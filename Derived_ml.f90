@@ -95,6 +95,7 @@ use ModelConstants_ml, only: &
   ,SOURCE_RECEPTOR &
   ,USE_SOILNOX &
   ,USE_SOILNH3 &
+  ,USE_EMERGENCY,DEBUG_EMERGENCY &
   ,PT           &
   ,FORECAST     & ! only dayly (and hourly) output on FORECAST mode
   ,NTDAY        & ! Number of 2D O3 to be saved each day (for SOMO)
@@ -483,6 +484,12 @@ do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
           txt = "SURF_UG_GROUP"   ! ppb not implementde yet
           itot = -1
           iout = igrp
+!-- Emergency: Volcanic Eruption. Skipp groups if not found
+          if(outname(1:3)=="ASH")then
+            if(MasterProc.and.USE_EMERGENCY.and.DEBUG_EMERGENCY)&
+              write(*,"(A,1X,I0,':',A)")'EMERGENCY: group ',igrp,trim(outname)
+            if(igrp<1)cycle
+          endif
        else
 
            call StopAll("Derived:OutputFields Error " // trim( outtyp ) //":" //trim( outname ) )

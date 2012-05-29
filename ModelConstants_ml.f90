@@ -72,7 +72,8 @@ logical, public, parameter ::         &
   USE_PFT_MAPS       = .false.,       & ! Future option
   EXTENDEDMASSBUDGET = .false.,       & ! extended massbudget outputs
   LANDIFY_MET        = .false.,       & ! extended massbudget outputs
-  USE_POLLEN         = .false.          ! EXPERIMENTAL. Only works if start Jan 1
+  USE_POLLEN         = .false.,       & ! EXPERIMENTAL. Only works if start Jan 1
+  USE_EMERGENCY      = .false.           ! Emergency: Volcanic Eruption & Nuclear Accident. Under development.
 !Boundary layer profiles
   character(len=4), parameter, public :: FluxPROFILE = &
      "Iter"   ! 
@@ -278,7 +279,8 @@ integer, public, parameter :: &
   ,DEBUG_SITES          = .false. &
   ,DEBUG_SOILWATER      = .false. &
   ,DEBUG_SOILNOX        = .false. &
-  ,DEBUG_VOLC           = .false.   ! Volcanoes
+  ,DEBUG_VOLC           = .false. & ! Volcanoes
+  ,DEBUG_EMERGENCY      = .false.    ! Emergency: Volcanic Eruption & Nuclear Accident. Under development.
 
 !=============================================================================
 ! 3)  Source-receptor runs?

@@ -175,7 +175,7 @@ subroutine check_file(fname,fexist,needed,errmsg)
   end if
 end subroutine check_file
 !-------------------------------------------------------------------------
-subroutine open_file(io_num,mode,fname,needed,skip)
+subroutine open_file(io_num,mode,fname,needed,skip,iostat)
 ! Checks for the existence of a file and opens if present. If the
 ! file is specified as "needed", and missing, an error message is
 ! printed and the run is stopped.
@@ -185,6 +185,7 @@ subroutine open_file(io_num,mode,fname,needed,skip)
   character (len=*), intent(in) :: fname    ! file name
   logical, optional, intent(in) :: needed   ! see below
   integer, optional, intent(in) :: skip     ! No. text lines to be skipped
+  integer, optional, intent(out) :: iostat  ! return ios
 
   integer :: i  ! local loop counter
 
@@ -219,6 +220,7 @@ subroutine open_file(io_num,mode,fname,needed,skip)
     print *, "OPEN FILE: Incorrect mode: ", trim(mode)
     ios = -1
   end select
+  if(present(iostat))iostat=ios
 end subroutine open_file
 !-------------------------------------------------------------------------
 subroutine Read_Headers(io_num,io_msg,NHeaders,NKeys,Headers,Keyvalues,&

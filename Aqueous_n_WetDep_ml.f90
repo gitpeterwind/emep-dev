@@ -1,9 +1,9 @@
 ! <Aqueous_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
 !          Chemical transport Model>
-!*****************************************************************************! 
-!* 
+!*****************************************************************************!
+!*
 !*  Copyright (C) 2007-2011 met.no
-!* 
+!*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
 !*  Box 43 Blindern
@@ -11,26 +11,26 @@
 !*  NORWAY
 !*  email: emep.mscw@met.no
 !*  http://www.emep.int
-!*  
+!*
 !*    This program is free software: you can redistribute it and/or modify
 !*    it under the terms of the GNU General Public License as published by
 !*    the Free Software Foundation, either version 3 of the License, or
 !*    (at your option) any later version.
-!* 
+!*
 !*    This program is distributed in the hope that it will be useful,
 !*    but WITHOUT ANY WARRANTY; without even the implied warranty of
 !*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 !*    GNU General Public License for more details.
-!* 
+!*
 !*    You should have received a copy of the GNU General Public License
 !*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************! 
+!*****************************************************************************!
 module Aqueous_ml
 
 !-----------------------------------------------------------------------
 ! Aqueous scavenging and cloud-processing routines.
 !
-! The scavenging of soluble compounds is based upon the work of Berge 
+! The scavenging of soluble compounds is based upon the work of Berge
 ! and Jakobsen (1998) and Eliassen and Saltbones (1983).
 ! Simple scavenging coefficients are used. A distinction is made
 ! between in-cloud and sub-cloud scavenging.
@@ -70,7 +70,7 @@ module Aqueous_ml
   use Io_ml,             only : IO_DEBUG, datewrite
   use MassBudget_ml,     only : wdeploss,totwdep
   use ModelConstants_ml, only: &
-      CHEMTMIN, CHEMTMAX       &       ! -> range of temperature 
+      CHEMTMIN, CHEMTMAX       &       ! -> range of temperature
      ,MasterProc               &
      ,DEBUG => DEBUG_AQUEOUS   &       !
      ,atwS, atwN, DEBUG_MY_WETDEP &
@@ -86,7 +86,7 @@ module Aqueous_ml
   use OrganicAerosol_ml,    only: ORGANIC_AEROSOLS
   use OwnDataTypes_ml,           only : depmap, typ_i3  ! has adv, calc, vg
   use Par_ml,               only : limax,ljmax, me,li0,li1,lj0,lj1
-  use PhysicalConstants_ml, only: GRAV  &   
+  use PhysicalConstants_ml, only: GRAV  &
                                  ,AVOG  &    ! Avogadro's No.
                                  ,RGAS_ATML,RGAS_J  ! Gas-constant
   use Setup_1dfields_ml,   only : xn_2d, amk, Fpart, Fgas &
@@ -116,7 +116,7 @@ module Aqueous_ml
 ! Outputs:
 
   logical, public, save, dimension(KUPPER:KMAX_MID) :: &
-           incloud              ! True for in-cloud k values 
+           incloud              ! True for in-cloud k values
 
 
 ! Variables used in module:
@@ -173,29 +173,28 @@ module Aqueous_ml
   real, private, dimension(NAQRC), save :: aqrc ! constant rates for
                                                 ! so2 oxidn.
   real, private, dimension(2), save :: vw       ! constant rates for
-  logical, public,save :: prclouds_present      ! true if precipitating
-                                                ! clouds
+  logical, public,save :: prclouds_present      ! true if precipitating clouds
 
   integer, public, parameter :: &
-      ICLOHSO2  = 1   &  ! for [oh] + [so2]
-     ,ICLRC1    = 2   &  ! for [h2o2] + [so2]
-     ,ICLRC2    = 3   &  ! for [o3] + [so2]
-     ,ICLRC3    = 4      ! for [o3] + [o2] (Fe catalytic)
+    ICLOHSO2  = 1,   &  ! for [oh] + [so2]
+    ICLRC1    = 2,   &  ! for [h2o2] + [so2]
+    ICLRC2    = 3,   &  ! for [o3] + [so2]
+    ICLRC3    = 4       ! for [o3] + [o2] (Fe catalytic)
 
 
 ! Incloud scavenging: (only dependant on precipitation (not cloud water)
 !-----------------------------------------------------------------------
-! The parameterization of the scavenging of soluble chemical 
-! components is scaled to the precipitation in each layer. For 
-! incloud scavenging it is based on the parameterization described 
-! in Berge (1998). The incloud scavenging of a soluble component 
+! The parameterization of the scavenging of soluble chemical
+! components is scaled to the precipitation in each layer. For
+! incloud scavenging it is based on the parameterization described
+! in Berge (1998). The incloud scavenging of a soluble component
 ! X is given by the expression:
 !
 !       X * f * pr_acc * W_sca
 ! Q =  ------------------------
 !         Z_sca * rho_water
 !
-! where pr_acc is the accumulated precipitation in the layer, 
+! where pr_acc is the accumulated precipitation in the layer,
 ! Z_sca is the scavenging depth (scale=1000m) and rho_water is the
 ! density of water.
 ! f is an efficiency parameter. The module My_WetDep_ml should
@@ -211,198 +210,183 @@ module Aqueous_ml
 ! from all the layers above. (From setup_1d)
 ! For particles the scavenging is believed to be much less effective,
 ! as they follow the air-current around the droplets (Berge, 1993).
-! Scavenging for particles is calculated as 
+! Scavenging for particles is calculated as
 !    Q = A.e.P/v
 ! where A is 5.2 m3 kg-1 s-1, v is the fall-speed of the droplets,
 ! 5 m s-1, and e is the scavenging efficiency, 0.1.
 
 
 
-  ! ------------ WetDep initialisation (old My_WetDep --------------
+! ------------ WetDep initialisation (old My_WetDep --------------
 
   type, public :: WScav
-     real  :: W_sca       ! Scavenging ratio/z_Sca/rho = W_sca/1.0e6
-     real  :: W_sub       ! same for subcloud
+    real  :: W_sca       ! Scavenging ratio/z_Sca/rho = W_sca/1.0e6
+    real  :: W_sub       ! same for subcloud
   end type WScav
-  
 
   integer, public, parameter :: NWETDEP_CALC =  14 ! No. of solublity classes
 
-   !  Note - these are for "master" or model species - they do not
-   !  need to be present in the chemical scheme. However, the chemical
-   !  scheme needs to define wet scavenging after these. If you would
-   !  like other characteristics, add them here.
-  
+!  Note - these are for "master" or model species - they do not
+!  need to be present in the chemical scheme. However, the chemical
+!  scheme needs to define wet scavenging after these. If you would
+!  like other characteristics, add them here.
   integer, parameter, public :: &
-     CWDEP_SO2 = 1,  &
-     CWDEP_SO4 = 2,  &
-     CWDEP_NH3 = 3,  &
-     CWDEP_HNO3 = 4,  &
-     CWDEP_H2O2 = 5,  &
-     CWDEP_HCHO = 6,  &
-     CWDEP_PMf  = 7,  &
-     CWDEP_PMc  = 8,  &
-     CWDEP_ECfn = 9,  &
-     CWDEP_SSf  = 10, &
-     CWDEP_SSc  = 11, &
-     CWDEP_SSg  = 12, &
-     CWDEP_POLLw = 13, &
-     CWDEP_ROOH = 14   ! TEST!!
+    CWDEP_SO2  =  1, CWDEP_SO4  =  2, CWDEP_NH3  =  3, CWDEP_HNO3 =  4, &
+    CWDEP_H2O2 =  5, CWDEP_HCHO =  6, CWDEP_PMf  =  7, CWDEP_PMc  =  8, &
+    CWDEP_ECfn =  9, CWDEP_SSf  = 10, CWDEP_SSc  = 11, CWDEP_SSg  = 12, &
+    CWDEP_POLLw= 13, &
+    CWDEP_ROOH = 14   ! TEST!!
 
 
+  integer, parameter, public :: &
+    CWDEP_ASH1=CWDEP_PMf,CWDEP_ASH2=CWDEP_PMf,CWDEP_ASH3=CWDEP_PMf,&
+    CWDEP_ASH4=CWDEP_PMf,CWDEP_ASH5=CWDEP_PMc,CWDEP_ASH6=CWDEP_PMc,&
+    CWDEP_ASH7=CWDEP_PMc
 
-            !===========================================!
-            ! Chemistry-dependent mapping:
-            ! WdepMap = (/
-            !    depmap( HNO3, CWDEP_HNO3, -1) & etc.
-            ! .... produced from GenChem, also with e.g. 
-            !integer, public, parameter ::  NWETDEP_ADV  = 14
-            !===========================================!
+!===========================================!
+! Chemistry-dependent mapping:
+! WdepMap = (/
+!    depmap( HNO3, CWDEP_HNO3, -1) & etc.
+! .... produced from GenChem, also with e.g.
+!integer, public, parameter ::  NWETDEP_ADV  = 14
+!===========================================!
 
-                       include 'CM_WetDep.inc'
+  include 'CM_WetDep.inc'
 
-            !===========================================!
-            !===========================================!
-            !===========================================!
+!===========================================!
+!===========================================!
+!===========================================!
 
+! And create an array to map from the "calc" to the advected species
+! Use zeroth column to store number of species in that row
+  integer, public, dimension(NWETDEP_CALC,0:NWETDEP_ADV) :: Calc2tot
 
- ! And create an array to map from the "calc" to the advected species
- ! Use zeroth column to store number of species in that row
+! arrays for species and groups, e.g. SOX, OXN
+  integer, save, private :: nwgrp = 0, nwspec = 0  ! no. groups & specs
+  integer, save, allocatable, dimension(:), private :: wetgroup, wetspec
 
-   integer, public, dimension(NWETDEP_CALC,0:NWETDEP_ADV) :: Calc2tot
+  type(typ_i3), save, private, &
+    dimension(size(WDEP_WANTED(:)%txt1)) :: tmpgroup, tmpspec
 
-  ! arrays for species and groups, e.g. SOX, OXN
-    integer, save, private :: nwgrp = 0, nwspec = 0  ! no. groups & specs
-    integer, save, allocatable, dimension(:), private :: wetgroup, wetspec 
+  type(WScav), public, dimension(NWETDEP_CALC), save  :: WetDep
 
-    type(typ_i3), save, private, &
-          dimension(size(WDEP_WANTED(:)%txt1 )) :: tmpgroup, tmpspec
-
-    type(WScav), public, dimension(NWETDEP_CALC), save  :: WetDep
-  
-    integer, public, save  :: WDEP_PREC   ! Used in Aqueous_ml
+  integer, public, save  :: WDEP_PREC   ! Used in Aqueous_ml
 
 
 contains
 
-  subroutine Init_WetDep()
+subroutine Init_WetDep()
 
-    integer :: itot, icalc, n, nc, if2, igr, isp, alloc_err, atw
+  integer :: itot, icalc, n, nc, if2, igr, isp, alloc_err, atw
 
-  !/ SUBCLFAC is A/FALLSPEED where A is 5.2 m3 kg-1 s-1, 
-  !  and the fallspeed of the raindroplets is assumed to be 5 m/s. 
-    real, parameter ::  FALLSPEED = 5.0               ! m/s 
-    real, parameter ::  SUBCLFAC = 5.2 / FALLSPEED
+!/ SUBCLFAC is A/FALLSPEED where A is 5.2 m3 kg-1 s-1,
+!  and the fallspeed of the raindroplets is assumed to be 5 m/s.
+  real, parameter ::  FALLSPEED = 5.0               ! m/s
+  real, parameter ::  SUBCLFAC = 5.2 / FALLSPEED
 
-  !/ e is the scavenging efficiency (0.02 for fine particles, 0.4 for course)
+!/ e is the scavenging efficiency (0.02 for fine particles, 0.4 for course)
 
-    real, parameter ::  EFF25 = 0.02*SUBCLFAC  & 
-                      , EFFCO = 0.4*SUBCLFAC   &
-                      , EFFGI = 0.7*SUBCLFAC  
+  real, parameter ::  EFF25 = 0.02*SUBCLFAC  &
+                    , EFFCO = 0.4*SUBCLFAC   &
+                    , EFFGI = 0.7*SUBCLFAC
 
-   !/.. setup the scavenging ratios for in-cloud and sub-cloud. For
-   !    gases, sub-cloud = 0.5 * incloud. For particles, sub-cloud=
-   !    efficiency * SUBCLFAC
-   !/..                             W_Sca  W_sub
-    WetDep(CWDEP_SO2)   = WScav(   0.3,  0.15)  ! Berge+Jakobsen
-    WetDep(CWDEP_SO4)   = WScav(   1.0,  EFF25) ! Berge+Jakobsen
-    WetDep(CWDEP_NH3)   = WScav(   1.4,  0.5 )  ! subcloud = 1/3 of cloud for gases
-    WetDep(CWDEP_HNO3)  = WScav(   1.4,  0.5)   ! 
-    WetDep(CWDEP_H2O2)  = WScav(   1.4,  0.5)   ! 
-    WetDep(CWDEP_HCHO)  = WScav(   0.1,  0.03)  ! 
-    WetDep(CWDEP_ECfn)  = WScav(   0.05,  EFF25)
-    WetDep(CWDEP_SSf)   = WScav(   1.6,  EFF25)
-    WetDep(CWDEP_SSc)   = WScav(   1.6,  EFFCO)
-    WetDep(CWDEP_SSg)   = WScav(   1.6,  EFFGI)
-    WetDep(CWDEP_PMf)   = WScav(   1.0,  EFF25) !!
-    WetDep(CWDEP_PMc)   = WScav(   1.0,  EFFCO) !!
-    WetDep(CWDEP_POLLw)  = WScav(   1.0,  SUBCLFAC) ! pollen
-    WetDep(CWDEP_ROOH)   = WScav(  0.05,  0.015) ! assumed half of HCHO
+!/.. setup the scavenging ratios for in-cloud and sub-cloud. For
+!    gases, sub-cloud = 0.5 * incloud. For particles, sub-cloud=
+!    efficiency * SUBCLFAC
+!/..                             W_Sca  W_sub
+  WetDep(CWDEP_SO2)   = WScav(   0.3,  0.15)  ! Berge+Jakobsen
+  WetDep(CWDEP_SO4)   = WScav(   1.0,  EFF25) ! Berge+Jakobsen
+  WetDep(CWDEP_NH3)   = WScav(   1.4,  0.5 )  ! subcloud = 1/3 of cloud for gases
+  WetDep(CWDEP_HNO3)  = WScav(   1.4,  0.5)   !
+  WetDep(CWDEP_H2O2)  = WScav(   1.4,  0.5)   !
+  WetDep(CWDEP_HCHO)  = WScav(   0.1,  0.03)  !
+  WetDep(CWDEP_ECfn)  = WScav(   0.05, EFF25)
+  WetDep(CWDEP_SSf)   = WScav(   1.6,  EFF25)
+  WetDep(CWDEP_SSc)   = WScav(   1.6,  EFFCO)
+  WetDep(CWDEP_SSg)   = WScav(   1.6,  EFFGI)
+  WetDep(CWDEP_PMf)   = WScav(   1.0,  EFF25) !!
+  WetDep(CWDEP_PMc)   = WScav(   1.0,  EFFCO) !!
+  WetDep(CWDEP_POLLw) = WScav(   1.0,  SUBCLFAC) ! pollen
+  WetDep(CWDEP_ROOH)  = WScav(   0.05, 0.015) ! assumed half of HCHO
 
-  ! Other PM compounds treated with SO4-LIKE array defined above
+! Other PM compounds treated with SO4-LIKE array defined above
 
-   !####################### gather indices from My_Derived
-   ! WDEP_WANTED array, and determine needed indices in d_2d
+!####################### gather indices from My_Derived
+! WDEP_WANTED array, and determine needed indices in d_2d
 
-     do n = 1, size( WDEP_WANTED(:)%txt1 )
+  do n = 1, size( WDEP_WANTED(:)%txt1 )
 
-       if2   = find_index("WDEP_"//WDEP_WANTED(n)%txt1,f_2d(:)%name)
-       atw = -999
-       if( WDEP_WANTED(n)%txt3 == "mgS" ) atw = atwS
-       if( WDEP_WANTED(n)%txt3 == "mgN" ) atw = atwN
-       if( WDEP_WANTED(n)%txt3 == "mgSS") atw = 58
-       if( WDEP_WANTED(n)%txt3 == "mgP")  atw = 12
-       if( WDEP_WANTED(n)%txt3 == "mm")   atw = 999 ! Dummy for precip
-       call CheckStop( atw <1 , "AQUEOUS ATW PROBLEM:" // trim(WDEP_WANTED(n)%txt3)  ) 
+    if2   = find_index("WDEP_"//WDEP_WANTED(n)%txt1,f_2d(:)%name)
+    atw = -999
+    if( WDEP_WANTED(n)%txt3 == "mgS" ) atw = atwS
+    if( WDEP_WANTED(n)%txt3 == "mgN" ) atw = atwN
+    if( WDEP_WANTED(n)%txt3 == "mgSS") atw = 58
+    if( WDEP_WANTED(n)%txt3 == "mgP")  atw = 12
+    if( WDEP_WANTED(n)%txt3 == "mm")   atw = 999 ! Dummy for precip
+    call CheckStop( atw <1 , "AQUEOUS ATW PROBLEM:" // trim(WDEP_WANTED(n)%txt3)  )
 
-       if ( WDEP_WANTED(n)%txt2 == "GROUP" ) then
+    if ( WDEP_WANTED(n)%txt2 == "GROUP" ) then
+      igr   = find_index("WDEP_"//WDEP_WANTED(n)%txt1,chemgroups(:)%name)
+      if(igr>0) then
+        nwgrp = nwgrp + 1
+        tmpgroup(nwgrp) = typ_i3( igr, if2, atw )  ! link to array of species integers
+      endif
 
-          igr   = find_index("WDEP_"//WDEP_WANTED(n)%txt1,chemgroups(:)%name)
+    else if ( WDEP_WANTED(n)%txt2 == "PREC" ) then
+      WDEP_PREC= find_index("WDEP_PREC",f_2d(:)%name)
+      igr = -999 ! just for printout
+      isp = -999 ! just for printout
+      atw = -999
 
-          if(igr>0) then
-              nwgrp = nwgrp + 1
-              tmpgroup(nwgrp) = typ_i3( igr, if2, atw )  ! link to array of 
-                                                         ! species integers
-          end if
+    else ! SPEC
+      isp   = find_index(WDEP_WANTED(n)%txt1,species(:)%name)
+      if(isp>0) then
+        nwspec = nwspec + 1
+        tmpspec(nwspec) = typ_i3( isp, if2, atw )
+      endif
+    endif
 
-       else if ( WDEP_WANTED(n)%txt2 == "PREC" ) then
+    if( DEBUG .and. MasterProc )  then
+      write(6,"(2a,4i5)") "WETPPP ", trim(f_2d(if2)%name), if2, igr , atw
+      if(igr>0) write(*,*) "WETFGROUP ", nwgrp, chemgroups(igr)%ptr, atw
+      if(isp>0) write(*,*) "WETFSPEC  ", nwspec, isp, atw
+    endif
+  enddo
+  allocate(wetspec(nwspec),stat=alloc_err)
+  call CheckStop( alloc_err /= 0, "alloc error wetspec")
+  allocate(wetgroup(nwgrp),stat=alloc_err)
+  call CheckStop( alloc_err /= 0, "alloc error wetgroup")
 
-          WDEP_PREC= find_index("WDEP_PREC",f_2d(:)%name)
-          igr = -999 ! just for printout
-          isp = -999 ! just for printout
-          atw = -999
+! And now we fill these arrays with the right indices:
+! Simplifies the code a little, but we still use the tmp arrays
+! to store the f2d and atw info.
 
-       else ! SPEC
+  wetspec(:)  = tmpspec(1:nwspec)%int1
+  wetgroup(:) = tmpgroup(1:nwgrp)%int1
 
-          isp   = find_index(WDEP_WANTED(n)%txt1,species(:)%name)
-          if(isp>0) then
-              nwspec = nwspec + 1
-              tmpspec(nwspec) = typ_i3( isp, if2, atw )
-          end if
-       end if
+!####################### END indices here ##########
 
-       if( DEBUG .and. MasterProc )  then
-            write(6,"(2a,4i5)") "WETPPP ", trim(f_2d(if2)%name), if2, igr , atw
-            if(igr>0) write(*,*) "WETFGROUP ", nwgrp, chemgroups(igr)%ptr, atw
-            if(isp>0) write(*,*) "WETFSPEC  ", nwspec, isp, atw
-       end if
-     end do
-     allocate(wetspec(nwspec),stat=alloc_err)
-     call CheckStop( alloc_err /= 0, "alloc error wetspec")
-     allocate(wetgroup(nwgrp),stat=alloc_err)
-     call CheckStop( alloc_err /= 0, "alloc error wetgroup")
+! Now create table to map calc species to actual advected ones:
+  Calc2tot = 0
+  do n = 1, NWETDEP_ADV
+    icalc = WDepMap(n)%calc
+    itot  = WDepMap(n)%ind
+    Calc2tot(icalc,0) =  Calc2tot(icalc,0)  + 1
+    nc = Calc2tot(icalc,0)
+    if( MasterProc .and.DEBUG) write(*,"(a,4i5)") &
+      "CHECKING WetDep Calc2tot ", n,icalc,itot,nc
+    Calc2tot(icalc,nc) = itot
+  end do
 
-    ! And now we fill these arrays with the right indices:
-    ! Simplifies the code a little, but we still use the tmp arrays
-    ! to store the f2d and atw info.
+  if( MasterProc.and.DEBUG ) then
+    write(*,*) "FINAL WetDep Calc2tot "
+    do icalc = 1, NWETDEP_CALC
+      write(*,"(i3,i4,15(1x,a))") icalc, Calc2tot(icalc,0), &
+        (trim(species(Calc2tot(icalc,nc))%name), nc=1,Calc2tot(icalc,0))
+    enddo
+  endif
 
-     wetspec(:)  = tmpspec(1:nwspec)%int1
-     wetgroup(:) = tmpgroup(1:nwgrp)%int1
-       
-   !####################### END indices here ##########
-
-   ! Now create table to map calc species to actual advected ones:
-     Calc2tot = 0
-     do n = 1, NWETDEP_ADV
-         icalc = WDepMap(n)%calc
-         itot  = WDepMap(n)%ind
-         Calc2tot(icalc,0) =  Calc2tot(icalc,0)  + 1
-         nc = Calc2tot(icalc,0)
-     if( MasterProc .and.DEBUG) write(6,"(a,4i5)") "CHECKING WetDep Calc2tot ", &
-            n,icalc,itot,nc
-         Calc2tot(icalc,nc) = itot
-      end do 
-
-     if( MasterProc.and.DEBUG ) then
-      write(*,*) "FINAL WetDep Calc2tot "
-      do icalc = 1, NWETDEP_CALC
-        write(*,"(i3,i4,15(1x,a))") icalc, Calc2tot(icalc,0 ), &
-         ( trim( species(Calc2tot(icalc,nc))%name ), &
-             nc= 1, Calc2tot(icalc,0 ))
-      end do
-     end if
-
-  end subroutine Init_WetDep
+end subroutine Init_WetDep
 
 !-----------------------------------------------------------------------
 subroutine Setup_Clouds(i,j,debug_flag)
@@ -410,34 +394,32 @@ subroutine Setup_Clouds(i,j,debug_flag)
 !-----------------------------------------------------------------------
 ! DESCRIPTION
 ! Define incloud and precipitating clouds.
-! The layer must contain at least 1.e-7 kgwater/kg air to 
-! be considered a cloud. 
+! The layer must contain at least 1.e-7 kgwater/kg air to
+! be considered a cloud.
 !
-! Also calculates 
+! Also calculates
 !  pr_acc - the accumulated precipitation for each k
 !  b      - fractional cloud cover for each k
 !-----------------------------------------------------------------------
 
   integer, intent(in) ::  i,j
-  logical, intent(in) :: debug_flag  
+  logical, intent(in) :: debug_flag
 
   real, dimension(KUPPER:KMAX_MID) :: &
-       b           &  !  Cloud-area (fraction)
-      ,cloudwater  &  !  Cloud-water (volume mixing ratio) 
-                      !  cloudwater = 1.e-6 same as 1.g m^-3
-      ,pres           !Pressure (Pa)
+    b,           &  ! Cloud-area (fraction)
+    cloudwater,  &  ! Cloud-water (volume mixing ratio)
+                    ! cloudwater = 1.e-6 same as 1.g m^-3
+    pres            ! Pressure (Pa)
   integer :: k
 
 ! Add up the precipitation in the column:
-  pr_acc(KUPPER) = sum ( pr(i,j,1:KUPPER) ) ! prec. from above 
+  pr_acc(KUPPER) = sum ( pr(i,j,1:KUPPER) ) ! prec. from above
   do k= KUPPER+1, KMAX_MID
-     pr_acc(k) = pr_acc(k-1) + pr(i,j,k)
-     pr_acc(k) = max( pr_acc(k), 0.0 )
+    pr_acc(k) = pr_acc(k-1) + pr(i,j,k)
+    pr_acc(k) = max( pr_acc(k), 0.0 )
   end do
 
-  prclouds_present = .false.  
-  if ( pr_acc(KMAX_MID) > PR_LIMIT )  prclouds_present = .true. 
-                             ! --> precipitation at the surface
+  prclouds_present=(pr_acc(KMAX_MID)>PR_LIMIT) ! --> precipitation at the surface
 
 ! initialise with .false. and 0:
   incloud(:)  = .false.
@@ -449,79 +431,79 @@ subroutine Setup_Clouds(i,j,debug_flag)
 
   ksubcloud = KMAX_MID+1       ! k-coordinate of sub-cloud limit
 
-  do k = KMAX_MID, KUPPER, -1  
-     if ( lwc(i,j,k) >  CW_LIMIT ) exit
-     ksubcloud = k
+  do k = KMAX_MID, KUPPER, -1
+    if(lwc(i,j,k)>CW_LIMIT) exit
+    ksubcloud = k
   end do
-  if ( ksubcloud == 0 ) return ! No cloud water found below level 6
-                               ! Cloud above level 6 are likely thin
-                               ! cirrus clouds, and if included may
-                               ! need special treatment...
-                               ! ==> assume no cloud 
+  if(ksubcloud == 0) return ! No cloud water found below level 6
+                            ! Cloud above level 6 are likely thin
+                            ! cirrus clouds, and if included may
+                            ! need special treatment...
+                            ! ==> assume no cloud
 
 ! Define incloud part of the column requiring that both cloud water
-! and cloud fractions are above limit values 
+! and cloud fractions are above limit values
 
   kcloudtop = -1               ! k-level of cloud top
   do k = KUPPER, ksubcloud-1
 
-     b(k) = cc3d(i,j,k)
+    b(k) = cc3d(i,j,k)
 
 ! Units: kg(w)/kg(air) * kg(air(m^3) / density of water 10^3 kg/m^3
-! ==> cloudwater (volume mixing ratio of water to air in cloud 
+! ==> cloudwater (volume mixing ratio of water to air in cloud
 ! (when devided by cloud fraction b )
-! cloudwater(k) = 1.0e-3 * cw(i,j,k,1) * roa(i,j,k,1) / b(k)   
+! cloudwater(k) = 1.0e-3 * cw(i,j,k,1) * roa(i,j,k,1) / b(k)
 
-     if ( lwc(i,j,k) >  CW_LIMIT ) then
-        cloudwater(k) = lwc(i,j,k) / b(k) ! value of cloudwater in the
-                                          ! cloud fraction of the grid
+    if(lwc(i,j,k)>CW_LIMIT) then
+      cloudwater(k) = lwc(i,j,k) / b(k) ! value of cloudwater in the
+                                        ! cloud fraction of the grid
 
 !hf : alternative if cloudwater exists (and can be used) from met model
 !        cloudwater(k) = 1.0e-3 * cw(i,j,k,1) * roa(i,j,k,1) / b(k)
-!        cloudwater min 0.03 g/m3 (0.03e-6 mix ratio)   
+!        cloudwater min 0.03 g/m3 (0.03e-6 mix ratio)
 !        cloudwater(k) = max(0.3e-7, (1.0e-3 * cw(i,j,k,1) * roa(i,j,k,1) ))
 !        cloudwater(k) =         cloudwater(k)/ b(k)
-        incloud(k) = .true.
+      incloud(k) = .true.
 !hf
-        pres(k)=ps(i,j,1)
-        if ( kcloudtop < 0 ) kcloudtop = k
-     end if
+      pres(k)=ps(i,j,1)
+      if(kcloudtop<0) kcloudtop = k
+    endif
+  enddo
 
-  end do
+  if(kcloudtop == -1) then
+    if(prclouds_present.and.DEBUG) &
+      write(*,"(a20,2i5,3es12.4)") "ERROR prclouds sum_cw", &
+        i,j, maxval(lwc(i,j,KUPPER:KMAX_MID),1), maxval(pr(i,j,:)), pr_acc(KMAX_MID)
+    kcloudtop = KUPPER ! for safety
+  endif
 
-  if ( kcloudtop == -1 ) then
-     if ( prclouds_present ) then
-     if ( DEBUG ) write(6,"(a20,2i5,3es12.4)") &
-        "ERROR prclouds sum_cw", &
-         i,j, maxval(lwc(i,j,KUPPER:KMAX_MID),1) , &
-         maxval(pr(i,j,:)), pr_acc(KMAX_MID)
-     end if
-     kcloudtop = KUPPER ! for safety
-  end if
-
-! sets up the aqueous phase reaction rates (SO2 oxidation) and the 
-! fractional solubility 
+! sets up the aqueous phase reaction rates (SO2 oxidation) and the
+! fractional solubility
 
 !hf add pres
   call setup_aqurates(b ,cloudwater,incloud,pres)
 
-  if ( DEBUG_pH .and. debug_flag .and. incloud(kcloudtop) ) then
-!     write(6,"(a,l1,2i4,es14.4)") "DEBUG_AQ ",prclouds_present, &
-!                kcloudtop, ksubcloud, pr_acc(KMAX_MID)
+  if(DEBUG_pH .and. debug_flag .and. incloud(kcloudtop)) then
+!   write(*,"(a,l1,2i4,es14.4)") "DEBUG_AQ ",prclouds_present, &
+!            kcloudtop, ksubcloud, pr_acc(KMAX_MID)
 
-     write(6,*) "DEBUG_pH ",prclouds_present, &
-                kcloudtop, ksubcloud, (pH(k),k=kcloudtop,ksubcloud-1)
-     write(6,*) "CONC (mol/l)",so4_aq(ksubcloud-1),no3_aq(ksubcloud-1),nh4_aq(ksubcloud-1),nh3_aq(ksubcloud-1),hco3_aq(ksubcloud-1),co2_aq(ksubcloud-1)
-write(6,*)"H+(ph_factor) ",hco3_aq(ksubcloud-1)+2.*so4_aq(ksubcloud-1)+hso3_aq(ksubcloud-1)+2.*so32_aq(ksubcloud-1)+no3_aq(ksubcloud-1)-nh4_aq(ksubcloud-1)-nh3_aq(ksubcloud-1)
-     write(6,*) "CLW(l_vann/l_luft) ",cloudwater(ksubcloud-1)
-     write(6,*) "xn_2d(SO4) ugS/m3 ",(xn_2d(SO4,k)*10.e12*32./AVOG,k=kcloudtop,KMAX_MID)
-  end if
+    write(*,*) "DEBUG_pH ",prclouds_present, &
+              kcloudtop, ksubcloud, (pH(k),k=kcloudtop,ksubcloud-1)
+    write(*,*) "CONC (mol/l)",&
+      so4_aq(ksubcloud-1),no3_aq(ksubcloud-1),nh4_aq(ksubcloud-1),&
+      nh3_aq(ksubcloud-1),hco3_aq(ksubcloud-1),co2_aq(ksubcloud-1)
+    write(*,*)"H+(ph_factor) ",&
+      hco3_aq(ksubcloud-1)+2.*so4_aq(ksubcloud-1)+hso3_aq(ksubcloud-1)&
+     +2.*so32_aq(ksubcloud-1)+no3_aq(ksubcloud-1)-nh4_aq(ksubcloud-1)-nh3_aq(ksubcloud-1)
+    write(*,*) "CLW(l_vann/l_luft) ",cloudwater(ksubcloud-1)
+    write(*,*) "xn_2d(SO4) ugS/m3 ",(xn_2d(SO4,k)*10.e12*32./AVOG,k=kcloudtop,KMAX_MID)
+  endif
 
 end subroutine Setup_Clouds
 
 
 !-----------------------------------------------------------------------
-subroutine init_aqueous() 
+subroutine init_aqueous()
 
 !-----------------------------------------------------------------------
 ! DESCRIPTION
@@ -558,7 +540,7 @@ subroutine init_aqueous()
   aqrc(2) = 1.8e4 * 1.0e3/AVOG * MASSTRLIM
 
 ! (so2aq + hso3-) + o2 ( + Fe ) --> so4, see documentation below
-  aqrc(3) = 3.3e-10  * MASSTRLIM  
+  aqrc(3) = 3.3e-10  * MASSTRLIM
 
 ! Regarding aqrc(3):
 ! catalytic oxidation with Fe. The assumption is that 2% of SIV
@@ -583,7 +565,7 @@ subroutine tabulate_aqueous()
 ! Tabulates Henry's law coefficients over the temperature range
 ! defined in Tabulations_ml.
 ! For SO2, the effective Henry's law is given by
-!   Heff = H * ( 1 + K1/H+ )  
+!   Heff = H * ( 1 + K1/H+ )
 ! where k2 is omitted as it is significant only at high pH.
 ! We tabulate also the factor 1+K1/H+ as K1fac.
 !-----------------------------------------------------------------------
@@ -594,7 +576,7 @@ subroutine tabulate_aqueous()
   t(:)           = (/ ( real(i), i=CHEMTMIN, CHEMTMAX ) /)
   tfac(:)        = 1.0/t(:) -  1.0/298.0
 
-  H (IH_SO2 ,:)  = 1.23    * exp(3020.0*tfac(:) ) 
+  H (IH_SO2 ,:)  = 1.23    * exp(3020.0*tfac(:) )
   H (IH_H2O2,:)  = 7.1e4   * exp(6800.0*tfac(:) )
   H (IH_O3  ,:)  = 1.13e-2 * exp(2300.0*tfac(:) )
   H (IH_NH3 ,:)  = 60.0    * exp(4400.0*tfac(:) ) !http://www.ceset.unicamp.br/~mariaacm/ST405/Lei%20de%20Henry.pdf
@@ -608,7 +590,7 @@ subroutine tabulate_aqueous()
   Kco2(:) = 4.3e-7 * exp(-921.0*tfac(:)  )!Seinfeldt&Pandis 1998
 
 ! Need  effective Henry's coefficient for SO2:
-!hf belove moved to setup_clouds because pH is needed 
+!hf belove moved to setup_clouds because pH is needed
 !hf moved to setup_clouds  K1fac(IH_SO2  ,:)  =  &
 !hf moved      ( 1.0 + 1.23e-2 * exp(2010.0*tfac(:) ) * INV_Hplus)
 !WAS A BUG HERE. Above=(1+K1)/H+ but should be K1fac=1+K1/H+
@@ -632,7 +614,7 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
     ,pres           !Pressure(Pa) !hf
 
   logical, dimension(KUPPER:KMAX_MID) :: &
-           incloud  ! True for in-cloud k values 
+           incloud  ! True for in-cloud k values
 
 ! Outputs  -> aqurates
 
@@ -647,13 +629,13 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
 ! PH
   real, dimension(KUPPER:KMAX_MID) :: &
    phfactor &
-   ,h_plus 
+   ,h_plus
 
   real, parameter :: CO2conc_ppm = 392 !mix ratio for CO2 in ppm
   real :: CO2conc !Co2 in mol/l
  !real :: invhplus04, K1_fac,K1K2_fac, Heff,Heff_NH3
   real :: invhplus04, K1K2_fac, Heff,Heff_NH3
-  integer, parameter :: pH_ITER = 5 ! num iter to calc pH. Could probably be reduced     
+  integer, parameter :: pH_ITER = 5 ! num iter to calc pH. Could probably be reduced
   real, dimension (KUPPER:KMAX_MID) :: VfRT ! Vf * Rgas * Temp
 
   integer k, iter
@@ -662,7 +644,6 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
 
   call get_frac(cloudwater,incloud) ! => frac_aq
 
-    
 ! initialize:
   aqrck(:,:)=0.
 
@@ -676,9 +657,9 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
 
 ! Gas phase ox. of SO2 is "default"
 ! in cloudy air, only the part remaining in gas phase (not
-! dissolved) is oxidized 
+! dissolved) is oxidized
 
-  aqrck(ICLOHSO2,:) = 1.0 
+  aqrck(ICLOHSO2,:) = 1.0
 
   do k = KUPPER,KMAX_MID
      if ( incloud(k) ) then ! Vf > 1.0e-10) ! lwc > CW_limit
@@ -700,7 +681,7 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
 
         VfRT(k) = cloudwater(k) * RGAS_ATML * temp(k)
 
-           !dissolve CO2 and SO2 (pH independent)          
+           !dissolve CO2 and SO2 (pH independent)
            !CO2conc=392 ppm
            CO2conc=CO2conc_ppm * 1e-9 * pres(k)/(RGAS_J *temp(k)) !mol/l
 
@@ -718,7 +699,7 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
            pH(k)=-log(h_plus(k))/log(10.)
 
            !nh4+, hco3, hso3 and so32 dissolve and ionize
-           Heff_NH3= H(IH_NH3,itemp(k))*Knh3(itemp(k))*h_plus(k)/Kw(itemp(k)) 
+           Heff_NH3= H(IH_NH3,itemp(k))*Knh3(itemp(k))*h_plus(k)/Kw(itemp(k))
            frac_aq(IH_NH3,k) = 1.0 / ( 1.0+1.0/( Heff_NH3*VfRT(k) ) )
            nh3_aq(k)= frac_aq(IH_NH3,k)*(xn_2d(NH3,k)*1000./AVOG)/cloudwater(k)
 
@@ -728,7 +709,7 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
 
         enddo
 
-!after pH determined, final numbers of frac_aq(IH_SO2) 
+!after pH determined, final numbers of frac_aq(IH_SO2)
 != effective fraction of S(IV):
 !include now also ionization to SO32-
 !        K1_fac  =  &
@@ -739,24 +720,20 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
              1.0 + K1(itemp(k))/h_plus(k) + K1(itemp(k))*K2(itemp(k))/(h_plus(k)**2)
         Heff  = H(IH_SO2,itemp(k)) * K1K2_fac
         frac_aq(IH_SO2,k) = 1.0 / ( 1.0+1.0/( Heff*VfRT(k) ) )
-        fso2grid(k) = b(k) * frac_aq(IH_SO2,k)!frac of S(IV) in grid in 
+        fso2grid(k) = b(k) * frac_aq(IH_SO2,k)!frac of S(IV) in grid in
                                               !aqueous phase
-!        fso2aq  (k) = fso2grid(k) / K1_fac 
-        fso2aq  (k) = fso2grid(k) / K1K2_fac  !frac of SO2 in total grid 
+!        fso2aq  (k) = fso2grid(k) / K1_fac
+        fso2aq  (k) = fso2grid(k) / K1K2_fac  !frac of SO2 in total grid
                                               !in aqueous phase
-                                             
-        
         caqh2o2 (k) = aqrc(1) * frac_aq(IH_H2O2,k) / cloudwater(k)
         caqo3   (k) = aqrc(2) * frac_aq(IH_O3,k) / cloudwater(k)
-        caqsx   (k) = aqrc(3) / cloudwater(k)  
-        
+        caqsx   (k) = aqrc(3) / cloudwater(k)
         ! oh + so2 gas-phase
         aqrck(ICLOHSO2,k) = ( 1.0-fso2grid(k) ) ! now correction factor!
         aqrck(ICLRC1,k)   = caqh2o2(k) * fso2aq(k) !only SO2
         !        aqrck(ICLRC2,k)   = caqo3(k) * INV_Hplus0p4 * fso2grid(k)
         aqrck(ICLRC2,k)   = caqo3(k) * invhplus04 * fso2grid(k)
-        aqrck(ICLRC3,k)   = caqsx(k) *  fso2grid(k) 
-        
+        aqrck(ICLRC3,k)   = caqsx(k) *  fso2grid(k)
      end if
   enddo
 
@@ -814,7 +791,7 @@ subroutine WetDeposition(i,j,debug_flag)
 
 ! input
   integer, intent(in) ::  i,j
-  logical, intent(in) :: debug_flag  
+  logical, intent(in) :: debug_flag
 
 ! local
   integer :: itot,is !  index in xn_2d arrays
@@ -855,7 +832,7 @@ subroutine WetDeposition(i,j,debug_flag)
 
      do k = kcloudtop, KMAX_MID
 
-        lossfac(k)  = exp( -vw(k)*pr_acc(k)*dt ) 
+        lossfac(k)  = exp( -vw(k)*pr_acc(k)*dt )
 
         ! For each "calc" species we have often a number of model
         ! species

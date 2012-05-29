@@ -78,6 +78,7 @@
     ,USE_SEASALT                     &
     ,USE_LIGHTNING_EMIS              & !
     ,USE_SOILNOX, USE_GLOBAL_SOILNOX, USE_DUST, USE_ROADDUST    & !
+    ,USE_EMERGENCY,DEBUG_EMERGENCY   & ! Emergency: Volcanic Eruption
     ,KMAX_MID ,KMAX_BND, KCHEMTOP    & ! Start and upper k for 1d fields
     ,DEBUG_i, DEBUG_j  !FUTURE , DEBUG_NH3 !NH3emis
   use Landuse_ml,            only : water_fraction, ice_landcover
@@ -88,6 +89,7 @@
   use Setup_1dfields_ml,     only : &
      xn_2d                &  ! concentration terms
     ,rcemis               &  ! emission terms
+    ,rcerup               &  ! Volcanic eruption
     ,rc_Rn222             &  ! for Pb210
     ,rc_Rnwater           &  ! TEST
     ,rcss, rcwbd, rcpol   &  !Sea salt, Wind blown dust, pollen
@@ -270,6 +272,10 @@ contains
      enddo
 
      endif ! VOLCANOES
+    if(USE_EMERGENCY.and.Eruption_found) then   ! Volcanic ASH & SO2
+      rcerup(:,:)=EruptionRate(i,j)             ! rcerup for ASH teacers
+      rcemis(SO2,:)=rcemis(SO2,:)+rcerup(SO2,:) ! SO2 contrib from eruption
+    endif
 
     !/** lightning and aircraft ... Airial NOx emissions if required:
 

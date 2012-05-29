@@ -56,6 +56,7 @@ use Functions_ml,    only : great_circle_distance
       ,li0,li1,lj0,lj1    & ! for debugging TAB
       ,IRUNBEG,JRUNBEG    & ! start of user-specified domain
       ,gi0,gj0     & ! full-dom coordinates of domain lower l.h. corner
+      ,gi1,gj1     & ! full-dom coordinates of domain uppet r.h. corner
       ,me            ! local processor
  use PhysicalConstants_ml, only : GRAV, PI ! gravity, pi
  implicit none
@@ -73,6 +74,8 @@ use Functions_ml,    only : great_circle_distance
 
  Public :: GlobalPosition
  private :: Position ! => lat(glat), long (glon)
+ Public :: coord_in_gridbox,  &  ! Are coord (lon/lat) is inside gridbox(i,j)?
+           coord_in_processor    ! Are coord (lon/lat) is inside local domain?
 
 
   !** 1) Public (saved) Variables from module:
@@ -967,6 +970,28 @@ endif
      end subroutine ij2ijm
 
   ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+  function coord_in_gridbox(lon,lat,i,j) result(in)
+  !-------------------------------------------------------------------!
+  ! Is coord (lon/lat) is inside gridbox(i,j)?
+  !-------------------------------------------------------------------!
+    real, intent(in) :: lon,lat
+    integer, intent(in) :: i,j
+    logical :: in
+    in=gl_stagg(i-1,j)<=lon.and.lon<gl_stagg(i,j).and. &
+       gb_stagg(i,j-1)<=lat.and.lat<gb_stagg(i,j)
+  end function coord_in_gridbox
+  function coord_in_processor(lon,lat) result(in)
+  !-------------------------------------------------------------------!
+  ! Is coord (lon/lat) is inside local domain?
+  !-------------------------------------------------------------------!
+    real, intent(in) :: lon,lat
+    logical :: in
+    integer :: i,j
+    real    :: xr,yr
+    call lb2ij(lon,lat,xr,yr)
+    i=nint(xr);j=nint(yr)
+    in=(gi0<=i).and.(i<=gi1).and.(gj0<=j).and.(j<=gj1)
+  end function coord_in_processor
 
 end module GridValues_ml
 !==============================================================================

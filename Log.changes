@@ -34,7 +34,7 @@ IMPORTANT NOTE:
      ----------------------
      If you get an error message such as:
 
-Looking for DegreeDayFac: /global/work/mifapw/emep/Data/inputs_emepdefaults_May2012/HDD18-TNO28-2008.nc 
+Looking for DegreeDayFac: /global/work/mifapw/emep/Data/inputs_emepdefaults_May2012/HDD18-TNO28-2008.nc
 
       you may need to generate this file. Use either:
 
@@ -47,12 +47,12 @@ SOIL NOx ISSUES - Mainly think about (1) for policy
 This versions works for European soil-NO emissions, but work still
 needed on a few issues for e.g. global usage, or NH3
 
-    (1) Soil-NO needs maps of annual N-deposition. 
+    (1) Soil-NO needs maps of annual N-deposition.
         Need to have climatalogical values, e.g.  5-year avg.
         Also need to consider "trends" for future scenarios
 
         Currently done with mkcdo.Ndep_5yrs in mifads/bin directory
-        on stallo. 
+        on stallo.
 
     (2) Can now have either the hourly calculations or the monthly
         global fields. Ideal is probably hourly for Europe and
@@ -92,6 +92,64 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
+xxxxxxxx rv4beta7 Alvaro   29/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
+
+eEMEP update (Alvaro):
+* Read & process Volcano locations and eruption setings
+* Specific DRY,WET deposition codes for VAAC Volcanic Ash (7bin configuration)
+
+run.pl
+  - Specic procesor numbers for 2010 BENCHMARKs:
+    $BENCHMARK{'ndx'} and $BENCHMARK{'ndy'}.
+  - `ls ... $HDD` instead `wc $HDD`.
+
+ZCM_Emergency/ASH*.species
+  - Add ASH total, fine, coarse & gigant groups (ASH, ASH_f, ASH_c & ASH_g).
+    This groups are the total for all erupting volcanoes (vents) and bins on the size class.
+
+ModelConstants_ml:
+  - Logical parameters USE_EMERGENCY and DEBUG_EMERGENCY (ModelConstants_ml)
+    switch on/off Emergency (only Volcanic Eruption so far) code.
+
+Volcanos_ml, Setup_1d_ml
+  - EruptionRate function returns the emission rates values for a grid point.
+
+Wesely_ml, Aqueous_ml (Aqueous_n_WetDep_ml.f90), ZCM_Emergency/ASH_?bin.species:
+  - Specific DRY,WET deposition codes for Volcanic Ash tracers under 7bin configuration (VAAC).
+    Only an interim solution. Specific values have yet to be implemented.
+    Ash deposition codes (CDDEP_ASH1,...,ASH7 in Wesely_ml and CWDEP_ASH1,...,ASH7 insAqueous_ml)
+    are defined exactly as PMf/PMc conterparts used for PPMf and PPMc.
+  - format/indent, write(*, instead of write(6,
+
+GridValues_ml:
+  - new logical function coord_in_gridbox:
+    Returns if coord (lon/lat) is inside gridbox(i,j)
+  - new logical function coord_in_processor:
+    Returns if coord (lon/lat) is inside local domain
+
+Io_Progs_ml:
+  - Optional output variable on open_file to return status (iostat=ios)
+    without having to use module variable ios.
+
+SmallUtils_ml:
+  - Two additional optional parameters for wordsplit:
+    * strict_separator: Split words ONLY with this separator
+    * empty_words: Allow empty strings ('') as output
+
+TimeDate_ExtraUtil_ml:
+  - Extend date2string fucntion with optional parameter addsecs=secs to add seconds
+    to generate the string for date+secs.
+  - New string2date function that extracts a date (model format) from a
+    string and a given pattern.
+  - New subroutines date2nctime and nctime2date for time/date formats
+    to/from netCDF time (secs1970/days1900).
+  - replace print by write statements
+
+Derived_ml, ZD_OZONE/My_Derived_ml, ZD_OZONE/My_Outputs_ml:
+  - Daily,...,FullRun output for EMERGENCY runs:
+    add ASH groups (all Vents) if group is not found.
+  - Hourly output for EMERGENCY/FORECAST or EMERGENCY/DEBUG runs:
+    PM*, AOD & each Erupting Volcano (Vent)
 
 xxxxxxxx rv4beta6 Svetlana  29/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -122,7 +180,7 @@ ZD_SR/My_Derived_ml.f90
 
 xxxxxxxx ongoing Peter, Dave 24/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
-run.pl: 
+run.pl:
 One run only for non arrays SR
 defined P as a reduction
 AnnualNdep_TNO28_2020.nc with capital A
@@ -143,10 +201,10 @@ BoundaryConditions_ml
 
 ModelConstants_ml and My_RunSettings.inc
 
-** New ** file RunSettings.inc, in ZD_SR and ZD_OZONE. 
+** New ** file RunSettings.inc, in ZD_SR and ZD_OZONE.
 Has just one line, e.g.
 
- cat ZD_SR/My_RunSettings.inc 
+ cat ZD_SR/My_RunSettings.inc
   logical, save, public :: SOURCE_RECEPTOR = .true.
 
 Makefile now calls the appropriate one, on doing
@@ -165,7 +223,7 @@ Notation change for SOA/OM species: _C changed to _OC:
   ZCM_vbs_tests/VBS_help.species
   ZD_VBS/My_SOA_ml.f90
 
-Also OMCOARSE added as group in 
+Also OMCOARSE added as group in
 
    ZCM_vbs_tests/VBS_nonvolatile.species
 
@@ -191,7 +249,7 @@ xxxxxxxx rv4beta    Dave      22/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
 *** THIS FILE HAS been committed while benchmark is in progress,
 given the urgency of the TNO28 SR runs. Should be okay, but be
-warned. 
+warned.
 
 Please - do not CVS stuff at this stage without discussing with
 Dave, since these SR runs are important and we don't want the
@@ -231,7 +289,7 @@ EmisGet_ml - EmisHeighs routine added to read in EmisHeights.txt file
   and set nemis_kprofile, emis_kprofile
    (the latter is allocatable, deduced from EmisHeights.txt)
 
-Emissions_ml - use of emis_kprofile 
+Emissions_ml - use of emis_kprofile
 
 run.pl - copies input_emepdefaults/EmisHeights_v3_9.txt to EmisHeights.txt
 (INERIS option not set yet, will follow shortly)
@@ -243,7 +301,7 @@ No effect except in title of outputs, since they are treated identically for now
 
 xxxxxxxx rv3_15   Dave     20/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
-  Submission of emission work. 
+  Submission of emission work.
 
     Hourly and HDD emissions variation clean-up. Now just read these
     from file linked through run.pl. If you want the old day/night from
@@ -260,7 +318,7 @@ xxxxxxxx rv3_15   Dave     20/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
      Choose which on in run.pl with INERIS_FACS.
 
-     
+
   Emissions and changes:
 
      (i) Heating degree-day (HDD) system improved to now use simpler
@@ -268,9 +326,9 @@ xxxxxxxx rv3_15   Dave     20/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
      "EMEP" style, with INERIS_SNAP2, see comments in rv3_14_5 log.
 
 
-      (The HDDxx files needed for this are currently in Dave's 
+      (The HDDxx files needed for this are currently in Dave's
        directory /home/mifads/Work/D_Emis/DegreeDay on stallo.
-       These files can be generated for any meteo (I think) by  
+       These files can be generated for any meteo (I think) by
        running the code DegreeDayFactors in that directory. Run with
        -h to get options. These shouldn't be needed with default
        ModelConstants though.)
@@ -293,8 +351,8 @@ xxxxxxxx rv3_15   Dave     20/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
   EmisDef_ml     - removed SNAP_HOURFAC (values can be obtained through
     new system with HourlyFacs.TNO2005 in run.pl)
 
-  
-  Emissions_ml   -  
+
+  Emissions_ml   -
 
     Consistent use of hourly and degree-day data for time-factor tfac
 
@@ -325,7 +383,7 @@ xxxxxxxx rv3_15   Dave     20/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
   Io_Progs fname added in debug output
 
   Met_ml - add call_msg txt, which can be used to pass messages
-     to "check" subtroutine. Helps to find out which file is 
+     to "check" subtroutine. Helps to find out which file is
      causing problems.
 
   Par_ml - add MSG_READ 88 (probably not needed?)
@@ -350,14 +408,14 @@ xxxxxxxx rv3_14_6 Peter    16/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 Met_ml.f90: Model stops if meteo file is not found (it did not before!)
 
 run.pl:
-#make results readable for others: 
+#make results readable for others:
 #PBS -W umask=0022
 new links for RoadDir
 
 xxxxxxxx rv3_14_5     14/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
 Alvaro  14/5/2012:
-Makefile,Makefile_stallo 
+Makefile,Makefile_stallo
   - commented MODULE check before compilation for netcdf/4.1.1
   - include .depend only when compiling a specific object (*.o)
     or when linking the full program (all or Unimod or '').
@@ -369,7 +427,7 @@ Emissions_ml   - if INERIS_FACS=.true. uses a degree-day
    method DS had introduced - putting more emission into
    winter. Methodology uses Dave's 18C Tbase, not yet
    Betrand's 20C. Will sort out later as part of DegreeDay
-   file cleanup 
+   file cleanup
 
 ModelConstants_ml - INERIS_FACS added for Bertrand's HDD method
                     TNO/TFMM domnain defintions added

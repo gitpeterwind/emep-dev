@@ -111,12 +111,12 @@ GETOPTS(){
         tee -a $rdir/volcanoes.csv                        # Headers
       cp -f "$ErupCSV" $rdir/eruptions.csv
       for N in ${!EE[*]};do
-        volc=`grep -i ${EE[$N]} "$VolcCSV"|cut -d',' -f$COL|
+        volc=`grep -iE ${EE[$N]/./'.{1,2}'} "$VolcCSV"|cut -d',' -f$COL|
         sed 's/^\(.\{4,7\}\)-/\1A/g;s/^\(.\{4,7\}\)=/\1B/g;s/^/V/g;s/, */,/g;'` # Volcano description
         [[ -n "$volc" ]] ||
           HELP $* "\nUnknown volcano option:\n\t-$OPT ${EE[$N]}"
         echo "$volc"|tee -a $rdir/volcanoes.csv
-        volc="v${volc%%,*}"                               # Tracer name
+        volc="${volc%%,*}"                               # Tracer name
         volcan[$N]=$rdir/ASH$volc
         sed "s/_ASH_/$volc/g;" $vdir/ASH_$vbin.species   > ${volcan[$N]}.species
         sed "s/_ASH_/$volc/g;" $vdir/ASH_$vbin.reactions > ${volcan[$N]}.reactions

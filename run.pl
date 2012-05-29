@@ -12,12 +12,12 @@
 #VePBS -lnodes=2:ppn=16
 #Stallo
 #PBS -lnodes=64
-#8:ppn=8:ib
+##PBS -lnodes=8:ppn=8:ib
 # wall time limit of run
 #PBS -lwalltime=07:30:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
 #PBS -lpmem=1000MB
-#make results readable for others: 
+#make results readable for others:
 #PBS -W umask=0022
 # account for billing
 #PBS -A nn2890k
@@ -107,11 +107,19 @@ my %BENCHMARK;
 #  %BENCHMARK = (grid=>"MACC02",year=>2008,emis=>"2008_emis_EMEP_MACC") ;
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2009,emis=>"Modrun11/EMEP_trend_2000-2009/2009");
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2009,emis=>"Modrun11/2011-Trend2009-CEIP");
-#  %BENCHMARK = (grid=>"EECCA" ,year=>2010,emis=>"Modrun12/2012-Trend2010-CEIP",chem=>"EmChem09soa",make=>"EMEP2010");
+#  %BENCHMARK = (grid=>"EECCA" ,year=>2010,emis=>"Modrun12/2012-Trend2010-CEIP",chem=>"EmChem09soa",make=>"EMEP2010",ndx=>8,ndy=>8);
 if (%BENCHMARK) {
   $BENCHMARK{'debug'}   = 1;  # chech if all debug flags are .false.
   $BENCHMARK{'archive'} = 1;  # save summary info in $DataDir
   $MAKEMODE = $BENCHMARK{'make'}?$BENCHMARK{'make'}:"EMEP" unless $MAKEMODE;  # comment for non EmChem09soa benchmarks
+# $BENCHMARK{'ndx'}     = 8;    # number of procesors in x-direction
+# $BENCHMARK{'ndy'}     = 8;    # number of procesors in y-direction
+  # Default setting, if not previously specified
+  $BENCHMARK{'chem'}    = "EmChem09soa"
+    unless $BENCHMARK{'chem'};  # chemical mecanism, e.g. OpenSource 2008
+  $BENCHMARK{'make'}    = ($BENCHMARK{'chem'} eq "EmChem09soa")?"EMEP":"all"
+    unless $BENCHMARK{'make'};  # make target, e.g. Status 2010
+  $MAKEMODE = $BENCHMARK{'make'} unless $MAKEMODE;
 }
 
 my $INERIS_FACS=0;  # Used for timefactors, and e,g TNOxx tests
@@ -240,8 +248,7 @@ my $Chem     = "EmChem09soa";
 #$Chem     = "CRI_v2_R5";
    $Chem     = $BENCHMARK{'chem'} if $BENCHMARK{'chem'};
 
-my $testv = "rv4beta";
-#$testv = "test";
+my $testv = "rv3_15.eCWF";
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
@@ -296,7 +303,7 @@ print "TESTING ENV:", $ENV{PWD}, "\n";
 
 
 my $SplitDir    = "$DataDir/SPLITS_JAN2010/BASE_NAEI2000_GH2009.$Chem" ;
-$SplitDir    = "$ChemDir/EMISSPLIT"; 
+$SplitDir    = "$ChemDir/EMISSPLIT";
 #RB:had "~mifarb/Unify/MyData/D_EGU/SPLITS_NOV2009v2/BASE_NAEI2000_GH2009.$Chem" ;
 
 my $version     = "Unimod" ;
@@ -417,7 +424,7 @@ die "Domain mis-match Model: $XDIM Grid $GRID" if (
    ( $GRID eq "HIRHAM"   && $XDIM != 182 ) or
    ( $GRID eq "GLOBAL"   && $XDIM != 360 ) );
 
-if (%BENCHMARK and not $BENCHMARK{'debug'}){
+if (%BENCHMARK and $BENCHMARK{'debug'}){
   die "No debug flags for benchmarks!"
   if (system ("grep -Hnie 'logical.*DEBUG.*=\ *.TRUE.' $ProgDir/*.f90") == 0) or
      (system ("grep -Hnie 'DEBUG.*=\ *.TRUE.' $ProgDir/ModelConstants_ml.f90") == 0);
@@ -429,6 +436,9 @@ if ( $ENV{PBS_NODEFILE} ) {
    ( $RUN_NPROC, undef ) = split;
    print "Qsub has: lnodes $RUN_NPROC\n";
    die "Error: Wrong number of lnodes!\n" unless $NPROC == $RUN_NPROC;
+   die "Domain mis-match Model: ${NDX}x${NDY} for Benchmark"
+   if(($BENCHMARK{'ndx'} and $BENCHMARK{'ndx'} != $NDX) or
+      ($BENCHMARK{'ndy'} and $BENCHMARK{'ndy'} != $NDY));
 } else {
    print "skip nodefile check on interactive runs\n";
 }
@@ -465,7 +475,7 @@ if ($SR) {
   print "SR is true\n";
   @runs = EMEP::Sr::initRuns();
   if ($ENV{'PBS_ARRAY_INDEX'} ){
-      print "PBS_ARRAY_INDEX:  $ENV{'PBS_ARRAY_INDEX'} \n" ; 
+      print "PBS_ARRAY_INDEX:  $ENV{'PBS_ARRAY_INDEX'} \n" ;
       @runs = ($runs[$ENV{'PBS_ARRAY_INDEX'}-1]); }  # PBS Pro, Ve, one run per job
   else{
       @runs = ($runs[0]);   # only one run
@@ -876,7 +886,7 @@ if ( $iyr_trend > 2015 )  {
 #
  my $HDD = "$timeseries/HDD${Tbase}-${GRID}-$year.nc";
  print "Looking for DegreeDayFac: $HDD \n";
- system("wc $HDD");
+ system("ls -lh --time-style=long-iso $HDD");
  unless ( $GRID eq "FORECAST" ) {
    die "NO HDD files " unless -f $HDD;   # Can comment out if USE_DEGREEDAYS
                                       # set false in ModelConstants_ml
@@ -909,7 +919,7 @@ if ( $iyr_trend > 2015 )  {
     open(IN,"<$ChemDir/volcanoes.csv");
     while(my $line = <IN>){
       $line=~ s/#.*//;                 # Get rid of comment lines
-      my $vname = split(",",$line,1);  # Volcano tracer name
+      my $vname = (split(",",$line))[0];  # Volcano tracer name
       my $nbin=($MAKEMODE eq "EMEP2010")?"2bin":"7bin";
       my $efile = "$EruptionDir/${vname}_$nbin.eruptions";
       system("cat $efile >> eruptions.csv") if -e $efile;
