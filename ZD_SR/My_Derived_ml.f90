@@ -137,7 +137,7 @@ private
    type(typ_s5i), public, save, dimension(MAX_NUM_DERIV2D) :: OutputFields
    integer, public, save :: nOutputFields = 0
 
-   type(typ_s5i), public, parameter, dimension(38) :: &
+   type(typ_s5i), public, parameter, dimension(40) :: &
       OutputConcs = (/  &
        ! ppb
          typ_s5i("O3        ", "ppb", D2,"AIR_CONCS", SPEC, D)& ! test 3d
@@ -208,7 +208,9 @@ private
         ,typ_s5i("SIA       ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
         ,typ_s5i("PMFINE    ",  "ug ", D2,"AIR_CONCS", GROUP, D)& !30
         ,typ_s5i("PM10      ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
-        ,typ_s5i("PMCO      ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
+        ,typ_s5i("PMCO      ",  "ug ", D2,"AIR_CONCS", GROUP, D)&
+        ,typ_s5i("PPM25     ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
+        ,typ_s5i("PPM_C     ",  "ug ", D2,"AIR_CONCS", GROUP, D)&
         ,typ_s5i("SS        ",  "ug ", D2,"AIR_CONCS", GROUP, D)&
         ,typ_s5i("DUST_NAT_F",  "ug ", D2,"AIR_CONCS", GROUP, D)&
         ,typ_s5i("DUST_NAT_C",  "ug ", D2,"AIR_CONCS", GROUP, D)&
