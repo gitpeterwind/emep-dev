@@ -93,12 +93,15 @@ Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
 
-xxxxxxxx Svetlana      29/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv4beta5 Svetlana  29/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
 Groups for PPM25, PPM_C and PPM10 are introduced:
  ZCM_EmChem09soa/VBS_nonvolatile.species
-Output of PPM25 and PPM_C in included in ZD_OZONE/My_Derived_ml.f90
+
+Output of PPM25 and PPM_C as GROUP in included in ZD_OZONE/My_Derived_ml.f90
 and ZD_SR/My_Derived_ml.f90
+(May be able to simply add these groups into ZCM_EmChem09/PMmass.species
+also, but needs checking.)
 
 xxxxxxxx rv4beta5 Dave       26/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
