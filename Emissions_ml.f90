@@ -782,8 +782,10 @@ READCLIMATEFACTOR: do   ! ************* Loop over emislist files ***************
            endif
      end if
 
-     if(MasterProc)  write(*,"(a,2f8.3)") " EmisSet  traffic 24x7", &
+     if( DEBUG_EMISTIMEFACS .and. MasterProc ) then
+       write(*,"(a,2f8.3)") " EmisSet  traffic 24x7", &
            fac_ehh24x7(ISNAP_TRAF,1,4),fac_ehh24x7(ISNAP_TRAF,13,4)
+     end if
 
 
     !..........................................
