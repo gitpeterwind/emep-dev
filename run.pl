@@ -477,6 +477,11 @@ if ($SR) {
   if ($ENV{'PBS_ARRAY_INDEX'} ){
       print "PBS_ARRAY_INDEX:  $ENV{'PBS_ARRAY_INDEX'} \n" ;
       @runs = ($runs[$ENV{'PBS_ARRAY_INDEX'}-1]); }  # PBS Pro, Ve, one run per job
+
+#for additional sets of single runs (uncomment the previous @runs =)
+#      if($ENV{'PBS_ARRAY_INDEX'}==1){@runs = ($runs[13])  ; }  # 
+#      elsif($ENV{'PBS_ARRAY_INDEX'}==2){@runs = ($runs[27])  ; }  # 
+#      else{ die "Not a valid array index \n" ; }  # default
   else{
       @runs = ($runs[0]);   # only one run
   }
@@ -1280,13 +1285,11 @@ $redn        = "0.85"; # 15% reduction
 sub initRuns {
   my @runs;
   foreach my $cc (@countries) {
-    foreach my $poll (@polls) {
-      push @runs, [$cc, $poll, $redn];
-      if ($poll eq 'BASE') {
-        # run BASE only once (for exactly one cc)!!!
-        @polls = grep {'BASE' ne $_} @polls;
+      foreach my $poll (@polls) {
+	  push @runs, [$cc, $poll, $redn];  
       }
-    }
+      # run BASE only once (for exactly one cc)!!!
+      @polls = grep {'BASE' ne $_} @polls;  
   }
   return @runs;
 }

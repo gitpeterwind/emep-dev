@@ -100,6 +100,7 @@ Caused the code to not find the input file after some monthes.
 ZD_OZONE/My_External_BICs: public adv_icbc,. Some compiler version did 
 not like that EXTERNAL_BIC is public and of type private.
 
+Bug in scenarios setup for SR runs (the first non BASE run was jumpped over).
 
    Emissions_ml  "EmisSet traffic"  output reduced
 xxxxxxxx rv4beta8 Dave     29/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
