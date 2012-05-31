@@ -40,7 +40,7 @@ type, public :: icbc                 ! Inital (IC) & Boundary Conditions (BC)
   logical           :: wanted=.false.,found=.false.
 end type icbc
 
-type,private :: adv_icbc             ! IC/BC Set, included intended ixadv
+type,public :: adv_icbc             ! IC/BC Set, included intended ixadv
   integer           :: ixadv=-1
   type(icbc)        :: icbc=icbc('',.false.,.false.)
 end type adv_icbc
