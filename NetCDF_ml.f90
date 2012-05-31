@@ -2738,6 +2738,8 @@ subroutine printCDF(name, array,unit)
        endif
     endif
 
+    call check(nf90_close(ncFileID))
+
     deallocate(times)
   end subroutine ReadTimeCDF
 

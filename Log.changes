@@ -92,6 +92,14 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
+xxxxxxxx rv4beta9 Peter/Massimo     31/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
+
+Bug in the nesting. in ReadTimeCDF the file is opened but not closed.
+Caused the code to not find the input file after some monthes.
+
+ZD_OZONE/My_External_BICs: public adv_icbc,. Some compiler version did 
+not like that EXTERNAL_BIC is public and of type private.
+
 
    Emissions_ml  "EmisSet traffic"  output reduced
 xxxxxxxx rv4beta8 Dave     29/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
