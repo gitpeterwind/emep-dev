@@ -92,11 +92,15 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
+
 xxxxxxxx rv4betav .. ongoing         1/6/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
 Bug hunting:
 
 MARS_ml - initialised intent(out) variables (ASO4 etc.)
+BIC where all set to zero when (.not. USE_SEASALT )
+Corrected BoundaryConditions_ml
+
 
 xxxxxxxx rv4beta9 Peter/Massimo     31/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
