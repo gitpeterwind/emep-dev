@@ -354,6 +354,9 @@ module MARS_ml
 !-----------------------------------------------------------------------
 !  begin body of subroutine RPMARES
                                                                          
+!added Jun 2012 for safety
+ASO4=FLOOR;ANO3=FLOOR;AH2O=FLOOR;ANH4=FLOOR;GNO3=FLOOR;GNH3=FLOOR 
+
 !...convert into micromoles/m**3
  
 !..iamodels3 merge NH3/NH4 , HNO3,NO3 here
@@ -481,11 +484,11 @@ module MARS_ml
         ANH4 = YNH4 * MWNH4
 !if(deb) call datewrite("MARS debug ", -1,(/ ASO4, ANH4, AH2O /) )
 
-!if( ASO4 + ANH4 +  AH2O < 1.0-10 ) then
-!   call datewrite("MARS failing? ", -1,(/ ASO4, ANH4, AH2O /) )
-!   print *, "MARS PROB ", ASO4, ANH4, AH2O, TSO4, YNH4
-!   call CheckStop("MARS")
-!end if
+! if( ASO4 + ANH4 +  AH2O < 1.0-10 ) then
+! call datewrite("MARS failing? ", -1,(/ ASO4, ANH4, AH2O /) )
+! print *, "MARS PROB ", ASO4, ANH4, AH2O, TSO4, YNH4
+! call CheckStop("MARS")
+! end if
         WFRAC = AH2O / ( ASO4 + ANH4 +  AH2O + FLOOR  )
         !CRUDE FIX? WFRAC = AH2O / ( ASO4 + ANH4 +  AH2O )
 !!!!       IF ( WFRAC == 0.0 )  RETURN   ! No water       
@@ -584,7 +587,7 @@ module MARS_ml
             ANH4 = YNH4 * MWNH4
             GNH3 = TMASSNH3 - ANH4
 
-!!!            WRITE( 10, * ) ' COMPLEX ROOTS '
+! WRITE( 10, * ) ' COMPLEX ROOTS '
             RETURN
           END IF
 ! 2/25/99 IJA
