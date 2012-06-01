@@ -93,13 +93,20 @@ Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
 
-xxxxxxxx rv4betav .. ongoing         1/6/2012 xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv4beta10 Dave/Peter/Massimo  1/6/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
-Bug hunting:
+Bug hunting (still not finished, 4x2 procs gives diff to 2x4):
 
 MARS_ml - initialised intent(out) variables (ASO4 etc.)
+
+BoundaryConditions_ml 
+
 BIC where all set to zero when (.not. USE_SEASALT )
 Corrected BoundaryConditions_ml
+
+And improvement:
+
+Sites_ml.f90  - used Massimo's version, giving long rows (gnumeric friendly)
 
 
 xxxxxxxx rv4beta9 Peter/Massimo     31/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
