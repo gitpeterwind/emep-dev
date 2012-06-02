@@ -92,6 +92,7 @@
   integer, private, save      :: ipoll
   integer, save               :: dry_period(MAXLIMAX, MAXLJMAX) = 72
   character(len=20)           :: soil_type
+  real, parameter             :: SMALL=1.0e-10
   contains
 
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -194,7 +195,8 @@
 !/.. or wet (crude approximation by surface Rh)
 
 !DSA12 QUERY: Why "FROST" term?
-  FROST: if ( Grid%t2C > 0.0 .and.  Grid%sdepth == 0.0 .and.  & 
+  !RV4TEST FROST: if ( Grid%t2C > 0.0 .and.  Grid%sdepth == 0.0 .and.  & 
+  FROST: if ( Grid%t2C > SMALL    .and.  Grid%sdepth <  SMALL   .and.  & 
                                     rh(KMAX_MID) < 0.85)  then
 
     if(DEBUG_DUST .and. debug_flag) write(6,'(a25,2f10.2,i4)')   &
@@ -202,7 +204,7 @@
 
 !DSA12
    if ( water_fraction(i,j)  > 0.99) then ! skip dust calcs
-      if(DEBUG_DUST) call datewrite("DUST: SEA! ", &
+      if(DEBUG_DUST) call datewrite("DUST: Skip SEA! ", &
         (/ i_fdom(i), j_fdom(j) /), (/ fc(i,j), water_fraction(i,j) /) )
       return
    end if
@@ -305,7 +307,7 @@
 
      v_h2o = pwp(i,j) + SoilWater(i,j,1) * (fc(i,j)-pwp(i,j) )
   ! call CheckStop(v_h2o <= 0.0 ,  "DUSTY DRY" )
-  if( v_h2o <= 0.0 ) then
+  if( v_h2o < SMALL ) then
    print "(a,2i4,9f10.4)"," DUSTY DRY!!",  i_fdom(i), j_fdom(j), &
       v_h2o, pwp(i,j), fc(i,j), SoilWater(i,j,1), water_fraction(i,j)
   ! v_h2o = max( 1.0e-12, v_h2o) 
