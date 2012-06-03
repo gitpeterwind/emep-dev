@@ -242,6 +242,7 @@ integer, public, parameter :: &
     ,DEBUG_STOFLUX      = .false. &
   ,DEBUG_EMISSIONS      = .false. &
   ,DEBUG_EMISTIMEFACS   = .false. &
+  ,DEBUG_EQUIB          = .false. &   !MARS, EQSAM etc.
   ,DEBUG_GETEMIS        = .false. &
   ,DEBUG_GRIDVALUES     = .false. &
   ,DEBUG_IOPROG         = .false. &
