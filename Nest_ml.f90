@@ -513,16 +513,16 @@ subroutine wrtxn(indate,WriteNow)
         cycle
       endif
       dat=xn_adv(n,:,:,:)
-      lsend=any(dat/=0.0)
-      CALL MPI_ALLREDUCE(lsend,lrecv,1,MPI_LOGICAL,MPI_LOR,MPI_COMM_WORLD,INFO)
-      adv_ic(n)%wanted=lrecv
-      if(.not.adv_ic(n)%wanted)then
-        if((DEBUG_NEST.or.DEBUG_ICBC).and.MasterProc)&
-        write(*,"(A,':',/2(2X,A,1X,'''',A,'''',A,'.'))")"Nest(wrtxn) DEBUG_ICBC",&
-            "Variable",trim(def1%name),"was found constant=0.0",&
-            "Will not be written to IC file:",trim(filename_write),""
-        cycle
-      endif
+!      lsend=any(dat/=0.0)
+!      CALL MPI_ALLREDUCE(lsend,lrecv,1,MPI_LOGICAL,MPI_LOR,MPI_COMM_WORLD,INFO)
+!      adv_ic(n)%wanted=lrecv
+!      if(.not.adv_ic(n)%wanted)then
+!        if((DEBUG_NEST.or.DEBUG_ICBC).and.MasterProc)&
+!        write(*,"(A,':',/2(2X,A,1X,'''',A,'''',A,'.'))")"Nest(wrtxn) DEBUG_ICBC",&
+!            "Variable",trim(def1%name),"was found constant=0.0",&
+!            "Will not be written to IC file:",trim(filename_write),""
+!        cycle
+!      endif
       call Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype=Real4,&
             ist=istart,jst=jstart,ien=iend,jen=jend,fileName_given=fileName_write,create_var_only=.true.)
     enddo
@@ -607,7 +607,8 @@ subroutine init_icbc()
         do n=1,size(varname)
           if(varname(n)/="") &
             found(n)=(nf90_inq_varid(ncid=ncFileID,name=trim(varname(n)),varID=varID)==nf90_noerr)
-        enddo
+       enddo
+       call check(nf90_close(ncFileID))       
       endif
     endif
     CALL MPI_BCAST(found,size(found),MPI_LOGICAL,0,MPI_COMM_WORLD,INFO)
