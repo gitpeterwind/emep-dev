@@ -50,14 +50,21 @@ module Nest_ml
 !  It should be possible to save only xn_adv_bnd if the inner grid is known for the outer grid.
 !  The routines should be thought together with GlobalBC_ml (can it replace it?)
 
+!----------------------------------------------------------------------------!
+! EXTERNAL BICs: 
+! The code in My_ExternalBICs is different for different external sources. So
+! far coded for FORECAST and EnsClimRCA work.
+! These set the following arrays, and filenames
+
 use My_ExternalBICs_ml,     only: set_extbic, icbc, &
        EXTERNAL_BIC_SET, EXTERNAL_BC, EXTERNAL_BIC_NAME, TOP_BC, &
+!rca:  iw, ie, js, jn, kt, &  ! i West/East bnd; j North/South bnd; k Top
        filename_read_3D,filename_read_BC,fileName_write,filename_eta
-use OwnDataTypes_ml,        only: Deriv
-use TimeDate_ml,            only: date
+!----------------------------------------------------------------------------!
 use GridValues_ml,          only: glon,glat
 use CheckStop_ml,          only : CheckStop,StopAll
 use ChemChemicals_ml,       only: species
+use Chemfields_ml,          only: xn_adv, xn_shl    ! emep model concs.
 use ChemSpecs_shl_ml,       only: NSPEC_SHL
 use ChemSpecs_adv_ml,       only: NSPEC_ADV
 use ChemSpecs_tot_ml,       only: NSPEC_TOT
@@ -70,10 +77,11 @@ use Functions_ml,           only: great_circle_distance
 use ModelConstants_ml,      only: Pref,PPB,PT,KMAX_MID, MasterProc, NPROC     &
   , IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY,RUNDOMAIN  &
   , MODE=>NEST_MODE, FORECAST, DEBUG_NEST, DEBUG_ICBC=>DEBUG_NEST_ICBC
+use OwnDataTypes_ml,        only: Deriv
 use Par_ml,                 only: MAXLIMAX, MAXLJMAX, GIMAX,GJMAX,IRUNBEG,JRUNBEG &
   , me, li0,li1,lj0,lj1,limax,ljmax, tgi0, tgj0, tlimax, tljmax
-use Chemfields_ml,          only: xn_adv, xn_shl    ! emep model concs.
 use TimeDate_ExtraUtil_ml,  only: idate2nctime,nctime2idate,date2string
+use TimeDate_ml,            only: date
 
 implicit none
 

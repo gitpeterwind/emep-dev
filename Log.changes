@@ -92,6 +92,9 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
+
+Dave started - tidy up of Nest_ml, pending RCA/EnsClim work,
+
 xxxxxxxx rv4beta11 Dave/Peter/Svetlana  4-5/6/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
 SeaSalt_ml: Tw = min(Tw, 300.0) also for safety
