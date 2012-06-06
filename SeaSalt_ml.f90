@@ -116,6 +116,7 @@
     ! chemical scheme might not have seasalt species. We check.
 
     iseasalt = find_index("SEASALT_F", species(:)%name )
+    if(DEBUG_SEASALT ) write(*,*)"SSALT INIT", iseasalt, debug_flag
 
     if ( iseasalt < 1 ) then
        seasalt_found = .false.
@@ -155,9 +156,8 @@
        if ( Sub(lu)%is_water ) then
 
           if(DEBUG_SEASALT .and. debug_flag) then
-              write(6,'(a40)') ' Sea-Salt Check '
-              write(6,*)
-              write(6,'(a30,4f12.4,f8.2)') '** CHAR, ustar_nwp, d, Z0, SST ** ',&
+              write(6,'(a,f8.4,f12.4,3f8.3)') &
+                'SSALT ** CHAR, ustar_nwp, d, Z0, SST ** ',&
                    CHARNOCK,Grid%ustar,Sub(lu)%d,Sub(lu)%z0, sst(i,j,1)
           end if
 
@@ -170,12 +170,14 @@
                            Sub(lu)%z0,  Sub(lu)%invL)
           end if
 
-         if (u10 <= 0.0) u10 = 1.0e-5  ! make sure u10!=0 because of LOG(u10)
+         !if (u10 <= 0.0) u10 = 1.0e-5  ! make sure u10!=0 because of LOG(u10)
+         !u10 =  max(1.0e-5, u10)  ! make sure u10!=0 because of LOG(u10)
+         u10 =  max(0.1, u10)  ! DS - use more physical limit here
 
          u10_341=exp(log(u10) * (3.41))
 
          if(DEBUG_SEASALT .and. debug_flag) &
-             write(6,'(a,L2,4f12.4,es14.4)')'** U*, Uref, U10, Uh, invL ** ',&
+             write(6,'(a,L2,4f12.4,es14.4)')'SSALT ** U*, Uref, U10, Uh, invL ** ',&
                foundws10_met, Sub(lu)%ustar, Grid%u_ref, u10, &
                Wind_at_h (Grid%u_ref, Grid%z_ref, Z10, Sub(lu)%d,   &
                            Sub(lu)%z0,  Sub(lu)%invL), &
@@ -208,7 +210,7 @@
                total_flux =  total_flux + ss_flux(ii)
 
                if(DEBUG_SEASALT .and. debug_flag) write(6,'(a20,i5,es13.4)') &
-                  'Flux Maarten ->  ',ii, ss_flux(ii)
+                  'SSALT Flux Maarten ->  ',ii, ss_flux(ii)
           enddo
 
 !... Fluxes of larger aerosols for each size bin (Monahan etal,1986)
@@ -222,10 +224,10 @@
                total_flux =  total_flux + ss_flux(ii) 
 
                if(DEBUG_SEASALT .and. debug_flag) &
-                   write(6,'(a20,i5,es13.4)') 'Flux Monah ->  ',ii, ss_flux(jj)
+                   write(6,'(a20,i5,es13.4)') 'SSALT Flux Monah ->  ',ii, ss_flux(jj)
           enddo
 
-   if(DEBUG_SEASALT .and. debug_flag) write(6,'(a20,es13.3)') 'Total SS flux ->  ',  total_flux
+   if(DEBUG_SEASALT .and. debug_flag) write(6,'(a20,es13.3)') 'SSALT Total SS flux ->  ',  total_flux
 
 !.. conversion factor from [part/m2/s] to [molec/cm3/s]
 
@@ -240,7 +242,7 @@
                                   + ss_flux(ii) * d3(ii) * n2m   &
                                   * water_fraction(i,j) 
             if(DEBUG_SEASALT .and. debug_flag) &
-            write(6,'(a20,i5,2es13.4)') 'Flux fine ->  ',ii,d3(ii),SS_prod(QSSFI,i,j)
+            write(6,'(a20,i5,2es13.4)') 'SSALT Flux fine ->  ',ii,d3(ii),SS_prod(QSSFI,i,j)
           enddo
 
 !..Coarse particles emission [molec/cm3/s]
@@ -249,7 +251,7 @@
                                   + ss_flux(ii) * d3(ii) * n2m   &
                                   * water_fraction(i,j)
             if(DEBUG_SEASALT .and. debug_flag) &
-            write(6,'(a20,i5,2es13.4)') 'Flux coarse ->  ',ii,d3(ii),SS_prod(QSSCO,i,j)
+            write(6,'(a20,i5,2es13.4)') 'SSALT Flux coarse ->  ',ii,d3(ii),SS_prod(QSSCO,i,j)
           enddo
 
 !..'Giant' particles emission [molec/cm3/s]
@@ -268,7 +270,7 @@
           endif
   
           if(DEBUG_SEASALT .and. debug_flag) write(6,'(a35,2es15.4)')  &
-             '>> SS production fine/coarse  >>', &
+             '>> SSALT production fine/coarse  >>', &
                 SS_prod(QSSFI,i,j), SS_prod(QSSCO,i,j)
                           
        endif  ! water
