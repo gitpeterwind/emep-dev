@@ -95,12 +95,14 @@ Will keep list here near top of Log.changes.
 
 Dave started - tidy up of Nest_ml, pending RCA/EnsClim work,
 
-xxxxxxxx rv4beta11 Dave/Peter/Svetlana  4-5/6/2012 xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv4beta11 Dave/Peter/Svetlana  4-5-6/6/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
 SeaSalt_ml: Tw = min(Tw, 300.0) also for safety
 
 Nest_ml: commented out a test in Nest_ml to see wether data was=0. This was wrongly jumping over most fields.
 Nest_ml: added a close in find_icbc
+
+NetCDF_ml: faster 3D output
 
 xxxxxxxx rv4beta10 Dave/Peter/Massimo  1/6/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 

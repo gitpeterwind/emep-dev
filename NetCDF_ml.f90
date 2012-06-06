@@ -861,10 +861,8 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
               call check(nf90_put_var(ncFileID, VarID, &
                    Idata3D(i1:i2, j1:j2, 1), start = (/ 1, 1, ik,nrecords /)) )
            else
-              do k=1,kmax
                  call check(nf90_put_var(ncFileID, VarID,&
-                      Idata3D(i1:i2, j1:j2, k), start = (/ 1, 1, k,nrecords /)) )
-              enddo
+                      Idata3D(i1:i2, j1:j2, 1:kmax), start = (/ 1, 1, 1,nrecords /)) )
            endif
         else
            call check(nf90_put_var(ncFileID, VarID,&
@@ -882,10 +880,8 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
               call check(nf90_put_var(ncFileID, VarID, &
                    R4data3D(i1:i2, j1:j2, 1), start = (/ 1, 1, ik,nrecords /)) )
            else
-              do k=1,kmax
-                 call check(nf90_put_var(ncFileID, VarID,&
-                      R4data3D(i1:i2, j1:j2, k), start = (/ 1, 1, k,nrecords /)) )
-              enddo
+              call check(nf90_put_var(ncFileID, VarID,&
+                   R4data3D(i1:i2, j1:j2, 1:kmax), start = (/ 1, 1, 1,nrecords /)) )
            endif
         else
            call check(nf90_put_var(ncFileID, VarID,&
@@ -903,10 +899,8 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
               call check(nf90_put_var(ncFileID, VarID, &
                    R8data3D(i1:i2, j1:j2, 1), start = (/ 1, 1, ik,nrecords /)) )
            else
-              do k=1,kmax
-                 call check(nf90_put_var(ncFileID, VarID,&
-                      R8data3D(i1:i2, j1:j2, k), start = (/ 1, 1, k,nrecords /)) )
-              enddo
+              call check(nf90_put_var(ncFileID, VarID,&
+                   R8data3D(i1:i2, j1:j2, 1:kmax), start = (/ 1, 1, 1,nrecords /)) )
            endif
         else
            call check(nf90_put_var(ncFileID, VarID,&
