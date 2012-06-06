@@ -51,8 +51,9 @@ logical, public, parameter :: &
 ! (for convection use foundconv in permanent code)
 logical, public, parameter ::         &
   USE_CONVECTION     = .false.,       & ! false works best for Euro runs,
-  INERIS_SNAP1           = .false.,    & ! Switches off decadal trend 
-  INERIS_SNAP2            = .false.,   & ! Allows near-zero summer values 
+  TFMM_RUNS          = .false.,       & ! tmp Jun 2012
+  INERIS_SNAP1       = TFMM_RUNS,    & ! Switches off decadal trend 
+  INERIS_SNAP2       = TFMM_RUNS,   & ! Allows near-zero summer values 
   USE_DEGREEDAY_FACTORS  = .not.FORECAST,  & !
   USE_SOILWATER      = .not.FORECAST, & ! for deep soilwater,  under testing
   USE_FOREST_FIRES   = .not.FORECAST, & ! Needs global files, future
@@ -140,6 +141,15 @@ integer, public, parameter, dimension(4) ::  &
 ! RUNDOMAIN = (/  70, 110, 72, 110 /)     ! TNO28  test
 !  RUNDOMAIN = (/  30, 90, 6, 92 /)        ! TNO56 reduced (15W-45E;30N-73N)
 ! RUNDOMAIN = (/  60,180, 12, 184 /)     !  test TNO7 area
+!--
+! Suggestions, 6th June 2012, for TFMM_RUNS scale-dep -----------------------
+! RUNDOMAIN = (/  40, 210, 12, 184 /)     ! TNO28 SR area (25W-60E;30N-73N)
+! i.e.  - adds 20 squares west, 30 east to TNO28
+! RUNDOMAIN = (/  160, 840, 48, 736 /)    ! TNO07  - add 80, 120
+! RUNDOMAIN = (/   80, 420, 24, 368 /)    ! TNO14  - add 40, 60
+! RUNDOMAIN = (/   20, 105, 6, 92 /)      ! TNO56  - add 10, 15
+!----------------------------------------------------------------------------
+
 ! RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain in PARLAM
 ! RUNDOMAIN = (/  1, 360,  1, 180 /)     ! FULL GLOBAL
 ! RUNDOMAIN = (/  1, 132,  1, 111 /)     ! EECCA, rep09

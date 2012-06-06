@@ -65,7 +65,8 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
                               IOU_INST, IOU_HOUR, IOU_YEAR, IOU_HOUR_PREVIOUS, &
                               DEBUG => DEBUG_OUT_HOUR,runlabel1,&
                               DAILY_HOURLYFILE, MONTHLY_HOURLYFILE
- use MetFields_ml,     only: t2_nwp,th, roa, surface_precip, ws_10m ,rh2m,      &
+ use MetFields_ml,     only: t2_nwp,th, roa, surface_precip, ws_10m ,rh2m,&
+                              pzpbl, ustar_nwp, Kz_m2s, &
                               Idirect, Idiffuse, z_bnd
   use NetCDF_ml,        only: Out_netCDF, CloseNetCDF, Init_new_netCDF,  &
                               Int1, Int2, Int4, Real4, Real8  !Output data type to choose

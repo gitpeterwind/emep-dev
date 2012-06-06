@@ -41,7 +41,7 @@ module MARS_ml
  implicit none
  private
 
-  real, parameter ::    FLOOR = 1.0E-30         ! minimum concentration  
+  real, parameter ::    FLOOR = 1.0E-50         ! minimum concentration  
 
 
  !/- subroutines:

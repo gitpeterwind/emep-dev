@@ -92,8 +92,29 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
+xxxxxxxx rv4beta12 Dave/Peter    6/6/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
-Dave started - tidy up of Nest_ml, pending RCA/EnsClim work,
+Model for TFMM_RUNS 
+
+Dave
+
+MARS_ml - extra safety measures
+
+ModelConstants_ml - added logical TFMM_RUNS. This will switch on
+INERIS_SNAP1 and INERIS_SNAP2, and give loads of hourly
+output (used in My_Outputs to get 28 hourly outputs!)
+
+SeaSalt_ml - extra safety measures
+
+ZD_OZONE/My_outputs_ml - new style of output, avoiding hr_out(01)= etc.
+   (currently loads of hourly output, for TNOxx runs!)
+  - uses TFMM_RUNS as one option
+
+ZD_OZONE/My_Derived_ml - new style of output, avoiding hr_out(01)= etc.
+
+Peter:
+
+Nest_ml - small start to tidy up of Nest_ml, pending RCA/EnsClim work,
 
 xxxxxxxx rv4beta11 Dave/Peter/Svetlana  4-5-6/6/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 

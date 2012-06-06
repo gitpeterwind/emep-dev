@@ -401,6 +401,10 @@ call AddNewDeriv( "Snow_m","SNOW",  "-","-",   "m", &
 
 call AddNewDeriv( "USTAR_NWP","USTAR_NWP",  "-","-",   "m/s", &
                -99,  -99, F, 1.0,  T,  IOU_DAY ) 
+!Added for TFMM scale runs
+call AddNewDeriv( "Kz_m2s","Kz_m2s",  "-","-",   "m2/s", &
+               -99,  -99, F, 1.0,  T,  IOU_DAY )
+
 !Most met params are now better specified in My_Derived.
 !MOVED call AddNewDeriv( "ws_10m","ws_10m",  "-","-",   "m/s", &
 !MOVED                -99,  -99, F, 1.0,  T,  IOU_DAY ) 
@@ -869,6 +873,10 @@ end do
             forall ( i=1:limax, j=1:ljmax )
               d_2d( n, i,j,IOU_INST) = ustar_nwp(i,j)
           end forall
+         case ( "Kz_m2s" )
+            forall ( i=1:limax, j=1:ljmax )
+              d_2d( n, i,j,IOU_INST) = Kz_m2s(i,j,KMAX_MID)
+            end forall
           case ( "ws_10m" )
             forall ( i=1:limax, j=1:ljmax )
               d_2d( n, i,j,IOU_INST) = ws_10m(i,j,1)

@@ -149,7 +149,7 @@ if ($CWF) {
 #  --- Here, the main changeable parameters are given. The variables
 #      are explained below, and derived variables set later.-
 
-my $year = "2008";
+my $year = "2009";
    $year = substr($CWFBASE,0,4) if $CWF;
    $year = $BENCHMARK{"year"} if %BENCHMARK;
 ( my $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
@@ -248,7 +248,7 @@ my $Chem     = "EmChem09soa";
 #$Chem     = "CRI_v2_R5";
    $Chem     = $BENCHMARK{'chem'} if $BENCHMARK{'chem'};
 
-my $testv = "rv4beta7";
+my $testv = "rv4beta12";
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
@@ -741,15 +741,12 @@ foreach my $scenflag ( @runs ) {
 #  emisfiles:pm25
 # etc.
 
-my $timeseries  = "$DataDir/inputs_emepdefaults_May2012";
+my $timeseries  = "$DataDir/inputs_emepdefaults_Jun2012";
 my $Tbase = 18 ;  # Base-temperature for Degree-day (HDD) files
-# Emission heights
-#pre rv4: $ifile{"$timeseries/EmisHeights_v3_9x.txt"} = "EmisHeights.txt";
 
 if ( $INERIS_FACS  ){
-   $timeseries  = "$DataDir/inputs_eurodelta_May2012";
+   $timeseries  = "$DataDir/inputs_eurodelta_Jun2012";
    $Tbase = 20;
-   die "No EmisHeights file for INERIS yet!"
 }
    #$ifile{"$timeseries/HourlyFacs.EMEP2003"} = "HOURLY-FACS";
    #$ifile{"$timeseries/HourlyFacs.TNO2005"} = "HOURLY-FACS";
@@ -809,8 +806,15 @@ print "TESTING PM $poll $dir\n";
 
     $ifile{"$SplitDir/emissplit.defaults.$poll"} = "emissplit.defaults.$poll";
     # specials aren't required
-    $ifile{"$SplitDir/emissplit.specials.$poll"} = "emissplit.specials.$poll"
-    if( -e "$SplitDir/emissplit.specials.$poll" );
+    # INERIS special! nox and pm. Take from 2010 IIASA
+    if ( $INERIS_FACS && -e "$timeseries/emissplit.specials.$poll.2010" ) {
+        $ifile{"$timeseries/emissplit.specials.$poll.2010"} =
+               "emissplit.specials.$poll"
+    } else {
+
+     $ifile{"$SplitDir/emissplit.specials.$poll"} = "emissplit.specials.$poll"
+     if( -e "$SplitDir/emissplit.specials.$poll" );
+    }
   }
 
   foreach my $mmm ( $mm1 .. $mm2, $mm1, $mm2 ) {
@@ -950,7 +954,7 @@ if ( $iyr_trend > 2015 )  {
       $ifile{"$RoadDir/RoadDust_HIGHWAYplus_emis_potential.txt"} = "HIGHWAYplus";
       $ifile{"$RoadDir/RoadDust_NonHighway_emis_potential.txt"} = "NONHIGHWAY";
       $ifile{"$RoadDir/RoughTestClimateFactorSoilWater.txt"} = "ROADDUST_CLIMATE_FAC";
-  }elsif(($GRID eq "TNO7") or ($GRID eq "TNO56")){
+  }elsif( $GRID =~ /TNO/ ){
       $ifile{"$DATA_LOCAL/nonHIGHWAYs_RoadDust_potentials.txt"} = "NONHIGHWAY";
       $ifile{"$DATA_LOCAL/HIGHWAYplus_RoadDust_potentials.txt"} = "HIGHWAYplus";
       $ifile{"$DATA_LOCAL/ClimateFactors_SMI.txt"} = "ROADDUST_CLIMATE_FAC";
