@@ -92,6 +92,17 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
+xxxxxxxx rv4beta13 in-progress   6/6/2012 xxxxxxxxxxxxxxxxxxxxxxxx
+
+run.pl - emissplit for emepdefaults corrected
+
+Nest_ml -  mainly extra debugging. Preperation for EnsClim
+
+ZD_OZONE/My_ExternalBICs_ml.f90
+
+   - added integer,save, public :: iw=-1, ie=-1, js=-1, jn=-1, kt=-1
+
+
 xxxxxxxx rv4beta12 Dave/Peter    6/6/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
 Model for TFMM_RUNS 
