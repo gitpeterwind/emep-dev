@@ -137,58 +137,49 @@ private
    type(typ_s5i), public, save, dimension(MAX_NUM_DERIV2D) :: OutputFields
    integer, public, save :: nOutputFields = 0
 
-   type(typ_s5i), public, parameter, dimension(77) :: &
+   type(typ_s5i), public, parameter, dimension(78) :: &
       OutputConcs = (/  &
-         typ_s5i("SO2       ", "ugS", D2,"AIR_CONCS", SPEC, D)&
-        ,typ_s5i("SO4       ", "ugS", D2,"AIR_CONCS", SPEC, D)& 
 !
 ! Here we use the 4th text field to give the "class" or "typ". Derived_ml
 ! will look for this in the select case (typ) 
 !CAN allow lower case ...
-        ,typ_s5i("HMIX      ", "m",   D2,"HMIX     ","MISC", H)& !hourly tests
+         typ_s5i("HMIX      ", "m",   D2,"HMIX     ","MISC", H)& !hourly tests
+        ,typ_s5i("USTAR_NWP ", "m/s", D2,"USTAR_NWP","MISC", H)& !hourly tests
+        ,typ_s5i("Kz_m2s    ", "m2/s",D2,"Kz_m2s   ","MISC", H)& !hourly tests
         ,typ_s5i("ws_10m    ", "m",   D2,"ws_10m   ","MISC", H)& !hourly tests
         ,typ_s5i("rh2m      ", "m",   D2,"rh2m     ","MISC", H)& !hourly tests
         ,typ_s5i("T2m       ", "degC",D2,"T2m      ","MISC", D)&
         ,typ_s5i("Snow_m    ", "m",   D2,"SNOW     ","MISC", D)&
         ,typ_s5i("SURF_ppbC_VOC  ", "ppb", D2,"VOC      ","MISC", D)&!?CHECK??
         ,typ_s5i("SMI_deep  ", "-",   D2,"SMI_deep ","MISC", D)&
-        ,typ_s5i("SMI_uppr  ", "-",   D2,"SMI_uppr ","MISC", D)&
-! Could also add from earlier D2_EXTRA array:
-      !,"USTAR_NWP         " &
-      !,"u_ref             " &
-!.... down to here
-!        ,typ_s5i("RN222     ", "ppb", D2,"AIR_CONCS", SPEC, D)& 
-!        ,typ_s5i("RNWATER   ", "ppb", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("SMI_uppr  ", "-",   D2,"SMI_uppr ","MISC", D)& !tno10
         ,typ_s5i("CO        ", "ppb", D2,"AIR_CONCS", SPEC, D)& 
-! Omit for CityZen
-        ,typ_s5i("NO        ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
-        ,typ_s5i("NO2       ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
-        ,typ_s5i("NH3       ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
-        ,typ_s5i("HNO3      ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
-        ,typ_s5i("HONO      ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
-        ,typ_s5i("PAN       ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
-       ! Remember, species have upper case, so not _f !
-        ,typ_s5i("NO3_F     ", "ugN", D2,"AIR_CONCS", SPEC, D)&  
-        ,typ_s5i("NO3_C     ", "ugN", D2,"AIR_CONCS", SPEC, D)&  ! 10 to here
-        ,typ_s5i("NH4_F     ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
        ! ug/m3
+        ,typ_s5i("SO2       ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("NH3       ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("HNO3      ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("NO2       ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("NO        ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("SO4       ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("NO3_F     ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("NO3_C     ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
-        ,typ_s5i("NH4_F     ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("NH4_F     ", "ug ", D2,"AIR_CONCS", SPEC, D)&  !tno20
         ,typ_s5i("SEASALT_F ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("SEASALT_C ", "ug ", D2,"AIR_CONCS", SPEC, D)&
         ,typ_s5i("POLLEN_B  ", "ug ", D2,"AIR_CONCS", SPEC, D)&
-!        ,typ_s5i("DUST_ROAD_F ", "ug ", D2,"AIR_CONCS", SPEC, D)&
-!        ,typ_s5i("DUST_ROAD_C ", "ug ", D2,"AIR_CONCS", SPEC, D)&
-!        ,typ_s5i("DUST_WB_F ", "ug ", D2,"AIR_CONCS", SPEC, D)&
-!        ,typ_s5i("DUST_WB_C ", "ug ", D2,"AIR_CONCS", SPEC, D)&
-!        ,typ_s5i("DUST_SAH_F", "ug ", D2,"AIR_CONCS", SPEC, D)&
-!        ,typ_s5i("DUST_SAH_C", "ug ", D2,"AIR_CONCS", SPEC, D)&
+        ,typ_s5i("DUST_ROAD_F ", "ug ", D2,"AIR_CONCS", SPEC, D)&
+        ,typ_s5i("DUST_ROAD_C ", "ug ", D2,"AIR_CONCS", SPEC, D)&
+        ,typ_s5i("DUST_WB_F ", "ug ", D2,"AIR_CONCS", SPEC, D)&
+        ,typ_s5i("DUST_WB_C ", "ug ", D2,"AIR_CONCS", SPEC, D)&
+        ,typ_s5i("DUST_SAH_F", "ug ", D2,"AIR_CONCS", SPEC, D)&
+        ,typ_s5i("DUST_SAH_C", "ug ", D2,"AIR_CONCS", SPEC, D)&
        ! ppb
-        ,typ_s5i("O3        ", "ppb", D2,"AIR_CONCS", SPEC, D)& ! test 3d
+        ,typ_s5i("O3        ", "ppb", D2,"AIR_CONCS", SPEC, D)& ! test 3d !tno30
         ,typ_s5i("NO        ", "ppb", D2,"AIR_CONCS", SPEC, D)& !20 also have ugN
         ,typ_s5i("NO2       ", "ppb", D2,"AIR_CONCS", SPEC, D)& ! also have ugN 
+        ,typ_s5i("NH3       ", "ppb", D2,"AIR_CONCS", SPEC, D)& ! also have ugN 
+        ,typ_s5i("HNO3      ", "ppb", D2,"AIR_CONCS", SPEC, D)& ! also have ugN 
+        ,typ_s5i("SO2       ", "ppb", D2,"AIR_CONCS", SPEC, D)& ! also have ugN 
         ,typ_s5i("HCHO      ", "ppb", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("C5H8      ", "ppb", D2,"AIR_CONCS", SPEC, D)& 
        ! ugC/m3
@@ -199,7 +190,7 @@ private
 ! uppercase:
         ,typ_s5i("OXN       ",  "ugN", D2,"AIR_CONCS", GROUP, D)& 
         ,typ_s5i("NOX       ",  "ugN", D2,"AIR_CONCS", GROUP, D)& 
-        ,typ_s5i("RDN       ",  "ugN", D2,"AIR_CONCS", GROUP, D)& 
+        ,typ_s5i("RDN       ",  "ugN", D2,"AIR_CONCS", GROUP, D)&  !tno40
         ,typ_s5i("TNO3      ",  "ugN", D2,"AIR_CONCS", GROUP, D)& 
         ,typ_s5i("SIA       ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
         ,typ_s5i("PMFINE    ",  "ug ", D2,"AIR_CONCS", GROUP, D)& !30
@@ -209,16 +200,8 @@ private
         ,typ_s5i("PPM_C     ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
         ,typ_s5i("SS        ",  "ug ", D2,"AIR_CONCS", GROUP, D)&
         ,typ_s5i("DUST_NAT_F",  "ug ", D2,"AIR_CONCS", GROUP, D)&
-        ,typ_s5i("DUST_NAT_C",  "ug ", D2,"AIR_CONCS", GROUP, D)&
+        ,typ_s5i("DUST_NAT_C",  "ug ", D2,"AIR_CONCS", GROUP, D)& !tno50
         ,typ_s5i("DUST      ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
-      !CityZen Outputs
-      !  ,typ_s5i("O3        ", "ug ", D2,"AIR_CONCS", SPEC, D)& ! test 3d
-      !  ,typ_s5i("NO2       ", "ug ", D2,"AIR_CONCS", SPEC, D)& ! also have ugN 
-      !  ,typ_s5i("DUST_NAT_F", "ug ", D2,"AIR_CONCS", SPEC, D)& 
-      !  ,typ_s5i("DUST_NAT_C", "ug ", D2,"AIR_CONCS", SPEC, D)& 
-      !  ,typ_s5i("AER_OM_F  ", "ug ", D2,"AIR_CONCS", SPEC, D)&  !! NEVER as ugC !!
-      !  ,typ_s5i("AER_OC    ", "ug ", D2,"AIR_CONCS", SPEC, D)&  !! NEVER as ugC !!
-      !  ,typ_s5i("EC_F      ", "ug ", D2,"AIR_CONCS", GROUP, D)& 
        ! SOA, PCM_F etc. are special and need appropriate units. Do
        ! not confuse! Only PCM has proper ug units, the others are
        ! carbon-eqiuvalents (PCM is particulate carbonaceous matter
@@ -227,11 +210,6 @@ private
        ! ,typ_s5i("AER_BSOA  ", "ugC", D2,"AIR_CONCS", SPEC, D)& 
          !typ_s5i("DUST      ",  "ug ", D2,"AIR_CONCS", GROUP, D),&   !#35
         ,typ_s5i("PM_FIRE",  "ug", D2,"AIR_CONCS", GROUP,  D) &
-!-- Emergency: Volcanic Eruption (4 entries). Skipp groups if not found
-        ,typ_s5i("ASH       ",  "ug ", D2,"AIR_CONCS", GROUP, D)&
-        ,typ_s5i("ASH_F     ",  "ug ", D2,"AIR_CONCS", GROUP, D)&
-        ,typ_s5i("ASH_C     ",  "ug ", D2,"AIR_CONCS", GROUP, D)&
-        ,typ_s5i("ASH_G     ",  "ug ", D2,"AIR_CONCS", GROUP, D)&
        ! ============================================================
        ! SOA additions (26 entries)
         ,typ_s5i("PART_OM_F  ", "ug ", D2,"AIR_CONCS", SPEC, D)&  !! NEVER as ugC !!
@@ -247,30 +225,17 @@ private
        ! carbon-eqiuvalents (PCM is particulate carbonaceous matter
        ! = sum of all EC and OM components.)
         ,typ_s5i("PART_ASOA_OC", "ugC", D2,"AIR_CONCS", SPEC, M)&  !! ALWAYS as ugC
-        ,typ_s5i("PART_BSOA_OC", "ugC", D2,"AIR_CONCS", SPEC, M)& 
-!        ,typ_s5i("PART_SOA_OC", "ugC", D2,"AIR_CONCS", SPEC, M)&
+        ,typ_s5i("PART_BSOA_OC", "ugC", D2,"AIR_CONCS", SPEC, M)&  !tno60
          ,typ_s5i("PART_FFUELOA25_OC", "ugC", D2,"AIR_CONCS", SPEC, M)& 
-       ! ,typ_s5i("PART_OFFUELOA25_OC", "ugC", D2,"AIR_CONCS", SPEC, M)& 
          ,typ_s5i("PART_WOODOA25_OC", "ugC", D2,"AIR_CONCS", SPEC, M)& 
-       ! ,typ_s5i("PART_OWOODOA25_OC", "ugC", D2,"AIR_CONCS", SPEC, M)& 
         ,typ_s5i("PART_FFIREOA25_OC", "ugC", D2,"AIR_CONCS", SPEC, M)& 
-       ! ,typ_s5i("PART_OFFIREOA25_OC", "ugC", D2,"AIR_CONCS", SPEC, M)& 
-!none yet        ,typ_s5i("EC_F_WOOD_NEW ", "ug", D2,"AIR_CONCS", SPEC, D)&
-!none yet        ,typ_s5i("EC_F_WOOD_AGE ", "ug", D2,"AIR_CONCS", SPEC, D)&
         ,typ_s5i("EC_F_FFUEL_NEW", "ug", D2,"AIR_CONCS", SPEC, D)&
         ,typ_s5i("EC_F_FFUEL_AGE", "ug", D2,"AIR_CONCS", SPEC, D)&
-       !DS  ,typ_s5i("EC_C_WOOD ", "ug", D2,"AIR_CONCS", SPEC, M)& 
         ,typ_s5i("EC_C_FFUEL", "ug", D2,"AIR_CONCS", SPEC, M)& 
         ,typ_s5i("NONVOL_BGNDOC", "ug", D2,"AIR_CONCS", SPEC, D)& 
-!Needed for forest-fire checks
-!        ,typ_s5i("NONVOL_FFUELOC25", "ug", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("NONV_FFUELOC_COARSE", "ug", D2,"AIR_CONCS", SPEC, D)&
-       !DS  ,typ_s5i("NONVOL_WOODOC25", "ug", D2,"AIR_CONCS", SPEC, D)& 
-!        ,typ_s5i("NONVOL_FFIREOC25", "ug", D2,"AIR_CONCS", SPEC, D)& 
-!
         ,typ_s5i("PART_ASOA_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
-        ,typ_s5i("PART_BSOA_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
-!        ,typ_s5i("PART_SOA_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
+        ,typ_s5i("PART_BSOA_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC! !tno70
          !zero for NONVOL:
         ,typ_s5i("PART_FFUELOA25_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
         ,typ_s5i("PART_WOODOA25_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
@@ -282,14 +247,55 @@ private
         ,typ_s5i("SURF_ug_PM25X",  "ug" ,  D2,"PM25X     ","MISC", D)&
         ,typ_s5i("SURF_ug_PM25X_rh50",  "ug" ,  D2,"PM25X_rh50","MISC", D)&
         ,typ_s5i("SURF_ug_PM25_rh50" ,  "ug" ,  D2,"PM25_rh50 ","MISC", D)&
-        ,typ_s5i("SURF_ug_PM10_rh50" ,  "ug" ,  D2,"PM10_rh50 ","MISC", D)&
+        ,typ_s5i("SURF_ug_PM10_rh50" ,  "ug" ,  D2,"PM10_rh50 ","MISC", D)&  !tno78
 
 !---------------------------------------------
+       ! ============================================================
+       /)
+!TNO         typ_s5i("SO2       ", "ugS", D2,"AIR_CONCS", SPEC, D)&
+!TNO        ,typ_s5i("SO4       ", "ugS", D2,"AIR_CONCS", SPEC, D)& 
+! Could also add from earlier D2_EXTRA array:
+      !,"u_ref             " &
+!.... down to here
+!        ,typ_s5i("RN222     ", "ppb", D2,"AIR_CONCS", SPEC, D)& 
+!        ,typ_s5i("RNWATER   ", "ppb", D2,"AIR_CONCS", SPEC, D)& 
+! Omit for CityZen
+!TNO just keep ppb version below
+!TNO        ,typ_s5i("NO        ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
+!TNO        ,typ_s5i("NO2       ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
+!TNO        ,typ_s5i("NH3       ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
+!TNO        ,typ_s5i("HNO3      ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
+!TNO        ,typ_s5i("HONO      ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
+!TNO        ,typ_s5i("PAN       ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
+       ! Remember, species have upper case, so not _f !
+!TNO just keep ug version below
+!TNO    ,typ_s5i("NO3_F     ", "ugN", D2,"AIR_CONCS", SPEC, D)&  
+!TNO    ,typ_s5i("NO3_C     ", "ugN", D2,"AIR_CONCS", SPEC, D)&  ! 10 to here
+!TNO    ,typ_s5i("NH4_F     ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
+!        ,typ_s5i("PART_SOA_OC", "ugC", D2,"AIR_CONCS", SPEC, M)&
+       ! ,typ_s5i("PART_OFFUELOA25_OC", "ugC", D2,"AIR_CONCS", SPEC, M)& 
+       ! ,typ_s5i("PART_OWOODOA25_OC", "ugC", D2,"AIR_CONCS", SPEC, M)& 
+       ! ,typ_s5i("PART_OFFIREOA25_OC", "ugC", D2,"AIR_CONCS", SPEC, M)& 
+!none yet        ,typ_s5i("EC_F_WOOD_NEW ", "ug", D2,"AIR_CONCS", SPEC, D)&
+!none yet        ,typ_s5i("EC_F_WOOD_AGE ", "ug", D2,"AIR_CONCS", SPEC, D)&
+       !DS  ,typ_s5i("EC_C_WOOD ", "ug", D2,"AIR_CONCS", SPEC, M)& 
+!Needed for forest-fire checks
+!        ,typ_s5i("NONVOL_FFUELOC25", "ug", D2,"AIR_CONCS", SPEC, D)& 
+       !DS  ,typ_s5i("NONVOL_WOODOC25", "ug", D2,"AIR_CONCS", SPEC, D)& 
+!        ,typ_s5i("NONVOL_FFIREOC25", "ug", D2,"AIR_CONCS", SPEC, D)& 
+!        ,typ_s5i("PART_SOA_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
+!
+      !CityZen Outputs
+      !  ,typ_s5i("O3        ", "ug ", D2,"AIR_CONCS", SPEC, D)& ! test 3d
+      !  ,typ_s5i("NO2       ", "ug ", D2,"AIR_CONCS", SPEC, D)& ! also have ugN 
+      !  ,typ_s5i("DUST_NAT_F", "ug ", D2,"AIR_CONCS", SPEC, D)& 
+      !  ,typ_s5i("DUST_NAT_C", "ug ", D2,"AIR_CONCS", SPEC, D)& 
+      !  ,typ_s5i("AER_OM_F  ", "ug ", D2,"AIR_CONCS", SPEC, D)&  !! NEVER as ugC !!
+      !  ,typ_s5i("AER_OC    ", "ug ", D2,"AIR_CONCS", SPEC, D)&  !! NEVER as ugC !!
+      !  ,typ_s5i("EC_F      ", "ug ", D2,"AIR_CONCS", GROUP, D)& 
         !,typ_s5i("PART_XO_OFFLOA25_O", "ug", D2,"AIR_CONCS", SPEC, M)& !NEVER as ugC!
         !,typ_s5i("PART_XO_OWDOA25_O", "ug", D2,"AIR_CONCS", SPEC, M)& !NEVER as ugC!
         !,typ_s5i("PART_XO_OFFIOA25_O", "ug", D2,"AIR_CONCS", SPEC, M)& !NEVER as ugC!
-       ! ============================================================
-       /)
 
 ! Tropospheric columns
    integer, public, parameter, dimension(1) :: COLUMN_MOLEC_CM2 = &
@@ -339,10 +345,11 @@ private
    ! the DEP_RECEIVERS  from EcoSystem_ml.
    !
    ! integer, public, parameter :: NNDRYDEP = 3 ! 7 + 1 !JUST HNO3: size(DDEP_OXNGROUP)
-    integer, public, parameter, dimension(7+size(DDEP_OXNGROUP)) :: &
+    !TNO integer, public, parameter, dimension(7+size(DDEP_OXNGROUP)) :: &
+    integer, public, parameter, dimension(3) :: &
     !integer, public, parameter, dimension(NNDRYDEP) :: &
-      DDEP_SPECS = (/ SOX_INDEX, OXN_INDEX, RDN_INDEX, & !  /) ! , &
-           SO2,  SO4, NH3, NH4_f, DDEP_OXNGROUP /)
+      DDEP_SPECS = (/ SOX_INDEX, OXN_INDEX, RDN_INDEX /) !TNO , & !  /) ! , &
+           !SO2,  SO4, NH3, NH4_f, DDEP_OXNGROUP /)
            !SO2,  SO4, NH3, NH4_f, HNO3 /) ! DDEP_OXNGROUP /)
 
     character(len=TXTLEN_DERIV), public, parameter, dimension(3) :: &
@@ -350,7 +357,7 @@ private
                   !  , "Decid  ", "Crops  " /)
 
    ! Frequency of dry-dep outputs
-    integer, public, parameter ::  DDEP_FREQ = M  ! (D)ay or (M)onth
+    integer, public, parameter ::  DDEP_FREQ = D  ! (D)ay or (M)onth
     
 
   ! Have many combinations: species x ecosystems
@@ -360,25 +367,26 @@ private
    !- specify some species and land-covers we want to output
    ! dep. velocities for in netcdf files. Set in My_DryDep_ml.
 
-    type(typ_s5i), public, parameter, dimension(17) :: &
+!TNO    type(typ_s5i), public, parameter, dimension(17) :: &
+    type(typ_s5i), public, parameter, dimension(1) :: &
          NewMosaic = (/ &
              typ_s5i( "Mosaic", "VG", "O3       ", "Grid","cms",D ) &
-            ,typ_s5i( "Mosaic", "VG", "O3       ", "CF  ","cms",D ) &
-            ,typ_s5i( "Mosaic", "VG", "O3       ", "SNL ","cms",D ) &
-            ,typ_s5i( "Mosaic", "VG", "HNO3     ", "Grid","cms",D ) &
-            ,typ_s5i( "Mosaic", "VG", "HNO3     ", "W   ","cms",D ) &
-            ,typ_s5i( "Mosaic", "VG", "HNO3     ", "CF  ","cms",D ) &
-            ,typ_s5i( "Mosaic", "VG", "HNO3     ", "SNL ","cms",D ) &
-            ,typ_s5i( "Mosaic", "VG", "NO3_F    ", "SNL ","cms",D ) &
-            ,typ_s5i( "Mosaic", "VG", "NO3_C    ", "SNL ","cms",D ) &
-            ,typ_s5i( "Mosaic", "VG", "NO3_F    ", "Grid","cms",D ) &
-            ,typ_s5i( "Mosaic", "VG", "NO3_C    ", "Grid","cms",D ) &
-            ,typ_s5i( "Mosaic", "VG", "SEASALT_F", "W   ","cms",D ) &
-            ,typ_s5i( "Mosaic", "VG", "SEASALT_C", "W   ","cms",D ) &
-            ,typ_s5i( "Mosaic", "VG", "SEASALT_F", "Grid","cms",D ) &
-            ,typ_s5i( "Mosaic", "VG", "SEASALT_C", "Grid","cms",D ) &
-            ,typ_s5i( "Mosaic", "Rs", "SO2      ", "Grid","sm",D ) &
-            ,typ_s5i( "Mosaic", "Rs", "NH3      ", "Grid","sm",D ) &
+!TNO            ,typ_s5i( "Mosaic", "VG", "O3       ", "CF  ","cms",D ) &
+!TNO            ,typ_s5i( "Mosaic", "VG", "O3       ", "SNL ","cms",D ) &
+!TNO            ,typ_s5i( "Mosaic", "VG", "HNO3     ", "Grid","cms",D ) &
+!TNO            ,typ_s5i( "Mosaic", "VG", "HNO3     ", "W   ","cms",D ) &
+!TNO            ,typ_s5i( "Mosaic", "VG", "HNO3     ", "CF  ","cms",D ) &
+!TNO            ,typ_s5i( "Mosaic", "VG", "HNO3     ", "SNL ","cms",D ) &
+!TNO            ,typ_s5i( "Mosaic", "VG", "NO3_F    ", "SNL ","cms",D ) &
+!TNO            ,typ_s5i( "Mosaic", "VG", "NO3_C    ", "SNL ","cms",D ) &
+!TNO            ,typ_s5i( "Mosaic", "VG", "NO3_F    ", "Grid","cms",D ) &
+!TNO            ,typ_s5i( "Mosaic", "VG", "NO3_C    ", "Grid","cms",D ) &
+!TNO            ,typ_s5i( "Mosaic", "VG", "SEASALT_F", "W   ","cms",D ) &
+!TNO            ,typ_s5i( "Mosaic", "VG", "SEASALT_C", "W   ","cms",D ) &
+!TNO            ,typ_s5i( "Mosaic", "VG", "SEASALT_F", "Grid","cms",D ) &
+!TNO            ,typ_s5i( "Mosaic", "VG", "SEASALT_C", "Grid","cms",D ) &
+!TNO            ,typ_s5i( "Mosaic", "Rs", "SO2      ", "Grid","sm",D ) &
+!TNO            ,typ_s5i( "Mosaic", "Rs", "NH3      ", "Grid","sm",D ) &
          /)
 
 ! VEGO3 outputs for PODY and AOTX - see AOTnPOD_ml for definitions,
@@ -412,13 +420,14 @@ private
 
 ! For met-data and canopy concs/fluxes ...
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(3) :: &
-      MOSAIC_METCONCS = (/ "VPD     "  &
+!TNO    character(len=TXTLEN_DERIV), public, parameter, dimension(3) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(1) :: &
+      MOSAIC_METCONCS = (/ "USTAR" /) ! TNO "VPD     "  &
                          ! ,"CanopyO3" & !SKIP 
          !,"VPD     ", "FstO3   " "EVAP    ", "Gsto    " &
                         !SKIP  
-                       ,"USTAR   ", "INVL    "  &
-                       /)
+   !TNO                    ,"USTAR   ", "INVL    "  &
+   !TNO                    /)
                           ! "g_sto" needs more work - only set as L%g_sto
 
     character(len=TXTLEN_DERIV), public, save, dimension(2) :: &
@@ -437,20 +446,20 @@ private
 !----------------------
 
 
-   type(typ_s3), dimension(7), public, parameter :: WDEP_WANTED = (/ &
+   type(typ_s3), dimension(7-3), public, parameter :: WDEP_WANTED = (/ &
          typ_s3( "PREC     ", "PREC ", "mm  " )  &
         ,typ_s3( "SOX      ", "GROUP", "mgS " )  & ! Will get WDEP_SOX group
         ,typ_s3( "OXN      ", "GROUP", "mgN " )  &
         ,typ_s3( "RDN      ", "GROUP", "mgN " )  &
-        ,typ_s3( "SS       ", "GROUP", "mgSS" )  &
+!TNO        ,typ_s3( "SS       ", "GROUP", "mgSS" )  &
       ! 
       !  ,typ_s3( "SO2      ", "SPEC ", "mgS ") &  ! Makes WPEP_SO2
       !  ,typ_s3( "SO4      ", "SPEC ", "mgS ") &
       !  ,typ_s3( "HNO3     ", "SPEC ", "mgN ") &
       !  ,typ_s3( "NO3_F    ", "SPEC ", "mgN ") &
       !  ,typ_s3( "NO3_C    ", "SPEC ", "mgN ") &
-        ,typ_s3( "NH4_F    ", "SPEC ", "mgN ") &
-        ,typ_s3( "NH3      ", "SPEC ", "mgN ") &
+!TNO        ,typ_s3( "NH4_F    ", "SPEC ", "mgN ") &
+!TNO        ,typ_s3( "NH3      ", "SPEC ", "mgN ") &
       !  ,typ_s3( "SEASALT_F", "SPEC ", "mgSS") &
       ! ,typ_s3( "SEASALT_C", "SPEC ", "mgSS") &
      /)
