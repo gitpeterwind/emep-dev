@@ -58,31 +58,30 @@ module Nest_ml
 
 use My_ExternalBICs_ml,     only: set_extbic, icbc, &
        EXTERNAL_BIC_SET, EXTERNAL_BC, EXTERNAL_BIC_NAME, TOP_BC, &
-!rca:  iw, ie, js, jn, kt, &  ! i West/East bnd; j North/South bnd; k Top
+       iw, ie, js, jn, kt, &  ! i West/East bnd; j North/South bnd; k Top
        filename_read_3D,filename_read_BC,fileName_write,filename_eta
 !----------------------------------------------------------------------------!
-use GridValues_ml,          only: glon,glat
 use CheckStop_ml,          only : CheckStop,StopAll
 use ChemChemicals_ml,       only: species
 use Chemfields_ml,          only: xn_adv, xn_shl    ! emep model concs.
 use ChemSpecs_shl_ml,       only: NSPEC_SHL
 use ChemSpecs_adv_ml,       only: NSPEC_ADV
 use ChemSpecs_tot_ml,       only: NSPEC_TOT
-use GridValues_ml,          only: A_mid,B_mid
-use Io_ml,                  only: open_file, IO_TMP
-use netcdf
-use netcdf_ml,              only: GetCDF,Out_netCDF,Init_new_netCDF&
-                                  ,Int1,Int2,Int4,Real4,Real8,ReadTimeCDF
 use Functions_ml,           only: great_circle_distance
+use GridValues_ml,          only: A_mid,B_mid, glon,glat
+use Io_ml,                  only: open_file, IO_TMP
 use ModelConstants_ml,      only: Pref,PPB,PT,KMAX_MID, MasterProc, NPROC     &
   , IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY,RUNDOMAIN  &
   , MODE=>NEST_MODE, FORECAST, DEBUG_NEST, DEBUG_ICBC=>DEBUG_NEST_ICBC
+use netcdf
+use netcdf_ml,              only: GetCDF,Out_netCDF,Init_new_netCDF&
+                                  ,Int1,Int2,Int4,Real4,Real8,ReadTimeCDF
 use OwnDataTypes_ml,        only: Deriv
-use Par_ml,                 only: MAXLIMAX, MAXLJMAX, GIMAX,GJMAX,IRUNBEG,JRUNBEG &
+use Par_ml,                 only: MAXLIMAX, MAXLJMAX, GIMAX,GJMAX&
+  ,IRUNBEG,JRUNBEG &
   , me, li0,li1,lj0,lj1,limax,ljmax, tgi0, tgj0, tlimax, tljmax
-use TimeDate_ExtraUtil_ml,  only: idate2nctime,nctime2idate,date2string
 use TimeDate_ml,            only: date
-
+use TimeDate_ExtraUtil_ml,  only: idate2nctime,nctime2idate,date2string
 implicit none
 
 INCLUDE 'mpif.h'
@@ -92,11 +91,7 @@ INTEGER INFO
 integer, public, parameter :: FORECAST_NDUMP = 1  ! Number of nested output
 ! on FORECAST mode (1: starnt next forecast; 2: NMC statistics)
 type(date), public :: outdate(FORECAST_NDUMP)=date(-1,-1,-1,-1,-1)
-!DSBIC now store RCA etc in char array EXTERNAL_BIC
-!DSBIC logical , public,parameter :: TRANSPHORM = .false.  ! Use limited set of BC components
-!DSBIC logical , public,parameter :: RCA = .false.        ! Use limited set of IC and BC components
-!DSBIC logical , public,parameter :: HTAP = .false.        ! Use limited set of IC and BC components
-!RCA: remember to manually set some BC to fixed values!
+
 !coordinates of subdomain to write
 !coordinates relative to LARGE domain (only used in write mode)
 integer ::istart=60,jstart=11,iend=107,jend=58 !ENEA NB: version has changed, these numbers where for small domain!!!
@@ -107,6 +102,7 @@ integer ::istart=60,jstart=11,iend=107,jend=58 !ENEA NB: version has changed, th
 public  :: readxn
 public  :: wrtxn
 
+logical, private, save :: mydebug =  .false.
 integer, public, parameter :: NHOURSAVE=3 !time between two saves. should be a fraction of 24
 integer, public, parameter :: NHOURREAD=1 !time between two reads. should be a fraction of 24
 !if(NHOURREAD<NHOURSAVE) the data is interpolated in time
@@ -115,7 +111,7 @@ private
 
 !Use TOP BC on forecast mode - moved to EXTERNAL
 !DSBIC where?!logical, parameter :: TOP_BC=.false..or.FORECAST.or.RCA.or.TRANSPHORM.or.HTAP
-integer,save :: iw, ie, js, jn, kt ! i West/East bnd; j North/South bnd; k Top
+!rca integer,save :: iw, ie, js, jn, kt ! i West/East bnd; j North/South bnd; k Top
 real(kind=8), parameter :: halfsecond=0.5/(24.0*3600.0)!used to avoid rounding errors
 !BC values at boundaries in present grid
 real, save, allocatable, dimension(:,:,:,:) :: &
@@ -150,101 +146,43 @@ integer,save :: date_nextfile(4)!date corresponding to the next BC file to read
 integer,save :: NHOURS_Stride_BC   !number of hours between start of two consecutive records in BC files
 integer, public, parameter :: NHOURS_Stride_BC_default=6 !time between records if only one record per file (RCA for example)
 
+!Arrays to stiore species 
+!e.g. EXTERNAL_BC=(/adv_icbc(IXADV_NO   ,icbc('NO'    ,.true.,.false.)), &
+!                   adv_icbc(IXADV_NO2   ,icbc('NO2'    ,.true.,.false.)), &
 
-! Nested output dates on FORECAST mode
-! IFS-MOZART BC
-!dsMOVED type, private :: icbc    ! Inital (IC) & Boundary Conditions (BC)
-!dsMOVED   character(len=24) :: varname=""
-!dsMOVED   logical           :: wanted=.false.,found=.false.
-!dsMOVED end type icbc
 type(icbc), dimension(NSPEC_ADV), private :: &
-  adv_ic=icbc('',.false.,.false.), &  ! Initial 3D IC/CB
-  adv_bc=icbc('',.false.,.false.)     ! Time dependent BC
+  adv_ic=icbc('',.false.,.false.), &  ! Initial 3D IC/CB, varname, wanted, found
+  adv_bc=icbc('',.false.,.false.)     ! Time dependent BC, varname, wanted, found
 
-!dsMOVED type, private :: adv_icbc       ! IC/BC Set, included intended ixadv
-!dsMOVED   integer           :: ixadv=-1
-!dsMOVED   type(icbc)        :: icbc
-!dsMOVED end type adv_icbc
+!In My_ExternalBICs we have:
+! type, public :: icbc                 ! Inital (IC) & Boundary Conditions (BC)
+!    character(len=24) :: varname=""
+!    logical           :: wanted=.false.,found=.false.
+!  end type icbc
+! type, private :: adv_icbc       ! IC/BC Set, included intended ixadv
+!   integer           :: ixadv=-1
+!   type(icbc)        :: icbc
+! end type adv_icbc
 
-  !DSBIC ============================================================
-  ! Provides EXTERNAL_BIC_NAME, and EXTERNAL_BC array
-  !  include 'EXTERNAL_BICS_MAP.inc'
-  !DSBIC ============================================================
-
-!SKIPtype(adv_icbc), dimension(26), private, parameter :: &  ! BC from EnsClim-RCA
-!SKIP  RCA_BC=(/adv_icbc(IXADV_NO   ,icbc('NO'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_NO2   ,icbc('NO2'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_O3    ,icbc('O3'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_CO     ,icbc('CO'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_HCHO    ,icbc('HCHO'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_PAN     ,icbc('PAN'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_HNO3    ,icbc('HNO3'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_H2O2  ,icbc('H2O2'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_CH4  ,icbc('CH4'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_CH3CHO  ,icbc('CH3CHO'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_C2H6  ,icbc('C2H6'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_C5H8  ,icbc('Isoprene'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_NC4H10  ,icbc('nC4H10'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_OXYL  ,icbc('oXylene'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_SO2  ,icbc('SO2'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_NH3  ,icbc('NH3'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_N2O5  ,icbc('N2O5'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_SO4  ,icbc('SO4'    ,.true.,.false.)), &!SO4+ NH4HSO4 + (NH4)2SO4
-!SKIP                 adv_icbc(IXADV_SO4  ,icbc('NH4HSO4'    ,.true.,.false.)), &!SO4+ NH4HSO4 + (NH4)2SO4
-!SKIP                 adv_icbc(IXADV_SO4  ,icbc('NH42SO4'    ,.true.,.false.)), &!SO4+ NH4HSO4 + (NH4)2SO4
-!SKIP                 adv_icbc(IXADV_NO3_F  ,icbc('NH4NO3'    ,.true.,.false.)), &!NH4NO3+ANIT
-!SKIP                 adv_icbc(IXADV_NO3_F  ,icbc('ANIT'    ,.true.,.false.)), &!+ANIT
-!SKIP                 adv_icbc(IXADV_NH4_F  ,icbc('NH4NO3'    ,.true.,.false.)), &!NH4NO3+ NH4HSO4 + 2 * (NH4)2SO4
-!SKIP                 adv_icbc(IXADV_NH4_F  ,icbc('NH4HSO4'    ,.true.,.false.)), &!NH4NO3+ NH4HSO4 + 2 * (NH4)2SO4
-!SKIP                 adv_icbc(IXADV_NH4_F  ,icbc('NH42SO4'    ,.true.,.false.)), &!NH4NO3+ NH4HSO4 + 2 * (NH4)2SO4
-!SKIP                 adv_icbc(IXADV_NH4_F  ,icbc('NH42SO4'    ,.true.,.false.)) &!NH4NO3+ NH4HSO4 + 2 * (NH4)2SO4
-!SKIP
-!SKIP/)
-!SKIPtype(adv_icbc), dimension(7), private, parameter :: &  ! BC from HTAP
-!SKIP  HTAP_BC=(/adv_icbc(IXADV_SO2   ,icbc('vmr_so2'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_HNO3   ,icbc('vmr_hno3'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_NO     ,icbc('vmr_no'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_NO2    ,icbc('vmr_no2'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_O3     ,icbc('vmr_o3'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_PAN    ,icbc('vmr_pan'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_CO    ,icbc('vmr_co'    ,.true.,.false.))/)
-!SKIP
-!SKIP
-!SKIPtype(adv_icbc), dimension(26), private, parameter :: &  ! BC from EnsClim-RCA
-!SKIP  RCA_BC=(/adv_icbc(IXADV_NO   ,icbc('NO'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_NO2   ,icbc('NO2'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_O3    ,icbc('O3'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_CO     ,icbc('CO'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_HCHO    ,icbc('HCHO'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_PAN     ,icbc('PAN'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_HNO3    ,icbc('HNO3'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_H2O2  ,icbc('H2O2'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_CH4  ,icbc('CH4'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_CH3CHO  ,icbc('CH3CHO'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_C2H6  ,icbc('C2H6'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_C5H8  ,icbc('Isoprene'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_NC4H10  ,icbc('nC4H10'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_OXYL  ,icbc('oXylene'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_SO2  ,icbc('SO2'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_NH3  ,icbc('NH3'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_N2O5  ,icbc('N2O5'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_SO4  ,icbc('SO4'    ,.true.,.false.)), &!SO4+ NH4HSO4 + (NH4)2SO4
-!SKIP                 adv_icbc(IXADV_SO4  ,icbc('NH4HSO4'    ,.true.,.false.)), &!SO4+ NH4HSO4 + (NH4)2SO4
-!SKIP                 adv_icbc(IXADV_SO4  ,icbc('NH42SO4'    ,.true.,.false.)), &!SO4+ NH4HSO4 + (NH4)2SO4
-!SKIP                 adv_icbc(IXADV_NO3_F  ,icbc('NH4NO3'    ,.true.,.false.)), &!NH4NO3+ANIT
-!SKIP                 adv_icbc(IXADV_NO3_F  ,icbc('ANIT'    ,.true.,.false.)), &!+ANIT
-!SKIP                 adv_icbc(IXADV_NH4_F  ,icbc('NH4NO3'    ,.true.,.false.)), &!NH4NO3+ NH4HSO4 + 2 * (NH4)2SO4
-!SKIP                 adv_icbc(IXADV_NH4_F  ,icbc('NH4HSO4'    ,.true.,.false.)), &!NH4NO3+ NH4HSO4 + 2 * (NH4)2SO4
-!SKIP                 adv_icbc(IXADV_NH4_F  ,icbc('NH42SO4'    ,.true.,.false.)), &!NH4NO3+ NH4HSO4 + 2 * (NH4)2SO4
-!SKIP                 adv_icbc(IXADV_NH4_F  ,icbc('NH42SO4'    ,.true.,.false.)) &!NH4NO3+ NH4HSO4 + 2 * (NH4)2SO4
-!SKIP
-!SKIP/)
+!e.g.
+!type(adv_icbc), dimension(7), private, parameter :: &  ! BC from HTAP
+!  HTAP_BC=(/adv_icbc(IXADV_SO2   ,icbc('vmr_so2'    ,.true.,.false.)), &
+!                 adv_icbc(IXADV_HNO3   ,icbc('vmr_hno3'    ,.true.,.false.)), &
+!                 adv_icbc(IXADV_NO     ,icbc('vmr_no'    ,.true.,.false.)), &
+!                 adv_icbc(IXADV_NO2    ,icbc('vmr_no2'    ,.true.,.false.)), &
+!                 adv_icbc(IXADV_O3     ,icbc('vmr_o3'    ,.true.,.false.)), &
+!                 adv_icbc(IXADV_PAN    ,icbc('vmr_pan'    ,.true.,.false.)), &
+!                 adv_icbc(IXADV_CO    ,icbc('vmr_co'    ,.true.,.false.))/)
+!RCA e.g.
+!               adv_icbc(IXADV_N2O5  ,icbc('N2O5'    ,.true.,.false.)), &
+!               adv_icbc(IXADV_NH4_F  ,icbc('NH42SO4'    ,.true.,.false.)), &!NH4NO3+ NH4HSO4 + 2 * (NH4)2SO4
+!
 
 
 contains
 
+!++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
 subroutine readxn(indate)
-  implicit none
   type(date), intent(in) :: indate           ! Gives year..seconds
   integer,save  :: first_data=-1
 
@@ -258,7 +196,8 @@ subroutine readxn(indate)
   logical :: fexist=.false.
   integer ::oldmonth=0
 
-  if(DEBUG_NEST.and.MasterProc)write(*,*)'Nest:Read BC, MODE=',MODE
+  mydebug = DEBUG_NEST .and. MasterProc
+  if( mydebug )write(*,*)'Nest:Read BC, MODE=',MODE
   if(MODE /= 2.and.MODE /= 3.and. MODE /= 11.and. MODE /= 12.and. MODE /= 100.and. .not.FORECAST)return
 
   KMAX_BC=KMAX_MID
@@ -280,16 +219,16 @@ subroutine readxn(indate)
       first_call=.false.
       inquire(file=filename_read_3D,exist=fexist)
       if(.not.fexist)then
-        if(MasterProc) print *,'No nest IC file found: ',trim(filename_read_3D)
+        if(MasterProc) write(*,*)'No Nest IC file found: ',trim(filename_read_3D)
       else
-        if(MasterProc) print *,'RESET ALL XN 3D'
+        if(MasterProc) write(*,*)'Nest RESET ALL XN 3D'
         call reset_3D(ndays_indate)
       endif
     endif
     if(mod(indate%hour,NHOURREAD)/=0.or.indate%seconds/=0) return
     inquire(file=filename_read_BC,exist=fexist)
     if(.not.fexist)then
-      if(MasterProc) print *,'No nest BC file found: ',trim(filename_read_BC)
+      if(MasterProc) write(*,*)'No Nest BC file found: ',trim(filename_read_BC)
       return
     endif
   elseif(MODE == 100)then
@@ -297,11 +236,12 @@ subroutine readxn(indate)
      if(indate%month==oldmonth)return
      if(MasterProc.and.oldmonth==0)   print *,'Nest: Initialzing IC'
      oldmonth=indate%month
-     if(MasterProc)   print *,'Nest: New month, reset BC'
+     if(MasterProc)   write(*,*)'Nest: New month, reset BC'
+ 
   elseif(MODE == 11.or.MODE == 12)then
     if(.not. first_call)return
     first_call=.false.
-    if(MasterProc)   print *,'RESET ALL XN 3D'
+   if(MasterProc)   write(*,*)'Nest RESET ALL XN 3D'
     call reset_3D(ndays_indate)
     return
   else
@@ -311,7 +251,7 @@ subroutine readxn(indate)
 
 !never comes to this point if MODE=11 or 12
 
-  if(MasterProc) print *,'NESTING'
+ if(MasterProc) write(*,*) 'Nest: kt', kt, first_data
 
 
   if(first_data==-1)then
@@ -322,8 +262,13 @@ subroutine readxn(indate)
     call set_extbic(date_nextfile)
 
     if(.not.FORECAST) call reset_3D(ndays_indate)
-    if(MasterProc) print *,'NEST: READING BC DATA from ',trim(filename_read_BC)
+    if(mydebug) write(*,*)'Nest: READING FIRST BC DATA 3D: ',&
+          trim(filename_read_3D), ndays_indate
+ 
     call read_newdata_LATERAL(ndays_indate)
+    if(mydebug) write(*,"(a,5i4)")'Nest: iw, ie, js, jn, kt ',&
+           iw, ie, js, jn, kt
+
     !the first hour only these values are used, no real interpolation between two records
   endif
 
@@ -333,7 +278,9 @@ subroutine readxn(indate)
    !filename_read_BC=date2string(trim(filename_read_BC_template),date_nextfile) !
     call set_extbic(date_nextfile)
 
-    if(MasterProc) print *,'NEST: READING NEW BC DATA from ',trim(filename_read_BC)
+   if(MasterProc) write(*,*)'Nest: READING NEW BC DATA from ',&
+          trim(filename_read_BC)
+
     call read_newdata_LATERAL(ndays_indate)
   endif
 
@@ -342,27 +289,28 @@ subroutine readxn(indate)
      !don't interpolate for now
      W1=0.0;  W2=1.0 ! use last read value
   else
-  W1=1.0;  W2=0.0 ! default
-  if(ndays_indate-rtime_saved(1)>halfsecond)then
-    !interpolate
-    W2=(ndays_indate-rtime_saved(1))/(rtime_saved(2)-rtime_saved(1))
-    W1=1.0-W2
+     W1=1.0;  W2=0.0 ! default
+     if(ndays_indate-rtime_saved(1)>halfsecond)then
+       !interpolate
+       W2=(ndays_indate-rtime_saved(1))/(rtime_saved(2)-rtime_saved(1))
+       W1=1.0-W2
 !   if(me==1)then
 !     call nctime2idate(ndate,ndays_indate,'YYYY-MM-DD hh:mm:ss')
 !     call nctime2idate(ndate,rtime_saved(1),'interpolating between YYYY-MM-DD hh:mm:ss')
 !     call nctime2idate(ndate,rtime_saved(2),'and                   YYYY-MM-DD hh:mm:ss')
 !     print *,'with weights : ',W1,W2
 !   endif
-  endif
+     endif
   endif
  if(DEBUG_NEST.and.MasterProc) then
-   write(*,*) 'nesting BC 2D: time weights : ',W1,W2
-   write(*,*) 'nesting BC 2D: time stamps : ',rtime_saved(1),rtime_saved(2)
+   write(*,*) 'Nesting BC 2D: time weights : ',W1,W2
+   write(*,*) 'Nesting BC 2D: time stamps : ',rtime_saved(1),rtime_saved(2)
  end if
 
   do n=1,NSPEC_ADV
      if(adv_bc(n)%wanted.and.adv_bc(n)%found)then
-        if(DEBUG_ICBC.and.MasterProc) write(*,*) 'nesting component ',trim(adv_bc(n)%varname)
+        if(DEBUG_ICBC.and.MasterProc) write(*,*) 'NestICBCnesting component ',&
+             trim(adv_bc(n)%varname)
         forall (i=iw:iw, k=1:KMAX_BC, j=1:ljmax, i>=1) &
              xn_adv(n,i,j,k)=W1*xn_adv_bndw(n,j,k,1)+W2*xn_adv_bndw(n,j,k,2)
         forall (i=ie:ie, k=1:KMAX_BC, j=1:ljmax, i<=limax) &
@@ -378,67 +326,6 @@ subroutine readxn(indate)
 
 if(EXTERNAL_BIC_NAME == "RCA")then
     call CheckStop("WORK NEEDED: RCA BICs commented out in Nest_ml - not consistent with all chem schemes")
-!some components put to a fixed value
-!RCA    if(kt==1)then
-!RCA       !top
-!RCA       xn_adv(IXADV_H2,:,:,kt)=       5e-7
-!RCA       xn_adv(IXADV_C2H4,:,:,kt)=     2e-10
-!RCA       xn_adv(IXADV_C3H6,:,:,kt)=     5e-11
-!RCA       xn_adv(IXADV_C2H5OH,:,:,kt)=   4e-10
-!RCA       xn_adv(IXADV_MEK,:,:,kt)=      2.5e-11
-!RCA       xn_adv(IXADV_CH3O2H,:,:,kt)=   7.5e-11
-!RCA       xn_adv(IXADV_MGLYOX,:,:,kt)=   0
-!RCA       xn_adv(IXADV_GLYOX,:,:,kt)=    0
-!RCA       xn_adv(IXADV_C2H5OOH,:,:,kt)=  1e-12
-!RCA   endif
-!RCA    if(iw>=1)then
-!RCA!west
-!RCA       xn_adv(IXADV_H2,iw,:,:)=       5e-7
-!RCA       xn_adv(IXADV_C2H4,iw,:,:)=     2e-10
-!RCA       xn_adv(IXADV_C3H6,iw,:,:)=     5e-11
-!RCA       xn_adv(IXADV_C2H5OH,iw,:,:)=   4e-10
-!RCA       xn_adv(IXADV_MEK,iw,:,:)=      2.5e-11
-!RCA       xn_adv(IXADV_CH3O2H,iw,:,:)=   1e-10
-!RCA       xn_adv(IXADV_MGLYOX,iw,:,:)=   2e-12
-!RCA       xn_adv(IXADV_GLYOX,iw,:,:)=    6e-12
-!RCA       xn_adv(IXADV_C2H5OOH,iw,:,:)=  1e-12
-!RCA    endif
-!RCA    if(ie<=limax)then
-!RCA!east
-!RCA       xn_adv(IXADV_H2,ie,:,:)=        5e-7
-!RCA       xn_adv(IXADV_C2H4,ie,:,:)=      2e-10
-!RCA       xn_adv(IXADV_C3H6,ie,:,:)=      2e-10
-!RCA       xn_adv(IXADV_C2H5OH,ie,:,:)=    6e-10
-!RCA       xn_adv(IXADV_MEK,ie,:,:)=       5e-11
-!RCA       xn_adv(IXADV_CH3O2H,ie,:,:)=    1e-10
-!RCA       xn_adv(IXADV_MGLYOX,ie,:,:)=    1.5e-12
-!RCA       xn_adv(IXADV_GLYOX,ie,:,:)=     1.3e-11
-!RCA       xn_adv(IXADV_C2H5OOH,ie,:,:)=   1e-12
-!RCA    endif
-!RCA    if(js>=1)then
-!RCA!south
-!RCA       xn_adv(IXADV_H2,:,js,:)=        5e-7
-!RCA       xn_adv(IXADV_C2H4,:,js,:)=      5e-11
-!RCA       xn_adv(IXADV_C3H6,:,js,:)=      1.6e-11
-!RCA       xn_adv(IXADV_C2H5OH,:,js,:)=    7e-11
-!RCA       xn_adv(IXADV_MEK,:,js,:)=       2.5e-11
-!RCA       xn_adv(IXADV_CH3O2H,:,js,:)=    1e-10
-!RCA       xn_adv(IXADV_MGLYOX,:,js,:)=    2e-12
-!RCA       xn_adv(IXADV_GLYOX,:,js,:)=     4e-12
-!RCA       xn_adv(IXADV_C2H5OOH,:,js,:)=   1e-12
-!RCA    endif
-!RCA    if(jn<=ljmax)then
-!RCA!north
-!RCA       xn_adv(IXADV_H2,:,jn,:)=        5e-7
-!RCA       xn_adv(IXADV_C2H4,:,jn,:)=      2e-10
-!RCA       xn_adv(IXADV_C3H6,:,jn,:)=      2e-10
-!RCA       xn_adv(IXADV_C2H5OH,:,jn,:)=    4e-10
-!RCA       xn_adv(IXADV_MEK,:,jn,:)=       2.5e-11
-!RCA       xn_adv(IXADV_CH3O2H,:,jn,:)=    1e-12
-!RCA       xn_adv(IXADV_MGLYOX,:,jn,:)=    2e-12
-!RCA       xn_adv(IXADV_GLYOX,:,jn,:)=     4e-12
-!RCA       xn_adv(IXADV_C2H5OOH,:,jn,:)=   1e-12
-!RCA    endif
 endif
 
 
@@ -447,8 +334,8 @@ endif
   return
 end subroutine readxn
 
+!++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
 subroutine wrtxn(indate,WriteNow)
-  implicit none
   type(date), intent(in) :: indate
   logical, intent(in) :: WriteNow !Do not check indate value
   real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: dat ! Data arrays
@@ -468,8 +355,9 @@ subroutine wrtxn(indate,WriteNow)
                 indate%day    ==outdate%day   .and.   &
                 indate%hour   ==outdate%hour  .and.   &
                 indate%seconds==outdate%seconds))return
-    if(MasterProc) print *,&
+   if(MasterProc) write(*,*)&
       date2string(" Forecast nest/dump at YYYY-MM-DD hh:mm:ss",indate)
+
     istart=RUNDOMAIN(1)
     jstart=RUNDOMAIN(3)
     iend=RUNDOMAIN(2)
@@ -486,14 +374,13 @@ subroutine wrtxn(indate,WriteNow)
 
 ! fileName_write=date2string("EMEP_BC_MMYYYY.nc",indate)!for different names each month
                                                         !NB: readxn should have same name
-  if(MasterProc)print *,'Nest:write data ',trim(fileName_write)
+  if(MasterProc)write(*,*)'Nest:write data ',trim(fileName_write)
+
 
   iotyp=IOU_INST
   if(first_call)then
     if(MasterProc)then
-      print *,'Nest:Writing BC on ',trim(fileName_write)
-     !write(command,*)'rm ',trim(fileName_write)
-     !call system(command)
+      write(*,*)'Nest:Writing BC on ',trim(fileName_write)
     endif
   endif
 
@@ -515,9 +402,10 @@ subroutine wrtxn(indate,WriteNow)
       def1%name= species(NSPEC_SHL+n)%name       !written
       if(.not.adv_ic(n)%wanted)then
         if((DEBUG_NEST.or.DEBUG_ICBC).and.MasterProc)&
-          write(*,"(A,':',/2(2X,A,1X,'''',A,'''',A,'.'))")"Nest(wrtxn) DEBUG_ICBC",&
-            "Variable",trim(def1%name),"is not wanted as IC",&
-            "Will not be written to IC file:",trim(filename_write),""
+          write(*,"(A,':',/2(2X,A,1X,'''',A,'''',A,'.'))")&
+           "Nest(wrtxn) DEBUG_ICBC", &
+           "Variable",trim(def1%name), "is not wanted as IC", &
+           "Will not be written to IC file:",trim(filename_write),""
         cycle
       endif
       dat=xn_adv(n,:,:,:)
@@ -532,7 +420,8 @@ subroutine wrtxn(indate,WriteNow)
 !        cycle
 !      endif
       call Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype=Real4,&
-            ist=istart,jst=jstart,ien=iend,jen=jend,fileName_given=fileName_write,create_var_only=.true.)
+            ist=istart,jst=jstart,ien=iend,jen=jend,&
+              fileName_given=fileName_write,create_var_only=.true.)
     enddo
   endif
 
@@ -542,17 +431,17 @@ subroutine wrtxn(indate,WriteNow)
     def1%name= species(NSPEC_SHL+n)%name       !written
     dat=xn_adv(n,:,:,:)
     call Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype=Real4,&
-        ist=istart,jst=jstart,ien=iend,jen=jend,fileName_given=fileName_write,create_var_only=.false.)
+        ist=istart,jst=jstart,ien=iend,jen=jend,&
+          fileName_given=fileName_write,create_var_only=.false.)
   enddo
 
     first_call=.false.
   return
 end subroutine wrtxn
 
-
+!++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
 subroutine check(status)
   use netcdf
-  implicit none
   integer, intent ( in) :: status
 
   if(status /= nf90_noerr) then
@@ -562,28 +451,34 @@ subroutine check(status)
   end if
 end subroutine check
 
+!++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
 subroutine init_icbc()
-  implicit none
   logical, save :: first_call=.true.
   integer :: n
 
   if(.not.first_call)return
   first_call=.false.
 
-  call set_extbic() !ds sets mapping, EXTERNAL_BIC_SET, EXTERNAL_BC, TOP_BC
+  call set_extbic() ! sets mapping, EXTERNAL_BIC_SET, EXTERNAL_BC, TOP_BC
 
   if(all(adv_ic%varname==""))then
+    if(mydebug) write(*,*) "DEBUGNest: init_icbc empty adv_ic varnames"
     adv_ic(:)%varname=species(NSPEC_SHL+1:NSPEC_SHL+NSPEC_ADV)%name
     adv_ic(:)%wanted=.true.
     adv_ic(:)%found=find_icbc(filename_read_3D,adv_ic%varname(:))
+    if( mydebug) then
+     do n = 1, size( adv_ic%varname )
+       if(adv_ic(n)%found) write(*,*) &
+          "init_icbc filled adv_ic "//trim(adv_ic(n)%varname)
+     end do
+    end if 
   endif
   if(all(adv_bc%varname==""))then
-    if ( EXTERNAL_BIC_SET ) then ! DSBIC
+    if(mydebug) write(*,*) "DEBUGNest: init_icbc empty adv_bc varnames",&
+         EXTERNAL_BIC_SET
 
-    !if (FORECAST ) ! IFS-MOZART BC
-    !if(TRANSPHORM) ! TRANSPHORM BC
-    !if(HTAP) ! HTAP BC
-    !if(RCA)  ! RCA BC
+    if ( EXTERNAL_BIC_SET ) then
+
       adv_bc(:)%wanted=.false.
       adv_bc(EXTERNAL_BC%ixadv)=EXTERNAL_BC%icbc
       adv_bc(:)%found=find_icbc(filename_read_bc,adv_bc%varname(:))
@@ -623,11 +518,11 @@ subroutine init_icbc()
   end function find_icbc
 end subroutine init_icbc
 
+!++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
 subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
      k1_ext,k2_ext,weight_k1,weight_k2,&
      N_ext,KMAX_ext,GIMAX_ext,GJMAX_ext)
 
-  implicit none
   character(len=*),intent(in) :: filename_read
   real ,intent(out):: Weight(MAXLIMAX,MAXLJMAX,4)
   integer ,intent(out)::IIij(MAXLIMAX,MAXLJMAX,4),JJij(MAXLIMAX,MAXLJMAX,4)
@@ -650,10 +545,10 @@ subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
   if(MasterProc)then
      status = nf90_open(path=trim(filename_read),mode=nf90_nowrite,ncid=ncFileID)
      if(status /= nf90_noerr) then
-        print *,'init_nest: not found',trim(filename_read)
+        print *,'init_Nest: not found',trim(filename_read)
         return
      else
-        print *,'init_nest: reading ',trim(filename_read)
+        print *,'init_Nest: reading ',trim(filename_read)
      endif
 
      projection=''
@@ -661,7 +556,8 @@ subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
      if(status == nf90_noerr) then
         write(*,*)'Nest: projection: '
      else
-        write(*,*)'Nest: projection not found for ',trim(filename_read)//', assuming lon lat'
+        write(*,*)'Nest: projection not found for ',&
+               trim(filename_read)//', assuming lon lat'
         projection='lon lat'
      endif
      !get dimensions id
@@ -770,9 +666,9 @@ subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
 
      elseif(ndays_ext(1)-ndays_indate>halfsecond)then
         call nctime2idate(ndate,ndays_indate,&
-             'WARNING: did not find BIC for date YYYY-MM-DD hh:mm:ss')
+          'WARNING: Nest did not find BIC for date YYYY-MM-DD hh:mm:ss')
         call nctime2idate(ndate,ndays_ext(1),&
-             'first date found YYYY-MM-DD hh:mm:ss')
+             'Nest first date found YYYY-MM-DD hh:mm:ss')
      endif
 
      if(N_ext>1)then
@@ -912,7 +808,7 @@ subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
   !   important as long as they are both terrain following.
   do k_ext=1,KMAX_EXT
      P_ext(k_ext)=hyam(k_ext)+hybm(k_ext)*Pref
-     if(DEBUG_NEST.and.MasterProc) write(*,fmt="(A,I3,F10.2)")'Nest: P_ext',k_ext,P_ext(k_ext)
+     if( mydebug ) write(*,fmt="(A,I3,F10.2)")'Nest: P_ext',k_ext,P_ext(k_ext)
   enddo
   if(P_ext(1)>P_ext(2))then
      ! assumes that k_ext=KMAX_EXT is top and k_ext=1 is surface
@@ -925,7 +821,7 @@ subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
   if(reversed_k_BC)then
      do k=1,KMAX_MID
         P_emep=A_mid(k)+B_mid(k)*Pref !Pa
-        if(DEBUG_NEST.and.MasterProc) write(*,fmt="(A,I3,F10.2)")'Nest: P_emep',k,P_emep
+        if( mydebug ) write(*,fmt="(A,I3,F10.2)")'Nest: P_emep',k,P_emep
         !largest available P smaller than P_emep (if possible)
         k1_ext(k)=1 !start at surface, and go up until P_emep
         do k_ext=1,KMAX_EXT
@@ -941,16 +837,17 @@ subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
         enddo
         weight_k1(k)=(P_emep-P_ext(k2_ext(k)))/(P_ext(k1_ext(k))-P_ext(k2_ext(k)))
         weight_k2(k)=1.0-weight_k1(k)
-        if(DEBUG_NEST.and.MasterProc)then
-           write(*,fmt="(A,I3,A,I2,A,f4.2,A,I2,A,F4.2)")'Nest: level',k,' is the sum of level ',&
-                k1_ext(k),' weight ',weight_k1(k),' and level ',k2_ext(k),' weight ',weight_k2(k)
+        if( mydebug )then
+           write(*,fmt="(A,I3,A,I2,A,f4.2,A,I2,A,F4.2)")'Nest: level',k,&
+               ' is the sum of level ',k1_ext(k),' weight ',weight_k1(k),&
+                         ' and level ',k2_ext(k),' weight ',weight_k2(k)
         endif
      enddo
 
   else
      do k=1,KMAX_MID
         P_emep=A_mid(k)+B_mid(k)*Pref !Pa
-        if(DEBUG_NEST.and.MasterProc) write(*,fmt="(A,I3,F10.2)")'Nest: P_emep',k,P_emep
+        if( mydebug ) write(*,fmt="(A,I3,F10.2)")'Nest: P_emep',k,P_emep
         !largest available P smaller than P_emep (if possible)
         k1_ext(k)=KMAX_EXT !start at surface, and go up until P_emep
         do k_ext=KMAX_EXT,1,-1
@@ -966,20 +863,21 @@ subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
         enddo
         weight_k1(k)=(P_emep-P_ext(k2_ext(k)))/(P_ext(k1_ext(k))-P_ext(k2_ext(k)))
         weight_k2(k)=1.0-weight_k1(k)
-        if(DEBUG_NEST.and.MasterProc)then
-           write(*,fmt="(A,I3,A,I2,A,f4.2,A,I2,A,F4.2)")'Nest: level',k,' is the sum of level ',&
-                k1_ext(k),' weight ',weight_k1(k),' and level ',k2_ext(k),' weight ',weight_k2(k)
+        if( mydebug )then
+           write(*,fmt="(A,I3,A,I2,A,f4.2,A,I2,A,F4.2)")'Nest: level',k,&
+             ' is the sum of level ', k1_ext(k),' weight ',weight_k1(k),&
+                       ' and level ', k2_ext(k),' weight ',weight_k2(k)
         endif
      enddo
   endif
   deallocate(P_ext,hyam,hybm)
 
-  if(DEBUG_NEST.and.MasterProc)write(*,*)'Nest: finished determination of interpolation parameters'
-
+  if( mydebug )write(*,*) &
+     'Nest: finished determination of interpolation parameters'
 end subroutine init_nest
 
+!++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
 subroutine read_newdata_LATERAL(ndays_indate)
-  implicit none
   real(kind=8), intent(in)::ndays_indate
   real, allocatable, dimension(:,:,:) ::data
   integer :: ncFileID,varid,status
@@ -1007,9 +905,11 @@ subroutine read_newdata_LATERAL(ndays_indate)
   logical :: time_exists
 
   KMAX_BC=KMAX_MID
+  if( mydebug )write(*,*)'Nest: read_newdata_LATERAL, first?', first_call
   if(first_call)then
-     if(DEBUG_NEST.and.MasterProc)write(*,*)'Nest: initializations 2D'
+     if( mydebug )write(*,*)'Nest: initializations 2D'
     call init_icbc()
+     if( mydebug )write(*,*)'calling init_nest for '//trim(filename_read_BC)
     call init_nest(ndays_indate,filename_read_BC,IIij,JJij,Weight,&
                    k1_ext,k2_ext,weight_k1,weight_k2,&
                    N_ext_BC,KMAX_ext_BC,GIMAX_ext,GJMAX_ext)
@@ -1023,11 +923,11 @@ subroutine read_newdata_LATERAL(ndays_indate)
     iw=li0-1;ie=li1+1   ! i West/East   boundaries
     js=lj0-1;jn=lj1+1   ! j South/North boundaries
     kt=0;if(TOP_BC)kt=1 ! k Top         boundary
-    if(DEBUG_NEST.and.MasterProc)then
+    if( mydebug )then
        if(kt==1)then
-          write(*,*)'Nest: Also including the top layer in BC'
+          write(*,*)'Nest-kt test: Also including the top layer in BC'
        else
-          write(*,*)'Nest: Not resetting the top layer'
+          write(*,*)'Nest-kt test: Not resetting the top layer'
        endif
     endif
 
@@ -1052,7 +952,8 @@ subroutine read_newdata_LATERAL(ndays_indate)
       CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
     endif
     rtime_saved(2)=-99.0!just to put a value
-     if(DEBUG_NEST.and.MasterProc)write(*,*)'Nest: end initializations 2D'
+    if(  mydebug )write(*,*)'Nest: end initializations 2D'
+
   endif
 
   rtime_saved(1)=rtime_saved(2)!put old values in 1
@@ -1098,14 +999,15 @@ subroutine read_newdata_LATERAL(ndays_indate)
     endif
 
     call nctime2idate(ndate,ndays_ext(n),'Nest: Reading date YYYY-MM-DD hh:mm:ss')
-    if(DEBUG_NEST.and.MasterProc)write(*,*)'Nest: Record ',n,' of ',N_ext_BC
+    if( mydebug )write(*,*)'Nest: Record ',n,' of ',N_ext_BC
     itime=n
     rtime_saved(2)=ndays_ext(n)
     if(n==N_ext_BC)then
        !next data to be read should be from another file
-       if(DEBUG_NEST.and.MasterProc)then
+       if( mydebug )then
           write(*,*)'Nest: Last record reached ',n,N_ext_BC
-          call nctime2idate(date_nextfile,ndays_ext(n)+NHOURS_Stride_BC/24.0,'next BC date to read:  YYYY-MM-DD hh:mm:ss')
+          call nctime2idate(date_nextfile,ndays_ext(n)+NHOURS_Stride_BC/24.0,&
+                'next BC date to read:  YYYY-MM-DD hh:mm:ss')
           write(*,*)'Nest: date_nextfile ',date_nextfile
        else
           call nctime2idate(date_nextfile,ndays_ext(n)+NHOURS_Stride_BC/24.0)
@@ -1147,6 +1049,7 @@ subroutine read_newdata_LATERAL(ndays_indate)
   DO_SPEC: do n= 1, NSPEC_ADV
     if(.not.(adv_bc(n)%wanted.and.adv_bc(n)%found)) cycle DO_SPEC
 
+    if( mydebug )write(*,*)'Nest: DO_SPEC:', trim(adv_bc(n)%varname)
     if(MasterProc)then
     !Could fetch one level at a time if sizes becomes too big
       call check(nf90_inq_varid(ncid=ncFileID, name=trim(adv_bc(n)%varname), varID=varID))
@@ -1252,6 +1155,7 @@ subroutine read_newdata_LATERAL(ndays_indate)
   return
 end subroutine read_newdata_LATERAL
 
+!++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
 subroutine reset_3D(ndays_indate)
   implicit none
   real(kind=8), intent(in)::ndays_indate
@@ -1277,10 +1181,14 @@ subroutine reset_3D(ndays_indate)
   character (len=80) ::units
   real :: scale_factor,add_offset
 
+  if( mydebug ) write(*,*) 'Nest: initializations 3D', first_call
+ 
   if(first_call)then
-     if(DEBUG_NEST.and.MasterProc)write(*,*)'Nest: initializations 3D'
+     if( mydebug ) write(*,*)'Nest: initializations 3D'
      first_call=.false.
+     if( mydebug ) write(*,*) 'Nest: init-icbc'
      call init_icbc()
+     if( mydebug )write(*,*)'calling init_nest for 3D '//trim(filename_read_3D)
      call init_nest(ndays_indate,filename_read_3D,IIij,JJij,Weight,&
                     k1_ext,k2_ext,weight_k1,weight_k2,&
                     N_ext,KMAX_ext,GIMAX_ext,GJMAX_ext)
@@ -1289,7 +1197,8 @@ subroutine reset_3D(ndays_indate)
            call StopAll('Nest: IC: wrong number of months')
         endif
 
-     if(DEBUG_NEST.and.MasterProc)write(*,*)'Nest: end initializations 3D'
+     if( mydebug ) write(*,*)'Nest: end initializations 3D'
+ 
   endif
   allocate(data(GIMAX_ext,GJMAX_ext,KMAX_ext), stat=status)
   if(MasterProc)then
@@ -1315,7 +1224,8 @@ subroutine reset_3D(ndays_indate)
     itime=n
  endif
 
-  if(DEBUG_NEST.and.MasterProc)write(*,*)'Nest: overwrite 3D'
+  if( mydebug )write(*,*)'Nest: overwrite 3D'
+ 
   DO_SPEC: do n= 1, NSPEC_ADV
      if(.not.(adv_ic(n)%wanted.and.adv_ic(n)%found)) cycle DO_SPEC
      if(MasterProc)then
@@ -1365,8 +1275,137 @@ subroutine reset_3D(ndays_indate)
   if(MasterProc) call check(nf90_close(ncFileID))
 end subroutine reset_3D
 
-
-
-
 end module Nest_ml
+!++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
 
+!OLD CODE kept here to give hints for External BIC files. Can delete
+! once the new files are working
+!some components put to a fixed value
+!RCA    if(kt==1)then
+!RCA       !top
+!RCA       xn_adv(IXADV_H2,:,:,kt)=       5e-7
+!RCA       xn_adv(IXADV_C2H4,:,:,kt)=     2e-10
+!RCA       xn_adv(IXADV_C3H6,:,:,kt)=     5e-11
+!RCA       xn_adv(IXADV_C2H5OH,:,:,kt)=   4e-10
+!RCA       xn_adv(IXADV_MEK,:,:,kt)=      2.5e-11
+!RCA       xn_adv(IXADV_CH3O2H,:,:,kt)=   7.5e-11
+!RCA       xn_adv(IXADV_MGLYOX,:,:,kt)=   0
+!RCA       xn_adv(IXADV_GLYOX,:,:,kt)=    0
+!RCA       xn_adv(IXADV_C2H5OOH,:,:,kt)=  1e-12
+!RCA   endif
+!RCA    if(iw>=1)then
+!RCA!west
+!RCA       xn_adv(IXADV_H2,iw,:,:)=       5e-7
+!RCA       xn_adv(IXADV_C2H4,iw,:,:)=     2e-10
+!RCA       xn_adv(IXADV_C3H6,iw,:,:)=     5e-11
+!RCA       xn_adv(IXADV_C2H5OH,iw,:,:)=   4e-10
+!RCA       xn_adv(IXADV_MEK,iw,:,:)=      2.5e-11
+!RCA       xn_adv(IXADV_CH3O2H,iw,:,:)=   1e-10
+!RCA       xn_adv(IXADV_MGLYOX,iw,:,:)=   2e-12
+!RCA       xn_adv(IXADV_GLYOX,iw,:,:)=    6e-12
+!RCA       xn_adv(IXADV_C2H5OOH,iw,:,:)=  1e-12
+!RCA    endif
+!RCA    if(ie<=limax)then
+!RCA!east
+!RCA       xn_adv(IXADV_H2,ie,:,:)=        5e-7
+!RCA       xn_adv(IXADV_C2H4,ie,:,:)=      2e-10
+!RCA       xn_adv(IXADV_C3H6,ie,:,:)=      2e-10
+!RCA       xn_adv(IXADV_C2H5OH,ie,:,:)=    6e-10
+!RCA       xn_adv(IXADV_MEK,ie,:,:)=       5e-11
+!RCA       xn_adv(IXADV_CH3O2H,ie,:,:)=    1e-10
+!RCA       xn_adv(IXADV_MGLYOX,ie,:,:)=    1.5e-12
+!RCA       xn_adv(IXADV_GLYOX,ie,:,:)=     1.3e-11
+!RCA       xn_adv(IXADV_C2H5OOH,ie,:,:)=   1e-12
+!RCA    endif
+!RCA    if(js>=1)then
+!RCA!south
+!RCA       xn_adv(IXADV_H2,:,js,:)=        5e-7
+!RCA       xn_adv(IXADV_C2H4,:,js,:)=      5e-11
+!RCA       xn_adv(IXADV_C3H6,:,js,:)=      1.6e-11
+!RCA       xn_adv(IXADV_C2H5OH,:,js,:)=    7e-11
+!RCA       xn_adv(IXADV_MEK,:,js,:)=       2.5e-11
+!RCA       xn_adv(IXADV_CH3O2H,:,js,:)=    1e-10
+!RCA       xn_adv(IXADV_MGLYOX,:,js,:)=    2e-12
+!RCA       xn_adv(IXADV_GLYOX,:,js,:)=     4e-12
+!RCA       xn_adv(IXADV_C2H5OOH,:,js,:)=   1e-12
+!RCA    endif
+!RCA    if(jn<=ljmax)then
+!RCA!north
+!RCA       xn_adv(IXADV_H2,:,jn,:)=        5e-7
+!RCA       xn_adv(IXADV_C2H4,:,jn,:)=      2e-10
+!RCA       xn_adv(IXADV_C3H6,:,jn,:)=      2e-10
+!RCA       xn_adv(IXADV_C2H5OH,:,jn,:)=    4e-10
+!RCA       xn_adv(IXADV_MEK,:,jn,:)=       2.5e-11
+!RCA       xn_adv(IXADV_CH3O2H,:,jn,:)=    1e-12
+!RCA       xn_adv(IXADV_MGLYOX,:,jn,:)=    2e-12
+!RCA       xn_adv(IXADV_GLYOX,:,jn,:)=     4e-12
+!RCA       xn_adv(IXADV_C2H5OOH,:,jn,:)=   1e-12
+!RCA    endif
+!SKIPtype(adv_icbc), dimension(26), private, parameter :: &  ! BC from EnsClim-RCA
+!SKIP  RCA_BC=(/adv_icbc(IXADV_NO   ,icbc('NO'    ,.true.,.false.)), &
+!SKIP                 adv_icbc(IXADV_NO2   ,icbc('NO2'    ,.true.,.false.)), &
+!SKIP                 adv_icbc(IXADV_O3    ,icbc('O3'    ,.true.,.false.)), &
+!SKIP                 adv_icbc(IXADV_CO     ,icbc('CO'    ,.true.,.false.)), &
+!SKIP                 adv_icbc(IXADV_HCHO    ,icbc('HCHO'    ,.true.,.false.)), &
+!SKIP                 adv_icbc(IXADV_PAN     ,icbc('PAN'    ,.true.,.false.)), &
+!SKIP                 adv_icbc(IXADV_HNO3    ,icbc('HNO3'    ,.true.,.false.)), &
+!SKIP                 adv_icbc(IXADV_H2O2  ,icbc('H2O2'    ,.true.,.false.)), &
+!SKIP                 adv_icbc(IXADV_CH4  ,icbc('CH4'    ,.true.,.false.)), &
+!SKIP                 adv_icbc(IXADV_CH3CHO  ,icbc('CH3CHO'    ,.true.,.false.)), &
+!SKIP                 adv_icbc(IXADV_C2H6  ,icbc('C2H6'    ,.true.,.false.)), &
+!SKIP                 adv_icbc(IXADV_C5H8  ,icbc('Isoprene'    ,.true.,.false.)), &
+!SKIP                 adv_icbc(IXADV_NC4H10  ,icbc('nC4H10'    ,.true.,.false.)), &
+!SKIP                 adv_icbc(IXADV_OXYL  ,icbc('oXylene'    ,.true.,.false.)), &
+!SKIP                 adv_icbc(IXADV_SO2  ,icbc('SO2'    ,.true.,.false.)), &
+!SKIP                 adv_icbc(IXADV_NH3  ,icbc('NH3'    ,.true.,.false.)), &
+!SKIP                 adv_icbc(IXADV_N2O5  ,icbc('N2O5'    ,.true.,.false.)), &
+!SKIP                 adv_icbc(IXADV_SO4  ,icbc('SO4'    ,.true.,.false.)), &!SO4+ NH4HSO4 + (NH4)2SO4
+!SKIP                 adv_icbc(IXADV_SO4  ,icbc('NH4HSO4'    ,.true.,.false.)), &!SO4+ NH4HSO4 + (NH4)2SO4
+!SKIP                 adv_icbc(IXADV_SO4  ,icbc('NH42SO4'    ,.true.,.false.)), &!SO4+ NH4HSO4 + (NH4)2SO4
+!SKIP                 adv_icbc(IXADV_NO3_F  ,icbc('NH4NO3'    ,.true.,.false.)), &!NH4NO3+ANIT
+!SKIP                 adv_icbc(IXADV_NO3_F  ,icbc('ANIT'    ,.true.,.false.)), &!+ANIT
+!SKIP                 adv_icbc(IXADV_NH4_F  ,icbc('NH4NO3'    ,.true.,.false.)), &!NH4NO3+ NH4HSO4 + 2 * (NH4)2SO4
+!SKIP                 adv_icbc(IXADV_NH4_F  ,icbc('NH4HSO4'    ,.true.,.false.)), &!NH4NO3+ NH4HSO4 + 2 * (NH4)2SO4
+!SKIP                 adv_icbc(IXADV_NH4_F  ,icbc('NH42SO4'    ,.true.,.false.)), &!NH4NO3+ NH4HSO4 + 2 * (NH4)2SO4
+!SKIP                 adv_icbc(IXADV_NH4_F  ,icbc('NH42SO4'    ,.true.,.false.)) &!NH4NO3+ NH4HSO4 + 2 * (NH4)2SO4
+!SKIP
+!SKIP/)
+!SKIPtype(adv_icbc), dimension(7), private, parameter :: &  ! BC from HTAP
+!SKIP  HTAP_BC=(/adv_icbc(IXADV_SO2   ,icbc('vmr_so2'    ,.true.,.false.)), &
+!SKIP                 adv_icbc(IXADV_HNO3   ,icbc('vmr_hno3'    ,.true.,.false.)), &
+!SKIP                 adv_icbc(IXADV_NO     ,icbc('vmr_no'    ,.true.,.false.)), &
+!SKIP                 adv_icbc(IXADV_NO2    ,icbc('vmr_no2'    ,.true.,.false.)), &
+!SKIP                 adv_icbc(IXADV_O3     ,icbc('vmr_o3'    ,.true.,.false.)), &
+!SKIP                 adv_icbc(IXADV_PAN    ,icbc('vmr_pan'    ,.true.,.false.)), &
+!SKIP                 adv_icbc(IXADV_CO    ,icbc('vmr_co'    ,.true.,.false.))/)
+!SKIP
+!SKIP
+!SKIPtype(adv_icbc), dimension(26), private, parameter :: &  ! BC from EnsClim-RCA
+!SKIP  RCA_BC=(/adv_icbc(IXADV_NO   ,icbc('NO'    ,.true.,.false.)), &
+!SKIP                 adv_icbc(IXADV_NO2   ,icbc('NO2'    ,.true.,.false.)), &
+!SKIP                 adv_icbc(IXADV_O3    ,icbc('O3'    ,.true.,.false.)), &
+!SKIP                 adv_icbc(IXADV_CO     ,icbc('CO'    ,.true.,.false.)), &
+!SKIP                 adv_icbc(IXADV_HCHO    ,icbc('HCHO'    ,.true.,.false.)), &
+!SKIP                 adv_icbc(IXADV_PAN     ,icbc('PAN'    ,.true.,.false.)), &
+!SKIP                 adv_icbc(IXADV_HNO3    ,icbc('HNO3'    ,.true.,.false.)), &
+!SKIP                 adv_icbc(IXADV_H2O2  ,icbc('H2O2'    ,.true.,.false.)), &
+!SKIP                 adv_icbc(IXADV_CH4  ,icbc('CH4'    ,.true.,.false.)), &
+!SKIP                 adv_icbc(IXADV_CH3CHO  ,icbc('CH3CHO'    ,.true.,.false.)), &
+!SKIP                 adv_icbc(IXADV_C2H6  ,icbc('C2H6'    ,.true.,.false.)), &
+!SKIP                 adv_icbc(IXADV_C5H8  ,icbc('Isoprene'    ,.true.,.false.)), &
+!SKIP                 adv_icbc(IXADV_NC4H10  ,icbc('nC4H10'    ,.true.,.false.)), &
+!SKIP                 adv_icbc(IXADV_OXYL  ,icbc('oXylene'    ,.true.,.false.)), &
+!SKIP                 adv_icbc(IXADV_SO2  ,icbc('SO2'    ,.true.,.false.)), &
+!SKIP                 adv_icbc(IXADV_NH3  ,icbc('NH3'    ,.true.,.false.)), &
+!SKIP                 adv_icbc(IXADV_N2O5  ,icbc('N2O5'    ,.true.,.false.)), &
+!SKIP                 adv_icbc(IXADV_SO4  ,icbc('SO4'    ,.true.,.false.)), &!SO4+ NH4HSO4 + (NH4)2SO4
+!SKIP                 adv_icbc(IXADV_SO4  ,icbc('NH4HSO4'    ,.true.,.false.)), &!SO4+ NH4HSO4 + (NH4)2SO4
+!SKIP                 adv_icbc(IXADV_SO4  ,icbc('NH42SO4'    ,.true.,.false.)), &!SO4+ NH4HSO4 + (NH4)2SO4
+!SKIP                 adv_icbc(IXADV_NO3_F  ,icbc('NH4NO3'    ,.true.,.false.)), &!NH4NO3+ANIT
+!SKIP                 adv_icbc(IXADV_NO3_F  ,icbc('ANIT'    ,.true.,.false.)), &!+ANIT
+!SKIP                 adv_icbc(IXADV_NH4_F  ,icbc('NH4NO3'    ,.true.,.false.)), &!NH4NO3+ NH4HSO4 + 2 * (NH4)2SO4
+!SKIP                 adv_icbc(IXADV_NH4_F  ,icbc('NH4HSO4'    ,.true.,.false.)), &!NH4NO3+ NH4HSO4 + 2 * (NH4)2SO4
+!SKIP                 adv_icbc(IXADV_NH4_F  ,icbc('NH42SO4'    ,.true.,.false.)), &!NH4NO3+ NH4HSO4 + 2 * (NH4)2SO4
+!SKIP                 adv_icbc(IXADV_NH4_F  ,icbc('NH42SO4'    ,.true.,.false.)) &!NH4NO3+ NH4HSO4 + 2 * (NH4)2SO4
+!SKIP
+!SKIP/)
