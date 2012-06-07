@@ -284,7 +284,7 @@ $SoilDir = 0 if ($GRID eq "EMEP") or ($GRID eq "MACC02");
 # TEST! Road dust NOTE! The road dust code may not be working properly yet! Not tested enough!
 my $RoadDir     = "/home/$ROBERT/Unify/MyData/TNO_traffic/" ;
 $RoadDir = 0 if $CWF;
-$RoadDir = 0 ;#default?
+#$RoadDir = 0 ;#default?
 
 
 # Forecast: nest/dump dir, BCs pattern
