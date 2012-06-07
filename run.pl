@@ -807,7 +807,8 @@ print "TESTING PM $poll $dir\n";
     $ifile{"$SplitDir/emissplit.defaults.$poll"} = "emissplit.defaults.$poll";
     # specials aren't required
     # INERIS special! nox and pm. Take from 2010 IIASA
-    if ( $INERIS_FACS && -e "$timeseries/emissplit.specials.$poll.2010" ) {
+    #if ( $INERIS_FACS && -e "$timeseries/emissplit.specials.$poll.2010" ) {
+    if ( -e "$timeseries/emissplit.specials.$poll.2010" ) {
         $ifile{"$timeseries/emissplit.specials.$poll.2010"} =
                "emissplit.specials.$poll"
     } else {
