@@ -93,7 +93,7 @@ Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
 xxxxxxxx rv4beta13 in-progress   6/6/2012 xxxxxxxxxxxxxxxxxxxxxxxx
-run.pl: change of link for 5yr annual N dep to AnnualNdep_PS50_EECCA.nc
+run.pl: change of link for 5yr annual N dep to AnnualNdep_PS50_EECCA2005_2009.nc
 (5 year average 2005-2009 run for EECCA with PS50 for 2005-2009)
 
 run.pl - emissplit for emepdefaults corrected
