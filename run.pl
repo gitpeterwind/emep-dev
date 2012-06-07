@@ -867,8 +867,8 @@ print "TESTING PM $poll $dir\n";
 
 if ( $iyr_trend > 2015 )  {
   $ifile{"$DataDir/AnnualNdep_TNO28_2020.nc"} = "annualNdep.nc";
-} else {
-  $ifile{"$DataDir/AnnualNdep_PS50_EECCA2005_2009.nc"} = "annualNdep.nc";
+} else { # Note PS50x - hand-edited version 
+  $ifile{"$DataDir/AnnualNdep_PS50x_EECCA2005_2009.nc"} = "annualNdep.nc";
 }
 
 # hb NH3emis
