@@ -104,6 +104,9 @@ run.pl:
   - Official eruoption emissions for 2010 Eyjafjöll eruption
   - SOx & PMx reduced files for 2010 Eyjafjöll eruption (SR-VOL run)
 
+Makefile_vilje:
+  - Add model specific targets (EMEP / MACC / eEMEP)
+
 xxxxxxxx rv4beta13 in-progress   6/6/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
 run.pl: change of link for 5yr annual N dep to AnnualNdep_PS50x_EECCA2005_2009.nc (5 year average 2005-2009 run for EECCA with PS50 for 2005-2009)
