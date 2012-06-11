@@ -381,7 +381,7 @@ function EruptionRate(i,j) result(emiss)
       emiss(itot,k1:k0)=emiss(itot,k1:k0)+erupdef(v,e)%rate*uconv
       if(DEBUG_EM) &
         write(*,MSG_FMT)snow//' Erup.',me,'me',e,erupdef(v,e)%sbeg,&
-          itot,trim(species(itot)%name),k1,'k1',k1,'k0',&
+          itot,trim(species(itot)%name),k1,'k1',k0,'k0',&
           emiss(itot,k1),'emiss',erupdef(v,e)%rate,'rate',uconv,'uconv'
     enddo doERUP
   enddo doVENT
