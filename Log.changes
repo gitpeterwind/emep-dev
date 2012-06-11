@@ -92,6 +92,12 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
+xxxxxxxx rv4beta14 Alvaro & Birthe 11/6/2012 xxxxxxxxxxxxxxxxxxxxxxxx
+
+Volcanos_ml: eEMEP update
+  - Fix MPI bug on reading eruption.csv
+  - Change default VAAC splits for 2bin mode.
+
 xxxxxxxx rv4beta13 in-progress   6/6/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
 run.pl: change of link for 5yr annual N dep to AnnualNdep_PS50x_EECCA2005_2009.nc (5 year average 2005-2009 run for EECCA with PS50 for 2005-2009)
@@ -108,7 +114,7 @@ ZD_OZONE/My_ExternalBICs_ml.f90
 
 xxxxxxxx rv4beta12 Dave/Peter    6/6/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
-Model for TFMM_RUNS 
+Model for TFMM_RUNS
 
 Dave
 
@@ -145,7 +151,7 @@ Bug hunting (still not finished, 4x2 procs gives diff to 2x4):
 
 MARS_ml - initialised intent(out) variables (ASO4 etc.)
 
-BoundaryConditions_ml 
+BoundaryConditions_ml
 
 BIC where all set to zero when (.not. USE_SEASALT )
 Corrected BoundaryConditions_ml
@@ -160,7 +166,7 @@ xxxxxxxx rv4beta9 Peter/Massimo     31/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 Bug in the nesting. in ReadTimeCDF the file is opened but not closed.
 Caused the code to not find the input file after some monthes.
 
-ZD_OZONE/My_External_BICs: public adv_icbc,. Some compiler version did 
+ZD_OZONE/My_External_BICs: public adv_icbc,. Some compiler version did
 not like that EXTERNAL_BIC is public and of type private.
 
    Emissions_ml  "EmisSet traffic"  output reduced

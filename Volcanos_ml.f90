@@ -423,7 +423,7 @@ function EruptionRate(i,j) result(emiss)
 !   C. Witham, M. Hort, D. Thomson, S. Leadbetter, B. Devenish and H. Webster.
     real, target :: & !0.0<0.1<0.3<1.0<3.0<10.0<30.0<100.0
       VAAC_7BIN_SPLIT(7)=(/0.0,0.1,0.5,5.0,20.0,70.0,4.4/)*1e-2,&
-      VAAC_2BIN_SPLIT(2)=(/            5.6,         94.4/)*1e-2
+      VAAC_2BIN_SPLIT(2)=(/            5.6,20.0         /)*1e-2
     real, pointer, dimension(:) :: binsplit => NULL()
   !----------------------------!
   !
@@ -483,8 +483,8 @@ function EruptionRate(i,j) result(emiss)
     nerup(:)=0
     doERUP: do l=1,NMAX_ERUP+1
       call read_line(io,txtline,stat)
-      if(.not.Eruption_found)cycle doERUP ! There is no vents on subdomain
       if(stat/=0) exit doERUP             ! End of file
+      if(.not.Eruption_found)cycle doERUP ! There is no vents on subdomain
       txtline=ADJUSTL(txtline)            ! Remove leading spaces
       if(txtline(1:1)=='#')cycle doERUP   ! Comment line
       derup=getErup(txtline)
