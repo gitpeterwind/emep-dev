@@ -94,9 +94,15 @@ Will keep list here near top of Log.changes.
 !----------------------------------------------------------
 xxxxxxxx rv4beta14 Alvaro & Birthe 11/6/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
-Volcanos_ml: eEMEP update
+eEMEP update
+
+Volcanos_ml:
   - Fix MPI bug on reading eruption.csv
   - Change default VAAC splits for 2bin mode.
+
+run.pl:
+  - Official eruoption emissions for 2010 Eyjafjöll eruption
+  - SOx & PMx reduced files for 2010 Eyjafjöll eruption (SR-VOL run)
 
 xxxxxxxx rv4beta13 in-progress   6/6/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 

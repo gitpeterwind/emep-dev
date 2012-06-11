@@ -479,8 +479,8 @@ if ($SR) {
       @runs = ($runs[$ENV{'PBS_ARRAY_INDEX'}-1]); }  # PBS Pro, Ve, one run per job
 
 #for additional sets of single runs (uncomment the previous @runs =)
-#      if($ENV{'PBS_ARRAY_INDEX'}==1){@runs = ($runs[13])  ; }  # 
-#      elsif($ENV{'PBS_ARRAY_INDEX'}==2){@runs = ($runs[27])  ; }  # 
+#      if($ENV{'PBS_ARRAY_INDEX'}==1){@runs = ($runs[13])  ; }  #
+#      elsif($ENV{'PBS_ARRAY_INDEX'}==2){@runs = ($runs[27])  ; }  #
 #      else{ die "Not a valid array index \n" ; }  # default
   else{
       @runs = ($runs[0]);   # only one run
@@ -867,7 +867,7 @@ print "TESTING PM $poll $dir\n";
 
 if ( $iyr_trend > 2015 )  {
   $ifile{"$DataDir/AnnualNdep_TNO28_2020.nc"} = "annualNdep.nc";
-} else { # Note PS50x - hand-edited version 
+} else { # Note PS50x - hand-edited version
   $ifile{"$DataDir/AnnualNdep_PS50x_EECCA2005_2009.nc"} = "annualNdep.nc";
 }
 
@@ -930,8 +930,10 @@ if ( $iyr_trend > 2015 )  {
     while(my $line = <IN>){
       $line=~ s/#.*//;                 # Get rid of comment lines
       my $vname = (split(",",$line))[0];  # Volcano tracer name
-      my $nbin=($MAKEMODE eq "EMEP2010")?"2bin":"7bin";
-      my $efile = "$EruptionDir/${vname}_$nbin.eruptions";
+      my $efile = "$EruptionDir/${vname}_7bin.eruptions";
+      $efile = "$EruptionDir/${vname}_2bin_EMEP2010.eruptions" if ($MAKEMODE eq "EMEP2010");
+    # $efile = "$EruptionDir/${vname}_2bin_EMEP2010_SR-SOx.eruptions" if ($MAKEMODE eq "EMEP2010");
+    # $efile = "$EruptionDir/${vname}_2bin_EMEP2010_SR-PMx.eruptions" if ($MAKEMODE eq "EMEP2010");
       system("cat $efile >> eruptions.csv") if -e $efile;
     }
     close(IN);
@@ -1291,10 +1293,10 @@ sub initRuns {
   my @runs;
   foreach my $cc (@countries) {
       foreach my $poll (@polls) {
-	  push @runs, [$cc, $poll, $redn];  
+	  push @runs, [$cc, $poll, $redn];
       }
       # run BASE only once (for exactly one cc)!!!
-      @polls = grep {'BASE' ne $_} @polls;  
+      @polls = grep {'BASE' ne $_} @polls;
   }
   return @runs;
 }
