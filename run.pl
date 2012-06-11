@@ -89,7 +89,7 @@ my @MAKE = ("gmake", "-j4", "--makefile=Makefile_snow");
    @MAKE = ( "make", "-j4", "-f", "Makefile_titan")  if $TITAN==1 ;
 die "Must choose STALLO **or** VILJE **or** TITAN!\n"
   unless $STALLO+$VILJE+$TITAN==1;
-my $MAKEMODE=0; #="EMEP2010";  # make EMEP2010
+my $MAKEMODE=0; #="EMEP2010";  # make EMEP2010, make SR-EMEP2010
 
 my %BENCHMARK;
 # OpenSource 2008
