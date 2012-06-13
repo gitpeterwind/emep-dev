@@ -28,6 +28,26 @@ IMPORTANT NOTE:
 
    [option: if SR wanted, cp ZD_SR/My* .]
 
+    Run/Make examples:
+      2009 Base run
+        * Compile the model with `make EMEP`.
+        * Run $year=2009 and $MAKEMODE="EMEP" (run.pl),
+          and the program will be compiled by run.pl.
+      2009 SR run
+        * Compile the model with `make SR-EMEP`.
+        * Run $year=2009 and $MAKEMODE="SR-EMEP" (run.pl),
+          and the program will be compiled by run.pl.
+      2010 Base run
+        * Compile the model with `make EMEP2010` and USE_EMERGENCY=.true.
+          on ModelConstants_ml to include Eyjafjöll ash tracers.
+        * Run $year=2010 and $MAKEMODE="EMEP2010" (run.pl), and the program
+          will be compiled by run.pl including Eyjafjöll ash tracers.
+      2010 SR run
+        * Compile the model with `make SR-EMEP2010` and USE_EMERGENCY=.true.
+          on ModelConstants_ml to include Eyjafjöll ash tracers.
+        * Run $year=2010 and $MAKEMODE="SR-EMEP2010" (run.pl), and the program
+          will be compiled by run.pl including Eyjafjöll ash tracers.
+
     Inputs
 
      HDD (Degree Day files)
