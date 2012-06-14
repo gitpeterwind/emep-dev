@@ -49,37 +49,36 @@ touchdepend:
 
 # GenChem config for standard EMEP & MACC runs
 .SECONDEXPANSION:
-MakeFile=Makefile
-EMEP EMEP2010 SR-EMEP2010: modules $$@-GenChem-EmChem09soa \
+EMEP EMEP2010: modules $$@-GenChem-EmChem09soa \
           ./ZD_OZONE/My_ExternalBICs_ml.f90 \
 	  ./ZD_OZONE/My_RunSettings.inc \
 	  ./ZD_OZONE/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
 	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_VBS/My_SOA_ml.f90
-	ln -sf $(filter %.f90,$+) . && \
-	$(MAKE) -f $(MakeFile) -j4 $(PROG)
+	ln -sf $(filter %.f90 %.inc,$+) . && \
+	$(MAKE) -f $(firstword $(MAKEFILE_LIST)) -j4 $(PROG)
 #For SR we use the small My_Derived
-SR-EMEP: modules $$@-GenChem-EmChem09soa \
+SR-EMEP SR-EMEP2010: modules $$@-GenChem-EmChem09soa \
           ./ZD_OZONE/My_ExternalBICs_ml.f90 \
 	  ./ZD_SR/My_RunSettings.inc \
 	  ./ZD_SR/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
 	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_VBS/My_SOA_ml.f90
-	ln -sf $(filter %.f90,$+) . && \
-	$(MAKE) -f $(MakeFile) -j4 $(PROG)
+	ln -sf $(filter %.f90 %.inc,$+) . && \
+	$(MAKE) -f $(firstword $(MAKEFILE_LIST)) -j4 $(PROG)
 MACC SR-MACC: modules $$@-GenChem-EmChem09soa \
 	  ./ZD_OZONE/IFSMOZ_ExternalBICs_ml.f90 \
 	  ./ZD_OZONE/My_RunSettings.inc \
 	  ./ZD_OZONE/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
 	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_VBS/My_SOA_ml.f90
-	ln -sf $(filter %.f90,$+) . && \
+	ln -sf $(filter %.f90 %.inc,$+) . && \
 	ln -sf IFSMOZ_ExternalBICs_ml.f90 My_ExternalBICs_ml.f90 && \
-	$(MAKE) -f $(MakeFile) -j4 $(PROG)
+	$(MAKE) -f $(firstword $(MAKEFILE_LIST)) -j4 $(PROG)
 eEMEP: modules $$@-GenChem-Emergency \
           ./ZD_OZONE/My_ExternalBICs_ml.f90 \
 	  ./ZD_OZONE/My_RunSettings.inc \
 	  ./ZD_OZONE/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
 	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_OZONE/My_SOA_ml.f90
-	ln -sf $(filter %.f90,$+) . && \
-	$(MAKE) -f $(MakeFile) -j4 $(PROG)
+	ln -sf $(filter %.f90 %.inc,$+) . && \
+	$(MAKE) -f $(firstword $(MAKEFILE_LIST)) -j4 $(PROG)
 
 EMEP-GenChem-%:
 	mk.GenChem -r $* -f FINNv1 -e SeaSalt,Dust,Isotopes
