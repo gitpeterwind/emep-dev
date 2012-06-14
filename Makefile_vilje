@@ -50,39 +50,29 @@ diskclean:
 touchdepend:
 	touch .depend
 
-# GenChem config for standard EMEP & MACC runs
-.SECONDEXPANSION:
-EMEP EMEP2010: modules $$@-GenChem-EmChem09soa \
-          ./ZD_OZONE/My_ExternalBICs_ml.f90 \
-	  ./ZD_OZONE/My_RunSettings.inc \
-	  ./ZD_OZONE/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
-	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_VBS/My_SOA_ml.f90
+# Model/Config specific targets
+EMEP EMEP2010 SR-EMEP SR-EMEP2010 eEMEP:
 	ln -sf $(filter %.f90 %.inc,$+) . && \
 	$(MAKE) -f $(firstword $(MAKEFILE_LIST)) -j4 $(PROG)
-#For SR we use the small My_Derived
-SR-EMEP SR-EMEP2010: modules $$@-GenChem-EmChem09soa \
-          ./ZD_OZONE/My_ExternalBICs_ml.f90 \
-	  ./ZD_SR/My_RunSettings.inc \
-	  ./ZD_SR/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
-	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_VBS/My_SOA_ml.f90
-	ln -sf $(filter %.f90 %.inc,$+) . && \
-	$(MAKE) -f $(firstword $(MAKEFILE_LIST)) -j4 $(PROG)
-MACC SR-MACC: modules $$@-GenChem-EmChem09soa \
-	  ./ZD_OZONE/IFSMOZ_ExternalBICs_ml.f90 \
-	  ./ZD_OZONE/My_RunSettings.inc \
-	  ./ZD_OZONE/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
-	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_VBS/My_SOA_ml.f90
+MACC SR-MACC: ./ZD_OZONE/IFSMOZ_ExternalBICs_ml.f90
 	ln -sf $(filter %.f90 %.inc,$+) . && \
 	ln -sf IFSMOZ_ExternalBICs_ml.f90 My_ExternalBICs_ml.f90 && \
 	$(MAKE) -f $(firstword $(MAKEFILE_LIST)) -j4 $(PROG)
-eEMEP: modules $$@-GenChem-Emergency \
-          ./ZD_OZONE/My_ExternalBICs_ml.f90 \
-	  ./ZD_OZONE/My_RunSettings.inc \
-	  ./ZD_OZONE/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
-	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_OZONE/My_SOA_ml.f90
-	ln -sf $(filter %.f90 %.inc,$+) . && \
-	$(MAKE) -f $(firstword $(MAKEFILE_LIST)) -j4 $(PROG)
 
+# My_* files pre-requisites
+EMEP EMEP2010 MACC eEMEP: \
+	  ./ZD_OZONE/My_RunSettings.inc ./ZD_OZONE/My_Derived_ml.f90 \
+	  ./ZD_OZONE/My_ExternalBICs_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
+	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_VBS/My_SOA_ml.f90
+#For SR we use the small My_Derived
+SR-EMEP SR-EMEP2010 SR-MACC: \
+	  ./ZD_SR/My_RunSettings.inc ./ZD_SR/My_Derived_ml.f90 \
+	  ./ZD_OZONE/My_ExternalBICs_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
+	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_VBS/My_SOA_ml.f90
+
+# GenChem config
+.SECONDEXPANSION:
+EMEP EMEP2010 SR-EMEP SR-EMEP2010 MACC SR-MACC eEMEP: modules $$@-GenChem-EmChem09soa
 EMEP-GenChem-%:
 	mk.GenChem -r $* -f FINNv1 -e SeaSalt,Dust,Isotopes
 EMEP2010-GenChem-%:

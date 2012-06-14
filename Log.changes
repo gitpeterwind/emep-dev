@@ -29,14 +29,6 @@ IMPORTANT NOTE:
    [option: if SR wanted, cp ZD_SR/My* .]
 
     Run/Make examples:
-      2009 Base run
-        * Compile the model with `make EMEP`.
-        * Run $year=2009 and $MAKEMODE="EMEP" (run.pl),
-          and the program will be compiled by run.pl.
-      2009 SR run
-        * Compile the model with `make SR-EMEP`.
-        * Run $year=2009 and $MAKEMODE="SR-EMEP" (run.pl),
-          and the program will be compiled by run.pl.
       2010 Base run
         * Compile the model with `make EMEP2010` and USE_EMERGENCY=.true.
           on ModelConstants_ml to include Eyjafjöll ash tracers.
@@ -47,6 +39,14 @@ IMPORTANT NOTE:
           on ModelConstants_ml to include Eyjafjöll ash tracers.
         * Run $year=2010 and $MAKEMODE="SR-EMEP2010" (run.pl), and the program
           will be compiled by run.pl including Eyjafjöll ash tracers.
+      2009 Base run (or eny other year/=2010)
+        * Compile the model with `make EMEP`.
+        * Run $year=2009 and $MAKEMODE="EMEP" (run.pl),
+          and the program will be compiled by run.pl.
+      2009 SR run (or eny other year/=2010)
+        * Compile the model with `make SR-EMEP`.
+        * Run $year=2009 and $MAKEMODE="SR-EMEP" (run.pl),
+          and the program will be compiled by run.pl.
 
     Inputs
 
@@ -133,6 +133,7 @@ Makefile,Makefile_stallo,Makefile_vilje (13-14th June):
     to ensure that right Makefile is used.
   - Fix for SR-EMEP2010 target. Wrong My_Derived_ml.f90 was used,
     creating inecesary output. Now it links ./ZD_SR/My_Derived_ml.f90.
+  - Re-organize EMEP/MACC/eEMEP targets
 
 xxxxxxxx rv4beta13 in-progress   6/6/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
