@@ -51,13 +51,13 @@ touchdepend:
 EMEP EMEP2010 SR-EMEP SR-EMEP2010 eEMEP:
 	ln -sf $(filter %.f90 %.inc,$+) . && \
 	$(MAKE) -f $(firstword $(MAKEFILE_LIST)) -j4 $(PROG)
-MACC SR-MACC: ./ZD_OZONE/IFSMOZ_ExternalBICs_ml.f90
+MACC SR-MACC eEMEP2010: ./ZD_OZONE/IFSMOZ_ExternalBICs_ml.f90
 	ln -sf $(filter %.f90 %.inc,$+) . && \
 	ln -sf IFSMOZ_ExternalBICs_ml.f90 My_ExternalBICs_ml.f90 && \
 	$(MAKE) -f $(firstword $(MAKEFILE_LIST)) -j4 $(PROG)
 
 # My_* files pre-requisites
-EMEP EMEP2010 MACC eEMEP: \
+EMEP EMEP2010 MACC eEMEP eEMEP2010: \
 	  ./ZD_OZONE/My_RunSettings.inc ./ZD_OZONE/My_Derived_ml.f90 \
 	  ./ZD_OZONE/My_ExternalBICs_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
 	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_VBS/My_SOA_ml.f90
@@ -69,7 +69,7 @@ SR-EMEP SR-EMEP2010 SR-MACC: \
 
 # GenChem config
 .SECONDEXPANSION:
-EMEP EMEP2010 SR-EMEP SR-EMEP2010 MACC SR-MACC eEMEP: modules $$@-GenChem-EmChem09soa
+EMEP EMEP2010 SR-EMEP SR-EMEP2010 MACC SR-MACC eEMEP eEMEP2010: modules $$@-GenChem-EmChem09soa
 EMEP-GenChem-%:
 	mk.GenChem -r $* -f FINNv1 -e SeaSalt,Dust,Isotopes
 EMEP2010-GenChem-%:
@@ -84,6 +84,8 @@ SR-MACC-GenChem-%:
 	mk.GenChem -r $* -f GFED   -e none
 eEMEP-GenChem-%:
 	mk.GenChem -r $* -f FINNv1 -e none -V 7bin,Vesuvius,Etna,Kr.suv.k,Katla,Askja #-h
+eEMEP2010-GenChem-%:
+	mk.GenChem -r $* -f FINNv1 -e none -V 2bin,Eyjafj.ll #-h
 
 # Check if intended modules are loaded
 MODULES = intel-compiler/11.1 openmpi/1.4 #netcdf/4.1.1
