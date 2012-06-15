@@ -21,6 +21,9 @@ logical, public, parameter :: &
 character(len=*),public, parameter :: &
   EXTERNAL_BIC_NAME = "IFS-MOZART"
 
+! i West/East bnd; j North/South bnd; k Top
+integer,save, public :: iw=-1, ie=-1, js=-1, jn=-1, kt=-1 ! i West/East bnd; j North/South bnd; k Top
+
 ! YYYY, YY, MM, DD, hh will be replaced by numbers by the program.
 ! Search for date2string in set_extbic and uncomment lines, if necessary.
 ! For details, see detail2str in TimeDate_ExtraUtil_ml.f90

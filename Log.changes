@@ -112,7 +112,7 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
-xxxxxxxx rv4beta14 Alvaro & Birthe 11,13-14/6/2012 xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv4beta14 Alvaro & Birthe 11,13-15/6/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
 eEMEP update
 
@@ -127,13 +127,18 @@ run.pl:
 Makefile_vilje:
   - Add model specific targets (EMEP / MACC / eEMEP)
 
-Makefile,Makefile_stallo,Makefile_vilje (13-14th June):
+Makefile,Makefile_stallo,Makefile_vilje (13-15th June):
   - Fix for recursive make. Use -f $(firstword $(MAKEFILE_LIST))
     in $(MAKE) recursive calls (for EMEP/MACC/eEMEP targets)
     to ensure that right Makefile is used.
   - Fix for SR-EMEP2010 target. Wrong My_Derived_ml.f90 was used,
     creating inecesary output. Now it links ./ZD_SR/My_Derived_ml.f90.
   - Re-organize EMEP/MACC/eEMEP targets
+  - Add eEMEP2010 target for evaluation of the model.
+
+ZD_OZONE/IFSMOZ_ExternalBICs_ml.f90 (15th June):
+  - Add integer,save, public :: iw=-1, ie=-1, js=-1, jn=-1, kt=-1,
+    as in rv4beta13 for My_ExternalBICs_ml.f90
 
 xxxxxxxx rv4beta13 in-progress   6/6/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
