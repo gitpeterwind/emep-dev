@@ -204,6 +204,7 @@ if ($STALLO) {
   $WORKROOT = "/global/work";
   $DataDir  = "/global/work/$PETER/Data";
   $MetDir   = "$DataDir/$GRID/metdata/$year" ;
+  $MetDir   = "$DataDir/$GRID/metdata_EC/$year"  if ($GRID eq "GLOBAL");
   $MetDir   = "$DataDir/$GRID/metdata_EC/$year"  if ($GRID =~ /TNO/);
   $MetDir   = "$DataDir/$GRID/metdata_EC/$year"  if ($GRID eq "MACC02");
   $MetDir   = "$DataDir/$GRID/metdata_CWF/$year" if ($GRID eq "MACC02") and $CWF;
@@ -248,7 +249,7 @@ my $Chem     = "EmChem09soa";
 #$Chem     = "CRI_v2_R5";
    $Chem     = $BENCHMARK{'chem'} if $BENCHMARK{'chem'};
 
-my $testv = "rv4beta12";
+my $testv = "rv4beta14";
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
@@ -896,15 +897,16 @@ if ( $iyr_trend > 2015 )  {
 #
  my $HDD = "$timeseries/HDD${Tbase}-${GRID}-$year.nc";
  print "Looking for DegreeDayFac: $HDD \n";
- system("ls -lh --time-style=long-iso $HDD");
- unless ( $GRID eq "FORECAST" ) {
+ $skipHDD = 1 if $GRID eq "FORECAST" ;
+ $skipHDD = 1 if $GRID eq "RCA" ;
+ $skipHDD = 1 if $GRID eq "GLOBAL" ;
+ unless ( $skipHDD ) {
+   system("ls -lh --time-style=long-iso $HDD");
    die "NO HDD files " unless -f $HDD;   # Can comment out if USE_DEGREEDAYS
                                       # set false in ModelConstants_ml
    $ifile{"$HDD"} = "DegreeDayFactors.nc" if -f $HDD ;
  }
 
-
-#Prelim BVOC attempt
   $ifile{"$DataDir/GLOBAL_LAInBVOC.nc"} = "GLOBAL_LAInBVOC.nc";
 #New EURO BVOC
   $ifile{"$DataDir/LandInputs_Mar2011/EMEP_EuroBVOC.nc"} = "EMEP_EuroBVOC.nc";

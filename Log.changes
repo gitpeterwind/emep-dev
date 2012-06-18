@@ -112,6 +112,13 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
+xxxxxxxx rv4beta   ongoing    Dave                  xxxxxxxxxxxxxxxxxxxxxxx
+
+  run.pl
+
+     skipHDD introduced to avoid HDD files for some runs
+     metdata_EC used by default for global
+
 xxxxxxxx rv4beta14 Alvaro & Birthe 11,13-15/6/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
 eEMEP update
