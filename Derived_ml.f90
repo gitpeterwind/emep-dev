@@ -52,9 +52,9 @@ use My_Derived_ml, only : &
 use My_Derived_ml,  only : &
       COLUMN_MOLEC_CM2, &
       COLUMN_LEVELS   , &
-      OutputFields,  & 
-      nOutputFields,  & 
-      WDEP_WANTED, & 
+      OutputFields,  &
+      nOutputFields,  &
+      WDEP_WANTED, &
       D3_OTHER
 
 use Aero_Vds_ml,      only: diam  !aerosol MMD (um)
@@ -90,7 +90,7 @@ use ModelConstants_ml, only: &
   ,PPTINV       & ! 1.0e12, for conversion of units
   ,MFAC         & ! converts roa (kg/m3 to M, molec/cm3)
   ,DEBUG_i, DEBUG_j &
-  ,DEBUG_AOT       &  
+  ,DEBUG_AOT       &
   ,DEBUG => DEBUG_DERIVED,  DEBUG_COLUMN, MasterProc &
   ,SOURCE_RECEPTOR &
   ,USE_SOILNOX &
@@ -109,9 +109,10 @@ use Par_ml,    only: MAXLIMAX,MAXLJMAX, &   ! => max. x, y dimensions
                      gi0,gj0,IRUNBEG,JRUNBEG,&! for i_fdom, j_fdom
                      li0,lj0,limax, ljmax    ! => used x, y area
 use PhysicalConstants_ml,  only : PI,KAPPA
-use Pollen_ml, only : AreaPOLL
-use SmallUtils_ml, only: find_index, LenArray, NOT_SET_STRING
-use TimeDate_ml, only : day_of_year,daynumber,current_date
+use Pollen_ml,      only: AreaPOLL
+use SmallUtils_ml,  only: find_index, LenArray, NOT_SET_STRING
+use TimeDate_ml,    only: day_of_year,daynumber,current_date
+use Units_ml,       only: Units_Scale
 implicit none
 private
 
@@ -124,7 +125,6 @@ private
  private :: Setups
  private :: write_debug
  private :: write_debugadv
- private :: Units_Scale           ! selects unt factor
 
  public :: Derived              ! Calculations of sums, avgs etc.
  private :: voc_2dcalc          ! Calculates sum of VOC for 2d fields
@@ -392,28 +392,28 @@ call AddNewDeriv( "AOT40_Grid", "GRIDAOT","subclass","-", "ppb h", &
 
 ! NOT YET: Scale pressure by 0.01 to get hPa
 call AddNewDeriv( "PSURF ","PSURF",  "SURF","-",   "hPa", &
-               -99,  -99,  F,  1.0,  T,   IOU_DAY ) 
+               -99,  -99,  F,  1.0,  T,   IOU_DAY )
 
 
 call AddNewDeriv( "Snow_m","SNOW",  "-","-",   "m", &
-               -99,  -99,  F,  1.0,  T,  IOU_DAY ) 
+               -99,  -99,  F,  1.0,  T,  IOU_DAY )
 
 
 call AddNewDeriv( "USTAR_NWP","USTAR_NWP",  "-","-",   "m/s", &
-               -99,  -99, F, 1.0,  T,  IOU_DAY ) 
+               -99,  -99, F, 1.0,  T,  IOU_DAY )
 !Added for TFMM scale runs
 call AddNewDeriv( "Kz_m2s","Kz_m2s",  "-","-",   "m2/s", &
                -99,  -99, F, 1.0,  T,  IOU_DAY )
 
 !Most met params are now better specified in My_Derived.
 !MOVED call AddNewDeriv( "ws_10m","ws_10m",  "-","-",   "m/s", &
-!MOVED                -99,  -99, F, 1.0,  T,  IOU_DAY ) 
+!MOVED                -99,  -99, F, 1.0,  T,  IOU_DAY )
 !MOVED call AddNewDeriv( "HMIX  ","HMIX",  "-","-",   "m", &
-!MOVED                -99,  -99,  F,  1.0,  T,  IOU_DAY ) 
+!MOVED                -99,  -99,  F,  1.0,  T,  IOU_DAY )
 ! "HMIX00","HMIX12", ....
 
 call AddNewDeriv( "u_ref","u_ref",  "-","-",   "m/s", &
-               -99,  -99, F, 1.0,  T,  IOU_DAY ) 
+               -99,  -99, F, 1.0,  T,  IOU_DAY )
 
 !call AddNewDeriv( "SoilWater_deep","SoilWater_deep",  "-","-",   "m", &
 !               -99,  -99, F, 1.0,  T,  IOU_DAY )
@@ -424,7 +424,7 @@ call AddNewDeriv( "u_ref","u_ref",  "-","-",   "m/s", &
       !Deriv index, f2d, dt_scale, scale, avg? rho Inst Yr Mn Day atw
 
 call AddNewDeriv( "T2m","T2m",  "-","-",   "deg. C", &
-               -99,  -99, F, 1.0,  T,  IOU_DAY ) 
+               -99,  -99, F, 1.0,  T,  IOU_DAY )
 call AddNewDeriv( "Idirect","Idirect",  "-","-",   "W/m2", &
                -99,  -99, F, 1.0,  T,  IOU_DAY )
 call AddNewDeriv( "Idiffuse","Idiffuse",  "-","-",   "W/m2", &
@@ -449,13 +449,13 @@ do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
        class  = trim( OutputFields(ind)%txt4 )   ! SPEC or GROUP
        unitscale = 1.0
        if( outunit == "ppb") unitscale = PPBINV
-       if(     OutputFields(ind)%txt4 == "PM25"  &      
-          .or. OutputFields(ind)%txt4 == "PM25X" & 
-          .or. OutputFields(ind)%txt4 == "PM25_rh50" & 
+       if(     OutputFields(ind)%txt4 == "PM25"  &
+          .or. OutputFields(ind)%txt4 == "PM25X" &
+          .or. OutputFields(ind)%txt4 == "PM25_rh50" &
           .or. OutputFields(ind)%txt4 == "PM25X_rh50"&
-          .or. OutputFields(ind)%txt4 == "PM10_rh50" & ) then 
+          .or. OutputFields(ind)%txt4 == "PM10_rh50" & ) then
           itot = 0
-          call Units_Scale( outunit , itot,  unitscale, unittxt, volunit )
+          unitscale = Units_Scale(outunit, itot, unittxt, volunit)
           if(MasterProc ) write(*,*)"FRACTION UNITSCALE ", unitscale
        end if
 
@@ -466,15 +466,15 @@ do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
                      iout,  -99,  F, unitscale,  T, outind )
       ! WAS
       !call AddNewDeriv( "HMIX  ","HMIX",  "-","-",   "m", &
-      !                  -99,  -99,  F,  1.0,  T,  IOU_DAY ) 
+      !                  -99,  -99,  F,  1.0,  T,  IOU_DAY )
       !call AddNewDeriv( "SURF_ppbC_VOC", "VOC", "-", "-", "ppb", &
-            !   -1 , -99,  F, PPBINV,  T,  IOU_DAY ) 
+            !   -1 , -99,  F, PPBINV,  T,  IOU_DAY )
 
    else ! SPEC and GROUPS of specs.
 
        if ( outtyp == "SPEC" ) then ! Simple species
 
-          itot = find_index( trim( outname ) , species(:)%name ) 
+          itot = find_index( trim( outname ) , species(:)%name )
           iout = itot - NSPEC_SHL   ! set to iadv
 
           call CheckStop(itot<0, &
@@ -500,13 +500,13 @@ do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
 
        end if
 
-       call Units_Scale( outunit , itot,  unitscale, unittxt, volunit )
-  
+       unitscale = Units_Scale(outunit, itot, unittxt, volunit)
+
        class = "SURF_MASS_" // trim(outtyp)
        if (  volunit .and. itot > 0 ) class = "SURF_PPB_" // trim(outtyp)
        if (  volunit .and. itot < 1 ) call StopAll(&
            "SURF_PPB_GROUPS not implemented yet:"// trim(dname) )
-                                                
+
        dname = "SURF_" // trim( outunit ) // "_" // trim( outname )
 
        if( DEBUG.and.MasterProc ) write(*,"(a,2i4,3(1x,a),2L3,i4,es10.2)") &
@@ -529,7 +529,7 @@ do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
            !, OutputFields(ind)%ind,unitscale
 
           call AddNewDeriv( dname, class, "-", "-", trim( unittxt ) , &
-             iout  , -99, F,   unitscale,     T,   OutputFields(ind)%ind, & 
+             iout  , -99, F,   unitscale,     T,   OutputFields(ind)%ind, &
              Is3D=.true. )
 
        end if ! 3d
@@ -552,30 +552,31 @@ do ind = 1, size( WDEP_WANTED(:)%txt1 )
   else if ( WDEP_WANTED(ind)%txt2 == "GROUP" ) then
 
     ! just get units text here
-     call Units_Scale(WDEP_WANTED( ind )%txt3, -1,  unitscale, unittxt, volunit)
+     unitscale = Units_Scale(WDEP_WANTED( ind )%txt3, -1, unittxt, volunit)
 
-     dname = "WDEP_" // trim(WDEP_WANTED( ind )%txt1) 
+     dname = "WDEP_" // trim(WDEP_WANTED( ind )%txt1)
      call AddNewDeriv( dname,  "WDEP ","-","-", unittxt ,  &
-                -1, -99,   F,    1.0e6,   F,    IOU_DAY ) 
+                -1, -99,   F,    1.0e6,   F,    IOU_DAY )
 
   else ! SPEC
 
-     itot = find_index( trim(WDEP_WANTED(ind)%txt1) , species(:)%name ) 
+     itot = find_index( trim(WDEP_WANTED(ind)%txt1) , species(:)%name )
      iadv = itot - NSPEC_SHL
 
      ! Without units for now:
      dname = "WDEP_" // trim(WDEP_WANTED( ind )%txt1)
      call CheckStop(itot<0, "WDEP_WANTED Species not found " // trim(dname) )
 
-     call Units_Scale(WDEP_WANTED( ind )%txt3, itot,  unitscale, unittxt, volunit)
+     unitscale = Units_Scale(WDEP_WANTED( ind )%txt3, itot, unittxt, volunit)
+
      call AddNewDeriv( dname, "WDEP", "-", "-", unittxt , &
-              iadv , -99,   F,   unitscale,     F,  IOU_DAY ) 
+              iadv , -99,   F,   unitscale,     F,  IOU_DAY )
    end if
    if(MasterProc) write(*,*) "Wet deposition output: ", trim(dname), " ",  trim(unittxt)
 end do
 
 !NOV2011 call AddNewDeriv( "SURF_ppbC_VOC", "VOC", "-", "-", "ppb", &
-!NOV2011          -1 , -99,  F, PPBINV,  T,  IOU_DAY ) 
+!NOV2011          -1 , -99,  F, PPBINV,  T,  IOU_DAY )
 
 !Emissions:
 ! We use mg/m2 outputs for consistency with depositions
@@ -591,19 +592,19 @@ end do
   do  ind = 1, NEMIS_BioNat !DSA12 size(BVOC_GROUP)
      dname = "Emis_mgm2_BioNat" // trim(EMIS_BioNat(ind) )
      call AddNewDeriv( dname, "NatEmis", "-", "-", "mg/m2", &
-                 ind , -99, T ,    1.0e6,     F, IOU_DAY )  
+                 ind , -99, T ,    1.0e6,     F, IOU_DAY )
    end do
 !DSA12   if ( USE_SOILNOX ) then
 !DSA12     call AddNewDeriv( "Emis_mgm2_SoilNO", "NatEmis", "-", "-", "mg/m2", &
-!DSA12                 BIO_SOILNO , -99, T ,    1.0e6,     F, IOU_DAY )  
+!DSA12                 BIO_SOILNO , -99, T ,    1.0e6,     F, IOU_DAY )
 !DSA12   end if
 !DSA12   if ( USE_SOILNH3 ) then
 !DSA12     call AddNewDeriv( "Emis_mgm2_SoilNH3", "NatEmis", "-", "-", "mg/m2", &
-!DSA12                 BIO_SOILNH3 , -99, T ,    1.0e6,     F, IOU_DAY )  
+!DSA12                 BIO_SOILNH3 , -99, T ,    1.0e6,     F, IOU_DAY )
 !DSA12   end if
 
 ! SNAP emissions called every hour, given in kg/m2/s, but added to
-! d_2d every advection step, so get kg/m2. 
+! d_2d every advection step, so get kg/m2.
 ! Need 1.0e6 to get from kg/m2 to mg/m2 accumulated.
 !
 ! Future option - might make use of Emis_Molwt to get mg(N)/m2
@@ -620,19 +621,19 @@ call AddNewDeriv("SURF_PM25water", "PM25water", "-", "-", "-", &
 !                      -99 , -99, F, 1.0,   T,  IOU_DAY )
 
 call AddNewDeriv("AOD", "AOD", "-", "-", "-", &
-                      -99 , -99, F, 1.0,   T, IOU_DAY ) 
+                      -99 , -99, F, 1.0,   T, IOU_DAY )
 
 call AddNewDeriv("AreaPOLL", "AreaPOLL", "-", "-", "-", &
                       -99 , -99, F, 1.0,   F, IOU_DAY )
 
 ! As for GRIDAOT, we can use index for the threshold
 call AddNewDeriv( "SOMO35","SOMO",  "SURF","-",   "ppb.day", &
-                  35, -99, F, 1.0,   F,   IOU_MON ) 
+                  35, -99, F, 1.0,   F,   IOU_MON )
 call AddNewDeriv( "SOMO0 ","SOMO",  "SURF","-",   "ppb.day", &
-                  0 , -99, F, 1.0,   F,   IOU_MON ) 
+                  0 , -99, F, 1.0,   F,   IOU_MON )
 
 call AddNewDeriv( "SURF_MAXO3","MAXADV", "O3","-",   "ppb", &
-           IXADV_O3, -99, F, PPBINV,   F,   IOU_DAY) 
+           IXADV_O3, -99, F, PPBINV,   F,   IOU_DAY)
 
 
 !-- 3-D fields
@@ -728,7 +729,7 @@ end do
   if (SOURCE_RECEPTOR.and..not.FORECAST)&  ! We assume that no daily & hourly outputs
     iou_max=IOU_MON                        ! are wanted on SOURCE_RECEPTOR mode
 
-  if (SOURCE_RECEPTOR) &                   ! We need yearly for SR always 
+  if (SOURCE_RECEPTOR) &                   ! We need yearly for SR always
     iou_min=IOU_YEAR                       !
 
   if (FORECAST) &                          ! Only dayly & hourly outputs
@@ -813,7 +814,7 @@ end do
       integer :: igrp, ngrp  ! group methods
       integer, save :: ind_pmfine = -999, ind_pmwater = -999, & !needed for PM25
                        ind_pm10 = -999
-  
+
       timefrac = dt/3600.0
       thour = current_date%hour+current_date%seconds/3600.0
 
@@ -890,8 +891,8 @@ end do
               d_2d( n, i,j,IOU_INST) = u_ref(i,j)
           end forall
 
-          !case ( "SoilWater_deep" ) 
-          case ( "SMI_deep" ) 
+          !case ( "SoilWater_deep" )
+          case ( "SMI_deep" )
             forall ( i=1:limax, j=1:ljmax )
               d_2d( n, i,j,IOU_INST) = SoilWater_deep(i,j,1)
           end forall
@@ -899,7 +900,7 @@ end do
 if(debug_flag) print *, "SOILW_DEEP ", n, SoilWater_deep(2,2,1)
 
           !case ( "SoilWater_uppr" ) ! Not used so far. (=shallow)
-          case ( "SMI_uppr" ) 
+          case ( "SMI_uppr" )
             forall ( i=1:limax, j=1:ljmax )
               d_2d( n, i,j,IOU_INST) = SoilWater_uppr(i,j,1)
           end forall
@@ -983,7 +984,7 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
             ind_pmwater = n
 
           case ( "PM25" )      ! Need to add PMFINE + fraction NO3_c
-      
+
             !scale = 62.0
             ! All this size class has the same cfac.
             forall ( i=1:limax, j=1:ljmax )
@@ -1003,15 +1004,15 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
             end forall
 
           case ( "PM25X" )      ! Need to add PMFINE + fraction NO3_c
-      
+
             !scale = 62.0
             ! All this size class has the same cfac.
             forall ( i=1:limax, j=1:ljmax )
               d_2d( n, i,j,IOU_INST) = d_2d(ind_pmfine,i,j,IOU_INST) + &
                                        fracPM25 * &
                   (   62.0 * xn_adv(IXADV_NO3_C,i,j,KMAX_MID)  &
-                    + 12.0 * xn_adv(IXADV_EC_C_WOOD,i,j,KMAX_MID) & 
-                    + 12.0 * xn_adv(IXADV_EC_C_FFUEL,i,j,KMAX_MID) & 
+                    + 12.0 * xn_adv(IXADV_EC_C_WOOD,i,j,KMAX_MID) &
+                    + 12.0 * xn_adv(IXADV_EC_C_FFUEL,i,j,KMAX_MID) &
                     + 15.0 * xn_adv(IXADV_POM_C_FFUEL,i,j,KMAX_MID) &
                    ) * cfac(IXADV_NO3_C,i,j) * density(i,j)
             end forall
@@ -1022,8 +1023,8 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
                                        PM25_water_rh50(i,j) * ATWAIR/PPBINV + &
                                        fracPM25 * &
                   (   62.0 * xn_adv(IXADV_NO3_C,i,j,KMAX_MID)  &
-                    + 12.0 * xn_adv(IXADV_EC_C_WOOD,i,j,KMAX_MID) & 
-                    + 12.0 * xn_adv(IXADV_EC_C_FFUEL,i,j,KMAX_MID) & 
+                    + 12.0 * xn_adv(IXADV_EC_C_WOOD,i,j,KMAX_MID) &
+                    + 12.0 * xn_adv(IXADV_EC_C_FFUEL,i,j,KMAX_MID) &
                     + 15.0 * xn_adv(IXADV_POM_C_FFUEL,i,j,KMAX_MID) &
                    ) * cfac(IXADV_NO3_C,i,j) * density(i,j)
             end forall
@@ -1051,25 +1052,25 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
            case ( "AreaPOLL" )        !/ Aerosol Optical Depth
 
             forall ( i=1:limax, j=1:ljmax )
-              d_2d( n, i,j,IOU_INST) = AreaPOLL(i,j)   
+              d_2d( n, i,j,IOU_INST) = AreaPOLL(i,j)
             end forall
 
           case ( "AOD" )        !/ Aerosol Optical Depth
 
             forall ( i=1:limax, j=1:ljmax )
-              d_2d( n, i,j,IOU_INST) = AOD(i,j)   
+              d_2d( n, i,j,IOU_INST) = AOD(i,j)
             end forall
 
           case ( "MAXADV" )
 
-            if (  f_2d(n)%unit == "ppb"  ) then 
+            if (  f_2d(n)%unit == "ppb"  ) then
 
                d_2d( n, 1:limax,1:ljmax,IOU_DAY) = &
                  max( d_2d( n, 1:limax,1:ljmax,IOU_DAY),  &
                       xn_adv(index,1:limax,1:ljmax,KMAX_MID)  &
                      * cfac(index,1:limax,1:ljmax) )
                txt2 = "MAXADV ppb for " // trim( f_2d(n)%name)
-             else 
+             else
                d_2d( n, 1:limax,1:ljmax,IOU_DAY) = &
                  max( d_2d( n, 1:limax,1:ljmax,IOU_DAY),  &
                       xn_adv(index,1:limax,1:ljmax,KMAX_MID)  &
@@ -1161,7 +1162,7 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
               if(dayfrac<0)then !only at midnight: write on d_2d
 
 
-                 call somo_calc( n, f_2d(n)%index, DEBUG .and. debug_proc ) 
+                 call somo_calc( n, f_2d(n)%index, DEBUG .and. debug_proc )
                  d_2d(n,:,:,IOU_MON )  = d_2d(n,:,:,IOU_MON )  + d_2d(n,:,:,IOU_DAY)
 
                 ! if(current_date%month>=4.and.current_date%month<=9)then
@@ -1262,8 +1263,8 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
                    n, f_2d(n)%name, " is ", d_2d(n,debug_li,debug_lj,IOU_INST)
 
 
-          case ( "SURF_MASS_GROUP" ) ! 
-            igrp = f_2d(n)%index 
+          case ( "SURF_MASS_GROUP" ) !
+            igrp = f_2d(n)%index
             call CheckStop(igrp<1, "NEG GRP "//trim(f_2d(n)%name) )
             call CheckStop(igrp>size( GROUP_ARRAY(:)%name ), &
                  "Outside GRP "//trim(f_2d(n)%name) )
@@ -1284,7 +1285,7 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
             if(DEBUG.and. MasterProc ) then
                 write(*,*) "CASEGRP ", n, igrp, ngrp, trim(typ)
                 write(*,*) "CASENAM ", trim(f_2d(n)%name)
-                write(*,*) "CASEGRP:", GROUP_ARRAY(igrp)%itot(1:ngrp) 
+                write(*,*) "CASEGRP:", GROUP_ARRAY(igrp)%itot(1:ngrp)
                 write(*,*) "CASEunit", trim(f_2d(n)%unit)
             end if
             call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, &
@@ -1343,7 +1344,7 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
         !if( debug_flag .and. n == 27  ) then ! C5H8 BvocEmis:
         !if(  n == 27  ) then ! C5H8 BvocEmis:
         !   print *, " TESTING NatEmis ", n, af, f_2d(n)%Index, f_2d(n)
-        !      call datewrite("NatEmis-end-Derived", n, (/ af, & 
+        !      call datewrite("NatEmis-end-Derived", n, (/ af, &
         !         SumSnapEmis( debug_li,debug_lj, f_2d(n)%Index), &
         !         d_2d(n,debug_li,debug_lj,IOU_INST), &
         !         d_2d(n,debug_li,debug_lj,IOU_DAY), &
@@ -1366,7 +1367,7 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
 
         index = f_3d(n)%index
 
-       if (  f_3d(n)%unit == "ppb"  ) then 
+       if (  f_3d(n)%unit == "ppb"  ) then
             inv_air_density3D(:,:,:) = 1.0
        else  !OLD if ( f_3d(n)%rho ) then
             forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
@@ -1407,17 +1408,17 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
               d_3d( n, i,j,k,IOU_INST) = th(i,j,k,1)
             end forall
 
-         case ("T   " ) ! Absolute Temperature                                                                                                 
+         case ("T   " ) ! Absolute Temperature
 
             forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
                d_3d( n, i,j,k,IOU_INST) = th(i,j,k,1)&
                    *exp(KAPPA*log((PT+sigma_mid(k)*(ps(i,j,1) - PT))*1.e-5))
-                 !NB: PT and PS in Pa                                               
+                 !NB: PT and PS in Pa
             end forall
 
          case ( "MAX3DSHL" ) ! Daily maxima - short-lived
 
-            if (  f_3d(n)%unit == "ppb"  ) then 
+            if (  f_3d(n)%unit == "ppb"  ) then
               call CheckStop("Asked for MAX3DSHL ppb ")
             else
               forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
@@ -1466,8 +1467,8 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
             end forall
            if ( debug_flag ) call write_debugadv(n,index, 1.0, "3D UG OUTS")
 
-        case ( "3D_MASS_GROUP" ) ! 
-            igrp = f_3d(n)%index 
+        case ( "3D_MASS_GROUP" ) !
+            igrp = f_3d(n)%index
             call CheckStop(igrp<1, "NEG GRP "//trim(f_3d(n)%name) )
             call CheckStop(igrp>size( GROUP_ARRAY(:)%name ), &
                  "Outside GRP "//trim(f_3d(n)%name) )
@@ -1475,7 +1476,7 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
             if(DEBUG.and. MasterProc ) then
                 write(*,*) "3DCASEGRP ", n, igrp, ngrp, trim(typ)
                 write(*,*) "3DCASENAM ", trim(f_3d(n)%name)
-                write(*,*) "3DCASEGRP:", GROUP_ARRAY(igrp)%itot(1:ngrp) 
+                write(*,*) "3DCASEGRP:", GROUP_ARRAY(igrp)%itot(1:ngrp)
                 write(*,*) "3DCASEunit", trim(f_3d(n)%unit)
             end if
 
@@ -1714,7 +1715,7 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
     select case (trim(unit))
       case("ug/m3" ); scale = species(itot)%molwt
       case("ugN/m3"); scale = species(itot)%nitrogens
-      case default 
+      case default
        if(ik==0)  print *, "uggroup Wrong Units 2d "//trim(f_2d(n)%name)
        if(ik/=0)  print *, "uggroup Wrong Units 3d "//trim(f_3d(n)%name)
        call StopAll("uggroup called with wrong unit='"//unit//"'!")
@@ -1784,7 +1785,7 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
            if ( debug_flag .and. i==debug_li .and. j==debug_lj ) then
              write(*,"(a,2i4,f12.3)") "SOMO DEBUG ", n, iX, o3
            end if
-   
+
 
            o3 = max( o3 - iX , 0.0 )   ! Definition of SOMOs
 
@@ -1820,61 +1821,4 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
     end subroutine write_debug
 
  !=========================================================================
-    subroutine Units_Scale(txt,itot,unitscale,unitstxt, volunit)
-      character(len=*), intent(in) :: txt
-      integer, intent(in) :: itot  ! species index, used if > 0
-      real, intent(out) :: unitscale
-      character(len=*), intent(out) :: unitstxt
-      logical, intent(out) :: volunit
-
-    real, save    :: ugSm3 = atwS*PPBINV/ATWAIR
-    real, save    :: ugNm3 = atwN*PPBINV/ATWAIR
-    real, save    :: ugCm3 = 12*PPBINV/ATWAIR
-    real, save    :: ugXm3 = PPBINV/ATWAIR   ! will be multiplied by molwwt(X)
-!ds    real, save    :: ugPM  = PPBINV /ATWAIR  ! No multiplication needed
-
-    volunit = .false.
-
-  if ( txt .eq.  "ugS" ) then
-      unitscale = ugSm3
-      unitstxt  = "ugS/m3"
-  else if ( txt .eq.  "ugN" ) then
-      unitscale = ugNm3
-      unitstxt  = "ugN/m3"
-  else if ( txt .eq.  "ugC" ) then
-      unitscale = ugCm3
-      unitstxt  = "ugC/m3"
-  else if ( txt .eq.  "ug" ) then
-      unitscale = ugXm3  ! will be multplied by species(itot)%molwt later
-      unitstxt  = "ug/m3"
-      if( itot>0) unitscale = ugXm3 * species(itot)%molwt
-
-  else if ( txt .eq.  "ppb" ) then
-      unitscale = PPBINV
-      unitstxt  = "ppb"
-      volunit = .true.
-
-  else if ( txt .eq.  "mgS" ) then  ! For wet deposition
-      unitscale = 1.0e6
-      unitstxt  = "mgS/m2"
-  else if ( txt .eq.  "mgN" ) then
-      unitscale = 1.0e6
-      unitstxt  = "mgN/m2"
-  else if ( txt .eq.  "mgSS" ) then
-      unitscale = 1.0e6
-      unitstxt  = "mg/m2"
-  else if ( txt .eq.  "mgP" ) then
-      unitscale = 1.0e6
-      unitstxt  = "mg/m2"
-  else if ( txt .eq.  "m" ) then
-      unitscale = 1.0
-      unitstxt  = "m"
-  else if ( txt == "raw" ) then
-      unitscale = 1.0
-      unitstxt  = "raw"
-  else
-      call StopAll("Units Scale Error "// txt )
-  end if
-  end subroutine Units_Scale
-
 end module Derived_ml

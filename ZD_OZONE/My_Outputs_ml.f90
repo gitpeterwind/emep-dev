@@ -35,7 +35,7 @@ module  My_Outputs_ml
 ! Hourly - ascii output of selected species, selcted domain
 ! -----------------------------------------------------------------------
 
-use CheckStop_ml,     only: CheckStop
+use CheckStop_ml,      only: CheckStop
 use ChemSpecs_tot_ml
 use ChemSpecs_adv_ml
 use ChemSpecs_shl_ml
@@ -44,14 +44,16 @@ use ChemChemicals_ml,  only: chemical,species
 use ChemGroups_ml,     only: chemgroups
 use DerivedFields_ml,  only: f_2d               ! D2D houtly output type
 use ModelConstants_ml, only: PPBINV, PPTINV, ATWAIR, atwS, atwN, MasterProc, &
-                             TOPO_TEST, &
-                             FORECAST, to_molec_cm3=>MFAC, &
+                             TOPO_TEST, FORECAST, &
                              TFMM_RUNS, & !tmp marker for TNOxxx runs
                              USE_EMERGENCY,DEBUG_EMERGENCY
 use OwnDataTypes_ml,   only: Asc2D
 use Par_ml,            only: GIMAX,GJMAX,IRUNBEG,JRUNBEG
 use SmallUtils_ml,     only: find_index
 use TimeDate_ml,       only: date
+use Units_ml,          only: Init_Units,&
+                             to_molec_cm3,to_molec_cm2,to_mgSIA,to_ugSIA,&
+                             to_ug_ADV,to_ug_C,to_ug_N,to_ug_S
 
 implicit none
 
@@ -199,18 +201,6 @@ type(Asc2D), public, dimension(:), allocatable :: hr_out  ! Set below
 integer, public, parameter :: NBDATES = 3
 type(date), public, save, dimension(NBDATES) :: wanted_dates_inst
 
-! Conversion to ug/m3
-!   xn_adv(ixadv,ix,iy,k)*roa(ix,iy,k,1)*to_ug_ADV(ixadv)
-! Conversion to ugX/m3
-!   xn_adv(ixadv,ix,iy,k)*roa(ix,iy,k,1)*to_ug_X(ixadv)
-!  Use "ADVugXX" for ug output (ug/m3, ugC/m3, ugN/m3, ugS/m3)
-!   For ug/m3  output use in combination with to_ug_ADV(ixadv).
-!   For ugX/m3 output use in combination with to_ug_X(ixadv).
-real, public, save, dimension(NSPEC_ADV)  :: &
-  to_ug_ADV,  & ! conversion to ug
-  to_ug_C,    & ! conversion to ug of C
-  to_ug_N,    & ! conversion to ug of N
-  to_ug_S       ! conversion to ug of S
 !================================================================
 
 public :: set_output_defs
@@ -228,9 +218,6 @@ subroutine set_output_defs
 
   type(chemical), dimension(:), pointer :: species_adv
   real, parameter :: atwC=12.0
-  real, parameter :: to_mgSIA=PPBINV/ATWAIR*1000.0   &  ! conversion to mg
-                    ,to_ugSIA=PPBINV/ATWAIR          &  ! conversion to ug
-                    ,to_molec_cm2=to_molec_cm3*100.0
   real, parameter :: m_s = 100.0 ! From cm/s to m/s
 
   ! introduce some integers to make specification of domain simpler
@@ -247,14 +234,18 @@ subroutine set_output_defs
   !            latitude and longitude in NetCDF output will be
   !            wrong.
 
+
+  !==============================================================
+  ! Conversion to ug/m3
+  !   xn_adv(ixadv,ix,iy,k)*roa(ix,iy,k,1)*to_ug_ADV(ixadv)
+  ! Conversion to ugX/m3
+  !   xn_adv(ixadv,ix,iy,k)*roa(ix,iy,k,1)*to_ug_X(ixadv)
   !  Use "ADVugXX" for ug output (ug/m3, ugC/m3, ugN/m3, ugS/m3)
-  !    For ug/m3  output use in combination with to_ug_ADV(ixadv).
-  !    For ugX/m3 output use in combination with to_ug_X(ixadv).
+  !   For ug/m3  output use in combination with to_ug_ADV(ixadv).
+  !   For ugX/m3 output use in combination with to_ug_X(ixadv).
+  !==============================================================
+  call Init_Units()
   species_adv=>species(NSPEC_SHL+1:NSPEC_SHL+NSPEC_ADV)
-  to_ug_ADV= species_adv%molwt    *PPBINV/ATWAIR
-  to_ug_C  = species_adv%carbons  *atwC*PPBINV/ATWAIR
-  to_ug_N  = species_adv%nitrogens*atwN*PPBINV/ATWAIR
-  to_ug_S  = species_adv%sulphurs *atwS*PPBINV/ATWAIR
 
   !/** Hourly outputs
   !    Note that the hourly output uses **lots** of disc space, so specify
@@ -264,8 +255,7 @@ subroutine set_output_defs
   ! ** REMEMBER : SHL species are in molecules/cm3, not mixing ratio !!
   ! ** REMEMBER : No spaces in name, except at end !!
 
-if(MasterProc ) print *, "TESTHH INSIDE set_output_defs"
-
+  if(MasterProc) print *, "TESTHH INSIDE set_output_defs"
 
   if(HOUTLY_EMERGENCY)then
     nlevels_hourly = 1
@@ -374,7 +364,7 @@ if(MasterProc ) print *, "TESTHH INSIDE set_output_defs"
     call CheckStop(hr_out(6)%spec<1,"set_output_defs: Unknown specie 'RN222'")
     call CheckStop(hr_out(7)%spec<1,"set_output_defs: Unknown group 'PM25'")
     call CheckStop(hr_out(8)%spec<1,"set_output_defs: Unknown group 'PM10'")
-  elseif ( TOPO_TEST ) then 
+  elseif ( TOPO_TEST ) then
    ! nb Out3D uses totals, e.g. O3, not IXADV_O3
    ! Number of definitions must match nhourly_out set above
     levels_hourly = (/ (i, i= 0,nlevels_hourly-1) /)  ! -1 will give surfac
@@ -388,7 +378,7 @@ if(MasterProc ) print *, "TESTHH INSIDE set_output_defs"
     /)
 
     if(MasterProc ) write(*,*) "TESTHH TOPO O3 SET", nlevels_hourly
-  elseif ( TFMM_RUNS ) then 
+  elseif ( TFMM_RUNS ) then
 
 !**               name     type     ofmt
 !**               ispec    ix1 ix2 iy1 iy2 nk sellev? unit conv  max
@@ -521,7 +511,7 @@ if(MasterProc ) print *, "TESTHH INSIDE set_output_defs"
 !!!!DS             IXADV_NO3_C ,ix1,ix2,iy1,iy2,1,"ug",to_ug_ADV(IXADV_NO3_C),-999.9)
 !!!    hr_out(10)=Asc2D("no_3m"   ,"ADVppbv","(f9.4)",&
 !!!             IXADV_NO  ,ix1,ix2,iy1,iy2,1,"ppbv",PPBINV ,600.0*1.91)
-!!! ! We grab HMIX and USTAR_NWP from the Derived_ml 
+!!! ! We grab HMIX and USTAR_NWP from the Derived_ml
 !!! !DS   hr_out(11)= Asc2D("PBL",   "pzpbl ", "(f6.1)",     &
 !!! !DS              -99,     ix1,ix2,iy1,iy2,1, "m",1.0   ,-999.9)
 !!!   hr_out(11)= Asc2D("HMIX","D2D", "(f6.1)", &
