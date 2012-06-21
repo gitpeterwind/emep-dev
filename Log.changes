@@ -112,12 +112,14 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
-xxxxxxxx rv4beta   ongoing Dave,Alvaro  20/6/2012  xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv4beta15 Dave,Alvaro  20/6/2012  xxxxxxxxxxxxxxxxxxxxxxx
 
+  Dave:
   run.pl
      skipHDD introduced to avoid HDD files for some runs
      metdata_EC used by default for global
 
+  Alvaro:
   Units_ml,Makefile.SRCS,Derived_ml,My_Outputs_ml,Output_hourly
     - New module Units_ml gathers routines and variables dealing
       with units convertions formerly scattered between Output_hourly and Derived_ml
@@ -126,6 +128,7 @@ xxxxxxxx rv4beta   ongoing Dave,Alvaro  20/6/2012  xxxxxxxxxxxxxxxxxxxxxxx
         to_molec_cm3,to_molec_cm2,to_mgSIA,to_ugSIA,&
         to_ug_ADV,to_ug_C,to_ug_N,to_ug_S
     - Subroutine Group_Units replaces group_setup on Output_hourly.
+
   Output_hourly
     - Alingn/ format & other house keeping
 
