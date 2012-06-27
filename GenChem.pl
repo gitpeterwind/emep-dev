@@ -42,7 +42,6 @@ use warnings;
       xnew(SPEC)=  ( xold(SPEC) + dt2 * P) /(1.0 + dt2*L )\n";
       #if( xnew(SPEC) < 0.0 ) print *, \"NEGNEG!!! SPEC\", xold(SPEC), P, L\n";
       #xnew(SPEC)=  ( xold(SPEC) + dt2 * P) /(1.0 + dt2*L )\n";
-      
 
  my $CHEMEQN_NOLOSS  =  "
       xnew(SPEC)=  xold(SPEC) + dt2 * P\n";
@@ -1058,7 +1057,10 @@ sub print_species {
 
 
      $module = "ChemChemicals_ml";
-     $Use    = " use ChemSpecs_tot_ml  ! => NSPEC_TOT, species indices";
+     $Use    ="
+  use ChemSpecs_tot_ml  ! => NSPEC_TOT, species indices
+  use ChemSpecs_shl_ml, only: NSPEC_SHL
+  use ChemSpecs_adv_ml, only: NSPEC_ADV";
      open(F,">GenOut_$module.inc");
      start_module($module,\*F,$Use);
 
@@ -1081,32 +1083,39 @@ sub print_species {
        real              :: DeltaH    ! VBS param
   end type Chemical
   type(Chemical), public, dimension(NSPEC_TOT), target :: species
+  type(Chemical), public, dimension(:), pointer :: &
+    species_shl=>null(),&             ! => species(..short lived..)
+    species_adv=>null()               ! => species(..advected..)
 
   contains
-    subroutine define_chemicals()
-    !+
-    ! Assigns names, mol wts, carbon numbers, advec,  nmhc to user-defined Chemical
-    ! array, using indices from total list of species (advected + short-lived).
-    !                                           MW  NM   C    N   S  ExtC C*  dH
+  subroutine define_chemicals()
+  !+
+  ! Pointers to short lived and advected portions of species
+  !
+    species_shl=>species(1:NSPEC_SHL)
+    species_adv=>species(NSPEC_SHL+1:NSPEC_SHL+NSPEC_ADV)
+  !+
+  ! Assigns names, mol wts, carbon numbers, advec,  nmhc to user-defined Chemical
+  ! array, using indices from total list of species (advected + short-lived).
+  !                                           MW  NM   C    N   S  ExtC C*  dH
 END_CHEMSTART
 
-	for($i=1;$i<=$nspecies[$tot]; $i++){
-	    my $spec = $species[$tot][$i];
-	    $cnum = $count{$spec}{"C"};   # to save interpolating inside string!
-	    $nnum = $count{$spec}{"N"};   # to save interpolating inside string!
-	    $snum = $count{$spec}{"S"};   # to save interpolating inside string!
-            printf F
-           "     species(%s) = Chemical(\"%-12s\",%9.4f,%3d,%3d,%4d,%3d,%5.1f,%8.4f,%7.1f ) \n",
-                   $species[$tot][$i], $species[$tot][$i],$molwt{$spec}, $nmhc{$spec},
-                   $cnum, $nnum, $snum, $extinc[$i], $CiStar[$i], $DeltaH[$i];
-            print "SPECF ",
-                   $species[$tot][$i], $species[$tot][$i],$molwt{$spec}, $nmhc{$spec},
-                   $cnum, $nnum, $snum, $extinc[$i], $CiStar[$i], $DeltaH[$i], "\n";
-	}
-
-        print F "   end subroutine define_chemicals\n";
-        print F " end module $module\n $HLINE";
-	close(F);
+  for($i=1;$i<=$nspecies[$tot]; $i++){
+    my $spec = $species[$tot][$i];
+    $cnum = $count{$spec}{"C"};   # to save interpolating inside string!
+    $nnum = $count{$spec}{"N"};   # to save interpolating inside string!
+    $snum = $count{$spec}{"S"};   # to save interpolating inside string!
+    printf F
+    "    species(%-12s) = Chemical(\"%-12s\",%9.4f,%3d,%3d,%4d,%3d,%5.1f,%8.4f,%7.1f ) \n",
+            $species[$tot][$i], $species[$tot][$i],$molwt{$spec}, $nmhc{$spec},
+            $cnum, $nnum, $snum, $extinc[$i], $CiStar[$i], $DeltaH[$i];
+    print "SPECF ",
+            $species[$tot][$i], $species[$tot][$i],$molwt{$spec}, $nmhc{$spec},
+            $cnum, $nnum, $snum, $extinc[$i], $CiStar[$i], $DeltaH[$i], "\n";
+  }
+  print F "  end subroutine define_chemicals\n";
+  print F "end module $module\n $HLINE";
+  close(F);
 
 } # end of sub write_species
 
