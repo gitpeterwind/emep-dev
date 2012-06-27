@@ -1,6 +1,6 @@
 module Units_ml
 use CheckStop_ml,     only: CheckStop
-use ChemChemicals_ml, only: chemical,species
+use ChemChemicals_ml, only: species_adv
 use ChemGroups_ml,    only: chemgroups
 use ChemSpecs_adv_ml, only: NSPEC_ADV
 use ChemSpecs_shl_ml, only: NSPEC_SHL
@@ -90,7 +90,6 @@ logical, private, save :: Initialize_Units = .true.
 contains
 
 subroutine Init_Units()
-  type(chemical), dimension(:), pointer :: species_adv=>null()
   real, dimension(NSPEC_ADV) :: uconv_spec
   integer :: i
   if(.not.Initialize_Units) return
@@ -99,7 +98,6 @@ subroutine Init_Units()
 ! Use "ADVugXX" for ug output (ug/m3, ugC/m3, ugN/m3, ugS/m3) in Hourly Output
 !   For ug/m3  output use in combination with to_ug_ADV(ixadv).
 !   For ugX/m3 output use in combination with to_ug_X(ixadv).
-  species_adv=>species(NSPEC_SHL+1:NSPEC_SHL+NSPEC_ADV)
   to_ug_ADV = ugXm3*species_adv%molwt
   to_ug_C   = ugCm3*species_adv%carbons
   to_ug_N   = ugNm3*species_adv%nitrogens
@@ -157,7 +155,7 @@ subroutine Group_Units_Asc2D(hr_out,gspec,gunit_conv,debug,name)
   gunit_conv(:)=unit_map(i)%uconv(gspec)
 
   if (debug) print "(A,'=',30(A,':',I0,:,'+'))",trim(dname),&
-    (trim(species(gspec(i)+NSPEC_SHL)%name),gspec(i),i=1,size(gspec))
+    (trim(species_adv(gspec(i))%name),gspec(i),i=1,size(gspec))
 end subroutine Group_Units_Asc2D
 
 subroutine Group_Units_detail(igrp,unit,gspec,gunit_conv,debug)
@@ -173,9 +171,9 @@ subroutine Group_Units_detail(igrp,unit,gspec,gunit_conv,debug)
   call Group_Units_Asc2D(hr_out,gspec,gunit_conv,debug)
 end subroutine Group_Units_detail
 
-function Units_Scale(txtin,itot,unitstxt,volunit,needroa,debug_msg) result(unitscale)
+function Units_Scale(txtin,iadv,unitstxt,volunit,needroa,debug_msg) result(unitscale)
   character(len=*), intent(in) :: txtin
-  integer, intent(in) :: itot  ! species index, used if > 0
+  integer, intent(in) :: iadv  ! species_adv index, used if > 0
   character(len=*), intent(out), optional :: unitstxt
   logical,          intent(out), optional :: volunit,needroa
   character(len=*), intent(in), optional :: debug_msg
@@ -198,19 +196,21 @@ function Units_Scale(txtin,itot,unitstxt,volunit,needroa,debug_msg) result(units
   if(present(unitstxt))unitstxt = unit_map(i)%units
   if(present(volunit )) volunit = any(txt==(/"ppb","ppbh","ppb h"/))
   if(present(needroa )) needroa = any(txt(1:2)==(/"ug","uB","ex"/))
-  select case (itot)
+  select case (iadv)
+  case (-1)
+! groups (called iadv==-1) do not get a scaling factor at this stage.
+! A second call with a valid iadv will provide the full conversion factor.
+    unitscale = 1.0
   case (0)
 ! return the conversion factor without the specie specific part (eg %molwt)
-    unitscale = unit_map(i)%uconv(itot)
+    unitscale = unit_map(i)%uconv(iadv)
   case (1:NSPEC_ADV)
-    unitscale = unit_map(i)%uconv(itot)
+    unitscale = unit_map(i)%uconv(iadv)
     if(present(debug_msg)) &
       call CheckStop(unitscale==0.0,"Units_Scale Error: 0.0 conversion for "//&
-      trim(species(itot)%name)//" in "//trim(unitstxt)//" at "//trim(debug_msg))
+      trim(species_adv(iadv)%name)//" in "//trim(unitstxt)//" at "//trim(debug_msg))
   case default
-! groups (called itot<1) do not get a scaling factor at this stage.
-! A second call with a valid itot will provide the full conversion factor.
-    unitscale = 1.0
+    call CheckStop(iadv,"Units_Scale Error: Unknown iadv.")
   endselect
 
 end function Units_Scale

@@ -67,7 +67,7 @@ use ChemGroups_ml     ! SIA_GROUP, PMCO_GROUP -- use tot indices
 use ChemSpecs_adv_ml         ! Use NSPEC_ADV amd any of IXADV_ indices
 use ChemSpecs_shl_ml
 use ChemSpecs_tot_ml
-use ChemChemicals_ml, only: species
+use ChemChemicals_ml, only: species,species_adv
 use Chemfields_ml ,   only: so2nh3_24hr,Grid_snow
 use DerivedFields_ml, only: MAXDEF_DERIV2D, MAXDEF_DERIV3D, &
                             def_2d, def_3d, f_2d, f_3d, d_2d, d_3d
@@ -190,57 +190,66 @@ private
 
    integer, private :: i,j,k,n, ivoc, index    ! Local loop variables
 
+  integer, private, save :: iadv_O3=-999,iadv_NO3_C=-999,  & ! Avoid hard codded IXADV_SPCS
+    iadv_EC_C_WOOD=-999,iadv_EC_C_FFUEL=-999,iadv_POM_C_FFUEL=-999
+
    contains
 
-    !=========================================================================
-    subroutine Init_Derived()
+  !=========================================================================
+  subroutine Init_Derived()
+    integer :: alloc_err
 
-        integer :: alloc_err
-          if(MasterProc .and. DEBUG ) write(*,*) "INIT My DERIVED STUFF"
-          call Init_My_Deriv()  !-> wanted_deriv2d, wanted_deriv3d
+    if(MasterProc .and. DEBUG ) write(*,*) "INIT My DERIVED STUFF"
+    call Init_My_Deriv()  !-> wanted_deriv2d, wanted_deriv3d
 
-         ! get lengths of wanted arrays (excludes notset values)
-          num_deriv2d = LenArray(wanted_deriv2d,NOT_SET_STRING)
-          num_deriv3d = LenArray(wanted_deriv3d,NOT_SET_STRING)
+    ! get lengths of wanted arrays (excludes notset values)
+    num_deriv2d = LenArray(wanted_deriv2d,NOT_SET_STRING)
+    num_deriv3d = LenArray(wanted_deriv3d,NOT_SET_STRING)
 
-          call CheckStop(num_deriv2d<1,"num_deriv2d<1 !!")
+    call CheckStop(num_deriv2d<1,"num_deriv2d<1 !!")
 
-     if ( num_deriv2d > 0 ) then
-          if(DEBUG .and. MasterProc ) write(*,*) "Allocate arrays for 2d:",&
-                                                  num_deriv2d
-          allocate(f_2d(num_deriv2d),stat=alloc_err)
-          call CheckStop(alloc_err,"Allocation of f_2d")
-          allocate(d_2d(num_deriv2d,MAXLIMAX,MAXLJMAX,LENOUT2D),stat=alloc_err)
-          call CheckStop(alloc_err,"Allocation of d_2d")
-          call CheckStop(alloc_err,"Allocation of d_3d")
-          allocate(nav_2d(num_deriv2d,LENOUT2D),stat=alloc_err)
-          call CheckStop(alloc_err,"Allocation of nav_2d")
-          nav_2d = 0
-     end if
-     if ( num_deriv3d > 0 ) then
-          if(DEBUG .and. MasterProc ) write(*,*) "Allocate arrays for 3d: ",&
-                                                 num_deriv3d
-          allocate(f_3d(num_deriv3d),stat=alloc_err)
-          call CheckStop(alloc_err,"Allocation of f_3d")
-          allocate(d_3d(num_deriv3d,MAXLIMAX,MAXLJMAX,KMAX_MID,LENOUT3D),&
-                 stat=alloc_err)
-          allocate(nav_3d(num_deriv3d,LENOUT3D),stat=alloc_err)
-          call CheckStop(alloc_err,"Allocation of nav_3d")
-          nav_3d = 0
-     end if
+    if(num_deriv2d > 0) then
+      if(DEBUG .and. MasterProc ) write(*,*) "Allocate arrays for 2d:",&
+                                              num_deriv2d
+      allocate(f_2d(num_deriv2d),stat=alloc_err)
+      call CheckStop(alloc_err,"Allocation of f_2d")
+      allocate(d_2d(num_deriv2d,MAXLIMAX,MAXLJMAX,LENOUT2D),stat=alloc_err)
+      call CheckStop(alloc_err,"Allocation of d_2d")
+      call CheckStop(alloc_err,"Allocation of d_3d")
+      allocate(nav_2d(num_deriv2d,LENOUT2D),stat=alloc_err)
+      call CheckStop(alloc_err,"Allocation of nav_2d")
+      nav_2d = 0
+    endif
+    if(num_deriv3d > 0) then
+      if(DEBUG .and. MasterProc ) write(*,*) "Allocate arrays for 3d: ",&
+                                              num_deriv3d
+      allocate(f_3d(num_deriv3d),stat=alloc_err)
+      call CheckStop(alloc_err,"Allocation of f_3d")
+      allocate(d_3d(num_deriv3d,MAXLIMAX,MAXLJMAX,KMAX_MID,LENOUT3D),&
+              stat=alloc_err)
+      allocate(nav_3d(num_deriv3d,LENOUT3D),stat=alloc_err)
+      call CheckStop(alloc_err,"Allocation of nav_3d")
+      nav_3d = 0
+    endif
 
-          call Define_Derived()
-          call Setups()  ! just for VOC now
+    ! Avoid hard codded IXADV_SPCS
+    iadv_O3         =find_index('O3'         ,species_adv(:)%name )
+    iadv_NO3_C      =find_index('NO3_C'      ,species_adv(:)%name )
+    iadv_EC_C_WOOD  =find_index('EC_C_WOOD'  ,species_adv(:)%name )
+    iadv_EC_C_FFUEL =find_index('EC_C_FFUEL' ,species_adv(:)%name )
+    iadv_POM_C_FFUEL=find_index('POM_C_FFUEL',species_adv(:)%name )
 
-       if( nint( 1.0e7*diam(2) )==25 ) then
-           fracPM25 = 0.37
-       else if( nint( 1.0e7*diam(2) )== 30 ) then
-           fracPM25 = 0.27
-       end if
-       print *,  ' CFAC INIT PMFRACTION ', fracPM25, diam(2), nint(1.0e7*diam(2))
-       call CheckStop( fracPM25 < 0.01, "NEED TO SET FRACPM25")
+    call Define_Derived()
+    call Setups()  ! just for VOC now
 
-    end subroutine Init_Derived
+    select case(nint(diam(2)*1e7))
+    case(25);fracPM25=0.37
+    case(30);fracPM25=0.27
+    endselect
+    print *,  ' CFAC INIT PMFRACTION ', fracPM25, diam(2), nint(1.0e7*diam(2))
+    call CheckStop( fracPM25 < 0.01, "NEED TO SET FRACPM25")
+
+  end subroutine Init_Derived
 
    !=========================================================================
     subroutine AddNewDeriv( name,class,subclass,txt,unit,index,f2d,&
@@ -470,71 +479,65 @@ do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
       !call AddNewDeriv( "SURF_ppbC_VOC", "VOC", "-", "-", "ppb", &
             !   -1 , -99,  F, PPBINV,  T,  IOU_DAY )
 
-   else ! SPEC and GROUPS of specs.
+  else ! SPEC and GROUPS of specs.
 
-       if ( outtyp == "SPEC" ) then ! Simple species
+    select case(outtyp)
+    case("SPEC") ! Simple species
+      iadv = find_index(outname, species_adv(:)%name )
+      call CheckStop(iadv<0,"OutputFields Species not found "//trim(outname))
+      txt = "SURF_UG"
 
-          itot = find_index( trim( outname ) , species(:)%name )
-          iout = itot - NSPEC_SHL   ! set to iadv
-
-          call CheckStop(itot<0, &
-               "OutputFields Species not found " // trim(outname) )
-          txt = "SURF_UG"
-
-       else if ( outtyp == "GROUP" ) then ! groups of species
-
-          igrp = find_index( trim( outname ), GROUP_ARRAY(:)%name )
-
-          txt = "SURF_UG_GROUP"   ! ppb not implementde yet
-          itot = -1
-          iout = igrp
+      iout = iadv
+    case("GROUP" ) ! groups of species
+      igrp = find_index(outname, GROUP_ARRAY(:)%name )
 !-- Emergency: Volcanic Eruption. Skipp groups if not found
-          if(outname(1:3)=="ASH")then
-            if(MasterProc.and.USE_EMERGENCY.and.DEBUG_EMERGENCY)&
-              write(*,"(A,1X,I0,':',A)")'EMERGENCY: group ',igrp,trim(outname)
-            if(igrp<1)cycle
-          endif
-       else
+      if(outname(1:3)=="ASH")then
+        if(MasterProc.and.USE_EMERGENCY.and.DEBUG_EMERGENCY)&
+          write(*,"(A,1X,I0,':',A)")'EMERGENCY: group ',igrp,trim(outname)
+        if(igrp<1)cycle
+      endif
+      call CheckStop(igrp<0,"OutputFields Group not found "//trim(outname))
+      txt = "SURF_UG_GROUP"   ! ppb not implementde yet
+      iadv = -1
+      iout = igrp
+    case default
+      call StopAll("Derived:OutputFields Error "//trim(outtyp)//":"//trim(outname))
+    endselect
 
-           call StopAll("Derived:OutputFields Error " // trim( outtyp ) //":" //trim( outname ) )
+    unitscale = Units_Scale(outunit, iadv, unittxt, volunit)
 
-       end if
+    class = "SURF_MASS_" // trim(outtyp)
+    if(volunit .and. iadv > 0) class = "SURF_PPB_" // trim(outtyp)
+    if(volunit .and. iadv < 1) call StopAll(&
+      "SURF_PPB_GROUPS not implemented yet:"// trim(dname) )
 
-       unitscale = Units_Scale(outunit, itot, unittxt, volunit)
+    dname = "SURF_" // trim( outunit ) // "_" // trim( outname )
 
-       class = "SURF_MASS_" // trim(outtyp)
-       if (  volunit .and. itot > 0 ) class = "SURF_PPB_" // trim(outtyp)
-       if (  volunit .and. itot < 1 ) call StopAll(&
-           "SURF_PPB_GROUPS not implemented yet:"// trim(dname) )
+    if( DEBUG.and.MasterProc ) write(*,"(a,2i4,3(1x,a),2L3,i4,es10.2)") &
+    "ADD   ", ind, iout, trim(dname),";", trim(class), outmm, outdd, &
+          OutputFields(ind)%ind,unitscale
 
-       dname = "SURF_" // trim( outunit ) // "_" // trim( outname )
+    call AddNewDeriv( dname, class, "-", "-", trim( unittxt ) , &
+          iout  , -99,  F,   unitscale,     T,  OutputFields(ind)%ind )
 
-       if( DEBUG.and.MasterProc ) write(*,"(a,2i4,3(1x,a),2L3,i4,es10.2)") &
-        "ADD   ", ind, iout, trim(dname),";", trim(class), outmm, outdd, &
-              OutputFields(ind)%ind,unitscale
+    if(outdim == "3d") then
 
-       call AddNewDeriv( dname, class, "-", "-", trim( unittxt ) , &
-             iout  , -99,  F,   unitscale,     T,  OutputFields(ind)%ind )
+      class = "3D_MASS_"//trim(outtyp)
+      if(volunit .and. iadv > 0) class = "3D_PPB_"//trim(outtyp)
 
-       if ( outdim == "3d" ) then
+      dname = "D3_"//trim(outunit)//"_"//trim(outname)
 
-          class = "3D_MASS_" // trim(outtyp)
-          if (  volunit .and. itot > 0 ) class = "3D_PPB_" // trim(outtyp)
+      ! Always print out 3D info. Good to help avoid using 3d unless really needed!
+      if( MasterProc ) write(*,"(a,3(1x,a),a,L3,a,L3,i4,es10.2)") " ADDED 3D outputs",  &
+        trim(dname)," ; class =", trim(class), ', monthly =',outmm,', daily =',outdd
+        !, OutputFields(ind)%ind,unitscale
 
-          dname = "D3_" // trim( outunit ) // "_" // trim( outname )
+      call AddNewDeriv(dname, class, "-", "-", trim( unittxt ) , &
+          iout  , -99, F,   unitscale,     T,   OutputFields(ind)%ind, &
+          Is3D=.true. )
+    endif ! 3d
 
-          ! Always print out 3D info. Good to help avoid using 3d unless really needed!
-          if( MasterProc ) write(*,"(a,3(1x,a),a,L3,a,L3,i4,es10.2)") " ADDED 3D outputs",  &
-           trim(dname)," ; class =", trim(class), ', monthly =',outmm,', daily =',outdd
-           !, OutputFields(ind)%ind,unitscale
-
-          call AddNewDeriv( dname, class, "-", "-", trim( unittxt ) , &
-             iout  , -99, F,   unitscale,     T,   OutputFields(ind)%ind, &
-             Is3D=.true. )
-
-       end if ! 3d
-
-   end if
+   endif
 end do ! OutputFields
 
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -567,7 +570,7 @@ do ind = 1, size( WDEP_WANTED(:)%txt1 )
      dname = "WDEP_" // trim(WDEP_WANTED( ind )%txt1)
      call CheckStop(itot<0, "WDEP_WANTED Species not found " // trim(dname) )
 
-     unitscale = Units_Scale(WDEP_WANTED( ind )%txt3, itot, unittxt, volunit)
+     unitscale = Units_Scale(WDEP_WANTED( ind )%txt3, iadv, unittxt, volunit)
 
      call AddNewDeriv( dname, "WDEP", "-", "-", unittxt , &
               iadv , -99,   F,   unitscale,     F,  IOU_DAY )
@@ -631,10 +634,9 @@ call AddNewDeriv( "SOMO35","SOMO",  "SURF","-",   "ppb.day", &
                   35, -99, F, 1.0,   F,   IOU_MON )
 call AddNewDeriv( "SOMO0 ","SOMO",  "SURF","-",   "ppb.day", &
                   0 , -99, F, 1.0,   F,   IOU_MON )
-
+if(iadv_o3>0) &
 call AddNewDeriv( "SURF_MAXO3","MAXADV", "O3","-",   "ppb", &
-           IXADV_O3, -99, F, PPBINV,   F,   IOU_DAY)
-
+           iadv_o3, -99, F, PPBINV,   F,   IOU_DAY)
 
 !-- 3-D fields
 
@@ -809,7 +811,7 @@ end do
       real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: inv_air_density3D
                 ! Inverse of No. air mols/cm3 = 1/M
                 ! where M =  roa (kgair m-3) * MFAC  when ! scale in ug,  else 1
-      logical :: first_call = .true.
+      logical, save :: first_call = .true.
       integer :: ipm25, ipmc ! will save some calcs for pm10
       integer :: igrp, ngrp  ! group methods
       integer, save :: ind_pmfine = -999, ind_pmwater = -999, & !needed for PM25
@@ -984,49 +986,67 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
             ind_pmwater = n
 
           case ( "PM25" )      ! Need to add PMFINE + fraction NO3_c
+            if(first_call)&
+              call CheckStop(iadv_NO3_C<1,"Unknown specie NO3_C")
 
             !scale = 62.0
             ! All this size class has the same cfac.
             forall ( i=1:limax, j=1:ljmax )
               d_2d( n, i,j,IOU_INST) = d_2d(ind_pmfine,i,j,IOU_INST) + &
                                        fracPM25 * &
-                  (   62.0 * xn_adv(IXADV_NO3_C,i,j,KMAX_MID)  &
-                     ) * cfac(IXADV_NO3_C,i,j) * density(i,j)
+                  (   62.0 * xn_adv(iadv_NO3_C,i,j,KMAX_MID)  &
+                     ) * cfac(iadv_NO3_C,i,j) * density(i,j)
             end forall
 
           case ( "PM25_rh50" )      ! Need to add PMFINE + fraction NO3_c
+            if(first_call)&
+              call CheckStop(iadv_NO3_C<1,"Unknown specie NO3_C")
+
             forall ( i=1:limax, j=1:ljmax )
               d_2d( n, i,j,IOU_INST) = d_2d(ind_pmfine,i,j,IOU_INST) + &
                                        PM25_water_rh50(i,j)*ATWAIR/PPBINV +  &
                                        fracPM25 * &
-                  (   62.0 * xn_adv(IXADV_NO3_C,i,j,KMAX_MID)  &
-                     ) * cfac(IXADV_NO3_C,i,j) * density(i,j)
+                  (   62.0 * xn_adv(iadv_NO3_C,i,j,KMAX_MID)  &
+                     ) * cfac(iadv_NO3_C,i,j) * density(i,j)
             end forall
 
           case ( "PM25X" )      ! Need to add PMFINE + fraction NO3_c
+            if(first_call)then
+              call CheckStop(iadv_NO3_C      <1,"Unknown specie NO3_C")
+              call CheckStop(iadv_EC_C_WOOD  <1,"Unknown specie EC_C_WOOD")
+              call CheckStop(iadv_EC_C_FFUEL <1,"Unknown specie EC_C_FFUEL")
+              call CheckStop(iadv_POM_C_FFUEL<1,"Unknown specie POM_C_FFUEL")
+            endif
 
             !scale = 62.0
             ! All this size class has the same cfac.
             forall ( i=1:limax, j=1:ljmax )
               d_2d( n, i,j,IOU_INST) = d_2d(ind_pmfine,i,j,IOU_INST) + &
                                        fracPM25 * &
-                  (   62.0 * xn_adv(IXADV_NO3_C,i,j,KMAX_MID)  &
-                    + 12.0 * xn_adv(IXADV_EC_C_WOOD,i,j,KMAX_MID) &
-                    + 12.0 * xn_adv(IXADV_EC_C_FFUEL,i,j,KMAX_MID) &
-                    + 15.0 * xn_adv(IXADV_POM_C_FFUEL,i,j,KMAX_MID) &
-                   ) * cfac(IXADV_NO3_C,i,j) * density(i,j)
+                  (   62.0 * xn_adv(iadv_NO3_C      ,i,j,KMAX_MID)  &
+                    + 12.0 * xn_adv(iadv_EC_C_WOOD  ,i,j,KMAX_MID) &
+                    + 12.0 * xn_adv(iadv_EC_C_FFUEL ,i,j,KMAX_MID) &
+                    + 15.0 * xn_adv(iadv_POM_C_FFUEL,i,j,KMAX_MID) &
+                   ) * cfac(iadv_NO3_C,i,j) * density(i,j)
             end forall
 
          case ( "PM25X_rh50" )      ! Need to add PMFINE + fraction NO3_c + water
+            if(first_call)then
+              call CheckStop(iadv_NO3_C      <1,"Unknown specie NO3_C")
+              call CheckStop(iadv_EC_C_WOOD  <1,"Unknown specie EC_C_WOOD")
+              call CheckStop(iadv_EC_C_FFUEL <1,"Unknown specie EC_C_FFUEL")
+              call CheckStop(iadv_POM_C_FFUEL<1,"Unknown specie POM_C_FFUEL")
+            endif
+
             forall ( i=1:limax, j=1:ljmax )
               d_2d( n, i,j,IOU_INST) = d_2d(ind_pmfine,i,j,IOU_INST) + &
                                        PM25_water_rh50(i,j) * ATWAIR/PPBINV + &
                                        fracPM25 * &
-                  (   62.0 * xn_adv(IXADV_NO3_C,i,j,KMAX_MID)  &
-                    + 12.0 * xn_adv(IXADV_EC_C_WOOD,i,j,KMAX_MID) &
-                    + 12.0 * xn_adv(IXADV_EC_C_FFUEL,i,j,KMAX_MID) &
-                    + 15.0 * xn_adv(IXADV_POM_C_FFUEL,i,j,KMAX_MID) &
-                   ) * cfac(IXADV_NO3_C,i,j) * density(i,j)
+                  (   62.0 * xn_adv(iadv_NO3_C      ,i,j,KMAX_MID)  &
+                    + 12.0 * xn_adv(iadv_EC_C_WOOD  ,i,j,KMAX_MID) &
+                    + 12.0 * xn_adv(iadv_EC_C_FFUEL ,i,j,KMAX_MID) &
+                    + 15.0 * xn_adv(iadv_POM_C_FFUEL,i,j,KMAX_MID) &
+                   ) * cfac(iadv_NO3_C,i,j) * density(i,j)
             end forall
 
           case ( "PM10_rh50" )      ! Need to add PMFINE + fraction NO3_c
@@ -1036,18 +1056,23 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
             end forall
 
             if(DEBUG.and. debug_proc )  then
-                write(*,*) "FRACTION PM25", n, ind_pmfine, ind_pmwater
-                i= debug_li; j=debug_lj
-                write(*,"(a,2i4,4es12.3)") "Adding PM25FRACTIONS:", n, ind_pmfine,  &
-                   PM25_water_rh50(i,j)* ATWAIR/PPBINV, &
-                    d_2d(ind_pmfine,i,j,IOU_INST), d_2d( n, i,j,IOU_INST),&
-                       62.0 * xn_adv(IXADV_NO3_C,i,j,KMAX_MID) &
-                                     * cfac(IXADV_NO3_C,i,j) * density(i,j)
-                write(*,"(a,i4,f5.2,4es12.3)") "CFAC PM25FRACTIONS:", n, fracPM25,  &
-                         cfac(IXADV_NO3_C,i,j), cfac(IXADV_POM_C_FFUEL,i,j), &
-                        cfac(IXADV_EC_C_WOOD,i,j), cfac(IXADV_EC_C_FFUEL,i,j)
-
-            end if
+              if(first_call)then
+                call CheckStop(iadv_NO3_C      <1,"Unknown specie NO3_C")
+                call CheckStop(iadv_EC_C_WOOD  <1,"Unknown specie EC_C_WOOD")
+                call CheckStop(iadv_EC_C_FFUEL <1,"Unknown specie EC_C_FFUEL")
+                call CheckStop(iadv_POM_C_FFUEL<1,"Unknown specie POM_C_FFUEL")
+              endif
+              write(*,*) "FRACTION PM25", n, ind_pmfine, ind_pmwater
+              i= debug_li; j=debug_lj
+              write(*,"(a,2i4,4es12.3)") "Adding PM25FRACTIONS:", n, ind_pmfine,  &
+                  PM25_water_rh50(i,j)* ATWAIR/PPBINV, &
+                  d_2d(ind_pmfine,i,j,IOU_INST), d_2d( n, i,j,IOU_INST),&
+                      62.0 * xn_adv(iadv_NO3_C,i,j,KMAX_MID) &
+                           * cfac(iadv_NO3_C,i,j) * density(i,j)
+              write(*,"(a,i4,f5.2,4es12.3)") "CFAC PM25FRACTIONS:", n, fracPM25,  &
+                      cfac(iadv_NO3_C    ,i,j), cfac(iadv_POM_C_FFUEL,i,j), &
+                      cfac(iadv_EC_C_WOOD,i,j), cfac(iadv_EC_C_FFUEL ,i,j)
+            endif
 
            case ( "AreaPOLL" )        !/ Aerosol Optical Depth
 
@@ -1131,9 +1156,11 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
 
             call voc_2dcalc()
 
-          case( "GRIDAOT" )    !  Hardly used these days. The vegetation-specific
+          case( "GRIDAOT" )!  Hardly used these days. The vegetation-specific
                            !  AOTs are handled in the Mosaic class and as
                            !  part of the dry dep calculations.
+            if(first_call)&
+              call CheckStop(iadv_o3<1,"Unknown specie O3")
 
             d_2d(n, 1:limax, 1:ljmax, IOU_INST) = &
                  Calc_GridAOTx( f_2d(n)%index, debug_proc,"DERIVAOT")
@@ -1141,13 +1168,14 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
            if( DEBUG_AOT .and. debug_proc ) then
              call datewrite("AOTDEBUG" // trim(f_2d(n)%name), n, &
                (/ zen(debug_li,debug_lj), real(f_2d(n)%index), &
-                  xn_adv(IXADV_O3,debug_li,debug_lj,KMAX_MID)*&
-                     cfac(IXADV_O3,debug_li,debug_lj)*PPBINV, &
+                  xn_adv(iadv_O3,debug_li,debug_lj,KMAX_MID)*&
+                     cfac(iadv_O3,debug_li,debug_lj)*PPBINV, &
                   d_2d(n, debug_li, debug_lj, IOU_INST )  /) )
            end if
 
            case( "SOMO" )
-
+            if(first_call)&
+              call CheckStop(iadv_o3<1,"Unknown specie O3")
 
               !dt/7200: half a dt time step in hours
               !dayfrac "points" to the middle of the integration step
@@ -1157,7 +1185,7 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
 
         !last value  (not averaged):
           D2_O3_DAY( : , : , ntime) =&
-           xn_adv(IXADV_O3,:,:,KMAX_MID)*cfac(IXADV_O3,:,:)*PPBINV
+           xn_adv(iadv_o3,:,:,KMAX_MID)*cfac(iadv_o3,:,:)*PPBINV
 
               if(dayfrac<0)then !only at midnight: write on d_2d
 
