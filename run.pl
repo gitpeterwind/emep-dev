@@ -143,6 +143,7 @@ if ($CWF) {
   $MAKEMODE=$eCWF?"eEMEP":"MACC";    # Standard Forecast model setup
 }
  $CWF=0 if %BENCHMARK;
+ $MAKEMODE="SR-$MAKEMODE" if($MAKEMODE and $SR);
 
 # <---------- start of user-changeable section ----------------->
 
@@ -225,8 +226,9 @@ if ($STALLO) {
 } else { #Ve or Vilje
   $HOMEROOT = "/home/metno";
   $WORKROOT = "$HOMEROOT/$USER/work";
-  $MetDir   = "/home/metno/mifapw/work/Data/$GRID/metdata_EC/$year" ;
-  $DataDir  = "/home/metno/mifapw/work/Data";
+  $DataDir  = "$HOMEROOT/mifapw/work/Data";
+  $MetDir   = "$DataDir/$GRID/metdata_EC/$year" ;
+  $MetDir   = "$DataDir/$GRID/metdata_CWF/$year" if ($GRID eq "MACC02") and $CWF;
 }
 
 # DataDir    = Main general Data directory
@@ -235,8 +237,8 @@ my $DATA_LOCAL = "$DataDir/$GRID";   # Grid specific data , EMEP, EECCA, GLOBAL
 my $PollenDir = "/home/$BIRTHE/Unify/MyData";
    $PollenDir = 0 unless $STALLO;
 # Eruption (eEMEP)
-my $EruptionDir = "/home/$ALVARO/Unify/MyData";
-   $EruptionDir = 0 unless $STALLO;
+my $EruptionDir = "$HOMEROOT/$ALVARO/Unify/MyData";
+   $EruptionDir = 0 unless $STALLO or $VILJE;
 
 
 # Boundary conditions: set source direcories here:
@@ -249,7 +251,7 @@ my $Chem     = "EmChem09soa";
 #$Chem     = "CRI_v2_R5";
    $Chem     = $BENCHMARK{'chem'} if $BENCHMARK{'chem'};
 
-my $testv = "rv4beta15";
+my $testv = "rv4beta16";
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
@@ -277,7 +279,8 @@ close(CHEM);
 #  ( File::Compare::compare( "$ProgDir/CM_ChemSpecs_ml.f90" , "$ChemDir/CM_ChemSpecs_ml.f90"));
 
 my $WORKDIR     = "$WORKROOT/$USER/$testv.$year";  # working and result directory
-   $WORKDIR     = "$WORKROOT/$USER/Benchmark/$GRID.$year" if (%BENCHMARK);
+   $WORKDIR     = "$WORKROOT/$testv.$year" if($WORKROOT =~ /$USER/);  # working and result directory
+   $WORKDIR =~ s/$testv.$year/Benchmark\/$GRID.$year/g if (%BENCHMARK);
 my $MyDataDir   = "$HOMEROOT/$USER/Unify/MyData";           # for each user's private input
 my $SoilDir     = "$DATA_LOCAL/dust_input";               # Saharan BIC
 $SoilDir = 0 if ($GRID eq "EMEP") or ($GRID eq "MACC02");
@@ -285,13 +288,15 @@ $SoilDir = 0 if ($GRID eq "EMEP") or ($GRID eq "MACC02");
 # TEST! Road dust NOTE! The road dust code may not be working properly yet! Not tested enough!
 my $RoadDir     = "/home/$ROBERT/Unify/MyData/TNO_traffic/" ;
 $RoadDir = 0 if $CWF;
+$RoadDir = 0 unless -d $RoadDir;#default?
 #$RoadDir = 0 ;#default?
 
 
 # Forecast: nest/dump dir, BCs pattern
 my ($CWFDUMPDIR, $CWFBC) if $CWF;
 if ($CWF) {
-  $CWFDUMPDIR = "$WORKROOT/$USER/$testv.dump";
+# $CWFDUMPDIR = "$WORKROOT/$USER/$testv.dump";
+  ($CWFDUMPDIR = $WORKDIR) =~ s/$testv.$year/$testv.dump/g;
   $CWFBC = "$DataDir/$GRID/Boundary_conditions/%04d_IFS-MOZART_FC/cwf-mozifs_h%08d00_raqbc.nc" # IFS-MOZ Forecast
 # $CWFBC = "$DataDir/$GRID/Boundary_conditions/%04d_IFS-MOZART_AN/h%08d00_raqbc.nc";           # IFS-MOZ ReAnalysus
 }
@@ -556,7 +561,7 @@ if ( $RESET ) { ########## Recompile everything!
   # For now, we simply recompile everything!
   system(@MAKE, "clean");
   if ($MAKEMODE) {
-    system(@MAKE, $MAKEMODE);
+    system(@MAKE, "$MAKEMODE");
   } elsif ($SR) {
     #No recompile in SR runs
   } else {
@@ -572,7 +577,7 @@ system "ls -lht --time-style=long-iso -I\*{~,.o,.mod} | head -6 ";
 #unlink($PROGRAM);
 
 if ($MAKEMODE) {
-  system(@MAKE, $MAKEMODE) == 0 or die "@MAKE $MAKEMODE failed";
+  system(@MAKE, "$MAKEMODE") == 0 or die "@MAKE $MAKEMODE failed";
 } else {
   system (@MAKE, "depend") ;
   system (@MAKE, "all") == 0 or die "@MAKE all failed";
@@ -796,7 +801,7 @@ print "TESTING PM $poll $dir\n";
          $ifile{"$timeseries/DailyFac.$poll"} = "DailyFac.$poll";
       } else { # Assume same as PM25, works e.g for ocffl, etc.
          print "Monthly Daily Fac pm25 fill in for $poll\n";
-         my $TMPWDIR = "$WORKROOT/$USER/$testv.tmpdir";
+         my $TMPWDIR = "$WORKDIR/$testv.tmpdir";
          mkdir($TMPWDIR) unless -d $TMPWDIR;
          cp ("$timeseries/MonthlyFac.pm25", "$TMPWDIR/MonthlyFac.$poll");
          cp ("$timeseries/DailyFac.pm25",   "$TMPWDIR/DailyFac.$poll");
@@ -897,7 +902,8 @@ if ( $iyr_trend > 2015 )  {
 #
  my $HDD = "$timeseries/HDD${Tbase}-${GRID}-$year.nc";
  print "Looking for DegreeDayFac: $HDD \n";
- $skipHDD = 1 if $GRID eq "FORECAST" ;
+ my $skipHDD = 0;
+ $skipHDD = 1 if $CWF ;
  $skipHDD = 1 if $GRID eq "RCA" ;
  $skipHDD = 1 if $GRID eq "GLOBAL" ;
  unless ( $skipHDD ) {
@@ -924,7 +930,7 @@ if ( $iyr_trend > 2015 )  {
   #NOTNEEDED $ifile{"$DATA_LOCAL/Volcanoes.dat"} = "Volcanoes.dat" unless $EUCAARI;
   $ifile{"$DataDir/VolcanoesLL.dat"} = "VolcanoesLL.dat";
 # Volcanic Eruption (eEMEP)
-  if(($MAKEMODE eq "EMEP2010") or ($MAKEMODE eq "eEMEP")){
+  if(($MAKEMODE =~ /EMEP2010/) or ($MAKEMODE =~ /eEMEP/)){
     cp ("$ChemDir/eruptions.csv","eruptions.csv");
     $ifile{"$ChemDir/volcanoes.csv"} = "volcanoes.csv";
     print "$ChemDir/volcanoes.csv\n";
@@ -933,9 +939,9 @@ if ( $iyr_trend > 2015 )  {
       $line=~ s/#.*//;                 # Get rid of comment lines
       my $vname = (split(",",$line))[0];  # Volcano tracer name
       my $efile = "$EruptionDir/${vname}_7bin.eruptions";
-      $efile = "$EruptionDir/${vname}_2bin_EMEP2010.eruptions" if ($MAKEMODE eq "EMEP2010");
-    # $efile = "$EruptionDir/${vname}_2bin_EMEP2010_SR-SOx.eruptions" if ($MAKEMODE eq "EMEP2010");
-    # $efile = "$EruptionDir/${vname}_2bin_EMEP2010_SR-PMx.eruptions" if ($MAKEMODE eq "EMEP2010");
+      $efile = "$EruptionDir/${vname}_2bin_${MAKEMODE}.eruptions" if($MAKEMODE =~ /2010/);
+    # $efile = "$EruptionDir/${vname}_2bin_${MAKEMODE}_SR-SOx.eruptions" if($MAKEMODE =~ /2010/);
+    # $efile = "$EruptionDir/${vname}_2bin_${MAKEMODE}_SR-PMx.eruptions" if($MAKEMODE =~ /2010/);
       system("cat $efile >> eruptions.csv") if -e $efile;
     }
     close(IN);

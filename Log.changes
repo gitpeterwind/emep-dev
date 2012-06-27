@@ -112,6 +112,43 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
+xxxxxxxx rv4beta16 Alvaro       27/6/2012  xxxxxxxxxxxxxxxxxxxxxxx
+
+  Units_ml,Derived_ml: Fix bug introduced on rv4beta15.
+    Before rv4beta15 Units_Scale (Derived_ml) provided ug/m3 conversion
+    for all species. The current version of Units_Scale (Units_ml) povides
+    unit conversion factors only for advected species.
+    - Units_Scale calls in Derived_ml have been modified to take iadv instead of itot
+    - Units_Scale will Stop if iadv is out of range.
+
+  Output_hourly:
+    - Add Z_MID hourly output type
+    - Alingn/format & other house keeping
+
+  ZD_OZONE/My_Outputs_ml:
+    - Add Z_MID and Volcano (vent) column hourtly output on Emergency-Forecast mode
+
+  GenChem.pl (ChemChemicals_ml), Units_ml, Derived_ml:
+    - Define species_adv and species_shl in ChemChemicals_ml
+      as pointers to species short lived and advected portions.
+    - species_adv is now used in Units_ml and Derived_ml as a short hand to
+      species(NSPEC_SHL+1:NSPEC_SHL+NSPEC_ADV)
+
+  Derived_ml:
+    - Avoid hard codded IXADV_"SPC" by introducing aux variables, such as
+      iadv_O3=find_index('O3',species_adv(:)%name)
+
+  run.pl:
+    - define $skipHDD
+    - $MAKEMODE for $SR
+    - Options for $VILJE for $EruptionDir, $WORKDIR and $CWFDUMPDIR
+
+  Functions_ml:
+    - great_circle_distance is now a PURE function
+
+  Nest_ml:
+    - Change debug output format F4.2 to F5.2 to avoid compialtion warning
+
 xxxxxxxx rv4beta15 Dave,Alvaro  20/6/2012  xxxxxxxxxxxxxxxxxxxxxxx
 
   Dave:
@@ -130,7 +167,7 @@ xxxxxxxx rv4beta15 Dave,Alvaro  20/6/2012  xxxxxxxxxxxxxxxxxxxxxxx
     - Subroutine Group_Units replaces group_setup on Output_hourly.
 
   Output_hourly
-    - Alingn/ format & other house keeping
+    - Alingn/format & other house keeping
 
 xxxxxxxx rv4beta14 Alvaro & Birthe 11,13-15/6/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
