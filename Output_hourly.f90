@@ -67,7 +67,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
                               DAILY_HOURLYFILE, MONTHLY_HOURLYFILE
  use MetFields_ml,     only: t2_nwp,th, roa, surface_precip, ws_10m ,rh2m,&
                               pzpbl, ustar_nwp, Kz_m2s, &
-                              Idirect, Idiffuse, z_bnd
+                              Idirect, Idiffuse, z_bnd, z_mid
   use NetCDF_ml,        only: Out_netCDF, CloseNetCDF, Init_new_netCDF,  &
                               Int1, Int2, Int4, Real4, Real8  !Output data type to choose
   use OwnDataTypes_ml,  only: TXTLEN_DERIV,TXTLEN_SHORT
@@ -217,24 +217,21 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
         if(ik>=KMAX_MID)ik=1         ! 1-level column does not make sense
       else
         ik=KMAX_MID-k+1              ! all levels from model bottom are outputed,
-        if ( debug_flag ) write(6,*)"SELECT LEVELS? ", ik, SELECT_LEVELS_HOURLY
+        if ( debug_flag ) write(*,*)"SELECT LEVELS? ", ik, SELECT_LEVELS_HOURLY
         if(SELECT_LEVELS_HOURLY)then ! or the output levels are taken
           ik=LEVELS_HOURLY(k)        ! from LEVELS_HOURLY array (default)
           hr_out_type=hr_out(ih)%type
-          if ( debug_flag ) write(6,*)"DEBUG SELECT LEVELS", ik, hr_out_type
-          if(ik== 0)then
-            surf_corrected = .true.  ! Will implement cfac
-            if ( debug_flag ) write(6,'(a)')"DEBUG HOURLY Surf_correction", ik, k
-          else
-            surf_corrected = .false.
-          end if
+          if ( debug_flag ) write(*,*)"DEBUG SELECT LEVELS", ik, hr_out_type
+          surf_corrected = (ik==0)  ! Will implement cfac
+          if ( debug_flag .and. surf_corrected ) &
+            write(*,*)"DEBUG HOURLY Surf_correction", ik, k
 !TESTHH QUERY: see below
           if(ik==0)then
             ik=KMAX_MID              ! surface/lowermost level
-            if ( debug_flag ) write(6,*)"DEBUG LOWEST LEVELS", ik, hr_out_type
+            if ( debug_flag ) write(*,*)"DEBUG LOWEST LEVELS", ik, hr_out_type
             if(any(hr_out_type==(/"BCVppbv     ","BCVugXX     ",&
                                   "BCVugXXgroup"/)))&
-!                                  "BCVugXXgroup","Out3D       "/)))&
+!                                 "BCVugXXgroup","Out3D       "/)))&
               hr_out_type(1:3)="ADV" ! ensure surface output
             if(any(hr_out_type==(/"PMwater"/)))&
               hr_out_type=trim(hr_out_type)//"SRF"
@@ -272,7 +269,6 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
 
       if ( debug_flag ) write(*,"(5a,i4)") "DEBUG Hourly MULTI ",&
               trim(hr_out(ih)%name), " case ", trim(hr_out_type), " k: ",  ik
-
         OPTIONS: select case ( trim(hr_out_type) )
 
         case ( "ADVppbv" )
@@ -315,7 +311,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
 
           if ( debug_flag ) then
             i=debug_li; j=debug_lj
-            write(6,'(A,2I4,1X,L2,2f10.4)')"Out3D K-level"//trim(name), ik,  &
+            write(*,'(A,2I4,1X,L2,2f10.4)')"Out3D K-level"//trim(name), ik,  &
               itot, surf_corrected, hourly(i,j), cfac(ispec-NSPEC_SHL,i,j)
           endif
 
@@ -330,7 +326,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
           endforall
           !if( ik
           if ( DEBUG ) &
-            write(6,'(A,I0,1X,L2)')"K-level", ik, trim(name), itot, surf_corrected
+            write(*,'(A,I0,1X,L2)')"K-level", ik, trim(name), itot, surf_corrected
 
         case ( "ADVugXX" )  !ug/m3, ugX/m3 output at the surface
           itot = NSPEC_SHL + ispec
@@ -354,7 +350,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
                         * roa(i,j,ik,1)         ! density.
           endforall
           if ( DEBUG  ) &
-            write(6,'(a,i5,a10,i5)')"K-level", ik, trim(name), itot
+            write(*,'(a,i5,a10,i5)')"K-level", ik, trim(name), itot
 
         case ( "ADVugXXgroup" )  ! GROUP output in ug/m3, ugX/m3 at the surface
           call Group_Units(hr_out(ih),gspec,gunit_conv,debug_flag,name)
@@ -365,7 +361,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
                         * roa(i,j,KMAX_MID,1)           ! density.
           endforall
           if ( DEBUG  ) &
-            write(6,'(2a10,99i5)')"Surface", trim(name), gspec+NSPEC_SHL
+            write(*,'(2a10,99i5)')"Surface", trim(name), gspec+NSPEC_SHL
           deallocate(gspec,gunit_conv)
 
         case ( "BCVugXXgroup" )  ! GROUP output in ug/m3, ugX/m3 at model mid-levels
@@ -376,7 +372,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
                         * roa(i,j,ik,1)                 ! density.
           endforall
           if ( DEBUG ) &
-            write(6,'(a10,i7,a10,i7)')"K-level", ik, trim(name), gspec+NSPEC_SHL
+            write(*,'(a10,i7,a10,i7)')"K-level", ik, trim(name), gspec+NSPEC_SHL
           deallocate(gspec,gunit_conv)
 
         case ( "PMwater" )    ! PM water content in ug/m3 at model mid-levels
@@ -390,6 +386,19 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
           forall(i=1:limax,j=1:ljmax)
             hourly(i,j) = PM25_water_rh50(i,j)
           endforall
+
+        case ( "Z","Z_MID" )
+          name = "Z_MID"
+          unit_conv =  hr_out(ih)%unitconv
+          if(surf_corrected)then
+            forall ( i=1:limax, j=1:ljmax )
+              hourly(i,j) = 0.0
+            endforall
+          else
+            forall ( i=1:limax, j=1:ljmax )
+              hourly(i,j) = z_mid(i,j,ik)*unit_conv
+            endforall
+          endif
 
         case ( "AOD" )
           name = "AOD 550nm"
@@ -425,7 +434,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
             endforall
           enddo
           if ( DEBUG ) &
-            write(6,'(a10,i7,a10,i7)')"K-level", ik, trim(name), gspec+NSPEC_SHL
+            write(*,'(a10,i7,a10,i7)')"K-level", ik, trim(name), gspec+NSPEC_SHL
           deallocate(gspec,gunit_conv)
 
         case ( "SHLmcm3" )        ! No cfac for short-lived species
@@ -500,7 +509,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
             endforall
           endif
           if( debug_flag ) &
-            write(6,'(a,2i3,2es12.3)')"HHH DEBUG D2D", ispec, ih, &
+            write(*,'(a,2i3,2es12.3)')"HHH DEBUG D2D", ispec, ih, &
               hr_out(ih)%unitconv, hourly(debug_li,debug_lj)
 
         case DEFAULT

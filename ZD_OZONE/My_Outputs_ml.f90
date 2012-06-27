@@ -39,7 +39,7 @@ use CheckStop_ml,      only: CheckStop
 use ChemSpecs_tot_ml
 use ChemSpecs_adv_ml
 use ChemSpecs_shl_ml
-use ChemChemicals_ml,  only: chemical,species
+use ChemChemicals_ml,  only: species,species_adv
 
 use ChemGroups_ml,     only: chemgroups
 use DerivedFields_ml,  only: f_2d               ! D2D houtly output type
@@ -214,9 +214,6 @@ subroutine set_output_defs
    integer            :: i,j,ash  ! Loop & ash group indexes
    character(len=9)   :: vent     ! Volcano (vent) name
 
-
-
-  type(chemical), dimension(:), pointer :: species_adv
   real, parameter :: atwC=12.0
   real, parameter :: m_s = 100.0 ! From cm/s to m/s
 
@@ -240,12 +237,11 @@ subroutine set_output_defs
   !   xn_adv(ixadv,ix,iy,k)*roa(ix,iy,k,1)*to_ug_ADV(ixadv)
   ! Conversion to ugX/m3
   !   xn_adv(ixadv,ix,iy,k)*roa(ix,iy,k,1)*to_ug_X(ixadv)
-  !  Use "ADVugXX" for ug output (ug/m3, ugC/m3, ugN/m3, ugS/m3)
+  ! Use "ADVugXX" for ug output (ug/m3, ugC/m3, ugN/m3, ugS/m3)
   !   For ug/m3  output use in combination with to_ug_ADV(ixadv).
   !   For ugX/m3 output use in combination with to_ug_X(ixadv).
   !==============================================================
   call Init_Units()
-  species_adv=>species(NSPEC_SHL+1:NSPEC_SHL+NSPEC_ADV)
 
   !/** Hourly outputs
   !    Note that the hourly output uses **lots** of disc space, so specify
@@ -258,20 +254,17 @@ subroutine set_output_defs
   if(MasterProc) print *, "TESTHH INSIDE set_output_defs"
 
   if(HOUTLY_EMERGENCY)then
-    nlevels_hourly = 1
-    nhourly_out=4     !PM*,AOD
+    nlevels_hourly = 1+18
+    nhourly_out=4+1    !PM*,AOD (&Z)
     ash=find_index("ASH",chemgroups(:)%name)
     call CheckStop(ash<1,"set_output_defs: Unknown group 'ASH'")
-    nhourly_out=nhourly_out+size(chemgroups(ash)%ptr)
     vent="none"
     do i=1,size(chemgroups(ash)%ptr)
-      if(species(chemgroups(ash)%ptr(i))%name(1:9)==vent)then
-        nhourly_out=nhourly_out-1
-      else
+      if(species(chemgroups(ash)%ptr(i))%name(1:9)==vent)cycle
         vent=species(chemgroups(ash)%ptr(i))%name(1:9)
+      nhourly_out=nhourly_out+2
         if(MasterProc.and.DEBUG_EMERGENCY)&
           write(*,*)'EMERGENCY: Volcanic Ash, Vent=',vent
-      endif
     enddo
   else if(FORECAST)then
     nhourly_out=11
@@ -293,7 +286,7 @@ subroutine set_output_defs
   if(HOUTLY_EMERGENCY)then
     ix1=IRUNBEG;ix2=IRUNBEG+GIMAX-1
     iy1=JRUNBEG;iy2=JRUNBEG+GJMAX-1
-    levels_hourly = (/0/)
+    levels_hourly = (/(i-1,i=1,nlevels_hourly)/)
 
     hr_out(01)=Asc2D("pm25_3km"  ,"BCVugXXgroup","(f9.4)",&
 !            find_index("PM25",chemgroups(:)%name),&
@@ -308,15 +301,21 @@ subroutine set_output_defs
              ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",1.0                   ,-999.9)
     hr_out(04)=Asc2D("AOD_550nm" ,"AOD"   ,"(f9.4)",00         ,&
              ix1,ix2,iy1,iy2,1," ",1.0    ,-9999.9)
-    j=04
+    hr_out(05)=Asc2D("z"         ,"Z_MID"   ,"(f9.4)",00         ,&
+             ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"km",1e-3    ,-9999.9)
+    j=04+1
     vent="none"
     do i=1,size(chemgroups(ash)%ptr)
       if(species(chemgroups(ash)%ptr(i))%name(1:9)==vent)cycle
-      j=j+1
       vent=species(chemgroups(ash)%ptr(i))%name(1:9)
-      hr_out(j)=Asc2D(vent,"BCVugXXgroup","(f9.4)",find_index(vent,chemgroups(:)%name),&
+      j=j+1
+      hr_out(j)=Asc2D(vent        ,"BCVugXXgroup","(f9.4)",&
+              find_index(vent,chemgroups(:)%name),&
               ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",1.0,-999.9)
       call CheckStop(hr_out(j)%spec<1,"set_output_defs: Unknown group '"//vent//"'")
+      j=j+1
+      hr_out(j)=Asc2D(vent//"_col","COLUMNgroup","(f9.4)",hr_out(j-1)%spec,&
+              ix1,ix2,iy1,iy2,1,"ug",1.0,-999.9)
     enddo
   else if(FORECAST)then
     ix1=IRUNBEG;ix2=IRUNBEG+GIMAX-1
