@@ -112,18 +112,24 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
-xxxxxxxx rv4beta16 Alvaro       27/6/2012  xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv4beta16 Alvaro    27,29/6/2012  xxxxxxxxxxxxxxxxxxxxxxx
 
-  Units_ml,Derived_ml: Fix bug introduced on rv4beta15.
+  Units_ml,Derived_ml (27/6/2012): Fix bug introduced on rv4beta15
     Before rv4beta15 Units_Scale (Derived_ml) provided ug/m3 conversion
     for all species. The current version of Units_Scale (Units_ml) povides
     unit conversion factors only for advected species.
-    - Units_Scale calls in Derived_ml have been modified to take iadv instead of itot
-    - Units_Scale will Stop if iadv is out of range.
+     - Units_Scale calls in Derived_ml have been modified to take iadv instead of itot
+     - Units_Scale will Stop if iadv is out of range.
+
+  Derived_ml (29/6/2012): Fix bug introduced on rv4beta15
+    Fix from (27/6/2012) solved the rpoblem only for SPCS output,
+    GROUP output was stilly faulty.
+    - uggroup_calc calc gets the unit conversion factor from Group_Units (Units_ml)
 
   Output_hourly:
     - Add Z_MID hourly output type
     - Alingn/format & other house keeping
+    - (29/6/2012) Initialyze group index/conversion pointers =>null()
 
   ZD_OZONE/My_Outputs_ml:
     - Add Z_MID and Volcano (vent) column hourtly output on Emergency-Forecast mode

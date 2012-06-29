@@ -118,7 +118,7 @@ subroutine Init_Units()
     case default
       uconv_spec = 1.0
    endselect
-   unit_map(i)%uconv(1:)=unit_map(i)%uconv(1:)*uconv_spec
+   unit_map(i)%uconv(1:)=unit_map(i)%uconv(0)*uconv_spec
  enddo
 end subroutine Init_Units
 

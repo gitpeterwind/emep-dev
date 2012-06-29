@@ -112,7 +112,7 @@ use PhysicalConstants_ml,  only : PI,KAPPA
 use Pollen_ml,      only: AreaPOLL
 use SmallUtils_ml,  only: find_index, LenArray, NOT_SET_STRING
 use TimeDate_ml,    only: day_of_year,daynumber,current_date
-use Units_ml,       only: Units_Scale
+use Units_ml,       only: Units_Scale,Group_Units
 implicit none
 private
 
@@ -482,13 +482,14 @@ do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
   else ! SPEC and GROUPS of specs.
 
     select case(outtyp)
-    case("SPEC") ! Simple species
+    case("SPEC")  ! Simple species
       iadv = find_index(outname, species_adv(:)%name )
       call CheckStop(iadv<0,"OutputFields Species not found "//trim(outname))
       txt = "SURF_UG"
-
       iout = iadv
-    case("GROUP" ) ! groups of species
+    case("GROUP") ! groups of species
+      iadv = -1     ! Units_Scale(iadv=-1) returns 1.0
+                    ! uggroup_calc gets the unit conversion factor from Group_Units
       igrp = find_index(outname, GROUP_ARRAY(:)%name )
 !-- Emergency: Volcanic Eruption. Skipp groups if not found
       if(outname(1:3)=="ASH")then
@@ -498,7 +499,6 @@ do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
       endif
       call CheckStop(igrp<0,"OutputFields Group not found "//trim(outname))
       txt = "SURF_UG_GROUP"   ! ppb not implementde yet
-      iadv = -1
       iout = igrp
     case default
       call StopAll("Derived:OutputFields Error "//trim(outtyp)//":"//trim(outname))
@@ -507,8 +507,8 @@ do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
     unitscale = Units_Scale(outunit, iadv, unittxt, volunit)
 
     class = "SURF_MASS_" // trim(outtyp)
-    if(volunit .and. iadv > 0) class = "SURF_PPB_" // trim(outtyp)
-    if(volunit .and. iadv < 1) call StopAll(&
+    if(volunit) class = "SURF_PPB_" // trim(outtyp)
+    call CheckStop(class=="SURF_PPB_GROUP",&
       "SURF_PPB_GROUPS not implemented yet:"// trim(dname) )
 
     dname = "SURF_" // trim( outunit ) // "_" // trim( outname )
@@ -1316,9 +1316,8 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
                 write(*,*) "CASEGRP:", GROUP_ARRAY(igrp)%itot(1:ngrp)
                 write(*,*) "CASEunit", trim(f_2d(n)%unit)
             end if
-            call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, &
-              GROUP_ARRAY(igrp)%itot(1:ngrp) ,  density, 0, &
-              GROUP_ARRAY(igrp)%name )
+            call uggroup_calc(d_2d(n,:,:,IOU_INST), density, &
+                              f_2d(n)%unit, 0, igrp)
 
             if(DEBUG.and. debug_proc .and. n==ind_pmfine )  then
                 i= debug_li; j=debug_lj
@@ -1506,13 +1505,11 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
                 write(*,*) "3DCASENAM ", trim(f_3d(n)%name)
                 write(*,*) "3DCASEGRP:", GROUP_ARRAY(igrp)%itot(1:ngrp)
                 write(*,*) "3DCASEunit", trim(f_3d(n)%unit)
-            end if
-
+            endif
             do k=1,KMAX_MID
-              call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, &
-                  GROUP_ARRAY(igrp)%itot(1:ngrp) , &
-                        roa(:,:,k,1), k, GROUP_ARRAY(igrp)%name )
-            end do
+              call uggroup_calc(d_3d(n,:,:,k,IOU_INST), roa(:,:,k,1), &
+                                f_3d(n)%unit, k, igrp)
+            enddo
 
          case ( "Kz" )
 
@@ -1700,79 +1697,37 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
 
    end subroutine voc_3dcalc
  !=========================================================================
- subroutine uggroup_calc( ug_2d, n, class, group, density, ik, gname)
+subroutine uggroup_calc( ug_2d, density, unit, ik, igrp)
 
   !/--  calulates e.g. SIA = SO4 + pNO3_f + pNO3_c + aNH4
   ! (only SIA converted to new group system so far, rv3_5_6 )
   !/--  calulates also PM10  = SIA + PPM2.5 + PPMCOARSE
 
-  real, dimension(:,:), intent(inout) :: ug_2d  ! i,j section of d_2d arrays
-  character(len=*)    :: class   ! Type of data
-  integer, intent(in)  :: n   !
-  !character(len=*)    :: unit   !
-  integer, intent(in), dimension(:)  :: group
+  real, dimension(:,:), intent(out) :: ug_2d  ! i,j section of d_2d arrays
   real, intent(in), dimension(MAXLIMAX,MAXLJMAX)  :: density
-  integer, intent(in) :: ik
-  character(len=*),intent(in), optional    :: gname   ! group name
-  integer :: ig, iadv, itot,k
-  real :: scale
-  character(len=10) :: unit=""
+  character(len=*), intent(in) :: unit
+  integer, intent(in) :: ik,igrp
 
-  if(DEBUG .and. debug_proc) then
-    write(*,"(a,i4,L1,2i4)") "DEBUG GROUP-PM-N", size(group),debug_proc,me,ik
-    if ( present(gname ) ) write(*,*) " GNAME ", trim(gname)
-  end if
+  integer, pointer, dimension(:) :: gspec=>null()       ! group array of indexes
+  real,    pointer, dimension(:) :: gunit_conv=>null()  ! & unit conv. factors
 
-  if     (ik==0 .and. n<=num_deriv2d) then
-    k=KMAX_MID
-    unit=f_2d(n)%unit
-  elseif (ik/=0 .and. n<=num_deriv3d) then
-    k=ik
-    unit=f_3d(n)%unit
+  if(DEBUG.and.debug_proc) &
+    write(*,"(a,L1,2i4)") "DEBUG GROUP-PM-N",debug_proc,me,ik
+  call CheckStop(unit(1:2)/="ug","uggroup: Invalid deriv/level")
+  call Group_Units(igrp,unit,gspec,gunit_conv,debug=DEBUG.and.debug_proc)
+
+  if(ik==0)then
+    forall(i=1:limax,j=1:ljmax) &
+      ug_2d(i,j) = dot_product(xn_adv(gspec(:),i,j,KMAX_MID),&
+                               cfac(gspec(:),i,j)*gunit_conv(:)) &
+                 * density(i,j)
   else
-    k=-1
-    unit="not_found"
+    forall(i=1:limax,j=1:ljmax) &
+      ug_2d(i,j) = dot_product(xn_adv(gspec(:),i,j,ik),gunit_conv(:)) &
+                 * density(i,j)
   endif
-
-  ug_2d( :,:) = 0.0
-  scale = 0.0 ! safety
-  do ig = 1, size(group)
-    itot = group(ig)
-    iadv = group(ig) - NSPEC_SHL
-
-    select case (trim(unit))
-      case("ug/m3" ); scale = species(itot)%molwt
-      case("ugN/m3"); scale = species(itot)%nitrogens
-      case default
-       if(ik==0)  print *, "uggroup Wrong Units 2d "//trim(f_2d(n)%name)
-       if(ik/=0)  print *, "uggroup Wrong Units 3d "//trim(f_3d(n)%name)
-       call StopAll("uggroup called with wrong unit='"//unit//"'!")
-    end select
-
-    if(ik==0)then
-      call CheckStop( iadv < 1, "ug_2d derived failed here")
-      forall ( i=1:limax, j=1:ljmax )
-        ug_2d( i,j) = ug_2d( i,j) + xn_adv(iadv,i,j,k) *scale * cfac(iadv,i,j)
-      end forall
-    else
-      forall ( i=1:limax, j=1:ljmax )
-        ug_2d( i,j) = ug_2d( i,j) + xn_adv(iadv,i,j,k) *scale
-      end forall
-    endif
-
-   if(DEBUG .and. debug_proc) then
-      i=debug_li
-      j=debug_lj
-      write(*,"(a,i4,a,i4,2f6.1,2es12.3)") "DEBUG GROUP-PM", ig, &
-        trim(species(itot)%name), iadv, species(itot)%molwt,&
-           scale, xn_adv(iadv,i,j,k), ug_2d(i,j)
-    end if
-  end do !n
-  forall ( i=1:limax, j=1:ljmax )
-    ug_2d( i,j) = ug_2d( i,j) * density(i,j)
-  end forall
-
- end subroutine uggroup_calc
+  deallocate(gspec,gunit_conv)
+end subroutine uggroup_calc
  !=========================================================================
 
   subroutine somo_calc( n, iX, debug_flag )

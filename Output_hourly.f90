@@ -108,10 +108,10 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
   type(Deriv) :: def1           ! for NetCDF
   real :: scale                 ! for NetCDF
   integer ::CDFtype,nk,klevel   ! for NetCDF
-  character(len=TXTLEN_SHORT)    :: hr_out_type ! hr_out%type
-  integer                        :: hr_out_nk   ! hr_out%nk
-  integer, pointer, dimension(:) :: gspec       ! group array of indexes
-  real,    pointer, dimension(:) :: gunit_conv  ! group array of unit conv. factors
+  character(len=TXTLEN_SHORT)    :: hr_out_type         ! hr_out%type
+  integer                        :: hr_out_nk           ! hr_out%nk
+  integer, pointer, dimension(:) :: gspec=>null()       ! group array of indexes
+  real,    pointer, dimension(:) :: gunit_conv=>null()  ! & unit conv. factors
 
   integer,save :: old_month=-1,old_day=-1
   integer :: month,day
