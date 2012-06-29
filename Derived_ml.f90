@@ -1015,9 +1015,10 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
             endif
 
             forall ( i=1:limax, j=1:ljmax )
-              d_2d( n, i,j,IOU_INST) = d_2d(ind_pmfine,i,j,IOU_INST) + &
-                                       PM25_water_rh50(i,j)*ATWAIR/PPBINV +  &
-                                       fracPM25 * &
+              d_2d( n, i,j,IOU_INST) = d_2d(ind_pmfine ,i,j,IOU_INST) &
+!                                    + PM25_water_rh50(i,j)*ATWAIR/PPBINV  &
+                                     + d_2d(ind_pmwater,i,j,IOU_INST)
+                                     + fracPM25 * &
                   ( xn_adv(iadv_NO3_C,i,j,KMAX_MID) * ug_NO3_C &
                   ) * cfac(iadv_NO3_C,i,j) * density(i,j)
             end forall
@@ -1053,9 +1054,10 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
             endif
 
             forall ( i=1:limax, j=1:ljmax )
-              d_2d( n, i,j,IOU_INST) = d_2d(ind_pmfine,i,j,IOU_INST) + &
-                                       PM25_water_rh50(i,j) * ATWAIR/PPBINV + &
-                                       fracPM25 * &
+              d_2d( n, i,j,IOU_INST) = d_2d(ind_pmfine,i,j,IOU_INST) &
+!                                    + PM25_water_rh50(i,j)*ATWAIR/PPBINV &
+                                     + d_2d(ind_pmwater,i,j,IOU_INST)
+                                     + fracPM25 * &
                   ( xn_adv(iadv_NO3_C      ,i,j,KMAX_MID) * ug_NO3_C       &
                   + xn_adv(iadv_EC_C_WOOD  ,i,j,KMAX_MID) * ug_EC_C_WOOD   &
                   + xn_adv(iadv_EC_C_FFUEL ,i,j,KMAX_MID) * ug_EC_C_FFUEL  &
@@ -1065,8 +1067,9 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
 
           case ( "PM10_rh50" )      ! Need to add PMFINE + fraction NO3_c
             forall ( i=1:limax, j=1:ljmax )
-              d_2d( n, i,j,IOU_INST) = d_2d(ind_pm10,i,j,IOU_INST) + &
-                                       PM25_water_rh50(i,j)*ATWAIR/PPBINV
+              d_2d( n, i,j,IOU_INST) = d_2d(ind_pm10   ,i,j,IOU_INST) &
+!                                    + PM25_water_rh50(i,j)*ATWAIR/PPBINV &
+                                     + d_2d(ind_pmwater,i,j,IOU_INST)
             end forall
 
             if(DEBUG.and. debug_proc )  then
@@ -1080,8 +1083,9 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
               write(*,*) "FRACTION PM25", n, ind_pmfine, ind_pmwater
               i= debug_li; j=debug_lj
               write(*,"(a,2i4,4es12.3)") "Adding PM25FRACTIONS:", n, ind_pmfine,  &
-                  PM25_water_rh50(i,j)* ATWAIR/PPBINV, &
-                  d_2d(ind_pmfine,i,j,IOU_INST), d_2d( n, i,j,IOU_INST),&
+!                 PM25_water_rh50(i,j)* ATWAIR/PPBINV, &
+                  d_2d(ind_pmwater,i,j,IOU_INST),
+                  d_2d(ind_pmfine ,i,j,IOU_INST), d_2d( n, i,j,IOU_INST),&
                   ug_NO3_C * xn_adv(iadv_NO3_C,i,j,KMAX_MID) &
                            * cfac(iadv_NO3_C,i,j) * density(i,j)
               write(*,"(a,i4,f5.2,4es12.3)") "CFAC PM25FRACTIONS:", n, fracPM25,  &
