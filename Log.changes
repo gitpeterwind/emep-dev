@@ -125,6 +125,8 @@ xxxxxxxx rv4beta16 Alvaro    27,29/6/2012  xxxxxxxxxxxxxxxxxxxxxxx
     Fix from (27/6/2012) solved the rpoblem only for SPCS output,
     GROUP output was stilly faulty.
     - uggroup_calc calc gets the unit conversion factor from Group_Units (Units_ml)
+    - Avoid hard codded molwt by introducing aux variables, such as
+      ug_NO3_C=Units_Scale('ug', iadv_NO3_C)
 
   Output_hourly:
     - Add Z_MID hourly output type

@@ -192,6 +192,8 @@ private
 
   integer, private, save :: iadv_O3=-999,iadv_NO3_C=-999,  & ! Avoid hard codded IXADV_SPCS
     iadv_EC_C_WOOD=-999,iadv_EC_C_FFUEL=-999,iadv_POM_C_FFUEL=-999
+  integer, private, save :: ug_NO3_C=-999.0,  &             ! Avoid hard codded molwt
+    ug_EC_C_WOOD=-999.0,ug_EC_C_FFUEL=-999.0,ug_POM_C_FFUEL=-999.0
 
    contains
 
@@ -238,6 +240,10 @@ private
     iadv_EC_C_WOOD  =find_index('EC_C_WOOD'  ,species_adv(:)%name )
     iadv_EC_C_FFUEL =find_index('EC_C_FFUEL' ,species_adv(:)%name )
     iadv_POM_C_FFUEL=find_index('POM_C_FFUEL',species_adv(:)%name )
+    if(iadv_NO3_C      >0)ug_NO3_C      =Units_Scale('ug', iadv_NO3_C      )
+    if(iadv_EC_C_WOOD  >0)ug_EC_C_WOOD  =Units_Scale('ug', iadv_EC_C_WOOD  )
+    if(iadv_EC_C_FFUEL >0)ug_EC_C_FFUEL =Units_Scale('ug', iadv_EC_C_FFUEL )
+    if(iadv_POM_C_FFUEL>0)ug_POM_C_FFUEL=Units_Scale('ug', iadv_POM_C_FFUEL)
 
     call Define_Derived()
     call Setups()  ! just for VOC now
@@ -463,8 +469,9 @@ do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
           .or. OutputFields(ind)%txt4 == "PM25_rh50" &
           .or. OutputFields(ind)%txt4 == "PM25X_rh50"&
           .or. OutputFields(ind)%txt4 == "PM10_rh50" & ) then
-          iadv = -1     ! Units_Scale(iadv=-1) returns 1.0
-                        ! uggroup_calc gets the unit conversion factor from Group_Units
+          iadv = -1 ! Units_Scale(iadv=-1) returns 1.0
+                    ! uggroup_calc gets the unit conversion factor from Group_Units
+                    ! additional PM* components get conversion factor later cals to unitscale
           unitscale = Units_Scale(outunit, iadv, unittxt, volunit)
           if(MasterProc ) write(*,*)"FRACTION UNITSCALE ", unitscale
        end if
@@ -987,32 +994,37 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
             ind_pmwater = n
 
           case ( "PM25" )      ! Need to add PMFINE + fraction NO3_c
-            if(first_call)&
+            if(first_call)then
+              call CheckStop(f_2d(n)%unit/="ug","Wrong unit for "//trim(typ))
               call CheckStop(iadv_NO3_C<1,"Unknown specie NO3_C")
+            endif
 
             !scale = 62.0
             ! All this size class has the same cfac.
             forall ( i=1:limax, j=1:ljmax )
               d_2d( n, i,j,IOU_INST) = d_2d(ind_pmfine,i,j,IOU_INST) + &
                                        fracPM25 * &
-                  (   62.0 * xn_adv(iadv_NO3_C,i,j,KMAX_MID)  &
-                     ) * cfac(iadv_NO3_C,i,j) * density(i,j)
+                  ( xn_adv(iadv_NO3_C,i,j,KMAX_MID) * ug_NO3_C &
+                  ) * cfac(iadv_NO3_C,i,j) * density(i,j)
             end forall
 
           case ( "PM25_rh50" )      ! Need to add PMFINE + fraction NO3_c
-            if(first_call)&
+            if(first_call)then
+              call CheckStop(f_2d(n)%unit/="ug","Wrong unit for "//trim(typ))
               call CheckStop(iadv_NO3_C<1,"Unknown specie NO3_C")
+            endif
 
             forall ( i=1:limax, j=1:ljmax )
               d_2d( n, i,j,IOU_INST) = d_2d(ind_pmfine,i,j,IOU_INST) + &
                                        PM25_water_rh50(i,j)*ATWAIR/PPBINV +  &
                                        fracPM25 * &
-                  (   62.0 * xn_adv(iadv_NO3_C,i,j,KMAX_MID)  &
-                     ) * cfac(iadv_NO3_C,i,j) * density(i,j)
+                  ( xn_adv(iadv_NO3_C,i,j,KMAX_MID) * ug_NO3_C &
+                  ) * cfac(iadv_NO3_C,i,j) * density(i,j)
             end forall
 
           case ( "PM25X" )      ! Need to add PMFINE + fraction NO3_c
             if(first_call)then
+              call CheckStop(f_2d(n)%unit/="ug","Wrong unit for "//trim(typ))
               call CheckStop(iadv_NO3_C      <1,"Unknown specie NO3_C")
               call CheckStop(iadv_EC_C_WOOD  <1,"Unknown specie EC_C_WOOD")
               call CheckStop(iadv_EC_C_FFUEL <1,"Unknown specie EC_C_FFUEL")
@@ -1024,15 +1036,16 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
             forall ( i=1:limax, j=1:ljmax )
               d_2d( n, i,j,IOU_INST) = d_2d(ind_pmfine,i,j,IOU_INST) + &
                                        fracPM25 * &
-                  (   62.0 * xn_adv(iadv_NO3_C      ,i,j,KMAX_MID)  &
-                    + 12.0 * xn_adv(iadv_EC_C_WOOD  ,i,j,KMAX_MID) &
-                    + 12.0 * xn_adv(iadv_EC_C_FFUEL ,i,j,KMAX_MID) &
-                    + 15.0 * xn_adv(iadv_POM_C_FFUEL,i,j,KMAX_MID) &
-                   ) * cfac(iadv_NO3_C,i,j) * density(i,j)
+                  ( xn_adv(iadv_NO3_C      ,i,j,KMAX_MID) * ug_NO3_C       &
+                  + xn_adv(iadv_EC_C_WOOD  ,i,j,KMAX_MID) * ug_EC_C_WOOD   &
+                  + xn_adv(iadv_EC_C_FFUEL ,i,j,KMAX_MID) * ug_EC_C_FFUEL  &
+                  + xn_adv(iadv_POM_C_FFUEL,i,j,KMAX_MID) * ug_POM_C_FFUEL &
+                  ) * cfac(iadv_NO3_C,i,j) * density(i,j)
             end forall
 
          case ( "PM25X_rh50" )      ! Need to add PMFINE + fraction NO3_c + water
             if(first_call)then
+              call CheckStop(f_2d(n)%unit/="ug","Wrong unit for "//trim(typ))
               call CheckStop(iadv_NO3_C      <1,"Unknown specie NO3_C")
               call CheckStop(iadv_EC_C_WOOD  <1,"Unknown specie EC_C_WOOD")
               call CheckStop(iadv_EC_C_FFUEL <1,"Unknown specie EC_C_FFUEL")
@@ -1043,11 +1056,11 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
               d_2d( n, i,j,IOU_INST) = d_2d(ind_pmfine,i,j,IOU_INST) + &
                                        PM25_water_rh50(i,j) * ATWAIR/PPBINV + &
                                        fracPM25 * &
-                  (   62.0 * xn_adv(iadv_NO3_C      ,i,j,KMAX_MID)  &
-                    + 12.0 * xn_adv(iadv_EC_C_WOOD  ,i,j,KMAX_MID) &
-                    + 12.0 * xn_adv(iadv_EC_C_FFUEL ,i,j,KMAX_MID) &
-                    + 15.0 * xn_adv(iadv_POM_C_FFUEL,i,j,KMAX_MID) &
-                   ) * cfac(iadv_NO3_C,i,j) * density(i,j)
+                  ( xn_adv(iadv_NO3_C      ,i,j,KMAX_MID) * ug_NO3_C       &
+                  + xn_adv(iadv_EC_C_WOOD  ,i,j,KMAX_MID) * ug_EC_C_WOOD   &
+                  + xn_adv(iadv_EC_C_FFUEL ,i,j,KMAX_MID) * ug_EC_C_FFUEL  &
+                  + xn_adv(iadv_POM_C_FFUEL,i,j,KMAX_MID) * ug_POM_C_FFUEL &
+                  ) * cfac(iadv_NO3_C,i,j) * density(i,j)
             end forall
 
           case ( "PM10_rh50" )      ! Need to add PMFINE + fraction NO3_c
@@ -1058,6 +1071,7 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
 
             if(DEBUG.and. debug_proc )  then
               if(first_call)then
+                call CheckStop(f_2d(n)%unit/="ug","Wrong unit for "//trim(typ))
                 call CheckStop(iadv_NO3_C      <1,"Unknown specie NO3_C")
                 call CheckStop(iadv_EC_C_WOOD  <1,"Unknown specie EC_C_WOOD")
                 call CheckStop(iadv_EC_C_FFUEL <1,"Unknown specie EC_C_FFUEL")
@@ -1068,7 +1082,7 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
               write(*,"(a,2i4,4es12.3)") "Adding PM25FRACTIONS:", n, ind_pmfine,  &
                   PM25_water_rh50(i,j)* ATWAIR/PPBINV, &
                   d_2d(ind_pmfine,i,j,IOU_INST), d_2d( n, i,j,IOU_INST),&
-                      62.0 * xn_adv(iadv_NO3_C,i,j,KMAX_MID) &
+                  ug_NO3_C * xn_adv(iadv_NO3_C,i,j,KMAX_MID) &
                            * cfac(iadv_NO3_C,i,j) * density(i,j)
               write(*,"(a,i4,f5.2,4es12.3)") "CFAC PM25FRACTIONS:", n, fracPM25,  &
                       cfac(iadv_NO3_C    ,i,j), cfac(iadv_POM_C_FFUEL,i,j), &
