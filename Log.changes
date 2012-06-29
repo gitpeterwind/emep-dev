@@ -127,6 +127,8 @@ xxxxxxxx rv4beta16 Alvaro    27,29/6/2012  xxxxxxxxxxxxxxxxxxxxxxx
     - uggroup_calc calc gets the unit conversion factor from Group_Units (Units_ml)
     - Avoid hard codded molwt by introducing aux variables, such as
       ug_NO3_C=Units_Scale('ug', iadv_NO3_C)
+    - Use d_2d(ind_pmwater,i,j,IOU_INST) instead of PM25_water_rh50(i,j)*ATWAIR/PPBINV
+      for PM25_rh50, PM25X_rh50 and PM10_rh50 output types
 
   Output_hourly:
     - Add Z_MID hourly output type
