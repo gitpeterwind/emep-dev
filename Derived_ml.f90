@@ -463,8 +463,9 @@ do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
           .or. OutputFields(ind)%txt4 == "PM25_rh50" &
           .or. OutputFields(ind)%txt4 == "PM25X_rh50"&
           .or. OutputFields(ind)%txt4 == "PM10_rh50" & ) then
-          itot = 0
-          unitscale = Units_Scale(outunit, itot, unittxt, volunit)
+          iadv = -1     ! Units_Scale(iadv=-1) returns 1.0
+                        ! uggroup_calc gets the unit conversion factor from Group_Units
+          unitscale = Units_Scale(outunit, iadv, unittxt, volunit)
           if(MasterProc ) write(*,*)"FRACTION UNITSCALE ", unitscale
        end if
 
