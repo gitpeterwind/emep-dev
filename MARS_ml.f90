@@ -594,7 +594,8 @@ if( DEBUG_EQUIB .and. debug_flag ) print *, "MARS DISC NEG2 ", XNO3, WH2O, DISC
             GNO3 = HNO3
             ASO4 = TSO4 * MWSO4
             ANO3 = NO3
-            ANH4 = YNH4 * MWNH4
+            !ANH4 = YNH4 * MWNH4
+            ANH4 = min( YNH4 * MWNH4, TMASSNH3)  ! ds added "min"
             GNH3 = TMASSNH3 - ANH4
 
               !WRITE( 10, * ) ' COMPLEX ROOTS '
@@ -606,20 +607,35 @@ if( DEBUG_EQUIB .and. debug_flag ) print *, "MARS DISC NEG2 ", XNO3, WH2O, DISC
 
           !DS IF ( AA /= 0.0 ) THEN
           IF ( abs(AA) > FLOOR  ) THEN
-if( DEBUG_EQUIB .and. debug_flag ) print "(a,9es11.3)", "MARS DEGEN  ",  XNO3, WH2O, DISC, AA, BB, CC
-            DD = SQRT( DISC )
-            XXQ = -0.5 * ( BB + SIGN ( 1.0, BB ) * DD )
-            RR1 = XXQ / AA
-            RR2 = CC / XXQ
+             if( DEBUG_EQUIB .and. debug_flag ) print "(a,9es11.3)", "MARS DEGEN  ",  XNO3, WH2O, DISC, AA, BB, CC
+             DD = SQRT( DISC )
+             XXQ = -0.5 * ( BB + SIGN ( 1.0, BB ) * DD )
+             RR1 = XXQ / AA
+             RR2 = CC / XXQ
+             
+             !...choose minimum positve root         
+             
+             IF ( ( RR1 * RR2 ) < 0.0 ) THEN
+                if( DEBUG_EQUIB .and. debug_flag ) print "(a,10es10.3)", "MARS RR1*RR2  ", XNO3, WH2O, DISC, RR1, RR2
+                XNO3 = MAX( RR1, RR2 )
+             ELSE if(MIN( RR1, RR2 )>0.0)then
+                XNO3 = MIN( RR1, RR2 )
+             ELSE!two negative roots !DS PW added 4th July 2012
 
-!...choose minimum positve root         
-
-            IF ( ( RR1 * RR2 ) < 0.0 ) THEN
-              if( DEBUG_EQUIB .and. debug_flag ) print "(a,10es10.3)", "MARS RR1*RR2  ", XNO3, WH2O, DISC, RR1, RR2
-              XNO3 = MAX( RR1, RR2 )
-            ELSE 
-              XNO3 = MIN( RR1, RR2 )
-            END IF
+                           !--------------------- return copied from above
+                XNO3 = 0.0
+                AH2O = 1000.0 * WH2O
+                YNH4 = TWOSO4
+                GNO3 = HNO3
+                ASO4 = TSO4 * MWSO4
+                ANO3 = NO3
+                !ds ANH4 = YNH4 * MWNH4
+                ANH4 = min( YNH4 * MWNH4, TMASSNH3)  ! ds added "min"
+                GNH3 = TMASSNH3 - ANH4
+                if( DEBUG_EQUIB .and. debug_flag ) WRITE( *, * ) ' TWO NEG ROOTS '
+                RETURN
+                
+             END IF
           ELSE
              XNO3 = - CC / BB
 if( DEBUG_EQUIB .and. debug_flag ) print "(a,4es10.3)", "MARS NONDEGEN  ",  AA, BB, CC, XNO3
@@ -676,8 +692,10 @@ if( DEBUG_EQUIB .and. debug_flag ) print "(a,4es10.3)", "MARS NONDEGEN  ",  AA, 
 !!!     &      GAMS( 2, 1 ), GAMS( 2, 2 ), GAMS( 2, 3 ), PHIBAR
 ! 2/25/99 IJA
             ASO4 = TSO4 * MWSO4
-            ANO3 = XNO3 * MWNO3
-            ANH4 = YNH4 * MWNH4
+!            ANO3 = XNO3 * MWNO3
+            ANO3 = min(XNO3 * MWNO3,TMASSHNO3) !pw added min
+            !ANH4 = YNH4 * MWNH4
+            ANH4 = min( YNH4 * MWNH4, TMASSNH3 )  ! ds pw added "min"
             GNO3 = TMASSHNO3  - ANO3
             GNH3 = TMASSNH3   - ANH4
             AH2O = 1000.0 * WH2O
@@ -693,7 +711,8 @@ if( DEBUG_EQUIB .and. debug_flag ) print "(a,4es10.3)", "MARS NONDEGEN  ",  AA, 
         ANO3 = NO3
         XNO3 = NO3 / MWNO3
         YNH4 = TWOSO4
-        ANH4 = YNH4 * MWNH4
+!        ANH4 = YNH4 * MWNH4
+        ANH4 = min( YNH4 * MWNH4, TMASSNH3 )  ! ds pw added "min"
         CALL AWATER ( fRH, TSO4, YNH4, XNO3, AH2O)
         GNO3 = HNO3
         GNH3 = TMASSNH3 - ANH4
