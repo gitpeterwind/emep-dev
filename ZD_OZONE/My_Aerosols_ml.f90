@@ -43,7 +43,7 @@
 ! 4. EQUILIB_EQSAM - run EQSAM equilibrium model
 !----------------------------------------------------------------------
 
- use CheckStop_ml,         only :  StopAll
+ use CheckStop_ml,         only :  StopAll, CheckStop
  use ChemSpecs_tot_ml,     only :  SO4, NH3, HNO3, NO3_f, NH4_f
  use ChemSpecs_shl_ml,     only :  NSPEC_SHL
  use ChemChemicals_ml,     only :  species
@@ -51,7 +51,7 @@
                                    cfac
  use EQSAM_v03d_ml,        only :  eqsam_v03d
  use MARS_ml,              only :  rpmares
- use ModelConstants_ml,    only :  KMAX_MID, KCHEMTOP
+ use ModelConstants_ml,    only :  KMAX_MID, KCHEMTOP, DEBUG_EQUIB
  use PhysicalConstants_ml, only :  AVOG
  use Setup_1dfields_ml,    only :  xn_2d,       & ! SIA concentration 
                                    temp, rh, pp
@@ -108,6 +108,13 @@ contains
                     aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out, &
                     ERRMARK,debug_flag) 
  !--------------------------------------------------------------------------
+
+      if( DEBUG_EQUIB) then
+        call CheckStop(gNO3out< 0.0, "XMARS: gNO3out")
+        call CheckStop(gNH3out< 0.0, "XMARS: gNH3out")
+        call CheckStop(aNO3out< 0.0, "XMARS: aNO3out")
+        call CheckStop(aNH4out< 0.0, "XMARS: aNH4out")
+      end if ! DEBUG_EQUIB
 
       xn_2d(HNO3,k)  = max (FLOOR, gNO3out / (species(HNO3)%molwt *coef) )
       xn_2d(NH3,k)   = max (FLOOR, gNH3out / (species(NH3)%molwt  *coef) )

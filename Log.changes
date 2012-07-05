@@ -112,6 +112,13 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
+xxxxxxxx rv4beta18 Dave         5/7/2012  xxxxxxxxxxxxxxxxxxxxxxx
+
+MARS_ml - more safety checks added.
+
+My_Aerosols_ml - more safety checks whe DEBUG_EUIB = true.
+
+
 xxxxxxxx rv4beta17 Dave Peter   4/7/2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 (not tested)

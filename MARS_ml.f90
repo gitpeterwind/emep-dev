@@ -41,7 +41,8 @@ module MARS_ml
  implicit none
  private
 
-  real, parameter ::    FLOOR = 1.0E-50         ! minimum concentration  
+  real, parameter ::    FLOOR = 1.0E-30       ! minimum concentration  
+                                              ! -30 from RPM
 
 
  !/- subroutines:
@@ -49,6 +50,28 @@ module MARS_ml
               cubic,     &
               actcof
 
+      integer, private, save :: MAXNNN1 = 0
+      integer, private, save :: MAXNNN2 = 0
+!ds      real        MWNO3            ! molecular weight for NO3
+      real, private, parameter :: MWNO3  = 62.0049 
+
+!ds      real        MWHNO3           ! molecular weight for HNO3
+      real, private, parameter :: MWHNO3 = 63.01287       
+
+!ds      real        MWSO4            ! molecular weight for SO4
+      real, private, parameter :: MWSO4 = 96.0576 
+
+!ds      real        MWHSO4           ! molecular weight for HSO4
+      real, private, parameter :: MWHSO4 = MWSO4 + 1.0080
+
+!ds      real        MH2SO4           ! molecular weight for H2SO4
+      real, private, parameter :: MH2SO4 = 98.07354 
+
+!ds      real        MWNH3            ! molecular weight for NH3
+      real, private, parameter :: MWNH3 = 17.03061 
+
+!ds      real        MWNH4            ! molecular weight for NH4
+      real, private, parameter :: MWNH4 = 18.03858
  contains
 
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -213,26 +236,7 @@ module MARS_ml
       real        MWNACL           ! molecular weight for NaCl
       parameter ( MWNACL = 58.44277 )
 
-      real        MWNO3            ! molecular weight for NO3
-      parameter ( MWNO3  = 62.0049 ) 
-
-      real        MWHNO3           ! molecular weight for HNO3
-      parameter ( MWHNO3 = 63.01287 )       
-
-      real        MWSO4            ! molecular weight for SO4
-      parameter ( MWSO4 = 96.0576 )
-
-      real        MWHSO4           ! molecular weight for HSO4
-      parameter ( MWHSO4 = MWSO4 + 1.0080 ) 
-
-      real        MH2SO4           ! molecular weight for H2SO4
-      parameter ( MH2SO4 = 98.07354 ) 
-
-      real        MWNH3            ! molecular weight for NH3
-      parameter ( MWNH3 = 17.03061 ) 
-
-      real        MWNH4            ! molecular weight for NH4
-      parameter ( MWNH4 = 18.03858 )
+!ds moved a bunch upstairs.
 
       real        MWORG            ! molecular weight for Organic Species
       parameter ( MWORG = 16.0 )
@@ -359,6 +363,8 @@ module MARS_ml
 
       ASO4=0.0;ANO3=0.0;AH2O=0.0;ANH4=0.0;GNO3=0.0;GNH3=0.0 
 
+      ASO4 = SO4   !ds from RPM
+
 !...convert into micromoles/m**3
  
 !..iamodels3 merge NH3/NH4 , HNO3,NO3 here
@@ -425,6 +431,20 @@ module MARS_ml
       GAMAAN = 1.0
       GAMOLD = 1.0
 
+!ds from RPM, but removed FLOOR : (slighty different logic)
+      if( (TSO4 < MINSO4 ) .and. (TNO3 < MINNO3) ) then
+        !print *, "DSX  HERE"
+          ASO4 = SO4   ! MAX..
+          ANO3 = NO3   ! MAX..      
+          WH2O = 0.0
+          AH2O = 0.0
+          GNH3 = NH3   ! MAX(FLOOR,NH3)
+          GNO3 = NO3   ! MAX(FLOOR,NO3)
+          RETURN
+       END IF
+!ds end rpm
+
+
 !...set the ratio according to the amount of sulfate and nitrate
 
       IF ( TSO4 > MINSO4 ) THEN
@@ -440,12 +460,12 @@ module MARS_ml
 ! *** If there is very little sulfate and nitrate set concentrations
 !      to a very small value and return.    
 ! Jun 2012, Note these values are set in the initialisation
-          ASO4 = MAX(FLOOR, ASO4)
-          ANO3 = MAX(FLOOR, ANO3 )          
+          ASO4 = SO4 ! MAX(FLOOR, ASO4)
+          ANO3 = NO3 ! MAX(FLOOR, ANO3 )          
           WH2O = 0.0
           AH2O = 0.0
-          GNH3 = MAX(FLOOR,GNH3)
-          GNO3 = MAX(FLOOR,GNO3)
+          GNH3 = NH3 ! MAX(FLOOR,GNH3)
+          GNO3 = NO3 ! MAX(FLOOR,GNO3)
           RETURN
        END IF
        
@@ -465,7 +485,7 @@ module MARS_ml
 !......... High Ammonia Case ........
 !....................................
  
-      IF ( RATIO > 2.0 ) THEN
+      IF ( RATIO > 2.0 ) THEN    ! NH4/SO4 > 2
         GAMAAN = 0.1
 
 !...Set up twice the sulfate for future use.
@@ -494,7 +514,8 @@ if ( DEBUG_EQUIB ) then
      call CheckStop("MARS")
   end if
 end if
-        WFRAC = AH2O / ( ASO4 + ANH4 +  AH2O + FLOOR  )
+        WFRAC = (AH2O + FLOOR)  / ( ASO4 + ANH4 +  AH2O + FLOOR  )
+        !ds WFRAC = AH2O / ( ASO4 + ANH4 +  AH2O + FLOOR  )
         !CRUDE FIX? WFRAC = AH2O / ( ASO4 + ANH4 +  AH2O )
 !!!!       IF ( WFRAC == 0.0 )  RETURN   ! No water       
         IF ( WFRAC < 0.2 ) THEN
@@ -520,7 +541,8 @@ end if
 !2/25/99 IJA
 
             !DS IF ( DISC < 0.0 ) THEN
-            IF ( DISC < FLOOR ) THEN
+            !dsDSdIF ( DISC < FLOOR ) THEN
+            IF ( DISC < 0.0 ) THEN
 if( DEBUG_EQUIB .and. debug_flag ) print *, "MARS DISC NEG ", XNO3, WH2O, DISC
               XNO3 = 0.0
               AH2O = 1000.0 * WH2O
@@ -530,6 +552,10 @@ if( DEBUG_EQUIB .and. debug_flag ) print *, "MARS DISC NEG ", XNO3, WH2O, DISC
               ANO3 = NO3
               ANH4 = YNH4 * MWNH4
               GNH3 = TMASSNH3 - ANH4
+              if( GNH3 < 0.0 ) then
+                 print *, " NEG GNH3", TWOSO4, ANH4, TMASSNH3
+                 call CheckStop("NEG GNH3")
+              end if
               RETURN
             END IF
 
@@ -547,10 +573,16 @@ if( DEBUG_EQUIB .and. debug_flag ) print *, "MARS DISC NEG ", XNO3, WH2O, DISC
           AH2O = 1000.0 * WH2O
           YNH4 = TWOSO4 + XNO3
           ASO4 = TSO4 * MWSO4
-          ANO3 = XNO3 * MWNO3
-          ANH4 = YNH4 * MWNH4
+          !dsSAFE ANO3 = XNO3 * MWNO3
+          ANO3 = min(XNO3 * MWNO3, TMASSHNO3 )
+          !dsSAFE ANH4 = YNH4 * MWNH4 ! ds should be safe as NH4/SO4 >2, but anyway:
+          ANH4 = min(YNH4 * MWNH4, TMASSNH3 )  ! ds should be safe as NH4/SO4 >2, but anyway:
           GNH3 = TMASSNH3 - ANH4
           GNO3 = TMASSHNO3 - ANO3
+          !    if( GNH3 < 0.0 .or. GNO3 < 0.0 ) then
+          !       print *, " NEG GNH3 GNO3", TWOSO4, ANH4, TMASSNH3, ANO3, TMASSHNO3
+          !       call CheckStop("NEG GNH3 GNO3")
+          !    end if
           RETURN
 
         END IF
@@ -582,11 +614,16 @@ if( DEBUG_EQUIB .and. debug_flag ) print *, "MARS DISC NEG ", XNO3, WH2O, DISC
 
           DISC = BB * BB - 4.0 * AA * CC
 
+          if( DEBUG_EQUIB ) then
+            MAXNNN1 = NNN
+            !if( MAXNNN1 > 140) print "(a,i4,9es12.3)", "NNN1 ", NNN, DISC, TNO3, TNH4, TWOSO4
+          end if
 !...Check for complex roots, retain inital values and RETURN
 !2/25/99 IJA
 
           !DS IF ( DISC < 0.0 ) THEN
-          IF ( DISC < FLOOR ) THEN
+          !dsDS IF ( DISC < FLOOR ) THEN
+          IF ( DISC < 0.0 ) THEN
 if( DEBUG_EQUIB .and. debug_flag ) print *, "MARS DISC NEG2 ", XNO3, WH2O, DISC
             XNO3 = 0.0
             AH2O = 1000.0 * WH2O
@@ -637,7 +674,7 @@ if( DEBUG_EQUIB .and. debug_flag ) print *, "MARS DISC NEG2 ", XNO3, WH2O, DISC
                 
              END IF
           ELSE
-             XNO3 = - CC / BB
+             XNO3 = - CC / BB   ! AA equals zero here
 if( DEBUG_EQUIB .and. debug_flag ) print "(a,4es10.3)", "MARS NONDEGEN  ",  AA, BB, CC, XNO3
           END IF
 
@@ -739,13 +776,15 @@ if( DEBUG_EQUIB .and. debug_flag ) print "(a,4es10.3)", "MARS NONDEGEN  ",  AA, 
 ! 2/25/99 IJA 
         ASO4 = TSO4 * MWSO4
         ANH4 = TNH4 * MWNH4
-        ANO3 = NO3
+        !dsSAFE ANO3 = NO3
+        ANO3 = min( NO3, TMASSHNO3 )
         GNO3 = TMASSHNO3 - ANO3
         GNH3 = FLOOR
 
 !...Check for zero water.      
 
-        IF ( WH2O == 0.0 ) RETURN
+        !ds IF ( WH2O == 0.0 ) RETURN
+        IF ( abs(WH2O) < FLOOR ) RETURN
         ZSO4 = TSO4 / WH2O 
 
 !...ZSO4 is the molality of total sulfate i.e. MSO4 + MHSO4      
@@ -780,6 +819,10 @@ if( DEBUG_EQUIB .and. debug_flag ) print "(a,4es10.3)", "MARS NONDEGEN  ",  AA, 
 !...loop for iteration
  
         DO 1601 NNN = 1, 150
+          if( DEBUG_EQUIB ) then
+            if(NNN > MAXNNN2 ) MAXNNN2 = NNN
+            !if( MAXNNN2 > 140) print *, "NNN2 ", NNN, TNO3, TNH4, TWOSO4
+          end if
           NITR = NNN
 
 !...set up equilibrium constants including activities
@@ -811,9 +854,13 @@ if( DEBUG_EQUIB .and. debug_flag ) print "(a,4es10.3)", "MARS NONDEGEN  ",  AA, 
           MNA = MAX( 0.0, MNA )
           MNA = MIN( MNA, TNO3 / WH2O )
           XNO3 = MNA * WH2O
-          ANO3 = MNA * WH2O * MWNO3
+          !ds ANO3 = MNA * WH2O * MWNO3
+          ANO3 = min( TMASSHNO3, MNA * WH2O * MWNO3)
 ! 2/25/99 IJA
           GNO3 = TMASSHNO3 - ANO3
+          if( DEBUG_EQUIB ) then
+             if (GNO3 < 0.0 ) call CheckStop("NNN2 GNO3 NEG")
+          end if
         
 !...Calculate ionic strength      
 
