@@ -151,6 +151,9 @@ GenChem,MassBudget_ml,Aqueous_n_WetDep_ml,Derived_ml:
   - Restrict wdeploss & ddeploss (currently not used) to NSPEC_ADV (MassBudget_ml)
   - Use IXADV indexes in AddNewDeriv (Derived_ml) for WDEP_WANTED,
     and assume f_2d(if2)%index an IXADV in Init_WetDep & WetDep_Budget (Aqueous_n_WetDep_ml)
+  - totWdep is no longer calculated for hard coded groups (only SOX, OXN & RDN).
+    It is assigned to the IXADV indexes in WetDep_Budget (Aqueous_n_WetDep_ml),
+    just as totDdep is assigned in drydep (DryDep_ml).
 
 Aqueous_n_WetDep_ml,Units_ml:
  Store group IXADV and unit conversion factors in special type
