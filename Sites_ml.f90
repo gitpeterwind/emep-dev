@@ -416,7 +416,6 @@ subroutine siteswrt_surf(xn_adv,cfac,xn_shl)
       endif
     enddo
 
-    my_first_call = .false.
 
     do ispec = 1, NSHL_SITE
       out(NADV_SITE+ispec,i)  = xn_shl( SITE_SHL(ispec) ,ix,iy,iz )
@@ -442,11 +441,22 @@ subroutine siteswrt_surf(xn_adv,cfac,xn_shl)
           "ABS(SITES OUT: '"//trim(SITE_XTRA_MISC(ispec))//"') TOO BIG" )
       end do
       do ispec = 1, NXTRA_SITE_D2D
-        nn=nn+1
         d2code      = SITE_XTRA_D2D(ispec)
         d2index     = find_index(d2code, f_2d(:)%name)
-        call CheckStop( d2index<1, "SITES D2D NOT FOUND"//trim(d2code) )
-        out(nn,i)   = d_2d(d2index,ix,iy,IOU_INST)
+        nn=nn+1
+
+        if ( d2index < 1 ) then
+           if( my_first_call) write(*,*) &
+                 "WARNING: SITES D2D NOT FOUND"//trim(d2code)
+           !cycle
+           out(nn,i)   = -999.9
+        else
+           !call CheckStop( d2index<1, "SITES D2D NOT FOUND"//trim(d2code) )
+           out(nn,i)   = d_2d(d2index,ix,iy,IOU_INST)
+        end if
+
+        !May25 call CheckStop( d2index<1, "SITES D2D NOT FOUND"//trim(d2code) )
+        !May25 out(nn,i)   = d_2d(d2index,ix,iy,IOU_INST)
         if( DEBUG_SITES ) &
           write(6,"(a,3i3,a,i4,es10.3)") "DEBUG_SITES ", me, nn, i,&
             trim(d2code), d2index, out(nn,i)
@@ -455,6 +465,8 @@ subroutine siteswrt_surf(xn_adv,cfac,xn_shl)
       enddo
     endif
   enddo
+
+    my_first_call = .false.
 
   ! collect data into gout on me=0 t
 
