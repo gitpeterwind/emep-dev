@@ -111,10 +111,9 @@ my %BENCHMARK;
 if (%BENCHMARK) {
   $BENCHMARK{'debug'}   = 1;  # chech if all debug flags are .false.
   $BENCHMARK{'archive'} = 1;  # save summary info in $DataDir
-  $MAKEMODE = $BENCHMARK{'make'}?$BENCHMARK{'make'}:"EMEP" unless $MAKEMODE;  # comment for non EmChem09soa benchmarks
-# $BENCHMARK{'ndx'}     = 8;    # number of procesors in x-direction
-# $BENCHMARK{'ndy'}     = 8;    # number of procesors in y-direction
-  # Default setting, if not previously specified
+# $BENCHMARK{'ndx'}     = 8;  # number of procesors in x-direction
+# $BENCHMARK{'ndy'}     = 8;  # number of procesors in y-direction
+# Default setting, if not previously specified
   $BENCHMARK{'chem'}    = "EmChem09soa"
     unless $BENCHMARK{'chem'};  # chemical mecanism, e.g. OpenSource 2008
   $BENCHMARK{'make'}    = ($BENCHMARK{'chem'} eq "EmChem09soa")?"EMEP":"all"
@@ -251,7 +250,7 @@ my $Chem     = "EmChem09soa";
 #$Chem     = "CRI_v2_R5";
    $Chem     = $BENCHMARK{'chem'} if $BENCHMARK{'chem'};
 
-my $testv = "rv4beta16";
+my $testv = "rv4beta20";
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code

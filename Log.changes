@@ -112,6 +112,53 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
+xxxxxxxx rv4beta20 Alvaro      13/7/2012  xxxxxxxxxxxxxxxxxxxxxxx
+
+New features:
+  - WDEP/GROUP output can be produced for groups with elements
+    with %nitrogens/=1 in mgN or %sulphurs/=1 in mgS.
+  - WDEP/GROUP output in mg, mgC and mBq (radioactive exposure).
+  - WDEP is restricted to ADV species. No WDEP is allowed for SHL species.
+    Note that, this was already the case for DDEP.
+
+Aqueous_n_WetDep_ml,Derived_ml:
+  Wrong WDEP/SPEC output. Bug introcuded in rv4beta14.
+  Was not corrected in rv4beta16, as My_Derived_ml contains no WDEP/SPEC output.
+  - Molecular wheight was accounted twice, in Define_Derived
+    (Derived_ml via Units_Scale) and in Init_WetDep (Aqueous_n_WetDep_ml)
+  - Remove hard codded molecular weights in Init_WetDep (Aqueous_n_WetDep_ml)
+  - Units conversions for WDEP/SPEC output are handeled exclusively
+    by Units_Scale (in Derived_ml.Define_Derived).
+  - Units conversions for WDEP/GROUP output are handeled exclusively
+    by Group_Units (in Aqueous_n_WetDep_ml.WetDep_Budget).
+  - Use only the SPEC/GROUP number defined in Define_Derived (Derived_ml),
+    and refer to f_2d(if2)%index in Init_WetDep & WetDep_Budget.
+    Thus, eliminating the need for typ_i3 arrays tmpgroup & tmpspec.
+
+ZD_*/My_Derived_ml:
+  - WDEP specific units mgSS and mgP(?) are now obselete.
+    They are replaced with mg in ZD_*/My_Derived_ml.
+  - Add SO2 and HNO3 to WDEP/SPEC output in ZD_OZONE/My_Derived_ml
+    New Benchmarks for rv4beta14 & rv4beta16 contain this additional output.
+
+Units_ml:
+  Wrong unit text for mg, mgC, mgN & mgS. Bug introcuded in rv4beta14.
+  - Units written for WDEP Derived outputs were mg*/m3 instead of mg*/m2.
+
+GenChem,MassBudget_ml,Aqueous_n_WetDep_ml,Derived_ml:
+  Limit WetDep to ADV species
+  - WetDep mapping uses IXADV_"SPEC" (GenChem)
+  - Restrict wdeploss & ddeploss (currently not used) to NSPEC_ADV (MassBudget_ml)
+  - Use IXADV indexes in AddNewDeriv (Derived_ml) for WDEP_WANTED,
+    and assume f_2d(if2)%index an IXADV in Init_WetDep & WetDep_Budget (Aqueous_n_WetDep_ml)
+
+Aqueous_n_WetDep_ml,Units_ml:
+ Store group IXADV and unit conversion factors in special type
+ - type group_umap(name,iadv,uconv) for group index & conversion factors (Units_ml).
+ - function Group_Scale, based on subroutine Group_Units,
+   provides group_umap output (Units_ml).
+ - store wetGroupUnits in Init_WetDep for later reference in WetDep_Budget (Aqueous_n_WetDep_ml)
+
 xxxxxxxx rv4beta19 Dave/Agnes  13/7/2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 Country_ml   - correction for CS
@@ -119,7 +166,6 @@ Country_ml   - correction for CS
 Sites_ml.f90 - sets "NOT FOUND" d_2d species to -999
 
 ZD_SR/My_Derived_ml - extra params as requested by Agnes/Chris
-
 
 xxxxxxxx rv4beta18 Dave         5/7/2012  xxxxxxxxxxxxxxxxxxxxxxx
 
@@ -140,12 +186,12 @@ Also a few "min(YNH4 * MWNH4, TMASSNH3)" have been added, as these could give ne
 For later reference, the following input values were giving wrong results:
 so4in= 9.469145296322812E-008
 hno3in=1.575623936674725E-002
-no3in=6.964374931256713E-012 
+no3in=6.964374931256713E-012
 nh3in=2.877165942842792E-008
 nh4in=1.927434239142973E-009
-rh=1.00000000000000  
-rh=0.99000000000000  
-temp=263.068584647992 
+rh=1.00000000000000
+rh=0.99000000000000
+temp=263.068584647992
 
 
 xxxxxxxx rv4beta16 Alvaro    27,29/6/2012  xxxxxxxxxxxxxxxxxxxxxxx

@@ -1269,56 +1269,54 @@ sub print_rates {
 } # end of sub print_rate
 ###############################################################################
  sub process_alldep {
-	my $ddep = shift;
-	my $wdep = shift;
-	my  $adv = shift;
-	my $found = 0;
-	#ok: print "CHECKING ALLDEP DDEP$ddep WDEP$wdep ADV$adv : @species_tot\n";
+  my $ddep = shift;
+  my $wdep = shift;
+  my $adv  = shift;
+  my $found = 0;
+  #ok: print "CHECKING ALLDEP DDEP$ddep WDEP$wdep ADV$adv : @species_tot\n";
 
-	$ddep = expand_shorthands($ddep);
-	     printall( "CDEP_EXPANDED ADV:$adv CDryDEP:$ddep\n");
-	$wdep = expand_shorthands($wdep);
-	     printall( "CDEP_EXPANDED ADV:$adv CWetDEP:$wdep\n");
-	my $comma = ",";
-	$comma = "" if $nddep < 1;
+  $ddep = expand_shorthands($ddep);
+    printall( "CDEP_EXPANDED ADV:$adv CDryDEP:$ddep\n");
+  $wdep = expand_shorthands($wdep);
+    printall( "CDEP_EXPANDED ADV:$adv CWetDEP:$wdep\n");
 
-     # 2010 use group hashes
+  # 2010 use group hashes
 
-        foreach my $n ( @{ $grp{"OXN"} } ) {
-           my $same_spec =  specs_equal($adv, $n ); # Ignores case
-	   push(@ddep_oxngroup,$adv) if  $same_spec;
-	   push(@wdep_oxngroup,$adv) if ( $same_spec && $wdep ne "-" ) ;
-	}
-        foreach my $s ( @{ $grp{"SOX"} } ) {
-           my $same_spec =  specs_equal($adv, $s ); # Ignores case
-	   push(@ddep_soxgroup,$adv) if $same_spec ;
-	   push(@wdep_soxgroup,$adv) if ($same_spec && $wdep ne "-" ) ;
-	}
-        foreach my $s ( @{ $grp{"SS"} } ) {
-           my $same_spec =  specs_equal($adv, $s ); # Ignores case
-	   push(@ddep_seagroup,$adv) if $same_spec ;
-	   push(@wdep_seagroup,$adv) if ($same_spec && $wdep ne "-" ) ;
-	}
-        foreach my $r ( @{ $grp{"RDN"} } ) {
-           my $same_spec =  specs_equal($adv, $r ); # Ignores case
-	   push(@ddep_rdngroup,$adv) if $same_spec;
-	   push(@wdep_rdngroup,$adv) if ( $same_spec && $wdep ne "-" ) ;
-	   printall( "WETDRY FOUND RDN WET ADV$adv R$r WDEP$wdep\n") if $adv eq $r;
-	}
+  foreach my $n ( @{ $grp{"OXN"} } ) {
+    my $same_spec =  specs_equal($adv, $n ); # Ignores case
+    push(@ddep_oxngroup,$adv) if  $same_spec;
+    push(@wdep_oxngroup,$adv) if ( $same_spec && $wdep ne "-" ) ;
+  }
+  foreach my $s ( @{ $grp{"SOX"} } ) {
+    my $same_spec =  specs_equal($adv, $s ); # Ignores case
+    push(@ddep_soxgroup,$adv) if $same_spec ;
+    push(@wdep_soxgroup,$adv) if ($same_spec && $wdep ne "-" ) ;
+  }
+  foreach my $s ( @{ $grp{"SS"} } ) {
+    my $same_spec =  specs_equal($adv, $s ); # Ignores case
+    push(@ddep_seagroup,$adv) if $same_spec ;
+    push(@wdep_seagroup,$adv) if ($same_spec && $wdep ne "-" ) ;
+  }
+  foreach my $r ( @{ $grp{"RDN"} } ) {
+    my $same_spec =  specs_equal($adv, $r ); # Ignores case
+    push(@ddep_rdngroup,$adv) if $same_spec;
+    push(@wdep_rdngroup,$adv) if ( $same_spec && $wdep ne "-" ) ;
+    printall( "WETDRY FOUND RDN WET ADV$adv R$r WDEP$wdep\n") if $adv eq $r;
+  }
 
-	$nddep += 1;
-	printall( "CDEP $ddep $wdep ADV $adv NDDEP $nddep  NWDEP $nwdep LINE$_ \n");
-	$ddep =~ s/DRY_//;
-	$ddep_txt .= "      $comma depmap( IXADV_$adv, CDDEP_$ddep, -1) & \n";
-
-	$comma = ",";
-	$comma = "" if $nwdep < 1;
-	$nwdep += 1 unless $wdep eq "-" ;
-
-	unless ( $wdep eq "-" ) { # Here we use total, not IXADV
- 	  $wdep =~ s/WET_//;
-	  $wdep_txt .= "      $comma depmap( $adv, CWDEP_$wdep, -1) & \n";
-	}
+  unless ($ddep eq "-") {
+    my $comma = ($nddep<1)?" ":",";
+    $ddep =~ s/DRY_//;
+    $ddep_txt .= "      $comma depmap( IXADV_$adv, CDDEP_$ddep, -1) & \n";
+    $nddep += 1;
+  }
+  unless ($wdep eq "-") {
+    my $comma = ($nwdep<1)?" ":",";
+    $wdep =~ s/WET_//;
+    $wdep_txt .= "      $comma depmap( IXADV_$adv, CWDEP_$wdep, -1) & \n";
+    $nwdep += 1;
+  }
+  printall("CDEP $ddep $wdep ADV $adv NDDEP $nddep  NWDEP $nwdep LINE$_ \n");
 }
 
 ###############################################################################

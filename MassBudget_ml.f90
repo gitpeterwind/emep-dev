@@ -1,9 +1,9 @@
 ! <MassBudget_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
 !          Chemical transport Model>
-!*****************************************************************************! 
-!* 
+!*****************************************************************************!
+!*
 !*  Copyright (C) 2007-2011 met.no
-!* 
+!*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
 !*  Box 43 Blindern
@@ -11,27 +11,27 @@
 !*  NORWAY
 !*  email: emep.mscw@met.no
 !*  http://www.emep.int
-!*  
+!*
 !*    This program is free software: you can redistribute it and/or modify
 !*    it under the terms of the GNU General Public License as published by
 !*    the Free Software Foundation, either version 3 of the License, or
 !*    (at your option) any later version.
-!* 
+!*
 !*    This program is distributed in the hope that it will be useful,
 !*    but WITHOUT ANY WARRANTY; without even the implied warranty of
 !*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 !*    GNU General Public License for more details.
-!* 
+!*
 !*    You should have received a copy of the GNU General Public License
 !*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************! 
+!*****************************************************************************!
 !_____________________________________________________________________________
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
  module   MassBudget_ml
 
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-! DESCRIPTION 
+! DESCRIPTION
 ! Routine to cross check the mass balance of the model
 !_____________________________________________________________________________
 
@@ -42,14 +42,14 @@
  use ChemSpecs_adv_ml,  only : NSPEC_ADV     ! No. species (long-lived)
  use ChemSpecs_shl_ml,  only : NSPEC_SHL     ! No. species (shorshort-lived)
  use Chemfields_ml ,  only : xn_adv        ! advective flag
- use GridValues_ml ,  only : carea,xmd     ! cell area, 1/xm2 where xm2 is 
-                                           ! the area factor in the middle 
-                                           ! of the cell 
+ use GridValues_ml ,  only : carea,xmd     ! cell area, 1/xm2 where xm2 is
+                                           ! the area factor in the middle
+                                           ! of the cell
  use GridValues_ml,   only : gridwidth_m,dA,dB
  use GridValues_ml ,  only : debug_proc, debug_li, debug_lj
  use Io_ml         ,  only : IO_RES, PrintLog   ! io=25
  use Io_ml         ,  only : datewrite   ! MASS
- use MetFields_ml  ,  only : ps            ! surface pressure  
+ use MetFields_ml  ,  only : ps            ! surface pressure
  use ModelConstants_ml,  only : &
     KMAX_MID , KCHEMTOP    & ! Start and upper k for 1d fields
                             ,MasterProc &  ! Master processor
@@ -58,10 +58,10 @@
                             ,PT         &  ! Pressure at top
                             ,ATWAIR     &  ! Mol. weight of air(Jones,1992)
                             ,TXTLEN_NAME&
-                            ,DEBUG_MASS &  
+                            ,DEBUG_MASS &
                             ,EXTENDEDMASSBUDGET
- use Par_ml,          only : MAXLIMAX   & 
-                            ,MAXLJMAX   &  
+ use Par_ml,          only : MAXLIMAX   &
+                            ,MAXLJMAX   &
                             ,li0,li1    &
                             ,lj0,lj1    &
                             ,limax,ljmax&
@@ -74,13 +74,13 @@
 !Variable listing
 !MAXLIMAX    ==> Maximum number of local points in longitude
 !MAXLJMAX    ==> Maximum number of local points in latitude
-!li0         ==> First local index in longitude when 
+!li0         ==> First local index in longitude when
 !                outer boundary is excluded
-!li1         ==> Last local index in longitude when 
+!li1         ==> Last local index in longitude when
 !                outer boundary is excluded
-!lj0         ==> First local index in latitude when 
+!lj0         ==> First local index in latitude when
 !                outer boundary is excluded
-!lj1         ==> Last local index in latitude when 
+!lj1         ==> Last local index in latitude when
 !                outer boundary is excluded
 !NPROC       ==> Total no. of processors for parallel computation
 !limax       ==> Actual number of local points in longitude
@@ -92,22 +92,20 @@
 !GIMAX = 132 ==> Number of global points in longitude
 !GJMAX = 111 ==> Number of global points in latitude
 
- 
+
 implicit none
 private
    INCLUDE 'mpif.h'
    INTEGER STATUS(MPI_STATUS_SIZE),INFO
    real    MPIbuff(NSPEC_ADV*KMAX_MID)
 
-! Some work arrays used in Aqueous_ml and (in future) DryDry
-! Use tot index for convenience
-  real, public, save, dimension(NSPEC_TOT) ::   &
-      wdeploss, & 
-      ddeploss
+! Some work arrays used in Aqueous_ml and (in future) DryDry:
+! Use ADV index, as Dry/WetDep makes no seance for SHL.
+   real, public, save, dimension(NSPEC_ADV) ::   &
+    wdeploss=0.0, ddeploss=0.0
 
 ! The following parameters are used to check the global mass budget:
 ! Initialise here also.
-
   real, public, save, dimension(NSPEC_ADV) ::   &
       sumint   = 0.0   & !  initial mass
      ,fluxin   = 0.0   & !  mass in  across lateral boundaries
@@ -142,24 +140,24 @@ contains
                                 ! info - printing info
     real rwork
 
-    do k=2,KMAX_MID   
+    do k=2,KMAX_MID
       do j=lj0,lj1
         do i=li0,li1
             rwork = carea(k)* xmd(i,j)*(ps(i,j,1) - PT)
-            sumint(:) = sumint(:) + xn_adv(:,i,j,k)*rwork  ! sumint in kg      
+            sumint(:) = sumint(:) + xn_adv(:,i,j,k)*rwork  ! sumint in kg
         enddo
       enddo
     enddo
 
-      MPIbuff(1:NSPEC_ADV)= sumint (1:NSPEC_ADV) 
+      MPIbuff(1:NSPEC_ADV)= sumint (1:NSPEC_ADV)
       CALL MPI_ALLREDUCE(MPIbuff, sumint , NSPEC_ADV, &
-      MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
+      MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
 
     if(MasterProc.and.EXTENDEDMASSBUDGET)then
          do n = 1,NSPEC_ADV
        if(sumint(n) >  0. ) then
-             write(IO_RES,"(a15,i4,4x,e10.3)") "Initial mass",n,sumint(n) 
-             write(6,"(a15,i4,4x,e10.3)") "Initial mass",n,sumint(n) 
+             write(IO_RES,"(a15,i4,4x,e10.3)") "Initial mass",n,sumint(n)
+             write(6,"(a15,i4,4x,e10.3)") "Initial mass",n,sumint(n)
            end if
          enddo
     end if
@@ -188,7 +186,7 @@ contains
        scaling_k = scaling * (dA(k) + dB(k)*ps(i,j,1))/amk(k)
 
        if ( DEBUG_MASS .and. debug_proc .and.  &
-            i==debug_li .and. j==debug_lj ) then ! .and. 
+            i==debug_li .and. j==debug_lj ) then ! .and.
 !            current_date%seconds == 0 ) then
             call datewrite("MASSRC ", k, (/ dB(k)*ps(i,j,1), xmd(i,j), &
                 ps(i,j,1), scaling_k /) )
@@ -217,20 +215,20 @@ contains
                                                  ! info - printing info
   integer :: ifam                                ! family index
   real, dimension(NSPEC_ADV,KMAX_MID) ::  sumk   ! total mass in each layer
-  integer, parameter :: NFAMILIES = 3            ! No. of families         
+  integer, parameter :: NFAMILIES = 3            ! No. of families
   character(len=8), dimension(NFAMILIES), save :: family_name = &
            (/ "Sulphur ", "Nitrogen", "Carbon  " /)
   character(len=200) :: logtxt
 
-  real, dimension(NFAMILIES) ::family_init  & ! initial total mass of 
+  real, dimension(NFAMILIES) ::family_init  & ! initial total mass of
                                               ! species family
-                              ,family_mass &  ! total family mass at the 
+                              ,family_mass &  ! total family mass at the
                                               ! end of the model run
-                              ,family_inflow &! total family mass flowing in  
-                              ,family_outflow&! total family mass flowing out 
-                              ,family_ddep&   ! total family mass dry dep. 
-                              ,family_wdep&   ! total family mass wet dep. 
-                              ,family_em  &   ! total family mass emitted 
+                              ,family_inflow &! total family mass flowing in
+                              ,family_outflow&! total family mass flowing out
+                              ,family_ddep&   ! total family mass dry dep.
+                              ,family_wdep&   ! total family mass wet dep.
+                              ,family_em  &   ! total family mass emitted
                               ,family_input & ! total family mass input
                               ,family_fracmass  ! mass fraction (should be 1.0)
 
@@ -242,7 +240,7 @@ contains
         gtotem,    & ! total emission
         gtotddep, gtotwdep, & ! total dry and wet deposition
         gtotldep, & ! local dry deposition
-        gtotox      ! oxidation of SO2 
+        gtotox      ! oxidation of SO2
 
   real :: totdiv,helsum, natoms
 
@@ -285,33 +283,33 @@ contains
 
 
 
-      MPIbuff(1:NSPEC_ADV)= xmax(1:NSPEC_ADV) 
+      MPIbuff(1:NSPEC_ADV)= xmax(1:NSPEC_ADV)
       CALL MPI_ALLREDUCE(MPIbuff, xmax, NSPEC_ADV,&
-      MPI_DOUBLE_PRECISION, MPI_MAX, MPI_COMM_WORLD, INFO) 
-      MPIbuff(1:NSPEC_ADV)= xmin   (1:NSPEC_ADV) 
+      MPI_DOUBLE_PRECISION, MPI_MAX, MPI_COMM_WORLD, INFO)
+      MPIbuff(1:NSPEC_ADV)= xmin   (1:NSPEC_ADV)
       CALL MPI_ALLREDUCE(MPIbuff, xmin   , NSPEC_ADV, &
-      MPI_DOUBLE_PRECISION, MPI_MIN, MPI_COMM_WORLD, INFO) 
-      MPIbuff(1:NSPEC_ADV)= gfluxin (1:NSPEC_ADV) 
+      MPI_DOUBLE_PRECISION, MPI_MIN, MPI_COMM_WORLD, INFO)
+      MPIbuff(1:NSPEC_ADV)= gfluxin (1:NSPEC_ADV)
       CALL MPI_ALLREDUCE(MPIbuff, gfluxin , NSPEC_ADV, &
-      MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
-      MPIbuff(1:NSPEC_ADV)= gfluxout (1:NSPEC_ADV) 
+      MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
+      MPIbuff(1:NSPEC_ADV)= gfluxout (1:NSPEC_ADV)
       CALL MPI_ALLREDUCE(MPIbuff, gfluxout , NSPEC_ADV, &
-      MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
-      MPIbuff(1:NSPEC_ADV)= gtotem (1:NSPEC_ADV) 
+      MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
+      MPIbuff(1:NSPEC_ADV)= gtotem (1:NSPEC_ADV)
       CALL MPI_ALLREDUCE(MPIbuff, gtotem , NSPEC_ADV, &
-      MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
-      MPIbuff(1:NSPEC_ADV)= gtotddep (1:NSPEC_ADV) 
+      MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
+      MPIbuff(1:NSPEC_ADV)= gtotddep (1:NSPEC_ADV)
       CALL MPI_ALLREDUCE(MPIbuff, gtotddep , NSPEC_ADV, &
-      MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
-      MPIbuff(1:NSPEC_ADV)= gtotwdep (1:NSPEC_ADV) 
+      MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
+      MPIbuff(1:NSPEC_ADV)= gtotwdep (1:NSPEC_ADV)
       CALL MPI_ALLREDUCE(MPIbuff, gtotwdep , NSPEC_ADV, &
-      MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
-      MPIbuff(1:NSPEC_ADV)= gtotldep (1:NSPEC_ADV) 
+      MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
+      MPIbuff(1:NSPEC_ADV)= gtotldep (1:NSPEC_ADV)
       CALL MPI_ALLREDUCE(MPIbuff, gtotldep , NSPEC_ADV, &
-      MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
-      MPIbuff(1:NSPEC_ADV)= gtotox (1:NSPEC_ADV) 
+      MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
+      MPIbuff(1:NSPEC_ADV)= gtotox (1:NSPEC_ADV)
       CALL MPI_ALLREDUCE(MPIbuff, gtotox , NSPEC_ADV, &
-      MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
+      MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
       j=0
       do k=1,KMAX_MID
          do i=1,NSPEC_ADV
@@ -320,9 +318,9 @@ contains
          enddo
       enddo
       CALL MPI_ALLREDUCE(MPIbuff, sumk , NSPEC_ADV*KMAX_MID, &
-      MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
+      MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
 
-!     make some temporary variables used to hold the sum over all 
+!     make some temporary variables used to hold the sum over all
 !     domains. Remember that sumint already holds the sum over all
 !     domains, see inass
 !
@@ -338,7 +336,7 @@ contains
 
       totdiv = sumint(n) + gtotem(n) + gfluxin(n)
       frac_mass(n) = sum_mass(n)  + (gtotddep(n)+gtotwdep(n))*ATWAIR &
-                   + gfluxout(n) 
+                   + gfluxout(n)
 
       if(totdiv >  0.0 ) frac_mass(n) = frac_mass(n)/totdiv
 
@@ -368,7 +366,7 @@ contains
 
      do ifam = 1, 3
 
-       write(logtxt,"(a,i3,a12)") 'Mass balance ', ifam, family_name(ifam) 
+       write(logtxt,"(a,i3,a12)") 'Mass balance ', ifam, family_name(ifam)
        call PrintLog(logtxt)
        do n = 1, NSPEC_ADV
 
@@ -394,13 +392,13 @@ contains
 
        family_input(ifam) = family_init(ifam) &
                          + family_inflow(ifam) &
-                         + family_em(ifam)   
+                         + family_em(ifam)
 
        if (family_input(ifam) > 0.0 ) &
               family_fracmass(ifam) = (family_mass(ifam) &
                                  +  family_outflow(ifam)  &
-                                 +  family_ddep(ifam)*ATWAIR  & 
-                                 +  family_wdep(ifam)*ATWAIR) & 
+                                 +  family_ddep(ifam)*ATWAIR  &
+                                 +  family_wdep(ifam)*ATWAIR) &
                                  / family_input(ifam)
 
 
@@ -408,7 +406,7 @@ contains
       write(logtxt,"(a9,5a12)")" ", "sumint", "summas", &
                                "fluxout","fluxin", "fracmass"
       call PrintLog(logtxt)
-     
+
       write(logtxt,"(a9,5es12.4)") family_name(ifam), &
              family_init(ifam), family_mass(ifam),family_outflow(ifam), &
              family_inflow(ifam), family_fracmass(ifam)
@@ -418,12 +416,12 @@ contains
       call PrintLog(logtxt)
       write(logtxt,"(i9,3es14.3)") ifam, family_ddep(ifam)*ATWAIR  &
                         , family_wdep(ifam)*ATWAIR  &
-                        , family_em(ifam) 
+                        , family_em(ifam)
       call PrintLog(logtxt)
       call PrintLog('++++++++++++++++++++++++++++++++++++++++++++++++')
 
     end do  ! ifam = 1,3
-    
+
 
    end if
 
@@ -439,11 +437,11 @@ contains
         end do
      enddo
 950  format(' Spec ',i3,2x,a12,5x,'k= ',i2,5x,es12.5)
-     
+
      do n = 1,NSPEC_ADV
 
         write(6,*)
-        write(6,*)'++++++++++++++++++++++++++++++++++++++++++++++++'      
+        write(6,*)'++++++++++++++++++++++++++++++++++++++++++++++++'
         write(6,*)
 
         write(6,"(a3,6a12)") " n ", "Spec", "sumint", "summas", &
@@ -458,9 +456,9 @@ contains
                  gtotox(n), gtotddep(n), gtotwdep(n), gtotem(n), gtotldep(n)
         write(6,*)
         write(6,*)'++++++++++++++++++++++++++++++++++++++++++++++++'
-                 
+
     enddo
-!              
+!
 
    end if  ! MasterProc
 
@@ -475,15 +473,15 @@ contains
 !
 !      real, dimension(NSPEC_ADV), intent(in) :: Loss
 !      real, dimension(NSPEC_ADV)             :: DryLoss
-! 
+!
 !     real, intent(in)  :: convfac
 !     integer           :: n,nadv,i,j  ! index in IXADV_  arrays
 !
-!     DryLoss(:)=Loss(:)* convfac /amk(KMAX_MID)   !molec/cm3->mix ratio 
+!     DryLoss(:)=Loss(:)* convfac /amk(KMAX_MID)   !molec/cm3->mix ratio
 !
-!      do n = 1, NDRYDEP_ADV 
+!      do n = 1, NDRYDEP_ADV
 !         nadv    = DDepMap(n)%ind
-!         totddep( nadv ) = totddep (nadv) + DryLoss(nadv) 
+!         totddep( nadv ) = totddep (nadv) + DryLoss(nadv)
 !
 !      enddo
 !  end subroutine DryDep_Budget

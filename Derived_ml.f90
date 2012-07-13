@@ -458,34 +458,30 @@ do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
    outind = OutputFields(ind)%ind    !  H, D, M - fequency of output
    txt2   = "-" ! not needed?
 
-   if ( outtyp == "MISC" ) then ! Simple species
+  if ( outtyp == "MISC" ) then ! Simple species
 
-       iout = -99 ! find_index( wanted_deriv2d(i), def_2d(:)%name )
-       class  = trim( OutputFields(ind)%txt4 )   ! SPEC or GROUP
-       unitscale = 1.0
-       if( outunit == "ppb") unitscale = PPBINV
-       if(     OutputFields(ind)%txt4 == "PM25"  &
-          .or. OutputFields(ind)%txt4 == "PM25X" &
-          .or. OutputFields(ind)%txt4 == "PM25_rh50" &
-          .or. OutputFields(ind)%txt4 == "PM25X_rh50"&
-          .or. OutputFields(ind)%txt4 == "PM10_rh50" & ) then
-          iadv = -1 ! Units_Scale(iadv=-1) returns 1.0
-                    ! uggroup_calc gets the unit conversion factor from Group_Units
-                    ! additional PM* components get conversion factor later cals to unitscale
-          unitscale = Units_Scale(outunit, iadv, unittxt, volunit)
-          if(MasterProc ) write(*,*)"FRACTION UNITSCALE ", unitscale
-       end if
+    iout  = -99 ! find_index( wanted_deriv2d(i), def_2d(:)%name )
+    class = trim(OutputFields(ind)%txt4)
+    unitscale = 1.0
+    if(outunit=="ppb") unitscale = PPBINV
+    if(any(class==(/"PM25      ","PM25X     ",&
+                    "PM25_rh50 ","PM25X_rh50","PM10_rh50 "/)))then
+      iadv = -1 ! Units_Scale(iadv=-1) returns 1.0
+                ! uggroup_calc gets the unit conversion factor from Group_Units
+      unitscale = Units_Scale(outunit, iadv, unittxt, volunit)
+      if(MasterProc) write(*,*)"FRACTION UNITSCALE ", unitscale
+    endif
 
-       if(MasterProc ) write(*,"(i3,a,i4,a)")  me, &
-            "Deriv:D2MET " // trim(outname), outind, trim(class)
+    if(MasterProc ) write(*,"(i3,a,i4,a)")  me, &
+        "Deriv:D2MET " // trim(outname), outind, trim(class)
 
-       call AddNewDeriv( outname,class,  "-","-",  outunit, &
-                     iout,  -99,  F, unitscale,  T, outind )
-      ! WAS
-      !call AddNewDeriv( "HMIX  ","HMIX",  "-","-",   "m", &
-      !                  -99,  -99,  F,  1.0,  T,  IOU_DAY )
-      !call AddNewDeriv( "SURF_ppbC_VOC", "VOC", "-", "-", "ppb", &
-            !   -1 , -99,  F, PPBINV,  T,  IOU_DAY )
+    call AddNewDeriv( outname,class,  "-","-",  outunit, &
+                  iout,  -99,  F, unitscale,  T, outind )
+  ! WAS
+  !call AddNewDeriv( "HMIX  ","HMIX",  "-","-",   "m", &
+  !                  -99,  -99,  F,  1.0,  T,  IOU_DAY )
+  !call AddNewDeriv( "SURF_ppbC_VOC", "VOC", "-", "-", "ppb", &
+        !   -1 , -99,  F, PPBINV,  T,  IOU_DAY )
 
   else ! SPEC and GROUPS of specs.
 
@@ -546,45 +542,39 @@ do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
     endif ! 3d
 
    endif
-end do ! OutputFields
+enddo ! OutputFields
 
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-do ind = 1, size( WDEP_WANTED(:)%txt1 )
+do ind = 1, size(WDEP_WANTED(:)%txt1)
+  dname = "WDEP_"//trim(WDEP_WANTED(ind)%txt1)
+  select case(WDEP_WANTED(ind)%txt2)
+  case("PREC")
+    call AddNewDeriv("WDEP_PREC","PREC ","-","-", "mm",  &
+                      -1, -99,   F,    1.0,   F,    IOU_DAY )
+  case("SPEC")
+    iadv = find_index(WDEP_WANTED(ind)%txt1, species_adv(:)%name)
+    call CheckStop(iadv<1, "WDEP_WANTED Species not found " // trim(dname) )
 
-  if ( WDEP_WANTED(ind)%txt2 == "PREC" ) then
+    unitscale = Units_Scale(WDEP_WANTED(ind)%txt3, iadv, unittxt)
+    call AddNewDeriv( dname, "WDEP", "-", "-", unittxt , &
+            iadv, -99,   F, unitscale,     F,  IOU_DAY)
+  case("GROUP")
+    igrp = find_index(dname, chemgroups(:)%name)
+    call CheckStop(igrp<1, "WDEP_WANTED Group not found " // trim(dname) )
 
-     dname = "WDEP_" // trim(WDEP_WANTED( ind )%txt1) ! just for printout below
-     call AddNewDeriv( "WDEP_PREC","PREC ","-","-", "mm",  &
-                       -1, -99,   F,    1.0,   F,    IOU_DAY )
-
-  else if ( WDEP_WANTED(ind)%txt2 == "GROUP" ) then
-
-    ! just get units text here
-     unitscale = Units_Scale(WDEP_WANTED( ind )%txt3, -1, unittxt, volunit)
-
-     dname = "WDEP_" // trim(WDEP_WANTED( ind )%txt1)
-     call AddNewDeriv( dname,  "WDEP ","-","-", unittxt ,  &
-                -1, -99,   F,    1.0e6,   F,    IOU_DAY )
-
-  else ! SPEC
-
-     itot = find_index( trim(WDEP_WANTED(ind)%txt1) , species(:)%name )
-     iadv = itot - NSPEC_SHL
-
-     ! Without units for now:
-     dname = "WDEP_" // trim(WDEP_WANTED( ind )%txt1)
-     call CheckStop(itot<0, "WDEP_WANTED Species not found " // trim(dname) )
-
-     unitscale = Units_Scale(WDEP_WANTED( ind )%txt3, iadv, unittxt, volunit)
-
-     call AddNewDeriv( dname, "WDEP", "-", "-", unittxt , &
-              iadv , -99,   F,   unitscale,     F,  IOU_DAY )
-   end if
-   if(MasterProc) write(*,*) "Wet deposition output: ", trim(dname), " ",  trim(unittxt)
-end do
+    ! Just get units text here.
+    ! Init_WetDep gets the unit conversion factors from Group_Scale.
+    unitscale = Units_Scale(WDEP_WANTED(ind)%txt3, -1, unittxt)
+    call AddNewDeriv( dname,  "WDEP ","-","-", unittxt ,  &
+            igrp, -99,   F,      1.0,   F,    IOU_DAY)
+  case default
+    call CheckStop("Unknown WDEP_WANTED type " // trim(WDEP_WANTED(ind)%txt2) )
+  endselect
+  if(MasterProc) write(*,*)"Wet deposition output: ",trim(dname)," ",trim(unittxt)
+enddo
 
 !NOV2011 call AddNewDeriv( "SURF_ppbC_VOC", "VOC", "-", "-", "ppb", &
 !NOV2011          -1 , -99,  F, PPBINV,  T,  IOU_DAY )

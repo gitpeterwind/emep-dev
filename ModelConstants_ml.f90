@@ -47,13 +47,13 @@ logical, public, parameter :: &
   FORECAST = .false.
 
 ! Some flags for model setup
-! will be removed when code is sufficiently tested 
+! will be removed when code is sufficiently tested
 ! (for convection use foundconv in permanent code)
 logical, public, parameter ::         &
   USE_CONVECTION     = .false.,       & ! false works best for Euro runs,
   TFMM_RUNS          = .false.,       & ! tmp Jun 2012
-  INERIS_SNAP1       = TFMM_RUNS,    & ! Switches off decadal trend 
-  INERIS_SNAP2       = TFMM_RUNS,   & ! Allows near-zero summer values 
+  INERIS_SNAP1       = TFMM_RUNS,    & ! Switches off decadal trend
+  INERIS_SNAP2       = TFMM_RUNS,   & ! Allows near-zero summer values
   USE_DEGREEDAY_FACTORS  = .not.FORECAST,  & !
   USE_SOILWATER      = .not.FORECAST, & ! for deep soilwater,  under testing
   USE_FOREST_FIRES   = .not.FORECAST, & ! Needs global files, future
@@ -77,11 +77,11 @@ logical, public, parameter ::         &
   USE_EMERGENCY      = .false.           ! Emergency: Volcanic Eruption & Nuclear Accident. Under development.
 !Boundary layer profiles
   character(len=4), parameter, public :: FluxPROFILE = &
-     "Iter"   ! 
+     "Iter"   !
 !      "Ln95"   ! ! will use Launiainen1995  EXPERIMENTAL. Fails in some areas
 
 ! Biogenics. Use 3 even if no terpene chemistry - simplifies
-! rest of code.  iso = isoprene, mtp = monoterpenes from pools, 
+! rest of code.  iso = isoprene, mtp = monoterpenes from pools,
 ! mtl = monoterpenes with light dependence
 !DSA12 integer, public, parameter ::   NSOIL_EMIS = 2 ! NO + NH3
  integer, public, parameter ::   NBVOC = 3
@@ -90,12 +90,12 @@ logical, public, parameter ::         &
 
 !The GEA emission data, which is used for EUCAARI runs on the HIRHAM domains
 !have in several sea grid cells non-zero emissions in other sectors than SNAP8
-!and there are also NH3 emission over sea areas. The former problem makes 
-!the code crash if the sea areas are defined  as sea (sea=T), so we treat 
-!them as land in the EUCAARI/HIRHAM runs (sea=F). This is a problem with GEA 
+!and there are also NH3 emission over sea areas. The former problem makes
+!the code crash if the sea areas are defined  as sea (sea=T), so we treat
+!them as land in the EUCAARI/HIRHAM runs (sea=F). This is a problem with GEA
 !emission data only, not the HIRHAM domain! When e.g. interpolated EMEP emissions
 !are used on the HIRHAM domain, this is not a problem.
- 
+
 logical, public, parameter :: SEAFIX_GEA_NEEDED = .false. ! only if problems
 
 !=============================================================================
@@ -114,9 +114,9 @@ integer, public, parameter ::  &
 ! IIFULLDOM = 182, JJFULLDOM = 197 ! x,y-Dimensions of full HIRHAM domain
 ! IIFULLDOM = 170, JJFULLDOM = 133 ! x,y-Dimensions of full EMEP domain
  IIFULLDOM = 132, JJFULLDOM = 159 ! x,y-Dimensions of full EECA domain
-! IIFULLDOM = 840, JJFULLDOM = 832 ! x,y-Dimensions of full TNO07 domain     
-! IIFULLDOM = 420, JJFULLDOM = 416 ! x,y-Dimensions of full TNO14 domain   
-! IIFULLDOM = 210, JJFULLDOM = 208 ! x,y-Dimensions of full TNO28 domain 
+! IIFULLDOM = 840, JJFULLDOM = 832 ! x,y-Dimensions of full TNO07 domain
+! IIFULLDOM = 420, JJFULLDOM = 416 ! x,y-Dimensions of full TNO14 domain
+! IIFULLDOM = 210, JJFULLDOM = 208 ! x,y-Dimensions of full TNO28 domain
 !  IIFULLDOM = 105, JJFULLDOM = 104 ! x,y-Dimensions of full TNO56 domain
 ! IIFULLDOM = 360, JJFULLDOM = 180 ! .... full GLOBAL domain
 ! IIFULLDOM = 201, JJFULLDOM = 161 ! .... full GEMS 0.25 domain
@@ -125,16 +125,16 @@ integer, public, parameter ::  &
 
 ! The difference between EMEP and EECCA is confusing...
 integer, public, parameter :: &
-! OFFSET_i=  0, OFFSET_j=  0    ! EMEP or default 
+! OFFSET_i=  0, OFFSET_j=  0    ! EMEP or default
  OFFSET_i=-35, OFFSET_j=-11    ! EECCA
-! OFFSET_i=  0, OFFSET_j=  0    ! EMEP or default 
+! OFFSET_i=  0, OFFSET_j=  0    ! EMEP or default
 integer, public, parameter, dimension(4) ::  &
 !                 x0   x1  y0   y1
 ! RUNDOMAIN = (/  1, 182,  1, 197 /)     ! HIRHAM
 ! RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA = new EMEP domain
  RUNDOMAIN = (/  1, 100,  1, 100 /)     ! Orig EMEP domain in EECCA
 ! RUNDOMAIN = (/  40,210, 12, 184 /)     !  SR TNO28 area
-! RUNDOMAIN = (/  1, 210,  1, 208 /)     ! TNO28  
+! RUNDOMAIN = (/  1, 210,  1, 208 /)     ! TNO28
 ! RUNDOMAIN = (/  240, 720, 48, 736 /)    ! TNO07 reduced (15W-45E;30N-73N)
 ! RUNDOMAIN = (/  120, 360, 24, 368 /)    ! TNO14 reduced (15W-45E;30N-73N)
 ! RUNDOMAIN = (/  60, 180, 12, 184 /)     ! TNO28 reduced (15W-45E;30N-73N)
@@ -190,8 +190,8 @@ logical, public, save ::  DebugCell  = .false.
 integer, private, parameter :: &
 ! DEBUG_ii= 79, DEBUG_jj= 56 ! Eskdalemuir
 ! DEBUG_ii= 73, DEBUG_jj= 48 ! Mace Head
-! DEBUG_ii= 88, DEBUG_jj= 53 ! Sibton     
-! DEBUG_ii= 88, DEBUG_jj= 53 ! Sibton     
+! DEBUG_ii= 88, DEBUG_jj= 53 ! Sibton
+! DEBUG_ii= 88, DEBUG_jj= 53 ! Sibton
 ! DEBUG_ii= 91, DEBUG_jj= 71 ! Rorvik
 ! DEBUG_ii= 82, DEBUG_jj= 72 ! Voss, has some snow
 ! DEBUG_ii=110, DEBUG_jj= 48 ! High Vg!
@@ -209,19 +209,19 @@ integer, private, parameter :: &
 ! DEBUG_ii= 93, DEBUG_jj= 47 !  Grignon, France
 ! DEBUG_ii= 90, DEBUG_jj= 104 !  Wetland, Tundra
 ! DEBUG_ii= 72-OFFSET_i, DEBUG_jj= 37-OFFSET_j ! biomass burnung, Aug 2003
-! DEBUG_ii= 90-OFFSET_i, DEBUG_jj= 27-OFFSET_j ! biomass burnung, Jul 2009 
+! DEBUG_ii= 90-OFFSET_i, DEBUG_jj= 27-OFFSET_j ! biomass burnung, Jul 2009
 !DEBUG_ii= 58-OFFSET_i, DEBUG_jj= 72-OFFSET_j ! 99% water, SMI problems
 !DUST DEBUG_ii= 94-OFFSET_i, DEBUG_jj= 24-OFFSET_j ! 99% water, dust problems
 ! DEBUG_ii= 85, DEBUG_jj= 35 ! Sea, Bay of Biscay
 !DEBUG_ii= 76, DEBUG_jj= 65 ! Sea,  North sea
 ! DEBUG_ii= 66, DEBUG_jj= 50 ! Sea,  west UK
-! DEBUG_ii= 80, DEBUG_jj= 52 ! Irish sea    
+! DEBUG_ii= 80, DEBUG_jj= 52 ! Irish sea
 ! DEBUG_ii= 91, DEBUG_jj= 67 ! Tange
 ! DEBUG_ii=103, DEBUG_jj= 32 ! Prades, SMDge
 ! DEBUG_ii=128, DEBUG_jj= 13 !  Desert?
 
 integer, public, parameter :: &
-! DEBUG_i= 62, DEBUG_j= 45  ! SEA 
+! DEBUG_i= 62, DEBUG_j= 45  ! SEA
   DEBUG_i= DEBUG_II+OFFSET_i, DEBUG_j= DEBUG_JJ+OFFSET_j    ! EMEP/EECCA
 ! DEBUG_i= 9, DEBUG_j= 201                                  ! MACC02
 !  DEBUG_i= 0, DEBUG_j= 0    ! default
@@ -230,7 +230,7 @@ integer, public, parameter :: &
 ! Some flags for model setup
 
 ! Debug flag DEBUG_XXX  applied in subroutine XXX
- logical, public, parameter ::      &
+ logical, public, parameter ::    &
    DEBUG_ADV            = .false. &
   ,DEBUG_AOT            = .false. &
   ,DEBUG_AQUEOUS        = .false. &
@@ -309,7 +309,7 @@ logical, public, parameter :: NETCDF_COMPRESS_OUTPUT=(.not.FORECAST .and. .not.T
 
 !Hourly output in smaller files?
 !NB: will not work well by default on Stallo per 14th Feb 2012 because of library bugs!
-!Until this is fixed, you must compile with netcdf/4.1.3 and link and run with compiler 12.1.2 
+!Until this is fixed, you must compile with netcdf/4.1.3 and link and run with compiler 12.1.2
 logical, public, parameter :: MONTHLY_HOURLYFILE=.false.!gives a new file every month
 logical, public, parameter :: DAILY_HOURLYFILE=.false.!gives a new file every day
 
@@ -321,11 +321,11 @@ logical, public, parameter :: DAILY_HOURLYFILE=.false.!gives a new file every da
 logical, public, parameter :: NH3_U10 = .false.
 
 ! Nesting modes:
-! produces netcdf dump of concentrations if wanted, or initialises mode runs 
+! produces netcdf dump of concentrations if wanted, or initialises mode runs
 ! from such a file. Used in Nest_ml
 
-integer, public, parameter ::NEST_MODE=0  !0=donothing , 1=write , 2=read , 
-!3=read and write, 10=write at end of run, 11=read at start, 12=read at 
+integer, public, parameter ::NEST_MODE=0  !0=donothing , 1=write , 2=read ,
+!3=read and write, 10=write at end of run, 11=read at start, 12=read at
 !start and write at end (BIC)
 
 

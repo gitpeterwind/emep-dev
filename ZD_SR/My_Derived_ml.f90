@@ -71,7 +71,7 @@ use ModelConstants_ml, only : ATWAIR  &
                         , SOX_INDEX, OXN_INDEX, RDN_INDEX &
                         , MasterProc  &
                         , SOURCE_RECEPTOR  &
-                        , USE_SOILNOX & 
+                        , USE_SOILNOX &
                         , DEBUG => DEBUG_MY_DERIVED &
                         , M=>IOU_MON, D=>IOU_DAY, H=>IOU_HOUR &
                         , KMAX_MID & ! =>  z dimension
@@ -79,7 +79,7 @@ use ModelConstants_ml, only : ATWAIR  &
                         , MFAC       ! converts roa (kg/m3 to M, molec/cm3)
 use MosaicOutputs_ml, only : nMosaic, MAX_MOSAIC_OUTPUTS, MosaicOutput, & !
   Init_MosaicMMC,  Add_MosaicMetConcs, &
-  Add_NewMosaics, & 
+  Add_NewMosaics, &
   Add_MosaicVEGO3, &
   Add_MosaicDDEP, &
   MMC_USTAR, MMC_INVL, MMC_RH, MMC_CANO3, MMC_VPD, MMC_FST, MMC_GSTO, MMC_EVAP
@@ -142,12 +142,12 @@ private
        ! ppb
          typ_s5i("O3        ", "ppb", D2,"AIR_CONCS", SPEC, D)& ! test 3d
         ,typ_s5i("NO        ", "ppb", D2,"AIR_CONCS", SPEC, D)& !20 also have ugN
-        ,typ_s5i("NO2       ", "ppb", D2,"AIR_CONCS", SPEC, D)& ! also have ugN 
+        ,typ_s5i("NO2       ", "ppb", D2,"AIR_CONCS", SPEC, D)& ! also have ugN
 !SR      typ_s5i("SO2       ", "ugS", D2,"AIR_CONCS", SPEC, D)&
-!SR     ,typ_s5i("SO4       ", "ugS", D2,"AIR_CONCS", SPEC, D)& 
+!SR     ,typ_s5i("SO4       ", "ugS", D2,"AIR_CONCS", SPEC, D)&
 !
 ! Here we use the 4th text field to give the "class" or "typ". Derived_ml
-! will look for this in the select case (typ) 
+! will look for this in the select case (typ)
 !CAN allow lower case ...
 !SR
 !DS Added back 13th July
@@ -163,30 +163,30 @@ private
       !,"USTAR_NWP         " &
       !,"u_ref             " &
 !.... down to here
-!        ,typ_s5i("RN222     ", "ppb", D2,"AIR_CONCS", SPEC, D)& 
-!        ,typ_s5i("RNWATER   ", "ppb", D2,"AIR_CONCS", SPEC, D)& 
-!SR     ,typ_s5i("CO        ", "ppb", D2,"AIR_CONCS", SPEC, D)& 
-        !,typ_s5i("PPM25     ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
-        !,typ_s5i("PPM_C     ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
+!        ,typ_s5i("RN222     ", "ppb", D2,"AIR_CONCS", SPEC, D)&
+!        ,typ_s5i("RNWATER   ", "ppb", D2,"AIR_CONCS", SPEC, D)&
+!SR     ,typ_s5i("CO        ", "ppb", D2,"AIR_CONCS", SPEC, D)&
+        !,typ_s5i("PPM25     ", "ug ", D2,"AIR_CONCS", SPEC, D)&
+        !,typ_s5i("PPM_C     ", "ug ", D2,"AIR_CONCS", SPEC, D)&
 ! Omit for CityZen
-!SR     ,typ_s5i("NO        ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
-!SR     ,typ_s5i("NO2       ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
-!SR     ,typ_s5i("NH3       ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
-!SR     ,typ_s5i("HNO3      ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
-!SR     ,typ_s5i("HONO      ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
-!SR     ,typ_s5i("PAN       ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
+!SR     ,typ_s5i("NO        ", "ugN", D2,"AIR_CONCS", SPEC, D)&
+!SR     ,typ_s5i("NO2       ", "ugN", D2,"AIR_CONCS", SPEC, D)&
+!SR     ,typ_s5i("NH3       ", "ugN", D2,"AIR_CONCS", SPEC, D)&
+!SR     ,typ_s5i("HNO3      ", "ugN", D2,"AIR_CONCS", SPEC, D)&
+!SR     ,typ_s5i("HONO      ", "ugN", D2,"AIR_CONCS", SPEC, D)&
+!SR     ,typ_s5i("PAN       ", "ugN", D2,"AIR_CONCS", SPEC, D)&
        ! Remember, species have upper case, so not _f !
-!SR     ,typ_s5i("NO3_F     ", "ugN", D2,"AIR_CONCS", SPEC, D)&  
+!SR     ,typ_s5i("NO3_F     ", "ugN", D2,"AIR_CONCS", SPEC, D)&
 !SR     ,typ_s5i("NO3_C     ", "ugN", D2,"AIR_CONCS", SPEC, D)&  ! 10 to here
-!SR     ,typ_s5i("NH4_F     ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
+!SR     ,typ_s5i("NH4_F     ", "ugN", D2,"AIR_CONCS", SPEC, D)&
        ! ug/m3
-        ,typ_s5i("SO2       ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
-        ,typ_s5i("SO4       ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
-        ,typ_s5i("NH3       ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
-        ,typ_s5i("NO3_F     ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
-        ,typ_s5i("NO3_C     ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
-        ,typ_s5i("NH4_F     ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
-        ,typ_s5i("SEASALT_F ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("SO2       ", "ug ", D2,"AIR_CONCS", SPEC, D)&
+        ,typ_s5i("SO4       ", "ug ", D2,"AIR_CONCS", SPEC, D)&
+        ,typ_s5i("NH3       ", "ug ", D2,"AIR_CONCS", SPEC, D)&
+        ,typ_s5i("NO3_F     ", "ug ", D2,"AIR_CONCS", SPEC, D)&
+        ,typ_s5i("NO3_C     ", "ug ", D2,"AIR_CONCS", SPEC, D)&
+        ,typ_s5i("NH4_F     ", "ug ", D2,"AIR_CONCS", SPEC, D)&
+        ,typ_s5i("SEASALT_F ", "ug ", D2,"AIR_CONCS", SPEC, D)&
         ,typ_s5i("SEASALT_C ", "ug ", D2,"AIR_CONCS", SPEC, D)&
 !DS added July 13th
         ,typ_s5i("REMPPM25  ", "ug ", D2,"AIR_CONCS", SPEC, D)&
@@ -198,42 +198,42 @@ private
 !        ,typ_s5i("DUST_WB_C ", "ug ", D2,"AIR_CONCS", SPEC, D)&
 !        ,typ_s5i("DUST_SAH_F", "ug ", D2,"AIR_CONCS", SPEC, D)&
 !        ,typ_s5i("DUST_SAH_C", "ug ", D2,"AIR_CONCS", SPEC, D)&
-!SR        ,typ_s5i("HCHO      ", "ppb", D2,"AIR_CONCS", SPEC, D)& 
-!SR        ,typ_s5i("C5H8      ", "ppb", D2,"AIR_CONCS", SPEC, D)& 
+!SR        ,typ_s5i("HCHO      ", "ppb", D2,"AIR_CONCS", SPEC, D)&
+!SR        ,typ_s5i("C5H8      ", "ppb", D2,"AIR_CONCS", SPEC, D)&
        ! ugC/m3
 ! GenChem produces a number of groups of species.
 ! Here we say which ones we want for different units
 ! ****** UPPER CASE ONLY ************
 ! Sorry, this is a limitation that GenChem converts all names to
 ! uppercase:
-        ,typ_s5i("OXN       ",  "ugN", D2,"AIR_CONCS", GROUP, D)& 
-        ,typ_s5i("NOX       ",  "ugN", D2,"AIR_CONCS", GROUP, D)& 
-        ,typ_s5i("RDN       ",  "ugN", D2,"AIR_CONCS", GROUP, D)& 
-        ,typ_s5i("TNO3      ",  "ugN", D2,"AIR_CONCS", GROUP, D)& 
-        ,typ_s5i("SIA       ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
+        ,typ_s5i("OXN       ",  "ugN", D2,"AIR_CONCS", GROUP, D)&
+        ,typ_s5i("NOX       ",  "ugN", D2,"AIR_CONCS", GROUP, D)&
+        ,typ_s5i("RDN       ",  "ugN", D2,"AIR_CONCS", GROUP, D)&
+        ,typ_s5i("TNO3      ",  "ugN", D2,"AIR_CONCS", GROUP, D)&
+        ,typ_s5i("SIA       ",  "ug ", D2,"AIR_CONCS", GROUP, D)&
         ,typ_s5i("PMFINE    ",  "ug ", D2,"AIR_CONCS", GROUP, D)& !30
-        ,typ_s5i("PM10      ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
+        ,typ_s5i("PM10      ",  "ug ", D2,"AIR_CONCS", GROUP, D)&
         ,typ_s5i("PMCO      ",  "ug ", D2,"AIR_CONCS", GROUP, D)&
-        ,typ_s5i("PPM25     ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
+        ,typ_s5i("PPM25     ",  "ug ", D2,"AIR_CONCS", GROUP, D)&
         ,typ_s5i("PPM_C     ",  "ug ", D2,"AIR_CONCS", GROUP, D)&
         ,typ_s5i("SS        ",  "ug ", D2,"AIR_CONCS", GROUP, D)&
         ,typ_s5i("DUST_NAT_F",  "ug ", D2,"AIR_CONCS", GROUP, D)&
         ,typ_s5i("DUST_NAT_C",  "ug ", D2,"AIR_CONCS", GROUP, D)&
-        ,typ_s5i("DUST      ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
+        ,typ_s5i("DUST      ",  "ug ", D2,"AIR_CONCS", GROUP, D)&
       !CityZen Outputs
       !  ,typ_s5i("O3        ", "ug ", D2,"AIR_CONCS", SPEC, D)& ! test 3d
-      !  ,typ_s5i("NO2       ", "ug ", D2,"AIR_CONCS", SPEC, D)& ! also have ugN 
-      !  ,typ_s5i("DUST_NAT_F", "ug ", D2,"AIR_CONCS", SPEC, D)& 
-      !  ,typ_s5i("DUST_NAT_C", "ug ", D2,"AIR_CONCS", SPEC, D)& 
+      !  ,typ_s5i("NO2       ", "ug ", D2,"AIR_CONCS", SPEC, D)& ! also have ugN
+      !  ,typ_s5i("DUST_NAT_F", "ug ", D2,"AIR_CONCS", SPEC, D)&
+      !  ,typ_s5i("DUST_NAT_C", "ug ", D2,"AIR_CONCS", SPEC, D)&
       !  ,typ_s5i("AER_OM_F  ", "ug ", D2,"AIR_CONCS", SPEC, D)&  !! NEVER as ugC !!
       !  ,typ_s5i("AER_OC    ", "ug ", D2,"AIR_CONCS", SPEC, D)&  !! NEVER as ugC !!
-      !  ,typ_s5i("EC_F      ", "ug ", D2,"AIR_CONCS", GROUP, D)& 
+      !  ,typ_s5i("EC_F      ", "ug ", D2,"AIR_CONCS", GROUP, D)&
        ! SOA, PCM_F etc. are special and need appropriate units. Do
        ! not confuse! Only PCM has proper ug units, the others are
        ! carbon-eqiuvalents (PCM is particulate carbonaceous matter
        ! = sum of all EC and OM components.)
        ! ,typ_s5i("AER_ASOA  ", "ugC", D2,"AIR_CONCS", SPEC, D)&  !! ALWAYS as ugC
-       ! ,typ_s5i("AER_BSOA  ", "ugC", D2,"AIR_CONCS", SPEC, D)& 
+       ! ,typ_s5i("AER_BSOA  ", "ugC", D2,"AIR_CONCS", SPEC, D)&
          !typ_s5i("DUST      ",  "ug ", D2,"AIR_CONCS", GROUP, D),&   !#35
        ! ,typ_s5i("PPM25_FIRE",  "ugC", D2,"AIR_CONCS", SPEC,  D) &
        ! ============================================================
@@ -242,35 +242,35 @@ private
         ,typ_s5i("OMCOARSE   ", "ug ", D2,"AIR_CONCS", GROUP, D)& !! Inert in EmChem09soa
 !SR     ,typ_s5i("PART_OC10  ", "ug ", D2,"AIR_CONCS", SPEC, M)&  !! NEVER as ugC !!
 !SR     ,typ_s5i("PART_OC25  ", "ug ", D2,"AIR_CONCS", SPEC, M)&  !! NEVER as ugC AND note that for nonvolatile type VBS runs (NPNA etc) this lacks the FFUELOC component!!
-!AS ECFINE        ,typ_s5i("EC_F      ", "ug ", D2,"AIR_CONCS", GROUP, D)& 
-        ,typ_s5i("ECFINE    ", "ug ", D2,"AIR_CONCS", GROUP, D)& 
-        ,typ_s5i("ECCOARSE  ", "ug ", D2,"AIR_CONCS", GROUP, D)& 
+!AS ECFINE        ,typ_s5i("EC_F      ", "ug ", D2,"AIR_CONCS", GROUP, D)&
+        ,typ_s5i("ECFINE    ", "ug ", D2,"AIR_CONCS", GROUP, D)&
+        ,typ_s5i("ECCOARSE  ", "ug ", D2,"AIR_CONCS", GROUP, D)&
        ! SOA, PCM_F etc. are special and need appropriate units. Do
        ! not confuse! Only PCM has proper ug units, the others are
        ! carbon-eqiuvalents (PCM is particulate carbonaceous matter
        ! = sum of all EC and OM components.)
 !SR     ,typ_s5i("PART_ASOA_OC", "ugC", D2,"AIR_CONCS", SPEC, M)&  !! ALWAYS as ugC
-!SR     ,typ_s5i("PART_BSOA_OC", "ugC", D2,"AIR_CONCS", SPEC, M)& 
+!SR     ,typ_s5i("PART_BSOA_OC", "ugC", D2,"AIR_CONCS", SPEC, M)&
 !        ,typ_s5i("PART_SOA_OC", "ugC", D2,"AIR_CONCS", SPEC, M)&
-!SR      ,typ_s5i("PART_FFUELOA25_OC", "ugC", D2,"AIR_CONCS", SPEC, M)& 
-       ! ,typ_s5i("PART_OFFUELOA25_OC", "ugC", D2,"AIR_CONCS", SPEC, M)& 
-!SR      ,typ_s5i("PART_WOODOA25_OC", "ugC", D2,"AIR_CONCS", SPEC, M)& 
-       ! ,typ_s5i("PART_OWOODOA25_OC", "ugC", D2,"AIR_CONCS", SPEC, M)& 
-!SR     ,typ_s5i("PART_FFIREOA25_OC", "ugC", D2,"AIR_CONCS", SPEC, M)& 
-       ! ,typ_s5i("PART_OFFIREOA25_OC", "ugC", D2,"AIR_CONCS", SPEC, M)& 
+!SR      ,typ_s5i("PART_FFUELOA25_OC", "ugC", D2,"AIR_CONCS", SPEC, M)&
+       ! ,typ_s5i("PART_OFFUELOA25_OC", "ugC", D2,"AIR_CONCS", SPEC, M)&
+!SR      ,typ_s5i("PART_WOODOA25_OC", "ugC", D2,"AIR_CONCS", SPEC, M)&
+       ! ,typ_s5i("PART_OWOODOA25_OC", "ugC", D2,"AIR_CONCS", SPEC, M)&
+!SR     ,typ_s5i("PART_FFIREOA25_OC", "ugC", D2,"AIR_CONCS", SPEC, M)&
+       ! ,typ_s5i("PART_OFFIREOA25_OC", "ugC", D2,"AIR_CONCS", SPEC, M)&
 !none yet        ,typ_s5i("EC_F_WOOD_NEW ", "ug", D2,"AIR_CONCS", SPEC, D)&
 !none yet        ,typ_s5i("EC_F_WOOD_AGE ", "ug", D2,"AIR_CONCS", SPEC, D)&
 !SR     ,typ_s5i("EC_F_FFUEL_NEW", "ug", D2,"AIR_CONCS", SPEC, D)&
 !SR     ,typ_s5i("EC_F_FFUEL_AGE", "ug", D2,"AIR_CONCS", SPEC, D)&
-       !DS  ,typ_s5i("EC_C_WOOD ", "ug", D2,"AIR_CONCS", SPEC, M)& 
-!SR     ,typ_s5i("EC_C_FFUEL", "ug", D2,"AIR_CONCS", SPEC, M)& 
-!SR     ,typ_s5i("NONVOL_BGNDOC", "ug", D2,"AIR_CONCS", SPEC, D)& 
+       !DS  ,typ_s5i("EC_C_WOOD ", "ug", D2,"AIR_CONCS", SPEC, M)&
+!SR     ,typ_s5i("EC_C_FFUEL", "ug", D2,"AIR_CONCS", SPEC, M)&
+!SR     ,typ_s5i("NONVOL_BGNDOC", "ug", D2,"AIR_CONCS", SPEC, D)&
 !Needed for forest-fire checks
-!        ,typ_s5i("NONVOL_FFUELOC25", "ug", D2,"AIR_CONCS", SPEC, D)& 
+!        ,typ_s5i("NONVOL_FFUELOC25", "ug", D2,"AIR_CONCS", SPEC, D)&
 !SR     ,typ_s5i("NONV_FFUELOC_COARSE", "ug", D2,"AIR_CONCS", SPEC, D)&
         ,typ_s5i("POM_C_FFUEL", "ug", D2,"AIR_CONCS", SPEC, D)&
-       !DS  ,typ_s5i("NONVOL_WOODOC25", "ug", D2,"AIR_CONCS", SPEC, D)& 
-!        ,typ_s5i("NONVOL_FFIREOC25", "ug", D2,"AIR_CONCS", SPEC, D)& 
+       !DS  ,typ_s5i("NONVOL_WOODOC25", "ug", D2,"AIR_CONCS", SPEC, D)&
+!        ,typ_s5i("NONVOL_FFIREOC25", "ug", D2,"AIR_CONCS", SPEC, D)&
 !
         ,typ_s5i("PART_ASOA_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
         ,typ_s5i("PART_BSOA_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
@@ -304,8 +304,8 @@ private
     character(len=TXTLEN_DERIV), public, parameter, dimension(4) :: &
   D2_SR = (/ &
        "SURF_MAXO3    " &
-      ,"SURF_PM25water" & 
-      ,"SOMO35        " & 
+      ,"SURF_PM25water" &
+      ,"SOMO35        " &
       ,"PSURF         " &  ! Surface  pressure (for cross section):
   /)
 
@@ -335,7 +335,7 @@ private
 
 
   integer, private, save :: nOutDDep, nOutVEGO3
-  integer, private, save :: nOutMET ! 
+  integer, private, save :: nOutMET !
 
 
    ! Specify some species and land-covers we want to output
@@ -411,7 +411,7 @@ private
          "MMAOT40_IAM_MF ",&
          "MMAOT40_IAM_CR ",&
          "EUAOT40_Crops  ", &
-         "EUAOT40_Forests", & 
+         "EUAOT40_Forests", &
          "MMAOT40_IAM_WH " &
     /) !NB -last not found. Could just be skipped, but kept
        !to show behaviour
@@ -421,15 +421,15 @@ private
 
     character(len=TXTLEN_DERIV), public, parameter, dimension(1) :: &
       MOSAIC_METCONCS  = (/ "CanopyO3" /)   !"VPD     "  &
-                         ! ,"CanopyO3" & !SKIP 
+                         ! ,"CanopyO3" & !SKIP
          !,"VPD     ", "FstO3   " "EVAP    ", "Gsto    " &
-                        !SKIP  
+                        !SKIP
                        !SR ,"USTAR   " !SR , "INVL    "  &
                       !SR /)
                           ! "g_sto" needs more work - only set as L%g_sto
 
     character(len=TXTLEN_DERIV), public, save, dimension(2) :: &
-      MET_LCS  = (/ "DF    ", "GR    " /) !, "CF    ", "BF    ", "NF    " /) !, 
+      MET_LCS  = (/ "DF    ", "GR    " /) !, "CF    ", "BF    ", "NF    " /) !,
                                 !"IAM_DF", "IAM_MF"/)
 
       !MET_LCS  = (/ "GR    " , "IAM_CR", "IAM_DF", "IAM_MF"/)
@@ -445,21 +445,21 @@ private
 
 
    type(typ_s3), dimension(7), public, parameter :: WDEP_WANTED = (/ &
-         typ_s3( "PREC     ", "PREC ", "mm  " )  &
-        ,typ_s3( "SOX      ", "GROUP", "mgS " )  & ! Will get WDEP_SOX group
-        ,typ_s3( "OXN      ", "GROUP", "mgN " )  &
-        ,typ_s3( "RDN      ", "GROUP", "mgN " )  &
-        ,typ_s3( "SS       ", "GROUP", "mgSS" )  &
-      ! 
-      !  ,typ_s3( "SO2      ", "SPEC ", "mgS ") &  ! Makes WPEP_SO2
-      !  ,typ_s3( "SO4      ", "SPEC ", "mgS ") &
-      !  ,typ_s3( "HNO3     ", "SPEC ", "mgN ") &
-      !  ,typ_s3( "NO3_F    ", "SPEC ", "mgN ") &
-      !  ,typ_s3( "NO3_C    ", "SPEC ", "mgN ") &
-        ,typ_s3( "NH4_F    ", "SPEC ", "mgN ") &
-        ,typ_s3( "NH3      ", "SPEC ", "mgN ") &
-      !  ,typ_s3( "SEASALT_F", "SPEC ", "mgSS") &
-      ! ,typ_s3( "SEASALT_C", "SPEC ", "mgSS") &
+         typ_s3( "PREC     ", "PREC ", "mm " )  &
+        ,typ_s3( "SOX      ", "GROUP", "mgS" )  & ! Will get WDEP_SOX group
+        ,typ_s3( "OXN      ", "GROUP", "mgN" )  &
+        ,typ_s3( "RDN      ", "GROUP", "mgN" )  &
+        ,typ_s3( "SS       ", "GROUP", "mg " )  &
+      !
+      ! ,typ_s3( "SO2      ", "SPEC ", "mgS") &  ! Makes WPEP_SO2
+      ! ,typ_s3( "SO4      ", "SPEC ", "mgS") &
+      ! ,typ_s3( "HNO3     ", "SPEC ", "mgN") &
+      ! ,typ_s3( "NO3_F    ", "SPEC ", "mgN") &
+      ! ,typ_s3( "NO3_C    ", "SPEC ", "mgN") &
+        ,typ_s3( "NH4_F    ", "SPEC ", "mgN") &
+        ,typ_s3( "NH3      ", "SPEC ", "mgN") &
+      ! ,typ_s3( "SEASALT_F", "SPEC ", "mg ") &
+      ! ,typ_s3( "SEASALT_C", "SPEC ", "mg ") &
      /)
 
 
@@ -613,7 +613,7 @@ if(MasterProc ) print *, "TESTHH INSIDE Init_My_Deriv"
    ! Requested species which are not present will trigger warnings
    !type(typ_s5i), public, parameter, dimension(27) :: &
    !   OutputConcs = (/  typ_s5i("SO2", "ugS", D2,"AIR_CONCS", SPEC, M),&
-   !                     typ_s5i("SO4", "ugS", D2,"AIR_CONCS", SPEC, M),& 
+   !                     typ_s5i("SO4", "ugS", D2,"AIR_CONCS", SPEC, M),&
 
       do n = 1, size( OutputConcs(:)%txt1 )
 
@@ -622,20 +622,20 @@ if(MasterProc ) print *, "TESTHH INSIDE Init_My_Deriv"
          outdim = trim(OutputConcs(n)%txt3)
          outtyp = trim(OutputConcs(n)%txt4)
          outclass = trim(OutputConcs(n)%txt5) ! MISC or SPEC or GROUP
- 
+
          if( outdim == "3d" ) txt = "D3"  ! Will simplify later
          if( outdim == "2d" ) txt = "SURF"  ! Will simplify later
 
-         if( outclass == "MISC" ) then 
+         if( outclass == "MISC" ) then
 
               tag_name(1)= trim(outname) ! Just use raw name here
 
               call AddArray( tag_name(1:1) , wanted_deriv2d, &
                      NOT_SET_STRING, errmsg)
               nOutputFields = nOutputFields + 1
-              OutputFields(nOutputFields) = OutputConcs(n) 
-  
-         else if( outtyp == "AIR_CONCS" ) then 
+              OutputFields(nOutputFields) = OutputConcs(n)
+
+         else if( outtyp == "AIR_CONCS" ) then
 
              if( outclass == SPEC ) then ! check if available
               n1 = find_index(outname,species(:)%name)
@@ -643,7 +643,7 @@ if(MasterProc ) print *, "TESTHH INSIDE Init_My_Deriv"
               n1 = find_index(outname,GROUP_ARRAY(:)%name)
              end if
 
-              if ( n1 < 1 ) then 
+              if ( n1 < 1 ) then
                 if(DEBUG.and.MasterProc) write(*,*) "Xd-2d-SKIP ", n, trim(outname)
                 call PrintLog("WARNING: Requested My_Derived OutputField not found: "&
                    // " " //trim(outclass) // ":"   //trim(outname), MasterProc)
@@ -657,7 +657,7 @@ if(MasterProc ) print *, "TESTHH INSIDE Init_My_Deriv"
                      NOT_SET_STRING, errmsg)
               call CheckStop( errmsg, errmsg // trim(outname) // " too long" )
               nOutputFields = nOutputFields + 1
-              OutputFields(nOutputFields) = OutputConcs(n) 
+              OutputFields(nOutputFields) = OutputConcs(n)
               if(DEBUG.and.MasterProc) write(*,*) "Xd-2d-DONE ", n, trim(outname)
 
               if( outdim == "3d" ) then
@@ -666,7 +666,7 @@ if(MasterProc ) print *, "TESTHH INSIDE Init_My_Deriv"
                      NOT_SET_STRING, errmsg)
                   call CheckStop( errmsg, errmsg // trim(outname) // " too long" )
                   nOutputFields = nOutputFields + 1
-                  OutputFields(nOutputFields) = OutputConcs(n) 
+                  OutputFields(nOutputFields) = OutputConcs(n)
                   if(DEBUG.and.MasterProc) write(*,*) "Xd-3d-DONE ", n, trim(tag_name(1))
               end if
 
@@ -710,7 +710,7 @@ if(MasterProc ) print *, "TESTHH INSIDE Init_My_Deriv"
   subroutine My_DerivFunc( e_2d, class )!  , density )
 
     ! We define here here any functions which cannot easily be defined
-    ! in the more general Derived_ml. 
+    ! in the more general Derived_ml.
 
   real, dimension(:,:), intent(inout) :: e_2d  !  (i,j) 2-d extract of d_2d
   character(len=*), intent(in)    :: class       ! Class of data

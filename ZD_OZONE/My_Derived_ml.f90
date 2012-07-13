@@ -446,22 +446,22 @@ private
 !----------------------
 
 
-   type(typ_s3), dimension(7-3), public, parameter :: WDEP_WANTED = (/ &
+   type(typ_s3), dimension(7-3+2), public, parameter :: WDEP_WANTED = (/ &
          typ_s3( "PREC     ", "PREC ", "mm  " )  &
         ,typ_s3( "SOX      ", "GROUP", "mgS " )  & ! Will get WDEP_SOX group
         ,typ_s3( "OXN      ", "GROUP", "mgN " )  &
         ,typ_s3( "RDN      ", "GROUP", "mgN " )  &
-!TNO        ,typ_s3( "SS       ", "GROUP", "mgSS" )  &
+!TNO        ,typ_s3( "SS       ", "GROUP", "mg  " )  &
       !
-      !  ,typ_s3( "SO2      ", "SPEC ", "mgS ") &  ! Makes WPEP_SO2
+        ,typ_s3( "SO2      ", "SPEC ", "mgS ") &  ! Makes WPEP_SO2
       !  ,typ_s3( "SO4      ", "SPEC ", "mgS ") &
-      !  ,typ_s3( "HNO3     ", "SPEC ", "mgN ") &
+        ,typ_s3( "HNO3     ", "SPEC ", "mgN ") &
       !  ,typ_s3( "NO3_F    ", "SPEC ", "mgN ") &
       !  ,typ_s3( "NO3_C    ", "SPEC ", "mgN ") &
 !TNO        ,typ_s3( "NH4_F    ", "SPEC ", "mgN ") &
 !TNO        ,typ_s3( "NH3      ", "SPEC ", "mgN ") &
-      !  ,typ_s3( "SEASALT_F", "SPEC ", "mgSS") &
-      ! ,typ_s3( "SEASALT_C", "SPEC ", "mgSS") &
+      !  ,typ_s3( "SEASALT_F", "SPEC ", "mg  ") &
+      ! ,typ_s3( "SEASALT_C", "SPEC ", "mg  ") &
      /)
 
 

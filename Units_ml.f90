@@ -16,7 +16,8 @@ private
 public ::                   &
   Init_Units,               & ! initalize conversion arrays
   Units_Scale,              & ! unit factor for single SPC
-  Group_Units                 ! unit factors for a GROUP
+  Group_Units,              & ! unit factors for a GROUP
+  Group_Scale                 ! function version of Group_Units
 
 interface Group_Units
   module procedure Group_Units_Asc2D,Group_Units_detail
@@ -59,7 +60,13 @@ real, public, dimension(NSPEC_ADV), save  :: &
 type, private :: umap
   character(len=TXTLEN_SHORT)  :: utxt,units    ! short,NetCDF units
   real, dimension(0:NSPEC_ADV) :: uconv         ! conversion factor
-end type umap
+endtype umap
+
+type, public :: group_umap
+  character(len=TXTLEN_DERIV)  :: name = 'none' ! short name
+  integer,pointer,dimension(:) :: iadv =>null() ! advection index
+  real,   pointer,dimension(:) :: uconv=>null() ! conversion factor
+endtype group_umap
 
 type(umap), public, save :: unit_map(17)=(/&
 ! Air concentration
@@ -71,10 +78,10 @@ type(umap), public, save :: unit_map(17)=(/&
   umap("ugS","ugS/m3",ugSm3),&
 ! Dry/Wet deposition
   umap("mm" ,"mm"    ,1.0  ),&
-  umap("mg" ,"mg/m3" ,mgXm2),&
-  umap("mgC","mgC/m3",mgCm2),&
-  umap("mgN","mgN/m3",mgNm2),&
-  umap("mgS","mgS/m3",mgSm2),&
+  umap("mg" ,"mg/m2" ,mgXm2),&
+  umap("mgC","mgC/m2",mgCm2),&
+  umap("mgN","mgN/m2",mgNm2),&
+  umap("mgS","mgS/m2",mgSm2),&
 ! Exposure to radioactive material
   umap("uBq" ,"uBq/m3"  ,ugXm3    ),& ! inst/mean   exposure
   umap("uBqh","uBq h/m3",ugXm3*s2h),& ! accumulated exposure
@@ -132,30 +139,26 @@ subroutine Group_Units_Asc2D(hr_out,gspec,gunit_conv,debug,name)
   integer :: i
 
   if(Initialize_Units) call Init_Units
+  call CheckStop((hr_out%spec<1).or.(hr_out%spec>size(chemgroups)),&
+    "Group_Units Error: Unknown group id, "//&
+    "variable "//trim(hr_out%name)//" type "//trim(hr_out%type))
 
-  select case ( hr_out%spec )
-    case (1:size(chemgroups))
-      dname=trim(chemgroups(hr_out%spec)%name)//"_"//trim(hr_out%unit)
-      if(present(name))name = trim(dname)
-      if(associated(gspec)) deallocate(gspec)
-      allocate(gspec(size(chemgroups(hr_out%spec)%ptr)))
-      gspec=chemgroups(hr_out%spec)%ptr-NSPEC_SHL
-    case DEFAULT
-      call CheckStop( "ERROR-DEF! Hourly_out: "//&
-                      " hourly variable "//trim(hr_out%name)//&
-                      " type "//trim(hr_out%type)//", wrong group id!")
-  end select
+  dname=trim(chemgroups(hr_out%spec)%name)//"_"//trim(hr_out%unit)
+  if(present(name))name = trim(dname)
 
-  if(associated(gunit_conv)) deallocate(gunit_conv)
-  allocate(gunit_conv(size(gspec)))
+  if(associated(gspec)) deallocate(gspec)
+  allocate(gspec(size(chemgroups(hr_out%spec)%ptr)))
+  gspec=chemgroups(hr_out%spec)%ptr-NSPEC_SHL
+  if(debug) write(*,"(A,'=',30(A,':',I0,:,'+'))") &
+    trim(dname),(trim(species_adv(gspec(i))%name),gspec(i),i=1,size(gspec))
 
   i=find_index(hr_out%unit,unit_map(:)%utxt)
   if(i<1)i=find_index(hr_out%unit,unit_map(:)%units)
   call CheckStop(i<1,"Group_Units Error: Unknown unit "//trim(hr_out%unit))
-  gunit_conv(:)=unit_map(i)%uconv(gspec)
 
-  if (debug) print "(A,'=',30(A,':',I0,:,'+'))",trim(dname),&
-    (trim(species_adv(gspec(i))%name),gspec(i),i=1,size(gspec))
+  if(associated(gunit_conv)) deallocate(gunit_conv)
+  allocate(gunit_conv(size(gspec)))
+  gunit_conv(:)=unit_map(i)%uconv(gspec)
 end subroutine Group_Units_Asc2D
 
 subroutine Group_Units_detail(igrp,unit,gspec,gunit_conv,debug)
@@ -170,6 +173,19 @@ subroutine Group_Units_detail(igrp,unit,gspec,gunit_conv,debug)
   hr_out%type="Group_Units_detail"
   call Group_Units_Asc2D(hr_out,gspec,gunit_conv,debug)
 end subroutine Group_Units_detail
+
+function Group_Scale(igrp,unit,debug) result(gmap)
+  integer, intent(in)          :: igrp
+  character(len=*), intent(in) :: unit
+  logical, intent(in)          :: debug
+  type(group_umap)             :: gmap
+  type(Asc2D)                  :: hr_out
+  hr_out%spec=igrp
+  hr_out%unit=unit//""
+  hr_out%type="Group_Scale"
+  call Group_Units_Asc2D(hr_out,gmap%iadv,gmap%uconv,debug,name=gmap%name)
+end function Group_Scale
+
 
 function Units_Scale(txtin,iadv,unitstxt,volunit,needroa,debug_msg) result(unitscale)
   character(len=*), intent(in) :: txtin
