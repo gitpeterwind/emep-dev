@@ -112,7 +112,9 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
-xxxxxxxx rv4beta19 Dave        13/7/2012  xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv4beta19 Dave/Agnes  13/7/2012  xxxxxxxxxxxxxxxxxxxxxxx
+
+Country_ml   - correction for CS
 
 Sites_ml.f90 - sets "NOT FOUND" d_2d species to -999
 
