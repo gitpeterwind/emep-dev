@@ -137,7 +137,7 @@ private
    type(typ_s5i), public, save, dimension(MAX_NUM_DERIV2D) :: OutputFields
    integer, public, save :: nOutputFields = 0
 
-   type(typ_s5i), public, parameter, dimension(40) :: &
+   type(typ_s5i), public, parameter, dimension(44) :: &
       OutputConcs = (/  &
        ! ppb
          typ_s5i("O3        ", "ppb", D2,"AIR_CONCS", SPEC, D)& ! test 3d
@@ -149,7 +149,9 @@ private
 ! Here we use the 4th text field to give the "class" or "typ". Derived_ml
 ! will look for this in the select case (typ) 
 !CAN allow lower case ...
-!SR     ,typ_s5i("HMIX      ", "m",   D2,"HMIX     ","MISC", H)& !hourly tests
+!SR
+!DS Added back 13th July
+        ,typ_s5i("HMIX      ", "m",   D2,"HMIX     ","MISC", H)& !hourly tests
 !SR     ,typ_s5i("ws_10m    ", "m",   D2,"ws_10m   ","MISC", H)& !hourly tests
 !SR     ,typ_s5i("rh2m      ", "m",   D2,"rh2m     ","MISC", H)& !hourly tests
 !SR     ,typ_s5i("T2m       ", "degC",D2,"T2m      ","MISC", D)&
@@ -186,6 +188,9 @@ private
         ,typ_s5i("NH4_F     ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("SEASALT_F ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("SEASALT_C ", "ug ", D2,"AIR_CONCS", SPEC, D)&
+!DS added July 13th
+        ,typ_s5i("REMPPM25  ", "ug ", D2,"AIR_CONCS", SPEC, D)&
+        ,typ_s5i("REMPPM_C  ", "ug ", D2,"AIR_CONCS", SPEC, D)&
 !SR     ,typ_s5i("POLLEN_B  ", "ug ", D2,"AIR_CONCS", SPEC, D)&
 !        ,typ_s5i("DUST_ROAD_F ", "ug ", D2,"AIR_CONCS", SPEC, D)&
 !        ,typ_s5i("DUST_ROAD_C ", "ug ", D2,"AIR_CONCS", SPEC, D)&
@@ -274,6 +279,7 @@ private
         ,typ_s5i("PART_FFUELOA25_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
         ,typ_s5i("PART_WOODOA25_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
         ,typ_s5i("PART_FFIREOA25_OM", "ug", D2,"AIR_CONCS", SPEC, M)& !NEVER as ugC!
+        ,typ_s5i("FFIRE_REMPPM25", "ug", D2,"AIR_CONCS", SPEC, M)& !NEVER as ugC!
 !SPECIAL PM25 will be sum of fine + fraction coarse
 ! PUT AT END OF THIS LIST  !
 !---------------------------------------------
