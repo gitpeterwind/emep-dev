@@ -112,6 +112,17 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
+xxxxxxxx still  rv4beta21 Dave       16/7/2012  xxxxxxxxxxxxxxxxxxxxxxx
+
+run.pl changed for emissplit files:
+
+    script looks for emissplit.$Specials.xxx in $timeseries directory
+    first, thus can set $Specials = "TSAP_Jul2012" to get files
+    for TSAP re-runs. (This one also needs iyr_trend to be set of
+    course, corresponding to SR runs.)
+
+    Still, be careful with emissplit files! System is confusing:-(
+
 xxxxxxxx still  rv4beta20 Peter      15/7/2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 ZD_SR/My_Derived with T2m without SS

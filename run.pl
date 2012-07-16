@@ -99,7 +99,7 @@ my %BENCHMARK;
 # Use Modrun11 where possible:
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2006,emis=>"Modrun11/EMEP_trend_2000-2009/2006");
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2007,emis=>"Modrun11/EMEP_trend_2000-2009/2007");
-   %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun11/EMEP_trend_2000-2009/2008",chem=>"EmChem09soa",make=>"EMEP");
+#   %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun11/EMEP_trend_2000-2009/2008",chem=>"EmChem09soa",make=>"EMEP");
 #  %BENCHMARK = (grid=>"TNO28" ,year=>2008,emis=>"emis_TNO28");
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2005,emis=>"Modrun11/EMEP_trend_2000-2009/2005");
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun10/EMEP_trend_2000-2008/2008");
@@ -159,6 +159,7 @@ my $year = "2009";
 
 my $iyr_trend = $year;
 $iyr_trend = "2020" if $SR ;  # 2020 assumed for SR runs here
+#$iyr_trend = "2020" ;  #  TSAP test
 
 print "Year is $yy YEAR $year Trend year $iyr_trend\n";
 
@@ -250,11 +251,13 @@ my $Chem     = "EmChem09soa";
 #$Chem     = "CRI_v2_R5";
    $Chem     = $BENCHMARK{'chem'} if $BENCHMARK{'chem'};
 
-my $testv = "rv4beta20";
+my $testv = "rv4beta21";
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
 my $ChemDir  = "$ProgDir/ZCM_$Chem";
+my $Specials = "specials";  # default
+#$Specials = "TSAP_Jul2012";  # used for TSAP runs in July 2012
 # Check:
 die "No ProgDir! $ProgDir\n" unless -d $ProgDir;
 die "No ChemDir! $ChemDir\n" unless -d $ChemDir;
@@ -307,6 +310,7 @@ chdir "$ProgDir";
 print "TESTING ENV:", $ENV{PWD}, "\n";
 
 
+# Default emissplits used here. if $Specials is set will look
 my $SplitDir    = "$DataDir/SPLITS_JAN2010/BASE_NAEI2000_GH2009.$Chem" ;
 $SplitDir    = "$ChemDir/EMISSPLIT";
 #RB:had "~mifarb/Unify/MyData/D_EGU/SPLITS_NOV2009v2/BASE_NAEI2000_GH2009.$Chem" ;
@@ -810,10 +814,15 @@ print "TESTING PM $poll $dir\n";
       }
 
     $ifile{"$SplitDir/emissplit.defaults.$poll"} = "emissplit.defaults.$poll";
-    # specials aren't required
+    # specials aren't essential, but if available we use them
+    # Set $Specials flag for special cases, e.g. TSAP
     # INERIS special! nox and pm. Take from 2010 IIASA
     #if ( $INERIS_FACS && -e "$timeseries/emissplit.specials.$poll.2010" ) {
-    if ( -e "$timeseries/emissplit.specials.$poll.2010" ) {
+
+    if ( -e "$timeseries/emissplit.$Specials.$poll.$iyr_trend" ) { # e.g. TSAP
+        $ifile{"$timeseries/emissplit.$Specials.$poll.$iyr_trend"} =
+               "emissplit.specials.$poll"
+    } elsif ( -e "$timeseries/emissplit.specials.$poll.2010" ) { # when no other year availanle
         $ifile{"$timeseries/emissplit.specials.$poll.2010"} =
                "emissplit.specials.$poll"
     } else {
