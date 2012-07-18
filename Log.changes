@@ -113,11 +113,26 @@ Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
 
+xxxxxxxx rv4beta22 Peter 18/7/2012  xxxxxxxxxxxxxxxxxxxxxxx
+
+New RoadDust whith grid independent input. Does not give exactly the same results as the old scheme because 
+the defintion of climatefactors is different.
+
+The scheme is rather new, and is also a test for a general scheme that can be used for all gridXXX emissions.
+Emissions as stored in a netcdf file with: total per gridcells, and fractions assigned to countries.
+
+Modified: 
+NetCDF_ml.f90
+Emissions_ml.f90
+run.pl
+
+=======
 Dave  18 July
 Aqueous_ml            - small tidy up
 BoundaryConditions_ml - small tidy up
 
 xxxxxxxx rv4beta21 Dave 16-18/7/2012  xxxxxxxxxxxxxxxxxxxxxxx
+
 
 run.pl changed for emissplit files:
 
