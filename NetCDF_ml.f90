@@ -1568,6 +1568,7 @@ end subroutine Read_Inter_CDF
 
 recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      known_projection,  &! can be provided by user, eg. for MEGAN.
+     fractions_out,CC_out,Ncc_out,&! additional output for emissions given with country-codes
      needed,debug_flag,UnDef)
   !
   !reads data from netcdf file and interpolates data into model local (subdomain) grid
@@ -1609,8 +1610,17 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   !'mass_conservative' can be used for emissions in kg (or kg/s). If the gricell in the model are
   !twice as small as the gridcell in the netcdf file, the values will also be reduced by a factor 2.
 
+  !Emissions with country-codes: (July 2012, under development)
+  !Emissions are given in each gridcell with:
+  !1) Total (Rvar)
+  !2) Number of country-codes (Ncc_out)
+  !3) Country codes (CC_out)
+  !4) fraction assigned to each country (fractions_out)
+  !Presently only lat-lon projection of input file supported
+  !negative data not finished/tested (can give 0 totals, definition of fractions?)
+
   !Technical, future developements:
-  !This routine is likely to change a lot in the future: can be divided into simpler routines;
+  !This routine is likely to change a lot in the future: should be divided into simpler routines;
   !more functionalities will be introduced.
   !Should also be usable as standalone.
   !All MPI processes read the same file simultaneously (i.e. in parallel).
@@ -1629,11 +1639,15 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   integer, optional,intent(in) :: kend!largest k to read. Default: assume 2D field
   logical, optional, intent(in) :: debug_flag
   real, optional, intent(in) :: UnDef ! Value put into the undefined gridcells
-  logical, save :: debug_ij
+  real , optional, intent(out) ::fractions_out(MAXLIMAX*MAXLJMAX,*) !fraction assigned to each country 
+  integer, optional, intent(out)  ::Ncc_out(*), CC_out(MAXLIMAX*MAXLJMAX,*) !Number of country-codes and Country codes
 
+  logical, save :: debug_ij
+  logical ::fractions
   integer :: ncFileID,VarID,lonVarID,latVarID,status,xtype,ndims,dimids(NF90_MAX_VAR_DIMS),nAtts
-  integer :: dims(NF90_MAX_VAR_DIMS),totsize,i,j,k
-  integer :: startvec(NF90_MAX_VAR_DIMS)
+  integer :: VarIDCC,VarIDNCC,VarIDfrac,NdimID
+  integer :: dims(NF90_MAX_VAR_DIMS),NCdims(NF90_MAX_VAR_DIMS),totsize,i,j,k
+  integer :: startvec(NF90_MAX_VAR_DIMS),Nstartvec(NF90_MAX_VAR_DIMS)
   integer ::alloc_err
   character*100 ::name
   real :: scale,offset,scalefactors(2),dloni,dlati
@@ -1662,6 +1676,11 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   integer :: ii, jj,i_ext,j_ext
   real::an_ext,xp_ext,yp_ext,fi_ext,ref_lat_ext,xp_ext_div,yp_ext_div,Grid_resolution_div,an_ext_div
   real ::buffer1(MAXLIMAX, MAXLJMAX),buffer2(MAXLIMAX, MAXLJMAX)
+  real, allocatable ::fraction_in(:,:)
+  integer, allocatable ::CC(:,:),Ncc(:)
+  real ::total
+  integer ::N_out,Ng,Nmax
+
   !_______________________________________________________________________________
   !
   !1)           General checks and init
@@ -1838,7 +1857,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
            call ReadField_CDF('SurfacePressure.nc','surface_pressure',&
                 Psurf_ref,current_date%month,needed=.true.,interpol='zero_order',debug_flag=debug_flag)
         else
-           call CheckStop(trim(name)/='k',"vertical coordinate k not found")
+           call CheckStop(trim(name)/='k'.and.trim(name)/='N',"vertical coordinate (k or N) not found")
         endif
      endif
 
@@ -1949,6 +1968,61 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
      call check(nf90_get_var(ncFileID, VarID, Rvalues,start=startvec,count=dims),&
           errmsg="RRvalues")
 
+!test if this is "fractions" type data
+     fractions=.false.
+     if(present(fractions_out).or.present(CC_out).or.present(Ncc_out))then
+        if ( debug ) write(*,*) 'ReadField_CDF, fraction arrays  '
+        if(.not.(present(fractions_out).and.present(CC_out).and.present(Ncc_out)))then
+           write(*,*) 'Fraction interpolation missing some arrays of arrays fractions_out CC_out Ncc_out',&
+                present(fractions_out),present(CC_out),present(Ncc_out)
+        end if
+        fractions=.true.
+     end if
+     if(fractions)then
+        if ( debug ) write(*,*) 'fractions method. reading data '
+        Nstartvec=startvec!set 2 first dimensions
+        Nstartvec(3)=1
+        NCdims=dims!set 2 first dimensions
+        !find size of dimension for N (max number of countries per gridcell)
+        call check(nf90_inq_dimid(ncid = ncFileID, name = "N", dimID = NdimID))
+        call check(nf90_inquire_dimension(ncid=ncFileID,dimID=NdimID,len=Nmax))
+        NCdims(3)=Nmax
+        
+        allocate(NCC(dims(1)*dims(2)), stat=alloc_err)
+        allocate(CC(dims(1)*dims(2),Nmax), stat=alloc_err)     
+        allocate(fraction_in(dims(1)*dims(2),Nmax), stat=alloc_err)     
+        
+        call check(nf90_inq_varid(ncid = ncFileID, name = 'NCodes', varID = VarIDNCC),&
+             errmsg="NCodes not found")
+        write(*,*)dims(1),dims(2),dims(3)
+        call check(nf90_get_var(ncFileID, VarIDNCC,NCC ,start=startvec,count=dims),&
+             errmsg="Nvalues")
+
+        call check(nf90_inq_varid(ncid = ncFileID, name = 'Codes', varID = VarIDCC),&
+             errmsg="Codes not found")
+        call check(nf90_get_var(ncFileID, VarIDCC,CC ,start=Nstartvec,count=NCdims),&
+             errmsg="CCvalues")
+
+        call check(nf90_inq_varid(ncid = ncFileID, name = 'fractions_'//trim(varname), varID = VarIDfrac),&
+             errmsg="fractions not found")
+        call check(nf90_get_var(ncFileID, VarIDfrac,fraction_in ,start=Nstartvec,count=NCdims),&
+             errmsg="fractions")
+        
+        if( debug )then
+           write(*,*)'More than 2 countries:'
+           do i=1,dims(1)*dims(2)
+              if(NCC(i)>2)write(*,77)me,i,NCC(i),CC(i,1),fraction_in(i,1),CC(i,NCC(i)),fraction_in(i,NCC(i))
+              77 format(3I5,2(I5,F6.3))
+           enddo
+        endif
+        
+        Ncc_out(1:MAXLIMAX*MAXLJMAX)=0
+        CC_out(1:MAXLIMAX*MAXLJMAX,1:Nmax)=0
+        fractions_out(1:MAXLIMAX*MAXLJMAX,1)=0.0
+        fractions_out(1:MAXLIMAX*MAXLJMAX,2:Nmax)=0.0
+     endif
+
+
      if ( debug ) write(*,*) 'ReadCDF types ', &
            xtype, NF90_INT, NF90_SHORT, NF90_BYTE
 
@@ -2020,7 +2094,41 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
                              Nvalues(ijk)=Nvalues(ijk)+1
                              igjgk=igjg+(k-1)*dims(1)*dims(2)
 
-                             if(OnlyDefinedValues.or.Rvalues(igjgk)/=FillValue)then
+                             if(fractions)then
+                                do Ng=1,Ncc(igjgk)!number of fields at igjg as read
+                                   do N_out=1,Ncc_out(ijk) !number of fields at ij already saved in the model grid
+                                      if(CC(igjgk,Ng)==CC_out(ijk,N_out))goto 731
+                                   enddo
+                                   !the country is not yet used for this gridcell. Define it now
+                                   Ncc_out(ijk)=Ncc_out(ijk)+1
+                                   N_out=Ncc_out(ijk)
+                                   CC_out(ijk, N_out)=CC(igjgk,Ng)
+731                                continue
+                                   !update fractions
+                                   total=Rvar(ijk)+Rvalues(igjgk)*fraction_in(igjgk,Ng)
+                                   if(debug.and.fraction_in(igjgk,Ng)>1.001)then
+                                      write(*,*)'fractions_in TOO LARGE ',Ng,ig,jg,k,fraction_in(igjgk,Ng)
+                                      stop
+                                   endif
+                                   if(abs(total)>1.0E-30)then
+                                      do N=1,Ncc_out(ijk)
+                                         !reduce previously defined fractions
+                                         fractions_out(ijk,N)=fractions_out(ijk,N)*Rvar(ijk)/total
+                                      enddo
+                                      !increase fraction of this country (yes, after having reduced it!)
+                                      fractions_out(ijk,N_out)=fractions_out(ijk,N_out)+Rvalues(igjgk)*fraction_in(igjgk,Ng)/total
+                                   else
+                                      !should try to keep proportions right in case cancellation of positive an negative; not finished!
+                                      do N=1,Ncc_out(ijk)
+                                         !reduce existing fractions
+                                         fractions_out(ijk,N)=fractions_out(ijk,N)/Ncc_out(ijk)
+                                      enddo
+                                      !increase fraction of this country (yes, after having reduced it!)
+                                      fractions_out(ijk,N_out)=fractions_out(ijk,N_out)+Rvalues(igjgk)*fraction_in(igjgk,Ng)/Ncc_out(ijk)
+                                   endif
+                                   Rvar(ijk)=total
+                                enddo
+                             elseif(OnlyDefinedValues.or.Rvalues(igjgk)/=FillValue)then
                                 Rvar(ijk)=Rvar(ijk)+Rvalues(igjgk)
                              else
                                 !Not defined: don't include this Rvalue
@@ -2504,6 +2612,9 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   deallocate(Rvalues)
   deallocate(Rlon)
   deallocate(Rlat)
+  if(fractions)then
+     deallocate(NCC,CC,fraction_in)
+  endif
   call check(nf90_close(ncFileID))
 
 

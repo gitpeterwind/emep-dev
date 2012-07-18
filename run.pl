@@ -191,7 +191,7 @@ my $NH3EMIS_VAR = 0; # set to 1 if new temp NH3.
 
 my $METformat="cdf"; # felt or cdf
 
-my $GRID = "EECCA"; # TNO7, TNO14, TNO28, TNO56, EMEP, EECCA, MACC02, GLOBAL or FORECAST
+my $GRID = "TNO28"; # TNO7, TNO14, TNO28, TNO56, EMEP, EECCA, MACC02, GLOBAL or FORECAST
    $GRID = "MACC02" if $CWF;
    $GRID = $BENCHMARK{'grid'} if %BENCHMARK;
 #DS Confusing list of possibilites. Needs  CHECK LATER
@@ -398,6 +398,8 @@ if ( $STALLO && $GRID eq "GLOBAL" ) {
   $pm_emisdir = $emisdir;
 }
 
+
+
 my $RESET        = 0 ;  # usually 0 (false) is ok, but set to 1 for full restart
 my $COMPILE_ONLY = 0 ;  # usually 0 (false) is ok, but set to 1 for compile-only
 my $INTERACTIVE  = 0 ;  # usually 0 (false), but set to 1 to make program stop
@@ -481,21 +483,21 @@ if (%BENCHMARK){ # Allways runn full year on benchmark mode
 #               (normally, that is...)
 
 if ($SR) {
-  print "SR is true\n";
-  @runs = EMEP::Sr::initRuns();
-  if ($ENV{'PBS_ARRAY_INDEX'} ){
-      print "PBS_ARRAY_INDEX:  $ENV{'PBS_ARRAY_INDEX'} \n" ;
-      @runs = ($runs[$ENV{'PBS_ARRAY_INDEX'}-1]); }  # PBS Pro, Ve, one run per job
-
+    print "SR is true\n";
+    @runs = EMEP::Sr::initRuns();
+    if ($ENV{'PBS_ARRAY_INDEX'} ){
+	print "PBS_ARRAY_INDEX:  $ENV{'PBS_ARRAY_INDEX'} \n" ;
+	@runs = ($runs[$ENV{'PBS_ARRAY_INDEX'}-1]);   # PBS Pro, Ve, one run per job
+    
 #for additional sets of single runs (uncomment the previous @runs =)
 #      if($ENV{'PBS_ARRAY_INDEX'}==1){@runs = ($runs[13])  ; }  #
 #      elsif($ENV{'PBS_ARRAY_INDEX'}==2){@runs = ($runs[27])  ; }  #
 #      else{ die "Not a valid array index \n" ; }  # default
-  else{
-      @runs = ($runs[0]);   # only one run
-  }
-  @runs = ($runs[$ENV{'PBS_ARRAY_INDEX'}-1]) if $ENV{'PBS_ARRAY_INDEX'};   # PBS Pro, Ve, one run per job
-  print "PBS_ARRAY_INDEX:  $ENV{PBS_ARRAY_INDEX} \n";   # PBS Pro
+    }else{
+	@runs = ($runs[0]);   # only one run
+    }
+    @runs = ($runs[$ENV{'PBS_ARRAY_INDEX'}-1]) if $ENV{'PBS_ARRAY_INDEX'};   # PBS Pro, Ve, one run per job
+    print "PBS_ARRAY_INDEX:  $ENV{PBS_ARRAY_INDEX} \n";   # PBS Pro
 }
 
 if ($CWF) {
@@ -875,6 +877,11 @@ print "TESTING PM $poll $dir\n";
   $ifile{"$DataDir/AircraftEmis_FL.nc"} = "AircraftEmis_FL.nc";
   $ifile{"$DataDir/SurfacePressure.nc"} = "SurfacePressure.nc";
   $ifile{"$DataDir/SoilTypes_IFS.nc"} = "SoilTypes_IFS.nc";
+#netcdf RoadDust inputs:
+  $ifile{"$DataDir/RoadMap.nc"} = "RoadMap.nc";
+  $ifile{"$DataDir/AVG_SMI_2005_2010.nc"} = "AVG_SMI_2005_2010.nc";
+
+
 #TEMPORARY SETUP
 #  my $tmpndep = "/home/$DAVE/Work/RESULTS/MAPS/AnnualSums/AnnualNdep";
 #  $ifile{"$tmpndep/AnnualNdep_BM_rv3_9_20soa-EmChem09soa.nc"} = "AnnualNdep.nc";
