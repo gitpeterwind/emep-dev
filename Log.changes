@@ -112,6 +112,11 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
+
+Dave  18 July
+Aqueous_ml            - small tidy up
+BoundaryConditions_ml - small tidy up
+
 xxxxxxxx rv4beta21 Dave 16-18/7/2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 run.pl changed for emissplit files:

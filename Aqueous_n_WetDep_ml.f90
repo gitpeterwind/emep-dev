@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************!
 !*
-!*  Copyright (C) 2007-2011 met.no
+!*  Copyright (C) 2007-2012 met.no
 !*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -34,6 +34,7 @@ module Aqueous_ml
 ! and Jakobsen (1998) and Eliassen and Saltbones (1983).
 ! Simple scavenging coefficients are used. A distinction is made
 ! between in-cloud and sub-cloud scavenging.
+! Variable pH introduced 2011 (hf)
 !
 ! Usage:
 !
@@ -744,7 +745,6 @@ subroutine WetDeposition(i,j,debug_flag)
 
 ! Put both in- and sub-cloud scavenging ratios in the array vw:
 
-!TMP xnloss = 0.0
     vw(kcloudtop:ksubcloud-1) = WetDep(icalc)%W_sca ! Scav. for incloud
     vw(ksubcloud:KMAX_MID  )  = WetDep(icalc)%W_sub ! Scav. for subcloud
 
