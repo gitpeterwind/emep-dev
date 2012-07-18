@@ -114,6 +114,8 @@ Will keep list here near top of Log.changes.
 !----------------------------------------------------------
 
 xxxxxxxx rv4beta22 Peter 18/7/2012  xxxxxxxxxxxxxxxxxxxxxxx
+           (+ small clean-ups from Dave)
+            ongoing - so not rtagged yet
 
 New RoadDust whith grid independent input. Does not give exactly the same results as the old scheme because 
 the defintion of climatefactors is different.
@@ -126,10 +128,10 @@ NetCDF_ml.f90
 Emissions_ml.f90
 run.pl
 
-=======
-Dave  18 July
+Dave  18 July, comparing with EnsClim2 code
 Aqueous_ml            - small tidy up
 BoundaryConditions_ml - small tidy up
+DryDep_ml             - small tidy up
 
 xxxxxxxx rv4beta21 Dave 16-18/7/2012  xxxxxxxxxxxxxxxxxxxxxxx
 
