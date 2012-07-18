@@ -218,26 +218,25 @@ contains
     integer, save :: idebug=0, itest=1, i_test=0, j_test=0
 
     if (first_call) then
-       if (DEBUG_BCS) print "((A,I0,1X))",               &
-            "FIRST CALL TO BOUNDARY CONDITIONS, me: ", me,  &
-            "TREND YR ", iyr_trend
+       if (DEBUG_BCS) write(*,"(a,I3,1X,a,i5)") &
+            "FIRST CALL TO BOUNDARY CONDITIONS, me: ", me,  "TREND YR ", iyr_trend
 
        call My_bcmap(iyr_trend)      ! assigns bc2xn_adv and bc2xn_bgn mappings
        call Set_bcmap()              ! assigns xn2adv_changed, etc.
 
        num_changed = num_adv_changed + num_bgn_changed   !u1
-       if (DEBUG_BCS) print "((A,I0,1X))",           &
+       if (DEBUG_BCS) write(*, "((A,I0,1X))")           &
             "BCs: num_adv_changed: ", num_adv_changed,  &
             "BCs: num_bgn_changed: ", num_bgn_changed,  &
             "BCs: num     changed: ", num_changed
 
     endif ! first call
-    if (DEBUG_BCS) print "((A,I0,1X))",             &
+    if (DEBUG_BCS) write(*, "((A,I0,1X))")           &
          "CALL TO BOUNDARY CONDITIONS, me:", me, &
-         "month ", month, "TREND2 YR ", iyr_trend, me
+         "month ", month, "TREND2 YR ", iyr_trend, "me ", me
 
     if (num_changed==0) then
-       print *,"BCs: No species requested"
+       write(*,*) "BCs: No species requested"
        return
     endif
 
@@ -271,7 +270,7 @@ contains
 
     if (first_call) then
        idebug = 1
-       if (DEBUG_BCS) print *, "RESET 3D BOUNDARY CONDITIONS", me
+       if (DEBUG_BCS) write(*,*) "RESET 3D BOUNDARY CONDITIONS", me
        do k = 1, KMAX_MID
           do j = 1, ljmax
              do i = 1, limax
@@ -281,7 +280,7 @@ contains
           enddo
        enddo
     else       
-       if (DEBUG_BCS.and.MasterProc) print *, "RESET LATERAL BOUNDARIES"
+       if (DEBUG_BCS.and.MasterProc) write(*,*) "RESET LATERAL BOUNDARIES"
        do k = 2, KMAX_MID
           do j = lj0, lj1
              !left
@@ -327,7 +326,7 @@ contains
             iglobact,jglobact,bc_data,io_num,errcode)
 
        if (DEBUG_BCS.and.MasterProc) &
-            print *,'Calls GetGlobalData: year,iyr_trend,ibc,month,bc_used=', &
+            write(*, *)'Calls GetGlobalData: year,iyr_trend,ibc,month,bc_used=', &
             year,iyr_trend,ibc,month,bc_used(ibc)
 
        call CheckStop(ibc==1.and.errcode/= 0,&
@@ -846,9 +845,9 @@ subroutine Set_bcmap()
     endif
   enddo ! iem
 
-  if (DEBUG_BCS) print "(A,/10i5)","TEST SET_BCMAP bc_used: ",&
+  if (DEBUG_BCS) write(*,*) "TEST SET_BCMAP bc_used: ",&
     (bc_used(ibc),ibc=1, NTOT_BC)
-  if (MasterProc.and.DEBUG_BCS) print *,"Finished Set_bcmap: Nbcused is ", sum(bc_used)
+  if (MasterProc.and.DEBUG_BCS) write(*,*)"Finished Set_bcmap: Nbcused is ", sum(bc_used)
 
   allocate(spc_changed2adv(num_adv_changed))
   allocate(spc_changed2bgn(num_bgn_changed))
@@ -937,7 +936,7 @@ subroutine MiscBoundaryConditions(iglobact,jglobact,bc_adv,bc_bgn)
   endif
 
   itest = 1
-  if (DEBUG_BCS.and.debug_proc) print "(a50,i4,/,(5es12.4))", &
+  if (DEBUG_BCS.and.debug_proc) write(*,*) "(a50,i4,/,(5es12.4))", &
     "From MiscBoundaryConditions: ITEST (ppb): ",&
     itest, ((bc_adv(spc_adv2changed(itest),1,1,k)/1.0e-9),k=1,20)
 end subroutine MiscBoundaryConditions
