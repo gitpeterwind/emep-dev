@@ -78,7 +78,6 @@ use ChemChemicals_ml         ! provide species names
 use Chemfields_ml,     only: xn_adv, xn_bgn, NSPEC_BGN  ! emep model concs.
 use ChemSpecs_adv_ml         ! provide NSPEC_ADV and IXADV_*
 use ChemSpecs_shl_ml         ! provide NSPEC_SHL
-!FEB2012 use ChemGroups_ml,     only: SS_GROUP !  Sea-salt special
 use GlobalBCs_ml,      only:  &
    NGLOB_BC                   &  ! Number of species from global-model
   ,GetGlobalData              &  ! Sub., reads global data+vert interp.
@@ -362,10 +361,11 @@ contains
           do n = 1, bc_used_adv(ibc)
              iem = spc_used_adv(ibc,n)
              ntot = iem + NSPEC_SHL 
+
+            ! Sea-salt. 
+            !  If SeaSalt isn't called from mk.GenChem, we don't have the
+            !  SS_GROUP, so we search for the simple SEASALT name.
              bc_seaspec = .false.
-!FEB2012. If SeaSalt isn't called from mk.GenChem, we don't have the SS_GROUP,
-!         so we search for the simple SEASALT name.
-!            if ( USE_SEASALT .and. ( find_index( ntot, SS_GROUP(:) ) > 0 ) ) then
              if ( USE_SEASALT .and. &
                   ( index( species(ntot)%name, "SEASALT_" ) > 0 ) ) then
                 bc_seaspec = .true.
@@ -379,10 +379,11 @@ contains
                 do j = 1, ljmax
                    do i = 1, limax
                       bc_fac     = 1.0
-                      ! Parentheses needed to get correct precedence (dangerous!): 
-                      if ( bc_seaspec .and. ( nwp_sea(i,j) .eqv. .false. ) ) bc_fac = 0.001 !st0.01
-                      !st swithch off BICs if sea salt is not calculated
-                      if (bc_seaspec .and. .not. USE_SEASALT )  bc_fac = 0.0
+
+                      if ( bc_seaspec ) then
+                         if ( .not. nwp_sea(i,j))  bc_fac = 0.001 ! low over land
+                         if ( .not. USE_SEASALT )  bc_fac = 0.0   ! not wanted!
+                      end if
 
                       xn_adv(iem,i,j,k) =   xn_adv(iem,i,j,k) +&
                            bc_fac * &  ! used for sea-salt species 
@@ -417,22 +418,20 @@ contains
              iem = spc_used_adv(ibc,n)
              ntot = iem + NSPEC_SHL 
              bc_seaspec = .false.
-             !FEB2012 if ( USE_SEASALT .and. ( find_index( ntot, SS_GROUP(:) ) > 0 ) ) then
              if ( USE_SEASALT .and. ( index( species(ntot)%name, "SEASALT_" ) > 0 ) ) then
                 bc_seaspec = .true.
              end if
-             !             if ( debug_proc ) write (*,*) "SEAINDEX", &
-             !                  trim(species(ntot)%name), n, ntot, bc_seaspec
 
              do k = 2, KMAX_MID
                 do j = lj0, lj1
                    !left
                    do i = 1, li0-1
                       bc_fac     = 1.0
-                      ! Parentheses needed to get correct precedence (dangerous!): 
-                      if ( bc_seaspec .and. ( nwp_sea(i,j) .eqv. .false. ) ) bc_fac = 0.001 !st0.01
-                      !st swithch off BICs if sea salt is not calculated
-                      if ( bc_seaspec .and..not. USE_SEASALT )  bc_fac = 0.0
+
+                      if ( bc_seaspec ) then
+                         if ( .not. nwp_sea(i,j))  bc_fac = 0.001 ! low over land
+                         if ( .not. USE_SEASALT )  bc_fac = 0.0   ! not wanted!
+                      end if
 
                       xn_adv(iem,i,j,k) =   xn_adv(iem,i,j,k) +&
                            bc_fac * &  ! used for sea-salt species 
@@ -442,10 +441,11 @@ contains
                    !right
                    do i = li1+1, limax
                       bc_fac     = 1.0
-                      ! Parentheses needed to get correct precedence (dangerous!): 
-                      if ( bc_seaspec .and. ( nwp_sea(i,j) .eqv. .false. ) ) bc_fac = 0.001 !st0.01
-                      !st swithch off BICs if sea salt is not calculated
-                      if (bc_seaspec .and. .not. USE_SEASALT )  bc_fac = 0.0
+
+                      if ( bc_seaspec ) then
+                         if ( .not. nwp_sea(i,j))  bc_fac = 0.001 ! low over land
+                         if ( .not. USE_SEASALT )  bc_fac = 0.0   ! not wanted!
+                      end if
 
                       xn_adv(iem,i,j,k) =   xn_adv(iem,i,j,k) +&
                            bc_fac * &  ! used for sea-salt species 
@@ -457,10 +457,11 @@ contains
                 do j = 1, lj0-1
                    do i = 1, limax
                       bc_fac     = 1.0
-                      ! Parentheses needed to get correct precedence (dangerous!): 
-                      if ( bc_seaspec .and. ( nwp_sea(i,j) .eqv. .false. ) ) bc_fac = 0.001 !st0.01
-                      !st swithch off BICs if sea salt is not calculated
-                      if (bc_seaspec .and. .not. USE_SEASALT )  bc_fac = 0.0
+
+                      if ( bc_seaspec ) then
+                         if ( .not. nwp_sea(i,j))  bc_fac = 0.001 ! low over land
+                         if ( .not. USE_SEASALT )  bc_fac = 0.0   ! not wanted!
+                      end if
 
                       xn_adv(iem,i,j,k) =   xn_adv(iem,i,j,k) +&
                            bc_fac * &  ! used for sea-salt species 
@@ -472,10 +473,11 @@ contains
                 do j = lj1+1, ljmax
                    do i = 1, limax
                       bc_fac     = 1.0
-                      ! Parentheses needed to get correct precedence (dangerous!): 
-                      if ( bc_seaspec .and. ( nwp_sea(i,j) .eqv. .false. ) ) bc_fac = 0.001 !st0.01
-                      !st swithch off BICs if sea salt is not calculated
-                      if ( bc_seaspec .and..not. USE_SEASALT )  bc_fac = 0.0
+
+                      if ( bc_seaspec ) then
+                         if ( .not. nwp_sea(i,j))  bc_fac = 0.001 ! low over land
+                         if ( .not. USE_SEASALT )  bc_fac = 0.0   ! not wanted!
+                      end if
 
                       xn_adv(iem,i,j,k) =   xn_adv(iem,i,j,k) +&
                            bc_fac * &  ! used for sea-salt species 
@@ -489,10 +491,11 @@ contains
                 do j = 1, ljmax
                    do i = 1, limax
                       bc_fac     = 1.0
-                      ! Parentheses needed to get correct precedence (dangerous!): 
-                      if ( bc_seaspec .and. ( nwp_sea(i,j) .eqv. .false. ) ) bc_fac = 0.001 !st0.01
-                      !st swithch off BICs if sea salt is not calculated
-                      if (bc_seaspec .and. .not. USE_SEASALT )  bc_fac = 0.0
+
+                      if ( bc_seaspec ) then
+                         if ( .not. nwp_sea(i,j))  bc_fac = 0.001 ! low over land
+                         if ( .not. USE_SEASALT )  bc_fac = 0.0   ! not wanted!
+                      end if
 
                       xn_adv(iem,i,j,k) =   xn_adv(iem,i,j,k) +&
                            bc_fac * &  ! used for sea-salt species 
@@ -996,7 +999,6 @@ subroutine Set_BoundaryConditions(mode,iglobact,jglobact,bc_adv,bc_bgn)
     ntot = nadv + NSPEC_SHL 
 
     bc_seaspec = .false.
-!FEB2012    if ( USE_SEASALT .and. ( find_index( ntot, SS_GROUP(:) ) > 0 ) ) then
     if ( USE_SEASALT .and. ( index( species(ntot)%name, "SEASALT_" ) > 0 ) ) then
       bc_seaspec = .true.
     end if
@@ -1009,12 +1011,11 @@ subroutine Set_BoundaryConditions(mode,iglobact,jglobact,bc_adv,bc_bgn)
           if ( mask(i,j,k) ) then
 
             bc_fac     = 1.0
-           ! Parentheses needed to get correct precedence (dangerous!): 
-            if ( bc_seaspec .and. ( nwp_sea(i,j) .eqv. .false. ) ) bc_fac = 0.001 !st0.01
-!st switch off BICs if sea salt is not calculated
-            if (bc_seaspec .and. .not. USE_SEASALT )  bc_fac = 0.0
+            if ( bc_seaspec ) then
+                  if ( .not. nwp_sea(i,j))  bc_fac = 0.001 ! low over land
+                  if ( .not. USE_SEASALT )  bc_fac = 0.0   ! not wanted!
+            end if
 
-            !xn_adv(spc_changed2adv(n),i,j,k) =   &
             xn_adv(nadv,i,j,k) =   &
                bc_fac * &  ! used for sea-salt species 
                  bc_adv(n,(i_fdom(i)-IRUNBEG+1),(j_fdom(j)-JRUNBEG+1),k)
