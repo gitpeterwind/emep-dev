@@ -112,7 +112,7 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
-xxxxxxxx still  rv4beta21 Dave       16/7/2012  xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv4beta21 Dave 16-18/7/2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 run.pl changed for emissplit files:
 
@@ -122,6 +122,8 @@ run.pl changed for emissplit files:
     course, corresponding to SR runs.)
 
     Still, be careful with emissplit files! System is confusing:-(
+
+BoundaryConditions_ml - replaced print with write to aid debugging
 
 xxxxxxxx still  rv4beta20 Peter      15/7/2012  xxxxxxxxxxxxxxxxxxxxxxx
 
