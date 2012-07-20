@@ -18,10 +18,9 @@ MACHINE ?= stallo
 DEBUG ?= no
 ifeq ($(MACHINE),stallo)
   MODULES = intel-compiler/11.1 openmpi/1.4 #netcdf/4.1.1
-LIBS = -lnetcdf -lnetcdff
+  LIBS = -lnetcdf -lnetcdff
   INCL += /global/apps/netcdf/4.1.1/include
-LLIB = /global/apps/netcdf/4.1.1/lib
-
+  LLIB = /global/apps/netcdf/4.1.1/lib
   MAKEDEPF90=/home/mifapw/bin/makedepf90
   OPT_FLAGS = -O2 -ftz
   LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
