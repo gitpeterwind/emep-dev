@@ -83,10 +83,10 @@ my $STALLO=1; #1 if stallo is used
 my $TITAN=0;  #1 if titan is used
 
 # -j4 parallel make with 4 threads
-my @MAKE = ("gmake", "-j4", "--makefile=Makefile_snow");
-   @MAKE = ( "make", "-j4", "-f", "Makefile_vilje")  if $VILJE==1 ;
-   @MAKE = ( "make", "-j4", "-f", "Makefile_stallo") if $STALLO==1 ;
-   @MAKE = ( "make", "-j4", "-f", "Makefile_titan")  if $TITAN==1 ;
+my @MAKE = ("gmake", "-j4", "MACHINE=snow");
+   @MAKE = ( "make", "-j4", "MACHINE=vilje")  if $VILJE==1 ;
+   @MAKE = ( "make", "-j4", "MACHINE=stallo") if $STALLO==1 ;
+   @MAKE = ( "make", "-j4", "MACHINE=titan")  if $TITAN==1 ;
 die "Must choose STALLO **or** VILJE **or** TITAN!\n"
   unless $STALLO+$VILJE+$TITAN==1;
 my $MAKEMODE=0; #="EMEP2010";  # make EMEP2010, make SR-EMEP2010
@@ -251,7 +251,7 @@ my $Chem     = "EmChem09soa";
 #$Chem     = "CRI_v2_R5";
    $Chem     = $BENCHMARK{'chem'} if $BENCHMARK{'chem'};
 
-my $testv = "rv4beta21";
+my $testv = "rv4beta22";
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
@@ -488,7 +488,7 @@ if ($SR) {
     if ($ENV{'PBS_ARRAY_INDEX'} ){
 	print "PBS_ARRAY_INDEX:  $ENV{'PBS_ARRAY_INDEX'} \n" ;
 	@runs = ($runs[$ENV{'PBS_ARRAY_INDEX'}-1]);   # PBS Pro, Ve, one run per job
-    
+
 #for additional sets of single runs (uncomment the previous @runs =)
 #      if($ENV{'PBS_ARRAY_INDEX'}==1){@runs = ($runs[13])  ; }  #
 #      elsif($ENV{'PBS_ARRAY_INDEX'}==2){@runs = ($runs[27])  ; }  #

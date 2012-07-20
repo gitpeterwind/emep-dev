@@ -117,13 +117,13 @@ xxxxxxxx rv4beta22 Peter 18/7/2012  xxxxxxxxxxxxxxxxxxxxxxx
            (+ small clean-ups from Dave)
             ongoing - so not rtagged yet
 
-New RoadDust whith grid independent input. Does not give exactly the same results as the old scheme because 
+New RoadDust whith grid independent input. Does not give exactly the same results as the old scheme because
 the defintion of climatefactors is different.
 
 The scheme is rather new, and is also a test for a general scheme that can be used for all gridXXX emissions.
 Emissions as stored in a netcdf file with: total per gridcells, and fractions assigned to countries.
 
-Modified: 
+Modified:
 NetCDF_ml.f90
 Emissions_ml.f90
 run.pl
@@ -132,6 +132,19 @@ Dave  18 July, comparing with EnsClim2 code
 Aqueous_ml            - small tidy up
 BoundaryConditions_ml - small tidy up
 DryDep_ml             - small tidy up
+
+Alvaro: 20/07/2012
+  Makefile*,run.pl: Only one makefile with all config for any machine.
+    - Use variable MACHINE in Makefile to decide which configuration to use, e.g.
+      make MACHINE=stallo instead of make -f Makefile_stallo.
+      For convenience, MACHINE can be set once as:
+        export MACHINE=stallo # on command line or ~/.bashrc
+      and all subsequent calls to make (e.g. make EMEP) will use the corresponding
+      machine configuration
+    - All machine specific makefiles, such as Makefile_stallo & Makefile_titan,
+      have been removed from CVS.
+    - New specific model target MACC-EVA2010 (Makefile)
+    - Use make MACHINE=stallo instead of make -f Makefile_stallo (run.pl)
 
 xxxxxxxx rv4beta21 Dave 16-18/7/2012  xxxxxxxxxxxxxxxxxxxxxxx
 
