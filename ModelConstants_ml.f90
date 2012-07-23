@@ -44,7 +44,7 @@ private
 ! * Only dayly and hourly output are required,
 !   all other output types to false in Derived_ml.
 logical, public, parameter :: &
-  FORECAST = .true.
+  FORECAST = .false.
 
 ! Some flags for model setup
 ! will be removed when code is sufficiently tested
@@ -103,8 +103,8 @@ logical, public, parameter :: SEAFIX_GEA_NEEDED = .false. ! only if problems
 !     run domains
 character(len=*), parameter, public :: &
 ! DomainName = "EMEP-50kmEurope"
-! DomainName = "EMEP-50kmEECCA"
-  DomainName = "EMEP-1degGLOBAL"
+  DomainName = "EMEP-50kmEECCA"
+! DomainName = "EMEP-1degGLOBAL"
 ! DomainName = "EMEPCWF-0.25degEurope"
 ! DomainName = "EMEPCWF-0.20degEurope"
 ! DomainName = "HIRHAM"
@@ -114,12 +114,12 @@ logical, parameter, public :: IS_GLOBAL = .false.
 integer, public, parameter ::  &
 ! IIFULLDOM = 182, JJFULLDOM = 197 ! x,y-Dimensions of full HIRHAM domain
 ! IIFULLDOM = 170, JJFULLDOM = 133 ! x,y-Dimensions of full EMEP domain
-! IIFULLDOM = 132, JJFULLDOM = 159 ! x,y-Dimensions of full EECA domain
+ IIFULLDOM = 132, JJFULLDOM = 159 ! x,y-Dimensions of full EECA domain
 ! IIFULLDOM = 840, JJFULLDOM = 832 ! x,y-Dimensions of full TNO07 domain
 ! IIFULLDOM = 420, JJFULLDOM = 416 ! x,y-Dimensions of full TNO14 domain
 ! IIFULLDOM = 210, JJFULLDOM = 208 ! x,y-Dimensions of full TNO28 domain
 !  IIFULLDOM = 105, JJFULLDOM = 104 ! x,y-Dimensions of full TNO56 domain
-  IIFULLDOM = 360, JJFULLDOM = 180 ! .... full GLOBAL domain
+! IIFULLDOM = 360, JJFULLDOM = 180 ! .... full GLOBAL domain
 ! IIFULLDOM = 201, JJFULLDOM = 161 ! .... full GEMS 0.25 domain
 ! IIFULLDOM = 301, JJFULLDOM = 221 ! .... full GEMS 0.25 extended domain
 ! IIFULLDOM = 321, JJFULLDOM = 221 ! .... full MACC 0.20 domain
@@ -133,7 +133,7 @@ integer, public, parameter, dimension(4) ::  &
 !                 x0   x1  y0   y1
 ! RUNDOMAIN = (/  1, 182,  1, 197 /)     ! HIRHAM
 ! RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA = new EMEP domain
-! RUNDOMAIN = (/   1, 100,  1, 100 /)     ! Orig EMEP domain in EECCA
+ RUNDOMAIN = (/  1, 100,  1, 100 /)     ! Orig EMEP domain in EECCA
 ! RUNDOMAIN = (/  40,210, 12, 184 /)     !  SR TNO28 area
 ! RUNDOMAIN = (/  1, 210,  1, 208 /)     ! TNO28
 ! RUNDOMAIN = (/  240, 720, 48, 736 /)    ! TNO07 reduced (15W-45E;30N-73N)
@@ -152,7 +152,7 @@ integer, public, parameter, dimension(4) ::  &
 !----------------------------------------------------------------------------
 
 ! RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain in PARLAM
-  RUNDOMAIN = (/  1, 360,  1, 180 /)     ! FULL GLOBAL
+! RUNDOMAIN = (/  1, 360,  1, 180 /)     ! FULL GLOBAL
 ! RUNDOMAIN = (/  1, 132,  1, 111 /)     ! EECCA, rep09
 ! RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA, rep10
 ! RUNDOMAIN = (/ 20, 167,  1, 122 /)     ! OSPAR/HELCOM domain
@@ -223,9 +223,9 @@ integer, private, parameter :: &
 
 integer, public, parameter :: &
 ! DEBUG_i= 62, DEBUG_j= 45  ! SEA
-! DEBUG_i= DEBUG_II+OFFSET_i, DEBUG_j= DEBUG_JJ+OFFSET_j    ! EMEP/EECCA
+  DEBUG_i= DEBUG_II+OFFSET_i, DEBUG_j= DEBUG_JJ+OFFSET_j    ! EMEP/EECCA
 ! DEBUG_i= 9, DEBUG_j= 201                                  ! MACC02
-  DEBUG_i= 0, DEBUG_j= 0    ! default
+!  DEBUG_i= 0, DEBUG_j= 0    ! default
 
 !=============================================================================
 ! Some flags for model setup

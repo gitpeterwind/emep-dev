@@ -146,6 +146,15 @@ Alvaro: 20/07/2012
     - New specific model target MACC-EVA2010 (Makefile)
     - Use make MACHINE=stallo instead of make -f Makefile_stallo (run.pl)
 
+Alvaro: 23/07/2012
+  Aqueous_n_WetDep_ml: Budget WetDep for all SPCS
+    - Fix bug introduced on rv4beta20 mass-budget calculation:
+      - From rv4beta20 only SPEC which about was required (My_Derived)
+        were budgeted.
+      - Previous versions, WetDep budget was based on SOX, OXN & RDN group output.
+        As WetDep for this groups was always required, the budget was complete.
+    - Now WetDep is budgeted for all SPCS, independent of WetDep output requirements.
+
 xxxxxxxx rv4beta21 Dave 16-18/7/2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 
