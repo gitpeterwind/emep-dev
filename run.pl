@@ -839,7 +839,7 @@ print "TESTING PM $poll $dir\n";
   }
 
   foreach my $mmm ( $mm1 .. $mm2, $mm1, $mm2 ) {
-    my $mm = sprintf "%2.2d", $mmm ;
+    my $mm = sprintf "%2.2d", $mmm;
     $ifile{"$DATA_LOCAL/natso2$mm.dat"} =  "natso2$mm.dat";
     $ifile{"$DataDir/lt21-nox.dat$mm"} =  "lightning$mm.dat";
 # BIC for Saharan dust
@@ -849,7 +849,7 @@ print "TESTING PM $poll $dir\n";
       }
     } # dust
     if ( $GRID eq "GLOBAL" ) {
-      my $mm = sprintf "%2.2d", $mmm ;
+      $mm = sprintf "%2.2d", $mmm;
       foreach my $t ( qw (nox voc co nh3 pm25 pmco) ) {
         $ifile{"$emisdir/grid$gridmap{$t}.$mm"} =  "grid$t.$mm";
       }
