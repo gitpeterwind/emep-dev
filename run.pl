@@ -128,7 +128,7 @@ my $SR= 0;     # Set to 1 if source-receptor calculation
                # check also variables in package EMEP::Sr below!!
 
 my $CWF=0;     # Set to N for 'N'-day forecast mode (0 otherwise)
-my ($CWFBASE, $CWFDAYS, @CWFDATE, @CWFDUMP, $eCWF) if $CWF;
+my ($CWFBASE, $CWFDAYS, $CWFMETV, @CWFDATE, @CWFDUMP, $eCWF) if $CWF;
 if ($CWF) {
   chop($CWFBASE = `date +%Y%m%d`);   # Forecast base date     (default today)
        $CWFDAYS = $CWF;              # Forecast lenght indays (default $CWF)
@@ -1140,7 +1140,7 @@ EOT
       ($old=$new)=~s/$CWFBASE/$CWFDATE[0]/g;      # yesterday's dump
       system("rm $old") if (-e $old);
       $old="modelrun.finished";
-      foreach my $task ('PBS_ARRAY_INDEX' 'PBS_ARRAYID' 'TASK_ID') {
+      foreach my $task ('PBS_ARRAY_INDEX', 'PBS_ARRAYID', 'TASK_ID') {
         $new="runsr_$ENV{$task}.finished" if $ENV{$task};
         system("mkdir -p ../CWF_$CWFBASE/;echo $scenario >> ../CWF_$CWFBASE/$new")
           if (-e $old) && ($ENV{$task});
@@ -1310,7 +1310,7 @@ $redn        = "0.85"; # 15% reduction
 
 # multiple tasks for paralel SR runs: one task per country
 # Queue system:    POSIX             PBS           SLURM
-foreach my $task ('PBS_ARRAY_INDEX' 'PBS_ARRAYID' 'TASK_ID') {
+foreach my $task ('PBS_ARRAY_INDEX','PBS_ARRAYID','TASK_ID') {
   @countries=($countries[$ENV{$task}-1]) if $ENV{$task};
 }
 ################################
