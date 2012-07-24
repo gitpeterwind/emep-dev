@@ -140,7 +140,7 @@ if ($CWF) {
        $CWFDAYS = shift if @ARGV;    #  & MetUTC version can be passed
        $CWFMETV = shift if @ARGV;    #  as argument to script
   $CWF=($CWFMETV)?"$CWFMETV-$CWFBASE":"$CWFBASE";
-  my $metday = int($CWFMETV/24+0.99);
+  my $metday = ($CWFMETV)?int($CWFMETV/24+0.99):0;
   chop($CWFBASE = `date -d '$CWFBASE $metday day' +%Y%m%d`) if ($metday gt 0);
   chop($CWFDATE[0] = `date -d '$CWFBASE 1 day ago'    +%Y%m%d`);  # yesterday
        $CWFDATE[1] = $CWFBASE;                                    # start date
