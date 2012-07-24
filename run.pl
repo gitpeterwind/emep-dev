@@ -93,30 +93,32 @@ my $MAKEMODE=0; #="EMEP2010";  # make EMEP2010, make SR-EMEP2010
 
 my %BENCHMARK;
 # OpenSource 2008
-#  %BENCHMARK = (grid=>"EMEP"  ,year=>2005,emis=>"Modrun07/OpenSourceEmis"     ) ;
+#  %BENCHMARK = (grid=>"EMEP"  ,year=>2005,emis=>"Modrun07/OpenSourceEmis"           ,archive=>1,chem=>"EmChem03");
 # Dave's preference for EMEP:
-#   %BENCHMARK = (grid=>"EMEP"  ,year=>2006,emis=>"Modrun10/EMEP_trend_2000-2008/2006");
-# Use Modrun11 where possible:
+#  %BENCHMARK = (grid=>"EMEP"  ,year=>2006,emis=>"Modrun10/EMEP_trend_2000-2008/2006",archive=>1,chem=>"EmChem09");
+# EECCA Default:
+   %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun11/EMEP_trend_2000-2009/2008",archive=>1,chem=>"EmChem09soa",make=>"EMEP");
+# Status Runs:
+#  %BENCHMARK = (grid=>"EECCA" ,year=>2007,emis=>"Modrun09/2009-Trend2007-CEIP") ;
+#  %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun10/2010-Trend2008_CEIP");
+#  %BENCHMARK = (grid=>"EECCA" ,year=>2009,emis=>"Modrun11/2011-Trend2009-CEIP");
+#  %BENCHMARK = (grid=>"EECCA" ,year=>2010,emis=>"Modrun12/2012-Trend2010-CEIP",archive=>1,chem=>"EmChem09soa",make=>"EMEP2010");
+# Alternative domains:
+#  %BENCHMARK = (grid=>"TNO28" ,year=>2008,emis=>"emis_TNO28"         ,archive=>1);
+#  %BENCHMARK = (grid=>"MACC02",year=>2008,emis=>"2008_emis_EMEP_MACC",archive=>1) ;
+# Candidate for removal/update: Do not arrchive!
+#  %BENCHMARK = (grid=>"EECCA" ,year=>2005,emis=>"Modrun11/EMEP_trend_2000-2009/2005");
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2006,emis=>"Modrun11/EMEP_trend_2000-2009/2006");
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2007,emis=>"Modrun11/EMEP_trend_2000-2009/2007");
-   %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun11/EMEP_trend_2000-2009/2008",chem=>"EmChem09soa",make=>"EMEP");
-#  %BENCHMARK = (grid=>"TNO28" ,year=>2008,emis=>"emis_TNO28");
-#  %BENCHMARK = (grid=>"EECCA" ,year=>2005,emis=>"Modrun11/EMEP_trend_2000-2009/2005");
-#  %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun10/EMEP_trend_2000-2008/2008");
-#  %BENCHMARK = (grid=>"EECCA" ,year=>2007,emis=>"Modrun09/2009-Trend2007-CEIP") ;
-#  %BENCHMARK = (grid=>"MACC02",year=>2008,emis=>"2008_emis_EMEP_MACC") ;
-#  %BENCHMARK = (grid=>"EECCA" ,year=>2009,emis=>"Modrun11/EMEP_trend_2000-2009/2009");
-#  %BENCHMARK = (grid=>"EECCA" ,year=>2009,emis=>"Modrun11/2011-Trend2009-CEIP");
-#  %BENCHMARK = (grid=>"EECCA" ,year=>2010,emis=>"Modrun12/2012-Trend2010-CEIP",chem=>"EmChem09soa",make=>"EMEP2010",ndx=>8,ndy=>8);
 if (%BENCHMARK) {
-  $BENCHMARK{'debug'}   = 1;  # chech if all debug flags are .false.
-  $BENCHMARK{'archive'} = 1;  # save summary info in $DataDir
-# $BENCHMARK{'ndx'}     = 8;  # number of procesors in x-direction
-# $BENCHMARK{'ndy'}     = 8;  # number of procesors in y-direction
+# $BENCHMARK{'archive'} = 1;                        # save summary info in $DataDir
+  $BENCHMARK{'debug'} = $BENCHMARK{'archive'};      # chech if all debug flags are .false.
+  $BENCHMARK{'ndx'}   = 8 if $BENCHMARK{'archive'}; # number of procesors in
+  $BENCHMARK{'ndy'}   = 8 if $BENCHMARK{'archive'}; # x and y directions
 # Default setting, if not previously specified
-  $BENCHMARK{'chem'}    = "EmChem09soa"
+  $BENCHMARK{'chem'}  = "EmChem09soa"
     unless $BENCHMARK{'chem'};  # chemical mecanism, e.g. OpenSource 2008
-  $BENCHMARK{'make'}    = ($BENCHMARK{'chem'} eq "EmChem09soa")?"EMEP":"all"
+  $BENCHMARK{'make'}  = ($BENCHMARK{'chem'} eq "EmChem09soa")?"EMEP":"all"
     unless $BENCHMARK{'make'};  # make target, e.g. Status 2010
   $MAKEMODE = $BENCHMARK{'make'} unless $MAKEMODE;
 }
@@ -124,15 +126,22 @@ if (%BENCHMARK) {
 my $INERIS_FACS=0;  # Used for timefactors, and e,g TNOxx tests
 my $SR= 0;     # Set to 1 if source-receptor calculation
                # check also variables in package EMEP::Sr below!!
-#die " TO DO: Need still to create SR split files\n" if $SR ;
 
 my $CWF=0;     # Set to N for 'N'-day forecast mode (0 otherwise)
 my ($CWFBASE, $CWFDAYS, @CWFDATE, @CWFDUMP, $eCWF) if $CWF;
 if ($CWF) {
-  chop($CWFBASE = `date +%Y%m%d`);   # Forecast base date (default today)
+  chop($CWFBASE = `date +%Y%m%d`);   # Forecast base date     (default today)
        $CWFDAYS = $CWF;              # Forecast lenght indays (default $CWF)
-       $CWFBASE = shift if @ARGV;    # Forecast base date and lenght can be
-       $CWFDAYS = shift if @ARGV;    # passed as argument to script
+       $CWFMETV = "";                # Met.UTC version        (default 'none')
+       $CWFBASE = $ENV{"DATE"} if $ENV{"DATE"}; # Forecast base date, lenght
+       $CWFDAYS = $ENV{"NDAY"} if $ENV{"NDAY"}; #  & MetUTC version can be passed
+       $CWFMETV = $ENV{"UTC"}  if $ENV{"UTC"} ; #  as environment variables
+       $CWFBASE = shift if @ARGV;    # Forecast base date, lenght
+       $CWFDAYS = shift if @ARGV;    #  & MetUTC version can be passed
+       $CWFMETV = shift if @ARGV;    #  as argument to script
+  $CWF=($CWFMETV)?"$CWFMETV-$CWFBASE":"$CWFBASE";
+  my $metday = int($CWFMETV/24+0.99);
+  chop($CWFBASE = `date -d '$CWFBASE $metday day' +%Y%m%d`) if ($metday gt 0);
   chop($CWFDATE[0] = `date -d '$CWFBASE 1 day ago'    +%Y%m%d`);  # yesterday
        $CWFDATE[1] = $CWFBASE;                                    # start date
   chop($CWFDATE[2] = `date -d '$CWFBASE ($CWFDAYS-1) day' +%Y%m%d`);  # end date
@@ -140,6 +149,7 @@ if ($CWF) {
   chop($CWFDUMP[1] = `date -d '$CWFBASE 2 day' +%Y%m%d000000`); # 2nd dump/nest
   $eCWF=0;                           # Emergency forecast
   $MAKEMODE=$eCWF?"eEMEP":"MACC";    # Standard Forecast model setup
+# $MAKEMODE=$eCWF?"eEMEP2010":"MACC-EVA2010";    # 2010 special
 }
  $CWF=0 if %BENCHMARK;
  $MAKEMODE="SR-$MAKEMODE" if($MAKEMODE and $SR);
@@ -180,6 +190,7 @@ my $ALVARO     = "alvarov";
 my $ROBERT     = "mifarb";
 my $HALDIS     = "mifahb";
 my $BIRTHE     = "birthems";
+my $FORCAST    = "forecast";
 
 my $USER = $ENV{"USER"};
 if ($PETER =~ m/$USER/) { $USER="$PETER" };
@@ -192,7 +203,7 @@ my $NH3EMIS_VAR = 0; # set to 1 if new temp NH3.
 my $METformat="cdf"; # felt or cdf
 
 my $GRID = "TNO28"; # TNO7, TNO14, TNO28, TNO56, EMEP, EECCA, MACC02, GLOBAL or FORECAST
-   $GRID = "MACC02" if $CWF;
+   $GRID = $eCWF?"GLOBAL":"MACC02" if $CWF;
    $GRID = $BENCHMARK{'grid'} if %BENCHMARK;
 #DS Confusing list of possibilites. Needs  CHECK LATER
 my $MetDriver = "H20" ; # DS consider condition "EC";  #"H20";
@@ -208,7 +219,7 @@ if ($STALLO) {
   $MetDir   = "$DataDir/$GRID/metdata_EC/$year"  if ($GRID eq "GLOBAL");
   $MetDir   = "$DataDir/$GRID/metdata_EC/$year"  if ($GRID =~ /TNO/);
   $MetDir   = "$DataDir/$GRID/metdata_EC/$year"  if ($GRID eq "MACC02");
-  $MetDir   = "$DataDir/$GRID/metdata_CWF/$year" if ($GRID eq "MACC02") and $CWF;
+  $MetDir   = "$DataDir/$GRID/metdata_CWF/$year" if $CWF;
   $MetDir   = "$DataDir/$GRID/metdata_H20/$year" if $GRID eq "EECCA"; # assumes $METformat eq "cdf";
 
 #DS added Mar 2011. Use EC for standard 2008 runs?
@@ -228,7 +239,8 @@ if ($STALLO) {
   $WORKROOT = "$HOMEROOT/$USER/work";
   $DataDir  = "$HOMEROOT/mifapw/work/Data";
   $MetDir   = "$DataDir/$GRID/metdata_EC/$year" ;
-  $MetDir   = "$DataDir/$GRID/metdata_CWF/$year" if ($GRID eq "MACC02") and $CWF;
+  $MetDir   = "$DataDir/$GRID/metdata_CWF/$year" if $CWF;
+  $MetDir   = "/prod/forecast/work/emep/ec/prepmet" if $eCWF and ($USER eq $FORCAST);
 }
 
 # DataDir    = Main general Data directory
@@ -238,7 +250,7 @@ my $PollenDir = "/home/$BIRTHE/Unify/MyData";
    $PollenDir = 0 unless $STALLO;
 # Eruption (eEMEP)
 my $EruptionDir = "$HOMEROOT/$ALVARO/Unify/MyData";
-   $EruptionDir = 0 unless $STALLO or $VILJE;
+   $EruptionDir = 0 unless -d $EruptionDir;
 
 
 # Boundary conditions: set source direcories here:
@@ -255,6 +267,7 @@ my $testv = "rv4beta22";
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
+   $ProgDir  = "/prod/forecast/emep/eemep/src/Unimod.$testv" if $eCWF and ($USER eq $FORCAST);
 my $ChemDir  = "$ProgDir/ZCM_$Chem";
 my $Specials = "specials";  # default
 #$Specials = "TSAP_Jul2012";  # used for TSAP runs in July 2012
@@ -283,12 +296,13 @@ close(CHEM);
 my $WORKDIR     = "$WORKROOT/$USER/$testv.$year";  # working and result directory
    $WORKDIR     = "$WORKROOT/$testv.$year" if($WORKROOT =~ /$USER/);  # working and result directory
    $WORKDIR =~ s/$testv.$year/Benchmark\/$GRID.$year/g if (%BENCHMARK);
+   $WORKDIR = "/prod/forecast/run/eemep" if $eCWF and ($USER eq $FORCAST);
 my $MyDataDir   = "$HOMEROOT/$USER/Unify/MyData";           # for each user's private input
 my $SoilDir     = "$DATA_LOCAL/dust_input";               # Saharan BIC
-$SoilDir = 0 if ($GRID eq "EMEP") or ($GRID eq "MACC02");
+$SoilDir = 0 unless -d "$SoilDir/BC_DUST/2000";
 
 # TEST! Road dust NOTE! The road dust code may not be working properly yet! Not tested enough!
-my $RoadDir     = "/home/$ROBERT/Unify/MyData/TNO_traffic/" ;
+my $RoadDir     = "$HOMEROOT/$ROBERT/Unify/MyData/TNO_traffic/" ;
 $RoadDir = 0 if $CWF;
 $RoadDir = 0 unless -d $RoadDir;#default?
 #$RoadDir = 0 ;#default?
@@ -301,6 +315,7 @@ if ($CWF) {
   ($CWFDUMPDIR = $WORKDIR) =~ s/$testv.$year/$testv.dump/g;
   $CWFBC = "$DataDir/$GRID/Boundary_conditions/%04d_IFS-MOZART_FC/cwf-mozifs_h%08d00_raqbc.nc" # IFS-MOZ Forecast
 # $CWFBC = "$DataDir/$GRID/Boundary_conditions/%04d_IFS-MOZART_AN/h%08d00_raqbc.nc";           # IFS-MOZ ReAnalysus
+# $CWFBC = "$DataDir/$GRID/Boundary_conditions/%04d_EVA/EVA_%08d_EU_AQ.nc" # IFS-MOZ Forecast
 }
 
 #ds check: and change
@@ -345,14 +360,15 @@ $emisdir = "$EMIS_OLD/$year" if $year < 2000;
 $emisdir = "$EMIS_INP/Modrun11/EMEP_trend_2000-2009/$year" if ( $year > 1999 ) and ($year < 2009);
 $emisdir = "$EMIS_INP/Modrun11/2011-Trend2009-CEIP" if $year >= 2009 ;
 
-
+#Alvaro: When are we to switch to Modrun12?
+#$emisdir = "$EMIS_INP/Modrun12/EMEP_trend_2000-2009/$year" if ( $year > 1999 ) and ($year < 2010);
+#$emisdir = "$EMIS_INP/Modrun12/2012-Trend2010-CEIP" if $year >= 2010 ;
 
 #TMP and should be improved because it gives errors for
 # other domains!
 #.. For using emissions of EC/OC instead of PMx
 my $RFEmisDir = "/global/work/$SVETLANA/Data_RF"; # Split-Fraction files for EC/OC
 my $TNOemisDir = "/global/work/$SVETLANA/Emis_TNO"; # TNO EC/OC emissions
-
 
 #$emisdir = $TNOemisDir if $EUCAARI;
 $emisdir = "$EMIS_INP/emissions/${emisscen}/${emisyear}" if $GRID eq "HIRHAM";
@@ -392,13 +408,11 @@ if ($STALLO && $TREND_RUNS ) {
   $pm_emisdir = $emisdir;
 }
 #
-if ( $STALLO && $GRID eq "GLOBAL" ) {
-  $EMIS_INP = "/global/work/$PETER/Data/GLOBAL/MonthlyEmis";
-  $emisdir = $EMIS_INP;
+if ( $GRID eq "GLOBAL" ) {
+  $EMIS_INP = $DATA_LOCAL;
+  $emisdir = ($eCWF)?"$EMIS_INP/Emissions_June2012":"$EMIS_INP/MonthlyEmis";
   $pm_emisdir = $emisdir;
 }
-
-
 
 my $RESET        = 0 ;  # usually 0 (false) is ok, but set to 1 for full restart
 my $COMPILE_ONLY = 0 ;  # usually 0 (false) is ok, but set to 1 for compile-only
@@ -485,24 +499,11 @@ if (%BENCHMARK){ # Allways runn full year on benchmark mode
 if ($SR) {
     print "SR is true\n";
     @runs = EMEP::Sr::initRuns();
-    if ($ENV{'PBS_ARRAY_INDEX'} ){
-	print "PBS_ARRAY_INDEX:  $ENV{'PBS_ARRAY_INDEX'} \n" ;
-	@runs = ($runs[$ENV{'PBS_ARRAY_INDEX'}-1]);   # PBS Pro, Ve, one run per job
-
-#for additional sets of single runs (uncomment the previous @runs =)
-#      if($ENV{'PBS_ARRAY_INDEX'}==1){@runs = ($runs[13])  ; }  #
-#      elsif($ENV{'PBS_ARRAY_INDEX'}==2){@runs = ($runs[27])  ; }  #
-#      else{ die "Not a valid array index \n" ; }  # default
-    }else{
-	@runs = ($runs[0]);   # only one run
-    }
-    @runs = ($runs[$ENV{'PBS_ARRAY_INDEX'}-1]) if $ENV{'PBS_ARRAY_INDEX'};   # PBS Pro, Ve, one run per job
-    print "PBS_ARRAY_INDEX:  $ENV{PBS_ARRAY_INDEX} \n";   # PBS Pro
 }
 
 if ($CWF) {
   print "CWF is true: $CWFDAYS-day foracast mode\n";
-  @runs = ( $CWFBASE ) unless $SR ;
+  @runs = ( $CWF ) unless $SR ;
 }
 
 if (%BENCHMARK){
@@ -603,7 +604,7 @@ foreach my $scenflag ( @runs ) {
   if ($SR) {
     $scenario = EMEP::Sr::getScenario($scenflag);
   } elsif ($CWF) {
-    $scenario = "CWF_$scenflag";
+    $scenario = $eCWF?"eemep-$scenflag":"CWF_$scenflag";
   } elsif (%BENCHMARK){
     $scenario = "BM_$scenflag";
   } else {
@@ -642,7 +643,10 @@ foreach my $scenflag ( @runs ) {
   } elsif ($CWF) {
 # Forecast Meteorology in NetCDF
     for (my $n = 0; $n < $CWFDAYS; $n++) {
-      my $old = sprintf "$MetDir/meteo${CWFBASE}_%02d.nc",$n;
+      my $metday = int($CWFMETV/24+0.99);
+     (my $old = "$MetDir/meteo%Y%m%d${CWFMETV}_%%02d.nc") =~ s/$year/%Y/g;
+      chop($old=`date -d '$CWFBASE $metday day ago' '+$old'`);
+      $old = sprintf "$old",$n+$metday;
       if (-e $old) {
         chop($CWFDATE[2]=`date -d '$CWFBASE $n day' +%Y%m%d`);
         my $new = "meteo$CWFDATE[2].nc";
@@ -1136,10 +1140,11 @@ EOT
       ($old=$new)=~s/$CWFBASE/$CWFDATE[0]/g;      # yesterday's dump
       system("rm $old") if (-e $old);
       $old="modelrun.finished";
-      $new="runsr_$ENV{'PBS_ARRAYID'}.finished" if $ENV{'PBS_ARRAYID'};
-      $new="runsr_$ENV{'TASK_ID'}.finished"     if $ENV{'TASK_ID'};
-      system("mkdir -p ../CWF_$CWFBASE/;echo $scenario >> ../CWF_$CWFBASE/$new")
-        if (-e $old) && ($ENV{'PBS_ARRAYID'} or $ENV{'TASK_ID'});
+      foreach my $task ('PBS_ARRAY_INDEX' 'PBS_ARRAYID' 'TASK_ID') {
+        $new="runsr_$ENV{$task}.finished" if $ENV{$task};
+        system("mkdir -p ../CWF_$CWFBASE/;echo $scenario >> ../CWF_$CWFBASE/$new")
+          if (-e $old) && ($ENV{$task});
+      }
     }
   }
 
@@ -1303,9 +1308,11 @@ $redn        = "0.85"; # 15% reduction
 @countries  = (@eu27, @sea, @noneu, @emep, @eecca, @eccomb);
 @polls       = qw (BASE N P A V S );  #  (any, all, at least 1)
 
-# multiple tasks for paralel SR runs: one task per country             # Queue system
-@countries=($countries[$ENV{'PBS_ARRAYID'}-1]) if $ENV{'PBS_ARRAYID'};   # PBS
-@countries=($countries[$ENV{'TASK_ID'}-1])     if $ENV{'TASK_ID'};       # SLURM
+# multiple tasks for paralel SR runs: one task per country
+# Queue system:    POSIX             PBS           SLURM
+foreach my $task ('PBS_ARRAY_INDEX' 'PBS_ARRAYID' 'TASK_ID') {
+  @countries=($countries[$ENV{$task}-1]) if $ENV{$task};
+}
 ################################
 #### end of SR parameters   ####
 ################################

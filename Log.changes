@@ -155,6 +155,12 @@ Alvaro: 23/07/2012
         As WetDep for this groups was always required, the budget was complete.
     - Now WetDep is budgeted for all SPCS, independent of WetDep output requirements.
 
+Alvaro: 24/07/2012
+  MassBudget_ml - tidy up
+  run.pl        - eEMEP setup for Forecast user in ve
+                - Clean-up Benchmark definitions
+                - Clean-up SR code for ve
+
 xxxxxxxx rv4beta21 Dave 16-18/7/2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 
