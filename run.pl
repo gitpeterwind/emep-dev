@@ -132,7 +132,7 @@ my ($CWFBASE, $CWFDAYS, $CWFMETV, @CWFDATE, @CWFDUMP, $eCWF) if $CWF;
 if ($CWF) {
   chop($CWFBASE = `date +%Y%m%d`);   # Forecast base date     (default today)
        $CWFDAYS = $CWF;              # Forecast lenght indays (default $CWF)
-       $CWFMETV = "";                # Met.UTC version        (default 'none')
+       $CWFMETV = 0;                 # Met.UTC version        (default 'none')
        $CWFBASE = $ENV{"DATE"} if $ENV{"DATE"}; # Forecast base date, lenght
        $CWFDAYS = $ENV{"NDAY"} if $ENV{"NDAY"}; #  & MetUTC version can be passed
        $CWFMETV = $ENV{"UTC"}  if $ENV{"UTC"} ; #  as environment variables
