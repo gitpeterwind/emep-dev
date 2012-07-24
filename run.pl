@@ -950,7 +950,7 @@ if ( $iyr_trend > 2015 )  {
   #NOTNEEDED $ifile{"$DATA_LOCAL/Volcanoes.dat"} = "Volcanoes.dat" unless $EUCAARI;
   $ifile{"$DataDir/VolcanoesLL.dat"} = "VolcanoesLL.dat";
 # Volcanic Eruption (eEMEP)
-  if(($MAKEMODE =~ /EMEP2010/) or ($MAKEMODE =~ /eEMEP/)){
+  if(($MAKEMODE =~ /2010/) or ($MAKEMODE =~ /eEMEP/)){
     cp ("$ChemDir/eruptions.csv","eruptions.csv");
     $ifile{"$ChemDir/volcanoes.csv"} = "volcanoes.csv";
     print "$ChemDir/volcanoes.csv\n";
