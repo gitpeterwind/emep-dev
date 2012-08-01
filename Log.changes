@@ -112,6 +112,10 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
+xxxxxxxx rv4beta.....     1/8/2012  xxxxxxxxxxxxxxxxxxxxxxx
+
+   just removed case SOILNO from Derived_ml. Was some old
+   test I think.
 
 xxxxxxxx rv4beta22 Peter 18/7/2012  xxxxxxxxxxxxxxxxxxxxxxx
            (+ small clean-ups from Dave)
