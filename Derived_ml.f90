@@ -938,16 +938,17 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
             end forall
 
 
-          case ( "SOILNO" )
+          !Confusing here, some test maybe? SoilNO emissions are in EmisNat
+          !EXP case ( "SOILNO" )
 
-            forall ( i=1:limax, j=1:ljmax )
-              d_2d( n, i,j,IOU_INST) = exp( (t2_nwp(i,j,2)-273.15-20)*log(2.1) / 10.0 )
-            end forall
+          !EXP  forall ( i=1:limax, j=1:ljmax )
+          !EXP    d_2d( n, i,j,IOU_INST) = exp( (t2_nwp(i,j,2)-273.15-20)*log(2.1) / 10.0 )
+          !EXP  end forall
 
-            if ( debug_flag ) then
-             write(*,fmt="(a12,i4,f12.3)") "SOILNO" , n , &
-                     d_2d(n,debug_li,debug_lj,IOU_INST)
-            end if
+          !EXP  if ( debug_flag ) then
+          !EXP   write(*,fmt="(a12,i4,f12.3)") "SOILNO" , n , &
+          !EXP           d_2d(n,debug_li,debug_lj,IOU_INST)
+          !EXP  end if
 
           case ( "HMIX", "HMIX00", "HMIX12" )
 
