@@ -112,7 +112,8 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
-xxxxxxxx rv4_1 Peter  3/8/2012  xxxxxxxxxxxxxxxxxxxxxxx
+
+xxxxxxxx rv4rc1 Peter  3/8/2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 Dynamical allocation of the grid sizes: 
 IIFULLDOMAIN, JJFULLDOMAIN, RUNDOMAIN
@@ -137,7 +138,7 @@ A few small bugs corrected:
 3)In Rsurface there is a L%SAI > SMALLSAI, but SAI and LAI where not set/initialized for bulk.
 
 
-xxxxxxxx rv4beta.....     1/8/2012  xxxxxxxxxxxxxxxxxxxxxxx
+   Dave:  1/8/2012  xxxxxxxxxxxxxxxxxxxxxxx
 
    just removed case SOILNO from Derived_ml. Was some old
    test I think.
