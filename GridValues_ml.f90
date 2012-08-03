@@ -419,7 +419,7 @@ contains
 
     if(MasterProc)then
        call CheckStop(GIMAX+IRUNBEG-1 > IIFULLDOM, "GridRead: I outside domain" )
-       call CheckStop(GJMAX+JRUNBEG-1 > IIFULLDOM, "GridRead: J outside domain" )
+       call CheckStop(GJMAX+JRUNBEG-1 > JJFULLDOM, "GridRead: J outside domain" )
 
        call CheckStop(nhour/=0 .and. nhour /=3,&
             "ReadGrid: must start at nhour=0 or 3")
