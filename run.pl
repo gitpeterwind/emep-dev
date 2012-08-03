@@ -874,7 +874,7 @@ if ( $iyr_trend > 2015 )  {
 
 # DEGREE DAYS (Tbase set above, either 18 or 20):
 #
- my $HDD = "$timeseries/HDD${Tbase}-${GRID}-$year.nc";
+ my $HDD = "$MetDir/HDD${Tbase}-${GRID}-$year.nc";
  print "Looking for DegreeDayFac: $HDD \n";
  my $skipHDD = 0;
  $skipHDD = 1 if $CWF ;

@@ -114,7 +114,7 @@ module OrganicAerosol_ml
 !  real,public, save, dimension(S1:S2,LIDIM,LJDIM,K1:K2) :: &
 !            Grid_SOA_Fgas           !EXC Grid_SOA_gamma
 
-  real,public, save, dimension(LIDIM,LJDIM,K1:K2) :: Grid_COA
+  real,public, save, allocatable, dimension(:,:,:) :: Grid_COA
 
   real, private, dimension(K1:K2), save :: &
         COA           & ! Org. aerosol, ug/m3  
@@ -175,6 +175,9 @@ module OrganicAerosol_ml
 
 
    if ( my_first_call ) then
+
+      allocate(Grid_COA(LIDIM,LJDIM,K1:K2))
+
     !=========================================================================
     ! Set up background OM 
       ! Need to convert aeros to ug/m3 or ugC/m3.  Since xn is in molecules/cm3
