@@ -105,7 +105,7 @@
 
   ! Heating-degree day factor for SNAP-2. Independent of country:
   logical, public, save :: Gridded_SNAP2_Factors = .false.
-  real, public, dimension (MAXLIMAX,MAXLJMAX), save :: gridfac_HDD
+  real, public, allocatable,dimension (:,:), save :: gridfac_HDD
   !real, private, dimension (MAXLIMAX,MAXLJMAX), save :: tmpt2
 
   ! Used for general file calls and mpi routines below
@@ -280,7 +280,7 @@ contains
        do 
           read(IO_TIMEFACS,"(a)",iostat=ios) inputline
           n = n + 1
-          write(*,*) "HourlyFacs ", n, trim(inputline)
+          if(DEBUG)write(*,*) "HourlyFacs ", n, trim(inputline)
           if ( ios <  0 ) exit     ! End of file
           if( index(inputline,"#")>0 ) then ! Headers
             if(n==1) call PrintLog(trim(inputline))
@@ -513,11 +513,15 @@ contains
     if (dd_old == daynumber) return   ! Only calculate once per day max
     dd_old= daynumber
 
-     write(*,*) "HDD inputs", me, " Day ", daynumber
+!     write(*,*) "HDD inputs", me, " Day ", daynumber
 
    ! DegreeDays have the same domain/grid as the met data, so we can use:
     if(MasterProc) call GetCDF('HDD_Facs','DegreeDayFactors.nc', &
           var2d_global,IIFULLDOM,JJFULLDOM,1,daynumber,nfetch)
+
+    if(.not.allocated(gridfac_HDD))then
+       allocate(gridfac_HDD(MAXLIMAX,MAXLJMAX))
+    endif
 
     call global2local(var2d_global,gridfac_HDD,MSG_READ8,1,IIFULLDOM,JJFULLDOM,&
          kmax,IRUNBEG,JRUNBEG)

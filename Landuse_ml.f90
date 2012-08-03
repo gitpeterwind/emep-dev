@@ -94,18 +94,18 @@ private
          ,old_gsun   ! also for flux
  end type LandCov
  !=============================================
- type(LandCov), public, save, dimension(MAXLIMAX,MAXLJMAX) :: LandCover
+ type(LandCov), public, save, allocatable,dimension(:,:) :: LandCover
  !=============================================
 
 
-  logical, public,save,dimension(MAXLIMAX,MAXLJMAX) :: likely_coastal  = .false.
+  logical, public,save, allocatable,dimension(:,:) :: likely_coastal 
 
-  integer, public,save,dimension(MAXLIMAX,MAXLJMAX) :: &
+  integer, public,save, allocatable,dimension(:,:) :: &
           WheatGrowingSeason  ! Growing season (days), IAM_WHEAT =1 for true
  
  ! For some flux work, experimental
 
- real,public,save,dimension(MAXLIMAX,MAXLJMAX) :: water_fraction, ice_landcover 
+ real,public,save, allocatable,dimension(:,:) :: water_fraction, ice_landcover 
  logical,public,save :: water_frac_set = .false.
 
  character(len=80), private :: errmsg
@@ -120,6 +120,14 @@ contains
     integer ::i,j,ilu,lu
     logical :: debug_flag = .false.
     !=====================================
+
+    !ALLOCATE ARRAYS
+    allocate(LandCover(MAXLIMAX,MAXLJMAX))
+    allocate(likely_coastal(MAXLIMAX,MAXLJMAX) )
+    likely_coastal  = .false.
+    allocate(WheatGrowingSeason(MAXLIMAX,MAXLJMAX))
+    allocate(water_fraction(MAXLIMAX,MAXLJMAX), ice_landcover(MAXLIMAX,MAXLJMAX))
+
 
     !ReadLandUse_CDF to be used as default when glc2000 data is improved?
 
@@ -390,18 +398,16 @@ contains
     Land_codes(18) = 'IAM_DF'
     Land_codes(19) = 'IAM_MF'
     do lu=1,NLanduse_DEF
-       !TO DO:
-       !read LanduseGLC.nc as default and overwrite with PS_5km where available
        !
        if(me==0)write(*,*)'Reading landuse ',trim(Land_codes(lu))
        !   call ReadField_CDF('/global/work/mifapw/emep/Data/LanduseGLC.nc',&!fast but unprecise
        call ReadField_CDF('Landuse_PS_5km.nc',& !SLOW!
             Land_codes(lu),landuse_in(1,1,lu),1,interpol='conservative', &
-            needed=.true.,debug_flag=.true.,UnDef=-9.9E19) !NB: Undef must be largenegative, 
-!          because it is avergaed over many points, and the final result must still be negative
+            needed=.true.,debug_flag=.false.,UnDef=-9.9E19) !NB: Undef must be largenegative, 
+!          because it is averagad over many points, and the final result must still be negative
           call ReadField_CDF('LanduseGLC.nc',&
                Land_codes(lu),landuse_tmp,1,interpol='conservative', &
-               needed=.true.,debug_flag=.true.)
+               needed=.true.,debug_flag=.false.)
           do j = 1, ljmax
              do i = 1, limax
                 if(landuse_in(i,j,lu)<-0.1)landuse_in(i,j,lu)=landuse_tmp(i,j)
@@ -506,7 +512,11 @@ contains
              lu      = LandCover(i,j)%codes(ilu)
              pft     = LandType(lu)%pft
 
-             if ( LandType(lu)%is_bulk ) cycle    !else Growing veg present:
+             if ( LandType(lu)%is_bulk ) then
+                LandCover(i,j)%LAI(ilu) = 0.0
+                LandCover(i,j)%SAI(ilu) = 0.0
+                cycle    
+             endif!else Growing veg present:
 
              LandCover(i,j)%LAI(ilu) = Polygon(effectivdaynumber, &
                     0.0, LandDefs(lu)%LAImin, LandDefs(lu)%LAImax,&
@@ -588,6 +598,7 @@ contains
     if ( DEBUG_LANDUSE.and.debug_proc ) then
        i=debug_li
        j=debug_lj
+
        do ilu= 1, LandCover(i,j)%ncodes
           lu      = LandCover(i,j)%codes(ilu)
           pft     = LandType(lu)%pft
@@ -599,9 +610,9 @@ contains
               LandCover(i,j)%fphen(ilu), &
              LandCover(i,j)%SGS(ilu), LandCover(i,j)%EGS(ilu)
        end do
-   end if
 
-  end subroutine  SetLandUse
+   end if
+ end subroutine  SetLandUse
 ! =====================================================================
 
 !=======================================================================

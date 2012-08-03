@@ -132,31 +132,31 @@
  ! is emitting.                        
  ! nlandcode = No. countries in grid square
  ! landcode  = Country codes for that grid square
-   integer, private, save, dimension(MAXLIMAX,MAXLJMAX)       :: nlandcode
-   integer, private, save, dimension(MAXLIMAX,MAXLJMAX,NCMAX) :: landcode
+   integer, private, save, allocatable, dimension(:,:)       :: nlandcode
+   integer, private, save, allocatable, dimension(:,:,:) :: landcode
  ! for flat emissions, i.e. no vertical extent:
-   integer, private, save, dimension(MAXLIMAX,MAXLJMAX)       :: flat_nlandcode
-   integer, private, save, dimension(MAXLIMAX,MAXLJMAX,FNCMAX):: flat_landcode
+   integer, private, save, allocatable, dimension(:,:)       :: flat_nlandcode
+   integer, private, save, allocatable, dimension(:,:,:):: flat_landcode
  ! for road dust emission potentials:
-   integer, private, save, dimension(MAXLIMAX,MAXLJMAX)       :: road_nlandcode
-   integer, private, save, dimension(MAXLIMAX,MAXLJMAX,NCMAX) :: road_landcode
+   integer, private, save, allocatable, dimension(:,:)       :: road_nlandcode
+   integer, private, save, allocatable, dimension(:,:,:) :: road_landcode
 
  !
  ! The output emission matrix for the 11-SNAP data is snapemis:
  !
 
-  real, private, dimension(NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS_FILE) &
+  real, private, allocatable, dimension(:,:,:,:,:) &
             , save ::  snapemis      ! main emission arrays, in kg/m2/s
 
-  real, private, dimension(MAXLIMAX,MAXLJMAX,FNCMAX,NEMIS_FILE) &
+  real, private, allocatable, dimension(:,:,:,:) &
             , save ::  snapemis_flat ! main emission arrays, in kg/m2/s  
 
-  real, private, dimension(MAXLIMAX,MAXLJMAX,NCMAX,NROAD_FILES) & ! Not sure if it is really necessary to keep the country info; gives rather messy code but consistent with the rest at least (and can do the seasonal scaling for Nordic countries in the code instead of as preprocessing) 
+  real, private, allocatable, dimension(:,:,:,:) & ! Not sure if it is really necessary to keep the country info; gives rather messy code but consistent with the rest at least (and can do the seasonal scaling for Nordic countries in the code instead of as preprocessing) 
             , save ::  roaddust_emis_pot ! main road dust emission potential arrays, in kg/m2/s (to be scaled!)
 
  ! We store the emissions for output to d_2d files and netcdf in kg/m2/s
 
-  real, public, dimension(MAXLIMAX,MAXLJMAX,NEMIS_FILE), save :: SumSnapEmis
+  real, public, allocatable, dimension(:,:,:), save :: SumSnapEmis
 
   logical, save, private  :: first_dms_read
 
@@ -178,8 +178,8 @@
 
    integer, private, save :: iemCO  ! index of CO emissions, for debug
 
-!   logical, parameter ::USE_OLDSCHEME_ROADDUST=.false. !temporary until the new scheme is validated
-   logical, parameter ::USE_OLDSCHEME_ROADDUST=.true. !temporary until the old scheme is no more needed
+   logical, parameter ::USE_OLDSCHEME_ROADDUST=.false. !temporary until the new scheme is validated
+!   logical, parameter ::USE_OLDSCHEME_ROADDUST=.true. !temporary until the new scheme is validated
 
 contains
  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -257,6 +257,15 @@ contains
 
     ! 0) set molwts, conversion factors (e.g. tonne NO2 -> tonne N), and
     !    emission indices (IQSO2=.., )
+
+    allocate(nlandcode(MAXLIMAX,MAXLJMAX),landcode(MAXLIMAX,MAXLJMAX,NCMAX))
+    allocate(flat_nlandcode(MAXLIMAX,MAXLJMAX),flat_landcode(MAXLIMAX,MAXLJMAX,FNCMAX))
+    allocate(road_nlandcode(MAXLIMAX,MAXLJMAX),road_landcode(MAXLIMAX,MAXLJMAX,NCMAX))
+    allocate(snapemis(NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS_FILE))
+    allocate(snapemis_flat(MAXLIMAX,MAXLJMAX,FNCMAX,NEMIS_FILE))
+    allocate(roaddust_emis_pot(MAXLIMAX,MAXLJMAX,NCMAX,NROAD_FILES))
+    allocate(SumSnapEmis(MAXLIMAX,MAXLJMAX,NEMIS_FILE))
+
 
     !=========================
     call Country_Init()    ! In Country_ml, => NLAND, country codes and 
@@ -517,7 +526,7 @@ contains
              roaddust_emis_pot(:,:,:,iem)=0.0
              call ReadField_CDF('RoadMap.nc',varname,roaddust_emis_pot(1,1,1,iem),&
                   nstart=1,interpol='mass_conservative', &
-                  fractions_out=fractions,CC_out=road_landcode,Ncc_out=road_nlandcode,needed=.true.,debug_flag=.true.)
+                  fractions_out=fractions,CC_out=road_landcode,Ncc_out=road_nlandcode,needed=.true.,debug_flag=.true.,Undef=0.0)
              if(.not.SMI_defined)then
                 varname='SMI1'
                 call ReadField_CDF('AVG_SMI_2005_2010.nc',varname,SMI,nstart=1,&
@@ -1255,19 +1264,16 @@ contains
         real :: buffer(MAXLIMAX,MAXLJMAX),SumSoilNOx,SumSoilNOx_buff
 
 if( USE_AIRCRAFT_EMIS )then
-airn = 0.0 !ssp8W
-!AIRCRAFT
-kstart=KCHEMTOP
-kend=KMAX_MID
-do k=KEMISTOP,KMAX_MID
-do j=1,ljmax
-do i=1,limax
+   !AIRCRAFT
 
-airn(k,i,j)=0.0
+   if(.not.allocated(airn))then
+      allocate(airn(KCHEMTOP:KMAX_MID,MAXLIMAX,MAXLJMAX))
+   endif
+   
+   airn = 0.0
+   kstart=KCHEMTOP
+   kend=KMAX_MID
 
-enddo
-enddo
-enddo
 call ReadField_CDF('AircraftEmis_FL.nc','NOx',airn,nstart=current_date%month,kstart=kstart,kend=kend,interpol='mass_conservative', &
      needed=.true.,debug_flag=.true.)
 

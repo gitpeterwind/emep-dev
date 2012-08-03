@@ -81,7 +81,7 @@
   real, save, dimension(SS_MAAR+1) :: log_dbin
   real, save, dimension(SS_MONA) :: temp_Monah, radSS, dSS3
   real, save                     :: n_to_mSS
-  real, public, dimension(NSS,MAXLIMAX,MAXLJMAX) :: SS_prod !Sea salt flux
+  real, public, allocatable,dimension(:,:,:) :: SS_prod !Sea salt flux
 
   logical, private, save :: my_first_call = .true.
   logical, private, save :: seasalt_found
@@ -117,6 +117,8 @@
 
     iseasalt = find_index("SEASALT_F", species(:)%name )
     if(DEBUG_SEASALT ) write(*,*)"SSALT INIT", iseasalt, debug_flag
+
+    allocate(SS_prod(NSS,MAXLIMAX,MAXLJMAX))
 
     if ( iseasalt < 1 ) then
        seasalt_found = .false.

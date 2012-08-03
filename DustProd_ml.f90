@@ -82,15 +82,15 @@
 
   public ::  WindDust       
 
-  real, public                :: DU_prod (NDU,MAXLIMAX,MAXLJMAX)  
-  real, public                :: DUST_flux (MAXLIMAX,MAXLJMAX)
+  real, allocatable, public   :: DU_prod (:,:,:)  
+  real, allocatable, public   :: DUST_flux (:,:)
   real, private, save         :: kg2molecDU, m_to_nDU, frac_fine, frac_coar,  &
                                  soil_dns_dry, help_ustar_th
   real, parameter             :: soil_dens = 2650.0  ! [kg/m3]
   logical, private, save      :: my_first_call = .true.
   logical, private, save      :: dust_found
   integer, private, save      :: ipoll
-  integer, save               :: dry_period(MAXLIMAX, MAXLJMAX) = 72
+  integer, allocatable, save  :: dry_period(:,:)
   character(len=20)           :: soil_type
   real, parameter             :: SMALL=1.0e-10
   contains
@@ -622,6 +622,12 @@
    write(6,*)
    write(6,*) ' >> DUST init <<',soil_dens
   endif
+
+  allocate(DU_prod (NDU,MAXLIMAX,MAXLJMAX))
+  allocate(DUST_flux (MAXLIMAX,MAXLJMAX))
+  allocate(dry_period(MAXLIMAX, MAXLJMAX))
+  dry_period = 72
+
 
 !//__ Reynold's number ( uses D_opt[cm] ) 
     Re_opt=0.38 + 1331. *(100.*D_opt)**1.56  ! [frc] "B" MaB95 p. 16417 (5)

@@ -157,12 +157,20 @@ subroutine runchem(numt)
 
              call setup_1d(i,j)   
 
-             call setup_rcemis(i,j) ! Sets initial rcemis. DSA12 moved
+ 
+             if ( USE_SEASALT )  &
+             call SeaSalt_flux(i,j,debug_flag)
 
-             call Add_2timing(27,tim_after,tim_before,&
-                                              "Runchem:setup_1d+rcemis")
+             if ( USE_DUST )     &
+             call WindDust (i,j,debug_flag)
 
-             call Setup_Clouds(i,j,debug_flag)
+             if ( USE_Pollen .and. daynumber >  59) &
+             call Pollen_flux (i,j,debug_flag)
+             !if (debug_) write(6,*) "2 Runchem polled_prod",&
+             !                              Pollen_prod(1,i,j)
+
+            call setup_rcemis(i,j) ! Sets initial rcemis. DSA12 moved
+            call Setup_Clouds(i,j,debug_flag)
 
              call setup_bio(i,j)   ! Adds bio/nat to rcemis
 
@@ -182,17 +190,6 @@ subroutine runchem(numt)
 ! Called every adv step, only updated every third hour
              !FUTURE call setup_nh3(i,j)    ! NH3emis, experimental (NMR-NH3)
 
-             if ( USE_SEASALT )  &
-             call SeaSalt_flux(i,j,debug_flag)
-
-             if ( USE_DUST )     &
-             call WindDust (i,j,debug_flag)
-
-             if ( USE_Pollen .and. daynumber >  59) &
-             call Pollen_flux (i,j,debug_flag)
-             !if (debug_) write(6,*) "2 Runchem polled_prod",&
-             !                              Pollen_prod(1,i,j)
-
 
              if ( DEBUG .and. debug_flag  ) then
                call datewrite("Runchem Pre-Chem", (/ rcemis(NO,20), &
@@ -204,6 +201,10 @@ subroutine runchem(numt)
 
              call Add_2timing(30,tim_after,tim_before,  &
                                           "Runchem:2nd setups")
+
+ 
+             call Add_2timing(27,tim_after,tim_before,&
+                                              "Runchem:setup_1d+rcemis")
 
 !if ( DEBUG .and. debug_flag  ) then
 !    write(6,"(a16,9es10.2)") "RUNCHEM PRE-CHEM ", &

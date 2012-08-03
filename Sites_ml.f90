@@ -93,8 +93,8 @@ integer, private, save :: nglobal_sondes, nlocal_sondes
 ! site_gindex stores the global index n asociated
 ! with each processor and local site
 
-integer, private, save, dimension (0:NPROC-1,NSITES_MAX)  :: site_gindex
-integer, private, save, dimension (0:NPROC-1,NSONDES_MAX) :: sonde_gindex
+integer, private, save, allocatable,dimension (:,:)  :: site_gindex
+integer, private, save, allocatable,dimension (:,:) :: sonde_gindex
 
 integer, private, save, dimension (NSITES_MAX) :: &
          site_gx, site_gy, site_gz   & ! global coordinates
@@ -142,6 +142,9 @@ subroutine sitesdef()
 
   sonde_gz(:) = 0
   sonde_z(:)  = 0
+
+  allocate(site_gindex(0:NPROC-1,NSITES_MAX))
+  allocate(sonde_gindex(0:NPROC-1,NSONDES_MAX))
 
   call Init_sites("sites",IO_SITES,NSITES_MAX, &
         nglobal_sites,nlocal_sites, &

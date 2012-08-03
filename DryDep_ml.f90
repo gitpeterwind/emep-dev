@@ -432,7 +432,6 @@ module DryDep_ml
 
         L = Sub(iL)    ! ! Assign e.g. Sub(iL)ustar to ustar
 
-
              if ( DEBUG_DRYDEP .and. debug_flag ) then
                 write(6,"(a,3i3,f6.1,2i4,3f7.3,i4,i2,2f6.2)") "DVEG: ", &
                     nlu,iiL, iL, glat(i,j), L%SGS, L%EGS, &

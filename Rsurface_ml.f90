@@ -42,10 +42,13 @@ use TimeDate_ml,  only : current_date
 use Wesely_ml,    only : Wesely_tab2 &  ! Wesely Table 2 for 14 gases
    ,WES_HNO3, WES_NH3,DRx,WES_SO2    ! Indices and Ratio of diffusivities to ozone
 use MetFields_ml, only : foundsdepth, foundice
+use Par_ml,only :me
 implicit none
 private
 
 public   :: Rsurface
+INCLUDE 'mpif.h'
+INTEGER STATUS(MPI_STATUS_SIZE),INFO
 
 
 real, public, save :: Rinc, RigsO, GnsO, RgsS  !hf CoDep 

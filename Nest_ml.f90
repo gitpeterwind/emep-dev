@@ -338,7 +338,7 @@ end subroutine readxn
 subroutine wrtxn(indate,WriteNow)
   type(date), intent(in) :: indate
   logical, intent(in) :: WriteNow !Do not check indate value
-  real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: dat ! Data arrays
+  real,allocatable, dimension(:,:,:) :: dat ! Data arrays
 
   type(Deriv) :: def1 ! definition of fields
   integer :: n,iotyp,ndim,kmax
@@ -396,6 +396,8 @@ subroutine wrtxn(indate,WriteNow)
   def1%unit='mix_ratio' ! written
 
   if(first_call)then
+     allocate(dat(MAXLIMAX,MAXLJMAX,KMAX_MID))
+
      !do first one loop to define the fields, without writing them (for performance purposes)
     do n= 1, NSPEC_ADV
    !do n= 1, NSPEC_ADV-4  !ENEA
@@ -886,9 +888,9 @@ subroutine read_newdata_LATERAL(ndays_indate)
   logical, save :: first_call=.true.
 
   !4 nearest points from external grid  (horizontal)
-  integer, save ::IIij(MAXLIMAX,MAXLJMAX,4),JJij(MAXLIMAX,MAXLJMAX,4)
+  integer, save,allocatable ::IIij(:,:,:),JJij(:,:,:)
   !weights of the 4 nearest points (horizontal)
-  real, save :: Weight(MAXLIMAX,MAXLJMAX,4)
+  real, save,allocatable :: Weight(:,:,:)
 
   !2 adjacent levels from external grid  (vertical)
   integer, save, dimension(KMAX_MID) :: k1_ext,k2_ext
@@ -908,6 +910,8 @@ subroutine read_newdata_LATERAL(ndays_indate)
   if( mydebug )write(*,*)'Nest: read_newdata_LATERAL, first?', first_call
   if(first_call)then
      if( mydebug )write(*,*)'Nest: initializations 2D'
+     allocate(IIij(MAXLIMAX,MAXLJMAX,4),JJij(MAXLIMAX,MAXLJMAX,4))
+     allocate(Weight(MAXLIMAX,MAXLJMAX,4))
     call init_icbc()
      if( mydebug )write(*,*)'calling init_nest for '//trim(filename_read_BC)
     call init_nest(ndays_indate,filename_read_BC,IIij,JJij,Weight,&
@@ -1166,10 +1170,10 @@ subroutine reset_3D(ndays_indate)
   logical, save :: first_call=.true.
 
   !4 nearest points from external grid
-  integer, save ::IIij(MAXLIMAX,MAXLJMAX,4),JJij(MAXLIMAX,MAXLJMAX,4)
+  integer, save,allocatable ::IIij(:,:,:),JJij(:,:,:)
 
   !weights of the 4 nearest points
-  real, save :: Weight(MAXLIMAX,MAXLJMAX,4)
+  real, save,allocatable :: Weight(:,:,:)
 
   !dimensions of external grid for 3D
   integer, save ::N_ext,KMAX_ext,GIMAX_ext,GJMAX_ext
@@ -1185,6 +1189,8 @@ subroutine reset_3D(ndays_indate)
  
   if(first_call)then
      if( mydebug ) write(*,*)'Nest: initializations 3D'
+     allocate(IIij(MAXLIMAX,MAXLJMAX,4),JJij(MAXLIMAX,MAXLJMAX,4))
+     allocate(Weight(MAXLIMAX,MAXLJMAX,4))
      first_call=.false.
      if( mydebug ) write(*,*) 'Nest: init-icbc'
      call init_icbc()

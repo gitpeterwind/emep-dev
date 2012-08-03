@@ -156,8 +156,8 @@ private
 
 
    ! save O3 every hour during one day to find running max
-    real, save,  public :: &     ! to be used for SOMO35
-     D2_O3_DAY( MAXLIMAX, MAXLJMAX, NTDAY) = 0.
+    real, save  , allocatable , public :: &     ! to be used for SOMO35
+     D2_O3_DAY( :,:,:)
 
    ! Fraction of NO3_c below 2.5 um (v. crude so far)
 
@@ -200,6 +200,9 @@ private
   !=========================================================================
   subroutine Init_Derived()
     integer :: alloc_err
+
+    allocate(D2_O3_DAY( MAXLIMAX, MAXLJMAX, NTDAY))
+     D2_O3_DAY = 0.0
 
     if(MasterProc .and. DEBUG ) write(*,*) "INIT My DERIVED STUFF"
     call Init_My_Deriv()  !-> wanted_deriv2d, wanted_deriv3d
@@ -252,7 +255,7 @@ private
     case(25);fracPM25=0.37
     case(30);fracPM25=0.27
     endselect
-    print *,  ' CFAC INIT PMFRACTION ', fracPM25, diam(2), nint(1.0e7*diam(2))
+    if(DEBUG)print *,  ' CFAC INIT PMFRACTION ', fracPM25, diam(2), nint(1.0e7*diam(2))
     call CheckStop( fracPM25 < 0.01, "NEED TO SET FRACPM25")
 
   end subroutine Init_Derived

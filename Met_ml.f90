@@ -95,13 +95,17 @@ module Met_ml
   use CheckStop_ml,         only : CheckStop,StopAll
   use Functions_ml,         only : Exner_tab, Exner_nd
   use Functions_ml,         only : T_2_Tpot  !OS_TESTS
-  use GridValues_ml,        only : xmd, i_fdom, j_fdom, METEOfelt, projection &
+  use GridValues_ml,        only : xmd, i_fdom, j_fdom, i_local,j_local&
+       ,glon,glat,gl_stagg,gb_stagg,glat_fdom,glon_fdom&
+       ,xm_i,xm_j ,xm2,xmd,xm2ji,xmdji,GridArea_m2&
+       , projection &
        ,glon,glat, glat_fdom, glon_fdom, MIN_ADVGRIDS   &
-       ,Poles, Pole_included, xm_i, xm_j, xm2, sigma_bnd,sigma_mid &
+       ,Poles, xm_i, xm_j, xm2, sigma_bnd,sigma_mid &
        ,xp, yp, fi, GRIDWIDTH_M,ref_latitude     &
        ,debug_proc, debug_li, debug_lj &
        ,grid_north_pole_latitude,grid_north_pole_longitude &
-       ,GlobalPosition,DefGrid,gl_stagg,gb_stagg,A_mid,B_mid
+       ,GlobalPosition,DefGrid,gl_stagg,gb_stagg,A_mid,B_mid &
+       ,GridRead
 
   use Io_ml ,               only : ios, IO_ROUGH, datewrite,PrintLog, &
                                    IO_CLAY, IO_SAND, open_file, IO_LOG
@@ -109,8 +113,8 @@ module Met_ml
   use MetFields_ml 
   use MicroMet_ml, only : PsiH  ! Only if USE_MIN_KZ
   use ModelConstants_ml,    only : PASCAL, PT, CLOUDTHRES, METSTEP  &
-       ,KMAX_BND,KMAX_MID,NMET &
-       ,IIFULLDOM, JJFULLDOM, NPROC  &
+       ,KMAX_BND,KMAX_MID,NMET,KCHEMTOP &
+       ,IIFULLDOM, JJFULLDOM, RUNDOMAIN,NPROC  &
        ,MasterProc, DEBUG_MET,DEBUG_i, DEBUG_j, identi, V_RAIN, nmax  &
        ,DEBUG_BLM, DEBUG_Kz, DEBUG_SOILWATER,DEBUG_LANDIFY & 
        ,NH3_U10   & !FUTURE
@@ -123,8 +127,8 @@ module Met_ml
        ,limax,ljmax  &
        ,neighbor,WEST,EAST,SOUTH,NORTH,NOPROC  &
        ,MSG_NORTH2,MSG_EAST2,MSG_SOUTH2,MSG_WEST2  &
-       ,MFSIZEINP, IRUNBEG,JRUNBEG, tgi0, tgj0,gi0,gj0  &
-       ,MSG_INIT3,MSG_READ4, tlimax, tljmax, parinit
+       ,IRUNBEG,JRUNBEG, tgi0, tgj0,gi0,gj0  &
+       ,MSG_INIT3,MSG_READ4, tlimax, tljmax
   use PhysicalConstants_ml, only : KARMAN, KAPPA, RGAS_KG, CP, GRAV    &
        ,ROWATER, PI
   use TimeDate_ml,          only : current_date, date,Init_nmdays,nmdays, &
@@ -148,15 +152,10 @@ module Met_ml
   integer, private, save      ::  debug_iloc, debug_jloc  ! local coords
 
 
-  integer, save   :: Nhh &         ! number of field stored per 24 hours
-       ,nhour_first&  ! time of the first meteo stored
-       ,nrec          ! nrec=record in meteofile, for example
+  integer, save   :: nrec          ! nrec=record in meteofile, for example
   ! (Nhh=8): 1=00:00 2=03:00 ... 8=21:00
   ! if nhour_first=3 then 1=03:00 2=06:00...8=24:00
 
-  integer, parameter, private :: NEXTEND = 2 ! no. box to side of (i,j) 
-  real, dimension(MAXLIMAX+2*NEXTEND,MAXLJMAX+2*NEXTEND), save  ::&
-         xwf  ! extension of water fraction, save after 1st call
   logical, save, private  :: xwf_done = .false. ! extended water-fraction array
 
   character (len = 100)        ::  field_not_found='field_not_found'
@@ -166,7 +165,6 @@ module Met_ml
   character (len = 100), private, save :: call_msg=" Not set"
 
 
-  public :: MeteoGridRead
   public :: MeteoRead
   public :: MetModel_LandUse
   public :: metvar
@@ -658,56 +656,6 @@ if( USE_SOILWATER ) then
 
 
   end subroutine Meteoread
-
-  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-  subroutine MeteoGridRead(cyclicgrid)
-
-    !   the subroutine reads the grid parameters (projection, resolution etc.)
-    !   defined by the meteorological fields
-    !
-
-    implicit none
-
-    integer,  intent(out)      :: cyclicgrid
-    integer                    :: nyear,nmonth,nday,nhour,k
-
-    character (len = 100),save :: meteoname !name of the meteofile
-
-    call_msg = "MeteoGridRead"
-
-    nyear=startdate(1)
-    nmonth=startdate(2)
-    nday=startdate(3)
-    nhour=0
-    current_date = date(nyear, nmonth, nday, nhour, 0 )
-    call Init_nmdays( current_date )
-
-    !*********initialize grid parameters*********
-56  FORMAT(a5,i4.4,i2.2,i2.2,a3)
-    write(meteoname,56)'meteo',nyear,nmonth,nday,'.nc'
-    if(DEBUG_MET.and.MasterProc)write(*,*)'looking for ',trim(meteoname)
-
-
-    call Getgridparams(meteoname,GRIDWIDTH_M,xp,yp,fi,xm_i,xm_j,xm2,&
-         ref_latitude,sigma_mid,Nhh,nyear,nmonth,nday,nhour,nhour_first&
-         ,cyclicgrid)
-
-
-    if(MasterProc .and. DEBUG_MET)then
-       write(*,*)'sigma_mid:',(sigma_mid(k),k=1,20)
-       write(*,*)'grid resolution:',GRIDWIDTH_M
-       write(*,*)'xcoordinate of North Pole, xp:',xp
-       write(*,*)'ycoordinate of North Pole, yp:',yp
-       write(*,*)'longitude rotation of grid, fi:',fi
-       write(*,*)'true distances latitude, ref_latitude:',ref_latitude
-    endif
-
-    call DefGrid()!defines: i_fdom,j_fdom,i_local, j_local,xmd,xm2ji,xmdji,
-                  !         sigma_bnd,carea,gbacmax,gbacmin,glacmax,glacmin
-
-  end subroutine Meteogridread
-
 
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
@@ -3152,465 +3100,6 @@ filename_save=trim(filename)
 !    call check(nf90_close(ncFileID))
 
   end subroutine GetCDF_short
-
-
-
-
-
-  subroutine Getgridparams(meteoname,GRIDWIDTH_M,xp,yp,fi,xm_i,xm_j,xm2,&
-       ref_latitude,sigma_mid,Nhh,nyear,nmonth,nday,nhour,nhour_first&
-       ,cyclicgrid)
-    !
-    ! Get grid and time parameters as defined in the meteo file
-    ! Do some checks on sizes and dates
-    !
-    ! This routine is called only once (and is therefore not optimized for speed)
-    !
-
-    implicit none
-
-    character (len = *), intent(in) ::meteoname
-    integer, intent(in):: nyear,nmonth,nday,nhour
-    real, intent(out) :: GRIDWIDTH_M,xp,yp,fi, ref_latitude,&
-         xm2(0:MAXLIMAX+1,0:MAXLJMAX+1)&
-         ,xm_i(0:MAXLIMAX+1,0:MAXLJMAX+1)&
-         ,xm_j(0:MAXLIMAX+1,0:MAXLJMAX+1),sigma_mid(KMAX_MID)
-    integer, intent(out):: Nhh,nhour_first,cyclicgrid
-
-    integer :: nseconds(1),n1,i,j,im,jm,i0,j0
-    integer :: ncFileID,idimID,jdimID, kdimID,timeDimID,varid,timeVarID
-    integer :: GIMAX_file,GJMAX_file,KMAX_file,ihh,ndate(4)
-    real,dimension(-1:GIMAX+2,-1:GJMAX+2) ::xm_global,xm_global_j,xm_global_i
-    integer :: status,iglobal,jglobal,info,South_pole,North_pole,Ibuff(2)
-    real :: ndays(1),x1,x2,x3,x4
-    character (len = 50) :: timeunit
-
-    call_msg = "Getgridparams"
-    if(MasterProc)then
-       print *,'Defining grid properties from ',trim(meteoname)
-      !open an existing netcdf dataset
-       status = nf90_open(path=trim(meteoname),mode=nf90_nowrite,ncid=ncFileID)
-
-       if(status /= nf90_noerr) then
-          print *,'not found',trim(meteoname)
-          call StopAll("Meteo file not found")
-          METEOfelt=1
-       else
-!          print *,'  reading ',trim(meteoname)
-          projection=''
-         call check(nf90_get_att(ncFileID,nf90_global,"projection",projection))
-          if(trim(projection)=='Rotated_Spherical'.or.trim(projection)=='rotated_spherical'&
-               .or.trim(projection)=='rotated_pole'.or.trim(projection)=='rotated_latitude_longitude')then
-             projection='Rotated_Spherical'
-          endif
-          write(*,*)'projection: ',trim(projection)
-
-          !get dimensions id
-          if(trim(projection)=='Stereographic') then
-             call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
-             call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
-          elseif(trim(projection)==trim('lon lat')) then
-             call check(nf90_inq_dimid(ncid = ncFileID, name = "lon", dimID = idimID))
-             call check(nf90_inq_dimid(ncid = ncFileID, name = "lat", dimID = jdimID))
-          else
-             !     write(*,*)'GENERAL PROJECTION ',trim(projection)
-             call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
-             call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
-          endif
-
-          call check(nf90_inq_dimid(ncid = ncFileID, name = "k", dimID = kdimID))
-          call check(nf90_inq_dimid(ncid = ncFileID, name = "time", dimID = timeDimID))
-          call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = timeVarID))
-
-          !get dimensions length
-          call check(nf90_inquire_dimension(ncid=ncFileID,dimID=idimID,len=GIMAX_file))
-          call check(nf90_inquire_dimension(ncid=ncFileID,dimID=jdimID,len=GJMAX_file))
-          call check(nf90_inquire_dimension(ncid=ncFileID,dimID=kdimID,len=KMAX_file))
-          call check(nf90_inquire_dimension(ncid=ncFileID,dimID=timedimID,len=Nhh))
-
-          write(*,*)'dimensions meteo grid:',GIMAX_file,GJMAX_file,KMAX_file,Nhh
-
-          if(GIMAX_file/=IIFULLDOM.or.GJMAX_file/=JJFULLDOM)then
-             write(*,*)'IIFULLDOM,JJFULLDOM ',IIFULLDOM,JJFULLDOM
-             write(*,*)'WARNING: large domain and meteorology file have different sizes'
-             write(*,*)'WARNING: THIS CASE IS NOT TESTED. Please change large domain'
-          endif
-
-          call CheckStop(GIMAX+IRUNBEG-1 > GIMAX_file, "NetCDF_ml: I outside domain" )
-          call CheckStop(GJMAX+JRUNBEG-1 > GJMAX_file, "NetCDF_ml: J outside domain" )
-          call CheckStop(KMAX_MID > KMAX_file,  "NetCDF_ml: wrong vertical dimension")
-          call CheckStop(24/Nhh, METSTEP,          "NetCDF_ml: METSTEP != meteostep" )
-
-          call CheckStop(nhour/=0 .and. nhour /=3,&
-               "Met_ml/GetCDF: must start at nhour=0 or 3")
-
-          call check(nf90_get_att(ncFileID,timeVarID,"units",timeunit))
-
-          ihh=1
-          n1=1
-          if(trim(timeunit(1:19))==trim("days since 1900-1-1"))then
-             write(*,*)'Meteo date in days since 1900-1-1 0:0:0'
-             call check(nf90_get_var(ncFileID,timeVarID,ndays,&
-                  start=(/ihh/),count=(/n1 /)))
-             call nctime2idate(ndate,ndays(1))  ! for printout: msg="meteo hour YYYY-MM-DD hh"
-          else
-             call check(nf90_get_var(ncFileID,timeVarID,nseconds,&
-                  start=(/ihh/),count=(/n1 /)))
-             call nctime2idate(ndate,nseconds(1)) ! default
-          endif
-          nhour_first=ndate(4)
-
-
-          call CheckStop(ndate(1), nyear,  "NetCDF_ml: wrong meteo year" )
-          call CheckStop(ndate(2), nmonth, "NetCDF_ml: wrong meteo month" )
-          call CheckStop(ndate(3), nday,   "NetCDF_ml: wrong meteo day" )
-
-          do ihh=1,Nhh
-
-             if(trim(timeunit(1:19))==trim("days since 1900-1-1"))then
-                call check(nf90_get_var(ncFileID, timeVarID, ndays,&
-                     start=(/ ihh /),count=(/ n1 /)))
-                call nctime2idate(ndate,ndays(1))
-             else
-                call check(nf90_get_var(ncFileID, timeVarID, nseconds,&
-                  start=(/ ihh /),count=(/ n1 /)))
-                call nctime2idate(ndate,nseconds(1))
-             endif
-             call CheckStop( mod((ihh-1)*METSTEP+nhour_first,24), ndate(4),  &
-                  date2string("NetCDF_ml: wrong meteo hour YYYY-MM-DD hh",ndate))
-
-          enddo
-
-
-          !get global attributes
-          call check(nf90_get_att(ncFileID,nf90_global,"Grid_resolution",GRIDWIDTH_M))
-          if(trim(projection)=='Stereographic')then
-             call check(nf90_get_att(ncFileID,nf90_global,"ref_latitude",ref_latitude))
-             call check(nf90_get_att(ncFileID, nf90_global, "xcoordinate_NorthPole" &
-                  ,xp ))
-             call check(nf90_get_att(ncFileID, nf90_global, "ycoordinate_NorthPole" &
-                  ,yp ))
-             call check(nf90_get_att(ncFileID, nf90_global, "fi",fi ))
-
-             call GlobalPosition
-          elseif(trim(projection)==trim('lon lat')) then
-             ref_latitude=60.
-             xp=0.0
-             yp=GJMAX
-             fi =0.0
-             call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
-             call check(nf90_get_var(ncFileID, varID, glon_fdom(1:IIFULLDOM,1) ))
-             do i=1,IIFULLDOM
-                if(glon_fdom(i,1)>180.0)glon_fdom(i,1)=glon_fdom(i,1)-360.0
-                if(glon_fdom(i,1)<-180.0)glon_fdom(i,1)=glon_fdom(i,1)+360.0
-             enddo
-             do j=1,JJFULLDOM
-                glon_fdom(:,j)=glon_fdom(:,1)
-             enddo
-             call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
-             call check(nf90_get_var(ncFileID, varID, glat_fdom(1,1:JJFULLDOM) ))
-             do i=1,IIFULLDOM
-                glat_fdom(i,:)=glat_fdom(1,:)
-             enddo
-          else
-             ref_latitude=60.
-             xp=0.0
-             yp=GJMAX
-             fi =0.0
-             if(trim(projection)=='Rotated_Spherical')then
-                call check(nf90_get_att(ncFileID,nf90_global,"grid_north_pole_latitude",grid_north_pole_latitude))
-                call check(nf90_get_att(ncFileID,nf90_global,"grid_north_pole_longitude",grid_north_pole_longitude))
-             endif
-             call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
-             call check(nf90_get_var(ncFileID, varID, glon_fdom(1:IIFULLDOM,1:JJFULLDOM) ))
-
-             call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
-             call check(nf90_get_var(ncFileID, varID, glat_fdom(1:IIFULLDOM,1:JJFULLDOM) ))
-             do j=1,JJFULLDOM
-             do i=1,IIFULLDOM
-                if(glon_fdom(i,j)>180.0)glon_fdom(i,j)=glon_fdom(i,j)-360.0
-                if(glon_fdom(i,j)<-180.0)glon_fdom(i,j)=glon_fdom(i,j)+360.0
-             enddo
-             enddo
-
-          endif
-          !get variables
-          status=nf90_inq_varid(ncid=ncFileID, name="map_factor", varID=varID)
-
-          if(status == nf90_noerr)then
-             !mapping factor at center of cells is defined
-             !make "staggered" map factors
-             call check(nf90_get_var(ncFileID, varID, xm_global(1:GIMAX,1:GJMAX) &
-                  ,start=(/ IRUNBEG,JRUNBEG /),count=(/ GIMAX,GJMAX /)))
-             do j=1,GJMAX
-                do i=1,GIMAX-1
-                   xm_global_j(i,j)=0.5*(xm_global(i,j)+xm_global(i+1,j))
-                enddo
-             enddo
-             i=GIMAX
-             do j=1,GJMAX
-                xm_global_j(i,j)=1.5*xm_global(i,j)-0.5*xm_global(i-1,j)
-             enddo
-             do j=1,GJMAX-1
-                do i=1,GIMAX
-                   xm_global_i(i,j)=0.5*(xm_global(i,j)+xm_global(i,j+1))
-                enddo
-             enddo
-             j=GJMAX
-             do i=1,GIMAX
-                xm_global_i(i,j)=1.5*xm_global(i,j)-0.5*xm_global(i,j-1)
-             enddo
-
-          else
-             !map factor are already staggered
-             status=nf90_inq_varid(ncid=ncFileID, name="map_factor_i", varID=varID)
-
-             !BUGCHECK - moved here... (deleted if loop)
-             call CheckStop( status, nf90_noerr, "erro rreading map factor" )
-
-             call check(nf90_get_var(ncFileID, varID, xm_global_i(1:GIMAX,1:GJMAX) &
-                  ,start=(/ IRUNBEG,JRUNBEG /),count=(/ GIMAX,GJMAX /)))
-             call check(nf90_inq_varid(ncid=ncFileID, name="map_factor_j", varID=varID))
-             call check(nf90_get_var(ncFileID, varID, xm_global_j(1:GIMAX,1:GJMAX) &
-                  ,start=(/ IRUNBEG,JRUNBEG /),count=(/ GIMAX,GJMAX /)))
-          endif
-
-          call check(nf90_inq_varid(ncid = ncFileID, name = "k", varID = varID))
-          call check(nf90_get_var(ncFileID, varID, sigma_mid ))
-
-          call check(nf90_close(ncFileID))
-
-
-       endif !found meteo
-    endif !me=0
-
-    CALL MPI_BCAST(METEOfelt ,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-    if( METEOfelt==1)return !do not use NetCDF meteo input
-
-
-    CALL MPI_BCAST(Nhh,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-    CALL MPI_BCAST(GRIDWIDTH_M,8*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-    CALL MPI_BCAST(ref_latitude,8*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-    CALL MPI_BCAST(xp,8*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-    CALL MPI_BCAST(yp,8*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-    CALL MPI_BCAST(fi,8*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-    CALL MPI_BCAST(sigma_mid,8*KMAX_MID,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-    CALL MPI_BCAST(xm_global_i(1:GIMAX,1:GJMAX),8*GIMAX*GJMAX,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-    CALL MPI_BCAST(xm_global_j(1:GIMAX,1:GJMAX),8*GIMAX*GJMAX,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-    CALL MPI_BCAST(glat_fdom(1:IIFULLDOM,1:JJFULLDOM),8*IIFULLDOM*JJFULLDOM,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-    CALL MPI_BCAST(glon_fdom(1:IIFULLDOM,1:JJFULLDOM),8*IIFULLDOM*JJFULLDOM,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-    CALL MPI_BCAST(projection,len(projection),MPI_CHARACTER,0,MPI_COMM_WORLD,INFO) 
-
-
-    do j=1,MAXLJMAX
-       do i=1,MAXLIMAX
-          glon(i,j)=glon_fdom(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)
-          glat(i,j)=glat_fdom(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)
-       enddo
-    enddo
-    i0=0
-    im=MAXLIMAX
-    j0=0
-    jm=MAXLJMAX
-    if(gi0+MAXLIMAX+1+IRUNBEG-2>IIFULLDOM)im=MAXLIMAX-1!outside fulldomain
-    if(gi0+0+IRUNBEG-2<1)i0=1!outside fulldomain
-    if(gj0+MAXLJMAX+1+JRUNBEG-2>JJFULLDOM)jm=MAXLJMAX-1!outside fulldomain
-    if(gj0+0+JRUNBEG-2<1)j0=1!outside fulldomain
-
-    do j=j0,jm
-       do i=i0,im
-          x1=glon_fdom(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)
-          x2=glon_fdom(gi0+i+1+IRUNBEG-2,gj0+j+JRUNBEG-2)
-          x3=glon_fdom(gi0+i+IRUNBEG-2,gj0+j+1+JRUNBEG-2)
-          x4=glon_fdom(gi0+i+1+IRUNBEG-2,gj0+j+1+JRUNBEG-2)
-
-!8100=90*90; could use any number much larger than zero and much smaller than 180*180  
-          if(x1*x2<-8100.0 .or. x1*x3<-8100.0 .or. x1*x4<-8100.0)then
-             !Points are on both sides of the longitude -180=180              
-             if(x1<0)x1=x1+360.0
-             if(x2<0)x2=x2+360.0
-             if(x3<0)x3=x3+360.0
-             if(x4<0)x4=x4+360.0
-          endif
-          gl_stagg(i,j)=0.25*(x1+x2+x3+x4)
-
-          gb_stagg(i,j)=0.25*(glat_fdom(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)+&
-               glat_fdom(gi0+i+1+IRUNBEG-2,gj0+j+JRUNBEG-2)+&
-               glat_fdom(gi0+i+IRUNBEG-2,gj0+j+1+JRUNBEG-2)+&
-               glat_fdom(gi0+i+1+IRUNBEG-2,gj0+j+1+JRUNBEG-2))
-       enddo
-    enddo
-    do j=0,j0
-       do i=i0,im
-          x1=gl_stagg(i,j+1)
-          x2=gl_stagg(i,j+2)
-          if(x1*x2<-8100.0 )then
-             if(x1<0)x1=x1+360.0
-             if(x2<0)x2=x2+360.0
-          endif
-          gl_stagg(i,j)=2*x1-x2
-          gb_stagg(i,j)=2*gb_stagg(i,j+1)-gb_stagg(i,j+2)
-       enddo
-    enddo
-    do j=jm,MAXLJMAX
-       do i=i0,im
-          x1=gl_stagg(i,j-1)
-          x2=gl_stagg(i,j-2)
-          if(x1*x2<-8100.0 )then
-             if(x1<0)x1=x1+360.0
-             if(x2<0)x2=x2+360.0
-          endif
-          gl_stagg(i,j)=2*x1-x2
-          gb_stagg(i,j)=2*gb_stagg(i,j-1)-gb_stagg(i,j-2)
-       enddo
-    enddo
-    do j=0,MAXLJMAX
-       do i=0,i0
-          x1=gl_stagg(i+1,j)
-          x2=gl_stagg(i+2,j)
-          if(x1*x2<-8100.0 )then
-             if(x1<0)x1=x1+360.0
-             if(x2<0)x2=x2+360.0
-          endif
-          gl_stagg(i,j)=2*x1-x2
-          gb_stagg(i,j)=2*gb_stagg(i+1,j)-gb_stagg(i+2,j)
-       enddo
-    enddo
-    do j=0,MAXLJMAX
-       do i=im,MAXLIMAX
-          x1=gl_stagg(i-1,j)
-          x2=gl_stagg(i-2,j)
-          if(x1*x2<-8100.0 )then
-             if(x1<0)x1=x1+360.0
-             if(x2<0)x2=x2+360.0
-          endif
-          gl_stagg(i,j)=2*x1-x2
-          gb_stagg(i,j)=2*gb_stagg(i-1,j)-gb_stagg(i-2,j)
-       enddo
-    enddo
-!ensure that values are within [-180,+180]]
-    do j=0,MAXLJMAX
-       do i=0,MAXLIMAX
-          if(gl_stagg(i,j)>180.0)gl_stagg(i,j)=gl_stagg(i,j)-360.0
-          if(gl_stagg(i,j)<-180.0)gl_stagg(i,j)=gl_stagg(i,j)+360.0
-       enddo
-    enddo
-
-    !test if the grid is cyclicgrid:
-    !The last cell + 1 cell = first cell
-    Cyclicgrid=1 !Cyclicgrid
-    do j=1,JJFULLDOM
-       if(mod(nint(glon_fdom(GIMAX,j)+360+360.0/GIMAX),360)/=&
-            mod(nint(glon_fdom(IRUNBEG,j)+360.0),360))then
-          Cyclicgrid=0  !not cyclicgrid
-       endif
-    enddo
-
-    if(MasterProc .and. DEBUG_MET)write(*,*)'CYCLICGRID:',Cyclicgrid
-
-    !complete (extrapolate) along the four lateral sides
-    do i=1,GIMAX
-       xm_global_j(i,0)=1.0/(2.0/(xm_global_j(i,1))-1.0/(xm_global_j(i,2)))
-       xm_global_j(i,-1)=1.0/(2.0/(xm_global_j(i,0))-1.0/(xm_global_j(i,1)))
-       xm_global_j(i,GJMAX+1)=1.0/(2.0/(xm_global_j(i,GJMAX))-1.0/(xm_global_j(i,GJMAX-1)))
-       xm_global_j(i,GJMAX+2)=1.0/(2.0/(xm_global_j(i,GJMAX+1))-1.0/(xm_global_j(i,GJMAX)))
-       xm_global_i(i,0)=1.0/(2.0/(xm_global_i(i,1))-1.0/(xm_global_i(i,2)))
-       xm_global_i(i,-1)=1.0/(2.0/(xm_global_i(i,0))-1.0/(xm_global_i(i,1)))
-       xm_global_i(i,GJMAX+1)=1.0/(2.0/(xm_global_i(i,GJMAX))-1.0/(xm_global_i(i,GJMAX-1)))
-       xm_global_i(i,GJMAX+2)=1.0/(2.0/(xm_global_i(i,GJMAX+1))-1.0/(xm_global_i(i,GJMAX)))
-    enddo
-    do j=-1,GJMAX+2
-       xm_global_j(0,j)=1.0/(2.0/(xm_global_j(1,j))-1.0/(xm_global_j(2,j)))
-       xm_global_j(-1,j)=1.0/(2.0/(xm_global_j(0,j))-1.0/(xm_global_j(1,j)))
-       xm_global_j(GIMAX+1,j)=1.0/(2.0/(xm_global_j(GIMAX,j))-1.0/(xm_global_j(GIMAX-1,j)))
-       xm_global_j(GIMAX+2,j)=1.0/(2.0/(xm_global_j(GIMAX+1,j))-1.0/(xm_global_j(GIMAX,j)))
-       xm_global_i(0,j)=1.0/(2.0/(xm_global_i(1,j))-1.0/(xm_global_i(2,j)))
-       xm_global_i(-1,j)=1.0/(2.0/(xm_global_i(0,j))-1.0/(xm_global_i(1,j)))
-       xm_global_i(GIMAX+1,j)=1.0/(2.0/(xm_global_i(GIMAX,j))-1.0/(xm_global_i(GIMAX-1,j)))
-       xm_global_i(GIMAX+2,j)=1.0/(1.0/(2*xm_global_i(GIMAX+1,j))-1.0/(xm_global_i(GIMAX,j)))
-    enddo
-
-    j=1
-    i=1
-    if(abs(1.5*glat_fdom(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)-0.5*glat_fdom(gi0+i+IRUNBEG-2,gj0+j+1+JRUNBEG-2))>89.5)then
-       write(*,*)'south pole' !xm is infinity
-       xm_global_i(:,0)=1.0E19
-       xm_global_i(:,-1)=1.0E19
-    endif
-
-
-
-    !keep only part of xm relevant to the local domain
-    !note that xm has dimensions larger than local domain
-
-    call CheckStop( MAXLIMAX+1 > limax+2, "Error in Met_ml X size definition" )
-    call CheckStop( MAXLJMAX+1 > ljmax+2, "Error in Met_ml J size definition" )
-
-    do j=0,MAXLJMAX+1
-       do i=0,MAXLIMAX+1
-          iglobal=gi0+i-1
-          jglobal=gj0+j-1
-          xm_i(i,j)=xm_global_i(iglobal,jglobal)
-          xm_j(i,j)=xm_global_j(iglobal,jglobal)
-          !Note that xm is inverse length: interpolate 1/xm rather than xm
-          xm2(i,j) = 4.0*( (xm_global_i(iglobal,jglobal-1)*&
-               xm_global_i(iglobal,jglobal))/ &
-               (xm_global_i(iglobal,jglobal-1)+&
-               xm_global_i(iglobal,jglobal)    )   )   *(&
-               xm_global_j(iglobal-1,jglobal)*&
-               xm_global_j(iglobal,jglobal)     )/(&
-               xm_global_j(iglobal-1,jglobal)+&
-               xm_global_j(iglobal,jglobal)     )
-       enddo
-    enddo
-
-    !pw
-    !If some cells are to narrow (Poles in lat lon coordinates),
-    !this will give too small time steps in the Advection,
-    !because of the constraint that the Courant number should be <1.
-    !
-    !If Poles are found and lon-lat coordinates are used the Advection scheme
-    !will be modified to be able to cope with the singularity
-
-    !Look for poles
-    !If the northernmost or southernmost lines are poles, they are not
-    !considered as outer boundaries and will not be treated 
-    !by "BoundaryConditions_ml".
-    !Note that "Poles" is defined in subdomains
-
-    North_pole=1
-    do i=1,limax
-       if(nint(glat(i,ljmax))<=88)then
-          North_pole=0  !not north pole
-       endif
-    enddo
-
-    South_pole=1
-    do i=1,limax
-       if(nint(glat(i,1))>=-88)then
-          South_pole=0  !not south pole
-       endif
-    enddo
-
-    Poles=0
-    if(North_pole==1)then
-       Poles(1)=1
-       write(*,*)me,'Found North Pole'
-    endif
-
-    if(South_pole==1)then
-       Poles(2)=1
-       write(*,*)me,'Found South Pole'
-    endif
-
-     CALL MPI_ALLREDUCE(Poles,Ibuff,2,MPI_INTEGER,MPI_MAX,MPI_COMM_WORLD,INFO)
-     Pole_included=max(Ibuff(1),Ibuff(2))
-     
-     if(ME==0.and.Pole_included==1)write(*,*)'The grid includes a pole'
-     
-    call_msg = "Unset"
-  end subroutine Getgridparams
-
 
 
 

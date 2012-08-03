@@ -65,18 +65,18 @@ module Pollen_ml
 
   public ::   Pollen_flux  ! subroutine
 
-  real, public, dimension(NPOL,MAXLIMAX,MAXLJMAX) :: Pollen_prod
-  real, public, dimension(MAXLIMAX,MAXLJMAX)::AreaPOLL,& ! emission of pollen 
+  real, public,save , allocatable,dimension(:,:,:) :: Pollen_prod
+  real, public,save , allocatable, dimension(:,:)::AreaPOLL,& ! emission of pollen 
                                               heatsum,&  ! heatsum, needs to be remembered for forecast
                                               Pollen_rest! what is available pollen pr m2, fr forecast
-  real, dimension(MAXLIMAX,MAXLJMAX)   :: h, &     !Heatsum 
+  real, save, allocatable, dimension(:,:)   :: h, &     !Heatsum 
                                           R, &     !Summed pollen release
                                           h_day, & !Temperature summed over a day
                                           birch_frac, & ! Fraction of birch, read in
                                           h_c, &   ! Heatsum thresholds, read in
                                           corr     ! correction field for p. emission, read in
   real                                 :: scale,lim,n2m,lat_factor
-  integer, dimension(MAXLIMAX,MAXLJMAX):: day
+  integer, save,allocatable, dimension(:,:):: day
   integer                              :: step,OpenStatus,IOSTAT,it,jt
   real,private, parameter  :: &
       T_cutoff = 273.2+3.5  & ! Cut-off temperature
@@ -113,6 +113,14 @@ module Pollen_ml
   
 ! Reas in the different fields
    if ( my_first_call_pollen ) then 
+
+
+      allocate(Pollen_prod(NPOL,MAXLIMAX,MAXLJMAX))
+      allocate(AreaPOLL(MAXLIMAX,MAXLJMAX),heatsum(MAXLIMAX,MAXLJMAX),Pollen_rest(MAXLIMAX,MAXLJMAX))
+      allocate(h(MAXLIMAX,MAXLJMAX),R(MAXLIMAX,MAXLJMAX),h_day(MAXLIMAX,MAXLJMAX))
+      allocate(birch_frac(MAXLIMAX,MAXLJMAX),h_c(MAXLIMAX,MAXLJMAX),corr(MAXLIMAX,MAXLJMAX))
+      allocate(day(MAXLIMAX,MAXLJMAX))
+
        call ReadField_CDF('pollen_data.nc','birch',birch_frac,2, &
            interpol = 'conservative',needed=.true.,debug_flag=.true.,UnDef=0.0)
        call ReadField_CDF('pollen_data.nc','h_c',h_c,2, &

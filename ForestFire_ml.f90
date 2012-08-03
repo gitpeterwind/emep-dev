@@ -75,7 +75,7 @@ implicit none
   public :: Fire_rcemis
   private :: Export_FireNc
 
-  logical, public, dimension(MAXLIMAX,MAXLJMAX), save ::  burning
+  logical, public, allocatable, dimension(:,:), save ::  burning
   real, private, allocatable, dimension(:,:,:), save :: BiomassBurningEmis
 
   integer, private, save ::  ieCO  ! index for CO
@@ -279,6 +279,9 @@ contains
          allocate(BiomassBurningEmis(NBBSPECS,MAXLIMAX,MAXLJMAX),&
               stat=alloc_err)
          call CheckStop( alloc_err, "BB alloc problem")
+         allocate(burning(MAXLIMAX,MAXLJMAX),&
+              stat=alloc_err)
+         call CheckStop( alloc_err, "Burn alloc problem")
 
          my_first_call = .false.
 

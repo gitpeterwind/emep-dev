@@ -111,14 +111,14 @@ character(len=*), parameter, public :: &
 
 logical, parameter, public :: IS_GLOBAL = .false.
 
-integer, public, parameter ::  &
+integer, public :: IIFULLDOM,JJFULLDOM!  & SET AUTOMATICALLY BY THE CODE
 ! IIFULLDOM = 182, JJFULLDOM = 197 ! x,y-Dimensions of full HIRHAM domain
 ! IIFULLDOM = 170, JJFULLDOM = 133 ! x,y-Dimensions of full EMEP domain
- IIFULLDOM = 132, JJFULLDOM = 159 ! x,y-Dimensions of full EECA domain
-! IIFULLDOM = 840, JJFULLDOM = 832 ! x,y-Dimensions of full TNO07 domain
-! IIFULLDOM = 420, JJFULLDOM = 416 ! x,y-Dimensions of full TNO14 domain
-! IIFULLDOM = 210, JJFULLDOM = 208 ! x,y-Dimensions of full TNO28 domain
-!  IIFULLDOM = 105, JJFULLDOM = 104 ! x,y-Dimensions of full TNO56 domain
+! IIFULLDOM = 132, JJFULLDOM = 159 ! x,y-Dimensions of full EECA domain
+! IIFULLDOM = 840, JJFULLDOM = 832 ! x,y-Dimensions of full TNO07 domain     
+! IIFULLDOM = 420, JJFULLDOM = 416 ! x,y-Dimensions of full TNO14 domain   
+! IIFULLDOM = 210, JJFULLDOM = 208 ! x,y-Dimensions of full TNO28 domain 
+! IIFULLDOM = 105, JJFULLDOM = 104 ! x,y-Dimensions of full TNO56 domain
 ! IIFULLDOM = 360, JJFULLDOM = 180 ! .... full GLOBAL domain
 ! IIFULLDOM = 201, JJFULLDOM = 161 ! .... full GEMS 0.25 domain
 ! IIFULLDOM = 301, JJFULLDOM = 221 ! .... full GEMS 0.25 extended domain
@@ -128,12 +128,13 @@ integer, public, parameter ::  &
 integer, public, parameter :: &
 ! OFFSET_i=  0, OFFSET_j=  0    ! EMEP or default
  OFFSET_i=-35, OFFSET_j=-11    ! EECCA
-! OFFSET_i=  0, OFFSET_j=  0    ! EMEP or default
-integer, public, parameter, dimension(4) ::  &
+! OFFSET_i=  0, OFFSET_j=  0    ! EMEP or default 
+integer, public, save, dimension(4) ::   &
 !                 x0   x1  y0   y1
+ RUNDOMAIN = (/  -999,-999 ,  -999, -999 /)     ! Set values later
 ! RUNDOMAIN = (/  1, 182,  1, 197 /)     ! HIRHAM
 ! RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA = new EMEP domain
- RUNDOMAIN = (/  1, 100,  1, 100 /)     ! Orig EMEP domain in EECCA
+! RUNDOMAIN = (/  1, 100,  1, 100 /)     ! Orig EMEP domain in EECCA
 ! RUNDOMAIN = (/  40,210, 12, 184 /)     !  SR TNO28 area
 ! RUNDOMAIN = (/  1, 210,  1, 208 /)     ! TNO28
 ! RUNDOMAIN = (/  240, 720, 48, 736 /)    ! TNO07 reduced (15W-45E;30N-73N)
@@ -169,10 +170,10 @@ integer, public, parameter, dimension(4) ::  &
 ! RUNDOMAIN = (/ 80+OFFSET_i, 106+OFFSET_i, 13+OFFSET_j,  35+OFFSET_j /) ! Southern domain
 ! RUNDOMAIN = (/ 75+OFFSET_i,110+OFFSET_i, 25+OFFSET_j,  60+OFFSET_j /) ! (gets Esk)
 
-integer, public, parameter ::  &
-  NPROCX      =   8       & ! Actual number of processors in longitude
-, NPROCY      =   8        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
-, NPROC       = NPROCX * NPROCY
+integer, public,save ::  &
+  NPROCX         & ! Actual number of processors in longitude
+, NPROCY           ! .. in latitude. NPROCY must be 2 for GLOBAL,
+integer, public,save ::  NPROC   
 
 !=============================================================================
 !+ 2) Define  debug flags.

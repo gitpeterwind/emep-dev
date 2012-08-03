@@ -2012,7 +2012,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
            write(*,*)'More than 2 countries:'
            do i=1,dims(1)*dims(2)
               if(NCC(i)>2)write(*,77)me,i,NCC(i),CC(i,1),fraction_in(i,1),CC(i,NCC(i)),fraction_in(i,NCC(i))
-              77 format(3I5,2(I5,F6.3))
+              77 format(3I7,2(I5,F6.3))
            enddo
         endif
         
@@ -2103,6 +2103,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
                                    Ncc_out(ijk)=Ncc_out(ijk)+1
                                    N_out=Ncc_out(ijk)
                                    CC_out(ijk, N_out)=CC(igjgk,Ng)
+                                   fractions_out(ijk,N_out)=0.0
 731                                continue
                                    !update fractions
                                    total=Rvar(ijk)+Rvalues(igjgk)*fraction_in(igjgk,Ng)
@@ -2671,12 +2672,13 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
     CALL MPI_FINALIZE(INFO)
      stop
   else
-      if(trim(varname)=='CF')then
+      if(trim(varname)=='nonHighwayRoadDustPM10_Jun-Feb')then
 !      if(.true.)then
     n=2
      k2=1
+
      call Out_netCDF(IOU_INST,def1,n,k2, &
-          Rvar,1.0,CDFtype=Real4,fileName_given='ReadField2D.nc',overwrite=.false.)
+          rvar,1.0,CDFtype=Real4,fileName_given='ReadField2D.nc',overwrite=.false.)
     CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
 !    CALL MPI_FINALIZE(INFO)
 !     stop

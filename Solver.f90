@@ -104,8 +104,8 @@ contains
     integer, intent(in) ::  i,j       ! Coordinates (needed for Dchem)
     logical, intent(in) :: debug_flag
 
-    real, dimension(NSPEC_TOT,KCHEMTOP:KMAX_MID,MAXLIMAX,MAXLJMAX), save :: &
-                    Dchem=0.0  ! Concentration increments due to chemistry
+    real, dimension(:,:,:,:), save,allocatable :: &
+                    Dchem  ! Concentration increments due to chemistry
 
     logical, save ::  first_call = .true.
 
@@ -132,6 +132,8 @@ contains
 !======================================================
 
     if ( first_call ) then
+       allocate( Dchem(NSPEC_TOT,KCHEMTOP:KMAX_MID,MAXLIMAX,MAXLJMAX))
+       Dchem=0.0
        call makedt(dti,nchem,coeff1,coeff2,cc)
        if ( MasterProc ) then
            write(IO_LOG,"(a,i4)") 'Chem dts: nchemMAX: ', nchemMAX

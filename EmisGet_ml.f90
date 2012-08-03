@@ -537,7 +537,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 
      call CheckStop(nemis_kprofile < 1,"EmisGet: No EmisHeights set!!")
      call CheckStop( any( emis_kprofile(:,:) < 0 ), "EmisHeight read failure" )
-     print *, "CLOSING EMIS HEIGHTS"
+
      close(IO_EMIS)
   end subroutine EmisHeights
 !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>

@@ -32,7 +32,7 @@ module SoilWater_ml
  use Landuse_ml,        only : water_fraction
  use LocalVariables_ml, only: Grid
  use Met_ml,            only : extendarea
- use MetFields_ml,      only : SoilWater_deep, nwp_sea, SoilWaterSource &
+ use MetFields_ml,      only : SoilWater_deep, nwp_sea, SoilWaterSource,fSW &
                                ,foundSoilWater_deep  ! false if no SW-deep
  use ModelConstants_ml, only : USE_SOILWATER, DEBUG_SOILWATER
  use Par_ml,            only : limax, ljmax, MAXLIMAX, MAXLJMAX, me
@@ -65,8 +65,6 @@ module SoilWater_ml
                             ! DO NOT SET TO ZERO!
 !    real, dimension(366), public, save :: SWP = 0.0  ! daily soil water potential
                                               ! in  MPa
-   real,public, save, dimension(MAXLIMAX,MAXLJMAX) :: &
-    fSW = 1.0    ! fSW= f(relative extractable water) =  (sw-swmin)/(swFC-swmin)
 
 
 contains
