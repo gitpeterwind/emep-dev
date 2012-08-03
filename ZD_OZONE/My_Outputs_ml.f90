@@ -222,8 +222,7 @@ subroutine set_output_defs
 
  !integer, save :: ix1 = 36, ix2 = 167, iy1=12, iy2 =  122  ! EMEP
  ! integer, save :: ix1 = 65, ix2 = 167, iy1=12, iy2 =  122  ! restricted EMEP
- integer, save :: ix1=IRUNBEG, ix2=IRUNBEG+GIMAX-1,  &
-                  iy1=JRUNBEG, iy2=JRUNBEG+GJMAX-1   ! all
+ integer, save :: ix1, ix2, iy1, iy2
 
   ! WARNING: If the specification of the subdomain is different for
   !            different components (ix1=125 for ozone and ix1=98 for
@@ -250,6 +249,12 @@ subroutine set_output_defs
   ! ** REMEMBER : ADV species are mixing ratios !!
   ! ** REMEMBER : SHL species are in molecules/cm3, not mixing ratio !!
   ! ** REMEMBER : No spaces in name, except at end !!
+
+!default
+  ix1=IRUNBEG
+  ix2=IRUNBEG+GIMAX-1
+  iy1=JRUNBEG
+  iy2=JRUNBEG+GJMAX-1 
 
   if(MasterProc) print *, "TESTHH INSIDE set_output_defs"
 
