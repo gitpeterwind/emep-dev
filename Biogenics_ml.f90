@@ -111,7 +111,7 @@ module Biogenics_ml
   integer, public, save ::  last_bvoc_LC   !max index land-cover with BVOC (min 4)
                                                         
   ! Soil NOx
-   real,public, save, dimension(MAXLIMAX,MAXLJMAX) :: &
+   real,public, save, allocatable, dimension(:,:) :: &
       AnnualNdep, &  ! N-dep in mgN/m2/
       SoilNOx, SoilNH3
 
@@ -125,8 +125,8 @@ module Biogenics_ml
   ! Main criteria is not provided in gridded data-bases, often land-use
   ! dependent.
 
-  real, public, save, dimension(MAXLIMAX,MAXLJMAX,NEMIS_BioNat) :: &
-     EmisNat =0.0      !  will be transferred to d_2d emis sums
+  real, public, save, allocatable, dimension(:,:,:) :: &
+     EmisNat       !  will be transferred to d_2d emis sums
 
   ! Emission arrays: (was Setup_1dfields_ml)
   !DSA12 real, public, dimension(NEMIS_BioNat,KT:KG), save :: rcbio = 0.0
@@ -138,10 +138,10 @@ module Biogenics_ml
      bvocEF       !  Gridded std. emissions per PFT
 
   !standard emission factors per LC for daily LAI
-  real, private, save, dimension(MAXLIMAX,MAXLJMAX,size(BVOC_USED)) :: &
-     day_embvoc = 0.0   !  emissions scaled by daily LAI
+  real, private, save, allocatable, dimension(:,:,:) :: &
+     day_embvoc    !  emissions scaled by daily LAI
 
-  logical, private, dimension(MAXLIMAX,MAXLJMAX) :: EuroMask
+  logical, private, save, allocatable, dimension(:,:) :: EuroMask
 
   !/-- Canopy environmental correction factors-----------------------------
   !
@@ -168,6 +168,14 @@ module Biogenics_ml
 !   8113-8152, and Keenan, T. et al., ACP, 2009, 9, 4053-4076 
 
     integer :: alloc_err
+    
+    allocate(AnnualNdep(MAXLIMAX,MAXLJMAX),SoilNOx(MAXLIMAX,MAXLJMAX), SoilNH3(MAXLIMAX,MAXLJMAX))
+    allocate(EmisNat(MAXLIMAX,MAXLJMAX,NEMIS_BioNat))
+    EmisNat=0.0
+    allocate(day_embvoc(MAXLIMAX,MAXLJMAX,size(BVOC_USED)))
+    day_embvoc = 0.0
+    allocate(EuroMask(MAXLIMAX,MAXLJMAX))
+    EuroMask=.false.
 
       if ( size(BVOC_USED) == 0 ) then
         call PrintLog("No Biogenic Emissions ", MasterProc)
@@ -267,7 +275,7 @@ module Biogenics_ml
 
 !    Reads the processed BVOC emission potentials.
 
-    real    :: loc(MAXLIMAX,MAXLJMAX) = 0.0  ! Emissions read from file
+!    real    :: loc(MAXLIMAX,MAXLJMAX)  ! Emissions read from file
     integer :: iVeg, iEmis, ibvoc, i,j
     character(len=1000) :: varname
     character(len=2), dimension(4) :: VegName = (/ "CF", "DF", "NF", "BF" /)
@@ -279,38 +287,38 @@ module Biogenics_ml
        !    loc,1,interpol='zero_order',needed=.true.,debug_flag=.true.)
        !if( debug_proc ) write(*,*)  "EMEP_EuroBVOC i,j fake ", &
        !   loc(debug_li, debug_lj)
-
      do iVeg = 1, size(VegName)
        ibvoc = find_index( VegName(iveg), LandDefs(:)%code )
        HaveLocalEF(ibvoc) = .true.
        do iEmis = 1, size(BVOC_USED)
           varname = trim(BVOC_USED(iEmis)) // "_" // trim(VegName(iVeg))
+          
           call ReadField_CDF('EMEP_EuroBVOC.nc',varname,&
-             loc,1,interpol='zero_order',needed=.true.,debug_flag=.false.,UnDef=-999.0)
+             bvocEF(:,:,ibvoc,iEmis),1,interpol='zero_order',needed=.true.,debug_flag=.false.,UnDef=-999.0)
 
+ 
          if( debug_proc ) then
               write(*, "(2a,f12.3,3i2)") "EURO-BVOC:E ", &
-             trim(varname), loc(debug_li, debug_lj), iVeg, ibvoc, iEmis
+             trim(varname), bvocEF(debug_li, debug_lj,ibvoc,iEmis), iVeg, ibvoc, iEmis
               write(*, "(2a,2es12.3)") "EURO-BVOC:minmax ", &
-             trim(varname), minval(loc), maxval(loc)
-         end if
-
-         bvocEF(:,:,ibvoc,iEmis) = loc(:,:)
+             trim(varname), minval(bvocEF(:,:,ibvoc,iEmis)), maxval(bvocEF(:,:,ibvoc,iEmis))
+         end if     
 
        end do
 
+       
       ! Make a mask where we can use the local bvoc. Should be the same from
       ! all EFs, since only non-def areas set to -999, otherwise zero or +
       ! If any values exist, should exist for all entries, hence check.
-
+       iEmis=size(BVOC_USED)
        if( iVeg == 1 )  then
-          where(loc>-1.0)
+          where(bvocEF(:,:,ibvoc,iEmis)>-1.0)
             EuroMask = .true.
           end where
        else  ! Just check that following maps are consistent
-           do i=1,MAXLIMAX
-           do j=1,MAXLJMAX
-             if ( EuroMask(i,j) .and. loc(i,j)<0.0 ) then
+           do i=1,limax
+           do j=1,ljmax
+             if ( EuroMask(i,j) .and. bvocEF(i,j,ibvoc,iEmis)<0.0 ) then
                write(*,*) "MASK ERROR", me, i_fdom(i), j_fdom(j)
                call CheckStop("EuroMask BVOC ERROR")
              end if

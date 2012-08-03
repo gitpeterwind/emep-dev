@@ -46,7 +46,7 @@ module AirEmis_ml
    implicit none
    private
 
-   real, public, dimension(KCHEMTOP:KMAX_MID,MAXLIMAX,MAXLJMAX), save :: &
+   real, public, dimension(:,:,:), save,allocatable :: &
                   airn                 & ! aircraft  NOx emissions
                  ,airlig                 ! lightning NOx emissions
 
@@ -112,6 +112,11 @@ module AirEmis_ml
 
       secmonth = 1.
       flux(:,:,:) = 0.
+
+      
+      if(.not.allocated(airlig))then
+         allocate(airlig(KCHEMTOP:KMAX_MID,MAXLIMAX,MAXLJMAX))
+      endif
 
 ! --- Read Emission data received from DLR 
 
