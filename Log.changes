@@ -112,6 +112,28 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
+xxxxxxxx rv4_1 Peter  3/8/2012  xxxxxxxxxxxxxxxxxxxxxxx
+
+Dynamical allocation of the grid sizes: 
+IIFULLDOMAIN, JJFULLDOMAIN, RUNDOMAIN
+and the processors partitionning:
+NPROC, NPROCX, NPROCY
+
+All routines with arrays, MAXLIMAX,MAXLJMAX changed:
+Derived_ml.f90 DryDep_ml.f90 DustProd_ml.f90 EcoSystem_ml.f90 EmisGet_ml.f90 Emissions_ml.f90 ForestFire_ml.f90 GlobalBCs_ml.f90 GridValues_ml.f90 Landuse_ml.f90 MetFields_ml.f90 Met_ml.f90 ModelConstants_ml.f90 Nest_ml.f90 NetCDF_ml.f90 Par_ml.f90 PhyChem_ml.f90 Pollen_ml.f90 ReadField_ml.f90 Rsurface_ml.f90 Runchem_ml.f90 SeaSalt_ml.f90 Sites_ml.f90  SoilWater_ml.f90 Solver.f90 Timefactors_ml.f90 Unimod.f90 ZD_OZONE/My_Outputs_ml.f90 run.pl
+
+It is no more necessary to define the grid which is used. The grid is read from the metfile.
+Also the rundomain is by default set as _ fulldomain, but can still be set in ModelConstants_ml.
+In future will be read in from a namelist.
+
+The reading of the gridparameters is done in GridValues_ml (was in Met_ml before).
+
+A few small bugs corrected:
+1)In Runchem setup_rcemis was called before SeaSalt_flux, WindDust and  Pollen_flux, so that the emissions ( SS_prod,DU_prod, Pollen_prod) where the old ones, or not defined at the first step.
+2)In Pollen_ml the variables did not have the save attribute.
+3)In Rsurface there is a L%SAI > SMALLSAI, but SAI and LAI where not set/initialized for bulk.
+
+
 xxxxxxxx rv4beta.....     1/8/2012  xxxxxxxxxxxxxxxxxxxxxxx
 
    just removed case SOILNO from Derived_ml. Was some old
