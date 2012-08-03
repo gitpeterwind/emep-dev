@@ -113,8 +113,8 @@ my %BENCHMARK;
 if (%BENCHMARK) {
 # $BENCHMARK{'archive'} = 1;                        # save summary info in $DataDir
   $BENCHMARK{'debug'} = $BENCHMARK{'archive'};      # chech if all debug flags are .false.
-  $BENCHMARK{'ndx'}   = 8 if $BENCHMARK{'archive'}; # number of procesors in
-  $BENCHMARK{'ndy'}   = 8 if $BENCHMARK{'archive'}; # x and y directions
+#  $BENCHMARK{'ndx'}   = 8 if $BENCHMARK{'archive'}; # number of procesors in
+#  $BENCHMARK{'ndy'}   = 8 if $BENCHMARK{'archive'}; # x and y directions
 # Default setting, if not previously specified
   $BENCHMARK{'chem'}  = "EmChem09soa"
     unless $BENCHMARK{'chem'};  # chemical mecanism, e.g. OpenSource 2008
@@ -421,33 +421,7 @@ my $DRY_RUN      = 0 ;  # Test script without running model (but compiling)
 
 # just before execution - so code can be run interactivel.
 
-# NDX, NDY  now set in ModelConstants_ml - use perl to extract these
-# values and check against submission:
-
-print "$ProgDir/ModelConstants_ml.f90\n";
-open(IN,"<$ProgDir/ModelConstants_ml.f90");
-my ( $NDX, $NDY , $XDIM ); # Processors in x-, y-, direction, and x-dimension
-while(my $line = <IN>){
-    $line=~ s/!.*//; # Get rid of comment lines
-    $NDX = $1 if $line =~ /\W+ NPROCX \W+ (\d+) /x ;
-    $NDY = $1 if $line =~ /\W+ NPROCY \W+ (\d+) /x ;
-    $XDIM = $1 if $line =~ /\W+ IIFULLDOM \W+ (\d+) /x ;
-}
-close(IN);
-my $NPROC =  $NDX * $NDY ;
-print "ModelConstants has: NDX = $NDX NDY = $NDY  =>  NPROC = $NPROC\n";
-die "Global model requires NDY <= 2\n" if ( $GRID eq "GLOBAL" && $NDY > 2);
-die "Domain mis-match Model: $XDIM Grid $GRID" if (
-   ( $GRID eq "EMEP"     && $XDIM != 170 ) or
-   ( $GRID eq "EECCA"    && $XDIM != 132 ) or
-   ( $GRID eq "TNO7"     && $XDIM != 840 ) or
-   ( $GRID eq "TNO14"    && $XDIM != 420 ) or
-   ( $GRID eq "TNO28"    && $XDIM != 210 ) or
-   ( $GRID eq "TNO56"    && $XDIM != 105 ) or
-   ( $GRID eq "EECCA_25" && $XDIM != 264 ) or
-   ( $GRID eq "MACC02"   && $XDIM != 321 ) or
-   ( $GRID eq "HIRHAM"   && $XDIM != 182 ) or
-   ( $GRID eq "GLOBAL"   && $XDIM != 360 ) );
+# NDX, NDY  now set dynamically by the model
 
 if (%BENCHMARK and $BENCHMARK{'debug'}){
   die "No debug flags for benchmarks!"
@@ -459,18 +433,11 @@ if ( $ENV{PBS_NODEFILE} ) {
    $_ =  `wc -l $ENV{PBS_NODEFILE}`;
    my $RUN_NPROC;
    ( $RUN_NPROC, undef ) = split;
-   print "Qsub has: lnodes $RUN_NPROC\n";
-   die "Error: Wrong number of lnodes!\n" unless $NPROC == $RUN_NPROC;
-   die "Domain mis-match Model: ${NDX}x${NDY} for Benchmark"
-   if(($BENCHMARK{'ndx'} and $BENCHMARK{'ndx'} != $NDX) or
-      ($BENCHMARK{'ndy'} and $BENCHMARK{'ndy'} != $NDY));
+   print "Qsub required: $RUN_NPROC processors\n";
+
 } else {
    print "skip nodefile check on interactive runs\n";
 }
-
-# P B S -lnodes=$NPROC
-#(Didn't work: my $NCPUS=`wc -l $ENV{PBS_NODEFILE} | awk '{print $1}'`;)
-
 
 
 my @month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,31);
@@ -528,19 +495,6 @@ foreach my $d (  $WORKDIR, $DATA_LOCAL, $DataDir,  $ProgDir) {
 die "Wrong ProgDir: $ProgDir \n" unless -d $ProgDir;
 
 
-# and check that we have the same from the bsub command, by
-# accessing the LSB_MCPU_HOSTS environment variable.
-# (For a 5 cpu job this looks like: LSB_MCPU_HOSTS=gridur.ntnu.no 5)
-
-#$nproc_bsub = (split/\s+/,$ENV{'LSB_MCPU_HOSTS'})[1];
-
-#if ( ! $INTERACTIVE && ! $COMPILE_ONLY  && $NPROC != $nproc_bsub ) {
-#    die " -- Requested wrong number of processors --
-#      bsub asked for $nproc_bsub whereas NPROC = $NDX x $NDY = $NPROC \n";
-#}
-
-
-
 
 #--- Calendar stuff
 @month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,31);
@@ -554,7 +508,7 @@ $month_days[2] += leap_year($year);
 # --- We check if the already-compiled version of $PROGRAM is the same
 #     as the one we are asking for. The old configuration should have
 #     been stored in Make.log.  Read in this and split terms into
-#     : model, emis, ndx, ndy and domain sizes
+#     : model, emis
 
 
 chdir "$ProgDir";
@@ -1094,7 +1048,6 @@ Meteo: $MetDir
 Version: $testv
 Chemical scheme: $Chem
 @packages
-Processors $NDX $NDY
 SR?  $SR
 CWF? $CWF
 BC? $cwfbc
