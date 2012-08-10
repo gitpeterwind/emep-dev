@@ -113,6 +113,15 @@ Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
 
+xxxxxxxx rv4rc2 Peter  10/8/2012  xxxxxxxxxxxxxxxxxxxxxxx
+
+Cubic equation solver from MARS_ml had only 7 digit precision.
+Affects results slightly.
+
+Note that there is still some instability somewhere, producing random 
+fluctuations (SIA), particularly for fine scales.
+
+
 xxxxxxxx rv4rc1 Peter  3/8/2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 Dynamical allocation of the grid sizes: 
