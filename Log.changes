@@ -112,6 +112,13 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
+xxxxxxxx rv4rc3 Peter, Dave  13/8/2012  xxxxxxxxxxxxxxxxxxxxxxx
+
+Instability in the solver for aqueous chemistry. Gave a lot of 
+noise in the SR differences.
+
+Aqueous_n_WetDep_ml.f90
+
 
 xxxxxxxx rv4rc2 Peter  10/8/2012  xxxxxxxxxxxxxxxxxxxxxxx
 

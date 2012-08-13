@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************!
 !*
-!*  Copyright (C) 2007-2012 met.no
+!*  Copyright (C) 2007-2011 met.no
 !*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -34,7 +34,6 @@ module Aqueous_ml
 ! and Jakobsen (1998) and Eliassen and Saltbones (1983).
 ! Simple scavenging coefficients are used. A distinction is made
 ! between in-cloud and sub-cloud scavenging.
-! Variable pH introduced 2011 (hf)
 !
 ! Usage:
 !
@@ -580,9 +579,10 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
   real, parameter :: CO2conc_ppm = 392 !mix ratio for CO2 in ppm
   real :: CO2conc !Co2 in mol/l
  !real :: invhplus04, K1_fac,K1K2_fac, Heff,Heff_NH3
-  real :: invhplus04, K1K2_fac, Heff,Heff_NH3
+  real :: invhplus04, K1K2_fac, Heff,Heff_NH3,pH_old
   integer, parameter :: pH_ITER = 5 ! num iter to calc pH. Could probably be reduced
   real, dimension (KUPPER:KMAX_MID) :: VfRT ! Vf * Rgas * Temp
+  real, parameter :: Hplus43=5.011872336272724E-005! 10.0**-4.3
 
   integer k, iter
 
@@ -592,12 +592,13 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
   aqrck(:,:)=0.
 
 ! for PH
-  so4_aq(:)=0.0
-  no3_aq(:)=0.0
-  nh4_aq(:)=0.0
+!dspw   so4_aq(:)=0.0
+!dspw   no3_aq(:)=0.0
+!dspw   nh4_aq(:)=0.0
 
-  phfactor(:)=0.0
-  pH(:)=0.0
+!dspw   phfactor(:)=0.0
+  pH(:)=4.3!dspw 13082012
+  h_plus(:)=Hplus43!dspw 13082012
 
 ! Gas phase ox. of SO2 is "default"
 ! in cloudy air, only the part remaining in gas phase (not
@@ -615,10 +616,10 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
                                                 !so4_aq= mol/l
     no3_aq(k)= ( (xn_2d(NO3_F,k)+xn_2d(HNO3,k))*1000./AVOG)/cloudwater(k)
     nh4_aq(k)=  ( xn_2d(NH4_F,k) *1000./AVOG )/cloudwater(k)!only nh4+ now
-    hso3_aq(k)= 0.0 !initial, before dissolved
-    so32_aq(k)= 0.0
-    nh3_aq(k) = 0.0 !nh3 dissolved and ionized to nh4+(aq)
-    hco3_aq(k) = 0.0 !co2 dissolved and ionized to hco3
+ !   hso3_aq(k)= 0.0 !initial, before dissolved
+ !   so32_aq(k)= 0.0
+ !   nh3_aq(k) = 0.0 !nh3 dissolved and ionized to nh4+(aq)
+ !   hco3_aq(k) = 0.0 !co2 dissolved and ionized to hco3
 
     VfRT(k) = cloudwater(k) * RGAS_ATML * temp(k)
 
@@ -632,11 +633,41 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
     frac_aq(IH_SO2,k) = 1.0 / ( 1.0+1.0/( H(IH_SO2,itemp(k))*VfRT(k) ) )
     so2_aq(k)= frac_aq(IH_SO2,k)*(xn_2d(SO2,k)*1000./AVOG)/cloudwater(k)
 
+ 
     do iter = 1,pH_ITER !iteratively calc pH
+! dspw moved pH calculation after X_aq determination 
+      !nh4+, hco3, hso3 and so32 dissolve and ionize
+      Heff_NH3= H(IH_NH3,itemp(k))*Knh3(itemp(k))*h_plus(k)/Kw(itemp(k))
+      frac_aq(IH_NH3,k) = 1.0 / ( 1.0+1.0/( Heff_NH3*VfRT(k) ) )
+      nh3_aq(k)= frac_aq(IH_NH3,k)*(xn_2d(NH3,k)*1000./AVOG)/cloudwater(k)
+
+      hco3_aq(k)= co2_aq(k) * Kco2(itemp(k))/h_plus(k)
+      hso3_aq(k)= so2_aq(k) * K1(itemp(k))/h_plus(k)
+      so32_aq(k)= hso3_aq(k) * K2(itemp(k))/h_plus(k)
+ 
+      pH_old=pH(k)
       phfactor(k)=hco3_aq(k)+2.*so4_aq(k)+hso3_aq(k)+2.*so32_aq(k)+no3_aq(k)-nh4_aq(k)-nh3_aq(k)
       h_plus(k)=0.5*(phfactor(k) + sqrt(phfactor(k)*phfactor(k)+4.*1.e-14) )
       h_plus(k)=min(1.e-1,max(h_plus(k),1.e-7))! between 1 and 7
       pH(k)=-log(h_plus(k))/log(10.)
+
+   enddo
+
+    if(abs((pH_old-pH(k))/pH(k))>0.05)then
+! dspw bad convergence
+! dspw restart without iterations dspw
+   pH(k)=4.3
+   h_plus(k)=Hplus43
+
+    !dissolve CO2 and SO2 (pH independent)
+    !CO2conc=392 ppm
+    CO2conc=CO2conc_ppm * 1.0e-9 * pres(k)/(RGAS_J *temp(k)) !mol/l
+
+    frac_aq(IH_CO2,k) = 1.0 / ( 1.0+1.0/( H(IH_CO2,itemp(k))*VfRT(k) ) )
+    co2_aq(k)=frac_aq(IH_CO2,k)*CO2CONC /cloudwater(k)
+
+    frac_aq(IH_SO2,k) = 1.0 / ( 1.0+1.0/( H(IH_SO2,itemp(k))*VfRT(k) ) )
+    so2_aq(k)= frac_aq(IH_SO2,k)*(xn_2d(SO2,k)*1000./AVOG)/cloudwater(k)
 
       !nh4+, hco3, hso3 and so32 dissolve and ionize
       Heff_NH3= H(IH_NH3,itemp(k))*Knh3(itemp(k))*h_plus(k)/Kw(itemp(k))
@@ -646,7 +677,9 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
       hco3_aq(k)= co2_aq(k) * Kco2(itemp(k))/h_plus(k)
       hso3_aq(k)= so2_aq(k) * K1(itemp(k))/h_plus(k)
       so32_aq(k)= hso3_aq(k) * K2(itemp(k))/h_plus(k)
-    enddo
+      
+   endif
+
 
 !after pH determined, final numbers of frac_aq(IH_SO2)
 != effective fraction of S(IV):
@@ -745,6 +778,7 @@ subroutine WetDeposition(i,j,debug_flag)
 
 ! Put both in- and sub-cloud scavenging ratios in the array vw:
 
+!TMP xnloss = 0.0
     vw(kcloudtop:ksubcloud-1) = WetDep(icalc)%W_sca ! Scav. for incloud
     vw(ksubcloud:KMAX_MID  )  = WetDep(icalc)%W_sub ! Scav. for subcloud
 
@@ -793,11 +827,7 @@ subroutine WetDep_Budget(i,j,invgridarea, debug_flag)
   real    :: wdep
   type(group_umap), pointer :: gmap=>null()  ! group unit mapping
 
-  ! Mass Budget: Do not include values on outer frame
-  if(.not.(i<li0.or.i>li1.or.j<lj0.or.j>lj1)) &
-    totwdep(:) = totwdep(:) + wdeploss(:)
-
-  ! Deriv.Output: individual species (SO4, HNO3, etc.) as needed
+  ! Process individual species (SO4, HNO3, etc.) as needed
   do n = 1, nwspec
     f2d  = wetSpec(n)
     iadv = f_2d(f2d)%index
@@ -806,9 +836,13 @@ subroutine WetDep_Budget(i,j,invgridarea, debug_flag)
     if(DEBUG_MY_WETDEP.and.debug_flag) &
       call datewrite("WET-PPPSPEC: "//species_adv(iadv)%name,&
         iadv,(/wdeploss(iadv)/))
+
+    !Do not include values on outer frame
+    if(.not.(i<li0.or.i>li1.or.j<lj0.or.j>lj1)) &
+      totwdep(iadv) = totwdep(iadv) + wdeploss(iadv)
   enddo
 
-  ! Deriv.Output: groups of species (SOX, OXN, etc.) as needed
+  ! Process groups of species (SOX, OXN, etc.) as needed
   do n = 1, nwgrp
     f2d  =  wetGroup(n)
     gmap => wetGroupUnits(n)
