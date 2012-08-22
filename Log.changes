@@ -112,6 +112,22 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
+xxxxxxxx rv4rc4 Peter   22/8/2012  xxxxxxxxxxxxxxxxxxxxxxx
+
+Bug in BLPhysics_ml.f90/JericevicRiB_Hmix0. The indices for u and v where shifted by 4 (i.e. taking the wind from higher altitude)
+This will modify results.
+
+Experimental:
+Possibility to get emissions for any grid (over Europe), based on fine resolution TNO7 emissions.
+put CDF_emis=.true.
+The Emis_TNO7.nc file contains: 
+total emission for each gridcell, each component, each sector,
+the fraction of each gridcell assigned to each country code, 
+the corresponding country code and 
+the number of fractions defined for each gridcell
+
+modified Emissions_ml.f90 (NetCDF_ml.f90)
+
 xxxxxxxx rv4rc3 Peter, Dave  13/8/2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 Instability in the solver for aqueous chemistry. Gave a lot of 

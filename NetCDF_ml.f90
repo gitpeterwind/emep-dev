@@ -1820,6 +1820,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   Flight_Levels=.false.
 
 
+
      if ( debug .and. filename == "DegreeDayFac.nc" ) print *, 'ABCD2 got to here'
   !_______________________________________________________________________________
   !
@@ -1994,7 +1995,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
         
         call check(nf90_inq_varid(ncid = ncFileID, name = 'NCodes', varID = VarIDNCC),&
              errmsg="NCodes not found")
-        write(*,*)dims(1),dims(2),dims(3)
+
         call check(nf90_get_var(ncFileID, VarIDNCC,NCC ,start=startvec,count=dims),&
              errmsg="Nvalues")
 
@@ -2009,11 +2010,11 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
              errmsg="fractions")
         
         if( debug )then
-           write(*,*)'More than 2 countries:'
-           do i=1,dims(1)*dims(2)
-              if(NCC(i)>2)write(*,77)me,i,NCC(i),CC(i,1),fraction_in(i,1),CC(i,NCC(i)),fraction_in(i,NCC(i))
+!           write(*,*)'More than 2 countries:'
+!           do i=1,dims(1)*dims(2)
+!              if(NCC(i)>2)write(*,77)me,i,NCC(i),CC(i,1),fraction_in(i,1),CC(i,NCC(i)),fraction_in(i,NCC(i))
               77 format(3I7,2(I5,F6.3))
-           enddo
+!           enddo
         endif
         
         Ncc_out(1:MAXLIMAX*MAXLJMAX)=0
@@ -2023,7 +2024,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
      endif
 
 
-     if ( debug ) write(*,*) 'ReadCDF types ', &
+     if ( DEBUG_NETCDF_RF ) write(*,*) 'ReadCDF types ', &
            xtype, NF90_INT, NF90_SHORT, NF90_BYTE
 
      if(xtype==NF90_INT.or.xtype==NF90_SHORT.or.xtype==NF90_BYTE)then
@@ -2174,6 +2175,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
               enddo
            enddo
         enddo
+
         k2=1
         if(data3D)k2=kend-kstart+1
         do k=1,k2

@@ -233,7 +233,7 @@ contains
     real,    allocatable, dimension(:,:)      :: RoadDustEmis_climate_factor ! Climatic factor for scaling road dust emissions (in TNO model based on yearly average soil water)
     integer :: err1, err2, err3, err4, err5, err6, err7, err8, err9 ! Error messages
     integer :: fic ,insec,inland,iemis 
-    integer :: iic,ic           ! country codes 
+    integer :: iic,ic,n         ! country codes 
     integer :: isec             ! loop variables: emission sectors
     integer :: iem              ! loop variable over pollutants (1..NEMIS_FILE)
     character(len=40) :: fname  ! File name
@@ -241,8 +241,8 @@ contains
     real    :: tmpclimfactor
 
     ! Emission sums (after e_fact adjustments):
-    real, dimension(NEMIS_FILE)       :: emsum    ! Sum emis over all countries
-    real, dimension(NLAND,NEMIS_FILE) :: sumemis  ! Sum of emissions per country
+    real, dimension(NEMIS_FILE)       :: emsum ! Sum emis over all countries
+    real, dimension(NLAND,NEMIS_FILE) :: sumemis, sumemis_local ! Sum of emissions per country
 
     ! Road dust emission potential sums (just for testing the code, the actual emissions are weather dependent!)
     real, dimension(NROAD_FILES)       :: roaddustsum    ! Sum emission potential over all countries
@@ -250,8 +250,9 @@ contains
     real, dimension(NLAND,NROAD_FILES) :: sumroaddust_local    ! Sum of emission potentials per country in subdomain
     real :: fractions(MAXLIMAX,MAXLJMAX,NCMAX),SMI(MAXLIMAX,MAXLJMAX),SMI_roadfactor
     logical ::SMI_defined=.false.
+    real, allocatable ::emis_tot(:,:)
     character(len=40) :: varname 
-
+    logical ::CDF_emis=.false.!experimental 
 
     if (MasterProc) write(6,*) "Reading emissions for year",  year
 
@@ -259,13 +260,22 @@ contains
     !    emission indices (IQSO2=.., )
 
     allocate(nlandcode(MAXLIMAX,MAXLJMAX),landcode(MAXLIMAX,MAXLJMAX,NCMAX))
+    nlandcode=0
+    landcode=0
     allocate(flat_nlandcode(MAXLIMAX,MAXLJMAX),flat_landcode(MAXLIMAX,MAXLJMAX,FNCMAX))
+    flat_nlandcode=0
+    flat_landcode=0
     allocate(road_nlandcode(MAXLIMAX,MAXLJMAX),road_landcode(MAXLIMAX,MAXLJMAX,NCMAX))
+    road_nlandcode=0
+    road_landcode=0
     allocate(snapemis(NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS_FILE))
+    snapemis=0.0
     allocate(snapemis_flat(MAXLIMAX,MAXLJMAX,FNCMAX,NEMIS_FILE))
+    snapemis_flat=0.0
     allocate(roaddust_emis_pot(MAXLIMAX,MAXLJMAX,NCMAX,NROAD_FILES))
+    roaddust_emis_pot=0.0
     allocate(SumSnapEmis(MAXLIMAX,MAXLJMAX,NEMIS_FILE))
-
+    SumSnapEmis=0.0
 
     !=========================
     call Country_Init()    ! In Country_ml, => NLAND, country codes and 
@@ -378,33 +388,87 @@ contains
 
     do iem = 1, NEMIS_FILE
        ! now again test for me=0
-       if ( MasterProc ) then
-
-          ! read in global emissions for one pollutant
-          ! *****************
-          call EmisGet(iem,EMIS_FILE(iem),IRUNBEG,JRUNBEG,GIMAX,GJMAX, &
+       if(.not.CDF_emis)then
+          if ( MasterProc ) then
+             
+             ! read in global emissions for one pollutant
+             ! *****************
+             call EmisGet(iem,EMIS_FILE(iem),IRUNBEG,JRUNBEG,GIMAX,GJMAX, &
                globemis,globnland,globland,sumemis,&
                globemis_flat,flat_globnland,flat_globland)
-          ! *****************
+             ! *****************
+             
+             
+             emsum(iem) = sum( globemis(:,:,:,:) ) + &
+                  sum( globemis_flat(:,:,:) )    ! hf
+          endif  ! MasterProc
+
+          call CheckStop(ios, "ios error: EmisGet")
+          
+          ! Send data to processors 
+          ! as  e.g. snapemis (NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,iem)
+          ! send to nodes
+          
+          call global2local(globemis,snapemis(1,1,1,1,iem),MSG_READ1,   &
+               NSECTORS,GIMAX,GJMAX,NCMAX,1,1)
+          
+          call global2local(globemis_flat,snapemis_flat(1,1,1,iem),MSG_READ1,   &
+               1,GIMAX,GJMAX,FNCMAX,1,1)
+       else
+          !use grid independent netcdf emission file
+          !experimental so far. Needs a lot of reorganization
+          if(.not.allocated(emis_tot))then
+             allocate(emis_tot(MAXLIMAX,MAXLJMAX))          
+          endif
+77        format(A,I2.2)
+          sumemis_local(:,iem)=0.0
+          do   isec=1,NSECTORS
+             
+             if(iem==1)varname='SOx_sec'
+             if(iem==2)varname='NOx_sec'
+             if(iem==3)varname='CO_sec'
+             if(iem==4)varname='NMVOC_sec'
+             if(iem==5)varname='NH3_sec'
+             if(iem==6)varname='PM25_sec'
+             if(iem==7)varname='PMco_sec'
+             write(varname,77)trim(varname),isec
+             call ReadField_CDF('/global/work/mifapw/emep/Data/Emis_TNO7.nc',varname,emis_tot(1,1),&
+                  nstart=1,interpol='mass_conservative', &
+                  fractions_out=fractions,CC_out=landcode,Ncc_out=nlandcode,needed=.true.,debug_flag=.true.,Undef=0.0)
+
+             do j=1,ljmax
+                do i=1,limax                   
+                   if(nlandcode(i,j)>NCMAX)then
+                      write(*,*)"To many emitter countries in one gridcell: ", me,i,j,nlandcode(i,j)
+                      call StopAll("To many countries in one gridcell ")
+                   endif
+                   do n=1,nlandcode(i,j)
+                      snapemis(isec,i,j,n,iem)=snapemis(isec,i,j,n,iem)+fractions(i,j,n)*emis_tot(i,j)                      
+                      ic=1
+                      if(landcode(i,j,n)<=NLAND)ic=landcode(i,j,n)!most country_index are equal to country_code
+                      if(Country(ic)%index/=landcode(i,j,n))then
+                         !if not equal, find which index correspond to country_code
+                         do ic=1,NLAND
+                            if((Country(ic)%index==landcode(i,j,n)))exit
+                         enddo
+                         if(ic>NLAND)then
+                            write(*,*)"COUNTRY CODE NOT RECOGNIZED OR UNDEFINED: ", landcode(i,j,n)
+                            call StopAll("COUNTRY CODE NOT RECOGNIZED ")
+                         endif
+                      endif                      
+                      sumemis_local(ic,iem)= sumemis_local(ic,iem)+0.001*snapemis(isec,i,j,n,iem)!for diagnostics, mass balance
+                   enddo
+                enddo
+             enddo
 
 
-          emsum(iem) = sum( globemis(:,:,:,:) ) + &
-               sum( globemis_flat(:,:,:) )    ! hf
-       endif  ! MasterProc
+          enddo!sectors
+          CALL MPI_REDUCE(sumemis_local(1,iem),sumemis(1,iem),NLAND,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,INFO) 
+          emsum(iem)= sum(sumemis(:,iem))
+       endif
 
-       call CheckStop(ios, "ios error: EmisGet")
-
-       ! Send data to processors 
-       ! as  e.g. snapemis (NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,iem)
-       ! send to nodes
-
-       call global2local(globemis,snapemis(1,1,1,1,iem),MSG_READ1,   &
-            NSECTORS,GIMAX,GJMAX,NCMAX,1,1)
-
-       call global2local(globemis_flat,snapemis_flat(1,1,1,iem),MSG_READ1,   &
-            1,GIMAX,GJMAX,FNCMAX,1,1)
-
-    end do ! iem = 1, NEMIS_FILE-loop
+          
+       end do ! iem = 1, NEMIS_FILE-loop
 
     if(USE_ROADDUST) then
 
@@ -549,8 +613,8 @@ contains
              do i=1,LIMAX
                 do j=1,LJMAX
                    do iic=1,road_nlandcode(i,j)
-
-                      ic=road_landcode(i,j,iic)!most country_index are equal to country_code
+                      ic=1
+                      if(road_landcode(i,j,iic)<=NLAND)ic=road_landcode(i,j,iic)!most country_index are equal to country_code
                       if(Country(ic)%index/=road_landcode(i,j,iic))then
                          !if not equal, find which index correspond to country_code
                          do ic=1,NLAND
@@ -617,6 +681,7 @@ contains
     ! globland are ready for distribution
     ! print *, "calling glob2local_int for iem", iem, " me ", me
 
+    if(.not.CDF_emis)then
     call global2local_int(globnland,nlandcode,326, GIMAX,GJMAX,1,1,1)
     call global2local_int(globland, landcode ,326, GIMAX,GJMAX,NCMAX,1,1)
 
@@ -624,6 +689,10 @@ contains
          GIMAX,GJMAX,1,1,1)  !extra array
     call global2local_int(flat_globland,flat_landcode,326,&
          GIMAX,GJMAX,FNCMAX,1,1)
+    else
+       !emissions directly defined into 
+       !nlandcode,landcode and snapemis
+    endif
 
     ! Broadcast volcanoe info derived in EmisGet 
 
