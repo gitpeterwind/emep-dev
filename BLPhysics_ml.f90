@@ -171,7 +171,7 @@ end subroutine SeibertRiB_Hmix_3d
 
  !----------------------------------------------------------------------------
 subroutine SeibertRiB_Hmix (u,v, zm, theta, pzpbl)
-  real, dimension(KWINDTOP:KMAX_MID), intent(in) :: u,v ! winds
+  real, dimension(KMAX_MID), intent(in) :: u,v ! winds
   real, dimension(KMAX_MID), intent(in) :: zm ! mid-cell height
   real, dimension(KMAX_MID), intent(in) :: theta !pot. temp
   real, intent(out) :: pzpbl
@@ -200,7 +200,7 @@ end subroutine SeibertRiB_Hmix
  !----------------------------------------------------------------------------
 
 subroutine JericevicRiB_Hmix (u,v, zm, theta, zi)
-  real, dimension(KWINDTOP:KMAX_MID), intent(in) :: u,v ! winds
+  real, dimension(KMAX_MID), intent(in) :: u,v ! winds
   real, dimension(KMAX_MID), intent(in) :: zm ! mid-cell height
   real, dimension(KMAX_MID), intent(in) :: theta !pot. temp
   real, intent(out) :: zi
@@ -231,7 +231,7 @@ end subroutine JericevicRiB_Hmix
  !----------------------------------------------------------------------------
 subroutine JericevicRiB_Hmix0 (u,v, zm, theta, zi, theta0, coastal)
  !- as above, but allow test for surface SBL
-  real, dimension(KWINDTOP:KMAX_MID), intent(in) :: u,v ! winds
+  real, dimension(KMAX_MID), intent(in) :: u,v ! winds
   real, dimension(KMAX_MID), intent(in) :: zm ! mid-cell height
   real, dimension(KMAX_MID), intent(in) :: theta !pot. temp
   real, intent(out) :: zi
@@ -276,7 +276,7 @@ subroutine JericevicRiB_Hmix0 (u,v, zm, theta, zi, theta0, coastal)
 end subroutine JericevicRiB_Hmix0
 
 subroutine VogelezangHoltslag_Hmix (u,v, zm, theta, q, ustar, pzpbl)
-  real, dimension(KWINDTOP:KMAX_MID), intent(in) :: u,v ! winds
+  real, dimension(KMAX_MID), intent(in) :: u,v ! winds
   real, dimension(KMAX_MID), intent(in) :: zm ! mid-cell height
   real, dimension(KMAX_MID), intent(in) :: theta !pot. temp
   real, dimension(KMAX_MID), intent(in) :: q ! spec humid
