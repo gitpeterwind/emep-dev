@@ -112,6 +112,10 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
+xxxxxxxx ongoing        28--/2012  xxxxxxxxxxxxxxxxxxxxxxx
+
+ChemFunctions_ml - corrected comments. Refs to ACP paper
+
 xxxxxxxx rv4rc4 Peter   22/8/2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 Bug in BLPhysics_ml.f90/JericevicRiB_Hmix0. The indices for u and v where shifted by 4 (i.e. taking the wind from higher altitude)
