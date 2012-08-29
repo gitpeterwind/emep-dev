@@ -62,26 +62,25 @@ use My_ExternalBICs_ml,     only: set_extbic, icbc, &
        filename_read_3D,filename_read_BC,fileName_write,filename_eta
 !----------------------------------------------------------------------------!
 use CheckStop_ml,          only : CheckStop,StopAll
-use ChemChemicals_ml,       only: species
-use Chemfields_ml,          only: xn_adv, xn_shl    ! emep model concs.
-use ChemSpecs_shl_ml,       only: NSPEC_SHL
+use ChemChemicals_ml,       only: species_adv
+use Chemfields_ml,          only: xn_adv    ! emep model concs.
 use ChemSpecs_adv_ml,       only: NSPEC_ADV
-use ChemSpecs_tot_ml,       only: NSPEC_TOT
 use Functions_ml,           only: great_circle_distance
 use GridValues_ml,          only: A_mid,B_mid, glon,glat
 use Io_ml,                  only: open_file, IO_TMP
 use ModelConstants_ml,      only: Pref,PPB,PT,KMAX_MID, MasterProc, NPROC     &
-  , IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY,RUNDOMAIN  &
+  , IOU_INST,IOU_HOUR,IOU_YEAR,IOU_MON,IOU_DAY, RUNDOMAIN  &
   , MODE=>NEST_MODE, FORECAST, DEBUG_NEST, DEBUG_ICBC=>DEBUG_NEST_ICBC
+use MetFields_ml,           only: roa
 use netcdf
-use netcdf_ml,              only: GetCDF,Out_netCDF,Init_new_netCDF&
-                                  ,Int1,Int2,Int4,Real4,Real8,ReadTimeCDF
+use netcdf_ml,              only: GetCDF,Out_netCDF,Init_new_netCDF,&
+                                  Int1,Int2,Int4,Real4,Real8,ReadTimeCDF
 use OwnDataTypes_ml,        only: Deriv
-use Par_ml,                 only: MAXLIMAX, MAXLJMAX, GIMAX,GJMAX&
-  ,IRUNBEG,JRUNBEG &
-  , me, li0,li1,lj0,lj1,limax,ljmax, tgi0, tgj0, tlimax, tljmax
+use Par_ml,                 only: MAXLIMAX,MAXLJMAX,GIMAX,GJMAX,IRUNBEG,JRUNBEG, &
+                                  me, li0,li1,lj0,lj1,limax,ljmax
 use TimeDate_ml,            only: date
 use TimeDate_ExtraUtil_ml,  only: idate2nctime,nctime2idate,date2string
+use Units_ml,               only: Units_Scale
 implicit none
 
 INCLUDE 'mpif.h'
@@ -146,37 +145,10 @@ integer,save :: date_nextfile(4)!date corresponding to the next BC file to read
 integer,save :: NHOURS_Stride_BC   !number of hours between start of two consecutive records in BC files
 integer, public, parameter :: NHOURS_Stride_BC_default=6 !time between records if only one record per file (RCA for example)
 
-!Arrays to stiore species 
-!e.g. EXTERNAL_BC=(/adv_icbc(IXADV_NO   ,icbc('NO'    ,.true.,.false.)), &
-!                   adv_icbc(IXADV_NO2   ,icbc('NO2'    ,.true.,.false.)), &
-
-type(icbc), dimension(NSPEC_ADV), private :: &
-  adv_ic=icbc('',.false.,.false.), &  ! Initial 3D IC/CB, varname, wanted, found
-  adv_bc=icbc('',.false.,.false.)     ! Time dependent BC, varname, wanted, found
-
-!In My_ExternalBICs we have:
-! type, public :: icbc                 ! Inital (IC) & Boundary Conditions (BC)
-!    character(len=24) :: varname=""
-!    logical           :: wanted=.false.,found=.false.
-!  end type icbc
-! type, private :: adv_icbc       ! IC/BC Set, included intended ixadv
-!   integer           :: ixadv=-1
-!   type(icbc)        :: icbc
-! end type adv_icbc
-
-!e.g.
-!type(adv_icbc), dimension(7), private, parameter :: &  ! BC from HTAP
-!  HTAP_BC=(/adv_icbc(IXADV_SO2   ,icbc('vmr_so2'    ,.true.,.false.)), &
-!                 adv_icbc(IXADV_HNO3   ,icbc('vmr_hno3'    ,.true.,.false.)), &
-!                 adv_icbc(IXADV_NO     ,icbc('vmr_no'    ,.true.,.false.)), &
-!                 adv_icbc(IXADV_NO2    ,icbc('vmr_no2'    ,.true.,.false.)), &
-!                 adv_icbc(IXADV_O3     ,icbc('vmr_o3'    ,.true.,.false.)), &
-!                 adv_icbc(IXADV_PAN    ,icbc('vmr_pan'    ,.true.,.false.)), &
-!                 adv_icbc(IXADV_CO    ,icbc('vmr_co'    ,.true.,.false.))/)
-!RCA e.g.
-!               adv_icbc(IXADV_N2O5  ,icbc('N2O5'    ,.true.,.false.)), &
-!               adv_icbc(IXADV_NH4_F  ,icbc('NH42SO4'    ,.true.,.false.)), &!NH4NO3+ NH4HSO4 + 2 * (NH4)2SO4
-!
+type(icbc), private, target, dimension(NSPEC_ADV) :: &
+  adv_ic=icbc(-1,'none',.false.,.false.)    ! Initial 3D IC/CB, varname, wanted, found
+type(icbc), private, pointer, dimension(:) :: &
+  adv_bc=>null()                            ! Time dependent BC, varname, wanted, found
 
 
 contains
@@ -186,7 +158,7 @@ subroutine readxn(indate)
   type(date), intent(in) :: indate           ! Gives year..seconds
   integer,save  :: first_data=-1
 
-  integer :: n,i,j,k,KMAX_BC !nseconds(1),n1,II,JJ
+  integer :: n,i,j,k,KMAX_BC,bc !nseconds(1),n1,II,JJ
   integer :: ndate(4) !nstart,nfetch,nseconds_indate
   real(kind=8):: ndays_indate
 
@@ -210,9 +182,6 @@ subroutine readxn(indate)
   if(first_call)date_nextfile=ndate
 
   if(FORECAST)then ! FORECAST mode superseeds nest MODE
-!   filename_read_3D='EMEP_IN_IC.nc'          !IC file: dump/re-start
-!   filename_read_BC_template='EMEP_IN_BC_YYYYMMDD.nc'
-!   filename_read_BC=date2string(trim(filename_read_BC_template),date_nextfile)
     call set_extbic(date_nextfile)
 !filename_read_BC=date2string('EMEP_IN_BC_YYYYMMDD.nc',indate) !BC file: 01,...,24 UTC rec for 1 day
     if(first_call)then
@@ -251,14 +220,11 @@ subroutine readxn(indate)
 
 !never comes to this point if MODE=11 or 12
 
- if(MasterProc) write(*,*) 'Nest: kt', kt, first_data
+  if(MasterProc) write(*,*) 'Nest: kt', kt, first_data
 
 
   if(first_data==-1)then
 
-   !filename_read_BC=date2string(trim(filename_read_BC_template),date_nextfile)
-   !filename_read_3D=date2string(trim(filename_read_3D),date_nextfile) !used only once
-   !filename_read_BC file must be defined before reset_3D, because it is used by init_icbc
     call set_extbic(date_nextfile)
 
     if(.not.FORECAST) call reset_3D(ndays_indate)
@@ -266,19 +232,17 @@ subroutine readxn(indate)
           trim(filename_read_3D), ndays_indate
  
     call read_newdata_LATERAL(ndays_indate)
-    if(mydebug) write(*,"(a,5i4)")'Nest: iw, ie, js, jn, kt ',&
-           iw, ie, js, jn, kt
+    if(mydebug) write(*,"(a,5i4)")'Nest: iw, ie, js, jn, kt ',iw,ie,js,jn,kt
 
     !the first hour only these values are used, no real interpolation between two records
   endif
 
 
   if(ndays_indate-rtime_saved(2)>halfsecond.or.MODE==100)then
-    !look for a new data set
-   !filename_read_BC=date2string(trim(filename_read_BC_template),date_nextfile) !
+   !look for a new data set
     call set_extbic(date_nextfile)
 
-   if(MasterProc) write(*,*)'Nest: READING NEW BC DATA from ',&
+    if(MasterProc) write(*,*)'Nest: READING NEW BC DATA from ',&
           trim(filename_read_BC)
 
     call read_newdata_LATERAL(ndays_indate)
@@ -286,42 +250,36 @@ subroutine readxn(indate)
 
 !   make weights for time interpolation
   if(MODE==100)then
-     !don't interpolate for now
-     W1=0.0;  W2=1.0 ! use last read value
+    !don't interpolate for now
+    W1=0.0;  W2=1.0 ! use last read value
   else
-     W1=1.0;  W2=0.0 ! default
-     if(ndays_indate-rtime_saved(1)>halfsecond)then
-       !interpolate
-       W2=(ndays_indate-rtime_saved(1))/(rtime_saved(2)-rtime_saved(1))
-       W1=1.0-W2
-!   if(me==1)then
-!     call nctime2idate(ndate,ndays_indate,'YYYY-MM-DD hh:mm:ss')
-!     call nctime2idate(ndate,rtime_saved(1),'interpolating between YYYY-MM-DD hh:mm:ss')
-!     call nctime2idate(ndate,rtime_saved(2),'and                   YYYY-MM-DD hh:mm:ss')
-!     print *,'with weights : ',W1,W2
-!   endif
-     endif
+    W1=1.0;  W2=0.0 ! default
+    if(ndays_indate-rtime_saved(1)>halfsecond)then
+      !interpolate
+      W2=(ndays_indate-rtime_saved(1))/(rtime_saved(2)-rtime_saved(1))
+      W1=1.0-W2
+    endif
   endif
- if(DEBUG_NEST.and.MasterProc) then
-   write(*,*) 'Nesting BC 2D: time weights : ',W1,W2
-   write(*,*) 'Nesting BC 2D: time stamps : ',rtime_saved(1),rtime_saved(2)
- end if
+  if(DEBUG_NEST.and.MasterProc) then
+    write(*,*) 'Nesting BC 2D: time weights : ',W1,W2
+    write(*,*) 'Nesting BC 2D: time stamps : ',rtime_saved(1),rtime_saved(2)
+  endif
 
-  do n=1,NSPEC_ADV
-     if(adv_bc(n)%wanted.and.adv_bc(n)%found)then
-        if(DEBUG_ICBC.and.MasterProc) write(*,*) 'NestICBCnesting component ',&
-             trim(adv_bc(n)%varname)
-        forall (i=iw:iw, k=1:KMAX_BC, j=1:ljmax, i>=1) &
-             xn_adv(n,i,j,k)=W1*xn_adv_bndw(n,j,k,1)+W2*xn_adv_bndw(n,j,k,2)
-        forall (i=ie:ie, k=1:KMAX_BC, j=1:ljmax, i<=limax) &
-             xn_adv(n,i,j,k)=W1*xn_adv_bnde(n,j,k,1)+W2*xn_adv_bnde(n,j,k,2)
-        forall (j=js:js, k=1:KMAX_BC, i=1:limax, j>=1) &
-             xn_adv(n,i,j,k)=W1*xn_adv_bnds(n,i,k,1)+W2*xn_adv_bnds(n,i,k,2)
-        forall (j=jn:jn, k=1:KMAX_BC, i=1:limax, j<=ljmax) &
-             xn_adv(n,i,j,k)=W1*xn_adv_bndn(n,i,k,1)+W2*xn_adv_bndn(n,i,k,2)
-        forall (k=kt:kt, i=1:limax, j=1:ljmax, k>=1) &
-             xn_adv(n,i,j,k)=W1*xn_adv_bndt(n,i,j,1)+W2*xn_adv_bndt(n,i,j,2)
-     endif
+  do bc=1,size(adv_bc)
+    if(.not.(adv_bc(bc)%wanted.and.adv_bc(bc)%found))cycle
+    n=adv_bc(bc)%ixadv
+    if(DEBUG_ICBC.and.MasterProc) write(*,"(2(A,1X),I0,'-->',I0)") &
+      'NestICBC: Nesting component',trim(adv_bc(bc)%varname),bc,n
+    forall (i=iw:iw, k=1:KMAX_BC, j=1:ljmax, i>=1) &
+      xn_adv(n,i,j,k)=W1*xn_adv_bndw(n,j,k,1)+W2*xn_adv_bndw(n,j,k,2)
+    forall (i=ie:ie, k=1:KMAX_BC, j=1:ljmax, i<=limax) &
+      xn_adv(n,i,j,k)=W1*xn_adv_bnde(n,j,k,1)+W2*xn_adv_bnde(n,j,k,2)
+    forall (j=js:js, k=1:KMAX_BC, i=1:limax, j>=1) &
+      xn_adv(n,i,j,k)=W1*xn_adv_bnds(n,i,k,1)+W2*xn_adv_bnds(n,i,k,2)
+    forall (j=jn:jn, k=1:KMAX_BC, i=1:limax, j<=ljmax) &
+      xn_adv(n,i,j,k)=W1*xn_adv_bndn(n,i,k,1)+W2*xn_adv_bndn(n,i,k,2)
+    forall (k=kt:kt, i=1:limax, j=1:ljmax, k>=1) &
+      xn_adv(n,i,j,k)=W1*xn_adv_bndt(n,i,j,1)+W2*xn_adv_bndt(n,i,j,2)
   enddo
 
 if(EXTERNAL_BIC_NAME == "RCA")then
@@ -332,7 +290,7 @@ endif
   first_data=0
   first_call=.false.
   return
-end subroutine readxn
+endsubroutine readxn
 
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
 subroutine wrtxn(indate,WriteNow)
@@ -344,17 +302,17 @@ subroutine wrtxn(indate,WriteNow)
   integer :: n,iotyp,ndim,kmax
   real :: scale
   logical, save ::first_call=.true.
-  logical :: lsend, lrecv
+  logical :: fexist, lsend, lrecv
 
   if(MODE /= 1.and.MODE /= 3.and.MODE /= 10.and.MODE /= 12.and. .not.FORECAST)return
 
   if(FORECAST)then ! FORECAST mode superseeds nest MODE
     outdate(:)%seconds=0   ! output only at full hours
-    if(.not.any(indate%year   ==outdate%year  .and.   &
-                indate%month  ==outdate%month .and.   &
-                indate%day    ==outdate%day   .and.   &
-                indate%hour   ==outdate%hour  .and.   &
-                indate%seconds==outdate%seconds))return
+    if(.not.any((indate%year   ==outdate%year   .or.outdate%year   ==-1).and.&
+                (indate%month  ==outdate%month  .or.outdate%month  ==-1).and.&
+                (indate%day    ==outdate%day    .or.outdate%day    ==-1).and.&
+                (indate%hour   ==outdate%hour   .or.outdate%hour   ==-1).and.&
+                (indate%seconds==outdate%seconds.or.outdate%seconds==-1)))return
    if(MasterProc) write(*,*)&
       date2string(" Forecast nest/dump at YYYY-MM-DD hh:mm:ss",indate)
 
@@ -378,12 +336,6 @@ subroutine wrtxn(indate,WriteNow)
 
 
   iotyp=IOU_INST
-  if(first_call)then
-    if(MasterProc)then
-      write(*,*)'Nest:Writing BC on ',trim(fileName_write)
-    endif
-  endif
-
   ndim=3 !3-dimensional
   kmax=KMAX_MID
   scale=1.0
@@ -395,13 +347,14 @@ subroutine wrtxn(indate,WriteNow)
   def1%name=''          ! written
   def1%unit='mix_ratio' ! written
 
-  if(first_call)then
-     allocate(dat(MAXLIMAX,MAXLJMAX,KMAX_MID))
+  if(first_call) allocate(dat(MAXLIMAX,MAXLJMAX,KMAX_MID))
 
-     !do first one loop to define the fields, without writing them (for performance purposes)
+  inquire(file=fileName_write,exist=fexist)
+  !do first one loop to define the fields, without writing them (for performance purposes)
+  if(.not.fexist)then
+    call init_icbc(cdate=indate)
     do n= 1, NSPEC_ADV
-   !do n= 1, NSPEC_ADV-4  !ENEA
-      def1%name= species(NSPEC_SHL+n)%name       !written
+      def1%name= species_adv(n)%name       !written
       if(.not.adv_ic(n)%wanted)then
         if((DEBUG_NEST.or.DEBUG_ICBC).and.MasterProc)&
           write(*,"(A,':',/2(2X,A,1X,'''',A,'''',A,'.'))")&
@@ -411,88 +364,94 @@ subroutine wrtxn(indate,WriteNow)
         cycle
       endif
       dat=xn_adv(n,:,:,:)
-!      lsend=any(dat/=0.0)
-!      CALL MPI_ALLREDUCE(lsend,lrecv,1,MPI_LOGICAL,MPI_LOR,MPI_COMM_WORLD,INFO)
-!      adv_ic(n)%wanted=lrecv
-!      if(.not.adv_ic(n)%wanted)then
-!        if((DEBUG_NEST.or.DEBUG_ICBC).and.MasterProc)&
-!        write(*,"(A,':',/2(2X,A,1X,'''',A,'''',A,'.'))")"Nest(wrtxn) DEBUG_ICBC",&
-!            "Variable",trim(def1%name),"was found constant=0.0",&
-!            "Will not be written to IC file:",trim(filename_write),""
-!        cycle
-!      endif
+      if(FORECAST.and..false.)then
+        lsend=any(dat/=0.0)
+        CALL MPI_ALLREDUCE(lsend,lrecv,1,MPI_LOGICAL,MPI_LOR,MPI_COMM_WORLD,INFO)
+        adv_ic(n)%wanted=lrecv
+        if(.not.adv_ic(n)%wanted)then
+          if((DEBUG_NEST.or.DEBUG_ICBC).and.MasterProc)&
+          write(*,"(A,':',/2(2X,A,1X,'''',A,'''',A,'.'))")"Nest(wrtxn) DEBUG_ICBC",&
+              "Variable",trim(def1%name),"was found constant=0.0",&
+              "Will not be written to IC file:",trim(filename_write),""
+          cycle
+        endif
+      endif
       call Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype=Real4,&
             ist=istart,jst=jstart,ien=iend,jen=jend,&
-              fileName_given=fileName_write,create_var_only=.true.)
+            fileName_given=fileName_write,create_var_only=.true.)
     enddo
   endif
 
   do n= 1, NSPEC_ADV
- !do n= 1, NSPEC_ADV-4  !ENEA
     if(.not.adv_ic(n)%wanted)cycle
-    def1%name= species(NSPEC_SHL+n)%name       !written
+    def1%name= species_adv(n)%name       !written
     dat=xn_adv(n,:,:,:)
     call Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype=Real4,&
-        ist=istart,jst=jstart,ien=iend,jen=jend,&
+          ist=istart,jst=jstart,ien=iend,jen=jend,&
           fileName_given=fileName_write,create_var_only=.false.)
   enddo
 
-    first_call=.false.
+  first_call=.false.
   return
-end subroutine wrtxn
+endsubroutine wrtxn
 
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
-subroutine check(status)
-  use netcdf
-  integer, intent ( in) :: status
-
-  if(status /= nf90_noerr) then
-      print *, trim(nf90_strerror(status))
-        WRITE(*,*) 'MPI_ABORT: ', "errorin NetCDF_ml"
-        call  MPI_ABORT(MPI_COMM_WORLD,9,INFO)
-  end if
-end subroutine check
+subroutine check(status,msg)
+  integer, intent(in) :: status
+  character(len=*),intent(in),optional::msg
+  if(present(msg))write(*,*)msg
+  call CheckStop(status,nf90_noerr,"Error in Nest_ml. "//trim(nf90_strerror(status)))
+endsubroutine check
 
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
-subroutine init_icbc()
+subroutine init_icbc(idate,cdate,ndays,nsecs)
+  integer,   intent(in), optional :: idate(4)
+  type(date),intent(in), optional :: cdate
+  real(kind=8),intent(in),optional:: ndays
+  integer,     intent(in),optional:: nsecs
   logical, save :: first_call=.true.
-  integer :: n
+  integer :: n,dat(4)
 
   if(.not.first_call)return
   first_call=.false.
 
-  call set_extbic() ! sets mapping, EXTERNAL_BIC_SET, EXTERNAL_BC, TOP_BC
+! One of the date fromats needs to be provided
+  call CheckStop(count((/present(idate),present(cdate),present(ndays),&
+                         present(nsecs)/)),1,"init_icbc: wrong date option")
+  if(present(idate)) dat=idate 
+  if(present(cdate)) dat=(/cdate%year,cdate%month,cdate%day,cdate%hour/) 
+  if(present(ndays)) call nctime2idate(dat,ndays)
+  if(present(nsecs)) call nctime2idate(dat,nsecs)
+  call set_extbic(dat)  ! set mapping, EXTERNAL_BC, TOP_BC
 
-  if(all(adv_ic%varname==""))then
-    if(mydebug) write(*,*) "DEBUGNest: init_icbc empty adv_ic varnames"
-    adv_ic(:)%varname=species(NSPEC_SHL+1:NSPEC_SHL+NSPEC_ADV)%name
-    adv_ic(:)%wanted=.true.
-    adv_ic(:)%found=find_icbc(filename_read_3D,adv_ic%varname(:))
-    if( mydebug) then
-     do n = 1, size( adv_ic%varname )
-       if(adv_ic(n)%found) write(*,*) &
-          "init_icbc filled adv_ic "//trim(adv_ic(n)%varname)
-     end do
-    end if 
+  adv_ic(:)%ixadv=(/(n,n=1,NSPEC_ADV)/)
+  adv_ic(:)%varname=species_adv(:)%name
+  adv_ic(:)%wanted=.true.
+  adv_ic(:)%found=find_icbc(filename_read_3D,adv_ic%varname(:))
+  if(mydebug) then
+   do n = 1,size(adv_ic%varname)
+     if(adv_ic(n)%found) write(*,*) &
+        "init_icbc filled adv_ic "//trim(adv_ic(n)%varname)
+   enddo
   endif
-  if(all(adv_bc%varname==""))then
-    if(mydebug) write(*,*) "DEBUGNest: init_icbc empty adv_bc varnames",&
-         EXTERNAL_BIC_SET
-
-    if ( EXTERNAL_BIC_SET ) then
-
-      adv_bc(:)%wanted=.false.
-      adv_bc(EXTERNAL_BC%ixadv)=EXTERNAL_BC%icbc
-      adv_bc(:)%found=find_icbc(filename_read_bc,adv_bc%varname(:))
-    else
-      adv_bc(:)=adv_ic(:)
-    end if
+  if(EXTERNAL_BIC_SET) then
+    adv_bc=>EXTERNAL_BC
+    adv_bc(:)%found=find_icbc(filename_read_bc,adv_bc%varname(:))
+  else
+    adv_bc=>adv_ic
+  endif
+  if(mydebug) then
+   do n = 1,size(adv_bc%varname)
+     if(adv_bc(n)%found) write(*,*) &
+        "init_icbc filled adv_bc "//trim(adv_bc(n)%varname)
+   enddo
   endif
 
   if((DEBUG_NEST.or.DEBUG_ICBC).and.MasterProc)then
     write(*,"(a)") "Nest: DEBUG_ICBC Variables:"
-    write(*,"(2(1X,A,I3,'=',A24,2L2))") &
-      ('Nest: ADV_IC',n,adv_ic(n),'ADV_BC',n,adv_bc(n),n=1,NSPEC_ADV)
+    write(*,"((1X,A,I3,'->',I3,'=',A24,2L2))") &
+      ('Nest: ADV_IC',n,adv_ic(n),n=1,size(adv_ic)),&
+      ('Nest: ADV_BC',n,adv_bc(n),n=1,size(adv_bc))
   endif
   contains
   function find_icbc(filename_read,varname) result(found)
@@ -500,25 +459,26 @@ subroutine init_icbc()
     character(len=*), intent(in)               :: filename_read
     character(len=*), dimension(:), intent(in) :: varname
     logical, dimension(size(varname))          :: found
-    integer :: status,ncFileID,varID,n
+    integer :: ncFileID,varID,status,n
 
     found(:)=.false.
     if(MasterProc)then
-      status = nf90_open(path=trim(filename_read),mode=nf90_nowrite,ncid=ncFileID)
-      if(status /= nf90_noerr) then
+      status=nf90_open(path=trim(filename_read),mode=nf90_nowrite,ncid=ncFileID)
+      if(status/=nf90_noerr) then
         print *,'icbc: not found ',trim(filename_read)
       else
         print *,'icbc: reading ',trim(filename_read)
         do n=1,size(varname)
-          if(varname(n)/="") &
-            found(n)=(nf90_inq_varid(ncid=ncFileID,name=trim(varname(n)),varID=varID)==nf90_noerr)
-       enddo
-       call check(nf90_close(ncFileID))       
+          if(varname(n)=="") cycle
+          status=nf90_inq_varid(ncid=ncFileID,name=trim(varname(n)),varID=varID)
+          found(n)=(status==nf90_noerr)
+        enddo
+        call check(nf90_close(ncFileID))
       endif
     endif
     CALL MPI_BCAST(found,size(found),MPI_LOGICAL,0,MPI_COMM_WORLD,INFO)
-  end function find_icbc
-end subroutine init_icbc
+  endfunction find_icbc
+endsubroutine init_icbc
 
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
 subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
@@ -534,10 +494,10 @@ subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
   real(kind=8) :: ndays_indate
   integer :: ncFileID,idimID,jdimID, kdimID,timeDimID,varid,status !,timeVarID
   integer :: ndate(4) !nseconds_indate,
-  real :: dist(0:4),P_emep
+  real :: DD,dist(4),P_emep
   integer :: i,j,k,n,k_ext,II,JJ !nseconds(1),n,n1,k
-  real, allocatable, dimension(:,:) ::lon_ext,lat_ext,temp_lat(:)
-  real, allocatable, dimension(:) ::hyam,hybm,P_ext
+  real, allocatable, dimension(:,:) ::lon_ext,lat_ext
+  real, allocatable, dimension(:) ::hyam,hybm,P_ext,temp_ll
   character(len=80) ::projection,word
   logical :: reversed_k_BC,time_exists,fexist
 
@@ -545,145 +505,134 @@ subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
 
   !Read dimensions (global)
   if(MasterProc)then
-     status = nf90_open(path=trim(filename_read),mode=nf90_nowrite,ncid=ncFileID)
-     if(status /= nf90_noerr) then
-        print *,'init_Nest: not found',trim(filename_read)
-        return
-     else
-        print *,'init_Nest: reading ',trim(filename_read)
-     endif
+    status = nf90_open(path=trim(filename_read),mode=nf90_nowrite,ncid=ncFileID)
+    if(status /= nf90_noerr) then
+      print *,'init_Nest: not found',trim(filename_read)
+      return
+    else
+      print *,'init_Nest: reading ',trim(filename_read)
+    endif
 
-     projection=''
-     status = nf90_get_att(ncFileID,nf90_global,"projection",projection)
-     if(status == nf90_noerr) then
-        write(*,*)'Nest: projection: '
-     else
-        write(*,*)'Nest: projection not found for ',&
-               trim(filename_read)//', assuming lon lat'
-        projection='lon lat'
-     endif
-     !get dimensions id
-     if(trim(projection)=='Stereographic') then
-        call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
-        call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
-     elseif(trim(projection)==trim('lon lat').or. &
-          trim(projection)==trim('lon_lat')) then
-        projection='lon lat'
-        call check(nf90_inq_dimid(ncid = ncFileID, name = "lon", dimID = idimID))
-        call check(nf90_inq_dimid(ncid = ncFileID, name = "lat", dimID = jdimID))
-     else
-        !write(*,*)'GENERAL PROJECTION ',trim(projection)
-        call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
-        call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
-        !WRITE(*,*) 'MPI_ABORT: ', "PROJECTION NOT RECOGNIZED"
-        !call  MPI_ABORT(MPI_COMM_WORLD,9,INFO)
-     endif
+    projection='Unknown'
+    status = nf90_get_att(ncFileID,nf90_global,"projection",projection)
+    if(status == nf90_noerr) then
+      write(*,*)'Nest: projection: '//trim(projection)
+    else
+      projection='lon lat'
+      write(*,*)'Nest: projection not found for ',&
+              trim(filename_read)//', assuming '//trim(projection)
+    endif
+    !get dimensions id
+    if(trim(projection)=='Stereographic') then
+      call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
+      call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
+    elseif(trim(projection)==trim('lon lat').or. &
+        trim(projection)==trim('lon_lat')) then
+      projection='lon lat'
+      call check(nf90_inq_dimid(ncid = ncFileID, name = "lon", dimID = idimID))
+      call check(nf90_inq_dimid(ncid = ncFileID, name = "lat", dimID = jdimID))
+    else
+      !write(*,*)'GENERAL PROJECTION ',trim(projection)
+      call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
+      call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
+      !WRITE(*,*) 'MPI_ABORT: ', "PROJECTION NOT RECOGNIZED"
+      !call  MPI_ABORT(MPI_COMM_WORLD,9,INFO)
+    endif
 
-     status = nf90_inq_dimid(ncid = ncFileID, name = "k", dimID = kdimID)
-     if(status /= nf90_noerr) then
-        status = nf90_inq_dimid(ncid = ncFileID, name = "mlev", dimID = kdimID)
-        if(status /= nf90_noerr) then
-           status = nf90_inq_dimid(ncid = ncFileID, name = "lev", dimID = kdimID)
-           if(status /= nf90_noerr) then
-              !include more possible names here
-              write(*,*)'Nest: vertical levels name not found: ',trim(filename_read)
-              call StopAll('Include new name in init_nest')
-           endif
-        endif
-     endif
+    status = nf90_inq_dimid(ncid=ncFileID,dimID=kdimID,name="k")
+    if(status/=nf90_noerr) &
+      status=nf90_inq_dimid(ncid=ncFileID,dimID=kdimID,name="mlev")
+    if(status/=nf90_noerr) &
+      status=nf90_inq_dimid(ncid=ncFileID,dimID=kdimID,name="lev")
+    if(status/=nf90_noerr) then
+      !include more possible names here
+      write(*,*)'Nest: vertical levels name not found: ',trim(filename_read)
+      call StopAll('Include new name in init_nest')
+    endif
 
+    N_ext=0
+    status = nf90_inq_dimid(ncid=ncFileID,name="time",dimID=timeDimID)
+    time_exists=(status==nf90_noerr)
+    if(time_exists) then
+      call check(nf90_inquire_dimension(ncid=ncFileID,dimID=timedimID,len=N_ext))
+    else
+      write(*,*)'Nest: time dimension not found. Assuming only one record '
+      N_ext=1
+    endif
 
-     N_ext=0
-     status = nf90_inq_dimid(ncid = ncFileID, name = "time", dimID = timeDimID)
-     if(status == nf90_noerr) then
-        time_exists=.true.
-        call check(nf90_inquire_dimension(ncid=ncFileID,dimID=timedimID,len=N_ext))
-     else
-        write(*,*)'Nest: time dimension not found. Assuming only one record '
-        time_exists=.false.
-        N_ext=1
-     endif
+    call check(nf90_inquire_dimension(ncid=ncFileID,dimID=idimID,len=GIMAX_ext))
+    call check(nf90_inquire_dimension(ncid=ncFileID,dimID=jdimID,len=GJMAX_ext))
+    call check(nf90_inquire_dimension(ncid=ncFileID,dimID=kdimID,len=KMAX_ext))
 
-     call check(nf90_inquire_dimension(ncid=ncFileID,dimID=idimID,len=GIMAX_ext))
-     call check(nf90_inquire_dimension(ncid=ncFileID,dimID=jdimID,len=GJMAX_ext))
-     call check(nf90_inquire_dimension(ncid=ncFileID,dimID=kdimID,len=KMAX_ext))
-
-     write(*,*)'Nest: dimensions external grid',GIMAX_ext,GJMAX_ext,KMAX_ext,N_ext
-     if(allocated(ndays_ext))then
-        if(size(ndays_ext)<N_ext)then
-           if(Masterproc)write(*,*)'Nest: Sizes times ',N_ext
-           deallocate(ndays_ext)
-           allocate(ndays_ext(N_ext))
-        endif
-     else
-        allocate(ndays_ext(N_ext))
-     endif
+    write(*,*)'Nest: dimensions external grid',GIMAX_ext,GJMAX_ext,KMAX_ext,N_ext
+    if(.not.allocated(ndays_ext))then
+      allocate(ndays_ext(N_ext))
+    elseif(size(ndays_ext)<N_ext)then
+      if(Masterproc)write(*,*)'Nest: Sizes times ',N_ext
+      deallocate(ndays_ext)
+      allocate(ndays_ext(N_ext))
+    endif
 
   endif
   CALL MPI_BCAST(GIMAX_ext,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
   CALL MPI_BCAST(GJMAX_ext,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
   CALL MPI_BCAST(KMAX_ext,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-  !  CALL MPI_BCAST(N_ext,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO) !not needed by others than MasterProc
+ !CALL MPI_BCAST(N_ext,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO) !not needed by others than MasterProc
 
-  allocate(lon_ext(GIMAX_ext,GJMAX_ext))
-  allocate(lat_ext(GIMAX_ext,GJMAX_ext))
-  allocate(hyam(KMAX_ext+1))
-  allocate(hybm(KMAX_ext+1))
-  allocate(P_ext(KMAX_ext))
+  allocate(lon_ext(GIMAX_ext,GJMAX_ext),lat_ext(GIMAX_ext,GJMAX_ext))
+  allocate(hyam(KMAX_ext+1),hybm(KMAX_ext+1),P_ext(KMAX_ext))
 
   if(MasterProc)then
-     !Read lon lat of the external grid (global)
-     if(trim(projection)==trim('lon lat')) then
-        call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
-        call check(nf90_get_var(ncFileID, varID, lon_ext(:,1) ))
-        do i=1,GJMAX_ext
-           lon_ext(:,i)=lon_ext(:,1)
-        enddo
-        call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
-        allocate(temp_lat(GJMAX_ext))
-        call check(nf90_get_var(ncFileID, varID, temp_lat ))
-        do i=1,GIMAX_ext
-           lat_ext(i,:)=temp_lat(:)
-        enddo
-        deallocate(temp_lat)
-     else
-        call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
-        call check(nf90_get_var(ncFileID, varID, lon_ext ))
+    !Read lon lat of the external grid (global)
+    if(trim(projection)==trim('lon lat')) then
+      call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
+      allocate(temp_ll(GJMAX_ext))
+      call check(nf90_get_var(ncFileID, varID, temp_ll))
+      lon_ext=SPREAD(temp_ll,2,GJMAX_ext)
+      deallocate(temp_ll)
+      call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
+      allocate(temp_ll(GJMAX_ext))
+      call check(nf90_get_var(ncFileID, varID, temp_ll))
+      lon_ext=SPREAD(temp_ll,1,GIMAX_ext)
+      deallocate(temp_ll)
+    else
+      call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
+      call check(nf90_get_var(ncFileID, varID, lon_ext ))
 
-        call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
-        call check(nf90_get_var(ncFileID, varID, lat_ext ))
-     endif
+      call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
+      call check(nf90_get_var(ncFileID, varID, lat_ext ))
+    endif
      !    call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = varID))
 
      !do n=1,N_ext
      !    call check(nf90_get_var(ncFileID, varID, ndays,start=(/ 1 /),count=(/ 1 /) ))
-     if(time_exists)then
-        call ReadTimeCDF(filename_read,ndays_ext,N_ext)
-     else
-        !cannot read time on file. assumes it is correct
-        ndays_ext(1)=ndays_indate
-     endif
-     if(MODE==100)then
+    if(time_exists)then
+      call ReadTimeCDF(filename_read,ndays_ext,N_ext)
+    else
+      !cannot read time on file. assumes it is correct
+      ndays_ext(1)=ndays_indate
+    endif
+    if(MODE==100)then
         !asuming 12 monthes for BC, and 12 or 1 values for IC
 
-     elseif(ndays_ext(1)-ndays_indate>halfsecond)then
-        call nctime2idate(ndate,ndays_indate,&
-          'WARNING: Nest did not find BIC for date YYYY-MM-DD hh:mm:ss')
-        call nctime2idate(ndate,ndays_ext(1),&
-             'Nest first date found YYYY-MM-DD hh:mm:ss')
-     endif
+    elseif(ndays_ext(1)-ndays_indate>halfsecond)then
+      call nctime2idate(ndate,ndays_indate,&
+        'WARNING: Nest did not find BIC for date YYYY-MM-DD hh:mm:ss')
+      call nctime2idate(ndate,ndays_ext(1),&
+        'Nest first date found YYYY-MM-DD hh:mm:ss')
+    endif
 
-     if(N_ext>1)then
-        NHOURS_Stride_BC = nint((ndays_ext(2)-ndays_ext(1))*24)
-     else
-        !use manually set stride:
-        NHOURS_Stride_BC = NHOURS_Stride_BC_default
-     endif
-     write(*,*)'Nest: new BC record every ',NHOURS_Stride_BC,' hours'
+    if(N_ext>1)then
+      NHOURS_Stride_BC = nint((ndays_ext(2)-ndays_ext(1))*24)
+    else
+      !use manually set stride:
+      NHOURS_Stride_BC = NHOURS_Stride_BC_default
+    endif
+    write(*,*)'Nest: new BC record every ',NHOURS_Stride_BC,' hours'
 
-     !enddo
-     !Read pressure for vertical levels
-     write(*,*)'Nest: reading vertical levels'
+    !enddo
+    !Read pressure for vertical levels
+    write(*,*)'Nest: reading vertical levels'
 
     status = nf90_inq_varid(ncid = ncFileID, name = "hyam", varID = varID)
     if(status == nf90_noerr) then
@@ -746,58 +695,37 @@ subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
   !note that i,j are local
   !find the four closest points
   do j=1,ljmax
-     do i=1,limax
-        dist=1.0E40
-        do JJ=1,GJMAX_ext
-           do II=1,GIMAX_ext
-              !distance between (i,j) and (II,JJ)
-              dist(0)=great_circle_distance(lon_ext(II,JJ),lat_ext(II,JJ),glon(i,j),glat(i,j))
-              if(dist(0)<dist(1))then
-                 dist(4)=dist(3)
-                 dist(3)=dist(2)
-                 dist(2)=dist(1)
-                 dist(1)=dist(0)
-                 IIij(i,j,4)=IIij(i,j,3)
-                 JJij(i,j,4)=JJij(i,j,3)
-                 IIij(i,j,3)=IIij(i,j,2)
-                 JJij(i,j,3)=JJij(i,j,2)
-                 IIij(i,j,2)=IIij(i,j,1)
-                 JJij(i,j,2)=JJij(i,j,1)
-                 IIij(i,j,1)=II
-                 JJij(i,j,1)=JJ
-              elseif(dist(0)<dist(2))then
-                 dist(4)=dist(3)
-                 dist(3)=dist(2)
-                 dist(2)=dist(0)
-                 IIij(i,j,4)=IIij(i,j,3)
-                 JJij(i,j,4)=JJij(i,j,3)
-                 IIij(i,j,3)=IIij(i,j,2)
-                 JJij(i,j,3)=JJij(i,j,2)
-                 IIij(i,j,2)=II
-                 JJij(i,j,2)=JJ
-              elseif(dist(0)<dist(3))then
-                 dist(4)=dist(3)
-                 dist(3)=dist(0)
-                 IIij(i,j,4)=IIij(i,j,3)
-                 JJij(i,j,4)=JJij(i,j,3)
-                 IIij(i,j,3)=II
-                 JJij(i,j,3)=JJ
-              elseif(dist(0)<dist(4))then
-                 dist(4)=dist(0)
-                 IIij(i,j,4)=II
-                 JJij(i,j,4)=JJ
-              endif
-           enddo
+    do i=1,limax
+      dist(:)=1.0E40
+      do JJ=1,GJMAX_ext
+        do II=1,GIMAX_ext
+          !distance between (i,j) and (II,JJ)
+          DD=great_circle_distance(lon_ext(II,JJ),lat_ext(II,JJ),glon(i,j),glat(i,j))
+          if    (DD<dist(1))then
+            dist(    1:4)=EOSHIFT(dist(    1:4),-1,BOUNDARY=DD)
+            IIij(i,j,1:4)=EOSHIFT(IIij(i,j,1:4),-1,BOUNDARY=II)
+            JJij(i,j,1:4)=EOSHIFT(JJij(i,j,1:4),-1,BOUNDARY=JJ)
+          elseif(DD<dist(2))then
+            dist(    2:4)=EOSHIFT(dist(    2:4),-1,BOUNDARY=DD)
+            IIij(i,j,2:4)=EOSHIFT(IIij(i,j,2:4),-1,BOUNDARY=II)
+            JJij(i,j,2:4)=EOSHIFT(JJij(i,j,2:4),-1,BOUNDARY=JJ)
+          elseif(DD<dist(3))then
+            dist(    3:4)=EOSHIFT(dist(    3:4),-1,BOUNDARY=DD)
+            IIij(i,j,3:4)=EOSHIFT(IIij(i,j,3:4),-1,BOUNDARY=II)
+            JJij(i,j,3:4)=EOSHIFT(JJij(i,j,3:4),-1,BOUNDARY=JJ)
+          elseif(DD<dist(4))then
+            dist(    4:4)=EOSHIFT(dist(    4:4),-1,BOUNDARY=DD)
+            IIij(i,j,4:4)=EOSHIFT(IIij(i,j,4:4),-1,BOUNDARY=II)
+            JJij(i,j,4:4)=EOSHIFT(JJij(i,j,4:4),-1,BOUNDARY=JJ)
+          endif
         enddo
 
-        dist(0)=(dist(1)+dist(2)+dist(3)+dist(4))
-        Weight(i,j,1)=1.0-3.0*dist(1)/dist(0)
-        dist(0)=(dist(2)+dist(3)+dist(4))
-        Weight(i,j,2)=(1.0-Weight(i,j,1))*(1.0-2.0*dist(2)/dist(0))
-        dist(0)=(dist(3)+dist(4))
-        Weight(i,j,3)=(1.0-Weight(i,j,1)-Weight(i,j,2))*(1.0-dist(3)/dist(0))
-        Weight(i,j,4)=1.0-Weight(i,j,1)-Weight(i,j,2)-Weight(i,j,3)
-     enddo
+      enddo
+      Weight(i,j,1)=1.0-3.0*dist(1)/sum(dist(1:4))
+      Weight(i,j,2)=(1.0-Weight(i,j,1))*(1.0-2.0*dist(2)/sum(dist(2:4)))
+      Weight(i,j,3)=(1.0-Weight(i,j,1)-Weight(i,j,2))*(1.0-dist(3)/sum(dist(3:4)))
+      Weight(i,j,4)=1.0-Weight(i,j,1)-Weight(i,j,2)-Weight(i,j,3)
+    enddo
   enddo
 
   deallocate(lon_ext,lat_ext)
@@ -809,86 +737,80 @@ subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
   !We assume constant surface pressure, both for emep and external grid; should not be so
   !   important as long as they are both terrain following.
   do k_ext=1,KMAX_EXT
-     P_ext(k_ext)=hyam(k_ext)+hybm(k_ext)*Pref
-     if( mydebug ) write(*,fmt="(A,I3,F10.2)")'Nest: P_ext',k_ext,P_ext(k_ext)
+    P_ext(k_ext)=hyam(k_ext)+hybm(k_ext)*Pref
+    if(mydebug) write(*,fmt="(A,I3,F10.2)")'Nest: P_ext',k_ext,P_ext(k_ext)
   enddo
-  if(P_ext(1)>P_ext(2))then
-     ! assumes that k_ext=KMAX_EXT is top and k_ext=1 is surface
-     reversed_k_BC=.true.
-  else
-     ! assumes that k_ext=1 is top and k_ext=KMAX_EXT is surface
-     reversed_k_BC=.false.
-  endif
+  reversed_k_BC=(P_ext(1)>P_ext(2))
+  ! .true.  --> assumes k_ext=KMAX_EXT is top and k_ext=1 is surface
+  ! .false. --> assumes k_ext=1 is top and k_ext=KMAX_EXT is surface
 
   if(reversed_k_BC)then
-     do k=1,KMAX_MID
-        P_emep=A_mid(k)+B_mid(k)*Pref !Pa
-        if( mydebug ) write(*,fmt="(A,I3,F10.2)")'Nest: P_emep',k,P_emep
-        !largest available P smaller than P_emep (if possible)
-        k1_ext(k)=1 !start at surface, and go up until P_emep
-        do k_ext=1,KMAX_EXT
-           if(P_ext(k_ext)<P_emep)exit
-           k1_ext(k)=k_ext
-        enddo
-        !smallest available P larger than P_emep (if possible)
-        k2_ext(k)=KMAX_EXT !start at top, and go down until P_emep
-        if(k2_ext(k)==k1_ext(k))k2_ext(k)=KMAX_EXT-1 !avoid k2=k1
-        do k_ext=KMAX_EXT,1,-1
-           if(P_ext(k_ext)>P_emep)exit
-           if(k_ext/=k1_ext(k))k2_ext(k)=k_ext
-        enddo
-        weight_k1(k)=(P_emep-P_ext(k2_ext(k)))/(P_ext(k1_ext(k))-P_ext(k2_ext(k)))
-        weight_k2(k)=1.0-weight_k1(k)
-        if( mydebug )then
-           write(*,fmt="(A,I3,2(A,I2,A,F5.2))")'Nest: level',k,&
-               ' is the sum of level ',k1_ext(k),' weight ',weight_k1(k),&
-                         ' and level ',k2_ext(k),' weight ',weight_k2(k)
-        endif
-     enddo
+    do k=1,KMAX_MID
+      P_emep=A_mid(k)+B_mid(k)*Pref !Pa
+      if(mydebug) write(*,fmt="(A,I3,F10.2)")'Nest: P_emep',k,P_emep
+      !largest available P smaller than P_emep (if possible)
+      k1_ext(k)=1 !start at surface, and go up until P_emep
+      do k_ext=1,KMAX_EXT
+        if(P_ext(k_ext)<P_emep)exit
+        k1_ext(k)=k_ext
+      enddo
+      !smallest available P larger than P_emep (if possible)
+      k2_ext(k)=KMAX_EXT !start at top, and go down until P_emep
+      if(k2_ext(k)==k1_ext(k))k2_ext(k)=KMAX_EXT-1 !avoid k2=k1
+      do k_ext=KMAX_EXT,1,-1
+        if(P_ext(k_ext)>P_emep)exit
+        if(k_ext/=k1_ext(k))k2_ext(k)=k_ext
+      enddo
+      weight_k1(k)=(P_emep-P_ext(k2_ext(k)))/(P_ext(k1_ext(k))-P_ext(k2_ext(k)))
+      weight_k2(k)=1.0-weight_k1(k)
+      if(mydebug)&
+        write(*,fmt="(A,I3,2(A,I2,A,F5.2))")'Nest: level',k,&
+            ' is the sum of level ',k1_ext(k),' weight ',weight_k1(k),&
+                      ' and level ',k2_ext(k),' weight ',weight_k2(k)
+    enddo
 
   else
-     do k=1,KMAX_MID
-        P_emep=A_mid(k)+B_mid(k)*Pref !Pa
-        if( mydebug ) write(*,fmt="(A,I3,F10.2)")'Nest: P_emep',k,P_emep
-        !largest available P smaller than P_emep (if possible)
-        k1_ext(k)=KMAX_EXT !start at surface, and go up until P_emep
-        do k_ext=KMAX_EXT,1,-1
-           if(P_ext(k_ext)<P_emep)exit
-           k1_ext(k)=k_ext
-        enddo
-        !smallest available P larger than P_emep (if possible)
-        k2_ext(k)=1 !start at top, and go down until P_emep
-        if(k2_ext(k)==k1_ext(k))k2_ext(k)=2 !avoid k2=k1
-        do k_ext=1,KMAX_EXT
-           if(P_ext(k_ext)>P_emep)exit
-           if(k_ext/=k1_ext(k))k2_ext(k)=k_ext
-        enddo
-        weight_k1(k)=(P_emep-P_ext(k2_ext(k)))/(P_ext(k1_ext(k))-P_ext(k2_ext(k)))
-        weight_k2(k)=1.0-weight_k1(k)
-        if( mydebug )then
-           write(*,fmt="(A,I3,2(A,I2,A,F5.2))")'Nest: level',k,&
-             ' is the sum of level ', k1_ext(k),' weight ',weight_k1(k),&
-                       ' and level ', k2_ext(k),' weight ',weight_k2(k)
-        endif
-     enddo
+    do k=1,KMAX_MID
+      P_emep=A_mid(k)+B_mid(k)*Pref !Pa
+      if(mydebug) write(*,fmt="(A,I3,F10.2)")'Nest: P_emep',k,P_emep
+      !largest available P smaller than P_emep (if possible)
+      k1_ext(k)=KMAX_EXT !start at surface, and go up until P_emep
+      do k_ext=KMAX_EXT,1,-1
+        if(P_ext(k_ext)<P_emep)exit
+        k1_ext(k)=k_ext
+      enddo
+      !smallest available P larger than P_emep (if possible)
+      k2_ext(k)=1 !start at top, and go down until P_emep
+      if(k2_ext(k)==k1_ext(k))k2_ext(k)=2 !avoid k2=k1
+      do k_ext=1,KMAX_EXT
+        if(P_ext(k_ext)>P_emep)exit
+        if(k_ext/=k1_ext(k))k2_ext(k)=k_ext
+      enddo
+      weight_k1(k)=(P_emep-P_ext(k2_ext(k)))/(P_ext(k1_ext(k))-P_ext(k2_ext(k)))
+      weight_k2(k)=1.0-weight_k1(k)
+      if(mydebug) &
+        write(*,fmt="(A,I3,2(A,I2,A,F5.2))")'Nest: level',k,&
+          ' is the sum of level ', k1_ext(k),' weight ',weight_k1(k),&
+                    ' and level ', k2_ext(k),' weight ',weight_k2(k)
+    enddo
   endif
   deallocate(P_ext,hyam,hybm)
 
-  if( mydebug )write(*,*) &
-     'Nest: finished determination of interpolation parameters'
-end subroutine init_nest
+  if(mydebug) &
+    write(*,*)'Nest: finished determination of interpolation parameters'
+endsubroutine init_nest
 
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
 subroutine read_newdata_LATERAL(ndays_indate)
   real(kind=8), intent(in)::ndays_indate
   real, allocatable, dimension(:,:,:) ::data
   integer :: ncFileID,varid,status
-  integer :: ndate(4),n,i,j,k
+  integer :: ndate(4),n,i,j,k,bc
   real(kind=8) :: ndays(1),ndays_old
   logical, save :: first_call=.true.
 
   !4 nearest points from external grid  (horizontal)
-  integer, save,allocatable ::IIij(:,:,:),JJij(:,:,:)
+  integer, save,allocatable :: IIij(:,:,:),JJij(:,:,:)
   !weights of the 4 nearest points (horizontal)
   real, save,allocatable :: Weight(:,:,:)
 
@@ -904,35 +826,34 @@ subroutine read_newdata_LATERAL(ndays_indate)
   integer, save ::GIMAX_ext,GJMAX_ext
   character (len=80) ::units
   real :: scale_factor,add_offset
-  logical :: time_exists
+  logical :: time_exists,divbyroa
 
   KMAX_BC=KMAX_MID
-  if( mydebug )write(*,*)'Nest: read_newdata_LATERAL, first?', first_call
+  if(mydebug)write(*,*)'Nest: read_newdata_LATERAL, first?', first_call
   if(first_call)then
-     if( mydebug )write(*,*)'Nest: initializations 2D'
-     allocate(IIij(MAXLIMAX,MAXLJMAX,4),JJij(MAXLIMAX,MAXLJMAX,4))
-     allocate(Weight(MAXLIMAX,MAXLJMAX,4))
-    call init_icbc()
-     if( mydebug )write(*,*)'calling init_nest for '//trim(filename_read_BC)
+    if(mydebug)write(*,*)'Nest: initializations 2D'
+    allocate(IIij(MAXLIMAX,MAXLJMAX,4),JJij(MAXLIMAX,MAXLJMAX,4))
+    allocate(Weight(MAXLIMAX,MAXLJMAX,4))
+    call init_icbc(ndays=ndays_indate)
+    if(mydebug)write(*,*)'calling init_nest for '//trim(filename_read_BC)
     call init_nest(ndays_indate,filename_read_BC,IIij,JJij,Weight,&
                    k1_ext,k2_ext,weight_k1,weight_k2,&
                    N_ext_BC,KMAX_ext_BC,GIMAX_ext,GJMAX_ext)
     if(MODE==100.and.N_ext_BC/=12.and.MasterProc)then
-       write(*,*)'Nest: WARNING: Expected 12 monthes in BC file, found ',N_ext_BC
-       call StopAll('Nest BC: wrong number of monthes')
+      write(*,*)'Nest: WARNING: Expected 12 monthes in BC file, found ',N_ext_BC
+      call StopAll('Nest BC: wrong number of monthes')
     endif
-
 
     !Define & allocate West/East/South/Nort Boundaries
     iw=li0-1;ie=li1+1   ! i West/East   boundaries
     js=lj0-1;jn=lj1+1   ! j South/North boundaries
     kt=0;if(TOP_BC)kt=1 ! k Top         boundary
-    if( mydebug )then
-       if(kt==1)then
-          write(*,*)'Nest-kt test: Also including the top layer in BC'
-       else
-          write(*,*)'Nest-kt test: Not resetting the top layer'
-       endif
+    if(mydebug)then
+      if(kt==1)then
+        write(*,*)'Nest-kt test: Also including the top layer in BC'
+      else
+        write(*,*)'Nest-kt test: Not resetting the top layer'
+      endif
     endif
 
     if(iw>=1    .and..not.allocated(xn_adv_bndw)) &
@@ -956,7 +877,7 @@ subroutine read_newdata_LATERAL(ndays_indate)
       CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
     endif
     rtime_saved(2)=-99.0!just to put a value
-    if(  mydebug )write(*,*)'Nest: end initializations 2D'
+    if(mydebug)write(*,*)'Nest: end initializations 2D'
 
   endif
 
@@ -965,199 +886,174 @@ subroutine read_newdata_LATERAL(ndays_indate)
   if(MasterProc)then
     call check(nf90_open(path = trim(fileName_read_BC), mode = nf90_nowrite, ncid = ncFileID))
     status = nf90_inq_dimid(ncid = ncFileID, name = "time", dimID = timeDimID)
-    if(status == nf90_noerr) then
-       time_exists=.true.
-       call check(nf90_inquire_dimension(ncid=ncFileID,dimID=timedimID,len=N_ext_BC))
+    time_exists=(status==nf90_noerr)
+    if(time_exists) then
+      call check(nf90_inquire_dimension(ncid=ncFileID,dimID=timedimID,len=N_ext_BC))
     else
-       time_exists=.false.
-       N_ext_BC=1
+      N_ext_BC=1
     endif
 
     if(size(ndays_ext)<N_ext_BC)then
-       write(*,*)'Nest: New size times in BC file ',N_ext_BC
-       deallocate(ndays_ext)
-       allocate(ndays_ext(N_ext_BC))
+      write(*,*)'Nest: New size times in BC file ',N_ext_BC
+      deallocate(ndays_ext)
+      allocate(ndays_ext(N_ext_BC))
     endif
 
     if(MODE==100)then
-       !only care of the month
-       call nctime2idate(ndate,ndays_indate,'Nest: BC reading record MM')
-       n=ndate(2)
+      !only care of the month
+      call nctime2idate(ndate,ndays_indate,'Nest: BC reading record MM')
+      n=ndate(2)
     else
-       if(time_exists)then
-          call ReadTimeCDF(filename_read_BC,ndays_ext,N_ext_BC)
-          !    call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = varID))
+      if(time_exists)then
+        call ReadTimeCDF(filename_read_BC,ndays_ext,N_ext_BC)
+        !    call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = varID))
 
-          do n=1,N_ext_BC
-             !      call check(nf90_get_var(ncFileID, varID, ndays,start=(/ n /),count=(/ 1 /) ))
-             if(ndays_indate-ndays_ext(n)<halfsecond) goto 876
-          enddo
-          n=N_ext_BC
-          write(*,*)'Nest: WARNING: did not find correct date ',n
-876       continue
-       else
-          !cannot read time on file. assume it is corresponds to date_nextfile
-          n=1
-          call idate2nctime(date_nextfile,ndays_ext(n))
-       endif
+        do n=1,N_ext_BC
+          !      call check(nf90_get_var(ncFileID, varID, ndays,start=(/ n /),count=(/ 1 /) ))
+          if(ndays_indate-ndays_ext(n)<halfsecond) goto 876
+        enddo
+        n=N_ext_BC
+        write(*,*)'Nest: WARNING: did not find correct date ',n
+876     continue
+      else
+        !cannot read time on file. assume it is corresponds to date_nextfile
+        n=1
+        call idate2nctime(date_nextfile,ndays_ext(n))
+      endif
     endif
 
     call nctime2idate(ndate,ndays_ext(n),'Nest: Reading date YYYY-MM-DD hh:mm:ss')
-    if( mydebug )write(*,*)'Nest: Record ',n,' of ',N_ext_BC
+    if(mydebug) write(*,*)'Nest: Record ',n,' of ',N_ext_BC
     itime=n
     rtime_saved(2)=ndays_ext(n)
     if(n==N_ext_BC)then
-       !next data to be read should be from another file
-       if( mydebug )then
-          write(*,*)'Nest: Last record reached ',n,N_ext_BC
-          call nctime2idate(date_nextfile,ndays_ext(n)+NHOURS_Stride_BC/24.0,&
-                'next BC date to read:  YYYY-MM-DD hh:mm:ss')
-          write(*,*)'Nest: date_nextfile ',date_nextfile
-       else
-          call nctime2idate(date_nextfile,ndays_ext(n)+NHOURS_Stride_BC/24.0)
-       endif
+      !next data to be read should be from another file
+      if(mydebug)then
+        write(*,*)'Nest: Last record reached ',n,N_ext_BC
+        call nctime2idate(date_nextfile,ndays_ext(n)+NHOURS_Stride_BC/24.0,&
+              'next BC date to read:  YYYY-MM-DD hh:mm:ss')
+        write(*,*)'Nest: date_nextfile ',date_nextfile
+      else
+        call nctime2idate(date_nextfile,ndays_ext(n)+NHOURS_Stride_BC/24.0)
+      endif
     endif
 
   endif
 
   CALL MPI_BCAST(rtime_saved,8*2,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
 
-  DO_SPEC_init: do n= 1, NSPEC_ADV  !move BC used to nr=1 and set nr=2 to zero
-    if(.not.(adv_bc(n)%wanted.and.adv_bc(n)%found)) cycle DO_SPEC_init
-    if(.not.first_call)then
-      !store the old values in 1
-      if(iw>=1)     forall (k=1:KMAX_BC, j=1:ljmax) &
-        xn_adv_bndw(n,j,k,1)=xn_adv_bndw(n,j,k,2)
-      if(ie<=limax) forall (k=1:KMAX_BC, j=1:ljmax) &
-        xn_adv_bnde(n,j,k,1)=xn_adv_bnde(n,j,k,2)
-      if(js>=1)     forall (k=1:KMAX_BC, i=1:limax) &
-        xn_adv_bnds(n,i,k,1)=xn_adv_bnds(n,i,k,2)
-      if(jn<=ljmax) forall (k=1:KMAX_BC, i=1:limax) &
-        xn_adv_bndn(n,i,k,1)=xn_adv_bndn(n,i,k,2)
-      if(kt>=1)     forall (i=1:limax, j=1:ljmax) &
-        xn_adv_bndt(n,i,j,1)=xn_adv_bndt(n,i,j,2)
-    endif
-      if(iw>=1)     forall (k=1:KMAX_BC, j=1:ljmax) &
-        xn_adv_bndw(n,j,k,2)=0.0
-      if(ie<=limax) forall (k=1:KMAX_BC, j=1:ljmax) &
-        xn_adv_bnde(n,j,k,2)=0.0
-      if(js>=1)     forall (k=1:KMAX_BC, i=1:limax) &
-        xn_adv_bnds(n,i,k,2)=0.0
-      if(jn<=ljmax) forall (k=1:KMAX_BC, i=1:limax) &
-        xn_adv_bndn(n,i,k,2)=0.0
-      if(kt>=1)     forall (i=1:limax, j=1:ljmax) &
-        xn_adv_bndt(n,i,j,2)=0.0
+  if(.not.first_call) call store_old_bc() !store the old values in 1
+  if(allocated(xn_adv_bndw)) xn_adv_bndw(:,:,:,2)=0.0
+  if(allocated(xn_adv_bnde)) xn_adv_bnde(:,:,:,2)=0.0
+  if(allocated(xn_adv_bnds)) xn_adv_bnds(:,:,:,2)=0.0
+  if(allocated(xn_adv_bndn)) xn_adv_bndn(:,:,:,2)=0.0
+  if(allocated(xn_adv_bndt)) xn_adv_bndt(:,:,:,2)=0.0
 
-  enddo DO_SPEC_init
-
-  DO_SPEC: do n= 1, NSPEC_ADV
-    if(.not.(adv_bc(n)%wanted.and.adv_bc(n)%found)) cycle DO_SPEC
-
-    if( mydebug )write(*,*)'Nest: DO_SPEC:', trim(adv_bc(n)%varname)
+  DO_BC: do bc=1,size(adv_bc)
+    if(.not.(adv_bc(bc)%wanted.and.adv_bc(bc)%found))cycle DO_BC
+    n=adv_bc(bc)%ixadv
     if(MasterProc)then
+      if(DEBUG_NEST.or.DEBUG_ICBC) write(*,"(2(A,1X),I0,'-->',I0)")&
+        'Nest: DO_BC',trim(adv_bc(bc)%varname),bc,n
     !Could fetch one level at a time if sizes becomes too big
-      call check(nf90_inq_varid(ncid=ncFileID, name=trim(adv_bc(n)%varname), varID=varID))
+      call check(nf90_inq_varid(ncid=ncFileID, name=trim(adv_bc(bc)%varname), varID=varID))
 
       call check(nf90_get_var(ncFileID, varID, data &
             ,start=(/ 1,1,1,itime /),count=(/ GIMAX_ext,GJMAX_ext,KMAX_ext_BC,1 /) ))
       status = nf90_get_att(ncFileID,VarID,"scale_factor",scale_factor)
-      if(status == nf90_noerr) then
-         data=data*scale_factor
-      endif
+      if(status==nf90_noerr) data=data*scale_factor
       status = nf90_get_att(ncFileID,VarID,"add_offset",add_offset)
-      if(status == nf90_noerr) then
-         data=data+add_offset
-      endif
+      if(status==nf90_noerr) data=data+add_offset
       status = nf90_get_att(ncFileID,VarID,"units",units)
-      if(status == nf90_noerr) then
-         if(DEBUG_NEST)write(*,*)'Nest: variable '//trim(adv_bc(n)%varname)//' has unit '//trim(units)
-         if(units(1:3) == 'ppb') then
-            if(DEBUG_NEST)write(*,*)'which is ppb unit. Scaling by ',PPB
-            data=data*PPB
-         else
-            if(DEBUG_NEST)write(*,*)'which is not recognized as ppb unit. Assuming mixing ratio'
-         endif
+      if(status==nf90_noerr) then
+        if(DEBUG_NEST.or.DEBUG_ICBC) write(*,*)&
+          'Nest: variable '//trim(adv_bc(bc)%varname)//' has unit '//trim(units)
+        data=data/Units_Scale(units,n,needroa=divbyroa,debug_msg="read_newdata_LATERAL")
       else
-        if(DEBUG_NEST)write(*,*)'units attribute not found for variable '//trim(adv_bc(n)%varname)
+        if(DEBUG_NEST.or.DEBUG_ICBC) write(*,*)&
+          'units attribute not found for variable '//trim(adv_bc(bc)%varname)
       endif
     endif
-
 
     CALL MPI_BCAST(data,8*GIMAX_ext*GJMAX_ext*KMAX_ext_BC,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
 
    !overwrite Global Boundaries (lateral faces)
-    if(iw>=1)     forall (k=1:KMAX_BC, j=1:ljmax) &
-      xn_adv_bndw(n,j,k,2)=xn_adv_bndw(n,j,k,2)+(Weight(iw,j,1)*data(IIij(iw,j,1),JJij(iw,j,1),k1_ext(k)) &
-                           +Weight(iw,j,2)*data(IIij(iw,j,2),JJij(iw,j,2),k1_ext(k)) &
-                           +Weight(iw,j,3)*data(IIij(iw,j,3),JJij(iw,j,3),k1_ext(k)) &
-                           +Weight(iw,j,4)*data(IIij(iw,j,4),JJij(iw,j,4),k1_ext(k)))*weight_k1(k)&
-                          +(Weight(iw,j,1)*data(IIij(iw,j,1),JJij(iw,j,1),k2_ext(k)) &
-                           +Weight(iw,j,2)*data(IIij(iw,j,2),JJij(iw,j,2),k2_ext(k)) &
-                           +Weight(iw,j,3)*data(IIij(iw,j,3),JJij(iw,j,3),k2_ext(k)) &
-                           +Weight(iw,j,4)*data(IIij(iw,j,4),JJij(iw,j,4),k2_ext(k)))*weight_k2(k)
-    if(ie<=limax) forall (k=1:KMAX_BC, j=1:ljmax) &
-      xn_adv_bnde(n,j,k,2)=xn_adv_bnde(n,j,k,2)+(Weight(ie,j,1)*data(IIij(ie,j,1),JJij(ie,j,1),k1_ext(k)) &
-                           +Weight(ie,j,2)*data(IIij(ie,j,2),JJij(ie,j,2),k1_ext(k)) &
-                           +Weight(ie,j,3)*data(IIij(ie,j,3),JJij(ie,j,3),k1_ext(k)) &
-                           +Weight(ie,j,4)*data(IIij(ie,j,4),JJij(ie,j,4),k1_ext(k)))*weight_k1(k)&
-                          +(Weight(ie,j,1)*data(IIij(ie,j,1),JJij(ie,j,1),k2_ext(k)) &
-                           +Weight(ie,j,2)*data(IIij(ie,j,2),JJij(ie,j,2),k2_ext(k)) &
-                           +Weight(ie,j,3)*data(IIij(ie,j,3),JJij(ie,j,3),k2_ext(k)) &
-                           +Weight(ie,j,4)*data(IIij(ie,j,4),JJij(ie,j,4),k2_ext(k)))*weight_k2(k)
-    if(js>=1)     forall (k=1:KMAX_BC, i=1:limax) &
-      xn_adv_bnds(n,i,k,2)=xn_adv_bnds(n,i,k,2)+(Weight(i,js,1)*data(IIij(i,js,1),JJij(i,js,1),k1_ext(k)) &
-                           +Weight(i,js,2)*data(IIij(i,js,2),JJij(i,js,2),k1_ext(k)) &
-                           +Weight(i,js,3)*data(IIij(i,js,3),JJij(i,js,3),k1_ext(k)) &
-                           +Weight(i,js,4)*data(IIij(i,js,4),JJij(i,js,4),k1_ext(k)))*weight_k1(k)&
-                          +(Weight(i,js,1)*data(IIij(i,js,1),JJij(i,js,1),k2_ext(k)) &
-                           +Weight(i,js,2)*data(IIij(i,js,2),JJij(i,js,2),k2_ext(k)) &
-                           +Weight(i,js,3)*data(IIij(i,js,3),JJij(i,js,3),k2_ext(k)) &
-                           +Weight(i,js,4)*data(IIij(i,js,4),JJij(i,js,4),k2_ext(k)))*weight_k2(k)
-    if(jn<=ljmax) forall (k=1:KMAX_BC, i=1:limax) &
-      xn_adv_bndn(n,i,k,2)=xn_adv_bndn(n,i,k,2)+(Weight(i,jn,1)*data(IIij(i,jn,1),JJij(i,jn,1),k1_ext(k)) &
-                           +Weight(i,jn,2)*data(IIij(i,jn,2),JJij(i,jn,2),k1_ext(k)) &
-                           +Weight(i,jn,3)*data(IIij(i,jn,3),JJij(i,jn,3),k1_ext(k)) &
-                           +Weight(i,jn,4)*data(IIij(i,jn,4),JJij(i,jn,4),k1_ext(k)))*weight_k1(k)&
-                          +(Weight(i,jn,1)*data(IIij(i,jn,1),JJij(i,jn,1),k2_ext(k)) &
-                           +Weight(i,jn,2)*data(IIij(i,jn,2),JJij(i,jn,2),k2_ext(k)) &
-                           +Weight(i,jn,3)*data(IIij(i,jn,3),JJij(i,jn,3),k2_ext(k)) &
-                           +Weight(i,jn,4)*data(IIij(i,jn,4),JJij(i,jn,4),k2_ext(k)))*weight_k2(k)
-    if(kt>=1)     forall (i=1:limax, j=1:ljmax) &
-      xn_adv_bndt(n,i,j,2)=xn_adv_bndt(n,i,j,2)+(Weight(i,j,1)*data(IIij(i,j,1),JJij(i,j,1),k1_ext(kt)) &
-                           +Weight(i,j,2)*data(IIij(i,j,2),JJij(i,j,2),k1_ext(kt)) &
-                           +Weight(i,j,3)*data(IIij(i,j,3),JJij(i,j,3),k1_ext(kt)) &
-                           +Weight(i,j,4)*data(IIij(i,j,4),JJij(i,j,4),k1_ext(kt)))*weight_k1(kt)&
-                          +(Weight(i,j,1)*data(IIij(i,j,1),JJij(i,j,1),k2_ext(kt)) &
-                           +Weight(i,j,2)*data(IIij(i,j,2),JJij(i,j,2),k2_ext(kt)) &
-                           +Weight(i,j,3)*data(IIij(i,j,3),JJij(i,j,3),k2_ext(kt)) &
-                           +Weight(i,j,4)*data(IIij(i,j,4),JJij(i,j,4),k2_ext(kt)))*weight_k2(kt)
-  enddo DO_SPEC
-
+    if(divbyroa)then
+      if(allocated(xn_adv_bndw)) forall(k=1:KMAX_BC, j=1:ljmax) &
+        xn_adv_bndw(n,j,k,2)=xn_adv_bndw(n,j,k,2) &
+                            +(WeightData(iw,j,k1_ext(k))*weight_k1(k) &
+                             +WeightData(iw,j,k2_ext(k))*weight_k2(k))&
+                            /roa(iw,j,k,1)
+      if(allocated(xn_adv_bnde)) forall(k=1:KMAX_BC, j=1:ljmax) &
+        xn_adv_bnde(n,j,k,2)=xn_adv_bnde(n,j,k,2) &
+                            +(WeightData(ie,j,k1_ext(k))*weight_k1(k) &
+                             +WeightData(ie,j,k2_ext(k))*weight_k2(k))&
+                            /roa(ie,j,k,1)
+      if(allocated(xn_adv_bnds)) forall(k=1:KMAX_BC, i=1:limax) &
+        xn_adv_bnds(n,i,k,2)=xn_adv_bnds(n,i,k,2) &
+                            +(WeightData(i,js,k1_ext(k))*weight_k1(k) &
+                             +WeightData(i,js,k2_ext(k))*weight_k2(k))&
+                            /roa(i,js,k,1)
+      if(allocated(xn_adv_bndn)) forall(k=1:KMAX_BC, i=1:limax) &
+        xn_adv_bndn(n,i,k,2)=xn_adv_bndn(n,i,k,2) &
+                            +(WeightData(i,jn,k1_ext(k))*weight_k1(k) &
+                             +WeightData(i,jn,k2_ext(k))*weight_k2(k))&
+                            /roa(i,jn,k,1)
+      if(allocated(xn_adv_bndt)) forall(i=1:limax, j=1:ljmax) &
+        xn_adv_bndt(n,i,j,2)=xn_adv_bndt(n,i,j,2) &
+                            +(WeightData(i,j,k1_ext(kt))*weight_k1(kt) &
+                             +WeightData(i,j,k2_ext(kt))*weight_k2(kt))&
+                            /roa(i,j,kt,1)
+    else
+      if(allocated(xn_adv_bndw)) forall(k=1:KMAX_BC, j=1:ljmax) &
+        xn_adv_bndw(n,j,k,2)=xn_adv_bndw(n,j,k,2) &
+                            +WeightData(iw,j,k1_ext(k))*weight_k1(k)&
+                            +WeightData(iw,j,k2_ext(k))*weight_k2(k)
+      if(allocated(xn_adv_bnde)) forall(k=1:KMAX_BC, j=1:ljmax) &
+        xn_adv_bnde(n,j,k,2)=xn_adv_bnde(n,j,k,2) &
+                            +WeightData(ie,j,k1_ext(k))*weight_k1(k)&
+                            +WeightData(ie,j,k2_ext(k))*weight_k2(k)
+      if(allocated(xn_adv_bnds)) forall(k=1:KMAX_BC, i=1:limax) &
+        xn_adv_bnds(n,i,k,2)=xn_adv_bnds(n,i,k,2) &
+                            +WeightData(i,js,k1_ext(k))*weight_k1(k)&
+                            +WeightData(i,js,k2_ext(k))*weight_k2(k)
+      if(allocated(xn_adv_bndn)) forall(k=1:KMAX_BC, i=1:limax) &
+        xn_adv_bndn(n,i,k,2)=xn_adv_bndn(n,i,k,2) &
+                            +WeightData(i,jn,k1_ext(k))*weight_k1(k)&
+                            +WeightData(i,jn,k2_ext(k))*weight_k2(k)
+      if(allocated(xn_adv_bndt)) forall(i=1:limax, j=1:ljmax) &
+        xn_adv_bndt(n,i,j,2)=xn_adv_bndt(n,i,j,2) &
+                            +WeightData(i,j,k1_ext(kt))*weight_k1(kt)&
+                            +WeightData(i,j,k2_ext(kt))*weight_k2(kt)
+    endif
+  enddo DO_BC
 
   if(first_call)then
-     !copy 2 into 1 so that both are well defined
-     rtime_saved(1)=rtime_saved(2)!put  time in 1
-     DO_SPEC_init1: do n= 1, NSPEC_ADV  !copy BC used to nr=1
-        if(.not.(adv_bc(n)%wanted.and.adv_bc(n)%found)) cycle DO_SPEC_init1
-        !store the old values in 1
-        if(iw>=1)     forall (k=1:KMAX_BC, j=1:ljmax) &
-             xn_adv_bndw(n,j,k,1)=xn_adv_bndw(n,j,k,2)
-        if(ie<=limax) forall (k=1:KMAX_BC, j=1:ljmax) &
-             xn_adv_bnde(n,j,k,1)=xn_adv_bnde(n,j,k,2)
-        if(js>=1)     forall (k=1:KMAX_BC, i=1:limax) &
-             xn_adv_bnds(n,i,k,1)=xn_adv_bnds(n,i,k,2)
-        if(jn<=ljmax) forall (k=1:KMAX_BC, i=1:limax) &
-             xn_adv_bndn(n,i,k,1)=xn_adv_bndn(n,i,k,2)
-        if(kt>=1)     forall (i=1:limax, j=1:ljmax) &
-             xn_adv_bndt(n,i,j,1)=xn_adv_bndt(n,i,j,2)
-     enddo DO_SPEC_init1
+    !copy 2 into 1 so that both are well defined
+    rtime_saved(1)=rtime_saved(2)!put  time in 1
+    call store_old_bc() !store the old values in 1
   endif
 
   deallocate(data)
   if(MasterProc) call check(nf90_close(ncFileID))
   first_call=.false.
   return
-end subroutine read_newdata_LATERAL
+  contains
+  PURE function WeightData(i,j,k) result(wsum)
+    integer, intent(in)::i,j,k
+    real:: wsum
+    wsum=dot_product(Weight(i,j,:),&
+      (/data(IIij(i,j,1),JJij(i,j,1),k),data(IIij(i,j,2),JJij(i,j,2),k),&
+        data(IIij(i,j,3),JJij(i,j,3),k),data(IIij(i,j,4),JJij(i,j,4),k)/))
+  endfunction WeightData
+  subroutine store_old_bc !store the old values in 1
+    if(allocated(xn_adv_bndw)) xn_adv_bndw(:,:,:,1)=xn_adv_bndw(:,:,:,2)
+    if(allocated(xn_adv_bnde)) xn_adv_bnde(:,:,:,1)=xn_adv_bnde(:,:,:,2)
+    if(allocated(xn_adv_bnds)) xn_adv_bnds(:,:,:,1)=xn_adv_bnds(:,:,:,2)
+    if(allocated(xn_adv_bndn)) xn_adv_bndn(:,:,:,1)=xn_adv_bndn(:,:,:,2)
+    if(allocated(xn_adv_bndt)) xn_adv_bndt(:,:,:,1)=xn_adv_bndt(:,:,:,2)
+  endsubroutine store_old_bc
+endsubroutine read_newdata_LATERAL
 
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
 subroutine reset_3D(ndays_indate)
@@ -1170,7 +1066,7 @@ subroutine reset_3D(ndays_indate)
   logical, save :: first_call=.true.
 
   !4 nearest points from external grid
-  integer, save,allocatable ::IIij(:,:,:),JJij(:,:,:)
+  integer, save,allocatable :: IIij(:,:,:),JJij(:,:,:)
 
   !weights of the 4 nearest points
   real, save,allocatable :: Weight(:,:,:)
@@ -1182,236 +1078,102 @@ subroutine reset_3D(ndays_indate)
   integer, save, dimension(KMAX_MID) :: k1_ext,k2_ext
   !weights of the 2 adjacent levels (vertical)
   real, save, dimension(KMAX_MID) :: weight_k1,weight_k2
-  character (len=80) ::units
+  character (len=80) :: units
   real :: scale_factor,add_offset
+  logical :: divbyroa
 
-  if( mydebug ) write(*,*) 'Nest: initializations 3D', first_call
+  if(mydebug) write(*,*) 'Nest: initializations 3D', first_call
  
   if(first_call)then
-     if( mydebug ) write(*,*)'Nest: initializations 3D'
+    if(mydebug) write(*,*)'Nest: initializations 3D'
      allocate(IIij(MAXLIMAX,MAXLJMAX,4),JJij(MAXLIMAX,MAXLJMAX,4))
      allocate(Weight(MAXLIMAX,MAXLJMAX,4))
-     first_call=.false.
-     if( mydebug ) write(*,*) 'Nest: init-icbc'
-     call init_icbc()
-     if( mydebug )write(*,*)'calling init_nest for 3D '//trim(filename_read_3D)
-     call init_nest(ndays_indate,filename_read_3D,IIij,JJij,Weight,&
-                    k1_ext,k2_ext,weight_k1,weight_k2,&
-                    N_ext,KMAX_ext,GIMAX_ext,GJMAX_ext)
-        if(MODE==100.and.(N_ext/=12.and.N_ext/=1.and.MasterProc))then
-           write(*,*)'Nest: WARNING: Expected 12 or 1 monthes in IC file, found ',N_ext
-           call StopAll('Nest: IC: wrong number of months')
-        endif
-
-     if( mydebug ) write(*,*)'Nest: end initializations 3D'
- 
+    first_call=.false.
+    if(mydebug) write(*,*) 'Nest: init-icbc'
+    call init_icbc(ndays=ndays_indate)
+    if(mydebug) write(*,*)'calling init_nest for 3D '//trim(filename_read_3D)
+    call init_nest(ndays_indate,filename_read_3D,IIij,JJij,Weight,&
+                  k1_ext,k2_ext,weight_k1,weight_k2,&
+                  N_ext,KMAX_ext,GIMAX_ext,GJMAX_ext)
+    if(MODE==100.and.(N_ext/=12.and.N_ext/=1.and.MasterProc))then
+      write(*,*)'Nest: WARNING: Expected 12 or 1 monthes in IC file, found ',N_ext
+      call StopAll('Nest: IC: wrong number of months')
+    endif
+    if(mydebug) write(*,*)'Nest: end initializations 3D'
   endif
   allocate(data(GIMAX_ext,GJMAX_ext,KMAX_ext), stat=status)
   if(MasterProc)then
     call check(nf90_open(path = trim(fileName_read_3D), mode = nf90_nowrite, ncid = ncFileID))
     if(MODE==100)then
-       if(N_ext==1)then
-          n=1
-       else
-          call nctime2idate(ndate,ndays_indate,'Using record MM')
-          n=ndate(2)
-       endif
+      if(N_ext==1)then
+        n=1
+      else
+        call nctime2idate(ndate,ndays_indate,'Using record MM')
+        n=ndate(2)
+      endif
     else
-       !    call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = varID))
-       do n=1,N_ext
-          !call check(nf90_get_var(ncFileID, varID, ndays,start=(/ n /),count=(/ 1 /) ))
-          if(ndays_ext(n)>=ndays_indate) goto 876
-       enddo
-       n=N_ext
-       write(*,*)'Nest: WARNING: did not find correct date'
-876    continue
-       call nctime2idate(ndate,ndays_ext(n),'Using date YYYY-MM-DD hh:mm:ss')
+      !    call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = varID))
+      do n=1,N_ext
+        !call check(nf90_get_var(ncFileID, varID, ndays,start=(/ n /),count=(/ 1 /) ))
+        if(ndays_ext(n)>=ndays_indate) goto 876
+      enddo
+      n=N_ext
+      write(*,*)'Nest: WARNING: did not find correct date'
+876   continue
+      call nctime2idate(ndate,ndays_ext(n),'Using date YYYY-MM-DD hh:mm:ss')
     endif
     itime=n
- endif
+  endif
 
-  if( mydebug )write(*,*)'Nest: overwrite 3D'
+  if(mydebug)write(*,*)'Nest: overwrite 3D'
  
   DO_SPEC: do n= 1, NSPEC_ADV
-     if(.not.(adv_ic(n)%wanted.and.adv_ic(n)%found)) cycle DO_SPEC
-     if(MasterProc)then
-        !Could fetch one level at a time if sizes becomes too big
-        call check(nf90_inq_varid(ncid=ncFileID, name=trim(adv_ic(n)%varname), varID=varID))
-
-        call check(nf90_get_var(ncFileID, varID, data &
-             ,start=(/ 1,1,1,itime /),count=(/ GIMAX_ext,GJMAX_ext,KMAX_ext,1 /) ))
-        status = nf90_get_att(ncFileID,VarID,"scale_factor",scale_factor)
-        if(status == nf90_noerr) then
-           data=data*scale_factor
-        endif
-        status = nf90_get_att(ncFileID,VarID,"add_offset",add_offset)
-        if(status == nf90_noerr) then
-           data=data+add_offset
-        endif
-        if(DEBUG_NEST) print *,'Nest: 3D component ',trim(adv_ic(n)%varname)
-        status = nf90_get_att(ncFileID,VarID,"units",units)
-        if(status == nf90_noerr) then
-           if(DEBUG_NEST)write(*,*)'variable '//trim(adv_ic(n)%varname)//' has unit '//trim(units)
-           if(units(1:3) == 'ppb') then
-              if(DEBUG_NEST)write(*,*)'which is ppb unit. Scaling by ',PPB
-              data=data*PPB
-           else
-              if(DEBUG_NEST)write(*,*)'which is not recognized as ppb unit. Assuming mixing ratio'
-           endif
-        else
-           if(DEBUG_NEST)write(*,*)'units attribute not found for variable '//trim(adv_bc(n)%varname)
-        endif
-     endif
-     CALL MPI_BCAST(data,8*GIMAX_ext*GJMAX_ext*KMAX_ext,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+    if(.not.(adv_ic(n)%wanted.and.adv_ic(n)%found)) cycle DO_SPEC
+    if(MasterProc)then
+      if(DEBUG_NEST) print *,'Nest: 3D component ',trim(adv_ic(n)%varname)
+      !Could fetch one level at a time if sizes becomes too big
+      call check(nf90_inq_varid(ncid=ncFileID, name=trim(adv_ic(n)%varname), varID=varID))
+      call check(nf90_get_var(ncFileID, varID, data &
+            ,start=(/ 1,1,1,itime /),count=(/ GIMAX_ext,GJMAX_ext,KMAX_ext,1 /) ))
+      status = nf90_get_att(ncFileID,VarID,"scale_factor",scale_factor)
+      if(status==nf90_noerr) data=data*scale_factor
+      status = nf90_get_att(ncFileID,VarID,"add_offset",add_offset)
+      if(status==nf90_noerr) data=data+add_offset
+      status = nf90_get_att(ncFileID,VarID,"units",units)
+      if(status==nf90_noerr) then
+        if(DEBUG_NEST)write(*,*)'Nest: variable '//trim(adv_ic(n)%varname)//' has unit '//trim(units)
+        data=data/Units_Scale(units,n,needroa=divbyroa,debug_msg="reset_3D")
+      else
+        if(DEBUG_NEST)write(*,*)'units attribute not found for variable '//trim(adv_ic(n)%varname)
+      endif
+    endif
+    CALL MPI_BCAST(data,8*GIMAX_ext*GJMAX_ext*KMAX_ext,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
 
      !overwrite everything 3D (init)
-     forall (k=1:KMAX_MID, j=1:ljmax, i=1:limax) &
-      xn_adv(n,i,j,k)=(Weight(i,j,1)*data(IIij(i,j,1),JJij(i,j,1),k1_ext(k)) &
-                     +Weight(i,j,2)*data(IIij(i,j,2),JJij(i,j,2),k1_ext(k)) &
-                     +Weight(i,j,3)*data(IIij(i,j,3),JJij(i,j,3),k1_ext(k)) &
-                     +Weight(i,j,4)*data(IIij(i,j,4),JJij(i,j,4),k1_ext(k)))*weight_k1(k)&
-                     +(Weight(i,j,1)*data(IIij(i,j,1),JJij(i,j,1),k2_ext(k)) &
-                     +Weight(i,j,2)*data(IIij(i,j,2),JJij(i,j,2),k2_ext(k)) &
-                     +Weight(i,j,3)*data(IIij(i,j,3),JJij(i,j,3),k2_ext(k)) &
-                     +Weight(i,j,4)*data(IIij(i,j,4),JJij(i,j,4),k2_ext(k)))*weight_k2(k)
+    if(divbyroa)then
+      forall (k=1:KMAX_MID, j=1:ljmax, i=1:limax) &
+        xn_adv(n,i,j,k)=(WeightData(i,j,k1_ext(k))*weight_k1(k) &
+                        +WeightData(i,j,k2_ext(k))*weight_k2(k))&
+                       /roa(i,j,k,1)
+    else
+      forall (k=1:KMAX_MID, j=1:ljmax, i=1:limax) &
+        xn_adv(n,i,j,k)=WeightData(i,j,k1_ext(k))*weight_k1(k)&
+                       +WeightData(i,j,k2_ext(k))*weight_k2(k)
+    endif
 
   enddo DO_SPEC
 
   deallocate(data)
   if(MasterProc) call check(nf90_close(ncFileID))
-end subroutine reset_3D
+  contains
+  PURE function WeightData(i,j,k) result(wsum)
+    integer, intent(in)::i,j,k
+    real:: wsum
+    wsum=dot_product(Weight(i,j,:),&
+      (/data(IIij(i,j,1),JJij(i,j,1),k),data(IIij(i,j,2),JJij(i,j,2),k),&
+        data(IIij(i,j,3),JJij(i,j,3),k),data(IIij(i,j,4),JJij(i,j,4),k)/))
+  endfunction WeightData
+endsubroutine reset_3D
 
-end module Nest_ml
+endmodule Nest_ml
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
-
-!OLD CODE kept here to give hints for External BIC files. Can delete
-! once the new files are working
-!some components put to a fixed value
-!RCA    if(kt==1)then
-!RCA       !top
-!RCA       xn_adv(IXADV_H2,:,:,kt)=       5e-7
-!RCA       xn_adv(IXADV_C2H4,:,:,kt)=     2e-10
-!RCA       xn_adv(IXADV_C3H6,:,:,kt)=     5e-11
-!RCA       xn_adv(IXADV_C2H5OH,:,:,kt)=   4e-10
-!RCA       xn_adv(IXADV_MEK,:,:,kt)=      2.5e-11
-!RCA       xn_adv(IXADV_CH3O2H,:,:,kt)=   7.5e-11
-!RCA       xn_adv(IXADV_MGLYOX,:,:,kt)=   0
-!RCA       xn_adv(IXADV_GLYOX,:,:,kt)=    0
-!RCA       xn_adv(IXADV_C2H5OOH,:,:,kt)=  1e-12
-!RCA   endif
-!RCA    if(iw>=1)then
-!RCA!west
-!RCA       xn_adv(IXADV_H2,iw,:,:)=       5e-7
-!RCA       xn_adv(IXADV_C2H4,iw,:,:)=     2e-10
-!RCA       xn_adv(IXADV_C3H6,iw,:,:)=     5e-11
-!RCA       xn_adv(IXADV_C2H5OH,iw,:,:)=   4e-10
-!RCA       xn_adv(IXADV_MEK,iw,:,:)=      2.5e-11
-!RCA       xn_adv(IXADV_CH3O2H,iw,:,:)=   1e-10
-!RCA       xn_adv(IXADV_MGLYOX,iw,:,:)=   2e-12
-!RCA       xn_adv(IXADV_GLYOX,iw,:,:)=    6e-12
-!RCA       xn_adv(IXADV_C2H5OOH,iw,:,:)=  1e-12
-!RCA    endif
-!RCA    if(ie<=limax)then
-!RCA!east
-!RCA       xn_adv(IXADV_H2,ie,:,:)=        5e-7
-!RCA       xn_adv(IXADV_C2H4,ie,:,:)=      2e-10
-!RCA       xn_adv(IXADV_C3H6,ie,:,:)=      2e-10
-!RCA       xn_adv(IXADV_C2H5OH,ie,:,:)=    6e-10
-!RCA       xn_adv(IXADV_MEK,ie,:,:)=       5e-11
-!RCA       xn_adv(IXADV_CH3O2H,ie,:,:)=    1e-10
-!RCA       xn_adv(IXADV_MGLYOX,ie,:,:)=    1.5e-12
-!RCA       xn_adv(IXADV_GLYOX,ie,:,:)=     1.3e-11
-!RCA       xn_adv(IXADV_C2H5OOH,ie,:,:)=   1e-12
-!RCA    endif
-!RCA    if(js>=1)then
-!RCA!south
-!RCA       xn_adv(IXADV_H2,:,js,:)=        5e-7
-!RCA       xn_adv(IXADV_C2H4,:,js,:)=      5e-11
-!RCA       xn_adv(IXADV_C3H6,:,js,:)=      1.6e-11
-!RCA       xn_adv(IXADV_C2H5OH,:,js,:)=    7e-11
-!RCA       xn_adv(IXADV_MEK,:,js,:)=       2.5e-11
-!RCA       xn_adv(IXADV_CH3O2H,:,js,:)=    1e-10
-!RCA       xn_adv(IXADV_MGLYOX,:,js,:)=    2e-12
-!RCA       xn_adv(IXADV_GLYOX,:,js,:)=     4e-12
-!RCA       xn_adv(IXADV_C2H5OOH,:,js,:)=   1e-12
-!RCA    endif
-!RCA    if(jn<=ljmax)then
-!RCA!north
-!RCA       xn_adv(IXADV_H2,:,jn,:)=        5e-7
-!RCA       xn_adv(IXADV_C2H4,:,jn,:)=      2e-10
-!RCA       xn_adv(IXADV_C3H6,:,jn,:)=      2e-10
-!RCA       xn_adv(IXADV_C2H5OH,:,jn,:)=    4e-10
-!RCA       xn_adv(IXADV_MEK,:,jn,:)=       2.5e-11
-!RCA       xn_adv(IXADV_CH3O2H,:,jn,:)=    1e-12
-!RCA       xn_adv(IXADV_MGLYOX,:,jn,:)=    2e-12
-!RCA       xn_adv(IXADV_GLYOX,:,jn,:)=     4e-12
-!RCA       xn_adv(IXADV_C2H5OOH,:,jn,:)=   1e-12
-!RCA    endif
-!SKIPtype(adv_icbc), dimension(26), private, parameter :: &  ! BC from EnsClim-RCA
-!SKIP  RCA_BC=(/adv_icbc(IXADV_NO   ,icbc('NO'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_NO2   ,icbc('NO2'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_O3    ,icbc('O3'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_CO     ,icbc('CO'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_HCHO    ,icbc('HCHO'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_PAN     ,icbc('PAN'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_HNO3    ,icbc('HNO3'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_H2O2  ,icbc('H2O2'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_CH4  ,icbc('CH4'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_CH3CHO  ,icbc('CH3CHO'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_C2H6  ,icbc('C2H6'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_C5H8  ,icbc('Isoprene'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_NC4H10  ,icbc('nC4H10'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_OXYL  ,icbc('oXylene'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_SO2  ,icbc('SO2'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_NH3  ,icbc('NH3'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_N2O5  ,icbc('N2O5'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_SO4  ,icbc('SO4'    ,.true.,.false.)), &!SO4+ NH4HSO4 + (NH4)2SO4
-!SKIP                 adv_icbc(IXADV_SO4  ,icbc('NH4HSO4'    ,.true.,.false.)), &!SO4+ NH4HSO4 + (NH4)2SO4
-!SKIP                 adv_icbc(IXADV_SO4  ,icbc('NH42SO4'    ,.true.,.false.)), &!SO4+ NH4HSO4 + (NH4)2SO4
-!SKIP                 adv_icbc(IXADV_NO3_F  ,icbc('NH4NO3'    ,.true.,.false.)), &!NH4NO3+ANIT
-!SKIP                 adv_icbc(IXADV_NO3_F  ,icbc('ANIT'    ,.true.,.false.)), &!+ANIT
-!SKIP                 adv_icbc(IXADV_NH4_F  ,icbc('NH4NO3'    ,.true.,.false.)), &!NH4NO3+ NH4HSO4 + 2 * (NH4)2SO4
-!SKIP                 adv_icbc(IXADV_NH4_F  ,icbc('NH4HSO4'    ,.true.,.false.)), &!NH4NO3+ NH4HSO4 + 2 * (NH4)2SO4
-!SKIP                 adv_icbc(IXADV_NH4_F  ,icbc('NH42SO4'    ,.true.,.false.)), &!NH4NO3+ NH4HSO4 + 2 * (NH4)2SO4
-!SKIP                 adv_icbc(IXADV_NH4_F  ,icbc('NH42SO4'    ,.true.,.false.)) &!NH4NO3+ NH4HSO4 + 2 * (NH4)2SO4
-!SKIP
-!SKIP/)
-!SKIPtype(adv_icbc), dimension(7), private, parameter :: &  ! BC from HTAP
-!SKIP  HTAP_BC=(/adv_icbc(IXADV_SO2   ,icbc('vmr_so2'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_HNO3   ,icbc('vmr_hno3'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_NO     ,icbc('vmr_no'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_NO2    ,icbc('vmr_no2'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_O3     ,icbc('vmr_o3'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_PAN    ,icbc('vmr_pan'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_CO    ,icbc('vmr_co'    ,.true.,.false.))/)
-!SKIP
-!SKIP
-!SKIPtype(adv_icbc), dimension(26), private, parameter :: &  ! BC from EnsClim-RCA
-!SKIP  RCA_BC=(/adv_icbc(IXADV_NO   ,icbc('NO'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_NO2   ,icbc('NO2'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_O3    ,icbc('O3'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_CO     ,icbc('CO'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_HCHO    ,icbc('HCHO'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_PAN     ,icbc('PAN'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_HNO3    ,icbc('HNO3'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_H2O2  ,icbc('H2O2'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_CH4  ,icbc('CH4'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_CH3CHO  ,icbc('CH3CHO'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_C2H6  ,icbc('C2H6'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_C5H8  ,icbc('Isoprene'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_NC4H10  ,icbc('nC4H10'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_OXYL  ,icbc('oXylene'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_SO2  ,icbc('SO2'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_NH3  ,icbc('NH3'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_N2O5  ,icbc('N2O5'    ,.true.,.false.)), &
-!SKIP                 adv_icbc(IXADV_SO4  ,icbc('SO4'    ,.true.,.false.)), &!SO4+ NH4HSO4 + (NH4)2SO4
-!SKIP                 adv_icbc(IXADV_SO4  ,icbc('NH4HSO4'    ,.true.,.false.)), &!SO4+ NH4HSO4 + (NH4)2SO4
-!SKIP                 adv_icbc(IXADV_SO4  ,icbc('NH42SO4'    ,.true.,.false.)), &!SO4+ NH4HSO4 + (NH4)2SO4
-!SKIP                 adv_icbc(IXADV_NO3_F  ,icbc('NH4NO3'    ,.true.,.false.)), &!NH4NO3+ANIT
-!SKIP                 adv_icbc(IXADV_NO3_F  ,icbc('ANIT'    ,.true.,.false.)), &!+ANIT
-!SKIP                 adv_icbc(IXADV_NH4_F  ,icbc('NH4NO3'    ,.true.,.false.)), &!NH4NO3+ NH4HSO4 + 2 * (NH4)2SO4
-!SKIP                 adv_icbc(IXADV_NH4_F  ,icbc('NH4HSO4'    ,.true.,.false.)), &!NH4NO3+ NH4HSO4 + 2 * (NH4)2SO4
-!SKIP                 adv_icbc(IXADV_NH4_F  ,icbc('NH42SO4'    ,.true.,.false.)), &!NH4NO3+ NH4HSO4 + 2 * (NH4)2SO4
-!SKIP                 adv_icbc(IXADV_NH4_F  ,icbc('NH42SO4'    ,.true.,.false.)) &!NH4NO3+ NH4HSO4 + 2 * (NH4)2SO4
-!SKIP
-!SKIP/)

@@ -132,7 +132,7 @@ my ($CWFBASE, $CWFDAYS, $CWFMETV, @CWFDATE, @CWFDUMP, $eCWF) if $CWF;
 if ($CWF) {
   chop($CWFBASE = `date +%Y%m%d`);   # Forecast base date     (default today)
        $CWFDAYS = $CWF;              # Forecast lenght indays (default $CWF)
-       $CWFMETV = 0;                 # Met.UTC version        (default 'none')
+       $CWFMETV = "";                # Met.UTC version        (default 'none')
        $CWFBASE = $ENV{"DATE"} if $ENV{"DATE"}; # Forecast base date, lenght
        $CWFDAYS = $ENV{"NDAY"} if $ENV{"NDAY"}; #  & MetUTC version can be passed
        $CWFMETV = $ENV{"UTC"}  if $ENV{"UTC"} ; #  as environment variables
@@ -263,7 +263,7 @@ my $Chem     = "EmChem09soa";
 #$Chem     = "CRI_v2_R5";
    $Chem     = $BENCHMARK{'chem'} if $BENCHMARK{'chem'};
 
-my $testv = "rv4_1";
+my $testv = "rv4rc4";
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
@@ -597,7 +597,7 @@ foreach my $scenflag ( @runs ) {
   } elsif ($CWF) {
 # Forecast Meteorology in NetCDF
     for (my $n = 0; $n < $CWFDAYS; $n++) {
-      my $metday = int($CWFMETV/24+0.99);
+      my $metday = ($CWFMETV)?int($CWFMETV/24+0.99):0;
      (my $old = "$MetDir/meteo%Y%m%d${CWFMETV}_%%02d.nc") =~ s/$year/%Y/g;
       chop($old=`date -d '$CWFBASE $metday day ago' '+$old'`);
       $old = sprintf "$old",$n+$metday;

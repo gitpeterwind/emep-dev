@@ -114,7 +114,17 @@ Will keep list here near top of Log.changes.
 !----------------------------------------------------------
 xxxxxxxx ongoing        28--/2012  xxxxxxxxxxxxxxxxxxxxxxx
 
+Peter:
 ChemFunctions_ml - corrected comments. Refs to ACP paper
+run.pl - re-instate CS=>51 which had fallen out
+
+Alvaro: 29/8/2012
+Nest_ml,ZD_OZONE/IFSMOZ_ExternalBICs_ml,My_ExternalBICs_ml
+  - Mutliple External BC definitions will result in added BCs.
+    This feature was missing on previous module versions.
+
+run.pl
+  - small change on forecast met version ($CWFMETV)
 
 xxxxxxxx rv4rc4 Peter   22/8/2012  xxxxxxxxxxxxxxxxxxxxxxx
 
