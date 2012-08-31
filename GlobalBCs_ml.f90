@@ -588,8 +588,9 @@ subroutine GetGlobalData(year,iyr_trend,month,ibc,used,        &
         !/ - correct for other heights
         ! the first 10 layers have about the same values
         do k=1,9
-          bc_rawdata(:,:,KMAX_MID-k) = bc_rawdata(:,:,KMAX_MID)
-        enddo
+!fix          bc_rawdata(:,:,KMAX_MID-k) = bc_rawdata(:,:,KMAX_MID)
+          bc_rawdata(:,:,KMAX_MID-k) = 0.5*bc_rawdata(:,:,KMAX_MID) ! ST
+        enddo                 ! *0.5 as Mwt was changed from 100 to 200 g/mol
         ! remaining levers are about zero
         bc_rawdata(:,:,1:KMAX_MID-10) = 0.0
       endif
