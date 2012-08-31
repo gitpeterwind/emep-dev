@@ -580,10 +580,12 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
   real :: CO2conc !Co2 in mol/l
  !real :: invhplus04, K1_fac,K1K2_fac, Heff,Heff_NH3
   real :: invhplus04, K1K2_fac, Heff,Heff_NH3,pH_old
-  integer, parameter :: pH_ITER = 5 ! num iter to calc pH. Could probably be reduced
+  integer, parameter :: pH_ITER = 2 ! num iter to calc pH. 
+                                    !Do not change without knowing what you are doing
   real, dimension (KUPPER:KMAX_MID) :: VfRT ! Vf * Rgas * Temp
   real, parameter :: Hplus43=5.011872336272724E-005! 10.0**-4.3
-
+  real, parameter :: Hplus55=3.162277660168379e-06! 10.0**-5.5
+  real ::pHin(pH_ITER),pHout(pH_ITER)
   integer k, iter
 
   call get_frac(cloudwater,incloud) ! => frac_aq
@@ -599,7 +601,10 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
 !dspw   phfactor(:)=0.0
   pH(:)=4.3!dspw 13082012
   h_plus(:)=Hplus43!dspw 13082012
+  pH(:)=5.5!stpw 23082012
+  h_plus(:)=Hplus55!stpw 23082012
 
+  ph_old=0.0
 ! Gas phase ox. of SO2 is "default"
 ! in cloudy air, only the part remaining in gas phase (not
 ! dissolved) is oxidized
@@ -635,6 +640,8 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
 
  
     do iter = 1,pH_ITER !iteratively calc pH
+      pHin(iter)=pH(k)!save input pH
+
 ! dspw moved pH calculation after X_aq determination 
       !nh4+, hco3, hso3 and so32 dissolve and ionize
       Heff_NH3= H(IH_NH3,itemp(k))*Knh3(itemp(k))*h_plus(k)/Kw(itemp(k))
@@ -651,34 +658,17 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
       h_plus(k)=min(1.e-1,max(h_plus(k),1.e-7))! between 1 and 7
       pH(k)=-log(h_plus(k))/log(10.)
 
+      pHout(iter)=pH(k)!save output pH
+
+      if(iter>1.and.(abs(pHin(iter-1)-pHin(iter)-pHout(iter-1)+pHout(iter))>1.E-10))then
+         !linear interpolation for pH . (Solution of f(pH)=pH)
+         pH(k)=(pHin(iter-1)*pHout(iter)-pHin(iter)*pHout(iter-1))&
+              /(pHin(iter-1)-pHin(iter)-pHout(iter-1)+pHout(iter))
+         pH(k)=max(1.0,min(pH(k),7.0))! between 1 and 7
+         h_plus(k)=exp(-pH(k)*log(10.))
+      endif
+
    enddo
-
-    if(abs((pH_old-pH(k))/pH(k))>0.05)then
-! dspw bad convergence
-! dspw restart without iterations dspw
-   pH(k)=4.3
-   h_plus(k)=Hplus43
-
-    !dissolve CO2 and SO2 (pH independent)
-    !CO2conc=392 ppm
-    CO2conc=CO2conc_ppm * 1.0e-9 * pres(k)/(RGAS_J *temp(k)) !mol/l
-
-    frac_aq(IH_CO2,k) = 1.0 / ( 1.0+1.0/( H(IH_CO2,itemp(k))*VfRT(k) ) )
-    co2_aq(k)=frac_aq(IH_CO2,k)*CO2CONC /cloudwater(k)
-
-    frac_aq(IH_SO2,k) = 1.0 / ( 1.0+1.0/( H(IH_SO2,itemp(k))*VfRT(k) ) )
-    so2_aq(k)= frac_aq(IH_SO2,k)*(xn_2d(SO2,k)*1000./AVOG)/cloudwater(k)
-
-      !nh4+, hco3, hso3 and so32 dissolve and ionize
-      Heff_NH3= H(IH_NH3,itemp(k))*Knh3(itemp(k))*h_plus(k)/Kw(itemp(k))
-      frac_aq(IH_NH3,k) = 1.0 / ( 1.0+1.0/( Heff_NH3*VfRT(k) ) )
-      nh3_aq(k)= frac_aq(IH_NH3,k)*(xn_2d(NH3,k)*1000./AVOG)/cloudwater(k)
-
-      hco3_aq(k)= co2_aq(k) * Kco2(itemp(k))/h_plus(k)
-      hso3_aq(k)= so2_aq(k) * K1(itemp(k))/h_plus(k)
-      so32_aq(k)= hso3_aq(k) * K2(itemp(k))/h_plus(k)
-      
-   endif
 
 
 !after pH determined, final numbers of frac_aq(IH_SO2)

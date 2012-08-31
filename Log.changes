@@ -112,7 +112,17 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
-xxxxxxxx ongoing        28--/2012  xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx  rv4rc5      28-31Aug/2012  xxxxxxxxxxxxxxxxxxxxxxx
+
+Peter: 31/8/2012
+Aqueous_n_WetDep_ml.f90
+(Note: Only Aqueous changes usedin TSAP SR runs)
+
+In setup_aqurates concentrations were calculated from pH then pH from concentrations.
+A loop with fixed number (5) of iteration was doing this. In the original code nothing ensured convergence; i.e we could have for instance pH=4 in first iteration, pH=5.6 second iteration, then pH=3.7, pH=6.1, and pH= 3.5 at the last iteration. This is unstable, meaning that small change in start value can give large changes in end values.
+The solution adopted is to take only 2 "iterations" (pH give concentration and then concentration give pH). A proper linear combination of the 2 values are taken. "proper" meaning correct to second order. In practice for good situations (smooth variations), the solution is very close to the self-consistent value, for difficult situations, the value is in the right direction, but not exactely equal to the self-consistent solution.
+Still, since the method is not really iterative, the solution is stable.
+
 
 Svetlana: 31/8/2012
 GlobalBCs_ml: Saharan BCs are divided by 2, as molecular weight for dust
