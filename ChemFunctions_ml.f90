@@ -250,7 +250,7 @@ module ChemFunctions_ml
 !   
 ! E12:47
 ! The surface/volume ratio is calculated using Whitby particle distribution
-! with number mean radius 0.034  and standard deviation (Sigma)=2. 
+! with number mean radius rgn=0.068  and standard deviation (Sigma)=2. 
 ! Then surface/volume=3/r *  exp( -5/2 *(lnSigma)^2)=26.54 
 ! 3* exp( -5/2 *(lnSigma)^2)=1.2648  for  sigma=1.8
 ! (monodisperse aerosols; 4*pi*r^2/(4/3 pi*r^3)= 3/r =88.2)
