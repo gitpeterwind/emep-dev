@@ -112,6 +112,19 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
+xxxxxxxx  rv4rc6         3 Sep/2012  xxxxxxxxxxxxxxxxxxxxxxx
+
+New ForestFire type: GFASv1
+
+ForestFire_ml,run.pl
+  ZCM_EmChem09soa/BiomassBurning_GFASv1_to_EmChem09soa.inc
+  - New ForestFire type GFASv1 (BiomassBurning_GFASv1_to_EmChem09soa.inc)
+  - Clean up ForestFire_ml
+
+Makefile:
+  - Update compiler & netCDF librery versions on stallo & vilje
+  - Target MACC-EVA2010 uses GFASv1 ForestFire
+
 xxxxxxxx  rv4rc5      28-31Aug/2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 Peter: 31/8/2012

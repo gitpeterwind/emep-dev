@@ -111,7 +111,7 @@ my %BENCHMARK;
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2006,emis=>"Modrun11/EMEP_trend_2000-2009/2006");
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2007,emis=>"Modrun11/EMEP_trend_2000-2009/2007");
 if (%BENCHMARK) {
-# $BENCHMARK{'archive'} = 1;                        # save summary info in $DataDir
+  $BENCHMARK{'archive'} = 1;                        # save summary info in $DataDir
   $BENCHMARK{'debug'} = $BENCHMARK{'archive'};      # chech if all debug flags are .false.
 #  $BENCHMARK{'ndx'}   = 8 if $BENCHMARK{'archive'}; # number of procesors in
 #  $BENCHMARK{'ndy'}   = 8 if $BENCHMARK{'archive'}; # x and y directions
@@ -263,7 +263,7 @@ my $Chem     = "EmChem09soa";
 #$Chem     = "CRI_v2_R5";
    $Chem     = $BENCHMARK{'chem'} if $BENCHMARK{'chem'};
 
-my $testv = "rv4rc4";
+my $testv = "rv4rc6";
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
@@ -829,9 +829,12 @@ print "TESTING PM $poll $dir\n";
   $ifile{"$DataDir/GLOBAL_O3.nc"} =
                   "GLOBAL_O3.nc";
   $ifile{"$DataDir/amilt42-nox.dat"} = "ancatmil.dat";#RENAME TO AIRCARAFT?!
-  $ifile{"$DataDir/GLOBAL_ForestFireEmis.nc"} = "GLOBAL_ForestFireEmis.nc"; #GFED emissions
-  $ifile{"$DataDir/ForestFire_Emis_$year.nc"} = "GLOBAL_ForestFireEmis_FINN.nc"
-    if ($year >= 2002 and $year <= 2011);#FINN emissions
+  $ifile{"$DataDir/GLOBAL_ForestFireEmis.nc"} =                     # GFED emissions
+    "GFED_ForestFireEmis.nc";     #if ($year >= 2001 and $year <= 2007);
+  $ifile{"$DataDir/ForestFire/FINN/ForestFire_Emis_$year.nc"} =     # FINN emissions
+    "FINN_ForestFireEmis_$year.nc" if ($year >= 2002 and $year <= 2011);
+  $ifile{"$DataDir/ForestFire/GFAS/GFAS_ForestFireEmis_$year.nc"} = # GFAS emissions
+    "GFAS_ForestFireEmis_$year.nc" if ($year >= 2008 and $year <= 2011);
   $ifile{"$DataDir/nox_emission_1996-2005.nc"} = "nox_emission_1996-2005.nc";
   $ifile{"$DataDir/AircraftEmis_FL.nc"} = "AircraftEmis_FL.nc";
   $ifile{"$DataDir/SurfacePressure.nc"} = "SurfacePressure.nc";
