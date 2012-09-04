@@ -871,7 +871,7 @@ if( USE_SOILWATER ) then
           if(nr==1)cw(:,:,:,2)=cw(:,:,:,nr)       
           do j=1,ljmax
              do i=1,limax
-                pr(i,j,KMAX_MID)= surface_precip(i,j)*10800000.0!guarantees precip at surface
+                pr(i,j,KMAX_MID)= surface_precip(i,j)*METSTEP*3600.0*1000.0!guarantees precip at surface
                 do k=1,KMAX_MID-1
                    if(cw(i,j,k,2)+cw(i,j,k,1)>CW_THRESHOLD)then
                       !fill the column up to this level with constant precip
@@ -890,7 +890,7 @@ if( USE_SOILWATER ) then
           !will use RH to determine the height of release (less accurate than cloudwater)
           do j=1,ljmax
              do i=1,limax 
-                pr(i,j,KMAX_MID)= surface_precip(i,j)*10800000.0!guarantees precip at surface
+                pr(i,j,KMAX_MID)= surface_precip(i,j)*METSTEP*3600.0*1000.0!guarantees precip at surface
                 do k=1,KMAX_MID-1
                    !convert from potential temperature into absolute temperature
                    temperature = th(i,j,k,nr)*exp(KAPPA*log((A_mid(k) + B_mid(k)*ps(i,j,nr)*100)*1.e-5))!Pa, Ps still in hPa here
@@ -911,7 +911,7 @@ if( USE_SOILWATER ) then
                    if(relh1>RH_THRESHOLD.or.relh2>RH_THRESHOLD)then
                       !fill the column up to this level with constant precip
                       do kk=k,KMAX_MID-1
-                         pr(i,j,kk)= surface_precip(i,j)*10800000.0!3hours and m->mm              
+                         pr(i,j,kk)= surface_precip(i,j)*METSTEP*3600.0*1000.0!3hours and m->mm              
                       enddo
                       exit
                    else

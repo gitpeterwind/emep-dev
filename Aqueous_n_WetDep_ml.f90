@@ -662,6 +662,9 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
 
       if(iter>1.and.(abs(pHin(iter-1)-pHin(iter)-pHout(iter-1)+pHout(iter))>1.E-10))then
          !linear interpolation for pH . (Solution of f(pH)=pH)
+         !assume a linear relation between pHin and pHout.
+         !make a straight line between vaues at iter and iter-a, 
+         !and find where the line cross the diagonal, i.e. pHin = pHout
          pH(k)=(pHin(iter-1)*pHout(iter)-pHin(iter)*pHout(iter-1))&
               /(pHin(iter-1)-pHin(iter)-pHout(iter-1)+pHout(iter))
          pH(k)=max(1.0,min(pH(k),7.0))! between 1 and 7
