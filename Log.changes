@@ -112,6 +112,12 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
+xxxxxxxx  rv4rc7    Peter     5 Sep/2012  xxxxxxxxxxxxxxxxxxxxxxx
+
+Small changes only 
+Met_ml: replaced some hardcoded 10800 with 3*METSTEP
+Aqueous_n_WetDep_ml.f90: added some comments
+
 xxxxxxxx  rv4rc6         3 Sep/2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 New ForestFire type: GFASv1
