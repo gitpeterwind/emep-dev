@@ -480,6 +480,7 @@ subroutine days1900_to_int(id,ndays,msg)
   type(timestamp) :: ts
 
   call days1900_to_ts(ts,ndays,msg=msg)
+  if(size(id)<=4)ts%secs=ts%secs+0.1!correct for rounding errors
   id=to_idate(ts,size(id))
 end subroutine days1900_to_int
 
