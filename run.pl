@@ -8,8 +8,10 @@
 #Queue system commands start with #PBS (these are not comments!)
 # lnodes= number of nodes, ppn=processor per node (max8 on stallo)
 # Stallo, use ib for infiniband (fast interconnect).
-# Ve/Vilje, use ppn=16, do not use :ib
-#VePBS -lnodes=2:ppn=16
+# Ve/Vilje, (take out one # and put one # before the Stallo). 
+#     select= number of nodes, ncpus=number of threads per node to reserve, 
+#     mpiprocs=number of MPI threads per node. For 64 processors:
+##PBS -l select=2:ncpus=32:mpiprocs=32
 #Stallo
 #PBS -lnodes=64
 ##PBS -lnodes=8:ppn=8:ib
