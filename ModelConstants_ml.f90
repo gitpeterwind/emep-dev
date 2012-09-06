@@ -142,7 +142,7 @@ integer, public, parameter :: &
 
 integer, public, save, dimension(4) ::   &
 !                 x0   x1  y0   y1
-! RUNDOMAIN = (/  -999,-999 ,  -999, -999 /)     ! Set values later
+  RUNDOMAIN = (/  -999,-999 ,  -999, -999 /)     ! Set values later
 ! RUNDOMAIN = (/  1, 182,  1, 197 /)     ! HIRHAM
 ! RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA = new EMEP domain
 !!RUNDOMAIN = (/  1, 100,  1, 100 /)     ! Orig EMEP domain in EECCA (for benchmarks)
@@ -181,8 +181,8 @@ integer, public, save, dimension(4) ::   &
 ! RUNDOMAIN = (/ 80+OFFSET_i, 106+OFFSET_i, 13+OFFSET_j,  35+OFFSET_j /) ! Southern domain
 ! RUNDOMAIN = (/ 75+OFFSET_i,110+OFFSET_i, 25+OFFSET_j,  60+OFFSET_j /) ! (gets Esk)
 
-integer, public,save ::  & ! Actual number of processors in longitude,
-  NPROCX, NPROCY, NPROC  & ! latitude and total. NPROCY must be 2 for GLOBAL,
+integer, public, save ::  & ! Actual number of processors in longitude, latitude
+  NPROCX, NPROCY, NPROC     ! and total. NPROCY must be 2 for GLOBAL runs.
 
 !=============================================================================
 !+ 2) Define  debug flags.
