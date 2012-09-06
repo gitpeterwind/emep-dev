@@ -147,6 +147,20 @@ NestCDF_ml
   - replace (me==0) by MasterProc
   - rewrite subroutine CloseNetCDF
 
+TimeDate_ExtraUtil_ml
+  - Add support for "day of the year" on date2string ('JJJ' keyword).
+  - Add to int arrays of size 6 as date format.
+    It assumes (/year,month,day,hour,minute,second/) format.
+
+Units_ml
+  - Add support for mix_ratio unit:
+      umap("mix_ratio","mol/mol",1.0),&  ! Internal model unit
+  - Units_Scale also recongizes "mole mole-1" & "mixratio" as "mix_ratio"
+
+Unimod.f90
+  - Do not create hourly output file. This is now done on Output_hourly
+  - Use date2string to write current date and time messages
+
 Makefile:
   - Target MACC-EVA2010 uses GFASv1 ForestFire
   - Update compiler & netCDF library versions on stallo & vilje.

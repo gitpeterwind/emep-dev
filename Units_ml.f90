@@ -68,8 +68,9 @@ type, public :: group_umap
   real,   pointer,dimension(:) :: uconv=>null() ! conversion factor
 endtype group_umap
 
-type(umap), public, save :: unit_map(17)=(/&
+type(umap), public, save :: unit_map(18)=(/&
 ! Air concentration
+  umap("mix_ratio","mol/mol",1.0),&  ! Internal model unit
   umap("ppb" ,"ppb" ,PPBINV),&
   umap("ppbh","ppb h",s2h  ),&  ! PPBINV already included in AOT calculations
   umap("ug" ,"ug/m3" ,ugXm3),&  ! ug* units need to be further multiplied
@@ -198,12 +199,15 @@ function Units_Scale(txtin,iadv,unitstxt,volunit,needroa,debug_msg) result(units
   integer :: i
 
   if(Initialize_Units) call Init_Units
-  select case (txtin)
+  txt=ADJUSTL(txtin) ! Remove leading spaces
+  select case (txt)
   case("ugSS","ugSS/m3","ugP","ugP/m3",&
        "mgSS","mgSS/m2","mgP","mgP/m2")
-    txt=txtin(1:2)
-  case default
-    txt=txtin
+    txt=txt(1:2)
+  case("mol/mol","mole mole-1","mixratio")
+    txt="mix_ratio"
+ !case default
+ !  txt=txtin
   endselect
   i=find_index(txt,unit_map(:)%utxt)
   if(i<1)i=find_index(txt,unit_map(:)%units)

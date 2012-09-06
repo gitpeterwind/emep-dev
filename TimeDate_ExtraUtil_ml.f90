@@ -32,7 +32,7 @@ use ModelConstants_ml,only: METSTEP, MasterProc, IOU_MON,IOU_DAY,IOU_HOUR_MEAN
 use My_Outputs_ml,    only: FREQ_HOURLY
 use TimeDate_ml,      only: max_day,tdif_secs,tdif_days,add_secs,add_days,&
                             ts2date=>make_current_date,date2ts=>make_timestamp,&
-                            date,timestamp,startdate,enddate
+                            timestamp,day_of_year,date,startdate,enddate
 use CheckStop_ml,     only: CheckStop
 
 IMPLICIT NONE
@@ -123,6 +123,7 @@ function int2date (id) result (cd)
     case (3);     cd=date(id(1),id(2),id(3),0,0)
     case (4);     cd=date(id(1),id(2),id(3),id(4),0)
     case (5);     cd=date(id(1),id(2),id(3),id(4),id(5))
+    case (6);     cd=date(id(1),id(2),id(3),id(4),id(5)*60+id(6))
     case default; cd=date(-1,-1,-1,-1,-1)
     call CheckStop("ERROR in int2date: undetermined date")
   end select
@@ -210,11 +211,12 @@ function rkey2str(iname,key,val) result(fname)
   enddo
 end function rkey2str
 
-subroutine str2detail(str,fmt,year,month,day,hour,seconds,minute,second,&
+subroutine str2detail(str,fmt,year,month,day,hour,seconds,minute,second,days,&
                      fstep,ntme,nlev,nlat,nlon,debug)
   implicit none
   character(len=*), intent(in) :: str,fmt
-  integer,intent(out),optional :: year,month,day,hour,seconds,minute,second,&
+  integer,intent(out),optional :: year,month,day,hour,seconds,&
+                                  minute,second,days,&
                                   fstep,ntme,nlev,nlat,nlon
   logical, intent(in),optional :: debug
   if(present(seconds))seconds=str2key(str,fmt,'ssss')&
@@ -227,6 +229,7 @@ subroutine str2detail(str,fmt,year,month,day,hour,seconds,minute,second,&
   if(present(month  ))month  =str2key(str,fmt,'MM'  )
   if(present(year   ))year   =str2key(str,fmt,'YYYY')
 ! if(present(year   ))year   =str2key(str,fmt,'YY'  )+1900
+  if(present(days   ))days   =str2key(str,fmt,'JJJ' ) ! day of the year
   if(present(nlon   ))nlon   =str2key(str,fmt,'LON' )
   if(present(nlat   ))nlat   =str2key(str,fmt,'LAT' )
   if(present(nlev   ))nlev   =str2key(str,fmt,'LL'  )
@@ -246,12 +249,13 @@ function string2date(str,fmt,debug) result(cd)
                   hour=cd%hour,seconds=cd%seconds,debug=debug)
 end function string2date
 
-function detail2str(iname,year,month,day,hour,seconds,minute,second,&
+function detail2str(iname,year,month,day,hour,seconds,minute,second,days,&
                         fstep,ntme,nlev,nlat,nlon,debug) result(fname)
   implicit none
   character(len=*), intent(in) :: iname
   character(len=len(iname))    :: fname
-  integer, intent(in),optional :: year,month,day,hour,seconds,minute,second,&
+  integer, intent(in),optional :: year,month,day,hour,seconds,&
+                                  minute,second,days,&
                                   fstep,ntme,nlev,nlat,nlon
   logical, intent(in),optional :: debug
   fname=iname
@@ -263,6 +267,7 @@ function detail2str(iname,year,month,day,hour,seconds,minute,second,&
   if(present(month  ))fname=key2str(fname,'MM'  ,month )
   if(present(year   ))fname=key2str(fname,'YYYY',year  )
   if(present(year   ))fname=key2str(fname,'YY'  ,mod(year,100))
+  if(present(days   ))fname=key2str(fname,'JJJ' ,days  ) ! day of the year
   if(present(nlon   ))fname=key2str(fname,'LON' ,nlon  )
   if(present(nlat   ))fname=key2str(fname,'LAT' ,nlat  )
   if(present(nlev   ))fname=key2str(fname,'LL'  ,nlev  )
@@ -282,7 +287,7 @@ function cd2str(iname,cd,debug) result(fname)
   fname=detail2str(iname,year=cd%year,month=cd%month,day=cd%day,&
                          hour=cd%hour,seconds=cd%seconds,&
                          minute=cd%seconds/60,second=mod(cd%seconds,60),&
-                         debug=debug)
+                         days=day_of_year(cd%year,cd%month,cd%day),debug=debug)
 end function cd2str
 
 function int2str(iname,id,debug) result(fname)

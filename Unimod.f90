@@ -290,8 +290,8 @@ if (MasterProc.and.DEBUG_UNI) print *,"vgrid finish"
     call Init_new_netCDF(trim(runlabel1)//'_fullrun.nc',IOU_YEAR)
   if (wanted_iou(IOU_INST)) &
     call Init_new_netCDF(trim(runlabel1)//'_inst.nc',IOU_INST)
-  if (wanted_iou(IOU_HOUR).or.NHOURLY_OUT>0) &
-    call Init_new_netCDF(trim(runlabel1)//'_hour.nc',IOU_HOUR)
+! if (wanted_iou(IOU_HOUR).or.NHOURLY_OUT>0) &
+!   call Init_new_netCDF(trim(runlabel1)//'_hour.nc',IOU_HOUR)
   if (wanted_iou(IOU_DAY)) &
     call Init_new_netCDF(trim(runlabel1)//'_day.nc',IOU_DAY)
   if (wanted_iou(IOU_MON)) &
@@ -322,7 +322,7 @@ do numt = 2, nterm + nadd         ! 3-hourly time-loop
     case(3:5)   ;newseason = 2
     case(6:8)   ;newseason = 3
     case(9:11)  ;newseason = 4
-  end select
+  endselect
 
   ! daynumber needed for BCs
   daynumber=day_of_year(current_date%year,current_date%month,current_date%day)
@@ -389,10 +389,11 @@ do numt = 2, nterm + nadd         ! 3-hourly time-loop
   call Add_2timing(12,tim_after,tim_before,"Fires+BVOC")
 
   daynumber=day_of_year(current_date%year,current_date%month,current_date%day)
-  if (MasterProc) print "(a,2I2.2,I4,3x,i2.2,a,i2.2,a,i2.2)",' current date and time: ',&
-      current_date%day,current_date%month,current_date%year,&
-     current_date%hour, ':',current_date%seconds/60,':',current_date%seconds-60*(current_date%seconds/60)
-
+! if(MasterProc) print "(a,2I2.2,I4,3x,i2.2,a,i2.2,a,i2.2)",' current date and time: ',&
+!   current_date%day,current_date%month,current_date%year,&
+!   current_date%hour, ':',current_date%seconds/60,':',current_date%seconds-60*(current_date%seconds/60)
+  if(MasterProc) print "(2(1X,A))",'current date and time:',&
+    date2string("YYYY-MM-DD hh:mm:ss",current_date)
 
   call Code_timer(tim_before)
   call metvar(numt)
