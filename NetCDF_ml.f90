@@ -585,7 +585,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
      !NB if the file already exist (also from earlier runs) it will be appended
      overwrite_local=.false.
      if(present(overwrite))overwrite_local=overwrite
-     if(me==0)then
+     if(MasterProc)then
         !try to open the file
         status=nf90_open(path = trim(fileName_given), mode = nf90_share+nf90_write, ncid = ncFileID)
         if(DEBUG_NETCDF) write(*,*)'Out_NetCDF: fileName_given ' , trim(fileName_given),overwrite_local,status == nf90_noerr, ncfileID,trim(nf90_strerror(status))
@@ -666,7 +666,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
   OUTtype=Real4  !default value
   if(present(CDFtype))OUTtype=CDFtype
 
-  if(me==0)then
+  if(MasterProc)then
 
      ndate(1)  = current_date%year
      ndate(2)  = current_date%month
@@ -703,13 +703,13 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
         if (DEBUG_NETCDF) write(6,*) 'Out_NetCDF: creating variable: ',varname
         call  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype)
      endif
-  endif!me==0
+  endif!MasterProc
 
   if(create_var_only_local)then
      !Don't write the data
      !For performance: need to create all variables before writing data
      if(DEBUG_NETCDF.and.MasterProc)write(*,*)'variable ONLY created. Finished'
-     if(me==0.and.iotyp_new==1)call check(nf90_close(ncFileID))
+     if(MasterProc.and.iotyp_new==1)call check(nf90_close(ncFileID))
      return
   endif!create var only
 
@@ -821,7 +821,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
   endif
   !return
 
-  if(me==0)then
+  if(MasterProc)then
 
      ndate(1)  = current_date%year
      ndate(2)  = current_date%month
@@ -1045,57 +1045,42 @@ subroutine  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype)
 end subroutine  createnewvariable
 !_______________________________________________________________________
 
-  subroutine check(status,errmsg)
-    implicit none
-    integer, intent ( in) :: status
-    character(len=*), intent(in), optional :: errmsg
+subroutine check(status,errmsg)
+  implicit none
+  integer, intent ( in) :: status
+  character(len=*), intent(in), optional :: errmsg
 
-    if(status /= nf90_noerr) then
-      print *, trim(nf90_strerror(status))
-      if( present(errmsg) ) print *, "ERRMSG: ", trim(errmsg)
-      call CheckStop("NetCDF_ml : error in netcdf routine")
-    end if
-  end subroutine check
+  if(status /= nf90_noerr) then
+    print *, trim(nf90_strerror(status))
+    if(present(errmsg)) print *, "ERRMSG: ", trim(errmsg)
+    call CheckStop("NetCDF_ml : error in netcdf routine")
+  endif
+endsubroutine check
 
-  subroutine CloseNetCDF
+subroutine CloseNetCDF
 !close open files
 !NB the data in a NetCDF file is not "safe" before the file is closed.
 !The files are NOT automatically properly closed after end of program,
 ! and data may be lost if the files are not closed explicitely.
 
-integer :: ncFileID
+  if(MasterProc)then
+    call CloseNC(ncFileID_year)
+    call CloseNC(ncFileID_month)
+    call CloseNC(ncFileID_day)
+    call CloseNC(ncFileID_hour)
+    call CloseNC(ncFileID_inst)
+  endif
+  contains
+  subroutine CloseNC(ncID)
+    integer, intent(inout) :: ncID
+    integer :: ncFileID
 
-outCDFtag=0 !for avoiding too large integers
-
-if(me==0)then
-
-    if(ncFileID_year/=closedID)then
-       ncFileID = ncFileID_year
-       call check(nf90_close(ncFileID))
-       ncFileID_year=closedID
-    endif
-    if(ncFileID_month/=closedID)then
-       ncFileID = ncFileID_month
-       call check(nf90_close(ncFileID))
-       ncFileID_month=closedID
-    endif
-    if(ncFileID_day/=closedID)then
-       ncFileID = ncFileID_day
-       call check(nf90_close(ncFileID))
-       ncFileID_day=closedID
-    endif
-    if(ncFileID_hour/=closedID)then
-       ncFileID = ncFileID_hour
-       call check(nf90_close(ncFileID))
-       ncFileID_hour=closedID
-    endif
-    if(ncFileID_inst/=closedID)then
-       ncFileID = ncFileID_inst
-       call check(nf90_close(ncFileID))
-       ncFileID_inst=closedID
-    endif
-endif
-end subroutine CloseNetCDF
+    if(ncID==closedID)return
+    ncFileID = ncID
+    call check(nf90_close(ncFileID))
+    ncID=closedID
+  end subroutine CloseNC
+endsubroutine CloseNetCDF
 
 subroutine GetCDF(varname,fileName,Rvar,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,needed)
   !
@@ -1125,7 +1110,7 @@ subroutine GetCDF(varname,fileName,Rvar,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,
   integer, allocatable:: Ivalues(:)
 
   print *,'GetCDF  reading ', me, trim(fileName), ' nstart ', nstart
-  if(me==0.and.DEBUG_NETCDF)print *,'GetCDF  reading ',trim(fileName), ' nstart ', nstart
+  if(MasterProc.and.DEBUG_NETCDF)print *,'GetCDF  reading ',trim(fileName), ' nstart ', nstart
   !open an existing netcdf dataset
   fileneeded=.true.!default
   if(present(needed))then
@@ -1287,7 +1272,7 @@ subroutine WriteCDF(varname,vardate,filename_given,newfile)
  ndim=3 !3-dimensional
  kmax=KMAX_MID
 
- if(NSPEC_SHL+ NSPEC_ADV /=  NSPEC_TOT.and. me==0)then
+ if(NSPEC_SHL+ NSPEC_ADV /=  NSPEC_TOT.and. MasterProc)then
     write(*,*)'WARNING: NSPEC_SHL+ NSPEC_ADV /=  NSPEC_TOT'
     write(*,*) NSPEC_SHL,NSPEC_ADV, NSPEC_TOT
     write(*,*)'WRITING ONLY SHL and ADV'
@@ -1326,7 +1311,7 @@ subroutine WriteCDF(varname,vardate,filename_given,newfile)
 
 else
 
-    if(me==0)write(*,*)'case not implemented'
+    if(MasterProc)write(*,*)'case not implemented'
  endif
 
 
@@ -2717,139 +2702,131 @@ subroutine printCDF(name, array,unit)
   end subroutine printCDF
 
 
-  subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read)
-    !Read times in file under CF convention and convert into days since 1900-01-01 00:00:00
-    character(len=*) ,intent(in)::filename
-    real,intent(out) ::TimesInDays(*)
-    integer, intent(in)  :: NTime_Read !number of records to read
+subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read)
+  !Read times in file under CF convention and convert into days since 1900-01-01 00:00:00
+  character(len=*) ,intent(in)::filename
+  real,intent(out) :: TimesInDays(*)
+  integer, intent(in)  :: NTime_Read !number of records to read
 
-    real, allocatable ::times(:)
-    integer :: i,ntimes,status
-    integer :: varID,ncFileID,ndims
-    integer :: xtype,dimids(NF90_MAX_VAR_DIMS),nAtts
-    integer, parameter::wordarraysize=20
-    character*50 ::varname,period,since,name,timeunit,wordarray(wordarraysize),calendar
+  real, allocatable :: times(:)
+  integer :: i,ntimes,status
+  integer :: varID,ncFileID,ndims
+  integer :: xtype,dimids(NF90_MAX_VAR_DIMS),nAtts
+  integer, parameter::wordarraysize=20
+  character(len=50) ::varname,period,since,name,timeunit,wordarray(wordarraysize),calendar
 
-    integer :: yyyy,mo,dd,hh,mi,ss,julian,julian_1900,diff_1900,nwords,errcode
-    logical:: proleptic_gregorian
+  integer :: yyyy,mo,dd,hh,mi,ss,julian,julian_1900,diff_1900,nwords,errcode
+  logical:: proleptic_gregorian
 
-    status = nf90_open(path = trim(fileName), mode = nf90_nowrite, ncid = ncFileID)
-    call CheckStop(status /= nf90_noerr, "ReadTimeCDF, file not found: "//trim(fileName))
+  call check(nf90_open(path=fileName, mode=nf90_nowrite, ncid=ncFileID),&
+    errmsg="ReadTimeCDF, file not found: "//trim(fileName))
 
-    varname='time'
-    status = nf90_inq_varid(ncid = ncFileID, name = varname, varID = VarID)
+  varname='time'
+  call check(nf90_inq_varid(ncid=ncFileID, name=varname, varID=VarID),&
+    errmsg="ReadTimeCDF, "//trim(varname)//" not found in "//trim(fileName))
+  if(DEBUG_NETCDF)write(*,*)'variable exists: ',trim(varname)
 
-    if(status == nf90_noerr) then
-       if(DEBUG_NETCDF)print *, 'variable exists: ',trim(varname)
-    else
-       print *, 'variable does not exist: ',trim(varname),'file: ',trim(fileName),nf90_strerror(status)
-       call StopAll("ReadTimeCDF : time not found")
-       return
-    endif
+  call check(nf90_Inquire_Variable(ncFileID,VarID,name,xtype,ndims,dimids,nAtts))
+  if(ndims>1)write(*,*)'WARNING: time has more than 1 dimension!? ',ndims
+  call check(nf90_inquire_dimension(ncid=ncFileID, dimID=dimids(1),  len=ntimes))
+  call CheckStop(ntimes<NTime_Read, "to few records in "//trim(fileName))
+  allocate(times(NTime_Read))
+  call check(nf90_get_var(ncFileID, VarID, times,count=(/NTime_Read/)))
 
-    call check(nf90_Inquire_Variable(ncFileID,VarID,name,xtype,ndims,dimids,nAtts))
-    if(ndims>1)write(*,*)'WARNING: time has more than 1 dimension!? ',ndims
-    call check(nf90_inquire_dimension(ncid=ncFileID, dimID=dimids(1),  len=ntimes))
-    call CheckStop(ntimes<NTime_Read, "to few records in "//trim(fileName))
-    allocate(times(NTime_Read))
-    call check(nf90_get_var(ncFileID, VarID, times,count=(/NTime_Read/)))
-
-    call check(nf90_get_att(ncFileID, VarID, "units", timeunit  ))
+  call check(nf90_get_att(ncFileID, VarID, "units", timeunit  ))
 
 !must be of the form " xxxx since yyyy-mm-dd hh:mm:ss"
 
 !    read(timeunit,fmt="(a,a,a,a)")period,since,date,time
-    call wordsplit(trim(timeunit),wordarraysize,wordarray,nwords,errcode,separator='-')
-    if(DEBUG_NETCDF.and.me==0)write(*,*)(trim(wordarray(i)),i=1,8)
-    period=wordarray(1)
-    call CheckStop(trim(period)/='days', "Error: only time in days implemented "//trim(period))
-    since=wordarray(2)
-    call CheckStop(trim(since)/='since', "since error "//trim(since))
+  call wordsplit(trim(timeunit),wordarraysize,wordarray,nwords,errcode,separator='-')
+  if(DEBUG_NETCDF.and.MasterProc)write(*,*)(trim(wordarray(i)),i=1,8)
+  period=wordarray(1)
+  since=wordarray(2)
+  call CheckStop(since/='since',"since error "//trim(since))
 
-    read(wordarray(3),*)yyyy
-    read(wordarray(4),*)mo
-    read(wordarray(5),*)dd
-    read(wordarray(6),*)hh
-    mi=0
-    ss=0
+  read(wordarray(3),*)yyyy
+  read(wordarray(4),*)mo
+  read(wordarray(5),*)dd
+  read(wordarray(6),*)hh
+  mi=0
+  ss=0
 !    read(wordarray(7),*)mi
 !    read(wordarray(8),*)ss  !did not work ???
-    status=nf90_get_att(ncFileID, VarID, "calendar", calendar )
-    proleptic_gregorian=.false.
-    if(status == nf90_noerr)then
-       if(trim(calendar)=='proleptic_gregorian')then
-          if(DEBUG_NETCDF.and.me==0)write(*,*)'found proleptic_gregorian calendar'
-          proleptic_gregorian=.true.
-       endif
-    endif
+  calendar='unknown'
+  status=nf90_get_att(ncFileID, VarID, "calendar", calendar )
+  proleptic_gregorian=(status==nf90_noerr).and.(calendar=='proleptic_gregorian')
+  if(proleptic_gregorian.and.DEBUG_NETCDF.and.MasterProc)&
+    write(*,*)'found proleptic_gregorian calendar'
 
 
-    if(yyyy/=0.or.proleptic_gregorian)then
+  if(yyyy/=0.or.proleptic_gregorian)then
 !       read(date,fmt="(I4.4,a1,I2.2,a1,I2.2)")yyyy,s1,mo,s2,dd
 !       read(time,fmt="(I2.2,a1,I2.2,a1,I2.2)")hh,s1,mi,s2,ss
 
-       if(DEBUG_NETCDF.and.me==0)write(*,fmt="(a,I4.4,a1,I2.2,a1,I2.2,a,I2.2,a1,I2.2,a1,I2.2)")&
-            'nest refdate ',yyyy,'-',mo,'-',dd,' time ',hh,':',mi,':',ss
-       ss=ss+60*mi+3600*hh
-       julian=julian_date(yyyy,mo,dd)
-       julian_1900=julian_date(1900,1,1)
-       diff_1900=julian-julian_1900
-       !    if(me==0)write(*,*)'julians ',diff_1900,julian,julian_1900
-       if(trim(period)=='days')then
-          do i=1,NTime_Read
-             TimesInDays(i)=diff_1900+times(i)+ss/(24.0*3600.0)
-          enddo
-       elseif(trim(period)=='seconds')then
-          do i=1,NTime_Read
-             TimesInDays(i)=diff_1900+(times(i)+ss)/(3600.0*24.0)
-          enddo
-       else
-          call StopAll("ReadTimeCDF : time unit not recognized")
-       endif
+    if(DEBUG_NETCDF.and.MasterProc)&
+      write(*,"(A,I4.4,2('-',I2.2),A,I2.2,2(':',I2.2))")&
+        'nest refdate ',yyyy,mo,dd,' time ',hh,mi,ss
+    ss=ss+60*mi+3600*hh
+    julian=julian_date(yyyy,mo,dd)
+    julian_1900=julian_date(1900,1,1)
+    diff_1900=julian-julian_1900
+!   if(MasterProc)write(*,*)'julians ',diff_1900,julian,julian_1900
+    select case(period)
+    case('days')
+      do i=1,NTime_Read
+        TimesInDays(i)=diff_1900+times(i)+ss/(3600.0*24.0)
+      enddo
+    case('hours')
+      do i=1,NTime_Read
+        TimesInDays(i)=diff_1900+(times(i)+ss/3600.0)/24.0
+      enddo
+    case('seconds')
+      do i=1,NTime_Read
+        TimesInDays(i)=diff_1900+(times(i)+ss)/(3600.0*24.0)
+      enddo
+    case default
+      call StopAll("ReadTimeCDF, time unit not recognized: "//trim(period))
+    endselect
 
-    else
+  else
 
-       if(DEBUG_NETCDF.and.me==0)write(*,*)'assuming days since 0-01-01 00:00 and 365days'
-       !assume units = "days since 0-01-01 00:00"
-       !and calendar = "365_day"
-       yyyy=int(times(1)/365)
+    if(DEBUG_NETCDF.and.MasterProc)&
+      write(*,*)'assuming days since 0-01-01 00:00 and 365days'
+    call CheckStop(period/='days',"Error: only time in days implemented "//trim(period))
+    !assume units = "days since 0-01-01 00:00"
+    !and calendar = "365_day"
+    yyyy=int(times(1)/365)
 
-       julian=julian_date(yyyy,1,1)
-       julian_1900=julian_date(1900,1,1)
-       diff_1900=julian-julian_1900
+    julian=julian_date(yyyy,1,1)
+    julian_1900=julian_date(1900,1,1)
+    diff_1900=julian-julian_1900
 
-       do i=1,NTime_Read
-          TimesInDays(i)=diff_1900+times(i)-yyyy*365
-       enddo
-       !for leap years and dates after 28th February add one day to get Julian days
-       if(mod(yyyy,4)==0)then
-          do i=1,NTime_Read
-             if(times(i)-yyyy*365>59.999)then
-                !later than midnight the 28th february (28th Feb is 59th day)
-                TimesInDays(i)=TimesInDays(i)+1.0
-             endif
-          enddo
+    do i=1,NTime_Read
+      TimesInDays(i)=diff_1900+times(i)-yyyy*365
+    enddo
+    !for leap years and dates after 28th February add one day to get Julian days
+    if(mod(yyyy,4)==0)then
+      do i=1,NTime_Read
+        !later than midnight the 28th february (28th Feb is 59th day)
+        if(times(i)-yyyy*365>59.999) TimesInDays(i)=TimesInDays(i)+1.0
+      enddo
 !if the current date in the model is 29th of february, then this date is not defined in the
 !365 days calendar. We then assume that the 60th day is 29th of february in the netcdf file
 !and not the 1st of march.
 !Keep this separately as this may be defined differently in different situations.
 !This implementation works for the IFS-MOZART BC
-          if(current_date%month==2.and.current_date%day==29)then
-             write(*,*)'WARNING: assuming 29th of February for ',trim(filename)
-             do i=1,NTime_Read
-                if(int(times(i)-yyyy*365)==60)then
-                   !move 1st march to 29th february
-                   TimesInDays(i)=TimesInDays(i)-1.0
-                endif
-             enddo
-          endif
-
-       endif
+      if(current_date%month==2.and.current_date%day==29)then
+        write(*,*)'WARNING: assuming 29th of February for ',trim(filename)
+        do i=1,NTime_Read
+          !move 1st march to 29th february
+          if(int(times(i)-yyyy*365)==60) TimesInDays(i)=TimesInDays(i)-1.0
+        enddo
+      endif
     endif
+  endif
 
-    call check(nf90_close(ncFileID))
-
-    deallocate(times)
-  end subroutine ReadTimeCDF
+  call check(nf90_close(ncFileID))
+  deallocate(times)
+endsubroutine ReadTimeCDF
 
 end module NetCDF_ml

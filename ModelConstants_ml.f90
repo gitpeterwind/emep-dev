@@ -38,25 +38,34 @@ implicit none
 private
 
 !=============================================================================
+! Experiment name:
+!  STATUS      Standard run & output
+!  STATUS2010  STATUS with Volcanic Eruption input
+!  TFMM        STATUS: INERIS_SNAP & TFMM hourly output
+!  FORECAST    Forecast run, MACC-ENS hourly output & BC
+!  EVA2010     FORECAST with MACC-EVA2010 hourly output & BC
+!  EMERGENCY   FORECAST with ONLY Volcanic Eruption & Nuclear Accident.
+CHARACTER(LEN=*), public, parameter :: &
+  EXP_NAME="STATUS"
+
 ! FORECAST mode run:
 ! * Nested IC/BC def in Nest_ml & IFSMOZ_ExternalBICs_ml
 ! * Special hourly output def in My_Outputs_ml
 ! * Only dayly and hourly output are required,
 !   all other output types to false in Derived_ml.
-logical, public, parameter :: &
-  FORECAST = .false.
+logical, public, parameter :: FORECAST=&
+  (EXP_NAME=="FORECAST").or.(EXP_NAME=="EVA2010").or.(EXP_NAME=="EMERGENCY")
 
 ! Some flags for model setup
 ! will be removed when code is sufficiently tested
 ! (for convection use foundconv in permanent code)
 logical, public, parameter ::         &
   USE_CONVECTION     = .false.,       & ! false works best for Euro runs,
-  TFMM_RUNS          = .false.,       & ! tmp Jun 2012
-  INERIS_SNAP1       = TFMM_RUNS,    & ! Switches off decadal trend
-  INERIS_SNAP2       = TFMM_RUNS,   & ! Allows near-zero summer values
+  INERIS_SNAP1       = (EXP_NAME=="TFMM"), & ! Switches off decadal trend
+  INERIS_SNAP2       = (EXP_NAME=="TFMM"), & ! Allows near-zero summer values
   USE_DEGREEDAY_FACTORS  = .not.FORECAST,  & !
   USE_SOILWATER      = .not.FORECAST, & ! for deep soilwater,  under testing
-  USE_FOREST_FIRES   = .not.FORECAST, & ! Needs global files, future
+  USE_FOREST_FIRES   = .true.,        & ! Needs global files, future
   USE_AIRCRAFT_EMIS  = .true.,        & ! Needs global file, see manual
   USE_LIGHTNING_EMIS = .true.,        & ! ok
   USE_SOILNOX        = .true.,        & ! ok, but diff for global + Euro runs
@@ -74,7 +83,9 @@ logical, public, parameter ::         &
   EXTENDEDMASSBUDGET = .false.,       & ! extended massbudget outputs
   LANDIFY_MET        = .false.,       & ! extended massbudget outputs
   USE_POLLEN         = .false.,       & ! EXPERIMENTAL. Only works if start Jan 1
-  USE_EMERGENCY      = FORECAST         ! Emergency: Volcanic Eruption & Nuclear Accident. Under development.
+  USE_EMERGENCY      = FORECAST.or.&      ! Emergency: Volcanic Eruption & Nuclear Accident. Under development.
+                       (EXP_NAME=="STATUS2010")
+
 !Boundary layer profiles
   character(len=4), parameter, public :: FluxPROFILE = &
      "Iter"   !
@@ -127,22 +138,22 @@ integer, public :: IIFULLDOM,JJFULLDOM!  & SET AUTOMATICALLY BY THE CODE
 ! The difference between EMEP and EECCA is confusing...
 integer, public, parameter :: &
 ! OFFSET_i=  0, OFFSET_j=  0    ! EMEP or default
- OFFSET_i=-35, OFFSET_j=-11    ! EECCA
-! OFFSET_i=  0, OFFSET_j=  0    ! EMEP or default 
+  OFFSET_i=-35, OFFSET_j=-11    ! EECCA
+
 integer, public, save, dimension(4) ::   &
 !                 x0   x1  y0   y1
- RUNDOMAIN = (/  -999,-999 ,  -999, -999 /)     ! Set values later
+! RUNDOMAIN = (/  -999,-999 ,  -999, -999 /)     ! Set values later
 ! RUNDOMAIN = (/  1, 182,  1, 197 /)     ! HIRHAM
 ! RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA = new EMEP domain
-! RUNDOMAIN = (/  1, 100,  1, 100 /)     ! Orig EMEP domain in EECCA
-! RUNDOMAIN = (/  40,210, 12, 184 /)     !  SR TNO28 area
+!!RUNDOMAIN = (/  1, 100,  1, 100 /)     ! Orig EMEP domain in EECCA (for benchmarks)
+! RUNDOMAIN = (/ 40, 210, 12, 184 /)     ! SR TNO28 area
 ! RUNDOMAIN = (/  1, 210,  1, 208 /)     ! TNO28
-! RUNDOMAIN = (/  240, 720, 48, 736 /)    ! TNO07 reduced (15W-45E;30N-73N)
-! RUNDOMAIN = (/  120, 360, 24, 368 /)    ! TNO14 reduced (15W-45E;30N-73N)
-! RUNDOMAIN = (/  60, 180, 12, 184 /)     ! TNO28 reduced (15W-45E;30N-73N)
-! RUNDOMAIN = (/  70, 110, 72, 110 /)     ! TNO28  test
-!  RUNDOMAIN = (/  30, 90, 6, 92 /)        ! TNO56 reduced (15W-45E;30N-73N)
-! RUNDOMAIN = (/  60,180, 12, 184 /)     !  test TNO7 area
+! RUNDOMAIN = (/240, 720, 48, 736 /)     ! TNO07 reduced (15W-45E;30N-73N)
+! RUNDOMAIN = (/120, 360, 24, 368 /)     ! TNO14 reduced (15W-45E;30N-73N)
+! RUNDOMAIN = (/ 60, 180, 12, 184 /)     ! TNO28 reduced (15W-45E;30N-73N)
+! RUNDOMAIN = (/ 70, 110, 72, 110 /)     ! TNO28  test
+! RUNDOMAIN = (/ 30,  90,  6,  92 /)     ! TNO56 reduced (15W-45E;30N-73N)
+! RUNDOMAIN = (/ 60, 180, 12, 184 /)     !  test TNO7 area
 !--
 ! Suggestions, 6th June 2012, for TFMM_RUNS scale-dep -----------------------
 ! RUNDOMAIN = (/  40, 210, 12, 184 /)     ! TNO28 SR area (25W-60E;30N-73N)
@@ -170,10 +181,8 @@ integer, public, save, dimension(4) ::   &
 ! RUNDOMAIN = (/ 80+OFFSET_i, 106+OFFSET_i, 13+OFFSET_j,  35+OFFSET_j /) ! Southern domain
 ! RUNDOMAIN = (/ 75+OFFSET_i,110+OFFSET_i, 25+OFFSET_j,  60+OFFSET_j /) ! (gets Esk)
 
-integer, public,save ::  &
-  NPROCX         & ! Actual number of processors in longitude
-, NPROCY           ! .. in latitude. NPROCY must be 2 for GLOBAL,
-integer, public,save ::  NPROC   
+integer, public,save ::  & ! Actual number of processors in longitude,
+  NPROCX, NPROCY, NPROC  & ! latitude and total. NPROCY must be 2 for GLOBAL,
 
 !=============================================================================
 !+ 2) Define  debug flags.
@@ -302,34 +311,31 @@ integer, public, parameter :: &
 
 logical, public, parameter :: SOURCE_RECEPTOR = .false.
 
-!Topography tests (tmp)
-logical, public, parameter :: TOPO_TEST = .false.
-
 ! Compress NetCDF output? (nc4 feature)
-logical, public, parameter :: NETCDF_COMPRESS_OUTPUT=(.not.FORECAST .and. .not.TOPO_TEST)
+logical, public, parameter :: NETCDF_COMPRESS_OUTPUT=&
+  (EXP_NAME/="FORECAST").and.(EXP_NAME/="EMERGENCY").and.(EXP_NAME/="TOPO")
 !logical, public, parameter :: NETCDF_COMPRESS_OUTPUT=.false.
 
-!Hourly output in smaller files?
+!Hourly output in single file or monthly/daily files:
 !NB: will not work well by default on Stallo per 14th Feb 2012 because of library bugs!
 !Until this is fixed, you must compile with netcdf/4.1.3 and link and run with compiler 12.1.2
-logical, public, parameter :: MONTHLY_HOURLYFILE=.false.!gives a new file every month
-logical, public, parameter :: DAILY_HOURLYFILE=.false.!gives a new file every day
+character(len=*), public, parameter :: & ! ending depeding on date
+! HOURLYFILE_ending="_hour_YYYYMM.nc" ! MM  -> month (01 .. 12)
+! HOURLYFILE_ending="_hour_MMDD.nc"   ! DD  -> day of the month (00 .. 31)
+! HOURLYFILE_ending="_hour_JJJ.nc"    ! JJJ -> the day of the year (001 .. 366)
+  HOURLYFILE_ending="_hour.nc"        ! keep the same for the whole run
 
 ! NH3 module as set up originally with U10 from met: kept for safety only.
 ! Will be replaced by sub.grid calculation of wind in future.
 ! Keep false until code re-implemented
-
-
 logical, public, parameter :: NH3_U10 = .false.
 
 ! Nesting modes:
 ! produces netcdf dump of concentrations if wanted, or initialises mode runs
-! from such a file. Used in Nest_ml
-
-integer, public, parameter ::NEST_MODE=0  !0=donothing , 1=write , 2=read ,
-!3=read and write, 10=write at end of run, 11=read at start, 12=read at
-!start and write at end (BIC)
-
+! from such a file. Used in Nest_ml:
+!   0=donothing; 1=write; 2=read; 3=read and write;
+!  10=write at end of run; 11=read at start; 12=read atstart and write at end (BIC)
+integer, public, parameter ::NEST_MODE=0  
 
 !=============================================================================
 !+ 4)  Define main model dimensions,  things that will

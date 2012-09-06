@@ -112,6 +112,58 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
+xxxxxxxx  rv4rc8    Alvaro    6 Sep/2012  xxxxxxxxxxxxxxxxxxxxxxx
+
+Experiment Name (EXP_NAME) to select different configurations
+of USE_* flags, hourly output and external BC (on Forecast mode).
+
+Cleanup hourly output code. Remove Hourly_ASCII option.
+Improve options for splitting hourly files.
+
+ModelConstants_ml,ZD_OZONE/IFSMOZ_ExternalBICs_ml,My_Outputs_ml
+  - USE_FOREST_FIRES as default. New to FORECAST mode.
+  - Introduce Experiment Name (EXP_NAME) in ModelConstants_ml,
+    to select different configurations:
+    - USE_* flags (ModelConstants_ml)
+    - hourly output (My_Outputs_ml)
+    - BC version on Forecast mode (IFSMOZ_ExternalBICs_ml)
+
+Output_hourly,ZD_OZONE/My_Outputs_ml,OwnDataTypes_ml,ModelConstants_ml
+  - Remove ASCII hourly output code:
+    - ASCII hourly output code (Output_hourly).
+    - Hourly_ASCII variable (My_Outputs_ml)
+    - ASCII output format (ofmt) element on Asc2D type definition (OwnDataTypes_ml)
+  - Improve options for splitting hourly files:
+    - Replace logical variables DAILY_HOURLYFILE, MONTHLY_HOURLYFILE
+      by string variable HOURLYFILE_ending  (ModelConstants_ml).
+    - Use function date2string (TimeDate_ExtraUtil_ml)
+      to recreate the hourly file name (fileName_hour; NetCDF_ml).
+      If the file name is changed, a new hourly file is created (Output_hourly).
+    - Call Out_netCDF(create_var_only=.true.) to write all variable definitions
+      at once, hourly data is added later (Output_hourly).
+
+NestCDF_ml
+  - Add support for "hours since" time units in ReadTimeCDF
+  - replace (me==0) by MasterProc
+  - rewrite subroutine CloseNetCDF
+
+Makefile:
+  - Target MACC-EVA2010 uses GFASv1 ForestFire
+  - Update compiler & netCDF library versions on stallo & vilje.
+    Use netcdf/4.1.3 for hourly split files to work,
+    as required on a ModelConstants_ml comment.
+    Intel compiler and MPI moules updated to match netcdf/4.1.3 requirements.
+  - Use on environment variable (vilje:$NETCDF_PREFIX, stallo:$NETCDF_ROOT)
+    on INCL and LLIB paths. NETCDF_PREFIX/ROOT is set by mode load netcdf/version.
+    Module netcdf/4.1.3 must be loaded for make run.
+  - I sugeest the following lines to me added to the ~/.bashrc
+    stallo:
+      export MACHINE=stallo
+      module load intel-compiler/12.1.2 openmpi/1.4.4 netcdf/4.1.3
+    vilje: 
+      export MACHINE=vilje
+      module load intelcomp/12.0.5.220 mpt/2.06 netcdf/4.1.3
+
 xxxxxxxx  rv4rc7    Peter     5 Sep/2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 Small changes only 
@@ -121,7 +173,7 @@ Aqueous_n_WetDep_ml.f90: added some comments
 run.pl: PBS command for Vilje
 TimeDate_ExtraUtils_ml, days1900_to_int correct for rounding errors
 
-xxxxxxxx  rv4rc6         3 Sep/2012  xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx  rv4rc6    Alvaro    3 Sep/2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 New ForestFire type: GFASv1
 
@@ -129,10 +181,6 @@ ForestFire_ml,run.pl
   ZCM_EmChem09soa/BiomassBurning_GFASv1_to_EmChem09soa.inc
   - New ForestFire type GFASv1 (BiomassBurning_GFASv1_to_EmChem09soa.inc)
   - Clean up ForestFire_ml
-
-Makefile:
-  - Update compiler & netCDF librery versions on stallo & vilje
-  - Target MACC-EVA2010 uses GFASv1 ForestFire
 
 xxxxxxxx  rv4rc5      28-31Aug/2012  xxxxxxxxxxxxxxxxxxxxxxx
 
@@ -158,6 +206,8 @@ Alvaro: 29/8/2012
 Nest_ml,ZD_OZONE/IFSMOZ_ExternalBICs_ml,My_ExternalBICs_ml
   - Mutliple External BC definitions will result in added BCs.
     This feature was missing on previous module versions.
+  - New BC type EVA2010 available for Forecast mode (IFSMOZ_ExternalBICs_ml).
+    Previous default (IFS_MOZ_fkya) was kept.
 
 run.pl
   - small change on forecast met version ($CWFMETV)

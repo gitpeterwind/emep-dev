@@ -42,20 +42,18 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
 !
 !*************************************************************************
 !
-  use My_Outputs_ml,    only: NHOURLY_OUT, &     ! No. outputs
-                              NLEVELS_HOURLY, &  ! No. output levels
-                              FREQ_HOURLY, &     ! No. hours between outputs
-                              Asc2D, hr_out, &   ! Required outputs
-                              Hourly_ASCII, &    ! ASCII output or not
-                              to_ug_ADV, to_ug_C, to_ug_S, to_ug_N, &
-                              SELECT_LEVELS_HOURLY, LEVELS_HOURLY !Output selected model levels
+  use My_Outputs_ml,    only: NHOURLY_OUT,    & ! No. outputs
+                              NLEVELS_HOURLY, & ! No. output levels
+                              FREQ_HOURLY,    & ! No. hours between outputs
+                              hr_out,         & ! Required outputs
+            SELECT_LEVELS_HOURLY, LEVELS_HOURLY ! Output selected model levels
 
-  use CheckStop_ml,     only: CheckStop, StopAll
-  use Chemfields_ml,    only: xn_adv,xn_shl, cfac, PM25_water, PM25_water_rh50, AOD
+  use CheckStop_ml,     only: CheckStop
+  use Chemfields_ml,    only: xn_adv,xn_shl,cfac,PM25_water,PM25_water_rh50,AOD
   use ChemGroups_ml,    only: chemgroups
   use Derived_ml,       only: num_deriv2d        ! D2D houtly output type
   use DerivedFields_ml, only: f_2d,d_2d          ! D2D houtly output type
-  use OwnDataTypes_ml,  only: Deriv
+  use OwnDataTypes_ml,  only: Asc2D, Deriv
   use ChemSpecs_shl_ml ,only: NSPEC_SHL          ! Maps indices
   use ChemChemicals_ml ,only: species            ! Gives names
   use GridValues_ml,    only: i_fdom, j_fdom,&   ! Gives emep coordinates
@@ -63,17 +61,17 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
   use Io_ml,            only: IO_HOURLY
   use ModelConstants_ml,only: KMAX_MID, MasterProc, &
                               IOU_INST, IOU_HOUR, IOU_YEAR, IOU_HOUR_PREVIOUS, &
-                              DEBUG => DEBUG_OUT_HOUR,runlabel1,&
-                              DAILY_HOURLYFILE, MONTHLY_HOURLYFILE
- use MetFields_ml,     only: t2_nwp,th, roa, surface_precip, ws_10m ,rh2m,&
+                              DEBUG => DEBUG_OUT_HOUR,runlabel1,HOURLYFILE_ending
+  use MetFields_ml,     only: t2_nwp,th, roa, surface_precip, ws_10m ,rh2m,&
                               pzpbl, ustar_nwp, Kz_m2s, &
                               Idirect, Idiffuse, z_bnd, z_mid
-  use NetCDF_ml,        only: Out_netCDF, CloseNetCDF, Init_new_netCDF,  &
+  use NetCDF_ml,        only: Out_netCDF, CloseNetCDF, Init_new_netCDF, fileName_hour, &
                               Int1, Int2, Int4, Real4, Real8  !Output data type to choose
   use OwnDataTypes_ml,  only: TXTLEN_DERIV,TXTLEN_SHORT
   use Par_ml,           only: MAXLIMAX, MAXLJMAX, GIMAX,GJMAX,        &
                               me, IRUNBEG, JRUNBEG, limax, ljmax
-  use TimeDate_ml,      only: current_date,daynumber
+  use TimeDate_ml,      only: current_date
+  use TimeDate_ExtraUtil_ml,only : date2string
   use Units_ml,         only: Group_Units
 
   implicit none
@@ -108,28 +106,30 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
   type(Deriv) :: def1           ! for NetCDF
   real :: scale                 ! for NetCDF
   integer ::CDFtype,nk,klevel   ! for NetCDF
-  character(len=TXTLEN_SHORT)    :: hr_out_type         ! hr_out%type
-  integer                        :: hr_out_nk           ! hr_out%nk
+  character(len=TXTLEN_SHORT)    :: hr_out_type=""      ! hr_out%type
+  integer                        :: hr_out_nk=0         ! hr_out%nk
   integer, pointer, dimension(:) :: gspec=>null()       ! group array of indexes
   real,    pointer, dimension(:) :: gunit_conv=>null()  ! & unit conv. factors
 
-  integer,save :: old_month=-1,old_day=-1
-  integer :: month,day
-  character(len=200) ::filename
-  logical, save :: debug_flag    ! = ( MasterProc .and. DEBUG )
-  logical       ::  surf_corrected  ! to get 3m values
+  character(len=len(fileName_hour)) :: filename
+  logical, save :: debug_flag      ! = ( MasterProc .and. DEBUG )
+  logical       :: surf_corrected  ! to get 3m values
+
+  logical       :: create_netcdf_var=.false.
 
 
-  if ( NHOURLY_OUT <= 0 ) then
-    if ( MasterProc .and. DEBUG ) &
+  if(NHOURLY_OUT<= 0) then
+    if(my_first_call.and.MasterProc.and.DEBUG) &
        write(*,*) "DEBUG Hourly_out: nothing to output!"
+    my_first_call = .false.
     return
   endif
 
 
-  if ( my_first_call ) then
+  create_netcdf_var=my_first_call
+  if(my_first_call) then
+    debug_flag=(debug_proc.and.DEBUG)
 
-    debug_flag= ( debug_proc .and. DEBUG )
   !/ Ensure that domain limits specified in My_Outputs lie within
   !  model domain. In emep coordinates we have:
     do ih = 1, NHOURLY_OUT
@@ -138,48 +138,42 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
       hr_out(ih)%ix2 = min(GIMAX+IRUNBEG-1,hr_out(ih)%ix2)
       hr_out(ih)%iy2 = min(GJMAX+JRUNBEG-1,hr_out(ih)%iy2)
       hr_out(ih)%nk  = min(KMAX_MID,hr_out(ih)%nk)
-      if ( debug_flag ) write(*,*) "DEBUG Hourly nk ", ih, hr_out(ih)%nk
+      if(debug_flag) write(*,*) "DEBUG Hourly nk ", ih, hr_out(ih)%nk
     enddo ! ih
-
     my_first_call = .false.
   endif  ! first_call
-  if(DAILY_HOURLYFILE)then
-    day=daynumber
-    if(old_day/=day)then
-      !create new hourly file
-      old_day=day
-      !TESTHH 217 FORMAT(A,I3.3,A)
-      write(filename,"(a,i3.3,a)")trim(runlabel1)//'_hour_',day,'.nc'
-      if ( debug_flag ) write(*,*) "DEBUG Day-Hourlyfile ", trim(filename)
-      call Init_new_netCDF(trim(filename),IOU_HOUR)
-    endif
-  elseif(MONTHLY_HOURLYFILE)then
-    month=current_date%month
-    if(old_month/=month)then
-      !create new hourly file
-      old_month=month
-      218 FORMAT(A,I2.2,A)
-      write(filename,"(a,i2.2,a)")trim(runlabel1)//'_hour_',month,'.nc'
-      if ( debug_flag ) write(*,*) "DEBUG Mon-Hourlyfile ", trim(filename)
-      call Init_new_netCDF(trim(filename),IOU_HOUR)
-    endif
+
+  filename=trim(runlabel1)//date2string(HOURLYFILE_ending,current_date)
+  if(filename/=fileName_hour)then
+    if(debug_flag) write(*,*) "DEBUG ",HOURLYFILE_ending,"-Hourlyfile ", trim(filename)
+    call Init_new_netCDF(trim(filename),IOU_HOUR)
+    create_netcdf_var=.true.
   endif
 
-  if( MasterProc .and. Hourly_ASCII .and. current_date%month/=prev_month ) then
-    if(prev_month>0) close(IO_HOURLY)      ! Close last-months file
-    prev_month = current_date%month
-
-    !/.. Open new file for write-out
-    write(suffix,"(2i2.2)")current_date%month,modulo(current_date%year,100)
-    name = "Hourly." // suffix
-    open(file=name,unit=IO_HOURLY,action="write")
-
-    ! Write summary of outputs to top of Hourly file
-    write(IO_HOURLY,"(1(I0,1X,A))")          &
-      NHOURLY_OUT,    "Outputs",             &
-      FREQ_HOURLY,    "Hours betwen outputs",&
-      NLEVELS_HOURLY, "Max Level(s)"
-    write(IO_HOURLY,"(1(a21,a21,a10,i4,5i4,a21,es12.5,es10.3))")hr_out
+  !! Create variables first, without writing them (for performance purposes)   
+  if(create_netcdf_var)then
+    do ih=1,NHOURLY_OUT
+      def1%name=hr_out(ih)%name
+      def1%unit=hr_out(ih)%unit
+      def1%class=hr_out(ih)%type
+      ist = hr_out(ih)%ix1
+      jst = hr_out(ih)%iy1
+      ien = hr_out(ih)%ix2
+      jen = hr_out(ih)%iy2
+      nk  = hr_out(ih)%nk
+      CDFtype=Real4 ! can be choosen as Int1,Int2,Int4,Real4 or Real8
+      scale=1.
+      if(any(hr_out(ih)%type==(/"ADVppbv     ","ADVugXX     ","ADVugXXgroup",&
+                                "COLUMN      ","COLUMNgroup ","D2D         "/)))nk=1
+      select case(nk)
+      case(1)       ! write as 2D
+        call Out_netCDF(IOU_HOUR,def1,2,1,hourly,scale,CDFtype,ist,jst,ien,jen,&
+          create_var_only=.true.)
+      case(2:)      ! write as 3D
+        call Out_netCDF(IOU_HOUR,def1,3,1,hourly,scale,CDFtype,ist,jst,ien,jen,1,&
+          create_var_only=.true.)
+      endselect
+    enddo
   endif
 
 !......... Uses concentration/met arrays from Chem_ml or Met_ml ..................
@@ -197,7 +191,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
 
   HLOOP: do ih = 1, NHOURLY_OUT
 
-    hr_out_type=hr_out(ih)%type
+    hr_out_type=trim(hr_out(ih)%type)
     hr_out_nk=hr_out(ih)%nk
     if(any(hr_out_type==(/"ADVppbv     ","ADVugXX     ","ADVugXXgroup",&
                           "COLUMN      ","COLUMNgroup ","D2D         "/)))hr_out_nk=1
@@ -207,7 +201,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
       msnr  = 3475 + ih
       ispec = hr_out(ih)%spec
       name  = hr_out(ih)%name
-      if ( debug_flag ) &
+      if(debug_flag) &
         write(*,'(a,2i4,1X,a,/a,1X,2a,i3)')"DEBUG DERIV HOURLY", ih, ispec, &
           trim(name),"INTO HOUR TYPE:", &
           trim(hr_out(ih)%type) // " "//trim(hr_out(ih)%name), " nk:", hr_out_nk
@@ -217,18 +211,18 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
         if(ik>=KMAX_MID)ik=1         ! 1-level column does not make sense
       else
         ik=KMAX_MID-k+1              ! all levels from model bottom are outputed,
-        if ( debug_flag ) write(*,*)"SELECT LEVELS? ", ik, SELECT_LEVELS_HOURLY
+        if(debug_flag) write(*,*)"SELECT LEVELS? ", ik, SELECT_LEVELS_HOURLY
         if(SELECT_LEVELS_HOURLY)then ! or the output levels are taken
           ik=LEVELS_HOURLY(k)        ! from LEVELS_HOURLY array (default)
           hr_out_type=hr_out(ih)%type
-          if ( debug_flag ) write(*,*)"DEBUG SELECT LEVELS", ik, hr_out_type
+          if(debug_flag) write(*,*)"DEBUG SELECT LEVELS", ik, hr_out_type
           surf_corrected = (ik==0)  ! Will implement cfac
-          if ( debug_flag .and. surf_corrected ) &
+          if(debug_flag.and.surf_corrected) &
             write(*,*)"DEBUG HOURLY Surf_correction", ik, k
 !TESTHH QUERY: see below
           if(ik==0)then
             ik=KMAX_MID              ! surface/lowermost level
-            if ( debug_flag ) write(*,*)"DEBUG LOWEST LEVELS", ik, hr_out_type
+            if(debug_flag) write(*,*)"DEBUG LOWEST LEVELS", ik, hr_out_type
             if(any(hr_out_type==(/"BCVppbv     ","BCVugXX     ",&
                                   "BCVugXXgroup"/)))&
 !                                 "BCVugXXgroup","Out3D       "/)))&
@@ -267,268 +261,240 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
    !  For molec/cm2 output, set hr_out%unitconv=to_molec_cm2.
    !----------------------------------------------------------------
 
-      if ( debug_flag ) write(*,"(5a,i4)") "DEBUG Hourly MULTI ",&
+      if(debug_flag) write(*,"(5a,i4)") "DEBUG Hourly MULTI ",&
               trim(hr_out(ih)%name), " case ", trim(hr_out_type), " k: ",  ik
-        OPTIONS: select case ( trim(hr_out_type) )
+      OPTIONS: select case(hr_out_type)
 
-        case ( "ADVppbv" )
-          itot = NSPEC_SHL + ispec
-          name = species(itot)%name
-          unit_conv =  hr_out(ih)%unitconv
-          forall ( i=1:limax, j=1:ljmax)
-            hourly(i,j) = xn_adv(ispec,i,j,KMAX_MID) &
-                        * cfac(ispec,i,j) &    ! 50m->3m conversion
-                        * unit_conv            ! Units conv.
-          endforall
+      case("ADVppbv")
+        itot = NSPEC_SHL + ispec
+        name = species(itot)%name
+        unit_conv =  hr_out(ih)%unitconv
+        forall ( i=1:limax, j=1:ljmax)
+          hourly(i,j) = xn_adv(ispec,i,j,KMAX_MID) &
+                      * cfac(ispec,i,j) &    ! 50m->3m conversion
+                      * unit_conv            ! Units conv.
+        endforall
 
-        case ( "Out3D" )
-          itot = ispec
-          iadv  = ispec - NSPEC_SHL
-          name = species(itot)%name
-          unit_conv =  hr_out(ih)%unitconv
+      case("Out3D")
+        itot = ispec
+        iadv  = ispec - NSPEC_SHL
+        name = species(itot)%name
+        unit_conv =  hr_out(ih)%unitconv
 
-          if ( index( hr_out(ih)%unit, "ppb" ) > 0 ) then
-            forall ( i=1:limax, j=1:ljmax)
-              hourly(i,j) = xn_adv(iadv ,i,j,ik) & !BCV:KMAX_MID) &
-                          * unit_conv            ! Units conv.
-            endforall
-          elseif ( index(hr_out(ih)%unit, "ug" ) > 0 ) then
-            forall ( i=1:limax, j=1:ljmax)
-                hourly(i,j) = xn_adv(iadv ,i,j,ik) & !BCV:KMAX_MID) &
-                            * roa(i,j,ik,1)        & ! density.
-                            * unit_conv              ! Units conv.
-            endforall
-          else
-            call StopAll("ERROR: Output_hourly  unit problem"//trim(name) )
-          end if
-
-          if( surf_corrected .and. ik==KMAX_MID .and. itot > NSPEC_SHL ) then
-                   ! * cfac(ispec,i,j) &    ! 50m->3m conversion
-            forall ( i=1:limax, j=1:ljmax)
-              hourly(i,j) = hourly(i,j)*cfac(iadv,i,j)
-            endforall
-          endif
-
-          if ( debug_flag ) then
-            i=debug_li; j=debug_lj
-            write(*,'(A,2I4,1X,L2,2f10.4)')"Out3D K-level"//trim(name), ik,  &
-              itot, surf_corrected, hourly(i,j), cfac(ispec-NSPEC_SHL,i,j)
-          endif
-
-        case ( "BCVppbv" )
-          itot = NSPEC_SHL + ispec
-          name = species(itot)%name
-          unit_conv =  hr_out(ih)%unitconv
-          forall ( i=1:limax, j=1:ljmax)
-            hourly(i,j) = xn_adv(ispec,i,j,ik) & !BCV:KMAX_MID) &
-                   !BCV * cfac(ispec,i,j) &    ! 50m->3m conversion
-                        * unit_conv            ! Units conv.
-          endforall
-          !if( ik
-          if ( DEBUG ) &
-            write(*,'(A,I0,1X,L2)')"K-level", ik, trim(name), itot, surf_corrected
-
-        case ( "ADVugXX" )  !ug/m3, ugX/m3 output at the surface
-          itot = NSPEC_SHL + ispec
-          name = species(itot)%name
-          unit_conv =  hr_out(ih)%unitconv
-          forall ( i=1:limax, j=1:ljmax)
-            hourly(i,j) = xn_adv(ispec,i,j,KMAX_MID) &
-                        * cfac(ispec,i,j) &     ! 50m->3m conversion
-                        * unit_conv       &     ! Units conv.
-                        * roa(i,j,KMAX_MID,1)   ! density.
-          endforall
-
-        case ( "BCVugXX" )  ! ug/m3, ugX/m3 output at model mid-levels
-          itot = NSPEC_SHL + ispec
-          name = species(itot)%name
-          unit_conv =  hr_out(ih)%unitconv
-          forall ( i=1:limax, j=1:ljmax)
-            hourly(i,j) = xn_adv(ispec,i,j,ik) &
-                  !BCV  * cfac(ispec,i,j) &     ! 50m->3m conversion
-                        * unit_conv       &     ! Units conv.
-                        * roa(i,j,ik,1)         ! density.
-          endforall
-          if ( DEBUG  ) &
-            write(*,'(a,i5,a10,i5)')"K-level", ik, trim(name), itot
-
-        case ( "ADVugXXgroup" )  ! GROUP output in ug/m3, ugX/m3 at the surface
-          call Group_Units(hr_out(ih),gspec,gunit_conv,debug_flag,name)
-          forall ( i=1:limax, j=1:ljmax)
-            hourly(i,j) = dot_product(xn_adv(gspec,i,j,KMAX_MID),&
-                                      cfac(gspec,i,j) & ! 50m->3m conversion
-                                     *gunit_conv(:))  & ! Units conv.
-                        * roa(i,j,KMAX_MID,1)           ! density.
-          endforall
-          if ( DEBUG  ) &
-            write(*,'(2a10,99i5)')"Surface", trim(name), gspec+NSPEC_SHL
-          deallocate(gspec,gunit_conv)
-
-        case ( "BCVugXXgroup" )  ! GROUP output in ug/m3, ugX/m3 at model mid-levels
-          call Group_Units(hr_out(ih),gspec,gunit_conv,debug_flag,name)
-          forall ( i=1:limax, j=1:ljmax)
-            hourly(i,j) = dot_product(xn_adv(gspec,i,j,ik), &
-                                      gunit_conv(:))  & ! Units conv.
-                        * roa(i,j,ik,1)                 ! density.
-          endforall
-          if ( DEBUG ) &
-            write(*,'(a10,i7,a10,i7)')"K-level", ik, trim(name), gspec+NSPEC_SHL
-          deallocate(gspec,gunit_conv)
-
-        case ( "PMwater" )    ! PM water content in ug/m3 at model mid-levels
-          if(hr_out(ih)%unit/="ug/m3")hr_out(ih)%unit="ug"
-          forall ( i=1:limax, j=1:ljmax)
-            hourly(i,j) = PM25_water(i,j,ik)
-          endforall
-
-        case ( "PMwaterSRF" )  ! PM water content in ug/m3 at surface level
-          if(hr_out(ih)%unit/="ug/m3")hr_out(ih)%unit="ug"
+        if(index(hr_out(ih)%unit,"ppb")>0) then
           forall(i=1:limax,j=1:ljmax)
-            hourly(i,j) = PM25_water_rh50(i,j)
+            hourly(i,j) = xn_adv(iadv ,i,j,ik) &
+                        * unit_conv            ! Units conv.
           endforall
+        elseif(index(hr_out(ih)%unit,"ug")>0) then
+          forall(i=1:limax,j=1:ljmax)
+            hourly(i,j) = xn_adv(iadv ,i,j,ik) &
+                        * roa(i,j,ik,1)        & ! density.
+                        * unit_conv              ! Units conv.
+          endforall
+        else
+          call CheckStop("ERROR: Output_hourly  unit problem"//trim(name) )
+        endif
 
-        case ( "Z","Z_MID" )
-          name = "Z_MID"
-          unit_conv =  hr_out(ih)%unitconv
-          if(surf_corrected)then
-            forall ( i=1:limax, j=1:ljmax )
-              hourly(i,j) = 0.0
-            endforall
-          else
-            forall ( i=1:limax, j=1:ljmax )
-              hourly(i,j) = z_mid(i,j,ik)*unit_conv
-            endforall
+        if(surf_corrected.and.ik==KMAX_MID.and.itot>NSPEC_SHL) then
+          forall(i=1:limax,j=1:ljmax)
+            hourly(i,j) = hourly(i,j)*cfac(iadv,i,j) ! 50m->3m conversion
+          endforall
+        endif
+
+        if(debug_flag) then
+          i=debug_li; j=debug_lj
+          write(*,'(A,2I4,1X,L2,2f10.4)')"Out3D K-level"//trim(name), ik,  &
+            itot, surf_corrected, hourly(i,j), cfac(ispec-NSPEC_SHL,i,j)
+        endif
+
+      case("BCVppbv")
+        itot = NSPEC_SHL + ispec
+        name = species(itot)%name
+        unit_conv =  hr_out(ih)%unitconv
+        forall(i=1:limax,j=1:ljmax)
+          hourly(i,j) = xn_adv(ispec,i,j,ik) &
+                      * unit_conv            ! Units conv.
+        endforall
+        if(DEBUG) &
+          write(*,'(A,I0,1X,L2)')"K-level", ik, trim(name), itot, surf_corrected
+
+      case("ADVugXX")  !ug/m3, ugX/m3 output at the surface
+        itot = NSPEC_SHL + ispec
+        name = species(itot)%name
+        unit_conv =  hr_out(ih)%unitconv
+        forall ( i=1:limax, j=1:ljmax)
+          hourly(i,j) = xn_adv(ispec,i,j,KMAX_MID) &
+                      * cfac(ispec,i,j) &     ! 50m->3m conversion
+                      * unit_conv       &     ! Units conv.
+                      * roa(i,j,KMAX_MID,1)   ! density.
+        endforall
+
+      case("BCVugXX")  ! ug/m3, ugX/m3 output at model mid-levels
+        itot = NSPEC_SHL + ispec
+        name = species(itot)%name
+        unit_conv =  hr_out(ih)%unitconv
+        forall ( i=1:limax, j=1:ljmax)
+          hourly(i,j) = xn_adv(ispec,i,j,ik) &
+                !BCV  * cfac(ispec,i,j) &     ! 50m->3m conversion
+                      * unit_conv       &     ! Units conv.
+                      * roa(i,j,ik,1)         ! density.
+        endforall
+        if(DEBUG) &
+          write(*,'(a,i5,a10,i5)')"K-level", ik, trim(name), itot
+
+      case("ADVugXXgroup")  ! GROUP output in ug/m3, ugX/m3 at the surface
+        call Group_Units(hr_out(ih),gspec,gunit_conv,debug_flag,name)
+        forall ( i=1:limax, j=1:ljmax)
+          hourly(i,j) = dot_product(xn_adv(gspec,i,j,KMAX_MID),&
+                                    cfac(gspec,i,j) & ! 50m->3m conversion
+                                   *gunit_conv(:))  & ! Units conv.
+                      * roa(i,j,KMAX_MID,1)           ! density.
+        endforall
+        if(DEBUG) &
+          write(*,'(2a10,99i5)')"Surface", trim(name), gspec+NSPEC_SHL
+        deallocate(gspec,gunit_conv)
+
+      case("BCVugXXgroup")  ! GROUP output in ug/m3, ugX/m3 at model mid-levels
+        call Group_Units(hr_out(ih),gspec,gunit_conv,debug_flag,name)
+        forall ( i=1:limax, j=1:ljmax)
+          hourly(i,j) = dot_product(xn_adv(gspec,i,j,ik), &
+                                    gunit_conv(:))  & ! Units conv.
+                      * roa(i,j,ik,1)                 ! density.
+        endforall
+        if(DEBUG) &
+          write(*,'(a10,i7,a10,i7)')"K-level", ik, trim(name), gspec+NSPEC_SHL
+        deallocate(gspec,gunit_conv)
+
+      case("PMwater")    ! PM water content in ug/m3 at model mid-levels
+        if(hr_out(ih)%unit/="ug/m3")hr_out(ih)%unit="ug"
+        forall(i=1:limax,j=1:ljmax) hourly(i,j) = PM25_water(i,j,ik)
+
+      case("PMwaterSRF")  ! PM water content in ug/m3 at surface level
+        if(hr_out(ih)%unit/="ug/m3")hr_out(ih)%unit="ug"
+        forall(i=1:limax,j=1:ljmax) hourly(i,j) = PM25_water_rh50(i,j)
+
+      case("Z","Z_MID")
+        name = "Z_MID"
+        unit_conv =  hr_out(ih)%unitconv
+        if(surf_corrected)then
+          forall(i=1:limax,j=1:ljmax) hourly(i,j) = 0.0
+        else
+          forall(i=1:limax,j=1:ljmax) hourly(i,j) = z_mid(i,j,ik)*unit_conv
+        endif
+
+      case("AOD")
+        name = "AOD 550nm"
+        forall(i=1:limax,j=1:ljmax) hourly(i,j) = AOD(i,j)
+
+      case("COLUMN")    ! Column output in ug/m2, ugX/m2, molec/cm2
+        itot = NSPEC_SHL + ispec
+        name = species(itot)%name
+        unit_conv =  hr_out(ih)%unitconv
+        if(ih>0) hourly(:,:) = 0.0
+        do iik=ik,KMAX_MID
+          forall(i=1:limax,j=1:ljmax)
+            hourly(i,j) = hourly(i,j)                     &
+                      + xn_adv(ispec,i,j,iik)             &
+                      *                  unit_conv        & ! Units conv.
+                      * roa(i,j,iik,1)                    & ! density.
+                      * (z_bnd(i,j,iik)-z_bnd(i,j,iik+1))   ! level thickness
+          endforall
+        enddo
+
+      case("COLUMNgroup")! GROUP Column output in ug/m2, ugX/m2, molec/cm2
+        call Group_Units(hr_out(ih),gspec,gunit_conv,debug_flag,name)
+        if(ih>1) hourly(:,:) = 0.0
+        do iik=ik,KMAX_MID
+          forall(i=1:limax,j=1:ljmax)
+            hourly(i,j) = hourly(i,j)                     &
+                      + dot_product(xn_adv(gspec,i,j,iik),&
+                                    gunit_conv(:))        & ! Units conv.
+                      * roa(i,j,iik,1)                    & ! density.
+                      * (z_bnd(i,j,iik)-z_bnd(i,j,iik+1))   ! level thickness
+          endforall
+        enddo
+        if(DEBUG) &
+          write(*,'(a10,i7,a10,i7)')"K-level", ik, trim(name), gspec+NSPEC_SHL
+        deallocate(gspec,gunit_conv)
+
+      case("SHLmcm3")        ! No cfac for short-lived species
+        itot = ispec
+        name = species(itot)%name
+        forall ( i=1:limax, j=1:ljmax)
+          hourly(i,j) = xn_shl(ispec,i,j,KMAX_MID) &
+                      * hr_out(ih)%unitconv  ! Units conv.
+        endforall
+
+      case("T2_C")        ! No cfac for surf.variable; Skip Units conv.
+        forall(i=1:limax,j=1:ljmax) hourly(i,j) = t2_nwp(i,j,1) - 273.15
+
+      case("rh2m")        ! No cfac for surf.variable; Skip Units conv.
+        forall(i=1:limax,j=1:ljmax) hourly(i,j) = rh2m(i,j,1)*100
+
+      case("ws_10m")      ! No cfac for surf.variable; Skip Units conv.
+        forall(i=1:limax,j=1:ljmax) hourly(i,j) = ws_10m(i,j,1)
+
+      case("theta")       ! No cfac for surf.variable; Skip Units conv.
+        forall(i=1:limax,j=1:ljmax) hourly(i,j) = th(i,j,KMAX_MID,1)
+
+      case("PRECIP")      ! No cfac for surf.variable; Skip Units conv.
+        forall(i=1:limax,j=1:ljmax) hourly(i,j) = surface_precip(i,j)
+
+      case("Idirect")     ! Direct radiation (W/m2); Skip Units conv.
+        forall(i=1:limax,j=1:ljmax) hourly(i,j) = Idirect(i,j)
+
+      case("Idiffus")     ! Diffuse radiation (W/m2); Skip Units conv.
+        forall(i=1:limax,j=1:ljmax) hourly(i,j) = Idiffuse(i,j)
+
+      case ( "D2D" )
+       ! Here ispec is the index in the f_2d arrays
+        call CheckStop(ispec<1.or.ispec>num_deriv2d,&
+          "ERROR-DEF! Hourly_out: "//trim(hr_out(ih)%name)//", wrong D2D id!")
+        if(hr_out(ih)%unit=="") hr_out(ih)%unit = f_2d(ispec)%unit
+        unit_conv = hr_out(ih)%unitconv*f_2d(ispec)%scale
+        if(f_2d(ispec)%avg)then           ! non accumulated variables
+          if( debug_flag ) write(*,*) " D2Davg ",&
+          trim(hr_out(ih)%name), ih, ispec, trim(f_2d(ispec)%name), f_2d(ispec)%avg
+          forall(i=1:limax,j=1:ljmax)
+            hourly(i,j) = d_2d(ispec,i,j,IOU_INST) * unit_conv
+          endforall
+        else                              ! hourly accumulated variables
+          if(debug_flag) then
+            i=debug_li
+            j=debug_lj
+            write(*,"(2a,2i4,a,3g12.3)") "OUTHOUR D2Dpre ",&
+              trim(hr_out(ih)%name), ih, ispec,trim(f_2d(ispec)%name),&
+              d_2d(ispec,i,j,IOU_YEAR), d_2d(ispec,i,j,IOU_HOUR_PREVIOUS),&
+              unit_conv
           endif
-
-        case ( "AOD" )
-          name = "AOD 550nm"
-          forall ( i=1:limax, j=1:ljmax)
-            hourly(i,j) = AOD(i,j)
+  
+          forall(i=1:limax,j=1:ljmax)
+            hourly(i,j) = (d_2d(ispec,i,j,IOU_YEAR)&
+                          -d_2d(ispec,i,j,IOU_HOUR_PREVIOUS)) * unit_conv
+            d_2d(ispec,i,j,IOU_HOUR_PREVIOUS)=d_2d(ispec,i,j,IOU_YEAR)
           endforall
+        endif
+        if(debug_flag) &
+          write(*,'(a,2i3,2es12.3)')"HHH DEBUG D2D", ispec, ih, &
+            hr_out(ih)%unitconv, hourly(debug_li,debug_lj)
 
-        case ( "COLUMN" )    ! Column output in ug/m2, ugX/m2, molec/cm2
-          itot = NSPEC_SHL + ispec
-          name = species(itot)%name
-          unit_conv =  hr_out(ih)%unitconv
-          if(ih>0) hourly(:,:) = 0.0
-          do iik=ik,KMAX_MID
-            forall ( i=1:limax, j=1:ljmax)
-              hourly(i,j) = hourly(i,j)                     &
-                        + xn_adv(ispec,i,j,iik)             &
-                        *                  unit_conv        & ! Units conv.
-                        * roa(i,j,iik,1)                    & ! density.
-                        * (z_bnd(i,j,iik)-z_bnd(i,j,iik+1))   ! level thickness
-            endforall
-          enddo
-
-        case ( "COLUMNgroup" )! GROUP Column output in ug/m2, ugX/m2, molec/cm2
-          call Group_Units(hr_out(ih),gspec,gunit_conv,debug_flag,name)
-          if(ih>1) hourly(:,:) = 0.0
-          do iik=ik,KMAX_MID
-            forall ( i=1:limax, j=1:ljmax)
-              hourly(i,j) = hourly(i,j)                     &
-                        + dot_product(xn_adv(gspec,i,j,iik),&
-                                      gunit_conv(:))        & ! Units conv.
-                        * roa(i,j,iik,1)                    & ! density.
-                        * (z_bnd(i,j,iik)-z_bnd(i,j,iik+1))   ! level thickness
-            endforall
-          enddo
-          if ( DEBUG ) &
-            write(*,'(a10,i7,a10,i7)')"K-level", ik, trim(name), gspec+NSPEC_SHL
-          deallocate(gspec,gunit_conv)
-
-        case ( "SHLmcm3" )        ! No cfac for short-lived species
-          itot = ispec
-          name = species(itot)%name
-          forall ( i=1:limax, j=1:ljmax)
-            hourly(i,j) = xn_shl(ispec,i,j,KMAX_MID) &
-                        * hr_out(ih)%unitconv  ! Units conv.
-          endforall
-
-        case ( "T2_C   " )        ! No cfac for surf.variable
-          forall ( i=1:limax, j=1:ljmax)
-            hourly(i,j) = t2_nwp(i,j,1) - 273.15     ! Skip Units conv.
-          end forall
-
-        case ( "rh2m   " )        ! No cfac for surf.variable
-          forall ( i=1:limax, j=1:ljmax)
-            hourly(i,j) = rh2m(i,j,1)*100              ! Skip Units conv.
-          endforall
-
-        case ( "ws_10m   " )        ! No cfac for surf.variable
-          forall ( i=1:limax, j=1:ljmax)
-            hourly(i,j) = ws_10m(i,j,1)              ! Skip Units conv.
-          endforall
-
-        case ( "theta  " )        ! No cfac for met.variable
-          forall ( i=1:limax, j=1:ljmax)
-            hourly(i,j) = th(i,j,KMAX_MID,1)  ! Skip Units conv.
-          endforall
-
-        case ( "PRECIP " )        ! No cfac for surf.variables
-          forall ( i=1:limax, j=1:ljmax)
-            hourly(i,j) = surface_precip(i,j)     ! Skip Units conv.
-          endforall
-
-        case ( "Idirect" )        !  Direct radiation (W/m2)
-          forall ( i=1:limax, j=1:ljmax)
-            hourly(i,j) = Idirect(i,j)    ! Skip Units conv.
-          endforall
-
-        case ( "Idiffus" )        !  Diffuse radiation (W/m2)
-          forall ( i=1:limax, j=1:ljmax)
-            hourly(i,j) = Idiffuse(i,j)    ! Skip Units conv.
-          endforall
-
-        case ( "D2D" )
-         ! Here ispec is the index in the f_2d arrays
-          call CheckStop(ispec<1.or.ispec>num_deriv2d,"ERROR-DEF! Hourly_out: "&
-                         //trim(hr_out(ih)%name)//", wrong D2D id!")
-          if(hr_out(ih)%unit=="") hr_out(ih)%unit = f_2d(ispec)%unit
-          unit_conv = hr_out(ih)%unitconv*f_2d(ispec)%scale
-          if(f_2d(ispec)%avg)then           ! non accumulated variables
-            if( debug_flag ) write(*,*) " D2Davg ",&
-            trim(hr_out(ih)%name), ih, ispec, trim(f_2d(ispec)%name), f_2d(ispec)%avg
-            forall ( i=1:limax, j=1:ljmax)
-              hourly(i,j) = d_2d(ispec,i,j,IOU_INST) * unit_conv
-            endforall
-          else                              ! hourly accumulated variables
-            if( debug_flag ) then
-              i=debug_li
-              j=debug_lj
-              write(*,"(2a,2i4,a,3g12.3)") "OUTHOUR D2Dpre ",&
-                trim(hr_out(ih)%name), ih, ispec,trim(f_2d(ispec)%name),&
-                d_2d(ispec,i,j,IOU_YEAR), d_2d(ispec,i,j,IOU_HOUR_PREVIOUS),&
-                unit_conv
-            endif
-
-            forall ( i=1:limax, j=1:ljmax)
-              hourly(i,j) = (d_2d(ispec,i,j,IOU_YEAR)&
-                            -d_2d(ispec,i,j,IOU_HOUR_PREVIOUS)) * unit_conv
-              d_2d(ispec,i,j,IOU_HOUR_PREVIOUS)=d_2d(ispec,i,j,IOU_YEAR)
-            endforall
-          endif
-          if( debug_flag ) &
-            write(*,'(a,2i3,2es12.3)')"HHH DEBUG D2D", ispec, ih, &
-              hr_out(ih)%unitconv, hourly(debug_li,debug_lj)
-
-        case DEFAULT
-          call CheckStop( "ERROR-DEF! Hourly_out: "//trim(hr_out(ih)%type)//&
-                          " hourly type not found!")
+      case DEFAULT
+        call CheckStop( "ERROR-DEF! Hourly_out: '"//trim(hr_out(ih)%type)//&
+                        "' hourly type not found!")
 
       endselect OPTIONS
 
-      if( debug_flag ) then
+      if(debug_flag) &
         write(*,"(a,3i4,2g12.3)")"DEBUG-HOURLY-OUT:"//trim(hr_out(ih)%name),&
            me,ih,ispec, hourly(debug_li,debug_lj), hr_out(ih)%unitconv
-      endif
 
       !/ Get maximum value of hourly array
       hourly(limax+1:MAXLIMAX,:) = 0.0
       hourly(1:limax,ljmax+1:MAXLJMAX) = 0.0
       arrmax = maxval(hourly)
 
-      if ((hr_out(ih)%max>0.0).and.(arrmax>hr_out(ih)%max)) then
+      if((hr_out(ih)%max>0.0).and.(arrmax>hr_out(ih)%max)) then
         write(*,*) "Hourly value too big!: ", ih, trim(hr_out(ih)%type), arrmax
         write(*,*) "Species : ", trim(name)," : ",  " ispec ", ispec
         write(*,*) "max allowed is : ",  hr_out(ih)%max
@@ -539,10 +505,10 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
         write(*,*) "Location is i=", maxpos(1), " j=", maxpos(2)
         write(*,*) "EMEP coords ix=", i_fdom(maxpos(1)), " iy=", j_fdom(maxpos(2))
         write(*,*) "hourly is ", hourly(maxpos(1),maxpos(2))
-        if ( hr_out(ih)%type(1:3) == "ADV" ) then
+        if(hr_out(ih)%type(1:3)=="ADV") then
           write(*,*) "xn_ADV is ", xn_adv(ispec,maxpos(1),maxpos(2),KMAX_MID)
           write(*,*) "cfac   is ",   cfac(ispec,maxpos(1),maxpos(2))
-        end if
+        endif
         call CheckStop("Error, Output_hourly/hourly_out: too big!")
       endif
 
@@ -554,63 +520,24 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
       jst = max(JRUNBEG,hr_out(ih)%iy1)
       ien = min(GIMAX+IRUNBEG-1,hr_out(ih)%ix2)
       jen = min(GJMAX+JRUNBEG-1,hr_out(ih)%iy2)
-      nk = min(KMAX_MID,hr_out_nk)
+      nk  = min(KMAX_MID,hr_out_nk)
       CDFtype=Real4 ! can be choosen as Int1,Int2,Int4,Real4 or Real8
       scale=1.
 
-      if (nk == 1) then       !write as 2D
+      select case(nk)
+      case(1)       ! write as 2D
         call Out_netCDF(IOU_HOUR,def1,2,1,hourly,scale,CDFtype,ist,jst,ien,jen)
-      elseif( nk > 1 ) then   !write as 3D
+      case(2:)      ! write as 3D
         klevel=ik
         if(nk<KMAX_MID)  klevel=KMAX_MID-ik+1 !count from ground and up
         if(SELECT_LEVELS_HOURLY) klevel=k     !order is defined in LEVELS_HOURLY
         call Out_netCDF(IOU_HOUR,def1,3,1,hourly,scale,CDFtype,ist,jst,ien,jen,klevel)
-        !else nk<1 : no output
-      endif
-
-      if(Hourly_ASCII)then
-
-      !/ Send to ghourly
-        call local2global(hourly,ghourly,msnr)
-
-        if ( MasterProc ) then
-          !....   write out for a sub-section of the grid:
-
-          !/** We need to correct for small run-domains and the asked-for
-          !    output domain. We can only print out the intersection of
-          !    these two rectangles.
-
-          write(IO_HOURLY,"('Spec ',i3,' Var ',i2,' = ',2a12,'Lev: ',i2,' Date:',i5,3i3)")  &
-            ispec, ih, name, hr_out(ih)%name, ik,                        &
-            current_date%year,current_date%month,current_date%day,current_date%hour
-
-          if ( DEBUG ) write(*,*)"TTTHOUR ISTS", me, ist, ien, jst, jen
-
-          !/ In model coordinates we have:
-          ist = max(1,hr_out(ih)%ix1-IRUNBEG+1)
-          jst = max(1,hr_out(ih)%iy1-JRUNBEG+1)
-          ien = min(GIMAX,hr_out(ih)%ix2-IRUNBEG+1)
-          jen = min(GJMAX,hr_out(ih)%iy2-JRUNBEG+1)
-
-          do i = ist,ien
-            do j = jst,jen
-              g = ghourly(i,j)
-              if ( g /= 0.0 ) then
-                write(IO_HOURLY,trim(hr_out(ih)%ofmt) ) g
-              else ! Save disc-space used by thousands of  0.00000
-                write(IO_HOURLY,"(i1)" ) 0
-              endif
-            enddo ! j
-          enddo   ! i
-
-        endif  ! me loop
-
-      endif !Hourly_ASCII
-
-    enddo KVLOOP
-  enddo HLOOP
+      !case default   ! no output
+      endselect
+      enddo KVLOOP
+    enddo HLOOP
 
 !Not closing seems to give a segmentation fault when opening the daily file
 !Probably just a bug in the netcdf4/hdf5 library.
   call CloseNetCDF
-end subroutine hourly_out
+endsubroutine hourly_out

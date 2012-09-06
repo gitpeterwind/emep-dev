@@ -17,18 +17,20 @@ LDFLAGS =  $(F90FLAGS) $(LLIB) $(LIBS)
 MACHINE ?= stallo
 DEBUG ?= no
 ifeq ($(MACHINE),stallo)
-  MODULES = intel-compiler/11.1 openmpi/1.4 #netcdf/4.1.1
+# MODULES = intel-compiler/11.1   openmpi/1.4   netcdf/4.1.1
+  MODULES = intel-compiler/12.1.2 openmpi/1.4.4 netcdf/4.1.3
   LIBS = -lnetcdf -lnetcdff
-  INCL += /global/apps/netcdf/4.1.1/include
-  LLIB = /global/apps/netcdf/4.1.1/lib
+  INCL += $(NETCDF_ROOT)/include
+  LLIB =  $(NETCDF_ROOT)/lib
   MAKEDEPF90=/home/mifapw/bin/makedepf90
   OPT_FLAGS = -O2 -ftz
   LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
 else ifeq ($(MACHINE),vilje)
-  MODULES = #intelcomp/11.1.073 mpt/2.04 netcdf/4.1.3-intel.11.1.073
+# MODULES = intelcomp/11.1.073   mpt/2.04 netcdf/4.1.3-intel.11.1.073
+  MODULES = intelcomp/12.0.5.220 mpt/2.06 netcdf/4.1.3
   LIBS = -lnetcdf -lnetcdff
-  INCL += /sw/sdev/Modules/netcdf/netcdf-4.1.3-intel.11.1.073/include
-  LLIB = /sw/sdev/Modules/netcdf/netcdf-4.1.3-intel.11.1.073/lib
+  INCL += $(NETCDF_PREFIX)/include
+  LLIB  = $(NETCDF_PREFIX)/lib
   MAKEDEPF90=/home/metno/mifapw/bin/makedepf90
   LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
 else ifeq ($(MACHINE),titan)
@@ -153,7 +155,7 @@ EMEP2010-GenChem-%:
 MACC-GenChem-%:
 	mk.GenChem -r $* -f GFED   -e SeaSalt,Dust,Isotopes
 MACC-EVA2010-GenChem-%:
-	mk.GenChem -r $* -f FINNv1 -e SeaSalt,Dust,Isotopes -V 2bin,Eyjafj.ll
+	mk.GenChem -r $* -f GFASv1 -e SeaSalt,Dust,Isotopes -V 2bin,Eyjafj.ll
 SR-EMEP-GenChem-%:
 	mk.GenChem -r $* -f FINNv1 -e none
 SR-EMEP2010-GenChem-%:
