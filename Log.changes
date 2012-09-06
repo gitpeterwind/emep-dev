@@ -152,18 +152,17 @@ Makefile:
   - Update compiler & netCDF library versions on stallo & vilje.
     Use netcdf/4.1.3 for hourly split files to work,
     as required on a ModelConstants_ml comment.
-    Intel compiler and MPI moules updated to match netcdf/4.1.3 requirements.
+    Intel compiler and MPI modules updated to match netcdf/4.1.3 requirements.
   - Use on environment variable (vilje:$NETCDF_PREFIX, stallo:$NETCDF_ROOT)
     on INCL and LLIB paths. NETCDF_PREFIX/ROOT is set by mode load netcdf/version.
     Module netcdf/4.1.3 must be loaded for make run.
-  - I sugeest the following lines to me added to the ~/.bashrc
+  - I suggest the following lines to be added to the ~/.bashrc
     stallo:
       export MACHINE=stallo
       module load intel-compiler/12.1.2 openmpi/1.4.4 netcdf/4.1.3
     vilje: 
       export MACHINE=vilje
       module load intelcomp/12.0.5.220 mpt/2.06 netcdf/4.1.3
-
 xxxxxxxx  rv4rc7    Peter     5 Sep/2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 Small changes only 
