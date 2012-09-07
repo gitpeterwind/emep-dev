@@ -516,7 +516,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
    
      do
         call read_line(IO_EMIS,txtinput,ios,'EmisHeight')
-        if(me==1) print *, "EMIS HEIGHTS" // trim(txtinput), ios
+        if(me==1) print *, "EMIS HEIGHTS " // trim(txtinput)!, ios
         if ( ios <  0 ) exit     ! End of file
           if( index(txtinput,"#")>0 ) then ! Headers
             call PrintLog(trim(txtinput),MasterProc)

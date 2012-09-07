@@ -199,6 +199,7 @@ logical, public, save ::  DebugCell  = .false.
 
 ! The coordinates given here only apply for the standard EMEP domain
 integer, private, parameter :: &
+  DEBUG_ii= -99, DEBUG_jj= -99 ! none
 ! DEBUG_ii= 79, DEBUG_jj= 56 ! Eskdalemuir
 ! DEBUG_ii= 73, DEBUG_jj= 48 ! Mace Head
 ! DEBUG_ii= 88, DEBUG_jj= 53 ! Sibton
@@ -215,7 +216,7 @@ integer, private, parameter :: &
 ! DEBUG_ii= 97, DEBUG_jj= 62 ! Waldhof
 ! DEBUG_ii=116, DEBUG_jj= 63 ! K-Puszta
 ! DEBUG_ii=102, DEBUG_jj= 48 ! Payerne
- DEBUG_ii= 85, DEBUG_jj= 50 ! Harwell
+! DEBUG_ii= 85, DEBUG_jj= 50 ! Harwell
 ! DEBUG_ii= 88, DEBUG_jj= 99 ! Harwell TNO TEST
 ! DEBUG_ii= 93, DEBUG_jj= 47 !  Grignon, France
 ! DEBUG_ii= 90, DEBUG_jj= 104 !  Wetland, Tundra
@@ -322,8 +323,8 @@ logical, public, parameter :: NETCDF_COMPRESS_OUTPUT=&
 character(len=*), public, parameter :: & ! ending depeding on date
 ! HOURLYFILE_ending="_hour_YYYYMM.nc" ! MM  -> month (01 .. 12)
 ! HOURLYFILE_ending="_hour_MMDD.nc"   ! DD  -> day of the month (00 .. 31)
-! HOURLYFILE_ending="_hour_JJJ.nc"    ! JJJ -> the day of the year (001 .. 366)
-  HOURLYFILE_ending="_hour.nc"        ! keep the same for the whole run
+ HOURLYFILE_ending="_hour_JJJ.nc"    ! JJJ -> the day of the year (001 .. 366)
+!  HOURLYFILE_ending="_hour.nc"        ! keep the same for the whole run
 
 ! NH3 module as set up originally with U10 from met: kept for safety only.
 ! Will be replaced by sub.grid calculation of wind in future.
@@ -375,15 +376,15 @@ integer, public, parameter :: NTDAY = 72
 integer, parameter, public :: CHEMTMIN=148,CHEMTMAX=333
 
 real, public, parameter :: &
-  V_RAIN     = 5.          & !approximate vertical speed of rain m/
-, CLOUDTHRES = 1.0e-5        !when cloudwater is larger than
-                             !CLOUDTHRES, there are clouds.
+  V_RAIN     = 5.           !approximate vertical speed of rain m/s
 
 real, public, parameter :: &
   CW_THRESHOLD = 1.0E-7&!Cloudwater (kg/kg); above threshold allow possibility
                         ! for precipitations. Value could be adjusted.
-, RH_THRESHOLD = 0.85   !Relative humidity (fraction); above threshold allow
+, RH_THRESHOLD = 0.85  &!Relative humidity (fraction); above threshold allow
                         !possibility for precipitations.Value could be adjusted.
+, CW2CC = 1.0E6         !Converts Cloudwater (kg/kg) into CloudCover in %
+                        !Value could be adjusted.
 !
 !  additional parameters
 !

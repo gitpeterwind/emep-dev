@@ -1109,7 +1109,6 @@ subroutine GetCDF(varname,fileName,Rvar,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,
   real :: scale,offset,scalefactors(2)
   integer, allocatable:: Ivalues(:)
 
-  print *,'GetCDF  reading ', me, trim(fileName), ' nstart ', nstart
   if(MasterProc.and.DEBUG_NETCDF)print *,'GetCDF  reading ',trim(fileName), ' nstart ', nstart
   !open an existing netcdf dataset
   fileneeded=.true.!default
