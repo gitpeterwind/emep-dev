@@ -121,6 +121,9 @@ ModelConstants_ml:defined CW2CC = 1.0E6
 
 clean up of output: ModelConstants_ml, EmisGet_ml, DryDep_ml, Met_ml
 
+Aqueous_n_WetDep_ml: mass balance bug fix (Alvaro)
+  Re-implement balance bug fix from rv4beta22.
+  Bug was re-introduced on rv4rc3.
 
 xxxxxxxx  rv4rc8    Alvaro    6 Sep/2012  xxxxxxxxxxxxxxxxxxxxxxx
 

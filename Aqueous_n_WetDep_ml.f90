@@ -820,7 +820,11 @@ subroutine WetDep_Budget(i,j,invgridarea, debug_flag)
   real    :: wdep
   type(group_umap), pointer :: gmap=>null()  ! group unit mapping
 
-  ! Process individual species (SO4, HNO3, etc.) as needed
+  ! Mass Budget: Do not include values on outer frame
+  if(.not.(i<li0.or.i>li1.or.j<lj0.or.j>lj1)) &
+    totwdep(:) = totwdep(:) + wdeploss(:)
+
+  ! Deriv.Output: individual species (SO4, HNO3, etc.) as needed
   do n = 1, nwspec
     f2d  = wetSpec(n)
     iadv = f_2d(f2d)%index
@@ -829,13 +833,9 @@ subroutine WetDep_Budget(i,j,invgridarea, debug_flag)
     if(DEBUG_MY_WETDEP.and.debug_flag) &
       call datewrite("WET-PPPSPEC: "//species_adv(iadv)%name,&
         iadv,(/wdeploss(iadv)/))
-
-    !Do not include values on outer frame
-    if(.not.(i<li0.or.i>li1.or.j<lj0.or.j>lj1)) &
-      totwdep(iadv) = totwdep(iadv) + wdeploss(iadv)
   enddo
 
-  ! Process groups of species (SOX, OXN, etc.) as needed
+  ! Deriv.Output: groups of species (SOX, OXN, etc.) as needed
   do n = 1, nwgrp
     f2d  =  wetGroup(n)
     gmap => wetGroupUnits(n)
