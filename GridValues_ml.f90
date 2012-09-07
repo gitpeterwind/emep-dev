@@ -104,6 +104,7 @@ Module GridValues_ml
 
   !Rotated_Spherical grid prarameters
   real, public, save :: grid_north_pole_latitude,grid_north_pole_longitude
+  real, public, save :: dx_rot,dx_roti,x1_rot,y1_rot
 
   !/ Variables to define full-domain (fdom) coordinates of local i,j values. 
 
@@ -194,6 +195,7 @@ Module GridValues_ml
   integer, public, parameter :: MIN_ADVGRIDS = 5 !minimum size of a subdomain
   integer, public :: Poles(2) !Poles(1)=1 if North pole is found, Poles(2)=1:SP
   integer, public :: Pole_Singular !Pole_included=1 or 2 if the grid include at least one pole and has lat lon projection
+
 
 contains
 
@@ -469,8 +471,7 @@ contains
           call nctime2idate(ndate,nseconds(1)) ! default
        endif
        nhour_first=ndate(4)
-
-
+ 
        call CheckStop(ndate(1), nyear,  "NetCDF_ml: wrong year" )
        call CheckStop(ndate(2), nmonth, "NetCDF_ml: wrong month" )
        call CheckStop(ndate(3), nday,   "NetCDF_ml: wrong day" )
@@ -481,11 +482,13 @@ contains
              call check(nf90_get_var(ncFileID, timeVarID, ndays,&
                   start=(/ ihh /),count=(/ n1 /)))
              call nctime2idate(ndate,ndays(1))
+             write(*,*)'ndays ',ndays(1),ndate(3),ndate(4)
           else
              call check(nf90_get_var(ncFileID, timeVarID, nseconds,&
                   start=(/ ihh /),count=(/ n1 /)))
              call nctime2idate(ndate,nseconds(1))
           endif
+          write(*,*)ihh,METSTEP,nhour_first, ndate(4)
           call CheckStop( mod((ihh-1)*METSTEP+nhour_first,24), ndate(4),  &
                date2string("NetCDF_ml: wrong hour YYYY-MM-DD hh",ndate))
 
@@ -494,6 +497,7 @@ contains
 
        !get global attributes
        call check(nf90_get_att(ncFileID,nf90_global,"Grid_resolution",GRIDWIDTH_M))
+       write(*,*)"Grid_resolution",GRIDWIDTH_M
        if(trim(projection)=='Stereographic')then
           call check(nf90_get_att(ncFileID,nf90_global,"ref_latitude",ref_latitude))
           call check(nf90_get_att(ncFileID, nf90_global, "xcoordinate_NorthPole" &
@@ -529,7 +533,18 @@ contains
           fi =0.0
           if(trim(projection)=='Rotated_Spherical')then
              call check(nf90_get_att(ncFileID,nf90_global,"grid_north_pole_latitude",grid_north_pole_latitude))
+             write(*,*)"grid_north_pole_latitude",grid_north_pole_latitude
              call check(nf90_get_att(ncFileID,nf90_global,"grid_north_pole_longitude",grid_north_pole_longitude))
+             write(*,*)"grid_north_pole_longitude",grid_north_pole_longitude
+             call check(nf90_inq_varid(ncid = ncFileID, name = "i", varID = varID))
+             call check(nf90_get_var(ncFileID, varID, glon_fdom(1:2,1)))!note that i is one dimensional
+             x1_rot=glon_fdom(1,1)
+             dx_rot=glon_fdom(2,1)-glon_fdom(1,1)
+             call check(nf90_inq_varid(ncid = ncFileID, name = "j", varID = varID))
+             call check(nf90_get_var(ncFileID, varID, glon_fdom(1,1)))!note that j is one dimensional
+             y1_rot=glon_fdom(1,1)
+             write(*,*)"rotated lon lat of (i,j)=(1,1)",x1_rot,y1_rot
+             write(*,*)"resolution",dx_rot
           endif
           call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
           call check(nf90_get_var(ncFileID, varID, glon_fdom(1:IIFULLDOM,1:JJFULLDOM) ))
@@ -608,6 +623,14 @@ contains
     CALL MPI_BCAST(glon_fdom,8*IIFULLDOM*JJFULLDOM,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
     CALL MPI_BCAST(projection,len(projection),MPI_CHARACTER,0,MPI_COMM_WORLD,INFO) 
 
+    if(trim(projection)=='Rotated_Spherical')then
+       CALL MPI_BCAST(grid_north_pole_longitude,8*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+       CALL MPI_BCAST(grid_north_pole_latitude,8*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+       CALL MPI_BCAST(dx_rot,8*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+       CALL MPI_BCAST(x1_rot,8*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+       CALL MPI_BCAST(y1_rot,8*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+       dx_roti=1.0/dx_rot
+    endif
 
     do j=1,MAXLJMAX
        do i=1,MAXLIMAX
@@ -1268,21 +1291,20 @@ contains
     !      output: xr2(i1,j1): i coordinates in grid2 
     !              yr2(i1,j1): j coordinates in grid2 
     !-------------------------------------------------------------------! 
-
+    
     real, intent(in)    :: gl2,gb2 
     real, intent(out)   :: xr2,yr2
     real, intent(in), optional    :: fi2,an2,xp2,yp2
 
     real  :: fi_loc,an_loc,xp_loc,yp_loc
-    real, parameter :: PI=3.14159265358979323
-    real    :: PId4,dr,dr2,dist,dist2,dist3
+    real, parameter :: PI=3.14159265358979323,dr=PI/180.0,dri= 180.0/PI
+    real    :: PId4,dr2,dist,dist2,dist3
     integer ::i,j,ip1,jp1, ir2, jr2
-
+    real ::xscen ,yscen,zsycen,zcycen ,zxmxc,zsxmxc,zcxmxc,zsysph,zsyrot,yrot,zsxrot,zcysph,zcyrot,zcxrot,xrot,dx,x1,y1
 
     if(projection=='Stereographic')then
        PId4  =PI/4.      
-       dr2   =PI/180.0/2.   ! degrees to radians /2
-       dr    =PI/180.0      ! degrees to radians 
+       dr2   =dr*0.5   ! degrees to radians /2
        fi_loc=fi
        an_loc=an
        xp_loc=xp
@@ -1295,12 +1317,59 @@ contains
 
        xr2=xp_loc+an_loc*tan(PId4-gb2*dr2)*sin(dr*(gl2-fi_loc))
        yr2=yp_loc-an_loc*tan(PId4-gb2*dr2)*cos(dr*(gl2-fi_loc))
+
     else  if(projection=='lon lat')then! lon-lat grid
+
        xr2=(gl2-glon_fdom(1,1))/(glon_fdom(2,1)-glon_fdom(1,1))+1
        if(xr2<0.5)xr2=xr2+360.0/(glon_fdom(2,1)-glon_fdom(1,1))
        yr2=(gb2-glat_fdom(1,1))/(glat_fdom(1,2)-glat_fdom(1,1))+1
+
+    else  if(projection=='Rotated_Spherical')then! rotated lon-lat grid
+!       dx_roti=20.0
+!       grid_north_pole_longitude = -170.0
+!       grid_north_pole_latitude = 40.0
+       xscen = grid_north_pole_longitude-180.0
+       if(xscen<-180.0)xscen = xscen+360.0
+       yscen = 90.0-grid_north_pole_latitude
+       !       xscen=grid_north_pole_longitude-180.0
+       !       yscen=90.0-grid_north_pole_latitude
+       zsycen = sin(dr*yscen)
+       zcycen = cos(dr*yscen)
+       !
+        zxmxc  = dr*(gl2 - xscen)
+         zsxmxc = sin(zxmxc)
+         zcxmxc = cos(zxmxc)
+         zsysph = sin(dr*gb2)
+         zcysph = cos(dr*gb2)
+         zsyrot = zcycen*zsysph - zsycen*zcysph*zcxmxc
+         zsyrot = amax1(zsyrot,-1.0)
+         zsyrot = amin1(zsyrot,+1.0)
+         yrot = asin(zsyrot)
+         zcyrot = cos(yrot)
+         zcxrot = (zcycen*zcysph*zcxmxc +&
+                   zsycen*zsysph)/zcyrot
+         zcxrot = amax1(zcxrot,-1.0)
+         zcxrot = amin1(zcxrot,+1.0)
+         zsxrot = zcysph*zsxmxc/zcyrot
+         xrot = acos(zcxrot)
+         if (zsxrot.lt.0.0) xrot = -xrot
+         xrot=xrot*dri
+         yrot=yrot*dri
+         if(xrot<x1_rot)xrot=xrot+360.0
+         dx=0.05
+         x1=-13.65
+         y1=-1.027
+         xr2=(xrot-x1_rot)*dx_roti+1
+         yr2=(yrot-y1_rot)*dx_roti+1
+
+!if(me==1)write(*,*)gl2,gb2,xr2,yr2,xrot,yrot,1.0/dx_roti
+!CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
+!CALL MPI_FINALIZE(INFO)
+!stop
     else!general projection, Use only info from glon_fdom and glat_fdom
        !first find closest by testing all gridcells. 
+
+stop
        dist=10.0!max distance is PI
        do j=1,JJFULLDOM
           do i=1,IIFULLDOM
@@ -1313,6 +1382,7 @@ contains
              endif
           enddo
        enddo
+
        !find the real part of i and j by comparing distances to neighbouring cells
        !
        !     C

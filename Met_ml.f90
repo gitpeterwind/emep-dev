@@ -112,7 +112,7 @@ module Met_ml
   use Landuse_ml, only : water_fraction, water_frac_set, likely_coastal
   use MetFields_ml 
   use MicroMet_ml, only : PsiH  ! Only if USE_MIN_KZ
-  use ModelConstants_ml,    only : PASCAL, PT, CLOUDTHRES, METSTEP  &
+  use ModelConstants_ml,    only : PASCAL, PT, METSTEP  &
        ,KMAX_BND,KMAX_MID,NMET,KCHEMTOP &
        ,IIFULLDOM, JJFULLDOM, RUNDOMAIN,NPROC  &
        ,MasterProc, DEBUG_MET,DEBUG_i, DEBUG_j, identi, V_RAIN, nmax  &
@@ -122,7 +122,7 @@ module Met_ml
        ,USE_DUST, USE_SOILWATER & 
        ,nstep,USE_CONVECTION & 
        ,LANDIFY_MET  & 
-       ,CW_THRESHOLD,RH_THRESHOLD
+       ,CW_THRESHOLD,RH_THRESHOLD, CW2CC
   use Par_ml           ,    only : MAXLIMAX,MAXLJMAX,GIMAX,GJMAX, me  &
        ,limax,ljmax  &
        ,neighbor,WEST,EAST,SOUTH,NORTH,NOPROC  &
@@ -345,11 +345,20 @@ contains
     namefield='3D_cloudcover'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
          unit,validity, cc3d(:,:,:))
-       call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
-
-    if(trim(validity)/='averaged')then
+    if(validity/=field_not_found.and.trim(validity)/='averaged')then
        if(MasterProc.and.numt==1)write(*,*)'WARNING: 3D cloud cover is not averaged'
     endif
+    if(validity==field_not_found)then
+       !if available, will use cloudwater to determine the height of release
+       namefield='cloudwater'
+       foundcloudwater = .true.
+        call Getmeteofield(meteoname,namefield,nrec,ndim,&
+         unit,validity, cc3d(:,:,:))
+      call CheckStop(validity==field_not_found, "meteo field not found: 3D_cloudcover and" // trim(namefield))
+       cc3d(:,:,:)=min(0.0,max(100.0,cc3d(:,:,:)*CW2CC))!from kg/kg water to % clouds
+        if(MasterProc.and.numt==1)write(*,*)'WARNING: 3D cloud cover not found, using CloudWater instead'
+   endif
+
 
     namefield='precipitation'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
@@ -737,10 +746,10 @@ if( USE_SOILWATER ) then
        if( SoilWaterSource == "IFS")then
           !needed for transforming IFS soil water
            call ReadField_CDF('SoilTypes_IFS.nc','pwp',pwp, &
-                1,interpol='conservative',needed=.true.,UnDef=-999.,debug_flag=.true.)
+                1,interpol='conservative',needed=.true.,UnDef=-999.,debug_flag=.false.)
            !call printCDF('pwp0',pwp,' ')
            call ReadField_CDF('SoilTypes_IFS.nc','fc',fc, &
-                1,interpol='conservative',needed=.true.,UnDef=-999.,debug_flag=.true.)
+                1,interpol='conservative',needed=.true.,UnDef=-999.,debug_flag=.false.)
            !call printCDF('fc0',fc,' ')
 
           ! landify(x,intxt,xmin,xmax,wfmin,xmask)
@@ -2298,7 +2307,7 @@ if( USE_SOILWATER ) then
     real, dimension(MAXLIMAX+2*NEXTEND,MAXLJMAX+2*NEXTEND)  :: xx  ! extended
     character(len=30) :: txt, masktxt
     real :: xwfmin, xxmin, xxmax  
-    logical :: debug_flag
+    logical :: debug_flag=.false.
     real :: sumland, sumx, landfrac, oldx
     integer :: i,j, ii, jj, ii2, jj2
 
@@ -2311,7 +2320,7 @@ if( USE_SOILWATER ) then
     xxmax = 1.0e30   ! Default max value x
     if ( present(xmax) )  xxmax = xmax
     
-    if(MasterProc) then
+    if(DEBUG_LANDIFY.and.MasterProc) then
         write(*,*) trim(txt) , water_frac_set 
         write(*,"(a,2g12.4)") 'Data Limits ', xxmin, xxmax
         write(*,"(a,g12.4)")  'Water Limit ', xwfmin

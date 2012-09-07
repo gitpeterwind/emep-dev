@@ -1325,12 +1325,14 @@ contains
     logical , save :: first_call=.true.
     real, dimension(NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS_FILE) &
             ::  snapemis_month ! monthly emissions tonne/month
+    logical :: needed_found
 
    ! For now, only the global runs use the Monthly files
 
         logical, parameter :: MONTHLY_GRIDEMIS= IS_GLOBAL      
         integer :: kstart,kend,nstart,Nyears
         real :: buffer(MAXLIMAX,MAXLJMAX),SumSoilNOx,SumSoilNOx_buff
+        
 
 if( USE_AIRCRAFT_EMIS )then
    !AIRCRAFT
@@ -1502,50 +1504,55 @@ end if
             ! We have so2 emission so need DMS also
 
              if ( MasterProc ) then
+                
+                write(fname,fmt='(''natso2'',i2.2,''.dat'')')     &
+                     current_date%month
+                write(6,*) 'Reading DMS emissions from ',trim(fname)
+             endif
+             
+             needed_found=.false.
+             call ReadField(IO_DMS,fname,rdemis,needed_found)
+             if(needed_found)then
+                errcode = 0
+                do j=1,ljmax
+                   do i=1,limax
+                      
+                      ! Add DMS for country code IQ_DMS=35  to snap sector 11=Nature.
+                      ! First time we read we must add DMS to the "countries" 
+                      ! contributing within the grid square. 
+                      
+                      ! - for flat emissions:
+                      
+                      if ( first_dms_read ) then 
+                         flat_nlandcode(i,j) = flat_nlandcode(i,j) + 1 
+                         n = flat_nlandcode(i,j)
+                          flat_landcode(i,j,n) = IQ_DMS   ! country code 35 
+                          if ( n > flat_ncmaxfound ) then
+                             flat_ncmaxfound = n 
+                             if (DEBUG) write(6,*)'DMS Increased flat_ncmaxfound to ',n 
+                             call CheckStop( n > FNCMAX, "IncreaseFNCMAX for dms")
+                          endif
+                       else  ! We know that DMS lies last in the array, so:
+                          n = flat_nlandcode(i,j)
+                          call CheckStop(flat_landcode(i,j,n), IQ_DMS, &
+                               "Newmonth:DMS not last!")
+                       endif
+                       
+                       snapemis_flat(i,j,n,IQSO2) = rdemis(i,j) * ktonne_to_kgm2s &
+                            * xm2(i,j)
+                    enddo ! i
+                 enddo ! j
 
-              write(fname,fmt='(''natso2'',i2.2,''.dat'')')     &
-                current_date%month
-              write(6,*) 'Reading DMS emissions from ',trim(fname)
-              endif
 
-              call ReadField(IO_DMS,fname,rdemis)
-
-          errcode = 0
-          do j=1,ljmax
-              do i=1,limax
-
-! Add DMS for country code IQ_DMS=35  to snap sector 11=Nature.
-! First time we read we must add DMS to the "countries" 
-! contributing within the grid square. 
- 
-        ! - for flat emissions:
-
-            if ( first_dms_read ) then 
-               flat_nlandcode(i,j) = flat_nlandcode(i,j) + 1 
-               n = flat_nlandcode(i,j)
-               flat_landcode(i,j,n) = IQ_DMS   ! country code 35 
-               if ( n > flat_ncmaxfound ) then
-                 flat_ncmaxfound = n 
-                 if (DEBUG) write(6,*)'DMS Increased flat_ncmaxfound to ',n 
-                   call CheckStop( n > FNCMAX, "IncreaseFNCMAX for dms")
-                 endif 
-               else  ! We know that DMS lies last in the array, so:
-                  n = flat_nlandcode(i,j)
-                  call CheckStop(flat_landcode(i,j,n), IQ_DMS, &
-                          "Newmonth:DMS not last!")
-               endif 
-
-                  snapemis_flat(i,j,n,IQSO2) = rdemis(i,j) * ktonne_to_kgm2s &
-                     * xm2(i,j)
-            enddo ! i
-          enddo ! j
-
-
-              if ( first_dms_read ) then
-                 if (DEBUG) write(6,*)'me ',me, ' Increased flat_ncmaxfound to ' &
-                  ,flat_ncmaxfound 
-              first_dms_read = .false.
-          end if
+                 if ( first_dms_read ) then
+                    if (DEBUG) write(6,*)'me ',me, ' Increased flat_ncmaxfound to ' &
+                         ,flat_ncmaxfound 
+                    first_dms_read = .false.
+                 end if
+              else!no dms file found
+                 if ( MasterProc ) write(6,*) 'WARNING: NO DMS emissions found '
+                 if ( MasterProc ) write(unit=IO_LOG,fmt=*) "WARNING: NO DMS emissions found "
+              end if
 
         end if  ! IQSO2>0
 
