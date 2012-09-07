@@ -112,6 +112,16 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
+xxxxxxxx  rv4rc9    Peter    7 Sep/2012  xxxxxxxxxxxxxxxxxxxxxxx
+
+Met_ml: can make 3D cloudcover from cloudwater
+GridValues_ml: support for rotated spherical projection in lb2ij
+Emissions_ml: natso2 (DMS) not needed
+ModelConstants_ml:defined CW2CC = 1.0E6
+
+clean up of output: ModelConstants_ml, EmisGet_ml, DryDep_ml, Met_ml
+
+
 xxxxxxxx  rv4rc8    Alvaro    6 Sep/2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 Experiment Name (EXP_NAME) to select different configurations
