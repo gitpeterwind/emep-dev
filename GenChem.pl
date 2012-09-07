@@ -98,7 +98,7 @@ our @bionat_specs = (); # For isoprene, terpenes, soil-NO etc.
  my (%prod,  %loss ) = ();            # Initialise
  my ($neqn, $nrct, $nrctroe, $nrcmisc ) = (0,0,0,0);  # rct = Temp-dependant
  my ( $nddep,  $nwdep ) = (0,0);
- my ( $ddep_txt, $wdep_txt );
+ my ( $ddep_txt, $wdep_txt ) = ("","");
  my ( @rate_label, @rct, @rcttext, @rctroe, @rctroetext,
 	 @rcmisc, @rcmisctext ) = ();
  my ( %atoms, %molwt, %count, %nmhc, %shorthand ) = ("", "", "", "" );
@@ -742,8 +742,9 @@ sub count_tracer {
 # if ( $n < 0 ) { print "ZEROCOUNT_TRACER S$test_spec\n"; }
         my @known =  @{ $species[$tot] }[ 0 .. $n ];
         foreach my $t ( @known ) {  #  @species[$tot] ) {
+          next unless defined $t;
    	#print "COUNT_TRACER T$t N$n S$test_spec\n";
-   	   return ("already known") if $test_spec eq $t;
+   	   return ("already known") if ($test_spec eq $t);
         }
 #print " NEWTRACER$test_spec\n";
 	# If we got to here, we have a new tracer
@@ -1316,7 +1317,7 @@ sub print_rates {
     $wdep_txt .= "      $comma depmap( IXADV_$adv, CWDEP_$wdep, -1) & \n";
     $nwdep += 1;
   }
-  printall("CDEP $ddep $wdep ADV $adv NDDEP $nddep  NWDEP $nwdep LINE$_ \n");
+  printall("CDEP $ddep $wdep ADV $adv NDDEP $nddep  NWDEP $nwdep LINE".(undef $_?'':$_)." \n");
 }
 
 ###############################################################################

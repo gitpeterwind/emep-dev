@@ -475,7 +475,7 @@ subroutine set_output_defs
   ! Was the D2D/Group found? R: %spec>0
   do i=1,nhourly_out
     if(MasterProc) write(*,*) "TESTHH O3 ATEND", i, nlevels_hourly
-    if(hr_out(i)%name/="none".and.hr_out(i)%spec>0) cycle
+    if(hr_out(i)%name/="none".and.hr_out(i)%spec>=0) cycle
     write(errmsg,"(A,2(1X,A,'=',I0),2(1X,A,':',A))")&
       "set_output_defs: Failed consistency check",&
       "Hourly",i, "Nhourly",NHOURLY_OUT,&

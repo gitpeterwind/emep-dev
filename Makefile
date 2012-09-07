@@ -147,7 +147,7 @@ eEMEP: \
 .SECONDEXPANSION:
 EMEP EMEP2010 SR-EMEP SR-EMEP2010 \
 MACC MACC-EVA2010 SR-MACC eEMEP2010: modules $$@-GenChem-EmChem09soa
-eEMEP: modules $$@-GenChem-Emergency
+eEMEP: modules $$@-GenChem-EmChem09soa #-Emergency not yet ready
 EMEP-GenChem-%:
 	mk.GenChem -r $* -f FINNv1 -e SeaSalt,Dust,Isotopes
 EMEP2010-GenChem-%:

@@ -121,9 +121,29 @@ ModelConstants_ml:defined CW2CC = 1.0E6
 
 clean up of output: ModelConstants_ml, EmisGet_ml, DryDep_ml, Met_ml
 
-Aqueous_n_WetDep_ml: mass balance bug fix (Alvaro)
+Alvaro: small bug fixes & eEMEP code requirements
+
+GenChem.pl: get rid of all "Use of uninitialized value" perl warnings
+
+Aqueous_n_WetDep_ml: mass balance bug fix
   Re-implement balance bug fix from rv4beta22.
   Bug was re-introduced on rv4rc3.
+
+ZD_OZONE/My_Outputs_ml.f90: fix bug on consistency check.
+  The bug was introduced on rv4rc8 and caused to treat
+  hourly definitions with %spec==0 as undefined.
+
+Makefile: compile eEMEP target with GenChem-EmChem09soa
+  as GenChem-Emergency (strip down version) is not yet ready
+
+Output_hourly: in FORECAST mode,
+  write a .msg file at the after a hourly set is finished.
+  The .msg file has the same basename as the hourly file.
+  This will be used my the FORECAST user running eEMEP,
+  together with HOURLYFILE_ending="+FFF.nc" (one file per forecast hour),
+  to signal that the hourly file is complete and ready for download.
+
+TimeDate_ExtraUtil_ml: add support for forecast step on date2string ('FFF' tag).
 
 xxxxxxxx  rv4rc8    Alvaro    6 Sep/2012  xxxxxxxxxxxxxxxxxxxxxxx
 

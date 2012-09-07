@@ -61,7 +61,8 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
   use Io_ml,            only: IO_HOURLY
   use ModelConstants_ml,only: KMAX_MID, MasterProc, &
                               IOU_INST, IOU_HOUR, IOU_YEAR, IOU_HOUR_PREVIOUS, &
-                              DEBUG => DEBUG_OUT_HOUR,runlabel1,HOURLYFILE_ending
+                              DEBUG => DEBUG_OUT_HOUR,runlabel1,HOURLYFILE_ending,&
+                              FORECAST
   use MetFields_ml,     only: t2_nwp,th, roa, surface_precip, ws_10m ,rh2m,&
                               pzpbl, ustar_nwp, Kz_m2s, &
                               Idirect, Idiffuse, z_bnd, z_mid
@@ -534,10 +535,17 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
         call Out_netCDF(IOU_HOUR,def1,3,1,hourly,scale,CDFtype,ist,jst,ien,jen,klevel)
       !case default   ! no output
       endselect
-      enddo KVLOOP
-    enddo HLOOP
+    enddo KVLOOP
+  enddo HLOOP
 
 !Not closing seems to give a segmentation fault when opening the daily file
 !Probably just a bug in the netcdf4/hdf5 library.
   call CloseNetCDF
+
+! Write text file wich contents
+  if(.not.(FORECAST.and.MasterProc))return
+  i=index(filename,'.nc')-1;if(i<1)i=len_trim(filename)
+  open(IO_HOURLY,file=filename(1:i)//'.msg',position='append')
+  write(IO_HOURLY,*)date2string('FFF: YYYY-MM-DD hh',current_date)
+  close(IO_HOURLY)
 endsubroutine hourly_out

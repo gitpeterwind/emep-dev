@@ -287,7 +287,9 @@ function cd2str(iname,cd,debug) result(fname)
   fname=detail2str(iname,year=cd%year,month=cd%month,day=cd%day,&
                          hour=cd%hour,seconds=cd%seconds,&
                          minute=cd%seconds/60,second=mod(cd%seconds,60),&
-                         days=day_of_year(cd%year,cd%month,cd%day),debug=debug)
+                         days=day_of_year(cd%year,cd%month,cd%day),&
+                         fstep=nint(tdif_days(to_stamp(startdate),to_stamp(cd))*24),&
+                         debug=debug)
 end function cd2str
 
 function int2str(iname,id,debug) result(fname)
