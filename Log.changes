@@ -245,7 +245,7 @@ Svetlana: 31/8/2012
 GlobalBCs_ml: Saharan BCs are divided by 2, as molecular weight for dust
 was increasd from 100 to 200 g/cm3
 
-Peter:
+Dave:  
 ChemFunctions_ml - corrected comments. Refs to ACP paper
 run.pl - re-instate CS=>51 which had fallen out
 
