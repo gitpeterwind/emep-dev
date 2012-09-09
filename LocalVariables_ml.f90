@@ -57,7 +57,6 @@ type, public :: GridDat
   real    :: precip       ! Precip at surface
   real    :: wetarea      ! Fraction of grid which is wet
   real    :: cloud        ! Cloud-cover (fraction)
-!ACB    integer :: snow   ! 1=snow present, 0 = no snow
   logical ::  snowice     ! true is sdepth > 0 or ice>0
   real    :: sdepth       ! snowdepth (m)
   real    :: ice_nwp      ! ice_nwp (%)
