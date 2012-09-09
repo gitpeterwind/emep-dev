@@ -113,13 +113,16 @@ info on unused variables, etc.
 
 Will keep list here near top of Log.changes.
 LIST OF CODE needing quick check before Sep 2012 release
+
+Checked/
+cleaned
           Advection_ml.f90
 dsSep9    Aero_Vds_ml.f90
           Aero_water_ml.f90
           AirEmis_ml.f90
           Ammonium_ml.f90
           AOD_PM_ml.f90
-          AOTnPOD_ml.f90
+dsSep9    AOTnPOD_ml.f90
           Aqueous_n_WetDep_ml.f90
           Biogenics_ml.f90
           BLPhysics_ml.f90
@@ -127,14 +130,14 @@ dsSep9    Aero_Vds_ml.f90
 dsSep9    CellMet_ml.f90
 dsSep9    CheckStop_ml.f90
 dsSep9    ChemFunctions_ml.f90 - query to st
-          Chem_ml.f90
+dsSep9    Chem_ml.f90
           CM_ChemGroups_ml.f90
           CM_ChemRates_ml.f90
           CM_ChemSpecs_ml.f90
 dsSep9    CoDep_ml.f90
-          Convection_ml.f90
-          Country_ml.f90
-          DefPhotolysis_ml.f90
+dsSep9    Convection_ml.f90
+dsSep9    Country_ml.f90
+dsSep9    DefPhotolysis_ml.f90
           DerivedFields_ml.f90
           Derived_ml.f90
           DO3SE_ml.f90
@@ -149,7 +152,7 @@ dsSep9    EcoSystem_ml.f90
           Functions_ml.f90
           global2local.f90
           GlobalBCs_ml.f90
-          GridAllocate_ml.f90
+dsSep9    GridAllocate_ml.f90
           GridValues_ml.f90
           InterpolationRoutines_ml.f90
 dsSep9    Io_ml.f90
@@ -178,13 +181,13 @@ dsSep9    MosaicOutputs_ml.f90
           NetCDF_ml.f90
           OutputChem_ml.f90
           Output_hourly.f90
-          OwnDataTypes_ml.f90
+dsSep9    OwnDataTypes_ml.f90
           Par_ml.f90
-          PhyChem_ml.f90
+dsSep9    PhyChem_ml.f90
 dsSep9    PhysicalConstants_ml.f90
-          Pollen_ml.f90
+          Pollen_ml.f90 - Will move to FUTURE_Pollen
 dsSep9    Radiation_ml.f90
-          Rb_ml.f90
+dsSep9    Rb_ml.f90
           ReadField_ml.f90
 dsSep9    Rsurface_ml.f90
 dsSep9    Runchem_ml.f90
@@ -197,7 +200,7 @@ dsSep9    Runchem_ml.f90
           Solver.f90
           StoFlux_ml.f90
           SubMet_ml.f90
-          Tabulations_ml.f90
+dsSep9    Tabulations_ml.f90
           TimeDate_ExtraUtil_ml.f90
           TimeDate_ml.f90
           Timefactors_ml.f90
