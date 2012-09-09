@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !***************************************************************************! 
 !* 
-!*  Copyright (C) 2007-2011 met.no
+!*  Copyright (C) 2007-2012 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -204,7 +204,6 @@ contains
           ! and land for micromet purposes, e.g. T2 can be very wrong
           ! We mark these as likely coastal:
           if ( nwp_sea(i,j) )  then
-             !DSA12 if (  water_fraction(i,j) < 0.95 ) likely_coastal(i,j) = .true.
              if (  water_fraction(i,j) < 1.0  ) likely_coastal(i,j) = .true.
           else if ( water_fraction(i,j) > 0.2 ) then
              likely_coastal(i,j) = .true.
