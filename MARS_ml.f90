@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2007-2011 met.no
+!*  Copyright (C) 2007-2012 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -52,26 +52,14 @@ module MARS_ml
 
       integer, private, save :: MAXNNN1 = 0
       integer, private, save :: MAXNNN2 = 0
-!ds      real        MWNO3            ! molecular weight for NO3
-      real, private, parameter :: MWNO3  = 62.0049 
-
-!ds      real        MWHNO3           ! molecular weight for HNO3
-      real, private, parameter :: MWHNO3 = 63.01287       
-
-!ds      real        MWSO4            ! molecular weight for SO4
-      real, private, parameter :: MWSO4 = 96.0576 
-
-!ds      real        MWHSO4           ! molecular weight for HSO4
-      real, private, parameter :: MWHSO4 = MWSO4 + 1.0080
-
-!ds      real        MH2SO4           ! molecular weight for H2SO4
-      real, private, parameter :: MH2SO4 = 98.07354 
-
-!ds      real        MWNH3            ! molecular weight for NH3
-      real, private, parameter :: MWNH3 = 17.03061 
-
-!ds      real        MWNH4            ! molecular weight for NH4
-      real, private, parameter :: MWNH4 = 18.03858
+      real, private, parameter :: &
+        MWNO3  = 62.0049  ! molecular weight for NO3
+       ,MWHNO3 = 63.01287 ! .. HNO3       
+       ,MWSO4  = 96.0576  ! .. SO4 
+       ,MWHSO4 = MWSO4 + 1.0080  ! HSO4
+       ,MH2SO4 = 98.07354    ! H2SO4
+       ,MWNH3 = 17.03061     ! NH3
+       ,MWNH4 = 18.03858     ! NH4
  contains
 
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -236,7 +224,7 @@ module MARS_ml
       real        MWNACL           ! molecular weight for NaCl
       parameter ( MWNACL = 58.44277 )
 
-!ds moved a bunch upstairs.
+!emep moved a bunch upstairs.
 
       real        MWORG            ! molecular weight for Organic Species
       parameter ( MWORG = 16.0 )
@@ -346,8 +334,8 @@ module MARS_ml
        parameter( MINSO4 = 1.0E-6 / MWSO4 ) 
       real        MINNO3
        parameter( MINNO3 = 1.0E-6 / MWNO3 )    !2/25/99 IJA
-!st      real        FLOOR
-!st       parameter( FLOOR = 1.0E-30) ! minimum concentration       
+!emep      real        FLOOR
+!emep       parameter( FLOOR = 1.0E-30) ! minimum concentration       
 !2/25/99 IJA
 ! FSB New variables Total ammonia and nitrate mass concentrations
       real  TMASSNH3  ! Total ammonia (gas and particle)
@@ -363,7 +351,7 @@ module MARS_ml
 
       ASO4=0.0;ANO3=0.0;AH2O=0.0;ANH4=0.0;GNO3=0.0;GNH3=0.0 
 
-      ASO4 = SO4   !ds from RPM
+      ASO4 = SO4   ! from RPM
 
 !...convert into micromoles/m**3
  
@@ -381,7 +369,7 @@ module MARS_ml
  
 !...now set humidity index fRH as a percent
 
-!st      IRH = NINT( 100.0 * RH )
+!      IRH = NINT( 100.0 * RH )
          fRH = RH 
 !...Check for valid fRH
 
@@ -431,9 +419,8 @@ module MARS_ml
       GAMAAN = 1.0
       GAMOLD = 1.0
 
-!ds from RPM, but removed FLOOR : (slighty different logic)
+!emep from RPM, but removed FLOOR : (slighty different logic)
       if( (TSO4 < MINSO4 ) .and. (TNO3 < MINNO3) ) then
-        !print *, "DSX  HERE"
           ASO4 = SO4   ! MAX..
           ANO3 = NO3   ! MAX..      
           WH2O = 0.0
@@ -442,7 +429,7 @@ module MARS_ml
           GNO3 = NO3   ! MAX(FLOOR,NO3)
           RETURN
        END IF
-!ds end rpm
+!emep end rpm
 
 
 !...set the ratio according to the amount of sulfate and nitrate
@@ -515,7 +502,7 @@ if ( DEBUG_EQUIB ) then
   end if
 end if
         WFRAC = (AH2O + FLOOR)  / ( ASO4 + ANH4 +  AH2O + FLOOR  )
-        !ds WFRAC = AH2O / ( ASO4 + ANH4 +  AH2O + FLOOR  )
+        !emep WFRAC = AH2O / ( ASO4 + ANH4 +  AH2O + FLOOR  )
         !CRUDE FIX? WFRAC = AH2O / ( ASO4 + ANH4 +  AH2O )
 !!!!       IF ( WFRAC == 0.0 )  RETURN   ! No water       
         IF ( WFRAC < 0.2 ) THEN
@@ -528,7 +515,6 @@ end if
 
 !...check for not enough to support aerosol      
 
-          !dsjIF ( CC <= 0.0 ) THEN
           IF ( CC < FLOOR ) THEN
             XNO3 = 0.0
           ELSE
@@ -540,10 +526,9 @@ end if
 !...  set nitrate to zero and RETURN if complex roots are found
 !2/25/99 IJA
 
-            !DS IF ( DISC < 0.0 ) THEN
-            !dsDSdIF ( DISC < FLOOR ) THEN
             IF ( DISC < 0.0 ) THEN
-if( DEBUG_EQUIB .and. debug_flag ) print *, "MARS DISC NEG ", XNO3, WH2O, DISC
+             if( DEBUG_EQUIB .and. debug_flag ) print *, &
+                "MARS DISC NEG ", XNO3, WH2O, DISC
               XNO3 = 0.0
               AH2O = 1000.0 * WH2O
               YNH4 = TWOSO4
@@ -621,8 +606,6 @@ if( DEBUG_EQUIB .and. debug_flag ) print *, "MARS DISC NEG ", XNO3, WH2O, DISC
 !...Check for complex roots, retain inital values and RETURN
 !2/25/99 IJA
 
-          !DS IF ( DISC < 0.0 ) THEN
-          !dsDS IF ( DISC < FLOOR ) THEN
           IF ( DISC < 0.0 ) THEN
 if( DEBUG_EQUIB .and. debug_flag ) print *, "MARS DISC NEG2 ", XNO3, WH2O, DISC
             XNO3 = 0.0
@@ -642,7 +625,7 @@ if( DEBUG_EQUIB .and. debug_flag ) print *, "MARS DISC NEG2 ", XNO3, WH2O, DISC
 
 ! Deal with degenerate case (yoj)
 
-          !DS IF ( AA /= 0.0 ) THEN
+          !emep IF ( AA /= 0.0 ) THEN
           IF ( abs(AA) > FLOOR  ) THEN
              if( DEBUG_EQUIB .and. debug_flag ) print "(a,9es11.3)", "MARS DEGEN  ",  XNO3, WH2O, DISC, AA, BB, CC
              DD = SQRT( DISC )
@@ -657,7 +640,7 @@ if( DEBUG_EQUIB .and. debug_flag ) print *, "MARS DISC NEG2 ", XNO3, WH2O, DISC
                 XNO3 = MAX( RR1, RR2 )
              ELSE if(MIN( RR1, RR2 )>0.0)then
                 XNO3 = MIN( RR1, RR2 )
-             ELSE!two negative roots !DS PW added 4th July 2012
+             ELSE!two negative roots !emep added 4th July 2012
 
                            !--------------------- return copied from above
                 XNO3 = 0.0
@@ -666,8 +649,8 @@ if( DEBUG_EQUIB .and. debug_flag ) print *, "MARS DISC NEG2 ", XNO3, WH2O, DISC
                 GNO3 = HNO3
                 ASO4 = TSO4 * MWSO4
                 ANO3 = NO3
-                !ds ANH4 = YNH4 * MWNH4
-                ANH4 = min( YNH4 * MWNH4, TMASSNH3)  ! ds added "min"
+                !emep ANH4 = YNH4 * MWNH4
+                ANH4 = min( YNH4 * MWNH4, TMASSNH3)  ! emep added "min"
                 GNH3 = TMASSNH3 - ANH4
                 if( DEBUG_EQUIB .and. debug_flag ) WRITE( *, * ) ' TWO NEG ROOTS '
                 RETURN
@@ -783,7 +766,7 @@ if( DEBUG_EQUIB .and. debug_flag ) print "(a,4es10.3)", "MARS NONDEGEN  ",  AA, 
 
 !...Check for zero water.      
 
-        !ds IF ( WH2O == 0.0 ) RETURN
+        !emep IF ( WH2O == 0.0 ) RETURN
         IF ( abs(WH2O) < FLOOR ) RETURN
         ZSO4 = TSO4 / WH2O 
 
@@ -940,7 +923,7 @@ if( DEBUG_EQUIB .and. debug_flag ) print "(a,4es10.3)", "MARS NONDEGEN  ",  AA, 
       real ::  dum1,dum2,part1,part2,part3,rrsq,phi,yy1,yy2,yy3
       real ::  costh, sinth
 
-!PW:  7 digits not enough!      data sqrt3/1.732050808/, one3rd/0.333333333/
+!emep:  7 digits not enough!      data sqrt3/1.732050808/, one3rd/0.333333333/
 
       sqrt3=sqrt(3.0)
       one3rd=1.0/3.0
@@ -999,7 +982,7 @@ if( DEBUG_EQUIB .and. debug_flag ) print "(a,4es10.3)", "MARS NONDEGEN  ",  AA, 
       if(crutes(1) <= 0.0) THEN
          crutes(1) = 1.0e9
   !!    if(debug_flag ) write(6,*) 'WARNING: NEGATIVE ROOTS IN CUBIC', crutes(1)
-  !!st       stop
+  !!       stop
       end if
       nr=1
       end if
