@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2011 met.no
+!*  Copyright (C) 2007-2012 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -49,7 +49,6 @@
    use Ammonium_ml,       only: Ammonium
    use AOD_PM_ml,         only: AOD_calc
    use Aqueous_ml,        only: Setup_Clouds, prclouds_present, WetDeposition
-   !DSA12 use Biogenics_ml,      only: BIO_ISOP, BIO_TERP,  BIO_SOILNO, setup_bio !DSA12, rcbio 
    use Biogenics_ml,      only: setup_bio
    use CellMet_ml,        only: Get_CellMet
    use CheckStop_ml,      only: CheckStop
@@ -107,7 +106,6 @@ subroutine runchem(numt)
    logical ::  Jan_1st, End_of_Run
 !   logical :: ambient
    logical ::  debug_flag    ! =>   Set true for selected i,j
-   !TEST real, dimension(limax,ljmax) :: aotpre, aotpost
 
 ! =============================
 
@@ -148,46 +146,45 @@ subroutine runchem(numt)
          !write(*,"(a,4i4)") "RUNCHEM DEBUG IJTESTS", debug_li, debug_lj, i,j
          !write(*,*) "RUNCHEM DEBUG LLTESTS", me,debug_proc,debug_flag
 
- ! Prepare some near-surface grid and sub-scale meteorology
- ! for MicroMet
-             call Get_CellMet(i,j,debug_flag) 
+         ! Prepare some near-surface grid and sub-scale meteorology
+         ! for MicroMet
 
-             !FEB2012 - we need to get the gas fraction of semivols:
-             if ( ORGANIC_AEROSOLS ) call Init_OrganicAerosol(i,j,debug_flag)
+          call Get_CellMet(i,j,debug_flag) 
 
-             call setup_1d(i,j)   
+          ! we need to get the gas fraction of semivols:
+          if ( ORGANIC_AEROSOLS ) call Init_OrganicAerosol(i,j,debug_flag)
+
+          call setup_1d(i,j)   
 
  
-             if ( USE_SEASALT )  &
+          if ( USE_SEASALT )  &
              call SeaSalt_flux(i,j,debug_flag)
 
-             if ( USE_DUST )     &
+          if ( USE_DUST )     &
              call WindDust (i,j,debug_flag)
 
-             if ( USE_Pollen .and. daynumber >  59) &
+          if ( USE_Pollen .and. daynumber >  59) &
              call Pollen_flux (i,j,debug_flag)
              !if (debug_) write(6,*) "2 Runchem polled_prod",&
              !                              Pollen_prod(1,i,j)
 
-            call setup_rcemis(i,j) ! Sets initial rcemis. DSA12 moved
-            call Setup_Clouds(i,j,debug_flag)
+          call setup_rcemis(i,j) ! Sets initial rcemis. DSA12 moved
+          call Setup_Clouds(i,j,debug_flag)
 
-             call setup_bio(i,j)   ! Adds bio/nat to rcemis
+          call setup_bio(i,j)   ! Adds bio/nat to rcemis
 
-             call emis_massbudget_1d(i,j)   ! Adds bio/nat to rcemis
-
-             call Add_2timing(28,tim_after,tim_before,  &
+          call emis_massbudget_1d(i,j)   ! Adds bio/nat to rcemis
+            call Add_2timing(28,tim_after,tim_before,  &
                                          "Runchem:setup_cl/bio")
 
-             call setup_phot(i,j,errcode)
+          call setup_phot(i,j,errcode)
 
-             call CheckStop(errcode,"setup_photerror in Runchem") 
-             call Add_2timing(29,tim_after,tim_before,  &
+          call CheckStop(errcode,"setup_photerror in Runchem") 
+            call Add_2timing(29,tim_after,tim_before,  &
                                            "Runchem:1st setups")
 
-!DSA12 moved             call setup_rcemis(i,j)
 
-! Called every adv step, only updated every third hour
+          ! Called every adv step, only updated every third hour
              !FUTURE call setup_nh3(i,j)    ! NH3emis, experimental (NMR-NH3)
 
 
@@ -196,14 +193,12 @@ subroutine runchem(numt)
                 rcemis(C5H8,KMAX_MID), xn_2d(NO,20),xn_2d(C5H8,20) /) )
              end if
 
-             if ( ORGANIC_AEROSOLS ) &
+          if ( ORGANIC_AEROSOLS ) &
                call OrganicAerosol(i,j,debug_flag)
 
-             call Add_2timing(30,tim_after,tim_before,  &
+            call Add_2timing(30,tim_after,tim_before,  &
                                           "Runchem:2nd setups")
-
- 
-             call Add_2timing(27,tim_after,tim_before,&
+            call Add_2timing(27,tim_after,tim_before,&
                                               "Runchem:setup_1d+rcemis")
 
 !if ( DEBUG .and. debug_flag  ) then
@@ -281,8 +276,8 @@ subroutine runchem(numt)
 !                        call Aero_water(i,j, ambient, debug_flag)
                    
                      if(i>=li0.and.i<=li1.and.j>=lj0.and.j<=lj1)then
-!DO NOT UPDATE BC. BC are frozen
                         call reset_3d(i,j)
+                           !(DO NOT UPDATE BC. BC are frozen)
                      endif
 
                      call Add_2timing(33,tim_after,tim_before,&
