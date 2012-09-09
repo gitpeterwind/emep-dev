@@ -356,7 +356,10 @@ module ChemFunctions_ml
  !---------------------------------------------------------------------
   function ec_ageing_rate() result(rate) 
  
-!.. Sets ageing rates for fresh EC based on Riemer et al.; ACP (2004). 
+   !.. Sets ageing rates for fresh EC
+   !   See Tsyro, Simpson, Tarrason, Klimont, Kupiainen, Pio and Yttri, JGR, 
+   !   112, D23S19, 2007
+   !   - loosely based on Riemer et al.; ACP (2004). 
 
      real, dimension(K1:K2) :: rate
  
