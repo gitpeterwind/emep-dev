@@ -358,8 +358,7 @@ module MosaicOutputs_ml
 
              MosaicOutput(nMosaic) = Deriv(  &
               name, "Mosaic", "DDEP", DDEP_ECOS(n), units, &
-                  iadv,-99, F, 1.0e6 * atw ,  F,  DDEP_FREQ ) !FEB2011
-!QUERY - why no dt_scale??
+                  iadv,-99, F, 1.0e6 * atw ,  F,  DDEP_FREQ ) 
 
           if(DEBUG .and. MasterProc) then
             write(6,*) "DDEP setups"
