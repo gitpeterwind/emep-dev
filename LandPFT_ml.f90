@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2010-2011 met.no
+!*  Copyright (C) 2010-2012 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -87,7 +87,7 @@ contains
     integer :: pft
     character(len=20) :: varname
 
-return ! JAN31TEST. This code will be completed during 2011
+return ! JAN31TEST. This code needs to be  completed still *****
      if ( my_first_call ) then
          allocate ( pft_lai(MAXLIMAX,MAXLJMAX,N_PFTS) )
          my_first_call = .false.

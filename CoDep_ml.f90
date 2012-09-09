@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2007-2011 met.no
+!*  Copyright (C) 2007-2012 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -39,8 +39,7 @@ module CoDep_ml
   !---------------------------------------------------------------------------
   ! For basic reference and methods, see
   !
-  ! Fagerli et al., 2011, in preperation  for Rbs_SO2
-  ! Simpson et al. 2011, in preperation for general model documentation
+  ! Simpson et al. 2012, ACP, 12, for general model documentation
   !
   ! Also,
   ! RIS: Smith, R.I., Fowler, D., Sutton, M.A., Flechard, C: and Coyle, M.
