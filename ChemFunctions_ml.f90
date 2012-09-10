@@ -33,7 +33,7 @@ module ChemFunctions_ml
 ! and Standard Atmosphere p -> H conversion
 !
 ! Where possible, reference to the EMEP documentation paper, Simpson
-! et al., ACP, in-press, 2012,  are given, indicated by E12:
+! et al., ACP, 2012,  are given, indicated by ACP:
 ! 
 !____________________________________________________________________
 !
@@ -225,7 +225,7 @@ module ChemFunctions_ml
 ! The first order reaction coefficient K (corrected for gas phase diffusion, 
 ! Schwartz, 1986) is given by
 !
-! K= S* alpha* v/4                               E12:44
+! K= S* alpha* v/4                               ACP:44
 !    alpha=sticking coeff. for N2O5 =0.02
 !    v=mean molecular speed for N2O5
 !    S=aerosol surfac
@@ -271,10 +271,10 @@ module ChemFunctions_ml
 ! According to Riemer et al, 2003, we weight the reaction probability
 ! according to the composition of the aerosol
 !
-! alpha(N2O5)=f*alpha1 +(1-f)alpha2                           E12:45
+! alpha(N2O5)=f*alpha1 +(1-f)alpha2                           ACP:45
 !   alpha1=0.02
 !   alpha2=0.002
-!   f= Mso4/(Mso4+Mno3), M=aerosol mass concentration         E12:46
+!   f= Mso4/(Mso4+Mno3), M=aerosol mass concentration         ACP:46
  
 ! N2O5 -> aerosol based upon  based on Riemer 2003 and
 ! In testing, we had also tried a simple acounting for 
