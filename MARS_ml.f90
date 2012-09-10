@@ -53,13 +53,13 @@ module MARS_ml
       integer, private, save :: MAXNNN1 = 0
       integer, private, save :: MAXNNN2 = 0
       real, private, parameter :: &
-        MWNO3  = 62.0049  ! molecular weight for NO3
-       ,MWHNO3 = 63.01287 ! .. HNO3       
-       ,MWSO4  = 96.0576  ! .. SO4 
-       ,MWHSO4 = MWSO4 + 1.0080  ! HSO4
-       ,MH2SO4 = 98.07354    ! H2SO4
-       ,MWNH3 = 17.03061     ! NH3
-       ,MWNH4 = 18.03858     ! NH4
+        MWNO3  = 62.0049         &! molecular weight for NO3
+       ,MWHNO3 = 63.01287        &! .. HNO3       
+       ,MWSO4  = 96.0576         &! .. SO4 
+       ,MWHSO4 = MWSO4 + 1.0080  &! HSO4
+       ,MH2SO4 = 98.07354        &! H2SO4
+       ,MWNH3 = 17.03061         &! NH3
+       ,MWNH4 = 18.03858          ! NH4
  contains
 
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
