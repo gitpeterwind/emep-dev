@@ -1362,14 +1362,9 @@ contains
          xr2=(xrot-x1_rot)*dx_roti+1
          yr2=(yrot-y1_rot)*dx_roti+1
 
-!if(me==1)write(*,*)gl2,gb2,xr2,yr2,xrot,yrot,1.0/dx_roti
-!CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
-!CALL MPI_FINALIZE(INFO)
-!stop
     else!general projection, Use only info from glon_fdom and glat_fdom
        !first find closest by testing all gridcells. 
 
-stop
        dist=10.0!max distance is PI
        do j=1,JJFULLDOM
           do i=1,IIFULLDOM
