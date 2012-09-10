@@ -356,7 +356,7 @@ module ChemFunctions_ml
  !---------------------------------------------------------------------
   function ec_ageing_rate() result(rate) 
  
-   !.. Sets ageing rates for fresh EC
+   !.. Sets ageing rates for fresh EC [1/s]
    !   See Tsyro, Simpson, Tarrason, Klimont, Kupiainen, Pio and Yttri, JGR, 
    !   112, D23S19, 2007
    !   - loosely based on Riemer et al.; ACP (2004). 
@@ -365,10 +365,10 @@ module ChemFunctions_ml
  
     if ( Grid%izen <= DAY_ZEN ) then  ! daytime
 
-       rate (K2-2 : K2)   = 3.5e-5  ! t= 2h
-       rate (K1   : K2-3) = 1.4e-4  ! t= 8h
+       rate (K2-2 : K2)   = 3.5e-5  !  half-lifetime ~ 8h
+       rate (K1   : K2-3) = 1.4e-4  !                ~ 2h
       else
-       rate (K1 : K2 )    = 9.2e-6  ! t= 30h
+       rate (K1 : K2 )    = 9.2e-6  !                ~ 30h
     endif
 
   end function ec_ageing_rate
