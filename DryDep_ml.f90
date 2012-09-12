@@ -3,7 +3,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2007-2011 met.no
+!*  Copyright (C) 2007-2012 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -50,7 +50,16 @@ module DryDep_ml
   !   and improving the EMEP ozone deposition module", Atmos.Env.,38,2373-2385
   !
   ! Also, handling of dry/wet and co-dep procedure changed following discussions
-  ! with CEH: Fagerli et al., in preperation....
+  ! with CEH:
+
+  ! Latest documentation and ACP eqn references in code below from
+  !  Simpson, D., Benedictow, A., Berge, H., Bergstr\"om, R., Emberson, L. D.,
+  !  Fagerli, H., Flechard, C. R.,  Hayman, G. D., Gauss, M., Jonson, J. E., 
+  !  Jenkin, M. E., Ny\'{\i}ri, A., Richter, C., Semeena, V. S., Tsyro, S.,
+  !  Tuovinen, J.-P., Valdebenito, \'{A}., and Wind, P.: 
+  !  The EMEP MSC-W chemical transport model -- technical description, 
+  !  Atmos. Chem. Phys., 12, 7825--7865, 2012.
+  
 
  use My_Aerosols_ml,    only : NSIZE  
 
@@ -139,6 +148,8 @@ module DryDep_ml
    ! total, NDRYDEP_ADV. This number should be >= NDRYDEP_GASES
    ! The actual species used and their relation to the CDDEP_ indices
    ! above will be defined in Init_DepMap
+
+   !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
        include 'CM_DryDep.inc'
 
@@ -409,7 +420,6 @@ module DryDep_ml
          call datewrite("DRYDEP VS",NSIZE,(/ Grid%t2, Grid%rho_ref, Vs /) )
    !      if( maxval(Vs) > 0.02 ) write(*,*) "DRYDEP LIM!"
     end if
-   !  Vs(:) = min( Vs(:), 0.02) 
 
     !/ And start the sub-grid stuff over different landuse (iL)
 
@@ -473,28 +483,30 @@ module DryDep_ml
               if ( LandType(iL)%is_forest  ) then ! Vds NOV08
 
                  !/ Use eqn *loosely* derived from Petroff results
+                 ! ACP67-69
 
                   Vds = GPF_Vds300(L%ustar,L%invL, L%SAI )
-                  if (n==CDDEP_PMfN .and. L%invL<0.0 ) then ! We allow nitrate to deposit x 2
-                       Vds = Vds * 3.0 ! for nitrate-like
-                  end if
 
-              else !!!
+              else !!!  ! ACP67-68
 
                 !/  Use Wesely et al  for other veg & sea
 
                  ! Vds = Nemitz2004( 0.4, L%ustar, L%invL )
                  Vds = Wesely300( L%ustar, L%invL )
-                  ! We allow nitrate to deposit x 2
-                  if (n==CDDEP_PMfN .and. L%invL<0.0 ) then 
-                       Vds = Vds * 3.0 ! for nitrate-like
-                  end if
 
               end if
 
-                ! Use non-electrical-analogy version of Venkatram+Pleim (AE,1999)
-                 Vg_ref(n) =  Vs(nae)/ ( 1.0 - exp( -( L%Ra_ref + 1.0/Vds)* Vs(nae)))
-                 Vg_3m (n) =  Vs(nae)/ ( 1.0 - exp( -( L%Ra_3m  + 1.0/Vds)* Vs(nae)))
+             ! We allow fine N-patricles to deposit x 3, in
+             ! unstable conditions. (F_N in ACP68)
+              if (n==CDDEP_PMfN .and. L%invL<0.0 ) then 
+                   Vds = Vds * 3.0 ! for nitrate-like
+              end if
+
+            ! Use non-electrical-analogy version of Venkatram+Pleim (AE,1999)
+            ! ACP70
+
+              Vg_ref(n) =  Vs(nae)/ ( 1.0 - exp( -( L%Ra_ref + 1.0/Vds)* Vs(nae)))
+              Vg_3m (n) =  Vs(nae)/ ( 1.0 - exp( -( L%Ra_3m  + 1.0/Vds)* Vs(nae)))
 
 
         if ( DEBUG_VDS ) then
@@ -546,14 +558,14 @@ module DryDep_ml
              !QUERY - do we need Gsur for anything now?!
 
              Sub(iL)%Gsur(n) = 1.0/Rsur(n) ! Note iL, not iiL 
-             Sub(iL)%Gns(n)  = Gns(n)  ! Note iL, not iiL 
+             Sub(iL)%Gns(n)  = Gns(n)      ! Note iL, not iiL 
 
              !SUB0 Grid%Gsur(n)  =  Grid%Gsur(n) + L%coverage / Rsur(n)
              !SUB0 Grid%Gns(n)  =  Grid%Gns(n)+ L%coverage * Gns(n)
              Sub(0)%Gsur(n)  =  Sub(0)%Gsur(n) + L%coverage / Rsur(n)
              Sub(0)%Gns(n)   =  Sub(0)%Gns(n)  + L%coverage * Gns(n)
          endif
-         end do !species loop
+             end do !species loop
 
          Sumcover = Sumcover + L%coverage
 
