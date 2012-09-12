@@ -1,4 +1,5 @@
 
+
 IMPORTANT NOTE:
 
   * Instructions to run *
@@ -6,7 +7,7 @@ IMPORTANT NOTE:
 
     Options:
 
-    1) Use the make system (stallo only!), e.g. type:
+    1) Use the make system (stallo/vilje only!), e.g. type:
         make EMEP
         make SR-EMEP
       or other targets. See Makefile for these
@@ -47,6 +48,24 @@ IMPORTANT NOTE:
         * Compile the model with `make SR-EMEP`.
         * Run $year=2009 and $MAKEMODE="SR-EMEP" (run.pl),
           and the program will be compiled by run.pl.
+          
+    Modules & Make in stallo/vilje
+      Since rv4rc8, the modules required for compilation are set and tested on Makefile.
+      This is done to esnure that the model is compiled/linked with consistent compiler/libraries.
+      Please add the following lines to your ~/.bashrc file
+      
+## Unimod: Modules & Make
+export MACHINE=vilje                  # select stallo/vilje machine
+case $MACHINE in                      # modules needed to compile Unimod
+ stallo)EMEPMODULES=(intel-compiler/12.1.2 openmpi/1.4.4 netcdf/4.1.3);;
+  vilje)EMEPMODULES=(intelcomp/12.0.5.220 mpt/2.06 netcdf/4.1.3);;
+esac
+[[ -z "$MODULESHOME" ]] &&
+  . /etc/profile.d/modules.sh         # load modulecmd wraper, fi needed
+if [[ -n "$EMEPMODULES" ]]; then
+  module unload ${EMEPMODULES[*]%/*}  # unload system default versions
+  module load   ${EMEPMODULES[*]}     # load versions needed by Unimod
+fi
 
     Inputs
 
@@ -216,6 +235,19 @@ xxxxxxxx  rv4rc-ongoing Dave 9-- Sep/2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 Just cleaning up a little so far. Not rtagged
 
+Alvaro 12 Sep
+
+Makefile:
+  Patch from Viel for `make module`.
+  
+ModelConstants_ml, Output_hourly:
+  For hourly splitted files (see HOURLYFILE_ending in ModelConstants_ml),
+  avoid writing different years on the same file.
+  - Restore single hourly file as defaul (ModelConstants_ml).
+  - Create NetCDF variables only if the file is niwely created
+
+GenChem.pl: get rid of one "Use of uninitialized value" perl warning
+  that scaped rv4rc9
 
 xxxxxxxx  rv4rc9    Peter    7 Sep/2012  xxxxxxxxxxxxxxxxxxxxxxx
 

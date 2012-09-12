@@ -1317,7 +1317,8 @@ sub print_rates {
     $wdep_txt .= "      $comma depmap( IXADV_$adv, CWDEP_$wdep, -1) & \n";
     $nwdep += 1;
   }
-  printall("CDEP $ddep $wdep ADV $adv NDDEP $nddep  NWDEP $nwdep LINE".(undef $_?'':$_)." \n");
+  printall("CDEP $ddep $wdep ADV $adv NDDEP $nddep  NWDEP $nwdep LINE".
+    (join '',grep{defined;} @_)." \n");
 }
 
 ###############################################################################

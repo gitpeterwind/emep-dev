@@ -168,7 +168,8 @@ eEMEP2010-GenChem-%:
 	mk.GenChem -r $* -f FINNv1 -e SeaSalt,Dust,Isotopes -V 2bin,Eyjafj.ll #-h
 
 # Check if intended modules are loaded
-fidmodule = $(findstring $(1),$(shell bash -c 'module list' 2>&1))
+lstmodule = $(shell bash -c '. /etc/profile.d/modules.sh; module list' 2>&1)
+fidmodule = $(findstring $(1),$(lstmodule))
 chkmodule = $(if $(call fidmodule,$(1)),$(info Found module: $(1)),\
   $(error Missing module $(1): try 'module load $(1)'))
 checkmodules = $(foreach m,$(subst _,/,$(1)),$(call chkmodule,$(m)))
