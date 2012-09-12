@@ -585,7 +585,7 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
   real, dimension (KUPPER:KMAX_MID) :: VfRT ! Vf * Rgas * Temp
   real, parameter :: Hplus43=5.011872336272724E-005! 10.0**-4.3
   real, parameter :: Hplus55=3.162277660168379e-06! 10.0**-5.5
-  real ::pHin(pH_ITER),pHout(pH_ITER)
+  real ::pHin(0:pH_ITER),pHout(0:pH_ITER)!start at zero to avoid debugger warnings for iter-1
   integer k, iter
 
   call get_frac(cloudwater,incloud) ! => frac_aq
