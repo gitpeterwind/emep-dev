@@ -51,7 +51,7 @@ IMPORTANT NOTE:
           
     Modules & Make in stallo/vilje
       Since rv4rc8, the modules required for compilation are set and tested on Makefile.
-      This is done to esnure that the model is compiled/linked with consistent compiler/libraries.
+      This is done to ensure that the model is compiled/linked with consistent compiler/libraries.
       Please add the following lines to your ~/.bashrc file
       
 ## Unimod: Modules & Make
@@ -231,9 +231,7 @@ dsSep9    Trajectory_ml.f90
           Wesely_ml.f90
 
 !----------------------------------------------------------
-xxxxxxxx  rv4rc-ongoing Dave 9-- Sep/2012  xxxxxxxxxxxxxxxxxxxxxxx
-
-Just cleaning up a little so far. Not rtagged
+xxxxxxxx  rv4rc10 12Sep/2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 Alvaro 12 Sep
 
@@ -248,6 +246,9 @@ ModelConstants_ml, Output_hourly:
 
 GenChem.pl: get rid of one "Use of uninitialized value" perl warning
   that escaped rv4rc9
+
+Dave 9-12th:
+Just cleaning up a little so far. Not rtagged
 
 xxxxxxxx  rv4rc9    Peter    7 Sep/2012  xxxxxxxxxxxxxxxxxxxxxxx
 
