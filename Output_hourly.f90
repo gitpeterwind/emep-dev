@@ -116,8 +116,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
   logical, save :: debug_flag      ! = ( MasterProc .and. DEBUG )
   logical       :: surf_corrected  ! to get 3m values
 
-  logical       :: create_netcdf_var=.false.
-
+  logical       :: file_exist=.false.
 
   if(NHOURLY_OUT<= 0) then
     if(my_first_call.and.MasterProc.and.DEBUG) &
@@ -126,8 +125,6 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
     return
   endif
 
-
-  create_netcdf_var=my_first_call
   if(my_first_call) then
     debug_flag=(debug_proc.and.DEBUG)
 
@@ -141,18 +138,17 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
       hr_out(ih)%nk  = min(KMAX_MID,hr_out(ih)%nk)
       if(debug_flag) write(*,*) "DEBUG Hourly nk ", ih, hr_out(ih)%nk
     enddo ! ih
-    my_first_call = .false.
   endif  ! first_call
 
   filename=trim(runlabel1)//date2string(HOURLYFILE_ending,current_date)
-  if(filename/=fileName_hour)then
+  inquire(file=filename,exist=file_exist)
+  if(.not.file_exist)then
     if(debug_flag) write(*,*) "DEBUG ",HOURLYFILE_ending,"-Hourlyfile ", trim(filename)
     call Init_new_netCDF(trim(filename),IOU_HOUR)
-    create_netcdf_var=.true.
   endif
 
   !! Create variables first, without writing them (for performance purposes)   
-  if(create_netcdf_var)then
+  if(my_first_call.or..not.file_exist)then
     do ih=1,NHOURLY_OUT
       def1%name=hr_out(ih)%name
       def1%unit=hr_out(ih)%unit
@@ -177,6 +173,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
     enddo
   endif
 
+  my_first_call = .false.
 !......... Uses concentration/met arrays from Chem_ml or Met_ml ..................
 !
 !        real xn_adv(NSPEC_ADV,MAXLIMAX,MAXLJMAX,KMAX_MID)

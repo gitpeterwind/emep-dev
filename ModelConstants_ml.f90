@@ -320,11 +320,11 @@ logical, public, parameter :: NETCDF_COMPRESS_OUTPUT=&
 !Hourly output in single file or monthly/daily files:
 !NB: will not work well by default on Stallo per 14th Feb 2012 because of library bugs!
 !Until this is fixed, you must compile with netcdf/4.1.3 and link and run with compiler 12.1.2
-character(len=*), public, parameter :: & ! ending depeding on date
-! HOURLYFILE_ending="_hour_YYYYMM.nc" ! MM  -> month (01 .. 12)
-! HOURLYFILE_ending="_hour_MMDD.nc"   ! DD  -> day of the month (00 .. 31)
- HOURLYFILE_ending="_hour_JJJ.nc"    ! JJJ -> the day of the year (001 .. 366)
-!  HOURLYFILE_ending="_hour.nc"        ! keep the same for the whole run
+character(len=*), public, parameter :: &! ending depeding on date:
+! HOURLYFILE_ending="_hour_YYYYMM.nc"   ! MM  -> month (01 .. 12)
+! HOURLYFILE_ending="_hour_YYYYMMDD.nc" ! DD  -> day of the month (00 .. 31)
+! HOURLYFILE_ending="_hour_YYYYJJJ.nc"  ! JJJ -> the day of the year (001 .. 366)
+  HOURLYFILE_ending="_hour.nc"          ! keep the same for the whole run
 
 ! NH3 module as set up originally with U10 from met: kept for safety only.
 ! Will be replaced by sub.grid calculation of wind in future.

@@ -247,7 +247,7 @@ ModelConstants_ml, Output_hourly:
   - Create NetCDF variables only if the file is niwely created
 
 GenChem.pl: get rid of one "Use of uninitialized value" perl warning
-  that scaped rv4rc9
+  that escaped rv4rc9
 
 xxxxxxxx  rv4rc9    Peter    7 Sep/2012  xxxxxxxxxxxxxxxxxxxxxxx
 
