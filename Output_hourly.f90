@@ -227,7 +227,6 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
               hr_out_type=trim(hr_out_type)//"SRF"
           else
 !TESTHH QUERY:
-!DSQUERY - why not ik = KMAX_MID -ik ? With zero this would give KMAX_MID
             ik=KMAX_MID-ik+1         ! model level to be outputed
             if(any(hr_out_type==(/"ADVppbv     ","ADVugXX     ","ADVugXXgroup"/)))&
               ik=KMAX_MID            ! all ADV* types represent surface output
