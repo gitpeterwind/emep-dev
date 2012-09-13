@@ -13,8 +13,7 @@
 #     mpiprocs=number of MPI threads per node. For 64 processors:
 ##PBS -l select=2:ncpus=32:mpiprocs=32
 #Stallo
-#PBS -lnodes=8
-# 64
+#PBS -lnodes=64
 ##PBS -lnodes=8:ppn=8:ib
 # wall time limit of run
 #PBS -lwalltime=00:30:00
@@ -266,8 +265,7 @@ my $Chem     = "EmChem09soa";
 #$Chem     = "CRI_v2_R5";
    $Chem     = $BENCHMARK{'chem'} if $BENCHMARK{'chem'};
 
-my $testv = "rv4rc6";
-$testv="rv4rc9rc";
+my $testv = "rv4rc12";
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
@@ -450,10 +448,10 @@ $month_days[2] += leap_year($year);
 #Only 360 days in HIRHAM metdata. We ignore leaps
 @month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,24) if $GRID eq "HIRHAM";
 
-my $mm1   =  "07";       # first month, use 2-digits!
-my $mm2   =  "08";       # last month, use 2-digits!
+my $mm1   =  "01";       # first month, use 2-digits!
+my $mm2   =  "01";       # last month, use 2-digits!
 my $dd1   =  1;       # Start day, usually 1
-my $dd2   =  12;       # End day (can be too large; will be limited to max number of days in the month)
+my $dd2   =  3;       # End day (can be too large; will be limited to max number of days in the month)
                       # put dd2=0 for 3 hours run/test.
 
 if (%BENCHMARK){ # Allways runn full year on benchmark mode
