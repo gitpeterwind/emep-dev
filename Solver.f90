@@ -1,3 +1,4 @@
+
 ! <Solver.f90 - A component of the EMEP MSC-W Unified Eulerian
 !          Chemical transport Model>
 !*****************************************************************************!
@@ -68,8 +69,7 @@
                                  xn_2d,         &
                                  rh,            &
                                  Fgas,   & ! fraction in gas-phase, for SOA
-                                 amk, & ! atmospheric conc. M
-                                 rcerup ! Volcanic eruption
+                                 amk
                                  !FUTURE rcnh3,         & ! NH3emis
  use Setup_1dfields_ml,     only : itemp, tinv, rh, x=> xn_2d, amk
     use ChemFunctions_ml, only :VOLFACSO4,VOLFACNO3,VOLFACNH4 !TEST TTTT

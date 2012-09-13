@@ -68,8 +68,7 @@
 
  !Emissions in column. We assume that these only involve advected species
    real, public, dimension(NSPEC_SHL+1:NSPEC_TOT,KCHEMTOP:KMAX_MID), save ::&
-         rcemis,&   ! emissions
-         rcerup     ! Volcanic eruption (ash&so2). Temporary, should go into rcemis somehow?
+         rcemis     ! emissions
   ! We define a column array for isoprene and terpene for use in
   ! the chemical solver. All values except for k=KMAX_MID will
   ! remain zero however

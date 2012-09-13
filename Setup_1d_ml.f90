@@ -87,7 +87,6 @@
   use Setup_1dfields_ml,     only : &
      xn_2d                &  ! concentration terms
     ,rcemis               &  ! emission terms
-    ,rcerup               &  ! Volcanic eruption
     ,rh, temp, tinv, itemp,pp      &  !
     ,amk, o2, n2, h2o    ! &  ! Air concentrations
 !FUTURE    ,rcnh3                   ! NH3emis
@@ -272,10 +271,9 @@ contains
      enddo
 
      endif ! VOLCANOES
-    if(USE_EMERGENCY.and.Eruption_found) then   ! Volcanic ASH & SO2
-      rcerup(:,:)=EruptionRate(i,j)             ! rcerup for ASH teacers
-      rcemis(SO2,:)=rcemis(SO2,:)+rcerup(SO2,:) ! SO2 contrib from eruption
-    endif
+
+    if(USE_EMERGENCY.and.Eruption_found)&       ! Volcanic ASH & SO2
+      rcemis(:,:)=rcemis(:,:)+EruptionRate(i,j) ! contribution from eruption
 
     !/** lightning and aircraft ... Airial NOx emissions if required:
 
