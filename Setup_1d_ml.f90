@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************!
 !*
-!*  Copyright (C) 2007-2011 met.no
+!*  Copyright (C) 2007-2012 met.no
 !*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -53,7 +53,6 @@
                                       IXADV_SO4, IXADV_NO3_f, IXADV_NH4_F
   use ChemSpecs_shl_ml,      only :  NSPEC_SHL
   use ChemRates_rct_ml,      only :  set_rct_rates, rct
-!ESC  use ChemRates_rcmisc_ml,   only :  rcmisc, set_rcmisc_rates
   use GridValues_ml,         only :  sigma_mid, xmd, GridArea_m2, & 
                                      debug_proc, debug_li, debug_lj,&
                                      A_mid,B_mid,gridwidth_m,dA,dB,&
@@ -73,7 +72,7 @@
     ,PT                              & ! Pressure at top
     ,MFAC                            & ! converts roa (kg/m3 to M, molec/cm3)
     ,USE_FOREST_FIRES                & !
-    ,USE_POLLEN                      & ! Pollen
+!FUTURE    ,USE_POLLEN                      & ! Pollen
     ,USE_SEASALT                     &
     ,USE_LIGHTNING_EMIS              & !
     ,USE_SOILNOX, USE_GLOBAL_SOILNOX, USE_DUST, USE_ROADDUST    & !
@@ -222,7 +221,6 @@ contains
 
    !  local
      integer ::  iqrc,k, itot
-     !DSA12 real    :: scaling, scaling_k
      real    :: eland   ! for Pb210  - emissions from land
 
     integer ::  i_help,j_help,i_l,j_l
@@ -317,39 +315,6 @@ contains
         rcemis(NO,KMAX_MID)=rcemis(NO,KMAX_MID)+SoilNOx(i,j)
      endif
 
-!DSA12   !Mass Budget calculations
-!DSA12   !   Adding up the emissions in each timestep
-!DSA12
-!DSA12
-!DSA12   scaling = dt_advec * xmd(i,j)* gridwidth_m*gridwidth_m / GRAV
-!DSA12
-!DSA12   do k = KCHEMTOP,KMAX_MID
-!DSA12
-!DSA12 
-!DSA12
-!DSA12       scaling_k = scaling * (dA(k) + dB(k)*ps(i,j,1))/amk(k)
-!DSA12
-!DSA12  if ( DEBUG_MASS .and. debug_proc .and.  &
-!DSA12            i==debug_li .and. j==debug_lj ) then ! .and. 
-!DSA12!            current_date%seconds == 0 ) then
-!DSA12    call datewrite("MASSRC ", k, (/ dB(k)*ps(i,j,1), xmd(i,j), ps(i,j,1), scaling_k /) )
-!DSA12
-!DSA12!     write(6,"(a,i3,5es12.3)") "MASSRC ", k, dB(k), dB(k)*ps(i,j,1), xmd(i,j), scaling_k /) )
-!DSA12  end if
-!DSA12
-!DSA12       do iqrc = 1, NSPEC_ADV
-!DSA12
-!DSA12          itot = iqrc + NSPEC_SHL
-!DSA12          totem( iqrc ) = totem( iqrc ) + &
-!DSA12                rcemis( itot, k ) * scaling_k
-!DSA12          !if ( DEBUG_SETUP_1DCHEM .and. debug_proc .and.  &
-!DSA12          !    i==debug_li .and. j==debug_lj ) then
-!DSA12          ! write(6,"(a,2i3,es10.3,2i4)") "MASSEQV:", iqrc, &
-!DSA12          ! rcemis( iqrc,k), qrc2ixadv(iqrc)
-!DSA12          !end if
-!DSA12       end do
-!DSA12
-!DSA12   end do ! k loop
 
   ! Soil Rn222 emissions from non-ice covered land, + water
   ! at rate of 1 atom/cm2/s
