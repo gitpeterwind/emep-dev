@@ -38,7 +38,8 @@
 !DSA12  use ModelConstants_ml,     only :  KMAX_MID, KCHEMTOP, KUPPER, NBVOC, NSOIL_EMIS
   use ModelConstants_ml,     only :  KMAX_MID, KCHEMTOP, KUPPER
   !ESX use EmisDef_ml,            only :  NSS, NDU, NROADDUST, NPOL !SeaS, Dust
-  use EmisDef_ml,            only :  NDU, NROADDUST, NPOL !SeaS, Dust
+  !use EmisDef_ml,            only :  NDU, NROADDUST, NPOL !SeaS, Dust
+  use EmisDef_ml,            only :  NROADDUST, NPOL !SeaS, Dust
   use ChemSpecs_tot_ml,      only :  NSPEC_TOT, FIRST_SEMIVOL, LAST_SEMIVOL
   use ChemSpecs_shl_ml,      only :  NSPEC_SHL
   use Chemfields_ml,         only :  NSPEC_COL

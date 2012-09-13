@@ -235,7 +235,6 @@ subroutine Output_f2d (iotyp, dim, nav, def, dat, Init_Only)
 !---------------------------------------------------------------------
 
   do icmp = 1, dim
-    !FEB2011. QUERY on INST ??
     if ( wanted_iou(iotyp,def(icmp)%iotype) ) then
       scale  = def(icmp)%scale
       if (iotyp /= IOU_INST ) scale = scale / max(1,nav(icmp,iotyp))

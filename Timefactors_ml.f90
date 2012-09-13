@@ -143,7 +143,6 @@ contains
   real    :: tmp24(24)          ! used for hourly factors
   character(len=100) :: errmsg
   character(len=200) :: inputline
-!hf
   real :: fracchange
   real, dimension(NLAND,NEMIS_FILE):: sumfacc !factor to normalize monthly changes                                                         
 
@@ -223,7 +222,6 @@ contains
                 fac_emm(ic,mm,1,iemis)=fac_emm(ic,mm,1,iemis)*12./sumfacc(ic,iemis)
              enddo
           enddo
-!hf end
        if (DEBUG) write(unit=6,fmt=*) "Read ", n, " records from ", fname2 
    enddo  ! iemis
 
