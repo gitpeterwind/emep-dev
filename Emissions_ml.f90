@@ -1348,7 +1348,7 @@ if( USE_AIRCRAFT_EMIS )then
    kend=KMAX_MID
 
 call ReadField_CDF('AircraftEmis_FL.nc','NOx',airn,nstart=current_date%month,kstart=kstart,kend=kend,interpol='mass_conservative', &
-     needed=.true.,debug_flag=.true.)
+     needed=.true.,debug_flag=.false.)
 
 ! convert from kg(NO2)/month into molecules/cm3/s
 ! from kg to molecules: 0.001*AVOG/species(NO2)%molwt
@@ -1379,7 +1379,7 @@ if(USE_SOILNOX)then  !
   ! with script mkcdo.annualNdep
   ! 
    call ReadField_CDF('annualNdep.nc',&
-     'Ndep_m2',AnnualNdep,1, interpol='zero_order',needed=.true.,debug_flag=.true.,UnDef=0.0)
+     'Ndep_m2',AnnualNdep,1, interpol='zero_order',needed=.true.,debug_flag=.false.,UnDef=0.0)
 
    if (DEBUG_SOILNOX .and. debug_proc ) then
       write(*,"(a,4es12.3)") "SOILNOX AnnualDEBUG ", &
@@ -1400,7 +1400,7 @@ else
   if(nstart>0.and.nstart<=120)then
    !the month is defined
    call ReadField_CDF('nox_emission_1996-2005.nc','NOX_EMISSION',SoilNOx,nstart=nstart,&
-   interpol='conservative',known_projection="lon lat",needed=.true.,debug_flag=.true.)
+   interpol='conservative',known_projection="lon lat",needed=.true.,debug_flag=.false.)
   if ( DEBUG_SOILNOX .and.debug_proc ) write(*,*) "PROPER YEAR of SOILNO ", current_date%year, nstart
   else
    !the year is not defined; average over all years
@@ -1408,7 +1408,7 @@ else
    do iyr=1,Nyears 
       nstart=12*(iyr-1) + current_date%month  
       call ReadField_CDF('nox_emission_1996-2005.nc','NOX_EMISSION',buffer,nstart=nstart,&
-      interpol='conservative',known_projection="lon lat",needed=.true.,debug_flag=.true.,UnDef=0.0)
+      interpol='conservative',known_projection="lon lat",needed=.true.,debug_flag=.false.,UnDef=0.0)
       do j=1,ljmax 
          do i=1,limax
            SoilNOx(i,j)=SoilNOx(i,j)+buffer(i,j)
