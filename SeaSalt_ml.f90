@@ -46,13 +46,11 @@
 
  use Biogenics_ml,         only : EMIS_BioNat, EmisNat  
  use ChemChemicals_ml,     only : species
-!ESX  use EmisDef_ml,           only : NSS, QSSFI, QSSCO !, QSSGI
  use GridValues_ml,        only : glat, glon, i_fdom, j_fdom 
  use Io_Progs_ml,          only : PrintLog
  use Landuse_ml,           only : LandCover, water_fraction
  use LocalVariables_ml,    only : Sub, Grid
- use MetFields_ml,         only : u_ref
- use MetFields_ml,         only : z_bnd, z_mid, sst,  &
+ use MetFields_ml,         only : u_ref, z_bnd, z_mid, sst,  &
                                   nwp_sea, u_ref, foundSST, &
                                    foundws10_met,ws_10m
  use MicroMet_ml,          only : Wind_at_h
@@ -61,7 +59,7 @@
                                   DEBUG_SEASALT, DEBUG_i,DEBUG_j
  use Par_ml,               only : MAXLIMAX,MAXLJMAX   ! => x, y dimensions
  use PhysicalConstants_ml, only : CHARNOCK, AVOG ,PI
- use Setup_1dfields_ml,    only : rcemis   ! ESX
+ use Setup_1dfields_ml,    only : rcemis 
  use SmallUtils_ml,        only : find_index
  use TimeDate_ml,          only : current_date
 
@@ -113,6 +111,7 @@
    real, parameter :: Z10 = 10.0  ! 10m height
    integer :: ii, jj, nlu, ilu, lu
    real    :: invdz, n2m, u10, u10_341, Tw, flux_help, total_flux
+   real, save  ::   moleccm3s_2_kgm2h 
    real    :: ss_flux(SS_MAAR+SS_MONA), d3(SS_MAAR+SS_MONA) 
    real    :: rcss(NSS)
 !//---------------------------------------------------
@@ -122,7 +121,6 @@
     ! We might have USE_SEASALT=.true. in ModelConstants, but the
     ! chemical scheme might not have seasalt species. We check.
 
-    !ESX iseasalt = find_index("SEASALT_F", species(:)%name )
     inat_SSFI = find_index( "SEASALT_F", Emis_BioNat(:) )
     inat_SSCO = find_index( "SEASALT_C", Emis_BioNat(:) )
     itot_SSFI = find_index( "SEASALT_F", species(:)%name    )
@@ -130,17 +128,17 @@
 
     if(DEBUG_SEASALT ) write(*,*)"SSALT INIT", inat_SSFI, itot_SSFI, debug_flag
 
-    !ESX allocate(SS_prod(NSS,MAXLIMAX,MAXLJMAX))
-
     if ( inat_SSFI < 1 ) then
        seasalt_found = .false.
-       !SS_prod(:,:,:) = 0.0
        call PrintLog("WARNING: SeaSalt asked for but not found",MasterProc)
     else
         seasalt_found = .true.
         call init_seasalt()
     end if
     
+    ! For EmisNat, need kg/m2/h from molec/cm3/s
+     moleccm3s_2_kgm2h =   Grid%DeltaZ * 1.0e6 * 3600.0  &! /cm3/s > /m2/hr
+                          /AVOG * 1.0e-6  ! kg  after *MW
     my_first_call = .false.
 
   end if !  my_first_call
@@ -150,10 +148,6 @@
 
  !....................................
 
-
-    !ESX SS_prod(:,i,j) = 0.0
-    !EmisNat( inat_SSFI,i,j) = 0.0
-    !EmisNat( inat_SSCO,i,j) = 0.0
 
 
     if ( .not. Grid%is_NWPsea .or. Grid%snowice ) then ! quick check
@@ -287,19 +281,11 @@
             write(6,'(a20,i5,2es13.4)') 'SSALT Flux coarse ->  ',ii,d3(ii), rcss( iSSCO ) !ESX SS_prod(QSSCO,i,j)
           enddo
 
-!..'Giant' particles emission [molec/cm3/s]
-!          do ii = NFIN+NCOA+1, NFIN+NCOA+NGIG
-!               SS_prod(QSSGI,i,j) = SS_prod(QSSGI,i,j)   &
-!                                  + ss_flux(ii) * d3(ii) * n2m   &
-!                                 * water_fraction(i,j)
-!          enddo
-
 !... Crude fix for the effect of lower salinity in the Baltic Sea
 
           if ( (glat(i,j) > 52.0 .and. glat(i,j) < 67.0)     .and.   &  
                (glon(i,j) > 13.0 .and. glon(i,j) < 30.0) )   then 
           
-                 !ESX SS_prod(:,i,j) =  0.2 * SS_prod(:,i,j)
                rcss( iSSFI ) = 0.2 * rcss( iSSFI )
                rcss( iSSCO ) = 0.2 * rcss( iSSCO )
           endif
@@ -307,13 +293,12 @@
           if(DEBUG_SEASALT .and. debug_flag) write(6,'(a35,2es15.4)')  &
              '>> SSALT production fine/coarse  >>', &
                 rcss(  iSSFI ), rcss( iSSCO )
-                !ESX SS_prod(QSSFI,i,j), SS_prod(QSSCO,i,j)
                           
        endif  ! water
      enddo  ! LU classes
 
-     EmisNat( inat_SSFI, i,j )      = rcss( iSSFI )
-     EmisNat( inat_SSCO, i,j )      = rcss( iSSCO )
+     EmisNat( inat_SSFI, i,j )      = rcss( iSSFI ) * moleccm3s_2_kgm2h * species( itot_SSFI )%molwt
+     EmisNat( inat_SSCO, i,j )      = rcss( iSSCO ) * moleccm3s_2_kgm2h * species( itot_SSCO )%molwt
      rcemis ( itot_SSFI, KMAX_MID ) = rcss( iSSFI )
      rcemis ( itot_SSCO, KMAX_MID ) = rcss( iSSCO )
 

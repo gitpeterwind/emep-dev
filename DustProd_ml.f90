@@ -48,7 +48,6 @@
 
  use Biogenics_ml,         only : EmisNat, EMIS_BioNat
  use CheckStop_ml,         only : CheckStop
- !ESXuse EmisDef_ml,           only : NDU, QDUFI, QDUCO
  use Functions_ml,         only : ERFfunc
  use ChemChemicals_ml,     only : species
  use GridValues_ml,        only : glat, glon, glat_fdom, glon_fdom, i_fdom, j_fdom 
@@ -73,7 +72,7 @@
  use Par_ml,               only : limax, ljmax ! Debugging 
  use PhysicalConstants_ml, only : GRAV,  AVOG, PI, KARMAN, RGAS_KG, CP
                                   !! ECO_CROP, ECO_SEMINAT, Desert=13, Urban=17
- use Setup_1dfields_ml,    only : rcemis   ! ESX
+ use Setup_1dfields_ml,    only : rcemis 
  use Setup_1dfields_ml,    only : rh
  use SmallUtils_ml,        only : find_index
  use TimeDate_ml,          only : daynumber
@@ -84,8 +83,6 @@
 
   public ::  WindDust       
 
-  !ESX real, allocatable, public   :: DU_prod (:,:,:)  
-  !ESX not needed? real, allocatable, public   :: DUST_flux (:,:)
   real, private, save         :: kg2molecDU, m_to_nDU, frac_fine, frac_coar,  &
                                  soil_dns_dry, help_ustar_th
   real, parameter             :: soil_dens = 2650.0  ! [kg/m3]
@@ -116,7 +113,7 @@
 
    integer, parameter  :: Ndust = 2, &        ! number of size classes 
                           DU_F = 1, DU_C = 2
-   integer, parameter  :: LU_DESERT = 13    !ESX REMOVE HARD-CODE
+   integer, parameter  :: LU_DESERT = 13    ! REMOVE HARD-CODE
    real   , parameter  :: Ro_water = 1000.0 
    real, parameter, dimension(Ndust) ::                    &
                     dsoil = (/ 1.5, 6.7/)   & ! diameter of dust particles [mkm]
@@ -185,8 +182,6 @@
 !/..  landuse types ..........
 
   EmisNat(dust_indices ,i,j) = 0.0  
-  !ESX DU_prod (:,i,j) = 0.0  
-  !ESX DUST_flux (i,j) = 0.0
   flx_vrt_dst = 0.0   ! vertical dust flux 
   Mflux = 0.0  
 
@@ -571,26 +566,21 @@
      frac_fine = 0.05    ! fine fraction 0.10 was found too large 
      frac_coar = 0.20    ! coarse fraction also 0.15-0.23 was tested
 !!.. vertical dust flux [kg/m2/s] -> [kg/m3/s]*AVOG/M e-3 -> [molec/cm3/s]  
-!ESX      DU_prod(DU_F,i,j) = frac_fine * flx_vrt_dst * kg2molecDU /Grid%DeltaZ 
-!ESX     DU_prod(DU_C,i,j) = frac_coar * flx_vrt_dst * kg2molecDU /Grid%DeltaZ    
 
       rcemis( itot_DUf, KMAX_MID ) = frac_fine * flx_vrt_dst * kg2molecDU /Grid%DeltaZ
       rcemis( itot_DUc, KMAX_MID ) = frac_coar * flx_vrt_dst * kg2molecDU /Grid%DeltaZ
 
-!ESX WRONG UNITS SO FAR for EmisNat
-      EmisNat( inat_DUf,i,j) = frac_fine * flx_vrt_dst * kg2molecDU /Grid%DeltaZ 
-      EmisNat( inat_DUc,i,j) = frac_coar * flx_vrt_dst * kg2molecDU /Grid%DeltaZ    
+! Need kg/m2/hr for EmisNat
+      EmisNat( inat_DUf,i,j) = frac_fine * flx_vrt_dst * 3600.0
+      EmisNat( inat_DUc,i,j) = frac_coar * flx_vrt_dst * 3600.0
 
 !//__Dust flux [kg/m2/s] for check
-!ESX not used     DUST_flux(i,j) =   flx_vrt_dst ! * (frac_fin + frac_coar) 
  
      dust_prod = .false.   ! Zero-setting
 
     if( debug ) write(6,'(//a15,2es12.4,a15,e12.4,2f6.3)') &
        '<< DUST OUT>>', EmisNat( inat_DUf,i,j), EmisNat( inat_DUc,i,j), &
        ' > TOTAL >',  sum( EmisNat( dust_indices, i,j )),frac_fin, frac_coa
-       !ESX '<< DUST OUT>>', DU_prod(DU_F,i,j),  DU_prod(DU_C,i,j), ' > TOTAL >',         &
-       !ESX DUST_flux(i,j), frac_fin, frac_coa
 
   endif  ! dust_prod
 
@@ -630,7 +620,7 @@
 !  real, dimension (3) :: dsoil   = (/  1.5 ,  6.7,   14.2  /)  ! [um] MMD 
 !  real, dimension (3) :: sig_soil= (/  1.7 ,  1.6 ,  1.5   /)  ! [frc] GSD
 !---------------------------------------------
-  !ESX change:
+
   inat_DUf = find_index( "DUST_WB_F", EMIS_BioNat(:) )
   inat_DUc = find_index( "DUST_WB_C", EMIS_BioNat(:) )
   itot_DUf = find_index( "DUST_WB_F", species(:)%name    )
@@ -644,8 +634,6 @@
   endif
 
 
-  !ESX allocate(DU_prod (NDU,MAXLIMAX,MAXLJMAX))
-  !ESX allocate(DUST_flux (MAXLIMAX,MAXLJMAX))
   allocate(dry_period(MAXLIMAX, MAXLJMAX))
   dry_period = 72
 
