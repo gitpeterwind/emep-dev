@@ -69,7 +69,6 @@ module Biogenics_ml
   use ModelConstants_ml, only : NPROC, MasterProc, TINY, &
                            USE_PFT_MAPS, NLANDUSEMAX, IOU_INST, & 
                            KT => KCHEMTOP, KG => KMAX_MID, & 
-!DSA12                           NSOIL_EMIS, &
                            DEBUG_BIO, BVOC_USED, MasterProc
   use NetCDF_ml,        only : ReadField_CDF, printCDF
   use OwnDataTypes_ml,  only : Deriv, TXTLEN_SHORT
@@ -77,7 +76,6 @@ module Biogenics_ml
   use Par_ml,            only : limax, ljmax, MAXLIMAX, MAXLJMAX, me
   use PhysicalConstants_ml,  only :  AVOG, GRAV
   use Radiation_ml,          only : PARfrac, Wm2_uE
- !DSA12  use Setup_1dfields_ml,     only : rcbio  
   use Setup_1dfields_ml,     only : rcemis  
   use SmallUtils_ml, only : find_index
   use TimeDate_ml,       only : current_date, daynumber
@@ -106,7 +104,7 @@ module Biogenics_ml
   INTEGER STATUS(MPI_STATUS_SIZE),INFO
   integer, public, parameter :: N_ECF=2, ECF_ISOP=1, ECF_TERP=2
   integer, public, parameter :: BIO_ISOP=1, BIO_MTP=2, &
-                                 BIO_MTL=3 !DSA12 , BIO_SOILNO=4, BIO_SOILNH3=5
+                                 BIO_MTL=3 ! , BIO_SOILNO=4, BIO_SOILNH3=5
   integer, public, parameter :: BIO_TERP=2 ! Used for final emis, sum of MTP+MTL
   integer, public, save ::  last_bvoc_LC   !max index land-cover with BVOC (min 4)
                                                         
@@ -119,7 +117,7 @@ module Biogenics_ml
  ! (Currently for 1st four LCC, CF, DF, BF, NF)
   logical, private, dimension(NLANDUSEMAX), save :: HaveLocalEF 
 
-!DSA12  real, public, save, dimension(MAXLIMAX,MAXLJMAX,size(BVOC_USED)+NSOIL_EMIS) :: &
+! real, public, save, dimension(MAXLIMAX,MAXLJMAX,size(BVOC_USED)+NSOIL_EMIS) :: &
 
   ! EmisNat is used for BVOC; soil-NO, also in futur for sea-salt etc.
   ! Main criteria is not provided in gridded data-bases, often land-use
@@ -127,9 +125,6 @@ module Biogenics_ml
 
   real, public, save, allocatable, dimension(:,:,:) :: &
      EmisNat       !  will be transferred to d_2d emis sums
-
-  ! Emission arrays: (was Setup_1dfields_ml)
-  !DSA12 real, public, dimension(NEMIS_BioNat,KT:KG), save :: rcbio = 0.0
 
 
   !standard emission factors (EFs) per LC
@@ -199,11 +194,6 @@ module Biogenics_ml
       itot_NO   = find_index( "NO", species(:)%name      )
       itot_NH3  = find_index( "NH3", species(:)%name      )
 
-   !====================================
-   ! Initialise chemical emission rates to zero. In rest of  code
-   ! only k=KMAX_MID will be set
-
-   !  rcbio(:,:) = 0.0  
    !====================================
  
     call TabulateECF()   ! Tabulates temp functions
@@ -561,8 +551,6 @@ module Biogenics_ml
   it2m = max(it2m,1)
   it2m = min(it2m,40)
 
-  !DSA12 rcbio(:,KG) = 0.0
-
   !ASSUME C5H8 FOR NOW if ( ispec_C5H8 > 0 ) then
     if ( Grid%izen <= 90) then ! Isoprene in daytime only:
 
@@ -585,7 +573,6 @@ module Biogenics_ml
      ! Emissions_ml (snapemis).  ug/m2/h -> kg/m2/s needs 1.0-9/3600.0. 
 
       E_ISOP = day_embvoc(i,j,BIO_ISOP)*canopy_ecf(BIO_ISOP,it2m) * cL 
-      !DSA12 rcbio(BIO_ISOP,KG)   = E_ISOP * biofac_ISOP/Grid%DeltaZ
 
       rcemis(itot_C5H8,KG)   = rcemis(itot_C5H8,KG) + E_ISOP * biofac_ISOP/Grid%DeltaZ
       EmisNat(ispec_C5H8,i,j)= E_ISOP * 1.0e-9/3600.0
@@ -596,19 +583,16 @@ module Biogenics_ml
      E_ISOP = 0.0
   endif ! daytime
 
-    !DSA12 if ( BIO_TERP > 0 ) then
     if ( ispec_APIN > 0 ) then
 
      ! add pool-only terpenes rate;
         E_MTP = day_embvoc(i,j,BIO_MTP)*canopy_ecf(ECF_TERP,it2m)
-        !DSA12 rcbio(BIO_TERP,KG)    = (E_MTL+E_MTP) * biofac_TERP/Grid%DeltaZ
         rcemis(itot_APIN,KG)    = rcemis(itot_APIN,KG) + &
                (E_MTL+E_MTP) * biofac_TERP/Grid%DeltaZ
         EmisNat(ispec_APIN,i,j) = (E_MTL+E_MTP) * 1.0e-9/3600.0
     end if
 
     if ( USE_SOILNOX ) then
-        !rcbio(BIO_SOILNO,KG)    = SoilNOx(i,j) * biofac_SOILNO/Grid%DeltaZ
         rcemis(itot_NO,KG)    = rcemis(itot_NO,KG) + &
              SoilNOx(i,j) * biofac_SOILNO/Grid%DeltaZ
         EmisNat(ispec_NO,i,j) =  SoilNOx(i,j) * 1.0e-9/3600.0
@@ -618,7 +602,6 @@ module Biogenics_ml
     if ( USE_SOILNH3 ) then
         rcemis(itot_NH3,KG)    = rcemis(itot_NH3,KG) + &
             SoilNH3(i,j) * biofac_SOILNH3/Grid%DeltaZ
-!DSA12        rcbio(BIO_SOILNH3,KG)    = SoilNH3(i,j) * biofac_SOILNH3/Grid%DeltaZ
         EmisNat(ispec_NH3,i,j) =  SoilNH3(i,j) * 1.0e-9/3600.0
     end if
      
