@@ -142,13 +142,11 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
 
   filename=trim(runlabel1)//date2string(HOURLYFILE_ending,current_date)
   inquire(file=filename,exist=file_exist)
-  if(.not.file_exist)then
+  if(my_first_call.or..not.file_exist)then
     if(debug_flag) write(*,*) "DEBUG ",HOURLYFILE_ending,"-Hourlyfile ", trim(filename)
     call Init_new_netCDF(trim(filename),IOU_HOUR)
-  endif
 
   !! Create variables first, without writing them (for performance purposes)   
-  if(my_first_call.or..not.file_exist)then
     do ih=1,NHOURLY_OUT
       def1%name=hr_out(ih)%name
       def1%unit=hr_out(ih)%unit

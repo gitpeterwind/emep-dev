@@ -292,7 +292,7 @@ ZCM_EmChem09/
 
 xxxxxxxx  rv4rc10 12Sep/2012  xxxxxxxxxxxxxxxxxxxxxxx
 
-Alvaro 12 Sep
+Alvaro 12-13 Sep
 
 Makefile:
   Patch from Viel for `make module`.
@@ -301,7 +301,7 @@ ModelConstants_ml, Output_hourly:
   For hourly splitted files (see HOURLYFILE_ending in ModelConstants_ml),
   avoid writing different years on the same file.
   - Restore single hourly file as defaul (ModelConstants_ml).
-  - Create NetCDF variables only if the file is niwely created
+  - Create NetCDF variables only if the file is newly created
 
 GenChem.pl: get rid of one "Use of uninitialized value" perl warning
   that escaped rv4rc9
