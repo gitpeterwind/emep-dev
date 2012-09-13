@@ -47,7 +47,6 @@
   use EmisDef_ml, only : NSECTORS & ! No. sectors
                      ,NEMIS_FILE & ! No. emission files
                      ,EMIS_FILE   & ! Names of species ("sox  ",...)
-                     !,NEMISLAYERS & ! No. vertical layers for emission
                      ,NCMAX       & ! Max. No. countries per grid
                      ,FNCMAX      & ! Max. No. countries (with flat emissions)
                                     ! per grid
@@ -56,7 +55,6 @@
                      ,ISNAP_SHIP  & ! snap index for ship emissions
                      ,ISNAP_NAT   & ! snap index for nat. (dms) emissions
                      ,IQ_DMS      & ! code for DMS emissions
-!                     ,VERTFAC     & ! vertical emission split
                      ,NROAD_FILES & ! No. road dust emis potential files
                      ,ROAD_FILE   & ! Names of road dust emission files
                      ,NROADDUST   & ! No. road dust components 
@@ -181,7 +179,6 @@
    integer, private, save :: iemCO  ! index of CO emissions, for debug
 
    logical, parameter ::USE_OLDSCHEME_ROADDUST=.false. !temporary until the new scheme is validated
-!   logical, parameter ::USE_OLDSCHEME_ROADDUST=.true. !temporary until the new scheme is validated
 
 contains
  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -545,10 +542,7 @@ contains
 
                 roaddustsum(iem) = sum( globroad_dust_pot(:,:,:) )    ! 
 
-                ! Strange effect of adding climate factor? Should be in the range 1-3.3 (that is never below 1!)
-                ! so should increase road dust but the results in the sites file indicate that sometimes  
-                ! less road dust is stored with the climate factor included????
-                ! Something seems to be wrong. Should be checked in detail!!
+                ! ToDo-2012-0913
 
                 do i=1,GIMAX
                    do j=1,GJMAX
@@ -929,10 +923,9 @@ contains
                  call DegreeDayFactors(daynumber) ! => fac_emm, fac_edd
               !==========================
 
-               !if(USE_ROADDUST)THEN
+               ! for ROADDUST
                wday=day_of_week(indate%year,indate%month,indate%day)
                if(wday==0)wday=7 ! Sunday -> 7
-               !endif
 
                oldday = indate%day
            endif
@@ -1203,7 +1196,6 @@ contains
 
             if(((icc.eq.IC_FI).or.(icc.eq.IC_NO).or.(icc.eq.IC_SE)).and. & ! Nordic countries
                  ((indate%month.eq.3).or.(indate%month.eq.4).or.(indate%month.eq.5)))then ! spring road dust
-               !tfac = SNAP_HOURFAC(hour_iland,7)*D_FAC(wday)*2.0 ! Doubling in Mar-May (as in TNO model)
                tfac =  fac_ehh24x7(ISNAP_TRAF,hour_iland,wday_loc) *2.0 ! Doubling in Mar-May (as in TNO model)
             else
                tfac =  fac_ehh24x7(ISNAP_TRAF,hour_iland,wday_loc)
@@ -1347,8 +1339,9 @@ if( USE_AIRCRAFT_EMIS )then
    kstart=KCHEMTOP
    kend=KMAX_MID
 
-call ReadField_CDF('AircraftEmis_FL.nc','NOx',airn,nstart=current_date%month,kstart=kstart,kend=kend,interpol='mass_conservative', &
-     needed=.true.,debug_flag=.false.)
+   call ReadField_CDF('AircraftEmis_FL.nc','NOx',airn,&
+    nstart=current_date%month,kstart=kstart,kend=kend,&
+    interpol='mass_conservative', needed=.true.,debug_flag=.false.)
 
 ! convert from kg(NO2)/month into molecules/cm3/s
 ! from kg to molecules: 0.001*AVOG/species(NO2)%molwt
@@ -1372,8 +1365,7 @@ enddo
 
 endif
 
-!Soil NOx emissions
-if(USE_SOILNOX)then  ! 
+if(USE_SOILNOX)then  ! Global Soil NOx emissions
 
   ! read in map of annual N-deposition produced from pre-runs of EMEP model
   ! with script mkcdo.annualNdep
