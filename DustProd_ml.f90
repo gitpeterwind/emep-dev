@@ -46,8 +46,9 @@
 ! threshold wind friction velocity to soil moisture for arid and semi-arid
 ! areas. Ann. Geophysicae, 17,149-157.
 
+ use Biogenics_ml,         only : EmisNat, EMIS_BioNat
  use CheckStop_ml,         only : CheckStop
- use EmisDef_ml,           only : NDU, QDUFI, QDUCO
+ !ESXuse EmisDef_ml,           only : NDU, QDUFI, QDUCO
  use Functions_ml,         only : ERFfunc
  use ChemChemicals_ml,     only : species
  use GridValues_ml,        only : glat, glon, glat_fdom, glon_fdom, i_fdom, j_fdom 
@@ -72,9 +73,10 @@
  use Par_ml,               only : limax, ljmax ! Debugging 
  use PhysicalConstants_ml, only : GRAV,  AVOG, PI, KARMAN, RGAS_KG, CP
                                   !! ECO_CROP, ECO_SEMINAT, Desert=13, Urban=17
- use TimeDate_ml,          only : daynumber
+ use Setup_1dfields_ml,    only : rcemis   ! ESX
  use Setup_1dfields_ml,    only : rh
  use SmallUtils_ml,        only : find_index
+ use TimeDate_ml,          only : daynumber
 
 !-----------------------------------------------
   implicit none
@@ -82,8 +84,8 @@
 
   public ::  WindDust       
 
-  real, allocatable, public   :: DU_prod (:,:,:)  
-  real, allocatable, public   :: DUST_flux (:,:)
+  !ESX real, allocatable, public   :: DU_prod (:,:,:)  
+  !ESX not needed? real, allocatable, public   :: DUST_flux (:,:)
   real, private, save         :: kg2molecDU, m_to_nDU, frac_fine, frac_coar,  &
                                  soil_dns_dry, help_ustar_th
   real, parameter             :: soil_dens = 2650.0  ! [kg/m3]
@@ -93,6 +95,14 @@
   integer, allocatable, save  :: dry_period(:,:)
   character(len=20)           :: soil_type
   real, parameter             :: SMALL=1.0e-10
+
+ ! Indices for the species defined in this routine. Only set if found
+ ! Hard-coded 2-mode for now. Could generalise later
+  integer, private, save :: inat_DUf ,  inat_DUc  
+  integer, private, save :: itot_DUf ,  itot_DUc
+  integer, private, dimension(2), save :: dust_indices ! indices in EmisNat
+
+
   contains
 
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -106,7 +116,7 @@
 
    integer, parameter  :: Ndust = 2, &        ! number of size classes 
                           DU_F = 1, DU_C = 2
-   integer, parameter  :: LU_DESERT = 13
+   integer, parameter  :: LU_DESERT = 13    !ESX REMOVE HARD-CODE
    real   , parameter  :: Ro_water = 1000.0 
    real, parameter, dimension(Ndust) ::                    &
                     dsoil = (/ 1.5, 6.7/)   & ! diameter of dust particles [mkm]
@@ -124,7 +134,7 @@
           , u10g_2, u10_gust, alfa, ustar_th, uratio, ustar, clay  &
           , frac_fin, frac_coa, flx_hrz_slt,  flx_vrt_dst
 
-   logical :: arable, dust_prod = .false.
+   logical :: arable, dust_prod = .false., debug
    integer :: nlu, ilu, lu
 
 !_______________________________________________________
@@ -160,35 +170,41 @@
 
 
  !++++++++++++++++++++++++++++
- if ( .not. dust_found ) return
+ if ( .not. dust_found  .or.  & 
+     (glat(i,j)>65.0 .and. glon(i,j)>50.0)) then  ! Avoid dust production in N. Siberia
+       EmisNat( inat_DUf,i,j) = 0.0
+       EmisNat( inat_DUc,i,j) = 0.0
+       rcemis( itot_DUf,KMAX_MID) = 0.0
+       rcemis( itot_DUc,KMAX_MID) = 0.0
+    return 
+ end if
  !++++++++++++++++++++++++++++
 
- if(DEBUG_DUST .and. debug_flag ) write(6,*)'***   WINDBLOWN DUST',  &
-                                 i_fdom(i), j_fdom(j)
 
- if ((glat(i,j)>65.0 .and. glon(i,j)>50.0)) return ! Avoid dust production in N. Siberia
 
 !/..  landuse types ..........
 
-  DU_prod (:,i,j) = 0.0  
-  DUST_flux (i,j) = 0.0
+  EmisNat(dust_indices ,i,j) = 0.0  
+  !ESX DU_prod (:,i,j) = 0.0  
+  !ESX DUST_flux (i,j) = 0.0
   flx_vrt_dst = 0.0   ! vertical dust flux 
   Mflux = 0.0  
 
-   if(DEBUG_DUST .and. debug_flag) write(6,'(a30,i5,es12.3)')'>>    RAIN >>', &
-                                   dry_period(i,j),surface_precip(i,j)
+   debug = ( DEBUG_DUST .and. debug_flag)
+   if( debug ) write(6,"(a,2i5,a,i5,es12.3)")'***   WINDBLOWN DUST', &
+       i_fdom(i), j_fdom(j), '>> RAIN >>', dry_period(i,j),surface_precip(i,j)
 
 !/.. Crude assumption: dust generation if Pr < 2.4 mm per day (surpace_prec[mm/h])
  NO_PRECIP:  if (surface_precip(i,j) < 0.1) then
                   dry_period(i,j) = dry_period(i,j) + 1
 
-   if(DEBUG_DUST .and. debug_flag) write(6,'(a30,i5,es12.3)')'>> NO RAIN >>', &
+   if(debug) write(6,'(a30,i5,es12.3)')'>> NO RAIN >>', &
                                    dry_period(i,j),surface_precip(i,j)
 
 !/.. Crude assumption: Dry soil after 48 hours since precipitation
   DRY:  if (dry_period(i,j)*dt_advec/3600.0 >= 48.0) then
 
-     if(DEBUG_DUST .and. debug_flag) &
+     if(debug) &
      write(6,'(a30,f10.4)')'>> DRY period>>', dry_period(i,j)*dt_advec/3600.0
 
 !/.. No dust production when soil is frozen, or covered by snow,
@@ -199,7 +215,7 @@
   FROST: if ( Grid%t2C > SMALL    .and.  Grid%sdepth <  SMALL   .and.  & 
                                     rh(KMAX_MID) < 0.85)  then
 
-    if(DEBUG_DUST .and. debug_flag) write(6,'(a25,2f10.2,i4)')   &
+    if(debug) write(6,'(a25,2f10.2,i4)')   &
           '>> FAVOURABLE for DUST>>', Grid%t2C, rh(KMAX_MID), Grid%sdepth 
 
 !DSA12
@@ -209,12 +225,6 @@
       return
    end if
 
-!DSA12 - never called:
-!   if ( fc(i,j)  < 0.0 ) then
-!      call datewrite("DUST: NEG FC", (/ i_fdom(i), j_fdom(j) /), &
-!          (/ fc(i,j), water_fraction(i,j) /) )
-!      return
-!   end if
 !==  Land-use loop ===============================================
 
  nlu = LandCover(i,j)%ncodes
@@ -235,8 +245,8 @@
 
    DUST: if (arable .or. lu == LU_DESERT) then
 
-     if(DEBUG_DUST .and. debug_flag) write(6,'(a,i5,f10.3)')   &
-                                     'DUST: -----> Landuse', lu, cover
+     if( debug ) write(6,'(a,i5,f10.3)')   &
+                         'DUST: -----> Landuse', lu, cover
 
      flx_hrz_slt = 0.0
 
@@ -266,9 +276,8 @@
 
      ustar_th = help_ustar_th / sqrt(roa(i,j,KMAX_MID,1)) ! [m s-1] 
 
-!QUERY DS found zero ustar here
-     if(DEBUG_DUST .and. debug_flag) write(6,'(a,3f15.5)')  &
-                'DUST: >> U*/U*th/ro >>', ustar,ustar_th,roa(i,j,KMAX_MID,1)
+     if( debug) write(6,'(a,3f15.5)')  &
+         'DUST: >> U*/U*th/ro >>', ustar,ustar_th,roa(i,j,KMAX_MID,1)
 
 
 !//___  Inhibition of saltation by soil moisture (Fecan et al., 1999)
@@ -289,16 +298,16 @@
 
 !__ Saturated volumetric water content (sand-dependent)
      vh2o_sat = 0.489-0.126 * sand_frac(i,j)       ! [m3 m-3] 
+
 !__ Bulk density of dry surface soil [Zender, (8)]
      soil_dns_dry = soil_dens * (1.0 - vh2o_sat)    ! [kg m-3]
 
 !__ Volumetric soil water content [m3/m3] 
-!DSA12 Now we have soil moisture index, SMI = (SW-PWP)/(FC-PWP)
-!DSA12     v_h2o = SoilWater(i,j,1)
-              !-- Note, in HIRLAM SoilWater is in [m/0.072m] -> conversion
-              !   if ( SoilWater_in_meter )   v_h2o = SoilWater(i,j,1)/0.072 
+!Now we have soil moisture index, SMI = (SW-PWP)/(FC-PWP)
+!     v_h2o = SoilWater(i,j,1)
+!-- Note, in HIRLAM SoilWater is in [m/0.072m] -> conversion
+!   if ( SoilWater_in_meter )   v_h2o = SoilWater(i,j,1)/0.072 
 !
-!DSA12
 ! *** BUT *** the following is using IFS pwp. This is likely
 ! the best we can do for the grid-average, but for dust it might be more
 ! appropriate to calculate for specific landcover PWP values.
@@ -336,7 +345,7 @@
        ustar_moist_cor = sqrt(1.0 + 1.21 *  &
                  (100.*(gr_h2o - gwc_thr))**0.68) ! [frc] FMB99 p.155(15) 
 
-     if(DEBUG_DUST .and. debug_flag) then
+     if( debug ) then
         write(6,'(a,f8.2,2f12.4)') 'DUST: Sand/Water_sat/soil_dens',  &
                                    sand_frac(i,j),vh2o_sat,soil_dns_dry
         write(6,'(a,3f15.5)') 'DUST: SW/VolW/GrW/ ',SoilWater(i,j,1),v_h2o,gr_h2o
@@ -350,7 +359,7 @@
 ! 1.1-1.75 for sand (gr_h2o = 0.1-2%) ; 1.5-2.5 for loam (gr_h2o = 4-10%) and
 !                                               for clay (gr_h2o = 9-15%)
 
-     if(DEBUG_DUST .and. debug_flag) then
+     if( debug ) then
        write(6,'(a,f8.2,2f12.4)') 'DUST ++ No SoilWater in meteorology++'
        write(6,'(a,f10.4)')  'DUST: >> U*_moist_corr  >>', ustar_moist_cor                                 
      endif 
@@ -401,8 +410,7 @@
    ustar_z0_cor = 1.0 -          & ! [frc] MaB95 p. 16420, GMB98 p. 6207
                   log(z0 / Z0s) / log( 0.35 * (0.1/Z0s)**0.8 )
 
-   if(DEBUG_DUST .and. debug_flag) write(6,'(a20,es12.3)') &
-                            '>> ustar_zo_corr  >>', ustar_z0_cor
+   if( debug ) write(6,'(a,es12.3)') '>> ustar_zo_corr  >>', ustar_z0_cor
 
    ustar_z0_cor = min ( 1.0, max(0.0001,ustar_z0_cor) )
 
@@ -411,8 +419,7 @@
 
    ustar_z0_cor = 1.0 / ustar_z0_cor   ! [frc] 
 
-   if(DEBUG_DUST .and. debug_flag) write(6,'(a25,3es12.3)')   &
-                         '>> U*_zo_corr  >>',z0, Z0s, ustar_z0_cor
+   if( debug ) write(6,'(a,3es12.3)') '>> U*_zo_corr  >>',z0, Z0s, ustar_z0_cor
 
 
 !//___   Final threshold friction velocity
@@ -498,10 +505,8 @@
     if (DEBUG_DUST .and. debug_flag) then
       write(6,*)' '
       write(6,'(a35,es12.3)')  ' Horizontal Flux => ',   flx_hrz_slt
-    endif
-
-    if(DEBUG_DUST .and. debug_flag) then
-      write(6,'(/a25,4f8.2)') soil_type,glat(i,j),glon(i,j),glat_fdom(i,j),glon_fdom(i,j)
+      write(6,'(/a25,4f8.2)') soil_type,glat(i,j),glon(i,j),&
+           glat_fdom(i,j),glon_fdom(i,j)
       write(6,'(a25,3f10.3,es10.2)') '>>  U*/U*t/Klim,alfa  >>',  &
             ustar,ustar_th, dust_lim, alfa
       write(6,'(a15,f10.3,2es12.3)') 'FLUXES:',uratio, flx_hrz_slt*1000.0,  &
@@ -530,7 +535,7 @@
 !.. Mass flus for test output
    Mflux = Mflux + flx_hrz_slt * alfa * dust_lim
 
-   if(DEBUG_DUST .and. debug_flag)  then
+   if( debug )  then
     write(6,'(a35,es12.3/)')  ' Vertical Flux   => ',  Mflux
     write(6,'(a35,es12.3,i4,f8.3)')  'DUST Flux   => ',   flx_vrt_dst, lu, cover
     write(6,'(a15,f10.3,2es12.3)') 'FLUXES:',uratio, flx_hrz_slt*1000., flx_vrt_dst*1000.
@@ -548,7 +553,7 @@
  else  ! PREC
     dry_period(i,j) = 0
 
-    if(DEBUG_DUST .and. debug_flag) write(6,'(a30,i5,es12.3)')   &
+    if( debug ) write(6,'(a30,i5,es12.3)')   &
         '>> RAIN-RAIN >>', dry_period(i,j),surface_precip(i,j)
  endif NO_PRECIP
 
@@ -566,22 +571,30 @@
      frac_fine = 0.05    ! fine fraction 0.10 was found too large 
      frac_coar = 0.20    ! coarse fraction also 0.15-0.23 was tested
 !!.. vertical dust flux [kg/m2/s] -> [kg/m3/s]*AVOG/M e-3 -> [molec/cm3/s]  
-     DU_prod(DU_F,i,j) = frac_fine * flx_vrt_dst * kg2molecDU /Grid%DeltaZ 
-     DU_prod(DU_C,i,j) = frac_coar * flx_vrt_dst * kg2molecDU /Grid%DeltaZ    
+!ESX      DU_prod(DU_F,i,j) = frac_fine * flx_vrt_dst * kg2molecDU /Grid%DeltaZ 
+!ESX     DU_prod(DU_C,i,j) = frac_coar * flx_vrt_dst * kg2molecDU /Grid%DeltaZ    
+
+      rcemis( itot_DUf, KMAX_MID ) = frac_fine * flx_vrt_dst * kg2molecDU /Grid%DeltaZ
+      rcemis( itot_DUc, KMAX_MID ) = frac_coar * flx_vrt_dst * kg2molecDU /Grid%DeltaZ
+
+!ESX WRONG UNITS SO FAR for EmisNat
+      EmisNat( inat_DUf,i,j) = frac_fine * flx_vrt_dst * kg2molecDU /Grid%DeltaZ 
+      EmisNat( inat_DUc,i,j) = frac_coar * flx_vrt_dst * kg2molecDU /Grid%DeltaZ    
 
 !//__Dust flux [kg/m2/s] for check
-     DUST_flux(i,j) =   flx_vrt_dst ! * (frac_fin + frac_coar) 
+!ESX not used     DUST_flux(i,j) =   flx_vrt_dst ! * (frac_fin + frac_coar) 
  
      dust_prod = .false.   ! Zero-setting
 
-    if(DEBUG_DUST .and. debug_flag) write(6,'(//a15,2es12.4,a15,e12.4,2f6.3)') &
-       '<< DUST OUT>>', DU_prod(DU_F,i,j),  DU_prod(DU_C,i,j), ' > TOTAL >',         &
-       DUST_flux(i,j), frac_fin, frac_coa
+    if( debug ) write(6,'(//a15,2es12.4,a15,e12.4,2f6.3)') &
+       '<< DUST OUT>>', EmisNat( inat_DUf,i,j), EmisNat( inat_DUc,i,j), &
+       ' > TOTAL >',  sum( EmisNat( dust_indices, i,j )),frac_fin, frac_coa
+       !ESX '<< DUST OUT>>', DU_prod(DU_F,i,j),  DU_prod(DU_C,i,j), ' > TOTAL >',         &
+       !ESX DUST_flux(i,j), frac_fin, frac_coa
 
   endif  ! dust_prod
 
-  if(DEBUG_DUST .and. debug_flag) write(6,*) &
-       '<< No DUST production>>   > TOTAL >', DUST_flux(i,j)
+  if( debug ) write(6,*) '<< No DUST production TOTAL >>', sum( EmisNat( dust_indices, i,j ))
 
    end subroutine WindDust
 
@@ -617,14 +630,22 @@
 !  real, dimension (3) :: dsoil   = (/  1.5 ,  6.7,   14.2  /)  ! [um] MMD 
 !  real, dimension (3) :: sig_soil= (/  1.7 ,  1.6 ,  1.5   /)  ! [frc] GSD
 !---------------------------------------------
+  !ESX change:
+  inat_DUf = find_index( "DUST_WB_F", EMIS_BioNat(:) )
+  inat_DUc = find_index( "DUST_WB_C", EMIS_BioNat(:) )
+  itot_DUf = find_index( "DUST_WB_F", species(:)%name    )
+  itot_DUc = find_index( "DUST_WB_C", species(:)%name    )
+
+  dust_indices = (/   inat_DUf,  inat_DUc /)  
 
   if (DEBUG_DUST .and. MasterProc) then
    write(6,*)
-   write(6,*) ' >> DUST init <<',soil_dens
+   write(6,*) ' >> DUST init <<',soil_dens,  inat_DUf,  inat_DUc , itot_DUf, itot_DUc
   endif
 
-  allocate(DU_prod (NDU,MAXLIMAX,MAXLJMAX))
-  allocate(DUST_flux (MAXLIMAX,MAXLJMAX))
+
+  !ESX allocate(DU_prod (NDU,MAXLIMAX,MAXLJMAX))
+  !ESX allocate(DUST_flux (MAXLIMAX,MAXLJMAX))
   allocate(dry_period(MAXLIMAX, MAXLJMAX))
   dry_period = 72
 
@@ -675,7 +696,7 @@
     if (DEBUG_DUST .and. MasterProc) then
       write(6,*)
       write(6,*) 'DUST: >> fractions <<', Nsoil, Ndust
-      write(6,'(a15,3e12.4)') 'DUST: Sigma =', (sig_soil(i),i=1,Nsoil)
+      write(6,'(a,3e12.4)') 'DUST: Sigma =', (sig_soil(i),i=1,Nsoil)
     endif
 
     sum_soil(:) = 0.0

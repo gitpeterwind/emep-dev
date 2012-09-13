@@ -156,20 +156,24 @@ subroutine runchem(numt)
 
           call setup_1d(i,j)   
 
+          call setup_rcemis(i,j) ! Sets initial rcemis=0.0 ESX moved
  
           if ( USE_SEASALT )  &
-             call SeaSalt_flux(i,j,debug_flag)
+             call SeaSalt_flux(i,j,debug_flag) ! sets rcemis(SEASALT_...)
 
           if ( USE_DUST )     &
-             call WindDust (i,j,debug_flag)
+             call WindDust (i,j,debug_flag) ! sets rcemis(DUST...)
 
           if ( USE_Pollen .and. daynumber >  59) &
              call Pollen_flux (i,j,debug_flag)
              !if (debug_) write(6,*) "2 Runchem polled_prod",&
              !                              Pollen_prod(1,i,j)
 
-          call setup_rcemis(i,j) ! Sets initial rcemis. DSA12 moved
+!ESX            call setup_rcemis(i,j) ! Sets initial rcemis. DSA12 moved
+
           call Setup_Clouds(i,j,debug_flag)
+
+          call setup_bio(i,j)   ! Adds bio/nat to rcemis
 
           call setup_bio(i,j)   ! Adds bio/nat to rcemis
 

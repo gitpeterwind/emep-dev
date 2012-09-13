@@ -50,14 +50,14 @@
     !DSA12use Biogenics_ml,      only: BIO_ISOP, BIO_TERP, BIO_SOILNO, rcbio
     use CheckStop_ml,      only: CheckStop
     use DefPhotolysis_ml         ! => IDHNO3, etc.
-    use EmisDef_ml,        only: QSSFI, QSSCO, QDUFI, QDUCO, QPOL, &
-                                 QROADDUST_FI, QROADDUST_CO
+    !ESX use EmisDef_ml,        only: QSSFI, QSSCO, QDUFI, QDUCO, QPOL, &
+    !ESX                              QROADDUST_FI, QROADDUST_CO
     use Emissions_ml,      only: KEMISTOP
     use ChemGroups_ml,     only: RO2_POOL, RO2_GROUP
     use ChemSpecs_tot_ml           ! => NSPEC_TOT, O3, NO2, etc.
     use Chemfields_ml, only : NSPEC_BGN  ! => IXBGN_  indices and xn_2d_bgn
     use ChemRates_rct_ml,   only: rct
-    use ChemRates_rcmisc_ml,only: rcmisc
+    !ESX use ChemRates_rcmisc_ml,only: rcmisc
     use GridValues_ml,     only : GRIDWIDTH_M
     use Io_ml,             only : IO_LOG, datewrite
     use ModelConstants_ml, only: KMAX_MID, KCHEMTOP, dt_advec,dt_advec_inv, &
@@ -66,15 +66,16 @@
     use Par_ml,            only: me, MAXLIMAX, MAXLJMAX
     use PhysicalConstants_ml, only:  RGAS_J
     use Setup_1dfields_ml, only: rcemis,        & ! photolysis, emissions
-                                 rc_Rn222,      & ! Pb210
-                                 rc_Rnwater,    & ! Pb210
+                                 !ESX rc_Rn222,      & ! Pb210
+                                 !ESX rc_Rnwater,    & ! Pb210
                                  xn_2d,         &
                                  rh,            &
                                  Fgas,   & ! fraction in gas-phase, for SOA
-                                 rcss, rcwbd, amk, & ! Sea salt, dust emission rate
-                                 rcroadd,       & ! Road dust emission rate
-                                 rcerup,        & ! Volcanic eruption
-                                 rcpol !,       & ! Pollen
+                                 !ESX rcss, rcwbd, 
+                                 amk, & ! Sea salt, dust emission rate
+                                 !ESX rcroadd,       & ! Road dust emission rate
+                                 rcerup !ESX,        & ! Volcanic eruption
+                                 !ESX rcpol !,       & ! Pollen
                                  !FUTURE rcnh3,         & ! NH3emis
 !DSA12                                 rcbio            ! bvoc
  use Setup_1dfields_ml,     only : itemp, tinv, rh, x=> xn_2d, amk

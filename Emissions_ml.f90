@@ -99,6 +99,8 @@
                              limax,ljmax, &
                              MSG_READ1,MSG_READ7
   use PhysicalConstants_ml,  only :  GRAV,  AVOG
+  use Setup_1dfields_ml,    only : rcemis   ! ESX
+
   use ReadField_ml, only : ReadField    ! Reads ascii fields
   use TimeDate_ml,  only : nydays, nmdays, date, current_date, &! No. days per 
                            daynumber,day_of_week                ! year, date-type, weekday 

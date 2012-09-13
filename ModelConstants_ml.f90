@@ -72,8 +72,8 @@ logical, public, parameter ::         &
   NO_CROPNH3DEP      = .true.,        & ! Stop NH3 deposition for growing crops
   USE_SEASALT        = .true.,        & ! ok
 ! More experimental:
-  USE_DUST           = .false.,       & ! Experimental
-  USE_ROADDUST       = .false.,       & ! UNDER DEVELOPMENT! Testing the TNO Road Dust routine. So far with simplified "climate-correction" factor
+  USE_DUST           = .true.,       & ! Experimental
+  USE_ROADDUST       = .true.,       & ! UNDER DEVELOPMENT! Testing the TNO Road Dust routine. So far with simplified "climate-correction" factor
   DO_SAHARA          = .not.FORECAST, & ! Turn on/off BG Saharan Dust
   USE_GLOBAL_SOILNOX = .false.,       & ! Need to design better switch
   USE_SOILNH3        = .false.,       & ! DUMMY VALUES, DO NOT USE!
@@ -199,7 +199,7 @@ logical, public, save ::  DebugCell  = .false.
 
 ! The coordinates given here only apply for the standard EMEP domain
 integer, private, parameter :: &
-  DEBUG_ii= -99, DEBUG_jj= -99 ! none
+!  DEBUG_ii= -99, DEBUG_jj= -99 ! none
 ! DEBUG_ii= 79, DEBUG_jj= 56 ! Eskdalemuir
 ! DEBUG_ii= 73, DEBUG_jj= 48 ! Mace Head
 ! DEBUG_ii= 88, DEBUG_jj= 53 ! Sibton
@@ -226,7 +226,7 @@ integer, private, parameter :: &
 !DUST DEBUG_ii= 94-OFFSET_i, DEBUG_jj= 24-OFFSET_j ! 99% water, dust problems
 ! DEBUG_ii= 85, DEBUG_jj= 35 ! Sea, Bay of Biscay
 !DEBUG_ii= 76, DEBUG_jj= 65 ! Sea,  North sea
-! DEBUG_ii= 66, DEBUG_jj= 50 ! Sea,  west UK
+ DEBUG_ii= 66, DEBUG_jj= 50 ! Sea,  west UK
 ! DEBUG_ii= 80, DEBUG_jj= 52 ! Irish sea
 ! DEBUG_ii= 91, DEBUG_jj= 67 ! Tange
 ! DEBUG_ii=103, DEBUG_jj= 32 ! Prades, SMDge

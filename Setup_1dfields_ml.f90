@@ -37,7 +37,8 @@
 
 !DSA12  use ModelConstants_ml,     only :  KMAX_MID, KCHEMTOP, KUPPER, NBVOC, NSOIL_EMIS
   use ModelConstants_ml,     only :  KMAX_MID, KCHEMTOP, KUPPER
-  use EmisDef_ml,            only :  NSS, NDU, NROADDUST, NPOL !SeaS, Dust
+  !ESX use EmisDef_ml,            only :  NSS, NDU, NROADDUST, NPOL !SeaS, Dust
+  use EmisDef_ml,            only :  NDU, NROADDUST, NPOL !SeaS, Dust
   use ChemSpecs_tot_ml,      only :  NSPEC_TOT, FIRST_SEMIVOL, LAST_SEMIVOL
   use ChemSpecs_shl_ml,      only :  NSPEC_SHL
   use Chemfields_ml,         only :  NSPEC_COL
@@ -78,7 +79,7 @@
   !FUTURE real, public, dimension(KCHEMTOP:KMAX_MID), save   :: rcnh3
    real, public, dimension(KCHEMTOP:KMAX_MID), save   :: rc_Rn222 = 0.0  ! 210Pb
    real, public, dimension(KCHEMTOP:KMAX_MID), save   :: rc_Rnwater = 0.0  ! TEST
-   real, public, dimension(NSS,KCHEMTOP:KMAX_MID), save :: rcss = 0.0  ! Sea salt
+   !ESX real, public, dimension(NSS,KCHEMTOP:KMAX_MID), save :: rcss = 0.0  ! Sea salt
    real, public, dimension(NDU,KCHEMTOP:KMAX_MID), save :: rcwbd = 0.0 ! windblown dust
    real, public, dimension(NROADDUST,KCHEMTOP:KMAX_MID), save :: rcroadd = 0.0 ! road traffic dust
    real, public, dimension(NPOL,KCHEMTOP:KMAX_MID), save :: rcpol = 0.0 ! Pollen (birch)

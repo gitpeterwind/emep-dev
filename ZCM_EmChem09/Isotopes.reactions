@@ -5,6 +5,6 @@
 2.1e-6                Rn222 = Pb210 ;
 2.1e-6                Rnwater = ; # TEST
 * Emissions
-rc_Rn222(k)                                = Rn222    ;
+rcbio:Rn222                                = Rn222    ;
 *CB05 had:  1.0e-12*h2o                              Pb210 = ;
 *

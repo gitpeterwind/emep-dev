@@ -5,7 +5,7 @@ use warnings;
 #  GenChem - a perl script to read in equations and output
 #  production and loss terms for fortran programmes.
 #
-# Dave Simpson    1998-2010:
+# Dave Simpson    1998-2012:
 # Includes: species checks, atom-balance,  use of shorthands,
 #  rate-simplication, various user-changeable options.
 #
@@ -96,9 +96,11 @@ our @bionat_specs = (); # For isoprene, terpenes, soil-NO etc.
  my (@lhtracer,  @rhtracer) = ();     # Initialise lhs and rhs tracers
  my (%lhfactor,  %rhfactor ) = ();    # Initialise lhs and rhs factors
  my (%prod,  %loss ) = ();            # Initialise
- my ($neqn, $nrct, $nrctroe, $nrcmisc ) = (0,0,0,0);  # rct = Temp-dependant
+ my ($neqn, $nrct, $nrctroe, $nrcfunc ) = (0,0,0,0);  # rct = Temp-dependant
  my ( $nddep,  $nwdep ) = (0,0);
- my ( $ddep_txt, $wdep_txt ) = ("","");
+ my ( $ddep_txt, $wdep_txt );
+ my ( @rate_label, @rct, @rcttext ) = ();
+ #QUERY? my ( $ddep_txt, $wdep_txt ) = ("","");
  my ( @rate_label, @rct, @rcttext, @rctroe, @rctroetext,
 	 @rcmisc, @rcmisctext ) = ();
  my ( %atoms, %molwt, %count, %nmhc, %shorthand ) = ("", "", "", "" );
@@ -112,36 +114,28 @@ our @bionat_specs = (); # For isoprene, terpenes, soil-NO etc.
 
 #======================================================================
 # CONSIDER REMOVING!
- my ( $rct, $rctroe, $rcmisc)    = qw ( rct rctroe rcmisc );
+ my ( $rct )    = qw ( rct );
  my  %description = (
            $adv => "Advected species",
            $shl => "Short-lived (non-advected) species ",
            $tot => "All reacting species ",
            $rct => "Rate-coefficients - temperature dependant",
-           $rctroe =>
-            "Rate-coefficients - pressure & temperature dependant (Troe)",
-           $rcmisc => "Rate-coefficients - complex dependancies"
        );
 
-       #  These rates require different used variables
+#  These rates require different used variables. The ChemFunctions_ml
+#  is only called if the more complex functions are needed.
+#  but for simplicity we define it anyway.... (ESX check)
+ my $txtrcfunc = "";
+ $txtrcfunc = "\n  use ChemFunctions_ml       ! => kaero, RiemerN2O5\n" ; #ESX if $nrcfunc>0;
+ #printall ("TXTRCFUNC needed? $nrcfunc   TXT:$txtrcfunc");
  my %UsedVariables = (
-	   $rct    => "
-  use Setup_1dfields_ml      ! => tinv, h2o, m, Fgas
-  use ModelConstants_ml,     only : KMAX_MID,KCHEMTOP"
-
-	  ,$rcmisc => "
-  use ChemFunctions_ml       ! => kaero, RiemerN2O5
+	   $rct    => " $txtrcfunc
   use Setup_1dfields_ml      ! => tinv, h2o, m, Fgas
   use Setup_1dfields_ml, m=> amk
   use ChemSpecs_tot_ml         ! => PINALD, .... for FgasJ08
   use ModelConstants_ml,     only : KMAX_MID,KCHEMTOP,DebugCell,DEBUG_RUNCHEM"
        );
 
- my %post = (
-	   $rct    => "",
-	   $rctroe => "",
-	   $rcmisc => ""
-       );
 #======================================================================
 
  read_species();    # Assigns to $species[nspec] array, also calculates
@@ -162,15 +156,7 @@ our @bionat_specs = (); # For isoprene, terpenes, soil-NO etc.
 
  print_rates($rct, $nrct,\@rct,\@rcttext) ;
 
-# For troe expressions, we replace the Fc term by its logarithm
-# and replace the very common 300/xt by t300. Both of these
-# are optimisations suggested by Steffen.
 
-
-if ( $nrcmisc > 0 ) {
-    print "SHOULD PRINT MISC RATES $nrcmisc \n";
-    print_rates($rcmisc, $nrcmisc,\@rcmisc,\@rcmisctext) ;
-}
  printmap_dep();
         print "QQQQQQQQQQQQQQQQQQQQQQQQQQ ; \n";
 	foreach my $gg ( keys %grp ) {
@@ -214,10 +200,7 @@ sub read_species {
 			next;
 		}
 
-		$old_style = 1                  if $line =~ /^\#OLD_STYLE/ ;
-		$grp_style = 1                  if $line =~ /^"\#GROUPED_STYLE/ ;
 		$SlowSpec = $nspecies[$tot] + 1 if $line =~ /^\"#SLOW/ ;
-		print "LINE $line STYLE $grp_style \n";
                 next if $line =~ /^"#/ ; # would be OLD_STYLE of SLOW
 
                 my ( $spec, $typ, $formula, $comment, $in_ncarbon, $class );
@@ -225,46 +208,33 @@ sub read_species {
 		my ( $groups, @groups );
 		@groups = ();
                 my $in_rmm = "-";   # init to "-" for old_style
-		if ( $old_style ) {
-		   ( $spec, $typ, $formula, $comment )  = split(/\s+/,$line,4);
-		   die " OLD NOT USED NOW \n";
-		} elsif ( $grp_style ) {
-			#( $spec, $typ, $formula, $in_rmm,
-			#$extinc, $cstar, $DeltaH,
-			#$groups, $comment )  = split(/,/,$line,10);
-			$line =~ s/xx/-/g; # Oocalc didn't like -
-			my @r = split(/,/,$line);
-			$spec     = $r[0];
-			$typ      = $r[1];
-			$formula  = $r[2];
-			$in_rmm   = $r[3];
-			my $dry      = $r[4];
-			my $wet      = $r[5];
-			$extinc   = $r[6];
-			$cstar    = $r[7];
-			$DeltaH   = $r[8];
-			$groups   = $r[10];
-			#my $tgroups  = find_rec("Groups",@headers ) ;
-			my $tgroups  = $r[ find_rec("Groups",@headers ) ];
-			#die "TESTED T$tgroups should be ten\n";
+		$line =~ s/xx/-/g; # Oocalc didn't like -
+		my @r = split(/,/,$line);
+		$spec     = $r[0];
+		$typ      = $r[1];
+		$formula  = $r[2];
+		$in_rmm   = $r[3];
+		my $dry      = $r[4];
+		my $wet      = $r[5];
+		$extinc   = $r[6];
+		$cstar    = $r[7];
+		$DeltaH   = $r[8];
+		$groups   = $r[10];
+		my $tgroups  = $r[ find_rec("Groups",@headers ) ];
+		#die "TESTED T$tgroups should be ten\n";
 
-	       		# Assign species to groups if given:
-	               	unless ( $groups =~ "-" ) {
-				print "PG SPEC $spec G $groups\n";
-			       process_groups($spec, $groups, $dry, $wet );
-			       #print "PPPPPPPPPPPPPPPPPPPPPPPPPP ; \n";
-			       #foreach my $gg ( keys %grp ) {
-			       #print "  TESTPP $gg group is: @{ $grp{$gg} }\n";
-			       #}
-			}
-			process_alldep ( $dry, $wet, $spec ) unless $dry eq "-" ;
+       		# Assign species to groups if given:
+               	unless ( $groups =~ "-" ) {
+			print "PG SPEC $spec G $groups\n";
+		       process_groups($spec, $groups, $dry, $wet );
+		       #print "PPPPPPPPPPPPPPPPPPPPPPPPPP ; \n";
+		       #foreach my $gg ( keys %grp ) {
+		       #print "  TESTPP $gg group is: @{ $grp{$gg} }\n";
+		       #}
+		}
+		process_alldep ( $dry, $wet, $spec ) unless $dry eq "-" ;
 
-	    	} else { # Garry's new style:
-		   die " GH NOT USED NOW \n";
-                   ( $spec, $typ, $formula, $in_rmm, $in_ncarbon,
-		       $class, $comment )  = split(/\s+/,$line,7);
-		   push(@ro2pool,$spec) if $class eq "peroxy";
-	       	}
+		#???? push(@ro2pool,$spec) if $class eq "peroxy";
 		$spec  =~ tr/a-z/A-Z/;   # Upper case
 
 		$nspecies[$tot]++;
@@ -276,7 +246,6 @@ sub read_species {
 	        $CiStar[$n]  = $cstar;
 	        $DeltaH[$n]  = $DeltaH;
 		printall("SPECIES READ => $n $spec N $n DH $DeltaH; ");
-
 
 		if ( $typ == 2 ) {
 		    $naerosol++ ;
@@ -298,8 +267,9 @@ sub read_species {
                 {       $molwt{$spec} = $formula;
                         print LOG "INPUT MOLWT: $spec= $molwt{$spec}\n";
                 }
-                else
-                {       # Get $molwt and $count[$spec][$atom]
+		else
+		{ 
+		      # Get $molwt and $count[$spec][$atom]
                         count_atoms($spec,$formula)
                 }
 
@@ -318,13 +288,6 @@ sub read_species {
                    if ($count{$spec}{"C"} == 0 and $in_ncarbon != 0)
                         { $count{$spec}{"C"} = $in_ncarbon }
 		}
-
-	# Automate assignent to OXN
-	#my $Ncount = $count{$spec}{"N"};
-	#       if ( $Ncount  >= 1.0 &&  $spec !~ /NH[34]/ ) {
-	#            push(@oxngroup,$spec);
-	#            printall( "OXNGROUP??? $spec $Ncount \n");
-	#       }
 
 	}
 	close(F);
@@ -472,7 +435,7 @@ print LOG "\n\n............... read_reactions .........................
 			    do not include multiplication signs on RHS
 			    :: $line\n" if( $term eq "*" );
 			   push(@rhs,$term);      # Add to rhs array
-	printall("CHECK_MATCH FROM RHS  $term ");
+	printall("CHECK_MATCH FROM RHS  RR${term}RR ");
 			   check_match( $term ) ;  # Check that species exists
 			   process_rhs( $term,$factor,$flux ) ;
 			   if( $factor != 1) {printall("Used RH factor $factor for $term\n")};
@@ -556,6 +519,7 @@ sub define_rates {
 # First, we check if rate constant is one of the shorthands, e.g. KHO2RO2. If so
 # we substitute the value (e.g. 1.0e-11)  into rate and carry on. To make
 # the search easy, we first add spaces around operators
+
 	printall("-------------------\n START Rate $oldrate\n");
 	$rate =~ s/(\*|\+|\-\/)/ $1 /g ;
 
@@ -566,18 +530,22 @@ sub define_rates {
 # and temperature(=XT) and see if any other text is present. If not
 # we have either a pure number or a complex expression.
 
-	my ( $misc,  $troe ) = (0,0) ;
+# For troe expressions, we replace the Fc term by its logarithm
+# and replace the very common 300/xt by t300. Both of these
+# are optimisations suggested by Steffen.
+
+	my $troe  = 0 ;
 	my $rctest = $rate;
 	$rctest =~ s/EXP//g;
 	$rctest =~ s/XT//g;
 	$rctest =~ s/TINV//g;
-	if ( $rctest =~ /[a-dfzA-DF-Z]/ ) { $misc = 1 } ;
-	if ( $rctest =~ /TROE/ ) { $troe = 1, $misc = 0 } ;
-	if ( $troe ){ print "TRUETRO $troe for $rate \n"};
+	#ESX if ( $rctest =~ /[a-dfzA-DF-Z]/ ) { $misc = 1 } ;
+	$troe = 1 if $rctest =~ /TROE/ ; #ESX ) { $troe = 1, $misc = 0 } ;
+	if ( $troe ){ printall( "TRUETRO $troe for $rate \n")};
 
 	$rate =~ s/\s+//g ; # Get rid of white space again
 	# $rate =~ s/([\d.]+)[dD]([-+\d]+)/$1E$2/ ;
-	printall("Type? $rate MISC $misc TROE $troe \n");
+	printall("Type? $rate TROE $troe \n");
 
 # Look for exponentials. Lower case them to keep F happy, and maybe later to
 # help optimise.
@@ -610,39 +578,48 @@ sub define_rates {
 	} elsif ( $rate =~ /DJ/i ) {   # e.g. DJ(iq,2)
 		$rate =~ s/DJ/rcphot/;
 		$k = $rate ;
-	} elsif ( $rate =~ /DRY|WET/i ) {   # e.g. DJ(iq,2)
-		$k = "$rate($DIMFLAG)" ;
-
-	} elsif ( $rate =~ /TROE/ or $rate =~ /KMT/ ) {   #  Troe expression - T & P
-		$nrcmisc++ ;
-		$k = "rcmisc($nrcmisc,$DIMFLAG)";
-		$nrctroe++ ;
-		$rate = lc($rate) ;
-		printall( "A08TROE->RCMISC = $nrcmisc RATE $rate\n" );
-		$rcmisc[$nrcmisc] = lc($rate) ;
-		$rcmisctext[$nrcmisc] = "rcmisc($nrcmisc,:)" ;    # older: $k ;
-	} elsif ( $rate =~ /(^[A-Z])/ ) {   # e.g. KRO2HO2,DJ_2  --> DJ_2(iq)
+#ESX	} elsif ( $rate =~ /DRY|WET/i ) {   # e.g. DJ(iq,2)
+#ESX		$k = "$rate($DIMFLAG)" ;
+#ESX
+#ESX	} elsif ( $rate =~ /TROE/ or $rate =~ /KMT/ ) {   #  Troe expression - T & P
+#ESX		$nrcmisc++ ;
+#ESX		$k = "rcmisc($nrcmisc,$DIMFLAG)";
+#ESX		$nrctroe++ ;
+#ESX		$rate = lc($rate) ;
+#ESX		printall( "A08TROE->RCMISC = $nrcmisc RATE $rate\n" );
+#ESX		$rcmisc[$nrcmisc] = lc($rate) ;
+#ESX		$rcmisctext[$nrcmisc] = "rcmisc($nrcmisc,:)" ;    # older: $k ;
+#ESX	} elsif ( $rate =~ /(^[A-Z])/ ) {   # e.g. KRO2HO2,DJ_2  --> DJ_2(iq)
 #M00		if ( $rate =~ /[\*\+\-]/ )  {
 #M00                     die "Error in $rate, line $linenum :
 #M00                     Rate-coefficients cannot begin with variable names, (e.g. K*3.0),
 #M00                     put variable last (e.g. 3.0*K) or use GenIn.shorthands !\n" ;
 #M00		}
 #M00		$k = "$rate($DIMFLAG)"    ;
-		$k = $rate  ;
+#ESX		$k = $rate  ;
 
 	} elsif  ( $rate =~ /^_FUNC_/ ) {   # Complex expression
-		$nrcmisc++ ;
-		$k = "rcmisc($nrcmisc,$DIMFLAG)";
+		#ESX $nrcmisc++ ;
+
+		#ESX$k = "rcmisc($nrcmisc,$DIMFLAG)";
+
+		$nrcfunc++; 
+		$nrct++;  #ESX
 		$rate =~ s/_FUNC_//;
-		printall( "Function->RCMISC = $nrcmisc RATE $rate\n" );
-		$rcmisc[$nrcmisc] = lc($rate) ;
-		$rcmisctext[$nrcmisc] = "rcmisc($nrcmisc,:)" ;    # older: $k ;
-	} elsif  ( $misc == 1 ) {   # Complex expression
-		$nrcmisc++ ;
-		printall( "MRCMISC = $nrcmisc\n" );
-		$k = "rcmisc($nrcmisc,$DIMFLAG)";
-		$rcmisc[$nrcmisc] = lc($rate) ;
-		$rcmisctext[$nrcmisc] = "rcmisc($nrcmisc,:)" ;    # older: $k ;
+		printall( "Function->RCMISC = $nrct RATE $rate\n" );
+		#ESX$rcmisc[$nrcmisc] = lc($rate) ;
+		#ESX$rcmisctext[$nrcmisc] = "rcmisc($nrcmisc,:)" ;    # older: $k ;
+
+		$rct[$nrct] = $rate ;
+		$rcttext[$nrct] = "rct($nrct,:)";    # older ,$DIMFLAG)";
+		$k = "rct($nrct,$DIMFLAG)";
+
+#ESX	} elsif  ( $misc == 1 ) {   # Complex expression
+#ESX		$nrcmisc++ ;
+#ESX		printall( "MRCMISC = $nrcmisc\n" );
+#ESX		$k = "rcmisc($nrcmisc,$DIMFLAG)";
+#ESX		$rcmisc[$nrcmisc] = lc($rate) ;
+#ESX		$rcmisctext[$nrcmisc] = "rcmisc($nrcmisc,:)" ;    # older: $k ;
 	} else{ # Variable coefficients --> e.g. rc(112,iq)
 		# For optimum speed, check for previous_rates ........   ;
 		for (my $i=1; $i<=$nrct;$i++){
@@ -653,6 +630,10 @@ sub define_rates {
 		}
 		# New coefficient needed...
 		$nrct++;
+                $nrctroe++ if $rate =~ /TROE/ ;  #  Troe expression - T & P
+		$nrcfunc++ if ( $rate =~ /TROE/ or $rate =~ /KMT/ ) ;
+                printall("ADDING TROE $rate") if $rate =~ /TROE/ ;  #  Troe expression - T & P
+                printall("ADDING FUNC $rate") if $rate =~ /TROE/ or $rate =~ /KMT/ ;  #  Troe expression - T & P
 		# if ( $rate =~ /[\*\+\-]/ )  { simplify_rate($rate) };
 		$rct[$nrct] = $rate ;
 		$rcttext[$nrct] = "rct($nrct,:)";    # older ,$DIMFLAG)";
@@ -680,7 +661,7 @@ sub process_lhs {
 #             check for e.g. fgas()*diacid  and that species exists !
 
 		$lhs[$i] = check_multipliers( $lhs[$i] ) ;
-	printall("CHECK_MATCH FROM LHS $lhs[$i]\n");
+		printall("CHECK_MATCH FROM LHS $lhs[$i]\n");
 		check_match( $lhs[$i] ) ;
 
 		if ( $loss{$lhs[$i]} ){
@@ -725,8 +706,9 @@ sub check_match {
 	my $nn = 0;
         foreach my $s ( @known ) {
 	   $nn ++;
-	   print "testing $test_spec against known N$nn Spec: $s\n";
+	   print "testing:${test_spec}XX against known N$nn Spec:${s}XX\n";
 	}
+	printall("FAILING FOR $test_spec\n (Could also be missing ;)");
 	die "Species $test_spec not found at line $linenum   !!!! \n";
 } # end of sub check_match
 #######################################################################
@@ -1198,7 +1180,6 @@ sub print_rates {
   # the definition and tmpout field.
 
   my $defrc = $rctype ;
-  #OLD $defrc =~ s/rc/rcv/ ;
   my $Nrctype = "N" . uc($rctype);
   my $module = "ChemRates_" . $rctype . "_ml" ;
   open(F,">GenOut_$module.inc");
@@ -1220,12 +1201,11 @@ sub print_rates {
         print F "  subroutine set_${rctype}_rates() \n";
 	#A08 print F "  subroutine set_${rctype}_rates($params{$rctype}) \n";
 	#A08 print F "  $arguments{$rctype}\n";
-	if ( $rctype =~ /misc/ && $nrctroe > 0 ) {
-		print F  "!OLD real, dimension(KCHEMTOP:KMAX_MID) :: lt300\n";
+	#ESX if ( $rctype =~ /misc/ && $nrctroe > 0 ) {
+	if ( $nrctroe > 0 ) {
 		print F  "     real, dimension(KCHEMTOP:KMAX_MID) :: log300divt, logtdiv300\n";
 		print F  "!     real, dimension(KCHEMTOP:KMAX_MID) :: BranchingNO\n";
 		print F  "!     real, dimension(KCHEMTOP:KMAX_MID) :: BranchingHO2\n";
-		print F  "!OLD       lt300(:) = log(300.0*tinv(:))\n";
 		print F  "       log300divt(:) = log(300.0*tinv(:))\n";
 		print F  "       logtdiv300(:) = log(temp(:)/300.0)\n";
 		print F  "!       BranchingNO(:) = 1.0e-11*xn_2d(NO,:)/ &

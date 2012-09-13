@@ -1276,13 +1276,13 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
           case ( "NatEmis" ) !emissions in kg/m2/s converted??
 
               forall ( i=1:limax, j=1:ljmax )
-                  d_2d(n,i,j,IOU_INST) =  EmisNat( i,j, f_2d(n)%Index)
+                  d_2d(n,i,j,IOU_INST) =  EmisNat( f_2d(n)%Index,i,j )
               end forall
               !Not done, keep mg/m2  * GridArea_m2(i,j)
               if ( debug_flag ) call write_debug(n,f_2d(n)%Index, "NatEmis")
             if( debug_flag ) &
               call datewrite("NatEmis-in-Derived, still kg/m2/s", &
-                f_2d(n)%Index, (/ EmisNat( debug_li,debug_lj, f_2d(n)%Index) /) )
+                f_2d(n)%Index, (/ EmisNat( f_2d(n)%Index, debug_li,debug_lj) /) )
 
           case ( "SnapEmis" ) !emissions in kg/m2/s converted??
 

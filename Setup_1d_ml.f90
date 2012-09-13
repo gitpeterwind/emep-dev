@@ -37,12 +37,13 @@
   !FUTURE use NH3variables_ml,       only : NNH3 ! hb NH3emis
   use AirEmis_ml,            only :  airn, airlig   ! airborne NOx emissions
   use Biogenics_ml,        only : SoilNOx    !DSA12 , rcbio
+  use Biogenics_ml,        only : EMIS_BioNat, EmisNat    !ESX
   use Chemfields_ml,         only :  xn_adv,xn_bgn,xn_shl, &
                                    NSPEC_COL, NSPEC_BGN, xn_2d_bgn
   use CheckStop_ml,          only :  CheckStop
   use DerivedFields_ml,            only : d_2d
-  use DustProd_ml,           only :  DU_prod   ! Dust
-  use EmisDef_ml,            only : NSS, NDU, NPOL, NROADDUST  !SeaS, Dust, POllen
+!ESX  use DustProd_ml,           only :  DU_prod   ! Dust
+!ESX  use EmisDef_ml,            only : NSS, NDU, NPOL, NROADDUST  !SeaS, Dust, POllen
                                   !FUTURE ,NH3EMIS_VAR ! FUTURE NH3Emis
   use EmisGet_ml,            only :  nrcemis, iqrc2itot  !DSRC added nrcemis
   use Emissions_ml,          only :  gridrcemis, gridrcroadd, KEMISTOP
@@ -54,7 +55,7 @@
                                       IXADV_SO4, IXADV_NO3_f, IXADV_NH4_F
   use ChemSpecs_shl_ml,      only :  NSPEC_SHL
   use ChemRates_rct_ml,      only :  set_rct_rates, rct
-  use ChemRates_rcmisc_ml,   only :  rcmisc, set_rcmisc_rates
+!ESC  use ChemRates_rcmisc_ml,   only :  rcmisc, set_rcmisc_rates
   use GridValues_ml,         only :  sigma_mid, xmd, GridArea_m2, & 
                                      debug_proc, debug_li, debug_lj,&
                                      A_mid,B_mid,gridwidth_m,dA,dB,&
@@ -90,16 +91,17 @@
      xn_2d                &  ! concentration terms
     ,rcemis               &  ! emission terms
     ,rcerup               &  ! Volcanic eruption
-    ,rc_Rn222             &  ! for Pb210
-    ,rc_Rnwater           &  ! TEST
-    ,rcss, rcwbd, rcpol   &  !Sea salt, Wind blown dust, pollen
-    ,rcroadd              &  !Road dust
+!ESX    ,rc_Rn222             &  ! for Pb210
+!ESX    ,rc_Rnwater           &  ! TEST
+!ESX    ,rcss, rcwbd, rcpol   &  !Sea salt, Wind blown dust, pollen
+!ESX    ,rcroadd              &  !Road dust
     ,rh, temp, tinv, itemp,pp      &  !
     ,amk, o2, n2, h2o    ! &  ! Air concentrations
 !DSA12    ,rcbio                   ! BVOC
 !FUTURE    ,rcnh3                   ! NH3emis
-  use SeaSalt_ml,        only : SS_prod
-  use Pollen_ml,         only : Pollen_prod
+!ESX  use SeaSalt_ml,        only : SS_prod
+!ESX  use Pollen_ml,         only : Pollen_prod
+  use SmallUtils_ml,        only : find_index
   use Tabulations_ml,    only :  tab_esat_Pa
   use TimeDate_ml,       only :  current_date, date
   use Volcanos_ml
@@ -111,6 +113,15 @@
   public :: setup_rcemis ! Emissions  (formerly "poll")
  !FUTURE public :: setup_nh3 ! NH3emis   , experimental version
   public :: reset_3d     ! Exports results for i,j column to 3-D fields
+
+! Indices for the species defined in this routine. Only set if found
+ ! Hard-coded for 2 specs just now. Could extend and allocate.
+  integer, private, parameter :: NROADDUST = 2
+  integer, private, parameter :: iROADF=1,  iROADC=2
+  integer, private, save :: inat_RDF,  inat_RDC, inat_Rn222
+  integer, private, save :: itot_RDF=-999,  itot_RDC=-999, itot_Rn222=-999
+
+  !DUST_ROAD_F
 
 contains
  !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -191,16 +202,16 @@ contains
    call set_rct_rates()
 
 
-   call set_rcmisc_rates()
+   !ESX call set_rcmisc_rates()
 
   if ( DEBUG_SETUP_1DCHEM .and. debug_proc .and.  &
             i==debug_li .and. j==debug_lj .and. &
             current_date%seconds == 0 ) then
-      write(*,"(a,f7.2,10es10.3)") " DEBUG_SETUP_1DCHEM ", &
-            1.0/tinv(KMAX_MID), o2(KMAX_MID), &
-            rcmisc(3,KMAX_MID), rcmisc(4,KMAX_MID), &
-            rcmisc(10,KMAX_MID), rcmisc(11,KMAX_MID), &
-            rcmisc(8,KMAX_MID), rcmisc(10,KMAX_MID)
+      !ESX write(*,"(a,f7.2,10es10.3)") " DEBUG_SETUP_1DCHEM ", &
+      !ESX       1.0/tinv(KMAX_MID), o2(KMAX_MID), &
+      !ESX       rcmisc(3,KMAX_MID), rcmisc(4,KMAX_MID), &
+      !ESX       rcmisc(10,KMAX_MID), rcmisc(11,KMAX_MID), &
+       !ESX      rcmisc(8,KMAX_MID), rcmisc(10,KMAX_MID)
       write(*,"(a,10es10.3)") " DEBUG_SETUP_1DCHEM RCT ", &
             rct(3,KMAX_MID), rct(4,KMAX_MID)
       write(*,"(a,10es10.3)") " DEBUG_SETUP_1DCHEM XN  ", &
@@ -208,8 +219,8 @@ contains
           xn_2d(IXADV_NO2+NSPEC_SHL,KMAX_MID)
       write(*,"(a,10es10.3)") " DEBUG_SETUP_1D-Riemer",&
         xn_2d(IXADV_SO4+NSPEC_SHL,KMAX_MID) &
-       ,xn_2d(IXADV_NO3_F+NSPEC_SHL,KMAX_MID) &
-       ,rcmisc(19,KMAX_MID)
+       ,xn_2d(IXADV_NO3_F+NSPEC_SHL,KMAX_MID) !ESX &
+       !ESX ,rcmisc(19,KMAX_MID)
   end if
 
 
@@ -233,12 +244,24 @@ contains
      real    :: eland   ! for Pb210  - emissions from land
 
     integer ::  i_help,j_help,i_l,j_l
+    logical, save     :: first_call = .true.   !ESX
 
-! initilize
+    if ( first_call ) then
+      inat_RDF = find_index( "DUST_ROAD_F", Emis_BioNat(:) )
+      inat_RDC = find_index( "DUST_ROAD_C", Emis_BioNat(:) )
+      itot_RDF = find_index( "DUST_ROAD_F", species(:)%name    )
+      itot_RDC = find_index( "DUST_ROAD_C", species(:)%name    )
+      itot_Rn222= find_index( "RN222", species(:)%name    )
+      first_call = .false.
+    end if 
+
+! initilize ! initilize ! initilize ! initilize
     rcemis(:,:)=0.
-    rcss(:,:) = 0.  !SeaS
-    rcwbd(:,:) = 0.  ! Dust
-    rcroadd(:,:) = 0. ! Road dust
+! initilize ! initilize ! initilize ! initilize
+
+!ESX    rcss(:,:) = 0.  !SeaS
+!ESX   rcwbd(:,:) = 0.  ! Dust
+!ESXrcroadd(:,:) = 0. ! Road dust
      do k=KEMISTOP,KMAX_MID
 
         do iqrc = 1, NRCEMIS
@@ -297,45 +320,46 @@ contains
 
      !/** Add sea salt production
 
-     if ( USE_SEASALT  ) then
+!ESX     if ( USE_SEASALT  ) then
+!ESX
+!ESX          do iqrc = 1, NSS
+!ESX            rcss(iqrc,KMAX_MID) = SS_prod(iqrc,i,j)
+!ESX          enddo
+!ESX
+!ESX     endif
+!ESX
+!ESX
+!ESX!ESX     !/** Add windblown dust production
+!ESX
+!ESX     if ( USE_DUST  ) then
+!ESX
+!ESX          do iqrc = 1, NDU
+!ESX            rcwbd(iqrc,KMAX_MID) = DU_prod(iqrc,i,j)
+!ESX
+!ESX!       if(debug) write(6,'(a25,3i4,2es12.3)') '>> WBDust emissions >>',   &
+!ESX!             i_fdom(i), j_fdom(j), iqrc, DU_prod(iqrc,i,j), rcwbd(iqrc,KMAX_MID)
+!ESX          enddo
+!ESX
+!ESX     endif
+!ESX
+     if ( USE_ROADDUST  ) then  ! Hard-code indices for now
 
-          do iqrc = 1, NSS
-            rcss(iqrc,KMAX_MID) = SS_prod(iqrc,i,j)
-          enddo
-
-     endif
-
-
-     !/** Add windblown dust production
-
-     if ( USE_DUST  ) then
-
-          do iqrc = 1, NDU
-            rcwbd(iqrc,KMAX_MID) = DU_prod(iqrc,i,j)
-
-!       if(debug) write(6,'(a25,3i4,2es12.3)') '>> WBDust emissions >>',   &
-!             i_fdom(i), j_fdom(j), iqrc, DU_prod(iqrc,i,j), rcwbd(iqrc,KMAX_MID)
-          enddo
-
-     endif
-
-     if ( USE_ROADDUST  ) then
-
-          do iqrc = 1, NROADDUST
-            rcroadd(iqrc,KMAX_MID) = gridrcroadd(iqrc,i,j)
-          enddo
-
-     endif
-
-
-     if ( USE_POLLEN  ) then
-
-          do iqrc = 1, NPOL
-            rcpol(iqrc,KMAX_MID) = Pollen_prod(iqrc,i,j)
-            !write(*,*) "Fra Setup_1d:", rcpol(iqrc,KMAX_MID)
-          enddo
+        rcemis(itot_RDF,KMAX_MID) = gridrcroadd(1,i,j)
+        rcemis(itot_RDC,KMAX_MID) = gridrcroadd(2,i,j)
+!ESX            rcroadd(iqrc,KMAX_MID) = gridrcroadd(iqrc,i,j)
+!ESX          enddo
 
      endif
+
+
+!ESX     if ( USE_POLLEN  ) then
+!ESX
+!ESX          do iqrc = 1, NPOL
+!ESX            rcpol(iqrc,KMAX_MID) = Pollen_prod(iqrc,i,j)
+!ESX            !write(*,*) "Fra Setup_1d:", rcpol(iqrc,KMAX_MID)
+!ESX          enddo
+!ESX
+!ESX     endif
 
      if ( USE_FOREST_FIRES  .and. burning(i,j)  ) then
 
@@ -388,15 +412,18 @@ contains
      eland = 1.0 - water_fraction(i,j) - ice_landcover(i,j)
 
 ! initialize, needed in My_Reactions
-     rc_Rn222(:)=0.0
-     rc_Rnwater(:)=0.0 ! TEST
+!ESX     rc_Rn222(:)=0.0
+!ESX     rc_Rnwater(:)=0.0 ! TEST
 
 ! z_bnd is in m, not cm, so need to divide by 100.
-     rc_Rn222(KMAX_MID) = &
+!ESX     rc_Rn222(KMAX_MID) = &
+!ESX            ( 0.00182 * water_fraction(i,j)  + eland ) / &
+!ESX            ((z_bnd(i,j,KMAX_BND-1) - z_bnd(i,j,KMAX_BND))*100.)
+         rcemis( itot_Rn222,KMAX_MID )  = & 
             ( 0.00182 * water_fraction(i,j)  + eland ) / &
             ((z_bnd(i,j,KMAX_BND-1) - z_bnd(i,j,KMAX_BND))*100.)
-     rc_Rnwater(KMAX_MID) = water_fraction(i,j)  / &
-            ((z_bnd(i,j,KMAX_BND-1) - z_bnd(i,j,KMAX_BND))*100.)
+!ESX     rc_Rnwater(KMAX_MID) = water_fraction(i,j)  / &
+!ESX            ((z_bnd(i,j,KMAX_BND-1) - z_bnd(i,j,KMAX_BND))*100.)
 
   end subroutine setup_rcemis
 

@@ -170,7 +170,7 @@ module Biogenics_ml
     integer :: alloc_err
     
     allocate(AnnualNdep(MAXLIMAX,MAXLJMAX),SoilNOx(MAXLIMAX,MAXLJMAX), SoilNH3(MAXLIMAX,MAXLJMAX))
-    allocate(EmisNat(MAXLIMAX,MAXLJMAX,NEMIS_BioNat))
+    allocate(EmisNat(NEMIS_BioNat,MAXLIMAX,MAXLJMAX))
     EmisNat=0.0
     allocate(day_embvoc(MAXLIMAX,MAXLJMAX,size(BVOC_USED)))
     day_embvoc = 0.0
@@ -588,10 +588,10 @@ module Biogenics_ml
       !DSA12 rcbio(BIO_ISOP,KG)   = E_ISOP * biofac_ISOP/Grid%DeltaZ
 
       rcemis(itot_C5H8,KG)   = rcemis(itot_C5H8,KG) + E_ISOP * biofac_ISOP/Grid%DeltaZ
-      EmisNat(i,j,ispec_C5H8)= E_ISOP * 1.0e-9/3600.0
+      EmisNat(ispec_C5H8,i,j)= E_ISOP * 1.0e-9/3600.0
 
   else ! night
-     EmisNat(i,j,ispec_C5H8) = 0.0
+     EmisNat(ispec_C5H8,i,j) = 0.0
      E_MTL = 0.0
      E_ISOP = 0.0
   endif ! daytime
@@ -604,14 +604,14 @@ module Biogenics_ml
         !DSA12 rcbio(BIO_TERP,KG)    = (E_MTL+E_MTP) * biofac_TERP/Grid%DeltaZ
         rcemis(itot_APIN,KG)    = rcemis(itot_APIN,KG) + &
                (E_MTL+E_MTP) * biofac_TERP/Grid%DeltaZ
-        EmisNat(i,j,ispec_APIN) = (E_MTL+E_MTP) * 1.0e-9/3600.0
+        EmisNat(ispec_APIN,i,j) = (E_MTL+E_MTP) * 1.0e-9/3600.0
     end if
 
     if ( USE_SOILNOX ) then
         !rcbio(BIO_SOILNO,KG)    = SoilNOx(i,j) * biofac_SOILNO/Grid%DeltaZ
         rcemis(itot_NO,KG)    = rcemis(itot_NO,KG) + &
              SoilNOx(i,j) * biofac_SOILNO/Grid%DeltaZ
-        EmisNat(i,j, ispec_NO) =  SoilNOx(i,j) * 1.0e-9/3600.0
+        EmisNat(ispec_NO,i,j) =  SoilNOx(i,j) * 1.0e-9/3600.0
     end if
 
     !EXPERIMENTAL
@@ -619,7 +619,7 @@ module Biogenics_ml
         rcemis(itot_NH3,KG)    = rcemis(itot_NH3,KG) + &
             SoilNH3(i,j) * biofac_SOILNH3/Grid%DeltaZ
 !DSA12        rcbio(BIO_SOILNH3,KG)    = SoilNH3(i,j) * biofac_SOILNH3/Grid%DeltaZ
-        EmisNat(i,j, ispec_NH3) =  SoilNH3(i,j) * 1.0e-9/3600.0
+        EmisNat(ispec_NH3,i,j) =  SoilNH3(i,j) * 1.0e-9/3600.0
     end if
      
  
@@ -630,7 +630,7 @@ module Biogenics_ml
             canopy_ecf(BIO_ISOP,it2m),canopy_ecf(BIO_TERP,it2m) /) )
       call datewrite("DBIO EISOP EMTP EMTL ESOIL ", (/  E_ISOP, &
              E_MTP, E_MTL, SoilNOx(i,j) /) ) 
-      call datewrite("DBIO EmisNat ", EmisNat(i,j,:) )
+      call datewrite("DBIO EmisNat ", EmisNat(:,i,j) )
 
      end if
 

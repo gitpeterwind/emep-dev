@@ -137,7 +137,7 @@ private
    type(typ_s5i), public, save, dimension(MAX_NUM_DERIV2D) :: OutputFields
    integer, public, save :: nOutputFields = 0
 
-   type(typ_s5i), public, parameter, dimension(78) :: &
+   type(typ_s5i), public, parameter, dimension(79) :: &
       OutputConcs = (/  &
 !
 ! Here we use the 4th text field to give the "class" or "typ". Derived_ml
@@ -250,6 +250,7 @@ private
         ,typ_s5i("SURF_ug_PM10_rh50" ,  "ug" ,  D2,"PM10_rh50 ","MISC", D)&  !tno78
 
 !---------------------------------------------
+        ,typ_s5i("RN222     ", "ppb", D2,"AIR_CONCS", SPEC, D)&
        ! ============================================================
        /)
 !TNO         typ_s5i("SO2       ", "ugS", D2,"AIR_CONCS", SPEC, D)&
@@ -257,7 +258,6 @@ private
 ! Could also add from earlier D2_EXTRA array:
       !,"u_ref             " &
 !.... down to here
-!        ,typ_s5i("RN222     ", "ppb", D2,"AIR_CONCS", SPEC, D)&
 !        ,typ_s5i("RNWATER   ", "ppb", D2,"AIR_CONCS", SPEC, D)&
 ! Omit for CityZen
 !TNO just keep ppb version below

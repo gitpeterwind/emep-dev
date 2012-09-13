@@ -44,10 +44,10 @@
 ! Programmed by Svetlana Tsyro
 !-----------------------------------------------------------------------------
 
-!FEB2012 use ChemSpecs_tot_ml,     only : SeaSalt_f, SeaSalt_c !, SeaSalt_g
+ use Biogenics_ml,         only : EMIS_BioNat, EmisNat  
  use ChemChemicals_ml,     only : species
- use EmisDef_ml,           only : NSS, QSSFI, QSSCO !, QSSGI
- use GridValues_ml,        only : glat, glon
+!ESX  use EmisDef_ml,           only : NSS, QSSFI, QSSCO !, QSSGI
+ use GridValues_ml,        only : glat, glon, i_fdom, j_fdom 
  use Io_Progs_ml,          only : PrintLog
  use Landuse_ml,           only : LandCover, water_fraction
  use LocalVariables_ml,    only : Sub, Grid
@@ -61,6 +61,7 @@
                                   DEBUG_SEASALT, DEBUG_i,DEBUG_j
  use Par_ml,               only : MAXLIMAX,MAXLJMAX   ! => x, y dimensions
  use PhysicalConstants_ml, only : CHARNOCK, AVOG ,PI
+ use Setup_1dfields_ml,    only : rcemis   ! ESX
  use SmallUtils_ml,        only : find_index
  use TimeDate_ml,          only : current_date
 
@@ -74,8 +75,8 @@
   integer, parameter :: SS_MAAR= 7, SS_MONA= 3, &   !Number size ranges for
                                                     !Maartinsson's and Monahan's
                         NFIN= 7, NCOA= 3      , &   !Number fine&coarse bins 
-!                        NFIN= 7, NCOA= 2, NGIG= 1, &   
                         SSdens = 2200.0             ! sea salt density [kg/m3]
+!TEST                      NFIN= 7, NCOA= 2, NGIG= 1, &   
 
   real, save, dimension(SS_MAAR) :: dp3, a, b
   real, save, dimension(SS_MAAR+1) :: log_dbin
@@ -86,6 +87,13 @@
   logical, private, save :: my_first_call = .true.
   logical, private, save :: seasalt_found
   integer, private, save :: iseasalt   ! index of SEASALT_F
+
+ ! Indices for the species defined in this routine. Only set if found
+ ! Hard-coded for 2 specs just now. Could extend and allocate.
+  integer, private, parameter :: NSS = 2
+  integer, private, parameter :: iSSFI=1,  iSSCO=2
+  integer, private, save :: inat_SSFI,  inat_SSCO
+  integer, private, save :: itot_SSFI,  itot_SSCO
 
   contains
 
@@ -99,8 +107,6 @@
   ! Output: SS_prod - fluxes of fine and coarse sea salt aerosols [molec/cm3/s]
   !-----------------------------------------------------------------------
 
-   implicit none
-
    integer, intent(in) :: i,j    ! coordinates of column
    logical, intent(in) :: debug_flag
 
@@ -108,6 +114,7 @@
    integer :: ii, jj, nlu, ilu, lu
    real    :: invdz, n2m, u10, u10_341, Tw, flux_help, total_flux
    real    :: ss_flux(SS_MAAR+SS_MONA), d3(SS_MAAR+SS_MONA) 
+   real    :: rcss(NSS)
 !//---------------------------------------------------
  
   if ( my_first_call ) then 
@@ -115,14 +122,19 @@
     ! We might have USE_SEASALT=.true. in ModelConstants, but the
     ! chemical scheme might not have seasalt species. We check.
 
-    iseasalt = find_index("SEASALT_F", species(:)%name )
-    if(DEBUG_SEASALT ) write(*,*)"SSALT INIT", iseasalt, debug_flag
+    !ESX iseasalt = find_index("SEASALT_F", species(:)%name )
+    inat_SSFI = find_index( "SEASALT_F", Emis_BioNat(:) )
+    inat_SSCO = find_index( "SEASALT_C", Emis_BioNat(:) )
+    itot_SSFI = find_index( "SEASALT_F", species(:)%name    )
+    itot_SSCO = find_index( "SEASALT_C", species(:)%name    )
 
-    allocate(SS_prod(NSS,MAXLIMAX,MAXLJMAX))
+    if(DEBUG_SEASALT ) write(*,*)"SSALT INIT", inat_SSFI, itot_SSFI, debug_flag
 
-    if ( iseasalt < 1 ) then
+    !ESX allocate(SS_prod(NSS,MAXLIMAX,MAXLJMAX))
+
+    if ( inat_SSFI < 1 ) then
        seasalt_found = .false.
-       SS_prod(:,:,:) = 0.0
+       !SS_prod(:,:,:) = 0.0
        call PrintLog("WARNING: SeaSalt asked for but not found",MasterProc)
     else
         seasalt_found = .true.
@@ -139,14 +151,23 @@
  !....................................
 
 
-    SS_prod(:,i,j) = 0.0
+    !ESX SS_prod(:,i,j) = 0.0
+    !EmisNat( inat_SSFI,i,j) = 0.0
+    !EmisNat( inat_SSCO,i,j) = 0.0
 
 
-    if ( .not. Grid%is_NWPsea .or. Grid%snowice ) return ! quick check
+    if ( .not. Grid%is_NWPsea .or. Grid%snowice ) then ! quick check
+       EmisNat( inat_SSFI,i,j) = 0.0
+       EmisNat( inat_SSCO,i,j) = 0.0
+       rcemis( itot_SSFI,KMAX_MID) = 0.0
+       rcemis( itot_SSCO,KMAX_MID) = 0.0
+       return
+    end if
 
 
 !// Loop over the land-use types present in the grid
 
+     rcss(:) = 0.0
      nlu = LandCover(i,j)%ncodes
      do ilu= 1, nlu
        lu =  LandCover(i,j)%codes(ilu)
@@ -158,8 +179,9 @@
        if ( Sub(lu)%is_water ) then
 
           if(DEBUG_SEASALT .and. debug_flag) then
-              write(6,'(a,f8.4,f12.4,3f8.3)') &
-                'SSALT ** CHAR, ustar_nwp, d, Z0, SST ** ',&
+              write(6,'(a,2i4,f8.4,f12.4,3f8.3)') &
+                'SSALT ** Charnock, ustar_nwp, d, Z0, SST ** ',&
+                   i_fdom(i), j_fdom(j), & 
                    CHARNOCK,Grid%ustar,Sub(lu)%d,Sub(lu)%z0, sst(i,j,1)
           end if
 
@@ -231,29 +253,38 @@
 
    if(DEBUG_SEASALT .and. debug_flag) write(6,'(a20,es13.3)') 'SSALT Total SS flux ->  ',  total_flux
 
-!.. conversion factor from [part/m2/s] to [molec/cm3/s]
+
+  !ESX n2m = n_to_mSS * invdz *AVOG / species(iseasalt)%molwt *1.0e-15
+  ! convert [part/m2/s] to [molec/cm3/s] required for differential equations.
+  !1).  n_to_mSS =PI*SSdens/6.0  - partfrom number to mass conversion 
+  !                                  (as M = PI/6 * diam^3 * density * N)
+  !2).  1.0e-15 = e-18 * e3 (where e-18 is to convert [um3] to [m3] in diam^3;i
+  !                                     and e3 is [kg] to [g] in density).
+  !3)    (then mass is converted to [molec] with AVOG/MotW)
 
           invdz  = 1.0e-6 / Grid%DeltaZ       ! 1/dZ [1/cm3]
-  !FEB2012b        ipoll = find_index("SEASALT_F", species(:)%name )
-  !FEB2012        n2m = n_to_mSS * invdz *AVOG / species(SeaSalt_f)%molwt *1.0e-15
-          n2m = n_to_mSS * invdz *AVOG / species(iseasalt)%molwt *1.0e-15
 
-!.. Fine particles emission [molec/cm3/s]
+          n2m = n_to_mSS * invdz *AVOG / species(itot_SSFI)%molwt *1.0e-15
+
+!.. Fine particles emission [molec/cm3/s] need to be scaled to get units kg/m2/s consistent with
+! Emissions_ml (snapemis). Scaling factor is 
           do ii = 1, NFIN
-               SS_prod(QSSFI,i,j) = SS_prod(QSSFI,i,j)   &
+               rcss( iSSFI) = rcss( iSSFI) + &  
+                 !! ESX SS_prod(QSSFI,i,j) = SS_prod(QSSFI,i,j)   &
                                   + ss_flux(ii) * d3(ii) * n2m   &
                                   * water_fraction(i,j) 
             if(DEBUG_SEASALT .and. debug_flag) &
-            write(6,'(a20,i5,2es13.4)') 'SSALT Flux fine ->  ',ii,d3(ii),SS_prod(QSSFI,i,j)
+            write(6,'(a20,i5,2es13.4)') 'SSALT Flux fine ->  ',ii,d3(ii), rcss( iSSFI ) !ESX SS_prod(QSSFI,i,j)
           enddo
 
 !..Coarse particles emission [molec/cm3/s]
           do ii = NFIN+1, NFIN+NCOA
-               SS_prod(QSSCO,i,j) = SS_prod(QSSCO,i,j)   &
+               rcss( iSSCO ) = rcss( iSSCO ) + &
+                 !!ESX SS_prod(QSSCO,i,j) = SS_prod(QSSCO,i,j)   &
                                   + ss_flux(ii) * d3(ii) * n2m   &
                                   * water_fraction(i,j)
             if(DEBUG_SEASALT .and. debug_flag) &
-            write(6,'(a20,i5,2es13.4)') 'SSALT Flux coarse ->  ',ii,d3(ii),SS_prod(QSSCO,i,j)
+            write(6,'(a20,i5,2es13.4)') 'SSALT Flux coarse ->  ',ii,d3(ii), rcss( iSSCO ) !ESX SS_prod(QSSCO,i,j)
           enddo
 
 !..'Giant' particles emission [molec/cm3/s]
@@ -268,15 +299,23 @@
           if ( (glat(i,j) > 52.0 .and. glat(i,j) < 67.0)     .and.   &  
                (glon(i,j) > 13.0 .and. glon(i,j) < 30.0) )   then 
           
-                 SS_prod(:,i,j) =  0.2 * SS_prod(:,i,j)
+                 !ESX SS_prod(:,i,j) =  0.2 * SS_prod(:,i,j)
+               rcss( iSSFI ) = 0.2 * rcss( iSSFI )
+               rcss( iSSCO ) = 0.2 * rcss( iSSCO )
           endif
   
           if(DEBUG_SEASALT .and. debug_flag) write(6,'(a35,2es15.4)')  &
              '>> SSALT production fine/coarse  >>', &
-                SS_prod(QSSFI,i,j), SS_prod(QSSCO,i,j)
+                rcss(  iSSFI ), rcss( iSSCO )
+                !ESX SS_prod(QSSFI,i,j), SS_prod(QSSCO,i,j)
                           
        endif  ! water
      enddo  ! LU classes
+
+     EmisNat( inat_SSFI, i,j )      = rcss( iSSFI )
+     EmisNat( inat_SSCO, i,j )      = rcss( iSSCO )
+     rcemis ( itot_SSFI, KMAX_MID ) = rcss( iSSFI )
+     rcemis ( itot_SSCO, KMAX_MID ) = rcss( iSSCO )
 
   end subroutine SeaSalt_flux
 

@@ -231,6 +231,65 @@ dsSep9    Trajectory_ml.f90
           Wesely_ml.f90
 
 !----------------------------------------------------------
+xxxxxxxx  rv4rc11 Dave 13/9/2012 xxxxxxxxxxxxxxxxxxxx
+
+New rc system (almost complete). Aim is to use the rc and rcemis arrays
+to cover everything. Also, all "natural" (or meteorology-driven) emissions
+should be treated with the same system, storage in EmisNat.
+
+* The arrays rcss, rcroadd, rcpol have been removed. Now we
+use rcemis for all. (almost complete)
+
+* The old "rcmisc" chemical rates are now part of the "rc" arrays
+
+These new emissions can also be collected in the EmisNat arrays, needing
+no special treatment. This array now covers all emissions which are
+driven by meteorology rather than SNAP-codes. Mainly natural (BVOC,
+dust, SS) but road-dust also enters here.
+
+Status 13th. The new system works, with trivial changes in
+concentrations compared to the old. I still need to fix the units
+in the EmisNat arrays. Will do that before public-release - all
+EmisNat should be identical in units.
+
+This involved changes in  several routines
+
+Biogenics_ml
+   new order of indices in EmisNat
+Derived_ml
+   new order of indices in EmisNat
+Dust_ml
+   "old" DU_prod, DUST_flux now removed
+   emissions into rcemis
+EmisDef
+   no need for NSS, QSSFI, QSSCO - all done in SeaSalt_ml
+Emissions_mk
+   use of rcemis
+GenChem.pl
+   No rcmisc, rctroe arrays, one fewer module produced
+Runchem_ml
+   call to setup_rcemis(i,j) now done before SS, dust etc.
+   deleted use of rcss, rcwbd, etc.
+   road-dust still set here
+SeaSalt_ml
+   "old" SS_prod removed
+   emissions into rcemis
+Setup_1d_ml
+   removed rc_Rn222, use of Dust, SS, pollen
+   removed call to set_rcmisc_rates
+Setup_1dfields_ml.f90
+   removed call to set_rcmisc_rates
+Solver_ml.f90
+   removed rcss, ROADDUST, etc,
+
+ZCM_EmChem09/
+  Dust.reactions - uses rcbio for dust, e.g.
+     rcbio:DUST_WB_F     = DUST_WB_F ;  # Dust
+  Isotopes.reactions - uses rcbio for Rn222, e.g.
+  SeaSalt.reactions  - uses rcbio for SEASALT
+   
+
+
 xxxxxxxx  rv4rc10 12Sep/2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 Alvaro 12 Sep

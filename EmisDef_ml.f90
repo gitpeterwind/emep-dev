@@ -129,9 +129,9 @@ implicit none
 
 
    !SeaSalt
-   integer, public, parameter ::  NSS   = 2 &   ! number of sea salt size modes
-                                 ,QSSFI = 1 &   ! production of fine SS
-                                 ,QSSCO = 2     ! production of coarse SS 
+   !ESX integer, public, parameter ::  NSS   = 2 &   ! number of sea salt size modes
+   !ESX                               ,QSSFI = 1 &   ! production of fine SS
+   !ESX                               ,QSSCO = 2     ! production of coarse SS 
    !Dust
    integer, public, parameter ::  NDU   = 2 &   ! number of dust size modes
                                  ,QDUFI = 1 &   ! production of fine dust
