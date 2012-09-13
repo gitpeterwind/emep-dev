@@ -73,7 +73,7 @@
    use OrganicAerosol_ml, only: ORGANIC_AEROSOLS, OrganicAerosol, &
            Init_OrganicAerosol, & !FEB2012
                   SOA_MODULE_FLAG   ! ="VBS" or "NotUsed"
-   use Pollen_ml,         only : Pollen_flux,Pollen_prod
+   !FUTURE use Pollen_ml,         only : Pollen_flux,Pollen_prod
    use Par_ml,            only : lj0,lj1,li0,li1, limax, ljmax  &
                                 ,gi0, gj0, me &    !! for testing
                                 ,IRUNBEG, JRUNBEG  !! for testing
@@ -81,7 +81,7 @@
    use Setup_1d_ml,       only: setup_1d, &
                                 setup_rcemis, reset_3d
                                 !FUTURE setup_nh3  ! NH3emis (NMR-NH3 project)
-   use Setup_1dfields_ml, only: first_call, & ! DSA12 , rcbio,  &
+   use Setup_1dfields_ml, only: first_call, & 
                                 amk, rcemis, xn_2d  ! DEBUG for testing
    use TimeDate_ml,       only: current_date,daynumber
 
@@ -156,7 +156,7 @@ subroutine runchem(numt)
 
           call setup_1d(i,j)   
 
-          call setup_rcemis(i,j) ! Sets initial rcemis=0.0 ESX moved
+          call setup_rcemis(i,j) ! Sets initial rcemis=0.0
  
           if ( USE_SEASALT )  &
              call SeaSalt_flux(i,j,debug_flag) ! sets rcemis(SEASALT_...)
@@ -164,12 +164,8 @@ subroutine runchem(numt)
           if ( USE_DUST )     &
              call WindDust (i,j,debug_flag) ! sets rcemis(DUST...)
 
-          if ( USE_Pollen .and. daynumber >  59) &
-             call Pollen_flux (i,j,debug_flag)
-             !if (debug_) write(6,*) "2 Runchem polled_prod",&
-             !                              Pollen_prod(1,i,j)
-
-!ESX            call setup_rcemis(i,j) ! Sets initial rcemis. DSA12 moved
+          !FUTURE if ( USE_Pollen .and. daynumber >  59) &
+             !FUTURE call Pollen_flux (i,j,debug_flag)
 
           call Setup_Clouds(i,j,debug_flag)
 

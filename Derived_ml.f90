@@ -109,7 +109,7 @@ use Par_ml,    only: MAXLIMAX,MAXLJMAX, &   ! => max. x, y dimensions
                      gi0,gj0,IRUNBEG,JRUNBEG,&! for i_fdom, j_fdom
                      li0,lj0,limax, ljmax    ! => used x, y area
 use PhysicalConstants_ml,  only : PI,KAPPA
-use Pollen_ml,      only: AreaPOLL
+!FUTURE use Pollen_ml,      only: AreaPOLL
 use SmallUtils_ml,  only: find_index, LenArray, NOT_SET_STRING
 use TimeDate_ml,    only: day_of_year,daynumber,current_date
 use Units_ml,       only: Units_Scale,Group_Units
@@ -627,8 +627,8 @@ call AddNewDeriv("SURF_PM25water", "PM25water", "-", "-", "-", &
 call AddNewDeriv("AOD", "AOD", "-", "-", "-", &
                       -99 , -99, F, 1.0,   T, IOU_DAY )
 
-call AddNewDeriv("AreaPOLL", "AreaPOLL", "-", "-", "-", &
-                      -99 , -99, F, 1.0,   F, IOU_DAY )
+!FUTURE call AddNewDeriv("AreaPOLL", "AreaPOLL", "-", "-", "-", &
+!FUTURE                       -99 , -99, F, 1.0,   F, IOU_DAY )
 
 ! As for GRIDAOT, we can use index for the threshold
 call AddNewDeriv( "SOMO35","SOMO",  "SURF","-",   "ppb.day", &
@@ -1087,11 +1087,11 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
                       cfac(iadv_EC_C_WOOD,i,j), cfac(iadv_EC_C_FFUEL ,i,j)
             endif
 
-           case ( "AreaPOLL" )        !/ Aerosol Optical Depth
-
-            forall ( i=1:limax, j=1:ljmax )
-              d_2d( n, i,j,IOU_INST) = AreaPOLL(i,j)
-            end forall
+!FUTURE    case ( "AreaPOLL" )        !/ Aerosol Optical Depth
+!FUTURE
+!FUTURE     forall ( i=1:limax, j=1:ljmax )
+!FUTURE       d_2d( n, i,j,IOU_INST) = AreaPOLL(i,j)
+!FUTURE     end forall
 
           case ( "AOD" )        !/ Aerosol Optical Depth
 
