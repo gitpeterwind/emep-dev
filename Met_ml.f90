@@ -1486,7 +1486,6 @@ if( USE_SOILWATER ) then
        end forall
     endif
 
-    !ds 25/2/2009.. following Branko's comments, 
     ! we limit u* to a physically plausible value over land
     ! to prevent numerical problems, and to account for enhanced
     ! mixing which is usually found over real terrain
@@ -1661,7 +1660,6 @@ if( USE_SOILWATER ) then
     real, dimension(KMAX_BND) :: p_bnd !TESTzi
     real, dimension(KMAX_MID) :: Kz_nwp 
     real    :: Kz_min, stab_h
-!    logical :: Pielke_flag    ! choice in Blackadar/Pielke equations
 
     integer i,j,k,numt, nr
     real :: theta2
@@ -1695,7 +1693,6 @@ if( USE_SOILWATER ) then
     end do
 
 
-! Are the invL and fh comparable??
     if  ( debug_proc .and. DEBUG_Kz) then
       i = debug_iloc
       j = debug_jloc
@@ -1711,8 +1708,7 @@ if( USE_SOILWATER ) then
 
     if (NWP_Kz .and. foundKz_met ) then  ! read from met data
 
-       !hb, +ds rewrote to reduce number of lines. LAter we should remove Kz_met
-       ! and Kz_m2s
+       ! LAter we should remove Kz_met and Kz_m2s
 
        forall(i=1:limax,j=1:ljmax,k=2:KMAX_MID)
              SigmaKz(i,j,k,nr)=Kz_met(i,j,k,nr)/(60*60*3)
@@ -1808,15 +1804,6 @@ if( USE_SOILWATER ) then
                       end do
                    end do
  
-                 !ORIG do i=1,limax
-                 !ORIG   do j=1,ljmax
-
-                 !ORIG     call JericevicRiB_Hmix(&
-                 !ORIG         u_mid(i,j,:), v_mid(i,j,:),  &
-                 !ORIG         z_mid(i,j,:), th(i,j,:,nr),  &
-                 !ORIG         pzpbl(i,j))
-                 !ORIG     end do
-                 !ORIG  end do
               else
                  call CheckStop("Need HmixMethod")
               end if ! end of newer methods
@@ -1851,9 +1838,9 @@ if( USE_SOILWATER ) then
                  Kz_m2s(i,j,k) = JericevicKz( z_bnd(i,j,k), pzpbl(i,j), ustar_nwp(i,j), Kz_m2s(i,j,k) )
                !if v.low zi, then set Kz at bottom boundary
                ! to zero to stop dispersion.
-!OCT2011                 if ( k==KMAX_MID .and. pzpbl(i,j) <= z_bnd(i,j,KMAX_MID) ) then
-!OCT2011                    Kz_m2s(i,j,k) = 0.0
-!OCT2011                 end if
+!                if ( k==KMAX_MID .and. pzpbl(i,j) <= z_bnd(i,j,KMAX_MID) ) then
+!                    Kz_m2s(i,j,k) = 0.0
+!                end if
              end do
              end do
              end do
@@ -1940,8 +1927,6 @@ if( USE_SOILWATER ) then
     !..spatial smoothing of new zi: Need fixed minimum here. 100 or 50 m is okay
     !  First, we make sure coastal areas had "land-like" values.
 
-         !MOVED call landify(pzpbl,pzpbl,NEXTEND) 
-    !MOBVED  call smoosp(pzpbl,PBL_ZiMIN,PBL_ZiMAX)
 
   !************************************************************************!
   ! test some alternative options for Kz and Hmix
@@ -2123,7 +2108,6 @@ if( USE_SOILWATER ) then
     !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
     !c
     !     based upon the smoosp routine
-    !c    adapted by David Simpson March 2011
     !     - returns extended array array, reading neighbour procs as needed
     !c----------------------------------------------------------------------
 
@@ -2193,14 +2177,6 @@ if( USE_SOILWATER ) then
        enddo
     enddo
 
-!    do j=1,jjf
-!       jj=j+thick
-!       do i=1,iif
-!          ii=i+thick
-!          f(i,j)=h2(ii,jj)
-!       enddo
-!    enddo
-!
   end subroutine extendarea
   !  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 

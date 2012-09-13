@@ -1,8 +1,4 @@
 module MetFields_ml
-!  use ModelConstants_ml,   only : KMAX_BND,KMAX_MID,NMET &
-!       ,IIFULLDOM, JJFULLDOM
-!  use Par_ml, only : MAXLIMAX,MAXLJMAX,GIMAX,GJMAX, me  &
-!       ,limax,ljmax,li0,li1,lj0,lj1 
 
   implicit none
   private
