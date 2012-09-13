@@ -397,7 +397,6 @@ subroutine set_output_defs
 !**               name     type     ofmt
 !**               ispec    ix1 ix2 iy1 iy2 nk sellev? unit conv  max
 
-!!!!DS COMMENTS
 !!!! It seems easiest to just use many variables as given in the d_2d arrays. Thus
 !!!! we search for the name as given there using "find_index" below.
 !!!! (As a test I tried both pmfine two ways, one as D2D and the other

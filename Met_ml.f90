@@ -700,9 +700,6 @@ if( USE_SOILWATER ) then
     real :: tmpsw, landfrac, sumland  ! for soil water averaging
     real :: tmpmax ! debug 
 
-    ! Avergaing of soil water used box from +/- NEXTEND (e.g. -1 to +1)
-    !DSA12 real, dimension(MAXLIMAX+2*NEXTEND,MAXLJMAX+2*NEXTEND)  ::&
-    !DSA12      xsw   ! extension of soil water
 
     nr = 2
     if (numt == 1) then
@@ -714,29 +711,9 @@ if( USE_SOILWATER ) then
 
        call Exner_tab()
 
-       !DSA12 debug stuff already set
-
         debug_iloc = debug_li
         debug_jloc = debug_lj
 
-       ! Look for processor containing debug coordinates
-       !DSA12 debug_iloc    = -999
-       !DSA12 debug_jloc    = -999
-!DSA12
-!DSA12print "(a,i2,L2,4i4)", "DSA12 IJBUG START ", me, debug_proc, &
-!DSA12        debug_i, debug_j, debug_li, debug_lj
-!DSA12       do i = 1, limax
-!DSA12          do j = 1, ljmax
-!DSA12!             if (DEBUG_MET .and. &
-!DSA12              if( i_fdom(i) == DEBUG_I .and. j_fdom(j) == DEBUG_J ) then
-!DSA12print *, "DSA12 IJBUG QUERY FOUND  ", me, debug_proc, debug_i, debug_j, debug_li, debug_lj
-!DSA12                debug_proc = .true.
-!DSA12                debug_iloc    = i
-!DSA12                debug_jloc    = j
-!DSA12             end if
-!DSA12          end do
-!DSA12       end do
-!DSA12 print *, "DSA12 IJBUGend " , me, debug_proc, debug_iloc, debug_jloc
        if( debug_proc ) write(*,*) "DEBUG EXNER me", me, Exner_nd(99500.0)
        !-------------------------------------------------------------------
        ! Notes on IFS:
@@ -1223,17 +1200,14 @@ if( USE_SOILWATER ) then
    if( USE_SOILWATER ) then
     if(foundSMI3.or.foundSoilWater_deep)then
 
-      !DSA12 call datewrite("SMD testing water_frac here" , me, (/ -1.0 /) ) 
-      !DSA12 write(*,*) "SMD debug? ", me, debug_proc
       if ( water_frac_set ) then  ! smooth the SoilWater values:
-        !DSA12 call datewrite("SMD found water_frac here" , me, (/ -2.0 /) ) 
 
          ! If NWP thinks this is a sea-square, but we anyway have land,
          ! the soil moisture might be very strange.  We search neighbouring
          ! grids and make a land-weighted mean SW
          ! Skip on 1st numt, since water fraction set a little later. No harm done...
 
-!DSA12 - changed landify routine to accept water_fraction as mask. Should
+! changed landify routine to accept water_fraction as mask. Should
 ! works almost the same as code below did.
 ! Should move later also, after other units converted to SMI
 ! NB  Some grid squares in EECCA have water cover of 99.998
@@ -1244,65 +1218,6 @@ if( USE_SOILWATER ) then
            call landify( SoilWater_uppr(:,:,nr), "SMI_UPPR", &
               -1.0, 1.0, 1.0, water_fraction < 1.0 )
 
-!DSA12           call extendarea( SoilWater_deep(:,:,nr), xsw, DEBUG_SOILWATER)
-!DSA12           call extendarea( SoilWater_deep(:,:,nr), xsw, DEBUG_SOILWATER)
-!DSA12
-!DSA12           if ( .not. xwf_done ) then ! only need to do this once
-!DSA12            call extendarea( water_fraction(:,:),       xwf, DEBUG_SOILWATER)
-!DSA12            xwf_done = .true.
-!DSA12           end if
-!DSA12
-!DSA12           if(DEBUG_SOILWATER .and. debug_proc)&
-!DSA12             write(*,*)'Met_ml water xwf_done: ', me, xwf_done
-!DSA12   
-!DSA12            do j = 1, ljmax
-!DSA12             do i = 1, limax
-!DSA12   
-!DSA12              ! Take a 5x5 average of the land-weighted values for SW. Seems
-!DSA12              !  best not to "believe" NWP models too much for this param, and
-!DSA12              !  the variation in a grid is so big anyway. We aim at the broad
-!DSA12              !  effect. (Alternative might be to find max values?)
-!DSA12
-!DSA12                tmpsw = 0.0  ! Relative SW
-!DSA12                sumland  = 0.0
-!DSA12                if( water_fraction(i,j) < 0.999 ) then !some land
-!DSA12                   do jj = -NEXTEND, NEXTEND
-!DSA12
-!DSA12
-!DSA12                     do ii = -NEXTEND, NEXTEND
-!DSA12                         ii2=i+ii+NEXTEND  ! coord in extended array
-!DSA12                         jj2=j+jj+NEXTEND
-!DSA12                         if( xsw(ii2,jj2) > 1.0e-10 ) then ! have some SW to work with
-!DSA12                            landfrac    =  1.0 - xwf(ii2,jj2) 
-!DSA12                            sumland = sumland +  landfrac
-!DSA12                            tmpsw   = tmpsw + landfrac * xsw(ii2,jj2)
-!DSA12                            if ( DEBUG_SOILWATER .and.i==debug_li.and.j==debug_lj ) then
-!DSA12                              write(*,"(a,2i4,8f10.4)") "METSWX: ", ii2, jj2,&
-!DSA12                                water_fraction(i,j), xwf(ii2,jj2), &
-!DSA12                                SoilWater_deep(i,j,nr),&
-!DSA12                                xsw(ii2,jj2), tmpsw, landfrac, sumland
-!DSA12                            end if ! DEBUG
-!DSA12                         end if ! xsw
-!DSA12                     end do!ii
-!DSA12                   end do!jj
-!DSA12                   if( sumland > 0.01) then
-!DSA12                        SoilWater_deep(i,j,nr) = tmpsw/sumland
-!DSA12                   else
-!DSA12                        SoilWater_deep(i,j,nr) = 1.0 ! same as sea
-!DSA12                   end if
-!DSA12                else
-!DSA12                   SoilWater_deep(i,j,nr) = 1.0 ! same as sea !QUERY!!!!!
-!DSA12                end if ! water_fraction
-!DSA12       
-!DSA12                !if( sumland > 0.1 ) then
-!DSA12                !   SoilWater_deep(i,j,nr) = tmpsw/sumland
-!DSA12                !   if(DEBUG_SOILWATER) call CheckStop( tmpsw > sumland, "METSW ERROR")
-!DSA12                !else
-!DSA12                !   SoilWater_deep(i,j,nr) = 1.0  ! also over water
-!DSA12                !end if
-!DSA12   
-!DSA12             end do ! i
-!DSA12            end do ! j
             if ( DEBUG_SOILWATER.and.debug_proc ) then
 
                i =  debug_li
@@ -1315,7 +1230,6 @@ if( USE_SOILWATER ) then
 
        else ! water_frac not set yet
             ! for sea values we usually have zero or negative. Set to 1.0
-           !DSA12 - NEED TO THINK ABOUT THIS ONE !!!!!
             call CheckStop("ERROR, Met_ml: SMD not set!!  here"  ) 
             !call datewrite("SMD here" , me, (/ -3.0 /) ) 
             !do i = 1, limax
@@ -1335,10 +1249,9 @@ if( USE_SOILWATER ) then
 
     if(SoilWaterSource == "IFS".and.(.not.foundSMI1 .or. .not.foundSMI3 ))then
 !has to convert from m3/m3 to Soil Moisture Index if not already in SMI units
-    !DSA12 -----------------------------------------------
-    !DSA12 - will cope with other met inputs another day
+    !- will cope with other met inputs another day
       call CheckStop('SW SHOULD NOT BE HERE ')
-    !DSA12 -----------------------------------------------
+    !2 -----------------------------------------------
         do j = 1, ljmax    ! NEWTEST 1, MAXLJMAX
         do i = 1, limax   ! NEWTEST 1, MAXLIMAX
           if ( DEBUG_SOILWATER ) then 
@@ -1375,14 +1288,9 @@ if( USE_SOILWATER ) then
            call printCDF('pwp',pwp,' ')
            call printCDF('fc',fc,' ')
 
-!DSA12 done below now.
-!DSA12       SoilWater_uppr(:,:,nr)=max(0.0,SoilWater_uppr(:,:,nr))
-!DSA12       SoilWater_deep(:,:,nr) = max(0.0, SoilWater_deep(:,:,nr) ) 
-
 
     endif
 
-!DSA12 Dave added:
 ! We should now have SMI regardless of soil water data source. We
 ! restrict this to be in range 0 --- 1 for deep soil water. 
 ! For upper-soil water, we allow some negative, since evaporation can dry the soil
@@ -2375,7 +2283,7 @@ if( USE_SOILWATER ) then
            debug_flag = ( DEBUG_LANDIFY .and. debug_proc .and. &
                i==debug_li .and. j==debug_lj )
 
-           !DSA12 if( likely_coastal(i,j) ) then !some land
+           ! if( likely_coastal(i,j) ) then !some land
            if( mask(i,j) ) then ! likely coastal or water_frac <0.0 for SW
               do jj = -NEXTEND, NEXTEND
                 do ii = -NEXTEND, NEXTEND
@@ -2383,7 +2291,7 @@ if( USE_SOILWATER ) then
                     jj2=j+jj+NEXTEND
 
 
-!DSA12 Had 0.5, 1.0e-10 in original for met-data
+!Had 0.5, 1.0e-10 in original for met-data
                     if( xwf(ii2,jj2)<= wfmin .and. &! was 0.5 likely not NWP sea
                         xx(ii2,jj2) <= xxmax .and. &! Valid x range
                         xx(ii2,jj2) >= xxmin ) then ! 
