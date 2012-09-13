@@ -26,9 +26,9 @@
 !*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !*****************************************************************************!
 !_____________________________________________________________________________
-! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+! ----------------------------------------------------------------------------
 module   MassBudget_ml
-! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+! ----------------------------------------------------------------------------
 ! DESCRIPTION
 ! Routine to cross check the mass balance of the model
 !_____________________________________________________________________________
@@ -88,7 +88,7 @@ public :: emis_massbudget_1d
 
 contains
 
-!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+!----------------------------------------------------------------------------
 subroutine Init_massbudget()
 ! Initialise mass-budget - calculate mass of concentrations fields
 ! within 3-D grid, after boundary conditions
@@ -121,8 +121,8 @@ subroutine Init_massbudget()
   endif
 
  endsubroutine Init_massbudget
-!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-!xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+!----------------------------------------------------------------------------
+!xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 subroutine emis_massbudget_1d(i,j)
   integer, intent(in) :: i,j    ! coordinates of column
   integer    :: k, iadv, itot   ! loop variables
@@ -148,7 +148,7 @@ subroutine emis_massbudget_1d(i,j)
   enddo ! k loop
 
 endsubroutine emis_massbudget_1d
-!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+!----------------------------------------------------------------------------
 subroutine massbudget()
 ! sums over all sulphur and nitrogen, so is model independant.
 
@@ -353,26 +353,6 @@ subroutine massbudget()
     enddo
   endif  ! MasterProc
 endsubroutine massbudget
-!>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-!
-!  subroutine DryDep_Budget(i,j,Loss,convfac)
-!     !use ChemSpecs_adv_ml
-!
-!      real, dimension(NSPEC_ADV), intent(in) :: Loss
-!      real, dimension(NSPEC_ADV)             :: DryLoss
-!
-!     real, intent(in)  :: convfac
-!     integer           :: n,nadv,i,j  ! index in IXADV_  arrays
-!
-!     DryLoss(:)=Loss(:)* convfac /amk(KMAX_MID)   !molec/cm3->mix ratio
-!
-!      do n = 1, NDRYDEP_ADV
-!         nadv    = DDepMap(n)%ind
-!         totddep( nadv ) = totddep (nadv) + DryLoss(nadv)
-!
-!      enddo
-!  end subroutine DryDep_Budget
-!
-!>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+!--------------------------------------------------------------------------
  end module MassBudget_ml
 !--------------------------------------------------------------------------

@@ -946,10 +946,10 @@ READEMIS: do   ! ************* Loop over emislist files *******************
             if( DEBUG_ROADDUST .and. i==DEBUG_i .and. j==DEBUG_j ) write(*,*) &
                 "DEBUG RoadDustGet iland, globrdp",iland,globroad_dust_pot(i,j,iland)
 
-!RB   NOTE!!!! A climatological factor is still missing for the road dust!
+!   NOTE!!!! A climatological factor is still missing for the road dust!
 !              should increase the emissions in dry areas by up to a factor of ca 3.3
-!              
 !              Will be based on soil water content
+!              (Fixed later....)
 
              ! Sum over all sectors, store as Ktonne:
 !              if(tmpdust.lt.0.)write(*,*)'neg dust!', tmpdust
