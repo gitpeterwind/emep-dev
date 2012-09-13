@@ -74,14 +74,13 @@
   ! remain zero however
 
   ! Emission arrays:
-!DSA12   real, public, dimension(NBVOC+NSOIL_EMIS,KCHEMTOP:KMAX_MID), save :: rcbio = 0.0 ! BVOC
   !FUTURE real, public, dimension(KCHEMTOP:KMAX_MID), save   :: rcnh3
-   real, public, dimension(KCHEMTOP:KMAX_MID), save   :: rc_Rn222 = 0.0  ! 210Pb
-   real, public, dimension(KCHEMTOP:KMAX_MID), save   :: rc_Rnwater = 0.0  ! TEST
+  ! real, public, dimension(KCHEMTOP:KMAX_MID), save   :: rc_Rn222 = 0.0  ! 210Pb
+  ! real, public, dimension(KCHEMTOP:KMAX_MID), save   :: rc_Rnwater = 0.0  ! TEST
    !ESX real, public, dimension(NSS,KCHEMTOP:KMAX_MID), save :: rcss = 0.0  ! Sea salt
-   real, public, dimension(NDU,KCHEMTOP:KMAX_MID), save :: rcwbd = 0.0 ! windblown dust
-   real, public, dimension(NROADDUST,KCHEMTOP:KMAX_MID), save :: rcroadd = 0.0 ! road traffic dust
-   real, public, dimension(NPOL,KCHEMTOP:KMAX_MID), save :: rcpol = 0.0 ! Pollen (birch)
+  ! real, public, dimension(NDU,KCHEMTOP:KMAX_MID), save :: rcwbd = 0.0 ! windblown dust
+  ! real, public, dimension(NROADDUST,KCHEMTOP:KMAX_MID), save :: rcroadd = 0.0 ! road traffic dust
+  ! real, public, dimension(NPOL,KCHEMTOP:KMAX_MID), save :: rcpol = 0.0 ! Pollen (birch)
 
    real, public, dimension(KCHEMTOP:KMAX_MID), save :: &
           rh                  & ! RH (fraction, 0-1)
