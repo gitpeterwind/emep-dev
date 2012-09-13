@@ -1,5 +1,5 @@
 *
 * <----------- Volcanic ash/natural emissions from _ASH_ ----------------------------->
 *
-rcerup(_ASH__f,k)                      = _ASH__f    ;
-rcerup(_ASH__c,k)                      = _ASH__c    ;
+rcbio:_ASH__f                      = _ASH__f    ;
+rcbio:_ASH__c                      = _ASH__c    ;

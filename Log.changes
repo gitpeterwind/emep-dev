@@ -287,8 +287,12 @@ ZCM_EmChem09/
      rcbio:DUST_WB_F     = DUST_WB_F ;  # Dust
   Isotopes.reactions - uses rcbio for Rn222, e.g.
   SeaSalt.reactions  - uses rcbio for SEASALT
-   
 
+Alvaro 13 Sep:
+
+Solver_ml,Setup_1d_ml,Setup_1d_ml,
+ZCM_Emergency/ASH_2bin.reactions,ASH_7bin.reactions
+  - remove rcerup, use rcbio instead
 
 xxxxxxxx  rv4rc10 12Sep/2012  xxxxxxxxxxxxxxxxxxxxxxx
 
