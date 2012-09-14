@@ -197,13 +197,6 @@ call Init_timing()
 call Code_Timer(tim_before0)
 tim_before = tim_before0
 
-!TRIEDcall Topology(cyclicgrid,Poles)   ! def GlobalBoundaries & subdomain neighbors
-
-
-
-!  current_date = date(startdate )
-!  call Init_nmdays(current_date)
-
 
 call GridRead(cyclicgrid)    !define: 1)grid sizes (IIFULLDOM, JJFULLDOM),
                              !        2)projection (lon lat or Stereographic etc and Poles),
@@ -211,7 +204,6 @@ call GridRead(cyclicgrid)    !define: 1)grid sizes (IIFULLDOM, JJFULLDOM),
                              !        4)subdomain partition (NPROCX, NPROCY, limax,ljmax)
                              !        5)topology (neighbor, poles)
                              !        5)grid properties arrays (xm, i_local, j_local etc.)
-!
 
 call Topology(cyclicgrid,Poles)   ! def GlobalBoundaries & subdomain neighbors
 call DefDebugProc()               ! Sets debug_proc, debug_li, debuglj
@@ -445,23 +437,3 @@ CALL MPI_FINALIZE(INFO)
 end program myeul
 
 !===========================================================================
-!  Experimental NH3 emissions code moved here for safety
-!FUTURE use calc_emis_potential_ml, only: NH3emis_potential,& ! NH3emis experimental
-!FUTURE                              lNH3emis_pot, readNH3emis, lEmis50_nh3
-!FUTURE use NH3Emis_variation_ml,  only: SetNH3               ! NH3emis experimental
-!FUTURE use EmisDef_ml,       only: NH3EMIS_VAR               ! NH3emis experimental
-!FUTURE                             IO_NH3_DEB                ! NH3emis experimental
-!FUTURE ! NH3emis experimental: write temporal emis variation for Tange to file
-!FUTURE if (NH3EMIS_VAR) then
-!FUTURE !  open(IO_NH3_DEB,FILE='out.Tange.dat')
-!FUTURE !  write(IO_NH3_DEB,'(4a7,18a12)')"mm","dd","hh","TIME1","ISO_STABLE",&
-!FUTURE !                 "OPEN_STABLE","STORAGE","WIN_CROP","SPR_CROP",&
-!FUTURE !                 "SPR_SBEET","SPR_GRASS","MANURE1","MANURE2","MANURE3",&
-!FUTURE !                 "MANURE4","MANURE4a","MIN_SPRING","MIN_AUTUMN",&
-!FUTURE !                 "GRAZ_CATTLE","NH3_GRASS","TRAFFIC","SUM "
-!FUTURE   call readNH3emis() !read 16.7km activity NH3 emissions
-!FUTURE   print *,'New ammonia emissions on proc ',me,sum(lEmis50_nh3)
-!FUTURE   call NH3emis_potential(current_date%year) !calc emission potential
-!FUTURE   print *,'Potential emissions on proc '  ,me,sum(lNH3emis_pot)
-!FUTURE endif
-!FUTURE 
