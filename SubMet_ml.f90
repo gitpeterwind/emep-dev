@@ -125,7 +125,6 @@ real :: theta2
 
     ! initial guesses for u*, t*, 1/L
         Sub(iL)%ustar  = Grid%ustar      ! First guess = NWP value
-        !FEB2009 Sub(iL)%invL   = Grid%invL       ! First guess = NWP value
         Sub(iL)%invL   = 0.0       ! Start at neutral...
         Sub(iL)%Hd     = Grid%Hd         ! First guess = NWP value
         Sub(iL)%LE     = Grid%LE         ! First guess = NWP value
@@ -187,11 +186,10 @@ real :: theta2
              z_3m   = 3.0       ! 3m above sea surface
 
         else if ( Sub(iL)%is_forest ) then ! forest
-           ! We restrict z0 to 0.5m, since comparison with CarboEurope
-           ! results shows that this provides the best u* values for
+           ! We restrict z0 to 1.0m, since comparison with CarboEurope
+           ! results shows that this provides better u* values for
            ! forests.
              Sub(iL)%d  =  0.78 * Sub(iL)%hveg   ! Jarvis, 1976
-             !Sub(iL)%z0 =  min( 0.07 * Sub(iL)%hveg, 0.5 )
              Sub(iL)%z0 =  min( 0.07 * Sub(iL)%hveg, 1.0 )
              z_1m   = (Sub(iL)%hveg + 1.0) - Sub(iL)%d
              z_3m   = max(3.0,Sub(iL)%hveg)
@@ -227,15 +225,12 @@ real :: theta2
     !TEST if ( Grid%Hd > -1 ) NITER = 2  ! Almost neutral to unstable
     !TEST if ( Grid%Hd > 1  ) NITER = 4  ! more unstable
 
-    !NEW
-
      if ( FluxPROFILE == "Ln95") then !TESTING
 
         theta2 = Grid%t2 * T_2_Tpot( Grid%psurf )
         call Launiainen1995( Grid%u_ref, Sub(iL)%z_refd, Sub(iL)%z0, Sub(iL)%z0, &
          theta2, Grid%theta_ref, Sub(iL)%invL )
 
-       !NOW DIRECT!
         Sub(iL)%ustar = Grid%u_ref * KARMAN/ &
          (log( Sub(iL)%z_refd/Sub(iL)%z0 ) - PsiM( Sub(iL)%z_refd*Sub(iL)%invL)&
            + PsiM( Sub(iL)%z0*Sub(iL)%invL ) )
@@ -284,7 +279,7 @@ real :: theta2
       !.. we limit the range of 1/L to prevent numerical and printout problems
       !   This range is very wide anyway.
 
-        !FEB2009 Sub(iL)%invL  = max( -1.0, Sub(iL)%invL ) !! limit very unstable
+        ! Sub(iL)%invL  = max( -1.0, Sub(iL)%invL ) !! limit very unstable
         ! Sub(iL)%invL  = min(  1.0, Sub(iL)%invL ) !! limit very stable
 
       ! To a good approx we could omit the PsiM(z0/L) term, but needed at ca. invL->-1

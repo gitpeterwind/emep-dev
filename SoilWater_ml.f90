@@ -70,9 +70,8 @@ module SoilWater_ml
 contains
 
   ! WARNING - THE SOIL MOISTURE WORK IS STILL UNDERWAY, AND IS NOT
-  ! FUNCTIONING FOR THE IFS METEOROLOGY USED IN THE OPENSOURCE 2011
-  ! CODE. THE CODE BELOW WORKS FOR PARLAM METEOROLOGY, BUT STILL NEEDS
-  ! TESTING. RECOMMENDATION = USE_SOILWATER = .false. in ModelConstants_ml
+  ! FUNCTIONING FOR ALL POSSIBLE METEOROLOGY INPUTS.
+  ! If in doubt, set USE_SOILWATER = .false. in ModelConstants_ml
    subroutine Set_SoilWater()
       integer :: i, j, hourloc
       logical :: my_first_call = .true.
@@ -104,8 +103,6 @@ contains
              mydebug = ( DEBUG_SOILWATER .and. debug_proc.and. i==debug_li.and.j==debug_lj ) 
              if ( mydebug ) write(*,*) "CHECK_SWF", hourloc, " date ", current_date
 
-!TMP          !if ( nwp_sea(i,j) .and. water_fraction(i,j) < 0.9 ) then
-!TMP          if ( water_fraction(i,j) < 0.9 ) then
 
              if ( my_first_call ) hourloc = 3 ! fake to get started
              if ( hourloc /= 3  ) cycle  ! Only set one per day, at 3am
