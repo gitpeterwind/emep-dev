@@ -23,7 +23,7 @@ interface Group_Units
   module procedure Group_Units_Asc2D,Group_Units_detail
 end interface Group_Units
 
-!ds    real, save    :: ugPM  = PPBINV /ATWAIR  ! No multiplication needed
+!    real, save    :: ugPM  = PPBINV /ATWAIR  ! No multiplication needed
 real, private, parameter :: &
   atwC  = 12.0,             &
   ugXm3 = PPBINV/ATWAIR,    & ! will be multiplied by species(?)%molwt
