@@ -272,8 +272,9 @@ contains
 
      endif ! VOLCANOES
 
-    if(USE_EMERGENCY.and.Eruption_found)&       ! Volcanic ASH & SO2
-      rcemis(:,:)=rcemis(:,:)+EruptionRate(i,j) ! contribution from eruption
+! Contribution from Volcanic eruption. EruptionRate(i,j) returns an array of 
+    if(USE_EMERGENCY.and.Eruption_found)&       ! rcemis size, only SO2 and
+      rcemis(:,:)=rcemis(:,:)+EruptionRate(i,j) ! ASH tracers have rates/=0.
 
     !/** lightning and aircraft ... Airial NOx emissions if required:
 
