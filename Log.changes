@@ -133,19 +133,19 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 LIST OF CODE needing quick check before Sep 2012 release
 
-Checked/
+Checked (vaguely)/
 cleaned
           Advection_ml.f90
 dsSep9    Aero_Vds_ml.f90
 dsSep13   Aero_water_ml.f90
 dsSep10   AirEmis_ml.f90
-          Ammonium_ml.f90
-          AOD_PM_ml.f90
+dsSep14   Ammonium_ml.f90
+dsSep14   AOD_PM_ml.f90
 dsSep9    AOTnPOD_ml.f90
           Aqueous_n_WetDep_ml.f90
 dsSep13   Biogenics_ml.f90
           BLPhysics_ml.f90
-          BoundaryConditions_ml.f90
+dsSep14   BoundaryConditions_ml.f90
 dsSep9    CellMet_ml.f90
 dsSep9    CheckStop_ml.f90
 dsSep9    ChemFunctions_ml.f90 - query to st
@@ -191,12 +191,12 @@ dsSep13   Met_ml.f90
 dsSep13   MicroMet_ml.f90
           ModelConstants_ml.f90
 dsSep9    MosaicOutputs_ml.f90
-          My_Aerosols_ml.f90
+dsSep14   My_Aerosols_ml.f90
           My_Derived_ml.f90
-          My_ExternalBICs_ml.f90
-          My_Outputs_ml.f90
-          My_SOA_ml.f90
-          Nest_ml.f90
+dsSep14   My_ExternalBICs_ml.f90
+dsSep14   My_Outputs_ml.f90
+dsSep14   My_SOA_ml.f90
+dsSep14   Nest_ml.f90
           NetCDF_ml.f90
 dsSep13   OutputChem_ml.f90
 dsSep13   Output_hourly.f90
@@ -214,16 +214,16 @@ dsSep13   SeaSalt_ml.f90
 dsSep13   Setup_1dfields_ml.f90
 dsSep13   Setup_1d_ml.f90
 dsSep13   Sites_ml.f90
-          SmallUtils_ml.f90
-          SoilWater_ml.f90
+dsSep14   SmallUtils_ml.f90
+dsSep14   SoilWater_ml.f90
 !dsSep13  Solver.f90
-          StoFlux_ml.f90
-          SubMet_ml.f90
+dsSep14   StoFlux_ml.f90
+dsSep14   SubMet_ml.f90
 dsSep9    Tabulations_ml.f90
-          TimeDate_ExtraUtil_ml.f90
-          TimeDate_ml.f90
+dsSep14   TimeDate_ExtraUtil_ml.f90
+dsSep14   TimeDate_ml.f90
 dsSep13   Timefactors_ml.f90
-          Timing_ml.f90
+dsSep14   Timing_ml.f90
 dsSep9    Trajectory_ml.f90
 dsSep14   Unimod.f90
 dsSep14   Units_ml.f90
