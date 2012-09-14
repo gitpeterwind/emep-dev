@@ -1,28 +1,11 @@
 module OrganicAerosol_ml
 
   ! Calculates the amount of condensible species in the gas and aerosol phases. 
-  ! Simple starting module, with alpha-K methodology for 2 aromatic
-  ! and 4 monoterpene species.
   !
   ! References:
-  !   AS2001: Andersson-Sk\"old, Y. and Simpson, D., 2001, Secondary Organic
-  !     Aerosol Formation in Northern Europe: a Model Study, JGR, 106, D7,
-  !     7357-7374
-  ! 
-  !   CS2002: Chung, S. H., and J. Seinfeld (2002), Global distribution and
-  !     climate forcing of carbonaceous aerosols, \textitJ. Geophys. Res.,
-  !     107(D19), doi: 101029/2001JD001397.
-  !
-  !   Pun2003: Pun, B., S. Wu, C. Seigneur, J. Seinfeld, R. Griffin, and 
-  !     A. Pandis (2003), Uncertainties in Modeling Secondary Organic 
-  !     Aerosols: Three-dimensional Modeling Studies in Nashville/Western
-  !     Tennessee, Environ. Sci.  Tech., 37, 3647-3661.
-  !
-  !   Pankow:  (1994a,b), An absorption model of gas/particle partitioning
-  !     of organic compounds in the atmosphere, Atmospheric Environment,
-  !     28(2), 185-188   ** AND **  189-193    
-  ! 
-  !   S2007: Simpson, D. et al., 2007, 
+  !   S2007: Simpson, D. et al., JGR, 2007, 
+  !   B2012: Bergström, R. et al., ACP (in press Sept.), 2012, 
+  !   S2012: Simpson, D. et al., ACP, 2012, 
   !
   !
   ! Usage: call OrganicAerosol from Runchem, after setup of column data
@@ -40,12 +23,9 @@ module OrganicAerosol_ml
   ! NB- we exclude use of gamma for now, but leave commented out code
   !-----------------------------------------------------------------------------
   !
-  ! Dave Simpson, August 2001 -- Mar. 2009
+  ! Dave Simpson, August 2001 -- 2012
+  ! Robert Bergström     2010 -- 2012
   ! 
-  ! NOTE!! 11 AUg 2011: This version of My_SOA_ml is under construction for use with the EMEP VBS
-  !        SOA models. The model is under development and changes are likely without warning.
-  !        If you want to use this model it is probably a good idea to contact David Simpson
-  !        and/or Robert Bergström first.  
   !--------------------------------------------------------------------------
 
   ! Functions + GridValues + PT only for BGNDOC
@@ -61,20 +41,8 @@ module OrganicAerosol_ml
     ,BSOA => BSOA_GROUP &
     ,ECFINE => ECFINE_GROUP &                    
     ,SVFFUELOA25  => SVFFUELOA25_GROUP & ! semi-volatile FFUELOA25 
-                                         !  (=total POA+OPOA!)
-!
-!XResearch      ,PFFUELOA25  => PFFUELOA25_GROUP & ! for VBS primary FFUELOA25 not needed but may be helpful to separate POA from OPOA, QUERY/OPEN ISSUE: Should perhaps include non-volatile POA as well? 
-!Research      ,OFFUELOA25  => OFFUELOA25_GROUP & ! for VBS oxidised FFUELOA25 (aged POA)
-!Research      ,OX_OFFUELOA25 => OFFOAEXTRAO25_GROUP &! for VBS FFUELOA25_OC with aging (added "oxygen")
       ,SVWOODOA25  => SVWOODOA25_GROUP &    ! for VBS semivolatile WOOD BURNING OA (primary + aged!)
-!XResearch      ,PWOODOA25  => PWOODOA25_GROUP &  ! for VBS primary WOOD BURNING OA not needed but may be helpful to separate POA from OPOA, QUERY/OPEN ISSUE: Should perhaps include non-volatile WOOD BURNING OA as well? 
-!Research      ,OWOODOA25  => OWOODOA25_GROUP &  ! for VBS oxidised (aged) WOOD BURNING OA 
-!Research      ,OX_OWOODOA25 => OWOODOAEXTRAO25_GROUP & ! for VBS WOOD BURNING OA with aging (added "oxygen")
       ,SVFFIREOA25  => SVFFIREOA25_GROUP &    ! for VBS semivolatile Wildfire OA (primary + aged!)
-!XResearch      ,PFFIREOA25  => PFFIREOA25_GROUP &  ! for VBS primary Wildfire OA not needed but may be helpful to separate POA from OPOA, QUERY/OPEN ISSUE: Should perhaps include non-volatile FFIRE POA as well? 
-!Research      ,OFFIREOA25  => OFFIREOA25_GROUP &  ! for VBS oxidised (aged) Wildfire OA
-!Research      ,OX_OFFIREOA25 => OFFIREOAEXTRAO25_GROUP & ! for VBS Wildfire OA with aging (added "oxygen")
-!
   ,FFUELEC     => FFUELEC_GROUP &
   ,NVFFUELOC25 => NVFFUELOC25_GROUP & ! non-vol. FFUELOC emis. (in PM2.5)
   ,NVFFUELOCCO => NVFFUELOC_COARSE_GROUP & ! non-vol. " " , (PM2.5-10 frac.)
@@ -141,7 +109,7 @@ module OrganicAerosol_ml
    ! TMP??? Excluding NVOL for now?
 
     real, private, dimension(S1:S2,K1:K2), save :: ug_semivol 
-!dsrb - use new NONVOLOC grpup to define:
+! - use new NONVOLOC grpup to define:
     integer, private, parameter :: NUM_NONVOLPCM = size(NONVOLPCM_GROUP)
     integer, private, parameter :: NUM_NVABSOM = size(NVABSOM_GROUP)
 !    integer, private, parameter, dimension(NUM_NONVOL) ::  &
@@ -207,7 +175,6 @@ module OrganicAerosol_ml
 
     !=========================================================================
     ! Set up Tables for Fcond 
-       !  Smog-chamber data from 310K
        ! Ci = 1.0e6*P0/RT 
        ! Now, pi(T) = Ai exp(-Hi/RT)
        ! And pi(T) = Pi(Tref) * exp( H/RT * (1/Tref - 1/T) )
@@ -216,7 +183,7 @@ module OrganicAerosol_ml
        do is=S1,S2
          do it=CHEMTMIN,CHEMTMAX
 
-!rb: C*-values are given for 298K according to most(?) publications.
+         ! C*-values are given for 298K according to most(?) publications.
            tabCiStar(is,it) = species(is)%CiStar * 298./it * &
                   exp( species(is)%DeltaH * kJ/RGAS_J * (1.0/298. - 1.0/it) )
          end do
@@ -227,13 +194,12 @@ module OrganicAerosol_ml
             do is = S1, S2
                write(6,"(a,i4,a16,f7.1,i3,8es12.3)") &
                 " Tab SOA: MW, Carbons, C*:", is, trim(species(is)%name), &
-                 species(is)%molwt, species(is)%carbons, & !VBStabVPsoa(is,298)
+                 species(is)%molwt, species(is)%carbons, & 
                  tabCiStar(is,273), tabCiStar(is,303)
             end do
          end if
 
 
-       !Feb2012:
        ! print *, "FEB2012 ALLOCATE ", S1,S2, K1, K2
          allocate( Fgas3d(S1:S2,LIDIM,LJDIM,K1:K2) )
 
@@ -254,7 +220,6 @@ module OrganicAerosol_ml
         my_first_call = .false.
     end if ! my_first_call
 
-    ! FEB2012
     ! We need to set Fgas at start of each Runchem i,j loop, as it is
     ! used for rcemis:
 
@@ -291,15 +256,6 @@ module OrganicAerosol_ml
 
    if( DEBUG .and. debug_flag) write(unit=*,fmt=*) "Into SOA"
 
-   !FEB2012 nif ( my_first_call ) then
-
-   !FEB2012 n    call Init_OrganicAerosol(debug_flag)
-   !FEB2012 n    my_first_call = .false.
-
-   !FEB2012 nendif
-
-
-
 ! Note that xn(SOA) is not strictly needed with the method we have, but it
 ! is a good first guess of the sum of the condensed phases, enables easy output
 ! and saves the need for iteration. 
@@ -307,36 +263,20 @@ module OrganicAerosol_ml
 ! Remember also that Fgas is saved, so will initially have been set by the
 ! preceding call to OrganicAerosol for a different set of i,j.
 
- !VBS forall(i=S1:S2,k=K1:K2)
- !VBS     tabRTpL( i, k) = 1.0e-6 * RGAS_J * itemp(k) / tabVpsoa(i,itemp(k))
- !VBS end forall
-
-
  ! 1st guesses:
 
-!  Fgas(S1:S2,:)   =  Grid_SOA_Fgas(S1:S2,i_pos,j_pos,:)
   COA(:)          =  Grid_COA(i_pos,j_pos,:)
-  !VBS avg_mw(:)    =  Grid_avg_mw(i_pos,j_pos,:)
-     !EXC gamma(:,:) = SOA_gamma(:,i_pos,j_pos,:)
 
 
  ! ============ Non-volatile species first ============================
  ! NVABSOM - Only include fine OM! That is no EC and no coarse OM!
 
   do i = 1, NUM_NVABSOM  ! OA/OC for POC about 1.333
-    !dsrb ispec = NONVOLOC(i)
     ispec = NVABSOM_GROUP(i)
 
     ug_nonvol(i,:) = molcc2ugm3 * xn(ispec,:)*species(ispec)%molwt
 
-!rb: something is strange with the output from sites (at least) for the non-volatile components test setting Fpart to 1 here also (but should not really be necessary since it is already done in the initialisation above)
-!FEB2012    Fpart(i,:)=1.0
-!FEB2012    Fgas(i,:)=0.0
-
   end do
-  !do k = K1, K2 
-  !  ug_ecf(k) = molcc2ugm3 * sum( xn(ECFINE,k) ) * 12.0 !! *species(ispec)%molwt
-  !end do
 
   ! ============ SOA species now, iteration needed ===================
 
@@ -380,12 +320,10 @@ module OrganicAerosol_ml
          if( iter == NITER .and. seconds == 0 ) then
            write(unit=6,fmt="(a,i2,a,3i3,f7.2)") "Iteration ", Niter, &
                 " ======== ",nmonth, nday, nhour, itemp(K2)
-         !NITER end if 
            write(unit=6,fmt="(a3,a15,3a10,a4,4a10)") "SOA","Species", "xn", &
                "Ci* ", "Ki"," ", "Fpart", "ng"
 
            do i = 1, NUM_NONVOLPCM
-              !dsrb ispec = NONVOLOC(i)
               ispec = NONVOLPCM_GROUP(i)
 !              write(unit=6,fmt="(a4,i3,a15,es10.2,2f10.3,a4,es10.3,f13.4)")&
 !                "NVOL", ispec,&
@@ -432,8 +370,8 @@ module OrganicAerosol_ml
    Grid_COA(i_pos,j_pos,:)              = COA(:)
    Fgas3d(S1:S2,i_pos,j_pos,:) = Fgas(S1:S2,:) !FEB2012
 
-!CITYZEN. PCM_F is for output only. Has MW 1 to avoid confusion with OC
-!do not use ugC outputs, just ug
+! PCM_F is for output only. Has MW 1 to avoid confusion with OC
+! do not use ugC outputs, just ug
 
    xn(PART_OM_F,:)  =  COA(:) * ugC2xn * 12.0
 
@@ -443,7 +381,7 @@ module OrganicAerosol_ml
 
   ! Outputs, ugC/m3
 
-  !RB: Would like to be able to store also total OM (not only OC) 
+  ! Would like to be able to store also total OM (not only OC) 
   !    at least for some components. And for a "total" OM and/or OM2.5 and OM10. 
   !    Total TC and EC (and TC2.5, TC10, EC2.5 and EC10) would also be useful.
   !    Also perhaps the names of these species should reflect 
@@ -457,26 +395,17 @@ module OrganicAerosol_ml
      xn(NONV_FFUELOC_COARSE,k) = sum ( xn(NVFFUELOCCO,k) *species(NVFFUELOCCO)%carbons)
      xn(NONVOL_WOODOC25,k)  = sum ( xn(NVWOODOC25,k)  *species(NVWOODOC25)%carbons )
      xn(NONVOL_FFIREOC25,k)  = sum ( xn(NVFFIREOC25,k)  *species(NVFFIREOC25)%carbons )
-!RB want to have PART_FFUELOA25/FFIREOA/WOODOA_OC working also with nonvolatile POA emissions, test this hard coded version first
+! want to have PART_FFUELOA25/FFIREOA/WOODOA_OC working also with nonvolatile POA emissions, test this hard coded version first
      xn(PART_FFUELOA25_OC,k)  = sum ( Fpart(SVFFUELOA25,k) *xn(SVFFUELOA25,k) *species(SVFFUELOA25)%carbons ) + &
      xn(NONVOL_FFUELOC25,k)
-!Research     xn(GAS_FFUELOA_OC,k)  = sum ( Fgas(SVFFUELOA25,k) *xn(SVFFUELOA25,k) *species(SVFFUELOA25)%carbons )
-!Research     xn(PART_OFFUELOA25_OC,k)  = sum ( Fpart(OFFUELOA25,k) *xn(OFFUELOA25,k)  *species(OFFUELOA25)%carbons )
-!Research     xn(GAS_OFFUELOA_OC,k)  = sum ( Fgas(OFFUELOA25,k) *xn(OFFUELOA25,k)  *species(OFFUELOA25)%carbons )
-!Research     xn(PART_XO_OFFLOA25_O,k)  = sum ( Fpart(OX_OFFUELOA25,k) *xn(OX_OFFUELOA25,k) )
-!Research     xn(GAS_XO_OFFLOA_O,k)  = sum ( Fgas( OX_OFFUELOA25,k) *xn(OX_OFFUELOA25,k) )
      xn(PART_WOODOA25_OC,k)  = sum ( Fpart(SVWOODOA25,k) *xn(SVWOODOA25,k)  *species(SVWOODOA25)%carbons )  + &
      xn(NONVOL_WOODOC25,k) 
-!PPOA     xn(PART_OWOODOA25_OC,k)  = sum ( Fpart(OWOODOA25,k) *xn(OWOODOA25,k)  *species(OWOODOA25)%carbons )
-!PPOA     xn(PART_XO_OWDOA25_O,k)  = sum ( Fpart(OX_OWOODOA25,k) *xn(OX_OWOODOA25,k) )
      xn(PART_FFIREOA25_OC,k)  = sum ( Fpart(SVFFIREOA25,k) *xn(SVFFIREOA25,k)  *species(SVFFIREOA25)%carbons )  + &
        xn(NONVOL_FFIREOC25,k)
-!PPOA     xn(PART_OFFIREOA25_OC,k)  = sum ( Fpart(OFFIREOA25,k) *xn(OFFIREOA25,k)  *species(OFFIREOA25)%carbons )
-!PPOA     xn(PART_XO_OFFIOA25_O,k)  = sum ( Fpart(OX_OFFIREOA25,k) *xn(OX_OFFIREOA25,k) )
 !Test for storing in ug/m3, Use with caution! 
      xn(PART_ASOA_OM,k)  = sum ( ug_semivol(ASOA,k) ) * ugC2xn * 12.0 
      xn(PART_BSOA_OM,k)  = sum ( ug_semivol(BSOA,k) ) * ugC2xn * 12.0 
-!RB want to have PART_FFUELOA25/FFIREOA/WOODOA_OM working also with nonvolatile POA emissions, test this hard coded version first
+! want to have PART_FFUELOA25/FFIREOA/WOODOA_OM working also with nonvolatile POA emissions, test this hard coded version first
      xn(PART_FFUELOA25_OM,k)  = sum ( ug_semivol(SVFFUELOA25,k) ) * ugC2xn * 12.0 + xn(NONVOL_FFUELOC25,k) * 1.25 * 12.0 ! factor 12.0 from M(OC25-components)=12 and M(OM-components)=1, OM/OC=1.25 assumed for Primary FFUELOC emissions
      xn(PART_WOODOA25_OM,k)  = sum ( ug_semivol(SVWOODOA25,k) ) * ugC2xn * 12.0 + xn(NONVOL_WOODOC25,k) * 1.7 * 12.0 ! OM/OC=1.7 assumed for Primary WOODOC and FFIRE emissions
      xn(PART_FFIREOA25_OM,k)  = sum ( ug_semivol(SVFFIREOA25,k) ) * ugC2xn * 12.0 + xn(NONVOL_FFIREOC25,k) * 1.7 * 12.0 
@@ -506,8 +435,6 @@ module OrganicAerosol_ml
    xn(NONVOL_BGNDOC,:)    = ugC2xn * BGND_OC(:)      ! FAKE FOR NOW, 0.5 ug/m3 at surface
 
  ! for convencience:
-!removed not used?   xn(PART_POC,:) =  xn(PART_FFUELOC,:) + xn(PART_FFUELOA25_OC,:)
-! Hopefully this works for both VBS-NPNA and VBS-PAx type runs. 
 ! WARNING! Test changing to WOODOC25, FFIREOC25 and NONVOLOC25 may cause problems here, especially if coarse components are inlcuded later! But this is rather hard coded anyway...
    xn(PART_OC10,:)  =  xn(PART_ASOA_OC,:)+xn(PART_BSOA_OC,:)+xn(NONV_FFUELOC_COARSE,:) + &
                     xn(NONVOL_BGNDOC,:)+ &
@@ -522,24 +449,13 @@ module OrganicAerosol_ml
 
    surfASOA  = xn2ugC* xn(PART_ASOA_OC,K2) ! sum ( Fpart(ASOA,K2) * xn(ASOA,K2)*species(ASOA)%carbons )
    surfBSOA  = xn2ugC* xn(PART_BSOA_OC,K2) ! sum ( Fpart(BSOA,K2) * xn(BSOA,K2)*species(BSOA)%carbons )
-! Is this used? Then we need the nonvolatile parts as well!?
-!Obsolete?Research   surfOFFUELOA25_OC  = xn2ugC* xn(PART_OFFUELOA25_OC,K2) !
+!
    surfFFUELOA25_OC  = xn2ugC* xn(PART_FFUELOA25_OC,K2) ! 
-!Obsolete?Research   surfOWOODOA25 = xn2ugC* xn(PART_OWOODOA25_OC,K2) !
    surfWOODOA25_OC = xn2ugC* xn(PART_WOODOA25_OC,K2) !
-!Obsolete?Research   surfOFFIREOA25 = xn2ugC* xn(PART_OFFIREOA25_OC,K2) !
    surfFFIREOA25_OC = xn2ugC* xn(PART_FFIREOA25_OC,K2) !
-
-!What's this? Obsolete?
-!   surfFFUELOC25 = xn2ugC* xn(NONVOL_FFUELOC25,K2) ! sum ( Fpart(FFUELOC,K2) * xn(FFUELOC,K2)*species(FFUELOC)%carbons )
-!   surfWOODOC25  = xn2ugC* xn(NONVOL_WOODOC25,K2) ! sum ( Fpart(WOODOC,K2) * xn(WOODOC,K2)*species(WOODOC)%carbons )
-!WHAT ABOUT FFIREOC25??? 
-! FAKEugC*sum ( Fpart(BGND_OC,K2) * &
-                  !FAKE       xn(BGND_OC,K2)*species(BGND_OC)%carbons )
 
    surfBGNDOC  = BGND_OC(K2)
    surfOC25    = surfASOA+surfBSOA+surfFFUELOA25_OC+surfWOODOA25_OC+surfBGNDOC+surfFFIREOA25_OC !
-! DO we need surfOC10 as well? 
 
    !/ Sum of Biogenics -----------------------
 
