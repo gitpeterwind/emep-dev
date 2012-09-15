@@ -176,7 +176,7 @@ integer, public, parameter :: FREQ_HOURLY = 1  ! 1 hours between outputs
 
 ! Output selected model levels
 logical, public, parameter ::  &
-  SELECT_LEVELS_HOURLY = .false..or.FORECAST.or.(EXP_NAME=="TOPO")
+  SELECT_LEVELS_HOURLY = .false..or.FORECAST.or.(EXP_NAME=="3DPROFILES")
 ! Decide which levels to print out
 ! 20<==>uppermost model level (m01)
 ! 01<==>lowermost model level (m20)
@@ -271,8 +271,8 @@ subroutine set_output_defs
   case("EVA2010")
     nhourly_out=4
     nlevels_hourly = 1
-  case("TOPO")
-    nhourly_out=3
+  case("3DPROFILES")
+    nhourly_out=2
     nlevels_hourly = 10  ! nb zero is one of levels in this system
   case("TFMM")
     nhourly_out=28
@@ -378,7 +378,7 @@ subroutine set_output_defs
 !  write(*,*)(i,hr_out(i),i=1,nhourly_out)
 !  call CheckStop("AMVB")
 !  endif
-  case("TOPO")
+  case("3DPROFILES")
    ! nb Out3D uses totals, e.g. O3, not IXADV_O3
    ! Number of definitions must match nhourly_out set above
     levels_hourly = (/ (i, i= 0,nlevels_hourly-1) /)  ! -1 will give surfac
@@ -387,11 +387,11 @@ subroutine set_output_defs
              ix1,ix2,iy1,iy2,nlevels_hourly,"ppbv", PPBINV,600.0*2.0) &
        ,Asc2D("no2_3dppb"   ,"Out3D",&
              NO2  ,ix1,ix2,iy1,iy2,nlevels_hourly,"ppbv",PPBINV ,600.0*1.91) &
-       ,Asc2D("o3_3dug"   ,"Out3D",&
-         O3, ix1,ix2,iy1,iy2,nlevels_hourly,"ug",to_ug_ADV(IXADV_O3) ,600.0*2.0) &
+!       ,Asc2D("o3_3dug"   ,"Out3D",&
+!         O3, ix1,ix2,iy1,iy2,nlevels_hourly,"ug",to_ug_ADV(IXADV_O3) ,600.0*2.0) &
     /)
 
-    if(MasterProc ) write(*,*) "TESTHH TOPO O3 SET", nlevels_hourly
+    if(MasterProc ) write(*,*) "TESTHH 3D O3 SET", nlevels_hourly
   case("TFMM")
 
 !**               name     type     ofmt

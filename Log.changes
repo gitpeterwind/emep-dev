@@ -232,6 +232,21 @@ dsSep14   Wesely_ml.f90
 
 !----------------------------------------------------------
 
+xxxxxxxx  rv4rc13 Dave 15/9/2012 xxxxxxxxxxxxxxxxxxxx
+
+More clean-ups/checks, as above
+
+ModelConstants_ml 
+My_Outputs
+
+    STATUS     -> EMEPSTD   = EMEP standard runs
+    STATUS2010 -> EMEP2010 - with Iceland eruption
+    TOPO       -> 3DPROFILES
+
+
+(Note that the latter isn't really an experiment name, just another
+output choice, but we can fix that later.)
+
 xxxxxxxx  rv4rc12 Dave/Alvaro/Peter 13/9/2012 xxxxxxxxxxxxxxxxxxxx
 
 Various clean-ups, rcerup and output fixes.

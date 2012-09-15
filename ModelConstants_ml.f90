@@ -39,14 +39,14 @@ private
 
 !=============================================================================
 ! Experiment name:
-!  STATUS      Standard run & output
-!  STATUS2010  STATUS with Volcanic Eruption input
-!  TFMM        STATUS: INERIS_SNAP & TFMM hourly output
+!  EMEPSTD      Standard run & output
+!  EMEP2010    EMEPSTD with Iceland Volcanic Eruption input
+!  TFMM        EMEPSTD, but with INERIS_SNAP & TFMM hourly output
 !  FORECAST    Forecast run, MACC-ENS hourly output & BC
 !  EVA2010     FORECAST with MACC-EVA2010 hourly output & BC
 !  EMERGENCY   FORECAST with ONLY Volcanic Eruption & Nuclear Accident.
 CHARACTER(LEN=*), public, parameter :: &
-  EXP_NAME="STATUS2010"
+  EXP_NAME="EMEP2010"
 
 ! FORECAST mode run:
 ! * Nested IC/BC def in Nest_ml & IFSMOZ_ExternalBICs_ml
@@ -84,7 +84,7 @@ logical, public, parameter ::         &
   LANDIFY_MET        = .false.,       & ! extended massbudget outputs
   USE_POLLEN         = .false.,       & ! EXPERIMENTAL. Only works if start Jan 1
   USE_EMERGENCY      = FORECAST.or.&      ! Emergency: Volcanic Eruption & Nuclear Accident. Under development.
-                       (EXP_NAME=="STATUS2010")
+                       (EXP_NAME=="EMEP2010")
 
 !Boundary layer profiles
   character(len=4), parameter, public :: FluxPROFILE = &
@@ -314,7 +314,7 @@ logical, public, parameter :: SOURCE_RECEPTOR = .false.
 
 ! Compress NetCDF output? (nc4 feature)
 logical, public, parameter :: NETCDF_COMPRESS_OUTPUT=&
-  (EXP_NAME/="FORECAST").and.(EXP_NAME/="EMERGENCY").and.(EXP_NAME/="TOPO")
+  (EXP_NAME/="FORECAST").and.(EXP_NAME/="EMERGENCY").and.(EXP_NAME/="3DPROFILES")
 !logical, public, parameter :: NETCDF_COMPRESS_OUTPUT=.false.
 
 !Hourly output in single file or monthly/daily files:
