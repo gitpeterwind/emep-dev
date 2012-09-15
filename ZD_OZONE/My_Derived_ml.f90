@@ -253,25 +253,25 @@ private
         ,typ_s5i("RN222     ", "ppb", D2,"AIR_CONCS", SPEC, D)&
        ! ============================================================
        /)
-!TNO         typ_s5i("SO2       ", "ugS", D2,"AIR_CONCS", SPEC, D)&
-!TNO        ,typ_s5i("SO4       ", "ugS", D2,"AIR_CONCS", SPEC, D)&
+!TFMM         typ_s5i("SO2       ", "ugS", D2,"AIR_CONCS", SPEC, D)&
+!TFMM        ,typ_s5i("SO4       ", "ugS", D2,"AIR_CONCS", SPEC, D)&
 ! Could also add from earlier D2_EXTRA array:
       !,"u_ref             " &
 !.... down to here
 !        ,typ_s5i("RNWATER   ", "ppb", D2,"AIR_CONCS", SPEC, D)&
 ! Omit for CityZen
-!TNO just keep ppb version below
-!TNO        ,typ_s5i("NO        ", "ugN", D2,"AIR_CONCS", SPEC, D)&
-!TNO        ,typ_s5i("NO2       ", "ugN", D2,"AIR_CONCS", SPEC, D)&
-!TNO        ,typ_s5i("NH3       ", "ugN", D2,"AIR_CONCS", SPEC, D)&
-!TNO        ,typ_s5i("HNO3      ", "ugN", D2,"AIR_CONCS", SPEC, D)&
-!TNO        ,typ_s5i("HONO      ", "ugN", D2,"AIR_CONCS", SPEC, D)&
-!TNO        ,typ_s5i("PAN       ", "ugN", D2,"AIR_CONCS", SPEC, D)&
+!TFMM just keep ppb version below
+!TFMM        ,typ_s5i("NO        ", "ugN", D2,"AIR_CONCS", SPEC, D)&
+!TFMM        ,typ_s5i("NO2       ", "ugN", D2,"AIR_CONCS", SPEC, D)&
+!TFMM        ,typ_s5i("NH3       ", "ugN", D2,"AIR_CONCS", SPEC, D)&
+!TFMM        ,typ_s5i("HNO3      ", "ugN", D2,"AIR_CONCS", SPEC, D)&
+!TFMM        ,typ_s5i("HONO      ", "ugN", D2,"AIR_CONCS", SPEC, D)&
+!TFMM        ,typ_s5i("PAN       ", "ugN", D2,"AIR_CONCS", SPEC, D)&
        ! Remember, species have upper case, so not _f !
-!TNO just keep ug version below
-!TNO    ,typ_s5i("NO3_F     ", "ugN", D2,"AIR_CONCS", SPEC, D)&
-!TNO    ,typ_s5i("NO3_C     ", "ugN", D2,"AIR_CONCS", SPEC, D)&  ! 10 to here
-!TNO    ,typ_s5i("NH4_F     ", "ugN", D2,"AIR_CONCS", SPEC, D)&
+!TFMM just keep ug version below
+!TFMM    ,typ_s5i("NO3_F     ", "ugN", D2,"AIR_CONCS", SPEC, D)&
+!TFMM    ,typ_s5i("NO3_C     ", "ugN", D2,"AIR_CONCS", SPEC, D)&  ! 10 to here
+!TFMM    ,typ_s5i("NH4_F     ", "ugN", D2,"AIR_CONCS", SPEC, D)&
 !        ,typ_s5i("PART_SOA_OC", "ugC", D2,"AIR_CONCS", SPEC, M)&
        ! ,typ_s5i("PART_OFFUELOA25_OC", "ugC", D2,"AIR_CONCS", SPEC, M)&
        ! ,typ_s5i("PART_OWOODOA25_OC", "ugC", D2,"AIR_CONCS", SPEC, M)&
@@ -345,10 +345,10 @@ private
    ! the DEP_RECEIVERS  from EcoSystem_ml.
    !
    ! integer, public, parameter :: NNDRYDEP = 3 ! 7 + 1 !JUST HNO3: size(DDEP_OXNGROUP)
-    !TNO integer, public, parameter, dimension(7+size(DDEP_OXNGROUP)) :: &
+    !TFMM integer, public, parameter, dimension(7+size(DDEP_OXNGROUP)) :: &
     integer, public, parameter, dimension(3) :: &
     !integer, public, parameter, dimension(NNDRYDEP) :: &
-      DDEP_SPECS = (/ SOX_INDEX, OXN_INDEX, RDN_INDEX /) !TNO , & !  /) ! , &
+      DDEP_SPECS = (/ SOX_INDEX, OXN_INDEX, RDN_INDEX /) !TFMM , & !  /) ! , &
            !SO2,  SO4, NH3, NH4_f, DDEP_OXNGROUP /)
            !SO2,  SO4, NH3, NH4_f, HNO3 /) ! DDEP_OXNGROUP /)
 
@@ -367,26 +367,26 @@ private
    !- specify some species and land-covers we want to output
    ! dep. velocities for in netcdf files. Set in My_DryDep_ml.
 
-!TNO    type(typ_s5i), public, parameter, dimension(17) :: &
+!TFMM    type(typ_s5i), public, parameter, dimension(17) :: &
     type(typ_s5i), public, parameter, dimension(1) :: &
          NewMosaic = (/ &
              typ_s5i( "Mosaic", "VG", "O3       ", "Grid","cms",D ) &
-!TNO            ,typ_s5i( "Mosaic", "VG", "O3       ", "CF  ","cms",D ) &
-!TNO            ,typ_s5i( "Mosaic", "VG", "O3       ", "SNL ","cms",D ) &
-!TNO            ,typ_s5i( "Mosaic", "VG", "HNO3     ", "Grid","cms",D ) &
-!TNO            ,typ_s5i( "Mosaic", "VG", "HNO3     ", "W   ","cms",D ) &
-!TNO            ,typ_s5i( "Mosaic", "VG", "HNO3     ", "CF  ","cms",D ) &
-!TNO            ,typ_s5i( "Mosaic", "VG", "HNO3     ", "SNL ","cms",D ) &
-!TNO            ,typ_s5i( "Mosaic", "VG", "NO3_F    ", "SNL ","cms",D ) &
-!TNO            ,typ_s5i( "Mosaic", "VG", "NO3_C    ", "SNL ","cms",D ) &
-!TNO            ,typ_s5i( "Mosaic", "VG", "NO3_F    ", "Grid","cms",D ) &
-!TNO            ,typ_s5i( "Mosaic", "VG", "NO3_C    ", "Grid","cms",D ) &
-!TNO            ,typ_s5i( "Mosaic", "VG", "SEASALT_F", "W   ","cms",D ) &
-!TNO            ,typ_s5i( "Mosaic", "VG", "SEASALT_C", "W   ","cms",D ) &
-!TNO            ,typ_s5i( "Mosaic", "VG", "SEASALT_F", "Grid","cms",D ) &
-!TNO            ,typ_s5i( "Mosaic", "VG", "SEASALT_C", "Grid","cms",D ) &
-!TNO            ,typ_s5i( "Mosaic", "Rs", "SO2      ", "Grid","sm",D ) &
-!TNO            ,typ_s5i( "Mosaic", "Rs", "NH3      ", "Grid","sm",D ) &
+!TFMM            ,typ_s5i( "Mosaic", "VG", "O3       ", "CF  ","cms",D ) &
+!TFMM            ,typ_s5i( "Mosaic", "VG", "O3       ", "SNL ","cms",D ) &
+!TFMM            ,typ_s5i( "Mosaic", "VG", "HNO3     ", "Grid","cms",D ) &
+!TFMM            ,typ_s5i( "Mosaic", "VG", "HNO3     ", "W   ","cms",D ) &
+!TFMM            ,typ_s5i( "Mosaic", "VG", "HNO3     ", "CF  ","cms",D ) &
+!TFMM            ,typ_s5i( "Mosaic", "VG", "HNO3     ", "SNL ","cms",D ) &
+!TFMM            ,typ_s5i( "Mosaic", "VG", "NO3_F    ", "SNL ","cms",D ) &
+!TFMM            ,typ_s5i( "Mosaic", "VG", "NO3_C    ", "SNL ","cms",D ) &
+!TFMM            ,typ_s5i( "Mosaic", "VG", "NO3_F    ", "Grid","cms",D ) &
+!TFMM            ,typ_s5i( "Mosaic", "VG", "NO3_C    ", "Grid","cms",D ) &
+!TFMM            ,typ_s5i( "Mosaic", "VG", "SEASALT_F", "W   ","cms",D ) &
+!TFMM            ,typ_s5i( "Mosaic", "VG", "SEASALT_C", "W   ","cms",D ) &
+!TFMM            ,typ_s5i( "Mosaic", "VG", "SEASALT_F", "Grid","cms",D ) &
+!TFMM            ,typ_s5i( "Mosaic", "VG", "SEASALT_C", "Grid","cms",D ) &
+!TFMM            ,typ_s5i( "Mosaic", "Rs", "SO2      ", "Grid","sm",D ) &
+!TFMM            ,typ_s5i( "Mosaic", "Rs", "NH3      ", "Grid","sm",D ) &
          /)
 
 ! VEGO3 outputs for PODY and AOTX - see AOTnPOD_ml for definitions,
@@ -420,14 +420,14 @@ private
 
 ! For met-data and canopy concs/fluxes ...
 
-!TNO    character(len=TXTLEN_DERIV), public, parameter, dimension(3) :: &
+!TFMM    character(len=TXTLEN_DERIV), public, parameter, dimension(3) :: &
     character(len=TXTLEN_DERIV), public, parameter, dimension(1) :: &
-      MOSAIC_METCONCS = (/ "USTAR" /) ! TNO "VPD     "  &
+      MOSAIC_METCONCS = (/ "USTAR" /) ! TFMM "VPD     "  &
                          ! ,"CanopyO3" & !SKIP
          !,"VPD     ", "FstO3   " "EVAP    ", "Gsto    " &
                         !SKIP
-   !TNO                    ,"USTAR   ", "INVL    "  &
-   !TNO                    /)
+   !TFMM                    ,"USTAR   ", "INVL    "  &
+   !TFMM                    /)
                           ! "g_sto" needs more work - only set as L%g_sto
 
     character(len=TXTLEN_DERIV), public, save, dimension(2) :: &
@@ -451,15 +451,15 @@ private
         ,typ_s3( "SOX      ", "GROUP", "mgS " )  & ! Will get WDEP_SOX group
         ,typ_s3( "OXN      ", "GROUP", "mgN " )  &
         ,typ_s3( "RDN      ", "GROUP", "mgN " )  &
-!TNO        ,typ_s3( "SS       ", "GROUP", "mg  " )  &
+!TFMM        ,typ_s3( "SS       ", "GROUP", "mg  " )  &
       !
         ,typ_s3( "SO2      ", "SPEC ", "mgS ") &  ! Makes WPEP_SO2
       !  ,typ_s3( "SO4      ", "SPEC ", "mgS ") &
         ,typ_s3( "HNO3     ", "SPEC ", "mgN ") &
       !  ,typ_s3( "NO3_F    ", "SPEC ", "mgN ") &
       !  ,typ_s3( "NO3_C    ", "SPEC ", "mgN ") &
-!TNO        ,typ_s3( "NH4_F    ", "SPEC ", "mgN ") &
-!TNO        ,typ_s3( "NH3      ", "SPEC ", "mgN ") &
+!TFMM        ,typ_s3( "NH4_F    ", "SPEC ", "mgN ") &
+!TFMM        ,typ_s3( "NH3      ", "SPEC ", "mgN ") &
       !  ,typ_s3( "SEASALT_F", "SPEC ", "mg  ") &
       ! ,typ_s3( "SEASALT_C", "SPEC ", "mg  ") &
      /)

@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************!
 !*
-!*  Copyright (C) 2007-2011 met.no
+!*  Copyright (C) 2007-2012 met.no
 !*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -169,12 +169,6 @@ private
 
     integer, public, allocatable, dimension(:,:), save :: nav_2d
     integer, public, allocatable, dimension(:,:), save :: nav_3d
-
-   ! Note - previous versions did not have the LENOUT2D dimension
-   ! for wet and dry deposition. Why not?  Are annual or daily
-   ! depositions never printed? Since I prefer to keep all 2d
-   ! fields as similar as posisble, I have kept this dimension
-   ! for now - ds
 
 
    !-- some variables for the VOC sum done for ozone models
@@ -425,9 +419,7 @@ call AddNewDeriv( "Kz_m2s","Kz_m2s",  "-","-",   "m2/s", &
 
 !Most met params are now better specified in My_Derived.
 !MOVED call AddNewDeriv( "ws_10m","ws_10m",  "-","-",   "m/s", &
-!MOVED                -99,  -99, F, 1.0,  T,  IOU_DAY )
 !MOVED call AddNewDeriv( "HMIX  ","HMIX",  "-","-",   "m", &
-!MOVED                -99,  -99,  F,  1.0,  T,  IOU_DAY )
 ! "HMIX00","HMIX12", ....
 
 call AddNewDeriv( "u_ref","u_ref",  "-","-",   "m/s", &
@@ -480,11 +472,6 @@ do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
 
     call AddNewDeriv( outname,class,  "-","-",  outunit, &
                   iout,  -99,  F, unitscale,  T, outind )
-  ! WAS
-  !call AddNewDeriv( "HMIX  ","HMIX",  "-","-",   "m", &
-  !                  -99,  -99,  F,  1.0,  T,  IOU_DAY )
-  !call AddNewDeriv( "SURF_ppbC_VOC", "VOC", "-", "-", "ppb", &
-        !   -1 , -99,  F, PPBINV,  T,  IOU_DAY )
 
   else ! SPEC and GROUPS of specs.
 
@@ -579,9 +566,6 @@ do ind = 1, size(WDEP_WANTED(:)%txt1)
   if(MasterProc) write(*,*)"Wet deposition output: ",trim(dname)," ",trim(unittxt)
 enddo
 
-!NOV2011 call AddNewDeriv( "SURF_ppbC_VOC", "VOC", "-", "-", "ppb", &
-!NOV2011          -1 , -99,  F, PPBINV,  T,  IOU_DAY )
-
 !Emissions:
 ! We use mg/m2 outputs for consistency with depositions
 ! Would need to multiply by GridArea_m2 later to get ktonne/grid, but not
@@ -598,14 +582,6 @@ enddo
      call AddNewDeriv( dname, "NatEmis", "-", "-", "mg/m2", &
                  ind , -99, T ,    1.0e6,     F, IOU_DAY )
    end do
-!DSA12   if ( USE_SOILNOX ) then
-!DSA12     call AddNewDeriv( "Emis_mgm2_SoilNO", "NatEmis", "-", "-", "mg/m2", &
-!DSA12                 BIO_SOILNO , -99, T ,    1.0e6,     F, IOU_DAY )
-!DSA12   end if
-!DSA12   if ( USE_SOILNH3 ) then
-!DSA12     call AddNewDeriv( "Emis_mgm2_SoilNH3", "NatEmis", "-", "-", "mg/m2", &
-!DSA12                 BIO_SOILNH3 , -99, T ,    1.0e6,     F, IOU_DAY )
-!DSA12   end if
 
 ! SNAP emissions called every hour, given in kg/m2/s, but added to
 ! d_2d every advection step, so get kg/m2.
@@ -627,8 +603,6 @@ call AddNewDeriv("SURF_PM25water", "PM25water", "-", "-", "-", &
 call AddNewDeriv("AOD", "AOD", "-", "-", "-", &
                       -99 , -99, F, 1.0,   T, IOU_DAY )
 
-!FUTURE call AddNewDeriv("AreaPOLL", "AreaPOLL", "-", "-", "-", &
-!FUTURE                       -99 , -99, F, 1.0,   F, IOU_DAY )
 
 ! As for GRIDAOT, we can use index for the threshold
 call AddNewDeriv( "SOMO35","SOMO",  "SURF","-",   "ppb.day", &
@@ -825,7 +799,7 @@ end do
                              current_date%day)
 
 
-     ! Jan 2011 - just calculate once, and use where needed
+     ! Just calculate once, and use where needed
 
       forall ( i=1:limax, j=1:ljmax )
            density(i,j) = roa(i,j,KMAX_MID,1)
@@ -900,7 +874,7 @@ end do
               d_2d( n, i,j,IOU_INST) = SoilWater_deep(i,j,1)
           end forall
           if ( debug_flag ) call write_debug(n,index, "SoilWater_DEEP")
-if(debug_flag) print *, "SOILW_DEEP ", n, SoilWater_deep(2,2,1)
+          !if(debug_flag) print *, "SOILW_DEEP ", n, SoilWater_deep(2,2,1)
 
           !case ( "SoilWater_uppr" ) ! Not used so far. (=shallow)
           case ( "SMI_uppr" )
@@ -908,7 +882,7 @@ if(debug_flag) print *, "SOILW_DEEP ", n, SoilWater_deep(2,2,1)
               d_2d( n, i,j,IOU_INST) = SoilWater_uppr(i,j,1)
           end forall
           if ( debug_flag ) call write_debug(n,index, "SoilWater_uppr")
-if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
+          !if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
 
           case ( "T2m" )
             forall ( i=1:limax, j=1:ljmax )
@@ -940,18 +914,6 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
               !NOT YET - keep hPa in sites:d_2d( n, i,j,IOU_INST) = ps(i,j,1)
             end forall
 
-
-          !Confusing here, some test maybe? SoilNO emissions are in EmisNat
-          !EXP case ( "SOILNO" )
-
-          !EXP  forall ( i=1:limax, j=1:ljmax )
-          !EXP    d_2d( n, i,j,IOU_INST) = exp( (t2_nwp(i,j,2)-273.15-20)*log(2.1) / 10.0 )
-          !EXP  end forall
-
-          !EXP  if ( debug_flag ) then
-          !EXP   write(*,fmt="(a12,i4,f12.3)") "SOILNO" , n , &
-          !EXP           d_2d(n,debug_li,debug_lj,IOU_INST)
-          !EXP  end if
 
           case ( "HMIX", "HMIX00", "HMIX12" )
 
@@ -1086,12 +1048,6 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
                       cfac(iadv_NO3_C    ,i,j), cfac(iadv_POM_C_FFUEL,i,j), &
                       cfac(iadv_EC_C_WOOD,i,j), cfac(iadv_EC_C_FFUEL ,i,j)
             endif
-
-!FUTURE    case ( "AreaPOLL" )        !/ Aerosol Optical Depth
-!FUTURE
-!FUTURE     forall ( i=1:limax, j=1:ljmax )
-!FUTURE       d_2d( n, i,j,IOU_INST) = AreaPOLL(i,j)
-!FUTURE     end forall
 
           case ( "AOD" )        !/ Aerosol Optical Depth
 
@@ -1251,7 +1207,6 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
                      d_2d( n, debug_li, debug_lj, IOU_INST)
 
 
-          !case ( "ECOAREA" )
          case ( "EcoFrac" ) ! ODD TO HAVE FRAC AND AREA BELOW:"ECOAREA" )
 
             if( .not. first_call ) cycle ! Only need to do once
