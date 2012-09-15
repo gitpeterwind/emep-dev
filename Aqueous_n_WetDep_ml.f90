@@ -392,7 +392,6 @@ subroutine Setup_Clouds(i,j,debug_flag)
 ! initialise with .false. and 0:
   incloud(:)  = .false.
   cloudwater(:) = 0.
-!hf
   pres(:)=0.0
 
 ! Loop starting at surface finding the cloud base:
@@ -532,7 +531,6 @@ subroutine tabulate_aqueous()
   H(IH_O3  ,:)  = 1.13e-2 * exp(2300.0*tfac(:))
   H(IH_NH3 ,:)  = 60.0    * exp(4400.0*tfac(:)) !http://www.ceset.unicamp.br/~mariaacm/ST405/Lei%20de%20Henry.pdf
   H(IH_CO2,:)   = 3.5e-2  * exp(2400.0*tfac(:)) !http://www.ceset.unicamp.br/~mariaacm/ST405/Lei%20de%20Henry.pdf
-!hf NEW:
 
   K1(:)   = 1.23e-2 * exp( 2010.0*tfac(:))
   K2(:)   = 6.6e-8  * exp( 1122.0*tfac(:))!Seinfeldt&Pandis 1998
@@ -540,12 +538,6 @@ subroutine tabulate_aqueous()
   Kw(:)   = 1.0e-14 * exp(-6718.0*tfac(:))!Seinfeldt&Pandis 1998
   Kco2(:) = 4.3e-7  * exp( -921.0*tfac(:))!Seinfeldt&Pandis 1998
 
-! Need  effective Henry's coefficient for SO2:
-!hf belove moved to setup_clouds because pH is needed
-!hf moved to setup_clouds  K1fac(IH_SO2  ,:)  =  &
-!hf moved      ( 1.0 + 1.23e-2 * exp(2010.0*tfac(:) ) * INV_Hplus)
-!WAS A BUG HERE. Above=(1+K1)/H+ but should be K1fac=1+K1/H+
-!hf moved  H (IH_SO2 ,:)  = H(IH_SO2,:) * K1fac(IH_SO2,:)
 end subroutine tabulate_aqueous
 !-----------------------------------------------------------------------
 subroutine setup_aqurates(b ,cloudwater,incloud,pres)
@@ -594,11 +586,7 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
   aqrck(:,:)=0.
 
 ! for PH
-!dspw   so4_aq(:)=0.0
-!dspw   no3_aq(:)=0.0
-!dspw   nh4_aq(:)=0.0
 
-!dspw   phfactor(:)=0.0
   pH(:)=4.3!dspw 13082012
   h_plus(:)=Hplus43!dspw 13082012
   pH(:)=5.5!stpw 23082012
@@ -642,7 +630,7 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
     do iter = 1,pH_ITER !iteratively calc pH
       pHin(iter)=pH(k)!save input pH
 
-! dspw moved pH calculation after X_aq determination 
+!     moved pH calculation after X_aq determination 
       !nh4+, hco3, hso3 and so32 dissolve and ionize
       Heff_NH3= H(IH_NH3,itemp(k))*Knh3(itemp(k))*h_plus(k)/Kw(itemp(k))
       frac_aq(IH_NH3,k) = 1.0 / ( 1.0+1.0/( Heff_NH3*VfRT(k) ) )
@@ -771,7 +759,6 @@ subroutine WetDeposition(i,j,debug_flag)
 
 ! Put both in- and sub-cloud scavenging ratios in the array vw:
 
-!TMP xnloss = 0.0
     vw(kcloudtop:ksubcloud-1) = WetDep(icalc)%W_sca ! Scav. for incloud
     vw(ksubcloud:KMAX_MID  )  = WetDep(icalc)%W_sub ! Scav. for subcloud
 

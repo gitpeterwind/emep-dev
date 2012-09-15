@@ -1404,16 +1404,6 @@
         fc3 = fc1*fc2
         n1k = 0
         if(fc1.lt.0)n1k=1
-!pw bug corrected 29/8-2002 (emep1.2beta):
-!       zzfl1 = alfnew(1,k,n1k)*fc1           &
-!             + alfnew(2,k,n1k)*fc2           &
-!             + alfnew(3,k,n1k)*fc3
-!       zzfl2 = alfnew(4,k,n1k)*fc1           &
-!             + alfnew(5,k,n1k)*fc2           &
-!             + alfnew(6,k,n1k)*fc3
-!       zzfl3 = alfnew(7,k,n1k)*fc1           &
-!             + alfnew(8,k,n1k)*fc2           &
-!             + alfnew(9,k,n1k)*fc3
         zzfl1 = alfnew(1,k+1,n1k)*fc1         &
               + alfnew(2,k+1,n1k)*fc2         &
               + alfnew(3,k+1,n1k)*fc3

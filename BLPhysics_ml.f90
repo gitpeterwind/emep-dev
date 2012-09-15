@@ -122,10 +122,10 @@ function JericevicKz(z,h,ustar,Kdef) result(Kz)
         zmax = 0.21 * h
         Kz = 0.39 * ustar * z * exp( -0.5*(z/zmax)**2 )
      !OS_TEST_Hmix1 
-!OCT2011
+
      else ! open-source had this Kz=0.0 line. Not sure why
      !OS_TEST_Hmix1    
-!OCT2011      Kz= 0.0
+     !Kz= 0.0
        Kz =  Kdef
      end if
 
@@ -247,20 +247,6 @@ subroutine JericevicRiB_Hmix0 (u,v, zm, theta, zi, theta0, coastal)
    Theta1 = theta(KMAX_MID)
    z1     = zm(KMAX_MID)
    zi     = z1  ! start val
-
-   ! Test first if stable in lowest 45m layer
-     ! (Not for coastal locations - too dangerous to use T2 here - would be too
-     !  stable in summer for example)
-!12d    if ( .not. coastal ) then
-!12d       k = KMAX_MID
-!12d       Rib =   GRAV * (z1-2.0) &
-!12d             * (Theta1 - Theta0 ) / &
-!12d       ( 0.5*(Theta1+theta0) * ( u(k)**2 + v(k)**2 )+EPS )
-!12d       if(Rib >= Ric) then
-!12d              zi = zm(k)
-!12d              return
-!12d       endif
-!12d   end if
 
    do k=KMAX_MID-1, KWINDTOP, -1
 
