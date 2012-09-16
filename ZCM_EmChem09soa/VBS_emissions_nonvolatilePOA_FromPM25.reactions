@@ -19,7 +19,7 @@ rcemis:EC_f_WOOD_age             = EC_f_WOOD_age ;
 rcemis:REMPPM25                  = REMPPM25 ;
 rcemis:REMPPM_C                  = REMPPM_C ;
 *
-rcemis:FFIRE_OC                   = FFIRE_OC ;
+rcemis:FFIRE_OM                   = FFIRE_OM ;
 rcemis:FFIRE_BC                   = FFIRE_BC ;
 rcemis:FFIRE_REMPPM25             = FFIRE_REMPPM25 ;
 

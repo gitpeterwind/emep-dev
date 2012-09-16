@@ -104,13 +104,10 @@ needed on a few issues for e.g. global usage, or NH3
 
 KNOWN PROBLEMS
 
-None?
-I (DS) have re-writting My_Derived and Derived to use the array
-OutputConcs.  This harmonises 2d and 3d, ppb, ug, ugN, etc., and
-has either simple species or groups.  No problems known, but this
-re-write will continue, and should be harmonised with the hourly
-outputs in some way (at some stage).
+ForestFire bug cleaned out for FINN, EmChem09soa.
+Needs to be repeated for other combinations
 
+TERPPEROXY
 
 IMPORTANT NOTE:
 
@@ -167,7 +164,7 @@ dsSep13   EmisDef_ml.f90
 dsSep13   EmisGet_ml.f90
 dsSep13   Emissions_ml.f90
 dsSep13   EQSAM_ml.f90
-          ForestFire_ml.f90
+dsSep16   ForestFire_ml.f90
 dsSep13   Functions_ml.f90
 dsSep15   global2local.f90
 dsSep13   GlobalBCs_ml.f90
@@ -197,7 +194,7 @@ dsSep14   My_ExternalBICs_ml.f90
 dsSep14   My_Outputs_ml.f90
 dsSep14   My_SOA_ml.f90
 dsSep14   Nest_ml.f90
-          NetCDF_ml.f90
+dsSep15   NetCDF_ml.f90
 dsSep13   OutputChem_ml.f90
 dsSep13   Output_hourly.f90
 dsSep9    OwnDataTypes_ml.f90
@@ -232,9 +229,25 @@ dsSep14   Wesely_ml.f90
 
 !----------------------------------------------------------
 
-xxxxxxxx  rv4rc13 Dave 15/9/2012 xxxxxxxxxxxxxxxxxxxx
+xxxxxxxx  rv4_OSrc1 Dave 16/9/2012 xxxxxxxxxxxxxxxxxxxx
 
-More clean-ups/checks, as above
+
+ForestFire_ml:
+   simplified considerably. Needs changes in appropriate
+   BiomassBurningMapping files. Done for FINNv1 EmChem09soa so far
+
+    Needs to be repeated for other combinations
+
+   Bug cleaned out for FINN, EmChem09soa, which previously had a factr
+   1.7 (OM/OC) in both the mapping file and the code.
+
+ZCM_EmChem09soa/VBS_emissions_nonvolatilePOA_FromPM25.reactions
+ZCM_EmChem09soa/VBS_nonvolatile.species
+
+   FFIRE_OM replaces FFIRE_OC
+
+
+More clean-ups/checks, as above. All routines have had basic check
 
 ModelConstants_ml 
 My_Outputs

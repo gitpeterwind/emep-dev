@@ -21,7 +21,8 @@ EC_c_FFUEL,1,C,xx,PMc,PMc,0,0,0,xx,PMCO;PPM_c;PPM10;PM10;PM10anthr;FFUELEC;ECCOA
 REMPPM25,1,xx,12,PMfS,PMf,0,0,0,xx,PM10;PMFINE;PPM25;PPM10,,"!Primary; fine <2.5um"
 *
 REMPPM_c,1,xx,12,PMc,PMc,0,0,0,xx,PMCO;PPM_c;PPM10;PM10,,"!Primary; coarse 2.5um<PM<10"
-FFIRE_OC,1,CO,20.4,PMfS,PMf,0,0,0,xx,PCM;NVFFIREOC25;NONVOLPCM;NVABSOM,,"!Wildfire OC emissions, OM/OC assumed to be =1.7 (loosely based on Aiken et al. 2008)"
+* For ffire emissions, we need an OM/OC ratio consistent with BiomassBurning Mapping. 1.7 x 12 = 20.4
+FFIRE_OM,1,CO,20.4,PMfS,PMf,0,0,0,xx,PCM;NVFFIREOC25;NONVOLPCM;NVABSOM,,"!Wildfire OC emissions, OM/OC assumed to be =1.7 (loosely based on Aiken et al. 2008)"
 FFIRE_BC,1,C,xx,PMfS,PMf,0,0,0,xx,EC_f;PMFINE;PM10;PCM;FFIREBC;NONVOLPCM,,"!Wildfire BC emissions"
 FFIRE_REMPPM25,1,xx,12,PMfS,PMf,0,0,0,xx,PM10;PMFINE,,"!Primary; fine <2.5um"
 * We do not use total PPM25 from fires

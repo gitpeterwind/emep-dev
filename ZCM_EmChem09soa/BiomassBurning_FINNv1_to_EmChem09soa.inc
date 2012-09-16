@@ -6,9 +6,8 @@
   character(len=*), public, parameter :: &
       BiomassBurningMapping = "FINNv1toEmChem09"
   integer, private, parameter :: &
-    NBB_DEFS  = 17 & ! No mapping lines below
-   ,NBBSPECS  = 17 & ! No  unique FINN used
-   ,NCMSPECS  = 17   ! No EMEP chemical mech specs used
+    NBB_DEFS  = 19 & ! No mapping lines below
+   ,NEMEPSPECS  = 15   ! No EMEP chemical mech specs used
 
   !-----------------------------------------------------------------------!
   ! Column-1 gives FINNv1 species ,
@@ -17,10 +16,12 @@
   !    set to 1.0, except for OC, which is given in units of C and 
   !    needs to be scaled from OC to OM. Others are given as mole/day, 
   !    so multiply by MW/1000 to get kg/day )
+  ! IMPORTANT - use just one value for unitsfac per txt
   ! Column-3 gives mass fraction of FINN emissions assign to EMEP species
   ! Column-4 gives EMEP species 
   !-----------------------------------------------------------------------!
 
+  !     BBname    unitsfac frac  emep:
   type(bbtype), private, dimension(NBB_DEFS) :: FF_defs = (/ &
     bbtype("CO  ",0.028 , 1.000, CO          ) &
    ,bbtype("NO  ",0.030 , 1.000, NO          ) &
@@ -36,9 +37,13 @@
    ,bbtype("ISOP",0.068 , 1.000, C5H8        ) &
    ,bbtype("MEK ",0.072 , 1.000, MEK         ) &
    ,bbtype("PRPE",0.042 , 1.000, C3H6        ) & !CHECK!
-   ,bbtype("PM25",1.0   , 1.000, FFIRE_REMPPM25 ) & !  Need to subtract OM, BC
-   ,bbtype("OC  ",1.7   , 1.000, FFIRE_OC    ) &
-   ,bbtype("BC  ",1.0   , 1.000, FFIRE_BC    ) &
+! We read in OC and PM25, but want OM and REMPPM25
+   ,bbtype("PM25",1.0   , 1.000, FFIRE_REMPPM25 ) & !  Will need to subtract OM, BC
+   ,bbtype("OC  ",1.7   , 1.000, FFIRE_OM    ) & ! Put OM/OC=1.7 in fac
+   ,bbtype("BC  ",1.7   , 1.000, FFIRE_BC    ) &
+! Subtract, assuming OM/OC=1.7. ForestFire_ml will pevent zeros
+   ,bbtype("OC  ",-1.7  , 1.000, FFIRE_REMPPM25 ) & ! Will subtract OM
+   ,bbtype("BC  ",-1.7  , 1.000, FFIRE_REMPPM25 ) & ! Will subtract BC
  /)
 ! Not used in EmChem09 standard
  !,bbtype("CH4  "      , 1.000, CH4         ) &

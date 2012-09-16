@@ -137,7 +137,7 @@ private
    type(typ_s5i), public, save, dimension(MAX_NUM_DERIV2D) :: OutputFields
    integer, public, save :: nOutputFields = 0
 
-   type(typ_s5i), public, parameter, dimension(79) :: &
+   type(typ_s5i), public, parameter, dimension(82) :: &
       OutputConcs = (/  &
 !
 ! Here we use the 4th text field to give the "class" or "typ". Derived_ml
@@ -240,6 +240,10 @@ private
         ,typ_s5i("PART_FFUELOA25_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
         ,typ_s5i("PART_WOODOA25_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
         ,typ_s5i("PART_FFIREOA25_OM", "ug", D2,"AIR_CONCS", SPEC, M)& !NEVER as ugC!
+         !Sep16 tests
+        ,typ_s5i("FFIRE_BC"     , "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
+        ,typ_s5i("FFIRE_REMPPM25", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
+        ,typ_s5i("FFIRE_OM"      , "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
 !SPECIAL PM25 will be sum of fine + fraction coarse
 ! PUT AT END OF THIS LIST  !
 !---------------------------------------------
