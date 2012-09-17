@@ -89,7 +89,7 @@
                               DEBUG_I,DEBUG_J, &
                               USE_DEGREEDAY_FACTORS, & 
                               NPROC, IIFULLDOM,JJFULLDOM , & 
-                              USE_AIRCRAFT_EMIS,USE_ROADDUST, &
+                              USE_LIGHTNING_EMIS,USE_AIRCRAFT_EMIS,USE_ROADDUST, &
                               USE_SOILNOX, USE_GLOBAL_SOILNOX   ! one or the other
   use NetCDF_ml, only  : ReadField_CDF
   use Par_ml,     only : MAXLIMAX,MAXLJMAX,me,gi0,gi1,gj0,gj1, &
@@ -1327,14 +1327,12 @@ contains
         integer :: kstart,kend,nstart,Nyears
         real :: buffer(MAXLIMAX,MAXLJMAX),SumSoilNOx,SumSoilNOx_buff
         
-
+        if(.not.allocated(airn).and.(USE_LIGHTNING_EMIS.or.USE_AIRCRAFT_EMIS))then
+           allocate(airn(KCHEMTOP:KMAX_MID,MAXLIMAX,MAXLJMAX))
+        endif
+        
 if( USE_AIRCRAFT_EMIS )then
    !AIRCRAFT
-
-   if(.not.allocated(airn))then
-      allocate(airn(KCHEMTOP:KMAX_MID,MAXLIMAX,MAXLJMAX))
-   endif
-   
    airn = 0.0
    kstart=KCHEMTOP
    kend=KMAX_MID

@@ -303,10 +303,12 @@ contains
      endif
 
 
-     if ( USE_FOREST_FIRES  .and. burning(i,j)  ) then
+     if ( USE_FOREST_FIRES   ) then
+     if ( burning(i,j)  ) then
 
        call Fire_rcemis(i,j)
 
+     endif 
      endif  !ForestFires
 
    !Soil NOx

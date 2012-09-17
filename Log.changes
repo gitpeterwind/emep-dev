@@ -232,6 +232,12 @@ dsSep14   Wesely_ml.f90
 xxxxxxxx    rv4.0    17/9/2012  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxxxxx    OpenSource Sep 2012 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+Setup_1d_ml: extra "if" for runing with debug and burning not defined.
+
+Emissions_ml.f90: allocate airn also if only lightning are used
+
+Volcanoes_ml :missing initialization for io
+
 ForestFire_ml - will die if called with GFED and wrong years
 
 ZCM_EmChem09soa/BiomassBurning-GFED updated to new system

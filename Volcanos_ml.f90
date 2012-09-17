@@ -50,7 +50,7 @@ use GridValues_ml,        only: GRIDWIDTH_M, xm2, sigma_bnd,  &
                                 i_local, j_local, lb2ij, &
                                 GridArea_m2,coord_in_processor,coord_in_gridbox
 use Io_ml,                only: ios, NO_FILE, open_file,      &
-                                IO_VOLC, Read_Headers, read_line
+                                IO_VOLC, Read_Headers, read_line,IO_TMP
 use SmallUtils_ml,        only: wordsplit,find_index
 use ModelConstants_ml,    only: KCHEMTOP, KMAX_BND, KMAX_MID, PT, MasterProc, &
                                 DEBUG=>DEBUG_VOLC,&
@@ -415,7 +415,7 @@ function EruptionRate(i,j) result(emiss)
     character(len=80) :: txtline       ! Long enough for a full line
     type(vent)        :: dvent
     type(erup)        :: derup
-    integer :: io,stat,l,v,e,g
+    integer :: stat,l,v,e,g
 ! Particles classes & default split as London VAAC setup for NAME
 ! from Witham&al:2011 Table 1
 !   Evolution of volcanic ash modelling at the London VAAC April 2010 --- April 2011
@@ -447,12 +447,12 @@ function EruptionRate(i,j) result(emiss)
   !----------------------------!
     if(DEBUG_EM) CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
     if(MasterProc)then
-      call open_file(io,"r",fventdef,needed=.true.,iostat=stat)
+      call open_file(IO_TMP,"r",fventdef,needed=.true.,iostat=stat)
       call CheckStop(stat,ERR_VENT_CSV//' not found')
     endif
     nvent=0
     doVENT: do l=1,NMAX_VENT+1
-      call read_line(io,txtline,stat)
+      call read_line(IO_TMP,txtline,stat)
       if(stat/=0) exit doVENT           ! End of file
       txtline=ADJUSTL(txtline)          ! Remove leading spaces
       if(txtline(1:1)=='#')cycle doVENT ! Comment line
@@ -470,19 +470,19 @@ function EruptionRate(i,j) result(emiss)
 !           dvent%grp,trim(dvent%name)
       endif
     enddo doVENT
-    if(MasterProc) close(io)
+    if(MasterProc) close(IO_TMP)
     Eruption_found=(nvent>0)
   !----------------------------!
   ! Read Eruption CVS
   !----------------------------!
     if(DEBUG_EM) CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
     if(MasterProc)then
-      call open_file(io,"r",ferupdef,needed=.true.,iostat=stat)
+      call open_file(IO_TMP,"r",ferupdef,needed=.true.,iostat=stat)
       call CheckStop(stat,ERR_ERUP_CSV//' not found')
     endif
     nerup(:)=0
     doERUP: do l=1,NMAX_ERUP+1
-      call read_line(io,txtline,stat)
+      call read_line(IO_TMP,txtline,stat)
       if(stat/=0) exit doERUP             ! End of file
       if(.not.Eruption_found)cycle doERUP ! There is no vents on subdomain
       txtline=ADJUSTL(txtline)            ! Remove leading spaces
@@ -507,7 +507,7 @@ function EruptionRate(i,j) result(emiss)
 !           derup%spc,trim(derup%name)
       endif
     enddo doERUP
-    if(MasterProc) close(io)
+    if(MasterProc) close(IO_TMP)
     Eruption_found=any(nerup(1:nvent)>0)
   !----------------------------!
   ! Expand Eruption Defaults
