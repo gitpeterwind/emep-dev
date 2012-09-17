@@ -229,6 +229,12 @@ dsSep14   Wesely_ml.f90
 
 !----------------------------------------------------------
 
+xxxxxxxx   Svetlana 17/9/2012 xxxxxxxxxxxxxxxxxxxxx
+ZCM_EmChem09soa/VBS_nonvolatile.species: PPM25_FIRE group 
+My_Derived: PPM25_FIRE, 
+            units change back to ugS/ugN for gases
+            comented out intermediate SOA compounds
+
 xxxxxxxx  rv4_OSrc1 Dave 16/9/2012 xxxxxxxxxxxxxxxxxxxx
 
 
