@@ -693,7 +693,7 @@ if(MasterProc ) print *, "TESTHH INSIDE Init_My_Deriv"
          call CheckStop( errmsg, errmsg // "Wanted D3 too long" )
        end if
      end if
-!DS TEST HERE
+! TEST HERE
      mynum_deriv2d  = LenArray( wanted_deriv2d, NOT_SET_STRING )
      mynum_deriv3d  = LenArray( wanted_deriv3d, NOT_SET_STRING )
 
