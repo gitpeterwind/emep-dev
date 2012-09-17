@@ -227,28 +227,27 @@ subroutine Fire_Emis(daynumber)
     my_first_call = .false.
     ne = 0     ! number-index of emep species
 
-    do n=1, NBB_DEFS ! CONFSIONSPECS  ! the unique input names   SEP SPECS
-      iemep   = FF_defs(n)%emep  ! Not
-      if( find_index( iemep, emep_used(:) ) < 1 ) then
-         ne = ne + 1
-         emep_used ( ne ) = iemep
+    do n=1, NBB_DEFS            ! Only unique EMEP SPECS in emep_used
+      iemep = FF_defs(n)%emep 
+      if(find_index(iemep,emep_used(:))>0) cycle
+      
+      ne = ne + 1
+      emep_used(ne) = iemep
 
-       ! CO is special. Keep the index
-         if  ( trim(species(iemep)%name) == "CO" ) ieCO = ne
+      ! CO is special. Keep the index
+      if(species(iemep)%name=="CO") ieCO=ne
 
-         if (MasterProc) write(*,"(a,2i4,a17)") "FFIRE Mapping EMEP ", &
-          ne, iemep, trim(species(iemep)%name)
-      end if
-
+      if(MasterProc) write(*,"(a,2i4,a17)") "FFIRE Mapping EMEP ", &
+        ne, iemep, trim(species(iemep)%name)
     enddo !n
     call CheckStop(ieCO<0,"No mapping for 'CO' found on "//BiomassBurningMapping)
-    call CheckStop( any( emep_used<0 ) ,"UNSET FFIRE EMEP "//BiomassBurningMapping)
+    call CheckStop(any(emep_used<0),"UNSET FFIRE EMEP "//BiomassBurningMapping)
 
   endif !my first call
   allocate(rdemis(MAXLIMAX,MAXLJMAX),stat=alloc_err)
   call CheckStop(alloc_err,"ForestFire rdemis alloc problem")
 
-  if(DEBUG_FORESTFIRE .and. MasterProc) write(*,*) "FOREST_FIRE: ", daynumber,nstart
+  if(DEBUG_FORESTFIRE.and.MasterProc) write(*,*) "FOREST_FIRE: ", daynumber,nstart
 
   BiomassBurningEmis(:,:,:) = 0.0
 
@@ -256,18 +255,16 @@ subroutine Fire_Emis(daynumber)
   ! to the standard emission files:
 
   do iBB = 1, NBB_DEFS
-
     FF_poll = FF_defs(iBB)%BBname
     iemep   = FF_defs(iBB)%emep  ! 
     ind     = find_index( iemep, emep_used )  !  Finds 1st emep in BiomassBurning
 
     if(DEBUG_FORESTFIRE.and.MasterProc) &
       write(*,"( a,3i5, a8,i3)") "FIRE SETUP: ", iBB,iemep,ind, &
-         trim(FF_poll), len_trim(FF_poll)
+        trim(FF_poll), len_trim(FF_poll)
 
    ! FORECAST mode: if file/variable/timestep not found it should not crash
     rdemis(:,:)=0.0
-
 
     select case(BiomassBurningMapping(1:4))
     case("GFED")
@@ -301,17 +298,19 @@ subroutine Fire_Emis(daynumber)
         write(*,*) "FFIRE GFAS ", me, iBB, n, nstart,  trim(FF_poll), trim(fname)
       call ReadField_CDF(fname,FF_poll,rdemis,nstart,interpol='conservative',&
           needed=.not.FORECAST,debug_flag=DEBUG_FORESTFIRE)
-      ! GFAS units are [kg/m2/s]. No unit conversion is needed.
+      ! GFAS units are [kg/m2/s]. No further unit conversion is needed.
+      ! However, fac can be /=1, e.g. when REMPPM is calculated
+      fac=FF_defs(iBB)%unitsfac * FF_defs(iBB)%frac
+      if(fac/=1.0) forall(j=1:ljmax,i=1:limax) rdemis(i,j)=rdemis(i,j)*fac
     endselect
 
 
    ! Assign . units should be [kg/m2/s] here 
-
     forall(j=1:ljmax,i=1:limax) 
-      BiomassBurningEmis(ind,i,j) = BiomassBurningEmis(ind, i,j) + rdemis(i,j) 
-    end forall
+      BiomassBurningEmis(ind,i,j) = BiomassBurningEmis(ind,i,j) + rdemis(i,j) 
+    endforall
 
-   if(my_debug)  write(*,"(3a10,i4,f8.3,es12.3)") "FFIRE SUMS:", &
+    if(my_debug)  write(*,"(3a10,i4,f8.3,es12.3)") "FFIRE SUMS:", &
       trim(FF_poll), trim( species(iemep)%name), ind, &
       species(iemep)%molwt, sum( BiomassBurningEmis(ind,:,:) )
 
@@ -320,7 +319,6 @@ subroutine Fire_Emis(daynumber)
       "ForestFire_ml :: Assigns "//trim(FF_poll) , MasterProc)
 
     if(DEBUG_FORESTFIRE) sum_emis(ind)=sum_emis(ind)+sum(BiomassBurningEmis(ind,:,:))
-
   enddo ! BB_DEFS
 
   my_first_defs  = .false.
@@ -338,15 +336,13 @@ subroutine Fire_Emis(daynumber)
   ! Some databases (e.g. FINN, GFED) have both total PM25 and EC, OC. The difference
   ! REMPPM25, is created by the BiomasBurning mapping procedure, but we just
   ! check here
-
   if(DEBUG_FORESTFIRE.and.debug_proc) then
     n = ieCO
     loc_maxemis = maxloc(BiomassBurningEmis(n,:,: ) )
     call datewrite("SUM_FF CHECK CO: ",  &
       (/ daynumber, n, i_fdom(loc_maxemis(1)), j_fdom(loc_maxemis(2)) /) ,&
       (/  sum_emis(n), maxval(BiomassBurningEmis(n,:,: ) ), &
-          BiomassBurningEmis(n,debug_li,debug_lj) /) &
-    )
+          BiomassBurningEmis(n,debug_li,debug_lj) /) )
   endif ! debug_proc
 endsubroutine Fire_Emis
 
@@ -364,7 +360,7 @@ subroutine Fire_rcemis(i,j)
 
   integer, parameter :: KEMISFIRE = 12
   real, dimension(KEMISFIRE:KMAX_MID) :: invDeltaZfac !  height of layer in m div 9
-  integer ::  k, n, iem, iFF
+  integer ::  k, n, iem
 
   integer, parameter ::  N_LEVELS = KMAX_MID - KEMISFIRE + 1  ! = 9.0 here
 
@@ -399,15 +395,9 @@ subroutine Fire_rcemis(i,j)
   enddo
  
   do n = 1, NEMEPSPECS 
-
-    iem = emep_used ( n )
-if( iem < 1 ) then
-   print *, "FFIREZERO ", n, me, " : ", emep_used
-   call CheckStop("FFIREZERO")
-end if 
+    iem = emep_used(n)
     origrc = rcemis(iem,KMAX_MID)   ! just for printout
     fac =  0.001 * AVOG /species(iem)%molwt    ! MW scale if needed
-
 
     ! distribute vertically:
     do k = KEMISFIRE, KMAX_MID
@@ -417,8 +407,8 @@ end if
     if(debug_flag) then
       k=KMAX_MID
       write(*,"(a,2i3,1x,a8,i4,es10.2,4es10.2)") "FIRERC ",&
-        n, IFF, trim(species(iem)%name), k, BiomassBurningEmis(iFF,i,j),&
-        invDeltaZfac(k), origrc, rcemis( iem, k )
+        n, iem, trim(species(iem)%name), k, BiomassBurningEmis(iem,i,j),&
+        invDeltaZfac(k), origrc, rcemis(iem,k)
     endif
 
 !DSBB    !--  Add up emissions in ktonne ......

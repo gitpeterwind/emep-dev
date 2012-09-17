@@ -6,9 +6,8 @@
   character(len=*), public, parameter :: &
     BiomassBurningMapping = "GFASv1toEmChem09"
   integer, private, parameter :: &
-    NBB_DEFS  = 21, & ! No mapping lines below
-    NBBSPECS  = 21, & ! No  unique GFAS used
-    NCMSPECS  = 21    ! No EMEP chemical mech specs used
+    NBB_DEFS   = 23, & ! No mapping lines below
+    NEMEPSPECS = 21    ! No EMEP chemical mech specs used
 
 !-----------------------------------------------------------------------!
 ! Column-1 gives GFASv1 species,
@@ -25,9 +24,9 @@
 !   bbtype("pm10fire     ", 1.000, 1.000, FFIRE_REMPPMco), & ! 087.210 | PM 10
 !   bbtype("pm2p5fire    ", 1.000,-1.000, FFIRE_REMPPMco), & ! 087.210 | PM 10 - PM 2.5
     bbtype("pm2p5fire    ", 1.000, 1.000, FFIRE_REMPPM25), & ! 087.210 | PM 2.5
-!   bbtype("ocfire       ", 1.000,-1.000, FFIRE_REMPPM25), & ! 090.210 | PM 2.5 - Organic Carbon
-!   bbtype("bcfire       ", 1.000,-1.000, FFIRE_REMPPM25), & ! 091.210 | PM 2.5 - Black Carbon
-    bbtype("ocfire       ", 1.000, 1.000, FFIRE_OC      ), & ! 090.210 | Organic Carbon
+    bbtype("ocfire       ", 1.700,-1.000, FFIRE_REMPPM25), & ! 090.210 | PM 2.5 - Organic Matter
+    bbtype("bcfire       ", 1.000,-1.000, FFIRE_REMPPM25), & ! 091.210 | PM 2.5 - Black Carbon
+    bbtype("ocfire       ", 1.700, 1.000, FFIRE_OM      ), & ! 090.210 | Organic Carbon --> O.Matter (OM/OC=1.7)
     bbtype("bcfire       ", 1.000, 1.000, FFIRE_BC      ), & ! 091.210 | Black Carbon
     bbtype("so2fire      ", 1.000, 1.000, SO2           ), & ! 102.210 | Sulfur Dioxide
     bbtype("ch3ohfire    ", 1.000, 1.000, CH3OH         ), & ! 103.210 | Methanol

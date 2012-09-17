@@ -238,6 +238,8 @@ My_Derived: PPM25_FIRE,
 
 ZCM_EmChem09soa/BiomassBurning-FINNv1_..... bug fix FFIRE_BC 1.0
 
+ForestFire_ml,ZCM_EmChem09soa/BiomassBurning-GFASv1_..... 
+  Update for GFAS input
 
 xxxxxxxx  rv4_OSrc1 Dave 16/9/2012 xxxxxxxxxxxxxxxxxxxx
 
