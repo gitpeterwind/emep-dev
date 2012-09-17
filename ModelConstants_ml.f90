@@ -141,7 +141,7 @@ integer, public, parameter :: &
 
 integer, public, save, dimension(4) ::   &
 !                 x0   x1  y0   y1
-RUNDOMAIN = (/  -999,-999 ,  -999, -999 /)     ! Set values later
+!RUNDOMAIN = (/  -999,-999 ,  -999, -999 /)     ! Set values later
 ! RUNDOMAIN = (/  1, 182,  1, 197 /)     ! HIRHAM
 ! RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA = new EMEP domain
 !  RUNDOMAIN = (/  1, 100,  1, 100 /)     ! Orig EMEP domain in EECCA (for benchmarks)
@@ -150,7 +150,7 @@ RUNDOMAIN = (/  -999,-999 ,  -999, -999 /)     ! Set values later
 ! RUNDOMAIN = (/240, 720, 48, 736 /)     ! TNO07 reduced (15W-45E;30N-73N)
 ! RUNDOMAIN = (/120, 360, 24, 368 /)     ! TNO14 reduced (15W-45E;30N-73N)
 ! RUNDOMAIN = (/ 60, 180, 12, 184 /)     ! TNO28 reduced (15W-45E;30N-73N)
-! RUNDOMAIN = (/ 70, 110, 72, 110 /)     ! TNO28  test
+ RUNDOMAIN = (/ 70, 110, 72, 110 /)     ! TNO28  test
 ! RUNDOMAIN = (/ 30,  90,  6,  92 /)     ! TNO56 reduced (15W-45E;30N-73N)
 ! RUNDOMAIN = (/ 60, 180, 12, 184 /)     !  test TNO7 area
 !--

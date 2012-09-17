@@ -6,10 +6,9 @@
   character(len=*), public, parameter :: &
      BiomassBurningMapping = "GFEDtoEmChem09"
   integer, private, parameter :: &
-    NBB_DEFS  = 13 & ! No mapping lines below
-   ,NBBSPECS  = 13 & ! No  unique GFED used
-   ,NCMSPECS  = 13 & ! No EMEP chemical mech specs used
-   ,MAXBB_SPLIT= 7   ! Max No EMEP components per GFED, e.g for VOC
+    NBB_DEFS  = 15 & ! No mapping lines below
+   ,NEMEPSPECS  = 13 !& ! No EMEP chemical mech specs used
+!   ,MAXBB_SPLIT= 7   ! Max No EMEP components per GFED, e.g for VOC
  
   !-----------------------------------------------------------------------!
   ! Column-1 gives GFED species , 
@@ -33,8 +32,10 @@
    ,bbtype("NMHC" , 1.0 , 0.05, CH3CHO       ) & 
    ,bbtype("NOx " , 1.0 , 1.000, NO          ) &
    ,bbtype("SO2 " , 1.0 , 1.000, SO2         ) &
-   ,bbtype("OC  " , 1.7 , 1.000, FFIRE_OC    ) &
+   ,bbtype("OC  " , 1.7 , 1.000, FFIRE_OM    ) &
    ,bbtype("BC  " , 1.0 , 1.000, FFIRE_BC    ) &
+   ,bbtype("OC  " ,-1.7 , 1.000, FFIRE_REMPPM25    ) &  ! Subtract from PM25 used above
+   ,bbtype("BC  " ,-1.0 , 1.000, FFIRE_REMPPM25    ) &  ! Subtract from PM25 used above
  /)
 ! Not used in EmChem09 standard
  !,bbtype("TPM         , 1.000, CH4         ) &

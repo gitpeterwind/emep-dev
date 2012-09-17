@@ -56,8 +56,6 @@ module ForestFire_ml
   use CheckStop_ml,      only : CheckStop
   use ChemChemicals_ml,  only : species
   use ChemSpecs_tot_ml
-!  use EmisDef_ml,        only : ISNAP_NAT &! Fires assigned to SNAP-11 usually
-!   ,NEMIS_FILE, EMIS_FILE  ! which pollutants are wanted, e.g. sox, pm25
 
   use GridValues_ml,     only : i_fdom, j_fdom, debug_li, debug_lj, &
                                  debug_proc,xm2,GRIDWIDTH_M
@@ -188,6 +186,7 @@ subroutine Fire_Emis(daynumber)
     case default
       if(my_first_call)&
         call PrintLog("8d GFED Forest Fires: only between 2001--2007",MasterProc)
+      call CheckStop("GFED not available. Use other FF data, or set USE_FOREST_FIRES .false. in ModelConstants")
       my_first_call = .false.
       return
     endselect

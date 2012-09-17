@@ -1,7 +1,7 @@
 
 #------- start from a "working" model code, after mk.GenChem, cpZD_OZONE/My*, make clean
 
-v=rv4_OSrc2                           # Input version flag
+v=rv4                                 # Input version flag
 tdir=$HOME/Unify                      # top directory - change $HOME as required
 idir=$tdir/Unimod.$v                  # Input dir
 

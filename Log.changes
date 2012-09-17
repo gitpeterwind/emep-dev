@@ -229,6 +229,13 @@ dsSep14   Wesely_ml.f90
 
 !----------------------------------------------------------
 
+xxxxxxxx    rv4.0    17/9/2012  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx    OpenSource Sep 2012 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+ForestFire_ml - will die if called with GFED and wrong years
+
+ZCM_EmChem09soa/BiomassBurning-GFED updated to new system
+
 xxxxxxxx   Svetlana/Alvaro/Dave 17/9/2012 xxxxxxxxxxxxxxxxxxxxx
 
 ZCM_EmChem09soa/VBS_nonvolatile.species: PPM25_FIRE group 
