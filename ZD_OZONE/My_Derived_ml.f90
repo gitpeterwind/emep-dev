@@ -191,7 +191,7 @@ private
         ,typ_s5i("OXN       ",  "ugN", D2,"AIR_CONCS", GROUP, D)&
         ,typ_s5i("NOX       ",  "ugN", D2,"AIR_CONCS", GROUP, D)&
         ,typ_s5i("RDN       ",  "ugN", D2,"AIR_CONCS", GROUP, D)&  !tno40
-        ,typ_s5i("TNO3      ",  "ugN", D2,"AIR_CONCS", GROUP, D)&
+        ,typ_s5i("TNO3      ",  "ug ", D2,"AIR_CONCS", GROUP, D)&
         ,typ_s5i("SIA       ",  "ug ", D2,"AIR_CONCS", GROUP, D)&
         ,typ_s5i("PMFINE    ",  "ug ", D2,"AIR_CONCS", GROUP, D)& !30
         ,typ_s5i("PM10      ",  "ug ", D2,"AIR_CONCS", GROUP, D)&
