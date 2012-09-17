@@ -40,10 +40,10 @@
 ! We read in OC and PM25, but want OM and REMPPM25
    ,bbtype("PM25",1.0   , 1.000, FFIRE_REMPPM25 ) & !  Will need to subtract OM, BC
    ,bbtype("OC  ",1.7   , 1.000, FFIRE_OM    ) & ! Put OM/OC=1.7 in fac
-   ,bbtype("BC  ",1.7   , 1.000, FFIRE_BC    ) &
+   ,bbtype("BC  ",1.0   , 1.000, FFIRE_BC    ) &
 ! Subtract, assuming OM/OC=1.7. ForestFire_ml will pevent zeros
    ,bbtype("OC  ",-1.7  , 1.000, FFIRE_REMPPM25 ) & ! Will subtract OM
-   ,bbtype("BC  ",-1.7  , 1.000, FFIRE_REMPPM25 ) & ! Will subtract BC
+   ,bbtype("BC  ",-1.0  , 1.000, FFIRE_REMPPM25 ) & ! Will subtract BC
  /)
 ! Not used in EmChem09 standard
  !,bbtype("CH4  "      , 1.000, CH4         ) &
