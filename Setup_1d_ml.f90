@@ -74,7 +74,7 @@
     ,USE_FOREST_FIRES                & !
 !FUTURE    ,USE_POLLEN                      & ! Pollen
     ,USE_SEASALT                     &
-    ,USE_LIGHTNING_EMIS              & !
+    ,USE_LIGHTNING_EMIS, USE_AIRCRAFT_EMIS              & !
     ,USE_SOILNOX, USE_GLOBAL_SOILNOX, USE_DUST, USE_ROADDUST    & !
     ,USE_EMERGENCY,DEBUG_EMERGENCY   & ! Emergency: Volcanic Eruption
     ,KMAX_MID ,KMAX_BND, KCHEMTOP    & ! Start and upper k for 1d fields
@@ -283,16 +283,31 @@ contains
         do k=KCHEMTOP, KMAX_MID
 
           rcemis(NO,k)  = rcemis(NO,k) &
-                              + 0.95 * (airn(k,i,j)+airlig(k,i,j))
+                              + 0.95 * airlig(k,i,j)
           rcemis(NO2,k) = rcemis(NO2,k) &
-                              + 0.05 * (airn(k,i,j)+airlig(k,i,j))
+                              + 0.05 * airlig(k,i,j)
 
         enddo
         if ( DEBUG_SETUP_1DCHEM .and. debug_proc .and.  &
                i==debug_li .and. j==debug_lj ) write(*,"(a,10es10.3)") &
                  " DEBUG_SETUP_AIRNOX ", airn(KMAX_MID,i,j),airlig(KMAX_MID,i,j)
 
-     end if ! AIRNOX
+     end if ! LIGHTNING_EMIS
+     if ( USE_AIRCRAFT_EMIS  ) then
+
+        do k=KCHEMTOP, KMAX_MID
+
+          rcemis(NO,k)  = rcemis(NO,k) &
+                              + 0.95 * airn(k,i,j)
+          rcemis(NO2,k) = rcemis(NO2,k) &
+                              + 0.05 * airn(k,i,j)
+
+        enddo
+        if ( DEBUG_SETUP_1DCHEM .and. debug_proc .and.  &
+               i==debug_li .and. j==debug_lj ) write(*,"(a,10es10.3)") &
+                 " DEBUG_SETUP_AIRNOX ", airn(KMAX_MID,i,j),airlig(KMAX_MID,i,j)
+
+     end if ! AIRCRAFT NOX
 
      !/** Add sea salt production
 

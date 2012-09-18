@@ -235,6 +235,9 @@ xxxxxxxx    rv4.0    18/9/2012  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 xxxxxxxx    OpenSource Sep 2012 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+Setup_1d_ml: Bug when lightning but no aircraft was used 
+(airn was used but not set). Separated rcemis into two parts. 
+
 Setup_1d_ml: extra "if" for runing with debug and burning not defined.
 
 Emissions_ml.f90: allocate airn also if only lightning are used
