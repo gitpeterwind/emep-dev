@@ -6,9 +6,11 @@
 \usepackage{rotating}
 \usepackage[pdfborder={0 0 0}]{hyperref}
 \usepackage{parskip}
-\usepackage[margin=2.5cm]{geometry}
+\usepackage[margin=2cm]{geometry}
 \usepackage[margin=2cm]{caption}
 \usepackage{etoolbox}
+\usepackage{longtable}
+\usepackage{nicefrac}
 \patchcmd{\quote}{\rightmargin}{\leftmargin 1em \rightmargin}{}{}
 
 \usepackage{ulem}   % added by dave to allow strike-out below
@@ -41,7 +43,26 @@
 %\usepackage[Bjarne]{fncychap}
 %\usepackage[Lenny]{fncychap}
 %\usepackage[Glenn]{fncychap}
-\newcommand{\ug}{$\mu g m^{-3}$}
+%\newcommand{\ug}{$\mu g m^{-3}$}
+%ST
+\newcommand{\degrees}{\ensuremath{^\circ}}
+ \newcommand{\ug}{\ensuremath{\mu \mbox{g m}^{-3}}\,}
+\newcommand{\tug}{$\nicefrac{\mu g}{m^{3}}$}
+\newcommand{\ugN}{\ensuremath{\mu \mbox{g(N) m}^{-3}}}
+\newcommand{\tugN}{$\nicefrac{\mu g(N)}{ m^{3}}$}
+\newcommand{\ugS}{\ensuremath{\mu \mbox{g(S) m}^{-3}}} 
+\newcommand{\tugS}{$\nicefrac{\mu g(S)}{m^{-3}}$}
+
+\newcommand{\mgSl}{\ensuremath{\mbox{mg(S)l}^{-1}}} 
+\newcommand{\tmgSl}{$\nicefrac{mg(S)}{l}$} 
+\newcommand{\mgNl}{\ensuremath{\mbox{mg(N)l}^{-1}}}
+\newcommand{\tmgNl}{$\nicefrac{mg(N)}{l}$} 
+\newcommand{\mgl}{\ensuremath{\mbox{mg l}^{-1}}}
+\newcommand{\tmgl}{$\nicefrac{mg}{l}$} 
+\newcommand{\mgSm}{\ensuremath{\mbox{mg(S)m}^{-2}}}  
+\newcommand{\tmgSm}{$\nicefrac{mg(S)}{m^{2}}$} 
+\newcommand{\mgNm}{\ensuremath{\mbox{mg(N)m}^{-2}}}
+\newcommand{\tmgNm}{$\nicefrac{mg(N)}{m^{2}}$} 
 
 %%% I tried using \bv to start a small-tex verbatim section and
 %%% \ev to end this. However, it seems that \end{verbatim} needs to
@@ -58,7 +79,7 @@
 %\begin{landscape}
 
 \title{The Unified EMEP Model - User's Guide}
-\date{(draft 31$^{st}$ March 2011)}
+\date{September 2012}
 \maketitle
 
 \tableofcontents
