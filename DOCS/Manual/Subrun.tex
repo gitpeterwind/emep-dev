@@ -2,7 +2,7 @@
 \label{ch:SubmitARun}
 
 In this chapter we provide detailed information on how to run the
-regional Unified EMEP model for two different types of
+regional EMEP/MSC-W model for two different types of
 simulations, namely: 
 
 \begin{description}
@@ -40,7 +40,7 @@ This is an example of a minimum modrun.sh script to run the model.
 \begin{verbatim}
 #!/bin/bash
 
-# Minimalistic script for run the Unified EMEP model
+# Minimalistic script for run the EMEP/MSC-W model
 
 # Link the input data
 inputdir=.
@@ -48,11 +48,11 @@ ln -s $inputdir/met/*   .   # Driving meteorology
 ln -s $inputdir/input/* .   # Other input files
 
 # Define some run parameters
-trendyear=2008              # emission year
+trendyear=2010              # emission year
 runlabel1=Base              # short label
 runlabel2=Opensource_setup  # long label
-startdate="2008 01 01"      # start date (metdata)
-  enddate="2008 01 01"      # end date (metdata)
+startdate="2010 01 01"      # start date (metdata)
+  enddate="2010 01 01"      # end date (metdata)
 
 # Put the run parameters in a temporary file
 cat > INPUT.PARA << EOF
@@ -75,9 +75,9 @@ rm INPUT.PARA
 \end{quote}
 This bash shell script is designed so that users can easily 
 adapt it to fit their needs. It contain the minimum information 
-required to run the Unified EMEP model. 
+required to run the EMEP/MSC-W model. 
 The script should be self-explanatory. It assumes two directories for input data. 
-One with all the metdata for 2008, and for January 1$^{st}$ 2009 (366 +1 files), 
+One with all the metdata for 2010, and for January 1$^{st}$ 2011 (365 +1 files), 
 and one input directory for all the other input files. You need to set the right paths 
 for the input directories.  
 All the input files in the input directories are linked to the directory you are working from. 
@@ -88,7 +88,7 @@ The trendyear can be set to change the boundary emissions for
 earlier and future years, see the modules {\bf BoundaryConditions\_ml.f90 } 
 and {\bf GlobalBCs\_ml.f90 } to understand better what the trendyear 
 setting does. The default setting is the meteorological year you are running for, 
-in this case 2008. 
+in this case 2010. 
 The runlabel1 option sets the name of the different output netCDF 
 files , see Table \ref{ch:output}. 
 The startdate and enddate parameters are set for the timeperiod you want the model 
@@ -99,13 +99,15 @@ has to be set (mpirun path\_to\_the\_modelcode/Unimod).
 
 It is recommended to submit the script as a batch job. Please check the submission routine 
 on the computer system you are running on. 
-When setting the number of nodes, it is important that it equals to the number set in the FORTRAN module 
-{\bf ModelConstants\_ml.f90}. In the module you set the wanted nodes in the x- and y-direction with {\bf NPROCX } and 
-{\bf NPROCY.} The product of these two is the number of nodes used. 
+In the new model version (4.0) the number of nodes is set automatically from what is asked 
+for when submitting a job. 
+% When setting the number of nodes, it is important that it equals to the number set in the FORTRAN module 
+% {\bf ModelConstants\_ml.f90}. In the module you set the wanted nodes in the x- and y-direction with {\bf NPROCX } and 
+% {\bf NPROCY.} The product of these two is the number of nodes used. 
 The approximate time and CPU usage is described in Section \ref{sec:compinf}\\
 
-When the job is no longer running or in the queue, it is either finished or has crashed for some reason. 
-There is an output log file and error file written to the directory where your modrun.s script is. 
+When the job is no longer running or in the queue, it is either finished or has crashed for some reason.  
+If the model run crashed, an error message will give information on what was missing or wrong in the routine.  
 If the run was successful, a message stating 
 \begin{quote}
 \begin{verbatim}
@@ -148,11 +150,11 @@ logical, public, parameter :: USE_CONVECTION = .false.
 
 Since convection has a smaller influence on transport on higher latitudes, this flag is turned off by 
 default when running the EECCA domain. It is however important when running the model globally. A global version 
-of the Unified EMEP model will be released later. 
+of the EMEP/MSC-W model will be released later. 
 
-The module {\bf ModelConstants\_ml.f90 } also sets the number of processors used in each direction with 
-{\bf PROCX } and {\bf NPROCY }. As described above, it is important that the product of these match the number set 
-when submitting the job. 
+% The module {\bf ModelConstants\_ml.f90 } also sets the number of processors used in each direction with 
+% {\bf PROCX } and {\bf NPROCY }. As described above, it is important that the product of these match the number set 
+% when submitting the job. 
 
 
 The module also sets which domain you want to run the model on. 
@@ -181,7 +183,7 @@ tells the model to run in the domain with x coordinates ranging from
 \section{Scenario run}
 \label{sec:scenrun}
 
-The EMEP  model can be used to test the impact of reduced emission of
+The EMEP model can be used to test the impact of reduced emission of
 one or more pollutants from a particular country or a number of
 countries.  Such runs are called ``Scenario runs''. They are the basic
 runs for source-receptor calculations.

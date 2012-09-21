@@ -2,16 +2,16 @@
 \label{ch:InputFiles}
 
 This chapter provides an overview on the necessary input files to run 
-the Unified EMEP model. A complete set of input files is provided in
-the EMEP Open Source web page to allow model runs for the year 2008. 
+the EMEP/MSC-W model. A complete set of input files is provided in
+the EMEP Open Source web page to allow model runs for the year 2010. 
 
 The input files are zipped in 13 different files. 
-There are 12 zipped files for the meteorology, one for each month, called meteo2008MM.tar.bz2 (where MM 
+There are 12 zipped files for the meteorology, one for each month, called meteo2010MM.tar.bz2 (where MM 
 is the month). 
-The last file for December also include a met file for January 1$^{st}$ 2009. 
+The last file for December also include a met file for January 1$^{st}$ 2011. 
 The last zipped input file (called other\_input\_files.tar.bz2) contains all other input 
 files needed for running the EMEP model, except AircraftEmis\_FL.nc.
-After unzipping all of the tar files, there will be two directories under EMEP\_Unified\_model.OpenSource2011. 
+After unzipping all of the tar files, there will be two directories under EMEP\_Unified\_model.OpenSource2012. 
 All the meteorology are placed under /met, and the rest of the input files under /input. 
 All the files, both meteorological and 
 the other input files, are described in this chapter.
@@ -37,21 +37,29 @@ PM$_{2.5}$ and PM$_{co}$).
 \hline
 {\bf Data} &  {\bf Name} & {\bf Format}\\
 {\bf Meteorology data} & met/&  \\
-Meteorology  &  meteoYYYYMMDD.nc \quad (366+1 files) & netCDF\\
+Meteorology  &  meteoYYYYMMDD.nc \quad (365+1 files) & netCDF\\
 & & \\
 {\bf Other Input files} & input/ &\\
 Global Ozone & GLOBAL\_O3.nc & netCDF\\
 BVOC emissions & EMEP\_EuroBVOC.nc & netCDF\\
+Landuse & LanduseGLC.nc and Landuse\_PS\_5km.nc  & netCDF\\
+Degree-day factor & DegreeDayFactors.nc &  netCDF\\
+N depositions & annualNdep.nc  & netCDF\\
+Road dust &  RoadMap.nc and AVG\_SMI\_2005\_2010.nc& netCDF$\dagger$ \\
 Aircraft emissions & AircraftEmis\_FL.nc & netCDF$\dagger$ \\
 Surface Pressure & SurfacePressure.nc & netCDF$\dagger$ \\
+Forest Fire & ForestFire\_Emis\_YYYY.nc & netCDF$\dagger$ \\
 & & \\
-Landuse & Inputs.Landuse & ASCII$^*$\\
-Land/Sea mask & landsea\_mask.dat & ASCII\\
+% Landuse & Inputs.Landuse & ASCII$^*$\\
+% Land/Sea mask & landsea\_mask.dat & ASCII\\
 Natural SO$_2$ & natso2MM.dat  \quad (12 files) & ASCII\\
 Volcanoes & VolcanoesLL.dat & ASCII$^*$\\
+	  & eruptions.csv volcanoes.csv& ASCII \\ 
 Emissions & emislist.POLL  \quad (7 files) & ASCII\\
 Time factors for monthly emissions& MonthlyFac.POLL  \quad (7 files) & ASCII\\
 Time factors for daily emissions &  DailyFac.POLL  \quad (7 files) & ASCII\\
+Time factors for hourly emissions & HOURLY-FACS  & ASCII$^*$\\
+Emission heights & EmisHeights.txt & ASCII$^*$\\
 Landuse definitions & Inputs\_LandDefs.csv & ASCII$^*$\\
 Stomatal conductance & Inputs\_DO3SE.csv & ASCII$^*$\\
 Lightning emissions & lightningMM.dat  \quad (12 files) & ASCII$^*$\\
@@ -62,6 +70,7 @@ Photo-dissociation rates & jclearSS.dat \quad (4 files) & ASCII\\
  & jcl3kmSS.dat \quad (4 files) + jcl3.jun & ASCII\\
 Dust files & sand\_frac.dat clay\_frac.dat & ASCII$\dagger$\\
  & DUST\_f.MM DUST\_c.MM & ASCII$\dagger$\\
+ & SoilTypes\_IFS.nc & netCDF$\dagger$\\
 Sites locations for surface output & sites.dat & ASCII$^*$\\
 Sondes locations for vertical output & sondes.dat & ASCII$^*$\\
 Emission factors for scenario runs & femis.dat & ASCII\\
@@ -95,7 +104,7 @@ some output parameters. The meteorological fields are retrieved on a
 on 60 eta levels from the IFS model are interpolated onto the 20 EMEP sigma
 levels. The version of the IFS model used for preparing these fields,
 Cycle 36r1, is documented in \url{http://www.ecmwf.int/research/ifsdocs/index.html}.
-Meteorological fields currently used for Unified EMEP Model runs are given in
+Meteorological fields currently used for EMEP/MSC-W Model runs are given in
 Table~\ref{Tab:metinput}. Some verification and description of these
 meteorological fields are given in Chapter 7 of the EMEP Status Report
 1/2010.
@@ -103,7 +112,7 @@ meteorological fields are given in Chapter 7 of the EMEP Status Report
 {\bf Acknowledgement:} ECMWF, met.no
 
 \begin{table}[h!]
-\caption{Input meteorological data used in the Unified EMEP Model
+\caption{Input meteorological data used in the EMEP/MSC-W Model
    \label{Tab:metinput}}
 \begin{center}
 \begin{tabular}{p{6cm}lll}
@@ -111,29 +120,36 @@ meteorological fields are given in Chapter 7 of the EMEP Status Report
 Parameter      & Unit & Description          \\
 \hline
 \multicolumn{3}{l}{3D fields - for 20 $\sigma$ levels} \\
-$u,v$  &  m/s     & Wind velocity components   \\
-$q$    &  kg/kg   & Specific humidity           \\
-$\dot{\sigma}$ & s$^{-1}$ & Vertical wind in $\sigma$ coordinates \\
+$u,v$  &  m/s     & Horizontal wind velocity components   \\
+$q$    &  $\nicefrac{kg}{kg}$   & Specific humidity           \\
+%$\dot{\sigma}$ & s$^{-1}$ & Vertical wind in $\sigma$ coordinates \\
 $\theta$       & K  & Potential temperature \\
+$CW$             & $\nicefrac{kg}{kg}$ & Cloud water          \\
 $CL$             & \% & 3D Cloud cover            \\
+$cnvuf$          & $\nicefrac{kg}{sm^2}$ & Convective updraft flux \\
+$cnvdf$          & $\nicefrac{kg}{sm^2}$ & Convective downdraft flux \\
 $PR$             & mm & Precipitation         \\
-$CW$             & kg/kg & Cloud water          \\
 \hline
 \multicolumn{3}{l}{2D fields - for Surface} \\
 $PS$             & hPa & Surface pressure                     \\
 $T2$          & K  & Temperature at 2m height               \\
-$Rh2$             & \% & Relative humidity at 2m height$\ast$ \\
-SH              & W m$^{-2}$ & Surface flux of sensible heat \\
-LH             & W m$^{-2}$ & Surface flux of latent heat \\
-$\tau$         & N m$^{-2}$ & Surface stress               \\
+$Rh2$             & \% & Relative humidity at 2m height \\
+SH              &  $\nicefrac{W}{m^{2}}$ & Surface flux of sensible heat \\
+LH             & $\nicefrac{W}{m^{2}}$ & Surface flux of latent heat \\
+$\tau$         & $\nicefrac{N}{m^{2}}$ & Surface stress               \\
 SST            & K & Sea surface temperature \\
-SWC            & m$^3$/m$^{3}$ & Soil water content$^\ast$        \\
-DSWC           & m$^3$/m$^{3}$ & Deep soil water content$^\ast$   \\
+SWC            & $\nicefrac{m^{3}}{m^{3}}$ & Soil water content      \\
+%DSWC           & m$^3$/m$^{3}$ & Deep soil water content$^\ast$   \\
+lspr             & m & Large scale precipitation \\
+cpr              & m & Convective precipitation \\
 sdepth         & m & Snow depth \\
 ice            & \% & Fraction of ice \\  
+$SMI1$           &    & Soil Mmoisture index level 1 \\
+$SMI3$           &    & Soil Mmoisture index level 3 \\
+
 \hline
 \end{tabular}\\
-Notes: $\ast$ not yet used
+%Notes: $\ast$ not yet used
 \end{center}
 \end{table}
 
@@ -172,16 +188,59 @@ refer to emissions per area of the appropriate forest category. In
 addition, default emission potentials are given for other
 land-cover categories in the file Inputs\_LandDefs.csv. 
 The underlying emission potentials, land-cover data bases, and model
-coding have however changed substantially for rv3\_7. The new approach
-is documented in Simpson {\sl et al.}, 2011.
+coding have however changed substantially for v.2011-06 (last OpenSource version). The new approach
+is documented in Simpson {\sl et al.}, 2012.
+
+\subsection{Landuse}
+
+Landuse data are required for modeling boundary layer processes
+(i.e. dry deposition, turbulent diffusion).
+The EMEP/MSC-W model can accept landuse data from any
+data set covering the whole of the domain, providing reasonable 
+resolution of the vegetation categories. Gridded data sets providing
+these landuse categories across the EMEP domain have been created
+based on the data from the Stockholm Environment Institute at York 
+(SEI-Y) and from the Coordinating Center for Effects (CCE). 
+16 basic landuse classes have been identified for use in the
+deposition module in the model, and three additional ``fake'' landuse
+classes are used for providing results for integrated assessment
+modeling and effects work.
+
+There are two netcdf files included, ``Landuse\_PS\_5km.nc`` 5 km resolution 
+landuse over the EMEP domain, and a global ``LanduseGLC.nc'' where the previous 
+file is not defined. The different landuse types are desribed in Simpson et al (2012). 
+
+% There is a {\bf header} in the file that contains short abbreviations 
+% for the different land cover
+% types, e.g. CF for temperate/boreal coniferous forest. The landuse
+% types are summarized in Table 5.1 in Chapter 5 of the EMEP Status
+% Report 1/2003 Part I (Simpson {\sl et al.}, 2003).
+% 
+% The different landuse types are given as a percentage of area for each 
+% EMEP grid cell in the {\bf ASCII file} ``Inputs.Landuse''. 
+
+\subsection{Degree-day factor}
+Domestic combustion which contribute to a large part of SNAP-2, varies on the daily 
+mean temperature. The variation is based on the heating degree-day concept. These 
+degree days are pre-calculated for each day and stored in the file DegreeDayFactors.nc. 
+See Simpson et al. (2012) section 6.1.2. 
 
 
+\subsection{NO$_x$ depositions}
+Areas with high NO deposition loads have greater soil-NO emissions. To include this in 
+the model, a netcdf file where pre-calculated N-depositions are included. The file made by 
+the results from the EMEP MSC-W model runs over a 5-year period. 
 
 
-
+\subsection{Road Dust}
+Road traffic produces dust. These emissions are handled in the EMEP MSC-W model in the 
+{\bf Emissions\_ml.f90} module. To include road dust, set USE\_ROADDUST = .true. in 
+ { \bf ModelConstants\_ml.f90}. There are two files included in input data, RoadMap.nc and 
+AVG\_SMI\_2005-2010.nc. RoadMap.nc include gridded roads and PM emissions over Europe, 
+AVG\_SMI\_2005-2010.nc are global. 
 
 \subsection{Aircraft emissions}
-In the Unified EMEP model aircraft emissions are 'OFF' by default. 
+In the EMEP/MSC-W model aircraft emissions are 'OFF' by default. 
 They can be switched 'ON' by setting USE\_AIRCRAFT\_EMIS = .true. in { \bf ModelConstants\_ml.f90.} 
 The model will then use data provided by the EU-Framework Programme 6 Integrated 
 Project QUANTIFY (\url{http://www.pa.op.dlr.de/quantify}). However, before using 
@@ -201,45 +260,31 @@ Emission file, there will be need for a SurfacePressure.nc file, which is alread
 The netCDF file consists of surface pressure fields for each of the months in 2008 called surface\_pressure, 
 and one field for the whole year called surface\_pressure\_year. All fields are given in Pa. 
 
+\subsection{Forest Fire}
+Fores fire emissions in the model are from the based on the Fire INventory from NCAR (FINN) version 1, downloadable 
+from \url{http://bai.acd.ucar.edu/Data/fire/}. They are global and daily. To include forest fire emissions set 
+USE\_FOREST\_FIRES = .true. in { \bf ModelConstants\_ml.f90,} and download the 
+2010 GEOS-chem daily data. The data needs to be stored with units mole/day in a netcdf file called ForestFire\_Emis\_2010.nc 
+campatible with the { \bf ForestFire\_ml.f90 } module. 
+
+
 \section{ASCII files}
 
-\subsection{Landuse}
 
-Landuse data are required for modeling boundary layer processes
-(i.e. dry deposition, turbulent diffusion).
-The Unified EMEP model can accept landuse data from any
-data set covering the whole of the domain, providing reasonable 
-resolution of the vegetation categories. Gridded data sets providing
-these landuse categories across the EMEP domain have been created
-based on the data from the Stockholm Environment Institute at York 
-(SEI-Y) and from the Coordinating Center for Effects (CCE). 
-16 basic landuse classes have been identified for use in the
-deposition module in the model, and three additional``fake'' landuse
-classes are used for providing results for integrated assessment
-modeling and effects work.
-
-There is a {\bf header} in the file that contains short abbreviations 
-for the different land cover
-types, e.g. CF for temperate/boreal coniferous forest. The landuse
-types are summarized in Table 5.1 in Chapter 5 of the EMEP Status
-Report 1/2003 Part I (Simpson {\sl et al.}, 2003).
-
-The different landuse types are given as a percentage of area for each 
-EMEP grid cell in the {\bf ASCII file} ``Inputs.Landuse''. 
-
-
-
-\subsection{Land/Sea mask}
-This file, based on the meteorological model's roughness length, is used
-to assign a land/sea mask within the Unified EMEP model, since there is
-a need to modify the stability information for coastal grid cells
-(which contain land, but is not resolved by the NWP model supplying 
-meteorological data to the Unified EMEP model). 
-
-The gridded {\bf ASCII} file ``landsea\_mask.dat'' contains 3 columns. 
-The first two columns represent the `i' and `j' indices of the EECCA
-grid and the third column gives the class of the grid cell, where the 
-EMEP model use 0 for ocean, and $\geq$ 1 as land.
+% 
+% 
+% 
+% \subsection{Land/Sea mask}
+% This file, based on the meteorological model's roughness length, is used
+% to assign a land/sea mask within the Unified EMEP model, since there is
+% a need to modify the stability information for coastal grid cells
+% (which contain land, but is not resolved by the NWP model supplying 
+% meteorological data to the Unified EMEP model). 
+% 
+% The gridded {\bf ASCII} file ``landsea\_mask.dat'' contains 3 columns. 
+% The first two columns represent the `i' and `j' indices of the EECCA
+% grid and the third column gives the class of the grid cell, where the 
+% EMEP model use 0 for ocean, and $\geq$ 1 as land.
 
 
 
@@ -258,6 +303,12 @@ and height of volcanoes into the model.
 The input file ``VolcanoesLL.dat'' in {\bf ASCII} format contains the input data for the two active volcanoes
  Enta and Stromboli. The two first columns gives their latitudes and longitudes, their height as sigma level
  in column 3 and their emission in ktons per year in column 4. 
+
+To include the 2010 volcanic eruptions of Eyjafjallaj\"{o}kull on Iceland additional files are included. 
+Since volcano only had eruptions on some days, two files are included. The first ``volcanoes.cvs`` gives 
+the name of the volcanoe, and ''eruption.cvs`` gives date and amount of ash and $SO_2$ emissions. 
+This is further described in Mastin {\sl et al.}, 2009a and Mastin {\sl et al.}, 2009b.
+
 
 \subsection{Gridded Emissions}
 The emission input for the Unified EMEP model consists of gridded
@@ -299,10 +350,19 @@ the 12 consecutive columns represent the time factors corresponding to
 the months of the year. In the daily files there are 7 consecutive columns representing 
 the time factor for each day of the week. 
 
+Version rv4.0 also includes hourly time factors for pollutants. The file HOURLY-FACS 
+includes factors for each of the elleven SNAP sectors for every hour (the collumns) for 
+each day of the week, see Simpson et al. (2012) section 6.1.2
+
 % \COMMENT{I moved all emission-related factors here}
 
+\subsection{Emission heights}
+A vertical distribution for the elleven SNAP sectors are given in the file EmisHeights.txt. 
+The file has seven vertical levels, over the collumns and the SNAP sectors given in the first row. 
+Read more in Simpson et al. (2012) section 6.1.1.
+
 \subsection{Emission factor for scenario runs}\label{sec:femis}
-Scenario run in the case of the Unified EMEP model means a run to test
+Scenario run in the case of the EMEP/MSC-W model means a run to test
 the impact of one or more pollutants from a particular
 country. 
 
@@ -387,7 +447,7 @@ defines the length of the LAI increase and decline periods (no. of days).
 % \NEW{
 Finally, the last four columns give default values of 
 foliar biomass and biogenic VOC emission potentials. See Simpson
-et al., 2011 for details.
+et al., (2012) for details.
 % }
 
 
@@ -404,7 +464,7 @@ Status Report 1/2003 Part I (Simpson {\sl et al.}, 2003).
 
 The file contains a {\bf header} with the contents of the file,
 with different factors needed for each of the landuse classes used
-in the Unified EMEP model. The first two columns represent the
+in the EMEP/MSC-W model. The first two columns represent the
 landuse code (which are consistent with those in ``Landuse.Input'' file)
 and name. The next 22 values are different phenology factors.
 
@@ -422,7 +482,7 @@ For the two types of cloud conditions there are one {\bf ASCII} file
 averaged for each season (SS); 01, 02, 03 and 04. 
 For light cloud the four seasonal files are called ``jcl1kmSS.dat'', for dense cloud conditions
 the four seasonal files are called ``jcl3kmSS.dat'', and then for clear sky four files 
-called ``jclearSS.dat''. In addittion there are wo files for june called jcl1.jun 
+called ``jclearSS.dat''. In addittion there are two files for june called jcl1.jun 
 and jcl3.jun.
 
 Each file contains 18 columns. The first column is latitude of zenith 
@@ -449,6 +509,10 @@ The gridded input files ``DUST\_f.MM'' and ``DUST\_c.MM'' gives monthly dust mix
 ratios (MM - month, e.g. 01, 02, 03,...) for fine and coarse dust from Sahara. The files are based on calculations 
 from a global CTM at the University of Oslo for 2000. 
 To include Saharan dust, set USE\_SAHARA = .true. in {\bf ModelConstants\_ml.f90}.
+
+Another source for dust is an arid surface. This is accountet for by soilmosture calculations in {\bf DustProd\_ml.f90 }. 
+Together with Soil Water Index from the meteorology files and permanent wilting point (pwp) from SoilTypes\_IFS.nc. 
+This file is global and netcdf. See Simpson et al. (2012) section 6.10.
 
 
 

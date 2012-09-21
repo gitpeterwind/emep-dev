@@ -3,21 +3,20 @@
 
 Output files from a model run are written out in either ASCII, or
 (for most data outputs) in netCDF format. 
-The different netCDF files, the Runlog output, and the zipped sites and sondes 
-files are named after the runlabel1 parameter set in modrun.sh. 
-The model output is written to the same directory as where you submitted 
-your run with the modrun.sh script, as described in Chapter \ref{ch:SubmitARun}.
+The different netCDF files are named after the runlabel1 parameter set in modrun.sh. 
+The model output is written to the same directory as where the runscript where submitted, as described 
+in Chapter \ref{ch:SubmitARun}.
 
 To compare you you model results, there has been made available model result files 
 that can be downloaded  from the EMEP Open Source website under ``Download'' section: ``Model Results''. 
-There are both model results for a run over a whole year, and a test run over two days from 
-January 1$^{st}$ to 2$^{nd}$. These are placed in an output/ directory. 
+There are both model results for a run over a whole year, and a test run for April. 
+These are placed in an output/ directory. 
  
 
 \begin{table}[h!]
 \caption[List of model output files]{List of output files written in the
   working directory after a  model run. 
-Note: YY: year, MM: month.}\label{tab:output}
+Note: YYYY: year.}\label{tab:output}
 % \vspace{0.5cm}
 \begin{center}
 \hspace{-1cm}
@@ -30,24 +29,21 @@ Note: YY: year, MM: month.}\label{tab:output}
     Base\_hour.nc &Gridded hourly values of a selection &
     netCDF\\  
  &  of compounds.& \\
-%    Base\_inst.nc &Gridded instantaneous values of a selection
-%     & netCDF\\
- &  of compounds.& \\
     Base\_month.nc & Gridded monthly values of a selection&
     netCDF\\
  &  of compounds.& \\
     Base\_fullrun.nc & Gridded yearly values of a selection&
     netCDF\\
  &  of compounds. & \\
-    sites.MMYY & Surface daily values of a selection&  ASCII\\
- & of stations and compounds per month.& \\
+    sites\_YYYY.cvs & Surface daily values of a selection&  ASCII\\
+ & of stations and compounds.& \\
 %    Base.sites.tgz & All the 'sites.MMYY' files in one zipped tar file. & ASCII\\
-    sondes.MMYY & Vertical daily values of a selection& ASCII\\
- &  of stations and compounds per month.& \\
+    sondes\_YYYY.csv & Vertical daily values of a selection& ASCII\\
+ &  of stations and compounds. & \\
 %    Base.sondes.tgz& All the 'sondes.MMYY' files in one zipped tar file.& ASCII\\ 
 & &\\ \hline
 {\bf Additional files} &  {\bf Short description} & {\bf Format}\\
-    Base\_RunLog & Summary log of runs, including total emissions  & ASCII\\
+    RunLog.out & Summary log of runs, including total emissions  & ASCII\\
  &  of different air pollutants per country& \\
 %% eulmod.res & Mass budget for different compounds & ASCII\\
 % INPUT.PARA & List of input parameters & ASCII\\\hline
@@ -62,6 +58,188 @@ Timing.out & Timing log file& ASCII \\
 \label{Tab:outputs}
 \end{table}
 
+
+%ST: Paramer list
+
+\newpage
+\section{Output parameters netcdf files}\label{sec:OutputParam}
+
+Parameters to be written out Base\_day.nc, Base\_month.nc and Base\_year.nc are defined in
+My\_Derived\_ml.f90 and Derived\_ml.f90. In My\_Derived\_ml.f90, the
+use can specify the output species (air concentrations, depositions,
+column values), units and temporal resolution of the outputs (daily,
+monthly, yearly).
+
+The name of output parameter provides some information about data. The
+names start with TYPE of the parameter, namely SURF (surface air
+concentrations), DDEP (Dry deposition), WDEP (Wet deposition), COLUMN
+(Vertically integrated parameters), Area (Surface area) etc.   
+
+For suface air concentrations, the general name pattern is
+SURF\_UNITS\_COMPONENT. Here, UNITS can e.g. be ug (\ug), ugS (\ugS),
+ugN (\ugN), or ppb. The user can change units in My\_Derived\_ml.f90
+(in array OutputConcs). Note that the components are classified either
+as SPEC (species) or GROUP. The content of complex GROUP components
+can be found in CM\_ChemGroups\_ml.f90.
+
+For dry depositions, given per 1m$^{2}$ of specified landuse, the
+names look like \\ DDEP\_COMPONENT\_m2LANDUSE, where LANDUSE can be
+either a specific landuse type or a cell average. The units are \mgSm
+or \mgNm. For wet depositions, the names are DDEP\_COMPONENT, and the
+units are \mgSl or \mgNl.
+
+For column integrated parameters, the names are
+COLUMN\_COMPONENT\_NLAYERS, where NLAYERS is the number of layers
+included in the integration. The units are molec/m$^2$, but can easily
+be changed in My\_Derived\_ml.f90 and Derived\_ml.f90.
+
+VG\_COMPONENT\_LANDUSE are the dry deposition velocities on various
+landuse types, typically in cm/s.
+
+
+Table \ref{tab:outpar} lists most of output parameters, providing
+additional explanation to the complex components. For a complete suit
+of currently selected output parameters, see provided output
+NetCDF files, or My\_Derived\_ml.f90 module.
+
+% $\nicefrac{\mu g}{m^{-3}}$
+
+\newpage
+\begin{center}
+\begin{longtable}{lll}
+\caption[List of output parameters]{List of output
+  parameters (not complete).}\label{tab:outpar} \\
+
+%\hspace{-1cm}
+\hline
+\textbf {Parameter name} &  {\textbf Short description} & {\textbf Comments}\\
+\hline
+\endfirsthead
+
+
+\multicolumn{3}{c}%
+	{\tablename\ \thetable\ -- \textit{Continued from previous
+            page}} \\
+
+\hline
+\textbf{Parameter name} & \textbf{Short description} & \textbf{Comments}  \\
+\hline
+\endhead
+
+\hline \multicolumn{3}{r}{\textit{Continued on next page}} \\ \hline
+\endfoot
+
+\hline \hline
+\endlastfoot
+
+%\hline
+%{\bf Parameter name} &  {\bf Short description} & {\bf Comments}\\
+%\hline
+%\hline
+
+%   & {\bf Air Concentrations}   & \\
+
+
+    SURF\_ppb\_O3 & O$_{3}$ [ppb]&  \\
+    SURF\_ugN\_NO & NO [\tugN]& Available also in ppb \\
+%    SURF\_ppb\_NO & NO [ppb]&  \\
+    SURF\_ugN\_NO2 & NO$_{2}$ [\tugN]& Available also in ppb \\
+%    SURF\_ppb\_NO2 & NO$_{2}$ [ppb]&  \\
+    SURF\_ugN\_HNO3 & HNO$_{3}$ [\tugN]&  Available also in ppb \\
+    SURF\_ugN\_NH3 & NH$_{3}$ [\tugN]& Available also in ppb \\
+    SURF\_ugS\_SO2 & SO$_{2}$ [\tugS]& Available also in ppb \\
+    & & \\
+    SURF\_ug\_SO4 & SO$_{4}^{2-}$ [\tug]&  \\
+    SURF\_ug\_NO3\_F & NO$_{3}^{-}$ [\tug] fine aerosol & As ammonium nitrate \\
+    SURF\_ug\_NO3\_C & NO$_{3}^{-}$ [\tug] coarse aerosol& Associated
+    with sea salt and \\ & & mineral dust \\
+    SURF\_ug\_TNO3 & NO$_{3}^{-}$ [\tug] total & Sum of fine and coarse nitrate \\
+    SURF\_ug\_NH4\_F & NO$_{4}^{+}$ [\tug] fine aerosol& As ammonium
+    sulphate and \\ & &  ammonium nitrate \\
+    SURF\_ug\_SIA & SIA [\tug]& Secondary Inorganic Aerosol \\
+    & & \\
+    SURF\_ug\_ECFINE & EC fine [\tug]& Elemental carbon \\
+    SURF\_ug\_ECCOARSE & EC coarse [\tug]& Elemental carbon \\
+    SURF\_ug\_PART\_OM\_F & OM fine [\tug]& Organic Matter fine aerosol\\
+    SURF\_ug\_OMCOARSE & OM coarse [\tug]& Organic Matter coarse
+    aerosol\\
+    & & \\
+    SURF\_ug\_SEASALT\_F & Sea salt fine aerosol [\tug]&  \\
+    SURF\_ug\_SEASALT\_C & Sea salt coarse aerosol [\tug]&  \\
+    SURF\_ug\_SS & Sea salt  [\tug]& Sum of fine and coarse sea salt \\
+    SURF\_ug\_DUST\_ROAD\_F & Road dust fine aerosol [\tug]&  \\
+    SURF\_ug\_DUST\_ROAD\_C & Road dust coarse aerosol [\tug]&  \\
+    SURF\_ug\_DUST\_WB\_F & Windblown dust fine  [\tug]&  \\
+    SURF\_ug\_DUST\_WB\_C & Winblown dust coarse [\tug]&  \\
+    SURF\_ug\_DUST\_SAH\_F & Saharan dust fine  [\tug]& From Boundary conditions \\
+    SURF\_ug\_DUST\_SAH\_C & Saharan dust coarse [\tug]&From Boundary conditions \\
+    SURF\_ug\_DUST\_NAT\_F & Natural dust fine  [\tug]& Windblown and Saharan \\
+    SURF\_ug\_DUST\_NAT\_C & Natural dust coarse [\tug]& Windblown and Saharan \\
+    SURF\_ug\_DUST & Mineral dust  [\tug]& From all sources \\
+    & & \\
+    SURF\_ug\_PM10 & PM$_{10}$ dry mass[\tug]&  \\
+    SURF\_ug\_PM10\_rh50 & PM$_{10}$ wet [\tug]&PM$_{10}$ +\\ 
+    & & particle water at Rh=50\% \\
+    SURF\_ug\_PM25 & PM$_{2.5}$ dry [\tug]& Includes fine PM and  \\ & & 27\% of
+    coarse $NO_{3}$  \\
+    SURF\_ug\_PM25\_rh50 & PM$_{2.5}$ wet [\tug]& PM$_{2.5}$ + \\
+    & & particle water at Rh=50\% \\
+    SURF\_ug\_PM25X & PM$_{2.5}$ dry [\tug]& Includes fine PM and 27\% of
+     \\ & & coarse $NO_{3}$, EC and OM \\
+    SURF\_ug\_PM25X\_rh50 & PM$_{2.5}$ [\tug]& As PM$_{2.5}$X + \\ &&
+    particle water at Rh=50\% \\
+
+    SURF\_ug\_PMFINE & Fine PM [\tug]& Sum of all fine aerosols \\
+    SURF\_ug\_PPM25 & Primary PPM$_{2.5}$ [\tug]& Anthropogenic emissions \\
+    SURF\_ug\_PPM\_C & Primary coarse PM [\tug]& Anthropogenic
+    emissions \\
+    SURF\_ug\_PM25\_FIRE & PM$_{2.5}$ from forest fires [\tug]& Sum of BC, OC \\
+    & & and rest PM$_{2.5}$ \\
+etc.& &\\ \hline
+
+& {\bf Dry Depositions}   & \\
+\hline
+    DDEP\_SOX\_m2Grid & Oxidized sulphur [\tmgSm]& For a grid cell\\
+    & & landuse area weighted \\
+    DDEP\_SOX\_m2Conif & Oxidized sulphur [\tmgSm]& To coniferous
+    forest \\
+    DDEP\_NOX\_m2Grid & Oxidized nitrogen [\tmgNm]& For a grid cell\\
+    & & landuse area weighted \\
+    DDEP\_NOX\_m2Decid & Oxidized nitrogen [\tmgNm]& To decideous
+    forest \\
+    DDEP\_RDN\_m2Grid & Reduced nitrogen [\tmgNm]& For a grid cell\\
+    & & landuse area weighted \\
+    DDEP\_RDN\_m2Seminat & Reduced nitrogen [\tmgNm]& To semi-natural \\
+etc.& &\\ \hline
+& {\bf Wet Depositions}   & \\
+\hline
+    WDEP\_PREC & Precipitation [mm]& \\
+    WDEP\_SOX & Oxidized sulphur [\tmgSl]& \\
+    WDEP\_SS  & Sea salt [\tmgl]& \\
+etc.& &\\ \hline
+& {\bf Others}   & \\
+\hline
+    AOD & Aerosol Optical Depth at 550nm & Experimental\\
+    Area\_Crops\_Frac & Area fraction of crops & Available for several
+    landuses\\
+    VG\_NO3\_F\_Grid  & Dry deposition velocity of fine NO$_{3}^{-}$ &
+    Grid cell average\\
+etc.& &\\ \hline
+
+& {\bf Meteorological parameters}   & \\
+\hline
+    USTAR\_GRID & U\* grid averaged & Available for several
+    landuses\\
+    T2m & Temperature at 2m [\degrees C] & \\
+    rh2m  & Fractional relative humidity at 2m & \\
+etc.& &\\ \hline
+ 
+%\hline
+%\end{tabular}
+%\label{Tab:outpar}
+
+\end{longtable}
+\end{center}
 
 \newpage
 \section{ASCII outputs: sites and sondes}\label{sec:sitesonde}
@@ -92,13 +270,14 @@ may look like this:
 \begin{quote}
 \begin{verbatim}
 # "Sondes: names, locations, elevations"
-# "Area: Northern Hemisphere"
-# "latitude in degrees (positive north)"
-# "longitude in degrees (positive east of Greenwich)"
-: Units deg
+# "Area: EMEP-Europe"
+# "ix: x coordinate"
+# "iy: y coordinate"
+# "lev: vertical coordinate (20=ground)"
+: Units index
 : Coords LatLong
 : VertCoords EMEPsigma
-: DomainName Hemis
+: DomainName NA
 #
 name lat long lev #HEADERS
 -    deg deg level #SKIP
@@ -113,30 +292,6 @@ Hohenpeissenberg  47.80   11.02  20  ! comment
 \end{quote}
 \end{small}
 
-Or, in cases where grid indicies are used rather than latitudes and 
-longitudes. This is useful if you want sites and sonde output from a line 
-or an area from the model. 
-
-\begin{small}
-\begin{quote}
-\begin{verbatim}
-# "Sites: names, locations, elevations"
-# "Area: EMEP-EECCA"
-# "ix: x coordinate"
-# "iy: y coordinate"
-# "lev: vertical coordinate (20=ground)"
-: Units index
-: Coords ModelCoords
-: VertCoords EMEPsigma
-: DomainName EMEP-50kmEECCA
-#
-name ix iy lev #HEADERS
--    index index level #SKIP
-#DATA:
-\end{verbatim}
-
-\end{quote}
-\end{small}
 
 The first line in each file is a header with file content.
 Then, the contents are described in more detail. Text strings after
@@ -149,7 +304,6 @@ Text after ':' is read in by the model:\newline
 (indices of the grid box in which the station is located)\newline
 - VertCoords: vertical coordinate system that is used in the model (usually
 'EMEPsigma')\newline
-- DomainName: domain, for which the model is run (e.g. 'Global\_1x1' or 'Hemis')\newline
 
 
 Both sites.dat and sondes.dat files are optional, but recommended. 
@@ -158,85 +312,88 @@ The species and meteorological data requested for site and sone output
 few met fields are defined so far but more can be added into 
 {\bf Sites\_ml.f90} as required. 
 
-The outputs consist of a header giving the number of sites requested, 
-species/met data requested, and then the actual values for each 
-variable for each staion. For the sonde data values are given for 
-all 20 levels, starting with the ground-level values. These files
-are best read using some helper programmes, which we provide in
-the "Tools" directory:
+The output files sites\_2010.csv and sondes\_2010.csv are comma separated files 
+that can be read by excel. If you include the whole year, or the 31. December, sites\_2011.csv 
+and sondes\_2011.csv are also incued in the output.
+% The outputs consist of a header giving the number of sites requested, 
+% species/met data requested, and then the actual values for each 
+% variable for each staion. For the sonde data values are given for 
+% all 20 levels, starting with the ground-level values. These files
+% are best read using some helper programmes, which we provide in
+% the "Tools" directory:
 
-\begin{description}
-\item[Rd\_sites.f90] - reads the sites outout file for one month, and allows the
-user to select site and component. Produces several outputs (SITES.hrly etc.), including
-hourly values, daily mean and max. The code is quite short and easy to modify
-\item[Rd\_sondes.f90] - similar to Rd\_sites, but for the sondes output.
-\end{description}
-
-Simply compile and run the executable to obtain usage instructions.
-
-
-\newpage
-
-\section{NetCDF outputs, Derived fields}
-
-%{\bf modules My\_Derived\_ml, Derived\_ml }\\
-
-% My\_Derived\_ml:\\
-% \begin{itemize}
-%   \item Constructs arrays wanted\_deriv2d, wanted\_deriv3d, listing
-%    the outputs which the user wants in netcdf fields.
-% \end{itemize}
+% \begin{description}
+% \item[Rd\_sites.f90] - reads the sites outout file for one month, and allows the
+% user to select site and component. Produces several outputs (SITES.hrly etc.), including
+% hourly values, daily mean and max. The code is quite short and easy to modify
+% \item[Rd\_sondes.f90] - similar to Rd\_sites, but for the sondes output.
+% \end{description}
 % 
-% Derived\_ml:\\
-% \begin{itemize}
-%   \item Contains definitions of possible output fields
-%   \item Allocates data arrays d\_2d and d\_3d for those
-%     fields which were requested in My\_Derived\_ml	
-% \end{itemize}
-
-The netCDF output files can contain both 2D and 3D data fields. The module 
-{ \bf Derived\_ml.f90 } contains an extensive set of predefined outputs, and
-others are defined as required in { \bf My\_Derived\_ml.f90}. 
-The user may choose which of these possible data fields should be written 
-into the output files by modifying the module called { \bf My\_Derived\_ml.f90}.\\
-
-Most data fields are defined by the array OutputConcs. A defined output 
-field for ozone in ppb is for example given  as:
-\begin{quote}
-\begin{verbatim}
-
- typ_s5i("O3        ", "ppb", D2,"AIR_CONCS", SPEC, D),& 
-
-\end{verbatim}
-\end{quote}
-This will give a 'SURF\_ppb\_O3' 2-dimensional surface field in the output netCDF file for 
-the fullrun, monthly and daily output. 
-Setting the dimensions to D3 will give an additional 3-dimensional field. 
+% Simply compile and run the executable to obtain usage instructions.
 
 
-Other arrays where output fields are given are D2\_SR, D2\_EXTRA,\
- VEGO3\_WANTED and 
-WDEP\_WANTED. Other fields are also defined in { \bf My\_Derived\_ml.f90 } e.g. for dry 
-depositions, emissions, canopy etc. \\
+% \newpage
 
-
-
-Note that by default the maximum field of 2- and 3-dimensional output field are 
-restricted to 200 and 5 respectively. These can be changed with MAX\_NUM\_DERIV2D and MAX\_NUM\_DERIV3D 
-in { \bf My\_Derived\_ml.f90 }.
-
-
-The output frequency is set in { \bf Derived\_ml.f90 }, for example for the surface fields:
-\begin{quote}
-\begin{verbatim}
-
- call AddNewDeriv( "PSURF ","PSURF",  "SURF","-",   "hPa", &
-               -99,  -99,  F,  1.0,  T,   IOU_DAY )
-
-\end{verbatim}
-\end{quote}
- Where the IOU\_DAY setting gives the field in the fullrun.nc, month.nc in addition to the day.nc 
-model output files. IOU\_MON gives the field in the fullrun.nc and the month.nc file. 
-
-
+% \section{NetCDF outputs, Derived fields}
+% 
+% %{\bf modules My\_Derived\_ml, Derived\_ml }\\
+% 
+% % My\_Derived\_ml:\\
+% % \begin{itemize}
+% %   \item Constructs arrays wanted\_deriv2d, wanted\_deriv3d, listing
+% %    the outputs which the user wants in netcdf fields.
+% % \end{itemize}
+% % 
+% % Derived\_ml:\\
+% % \begin{itemize}
+% %   \item Contains definitions of possible output fields
+% %   \item Allocates data arrays d\_2d and d\_3d for those
+% %     fields which were requested in My\_Derived\_ml	
+% % \end{itemize}
+% 
+% The netCDF output files can contain both 2D and 3D data fields. The module 
+% { \bf Derived\_ml.f90 } contains an extensive set of predefined outputs, and
+% others are defined as required in { \bf My\_Derived\_ml.f90}. 
+% The user may choose which of these possible data fields should be written 
+% into the output files by modifying the module called { \bf My\_Derived\_ml.f90}.\\
+% 
+% Most data fields are defined by the array OutputConcs. A defined output 
+% field for ozone in ppb is for example given  as:
+% \begin{quote}
+% \begin{verbatim}
+% 
+%  typ_s5i("O3        ", "ppb", D2,"AIR_CONCS", SPEC, D),& 
+% 
+% \end{verbatim}
+% \end{quote}
+% This will give a 'SURF\_ppb\_O3' 2-dimensional surface field in the output netCDF file for 
+% the fullrun, monthly and daily output. 
+% Setting the dimensions to D3 will give an additional 3-dimensional field. 
+% 
+% 
+% Other arrays where output fields are given are D2\_SR, D2\_EXTRA,\
+%  VEGO3\_WANTED and 
+% WDEP\_WANTED. Other fields are also defined in { \bf My\_Derived\_ml.f90 } e.g. for dry 
+% depositions, emissions, canopy etc. \\
+% 
+% 
+% 
+% Note that by default the maximum field of 2- and 3-dimensional output field are 
+% restricted to 200 and 5 respectively. These can be changed with MAX\_NUM\_DERIV2D and MAX\_NUM\_DERIV3D 
+% in { \bf My\_Derived\_ml.f90 }.
+% 
+% 
+% The output frequency is set in { \bf Derived\_ml.f90 }, for example for the surface fields:
+% \begin{quote}
+% \begin{verbatim}
+% 
+%  call AddNewDeriv( "PSURF ","PSURF",  "SURF","-",   "hPa", &
+%                -99,  -99,  F,  1.0,  T,   IOU_DAY )
+% 
+% \end{verbatim}
+% \end{quote}
+%  Where the IOU\_DAY setting gives the field in the fullrun.nc, month.nc in addition to the day.nc 
+% model output files. IOU\_MON gives the field in the fullrun.nc and the month.nc file. 
+% 
+% 
 
