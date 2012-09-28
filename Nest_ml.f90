@@ -586,14 +586,14 @@ subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
     !Read lon lat of the external grid (global)
     if(trim(projection)==trim('lon lat')) then
       call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
-      allocate(temp_ll(GJMAX_ext))
+      allocate(temp_ll(GIMAX_ext))
       call check(nf90_get_var(ncFileID, varID, temp_ll))
       lon_ext=SPREAD(temp_ll,2,GJMAX_ext)
       deallocate(temp_ll)
       call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
       allocate(temp_ll(GJMAX_ext))
       call check(nf90_get_var(ncFileID, varID, temp_ll))
-      lon_ext=SPREAD(temp_ll,1,GIMAX_ext)
+      lat_ext=SPREAD(temp_ll,1,GIMAX_ext)
       deallocate(temp_ll)
     else
       call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
@@ -719,17 +719,14 @@ subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
             JJij(i,j,4:4)=EOSHIFT(JJij(i,j,4:4),-1,BOUNDARY=JJ)
           endif
         enddo
-
-      enddo
+      enddo    
       Weight(i,j,1)=1.0-3.0*dist(1)/sum(dist(1:4))
       Weight(i,j,2)=(1.0-Weight(i,j,1))*(1.0-2.0*dist(2)/sum(dist(2:4)))
       Weight(i,j,3)=(1.0-Weight(i,j,1)-Weight(i,j,2))*(1.0-dist(3)/sum(dist(3:4)))
       Weight(i,j,4)=1.0-Weight(i,j,1)-Weight(i,j,2)-Weight(i,j,3)
     enddo
   enddo
-
   deallocate(lon_ext,lat_ext)
-
 
   !find vertical interpolation coefficients
   !use pressure as reference

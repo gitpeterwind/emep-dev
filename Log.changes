@@ -232,6 +232,14 @@ dsSep14   Wesely_ml.f90
 Birthe:
 DOCS/Manual rewritten for new OS release.
 
+xxxxxxxx    rv4.1    28th/9/2012  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Nest_ml:  Bug on init_nest for a IC/BC file on longlat.
+  - lon_ext & lat_ext variables where wrongly set.
+  - IC and BC longlat files are wrongly interpolated.
+  - This bug was introduced on rv4rc5 (Aug 29th 2012).
+  - It affects runs FORECAST mode. 
+
 xxxxxxxx    rv4.0    18-19th/9/2012  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 (Retagged on 19th after Peter's last changes)
