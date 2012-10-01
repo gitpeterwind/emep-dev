@@ -254,7 +254,7 @@ Units_ml: umap public
 gFortran cleanup: 
   - Units_ml, Volcanos_ml, EmisDef_ml
   - update Makefile for MACHINE=hardy & lucid.
-  - gFortran optiomnization/pedantic options if DEBUG=no/yes
+    gFortran optiomnization/pedantic options if DEBUG=no/yes
   
 xxxxxxxx  rv4.0.1 rtagged 1st Oct 2012  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
