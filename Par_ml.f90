@@ -207,6 +207,7 @@ private
     GJMAX = RUNDOMAIN(4)-RUNDOMAIN(3)+1 !Number of global points in longitude
 
     !Determine NPROCX, NPROCY
+    NPROCY=1
     if(Pole_singular==0)then
        !try values until it fits
        NPROCX=nint(sqrt(1.0*NPROC))
