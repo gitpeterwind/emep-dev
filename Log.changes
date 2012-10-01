@@ -247,9 +247,11 @@ Advection_ml: Change of algoritm; more robust advection.
 
 NetCDF_ml: "Read_Inter_CDF", close at end.
            " CreatenetCDFfile", do not open after created
+	   stop if fraction and not latlon
 
 Par_ml:    NPROCY=1 (init for runs with very few processors)
 
+Units_ml: umap public
 
 xxxxxxxx  rv4.0.1 rtagged 1st Oct 2012  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 

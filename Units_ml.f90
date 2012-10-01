@@ -57,7 +57,7 @@ real, public, dimension(NSPEC_ADV), save  :: &
   to_ug_N,    & ! conversion to ug of N
   to_ug_S       ! conversion to ug of S
 
-type, private :: umap
+type, public :: umap
   character(len=TXTLEN_SHORT)  :: utxt,units    ! short,NetCDF units
   real, dimension(0:NSPEC_ADV) :: uconv         ! conversion factor
 endtype umap
