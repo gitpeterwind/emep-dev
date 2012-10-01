@@ -400,7 +400,7 @@ character(len=80) ::UsedProjection
   ! Leave define mode
   call check(nf90_enddef(ncFileID), "define_done"//trim(fileName) )
 
-  call check(nf90_open(path = trim(fileName), mode = nf90_write, ncid = ncFileID))
+!  call check(nf90_open(path = trim(fileName), mode = nf90_write, ncid = ncFileID))
 
 ! Define horizontal distances
 
@@ -1535,6 +1535,7 @@ else
    call StopAll('interpolation method not recognized')
 endif
 
+  call check(nf90_close(ncFileID))
 
 deallocate(Rlon)
 deallocate(Rlat)
