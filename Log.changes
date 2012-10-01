@@ -228,6 +228,29 @@ dsSep14   Volcanos_ml.f90
 dsSep14   Wesely_ml.f90
 
 !----------------------------------------------------------
+
+xxxxxxxx    rv4.1    1st October 2012  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Advection_ml: Change of algoritm; more robust advection. 
+              NB: The results will show differences.
+	      The concentrations are "renormalized" (division by p*) 
+              after each partial advection (x, y or z direction). 
+              This removes the problems 
+              caused by emptying an entire gridcell (extreme divergence).
+              It has been tested in two cases where the old scheme failed: 
+	      at NorthPole, and a 2km resolution run with extreme winds 
+              around Jan Mayen (NILU).
+	      The scheme was also recommended by Alain Clappier to reduce the 
+              "cross problem" (underestimation of advection in diagonal 
+              directions)
+	      There is some CPU penalty for using this scheme.
+
+NetCDF_ml: "Read_Inter_CDF", close at end.
+           " CreatenetCDFfile", do not open after created
+
+Par_ml:    NPROCY=1 (init for runs with very few processors)
+
+
 xxxxxxxx  rv4.0.1 rtagged 1st Oct 2012  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Birthe: 
