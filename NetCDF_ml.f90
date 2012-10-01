@@ -1804,6 +1804,9 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
 
   Flight_Levels=.false.
 
+  
+  call CheckStop(fractions.and.trim(data_projection)/="lon lat", &
+       "ReadField_CDF: only implemented lon lat projection for fractions")     
 
 
      if ( debug .and. filename == "DegreeDayFac.nc" ) print *, 'ABCD2 got to here'
