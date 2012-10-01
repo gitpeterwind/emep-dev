@@ -136,7 +136,7 @@ type, private :: erup
   logical :: edef=.true.                      ! default setings?
 endtype erup
 type(erup), private, save, dimension(0:NMAX_VENT,NMAX_ERUP):: &
-  erupdef=erup('UNDEF','UNKNOWN',-999.0,-999.0,-999.0,"??","??",.true.)
+  erupdef=erup('UNDEF','UNKNOWN',-999.0,-999.0,-999.0,"??","??",-1,-1,.true.)
 
 INCLUDE 'mpif.h'
 INTEGER STATUS(MPI_STATUS_SIZE),INFO
@@ -340,7 +340,7 @@ function EruptionRate(i,j) result(emiss)
   integer, intent(in) :: i,j
   real, dimension(NSPEC_SHL+1:NSPEC_TOT,KCHEMTOP:KMAX_MID) :: emiss
   character(len=*),parameter :: &
-    MSG_FMT="('EMERGENCY:',1X,A,5(:,1X,I0,':',A),3(:,1X,G,':',A))"
+    MSG_FMT="('EMERGENCY:',1X,A,5(:,1X,I0,':',A),3(:,1X,G10.3,':',A))"
   logical, save :: first_call=.true.
   character(len=len(SDATE_FMT)) :: & ! Time strings in SDATE_FMT format
     sbeg=SDATE_FMT,&    ! Begin
@@ -601,7 +601,7 @@ function EruptionRate(i,j) result(emiss)
     type(erup)                  :: def
     character(len=TXTLEN_SHORT) :: words(10)=''  ! Array of paramaters
     logical :: edef=.true.                       ! default setings?
-    integer :: stat,nwords,ivent,ispc=0,ind
+    integer :: stat,nwords,ivent,ispc=0
     real    :: base,top,rate,m63,dhh
     call wordsplit(line,size(words),words,nwords,stat,strict_separator=",",empty_words=.true.)
     call CheckStop(stat,"EMERGENCY: Wrong/Unknown line format "//trim(line))

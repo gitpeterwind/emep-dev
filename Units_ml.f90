@@ -214,7 +214,7 @@ function Units_Scale(txtin,iadv,unitstxt,volunit,needroa,debug_msg) result(units
   call CheckStop(i<1,"Units_Scale Error: Unknown unit "// trim(txtin) )
 
   if(present(unitstxt))unitstxt = unit_map(i)%units
-  if(present(volunit )) volunit = any(txt==(/"ppb","ppbh","ppb h"/))
+  if(present(volunit )) volunit = any(txt==(/"ppb  ","ppbh ","ppb h"/))
   if(present(needroa )) needroa = any(txt(1:2)==(/"ug","uB","ex"/))
   select case (iadv)
   case (-1)

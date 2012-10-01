@@ -11,7 +11,7 @@ F90 = mpif90
 DEBUG_FLAGS = -CB -debug-parameters all -traceback -ftrapuv -g -fpe0 -O0
 OPT_FLAGS = -O3 -ftz
 F90FLAGS = -shared-intel -r8 -recursive -convert big_endian -IPF_fp_relaxed \
-           -cpp $(DFLAGS) $(addprefix -I,$(INCL))
+           -cpp $(DFLAGS)
 LDFLAGS =  $(F90FLAGS) $(LLIB) $(LIBS)
 
 MACHINE ?= stallo
@@ -47,7 +47,7 @@ else ifeq ($(MACHINE),njord)
   LLIB = -L/home/ntnu/usrlocal/netcdf/netcdf-3.6.1/lib -L/usr/lib
   MAKEDEPF90=/home/ntnu/mifahik/local/bin/makedepf90
   F90 = mpxlf90_r
-  F90FLAGS = -q64 -qrealsize=8 -O3 -qarch=pwr5 -qtune=pwr5 $(addprefix -I,$(INCL))
+  F90FLAGS = -q64 -qrealsize=8 -O3 -qarch=pwr5 -qtune=pwr5
 else ifeq ($(MACHINE),RSS)
   LIBS = -lnetcdf
   INCL += /usr/local/netcdf/include
@@ -55,7 +55,7 @@ else ifeq ($(MACHINE),RSS)
   MAKEDEPF90 = /home/davids/local/bin/makedepf90
   LD = gfortran
   F90FLAGS = -fdefault-real-8 -O3 -Wall -ffixed-line-length-none -fbacktrace \
-    -fbounds-check -pedantic -fimplicit-none $(addprefix -I,$(INCL))
+    -fbounds-check -pedantic -fimplicit-none
 else ifeq ($(MACHINE),EeePC)
   LIBS = -lnetcdf
   INCL += /home/davids/WRF_2009/netcdf4/include
@@ -63,7 +63,7 @@ else ifeq ($(MACHINE),EeePC)
   MAKEDEPF90 = /home/davids/local/bin/makedepf90
   LD = gfortran
   F90FLAGS = -fdefault-real-8 -O3 -Wall -ffixed-line-length-none -fbacktrace \
-    -fbounds-check -pedantic -fimplicit-none $(addprefix -I,$(INCL))
+    -fbounds-check -pedantic -fimplicit-none
 else ifeq ($(MACHINE),TP)
   LIBS = -lnetcdf
   INCL += /home/davids/local/netcdf-4.0.1/include
@@ -71,25 +71,29 @@ else ifeq ($(MACHINE),TP)
   MAKEDEPF90 = /home/davids/local/bin/makedepf90
   LD = gfortran
   F90FLAGS = -fdefault-real-8 -O3 -Wall -ffixed-line-length-none -fbacktrace \
-    -fbounds-check -pedantic -fimplicit-none $(addprefix -I,$(INCL))
+    -fbounds-check -pedantic -fimplicit-none
 else ifeq ($(MACHINE),hardy)  #ubuntu 8.04
   LIBS = -lnetcdff -lnetcdf
   INCL += /usr/include
   LLIB = -L/usr/lib
   MAKEDEPF90 = /disk1/emep_U804/local/bin/makedepf90
   LD = gfortran
+  DEBUG_FLAGS =
+  OPT_FLAGS =
   F90FLAGS = -fdefault-real-8 -O3 -Wall -ffixed-line-length-none -ffree-line-length-none \
-    -fbounds-check -pedantic -fimplicit-none $(addprefix -I,$(INCL))
+    -fbounds-check -pedantic -fimplicit-none
 else ifeq ($(MACHINE),lucid)  #ubuntu 10.04
   LIBS = -lnetcdff -lnetcdf
-  INCL += /usr/include
-  LLIB = -L/usr/lib
+  INCL +=  /opt/netcdf4.1.1/include/ /usr/include 
+  LLIB = -L/opt/netcdf4.1.1/lib    -L/usr/lib  
   MAKEDEPF90 = /disk1/emep_U1004/local/bin/makedepf90
   LD = gfortran
-  F90FLAGS = -fdefault-real-8 -O3 -Wall -ffixed-line-length-none -fbacktrace \
-    -fbounds-check -pedantic -fimplicit-none $(addprefix -I,$(INCL))
+  DEBUG_FLAGS = -Wall -fbacktrace -fbounds-check -pedantic 
+  OPT_FLAGS = -O3  
+  F90FLAGS = -fdefault-real-8 -ffixed-line-length-none -ffree-line-length-none -fimplicit-none
 endif
-F90FLAGS += $(if $(filter yes,$(DEBUG)),$(DEBUG_FLAGS),$(OPT_FLAGS))
+F90FLAGS += $(addprefix -I,$(INCL)) \
+   $(if $(filter yes,$(DEBUG)),$(DEBUG_FLAGS),$(OPT_FLAGS))
 
 .SUFFIXES: $(SUFFIXES)  .f90
 
