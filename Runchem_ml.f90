@@ -171,7 +171,7 @@ subroutine runchem(numt)
 
           call setup_bio(i,j)   ! Adds bio/nat to rcemis
 
-          call setup_bio(i,j)   ! Adds bio/nat to rcemis
+          call set_Shipping(i,j)   ! Adds bio/nat to rcemis
 
           call emis_massbudget_1d(i,j)   ! Adds bio/nat to rcemis
             call Add_2timing(28,tim_after,tim_before,  &

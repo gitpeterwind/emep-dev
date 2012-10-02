@@ -227,8 +227,12 @@ dsSep14   Wesely_ml.f90
 
 !----------------------------------------------------------
 
-xxxxxxxx    rv4.1    1st October 2012  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx    rv4.1 Alvaro,Peter, Dave   2nd October 2012  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+Dave: BUGFIX: Runchem_ml:   2nd call to setup_bio removed.
+                            Results will change
+
+Alvaro/Peter (1st October)
 Advection_ml: Change of algoritm; more robust advection. 
               NB: The results will show differences.
 	      The concentrations are "renormalized" (division by p*) 
