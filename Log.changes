@@ -229,6 +229,8 @@ dsSep14   Wesely_ml.f90
 
 xxxxxxxx    rv4.1 Alvaro,Peter, Dave   2nd October 2012  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+Bugfix: Nest_ml, wrtxn, "dat" declared with save 
+
 Dave: BUGFIX: Runchem_ml:   2nd call to setup_bio removed.
                             Results will change
 

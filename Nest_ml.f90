@@ -296,7 +296,7 @@ endsubroutine readxn
 subroutine wrtxn(indate,WriteNow)
   type(date), intent(in) :: indate
   logical, intent(in) :: WriteNow !Do not check indate value
-  real,allocatable, dimension(:,:,:) :: dat ! Data arrays
+  real,save,allocatable, dimension(:,:,:) :: dat ! Data arrays
 
   type(Deriv) :: def1 ! definition of fields
   integer :: n,iotyp,ndim,kmax
