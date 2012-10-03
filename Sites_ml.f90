@@ -722,7 +722,9 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
          write (io_num,'(a,",",2(i2.2,"/"),i4.4, i3.2,":00",9999(a,es10.3))') &
                trim(s_name(n)),&
                current_date%day,current_date%month,current_date%year,current_date%hour,&
-                 ( (",", g_out(ii,n)), ii =1, size(s_species) ) 
+                 ( ",", g_out(ii,n), ii =1, nout ) 
+                 !( (",", g_out(ii,n)), ii =1, nout ) 
+                 !( (",", g_out(ii,n)), ii =1, size(s_species) ) 
     enddo ! n
 
   endif ! MasterProc
