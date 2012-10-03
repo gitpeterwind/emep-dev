@@ -311,7 +311,7 @@ contains
 
      !/** Add sea salt production
 
-     if ( USE_ROADDUST  ) then  ! Hard-code indices for now
+     if ( USE_ROADDUST .and. itot_RDF>0  ) then  ! Hard-code indices for now
 
         rcemis(itot_RDF,KMAX_MID) = gridrcroadd(1,i,j)
         rcemis(itot_RDC,KMAX_MID) = gridrcroadd(2,i,j)
@@ -339,9 +339,10 @@ contains
 
 ! z_bnd is in m, not cm, so need to divide by 100.
 
-         rcemis( itot_Rn222,KMAX_MID )  = & 
+    if ( itot_Rn222 > 0 ) rcemis( itot_Rn222,KMAX_MID )  = & 
             ( 0.00182 * water_fraction(i,j)  + eland ) / &
             ((z_bnd(i,j,KMAX_BND-1) - z_bnd(i,j,KMAX_BND))*100.)
+
 !ESX     rc_Rnwater(KMAX_MID) = water_fraction(i,j)  / &
 !ESX            ((z_bnd(i,j,KMAX_BND-1) - z_bnd(i,j,KMAX_BND))*100.)
 
