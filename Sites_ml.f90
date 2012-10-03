@@ -639,13 +639,14 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
 
   ! Local
   real,dimension(nout,nglobal) :: g_out ! for output, collected
-  integer :: nglob, nloc        ! Site indices
+  integer :: nglob, nloc         ! Site indices
   character(len=40)  :: outfile
   character(len=4)   :: suffix
   integer, parameter :: NTYPES = 2      ! No. types, now 2 (sites, sondes)
   integer ::  type=-1                   ! = 1 for sites, 2 for sondes
   integer, save, dimension(NTYPES):: prev_month = (/ -99, -99 /) ! Initialise
   integer, save, dimension(NTYPES):: prev_year = (/ -99, -99 /) ! Initialise
+  integer :: ii
 
   select case (fname)
     case ("sites" )
@@ -717,9 +718,10 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
     do n = 1, nglobal
 
 !! Massimo Vieno change the ouput style make the output csv
-         write (io_num,'(a<len(trim(s_name(n)))>,",",i2.2,"/",i2.2,"/",i4.4," ",i2.2,":00",<size(s_species)>(",",es10.3))') &
+         write (io_num,'(a,",",i2.2,"/",i2.2,"/",i4.4," ",i2.2,":00",9999(a,es10.3))') &
                trim(s_name(n)),&
-               current_date%day,current_date%month,current_date%year,current_date%hour,g_out(:,n)
+               current_date%day,current_date%month,current_date%year,current_date%hour,&
+                 ( (",", g_out(ii,n)), ii =1, size(s_species) ) 
     enddo ! n
 
   endif ! MasterProc
