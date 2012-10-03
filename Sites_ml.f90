@@ -679,7 +679,8 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
      end do ! nglobal
 
      write(io_num,'(i3,a)') size(s_species), " Variables units: ppb"
-     write(io_num,'(a9,<size(s_species)>(",",a))')"site,date",(trim(s_species(i)),i=1,size(s_species))
+     !MV write(io_num,'(a9,<size(s_species)>(",",a))')"site,date",(trim(s_species(i)),i=1,size(s_species))
+     write(io_num,'(9999a)')"site,date", (",", (trim(s_species(i)) ),i=1,size(s_species))
 
   endif ! first call
 
@@ -718,7 +719,7 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
     do n = 1, nglobal
 
 !! Massimo Vieno change the ouput style make the output csv
-         write (io_num,'(a,",",i2.2,"/",i2.2,"/",i4.4," ",i2.2,":00",9999(a,es10.3))') &
+         write (io_num,'(a,",",2(i2.2,"/"),i4.4, i3.2,":00",9999(a,es10.3))') &
                trim(s_name(n)),&
                current_date%day,current_date%month,current_date%year,current_date%hour,&
                  ( (",", g_out(ii,n)), ii =1, size(s_species) ) 
