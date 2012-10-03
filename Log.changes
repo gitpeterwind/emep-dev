@@ -227,6 +227,20 @@ dsSep14   Wesely_ml.f90
 
 !----------------------------------------------------------
 
+xxxxxxxx    rv4.1.1 Dave   3rd October 2012  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Safer coding (tolerates missing species) for:
+
+Setup_1d_ml.f90   (e.g Rn222)
+
+DustProd_ml
+
+
+Updated:
+
+ZCM_EmChem09/Biomass...FINN..... - using simpler system introduced for EmChem09soa
+
+
 xxxxxxxx    rv4.1 Alvaro,Peter, Dave   2nd October 2012  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Bugfix: Nest_ml, wrtxn, "dat" declared with save 
