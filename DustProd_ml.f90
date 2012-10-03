@@ -144,7 +144,8 @@
 
         ipoll = find_index("DUST_WB_F", species(:)%name )
         dust_found = .true.
-        if( ipoll < 1 ) then
+        inat_DUf  = find_index( "DUST_WB_F", EMIS_BioNat(:) )
+        if( ipoll < 1 .or. inat_DUf < 1 ) then
             call PrintLog( "WARNING: Dust asked for, but not found"&
                   ,MasterProc)
             dust_found = .false.
@@ -169,10 +170,10 @@
  !++++++++++++++++++++++++++++
  if ( .not. dust_found  .or.  & 
      (glat(i,j)>65.0 .and. glon(i,j)>50.0)) then  ! Avoid dust production in N. Siberia
-       EmisNat( inat_DUf,i,j) = 0.0
-       EmisNat( inat_DUc,i,j) = 0.0
-       rcemis( itot_DUf,KMAX_MID) = 0.0
-       rcemis( itot_DUc,KMAX_MID) = 0.0
+       if( inat_DUf>0) EmisNat( inat_DUf,i,j) = 0.0
+       if( inat_DUc>0) EmisNat( inat_DUc,i,j) = 0.0
+       if( itot_DUf>0) rcemis( itot_DUf,KMAX_MID) = 0.0
+       if( itot_DUf>0) rcemis( itot_DUc,KMAX_MID) = 0.0
     return 
  end if
  !++++++++++++++++++++++++++++
@@ -625,6 +626,11 @@
   inat_DUc = find_index( "DUST_WB_C", EMIS_BioNat(:) )
   itot_DUf = find_index( "DUST_WB_F", species(:)%name    )
   itot_DUc = find_index( "DUST_WB_C", species(:)%name    )
+
+  if ( itot_DUf < 1 ) then
+      write(*,*) "DUST species not found!"
+      return
+  end if
 
   dust_indices = (/   inat_DUf,  inat_DUc /)  
 
