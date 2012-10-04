@@ -723,8 +723,6 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
                trim(s_name(n)),&
                current_date%day,current_date%month,current_date%year,current_date%hour,&
                  ( ",", g_out(ii,n), ii =1, nout ) 
-                 !( (",", g_out(ii,n)), ii =1, nout ) 
-                 !( (",", g_out(ii,n)), ii =1, size(s_species) ) 
     enddo ! n
 
   endif ! MasterProc
