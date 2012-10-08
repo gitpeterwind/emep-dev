@@ -67,6 +67,7 @@ Module GridValues_ml
   use PhysicalConstants_ml, only : GRAV, PI ! gravity, pi
   use TimeDate_ml,          only : current_date, date,Init_nmdays,nmdays,startdate
   use TimeDate_ExtraUtil_ml,only : nctime2idate,date2string
+  use InterpolationRoutines_ml,only: inside_1234
 
   implicit none
   private
@@ -1624,28 +1625,64 @@ contains
   end subroutine ij2ijm
 
   ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-  function coord_in_gridbox(lon,lat,i,j) result(in)
-    !-------------------------------------------------------------------!
-    ! Is coord (lon/lat) is inside gridbox(i,j)?
-    !-------------------------------------------------------------------!
-    real, intent(in) :: lon,lat
-    integer, intent(in) :: i,j
-    logical :: in
-    in=gl_stagg(i-1,j)<=lon.and.lon<gl_stagg(i,j).and. &
-         gb_stagg(i,j-1)<=lat.and.lat<gb_stagg(i,j)
-  end function coord_in_gridbox
-  function coord_in_processor(lon,lat) result(in)
-    !-------------------------------------------------------------------!
-    ! Is coord (lon/lat) is inside local domain?
-    !-------------------------------------------------------------------!
-    real, intent(in) :: lon,lat
-    logical :: in
-    integer :: i,j
-    real    :: xr,yr
-    call lb2ij(lon,lat,xr,yr)
-    i=nint(xr);j=nint(yr)
-    in=(gi0<=i).and.(i<=gi1).and.(gj0<=j).and.(j<=gj1)
-  end function coord_in_processor
+subroutine range_check(vname,var,vrange,fatal)
+  character(len=*), intent(in) :: vname
+  real, intent(in) :: var,vrange(0:1)
+  logical :: fatal
+  character(len=*), parameter :: &
+    errfmt="(A,'=',F6.2,' is out of range ',F6.2,'..',F6.2)"
+  character(len=len_trim(vname)+21+6*3) :: errmsg
+  if(var<vrange(0).or.var>vrange(1))then
+    write(errmsg,errfmt)trim(vname),var,vrange
+    if(fatal)then
+      call CheckStop("range_check",trim(errmsg))
+    else
+      write(*,*)"WARNING: ",trim(errmsg)
+    endif
+  endif
+endsubroutine range_check
+subroutine coord_check(msg,lon,lat,fix)
+  character(len=*), intent(in) :: msg
+  real, intent(inout) :: lon,lat
+  logical :: fix
+  call range_check(trim(msg)//" lat",lat,(/ -90.0, 90.0/),fatal=.not.fix)
+  call range_check(trim(msg)//" lon",lon,(/-180.0,180.0/),fatal=.not.fix)
+  if(fix)then
+    lat=modulo(lat, 90.0) ! lat/gb_stagg range  -90 .. 90
+    lon=modulo(lon,360.0) ! lon/gl_stagg range -180 .. 180
+  endif
+endsubroutine coord_check
+function coord_in_gridbox(lon,lat,iloc,jloc) result(in)
+!-------------------------------------------------------------------!
+! Is coord (lon/lat) is inside gridbox(iloc,jloc)?
+!-------------------------------------------------------------------!
+  real, intent(inout) :: lon,lat
+  integer, intent(inout) :: iloc,jloc
+  logical :: in
+  integer :: i,j
+  real    :: xr,yr
+  call coord_check("coord_in_gridbox",lon,lat,fix=.true.)
+  call lb2ij(lon,lat,xr,yr)
+  i=i_local(nint(xr));j=j_local(nint(yr))
+  in=(i==iloc).and.(j==jloc)
+endfunction coord_in_gridbox
+function coord_in_processor(lon,lat,iloc,jloc) result(in)
+!-------------------------------------------------------------------!
+! Is coord (lon/lat) is inside local domain?
+!-------------------------------------------------------------------!
+  real, intent(inout) :: lon,lat
+  integer, intent(out),optional:: iloc,jloc
+  logical :: in
+  integer :: i,j
+  real    :: xr,yr
+  call coord_check("coord_in_processor",lon,lat,fix=.true.)
+  call lb2ij(lon,lat,xr,yr)
+  i=i_local(nint(xr));j=j_local(nint(yr))
+  in=(i>=1).and.(i<=limax).and.(j>=1).and.(j<=ljmax)
+  if(present(iloc))iloc=i
+  if(present(jloc))jloc=j
+endfunction coord_in_processor
+
   subroutine check(status)
     use netcdf
     implicit none

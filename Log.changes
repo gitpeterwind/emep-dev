@@ -227,6 +227,13 @@ dsSep14   Wesely_ml.f90
 
 !----------------------------------------------------------
 
+xxxxxxxx    rv4.1.2 Alvaro 8th October 2012  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+GridValues_ml,Volcanos_ml
+  Wrong usage of gi0 and gj0 on the "right processor" check.
+  It is likely that the error does not affect the results, as the actual 
+  coordinate to grid point (lon/lat-->local i,j) calculation was correct.
+
 xxxxxxxx    rv4.1.1 Dave   3rd October 2012  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Safer coding (tolerates missing species) for:
