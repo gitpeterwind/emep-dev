@@ -67,6 +67,7 @@ use Par_ml,            only : li0,lj0,li1,lj1 &
 use SmallUtils_ml,     only : find_index
 use Tabulations_ml,    only : tab_esat_Pa
 use TimeDate_ml,       only : current_date
+use TimeDate_ExtraUtil_ml,   only : date2string
 use KeyValue_ml,       only : KeyVal, KeyValue, LENKEYVAL
 
 implicit none
@@ -719,10 +720,13 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
     do n = 1, nglobal
 
 !! Massimo Vieno change the ouput style make the output csv
-         write (io_num,'(a,",",2(i2.2,"/"),i4.4, i3.2,":00",9999(a,es10.3))') &
-               trim(s_name(n)),&
-               current_date%day,current_date%month,current_date%year,current_date%hour,&
-                 ( ",", g_out(ii,n), ii =1, nout ) 
+!! Oct 2012 Formatting changed (DS,AMV) for gfortran compliance
+!! and compactness. 
+         write (io_num,'(a,9999(:,",",es10.3))') & 
+          trim(s_name(n)) // date2string(", DD/MM/YYYY hh:00",current_date),& 
+             ( g_out(ii,n), ii =1, nout ) 
+           ! (The ':' format control item will stop processing once the g_out
+           !  is done, avoiding runtime warnings.)
     enddo ! n
 
   endif ! MasterProc
