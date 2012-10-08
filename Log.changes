@@ -234,6 +234,12 @@ GridValues_ml,Volcanos_ml
   It is likely that the error does not affect the results, as the actual 
   coordinate to grid point (lon/lat-->local i,j) calculation was correct.
 
+Makefile
+  - New modules in stallo:
+    Check for new (after Oct 4 maininance) modules if directory ~/.lmod.d exixts.
+    Otherwise the old modules are required.
+  - GFASv1 forest fire for MACC targets
+  
 xxxxxxxx    rv4.1.1 Dave   3rd October 2012  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Safer coding (tolerates missing species) for:
