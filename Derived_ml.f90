@@ -982,11 +982,15 @@ end do
           case ( "PM25X" )      ! Need to add PMFINE + fraction NO3_c
             if(first_call)then
               call CheckStop(f_2d(n)%unit/="ug","Wrong unit for "//trim(typ))
-              call CheckStop(iadv_NO3_C      <1,"Unknown specie NO3_C")
-              call CheckStop(iadv_EC_C_WOOD  <1,"Unknown specie EC_C_WOOD")
-              call CheckStop(iadv_EC_C_FFUEL <1,"Unknown specie EC_C_FFUEL")
-              call CheckStop(iadv_POM_C_FFUEL<1,"Unknown specie POM_C_FFUEL")
             endif
+            if (iadv_NO3_C      < 1 .or. & 
+                iadv_EC_C_WOOD  < 1 .or. & 
+                iadv_EC_C_FFUEL < 1 .or. & 
+                iadv_POM_C_FFUEL< 1 ) then
+                if ( first_call ) write(*,*) &
+                     "WARNING: Derived - not all PM25X species present. Skipping"
+                cycle   !! Skip this case
+            end if
 
             !scale = 62.0
             ! All this size class has the same cfac.
@@ -1003,11 +1007,15 @@ end do
          case ( "PM25X_rh50" )      ! Need to add PMFINE + fraction NO3_c + water
             if(first_call)then
               call CheckStop(f_2d(n)%unit/="ug","Wrong unit for "//trim(typ))
-              call CheckStop(iadv_NO3_C      <1,"Unknown specie NO3_C")
-              call CheckStop(iadv_EC_C_WOOD  <1,"Unknown specie EC_C_WOOD")
-              call CheckStop(iadv_EC_C_FFUEL <1,"Unknown specie EC_C_FFUEL")
-              call CheckStop(iadv_POM_C_FFUEL<1,"Unknown specie POM_C_FFUEL")
             endif
+            if (iadv_NO3_C      < 1 .or. & 
+                iadv_EC_C_WOOD  < 1 .or. & 
+                iadv_EC_C_FFUEL < 1 .or. & 
+                iadv_POM_C_FFUEL< 1 ) then
+                if ( first_call ) write(*,*) &
+                     "WARNING: Derived - not all PM25X_rh50 species present. Skipping"
+                cycle   !! Skip this case
+            end if
 
             forall ( i=1:limax, j=1:ljmax )
               d_2d( n, i,j,IOU_INST) = d_2d(ind_pmfine ,i,j,IOU_INST) &
