@@ -236,7 +236,7 @@ GridValues_ml,Volcanos_ml
 
 Makefile
   - New modules in stallo:
-    Check for new (after Oct 4 maininance) modules if directory ~/.lmod.d exixts.
+    Check for new (after Oct 4 maintenance) modules if directory ~/.lmod.d exists.
     Otherwise the old modules are required.
   - GFASv1 forest fire for MACC targets
   

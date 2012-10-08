@@ -18,7 +18,11 @@ MACHINE ?= stallo
 DEBUG ?= no
 ifeq ($(MACHINE),stallo)
 # MODULES = intel-compiler/11.1   openmpi/1.4   netcdf/4.1.1
-  MODULES = intel-compiler/12.1.2 openmpi/1.4.4 netcdf/4.1.3
+# MODULES = intel-compiler/12.1.2 openmpi/1.4.4 netcdf/4.1.3
+# MODULES = intel/13.0.0          openmpi/1.6.2 netcdf/4.2.1.1
+  MODULES = $(shell [ -d ~/.lmod.d ] && \
+    echo "intel/13.0.0          openmpi/1.6.2 netcdf/4.2.1.1" || \
+    echo "intel-compiler/12.1.2 openmpi/1.4.4 netcdf/4.1.3" )
   LIBS = -lnetcdf -lnetcdff
   INCL += $(NETCDF_ROOT)/include
   LLIB =  $(NETCDF_ROOT)/lib
@@ -157,7 +161,7 @@ EMEP-GenChem-%:
 EMEP2010-GenChem-%:
 	mk.GenChem -r $* -f FINNv1 -e SeaSalt,Dust,Isotopes -V 2bin,Eyjafj.ll #-h
 MACC-GenChem-%:
-	mk.GenChem -r $* -f GFED   -e SeaSalt,Dust,Isotopes
+	mk.GenChem -r $* -f GFASv1 -e SeaSalt,Dust,Isotopes
 MACC-EVA2010-GenChem-%:
 	mk.GenChem -r $* -f GFASv1 -e SeaSalt,Dust,Isotopes -V 2bin,Eyjafj.ll
 SR-EMEP-GenChem-%:
@@ -165,7 +169,7 @@ SR-EMEP-GenChem-%:
 SR-EMEP2010-GenChem-%:
 	mk.GenChem -r $* -f FINNv1 -e none -V 2bin,Eyjafj.ll
 SR-MACC-GenChem-%:
-	mk.GenChem -r $* -f GFED   -e none
+	mk.GenChem -r $* -f GFASv1 -e none
 eEMEP-GenChem-%:
 	mk.GenChem -r $* -f FINNv1 -e none -V 7bin,Vesuvius,Etna,Kr.suv.k,Katla,Askja #-h
 eEMEP2010-GenChem-%:
