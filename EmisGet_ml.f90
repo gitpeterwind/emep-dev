@@ -531,7 +531,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
           else
             read(txtinput,fmt=*,iostat=ios) snap, (tmp(k),k=1, nemis_kprofile)
             if( DEBUG ) write(*,*) "VER=> ",snap, tmp(1), tmp(3)
-            emis_kprofile(:,snap) = tmp(:)
+            emis_kprofile(1:nemis_kprofile,snap) = tmp(1:nemis_kprofile)
           end if
       end do
 

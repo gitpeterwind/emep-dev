@@ -958,7 +958,7 @@ contains
          totemadd(:)  = 0.
          gridrcemis0(:,:,:,:) = 0.0 
          SumSnapEmis(:,:,:) = 0.0
-         gridrcroadd0(:,:,:) = 0.0
+         if(USE_ROADDUST)gridrcroadd0(:,:,:) = 0.0
 
         !..........................................
         ! Process each grid:
