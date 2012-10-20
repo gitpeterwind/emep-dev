@@ -13,9 +13,7 @@
 #     mpiprocs=number of MPI threads per node. For 64 processors:
 ##PBS -l select=2:ncpus=32:mpiprocs=32
 #Stallo
-#PBS -lnodes=8
-#64
-##PBS -lnodes=8:ppn=8:ib
+#PBS -lnodes=2:ppn=16
 # wall time limit of run
 #PBS -lwalltime=00:30:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
