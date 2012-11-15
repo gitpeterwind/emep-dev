@@ -11,11 +11,11 @@
 # Ve/Vilje, (take out one # and put one # before the Stallo). 
 #     select= number of nodes, ncpus=number of threads per node to reserve, 
 #     mpiprocs=number of MPI threads per node. For 64 processors:
-##PBS -l select=2:ncpus=32:mpiprocs=32
+##PBS -l select=2:ncpus=32:mpiprocs=32:mem=8gb
 #Stallo
 #PBS -lnodes=2:ppn=16
 # wall time limit of run
-#PBS -lwalltime=00:30:00
+#PBS -lwalltime=04:00:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
 #PBS -lpmem=1000MB
 #make results readable for others:
@@ -97,7 +97,8 @@ my %BENCHMARK;
 #  %BENCHMARK = (grid=>"EMEP"  ,year=>2005,emis=>"Modrun07/OpenSourceEmis"           ,archive=>1,chem=>"EmChem03");
 # Dave's preference for EMEP:
 #  %BENCHMARK = (grid=>"EMEP"  ,year=>2006,emis=>"Modrun10/EMEP_trend_2000-2008/2006",archive=>1,chem=>"EmChem09");
-# EECCA Default: %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun11/EMEP_trend_2000-2009/2008",archive=>1,chem=>"EmChem09soa",make=>"EMEP");
+# EECCA Default: 
+   %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun11/EMEP_trend_2000-2009/2008",archive=>1,chem=>"EmChem09soa",make=>"EMEP");
 # Status Runs:
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2007,emis=>"Modrun09/2009-Trend2007-CEIP") ;
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun10/2010-Trend2008_CEIP");
@@ -128,7 +129,7 @@ my $SR= 0;     # Set to 1 if source-receptor calculation
                # check also variables in package EMEP::Sr below!!
 
 my $CWF=0;     # Set to N for 'N'-day forecast mode (0 otherwise)
-my ($CWFBASE, $CWFDAYS, $CWFMETV, @CWFDATE, @CWFDUMP, $eCWF) if $CWF;
+my ($CWFBASE, $CWFDAYS, $CWFMETV, @CWFDATE, @CWFDUMP, $eCWF, $aCWF) if $CWF;
 if ($CWF) {
   chop($CWFBASE = `date +%Y%m%d`);   # Forecast base date     (default today)
        $CWFDAYS = $CWF;              # Forecast lenght indays (default $CWF)
@@ -139,17 +140,23 @@ if ($CWF) {
        $CWFBASE = shift if @ARGV;    # Forecast base date, lenght
        $CWFDAYS = shift if @ARGV;    #  & MetUTC version can be passed
        $CWFMETV = shift if @ARGV;    #  as argument to script
-  $CWF=($CWFMETV)?"$CWFMETV-$CWFBASE":"$CWFBASE";
-  my $metday = ($CWFMETV)?int($CWFMETV/24+0.99):0;
-  chop($CWFBASE = `date -d '$CWFBASE $metday day' +%Y%m%d`) if ($metday gt 0);
+  $eCWF=0;                           # Emergency forecast
+  $aCWF=($CWFMETV =~ /AN/ );         # Analysis
+  $CWF=($eCWF?"eemep-":"CWF_").($CWFMETV?"$CWFMETV-$CWFBASE":"$CWFBASE");
+# short run: $CWFDAYS= 1 .. 10 --> meteo${CWFBASE}_00d _01d ..
+# long run:  $CWFDAYS= 10 ..   --> 00/01/03d (from CWFMETV) and meteo${DATE}
+  $CWFMETV =~s/[^\d.]//g;                           # extract number part
+  my $metday = ($CWFMETV)?int($CWFMETV/24+0.99):0;  # hour --> day
+  chop($CWFBASE = `date -d '$CWFBASE $metday day' +%Y%m%d`) if ($metday gt 0) and ($CWFDAYS<=10);
   chop($CWFDATE[0] = `date -d '$CWFBASE 1 day ago'    +%Y%m%d`);  # yesterday
        $CWFDATE[1] = $CWFBASE;                                    # start date
   chop($CWFDATE[2] = `date -d '$CWFBASE ($CWFDAYS-1) day' +%Y%m%d`);  # end date
+##chop($CWFDUMP[0] = `date -d '$CWFBASE'       +%Y-1-1000000`); # dump/nest every day at 00
   chop($CWFDUMP[0] = `date -d '$CWFBASE 1 day' +%Y%m%d000000`); # 1st dump/nest
   chop($CWFDUMP[1] = `date -d '$CWFBASE 2 day' +%Y%m%d000000`); # 2nd dump/nest
-  $eCWF=0;                           # Emergency forecast
   $MAKEMODE=$eCWF?"eEMEP":"MACC";    # Standard Forecast model setup
-# $MAKEMODE=$eCWF?"eEMEP2010":"MACC-EVA2010";    # 2010 special
+##$MAKEMODE=$eCWF?"eEMEP2010":"MACC-EVA2010";    # 2010 special
+  $MAKEMODE .="-3DVar" if($aCWF);
 }
  $CWF=0 if %BENCHMARK;
  $MAKEMODE="SR-$MAKEMODE" if($MAKEMODE and $SR);
@@ -263,7 +270,7 @@ my $Chem     = "EmChem09soa";
 #$Chem     = "CRI_v2_R5";
    $Chem     = $BENCHMARK{'chem'} if $BENCHMARK{'chem'};
 
-my $testv = "rv4";
+my $testv = "rv4_1_5";
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
@@ -303,19 +310,23 @@ $SoilDir = 0 unless -d "$SoilDir/BC_DUST/2000";
 
 # TEST! Road dust NOTE! The road dust code may not be working properly yet! Not tested enough!
 my $RoadDir     = "$HOMEROOT/$ROBERT/Unify/MyData/TNO_traffic/" ;
+   $RoadDir     = "$HOMEROOT/$AGNES/MyData/TNO_traffic/" if $VILJE;
 $RoadDir = 0 if $CWF;
 $RoadDir = 0 unless -d $RoadDir;#default?
 #$RoadDir = 0 ;#default?
 
 
 # Forecast: nest/dump dir, BCs pattern
-my ($CWFDUMPDIR, $CWFBC) if $CWF;
+my ($CWFIC, $CWFBC) if $CWF;
+my ($cwfic, $cwfbc) = ("No IC file","No BC file");
 if ($CWF) {
-# $CWFDUMPDIR = "$WORKROOT/$USER/$testv.dump";
-  ($CWFDUMPDIR = $WORKDIR) =~ s/$testv.$year/$testv.dump/g;
-  $CWFBC = "$DataDir/$GRID/Boundary_conditions/%04d_IFS-MOZART_FC/cwf-mozifs_h%08d00_raqbc.nc" # IFS-MOZ Forecast
-# $CWFBC = "$DataDir/$GRID/Boundary_conditions/%04d_IFS-MOZART_AN/h%08d00_raqbc.nc";           # IFS-MOZ ReAnalysus
-# $CWFBC = "$DataDir/$GRID/Boundary_conditions/%04d_EVA/EVA_%08d_EU_AQ.nc" # IFS-MOZ Forecast
+# $CWFIC = "$WORKROOT/$USER/$testv.dump/${CWF}_dump.nc";
+ ($CWFIC = "${CWF}_dump.nc" ) =~ s/$CWFBASE/%08d/g;
+ ($CWFIC = "$WORKDIR/$CWFIC") =~ s/$testv.$year/$testv.dump/g;
+  $CWFBC = "$DataDir/$GRID/Boundary_conditions/";            # IFS-MOZ
+  $CWFBC .= "%04d_IFS-MOZART_FC/cwf-mozifs_h%08d00_raqbc.nc";# :Forecast
+# $CWFBC .= "%04d_IFS-MOZART_AN/h%08d00_raqbc.nc";           # :ReAnalysus
+# $CWFBC .= "%04d_EVA/EVA_%08d_EU_AQ.nc";                    # :EVA-2010
 }
 
 #ds check: and change
@@ -331,7 +342,8 @@ $SplitDir    = "$ChemDir/EMISSPLIT";
 #RB:had "~mifarb/Unify/MyData/D_EGU/SPLITS_NOV2009v2/BASE_NAEI2000_GH2009.$Chem" ;
 
 my $version     = "Unimod" ;
-my $PROGRAM     = "$ProgDir/$version";         # programme
+   $version     = "ZD_3DVar/Unimod_3DVar" if($aCWF);
+my $PROGRAM     = "$ProgDir/$version";        # programme
 my $subv        = "$testv" ;                  # sub-version (to track changes)
 
 # New system. For "normal runs", we just put one run-name into the array @runs.
@@ -387,8 +399,9 @@ if ( ($GRID eq "FORECAST") or ($GRID eq "GEMS025") or ($GRID eq "MACC02") ) {
   $pm_emisdir = $emisdir;
 }
 if ( $GRID =~ /TNO/)  {  # STALLO ONLY
-  die "Need to set emisdir for TNO, non-stallo" unless $STALLO;
-  $EMIS_INP = "/global/work/nyiri/emis_SRbase/INERIS_direct/$GRID";
+  die "Need to set emisdir for TNO, non-stallo/vilje" unless ($STALLO+$VILJE);
+  $EMIS_INP = "$WORKROOT/$AGNES/emis_SRbase/INERIS_direct/$GRID" if($STALLO);
+  $EMIS_INP = "$HOMEROOT/$AGNES/emission/SD_emis/INERIS_direct/$GRID" if($VILJE);
   $emisdir = $EMIS_INP;
   $pm_emisdir = $emisdir;
 }
@@ -446,18 +459,13 @@ $month_days[2] += leap_year($year);
 #Only 360 days in HIRHAM metdata. We ignore leaps
 @month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,24) if $GRID eq "HIRHAM";
 
-my $mm1   =  "08";       # first month, use 2-digits!
-my $mm2   =  "08";       # last month, use 2-digits!
-my $dd1   =  1;       # Start day, usually 1
-my $dd2   =  1;       # End day (can be too large; will be limited to max number of days in the month)
-                      # put dd2=0 for 3 hours run/test.
-
-if (%BENCHMARK){ # Allways runn full year on benchmark mode
-  $mm1   =  "01";
-  $mm2   =  "12";
-  $dd1   =  1;       # Start day, usually 1
-  $dd2   =  31;       # End day, usually 31
-}
+my $mm1 ="08";      # first month, use 2-digits!
+my $mm2 ="08";      # last month, use 2-digits!
+my $dd1 =  1;       # Start day, usually 1
+my $dd2 =  1;       # End day (can be too large; will be limited to max number of days in the month)
+                    # put dd2=0 for 3 hours run/test.
+# Allways runn full year on benchmark mode
+($mm1,$mm2,$dd1,$dd2)=("01","12",1,31) if (%BENCHMARK);
 
 # <---------- end of normal use section ---------------------->
 # <---------- end of user-changeable section ----------------->
@@ -522,8 +530,6 @@ if ( $RESET ) { ########## Recompile everything!
   system(@MAKE, "clean");
   if ($MAKEMODE) {
     system(@MAKE, "$MAKEMODE");
-  } elsif ($SR) {
-    #No recompile in SR runs
   } else {
     system(@MAKE, "depend");
     system(@MAKE, "all");
@@ -536,7 +542,11 @@ system "ls -lht --time-style=long-iso -I\*{~,.o,.mod} | head -6 ";
 #to be sure that we don't use an old version (recommended while developing)
 #unlink($PROGRAM);
 
-if ($MAKEMODE) {
+if ($SR or defined($ENV{'PBS_ARRAY_INDEX'}) or 
+           defined($ENV{'PBS_ARRAYID'}) or 
+           defined($ENV{'TASK_ID'})){
+  #No recompile SR or ARRAY jobs
+} elsif ($MAKEMODE) {
   system(@MAKE, "$MAKEMODE") == 0 or die "@MAKE $MAKEMODE failed";
 } else {
   system (@MAKE, "depend") ;
@@ -547,7 +557,6 @@ die "Done. COMPILE ONLY\n" if  $COMPILE_ONLY;  ## exit after make ##
 
 
 my @list_of_files = ();   # Keep list of data-files
-my $cwfbc = "No BC file";
 
 
 ########################### START OF RUNS  ##########################
@@ -557,8 +566,6 @@ my $cwfbc = "No BC file";
 foreach my $scenflag ( @runs ) {
   if ($SR) {
     $scenario = EMEP::Sr::getScenario($scenflag);
-  } elsif ($CWF) {
-    $scenario = $eCWF?"eemep-$scenflag":"CWF_$scenflag";
   } elsif (%BENCHMARK){
     $scenario = "BM_$scenflag";
   } else {
@@ -599,8 +606,14 @@ foreach my $scenflag ( @runs ) {
     for (my $n = 0; $n < $CWFDAYS; $n++) {
       my $metday = ($CWFMETV)?int($CWFMETV/24+0.99):0;
      (my $old = "$MetDir/meteo%Y%m%d${CWFMETV}_%%02d.nc") =~ s/$year/%Y/g;
-      chop($old=`date -d '$CWFBASE $metday day ago' '+$old'`);
-      $old = sprintf "$old",$n+$metday;
+      if($CWFDAYS<=10){
+        chop($old=`date -d '$CWFBASE $metday day ago' '+$old'`);
+        $old = sprintf "$old",$n+$metday;
+      }else{
+        $old =~ s/meteo%Y%m%d$CWFMETV/meteo%Y%m%d/g;
+        chop($old=`date -d '$CWFBASE $metday day ago $n day' '+$old'`);
+        $old = sprintf "$old",$metday;
+      }
       if (-e $old) {
         chop($CWFDATE[2]=`date -d '$CWFBASE $n day' +%Y%m%d`);
         my $new = "meteo$CWFDATE[2].nc";
@@ -626,13 +639,14 @@ foreach my $scenflag ( @runs ) {
       }
     }
 # Forecast nest/dump files
-    my $old="$CWFDUMPDIR/CWF_${CWFDATE[0]}_dump.nc";  # yesterday's BASE dump
-      ($old="$CWFDUMPDIR/${scenario}_dump.nc")        # today's dump
-            =~s/$CWFBASE/$CWFDATE[0]/g;               # yesterday's dump
+    my $old = sprintf "$CWFIC",$CWFDATE[0]; # yesterday's dump
+      #$old =~s/AN-//        if($aCWF);     # use Forecast dump on AN runs
+       $old =~s/FC-/AN-/ unless($aCWF);     # use Analyis dump on FC runs
     if (-e $old) {
       # we manage to link the dumpfile
       my $new="EMEP_IN_IC.nc";
       mylink( "Linking:", $old, $new);
+      $cwfic=$old;
     } else {
       # if we have yesterday meteo, we can have an extra spin up day!
       print "No dumpfile present:\n\t$old,\n\ttrying to take an extra spin-up day!\n";
@@ -662,13 +676,14 @@ foreach my $scenflag ( @runs ) {
           }
         }
       # see if we can link to a dump file ...
-        my $old="$CWFDUMPDIR/CWF_${CWFDATE[0]}_dump.nc"; # yesterday's BASE dump
-          ($old="$CWFDUMPDIR/${scenario}_dump.nc")       # today's dump
-                =~s/$CWFBASE/$CWFDATE[0]/g;              # yesterday's dump
+        my $old = sprintf "$CWFIC",$CWFDATE[0]; # yesterday's dump
+          #$old =~s/AN-//        if($aCWF);     # use Forecast dump on AN runs
+           $old =~s/FC-/AN-/ unless($aCWF);     # use Analyis dump on FC runs
         if (-e $old) {
         # we manage to link the dumpfile
           my $new="EMEP_IN_IC.nc";
           mylink( "Linking:", $old, $new);
+          $cwfic=$old;
           print "Managed to link dump file for the extra spin-up day!\n";
         }
       }
@@ -1053,6 +1068,7 @@ Chemical scheme: $Chem
 @packages
 SR?  $SR
 CWF? $CWF
+IC? $cwfic
 BC? $cwfbc
 iyr_trend: $iyr_trend
 ------------------------------
@@ -1082,6 +1098,7 @@ EOT
 
 #tar sites and sondes. Use sondes to check as these are produced les frequently.
   my $last_sondes = sprintf  "sondes.%02d%02d", $mm2, $yy;
+     $last_sondes = "sondes_$year.csv" if ($CWF);
   print "LOOKING FOR LAST SITES $last_sondes\n";
   if ( -r $last_sondes ) {
     print "FOUND LAST sondes $last_sondes\n";
@@ -1091,15 +1108,14 @@ EOT
 
   if ($CWF) {
     my $old="EMEP_OUT.nc";
-    my $new="$CWFDUMPDIR/$scenario\_dump.nc";    # today's dump
-    system("mkdir -p $CWFDUMPDIR/; mv $old $new") if (-e "$old");
+    my $new = sprintf "$CWFIC",$CWFBASE;    # today's dump
+    system("mkdir -p `dirname $new`; mv $old $new") if (-e "$old");
     if ($SR) {
-      ($old=$new)=~s/$CWFBASE/$CWFDATE[0]/g;      # yesterday's dump
-      system("rm $old") if (-e $old);
+      system("rm $cwfic") if (-e $cwfic);   # yesterday's dump
       $old="modelrun.finished";
       foreach my $task ('PBS_ARRAY_INDEX', 'PBS_ARRAYID', 'TASK_ID') {
-        $new="runsr_$ENV{$task}.finished" if $ENV{$task};
-        system("mkdir -p ../CWF_$CWFBASE/;echo $scenario >> ../CWF_$CWFBASE/$new")
+        $new="../CWF_$CWFBASE/runsr_$ENV{$task}.finished" if $ENV{$task};
+        system("mkdir -p `dirname $new`;echo $scenario >> $new")
           if (-e $old) && ($ENV{$task});
       }
     }

@@ -9,7 +9,7 @@ use ChemSpecs_adv_ml,      only: IXADV_O3,IXADV_NO,IXADV_NO2,IXADV_PAN,&
             IXADV_HNO3,IXADV_CO,IXADV_C2H6,IXADV_HCHO,IXADV_CH3CHO,IXADV_H2O2,&
             IXADV_C5H8,IXADV_C3H6,IXADV_NC4H10,IXADV_OXYL,IXADV_CH4,IXADV_SO2,&
             IXADV_SEASALT_F,IXADV_SEASALT_C,IXADV_DUST_SAH_F,IXADV_DUST_SAH_C,&
-            IXADV_FFIRE_OC,IXADV_FFIRE_BC,IXADV_SO4
+            IXADV_FFIRE_OM,IXADV_FFIRE_BC,IXADV_SO4
 implicit none
 private
 public :: set_extbic
@@ -105,8 +105,8 @@ type(icbc), dimension(27), private, target :: &
                  icbc(IXADV_DUST_SAH_F,'DesertDust_f',T,F), &
                  icbc(IXADV_DUST_SAH_C,'DesertDust_c',T,F), &
                  icbc(-1              ,'DesertDust_g',F,F), &
-                 icbc(IXADV_FFIRE_OC  ,'OC'          ,T,F), &
-                 icbc(IXADV_FFIRE_BC  ,'BC'          ,T,F), &
+                 icbc(IXADV_FFIRE_OM  ,'OC'          ,F,F), & ! do not use
+                 icbc(IXADV_FFIRE_BC  ,'BC'          ,F,F), & ! do not use
                  icbc(IXADV_SO4       ,'SO4'         ,T,F)/)
 
 contains
@@ -130,7 +130,7 @@ subroutine set_extbic(idate)
     "External BICs filenames for",EXTERNAL_BIC_NAME
 ! filename_read_3D=date2string(template_read_3D,idate,debug=MasterProc.and.DEBUG)
   filename_read_BC=date2string(template_read_BC,idate,debug=MasterProc.and.DEBUG)
-! filename_write  =date2string(template_write  ,idate,debug=MasterProc.and.DEBUG)
+  filename_write  =date2string(template_write  ,idate,debug=MasterProc.and.DEBUG)
 
 !--- Set BC type  from idate: on first call only
   if(EXTERNAL_BIC_SET) return

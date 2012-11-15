@@ -55,10 +55,10 @@ IMPORTANT NOTE:
 ## Unimod: Modules & Make
 export MACHINE=vilje                  # select stallo/vilje machine
 case $MACHINE in                      # modules needed to compile Unimod
- stallo)EMEPMODULES=(intel-compiler/12.1.2 openmpi/1.4.4 netcdf/4.1.3);;
+ stallo)EMEPMODULES=(intel/13.0 openmpi/1.6.2 netcdf/4.2.1.1);;
   vilje)EMEPMODULES=(intelcomp/12.0.5.220 mpt/2.06 netcdf/4.1.3);;
 esac
-[[ -z "$MODULESHOME" ]] &&
+[[ -z "$MODULESHOME" && -s /etc/profile.d/modules.sh ]] &&
   . /etc/profile.d/modules.sh         # load modulecmd wraper, fi needed
 if [[ -n "$EMEPMODULES" ]]; then
   module unload ${EMEPMODULES[*]%/*}  # unload system default versions
@@ -226,6 +226,72 @@ dsSep14   Volcanos_ml.f90
 dsSep14   Wesely_ml.f90
 
 !----------------------------------------------------------
+xxxxxxxx  rv4.1.5 Alvaro        15th Novembner 2012  xxxxxxxxxxxxxxxxxxxxxxxxx
+
+Add 3DVar code to repository:
+  ZD_3DVar/My_3DVar_ml.f90
+    Link dummy 3DVar module for when NO 3DVar is required.
+  ZD_3DVar/Makefile,Makefile.SRCS
+    sub-make files for compiling 3DVar programs Unimod_Bnmc and Unimod_3DVar
+  ZD_3DVar/DA_ml,B_NMC/*.{f90,F,c},Analysis/*.{f90,F}
+    3DVar and Bnmc source files
+
+Makefile,Makefile.SRCS:
+  * update stallo module requirements for the new module system
+  * rename module checking functions
+  * Link dummy 3DVar module (ZD_3DVar/My_3DVar_ml.f90) for Unimod
+    compilaton targets, such as EMEP, eEMEP & MACC
+  * Add %-Bnmc and %-3DVar compilation targets for
+    EXP_Bnmc and EXP_3DVar targets on ZD_3DVar/Makefile which compile
+    ZD_3DVar/Unimod_Bnmc and ZD_3DVar/Unimod_3DVar
+    
+ModelConstants_ml:
+  * add logical parameter ANALYSIS for sich on/off 3DVar
+  * set RUNDOMAIN for a EECCA 100x100 Benchmark
+
+Nest_ml:
+  subroutine wrtxn
+  * rename allocatable array dat to data
+  * allocate data on each call and deallocate after usage
+  * remove now unnecessary variable first_call
+  subroutine init_nest
+  * new logical parameter USE_LAST_HYBRID_LEVELS=.true.
+  * check if number of vertical levels on variable and vertical dimension
+    matches for hyam/hybm case and:
+    * Stop simulation of hyam has less levels than variable.
+    * If the variable has less vertical levels than hyam,
+      assume that last vertical levels are the correct ones (if USE_LAST_HYBRID_LEVELS).
+  * Previously versions assumed the first values of hyam/hybm to be the correct
+    ones. The behaviour can be restored by setting USE_LAST_HYBRID_LEVELS=.false.
+
+PhyChem_ml
+  * Introruce 3DVar calls before first time step and EndOfDay
+  * move call wrtxn (write IC/BC for Nest run) after EndOfDay 3DVar call
+
+Timing_ml
+  * 7 additional timing tags (NTIMING=39+7) for 3DVar
+  * write timing tags only of they are non empty (Output_timing)
+
+run.pl
+  * set for a EECCA.2008 Benchmark
+  * set TNO emission path on vilje
+  * do not re-compile SR or or ARRAY jobs
+  * add IC file to RunLog.out
+  * CWF Forecast/Analysis modes with different scenario names
+  * CWF Analysis runs ZD_3DVar/Unimod_3DVar
+  * CWF Forecast options for long runs (more than 10 days)
+
+ZCM_EmChem09/EmChem09base.species
+  * NO2 in daObs group
+
+ZD_OZONE/IFSMOZ_ExternalBICs_ml
+  * Rename IXADV_FFIRE_OC --> IXADV_FFIRE_OM
+  * Set IFS_EVA_2010 BCs%wanted=.false. for OC and OM
+  
+ZD_OZONE/My_Outputs_ml
+  * change EVA2010 hourly output names to upercase
+  * add unique hr_out%name to consistency check
+
 xxxxxxxx    rv4.1.4 Peter/Matthias  12th October 2012  xxxxxxxxxxxxxxxxxxxxxxxxx
 
 Emissions_ml: if(USE_ROADDUST)gridrcroadd0(:,:,:) = 0.0 

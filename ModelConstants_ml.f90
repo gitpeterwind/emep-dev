@@ -83,7 +83,8 @@ logical, public, parameter ::         &
   LANDIFY_MET        = .false.,       & ! extended massbudget outputs
   USE_POLLEN         = .false.,       & ! EXPERIMENTAL. Only works if start Jan 1
   USE_EMERGENCY      = FORECAST.or.&      ! Emergency: Volcanic Eruption & Nuclear Accident. Under development.
-                       (EXP_NAME=="EMEP2010")
+                      (EXP_NAME=="EMEP2010"), &
+  ANALYSIS           = .false..and.FORECAST ! EXPERIMENTAL: 3DVar data assimilation
 
 !Boundary layer profiles
   character(len=4), parameter, public :: FluxPROFILE = &
@@ -141,10 +142,10 @@ integer, public, parameter :: &
 
 integer, public, save, dimension(4) ::   &
 !                 x0   x1  y0   y1
-RUNDOMAIN = (/  -999,-999 ,  -999, -999 /)     ! Set values later
+!!RUNDOMAIN =(/-999,-999,-999,-999/)     ! Set values later
 ! RUNDOMAIN = (/  1, 182,  1, 197 /)     ! HIRHAM
 ! RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA = new EMEP domain
-!  RUNDOMAIN = (/  1, 100,  1, 100 /)     ! Orig EMEP domain in EECCA (for benchmarks)
+  RUNDOMAIN = (/  1, 100,  1, 100 /)     ! Orig EMEP domain in EECCA (for benchmarks)
 ! RUNDOMAIN = (/ 40, 210, 12, 184 /)     ! SR TNO28 area
 ! RUNDOMAIN = (/  1, 210,  1, 208 /)     ! TNO28
 ! RUNDOMAIN = (/240, 720, 48, 736 /)     ! TNO07 reduced (15W-45E;30N-73N)

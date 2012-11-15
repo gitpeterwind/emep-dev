@@ -366,13 +366,13 @@ subroutine set_output_defs
 !**         name     type     ofmt    ispec    
 !**         ix1 ix2 iy1 iy2 nk sellev? unit conv  max
     hr_out = (/&
-      Asc2D("o3"  ,"BCVugXX",IXADV_O3   ,&
+      Asc2D("O3"  ,"BCVugXX",IXADV_O3   ,&
             ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_O3) ,600.0*2.0),&
-      Asc2D("no2" ,"BCVugXX",IXADV_NO2  ,&
+      Asc2D("NO2" ,"BCVugXX",IXADV_NO2  ,&
             ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_NO2),600.0*1.91),&
-      Asc2D("pm25","D2D",pm25,&
+      Asc2D("PM25","D2D",pm25,&
             ix1,ix2,iy1,iy2,1             ,"ug",1.0                 ,-999.9),&
-      Asc2D("pm10","D2D"    ,pm10,&
+      Asc2D("PM10","D2D"    ,pm10,&
             ix1,ix2,iy1,iy2,1             ,"ug",1.0                 ,-999.9)/)
 !  if(MasterProc)then
 !  write(*,*)(i,hr_out(i),i=1,nhourly_out)
@@ -470,11 +470,13 @@ subroutine set_output_defs
   endselect
 
   !/** Consistency check:
-  ! Was the array set?       R: %name/=none
-  ! Was the D2D/Group found? R: %spec>0
+  ! Was the array set?           R: %name/=none
+  ! Was the D2D/Group found?     R: %spec>=0
+  ! Is the varaible name unique? R: find_index((i)%name,(:)%name)==i
   do i=1,nhourly_out
     if(MasterProc) write(*,*) "TESTHH O3 ATEND", i, nlevels_hourly
-    if(hr_out(i)%name/="none".and.hr_out(i)%spec>=0) cycle
+    if((hr_out(i)%name/="none").and.(hr_out(i)%spec>=0).and.&
+       (find_index(hr_out(i)%name,hr_out(:)%name)==i)) cycle
     write(errmsg,"(A,2(1X,A,'=',I0),2(1X,A,':',A))")&
       "set_output_defs: Failed consistency check",&
       "Hourly",i, "Nhourly",NHOURLY_OUT,&

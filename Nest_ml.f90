@@ -296,12 +296,11 @@ endsubroutine readxn
 subroutine wrtxn(indate,WriteNow)
   type(date), intent(in) :: indate
   logical, intent(in) :: WriteNow !Do not check indate value
-  real,save,allocatable, dimension(:,:,:) :: dat ! Data arrays
+  real,allocatable, dimension(:,:,:) :: data ! Data arrays
 
   type(Deriv) :: def1 ! definition of fields
   integer :: n,iotyp,ndim,kmax
   real :: scale
-  logical, save ::first_call=.true.
   logical :: fexist, lsend, lrecv
 
   if(MODE /= 1.and.MODE /= 3.and.MODE /= 10.and.MODE /= 12.and. .not.FORECAST)return
@@ -347,8 +346,7 @@ subroutine wrtxn(indate,WriteNow)
   def1%name=''          ! written
   def1%unit='mix_ratio' ! written
 
-  if(first_call) allocate(dat(MAXLIMAX,MAXLJMAX,KMAX_MID))
-
+  allocate(data(MAXLIMAX,MAXLJMAX,KMAX_MID))
   inquire(file=fileName_write,exist=fexist)
   !do first one loop to define the fields, without writing them (for performance purposes)
   if(.not.fexist)then
@@ -363,9 +361,9 @@ subroutine wrtxn(indate,WriteNow)
            "Will not be written to IC file:",trim(filename_write),""
         cycle
       endif
-      dat=xn_adv(n,:,:,:)
+      data=xn_adv(n,:,:,:)
       if(FORECAST.and..false.)then
-        lsend=any(dat/=0.0)
+        lsend=any(data/=0.0)
         CALL MPI_ALLREDUCE(lsend,lrecv,1,MPI_LOGICAL,MPI_LOR,MPI_COMM_WORLD,INFO)
         adv_ic(n)%wanted=lrecv
         if(.not.adv_ic(n)%wanted)then
@@ -376,7 +374,7 @@ subroutine wrtxn(indate,WriteNow)
           cycle
         endif
       endif
-      call Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype=Real4,&
+      call Out_netCDF(iotyp,def1,ndim,kmax,data,scale,CDFtype=Real4,&
             ist=istart,jst=jstart,ien=iend,jen=jend,&
             fileName_given=fileName_write,create_var_only=.true.)
     enddo
@@ -385,14 +383,12 @@ subroutine wrtxn(indate,WriteNow)
   do n= 1, NSPEC_ADV
     if(.not.adv_ic(n)%wanted)cycle
     def1%name= species_adv(n)%name       !written
-    dat=xn_adv(n,:,:,:)
-    call Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype=Real4,&
+    data=xn_adv(n,:,:,:)
+    call Out_netCDF(iotyp,def1,ndim,kmax,data,scale,CDFtype=Real4,&
           ist=istart,jst=jstart,ien=iend,jen=jend,&
           fileName_given=fileName_write,create_var_only=.false.)
   enddo
-
-  first_call=.false.
-  return
+  deallocate(data)
 endsubroutine wrtxn
 
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
@@ -485,6 +481,7 @@ subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
      k1_ext,k2_ext,weight_k1,weight_k2,&
      N_ext,KMAX_ext,GIMAX_ext,GJMAX_ext)
 
+  logical, parameter :: USE_LAST_HYBRID_LEVELS=.true.
   character(len=*),intent(in) :: filename_read
   real ,intent(out):: Weight(MAXLIMAX,MAXLJMAX,4)
   integer ,intent(out)::IIij(MAXLIMAX,MAXLJMAX,4),JJij(MAXLIMAX,MAXLJMAX,4)
@@ -492,7 +489,7 @@ subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
   real, intent(out), dimension(KMAX_MID) :: weight_k1,weight_k2
   integer ,intent(out)::N_ext,KMAX_ext,GIMAX_ext,GJMAX_ext
   real(kind=8) :: ndays_indate
-  integer :: ncFileID,idimID,jdimID, kdimID,timeDimID,varid,status !,timeVarID
+  integer :: ncFileID,idimID,jdimID,kdimID,timeDimID,varid,status,dimIDs(3) !,timeVarID
   integer :: ndate(4) !nseconds_indate,
   real :: DD,dist(4),P_emep
   integer :: i,j,k,n,k_ext,II,JJ !nseconds(1),n,n1,k
@@ -636,9 +633,21 @@ subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
 
     status = nf90_inq_varid(ncid = ncFileID, name = "hyam", varID = varID)
     if(status == nf90_noerr) then
-      call check(nf90_get_var(ncFileID, varID, hyam,count=(/ KMAX_ext /) ))
+      call check(nf90_inquire_variable(ncid=ncFileID,varID=varID,dimIDs=dimIDs))
+      call check(nf90_inquire_dimension(ncid=ncFileID,dimID=dimIDs(1),len=k))
+      call CheckStop(k<KMAX_ext,"Nest BC, wrong hyam/hybm dimension")
+      if(USE_LAST_HYBRID_LEVELS)then
+        k_ext=1+k-KMAX_ext ! for 1+k-KMAX_ext .. k levels
+      else
+        k_ext=1            ! for 1 .. KMAX_ext levels
+      endif
+      if(k/=KMAX_ext.and.MasterProc)&
+        write(*,"(A,4(1X,A,I0))")'Nest BC warning:',&
+          'kdim #lev=',KMAX_ext,'and hyam/hybm #lev=',k,&
+          '. Using only levels ',k_ext,'..',k
+      call check(nf90_get_var(ncFileID,varID,hyam,start=(/k_ext/),count=(/KMAX_ext/)))
       call check(nf90_inq_varid(ncid = ncFileID, name = "hybm", varID = varID))
-      call check(nf90_get_var(ncFileID, varID, hybm,count=(/ KMAX_ext /) ))
+      call check(nf90_get_var(ncFileID,varID,hybm,start=(/k_ext/),count=(/KMAX_ext/)))
     else
       inquire(file=filename_eta,exist=fexist)
       status = nf90_inq_varid(ncid = ncFileID, name = "k", varID = varID)
