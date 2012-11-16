@@ -226,7 +226,7 @@ dsSep14   Volcanos_ml.f90
 dsSep14   Wesely_ml.f90
 
 !----------------------------------------------------------
-xxxxxxxx  rv4.1.5 Alvaro        15th Novembner 2012  xxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx  rv4.1.5 Alvaro        16th Novembner 2012  xxxxxxxxxxxxxxxxxxxxxxxxx
 
 Add 3DVar code to repository:
   ZD_3DVar/My_3DVar_ml.f90
@@ -247,7 +247,6 @@ Makefile,Makefile.SRCS:
     
 ModelConstants_ml:
   * add logical parameter ANALYSIS for sich on/off 3DVar
-  * set RUNDOMAIN for a EECCA 100x100 Benchmark
 
 Nest_ml:
   subroutine wrtxn
@@ -273,7 +272,6 @@ Timing_ml
   * write timing tags only of they are non empty (Output_timing)
 
 run.pl
-  * set for a EECCA.2008 Benchmark
   * set TNO emission path on vilje
   * do not re-compile SR or or ARRAY jobs
   * add IC file to RunLog.out
