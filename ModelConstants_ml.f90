@@ -71,8 +71,8 @@ logical, public, parameter ::         &
   NO_CROPNH3DEP      = .true.,        & ! Stop NH3 deposition for growing crops
   USE_SEASALT        = .true.,        & ! ok
 ! More experimental:
-  USE_DUST           = .true.,       & ! Experimental
-  USE_ROADDUST       = .true.,       & ! UNDER DEVELOPMENT! Testing the TNO Road Dust routine. So far with simplified "climate-correction" factor
+  USE_DUST           = .not.FORECAST, & ! Experimental
+  USE_ROADDUST       = .not.FORECAST, & ! UNDER DEVELOPMENT! Testing the TNO Road Dust routine. So far with simplified "climate-correction" factor
   DO_SAHARA          = .not.FORECAST, & ! Turn on/off BG Saharan Dust
   USE_GLOBAL_SOILNOX = .false.,       & ! Need to design better switch
   USE_SOILNH3        = .false.,       & ! DUMMY VALUES, DO NOT USE!
@@ -120,7 +120,7 @@ character(len=*), parameter, public :: &
 ! DomainName = "EMEPCWF-0.20degEurope"
 ! DomainName = "HIRHAM"
 
-logical, parameter, public :: IS_GLOBAL = .false.
+logical, parameter, public :: IS_GLOBAL = .false..or.(EXP_NAME=="EMERGENCY")
 
 integer, public :: IIFULLDOM,JJFULLDOM!  & SET AUTOMATICALLY BY THE CODE
 ! IIFULLDOM = 182, JJFULLDOM = 197 ! x,y-Dimensions of full HIRHAM domain
@@ -324,6 +324,7 @@ character(len=*), public, parameter :: &! ending depeding on date:
 ! HOURLYFILE_ending="_hour_YYYYMM.nc"   ! MM  -> month (01 .. 12)
 ! HOURLYFILE_ending="_hour_YYYYMMDD.nc" ! DD  -> day of the month (00 .. 31)
 ! HOURLYFILE_ending="_hour_YYYYJJJ.nc"  ! JJJ -> the day of the year (001 .. 366)
+! HOURLYFILE_ending="+FFF.nc"           ! a new file each forecast hour
   HOURLYFILE_ending="_hour.nc"          ! keep the same for the whole run
 
 ! NH3 module as set up originally with U10 from met: kept for safety only.

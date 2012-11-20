@@ -1648,8 +1648,8 @@ subroutine coord_check(msg,lon,lat,fix)
   call range_check(trim(msg)//" lat",lat,(/ -90.0, 90.0/),fatal=.not.fix)
   call range_check(trim(msg)//" lon",lon,(/-180.0,180.0/),fatal=.not.fix)
   if(fix)then
-    lat=modulo(lat, 90.0) ! lat/gb_stagg range  -90 .. 90
-    lon=modulo(lon,360.0) ! lon/gl_stagg range -180 .. 180
+    lat=modulo(lat      , 90.0)       ! lat/gb_stagg range  -90 .. 90
+    lon=modulo(lon+180.0,360.0)-180.0 ! lon/gl_stagg range -180 .. 180
   endif
 endsubroutine coord_check
 function coord_in_gridbox(lon,lat,iloc,jloc) result(in)

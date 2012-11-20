@@ -343,7 +343,7 @@ function EruptionRate(i,j) result(emiss)
                   cycle doVENT    ! Wrong gridbox
     if(nerup(v)<1)cycle doVENT    ! Not erupting
     if(DEBUG_EM) &
-      write(*,MSG_FMT)snow//' Vent',me,'me',v,ventdef(v)%id,i,"i",j,"j"
+      write(*,MSG_FMT)snow//' Vent',me,'me',v,trim(ventdef(v)%id),i,"i",j,"j"
     doERUP: do e=1,nerup(v)
       sbeg=date2string(erupdef(v,e)%sbeg,current_date)
       send=date2string(erupdef(v,e)%send,current_date)
@@ -378,7 +378,7 @@ function EruptionRate(i,j) result(emiss)
     do while(k>0.and.height>z_bnd(i,j,k))
       k=k-1
     enddo
-  end function getModLev
+  endfunction getModLev
 !----------------------------!
 ! Set Volcanic Eruption Param.
 !----------------------------!
@@ -442,11 +442,13 @@ function EruptionRate(i,j) result(emiss)
         ventdef(nvent)=dvent
         if(DEBUG_EM) &
           write(*,MSG_FMT)'Vent',me,'in',nvent,trim(dvent%id),&
-            dvent%grp,trim(dvent%name)
-!     else
-!       if(DEBUG_EM) &
-!         write(*,MSG_FMT)'Vent',me,'out',-1,trim(dvent%id),&
-!           dvent%grp,trim(dvent%name)
+            dvent%grp,trim(dvent%name),dvent%iloc,"i",dvent%jloc,"j",&
+            dvent%lon,"lon",dvent%lat,"lat"
+      elseif(MasterProc)then
+        if(DEBUG_EM) &
+          write(*,MSG_FMT)'Vent',me,'out',-1,trim(dvent%id),&
+            dvent%grp,trim(dvent%name),dvent%iloc,"i",dvent%jloc,"j",&
+            dvent%lon,"lon",dvent%lat,"lat"
       endif
     enddo doVENT
     if(MasterProc) close(IO_TMP)
@@ -472,7 +474,7 @@ function EruptionRate(i,j) result(emiss)
         call CheckStop(nerup(0)>NMAX_ERUP,ERR_ERUP_MAX//" read")
         erupdef(0,nerup(derup%vent))=derup
         if(DEBUG_EM) &
-          write(*,MSG_FMT)'Erup.Default',me,'in',nerup(0),derup%id
+          write(*,MSG_FMT)'Erup.Default',me,'in',nerup(0),trim(derup%id)
       elseif(derup%vent>0.and.derup%spc>0)then            ! Specific
         nerup(derup%vent)=nerup(derup%vent)+1
         call CheckStop(nerup(derup%vent)>NMAX_ERUP,ERR_ERUP_MAX//" read")
@@ -480,10 +482,10 @@ function EruptionRate(i,j) result(emiss)
         if(DEBUG_EM) &
           write(*,MSG_FMT)'Erup.Specific',me,'in',nerup(derup%vent),trim(derup%id),&
             derup%spc,trim(derup%name)
-!     else                                                ! Vent Outside domain
-!       if(DEBUG_EM) &                                    ! or Unknown Vent/SPC
-!         write(*,MSG_FMT)'Erup.Specific',me,'out',-1,trim(derup%id),&
-!           derup%spc,trim(derup%name)
+      elseif(MasterProc)then
+        if(DEBUG_EM) &                                    ! or Unknown Vent/SPC
+          write(*,MSG_FMT)'Erup.Specific',me,'out',-1,trim(derup%id),&
+            derup%spc,trim(derup%name)
       endif
     enddo doERUP
     if(MasterProc) close(IO_TMP)
@@ -493,8 +495,7 @@ function EruptionRate(i,j) result(emiss)
   !----------------------------!
     if(DEBUG_EM) CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
     if(nerup(0)<1)then
-      if(DEBUG_EM) &
-        write(*,MSG_FMT)'Erup.Default',me,'not found'
+     !if(DEBUG_EM) write(*,MSG_FMT)'Erup.Default',me,'not found'
       return
     endif
     doVENTe: do v=1,nvent
@@ -539,7 +540,7 @@ function EruptionRate(i,j) result(emiss)
       endif
     enddo doVENTe
     Eruption_found=any(nerup(1:nvent)>0)
-  end subroutine setRate
+  endsubroutine setRate
 !----------------------------!
 ! Extract Vent info from CVS line
 !----------------------------!
@@ -571,7 +572,7 @@ function EruptionRate(i,j) result(emiss)
     read(words(8),*)elev
     igrp=find_index(words(1),chemgroups(:)%name)
     def=vent(trim(words(1)),trim(words(2)),lat,lon,elev,trim(words(10)),igrp)
-  end function getVent
+  endfunction getVent
 !----------------------------!
 ! Extract Erup. info from CVS line
 !----------------------------!
@@ -617,7 +618,7 @@ function EruptionRate(i,j) result(emiss)
     words(9)=getDate(words(9),words(8),words(9),dhh,debug=DEBUG_EM) ! End   [date/code]
     def=erup(trim(words(1)),trim(words(2)),base,top,rate*m63,&
       trim(words(8)),trim(words(9)),max(ivent,0),max(ispc,0),edef)
-  end function getErup
+  endfunction getErup
 !----------------------------!
 ! Time/Date CODE--> YYYY-MM-DD hh:mm:ss
 !----------------------------!
@@ -626,23 +627,25 @@ function EruptionRate(i,j) result(emiss)
     real, intent(in)             :: dh  ! [hours]
     logical, intent(in), optional:: debug
     character(len=TXTLEN_SHORT)  :: str
+    logical :: mydebug=.false.
+    mydebug=.false.;if(present(debug))mydebug=debug.and..false.
     select case (code)
     case("SR")          ! Start of the simulation
-      str=date2string(SDATE_FMT,startdate,debug=debug)
+      str=date2string(SDATE_FMT,startdate,debug=mydebug)
     case("SR+D")        ! Start of the simulation + dh
-      str=date2string(SDATE_FMT,startdate,addsecs=dh*36e2,debug=debug)
+      str=date2string(SDATE_FMT,startdate,addsecs=dh*36e2,debug=mydebug)
     case("SE+D")        ! Start eruption + dh; no wildcards in SE allowed
-      str=date2string(SDATE_FMT,string2date(se,SDATE_FMT,debug=debug),addsecs=dh*36e2,debug=debug)
+      str=date2string(SDATE_FMT,string2date(se,SDATE_FMT,debug=mydebug),addsecs=dh*36e2,debug=mydebug)
     case("EE+D")        ! End eruption   - dh; no wildcards in EE allowed
-      str=date2string(SDATE_FMT,string2date(ee,SDATE_FMT,debug=debug),addsecs=-dh*36e2,debug=debug)
+      str=date2string(SDATE_FMT,string2date(ee,SDATE_FMT,debug=mydebug),addsecs=-dh*36e2,debug=mydebug)
     case("ER-D")        ! End of the simulation - dh
-      str=date2string(SDATE_FMT,enddate,addsecs=-dh*36e2,debug=debug)
+      str=date2string(SDATE_FMT,enddate,addsecs=-dh*36e2,debug=mydebug)
     case("ER")          ! End of the simulation
-      str=date2string(SDATE_FMT,enddate,debug=debug)
+      str=date2string(SDATE_FMT,enddate,debug=mydebug)
     case default
       str=code
     endselect
-  end function getDate
-end function EruptionRate
+  endfunction getDate
+endfunction EruptionRate
 
-end module Volcanos_ml
+endmodule Volcanos_ml

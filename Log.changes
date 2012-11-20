@@ -226,7 +226,36 @@ dsSep14   Volcanos_ml.f90
 dsSep14   Wesely_ml.f90
 
 !----------------------------------------------------------
-xxxxxxxx  rv4.1.5 Alvaro        16th Novembner 2012  xxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx  rv4.1.6 Alvaro         20th November 2012  xxxxxxxxxxxxxxxxxxxxxxxxx
+
+Small bug fixes and settings for FORECAST(MACC)/EMERGENCY(eEMEP) modes.
+
+GridValues_ml:
+  Fix bug introduced on rv4.1.2 (Oct 8, 2012).
+  Only simulations on STATUS2010 and EMERGENCY mode were affected.
+  Procedure coord_check(lon,lat,fix=.true.) converted longitudes
+  from the -180..180 range to 0..360 range. The opposite conversion was required.
+  Current version of coord_check converts longitudes to the -180..180 range.
+
+ModelConstants_ml:
+  Since rv4rc11 (Sep 13, 2012) USE_DUST and USE_ROADDUST are .true. by default.
+  Now they are .false. on FORECAST mode.
+
+Volcanos_ml:
+  Reduce DEBUG_EMERGENCY output
+
+ForestFire_ml:
+  On FORECAST mode, the forest fire file might not present.
+  In which case about 550 warnings are issued every day of simulation.
+  Now, Fire_Emis checks if forest fire file exists before attempting to read it.
+  In FORECAST mode return it after setting burning=.false.,
+  otherwise stop the simulation.
+
+ZD_OZONE/My_Derived_ml:
+  Add daily output for ASH groups.
+  They will be skipped if the groups are not found.
+  
+xxxxxxxx  rv4.1.5 Alvaro         16th November 2012  xxxxxxxxxxxxxxxxxxxxxxxxx
 
 Add 3DVar code to repository:
   ZD_3DVar/My_3DVar_ml.f90
