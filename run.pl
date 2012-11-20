@@ -11,11 +11,11 @@
 # Ve/Vilje, (take out one # and put one # before the Stallo). 
 #     select= number of nodes, ncpus=number of threads per node to reserve, 
 #     mpiprocs=number of MPI threads per node. For 64 processors:
-##PBS -l select=2:ncpus=32:mpiprocs=32:mem=8gb
+#PBS -l select=2:ncpus=32:mpiprocs=32:mem=8gb
 #Stallo
-#PBS -lnodes=2:ppn=16
+##PBS -lnodes=2:ppn=16
 # wall time limit of run
-#PBS -lwalltime=04:00:00
+#PBS -lwalltime=07:30:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
 #PBS -lpmem=1000MB
 #make results readable for others:
@@ -79,8 +79,8 @@ use File::Compare;
 $| = 1; # autoflush STDOUT
 
 #Choose one machine
-my $VILJE=0;  #1 if Ve or Vilje is used
-my $STALLO=1; #1 if stallo is used
+my $VILJE=1;  #1 if Ve or Vilje is used
+my $STALLO=0; #1 if stallo is used
 my $TITAN=0;  #1 if titan is used
 
 # -j4 parallel make with 4 threads
@@ -128,7 +128,7 @@ my $INERIS_FACS=0;  # Used for timefactors, and e,g TNOxx tests
 my $SR= 0;     # Set to 1 if source-receptor calculation
                # check also variables in package EMEP::Sr below!!
 
-my $CWF=0;     # Set to N for 'N'-day forecast mode (0 otherwise)
+my $CWF=4;     # Set to N for 'N'-day forecast mode (0 otherwise)
 my ($CWFBASE, $CWFDAYS, $CWFMETV, @CWFDATE, @CWFDUMP, $eCWF, $aCWF) if $CWF;
 if ($CWF) {
   chop($CWFBASE = `date +%Y%m%d`);   # Forecast base date     (default today)
@@ -140,7 +140,7 @@ if ($CWF) {
        $CWFBASE = shift if @ARGV;    # Forecast base date, lenght
        $CWFDAYS = shift if @ARGV;    #  & MetUTC version can be passed
        $CWFMETV = shift if @ARGV;    #  as argument to script
-  $eCWF=0;                           # Emergency forecast
+  $eCWF=1;                           # Emergency forecast
   $aCWF=($CWFMETV =~ /AN/ );         # Analysis
   $CWF=($eCWF?"eemep-":"CWF_").($CWFMETV?"$CWFMETV-$CWFBASE":"$CWFBASE");
 # short run: $CWFDAYS= 1 .. 10 --> meteo${CWFBASE}_00d _01d ..
@@ -270,7 +270,7 @@ my $Chem     = "EmChem09soa";
 #$Chem     = "CRI_v2_R5";
    $Chem     = $BENCHMARK{'chem'} if $BENCHMARK{'chem'};
 
-my $testv = "rv4_1_5";
+my $testv = "rv4_1_5.eCWF";
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
@@ -934,7 +934,7 @@ if ( $iyr_trend > 2015 )  {
       $efile = "$EruptionDir/${vname}_2bin_${MAKEMODE}.eruptions" if($MAKEMODE =~ /2010/);
     # $efile = "$EruptionDir/${vname}_2bin_${MAKEMODE}_SR-SOx.eruptions" if($MAKEMODE =~ /2010/);
     # $efile = "$EruptionDir/${vname}_2bin_${MAKEMODE}_SR-PMx.eruptions" if($MAKEMODE =~ /2010/);
-      system("cat $efile >> eruptions.csv") if -e $efile;
+      system("cat $efile >> eruptions.csv") if (-e $efile);
     }
     close(IN);
   }

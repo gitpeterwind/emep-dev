@@ -137,7 +137,7 @@ private
    type(typ_s5i), public, save, dimension(MAX_NUM_DERIV2D) :: OutputFields
    integer, public, save :: nOutputFields = 0
 
-   type(typ_s5i), public, parameter, dimension(71) :: &
+   type(typ_s5i), public, parameter, dimension(75) :: &
       OutputConcs = (/  &
 !
 ! Here we use the 4th text field to give the "class" or "typ". Derived_ml
@@ -255,6 +255,11 @@ private
 
 !---------------------------------------------
         ,typ_s5i("RN222     ", "ppb", D2,"AIR_CONCS", SPEC, D)&
+!-- Emergency: Volcanic Eruption (4 entries). Skipp groups if not found
+        ,typ_s5i("ASH       ",  "ug", D2,"AIR_CONCS",GROUP, D)&
+        ,typ_s5i("ASH_F     ",  "ug", D2,"AIR_CONCS",GROUP, D)&
+        ,typ_s5i("ASH_C     ",  "ug", D2,"AIR_CONCS",GROUP, D)&
+        ,typ_s5i("ASH_G     ",  "ug", D2,"AIR_CONCS",GROUP, D)&
        ! ============================================================
        /)
 !TFMM         typ_s5i("SO2       ", "ugS", D2,"AIR_CONCS", SPEC, D)&
