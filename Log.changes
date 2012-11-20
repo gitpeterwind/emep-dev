@@ -232,7 +232,7 @@ Small bug fixes and settings for FORECAST(MACC)/EMERGENCY(eEMEP) modes.
 
 GridValues_ml:
   Fix bug introduced on rv4.1.2 (Oct 8, 2012).
-  Only simulations on STATUS2010 and EMERGENCY mode were affected.
+  Only simulations on EMEP2010 and EMERGENCY mode were affected.
   Procedure coord_check(lon,lat,fix=.true.) converted longitudes
   from the -180..180 range to 0..360 range. The opposite conversion was required.
   Current version of coord_check converts longitudes to the -180..180 range.
