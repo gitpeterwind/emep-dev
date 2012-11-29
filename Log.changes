@@ -71,13 +71,20 @@ fi
      ----------------------
      If you get an error message such as:
 
-Looking for DegreeDayFac: /global/work/mifapw/emep/Data/inputs_emepdefaults_May2012/HDD18-TNO28-2008.nc
 
-      you may need to generate this file. Use either:
+ ERROR: Missing!!! in check-file:DegreeDayFactors.nc    (rv4_1_7 onwards)
 
-      i) DegreeDayFactors  from Dave's bin, and follow instruations, or
-      ii) look at mk.HDD in ~mifads/Work/D_Emis/DegreeDay
-      (both on stallo)
+ Or in earlier versions:
+
+ Looking for DegreeDayFac: /global/work/mifapw/emep/Data/inputs_emepdefaults_May2012/HDD18-TNO28-2008.nc
+
+      you may need to generate this file. Use:
+
+      *  meteoPreProc from ZD_EXTRA, use e.g. mk.meteoPreProc script.
+
+      OLD: (=pre-rv4_1_7): use DegreeDayFactors  from Dave's bin, and follow instruations)
+      OLD: ii) look at mk.HDD in ~mifads/Work/D_Emis/DegreeDay
+      OLD: (both on stallo)
 
 SOIL NOx ISSUES - Mainly think about (1) for policy
 
@@ -226,10 +233,27 @@ dsSep14   Volcanos_ml.f90
 dsSep14   Wesely_ml.f90
 
 !----------------------------------------------------------
-xxxxxxxx  rv4.1.7 Dave in-progress 29th November 2012  xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx  rv4.1.7 Dave 29th November 2012  xxxxxxxxxxxxxxxxxxxxxxx
 
-NetCDF_ml.f90 - safety check added to make sure idimID found. (Would catch files
-  with x,y insterad of i,j
+Updated Degreeday/HDD system - start of more general pre-processing of met data
+Files added in ZD_EXTRA so far, to avoid need for yet another sub-directory.
+(Could have used e.g. Aux)
+
+New prog and script here:
+
+ZD_EXTRA/meteoPreProc.f90   added to cvs system
+ZD_EXTRA/mk.meteoPreproc    added to cvs system
+
+
+Also, more safety checks in:
+
+NetCDF_ml.f90
+        - to make sure idimID found (catches files with x,y instead of i,j).
+
+Io_Progs_ml.f90  - now calls CheckStop if a "needed" file is missing.
+
+Timefactors_ml.f90 - DegreeDayFactors.nc needed=true  used
+
 
 xxxxxxxx  rv4.1.6 Alvaro         20th November 2012  xxxxxxxxxxxxxxxxxxxxxxxxx
 
