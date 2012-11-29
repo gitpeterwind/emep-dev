@@ -607,6 +607,12 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
               call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
               call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
            endif
+
+          ! only  i,j coords can be handled for PS so far. Posisble x,y would
+          ! give wrong dimID. 
+           call CheckStop(idimID <0 ,&
+             "ReadField_CDF: no dimID found for"//trim(fileName_given))
+
            call check(nf90_inq_dimid(ncid = ncFileID, name = "k", dimID = kdimID))
            call check(nf90_inquire_dimension(ncid=ncFileID,dimID=idimID,len=GIMAX_old))
            call check(nf90_inquire_dimension(ncid=ncFileID,dimID=jdimID,len=GJMAX_old))

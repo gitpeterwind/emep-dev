@@ -226,6 +226,11 @@ dsSep14   Volcanos_ml.f90
 dsSep14   Wesely_ml.f90
 
 !----------------------------------------------------------
+xxxxxxxx  rv4.1.7 Dave in-progress 29th November 2012  xxxxxxxxxxxxxxxxxxxxxxx
+
+NetCDF_ml.f90 - safety check added to make sure idimID found. (Would catch files
+  with x,y insterad of i,j
+
 xxxxxxxx  rv4.1.6 Alvaro         20th November 2012  xxxxxxxxxxxxxxxxxxxxxxxxx
 
 Small bug fixes and settings for FORECAST(MACC)/EMERGENCY(eEMEP) modes.
