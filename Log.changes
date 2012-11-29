@@ -244,6 +244,11 @@ New prog and script here:
 ZD_EXTRA/meteoPreProc.f90   added to cvs system
 ZD_EXTRA/mk.meteoPreproc    added to cvs system
 
+   The code here does the same job as the old DegreeDayFactors, but is a bit cleaner
+   Fixes also an "apparent" problem with i,j coordinates for TNO type lat/lon grids.
+   (No difference in model runs, but ncview will now see the data the right way up.)
+
+
 
 Also, more safety checks in:
 
