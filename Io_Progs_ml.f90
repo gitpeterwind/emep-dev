@@ -169,9 +169,10 @@ subroutine check_file(fname,fexist,needed,errmsg)
     ios = 0
   elseif ( .not. fexist .and. needed ) then
     ios = -1
-    print *, "ERROR: Missing!!! in check-file"
+    if(MasterProc) print *, "ERROR: Missing!!! in check-file:" // trim(fname)
+    call CheckStop("Missing!!! in check-file:" // trim(fname))
   else
-    write(unit=6,fmt=*) "Reading ",trim(fname)
+    if(MasterProc) write(unit=6,fmt=*) "IO check_file: Reading ",trim(fname)
   end if
 end subroutine check_file
 !-------------------------------------------------------------------------

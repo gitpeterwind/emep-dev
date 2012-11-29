@@ -197,7 +197,7 @@ contains
            ! fac_min(inland,insec,iemis) = minval( fac_emm(inland,:,insec,iemis) )
 
            if( DEBUG.and.insec==ISNAP_DOM  ) &
-              write(*,"(a,3i3,f7.3,a,12f6.1)") "emm tfac ", &
+              write(*,"(a,3i3,f7.3,a,12f6.2)") "emm tfac ", &
                inland,insec,iemis, fac_min(inland,insec,iemis),&
                  " : ",  ( fac_emm(inland,mm,insec,iemis), mm=1,12)
 
@@ -208,20 +208,20 @@ contains
 
        close(IO_TIMEFACS)
 
-! Apply change in monthly factors for SNAP 1
-          sumfacc(:,:)=0.0
-          do ic = 1, NLAND
-             do mm=1,12
-                fac_emm(ic,mm,1,iemis)=fac_emm(ic,mm,1,iemis)*fac_cemm(mm)
-                sumfacc(ic,iemis)=sumfacc(ic,iemis)+fac_emm(ic,mm,1,iemis)
-             enddo
+      ! Apply change in monthly factors for SNAP 1
+       sumfacc(:,:)=0.0
+       do ic = 1, NLAND
+          do mm=1,12
+               fac_emm(ic,mm,1,iemis)=fac_emm(ic,mm,1,iemis)*fac_cemm(mm)
+               sumfacc(ic,iemis)=sumfacc(ic,iemis)+fac_emm(ic,mm,1,iemis)
           enddo
-! normalize
-          do ic = 1, NLAND
-             do mm=1,12
-                fac_emm(ic,mm,1,iemis)=fac_emm(ic,mm,1,iemis)*12./sumfacc(ic,iemis)
-             enddo
+       enddo
+      ! normalize
+       do ic = 1, NLAND
+          do mm=1,12
+             fac_emm(ic,mm,1,iemis)=fac_emm(ic,mm,1,iemis)*12./sumfacc(ic,iemis)
           enddo
+       enddo
        if (DEBUG) write(unit=6,fmt=*) "Read ", n, " records from ", fname2 
    enddo  ! iemis
 
@@ -236,8 +236,7 @@ contains
        fname2 = "DailyFac." // trim ( EMIS_FILE(iemis) )
        call open_file(IO_TIMEFACS,"r",fname2,needed=.true.)
 
-       call CheckStop( ios, &
-        "Timefactors: Opening error in Dailyfac")
+       call CheckStop( ios, "Timefactors: Opening error in Dailyfac")
 
        n = 0
        do
@@ -493,11 +492,11 @@ contains
    !/ See if we have a file to work with....
     if ( daynumber == 0 ) then
       call check_file("DegreeDayFactors.nc", Gridded_SNAP2_Factors,&
-        needed=.false., errmsg=errmsg )
+        needed=.true., errmsg=errmsg )
       if ( Gridded_SNAP2_Factors ) then
-         call PrintLog("Found DEGREE-day factors", MasterProc)
+         call PrintLog("Found DegreeDayFactors.nc", MasterProc)
       else
-         call PrintLog("Not-found: DEGREE-day factors", MasterProc)
+         call PrintLog("Not-found: DegreeDayFactors.nc"//trim(errmsg), MasterProc)
       end if
       return
     end if
@@ -536,8 +535,6 @@ contains
              ijloc(1), ijloc(2), i_fdom(iii), j_fdom(jjj)
   
        if( debug_proc ) then
-           !write(*,"(a,3i4,2f12.3)") "GRIDFACDAYGEN ", daynumber, &
-           !  i_fdom(iii), j_fdom(jjj),  tmpt2(iii,jjj), gridfac_HDD(iii,jjj)
            write(*,"(a,i4,f12.3)") "GRIDFACDAY ", daynumber, &
              gridfac_HDD(debug_li,debug_lj)
        end if
@@ -547,7 +544,6 @@ contains
     if ( DEBUG .and. debug_proc ) then
        iii = debug_li
        jjj = debug_lj
-       !write(*,*) "DEBUG GRIDFAC", me, daynumber, iii, jjj, tmpt2(iii,jjj),  gridfac_HDD(iii, jjj)
        write(*,*) "DEBUG GRIDFAC", me, daynumber, iii, jjj, gridfac_HDD(iii, jjj)
     end if
 
