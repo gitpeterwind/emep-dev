@@ -171,13 +171,21 @@ SR-EMEP2010-GenChem-%:
 SR-MACC-GenChem-%:
 	mk.GenChem -r $* -f GFASv1 -e none
 eEMEP-GenChem-%:
-	mk.GenChem -r $* -f FINNv1 -e none -V 7bin,Vesuvius,Etna,Kr.suv.k,Katla,Askja #-h
+	mk.GenChem -r $* -f GFASv1 -e none -V 7bin,$(VENTS) #-h
 eEMEP2010-GenChem-%:
 	mk.GenChem -r $* -f FINNv1 -e SeaSalt,Dust,Isotopes -V 2bin,Eyjafj.ll #-h
+
+# eEMP Default Vents, NPPs & NUCs
+eEMEP-GenChem-%: VENTS ?= Vesuvius,Etna,Kr.suv.k,Katla,Askja
 
 # Data assimilation: Bnmc / 3DVar
 %-Bnmc %-3DVar: $$*
 	$(MAKE) MACHINE=$(MACHINE) -C ZD_3DVar/ $(@:$*-%=EXP_%)
+
+# Archive: create $(PROG).tar.bz2
+$(PROG) archive: $(PROG)_$(shell date +%Y%m%d).tar.bz2
+%.tar.bz2: $(SRCS) Makefile Makefile.SRCS .depend *.pl mk.*
+	@echo "Creating archive $@"; tar --dereference -cjf $@ $+
 
 # Check if intended modules are loaded
 modulelist = $(shell bash -c '. /etc/profile.d/modules.sh; module list' 2>&1)

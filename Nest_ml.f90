@@ -146,9 +146,9 @@ integer,save :: NHOURS_Stride_BC   !number of hours between start of two consecu
 integer, public, parameter :: NHOURS_Stride_BC_default=6 !time between records if only one record per file (RCA for example)
 
 type(icbc), private, target, dimension(NSPEC_ADV) :: &
-  adv_ic=icbc(-1,'none',.false.,.false.)    ! Initial 3D IC/CB, varname, wanted, found
+  adv_ic=icbc(-1,'none',1.0,.false.,.false.)  ! Initial 3D IC/CB, varname, wanted, found
 type(icbc), private, pointer, dimension(:) :: &
-  adv_bc=>null()                            ! Time dependent BC, varname, wanted, found
+  adv_bc=>null()                              ! Time dependent BC, varname, wanted, found
 
 
 contains
@@ -422,6 +422,7 @@ subroutine init_icbc(idate,cdate,ndays,nsecs)
 
   adv_ic(:)%ixadv=(/(n,n=1,NSPEC_ADV)/)
   adv_ic(:)%varname=species_adv(:)%name
+  adv_ic(:)%frac=1.0
   adv_ic(:)%wanted=.true.
   adv_ic(:)%found=find_icbc(filename_read_3D,adv_ic%varname(:))
   if(mydebug) then
@@ -445,7 +446,7 @@ subroutine init_icbc(idate,cdate,ndays,nsecs)
 
   if((DEBUG_NEST.or.DEBUG_ICBC).and.MasterProc)then
     write(*,"(a)") "Nest: DEBUG_ICBC Variables:"
-    write(*,"((1X,A,I3,'->',I3,'=',A24,2L2))") &
+    write(*,"((1X,A,I3,'->',I3,'=',A24,'*',F7.2,2L2))") &
       ('Nest: ADV_IC',n,adv_ic(n),n=1,size(adv_ic)),&
       ('Nest: ADV_BC',n,adv_bc(n),n=1,size(adv_bc))
   endif
@@ -812,6 +813,7 @@ subroutine read_newdata_LATERAL(ndays_indate)
   real, allocatable, dimension(:,:,:) ::data
   integer :: ncFileID,varid,status
   integer :: ndate(4),n,i,j,k,bc
+  real    :: unitscale
   real(kind=8) :: ndays(1),ndays_old
   logical, save :: first_call=.true.
 
@@ -974,11 +976,14 @@ subroutine read_newdata_LATERAL(ndays_indate)
       if(status==nf90_noerr) then
         if(DEBUG_NEST.or.DEBUG_ICBC) write(*,*)&
           'Nest: variable '//trim(adv_bc(bc)%varname)//' has unit '//trim(units)
-        data=data/Units_Scale(units,n,needroa=divbyroa,debug_msg="read_newdata_LATERAL")
+        unitscale=adv_bc(bc)%frac/Units_Scale(units,n,needroa=divbyroa,&
+                                              debug_msg="read_newdata_LATERAL")
       else
         if(DEBUG_NEST.or.DEBUG_ICBC) write(*,*)&
-          'units attribute not found for variable '//trim(adv_bc(bc)%varname)
+          'Nest: variable '//trim(adv_bc(bc)%varname//' has no unit attribute')
+        unitscale=adv_bc(bc)%frac
       endif
+      if(unitscale/=1.0) data=data*unitscale
     endif
 
     CALL MPI_BCAST(data,8*GIMAX_ext*GJMAX_ext*KMAX_ext_BC,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
@@ -1068,6 +1073,7 @@ subroutine reset_3D(ndays_indate)
   real, allocatable, dimension(:,:,:) ::data
   integer :: ndate(4),n,i,j,k,itime=0,status
   integer :: ncFileID,varid
+  real    :: unitscale
   real(kind=8) :: ndays(1)
   logical, save :: first_call=.true.
 
@@ -1147,11 +1153,16 @@ subroutine reset_3D(ndays_indate)
       if(status==nf90_noerr) data=data+add_offset
       status = nf90_get_att(ncFileID,VarID,"units",units)
       if(status==nf90_noerr) then
-        if(DEBUG_NEST)write(*,*)'Nest: variable '//trim(adv_ic(n)%varname)//' has unit '//trim(units)
-        data=data/Units_Scale(units,n,needroa=divbyroa,debug_msg="reset_3D")
+        if(DEBUG_NEST) write(*,*)&
+          'Nest: variable '//trim(adv_ic(n)%varname)//' has unit '//trim(units)
+        unitscale=adv_ic(n)%frac/Units_Scale(units,n,needroa=divbyroa,&
+                                             debug_msg="reset_3D")
       else
-        if(DEBUG_NEST)write(*,*)'units attribute not found for variable '//trim(adv_ic(n)%varname)
+        if(DEBUG_NEST) write(*,*)&
+          'Nest: variable '//trim(adv_ic(n)%varname//' has no unit attribute')
+        unitscale=adv_ic(n)%frac
       endif
+      if(unitscale/=1.0) data=data*unitscale
     endif
     CALL MPI_BCAST(data,8*GIMAX_ext*GJMAX_ext*KMAX_ext,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
 

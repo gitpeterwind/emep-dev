@@ -55,7 +55,7 @@ IMPORTANT NOTE:
 ## Unimod: Modules & Make
 export MACHINE=vilje                  # select stallo/vilje machine
 case $MACHINE in                      # modules needed to compile Unimod
- stallo)EMEPMODULES=(intel/13.0 openmpi/1.6.2 netcdf/4.2.1.1);;
+ stallo)EMEPMODULES=(intel/13.0 openmpi/1.6.2 hdf5/1.8.9 netcdf/4.2.1.1);;
   vilje)EMEPMODULES=(intelcomp/12.0.5.220 mpt/2.06 netcdf/4.1.3);;
 esac
 [[ -z "$MODULESHOME" && -s /etc/profile.d/modules.sh ]] &&
@@ -233,6 +233,49 @@ dsSep14   Volcanos_ml.f90
 dsSep14   Wesely_ml.f90
 
 !----------------------------------------------------------
+xxxxxxxx  rv4.1.8 Alvaro          3rd December 2012  xxxxxxxxxxxxxxxxxxxxxxxxx
+
+DryDep derived output for any group and deposition unit (supported Units_ml).
+ 
+OwnDataTypes_ml
+  * new type typ_si with one string (%name) and one integer (%ind)
+  * Align/format & other house keeping
+
+ZD_*/My_Derived_ml:
+  * Remove now obsolete variables SOX_INDEX, OXN_INDEX & RDN_INDEX
+  * Allow different frecuencies for different DDEP_ECOS
+    by using typ_si on definition (Add_MosaicDDEP)
+
+MosaicOutputs_ml:
+  * Use different frequencies for different DDEP_ECOS (Add_MosaicDDEP)
+  * Remove hard codded Ddep units/index/groups (e.g. mgSm2/SOX_INDEX/DDEP_SOXGROUP)
+    from Add_MosaicDDEP
+  * Use Units_Scale to calculate unitscale for Ddep of single species (Add_MosaicDDEP).
+  * For group Ddep, pre-calculate group indexes and unit conversion for factors
+    with Group_Scale, and store them in dryGroupUnits array (Add_MosaicDDEP).
+  * Use for different unit conversion factors for each Ddep group member
+    on Add_MosaicOutput.
+  * Align/format & other house keeping
+
+ModelConstants_ml:
+  * Remove now obsolete variables SOX_INDEX, OXN_INDEX & RDN_INDEX
+
+Other changes for FORECAST(MACC)/EMERGENCY(eEMEP) modes
+
+Makefile
+  * archive target creates Unimod_YYYYMMDD.tar.bz2 when the model is compiled.
+    The archive file contains all sources and scripts
+  * MACC target use GFASv1 Forest Fires instead of FINNv1
+  * eEMEP target erupting volcanoes can be set with enviroment variable VENTS.
+    If VENTS is not set, the default erupting volcanoes are kept.
+
+Nest_ml,ZD_OZONE/IFSMOZ_ExternalBICs_ml,My_ExternalBICs_ml
+  * Allow for fractions on IC/BC components, e.g. 
+    for IFS_EVA_2010 BCs 'OC'*1.7 goes into IXADV_FFIRE_OM
+
+ZCM_EmChem09/BiomassBurning_GFED_to_EmChem09.inc
+  * update parameter names & numbers
+
 xxxxxxxx  rv4.1.7 Dave 29th November 2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 Updated Degreeday/HDD system - start of more general pre-processing of met data
@@ -258,7 +301,6 @@ NetCDF_ml.f90
 Io_Progs_ml.f90  - now calls CheckStop if a "needed" file is missing.
 
 Timefactors_ml.f90 - DegreeDayFactors.nc needed=true  used
-
 
 xxxxxxxx  rv4.1.6 Alvaro         20th November 2012  xxxxxxxxxxxxxxxxxxxxxxxxx
 

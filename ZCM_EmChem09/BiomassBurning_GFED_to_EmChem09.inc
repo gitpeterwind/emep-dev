@@ -6,10 +6,8 @@
   character(len=*), public, parameter :: &
      BiomassBurningMapping = "GFEDtoEmChem09"
   integer, private, parameter :: &
-    NBB_DEFS  = 6 & ! No mapping lines below
-   ,NBBSPECS  = 5 & ! No  unique GFED used
-   ,NCMSPECS  = 6 & ! No EMEP chemical mech specs used
-   ,MAXBB_SPLIT= 2   ! Max No EMEP components per GFED, e.g for VOC
+    NBB_DEFS  =11 & ! No mapping lines below
+   ,NEMEPSPECS=11   ! No EMEP chemical mech specs used
  
   !-----------------------------------------------------------------------!
   ! Column-1 gives GFED species , 

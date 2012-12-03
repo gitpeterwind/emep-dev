@@ -356,10 +356,6 @@ integer, public, parameter ::  &
 ! And for My_Derived_ml VG_SPECS & LocalVariables_ml Vg_ref etc. we need a limit
 , NVGOUT_MAX   = 10         ! Max. no species for My_Derived VG outputs
 
-
-integer, public, parameter :: &   ! Groups for DDEP and WDEP
-  SOX_INDEX = -1, OXN_INDEX = -2, RDN_INDEX = -3
-
 ! EMEP measurements end at 6am, used in  daily averages
 integer, public, parameter :: END_OF_EMEPDAY  = 6
 

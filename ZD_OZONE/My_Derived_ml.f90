@@ -67,25 +67,17 @@ use GridValues_ml, only : debug_li, debug_lj, debug_proc
 use Io_Progs_ml,   only: PrintLog
 use LandDefs_ml,  only : LandDefs, LandType, Check_LandCoverPresent ! e.g. "CF"
 use MetFields_ml,        only : z_bnd, roa
-use ModelConstants_ml, only : ATWAIR  &
-                        , SOX_INDEX, OXN_INDEX, RDN_INDEX &
-                        , MasterProc  &
-                        , SOURCE_RECEPTOR  &
-                        , USE_SOILNOX &
-                        , DEBUG => DEBUG_MY_DERIVED &
-                        , M=>IOU_MON, D=>IOU_DAY, H=>IOU_HOUR &
-                        , KMAX_MID & ! =>  z dimension
-                        , PPBINV  &  !   1.0e9
-                        , MFAC       ! converts roa (kg/m3 to M, molec/cm3)
+use ModelConstants_ml, only : MasterProc, SOURCE_RECEPTOR  &
+                        , USE_SOILNOX, DEBUG => DEBUG_MY_DERIVED &
+                        , Y=>IOU_YEAR, M=>IOU_MON, D=>IOU_DAY, H=>IOU_HOUR &
+                        , KMAX_MID   ! =>  z dimension
 use MosaicOutputs_ml, only : nMosaic, MAX_MOSAIC_OUTPUTS, MosaicOutput, & !
   Init_MosaicMMC,  Add_MosaicMetConcs, &
-  Add_NewMosaics, &
-  Add_MosaicVEGO3, &
-  Add_MosaicDDEP, &
+  Add_NewMosaics, Add_MosaicVEGO3, Add_MosaicDDEP, &
   MMC_USTAR, MMC_INVL, MMC_RH, MMC_CANO3, MMC_VPD, MMC_FST, MMC_GSTO, MMC_EVAP
 
 use OwnDataTypes_ml, only : Deriv, print_deriv_type, TXTLEN_DERIV, &
-           TXTLEN_SHORT, typ_ss, typ_s3, typ_s4, typ_s5i
+           TXTLEN_SHORT, typ_ss, typ_s3, typ_s4, typ_s5i, typ_si
 use Par_ml,    only: me, MAXLIMAX,MAXLJMAX, &   ! => max. x, y dimensions
                      limax, ljmax           ! => used x, y area
 use SmallUtils_ml,  only : AddArray, LenArray, NOT_SET_STRING, WriteArray, &
@@ -352,22 +344,26 @@ private
    ! Specify some species and land-covers we want to output
    ! depositions for in netcdf files. DDEP_ECOS must match one of
    ! the DEP_RECEIVERS  from EcoSystem_ml.
-   !
-   ! integer, public, parameter :: NNDRYDEP = 3 ! 7 + 1 !JUST HNO3: size(DDEP_OXNGROUP)
-    !TFMM integer, public, parameter, dimension(7+size(DDEP_OXNGROUP)) :: &
-    integer, public, parameter, dimension(3) :: &
-    !integer, public, parameter, dimension(NNDRYDEP) :: &
-      DDEP_SPECS = (/ SOX_INDEX, OXN_INDEX, RDN_INDEX /) !TFMM , & !  /) ! , &
-           !SO2,  SO4, NH3, NH4_f, DDEP_OXNGROUP /)
-           !SO2,  SO4, NH3, NH4_f, HNO3 /) ! DDEP_OXNGROUP /)
+  type(typ_s3), public, parameter, dimension(3) :: &
+    DDEP_WANTED = (/ &
+    ! typ_s3("SO2      ", SPEC, "mgS"), &
+    ! typ_s3("SO4      ", SPEC, "mgS"), &
+    ! typ_s3("NH3      ", SPEC, "mgN"), &
+    ! typ_s3("NH4_F    ", SPEC, "mgN"), &
+    ! typ_s3("HNO3     ", SPEC, "mgN"), &
+    !
+      typ_s3("SOX      ",GROUP, "mgS"), &
+      typ_s3("OXN      ",GROUP, "mgN"), &
+      typ_s3("RDN      ",GROUP, "mgN")/)
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(3) :: &
-      DDEP_ECOS  = (/ "Grid   " , "Conif  ", "Seminat" /) !&! "Water_D" &
-                  !  , "Decid  ", "Crops  " /)
-
-   ! Frequency of dry-dep outputs
-    integer, public, parameter ::  DDEP_FREQ = D  ! (D)ay or (M)onth
-
+  type(typ_si), public, parameter, dimension(6) :: &
+    DDEP_ECOS  = (/ &
+      typ_si("Grid     ", D),&
+      typ_si("Conif    ", M),&
+      typ_si("Seminat  ", M),&
+      typ_si("Water_D  ", Y),&
+      typ_si("Decid    ", Y),&
+      typ_si("Crops    ", Y)/)
 
   ! Have many combinations: species x ecosystems
 !  type(Deriv), public, &
@@ -562,7 +558,7 @@ if(MasterProc ) print *, "TESTHH INSIDE Init_My_Deriv"
 
       !------------- Depositions to ecosystems --------------------------------
 
-      call Add_MosaicDDEP(DDEP_ECOS,DDEP_SPECS,DDEP_FREQ,nDD)
+      call Add_MosaicDDEP(DDEP_ECOS,DDEP_WANTED,nDD)
       nOutDDep = nDD
 
       !------------- VEGO3 stuff ----------------------------------------------
@@ -570,9 +566,8 @@ if(MasterProc ) print *, "TESTHH INSIDE Init_My_Deriv"
       !untangle it to get threshold Y (=3.0) and landcover type
 
       allocate(VEGO3_OUTPUTS( size(VEGO3_WANTED) ), stat=istat)
-      if( DEBUG .and. istat /= 0 ) then
-         print *, "My_Derived ISTAT ERR VEGO3"
-      end if
+      if(DEBUG.and.istat/=0) &
+         write(*,*) "My_Derived ISTAT ERR VEGO3"
 
       do n = 1, size(VEGO3_WANTED)
          n1 = find_index(VEGO3_WANTED(n),VEGO3_DEFS(:)%name)

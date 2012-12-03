@@ -47,6 +47,7 @@ character(len=*),public, parameter :: &
 type, public :: icbc                 ! Inital (IC) & Boundary Conditions (BC)
   integer           :: ixadv=-1
   character(len=24) :: varname="none"
+  real              :: fract=1.0
   logical           :: wanted=.false.,found=.false.
 endtype icbc
 
@@ -57,57 +58,57 @@ logical, private, parameter :: T=.true.,F=.false.
 
 ! BC from IFS-MOZ exp id: f7kn (before 2011-12-01)
 type(icbc), dimension(9), private, target :: &
-  IFS_MOZ_f7kn=(/icbc(IXADV_O3    ,'O3_VMR_inst'    ,T,F), &
-                 icbc(IXADV_NO    ,'NO_VMR_inst'    ,T,F), &
-                 icbc(IXADV_NO2   ,'NO2_VMR_inst'   ,T,F), &
-                 icbc(IXADV_PAN   ,'PAN_VMR_inst'   ,T,F), &
-                 icbc(IXADV_HNO3  ,'HNO3_VMR_inst'  ,T,F), &
-                 icbc(IXADV_CO    ,'CO_VMR_inst'    ,T,F), &
-                 icbc(IXADV_C2H6  ,'C2H6_VMR_inst'  ,T,F), &
-                 icbc(IXADV_HCHO  ,'CH2O_VMR_inst'  ,T,F), &
-                 icbc(IXADV_CH3CHO,'CH3CHO_VMR_inst',T,F)/)
+  IFS_MOZ_f7kn=(/icbc(IXADV_O3    ,'O3_VMR_inst'    ,1.0,T,F), &
+                 icbc(IXADV_NO    ,'NO_VMR_inst'    ,1.0,T,F), &
+                 icbc(IXADV_NO2   ,'NO2_VMR_inst'   ,1.0,T,F), &
+                 icbc(IXADV_PAN   ,'PAN_VMR_inst'   ,1.0,T,F), &
+                 icbc(IXADV_HNO3  ,'HNO3_VMR_inst'  ,1.0,T,F), &
+                 icbc(IXADV_CO    ,'CO_VMR_inst'    ,1.0,T,F), &
+                 icbc(IXADV_C2H6  ,'C2H6_VMR_inst'  ,1.0,T,F), &
+                 icbc(IXADV_HCHO  ,'CH2O_VMR_inst'  ,1.0,T,F), &
+                 icbc(IXADV_CH3CHO,'CH3CHO_VMR_inst',1.0,T,F)/)
 
 ! BC from IFS-MOZ exp id: fkya (new since 2011-12-01)
 type(icbc), dimension(9), private, target :: &
-  IFS_MOZ_fkya=(/icbc(IXADV_O3    ,'O3'    ,T,F), &
-                 icbc(IXADV_NO    ,'NO'    ,T,F), &
-                 icbc(IXADV_NO2   ,'NO2'   ,T,F), &
-                 icbc(IXADV_PAN   ,'PAN'   ,T,F), &
-                 icbc(IXADV_HNO3  ,'HNO3'  ,T,F), &
-                 icbc(IXADV_CO    ,'CO'    ,T,F), &
-                 icbc(IXADV_C2H6  ,'C2H6'  ,T,F), &
-                 icbc(IXADV_HCHO  ,'CH2O'  ,T,F), &
-                 icbc(IXADV_CH3CHO,'CH3CHO',T,F)/)
+  IFS_MOZ_fkya=(/icbc(IXADV_O3    ,'O3'    ,1.0,T,F), &
+                 icbc(IXADV_NO    ,'NO'    ,1.0,T,F), &
+                 icbc(IXADV_NO2   ,'NO2'   ,1.0,T,F), &
+                 icbc(IXADV_PAN   ,'PAN'   ,1.0,T,F), &
+                 icbc(IXADV_HNO3  ,'HNO3'  ,1.0,T,F), &
+                 icbc(IXADV_CO    ,'CO'    ,1.0,T,F), &
+                 icbc(IXADV_C2H6  ,'C2H6'  ,1.0,T,F), &
+                 icbc(IXADV_HCHO  ,'CH2O'  ,1.0,T,F), &
+                 icbc(IXADV_CH3CHO,'CH3CHO',1.0,T,F)/)
 
 ! BC for EVA2010: IFS-MOZ (MACC-GRG) & IFS-AER (MACC-AER)
 type(icbc), dimension(27), private, target :: &
-  IFS_EVA_2010=(/icbc(IXADV_O3        ,'O3'          ,T,F), & ! same as fkya
-                 icbc(IXADV_NO        ,'NO'          ,T,F), & ! same as fkya
-                 icbc(IXADV_NO2       ,'NO2'         ,T,F), & ! same as fkya
-                 icbc(IXADV_PAN       ,'PAN'         ,T,F), & ! same as fkya
-                 icbc(IXADV_HNO3      ,'HNO3'        ,T,F), & ! same as fkya
-                 icbc(IXADV_CO        ,'CO'          ,T,F), & ! same as fkya
-                 icbc(IXADV_C2H6      ,'C2H6'        ,T,F), & ! same as fkya
-                 icbc(IXADV_HCHO      ,'CH2O'        ,T,F), & ! same as fkya
-                 icbc(IXADV_CH3CHO    ,'CH3CHO'      ,T,F), & ! same as fkya
-                 icbc(IXADV_CH4       ,'CH4'         ,T,F), &
-                 icbc(IXADV_SO2       ,'SO2'         ,T,F), &
-                 icbc(IXADV_H2O2      ,'H2O2'        ,T,F), &
-                 icbc(IXADV_C5H8      ,'ISOP'        ,T,F), &
-                 icbc(-1              ,'OH'          ,F,F), &
-                 icbc(IXADV_NO2       ,'HO2NO2'      ,T,F), &
-                 icbc(IXADV_C3H6      ,'BIGENE'      ,T,F), &
-                 icbc(IXADV_NC4H10    ,'BIGALK'      ,T,F), &
-                 icbc(IXADV_OXYL      ,'TOLUENE'     ,T,F), &
-                 icbc(IXADV_SEASALT_F ,'SeaSalt_f'   ,T,F), &
-                 icbc(IXADV_SEASALT_C ,'SeaSalt_c'   ,T,F), &
-                 icbc(-1              ,'SeaSalt_g'   ,F,F), &
-                 icbc(IXADV_DUST_SAH_F,'DesertDust_f',T,F), &
-                 icbc(IXADV_DUST_SAH_C,'DesertDust_c',T,F), &
-                 icbc(-1              ,'DesertDust_g',F,F), &
-                 icbc(IXADV_FFIRE_OM  ,'OC'          ,F,F), & ! do not use
-                 icbc(IXADV_FFIRE_BC  ,'BC'          ,F,F), & ! do not use
-                 icbc(IXADV_SO4       ,'SO4'         ,T,F)/)
+  IFS_EVA_2010=(/icbc(IXADV_O3        ,'O3'          ,1.0,T,F), & ! same as fkya
+                 icbc(IXADV_NO        ,'NO'          ,1.0,T,F), & ! same as fkya
+                 icbc(IXADV_NO2       ,'NO2'         ,1.0,T,F), & ! same as fkya
+                 icbc(IXADV_PAN       ,'PAN'         ,1.0,T,F), & ! same as fkya
+                 icbc(IXADV_HNO3      ,'HNO3'        ,1.0,T,F), & ! same as fkya
+                 icbc(IXADV_CO        ,'CO'          ,1.0,T,F), & ! same as fkya
+                 icbc(IXADV_C2H6      ,'C2H6'        ,1.0,T,F), & ! same as fkya
+                 icbc(IXADV_HCHO      ,'CH2O'        ,1.0,T,F), & ! same as fkya
+                 icbc(IXADV_CH3CHO    ,'CH3CHO'      ,1.0,T,F), & ! same as fkya
+                 icbc(IXADV_CH4       ,'CH4'         ,1.0,T,F), &
+                 icbc(IXADV_SO2       ,'SO2'         ,1.0,T,F), &
+                 icbc(IXADV_H2O2      ,'H2O2'        ,1.0,T,F), &
+                 icbc(IXADV_C5H8      ,'ISOP'        ,1.0,T,F), &
+                 icbc(-1              ,'OH'          ,1.0,F,F), &
+                 icbc(IXADV_NO2       ,'HO2NO2'      ,1.0,T,F), &
+                 icbc(IXADV_C3H6      ,'BIGENE'      ,1.0,T,F), &
+                 icbc(IXADV_NC4H10    ,'BIGALK'      ,1.0,T,F), &
+                 icbc(IXADV_OXYL      ,'TOLUENE'     ,1.0,T,F), &
+                 icbc(IXADV_SEASALT_F ,'SeaSalt_f'   ,1.0,T,F), &
+                 icbc(IXADV_SEASALT_C ,'SeaSalt_c'   ,1.0,T,F), &
+                 icbc(-1              ,'SeaSalt_g'   ,1.0,F,F), &
+                 icbc(IXADV_DUST_SAH_F,'DesertDust_f',1.0,T,F), &
+                 icbc(IXADV_DUST_SAH_C,'DesertDust_c',1.0,T,F), &
+                 icbc(-1              ,'DesertDust_g',1.0,F,F), &
+                 icbc(IXADV_FFIRE_OM  ,'OC'          ,1.7,F,F), & ! do not use
+                 icbc(IXADV_FFIRE_BC  ,'BC'          ,1.0,F,F), & ! do not use
+                 icbc(IXADV_SO4       ,'SO4'         ,1.0,T,F)/)
 
 contains
 subroutine set_extbic(idate)

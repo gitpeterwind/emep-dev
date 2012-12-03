@@ -41,6 +41,7 @@ character(len=*),public, parameter :: &
 type, public :: icbc                 ! Inital (IC) & Boundary Conditions (BC)
   integer           :: ixadv=-1
   character(len=24) :: varname="none"
+  real              :: frac=1.0
   logical           :: wanted=.false.,found=.false.
 endtype icbc
 
