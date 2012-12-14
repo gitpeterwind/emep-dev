@@ -233,6 +233,12 @@ dsSep14   Volcanos_ml.f90
 dsSep14   Wesely_ml.f90
 
 !----------------------------------------------------------
+xxxxxxxx  rv4.1.9 Dave           14th December 2012  xxxxxxxxxxxxxxxxxxxxxxxxx
+
+Country_ml - removed need for ModelConstants_ml dependency (was for SEAFIX_GEA)
+
+Emissions_ml - added SEAFIX_GEA here.
+
 xxxxxxxx  rv4.1.8 Alvaro          3rd December 2012  xxxxxxxxxxxxxxxxxxxxxxxxx
 
 DryDep derived output for any group and deposition unit (supported Units_ml).

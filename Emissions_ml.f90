@@ -89,6 +89,7 @@
                               DEBUG_I,DEBUG_J, &
                               USE_DEGREEDAY_FACTORS, & 
                               NPROC, IIFULLDOM,JJFULLDOM , & 
+                              SEAFIX_GEA_NEEDED, & ! see below
                               USE_LIGHTNING_EMIS,USE_AIRCRAFT_EMIS,USE_ROADDUST, &
                               USE_SOILNOX, USE_GLOBAL_SOILNOX   ! one or the other
   use NetCDF_ml, only  : ReadField_CDF
@@ -98,6 +99,7 @@
                              MSG_READ1,MSG_READ7
   use PhysicalConstants_ml,  only :  GRAV,  AVOG
   use Setup_1dfields_ml,    only : rcemis   ! ESX
+  use SmallUtils_ml,        only : find_index
 
   use ReadField_ml, only : ReadField    ! Reads ascii fields
   use TimeDate_ml,  only : nydays, nmdays, date, current_date, &! No. days per 
@@ -279,6 +281,31 @@ contains
     !=========================
     call Country_Init()    ! In Country_ml, => NLAND, country codes and 
     !                   names, timezone
+     ! The GEA emission data, which is used for EUCAARI runs on the HIRHAM
+     ! domain have in several sea grid cells non-zero emissions in other sectors
+     ! than SNAP8 and there are also NH3 emission over sea areas. The former 
+     ! problem makes the code crash if the sea areas are defined  as 
+     ! sea (sea=T), so we treat them as land in the EUCAARI/HIRHAM runs 
+     ! (sea=F). This is a problem with GEA emission data only, not the 
+     ! HIRHAM domain! When e.g. interpolated EMEP emissions are used on
+     !  the HIRHAM domain, this is not a problem.
+
+     if ( SEAFIX_GEA_NEEDED ) then ! Special fix for HIRHAM/GEA
+
+      ! Could have hard-coded 30-34, but best to avoid:
+       ic= find_index("BAS", Country(:)%code )
+       Country( ic )%is_sea = .false.
+       ic= find_index("NOS", Country(:)%code )
+       Country( ic )%is_sea = .false.
+       ic= find_index("ATL", Country(:)%code )
+       Country( ic )%is_sea = .false.
+       ic= find_index("MED", Country(:)%code )
+       Country( ic )%is_sea = .false.
+       ic= find_index("BLS", Country(:)%code )
+       Country( ic )%is_sea = .false.
+
+     end if ! HIRHAM/GEA fix
+
     !=========================
 
     call consistency_check()               ! Below
