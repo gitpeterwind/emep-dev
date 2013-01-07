@@ -233,6 +233,11 @@ dsSep14   Volcanos_ml.f90
 dsSep14   Wesely_ml.f90
 
 !----------------------------------------------------------
+xxxxxxxx  rv4.1.11 Eiko/Dave     7th January 2012  xxxxxxxxxxxxxxxxxxxxxxxxx
+
+Corrected home of model to MSC-W, not MSC-E in Docs!
+(Somebody in the group is confused about who we are maybe?!)
+
 xxxxxxxx  rv4.1.10 Dave, safety   20th December 2012  xxxxxxxxxxxxxxxxxxxxxxxxx
 
 Emissions_ml SEAFIX changed/corrected. Not sure who.
