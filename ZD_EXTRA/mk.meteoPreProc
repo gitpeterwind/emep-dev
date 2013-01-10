@@ -13,12 +13,14 @@ ifort -o $prog -O3 -r8 -I/global/apps/netcdf/4.2.1.1/intel/13.0.0/include \
 
 #DEBUG 4: ifort -o $prog -shared-intel -r8 -CB -debug-parameters all -traceback -ftrapuv  -I/global/apps/netcdf/4.1.1/include  -L/global/apps/netcdf/4.1.1/lib $1 -lnetcdf -lnetcdff
 
-GRID=EECCA #EMEP
-met=metdata_EC
+GRID=CRDX #EMEP
+met=metdata_HIST
 
 for T in 18;  do
-for year in 2008   # 2007 2006 2010  ! varies with grid
+for year in {2005..2005}   # 2007 2006 2010  ! varies with grid
 do
   ./$prog $T $year /global/work/mifapw/emep/Data/$GRID/$met/$year $GRID-$year
+ mv HDD${T}-${GRID}-${year}.nc /global/work/mifapw/emep/Data/$GRID/$met/$year
 done
+
 done
