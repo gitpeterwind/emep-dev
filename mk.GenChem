@@ -13,6 +13,15 @@
 #run=CRI_v2_R5
 #
 # ==========================================
+# functions
+function cp_if_diff() {
+	diff $1 $2 > /dev/null 2>&1
+	if [ $? -ne 0 ]; then
+		echo "cp $1 $2"
+		cp $1 $2
+	fi
+}
+
 # ==========================================
 # Must specify source of biomass-burning
 ffires=FINNv1  # Can be FINNv1, the other option (GFED) may not be working properly!
@@ -296,10 +305,13 @@ mv GenOut_WetDep.inc      $odir/CM_WetDep.inc
 #rm GenOut_*                # Clean up current directory
 #mv Log.GenOut  $odir/Log.$run
 
-cp $odir/CM* $cdir
+for i in $odir/CM*; do
+	filename=`basename $i`
+    cp_if_diff $i $cdir/$filename
+done
 #FEB2012 cp $odir/SAFE.CM_BoundaryConditions.inc $cdir/CM_BoundaryConditions.inc  # Special
 # FINNv1 or GFED:
-cp $odir/BiomassBurning_${ffires}_to_$run.inc $cdir/BiomassBurningMapping.inc  # Special
+cp_if_diff $odir/BiomassBurning_${ffires}_to_$run.inc $cdir/BiomassBurningMapping.inc  # Special
 cd $cdir
 
 
