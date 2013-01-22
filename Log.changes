@@ -233,6 +233,10 @@ dsSep14   Volcanos_ml.f90
 dsSep14   Wesely_ml.f90
 
 !----------------------------------------------------------
+xxxxxxxx  rv4.1.11 Svetlana     22th January 2013  xxxxxxxxxxxxxxxxxxxxxx
+Derived_ml.f90: for consistency KMAX_MID is changes to KMAX_BND for
+                Kz_m2s(i,j,KMAX_BND-1)
+
 xxxxxxxx  rv4.1.11 Peter     10th January 2013  xxxxxxxxxxxxxxxxxxxxxxxxx
 
 small change in script ZD_EXTRA/mk.meteoPreProc

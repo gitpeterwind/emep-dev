@@ -83,7 +83,8 @@ use MetFields_ml,     only: roa,pzpbl,Kz_m2s,th,zen, ustar_nwp, z_bnd,u_ref,&
 use MetFields_ml,     only: ps, t2_nwp
 use MetFields_ml,     only: SoilWater_deep, SoilWater_uppr, Idirect, Idiffuse
 use ModelConstants_ml, only: &
-   KMAX_MID     & ! =>  z dimension
+   KMAX_MID     & ! =>  z dimension (layer number)
+  ,KMAX_BND     & ! =>  z dimension (level number)
   ,NPROC        & ! No. processors
   ,atwS, atwN, ATWAIR, dt_advec  &
   ,PPBINV       & ! 1.0e9, for conversion of units
@@ -853,7 +854,7 @@ end do
           end forall
          case ( "Kz_m2s" )
             forall ( i=1:limax, j=1:ljmax )
-              d_2d( n, i,j,IOU_INST) = Kz_m2s(i,j,KMAX_MID)
+              d_2d( n, i,j,IOU_INST) = Kz_m2s(i,j,KMAX_BND-1)
             end forall
           case ( "ws_10m" )
             forall ( i=1:limax, j=1:ljmax )
