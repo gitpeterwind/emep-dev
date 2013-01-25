@@ -1,0 +1,11 @@
+* <----------- Decay for _NPP_ Nuclear tracers ----------------------------------->
+*k=ln(2.0)/(8.0*24.0*3600.0):
+1.0e-6                _NPP__I131  = _NPP__Xe131 ;
+*
+* <----------- Nuclear tracer emissions from _NPP_ ----------------------------------->
+*
+rcbio:_NPP__Cs137                         = _NPP__Cs137 ;
+rcbio:_NPP__I131                          = _NPP__I131  ;
+rcbio:_NPP__Xe131                         = _NPP__Xe131 ;
+rcbio:_NPP__Sr90                          = _NPP__Sr90  ;
+rcbio:_NPP__Kr85                          = _NPP__Kr85  ;

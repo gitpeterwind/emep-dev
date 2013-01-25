@@ -171,12 +171,14 @@ SR-EMEP2010-GenChem-%:
 SR-MACC-GenChem-%:
 	mk.GenChem -r $* -f GFASv1 -e none
 eEMEP-GenChem-%:
-	mk.GenChem -r $* -f GFASv1 -e none -V 7bin,$(VENTS) #-h
+	mk.GenChem -r $* -f GFASv1 -e none -V 7bin,$(VENTS) -N $(NPPAS) -q # -h
 eEMEP2010-GenChem-%:
 	mk.GenChem -r $* -f FINNv1 -e SeaSalt,Dust,Isotopes -V 2bin,Eyjafj.ll #-h
 
 # eEMP Default Vents, NPPs & NUCs
 eEMEP-GenChem-%: VENTS ?= Vesuvius,Etna,Kr.suv.k,Katla,Askja
+eEMEP-GenChem-%: NPPAS ?= Loviisa,Oskarshamn,Torness
+eEMEP-GenChem-%: NUCAS ?=
 
 # Data assimilation: Bnmc / 3DVar
 %-Bnmc %-3DVar: $$*

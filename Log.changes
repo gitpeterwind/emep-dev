@@ -233,6 +233,47 @@ dsSep14   Volcanos_ml.f90
 dsSep14   Wesely_ml.f90
 
 !----------------------------------------------------------
+xxxxxxxx  rv4.1.13 Alvaro, Agnes & Heiko 25th January 2013  xxxxxxxxxxxxxxxxxxxxxx
+
+Update to eEMEP code. Small bug fixes and add code needed for NPP accidents.
+
+Makefile
+  eEMEP target NPP accident locations can be set with enviroment variable NPPAS.
+  If NPPAS is not set, the NPP accident locations are kept.
+  
+mk.GenChem:
+  * Fix bug on seed command for vent name generation, e.g.
+      vent code 0103-00- to variable nameV0103A00A
+  * Additional options
+    -q Quiet mode. No GenChem.pl chatter.
+    -N List of NPP accident locations to use on eEMEP runs.
+
+ZCM_Emergency/NPP.*: Add NPP accident files
+  NPP.csv         Pre-defined Accident locations
+  NPP.species     Nuclear tracers
+  NPP.reactions   Decay and emission
+
+ZD_OZONE/My_Derived_ml: Derived output Nuclear accident tracers
+  Add commented definitions for surf, dryDep and wetDep daily output.
+
+Volcanos_ml:
+  Increase the number of active vents (erupting volcaoes).
+  Previous versions could only deal wuth 5 or less vents (bug).
+
+NetCDF_ml: 
+  Avoid filling out varables on creation by calling
+  nf90_set_fill(NF90_NOFILL) from Out_netCDF(create_var_only=.true.)
+
+Nest_ml:
+  Runs which write IC/BC files (wrtxn) hang on creation of the file.
+  This is because the a "fast" Proc may not find the file, and create it,
+  and another will find that the file exist and skip the relevant code. 
+  Now, the MasterProc inquire if the file exist, and the result is MPI_BCAST
+  to the other Procs.
+
+GenChem.pl:
+  vatiables @rate_label, @rct, @rcttext defined twice
+
 xxxxxxxx  rv4.1.12 Dave, Svetlana  22th-25th January 2013  xxxxxxxxxxxxxxxxxxxxxx
 
 DS: utils directorty added - a place to store helper programmes

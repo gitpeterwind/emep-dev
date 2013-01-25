@@ -46,17 +46,19 @@ extras=( $xdir/SeaSalt $xdir/Dust $xdir/Isotopes ) #  Standard(?)
 
 # Variables for HELP & GETOPTS functions
 ERGO=`basename $0`
-VERB='off';[[ "$*" = *-v* ]] && VERB='on'
+VERB='off';[[ "$*" = *-q* ]] && VERB='quiet';[[ "$*" = *-v* ]] && VERB='on'
 [[ "$VERB" = 'on' ]] && echo -e "$ERGO verbose mode: $VERB"
 # Print ussage & exits
 HELP(){
   local EE=`echo ${extras[*]#*ZCM_}|tr ' ' ','` \
-        VV=`echo ${volcan[*]#*ZCM_}|tr ' ' ','`
+        VV=`echo ${volcan[*]#*ZCM_}|tr ' ' ','` \
+        PP=`echo ${nucppa[*]#*ZCM_}|tr ' ' ','`
   cat << _EOF
 '$ERGO' prepare Chemestry files (CM_.f90) for Unimod
 
 Usage:
-  $ERGO [-h] [-v] [-f fire] [-r run] [-e extra1[,extra2[...]]] [-V volc1,[,volc2[...]]]
+  $ERGO [-h] [-v] [-q] [-f fire] [-r run] [-e extra1[,extra2[...]]]
+        [-V volc1,[,volc2[...]]] [-N npp1,[,npp2[...]]]
 
 Examples:
 # EMEP GenChmem standard setup assumed in \`make EMEP\`
@@ -70,11 +72,13 @@ Examples:
 
 Options:
   -h        Print this help and exits
-  -v        Turns on verbose mode (currently: $VERB)
+  -v        Turns on verbose mode  (currently: $VERB)
+  -q        Quiet mode. No GenChem.pl chatter.
   -f ffire  Sets \$ffires variable (currently: $ffires)
   -r run    Sets \$run variable    (currently: $run)
   -e extras Sets \$extras variable (currently: ${EE:-'none'})
   -V volc   Sets \$volcan variable (currently: ${VV:-'none'})
+  -N npp    Sets \$nucppa variable (currently: ${PP:-'none'})
 _EOF
   (( $# )) && echo -e "\nCurrent call:\n\t$ERGO $*"
   exit 1
@@ -84,11 +88,12 @@ GETOPTS(){
   local rdir=$PWD/ZCM_$run N=0 EE=()
 # Volcano variables
   local vdir=$PWD/ZCM_Emergency
-  local VolcCSV="$vdir/Mastin&al2009a_table3.csv" \
-        ErupCSV="$vdir/Mastin&al2009b_table3.csv" \
-        COL='1,5-6,8-9,11-14,16' volc='1234-67=' vbin=7bin
+  local VolcCSV="$vdir/Mastin_et_al_2009a_table3.csv" \
+        ErupCSV="$vdir/Mastin_et_al_2009b_table3.csv" \
+        NppCSV="$vdir/NPP.csv" NacCSV="$vdir/NPP_Accident.csv" \
+        COL='1,5-6,8-9,11-14,16' vbin=7bin tracer='1234-67=/D23L567'
 # 1:NUMBER,5:NAME,6:LOCATION,8:LATITUDE,9:NS,11:LONGITUDE,12:EW,13:ELEV,14:TYPE,16:ERUPTION TYPE
-  while getopts ":f:r:e:V:vh" OPT; do
+  while getopts ":f:r:e:V:N:qvh" OPT; do
     [[ "$VERB" = 'on' ]] && echo -e "Processing option:\n\t-$OPT '$OPTARG'"
     case "$OPT" in
     f)ffires=$OPTARG;;
@@ -120,18 +125,38 @@ GETOPTS(){
         tee -a $rdir/volcanoes.csv                        # Headers
       cp -f "$ErupCSV" $rdir/eruptions.csv
       for N in ${!EE[*]};do
-        volc=`grep -iE ${EE[$N]/./'.{1,2}'} "$VolcCSV"|cut -d',' -f$COL|
-        sed 's/^\(.\{4,7\}\)-/\1A/g;s/^\(.\{4,7\}\)=/\1B/g;s/^/V/g;s/, */,/g;'` # Volcano description
-        [[ -n "$volc" ]] ||
+        tracer=`grep -iE ${EE[$N]/./'.{1,2}'} "$VolcCSV"|cut -d',' -f$COL|
+        sed 's/^\(....\)-/\1A/g;s/^\(....\)=/\1B/g;s/^\(.......\)-/\1A/g;s/^\(.......\)=/\1B/g;s/^/V/g;s/, */,/g;'` # Volcano description
+        [[ -n "$tracer" ]] ||
           HELP $* "\nUnknown volcano option:\n\t-$OPT ${EE[$N]}"
-        echo "$volc"|tee -a $rdir/volcanoes.csv
-        volc="${volc%%,*}"                               # Tracer name
-        volcan[$N]=$rdir/ASH$volc
-        sed "s/_ASH_/$volc/g;" $vdir/ASH_$vbin.species   > ${volcan[$N]}.species
-        sed "s/_ASH_/$volc/g;" $vdir/ASH_$vbin.reactions > ${volcan[$N]}.reactions
-        [[ -s $vdir/${volc}_$vbin.eruptions ]] && cat $vdir/${volc}_$vbin.eruptions >> $rdir/eruptions.csv
+        echo "$tracer"|tee -a $rdir/volcanoes.csv
+        tracer="${tracer%%,*}"                             # Tracer name
+        volcan[$N]=$rdir/ASH$tracer
+        sed "s/_ASH_/$tracer/g;" $vdir/ASH_$vbin.species   > ${volcan[$N]}.species
+        sed "s/_ASH_/$tracer/g;" $vdir/ASH_$vbin.reactions > ${volcan[$N]}.reactions
+        [[ -s $vdir/${tracer}_$vbin.eruptions ]] && cat $vdir/${tracer}_$vbin.eruptions >> $rdir/eruptions.csv
       done;;
-    v);;
+    N)nucppa=( );EE=( )
+      [[ "$OPTARG" = \-* ]] || [[ "$OPTARG" = none ]] || EE=( ${OPTARG//,/ } )
+      # cut     selects columns from $NppCSV
+      # sed     replaces '-' & '=' in NPP NUMBER and remove blanks
+      grep '^# '      "$NppCSV"|tee $rdir/npp.csv         # Source info
+      grep '^#NUMBER' "$NppCSV"|cut -d',' -f1-10|
+        tee -a $rdir/npp.csv                              # Headers
+#     cp -f "$NaCSV" $rdir/npp_accident.csv
+      for N in ${!EE[*]};do
+        tracer=`grep -iE ${EE[$N]/./'.{1,2}'} "$NppCSV"|cut -d',' -f1-10|
+        sed 's/^\(....\)-/\1A/g;s/^\(....\)=/\1B/g;s/^\(.......\)-/\1A/g;s/^\(.......\)=/\1B/g;s/^/V/g;s/, */,/g;'` # NPP description
+        [[ -n "$tracer" ]] ||
+          HELP $* "\nUnknown npp option:\n\t-$OPT ${EE[$N]}"
+        echo "$tracer"|tee -a $rdir/npp.csv
+        tracer="${tracer%%,*}"                                  # Tracer name
+        nucppa[$N]=$rdir/NPP$tracer
+        sed "s/_NPP_/$tracer/g;" $vdir/NPP.species   > ${nucppa[$N]}.species
+        sed "s/_NPP_/$tracer/g;" $vdir/NPP.reactions > ${nucppa[$N]}.reactions
+        [[ -s $vdir/$tracer.accident ]] && cat $vdir/$tracer.accident >> $rdir/npp_accident.csv
+      done;;
+  q|v);;
     h)HELP $*;;
     *)HELP $* "\nUnknown $ERGO option:\n\t-$OPT $OPTARG" ;;
     esac
@@ -140,16 +165,16 @@ GETOPTS(){
 
 if [ $run == EmChem09 ]; then
   echo "RUN EmChem09 chosen"
-  spcs=( EmChem09base PMmass ${volcan[@]} )
-  rcns=( EmChem09base PMmass ${volcan[@]} )
+  spcs=( EmChem09base PMmass ${volcan[@]} ${nucppa[@]} )
+  rcns=( EmChem09base PMmass ${volcan[@]} ${nucppa[@]} )
   bics=( EmChem09base )
 
 elif [ $run == EmChem09soa ]; then
   echo "RUN EmChem09soa chosen. Remember to cp ZD_VBS/My_SOA_ml.f90!!"
-  spcs=( $xdir/EmChem09base ${volcan[@]} \
+  spcs=( $xdir/EmChem09base ${volcan[@]} ${nucppa[@]} \
          ../ZCM_vbs_tests/VBS_help    \
           ./VBS_nonvolatile ../ZCM_vbs_tests/VBS_partitioning )  #  VBS NPNA
-  rcns=( $xdir/EmChem09base ${volcan[@]} \
+  rcns=( $xdir/EmChem09base ${volcan[@]} ${nucppa[@]} \
          ../ZCM_vbs_tests/VBS_SOAformation ../ZCM_vbs_tests/VBS_SOAageing \
           ./VBS_emissions_nonvolatilePOA_FromPM25  ) # VBS NPNA
   bics=( $xdir/EmChem09base )  # No special SOA BICs (yet)
@@ -238,11 +263,12 @@ cd $wdir
 #
 mv GenIn.species GenIn.species.bk # Safety
 echo "Species Files:" > CM_chempackages.txt
-for spec in ${spcs[@]}   # Wow, bash is cryptic!
-do
-  echo "+ SPECIES  FILE" $spec
+for FF in ${spcs[@]}; do
+  if [[ -s $FF.species ]];then
+    echo "+ SPECIES  FILE" $FF
   echo -n " $spec" >> CM_chempackages.txt
-  cat $spec.species >>  GenIn.species
+    cat $FF.species  >> GenIn.species
+  fi
 done
 echo " " >> CM_chempackages.txt
 
@@ -250,21 +276,23 @@ echo " " >> CM_chempackages.txt
 mv GenIn.reactions GenIn.reactions.bk
 echo "Reaction Files:" >> CM_chempackages.txt
 
-for reac in ${rcns[@]}   # Wow, bash is cryptic!
-do
-  echo "+ REACTION FILE" $reac
+for FF in ${rcns[@]}; do
+  if [[ -s $FF.reactions ]];then
+    echo "+ REACTION FILE" $FF
   echo -n " $reac" >> CM_chempackages.txt
-  cat $reac.reactions >>  GenIn.reactions
+    cat $FF.reactions >> GenIn.reactions
+  fi
 done
 echo " " >> CM_chempackages.txt
 # ==========================================
 #FEB2012:
 echo "!---- Boundary conditions -------" >  CM_BoundaryConditions.inc
-for bic in ${bics[@]}   # Wow, bash is cryptic!
-do
-  echo "+ BIC FILE" $bic
+for FF in ${bics[@]}; do
+  if [[ -s $FF.BoundaryConditions ]];then
+    echo "+ BIC FILE" $FF
   echo "!---- SECTION BICs $bic" >> CM_BoundaryConditions.inc
-  cat $bic.BoundaryConditions >>  CM_BoundaryConditions.inc
+    cat $FF.BoundaryConditions     >> CM_BoundaryConditions.inc
+  fi
 done
 echo " " >> CM_BoundaryConditions.inc.txt
 # ==========================================
@@ -274,7 +302,11 @@ echo " " >> CM_BoundaryConditions.inc.txt
 # 1) Runs GenChem to get chemical mechanism
 #######################################################################
 
-$cdir/GenChem.pl
+if [[ "$VERB" = 'quiet' ]];then
+  $cdir/GenChem.pl >/dev/null 2>&1
+else
+  $cdir/GenChem.pl
+fi
 
 # Mar 17th 2009, added fake GenSpec_bgn_ml
 
@@ -282,12 +314,9 @@ $cdir/GenChem.pl
 odir=$wdir           # We keep output in work-directory
 echo $odir
 
-cat GenOut_ChemRates*inc    > $odir/CM_ChemRates_ml.f90
-
-cat GenOut_ChemSpec*inc  GenOut_ChemChemicals_ml.inc \
-           > $odir/CM_ChemSpecs_ml.f90
-cat GenOut_ChemGroups_ml.f90 \
-           > $odir/CM_ChemGroups_ml.f90
+cat GenOut_ChemRates*_ml.inc            > $odir/CM_ChemRates_ml.f90
+cat GenOut_Chem{Spec*,Chemicals}_ml.inc > $odir/CM_ChemSpecs_ml.f90
+cat GenOut_ChemGroups_ml.f90            > $odir/CM_ChemGroups_ml.f90
 
 # ../DUMMY_Spec_bgn_ml \
 
@@ -314,8 +343,6 @@ done
 cp_if_diff $odir/BiomassBurning_${ffires}_to_$run.inc $cdir/BiomassBurningMapping.inc  # Special
 cd $cdir
 
-
-
 # Skipped now:
 # 2) Copies Boundary Condition files
 #######################################################################
@@ -327,4 +354,3 @@ cd $cdir
 #Now done by Garry
 #cd ..
 #GenVOC.pl $run
-

@@ -1,0 +1,13 @@
+# http://www.icjt.org/npp/world.html
+#NUMBER,NAME       ,LOCATION,LATITUDE,NS,LONGITUDE,EW,ELEV,TYPE,ACCIDENT TYPE
+D07L794,Olkiluoto  ,Finland       ,61.233,N, 21.433,E,    , NPP,
+D07L705,Loviisa    ,Finland       ,60.367,N, 26.350,E,    , NPP,
+D09L591,Brockdorf  ,Germany       ,53.850,N, 09.350,E,    , NPP,
+D22L689,Kola       ,Russia        ,67.467,N, 32.467,E,    , NPP,
+D22L702,Leningrad  ,Russia        ,59.833,N, 29.033,E,    , NPP,
+D22LX01,Kaliningrad,Russia        ,54.939,N, 22.161,E,    , NPP,
+D27L757,Ringhals   ,Sweden        ,57.250,N, 12.116,E,    , NPP,
+D27L643,Forsmark   ,Sweden        ,60.400,N, 18.183,E,    , NPP,
+D27L735,Oskarshamn ,Sweden        ,57.417,N, 16.667,E,    , NPP,
+D31L787,Torness    ,United_Kingdom,55.967,N,  2.400,W,    , NPP,
+D31LX01,Sellafield ,United_Kingdom,54.421,N,  3.498,W,    , NPS,

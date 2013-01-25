@@ -252,6 +252,14 @@ private
         ,typ_s5i("ASH_F     ",  "ug", D2,"AIR_CONCS",GROUP, D)&
         ,typ_s5i("ASH_C     ",  "ug", D2,"AIR_CONCS",GROUP, D)&
         ,typ_s5i("ASH_G     ",  "ug", D2,"AIR_CONCS",GROUP, D)&
+!-- Emergency: Nuclear accident (5 entries)
+       ! typ_s5i("CS137    ", "mBq", D2,"AIR_CONCS", SPEC, D), &
+       ! typ_s5i("I131     ", "mBq", D2,"AIR_CONCS", SPEC, D), &
+       ! typ_s5i("SR90     ", "mBq", D2,"AIR_CONCS", SPEC, D), &
+       ! typ_s5i("KR85     ", "mBq", D2,"AIR_CONCS", SPEC, D), &
+       ! typ_s5i("NUCRACT  ", "mBq", D2,"AIR_CONCS",GROUP, D), &
+       !!typ_s5i("XE131    ", "mBq", D2,"AIR_CONCS", SPEC, D), &
+       !!typ_s5i("NUC      ", "mBq", D2,"AIR_CONCS",GROUP, D)  &
        ! ============================================================
        /)
 !TFMM         typ_s5i("SO2       ", "ugS", D2,"AIR_CONCS", SPEC, D)&
@@ -355,6 +363,14 @@ private
       typ_s3("SOX      ",GROUP, "mgS"), &
       typ_s3("OXN      ",GROUP, "mgN"), &
       typ_s3("RDN      ",GROUP, "mgN")/)
+!-- Emergency: Nuclear accident (5 entries)
+    ! typ_s3("CS137    ", SPEC, "mBq"), &
+    ! typ_s3("I131     ", SPEC, "mBq"), &
+    ! typ_s3("SR90     ", SPEC, "mBq"), &
+    ! typ_s3("KR85     ", SPEC, "mBq"), &
+    ! typ_s3("NUCRACT  ",GROUP, "mBq"), &
+    !!typ_s3("XE131    ", SPEC, "mBq"), &
+    !!typ_s3("NUC      ",GROUP, "mBq")/)
 
   type(typ_si), public, parameter, dimension(6) :: &
     DDEP_ECOS  = (/ &
@@ -451,24 +467,31 @@ private
 !----------------------
 
 
-   type(typ_s3), dimension(7-3+2), public, parameter :: WDEP_WANTED = (/ &
-         typ_s3( "PREC     ", "PREC ", "mm  " )  &
-        ,typ_s3( "SOX      ", "GROUP", "mgS " )  & ! Will get WDEP_SOX group
-        ,typ_s3( "OXN      ", "GROUP", "mgN " )  &
-        ,typ_s3( "RDN      ", "GROUP", "mgN " )  &
-!TFMM        ,typ_s3( "SS       ", "GROUP", "mg  " )  &
-      !
-        ,typ_s3( "SO2      ", "SPEC ", "mgS ") &  ! Makes WPEP_SO2
-      !  ,typ_s3( "SO4      ", "SPEC ", "mgS ") &
-        ,typ_s3( "HNO3     ", "SPEC ", "mgN ") &
-      !  ,typ_s3( "NO3_F    ", "SPEC ", "mgN ") &
-      !  ,typ_s3( "NO3_C    ", "SPEC ", "mgN ") &
-!TFMM        ,typ_s3( "NH4_F    ", "SPEC ", "mgN ") &
-!TFMM        ,typ_s3( "NH3      ", "SPEC ", "mgN ") &
-      !  ,typ_s3( "SEASALT_F", "SPEC ", "mg  ") &
-      ! ,typ_s3( "SEASALT_C", "SPEC ", "mg  ") &
-     /)
-
+  type(typ_s3), dimension(6), public, parameter :: &
+    WDEP_WANTED = (/ &
+      typ_s3("PREC     ","PREC","mm"),  &
+      typ_s3("SOX      ",GROUP,"mgS"),  & ! Will get WDEP_SOX group
+      typ_s3("OXN      ",GROUP,"mgN"),  &
+      typ_s3("RDN      ",GROUP,"mgN"),  &
+!TFMM typ_s3("SS       ",GROUP,"mg "),  &
+      typ_s3("SO2      ", SPEC,"mgS"),  & ! Makes WPEP_SO2
+    ! typ_s3("SO4      ", SPEC,"mgS"),  &
+      typ_s3("HNO3     ", SPEC,"mgN")/)
+    ! typ_s3("NO3_F    ", SPEC,"mgN"),  &
+    ! typ_s3("NO3_C    ", SPEC,"mgN"),  &
+!TFMM typ_s3("NH4_F    ", SPEC,"mgN"),  &
+!TFMM typ_s3("NH3      ", SPEC,"mgN"),  &
+    ! typ_s3("SEASALT_F", SPEC,"mg "),  &
+    ! typ_s3("SEASALT_C", SPEC,"mg ")/)
+!-- Emergency: Nuclear accident (5 entries)
+    ! typ_s3("CS137    ", SPEC, "mBq"), &
+    ! typ_s3("I131     ", SPEC, "mBq"), &
+    ! typ_s3("SR90     ", SPEC, "mBq"), &
+    ! typ_s3("KR85     ", SPEC, "mBq"), &
+    ! typ_s3("NUCRACT  ",GROUP, "mBq"), &
+    !!typ_s3("XE131    ", SPEC, "mBq"), &
+    !!typ_s3("NUC      ",GROUP, "mBq")/)
+    
 
     ! For some reason having this as a parameter caused problems for
     ! PC-gfortran runs.
