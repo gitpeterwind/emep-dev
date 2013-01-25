@@ -240,6 +240,9 @@ DS: utils directorty added - a place to store helper programmes
   mk.meteoProc  moved from ZD_EXTRA to utils
   meteoProc.f90 moved from ZD_EXTRA to utils
 
+  Rd_csvsites.f90
+  README.Rd_csvsites
+
 ST: Derived_ml.f90: for consistency KMAX_MID is changes to KMAX_BND for
 
                 Kz_m2s(i,j,KMAX_BND-1)
