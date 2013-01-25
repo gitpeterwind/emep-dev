@@ -99,7 +99,6 @@ our @bionat_specs = (); # For isoprene, terpenes, soil-NO etc.
  my ($neqn, $nrct, $nrctroe, $nrcfunc ) = (0,0,0,0);  # rct = Temp-dependant
  my ( $nddep,  $nwdep ) = (0,0);
  my ( $ddep_txt, $wdep_txt );
- my ( @rate_label, @rct, @rcttext ) = ();
  #QUERY? my ( $ddep_txt, $wdep_txt ) = ("","");
  my ( @rate_label, @rct, @rcttext, @rctroe, @rctroetext,
 	 @rcmisc, @rcmisctext ) = ();

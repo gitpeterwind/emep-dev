@@ -97,7 +97,7 @@ real, public, save, dimension(NMAX_VOLC) ::   &
 
 ! Emergency: Volcanic Eruption
 integer, public, parameter :: &
-  NMAX_VENT = 10, & ! Max number of Vents (erupting) on processor/subdomain
+  NMAX_VENT = 12, & ! Max number of Vents (erupting) on processor/subdomain
   NMAX_ERUP = 90    ! Max number of Eruption def (~3 months per vent)
 
 integer, private, save ::   & ! No. of ... found on processor/subdomain
@@ -430,7 +430,8 @@ function EruptionRate(i,j) result(emiss)
       call CheckStop(stat,ERR_VENT_CSV//' not found')
     endif
     nvent=0
-    doVENT: do l=1,NMAX_VENT+1
+    l = 1
+    doVENT: do while (l<=NMAX_VENT)
       call read_line(IO_TMP,txtline,stat)
       if(stat/=0) exit doVENT           ! End of file
       txtline=ADJUSTL(txtline)          ! Remove leading spaces
@@ -450,6 +451,7 @@ function EruptionRate(i,j) result(emiss)
             dvent%grp,trim(dvent%name),dvent%iloc,"i",dvent%jloc,"j",&
             dvent%lon,"lon",dvent%lat,"lat"
       endif
+      l = l+1
     enddo doVENT
     if(MasterProc) close(IO_TMP)
     Eruption_found=(nvent>0)
@@ -462,7 +464,8 @@ function EruptionRate(i,j) result(emiss)
       call CheckStop(stat,ERR_ERUP_CSV//' not found')
     endif
     nerup(:)=0
-    doERUP: do l=1,NMAX_ERUP+1
+    l = 1
+    doERUP: do while (l <= NMAX_ERUP)
       call read_line(IO_TMP,txtline,stat)
       if(stat/=0) exit doERUP             ! End of file
       if(.not.Eruption_found)cycle doERUP ! There is no vents on subdomain
@@ -487,6 +490,7 @@ function EruptionRate(i,j) result(emiss)
           write(*,MSG_FMT)'Erup.Specific',me,'out',-1,trim(derup%id),&
             derup%spc,trim(derup%name)
       endif
+      l = l+1
     enddo doERUP
     if(MasterProc) close(IO_TMP)
     Eruption_found=any(nerup(1:nvent)>0)

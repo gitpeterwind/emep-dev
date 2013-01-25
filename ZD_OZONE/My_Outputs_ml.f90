@@ -204,7 +204,7 @@ subroutine set_output_defs
    implicit none
 
   character(len=144) :: errmsg   ! Local error message
-  integer            :: i,j,ash,rn222,pm25,pm10,ivent ! Loop & ash group indexes
+  integer            :: i,j,ash,rn222,pm25,pm10,psurf,ivent ! Loop & ash group indexes
   character(len=9)   :: vent     ! Volcano (vent) name
 
   real, parameter :: atwC=12.0
@@ -254,7 +254,7 @@ subroutine set_output_defs
   select case(EXP_NAME)
   case("EMERGENCY")
     nlevels_hourly = 1+18
-    nhourly_out=4+1    !PM*,AOD (&Z)
+    nhourly_out=4+2    !PM*,AOD (&Z, &PS)
     ash=find_index("ASH",chemgroups(:)%name)
     call CheckStop(ash<1,"set_output_defs: Unknown group 'ASH'")
     vent="none"
@@ -295,19 +295,24 @@ subroutine set_output_defs
 
     pm25 =find_index("PMFINE",chemgroups(:)%name) !NB There is no "PM25" group
     pm10 =find_index("PM10"  ,chemgroups(:)%name)
+    psurf=find_index("PSURF" ,f_2d(:)%name)
 !**               name     type     ofmt
 !**               ispec    ix1 ix2 iy1 iy2 nk sellev? unit conv  max
-    j=5;hr_out(:j) = (/&
+    j=6;hr_out(:j) = (/&
       Asc2D("pm25_3km"  ,"BCVugXXgroup",pm25,&
-             ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",1.0,-999.9),&
+             ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug/m3",1.0,-999.9),&
       Asc2D("pm10_3km"  ,"BCVugXXgroup",pm10,&
-             ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",1.0,-999.9),&
+             ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug/m3",1.0,-999.9),&
       Asc2D("pm_h2o_3km","PMwater",00         ,&
-             ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",1.0,-999.9),&
+             ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug/m3",1.0,-999.9),&
       Asc2D("AOD_550nm" ,"AOD"   ,00         ,&
              ix1,ix2,iy1,iy2,1," ",1.0    ,-9999.9),&
       Asc2D("z"         ,"Z_MID" ,00         ,&
-             ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"km",1e-3,-9999.9)/)
+             ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"km",1e-3,-9999.9),&
+!** PSURF needs always to be named PS as defined in formula-terms for sigma
+!** PSURF needed for konversion from sigma to pressure or height
+      Asc2D("PS"         ,"D2D" ,psurf       ,&
+             ix1,ix2,iy1,iy2,1,"hPa",1.0,-9999.9)/)
     vent="none"
     do i=1,size(chemgroups(ash)%ptr)
       if(species(chemgroups(ash)%ptr(i))%name(1:9)==vent)cycle
@@ -316,9 +321,9 @@ subroutine set_output_defs
       call CheckStop(ivent<1,"set_output_defs: Unknown group '"//vent//"'")
       j=j+2;hr_out(j-1:j)=(/&
         Asc2D(vent        ,"BCVugXXgroup",ivent,&
-              ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",1.0,-999.9),&
+              ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug/m3",1.0,-999.9),&
         Asc2D(vent//"_col","COLUMNgroup" ,ivent,&
-              ix1,ix2,iy1,iy2,1,"ug",1.0,-999.9)/)
+              ix1,ix2,iy1,iy2,1,"ug/m2",1.0,-999.9)/)
     enddo
   case("FORECAST")
 !   ix1=IRUNBEG;ix2=IRUNBEG+GIMAX-1
