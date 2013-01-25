@@ -17,7 +17,7 @@ GRID=EECCA #EMEP
 met=metdata_EC
 
 for T in 18;  do
-for year in {2003..2005}   #   ! varies with grid
+for year in {2000..2002}  # {2003..2005}   #   ! varies with grid
 do
   ./$prog $T $year /global/work/mifapw/emep/Data/$GRID/$met/$year $GRID-$year
  mv HDD${T}-${GRID}-${year}.nc /global/work/mifapw/emep/Data/$GRID/$met/$year

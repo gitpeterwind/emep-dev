@@ -233,8 +233,15 @@ dsSep14   Volcanos_ml.f90
 dsSep14   Wesely_ml.f90
 
 !----------------------------------------------------------
-xxxxxxxx  rv4.1.11 Svetlana     22th January 2013  xxxxxxxxxxxxxxxxxxxxxx
-Derived_ml.f90: for consistency KMAX_MID is changes to KMAX_BND for
+xxxxxxxx  rv4.1.12 Dave, Svetlana  22th-25th January 2013  xxxxxxxxxxxxxxxxxxxxxx
+
+DS: utils directorty added - a place to store helper programmes
+
+  mk.meteoProc  moved from ZD_EXTRA to utils
+  meteoProc.f90 moved from ZD_EXTRA to utils
+
+ST: Derived_ml.f90: for consistency KMAX_MID is changes to KMAX_BND for
+
                 Kz_m2s(i,j,KMAX_BND-1)
 
 xxxxxxxx  rv4.1.11 Peter     10th January 2013  xxxxxxxxxxxxxxxxxxxxxxxxx
