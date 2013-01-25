@@ -699,16 +699,17 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
         endif
      endif
 
-     !test first if the variable is already defined:
-     status = nf90_inq_varid(ncid = ncFileID, name = varname, varID = VarID)
-
-     if(status == nf90_noerr) then
-!             print *, 'variable exists: ',varname
-        if (DEBUG_NETCDF) write(6,*) 'Out_NetCDF: variable exists: ',varname
-     else
-        if (DEBUG_NETCDF) write(6,*) 'Out_NetCDF: creating variable: ',varname
-        call  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype)
-     endif
+    !test first if the variable is already defined:
+    status = nf90_inq_varid(ncid = ncFileID, name = varname, varID = VarID)
+    if(status == nf90_noerr) then
+!     print *, 'variable exists: ',varname
+      if(DEBUG_NETCDF) write(*,*) 'Out_NetCDF: variable exists: ',varname
+    else
+      if(DEBUG_NETCDF) write(*,*) 'Out_NetCDF: creating variable: ',varname
+      if(create_var_only_local) &
+        call check(nf90_set_fill(ncFileID,NF90_NOFILL,ijk))
+      call createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype)
+    endif
   endif!MasterProc
 
   if(create_var_only_local)then

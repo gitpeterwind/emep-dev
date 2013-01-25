@@ -186,7 +186,8 @@ subroutine readxn(indate)
 !filename_read_BC=date2string('EMEP_IN_BC_YYYYMMDD.nc',indate) !BC file: 01,...,24 UTC rec for 1 day
     if(first_call)then
       first_call=.false.
-      inquire(file=filename_read_3D,exist=fexist)
+      if(MasterProc) inquire(file=filename_read_3D,exist=fexist)
+      CALL MPI_BCAST(fexist,1,MPI_LOGICAL,0,MPI_COMM_WORLD,INFO)
       if(.not.fexist)then
         if(MasterProc) write(*,*)'No Nest IC file found: ',trim(filename_read_3D)
       else
@@ -195,7 +196,8 @@ subroutine readxn(indate)
       endif
     endif
     if(mod(indate%hour,NHOURREAD)/=0.or.indate%seconds/=0) return
-    inquire(file=filename_read_BC,exist=fexist)
+    if(MasterProc) inquire(file=filename_read_BC,exist=fexist)
+    CALL MPI_BCAST(fexist,1,MPI_LOGICAL,0,MPI_COMM_WORLD,INFO)
     if(.not.fexist)then
       if(MasterProc) write(*,*)'No Nest BC file found: ',trim(filename_read_BC)
       return
@@ -347,7 +349,9 @@ subroutine wrtxn(indate,WriteNow)
   def1%unit='mix_ratio' ! written
 
   allocate(data(MAXLIMAX,MAXLJMAX,KMAX_MID))
-  inquire(file=fileName_write,exist=fexist)
+  if(MasterProc) inquire(file=fileName_write,exist=fexist)
+  CALL MPI_BCAST(fexist,1,MPI_LOGICAL,0,MPI_COMM_WORLD,INFO)
+
   !do first one loop to define the fields, without writing them (for performance purposes)
   if(.not.fexist)then
     call init_icbc(cdate=indate)
