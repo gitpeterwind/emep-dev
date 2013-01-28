@@ -2,4 +2,6 @@
 * <----------- Biogenic/natural emissions ----------------------------->
 * Pollen
 *
-rcpol(QPOL,k)                           = Pollen_b ;
+*rcpol(QPOL,k)                           = Pollen_b ;
+
+rcbio:POLLEN_B                          = Pollen_b ;
