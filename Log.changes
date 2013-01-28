@@ -233,6 +233,16 @@ dsSep14   Volcanos_ml.f90
 dsSep14   Wesely_ml.f90
 
 !----------------------------------------------------------
+xxxxxxxx  rv4.1.14 Peter 28th January 2013  xxxxxxxxxxxxxxxxxxxxxx
+
+Attempt to retablish the original Nest functionality, as documented in header of Nest_ml.f90
+For EXTERNAL_BIC_SET=.false. nothing from My_ExternalBICs_ml.f90 is used.
+Moved filenames into Nest_ml and call set_extbic only if EXTERNAL_BIC_SET=.true.
+Default when EXTERNAL_BIC_SET=.false. is to read/write all components.
+
+Modified: Nest_ml.f90, ZD_OZONE/My_ExternalBICs.ml.f90
+
+
 xxxxxxxx  rv4.1.13 Alvaro, Agnes & Heiko 25th January 2013  xxxxxxxxxxxxxxxxxxxxxx
 
 Update to eEMEP code. Small bug fixes and add code needed for NPP accidents.

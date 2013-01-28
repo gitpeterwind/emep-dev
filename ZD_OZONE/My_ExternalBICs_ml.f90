@@ -1,6 +1,7 @@
 module My_ExternalBICs_ml
 ! External Boundary and Initial Conditions
 ! are set from the value depending on Experimnt Name (EXP_NAME)
+! Nothing in this file needs to be used if EXTERNAL_BIC_SET  = .false.
 use ModelConstants_ml,     only: MasterProc, DEBUG=>DEBUG_NEST_ICBC
 use CheckStop_ml,          only: CheckStop
 use Io_ml,                 only: PrintLog
@@ -28,12 +29,6 @@ character(len=*),private, parameter :: &
   template_read_BC = 'EMEP_IN_BC_YYYYMMDD.nc', &
   template_write   = 'EMEP_OUT.nc'
 ! template_write   = 'EMEP_OUT_YYYYMMDD.nc'
-character(len=len(template_read_3D)),public, save :: &
-  filename_read_3D = template_read_3D
-character(len=len(template_read_BC)),public, save :: &
-  filename_read_BC = template_read_BC
-character(len=len(template_write)),public, save :: &
-  filename_write   = template_write
 
 character(len=*),public, parameter :: &
   filename_eta     = 'EMEP_IN_BC_eta.zaxis'
@@ -42,16 +37,17 @@ type, public :: icbc                 ! Inital (IC) & Boundary Conditions (BC)
   integer           :: ixadv=-1
   character(len=24) :: varname="none"
   real              :: frac=1.0
-  logical           :: wanted=.false.,found=.false.
+  logical           :: wanted=.not.EXTERNAL_BIC_SET,found=.false.!default is all components for non-external
 endtype icbc
 
 type(icbc), dimension(:), public, pointer :: &
   EXTERNAL_BC=>null()
 
 contains
-subroutine set_extbic(idate)
+subroutine set_extbic(idate,filename_read_BC)
   implicit none
   integer,intent(in) :: idate(4)
+  character(len=*),intent(inout) ::filename_read_BC 
 
   character(len=*), parameter :: &
     DEBUG_FMT="('set_extbic DEBUG: ',A,' ''',A,'''.')"

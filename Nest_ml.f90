@@ -34,12 +34,14 @@ module Nest_ml
 ! 10=write at end of run, 11=read at start , 12=read at start and write at end (BIC)
 !
 ! To make a nested run:
-! 1) run with MODE=1 (NEST_MODE in ModelConstants_ml) to write out 3d BC
-! 2) run (in a smaller domain) with MODE=2
+! 1) run with MODE=1 (NEST_MODE in ModelConstants_ml) to write out 3d BC (name in filename_write defined below)
+! 2) copy or link filename_write to filename_read_BC (for example "ln -s EMEP_OUT.nc EMEP_IN.nc")
+! 3) run (in a smaller domain) with MODE=2
 !
-! Set MODE (NEST_MODE in ModelConstants_ml) and istart,jstart,iend,jend
+! Set MODE (NEST_MODE in ModelConstants_ml) and istart,jstart,iend,jend (in this file)
 ! Choose NHOURSAVE and NHOURREAD
-! Also filename_read_BC_template and filename_read_3D should point to appropriate files
+! Also filename_read_BC and filename_read_3D should point to appropriate files
+! Be careful to remove old BC files before making new ones.
 !
 ! Grids may have any projection.
 ! Horizontal interpolation uses a weighted average of the four closest points
@@ -58,8 +60,8 @@ module Nest_ml
 
 use My_ExternalBICs_ml,     only: set_extbic, icbc, &
        EXTERNAL_BIC_SET, EXTERNAL_BC, EXTERNAL_BIC_NAME, TOP_BC, &
-       iw, ie, js, jn, kt, &  ! i West/East bnd; j North/South bnd; k Top
-       filename_read_3D,filename_read_BC,fileName_write,filename_eta
+       iw, ie, js, jn, kt &! i West/East bnd; j North/South bnd; k Top
+       ,filename_eta
 !----------------------------------------------------------------------------!
 use CheckStop_ml,          only : CheckStop,StopAll
 use ChemChemicals_ml,       only: species_adv
@@ -106,6 +108,15 @@ integer, public, parameter :: NHOURSAVE=3 !time between two saves. should be a f
 integer, public, parameter :: NHOURREAD=1 !time between two reads. should be a fraction of 24
 !if(NHOURREAD<NHOURSAVE) the data is interpolated in time
 
+integer, parameter ::max_string_length=200!should be large enough for path set later in the code.
+!these can be overwritten in Nest_ml
+character(len=max_string_length),public, save :: &
+  filename_read_3D = 'EMEP_IN.nc'
+character(len=max_string_length),public, save :: &
+  filename_read_BC = 'EMEP_IN.nc'
+character(len=max_string_length),public, save :: &
+  filename_write   = 'EMEP_OUT.nc'
+
 private
 
 !Use TOP BC on forecast mode - moved to EXTERNAL
@@ -127,19 +138,6 @@ integer,save :: KMAX_ext_BC
 integer,save :: itime!itime_saved(2),
 real(kind=8),save :: rtime_saved(2)
 
-! filename_read_3D,filename_read_BC,fileName_write,filename_eta defined in My_ExternalBICs_ml
-! ! filename_read_3D,filename_read_BC updated by set_extbic
-!YYYY, YY, MM, DD, hh will be replaced by numbers by the program. For details, see detail2str in TimeDate_ExtraUtil_ml.f90
-!character(len=130),save  :: filename_read_BC_template='/global/work/mifapw/emep/work/HTAP_sigma.nc'
-!character(len=130),save  :: filename_read_BC_template='/global/work/mifajej/TRANSPHORM/Data/EMAC_YYYYMM_TRANSPHORM.nc'
-
-!character(len=130),save  :: filename_read_3D='/global/work/mifapw/emep/Data/RCA/Boundary_conditions/YYYY/YYYYMMDDhh00_ll.nc'
-!character(len=130),save  :: filename_read_3D='/global/work/mifapw/emep/work/HTAP_sigma.nc'
-!character(len=130),save  :: filename_read_3D='/global/work/mifajej/TRANSPHORM/MACC/spinnup/EMEP_IN.nc'
-!character(len=130),save  :: filename_eta='/global/work/mifapw/emep/Data/MACC02/Boundary_conditions/mozart_eta.zaxis'
-
-!character(len= 30),save  :: filename_write='EMEP_OUT.nc'
-!character(len=130),save  :: filename_read_BC
 
 integer,save :: date_nextfile(4)!date corresponding to the next BC file to read
 integer,save :: NHOURS_Stride_BC   !number of hours between start of two consecutive records in BC files
@@ -182,7 +180,7 @@ subroutine readxn(indate)
   if(first_call)date_nextfile=ndate
 
   if(FORECAST)then ! FORECAST mode superseeds nest MODE
-    call set_extbic(date_nextfile)
+    if(EXTERNAL_BIC_SET)call set_extbic(date_nextfile,filename_read_BC)
 !filename_read_BC=date2string('EMEP_IN_BC_YYYYMMDD.nc',indate) !BC file: 01,...,24 UTC rec for 1 day
     if(first_call)then
       first_call=.false.
@@ -227,7 +225,7 @@ subroutine readxn(indate)
 
   if(first_data==-1)then
 
-    call set_extbic(date_nextfile)
+    if(EXTERNAL_BIC_SET)call set_extbic(date_nextfile,filename_read_BC)
 
     if(.not.FORECAST) call reset_3D(ndays_indate)
     if(mydebug) write(*,*)'Nest: READING FIRST BC DATA 3D: ',&
@@ -242,7 +240,7 @@ subroutine readxn(indate)
 
   if(ndays_indate-rtime_saved(2)>halfsecond.or.MODE==100)then
    !look for a new data set
-    call set_extbic(date_nextfile)
+   if(EXTERNAL_BIC_SET)call set_extbic(date_nextfile,filename_read_BC)
 
     if(MasterProc) write(*,*)'Nest: READING NEW BC DATA from ',&
           trim(filename_read_BC)
@@ -422,7 +420,7 @@ subroutine init_icbc(idate,cdate,ndays,nsecs)
   if(present(cdate)) dat=(/cdate%year,cdate%month,cdate%day,cdate%hour/) 
   if(present(ndays)) call nctime2idate(dat,ndays)
   if(present(nsecs)) call nctime2idate(dat,nsecs)
-  call set_extbic(dat)  ! set mapping, EXTERNAL_BC, TOP_BC
+  if(EXTERNAL_BIC_SET) call set_extbic(dat,filename_read_BC)  ! set mapping, EXTERNAL_BC, TOP_BC
 
   adv_ic(:)%ixadv=(/(n,n=1,NSPEC_ADV)/)
   adv_ic(:)%varname=species_adv(:)%name
