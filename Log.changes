@@ -233,6 +233,15 @@ dsSep14   Volcanos_ml.f90
 dsSep14   Wesely_ml.f90
 
 !----------------------------------------------------------
+xxxxxxxx  rv4.1.15 Birthe 28th January 2013 xxxxxxxxxxxxxxxxxxxxxx
+
+New Pollen.
+Pollen_ml : emissions is now gicen in rcemis and NatEmis
+
+ZCM_EmChem09/Pollen.reactions: updated for the new emissions
+
+Makefile.SRCS : included Pollen_ml
+
 xxxxxxxx  rv4.1.14 Peter 28th January 2013  xxxxxxxxxxxxxxxxxxxxxx
 
 Attempt to retablish the original Nest functionality, as documented in header of Nest_ml.f90
