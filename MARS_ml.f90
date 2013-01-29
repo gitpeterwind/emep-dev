@@ -1009,7 +1009,11 @@ if( DEBUG_EQUIB .and. debug_flag ) print "(a,4es10.3)", "MARS NONDEGEN  ",  AA, 
       real ::  dum1,dum2,part1,part2,part3,rrsq,phi,yy1,yy2,yy3
       real ::  costh, sinth
 
-      data sqrt3/1.732050808/, one3rd/0.333333333/
+!emep:  7 digits not enough!      data sqrt3/1.732050808/, one3rd/0.333333333/
+
+      sqrt3=sqrt(3.0)
+      one3rd=1.0/3.0
+
 !=======
 
       a2sq=a2*a2
