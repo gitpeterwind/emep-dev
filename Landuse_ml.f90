@@ -196,9 +196,11 @@ contains
           end do ! ilu
 
 !set default values for nwp_sea
-          if(water_fraction(i,j)>water_fraction_THRESHOLD) &
-               nwp_sea(i,j) = .true.
-
+          if(water_fraction(i,j)>water_fraction_THRESHOLD)then
+             nwp_sea(i,j) = .true.
+          else
+             nwp_sea(i,j) = .false.
+          endif
 
           ! We don't want to trust some squares with a mixture of sea
           ! and land for micromet purposes, e.g. T2 can be very wrong
