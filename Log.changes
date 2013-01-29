@@ -233,6 +233,13 @@ dsSep14   Volcanos_ml.f90
 dsSep14   Wesely_ml.f90
 
 !----------------------------------------------------------
+xxxxxxxx  rv4.2 Peter  29th January 2013 xxxxxxxxxxxxxxxxxxxxxx
+
+More "continuous" function for MARS_ml.f90. NB: Will modify results!
+For RATIO (= TNH4/TSO4) between RATIO_Low and RATIO_High, consider the species in two boxes one with
+ RATIO_Low and the other with  RATIO_High. Then take a linear combination of the results in each box
+(as discussed at meeting 1st Nov 2012)
+
 xxxxxxxx  rv4.1.16 Peter/Svetlana 29th January 2013 xxxxxxxxxxxxxxxxxxxxxx
 
 Bug for  nwp_sea. Array not initialized and only .true. forced. Therefore nwp_sea had a random value when
