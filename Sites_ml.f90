@@ -494,13 +494,13 @@ subroutine siteswrt_sondes(xn_adv,xn_shl)
 
   ! Local variables
   integer :: n, i, k,  ix, iy, nn, ispec   ! Site and chem indices
-  integer, parameter ::  KTOP_SONDE = KMAX_MID - NLEVELS_SONDE + 1
+  integer ::  KTOP_SONDE 
   integer, dimension(NLEVELS_SONDE)      :: itemp
   real, dimension(KMAX_MID)              :: pp, temp, qsat, rh, sum_PM, sum_NOy
   real, dimension(NOUT_SONDE,NSONDES_MAX):: out
 
   ! Consistency check
-
+  KTOP_SONDE = KMAX_MID - NLEVELS_SONDE + 1
   do ispec = 1, NXTRA_SONDE
     select case ( SONDE_XTRA(ispec) )
       case ( "PM25 " ,"PMco " , "NOy ", "RH ","z_mid", "p_mid", &

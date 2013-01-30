@@ -117,32 +117,32 @@ Module GridValues_ml
   integer, public, allocatable, save,dimension(:) :: j_local  !of full-domain i,j
 
   !Parameters for Vertical Hybrid coordinates:
-  real, public, save,  dimension(KMAX_BND) ::  &
+  real, public, save,allocatable,  dimension(:) ::  &
        A_bnd !Unit Pa.  first constant, defined at layer boundary
   ! (i.e. half levels in EC nomenclature)
-  real, public, save,  dimension(KMAX_BND) ::  &
+  real, public, save,allocatable,  dimension(:) ::  &
        B_bnd !Unit 1.  second constant, defined at layer boundary
   ! (i.e. half levels in EC nomenclature)
-  real, public, save,  dimension(KMAX_MID) ::  &
+  real, public, save,allocatable,  dimension(:) ::  &
        A_mid !Unit Pa.  first constant, defined at middle of layer
   ! (i.e. full levels in EC nomenclature)
-  real, public, save,  dimension(KMAX_MID) ::  &
+  real, public, save,allocatable,  dimension(:) ::  &
        B_mid !Unit 1.  second constant, defined at middle of layer
   ! (i.e. full levels in EC nomenclature)
-  real, public, save,  dimension(KMAX_MID) ::  &
+  real, public, save,allocatable,  dimension(:) ::  &
        dA !Unit Pa.  A_bnd(k+1)-A_bnd(k) 
-  real, public, save,  dimension(KMAX_MID) ::  &
+  real, public, save,allocatable,  dimension(:) ::  &
        dB !Unit 1.  B_bnd(k+1)-B_bnd(k) 
   ! P = A + B*PS
   ! eta = A/Pref + B
 
-  real, public, save,  dimension(KMAX_BND) ::  &
+  real, public, save,allocatable,  dimension(:) ::  &
        sigma_bnd ! sigma, layer boundary 
 
-  real, public, save,  dimension(KMAX_MID) ::  &
+  real, public, save,allocatable,  dimension(:) ::  &
        sigma_mid   ! sigma layer midpoint
 
-  real, public, save,  dimension(KMAX_MID) ::  carea    ! for budgets?
+  real, public, save,allocatable,  dimension(:) ::  carea    ! for budgets?
 
   real, public, save,allocatable,  dimension(:,:) :: &
        glon       &         !longitude of gridcell centers
@@ -231,7 +231,15 @@ contains
 
     call GetFullDomainSize(filename,IIFULLDOM,JJFULLDOM,KMAX,Pole_Singular,projection)
 
-    call CheckStop(KMAX_MID/=KMAX,"vertical cordinates not yet flexible")
+!    call CheckStop(KMAX_MID/=KMAX,"vertical cordinates not yet flexible")
+
+    KMAX_MID=KMAX
+    KMAX_BND=KMAX_MID+1
+
+    allocate(A_bnd(KMAX_BND),B_bnd(KMAX_BND))
+    allocate(A_mid(KMAX_MID),B_mid(KMAX_MID))
+    allocate(dA(KMAX_MID),dB(KMAX_MID))
+    allocate(sigma_bnd(KMAX_BND),sigma_mid(KMAX_MID),carea(KMAX_MID))
 
     allocate(i_local(IIFULLDOM))
     allocate(j_local(JJFULLDOM))

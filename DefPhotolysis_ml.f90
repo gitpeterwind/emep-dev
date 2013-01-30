@@ -56,8 +56,8 @@
   integer, public, parameter :: &
              NRCPHOT      = 17   ! Number of photolytic reactions
    
-   real, public, dimension(NRCPHOT,KCHEMTOP:KMAX_MID), &
-        save :: rcphot       ! photolysis rates    -   main output
+   real, allocatable,save,public, dimension(:,:) &
+         :: rcphot       ! photolysis rates    -   main output
 
    real, public, save :: sum_rcphot     !  for debug only
    logical, public, parameter :: DEBUG_DJ = .false.
@@ -71,9 +71,9 @@
                NPHODIS = 17       &  ! Max possible NRCPHOT
               ,NLAT    = 6           ! No. latitude outputs
 
-    real, private, dimension(NPHODIS,KCHEMTOP:KMAX_MID,HORIZON,NLAT) :: dj
+    real, allocatable,save, private, dimension(:,:,:,:) :: dj
 
-    real, private, dimension(NPHODIS,KCHEMTOP:KMAX_MID,HORIZON) :: &
+    real, allocatable,save, private, dimension(:,:,:) :: &
                    djcl1        &
                   ,djcl3
 
@@ -108,10 +108,15 @@
         real myz
         character*20 fname1, fname2, fname3
 
+        logical,save:: first_call=.true.
 
 
-
-
+        if(first_call)then
+           allocate(rcphot(NRCPHOT,KCHEMTOP:KMAX_MID))
+           allocate(dj(NPHODIS,KCHEMTOP:KMAX_MID,HORIZON,NLAT))
+           allocate(djcl1(NPHODIS,KCHEMTOP:KMAX_MID,HORIZON))
+           allocate(djcl3(NPHODIS,KCHEMTOP:KMAX_MID,HORIZON))
+        endif
 !    Open, read and broadcast clear sky rates
 !---------------
 
@@ -223,7 +228,7 @@
 !           write(6,*) (djcl3(1,k,nr),nr=1,4)
 !         end do
 !       end if
-
+        first_call=.false.
         return
 
         end subroutine readdiss

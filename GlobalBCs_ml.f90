@@ -177,7 +177,7 @@ subroutine GetGlobalData(year,iyr_trend,month,ibc,used,        &
   character(len=99) :: errmsg   ! error messages
   character(len=30) :: BCpoll   ! pollutant name
   real :: trend_o3, trend_co, trend_voc
-  real, dimension(KMAX_MID), save :: p_kPa, h_km  !Use of standard atmosphere
+  real,allocatable,save, dimension(:) :: p_kPa, h_km  !Use of standard atmosphere
 
   real :: scale_old, scale_new,iMH,jMH
   logical :: notfound !set true if NetCDF BIC are not found
@@ -358,6 +358,7 @@ subroutine GetGlobalData(year,iyr_trend,month,ibc,used,        &
     ! Set up arrays to contain Logan's grid as lat/long
     !/ COnversions derived from emeplat2Logan etc.:
      allocate(lat5(IIFULLDOM,JJFULLDOM))
+     allocate(p_kPa(KMAX_MID), h_km(KMAX_MID))
     twopi_yr = 2.0 * PI / 365.25
 
     call GlobalPosition  !get glat for global domaib

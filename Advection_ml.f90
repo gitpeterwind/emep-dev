@@ -89,13 +89,13 @@
 
   INCLUDE 'mpif.h'
   INTEGER STATUS(MPI_STATUS_SIZE)
-  real,allocatable :: MPIbuff(:)
+  real,save,allocatable :: MPIbuff(:)
   integer, private, parameter :: NADVS      =  3
 
-  real, private, save, dimension(KMAX_BND)  ::  dhs1, dhs1i, dhs2i
+  real, private, save, allocatable,dimension(:)  ::  dhs1, dhs1i, dhs2i
 
 !  for vertical advection (nonequidistant spacing)
-  real, private, save, dimension(9,2:KMAX_MID,0:1)  ::  alfnew
+  real, private, save, allocatable, dimension(:,:,:)  ::  alfnew
   real, private, save, dimension(3)  ::  alfbegnew,alfendnew
 
   real, private,save,allocatable, dimension(:,:,:) :: uw,ue
@@ -3598,7 +3598,8 @@
     allocate(MPIbuff(KMAX_MID*max(gimax,gjmax)))
     allocate(uw(MAXLJMAX,KMAX_MID,NMET),ue(MAXLJMAX,KMAX_MID,NMET))
     allocate(vs(MAXLIMAX,KMAX_MID,NMET),vn(MAXLIMAX,KMAX_MID,NMET))
-
+    allocate(dhs1(KMAX_BND), dhs1i(KMAX_BND), dhs2i(KMAX_BND))
+    allocate(alfnew(9,2:KMAX_MID,0:1))
 
   end subroutine alloc_adv_arrays
 

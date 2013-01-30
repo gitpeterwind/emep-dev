@@ -129,7 +129,7 @@ integer, public, parameter :: &
   NTOT_BC  = NGLOB_BC + NMISC_BC
 
 ! misc_bc specifies concentrations of these species:
-real, public, save, dimension(NGLOB_BC+1:NTOT_BC,KMAX_MID) :: misc_bc
+real, public, allocatable,save, dimension(:,:) :: misc_bc
 
 ! Define mapping arrays
 ! -----------------------------------------------------------------------
@@ -219,7 +219,7 @@ contains
     if (first_call) then
        if (DEBUG_BCS) write(*,"(a,I3,1X,a,i5)") &
             "FIRST CALL TO BOUNDARY CONDITIONS, me: ", me,  "TREND YR ", iyr_trend
-
+       allocate(misc_bc(NGLOB_BC+1:NTOT_BC,KMAX_MID))
        call My_bcmap(iyr_trend)      ! assigns bc2xn_adv and bc2xn_bgn mappings
        call Set_bcmap()              ! assigns xn2adv_changed, etc.
 

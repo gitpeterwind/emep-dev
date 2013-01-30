@@ -1191,7 +1191,7 @@ sub print_rates {
 
     integer, parameter, public :: $Nrctype = $nrc   !! No. coefficients
 
-    real, save, public, dimension($Nrctype,$Krange) :: $defrc
+    real, allocatable, save, public, dimension(:,:) :: $defrc
 
 " ;
 
@@ -1205,6 +1205,10 @@ sub print_rates {
 		print F  "     real, dimension(KCHEMTOP:KMAX_MID) :: log300divt, logtdiv300\n";
 		print F  "!     real, dimension(KCHEMTOP:KMAX_MID) :: BranchingNO\n";
 		print F  "!     real, dimension(KCHEMTOP:KMAX_MID) :: BranchingHO2\n";
+		print F  "     logical,save::first_call=.true.\n";
+		print F  "     if(first_call)then\n";
+		print F  "       allocate($defrc($Nrctype,$Krange))\n";
+		print F  "     endif	\n";
 		print F  "       log300divt(:) = log(300.0*tinv(:))\n";
 		print F  "       logtdiv300(:) = log(temp(:)/300.0)\n";
 		print F  "!       BranchingNO(:) = 1.0e-11*xn_2d(NO,:)/ &
@@ -1214,6 +1218,7 @@ sub print_rates {
 #         write(*,"(a,9es12.3)") "BRANCHING RCMISC", &
 #                xn_2d(NO,KMAX_MID), xn_2d(HO2,KMAX_MID), &
 #                BranchingNO(KMAX_MID),  BranchingHO2(KMAX_MID)
+     
 
 	}
 
@@ -1241,6 +1246,7 @@ sub print_rates {
 		}
 	  	$i++ ;
         }
+	     print F  "       first_call=.false.";
 	     print F  "\n  end subroutine set_${rctype}_rates\n";
   }
   print F  "end module  $module\n";

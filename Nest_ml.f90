@@ -488,8 +488,8 @@ subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
   character(len=*),intent(in) :: filename_read
   real ,intent(out):: Weight(MAXLIMAX,MAXLJMAX,4)
   integer ,intent(out)::IIij(MAXLIMAX,MAXLJMAX,4),JJij(MAXLIMAX,MAXLJMAX,4)
-  integer, intent(out), dimension(KMAX_MID) :: k1_ext,k2_ext
-  real, intent(out), dimension(KMAX_MID) :: weight_k1,weight_k2
+  integer, intent(out), dimension(*) :: k1_ext,k2_ext
+  real, intent(out), dimension(*) :: weight_k1,weight_k2
   integer ,intent(out)::N_ext,KMAX_ext,GIMAX_ext,GJMAX_ext
   real(kind=8) :: ndays_indate
   integer :: ncFileID,idimID,jdimID,kdimID,timeDimID,varid,status,dimIDs(3) !,timeVarID
@@ -825,9 +825,9 @@ subroutine read_newdata_LATERAL(ndays_indate)
   real, save,allocatable :: Weight(:,:,:)
 
   !2 adjacent levels from external grid  (vertical)
-  integer, save, dimension(KMAX_MID) :: k1_ext,k2_ext
+  integer, allocatable,save, dimension(:) :: k1_ext,k2_ext
   !weights of the 2 adjacent levels (vertical)
-  real, save, dimension(KMAX_MID) :: weight_k1,weight_k2
+  real, allocatable,save, dimension(:) :: weight_k1,weight_k2
 
   integer:: KMAX_BC!which lvels are interpolated, = KMAX_MID for now
   integer:: timedimID
@@ -844,6 +844,9 @@ subroutine read_newdata_LATERAL(ndays_indate)
     if(mydebug)write(*,*)'Nest: initializations 2D'
     allocate(IIij(MAXLIMAX,MAXLJMAX,4),JJij(MAXLIMAX,MAXLJMAX,4))
     allocate(Weight(MAXLIMAX,MAXLJMAX,4))
+    allocate(k1_ext(KMAX_MID),k2_ext(KMAX_MID))
+    allocate(weight_k1(KMAX_MID),weight_k2(KMAX_MID))
+
     call init_icbc(ndays=ndays_indate)
     if(mydebug)write(*,*)'calling init_nest for '//trim(filename_read_BC)
     call init_nest(ndays_indate,filename_read_BC,IIij,JJij,Weight,&
@@ -1089,9 +1092,10 @@ subroutine reset_3D(ndays_indate)
   integer, save ::N_ext,KMAX_ext,GIMAX_ext,GJMAX_ext
 
   !2 adjacent levels from external grid  (vertical)
-  integer, save, dimension(KMAX_MID) :: k1_ext,k2_ext
+  integer, allocatable,save, dimension(:) :: k1_ext,k2_ext
   !weights of the 2 adjacent levels (vertical)
-  real, save, dimension(KMAX_MID) :: weight_k1,weight_k2
+  real, allocatable,save, dimension(:) :: weight_k1,weight_k2
+
   character (len=80) :: units
   real :: scale_factor,add_offset
   logical :: divbyroa
@@ -1100,8 +1104,10 @@ subroutine reset_3D(ndays_indate)
  
   if(first_call)then
     if(mydebug) write(*,*)'Nest: initializations 3D'
-     allocate(IIij(MAXLIMAX,MAXLJMAX,4),JJij(MAXLIMAX,MAXLJMAX,4))
-     allocate(Weight(MAXLIMAX,MAXLJMAX,4))
+    allocate(IIij(MAXLIMAX,MAXLJMAX,4),JJij(MAXLIMAX,MAXLJMAX,4))
+    allocate(Weight(MAXLIMAX,MAXLJMAX,4))
+    allocate(k1_ext(KMAX_MID),k2_ext(KMAX_MID))
+    allocate(weight_k1(KMAX_MID),weight_k2(KMAX_MID))
     first_call=.false.
     if(mydebug) write(*,*) 'Nest: init-icbc'
     call init_icbc(ndays=ndays_indate)

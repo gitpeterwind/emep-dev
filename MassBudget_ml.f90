@@ -58,7 +58,7 @@ implicit none
 private
 INCLUDE 'mpif.h'
 INTEGER STATUS(MPI_STATUS_SIZE),INFO
-real    MPIbuff(NSPEC_ADV*KMAX_MID)
+real    MPIbuff(NSPEC_ADV)
 
 ! Some work arrays used in Aqueous_ml and (in future) DryDry:
 ! Use ADV index, as Dry/WetDep makes no seance for SHL.
@@ -157,7 +157,7 @@ subroutine massbudget()
                                     ! nn - Total no. of short lived and advected species
                                     ! info - printing info
   integer :: ifam                                 ! family index
-  real, dimension(NSPEC_ADV,KMAX_MID) ::  sumk    ! total mass in each layer
+  real, allocatable, dimension(:,:) ::  sumk,sumk_buff    ! total mass in each layer
   integer, parameter :: NFAMILIES = 3             ! No. of families
   character(len=*), dimension(NFAMILIES), parameter :: &
     family_name = (/ "Sulphur ", "Nitrogen", "Carbon  " /)
@@ -187,6 +187,8 @@ subroutine massbudget()
 
   real :: totdiv,helsum
 
+  allocate(sumk(NSPEC_ADV,KMAX_MID),sumk_buff(NSPEC_ADV,KMAX_MID))
+
   sum_mass(:)   = 0.0
   frac_mass(:)  = 0.0
   xmax(:)       =-2.0
@@ -199,6 +201,7 @@ subroutine massbudget()
   gtotldep(:)   = totldep(:)
   gtotox(:)     = totox(:)
   sumk(:,:)     = 0.0
+  sumk_buff(:,:) = 0.0
 
   do k = 1,KMAX_MID
     do j = lj0,lj1
@@ -206,7 +209,7 @@ subroutine massbudget()
         helsum  = carea(k)*xmd(i,j) * (ps(i,j,1) - PT)
         xmax(:) = amax1(xmax(:),xn_adv(:,i,j,k))
         xmin(:) = amin1(xmin(:),xn_adv(:,i,j,k))
-        sumk(:,k) = sumk(:,k) + xn_adv(:,i,j,k)*helsum
+        sumk_buff(:,k) = sumk_buff(:,k) + xn_adv(:,i,j,k)*helsum
 
         if(all((/DEBUG_MASS,debug_proc,i==debug_li,j==debug_lj/)))&
           call datewrite("MASSBUD",k,(/carea(k),ps(i,j,1),PT,xmd(i,j)/))
@@ -241,14 +244,8 @@ subroutine massbudget()
   MPIbuff(1:NSPEC_ADV)= gtotox (1:NSPEC_ADV)
   CALL MPI_ALLREDUCE(MPIbuff, gtotox , NSPEC_ADV, &
     MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
-  j=0
-  do k=1,KMAX_MID
-    do i=1,NSPEC_ADV
-      j=j+1
-      MPIbuff(j)= sumk(i,k)
-    enddo
-  enddo
-  CALL MPI_ALLREDUCE(MPIbuff, sumk , NSPEC_ADV*KMAX_MID, &
+
+  CALL MPI_ALLREDUCE(sumk_buff, sumk , NSPEC_ADV*KMAX_MID, &
     MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
 
 !     make some temporary variables used to hold the sum over all

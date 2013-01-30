@@ -373,7 +373,7 @@ subroutine Fire_rcemis(i,j)
   real, dimension(KEMISFIRE:KMAX_MID) :: invDeltaZfac !  height of layer in m div 9
   integer ::  k, n, iem
 
-  integer, parameter ::  N_LEVELS = KMAX_MID - KEMISFIRE + 1  ! = 9.0 here
+  integer ::  N_LEVELS  ! = 9.0 here
 
   real    :: origrc, bbe, fac
   logical :: debug_flag
@@ -383,6 +383,8 @@ subroutine Fire_rcemis(i,j)
   if(debug_flag.and.BiomassBurningEmis(ieCO,i,j) > 1.0e-10)  &
     write(*,"(a,5i4,es12.3,f9.3)") "BurningDEBUG ", me, i,j, &
       i_fdom(i), j_fdom(j), BiomassBurningEmis(ieCO,i,j)
+
+  N_LEVELS = KMAX_MID - KEMISFIRE + 1 
 
   !// last conversion factors:
   ! The biomassBurning array is kept in kg/m2/s for consistency with other

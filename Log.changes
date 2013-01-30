@@ -233,6 +233,27 @@ dsSep14   Volcanos_ml.f90
 dsSep14   Wesely_ml.f90
 
 !----------------------------------------------------------
+xxxxxxxx  rv4.2.1 Peter  30th January 2013 xxxxxxxxxxxxxxxxxxxxxx
+
+KMAX_MID is read from the meteo file. All arrays using KMAX are made allocatable or automatic.
+Many files modified:
+Setup_1dfields_ml.f90
+Chem_ml.f90 
+MassBudget_ml.f90
+Advection_ml.f90
+Aqueous_n_WetDep_ml.f90
+GlobalBCs_ml.f90
+BoundaryConditions_ml.f90
+Met_ml.f90
+DefPhotolysis_ml.f90
+ForestFire_ml.f90
+Nest_ml.f90
+Sites_ml.f90
+GridValues_ml.f90
+ModelConstants_ml.f90
+GenChem.pl
+ZD_VBS/My_SOA_ml.f90
+
 xxxxxxxx  rv4.2 Peter  29th January 2013 xxxxxxxxxxxxxxxxxxxxxx
 
 More "continuous" function for MARS_ml.f90. NB: Will modify results!

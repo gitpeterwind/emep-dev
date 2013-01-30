@@ -122,6 +122,7 @@ character(len=*), parameter, public :: &
 
 logical, parameter, public :: IS_GLOBAL = .false..or.(EXP_NAME=="EMERGENCY")
 
+integer, public :: KMAX_MID, KMAX_BND
 integer, public :: IIFULLDOM,JJFULLDOM!  & SET AUTOMATICALLY BY THE CODE
 ! IIFULLDOM = 182, JJFULLDOM = 197 ! x,y-Dimensions of full HIRHAM domain
 ! IIFULLDOM = 170, JJFULLDOM = 133 ! x,y-Dimensions of full EMEP domain
@@ -345,8 +346,8 @@ integer, public, parameter ::NEST_MODE=0
 integer, public, parameter ::  &
   NLANDUSEMAX  = 23    &    ! Number of land use types in Inputs.Landuse file
 , METSTEP      = 3     &    ! time-step of met. (h)
-, KMAX_MID     = 20    &    ! Number of points (levels) in vertical
-, KMAX_BND     = KMAX_MID+1 & ! Number of points (levels) in vertical + 1
+!, KMAX_MID     = 20    &    ! Number of points (levels) in vertical
+!, KMAX_BND     = KMAX_MID+1 & ! Number of points (levels) in vertical + 1
 , KTOP         = 1     &    ! K-value at top of domain
 , KWINDTOP     = 5     &    ! Define extent needed for wind-speed array
 , NMET         = 2     &    ! No. met fields in memory

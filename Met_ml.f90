@@ -2479,9 +2479,6 @@ if( USE_SOILWATER ) then
          ,RIC=0.10       &   ! Critical Richardson number
                                 ! (Holstlag et al., 1993)
          ,ROVG=RGAS_KG/GRAV        ! Used in Calculation of R-number
-    integer, parameter :: KLM =KMAX_MID-1
-
-
 
     !     INPUT
     integer, intent(in) :: nr  ! Number of meteorological stored
@@ -2506,7 +2503,7 @@ if( USE_SOILWATER ) then
          ,u_mid     &! Wind speed in x-direction (m/s)
          ,v_mid      ! Wind speed in y-direction (m/s)
 
-    real, dimension(MAXLIMAX,MAXLJMAX,KLM):: &
+    real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID-1):: &
          dza         ! Thickness of half sigma layers (m)
 
     real, dimension(MAXLIMAX,MAXLJMAX):: &
@@ -2590,7 +2587,7 @@ if( USE_SOILWATER ) then
          - z_bnd(1:limax,1:ljmax,2:KMAX_BND)
 
     !     ... and the half sigma layers
-    dza(1:limax,1:ljmax,1:KLM) = z_mid(1:limax,1:ljmax,1:KLM)          &
+    dza(1:limax,1:ljmax,1:KMAX_MID-1) = z_mid(1:limax,1:ljmax,1:KMAX_MID-1)          &
          - z_mid(1:limax,1:ljmax,2:KMAX_MID)
 
     !     Calculate virtual temperature
