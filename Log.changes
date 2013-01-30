@@ -232,8 +232,7 @@ dsSep14   Units_ml.f90
 dsSep14   Volcanos_ml.f90
 dsSep14   Wesely_ml.f90
 
-!----------------------------------------------------------
-xxxxxxxx  rv4.2.1 Peter  30th January 2013 xxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx  rv4.2beta2 Peter  30th January 2013 xxxxxxxxxxxxxxxxxxxxxx
 
 KMAX_MID is read from the meteo file. All arrays using KMAX are made allocatable or automatic.
 Many files modified:
@@ -254,7 +253,7 @@ ModelConstants_ml.f90
 GenChem.pl
 ZD_VBS/My_SOA_ml.f90
 
-xxxxxxxx  rv4.2 Peter  29th January 2013 xxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx  rv4.2beta Peter  29th January 2013 xxxxxxxxxxxxxxxxxxxxxx
 
 More "continuous" function for MARS_ml.f90. NB: Will modify results!
 For RATIO (= TNH4/TSO4) between RATIO_Low and RATIO_High, consider the species in two boxes one with
