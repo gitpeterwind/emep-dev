@@ -148,6 +148,14 @@ type, public :: SubDat
 ! outputs from Rsurface will include:
     ,g_sto     = NOT_SET  & ! stomatal conductance (m/s)
     ,g_sun     = NOT_SET  & ! g_sto for sunlit upper-canopy (flag) leaves
+    ,f_sun     = NOT_SET  & ! f_env for SPOD?
+    ,f_shade   = NOT_SET  & ! f_env for SPOD?
+    ,f_env     = NOT_SET  & ! f_env for SPOD?
+    ,f_vpd     = NOT_SET  & ! f_env for SPOD?
+    ,f_light     = NOT_SET  & ! f_env for SPOD?
+    ,f_temp      = NOT_SET  & ! f_env for SPOD?
+    ,f_phen      = NOT_SET  & ! f_env for SPOD?
+    ,f_min       = NOT_SET  & ! f_env for SPOD?
 ! and enable concentrations at canopy height:
     ,cano3_ppb  = 0.0     & ! Use 0.0 to make d_2d behave better
     ,cano3_nmole= 0.0     & ! Use 0.0 to make d_2d behave better

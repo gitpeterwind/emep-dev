@@ -53,7 +53,7 @@ use ChemGroups_ml,    only: Init_ChemGroups
 use DefPhotolysis_ml, only: readdiss
 use Derived_ml,       only: Init_Derived, iou_min, iou_max
 use DerivedFields_ml, only: f_2d, f_3d
-use DO3SE_ml,         only: Init_DO3SE 
+!JAN2013: use DO3SE_ml,         only: Init_DO3SE 
 use EcoSystem_ml,     only: Init_EcoSystems
 use Emissions_ml,     only: Emissions, newmonth
 use ForestFire_ml,    only: Fire_Emis
@@ -252,8 +252,8 @@ call MetModel_LandUse(1)   !
 
 ! Read data for DO3SE (deposition O3 and  stomatal exchange) module
 ! (also used for other gases!)
-call Init_DO3SE(IO_DO3SE,"Inputs_DO3SE.csv",Land_codes, errmsg)
-call CheckStop(errmsg, "Reading DO3SE ")
+!JAN2013: call Init_DO3SE(IO_DO3SE,"Inputs_DO3SE.csv",Land_codes, errmsg)
+!JAN2013: call CheckStop(errmsg, "Reading DO3SE ")
 
 call Init_EcoSystems()     ! Defines ecosystem-groups for dep output
 

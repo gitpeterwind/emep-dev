@@ -238,16 +238,21 @@ contains
 
 
         call g_stomatal(iL, debug_flag )
+   if ( DEBUG_RSUR .and. debug_flag ) then
+       write(*,"(a,5i5,i3,L2,2f10.4,9es12.4)") "IN RSUR gstoA ", &
+              current_date, iL, leafy_canopy, G%Idirect+G%Idiffuse, L%PARsun,  L%g_sto, L%f_env
+   end if
 
    else
         L%g_sun = 0.0
         L%g_sto = 0.0
+        L%f_env = 0.0 !JAN2013
 
    end if ! leafy canopy and daytime
 
    if ( DEBUG_RSUR .and. debug_flag ) then
-       write(*,"(a,5i5,i3,L2,2f10.4)") "IN RSUR gsto ", &
-              current_date, iL, leafy_canopy, G%Idirect,  L%g_sto
+       write(*,"(a,5i5,i3,L2,3f10.4)") "IN RSUR gsto ", &
+              current_date, iL, leafy_canopy, G%Idirect,  L%g_sto, L%f_env
    end if
 
 

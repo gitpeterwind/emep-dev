@@ -28,13 +28,14 @@
 module Landuse_ml
 
 use CheckStop_ml,   only: CheckStop,StopAll
-use DO3SE_ml,       only: fPhenology
+use DO3SE_ml,       only: fPhenology, Init_DO3SE !JAN2013-DO3SE
 use GridAllocate_ml,only: GridAllocate
 use GridValues_ml,  only: glat_fdom, glat    & ! latitude,
                           , i_fdom, j_fdom   & ! coordinates
                           , i_local, j_local &
                           , debug_proc, debug_li, debug_lj
-use Io_ml,          only: open_file, ios, Read_Headers, Read2DN, IO_TMP
+use Io_ml,          only: open_file, ios, Read_Headers, Read2DN, IO_TMP &
+                         ,IO_DO3SE !JAN2013
 use KeyValue_ml,    only: KeyVal,KeyValue, LENKEYVAL
 use LandDefs_ml,    only: Init_LandDefs, LandType, LandDefs, &
                           STUBBLE, Growing_Season,&
@@ -65,7 +66,6 @@ private
  INTEGER STATUS(MPI_STATUS_SIZE),INFO
 
  integer, public, parameter :: NLUMAX = 19 ! max no. landuse per grid
- !ds logical, public :: LU_cdf
 
 ! The headers read from Inputs.Landuse define the "master-list" of
 ! codes for landuse. Each code must be present in the subsequent
@@ -207,8 +207,12 @@ contains
           ! We mark these as likely coastal:
           if ( nwp_sea(i,j) )  then
              if (  water_fraction(i,j) < 1.0  ) likely_coastal(i,j) = .true.
+             !if( MasterProc .and. likely_coastal(i,j) ) write(*,*) "COASTA ", i,j, water_fraction(i,j), nwp_sea(i,j)
+             if( likely_coastal(i,j) ) write(*,*) "COASTA ",me, i,j, water_fraction(i,j), nwp_sea(i,j)
           else if ( water_fraction(i,j) > 0.2 ) then
              likely_coastal(i,j) = .true.
+             !if( MasterProc .and. likely_coastal(i,j) ) write(*,*) "COASTB ",me, i,j, water_fraction(i,j), nwp_sea(i,j)
+             if(  likely_coastal(i,j) ) write(*,*) "COASTB ",me, i,j, water_fraction(i,j), nwp_sea(i,j)
           end if !
        end do ! j
     end do ! i
@@ -476,6 +480,12 @@ contains
         my_first_call   = .false.
         
         call InitLanduse()
+
+       !JAN213 - 
+       ! The DO3SE params are needed for the call to fPhenology
+      
+        call Init_DO3SE(IO_DO3SE,"Inputs_DO3SE.csv",Land_codes, errmsg)
+        call CheckStop(errmsg, "Reading DO3SE ")
 
     end if ! my_first_call
    !======================================================================

@@ -232,6 +232,28 @@ dsSep14   Units_ml.f90
 dsSep14   Volcanos_ml.f90
 dsSep14   Wesely_ml.f90
 
+xxxxxxxx  rv4.2beta3 Dave   31st January 2013 xxxxxxxxxxxxxxxxxxxxxx
+(changes currently flagged with JAN2013 and/or SPOD. Will remove
+ later)
+
+
+CHANGES RESULTS:
+
+1)  Unimod.f90, Landuse_ml.f90
+
+    - call to Init_DO3SE moved from Unimod to Landuse_ml, since some
+      params are needed for the first call to fPhenology
+
+2) DO3SE_ml  - bug fix on g_sun usage - CHANGES RESULTS
+
+Other:
+
+DO3SE_ml and LocalVariables_ml - added more for access to DO3SE f functions
+   (e.g. L%f_env, L%f_sun, etc...)
+
+Rsurface_ml    - L%f_env set, for easier debug info
+
+
 xxxxxxxx  rv4.2beta2 Peter  30th January 2013 xxxxxxxxxxxxxxxxxxxxxx
 
 KMAX_MID is read from the meteo file. All arrays using KMAX are made allocatable or automatic.

@@ -13,9 +13,9 @@
 #     mpiprocs=number of MPI threads per node. For 64 processors:
 ##PBS -l select=2:ncpus=32:mpiprocs=32:mem=8gb
 #Stallo
-#PBS -lnodes=2:ppn=16
+#PBS -lnodes=4:ppn=16
 # wall time limit of run
-#PBS -lwalltime=04:00:00
+#PBS -lwalltime=08:00:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
 #PBS -lpmem=1000MB
 #make results readable for others:
@@ -270,7 +270,7 @@ my $Chem     = "EmChem09soa";
 #$Chem     = "CRI_v2_R5";
    $Chem     = $BENCHMARK{'chem'} if $BENCHMARK{'chem'};
 
-my $testv = "rv4_1_9";
+my $testv = "rv4_2beta3";
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
@@ -462,7 +462,7 @@ $month_days[2] += leap_year($year);
 my $mm1 ="08";      # first month, use 2-digits!
 my $mm2 ="08";      # last month, use 2-digits!
 my $dd1 =  1;       # Start day, usually 1
-my $dd2 =  1;       # End day (can be too large; will be limited to max number of days in the month)
+my $dd2 =  2;       # End day (can be too large; will be limited to max number of days in the month)
                     # put dd2=0 for 3 hours run/test.
 # Allways runn full year on benchmark mode
 ($mm1,$mm2,$dd1,$dd2)=("01","12",1,31) if (%BENCHMARK);

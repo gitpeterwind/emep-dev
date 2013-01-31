@@ -28,6 +28,7 @@
 module DO3SE_ml
 
   use CheckStop_ml,  only : CheckStop
+  use LandDefs_ml, only : LandDefs, LandType ! SPOD
   use LocalVariables_ml,  only : L ! &
 !         t2C  => L%t2c  &! surface temp. at height 2m (deg. C)
 !        ,vpd  => L%vpd  &! vapour pressure deficit (kPa)
@@ -145,7 +146,7 @@ contains
             read(unit=inputline,fmt=*) do3se(iLC)
 
             if ( DEBUG_DO3SE .and. MasterProc ) then
-                print *, " DO3SE iLC", iLC,  do3se(iLC)%code, wanted_codes(iLC)
+                write(*,*) " DO3SE iLC", iLC,  do3se(iLC)%code, wanted_codes(iLC)
             end if
             if ( do3se(iLC)%VPDcrit > 0.0 ) then
               nSumVPD = nSumVPD + 1
@@ -188,6 +189,7 @@ contains
 
   real :: dg, dTs, bt   ! for temperate calculations
   real :: mmol2sm       !  Units conversion, mmole/m2/s to s/m
+  real :: tmp
 
 
         
@@ -257,6 +259,16 @@ contains
 
    f_env = f_phen * f_env * f_light  ! Canopy average
 
+!JAN2013
+   L%f_env = f_env 
+   L%f_vpd = f_vpd
+   L%f_temp = f_temp
+   L%f_light = f_light
+   L%f_phen  = f_phen   ! CAREFUL we have too many of these
+   L%f_sun   = f_sun    ! JAN2013
+   L%f_shade = f_shade  ! JAN2013
+   L%f_min   = do3se(iLC)%f_min   ! JAN2013
+
 ! From mmol O3/m2/s to s/m given in Jones, App. 3, gives 41000 for 20 deg.C )
 !   (should we just use P=100 hPa?)
 
@@ -264,8 +276,18 @@ contains
 
    L%g_sto = do3se(iLC)%g_max * f_env * mmol2sm 
 
-   L%g_sun = L%g_sto * f_sun/f_light       ! sunlit part
+   !JAN2013 BUG FIX
+   !ORIG L%g_sun = L%g_sto * f_sun/f_light       ! sunlit part
+   L%g_sun = do3se(iLC)%g_max * mmol2sm * f_phen * f_sun * &
+         max( do3se(iLC)%f_min,  f_temp * f_vpd * f_swp )
 
+
+   if ( DEBUG_DO3SE .and. debug_flag ) then !JAN2013 EXTRA
+       write(*,"(a,5i5,i3,L2,99f10.4)") "IN RSUR gstomatal ", &
+              current_date, iLC, USE_SOILWATER, L%PARsun, L%PARshade,&
+              do3se(iLC)%g_max, L%g_sto, L%f_env, f_env, f_phen, f_vpd,&
+              f_swp, L%g_sto * f_sun/f_light, L%g_sun 
+   end if
 
     if ( DEBUG_DO3SE ) then
         needed = (/ L%t2C,L%t2,L%vpd ,L%SWP ,&
@@ -275,10 +297,12 @@ contains
           call CheckStop("ERROR in g_stomatal, Missing data")
         end if
 
-        if ( debug_flag.and.current_date%seconds==0 .and. iLC<5  &
-             .and. current_date%hour==12.and. iLC<5 )  then
-           write(*,"(a,2i3,9f8.3)") "F-DO3SE ", daynumber, &!current_date%hour, &
-               iLC, f_phen, f_light, f_temp, f_vpd, f_swp, &
+        !SPOD if ( debug_flag.and.current_date%seconds==0 .and. iLC<5  &
+         !SPOD     .and. current_date%hour==12.and. iLC<5 )  then
+        if ( debug_flag.and.current_date%seconds==0 .and. LandType(iLC)%is_forest  &
+             .and. current_date%hour==12 )  then
+           write(*,"(a,2i3,99f8.3)") "F-DO3SE ", daynumber, &!current_date%hour, &
+               iLC, f_phen, f_light,f_sun, f_temp, f_vpd, f_swp, &
                  f_swp*f_vpd, do3se(iLC)%f_min, f_env
 
           ! Met params, except soil water  where fSW =~ REW
