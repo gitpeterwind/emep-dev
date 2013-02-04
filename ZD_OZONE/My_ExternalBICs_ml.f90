@@ -9,7 +9,7 @@ use TimeDate_ExtraUtil_ml, only: date2string
 implicit none
 
 private
-public :: set_extbic
+public :: update_bicname,set_extbic
 
 logical, public, parameter :: &
   EXTERNAL_BIC_SET  = .false.,&
@@ -21,14 +21,20 @@ character(len=30),public, parameter :: &
 ! i West/East bnd; j North/South bnd; k Top
 integer,save, public :: iw=-1, ie=-1, js=-1, jn=-1, kt=-1 ! i West/East bnd; j North/South bnd; k Top
 
-! YYYY, YY, MM, DD, hh will be replaced by numbers by the program.
-! Search for date2string in set_extbic and uncomment lines, if necessary.
-! For details, see detail2str in TimeDate_ExtraUtil_ml.f90
-character(len=*),private, parameter :: &
-  template_read_3D = 'EMEP_IN_IC.nc'         , &
-  template_read_BC = 'EMEP_IN_BC_YYYYMMDD.nc', &
-  template_write   = 'EMEP_OUT.nc'
-! template_write   = 'EMEP_OUT_YYYYMMDD.nc'
+character(len=*),private, parameter :: &  
+  template_read_3D = 'EMEP_IN.nc', &      ! a different path can be set here
+  template_read_BC = 'EMEP_IN.nc', &      ! for each of the IO IC/BC files,
+  template_write   = 'EMEP_OUT.nc'        ! if needed.
+! template_read_3D = 'EMEP_IN_IC.nc'         , & ! YYYY, YY, MM, DD, hh strings
+! template_read_BC = 'EMEP_IN_BC_YYYYMMDD.nc', & ! will be replaced by numbers
+! template_write   = 'EMEP_OUT_YYYYMMDD.nc'      ! on set_extbic.
+
+character(len=len(template_read_3D)),public, save :: &
+  filename_read_3D = template_read_3D   ! overwritten in update_bicname
+character(len=len(template_read_BC)),public, save :: &
+  filename_read_BC = template_read_BC   ! overwritten in update_bicname
+character(len=len(template_write)),public, save :: &
+  filename_write   = template_write     ! overwritten in update_bicname
 
 character(len=*),public, parameter :: &
   filename_eta     = 'EMEP_IN_BC_eta.zaxis'
@@ -43,24 +49,25 @@ endtype icbc
 type(icbc), dimension(:), public, pointer :: &
   EXTERNAL_BC=>null()
 
+character(len=*),private, parameter :: &
+  DEBUG_FMT="(A,' DEBUG: ',A,' ''',A,'''.')"
+
 contains
-subroutine set_extbic(idate,filename_read_BC)
-  implicit none
+
+subroutine update_bicname(idate)
   integer,intent(in) :: idate(4)
-  character(len=*),intent(inout) ::filename_read_BC 
-
-  character(len=*), parameter :: &
-    DEBUG_FMT="('set_extbic DEBUG: ',A,' ''',A,'''.')"
-  logical, save :: first_call=.true.
-  integer :: ydmh=0
-
 !--- Set filename from idate: on every call
-  if(MasterProc.and.DEBUG) write(*,DEBUG_FMT) &
+  if(MasterProc.and.DEBUG) write(*,DEBUG_FMT),"update_bicname", &
     "External BICs filenames for",EXTERNAL_BIC_NAME
-! filename_read_3D=date2string(template_read_3D,idate,debug=MasterProc.and.DEBUG)
-  filename_read_BC=date2string(template_read_BC,idate,debug=MasterProc.and.DEBUG)
-! filename_write  =date2string(template_write  ,idate,debug=MasterProc.and.DEBUG)
-  
+  filename_read_3D=date2string(template_read_3D,idate,debug=DEBUG.and.MasterProc)
+  filename_read_BC=date2string(template_read_BC,idate,debug=DEBUG.and.MasterProc)
+  filename_write  =date2string(template_write  ,idate,debug=DEBUG.and.MasterProc)
+endsubroutine update_bicname
+
+subroutine set_extbic(idate)
+  integer,intent(in) :: idate(4) ! Needed on other versions of My_ExternalBICs_ml
+  logical, save :: first_call=.true.
+
   if(first_call) return
   call PrintLog("No external BICs set",MasterProc)
   first_call = .false.

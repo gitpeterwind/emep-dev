@@ -240,7 +240,7 @@ NetCDF_ml
   For 3D output compress files, set chunk-size (nf90_def_var_chunking)
   to horizontal slices of 3D fields.
   This would allow to compress output on runs which require
-  multy level hourly output, such as Forecast, eEMEP and Transphorm.
+  multi level hourly output, such as Forecast, eEMEP and Transphorm.
 
 ModelConstants_ml
   Always compress NetCDF output
@@ -262,8 +262,8 @@ Nest_ml,/ZD_OZONE/*_ExternalBICs_ml.f90
     filename_read_3D, filename_read_BC & filename_write according to date,
     following respective template_filenames defined on My_ExternalBICs_ml.
   * Additional call to update_bicname on wrtxn before inquire about
-    filename_write existence ensures that BC output can be splited on
-    daily or montly files.
+    filename_write existence ensures that BC output can be splitted on
+    daily or monthly files.
 
 xxxxxxxx  rv4.2beta3 Dave   31st January 2013 xxxxxxxxxxxxxxxxxxxxxx
 (changes currently flagged with JAN2013 and/or SPOD. Will remove

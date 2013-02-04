@@ -58,10 +58,10 @@ module Nest_ml
 ! far coded for FORECAST and EnsClimRCA work.
 ! These set the following arrays, and filenames
 
-use My_ExternalBICs_ml,     only: set_extbic, icbc, &
+use My_ExternalBICs_ml,     only: update_bicname,set_extbic, icbc, &
        EXTERNAL_BIC_SET, EXTERNAL_BC, EXTERNAL_BIC_NAME, TOP_BC, &
-       iw, ie, js, jn, kt &! i West/East bnd; j North/South bnd; k Top
-       ,filename_eta
+       iw, ie, js, jn, kt, &! i West/East bnd; j North/South bnd; k Top
+       filename_read_3D,filename_read_BC,fileName_write,filename_eta
 !----------------------------------------------------------------------------!
 use CheckStop_ml,          only : CheckStop,StopAll
 use ChemChemicals_ml,       only: species_adv
@@ -108,15 +108,6 @@ integer, public, parameter :: NHOURSAVE=3 !time between two saves. should be a f
 integer, public, parameter :: NHOURREAD=1 !time between two reads. should be a fraction of 24
 !if(NHOURREAD<NHOURSAVE) the data is interpolated in time
 
-integer, parameter ::max_string_length=200!should be large enough for path set later in the code.
-!these can be overwritten in Nest_ml
-character(len=max_string_length),public, save :: &
-  filename_read_3D = 'EMEP_IN.nc'
-character(len=max_string_length),public, save :: &
-  filename_read_BC = 'EMEP_IN.nc'
-character(len=max_string_length),public, save :: &
-  filename_write   = 'EMEP_OUT.nc'
-
 private
 
 !Use TOP BC on forecast mode - moved to EXTERNAL
@@ -138,16 +129,14 @@ integer,save :: KMAX_ext_BC
 integer,save :: itime!itime_saved(2),
 real(kind=8),save :: rtime_saved(2)
 
-
 integer,save :: date_nextfile(4)!date corresponding to the next BC file to read
 integer,save :: NHOURS_Stride_BC   !number of hours between start of two consecutive records in BC files
 integer, public, parameter :: NHOURS_Stride_BC_default=6 !time between records if only one record per file (RCA for example)
 
 type(icbc), private, target, dimension(NSPEC_ADV) :: &
-  adv_ic=icbc(-1,'none',1.0,.false.,.false.)  ! Initial 3D IC/CB, varname, wanted, found
+  adv_ic=icbc(-1,'none',1.0,.false.,.false.)  ! Initial 3D IC/BC, varname, wanted, found
 type(icbc), private, pointer, dimension(:) :: &
   adv_bc=>null()                              ! Time dependent BC, varname, wanted, found
-
 
 contains
 
@@ -180,8 +169,9 @@ subroutine readxn(indate)
   if(first_call)date_nextfile=ndate
 
   if(FORECAST)then ! FORECAST mode superseeds nest MODE
-    if(EXTERNAL_BIC_SET)call set_extbic(date_nextfile,filename_read_BC)
-!filename_read_BC=date2string('EMEP_IN_BC_YYYYMMDD.nc',indate) !BC file: 01,...,24 UTC rec for 1 day
+  ! Update filename_read_IC, filename_read_BC & filename_write according to date
+  ! following respective template_filenames defined on My_ExternalBICs_ml
+    call update_bicname(date_nextfile)
     if(first_call)then
       first_call=.false.
       if(MasterProc) inquire(file=filename_read_3D,exist=fexist)
@@ -222,26 +212,23 @@ subroutine readxn(indate)
 
   if(MasterProc) write(*,*) 'Nest: kt', kt, first_data
 
+  ! Update filename_read_IC, filename_read_BC & filename_write according to date
+  ! following respective template_filenames defined on My_ExternalBICs_ml
+  call update_bicname(ndate)
 
   if(first_data==-1)then
-
-    if(EXTERNAL_BIC_SET)call set_extbic(date_nextfile,filename_read_BC)
-
     if(.not.FORECAST) call reset_3D(ndays_indate)
     if(mydebug) write(*,*)'Nest: READING FIRST BC DATA 3D: ',&
           trim(filename_read_3D), ndays_indate
- 
+
     call read_newdata_LATERAL(ndays_indate)
     if(mydebug) write(*,"(a,5i4)")'Nest: iw, ie, js, jn, kt ',iw,ie,js,jn,kt
 
     !the first hour only these values are used, no real interpolation between two records
   endif
 
-
   if(ndays_indate-rtime_saved(2)>halfsecond.or.MODE==100)then
    !look for a new data set
-   if(EXTERNAL_BIC_SET)call set_extbic(date_nextfile,filename_read_BC)
-
     if(MasterProc) write(*,*)'Nest: READING NEW BC DATA from ',&
           trim(filename_read_BC)
 
@@ -345,11 +332,14 @@ subroutine wrtxn(indate,WriteNow)
   def1%iotype=iotyp     ! not used
   def1%name=''          ! written
   def1%unit='mix_ratio' ! written
-
-  allocate(data(MAXLIMAX,MAXLJMAX,KMAX_MID))
+ 
+  ! Update filename_read_IC, filename_read_BC & filename_write according to date
+  ! following respective template_filenames defined on My_ExternalBICs_ml
+  call update_bicname((/indate%year,indate%month,indate%day,indate%hour/))
   if(MasterProc) inquire(file=fileName_write,exist=fexist)
   CALL MPI_BCAST(fexist,1,MPI_LOGICAL,0,MPI_COMM_WORLD,INFO)
 
+  allocate(data(MAXLIMAX,MAXLJMAX,KMAX_MID))
   !do first one loop to define the fields, without writing them (for performance purposes)
   if(.not.fexist)then
     call init_icbc(cdate=indate)
@@ -420,7 +410,10 @@ subroutine init_icbc(idate,cdate,ndays,nsecs)
   if(present(cdate)) dat=(/cdate%year,cdate%month,cdate%day,cdate%hour/) 
   if(present(ndays)) call nctime2idate(dat,ndays)
   if(present(nsecs)) call nctime2idate(dat,nsecs)
-  if(EXTERNAL_BIC_SET) call set_extbic(dat,filename_read_BC)  ! set mapping, EXTERNAL_BC, TOP_BC
+! Update filename_read_IC, filename_read_BC & filename_write according to date
+! following respective template_filenames defined on My_ExternalBICs_ml, and
+!!call update_bicname(dat)
+  call set_extbic(dat)  ! set mapping, EXTERNAL_BC, TOP_BC
 
   adv_ic(:)%ixadv=(/(n,n=1,NSPEC_ADV)/)
   adv_ic(:)%varname=species_adv(:)%name
