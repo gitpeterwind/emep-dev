@@ -1005,8 +1005,11 @@ subroutine  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype)
      print *, 'createnewvariable: unexpected ndim ',ndim
   endif
 !define variable as to be compressed
-  if(NETCDF_COMPRESS_OUTPUT) &
-    call check(nf90_def_var_deflate(ncFileid ,varID,shuffle=0,deflate=1 ,deflate_level=4) )
+  if(NETCDF_COMPRESS_OUTPUT) then
+    call check(nf90_def_var_deflate(ncFileid,varID,shuffle=0,deflate=1,deflate_level=4))
+    if(ndim==3) &     ! set chunk-size to 3d slices
+      call check(nf90_def_var_chunking(ncFileID,varID,NF90_CHUNKED,(/GIMAX,GJMAX,1,1/)))
+  endif
   !     FillValue=0.
   scale=1.
   !define attributes of new variable

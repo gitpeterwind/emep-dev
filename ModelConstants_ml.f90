@@ -315,9 +315,7 @@ integer, public, parameter :: &
 logical, public, parameter :: SOURCE_RECEPTOR = .false.
 
 ! Compress NetCDF output? (nc4 feature)
-logical, public, parameter :: NETCDF_COMPRESS_OUTPUT=&
-  (EXP_NAME/="FORECAST").and.(EXP_NAME/="EMERGENCY").and.(EXP_NAME/="3DPROFILES")
-!logical, public, parameter :: NETCDF_COMPRESS_OUTPUT=.false.
+logical, public, parameter :: NETCDF_COMPRESS_OUTPUT=.true.
 
 !Hourly output in single file or monthly/daily files:
 !NB: will not work well by default on Stallo per 14th Feb 2012 because of library bugs!

@@ -186,7 +186,7 @@ eEMEP-GenChem-%: NUCAS ?=
 
 # Archive: create $(PROG).tar.bz2
 $(PROG) archive: $(PROG)_$(shell date +%Y%m%d).tar.bz2
-%.tar.bz2: $(SRCS) Makefile Makefile.SRCS .depend *.pl mk.*
+%.tar.bz2: $(SRCS) *.inc Makefile Makefile.SRCS .depend *.pl mk.*
 	@echo "Creating archive $@"; tar --dereference -cjf $@ $+
 
 # Check if intended modules are loaded
