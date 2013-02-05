@@ -1,0 +1,27 @@
+&ModelConstants_config
+EXP_NAME              = 'EMEPSTD'  ! Flag for this setup. Here, EMEP standard
+USE_SOILWATER         = .true.     ! Uses SMI from meteo data
+USE_DEGREEDAY_FACTORS = .true.
+USE_FOREST_FIRES      = .true.
+USE_SEASALT           = .true.     ! 
+USE_SOILNOX           = .true.     ! diff for global + Euro runs
+USE_POLLEN            = .false.    ! EXPERIMENTAL. Only works if start Jan 1
+DO_SAHARA             = .true.
+USE_ROADDUST          = .true.    ! Only EECCA?
+USE_DUST              = .true.    ! Only EECCA?
+NETCDF_COMPRESS_OUTPUT= .true.    ! not FORECAST, EMERGENCY, 3DPROFILES
+!-------- Can switch on INERIS-type degreeday stuff
+INERIS_SNAP1          = .false.    ! Used for TFMM runs
+INERIS_SNAP2          = .false.    ! Used for TFMM runs
+!-------- Nesting ------------
+! Will add more documentation here
+NEST_MODE             = 0
+!------------------------------
+IS_GLOBAL             = .false.    ! Also for EMERGENCY
+MONTHLY_GRIDEMIS      = .false.    ! Also for EMERGENCY
+SELECT_LEVELS_HOURLY  = .false.    ! hourly output flag Also for FORECAST, 3DPROFILES
+FORECAST              = .false.
+USE_EMERGENCY         = .false.    ! Used for FORECASTs usually, EMEP2010
+ANALYSIS              = .false.    ! EXPERIMENTAL: 3DVar data assimilation
+USE_AOD               = .false.    ! Used for FORECASTs usually
+&end

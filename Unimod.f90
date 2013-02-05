@@ -75,6 +75,7 @@ use ModelConstants_ml,only: MasterProc, &   ! set true for host processor, me==0
                             USE_FOREST_FIRES, USE_DUST,DO_SAHARA, &
                             USE_LIGHTNING_EMIS, USE_ROADDUST,     &
                             FORECAST       ! FORECAST mode
+use ModelConstants_ml,only: Config_ModelConstants
 use NetCDF_ml,        only: Init_new_netCDF
 use OutputChem_ml,    only: WrtChem, wanted_iou
 use Par_ml,           only: me, GIMAX, GJMAX, Topology, parinit
@@ -141,6 +142,7 @@ if(MasterProc)write(*,55)' Found ',NPROC,' MPI processes available'
 call CheckStop(digits(1.0)<50, &
   "COMPILED WRONGLY: Need double precision, e.g. f90 -r8")
 
+call Config_ModelConstants()
 
 if (MasterProc) then
   open(IO_RES,file='eulmod.res')

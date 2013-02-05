@@ -43,7 +43,8 @@
   use My_Outputs_ml,     only : FREQ_HOURLY, &
                                 NHOURLY_OUT, &      ! No. outputs
                                 Asc2D, hr_out, &      ! Required outputs
-                                SELECT_LEVELS_HOURLY, LEVELS_HOURLY, &
+                                LEVELS_HOURLY, &
+                                !NML SELECT_LEVELS_HOURLY, LEVELS_HOURLY, &
                                 NLEVELS_HOURLY
   use Chemfields_ml,     only : xn_shl,xn_adv
   use CheckStop_ml,      only : CheckStop,StopAll
@@ -70,6 +71,7 @@
                                ,NPROC, IIFULLDOM,JJFULLDOM &
                                ,IOU_INST,IOU_HOUR,IOU_HOUR_MEAN, IOU_YEAR &
                                ,IOU_MON, IOU_DAY ,PT,NLANDUSEMAX, model
+  use ModelConstants_ml, only : SELECT_LEVELS_HOURLY  !NML
   use netcdf
   use OwnDataTypes_ml,   only : Deriv
   use Par_ml,            only : me,GIMAX,GJMAX,tgi0,tgj0,tlimax,tljmax, &

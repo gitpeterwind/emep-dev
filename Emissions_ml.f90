@@ -81,6 +81,7 @@
   use MetFields_ml,     only : t2_nwp   ! DS_TEST SOILNO - was zero!
   use ModelConstants_ml,only : KMAX_MID, KMAX_BND, PT ,dt_advec, &
                               IS_GLOBAL, & 
+                              MONTHLY_GRIDEMIS, &  !NML
                               NBVOC,     &      ! > 0 if forest voc wanted
                               INERIS_SNAP2 , &     ! INERIS/TFMM HDD20 method
                               DEBUG => DEBUG_EMISSIONS,  MasterProc, & 
@@ -1350,7 +1351,7 @@ contains
 
    ! For now, only the global runs use the Monthly files
 
-        logical, parameter :: MONTHLY_GRIDEMIS= IS_GLOBAL      
+        !NML logical, parameter :: MONTHLY_GRIDEMIS= IS_GLOBAL      
         integer :: kstart,kend,nstart,Nyears
         real :: buffer(MAXLIMAX,MAXLJMAX),SumSoilNOx,SumSoilNOx_buff
         

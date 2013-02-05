@@ -33,9 +33,12 @@ module ModelConstants_ml
  !
  !----------------------------------------------------------------------------
 use PhysicalConstants_ml, only : AVOG
+use Io_Nums_ml, only : IO_NML, IO_LOG
 
 implicit none
 private
+
+public :: Config_ModelConstants
 
 !=============================================================================
 ! Experiment name:
@@ -45,46 +48,69 @@ private
 !  FORECAST    Forecast run, MACC-ENS hourly output & BC
 !  EVA2010     FORECAST with MACC-EVA2010 hourly output & BC
 !  EMERGENCY   FORECAST with ONLY Volcanic Eruption & Nuclear Accident.
-CHARACTER(LEN=*), public, parameter :: EXP_NAME="EMEPSTD"
+CHARACTER(LEN=30), public, save :: EXP_NAME="EMEPSTD"
 
 ! FORECAST mode run:
 ! * Nested IC/BC def in Nest_ml & IFSMOZ_ExternalBICs_ml
 ! * Special hourly output def in My_Outputs_ml
 ! * Only dayly and hourly output are required,
 !   all other output types to false in Derived_ml.
-logical, public, parameter :: FORECAST=&
-  (EXP_NAME=="FORECAST").or.(EXP_NAME=="EVA2010").or.(EXP_NAME=="EMERGENCY")
+!NML These will be reset by forecast namelist
+!NML logical, public, parameter :: FORECAST=&
+!NML (EXP_NAME=="FORECAST").or.(EXP_NAME=="EVA2010").or.(EXP_NAME=="EMERGENCY")
+
+! Namelist controlled:
+! Some flags for model setup
+! First, those which may be reset by emep_namelist.nml file
+logical, public, save ::             &
+  FORECAST              = .false.    &! reset in namelist
+ ,USE_SOILWATER         = .false.    &!
+ ,USE_DEGREEDAY_FACTORS = .false.    &!
+ ,USE_FOREST_FIRES      = .false.    &! 
+ ,USE_SOILNOX           = .true.     & ! ok, but diff for global + Euro runs
+ ,USE_SEASALT           = .true.     & !
+! More experimental:
+ ,DO_SAHARA             = .false.    & ! Turn on/off BG Saharan Dust
+ ,USE_ROADDUST          = .false.    & ! TNO Road Dust routine. So far with simplified "climate-correction" factor
+ ,USE_DUST              = .false.    &! Experimental
+!TFMM
+ ,INERIS_SNAP1       = .false.       & !(EXP_NAME=="TFMM"), & ! Switches off decadal trend
+ ,INERIS_SNAP2       = .false.       & !(EXP_NAME=="TFMM"), & ! Allows near-zero summer values
+ ,USE_EMERGENCY      = .false.       & ! Emergency: Volcanic Eruption & Nuclear Accident. Under development.
+!                      (EXP_NAME=="EMEP2010"), &
+ ,USE_AOD            = .false.       &
+ ,USE_POLLEN         = .false.       &  ! EXPERIMENTAL. Only works if start Jan 1
+ ,ANALYSIS           = .false.       &  ! EXPERIMENTAL: 3DVar data assimilation
+! Output flags
+ ,SELECT_LEVELS_HOURLY  = .false.      ! for FORECAST, 3DPROFILES
 
 ! Some flags for model setup
 ! will be removed when code is sufficiently tested
 ! (for convection use foundconv in permanent code)
 logical, public, parameter ::         &
   USE_CONVECTION     = .false.,       & ! false works best for Euro runs,
-  INERIS_SNAP1       = (EXP_NAME=="TFMM"), & ! Switches off decadal trend
-  INERIS_SNAP2       = (EXP_NAME=="TFMM"), & ! Allows near-zero summer values
-  USE_DEGREEDAY_FACTORS  = .not.FORECAST,  & !
-  USE_SOILWATER      = .not.FORECAST, & ! for deep soilwater,  under testing
-  USE_FOREST_FIRES   = .true.,        & ! Needs global files, future
+!NML  INERIS_SNAP1       = (EXP_NAME=="TFMM"), & ! Switches off decadal trend
+!NML  INERIS_SNAP2       = (EXP_NAME=="TFMM"), & ! Allows near-zero summer values
+!NML  USE_DEGREEDAY_FACTORS  = .not.FORECAST,  & !
+!NML  USE_SOILWATER      = .not.FORECAST, & ! for deep soilwater,  under testing
+!NML  USE_FOREST_FIRES   = .true.,        & ! Needs global files, future
   USE_AIRCRAFT_EMIS  = .true.,        & ! Needs global file, see manual
   USE_LIGHTNING_EMIS = .true.,        & ! ok
-  USE_SOILNOX        = .true.,        & ! ok, but diff for global + Euro runs
   NO_CROPNH3DEP      = .true.,        & ! Stop NH3 deposition for growing crops
-  USE_SEASALT        = .true.,        & ! ok
 ! More experimental:
-  USE_DUST           = .not.FORECAST, & ! Experimental
-  USE_ROADDUST       = .not.FORECAST, & ! UNDER DEVELOPMENT! Testing the TNO Road Dust routine. So far with simplified "climate-correction" factor
-  DO_SAHARA          = .not.FORECAST, & ! Turn on/off BG Saharan Dust
+!NML  USE_DUST           = .not.FORECAST, & ! Experimental
+!NML  USE_ROADDUST       = .not.FORECAST, & ! UNDER DEVELOPMENT! Testing the TNO Road Dust routine. So far with simplified "climate-correction" factor
+!NML  DO_SAHARA          = .not.FORECAST, & ! Turn on/off BG Saharan Dust
   USE_GLOBAL_SOILNOX = .false.,       & ! Need to design better switch
   USE_SOILNH3        = .false.,       & ! DUMMY VALUES, DO NOT USE!
-  USE_AOD            = FORECAST,      &
+!NML  USE_AOD            = FORECAST,      &
   USE_ZREF           = .false.,       & ! testing
   USE_PFT_MAPS       = .false.,       & ! Future option
   EXTENDEDMASSBUDGET = .false.,       & ! extended massbudget outputs
-  LANDIFY_MET        = .false.,       & ! extended massbudget outputs
-  USE_POLLEN         = .false.,       & ! EXPERIMENTAL. Only works if start Jan 1
-  USE_EMERGENCY      = FORECAST.or.&      ! Emergency: Volcanic Eruption & Nuclear Accident. Under development.
-                      (EXP_NAME=="EMEP2010"), &
-  ANALYSIS           = .false..and.FORECAST ! EXPERIMENTAL: 3DVar data assimilation
+  LANDIFY_MET        = .false.          ! extended massbudget outputs
+!NML  USE_EMERGENCY      = FORECAST.or.&      ! Emergency: Volcanic Eruption & Nuclear Accident. Under development.
+!NML                      (EXP_NAME=="EMEP2010"), &
+!NML  ANALYSIS           = .false..and.FORECAST ! EXPERIMENTAL: 3DVar data assimilation
 
 !Boundary layer profiles
   character(len=4), parameter, public :: FluxPROFILE = &
@@ -120,7 +146,9 @@ character(len=*), parameter, public :: &
 ! DomainName = "EMEPCWF-0.20degEurope"
 ! DomainName = "HIRHAM"
 
-logical, parameter, public :: IS_GLOBAL = .false..or.(EXP_NAME=="EMERGENCY")
+!NML logical, parameter, public :: IS_GLOBAL = .false..or.(EXP_NAME=="EMERGENCY")
+logical, save, public :: IS_GLOBAL = .false.   !!NML .or.(EXP_NAME=="EMERGENCY")
+logical, save, public :: MONTHLY_GRIDEMIS = .false.   !! tmp
 
 integer, public :: KMAX_MID, &  ! Number of points (levels) in vertical
                    KMAX_BND     ! Number of level boundaries (=KMAX_MID+1)
@@ -316,7 +344,7 @@ integer, public, parameter :: &
 logical, public, parameter :: SOURCE_RECEPTOR = .false.
 
 ! Compress NetCDF output? (nc4 feature)
-logical, public, parameter :: NETCDF_COMPRESS_OUTPUT=.true.
+logical, public, save :: NETCDF_COMPRESS_OUTPUT=.true.
 
 !Hourly output in single file or monthly/daily files:
 !NB: will not work well by default on Stallo per 14th Feb 2012 because of library bugs!
@@ -338,7 +366,7 @@ logical, public, parameter :: NH3_U10 = .false.
 ! from such a file. Used in Nest_ml:
 !   0=donothing; 1=write; 2=read; 3=read and write;
 !  10=write at end of run; 11=read at start; 12=read atstart and write at end (BIC)
-integer, public, parameter ::NEST_MODE=0  
+integer, public, save ::NEST_MODE=0  
 
 !=============================================================================
 !+ 4)  Define main model dimensions,  things that will
@@ -433,6 +461,40 @@ integer, public, parameter ::  &
   ,IOU_MAX_MAX=7                                  ! Max values for of IOU (for array declarations)
 
 character(len=*), public, parameter :: model="EMEP_MSC-W"
+
+!----------------------------------------------------------------------------
+contains
+subroutine Config_ModelConstants()
+    character(len=120)  :: txt, errmsg
+    logical             :: file_exists
+
+    NAMELIST /ModelConstants_config/ &
+      EXP_NAME &  ! e.g. EMEPSTD, FORECAST, TFMM
+     ,USE_SOILWATER, USE_DEGREEDAY_FACTORS, USE_FOREST_FIRES &
+     ,DO_SAHARA, USE_ROADDUST, USE_DUST &
+     ,USE_SOILNOX, USE_SEASALT ,USE_POLLEN &
+     ,INERIS_SNAP1, INERIS_SNAP2 &   ! Used for TFMM time-factors
+     ,NEST_MODE &
+     ,IS_GLOBAL  &     ! Also for EMERGENCY
+     ,MONTHLY_GRIDEMIS &     ! was set in Emissions_ml
+     ,SELECT_LEVELS_HOURLY &  ! incl. FORECAST, 3DPROFILES
+     ,FORECAST, USE_EMERGENCY, ANALYSIS , USE_AOD &
+     ,NETCDF_COMPRESS_OUTPUT
+
+    txt = "ok"
+    !Can't call check_file due to circularity
+    !call check_file('emep_settings.nml', file_exists, needed=.true., errmsg=txt)
+    open(IO_NML,file='config_emep.nml',delim='APOSTROPHE')
+    read(IO_NML,NML=ModelConstants_config)
+    !close(IO_NML)
+
+    if ( MasterProc )  then
+     write(*, * ) "NAMELIST IS "
+     write(*, NML=ModelConstants_config)
+    end if
+
+  
+end subroutine Config_ModelConstants
 
 end module ModelConstants_ml
 !_____________________________________________________________________________

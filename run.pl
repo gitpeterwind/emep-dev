@@ -271,7 +271,8 @@ my $Chem     = "EmChem09soa";
 #$Chem     = "CRI_v2_R5";
    $Chem     = $BENCHMARK{'chem'} if $BENCHMARK{'chem'};
 
-my $testv = "rv4_2beta5";
+my $exp_name = "EMEPSTD";
+my $testv = "rv4_2beta5nml";
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
@@ -463,7 +464,7 @@ $month_days[2] += leap_year($year);
 my $mm1 ="08";      # first month, use 2-digits!
 my $mm2 ="08";      # last month, use 2-digits!
 my $dd1 =  1;       # Start day, usually 1
-my $dd2 =  2;       # End day (can be too large; will be limited to max number of days in the month)
+my $dd2 =  1;       # End day (can be too large; will be limited to max number of days in the month)
                     # put dd2=0 for 3 hours run/test.
 # Allways runn full year on benchmark mode
 ($mm1,$mm2,$dd1,$dd2)=("01","12",1,31) if (%BENCHMARK);
@@ -716,6 +717,9 @@ foreach my $scenflag ( @runs ) {
 # ToDo Change noxsplit.default to defaults, as with voc (also in Unimod)
 
   my %ifile   = ();   # List of input data-files
+
+  # NML namelist options.
+  $ifile{"$ProgDir/config_$exp_name.nml"} = "config_emep.nml";
 
 # First, emission files are labelled e.g. gridSOx, which we assign to
 # emislist.sox to ensure compatability with the names (sox,...) used

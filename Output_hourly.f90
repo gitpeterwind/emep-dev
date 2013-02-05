@@ -46,7 +46,8 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
                               NLEVELS_HOURLY, & ! No. output levels
                               FREQ_HOURLY,    & ! No. hours between outputs
                               hr_out,         & ! Required outputs
-            SELECT_LEVELS_HOURLY, LEVELS_HOURLY ! Output selected model levels
+                              LEVELS_HOURLY ! Output selected model levels
+            !NML SELECT_LEVELS_HOURLY, LEVELS_HOURLY ! Output selected model levels
 
   use CheckStop_ml,     only: CheckStop
   use Chemfields_ml,    only: xn_adv,xn_shl,cfac,PM25_water,PM25_water_rh50,AOD
@@ -63,6 +64,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
                               IOU_INST, IOU_HOUR, IOU_YEAR, IOU_HOUR_PREVIOUS, &
                               DEBUG => DEBUG_OUT_HOUR,runlabel1,HOURLYFILE_ending,&
                               FORECAST
+  use ModelConstants_ml,only: SELECT_LEVELS_HOURLY !NML
   use MetFields_ml,     only: t2_nwp,th, roa, surface_precip, ws_10m ,rh2m,&
                               pzpbl, ustar_nwp, Kz_m2s, &
                               Idirect, Idiffuse, z_bnd, z_mid

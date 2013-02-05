@@ -108,10 +108,10 @@ logical, parameter :: &
   DEBUG_EM=DEBUG.or.DEBUG_EMERGENCY
 
 logical, private, save ::      &
-  Vent_found=USE_EMERGENCY      ! Any Vent found on this processor/subdomain?
+  Vent_found=.false. !!! NML CHECK USE_EMERGENCY      ! Any Vent found on this processor/subdomain?
 
 logical, public, save ::      &
-  Eruption_found=USE_EMERGENCY  ! Any Eruption found on this processor/subdomain?
+  Eruption_found=.false. !!! NML CHECK USE_EMERGENCY  ! Any Eruption found on this processor/subdomain?
 
 type, private :: vent
   character(len=9)              :: id  =''    ! e.g. V1702A02B

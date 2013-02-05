@@ -232,6 +232,42 @@ dsSep14   Units_ml.f90
 dsSep14   Volcanos_ml.f90
 dsSep14   Wesely_ml.f90
 
+xxxxxxxx  rv4_2beta5nml   INTERIM!!! Dave  5th February 2013 xxxxxxxxxxxxxxxxxxxx
+
+namelist system started, changes indicated by !NML in code.
+
+
+ModelConstants_ml now has routine config_ModelConstants, called from
+Unimod.
+
+The namelist file is so far called by run.pl using $exp_name, which
+is EMEPSTD by default.
+
+file config_EMEPSTD.nml added to cvs.
+
+Code will now not work for FORECAST etc. - that will need a new namelist file,
+config_EMERGENCY.nml, config_FORECAST etc.
+
+Changes in
+
+run.pl  - exp_name and config_$exp_name.nml added
+ModelConstants_ml
+Emissions_ml  (MONTHLY_EMIS now in ModelConstants)
+Io_Nums_ml (now has IO_NML)
+NetCDF_ml  (SELECT_LEVELS_HOURLY, now in ModelConstants)
+Output_hourly  (SELECT_LEVELS_HOURLY, now in ModelConstants)
+Volcanos - NEEDS CHECK. HAD Vent_found, Eruption_found tied to
+  USE_EMERGENCY, but presumably even standard runs could have
+  emissions? Suggest different logic, but set false for now
+   (Is Vent_found used?)
+My_Outputs_ml  (SELECT_LEVELS_HOURLY, now in ModelConstants)
+
+
+
+
+
+
+
 xxxxxxxx  rv4_2beta5 Dave  5th February 2013 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 use of rough.dat removed
