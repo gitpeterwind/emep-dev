@@ -98,7 +98,8 @@ my %BENCHMARK;
 # Dave's preference for EMEP:
 #  %BENCHMARK = (grid=>"EMEP"  ,year=>2006,emis=>"Modrun10/EMEP_trend_2000-2008/2006",archive=>1,chem=>"EmChem09");
 # EECCA Default: 
-## %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun11/EMEP_trend_2000-2009/2008",archive=>1,chem=>"EmChem09soa",make=>"EMEP");
+##
+%BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun11/EMEP_trend_2000-2009/2008",archive=>1,chem=>"EmChem09soa",make=>"EMEP");
 # Status Runs:
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2007,emis=>"Modrun09/2009-Trend2007-CEIP") ;
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun10/2010-Trend2008_CEIP");
@@ -270,7 +271,7 @@ my $Chem     = "EmChem09soa";
 #$Chem     = "CRI_v2_R5";
    $Chem     = $BENCHMARK{'chem'} if $BENCHMARK{'chem'};
 
-my $testv = "rv4_2beta3";
+my $testv = "rv4_2beta5";
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
@@ -918,8 +919,6 @@ if ( $iyr_trend > 2015 )  {
     $ifile{"$DataDir/jcl3.$s"} = "jcl3km$seasons{$s}.dat";
   }
 
-#  $ifile{"$DATA_LOCAL/rough.dat"} = "landsea_mask.dat"; # Roughness length;
-  #NOTNEEDED $ifile{"$DATA_LOCAL/Volcanoes.dat"} = "Volcanoes.dat" unless $EUCAARI;
   $ifile{"$DataDir/VolcanoesLL.dat"} = "VolcanoesLL.dat";
 # Volcanic Eruption (eEMEP)
   if(($MAKEMODE =~ /2010/) or ($MAKEMODE =~ /eEMEP/)){

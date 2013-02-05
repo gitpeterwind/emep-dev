@@ -5,7 +5,7 @@ module BLPhysics_ml
  ! (*No* routines in use, except for testing)
 
  use Landuse_ml,           only : Landcover, water_fraction
- use MetFields_ml,         only : nwp_sea
+!JAN2013  use MetFields_ml,         only : nwp_sea
  use ModelConstants_ml,    only : KMAX_MID, KMAX_BND, KWINDTOP, PT
  use PhysicalConstants_ml, only : KARMAN, GRAV
  implicit none

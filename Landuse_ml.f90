@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !***************************************************************************! 
 !* 
-!*  Copyright (C) 2007-2012 met.no
+!*  Copyright (C) 2007-2013 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -41,8 +41,9 @@ use LandDefs_ml,    only: Init_LandDefs, LandType, LandDefs, &
                           STUBBLE, Growing_Season,&
                           NLanduse_DEF,NLANDUSE_EMEP
 use LandPFT_ml,       only: MapPFT_LAI, pft_lai
-use MetFields_ml,     only: nwp_sea ,foundnwp_sea
+!JAN2013 use MetFields_ml,     only: nwp_sea ,foundnwp_sea
 use ModelConstants_ml,only: DEBUG_i, DEBUG_j, NLANDUSEMAX, &
+                            SEA_LIMIT, & 
                             USE_PFT_MAPS, DEBUG_LANDPFTS, &
                             DEBUG_LANDUSE, NPROC, IIFULLDOM, JJFULLDOM, &
                             DomainName, MasterProc
@@ -99,6 +100,7 @@ private
 
 
   logical, public,save, allocatable,dimension(:,:) :: likely_coastal 
+  logical, public,save, allocatable,dimension(:,:) :: mainly_sea 
 
   integer, public,save, allocatable,dimension(:,:) :: &
           WheatGrowingSeason  ! Growing season (days), IAM_WHEAT =1 for true
@@ -116,7 +118,7 @@ contains
  !==========================================================================
   subroutine InitLanduse()
     logical :: filefound
-    real, parameter ::water_fraction_THRESHOLD=0.5
+    !JAN2013 real, parameter ::water_fraction_THRESHOLD=0.5
     integer ::i,j,ilu,lu
     logical :: debug_flag = .false.
     !=====================================
@@ -124,7 +126,7 @@ contains
     !ALLOCATE ARRAYS
     allocate(LandCover(MAXLIMAX,MAXLJMAX))
     allocate(likely_coastal(MAXLIMAX,MAXLJMAX) )
-    likely_coastal  = .false.
+    allocate(mainly_sea(MAXLIMAX,MAXLJMAX) )
     allocate(WheatGrowingSeason(MAXLIMAX,MAXLJMAX))
     allocate(water_fraction(MAXLIMAX,MAXLJMAX), ice_landcover(MAXLIMAX,MAXLJMAX))
 
@@ -150,9 +152,10 @@ contains
     !/ -- Calculate growing seasons where needed and water_fraction
     !          (for Rn emissions)
 
-    water_fraction(:,:) = 0.0    !for Pb210 
-    ice_landcover(:,:) = 0.0  !for Pb210 
-    likely_coastal(:,:) = .false.   ! already done, but just for clarity
+    water_fraction(:,:) = 0.0
+    ice_landcover(:,:)  = 0.0  !for Pb210 
+    likely_coastal(:,:) = .false.
+    mainly_sea(:,:)     = .false.
 
     do i = 1, limax
        do j = 1, ljmax
@@ -195,25 +198,44 @@ contains
 
           end do ! ilu
 
-!set default values for nwp_sea
-          if(water_fraction(i,j)>water_fraction_THRESHOLD)then
-             nwp_sea(i,j) = .true.
-          else
-             nwp_sea(i,j) = .false.
-          endif
+         ! Typically, we define as mainly sea when > 50% water, and
+         ! likely_coastal when > 20%. SEA_LIMIT stores these numbers
+         ! (We don't want to trust some squares with a mixture of sea
+         !  and land for micromet purposes, e.g. T2 can be very wrong
+         !  We mark these as likely coastal.)
+         ! Unfortunately, we cannot yet determine if true sea or water
 
-          ! We don't want to trust some squares with a mixture of sea
-          ! and land for micromet purposes, e.g. T2 can be very wrong
-          ! We mark these as likely coastal:
-          if ( nwp_sea(i,j) )  then
-             if (  water_fraction(i,j) < 1.0  ) likely_coastal(i,j) = .true.
-             !if( MasterProc .and. likely_coastal(i,j) ) write(*,*) "COASTA ", i,j, water_fraction(i,j), nwp_sea(i,j)
-             if( likely_coastal(i,j) ) write(*,*) "COASTA ",me, i,j, water_fraction(i,j), nwp_sea(i,j)
-          else if ( water_fraction(i,j) > 0.2 ) then
-             likely_coastal(i,j) = .true.
-             !if( MasterProc .and. likely_coastal(i,j) ) write(*,*) "COASTB ",me, i,j, water_fraction(i,j), nwp_sea(i,j)
-             if(  likely_coastal(i,j) ) write(*,*) "COASTB ",me, i,j, water_fraction(i,j), nwp_sea(i,j)
-          end if !
+          if(water_fraction(i,j)>SEA_LIMIT(2) ) mainly_sea(i,j) = .true.
+          if(water_fraction(i,j)>SEA_LIMIT(1).and. &
+             water_fraction(i,j) < 0.999 ) likely_coastal(i,j) = .true.
+
+          if ( DEBUG_LANDUSE .and. debug_flag )  then
+             write(*,"(a,2i4,f7.3,2L2)") "SEACOAST ", i_fdom(i), j_fdom(j), &
+                water_fraction(i,j), mainly_sea(i,j), likely_coastal(i,j)
+          end if
+          !if( DEBUG_LANDUSE .and. likely_coastal(i,j) ) then
+          !   write(*,"(a,2i4,f7.3,L2)") "JCOAST ", i_fdom(i), j_fdom(j), &
+          !    water_fraction(i,j), mainly_sea(i,j)
+          !end if
+
+
+!JAN2013 - move to separate subroutine. Needs to be called after Met lanuse
+!JAN2013!set default values for nwp_sea
+!JAN2013          if(water_fraction(i,j)>water_fraction_THRESHOLD)then
+!JAN2013             nwp_sea(i,j) = .true.
+!JAN2013          else
+!JAN2013             nwp_sea(i,j) = .false.
+!JAN2013          endif
+!JAN2013
+!JAN2013          if ( nwp_sea(i,j) )  then
+!JAN2013             if (  water_fraction(i,j) < 1.0  ) likely_coastal(i,j) = .true.
+!JAN2013             !if( MasterProc .and. likely_coastal(i,j) ) write(*,*) "COASTA ", i,j, water_fraction(i,j), nwp_sea(i,j)
+!JAN2013             if( likely_coastal(i,j) ) write(*,*) "COASTA ",me, i,j, water_fraction(i,j), nwp_sea(i,j)
+!JAN2013          else if ( water_fraction(i,j) > 0.2 ) then
+!JAN2013             likely_coastal(i,j) = .true.
+!JAN2013             !if( MasterProc .and. likely_coastal(i,j) ) write(*,*) "COASTB ",me, i,j, water_fraction(i,j), nwp_sea(i,j)
+!JAN2013             if(  likely_coastal(i,j) ) write(*,*) "COASTB ",me, i,j, water_fraction(i,j), nwp_sea(i,j)
+!JAN2013          end if !
        end do ! j
     end do ! i
 

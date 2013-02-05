@@ -91,8 +91,10 @@ use GridValues_ml,     only: glon, glat   & ! full domain lat, long
                             ,debug_proc, debug_li, debug_lj & ! debugging
                             ,i_fdom, j_fdom  ! for debugging
 use Io_Progs_ml,       only: datewrite
+use Landuse_ml,        only: mainly_sea
 use LocalVariables_ml, only: Grid
-use MetFields_ml,      only: z_mid, nwp_sea       ! height of half layers
+use MetFields_ml,      only: z_mid      ! height of half layers
+!JAN2013 use MetFields_ml,      only: nwp_sea       ! height of half layers
 use ModelConstants_ml, only: KMAX_MID  &  ! Number of levels in vertical
                             ,USE_SEASALT & 
                             ,DEBUG_BCS, DEBUG_i, DEBUG_j, MasterProc, PPB
@@ -381,7 +383,8 @@ contains
                       bc_fac     = 1.0
 
                       if ( bc_seaspec ) then
-                         if ( .not. nwp_sea(i,j))  bc_fac = 0.001 ! low over land
+                         !JAN2013 if ( .not. nwp_sea(i,j))  bc_fac = 0.001 ! low over land
+                         if ( .not. mainly_sea(i,j))  bc_fac = 0.001 ! low over land
                          if ( .not. USE_SEASALT )  bc_fac = 0.0   ! not wanted!
                       end if
 
@@ -429,7 +432,7 @@ contains
                       bc_fac     = 1.0
 
                       if ( bc_seaspec ) then
-                         if ( .not. nwp_sea(i,j))  bc_fac = 0.001 ! low over land
+                         if ( .not. mainly_sea(i,j))  bc_fac = 0.001 ! low over land
                          if ( .not. USE_SEASALT )  bc_fac = 0.0   ! not wanted!
                       end if
 
@@ -443,7 +446,7 @@ contains
                       bc_fac     = 1.0
 
                       if ( bc_seaspec ) then
-                         if ( .not. nwp_sea(i,j))  bc_fac = 0.001 ! low over land
+                         if ( .not. mainly_sea(i,j))  bc_fac = 0.001 ! low over land
                          if ( .not. USE_SEASALT )  bc_fac = 0.0   ! not wanted!
                       end if
 
@@ -459,7 +462,7 @@ contains
                       bc_fac     = 1.0
 
                       if ( bc_seaspec ) then
-                         if ( .not. nwp_sea(i,j))  bc_fac = 0.001 ! low over land
+                         if ( .not. mainly_sea(i,j))  bc_fac = 0.001 ! low over land
                          if ( .not. USE_SEASALT )  bc_fac = 0.0   ! not wanted!
                       end if
 
@@ -475,7 +478,7 @@ contains
                       bc_fac     = 1.0
 
                       if ( bc_seaspec ) then
-                         if ( .not. nwp_sea(i,j))  bc_fac = 0.001 ! low over land
+                         if ( .not. mainly_sea(i,j))  bc_fac = 0.001 ! low over land
                          if ( .not. USE_SEASALT )  bc_fac = 0.0   ! not wanted!
                       end if
 
@@ -493,7 +496,7 @@ contains
                       bc_fac     = 1.0
 
                       if ( bc_seaspec ) then
-                         if ( .not. nwp_sea(i,j))  bc_fac = 0.001 ! low over land
+                         if ( .not. mainly_sea(i,j))  bc_fac = 0.001 ! low over land
                          if ( .not. USE_SEASALT )  bc_fac = 0.0   ! not wanted!
                       end if
 
@@ -1012,7 +1015,7 @@ subroutine Set_BoundaryConditions(mode,iglobact,jglobact,bc_adv,bc_bgn)
 
             bc_fac     = 1.0
             if ( bc_seaspec ) then
-                  if ( .not. nwp_sea(i,j))  bc_fac = 0.001 ! low over land
+                  if ( .not. mainly_sea(i,j))  bc_fac = 0.001 ! low over land
                   if ( .not. USE_SEASALT )  bc_fac = 0.0   ! not wanted!
             end if
 

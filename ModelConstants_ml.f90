@@ -237,6 +237,7 @@ integer, private, parameter :: &
 integer, public, parameter :: &
 ! DEBUG_i= 62, DEBUG_j= 45  ! SEA
   DEBUG_i= DEBUG_II+OFFSET_i, DEBUG_j= DEBUG_JJ+OFFSET_j    ! EMEP/EECCA
+! DEBUG_i= 59, DEBUG_j= 79  ! JCOAST
 ! DEBUG_i= 9, DEBUG_j= 201                                  ! MACC02
 !  DEBUG_i= 0, DEBUG_j= 0    ! default
 
@@ -390,6 +391,10 @@ integer, public, save , dimension(20)   :: identi   !! ????
 integer, public, parameter :: TXTLEN_NAME = 20
 character(len=120), public, save :: runlabel1&!SHORT Allows explanatory text
                                   , runlabel2 !LONG  Read in from grun.pl
+
+! Typically, we define as mainly sea when > 50% water, and
+! likely_coastal when > 20%. See Landuse_ml
+real, public, parameter, dimension(2) ::  SEA_LIMIT = (/ 0.2, 0.5 /)
 
 real, public, parameter :: &
   EPSIL  = 1.0e-30         &  ! small number

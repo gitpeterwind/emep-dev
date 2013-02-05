@@ -38,10 +38,11 @@ module CellMet_ml
 use CheckStop_ml, only : CheckStop
 use GridValues_ml, only :  sigma_bnd
 use Landuse_ml, only : LandCover, ice_landcover    ! Provides SGS, hveg, LAI ....
+use Landuse_ml, only : mainly_sea
 use LocalVariables_ml, only: Grid, Sub, ResetSub
 use MicroMet_ml, only :  PsiH, PsiM, AerRes    !functions
 use MetFields_ml, only: ps, u_ref
-use MetFields_ml, only: cc3dmax, nwp_sea, sdepth,ice_nwp, surface_precip, &
+use MetFields_ml, only: cc3dmax, sdepth,ice_nwp, surface_precip, &
    fh,fl,z_mid, z_bnd, q, roa, rh2m, rho_surf, th, pzpbl, t2_nwp, ustar_nwp,&
     zen, coszen, Idirect, Idiffuse
 use ModelConstants_ml,    only : KMAX_MID, KMAX_BND, PT, USE_ZREF
@@ -127,8 +128,8 @@ contains
      Grid%rh2m  = rh2m(i,j,1)      ! 
      Grid%rho_s = rho_surf(i,j)    ! Should replace Met_ml calc. in future
 
-     Grid%is_NWPsea = nwp_sea(i,j)
-     Grid%is_allNWPsea = ( nwp_sea(i,j) .and. LandCover(i,j)%ncodes == 1)
+     Grid%is_mainlysea = mainly_sea(i,j)
+     Grid%is_allsea = ( mainly_sea(i,j) .and. LandCover(i,j)%ncodes == 1)
      Grid%sdepth    = sdepth(i,j,1)
      Grid%ice_nwp   = max( ice_nwp(i,j,1), ice_landcover(i,j) ) 
      Grid%snowice   = ( Grid%sdepth  > 1.0e-10 .or. Grid%ice_nwp > 1.0e-10 )

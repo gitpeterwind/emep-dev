@@ -45,7 +45,7 @@ use Functions_ml,   only: StandardAtmos_kPa_2_km ! for use in Hz scaling
 use GridValues_ml,  only: lb2ij, AN, glat_fdom, glon_fdom,A_mid, B_mid
 use Io_ml,          only: IO_GLOBBC, ios, open_file
 use LocalVariables_ml, only : Sub, Grid
-use MetFields_ml,   only: nwp_sea
+!JAN2013 use MetFields_ml,   only: nwp_sea
 use ModelConstants_ml, only: PPB, KMAX_MID, Pref, MasterProc, DO_SAHARA, &
                           IIFULLDOM, JJFULLDOM
 use NetCDF_ml,      only: GetCDF, Read_Inter_CDF

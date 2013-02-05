@@ -109,7 +109,8 @@ module Met_ml
 
   use Io_ml ,               only : ios, IO_ROUGH, datewrite,PrintLog, &
                                    IO_CLAY, IO_SAND, open_file, IO_LOG
-  use Landuse_ml, only : water_fraction, water_frac_set, likely_coastal
+  use Landuse_ml, only : water_fraction, water_frac_set, &
+        likely_coastal, mainly_sea  ! JAN2013
   use MetFields_ml 
   use MicroMet_ml, only : PsiH  ! Only if USE_MIN_KZ
   use ModelConstants_ml,    only : PASCAL, PT, METSTEP  &
@@ -1490,7 +1491,7 @@ if( USE_SOILWATER ) then
     ! to prevent numerical problems, and to account for enhanced
     ! mixing which is usually found over real terrain
 
-    where ( nwp_sea ) 
+    where ( mainly_sea ) 
        ustar_nwp = max( ustar_nwp, 1.0e-5 )
     elsewhere 
        ustar_nwp = max( ustar_nwp, MIN_USTAR_LAND )
@@ -1541,7 +1542,8 @@ if( USE_SOILWATER ) then
     integer, intent(in) :: callnum
     integer ::  i,j
 
-    real, dimension(MAXLIMAX,MAXLJMAX) :: r_class  ! Roughness (real)
+    !JAN2013 real, dimension(MAXLIMAX,MAXLJMAX) :: r_class  ! Roughness (real), used for PARLAM
+    !JAN2013 real, parameter ::water_fraction_THRESHOLD=0.5 ! 
 
     character*20 fname
     logical :: needed_found
@@ -1550,24 +1552,54 @@ if( USE_SOILWATER ) then
 
     if ( callnum == 1  ) then
 
-       if ( MasterProc  ) then
-          write(fname,fmt='(''landsea_mask.dat'')')
-          write(6,*) 'reading land-sea map from ',fname
-       end if
-       foundnwp_sea=.false.
-       call ReadField(IO_ROUGH,fname,r_class,foundnwp_sea,fill_needed=.true.)
-
-       ! And convert from real to integer field
-
-
-       if(foundnwp_sea)then
-          nwp_sea(:,:) = .false.
-          do j=1,ljmax
-             do i=1,limax
-                if ( nint(r_class(i,j)) == 0 ) nwp_sea(i,j) = .true.
-             enddo
-          enddo
-       endif
+!JAN2013 remobved nwp_sea
+!NONWP       ! The PARLAM NWP provides a 1:1 map from NWP grid to EMEP, so
+!NONWP       !  we can use the PARLAM rough.dat file to get the NWP sea/land
+!NONWP       !  definitions.  (For IFS we don't have this.)
+!NONWP
+!NONWP       if ( MasterProc  ) then
+!NONWP          write(fname,fmt='(''landsea_mask.dat'')')
+!NONWP          write(6,*) 'reading land-sea map from ',fname
+!NONWP       end if
+!NONWP!JAN2013       foundnwp_sea=.false.
+!NONWP       call ReadField(IO_ROUGH,fname,r_class,foundnwp_sea,fill_needed=.true.)
+!NONWP
+!NONWP       ! And convert from real to integer field
+!NONWP
+!NONWPprint *, "ECOAST PROC", me, foundnwp_sea
+!NONWP       if(foundnwp_sea)then
+!NONWP          nwp_sea(:,:) = .false.
+!NONWP          do j=1,ljmax
+!NONWP             do i=1,limax
+!NONWP                if ( nint(r_class(i,j)) == 0 ) nwp_sea(i,j) = .true.
+!NONWP!if( nwp_sea(i,j) ) print *, "COAST NWP_SEA ", me, i,j, i_fdom(i), j_fdom(j), r_class(i,j)
+!NONWPif( nwp_sea(i,j)) write(IO_LOG, "(a,3i3,2i4,2f7.2,i5,2L2,f8.4)") &
+!NONWP     "ECOAST ", me, i,j, i_fdom(i), j_fdom(j), glat(i,j), glon(i,j), &
+!NONWP                     nint(r_class(i,j)), water_frac_set, nwp_sea(i,j), water_fraction(i,j)
+!NONWPif( nwp_sea(i,j)) write(*, "(a,3i3,2i4,2f7.2,i5,2L2,f8.4)") &
+!NONWP     "ECOAST ", me, i,j, i_fdom(i), j_fdom(j), glat(i,j), glon(i,j), &
+!NONWP                     nint(r_class(i,j)), water_frac_set, nwp_sea(i,j), water_fraction(i,j)
+!NONWP             enddo
+!NONWP          enddo
+!NONWP       else ! JAN2013
+!NONWP
+!NONWP         !guess default values for nwp_sea
+!NONWP          do j=1,ljmax
+!NONWP             do i=1,limax
+!NONWP               nwp_sea(i,j) = water_fraction(i,j)>water_fraction_THRESHOLD
+!NONWPif( me==0 .and. nwp_sea(i,j)) print "(a,3i3,2i4,2f7.2,2L2,f8.4)", &
+!NONWP     "COAST NWP_SEAY ", me, i,j, i_fdom(i), j_fdom(j), glat(i,j), glon(i,j), &
+!NONWP                     water_frac_set, nwp_sea(i,j), water_fraction(i,j)
+!NONWPif( me==0 .and. .not. nwp_sea(i,j)) print "(a,3i3,2i4,2f7.2,2L2,f8.4)", &
+!NONWP     "COAST NWP_SEAN ", me, i,j, i_fdom(i), j_fdom(j), glat(i,j), glon(i,j),  &
+!NONWP                     water_frac_set, nwp_sea(i,j), water_fraction(i,j)
+!NONWP             enddo
+!NONWP          enddo
+!NONWP
+!NONWP       endif
+!NONWP
+!NONWP      !JAN2013
+!NONWP       call SetCoastal()   ! Determines cells which are likely coastal
 
 !.. Clay soil content    !
       ios = 0
