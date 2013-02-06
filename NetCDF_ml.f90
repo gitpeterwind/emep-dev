@@ -1653,7 +1653,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   integer, allocatable:: Ivalues(:)  ! I counts all data
   integer, allocatable:: Nvalues(:)  !ds counts all values
   real, allocatable:: Rvalues(:),Rlon(:),Rlat(:)
-  real ::lat,lon,maxlon,minlon,maxlat,minlat
+  real ::lat,lon,maxlon,minlon,maxlat,minlat,maxlon_var,minlon_var,maxlat_var,minlat_var
   logical ::fileneeded, debug,data3D
   character(len = 50) :: interpol_used, data_projection=""
   real :: ir,jr,Grid_resolution
@@ -1675,7 +1675,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   real ::buffer1(MAXLIMAX, MAXLJMAX),buffer2(MAXLIMAX, MAXLJMAX)
   real, allocatable ::fraction_in(:,:)
   integer, allocatable ::CC(:,:),Ncc(:)
-  real ::total
+  real ::total,UnDef_local
   integer ::N_out,Ng,Nmax
 
   !_______________________________________________________________________________
@@ -1735,6 +1735,81 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
      endif
   endif
 
+  fractions=.false.
+  if(present(fractions_out))fractions=.true.
+
+  UnDef_local=0.0
+  if(present(UnDef))UnDef_local=UnDef
+
+  data3D=.false.
+  if(present(kstart).or.present(kend))then
+     call CheckStop((.not. present(kend).or. .not. present(kend)), &
+          "ReadField_CDF : both or none kstart and kend should be present")
+     data3D=.true.
+  endif
+
+!Check first that variable has data covering the relevant part of the grid:
+
+  !Find chunk of data required (local)
+  maxlon=max(maxval(gl_stagg),maxval(glon))
+  minlon=min(minval(gl_stagg),minval(glon))
+  maxlat=max(maxval(gb_stagg),maxval(glat))
+  minlat=min(minval(gb_stagg),minval(glat))
+
+  !Read the extension of the data in the file (if available)
+  status = nf90_get_att(ncFileID, VarID, "minlat", minlat_var  )
+  if(status == nf90_noerr)then
+     !found minlat, therfore the other (maxlat,minlon,maxlat) expected too
+     if ( debug ) write(*,*) 'minlat attribute found: ',minlat_var
+     call CheckStop(fractions, &
+          "ReadField_CDF: minlat not implemented for fractions")     
+     k2=1
+     if(data3D)k2=kend-kstart+1
+     ijk=MAXLIMAX*MAXLJMAX*k2
+     if(minlat_var>maxlat)then
+        !the data is outside range. put zero or Undef.
+        Rvar(1:ijk)=UnDef_local
+        if ( debug ) write(*,*) 'data out of maxlat range ',maxlat
+        return
+     endif
+     status = nf90_get_att(ncFileID, VarID, "maxlat", maxlat_var  )
+     if(status == nf90_noerr)then
+        if ( debug ) write(*,*) 'maxlat attribute found: ',maxlat_var
+        if(maxlat_var<minlat)then
+           !the data is outside range. put zero or Undef.
+           Rvar(1:ijk)=UnDef_local
+           if ( debug ) write(*,*) 'data out of minlat range ',minlat
+           return
+        endif
+     endif
+     status = nf90_get_att(ncFileID, VarID, "minlon", minlon_var  )
+     if(status == nf90_noerr)then
+        if ( debug ) write(*,*) 'minlon attribute found: ',minlon_var
+        if(minlon_var>maxlon)then
+           !the data is outside range. put zero or Undef.
+           Rvar(1:ijk)=UnDef_local
+           if ( debug ) write(*,*) 'data out of minlon range ',minlon
+           return
+        endif
+     endif
+     status = nf90_get_att(ncFileID, VarID, "maxlon", maxlon_var  )
+     if(status == nf90_noerr)then
+        if ( debug ) write(*,*) 'maxlon attribute found: ',maxlon_var
+        if(maxlon_var<minlon)then
+           !the data is outside range. put zero or Undef.
+           Rvar(1:ijk)=UnDef_local
+           if ( debug ) write(*,*) 'data out of maxlon range ',maxlon
+           return
+        endif
+     endif
+  else
+     !dont expect to find maxlat,minlon or maxlat, therfore don't check
+     if ( debug ) write(*,*) 'minlat attribute not found for ',trim(varname)
+  endif
+  
+
+
+
   !get dimensions id
   call check(nf90_Inquire_Variable(ncFileID,VarID,name,&
        xtype,ndims,dimids,nAtts),"GetDimsId")
@@ -1768,12 +1843,6 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
      if ( debug ) write(*,*) 'ReadCDF size variable ',i,dims(i)
   enddo
 
-  data3D=.false.
-  if(present(kstart).or.present(kend))then
-     call CheckStop((.not. present(kend).or. .not. present(kend)), &
-          "ReadField_CDF : both or none kstart and kend should be present")
-     data3D=.true.
-  endif
 
   if( present(known_projection) ) then
      data_projection = trim(known_projection)
@@ -1877,11 +1946,6 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
     endif
     if ( debug ) write(*,*) 'interpol_used: ',interpol_used
 
-     !Find chunk of data required (local)
-     maxlon=max(maxval(gl_stagg),maxval(glon))
-     minlon=min(minval(gl_stagg),minval(glon))
-     maxlat=max(maxval(gb_stagg),maxval(glat))
-     minlat=min(minval(gb_stagg),minval(glat))
 
      if(debug) then
          write(*,*) "SET Grid resolution:" // trim(fileName), Grid_resolution

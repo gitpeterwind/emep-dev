@@ -232,6 +232,11 @@ dsSep14   Units_ml.f90
 dsSep14   Volcanos_ml.f90
 dsSep14   Wesely_ml.f90
 
+xxxxxxxx  rv4_2beta5nml   Peter  6th February 2013 xxxxxxxxxxxxxxxxxxxx
+
+NetCDF_ml: look for minlat,maxlat,minlon,maxlat to see if data reading kan be skipped
+Could need some polishing for 360 degree periodicity og longitudes.
+
 xxxxxxxx  rv4_2beta5nml   INTERIM!!! Dave  5th February 2013 xxxxxxxxxxxxxxxxxxxx
 
 namelist system started, changes indicated by !NML in code.
