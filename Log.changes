@@ -232,6 +232,11 @@ dsSep14   Units_ml.f90
 dsSep14   Volcanos_ml.f90
 dsSep14   Wesely_ml.f90
 
+xxxxxxxx  rv4_2beta7      Peter  8th February 2013 xxxxxxxxxxxxxxxxxxxx
+
+Bug in last change: did not close the file before returning in the "skipping" case. This created a memory leakage.
+NetCDF_ml
+
 xxxxxxxx  rv4_2beta6      Peter  6th February 2013 xxxxxxxxxxxxxxxxxxxx
 
 Still INTERIM -same statis as rv4_2beta5nml

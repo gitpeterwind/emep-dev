@@ -1731,6 +1731,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
         call CheckStop(fileneeded, "ReadField_CDF : variable needed but not found")
      else
         print *, 'variable does not exist (but not needed): ',trim(varname),nf90_strerror(status)
+        call check(nf90_close(ncFileID))
         return
      endif
   endif
@@ -1770,6 +1771,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
         !the data is outside range. put zero or Undef.
         Rvar(1:ijk)=UnDef_local
         if ( debug ) write(*,*) 'data out of maxlat range ',maxlat
+        call check(nf90_close(ncFileID))
         return
      endif
      status = nf90_get_att(ncFileID, VarID, "maxlat", maxlat_var  )
@@ -1779,6 +1781,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
            !the data is outside range. put zero or Undef.
            Rvar(1:ijk)=UnDef_local
            if ( debug ) write(*,*) 'data out of minlat range ',minlat
+           call check(nf90_close(ncFileID))
            return
         endif
      endif
@@ -1789,6 +1792,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
            !the data is outside range. put zero or Undef.
            Rvar(1:ijk)=UnDef_local
            if ( debug ) write(*,*) 'data out of minlon range ',minlon
+           call check(nf90_close(ncFileID))
            return
         endif
      endif
@@ -1799,6 +1803,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
            !the data is outside range. put zero or Undef.
            Rvar(1:ijk)=UnDef_local
            if ( debug ) write(*,*) 'data out of maxlon range ',maxlon
+           call check(nf90_close(ncFileID))
            return
         endif
      endif
