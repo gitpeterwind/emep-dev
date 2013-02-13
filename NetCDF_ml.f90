@@ -118,10 +118,10 @@
   public :: Read_Inter_CDF
   public :: ReadField_CDF
   public :: ReadTimeCDF
+  public :: check
 
   private :: CreatenetCDFfile
   private :: createnewvariable
-  private :: check
 
 contains
 !_______________________________________________________________________
