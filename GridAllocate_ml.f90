@@ -90,7 +90,7 @@ module GridAllocate_ml
   !========================================
 
   subroutine GridAllocate_ij(label,i,j,code,ncmax,ic,&
-                             ncmaxfound,gridc,ngridc)
+                             ncmaxfound,gridc,ngridc,debug_flag)
 
      character(len=*), intent(in) :: label   ! Type of data
      integer, intent(in) :: i,j
@@ -101,16 +101,20 @@ module GridAllocate_ml
      integer, intent(inout) :: ncmaxfound    ! No. countries found so far
      integer, dimension(:,:,:), intent(inout) :: gridc   ! Land-codes
      integer, dimension(:,:),   intent(inout) ::ngridc   ! No. countries
+     logical, intent(in), optional :: debug_flag
+     logical :: debug = .false.
 
      integer :: nc, icc  ! local variables
      character(len=100) :: errmsg
 
+     if ( present(debug_flag) ) debug = debug_flag
        nc=ngridc(i,j)    ! nc = no. countries known so far
 
        do icc = 1,nc
           if( gridc(i,j,icc) == code ) then
               !write(unit=*,fmt="(a8,a20,i3,3i6,4i4)") trim(label),  &
-                ! " ::Already listed ", me, i,j, nc , icc, code
+              if( debug ) write(*,*) trim(label) // &
+                 " GridAlloc::Already listed ", me, i,j, nc , icc, code
               ic = icc
               return
           endif
@@ -132,6 +136,8 @@ module GridAllocate_ml
        ngridc(i,j) = ngridc(i,j) + 1    ! country is a new one
        gridc(i,j,ic) = code 
 
+       if( debug ) write(*,"(a,3i3,2x,2i4)") trim(label) // &
+                 " GridAlloc::Set ", me, i,j, code, ngridc(i,j)
        if( ic >  ncmaxfound) then
            ncmaxfound = ic
  
