@@ -232,6 +232,12 @@ dsSep14   Units_ml.f90
 dsSep14   Volcanos_ml.f90
 dsSep14   Wesely_ml.f90
 
+xxxxxxxx  rv4_2 MOVE TO SVN!!!  12th February 2013 xxxxxxxxxxxxxxxxxxxx
+
+Code-based moved from stallo. Code in rv4_2 has several changes which
+affect results compared to rv4_1.
+
+
 xxxxxxxx  rv4_2beta7      Peter  8th February 2013 xxxxxxxxxxxxxxxxxxxx
 
 Bug in last change: did not close the file before returning in the "skipping" case. This created a memory leakage.
