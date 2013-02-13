@@ -64,6 +64,7 @@
                      , ROADDUST_CLIMATE_FILE ! TEMPORARY! file for road dust climate factors 
   use EmisGet_ml, only : EmisGet, EmisSplit &
         ,EmisHeights                 &  ! Generates vertical distrib
+        ,femis                       &  ! rv4_2.1
         ,nrcemis, nrcsplit, emisfrac &  ! speciation routines and array
         ,nemis_kprofile, emis_kprofile &! Vertical emissions profile
         ,iqrc2itot                   &  ! maps from split index to total index
@@ -252,6 +253,7 @@ contains
     real, dimension(NLAND,NROAD_FILES) :: sumroaddust_local    ! Sum of emission potentials per country in subdomain
     real :: fractions(MAXLIMAX,MAXLJMAX,NCMAX),SMI(MAXLIMAX,MAXLJMAX),SMI_roadfactor
     logical ::SMI_defined=.false.
+    logical :: my_first_call=.true.
     real, allocatable ::emis_tot(:,:)
     character(len=40) :: varname 
     logical ::CDF_emis=.false.!experimental 
@@ -412,6 +414,18 @@ contains
        endif ! road dust
 
     end if
+
+!rv4_2.1
+   !>============================
+
+    if ( my_first_call ) then
+         sumemis(:,:) =  0.0       ! initialize sums
+         ios = 0
+         call femis()              ! emission factors (femis.dat file)
+         if ( ios /= 0 )return
+         my_first_call = .false.
+    endif
+  !>============================
 
     do iem = 1, NEMIS_FILE
        ! now again test for me=0

@@ -70,7 +70,7 @@
   public  :: EmisHeights       ! => nemis_kprofile, emis_kprofile
                                !     vertical emissions profile
   public  :: RoadDustGet       ! Collects road dust emission potentials
-  private :: femis             ! Sets emissions control factors 
+  public :: femis             ! Sets emissions control factors 
   private :: CountEmisSpecs    !
 
 
@@ -151,15 +151,15 @@
   integer, save :: flat_ncmaxfound = 0     ! Max no. countries found in grid
                                            ! including flat emissions
 
-   !>============================
- 
-    if ( my_first_call ) then
-         sumemis(:,:) =  0.0       ! initialize sums
-         ios = 0
-         call femis()              ! emission factors (femis.dat file)
-         if ( ios /= 0 )return
-         my_first_call = .false.
-    endif
+!rv4_2.1   !>============================
+!rv4_2.1 
+!rv4_2.1    if ( my_first_call ) then
+!rv4_2.1         sumemis(:,:) =  0.0       ! initialize sums
+!rv4_2.1         ios = 0
+!rv4_2.1         call femis()              ! emission factors (femis.dat file)
+!rv4_2.1         if ( ios /= 0 )return
+!rv4_2.1         my_first_call = .false.
+!rv4_2.1    endif
   !>============================
 
 
