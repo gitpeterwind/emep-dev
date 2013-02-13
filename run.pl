@@ -98,8 +98,7 @@ my %BENCHMARK;
 # Dave's preference for EMEP:
 #  %BENCHMARK = (grid=>"EMEP"  ,year=>2006,emis=>"Modrun10/EMEP_trend_2000-2008/2006",archive=>1,chem=>"EmChem09");
 # EECCA Default: 
-##
-%BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun11/EMEP_trend_2000-2009/2008",archive=>1,chem=>"EmChem09soa",make=>"EMEP");
+   %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun11/EMEP_trend_2000-2009/2008",archive=>1,chem=>"EmChem09soa",make=>"EMEP");
 # Status Runs:
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2007,emis=>"Modrun09/2009-Trend2007-CEIP") ;
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun10/2010-Trend2008_CEIP");
@@ -115,8 +114,6 @@ my %BENCHMARK;
 if (%BENCHMARK) {
   $BENCHMARK{'archive'} = 1;                        # save summary info in $DataDir
   $BENCHMARK{'debug'} = $BENCHMARK{'archive'};      # chech if all debug flags are .false.
-#  $BENCHMARK{'ndx'}   = 8 if $BENCHMARK{'archive'}; # number of procesors in
-#  $BENCHMARK{'ndy'}   = 8 if $BENCHMARK{'archive'}; # x and y directions
 # Default setting, if not previously specified
   $BENCHMARK{'chem'}  = "EmChem09soa"
     unless $BENCHMARK{'chem'};  # chemical mecanism, e.g. OpenSource 2008
@@ -272,7 +269,9 @@ my $Chem     = "EmChem09soa";
    $Chem     = $BENCHMARK{'chem'} if $BENCHMARK{'chem'};
 
 my $exp_name = "EMEPSTD";
-my $testv = "rv4_2beta5nml";
+   $exp_name = ($eCWF)?"EMERGENCY":"FORECAST" if $CWF;
+my $testv = "rv4_2";
+   $testv.= ($eCWF)?".eCWF":".CWF" if $CWF;
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code

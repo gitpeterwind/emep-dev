@@ -1,0 +1,2 @@
+#TYPE/VOLCANO,VARIABLE,BASE[km],H[km above vent],D[h],dM/dt[kg/s],m63[-],START[code/date],END[code/date],DESCRIPTION
+NK13     ,ASH_CS137      , 0,  2.000,  12.00,  1e9,,2013-02-12 03:00:00,SE+D,North Korea undeground NUC test

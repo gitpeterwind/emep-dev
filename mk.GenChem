@@ -90,7 +90,7 @@ GETOPTS(){
   local vdir=$PWD/ZCM_Emergency
   local VolcCSV="$vdir/Mastin_et_al_2009a_table3.csv" \
         ErupCSV="$vdir/Mastin_et_al_2009b_table3.csv" \
-        NppCSV="$vdir/NPP.csv" NacCSV="$vdir/NPP_Accident.csv" \
+        NppCSV="$vdir/NPP_Location.csv" NacCSV="$vdir/NPP_Accident.csv" \
         COL='1,5-6,8-9,11-14,16' vbin=7bin tracer='1234-67=/D23L567'
 # 1:NUMBER,5:NAME,6:LOCATION,8:LATITUDE,9:NS,11:LONGITUDE,12:EW,13:ELEV,14:TYPE,16:ERUPTION TYPE
   while getopts ":f:r:e:V:N:qvh" OPT; do
@@ -143,7 +143,7 @@ GETOPTS(){
       grep '^# '      "$NppCSV"|tee $rdir/npp.csv         # Source info
       grep '^#NUMBER' "$NppCSV"|cut -d',' -f1-10|
         tee -a $rdir/npp.csv                              # Headers
-#     cp -f "$NaCSV" $rdir/npp_accident.csv
+      cp -f "$NacCSV" $rdir/npp_accident.csv
       for N in ${!EE[*]};do
         tracer=`grep -iE ${EE[$N]/./'.{1,2}'} "$NppCSV"|cut -d',' -f1-10|
         sed 's/^\(....\)-/\1A/g;s/^\(....\)=/\1B/g;s/^\(.......\)-/\1A/g;s/^\(.......\)=/\1B/g;s/^/V/g;s/, */,/g;'` # NPP description

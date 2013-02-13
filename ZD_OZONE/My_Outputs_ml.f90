@@ -204,8 +204,8 @@ subroutine set_output_defs
    implicit none
 
   character(len=144) :: errmsg   ! Local error message
-  integer            :: i,j,ash,rn222,pm25,pm10,psurf,ivent ! Loop & ash group indexes
-  character(len=9)   :: vent     ! Volcano (vent) name
+  integer            :: i,j,ash,nuc,rn222,pm25,pm10,psurf,igrp ! Loop & group indexes
+  character(len=9)   :: name     ! Volcano (vent) name
 
   real, parameter :: atwC=12.0
   real, parameter :: m_s = 100.0 ! From cm/s to m/s
@@ -256,15 +256,28 @@ subroutine set_output_defs
     nlevels_hourly = 1+18
     nhourly_out=4+2    !PM*,AOD (&Z, &PS)
     ash=find_index("ASH",chemgroups(:)%name)
-    call CheckStop(ash<1,"set_output_defs: Unknown group 'ASH'")
-    vent="none"
-    do i=1,size(chemgroups(ash)%ptr)
-      if(species(chemgroups(ash)%ptr(i))%name(1:9)==vent)cycle
-      vent=species(chemgroups(ash)%ptr(i))%name(1:9)
-      nhourly_out=nhourly_out+2
-      if(MasterProc.and.DEBUG_EMERGENCY)&
-        write(*,*)'EMERGENCY: Volcanic Ash, Vent=',vent
-    enddo
+    nuc=find_index("NUCRACT",chemgroups(:)%name)
+    call CheckStop(ash<1.and.nuc<1,"set_output_defs: Unknown group 'ASH'/'NUC'")
+    if(ash>0)then
+      name="none"
+      do i=1,size(chemgroups(ash)%ptr)
+        if(species(chemgroups(ash)%ptr(i))%name(1:9)==name)cycle
+        name=species(chemgroups(ash)%ptr(i))%name(1:9)
+        nhourly_out=nhourly_out+2
+        if(MasterProc.and.DEBUG_EMERGENCY)&
+          write(*,*)'EMERGENCY: Volcanic Ash, Vent=',name
+      enddo
+    endif
+    if(nuc>0)then
+      name="none"
+      do i=1,size(chemgroups(nuc)%ptr)
+        if(species(chemgroups(nuc)%ptr(i))%name(1:9)==name)cycle
+        name=species(chemgroups(nuc)%ptr(i))%name(1:9)
+        nhourly_out=nhourly_out+2
+        if(MasterProc.and.DEBUG_EMERGENCY)&
+          write(*,*)'EMERGENCY: Nuclear accident, NPP=',name
+      enddo
+    endif
   case("FORECAST")
     nhourly_out=11
     nlevels_hourly = 4
@@ -313,18 +326,35 @@ subroutine set_output_defs
 !** PSURF needed for konversion from sigma to pressure or height
       Asc2D("PS"         ,"D2D" ,psurf       ,&
              ix1,ix2,iy1,iy2,1,"hPa",1.0,-9999.9)/)
-    vent="none"
-    do i=1,size(chemgroups(ash)%ptr)
-      if(species(chemgroups(ash)%ptr(i))%name(1:9)==vent)cycle
-      vent=species(chemgroups(ash)%ptr(i))%name(1:9)
-      ivent=find_index(vent,chemgroups(:)%name)
-      call CheckStop(ivent<1,"set_output_defs: Unknown group '"//vent//"'")
-      j=j+2;hr_out(j-1:j)=(/&
-        Asc2D(vent        ,"BCVugXXgroup",ivent,&
-              ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug/m3",1.0,-999.9),&
-        Asc2D(vent//"_col","COLUMNgroup" ,ivent,&
-              ix1,ix2,iy1,iy2,1,"ug/m2",1.0,-999.9)/)
-    enddo
+    if(ash>0)then
+      name="none"
+      do i=1,size(chemgroups(ash)%ptr)
+        if(species(chemgroups(ash)%ptr(i))%name(1:9)==name)cycle
+        name=species(chemgroups(ash)%ptr(i))%name(1:9)
+        igrp=find_index(name,chemgroups(:)%name)
+        call CheckStop(igrp<1,"set_output_defs: Unknown group '"//name//"'")
+        j=j+2;hr_out(j-1:j)=(/&
+          Asc2D(name        ,"BCVugXXgroup",igrp,&
+                ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug/m3",1.0,-999.9),&
+          Asc2D(name//"_col","COLUMNgroup" ,igrp,&
+                ix1,ix2,iy1,iy2,1,"ug/m2",1.0,-999.9)/)
+      enddo
+    endif
+    if(nuc>0)then
+      name="none"
+      do i=1,size(chemgroups(nuc)%ptr)
+        if(species(chemgroups(nuc)%ptr(i))%name(1:9)==name)cycle
+        name=species(chemgroups(nuc)%ptr(i))%name(1:9)
+        igrp=find_index(name,chemgroups(:)%name)
+        call CheckStop(igrp<1,"set_output_defs: Unknown group '"//name//"'")
+        j=j+2;hr_out(j-1:j)=(/&
+          Asc2D(name        ,"BCVugXXgroup",igrp,&
+                ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"uBqh",1.0,-999.9),&
+! TO DO: dDep/wDep instead of col output
+          Asc2D(name//"_col","COLUMNgroup" ,igrp,&
+                ix1,ix2,iy1,iy2,1,"uBqh",1.0,-999.9)/)
+      enddo
+    endif
   case("FORECAST")
 !   ix1=IRUNBEG;ix2=IRUNBEG+GIMAX-1
 !   iy1=JRUNBEG;iy2=JRUNBEG+GJMAX-1

@@ -1,0 +1,52 @@
+&ModelConstants_config
+!-------- Experiment name -----
+!  FORECAST    Forecast run, MACC-ENS hourly output & BC
+!  EVA2010     FORECAST with MACC-EVA2010 hourly output & BC
+!  EMERGENCY   FORECAST with ONLY Volcanic Eruption & Nuclear Accident
+!------------------------------
+  EXP_NAME              = 'EMERGENCY',
+!------------------------------
+  USE_SOILWATER         = F,          ! Uses SMI from meteo data
+  USE_DEGREEDAY_FACTORS = F,
+  USE_FOREST_FIRES      = T,
+  USE_SEASALT           = T,
+  USE_SOILNOX           = T,          ! diff for global + Euro runs
+  USE_POLLEN            = F,          ! EXPERIMENTAL. Only works if start Jan 1
+  DO_SAHARA             = F,
+  USE_ROADDUST          = F,          ! Only EECCA?
+  USE_DUST              = F,          ! Only EECCA?
+  NETCDF_COMPRESS_OUTPUT= T,
+!-------- Can switch on INERIS-type degreeday stuff
+  INERIS_SNAP1          = F,          ! Used for TFMM runs
+  INERIS_SNAP2          = F,          ! Used for TFMM runs
+!-------- Nesting ------------
+! produces netcdf dump of concentrations if wanted, or init. run sfrom such a file
+!   0=donothing; 1=write; 2=read; 3=read and write;
+!  10=write at end of run; 11=read at start; 12=read at start and write at end (BIC)
+!------------------------------
+  NEST_MODE             = 0,
+!------------------------------
+  IS_GLOBAL             = T,          ! Also for EMERGENCY
+  MONTHLY_GRIDEMIS      = T,          ! Also for EMERGENCY
+  SELECT_LEVELS_HOURLY  = T,          ! hourly output flag Also for FORECAST, 3DPROFILES
+  FORECAST              = T,
+  USE_EMERGENCY         = T,          ! Used for FORECASTs usually, EMEP2010
+  ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
+  USE_AOD               = T,          ! Used for FORECASTs usually
+!-------- Sub domain (x0,x1,y0,y1)
+!!RUNDOMAIN =   1, 201,  1, 161,      ! EMEP-CWF, GEMS 0.25 domain
+!!RUNDOMAIN =   1, 301, 26, 221,      ! EMEP-CWF, GEMS 0.25 extended domain
+!!RUNDOMAIN =   1, 321,  1, 221,      ! EMEP-CWF, MACC 0.20 domain
+&end
+&Nest_config
+! template_read_3D = 'EMEP_IN.nc',            ! a different path can be set here
+! template_read_BC = 'EMEP_IN.nc',            ! for each of the IO IC/BC files,
+! template_write   = 'EMEP_OUT.nc',           ! if needed.
+  template_read_3D = 'EMEP_IN_YYYYMMDD.nc',   ! YYYY, YY, MM, DD, hh strings
+  template_read_BC = 'EMEP_IN_YYYYMMDD.nc',   ! will be replaced with numbers
+  template_write   = 'EMEP_OUT_YYYYMMDD.nc',  ! in Nest_ml
+&end
+&ExternalBICs_config
+  USE_EXTERNAL_BIC  = F,              ! .false. to deactivate
+  EXTERNAL_BIC_NAME = 'DUMMY',        ! No IC/BC will be read
+&end

@@ -232,9 +232,44 @@ dsSep14   Units_ml.f90
 dsSep14   Volcanos_ml.f90
 dsSep14   Wesely_ml.f90
 
-
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Alvaro 13th. February (was 2472)
+
+ExternalBICs_ml.f90,*/*_ExternalBICs_ml,Makefile,Makefile.SRCS,Nest_ml
+  Merge */*_ExternalBICs_ml into a single module.
+  Application specific code goes into namelist, see config_FORECAST.nml.
+  Data type icbc extended for BC descriptions to be EmChem independent.
+
+ModelConstants_ml,config_EMEPSTD.nml
+  Set RUNDOMAIN on namelist
+  
+Nest_ml,config_EMEPSTD.nml
+  Set filename templates on namelist  
+
+run.pl,config_FORECAST.nml,config_EMERGENCY.nml
+  Add namelist files for FORECAST & EMERGENCY runs
+
+mk.GenChem,ZCM_Emergency/NPP_Location.csv,ZCM_Emergency/NPP_Accident.csv
+  Add emission defaults for NPP accident.
+  Rename NPP.csv to NPP_Location.csv
+
+ZD_OZONE/My_SOA_ml.f90
+  Remove Fgas definition
+
+ZCM_EmChem09/BiomassBurning_GFASv1_to_EmChem09.inc
+  new file
+
+Units_ml
+  ug/m2 output for column output
+
+Volcanos_ml
+  Eruption_found=.true. for first call on EMERGENCY mode
+
+ZD_OZONE/My_Outputs_ml.f90
+  Nuclear accident output
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Dave 13th. (was 2468-2471)
@@ -299,12 +334,6 @@ Volcanos - NEEDS CHECK. HAD Vent_found, Eruption_found tied to
    (Is Vent_found used?)
 My_Outputs_ml  (SELECT_LEVELS_HOURLY, now in ModelConstants)
 
-
-
-
-
-
-
 xxxxxxxx  rv4_2beta5 Dave  5th February 2013 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 use of rough.dat removed
@@ -360,7 +389,7 @@ ZCM_Emergency/Mastin*_table3.csv:
 Makefile:
   include *.inc files on *.tar.bz2
 
-Nest_ml,/ZD_OZONE/*_ExternalBICs_ml.f90
+Nest_ml,/ZD_OZONE/*_ExternalBICs_ml
   * Move filename_read_3D, filename_read_BC & filename_write back from Nest_ml
     to My_ExternalBICs_ml.
   * Remove if(EXTERNAL_BIC_SET) before call set_extbic as it prevented all calls,
@@ -580,8 +609,6 @@ ZD_EXTRA/mk.meteoPreproc    added to cvs system
    The code here does the same job as the old DegreeDayFactors, but is a bit cleaner
    Fixes also an "apparent" problem with i,j coordinates for TNO type lat/lon grids.
    (No difference in model runs, but ncview will now see the data the right way up.)
-
-
 
 Also, more safety checks in:
 

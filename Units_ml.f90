@@ -68,7 +68,7 @@ type, public :: group_umap
   real,   pointer,dimension(:) :: uconv=>null() ! conversion factor
 endtype group_umap
 
-type(umap), public, save :: unit_map(18)=(/&
+type(umap), public, save :: unit_map(19)=(/&
 ! Air concentration
   umap("mix_ratio","mol/mol",1.0),&  ! Internal model unit
   umap("ppb" ,"ppb" ,PPBINV),&
@@ -90,6 +90,7 @@ type(umap), public, save :: unit_map(18)=(/&
 ! Aerosol optical properties
   umap("ext" ,"ext550nm",extX),&! ext* units need to be further multiplied...
 ! Coulumn output
+  umap("ugm2"   ,"ug/m2",ugXm3),&  ! ug* units need to be further multiplied
   umap("mcm2"   ,"molec/cm2"    ,to_molec_cm2),&
   umap("e15mcm2","1e15molec/cm2",to_molec_cm2*1e-15)/)
 
@@ -113,7 +114,7 @@ subroutine Init_Units()
 
  do i=1,size(unit_map)
    select case (unit_map(i)%utxt)
-    case("ug","mg","uBq","uBqh","mBq")
+    case("ug","mg","uBq","uBqh","mBq","ugm2")
       uconv_spec = species_adv%molwt
     case("ugC","mgC")
       uconv_spec = species_adv%carbons
@@ -154,6 +155,7 @@ subroutine Group_Units_Asc2D(hr_out,gspec,gunit_conv,debug,name)
     trim(dname),(trim(species_adv(gspec(i))%name),gspec(i),i=1,size(gspec))
 
   i=find_index(hr_out%unit,unit_map(:)%utxt)
+!!if(i>0)hr_out%unit=unit_map(i)%units
   if(i<1)i=find_index(hr_out%unit,unit_map(:)%units)
   call CheckStop(i<1,"Group_Units Error: Unknown unit "//trim(hr_out%unit))
 

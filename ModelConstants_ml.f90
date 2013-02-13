@@ -77,7 +77,6 @@ logical, public, save ::             &
  ,INERIS_SNAP1       = .false.       & !(EXP_NAME=="TFMM"), & ! Switches off decadal trend
  ,INERIS_SNAP2       = .false.       & !(EXP_NAME=="TFMM"), & ! Allows near-zero summer values
  ,USE_EMERGENCY      = .false.       & ! Emergency: Volcanic Eruption & Nuclear Accident. Under development.
-!                      (EXP_NAME=="EMEP2010"), &
  ,USE_AOD            = .false.       &
  ,USE_POLLEN         = .false.       &  ! EXPERIMENTAL. Only works if start Jan 1
  ,ANALYSIS           = .false.       &  ! EXPERIMENTAL: 3DVar data assimilation
@@ -334,7 +333,7 @@ integer, public, parameter :: &
   ,DEBUG_SOILWATER      = .false. &
   ,DEBUG_SOILNOX        = .false. &
   ,DEBUG_VOLC           = .false. & ! Volcanoes
-  ,DEBUG_EMERGENCY      = .false.    ! Emergency: Volcanic Eruption & Nuclear Accident. Under development.
+  ,DEBUG_EMERGENCY      = .false.   ! Emergency: Volcanic Eruption & Nuclear Accident. Under development.
 
 !=============================================================================
 ! 3)  Source-receptor runs?
@@ -479,7 +478,7 @@ subroutine Config_ModelConstants()
      ,MONTHLY_GRIDEMIS &     ! was set in Emissions_ml
      ,SELECT_LEVELS_HOURLY &  ! incl. FORECAST, 3DPROFILES
      ,FORECAST, USE_EMERGENCY, ANALYSIS , USE_AOD &
-     ,NETCDF_COMPRESS_OUTPUT
+     ,NETCDF_COMPRESS_OUTPUT, RUNDOMAIN
 
     txt = "ok"
     !Can't call check_file due to circularity

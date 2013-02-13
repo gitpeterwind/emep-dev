@@ -1,27 +1,62 @@
 &ModelConstants_config
-EXP_NAME              = 'EMEPSTD'  ! Flag for this setup. Here, EMEP standard
-USE_SOILWATER         = .true.     ! Uses SMI from meteo data
-USE_DEGREEDAY_FACTORS = .true.
-USE_FOREST_FIRES      = .true.
-USE_SEASALT           = .true.     ! 
-USE_SOILNOX           = .true.     ! diff for global + Euro runs
-USE_POLLEN            = .false.    ! EXPERIMENTAL. Only works if start Jan 1
-DO_SAHARA             = .true.
-USE_ROADDUST          = .true.    ! Only EECCA?
-USE_DUST              = .true.    ! Only EECCA?
-NETCDF_COMPRESS_OUTPUT= .true.    ! not FORECAST, EMERGENCY, 3DPROFILES
-!-------- Can switch on INERIS-type degreeday stuff
-INERIS_SNAP1          = .false.    ! Used for TFMM runs
-INERIS_SNAP2          = .false.    ! Used for TFMM runs
-!-------- Nesting ------------
-! Will add more documentation here
-NEST_MODE             = 0
+!-------- Experiment name -----
+!  EMEPSTD     Standard run & output
+!  EMEP2010    EMEPSTD with Iceland Volcanic Eruption input
+!  TFMM        EMEPSTD, but with INERIS_SNAP & TFMM hourly output
 !------------------------------
-IS_GLOBAL             = .false.    ! Also for EMERGENCY
-MONTHLY_GRIDEMIS      = .false.    ! Also for EMERGENCY
-SELECT_LEVELS_HOURLY  = .false.    ! hourly output flag Also for FORECAST, 3DPROFILES
-FORECAST              = .false.
-USE_EMERGENCY         = .false.    ! Used for FORECASTs usually, EMEP2010
-ANALYSIS              = .false.    ! EXPERIMENTAL: 3DVar data assimilation
-USE_AOD               = .false.    ! Used for FORECASTs usually
+  EXP_NAME              = 'EMEPSTD',
+!------------------------------
+  USE_SOILWATER         = T,          ! Uses SMI from meteo data
+  USE_DEGREEDAY_FACTORS = T,
+  USE_FOREST_FIRES      = T,
+  USE_SEASALT           = T,
+  USE_SOILNOX           = T,          ! diff for global + Euro runs
+  USE_POLLEN            = F,          ! EXPERIMENTAL. Only works if start Jan 1
+  DO_SAHARA             = T,
+  USE_ROADDUST          = T,          ! Only EECCA?
+  USE_DUST              = T,          ! Only EECCA?
+  NETCDF_COMPRESS_OUTPUT= T,
+!-------- Can switch on INERIS-type degreeday stuff
+  INERIS_SNAP1          = F,          ! Used for TFMM runs
+  INERIS_SNAP2          = F,          ! Used for TFMM runs
+!-------- Nesting ------------
+! produces netcdf dump of concentrations if wanted, or init. run sfrom such a file
+!   0=donothing; 1=write; 2=read; 3=read and write;
+!  10=write at end of run; 11=read at start; 12=read at start and write at end (BIC)
+!------------------------------
+  NEST_MODE             = 0,
+!------------------------------
+  IS_GLOBAL             = F,          ! Also for EMERGENCY
+  MONTHLY_GRIDEMIS      = F,          ! Also for EMERGENCY
+  SELECT_LEVELS_HOURLY  = F,          ! hourly output flag Also for FORECAST, 3DPROFILES
+  FORECAST              = F,
+  USE_EMERGENCY         = F,          ! Used for FORECASTs usually, EMEP2010
+  ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
+  USE_AOD               = F,          ! Used for FORECASTs usually
+!-------- Sub domain (x0,x1,y0,y1)
+!!RUNDOMAIN =   1, 100,  1, 100,      ! Orig EMEP domain in EECCA (for benchmarks)
+! RUNDOMAIN =  40, 210, 12, 184,      ! SR TNO28 area
+! RUNDOMAIN = 240, 720, 48, 736,      ! TNO07 reduced (15W-45E;30N-73N)
+! RUNDOMAIN = 120, 360, 24, 368,      ! TNO14 reduced (15W-45E;30N-73N)
+! RUNDOMAIN =  60, 180, 12, 184,      ! TNO28 reduced (15W-45E;30N-73N)
+! RUNDOMAIN =  30,  90,  6,  92,      ! TNO56 reduced (15W-45E;30N-73N)
+! RUNDOMAIN =  60, 180, 12, 184,      ! TNO07 test
+! RUNDOMAIN =  70, 110, 72, 110,      ! TNO28 test
+! RUNDOMAIN =  36, 167, 12, 122,      ! EMEP domain in PARLAM
+! RUNDOMAIN =   1, 132,  1, 111,      ! EECCA, rep09
+! RUNDOMAIN =   1, 132,  1, 159,      ! EECCA, rep10
+! RUNDOMAIN =  20, 167,  1, 122,      ! OSPAR/HELCOM domain
+! RUNDOMAIN =  18, 169,  1, 124,      ! OSPAR/HELCOM domain+borders
+&end
+&Nest_config
+  template_read_3D = 'EMEP_IN.nc',            ! a different path can be set here
+  template_read_BC = 'EMEP_IN.nc',            ! for each of the IO IC/BC files,
+  template_write   = 'EMEP_OUT.nc',           ! if needed.
+! template_read_3D = 'EMEP_IN_IC.nc',         ! YYYY, YY, MM, DD, hh strings
+! template_read_BC = 'EMEP_IN_BC_YYYYMMDD.nc',! will be replaced with numbers
+! template_write   = 'EMEP_OUT_YYYYMMDD.nc',  ! in Nest_ml
+&end
+&ExternalBICs_config
+  USE_EXTERNAL_BIC  = F,              ! .false. to deactivate
+  EXTERNAL_BIC_NAME = 'DUMMY',        ! No IC/BC will be read
 &end

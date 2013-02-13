@@ -53,23 +53,22 @@ module Nest_ml
 !  The routines should be thought together with GlobalBC_ml (can it replace it?)
 
 !----------------------------------------------------------------------------!
-! EXTERNAL BICs: 
-! The code in My_ExternalBICs is different for different external sources. So
-! far coded for FORECAST and EnsClimRCA work.
-! These set the following arrays, and filenames
-
-use My_ExternalBICs_ml,     only: update_bicname,set_extbic, icbc, &
+! External Boundary (BC) and Initial Conditions (IC)
+!   ExternalBICs_ml should handle different for different external sources.
+!   Experiment specific information must be set on ExternalBICs namelists.
+!   So far coded for FORECAST and EnsClimRCA(?) work.
+use ExternalBICs_ml,     only: set_extbic, icbc, &
        EXTERNAL_BIC_SET, EXTERNAL_BC, EXTERNAL_BIC_NAME, TOP_BC, &
        iw, ie, js, jn, kt, &! i West/East bnd; j North/South bnd; k Top
-       filename_read_3D,filename_read_BC,fileName_write,filename_eta
+       filename_eta
 !----------------------------------------------------------------------------!
-use CheckStop_ml,          only : CheckStop,StopAll
+use CheckStop_ml,           only: CheckStop,StopAll
 use ChemChemicals_ml,       only: species_adv
 use Chemfields_ml,          only: xn_adv    ! emep model concs.
 use ChemSpecs_adv_ml,       only: NSPEC_ADV
 use Functions_ml,           only: great_circle_distance
 use GridValues_ml,          only: A_mid,B_mid, glon,glat
-use Io_ml,                  only: open_file, IO_TMP
+use Io_ml,                  only: open_file,IO_TMP,IO_NML
 use ModelConstants_ml,      only: Pref,PPB,PT,KMAX_MID, MasterProc, NPROC     &
   , IOU_INST,IOU_HOUR,IOU_YEAR,IOU_MON,IOU_DAY, RUNDOMAIN  &
   , MODE=>NEST_MODE, FORECAST, DEBUG_NEST, DEBUG_ICBC=>DEBUG_NEST_ICBC
@@ -110,9 +109,17 @@ integer, public, parameter :: NHOURREAD=1 !time between two reads. should be a f
 
 private
 
-!Use TOP BC on forecast mode - moved to EXTERNAL
-!DSBIC where?!logical, parameter :: TOP_BC=.false..or.FORECAST.or.RCA.or.TRANSPHORM.or.HTAP
-!rca integer,save :: iw, ie, js, jn, kt ! i West/East bnd; j North/South bnd; k Top
+integer, parameter :: &
+  max_string_length=200 ! large enough for paths to be set on Nest_config namelist
+character(len=max_string_length),private, save ::  &  
+  template_read_3D = 'EMEP_IN.nc',&       ! Different paths can be set here
+  template_read_BC = 'EMEP_IN.nc',&       ! for each of the IO IC/BC files,
+  template_write   = 'EMEP_OUT.nc'        ! on Nest_config namelist, if needed.
+character(len=max_string_length),private, save ::  &  
+  filename_read_3D = 'template_read_3D',& ! Overwritten in readxn and wrtxn.
+  filename_read_BC = 'template_read_BC',& ! Filenames are updated according to date
+  filename_write   = 'template_write'     ! following respective templates
+
 real(kind=8), parameter :: halfsecond=0.5/(24.0*3600.0)!used to avoid rounding errors
 !BC values at boundaries in present grid
 real, save, allocatable, dimension(:,:,:,:) :: &
@@ -134,12 +141,28 @@ integer,save :: NHOURS_Stride_BC   !number of hours between start of two consecu
 integer, public, parameter :: NHOURS_Stride_BC_default=6 !time between records if only one record per file (RCA for example)
 
 type(icbc), private, target, dimension(NSPEC_ADV) :: &
-  adv_ic=icbc(-1,'none',1.0,.false.,.false.)  ! Initial 3D IC/BC, varname, wanted, found
+  adv_ic=icbc('none','none',1.0,.false.,.false.,-1)  ! Initial 3D IC/BC: spcname,varname,wanted,found,ixadv
 type(icbc), private, pointer, dimension(:) :: &
-  adv_bc=>null()                              ! Time dependent BC, varname, wanted, found
+  adv_bc=>null()                                     ! Time dependent BC: spcname,varname,wanted,found,ixadv
 
 contains
+!++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
+subroutine Config_Nest()
+  integer :: ios
+  logical, save :: first_call=.true.
+  NAMELIST /Nest_config/ &
+    template_read_3D,template_read_BC,template_write
 
+  if(.not.first_call)return
+  mydebug = DEBUG_NEST .and. MasterProc
+  rewind(IO_NML)
+  read(IO_NML,NML=Nest_config,iostat=ios)
+  call CheckStop(ios,"NML=Nest_config")  
+  if(mydebug)then
+    write(*,*) "NAMELIST IS "
+    write(*,NML=Nest_config)
+  endif
+endsubroutine Config_Nest
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
 subroutine readxn(indate)
   type(date), intent(in) :: indate           ! Gives year..seconds
@@ -155,7 +178,7 @@ subroutine readxn(indate)
   logical :: fexist=.false.
   integer ::oldmonth=0
 
-  mydebug = DEBUG_NEST .and. MasterProc
+  call Config_Nest()
   if( mydebug )write(*,*)'Nest:Read BC, MODE=',MODE
   if(MODE /= 2.and.MODE /= 3.and. MODE /= 11.and. MODE /= 12.and. MODE /= 100.and. .not.FORECAST)return
 
@@ -169,9 +192,10 @@ subroutine readxn(indate)
   if(first_call)date_nextfile=ndate
 
   if(FORECAST)then ! FORECAST mode superseeds nest MODE
-  ! Update filename_read_IC, filename_read_BC & filename_write according to date
-  ! following respective template_filenames defined on My_ExternalBICs_ml
-    call update_bicname(date_nextfile)
+! Update filenames according to date following templates defined on Nest_config nml
+    filename_read_3D=date2string(template_read_3D,date_nextfile,debug=mydebug)
+    filename_read_BC=date2string(template_read_BC,date_nextfile,debug=mydebug)
+
     if(first_call)then
       first_call=.false.
       if(MasterProc) inquire(file=filename_read_3D,exist=fexist)
@@ -212,9 +236,9 @@ subroutine readxn(indate)
 
   if(MasterProc) write(*,*) 'Nest: kt', kt, first_data
 
-  ! Update filename_read_IC, filename_read_BC & filename_write according to date
-  ! following respective template_filenames defined on My_ExternalBICs_ml
-  call update_bicname(ndate)
+! Update filenames according to date following templates defined on Nest_config nml
+  filename_read_3D=date2string(template_read_3D,ndate,debug=mydebug)
+  filename_read_BC=date2string(template_read_BC,ndate,debug=mydebug)
 
   if(first_data==-1)then
     if(.not.FORECAST) call reset_3D(ndays_indate)
@@ -290,6 +314,7 @@ subroutine wrtxn(indate,WriteNow)
   real :: scale
   logical :: fexist, lsend, lrecv
 
+  call Config_Nest()
   if(MODE /= 1.and.MODE /= 3.and.MODE /= 10.and.MODE /= 12.and. .not.FORECAST)return
 
   if(FORECAST)then ! FORECAST mode superseeds nest MODE
@@ -333,9 +358,8 @@ subroutine wrtxn(indate,WriteNow)
   def1%name=''          ! written
   def1%unit='mix_ratio' ! written
  
-  ! Update filename_read_IC, filename_read_BC & filename_write according to date
-  ! following respective template_filenames defined on My_ExternalBICs_ml
-  call update_bicname((/indate%year,indate%month,indate%day,indate%hour/))
+! Update filenames according to date following templates defined on Nest_config nml
+  filename_write=date2string(template_write,indate,debug=mydebug)
   if(MasterProc) inquire(file=fileName_write,exist=fexist)
   CALL MPI_BCAST(fexist,1,MPI_LOGICAL,0,MPI_COMM_WORLD,INFO)
 
@@ -410,21 +434,24 @@ subroutine init_icbc(idate,cdate,ndays,nsecs)
   if(present(cdate)) dat=(/cdate%year,cdate%month,cdate%day,cdate%hour/) 
   if(present(ndays)) call nctime2idate(dat,ndays)
   if(present(nsecs)) call nctime2idate(dat,nsecs)
-! Update filename_read_IC, filename_read_BC & filename_write according to date
-! following respective template_filenames defined on My_ExternalBICs_ml, and
-!!call update_bicname(dat)
+
+! Update filenames according to date following templates defined on Nest_config nml
+!!filename_read_3D=date2string(template_read_3D,dat,debug=mydebug)
+!!filename_read_BC=date2string(template_read_BC,dat,debug=mydebug)
+
   call set_extbic(dat)  ! set mapping, EXTERNAL_BC, TOP_BC
 
   adv_ic(:)%ixadv=(/(n,n=1,NSPEC_ADV)/)
+  adv_ic(:)%spcname=species_adv(:)%name
   adv_ic(:)%varname=species_adv(:)%name
   adv_ic(:)%frac=1.0
   adv_ic(:)%wanted=.true.
   adv_ic(:)%found=find_icbc(filename_read_3D,adv_ic%varname(:))
   if(mydebug) then
-   do n = 1,size(adv_ic%varname)
-     if(adv_ic(n)%found) write(*,*) &
+    do n = 1,size(adv_ic%varname)
+      if(adv_ic(n)%found) write(*,*) &
         "init_icbc filled adv_ic "//trim(adv_ic(n)%varname)
-   enddo
+    enddo
   endif
   if(EXTERNAL_BIC_SET) then
     adv_bc=>EXTERNAL_BC

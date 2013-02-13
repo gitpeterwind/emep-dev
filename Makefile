@@ -126,31 +126,21 @@ touchdepend:
 	touch .depend
 
 # Model/Config specific targets
-EMEP EMEP2010 SR-EMEP SR-EMEP2010 eEMEP:
+EMEP EMEP2010 SR-EMEP SR-EMEP2010 MACC MACC-EVA2010 SR-MACC eEMEP eEMEP2010:
 	ln -sf $(filter %.f90 %.inc,$+) . && \
-	$(MAKE) MACHINE=$(MACHINE) -j4 $(PROG)
-MACC MACC-EVA2010 SR-MACC eEMEP2010: ./ZD_OZONE/IFSMOZ_ExternalBICs_ml.f90
-	ln -sf $(filter %.f90 %.inc,$+) . && \
-	ln -sf IFSMOZ_ExternalBICs_ml.f90 My_ExternalBICs_ml.f90 && \
 	$(MAKE) MACHINE=$(MACHINE) -j4 $(PROG)
 
 # My_* files pre-requisites
 EMEP EMEP2010 MACC MACC-EVA2010 eEMEP2010: \
-	  ./ZD_OZONE/My_RunSettings.inc ./ZD_OZONE/My_Derived_ml.f90 \
-	  ./ZD_OZONE/My_ExternalBICs_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
-	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_VBS/My_SOA_ml.f90 \
-	  ./ZD_3DVar/My_3DVar_ml.f90
+	  ./ZD_OZONE/My_RunSettings.inc ./ZD_OZONE/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
+	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_VBS/My_SOA_ml.f90 ./ZD_3DVar/My_3DVar_ml.f90
 #For SR we use the small My_Derived
 SR-EMEP SR-EMEP2010 SR-MACC: \
-	  ./ZD_SR/My_RunSettings.inc ./ZD_SR/My_Derived_ml.f90 \
-	  ./ZD_OZONE/My_ExternalBICs_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
-	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_VBS/My_SOA_ml.f90 \
-	  ./ZD_3DVar/My_3DVar_ml.f90
+	  ./ZD_SR/My_RunSettings.inc ./ZD_SR/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
+	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_VBS/My_SOA_ml.f90 ./ZD_3DVar/My_3DVar_ml.f90
 eEMEP: \
-	  ./ZD_OZONE/My_RunSettings.inc ./ZD_OZONE/My_Derived_ml.f90 \
-	  ./ZD_OZONE/My_ExternalBICs_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
-	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_OZONE/My_SOA_ml.f90 \
-	  ./ZD_3DVar/My_3DVar_ml.f90
+	  ./ZD_OZONE/My_RunSettings.inc ./ZD_OZONE/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
+	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_OZONE/My_SOA_ml.f90 ./ZD_3DVar/My_3DVar_ml.f90
 # GenChem config
 .SECONDEXPANSION:
 EMEP EMEP2010 SR-EMEP SR-EMEP2010 \
