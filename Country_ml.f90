@@ -150,6 +150,44 @@ module Country_ml
 
   integer, parameter, public :: IC_BB  =  101 
 
+! Extra from IIASA/ECLIPSE/ECLAIRE global
+integer, parameter, public :: IC_AFGH = 201 ! Afghanistan
+integer, parameter, public :: IC_ARGE = 202 ! Argentina
+integer, parameter, public :: IC_AUTR = 203 ! Australia
+integer, parameter, public :: IC_BANG = 204 ! Bangladesh
+integer, parameter, public :: IC_BHUT = 205 ! Bhutan
+integer, parameter, public :: IC_BRAZ = 206 ! Brazil
+integer, parameter, public :: IC_BRUN = 207 ! Brunei
+integer, parameter, public :: IC_CAMB = 208 ! Cambodia
+integer, parameter, public :: IC_CHIL = 209 ! Chile
+integer, parameter, public :: IC_CHIN = 210 ! China
+integer, parameter, public :: IC_FSUA = 211 ! Former_USSR_(Asia)_Tajikistan_Turkmenistan_Uzbekistan
+integer, parameter, public :: IC_INDI = 212 ! India
+integer, parameter, public :: IC_INDO = 213 ! Indonesia
+integer, parameter, public :: IC_ISRA = 214 ! Israel
+integer, parameter, public :: IC_JAPA = 215 ! Japan
+integer, parameter, public :: IC_LAOS = 216 ! Laos
+integer, parameter, public :: IC_MALA = 217 ! Malaysia
+integer, parameter, public :: IC_MEXI = 218 ! Mexico
+integer, parameter, public :: IC_MIDE = 219 ! Middle_East
+integer, parameter, public :: IC_MONG = 220 ! Mongolia
+integer, parameter, public :: IC_MYAN = 221 ! Myanmar
+integer, parameter, public :: IC_NEPA = 222 ! Nepal
+integer, parameter, public :: IC_NZEL = 223 ! New_Zealand
+integer, parameter, public :: IC_NAFR = 224 ! North_Africa_Libya_Tunisia_Algeria_Sudan_Morocco
+integer, parameter, public :: IC_KORN = 225 ! North_Korea
+integer, parameter, public :: IC_OAFR = 226 ! Other_Africa
+integer, parameter, public :: IC_OLAM = 227 ! Other_Latin_America
+integer, parameter, public :: IC_PAKI = 228 ! Pakistan
+integer, parameter, public :: IC_PHIL = 229 ! Philippines
+integer, parameter, public :: IC_SING = 230 ! Singapore
+integer, parameter, public :: IC_SAFR = 231 ! South_Africa
+integer, parameter, public :: IC_KORS = 232 ! South_Korea
+integer, parameter, public :: IC_SRIL = 233 ! Sri_Lanka
+integer, parameter, public :: IC_TAIW = 234 ! Taiwan
+integer, parameter, public :: IC_THAI = 235 ! Thailand
+integer, parameter, public :: IC_VIET = 236 ! Vietnam
+
   ! extra subdivisions of ship emissions into shipping categories:
   ! Baltic Sea  (30)
   integer, parameter, public :: IC_BA2 = 302
@@ -422,5 +460,44 @@ Country( IC_NAX ) = cc(  "NAX" , 91 ,F,  91, 1   ,"EMEP-external part of North A
 Country( IC_RAA ) = cc(  "RAA" , 170 ,F,  170, 1, "Rest of Africa and Asia" )
 Country( IC_SEA ) = cc(  "SEA" , 171 ,F,  171, 1, "Ships" )
 
+! Extra from IIASA/ECLIPSE/ECLAIRE global
+
+Country(IC_AFGH) = cc( "AFGH", 201, F,201, -100, "Afghanistan") 
+Country(IC_ARGE) = cc( "ARGE", 202, F,202, -100, "Argentina") 
+Country(IC_AUTR) = cc( "AUTR", 203, F,203, -100, "Australia") 
+Country(IC_BANG) = cc( "BANG", 204, F,204, -100, "Bangladesh") 
+Country(IC_BHUT) = cc( "BHUT", 205, F,205, -100, "Bhutan") 
+Country(IC_BRAZ) = cc( "BRAZ", 206, F,206, -100, "Brazil") 
+Country(IC_BRUN) = cc( "BRUN", 207, F,207, -100, "Brunei") 
+Country(IC_CAMB) = cc( "CAMB", 208, F,208, -100, "Cambodia") 
+Country(IC_CHIL) = cc( "CHIL", 209, F,209, -100, "Chile") 
+Country(IC_CHIN) = cc( "CHIN", 210, F,210, -100, "China") 
+Country(IC_FSUA) = cc( "FSUA", 211, F,211, -100, "Former_USSR_(Asia)_Tajikistan_Turkmenistan_Uzbekistan") 
+Country(IC_INDI) = cc( "INDI", 212, F,212, -100, "India") 
+Country(IC_INDO) = cc( "INDO", 213, F,213, -100, "Indonesia") 
+Country(IC_ISRA) = cc( "ISRA", 214, F,214, -100, "Israel") 
+Country(IC_JAPA) = cc( "JAPA", 215, F,215, -100, "Japan") 
+Country(IC_LAOS) = cc( "LAOS", 216, F,216, -100, "Laos") 
+Country(IC_MALA) = cc( "MALA", 217, F,217, -100, "Malaysia") 
+Country(IC_MEXI) = cc( "MEXI", 218, F,218, -100, "Mexico") 
+Country(IC_MIDE) = cc( "MIDE", 219, F,219, -100, "Middle_East") 
+Country(IC_MONG) = cc( "MONG", 220, F,220, -100, "Mongolia") 
+Country(IC_MYAN) = cc( "MYAN", 221, F,221, -100, "Myanmar") 
+Country(IC_NEPA) = cc( "NEPA", 222, F,222, -100, "Nepal") 
+Country(IC_NZEL) = cc( "NZEL", 223, F,223, -100, "New_Zealand") 
+Country(IC_NAFR) = cc( "NAFR", 224, F,224, -100, "North_Africa_Libya_Tunisia_Algeria_Sudan_Morocco") 
+Country(IC_KORN) = cc( "KORN", 225, F,225, -100, "North_Korea") 
+Country(IC_OAFR) = cc( "OAFR", 226, F,226, -100, "Other_Africa") 
+Country(IC_OLAM) = cc( "OLAM", 227, F,227, -100, "Other_Latin_America") 
+Country(IC_PAKI) = cc( "PAKI", 228, F,228, -100, "Pakistan") 
+Country(IC_PHIL) = cc( "PHIL", 229, F,229, -100, "Philippines") 
+Country(IC_SING) = cc( "SING", 230, F,230, -100, "Singapore") 
+Country(IC_SAFR) = cc( "SAFR", 231, F,231, -100, "South_Africa") 
+Country(IC_KORS) = cc( "KORS", 232, F,232, -100, "South_Korea") 
+Country(IC_SRIL) = cc( "SRIL", 233, F,233, -100, "Sri_Lanka") 
+Country(IC_TAIW) = cc( "TAIW", 234, F,234, -100, "Taiwan") 
+Country(IC_THAI) = cc( "THAI", 235, F,235, -100, "Thailand") 
+Country(IC_VIET) = cc( "VIET", 236, F,236, -100, "Vietnam") 
   end subroutine Country_Init
+
 end module Country_ml
