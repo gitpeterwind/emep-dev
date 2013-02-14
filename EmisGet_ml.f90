@@ -35,6 +35,7 @@
 
 
   use CheckStop_ml,      only: CheckStop
+  use CheckStop_ml,      only: StopAll ! tmp debug
   use ChemSpecs_adv_ml,  only: NSPEC_ADV ! max possible number in split 
   use ChemSpecs_tot_ml,  only: NSPEC_TOT 
   use ChemChemicals_ml,  only: species
@@ -48,6 +49,7 @@
                                NH3EMIS_VAR,dknh3_agr,ISNAP_AGR,ISNAP_TRAF, &
                                NROADDUST
   use GridAllocate_ml,   only: GridAllocate
+  use GridValues_ml, only: debug_proc,debug_li,debug_lj, i_fdom, j_fdom !cdfemis
   use Io_ml,             only: open_file, NO_FILE, ios, IO_EMIS, &
                                Read_Headers, read_line, PrintLog
   use KeyValue_ml,       only: KeyVal
@@ -56,9 +58,15 @@
                                KMAX_MID, &
               SEAFIX_GEA_NEEDED, & ! only if emission problems over sea
                                MasterProc,DEBUG_GETEMIS,DEBUG_ROADDUST,USE_ROADDUST
+  use NetCDF_ml, only  : ReadField_CDF  !CDF_SNAP
+
   use Par_ml,            only: me
+  use Par_ml,            only: MAXLIMAX, MAXLJMAX, limax, ljmax   !cdfemis
   use SmallUtils_ml,     only: wordsplit, find_index
   use Volcanos_ml
+!TESTE
+  use netcdf
+  use NetCDF_ml, only  : check
 
   implicit none
   private
@@ -66,6 +74,7 @@
  ! subroutines:
 
   public  :: EmisGet           ! Collects emissions of each pollutant
+  public  :: EmisGetCdf        ! cdfemis
   public  :: EmisSplit         ! => emisfrac, speciation of voc, pm25, etc.
   public  :: EmisHeights       ! => nemis_kprofile, emis_kprofile
                                !     vertical emissions profile
@@ -76,7 +85,7 @@
 
   INCLUDE 'mpif.h'
   INTEGER STATUS(MPI_STATUS_SIZE),INFO
-  logical, private, save :: my_first_call = .true.
+!  logical, private, save :: my_first_call = .true.
   logical, private, save :: my_first_road = .true.
 
   ! e_fact is the emission control factor (increase/decrease/switch-off)
@@ -102,7 +111,7 @@
   real, public,allocatable, dimension(:,:), save :: emis_kprofile
 
   ! some common variables
-  character(len=40), private :: fname             ! File name
+  character(len=80), private :: fname             ! File name
   character(len=80), private :: errmsg
 
  ! Import list of the emitted species we need to find in the 
@@ -110,11 +119,173 @@
   include 'CM_EmisSpecs.inc'
   logical, dimension(NEMIS_SPECS) :: EmisSpecFound = .false.
 
+  !CDF cdfemis tests
+   real, public, save,  dimension(NLAND,NEMIS_FILE) ::&
+      sumcdfemis ! Only used for MasterProc
+   real, allocatable, private, save,  dimension(:,:) :: cdfemis
+   integer, allocatable, public, save,  dimension(:,:) :: nGridEmisCodes
+   integer, allocatable, public, save,  dimension(:,:,:):: GridEmisCodes
+   real, allocatable, public, save,  dimension(:,:,:,:,:):: GridEmis
  contains
 
 
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
+  subroutine EmisGetCdf(iem, fname)
+   integer, intent(in) :: iem ! index in EMIS_FILE array and GridEmis output
+   character(len=*)    :: fname
+   integer :: i,j, ic, isec, allocerr(6), icode
+   real, dimension(NLAND) :: sumcdfemis_loc, sumcdfemis_iem
+   integer :: icc, ncc
+   character(len=40) :: varname
+   integer, save :: ncmaxfound = 0, ncalls=0    ! Max no. countries found in grid
+   integer :: ncFileID, nDimensions,nVariables,nAttributes,timeDimID,varid,&
+           xtype,ndims  !TESTE testing
+   character(len=10) :: ewords(7), code ! Test Emis:UK:snap:7
+   integer :: nwords, err
+   logical :: my_first_call = .true.
+
+   character(len=len(Country(1)%code)) :: &
+     EU15(15), EU27(27), XEU(5), EUPLUS(27+5)
+
+   EU15 = (/ "AT", "BE", "DK", "FI", "FR", "DE", "GR", "IE", "IT", &
+             "NL", "PT", "ES", "SE",  "GB", "LU" /)
+   EU27  = (/ EU15,"HU", "PL", "CY", "CZ", "EE", "LT", "LV", "MT", &
+                  "SK", "SI", "BG", "RO" /)
+   XEU    = (/ "NO", "CH", "IS", "LI", "MC" /)  ! Still miss some, add later
+   EUPLUS = (/ EU27, XEU /)
+
+   !if( .not.allocated(cdfemis) )  then
+   if( my_first_call  )  then
+        allocerr = 0
+        allocate(cdfemis(MAXLIMAX,MAXLJMAX),stat=allocerr(1))
+        !allocate(cdfemisX(MAXLIMAX,MAXLJMAX,NSECTORS),stat=allocerr(2))
+        allocate(nGridEmisCodes(MAXLIMAX,MAXLJMAX),stat=allocerr(2))
+        allocate(GridEmisCodes(MAXLIMAX,MAXLJMAX,NCMAX),stat=allocerr(3))
+        allocate(GridEmis(NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS_FILE),&
+            stat=allocerr(4))
+        !allocate(sumcdfemis(NLAND,NEMIS_FILE),stat=allocerr(5))
+        !allocate(sumcdfemis_loc(NLAND,NEMIS_FILE),stat=allocerr(6))
+        call CheckStop(any ( allocerr(:) /= 0), &
+              "EmisGet:Allocation error for cdfemis")
+        GridEmisCodes = -1   
+        nGridEmisCodes = 0
+        GridEmis = 0.0
+        sumcdfemis = 0.0
+
+        my_first_call = .false.
+
+   end if
+
+    ! Initialise sums for this pollutant and processor
+    sumcdfemis_loc = 0.0
+    sumcdfemis_iem = 0.0
+
+!---------------------------------------------------------------
+! find emis file and  main properties
+
+ call check(nf90_open(path = trim(fName), mode = nf90_nowrite, ncid = ncFileID))
+
+ call check(nf90_Inquire(ncFileID,nDimensions,nVariables,nAttributes,timeDimID))
+ if( MasterProc ) then
+  write( *,*) 'EmisGetCdf '//trim(fName),' properties: '
+  write( *,*) 'EmisGetCdf Nb of dimensions: ',nDimensions
+  write( *,*) 'EmisGetCdf Nb of variables: ',nVariables
+ end if
+!  print *, 'Nb of global attributes: ',nAttributes
+
+
+  do varid=1,nVariables
+     call check(nf90_Inquire_Variable(ncFileID,varid,varname,xtype,ndims))
+
+    ! Emission terms look like, e.g. Emis:FR:snap:7
+     if( index( varname, "Emis:") < 1 ) cycle ! ONLY emissions wanted
+     call wordsplit(varname,4,ewords,nwords,err,separator=":")
+     if( ewords(3) /= "snap" ) cycle ! ONLY SNAP coded for now
+
+     code =ewords(2)    ! Country ISO
+     read(ewords(4),"(i)") isec
+
+     !print *, varid,trim(name), ewords(1), ewords(2) !,'  Nb of dimensions: ',ndims
+
+     !if ( find_index( code, EU15 ) <1 ) cycle  !only these from  EU+
+
+     ic = find_index( code, Country(:)%code )  !from Country_ml
+
+     if ( Country(ic)%code == "N/A" ) then
+          if(MasterProc) print *, "CDFCYCLE ", ic, trim(Country(ic)%code)
+          cycle    ! see Country_ml
+     end if
+     call CheckStop( ic < 1 , "CDFEMIS NegIC")
+
+     if( DEBUG .and. debug_proc ) write( *,*) 'EmisGetCdf ', varid,trim(varname), &
+           " ", trim(code), ic, isec 
+
+
+     cdfemis = 0.0 ! safety, shouldn't be needed though
+     call ReadField_CDF(fname,varname,cdfemis,1,&
+               interpol='mass_conservative',&
+                needed=.false.,UnDef=0.0,debug_flag=.false.)
+
+     if( maxval(cdfemis ) < 1.0e-10 ) cycle ! Likely no emiss in domain
+
+     if ( DEBUG .and. debug_proc ) then
+         ncalls = ncalls + 1
+         write(*,"(2a,2i4,i3,9f12.4)")"CDF emis-in ",&
+           trim(Country(ic)%name)//":"//trim(EMIS_FILE(iem)), &
+            i_fdom(debug_li),j_fdom(debug_lj),&
+             isec, cdfemis(debug_li, debug_lj), maxval(cdfemis)
+      end if
+
+!call MPI_BARRIER(MPI_COMM_WORLD, INFO)
+
+      sumcdfemis_loc(ic) = sumcdfemis_loc(ic) + &
+          0.001 *  e_fact(isec,ic,iem) * sum( cdfemis(:,:) )
+!print "(a,4i4,3es12.3)", "CDFSUMing ", me, isec, ic, iem, e_fact(isec,ic,iem), sumcdfemis_loc(ic), sum( cdfemis(:,:) )
+
+        do j = 1, ljmax
+            do i = 1, limax
+              if( cdfemis(i,j) > 1.0e-10 ) then
+                call GridAllocate("GridCode"// trim ( EMIS_FILE(iem) ),&
+                  i,j,ic,NCMAX, icode, ncmaxfound,GridEmisCodes,nGridEmisCodes,&
+                  debug_flag=.false.)
+                 GridEmis(isec,i,j,icode,iem) = &
+                   GridEmis(isec,i,j,icode,iem) + cdfemis(i,j)
+                !if ( debug_proc .and. i == debug_li .and. j == debug_lj ) then
+
+                 ncc = nGridEmisCodes(i,j)
+                if ( DEBUG .and. &
+                !if ( &
+                        debug_proc .and. i==debug_li .and. j==debug_lj ) then
+                    write(*,"(a,7i4,2es12.3,3x,99i3)")"CDF emis-alloc ",&
+                     i_fdom(i),j_fdom(j), isec, ic, icode, ncc, ncmaxfound, &
+                     cdfemis(i,j), GridEmis(isec,i,j,icode,iem), &
+                     (GridEmisCodes(i,j,icc),icc=1,ncc)
+                end if
+              end if
+            end do !i
+        end do !j
+      end do ! variables 
+
+     CALL MPI_REDUCE(sumcdfemis_loc(:),sumcdfemis_iem(:),NLAND,&
+                          MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,INFO)
+
+    if( debug_proc ) write(*,*) "FINISHED CDF "//trim(fname), me, sum(sumcdfemis_loc)
+    write(*,*) "FINISHED CDFLOC "//trim(fname), me, sum(sumcdfemis_loc)
+    if( MasterProc ) then
+       write(*,*) "FINISHED CDFM0 "//trim(fname), me, iem, sum(sumcdfemis_loc)
+       sumcdfemis(:,iem) = sumcdfemis_iem(:)
+       do ic = 1, NLAND
+         if ( sumcdfemis(ic,iem) > 1.0e-10 ) & 
+            write(*,"(a,i3,f12.3)") "CDFSUM "//trim(fname), ic, sumcdfemis(ic,iem)
+       end do
+    end if
+!TMP
+!call MPI_BARRIER(MPI_COMM_WORLD, INFO)
+!call StopAll("EMISGETCDF")
+
+  end subroutine EmisGetCdf
+!-----------------------------------------------------------------------------
   subroutine EmisGet(iemis,emisname,IRUNBEG,JRUNBEG,GIMAX,GJMAX, &
                      globemis,globnland,globland,sumemis,        &
                      globemis_flat,flat_globnland,flat_globland)
@@ -151,7 +322,8 @@
   integer, save :: flat_ncmaxfound = 0     ! Max no. countries found in grid
                                            ! including flat emissions
 
-!rv4_2.1   !>============================
+
+   !>============================
 !rv4_2.1 
 !rv4_2.1    if ( my_first_call ) then
 !rv4_2.1         sumemis(:,:) =  0.0       ! initialize sums
@@ -166,7 +338,9 @@
       globemis   (:,:,:,:) = 0.0
       globemis_flat(:,:,:) = 0.0
 
-      if (DEBUG) write(unit=6,fmt=*) "Called EmisGet with index, name", &
+      !if (DEBUG) write(unit=6,fmt=*) "Called EmisGet with index, name", &
+      !     iemis, trim(emisname)
+      write( *,*) "Called EmisGet with index, name", &
            iemis, trim(emisname)
       fname = "emislist." // emisname
       call open_file(IO_EMIS,"r",fname,needed=.true.)
@@ -182,6 +356,8 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 
             if( DEBUG .and. i==DEBUG_i .and. j==DEBUG_j ) write(*,*) &
                 "DEBUG GetEmis "//trim(emisname) // ":" , iic, duml,dumh
+            !if( j== DEBUG_j ) write(*,*) &
+            !    "DEBUG GetEmis "//trim(emisname) // ":" , iic, duml,dumh
             if ( ios <  0 ) exit READEMIS            ! End of file
             call CheckStop(ios > 0,"EmisGet: ios error in emission file")
 
@@ -790,7 +966,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 
   do ie = 1, NEMIS_SPECS
     if ( MasterProc .and. ( EmisSpecFound(ie) .eqv. .false.) ) then
-       call PrintLog("WARNING: EmisSpec not found in snapemis. Ok if in forest fire!! " // trim(EMIS_SPECS(ie)) )
+       call PrintLog("WARNING: EmisSpec not found in snapemis. Ok if bio, nat, or fire!! " // trim(EMIS_SPECS(ie)) )
        write(*,*) "WARNING: EmisSpec - emissions of this compound were specified",&
 &               " in the CM_reactions files, but not found in the ",&
 &               " emissplit.defaults files. Make sure that the sets of files",&

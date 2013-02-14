@@ -13,7 +13,7 @@
 #     mpiprocs=number of MPI threads per node. For 64 processors:
 ##PBS -l select=2:ncpus=32:mpiprocs=32:mem=8gb
 #Stallo
-#PBS -lnodes=4:ppn=16
+#PBS -lnodes=1:ppn=16
 # wall time limit of run
 #PBS -lwalltime=08:00:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
@@ -97,8 +97,7 @@ my %BENCHMARK;
 #  %BENCHMARK = (grid=>"EMEP"  ,year=>2005,emis=>"Modrun07/OpenSourceEmis"           ,archive=>1,chem=>"EmChem03");
 # Dave's preference for EMEP:
 #  %BENCHMARK = (grid=>"EMEP"  ,year=>2006,emis=>"Modrun10/EMEP_trend_2000-2008/2006",archive=>1,chem=>"EmChem09");
-# EECCA Default: 
-   %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun11/EMEP_trend_2000-2009/2008",archive=>1,chem=>"EmChem09soa",make=>"EMEP");
+# EECCA Default: %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun11/EMEP_trend_2000-2009/2008",archive=>1,chem=>"EmChem09soa",make=>"EMEP");
 # Status Runs:
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2007,emis=>"Modrun09/2009-Trend2007-CEIP") ;
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun10/2010-Trend2008_CEIP");
@@ -271,6 +270,7 @@ my $Chem     = "EmChem09soa";
 my $exp_name = "EMEPSTD";
    $exp_name = ($eCWF)?"EMERGENCY":"FORECAST" if $CWF;
 my $testv = "rv4_2";
+   $testv = "2474";   # From svn system, as reminder
    $testv.= ($eCWF)?".eCWF":".CWF" if $CWF;
 
 #User directories
@@ -366,6 +366,12 @@ my @runs     = ( $scenario );
 my ($EMIS_INP, $emisdir, $pm_emisdir);
 $EMIS_INP = "$DATA_LOCAL"                            ;
 $EMIS_INP = "$DATA_LOCAL/Emissions/Modruns" if $TITAN;
+
+#FEB 2013 TEST of netcdf emissions
+my $SNAP_CDF = "/global/work/mifapw/temp";  # Use for CdfFractions
+$SNAP_CDF = "/global/work/mifads/cdf_emis";  # Use for CdfSnap
+$SNAP_CDF = 0 unless $STALLO;
+
 
 #dave: Use Modrun11 if possible:
 my $EMIS_OLD = "/global/work/$AGNES/Emission_Trends";
@@ -463,7 +469,7 @@ $month_days[2] += leap_year($year);
 my $mm1 ="08";      # first month, use 2-digits!
 my $mm2 ="08";      # last month, use 2-digits!
 my $dd1 =  1;       # Start day, usually 1
-my $dd2 =  1;       # End day (can be too large; will be limited to max number of days in the month)
+my $dd2 =  0;       # End day (can be too large; will be limited to max number of days in the month)
                     # put dd2=0 for 3 hours run/test.
 # Allways runn full year on benchmark mode
 ($mm1,$mm2,$dd1,$dd2)=("01","12",1,31) if (%BENCHMARK);
@@ -771,7 +777,10 @@ print "TESTING PM $poll $dir\n";
       $dir = "/home/$AGNES/emis_NMR";
       $ifile{"$dir/gridNH3_NMR_$year"} = "emislist.$poll";
     }else{
-      $ifile{"$dir/grid$gridmap{$poll}"} = "emislist.$poll"
+      $ifile{"$dir/grid$gridmap{$poll}"} = "emislist.$poll";
+      # and in testing:
+      $ifile{"$SNAP_CDF/Emis_$gridmap{$poll}.nc"} 
+           = "GriddedSnapEmis_$poll.nc" if $SNAP_CDF ;
     }
 
     # copy pm25 if needed, avoid having 20 different PM25 time-series

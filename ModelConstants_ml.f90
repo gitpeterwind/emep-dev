@@ -132,7 +132,8 @@ logical, public, parameter ::         &
 !emission data only, not the HIRHAM domain! When e.g. interpolated EMEP emissions
 !are used on the HIRHAM domain, this is not a problem.
 
-logical, public, parameter :: SEAFIX_GEA_NEEDED = .false. ! only if problems
+logical, public, save :: &
+   SEAFIX_GEA_NEEDED = .false. ! only if problems. Reset in nml files. NOT HERE
 
 !=============================================================================
 !+ 1) Define first dimensions that might change quite often -  for different
@@ -144,6 +145,14 @@ character(len=*), parameter, public :: &
 ! DomainName = "EMEPCWF-0.25degEurope"
 ! DomainName = "EMEPCWF-0.20degEurope"
 ! DomainName = "HIRHAM"
+
+!IN-TESTING (reset in NML if wanted)
+!) Emissions. Standard =ascii emislist. CdfFractions possible for INERIS
+!  and new cdf emission system in testing. Reset in config_ files
+! EMIS_TEST can be merged with EMIS_SOURCE after tests
+character(len=20), save, public :: &
+   EMIS_SOURCE = "emislist"     &! "emislist" or CdfFractions
+  ,EMIS_TEST   = "None"          ! "None" or "CdfSnap" 
 
 !NML logical, parameter, public :: IS_GLOBAL = .false..or.(EXP_NAME=="EMERGENCY")
 logical, save, public :: IS_GLOBAL = .false.   !!NML .or.(EXP_NAME=="EMERGENCY")
@@ -174,7 +183,8 @@ integer, public, save, dimension(4) ::   &
   RUNDOMAIN =(/-999,-999,-999,-999/)     ! Set values later
 ! RUNDOMAIN = (/  1, 182,  1, 197 /)     ! HIRHAM
 ! RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA = new EMEP domain
-!!RUNDOMAIN = (/  1, 100,  1, 100 /)     ! Orig EMEP domain in EECCA (for benchmarks)
+!!
+!  RUNDOMAIN = (/  1, 100,  1, 100 /)     ! Orig EMEP domain in EECCA (for benchmarks)
 ! RUNDOMAIN = (/ 40, 210, 12, 184 /)     ! SR TNO28 area
 ! RUNDOMAIN = (/  1, 210,  1, 208 /)     ! TNO28
 ! RUNDOMAIN = (/240, 720, 48, 736 /)     ! TNO07 reduced (15W-45E;30N-73N)
@@ -203,6 +213,8 @@ integer, public, save, dimension(4) ::   &
 ! RUNDOMAIN = (/  1, 321,  1, 221 /)     ! EMEP-CWF, MACC 0.20 domain
 ! RUNDOMAIN = (/ 70+OFFSET_i, 90+OFFSET_i, 43+OFFSET_j,  63+OFFSET_j /) ! (UK)
 ! RUNDOMAIN = (/ 60+OFFSET_i, 86+OFFSET_i, 43+OFFSET_j,  59+OFFSET_j /) ! (UK)
+! RUNDOMAIN = (/ 40+OFFSET_i, 96+OFFSET_i, 23+OFFSET_j,  69+OFFSET_j /) ! (UK)
+! RUNDOMAIN = (/ 60+OFFSET_i,116+OFFSET_i, 33+OFFSET_j,  69+OFFSET_j /) ! (UK)
 ! RUNDOMAIN = (/ 85+OFFSET_i,120+OFFSET_i, 55+OFFSET_j,  70+OFFSET_j /) ! (changeable)
 ! RUNDOMAIN = (/ 85+OFFSET_i,120+OFFSET_i, 15+OFFSET_j,  50+OFFSET_j /) ! (changeable)
 ! RUNDOMAIN = (/ 75+OFFSET_i,110+OFFSET_i, 45+OFFSET_j,  60+OFFSET_j /) ! (gets Esk)
@@ -245,7 +257,7 @@ integer, private, parameter :: &
 ! DEBUG_ii= 97, DEBUG_jj= 62 ! Waldhof
 ! DEBUG_ii=116, DEBUG_jj= 63 ! K-Puszta
 ! DEBUG_ii=102, DEBUG_jj= 48 ! Payerne
-! DEBUG_ii= 85, DEBUG_jj= 50 ! Harwell
+ DEBUG_ii= 85, DEBUG_jj= 50 ! Harwell
 ! DEBUG_ii= 88, DEBUG_jj= 99 ! Harwell TNO TEST
 ! DEBUG_ii= 93, DEBUG_jj= 47 !  Grignon, France
 ! DEBUG_ii= 90, DEBUG_jj= 104 !  Wetland, Tundra
@@ -255,7 +267,7 @@ integer, private, parameter :: &
 !DUST DEBUG_ii= 94-OFFSET_i, DEBUG_jj= 24-OFFSET_j ! 99% water, dust problems
 ! DEBUG_ii= 85, DEBUG_jj= 35 ! Sea, Bay of Biscay
 !DEBUG_ii= 76, DEBUG_jj= 65 ! Sea,  North sea
- DEBUG_ii= 66, DEBUG_jj= 50 ! Sea,  west UK
+! DEBUG_ii= 66, DEBUG_jj= 50 ! Sea,  west UK
 ! DEBUG_ii= 80, DEBUG_jj= 52 ! Irish sea
 ! DEBUG_ii= 91, DEBUG_jj= 67 ! Tange
 ! DEBUG_ii=103, DEBUG_jj= 32 ! Prades, SMDge
@@ -263,7 +275,8 @@ integer, private, parameter :: &
 
 integer, public, parameter :: &
 ! DEBUG_i= 62, DEBUG_j= 45  ! SEA
-  DEBUG_i= DEBUG_II+OFFSET_i, DEBUG_j= DEBUG_JJ+OFFSET_j    ! EMEP/EECCA
+!  DEBUG_i= DEBUG_II+OFFSET_i, DEBUG_j= DEBUG_JJ+OFFSET_j    ! EMEP/EECCA
+ DEBUG_i= 70, DEBUG_j= 40 ! Lichtenstein, to test ncc
 ! DEBUG_i= 59, DEBUG_j= 79  ! JCOAST
 ! DEBUG_i= 9, DEBUG_j= 201                                  ! MACC02
 !  DEBUG_i= 0, DEBUG_j= 0    ! default
@@ -333,7 +346,7 @@ integer, public, parameter :: &
   ,DEBUG_SOILWATER      = .false. &
   ,DEBUG_SOILNOX        = .false. &
   ,DEBUG_VOLC           = .false. & ! Volcanoes
-  ,DEBUG_EMERGENCY      = .false.   ! Emergency: Volcanic Eruption & Nuclear Accident. Under development.
+  ,DEBUG_EMERGENCY      = .false.    ! Emergency: Volcanic Eruption & Nuclear Accident. Under development.
 
 !=============================================================================
 ! 3)  Source-receptor runs?
@@ -478,7 +491,9 @@ subroutine Config_ModelConstants()
      ,MONTHLY_GRIDEMIS &     ! was set in Emissions_ml
      ,SELECT_LEVELS_HOURLY &  ! incl. FORECAST, 3DPROFILES
      ,FORECAST, USE_EMERGENCY, ANALYSIS , USE_AOD &
-     ,NETCDF_COMPRESS_OUTPUT, RUNDOMAIN
+     ,SEAFIX_GEA_NEEDED & ! only if problems, see text above.
+     ,EMIS_SOURCE, EMIS_TEST & 
+     ,NETCDF_COMPRESS_OUTPUT,  RUNDOMAIN
 
     txt = "ok"
     !Can't call check_file due to circularity
