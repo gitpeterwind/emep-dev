@@ -235,6 +235,27 @@ dsSep14   Wesely_ml.f90
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Alvaro 15th Feb 2013.  (2475)
+
+Implement read/write for NPP Accident senarios (eEMEP/NUC)
+
+Volcanos_ml,Emergency_ml,Makefile.SRCS,
+  Move volcanic eruption code (eEMEP/ASH) out of Volcanos_ml
+  into a new module Emergency_ml
+  
+Emergency_ml,Setup_1d_ml
+  Rename EruptionRate to EmergencyRate
+
+Emergency_ml,mk.GenChem,run.pl
+  Rename volcanoes.csv and eruptions.csv to emergency_location.csv and emergency_emission.csv,
+  respectively. The emergency_*.csv files contain locations and emissions parameters
+  for all emergency senarios in use.
+
+Makefile
+  Add target eEMEP2013 for easy cinfiguration for "North Korea nuclear test"
+  scenario
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Dave 14th Feb 2013.  (2474)
 Code added to test new netcdf emission systems.  The new emissions don't
 do anything just yet except slow the code down enormously if

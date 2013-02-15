@@ -97,7 +97,8 @@ my %BENCHMARK;
 #  %BENCHMARK = (grid=>"EMEP"  ,year=>2005,emis=>"Modrun07/OpenSourceEmis"           ,archive=>1,chem=>"EmChem03");
 # Dave's preference for EMEP:
 #  %BENCHMARK = (grid=>"EMEP"  ,year=>2006,emis=>"Modrun10/EMEP_trend_2000-2008/2006",archive=>1,chem=>"EmChem09");
-# EECCA Default: %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun11/EMEP_trend_2000-2009/2008",archive=>1,chem=>"EmChem09soa",make=>"EMEP");
+# EECCA Default:
+## %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun11/EMEP_trend_2000-2009/2008",archive=>1,chem=>"EmChem09soa",make=>"EMEP");
 # Status Runs:
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2007,emis=>"Modrun09/2009-Trend2007-CEIP") ;
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun10/2010-Trend2008_CEIP");
@@ -153,6 +154,7 @@ if ($CWF) {
   chop($CWFDUMP[1] = `date -d '$CWFBASE 2 day' +%Y%m%d000000`); # 2nd dump/nest
   $MAKEMODE=$eCWF?"eEMEP":"MACC";    # Standard Forecast model setup
 ##$MAKEMODE=$eCWF?"eEMEP2010":"MACC-EVA2010";    # 2010 special
+##$MAKEMODE=$eCWF?"eEMEP2013":"MACC";            # 2013 special
   $MAKEMODE .="-3DVar" if($aCWF);
 }
  $CWF=0 if %BENCHMARK;
@@ -253,8 +255,8 @@ my $DATA_LOCAL = "$DataDir/$GRID";   # Grid specific data , EMEP, EECCA, GLOBAL
 my $PollenDir = "/home/$BIRTHE/Unify/MyData";
    $PollenDir = 0 unless $STALLO;
 # Eruption (eEMEP)
-my $EruptionDir = "$HOMEROOT/$ALVARO/Unify/MyData";
-   $EruptionDir = 0 unless -d $EruptionDir;
+my $EmergencyData = "$HOMEROOT/$ALVARO/Unify/MyData";
+   $EmergencyData = 0 unless -d $EmergencyData;
 
 
 # Boundary conditions: set source direcories here:
@@ -269,7 +271,7 @@ my $Chem     = "EmChem09soa";
 
 my $exp_name = "EMEPSTD";
    $exp_name = ($eCWF)?"EMERGENCY":"FORECAST" if $CWF;
-my $testv = "rv4_2";
+my $testv = "rv4_2.SVN";
    $testv = "2474";   # From svn system, as reminder
    $testv.= ($eCWF)?".eCWF":".CWF" if $CWF;
 
@@ -932,20 +934,22 @@ if ( $iyr_trend > 2015 )  {
   }
 
   $ifile{"$DataDir/VolcanoesLL.dat"} = "VolcanoesLL.dat";
-# Volcanic Eruption (eEMEP)
+# Emergency senarios (eEMEP)
   if(($MAKEMODE =~ /2010/) or ($MAKEMODE =~ /eEMEP/)){
-    cp ("$ChemDir/eruptions.csv","eruptions.csv");
-    $ifile{"$ChemDir/volcanoes.csv"} = "volcanoes.csv";
-    print "$ChemDir/volcanoes.csv\n";
-    open(IN,"<$ChemDir/volcanoes.csv");
+    cp ("$ChemDir/emergency_emission.csv","emergency_emission.csv");
+    $ifile{"$ChemDir/emergency_location.csv"} = "emergency_location.csv";
+    print "$ChemDir/emergency_location.csv\n";
+    open(IN,"<$ChemDir/emergency_location.csv");
     while(my $line = <IN>){
-      $line=~ s/#.*//;                 # Get rid of comment lines
-      my $vname = (split(",",$line))[0];  # Volcano tracer name
-      my $efile = "$EruptionDir/${vname}_7bin.eruptions";
-      $efile = "$EruptionDir/${vname}_2bin_${MAKEMODE}.eruptions" if($MAKEMODE =~ /2010/);
-    # $efile = "$EruptionDir/${vname}_2bin_${MAKEMODE}_SR-SOx.eruptions" if($MAKEMODE =~ /2010/);
-    # $efile = "$EruptionDir/${vname}_2bin_${MAKEMODE}_SR-PMx.eruptions" if($MAKEMODE =~ /2010/);
-      system("cat $efile >> eruptions.csv") if (-e $efile);
+      $line=~ s/#.*//;                    # Get rid of comment lines
+      my $vname = (split(",",$line))[0];  # Emergency tracer name
+      my $efile = "$EmergencyData/${vname}_7bin.eruptions";  # Volcanic eruption
+      $efile = "$EmergencyData/${vname}_2bin_${MAKEMODE}.eruptions" if($MAKEMODE =~ /2010/);
+    # $efile = "$EmergencyData/${vname}_2bin_${MAKEMODE}_SR-SOx.eruptions" if($MAKEMODE =~ /2010/);
+    # $efile = "$EmergencyData/${vname}_2bin_${MAKEMODE}_SR-PMx.eruptions" if($MAKEMODE =~ /2010/);
+      system("cat $efile >> emergency_emission.csv") if (-e $efile);
+      $efile = "$EmergencyData/${vname}.accident";           # NPP accident
+      system("cat $efile >> emergency_emission.csv") if (-e $efile);
     }
     close(IN);
   }

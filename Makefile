@@ -126,7 +126,7 @@ touchdepend:
 	touch .depend
 
 # Model/Config specific targets
-EMEP EMEP2010 SR-EMEP SR-EMEP2010 MACC MACC-EVA2010 SR-MACC eEMEP eEMEP2010:
+EMEP EMEP2010 SR-EMEP SR-EMEP2010 MACC MACC-EVA2010 SR-MACC eEMEP eEMEP2010 eEMEP2013:
 	ln -sf $(filter %.f90 %.inc,$+) . && \
 	$(MAKE) MACHINE=$(MACHINE) -j4 $(PROG)
 
@@ -138,7 +138,7 @@ EMEP EMEP2010 MACC MACC-EVA2010 eEMEP2010: \
 SR-EMEP SR-EMEP2010 SR-MACC: \
 	  ./ZD_SR/My_RunSettings.inc ./ZD_SR/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
 	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_VBS/My_SOA_ml.f90 ./ZD_3DVar/My_3DVar_ml.f90
-eEMEP: \
+eEMEP eEMEP2013: \
 	  ./ZD_OZONE/My_RunSettings.inc ./ZD_OZONE/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
 	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_OZONE/My_SOA_ml.f90 ./ZD_3DVar/My_3DVar_ml.f90
 # GenChem config
@@ -161,9 +161,11 @@ SR-EMEP2010-GenChem-%:
 SR-MACC-GenChem-%:
 	mk.GenChem -r $* -f GFASv1 -e none
 eEMEP-GenChem-%:
-	mk.GenChem -r $* -f GFASv1 -e none -V 7bin,$(VENTS) -N $(NPPAS) -q # -h
+	mk.GenChem -r $* -f GFASv1 -e none -V 7bin,$(VENTS) -N $(NPPAS) -q #-h
 eEMEP2010-GenChem-%:
 	mk.GenChem -r $* -f FINNv1 -e SeaSalt,Dust,Isotopes -V 2bin,Eyjafj.ll #-h
+eEMEP2013-GenChem-%:
+	mk.GenChem -r $* -f GFASv1 -e none                  -N NorthKorea -q #-h
 
 # eEMP Default Vents, NPPs & NUCs
 eEMEP-GenChem-%: VENTS ?= Vesuvius,Etna,Kr.suv.k,Katla,Askja

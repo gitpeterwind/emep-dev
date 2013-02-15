@@ -90,9 +90,11 @@ GETOPTS(){
   local vdir=$PWD/ZCM_Emergency
   local VolcCSV="$vdir/Mastin_et_al_2009a_table3.csv" \
         ErupCSV="$vdir/Mastin_et_al_2009b_table3.csv" \
-        NppCSV="$vdir/NPP_Location.csv" NacCSV="$vdir/NPP_Accident.csv" \
-        COL='1,5-6,8-9,11-14,16' vbin=7bin tracer='1234-67=/D23L567'
+        NppCSV="$vdir/NPP_Location.csv"       NacCSV="$vdir/NPP_Accident.csv" \
+        LocCSV="$rdir/emergency_location.csv" EmiCSV="$rdir/emergency_emission.csv" \
+        COL='1,5-6,8-9,11-14,16' vbin=7bin tracer='1234-67=|PP34L678'
 # 1:NUMBER,5:NAME,6:LOCATION,8:LATITUDE,9:NS,11:LONGITUDE,12:EW,13:ELEV,14:TYPE,16:ERUPTION TYPE
+  [[ "$*" = *-[VN]* ]] && rm -f $LocCSV $EmiCSV
   while getopts ":f:r:e:V:N:qvh" OPT; do
     [[ "$VERB" = 'on' ]] && echo -e "Processing option:\n\t-$OPT '$OPTARG'"
     case "$OPT" in
@@ -120,41 +122,39 @@ GETOPTS(){
       esac
       # cut     selects columns from $VolcCSV
       # sed     replaces '-' & '=' in Volcano NUMBER and remove blanks
-      grep '^# '      "$VolcCSV"|tee $rdir/volcanoes.csv  # Source info
-      grep '^#NUMBER' "$VolcCSV"|cut -d',' -f$COL|
-        tee -a $rdir/volcanoes.csv                        # Headers
-      cp -f "$ErupCSV" $rdir/eruptions.csv
+      grep '^# '      "$VolcCSV"|tee -a $LocCSV                  # Source info
+      grep '^#NUMBER' "$VolcCSV"|cut -d',' -f$COL|tee -a $LocCSV # Headers
+      cat "$ErupCSV" >> $EmiCSV
       for N in ${!EE[*]};do
         tracer=`grep -iE ${EE[$N]/./'.{1,2}'} "$VolcCSV"|cut -d',' -f$COL|
         sed 's/^\(....\)-/\1A/g;s/^\(....\)=/\1B/g;s/^\(.......\)-/\1A/g;s/^\(.......\)=/\1B/g;s/^/V/g;s/, */,/g;'` # Volcano description
         [[ -n "$tracer" ]] ||
           HELP $* "\nUnknown volcano option:\n\t-$OPT ${EE[$N]}"
-        echo "$tracer"|tee -a $rdir/volcanoes.csv
-        tracer="${tracer%%,*}"                             # Tracer name
+        echo "$tracer"|tee -a $LocCSV
+        tracer="${tracer%%,*}"                                  # Tracer name
         volcan[$N]=$rdir/ASH$tracer
         sed "s/_ASH_/$tracer/g;" $vdir/ASH_$vbin.species   > ${volcan[$N]}.species
         sed "s/_ASH_/$tracer/g;" $vdir/ASH_$vbin.reactions > ${volcan[$N]}.reactions
-        [[ -s $vdir/${tracer}_$vbin.eruptions ]] && cat $vdir/${tracer}_$vbin.eruptions >> $rdir/eruptions.csv
+        [[ -s $vdir/${tracer}_$vbin.eruptions ]] && cat $vdir/${tracer}_$vbin.eruptions >> $LocCSV
       done;;
     N)nucppa=( );EE=( )
       [[ "$OPTARG" = \-* ]] || [[ "$OPTARG" = none ]] || EE=( ${OPTARG//,/ } )
       # cut     selects columns from $NppCSV
       # sed     replaces '-' & '=' in NPP NUMBER and remove blanks
-      grep '^# '      "$NppCSV"|tee $rdir/npp.csv         # Source info
-      grep '^#NUMBER' "$NppCSV"|cut -d',' -f1-10|
-        tee -a $rdir/npp.csv                              # Headers
-      cp -f "$NacCSV" $rdir/npp_accident.csv
+      grep '^# '      "$NppCSV"|tee -a $LocCSV                   # Source info
+      grep '^#NUMBER' "$NppCSV"|cut -d',' -f1-10|tee -a $LocCSV  # Headers
+      cat "$NacCSV" >> $EmiCSV
       for N in ${!EE[*]};do
         tracer=`grep -iE ${EE[$N]/./'.{1,2}'} "$NppCSV"|cut -d',' -f1-10|
-        sed 's/^\(....\)-/\1A/g;s/^\(....\)=/\1B/g;s/^\(.......\)-/\1A/g;s/^\(.......\)=/\1B/g;s/^/V/g;s/, */,/g;'` # NPP description
+        sed 's/^\(....\)-/\1A/g;s/^\(....\)=/\1B/g;s/^\(.......\)-/\1A/g;s/^\(.......\)=/\1B/g;s/^/N/g;s/, */,/g;'` # NPP description
         [[ -n "$tracer" ]] ||
           HELP $* "\nUnknown npp option:\n\t-$OPT ${EE[$N]}"
-        echo "$tracer"|tee -a $rdir/npp.csv
+        echo "$tracer"|tee -a $LocCSV
         tracer="${tracer%%,*}"                                  # Tracer name
         nucppa[$N]=$rdir/NPP$tracer
         sed "s/_NPP_/$tracer/g;" $vdir/NPP.species   > ${nucppa[$N]}.species
         sed "s/_NPP_/$tracer/g;" $vdir/NPP.reactions > ${nucppa[$N]}.reactions
-        [[ -s $vdir/$tracer.accident ]] && cat $vdir/$tracer.accident >> $rdir/npp_accident.csv
+        [[ -s $vdir/$tracer.accident ]] && cat $vdir/$tracer.accident >> $EmiCSV
       done;;
   q|v);;
     h)HELP $*;;
