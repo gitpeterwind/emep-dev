@@ -235,6 +235,30 @@ dsSep14   Wesely_ml.f90
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Peter 15th Feb 2013.  (2477)
+
+NB: this will affect results a lot! (shift emissions by 2 weeks)
+
+EmisGet_ml.f90: close netcdf (memory leak otherwise)
+InterpolationRoutines_ml, new routine Averageconserved_interpolateInterpolate
+Timefactors_ml: timefactor for month, new interpolation between monthes.
+
+New turning point at the middle of the period. The equation to solve is then:
+1)Factor at start of month is equal average between two adjacent month
+2)Factor at end of month is equal average between two adjacent month
+3)Integral or average over all factors in a month is equal to monthly factor
+4)The factor changes linearly from start to middle, and middle and end of the month
+
+The value to calculate by a simple formula is then the factor at the middle of the month that gives all the wanted properties.
+If we don't take into account the discretization (but we will take this into account, so the formula will get much more unreadable):
+
+Middle = 2*Average - (End + Start)/2
+
+Also since we need a new turning point, we will get something like "if(xday<0.5)then ...else...".
+
+This will give some level of extrapolation, since the value at middle of the month can for example be higher than the average of all the 3  monthes (but never unreasonable values).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Alvaro 15th Feb 2013.  (2475-2476)
 
 Implement read/write for NPP Accident senarios (eEMEP/NUC)

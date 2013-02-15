@@ -267,6 +267,8 @@
         end do !j
       end do ! variables 
 
+      call check(nf90_close(ncFileID))
+
      CALL MPI_REDUCE(sumcdfemis_loc(:),sumcdfemis_iem(:),NLAND,&
                           MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,INFO)
 
@@ -280,6 +282,8 @@
             write(*,"(a,i3,f12.3)") "CDFSUM "//trim(fname), ic, sumcdfemis(ic,iem)
        end do
     end if
+
+
 !TMP
 !call MPI_BARRIER(MPI_COMM_WORLD, INFO)
 !call StopAll("EMISGETCDF")
