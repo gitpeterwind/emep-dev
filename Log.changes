@@ -235,7 +235,7 @@ dsSep14   Wesely_ml.f90
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-Alvaro 15th Feb 2013.  (2475)
+Alvaro 15th Feb 2013.  (2475-2476)
 
 Implement read/write for NPP Accident senarios (eEMEP/NUC)
 
@@ -254,6 +254,9 @@ Emergency_ml,mk.GenChem,run.pl
 Makefile
   Add target eEMEP2013 for easy cinfiguration for "North Korea nuclear test"
   scenario
+
+ZCM_Emergency/NPP_Accident.csv,NPP_Location.csv
+  Add/update scenario paramenters for NPP accidents
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Dave 14th Feb 2013.  (2474)
