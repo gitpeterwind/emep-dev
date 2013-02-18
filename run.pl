@@ -127,6 +127,7 @@ my $SR= 0;     # Set to 1 if source-receptor calculation
                # check also variables in package EMEP::Sr below!!
 
 my $CWF=0;     # Set to N for 'N'-day forecast mode (0 otherwise)
+   $CWF=0 if %BENCHMARK;
 my ($CWFBASE, $CWFDAYS, $CWFMETV, @CWFDATE, @CWFDUMP, $eCWF, $aCWF) if $CWF;
 if ($CWF) {
   chop($CWFBASE = `date +%Y%m%d`);   # Forecast base date     (default today)
@@ -157,7 +158,6 @@ if ($CWF) {
 ##$MAKEMODE=$eCWF?"eEMEP2013":"MACC";            # 2013 special
   $MAKEMODE .="-3DVar" if($aCWF);
 }
- $CWF=0 if %BENCHMARK;
  $MAKEMODE="SR-$MAKEMODE" if($MAKEMODE and $SR);
 
 # <---------- start of user-changeable section ----------------->
@@ -272,7 +272,7 @@ my $Chem     = "EmChem09soa";
 my $exp_name = "EMEPSTD";
    $exp_name = ($eCWF)?"EMERGENCY":"FORECAST" if $CWF;
 my $testv = "rv4_2.SVN";
-   $testv = "2474";   # From svn system, as reminder
+   $testv = "2481";   # From svn system, as reminder
    $testv.= ($eCWF)?".eCWF":".CWF" if $CWF;
 
 #User directories
@@ -941,14 +941,16 @@ if ( $iyr_trend > 2015 )  {
     print "$ChemDir/emergency_location.csv\n";
     open(IN,"<$ChemDir/emergency_location.csv");
     while(my $line = <IN>){
-      $line=~ s/#.*//;                    # Get rid of comment lines
-      my $vname = (split(",",$line))[0];  # Emergency tracer name
+      $line=~ s/#.*//;                          # Get rid of comment lines
+      chop(my $vname = (split(",",$line))[0]);  # Emergency tracer name
       my $efile = "$EmergencyData/${vname}_7bin.eruptions";  # Volcanic eruption
       $efile = "$EmergencyData/${vname}_2bin_${MAKEMODE}.eruptions" if($MAKEMODE =~ /2010/);
     # $efile = "$EmergencyData/${vname}_2bin_${MAKEMODE}_SR-SOx.eruptions" if($MAKEMODE =~ /2010/);
     # $efile = "$EmergencyData/${vname}_2bin_${MAKEMODE}_SR-PMx.eruptions" if($MAKEMODE =~ /2010/);
       system("cat $efile >> emergency_emission.csv") if (-e $efile);
       $efile = "$EmergencyData/${vname}.accident";           # NPP accident
+      system("cat $efile >> emergency_emission.csv") if (-e $efile);
+      $efile = "$EmergencyData/${vname}.explosion";          # NUC explosion
       system("cat $efile >> emergency_emission.csv") if (-e $efile);
     }
     close(IN);

@@ -44,9 +44,9 @@ use GridValues_ml,        only: xm2,sigma_bnd,GridArea_m2,&
                                 coord_in_processor,coord_in_gridbox
 use Io_ml,                only: open_file,read_line,IO_TMP
 use SmallUtils_ml,        only: wordsplit,find_index
-use ModelConstants_ml,    only: KCHEMTOP, KMAX_MID, MasterProc, &
+use ModelConstants_ml,    only: KCHEMTOP,KMAX_MID,MasterProc, &
                                 USE_EMERGENCY,DEBUG=>DEBUG_EMERGENCY,&
-                                TXTLEN_NAME
+                                TXTLEN_NAME,dt_advec,dt_advec_inv
 use OwnDataTypes_ml,      only: TXTLEN_SHORT
 use MetFields_ml,         only: roa, z_bnd
 use Par_ml,               only: me
@@ -77,7 +77,7 @@ type :: vent
   character(len=9)              :: id  =''    ! e.g. V1702A02B
   character(len=TXTLEN_NAME)    :: name=''    ! e.g. Eyjafjöll
   real :: lat=-1.0,lon=-1.0,elev=-1.0         ! vent coords and elevation
-  character(len=2)              :: etype=''   ! e.g. S0
+  character(len=4)              :: etype=''   ! e.g. S0, 10kt
   integer :: grp=-1,iloc=-1,jloc=-1           ! Which (ash)goup,local i,j indes
  !character(len=TXTLEN_SHORT)   :: location,vtype  ! other info
 endtype vent
@@ -104,7 +104,7 @@ character(len=*),parameter :: &
   ERR_ERUP_CSV="Emergency ERUP def.file "//ferupdef,          &
   ERR_VENT_MAX="Emergency NMAX_VENT exceeded in "//fventdef,  &
   ERR_ERUP_MAX="Emergency NMAX_ERUP exceeded in "//ferupdef,  &
-  MSG_FMT="('EMERGENCY:',1X,A,5(:,1X,I0,':',A),3(:,1X,G10.3,':',A))"
+  MSG_FMT="('EMERGENCY:',:,1X,A,5(:,1X,I0,':',A),3(:,1X,G10.3,':',A))"
 
 INCLUDE 'mpif.h'
 INTEGER STATUS(MPI_STATUS_SIZE),INFO
@@ -304,44 +304,50 @@ function EmergencyRate(i,j) result(emiss)
     endif
     doVENTe: do v=1,nvent
       if(nerup(v)>0)cycle doVENTe   ! Specific found --> no need for Default
-      e=find_index(ventdef(v)%etype,erupdef(0,:nerup(0))%id)
-      if(e<1)       cycle doVENTe   ! No Default found
-      if(DEBUG) &
-        write(*,MSG_FMT)'Erup.Default',me,'Expand',&
-          v,trim(ventdef(v)%id),e,trim(erupdef(0,e)%id)
-      derup=erupdef(0,e)
-      if(derup%spc<0.and.any(derup%name(1:3)==(/"ASH","NUC","###"/)))then          ! Expand variable name
-        derup%name=trim(ventdef(v)%id)//trim(derup%name(4:))  ! e.g. ASH_F --> V1702A02B_F
-        derup%spc=find_index(derup%name,species(:)%name)      ! Specie (total)
-      endif
-      if(derup%spc>0)then           ! Expand single SPC
-        nerup(v)=nerup(v)+1
-        call CheckStop(nerup(v)>NMAX_ERUP,ERR_ERUP_MAX//" expand")
-        erupdef(v,nerup(v))=derup
+      e=nerup(0)+1       ! A single defaul can have multiple lines, e.g.
+      do                 ! each line with a difinition for a different specie
+        e=find_index(ventdef(v)%etype,erupdef(0,:e-1)%id)
+        if(e<1)       cycle doVENTe   ! No Default found
         if(DEBUG) &
-          write(*,MSG_FMT)'Erup.Default',me,'Expand SPC',nerup(v),trim(derup%id)
-      elseif(ventdef(v)%grp>0)then   ! Expand GROUP of SPC
-        select case (size(chemgroups(ventdef(v)%grp)%ptr))
-        case(2);binsplit=>VAAC_2BIN_SPLIT
-        case(7);binsplit=>VAAC_7BIN_SPLIT
-        case default
-          call CheckStop(ERR_ERUP_CSV//' can not expand '//trim(ventdef(v)%id))
-        endselect
-        do g=1,size(chemgroups(ventdef(v)%grp)%ptr)
-          derup%spc=chemgroups(ventdef(v)%grp)%ptr(g)  ! Specie (total)
-          derup%name=species(derup%spc)%name
-          derup%rate=erupdef(0,e)%rate*binsplit(g)
+          write(*,MSG_FMT)'Erup.Default',me,'Expand',&
+            v,trim(ventdef(v)%id),e,trim(erupdef(0,e)%id)
+        derup=erupdef(0,e)
+        if(derup%spc<1.and.any(derup%name(1:3)==(/"ASH","NUC","###"/)))then ! Expand variable name
+          derup%name=trim(ventdef(v)%id)//trim(derup%name(4:))  ! e.g. ASH_F --> V1702A02B_F
+          derup%spc=find_index(derup%name,species(:)%name)      ! Specie (total)
+          if(DEBUG)&
+            write(*,MSG_FMT)'Erup.Default',me,'Expand',&
+              derup%spc,trim(derup%name)
+        endif
+        if(derup%spc>0)then           ! Expand single SPC
           nerup(v)=nerup(v)+1
           call CheckStop(nerup(v)>NMAX_ERUP,ERR_ERUP_MAX//" expand")
           erupdef(v,nerup(v))=derup
           if(DEBUG) &
-          write(*,MSG_FMT)'Erup.Default',me,'Expand GRP',nerup(v),trim(derup%id),&
-            derup%spc,trim(derup%name)
-        enddo
-      else
-        if(DEBUG) &
-          write(*,MSG_FMT)'Erup.Default',me,'not found'
-      endif
+            write(*,MSG_FMT)'Erup.Default',me,'Expand SPC',nerup(v),trim(derup%id)
+        elseif(ventdef(v)%grp>0)then   ! Expand GROUP of SPC
+          select case (size(chemgroups(ventdef(v)%grp)%ptr))
+          case(2);binsplit=>VAAC_2BIN_SPLIT
+          case(7);binsplit=>VAAC_7BIN_SPLIT
+          case default
+            call CheckStop(ERR_ERUP_CSV//' can not expand '//trim(ventdef(v)%id))
+          endselect
+          do g=1,size(chemgroups(ventdef(v)%grp)%ptr)
+            derup%spc=chemgroups(ventdef(v)%grp)%ptr(g)  ! Specie (total)
+            derup%name=species(derup%spc)%name
+            derup%rate=erupdef(0,e)%rate*binsplit(g)
+            nerup(v)=nerup(v)+1
+            call CheckStop(nerup(v)>NMAX_ERUP,ERR_ERUP_MAX//" expand")
+            erupdef(v,nerup(v))=derup
+            if(DEBUG) &
+            write(*,MSG_FMT)'Erup.Default',me,'Expand GRP',nerup(v),trim(derup%id),&
+              derup%spc,trim(derup%name)
+          enddo
+        else
+          if(DEBUG) &
+            write(*,MSG_FMT)'Erup.Default',me,'not found'
+        endif
+      enddo
     enddo doVENTe
     Emergency_found=any(nerup(1:nvent)>0)
   endsubroutine setRate
@@ -386,7 +392,7 @@ function EmergencyRate(i,j) result(emiss)
     character(len=TXTLEN_SHORT) :: words(10)=''  ! Array of paramaters
     logical :: edef=.true.                       ! default setings?
     integer :: stat,nwords,ivent,ispc=0
-    real    :: base,top,rate,m63,dhh
+    real    :: base,top,rate,frac,dhh
     call wordsplit(line,size(words),words,nwords,stat,strict_separator=",",empty_words=.true.)
     call CheckStop(stat,"EMERGENCY: Wrong/Unknown line format "//trim(line))
     call CheckStop(nwords,size(words),"EMERGENCY: Missing data in line "//trim(line))
@@ -412,15 +418,21 @@ function EmergencyRate(i,j) result(emiss)
       read(words(3),*)base  ! [km]
       base=base*1e3         ! [m]
     endselect
-    read(words(5),*)dhh
     read(words(6),*)rate
-    select case (words(7)) ! m63
-    case(" ")   ;m63=1.0
-    case default;read(words(7),*)m63
+    select case (words(7))  ! m63 or effect.fraction
+      case(" ")   ;frac=1.0
+      case default;read(words(7),*)frac
     endselect
+    select case (words(5))  ! dt[h]
+    case("1dt")
+      dhh=(dt_advec-0.1)/3600.0 ! only one time step
+      frac=frac*dt_advec_inv    ! assume rate=total emission
+    case default
+      read(words(5),*)dhh
+    endselect   
     words(8)=getDate(words(8),words(8),words(9),dhh,debug=DEBUG) ! Start [date/code]
     words(9)=getDate(words(9),words(8),words(9),dhh,debug=DEBUG) ! End   [date/code]
-    def=erup(trim(words(1)),trim(words(2)),base,top,rate*m63,&
+    def=erup(trim(words(1)),trim(words(2)),base,top,rate*frac,&
       trim(words(8)),trim(words(9)),max(ivent,0),max(ispc,0),edef)
   endfunction getErup
 !----------------------------!
@@ -434,10 +446,10 @@ function EmergencyRate(i,j) result(emiss)
     logical :: mydebug=.false.
     mydebug=.false.;if(present(debug))mydebug=debug.and..false.
     select case (code)
-    case("SR")          ! Start of the simulation
-      str=date2string(SDATE_FMT,startdate,debug=mydebug)
+    case("SR")          ! Start of the simulation (model actually starts on 2nd time step)
+      str=date2string(SDATE_FMT,startdate,addsecs=dt_advec,debug=mydebug)
     case("SR+D")        ! Start of the simulation + dh
-      str=date2string(SDATE_FMT,startdate,addsecs=dh*36e2,debug=mydebug)
+      str=date2string(SDATE_FMT,startdate,addsecs=dh*36e2+dt_advec,debug=mydebug)
     case("SE+D")        ! Start eruption + dh; no wildcards in SE allowed
       str=date2string(SDATE_FMT,string2date(se,SDATE_FMT,debug=mydebug),addsecs=dh*36e2,debug=mydebug)
     case("EE+D")        ! End eruption   - dh; no wildcards in EE allowed

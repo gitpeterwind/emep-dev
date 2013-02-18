@@ -52,13 +52,14 @@ VERB='off';[[ "$*" = *-q* ]] && VERB='quiet';[[ "$*" = *-v* ]] && VERB='on'
 HELP(){
   local EE=`echo ${extras[*]#*ZCM_}|tr ' ' ','` \
         VV=`echo ${volcan[*]#*ZCM_}|tr ' ' ','` \
-        PP=`echo ${nucppa[*]#*ZCM_}|tr ' ' ','`
+        PP=`echo ${nucppa[*]#*ZCM_}|tr ' ' ','` \
+        XX=`echo ${nucexp[*]#*ZCM_}|tr ' ' ','`
   cat << _EOF
 '$ERGO' prepare Chemestry files (CM_.f90) for Unimod
 
 Usage:
   $ERGO [-h] [-v] [-q] [-f fire] [-r run] [-e extra1[,extra2[...]]]
-        [-V volc1,[,volc2[...]]] [-N npp1,[,npp2[...]]]
+        [-V volc1,[,volc2[...]]] [-N npp1,[,npp2[...]]] [-X nuc1,[,nuc2[...]]]
 
 Examples:
 # EMEP GenChmem standard setup assumed in \`make EMEP\`
@@ -79,6 +80,7 @@ Options:
   -e extras Sets \$extras variable (currently: ${EE:-'none'})
   -V volc   Sets \$volcan variable (currently: ${VV:-'none'})
   -N npp    Sets \$nucppa variable (currently: ${PP:-'none'})
+  -X nuc    Sets \$nucexp variable (currently: ${XX:-'none'})
 _EOF
   (( $# )) && echo -e "\nCurrent call:\n\t$ERGO $*"
   exit 1
@@ -91,11 +93,12 @@ GETOPTS(){
   local VolcCSV="$vdir/Mastin_et_al_2009a_table3.csv" \
         ErupCSV="$vdir/Mastin_et_al_2009b_table3.csv" \
         NppCSV="$vdir/NPP_Location.csv"       NacCSV="$vdir/NPP_Accident.csv" \
+        NucCSV="$vdir/NUC_Location.csv"       NexCSV="$vdir/NUC_Explosion.csv" \
         LocCSV="$rdir/emergency_location.csv" EmiCSV="$rdir/emergency_emission.csv" \
         COL='1,5-6,8-9,11-14,16' vbin=7bin tracer='1234-67=|PP34L678'
 # 1:NUMBER,5:NAME,6:LOCATION,8:LATITUDE,9:NS,11:LONGITUDE,12:EW,13:ELEV,14:TYPE,16:ERUPTION TYPE
-  [[ "$*" = *-[VN]* ]] && rm -f $LocCSV $EmiCSV
-  while getopts ":f:r:e:V:N:qvh" OPT; do
+  [[ "$*" = *-[VNX]* ]] && rm -f $LocCSV $EmiCSV
+  while getopts ":f:r:e:V:N:X:qvh" OPT; do
     [[ "$VERB" = 'on' ]] && echo -e "Processing option:\n\t-$OPT '$OPTARG'"
     case "$OPT" in
     f)ffires=$OPTARG;;
@@ -156,25 +159,45 @@ GETOPTS(){
         sed "s/_NPP_/$tracer/g;" $vdir/NPP.reactions > ${nucppa[$N]}.reactions
         [[ -s $vdir/$tracer.accident ]] && cat $vdir/$tracer.accident >> $EmiCSV
       done;;
+    X)nucexp=( );EE=( )
+      [[ "$OPTARG" = \-* ]] || [[ "$OPTARG" = none ]] || EE=( ${OPTARG//,/ } )
+      # cut     selects columns from $NppCSV
+      # sed     replaces '-' & '=' in NPP NUMBER and remove blanks
+      grep '^# '      "$NucCSV"|tee -a $LocCSV                   # Source info
+      grep '^#NUMBER' "$NucCSV"|cut -d',' -f1-10|tee -a $LocCSV  # Headers
+      cat "$NexCSV" >> $EmiCSV
+      for N in ${!EE[*]};do
+        tracer=`grep -iE ${EE[$N]/./'.{1,2}'} "$NucCSV"|cut -d',' -f1-10|
+        sed 's/^\(....\)-/\1A/g;s/^\(....\)=/\1B/g;s/^\(.......\)-/\1A/g;s/^\(.......\)=/\1B/g;s/^/X/g;s/, */,/g;'` # NPP description
+        [[ -n "$tracer" ]] ||
+          HELP $* "\nUnknown npp option:\n\t-$OPT ${EE[$N]}"
+        echo "$tracer"|tee -a $LocCSV
+        tracer="${tracer%%,*}"                                  # Tracer name
+        nucexp[$N]=$rdir/NUC$tracer
+        sed "s/_NUC_/$tracer/g;" $vdir/NUC.species   > ${nucexp[$N]}.species
+        sed "s/_NUC_/$tracer/g;" $vdir/NUC.reactions > ${nucexp[$N]}.reactions
+        [[ -s $vdir/$tracer.explosion ]] && cat $vdir/$tracer.explosion >> $EmiCSV
+      done;;
   q|v);;
     h)HELP $*;;
     *)HELP $* "\nUnknown $ERGO option:\n\t-$OPT $OPTARG" ;;
     esac
   done
+  emergency=( ${volcan[@]} ${nucppa[@]} ${nucexp[@]} )
 };GETOPTS $* #-vh
 
 if [ $run == EmChem09 ]; then
   echo "RUN EmChem09 chosen"
-  spcs=( EmChem09base PMmass ${volcan[@]} ${nucppa[@]} )
-  rcns=( EmChem09base PMmass ${volcan[@]} ${nucppa[@]} )
+  spcs=( EmChem09base PMmass ${emergency[@]} )
+  rcns=( EmChem09base PMmass ${emergency[@]} )
   bics=( EmChem09base )
 
 elif [ $run == EmChem09soa ]; then
   echo "RUN EmChem09soa chosen. Remember to cp ZD_VBS/My_SOA_ml.f90!!"
-  spcs=( $xdir/EmChem09base ${volcan[@]} ${nucppa[@]} \
+  spcs=( $xdir/EmChem09base ${emergency[@]} \
          ../ZCM_vbs_tests/VBS_help    \
           ./VBS_nonvolatile ../ZCM_vbs_tests/VBS_partitioning )  #  VBS NPNA
-  rcns=( $xdir/EmChem09base ${volcan[@]} ${nucppa[@]} \
+  rcns=( $xdir/EmChem09base ${emergency[@]} \
          ../ZCM_vbs_tests/VBS_SOAformation ../ZCM_vbs_tests/VBS_SOAageing \
           ./VBS_emissions_nonvolatilePOA_FromPM25  ) # VBS NPNA
   bics=( $xdir/EmChem09base )  # No special SOA BICs (yet)
@@ -209,8 +232,8 @@ elif [ $run == OSRM ]; then
 
 elif [ $run == Emergency ]; then
   echo "RUN Emergency chosen"
-  spcs=( $xdir/EmChem09base $xdir/PMmass ${volcan[@]})
-  rcns=( $xdir/EmChem09base $xdir/PMmass ${volcan[@]})
+  spcs=( $xdir/EmChem09base $xdir/PMmass ${emergency[@]})
+  rcns=( $xdir/EmChem09base $xdir/PMmass ${emergency[@]})
   bics=( $xdir/EmChem09base )
  #extras=()
 

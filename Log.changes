@@ -234,6 +234,20 @@ dsSep14   Wesely_ml.f90
 
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Alvaro  18th Feb 2013.  (2482)
+
+Emergency_ml,ZCM_Emergency/NPP_Accident.csv
+  Extend emergency event (eEMEP:volcanic eruption or npp accident) defaults.
+  A single defaul can have multiple lines, e.g.
+  each line with a difinition for a different specie
+
+ZCM_Emergency/NUC.species,NUC.reactions,NUC_Location.csv,NUC_Explosion.csv
+  Additional files for nuclear explosion scenarios (eEMEP)
+
+mk.GenChem,run.pl,Makefile
+  Aditional tracers and emissions for nuclear explsions senarios (eEMEP) with
+    mk.GenChem -X scenario for
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Peter  18th Feb 2013.  (2481)
