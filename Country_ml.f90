@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2007-2011 met.no
+!*  Copyright (C) 2007-2013 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -52,10 +52,26 @@ module Country_ml
   logical, parameter, private :: T = .true.   ! shorthand
   logical, parameter, private :: F = .false.  ! shorthand
 
+
+  ! Some regions
+!QUer AL, HR, CS.....
+
+   character(len=10), public, parameter :: &
+     EU15(15) = (/ "AT", "BE", "DK", "FI", "FR", "DE", "GR", "IE", "IT", &
+               "NL", "PT", "ES", "SE",  "GB", "LU" /),&
+     EU27(27) = (/ EU15,"HU", "PL", "CY", "CZ", "EE", "LT", "LV", "MT", &
+                        "SK", "SI", "BG", "RO" /),&
+     EEA(30)  = (/ EU27, "NO", "IS", "LI" /)  ,&
+  ! Countries fully inside MACC2 emission area, excluding EEA.
+  !                     1     2     3    4     5     6     7     8     9   10
+     XMACC2(10) = (/ "CH", "MC", "TR", "MD", "GE", "AM", "AZ", "BA", "UA", "BY" /),&  ! all?
+     EUMACC2(40)  = (/ EEA, XMACC2 /)
+
+
   !/ to be set in Country_Init:
 
   type, public :: cc
-     character(len=3)  :: code          ! up to 3 letter land code
+     character(len=10)  :: code          ! up to 3 letter land code
      integer           :: index         ! index number (corresponds to 
                                         ! numbering in emission files)
      logical           :: is_sea        ! 1 for sea area, 0 otherwise
@@ -498,6 +514,7 @@ Country(IC_SRIL) = cc( "SRIL", 233, F,233, -100, "Sri_Lanka")
 Country(IC_TAIW) = cc( "TAIW", 234, F,234, -100, "Taiwan") 
 Country(IC_THAI) = cc( "THAI", 235, F,235, -100, "Thailand") 
 Country(IC_VIET) = cc( "VIET", 236, F,236, -100, "Vietnam") 
+Country(IC_INTSHIPS ) = cc(  "INTSHIPS" ,350 ,T, 350, -100  , "International ships, RCP6" )
   end subroutine Country_Init
 
 end module Country_ml

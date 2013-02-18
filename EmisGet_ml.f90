@@ -131,41 +131,34 @@
 
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-  subroutine EmisGetCdf(iem, fname)
+  subroutine EmisGetCdf(iem, fname,incl,excl)
    integer, intent(in) :: iem ! index in EMIS_FILE array and GridEmis output
-   character(len=*)    :: fname
+   character(len=*), intent(in)    :: fname
+   character(len=*),dimension(:), optional :: &
+       incl, excl ! Arrays of cc to inc/exclude
    integer :: i,j, ic, isec, allocerr(6), icode
    real, dimension(NLAND) :: sumcdfemis_loc, sumcdfemis_iem
    integer :: icc, ncc
    character(len=40) :: varname
-   integer, save :: ncmaxfound = 0, ncalls=0    ! Max no. countries found in grid
+   integer, save :: ncmaxfound = 0 ! Max no. countries found in grid
+   integer, save :: ncalls=0
    integer :: ncFileID, nDimensions,nVariables,nAttributes,timeDimID,varid,&
            xtype,ndims  !TESTE testing
    character(len=10) :: ewords(7), code ! Test Emis:UK:snap:7
    integer :: nwords, err
-   logical :: my_first_call = .true.
+   logical, save :: my_first_call = .true.
 
-   character(len=len(Country(1)%code)) :: &
-     EU15(15), EU27(27), XEU(5), EUPLUS(27+5)
+!
+   if(MasterProc)  print *, "ME INTO EMISGETCDF ", me, trim(fname)&
+       ,present(incl), present(excl)  ! optionals
 
-   EU15 = (/ "AT", "BE", "DK", "FI", "FR", "DE", "GR", "IE", "IT", &
-             "NL", "PT", "ES", "SE",  "GB", "LU" /)
-   EU27  = (/ EU15,"HU", "PL", "CY", "CZ", "EE", "LT", "LV", "MT", &
-                  "SK", "SI", "BG", "RO" /)
-   XEU    = (/ "NO", "CH", "IS", "LI", "MC" /)  ! Still miss some, add later
-   EUPLUS = (/ EU27, XEU /)
-
-   !if( .not.allocated(cdfemis) )  then
    if( my_first_call  )  then
         allocerr = 0
         allocate(cdfemis(MAXLIMAX,MAXLJMAX),stat=allocerr(1))
-        !allocate(cdfemisX(MAXLIMAX,MAXLJMAX,NSECTORS),stat=allocerr(2))
         allocate(nGridEmisCodes(MAXLIMAX,MAXLJMAX),stat=allocerr(2))
         allocate(GridEmisCodes(MAXLIMAX,MAXLJMAX,NCMAX),stat=allocerr(3))
         allocate(GridEmis(NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS_FILE),&
             stat=allocerr(4))
-        !allocate(sumcdfemis(NLAND,NEMIS_FILE),stat=allocerr(5))
-        !allocate(sumcdfemis_loc(NLAND,NEMIS_FILE),stat=allocerr(6))
         call CheckStop(any ( allocerr(:) /= 0), &
               "EmisGet:Allocation error for cdfemis")
         GridEmisCodes = -1   
@@ -188,11 +181,11 @@
 
  call check(nf90_Inquire(ncFileID,nDimensions,nVariables,nAttributes,timeDimID))
  if( MasterProc ) then
+  write( *,*) 'Nb of global attributes: ',nAttributes
   write( *,*) 'EmisGetCdf '//trim(fName),' properties: '
   write( *,*) 'EmisGetCdf Nb of dimensions: ',nDimensions
   write( *,*) 'EmisGetCdf Nb of variables: ',nVariables
  end if
-!  print *, 'Nb of global attributes: ',nAttributes
 
 
   do varid=1,nVariables
@@ -206,19 +199,39 @@
      code =ewords(2)    ! Country ISO
      read(ewords(4),"(i)") isec
 
-     !print *, varid,trim(name), ewords(1), ewords(2) !,'  Nb of dimensions: ',ndims
-
-     !if ( find_index( code, EU15 ) <1 ) cycle  !only these from  EU+
+     !/ We can include or exclude countries:
+      if ( present(excl) ) then
+           if(MasterProc) print "(a,50a4)", "INCEXCTEST-E "// &
+               trim(code)!, (trim(excl(i)),i=1,size(excl))
+        if ( find_index( code, excl ) >0 ) then
+           !if(MasterProc) print *, "INCEXCTEST-XX ", &
+           !    trim(code), find_index( code, excl )
+           cycle
+        else
+           if(MasterProc) print *, "INCEXCTEST-XY ", &
+               trim(code), find_index( code, Country(:)%code  )
+        end if
+      end if
+      if ( present(incl) ) then
+        if ( find_index( code, incl ) <1 ) then
+           if(MasterProc) print "(a,i5,50a4)", "INCEXCTEST-I "//trim(code), &
+               find_index( code, incl ) !!, (trim(incl(i)),i=1,size(incl))
+           cycle
+        end if
+      end if
 
      ic = find_index( code, Country(:)%code )  !from Country_ml
+     if(MasterProc) print "(a)", "INCEXCTEST-A "//trim(code)
 
      if ( Country(ic)%code == "N/A" ) then
           if(MasterProc) print *, "CDFCYCLE ", ic, trim(Country(ic)%code)
           cycle    ! see Country_ml
      end if
-     call CheckStop( ic < 1 , "CDFEMIS NegIC")
+     call CheckStop( ic < 1 , "CDFEMIS NegIC"//trim(code) )
 
-     if( DEBUG .and. debug_proc ) write( *,*) 'EmisGetCdf ', varid,trim(varname), &
+     !if( DEBUG .and. debug_proc ) write( *,*) 'EmisGetCdf ', trim(fname), varid,trim(varname), &
+     !      " ", trim(code), ic, isec 
+     if( DEBUG .and. debug_proc ) write( *,*) 'EmisGetCdf ', trim(fname), varid,trim(varname), &
            " ", trim(code), ic, isec 
 
 
@@ -234,7 +247,8 @@
          write(*,"(2a,2i4,i3,9f12.4)")"CDF emis-in ",&
            trim(Country(ic)%name)//":"//trim(EMIS_FILE(iem)), &
             i_fdom(debug_li),j_fdom(debug_lj),&
-             isec, cdfemis(debug_li, debug_lj), maxval(cdfemis)
+             isec, e_fact(isec,ic,iem), &
+                cdfemis(debug_li, debug_lj), maxval(cdfemis)
       end if
 
 !call MPI_BARRIER(MPI_COMM_WORLD, INFO)
@@ -267,7 +281,7 @@
         end do !j
       end do ! variables 
 
-      call check(nf90_close(ncFileID))
+     call check(nf90_close(ncFileID))
 
      CALL MPI_REDUCE(sumcdfemis_loc(:),sumcdfemis_iem(:),NLAND,&
                           MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,INFO)
@@ -276,17 +290,12 @@
     write(*,*) "FINISHED CDFLOC "//trim(fname), me, sum(sumcdfemis_loc)
     if( MasterProc ) then
        write(*,*) "FINISHED CDFM0 "//trim(fname), me, iem, sum(sumcdfemis_loc)
-       sumcdfemis(:,iem) = sumcdfemis_iem(:)
+       sumcdfemis(:,iem) = sumcdfemis(:,iem) + sumcdfemis_iem(:)
        do ic = 1, NLAND
          if ( sumcdfemis(ic,iem) > 1.0e-10 ) & 
             write(*,"(a,i3,f12.3)") "CDFSUM "//trim(fname), ic, sumcdfemis(ic,iem)
        end do
     end if
-
-
-!TMP
-!call MPI_BARRIER(MPI_COMM_WORLD, INFO)
-!call StopAll("EMISGETCDF")
 
   end subroutine EmisGetCdf
 !-----------------------------------------------------------------------------

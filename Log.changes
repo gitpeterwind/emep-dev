@@ -235,6 +235,23 @@ dsSep14   Wesely_ml.f90
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Dave  18th Feb 2013.  (2478)
+
+Country_ml - extended with IIASA global regions. ERROR spotted for
+  older global regions - timezones should be set to -100 for US, Canada
+  and quite a few other regions. Not done yet!
+
+  Country regions EU27, EEA, XMACC2 ... defined. Used in:
+
+
+EmisGet_ml, Emissions_ml - extended to allow incl and excl arrays
+  which can be used to choose between global IIASA emissions or
+  higher resolution cdf emissions. As cdf emissions are not yet
+  enabled in the code, no effect so far, except to help produce
+  EmisOutCdf ascii files which contain merge of global and INERIS/TNO
+  emissions for different grids.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Peter 15th Feb 2013.  (2477)
 
 NB: this will affect results a lot! (shift emissions by 2 weeks)

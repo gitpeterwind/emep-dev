@@ -44,6 +44,7 @@
   use ChemSpecs_tot_ml, only: NSPEC_TOT,NO2
   use ChemChemicals_ml, only: species
   use Country_ml,    only : NLAND,Country_Init,Country,IC_NAT,IC_FI,IC_NO,IC_SE
+  use Country_ml,    only : EUMACC2 !CdfSnap
   use EmisDef_ml, only : NSECTORS & ! No. sectors
                      ,NEMIS_FILE & ! No. emission files
                      ,EMIS_FILE   & ! Names of species ("sox  ",...)
@@ -442,12 +443,16 @@ contains
        !TESTING NEW SYSTEM, no effect on results so far
        ! NB SLOW!
        if( EMIS_TEST == "CdfSnap" ) then
-          fname="GriddedSnapEmis_" // trim(EMIS_FILE(iem)) // ".nc"
        !if ( iem < 3) then
 
           ! *************************
-           call EmisGetCdf(iem,fname) 
+           fname="GriddedSnapEmis_" // trim(EMIS_FILE(iem)) // ".nc"
+           call EmisGetCdf(iem,fname,incl=EUMACC2) 
           ! *************************
+           fname="GlobalSnapEmis_" // trim(EMIS_FILE(iem)) // ".nc"
+           call EmisGetCdf(iem,fname,excl=EUMACC2) 
+          ! *************************
+ 
  
            if( debug_proc ) then
              ncc =  nGridEmisCodes(debug_li, debug_lj)
@@ -746,7 +751,8 @@ contains
 
        do ic = 1, NLAND
           ccsum = sum( sumemis(ic,:) )
-          if ( ccsum > 0.0 ) then
+          !if ( ccsum > 0.0 ) then
+          if ( ccsum > 0.0 .or. sum( sumcdfemis(ic,:)) > 0.0 ) then
             if ( EMIS_TEST == "None" ) then
              write(unit=6,fmt="(i3,1x,a4,3x,30f12.2)") &
                   ic, Country(ic)%code, (sumemis(ic,i),i=1,NEMIS_FILE)
