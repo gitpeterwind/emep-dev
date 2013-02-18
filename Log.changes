@@ -234,6 +234,12 @@ dsSep14   Wesely_ml.f90
 
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Peter  18th Feb 2013.  (2480)
+Correction to the 2477 changes: The factor could be negative in some cases.
+Timefactors_ml.f90
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Dave  18th Feb 2013.  (2479)
 
@@ -262,7 +268,7 @@ NB: this will affect results a lot! (shift emissions by 2 weeks)
 
 EmisGet_ml.f90: close netcdf (memory leak otherwise)
 InterpolationRoutines_ml, new routine Averageconserved_interpolateInterpolate
-Timefactors_ml: timefactor for month, new interpolation between monthes.
+Timefactors_ml: timefactor for month, new interpolation between monthes. (see also 2480).
 
 New turning point at the middle of the period. The equation to solve is then:
 1)Factor at start of month is equal average between two adjacent month

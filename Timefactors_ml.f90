@@ -352,19 +352,13 @@ contains
                    mm0 = mm - 1 
                    if( mm0 < 1   ) mm0 = 12          ! December+1 => January
                    Start= 0.5*(fac_emm(ic,mm0,isec,iemis)+fac_emm(ic,mm,isec,iemis))
-                   Endval= 0.5*(fac_emm(ic,mm,isec,iemis)+fac_emm(ic,mm2,isec,iemis))
+                   Endval= 0.5*(fac_emm(ic,mm,isec,iemis)+fac_emm(ic,mm2,isec,iemis))                   
                    Average=fac_emm(ic,mm,isec,iemis)
+                   !limit values, to ensure that x never can be negative
+                   Start=min(Start,2*Average,2*fac_emm(ic,mm0,isec,iemis))
+                   Endval=min(Endval,2*Average,2*fac_emm(ic,mm2,isec,iemis))
                    call Averageconserved_interpolate(Start,Endval,Average,nmdays(mm),idd,x)
                    sumfac = sumfac + x * fac_edd(ic,weekday,isec,iemis)   
-
-
-!                    xday = real(idd-1) /real(nmdays(mm))
-!
-!                   sumfac = sumfac +                            &  ! timefac 
-!                      ( fac_emm(ic,mm,isec,iemis) +             &
-!                        ( fac_emm(ic,mm2,isec,iemis)            &
-!                         - fac_emm(ic,mm,isec,iemis) ) * xday ) &
-!                      * fac_edd(ic,weekday,isec,iemis)   
 
                 end do ! idd
              end do ! mm
@@ -377,22 +371,19 @@ contains
                  call CheckStop(errmsg)
               end if
 
-             if ( sumfac < 0.99999999 .or. sumfac > 1.00000001 ) then !pw: why this test?
-                 n = n+1
              ! can be caused by variable number of sundays in a month for instance
              ! Slight adjustment of monthly factors
-                  do mm = 1, 12
-                    fac_emm(ic,mm,isec,iemis)  =  &
+              do mm = 1, 12
+                 fac_emm(ic,mm,isec,iemis)  =  &
                        fac_emm(ic,mm,isec,iemis) * sumfac
-                  end do ! mm
-             end if
+              end do ! mm
+       if ( debug .and. abs(sumfac-1.0)>0.001) &
+            write(unit=6,fmt=*)  &
+           "needed for country, isec, iemis, sumfac = " ,ic, isec, iemis, sumfac
 
           end do ! ic
        enddo ! isec
 
-       if ( n ==  0 ) &
-            write(unit=6,fmt=*)  &
-           "Correction not needed for iemis, sumfac = " ,iemis, sumfac
 
       enddo ! iemis
 
@@ -470,15 +461,12 @@ contains
             Start= 0.5*(fac_emm(iland ,nmnd0,isec,iemis)+fac_emm(iland ,nmnd,isec,iemis))
             Endval= 0.5*(fac_emm(iland ,nmnd,isec,iemis)+fac_emm(iland ,nmnd2,isec,iemis))
             Average=fac_emm(iland ,nmnd,isec,iemis)
+            !limit values, to ensure that x never can be negative
+            Start=min(Start,2*Average,2*fac_emm(iland ,nmnd0,isec,iemis))
+            Endval=min(Endval,2*Average,2*fac_emm(iland ,nmnd2,isec,iemis))
             call Averageconserved_interpolate(Start,Endval,Average,nmdays(nmnd),dd,x)
             timefac(iland,isec,iemis) = x *  fac_edd(iland,weekday,isec,iemis) 
-                  
-!            timefac(iland,isec,iemis) =                           &
-!                ( fac_emm(iland,nmnd,isec,iemis)  +                &
-!                   ( fac_emm(iland,nmnd2,isec,iemis) -             &
-!                      fac_emm(iland,nmnd,isec,iemis ) ) * xday )   &
-!               *  fac_edd(iland,weekday,isec,iemis) 
-
+ 
          enddo ! iland  
       enddo ! isec   
    enddo ! iemis 
