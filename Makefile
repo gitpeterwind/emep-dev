@@ -132,14 +132,14 @@ EMEP EMEP2010 SR-EMEP SR-EMEP2010 MACC MACC-EVA2010 SR-MACC eEMEP eEMEP2010 eEME
 
 # My_* files pre-requisites
 EMEP EMEP2010 MACC MACC-EVA2010 eEMEP2010: \
-	  ./ZD_OZONE/My_RunSettings.inc ./ZD_OZONE/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
+	  ./ZD_OZONE/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
 	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_VBS/My_SOA_ml.f90 ./ZD_3DVar/My_3DVar_ml.f90
 #For SR we use the small My_Derived
 SR-EMEP SR-EMEP2010 SR-MACC: \
-	  ./ZD_SR/My_RunSettings.inc ./ZD_SR/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
+	  ./ZD_SR/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
 	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_VBS/My_SOA_ml.f90 ./ZD_3DVar/My_3DVar_ml.f90
 eEMEP eEMEP2013: \
-	  ./ZD_OZONE/My_RunSettings.inc ./ZD_OZONE/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
+	  ./ZD_OZONE/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
 	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_OZONE/My_SOA_ml.f90 ./ZD_3DVar/My_3DVar_ml.f90
 # GenChem config
 .SECONDEXPANSION:

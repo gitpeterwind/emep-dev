@@ -235,6 +235,10 @@ dsSep14   Wesely_ml.f90
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Dave  18th Feb 2013.  (2479)
+
+ZD_.../My_RunSettings files removed. Not used.
+
 Dave  18th Feb 2013.  (2478)
 
 Country_ml - extended with IIASA global regions. ERROR spotted for
