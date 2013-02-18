@@ -89,7 +89,6 @@
 
   INCLUDE 'mpif.h'
   INTEGER STATUS(MPI_STATUS_SIZE)
-  real,save,allocatable :: MPIbuff(:)
   integer, private, parameter :: NADVS      =  3
 
   real, private, save, allocatable,dimension(:)  ::  dhs1, dhs1i, dhs2i
@@ -292,8 +291,7 @@
       xcmax(k) = max(xcmax(k),ycmax(k))
     enddo
 
-    MPIbuff(1:KMAX_MID)= xcmax(1:KMAX_MID)
-    CALL MPI_ALLREDUCE(MPIbuff,xcmax,KMAX_MID,MPI_DOUBLE_PRECISION, &
+    CALL MPI_ALLREDUCE(MPI_IN_PLACE,xcmax,KMAX_MID,MPI_DOUBLE_PRECISION, &
                        MPI_MAX,MPI_COMM_WORLD,INFO)
 
     do k=1,KMAX_MID
@@ -319,8 +317,7 @@
       scmax  = max(sdcmax/dhs1(k+1),scmax)
     enddo
 
-    MPIbuff(1:1)= scmax
-    CALL MPI_ALLREDUCE(MPIbuff,scmax,1,MPI_DOUBLE_PRECISION, &
+    CALL MPI_ALLREDUCE(MPI_IN_PLACE,scmax,1,MPI_DOUBLE_PRECISION, &
                        MPI_MAX,MPI_COMM_WORLD,INFO)
     dt_smax = 1./scmax
 
@@ -759,24 +756,10 @@
        enddo
     enddo
 
-    n=0
-    do j=1,gjmax
-       do k=1,KMAX_MID
-          n=n+1
-          MPIbuff(n)= xcmax(k,j)
-       enddo
-    enddo
-    CALL MPI_ALLREDUCE(MPIbuff,xcmax,KMAX_MID*gjmax,MPI_DOUBLE_PRECISION, &
+    CALL MPI_ALLREDUCE(MPI_IN_PLACE,xcmax,KMAX_MID*gjmax,MPI_DOUBLE_PRECISION, &
          MPI_MAX,MPI_COMM_WORLD,INFO)
 
-    n=0
-    do i=1,gimax
-       do k=1,KMAX_MID
-          n=n+1
-          MPIbuff(n)= ycmax(k,i)
-       enddo
-    enddo
-    CALL MPI_ALLREDUCE(MPIbuff,ycmax,KMAX_MID*gimax,MPI_DOUBLE_PRECISION, &
+    CALL MPI_ALLREDUCE(MPI_IN_PLACE,ycmax,KMAX_MID*gimax,MPI_DOUBLE_PRECISION, &
          MPI_MAX,MPI_COMM_WORLD, INFO)
 
     do i=1,limax
@@ -825,8 +808,7 @@
        scmax  = max(sdcmax/dhs1(k+1),scmax)
     enddo
 
-    MPIbuff(1:1)= scmax
-    CALL MPI_ALLREDUCE(MPIbuff,scmax,1,MPI_DOUBLE_PRECISION, &
+    CALL MPI_ALLREDUCE(MPI_IN_PLACE,scmax,1,MPI_DOUBLE_PRECISION, &
          MPI_MAX,MPI_COMM_WORLD,INFO)
     dt_smax = 1./scmax
 42  FORMAT(A,F10.2)
@@ -3595,7 +3577,6 @@
   subroutine alloc_adv_arrays
 
     !allocate the arrays once
-    allocate(MPIbuff(KMAX_MID*max(gimax,gjmax)))
     allocate(uw(MAXLJMAX,KMAX_MID,NMET),ue(MAXLJMAX,KMAX_MID,NMET))
     allocate(vs(MAXLIMAX,KMAX_MID,NMET),vn(MAXLIMAX,KMAX_MID,NMET))
     allocate(dhs1(KMAX_BND), dhs1i(KMAX_BND), dhs2i(KMAX_BND))

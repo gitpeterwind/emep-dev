@@ -236,6 +236,13 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Peter  18th Feb 2013.  (2481)
+Removed all the "MPIbuff" used to buffer the data in  MPI_ALLREDUCE.
+Can use "MPI_IN_PLACE" instead.
+Does not modify results.
+Advection_ml, GridValues_ml, MassBudget_ml, AirEmis_ml, Emissions_ml
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Peter  18th Feb 2013.  (2480)
 Correction to the 2477 changes: The factor could be negative in some cases.
 Timefactors_ml.f90

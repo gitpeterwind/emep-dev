@@ -94,7 +94,6 @@ Module GridValues_ml
   !** 1) Public (saved) Variables from module:
   INCLUDE 'mpif.h'
   INTEGER STATUS(MPI_STATUS_SIZE),INFO
-  real MPIbuff
 
   real, public, save :: &
        xp, yp  &   ! Coordinates of North pole (from infield)
@@ -1057,17 +1056,14 @@ contains
     gbacmin = minval(glat(:,:))
     glacmax = maxval(glon(:,:))
     glacmin = minval(glon(:,:))
-    MPIbuff= gbacmax 
-    CALL MPI_ALLREDUCE(MPIbuff, gbacmax, 1,MPI_DOUBLE_PRECISION, &
+
+    CALL MPI_ALLREDUCE(MPI_IN_PLACE, gbacmax, 1,MPI_DOUBLE_PRECISION, &
          MPI_MAX, MPI_COMM_WORLD, INFO) 
-    MPIbuff= gbacmin
-    CALL MPI_ALLREDUCE(MPIbuff, gbacmin  , 1, &
+    CALL MPI_ALLREDUCE(MPI_IN_PLACE, gbacmin  , 1, &
          MPI_DOUBLE_PRECISION, MPI_MIN, MPI_COMM_WORLD, INFO) 
-    MPIbuff= glacmax 
-    CALL MPI_ALLREDUCE(MPIbuff, glacmax, 1,MPI_DOUBLE_PRECISION, &
+    CALL MPI_ALLREDUCE(MPI_IN_PLACE, glacmax, 1,MPI_DOUBLE_PRECISION, &
          MPI_MAX, MPI_COMM_WORLD, INFO) 
-    MPIbuff= glacmin
-    CALL MPI_ALLREDUCE(MPIbuff, glacmin  , 1, &
+    CALL MPI_ALLREDUCE(MPI_IN_PLACE, glacmin  , 1, &
          MPI_DOUBLE_PRECISION, MPI_MIN, MPI_COMM_WORLD, INFO) 
 
     if(me==0) write(unit=6,fmt="(a,4f9.2)") &

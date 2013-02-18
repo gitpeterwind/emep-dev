@@ -1460,7 +1460,7 @@ contains
 
         !NML logical, parameter :: MONTHLY_GRIDEMIS= IS_GLOBAL      
         integer :: kstart,kend,nstart,Nyears
-        real :: buffer(MAXLIMAX,MAXLJMAX),SumSoilNOx,SumSoilNOx_buff
+        real :: buffer(MAXLIMAX,MAXLJMAX),SumSoilNOx
         
         if(.not.allocated(airn).and.(USE_LIGHTNING_EMIS.or.USE_AIRCRAFT_EMIS))then
            allocate(airn(KCHEMTOP:KMAX_MID,MAXLIMAX,MAXLJMAX))
@@ -1559,15 +1559,14 @@ end if ! DS_TEST
 !for testing, compute total soil NOx emissions within domain
 !convert from g/m2/day into kg/day
 if ( USE_GLOBAL_SOILNOX ) then 
-  SumSoilNOx_buff=0.0
   SumSoilNOx=0.0
   SoilNOx = 0.0  ! Stops the NEGs!
   do j=1,ljmax
    do i=1,limax      
-      SumSoilNOx_buff=SumSoilNOx_buff+0.001*SoilNOx(i,j)*gridwidth_m**2*xmd(i,j)      
+      SumSoilNOx=SumSoilNOx+0.001*SoilNOx(i,j)*gridwidth_m**2*xmd(i,j)      
    enddo
   enddo
-  CALL MPI_ALLREDUCE(SumSoilNOx_buff, SumSoilNOx , 1, &
+  CALL MPI_ALLREDUCE(MPI_IN_PLACE, SumSoilNOx , 1, &
      MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
   if(MasterProc)write(*,*)'GLOBAL Soil NOx emissions this month within domain',&
         SumSoilNOx,' kg per day'
