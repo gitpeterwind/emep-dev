@@ -635,7 +635,7 @@ if( DEBUG_EQUIB .and. debug_flag ) print *, "MARS DISC NEG ", XNO3, WH2O, DISC
 !...liquid phase containing completely neutralized sulfate and
 !...  some nitrate.  Solve for composition and quantity.
  
-        MAS = TSO4_HighA / WH2O
+        MAS = TSO4_HighA / max(WH2O,FLOOR)
         MAN = 0.0
         XNO3 = 0.0
         YNH4 = TWOSO4
@@ -741,8 +741,8 @@ if( DEBUG_EQUIB .and. debug_flag ) print "(a,4es10.3)", "MARS NONDEGEN  ",  AA, 
 
 !...Ionic balance determines the ammonium in solution.
 
-          MAN = XNO3 / WH2O
-          MAS = TSO4_HighA / WH2O
+          MAN = XNO3 / max(WH2O,FLOOR)
+          MAS = TSO4_HighA / max(WH2O,FLOOR)
           MNH4 = 2.0 * MAS + MAN
           YNH4 = MNH4 * WH2O
 
@@ -841,7 +841,7 @@ if( DEBUG_EQUIB .and. debug_flag ) print "(a,4es10.3)", "MARS NONDEGEN  ",  AA, 
 
         !ds IF ( WH2O == 0.0 ) RETURN
         IF ( abs(WH2O) < FLOOR ) goto 111!RETURN
-        ZSO4 = TSO4_LowA / WH2O 
+        ZSO4 = TSO4_LowA / max(WH2O,FLOOR)
 
 !...ZSO4 is the molality of total sulfate i.e. MSO4 + MHSO4      
 
@@ -867,7 +867,7 @@ if( DEBUG_EQUIB .and. debug_flag ) print "(a,4es10.3)", "MARS NONDEGEN  ",  AA, 
 
 !...All ammonia is considered to be aerosol ammonium. 
 
-        MNH4 = TNH4 / WH2O
+        MNH4 = TNH4 / max(WH2O,FLOOR)
 
 !...MNH4 is the molality of ammonium ion.
 
@@ -909,7 +909,7 @@ if( DEBUG_EQUIB .and. debug_flag ) print "(a,4es10.3)", "MARS NONDEGEN  ",  AA, 
           MHSO4 = ZSO4 - MSO4                       ! molality of bisulfate ion
           MNA = RKNA * TNO3 / ( HPLUS + RKNWET )    ! molality of nitrate ion
           MNA = MAX( 0.0, MNA )
-          MNA = MIN( MNA, TNO3 / WH2O )
+          MNA = MIN( MNA, TNO3 / max(WH2O,FLOOR) )
           XNO3 = MNA * WH2O
           !ds ANO3 = MNA * WH2O * MWNO3
           ANO3_Low = min( TMASSHNO3, MNA * WH2O * MWNO3)

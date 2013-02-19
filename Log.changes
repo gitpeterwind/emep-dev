@@ -234,6 +234,12 @@ dsSep14   Wesely_ml.f90
 
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Peter, Dave  19th Feb 2013.  (2483)
+replaced "/WH2O" by "/max(WH2O,FLOOR)" in MARS_ml, since WH2O could get zero.
+Not expected to change results.
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Alvaro  18th Feb 2013.  (2482)
 
