@@ -720,6 +720,11 @@ foreach my $scenflag ( @runs ) {
     mylink( "LAST RECORD SET: ", $old,$new ) ;
   }
 
+#Experimental: Grid definitions in a separate file 
+  my $old = "$DATA_LOCAL/Grid_Def.nc";
+  my $new = "Grid_Def.nc";
+  mylink( "Linking:", $old, $new);
+
 #=================== INPUT FILES =========================================
 # ToDo Change noxsplit.default to defaults, as with voc (also in Unimod)
 

@@ -236,6 +236,7 @@ contains
        ! xp and yp should be shifted here, and coordinates must be shifted when
        ! meteofields are read (not yet implemented)
 
+ 
    if(MasterProc)then
        allocate(var_global(GIMAX,GJMAX,KMAX_MID))
     else
@@ -249,7 +250,6 @@ contains
        ts_now = make_timestamp(current_date)
        call add_secs(ts_now,nsec)
        next_inptime=make_current_date(ts_now)
-
 
     endif
 
@@ -267,6 +267,8 @@ contains
          current_date%hour  == 0 )         &
          call Init_nmdays( current_date )
 
+    !On first call, check that date from meteo file correspond to dates requested. Also defines nhour_first.
+    if(numt==1) call Check_Meteo_Date !note that all procs read this
 
 
     if(MasterProc .and. DEBUG_MET) write(6,*) &
@@ -278,8 +280,6 @@ contains
     !Read rec=1 both for h=0 and h=3:00 in case 00:00 from 1st January is missing
     if((numt-1)*METSTEP<=nhour_first)nrec=0
     nrec=nrec+1
-
-
 
 
 
@@ -3034,6 +3034,75 @@ filename_save=trim(filename)
          //  trim( nf90_strerror(status) ) )
 
   end subroutine check
+
+  subroutine Check_Meteo_Date
+    !On first call, check that dates from meteo file correspond to dates requested. Also defines nhour_first.
+    character (len = 100) ::meteoname
+    integer :: nyear,nmonth,nday,nhour
+    integer :: status,ncFileID,timeDimID,varid,timeVarID
+    character (len = 50) :: timeunit
+    integer ::ihh,ndate(4),n1,nseconds(1)
+    real :: ndays(1)
+    nyear=startdate(1)
+    nmonth=startdate(2)
+    nday=startdate(3)
+56  FORMAT(a5,i4.4,i2.2,i2.2,a3)
+    write(meteoname,56)'meteo',nyear,nmonth,nday,'.nc'
+    if(me==0)then
+    status = nf90_open(path=trim(meteoname),mode=nf90_nowrite,ncid=ncFileID)
+    if(status /= nf90_noerr) then
+       print *,'meteo file not found: ',trim(meteoname)
+       call StopAll("File not found")
+    endif
+
+    call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = timedimID))
+    call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = timeVarID))
+    call check(nf90_inquire_dimension(ncid=ncFileID,dimID=timedimID,len=Nhh))
+
+    call CheckStop(24/Nhh, METSTEP,          "Met_ml: METSTEP != meteostep" )
+
+    call check(nf90_get_att(ncFileID,timeVarID,"units",timeunit))
+
+    ihh=1
+    n1=1
+    if(trim(timeunit(1:19))==trim("days since 1900-1-1"))then
+       if(me==0)write(*,*)'Date in days since 1900-1-1 0:0:0'
+       call check(nf90_get_var(ncFileID,timeVarID,ndays,&
+            start=(/ihh/),count=(/n1 /)))
+       call nctime2idate(ndate,ndays(1))  ! for printout: msg="meteo hour YYYY-MM-DD hh"
+    else
+       call check(nf90_get_var(ncFileID,timeVarID,nseconds,&
+            start=(/ihh/),count=(/n1 /)))
+       call nctime2idate(ndate,nseconds(1)) ! default
+    endif
+    nhour_first=ndate(4)
+    
+    call CheckStop(ndate(1), nyear,  "NetCDF_ml: wrong year" )
+    call CheckStop(ndate(2), nmonth, "NetCDF_ml: wrong month" )
+    call CheckStop(ndate(3), nday,   "NetCDF_ml: wrong day" )
+    
+    do ihh=1,Nhh
+       
+       if(trim(timeunit(1:19))==trim("days since 1900-1-1"))then
+          call check(nf90_get_var(ncFileID, timeVarID, ndays,&
+               start=(/ ihh /),count=(/ n1 /)))
+          call nctime2idate(ndate,ndays(1))
+          if(me==0)write(*,*)'ndays ',ndays(1),ndate(3),ndate(4)
+       else
+          call check(nf90_get_var(ncFileID, timeVarID, nseconds,&
+               start=(/ ihh /),count=(/ n1 /)))
+          call nctime2idate(ndate,nseconds(1))
+       endif
+       write(*,*)ihh,METSTEP,nhour_first, ndate(4)
+       call CheckStop( mod((ihh-1)*METSTEP+nhour_first,24), ndate(4),  &
+            date2string("NetCDF_ml: wrong hour YYYY-MM-DD hh",ndate))
+       
+    enddo
+    endif
+    CALL MPI_BCAST(nhour_first ,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+   
+  end subroutine Check_Meteo_Date
+
 end module met_ml
 ! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
 !  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
