@@ -104,6 +104,7 @@ contains
     allocate(PM25_water_rh50(MAXLIMAX,MAXLJMAX))
     PM25_water_rh50=0.0
     allocate(AOD(MAXLIMAX,MAXLJMAX))
+    AOD=0.0
     allocate(cfac(NSPEC_ADV,MAXLIMAX,MAXLJMAX))
     cfac=1.0
     allocate(so2nh3_24hr(MAXLIMAX,MAXLJMAX))
