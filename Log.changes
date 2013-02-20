@@ -236,6 +236,31 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Dave  20th Feb 2013.  (2485)
+
+Enabling extra outputs of ozone-flux params, plus more explicit
+use of L% variables in DO3SE calculations
+
+Derived_ml - change of label (YYYY to D2IND - latter is easier to find)
+
+DryDep_ml - safer use of L and Sub 
+          - SPOD_OUT outputs added. Temporary, and switched off by
+            default
+
+DO3SE_ml - safer use of L and Sub 
+
+Io_Nums_ml - IO_SPOD added. CAREFUL - many io numbers can be called,
+   as DryDep uses IO_SPOD  me. (Not switched on by default though.)
+
+LocalVariables_ml  - just use -999 not -999.999 to avoid -1000 in prints
+
+Mosaic_ml - added extra outputs
+
+Rsurface - safer use of L and Sub 
+
+Sites_ml - some variables made public for use in DryDep
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Peter, Dave  20th Feb 2013.  (2484)
 AOD initialized to 0.0 in Chem_ml.f90 (could lead to crash when debug option used)
 

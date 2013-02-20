@@ -54,7 +54,12 @@ implicit none
   integer, parameter, public  :: &
     IO_SONDES   = 30  &! siteswrt_ml(o)  for output of sonde data
    ,IO_WRTCHEM  = 118 &! Used in Wrtchem (c) for AOT and BCs
-   ,IO_HOURLY   = 119  ! hourly_out(o)
+   ,IO_HOURLY   = 119 &! hourly_out(o)
+   ,IO_SPOD     = 120  ! Used in DryDep (c) for ozone-flux
+      ! ****************** !
+      ! CAREFUL. Code uses IO_SPOD + me, so potentally 120..very high IO num
+      ! ****************** !
+
 
   !(some subroutine names are a bit outdated:)
   integer, parameter, public  :: &

@@ -38,7 +38,7 @@ use Wesely_ml,         only: NDRYDEP_CALC
 implicit none
 private
 
-real,    private, parameter ::  NOT_SET = -999.999  ! Fake value to check for
+real,    private, parameter ::  NOT_SET = -999.     ! Fake value to check for
 integer, private, parameter :: INOT_SET = -999      ! variables being set
 
 integer, public, save :: iL = INOT_SET              ! Landuse index

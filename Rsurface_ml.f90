@@ -247,6 +247,8 @@ contains
         L%g_sun = 0.0
         L%g_sto = 0.0
         L%f_env = 0.0 !JAN2013
+        L%PARsun  = 0.0 !FEB2013
+        L%PARshade = 0.0 !FEB2013
 
    end if ! leafy canopy and daytime
 

@@ -651,9 +651,9 @@ end do
     if (ind>0) then
       f_2d(i) = def_2d(ind)
       if ( found_ind2d(ind) > 0 ) then
-          print *, "YYYY", me, trim( wanted_deriv2d(i) )
+          print *, "D2IND", me, trim( wanted_deriv2d(i) )
           do n = 1, size(def_2d(:)%name)
-             print *, "YYYY def2d", n, trim( def_2d(n)%name )
+             print *, "D2IND def2d", n, trim( def_2d(n)%name )
           end do
 
       call CheckStop ( found_ind2d(ind) > 0,  &
@@ -1335,6 +1335,7 @@ end do
             af = dt_advec
         end if
 
+!print *, "D2Ding", me, n, trim(f_2d(n)%name)
         d_2d(n,:,:,IOU_DAY )  = d_2d(n,:,:,IOU_DAY )  + af*d_2d(n,:,:,IOU_INST)
         if ( f_2d(n)%avg ) nav_2d(n,IOU_DAY) = nav_2d(n,IOU_DAY) + 1
 

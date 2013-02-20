@@ -52,9 +52,9 @@ module DO3SE_ml
  public :: fPhenology     !  -> f_phen
 
  ! Make public for output testing
-  real, public, save  :: f_light, f_temp, f_vpd, f_env         
-  real, public, save  :: f_swp = 1.0  ! Will only change if USE_SOILWATER set
-  real, public, save  :: f_phen = 888 ! But set elsewhere
+ !FEB2013 real, public, save  :: f_light, f_temp, f_vpd, f_env         
+ !FEB2013 real, public, save  :: f_swp = 1.0  ! Will only change if USE_SOILWATER set
+ !FEB2013  real, public, save  :: f_phen = 888 ! But set elsewhere
 
 !-----------------------------------------------------------------------------
 ! Notes: Basis is Emberson et al, EMEP Report 6/2000
@@ -184,8 +184,8 @@ contains
 
  ! environmental f factors
 
-  real :: f_sun         ! light-factor for upper-canopy sun-leaves
-  real :: f_shade       ! shade-leaf contribution to f_light
+ !FE2013 real :: f_sun         ! light-factor for upper-canopy sun-leaves
+ !FE2013 real :: f_shade       ! shade-leaf contribution to f_light
 
   real :: dg, dTs, bt   ! for temperate calculations
   real :: mmol2sm       !  Units conversion, mmole/m2/s to s/m
@@ -205,10 +205,10 @@ contains
 !    al. (1998), eqns. 31-35, based upon sun/shade method of  
 !    Norman (1979,1982)
 
-    f_sun   = (1.0 - exp (-do3se(iLC)%f_light*L%PARsun  ) ) 
-    f_shade = (1.0 - exp (-do3se(iLC)%f_light*L%PARshade) ) 
+    L%f_sun   = (1.0 - exp (-do3se(iLC)%f_light*L%PARsun  ) ) 
+    L%f_shade = (1.0 - exp (-do3se(iLC)%f_light*L%PARshade) ) 
 
-    f_light = L%LAIsunfrac * f_sun + (1.0 - L%LAIsunfrac) * f_shade
+    L%f_light = L%LAIsunfrac * L%f_sun + (1.0 - L%LAIsunfrac) * L%f_shade
 
 !--------------------------------------------------------------------
   
@@ -221,20 +221,20 @@ contains
   dg  =    ( do3se(iLC)%T_opt - do3se(iLC)%T_min )
   bt  =    ( do3se(iLC)%T_max - do3se(iLC)%T_opt ) / dg
   dTs = max( do3se(iLC)%T_max - L%t2C, 0.0 )      !CHECK why max?
-  f_temp = dTs / ( do3se(iLC)%T_max - do3se(iLC)%T_opt )
-  f_temp = ( L%t2C - do3se(iLC)%T_min ) / dg *  f_temp**bt
+  tmp = dTs / ( do3se(iLC)%T_max - do3se(iLC)%T_opt )
+  L%f_temp = ( L%t2C - do3se(iLC)%T_min ) / dg *  tmp**bt
 
-  f_temp = max( f_temp, 0.01 )  ! Revised usage of min value during 2007
+  L%f_temp = max( L%f_temp, 0.01 )  ! Revised usage of min value during 2007
 
 
 !..4) Calculate f_vpd
 !---------------------------------------
 
- f_vpd = do3se(iLC)%f_min + &
+ L%f_vpd = do3se(iLC)%f_min + &
           (1.0-do3se(iLC)%f_min) * (do3se(iLC)%VPD_min - L%vpd )/ &
               (do3se(iLC)%VPD_min - do3se(iLC)%VPD_max )
- f_vpd = min(f_vpd, 1.0)
- f_vpd = max(f_vpd, do3se(iLC)%f_min)
+ L%f_vpd = min(L%f_vpd, 1.0)
+ L%f_vpd = max(L%f_vpd, do3se(iLC)%f_min)
 
 
 !..5) Calculate f_swp
@@ -245,7 +245,7 @@ contains
   !   Once per day, but for simplicity we do it every time-step.
 
   ! ************************************
-   if ( USE_SOILWATER ) f_swp =  L%fSW
+   !FEB2013 if ( USE_SOILWATER ) L%f_swp =  L%fSW
   ! ************************************
 
 
@@ -253,40 +253,42 @@ contains
 !---------------------------------------
 !  ( with revised usage of min value for f_temp during 2007)
 
-   f_env = f_vpd * f_swp
-   f_env = max( f_env, do3se(iLC)%f_min )
-   f_env = max( f_temp, 0.01) * f_env
+   L%f_env = L%f_vpd * L%fSW
+   !FEB2013 L%f_swp = 1.0  ! FEB2013
+   L%f_min  = do3se(iLC)%f_min   ! FEB2013
+   L%f_env = max( L%f_env, L%f_min )
+   L%f_env = max( L%f_temp, 0.01) * L%f_env
 
-   f_env = f_phen * f_env * f_light  ! Canopy average
+   L%f_env = L%f_phen * L%f_env * L%f_light  ! Canopy average
 
 !JAN2013
-   L%f_env = f_env 
-   L%f_vpd = f_vpd
-   L%f_temp = f_temp
-   L%f_light = f_light
-   L%f_phen  = f_phen   ! CAREFUL we have too many of these
-   L%f_sun   = f_sun    ! JAN2013
-   L%f_shade = f_shade  ! JAN2013
-   L%f_min   = do3se(iLC)%f_min   ! JAN2013
+!FEB2013   L%f_env = f_env 
+!FEB2013   L%f_vpd = f_vpd
+!FEB2013   L%f_temp = f_temp
+!FEB2013   L%f_light = f_light
+!FEB2013  !FEB2013  L%f_phen  = f_phen   ! CAREFUL we have too many of these
+!FEB2013   L%f_sun   = f_sun    ! JAN2013
+!FEB2013   L%f_shade = f_shade  ! JAN2013
+!FEB2013   L%f_min   = do3se(iLC)%f_min   ! JAN2013
 
 ! From mmol O3/m2/s to s/m given in Jones, App. 3, gives 41000 for 20 deg.C )
 !   (should we just use P=100 hPa?)
 
    mmol2sm = 8.3144e-8 * L%t2       ! 0.001 * RT/P
 
-   L%g_sto = do3se(iLC)%g_max * f_env * mmol2sm 
+   L%g_sto = do3se(iLC)%g_max * L%f_env * mmol2sm 
 
    !JAN2013 BUG FIX
    !ORIG L%g_sun = L%g_sto * f_sun/f_light       ! sunlit part
-   L%g_sun = do3se(iLC)%g_max * mmol2sm * f_phen * f_sun * &
-         max( do3se(iLC)%f_min,  f_temp * f_vpd * f_swp )
+   L%g_sun = do3se(iLC)%g_max * mmol2sm * L%f_phen * L%f_sun * &
+         max( do3se(iLC)%f_min,  L%f_temp * L%f_vpd * L%fSW )
 
 
    if ( DEBUG_DO3SE .and. debug_flag ) then !JAN2013 EXTRA
        write(*,"(a,5i5,i3,L2,99f10.4)") "IN RSUR gstomatal ", &
               current_date, iLC, USE_SOILWATER, L%PARsun, L%PARshade,&
-              do3se(iLC)%g_max, L%g_sto, L%f_env, f_env, f_phen, f_vpd,&
-              f_swp, L%g_sto * f_sun/f_light, L%g_sun 
+              do3se(iLC)%g_max, L%g_sto, L%f_env,  L%f_phen, L%f_vpd,&
+              L%fSW, L%g_sto * L%f_sun/L%f_light, L%g_sun 
    end if
 
     if ( DEBUG_DO3SE ) then
@@ -302,8 +304,8 @@ contains
         if ( debug_flag.and.current_date%seconds==0 .and. LandType(iLC)%is_forest  &
              .and. current_date%hour==12 )  then
            write(*,"(a,2i3,99f8.3)") "F-DO3SE ", daynumber, &!current_date%hour, &
-               iLC, f_phen, f_light,f_sun, f_temp, f_vpd, f_swp, &
-                 f_swp*f_vpd, do3se(iLC)%f_min, f_env
+               iLC, L%f_phen, L%f_light,L%f_sun, L%f_temp, L%f_vpd, L%fSW, &
+                 L%fSW*L%f_vpd, L%f_min, L%f_env
 
           ! Met params, except soil water  where fSW =~ REW
 

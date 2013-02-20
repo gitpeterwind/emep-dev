@@ -64,6 +64,7 @@ INCLUDE 'mpif.h'
 INTEGER STATUS(MPI_STATUS_SIZE),INFO
 
 integer, public, save :: MMC_RH, MMC_CANO3, MMC_VPD, MMC_FST, &
+  MMC_PARsun, MMC_PARshade, &
   MMC_USTAR, MMC_INVL, MMC_GSTO, MMC_EVAP
 character(len=30),private, save :: errmsg = "ok"
 
@@ -87,6 +88,8 @@ subroutine Init_MosaicMMC(MOSAIC_METCONCS)
   character(len=*), dimension(:), intent(in) :: MOSAIC_METCONCS
   MMC_RH    = find_index("RH",MOSAIC_METCONCS)
   MMC_CANO3 = find_index("CanopyO3",MOSAIC_METCONCS)
+  MMC_PARsun = find_index("PARsun",MOSAIC_METCONCS)
+  MMC_PARshade = find_index("PARshade",MOSAIC_METCONCS)
   MMC_VPD   = find_index("VPD",MOSAIC_METCONCS)
   MMC_FST   = find_index("FstO3",MOSAIC_METCONCS)
   MMC_USTAR = find_index("USTAR",MOSAIC_METCONCS)
@@ -133,6 +136,8 @@ subroutine Add_MosaicMetConcs(MOSAIC_METCONCS,MET_LCS,iotyp, nMET)
         case("USTAR"   );MosaicOutput(nMosaic)%unit = "m/s"
         case("INVL"    );MosaicOutput(nMosaic)%unit = "m"
         case("CanopyO3");MosaicOutput(nMosaic)%unit = "ppb"
+        case("PARsun"  );MosaicOutput(nMosaic)%unit = "W/m2"
+        case("PARshade"  );MosaicOutput(nMosaic)%unit = "W/m2"
         case("FstO3"   );MosaicOutput(nMosaic)%unit = "mmole/m2" ! accumulated
         case("EVAP"    );MosaicOutput(nMosaic)%unit = "mm"
           MosaicOutput(nMosaic)%avg       =  .false. ! accumulate
@@ -431,6 +436,8 @@ endsubroutine Add_MosaicDDEP
         if(n==MMC_FST    ) output = Sub(iLC)%FstO3
         if(n==MMC_GSTO   ) output = Sub(iLC)%g_sto
         if(n==MMC_EVAP   ) output = Sub(iLC)%EvapTransp
+        if(n==MMC_PARsun ) output = Sub(iLC)%PARsun
+        if(n==MMC_PARshade ) output = Sub(iLC)%PARshade
 
         if(DEBUG.and.debug_flag.and.n==MMC_CANO3.and.iLC==2) & !DF
           write(*,"(a,4i5,f10.4)") "MYDDEP CANO3 ", &

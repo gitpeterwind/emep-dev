@@ -88,7 +88,7 @@ private :: siteswrt_out     ! Collects output from all nodes and prints
 
 INCLUDE 'mpif.h'
 INTEGER STATUS(MPI_STATUS_SIZE),INFO
-integer, private, save :: nglobal_sites, nlocal_sites
+integer, public, save :: nglobal_sites, nlocal_sites
 integer, private, save :: nglobal_sondes, nlocal_sondes
 
 ! site_gindex stores the global index n asociated
@@ -97,9 +97,13 @@ integer, private, save :: nglobal_sondes, nlocal_sondes
 integer, private, save, allocatable,dimension (:,:)  :: site_gindex
 integer, private, save, allocatable,dimension (:,:) :: sonde_gindex
 
+!SPOD outputs
+integer, public, save, dimension (NSITES_MAX) :: &
+        site_x, site_y, site_z       ! local coordinates
+
 integer, private, save, dimension (NSITES_MAX) :: &
          site_gx, site_gy, site_gz   & ! global coordinates
-       , site_x, site_y, site_z      & ! local coordinates
+!FEB2013       , site_x, site_y, site_z      & ! local coordinates
        , site_n                        ! number in global
 integer, private, save, dimension (NSONDES_MAX) ::  &
          sonde_gx, sonde_gy   &        ! global coordinates
@@ -114,7 +118,7 @@ integer, public, parameter :: & ! Total No., levels included
    NOUT_SITE  = NSPC_SITE * 1 &
   ,NOUT_SONDE = NSPC_SONDE* NLEVELS_SONDE
 
-character(len=50), private, save, dimension(NSITES_MAX) :: site_name
+character(len=50), public, save, dimension(NSITES_MAX) :: site_name
 character(len=50), private, save, dimension(NSONDES_MAX):: sonde_name
 character(len=20), private, save, dimension(NSPC_SITE)  :: site_species
 character(len=20), private, save, dimension(NSPC_SONDE) :: sonde_species
