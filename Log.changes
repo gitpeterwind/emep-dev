@@ -236,6 +236,12 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Dave   21st Feb 2013.  (2487)
+
+Sites_ml - local MY_DEBUG replaced by use of DEBUG_SITES, plus extra
+           debug formatting
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Peter  20th Feb 2013.  (2486)
 A new step towards flexible vertical coordinates.
 The grid definitions (and in the future all static data) can be read from a separate file,
