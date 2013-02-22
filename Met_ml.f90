@@ -105,7 +105,7 @@ module Met_ml
        ,debug_proc, debug_li, debug_lj &
        ,grid_north_pole_latitude,grid_north_pole_longitude &
        ,GlobalPosition,DefGrid,gl_stagg,gb_stagg,A_mid,B_mid &
-       ,GridRead
+       ,GridRead,Eta_bnd,Eta_mid
 
   use Io_ml ,               only : ios, IO_ROUGH, datewrite,PrintLog, &
                                    IO_CLAY, IO_SAND, open_file, IO_LOG
@@ -1167,36 +1167,41 @@ if( USE_SOILWATER ) then
        CALL MPI_WAIT(request_s, MPISTATUS, INFO)
     endif
 
+!new method introduced 22/1-2013
+!Old method u*(PS_u-PT)/(ps-pt); new method u*(P_u)/(P); the method differ by a term "PT".
+!The old method had more vertical exchanges at high altitude, when PS has large gradients (mountains).
+
 !note that u_xmj and v_xmi have already been divided by xm here
-       do j = 1,ljmax
-          do i = 1,limax
-             Pmid=Ps_extended(i,j)-PT
-             Pu1=0.5*(Ps_extended(i-1,j)+Ps_extended(i,j))-PT
-             Pu2=0.5*(Ps_extended(i+1,j)+Ps_extended(i,j))-PT
-             Pv1=0.5*(Ps_extended(i,j-1)+Ps_extended(i,j))-PT
-             Pv2=0.5*(Ps_extended(i,j+1)+Ps_extended(i,j))-PT
-
-             sdot(i,j,KMAX_BND,nr)=0.0
-             sdot(i,j,1,nr)=0.0
-             sumdiv=0.0
-             do k=1,KMAX_MID
-                divk(k)=((u_xmj(i,j,k,nr)*Pu2-u_xmj(i-1,j,k,nr)*Pu1)         &
-                     + (v_xmi(i,j,k,nr)*Pv2-v_xmi(i,j-1,k,nr)*Pv1))          &
-                     * xm2(i,j)*(sigma_bnd(k+1)-sigma_bnd(k))  &
-                     / GRIDWIDTH_M/Pmid
-                sumdiv=sumdiv+divk(k)
-             enddo
-             sdot(i,j,KMAX_MID,nr)=-(sigma_bnd(KMAX_MID+1)-sigma_bnd(KMAX_MID))&
-                                    *sumdiv+divk(KMAX_MID)
-             do k=KMAX_MID-1,2,-1
-                sdot(i,j,k,nr)=sdot(i,j,k+1,nr)-(sigma_bnd(k+1)-sigma_bnd(k))&
-                                                *sumdiv+divk(k)
-             enddo
+    do j = 1,ljmax
+       do i = 1,limax
+          Pmid=Ps_extended(i,j)
+          Pu1=0.5*(Ps_extended(i-1,j)+Ps_extended(i,j))
+          Pu2=0.5*(Ps_extended(i+1,j)+Ps_extended(i,j))
+          Pv1=0.5*(Ps_extended(i,j-1)+Ps_extended(i,j))
+          Pv2=0.5*(Ps_extended(i,j+1)+Ps_extended(i,j))
+          
+          sdot(i,j,KMAX_BND,nr)=0.0
+          sdot(i,j,1,nr)=0.0
+          sumdiv=0.0
+          do k=1,KMAX_MID
+             divk(k)=((u_xmj(i,j,k,nr)*(A_mid(k)+B_mid(k)*Pu2)-u_xmj(i-1,j,k,nr)*(A_mid(k)+B_mid(k)*Pu1))         &
+                  + (v_xmi(i,j,k,nr)*(A_mid(k)+B_mid(k)*Pv2)-v_xmi(i,j-1,k,nr)*(A_mid(k)+B_mid(k)*Pv1)))          &
+                  * xm2(i,j)*(Eta_bnd(k+1)-Eta_bnd(k))  &
+                  / GRIDWIDTH_M/(A_mid(k)+B_mid(k)*Pmid)
+             sumdiv=sumdiv+divk(k)
           enddo
+          sumdiv=sumdiv/(Eta_bnd(KMAX_MID+1)-Eta_bnd(1))
+          sdot(i,j,KMAX_MID,nr)=-(Eta_bnd(KMAX_MID+1)-Eta_bnd(KMAX_MID))&
+               *sumdiv+divk(KMAX_MID)
+          do k=KMAX_MID-1,1,-1
+             sdot(i,j,k,nr)=sdot(i,j,k+1,nr)-(Eta_bnd(k+1)-Eta_bnd(k))&
+                  *sumdiv+divk(k)
+          enddo
+          sdot(i,j,1,nr)=0.0! Is zero anyway from relations above
        enddo
-    endif
-
-
+    enddo
+    
+ endif
 
    if( USE_SOILWATER ) then
     if(foundSMI3.or.foundSoilWater_deep)then

@@ -236,6 +236,15 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Peter  22nd Feb 2013.  (2488)
+
+Define hybrid vertical coordinate Eta=A/Pref+B in GridValues.
+Modify sdot definition derived from horizontal winds in Met_ml.
+NB: this will modify results! 
+The vertical winds should be weaker over mountains, specially at high altitude.
+Also prepared a new routine in Advection_ml (not used yet).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Dave   21st Feb 2013.  (2487)
 
 Sites_ml - local MY_DEBUG replaced by use of DEBUG_SITES, plus extra

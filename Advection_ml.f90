@@ -109,6 +109,7 @@
   public :: assign_nmax
   public :: alloc_adv_arrays
   public :: vgrid
+  public :: vgrid_Eta
   public :: advecdiff
   public :: advecdiff_poles
   public :: adv_var
@@ -1354,6 +1355,137 @@
     alfendnew(3) = alfnew(6,KMAX_MID,1)+alfnew(9,KMAX_MID,1)
 
   end subroutine vgrid
+
+! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+  subroutine vgrid_Eta
+!
+!     inclusion of the variable grid spacing when interpolating the
+!     polynominal is done by introducing new local coordinates, cor.
+!
+!
+!     modified by pw january 2002: alfnew is modified such that
+!     a Courant number of one corresponds exactly to "empty" a cell.
+!     (small effects on results: less than 1%)
+!
+!     Adapted for pressure coordinates
+
+
+    use GridValues_ml, only : Eta_bnd,Eta_mid
+    implicit none
+
+    integer k
+    real cor1, cor2, dcorl
+    real hscor1(KMAX_BND+2),hscor2(KMAX_MID+2)
+    real alfa1(NADVS), alfa2(NADVS), dei
+    real corl1(KMAX_BND), corl2(KMAX_BND)
+
+    real alf(9,2:KMAX_BND)
+
+    do  k=1,KMAX_MID
+      hscor1(k+1) = Eta_bnd(k)
+      hscor2(k+1) = Eta_mid(k)
+    enddo
+    hscor1(KMAX_BND+1) = Eta_bnd(KMAX_BND)
+
+    hscor1(1) = - Eta_bnd(2)
+    hscor1(KMAX_BND+2) = 2.*Eta_bnd(KMAX_BND) - Eta_bnd(KMAX_BND-1)
+    hscor2(1) = 2.*Eta_mid(1) - Eta_mid(2)
+    hscor2(KMAX_MID+2) = 2.*Eta_mid(KMAX_MID) - Eta_mid(KMAX_MID-1)
+
+    do  k=1,KMAX_BND
+      dhs1(k) = hscor1(k+1) - hscor1(k)
+      dhs1i(k) = 1./dhs1(k)
+      dhs2i(k) = 1./(hscor2(k+1) - hscor2(k))
+    enddo
+
+    do k=2,KMAX_BND
+
+      corl1(k) = (hscor1(k) - hscor2(k))*dhs1i(k)
+      corl2(k) = (hscor1(k+1) - hscor2(k))*dhs1i(k)
+      dcorl = corl2(k) - corl1(k)
+      alfa1(NADVS-1) = (corl2(k)**2 - corl1(k)**2)/(2.*dcorl)
+      alfa2(NADVS-1) = (corl2(k)**3 - corl1(k)**3)/(3.*dcorl)
+
+      cor1 = (hscor1(k-1) - hscor2(k))*dhs1i(k)
+!     cor2 = (hscor1(k) - hscor2(k))*dhs1i(k)
+      dcorl = corl1(k) - cor1
+      alfa1(NADVS-2) = (corl1(k)**2 - cor1**2)/(2.*dcorl)
+      alfa2(NADVS-2) = (corl1(k)**3 - cor1**3)/(3.*dcorl)
+
+!     cor1 = (hscor1(k+1) - hscor2(k))*dhs1i(k)
+      cor2 = (hscor1(k+2) - hscor2(k))*dhs1i(k)
+      dcorl = cor2 - corl2(k)
+      alfa1(NADVS) = (cor2**2 - corl2(k)**2)/(2.*dcorl)
+      alfa2(NADVS) = (cor2**3 - corl2(k)**3)/(3.*dcorl)
+
+      dei = alfa1(NADVS-1)*alfa2(NADVS)                  &
+          - alfa1(NADVS)  *alfa2(NADVS-1)                &
+          - alfa1(NADVS-2)*(alfa2(NADVS)-alfa2(NADVS-1)) &
+          + alfa2(NADVS-2)*(alfa1(NADVS)-alfa1(NADVS-1))
+      dei = 1./dei
+
+      alf(1,k) = dei*(alfa1(NADVS-1)*alfa2(NADVS)        &
+                     -alfa1(NADVS)  *alfa2(NADVS-1))
+      alf(4,k) = dei*(alfa2(NADVS-2)*alfa1(NADVS)        &
+                     -alfa2(NADVS)  *alfa1(NADVS-2))
+      alf(7,k) = dei*(alfa2(NADVS-1)*alfa1(NADVS-2)      &
+                     -alfa2(NADVS-2)*alfa1(NADVS-1))
+      alf(2,k) = dei*(alfa2(NADVS-1)-alfa2(NADVS))  /2.
+      alf(5,k) = dei*(alfa2(NADVS)  -alfa2(NADVS-2))/2.
+      alf(8,k) = dei*(alfa2(NADVS-2)-alfa2(NADVS-1))/2.
+      alf(3,k) = dei*(alfa1(NADVS)  -alfa1(NADVS-1))/3.
+      alf(6,k) = dei*(alfa1(NADVS-2)-alfa1(NADVS))  /3.
+      alf(9,k) = dei*(alfa1(NADVS-1)-alfa1(NADVS-2))/3.
+    enddo
+
+    do k=2,KMAX_MID
+      alfnew(1,k,0) = alf(1,k) + 2.*alf(2,k)*corl2(k)                &
+                    + 3.*alf(3,k)*corl2(k)*corl2(k)
+      alfnew(1,k,1) = -(alf(1,k+1) + 2.*alf(2,k+1)*corl1(k+1)        &
+                    + 3.*alf(3,k+1)*corl1(k+1)*corl1(k+1))
+      alfnew(4,k,0) = alf(4,k) + 2.*alf(5,k)*corl2(k)                &
+                    + 3.*alf(6,k)*corl2(k)*corl2(k)
+      alfnew(4,k,1) = -(alf(4,k+1) + 2.*alf(5,k+1)*corl1(k+1)        &
+                    + 3.*alf(6,k+1)*corl1(k+1)*corl1(k+1))
+      alfnew(7,k,0) = alf(7,k) + 2.*alf(8,k)*corl2(k)                &
+                    + 3.*alf(9,k)*corl2(k)*corl2(k)
+      alfnew(7,k,1) = -(alf(7,k+1) + 2.*alf(8,k+1)*corl1(k+1)        &
+                    + 3.*alf(9,k+1)*corl1(k+1)*corl1(k+1))
+!pw   alfnew(2,k,0) = -(alf(2,k)   + 3.*alf(3,k)  *corl2(k))  *dhs2i(k)
+!     alfnew(2,k,1) =  (alf(2,k+1) + 3.*alf(3,k+1)*corl1(k+1))*dhs2i(k)
+      alfnew(2,k,0) = -(alf(2,k)   + 3.*alf(3,k)  *corl2(k))  *dhs1i(k)
+      alfnew(2,k,1) =  (alf(2,k+1) + 3.*alf(3,k+1)*corl1(k+1))*dhs1i(k+1)
+!pw   alfnew(5,k,0) = -(alf(5,k)   + 3.*alf(6,k)  *corl2(k))  *dhs2i(k)
+!     alfnew(5,k,1) =  (alf(5,k+1) + 3.*alf(6,k+1)*corl1(k+1))*dhs2i(k)
+      alfnew(5,k,0) = -(alf(5,k)   + 3.*alf(6,k)  *corl2(k))  *dhs1i(k)
+      alfnew(5,k,1) =  (alf(5,k+1) + 3.*alf(6,k+1)*corl1(k+1))*dhs1i(k+1)
+!pw   alfnew(8,k,0) = -(alf(8,k)   + 3.*alf(9,k)  *corl2(k))  *dhs2i(k)
+!     alfnew(8,k,1) = (alf(8,k+1) + 3.*alf(9,k+1)*corl1(k+1))*dhs2i(k)
+      alfnew(8,k,0) = -(alf(8,k)   + 3.*alf(9,k)  *corl2(k))  *dhs1i(k)
+      alfnew(8,k,1) =  (alf(8,k+1) + 3.*alf(9,k+1)*corl1(k+1))*dhs1i(k+1)
+!pw   alfnew(3,k,0) =  alf(3,k)  *dhs2i(k)*dhs2i(k)
+!     alfnew(3,k,1) = -alf(3,k+1)*dhs2i(k)*dhs2i(k)
+!     alfnew(6,k,0) =  alf(6,k)  *dhs2i(k)*dhs2i(k)
+!     alfnew(6,k,1) = -alf(6,k+1)*dhs2i(k)*dhs2i(k)
+!     alfnew(9,k,0) =  alf(9,k)  *dhs2i(k)*dhs2i(k)
+!     alfnew(9,k,1) = -alf(9,k+1)*dhs2i(k)*dhs2i(k)
+      alfnew(3,k,0) =  alf(3,k)  *dhs1i(k)  *dhs1i(k)
+      alfnew(3,k,1) = -alf(3,k+1)*dhs1i(k+1)*dhs1i(k+1)
+      alfnew(6,k,0) =  alf(6,k)  *dhs1i(k)  *dhs1i(k)
+      alfnew(6,k,1) = -alf(6,k+1)*dhs1i(k+1)*dhs1i(k+1)
+      alfnew(9,k,0) =  alf(9,k)  *dhs1i(k)  *dhs1i(k)
+      alfnew(9,k,1) = -alf(9,k+1)*dhs1i(k+1)*dhs1i(k+1)
+    enddo
+
+    alfbegnew(1) = alfnew(1,2,0)+alfnew(4,2,0)
+    alfbegnew(2) = alfnew(2,2,0)+alfnew(5,2,0)
+    alfbegnew(3) = alfnew(3,2,0)+alfnew(6,2,0)
+    alfendnew(1) = alfnew(4,KMAX_MID,1)+alfnew(7,KMAX_MID,1)
+    alfendnew(2) = alfnew(5,KMAX_MID,1)+alfnew(8,KMAX_MID,1)
+    alfendnew(3) = alfnew(6,KMAX_MID,1)+alfnew(9,KMAX_MID,1)
+
+  end subroutine vgrid_Eta
 
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 

@@ -134,6 +134,10 @@ Module GridValues_ml
        dB !Unit 1.  B_bnd(k+1)-B_bnd(k) 
   ! P = A + B*PS
   ! eta = A/Pref + B
+  real, public, save,allocatable,  dimension(:) ::  &
+       Eta_bnd ! sigma, layer boundary 
+  real, public, save,allocatable,  dimension(:) ::  &
+       Eta_mid ! sigma, layer boundary 
 
   real, public, save,allocatable,  dimension(:) ::  &
        sigma_bnd ! sigma, layer boundary 
@@ -230,7 +234,7 @@ contains
     if(Grid_Def_exist)then
     if(MasterProc)write(*,*)'Found Grid_Def! ',trim(filename)
     else
-    if(MasterProc)write(*,*)'Did not found Grid_Def ',trim(filename)
+    if(MasterProc.and.Use_Grid_Def)write(*,*)'Did not found Grid_Def ',trim(filename)
 56  FORMAT(a5,i4.4,i2.2,i2.2,a3)
     write(filename,56)'meteo',nyear,nmonth,nday,'.nc'
     endif
@@ -247,6 +251,7 @@ contains
     allocate(A_mid(KMAX_MID),B_mid(KMAX_MID))
     allocate(dA(KMAX_MID),dB(KMAX_MID))
     allocate(sigma_bnd(KMAX_BND),sigma_mid(KMAX_MID),carea(KMAX_MID))
+    allocate(Eta_bnd(KMAX_BND),Eta_mid(KMAX_MID))
 
     allocate(i_local(IIFULLDOM))
     allocate(j_local(JJFULLDOM))
@@ -626,7 +631,10 @@ contains
     do k = 1,KMAX_MID
        dA(k)=A_bnd(k+1)-A_bnd(k)
        dB(k)=B_bnd(k+1)-B_bnd(k)
+       Eta_bnd(k)=A_bnd(k)/Pref+B_bnd(k)
+       Eta_mid(k)=A_mid(k)/Pref+B_mid(k)
     enddo
+    Eta_bnd(KMAX_MID+1)=A_bnd(KMAX_MID+1)/Pref+B_bnd(KMAX_MID+1)
 
     CALL MPI_BCAST(xm_global_i(1:GIMAX,1:GJMAX),8*GIMAX*GJMAX,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
     CALL MPI_BCAST(xm_global_j(1:GIMAX,1:GJMAX),8*GIMAX*GJMAX,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
