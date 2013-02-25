@@ -236,6 +236,13 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Peter  25th Feb 2013.  (2491)
+
+Defined EtaKz and the corresponding routine (Kz_m2s_toEtaKz). Not in use yet.
+(EtaKz will replace SigmaKz at some later stage)
+MetFields, Met_ml, BLPhysics_ml
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Peter  22nd Feb 2013.  (2490)
 
 Define hybrid vertical coordinate Eta=A/Pref+B in GridValues.

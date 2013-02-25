@@ -90,6 +90,7 @@ module Met_ml
     ,O_BrienKz               &
     ,NWP_Kz                  & ! Kz from meteo 
     ,Kz_m2s_toSigmaKz        & 
+    ,Kz_m2s_toEtaKz        & 
     ,SigmaKz_2_m2s
 
   use CheckStop_ml,         only : CheckStop,StopAll
@@ -1369,6 +1370,8 @@ if( USE_SOILWATER ) then
             + (q(:,:,:,2) - q(:,:,:,1))*div
        SigmaKz(:,:,:,1)  = SigmaKz(:,:,:,1)                 &
             + (SigmaKz(:,:,:,2) - SigmaKz(:,:,:,1))*div
+       EtaKz(:,:,:,1)  = EtaKz(:,:,:,1)                 &
+            + (EtaKz(:,:,:,2) - EtaKz(:,:,:,1))*div
        roa(:,:,:,1)  = roa(:,:,:,1)                 &
             + (roa(:,:,:,2) - roa(:,:,:,1))*div
        ps(:,:,1)     = ps(:,:,1)                 &
@@ -1411,6 +1414,7 @@ if( USE_SOILWATER ) then
        th(:,:,:,1)   = th(:,:,:,2)
        q(:,:,:,1)    = q(:,:,:,2)
        SigmaKz(:,:,:,1)  = SigmaKz(:,:,:,2)
+       EtaKz(:,:,:,1)  = EtaKz(:,:,:,2)
        roa(:,:,:,1)  = roa(:,:,:,2)
        !  - note we need pressure first before surface_pressure
        ps(:,:,1)     = ps(:,:,2)
@@ -2003,6 +2007,7 @@ if( USE_SOILWATER ) then
     if ( .not. (NWP_Kz .and. foundKz_met) ) then  ! convert to Sigma units
 
       call Kz_m2s_toSigmaKz (Kz_m2s,roa(:,:,:,nr),ps(:,:,nr),SigmaKz(:,:,:,nr))
+      call Kz_m2s_toEtaKz (Kz_m2s,roa(:,:,:,nr),ps(:,:,nr),EtaKz(:,:,:,nr),Eta_mid,A_mid,B_mid)
 
     end if
     !***************************************************

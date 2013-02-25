@@ -104,7 +104,8 @@ module MetFields_ml
        ,roa    &  ! kg/m3
        ,cw        ! cloudwater
   real,public, save,allocatable, dimension(:,:,:,:) :: &
-        SigmaKz  &! vertical diffusivity in sigma coords
+        EtaKz    &! vertical diffusivity in Eta coords
+       ,SigmaKz  &! vertical diffusivity in sigma coords
        ,sdot     &! vertical velocity, sigma coords, 1/s
        ,Kz_met    ! vertical diffusivity in sigma coordinates from meteorology
 
@@ -233,6 +234,7 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
     allocate(roa(MAXLIMAX,MAXLJMAX,KMAX_MID,NMET))
     allocate(cw(MAXLIMAX,MAXLJMAX,KMAX_MID,NMET))
     allocate(SigmaKz(MAXLIMAX,MAXLJMAX,KMAX_BND,NMET))
+    allocate(EtaKz(MAXLIMAX,MAXLJMAX,KMAX_BND,NMET))
     allocate(sdot(MAXLIMAX,MAXLJMAX,KMAX_BND,NMET))
     allocate(Kz_met(MAXLIMAX,MAXLJMAX,KMAX_BND,NMET))
     allocate(pr(MAXLIMAX,MAXLJMAX,KMAX_MID))
