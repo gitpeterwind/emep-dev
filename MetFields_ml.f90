@@ -106,6 +106,7 @@ module MetFields_ml
   real,public, save,allocatable, dimension(:,:,:,:) :: &
         EtaKz    &! vertical diffusivity in Eta coords
        ,SigmaKz  &! vertical diffusivity in sigma coords
+       ,Etadot     &! vertical velocity, Eta coords, Pa/s
        ,sdot     &! vertical velocity, sigma coords, 1/s
        ,Kz_met    ! vertical diffusivity in sigma coordinates from meteorology
 
@@ -236,6 +237,7 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
     allocate(SigmaKz(MAXLIMAX,MAXLJMAX,KMAX_BND,NMET))
     allocate(EtaKz(MAXLIMAX,MAXLJMAX,KMAX_BND,NMET))
     allocate(sdot(MAXLIMAX,MAXLJMAX,KMAX_BND,NMET))
+    allocate(Etadot(MAXLIMAX,MAXLJMAX,KMAX_BND,NMET))
     allocate(Kz_met(MAXLIMAX,MAXLJMAX,KMAX_BND,NMET))
     allocate(pr(MAXLIMAX,MAXLJMAX,KMAX_MID))
     allocate(cc3d(MAXLIMAX,MAXLJMAX,KMAX_MID))

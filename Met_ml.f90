@@ -106,7 +106,7 @@ module Met_ml
        ,debug_proc, debug_li, debug_lj &
        ,grid_north_pole_latitude,grid_north_pole_longitude &
        ,GlobalPosition,DefGrid,gl_stagg,gb_stagg,A_mid,B_mid &
-       ,GridRead,Eta_bnd,Eta_mid
+       ,GridRead,Eta_bnd,Eta_mid,dA,dB
 
   use Io_ml ,               only : ios, IO_ROUGH, datewrite,PrintLog, &
                                    IO_CLAY, IO_SAND, open_file, IO_LOG
@@ -114,7 +114,7 @@ module Met_ml
         likely_coastal, mainly_sea  ! JAN2013
   use MetFields_ml 
   use MicroMet_ml, only : PsiH  ! Only if USE_MIN_KZ
-  use ModelConstants_ml,    only : PASCAL, PT, METSTEP  &
+  use ModelConstants_ml,    only : PASCAL, PT, Pref, METSTEP  &
        ,KMAX_BND,KMAX_MID,NMET,KCHEMTOP &
        ,IIFULLDOM, JJFULLDOM, RUNDOMAIN,NPROC  &
        ,MasterProc, DEBUG_MET,DEBUG_i, DEBUG_j, identi, V_RAIN, nmax  &
@@ -971,6 +971,8 @@ if( USE_SOILWATER ) then
           !    set sdot equal to zero at the top and bottom of atmosphere.
           sdot(i,j,KMAX_BND,nr)=0.0
           sdot(i,j,1,nr)=0.0
+          Etadot(i,j,KMAX_BND,nr)=0.0
+          Etadot(i,j,1,nr)=0.0
 
           !    conversion from % to fractions (<0,1>) for cloud cover
           !    calculation of cc3dmax (see eulmc.inc) -
@@ -1064,6 +1066,7 @@ if( USE_SOILWATER ) then
 
 
     if(.not.foundsdot)then
+       if(me==0)write(*,*)'ETADOT',nr
        ! sdot derived from divergence=0 principle
        do j = 1,ljmax
           do i = 1,limax
@@ -1168,40 +1171,65 @@ if( USE_SOILWATER ) then
        CALL MPI_WAIT(request_s, MPISTATUS, INFO)
     endif
 
-!new method introduced 22/1-2013
-!Old method u*(PS_u-PT)/(ps-pt); new method u*(P_u)/(P); the method differ by a term "PT".
-!The old method had more vertical exchanges at high altitude, when PS has large gradients (mountains).
+       do j = 1,ljmax
+          do i = 1,limax
+             Pmid=Ps_extended(i,j)-PT
+             Pu1=0.5*(Ps_extended(i-1,j)+Ps_extended(i,j))-PT
+             Pu2=0.5*(Ps_extended(i+1,j)+Ps_extended(i,j))-PT
+             Pv1=0.5*(Ps_extended(i,j-1)+Ps_extended(i,j))-PT
+             Pv2=0.5*(Ps_extended(i,j+1)+Ps_extended(i,j))-PT
 
-!note that u_xmj and v_xmi have already been divided by xm here
+             sdot(i,j,KMAX_BND,nr)=0.0
+             sdot(i,j,1,nr)=0.0
+             sumdiv=0.0
+             do k=1,KMAX_MID
+                divk(k)=((u_xmj(i,j,k,nr)*Pu2-u_xmj(i-1,j,k,nr)*Pu1)         &
+                     + (v_xmi(i,j,k,nr)*Pv2-v_xmi(i,j-1,k,nr)*Pv1))          &
+                     * xm2(i,j)*(sigma_bnd(k+1)-sigma_bnd(k))  &
+                     / GRIDWIDTH_M/Pmid
+                sumdiv=sumdiv+divk(k)
+             enddo
+           !  sdot(i,j,KMAX_MID,nr)=-(sigma_bnd(KMAX_MID+1)-sigma_bnd(KMAX_MID))&
+           !                         *sumdiv+divk(KMAX_MID)
+             do k=KMAX_MID,1,-1
+                sdot(i,j,k,nr)=sdot(i,j,k+1,nr)-(sigma_bnd(k+1)-sigma_bnd(k))&
+                                                *sumdiv+divk(k)
+             enddo
+          enddo
+       enddo
+
+!new method introduced 26/2-2013
+!Old method sigma=(P-PT)/(ps-pt); new method uses Eta=A/Pref+B; the method differ.
+!see http://www.ecmwf.int/research/ifsdocs/DYNAMICS/Chap2_Discretization3.html#959545
+
+!(note that u_xmj and v_xmi have already been divided by xm here)
     do j = 1,ljmax
        do i = 1,limax
-          Pmid=Ps_extended(i,j)
+          Pmid=Ps_extended(i,j)! without "-PT"
+          !surface pressure at gridcell boundaries
           Pu1=0.5*(Ps_extended(i-1,j)+Ps_extended(i,j))
           Pu2=0.5*(Ps_extended(i+1,j)+Ps_extended(i,j))
           Pv1=0.5*(Ps_extended(i,j-1)+Ps_extended(i,j))
           Pv2=0.5*(Ps_extended(i,j+1)+Ps_extended(i,j))
           
-          sdot(i,j,KMAX_BND,nr)=0.0
-          sdot(i,j,1,nr)=0.0
           sumdiv=0.0
           do k=1,KMAX_MID
-             divk(k)=((u_xmj(i,j,k,nr)*(A_mid(k)+B_mid(k)*Pu2)-u_xmj(i-1,j,k,nr)*(A_mid(k)+B_mid(k)*Pu1))         &
-                  + (v_xmi(i,j,k,nr)*(A_mid(k)+B_mid(k)*Pv2)-v_xmi(i,j-1,k,nr)*(A_mid(k)+B_mid(k)*Pv1)))          &
-                  * xm2(i,j)*(Eta_bnd(k+1)-Eta_bnd(k))  &
-                  / GRIDWIDTH_M/(A_mid(k)+B_mid(k)*Pmid)
+             divk(k)=((u_xmj(i,j,k,nr)*(dA(k)+dB(k)*Pu2)-u_xmj(i-1,j,k,nr)*(dA(k)+dB(k)*Pu1))         &
+                  + (v_xmi(i,j,k,nr)*(dA(k)+dB(k)*Pv2)-v_xmi(i,j-1,k,nr)*(dA(k)+dB(k)*Pv1)))          &
+                  * xm2(i,j)/ GRIDWIDTH_M
              sumdiv=sumdiv+divk(k)
           enddo
-          sumdiv=sumdiv/(Eta_bnd(KMAX_MID+1)-Eta_bnd(1))
-          sdot(i,j,KMAX_MID,nr)=-(Eta_bnd(KMAX_MID+1)-Eta_bnd(KMAX_MID))&
-               *sumdiv+divk(KMAX_MID)
-          do k=KMAX_MID-1,1,-1
-             sdot(i,j,k,nr)=sdot(i,j,k+1,nr)-(Eta_bnd(k+1)-Eta_bnd(k))&
-                  *sumdiv+divk(k)
+
+          Etadot(i,j,KMAX_MID+1,nr)=0.0
+          do k=KMAX_MID,1,-1
+             Etadot(i,j,k,nr)=Etadot(i,j,k+1,nr)-dB(k)*sumdiv+divk(k)
+             Etadot(i,j,k+1,nr)=Etadot(i,j,k+1,nr)*(dA(k)/Pref+dB(k))/(dA(k)+dB(k)*Pmid)
+!             Etadot(i,j,k+1,nr)=Etadot(i,j,k+1,nr)/(Ps_extended(i,j)-PT) gives same result as sdot for sigma coordinates
           enddo
-          sdot(i,j,1,nr)=0.0! Is zero anyway from relations above
+          Etadot(i,j,1,nr)=0.0! Is zero anyway from relations above
        enddo
     enddo
-    
+
  endif
 
    if( USE_SOILWATER ) then
@@ -1364,6 +1392,8 @@ if( USE_SOILWATER ) then
             + (v_xmi(:,:,:,2) - v_xmi(:,:,:,1))*div
        sdot(:,:,:,1) = sdot(:,:,:,1)             &
             + (sdot(:,:,:,2) - sdot(:,:,:,1))*div
+       Etadot(:,:,:,1) = Etadot(:,:,:,1)             &
+            + (Etadot(:,:,:,2) - Etadot(:,:,:,1))*div
        th(:,:,:,1)   = th(:,:,:,1)                 &
             + (th(:,:,:,2) - th(:,:,:,1))*div
        q(:,:,:,1)    = q(:,:,:,1)                 &
@@ -1411,6 +1441,7 @@ if( USE_SOILWATER ) then
        u_xmj(:,:,:,1)    = u_xmj(:,:,:,2)
        v_xmi(:,:,:,1)    = v_xmi(:,:,:,2)
        sdot(:,:,:,1) = sdot(:,:,:,2)
+       Etadot(:,:,:,1) = Etadot(:,:,:,2)
        th(:,:,:,1)   = th(:,:,:,2)
        q(:,:,:,1)    = q(:,:,:,2)
        SigmaKz(:,:,:,1)  = SigmaKz(:,:,:,2)
