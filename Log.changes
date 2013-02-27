@@ -236,6 +236,27 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Peter  27th Feb 2013.  (2493)
+
+More changes for hybrid vertical coordinates. Should not affect results.
+New advection and convection in hybrid coordinates: convection_Eta, advecdiff_Eta
+the "p*" from sigma equations must be replaced by dp/deta 
+
+Adapted routines:
+CellMet_ml.f90 
+BoundaryConditions_ml.f90 
+Convection_ml.f90 
+Advection_ml.f90 
+Emissions_ml.f90 
+Met_ml.f90 
+Sites_ml.f90 
+Setup_1d_ml.f90 
+Volcanos_ml.f90 
+ZD_VBS/My_SOA_ml.f90
+ModelConstants_ml.f90
+PhyChem_ml.f90
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Peter  26th Feb 2013.  (2492)
 
 Defined Etadot and reversed the change from (2490). 

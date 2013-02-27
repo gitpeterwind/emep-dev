@@ -106,7 +106,7 @@ module Met_ml
        ,debug_proc, debug_li, debug_lj &
        ,grid_north_pole_latitude,grid_north_pole_longitude &
        ,GlobalPosition,DefGrid,gl_stagg,gb_stagg,A_mid,B_mid &
-       ,GridRead,Eta_bnd,Eta_mid,dA,dB
+       ,GridRead,Eta_bnd,Eta_mid,dA,dB,A_mid,B_mid,A_bnd,B_bnd
 
   use Io_ml ,               only : ios, IO_ROUGH, datewrite,PrintLog, &
                                    IO_CLAY, IO_SAND, open_file, IO_LOG
@@ -996,7 +996,7 @@ if( USE_SOILWATER ) then
 
     do j = 1,ljmax
        do i = 1,limax
-          p1 = sigma_bnd(KMAX_BND)*(ps(i,j,nr) - PT) + PT
+          p1 = A_bnd(KMAX_BND)+B_bnd(KMAX_BND)*ps(i,j,nr)
 
           exf1(KMAX_BND) = CP * Exner_nd(p1)
 
@@ -1009,11 +1009,11 @@ if( USE_SOILWATER ) then
              !   Louis (1979), (see mc7e.f).
              !   exner-function of the half-layers
 
-             p1 = sigma_bnd(k)*(ps(i,j,nr) - PT) + PT
+             p1 = A_bnd(k)+B_bnd(k)*ps(i,j,nr)
              exf1(k) = CP * Exner_nd( p1 )
 
              !   exner-function of the full-levels
-             p2 = sigma_mid(k)*(ps(i,j,nr) - PT) + PT
+             p2 = A_mid(k)+B_mid(k)*ps(i,j,nr)
              exf2(k) = CP * Exner_nd(p2)
 
              !     height of the half-layers
@@ -1026,7 +1026,7 @@ if( USE_SOILWATER ) then
              z_mid(i,j,k) = z_bnd(i,j,k+1) + (th(i,j,k,nr)*            &
                   (exf1(k+1) - exf2(k)))/GRAV
 
-             roa(i,j,k,nr) = CP*((ps(i,j,nr) - PT)*sigma_mid(k) + PT)/      &
+             roa(i,j,k,nr) = CP*(A_mid(k)+B_mid(k)*ps(i,j,nr))/      &
                   (RGAS_KG*th(i,j,k,nr)*exf2(k))
 
           enddo  ! k
@@ -1755,8 +1755,8 @@ if( USE_SOILWATER ) then
     do j=1,ljmax
        do i=1,limax
 
-          p_m = PT + sigma_mid(k)*(ps(i,j,nr) - PT)
-          p_s = PT + sigma_bnd(k)*(ps(i,j,nr) - PT)
+          p_m = A_mid(k)+B_mid(k)*ps(i,j,nr)
+          p_s = A_bnd(k)+B_bnd(k)*ps(i,j,nr)
 
              exnm(i,j,k)= CP * Exner_nd(p_m) !c..exner (j/k kg)
              exns(i,j,k)= CP * Exner_nd(p_s)
@@ -1833,7 +1833,7 @@ if( USE_SOILWATER ) then
             do j=1,ljmax
                do i=1,limax
 
-                  p_bnd(:) = sigma_bnd(:)*(ps(i,j,nr) - PT) + PT
+                  p_bnd(:) = A_bnd(:)+B_bnd(:)*ps(i,j,nr)
                  ! p_mid(:) = sigma_mid(:)*(ps(i,j,nr) - PT) + PT
                  !exf2(:) = CP * Exner_nd(p_mid(:))
     
@@ -2007,7 +2007,7 @@ if( USE_SOILWATER ) then
 
       i = debug_iloc
       j = debug_jloc
-      p_bnd(:) = sigma_bnd(:)*(ps(i,j,nr) - PT) + PT
+      p_bnd(:) = A_bnd(:)+B_bnd(:)*ps(i,j,nr)
 
   !************************************************************************!
   ! We test all the various options here. Pass in  data as keyword arguments

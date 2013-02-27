@@ -1012,7 +1012,7 @@ contains
   logical                         ::  hourchange   !             
   real, dimension(NRCEMIS)        ::  tmpemis      !  local array for emissions
 
-  real ::  ehlpcom,ehlpcom0(KEMISTOP:KMAX_MID)
+  real ::  ehlpcom,ehlpcom0
   real ::  tfac, dtgrid    ! time-factor (tmp variable); dt*h*h for scaling
   real ::  s               ! source term (emis) before splitting
   integer :: iland, iland_timefac  ! country codes, and codes for timefac 
@@ -1030,11 +1030,7 @@ contains
   integer :: daytime_longitude, daytime_iland, hour_longitude, hour_iland
  
 ! Initialize
-    ehlpcom0(:)=0.0
-
-   do k=KEMISTOP,KMAX_MID
-      ehlpcom0(k) = GRAV* 0.001*AVOG/ (sigma_bnd(k+1) - sigma_bnd(k))
-   enddo
+  ehlpcom0 = GRAV* 0.001*AVOG!/ (sigma_bnd(k+1) - sigma_bnd(k))
 
   ! Scaling for totemadd:
      dtgrid = dt_advec * GRIDWIDTH_M * GRIDWIDTH_M 
@@ -1217,7 +1213,7 @@ contains
                       do iqrc =1, nrcemis
                          gridrcemis0(iqrc,k,i,j) =   &
                             gridrcemis0(iqrc,k,i,j) + tmpemis(iqrc)*   &
-                            ehlpcom0(k)*emis_kprofile(KMAX_BND-k,isec) &
+                            ehlpcom0*emis_kprofile(KMAX_BND-k,isec) &
                             !ehlpcom0(k)*VERTFAC(KMAX_BND-k,isec) &
                             * emis_masscorr(iqrc)
                         !if( debug_tfac.and. iqrc==1 ) then 
@@ -1289,7 +1285,7 @@ contains
 
                 gridrcemis0(iqrc,KMAX_MID,i,j) =   &
                   gridrcemis0(iqrc,KMAX_MID,i,j) + tmpemis(iqrc)*&
-                    ehlpcom0(KMAX_MID) * emis_masscorr(iqrc)
+                    ehlpcom0 * emis_masscorr(iqrc)
              end do ! iem
 
 !      ==================================================
@@ -1386,7 +1382,7 @@ contains
      do j = 1,ljmax
         do i = 1,limax
 
-              ehlpcom= roa(i,j,k,1)/(ps(i,j,1)-PT)
+              ehlpcom= roa(i,j,k,1)/(dA(k)+dB(k)*ps(i,j,1))
 !RB: This should also be done for the road dust emissions
               do iqrc =1, NRCEMIS
                  gridrcemis(iqrc,k,i,j) =  &
@@ -1407,7 +1403,7 @@ contains
             ehlpcom= roa(i,j,KMAX_MID,1)/(ps(i,j,1)-PT)
               do iqrc =1, NROADDUST
                  gridrcroadd(iqrc,i,j) =  &
-                      gridrcroadd0(iqrc,i,j)* ehlpcom * ehlpcom0(KMAX_MID) * roaddust_masscorr(iqrc)
+                      gridrcroadd0(iqrc,i,j)* ehlpcom * ehlpcom0 * roaddust_masscorr(iqrc)
               enddo  ! iqrc
            end do ! i
         end do ! j

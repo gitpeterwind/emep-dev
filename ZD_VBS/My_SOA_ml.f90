@@ -51,7 +51,7 @@ module OrganicAerosol_ml
   ,NVFFIREOC25 => NVFFIREOC25_GROUP  ! only non-vol. FFIREOC emissions
                                      ! (zero in VBS-PAX type runs)
 
-   use GridValues_ml, only: sigma_mid 
+   use GridValues_ml, only: A_mid,B_mid
    use ModelConstants_ml,    only :  PT
 
    use ModelConstants_ml,    only : CHEMTMIN, CHEMTMAX, &
@@ -161,7 +161,7 @@ module OrganicAerosol_ml
 
   ! Use Standard Atmosphere to get average heights of layers
 
-       p_kPa(:) = 0.001*( PT + sigma_mid(:)*(101325.0-PT) ) ! Pressure in kPa
+       p_kPa(:) = 0.001*( A_mid(:)+B_mid(:)*101325.0 ) ! Pressure in kPa
        h_km     = StandardAtmos_kPa_2_km(p_kPa)
        BGND_OC(:)= 0.5 * 1.005 ! ng/m3 !!! will give 0.5 ugC/m3 at z=0 m
 

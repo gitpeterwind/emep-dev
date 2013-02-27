@@ -46,7 +46,7 @@ use My_Outputs_ml, only : &  ! for sitesout
 
 use DerivedFields_ml,  only : f_2d, d_2d  ! not used:, d_3d
 use Functions_ml,      only : Tpot_2_T    ! Conversion function
-use GridValues_ml,     only : sigma_bnd, sigma_mid, lb2ij, i_fdom, j_fdom &
+use GridValues_ml,     only : lb2ij, i_fdom, j_fdom &
                               , i_local, j_local, A_mid, B_mid
 use Io_ml,             only : check_file,open_file,ios &
                               , fexist, IO_SITES, IO_SONDES &

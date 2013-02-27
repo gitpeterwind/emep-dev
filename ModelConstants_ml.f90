@@ -111,6 +111,8 @@ logical, public, parameter ::         &
 !NML                      (EXP_NAME=="EMEP2010"), &
 !NML  ANALYSIS           = .false..and.FORECAST ! EXPERIMENTAL: 3DVar data assimilation
 
+logical, public, parameter ::  USE_EtaCOORDINATES=.false.!temporay parameter; will be set true and removed after testing
+
 !Boundary layer profiles
   character(len=4), parameter, public :: FluxPROFILE = &
      "Iter"   !

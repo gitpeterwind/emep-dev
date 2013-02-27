@@ -89,7 +89,7 @@ use GlobalBCs_ml,      only:  &
 use GridValues_ml,     only: glon, glat   & ! full domain lat, long
                             ,sigma_mid    & !sigma layer midpoint
                             ,debug_proc, debug_li, debug_lj & ! debugging
-                            ,i_fdom, j_fdom  ! for debugging
+                            ,i_fdom, j_fdom,B_mid  ! for debugging
 use Io_Progs_ml,       only: datewrite
 use Landuse_ml,        only: mainly_sea
 use LocalVariables_ml, only: Grid
@@ -768,11 +768,12 @@ subroutine My_bcmap(iyr_trend)
 ! is top_misc_bc -decrease_factor*top_misc_bc. Since the choice to set the
 ! concentration as a factor of sigma_mid, the concentration in the lowest
 ! grid cell will not be excactly top_misc_bc -decrease_factor*top_misc_bc, but close.
+!pw March 2013 sigma_mid replaced by B_mid (equal for sigma coordinates)
   do ii=NGLOB_BC+1,NTOT_BC
     do k=1,KMAX_MID
-      misc_bc(ii,k) = top_misc_bc(ii)*(1.0-decrease_factor(ii)*sigma_mid(k))
+      misc_bc(ii,k) = top_misc_bc(ii)*(1.0-decrease_factor(ii)*B_mid(k))
       if (MasterProc.and.DEBUG_MYBC) print "(a20,2es12.4,i4)",&
-        "height,misc_vert,k",sigma_mid(k),misc_bc(ii,k),k
+        "height,misc_vert,k",B_mid(k),misc_bc(ii,k),k
     enddo
   enddo
 

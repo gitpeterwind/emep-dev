@@ -38,7 +38,7 @@ use CoDep_ml,         only: make_so2nh3_24hr
 use ChemSpecs_adv_ml, only: IXADV_SO2, IXADV_NH3, IXADV_O3
 use My_Outputs_ml ,   only: NHOURLY_OUT, FREQ_SITE, FREQ_SONDE, FREQ_HOURLY
 use My_Timing_ml,     only: Code_timer, Add_2timing, tim_before, tim_after
-use Advection_ml,     only:  advecdiff_poles,adv_int
+use Advection_ml,     only:  advecdiff_poles,advecdiff_Eta,adv_int
 use Chemfields_ml,    only: xn_adv,cfac,xn_shl
 use Derived_ml,       only: DerivedProds, Derived, num_deriv2d
 use DerivedFields_ml, only: d_2d, f_2d
@@ -56,7 +56,8 @@ use ModelConstants_ml,only: KMAX_MID, nmax, nstep &
                            ,IOU_INST       & !
                            ,FORECAST       & !use advecdiff_poles on FORECAST mode
                            ,ANALYSIS       & ! 3D-VAR Analysis
-                           ,SOURCE_RECEPTOR
+                           ,SOURCE_RECEPTOR&
+                           ,USE_EtaCOORDINATES
 use Nest_ml,          only: readxn, wrtxn
 use Par_ml,           only: me, MAXLIMAX, MAXLJMAX
 use SoilWater_ml,     only: Set_SoilWater
@@ -171,13 +172,12 @@ contains
 ! load; this can be obtained by setting NPROCY=1 (number of subdomains in 
 ! latitude- or y-direction).
 ! Then, all subdomains have exactly the same geometry.
-!        if( (Pole_included==1.or.FORECAST).and. &
-!            trim(projection)==trim('lon lat'))then
 
+        if(USE_EtaCOORDINATES)then
+           call advecdiff_Eta
+        else
            call advecdiff_poles
-!        else
-!           call advecdiff
-!        endif
+        endif
 
         call Add_2timing(17,tim_after,tim_before,"phyche:advecdiff")
         !================

@@ -46,7 +46,7 @@ use ChemSpecs_shl_ml,     only: NSPEC_SHL
 use ChemSpecs_tot_ml,     only: NSPEC_TOT, SO2
 use ChemGroups_ml,        only: chemgroups
 use EmisDef_ml,           only: VOLCANOES_LL
-use GridValues_ml,        only: GRIDWIDTH_M, xm2, sigma_bnd,  &
+use GridValues_ml,        only: GRIDWIDTH_M, xm2, dA, dB,  &
                                 i_local, j_local, lb2ij, &
                                 GridArea_m2,coord_in_processor,coord_in_gridbox
 use Io_ml,                only: ios, NO_FILE, open_file,      &
@@ -272,8 +272,7 @@ subroutine Set_Volc
       me,volc_no,i_volc(volc_no),j_volc(volc_no),i,j,1,limax,1,ljmax
     if(.not.all((/i>=1,i<=limax,j>=1,j<=ljmax/))) cycle 
 
-    unit_conv1 = GRAV* 0.001*AVOG/ &
-                (sigma_bnd(KMAX_BND-k+1) - sigma_bnd(KMAX_BND-k))
+    unit_conv1 = GRAV* 0.001*AVOG
     rcemis_volc0(volc_no) = emis_volc(volc_no)*unit_conv1/species(SO2)%molwt
     if(DEBUG) print *,'rc_emis_volc0 is ',rcemis_volc0(volc_no)
   enddo ! volc_no
@@ -296,7 +295,7 @@ subroutine Scale_Volc
     if(.not.all((/i>=1,i<=limax,j>=1,j<=ljmax/))) cycle 
 
     if(DEBUG) print '(A,2I8)','Volcan: check 3: ',i,j
-    unit_conv2 = roa(i,j,KMAX_BND-k,1) / (ps(i,j,1)-PT)
+    unit_conv2 = roa(i,j,KMAX_BND-k,1) /(dA(KMAX_BND-k)+dB(KMAX_BND-k)*ps(i,j,1))
     rcemis_volc(volc_no) = rcemis_volc0(volc_no) * unit_conv2
     if(DEBUG) print *,'rc_emis_volc is ',rcemis_volc(volc_no)
   enddo ! volc_no

@@ -53,7 +53,7 @@
                                     IXADV_SO4, IXADV_NO3_f, IXADV_NH4_F
   use ChemSpecs_shl_ml,      only:  NSPEC_SHL
   use ChemRates_rct_ml,      only:  set_rct_rates, rct
-  use GridValues_ml,         only:  sigma_mid, xmd, GridArea_m2, & 
+  use GridValues_ml,         only:  xmd, GridArea_m2, & 
                                      debug_proc, debug_li, debug_lj,&
                                      A_mid,B_mid,gridwidth_m,dA,dB,&
                                      i_fdom, j_fdom
