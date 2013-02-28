@@ -75,6 +75,7 @@ private
   real, public, save, allocatable:: Fgas3d (:,:,:,:)  ! for SOA
 
   real, public, save, allocatable, dimension(:,:) :: AOD
+  real, public, save, allocatable, dimension(:,:,:) :: Extin_coeff
 
   real, save, allocatable, public :: &
      cfac   (:,:,:)   
@@ -105,6 +106,8 @@ contains
     PM25_water_rh50=0.0
     allocate(AOD(MAXLIMAX,MAXLJMAX))
     AOD=0.0
+    allocate(Extin_coeff(MAXLIMAX,MAXLJMAX,KMAX_MID))
+    Extin_coeff=0.0
     allocate(cfac(NSPEC_ADV,MAXLIMAX,MAXLJMAX))
     cfac=1.0
     allocate(so2nh3_24hr(MAXLIMAX,MAXLJMAX))
