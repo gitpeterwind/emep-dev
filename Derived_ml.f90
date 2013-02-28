@@ -403,6 +403,8 @@ call AddNewDeriv( "AOT40_Grid", "GRIDAOT","subclass","-", "ppb h", &
        !Deriv(name, class,    subc,  txt,           unit
       !Deriv index, f2d, dt_scale, scale, avg? rho Inst Yr Mn Day atw
 
+call AddNewDeriv( "PS ","PS",  "SURF","-",   "Pa", &
+               -99,  -99,  F,  1.0,  T,   IOU_DAY )
 ! NOT YET: Scale pressure by 0.01 to get hPa
 call AddNewDeriv( "PSURF ","PSURF",  "SURF","-",   "hPa", &
                -99,  -99,  F,  1.0,  T,   IOU_DAY )
@@ -915,6 +917,11 @@ end do
               !NOT YET - keep hPa in sites:d_2d( n, i,j,IOU_INST) = ps(i,j,1)
             end forall
 
+          case ( "PS" )
+             !Required in Netcdf file for compliance to CF. Do not remove
+             forall ( i=1:limax, j=1:ljmax )
+                d_2d( n, i,j,IOU_INST) = ps(i,j,1)
+             end forall
 
           case ( "HMIX", "HMIX00", "HMIX12" )
 

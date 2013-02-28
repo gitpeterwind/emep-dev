@@ -591,7 +591,6 @@ contains
           call check(nf90_get_var(ncFileID, varID, sigma_mid ))
        endif
        call check(nf90_close(ncFileID))
-       write(*,*)'SIGMA: ',sigma_mid
     endif !me=0
 
 

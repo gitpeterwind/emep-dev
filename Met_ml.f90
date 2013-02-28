@@ -1066,7 +1066,6 @@ if( USE_SOILWATER ) then
 
 
     if(.not.foundsdot)then
-       if(me==0)write(*,*)'ETADOT',nr
        ! sdot derived from divergence=0 principle
        do j = 1,ljmax
           do i = 1,limax
