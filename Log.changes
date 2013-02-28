@@ -236,6 +236,13 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Svetlana  28th Feb 2013.  (2494-5)
+
+AODrh_PM_ml.f90 - updated AOD calculations (accounting for aerosol "size"
+  and relative humidity). Also calculates 3D Extinction Coeffecient
+Chem_ml.f90 - new parameter Extin_Coeff
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Peter  27th Feb 2013.  (2493)
 
 More changes for hybrid vertical coordinates. Should not affect results.
