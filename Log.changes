@@ -30,14 +30,14 @@ IMPORTANT NOTE:
     Run/Make examples:
       2010 Base run
         * Compile the model with `make EMEP2010` and USE_EMERGENCY=.true.
-          on ModelConstants_ml to include Eyjafjöll ash tracers.
+          on ModelConstants_ml to include Eyjafjï¿½ll ash tracers.
         * Run $year=2010 and $MAKEMODE="EMEP2010" (run.pl), and the program
-          will be compiled by run.pl including Eyjafjöll ash tracers.
+          will be compiled by run.pl including Eyjafjï¿½ll ash tracers.
       2010 SR run
         * Compile the model with `make SR-EMEP2010` and USE_EMERGENCY=.true.
-          on ModelConstants_ml to include Eyjafjöll ash tracers.
+          on ModelConstants_ml to include Eyjafjï¿½ll ash tracers.
         * Run $year=2010 and $MAKEMODE="SR-EMEP2010" (run.pl), and the program
-          will be compiled by run.pl including Eyjafjöll ash tracers.
+          will be compiled by run.pl including Eyjafjï¿½ll ash tracers.
       2009 Base run (or eny other year/=2010)
         * Compile the model with `make EMEP`.
         * Run $year=2009 and $MAKEMODE="EMEP" (run.pl),
@@ -234,6 +234,15 @@ dsSep14   Wesely_ml.f90
 
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Heiko  1st Mar 2013.  (2500)
+
+Remove 'units' and 'positive' for atmosphere_sigma_coordinate
+writing PT to file in hPa
+
+Modified:
+NetCDF_ml.f90
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Peter  28th Feb 2013.  (2499)
@@ -638,7 +647,7 @@ ModelConstants_ml
 
 ZCM_Emergency/Mastin*_table3.csv:
   * Rename Mastin files (eEMEP/Erupting volcanoes).
-  * Replace special characters (e.g. åøü) on vent names.
+  * Replace special characters (e.g. ï¿½ï¿½ï¿½) on vent names.
 
 Makefile:
   include *.inc files on *.tar.bz2
@@ -1645,8 +1654,8 @@ Volcanos_ml:
   - Change default VAAC splits for 2bin mode.
 
 run.pl:
-  - Official eruoption emissions for 2010 Eyjafjöll eruption
-  - SOx & PMx reduced files for 2010 Eyjafjöll eruption (SR-VOL run)
+  - Official eruoption emissions for 2010 Eyjafjï¿½ll eruption
+  - SOx & PMx reduced files for 2010 Eyjafjï¿½ll eruption (SR-VOL run)
 
 Makefile_vilje:
   - Add model specific targets (EMEP / MACC / eEMEP)
@@ -2101,9 +2110,9 @@ Other:
 
 Makefile, Makefile_stallo:
   - specify number of bins for eEMEP volcanoes (-V 7bin,Vesuvius,...)
-  - use Kr.suv.k instead of Krísuvík in mk.GenChem call for eEMEP target
+  - use Kr.suv.k instead of Krï¿½suvï¿½k in mk.GenChem call for eEMEP target
   - specific targets for 2010 run (EMEP2010 and SR-EMEP2010)
-    with Eyjafjöll volcano tracers from Emergency (-V 2bin,Eyjafj.ll)
+    with Eyjafjï¿½ll volcano tracers from Emergency (-V 2bin,Eyjafj.ll)
 
 mk.GenChem:
   - Allow -V volc option for -e EmChem09 and EmChem09soa
@@ -2293,7 +2302,7 @@ Makefile, mk.GenChem: standard eEMEP setup from command line
   * eEMEP GenChmem standard setup assumed in Makefile
     make eEMEP-GenChem-Emergency
     mk.GenChem -r Emergency -f FINNv1 -e none \
-      -V Vesuvius,Etna,Krísuvík,Katla,Askja
+      -V Vesuvius,Etna,Krï¿½suvï¿½k,Katla,Askja
   * Improve mk.GenChmem -h output
 
 run.pl, Makefile_stallo:

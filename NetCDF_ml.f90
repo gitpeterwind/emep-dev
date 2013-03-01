@@ -376,10 +376,8 @@ endif
 !pwsvs for CF-1.0
   call check(nf90_put_att(ncFileID, kVarID, "standard_name", "atmosphere_sigma_coordinate"))
   call check(nf90_put_att(ncFileID, kVarID, "formula_terms", trim(vert_coord)))
-  call check(nf90_put_att(ncFileID, kVarID, "units", "sigma_level"))
-  call check(nf90_put_att(ncFileID, kVarID, "positive", "down"))
   call check(nf90_def_var(ncFileID, "PT", nf90_float,  varID = PTVarID) )
-  call check(nf90_put_att(ncFileID, PTVarID, "units", "Pa"))
+  call check(nf90_put_att(ncFileID, PTVarID, "units", "hPa"))
   call check(nf90_put_att(ncFileID, PTVarID, "long_name", "Pressure at top"))
 
   call check(nf90_def_var(ncFileID, "time", nf90_double, dimids = timeDimID, varID = VarID) )
@@ -525,7 +523,8 @@ endif
     enddo
   endif
   call check(nf90_put_var(ncFileID, kVarID, kcoord(1:KMAXcdf)) )
-  call check(nf90_put_var(ncFileID, PTVarID, PT ))
+! write PT in hPa
+  call check(nf90_put_var(ncFileID, PTVarID, PT * 0.01 ))
 
   call check(nf90_close(ncFileID))
   if(DEBUG_NETCDF)write(*,*)'NetCDF: file created, end of CreatenetCDFfile ',ncFileID
