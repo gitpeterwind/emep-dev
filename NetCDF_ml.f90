@@ -376,6 +376,7 @@ endif
 !pwsvs for CF-1.0
   call check(nf90_put_att(ncFileID, kVarID, "standard_name", "atmosphere_sigma_coordinate"))
   call check(nf90_put_att(ncFileID, kVarID, "formula_terms", trim(vert_coord)))
+  call check(nf90_put_att(ncFileID, kVarID, "positive", "down"))
   call check(nf90_def_var(ncFileID, "PT", nf90_float,  varID = PTVarID) )
   call check(nf90_put_att(ncFileID, PTVarID, "units", "hPa"))
   call check(nf90_put_att(ncFileID, PTVarID, "long_name", "Pressure at top"))

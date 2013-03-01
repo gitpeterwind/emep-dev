@@ -236,6 +236,11 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Heiko  1st Mar 2013.  (2502)
+
+put back positve="down" for sigma-coordinate after reading CF-convention
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Peter  1st Mar 2013.  (2501)
 
 Put "units=Pa" for hyam and hyai.
