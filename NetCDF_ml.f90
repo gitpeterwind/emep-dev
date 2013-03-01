@@ -707,6 +707,7 @@ character (len=*), parameter :: vert_coord='atmosphere_hybrid_sigma_pressure_coo
 !The hybrid sigma-pressure coordinate for level k is defined as ap(k)/p0+b(k). 
   call check(nf90_def_var(ncFileID, "hyam", nf90_double,dimids = levDimID,  varID = hyamVarID) )
   call check(nf90_put_att(ncFileID, hyamVarID, "long_name","hybrid A coefficient at layer midpoints"))
+  call check(nf90_put_att(ncFileID, hyamVarID, "units","Pa"))
   call check(nf90_def_var(ncFileID, "hybm", nf90_double,dimids = levDimID,  varID = hybmVarID) )
   call check(nf90_put_att(ncFileID, hybmVarID, "long_name","hybrid B coefficient at layer midpoints"))
 
@@ -717,6 +718,7 @@ character (len=*), parameter :: vert_coord='atmosphere_hybrid_sigma_pressure_coo
   call check(nf90_put_att(ncFileID, ilevVarID, "formula_terms","ap: hyai b: hybi ps: PS p0: P0"))
   call check(nf90_def_var(ncFileID, "hyai", nf90_double, dimids = ilevDimID,  varID = hyaiVarID) )
   call check(nf90_put_att(ncFileID, hyaiVarID, "long_name","hybrid A coefficient at layer interfaces"))
+  call check(nf90_put_att(ncFileID, hyaiVarID, "units","Pa"))
   call check(nf90_def_var(ncFileID, "hybi", nf90_double, dimids = ilevDimID,  varID = hybiVarID) )
   call check(nf90_put_att(ncFileID, hybiVarID, "long_name","hybrid B coefficient at layer interfaces"))
 
