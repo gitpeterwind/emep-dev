@@ -66,7 +66,7 @@ logical, save ::      &
   Emergency_found=.true.     ! Are sources found on this processor/subdomain?
 
 integer, parameter :: &
-  NMAX_VENT = 12, & ! Max number of locations on processor/subdomain
+  NMAX_VENT = 24, & ! Max number of locations on processor/subdomain
   NMAX_ERUP = 90    ! Max number of events def (~3 months per location)
 
 integer, save ::   & ! No. of ... found on processor/subdomain

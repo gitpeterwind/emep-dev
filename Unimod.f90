@@ -73,7 +73,7 @@ use ModelConstants_ml,only: MasterProc, &   ! set true for host processor, me==0
                             IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY, &
                             USE_CONVECTION, USE_SOILWATER, USE_SOILNOX,  &
                             USE_FOREST_FIRES, USE_DUST,DO_SAHARA, &
-                            USE_LIGHTNING_EMIS, USE_ROADDUST,     &
+                            USE_LIGHTNING_EMIS, USE_ROADDUST, USE_POLLEN, &
                             FORECAST       ! FORECAST mode
 use ModelConstants_ml,only: Config_ModelConstants
 use NetCDF_ml,        only: Init_new_netCDF
@@ -182,16 +182,17 @@ if( MasterProc ) then
 !  write(unit=IO_LOG,fmt="(a12,4i4)")"RunDomain:  ", RUNDOMAIN
 
   ! And record some settings to RunLog (will recode later)
-  if(  FORECAST       ) call PrintLog("Forecast mode on")
+  call PrintLog("Forecast mode on",FORECAST)
   call PrintLog("Options used of (convec., soilwater, soilnox, forest fires)")
-  if(  USE_CONVECTION ) call PrintLog("Convection used")
-  if(  USE_SOILWATER  ) call PrintLog("SoilWater  switch on")
-  if(  USE_SOILNOX   ) call PrintLog("SoilNOx    switch on")
-  if(  USE_FOREST_FIRES)call PrintLog("ForestFires switch on")
+  call PrintLog("Convection used",USE_CONVECTION)
+  call PrintLog("SoilWater  switch on",USE_SOILWATER)
+  call PrintLog("SoilNOx    switch on",USE_SOILNOX)
+  call PrintLog("ForestFires switch on",USE_FOREST_FIRES)
   call PrintLog("Options used of (dust, sahara)")
-  if(  USE_DUST        )call PrintLog("Dust switch on")
-  if(  USE_ROADDUST    )call PrintLog("Road Dust switch on")
-  if(  DO_SAHARA       )call PrintLog("Sahara switch on")
+  call PrintLog("Dust switch on",USE_DUST)
+  call PrintLog("Road Dust switch on",USE_ROADDUST)
+  call PrintLog("Sahara switch on",DO_SAHARA)
+  call PrintLog("Pollen switch on",USE_POLLEN)
 endif
 
 !*** Timing ********

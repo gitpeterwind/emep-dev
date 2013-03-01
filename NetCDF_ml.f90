@@ -40,8 +40,7 @@
 !for the lower left corner, the coordinates i_EMEP j_EMEP and long lat will
 !be wrong
 !
-  use My_Outputs_ml,     only : FREQ_HOURLY, &
-                                NHOURLY_OUT, &      ! No. outputs
+  use My_Outputs_ml,     only : NHOURLY_OUT, &      ! No. outputs
                                 Asc2D, hr_out, &      ! Required outputs
                                 LEVELS_HOURLY, &
                                 !NML SELECT_LEVELS_HOURLY, LEVELS_HOURLY, &

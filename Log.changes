@@ -30,14 +30,14 @@ IMPORTANT NOTE:
     Run/Make examples:
       2010 Base run
         * Compile the model with `make EMEP2010` and USE_EMERGENCY=.true.
-          on ModelConstants_ml to include Eyjafjï¿½ll ash tracers.
+          on ModelConstants_ml to include Eyjafjöll ash tracers.
         * Run $year=2010 and $MAKEMODE="EMEP2010" (run.pl), and the program
-          will be compiled by run.pl including Eyjafjï¿½ll ash tracers.
+          will be compiled by run.pl including Eyjafjöll ash tracers.
       2010 SR run
         * Compile the model with `make SR-EMEP2010` and USE_EMERGENCY=.true.
-          on ModelConstants_ml to include Eyjafjï¿½ll ash tracers.
+          on ModelConstants_ml to include Eyjafjöll ash tracers.
         * Run $year=2010 and $MAKEMODE="SR-EMEP2010" (run.pl), and the program
-          will be compiled by run.pl including Eyjafjï¿½ll ash tracers.
+          will be compiled by run.pl including Eyjafjöll ash tracers.
       2009 Base run (or eny other year/=2010)
         * Compile the model with `make EMEP`.
         * Run $year=2009 and $MAKEMODE="EMEP" (run.pl),
@@ -236,6 +236,55 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Alvaro 1st Mar 2013.  (2503)
+
+Update Pollen module and use on FORECAST runs.
+
+Makefile,config_FORECAST.nml
+  - MACC target is compilled wiht Pollen tracers
+  - USE_POLLEN on FORECAST runs
+
+Makefile.SRCS
+  - Revert changes on 2497. AOD_PM_ml instead of AODrh_PM_ml,
+    so the model can be compiled.
+
+run.pl
+  - move/rename restart/dump files for EMERGENCY runs
+  - link/rename pollen restart/dump files for FORECAST runs
+
+PhyChem_ml
+  - Call to pollen_dump/pollen_read on FORECAST mode
+
+Par_ml
+  - add MSG number for global2local call on pollen_read
+
+Pollen_const_ml,Pollen_ml,Makefile.SRCS
+  - split Pollen module in Pollen_const_ml & Pollen_ml
+    to resolve circular dependency wiht My_Outputs_ml
+
+ZD_OZONE/My_Outputs_ml,Output_hourly
+  - Pollen hourly output for FORECAST runs
+  
+Pollen_ml
+  - Review code
+  - Add pollen_dump/pollen_read subroutines for restart/dump files on FORECAST mode
+  - Align/format & other house keeping
+
+Runchem_ml
+  - Add pollen_flux calls
+  - Align/format & other house keeping
+
+Unimod
+  - PrintLog(...,USE_POLLEN)
+  
+NetCDF_ml,
+  - remove use My_Outputs_ml FREQ_HOURLY
+
+Emergency_ml,Makefile
+  - Increase number of emergency senarios in une run.
+  - Set all 10 NPP accident senarios as default.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Heiko  1st Mar 2013.  (2502)
 
 put back positve="down" for sigma-coordinate after reading CF-convention
@@ -388,8 +437,8 @@ ZCM_Emergency/NUC.species,NUC.reactions,NUC_Location.csv,NUC_Explosion.csv
   Additional files for nuclear explosion scenarios (eEMEP)
 
 mk.GenChem,run.pl,Makefile
-  Aditional tracers and emissions for nuclear explsions senarios (eEMEP) with
-    mk.GenChem -X scenario for
+  Aditional tracers and emissions for nuclear explsion senarios (eEMEP) with
+    mk.GenChem -X scenario
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Peter  18th Feb 2013.  (2481)
@@ -658,7 +707,7 @@ ModelConstants_ml
 
 ZCM_Emergency/Mastin*_table3.csv:
   * Rename Mastin files (eEMEP/Erupting volcanoes).
-  * Replace special characters (e.g. ï¿½ï¿½ï¿½) on vent names.
+  * Replace special characters (e.g. åøü) on vent names.
 
 Makefile:
   include *.inc files on *.tar.bz2
@@ -1665,8 +1714,8 @@ Volcanos_ml:
   - Change default VAAC splits for 2bin mode.
 
 run.pl:
-  - Official eruoption emissions for 2010 Eyjafjï¿½ll eruption
-  - SOx & PMx reduced files for 2010 Eyjafjï¿½ll eruption (SR-VOL run)
+  - Official eruoption emissions for 2010 Eyjafjöll eruption
+  - SOx & PMx reduced files for 2010 Eyjafjöll eruption (SR-VOL run)
 
 Makefile_vilje:
   - Add model specific targets (EMEP / MACC / eEMEP)
@@ -2121,9 +2170,9 @@ Other:
 
 Makefile, Makefile_stallo:
   - specify number of bins for eEMEP volcanoes (-V 7bin,Vesuvius,...)
-  - use Kr.suv.k instead of Krï¿½suvï¿½k in mk.GenChem call for eEMEP target
+  - use Kr.suv.k instead of Krísuvík in mk.GenChem call for eEMEP target
   - specific targets for 2010 run (EMEP2010 and SR-EMEP2010)
-    with Eyjafjï¿½ll volcano tracers from Emergency (-V 2bin,Eyjafj.ll)
+    with Eyjafjöll volcano tracers from Emergency (-V 2bin,Eyjafj.ll)
 
 mk.GenChem:
   - Allow -V volc option for -e EmChem09 and EmChem09soa
@@ -2313,7 +2362,7 @@ Makefile, mk.GenChem: standard eEMEP setup from command line
   * eEMEP GenChmem standard setup assumed in Makefile
     make eEMEP-GenChem-Emergency
     mk.GenChem -r Emergency -f FINNv1 -e none \
-      -V Vesuvius,Etna,Krï¿½suvï¿½k,Katla,Askja
+      -V Vesuvius,Etna,Krísuvík,Katla,Askja
   * Improve mk.GenChmem -h output
 
 run.pl, Makefile_stallo:

@@ -44,9 +44,11 @@ use ChemChemicals_ml,  only: species,species_adv
 use ChemGroups_ml,     only: chemgroups
 use DerivedFields_ml,  only: f_2d               ! D2D houtly output type
 use ModelConstants_ml, only: PPBINV, PPTINV, ATWAIR, atwS, atwN, MasterProc, &
-                             EXP_NAME, FORECAST, USE_EMERGENCY,DEBUG_EMERGENCY
+                             EXP_NAME, FORECAST, USE_EMERGENCY,DEBUG_EMERGENCY,&
+                             USE_AOD, USE_POLLEN,DEBUG_POLLEN
 use OwnDataTypes_ml,   only: Asc2D
 use Par_ml,            only: GIMAX,GJMAX,IRUNBEG,JRUNBEG,me
+use Pollen_const_ml,   only: ug2grains  
 use SmallUtils_ml,     only: find_index
 use TimeDate_ml,       only: date
 use Units_ml,          only: Init_Units,&
@@ -204,7 +206,7 @@ subroutine set_output_defs
    implicit none
 
   character(len=144) :: errmsg   ! Local error message
-  integer            :: i,j,ash,nuc,rn222,pm25,pm10,psurf,igrp ! Loop & group indexes
+  integer            :: i,j,ash,nuc,rn222,pm25,pm10,poll,psurf,igrp ! Loop & group indexes
   character(len=9)   :: name     ! Volcano (vent) name
 
   real, parameter :: atwC=12.0
@@ -275,11 +277,14 @@ subroutine set_output_defs
         name=species(chemgroups(nuc)%ptr(i))%name(1:9)
         nhourly_out=nhourly_out+2
         if(MasterProc.and.DEBUG_EMERGENCY)&
-          write(*,*)'EMERGENCY: Nuclear accident, NPP=',name
+          write(*,*)'EMERGENCY: Nuclear accident/explosion, NPP/NUC=',name
       enddo
     endif
   case("FORECAST")
-    nhourly_out=11
+    nhourly_out=10
+    if(USE_AOD     )nhourly_out=nhourly_out+1
+    if(USE_POLLEN  )nhourly_out=nhourly_out+1
+    if(DEBUG_POLLEN)nhourly_out=nhourly_out+2
     nlevels_hourly = 4
   case("EVA2010")
     nhourly_out=4
@@ -359,39 +364,55 @@ subroutine set_output_defs
 !   ix1=IRUNBEG;ix2=IRUNBEG+GIMAX-1
 !   iy1=JRUNBEG;iy2=JRUNBEG+GJMAX-1
     levels_hourly = (/0,4,6,10/)
-    rn222=find_index("RN222",species_adv(:)%name)
-    pm25 =find_index("PMFINE",chemgroups(:)%name) !NB There is no "PM25" group
-    pm10 =find_index("PM10"  ,chemgroups(:)%name)  
+    rn222=find_index("RN222"   ,species_adv(:)%name)
+    pm25 =find_index("PMFINE"  ,chemgroups(:)%name) !NB There is no "PM25" group
+    pm10 =find_index("PM10"    ,chemgroups(:)%name)
+    poll =find_index("POLLEN_B",species_adv(:)%name)
 !**               name     type     ofmt
 !**               ispec    ix1 ix2 iy1 iy2 nk sellev? unit conv  max
-    hr_out(:) = (/&
-     Asc2D("o3_3km"    ,"BCVugXX",IXADV_O3   ,&
-           ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_O3) ,600.0*2.0),&
-     Asc2D("no_3km"    ,"BCVugXX",IXADV_NO   ,&
-           ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_NO) ,-999.9),&
-     Asc2D("no2_3km"   ,"BCVugXX",IXADV_NO2  ,&
-           ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_NO2),600.0*1.91),&
-     Asc2D("so2_3km"   ,"BCVugXX",IXADV_SO2  ,&
-           ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_SO2),-999.9),&
-     Asc2D("co_3km"    ,"BCVugXX",IXADV_CO   ,&
-           ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_CO) ,-999.9),&
-     Asc2D("Rn222_3km" ,"BCVugXX",rn222,&
-           ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",to_ug_ADV(rn222)    ,-999.9),&
-     Asc2D("pm25_3km"  ,"BCVugXXgroup",pm25,&
-           ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",1.0                 ,-999.9),&
-     Asc2D("pm10_3km"  ,"BCVugXXgroup",pm10,&
-           ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",1.0                 ,-999.9),&
-     Asc2D("pm_h2o_3km","PMwater",00         ,&
-           ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",1.0                 ,-999.9),&
+    j=10;hr_out(:j) = (/&
+      Asc2D("o3_3km"    ,"BCVugXX",IXADV_O3   ,&
+            ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_O3) ,600.0*2.0),&
+      Asc2D("no_3km"    ,"BCVugXX",IXADV_NO   ,&
+            ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_NO) ,-999.9),&
+      Asc2D("no2_3km"   ,"BCVugXX",IXADV_NO2  ,&
+            ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_NO2),600.0*1.91),&
+      Asc2D("so2_3km"   ,"BCVugXX",IXADV_SO2  ,&
+            ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_SO2),-999.9),&
+      Asc2D("co_3km"    ,"BCVugXX",IXADV_CO   ,&
+            ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_CO) ,-999.9),&
+      Asc2D("Rn222_3km" ,"BCVugXX",rn222,&
+            ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",to_ug_ADV(rn222)    ,-999.9),&
+      Asc2D("pm25_3km"  ,"BCVugXXgroup",pm25,&
+            ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",1.0                 ,-999.9),&
+      Asc2D("pm10_3km"  ,"BCVugXXgroup",pm10,&
+            ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",1.0                 ,-999.9),&
+      Asc2D("pm_h2o_3km","PMwater",00         ,&
+            ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",1.0                 ,-999.9),&
 !! Partial/Full COLUMN/COLUMgroup calculations:kk$
 !!   hr_out%nk indecate the number of levels in the column,
 !!     1<%nk<KMAX_MID  ==>  Partial column: %nk lowermost levels
 !!       otherwise     ==>  Full column: all model levels
-     Asc2D("no2_col"   ,"COLUMN",IXADV_NO2  ,&
-           ix1,ix2,iy1,iy2,1,"ug",to_ug_ADV(IXADV_NO2)             ,-999.9),&
-!!         ix1,ix2,iy1,iy2,1,"1e15molec/cm2",to_molec_cm2*1e-15    ,-999.9),
-     Asc2D("AOD_550nm" ,"AOD"   ,00         ,&
-           ix1,ix2,iy1,iy2,1," ",1.0                               ,-999.9)/)
+      Asc2D("no2_col"   ,"COLUMN",IXADV_NO2  ,&
+            ix1,ix2,iy1,iy2,1,"ug",to_ug_ADV(IXADV_NO2)             ,-999.9)/)
+!!          ix1,ix2,iy1,iy2,1,"1e15molec/cm2",to_molec_cm2*1e-15    ,-999.9)/)
+    if(USE_AOD)then
+      j=j+1;hr_out(j) = &
+      Asc2D("AOD_550nm" ,"AOD"    ,00         ,&
+            ix1,ix2,iy1,iy2,1," ",1.0                               ,-999.9)
+    endif
+    if(USE_POLLEN)then
+      j=j+1;hr_out(j) = &
+      Asc2D("Pollen"    ,"ADVugXX",poll, &
+            ix1,ix2,iy1,iy2,1,"grains/m3",to_ug_ADV(poll)*ug2grains ,-999.9)
+    endif
+    if(DEBUG_POLLEN)then
+      j=j+2;hr_out(j-1:j) = (/&
+      Asc2D("heatsum"    ,"heatsum"    ,00,&
+            ix1,ix2,iy1,iy2,1,"degree day",1.0                      ,-999.9),&
+      Asc2D("Pollen_left","pollen_left",00, &
+            ix1,ix2,iy1,iy2,1,"grains/m3" ,1.0                      ,-999.9)/)
+    endif
   case("EVA2010")
 !   ix1=IRUNBEG;ix2=IRUNBEG+GIMAX-1
 !   iy1=JRUNBEG;iy2=JRUNBEG+GJMAX-1

@@ -11,7 +11,7 @@
   USE_FOREST_FIRES      = T,
   USE_SEASALT           = T,
   USE_SOILNOX           = T,          ! diff for global + Euro runs
-  USE_POLLEN            = F,          ! EXPERIMENTAL. Only works if start Jan 1
+  USE_POLLEN            = T,          ! EXPERIMENTAL. Only works if start Jan 1
   DO_SAHARA             = F,
   USE_ROADDUST          = F,          ! Only EECCA?
   USE_DUST              = F,          ! Only EECCA?
@@ -30,7 +30,7 @@
   MONTHLY_GRIDEMIS      = F,          ! Also for EMERGENCY
   SELECT_LEVELS_HOURLY  = T,          ! hourly output flag Also for FORECAST, 3DPROFILES
   FORECAST              = T,
-  USE_EMERGENCY         = T,          ! Used for FORECASTs usually, EMEP2010
+  USE_EMERGENCY         = F,          ! Used for FORECASTs usually, EMEP2010
   ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
   USE_AOD               = T,          ! Used for FORECASTs usually
 !-------- Sub domain (x0,x1,y0,y1)

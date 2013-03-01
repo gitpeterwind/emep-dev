@@ -252,8 +252,8 @@ if ($STALLO) {
 # DataDir    = Main general Data directory
 my $DATA_LOCAL = "$DataDir/$GRID";   # Grid specific data , EMEP, EECCA, GLOBAL
 # Pollen data
-my $PollenDir = "/home/$BIRTHE/Unify/MyData";
-   $PollenDir = 0 unless $STALLO;
+my $PollenDir = "$HOMEROOT/$BIRTHE/Unify/MyData";
+   $PollenDir = 0 unless -d $PollenDir;
 # Eruption (eEMEP)
 my $EmergencyData = "$HOMEROOT/$ALVARO/Unify/MyData";
    $EmergencyData = 0 unless -d $EmergencyData;
@@ -272,7 +272,7 @@ my $Chem     = "EmChem09soa";
 my $exp_name = "EMEPSTD";
    $exp_name = ($eCWF)?"EMERGENCY":"FORECAST" if $CWF;
 my $testv = "rv4_2.SVN";
-   $testv = "2481";   # From svn system, as reminder
+   $testv = "2453";   # From svn system, as reminder
    $testv.= ($eCWF)?".eCWF":".CWF" if $CWF;
 
 #User directories
@@ -303,8 +303,8 @@ close(CHEM);
 #die "Mis-Match chemistry, Unimod.$testv Chem: $Chem" if
 #  ( File::Compare::compare( "$ProgDir/CM_ChemSpecs_ml.f90" , "$ChemDir/CM_ChemSpecs_ml.f90"));
 
-my $WORKDIR     = "$WORKROOT/$USER/$testv.$year";  # working and result directory
-   $WORKDIR     = "$WORKROOT/$testv.$year" if($WORKROOT =~ /$USER/);  # working and result directory
+my $WORKDIR = "$WORKROOT/$USER/$testv.$year";  # working and result directory
+   $WORKDIR = "$WORKROOT/$testv.$year" if($WORKROOT =~ /$USER/);  # working and result directory
    $WORKDIR =~ s/$testv.$year/Benchmark\/$GRID.$year/g if (%BENCHMARK);
    $WORKDIR = "/prod/forecast/run/eemep" if $eCWF and ($USER eq $FORCAST);
 my $MyDataDir   = "$HOMEROOT/$USER/Unify/MyData";           # for each user's private input
@@ -320,16 +320,17 @@ $RoadDir = 0 unless -d $RoadDir;#default?
 
 
 # Forecast: nest/dump dir, BCs pattern
-my ($CWFIC, $CWFBC) if $CWF;
-my ($cwfic, $cwfbc) = ("No IC file","No BC file");
+my ($CWFIC, $CWFBC, $CWFPL) if $CWF;
+my ($cwfic, $cwfbc, $cwfpl) = ("No IC file","No BC file","No Pollen file");
 if ($CWF) {
-# $CWFIC = "$WORKROOT/$USER/$testv.dump/${CWF}_dump.nc";
- ($CWFIC = "${CWF}_dump.nc" ) =~ s/$CWFBASE/%08d/g;
- ($CWFIC = "$WORKDIR/$CWFIC") =~ s/$testv.$year/$testv.dump/g;
-  $CWFBC = "$DataDir/$GRID/Boundary_conditions/";            # IFS-MOZ
+ ($CWFIC  = "${CWF}_dump.nc" ) =~ s[$CWFBASE][%08d]g;
+ ($CWFIC  = "$WORKDIR/$CWFIC") =~ s[$testv.$year][$testv.dump];
+  $CWFIC  =~ s[run/eemep][work/emep/restart] if $eCWF and ($USER eq $FORCAST);
+  $CWFBC  = "$DataDir/$GRID/Boundary_conditions/";            # IFS-MOZ
   $CWFBC .= "%04d_IFS-MOZART_FC/cwf-mozifs_h%08d00_raqbc.nc";# :Forecast
 # $CWFBC .= "%04d_IFS-MOZART_AN/h%08d00_raqbc.nc";           # :ReAnalysus
 # $CWFBC .= "%04d_EVA/EVA_%08d_EU_AQ.nc";                    # :EVA-2010
+ ($CWFPL  = $CWFIC) =~ s[_dump][_pollen];
 }
 
 #ds check: and change
@@ -962,8 +963,16 @@ if ( $iyr_trend > 2015 )  {
   }
 
 # For Pollen
-  if ( $PollenDir ) {
-      $ifile{"$PollenDir/pollen_data.nc"} = "pollen_data.nc";
+  if($PollenDir) {
+    $ifile{"$PollenDir/pollen_data.nc"} = "pollen_data.nc";
+    if($CWF){
+      my $old=sprintf("$CWFPL",$CWFDATE[0]);
+      if(-e $old){
+        my $new="pollen_${CWFDATE[0]}_dump.nc";
+        mylink( "Linking:",$old, $new);
+        $cwfpl=$old;
+      }
+    }
   }
 
 
@@ -1092,6 +1101,7 @@ SR?  $SR
 CWF? $CWF
 IC? $cwfic
 BC? $cwfbc
+PL? $cwfpl
 iyr_trend: $iyr_trend
 ------------------------------
 femis: femis.$scenario
@@ -1130,7 +1140,9 @@ EOT
 
   if ($CWF) {
     my $old="EMEP_OUT.nc";
-    my $new = sprintf "$CWFIC",$CWFBASE;    # today's dump
+       $old=sprintf("EMEP_OUT_%08d.nc",substr($CWFDUMP[0],0,8)) unless (-e "$old");
+       $old=sprintf("EMEP_OUT_%08d.nc",substr($CWFDUMP[1],0,8)) unless (-e "$old");
+    my $new=sprintf("$CWFIC",$CWFBASE);    # today's dump
     system("mkdir -p `dirname $new`; mv $old $new") if (-e "$old");
     if ($SR) {
       system("rm $cwfic") if (-e $cwfic);   # yesterday's dump
@@ -1141,6 +1153,12 @@ EOT
           if (-e $old) && ($ENV{$task});
       }
     }
+    # Pollen
+    $old="pollen_dump.nc";
+    $old=sprintf("pollen_%08d_dump.nc",substr($CWFDUMP[0],0,8)) unless (-e "$old");
+    $old=sprintf("pollen_%08d_dump.nc",substr($CWFDUMP[1],0,8)) unless (-e "$old");
+    $new=sprintf("$CWFPL",$CWFBASE);    # today's dump
+    system("mkdir -p `dirname $new`; mv $old $new") if (-e "$old");
   }
 
 ################################## END OF RUNS ######################

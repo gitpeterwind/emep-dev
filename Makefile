@@ -151,7 +151,7 @@ EMEP-GenChem-%:
 EMEP2010-GenChem-%:
 	mk.GenChem -r $* -f FINNv1 -e SeaSalt,Dust,Isotopes -V 2bin,Eyjafj.ll #-h
 MACC-GenChem-%:
-	mk.GenChem -r $* -f GFASv1 -e SeaSalt,Dust,Isotopes
+	mk.GenChem -r $* -f GFASv1 -e SeaSalt,Dust,Isotopes,Pollen -q
 MACC-EVA2010-GenChem-%:
 	mk.GenChem -r $* -f GFASv1 -e SeaSalt,Dust,Isotopes -V 2bin,Eyjafj.ll
 SR-EMEP-GenChem-%:
@@ -169,7 +169,7 @@ eEMEP2013-GenChem-%:
 
 # eEMP Default Vents, NPPs & NUCs
 eEMEP-GenChem-%: VENTS ?= Vesuvius,Etna,Kr.suv.k,Katla,Askja
-eEMEP-GenChem-%: NPPAS ?= Loviisa,Oskarshamn,Torness
+eEMEP-GenChem-%: NPPAS ?= Olkiluoto,Loviisa,Kola,Leningrad,Ringhals,Forsmark,Oskarshamn,Torness,Sellafield
 eEMEP-GenChem-%: NUCXS ?= NorthKorea,Tehran
 
 # Data assimilation: Bnmc / 3DVar
