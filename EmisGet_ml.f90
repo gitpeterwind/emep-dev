@@ -197,7 +197,7 @@
      if( ewords(3) /= "snap" ) cycle ! ONLY SNAP coded for now
 
      code =ewords(2)    ! Country ISO
-     read(ewords(4),"(i)") isec
+     read(ewords(4),"(I6)") isec
 
      !/ We can include or exclude countries:
       if ( present(excl) ) then

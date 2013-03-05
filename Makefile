@@ -93,6 +93,15 @@ else ifeq ($(MACHINE),lucid)  #ubuntu 10.04
   DEBUG_FLAGS = -Wall -fbacktrace -fbounds-check -pedantic 
   OPT_FLAGS = -O3  
   F90FLAGS = -fdefault-real-8 -ffixed-line-length-none -ffree-line-length-none -fimplicit-none
+else ifeq ($(MACHINE),precise)  #ubuntu 12.04
+  LIBS += -lnetcdff -lnetcdf
+  INCL +=   /usr/include 
+  LLIB +=   -L/usr/lib  
+  MAKEDEPF90 = $(EMEPLOCAL)/bin/makedepf90
+  LD = gfortran
+  DEBUG_FLAGS = -Wall -fbacktrace -fbounds-check -pedantic 
+  OPT_FLAGS = -O3  
+  F90FLAGS = -fdefault-real-8 -ffixed-line-length-none -ffree-line-length-none -fimplicit-none
 endif
 F90FLAGS += $(addprefix -I,$(INCL)) \
    $(if $(filter yes,$(DEBUG)),$(DEBUG_FLAGS),$(OPT_FLAGS))
