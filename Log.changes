@@ -237,13 +237,13 @@ changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-Svetlana  6th Mar 2013.  (2505)
+Svetlana  6th Mar 2013.  (2506)
 
-AOD_PM_ml.f90 - has new AOD_ext routine with updated AOD calculations 
+AOD_PM_ml.f90 - has new AOD_Ext routine with updated AOD calculations 
 (accounting for aerosol "size"  and relative humidity). 
 Also calculates 3D Extinction Coeffecient
 
-Runchem_ml.f90 - calls for AOD_ext
+Runchem_ml.f90 - calls for AOD_Ext
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Heiko 5th Mar 2013.  (2504)

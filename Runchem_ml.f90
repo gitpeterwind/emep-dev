@@ -46,7 +46,7 @@ module RunChem_ml
   use My_Timing_ml,     only: Code_timer, Add_2timing,  &
                               tim_before, tim_after
   use Ammonium_ml,      only: Ammonium
-  use AOD_PM_ml,        only: AOD_ext    !st.. update , AOD_calc
+  use AOD_PM_ml,        only: AOD_Ext    !st.. update , AOD_calc
   use Aqueous_ml,       only: Setup_Clouds, prclouds_present, WetDeposition
   use Biogenics_ml,     only: setup_bio
   use CellMet_ml,       only: Get_CellMet
@@ -215,7 +215,7 @@ subroutine runchem(numt)
       !// Calculate Aerosol Optical Depth
       if(USE_AOD)  &
 !st ...update        call AOD_calc(i,j,debug_flag)
-        call AOD_ext(i,j,debug_flag)
+        call AOD_Ext(i,j,debug_flag)
 
       !  Calculates PM water: 1. for ambient condition (3D)
       !  and for filter equlibration conditions (2D at surface) 
