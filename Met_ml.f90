@@ -3095,7 +3095,7 @@ filename_save=trim(filename)
        call StopAll("File not found")
     endif
 
-    call check(nf90_inq_dimid(ncid = ncFileID, name = "time", varID = timedimID))
+    call check(nf90_inq_dimid(ncid = ncFileID, name = "time", dimID = timedimID))
     call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = timeVarID))
     call check(nf90_inquire_dimension(ncid=ncFileID,dimID=timedimID,len=Nhh))
 

@@ -585,6 +585,7 @@ contains
           sigma_mid =B_mid!for Hybrid coordinates sigma_mid=B if A*P0=PT-sigma_mid*PT
           call check(nf90_inq_varid(ncid = ncFileID, name = "hyai", varID = varID))                 
           call check(nf90_get_var(ncFileID, varID, A_bnd ))
+          A_bnd=P0*A_bnd!different definition in modell and grid_Def
           call check(nf90_inq_varid(ncid = ncFileID, name = "hybi", varID = varID))                 
           call check(nf90_get_var(ncFileID, varID, B_bnd ))          
        else

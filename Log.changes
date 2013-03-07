@@ -236,6 +236,11 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Peter  7th Mar 2013.  (2507-8)
+Small changes Met_ml Check_Meteo_Date (inq_varid->inq_dimid, close file)
+GridValues: A_bnd=P0*A_bnd
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Svetlana  6th Mar 2013.  (2506)
 
@@ -303,9 +308,6 @@ Emergency_ml,Makefile
   - Increase number of emergency senarios in une run.
   - Set all 10 NPP accident senarios as default.
 
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-Peter  7th Mar 2013.  (2507)
-Small changes Met_ml Check_Meteo_Date (inq_varid->inq_dimid, close file)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Heiko  1st Mar 2013.  (2502)
