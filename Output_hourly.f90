@@ -66,7 +66,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
   use ModelConstants_ml,only: SELECT_LEVELS_HOURLY !NML
   use MetFields_ml,     only: t2_nwp,th, roa, surface_precip, ws_10m ,rh2m,&
                               pzpbl, ustar_nwp, Kz_m2s, &
-                              Idirect, Idiffuse, z_bnd, z_mid
+                              Idirect, Idiffuse, z_bnd, z_mid,ps
   use NetCDF_ml,        only: Out_netCDF, CloseNetCDF, Init_new_netCDF, fileName_hour, &
                               Int1, Int2, Int4, Real4, Real8  !Output data type to choose
   use OwnDataTypes_ml,  only: TXTLEN_DERIV,TXTLEN_SHORT
@@ -556,7 +556,17 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
       !case default   ! no output
       endselect
     enddo KVLOOP
+    
   enddo HLOOP
+  !write out surface pressure at each time step to define vertical coordinates
+  if(NHOURLY_OUT>0)then
+      def1%name='PS'
+      def1%unit='hPa'
+      def1%class='Surface pressure'
+      CDFtype=Real4 ! can be choosen as Int1,Int2,Int4,Real4 or Real8
+      scale=1.
+      call Out_netCDF(IOU_HOUR,def1,2,1,ps(:,:,1)*0.01,scale,CDFtype,ist,jst,ien,jen)     
+  endif
 
 !Not closing seems to give a segmentation fault when opening the daily file
 !Probably just a bug in the netcdf4/hdf5 library.

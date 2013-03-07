@@ -312,13 +312,12 @@ private
    character(len=3), public, parameter, dimension(1) :: COLUMN_LEVELS = &
       (/  "k20" /) ! , "k16", "k12", "k08" /)
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(5) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(4) :: &
   D2_SR = (/ &
        "SURF_MAXO3    " &
       ,"SURF_PM25water" &
       ,"SOMO35        " &
       ,"PSURF         " &  ! Surface  pressure (for cross section):
-      ,"PS            " &  ! Surface  pressure (for Netcdf CF convention) Do not remove
   /)
 
 
