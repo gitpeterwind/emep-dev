@@ -304,6 +304,10 @@ Emergency_ml,Makefile
   - Set all 10 NPP accident senarios as default.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Peter  7th Mar 2013.  (2507)
+Small changes Met_ml Check_Meteo_Date (inq_varid->inq_dimid, close file)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Heiko  1st Mar 2013.  (2502)
 
 put back positve="down" for sigma-coordinate after reading CF-convention
