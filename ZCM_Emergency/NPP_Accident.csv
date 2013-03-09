@@ -1,7 +1,7 @@
 #TYPE/NPP,VARIABLE,BASE[km],H[km above vent],D[h],dM/dt[kBq/s],m63[-],START[code/date],END[code/date],DESCRIPTION
 v0,NUC_I131 ,,  0.600,  12.00,1.4e10,,SR,SR+D,NPP Accident version 0
-#0,NUC_XE133,,  0.600,  12.00,1.0e10,,SR,SR+D,NPP Accident version 0
-v0,NUC_XE131,,  0.600,  12.00,1.0e10,,SR,SR+D,NPP Accident version 0
+v0,NUC_XE133,,  0.600,  12.00,1.0e10,,SR,SR+D,NPP Accident version 0
+#0,NUC_XE131,,  0.600,  12.00,1.0e10,,SR,SR+D,NPP Accident version 0
 v0,NUC_KR85 ,,  0.600,  12.00,1.0e10,,SR,SR+D,NPP Accident version 0
 v0,NUC_CS137,,  0.600,  12.00,5.8e07,,SR,SR+D,NPP Accident version 0
 v0,NUC_SR90 ,,  0.600,  12.00,1.0e11,,SR,SR+D,NPP Accident version 0

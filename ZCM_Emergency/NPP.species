@@ -1,7 +1,7 @@
 * Nuclear tracers for _NPP_
 *"*Spec,adv,forumula,MW,DRY,WET,Extinc,Cstar,DeltaH,Empty,Groups,,!Comments*"
-_NPP__Cs137,1,xx,12,PMfS,PMf,0,0,0,xx,_NPP_;Nuc;NUCract,,"!Cs-137 as PPM25"
-_NPP__I131,1,xx,12,PMfS,PMf,0,0,0,xx,_NPP_;Nuc;NUCract,, "!I-131 as PPM25"
-_NPP__Xe131,1,xx,12,PMfS,PMf,0,0,0,xx,_NPP_;Nuc,,        "!Xe-131 as PPM25"
-_NPP__Sr90,1,xx,12,PMfS,PMf,0,0,0,xx,_NPP_;Nuc;NUCract,, "!Sr-90 as PPM25"
-_NPP__Kr85,1,xx,12,xx,xx,0,0,0,xx,_NPP_;Nuc;NUCract,,    "!Kr-85 is a noble gas--> no DEP"
+_NPP__Cs137,1,xx,12,PMfS,PMf,0,0,0,xx,Nuc;NUCract,,"!Cs-137 as PPM25"
+_NPP__I131,1,xx,12,PMfS,PMf,0,0,0,xx,Nuc;NUCract,, "!I-131 as PPM25"
+_NPP__Xe133,1,xx,12,xx,xx,0,0,0,xx,Nuc;NUCract,,   "!Xe is a noble gas --> no DEP"
+_NPP__Sr90,1,xx,12,PMfS,PMf,0,0,0,xx,Nuc;NUCract,, "!Sr-90 as PPM25"
+_NPP__Kr85,1,xx,12,xx,xx,0,0,0,xx,Nuc;NUCract,,    "!Kr-85 is a noble gas--> no DEP"

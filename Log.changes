@@ -319,6 +319,15 @@ Emergency_ml,Makefile
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Heiko  9th Mar 2013 (2510)
+
+setting xenon as nobel-gas
+using Xe-133 instead of Xe-131 (stable)
+adding Dust and SeaSalt to emergency-runs, required by Svetlanas new AOD-module
+writing out conc for all NPP and NUC, dropping 3d output (TODO: wdep,ddep)
+removing restriction on 9chars per NPP/NUC
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Heiko  1st Mar 2013.  (2502)
 
 put back positve="down" for sigma-coordinate after reading CF-convention

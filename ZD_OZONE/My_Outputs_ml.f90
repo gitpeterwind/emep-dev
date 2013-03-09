@@ -206,8 +206,8 @@ subroutine set_output_defs
    implicit none
 
   character(len=144) :: errmsg   ! Local error message
-  integer            :: i,j,ash,nuc,rn222,pm25,pm10,poll,psurf,igrp ! Loop & group indexes
-  character(len=9)   :: name     ! Volcano (vent) name
+  integer            :: i,j,ash,nuc_conc,nuc_wdep,nuc_ddep,rn222,pm25,pm10,poll,psurf,igrp,idx ! Loop & group indexes
+  character(len=256)   :: name     ! Volcano (vent) name
 
   real, parameter :: atwC=12.0
   real, parameter :: m_s = 100.0 ! From cm/s to m/s
@@ -256,10 +256,12 @@ subroutine set_output_defs
   select case(EXP_NAME)
   case("EMERGENCY")
     nlevels_hourly = 1+18
-    nhourly_out=4+2    !PM*,AOD (&Z, &PS)
+    nhourly_out=4+2    !PM*,AOD (&Z, PS)
     ash=find_index("ASH",chemgroups(:)%name)
-    nuc=find_index("NUCRACT",chemgroups(:)%name)
-    call CheckStop(ash<1.and.nuc<1,"set_output_defs: Unknown group 'ASH'/'NUC'")
+    nuc_conc=find_index("NUCRACT",chemgroups(:)%name)
+    nuc_wdep=find_index("DDEP_NUCRACT",chemgroups(:)%name)
+    nuc_ddep=find_index("WDEP_NUCRACT",chemgroups(:)%name)
+    call CheckStop((ash+nuc_conc+nuc_ddep+nuc_wdep)<1,"set_output_defs: Unknown group 'ASH'/'NUC'")
     if(ash>0)then
       name="none"
       do i=1,size(chemgroups(ash)%ptr)
@@ -270,15 +272,34 @@ subroutine set_output_defs
           write(*,*)'EMERGENCY: Volcanic Ash, Vent=',name
       enddo
     endif
-    if(nuc>0)then
+    if(nuc_conc>0)then
       name="none"
-      do i=1,size(chemgroups(nuc)%ptr)
-        if(species(chemgroups(nuc)%ptr(i))%name(1:9)==name)cycle
-        name=species(chemgroups(nuc)%ptr(i))%name(1:9)
-        nhourly_out=nhourly_out+2
+      do i=1,size(chemgroups(nuc_conc)%ptr)
+        name=species(chemgroups(nuc_conc)%ptr(i))%name
+        nhourly_out=nhourly_out+1
         if(MasterProc.and.DEBUG_EMERGENCY)&
           write(*,*)'EMERGENCY: Nuclear accident/explosion, NPP/NUC=',name
       enddo
+    endif
+    if (.false.) then
+    if(nuc_ddep>0)then
+      name="none"
+      do i=1,size(chemgroups(nuc_ddep)%ptr)
+        name="DDEP_"//species(chemgroups(nuc_ddep)%ptr(i))%name
+        nhourly_out=nhourly_out+1
+        if(MasterProc.and.DEBUG_EMERGENCY)&
+          write(*,*)'EMERGENCY: Nuclear accident/explosion, NPP/NUC=',name
+      enddo
+    endif
+    if(nuc_wdep>0)then
+      name="none"
+      do i=1,size(chemgroups(nuc_wdep)%ptr)
+        name="WDEP_"//species(chemgroups(nuc_wdep)%ptr(i))%name
+        nhourly_out=nhourly_out+1
+        if(MasterProc.and.DEBUG_EMERGENCY)&
+          write(*,*)'EMERGENCY: Nuclear accident/explosion, NPP/NUC=',name
+      enddo
+    endif
     endif
   case("FORECAST")
     nhourly_out=10
@@ -339,27 +360,57 @@ subroutine set_output_defs
         igrp=find_index(name,chemgroups(:)%name)
         call CheckStop(igrp<1,"set_output_defs: Unknown group '"//name//"'")
         j=j+2;hr_out(j-1:j)=(/&
-          Asc2D(name        ,"BCVugXXgroup",igrp,&
+          Asc2D(trim(name)       ,"BCVugXXgroup",igrp,&
                 ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug/m3",1.0,-999.9),&
-          Asc2D(name//"_col","COLUMNgroup" ,igrp,&
+          Asc2D(trim(name)//"_col","COLUMNgroup" ,igrp,&
                 ix1,ix2,iy1,iy2,1,"ug/m2",1.0,-999.9)/)
       enddo
     endif
-    if(nuc>0)then
+    if(nuc_conc>0)then
       name="none"
-      do i=1,size(chemgroups(nuc)%ptr)
-        if(species(chemgroups(nuc)%ptr(i))%name(1:9)==name)cycle
-        name=species(chemgroups(nuc)%ptr(i))%name(1:9)
-        igrp=find_index(name,chemgroups(:)%name)
-        call CheckStop(igrp<1,"set_output_defs: Unknown group '"//name//"'")
-        j=j+2;hr_out(j-1:j)=(/&
-          Asc2D(name        ,"BCVugXXgroup",igrp,&
-                ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"uBqh",1.0,-999.9),&
-! TO DO: dDep/wDep instead of col output
-          Asc2D(name//"_col","COLUMNgroup" ,igrp,&
-                ix1,ix2,iy1,iy2,1,"uBqh",1.0,-999.9)/)
+      do i=1,size(chemgroups(nuc_conc)%ptr)
+        name=species(chemgroups(nuc_conc)%ptr(i))%name
+        !igrp=find_index(name,chemgroups(:)%name) ! position of NPP/NUC -group
+        !call CheckStop(igrp<1,"set_output_defs: Unknown conc group '"//name//"'")
+        j=j+1;
+        idx= chemgroups(nuc_conc)%ptr(i) - NSPEC_SHL ! offset between xn_adv and species
+        hr_out(j)= Asc2D(trim(name),"BCVugXX",idx,&
+                ix1,ix2,iy1,iy2,1,"uBqh/m3",1.0,-999.9)
       enddo
     endif
+    if (.false.) then
+    if(nuc_wdep>0)then
+      name="none"
+      do i=1,size(chemgroups(nuc_wdep)%ptr)
+        name=species(chemgroups(nuc_wdep)%ptr(i))%name
+        igrp=find_index(name,chemgroups(:)%name) ! position of NPP/NUC -group
+        call CheckStop(igrp<1,"set_output_defs: Unknown wdep group '"//name//"'")
+        j=j+1;
+!        hr_out(j)=(/&
+!          Asc2D(name        ,"BCVugXXgroup",igrp,&
+!                ix1,ix2,iy1,iy2,1,"uBqh/m2",1.0,-999.9)&
+!                /)
+        hr_out(j)=Asc2D(trim(name)//"_WDEP","D2D",&
+              find_index("WDEP_"//trim(name),f_2d(:)%name),ix1,ix2,iy1,iy2,1,"",1.0,-999.9)
+
+      enddo
+    endif
+    if(nuc_ddep>0)then
+      name="none"
+      do i=1,size(chemgroups(nuc_ddep)%ptr)
+        name=species(chemgroups(nuc_ddep)%ptr(i))%name
+        igrp=find_index(name,chemgroups(:)%name) ! position of NPP/NUC -group
+        call CheckStop(igrp<1,"set_output_defs: Unknown ddep group '"//name//"'")
+        j=j+1;
+!        hr_out(j:j)=(/&
+!          Asc2D(name        ,"BCVugXXgroup",igrp,&
+!                ix1,ix2,iy1,iy2,1,"uBqh/m2",1.0,-999.9)&
+!                /)
+        hr_out(j)=Asc2D(trim(name)//"_DDEP","D2D",&
+              find_index("DDEP_"//name,f_2d(:)%name),ix1,ix2,iy1,iy2,1,"",1.0,-999.9)
+      enddo
+    endif
+    endif ! if false
   case("FORECAST")
 !   ix1=IRUNBEG;ix2=IRUNBEG+GIMAX-1
 !   iy1=JRUNBEG;iy2=JRUNBEG+GJMAX-1
@@ -528,14 +579,17 @@ subroutine set_output_defs
   !/** Consistency check:
   ! Was the array set?           R: %name/=none
   ! Was the D2D/Group found?     R: %spec>=0
-  ! Is the varaible name unique? R: find_index((i)%name,(:)%name)==i
+  ! Is the variable name unique? R: find_index((i)%name,(:)%name)==i
   do i=1,nhourly_out
     if(MasterProc) write(*,*) "TESTHH O3 ATEND", i, nlevels_hourly
+    idx = find_index(hr_out(i)%name,hr_out(:)%name)
     if((hr_out(i)%name/="none").and.(hr_out(i)%spec>=0).and.&
-       (find_index(hr_out(i)%name,hr_out(:)%name)==i)) cycle
-    write(errmsg,"(A,2(1X,A,'=',I0),2(1X,A,':',A))")&
+       (idx==i)) cycle
+    write(errmsg,"(A,4(1X,A,'=',I0),2(1X,A,':',A))")&
       "set_output_defs: Failed consistency check",&
       "Hourly",i, "Nhourly",NHOURLY_OUT,&
+      "HourlyIndex",idx,&
+      "Spec",hr_out(i)%spec,&
       "Name",trim(hr_out(i)%name),"Type",trim(hr_out(i)%type)
     call CheckStop(errmsg)
   enddo

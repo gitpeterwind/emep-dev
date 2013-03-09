@@ -170,7 +170,7 @@ SR-EMEP2010-GenChem-%:
 SR-MACC-GenChem-%:
 	mk.GenChem -r $* -f GFASv1 -e none
 eEMEP-GenChem-%:
-	mk.GenChem -r $* -f GFASv1 -e none -V 7bin,$(VENTS) -N $(NPPAS) -X $(NUCXS) -q #-h
+	mk.GenChem -r $* -f GFASv1 -e SeaSalt,Dust -V 7bin,$(VENTS) -N $(NPPAS) -X $(NUCXS) -q #-h
 eEMEP2010-GenChem-%:
 	mk.GenChem -r $* -f FINNv1 -e SeaSalt,Dust,Isotopes -V 2bin,Eyjafj.ll #-h
 eEMEP2013-GenChem-%:
