@@ -16,9 +16,9 @@ private
 public :: set_extbic
 
 logical, public, save :: &
-  USE_EXTERNAL_BIC = .false.,  &
-  EXTERNAL_BIC_SET = .false., &
-  TOP_BC           = .false.
+  USE_EXTERNAL_BIC = .false., & ! use external (non Unimod) BCs
+  EXTERNAL_BIC_SET = .false., & ! external BC description/setup has been found
+  TOP_BC           = .false.    ! BCs include top level
 
 character(len=30),public, save :: &
   EXTERNAL_BIC_NAME = "DUMMY"
@@ -30,10 +30,10 @@ character(len=80),public, save :: &
   filename_eta     = 'EMEP_IN_BC_eta.zaxis'
 
 type, public :: icbc                ! Inital (IC) & Boundary Conditions (BC)
-  character(len=24) :: spcname="none",varname="none"
-  real              :: frac=1.0
-  logical           :: wanted=.false.,found=.false.
-  integer           :: ixadv=-1
+  character(len=24) :: spcname="none",varname="none" ! Unimod,BC_file names
+  real              :: frac=1.0                      ! fraction to unimod variable
+  logical           :: wanted=.false.,found=.false.  ! BC is wanted,found in file
+  integer           :: ixadv=-1                      ! adv index, set from %spcname
 endtype icbc
 
 type, private :: icbc_desc          ! IC/BC description
@@ -42,16 +42,23 @@ type, private :: icbc_desc          ! IC/BC description
 endtype icbc_desc
 
 type(icbc), dimension(:), public, pointer :: &
-  EXTERNAL_BC=>null()
+  EXTERNAL_BC=>null() ! external (non Unimod) BCs detailed description/setup
 type(icbc), dimension(NSPEC_ADV), private, target, save :: &
-  map_bc
+  map_bc              ! detailed description/setup from ExternalBICs_bc namelist
 
 character(len=*),private, parameter :: &
   DEBUG_FMT="(A,' DEBUG: ',A,' ''',A,'''.')"
 
 contains
-
 subroutine Config_ExternalBICs()
+!----------------------------------------------------------------------------!
+! Read basic configuration for external (non Unimod) BCs.
+! ICs are assumed to come from Unimod (Nest_ml.init_icbc).
+!
+! USE_EXTERNAL_BIC  Use of external BCs  
+!        otherwise  Assume Unimod BCs (.not.EXTERNAL_BIC_SET)
+! EXTERNAL_BIC_NAME description%name to look for on ExternalBICs_bc namelist
+!----------------------------------------------------------------------------!
   integer :: ios
   logical, save     :: first_call=.true.
   NAMELIST /ExternalBICs_config/ &
@@ -60,7 +67,7 @@ subroutine Config_ExternalBICs()
   if(.not.first_call) return
   rewind(IO_NML)
   read(IO_NML,NML=ExternalBICs_config,iostat=ios)
-  call CheckStop(ios,"NML=Nest_config")  
+  call CheckStop(ios,"NML=ExternalBICs_config")  
   if(DEBUG.and.MasterProc)then
     write(*,*) "NAMELIST IS "
     write(*,NML=ExternalBICs_config)
@@ -68,6 +75,16 @@ subroutine Config_ExternalBICs()
 endsubroutine Config_ExternalBICs
 
 subroutine set_extbic(idate)
+!----------------------------------------------------------------------------!
+! Read external (non Unimod) BCs description/setup.
+! ICs are assumed to come from Unimod (Nest_ml.init_icbc).
+!
+! EXTERNAL_BIC_SET  BC description/setup has been found
+!        otherwise  Assume Unimod BCs (Nest_ml.init_icbc)
+! description       BCs basic info %name,%version,%mapsize
+! map_bc            BCs detailed setup from ExternalBICs_bc namelist
+! EXTERNAL_BC       pointer to the records on map_bc with data (%mapsize)
+!----------------------------------------------------------------------------!
   integer,intent(in) :: idate(4)
   logical, save     :: first_call=.true.
   integer           :: ydmh=0,ios=0,n=0
@@ -87,6 +104,8 @@ subroutine set_extbic(idate)
 
 !--- Set BC type from idate: on first call only
   if(EXTERNAL_BIC_SET) return
+
+!--- Determine %version to look for
   select case (EXP_NAME)
   case("FORECAST")
    !ydmh=idate(1)*1000000+idate(2)*10000+idate(3)*100+idate(4)
@@ -99,6 +118,7 @@ subroutine set_extbic(idate)
   case default         ;bctype_name='use_any'
   endselect
 
+!--- Look for a ExternalBICs_bc with the correct %name and %version
   rewind(IO_NML)
   READ_NML: do
     read(IO_NML,NML=ExternalBICs_bc,iostat=ios)

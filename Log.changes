@@ -236,13 +236,16 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-Peter & Alvaro  14th Mar 2013.  (2511)
+Peter & Alvaro  14th Mar 2013.  (2511-2)
 
 Nest_ml:
   Fix bug on read IC/BC files for variables on ug/m3 or other units that
   need air density on the unit conversion to mol/mol.
   The logical variable divbyroa was defined only on MasterProc,
   therefore the unit conversion was incomplete/wrong elsewhere.
+  
+ExternalBICs_ml,Nest_ml:
+  Improve comments. Add variable and subroutine descriptions.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Peter  7th Mar 2013.  (2507-9)

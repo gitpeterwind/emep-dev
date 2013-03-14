@@ -293,10 +293,8 @@ subroutine readxn(indate)
       xn_adv(n,i,j,k)=W1*xn_adv_bndt(n,i,j,1)+W2*xn_adv_bndt(n,i,j,2)
   enddo
 
-if(EXTERNAL_BIC_NAME == "RCA")then
-    call CheckStop("WORK NEEDED: RCA BICs commented out in Nest_ml - not consistent with all chem schemes")
-endif
-
+  call CheckStop(EXTERNAL_BIC_NAME=="RCA",&
+    "WORK NEEDED: RCA BICs commented out in Nest_ml - not consistent with all chem schemes")
 
   first_data=0
   first_call=.false.
@@ -417,6 +415,16 @@ endsubroutine check
 
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
 subroutine init_icbc(idate,cdate,ndays,nsecs)
+!----------------------------------------------------------------------------!
+! Setup IC/BC detailed description.
+! ICs are assumed to come from Unimod.
+!
+! adv_ic            IC detailed description for all adv species
+! adv_bc            BC detailed description relevant adv species
+! EXTERNAL_BC       External (non Unimod) BC detailed description/setup
+! EXTERNAL_BIC_SET  EXTERNAL_BC has been set (adv_bc=>EXTERNAL_BC)
+!        otherwise  Assume Unimod BCs        (adv_bc=>adv_ic)
+!----------------------------------------------------------------------------!
   integer,   intent(in), optional :: idate(4)
   type(date),intent(in), optional :: cdate
   real(kind=8),intent(in),optional:: ndays
@@ -474,6 +482,9 @@ subroutine init_icbc(idate,cdate,ndays,nsecs)
   endif
   contains
   function find_icbc(filename_read,varname) result(found)
+!----------------------------------------------------------------------------!
+! Check if variables (varname) are present on file (filename_read)
+!----------------------------------------------------------------------------!
     implicit none
     character(len=*), intent(in)               :: filename_read
     character(len=*), dimension(:), intent(in) :: varname
