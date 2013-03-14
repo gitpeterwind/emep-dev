@@ -1010,8 +1010,8 @@ subroutine read_newdata_LATERAL(ndays_indate)
       endif
       if(unitscale/=1.0) data=data*unitscale
     endif
-
     CALL MPI_BCAST(data,8*GIMAX_ext*GJMAX_ext*KMAX_ext_BC,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+    CALL MPI_BCAST(divbyroa,1,MPI_LOGICAL,0,MPI_COMM_WORLD,INFO)
 
    !overwrite Global Boundaries (lateral faces)
     if(divbyroa)then
@@ -1193,6 +1193,7 @@ subroutine reset_3D(ndays_indate)
       if(unitscale/=1.0) data=data*unitscale
     endif
     CALL MPI_BCAST(data,8*GIMAX_ext*GJMAX_ext*KMAX_ext,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+    CALL MPI_BCAST(divbyroa,1,MPI_LOGICAL,0,MPI_COMM_WORLD,INFO)
 
      !overwrite everything 3D (init)
     if(divbyroa)then
