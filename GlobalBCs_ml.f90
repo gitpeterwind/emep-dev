@@ -121,6 +121,7 @@ end type UStrend
 ! the actual values - do not use IGLOB,JGLOB, but the actual one's
 integer, save, private  :: iglbeg, iglend, jglbeg, jglend
 ! -----------------------------------------------------------------------
+integer,parameter ::KMAX20=20
 
 contains
 
@@ -457,8 +458,11 @@ subroutine GetGlobalData(year,iyr_trend,month,ibc,used,        &
   case (IBC_O3)
     fname=date2string("D3_O3.MM",month=month)
     BCpoll='D3_O3_Logan'
-    call ReadBC_CDF(BCpoll,month,bc_rawdata,IIFULLDOM,JJFULLDOM,KMAX_MID,notfound)
+    call ReadBC_CDF(BCpoll,month,bc_rawdata(:,:,KMAX_MID-KMAX20+1:KMAX_MID),IIFULLDOM,JJFULLDOM,KMAX20,notfound)
 
+    do k=1, KMAX_MID-KMAX20
+       bc_rawdata(:,:,k)=bc_rawdata(:,:,KMAX_MID-KMAX20+1)
+    enddo
     if(notfound)then
       call open_file(IO_GLOBBC,"r",fname,needed=.true.,skip=1)
       if ( ios /= 0 ) errmsg = "BC Error O3"

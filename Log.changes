@@ -236,7 +236,7 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-Peter 15th Mar 2013.  (2513)
+Peter 15th Mar 2013.  (2513-4)
 
 In Nest_ml added two times this line:
 if(ichar(units(ilen:ilen))==0)units=units(1:ilen-1)!removes the last invisible character (char(0))
@@ -244,6 +244,12 @@ if(ichar(units(ilen:ilen))==0)units=units(1:ilen-1)!removes the last invisible c
 This is because C codes defines strings with a char(0) at the end.
 It is invisible, but can makes 'ppb'=='ppb' false. This happen for 
 instance when units are written in a netcdf file with nco library.
+
+Made a temporay fix so that the model does not crash when the number of vertical 
+levels is larger than 20:
+GlobalBCs_ml.f90 
+DefPhotolysis_ml.f90
+These routines have to be changed anyway if KMAX/=20
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Peter & Alvaro  14th Mar 2013.  (2511-2)

@@ -66,7 +66,7 @@
                HORIZON    = 90     & ! Integer solar zenith angle at sunset
              , CLOUDTOP   = 6        ! k-value above which clear-sky dj assumed
                                      ! (since..... Joffen?)
-
+   integer, parameter, private :: KMAX20=20
    integer, parameter, private :: &
                NPHODIS = 17       &  ! Max possible NRCPHOT
               ,NLAT    = 6           ! No. latitude outputs
@@ -135,10 +135,16 @@
 
           do la = 1,NLAT
             do izn = 1,HORIZON
-              do k = 1,KCHEMTOP
-                read(IO_DJ,999) myz,(dj(nr,KCHEMTOP,izn,la),nr=1,NPHODIS)
-              end do
-              do k = KCHEMTOP+1,KMAX_MID
+               do k = 1,KCHEMTOP
+                  read(IO_DJ,999) myz,(dj(nr,KCHEMTOP,izn,la),nr=1,NPHODIS)
+               end do
+               do k = 2,KMAX_MID-KMAX20+2
+                  do nr=1,NPHODIS
+                     dj(nr,k,izn,la)=dj(nr,KCHEMTOP,izn,la)
+                  enddo
+               enddo
+              do k = KMAX_MID-KMAX20+3,KMAX_MID
+!TEMPORARY FIX  do k = KCHEMTOP+1,KMAX_MID
                 read(IO_DJ,999) myz,(dj(nr,k,izn,la),nr=1,NPHODIS)
               end do   ! k
             end do    ! izn
@@ -167,7 +173,13 @@
             do k = 1,KCHEMTOP
               read(IO_DJ,999) myz,(djcl1(nr,KCHEMTOP,izn),nr=1,NPHODIS)
             end do
-            do k = KCHEMTOP+1,KMAX_MID
+               do k = 2,KMAX_MID-KMAX20+2
+                  do nr=1,NPHODIS
+                     djcl1(nr,K,izn)=djcl1(nr,KCHEMTOP,izn)
+                  enddo
+               enddo
+              do k = KMAX_MID-KMAX20+3,KMAX_MID
+!TEMPORARY FIX              do k = KCHEMTOP+1,KMAX_MID
               read(IO_DJ,999) myz,(djcl1(nr,k,izn),nr=1,NPHODIS)
             end do
           end do  ! izn
@@ -203,7 +215,13 @@
             do k = 1,KCHEMTOP
               read(IO_DJ,999) myz,(djcl3(nr,KCHEMTOP,izn),nr=1,NPHODIS)
             end do
-            do k = KCHEMTOP+1,KMAX_MID
+               do k = 2,KMAX_MID-KMAX20+2
+                  do nr=1,NPHODIS
+                     djcl3(nr,K,izn)=djcl3(nr,KCHEMTOP,izn)
+                  enddo
+               enddo
+              do k = KMAX_MID-KMAX20+3,KMAX_MID
+!TEMPORARY FIX              do k = KCHEMTOP+1,KMAX_MID
               read(IO_DJ,999) myz,(djcl3(nr,k,izn),nr=1,NPHODIS)
             end do  ! k
           end do   ! izn
