@@ -1009,6 +1009,7 @@ subroutine read_newdata_LATERAL(ndays_indate)
       status = nf90_get_att(ncFileID,VarID,"add_offset",add_offset)
       if(status==nf90_noerr) data=data+add_offset
       status = nf90_get_att(ncFileID,VarID,"units",units)
+      if(ichar(units(ilen:ilen))==0)units=units(1:ilen-1)!removes the last invisible character (char(0))
       if(status==nf90_noerr) then
         if(DEBUG_NEST.or.DEBUG_ICBC) write(*,*)&
           'Nest: variable '//trim(adv_bc(bc)%varname)//' has unit '//trim(units)
@@ -1191,6 +1192,7 @@ subroutine reset_3D(ndays_indate)
       status = nf90_get_att(ncFileID,VarID,"add_offset",add_offset)
       if(status==nf90_noerr) data=data+add_offset
       status = nf90_get_att(ncFileID,VarID,"units",units)
+      if(ichar(units(ilen:ilen))==0)units=units(1:ilen-1)!removes the last invisible character (char(0))
       if(status==nf90_noerr) then
         if(DEBUG_NEST) write(*,*)&
           'Nest: variable '//trim(adv_ic(n)%varname)//' has unit '//trim(units)
