@@ -845,7 +845,7 @@ subroutine read_newdata_LATERAL(ndays_indate)
   real(kind=8), intent(in)::ndays_indate
   real, allocatable, dimension(:,:,:) ::data
   integer :: ncFileID,varid,status
-  integer :: ndate(4),n,i,j,k,bc
+  integer :: ndate(4),n,i,j,k,bc,ilen
   real    :: unitscale
   real(kind=8) :: ndays(1),ndays_old
   logical, save :: first_call=.true.
@@ -1108,7 +1108,7 @@ subroutine reset_3D(ndays_indate)
   implicit none
   real(kind=8), intent(in)::ndays_indate
   real, allocatable, dimension(:,:,:) ::data
-  integer :: ndate(4),n,i,j,k,itime=0,status
+  integer :: ndate(4),n,i,j,k,itime=0,status,ilen
   integer :: ncFileID,varid
   real    :: unitscale
   real(kind=8) :: ndays(1)
