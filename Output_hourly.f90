@@ -137,7 +137,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
       hr_out(ih)%iy1 = max(JRUNBEG,hr_out(ih)%iy1)
       hr_out(ih)%ix2 = min(GIMAX+IRUNBEG-1,hr_out(ih)%ix2)
       hr_out(ih)%iy2 = min(GJMAX+JRUNBEG-1,hr_out(ih)%iy2)
-!      hr_out(ih)%nk  = min(KMAX_MID,hr_out(ih)%nk)
+!     hr_out(ih)%nk  = min(KMAX_MID,hr_out(ih)%nk)
       if(debug_flag) write(*,*) "DEBUG Hourly nk ", ih, hr_out(ih)%nk
     enddo ! ih
   endif  ! first_call
@@ -168,7 +168,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
           create_var_only=.true.)
       case(2:)      ! write as 3D
         call Out_netCDF(IOU_HOUR,def1,3,1,hourly,scale,CDFtype,ist,jst,ien,jen,1,&
-          create_var_only=.true.)
+          create_var_only=.true.,chunksizes=(/ien-ist+1,jen-jst+1,1,1/))
       endselect
     enddo
   endif

@@ -912,24 +912,28 @@ end subroutine CreatenetCDFfile_Eta
 
 !_______________________________________________________________________
 
-subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,fileName_given,overwrite,create_var_only)
+subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,&
+                      fileName_given,overwrite,create_var_only,chunksizes)
+!The use of fileName_given is probably slower than the implicit filename used by defining iotyp.
 
-  !The use of fileName_given is probably slower than the implicit filename used by defining iotyp.
-
-
-  integer ,intent(in) :: ndim,kmax
-  type(Deriv),     intent(in) :: def1 ! definition of fields
-  integer,                         intent(in) :: iotyp
-  real    ,intent(in) :: scale
+! Mandatary arguments:
+  integer ,    intent(in) :: ndim,kmax
+  type(Deriv), intent(in) :: def1 ! definition of fields
+  integer,     intent(in) :: iotyp
+  real,        intent(in) :: scale
   real, dimension(MAXLIMAX,MAXLJMAX,KMAX), intent(in) :: dat ! Data arrays
-  integer, optional, intent(in) :: ist,jst,ien,jen,ik !start and end of saved area.
-                                                      !Only level ik is written if defined
-  integer, optional, intent(in) :: CDFtype != OUTtype. (Integer*1, Integer*2,Integer*4, real*8 or real*4)
-  character (len=*),optional, intent(in):: fileName_given!filename to which the data must be written
-  !NB if the file fileName_given exist (also from earlier runs) it will be appended
-
-  logical, optional, intent(in) :: overwrite !overwrite if file already exists (in case fileName_given)
-  logical, optional, intent(in) :: create_var_only !only create the variable, without writing the data content
+! Optional arguments:
+  integer, optional, intent(in) :: &
+    ist,jst,ien,jen,ik, & ! start and end of saved area. Only level ik is written if defined
+    CDFtype               != OUTtype. (Integer*1, Integer*2,Integer*4, real*8 or real*4)
+  character (len=*),optional, intent(in) :: &
+    fileName_given ! filename to which the data must be written
+                   !NB if the file fileName_given exist (also from earlier runs) it will be appended
+  logical, optional, intent(in) :: &
+    overwrite,      &     ! overwrite if file already exists (in case fileName_given)
+    create_var_only       ! only create the variable, without writing the data content
+  integer, dimension(ndim), intent(in), optional :: &
+    chunksizes            ! nc4zip outpur writen in slizes, see NETCDF_COMPRESS_OUTPUT
   logical:: create_var_only_local !only create the variable, without writing the data content
 
   character(len=len(def1%name)) :: varname
@@ -1100,7 +1104,10 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
       if(DEBUG_NETCDF) write(*,*) 'Out_NetCDF: creating variable: ',varname
       if(create_var_only_local) &
         call check(nf90_set_fill(ncFileID,NF90_NOFILL,ijk))
-      call createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype)
+      if(present(chunksizes))&
+        call CheckStop(chunksizes(1)/=GIMAXcdf.or.chunksizes(2)/=GJMAXcdf,&
+          "NetCDF_ml: chunksizes has wrong dimensions")
+      call createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype,chunksizes=chunksizes)
     endif
   endif!MasterProc
 
@@ -1341,16 +1348,17 @@ end subroutine Out_netCDF
 !_______________________________________________________________________
 
 
-subroutine  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype)
+subroutine  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype,chunksizes)
 
   !create new netCDF variable
 
   implicit none
 
   type(Deriv),     intent(in) :: def1 ! definition of fields
-  character (len = *),intent(in) ::varname
-  integer ,intent(in) ::ndim,ncFileID,OUTtype
-  integer, dimension(:) ,intent(in) ::  ndate
+  character(len=*),intent(in) :: varname
+  integer,         intent(in) :: ndim,ncFileID,OUTtype
+  integer,dimension(:),intent(in) :: ndate
+  integer,dimension(ndim),intent(in), optional :: chunksizes
 
   integer :: iDimID,jDimID,kDimID,timeDimID
   integer :: varID,nrecords,status
@@ -1402,8 +1410,8 @@ subroutine  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype)
 !define variable as to be compressed
   if(NETCDF_COMPRESS_OUTPUT) then
     call check(nf90_def_var_deflate(ncFileid,varID,shuffle=0,deflate=1,deflate_level=4))
-    if(ndim==3) &     ! set chunk-size to 3d slices
-      call check(nf90_def_var_chunking(ncFileID,varID,NF90_CHUNKED,(/GIMAX,GJMAX,1,1/)))
+    if(present(chunksizes)) &     ! set chunk-size for 2d slices of 3d output
+      call check(nf90_def_var_chunking(ncFileID,varID,NF90_CHUNKED,chunksizes(:)))
   endif
   !     FillValue=0.
   scale=1.

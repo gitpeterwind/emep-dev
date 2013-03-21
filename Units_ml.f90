@@ -201,15 +201,16 @@ function Units_Scale(txtin,iadv,unitstxt,volunit,needroa,debug_msg) result(units
   integer :: i
 
   if(Initialize_Units) call Init_Units
-  txt=ADJUSTL(txtin) ! Remove leading spaces
+  txt=ADJUSTL(txtin)                    ! Remove leading spaces
+  do i=1,len(txt)                       ! Remove invisible character
+    if(ichar(txt(i:i))==0)txt(i:i)=' '  ! char(0)
+  enddo
   select case (txt)
   case("ugSS","ugSS/m3","ugP","ugP/m3",&
        "mgSS","mgSS/m2","mgP","mgP/m2")
     txt=txt(1:2)
   case("mol/mol","mole mole-1","mixratio")
     txt="mix_ratio"
- !case default
- !  txt=txtin
   endselect
   i=find_index(txt,unit_map(:)%utxt)
   if(i<1)i=find_index(txt,unit_map(:)%units)

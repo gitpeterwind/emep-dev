@@ -233,6 +233,36 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Alvaro 21th Mar 2013.  (2518)
+
+* Handle chunksizes for nc4zip output explicitely.
+  Fixes a bug introduced on rv4.2beta4 (4 Feb 13).
+* Fix wrong file name for NEST_MODE 1, 11 & 12.
+* Move char(0) fix from Nest_ml to Units_ml
+
+NetCDF_ml:
+  Additional optional parameter (chunksizes) on Out_netCDF and createnewvariable.
+  When present, it sets the size of the data chunk writen by Out_netCDF
+  to a variable on a compressed file.
+
+Output_hourly:
+  For 3d output, sets chunksizes for a 2d slize on Out_netCDF(create_var_only=.true.)
+
+Nest_ml:
+  Additional file_%=date2string(template_%,indate) to ensure that the
+  file names are properly defined/updated.
+
+Nest_ml,Units_ml:
+  Move the invisible character (char(0)) removal intorduced on 2513
+  from read_newdata_LATERAL and reset_3D (Nest_ml) to Units_Scale (Units_ml).
+  Now, the full string is searched for char(0).
+  
+Nest_ml,config_EMEPSTD.nml
+  Define subdomain for write (istart,jstart,iend,jend) on
+  NEST_MODE 1 and 3 on Nest_config namelist.
+  Other write modes write full RUNDOMAIN regardles of namelist.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Dave  15th Mar 2013.  (2516-2517)
 
   Just corrected text on location of mk.meteoPreProc for HDD files

@@ -79,7 +79,7 @@ use netcdf_ml,              only: GetCDF,Out_netCDF,Init_new_netCDF,&
 use OwnDataTypes_ml,        only: Deriv
 use Par_ml,                 only: MAXLIMAX,MAXLJMAX,GIMAX,GJMAX,IRUNBEG,JRUNBEG, &
                                   me, li0,li1,lj0,lj1,limax,ljmax
-use TimeDate_ml,            only: date
+use TimeDate_ml,            only: date,current_date
 use TimeDate_ExtraUtil_ml,  only: idate2nctime,nctime2idate,date2string
 use Units_ml,               only: Units_Scale
 implicit none
@@ -92,10 +92,8 @@ integer, public, parameter :: FORECAST_NDUMP = 1  ! Number of nested output
 ! on FORECAST mode (1: starnt next forecast; 2: NMC statistics)
 type(date), public :: outdate(FORECAST_NDUMP)=date(-1,-1,-1,-1,-1)
 
-!coordinates of subdomain to write
-!coordinates relative to LARGE domain (only used in write mode)
-integer ::istart=60,jstart=11,iend=107,jend=58 !ENEA NB: version has changed, these numbers where for small domain!!!
-!integer ::istart=RUNDOMAIN(1),jstart=RUNDOMAIN(3),iend=RUNDOMAIN(2),jend=RUNDOMAIN(4) !entire domain
+!coordinates of subdomain to write, relative to FULL domain (only used in write mode)
+integer ::istart,jstart,iend,jend ! Set on Nest_config namelist
 
 !/-- subroutines
 
@@ -151,10 +149,16 @@ subroutine Config_Nest()
   integer :: ios
   logical, save :: first_call=.true.
   NAMELIST /Nest_config/ &
-    template_read_3D,template_read_BC,template_write
+    template_read_3D,template_read_BC,template_write,&
+    istart,jstart,iend,jend
 
   if(.not.first_call)return
-  mydebug = DEBUG_NEST .and. MasterProc
+  mydebug = DEBUG_NEST.and.MasterProc
+! Default domain for write modes 1,3. Modes 10,12 write full RUNDOMAIN regardles
+  istart=RUNDOMAIN(1)+1
+  jstart=RUNDOMAIN(3)+1
+  iend=RUNDOMAIN(2)-1
+  jend=RUNDOMAIN(4)-1
   rewind(IO_NML)
   read(IO_NML,NML=Nest_config,iostat=ios)
   call CheckStop(ios,"NML=Nest_config")  
@@ -162,6 +166,11 @@ subroutine Config_Nest()
     write(*,*) "NAMELIST IS "
     write(*,NML=Nest_config)
   endif
+! Update filenames according to date following templates defined on Nest_config
+  filename_read_3D=date2string(template_read_3D,current_date,debug=mydebug)
+  filename_read_BC=date2string(template_read_BC,current_date,debug=mydebug)
+  filename_write  =date2string(template_write  ,current_date,debug=mydebug)
+  first_call=.false.
 endsubroutine Config_Nest
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
 subroutine readxn(indate)
@@ -179,7 +188,7 @@ subroutine readxn(indate)
   integer ::oldmonth=0
 
   call Config_Nest()
-  if( mydebug )write(*,*)'Nest:Read BC, MODE=',MODE
+  if(mydebug) write(*,*)'Nest:Read BC, MODE=',MODE
   if(MODE /= 2.and.MODE /= 3.and. MODE /= 11.and. MODE /= 12.and. MODE /= 100.and. .not.FORECAST)return
 
   KMAX_BC=KMAX_MID
@@ -203,7 +212,7 @@ subroutine readxn(indate)
       if(.not.fexist)then
         if(MasterProc) write(*,*)'No Nest IC file found: ',trim(filename_read_3D)
       else
-        if(MasterProc) write(*,*)'Nest RESET ALL XN 3D'
+        if(MasterProc) write(*,*)'Nest RESET ALL XN 3D ',trim(filename_read_3D)
         call reset_3D(ndays_indate)
       endif
     endif
@@ -214,17 +223,16 @@ subroutine readxn(indate)
       if(MasterProc) write(*,*)'No Nest BC file found: ',trim(filename_read_BC)
       return
     endif
-  elseif(MODE == 100)then
-!monthly input file
-     if(indate%month==oldmonth)return
-     if(MasterProc.and.oldmonth==0)   print *,'Nest: Initialzing IC'
-     oldmonth=indate%month
-     if(MasterProc)   write(*,*)'Nest: New month, reset BC'
- 
+  elseif(MODE == 100)then !monthly input file
+    if(indate%month==oldmonth)return
+    if(MasterProc.and.oldmonth==0) write(*,*)'Nest: Initialzing IC'
+    oldmonth=indate%month
+    if(MasterProc) write(*,*)'Nest: New month, reset BC'
   elseif(MODE == 11.or.MODE == 12)then
     if(.not. first_call)return
     first_call=.false.
-   if(MasterProc)   write(*,*)'Nest RESET ALL XN 3D'
+    filename_read_3D=date2string(template_read_3D,ndate,debug=mydebug)
+    if(MasterProc) write(*,*)'Nest RESET ALL XN 3D ',trim(filename_read_3D)
     call reset_3D(ndays_indate)
     return
   else
@@ -241,10 +249,13 @@ subroutine readxn(indate)
   filename_read_BC=date2string(template_read_BC,ndate,debug=mydebug)
 
   if(first_data==-1)then
-    if(.not.FORECAST) call reset_3D(ndays_indate)
-    if(mydebug) write(*,*)'Nest: READING FIRST BC DATA 3D: ',&
-          trim(filename_read_3D), ndays_indate
+    if(.not.FORECAST)then
+      if(MasterProc) write(*,*)'Nest RESET ALL XN 3D ',trim(filename_read_3D)
+      call reset_3D(ndays_indate)
+    endif
 
+    if(mydebug) write(*,*)'Nest: READING FIRST BC DATA from ',&
+          trim(filename_read_BC), ndays_indate
     call read_newdata_LATERAL(ndays_indate)
     if(mydebug) write(*,"(a,5i4)")'Nest: iw, ie, js, jn, kt ',iw,ie,js,jn,kt
 
@@ -255,7 +266,6 @@ subroutine readxn(indate)
    !look for a new data set
     if(MasterProc) write(*,*)'Nest: READING NEW BC DATA from ',&
           trim(filename_read_BC)
-
     call read_newdata_LATERAL(ndays_indate)
   endif
 
@@ -339,11 +349,6 @@ subroutine wrtxn(indate,WriteNow)
     if(mod(indate%hour,NHOURSAVE)/=0.or.indate%seconds/=0)return
   endif
 
-! fileName_write=date2string("EMEP_BC_MMYYYY.nc",indate)!for different names each month
-                                                        !NB: readxn should have same name
-  if(MasterProc)write(*,*)'Nest:write data ',trim(fileName_write)
-
-
   iotyp=IOU_INST
   ndim=3 !3-dimensional
   kmax=KMAX_MID
@@ -357,8 +362,10 @@ subroutine wrtxn(indate,WriteNow)
   def1%unit='mix_ratio' ! written
  
 ! Update filenames according to date following templates defined on Nest_config nml
+! e.g. set template_write="EMEP_BC_MMYYYY.nc" on namelist for different names each month
   filename_write=date2string(template_write,indate,debug=mydebug)
   if(MasterProc) inquire(file=fileName_write,exist=fexist)
+  if(MasterProc) write(*,*)'Nest:write data ',trim(fileName_write),fexist
   CALL MPI_BCAST(fexist,1,MPI_LOGICAL,0,MPI_COMM_WORLD,INFO)
 
   allocate(data(MAXLIMAX,MAXLJMAX,KMAX_MID))
@@ -446,6 +453,7 @@ subroutine init_icbc(idate,cdate,ndays,nsecs)
 ! Update filenames according to date following templates defined on Nest_config nml
 !!filename_read_3D=date2string(template_read_3D,dat,debug=mydebug)
 !!filename_read_BC=date2string(template_read_BC,dat,debug=mydebug)
+!!filename_write  =date2string(template_write  ,dat,debug=mydebug)
 
   call set_extbic(dat)  ! set mapping, EXTERNAL_BC, TOP_BC
 
@@ -845,7 +853,7 @@ subroutine read_newdata_LATERAL(ndays_indate)
   real(kind=8), intent(in)::ndays_indate
   real, allocatable, dimension(:,:,:) ::data
   integer :: ncFileID,varid,status
-  integer :: ndate(4),n,i,j,k,bc,ilen
+  integer :: ndate(4),n,i,j,k,bc
   real    :: unitscale
   real(kind=8) :: ndays(1),ndays_old
   logical, save :: first_call=.true.
@@ -1009,7 +1017,6 @@ subroutine read_newdata_LATERAL(ndays_indate)
       status = nf90_get_att(ncFileID,VarID,"add_offset",add_offset)
       if(status==nf90_noerr) data=data+add_offset
       status = nf90_get_att(ncFileID,VarID,"units",units)
-      if(ichar(units(ilen:ilen))==0)units=units(1:ilen-1)!removes the last invisible character (char(0))
       if(status==nf90_noerr) then
         if(DEBUG_NEST.or.DEBUG_ICBC) write(*,*)&
           'Nest: variable '//trim(adv_bc(bc)%varname)//' has unit '//trim(units)
@@ -1108,7 +1115,7 @@ subroutine reset_3D(ndays_indate)
   implicit none
   real(kind=8), intent(in)::ndays_indate
   real, allocatable, dimension(:,:,:) ::data
-  integer :: ndate(4),n,i,j,k,itime=0,status,ilen
+  integer :: ndate(4),n,i,j,k,itime=0,status
   integer :: ncFileID,varid
   real    :: unitscale
   real(kind=8) :: ndays(1)
@@ -1192,7 +1199,6 @@ subroutine reset_3D(ndays_indate)
       status = nf90_get_att(ncFileID,VarID,"add_offset",add_offset)
       if(status==nf90_noerr) data=data+add_offset
       status = nf90_get_att(ncFileID,VarID,"units",units)
-      if(ichar(units(ilen:ilen))==0)units=units(1:ilen-1)!removes the last invisible character (char(0))
       if(status==nf90_noerr) then
         if(DEBUG_NEST) write(*,*)&
           'Nest: variable '//trim(adv_ic(n)%varname)//' has unit '//trim(units)
