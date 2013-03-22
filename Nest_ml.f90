@@ -29,16 +29,16 @@
 module Nest_ml
 ! This module performs the reading or writing of data for nested runs
 !
-! The Nesting modes (NEST_MODE in ModelConstants_ml) are:
+! The Nesting modes (MODE in Nest_config nml) are:
 ! 0=donothing , 1=write , 2=read , 3=read and write
 ! 10=write at end of run, 11=read at start , 12=read at start and write at end (BIC)
 !
 ! To make a nested run:
-! 1) run with MODE=1 (NEST_MODE in ModelConstants_ml) to write out 3d BC (name in filename_write defined below)
+! 1) run with MODE=1 (MODE in Nest_config nml) to write out 3d BC (name in filename_write defined below)
 ! 2) copy or link filename_write to filename_read_BC (for example "ln -s EMEP_OUT.nc EMEP_IN.nc")
 ! 3) run (in a smaller domain) with MODE=2
 !
-! Set MODE (NEST_MODE in ModelConstants_ml) and istart,jstart,iend,jend (in this file)
+! Set MODE (in Nest_config nml) and istart,jstart,iend,jend (same namelist)
 ! Choose NHOURSAVE and NHOURREAD
 ! Also filename_read_BC and filename_read_3D should point to appropriate files
 ! Be careful to remove old BC files before making new ones.
@@ -71,7 +71,7 @@ use GridValues_ml,          only: A_mid,B_mid, glon,glat
 use Io_ml,                  only: open_file,IO_TMP,IO_NML
 use ModelConstants_ml,      only: Pref,PPB,PT,KMAX_MID, MasterProc, NPROC     &
   , IOU_INST,IOU_HOUR,IOU_YEAR,IOU_MON,IOU_DAY, RUNDOMAIN  &
-  , MODE=>NEST_MODE, FORECAST, DEBUG_NEST, DEBUG_ICBC=>DEBUG_NEST_ICBC
+  , FORECAST, DEBUG_NEST, DEBUG_ICBC=>DEBUG_NEST_ICBC
 use MetFields_ml,           only: roa
 use netcdf
 use netcdf_ml,              only: GetCDF,Out_netCDF,Init_new_netCDF,&
@@ -86,6 +86,13 @@ implicit none
 
 INCLUDE 'mpif.h'
 INTEGER INFO
+
+! Nesting modes:
+! produces netcdf dump of concentrations if wanted, or initialises mode runs
+! from such a file. Used in Nest_ml:
+!   0=donothing; 1=write; 2=read; 3=read and write;
+!  10=write at end of run; 11=read at start; 12=read atstart and write at end (BIC)
+integer, public, save :: MODE
 
 ! Nested input/output on FORECAST mode
 integer, public, parameter :: FORECAST_NDUMP = 1  ! Number of nested output
@@ -148,17 +155,17 @@ contains
 subroutine Config_Nest()
   integer :: ios
   logical, save :: first_call=.true.
-  NAMELIST /Nest_config/ &
+  NAMELIST /Nest_config/ MODE, &
     template_read_3D,template_read_BC,template_write,&
     istart,jstart,iend,jend
 
   if(.not.first_call)return
   mydebug = DEBUG_NEST.and.MasterProc
+! Default Nest mode
+  MODE=0  ! do nothing (unless FORECAST mode)
 ! Default domain for write modes 1,3. Modes 10,12 write full RUNDOMAIN regardles
-  istart=RUNDOMAIN(1)+1
-  jstart=RUNDOMAIN(3)+1
-  iend=RUNDOMAIN(2)-1
-  jend=RUNDOMAIN(4)-1
+  istart=RUNDOMAIN(1)+1;iend=RUNDOMAIN(2)-1
+  jstart=RUNDOMAIN(3)+1;jend=RUNDOMAIN(4)-1
   rewind(IO_NML)
   read(IO_NML,NML=Nest_config,iostat=ios)
   call CheckStop(ios,"NML=Nest_config")  
