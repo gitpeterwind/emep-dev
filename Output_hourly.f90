@@ -64,6 +64,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
                               DEBUG => DEBUG_OUT_HOUR,runlabel1,HOURLYFILE_ending,&
                               FORECAST
   use ModelConstants_ml,only: SELECT_LEVELS_HOURLY !NML
+  use ModelConstants_ml,only: MFAC! TESTSHL
   use MetFields_ml,     only: t2_nwp,th, roa, surface_precip, ws_10m ,rh2m,&
                               pzpbl, ustar_nwp, Kz_m2s, &
                               Idirect, Idiffuse, z_bnd, z_mid,ps
@@ -277,21 +278,45 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
         iadv  = ispec - NSPEC_SHL
         name = species(itot)%name
         unit_conv =  hr_out(ih)%unitconv
+        if(itot < NSPEC_SHL .and.  debug_proc) write(*,"(a,a,4es12.3)") &
+          "OUT3D MAR22 ", trim(name), unit_conv, &
+           MFAC,roa(2,2,ik,1)*MFAC, xn_shl(ispec,2,2,ik)
 
-        if(index(hr_out(ih)%unit,"ppb")>0) then
+        !MAR22 Added SHL option.
+        if( itot <= NSPEC_SHL ) then !TESTSHL
+         ! CRUDE units fix. Sort out later.
+         !   Inverse of No. air mols/cm3 = 1/M
+         ! where M =  roa (kgair m-3) * MFAC  when ! scale in ug,  else 1
+         !inv_air_density3D(i,j,k) = 1.0/( roa(i,j,k,1) * MFAC )
+
           forall(i=1:limax,j=1:ljmax)
-            hourly(i,j) = xn_adv(iadv ,i,j,ik) &
-                        * unit_conv            ! Units conv.
-          endforall
-        elseif(index(hr_out(ih)%unit,"ug")>0) then
-          forall(i=1:limax,j=1:ljmax)
-            hourly(i,j) = xn_adv(iadv ,i,j,ik) &
+             hourly(i,j) = xn_shl(ispec,i,j,ik)
+          end forall
+          if(index(hr_out(ih)%unit,"ppt")>0) then
+            forall(i=1:limax,j=1:ljmax)
+                hourly(i,j) = hourly(i,j)/( roa(i,j,ik,1) * MFAC ) * 1.0e9
+            end forall
+          else
+            call CheckStop("SHL Out3D option not coded yet")
+          end if
+        
+        else  ! ADV:, original code
+  
+          if(index(hr_out(ih)%unit,"ppb")>0) then
+            forall(i=1:limax,j=1:ljmax)
+              hourly(i,j) = xn_adv(iadv ,i,j,ik) &
+                          * unit_conv            ! Units conv.
+            end forall
+          else if(index(hr_out(ih)%unit,"ug")>0) then
+            forall(i=1:limax,j=1:ljmax)
+              hourly(i,j) = xn_adv(iadv ,i,j,ik) &
                         * roa(i,j,ik,1)        & ! density.
                         * unit_conv              ! Units conv.
-          endforall
-        else
-          call CheckStop("ERROR: Output_hourly  unit problem"//trim(name) )
-        endif
+            end forall
+          else
+            call CheckStop("ERROR: Output_hourly  unit problem"//trim(name) )
+          endif
+        end if ! MAR22 ADV/SHL split 
 
         if(surf_corrected.and.ik==KMAX_MID.and.itot>NSPEC_SHL) then
           forall(i=1:limax,j=1:ljmax)

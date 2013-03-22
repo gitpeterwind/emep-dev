@@ -233,6 +233,20 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Dave   22nd Mar 2013.  (2519)
+
+Changes for IMPACT2C and more general Out3D outputs:
+
+   config_IMPACT2C.nl file added (needs checks on F/T options)
+
+   Output_hourly - options to outut xn_shl added to Out3D case
+     (Note: Out3D should replace all earlier use of ADVppb etc.,
+      it is a much cleaner system.)
+     IMPACT2C cases added as example
+
+  My_Outputs_Ml - IMPACT2C cases added as example with O3, NO, NO2
+    and HO2 output at 3m and 45m
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Alvaro 21th Mar 2013.  (2518)
 
 * Handle chunksizes for nc4zip output explicitely.

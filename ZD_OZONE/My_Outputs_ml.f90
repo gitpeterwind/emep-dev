@@ -312,7 +312,10 @@ subroutine set_output_defs
     nlevels_hourly = 1
   case("3DPROFILES")
     nhourly_out=2
-    nlevels_hourly = 10  ! nb zero is one of levels in this system
+    nlevels_hourly = 2  ! nb zero is one of levels in this system
+  case("IMPACT2C")
+    nhourly_out=4  ! Dave's starting set
+    nlevels_hourly = 2  ! nb zero is one of levels, so we have 3m and 45m
   case("TFMM")
     nhourly_out=28
     nlevels_hourly = 1  ! nb zero is *not* one of levels
@@ -485,6 +488,20 @@ subroutine set_output_defs
 !  write(*,*)(i,hr_out(i),i=1,nhourly_out)
 !  call CheckStop("AMVB")
 !  endif
+  case("IMPACT2C") ! Dave's starting set. Uses Out3D to get 3m and 45m concs.
+    levels_hourly = (/ (i, i= 0,nlevels_hourly-1) /)  ! -1 will give surfac
+    hr_out= (/ &
+        Asc2D("o3_3dppb"    ,"Out3D",O3   ,&
+             ix1,ix2,iy1,iy2,nlevels_hourly,"ppbv", PPBINV,600.0*2.0) &
+       ,Asc2D("no_3dppb"   ,"Out3D",&
+             NO  ,ix1,ix2,iy1,iy2,nlevels_hourly,"ppbv",PPBINV ,600.0*1.91) &
+       ,Asc2D("no2_3dppb"   ,"Out3D",& 
+             NO2  ,ix1,ix2,iy1,iy2,nlevels_hourly,"ppbv",PPBINV ,600.0*1.91) &
+       ,Asc2D("ho2_3dppt"   ,"Out3D",&  !NOTE ppt
+             HO2  ,ix1,ix2,iy1,iy2,nlevels_hourly,"pptv",PPBINV ,600.0*1.91) &
+       ,Asc2D("HMIX","D2D",find_index("HMIX",f_2d(:)%name), &
+            ix1,ix2,iy1,iy2,1,"m",1.0,10000.0) &
+     /)
   case("3DPROFILES")
    ! nb Out3D uses totals, e.g. O3, not IXADV_O3
    ! Number of definitions must match nhourly_out set above
