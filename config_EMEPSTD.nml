@@ -19,12 +19,6 @@
 !-------- Can switch on INERIS-type degreeday stuff
   INERIS_SNAP1          = F,          ! Used for TFMM runs
   INERIS_SNAP2          = F,          ! Used for TFMM runs
-!-------- Nesting ------------
-! produces netcdf dump of concentrations if wanted, or init. run sfrom such a file
-!   0=donothing; 1=write; 2=read; 3=read and write;
-!  10=write at end of run; 11=read at start; 12=read at start and write at end (BIC)
-!------------------------------
-  NEST_MODE             = 0,
 !------------------------------
   IS_GLOBAL             = F,          ! Also for EMERGENCY
   MONTHLY_GRIDEMIS      = F,          ! Also for EMERGENCY
@@ -49,6 +43,12 @@
 ! RUNDOMAIN =  18, 169,  1, 124,      ! OSPAR/HELCOM domain+borders
 &end
 &Nest_config
+!-------- Nesting MODEs
+! Produce netcdf dump of concentrations if wanted, or init. run from such a file
+!   0=do nothing; 1=write; 2=read; 3=read and write;
+!  10=write at end of run; 11=read at start; 12=read at start and write at end (BIC)
+!------------------------------
+  MODE             = 0,
 !-------- File name templates for Nest I/O
   template_read_3D = 'EMEP_IN.nc',            ! a different path can be set here
   template_read_BC = 'EMEP_IN.nc',            ! for each of the IO IC/BC files,

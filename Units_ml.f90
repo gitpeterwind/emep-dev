@@ -211,13 +211,15 @@ function Units_Scale(txtin,iadv,unitstxt,volunit,needroa,debug_msg) result(units
     txt=txt(1:2)
   case("mol/mol","mole mole-1","mixratio")
     txt="mix_ratio"
+  case("ppbv")
+    txt="ppb"
   endselect
   i=find_index(txt,unit_map(:)%utxt)
   if(i<1)i=find_index(txt,unit_map(:)%units)
   call CheckStop(i<1,"Units_Scale Error: Unknown unit "// trim(txtin) )
 
   if(present(unitstxt))unitstxt = unit_map(i)%units
-  if(present(volunit )) volunit = any(txt==(/"ppb  ","ppbh ","ppb h"/))
+  if(present(volunit )) volunit = txt(1:3)=="ppb"
   if(present(needroa )) needroa = any(txt(1:2)==(/"ug","uB","ex"/))
   select case (iadv)
   case (-1)

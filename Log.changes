@@ -233,6 +233,23 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Alvaro 22th Mar 2013.  (2520)
+
+* Move NEST_MODE to Nest_ml (changes namelists also)
+* Small ammend to 2518
+* Small chanke to Units_Scale (Units_ml)
+
+ModelConstants_ml,Nest_ml,config_*.nml:
+  move NEST_MODE from ModelConstants_ml to MODE on Nest_ml.
+  MODE is now read on Nest_config namelist (config_*.nml).
+
+NetCDF_ml:
+  redefine CheckStop(chunksizes...) on Out_netCDF.
+
+Units_ml:
+  Units_Scale regognizes "ppbv" units as "ppb".
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Dave   22nd Mar 2013.  (2519)
 
 Changes for IMPACT2C and more general Out3D outputs:
@@ -246,6 +263,7 @@ Changes for IMPACT2C and more general Out3D outputs:
 
   My_Outputs_Ml - IMPACT2C cases added as example with O3, NO, NO2
     and HO2 output at 3m and 45m
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Alvaro 21th Mar 2013.  (2518)
 

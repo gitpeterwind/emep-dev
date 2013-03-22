@@ -1105,7 +1105,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
       if(create_var_only_local) &
         call check(nf90_set_fill(ncFileID,NF90_NOFILL,ijk))
       if(present(chunksizes))&
-        call CheckStop(chunksizes(1)/=GIMAXcdf.or.chunksizes(2)/=GJMAXcdf,&
+        call CheckStop(chunksizes(1)/=(i2-i1+1).or.chunksizes(2)/=(j2-j1+1),&
           "NetCDF_ml: chunksizes has wrong dimensions")
       call createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype,chunksizes=chunksizes)
     endif

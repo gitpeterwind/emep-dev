@@ -375,13 +375,6 @@ character(len=*), public, parameter :: &! ending depeding on date:
 ! Keep false until code re-implemented
 logical, public, parameter :: NH3_U10 = .false.
 
-! Nesting modes:
-! produces netcdf dump of concentrations if wanted, or initialises mode runs
-! from such a file. Used in Nest_ml:
-!   0=donothing; 1=write; 2=read; 3=read and write;
-!  10=write at end of run; 11=read at start; 12=read atstart and write at end (BIC)
-integer, public, save ::NEST_MODE=0  
-
 !=============================================================================
 !+ 4)  Define main model dimensions,  things that will
 !       generally only change when switching Met-driver
@@ -488,7 +481,6 @@ subroutine Config_ModelConstants()
      ,DO_SAHARA, USE_ROADDUST, USE_DUST &
      ,USE_SOILNOX, USE_SEASALT ,USE_POLLEN &
      ,INERIS_SNAP1, INERIS_SNAP2 &   ! Used for TFMM time-factors
-     ,NEST_MODE &
      ,IS_GLOBAL  &     ! Also for EMERGENCY
      ,MONTHLY_GRIDEMIS &     ! was set in Emissions_ml
      ,SELECT_LEVELS_HOURLY &  ! incl. FORECAST, 3DPROFILES
