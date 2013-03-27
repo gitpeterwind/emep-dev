@@ -107,6 +107,7 @@ contains
     i = Grid%i
     j = Grid%j
 
+
     LC_LOOP: do iiL = 1, nLC
         iL = iL_used(iiL) 
         L = Sub(iL)
@@ -162,10 +163,11 @@ contains
 
          ! Flux in nmole/m2/s:
 
+        if ( debug_flag ) write(*,*) "StoFlux SXXS", iL, nLC, iL, L%hveg, L%cano3_nmole, L%g_sun
           Sub(iL)%FstO3 = L%cano3_nmole * rc_leaf/(rb_leaf+rc_leaf) * L%g_sun 
 
           if( DEBUG_STOFLUX .and. debug_flag ) then
-            call datewrite("STOFLUX ", iL, (/ L%cano3_nmole, L%cano3_ppb /) )
+            call datewrite("StoFlux O3 ", iL, (/ L%cano3_nmole, L%cano3_ppb /) )
           end if
 
 ! ======   CLOVER  ===========================================================
@@ -224,8 +226,8 @@ contains
          !                 (rb_leaf/1.6 + 0.0224*(L%t2/273.0) 
 
 
-          if ( DEBUG_STOFLUX .and. debug_flag ) then 
-            call datewrite("STO ", iL, (/ L%LAI, L%g_sto, L%g_sun, u_hveg,&
+          if ( DEBUG_STOFLUX .and. debug_flag.and. current_date%seconds==0 ) then 
+            call datewrite("StoFlux VALS ", iL, (/ L%LAI, L%g_sto, L%g_sun, u_hveg,&
                              Sub(iL)%cano3_ppb, Sub(iL)%FstO3, gvcms /) )
           end if
 

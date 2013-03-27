@@ -233,6 +233,33 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Dave 27 March 2013 (2524)
+
+MY_OUTPUTS variable now used in place of EXP_NAME, with new system
+
+   EXP_NAME - should match the config file
+
+   MY_OUTPUTS should select the appropriate data-sets in My_Outputs_ml
+
+  - added in config_EMEPSTD, config_EMERGENCY, etc.
+
+
+BUG-fix for PARLAM usage and extensions for "real" species, and re-enabled
+   PARLAM runs with soil water
+
+AOTnPOD_ml - added e.g. POD1_ACE_BEECH etc.
+
+DO3SE_ml - longer names allowed
+
+Met_ml - SMI now calculated for PARLAM inputs too. Reads anyway FC and PWP from IFS, as
+these are used elsewhere. So, we are assuming that PARLAM gives SMI, then this can be
+used with IFS  FC and PWP if needed.
+
+SubMet_ml - sets L%fSW - BUG FIX for PARLAM usage.
+
+GridValues_ml - small debug change
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TAG: 2522 as rv4.2.1 SVN!!!  25th March 2013 xxxxxxxxxxxxxxxxxxxx
           (version used for ECLAIRE tree-specific delivery, Dave)
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

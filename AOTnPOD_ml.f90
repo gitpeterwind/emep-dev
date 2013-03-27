@@ -80,7 +80,8 @@ module AOTx_ml
     type(O3cl), public, allocatable, dimension(:) :: &
      VEGO3_OUTPUTS
 
-    type(O3cl), public, parameter, dimension(26) :: &
+    !WIMMAX type(O3cl), public, parameter, dimension(26) :: &
+    type(O3cl), public, parameter, dimension(26+10) :: &
      VEGO3_DEFS    =  (/ &
          ! name               class X/Y   defn   txtLC relSGS Sacc Eacc
    O3cl( "POD1_IAM_DF   ",   "POD", 1.0,  "- ", "IAM_DF",F,0,999 ), & 
@@ -90,6 +91,17 @@ module AOTx_ml
    O3cl( "POD1_DF       ",   "POD", 1.0,  "- ", "DF    ",F,0,999 ), &
    O3cl( "POD1_CF       ",   "POD", 1.0,  "- ", "CF    ",F,0,999 ), &
    O3cl( "POD3_TC       ",   "POD", 3.0,  "- ", "TC    ",F,0,999 ), & !
+!WIMMAX:
+   O3cl( "POD1_NEUR_SPRUCE", "POD", 1.0,  "- ", "NEUR_SPRUCE  ",F,0,999 ), &
+   O3cl( "POD1_NEUR_BIRCH ", "POD", 1.0,  "- ", "NEUR_BIRCH   ",F,0,999 ), &
+   O3cl( "POD1_ACE_PINE ",   "POD", 1.0,  "- ", "ACE_PINE   ",F,0,999 ), & !
+   O3cl( "POD1_ACE_OAK  ",   "POD", 1.0,  "- ", "ACE_OAK    ",F,0,999 ), &
+   O3cl( "POD1_ACE_BEECH",   "POD", 1.0,  "- ", "ACE_BEECH  ",F,0,999 ), &
+   O3cl( "POD1_CCE_SPRUCE", "POD", 1.0,  "- ", "CCE_SPRUCE  ",F,0,999 ), &
+   O3cl( "POD1_CCE_BEECH", "POD", 1.0,  "- ", "CCE_BEECH  ",F,0,999 ), &
+   O3cl( "POD1_MED_OAK", "POD", 1.0,  "- ", "MED_OAK  ",F,0,999 ), &
+   O3cl( "POD1_MED_PINE", "POD", 1.0,  "- ", "MED_PINE  ",F,0,999 ), &
+   O3cl( "POD1_MED_BEECH", "POD", 1.0,  "- ", "MED_BEECH  ",F,0,999 ), &
 ! 30days, 15 before mid, 15 after
    O3cl( "POD3_TC30d    ",   "POD", 3.0,  "- ", "TC    ",T,30,60 ), & 
 ! 55days, 15 before mid, 40 after

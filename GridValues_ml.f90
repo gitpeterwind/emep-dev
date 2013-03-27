@@ -326,7 +326,7 @@ contains
        status = nf90_open(path=trim(filename),mode=nf90_nowrite,ncid=ncFileID)
        if(status /= nf90_noerr) then
           print *,'not found',trim(filename)
-          call StopAll("File not found")
+          call StopAll("GridValues: File not found")
        endif
 
        !          print *,'  reading ',trim(filename)
@@ -449,7 +449,7 @@ contains
        status = nf90_open(path=trim(filename),mode=nf90_nowrite,ncid=ncFileID)
        if(status /= nf90_noerr) then
           print *,'not found',trim(filename)
-          call StopAll("File not found")
+          call StopAll("GridValues: File not found")
        endif
 
        !          print *,'  reading ',trim(filename)

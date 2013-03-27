@@ -48,7 +48,14 @@ public :: Config_ModelConstants
 !  FORECAST    Forecast run, MACC-ENS hourly output & BC
 !  EVA2010     FORECAST with MACC-EVA2010 hourly output & BC
 !  EMERGENCY   FORECAST with ONLY Volcanic Eruption & Nuclear Accident.
+!
+!DS Mar 2013. We separate the concept of exp_name and the
+! variable used to set the type of output in My_outputs_ml.
+! The longer term solution puts the outputs into namelists
+! but for now we use the MY_OUTPUTS flag. EXP_NAME can
+! now be anything descriptive.
 CHARACTER(LEN=30), public, save :: EXP_NAME="EMEPSTD"
+CHARACTER(LEN=30), public, save :: MY_OUTPUTS="EMEPSTD"
 
 ! FORECAST mode run:
 ! * Nested IC/BC def in Nest_ml & IFSMOZ_ExternalBICs_ml
@@ -88,28 +95,15 @@ logical, public, save ::             &
 ! (for convection use foundconv in permanent code)
 logical, public, parameter ::         &
   USE_CONVECTION     = .false.,       & ! false works best for Euro runs,
-!NML  INERIS_SNAP1       = (EXP_NAME=="TFMM"), & ! Switches off decadal trend
-!NML  INERIS_SNAP2       = (EXP_NAME=="TFMM"), & ! Allows near-zero summer values
-!NML  USE_DEGREEDAY_FACTORS  = .not.FORECAST,  & !
-!NML  USE_SOILWATER      = .not.FORECAST, & ! for deep soilwater,  under testing
-!NML  USE_FOREST_FIRES   = .true.,        & ! Needs global files, future
   USE_AIRCRAFT_EMIS  = .true.,        & ! Needs global file, see manual
   USE_LIGHTNING_EMIS = .true.,        & ! ok
   NO_CROPNH3DEP      = .true.,        & ! Stop NH3 deposition for growing crops
-! More experimental:
-!NML  USE_DUST           = .not.FORECAST, & ! Experimental
-!NML  USE_ROADDUST       = .not.FORECAST, & ! UNDER DEVELOPMENT! Testing the TNO Road Dust routine. So far with simplified "climate-correction" factor
-!NML  DO_SAHARA          = .not.FORECAST, & ! Turn on/off BG Saharan Dust
   USE_GLOBAL_SOILNOX = .false.,       & ! Need to design better switch
   USE_SOILNH3        = .false.,       & ! DUMMY VALUES, DO NOT USE!
-!NML  USE_AOD            = FORECAST,      &
   USE_ZREF           = .false.,       & ! testing
   USE_PFT_MAPS       = .false.,       & ! Future option
   EXTENDEDMASSBUDGET = .false.,       & ! extended massbudget outputs
   LANDIFY_MET        = .false.          ! extended massbudget outputs
-!NML  USE_EMERGENCY      = FORECAST.or.&      ! Emergency: Volcanic Eruption & Nuclear Accident. Under development.
-!NML                      (EXP_NAME=="EMEP2010"), &
-!NML  ANALYSIS           = .false..and.FORECAST ! EXPERIMENTAL: 3DVar data assimilation
 
 logical, public, parameter ::  USE_EtaCOORDINATES=.false.!temporay parameter; will be set true and removed after testing
 
@@ -156,7 +150,6 @@ character(len=20), save, public :: &
    EMIS_SOURCE = "emislist"     &! "emislist" or CdfFractions
   ,EMIS_TEST   = "None"          ! "None" or "CdfSnap" 
 
-!NML logical, parameter, public :: IS_GLOBAL = .false..or.(EXP_NAME=="EMERGENCY")
 logical, save, public :: IS_GLOBAL = .false.   !!NML .or.(EXP_NAME=="EMERGENCY")
 logical, save, public :: MONTHLY_GRIDEMIS = .false.   !! tmp
 
@@ -476,7 +469,8 @@ subroutine Config_ModelConstants()
     logical             :: file_exists
 
     NAMELIST /ModelConstants_config/ &
-      EXP_NAME &  ! e.g. EMEPSTD, FORECAST, TFMM
+      EXP_NAME &  ! e.g. EMEPSTD, FORECAST, TFMM, TodayTest, ....
+     ,MY_OUTPUTS  &  ! e.g. EMEPSTD, FORECAST, TFMM
      ,USE_SOILWATER, USE_DEGREEDAY_FACTORS, USE_FOREST_FIRES &
      ,DO_SAHARA, USE_ROADDUST, USE_DUST &
      ,USE_SOILNOX, USE_SEASALT ,USE_POLLEN &

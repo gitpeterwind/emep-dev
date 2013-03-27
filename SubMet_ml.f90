@@ -137,7 +137,8 @@ real :: theta2
         Sub(iL)%is_forest = LandType(iL)%is_forest
         Sub(iL)%is_crop   = LandType(iL)%is_crop   
 
-        if( USE_SOILWATER ) Sub(iL)%fSW    = Grid%fSW
+        !if( USE_SOILWATER )
+          Sub(iL)%fSW    = Grid%fSW ! MAR2013 - not needed, but for safety
 
      ! If NWP thinks this is a sea-square, but we anyway have land,
      ! the surface temps will be wrong and so will stability gradients.

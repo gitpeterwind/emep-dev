@@ -5,6 +5,7 @@
 !  EMERGENCY   FORECAST with ONLY Volcanic Eruption & Nuclear Accident
 !------------------------------
   EXP_NAME              = 'FORECAST',
+  MY_OUTPUTS            = 'FORECAST',
 !------------------------------
   USE_SOILWATER         = F,          ! Uses SMI from meteo data
   USE_DEGREEDAY_FACTORS = F,

@@ -5,6 +5,7 @@
 !  TFMM        EMEPSTD, but with INERIS_SNAP & TFMM hourly output
 !------------------------------
   EXP_NAME              = 'EMEPSTD',
+  MY_OUTPUTS            = 'EMEPSTD',
 !------------------------------
   USE_SOILWATER         = T,          ! Uses SMI from meteo data
   USE_DEGREEDAY_FACTORS = T,

@@ -67,7 +67,8 @@ module DO3SE_ml
  !/*****   Data to be read from Phenology_inputs.dat:
 
   type, public :: do3se_type
-     character(len=10) :: code
+     !WIMMAXcharacter(len=10) :: code
+     character(len=15) :: code
      character(len=15) :: name
      real:: g_max           ! max. value conductance g_s
      real:: f_min           ! min. value Conductance, factor
