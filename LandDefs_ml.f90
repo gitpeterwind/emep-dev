@@ -67,7 +67,8 @@ end interface Check_LandCoverPresent
 
  real, public, parameter :: STUBBLE  = 0.01 ! Veg. ht. out of season
  integer, public :: NLanduse_DEF ! No. of landuse categories actually defined
- integer, public, parameter :: NLANDUSE_EMEP=19 !No. of categories defined 
+ !WIMMAX integer, public, parameter :: NLANDUSE_EMEP=19 !No. of categories defined 
+ integer, public, parameter :: NLANDUSE_EMEP=29 !No. of categories defined 
                                                 !in EMEP grid (per April 2009)
  integer, public, save :: iLC_grass    ! Used with clover outputs
 
@@ -75,7 +76,8 @@ end interface Check_LandCoverPresent
 
   type, public :: land_input
      character(len=15) :: name
-     character(len=9) :: code
+     !WIMMAX character(len=9) :: code
+     character(len=15) :: code
      character(len=3) :: type   ! Ecocystem type, see headers
      character(len=5) :: LPJtype   ! Simplified LPJ assignment
      real    ::  hveg_max
@@ -207,8 +209,9 @@ contains
 
             if ( DEBUG_LANDDEFS .and. MasterProc ) then
                  write(*,"(a)") trim(txtinput)
-                 write(unit=*,fmt=*) "LANDPHEN match? ", n, &
-                   LandInput%name, trim(LandInput%code), trim(wanted_codes(n)),&
+                 write(unit=*,fmt="(a,i3,3a,2i4)") "LANDPHEN match? ", n, &
+                   trim(LandInput%name)//" ",  trim(LandInput%code)//" ", &
+                   trim(wanted_codes(n))//" ",&
                  len(trim(LandInput%code)), len(trim(wanted_codes(n)))
             end if
             call CheckStop(  LandInput%code, wanted_codes(n), "MATCHING CODES in LandDefs")
@@ -218,9 +221,14 @@ contains
             LandType(n)%is_iam    =  LandInput%code(1:4) == "IAM_" 
             LandType(n)%is_clover =  LandInput%code(1:2) == "CV" 
             LandType(n)%flux_wanted = LandType(n)%is_iam  ! default
+!WIMAX:
+           if(n>19) LandType(n)%flux_wanted = .true.
 
             LandType(n)%is_forest =  &
-                ( LandInput%type == "ECF" .or. LandInput%type == "EDF" )
+                (  LandDefs(n)%hveg_max > 5.0 .and. &    !  Simpler definitoin 
+                   LandDefs(n)%LAImax > 0.5           )  ! Excludes Urban
+               !MAR2013 ( LandInput%type == "ECF" .or. LandInput%type == "EDF" &
+               !MAR2013                          .or.  LandInput%type == "EMF" )
             LandType(n)%has_lpj   =  &
                 ( LandInput%type /= "NOLPJ" )
             LandType(n)%pft = find_index( LandDefs(n)%LPJtype, PFT_CODES)
@@ -228,6 +236,8 @@ contains
                  write(unit=*,fmt=*) "LANDPFT  match? ", n, &
                    LandInput%name, LandInput%code, wanted_codes(n), LandType(n)%pft
             end if
+           !is_decid, is_conif used mainly for BVOC and soil-NO. Not essential
+           ! for IAM-type landcover
             LandType(n)%is_conif = ( LandInput%type == "ECF"  )
             LandType(n)%is_decid = ( LandInput%type == "EDF"  )
             LandType(n)%is_crop  = ( LandInput%type == "ECR"  )

@@ -163,11 +163,12 @@ contains
 
          ! Flux in nmole/m2/s:
 
-        if ( debug_flag ) write(*,*) "StoFlux SXXS", iL, nLC, iL, L%hveg, L%cano3_nmole, L%g_sun
           Sub(iL)%FstO3 = L%cano3_nmole * rc_leaf/(rb_leaf+rc_leaf) * L%g_sun 
 
           if( DEBUG_STOFLUX .and. debug_flag ) then
-            call datewrite("StoFlux O3 ", iL, (/ L%cano3_nmole, L%cano3_ppb /) )
+            !write(*,*) "StoFlux SXXS", iL, nLC, iL, L%hveg, L%cano3_nmole, L%g_sun
+            call datewrite("StoFlux O3 ", (/ iiL, nLC, iL /),&
+                (/ L%hveg, L%g_sun, L%cano3_nmole, L%cano3_ppb /) )
           end if
 
 ! ======   CLOVER  ===========================================================

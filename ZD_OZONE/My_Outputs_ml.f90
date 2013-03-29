@@ -44,7 +44,7 @@ use ChemChemicals_ml,  only: species,species_adv
 use ChemGroups_ml,     only: chemgroups
 use DerivedFields_ml,  only: f_2d               ! D2D houtly output type
 use ModelConstants_ml, only: PPBINV, PPTINV, ATWAIR, atwS, atwN, MasterProc, &
-                             EXP_NAME, FORECAST, USE_EMERGENCY,DEBUG_EMERGENCY,&
+                             MY_OUTPUTS, FORECAST, USE_EMERGENCY,DEBUG_EMERGENCY,&
                              USE_AOD, USE_POLLEN,DEBUG_POLLEN
 use OwnDataTypes_ml,   only: Asc2D
 use Par_ml,            only: GIMAX,GJMAX,IRUNBEG,JRUNBEG,me
@@ -178,7 +178,7 @@ integer, public, parameter :: FREQ_HOURLY = 1  ! 1 hours between outputs
 
 ! Output selected model levels
 !NML logical, public, parameter ::  &
-!NML   SELECT_LEVELS_HOURLY = .false..or.FORECAST.or.(EXP_NAME=="3DPROFILES")
+!NML   SELECT_LEVELS_HOURLY = .false..or.FORECAST.or.(MY_OUTPUTS=="3DPROFILES")
 ! Decide which levels to print out
 ! 20<==>uppermost model level (m01)
 ! 01<==>lowermost model level (m20)
@@ -251,9 +251,9 @@ subroutine set_output_defs
   iy1=JRUNBEG
   iy2=JRUNBEG+GJMAX-1 
 
-  if(MasterProc) write(*,*) "TESTHH INSIDE set_output_defs",EXP_NAME
+  if(MasterProc) write(*,*) "TESTHH INSIDE set_output_defs",MY_OUTPUTS
 
-  select case(EXP_NAME)
+  select case(MY_OUTPUTS)
   case("EMERGENCY")
     nlevels_hourly = 1+18
     nhourly_out=4+2    !PM*,AOD (&Z, PS)
@@ -329,7 +329,7 @@ subroutine set_output_defs
   allocate(hr_out(nhourly_out),levels_hourly(nlevels_hourly))
   hr_out(:)=Asc2D("none","none",-99,-99,-99,-99,-99,-99,"none",-99.9,-99.9)
 
-  select case(EXP_NAME)
+  select case(MY_OUTPUTS)
   case("EMERGENCY")
 !   ix1=IRUNBEG;ix2=IRUNBEG+GIMAX-1
 !   iy1=JRUNBEG;iy2=JRUNBEG+GJMAX-1

@@ -123,7 +123,8 @@ module GridAllocate_ml
        ic = nc + 1
        if ( ic > ncmax ) then
           do icc  = 1, ic 
-              write(unit=*,fmt=*) "XXX GridAlloc_ij:"//label , icc,ic, code
+              write(unit=*,fmt=*) "GridAlloc_ij:"//trim(label),&
+                  icc,ic, code,ncmax
           end do
        
           write(unit=errmsg,fmt=*) "me", me, " i ", i, " j ", j, &

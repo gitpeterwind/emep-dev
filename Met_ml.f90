@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************!
 !*
-!*  Copyright (C) 2007-2011 met.no
+!*  Copyright (C) 2007-2013 met.no
 !*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -206,7 +206,6 @@ contains
     real :: nsec                                 ! step in seconds
 
     real :: buff(MAXLIMAX,MAXLJMAX)!temporary metfields
-    real :: SoilMax  ! Max value soil-water-deep, used to normalise SW
     integer :: i, j
     logical :: fexist 
 
@@ -595,7 +594,6 @@ if( USE_SOILWATER ) then
            foundSoilWater_deep = .true.
            if ( trim(unit) == "m" ) then  ! PARLAM has metres of water
               SoilWaterSource = "PARLAM"
-              SoilMax = 0.02   
            else if(unit(1:5)=='m3/m3')then
               !IFS has a fairly complex soil water system, with field capacity of 
               ! up to 0.766 for organic soils. More medium soils have ca. 0.43
@@ -608,7 +606,7 @@ if( USE_SOILWATER ) then
            endif
            
            if(MasterProc.and.numt==1) write(*,*)'max Met_ml Soilwater_deep: ' // &
-                trim(SoilWaterSource), SoilMax, maxval( SoilWater_deep(:,:,nr) )
+                trim(SoilWaterSource), maxval( SoilWater_deep(:,:,nr) )
 
         endif !found deep_soil_water_content
 
@@ -618,7 +616,7 @@ if( USE_SOILWATER ) then
      if ( DEBUG_SOILWATER.and.debug_proc ) then
         i =  debug_li
         j =  debug_lj
-        write(*,"(a,2i4,f12.4)") "DEBUG_METSWF2: ", &
+        write(*,"(a,2i4,f12.4)") "DEBUG_METSWF2 "//trim(SoilWaterSource)//": ", &
           nr, current_date%day, SoilWater_deep(i,j,nr)
       end if
   end if ! USE_SOILWATER
@@ -722,7 +720,9 @@ if( USE_SOILWATER ) then
        ! Fc  has max 1.0. Set to 1.0 over sea
        ! pwp has max 0.335 Set to 0.0 over sea
 
-       if( SoilWaterSource == "IFS")then
+
+       if( USE_SOILWATER ) then ! MAR2013 added
+       !MAR2013 if( SoilWaterSource == "IFS")then
           !needed for transforming IFS soil water
            call ReadField_CDF('SoilTypes_IFS.nc','pwp',pwp, &
                 1,interpol='conservative',needed=.true.,UnDef=-999.,debug_flag=.false.)
@@ -744,6 +744,7 @@ if( USE_SOILWATER ) then
        if ( DEBUG_SOILWATER.and.debug_proc ) then
             i =  debug_li
             j =  debug_lj
+           ! Note: at this stage soil water may be absolute or relative
             write(*,"(a,2i4,3f12.4)") "DEBUG_METSWF-IFS: swd pwp fc", &
              nr, current_date%day, SoilWater_deep(i,j,nr), pwp(i,j), fc(i,j)
             write(*,"(a,2i4,3f12.4)") "DEBUG_METSWF-IFS maxvals:   ", &
@@ -1232,6 +1233,21 @@ if( USE_SOILWATER ) then
  endif
 
    if( USE_SOILWATER ) then
+
+       ! MAR2013 adding back PARLAM SMI calcs:
+       ! with hard-coded FC value of 0.02 (cm)
+       if( SoilWaterSource == "PARLAM")then
+              !SoilMax = 0.02   
+              SoilWater_deep(:,:,nr) = SoilWater_deep(:,:,nr) / 0.02 !SoilMax
+              SoilWater_uppr(:,:,nr) = SoilWater_uppr(:,:,nr) / 0.02 !SoilMax
+            if ( DEBUG_SOILWATER.and.debug_proc ) then
+               i =  debug_li
+               j =  debug_lj
+               write(*,"(a,i4,3e12.5)") "DEBUG_METSWF PARLAM SCALE: ", nr, &
+                   SoilWater_deep(i,j,nr), SoilWater_uppr(i,j,nr), maxval(SoilWater_deep(:,:,nr))
+            end if
+       end if
+
     if(foundSMI3.or.foundSoilWater_deep)then
 
       if ( water_frac_set ) then  ! smooth the SoilWater values:
@@ -1253,7 +1269,6 @@ if( USE_SOILWATER ) then
               -1.0, 1.0, 1.0, water_fraction < 1.0 )
 
             if ( DEBUG_SOILWATER.and.debug_proc ) then
-
                i =  debug_li
                j =  debug_lj
                write(*,"(a,f7.4,2i4,f12.4)") "DEBUG_METSWF DEEP: ", &
@@ -1333,6 +1348,7 @@ if( USE_SOILWATER ) then
 ! SMI = (SW-PWP)/((FC-PWP), therefore min SMI value should be -PWP/(FC-PWP)
 ! Let's use 99% of this:
 
+    if ( SoilWaterSource == "IFS") then !MAR2013
     do i = 1, limax
     do j = 1, ljmax
       if( fc(i,j) > pwp(i,j) ) then ! Land values
@@ -1343,6 +1359,7 @@ if( USE_SOILWATER ) then
       end if
     end do
     end do
+    end if !MAR2013 test
 !!       SoilWater_uppr(:,:,nr) = max(  &
 !           -0.99 * pwp(:,:)/(fc(:,:)-pwp(:,:) ), &
 !           SoilWater_uppr(:,:,nr)  )
@@ -3092,7 +3109,7 @@ filename_save=trim(filename)
     status = nf90_open(path=trim(meteoname),mode=nf90_nowrite,ncid=ncFileID)
     if(status /= nf90_noerr) then
        print *,'meteo file not found: ',trim(meteoname)
-       call StopAll("File not found")
+       call StopAll("meteo File not found")
     endif
 
     call check(nf90_inq_dimid(ncid = ncFileID, name = "time", dimID = timedimID))

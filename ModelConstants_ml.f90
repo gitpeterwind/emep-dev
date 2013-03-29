@@ -270,8 +270,8 @@ integer, private, parameter :: &
 
 integer, public, parameter :: &
 ! DEBUG_i= 62, DEBUG_j= 45  ! SEA
-!  DEBUG_i= DEBUG_II+OFFSET_i, DEBUG_j= DEBUG_JJ+OFFSET_j    ! EMEP/EECCA
- DEBUG_i= 70, DEBUG_j= 40 ! Lichtenstein, to test ncc
+  DEBUG_i= DEBUG_II+OFFSET_i, DEBUG_j= DEBUG_JJ+OFFSET_j    ! EMEP/EECCA
+! DEBUG_i= 70, DEBUG_j= 40 ! Lichtenstein, to test ncc
 ! DEBUG_i= 59, DEBUG_j= 79  ! JCOAST
 ! DEBUG_i= 9, DEBUG_j= 201                                  ! MACC02
 !  DEBUG_i= 0, DEBUG_j= 0    ! default
@@ -372,7 +372,8 @@ logical, public, parameter :: NH3_U10 = .false.
 !+ 4)  Define main model dimensions,  things that will
 !       generally only change when switching Met-driver
 integer, public, parameter ::  &
-  NLANDUSEMAX  = 23    &    ! Number of land use types in Inputs.Landuse file
+!TREEX  NLANDUSEMAX  = 19   &   ! Number of land use types in Inputs.Landuse file
+  NLANDUSEMAX  = 30    &    ! Max num land use types in Inputs.Landuse file
 , METSTEP      = 3     &    ! time-step of met. (h)
 , KTOP         = 1     &    ! K-value at top of domain
 , KWINDTOP     = 5     &    ! Define extent needed for wind-speed array
