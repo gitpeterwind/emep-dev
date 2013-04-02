@@ -233,6 +233,24 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Peter, Dave 2nd April 2013 (2526)
+
+Towards new system to define landuse codes from netcdf file, instead of predefined list.
+Landuse_ml will first try to find a file 'Landuse_PS_5km_LC.nc'. 
+If this is found it includes all landuse with names of the form LC:CF:EMEP (where CF can be any name).
+The missing data are still read from the "old" "LanduseGLC.nc" (with old names).
+
+
+Recipe for use:
+include this line in the run.pl
+  $ifile{"$DataDir/Landuse/Landuse_PS_5km_LC.nc"} ="Landuse_PS_5km_LC.nc";
+The rest is automatic
+
+If the file is not found, old system is used (i.e. default if run.pl is not modified).
+/global/work/mifapw/emep/mk.rename 
+has been used to make the new names
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Dave 29 March 2013 (2525)
 
 i) Corrected MY_OUTPUTS usage (I had forgotten to commit My_outputs_ml and Met_ml) 

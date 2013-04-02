@@ -50,8 +50,11 @@ use ModelConstants_ml,only: DEBUG_i, DEBUG_j, NLANDUSEMAX, &
 use NetCDF_ml,      only: ReadField_CDF,printcdf
 use Par_ml,         only: MAXLIMAX, MAXLJMAX, &
                           limax, ljmax, me
-use SmallUtils_ml,  only: find_index, NOT_FOUND, WriteArray
+use SmallUtils_ml,  only: wordsplit, find_index, NOT_FOUND, WriteArray
 use TimeDate_ml,    only: daynumber, effectivdaynumber, nydays, current_date
+
+use netcdf
+use NetCDF_ml, only  : ReadField_CDF,check
 
 implicit none
 private
@@ -288,6 +291,7 @@ contains
       end if
       call MPI_BCAST( ios, 1, MPI_INTEGER, 0, MPI_COMM_WORLD,INFO)
       if(ios==0)then
+         if ( DEBUG_LANDUSE .and. MasterProc ) write(*,*)'found '//trim(fname) 
          filefound=.true.
 
          call Read_Headers(IO_TMP,errmsg,NHeaders,NKeys,&
@@ -376,11 +380,17 @@ contains
     !
     implicit none
     logical :: filefound
-    integer :: i,j,lu, index_lu, maxlufound
+    integer :: i,j,lu, ilu, index_lu, maxlufound
     logical :: debug_flag
     real :: sumfrac
 
-
+    character(len=40) :: varname
+    character(len=200) :: fname1,fname2
+    integer :: ncFileID, nDimensions,nVariables,nAttributes,timeDimID,varid
+    integer :: nwords, err, xtype,ndims  ,status
+    character(len=10) :: ewords(7), code ! LC:CF:EMEP
+    logical :: fexist=.false.!file exist flag
+  
     ! temporary arrays used.  Will re-write one day....
     real, dimension(MAXLIMAX,MAXLJMAX,NLANDUSEMAX):: landuse_in ! tmp, with all data
     real, dimension(MAXLIMAX,MAXLJMAX):: landuse_tmp ! tmp, with all data
@@ -389,49 +399,108 @@ contains
     integer, dimension(MAXLIMAX,MAXLJMAX,NLUMAX):: landuse_codes ! tmp, with all data
 
     if ( DEBUG_LANDUSE .and. MasterProc ) &
-         write(*,*) "LANDUSE: Starting ReadLandUse "
+         write(*,*) "LANDUSE: Starting ReadLandUse CDF"
 
 
     if (MasterProc ) write(*,*) "LANDUSE_CDF: experimental so far"
-!    filefound=.false.
-!    return
+    !    filefound=.false.
+    !    return
 
     maxlufound = 0   
 
     landuse_ncodes(:,:)   = 0     !/**  initialise  **/
     landuse_codes(:,:,:)  = 0     !/**  initialise  **/
     landuse_data  (:,:,:) = 0.0   !/**  initialise  **/
+    landuse_in = 0.0              !/**  initialise  **/
 
-    !hardcoded so far -> to softimize
+    !Landusefile where landcodes are not predefined, but read from the file.
+    fName1='Landuse_PS_5km_LC.nc'
+    fName2='LanduseGLC.nc'
+    !1)check that file exists
+    !note that every processor open and read the same file
+    status=nf90_open(path = trim(fName1), mode = nf90_nowrite, ncid = ncFileID)
+    inquire(file=trim(fName2),exist=fexist)
+    if ( DEBUG_LANDUSE .and. MasterProc .and. fexist)write(*,*) "LANDUSE: found "//trim(fName2)
+    if(status==nf90_noerr)then
+       if ( DEBUG_LANDUSE .and. MasterProc )write(*,*) "LANDUSE: found "//trim(fName1)
+       !get list of variables
+       call check(nf90_Inquire(ncFileID,nDimensions,nVariables,nAttributes,timeDimID))
+       ! All the inquire functions are inexpensive to use and require no I/O, since the information
+       ! they provide is stored in memory when a netCDF dataset is first opened.   
 
-    NLanduse_DEF=19
-    Land_codes(1) = 'CF' 
-    Land_codes(2) = 'DF' 
-    Land_codes(3) = 'NF' 
-    Land_codes(4) = 'BF' 
-    Land_codes(5) = 'TC' 
-    Land_codes(6) = 'MC' 
-    Land_codes(7) = 'RC' 
-    Land_codes(8) = 'SNL' 
-    Land_codes(9) = 'GR' 
-    Land_codes(10) = 'MS' 
-    Land_codes(11) = 'WE' 
-    Land_codes(12) = 'TU' 
-    Land_codes(13) = 'DE' 
-    Land_codes(14) = 'W' 
-    Land_codes(15) = 'ICE' 
-    Land_codes(16) = 'U' 
-    Land_codes(17) = 'IAM_CR' 
-    Land_codes(18) = 'IAM_DF'
-    Land_codes(19) = 'IAM_MF'
-    do lu=1,NLanduse_DEF
-       !
-       if(me==0)write(*,*)'Reading landuse ',trim(Land_codes(lu))
-       !   call ReadField_CDF('/global/work/mifapw/emep/Data/LanduseGLC.nc',&!fast but unprecise
-       call ReadField_CDF('Landuse_PS_5km.nc',& !SLOW!
-            Land_codes(lu),landuse_in(1,1,lu),1,interpol='conservative', &
-            needed=.true.,debug_flag=.false.,UnDef=-9.9E19) !NB: Undef must be largenegative, 
-!          because it is averagad over many points, and the final result must still be negative
+       !loop over all variables in file
+       iLU=0
+       do varid=1,nVariables
+          if ( DEBUG_LANDUSE )  CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
+
+          call check(nf90_Inquire_Variable(ncFileID,varid,varname,xtype,ndims))
+          if ( DEBUG_LANDUSE .and. MasterProc )write(*,*) "checking "//trim(varname), index( varname, "LC:") 
+
+          ! Emission terms look like, e.g. LC:CF:EMEP
+          if( index( varname, "LC:") < 1 ) cycle ! ONLY LC: (LandCode) wanted
+          call wordsplit(varname,3,ewords,nwords,err,separator=":")
+          if( ewords(3) /= "EMEP" ) cycle ! ONLY EMEP coded for now
+
+          if ( DEBUG_LANDUSE .and. MasterProc )write(*,*) "defining "//ewords(2) 
+          ilu=ilu+1
+          call CheckStop( ilu>NLANDUSEMAX , &
+               "NLANDUSEMAX smaller than number of landuses defined in file "//trim(fname1) )
+
+          Land_codes(ilu) = ewords(2)    ! Landuse code found on file
+          call ReadField_CDF(trim(fName1),varname,& 
+               landuse_in(1,1,ilu),1,interpol='conservative', &
+               needed=.true.,debug_flag=.false.,UnDef=-9.9E19) 
+          if(fexist .and. any(landuse_in(1:limax,1:ljmax,ilu)<-0.1))then
+             !complete missing data with data from second file
+             !name in second file may be defined differently
+             varname=Land_codes(ilu) !name such as CF (without LC: etc.)
+             call ReadField_CDF(trim(fName2),varname,&
+                  landuse_tmp,1,interpol='conservative', &
+                  needed=.true.,debug_flag=.false.)
+             do j = 1, ljmax
+                do i = 1, limax
+                   if(landuse_in(i,j,ilu)<-0.1)landuse_in(i,j,ilu)=landuse_tmp(i,j)
+                end do  !j
+             end do  !i
+          endif
+       enddo
+       call check(nf90_close(ncFileID))!fname1
+       NLanduse_DEF=ilu
+
+    else
+       !the landusefile with softcoded lancodes has not been found. Use "old" method 
+       if ( DEBUG_LANDUSE .and. MasterProc )write(*,*) "LANDUSE: LC: not found "//trim(fName1)
+
+       !the landcode where not read from the file, hardcoded one are used instead
+
+       NLanduse_DEF=19
+       Land_codes(1) = 'CF' 
+       Land_codes(2) = 'DF' 
+       Land_codes(3) = 'NF' 
+       Land_codes(4) = 'BF' 
+       Land_codes(5) = 'TC' 
+       Land_codes(6) = 'MC' 
+       Land_codes(7) = 'RC' 
+       Land_codes(8) = 'SNL' 
+       Land_codes(9) = 'GR' 
+       Land_codes(10) = 'MS' 
+       Land_codes(11) = 'WE' 
+       Land_codes(12) = 'TU' 
+       Land_codes(13) = 'DE' 
+       Land_codes(14) = 'W' 
+       Land_codes(15) = 'ICE' 
+       Land_codes(16) = 'U' 
+       Land_codes(17) = 'IAM_CR' 
+       Land_codes(18) = 'IAM_DF'
+       Land_codes(19) = 'IAM_MF'
+       do lu=1,NLanduse_DEF
+          !
+          if(me==0)write(*,*)'Reading landuse ',trim(Land_codes(lu))
+          !   call ReadField_CDF('/global/work/mifapw/emep/Data/LanduseGLC.nc',&!fast but unprecise
+          call ReadField_CDF('Landuse_PS_5km.nc',& !SLOW!
+               Land_codes(lu),landuse_in(1,1,lu),1,interpol='conservative', &
+               needed=.true.,debug_flag=.false.,UnDef=-9.9E19) !NB: Undef must be largenegative, 
+          !          because it is averagad over many points, and the final result must still be negative
           call ReadField_CDF('LanduseGLC.nc',&
                Land_codes(lu),landuse_tmp,1,interpol='conservative', &
                needed=.true.,debug_flag=.false.)
@@ -440,8 +509,10 @@ contains
                 if(landuse_in(i,j,lu)<-0.1)landuse_in(i,j,lu)=landuse_tmp(i,j)
              end do  !j
           end do  !i
-    enddo
-     ! call printCDF('LU_cdf', landuse_in(:,:,1),'??')
+       enddo
+       ! call printCDF('LU_cdf', landuse_in(:,:,1),'??')
+
+    endif !switch hardcoded/fileread lu definitions
 
     do i = 1, limax
        do j = 1, ljmax
@@ -469,6 +540,7 @@ contains
 
        end do  !j
     end do  !i
+
 
     filefound=.true.
 
