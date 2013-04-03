@@ -15,7 +15,7 @@
 #Stallo
 #PBS -lnodes=1:ppn=16
 # wall time limit of run
-#PBS -lwalltime=08:00:00
+#PBS -lwalltime=00:30:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
 #PBS -lpmem=1000MB
 #make results readable for others:
@@ -165,7 +165,7 @@ if ($CWF) {
 #  --- Here, the main changeable parameters are given. The variables
 #      are explained below, and derived variables set later.-
 
-my $year = "2009";
+my $year = "2006";
    $year = substr($CWFBASE,0,4) if $CWF;
    $year = $BENCHMARK{"year"} if %BENCHMARK;
 ( my $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
@@ -272,7 +272,7 @@ my $Chem     = "EmChem09soa";
 my $exp_name = "EMEPSTD";
    $exp_name = ($eCWF)?"EMERGENCY":"FORECAST" if $CWF;
 my $testv = "rv4_2.SVN";
-   $testv = "2525";   # From svn system, as reminder
+   $testv = "2526";   # From svn system, as reminder
    $testv.= ($eCWF)?".eCWF":".CWF" if $CWF;
 
 #User directories
@@ -469,10 +469,10 @@ $month_days[2] += leap_year($year);
 #Only 360 days in HIRHAM metdata. We ignore leaps
 @month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,24) if $GRID eq "HIRHAM";
 
-my $mm1 ="08";      # first month, use 2-digits!
-my $mm2 ="08";      # last month, use 2-digits!
+my $mm1 ="06";      # first month, use 2-digits!
+my $mm2 ="06";      # last month, use 2-digits!
 my $dd1 =  1;       # Start day, usually 1
-my $dd2 =  0;       # End day (can be too large; will be limited to max number of days in the month)
+my $dd2 =  1;       # End day (can be too large; will be limited to max number of days in the month)
                     # put dd2=0 for 3 hours run/test.
 # Allways runn full year on benchmark mode
 ($mm1,$mm2,$dd1,$dd2)=("01","12",1,31) if (%BENCHMARK);
@@ -899,11 +899,15 @@ if ( $iyr_trend > 2015 )  {
   $ifile{"$DATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse" if ( $CWF ) ;
   $ifile{"$DataDir/Landuse/landuseGLC2000_INT1.nc"} ="GLOBAL_landuse.nc";
 
-  $ifile{"$DataDir/Landuse_PS_5km.nc"} ="Landuse_PS_5km.nc";
+  #OLD $ifile{"$DataDir/Landuse_PS_5km.nc"} ="Landuse_PS_5km.nc";
   $ifile{"$DataDir/LanduseGLC.nc"} ="LanduseGLC.nc";
+  # Apr 2 Peter's new file:
+  $ifile{"$DataDir/Landuse/Landuse_PS_5km_LC.nc"} ="Landuse_PS_5km_LC.nc";
 
-  $ifile{"$DataDir/LandInputs_Jan2012/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
-  $ifile{"$DataDir/LandInputs_Jan2012/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
+  #$ifile{"$DataDir/LandInputs_Jan2012/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
+  #$ifile{"$DataDir/LandInputs_Jan2012/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
+  $ifile{"$DataDir/LandInputs_Mar2013/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
+  $ifile{"$DataDir/LandInputs_Mar2013/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
 
   $ifile{"$DataDir/sondesLL.dat"} = "sondes.dat";
   $ifile{"$DataDir/sitesLL.dat"} = "sites.dat";

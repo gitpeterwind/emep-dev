@@ -29,7 +29,7 @@ module StoFlux_ml
   use CheckStop_ml
   use DO3SE_ml, only : do3se, nSumVPD, SumVPD_LC
   use Io_Progs_ml, only : current_date, datewrite
-  use LandDefs_ml, only : LandType, STUBBLE,NLanduse_DEF, iLC_grass
+  use LandDefs_ml, only : LandType, STUBBLE, iLC_grass
   use LocalVariables_ml, only : L, Grid, Sub
   use MicroMet_ml, only : AerRes, Wind_at_h
   use ModelConstants_ml, only : NLANDUSEMAX, dt_advec, DEBUG_STOFLUX

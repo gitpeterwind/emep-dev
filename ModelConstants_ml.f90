@@ -380,9 +380,13 @@ integer, public, parameter ::  &
 , NMET         = 2     &    ! No. met fields in memory
 , KCHEMTOP     = 2     &    ! chemistry not done for k=1
 , KCLOUDTOP    = 8     &    ! limit of clouds (for MADE dj ??)
-, KUPPER       = 6     &    ! limit of clouds (for wet dep.)
-! And for My_Derived_ml VG_SPECS & LocalVariables_ml Vg_ref etc. we need a limit
-, NVGOUT_MAX   = 10         ! Max. no species for My_Derived VG outputs
+, KUPPER       = 6          ! limit of clouds (for wet dep.)
+
+
+!Namelist controlled: which veg do we want flux-outputs for
+character(len=15), public, save, dimension(10) :: FLUX_VEGS=""
+integer, public, save :: nFluxVegs = 0 ! reset in Landuse_ml
+    
 
 ! EMEP measurements end at 6am, used in  daily averages
 integer, public, parameter :: END_OF_EMEPDAY  = 6
@@ -482,6 +486,7 @@ subroutine Config_ModelConstants()
      ,FORECAST, USE_EMERGENCY, ANALYSIS , USE_AOD &
      ,SEAFIX_GEA_NEEDED & ! only if problems, see text above.
      ,EMIS_SOURCE, EMIS_TEST & 
+     ,FLUX_VEGS  & ! TESTX
      ,NETCDF_COMPRESS_OUTPUT,  RUNDOMAIN
 
     txt = "ok"

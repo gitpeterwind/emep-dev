@@ -233,6 +233,35 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Dave,  3 Apr 2013 (2527)
+
+** results change a little. Due to slighlty different coverage of
+   IAM species. Also, somewhat updated DO3SE params **
+
+New 5km landcover file (LC) used, with allowance for flexible
+landcover. 
+
+Landuse_ml - reads the Landuse_PS_5km_LC.nc file to set Land_Codes
+           - if a variable IAM_VEG is found, creates fake
+             landcover for all veg in FLUX_VEGS array (see below)
+
+             Hard-coded LC defns removed :-)
+
+DO3SE_ml - modified to use Land_Codes coming from Landuse
+LandDefs_ml - modified to use Land_Codes coming from Landuse
+  
+ModelConstants_ml - added new namelist item:
+  FLUX_VEGS   - can be IAM_DF, or NEUR_SPRUCE etc.
+  + new variable nFluxVegs which is used in Landuse_ml
+    removed unused variable NVGOUT_MAX
+
+(defaults set in config_EMEPSTD.nml, config_IMPACT2C.nml)
+
+StoFlux - removed unneeded variables (NLanduse_DEF)
+
+run.pl - links to new files, exclude link to older
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Peter, Dave 2nd April 2013 (2526)
 
 Towards new system to define landuse codes from netcdf file, instead of predefined list.

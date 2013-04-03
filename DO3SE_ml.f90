@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2007-2011 met.no
+!*  Copyright (C) 2007-2013 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -39,6 +39,7 @@ module DO3SE_ml
 
   use ModelConstants_ml, only : NLANDUSEMAX, DEBUG_DO3SE, MasterProc, &
       USE_SOILWATER
+  use SmallUtils_ml,     only : find_index
   use TimeDate_ml,       only : current_date, daynumber
 
   implicit none
@@ -110,14 +111,16 @@ module DO3SE_ml
 contains
 !=======================================================================
   !=======================================================================
-  subroutine Init_DO3SE(io_num,fname,wanted_codes,io_msg)
+  subroutine Init_DO3SE(io_num,fname,ncodes,wanted_codes,io_msg)
   !=======================================================================
       integer, intent(in) :: io_num
       character(len=*), intent(in) :: fname 
+      integer, intent(in) ::  ncodes ! number of land-codes in mapped data
       character(len=*), dimension(:), intent(in) :: wanted_codes 
       character(len=*), intent(inout) :: io_msg 
       character(len=300)  :: inputline
-      integer :: iLC, ios
+      integer :: iLC, ios, nLC
+      type(do3se_type) :: input_do3se
       !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       ! Read data (still old-style reading, on all processors)
 
@@ -130,7 +133,8 @@ contains
       !------ Read in file. Lines beginning with "!" are taken as
       !       comments and skipped
 
-       iLC = 1    
+       !APR2013 iLC = 1    
+       nLC = 0
        nSumVPD = 0
        do
             read(unit=io_num,fmt="(a200)",iostat=ios) inputline
@@ -144,7 +148,16 @@ contains
                 cycle
             end if
 
-            read(unit=inputline,fmt=*) do3se(iLC)
+            read(unit=inputline,fmt=*) input_do3se
+            !APR2013 read(unit=inputline,fmt=*) do3se(iLC)
+            iLC = find_index( input_do3se%code, wanted_codes)
+
+            if ( iLC < 1 ) then
+                if(MasterProc) write(*,*) " DO3SE skips iLC", iLC, input_do3se%code 
+                cycle
+            end if
+
+            do3se(iLC) = input_do3se  
 
             if ( DEBUG_DO3SE .and. MasterProc ) then
                 write(*,*) " DO3SE iLC", iLC,  do3se(iLC)%code, wanted_codes(iLC)
@@ -157,10 +170,13 @@ contains
                 write(*,*)'VPDlimit ',do3se(iLC)%VPDcrit,' for iLC ',iLC, nSumVPD
             end if
 
-            call CheckStop( wanted_codes(iLC), do3se(iLC)%code, "DO3SE MATCHING")
-            iLC = iLC + 1
+            !APR2013 call CheckStop( wanted_codes(iLC), do3se(iLC)%code, "DO3SE MATCHING")
+            !APR2013 iLC = iLC + 1
+            nLC = nLC + 1
        end do
        close(unit=io_num)
+
+       call CheckStop( nLC /= ncodes, "Init_DO3SE didn't find all codes")
 
   end subroutine Init_DO3SE
 

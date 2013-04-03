@@ -28,6 +28,10 @@
   USE_EMERGENCY         = F,          ! Used for FORECASTs usually, EMEP2010
   ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
   USE_AOD               = F,          ! Used for FORECASTs usually
+!--- "fake" vegetation for ozone POD calculations
+FLUX_VEGS = "IAM_CR" "IAM_DF" "IAM_MF"  ! do not need all array elements
+!FLUX_VEGS = "IAM_CR" "IAM_DF" "IAM_MF" "CCE_BEECH" "ACE_BEECH" "NEUR_SPRUCE",  ! Do not need to fill array :-)
+!-------- Sub domain (x0,x1,y0,y1)
 !-------- Sub domain (x0,x1,y0,y1)
 !!RUNDOMAIN =   1, 100,  1, 100,      ! Orig EMEP domain in EECCA (for benchmarks)
 ! RUNDOMAIN =  40, 210, 12, 184,      ! SR TNO28 area
