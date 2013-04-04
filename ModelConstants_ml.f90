@@ -149,6 +149,8 @@ character(len=*), parameter, public :: &
 character(len=20), save, public :: &
    EMIS_SOURCE = "emislist"     &! "emislist" or CdfFractions
   ,EMIS_TEST   = "None"          ! "None" or "CdfSnap" 
+Logical , save, public :: &
+   EMIS_OUT    = .false.           ! output emissions in separate files (memory demanding)
 
 logical, save, public :: IS_GLOBAL = .false.   !!NML .or.(EXP_NAME=="EMERGENCY")
 logical, save, public :: MONTHLY_GRIDEMIS = .false.   !! tmp
@@ -307,7 +309,7 @@ integer, public, parameter :: &
   ,DEBUG_GRIDVALUES     = .false. &
   ,DEBUG_IOPROG         = .false. &
   ,DEBUG_LANDDEFS       = .false. &
-  ,DEBUG_LANDUSE        = .false. &
+  ,DEBUG_LANDUSE        = .true. &
   ,DEBUG_LANDPFTS       = .false. &
   ,DEBUG_LANDIFY        = .false. &
   ,DEBUG_MASS           = .false. &
@@ -485,7 +487,7 @@ subroutine Config_ModelConstants()
      ,SELECT_LEVELS_HOURLY &  ! incl. FORECAST, 3DPROFILES
      ,FORECAST, USE_EMERGENCY, ANALYSIS , USE_AOD &
      ,SEAFIX_GEA_NEEDED & ! only if problems, see text above.
-     ,EMIS_SOURCE, EMIS_TEST & 
+     ,EMIS_SOURCE, EMIS_TEST, EMIS_OUT & 
      ,FLUX_VEGS  & ! TESTX
      ,NETCDF_COMPRESS_OUTPUT,  RUNDOMAIN
 

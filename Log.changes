@@ -233,6 +233,12 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Peter 4th April 2013 (2528)
+
+New paramater in namelist for ModelConstants_ml:
+ EMIS_OUT    = .false.           ! output emissions in separate files (memory demanding)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Dave,  3 Apr 2013 (2527)
 
 ** results change a little. Due to slighlty different coverage of

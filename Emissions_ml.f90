@@ -89,6 +89,7 @@
   use ModelConstants_ml,only : KMAX_MID, KMAX_BND, PT ,dt_advec, &
                               EMIS_SOURCE, & ! emislist, CdfFractions
                               EMIS_TEST,   & ! CdfSnap or none
+                              EMIS_OUT,   & ! output emissions in ASCII or not
                               IS_GLOBAL, & 
                               MONTHLY_GRIDEMIS, &  !NML
                               NBVOC,     &      ! > 0 if forest voc wanted
@@ -566,7 +567,7 @@ contains
           CALL MPI_REDUCE(sumemis_local(1,iem),sumemis(1,iem),NLAND,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,INFO) 
           emsum(iem)= sum(sumemis(:,iem))
 
-          call EmisOut ("Frac", iem, nlandcode, landcode, snapemis(:,:,:,:,iem) ) ! cdfemis
+          if(EMIS_OUT)call EmisOut ("Frac", iem, nlandcode, landcode, snapemis(:,:,:,:,iem) ) ! cdfemis
        else
           call CheckStop("EMIS_SOURCE not set"//trim(EMIS_SOURCE))
        endif
@@ -811,7 +812,7 @@ contains
     do iem = 1, NEMIS_FILE
 
       if( EMIS_SOURCE == "emislist"  ) then
-        call EmisOut ("Snap", iem, nlandcode, landcode, snapemis(:,:,:,:,iem) )
+        if(EMIS_OUT)call EmisOut ("Snap", iem, nlandcode, landcode, snapemis(:,:,:,:,iem) )
       end if
 
       if( EMIS_TEST  == "CdfSnap"  ) then
@@ -819,7 +820,7 @@ contains
           trim(EMIS_FILE(iem)), me, &
           maxval( nlandcode ),maxval( nGridEmisCodes ), &
           maxval( snapemis(:,:,:,:,iem)), maxval( GridEmis(:,:,:,:,iem))
-         call EmisOut ("Cdf", iem, nGridEmisCodes, &
+         if(EMIS_OUT)call EmisOut ("Cdf", iem, nGridEmisCodes, &
                          GridEmisCodes, GridEmis(:,:,:,:,iem) )
       end if
     end do
