@@ -413,13 +413,19 @@ private
 ! VEGO3 outputs for PODY and AOTX - see AOTnPOD_ml for definitions,
 ! Any string used here must have been defined in AOTnPOD_ml.
 !
-    character(len=TXTLEN_DERIV), public, parameter, dimension(13+10) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(29) :: &
      VEGO3_WANTED  =  (/ &
          "POD1_IAM_DF    ",&
          "POD1_IAM_MF    ",&
          "POD1_DF        ",&
          "POD1_CF        ",&
          "POD3_TC        ",&
+         "SPOD15_birch   ",&
+         "SPOD10_birch   ",&
+         "SPOD15_spruce  ",&
+         "SPOD10_spruce   ",&
+         "SPOD15_crops   ",&
+         "SPOD25_crops   ",&
         !WIMMAX:
          "POD1_NEUR_SPRUCE",&
          "POD1_NEUR_BIRCH",&

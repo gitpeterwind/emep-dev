@@ -76,7 +76,7 @@ module DryDep_ml
  use EcoSystem_ml,     only : EcoSystemFrac, Is_EcoSystem,  &
                              NDEF_ECOSYSTEMS, DEF_ECOSYSTEMS
  use GridValues_ml ,   only : GRIDWIDTH_M,xmd,xm2, glat,dA,dB, &
-          debug_proc, debug_li, debug_lj, i_fdom, j_fdom   ! for testing
+       glon,   debug_proc, debug_li, debug_lj, i_fdom, j_fdom   ! for testing
  
  use Io_Nums_ml,       only : IO_SPOD  !FEB2013
  use Io_Progs_ml,      only : datewrite
@@ -104,7 +104,7 @@ module DryDep_ml
  use Rb_ml,                only : Rb_gas
  use Rsurface_ml
  use Setup_1dfields_ml,    only : xn_2d,amk, Fpart, Fgas
-use Sites_ml, only : nlocal_sites, site_x, site_y, site_name
+ use Sites_ml, only : nlocal_sites, site_x, site_y, site_name, site_gn
  use SoilWater_ml,         only : fSW !  =1.0 unless set by Met_ml
  use StoFlux_ml,  only:   unit_flux, &! = sto. flux per m2
                           lai_flux,  &! = lai * unit_flux
@@ -297,9 +297,10 @@ use Sites_ml, only : nlocal_sites, site_x, site_y, site_name
       real :: c_hveg, Ra_diff, surf_ppb  ! for O3 fluxes and Fst where needed
       real :: c_hveg3m, o3_45m  !TESTS ONLY
 ! temporary for POD/SPOD
-logical, parameter :: SPOD_OUT = .false.
+logical, parameter :: SPOD_OUT = .false.  ! MAKES HUGE FILES. Not for routine use!
 logical, save      :: first_spod = .true.
 character(len=20), save :: fname
+integer :: nglob
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! Extra outputs sometime used. Important that this 
 !! line is kept at the end of the variable definitions and the start of real
@@ -397,6 +398,8 @@ character(len=20), save :: fname
                xn_2d(SO2,KMAX_MID) / max(1.0,xn_2d(NH3,KMAX_MID))
 
     Grid%so2nh3ratio24hr = so2nh3_24hr(i,j)
+    Grid%latitude = glat(i,j) !SPOD tests
+    Grid%longitude = glon(i,j)
 
   ! Surrogate for NO2 compensation point approach, assuming 
   ! c.p.=4 ppb (actually use 1.0e11 #/cm3):        
@@ -448,6 +451,8 @@ character(len=20), save :: fname
         Sub(iL)%f_sun  = 0.0 !FEB2013 for SPOD_OUT
         Sub(iL)%g_sun  = 0.0 !FEB2013 for SPOD_OUT
         Sub(iL)%g_sto  = 0.0 !FEB2013 for SPOD_OUT
+        Sub(iL)%f_temp = 0.0 !FEB2013 for SPOD_OUT. Can 
+        Sub(iL)%f_vpd  = 0.0 !FEB2013 for SPOD_OUT
 
         Sub(iL)%SGS = LandCover(i,j)%SGS(iiL)   !used for AOT CHECK?
         Sub(iL)%EGS = LandCover(i,j)%EGS(iiL)
@@ -767,7 +772,7 @@ character(len=20), save :: fname
               end if
 
               if ( DEBUG_AOT .and. debug_flag ) then !FEB2013 testing
-                write(*, "(a,3i3,i5,i3, 3f9.3,2f5.2,9es10.3)") &
+                write(*, "(a,3i3,i5,i3, 3f9.3,2f6.2,9es10.3)") &
                  "CHVEGX", imm, idd, ihh, current_date%seconds,  me, &
                   xn_2d(FLUX_TOT,KMAX_MID)*surf_ppb, c_hveg*surf_ppb,&
                    c_hveg3m * surf_ppb, &
@@ -899,13 +904,14 @@ character(len=20), save :: fname
         if( iss==0 .and. nlocal_sites > 0  )then
          do  n = 1, nlocal_sites
             if( i == site_x(n) .and. j == site_y(n) ) then 
+               nglob = site_gn(n)  ! number in global list
 !        if( iss==0 .and. debug_proc.and.  i==debug_li .and. j==debug_lj)then
        
          do iiL = 1, nlu
             iL  = iL_used(iiL)
             L   = Sub(iL)
 !print *, "SPOD_OUT:"//trim(fname), me,nlocal_sites, iL, imm, idd, ihh
-            write(P,"(a25,a8)",advance="no") adjustl(site_name(n)), adjustl(LandDefs(iL)%code)
+            write(P,"(a25,a8)",advance="no") adjustl(site_name(nglob)), adjustl(LandDefs(iL)%code)
             write(P,"(3i4)",advance="no")   L%SGS, L%EGS, daynumber
             write(P,"(3i3)",advance="no")   imm, idd, ihh
             write(P,"(f7.3)",advance="no")  L%coverage

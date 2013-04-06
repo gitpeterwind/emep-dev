@@ -272,11 +272,12 @@ integer, private, parameter :: &
 
 integer, public, parameter :: &
 ! DEBUG_i= 62, DEBUG_j= 45  ! SEA
-  DEBUG_i= DEBUG_II+OFFSET_i, DEBUG_j= DEBUG_JJ+OFFSET_j    ! EMEP/EECCA
+! DEBUG_i= 10, DEBUG_j= 140 !NEGSPOD
 ! DEBUG_i= 70, DEBUG_j= 40 ! Lichtenstein, to test ncc
+  DEBUG_i= DEBUG_II+OFFSET_i, DEBUG_j= DEBUG_JJ+OFFSET_j    ! EMEP/EECCA
 ! DEBUG_i= 59, DEBUG_j= 79  ! JCOAST
 ! DEBUG_i= 9, DEBUG_j= 201                                  ! MACC02
-!  DEBUG_i= 0, DEBUG_j= 0    ! default
+! DEBUG_i= 0, DEBUG_j= 0    ! default
 
 !=============================================================================
 ! Some flags for model setup

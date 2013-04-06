@@ -233,6 +233,35 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Dave 6th April,  2529
+
+run.pl - uses hostname to detect stallo or vilje. Needs testing for
+          titan
+
+
+AOTnPOD_ml
+   new index SPOD added    (SPOD is experimental. Not for routine output)
+
+Derived
+   SPOD enabled. 
+
+DryDep_ml
+   SPOD enabled. Possibility of ascii outputs (default off)  
+
+MosaicOutputs_ml
+   SPOD enabled. 
+
+Rsurface
+   extra debug
+
+Sites_ml
+   made site_gn public  ( was site_n)
+
+ZD_OZONE/My_Derived_m
+  SPOD added
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Peter 4th April 2013 (2528)
 
 New paramater in namelist for ModelConstants_ml:

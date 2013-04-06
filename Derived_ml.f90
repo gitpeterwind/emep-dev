@@ -1176,7 +1176,7 @@ end do
               endif
 
 
-          case ( "PREC", "WDEP", "DDEP", "VG" ,"Rs", "Rns", "Gns", "Mosaic", "POD", "AOT" )
+          case ( "PREC", "WDEP", "DDEP", "VG" ,"Rs", "Rns", "Gns", "Mosaic", "POD", "SPOD", "AOT" )
 !            if ( debug_flag ) write(*,"(2a,i4,a,es12.3)")"PROCESS ",trim(typ),&
 !                   n, trim(f_2d(n)%name), d_2d(n,debug_li,debug_lj,IOU_INST)
 !            Nothing to do - all set in My_DryDep

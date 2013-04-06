@@ -97,18 +97,16 @@ integer, private, save :: nglobal_sondes, nlocal_sondes
 integer, private, save, allocatable,dimension (:,:)  :: site_gindex
 integer, private, save, allocatable,dimension (:,:) :: sonde_gindex
 
-!SPOD outputs
 integer, public, save, dimension (NSITES_MAX) :: &
-        site_x, site_y, site_z       ! local coordinates
+        site_x, site_y, site_z      &! local coordinates
+       , site_gn                        ! number in global
 
 integer, private, save, dimension (NSITES_MAX) :: &
-         site_gx, site_gy, site_gz   & ! global coordinates
-!FEB2013       , site_x, site_y, site_z      & ! local coordinates
-       , site_n                        ! number in global
+         site_gx, site_gy, site_gz    ! global coordinates
 integer, private, save, dimension (NSONDES_MAX) ::  &
          sonde_gx, sonde_gy   &        ! global coordinates
        , sonde_x, sonde_y     &        ! local coordinates
-       , sonde_n                       ! number in global
+       , sonde_gn                       ! number in global
 
 ! Values from My_Outputs_ml gives ... =>
 integer, private, parameter :: & ! Total No., without counting levels
@@ -152,13 +150,13 @@ subroutine sitesdef()
   call Init_sites("sites",IO_SITES,NSITES_MAX, &
         nglobal_sites,nlocal_sites, &
         site_gindex, site_gx, site_gy, site_gz, &
-        site_x, site_y, site_z, site_n, &
+        site_x, site_y, site_z, site_gn, &
         site_name)
 
   call Init_sites("sondes",IO_SONDES,NSONDES_MAX, &
         nglobal_sondes,nlocal_sondes, &
         sonde_gindex, sonde_gx, sonde_gy, sonde_gz, &
-        sonde_x, sonde_y, sonde_z, sonde_n, &
+        sonde_x, sonde_y, sonde_z, sonde_gn, &
         sonde_name)
 
   call set_species(SITE_ADV,SITE_SHL,SITE_XTRA,site_species)
@@ -518,7 +516,7 @@ subroutine siteswrt_sondes(xn_adv,xn_shl)
   enddo
 
   do i = 1, nlocal_sondes
-    n  = sonde_n(i)
+    n  = sonde_gn(i)
     ix = sonde_x(i)
     iy = sonde_y(i)
     nn = 0

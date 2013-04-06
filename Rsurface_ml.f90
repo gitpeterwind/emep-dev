@@ -231,6 +231,10 @@ contains
   !    less than 1m above vegetation (1m chosen arbitrary)
 
    !g_sto 0 when snow covering canopy
+   if ( DEBUG_RSUR .and. debug_flag ) then
+       write(*,"(a,5i5,i3,2L2,2f10.4,9es12.4)") "IN RSUR testcan ", &
+              current_date, iL, canopy, leafy_canopy, G%Idirect, L%PARsun, G%sdepth
+   end if
    if( leafy_canopy  .and. G%Idirect > 0.001 .and. G%sdepth< (1.0 +Sdmax) ) then  ! Daytime 
 
         call CanopyPAR(L%LAI, G%coszen, G%Idirect, G%Idiffuse, &

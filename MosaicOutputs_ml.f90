@@ -28,6 +28,7 @@
 
 module MosaicOutputs_ml
 use AOTx_ml,          only: Calc_AOTx, Calc_POD, O3cl, VEGO3_OUTPUTS
+use AOTx_ml,          only: Calc_SPOD
 use CheckStop_ml,     only: CheckStop
 use ChemChemicals_ml, only: species_adv
 use ChemSpecs_adv_ml, only: NSPEC_ADV
@@ -64,7 +65,6 @@ INCLUDE 'mpif.h'
 INTEGER STATUS(MPI_STATUS_SIZE),INFO
 
 integer, public, save :: MMC_RH, MMC_CANO3, MMC_VPD, MMC_FST, &
-  MMC_PARsun, MMC_PARshade, &
   MMC_USTAR, MMC_INVL, MMC_GSTO, MMC_EVAP
 character(len=30),private, save :: errmsg = "ok"
 
@@ -88,8 +88,6 @@ subroutine Init_MosaicMMC(MOSAIC_METCONCS)
   character(len=*), dimension(:), intent(in) :: MOSAIC_METCONCS
   MMC_RH    = find_index("RH",MOSAIC_METCONCS)
   MMC_CANO3 = find_index("CanopyO3",MOSAIC_METCONCS)
-  MMC_PARsun = find_index("PARsun",MOSAIC_METCONCS)
-  MMC_PARshade = find_index("PARshade",MOSAIC_METCONCS)
   MMC_VPD   = find_index("VPD",MOSAIC_METCONCS)
   MMC_FST   = find_index("FstO3",MOSAIC_METCONCS)
   MMC_USTAR = find_index("USTAR",MOSAIC_METCONCS)
@@ -136,8 +134,6 @@ subroutine Add_MosaicMetConcs(MOSAIC_METCONCS,MET_LCS,iotyp, nMET)
         case("USTAR"   );MosaicOutput(nMosaic)%unit = "m/s"
         case("INVL"    );MosaicOutput(nMosaic)%unit = "m"
         case("CanopyO3");MosaicOutput(nMosaic)%unit = "ppb"
-        case("PARsun"  );MosaicOutput(nMosaic)%unit = "W/m2"
-        case("PARshade"  );MosaicOutput(nMosaic)%unit = "W/m2"
         case("FstO3"   );MosaicOutput(nMosaic)%unit = "mmole/m2" ! accumulated
         case("EVAP"    );MosaicOutput(nMosaic)%unit = "mm"
           MosaicOutput(nMosaic)%avg       =  .false. ! accumulate
@@ -223,10 +219,11 @@ subroutine Add_MosaicVEGO3(iotype,nVEGO3)
     units = "mmole/m2"
     scale = 1.0e-6     ! Accumulates nmole/s to mmole (*dt_advec)
     dt_scale = .true.  ! Accumulates nmole/s to mmole (*dt_advec)
-  case("AOT")
+  case("AOT", "SPOD")
     units = "ppb.h"
     scale = 1.0/3600.0 ! AOT in ppb.hour
     dt_scale = .true.
+    !TEST dt_scale = .false. ! TEST
   case default
     call CheckStop(DEBUG,"MosaicOuputs: vegclass errror"//veg%class )
   endselect
@@ -244,9 +241,15 @@ subroutine Add_MosaicVEGO3(iotype,nVEGO3)
   !Deriv(name, class,    subc,  txt,           unit
   !Deriv index, f2d,LC, scale dt_scale avg? Inst Yr Mn Day
   ! Use index for veg array. No need to set iadv for VEGO3. Always O3.
+   if(DEBUG.and.MasterProc) then
+     write(*,*) "Moscaics", nMosaic, trim(name) // "->" //trim(veg%TXTLC)
+   end if
    MosaicOutput(nMosaic) = Deriv(  &
       name, veg%class,  veg%defn, veg%TXTLC, units, &
-        n, -99, T,  scale,  F,   iotype ) 
+        !CORR:
+          n, -99, dt_scale,  scale,  F,   iotype ) 
+        !n, -99, T,  scale,  dt_scale,   iotype ) 
+        !SPODBUG n, -99, T,  scale,  F,   iotype ) 
 
   enddo VEGO3_LC !n
 endsubroutine Add_MosaicVEGO3
@@ -378,6 +381,7 @@ endsubroutine Add_MosaicDDEP
 
     if(class=="AOT") subclass=class
     if(class=="POD") subclass=class
+    if(class=="SPOD") subclass=class
 
     output = 0.0  ! We only have instantaneous outputs, so can initialise
                   ! here and set d-2d at end
@@ -436,8 +440,6 @@ endsubroutine Add_MosaicDDEP
         if(n==MMC_FST    ) output = Sub(iLC)%FstO3
         if(n==MMC_GSTO   ) output = Sub(iLC)%g_sto
         if(n==MMC_EVAP   ) output = Sub(iLC)%EvapTransp
-        if(n==MMC_PARsun ) output = Sub(iLC)%PARsun
-        if(n==MMC_PARshade ) output = Sub(iLC)%PARshade
 
         if(DEBUG.and.debug_flag.and.n==MMC_CANO3.and.iLC==2) & !DF
           write(*,"(a,4i5,f10.4)") "MYDDEP CANO3 ", &
@@ -447,6 +449,10 @@ endsubroutine Add_MosaicDDEP
       case("POD")         ! Fluxes, PODY (was AFstY)
         n =  MosaicOutput(imc)%Index !Index in VEGO3_OUPUTS
         call Calc_POD( n, iLC, output, debug_flag) 
+
+      case("SPOD")         ! Fluxes, PODY (was AFstY)
+        n =  MosaicOutput(imc)%Index !Index in VEGO3_OUPUTS
+        call Calc_SPOD( n, iLC, output, debug_flag) 
 
       case("AOT")         ! AOTX
         n =  MosaicOutput(imc)%Index !Index in VEGO3_OUPUTS

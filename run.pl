@@ -11,9 +11,9 @@
 # Ve/Vilje, (take out one # and put one # before the Stallo). 
 #     select= number of nodes, ncpus=number of threads per node to reserve, 
 #     mpiprocs=number of MPI threads per node. For 64 processors:
-##PBS -l select=2:ncpus=32:mpiprocs=32:mem=8gb
+#PBS -l select=4:ncpus=32:mpiprocs=32:mem=8gb
 #Stallo
-#PBS -lnodes=1:ppn=16
+##PBS -lnodes=1:ppn=16
 # wall time limit of run
 #PBS -lwalltime=00:30:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
@@ -79,9 +79,13 @@ use File::Compare;
 $| = 1; # autoflush STDOUT
 
 #Choose one machine
-my $VILJE=0;  #1 if Ve or Vilje is used
-my $STALLO=1; #1 if stallo is used
-my $TITAN=0;  #1 if titan is used
+#my $VILJE=0;  #1 if Ve or Vilje is used
+#my $STALLO=1; #1 if stallo is used
+#my $TITAN=0;  #1 if titan is used
+my $VILJE  = ( `hostname -f` =~ /vilje/ );
+my $STALLO = ( `hostname -f` =~ /stallo/ );
+my $TITAN  = ( `hostname -f` =~ /titan/ );
+print "HOST DETECT: V$VILJE S$STALLO T$TITAN\n";
 
 # -j4 parallel make with 4 threads
 my @MAKE = ("gmake", "-j4", "MACHINE=snow");
@@ -272,7 +276,7 @@ my $Chem     = "EmChem09soa";
 my $exp_name = "EMEPSTD";
    $exp_name = ($eCWF)?"EMERGENCY":"FORECAST" if $CWF;
 my $testv = "rv4_2.SVN";
-   $testv = "2526";   # From svn system, as reminder
+   $testv = "2528spod";   # From svn system, as reminder
    $testv.= ($eCWF)?".eCWF":".CWF" if $CWF;
 
 #User directories
@@ -383,8 +387,8 @@ $emisdir = "$EMIS_INP/Modrun11/EMEP_trend_2000-2009/$year" if ( $year > 1999 ) a
 $emisdir = "$EMIS_INP/Modrun11/2011-Trend2009-CEIP" if $year >= 2009 ;
 
 #Alvaro: When are we to switch to Modrun12?
-#$emisdir = "$EMIS_INP/Modrun12/EMEP_trend_2000-2009/$year" if ( $year > 1999 ) and ($year < 2010);
-#$emisdir = "$EMIS_INP/Modrun12/2012-Trend2010-CEIP" if $year >= 2010 ;
+$emisdir = "$EMIS_INP/Modrun12/EMEP_trend_2000-2009/$year" if ( $year > 1999 ) and ($year < 2010);
+$emisdir = "$EMIS_INP/Modrun12/2012-Trend2010-CEIP" if $year >= 2010 ;
 
 #TMP and should be improved because it gives errors for
 # other domains!
