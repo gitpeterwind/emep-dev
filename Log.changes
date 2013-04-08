@@ -232,6 +232,57 @@ dsSep14   Wesely_ml.f90
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Peter 8th April 2013 (2534)
+
+Modified definition of timezones in Country_ml.
+NB: this will modify results!
+
+Modifications (in parenthesis the old values):
+ Portugal: 0 (1)
+ Former USSR: -100  (3)
+ Remaining land areas: -100 (1)
+ Remaining NE Atlantic Ocean: -100 (1)
+ The Black Sea: 2 (1)
+ Natural marine sources: -100 (1)
+ Kola/Karelia: 4 (3)
+ St.Petersburg/Novgorod-Pskov: 4 (3)
+ Belarus: 3 (2)
+ Kazakstan : -100 (6) ?
+ Rest of Kazakhstan (in the extended EMEP domain) : -100 (5) ?
+ Other Asian areas: -100 (0)
+ Russian Federation: -100 (3)
+ USA: -100 (1)
+ Canada: -100 (1)
+ Azerbaijan: 4 (3)
+ Atlantic outside. EMEP : -100 (1)
+ Russian Fed. outside emep: -100 (4)
+ Biomass burning (wild): -100 (0)
+ B. Sea * cargo * 12 : 2 (1)
+ Rest of extended Russian Federation (in the extended EMEP domain): -100 (7)
+ Uzbekistan (in the original EMEP domain) : 5 (4)
+ Turkmenistan (in the original EMEP domain): 5 (4)
+ Rest of Uzbekistan (in the extended EMEP domain) : 5 (4)
+ Rest of Turkmenistan (in the extended EMEP domain): 5 (4)
+ Caspian Sea (in the original EMEP domain): 4 (3)
+ Tajikistan (in the extended EMEP domain): 5 (4)
+ Aral Lake (in the original EMEP domain) : 5 (4)
+ Rest of Aral Lake (in the extended EMEP domain): 5 (4)
+ Modified remaining Asian areas (in the original EMEP domain): -100
+ (3)
+ Remaining extended Asian areas (in the extended EMEP domain): -100
+ (6)
+ Arctic Ocean (in the extended EMEP domain): 9 (8) ??
+ Extended EMEP-external part of Russian Federation: -100 (12)
+ Extended EMEP-external part of Asia : -100 (7)
+ Extended EMEP-external part of Pacific Ocean : -100 (12)
+ Extended EMEP-external part of Arctic Ocean : 9 (12) (same as Arctic
+ Ocean)
+ EMEP-external part of North Africa : -100 (1)
+ Rest of Africa and Asia: -100 (1)
+ Ships: -100 (1)
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Dave 6th April,  2529
 
