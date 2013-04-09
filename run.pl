@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
-#Common script for Njord, Stallo and Titan.
-#Choose $VILJE=1 or $STALLO=1 or $TITAN=1
+#Common script for Njord, Stallo.
+#Choose $VILJE=1 or $STALLO=1
 #___________________________________________________________________
 # queue commands for PBS
 
@@ -28,7 +28,7 @@
 
 
 #___________________________________________________________________
-#Titan queue commands
+#Abel queue commands ?
 
 #Queue system commands start with #SBATCH (these are not comments!)
 #SBATCH --account=nn2890k
@@ -61,7 +61,7 @@
 # Par_ml.f90 file with appropriate set-up.
 #
 ######################################################################
-#Tips:            SNYKOV or STALLO  NJORD            TITAN
+#Tips:            SNYKOV or STALLO  NJORD            ABEL?
 #  submit job     qsub run.pl       llsubmit run.pl  sbatch run.sh
 #  queue status   qstat -u $USER    llq              squeue -u $USER
 #  job status                       checkjob 3456    checkjob 3456
@@ -81,19 +81,22 @@ $| = 1; # autoflush STDOUT
 #Choose one machine
 #my $VILJE=0;  #1 if Ve or Vilje is used
 #my $STALLO=1; #1 if stallo is used
-#my $TITAN=0;  #1 if titan is used
-my $VILJE  = ( `hostname -f` =~ /vilje/ );
-my $STALLO = ( `hostname -f` =~ /stallo/ );
-my $TITAN  = ( `hostname -f` =~ /titan/ );
-print "HOST DETECT: V$VILJE S$STALLO T$TITAN\n";
+my ( $STALLO, $VILJE ) = (0) x 2;
+foreach my $key  qw ( HOSTNAME PBS_SERVER MACHINE ){
+         next unless defined $ENV{$key};
+         $STALLO = 1 if $ENV{$key} =~/stallo/;
+         $VILJE  = 1 if $ENV{$key} =~/vilje/;
+         #my $val = $ENV{$key};
+         #print "KEY $key Val $val  STALLO?? $STALLO VILJE $VILJE\n";
+}
+print "HOST DETECT: V$VILJE S$STALLO \n";
 
 # -j4 parallel make with 4 threads
 my @MAKE = ("gmake", "-j4", "MACHINE=snow");
    @MAKE = ( "make", "-j4", "MACHINE=vilje")  if $VILJE==1 ;
    @MAKE = ( "make", "-j4", "MACHINE=stallo") if $STALLO==1 ;
-   @MAKE = ( "make", "-j4", "MACHINE=titan")  if $TITAN==1 ;
-die "Must choose STALLO **or** VILJE **or** TITAN!\n"
-  unless $STALLO+$VILJE+$TITAN==1;
+die "Must choose STALLO **or** VILJE !\n"
+  unless $STALLO+$VILJE==1;
 my $MAKEMODE=0; #="EMEP2010";  # make EMEP2010, make SR-EMEP2010
 
 my %BENCHMARK;
@@ -236,14 +239,6 @@ if ($STALLO) {
 #Also print $MetDir into RunLog later
   $MetDir   = "$DataDir/$GRID/metdata_EC/$year" if ($GRID eq "EECCA" && $year >= 2005 );
 
-} elsif ($TITAN) {
-  $HOMEROOT = "/usit/titan/u1";
-  $WORKROOT = "/xanadu/d1";
-  $DataDir  = "/projects/metno/emep/Data";
-  $MetDir   = "$DataDir/$GRID/metdata/$year" ;
-  $MetDir   = "$DataDir/$GRID/metdata_H20/$year" if $GRID eq "EECCA";
-  $MetDir   = "$DataDir/$GRID/metcdf/$year" if ($GRID eq "EMEP") and
-                                               ($METformat eq "cdf");
 } else { #Ve or Vilje
   $HOMEROOT = "/home/metno";
   $WORKROOT = "$HOMEROOT/$USER/work";
@@ -372,7 +367,6 @@ my @runs     = ( $scenario );
 #EMISSIONS: default settings
 my ($EMIS_INP, $emisdir, $pm_emisdir);
 $EMIS_INP = "$DATA_LOCAL"                            ;
-$EMIS_INP = "$DATA_LOCAL/Emissions/Modruns" if $TITAN;
 
 #FEB 2013 TEST of netcdf emissions
 my $SNAP_CDF = "/global/work/mifapw/temp";  # Use for CdfFractions

@@ -1830,10 +1830,10 @@
           do j = lj0,lj1
              where(xn_adv(:,i,j,1) .gt. xntop(:,i,j))
                 fluxout(:) = fluxout(:) + &
-                     (xn_adv(:,i,j,1)-xntop(:,i,j))*(dA(k)+dB(k)*ps(i,j,1))/GRAV*GRIDWIDTH_M*GRIDWIDTH_M*xmd(i,j)
+                     (xn_adv(:,i,j,1)-xntop(:,i,j))*(dA(1)+dB(1)*ps(i,j,1))/GRAV*GRIDWIDTH_M*GRIDWIDTH_M*xmd(i,j)
              elsewhere
                 fluxin(:) = fluxin(:) + &
-                     (xntop(:,i,j)-xn_adv(:,i,j,1))*(dA(k)+dB(k)*ps(i,j,1))/GRAV*GRIDWIDTH_M*GRIDWIDTH_M*xmd(i,j)
+                     (xntop(:,i,j)-xn_adv(:,i,j,1))*(dA(1)+dB(1)*ps(i,j,1))/GRAV*GRIDWIDTH_M*GRIDWIDTH_M*xmd(i,j)
              end where
           enddo
        enddo
