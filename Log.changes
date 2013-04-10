@@ -233,13 +233,20 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Peter 10th April 2013 (2536)
+
+Met_ml.f90:
+Bug when cc3d is derived from cloudwater -> was always zero!
+(not sure which metdata uses cloudwater)
+put also an additional max,min for cc3d, to ensure non-negative values.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Peter, Dave 9th April 2013 (2535)
 
 Bug in massbalance when eta coordinates are used (not default)
 Advection_ml.f90
 
 run.pl: new test for STALLO/VILJE, removed TITAN
-
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Peter 8th April 2013 (2534)

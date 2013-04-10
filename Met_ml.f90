@@ -356,9 +356,11 @@ contains
         call Getmeteofield(meteoname,namefield,nrec,ndim,&
          unit,validity, cc3d(:,:,:))
       call CheckStop(validity==field_not_found, "meteo field not found: 3D_cloudcover and" // trim(namefield))
-       cc3d(:,:,:)=min(0.0,max(100.0,cc3d(:,:,:)*CW2CC))!from kg/kg water to % clouds
-        if(MasterProc.and.numt==1)write(*,*)'WARNING: 3D cloud cover not found, using CloudWater instead'
-   endif
+       cc3d(:,:,:)=max(0.0,min(100.0,cc3d(:,:,:)*CW2CC))!from kg/kg water to % clouds
+       if(MasterProc.and.numt==1)write(*,*)'WARNING: 3D cloud cover not found, using CloudWater instead'
+    else
+       cc3d(:,:,:)=max(0.0,min(100.0,cc3d(:,:,:)))!0-100 % clouds
+    endif
 
 
     namefield='precipitation'
