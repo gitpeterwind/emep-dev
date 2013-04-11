@@ -76,6 +76,7 @@ logical, public, save ::             &
  ,USE_FOREST_FIRES      = .false.    &! 
  ,USE_SOILNOX           = .true.     & ! ok, but diff for global + Euro runs
  ,USE_SEASALT           = .true.     & !
+ ,USE_CONVECTION        = .false.    & ! false works best for Euro runs,
 ! More experimental:
  ,DO_SAHARA             = .false.    & ! Turn on/off BG Saharan Dust
  ,USE_ROADDUST          = .false.    & ! TNO Road Dust routine. So far with simplified "climate-correction" factor
@@ -94,7 +95,6 @@ logical, public, save ::             &
 ! will be removed when code is sufficiently tested
 ! (for convection use foundconv in permanent code)
 logical, public, parameter ::         &
-  USE_CONVECTION     = .false.,       & ! false works best for Euro runs,
   USE_AIRCRAFT_EMIS  = .true.,        & ! Needs global file, see manual
   USE_LIGHTNING_EMIS = .true.,        & ! ok
   NO_CROPNH3DEP      = .true.,        & ! Stop NH3 deposition for growing crops
@@ -472,14 +472,16 @@ character(len=*), public, parameter :: model="EMEP_MSC-W"
 
 !----------------------------------------------------------------------------
 contains
-subroutine Config_ModelConstants()
+subroutine Config_ModelConstants(iolog)
     character(len=120)  :: txt, errmsg
     logical             :: file_exists
+    integer, intent(in) :: iolog ! for Log file
 
     NAMELIST /ModelConstants_config/ &
       EXP_NAME &  ! e.g. EMEPSTD, FORECAST, TFMM, TodayTest, ....
      ,MY_OUTPUTS  &  ! e.g. EMEPSTD, FORECAST, TFMM
      ,USE_SOILWATER, USE_DEGREEDAY_FACTORS, USE_FOREST_FIRES &
+     ,USE_CONVECTION &
      ,DO_SAHARA, USE_ROADDUST, USE_DUST &
      ,USE_SOILNOX, USE_SEASALT ,USE_POLLEN &
      ,INERIS_SNAP1, INERIS_SNAP2 &   ! Used for TFMM time-factors
@@ -502,6 +504,9 @@ subroutine Config_ModelConstants()
     if ( MasterProc )  then
      write(*, * ) "NAMELIST IS "
      write(*, NML=ModelConstants_config)
+     write(*,* ) "NAMELIST IOLOG IS ", iolog
+     write(iolog,*) "NAMELIST IS "
+     write(iolog, NML=ModelConstants_config)
     end if
 
   

@@ -142,13 +142,13 @@ if(MasterProc)write(*,55)' Found ',NPROC,' MPI processes available'
 call CheckStop(digits(1.0)<50, &
   "COMPILED WRONGLY: Need double precision, e.g. f90 -r8")
 
-call Config_ModelConstants()
 
 if (MasterProc) then
-  open(IO_RES,file='eulmod.res')
   open(IO_LOG,file='RunLog.out')
   open(IO_TMP,file='INPUT.PARA')
 endif
+
+call Config_ModelConstants(IO_LOG)
 
 call read_line(IO_TMP,txt,status(1))
 read(txt,*) iyr_trend
@@ -179,20 +179,7 @@ if( MasterProc ) then
   call PrintLog( date2string("enddate   = YYYYMMDD",enddate  (1:3)) )
   write(unit=txt,fmt="(a,i4)") "iyr_trend= ", iyr_trend
 !  call PrintLog( trim(txt) )
-!  write(unit=IO_LOG,fmt="(a12,4i4)")"RunDomain:  ", RUNDOMAIN
 
-  ! And record some settings to RunLog (will recode later)
-  call PrintLog("Forecast mode on",FORECAST)
-  call PrintLog("Options used of (convec., soilwater, soilnox, forest fires)")
-  call PrintLog("Convection used",USE_CONVECTION)
-  call PrintLog("SoilWater  switch on",USE_SOILWATER)
-  call PrintLog("SoilNOx    switch on",USE_SOILNOX)
-  call PrintLog("ForestFires switch on",USE_FOREST_FIRES)
-  call PrintLog("Options used of (dust, sahara)")
-  call PrintLog("Dust switch on",USE_DUST)
-  call PrintLog("Road Dust switch on",USE_ROADDUST)
-  call PrintLog("Sahara switch on",DO_SAHARA)
-  call PrintLog("Pollen switch on",USE_POLLEN)
 endif
 
 !*** Timing ********
@@ -352,7 +339,7 @@ do numt = 2, nterm + nadd         ! 3-hourly time-loop
     if (DEBUG_UNI) print *, "Into BCs" , me
     ! We set BCs using the specified iyr_trend
     !   which may or may not equal the meteorology year
-    call BoundaryConditions(current_date%year,iyr_trend,mm)
+    call BoundaryConditions(current_date%year,mm)
     if (DEBUG_UNI) print *, "Finished BCs" , me
   endif
 

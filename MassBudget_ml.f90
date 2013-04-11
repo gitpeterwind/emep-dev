@@ -40,7 +40,7 @@ use Chemfields_ml,      only: xn_adv        ! advected species
 use GridValues_ml,      only: carea,xmd, &  ! cell area, 1/xm2 where xm2 is
                                   ! the area factor in the middle of the cell
                               gridwidth_m,dA,dB,debug_proc,debug_li,debug_lj
-use Io_ml,              only: IO_RES, PrintLog, datewrite
+use Io_ml,              only: IO_LOG, PrintLog, datewrite
 use MetFields_ml,       only: ps            ! surface pressure
 use ModelConstants_ml,  only: KMAX_MID,KCHEMTOP,& ! Start and upper k for 1d fields
                               MasterProc,       & ! Master processor
@@ -113,7 +113,7 @@ subroutine Init_massbudget()
   if(MasterProc.and.EXTENDEDMASSBUDGET)then
     do n = 1,NSPEC_ADV
       if(sumint(n)<=0.) cycle
-      write(IO_RES,"(a15,i4,4x,e10.3)") "Initial mass",n,sumint(n)
+      write(IO_LOG,"(a15,i4,4x,e10.3)") "Initial mass",n,sumint(n)
       write(*,"(a15,i4,4x,e10.3)") "Initial mass",n,sumint(n)
     enddo
   endif
@@ -311,10 +311,10 @@ subroutine massbudget()
   if(MasterProc.and.EXTENDEDMASSBUDGET) then     ! printout from node 0
     !/.. now use species array which is set in My_MassBudget_ml
     do n=1,NSPEC_ADV
-      write(IO_RES,*)
+      write(IO_LOG,*)
       write(*,*)
       do k=1,KMAX_MID
-        write(IO_RES,"(' Spec ',i3,2x,a12,5x,'k= ',i2,5x,es12.5)")&
+        write(IO_LOG,"(' Spec ',i3,2x,a12,5x,'k= ',i2,5x,es12.5)")&
           n,species_adv(n)%name, k,sumk(n,k)
         write(*     ,"(' Spec ',i3,2x,a12,5x,'k= ',i2,5x,es12.5)")&
           n,species_adv(n)%name, k,sumk(n,k)

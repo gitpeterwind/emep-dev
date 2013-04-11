@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************!
 !*
-!*  Copyright (C) 2007-2011 met.no
+!*  Copyright (C) 2007-2013 met.no
 !*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -94,8 +94,8 @@ use Io_Progs_ml,       only: datewrite
 use Landuse_ml,        only: mainly_sea
 use LocalVariables_ml, only: Grid
 use MetFields_ml,      only: z_mid      ! height of half layers
-!JAN2013 use MetFields_ml,      only: nwp_sea       ! height of half layers
 use ModelConstants_ml, only: KMAX_MID  &  ! Number of levels in vertical
+                            ,iyr_trend &  ! Used for e.g. future scenarios
                             ,USE_SEASALT & 
                             ,DEBUG_BCS, DEBUG_i, DEBUG_j, MasterProc, PPB
 use Par_ml,          only: &
@@ -185,7 +185,7 @@ INTEGER STATUS(MPI_STATUS_SIZE),INFO
 
 contains
 
-  subroutine BoundaryConditions(year,iyr_trend,month)
+  subroutine BoundaryConditions(year,month)
     ! ---------------------------------------------------------------------------
     ! Read in monthly-average global mixing ratios, and if found, collect the
     ! data in  bc_adv, bc_bgn arrays for later interpolations
@@ -198,7 +198,6 @@ contains
     !     This allows, e.g. runs with BCs for 2100 and met of 1990.
     ! ---------------------------------------------------------------------------
     integer, intent(in) :: year         ! "meteorology" year
-    integer, intent(in) :: iyr_trend    ! "trend" year
     integer, intent(in) :: month
     integer :: ibc, iem, k, iem1, i, j ,n, nadv,ntot ! loop variables
     integer :: info                     ! used in rsend
@@ -323,7 +322,7 @@ contains
     !== BEGIN READ_IN OF GLOBAL DATA
 
     do ibc = 1, NGLOB_BC
-       if (MasterProc) call GetGlobalData(year,iyr_trend,month,ibc,bc_used(ibc), &
+       if (MasterProc) call GetGlobalData(year,month,ibc,bc_used(ibc), &
             iglobact,jglobact,bc_data,io_num,errcode)
 
        if (DEBUG_BCS.and.MasterProc) &

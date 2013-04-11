@@ -46,7 +46,7 @@ use GridValues_ml,  only: lb2ij, AN, glat_fdom, glon_fdom,A_mid, B_mid
 use Io_ml,          only: IO_GLOBBC, ios, open_file, PrintLog
 use LocalVariables_ml, only : Sub, Grid
 use ModelConstants_ml, only: PPB, KMAX_MID, Pref, MasterProc, DO_SAHARA, &
-                          IIFULLDOM, JJFULLDOM
+                          iyr_trend, IIFULLDOM, JJFULLDOM
 use NetCDF_ml,      only: GetCDF, Read_Inter_CDF
 use Par_ml,         only: GIMAX, GJMAX, IRUNBEG, JRUNBEG
 use PhysicalConstants_ml, only: PI
@@ -145,7 +145,7 @@ subroutine setgl_actarray(iglobact,jglobact)
   jglobact = GJMAX
  end subroutine setgl_actarray
 
-subroutine GetGlobalData(year,iyr_trend,month,ibc,used,        &
+subroutine GetGlobalData(year,month,ibc,used,        &
                          iglobact,jglobact,bc_data,io_num,errcode)
 ! -----------------------------------------------------------------------
 ! HANDLES READ_IN OF GLOBAL DATA. We read in the raw data from the
@@ -153,7 +153,6 @@ subroutine GetGlobalData(year,iyr_trend,month,ibc,used,        &
 ! here if the species is to be used.
 ! -----------------------------------------------------------------------
   integer,             intent(in) :: year       ! for Mace Head correction
-  integer,             intent(in) :: iyr_trend  ! Allows future/past years
   integer,             intent(in) :: month
   integer,             intent(in) :: ibc        ! Index of BC
   integer,             intent(in) :: used       ! set to 1 if species wanted
@@ -288,7 +287,7 @@ subroutine GetGlobalData(year,iyr_trend,month,ibc,used,        &
     trend_voc= exp(-0.01*0.85*(1990-iyr_trend)) ! Zander,1975-1990
   end if
   if (MasterProc.and.first_call) then
-    write(unit=txtmsg,fmt="(a,i5,3f8.3)") "BC:trends O3,CO,VOC   ", &
+    write(unit=txtmsg,fmt="(a,i5,3f8.3)") "BC:trends O3,CO,VOC: ", &
        iyr_trend, trend_o3, trend_co, trend_voc
     call PrintLog(txtmsg)
   endif

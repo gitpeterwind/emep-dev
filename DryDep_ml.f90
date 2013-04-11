@@ -529,12 +529,12 @@ integer :: nglob
 
         if ( DEBUG_VDS ) then
             if ( debug_flag .or. (Vg_3m(n)>0.50 .or. Vg_ref(n)>0.50 )) then
-              print "(a,5i3,2i4,2f7.3,f8.2,20f7.2)", "AEROCHECK", imm, idd, ihh, &
+              write(*,"(a,5i3,2i4,2f7.3,f8.2,20f7.2)") "AEROCHECK", imm, idd, ihh, &
               n, iL, i_fdom(i), j_fdom(j), L%ustar,  L%invL, pzpbl(i,j), &
                 Grid%ustar, Grid%Hd,  100.0*Vds, &
               100.0*Vs(nae), 100.0*Vg_ref(n),  100.0*Vg_3m (n) &
              , Grid%t2, Grid%rho_ref 
-               print "(a,2i4,3es10.3)", "VDS CHECK ",n, nae, Vds, Vg_ref(n)
+               write(*,"(a,2i4,3es10.3)") "VDS CHECK ",n, nae, Vds, Vg_ref(n)
             
             call CheckStop((Vg_3m(n)>0.50 .or. Vg_ref(n)>0.50 ), "AEROSTOP")
           end if

@@ -8,6 +8,7 @@
   MY_OUTPUTS            = 'IMPACT2C',
 !------------------------------
   USE_SOILWATER         = T,          ! Uses SMI from meteo data
+  USE_CONVECTION        = F,          ! NB: Switch on for global
   USE_DEGREEDAY_FACTORS = T,
   USE_FOREST_FIRES      = T,
   USE_SEASALT           = T,

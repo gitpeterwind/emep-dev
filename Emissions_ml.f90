@@ -85,7 +85,7 @@
   use Io_Nums_ml,       only : IO_LOG, IO_DMS, IO_EMIS, IO_TMP
   use Io_Progs_ml,      only : ios, open_file, datewrite
   use MetFields_ml,     only : roa, ps, z_bnd, surface_precip ! ps in Pa, roa in kg/m3
-  use MetFields_ml,     only : t2_nwp   ! DS_TEST SOILNO - was zero!
+  use MetFields_ml,     only : t2_nwp
   use ModelConstants_ml,only : KMAX_MID, KMAX_BND, PT ,dt_advec, &
                               EMIS_SOURCE, & ! emislist, CdfFractions
                               EMIS_TEST,   & ! CdfSnap or none
@@ -1495,7 +1495,7 @@ enddo
 
 endif
 
-if(USE_SOILNOX)then  ! Global Soil NOx emissions
+if(USE_SOILNOX)then  ! European Soil NOx emissions
 
   ! read in map of annual N-deposition produced from pre-runs of EMEP model
   ! with script mkcdo.annualNdep
@@ -1504,12 +1504,13 @@ if(USE_SOILNOX)then  ! Global Soil NOx emissions
      'Ndep_m2',AnnualNdep,1, interpol='zero_order',needed=.true.,debug_flag=.false.,UnDef=0.0)
 
    if (DEBUG_SOILNOX .and. debug_proc ) then
-      write(*,"(a,4es12.3)") "SOILNOX AnnualDEBUG ", &
+      write(*,"(a,4es12.3)") "Emissions_ml: SOILNOX AnnualDEBUG ", &
            AnnualNdep(debug_li, debug_lj), maxval(AnnualNdep), minval(AnnualNdep)
    end if
    call CheckStop(USE_GLOBAL_SOILNOX, "SOILNOX - cannot use global with Euro")
    ! We then calculate SoulNOx in Biogenics_ml
-else
+
+else ! Global soil NOx
 
   do j=1,ljmax
    do i=1,limax
@@ -1523,7 +1524,7 @@ else
    !the month is defined
    call ReadField_CDF('nox_emission_1996-2005.nc','NOX_EMISSION',SoilNOx,nstart=nstart,&
    interpol='conservative',known_projection="lon lat",needed=.true.,debug_flag=.false.)
-  if ( DEBUG_SOILNOX .and.debug_proc ) write(*,*) "PROPER YEAR of SOILNO ", current_date%year, nstart
+   if ( DEBUG_SOILNOX .and.debug_proc ) write(*,*) "PROPER YEAR of SOILNO ", current_date%year, nstart
   else
    !the year is not defined; average over all years
    Nyears=10 !10 years defined
@@ -1540,18 +1541,15 @@ else
          write(*,"(a,2i6,es10.3,a,2es10.3)") "Averaging SOILNO  inputs", &
            1995+(i-1), nstart,SoilNOx(debug_li, debug_lj), &
             "max: ", maxval(buffer), maxval(SoilNOx)
-      !else if ( DEBUG_SOILNOX  ) then
-      !     write(*,"(a,2i6,a,es10.3)") &
-      !  "Averaging SOILNO  inputs", 1995+(i-1), nstart, "max: ", maxval(SoilNOx)
       end if
    enddo
    SoilNOx=SoilNOx/Nyears
-  endif
+  endif ! nstart test
 
   if ( DEBUG_SOILNOX ) then !!!  .and. debug_proc ) then
     write(*,"(a,i3,3es10.3)") "After Global SOILNO ",  me, maxval(SoilNOx), SoilNOx(3, 3), t2_nwp(2,2,2)
   end if ! SOIL_N
-end if ! DS_TEST
+end if ! Euro/Global TEST
 
 !for testing, compute total soil NOx emissions within domain
 !convert from g/m2/day into kg/day

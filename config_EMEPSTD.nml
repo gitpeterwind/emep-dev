@@ -8,6 +8,7 @@
   MY_OUTPUTS            = 'EMEPSTD',
 !------------------------------
   USE_SOILWATER         = T,          ! Uses SMI from meteo data
+  USE_CONVECTION        = F,
   USE_DEGREEDAY_FACTORS = T,
   USE_FOREST_FIRES      = T,
   USE_SEASALT           = T,

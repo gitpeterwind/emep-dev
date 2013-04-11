@@ -157,10 +157,11 @@ module Biogenics_ml
 !    Read natural BVOC emission potentials
 !-----------------------------------------------------------------------------
 !   Emission potentials (EFs) now read a netcdf of ca. 50x50 resolution.
-!   This fie, EMEP_EuroBVOC.nc uses the ICP-Forests species map as processed
+!   This file, EMEP_EuroBVOC.nc uses the ICP-Forests species map as processed
 !   by Renate Koeble at JRC (e.g.
 !   EFs now a mixure of rates from Simpson et al., 1999, JGR, Vol 104, D7, 
 !   8113-8152, and Keenan, T. et al., ACP, 2009, 9, 4053-4076 
+!   See Simpson et al., ACP, 2012
 
     integer :: alloc_err
     

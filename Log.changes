@@ -233,6 +233,35 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Dave 11th April  (2538)
+
+Tidy-up (more to RunLog)
+
+ModelConstants_ml, 
+Unimod.f90
+MassBudget
+
+  More outputs sent to RunLog, including NML from ModelConstants
+  USE_CONVECTION added to NML, default F
+  (added in config_EMEPSTD, config_IMPACT2C)
+
+  eulmod.res/IO_RES removed. Was empty except for extended Mass
+   debugging. Latter now sent to IO_LOG, but could just use
+   unit 6?
+
+GlobalBCs_ml, BoundaryConditions_ml, Unimod.f90
+  iyr_trend removed from subroutine calls. Use from ModelConstants_ml
+  BC trends sent to PrintLog
+
+Smaller changes:
+
+Biogenic_ml - refs updated
+
+DryDep_ml - print changed to write except before CheckStop
+
+Emissions_ml - comments re soil NOx corrected
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Dave 11th April  (2537)
 
 GlobalBCs_ml
