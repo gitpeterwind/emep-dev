@@ -227,8 +227,8 @@ contains
     logical, save     :: first_call = .true. 
 
     if ( first_call ) then
-      inat_RDF = find_index( "DUST_ROAD_F", Emis_BioNat(:) )
-      inat_RDC = find_index( "DUST_ROAD_C", Emis_BioNat(:) )
+      inat_RDF = find_index( "DUST_ROAD_F", EMIS_BioNat(:) )
+      inat_RDC = find_index( "DUST_ROAD_C", EMIS_BioNat(:) )
       itot_RDF = find_index( "DUST_ROAD_F", species(:)%name    )
       itot_RDC = find_index( "DUST_ROAD_C", species(:)%name    )
       itot_Rn222= find_index( "RN222", species(:)%name    )

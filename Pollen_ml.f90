@@ -132,7 +132,7 @@ subroutine Pollen_flux (i,j,debug_flag)
 ! Reas in the different fields
 
   if(first_call) then 
-    inat_POLL = find_index("POLLEN_B",Emis_BioNat(:))
+    inat_POLL = find_index("POLLEN_B",EMIS_BioNat(:))
     itot_POLL = find_index("POLLEN_B",species(:)%name)
 
     allocate(pollen_left(MAXLIMAX,MAXLJMAX),p_day(MAXLIMAX,MAXLJMAX))

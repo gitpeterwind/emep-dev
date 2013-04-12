@@ -71,9 +71,7 @@ use ModelConstants_ml,only: MasterProc, &   ! set true for host processor, me==0
                             runlabel2,  &   ! explanatory text
                             nprint,nterm,iyr_trend,                       &
                             IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY, &
-                            USE_CONVECTION, USE_SOILWATER, USE_SOILNOX,  &
-                            USE_FOREST_FIRES, USE_DUST,DO_SAHARA, &
-                            USE_LIGHTNING_EMIS, USE_ROADDUST, USE_POLLEN, &
+                            USE_FOREST_FIRES, USE_LIGHTNING_EMIS, &
                             FORECAST       ! FORECAST mode
 use ModelConstants_ml,only: Config_ModelConstants
 use NetCDF_ml,        only: Init_new_netCDF

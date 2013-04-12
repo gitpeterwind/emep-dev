@@ -121,8 +121,8 @@
     ! We might have USE_SEASALT=.true. in ModelConstants, but the
     ! chemical scheme might not have seasalt species. We check.
 
-    inat_SSFI = find_index( "SEASALT_F", Emis_BioNat(:) )
-    inat_SSCO = find_index( "SEASALT_C", Emis_BioNat(:) )
+    inat_SSFI = find_index( "SEASALT_F", EMIS_BioNat(:) )
+    inat_SSCO = find_index( "SEASALT_C", EMIS_BioNat(:) )
     itot_SSFI = find_index( "SEASALT_F", species(:)%name    )
     itot_SSCO = find_index( "SEASALT_C", species(:)%name    )
 
