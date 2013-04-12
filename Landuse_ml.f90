@@ -28,14 +28,14 @@
 module Landuse_ml
 
 use CheckStop_ml,   only: CheckStop,StopAll
-use DO3SE_ml,       only: fPhenology, Init_DO3SE !JAN2013-DO3SE
+use DO3SE_ml,       only: fPhenology, Init_DO3SE
 use GridAllocate_ml,only: GridAllocate
 use GridValues_ml,  only: glat_fdom, glat    & ! latitude,
                           , i_fdom, j_fdom   & ! coordinates
                           , i_local, j_local &
                           , debug_proc, debug_li, debug_lj
 use Io_ml,          only: open_file, ios, Read_Headers, Read2DN, IO_TMP &
-                         ,IO_DO3SE !JAN2013
+                         ,IO_DO3SE
 use KeyValue_ml,    only: KeyVal,KeyValue, LENKEYVAL
 use LandDefs_ml,    only: Init_LandDefs, LandType, LandDefs, &
                           STUBBLE, Growing_Season,&
@@ -67,10 +67,11 @@ private
   public :: ReadLanduse
   public :: SetLanduse
   private :: Polygon         ! Used for LAI
+  private :: MedLAI          ! Used for LAI, Medit.
  INCLUDE 'mpif.h'
  INTEGER STATUS(MPI_STATUS_SIZE),INFO
 
- integer, public, parameter :: NLUMAX = 25 ! max no. landuse per grid
+ integer, public, parameter :: NLUMAX = 30 ! max no. landuse per grid
  integer, private, save :: NLand_codes = 0 ! no. landuse in input files
 
 ! The LC: entries in the netcdf landuse, or the 
@@ -112,8 +113,6 @@ private
   integer, public,save, allocatable,dimension(:,:) :: &
           WheatGrowingSeason  ! Growing season (days), IAM_WHEAT =1 for true
  
- ! For some flux work, experimental
-
  real,public,save, allocatable,dimension(:,:) :: water_fraction, ice_landcover 
  logical,public,save :: water_frac_set = .false.
 
@@ -125,7 +124,6 @@ contains
  !==========================================================================
   subroutine InitLanduse()
     logical :: filefound
-    !JAN2013 real, parameter ::water_fraction_THRESHOLD=0.5
     integer ::i,j,ilu,lu
     logical :: debug_flag = .false.
     !=====================================
@@ -235,29 +233,6 @@ contains
              write(*,"(a,2i4,f7.3,2L2)") "SEACOAST ", i_fdom(i), j_fdom(j), &
                 water_fraction(i,j), mainly_sea(i,j), likely_coastal(i,j)
           end if
-          !if( DEBUG_LANDUSE .and. likely_coastal(i,j) ) then
-          !   write(*,"(a,2i4,f7.3,L2)") "JCOAST ", i_fdom(i), j_fdom(j), &
-          !    water_fraction(i,j), mainly_sea(i,j)
-          !end if
-
-
-!JAN2013 - move to separate subroutine. Needs to be called after Met lanuse
-!JAN2013!set default values for nwp_sea
-!JAN2013          if(water_fraction(i,j)>water_fraction_THRESHOLD)then
-!JAN2013             nwp_sea(i,j) = .true.
-!JAN2013          else
-!JAN2013             nwp_sea(i,j) = .false.
-!JAN2013          endif
-!JAN2013
-!JAN2013          if ( nwp_sea(i,j) )  then
-!JAN2013             if (  water_fraction(i,j) < 1.0  ) likely_coastal(i,j) = .true.
-!JAN2013             !if( MasterProc .and. likely_coastal(i,j) ) write(*,*) "COASTA ", i,j, water_fraction(i,j), nwp_sea(i,j)
-!JAN2013             if( likely_coastal(i,j) ) write(*,*) "COASTA ",me, i,j, water_fraction(i,j), nwp_sea(i,j)
-!JAN2013          else if ( water_fraction(i,j) > 0.2 ) then
-!JAN2013             likely_coastal(i,j) = .true.
-!JAN2013             !if( MasterProc .and. likely_coastal(i,j) ) write(*,*) "COASTB ",me, i,j, water_fraction(i,j), nwp_sea(i,j)
-!JAN2013             if(  likely_coastal(i,j) ) write(*,*) "COASTB ",me, i,j, water_fraction(i,j), nwp_sea(i,j)
-!JAN2013          end if !
        end do ! j
     end do ! i
 
@@ -420,7 +395,7 @@ contains
          write(*,*) "LANDUSE: Starting ReadLandUse CDF"
 
 
-    if (MasterProc ) write(*,*) "LANDUSE_CDF: experimental so far"
+    if (MasterProc ) write(*,*) "LANDUSE_CDF:"
     !    filefound=.false.
     !    return
 
@@ -688,23 +663,46 @@ contains
                 cycle    
              endif!else Growing veg present:
 
-             LandCover(i,j)%LAI(ilu) = Polygon(effectivdaynumber, &
+            if ( LandDefs(lu)%name == "MED_OAK" .or.  &
+                  LandDefs(lu)%name == "MED_PINE"   ) then
+
+                LandCover(i,j)%LAI(ilu) = MedLAI(effectivdaynumber, &
+                   100, 166, & ! Hard-code from Mapping Manual
+                     LandDefs(lu)%LAImin, LandDefs(lu)%LAImax )
+                if ( DEBUG_LANDUSE .and. debug_flag ) then
+                   write(*,"(a,3i4,3f8.3)") "MED_TREE "//trim(LandDefs(lu)%name), effectivdaynumber,&
+                   LandCover(i,j)%SGS(ilu), LandCover(i,j)%EGS(ilu),  &
+                     LandDefs(lu)%LAImin, LandDefs(lu)%LAImax, LandCover(i,j)%LAI(ilu)
+                end if
+
+             else
+                LandCover(i,j)%LAI(ilu) = Polygon(effectivdaynumber, &
                     0.0, LandDefs(lu)%LAImin, LandDefs(lu)%LAImax,&
                       LandCover(i,j)%SGS(ilu), LandDefs(lu)%SLAIlen, &
                          LandCover(i,j)%EGS(ilu), LandDefs(lu)%ELAIlen)
+             end if
 
              LandCover(i,j)%fphen(ilu) = fPhenology( lu &
                 ,effectivdaynumber &
                 ,LandCover(i,j)%SGS(ilu), LandCover(i,j)%EGS(ilu)&
                 ,debug_flag )
 
-          if ( DEBUG_LANDPFTS .and. debug_flag.and. USE_PFT_MAPS ) then
+             if ( DEBUG_LANDUSE .and. debug_flag ) then
+               write(*,"(a,3i4,5f8.3)")"CHECK_VEG "//trim(LandDefs(lu)%name),&
+                 effectivdaynumber, &
+                 LandCover(i,j)%SGS(ilu), LandCover(i,j)%EGS(ilu),  &
+                 LandDefs(lu)%LAImin, LandDefs(lu)%LAImax,&
+                 LandCover(i,j)%LAI(ilu), LandCover(i,j)%fphen(ilu)
+            end if
+
+
+            if ( DEBUG_LANDPFTS .and. debug_flag.and. USE_PFT_MAPS ) then
                  if ( pft > 0.0 ) then
                    write(*,"(2a,i4,i6,2f8.3)") "LANDUSE PFTS COMP? ", &
                       LandDefs(lu)%name, daynumber, pft,&
                        LandCover(i,j)%LAI(ilu), pft_lai(i,j, pft)
                  end if
-          end if
+            end if
 
 
              hveg = LandDefs(lu)%hveg_max   ! defaults
@@ -854,4 +852,32 @@ result (Poly)
  end function Polygon
 
  !=======================================================================
+function MedLAI(jday,LAIs,LAIe,LAImin,LAImax) result (LAI)
+!=======================================================================
+
+!     Calculates the value of LAI from the Mapping manual
+!     functions for Mediteranean forests
+
+!   Inputs
+    integer, intent(in) :: jday     !day of year, after any co-ordinate change
+    integer, intent(in) ::  LAIs,LAIe
+    real, intent(in) ::     LAImin,LAImax
+
+!  Output:
+    real ::   LAI  ! value at day jday
+
+
+    if( jday <= LAIs ) then
+      LAI = 0.35*((real(LAIs-jday))/LAIs) + LAImin
+    else if ( jday < (366.0-LAIe) ) then
+      LAI = (LAImax-LAImin)*(real(jday-LAIs)/LAIs) + LAImin
+    else
+      LAI = (LAImax-( LAImin+0.35))*(real(366-jday)/LAIe) + LAImin+0.35
+    end if
+
+
+ end function MedLAI
+
+ !=======================================================================
+
 end module Landuse_ml

@@ -78,7 +78,7 @@ module DryDep_ml
  use GridValues_ml ,   only : GRIDWIDTH_M,xmd,xm2, glat,dA,dB, &
        glon,   debug_proc, debug_li, debug_lj, i_fdom, j_fdom   ! for testing
  
- use Io_Nums_ml,       only : IO_SPOD  !FEB2013
+ use Io_Nums_ml,       only : IO_SPOD
  use Io_Progs_ml,      only : datewrite
  use Landuse_ml,       only : SetLandUse, Land_codes  & 
                               ,NLUMAX &  ! Max. no countries per grid

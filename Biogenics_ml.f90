@@ -65,7 +65,7 @@ module Biogenics_ml
   use Landuse_ml,        only : LandCover
   use LocalVariables_ml, only : Grid  ! -> izen, DeltaZ
   use MetFields_ml,      only : t2_nwp
-  use ModelConstants_ml, only : USE_SOILNOX, DEBUG_SOILNOX, USE_SOILNH3
+  use ModelConstants_ml, only : USE_EURO_SOILNOX, USE_GLOBAL_SOILNOx, DEBUG_SOILNOX, USE_SOILNH3
   use ModelConstants_ml, only : NPROC, MasterProc, TINY, &
                            USE_PFT_MAPS, NLANDUSEMAX, IOU_INST, & 
                            KT => KCHEMTOP, KG => KMAX_MID, & 
@@ -188,7 +188,9 @@ module Biogenics_ml
       !call CheckStop( ispec_APIN < 1 , "BiogencERROR APIN")
       if( ispec_APIN < 0 ) call PrintLog("WARNING: No APINENE Emissions")
      
-      call CheckStop( USE_SOILNOX .and. ispec_NO < 1 , "BiogencERROR NO")
+      call CheckStop( USE_EURO_SOILNOX .and. ispec_NO < 1 , "BiogencERROR NO")
+      call CheckStop( USE_GLOBAL_SOILNOX .and. ispec_NO < 1 , "BiogencERROR NO")
+      if( MasterProc ) write(*,*) "SOILNOX ispec ", ispec_NO
 
       itot_C5H8 = find_index( "C5H8", species(:)%name    ) 
       itot_APIN = find_index( "APINENE", species(:)%name )
@@ -593,10 +595,12 @@ module Biogenics_ml
         EmisNat(ispec_APIN,i,j) = (E_MTL+E_MTP) * 1.0e-9/3600.0
     end if
 
-    if ( USE_SOILNOX ) then
+    if ( USE_EURO_SOILNOX ) then
         rcemis(itot_NO,KG)    = rcemis(itot_NO,KG) + &
              SoilNOx(i,j) * biofac_SOILNO/Grid%DeltaZ
         EmisNat(ispec_NO,i,j) =  SoilNOx(i,j) * 1.0e-9/3600.0
+    else if ( USE_GLOBAL_SOILNOX ) then !TEST
+        EmisNat(ispec_NO,i,j) =  SoilNOx(i,j)*Grid%DeltaZ/biofac_SOILNO * 1.0e-9/3600.0
     end if
 
     !EXPERIMENTAL
@@ -632,10 +636,12 @@ module Biogenics_ml
       real :: beta, bmin, bmax, bx, by ! for beta function
       real :: hfac
 
-      if( DEBUG_SOILNOX .and. debug_proc )write(*,*)"DEBUG_SOILNOX START: ",&
-        current_date%day, current_date%hour, current_date%seconds
+      if( DEBUG_SOILNOX .and. debug_proc )&
+         write(*,*)"Biogenic_ml DEBUG_SOILNOX EURO: ",&
+          current_date%day, current_date%hour, current_date%seconds,&
+          USE_EURO_SOILNOX
 
-      if ( .not. USE_SOILNOX  ) return ! and fSW has been set to 1. at start
+      if ( .not. USE_EURO_SOILNOX  ) return ! and fSW has been set to 1. at start
 
 
       ! We reset once per hour

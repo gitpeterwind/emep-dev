@@ -12,7 +12,8 @@
   USE_DEGREEDAY_FACTORS = T,
   USE_FOREST_FIRES      = T,
   USE_SEASALT           = T,
-  USE_SOILNOX           = T,          ! diff for global + Euro runs
+  USE_EURO_SOILNOX      = T,          ! diff for global + Euro runs
+  USE_GLOBAL_SOILNOX    = F,          ! diff for global + Euro runs
   USE_POLLEN            = F,          ! EXPERIMENTAL. Only works if start Jan 1
   DO_SAHARA             = T,
   USE_ROADDUST          = T,          ! Only EECCA?
@@ -24,6 +25,9 @@
 !------------------------------
   IS_GLOBAL             = F,          ! Also for EMERGENCY
   MONTHLY_GRIDEMIS      = F,          ! Also for EMERGENCY
+  MONTHLY_GRIDEMIS      = F,          ! Also for EMERGENCY
+  EMIS_SOURCE           = "emislist", ! "emislist" or CdfFractions
+  EMIS_TEST             = "None",  ! "None" or "CdfSnap" 
   SELECT_LEVELS_HOURLY  = F,          ! hourly output flag Also for FORECAST, 3DPROFILES
   FORECAST              = F,
   USE_EMERGENCY         = F,          ! Used for FORECASTs usually, EMEP2010
@@ -31,9 +35,9 @@
   USE_AOD               = F,          ! Used for FORECASTs usually
 !--- "fake" vegetation for ozone POD calculations
 FLUX_VEGS = "IAM_CR" "IAM_DF" "IAM_MF"  ! do not need all array elements
-!FLUX_VEGS = "IAM_CR" "IAM_DF" "IAM_MF" "CCE_BEECH" "ACE_BEECH" "NEUR_SPRUCE",  ! Do not need to fill array :-)
+!FLUX_VEGS = "IAM_CR" "IAM_DF" "IAM_MF" "CCE_SPRUCE" "CCE_BEECH" "ACE_PINE" "ACE_OAK" "ACE_BEECH" "NEUR_SPRUCE" "NEUR_BIRCH" "MED_OAK", "MED_PINE" "MED_BEECH"  ! Do not need to fill array :-)
 !-------- Sub domain (x0,x1,y0,y1)
-!!RUNDOMAIN =   1, 100,  1, 100,      ! Orig EMEP domain in EECCA (for benchmarks)
+!!  RUNDOMAIN =   1, 100,  1, 100,      ! Orig EMEP domain in EECCA (for benchmarks)
 ! RUNDOMAIN =  40, 210, 12, 184,      ! SR TNO28 area
 ! RUNDOMAIN = 240, 720, 48, 736,      ! TNO07 reduced (15W-45E;30N-73N)
 ! RUNDOMAIN = 120, 360, 24, 368,      ! TNO14 reduced (15W-45E;30N-73N)

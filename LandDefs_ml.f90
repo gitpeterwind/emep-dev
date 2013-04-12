@@ -243,7 +243,7 @@ contains
            end if
 
             LandType(n)%is_forest =  &
-                (  LandDefs(n)%hveg_max > 5.0 .and. &    !  Simpler definitoin 
+                (  LandDefs(n)%hveg_max > 4.0 .and. &    !  Simpler definition 
                    LandDefs(n)%LAImax > 0.5           )  ! Excludes Urban
                !MAR2013 ( LandInput%type == "ECF" .or. LandInput%type == "EDF" &
                !MAR2013                          .or.  LandInput%type == "EMF" )

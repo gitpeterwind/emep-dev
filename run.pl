@@ -271,7 +271,7 @@ my $Chem     = "EmChem09soa";
 my $exp_name = "EMEPSTD";
    $exp_name = ($eCWF)?"EMERGENCY":"FORECAST" if $CWF;
 my $testv = "rv4_2.SVN";
-   $testv = "2528spod";   # From svn system, as reminder
+   $testv = "2541";   # From svn system, as reminder
    $testv.= ($eCWF)?".eCWF":".CWF" if $CWF;
 
 #User directories
@@ -897,13 +897,10 @@ if ( $iyr_trend > 2015 )  {
   $ifile{"$DATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse" if ( $CWF ) ;
   $ifile{"$DataDir/Landuse/landuseGLC2000_INT1.nc"} ="GLOBAL_landuse.nc";
 
-  #OLD $ifile{"$DataDir/Landuse_PS_5km.nc"} ="Landuse_PS_5km.nc";
   $ifile{"$DataDir/LanduseGLC.nc"} ="LanduseGLC.nc";
   # Apr 2 Peter's new file:
   $ifile{"$DataDir/Landuse/Landuse_PS_5km_LC.nc"} ="Landuse_PS_5km_LC.nc";
 
-  #$ifile{"$DataDir/LandInputs_Jan2012/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
-  #$ifile{"$DataDir/LandInputs_Jan2012/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
   $ifile{"$DataDir/LandInputs_Mar2013/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
   $ifile{"$DataDir/LandInputs_Mar2013/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
 

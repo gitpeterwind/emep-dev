@@ -94,7 +94,6 @@ use ModelConstants_ml, only: &
   ,DEBUG_AOT       &
   ,DEBUG => DEBUG_DERIVED,  DEBUG_COLUMN, MasterProc &
   ,SOURCE_RECEPTOR &
-  ,USE_SOILNOX &
   ,USE_SOILNH3 &
   ,USE_EMERGENCY,DEBUG_EMERGENCY &
   ,PT           &
@@ -578,7 +577,7 @@ enddo
     ! AddNewDeriv( name,class,subclass,txt,unit,
     !    index,f2d, dt_scale,scale, avg,iotype,Is3D)
 
-  do  ind = 1, NEMIS_BioNat !DSA12 size(BVOC_GROUP)
+  do  ind = 1, NEMIS_BioNat 
      dname = "Emis_mgm2_BioNat" // trim(EMIS_BioNat(ind) )
      call AddNewDeriv( dname, "NatEmis", "-", "-", "mg/m2", &
                  ind , -99, T ,    1.0e6,     F, IOU_DAY )

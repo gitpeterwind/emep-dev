@@ -74,7 +74,13 @@ logical, public, save ::             &
  ,USE_SOILWATER         = .false.    &!
  ,USE_DEGREEDAY_FACTORS = .false.    &!
  ,USE_FOREST_FIRES      = .false.    &! 
- ,USE_SOILNOX           = .true.     & ! ok, but diff for global + Euro runs
+! Soil NOx. Choose EURO for better spatial and temp res, but for 
+! global runs need global monthly. Variable USE_SOILNOX set from
+! these below.
+ ,USE_EURO_SOILNOX      = .true.     & ! ok, but diff for global + Euro runs
+ ,USE_GLOBAL_SOILNOX    = .false.    & ! Need to design better switch
+ ,USE_SOILNOX           = .true.     & ! DO NOT ALTER: Set after config
+!
  ,USE_SEASALT           = .true.     & !
  ,USE_CONVECTION        = .false.    & ! false works best for Euro runs,
 ! More experimental:
@@ -98,7 +104,6 @@ logical, public, parameter ::         &
   USE_AIRCRAFT_EMIS  = .true.,        & ! Needs global file, see manual
   USE_LIGHTNING_EMIS = .true.,        & ! ok
   NO_CROPNH3DEP      = .true.,        & ! Stop NH3 deposition for growing crops
-  USE_GLOBAL_SOILNOX = .false.,       & ! Need to design better switch
   USE_SOILNH3        = .false.,       & ! DUMMY VALUES, DO NOT USE!
   USE_ZREF           = .false.,       & ! testing
   USE_PFT_MAPS       = .false.,       & ! Future option
@@ -310,7 +315,7 @@ integer, public, parameter :: &
   ,DEBUG_GRIDVALUES     = .false. &
   ,DEBUG_IOPROG         = .false. &
   ,DEBUG_LANDDEFS       = .false. &
-  ,DEBUG_LANDUSE        = .true. &
+  ,DEBUG_LANDUSE        = .false. &
   ,DEBUG_LANDPFTS       = .false. &
   ,DEBUG_LANDIFY        = .false. &
   ,DEBUG_MASS           = .false. &
@@ -387,7 +392,7 @@ integer, public, parameter ::  &
 
 
 !Namelist controlled: which veg do we want flux-outputs for
-character(len=15), public, save, dimension(10) :: FLUX_VEGS=""
+character(len=15), public, save, dimension(20) :: FLUX_VEGS=""
 integer, public, save :: nFluxVegs = 0 ! reset in Landuse_ml
     
 
@@ -483,7 +488,7 @@ subroutine Config_ModelConstants(iolog)
      ,USE_SOILWATER, USE_DEGREEDAY_FACTORS, USE_FOREST_FIRES &
      ,USE_CONVECTION &
      ,DO_SAHARA, USE_ROADDUST, USE_DUST &
-     ,USE_SOILNOX, USE_SEASALT ,USE_POLLEN &
+     ,USE_EURO_SOILNOX, USE_GLOBAL_SOILNOX, USE_SEASALT ,USE_POLLEN &
      ,INERIS_SNAP1, INERIS_SNAP2 &   ! Used for TFMM time-factors
      ,IS_GLOBAL  &     ! Also for EMERGENCY
      ,MONTHLY_GRIDEMIS &     ! was set in Emissions_ml
@@ -500,6 +505,8 @@ subroutine Config_ModelConstants(iolog)
     open(IO_NML,file='config_emep.nml',delim='APOSTROPHE')
     read(IO_NML,NML=ModelConstants_config)
     !close(IO_NML)
+
+    USE_SOILNOX = USE_EURO_SOILNOX .or. USE_GLOBAL_SOILNOx
 
     if ( MasterProc )  then
      write(*, * ) "NAMELIST IS "

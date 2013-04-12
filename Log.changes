@@ -233,6 +233,34 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Dave 12th April  (2541)
+
+Changes in : a) Soil-NOx 
+             b) MedLAI function
+             c) config_EMEPSTD
+
+a) Better split between USE_EURO_SOILNOX and USE_GLOBAL_SOILNOX
+
+   Biogenics_ml
+   Emissions_ml
+   Setup_1d_ml
+   ModelConstants_ml
+
+
+b) MedLAI provides Mapping Manual variation in LAI
+
+  Landuse_ml
+
+c) config_EMEPSTD now has
+    EMIS_SOURCE           = "emislist", ! "emislist" or CdfFractions
+    EMIS_TEST             = "None",  ! "None" or "CdfSnap" 
+  (I thought I had put these earlier. Overwrite?)
+
+Minor tidy-ups
+DryDep_ml, Derived_ml, LandDefs_ml
+
+NEXT STEPS: soil NOx variation - check run.pl also.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Dave 12th April  (2540)
 
 Pollen_ml, SeaSalt_ml, Setup_ml : Emis_BioNat changed to EMIS_BioNat,

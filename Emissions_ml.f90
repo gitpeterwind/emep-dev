@@ -102,7 +102,7 @@
                               NPROC, IIFULLDOM,JJFULLDOM , & 
                               SEAFIX_GEA_NEEDED, & ! see below
                               USE_LIGHTNING_EMIS,USE_AIRCRAFT_EMIS,USE_ROADDUST, &
-                              USE_SOILNOX, USE_GLOBAL_SOILNOX   ! one or the other
+                              USE_EURO_SOILNOX, USE_GLOBAL_SOILNOX   ! one or the other
   use NetCDF_ml, only  : ReadField_CDF
   use Par_ml,     only : MAXLIMAX,MAXLJMAX,me,gi0,gi1,gj0,gj1, &
                              GIMAX, GJMAX, IRUNBEG, JRUNBEG,  &   
@@ -1464,7 +1464,6 @@ contains
         endif
         
 if( USE_AIRCRAFT_EMIS )then
-   !AIRCRAFT
    airn = 0.0
    kstart=KCHEMTOP
    kend=KMAX_MID
@@ -1482,8 +1481,8 @@ if( USE_AIRCRAFT_EMIS )then
 ! from month to seconds: ndaysmonth*24*3600
 
 conv=0.001*AVOG/species(NO2)%molwt*GRAV/gridwidth_m**2*1.0e-6/(nmdays(current_date%month)*24*3600)
-!do k=KEMISTOP,KMAX_MID
-do k=KCHEMTOP,KMAX_MID  !ssp8X
+
+do k=KCHEMTOP,KMAX_MID
 do j=1,ljmax
 do i=1,limax
 
@@ -1495,7 +1494,8 @@ enddo
 
 endif
 
-if(USE_SOILNOX)then  ! European Soil NOx emissions
+if(USE_EURO_SOILNOX)then  ! European Soil NOx emissions
+  if (DEBUG_SOILNOX .and. debug_proc ) write(*,*) "Emissions DEBUG_SOILNOX START"
 
   ! read in map of annual N-deposition produced from pre-runs of EMEP model
   ! with script mkcdo.annualNdep
@@ -1510,7 +1510,7 @@ if(USE_SOILNOX)then  ! European Soil NOx emissions
    call CheckStop(USE_GLOBAL_SOILNOX, "SOILNOX - cannot use global with Euro")
    ! We then calculate SoulNOx in Biogenics_ml
 
-else ! Global soil NOx
+else if ( USE_GLOBAL_SOILNOX ) then ! Global soil NOx
 
   do j=1,ljmax
    do i=1,limax
@@ -1539,23 +1539,27 @@ else ! Global soil NOx
       end do
       if ( DEBUG_SOILNOX .and.debug_proc ) then
          write(*,"(a,2i6,es10.3,a,2es10.3)") "Averaging SOILNO  inputs", &
-           1995+(i-1), nstart,SoilNOx(debug_li, debug_lj), &
+           1995+(iyr-1), nstart,SoilNOx(debug_li, debug_lj), &
             "max: ", maxval(buffer), maxval(SoilNOx)
       end if
    enddo
    SoilNOx=SoilNOx/Nyears
   endif ! nstart test
 
-  if ( DEBUG_SOILNOX ) then !!!  .and. debug_proc ) then
-    write(*,"(a,i3,3es10.3)") "After Global SOILNO ",  me, maxval(SoilNOx), SoilNOx(3, 3), t2_nwp(2,2,2)
-  end if ! SOIL_N
-end if ! Euro/Global TEST
+  if ( DEBUG_SOILNOX .and. debug_proc ) then
+    write(*,"(a,i3,3es10.3)") "After Global SOILNO ",  me, maxval(SoilNOx), &
+           SoilNOx(debug_li, debug_lj)
+    !write(*,"(a,i3,3es10.3)") "After Global SOILNO ",  me, maxval(SoilNOx), SoilNOx(3, 3)
+  end if 
+else ! no soil NO
+  if (DEBUG_SOILNOX .and. debug_proc ) write(*,*) "Emissions DEBUG_SOILNOX - none"
+end if !  SOIL NO
 
 !for testing, compute total soil NOx emissions within domain
 !convert from g/m2/day into kg/day
 if ( USE_GLOBAL_SOILNOX ) then 
   SumSoilNOx=0.0
-  SoilNOx = 0.0  ! Stops the NEGs!
+  SoilNOx = max(0.0, SoilNOx)  ! Stops the NEGs!
   do j=1,ljmax
    do i=1,limax      
       SumSoilNOx=SumSoilNOx+0.001*SoilNOx(i,j)*gridwidth_m**2*xmd(i,j)      
@@ -1563,7 +1567,7 @@ if ( USE_GLOBAL_SOILNOX ) then
   enddo
   CALL MPI_ALLREDUCE(MPI_IN_PLACE, SumSoilNOx , 1, &
      MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
-  if(MasterProc)write(*,*)'GLOBAL Soil NOx emissions this month within domain',&
+  if(MasterProc)write(*,*)'GLOBAL SOILNOX emissions this month within domain',&
         SumSoilNOx,' kg per day'
 
   ! convert from g(N)/m2/day into molecules/cm3/s from g to molecules:
