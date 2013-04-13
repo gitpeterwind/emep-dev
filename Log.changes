@@ -233,7 +233,10 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-Dave 13th April  (2542)  = GP_work version
+Dave 13th April  (2543)  = GP_work version
+Fixed bug in Ndep_trends (now sent to all nodes)
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Dave 13th April  (2542)
 
 Soil-NO emissions future proofed for Euro-versions anyway
 
