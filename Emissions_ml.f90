@@ -38,13 +38,13 @@
 !  with the 3D model.
 !_____________________________________________________________________________
 
-  use Biogenics_ml,            only : SoilNOx, AnnualNdep
+  use Biogenics_ml,     only: SoilNOx, AnnualNdep, Ndep_trends
   use CheckStop_ml,only : CheckStop,StopAll
   use ChemSpecs_shl_ml, only: NSPEC_SHL
   use ChemSpecs_tot_ml, only: NSPEC_TOT,NO2
   use ChemChemicals_ml, only: species
   use Country_ml,    only : NLAND,Country_Init,Country,IC_NAT,IC_FI,IC_NO,IC_SE
-  use Country_ml,    only : EUMACC2 !CdfSnap
+  use Country_ml,    only : EU27, EUMACC2 !CdfSnap
   use EmisDef_ml, only : NSECTORS & ! No. sectors
                      ,NEMIS_FILE & ! No. emission files
                      ,EMIS_FILE   & ! Names of species ("sox  ",...)
@@ -249,7 +249,7 @@ contains
     integer :: fic ,insec,inland,iemis 
     integer :: iic,ic,n         ! country codes 
     integer :: isec             ! loop variables: emission sectors
-    integer :: iem              ! loop variable over pollutants (1..NEMIS_FILE)
+    integer :: iem,iem2         ! loop variable over pollutants (1..NEMIS_FILE)
     integer :: icc,ncc          ! loop variables over  sources
     character(len=40) :: fname  ! File name
     character(len=300) :: inputline 
@@ -258,6 +258,7 @@ contains
     ! Emission sums (after e_fact adjustments):
     real, dimension(NEMIS_FILE)       :: emsum ! Sum emis over all countries
     real, dimension(NLAND,NEMIS_FILE) :: sumemis, sumemis_local ! Sum of emissions per country
+    real, dimension(NEMIS_FILE) :: sumEU ! Sum of emissions in EU
 
     ! Road dust emission potential sums (just for testing the code, the actual emissions are weather dependent!)
     real, dimension(NROAD_FILES)       :: roaddustsum    ! Sum emission potential over all countries
@@ -747,9 +748,10 @@ contains
     if ( MasterProc ) then
        write(unit=6,fmt=*) "Total emissions by countries:"
        write(unit=IO_LOG,fmt=*) "Total emissions by countries:"
-       write(unit=6,fmt="(2a4,11x,30a12)")  "  N "," CC ",(EMIS_FILE(iem),iem=1,NEMIS_FILE)
-       write(unit=IO_LOG,fmt="(2a4,11x,30a12)") "  N "," CC ",(EMIS_FILE(iem),iem=1,NEMIS_FILE)
+       write(unit=6,fmt="(2a4,3x,30a12)")  "  N "," CC ",(EMIS_FILE(iem),iem=1,NEMIS_FILE)
+       write(unit=IO_LOG,fmt="(2a4,3x,30a12)") "  N "," CC ",(EMIS_FILE(iem),iem=1,NEMIS_FILE)
 
+       sumEU(:) = 0.0
        do ic = 1, NLAND
           ccsum = sum( sumemis(ic,:) )
           !if ( ccsum > 0.0 ) then
@@ -766,8 +768,17 @@ contains
             end if
              write(unit=IO_LOG,fmt="(i3,1x,a4,3x,30f12.2)")& 
                   ic, Country(ic)%code, (sumemis(ic,i),i=1,NEMIS_FILE)
+             if( find_index( Country(ic)%code , EU27(:) ) > 0 ) then
+                 sumEU = sumEU + sumemis(ic,:)
+             end if
           end if
        end do
+       write(unit=IO_LOG,fmt="(i3,1x,a4,3x,30f12.2)") 0, "EU", (sumEU(i),i=1,NEMIS_FILE)
+      !GP_work, TMP solution with hard-coded emissions
+       iem= find_index( "nox", EMIS_FILE(:) )
+       iem2=find_index( "nh3", EMIS_FILE(:) )
+       Ndep_trends = ( sumEU(iem) + sumEU(iem2) ) / 15167.48
+   
 
        if(USE_ROADDUST)THEN
 

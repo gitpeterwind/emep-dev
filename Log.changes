@@ -233,6 +233,26 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Dave 13th April  (2542)  = GP_work version
+
+Soil-NO emissions future proofed for Euro-versions anyway
+
+Emissions_ml
+  added sumEU and calcu
+  Ndep_trends factor added, which compares read-in EU N emissions with
+  value from 2005 GP_work. The latter is hard-coded, but this method
+  allows the model to be run for e.g. 2050, without needing pre-runs
+  to establish deposition fields.
+
+Biogenic_ml
+  Uses Ndep_trends to calculate soil NO (if USE_EURO_SOILNOX )
+
+run.pl
+  Removed link to 2020 Ndep fields. Just use the 2005_2009 average
+  as base.
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Dave 12th April  (2541)
 
 Changes in : a) Soil-NOx 
@@ -259,7 +279,6 @@ c) config_EMEPSTD now has
 Minor tidy-ups
 DryDep_ml, Derived_ml, LandDefs_ml
 
-NEXT STEPS: soil NOx variation - check run.pl also.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Dave 12th April  (2540)
 

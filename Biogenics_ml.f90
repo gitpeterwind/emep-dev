@@ -113,6 +113,11 @@ module Biogenics_ml
       AnnualNdep, &  ! N-dep in mgN/m2/
       SoilNOx, SoilNH3
 
+  ! To avoid pre-runs of the model for scenario years, we assume that changes
+  ! can ve approximated by EU N emission changes
+   real, public, save :: Ndep_trends = 1.0  ! for scaling assumed soil N-dep
+
+
  ! Set true if LCC read from e.g. EMEP_EuroBVOC.nc:
  ! (Currently for 1st four LCC, CF, DF, BF, NF)
   logical, private, dimension(NLANDUSEMAX), save :: HaveLocalEF 
@@ -665,6 +670,7 @@ module Biogenics_ml
            ! We use a factor normalised to 1.0 at 5000 mgN/m2/a
 
              fn = AnnualNdep(i,j)/5000.0 ! scale for now
+             fn = fn * Ndep_trends       ! For e.g. 2030, see Emissions_ml
 
              ftn = ft * fn * hfac 
 

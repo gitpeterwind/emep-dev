@@ -882,11 +882,12 @@ print "TESTING PM $poll $dir\n";
 #  my $tmpndep = "/home/$DAVE/Work/RESULTS/MAPS/AnnualSums/AnnualNdep";
 #  $ifile{"$tmpndep/AnnualNdep_BM_rv3_9_20soa-EmChem09soa.nc"} = "AnnualNdep.nc";
 
-if ( $iyr_trend > 2015 )  {
-  $ifile{"$DataDir/AnnualNdep_TNO28_2020.nc"} = "annualNdep.nc";
-} else { # Note PS50x - hand-edited version
+# April 2013. Now use EU emissions as proxy for future changes
+#if ( $iyr_trend > 2015 )  {
+#  $ifile{"$DataDir/AnnualNdep_TNO28_2020.nc"} = "annualNdep.nc";
+#} else { # Note PS50x - hand-edited version
   $ifile{"$DataDir/AnnualNdep_PS50x_EECCA2005_2009.nc"} = "annualNdep.nc";
-}
+#}
 
 # hb NH3emis
 # New ammonia emissions  ---   NB no read permissions yet!!
