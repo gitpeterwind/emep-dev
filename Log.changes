@@ -233,6 +233,10 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TAG: 2546 as rv4.3beta   14th April 2013 xxxxxxxxxxxxxxxxxxxx
+          (version used for Gothenburg Protocol runs.)
+          (same as 2543. System seems a bit confused
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Dave 13th April  (2543)  = GP_work version
 Fixed bug in Ndep_trends (now sent to all nodes)
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

@@ -641,10 +641,11 @@ module Biogenics_ml
       real :: beta, bmin, bmax, bx, by ! for beta function
       real :: hfac
 
-      if( DEBUG_SOILNOX .and. debug_proc )
+      if( DEBUG_SOILNOX .and. debug_proc ) then
          write(*,*)"Biogenic_ml DEBUG_SOILNOX EURO: ",&
           current_date%day, current_date%hour, current_date%seconds,&
           USE_EURO_SOILNOX, Ndep_trends
+      end if
 
       if ( .not. USE_EURO_SOILNOX  ) return ! and fSW has been set to 1. at start
 
