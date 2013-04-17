@@ -615,7 +615,6 @@ contains
         
         call InitLanduse()
 
-       !JAN213 - 
        ! The DO3SE params are needed for the call to fPhenology
       
         call Init_DO3SE(IO_DO3SE,"Inputs_DO3SE.csv",NLand_codes, Land_codes, errmsg)

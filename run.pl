@@ -271,7 +271,7 @@ my $Chem     = "EmChem09soa";
 my $exp_name = "EMEPSTD";
    $exp_name = ($eCWF)?"EMERGENCY":"FORECAST" if $CWF;
 my $testv = "rv4_2.SVN";
-   $testv = "2543";   # From svn system, as reminder
+   $testv = "2547";   # From svn system, as reminder
    $testv.= ($eCWF)?".eCWF":".CWF" if $CWF;
 
 #User directories
@@ -730,6 +730,7 @@ foreach my $scenflag ( @runs ) {
   my %ifile   = ();   # List of input data-files
 
   # NML namelist options.
+  die "No CONFIG $exp_name" unless -f "$ProgDir/config_$exp_name.nml";
   $ifile{"$ProgDir/config_$exp_name.nml"} = "config_emep.nml";
 
 # First, emission files are labelled e.g. gridSOx, which we assign to

@@ -233,6 +233,29 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Dave 17th April  (2543)  = GP_work version
+
+
+run.pl -- added die unless config_exp name (I wasted 1000s h CPU with
+    a missing config file! Dangerous)
+
+
+Clean-ups only, no result change. Mainly took away JAN2013, NONWP etc.
+
+AOTnPOD_ml
+BLPhysics_ml
+BoundaryConditions_ml
+DO3SE_ml
+DustProd_ml 
+DryDep_ml
+LandDefs_ml
+Landuse_ml
+MetFields_ml
+MosaicOutputs_ml
+Unimod.f90
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TAG: 2546 as rv4.3beta   14th April 2013 xxxxxxxxxxxxxxxxxxxx
           (version used for Gothenburg Protocol runs.)
           (same as 2543. System seems a bit confused

@@ -159,7 +159,6 @@
 
         end if
         if(DEBUG_DUST.and.MasterProc) print *, "DUSTI ", ipoll, dust_found, debug_proc
-          !FEB2012 call CheckStop( ipoll < 1, "Dust asked for, but not found")
 
           my_first_call = .false.
 
@@ -310,21 +309,19 @@
 ! 
 ! (Note, v_h2o should not end up negative here, see Met_ml.f90)
 
-     v_h2o = pwp(i,j) + SoilWater(i,j,1) * (fc(i,j)-pwp(i,j) )
-  ! call CheckStop(v_h2o <= 0.0 ,  "DUSTY DRY" )
+  v_h2o = pwp(i,j) + SoilWater(i,j,1) * (fc(i,j)-pwp(i,j) )
+
   if( v_h2o < SMALL ) then
    print "(a,2i4,9f10.4)"," DUSTY DRY!!",  i_fdom(i), j_fdom(j), &
       v_h2o, pwp(i,j), fc(i,j), SoilWater(i,j,1), water_fraction(i,j)
-  ! v_h2o = max( 1.0e-12, v_h2o) 
+     !v_h2o = max( 1.0e-12, v_h2o) 
    call CheckStop(v_h2o <= 0.0 ,  "DUSTY DRY" )
   end if
-  if( v_h2o > fc(i,j) ) then
-   write(*,"(a,2i4,9f10.4)")," DUSTY WET!!",  i_fdom(i), j_fdom(j), &
+  if( v_h2o > fc(i,j) + 0.00001  ) then
+   print "(a,2i4,9f10.4)"," DUSTY WET!!",  i_fdom(i), j_fdom(j), &
     v_h2o, pwp(i,j), fc(i,j), SoilWater(i,j,1), water_fraction(i,j)
 
-   if( v_h2o > fc(i,j)+0.00001 ) then
     call CheckStop(v_h2o > fc(i,j),  "DUSTY WET" )
-   end if
 
   end if
 

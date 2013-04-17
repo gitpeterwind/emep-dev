@@ -67,16 +67,14 @@ interface Check_LandCoverPresent
 end interface Check_LandCoverPresent
 
  real, public, parameter :: STUBBLE  = 0.01 ! Veg. ht. out of season
- !WIMMAX integer, public, parameter :: NLANDUSE_EMEP=19 !No. of categories defined 
  integer, public, parameter :: NLANDUSE_EMEP=29 !No. of categories defined 
-                                                !in EMEP grid (per April 2009)
+                                                !in EMEP grid (per April 2013)
  integer, public, save :: iLC_grass    ! Used with clover outputs
 
  !/*****   Data to be read from Phenology_inputs.dat:
 
   type, public :: land_input
      character(len=15) :: name
-     !WIMMAX character(len=9) :: code
      character(len=15) :: code
      character(len=3) :: type   ! Ecocystem type, see headers
      character(len=5) :: LPJtype   ! Simplified LPJ assignment

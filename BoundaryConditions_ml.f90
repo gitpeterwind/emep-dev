@@ -382,7 +382,6 @@ contains
                       bc_fac     = 1.0
 
                       if ( bc_seaspec ) then
-                         !JAN2013 if ( .not. nwp_sea(i,j))  bc_fac = 0.001 ! low over land
                          if ( .not. mainly_sea(i,j))  bc_fac = 0.001 ! low over land
                          if ( .not. USE_SEASALT )  bc_fac = 0.0   ! not wanted!
                       end if

@@ -52,11 +52,6 @@ module DO3SE_ml
  public :: g_stomatal     ! produces g_sto and g_sun
  public :: fPhenology     !  -> f_phen
 
- ! Make public for output testing
- !FEB2013 real, public, save  :: f_light, f_temp, f_vpd, f_env         
- !FEB2013 real, public, save  :: f_swp = 1.0  ! Will only change if USE_SOILWATER set
- !FEB2013  real, public, save  :: f_phen = 888 ! But set elsewhere
-
 !-----------------------------------------------------------------------------
 ! Notes: Basis is Emberson et al, EMEP Report 6/2000
 ! Numbers updated to Mapping Manual, 2004 and changes recommended
@@ -68,7 +63,6 @@ module DO3SE_ml
  !/*****   Data to be read from Phenology_inputs.dat:
 
   type, public :: do3se_type
-     !WIMMAXcharacter(len=10) :: code
      character(len=15) :: code
      character(len=15) :: name
      real:: g_max           ! max. value conductance g_s
@@ -262,7 +256,7 @@ contains
   !   Once per day, but for simplicity we do it every time-step.
 
   ! ************************************
-   !FEB2013 if ( USE_SOILWATER ) L%f_swp =  L%fSW
+   !FEB2013 Set fSW in CellMet
   ! ************************************
 
 
@@ -271,22 +265,11 @@ contains
 !  ( with revised usage of min value for f_temp during 2007)
 
    L%f_env = L%f_vpd * L%fSW
-   !FEB2013 L%f_swp = 1.0  ! FEB2013
-   L%f_min  = do3se(iLC)%f_min   ! FEB2013
+   L%f_min  = do3se(iLC)%f_min
    L%f_env = max( L%f_env, L%f_min )
    L%f_env = max( L%f_temp, 0.01) * L%f_env
 
    L%f_env = L%f_phen * L%f_env * L%f_light  ! Canopy average
-
-!JAN2013
-!FEB2013   L%f_env = f_env 
-!FEB2013   L%f_vpd = f_vpd
-!FEB2013   L%f_temp = f_temp
-!FEB2013   L%f_light = f_light
-!FEB2013  !FEB2013  L%f_phen  = f_phen   ! CAREFUL we have too many of these
-!FEB2013   L%f_sun   = f_sun    ! JAN2013
-!FEB2013   L%f_shade = f_shade  ! JAN2013
-!FEB2013   L%f_min   = do3se(iLC)%f_min   ! JAN2013
 
 ! From mmol O3/m2/s to s/m given in Jones, App. 3, gives 41000 for 20 deg.C )
 !   (should we just use P=100 hPa?)
@@ -295,13 +278,11 @@ contains
 
    L%g_sto = do3se(iLC)%g_max * L%f_env * mmol2sm 
 
-   !JAN2013 BUG FIX
-   !ORIG L%g_sun = L%g_sto * f_sun/f_light       ! sunlit part
    L%g_sun = do3se(iLC)%g_max * mmol2sm * L%f_phen * L%f_sun * &
          max( do3se(iLC)%f_min,  L%f_temp * L%f_vpd * L%fSW )
 
 
-   if ( DEBUG_DO3SE .and. debug_flag ) then !JAN2013 EXTRA
+   if ( DEBUG_DO3SE .and. debug_flag ) then ! EXTRA
        write(*,"(a,5i5,i3,L2,99f10.4)") "IN RSUR gstomatal ", &
               current_date, iLC, USE_SOILWATER, L%PARsun, L%PARshade,&
               do3se(iLC)%g_max, L%g_sto, L%f_env,  L%f_phen, L%f_vpd,&

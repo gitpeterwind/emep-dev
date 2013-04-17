@@ -128,7 +128,7 @@ subroutine Add_MosaicMetConcs(MOSAIC_METCONCS,MET_LCS,iotyp, nMET)
       !Deriv index, f2d, scale, avg? Inst Yr Mn Day
       MosaicOutput(nMosaic) = Deriv(  &
           name, "Mosaic", "METCONC", MET_LCS(n), MOSAIC_METCONCS(ilab), &
-            ilab, -99,F , 1.0,  T,  iotyp )    !FEBN2011 fix later
+            ilab, -99,F , 1.0,  T,  iotyp )
       
       select case(MOSAIC_METCONCS(ilab))
         case("USTAR"   );MosaicOutput(nMosaic)%unit = "m/s"
@@ -425,7 +425,6 @@ endsubroutine Add_MosaicDDEP
       ! - invEcoFracCF divides the flux per grid by the landarea of each
       ! ecosystem, to give deposition in units of mg/m2 of ecosystem.
 
-!JAN30 output = Fflux * convfac * MosaicOutput(imc)%atw * invEcoFrac(iEco)
       output = Fflux * convfac * invEcoFrac(iEco)
       if(DEBUG.and.debug_flag) &
          write(*,"(3i4,3es12.3)") imc, nadv, iEco, Fflux, output

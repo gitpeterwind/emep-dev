@@ -111,7 +111,7 @@ module Met_ml
   use Io_ml ,               only : ios, IO_ROUGH, datewrite,PrintLog, &
                                    IO_CLAY, IO_SAND, open_file, IO_LOG
   use Landuse_ml, only : water_fraction, water_frac_set, &
-        likely_coastal, mainly_sea  ! JAN2013
+        likely_coastal, mainly_sea
   use MetFields_ml 
   use MicroMet_ml, only : PsiH  ! Only if USE_MIN_KZ
   use ModelConstants_ml,    only : PASCAL, PT, Pref, METSTEP  &
@@ -724,7 +724,6 @@ if( USE_SOILWATER ) then
 
 
        if( USE_SOILWATER ) then ! MAR2013 added
-       !MAR2013 if( SoilWaterSource == "IFS")then
           !needed for transforming IFS soil water
            call ReadField_CDF('SoilTypes_IFS.nc','pwp',pwp, &
                 1,interpol='conservative',needed=.true.,UnDef=-999.,debug_flag=.false.)
@@ -1600,9 +1599,6 @@ if( USE_SOILWATER ) then
     integer, intent(in) :: callnum
     integer ::  i,j
 
-    !JAN2013 real, dimension(MAXLIMAX,MAXLJMAX) :: r_class  ! Roughness (real), used for PARLAM
-    !JAN2013 real, parameter ::water_fraction_THRESHOLD=0.5 ! 
-
     character*20 fname
     logical :: needed_found
 
@@ -1610,54 +1606,6 @@ if( USE_SOILWATER ) then
 
     if ( callnum == 1  ) then
 
-!JAN2013 remobved nwp_sea
-!NONWP       ! The PARLAM NWP provides a 1:1 map from NWP grid to EMEP, so
-!NONWP       !  we can use the PARLAM rough.dat file to get the NWP sea/land
-!NONWP       !  definitions.  (For IFS we don't have this.)
-!NONWP
-!NONWP       if ( MasterProc  ) then
-!NONWP          write(fname,fmt='(''landsea_mask.dat'')')
-!NONWP          write(6,*) 'reading land-sea map from ',fname
-!NONWP       end if
-!NONWP!JAN2013       foundnwp_sea=.false.
-!NONWP       call ReadField(IO_ROUGH,fname,r_class,foundnwp_sea,fill_needed=.true.)
-!NONWP
-!NONWP       ! And convert from real to integer field
-!NONWP
-!NONWPprint *, "ECOAST PROC", me, foundnwp_sea
-!NONWP       if(foundnwp_sea)then
-!NONWP          nwp_sea(:,:) = .false.
-!NONWP          do j=1,ljmax
-!NONWP             do i=1,limax
-!NONWP                if ( nint(r_class(i,j)) == 0 ) nwp_sea(i,j) = .true.
-!NONWP!if( nwp_sea(i,j) ) print *, "COAST NWP_SEA ", me, i,j, i_fdom(i), j_fdom(j), r_class(i,j)
-!NONWPif( nwp_sea(i,j)) write(IO_LOG, "(a,3i3,2i4,2f7.2,i5,2L2,f8.4)") &
-!NONWP     "ECOAST ", me, i,j, i_fdom(i), j_fdom(j), glat(i,j), glon(i,j), &
-!NONWP                     nint(r_class(i,j)), water_frac_set, nwp_sea(i,j), water_fraction(i,j)
-!NONWPif( nwp_sea(i,j)) write(*, "(a,3i3,2i4,2f7.2,i5,2L2,f8.4)") &
-!NONWP     "ECOAST ", me, i,j, i_fdom(i), j_fdom(j), glat(i,j), glon(i,j), &
-!NONWP                     nint(r_class(i,j)), water_frac_set, nwp_sea(i,j), water_fraction(i,j)
-!NONWP             enddo
-!NONWP          enddo
-!NONWP       else ! JAN2013
-!NONWP
-!NONWP         !guess default values for nwp_sea
-!NONWP          do j=1,ljmax
-!NONWP             do i=1,limax
-!NONWP               nwp_sea(i,j) = water_fraction(i,j)>water_fraction_THRESHOLD
-!NONWPif( me==0 .and. nwp_sea(i,j)) print "(a,3i3,2i4,2f7.2,2L2,f8.4)", &
-!NONWP     "COAST NWP_SEAY ", me, i,j, i_fdom(i), j_fdom(j), glat(i,j), glon(i,j), &
-!NONWP                     water_frac_set, nwp_sea(i,j), water_fraction(i,j)
-!NONWPif( me==0 .and. .not. nwp_sea(i,j)) print "(a,3i3,2i4,2f7.2,2L2,f8.4)", &
-!NONWP     "COAST NWP_SEAN ", me, i,j, i_fdom(i), j_fdom(j), glat(i,j), glon(i,j),  &
-!NONWP                     water_frac_set, nwp_sea(i,j), water_fraction(i,j)
-!NONWP             enddo
-!NONWP          enddo
-!NONWP
-!NONWP       endif
-!NONWP
-!NONWP      !JAN2013
-!NONWP       call SetCoastal()   ! Determines cells which are likely coastal
 
 !.. Clay soil content    !
       ios = 0
@@ -1816,7 +1764,7 @@ if( USE_SOILWATER ) then
              DEBUG_Kz, 'NWP_Kz:',NWP_Kz, &
             '*** After convert to z',sum(Kz_m2s(:,:,:)), &
             minval(Kz_m2s(:,:,:)), maxval(Kz_m2s(:,:,:))
-          write(6,*) 'DS  After Set SigmaKz KTOP', Kz_met(debug_iloc,debug_jloc,1,nr)
+          write(6,*) 'After Set SigmaKz KTOP', Kz_met(debug_iloc,debug_jloc,1,nr)
        endif
 
     else   ! Not NWP Kz. Must calculate
@@ -1945,12 +1893,12 @@ if( USE_SOILWATER ) then
                  do i=1,limax
                   if ( invL_nwp(i,j) >= OB_invL_LIMIT ) then !neutral and unstable
                      do k = 2, KMAX_MID
-                       if( z_bnd(i,j,k) <  pzpbl(i,j) ) then ! OCT2011: 
+                       if( z_bnd(i,j,k) <  pzpbl(i,j) ) then
                          Kz_m2s(i,j,k) = &
                           JericevicKz( z_bnd(i,j,k), pzpbl(i,j), ustar_nwp(i,j) , Kz_m2s(i,j,k))
                        !else
                        !  keep Kz from Pielke/BLackadar
-                       end if !OCT2011
+                       end if
                      end do
                    end if
                  end do
@@ -2350,7 +2298,6 @@ if( USE_SOILWATER ) then
            debug_flag = ( DEBUG_LANDIFY .and. debug_proc .and. &
                i==debug_li .and. j==debug_lj )
 
-           ! if( likely_coastal(i,j) ) then !some land
            if( mask(i,j) ) then ! likely coastal or water_frac <0.0 for SW
               do jj = -NEXTEND, NEXTEND
                 do ii = -NEXTEND, NEXTEND

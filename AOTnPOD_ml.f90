@@ -82,7 +82,6 @@ module AOTx_ml
     type(O3cl), public, allocatable, dimension(:) :: &
      VEGO3_OUTPUTS
 
-    !WIMMAX type(O3cl), public, parameter, dimension(26) :: &
     type(O3cl), public, parameter, dimension(40) :: &
      VEGO3_DEFS    =  (/ &
          ! name               class X/Y   defn   txtLC relSGS Sacc Eacc
@@ -104,7 +103,7 @@ module AOTx_ml
    O3cl( "SPOD25_crops  ",   "SPOD", 25.0, "- ", "IAM_CR",F,0,999 ), & 
    O3cl( "SPOD15_crops  ",   "SPOD", 15.0, "- ", "IAM_CR",F,0,999 ), &!
    O3cl( "SPOD10_crops  ",   "SPOD", 10.0, "- ", "IAM_CR",F,0,999 ), & !9 => 16
-!WIMMAX:
+!TREE TESTS:
    O3cl( "POD1_NEUR_SPRUCE", "POD", 1.0,  "- ", "NEUR_SPRUCE  ",F,0,999 ), &
    O3cl( "POD1_NEUR_BIRCH ", "POD", 1.0,  "- ", "NEUR_BIRCH   ",F,0,999 ), &
    O3cl( "POD1_ACE_PINE ",   "POD", 1.0,  "- ", "ACE_PINE   ",F,0,999 ), & !

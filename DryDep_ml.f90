@@ -123,7 +123,6 @@ module DryDep_ml
  INCLUDE 'mpif.h'
  INTEGER STATUS(MPI_STATUS_SIZE),INFO
 
-!SPOD
   integer, private, save :: P != IO_SPOD + me
   ! Maps from adv index to one of calc indices
   integer, public, save, dimension(NSPEC_ADV) :: DepAdv2Calc 
@@ -875,6 +874,8 @@ integer :: nglob
            DepAdv2Calc, fluxfrac_adv, Deploss ) 
 
 
+      !----------------------------------------------------------------
+      ! HUGE OUTPUTS. Not for routine use ! 
        if (SPOD_OUT ) then   ! Extra outputs for ICP folkks
           if ( first_spod .and. nlocal_sites > 0  ) then
       P = IO_SPOD + me
@@ -910,7 +911,7 @@ integer :: nglob
          do iiL = 1, nlu
             iL  = iL_used(iiL)
             L   = Sub(iL)
-!print *, "SPOD_OUT:"//trim(fname), me,nlocal_sites, iL, imm, idd, ihh
+          !print *, "SPOD_OUT:"//trim(fname), me,nlocal_sites, iL, imm, idd, ihh
             write(P,"(a25,a8)",advance="no") adjustl(site_name(nglob)), adjustl(LandDefs(iL)%code)
             write(P,"(3i4)",advance="no")   L%SGS, L%EGS, daynumber
             write(P,"(3i3)",advance="no")   imm, idd, ihh
@@ -934,6 +935,7 @@ integer :: nglob
          end do !sites
         end if !iss
       end if !SPOD_OUT
+     !SPOD----------------------------------------------------
  end subroutine drydep
 
 end module DryDep_ml
