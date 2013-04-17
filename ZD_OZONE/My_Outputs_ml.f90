@@ -48,7 +48,7 @@ use ModelConstants_ml, only: PPBINV, PPTINV, ATWAIR, atwS, atwN, MasterProc, &
                              USE_AOD, USE_POLLEN,DEBUG_POLLEN
 use OwnDataTypes_ml,   only: Asc2D
 use Par_ml,            only: GIMAX,GJMAX,IRUNBEG,JRUNBEG,me
-use Pollen_const_ml,   only: ug2grains  
+! FUTURE use Pollen_const_ml,   only: ug2grains  
 use SmallUtils_ml,     only: find_index
 use TimeDate_ml,       only: date
 use Units_ml,          only: Init_Units,&
@@ -455,11 +455,11 @@ subroutine set_output_defs
       Asc2D("AOD_550nm" ,"AOD"    ,00         ,&
             ix1,ix2,iy1,iy2,1," ",1.0                               ,-999.9)
     endif
-    if(USE_POLLEN)then
-      j=j+1;hr_out(j) = &
-      Asc2D("Pollen"    ,"ADVugXX",poll, &
-            ix1,ix2,iy1,iy2,1,"grains/m3",to_ug_ADV(poll)*ug2grains ,-999.9)
-    endif
+ ! FUTURE   if(USE_POLLEN)then
+ ! FUTURE     j=j+1;hr_out(j) = &
+ ! FUTURE     Asc2D("Pollen"    ,"ADVugXX",poll, &
+ ! FUTURE          ix1,ix2,iy1,iy2,1,"grains/m3",to_ug_ADV(poll)*ug2grains ,-999.9)
+ ! FUTURE   endif
     if(DEBUG_POLLEN)then
       j=j+2;hr_out(j-1:j) = (/&
       Asc2D("heatsum"    ,"heatsum"    ,00,&
