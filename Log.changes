@@ -129,111 +129,21 @@ the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (see Makefile_gfortran) - gives loads of
 info on unused variables, etc.
 
-Will keep list here near top of Log.changes.
-LIST OF CODE needing quick check before Sep 2012 release
-
-Checked (vaguely)/
-cleaned
-dsSep15   Advection_ml.f90
-dsSep9    Aero_Vds_ml.f90
-dsSep13   Aero_water_ml.f90
-dsSep10   AirEmis_ml.f90
-dsSep14   Ammonium_ml.f90
-dsSep14   AOD_PM_ml.f90
-dsSep9    AOTnPOD_ml.f90
-dsSep15   Aqueous_n_WetDep_ml.f90
-dsSep13   Biogenics_ml.f90
-dsSep15   BLPhysics_ml.f90
-dsSep14   BoundaryConditions_ml.f90
-dsSep9    CellMet_ml.f90
-dsSep9    CheckStop_ml.f90
-dsSep9    ChemFunctions_ml.f90 - query to st
-dsSep9    Chem_ml.f90
-          CM_ChemGroups_ml.f90
-          CM_ChemRates_ml.f90
-          CM_ChemSpecs_ml.f90
-dsSep9    CoDep_ml.f90
-dsSep9    Convection_ml.f90
-dsSep9    Country_ml.f90
-dsSep9    DefPhotolysis_ml.f90
-dsSep15   DerivedFields_ml.f90
-dsSep15   Derived_ml.f90
-dsSep10   DO3SE_ml.f90
-dsSep9    DryDep_ml.f90 
-dsSep13   DustProd_ml.f90
-dsSep9    EcoSystem_ml.f90
-dsSep13   EmisDef_ml.f90
-dsSep13   EmisGet_ml.f90
-dsSep13   Emissions_ml.f90
-dsSep13   EQSAM_ml.f90
-dsSep16   ForestFire_ml.f90
-dsSep13   Functions_ml.f90
-dsSep15   global2local.f90
-dsSep13   GlobalBCs_ml.f90
-dsSep9    GridAllocate_ml.f90
-dsSep13   GridValues_ml.f90
-dsSep13   InterpolationRoutines_ml.f90
-dsSep9    Io_ml.f90
-dsSep9    Io_Nums_ml.f90
-dsSep9    Io_Progs_ml.f90
-dsSep9    KeyValue_ml.f90
-dsSep9    LandDefs_ml.f90
-dsSep9    LandPFT_ml.f90
-dsSep9    Landuse_ml.f90
-dsSep9    local2global.f90
-dsSep9    LocalVariables_ml.f90 
-dsSep13   MARS_Aero_water_ml.f90
-dsSep9    MARS_ml.f90
-dsSep13   MassBudget_ml.f90
-dsSep13   MetFields_ml.f90
-dsSep13   Met_ml.f90
-dsSep13   MicroMet_ml.f90
-dsSep15   ModelConstants_ml.f90
-dsSep9    MosaicOutputs_ml.f90
-dsSep14   My_Aerosols_ml.f90
-dsSep15   My_Derived_ml.f90
-dsSep14   My_ExternalBICs_ml.f90
-dsSep14   My_Outputs_ml.f90
-dsSep14   My_SOA_ml.f90
-dsSep14   Nest_ml.f90
-dsSep15   NetCDF_ml.f90
-dsSep13   OutputChem_ml.f90
-dsSep13   Output_hourly.f90
-dsSep9    OwnDataTypes_ml.f90
-dsSep13   Par_ml.f90
-dsSep9    PhyChem_ml.f90
-dsSep9    PhysicalConstants_ml.f90
-     x    Pollen_ml.f90 - Will move to FUTURE_Pollen
-dsSep9    Radiation_ml.f90
-dsSep9    Rb_ml.f90
-dsSep13   ReadField_ml.f90
-dsSep9    Rsurface_ml.f90
-dsSep9    Runchem_ml.f90
-dsSep13   SeaSalt_ml.f90
-dsSep13   Setup_1dfields_ml.f90
-dsSep13   Setup_1d_ml.f90
-dsSep13   Sites_ml.f90
-dsSep14   SmallUtils_ml.f90
-dsSep14   SoilWater_ml.f90
-!dsSep13  Solver.f90
-dsSep14   StoFlux_ml.f90
-dsSep14   SubMet_ml.f90
-dsSep9    Tabulations_ml.f90
-dsSep14   TimeDate_ExtraUtil_ml.f90
-dsSep14   TimeDate_ml.f90
-dsSep13   Timefactors_ml.f90
-dsSep14   Timing_ml.f90
-dsSep9    Trajectory_ml.f90
-dsSep14   Unimod.f90
-dsSep14   Units_ml.f90
-dsSep14   Volcanos_ml.f90
-dsSep14   Wesely_ml.f90
 
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-17th Dave 
+17th Svetlana (2563)
+
+AOD_PM_ml.f90 has been re-written in a flexible way,
+where species indices are found by "find_index" function in Derived_ml.
+
+AOD_PM_ml.90
+Derived_ml.f90
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+17th Dave  (2562)
 
 BGND_CH4 added as namelost variable, to allow CH4 to be reset with 
   the config file. Use of BGND_CH4 = -1 keeps default settings.
