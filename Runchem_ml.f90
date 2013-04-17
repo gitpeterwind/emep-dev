@@ -67,7 +67,7 @@ module RunChem_ml
   use OrganicAerosol_ml,only: ORGANIC_AEROSOLS, OrganicAerosol, &
                               Init_OrganicAerosol, & !FEB2012
                               SOA_MODULE_FLAG   ! ="VBS" or "NotUsed"
-  use Pollen_ml,        only: Pollen_flux
+  ! FUTURE use Pollen_ml,        only: Pollen_flux
   use Par_ml,           only: lj0,lj1,li0,li1, limax, ljmax,  &
                               gi0, gj0, me,IRUNBEG, JRUNBEG  !! for testing
   use SeaSalt_ml,       only: SeaSalt_flux
@@ -139,8 +139,8 @@ subroutine runchem(numt)
       if(USE_DUST)     &
         call WindDust(i,j,debug_flag)     ! sets rcemis(DUST...)
 
-      if(USE_POLLEN) &
-        call Pollen_flux(i,j,debug_flag)
+    ! FUTURE  if(USE_POLLEN) &
+    ! FUTURE      call Pollen_flux(i,j,debug_flag)
 
       call Setup_Clouds(i,j,debug_flag)
 
