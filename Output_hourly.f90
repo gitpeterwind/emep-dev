@@ -73,7 +73,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
   use OwnDataTypes_ml,  only: TXTLEN_DERIV,TXTLEN_SHORT
   use Par_ml,           only: MAXLIMAX, MAXLJMAX, GIMAX,GJMAX,        &
                               me, IRUNBEG, JRUNBEG, limax, ljmax
-  use Pollen_ml,        only: heatsum, pollen_left, AreaPOLL
+! FUTURE  use Pollen_ml,        only: heatsum, pollen_left, AreaPOLL
   use TimeDate_ml,      only: current_date
   use TimeDate_ExtraUtil_ml,only : date2string
   use Units_ml,         only: Group_Units
@@ -456,31 +456,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
 
       case("ws_10m")      ! No cfac for surf.variable; Skip Units conv.
         forall(i=1:limax,j=1:ljmax) hourly(i,j) = ws_10m(i,j,1)
-
-      case("heatsum")
-       !hr_out(ih)%unit='degree_days'
-        if(allocated(heatsum))then
-          forall(i=1:limax,j=1:ljmax) hourly(i,j) = heatsum(i,j)
-        else
-          hourly(:,:) = 0.0
-        endif
-
-      case("pollen_left")
-       !hr_out(ih)%unit=''
-        if(allocated(pollen_left))then
-          forall(i=1:limax,j=1:ljmax) hourly(i,j) = pollen_left(i,j)
-        else
-          hourly(:,:) = 0.0
-        endif
-
-      case("pollen_emiss")
-       !hr_out(ih)%unit='grains/m2/h'
-        if(allocated(AreaPOLL))then
-          forall(i=1:limax,j=1:ljmax) hourly(i,j) = AreaPOLL(i,j)
-        else
-          hourly(:,:) = 0.0
-        endif
-
+   
       case("theta")       ! No cfac for surf.variable; Skip Units conv.
         forall(i=1:limax,j=1:ljmax) hourly(i,j) = th(i,j,KMAX_MID,1)
 
