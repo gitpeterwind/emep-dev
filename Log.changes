@@ -233,7 +233,17 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-17th April 
+17th Dave 
+
+BGND_CH4 added as namelost variable, to allow CH4 to be reset with 
+  the config file. Use of BGND_CH4 = -1 keeps default settings.
+
+ModelConstants_ml
+BoundaryConditions_ml
+config_EMEPSTD.nml -  have not added yet to other configs as optional
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+17th April (2561)
 Birthe - removel Pollen for user course
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Dave 17th April  (2543)  = GP_work version

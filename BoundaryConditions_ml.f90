@@ -90,12 +90,13 @@ use GridValues_ml,     only: glon, glat   & ! full domain lat, long
                             ,sigma_mid    & !sigma layer midpoint
                             ,debug_proc, debug_li, debug_lj & ! debugging
                             ,i_fdom, j_fdom,B_mid  ! for debugging
-use Io_Progs_ml,       only: datewrite
+use Io_Progs_ml,       only: datewrite, PrintLog
 use Landuse_ml,        only: mainly_sea
 use LocalVariables_ml, only: Grid
 use MetFields_ml,      only: z_mid      ! height of half layers
 use ModelConstants_ml, only: KMAX_MID  &  ! Number of levels in vertical
                             ,iyr_trend &  ! Used for e.g. future scenarios
+                            ,BGND_CH4  &  ! If positive, replaces defaults
                             ,USE_SEASALT & 
                             ,DEBUG_BCS, DEBUG_i, DEBUG_j, MasterProc, PPB
 use Par_ml,          only: &
@@ -717,6 +718,7 @@ subroutine My_bcmap(iyr_trend)
   real :: decrease_factor(NGLOB_BC+1:NTOT_BC) ! Decrease factor for misc bc's
         ! Gives the factor for how much of the top-layer conc. that is left
         ! at bottom layer
+  character(len=80) :: txt
 
   real :: top_misc_bc(NGLOB_BC+1:NTOT_BC) ! Conc. at top of misc bc
 !    real :: ratio_length(KMAX_MID)    ! Vertical length of the actual layer
@@ -750,10 +752,20 @@ subroutine My_bcmap(iyr_trend)
     top_misc_bc(IBC_CH4) = 1780.0 * exp(-0.01*0.91*(1990-iyr_trend)) ! Zander,1975-1990
                                  !exp(-0.01*0.6633*(1975-iyr_trend)) ! Zander,1951-1975
   endif
+
+
+  ! Reset with namelist values if set
+  if ( BGND_CH4 > 0 ) then
+     top_misc_bc(IBC_CH4) = BGND_CH4
+  end if
+
   trend_ch4 = top_misc_bc(IBC_CH4)/1780.0
-  if (MasterProc.and.DEBUG_MYBC) print "(a20,i5,2f12.3)","TREND CH4", &
-    iyr_trend, trend_ch4, top_misc_bc(IBC_CH4)
-  if (MasterProc) print "(a,f12.3,a,I5,a)"," CH4 ", top_misc_bc(IBC_CH4), ' (trend year ',iyr_trend,')'
+
+  if (MasterProc) then
+     write(txt,"(a,2i6,f8.1,f8.3)") "BC: CH4 settings (iyr,nml,ch4,trend): ",&
+             iyr_trend, nint(BGND_CH4), top_misc_bc(IBC_CH4),trend_ch4
+     call PrintLog(txt)
+  end if
 
   top_misc_bc(IBC_CH4) =  top_misc_bc(IBC_CH4) * PPB
   top_misc_bc(IBC_H2)  =  600.0 * PPB

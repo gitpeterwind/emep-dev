@@ -97,6 +97,10 @@ logical, public, save ::             &
 ! Output flags
  ,SELECT_LEVELS_HOURLY  = .false.      ! for FORECAST, 3DPROFILES
 
+! Methane background. 
+  real, public, save :: BGND_CH4 = -1  ! -1 gives defaults in BoundaryConditions_ml, 
+                                       ! otherwise  set to positive value in NML
+
 ! Some flags for model setup
 ! will be removed when code is sufficiently tested
 ! (for convection use foundconv in permanent code)
@@ -112,6 +116,7 @@ logical, public, parameter ::         &
 
 logical, public, parameter ::  USE_EtaCOORDINATES=.false.!temporay parameter; will be set true and removed after testing
 
+!IN-TESTING (reset in NML if wanted)
 !Boundary layer profiles
   character(len=4), parameter, public :: FluxPROFILE = &
      "Iter"   !
@@ -495,6 +500,7 @@ subroutine Config_ModelConstants(iolog)
      ,SELECT_LEVELS_HOURLY &  ! incl. FORECAST, 3DPROFILES
      ,FORECAST, USE_EMERGENCY, ANALYSIS , USE_AOD &
      ,SEAFIX_GEA_NEEDED & ! only if problems, see text above.
+     ,BGND_CH4  & ! Can reset background CH4 values 
      ,EMIS_SOURCE, EMIS_TEST, EMIS_OUT & 
      ,FLUX_VEGS  & ! TESTX
      ,NETCDF_COMPRESS_OUTPUT,  RUNDOMAIN
