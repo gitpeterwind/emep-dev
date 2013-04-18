@@ -29,6 +29,12 @@
 
  module AOD_PM_ml
 
+ !***********************************************************************
+ ! The parameterisation is under delevopment and testing. It is to be
+ ! updated in the nearest future. Please, contact us for the update, if
+ ! you have a particular interest to aerosol optics calculations
+ !***********************************************************************
+
   !-----------------------------------------------------------------------! 
   ! Calculates Aerosol Optical Depth (AOD) for 0.5 um radiation based on 
   ! aerosol mass concentrations and specific extinction cross-sections 
@@ -83,13 +89,14 @@
    logical, intent(in) :: debug
 
    integer :: k, n, itot, irh
+   integer, parameter :: Nrh = 7
    real, parameter :: lambda = 0.55e-6
    real, parameter :: rhoSO4=1.6, rhoOC=1.8, rhoEC=1.0,   &
                       rhoDU=2.6,  rhoSS=2.2 
    real, parameter :: Reff_SO4 = 0.156, Reff_OC = 0.087, Reff_EC = 0.039, &
                       Reff_DUf = 0.80,  Reff_DUc = 4.5, Reff_SSf = 0.80,  &
                       Reff_SSc = 5.73
-   real, parameter, dimension(7) ::    &
+   real, parameter, dimension(Nrh) ::    &
        RelHum = (/ 0.0,  0.5, 0.7, 0.8, 0.9, 0.95, 0.99 /),  &
        GF_SO4 = (/ 1.0,  1.4, 1.5, 1.6, 1.8,  1.9,  2.2 /),  &
        GF_OC  = (/ 1.0,  1.2, 1.4, 1.5, 1.6,  1.8,  2.2 /),  &
@@ -103,7 +110,7 @@
        Ex_SSc = (/ 2.143, 2.103, 2.090, 2.106, 2.084, 2.070, 2.064/)
   real, dimension(KMAX_MID):: ext_SO4, ext_NO3, ext_NH4, ext_EC,       &
                               ext_OM, ext_SS, ext_DU, kext
-  real :: gfSO4, gfOC, gfEC, gfSS, &
+  real :: rh_actual, rh_corr, gfSO4, gfOC, gfEC, gfSS, &
           rhoSO4_wet, rhoOC_wet, rhoEC_wet, rhoSS_wet, rhoNO3c_wet,  &
           massGF_SO4, massGF_OC, massGF_EC, massGF_SS,               &
           extSO4, extEC, extOC, extSSf, extSSc,    AOD_old,          &                       
@@ -140,49 +147,11 @@
 !..   according to Chin et.al (J. Atm.Sci., 59, 2001)
 
 
-  RHloop: do irh = 2, 7
-    if ( rh(k) <= RelHum (irh) ) then
+  RHloop: do irh = 2, Nrh
 
-!.. Find actual growth factor by interpolation
-        
-      gfSO4 = GF_SO4(irh-1) + ( (GF_SO4(irh) - GF_SO4(irh-1)) /    &
-                                (RelHum(irh) - RelHum(irh-1) ) ) * &
-                                      ( rh(k) - RelHum(irh-1)   )
-      gfOC  = GF_OC(irh-1) + ( (GF_OC(irh) - GF_OC(irh-1)) /       &
-                                (RelHum(irh) - RelHum(irh-1) ) ) * &
-                                     ( rh(k) - RelHum(irh-1)   )
-      gfEC  = GF_EC(irh-1) + ( (GF_EC(irh) - GF_EC(irh-1)) /       &
-                                (RelHum(irh) - RelHum(irh-1) ) ) * &
-                                     ( rh(k) - RelHum(irh-1)   )
-      gfSS  = GF_SS(irh-1) + ( (GF_SS(irh) - GF_SS(irh-1)) /       &
-                                (RelHum(irh) - RelHum(irh-1) ) ) * &
-                                     ( rh(k) - RelHum(irh-1)   )
-!.. Extinction efficiencies
-      extSO4 = Ex_SO4(irh-1) + ( (Ex_SO4(irh) - Ex_SO4(irh-1)) /   &
-                                (RelHum(irh) - RelHum(irh-1) ) ) * &
-                                      ( rh(k) - RelHum(irh-1)   )
-      extOC  = Ex_OC(irh-1)  + ( (Ex_OC(irh) - Ex_OC(irh-1)) /     &
-                                (RelHum(irh) - RelHum(irh-1) ) ) * &
-                                     ( rh(k) - RelHum(irh-1)   )
-      extEC  = Ex_EC(irh-1)  + ( (Ex_EC(irh) - Ex_EC(irh-1)) /     &
-                                (RelHum(irh) - RelHum(irh-1) ) ) * &
-                                     ( rh(k) - RelHum(irh-1)   )
-      extSSf = Ex_SSf(irh-1) + ( (Ex_SSf(irh) - Ex_SSf(irh-1)) /   &
-                                (RelHum(irh) - RelHum(irh-1) ) ) * &
-                                     ( rh(k) - RelHum(irh-1)   )
-      extSSc = Ex_SSc(irh-1) + ( (Ex_SSc(irh) - Ex_SSc(irh-1)) /   &
-                                (RelHum(irh) - RelHum(irh-1) ) ) * &
-                                     ( rh(k) - RelHum(irh-1)   )
+    rh_actual = min( rh(k), RelHum (Nrh) )
 
-  if(debug .and. (k == KMAX_MID) ) write(6,'(a15,i3,5f8.2)') '## Rh >> ', &
-  irh, rh(k), RelHum(irh), RelHum(irh-1), GF_SO4(irh), GF_SO4(irh-1)
-   if(debug .and. (k == KMAX_MID) ) write(6,'(a15,i3,f8.2,3f10.3)')   &
-   '## Ext > ', irh, rh(k),  Ex_SO4(irh-1), Ex_SO4(irh), extSO4
-
-!.. end leave Rh loop
-      exit RHloop
-
-    else 
+   if ( rh_actual == RelHum(irh-1) ) then     
       gfSO4 = 1.0
       gfOC  = 1.0
       gfEC  = 1.0
@@ -193,7 +162,32 @@
       extSSf = Ex_SSf(1)
       extSSc = Ex_SSc(1)
       cycle 
-    
+ 
+    elseif ( rh_actual <= RelHum (irh) ) then
+!st    if ( rh(k) <= RelHum (irh) ) then
+      rh_corr = (rh_actual - RelHum(irh-1)) / (RelHum(irh) - RelHum(irh-1))        
+
+!.. Find actual growth factor by interpolation
+        
+      gfSO4 = GF_SO4(irh-1) + (GF_SO4(irh) - GF_SO4(irh-1)) *rh_corr
+      gfOC  = GF_OC(irh-1)  + (GF_OC(irh)  - GF_OC(irh-1))  *rh_corr
+      gfEC  = GF_EC(irh-1)  + (GF_EC(irh)  - GF_EC(irh-1))  *rh_corr
+      gfSS  = GF_SS(irh-1)  + (GF_SS(irh)  - GF_SS(irh-1))  *rh_corr
+!.. Extinction efficiencies
+      extSO4 = Ex_SO4(irh-1) + (Ex_SO4(irh) - Ex_SO4(irh-1)) *rh_corr
+      extOC  = Ex_OC(irh-1)  + (Ex_OC(irh)  - Ex_OC(irh-1))  *rh_corr 
+      extEC  = Ex_EC(irh-1)  + (Ex_EC(irh)  - Ex_EC(irh-1))  *rh_corr
+      extSSf = Ex_SSf(irh-1) + (Ex_SSf(irh) - Ex_SSf(irh-1)) *rh_corr
+      extSSc = Ex_SSc(irh-1) + (Ex_SSc(irh) - Ex_SSc(irh-1)) *rh_corr
+
+  if(debug .and. (k == KMAX_MID) ) write(6,'(a15,i3,5f8.2)') '## Rh >> ', &
+  irh, rh_actual, RelHum(irh), RelHum(irh-1), GF_SO4(irh), GF_SO4(irh-1)
+   if(debug .and. (k == KMAX_MID) ) write(6,'(a15,i3,f8.2,3f10.3)')   &
+   '## Ext > ', irh, rh_actual,  Ex_SO4(irh-1), Ex_SO4(irh), extSO4
+
+!.. end leave Rh loop
+      exit RHloop
+   
     endif
   enddo RHloop
 
