@@ -218,6 +218,8 @@ my $METformat="cdf"; # felt or cdf
 my $GRID = "EECCA"; # TNO7, TNO14, TNO28, TNO56, EMEP, EECCA, MACC02, GLOBAL or FORECAST
    $GRID = $eCWF?"GLOBAL":"MACC02" if $CWF;
    $GRID = $BENCHMARK{'grid'} if %BENCHMARK;
+my $MONTHLY_EMIS = ( $GRID eq "GLOBAL" ); #Switch off if only annual used
+
 #DS Confusing list of possibilites. Needs  CHECK LATER
 my $MetDriver = "H20" ; # DS consider condition "EC";  #"H20";
    $MetDriver = "EC" if $year >= 2005; # Available Nov 2011
@@ -432,6 +434,10 @@ if ($STALLO && $TREND_RUNS ) {
 if ( $GRID eq "GLOBAL" ) {
   $EMIS_INP = $DATA_LOCAL;
   $emisdir = ($eCWF)?"$EMIS_INP/Emissions_June2012":"$EMIS_INP/MonthlyEmis";
+  if ( $exp_name =~ /ECLAIRE/ ) {
+     $MONTHLY_EMIS = 0;
+     $emisdir = "$DATA_LOCAL/ECLAIRE_1deg_Feb2013/$iyr_trend";
+  }
   $pm_emisdir = $emisdir;
 }
 
@@ -837,7 +843,7 @@ print "TESTING PM $poll $dir\n";
         $ifile{"$SoilDir/BC_DUST/2000/$bc.$mm"} =  "$bc.$mm";
       }
     } # dust
-    if ( $GRID eq "GLOBAL" ) {
+    if ( $GRID eq "GLOBAL" && $MONTHLY_EMIS ) {
       $mm = sprintf "%2.2d", $mmm;
       foreach my $t ( qw (nox voc co nh3 pm25 pmco) ) {
         $ifile{"$emisdir/grid$gridmap{$t}.$mm"} =  "grid$t.$mm";

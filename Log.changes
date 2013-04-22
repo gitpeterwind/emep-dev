@@ -134,6 +134,25 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21st April 2013 Dave  (2567)
+
+Country_ml - added EGYP
+
+EmisGet_ml.90 - tmp - some debugging changes
+
+run.pl - added $MONTHLY_EMIS, which should be set to zero if
+         global emissions are not monthly. ECLAIRE example added.
+
+
+(all in preperation for new ECLAIRE/ECLIPSE global runs)
+
+Emissions files (annual) for ECLAIRE 1deg created in GLOBAL. Used
+if exp_name =~ /ECLAIRE/
+
+NOTE - BUG found in some global emission files. Always check
+emission output of runs!
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TAG: 2565 as rv4.3   19th April 2013 xxxxxxxxxxxxxxxxxxxx
       (version used for Open-source course, and apart from AOD same
        as for Gothenburg Protocol runs.)
