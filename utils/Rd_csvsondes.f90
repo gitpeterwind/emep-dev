@@ -1,9 +1,12 @@
 implicit none
-!  Reads from input file (e.g. model file sondes.0107 say), and provides 
+!  Reads from input file (e.g. model file sondes_2007.csv say), and provides 
 !  various outputs for a chosen pollutant.
 !
-!       SONDES.vals - provides output for each hour (by row), with here NK=15
-!                     columns representing 15 height levels.
+!   SONDES.vals - provides output for each hour (by row), with here NK=20
+!                 columns representing 20 height levels.
+!   SONDES.mmean - monthly means for each k level
+!   SONDES.dmax  - mean of daily max for each k level
+!
 
 
 character(len=100) :: infile   ! for GetArg
@@ -122,6 +125,7 @@ real :: mmean(12)
 
 
    do while (.true.)
+     old_mm = -1
      do isite = 1, nsites
      ! ----- new csv -----------------------------
       read(io_in,"(a)",end=100) longline ! wsite, txt1, txt2 !, v1
@@ -145,8 +149,6 @@ real :: mmean(12)
        longline=longline(comma2+1:)
       !print *, "longline ", longline(1:40)
        read(longline,*) ( xin(1:NK,n), n=1, nspec )
-!print "(a,3i4,4i5,2f12.3)", "TEST" // trim(date), isite, wanted_site, wanted_spec,&
-!       dd, mm, yy, hh, xin(1,wanted_spec), xin(20,wanted_spec)
 
       if( DEBUG ) print *, insite, yy, mm, dd, hh
 !stop "HERE"
@@ -155,9 +157,11 @@ real :: mmean(12)
            last_day = jd
            data(jd,hh,:) = xin(:,wanted_spec)
            maxx = max( maxval(xin(1:NK,wanted_spec)), maxx )
-           if(DEBUG) print "(a,a,6i5,3f12.3)", "SET:" , trim(date), &
+           if(DEBUG) then
+             print "(a,a,6i5,3f12.3)", "SET:" , trim(date), &
               jd, last_day, dd, mm, yy, hh, &
                xin(1,wanted_spec), xin(20,wanted_spec), maxx
+           end if
         end if
      end do
    end do
@@ -185,6 +189,8 @@ real :: mmean(12)
 
     do k = NK, 1, -1
       old_mm = -1
+      mmean(:) = 0.0
+      nmm(mm) = 0
       do jd = 1, last_day
         mm = cmonth(jd)
         if( mm /= old_mm ) then
@@ -193,6 +199,7 @@ real :: mmean(12)
         end if
         nmm(mm) = nmm(mm) + 1
         mmean( mm ) =  mmean( mm )  + sum( data(jd,:, k)/24.0 )
+       !print *, "Last ", jd, last_day
       end do
       write(IO_MMEAN,"(i4, 12f10.3)") k, (mmean(mm)/nmm(mm), mm= 1, 12) 
     end do
