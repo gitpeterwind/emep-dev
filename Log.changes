@@ -113,13 +113,10 @@ TERPPEROXY
 
 IMPORTANT NOTE:
 
-The latest code does now CM_Emis.inc in CVS. This is generated from
-mk.GenChem, which reads the emissions needed from GenIn.reactions.
+All CM_ files are removed from the cvs system. You have to
+run GenChem!!!
 
 Run mk.GenChem  or e.g. make EMEP, see above!!!!
-
-NOTE: Now all all CM_ files are removed from the cvs system. You have to
-run GenChem!!!
 
 Also - GenChem makes femis.defaults in the ZCM_... directory
 
@@ -132,6 +129,12 @@ info on unused variables, etc.
 
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+28th April 2013 Dave (2571)
+
+Emissions_ml - fixed call for global soil emissions for 2005, which
+  was causing a crash in global runs.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 24th April 2013 Dave (2570)

@@ -1541,7 +1541,8 @@ else if ( USE_GLOBAL_SOILNOX ) then ! Global soil NOx
   if(nstart>0.and.nstart<=120)then
    !the month is defined
    call ReadField_CDF('nox_emission_1996-2005.nc','NOX_EMISSION',SoilNOx,nstart=nstart,&
-   interpol='conservative',known_projection="lon lat",needed=.true.,debug_flag=.false.)
+   !interpol='conservative',known_projection="lon lat",needed=.true.,debug_flag=.false.)
+   interpol='conservative',known_projection="lon lat",needed=.true.,debug_flag=.false.,UnDef=0.0)
    if ( DEBUG_SOILNOX .and.debug_proc ) write(*,*) "PROPER YEAR of SOILNO ", current_date%year, nstart
   else
    !the year is not defined; average over all years
