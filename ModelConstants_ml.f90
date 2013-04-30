@@ -483,8 +483,8 @@ character(len=*), public, parameter :: model="EMEP_MSC-W"
 !----------------------------------------------------------------------------
 contains
 subroutine Config_ModelConstants(iolog)
-    character(len=120)  :: txt, errmsg
-    logical             :: file_exists
+    character(len=120)  :: txt
+    !logical             :: file_exists
     integer, intent(in) :: iolog ! for Log file
 
     NAMELIST /ModelConstants_config/ &
