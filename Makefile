@@ -26,7 +26,26 @@ ifeq ($(MACHINE),stallo)
   LLIB += $(NETCDF_ROOT)/lib
   MAKEDEPF90=/home/mifapw/bin/makedepf90
   OPT_FLAGS = -O2 -ftz
+else ifeq ($(MACHINE),gstallo)
+  # Needs module swap intel gcc/4.7.2
+  NETCDF_ROOT=/global/apps/netcdf/4.2.1.1/gcc/4.7.2
+  MODULES = gcc/4.7.2 openmpi/1.6.2 netcdf/4.2.1.1
+  LIBS += -lnetcdf -lnetcdff
+  #INCL +=   /usr/include 
+  #LLIB +=   -L/usr/lib  
+  INCL += $(NETCDF_ROOT)/include
+  LLIB += $(NETCDF_ROOT)/lib
+  INCL += /global/apps/openmpi/1.6.2/gcc/4.7.2/include
+  MAKEDEPF90=/home/mifapw/bin/makedepf90
   LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
+  DEBUG_FLAGS =
+  OPT_FLAGS =
+  #LD = gfortran
+  #F90 = gfortran
+  F90FLAGS = -fdefault-real-8 -O3 -Wall -ffixed-line-length-none -ffree-line-length-none \
+    -fbounds-check -pedantic -fimplicit-none
+  FC=mpif90
+  LD=mpif90
 else ifeq ($(MACHINE),vilje)
 # MODULES = intelcomp/11.1.073   mpt/2.04 netcdf/4.1.3-intel.11.1.073
   MODULES = intelcomp/12.0.5.220 mpt/2.06 netcdf/4.1.3

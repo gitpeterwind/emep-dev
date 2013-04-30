@@ -14,7 +14,7 @@ integer, parameter :: IO_5=5, IO_IN = 10,  &
    IO_SNAM=12, IO_DMAX=14, IO_MMEAN=15, IO_VALS=16, IO_DATES= 17, &
    NK = 20, &   ! Number of vertical levels to be printed
    MAX_SITES= 100, MAX_SPEC = 200
-character(len=25000) :: longline
+character(len=35000) :: longline
 character(len=20), dimension(MAX_SITES) :: sitename
 character(len=20), dimension(MAX_SPEC) :: specname
 real             , dimension(NK,MAX_SPEC) :: xin
