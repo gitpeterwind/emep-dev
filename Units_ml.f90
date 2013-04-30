@@ -213,6 +213,8 @@ function Units_Scale(txtin,iadv,unitstxt,volunit,needroa,debug_msg) result(units
     txt="mix_ratio"
   case("ppbv")
     txt="ppb"
+  case("ppbV")
+    txt="ppb"
   endselect
   i=find_index(txt,unit_map(:)%utxt)
   if(i<1)i=find_index(txt,unit_map(:)%units)

@@ -2252,6 +2252,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
 
   if( present(known_projection) ) then
      data_projection = trim(known_projection)
+     if(trim(known_projection)=="longitude latitude")data_projection = "lon lat"
      if ( debug ) write(*,*) 'data known_projection ',trim(data_projection)
   else
     call check(nf90_get_att(ncFileID, nf90_global, "projection", data_projection ),"Proj")
@@ -2259,7 +2260,8 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   end if
   if(MasterProc)write(*,*)'Interpolating ',trim(varname),' from ',trim(filename),' to present grid'
 
-  if(trim(data_projection)=="lon lat")then ! here we have simple 1-D lat, lon
+  if(trim(data_projection)=="lon lat")then 
+     ! here we have simple 1-D lat, lon
      allocate(Rlon(dims(1)), stat=alloc_err)
      allocate(Rlat(dims(2)), stat=alloc_err)
      if ( debug ) write(*,"(a,a,i5,i5,a,i5)") 'alloc_err lon lat ',&
@@ -2273,13 +2275,19 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   status=nf90_inq_varid(ncid = ncFileID, name = 'lon', varID = lonVarID)
   if(status /= nf90_noerr) then
      status=nf90_inq_varid(ncid = ncFileID, name = 'LON', varID = lonVarID)
-     call CheckStop(status /= nf90_noerr,'did not find longitude variable')
+     if(status /= nf90_noerr) then
+        status=nf90_inq_varid(ncid = ncFileID, name = 'longitude', varID = lonVarID)
+        call CheckStop(status /= nf90_noerr,'did not find longitude variable')
+     endif
   endif
 
   status=nf90_inq_varid(ncid = ncFileID, name = 'lat', varID = latVarID)
   if(status /= nf90_noerr) then
      status=nf90_inq_varid(ncid = ncFileID, name = 'LAT', varID = latVarID)
-     call CheckStop(status /= nf90_noerr,'did not find latitude variable')
+     if(status /= nf90_noerr) then
+        status=nf90_inq_varid(ncid = ncFileID, name = 'latitude', varID = latVarID)
+        call CheckStop(status /= nf90_noerr,'did not find latitude variable')
+     endif
   endif
   if(trim(data_projection)=="lon lat")then
      call check(nf90_get_var(ncFileID, lonVarID, Rlon), 'Getting Rlon')
@@ -2310,9 +2318,9 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
      !check that there are dimensions called lon and lat
 
      call check(nf90_inquire_dimension(ncid = ncFileID, dimID = dimids(1), name=name ),name)
-     call CheckStop(trim(name)/='lon',"longitude not found")
+     call CheckStop(trim(name)/='lon'.and.trim(name)/='longitude',"longitude not found")
      call check(nf90_inquire_dimension(ncid = ncFileID, dimID = dimids(2), name=name ),name)
-     call CheckStop(trim(name)/='lat',"latitude not found")
+     call CheckStop(trim(name)/='lat'.and.trim(name)/='latitude',"latitude not found")
 
      if(data3D)then
         call check(nf90_inquire_dimension(ncid = ncFileID, dimID = dimids(3), name=name ))
