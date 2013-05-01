@@ -130,6 +130,10 @@ info on unused variables, etc.
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+1st May 2013 Dave (2575)
+GlobalBCs_ml - changed format for SIAtrend output to fix gfortran crash
+  reported  by Adam Miles.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 30th April 2013 Peter (2574)
 Units_ml: accept ppbV as ppb
 NetCDF_ml: accept 'longitude' or 'latitude' instead of 'lon' 'lat'
