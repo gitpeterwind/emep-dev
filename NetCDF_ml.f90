@@ -2538,7 +2538,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
         Ndiv=max(1,Ndiv)
         Ndiv2=Ndiv*Ndiv
         !
-        if(projection/='Stereographic'.and.projection/='lon lat')then
+        if(projection/='Stereographic'.and.projection/='lon lat'.and.projection/='Rotated_Spherical')then
            !the method should be revised or used only occasionally
            if(me==0)write(*,*)'WARNING: interpolation method may be CPU demanding'
         endif
@@ -2816,9 +2816,9 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
         yp_ext_div=(yp_ext+0.5)*Ndiv-0.5
         an_ext_div=an_ext*Ndiv
 
-        if(projection/='Stereographic'.and.projection/='lon lat'.and.projection=='Rotated_Spherical')then
+        if(projection/='Stereographic'.and.projection/='lon lat'.and.projection/='Rotated_Spherical')then
            !the method should be revised or used only occasionally
-           if(me==0)write(*,*)'WARNING: interpolation method may be CPU demanding'
+           if(me==0)write(*,*)'WARNING: interpolation method may be CPU demanding:',projection
         endif
         k2=1
         if(data3D)k2=kend-kstart+1
@@ -2931,9 +2931,9 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
         an_ext_div=an_ext*Ndiv
      if(MasterProc.and.debug)write(*,*)'zero_order interpolation ',an_ext_div,xp_ext_div,yp_ext_div,dims(1),dims(2)
 
-        if(projection/='Stereographic'.and.projection/='lon lat')then
+        if(projection/='Stereographic'.and.projection/='lon lat'.and.projection/='Rotated_Spherical')then
            !the method should be revised or used only occasionally
-           if(me==0)write(*,*)'WARNING: interpolation method may be CPU demanding'
+           if(me==0)write(*,*)'WARNING: interpolation method may be CPU demanding',projection
         endif
 
 

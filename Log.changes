@@ -130,9 +130,11 @@ info on unused variables, etc.
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-1st May 2013 Peter (2576)
+1st May 2013 Peter (2577)
 One line had fallen out of Makefile
   LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
+Removed output comment in NetCDF
+('WARNING: interpolation method may be CPU demanding' for Rotated_Spherical)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 1st May 2013 Dave (2575)
