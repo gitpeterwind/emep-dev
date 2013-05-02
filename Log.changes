@@ -130,7 +130,15 @@ info on unused variables, etc.
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-1st May 2013 Peter (2577)
+2nd May 2013 Alvaro, Peter (2578)
+
+Nest_ml, ExternalBICs_ml
+ICBC_FMT, istart=max(istart,RUNDOMAIN(1)...)
+can now put in config file to get full domain:
+istart=-999,jstart=-999,iend=9999,jend=9999,
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+2nd May 2013 Peter (2577)
 One line had fallen out of Makefile
   LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
 Removed output comment in NetCDF

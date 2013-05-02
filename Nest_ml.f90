@@ -57,7 +57,7 @@ module Nest_ml
 !   ExternalBICs_ml should handle different for different external sources.
 !   Experiment specific information must be set on ExternalBICs namelists.
 !   So far coded for FORECAST and EnsClimRCA(?) work.
-use ExternalBICs_ml,     only: set_extbic, icbc, &
+use ExternalBICs_ml,     only: set_extbic, icbc, ICBC_FMT,&
        EXTERNAL_BIC_SET, EXTERNAL_BC, EXTERNAL_BIC_NAME, TOP_BC, &
        iw, ie, js, jn, kt, &! i West/East bnd; j North/South bnd; k Top
        filename_eta
@@ -177,6 +177,8 @@ subroutine Config_Nest()
   filename_read_3D=date2string(template_read_3D,current_date,debug=mydebug)
   filename_read_BC=date2string(template_read_BC,current_date,debug=mydebug)
   filename_write  =date2string(template_write  ,current_date,debug=mydebug)
+  istart=max(istart,RUNDOMAIN(1));iend=min(iend,RUNDOMAIN(2))
+  jstart=max(jstart,RUNDOMAIN(3));jend=min(jend,RUNDOMAIN(4))
   first_call=.false.
 endsubroutine Config_Nest
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
@@ -491,7 +493,7 @@ subroutine init_icbc(idate,cdate,ndays,nsecs)
 
   if((DEBUG_NEST.or.DEBUG_ICBC).and.MasterProc)then
     write(*,"(a)") "Nest: DEBUG_ICBC Variables:"
-    write(*,"((1X,A,I3,'->',I3,'=',A24,'*',F7.2,2L2))") &
+    write(*,"((1X,A,I3,'->',"//ICBC_FMT//"))") &
       ('Nest: ADV_IC',n,adv_ic(n),n=1,size(adv_ic)),&
       ('Nest: ADV_BC',n,adv_bc(n),n=1,size(adv_bc))
   endif
