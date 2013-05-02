@@ -26,6 +26,7 @@ ifeq ($(MACHINE),stallo)
   LLIB += $(NETCDF_ROOT)/lib
   MAKEDEPF90=/home/mifapw/bin/makedepf90
   OPT_FLAGS = -O2 -ftz
+  LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
 else ifeq ($(MACHINE),gstallo)
   # Needs module swap intel gcc/4.7.2
   NETCDF_ROOT=/global/apps/netcdf/4.2.1.1/gcc/4.7.2
