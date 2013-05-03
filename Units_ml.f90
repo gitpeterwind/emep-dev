@@ -209,6 +209,8 @@ function Units_Scale(txtin,iadv,unitstxt,volunit,needroa,debug_msg) result(units
   case("ugSS","ugSS/m3","ugP","ugP/m3",&
        "mgSS","mgSS/m2","mgP","mgP/m2")
     txt=txt(1:2)
+  case("micro g/m3")
+    txt="ug"
   case("mol/mol","mole mole-1","mixratio")
     txt="mix_ratio"
   case("ppbv")
