@@ -43,7 +43,7 @@ else ifeq ($(MACHINE),gstallo)
   OPT_FLAGS =
   #LD = gfortran
   #F90 = gfortran
-  F90FLAGS = -fdefault-real-8 -O3 -Wall -ffixed-line-length-none -ffree-line-length-none \
+  F90FLAGS = -fbacktrace -fdefault-real-8 -O1 -Wall -ffixed-line-length-none -ffree-line-length-none \
     -fbounds-check -pedantic -fimplicit-none
   FC=mpif90
   LD=mpif90

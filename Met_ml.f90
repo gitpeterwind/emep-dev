@@ -2953,7 +2953,7 @@ if( USE_SOILWATER ) then
     integer :: varID,ndims
     integer :: ncFileID,status
     real :: scale,offset
-    character *100 :: period_read
+    character *100 :: period_read=' '
     character *200,save :: filename_save='notsaved'
     integer,save :: ncFileID_save=-99
    
