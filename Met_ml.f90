@@ -691,7 +691,7 @@ if( USE_SOILWATER ) then
     real,   dimension(MAXLIMAX,KMAX_MID) :: vrcv   ! and in y direction
 
     real   divt, p1, p2
-    real   prhelp_sum,divk(KMAX_MID),sumdiv
+    real   prhelp_sum,divk(KMAX_MID),sumdiv,dB_sum
     real   inv_METSTEP
 
     integer :: i, j, k, kk, nr,info, ii,jj,ii2,jj2
@@ -1204,6 +1204,7 @@ if( USE_SOILWATER ) then
 !see http://www.ecmwf.int/research/ifsdocs/DYNAMICS/Chap2_Discretization3.html#959545
 
 !(note that u_xmj and v_xmi have already been divided by xm here)
+    dB_sum=1.0/(B_bnd(KMAX_MID+1)-B_bnd(1))!normalisation factor for dB (should be one if entire atmosphere is included)
     do j = 1,ljmax
        do i = 1,limax
           Pmid=Ps_extended(i,j)! without "-PT"
@@ -1223,7 +1224,7 @@ if( USE_SOILWATER ) then
 
           Etadot(i,j,KMAX_MID+1,nr)=0.0
           do k=KMAX_MID,1,-1
-             Etadot(i,j,k,nr)=Etadot(i,j,k+1,nr)-dB(k)*sumdiv+divk(k)
+             Etadot(i,j,k,nr)=Etadot(i,j,k+1,nr)-dB(k)*dB_sum*sumdiv+divk(k)
              Etadot(i,j,k+1,nr)=Etadot(i,j,k+1,nr)*(dA(k)/Pref+dB(k))/(dA(k)+dB(k)*Pmid)
 !             Etadot(i,j,k+1,nr)=Etadot(i,j,k+1,nr)/(Ps_extended(i,j)-PT) gives same result as sdot for sigma coordinates
           enddo

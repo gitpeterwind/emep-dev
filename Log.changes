@@ -131,6 +131,14 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+8th May 2013  Peter (2582)
+
+Met_ml
+Slightly different derivation of vertical wind in eta coordinates (not use in sigma coordinates)
+DOCS/vert_wind.tex 
+Tex documentation with mathematical justification of the expression for vertical wind. 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 3rd May 2013  Peter (2581)
 Added "micro g/m3" as unit in Units_ml
 
