@@ -2,7 +2,7 @@
 \chapter{Welcome to EMEP }
 
 This guide gives a brief documentation of the EMEP/MSC-W model
-version rv4.0. 
+version rv4\_3. 
 It is intended primarily as a guide on how to run the model, and
 to help users wishing to understand or change 
 the model in terms of domains, outputs, chemistry, etc.
@@ -25,9 +25,8 @@ Atmospheric Chemistry and Physics, 12, 7825-7865,
 \end{itemize}
 
 
-The model source code is available from the  EMEP Open Source
-  website:\\ \url{https://wiki.met.no/emep/page1/unimodopensource}
-%http://www.emep.int/OpenSource/index.html}
+The model source code is available from the EMEP/MSC-W Open Source website:\\ 
+\url{https://wiki.met.no/emep/page1/emepmscw_opensource}
 
 \newpage
 
@@ -76,9 +75,8 @@ model code source files.
 \noindent It is important to note that the code is provided ``as it is'', 
 and EMEP/MSC-W has very limited resources with which to support
 code-usage. To help users an {\bf EMEP Forum} is available from the
-EMEP Open Source website in section ``Users'': ``EMEP Forum''. 
-Support to the user community will develop here with your
-contribution. 
+EMEP/MSC-W Open Source website in section ``Users'': ``EMEP Forum''. 
+Support to the user community will develop here with your contribution. 
 Please let us know what your needs for information are 
 (e-mail: emep.mscw@met.no).
 
@@ -87,7 +85,7 @@ Please let us know what your needs for information are
 \section{Computer Information}
 \label{sec:compinf}
 
-To compile the Unified EMEP/MSC-W model you need:\\
+To compile the EMEP/MSC-W model you need:\\
 
 \textbf{Fortran 95 compiler}
 
@@ -121,11 +119,11 @@ can download meteorology for only the period they are interested in, pluss one d
 
 
 It is recommended to read all the chapters of this EMEP/MSC-W model
-User Guide before you start downloading anything from the EMEP Open
+User Guide before you start downloading anything from the EMEP/MSC-W Open
 Source website.
 
 Please register as an EMEP User on the {\bf EMEP Forum}
-(EMEP Open Source website under ``Users'' section: ``EMEP Forum'')
+(EMEP/MSC-W Open Source website under ``Users'' section: ``EMEP Forum'')
 before you start downloading the EMEP/MSC-W model code and/or input
 data. This will give you access to further communication with the
 developing team and to the section on ``Questions and Answers''. 
@@ -139,18 +137,18 @@ EMEP/MSC-W model:
 \item Read the EMEP/MSC-W model User Guide
 \item
 Download input data (description in Chapter~\ref{ch:InputFiles} and
-data available from the EMEP Open Source website under ``Download''
+data available from the EMEP/MSC-W Open Source website under ``Download''
 section: ``Input Data'')
 \item
 Download the EMEP/MSC-W model source code (description in 
-section~\ref{sec:ModelCode} and the files are available from the EMEP 
+section~\ref{sec:ModelCode} and the files are available from the EMEP/MSC-W 
 Open Source website under ``Download'' section: ``Model Code'')
 \item
 Follow the instructions for 'Submitting a Run' description in
 Chapter~\ref{ch:SubmitARun}.
 \item
 Download some model results for comparison, description in
-Chapter~\ref{ch:output} and the files are available from the EMEP 
+Chapter~\ref{ch:output} and the files are available from the EMEP/MSC-W 
 Open Source website under ``Download'' section: ``Model Results''. 
 %NEWTOOLS:
 % \item
@@ -165,18 +163,18 @@ Open Source website under ``Download'' section: ``Model Results''.
 \section{Model code}
 \label{sec:ModelCode}
 
-The EMEP/MSC-W model code version rv.4.0 are archived as a tar file. 
-The tar file is called ``EMEP\_Unified\_model.tar.bz'' and is downloadable from
-the EMEP Open Source website.
+The EMEP/MSC-W model code version rv.4\_3 are archived as a tar file. 
+The tar file is called ``EMEP\_MSC-W\_model.rv4\_3.OpenSource.tar.gz'' and 
+is downloadable from the EMEP/MSC-W Open Source website.
 
-Once this file is untarred all model files needed for a model run will be found under the
-directory \\ {\bf EMEP\_Unified\_model.OpenSource2012/code/} where the model source code, 
-makefiles, and a copy of the license file are stored. An overview is given in 
-Table~\ref{Tab:modelfiles}
+Once this file is untarred all model files needed for a model run will be 
+found under the directory \\ {\bf EMEP\_MSC-W\_model.rv4\_3.OpenSource/code/} 
+where the model source code, makefiles, and a copy of the license file are 
+stored. An overview is given in Table~\ref{Tab:modelfiles}
 
 \begin{table}[h]
 \begin{center}
-\caption{Contents of ``EMEP\_Unified\_model.tar'' file
+\caption{Contents of ``EMEP\_MSC-W\_model.rv4\_3.OpenSource.tar'' file
    \label{Tab:modelfiles}}
 \begin{tabular}{ll}
 & \\
@@ -184,30 +182,24 @@ Table~\ref{Tab:modelfiles}
 Type      & Filename          \\
 \hline
 & \\
-{\bf Model code directory} & EMEP\_Unified\_model.OpenSource2012/code \\ 
+{\bf Model code directory} & EMEP\_MSC-W\_model.rv4\_3.OpenSource/code \\ 
 \hline
 modules files & *.f90 \\
 include files & *.inc \\
+namelist & config\_emep.nml \\
 makefiles & Makefile and Makefile.SRCS \\
 dependency file &  dependencies\\
-%run script & modrun.sh \\
 a copy of the license & gpl.txt \\
 \hline
 \end{tabular}
 \end{center}
 \end{table}
 
-
-
-
-
 In addition there is a run script called ``modrun.sh'', which will be placed 
-in the \\{\bf EMEP\_Unified\_model.OpenSource2012/}  directory. The run script, 
-``modrun.sh'', can easily be modified to work on your computer system. This 
-script is described in detail in Chapter \ref{ch:SubmitARun}. 
+in the \\{\bf EMEP\_MSC-W\_model.rv4\_3.OpenSource/}  directory. The run 
+script, ``modrun.sh'', can easily be modified to work on your computer system. 
+This script is described in detail in Chapter \ref{ch:SubmitARun}. 
  
-
-
 %NEWTOOLS
 % \section{Helper tools}
 % \label{sec:tools}
@@ -237,7 +229,7 @@ description is given in detail in Chapter 2 of the EMEP Status Report
 
 In 2008 the official EMEP domain was extended eastwards in order to include the 
 EECCA countries in the EMEP model grid, see Figure \ref{fig:EECCA}. To distinguish the new grid from the old EMEP 
-grid, the new grid is called EECCA in this text and in the { \bf ModelConstants\_ml.f90} module.
+grid, the new grid is called EECCA in this text and in the config\_emep.nml.
 
 \begin{figure}[ht]
  \centering

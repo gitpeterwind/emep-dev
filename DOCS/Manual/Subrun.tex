@@ -2,11 +2,9 @@
 \label{ch:SubmitARun}
 
 In this chapter we provide detailed information on how to run the
-regional EMEP/MSC-W model for two different types of
-simulations, namely: 
+regional EMEP/MSC-W model for two different types of simulations, namely: 
 
 \begin{description}
-
 \item[Base run]
 This is the default set up for yearly transport model calculations
 in $50\times50$~km$^2$ grid. 
@@ -15,7 +13,6 @@ in $50\times50$~km$^2$ grid.
  countries is called 
 a ``Scenario run''. It is the basic type of run for the source-receptor
 calculations. 
-
 \end{description}
 
 \noindent
@@ -94,13 +91,13 @@ files , see Table \ref{ch:output}.
 The startdate and enddate parameters are set for the timeperiod you want the model 
 to run (YYYY MM DD), and you need meteorology data for the period.
 
-To run the model, the correct path  to the Unified EMEP model code 
+To run the model, the correct path to the EMEP/MSC-W model code 
 has to be set (mpirun path\_to\_the\_modelcode/Unimod).  
 
-It is recommended to submit the script as a batch job. Please check the submission routine 
-on the computer system you are running on. 
-In the new model version (4.0) the number of nodes is set automatically from what is asked 
-for when submitting a job. 
+It is recommended to submit the script as a batch job. Please check the 
+submission routine on the computer system you are running on. 
+In the newer model versions (since 4.0) the number of nodes is set 
+automatically from what is asked for when submitting a job. 
 % When setting the number of nodes, it is important that it equals to the number set in the FORTRAN module 
 % {\bf ModelConstants\_ml.f90}. In the module you set the wanted nodes in the x- and y-direction with {\bf NPROCX } and 
 % {\bf NPROCY.} The product of these two is the number of nodes used. 
@@ -108,14 +105,11 @@ The approximate time and CPU usage is described in Section \ref{sec:compinf}\\
 
 When the job is no longer running or in the queue, it is either finished or has crashed for some reason.  
 If the model run crashed, an error message will give information on what was missing or wrong in the routine.  
-If the run was successful, a message stating 
+If the run was successful, a message
 \begin{quote}
 \begin{verbatim}
-
  ++++++++++++++++++++++++++++++++++++++++++++++++
  programme is finished
-
-
 \end{verbatim}
 \end{quote}
 will be stated at the end of the log file, before printing the Timing.out file.   
@@ -124,51 +118,56 @@ sure there is enough disk place for the model results.
 %Here again, the user can edit the script to create an output directory. 
 For more information about the model result output files, see chapter \ref{ch:output}.\\
 
-If for some reason the model crashed, please check both the log and the error file for any 
-clue of the crash. After fixing the problem the job can be submitted again. If the 
-model has crashed, then the links to the input data are not removed. 
+If for some reason the model crashed, please check both the log and the error 
+file for any clue of the crash. After fixing the problem the job can be 
+submitted again. If the model has crashed, then the links to the input data 
+are not removed. 
 
-The script can also be submitted interactively, and either have the output written to the screen or to 
-named error and output log files. 
+The script can also be submitted interactively, and either have the output 
+written to the screen or to named error and output log files. 
  
 % \newpage
 
 \subsection{Model constants}
 
-In the module {\bf ModelConstants\_ml.f90 } there is a possibility to set different 
-constants and flags when running the model. 
+In the module {\bf ModelConstants\_ml.f90 } there is a possibility to set 
+different constants and flags when running the model. 
 Some of these are briefly explained in Chapter \ref{ch:InputFiles}. 
 An example of one of these settings is shown below:
 
 \begin{small}
 \begin{quote}
   \begin{verbatim}
-logical, public, parameter :: USE_CONVECTION = .false. 
+logical, public, parameter :: USE\_CONVECTION = .false. 
   \end{verbatim}
 \end{quote}
 \end{small}
 
-Since convection has a smaller influence on transport on higher latitudes, this flag is turned off by 
-default when running the EECCA domain. It is however important when running the model globally. A global version 
+Since convection has a smaller influence on transport on higher latitudes, 
+this flag is turned off by default when running the EECCA domain. It is 
+however important when running the model globally. A global version 
 of the EMEP/MSC-W model will be released later. 
 
 % The module {\bf ModelConstants\_ml.f90 } also sets the number of processors used in each direction with 
 % {\bf PROCX } and {\bf NPROCY }. As described above, it is important that the product of these match the number set 
 % when submitting the job. 
 
+\subsection{config\_emep.nml}
 
-The module also sets which domain you want to run the model on. 
-The datasets provided are for the new EMEP grid EECCA. 
+The model has a namelist system.  Different constants and flags are added in 
+this file.  Model gets information about running for special cases from this 
+file.   For example, this namelist sets which domain you want to run the model 
+on, other than the default domain. 
+The datasets provided are for the EMEP grid EECCA. 
 It is possible to run the model on a smaller domain than the full
 regional model domain, as defined by  x coordinates ranging
 from 1 to 132 and y coordinates ranging from 1 to 159. 
 
 To set a smaller domain, one needs only to specify the
-coordinates of the new domain in {\bf RUNDOMAIN} in the Fortran module
- {\bf ModelConstants\_ml.f90}. For example:
+coordinates of the new domain in {\bf RUNDOMAIN} in the namelist file,  
+ ``config\_emep.nml''. For example:
 
 \begin{quote}
-
 \begin{verbatim}
    !                    x0   x1  y0   y1
         RUNDOMAIN = (/  36, 100, 50, 150 /)  ! smaller EECCA domain
@@ -183,11 +182,10 @@ tells the model to run in the domain with x coordinates ranging from
 \section{Scenario run}
 \label{sec:scenrun}
 
-The EMEP model can be used to test the impact of reduced emission of
+The EMEP/MSC-W model can be used to test the impact of reduced emission of
 one or more pollutants from a particular country or a number of
 countries.  Such runs are called ``Scenario runs''. They are the basic
 runs for source-receptor calculations.
-
 
 Emission factors for reduced emissions of pollutants from different
 sectors and countries can be defined in the input file called
@@ -206,9 +204,9 @@ Name  5     sox    nox   voc   nh3  pm25
 \end{verbatim}
 \end{quote}
 \noindent
-This base run example means that there are (1.0), no emission reductions of sox (SO$_x$),
-nox (NO$_x$), voc (VOC), nh3 (NH$_3$) and pm25 (PM$_{2.5}$) from all
-sectors in the UK. 
+This base run example means that there are (1.0), no emission reductions of 
+sox (SO$_x$), nox (NO$_x$), voc (VOC), nh3 (NH$_3$) and pm25 (PM$_{2.5}$) from 
+all sectors in the UK. 
 
 \begin{itemize}
 
@@ -234,7 +232,6 @@ module {\bf EmisDef\_ml.f90}.
   for the given pollutants. For example, 0.7 would mean 70\% of the
   original emission, thus 30\% reduction.
 
-
 \item The number (``5'') following
 the first text (``Name'') in the first line gives the number of
 pollutants treated in the file.   
@@ -259,6 +256,3 @@ reduction one would like to test with any pollutant from any sector
 and/or any country. Several lines can be written in the file.
 % Once the ``femis.dat''  file is
 % edited, the scenario run can be submitted.  
-
-
-
