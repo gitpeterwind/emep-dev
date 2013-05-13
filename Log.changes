@@ -131,6 +131,11 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+13th May 2013 Anna 2585
+Deleted old versions of Manual/UserGuide files in DOCS/Manual:
+running.tex, general.tex, Outputs.tex, Inputs.tex
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 13th May 2013 Anna (2584 (and 2583))
 Updated files in DOCS/Manual as released with Open Source code 2565 rv 4.3:
 Input.tex, Intro.tex, Manual.tex, Output.tex, references.tex, Subrun.tex
