@@ -222,10 +222,10 @@ Steps to follow:
 
 	Edit {\bf `config\_NEST.nml'}:	
 
-	Choose the \bf MODE in {\bf `config\_NEST.nml'} file. This is done in the section \bf {\&Nest\_config}
+	Choose the {\bf MODE} in {\bf `config\_NEST.nml'} file. This is done in the section {\bf \&Nest\_config}
 For egs.,
 
-\bf {\&Nest\_config}
+{\bf \&Nest\_config}
 \begin{quote}
 \begin{verbatim}
 MODE		     = 2			           !for reading external BC 
@@ -235,7 +235,7 @@ template_write   = 'EMEP_OUT_YYYYMMDD.nc'  !(ONLY for MODE=1, 3, 10 and 12)
 \end{quote}
 
 
-\bf {\&ExternalBICs\_config}
+{\bf \&ExternalBICs\_config}
 \begin{quote}
 \begin{verbatim}
 USE_EXTERNAL_BIC 	= T,
@@ -250,8 +250,8 @@ filename_eta		= 'filename.zaxis' !(This is a text file containing the
 
 The checks for reading vertical levels in the BC data is done in the following order:
 \begin{itemize}
-\item The variable {\textbf `hyam'} (hybrid `a' coefficient at layer midpoint), exists :${\rightarrow}$ \bf eta coordinate. 
-\item Level is indexed with {\textbf `k'}  :${\rightarrow}$ \bf Sigma coordinate
+\item The variable {\textbf `hyam'} (hybrid `a' coefficient at layer midpoint), exists :${\rightarrow}$ {\bf eta coordinate}. 
+\item Level is indexed with {\textbf `k'}  :${\rightarrow}$ {\bf Sigma coordinate}
 \item {\textbf `filename\_eta'} exist :${\rightarrow}$ {\bf eta coordinate} derived from `vct'*  information in filename\_eta
 \item Level indexed with {\textbf`lev'} and no `hyam' or `filename\_eta' :${\rightarrow}$ {\bf pressure coordinate}	
 \end{itemize}
@@ -261,7 +261,7 @@ Independent of the coordinates of the BC file, the BC levels will be interpolate
 
 An example of the `filename\_eta' for EMEP model levels is given below. Here the `vct' variable describes the model level boundaries in hybrid eta coordinate: 	
 
-\bf emep\_eta.zaxis
+{\bf emep\_eta.zaxis}
 \begin{quote}
 \begin{verbatim}
 # 
@@ -318,7 +318,7 @@ map_bc=! emep,external,frac,wanted,found,IXADV,
 \end{verbatim}
 \end{quote}
 
-Variables in \bf {map\_bc} mean the following: 
+Variables in {\bf map\_bc} mean the following: 
 
 \begin{enumerate}
 \item ${\rightarrow}$  Variable name in EMEP MSC-W model.
@@ -333,11 +333,11 @@ The fraction is helpful, when one has to map a variable that is explicitly not i
 
 Caution should be given to the units of the variables in the External BC data file.  The model tries to read in the variable together with its units.  This is done in the module `Units\_ml.f90'.  The default units that EMEP can handle now are: 
 
-	\bf {gSm$^{3}$, ugNm$^{3}$, ugCm$^{3}$,  ugm$^{3}$, ppb and mix\_ratio (mol/${mol}$)}.
+	{\bf gSm$^{3}$, ugNm$^{3}$, ugCm$^{3}$,  ugm$^{3}$, ppb} and {\bf mixing ratio} ({\bf mol/mol}).
 
 If you have a BC data with different units, either convert them into one of the above 	mentioned units or add the respective conversion factor in the module `Units\_ml.f90'.  
 
-\bf {How to produce BC data from EMEP MSC-W model (MODE=1):}
+\subsection{How to produce BC data from EMEP MSC-W model (MODE=1):}
 	
 The time resolution of the BC data that has to produced by EMEP model, is specifed in the module `Nest\_ml.f90' by setting the variable `NHOURSAVE' . 
  
@@ -349,7 +349,7 @@ Egs., \bf {NHOURSAVE = 3},  means the data will be written out at 3 hour interva
 
 One can choose the frequency in which the BC out files has to be created (template\_write in config file), and also the domain for which the data has to be written out (sub domain part in config file).  The default setup of the model creates BC data for the whole run domain. 
  
-Egs.,  \bf {config\_NEST.nml:}
+Egs.,  {\bf config\_NEST.nml:}
 
 \begin{verbatim}
 MODE = 1.
