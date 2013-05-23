@@ -131,6 +131,16 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+23 May 2013  Semeena 2588
+
+Added more details to the Manual.  
+Chapter: How to submit a run.  Details about different 'Nesting' options.
+
+2586 and 2587 are submitted my me with the above mentioned changes in the
+ chapter 'subrun.tex'.  Forgot to mention those changes here.  So 2588 is 
+identical to 2587 apart from this 'Log.changes' file.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 13th May 2013 Anna 2585
 Deleted old versions of Manual/UserGuide files in DOCS/Manual:
 running.tex, general.tex, Outputs.tex, Inputs.tex
