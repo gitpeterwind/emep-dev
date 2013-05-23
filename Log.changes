@@ -131,6 +131,12 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+23 May 2013 Peter 2590
+
+Added a switch in MARS_ml to test without smoothinh between between 
+different TNH4/TSO4 regimes
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23 May 2013 Semeena 2589
 
 Some formatting corrections with tex file, chapter:Subrun.tex of Manual
