@@ -12,8 +12,13 @@
   USE_DEGREEDAY_FACTORS = T,
   USE_FOREST_FIRES      = T,
   USE_SEASALT           = T,
+  USE_AIRCRAFT_EMIS     = T,          ! Needs global file, see manual
+  USE_LIGHTNING_EMIS    = T,          ! 
+!
   USE_EURO_SOILNOX      = T,          ! diff for global + Euro runs
+  EURO_SOILNOX_DEPSCALE  = 1.0,   ! Scale, default 1  (see ModelConstants_ml)
   USE_GLOBAL_SOILNOX    = F,          ! diff for global + Euro runs
+!
   USE_POLLEN            = F,          ! EXPERIMENTAL. Only works if start Jan 1
   DO_SAHARA             = T,
   USE_ROADDUST          = T,          ! Only EECCA?
@@ -33,7 +38,7 @@
   USE_EMERGENCY         = F,          ! Used for FORECASTs usually, EMEP2010
   ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
   USE_AOD               = F,          ! Used for FORECASTs usually
-!--
+!
   BGND_CH4              = -1,    ! Reset CH4 (use ppb). (Use -1 for defaults)
 !_-
 !--- "fake" vegetation for ozone POD calculations

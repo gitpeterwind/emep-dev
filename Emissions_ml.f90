@@ -38,7 +38,7 @@
 !  with the 3D model.
 !_____________________________________________________________________________
 
-  use Biogenics_ml,     only: SoilNOx, AnnualNdep, Ndep_trends
+  use Biogenics_ml,     only: SoilNOx, AnnualNdep
   use CheckStop_ml,only : CheckStop,StopAll
   use ChemSpecs_shl_ml, only: NSPEC_SHL
   use ChemSpecs_tot_ml, only: NSPEC_TOT,NO2
@@ -102,7 +102,8 @@
                               NPROC, IIFULLDOM,JJFULLDOM , & 
                               SEAFIX_GEA_NEEDED, & ! see below
                               USE_LIGHTNING_EMIS,USE_AIRCRAFT_EMIS,USE_ROADDUST, &
-                              USE_EURO_SOILNOX, USE_GLOBAL_SOILNOX   ! one or the other
+                              USE_EURO_SOILNOX, USE_GLOBAL_SOILNOX, &! one or the other
+                              EURO_SOILNOX_DEPSCALE
   use NetCDF_ml, only  : ReadField_CDF
   use Par_ml,     only : MAXLIMAX,MAXLJMAX,me,gi0,gi1,gj0,gj1, &
                              GIMAX, GJMAX, IRUNBEG, JRUNBEG,  &   
@@ -775,13 +776,6 @@ contains
        end do
        write(unit=6     ,fmt="(i3,1x,a4,3x,30f12.2)") 0, "EU", (sumEU(i),i=1,NEMIS_FILE)
        write(unit=IO_LOG,fmt="(i3,1x,a4,3x,30f12.2)") 0, "EU", (sumEU(i),i=1,NEMIS_FILE)
-      !GP_work, TMP solution with hard-coded emissions
-       iem= find_index( "nox", EMIS_FILE(:) )
-       iem2=find_index( "nh3", EMIS_FILE(:) )
-       Ndep_trends = ( sumEU(iem) + sumEU(iem2) ) / 15167.48
-       write(unit=6,fmt="(a,2i3,f12.2,f8.4)")  "Ndep_trends", &
-            iem, iem2, sumEU(iem) + sumEU(iem2), Ndep_trends 
-       write(unit=IO_LOG,fmt="(a,f8.4)")  "Ndep_trends", Ndep_trends 
    
 
        if(USE_ROADDUST)THEN
@@ -848,8 +842,6 @@ contains
     CALL MPI_BCAST(j_volc,4*nvolc,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
     CALL MPI_BCAST(emis_volc,8*nvolc,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
  
-    ! And N-dep ttrends
-    CALL MPI_BCAST(Ndep_trends,8,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
 
     !    Conversions 
     !

@@ -275,6 +275,7 @@ my $exp_name = "EMEPSTD";
 my $testv = "rv4_2.SVN";
    $testv = "2563";   # From svn system, as reminder
    $testv.= ($eCWF)?".eCWF":".CWF" if $CWF;
+   $testv = "testsoil";   # From svn system, as reminder
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
