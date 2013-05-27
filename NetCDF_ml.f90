@@ -55,7 +55,8 @@
                                ,debug_proc, debug_li, debug_lj &
                                ,yp_EMEP_official,fi_EMEP,GRIDWIDTH_M_EMEP&
                                ,grid_north_pole_latitude&
-                               ,grid_north_pole_longitude,GlobalPosition&
+                               ,grid_north_pole_longitude,dx_rot,dx_roti,x1_rot,y1_rot&
+                               ,GlobalPosition&
                                ,glat_fdom,glon_fdom,ref_latitude&
                                ,projection, sigma_mid,gb_stagg,gl_stagg,glon&
                                ,sigma_bnd&
@@ -282,7 +283,20 @@ endif
     call check(nf90_put_att(ncFileID, jVarID, "long_name", "latitude"))
     call check(nf90_put_att(ncFileID, jVarID, "units", "degrees_north"))
 
-  else !general projection
+  elseif(UsedProjection=='Rotated_Spherical')then
+    call check(nf90_def_dim(ncid = ncFileID, name = "i", len = GIMAXcdf, dimid = iDimID))
+    call check(nf90_def_var(ncFileID, "i", nf90_float, dimids = iDimID, varID = iVarID) )
+    call check(nf90_put_att(ncFileID, iVarID, "standard_name", "grid_longitude"))
+    call check(nf90_put_att(ncFileID, iVarID, "long_name", "Rotated longitude"))
+    call check(nf90_put_att(ncFileID, iVarID, "units", "degrees"))
+    call check(nf90_put_att(ncFileID, iVarID, "axis", "X"))
+    call check(nf90_def_dim(ncid = ncFileID, name = "j", len = GJMAXcdf, dimid = jDimID))
+    call check(nf90_def_var(ncFileID, "j", nf90_float, dimids = jDimID, varID = jVarID) )
+    call check(nf90_put_att(ncFileID, jVarID, "standard_name", "grid_latitude"))
+    call check(nf90_put_att(ncFileID, jVarID, "long_name", "Rotated latitude"))
+    call check(nf90_put_att(ncFileID, jVarID, "units", "degrees"))
+    call check(nf90_put_att(ncFileID, jVarID, "axis", "Y"))
+   else !general projection
     call check(nf90_def_dim(ncid = ncFileID, name = "i", len = GIMAXcdf, dimid = iDimID))
     call check(nf90_def_dim(ncid = ncFileID, name = "j", len = GJMAXcdf, dimid = jDimID))
     call check(nf90_def_var(ncFileID, "i", nf90_float, dimids = iDimID, varID = iVarID) )
@@ -398,7 +412,7 @@ endif
     call check(nf90_put_att(ncFileID, VarID, "latitude_of_projection_origin", 90.0))
     call check(nf90_put_att(ncFileID, VarID, "scale_factor_at_projection_origin", scale_at_projection_origin))
   elseif(UsedProjection=='lon lat')then
-
+     !no additional attributes
   elseif(UsedProjection=='Rotated_Spherical')then
     call check(nf90_def_var(ncid = ncFileID, name = "Rotated_Spherical", xtype = nf90_int, varID=varID ) )
     call check(nf90_put_att(ncFileID, VarID, "grid_mapping_name", "rotated_latitude_longitude"))
@@ -465,6 +479,16 @@ endif
       call check(nf90_put_var(ncFileID, longVarID, &
         glon_fdom(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)))
     endif
+
+  elseif(UsedProjection=='Rotated_Spherical')then
+    do i=1,GIMAXcdf
+      xcoord(i)= (i+ISMBEGcdf-1)*dx_rot+x1_rot
+    enddo
+    do j=1,GJMAXcdf
+      ycoord(j)= (j+JSMBEGcdf-1)*dx_rot+y1_rot
+    enddo
+    call check(nf90_put_var(ncFileID, iVarID, xcoord(1:GIMAXcdf)) )
+    call check(nf90_put_var(ncFileID, jVarID, ycoord(1:GJMAXcdf)) )
 
   elseif(UsedProjection=='lon lat') then
     do i=1,GIMAXcdf
@@ -601,6 +625,20 @@ character (len=*), parameter :: vert_coord='atmosphere_hybrid_sigma_pressure_coo
     call check(nf90_put_att(ncFileID, jVarID, "standard_name", "latitude"))
     call check(nf90_put_att(ncFileID, jVarID, "long_name", "latitude"))
     call check(nf90_put_att(ncFileID, jVarID, "units", "degrees_north"))
+
+  elseif(UsedProjection=='Rotated_Spherical')then
+    call check(nf90_def_dim(ncid = ncFileID, name = "i", len = GIMAXcdf, dimid = iDimID))
+    call check(nf90_def_var(ncFileID, "i", nf90_float, dimids = iDimID, varID = iVarID) )
+    call check(nf90_put_att(ncFileID, iVarID, "standard_name", "grid_longitude"))
+    call check(nf90_put_att(ncFileID, iVarID, "long_name", "Rotated longitude"))
+    call check(nf90_put_att(ncFileID, iVarID, "units", "degrees"))
+    call check(nf90_put_att(ncFileID, iVarID, "axis", "X"))
+    call check(nf90_def_dim(ncid = ncFileID, name = "j", len = GJMAXcdf, dimid = jDimID))
+    call check(nf90_def_var(ncFileID, "j", nf90_float, dimids = jDimID, varID = jVarID) )
+    call check(nf90_put_att(ncFileID, jVarID, "standard_name", "grid_latitude"))
+    call check(nf90_put_att(ncFileID, jVarID, "long_name", "Rotated latitude"))
+    call check(nf90_put_att(ncFileID, jVarID, "units", "degrees"))
+    call check(nf90_put_att(ncFileID, jVarID, "axis", "Y"))
 
   else !general projection
     call check(nf90_def_dim(ncid = ncFileID, name = "i", len = GIMAXcdf, dimid = iDimID))
@@ -808,6 +846,16 @@ character (len=*), parameter :: vert_coord='atmosphere_hybrid_sigma_pressure_coo
       call check(nf90_put_var(ncFileID, longVarID, &
         glon_fdom(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)))
     endif
+
+  elseif(UsedProjection=='Rotated_Spherical')then
+    do i=1,GIMAXcdf
+      xcoord(i)= (i+ISMBEGcdf-1)*dx_rot+x1_rot
+    enddo
+    do j=1,GJMAXcdf
+      ycoord(j)= (j+JSMBEGcdf-1)*dx_rot+y1_rot
+    enddo
+    call check(nf90_put_var(ncFileID, iVarID, xcoord(1:GIMAXcdf)) )
+    call check(nf90_put_var(ncFileID, jVarID, ycoord(1:GJMAXcdf)) )
 
   elseif(UsedProjection=='lon lat') then
     do i=1,GIMAXcdf

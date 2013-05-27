@@ -15,11 +15,11 @@ ifort -o $prog -O3 -r8 -I/global/apps/netcdf/4.2.1.1/intel/13.0.0/include \
 
 GRID=EECCA
 met=metdata_EC
-GRID=EMEP
-met=metdata
+#GRID=EMEP
+#met=metdata
 
 for T in 18;  do
-for year in {1995..2006}  # {2003..2005}   #   ! varies with grid
+for year in {2011..2011}  # {2003..2005}   #   ! varies with grid
 do
   ./$prog $T $year /global/work/mifapw/emep/Data/$GRID/$met/$year $GRID-$year
  mv HDD${T}-${GRID}-${year}.nc /global/work/mifapw/emep/Data/$GRID/$met/$year

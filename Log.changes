@@ -131,6 +131,11 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+27th May 2013  Peter, Heiko  2592
+
+NetCD_ml: i and j defined correctly in Rotated lat lon projection (were in km up to now).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23 May 2013  Dave  2591
 
 ModelConstants_ml
@@ -146,7 +151,7 @@ Also, moved USE_AIRCRAFT_EMIS, USE_LIGHTNING into namelist system.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23 May 2013 Peter 2590
 
-Added a switch in MARS_ml to test without smoothinh between between 
+Added a switch MARS_RATIO_SMOOTH in MARS_ml to test without smoothinh between 
 different TNH4/TSO4 regimes
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
