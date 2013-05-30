@@ -821,7 +821,10 @@ print "TESTING PM $poll $dir\n";
     # INERIS special! nox and pm. Take from 2010 IIASA
     #if ( $INERIS_FACS && -e "$timeseries/emissplit.specials.$poll.2010" ) {
 
-    if ( -e "$timeseries/emissplit.$Specials.$poll.$iyr_trend" ) { # e.g. TSAP
+    if ( $Chem eq "EmChem09" ) { # e.g. when PM25 is not split, e.g. RCA, make EMCHEM09
+      $ifile{"$SplitDir/emissplit.specials.$poll"} = "emissplit.specials.$poll"
+      if( -e "$SplitDir/emissplit.specials.$poll" );
+    } elsif ( -e "$timeseries/emissplit.$Specials.$poll.$iyr_trend" ) { # e.g. TSAP
         $ifile{"$timeseries/emissplit.$Specials.$poll.$iyr_trend"} =
                "emissplit.specials.$poll"
     } elsif ( -e "$timeseries/emissplit.specials.$poll.2010" ) { # when no other year availanle
@@ -947,6 +950,8 @@ print "TESTING PM $poll $dir\n";
     $ifile{"$DataDir/jcl3.$s"} = "jcl3km$seasons{$s}.dat";
   }
 
+ #EnsClim RCA, and should be default:
+ # $ifile{"$DataDir/VolcanoesLL_2010.dat"} = "VolcanoesLL.dat";
   $ifile{"$DataDir/VolcanoesLL.dat"} = "VolcanoesLL.dat";
 # Emergency senarios (eEMEP)
   if(($MAKEMODE =~ /2010/) or ($MAKEMODE =~ /eEMEP/)){

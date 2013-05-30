@@ -130,12 +130,25 @@ info on unused variables, etc.
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+30th May 2013  Dave, 2593
+
+Makefile - EMCHEM09 option added, to use just EmChem09 chemistry.
+          (We don't always need SOA!)
+
+run.pl  - Just uses EMISPLIT specials if EmChem09  (to avoid trying to
+           split PM25)
+        - commented out VolcanoesLL_2010.dat line added. Should probably be
+          used for all years.
+        
+Log.changes  - try to keep text within 78 chars (as in code).
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 27th May 2013  Peter, Heiko  2592
 
-NetCD_ml: i and j defined correctly in Rotated lat lon projection (were in km up to now).
+NetCD_ml: i and j defined correctly in Rotated lat lon projection 
+          (were in km up to now).
 
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23 May 2013  Dave  2591
 
 ModelConstants_ml
@@ -148,13 +161,13 @@ config_EMEPSTD.nml
 
 Also, moved USE_AIRCRAFT_EMIS, USE_LIGHTNING into namelist system.
 
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23 May 2013 Peter 2590
 
 Added a switch MARS_RATIO_SMOOTH in MARS_ml to test without smoothinh between 
 different TNH4/TSO4 regimes
 
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23 May 2013 Semeena 2589
 
 Some formatting corrections with tex file, chapter:Subrun.tex of Manual

@@ -155,7 +155,7 @@ touchdepend:
 	touch .depend
 
 # Model/Config specific targets
-EMEP EMEP2010 SR-EMEP SR-EMEP2010 MACC MACC-EVA2010 SR-MACC eEMEP eEMEP2010 eEMEP2013:
+EMEP EMEP2010 SR-EMEP SR-EMEP2010 MACC MACC-EVA2010 SR-MACC eEMEP eEMEP2010 eEMEP2013 EMCHEM09:
 	ln -sf $(filter %.f90 %.inc,$+) . && \
 	$(MAKE) MACHINE=$(MACHINE) -j4 $(PROG)
 
@@ -163,6 +163,10 @@ EMEP EMEP2010 SR-EMEP SR-EMEP2010 MACC MACC-EVA2010 SR-MACC eEMEP eEMEP2010 eEME
 EMEP EMEP2010 MACC MACC-EVA2010 eEMEP2010: \
 	  ./ZD_OZONE/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
 	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_VBS/My_SOA_ml.f90 ./ZD_3DVar/My_3DVar_ml.f90
+# EmChem09 only:
+EMCHEM09: \
+	  ./ZD_OZONE/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
+	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_OZONE/My_SOA_ml.f90 ./ZD_3DVar/My_3DVar_ml.f90
 #For SR we use the small My_Derived
 SR-EMEP SR-EMEP2010 SR-MACC: \
 	  ./ZD_SR/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
@@ -175,7 +179,10 @@ eEMEP eEMEP2013: \
 EMEP EMEP2010 SR-EMEP SR-EMEP2010 \
 MACC MACC-EVA2010 SR-MACC eEMEP2010: modules $$@-GenChem-EmChem09soa
 eEMEP: modules $$@-GenChem-EmChem09soa #-Emergency not yet ready
+EMCHEM09: modules $$@-GenChem-EmChem09 #-Emergency not yet ready
 EMEP-GenChem-%:
+	mk.GenChem -r $* -f FINNv1 -e SeaSalt,Dust,Isotopes
+EMCHEM09-GenChem-%:
 	mk.GenChem -r $* -f FINNv1 -e SeaSalt,Dust,Isotopes
 EMEP2010-GenChem-%:
 	mk.GenChem -r $* -f FINNv1 -e SeaSalt,Dust,Isotopes -V 2bin,Eyjafj.ll #-h
