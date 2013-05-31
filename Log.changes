@@ -131,11 +131,12 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-31 May 2013  Alvaro, 2595-2597
+31 May 2013  Alvaro, 2595-2598
 
 2595: Prepare code for status runs
 2596: eEMEP and FORECAST downstream updates
 2597: Improve hourly output
+2598: Extend Nest configuration via namelist
 
 Makefile:
 - make targets with Grimsvotn eruption tracers (EMEP2011 SR-EMEP2011)
@@ -177,6 +178,10 @@ Output_hourly,ZD_OZONE/My_Outputs_ml
 - Hourly PS output is defined as
     hr_out(0)=Asc2D("PS","D2D_inst",find_index("PSURF",f_2d(:)%name),...
   This is to avoid the double definition in hr_out and Output_hourly
+
+Nest_ml,config_*.nml
+- Nest BC input/output frequency (NHOURREAD/NHOURSAVE)
+  defined trough Nest_config namelist
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 31 May 2013 Dave, 2594
