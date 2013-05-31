@@ -131,9 +131,11 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-31 May 2013  Alvaro, 2595
+31 May 2013  Alvaro, 2595-2597
 
-Prepare code for status runs
+2595: Prepare code for status runs
+2596: eEMEP and FORECAST downstream updates
+2597: Improve hourly output
 
 Makefile:
 - make targets with Grimsvotn eruption tracers (EMEP2011 SR-EMEP2011)
@@ -148,6 +150,33 @@ run.pl
 mk.GenChem
 - Emergency files created by mk.GenChem (emergency_location.csv & emergency_emission.csv)
   will be kept in ZCM_Emergency, instead of the run directory (ZCM_EmChem09soa).
+
+Units_ml
+- Fix wrong unit conversion for uBqh.
+
+FUTURE_Pollen_ml,run.pl
+- change name for pollen forecast dump/restart files
+
+Emissions_ml,run.pl
+- Remove hardcodded path to Emis_TNO7.nc
+- Change name used in model from Emis_TNO7.nc to EmisFracs_TNO7.nc,
+  in order to distinguish this emission format from others currently been tested.
+- run.pl links EmisFracs_TNO7.nc to Emis_TNO7.nc
+
+Output_hourly,Derived_ml,ModelConstants_ml
+- rename IOU_HOUR_PREVIOUS to IOU_YEAR_LASTHH
+
+Output_hourly,ZD_OZONE/My_Outputs_ml
+- D2D specific types _inst, _accum & _mean for instantanous, accumulated and mean
+  output comparable to daily,...,yearly output.
+  D2D_inst is taken from d_2d(..,IOU_INST). D2D_accum and D2D_mean are
+  calculated from d_2d(..,IOU_YEAR)-d_2d(..,IOU_YEAR_LASTHH).
+- Change D2D output for averaged species (f_2d(ispec)%avg).
+  For such species D2D will assume that D2D_mean is required.
+  In previous versions, it assumed D2D_inst.
+- Hourly PS output is defined as
+    hr_out(0)=Asc2D("PS","D2D_inst",find_index("PSURF",f_2d(:)%name),...
+  This is to avoid the double definition in hr_out and Output_hourly
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 31 May 2013 Dave, 2594

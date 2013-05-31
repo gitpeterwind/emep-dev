@@ -367,7 +367,7 @@ integer, public, parameter :: &
   ,DEBUG_SETUP_1DBIO    = .false. &
   ,DEBUG_SITES          = .false. &
   ,DEBUG_SOILWATER      = .false. &
-  ,DEBUG_SOILNOX        = .true. &
+  ,DEBUG_SOILNOX        = .false. &
   ,DEBUG_VOLC           = .false. & ! Volcanoes
   ,DEBUG_EMERGENCY      = .false.    ! Emergency: Volcanic Eruption & Nuclear Accident. Under development.
 
@@ -486,10 +486,10 @@ real, public, parameter :: MFAC = 0.001*AVOG/ATWAIR
 !                         refer to output variables defined in Derived_ml.
 !   Hourly  output types: Last 2 types (hourly inst.,hourly mean),
 !                         refer to output variables defined in My_Outputs_ml.
-!   IOU_HOUR_PREVIOUS: Auxiliary field for hourly accumulated Derived output
+!   IOU_YEAR_LASTHH: Auxiliary field for hourly accumulated Derived output
 integer, public, parameter ::  &
   IOU_INST=1, IOU_YEAR=2, IOU_MON=3, IOU_DAY=4, & ! Derived output
-  IOU_HOUR_PREVIOUS=5,                          & ! Aux. field
+  IOU_YEAR_LASTHH=5,                          & ! Aux. field
   IOU_HOUR=6, IOU_HOUR_MEAN=7                   & ! Hourly  output
   ,IOU_MAX_MAX=7                                  ! Max values for of IOU (for array declarations)
 
