@@ -82,7 +82,7 @@ CCFLAGS = $(filter-out -r8 -recursive -convert big_endian,$(F90FLAGS))
 
 SUFFIXES += .F .f
 %.o:%.f90
-	$(F90) $(F90FLAGS) -c $< -o $@ -module $(@D)/
+	$(F90) $(F90FLAGS) -c $< -o $@ -module ./
 %.o:%.f
 	$(F90) $(F90FLAGS) -c $< -o $@
 %.o:%.F
@@ -97,8 +97,8 @@ SUFFIXES += .F .f
 
 allprog: CLEANCPP=1
 allprog: EXP_Unimod EXP_3DVar EXP_Bnmc
-EXP_Unimod:
-	$(MAKE) MACHINE=$(MACHINE) -C ../ MACC-EVA2010
+EXP_Unimod%:
+	$(MAKE) MACHINE=$(MACHINE) -C ../ MACC$*
 EXP_%:
 	$(MAKE) MACHINE=$(MACHINE) -C ./ -j4 CLEANCPP=$(CLEANCPP) MKL=$(MKL) \
 	  EXP=$* PROG=$(@:EXP%=$(PROG)%)

@@ -1,8 +1,7 @@
 module DA_3DVar_ml
-use Par_ml,           only: me
 use TimeDate_ml,      only: date,current_date
 use My_Timing_ml,     only: Code_timer,Add_2timing
-use ModelConstants_ml,only: KMAX_MID,PPB,PPBINV,ANALYSIS
+use ModelConstants_ml,only: KMAX_MID,PPB,PPBINV,ANALYSIS,MasterProc
 use ChemSpecs_shl_ml, only: NSPEC_SHL        ! Maps indices
 !se ChemSpecs_tot_ml, only: NSPEC_TOT
 use ChemChemicals_ml, only: species          ! Gives names
@@ -52,13 +51,13 @@ integer :: ierr
   if(.not.ANALYSIS)return
   dafmt=date2string(DAFMT_DEF,current_date)
   if(first_call) then
-    if(debug.and.me==0)print dafmt,'Initialisation'
+    if(debug.and.MasterProc)print dafmt,'Initialisation'
     call init_3dvar()
     first_call=.false.
   endif
- !if(debug.and.me==0)print dafmt,'Test analysis'
+ !if(debug.and.MasterProc)print dafmt,'Test analysis'
   if(.not.compare_date(ANALYSIS_NDATE,current_date,analysis_date,wildcard=-1))return
-  if(debug.and.me==0)print dafmt,'Start analysis'
+  if(debug.and.MasterProc)print dafmt,'Start analysis'
   call generic3dvar(ierr)
 end subroutine main_3dvar
 subroutine init_3dvar()
@@ -115,7 +114,7 @@ namelist /DA_CONFIG/ analysis_date, nChem, nChemObs,&
       obsVarName(nChemObs)=varName(nvar)
     endif
   enddo
-  if(debug.and.me==0) then
+  if(debug.and.MasterProc) then
     print dafmt,'B matrix description'
     print "(2(A,:,'(',I0,')'))",&
       'Variable: Observed',nChemObs,'/Unobserved',nChem-nChemObs
@@ -191,16 +190,16 @@ real, allocatable, dimension(:) :: flat,flon,falt,obs,obsstddev1
 !-----------------------------------------------------------------------
 ! read observations
 !-----------------------------------------------------------------------
-  if(debug.and.me==0)print dafmt,'Read observations'
+  if(debug.and.MasterProc)print dafmt,'Read observations'
   allocate(ipar(maxobs),flat(maxobs),flon(maxobs),falt(maxobs),&
            obs(maxobs),obsstddev1(maxobs),stat=ierr)
   call CheckStop(ierr,'Allocation error: IPAR.')
   call read_obs(maxobs,flat,flon,falt,obs,obsstddev1,ipar,ierr)
   if(nobs==0)then
-    call my_deallocate(me==0,'WARNING: No obserations found')
+    call my_deallocate(MasterProc,'WARNING: No obserations found')
     return
   endif
-  if(debug.and.me==0)print "(1X,I0,1X,A)",nobs,'observations read.'
+  if(debug.and.MasterProc)print "(1X,I0,1X,A)",nobs,'observations read.'
 !-----------------------------------------------------------------------
 ! extend & scale background field
 !-----------------------------------------------------------------------
@@ -210,9 +209,9 @@ real, allocatable, dimension(:) :: flat,flon,falt,obs,obsstddev1
     call CheckStop(ierr,'Allocation error: XN_ADV_EX.')
     xn_adv_ex=0.0
   endif
-  if(debug.and.me==0)write(damsg,dafmt)'Extending..'
+  if(debug.and.MasterProc)write(damsg,dafmt)'Extending..'
   do nvar=1,nChem
-    if(debug.and.me==0)then
+    if(debug.and.MasterProc)then
       if(mod(nvar,10)==1)print "(/A,$)",trim(damsg)
       print "(1X,I0,':',A,$)",nvar,trim(varName(nvar))
     endif
@@ -220,7 +219,7 @@ real, allocatable, dimension(:) :: flat,flon,falt,obs,obsstddev1
            xn_adv(varSpec(nvar),:,:,KMAX_MID-nlev+1:KMAX_MID),&
            xn_adv_ex(:,:,:,nvar))
   enddo
-  if(debug.and.me==0)print *,''
+  if(debug.and.MasterProc)print *,''
   if(FGSCALE/=1e0) xn_adv_ex(:,:,:,:)=xn_adv_ex(:,:,:,:)*FGSCALE
   call Add_2timing(40,tim_after,tim_before,'3DVar: Domain extension.')
 !-----------------------------------------------------------------------
@@ -229,7 +228,7 @@ real, allocatable, dimension(:) :: flat,flon,falt,obs,obsstddev1
   call get_innovations(maxobs,flat,flon,falt,obs,obsstddev1)
   call Add_2timing(41,tim_after,tim_before,'3DVar: Get innovations from observations.')
   if(all(innov==0.0))then
-    call my_deallocate(me==0,'WARNING: No innovations found')
+    call my_deallocate(MasterProc,'WARNING: No innovations found')
     return
   endif
   if(all(H_jac==0.0))&
@@ -256,7 +255,7 @@ real, allocatable, dimension(:) :: flat,flon,falt,obs,obsstddev1
 !-----------------------------------------------------------------------
 ! perform variational analysis
 !-----------------------------------------------------------------------
-  if(debug.and.me==0) print dafmt,'call var3d'
+  if(debug.and.MasterProc) print dafmt,'call var3d'
   call var3d(nv2,Jcost,chi,ntot,dzs)
 !-----------------------------------------------------------------------
 ! read result for \delta x and \delta u and add to background field;
@@ -272,7 +271,7 @@ real, allocatable, dimension(:) :: flat,flon,falt,obs,obsstddev1
     xn_adv_ex(i,j,ilev,ichemobs  )=max(xn_adv_ex(i,j,ilev,ichemobs  )+dx(i,j,ilev,:),0.0)
     xn_adv_ex(i,j,ilev,ichemnoobs)=max(xn_adv_ex(i,j,ilev,ichemnoobs)+du(i,j,ilev,:),0.0)
   end forall
-! if(debug.and.me==0) then
+! if(debug.and.MasterProc) then
 !   k=ichemobs(1)
 !   kk=varSpec(k)
 !   do i=1,nx
@@ -294,7 +293,7 @@ real, allocatable, dimension(:) :: flat,flon,falt,obs,obsstddev1
 !-----------------------------------------------------------------------
 ! deallocate observation arrays
 !-----------------------------------------------------------------------
-  call my_deallocate(debug.and.me==0,'end generic3dvar')
+  call my_deallocate(debug.and.MasterProc,'end generic3dvar')
 !-----------------------------------------------------------------------
 contains
 !-----------------------------------------------------------------------
@@ -367,7 +366,7 @@ subroutine var3d(nv2,Jcost,chi,ntot,dzs)
   allocate(gradJcost(nv2),stat=ierr)
   call CheckStop(ierr,'Allocation error: gradJcost.')
   indic=4
-  if(debug.and.me==0) print dafmt,'call costFunction'
+  if(debug.and.MasterProc) print dafmt,'call costFunction'
   call costFunction(indic,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
   Jcost0=Jcost  ! Initial cost function
 !-----------------------------------------------------------------------
@@ -376,7 +375,7 @@ subroutine var3d(nv2,Jcost,chi,ntot,dzs)
   if(norm(gradJcost)<=1e-20)then
     print dafmt,'WARNING Starting point is almost optimal.&
       & No optimization needed..'
-!   if(debug.and.me==0) then
+!   if(debug.and.MasterProc) then
 !     do n=1,nobs
 !       do l=pidx(n)%l(0),pidx(n)%l(1)
 !         do p=1,4
@@ -410,7 +409,7 @@ subroutine var3d(nv2,Jcost,chi,ntot,dzs)
     nrz=4*nv2+nupdates*(2*nv2+1)
     allocate(rz(nrz),stat=ierr)
     call CheckStop(ierr,'Allocation error: RZ.')
-    if(debug.and.me==0.and.impres>0)then
+    if(debug.and.MasterProc.and.impres>0)then
       write(damsg,"(A,'=',3(I0,:,','),3(1X,A,'=',I0,:,','))"),&
         'mode',imode,'reverse',reverse,'niter',niter,'nsim',nsim
       print dafmt,'Calling m1qn3 '//trim(damsg)
@@ -432,7 +431,7 @@ subroutine var3d(nv2,Jcost,chi,ntot,dzs)
       enddo m1qn3_call
     endif
 
-    if(debug.and.me==0.and.impres>0)then
+    if(debug.and.MasterProc.and.impres>0)then
       write(damsg,"(A,'=',3(I0,:,','),3(1X,A,'=',I0,:,','))"),&
         'mode',imode,'reverse',reverse,'niter',niter,'nsim',nsim
       print dafmt,'Finish  m1qn3 '//trim(damsg)
@@ -442,7 +441,7 @@ subroutine var3d(nv2,Jcost,chi,ntot,dzs)
     else
       damsg=trim(omode_str(omode))
     endif
-    if(debug.and.me==0)print *,trim(damsg)
+    if(debug.and.MasterProc)print *,trim(damsg)
     call CheckStop(.not.any(omode==(/1,4,5,6/)),trim(damsg))
     call Add_2timing(42,tim_after,tim_before,'3DVar: Optimization.')
   endif
@@ -534,7 +533,7 @@ subroutine get_innovations(maxobs,flat,flon,falt,obs,obs_stddev)
 !   endif
     innov(n)=yn-obs(n)*FGSCALE
     obsstddev(n)=obs_stddev(n)*FGSCALE
-    if(debug.and.me==0) print "('#',I0,2(1X,A3,':',E12.3))",&
+    if(debug.and.MasterProc) print "('#',I0,2(1X,A3,':',E12.3))",&
       n,'Observation',obs(n),'Model',yn*FGSCALE_INV
   enddo DO_OBS
 end subroutine get_innovations
@@ -577,12 +576,12 @@ subroutine costFunction(ind,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
 !-----------------------------------------------------------------------
   select case(ind)
   case (1)
-    if(debug.and.me==0) print dafmt,"Free call to costFunction"
+    if(debug.and.MasterProc) print dafmt,"Free call to costFunction"
     return
   case(-1)
-    if(debug.and.me==0) print dafmt,"Update observed species"
+    if(debug.and.MasterProc) print dafmt,"Update observed species"
   case default
-    if(debug.and.me==0) print dafmt,"Optimization costFunction"
+    if(debug.and.MasterProc) print dafmt,"Optimization costFunction"
   endselect
   call Add_2timing(42,tim_after,tim_before,'3DVar: Optimization.')
 ! maxobs=nx*ny
@@ -593,7 +592,7 @@ subroutine costFunction(ind,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
   kxm1=kxmin+1
   kym1=kymin+1
   kx2=nxex-kxmin+1
-!   if(debug.and.me==0) print "(4(1X,A,'=',I0))",&
+!   if(debug.and.MasterProc) print "(4(1X,A,'=',I0))",&
 !     'kx',kx,'ky',ky,'kxmin',kxmin,'kymin',kymin
 !-----------------------------------------------------------------------
 ! Copy chi (in compact storage format) into chi_arr (in matrix format),
@@ -693,18 +692,16 @@ subroutine costFunction(ind,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
 !-----------------------------------------------------------------------
   call chitox(chi_arr,dx)
 !-----------------------------------------------------------------------
-! update unobserved species and return:
+! update unobserved species:
 !-----------------------------------------------------------------------
   if(ind==-1)then
     call Add_2timing(44,tim_after,tim_before,'3DVar: Update observed species.')
 #ifndef  NO_UPDATE_UNOBSERVED
-    if(debug.and.me==0) print dafmt,"Update unobserved species"
+    if(debug.and.MasterProc) print dafmt,"Update unobserved species"
     call update_unobserved(chi_arr)
     call Add_2timing(45,tim_after,tim_before,'3DVar: Update unobserved species.')
 #endif
-    call my_deallocate(.false.,"NoMessage")
-    return
-  endif
+  endif ! return after chi^2 eval
 !-----------------------------------------------------------------------
 ! conversion from model to observation space
 !-----------------------------------------------------------------------
@@ -737,7 +734,7 @@ subroutine costFunction(ind,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
 #endif
     enddo
   enddo
-  if(debug.and.me==0)then
+  if(debug.and.MasterProc)then
     n=min(debug_n,nobs);p=min(debug_p,4)
     k=min(debug_k,nchemobs);if(obsData(ipar(n))%found) k=obsData(ipar(n))%ichem
     kk=ichemObs(k)
@@ -761,6 +758,15 @@ subroutine costFunction(ind,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
   do n=1,nobs
     dep(n)=innov(n)+yn(n)
   enddo
+!-----------------------------------------------------------------------
+! chi^2 eval and return:
+!----------------------------------------------------------------------- 
+  if(ind==-1)then
+    call chisq_over_nobs2(nobs,dep)
+    call Add_2timing(46,tim_after,tim_before,'3DVar: CHI^2 evaluation.')
+    call my_deallocate(.false.,"NoMessage")
+    return
+  endif
 !-----------------------------------------------------------------------
 ! O^{-1} * [ H(xb)+H_jac*dx-y ]
 !-----------------------------------------------------------------------
@@ -794,7 +800,7 @@ subroutine costFunction(ind,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
   dep=innov+yn                            ! departures: H(xb)+H_jac*dx-y
   Oinvdep=dep/(obsstddev**2)              ! O^{-1} * [ H(xb)+H_jac*dx-y ]
   jobs=0.5*dot_product(dep,Oinvdep)
-! if(debug.and.me==0)print "(5(1X,A,'=',E12.3))",&
+! if(debug.and.MasterProc)print "(5(1X,A,'=',E12.3))",&
 !   '||H(xb)-y||',norm(innov),&
 !   '||H_jac*dx||',norm(yn),&
 !   '||H(xb)+H_jac*dx-y||',norm(dep),&
@@ -851,7 +857,7 @@ subroutine costFunction(ind,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
 #endif
     enddo
   enddo
-  if(debug.and.me==0)then
+  if(debug.and.MasterProc)then
     n=min(debug_n,nobs);p=min(debug_p,4)
     k=min(debug_k,nchemobs);if(obsData(ipar(n))%found)k=obsData(ipar(n))%ichem
     if(p==0)then
@@ -867,7 +873,7 @@ subroutine costFunction(ind,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
 ! grad J = grad Jb + grad Jobs
 !-----------------------------------------------------------------------
   call chitox_adj(chi_arr,dx)
-! if(debug.and.me==0) print "(2(1X,A,'=',E12.3))",&
+! if(debug.and.MasterProc) print "(2(1X,A,'=',E12.3))",&
 !   '||dx||',norm(dx),'||chi_arr||',norm(chi_arr)
 !-----------------------------------------------------------------------
 ! only add independent elements of grad Jobs to array gradJcost:
@@ -916,7 +922,7 @@ subroutine costFunction(ind,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
     enddo
   enddo
 !-----------------------------------------------------------------------
-  if(debug.and.me==0)then
+  if(debug.and.MasterProc)then
     print "(4(1X,A,'=',E12.3),$)",'J',Jcost,'Jb',Jb,'Jo',Jobs,'nobs/2',nobs*0.5
     Jb=norm(chi)
     Jobs=DIM(norm(gradJcost),Jb)

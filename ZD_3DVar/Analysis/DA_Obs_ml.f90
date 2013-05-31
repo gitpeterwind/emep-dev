@@ -1,5 +1,4 @@
 module DA_Obs_ml
-use Par_ml,           only: me
 use MetFields_ml,     only: z_bnd,z_mid,roa,th,q,ps
 use TimeDate_ml,      only: current_date
 use CheckStop_ml,     only: CheckStop
@@ -11,13 +10,14 @@ use Chemfields_ml,    only: xn_adv,cfac,PM25_water,PM25_water_rh50
 use ChemSpecs_adv_ml, only: NSPEC_ADV
 use ChemChemicals_ml, only: species
 use ChemGroups_ml,    only: chemgroups
-use ModelConstants_ml,only: KMAX_MID
+use Io_ml,            only: IO_TMP
+use ModelConstants_ml,only: KMAX_MID,MasterProc,runlabel1
 use SmallUtils_ml,    only: find_index
 use TimeDate_ExtraUtil_ml, only: date2string
 use Units_ml,         only: Units_Scale,Group_Units
 use DA_ml,            only: debug=>DA_DEBUG,dafmt=>da_fmt_msg,damsg=>da_msg
 use Util_ml,          only: norm
-use spectralcov,      only: nx,ny,nlev,nchem,nxex,nyex,FGSCALE,&
+use spectralcov,      only: nx,ny,nlev,nchem,nxex,nyex,nv1,FGSCALE,&
                             nChemObs,nChemNoObs,iChemInv,iChemObs,iChemNoObs
 implicit none
 integer, save :: nobs!,matidx
@@ -31,13 +31,13 @@ type(H_jac_idx), dimension(:), allocatable, save :: pidx
 !-----------------------------------------------------------------------
 type obs_data
   logical            :: set=.false.,found=.false.,unitroa=.false.
-  integer            :: ispec=-1,ichem=-1,ichemObs=-1
+  integer            :: ispec=-1,ichem=-1,ichemObs=-1,iobs(0:1)=-1
   real               :: min=0.0,max=1e3,error_rel=-1e0,error_rep=-1e0,unitconv=-1e0
   character(len=064) :: name='',unit='',deriv=''
   character(len=256) :: file='',tag=''
 end type
 integer            :: nobsData
-integer, parameter :: nobsDataMax=1000
+integer, parameter :: nobsDataMax=50
 type(obs_data)     :: obsData(nobsDataMax)
 namelist /OBSERVATIONS/nobsData,obsData
 !-----------------------------------------------------------------------
@@ -162,6 +162,7 @@ subroutine read_obs(maxobs,flat,flon,falt,y,stddev,ipar,iostat)
 !-----------------------------------------------------------------------
 ! read data
 !-----------------------------------------------------------------------
+    obsData(iobsData)%iobs(0)=nobs+1
     do while(iostat==0)
       if(nobs>=maxobs)then
         print dafmt,'ERROR reading observations, maxobs too small'
@@ -203,6 +204,7 @@ subroutine read_obs(maxobs,flat,flon,falt,y,stddev,ipar,iostat)
       endselect
     enddo
     close(lu1)
+    obsData(iobsData)%iobs(1)=nobs
   enddo
 end subroutine read_obs
 subroutine H_op(lat,lon,alt,n,yn,rho0,ipar)
@@ -240,7 +242,7 @@ subroutine H_op(lat,lon,alt,n,yn,rho0,ipar)
     ll=ll-1
   enddo
   l=ll+nlev-KMAX_MID  ! B might have a reduced number of levels...
-  if(debug.and.me==0) then
+  if(debug.and.MasterProc) then
     print dafmt,'Observation/Model Location:Weight[%],lon[deg],lat[deg],alt[km]'
     print "('#',I0,5(1X,A3,':',F0.1,3(',',F0.2)))",&
     n,'Observation',100.0,lon,lat,alt,&
@@ -271,7 +273,10 @@ subroutine H_op(lat,lon,alt,n,yn,rho0,ipar)
       trim(obsData(ipar)%name),trim(obsData(ipar)%deriv),trim(obsData(ipar)%unit)
     obsData(ipar)%set=.true.
   endif
-  print dafmt,"Analysis of "//trim(obsData(ipar)%tag)
+  if(n==obsData(ipar)%iobs(0)) &
+    print dafmt,"Analysis of "//trim(obsData(ipar)%tag)
+  print '(4(A,I0))','Obs:',n,'/',nobs,',',n-obsData(ipar)%iobs(0)+1,&
+                  '/',obsData(ipar)%iobs(1)-obsData(ipar)%iobs(0)+1
 !-----------------------------------------------------------------------
 ! analysis of direct observations: model mid-levels
 !-----------------------------------------------------------------------
@@ -359,7 +364,7 @@ subroutine H_op(lat,lon,alt,n,yn,rho0,ipar)
 !     "Unsupported obsData unit for: "//trim(obsData(ipar)%tag))
     igrp=find_index(obsData(ipar)%name,chemgroups(:)%name)
     if(igrp<1)then
-      if(me==0) print dafmt,"ERROR obsData not yet supported"
+      if(MasterProc) print dafmt,"ERROR obsData not yet supported"
       return
     endif
     call Group_Units(igrp,obsData(ipar)%unit,gspec,gunit_conv,debug)
@@ -405,7 +410,7 @@ subroutine H_op(lat,lon,alt,n,yn,rho0,ipar)
 !     "Unsupported obsData unit for: "//trim(obsData(ipar)%tag))
     igrp=find_index(obsData(ipar)%name,chemgroups(:)%name)
     if(igrp<1)then
-      if(me==0) print dafmt,"ERROR obsData not yet supported"
+      if(MasterProc) print dafmt,"ERROR obsData not yet supported"
       return
     endif
     print *,igrp,chemgroups(igrp)%name
@@ -450,7 +455,7 @@ subroutine H_op(lat,lon,alt,n,yn,rho0,ipar)
          (obsData(ipar)%name=='EXT'.and.obsData(ipar)%deriv=='Trop.Col.'))then
     igrp=find_index(obsData(ipar)%name,chemgroups(:)%name)
     if(igrp<1)then
-      if(me==0) print dafmt,"ERROR obsData not yet supported"
+      if(MasterProc) print dafmt,"ERROR obsData not yet supported"
       return
     endif
     call Group_Units(igrp,obsData(ipar)%unit,gspec,gunit_conv,debug)
@@ -498,10 +503,78 @@ subroutine H_op(lat,lon,alt,n,yn,rho0,ipar)
       endif
     enddo
   else
-    if(me==0) print dafmt,"ERROR obsData not yet supported"
+    if(MasterProc) print dafmt,"ERROR obsData not yet supported"
     return
   endif
 end subroutine H_op
+!-----------------------------------------------------------------------
+! @description
+! Compute CHI^2/nobs on an observation by observation
+! basis by taken a subset of the total number of observations.
+! This should be of order 0.5.
+! Calculated separately for each observation type.
+! @author M.Kahnert (SMHI) and L.Robertson (SMHI)
+!-----------------------------------------------------------------------
+subroutine chisq_over_nobs2(nobs,dep)
+  integer :: nobs                    ! number of observations,...
+  real    :: dep(nobs)               ! Analysis departure from background
+  integer :: i,j,n,p,frac,ipar
+  real :: hbh
+  integer, allocatable :: nm(:)      ! number of used observations
+  real, allocatable :: chisq(:),&    ! chi-square
+                       h(:,:,:,:)    ! Work array for observation operator
+  complex, allocatable :: uh(:,:,:)  ! .. on spectral space
+  character(len=128) :: file
+!-----------------------------------------------------------------------
+  if((nobsData<1).or.(nobs<1))then
+    if(MasterProc) print dafmt,'No Obs for CHI^2 calculations'
+    return
+  endif
+!----------------------------------------------------------------------- 
+  if(MasterProc) print dafmt,'CHI^2 calculations' 
+  allocate(chisq(nobsData),nm(nobsData),&
+           h(nxex,nyex,nlev,nchemobs),uh(nv1,nxex,nyex))
+!-----------------------------------------------------------------------
+! Determine (H^T)_n; compute U^{-\dagger}*(H^T)_n, n: nth component of H^T, n=1..nobs
+!-----------------------------------------------------------------------
+  chisq(:)=0e0
+  nm(:)=0
+! frac=nobs/max(nobs/5,min(200,nobs)) ! 1 (up to 200 obs) .. 5 (from 1000 obs)
+  do ipar=1,nobsData
+    n=obsData(ipar)%iobs(1)-obsData(ipar)%iobs(0)+1
+    frac=n/max(n/5,min(200,n))        ! 1 (up to 200 obs) .. 5 (from 1000 obs)
+    do n=obsData(ipar)%iobs(0)+frac,& ! only use every frac'th observation, i.e.
+         obsData(ipar)%iobs(1),frac   ! between all obs (up to 200) and 1/5th
+      h(:,:,:,:)=0e0 ! observation operator for this observations
+      do p=1,4
+        i = pidx(n)%i(p)
+        j = pidx(n)%i(p)
+        h(i,j,:,:)=H_jac(n,p,:,ichemobs(:))
+      enddo
+      call chitox_adj(uh,h)                 ! to spectral space
+      hbh=norm(uh,squared=.true.)+obsstddev(n)**2  ! HBH+R
+      chisq(ipar)=chisq(ipar)+dep(n)**2/hbh ! chi-square for this observation & sum
+      nm(ipar)=nm(ipar)+1                   ! number of used observations
+    enddo
+  enddo
+  deallocate(h,uh)
+! CALL MPI_ALLREDUCE(MPI_IN_PLACE,chisq,ipar,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD,INFO)
+! CALL MPI_ALLREDUCE(MPI_IN_PLACE,nm   ,ipar,MPI_INTEGER         ,MPI_SUM,MPI_COMM_WORLD,INFO)
+  where(nm(:)>0) chisq(:)=chisq(:)/nm(:)     ! Normalize by number of used observations
+
+  if(MasterProc) print '((X,I3,A,X,G12.4,X,3(A,I0)))',&
+    (ipar,'CHI^2/nobs=',chisq(ipar),'nobs=',nm(ipar),&
+      '/',obsData(ipar)%iobs(1)-obsData(ipar)%iobs(0)+1,&
+      '/',nobs,ipar=1,nobsData)
+
+  file=trim(runlabel1)//"_chisqr.dat"
+  open(IO_TMP,file=file,form="FORMATTED",position="APPEND")
+  write(IO_TMP,'(A,I3,50(G12.4,I7,:))'),&
+    date2string("YYYY-MM-DD hh:mm",current_date),nobsData,&
+    (chisq(ipar),nm(ipar),ipar=1,nobsData)
+  close(IO_TMP)
+  deallocate(chisq,nm)
+endsubroutine chisq_over_nobs2
 ! function great_circle_distance(fi1,lambda1,fi2,lambda2) result(dist)
 !   !compute the great circle distance between to points given in
 !   !spherical coordinates. Sphere has radius 1.
