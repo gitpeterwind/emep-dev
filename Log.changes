@@ -131,6 +131,28 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+31 May 2013 Dave, 2594
+
+Met_ml:  code for SMI now re-written to check for different options in a loop:
+
+   ! Soil water has many names. Some we can deal with:
+   ! (and all need to end up as SMI)
+    character(len=*), dimension(4), parameter :: possible_soilwater_uppr = (/&
+        "SMI1                " &
+       ,"SMI                 " &
+       ,"soil_water_content  " &
+       ,"soil_wetness_surface" &
+    /)
+    character(len=*), dimension(3), parameter :: possible_soilwater_deep = (/&
+        "SMI3                   " &
+       ,"SMI                    " &
+       ,"deep_soil_water_content" &
+    /)
+
+Tested for IFS, TNOxx, RCA, and EMEP (after the usual struggles with DUST, 
+clay, etc.) 
+        
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 30th May 2013  Dave, 2593
 
 Makefile - EMCHEM09 option added, to use just EmChem09 chemistry.
