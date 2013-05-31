@@ -90,11 +90,11 @@ GETOPTS(){
   local rdir=$PWD/ZCM_$run N=0 EE=()
 # Volcano variables
   local vdir=$PWD/ZCM_Emergency
-  local VolcCSV="$vdir/Mastin_et_al_2009a_table3.csv" \
-        ErupCSV="$vdir/Mastin_et_al_2009b_table3.csv" \
-        NppCSV="$vdir/NPP_Location.csv"       NacCSV="$vdir/NPP_Accident.csv" \
-        NucCSV="$vdir/NUC_Location.csv"       NexCSV="$vdir/NUC_Explosion.csv" \
-        LocCSV="$rdir/emergency_location.csv" EmiCSV="$rdir/emergency_emission.csv" \
+  local VolcCSV=$vdir/Mastin_et_al_2009a_table3.csv \
+        ErupCSV=$vdir/Mastin_et_al_2009b_table3.csv \
+        NppCSV=$vdir/NPP_Location.csv       NacCSV=$vdir/NPP_Accident.csv \
+        NucCSV=$vdir/NUC_Location.csv       NexCSV=$vdir/NUC_Explosion.csv \
+        LocCSV=$vdir/emergency_location.csv EmiCSV=$vdir/emergency_emission.csv \
         COL='1,5-6,8-9,11-14,16' vbin=7bin tracer='1234-67=|PP34L678'
 # 1:NUMBER,5:NAME,6:LOCATION,8:LATITUDE,9:NS,11:LONGITUDE,12:EW,13:ELEV,14:TYPE,16:ERUPTION TYPE
   [[ "$*" = *-[VNX]* ]] && rm -f $LocCSV $EmiCSV

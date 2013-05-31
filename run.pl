@@ -97,7 +97,7 @@ my @MAKE = ("gmake", "-j4", "MACHINE=snow");
    @MAKE = ( "make", "-j4", "MACHINE=stallo") if $STALLO==1 ;
 die "Must choose STALLO **or** VILJE !\n"
   unless $STALLO+$VILJE==1;
-my $MAKEMODE=0; #="EMEP2010";  # make EMEP2010, make SR-EMEP2010
+my $MAKEMODE=0;  # make EMEP2011, make SR-EMEP2011
 
 my %BENCHMARK;
 # OpenSource 2008
@@ -105,12 +105,13 @@ my %BENCHMARK;
 # Dave's preference for EMEP:
 #  %BENCHMARK = (grid=>"EMEP"  ,year=>2006,emis=>"Modrun10/EMEP_trend_2000-2008/2006",archive=>1,chem=>"EmChem09");
 # EECCA Default:
-## %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun11/EMEP_trend_2000-2009/2008",archive=>1,chem=>"EmChem09soa",make=>"EMEP");
+   %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun11/EMEP_trend_2000-2009/2008",archive=>1,chem=>"EmChem09soa",make=>"EMEP");
 # Status Runs:
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2007,emis=>"Modrun09/2009-Trend2007-CEIP") ;
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun10/2010-Trend2008_CEIP");
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2009,emis=>"Modrun11/2011-Trend2009-CEIP");
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2010,emis=>"Modrun12/2012-Trend2010-CEIP",archive=>1,chem=>"EmChem09soa",make=>"EMEP2010");
+#  %BENCHMARK = (grid=>"EECCA" ,year=>2011,emis=>"Modrun13/2013-Trend2011-CEIP",archive=>1,chem=>"EmChem09soa",make=>"EMEP2011");
 # Alternative domains:
 #  %BENCHMARK = (grid=>"TNO28" ,year=>2008,emis=>"emis_TNO28"         ,archive=>1);
 #  %BENCHMARK = (grid=>"MACC02",year=>2008,emis=>"2008_emis_EMEP_MACC",archive=>1) ;
@@ -215,8 +216,8 @@ my $NH3EMIS_VAR = 0; # set to 1 if new temp NH3.
 
 my $METformat="cdf"; # felt or cdf
 
-my $GRID = "EECCA"; # TNO7, TNO14, TNO28, TNO56, EMEP, EECCA, MACC02, GLOBAL or FORECAST
-   $GRID = $eCWF?"GLOBAL":"MACC02" if $CWF;
+my $GRID = "EECCA"; # TNO7, TNO14, TNO28, TNO56, EMEP, EECCA, MACC02, MACC14 or GLOBAL
+   $GRID = $eCWF?"GLOBAL":"MACC14" if $CWF;
    $GRID = $BENCHMARK{'grid'} if %BENCHMARK;
 my $MONTHLY_EMIS = ( $GRID eq "GLOBAL" ); #Switch off if only annual used
 
@@ -233,7 +234,7 @@ if ($STALLO) {
   $MetDir   = "$DataDir/$GRID/metdata/$year" ;
   $MetDir   = "$DataDir/$GRID/metdata_EC/$year"  if ($GRID eq "GLOBAL");
   $MetDir   = "$DataDir/$GRID/metdata_EC/$year"  if ($GRID =~ /TNO/);
-  $MetDir   = "$DataDir/$GRID/metdata_EC/$year"  if ($GRID eq "MACC02");
+  $MetDir   = "$DataDir/$GRID/metdata_EC/$year"  if ($GRID =~ /MACC/);
   $MetDir   = "$DataDir/$GRID/metdata_CWF/$year" if $CWF;
   $MetDir   = "$DataDir/$GRID/metdata_H20/$year" if $GRID eq "EECCA"; # assumes $METformat eq "cdf";
 
@@ -272,10 +273,9 @@ my $Chem     = "EmChem09soa";
 
 my $exp_name = "EMEPSTD";
    $exp_name = ($eCWF)?"EMERGENCY":"FORECAST" if $CWF;
-my $testv = "rv4_2.SVN";
-   $testv = "2563";   # From svn system, as reminder
+my $testv = "rv4_3.SVN";
+   $testv = "2594";   # From svn system, as reminder
    $testv.= ($eCWF)?".eCWF":".CWF" if $CWF;
-   $testv = "testsoil";   # From svn system, as reminder
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
@@ -401,12 +401,14 @@ $pm_emisdir = "$EMIS_INP/2006-Trend2000-V7"  if $year < 2000;
 $pm_emisdir = "/home/$ROBERT/Unify/MyData/D_EGU/${GRID}_GRID" if $VBS;
 
 #EMISSIONS: FORECAST settings
-if ( ($GRID eq "FORECAST") or ($GRID eq "GEMS025") or ($GRID eq "MACC02") ) {
+if ( ($GRID eq "GEMS025") or ($GRID eq "MACC02") or ($GRID eq "MACC14") ) {
   $EMIS_INP = "$DATA_LOCAL/Emissions";
-  $emisdir = "$EMIS_INP/2008-Trend2006-V9-Extended_PM_corrected-V3"; # GEMS025
+  $emisdir = "$EMIS_INP/2008-Trend2006-V9-Extended_PM_corrected-V3";    # GEMS025
 # $emisdir = "$EMIS_INP/2008_emis_EMEP_from_PS50" if $GRID eq "MACC02"; # MACC02
-# $emisdir = "$EMIS_INP/2008_emis_EMEP_MACC" if $GRID eq "MACC02"; # MACC02
-  $emisdir = "$EMIS_INP/2007_emis_MACC" if $GRID eq "MACC02"; # MACC02
+# $emisdir = "$EMIS_INP/2008_emis_EMEP_MACC"      if $GRID eq "MACC02"; # MACC02
+  $emisdir = "$EMIS_INP/2007_emis_MACC"           if $GRID eq "MACC02"; # MACC02
+  $emisdir = "$EMIS_INP/2009_emis_MACCII"         if $GRID eq "MACC14"; # MACC14
+
   $pm_emisdir = $emisdir;
 }
 if ( $GRID =~ /TNO/)  {  # STALLO ONLY
@@ -787,8 +789,10 @@ $ifile{"$timeseries/EmisHeights.txt"} = "EmisHeights.txt";
 print "TESTING PM $poll $dir\n";
 
 # hb NH3emis, new emis files
-    if(($NH3EMIS_VAR)&&($poll eq "nh3")){
-      $dir = "/home/$AGNES/emis_NMR";
+    if ($GRID eq "MACC14") {
+      # Only Emis_TNO7.nc available
+    }elsif(($NH3EMIS_VAR)&&($poll eq "nh3")){
+      $dir = "$HOMEROOT/$AGNES/emis_NMR";
       $ifile{"$dir/gridNH3_NMR_$year"} = "emislist.$poll";
     }else{
       $ifile{"$dir/grid$gridmap{$poll}"} = "emislist.$poll";
@@ -796,6 +800,8 @@ print "TESTING PM $poll $dir\n";
       $ifile{"$SNAP_CDF/Emis_$gridmap{$poll}.nc"} 
            = "GriddedSnapEmis_$poll.nc" if $SNAP_CDF ;
     }
+    $dir=(-e "$emisdir/Emis_TNO7.nc")?$emisdir:$DataDir;
+    $ifile{"$dir/Emis_TNO7.nc"} = "EmisFracs_TNO7.nc";
 
     # copy pm25 if needed, avoid having 20 different PM25 time-series
 
@@ -825,21 +831,20 @@ print "TESTING PM $poll $dir\n";
       $ifile{"$SplitDir/emissplit.specials.$poll"} = "emissplit.specials.$poll"
       if( -e "$SplitDir/emissplit.specials.$poll" );
     } elsif ( -e "$timeseries/emissplit.$Specials.$poll.$iyr_trend" ) { # e.g. TSAP
-        $ifile{"$timeseries/emissplit.$Specials.$poll.$iyr_trend"} =
-               "emissplit.specials.$poll"
+      $ifile{"$timeseries/emissplit.$Specials.$poll.$iyr_trend"} =
+             "emissplit.specials.$poll"
     } elsif ( -e "$timeseries/emissplit.specials.$poll.2010" ) { # when no other year availanle
-        $ifile{"$timeseries/emissplit.specials.$poll.2010"} =
-               "emissplit.specials.$poll"
-    } else {
-
-     $ifile{"$SplitDir/emissplit.specials.$poll"} = "emissplit.specials.$poll"
-     if( -e "$SplitDir/emissplit.specials.$poll" );
+      $ifile{"$timeseries/emissplit.specials.$poll.2010"} =
+             "emissplit.specials.$poll"
+    } elsif ( -e "$SplitDir/emissplit.specials.$poll" ) {
+      $ifile{"$SplitDir/emissplit.specials.$poll"} =
+             "emissplit.specials.$poll";
     }
   }
 
   foreach my $mmm ( $mm1 .. $mm2, $mm1, $mm2 ) {
     my $mm = sprintf "%2.2d", $mmm;
-    $ifile{"$DATA_LOCAL/natso2$mm.dat"} =  "natso2$mm.dat";
+    $ifile{"$DATA_LOCAL/natso2$mm.dat"} =  "natso2$mm.dat" unless ($GRID eq "MACC14");
     $ifile{"$DataDir/lt21-nox.dat$mm"} =  "lightning$mm.dat";
 # BIC for Saharan dust
     if ( $SoilDir ) { # Not yet for EMEP domain
@@ -870,7 +875,7 @@ print "TESTING PM $poll $dir\n";
 # mylink( "BIC: ", $old,$new ) ;
 #EUCAARI, but all?
 # Skip:  $ifile{"$DATA_LOCAL/Boundary_and_Initial_Conditions.nc"} =
-#                     "Boundary_and_Initial_Conditions.nc" unless $GRID eq "MACC02";
+#                     "Boundary_and_Initial_Conditions.nc" unless ($GRID =~ /MACC/);
   $ifile{"$DataDir/GLOBAL_O3.nc"} =
                   "GLOBAL_O3.nc";
   $ifile{"$DataDir/amilt42-nox.dat"} = "ancatmil.dat";#RENAME TO AIRCARAFT?!
@@ -906,7 +911,7 @@ print "TESTING PM $poll $dir\n";
 
 # new inputs style (Aug 2007)  with compulsory headers:
 # From rv3_14 used only for FORECAST mode
-  $ifile{"$DATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse" if ( $CWF ) ;
+  $ifile{"$DATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse" if ($CWF and ($GRID ne "MACC14")) ;
   $ifile{"$DataDir/Landuse/landuseGLC2000_INT1.nc"} ="GLOBAL_landuse.nc";
 
   $ifile{"$DataDir/LanduseGLC.nc"} ="LanduseGLC.nc";
@@ -954,23 +959,25 @@ print "TESTING PM $poll $dir\n";
  # $ifile{"$DataDir/VolcanoesLL_2010.dat"} = "VolcanoesLL.dat";
   $ifile{"$DataDir/VolcanoesLL.dat"} = "VolcanoesLL.dat";
 # Emergency senarios (eEMEP)
-  if(($MAKEMODE =~ /2010/) or ($MAKEMODE =~ /eEMEP/)){
-    cp ("$ChemDir/emergency_emission.csv","emergency_emission.csv");
-    $ifile{"$ChemDir/emergency_location.csv"} = "emergency_location.csv";
-    print "$ChemDir/emergency_location.csv\n";
-    open(IN,"<$ChemDir/emergency_location.csv");
+  if(($MAKEMODE =~ /(2010|2011)/) or ($MAKEMODE =~ /eEMEP/)){
+    my $dir="$ProgDir/ZCM_Emergency";
+    cp ("$dir/emergency_emission.csv","emergency_emission.csv");
+    $ifile{"$dir/emergency_location.csv"} = "emergency_location.csv";
+    print "$dir/emergency_location.csv\n";
+    open(IN,"<$dir/emergency_location.csv");
     while(my $line = <IN>){
-      $line=~ s/#.*//;                          # Get rid of comment lines
-      chop(my $vname = (split(",",$line))[0]);  # Emergency tracer name
-      my $efile = "$EmergencyData/${vname}_7bin.eruptions";  # Volcanic eruption
-      $efile = "$EmergencyData/${vname}_2bin_${MAKEMODE}.eruptions" if($MAKEMODE =~ /2010/);
-    # $efile = "$EmergencyData/${vname}_2bin_${MAKEMODE}_SR-SOx.eruptions" if($MAKEMODE =~ /2010/);
-    # $efile = "$EmergencyData/${vname}_2bin_${MAKEMODE}_SR-PMx.eruptions" if($MAKEMODE =~ /2010/);
-      system("cat $efile >> emergency_emission.csv") if (-e $efile);
-      $efile = "$EmergencyData/${vname}.accident";           # NPP accident
-      system("cat $efile >> emergency_emission.csv") if (-e $efile);
-      $efile = "$EmergencyData/${vname}.explosion";          # NUC explosion
-      system("cat $efile >> emergency_emission.csv") if (-e $efile);
+      unless ($line =~ /#.*/) {             # Skip comment lines
+        my $vname = (split(",",$line))[0];  # Emergency tracer name
+        my $efile = "$EmergencyData/${vname}_7bin.eruptions";  # Volcanic eruption
+        $efile = "$EmergencyData/${vname}_2bin_${MAKEMODE}.eruptions" if($MAKEMODE =~ /(2010|2011)/);
+      # $efile = "$EmergencyData/${vname}_2bin_${MAKEMODE}_SR-SOx.eruptions" if($MAKEMODE =~ /(2010|2011)/);
+      # $efile = "$EmergencyData/${vname}_2bin_${MAKEMODE}_SR-PMx.eruptions" if($MAKEMODE =~ /(2010|2011)/);
+        system("cat $efile >> emergency_emission.csv") if (-e $efile);
+        $efile = "$EmergencyData/${vname}.accident";           # NPP accident
+        system("cat $efile >> emergency_emission.csv") if (-e $efile);
+        $efile = "$EmergencyData/${vname}.explosion";          # NUC explosion
+        system("cat $efile >> emergency_emission.csv") if (-e $efile);
+      }
     }
     close(IN);
   }
@@ -981,7 +988,7 @@ print "TESTING PM $poll $dir\n";
     if($CWF){
       my $old=sprintf("$CWFPL",$CWFDATE[0]);
       if(-e $old){
-        my $new="pollen_${CWFDATE[0]}_dump.nc";
+        my $new="POLLEN_IN.nc";
         mylink( "Linking:",$old, $new);
         $cwfpl=$old;
       }
@@ -1167,10 +1174,10 @@ EOT
       }
     }
     # Pollen
-    $old="pollen_dump.nc";
-    $old=sprintf("pollen_%08d_dump.nc",substr($CWFDUMP[0],0,8)) unless (-e "$old");
-    $old=sprintf("pollen_%08d_dump.nc",substr($CWFDUMP[1],0,8)) unless (-e "$old");
-    $new=sprintf("$CWFPL",$CWFBASE);    # today's dump
+    $old="POLLEN_OUT.nc";
+    $old=sprintf("POLLEN_OUT_%08d.nc",substr($CWFDUMP[0],0,8)) unless (-e "$old");
+    $old=sprintf("POLLEN_OUT_%08d.nc",substr($CWFDUMP[1],0,8)) unless (-e "$old");
+    $new=sprintf("$CWFPL",$CWFBASE);        # today's pollen dump
     system("mkdir -p `dirname $new`; mv $old $new") if (-e "$old");
   }
 

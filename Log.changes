@@ -131,6 +131,25 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+31 May 2013  Alvaro, 2595
+
+Prepare code for status runs
+
+Makefile:
+- make targets with Grimsvotn eruption tracers (EMEP2011 SR-EMEP2011)
+- make eEMEP target with EmChem09 insead of EmChem09soa
+- mk.GenChem quiet option (-q) for all GenChem targets, except EMEP and EMCHEM09
+- compilation options for MACHINE=byvind
+
+run.pl
+- make and BM options for status run
+- introduce MACC14 domain, and use it as default for FORECAST runs
+
+mk.GenChem
+- Emergency files created by mk.GenChem (emergency_location.csv & emergency_emission.csv)
+  will be kept in ZCM_Emergency, instead of the run directory (ZCM_EmChem09soa).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 31 May 2013 Dave, 2594
 
 Met_ml:  code for SMI now re-written to check for different options in a loop:
@@ -151,7 +170,7 @@ Met_ml:  code for SMI now re-written to check for different options in a loop:
 
 Tested for IFS, TNOxx, RCA, and EMEP (after the usual struggles with DUST, 
 clay, etc.) 
-        
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 30th May 2013  Dave, 2593
 

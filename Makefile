@@ -55,6 +55,13 @@ else ifeq ($(MACHINE),vilje)
   LLIB += $(NETCDF_PREFIX)/lib
   MAKEDEPF90=/home/metno/mifapw/bin/makedepf90
   LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
+else ifeq ($(MACHINE),byvind)
+  MODULES = intel/12.1.0 openmpi/1.4.1-i101011 netcdf/4.1.2-i1210
+  LIBS += -lnetcdf -lnetcdff
+  INCL += /software/apps/netcdf/4.1.2/i1210/include
+  LLIB += /software/apps/netcdf/4.1.2/i1210/lib
+# MAKEDEPF90=????
+  LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
 else ifeq ($(MACHINE),abel) # titan --> abel
   MODULES = intel/2011.10 openmpi.intel/1.6.1 netcdf.intel/4.2.1.1
   INTEL  = /cluster/software/VERSIONS/$(subst /,-,$(filter intel%,$(MODULES)))
@@ -143,8 +150,8 @@ endif
 
 #
 depend .depend: Makefile.SRCS $(SRCS)
-	$(MAKEDEPF90) $(SRCS) -o '$$(PROG)' $(DFLAGS) \
-	  -l '$$(F90) -o $$@ $$(FOBJ) $$(LDFLAGS)' > .depend
+	test -n "$(MAKEDEPF90)" && $(MAKEDEPF90) $(SRCS) $(DFLAGS) \
+	  -o '$$(PROG)' -l '$$(F90) -o $$@ $$(FOBJ) $$(LDFLAGS)' > .depend
 
 clean: diskclean touchdepend depend
 
@@ -155,53 +162,55 @@ touchdepend:
 	touch .depend
 
 # Model/Config specific targets
-EMEP EMEP2010 SR-EMEP SR-EMEP2010 MACC MACC-EVA2010 SR-MACC eEMEP eEMEP2010 eEMEP2013 EMCHEM09:
+EMEP EMEP2010 EMEP2011 EMCHEM09 SR-EMEP SR-EMEP2010 SR-EMEP2011 \
+MACC MACC-EVA2010 MACC-EVA2011 SR-MACC eEMEP eEMEP2010 eEMEP2013:
 	ln -sf $(filter %.f90 %.inc,$+) . && \
 	$(MAKE) MACHINE=$(MACHINE) -j4 $(PROG)
 
 # My_* files pre-requisites
-EMEP EMEP2010 MACC MACC-EVA2010 eEMEP2010: \
+EMEP EMEP2010 EMEP2011 MACC MACC-EVA2010 MACC-EVA2011 eEMEP2010: \
 	  ./ZD_OZONE/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
 	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_VBS/My_SOA_ml.f90 ./ZD_3DVar/My_3DVar_ml.f90
 # EmChem09 only:
-EMCHEM09: \
+EMCHEM09 eEMEP eEMEP2013: \
 	  ./ZD_OZONE/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
 	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_OZONE/My_SOA_ml.f90 ./ZD_3DVar/My_3DVar_ml.f90
 #For SR we use the small My_Derived
-SR-EMEP SR-EMEP2010 SR-MACC: \
+SR-EMEP SR-EMEP2010 SR-EMEP2011 SR-MACC: \
 	  ./ZD_SR/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
 	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_VBS/My_SOA_ml.f90 ./ZD_3DVar/My_3DVar_ml.f90
-eEMEP eEMEP2013: \
-	  ./ZD_OZONE/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
-	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_OZONE/My_SOA_ml.f90 ./ZD_3DVar/My_3DVar_ml.f90
 # GenChem config
 .SECONDEXPANSION:
-EMEP EMEP2010 SR-EMEP SR-EMEP2010 \
-MACC MACC-EVA2010 SR-MACC eEMEP2010: modules $$@-GenChem-EmChem09soa
-eEMEP: modules $$@-GenChem-EmChem09soa #-Emergency not yet ready
-EMCHEM09: modules $$@-GenChem-EmChem09 #-Emergency not yet ready
-EMEP-GenChem-%:
-	mk.GenChem -r $* -f FINNv1 -e SeaSalt,Dust,Isotopes
-EMCHEM09-GenChem-%:
-	mk.GenChem -r $* -f FINNv1 -e SeaSalt,Dust,Isotopes
+EMEP EMEP2010 EMEP2011 SR-EMEP SR-EMEP2010 SR-EMEP2011 \
+MACC MACC-EVA2010 MACC-EVA2011 SR-MACC eEMEP2010: modules $$@-GenChem-EmChem09soa
+eEMEP eEMEP2013: modules $$@-GenChem-EmChem09  # GenChem-Emergency not yet ready
+EMCHEM09: modules $$@-GenChem-EmChem09
+EMEP-GenChem-% EMCHEM09-GenChem-%:
+	mk.GenChem    -r $* -f FINNv1 -e SeaSalt,Dust,Isotopes
 EMEP2010-GenChem-%:
-	mk.GenChem -r $* -f FINNv1 -e SeaSalt,Dust,Isotopes -V 2bin,Eyjafj.ll #-h
+	mk.GenChem -q -r $* -f FINNv1 -e SeaSalt,Dust,Isotopes -V 2bin,Eyjafj.ll
+EMEP2011-GenChem-%:
+	mk.GenChem -q -r $* -f FINNv1 -e SeaSalt,Dust,Isotopes -V 2bin,Grimsvotn
 MACC-GenChem-%:
-	mk.GenChem -r $* -f GFASv1 -e SeaSalt,Dust,Isotopes,Pollen -q
+	mk.GenChem -q -r $* -f GFASv1 -e SeaSalt,Dust,Isotopes,Pollen
 MACC-EVA2010-GenChem-%:
-	mk.GenChem -r $* -f GFASv1 -e SeaSalt,Dust,Isotopes -V 2bin,Eyjafj.ll
+	mk.GenChem -q -r $* -f GFASv1 -e SeaSalt,Dust,Isotopes -V 2bin,Eyjafj.ll
+MACC-EVA2011-GenChem-%:
+	mk.GenChem -q -r $* -f GFASv1 -e SeaSalt,Dust,Isotopes -V 2bin,Grimsvotn
 SR-EMEP-GenChem-%:
-	mk.GenChem -r $* -f FINNv1 -e none
+	mk.GenChem -q -r $* -f FINNv1 -e none
 SR-EMEP2010-GenChem-%:
-	mk.GenChem -r $* -f FINNv1 -e none -V 2bin,Eyjafj.ll
+	mk.GenChem -q -r $* -f FINNv1 -e none -V 2bin,Eyjafj.ll
+SR-EMEP2011-GenChem-%:
+	mk.GenChem -q -r $* -f FINNv1 -e none -V 2bin,Grimsvotn
 SR-MACC-GenChem-%:
-	mk.GenChem -r $* -f GFASv1 -e none
+	mk.GenChem -q -r $* -f GFASv1 -e none
 eEMEP-GenChem-%:
-	mk.GenChem -r $* -f GFASv1 -e SeaSalt,Dust -V 7bin,$(VENTS) -N $(NPPAS) -X $(NUCXS) -q #-h
+	mk.GenChem -q -r $* -f GFASv1 -e SeaSalt,Dust -V 7bin,$(VENTS) -N $(NPPAS) -X $(NUCXS)
 eEMEP2010-GenChem-%:
-	mk.GenChem -r $* -f FINNv1 -e SeaSalt,Dust,Isotopes -V 2bin,Eyjafj.ll #-h
+	mk.GenChem -q -r $* -f FINNv1 -e SeaSalt,Dust,Isotopes -V 2bin,Eyjafj.ll
 eEMEP2013-GenChem-%:
-	mk.GenChem -r $* -f GFASv1 -e none                  -N NorthKorea -q #-h
+	mk.GenChem -q -r $* -f GFASv1 -e none                  -N NorthKorea
 
 # eEMP Default Vents, NPPs & NUCs
 eEMEP-GenChem-%: VENTS ?= Vesuvius,Etna,Kr.suv.k,Katla,Askja
@@ -218,7 +227,8 @@ $(PROG) archive: $(PROG)_$(shell date +%Y%m%d).tar.bz2
 	@echo "Creating archive $@"; tar --dereference -cjf $@ $+
 
 # Check if intended modules are loaded
-modulelist = $(shell bash -c '. /etc/profile.d/modules.sh; module list' 2>&1)
+modulelist = $(if $(filter byvind,$(MACHINE)),/etc/cmod/bash.init,/etc/profile.d/modules.sh)
+modulelist:= $(shell bash -c '. $(modulelist); module list' 2>&1)
 modulefind = $(findstring $(1),$(modulelist))
 modulecheck= $(if $(call modulefind,$(1)),$(info Found module: $(1)),\
   $(error Missing module $(1): try 'module load $(1)'))
