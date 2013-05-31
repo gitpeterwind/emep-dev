@@ -84,9 +84,9 @@ type(umap), public, save :: unit_map(19)=(/&
   umap("mgN","mgN/m2",mgNm2),&
   umap("mgS","mgS/m2",mgSm2),&
 ! Exposure to radioactive material
-  umap("uBq" ,"uBq/m3"  ,ugXm3    ),& ! inst/mean   exposure
-  umap("uBqh","uBq h/m3",ugXm3*s2h),& ! accumulated exposure
-  umap("mBq" ,"mBq/m2"  ,mgXm2    ),& ! deposition
+  umap("uBq" ,"uBq/m3"  ,ugXm3),& ! inst/mean   exposure
+  umap("uBqh","uBq h/m3",ugXm3),& ! accumulated exposure over 1 hour
+  umap("mBq" ,"mBq/m2"  ,mgXm2),& ! deposition
 ! Aerosol optical properties
   umap("ext" ,"ext550nm",extX),&! ext* units need to be further multiplied...
 ! Coulumn output
@@ -213,9 +213,7 @@ function Units_Scale(txtin,iadv,unitstxt,volunit,needroa,debug_msg) result(units
     txt="ug"
   case("mol/mol","mole mole-1","mixratio")
     txt="mix_ratio"
-  case("ppbv")
-    txt="ppb"
-  case("ppbV")
+  case("ppbv","ppbV")
     txt="ppb"
   endselect
   i=find_index(txt,unit_map(:)%utxt)

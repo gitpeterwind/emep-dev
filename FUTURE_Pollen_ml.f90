@@ -85,7 +85,8 @@ module Pollen_ml
  !  integer                                       ::  fdump = 1
   character(len=*), parameter :: &
     pollen_data="pollen_data.nc",&
-    pollen_name="pollen_YYYYMMDD_dump.nc"
+    template_pollen_read ="POLLEN_IN.nc",&
+    template_pollen_write="POLLEN_OUT.nc"
 
   type(date), parameter :: &
     date_first=date(-1,3,1,1,0),&
@@ -139,6 +140,7 @@ subroutine Pollen_flux (i,j,debug_flag)
     pollen_left(:,:) = 1
     p_day(:,:) =current_date%day
 
+    if(FORECAST) call pollen_read()
     if(.not.allocated(heatsum))then
       allocate(heatsum(MAXLIMAX,MAXLJMAX))
       heatsum(:,:) = 0.00
@@ -276,14 +278,14 @@ subroutine pollen_read ()
   integer :: fid,did,vid
   logical :: fexist
   integer :: nlon,nlat
-  character(len=len(pollen_name)) :: filename
+  character(len=len(template_pollen_read)) :: filename
   real,  allocatable, dimension(:,:) :: h_gl,r_gl
 
   if(.not.checkdates(daynumber)) return
   if(.not.first_call) return
   first_call=.false.
 
-  filename=date2string(pollen_name,current_date)
+  filename=date2string(template_pollen_read,current_date)
   inquire(file=filename,exist=fexist)
   if(FORECAST.and..not.fexist)then
     if(MasterProc) write(*,*)"Warning Polen dump file not found: "//trim(filename)
@@ -319,7 +321,7 @@ subroutine pollen_read ()
 ! call printCDF("REST_GLOB",Pollen_rest,"not") 
 endsubroutine pollen_read 
 subroutine pollen_dump ()
-  character(len=len(pollen_name)) :: filename
+  character(len=len(template_pollen_write)) :: filename
   integer     :: i0=60,j0=11,i1=107,j1=58
   type(Deriv) :: def1
 
@@ -334,13 +336,11 @@ subroutine pollen_dump ()
     "Pollen: rest/heatsum allocated error")
   if(.not.(allocated(Pollen_rest).and.allocated(heatsum))) return
 
-  filename = date2string(pollen_name,current_date)
+  filename = date2string(template_pollen_write,current_date)
   write(*,*) "Pollen filename ",trim(filename)
 
-  i0=RUNDOMAIN(1)
-  j0=RUNDOMAIN(3)
-  i1=RUNDOMAIN(2)
-  j1=RUNDOMAIN(4)
+  i0=RUNDOMAIN(1);j0=RUNDOMAIN(3)
+  i1=RUNDOMAIN(2);j1=RUNDOMAIN(4)
 
   def1%class='pollen_out' !writtenclass='pollen_out' !written
   def1%avg=.false.      !not used
