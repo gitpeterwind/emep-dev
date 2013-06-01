@@ -70,7 +70,7 @@ use ModelConstants_ml,only: MasterProc, &   ! set true for host processor, me==0
                             runlabel2,  &   ! explanatory text
                             nprint,nterm,iyr_trend,                       &
                             IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY, &
-                            USE_FOREST_FIRES, USE_LIGHTNING_EMIS, &
+                            USES, USE_LIGHTNING_EMIS, &
                             FORECAST       ! FORECAST mode
 use ModelConstants_ml,only: Config_ModelConstants
 use NetCDF_ml,        only: Init_new_netCDF
@@ -116,12 +116,13 @@ INCLUDE 'mpif.h'
 INTEGER STATUS(MPI_STATUS_SIZE),INFO
 
 logical, parameter :: DEBUG_UNI = .false.
-integer :: numt, nadd, oldseason, newseason
-integer :: i
-integer :: mm, mm_old   ! month and old-month
+integer :: i, numt, nadd, oldseason, newseason
+integer :: mm_old   ! month and old-month
 integer :: nproc_mpi,cyclicgrid
 character (len=230) :: errmsg,txt
 
+associate ( yyyy => current_date%year, mm => current_date%month, &
+              dd => current_date%day,  hh => current_date%hour)
 !
 !     initialize the parallel topology
 !
@@ -198,7 +199,7 @@ call assign_NTERM(NTERM)          ! set NTERM, the number of 3-hourly periods
 call assign_dtadvec(GRIDWIDTH_M)  ! set dt_advec
 
 ! daynumber needed  for BCs, so call here to get initial
-daynumber=day_of_year(current_date%year,current_date%month,current_date%day)
+daynumber=day_of_year(yyyy,mm,dd)
 
 !     Decide the frequency of print-out
 !
@@ -230,9 +231,9 @@ call MeteoRead(1)
 
 call Add_2timing(3,tim_after,tim_before,"After infield")
 
-if (MasterProc.and.DEBUG_UNI) print *,"Calling emissions with year",current_date%year
+if (MasterProc.and.DEBUG_UNI) print *,"Calling emissions with year",yyyy
 
-call Emissions(current_date%year)
+call Emissions(yyyy)
 
 
 call MetModel_LandUse(1)   !
@@ -290,7 +291,6 @@ do numt = 2, nterm + nadd         ! 3-hourly time-loop
 
   !FUTURE if (NH3EMIS_VAR) call SetNH3()  ! NH3emis experimental
 
-  mm = current_date%month
   select case (mm)
     case(12,1:2);newseason = 1
     case(3:5)   ;newseason = 2
@@ -299,7 +299,7 @@ do numt = 2, nterm + nadd         ! 3-hourly time-loop
   endselect
 
   ! daynumber needed for BCs
-  daynumber=day_of_year(current_date%year,current_date%month,current_date%day)
+  daynumber=day_of_year(yyyy,mm,dd)
 
   if (mm_old /= mm) then   ! START OF NEW MONTH !!!!!
     call Code_timer(tim_before)
@@ -331,7 +331,7 @@ do numt = 2, nterm + nadd         ! 3-hourly time-loop
     if (DEBUG_UNI) print *, "Into BCs" , me
     ! We set BCs using the specified iyr_trend
     !   which may or may not equal the meteorology year
-    call BoundaryConditions(current_date%year,mm)
+    call BoundaryConditions(yyyy,mm)
     if (DEBUG_UNI) print *, "Finished BCs" , me
   endif
 
@@ -358,11 +358,12 @@ do numt = 2, nterm + nadd         ! 3-hourly time-loop
   
   call SetDailyBVOC(daynumber)
 
-  if (USE_FOREST_FIRES) call Fire_Emis(daynumber)
+  if (USES%FOREST_FIRES) call Fire_Emis(daynumber)
+  if(MasterProc) print *, "TEST DOY ", day_of_year(yyyy,12,31), day_of_year(yyyy,12+1,1) , mm, dd, hh
 
   call Add_2timing(12,tim_after,tim_before,"Fires+BVOC")
 
-  daynumber=day_of_year(current_date%year,current_date%month,current_date%day)
+  daynumber=day_of_year(yyyy,mm,dd)
 ! if(MasterProc) print "(a,2I2.2,I4,3x,i2.2,a,i2.2,a,i2.2)",' current date and time: ',&
 !   current_date%day,current_date%month,current_date%year,&
 !   current_date%hour, ':',current_date%seconds/60,':',current_date%seconds-60*(current_date%seconds/60)
@@ -416,6 +417,7 @@ endif
 CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
 CALL MPI_FINALIZE(INFO)
 
+end associate   ! yyyy, mm, dd
 end program myeul
 
 !===========================================================================

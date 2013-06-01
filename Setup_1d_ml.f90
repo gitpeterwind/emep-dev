@@ -71,7 +71,7 @@
     ,dt_advec                        & ! time-step
     ,PT                              & ! Pressure at top
     ,MFAC                            & ! converts roa (kg/m3 to M, molec/cm3)
-    ,USE_FOREST_FIRES                & !
+    ,USES                            & ! Forest fires so far
 !FUTURE    ,USE_POLLEN                      & ! Pollen
     ,USE_SEASALT                     &
     ,USE_LIGHTNING_EMIS, USE_AIRCRAFT_EMIS              & !
@@ -321,7 +321,7 @@ contains
      endif
 
 
-     if ( USE_FOREST_FIRES   ) then
+     if ( USES%FOREST_FIRES   ) then
      if ( burning(i,j)  ) then
 
        call Fire_rcemis(i,j)

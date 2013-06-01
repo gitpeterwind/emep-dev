@@ -13,9 +13,9 @@
 #     mpiprocs=number of MPI threads per node. For 64 processors:
 ##PBS -l select=4:ncpus=32:mpiprocs=32:mem=8gb
 #Stallo
-#PBS -lnodes=2:ppn=16
+#PBS -lnodes=4:ppn=16
 # wall time limit of run
-#PBS -lwalltime=00:30:00
+#PBS -lwalltime=07:30:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
 #PBS -lpmem=1000MB
 #make results readable for others:
@@ -274,7 +274,7 @@ my $Chem     = "EmChem09soa";
 my $exp_name = "EMEPSTD";
    $exp_name = ($eCWF)?"EMERGENCY":"FORECAST" if $CWF;
 my $testv = "rv4_3.SVN";
-   $testv = "2594";   # From svn system, as reminder
+   $testv = "2601";   # From svn system, as reminder
    $testv.= ($eCWF)?".eCWF":".CWF" if $CWF;
 
 #User directories
