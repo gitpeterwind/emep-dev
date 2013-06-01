@@ -131,6 +131,23 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+1 June 2013  Dave, 2600             
+
+Fortran 2003 "associate" introduced, and start of new config system (USES% type):
+
+ForestFires_ml:
+   USES type added, with forest-fire settings as first example
+   Introduced USES%MONTHLY_FF option to force monthly-average emissions
+    (very inefficient so far, called every day, but will fix later.)
+
+ModelConstants_ml: USES type added, with forest-fire settings as first example
+Setup_1d_ml: USES%FOREST_FIRES
+Unimod.f90:  USES%FOREST_FIRES and associate (e.g. mm=> current_date%month)
+
+config_EMEPSTD, EMERGENCY, FORECAST, IMPACT2C updated with new USES system.
+
+Both of these features simplify the code and should be expanded.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 31 May 2013  Alvaro, 2595-2599
 
 2595: Prepare code for status runs

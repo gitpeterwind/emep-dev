@@ -7,10 +7,15 @@
   EXP_NAME              = 'EMEPSTD',
   MY_OUTPUTS            = 'EMEPSTD',
 !------------------------------
+!USES system started June 2013
+  USES%testname          = "EMEPSTD",
+  USES%FOREST_FIRES      = T,
+  USES%MONTHLY_FF        = F,
+!------------------------------
+!
   USE_SOILWATER         = T,          ! Uses SMI from meteo data
   USE_CONVECTION        = F,
   USE_DEGREEDAY_FACTORS = T,
-  USE_FOREST_FIRES      = T,
   USE_SEASALT           = T,
   USE_AIRCRAFT_EMIS     = T,          ! Needs global file, see manual
   USE_LIGHTNING_EMIS    = T,          ! 

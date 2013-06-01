@@ -7,9 +7,15 @@
   EXP_NAME              = 'FORECAST',
   MY_OUTPUTS            = 'FORECAST',
 !------------------------------
+!USES system started June 2013
+  USES%testname          = "FORECAST",
+  USES%FOREST_FIRES      = T,
+  USES%MONTHLY_FF        = F,
+!------------------------------
+!
   USE_SOILWATER         = F,          ! Uses SMI from meteo data
   USE_DEGREEDAY_FACTORS = F,
-  USE_FOREST_FIRES      = T,
+!xx  USE_FOREST_FIRES      = T,
   USE_SEASALT           = T,
   USE_SOILNOX           = T,          ! diff for global + Euro runs
   USE_POLLEN            = T,          ! EXPERIMENTAL. Only works if start Jan 1

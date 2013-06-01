@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************!
 !*
-!*  Copyright (C) 2007-2011 met.no
+!*  Copyright (C) 2007-2013 met.no
 !*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -69,11 +69,19 @@ CHARACTER(LEN=30), public, save :: MY_OUTPUTS="EMEPSTD"
 ! Namelist controlled:
 ! Some flags for model setup
 !------------ NAMELIST VARIABLES - can be reset by emep_namelist.nml file
+! USES system introduced June 2013--------------------------
+type, public :: emep_useconfig
+  character(len=10) :: testname = "STD"
+  logical :: &                   ! Forest fire options
+     FOREST_FIRES     = .true.  &! 
+    ,MONTHLY_FF       = .false.  ! Creates monthly avg. emissions (for e.g. climate runs)
+end type emep_useconfig 
+type(emep_useconfig), public, save :: USES
+!-----------------------------------------------------------
 logical, public, save ::             &
   FORECAST              = .false.    &! reset in namelist
  ,USE_SOILWATER         = .false.    &!
  ,USE_DEGREEDAY_FACTORS = .false.    &!
- ,USE_FOREST_FIRES      = .false.    &! 
  ,USE_SEASALT           = .true.     & !
  ,USE_CONVECTION        = .false.    & ! false works best for Euro runs,
 !
@@ -299,8 +307,9 @@ integer, public, parameter :: &
 ! DEBUG_i= 62, DEBUG_j= 45  ! SEA
 ! DEBUG_i= 10, DEBUG_j= 140 !NEGSPOD
 ! DEBUG_i= 70, DEBUG_j= 40 ! Lichtenstein, to test ncc
-  DEBUG_i= DEBUG_II+OFFSET_i, DEBUG_j= DEBUG_JJ+OFFSET_j    ! EMEP/EECCA
+!  DEBUG_i= DEBUG_II+OFFSET_i, DEBUG_j= DEBUG_JJ+OFFSET_j    ! EMEP/EECCA
 ! DEBUG_i= 59, DEBUG_j= 79  ! JCOAST
+ DEBUG_i= 48, DEBUG_j= 15  !  BB aug 2006
 ! DEBUG_i= 9, DEBUG_j= 201                                  ! MACC02
 ! DEBUG_i= 0, DEBUG_j= 0    ! default
 
@@ -504,8 +513,9 @@ subroutine Config_ModelConstants(iolog)
 
     NAMELIST /ModelConstants_config/ &
       EXP_NAME &  ! e.g. EMEPSTD, FORECAST, TFMM, TodayTest, ....
+     ,USES   & ! just testname so far
      ,MY_OUTPUTS  &  ! e.g. EMEPSTD, FORECAST, TFMM
-     ,USE_SOILWATER, USE_DEGREEDAY_FACTORS, USE_FOREST_FIRES &
+     ,USE_SOILWATER, USE_DEGREEDAY_FACTORS &
      ,USE_CONVECTION &
      ,USE_AIRCRAFT_EMIS,USE_LIGHTNING_EMIS  &  
      ,DO_SAHARA, USE_ROADDUST, USE_DUST &
