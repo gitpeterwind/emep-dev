@@ -131,6 +131,21 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+3 June 2013  Alvaro, 2602
+
+Output_hourly,ZD_OZONE/My_Outputs_ml
+- re introduce PS output on Output_hourly as part of the CF convention
+  (introduced revision 2509; removed revision 2597).
+  To be written out only if there is no user defined PS output
+- remove PS user defined hourly output (introduced revision 2597).
+
+ExternalBICs_ml,config_FORECAST.nml
+- Rename IFS_EVA_2010 ExternalBICs_bc description%version to IFS_MACC_EVA
+
+ZD_OZONE/My_Outputs_ml
+- Rename MY_OUTPUTS EVA2010 case to MACC_EVA
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 1 June 2013  Dave, 2600-2601             
 
 Fortran 2003 "associate" introduced, and start of new config system (USES% type):

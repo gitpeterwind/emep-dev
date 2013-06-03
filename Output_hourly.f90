@@ -613,6 +613,17 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
       endselect
     enddo KVLOOP    
   enddo HLOOP
+  ! CF convention: surface pressure to define vertical coordinates.
+  if(NHOURLY_OUT>0.and.NLEVELS_HOURLY>0.and.all(hr_out(:)%name/="PS"))then
+    def1%name='PS'
+    def1%unit='hPa'
+    def1%class='Surface pressure'
+    CDFtype=Real4 ! can be choosen as Int1,Int2,Int4,Real4 or Real8
+    scale=1.
+    call Out_netCDF(IOU_HOUR,def1,2,1,ps(:,:,1)*0.01,scale,CDFtype,ist,jst,ien,jen)     
+  endif
+
+  
 
 !Not closing seems to give a segmentation fault when opening the daily file
 !Probably just a bug in the netcdf4/hdf5 library.

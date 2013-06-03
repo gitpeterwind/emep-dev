@@ -117,7 +117,7 @@ subroutine set_extbic(idate)
       case(:2011113023);bctype_name='IFS_MOZ_f7kn'  ! Untill 2011-11-30 23:00      
       case(2011120100:);bctype_name='IFS_MOZ_fkya'  ! from   2011-12-01 00:00
     endselect
-  case("EVA2010")      ;bctype_name='IFS_EVA_2010'  ! EVA2010: GRG & AER    
+  case("MACC_EVA")     ;bctype_name='IFS_MACC_EVA'  ! EVA2010/2011: GRG & AER    
   case default         ;bctype_name='use_any'
   endselect
 

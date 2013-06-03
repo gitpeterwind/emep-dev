@@ -307,7 +307,7 @@ subroutine set_output_defs
     if(USE_POLLEN  )nhourly_out=nhourly_out+1
     if(DEBUG_POLLEN)nhourly_out=nhourly_out+2
     nlevels_hourly = 4
-  case("EVA2010")
+  case("MACC_EVA")
     nhourly_out=4
     nlevels_hourly = 1
   case("3DPROFILES")
@@ -322,20 +322,19 @@ subroutine set_output_defs
   case("average_vs_instantaneous")
     nhourly_out = 6
     nlevels_hourly = 1
-  case default
+  case("TRENDS")
     nhourly_out=2
+    nlevels_hourly = 1  ! nb zero is *not* one of levels
+  case default
+    nhourly_out=1
     nlevels_hourly = 1  ! nb zero is *not* one of levels
   endselect
 
   if(allocated(hr_out))       deallocate(hr_out)
   if(allocated(levels_hourly))deallocate(levels_hourly)
-  allocate(hr_out(0:nhourly_out),levels_hourly(nlevels_hourly))
+  allocate(hr_out(nhourly_out),levels_hourly(nlevels_hourly))
   hr_out(:)=Asc2D("none","none",-99,-99,-99,-99,-99,-99,"none",-99.9,-99.9)
 
-! Write out surface pressure at each time step to define vertical coordinates.
-! Varaible must be named PS as defined in formula-terms for sigma.
-  hr_out(0)=Asc2D("PS","D2D_inst",find_index("PSURF",f_2d(:)%name),&
-             ix1,ix2,iy1,iy2,1,"hPa",1.0,-9999.9)
   select case(MY_OUTPUTS)
   case("EMERGENCY")
 !   ix1=IRUNBEG;ix2=IRUNBEG+GIMAX-1
@@ -469,7 +468,7 @@ subroutine set_output_defs
       Asc2D("Pollen_left","pollen_left",00, &
             ix1,ix2,iy1,iy2,1,"grains/m3" ,1.0                      ,-999.9)/)
     endif
-  case("EVA2010")
+  case("MACC_EVA")
 !   ix1=IRUNBEG;ix2=IRUNBEG+GIMAX-1
 !   iy1=JRUNBEG;iy2=JRUNBEG+GJMAX-1
     levels_hourly = (/0/)
@@ -477,7 +476,7 @@ subroutine set_output_defs
     pm10 =find_index("SURF_ug_PM10_rh50" ,f_2d(:)%name)
 !**         name     type     ofmt    ispec    
 !**         ix1 ix2 iy1 iy2 nk sellev? unit conv  max
-    hr_out(1:) = (/&
+    hr_out(:) = (/&
       Asc2D("O3"  ,"BCVugXX",IXADV_O3   ,&
             ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_O3) ,600.0*2.0),&
       Asc2D("NO2" ,"BCVugXX",IXADV_NO2  ,&
@@ -488,7 +487,7 @@ subroutine set_output_defs
             ix1,ix2,iy1,iy2,1             ,"ug",1.0                 ,-999.9)/)
   case("IMPACT2C") ! Dave's starting set. Uses Out3D to get 3m and 45m concs.
     levels_hourly = (/ (i, i= 0,nlevels_hourly-1) /)  ! -1 will give surfac
-    hr_out(1:)= (/ &
+    hr_out(:)= (/ &
         Asc2D("o3_3dppb"    ,"Out3D",O3   ,&
              ix1,ix2,iy1,iy2,nlevels_hourly,"ppbv", PPBINV,600.0*2.0) &
        ,Asc2D("no_3dppb"   ,"Out3D",&
@@ -504,7 +503,7 @@ subroutine set_output_defs
    ! nb Out3D uses totals, e.g. O3, not IXADV_O3
    ! Number of definitions must match nhourly_out set above
     levels_hourly = (/ (i, i= 0,nlevels_hourly-1) /)  ! -1 will give surfac
-    hr_out(1:)= (/ &
+    hr_out(:)= (/ &
         Asc2D("o3_3dppb"    ,"Out3D",O3   ,&
              ix1,ix2,iy1,iy2,nlevels_hourly,"ppbv", PPBINV,600.0*2.0) &
        ,Asc2D("no2_3dppb"   ,"Out3D",&
@@ -524,7 +523,7 @@ subroutine set_output_defs
 !!!! (As a test I tried both pmfine two ways, one as D2D and the other
 !!!!  as ADVugXXXgroup. The results were identical.)
 
-   hr_out(1:) = (/  &
+   hr_out(:) = (/  &
       Asc2D("o3_3m", "ADVppbv", IXADV_o3, &
             ix1,ix2,iy1,iy2,1, "ppbv",PPBINV,600.0) &
      ,Asc2D("no3_f"  ,"ADVugXX",IXADV_NO3_F  ,&
@@ -588,7 +587,7 @@ subroutine set_output_defs
   ! Example of different hourly output types - hourly average and hourly instantaneous value
   ! variables of type "ADVppbv" will be outputted instantaneous and
   ! variables of type "D2D_mean" will be hourly averages. 
-    hr_out(1:) = (/  &
+    hr_out(:) = (/  &
       Asc2D("SURF_ppb_O3_inst"  ,"ADVppbv", IXADV_O3, &
            ix1,ix2,iy1,iy2,1,"ppbv",PPBINV,600.0) ,&
       Asc2D("SURF_ppb_O3_mean"  ,"D2D_mean",find_index("SURF_ppb_O3",f_2d(:)%name), &
@@ -602,13 +601,18 @@ subroutine set_output_defs
       Asc2D("SURF_ug_PMFINE_mean","D2D_mean",find_index("SURF_ug_PMFINE",f_2d(:)%name),&
           ix1,ix2,iy1,iy2,1,"ug/m3",1.0,-999.9) &
     /)
-  case default
-    hr_out(1:) = (/  &
+  case("TRENDS")
+    hr_out(:) = (/  &
       Asc2D("o3_3m", "ADVppbv", IXADV_o3, &
                    ix1,ix2,iy1,iy2,1, "ppbv",PPBINV,600.0), &
       Asc2D("no2_col"   ,"COLUMN",IXADV_NO2  ,&
             ix1,ix2,iy1,iy2,1,"molec/cm2",to_molec_cm2,-999.9) &
 !!          ix1,ix2,iy1,iy2,1,"ug",to_ug_ADV(IXADV_NO2),-999.9) &
+    /)
+  case default
+    hr_out(:) = (/  &
+      Asc2D("o3_3m", "ADVppbv", IXADV_o3, &
+                   ix1,ix2,iy1,iy2,1, "ppbv",PPBINV,600.0) &
     /)
   endselect
 
@@ -616,9 +620,9 @@ subroutine set_output_defs
   ! Was the array set?           R: %name/=none
   ! Was the D2D/Group found?     R: %spec>=0
   ! Is the variable name unique? R: find_index((i)%name,(:)%name)==i
-  do i=0,nhourly_out
+  do i=1,nhourly_out
     if(MasterProc) write(*,*) "TESTHH O3 ATEND", i, nlevels_hourly
-    idx = find_index(hr_out(i)%name,hr_out(:)%name)-1
+    idx = find_index(hr_out(i)%name,hr_out(:)%name)
     if((hr_out(i)%name/="none").and.(hr_out(i)%spec>=0).and.&
        (idx==i)) cycle
     write(errmsg,"(A,4(1X,A,'=',I0),2(1X,A,':',A))")&

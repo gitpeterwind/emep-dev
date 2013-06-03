@@ -91,8 +91,8 @@
         'CH3CHO','CH3CHO',1.0,T,F,-1,
 &end
 &ExternalBICs_bc
-! BC for EVA2010: IFS-MOZ (MACC-GRG) & IFS-AER (MACC-AER)
-  description='IFS-MOZART','IFS_EVA_2010',27, ! name,version,size
+! BC for MACC-EVA: IFS-MOZ (MACC-GRG) & IFS-AER (MACC-AER)
+  description='IFS-MOZART','IFS_MACC_EVA',27, ! name,version,size
   map_bc=! emep,external,frac,wanted,found,IXADV,
         'O3'        ,'O3'          ,1.0,T,F,-1, ! same as fkya
         'NO''       ,'NO'          ,1.0,T,F,-1, ! same as fkya
