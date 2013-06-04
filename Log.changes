@@ -131,6 +131,18 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+4 June 2013  Dave, 2603
+
+de-associate...
+
+Forest_Fire_ml.f90 - removed outer associate block, which (for unknown reasons)
+  stops intel 12.0 (vilje) from compiling code. intel 13.0 works fine, but for
+  now I have replaced => with simple = assignments. Shame.
+
+  (The inner loop associate does work, as does associate in Unimod.f90. Very
+   odd.)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 3 June 2013  Alvaro, 2602
 
 Output_hourly,ZD_OZONE/My_Outputs_ml

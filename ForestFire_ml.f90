@@ -163,8 +163,13 @@ subroutine Fire_Emis(daynumber)
   integer, parameter :: verbose = 1
   integer :: dd1, dd2  ! TESTING
   real,allocatable :: xrdemis(:,:)  !TESTING
+  !
+  integer :: yyyy, mm  ! instead of associate
 
-  ACDATES: associate ( yyyy => current_date%year, mm => current_date%month )
+  !FAILED with ifort 12.0 :-(
+  !ACDATES: associate ( yyyy => current_date%year, mm => current_date%month )
+  yyyy = current_date%year
+  mm = current_date%month 
 
   if(my_first_call) &
     call PrintLog("Biomass Mapping: "//trim(BiomassBurningMapping),MasterProc)
@@ -304,7 +309,7 @@ subroutine Fire_Emis(daynumber)
    !end associate ! yyyy, mm
 
          rdemis = 0.0
-         do i = dd1, dd2
+         do i =  1, 10 ! dd1, dd2
             call ReadField_CDF(fname,FF_poll,xrdemis,daynumber,&
                interpol='mass_conservative',&
                needed=.not.FORECAST,UnDef=0.0,debug_flag=DEBUG_FORESTFIRE)
@@ -391,7 +396,7 @@ subroutine Fire_Emis(daynumber)
           BiomassBurningEmis(n,debug_li,debug_lj) /) )
     end associate ! idbg, jdbg
   endif ! debug_proc
-  end associate ACDATES
+  !end associate ACDATES
 end subroutine Fire_Emis
 
 !=============================================================================
