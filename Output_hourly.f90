@@ -211,7 +211,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
 
   hourly(:,:) = 0.0 ! initialize
 
-  HLOOP: do ih = 0, NHOURLY_OUT
+  HLOOP: do ih = 1, NHOURLY_OUT
 
     hr_out_type=trim(hr_out(ih)%type)
     hr_out_nk=hr_out(ih)%nk

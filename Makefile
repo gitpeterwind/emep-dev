@@ -49,7 +49,8 @@ else ifeq ($(MACHINE),gstallo)
   LD=mpif90
 else ifeq ($(MACHINE),vilje)
 # MODULES = intelcomp/11.1.073   mpt/2.04 netcdf/4.1.3-intel.11.1.073
-  MODULES = intelcomp/12.0.5.220 mpt/2.06 netcdf/4.1.3
+# MODULES = intelcomp/12.0.5.220 mpt/2.06 netcdf/4.1.3
+  MODULES = intelcomp/13.0.1     mpt/2.06 netcdf/4.3.0
   LIBS += -lnetcdf -lnetcdff
   INCL += $(NETCDF_PREFIX)/include
   LLIB += $(NETCDF_PREFIX)/lib
