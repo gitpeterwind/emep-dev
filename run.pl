@@ -13,9 +13,9 @@
 #     mpiprocs=number of MPI threads per node. For 64 processors:
 ##PBS -l select=4:ncpus=32:mpiprocs=32:mem=8gb
 #Stallo
-#PBS -lnodes=4:ppn=16
+#PBS -lnodes=2:ppn=16
 # wall time limit of run
-#PBS -lwalltime=07:30:00
+#PBS -lwalltime=00:20:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
 #PBS -lpmem=1000MB
 #make results readable for others:
@@ -104,8 +104,7 @@ my %BENCHMARK;
 #  %BENCHMARK = (grid=>"EMEP"  ,year=>2005,emis=>"Modrun07/OpenSourceEmis"           ,archive=>1,chem=>"EmChem03");
 # Dave's preference for EMEP:
 #  %BENCHMARK = (grid=>"EMEP"  ,year=>2006,emis=>"Modrun10/EMEP_trend_2000-2008/2006",archive=>1,chem=>"EmChem09");
-# EECCA Default:
-   %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun11/EMEP_trend_2000-2009/2008",archive=>1,chem=>"EmChem09soa",make=>"EMEP");
+# EECCA Default: %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun11/EMEP_trend_2000-2009/2008",archive=>1,chem=>"EmChem09soa",make=>"EMEP");
 # Status Runs:
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2007,emis=>"Modrun09/2009-Trend2007-CEIP") ;
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun10/2010-Trend2008_CEIP");
@@ -237,10 +236,12 @@ if ($STALLO) {
   $MetDir   = "$DataDir/$GRID/metdata_EC/$year"  if ($GRID =~ /MACC/);
   $MetDir   = "$DataDir/$GRID/metdata_CWF/$year" if $CWF;
   $MetDir   = "$DataDir/$GRID/metdata_H20/$year" if $GRID eq "EECCA"; # assumes $METformat eq "cdf";
+  $MetDir   = "/global/work/mifapw/emep/ClimData/$year" if ($GRID eq "RCA" );
 
-#DS added Mar 2011. Use EC for standard 2008 runs?
-#Also print $MetDir into RunLog later
   $MetDir   = "$DataDir/$GRID/metdata_EC/$year" if ($GRID eq "EECCA" && $year >= 2005 );
+ # Now have IFS from 2000. Special 1990 case must be hard-coded (to remind user?)
+  $MetDir   = "$DataDir/$GRID/metdata_EC/$year" if ($GRID eq "EECCA" && $year >= 1999 );
+
 
 } else { #Ve or Vilje
   $HOMEROOT = "/home/metno";
@@ -274,7 +275,7 @@ my $Chem     = "EmChem09soa";
 my $exp_name = "EMEPSTD";
    $exp_name = ($eCWF)?"EMERGENCY":"FORECAST" if $CWF;
 my $testv = "rv4_3.SVN";
-   $testv = "2601";   # From svn system, as reminder
+   $testv = "2606";   # From svn system, as reminder
    $testv.= ($eCWF)?".eCWF":".CWF" if $CWF;
 
 #User directories
@@ -383,9 +384,10 @@ $emisdir = "$EMIS_OLD/$year" if $year < 2000;
 $emisdir = "$EMIS_INP/Modrun11/EMEP_trend_2000-2009/$year" if ( $year > 1999 ) and ($year < 2009);
 $emisdir = "$EMIS_INP/Modrun11/2011-Trend2009-CEIP" if $year >= 2009 ;
 
-#Alvaro: When are we to switch to Modrun12?
+#Modrun12 ok, except for EMEP
 $emisdir = "$EMIS_INP/Modrun12/EMEP_trend_2000-2009/$year" if ( $year > 1999 ) and ($year < 2010);
 $emisdir = "$EMIS_INP/Modrun12/2012-Trend2010-CEIP" if $year >= 2010 ;
+die "FAILED: Need tor reset EMISDIR for EMEP grid\n" if ( $GRID eq "EMEP" );
 
 #TMP and should be improved because it gives errors for
 # other domains!
@@ -741,6 +743,7 @@ foreach my $scenflag ( @runs ) {
   # NML namelist options.
   die "No CONFIG $exp_name" unless -f "$ProgDir/config_$exp_name.nml";
   $ifile{"$ProgDir/config_$exp_name.nml"} = "config_emep.nml";
+  $ifile{"$ProgDir/config_Outputs_$exp_name.nml"} = "config_Outputs.nml";
 
 # First, emission files are labelled e.g. gridSOx, which we assign to
 # emislist.sox to ensure compatability with the names (sox,...) used
@@ -791,6 +794,12 @@ print "TESTING PM $poll $dir\n";
 # hb NH3emis, new emis files
     if ($GRID eq "MACC14") {
       # Only Emis_TNO7.nc available
+     }elsif( $GRID eq "RCA"){
+      #EnsClim RCA $ifile{"$dir/grid$gridmap{$poll}"} = "emislist.$poll";
+        $ifile{"$emisdir/EmisOut_$iyr_trend.$poll"} = "emislist.$poll";
+      # and in testing:
+        $ifile{"$SNAP_CDF/Emis_$gridmap{$poll}.nc"}
+                          = "GriddedSnapEmis_$poll.nc" if $SNAP_CDF ;
     }elsif(($NH3EMIS_VAR)&&($poll eq "nh3")){
       $dir = "$HOMEROOT/$AGNES/emis_NMR";
       $ifile{"$dir/gridNH3_NMR_$year"} = "emislist.$poll";
@@ -923,8 +932,8 @@ print "TESTING PM $poll $dir\n";
 
   $ifile{"$DataDir/sondesLL.dat"} = "sondes.dat";
   $ifile{"$DataDir/sitesLL.dat"} = "sites.dat";
+  #DS RCA:$ifile{"$MyDataDir/sondesLLBC.dat"} = "sondes.dat";
   # Extended to get isoprene, HCHO EC, OC /(huge list!)
-  # not default
   #$ifile{"$MyDataDir/sitesCPM_ds.dat"} = "sites.dat";
 
 # DEGREE DAYS (Tbase set above, either 18 or 20):

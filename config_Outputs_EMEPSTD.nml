@@ -1,0 +1,192 @@
+!-------------------- ---------------------------------------------------------
+! Common 2D and 3D outputs. Select here, giving unit, type, etc. 
+! If the variables are model-species, depositions, then processing is easy
+! If something else (typ=MISC, e.g. HMIX, T2m), needs to be defined 
+! in Derived_ml
+! Hourly outputs are set in My_Outputs_ml
+!-----------------------------------------------------------------------------
+!  items:
+!         name      Unit   dim  typ   class  freq
+!
+! where freq =  IOU_YEAR=2,IOU_MON=3, IOU_DAY=4,IOU_HOUR=6, IOU_HOUR_MEAN=7
+!         *NOTE* only the day, month, year flags work so far.
+!
+&OutputConcs_config
+OutputConcs= 
+         HMIX        , m,      2d, HMIX     ,MISC,  7    !! !hourly tests
+        ,'USTAR_NWP' , 'm/s',  2d, 'USTAR_NWP', MISC,  7    !! !hourly tests
+        ,'Kz_m2s'    , 'm2/s', 2d, 'Kz_m2s' , MISC,  7    !! !hourly tests
+!        ,'ws_10m'    , m,     2d, 'ws_10m'   ,MISC,  7    !! !hourly tests
+        ,rh2m      , m,   2d, rh2m     ,MISC,  7    !! !hourly tests
+        ,T2m       , degC,2d, T2m      ,MISC,  4    !!
+        ,Snow_m    , m,   2d, SNOW     ,MISC,  4    !!
+        ,SURF_ppbC_VOC , ppb, 2d,VOC  ,MISC,  4    !!!
+        ,SMI_deep  , -,   2d, SMI_deep ,MISC,  4    !!
+        ,SMI_uppr  , -,   2d, SMI_uppr ,MISC,  4    !! !
+       !
+       ! ug/m3
+        ,SO2       , ug , 2d,AIR_CONCS, SPEC,  4    !!
+        ,NH3       , ug , 2d,AIR_CONCS, SPEC,  4    !!
+        ,HNO3      , ug , 2d,AIR_CONCS, SPEC,  4    !!
+        ,NO2       , ug , 2d,AIR_CONCS, SPEC,  4    !!
+        ,NO        , ug , 2d,AIR_CONCS, SPEC,  4    !!
+        ,SO4       , ug , 2d,AIR_CONCS, SPEC,  4    !!
+        ,NO3_F     , ug , 2d,AIR_CONCS, SPEC,  4    !!
+        ,NO3_C     , ug , 2d,AIR_CONCS, SPEC,  4    !!
+        ,NH4_F     , ug , 2d,AIR_CONCS, SPEC,  4    !!  !
+        ,SEASALT_F , ug , 2d,AIR_CONCS, SPEC,  4    !!
+        ,SEASALT_C , ug , 2d,AIR_CONCS, SPEC,  4    !!
+        ,POLLEN_B  , ug , 2d,AIR_CONCS, SPEC,  4    !!
+        ,DUST_ROAD_F , ug , 2d,AIR_CONCS, SPEC,  4    !!
+        ,DUST_ROAD_C , ug , 2d,AIR_CONCS, SPEC,  4    !!
+        ,DUST_WB_F , ug , 2d,AIR_CONCS, SPEC,  4    !!
+        ,DUST_WB_C , ug , 2d,AIR_CONCS, SPEC,  4    !!
+        ,DUST_SAH_F, ug , 2d,AIR_CONCS, SPEC,  4    !!
+        ,DUST_SAH_C, ug , 2d,AIR_CONCS, SPEC,  4    !!
+       !
+       ! ppb
+        ,O3        , ppb, 2d,AIR_CONCS, SPEC,  4    !! ! test 3d 
+        ,NO        , ppb, 2d,AIR_CONCS, SPEC,  4    !! ! also have ugN
+        ,NO2       , ppb, 2d,AIR_CONCS, SPEC,  4    !! ! also have ugN
+        ,NH3       , ppb, 2d,AIR_CONCS, SPEC,  4    !! ! also have ugN
+        ,HNO3      , ppb, 2d,AIR_CONCS, SPEC,  4    !! ! also have ugN
+        ,SO2       , ppb, 2d,AIR_CONCS, SPEC,  4    !! ! also have ugN
+        ,CO        , ppb, 2d,AIR_CONCS, SPEC,  4    !!
+        ,HCHO      , ppb, 2d,AIR_CONCS, SPEC,  4    !!
+        ,C5H8      , ppb, 2d,AIR_CONCS, SPEC,  4    !!
+       !
+! GenChem produces a number of groups of species.
+! Here we say which ones we want for different units
+! ****** UPPER CASE ONLY ************
+! Sorry, this is a limitation that GenChem converts all names to
+! uppercase:
+!
+       ! ugC/m3
+        ,OXN       ,  ugN, 2d,AIR_CONCS, GROUP,  4    !!
+        ,NOX       ,  ugN, 2d,AIR_CONCS, GROUP,  4    !!
+        ,RDN       ,  ugN, 2d,AIR_CONCS, GROUP,  4    !!
+        ,TNO3      ,  ug , 2d,AIR_CONCS, GROUP,  4    !!
+        ,SIA       ,  ug , 2d,AIR_CONCS, GROUP,  4    !!
+        ,PMFINE    ,  ug , 2d,AIR_CONCS, GROUP,  4    !! 
+        ,PM10      ,  ug , 2d,AIR_CONCS, GROUP,  4    !!
+        ,PMCO      ,  ug , 2d,AIR_CONCS, GROUP,  4    !!
+        ,PPM25     ,  ug , 2d,AIR_CONCS, GROUP,  4    !!
+        ,PPM_C     ,  ug , 2d,AIR_CONCS, GROUP,  4    !!
+        ,SS        ,  ug , 2d,AIR_CONCS, GROUP,  4    !!
+        ,DUST_NAT_F,  ug , 2d,AIR_CONCS, GROUP,  4    !!
+        ,DUST_NAT_C,  ug , 2d,AIR_CONCS, GROUP,  4    !! 
+        ,DUST      ,  ug , 2d,AIR_CONCS, GROUP,  4    !!
+       !
+       ! SOA, PCM_F etc. are special and need appropriate units. Do
+       ! not confuse! Only PCM has proper ug units, the others are
+       ! carbon-eqiuvalents (PCM is particulate carbonaceous matter
+       ! = sum of all EC and OM components.)
+       ! ,AER_ASOA  , ugC, 2d,AIR_CONCS, SPEC,  4    !!  !! ALWAYS as ugC
+       ! ,AER_BSOA  , ugC, 2d,AIR_CONCS, SPEC,  4    !!
+         !DUST      ,  ug , 2d,AIR_CONCS, GROUP,  4 ,   !!
+        ,PPM25_FIRE, ug, 2d,AIR_CONCS, GROUP,   4     !!
+       ! ============================================================
+       ! SOA additions (26 entries)
+        ,PART_OM_F  , ug , 2d,AIR_CONCS, SPEC,  4    !!  !! NEVER as ugC !!
+        ,OMCOARSE   , ug , 2d,AIR_CONCS, GROUP,  4    !!  !! NEVER as ugC !!
+        ,ECFINE    , ug , 2d,AIR_CONCS, GROUP,  4    !!
+        ,ECCOARSE  , ug , 2d,AIR_CONCS, GROUP,  4    !!
+!
+        ,PART_OC10  , ug , 2d,AIR_CONCS, SPEC, 3    !!  !! NEVER as ugC !!
+        ,PART_OC25  , ug , 2d,AIR_CONCS, SPEC, 3    !!  !! NEVER as ugC AND..
+!! note that for nonvolatile type VBS runs (NPNA etc) this lacks the FFUELOC component!!
+!X        ,EC_F      , ug , 2d,AIR_CONCS, GROUP,  4    !!
+       ! SOA, PCM_F etc. are special and need appropriate units. Do
+       ! not confuse! Only PCM has proper ug units, the others are
+       ! carbon-eqiuvalents (PCM is particulate carbonaceous matter
+       ! = sum of all EC and OM components.)
+        ,PART_ASOA_OC, ugC, 2d,AIR_CONCS, SPEC, 3    !!  !! ALWAYS as ugC
+        ,PART_BSOA_OC, ugC, 2d,AIR_CONCS, SPEC, 3    !!
+!         ,PART_FFUELOA25_OC, ugC, 2d,AIR_CONCS, SPEC, 3    !!
+!         ,PART_WOODOA25_OC, ugC, 2d,AIR_CONCS, SPEC, 3    !!
+!        ,PART_FFIREOA25_OC, ugC, 2d,AIR_CONCS, SPEC, 3    !!
+!        ,EC_F_FFUEL_NEW, ug, 2d,AIR_CONCS, SPEC,  4    !!
+!        ,EC_F_FFUEL_AGE, ug, 2d,AIR_CONCS, SPEC,  4    !!
+!        ,EC_C_FFUEL, ug, 2d,AIR_CONCS, SPEC, 3    !!
+!        ,NONVOL_BGNDOC, ug, 2d,AIR_CONCS, SPEC,  4    !!
+!        ,NONV_FFUELOC_COARSE, ug, 2d,AIR_CONCS, SPEC,  4    !!
+        ,PART_ASOA_OM, ug, 2d,AIR_CONCS, SPEC,  4    !! !NEVER as ugC!
+        ,PART_BSOA_OM, ug, 2d,AIR_CONCS, SPEC,  4    !! !NEVER as ugC!
+         !zero for NONVOL:
+!        ,PART_FFUELOA25_OM, ug, 2d,AIR_CONCS, SPEC,  4    !! !NEVER as ugC!
+!        ,PART_WOODOA25_OM, ug, 2d,AIR_CONCS, SPEC,  4    !! !NEVER as ugC!
+!        ,PART_FFIREOA25_OM, ug, 2d,AIR_CONCS, SPEC, 3    !! !NEVER as ugC!
+         !Sep16 tests
+        ,FFIRE_BC     , ug, 2d,AIR_CONCS, SPEC,  4    !! !NEVER as ugC!
+        ,FFIRE_REMPPM25, ug, 2d,AIR_CONCS, SPEC,  4    !! !NEVER as ugC!
+        ,FFIRE_OM      , ug, 2d,AIR_CONCS, SPEC,  4    !! !NEVER as ugC!
+!SPECIAL PM25 will be sum of fine + fraction coarse
+! PUT AT END OF THIS LIST  !
+!---------------------------------------------
+        ,SURF_ug_PM25,  ug ,  2d,PM25     ,MISC,  4    !!
+        ,SURF_ug_PM25X,  ug ,  2d,PM25X     ,MISC,  4    !!
+        ,SURF_ug_PM25X_rh50,  ug ,  2d,PM25X_rh50,MISC,  4    !!
+        ,SURF_ug_PM25_rh50 ,  ug ,  2d,PM25_rh50 ,MISC,  4    !!
+        ,SURF_ug_PM10_rh50 ,  ug ,  2d,PM10_rh50 ,MISC,  4    !!
+
+!---------------------------------------------
+        ,RN222     , ppb, 2d,AIR_CONCS, SPEC,  4    !!
+!-- Emergency: Volcanic Eruption (4 entries). Skipp groups if not found
+        ,ASH       ,  ug, 2d,AIR_CONCS,GROUP,  4    !!
+        ,ASH_F     ,  ug, 2d,AIR_CONCS,GROUP,  4    !!
+        ,ASH_C     ,  ug, 2d,AIR_CONCS,GROUP,  4    !!
+        ,ASH_G     ,  ug, 2d,AIR_CONCS,GROUP,  4    !!
+!-- Emergency: Nuclear accident (5 entries)
+       ! CS137    , mBq, 2d,AIR_CONCS, SPEC,  4 ,    !!
+       ! I131     , mBq, 2d,AIR_CONCS, SPEC,  4 ,    !!
+       ! SR90     , mBq, 2d,AIR_CONCS, SPEC,  4 ,    !!
+       ! KR85     , mBq, 2d,AIR_CONCS, SPEC,  4 ,    !!
+       ! NUCRACT  , mBq, 2d,AIR_CONCS,GROUP,  4 ,    !!
+       !!XE131    , mBq, 2d,AIR_CONCS, SPEC,  4 ,    !!
+       !!NUC      , mBq, 2d,AIR_CONCS,GROUP,  4      !!
+       ! ============================================================
+       /)
+!TFMM         SO2       , ugS, 2d,AIR_CONCS, SPEC,  4    !!
+!TFMM        ,SO4       , ugS, 2d,AIR_CONCS, SPEC,  4    !!
+! Could also add from earlier 2d_EXTRA array:
+      !,u_ref                 !!
+!.... down to here
+!        ,RNWATER   , ppb, 2d,AIR_CONCS, SPEC,  4    !!
+! Omit for CityZen
+!TFMM just keep ppb version below
+!TFMM        ,NO        , ugN, 2d,AIR_CONCS, SPEC,  4    !!
+!TFMM        ,NO2       , ugN, 2d,AIR_CONCS, SPEC,  4    !!
+!TFMM        ,NH3       , ugN, 2d,AIR_CONCS, SPEC,  4    !!
+!TFMM        ,HNO3      , ugN, 2d,AIR_CONCS, SPEC,  4    !!
+!TFMM        ,HONO      , ugN, 2d,AIR_CONCS, SPEC,  4    !!
+!TFMM        ,PAN       , ugN, 2d,AIR_CONCS, SPEC,  4    !!
+       ! Remember, species have upper case, so not _f !
+!TFMM just keep ug version below
+!TFMM    ,NO3_F     , ugN, 2d,AIR_CONCS, SPEC,  4    !!
+!TFMM    ,NO3_C     , ugN, 2d,AIR_CONCS, SPEC,  4    !!  ! 10 to here
+!TFMM    ,NH4_F     , ugN, 2d,AIR_CONCS, SPEC,  4    !!
+!        ,PART_SOA_OC, ugC, 2d,AIR_CONCS, SPEC, 3    !!
+       ! ,PART_OFFUELOA25_OC, ugC, 2d,AIR_CONCS, SPEC, 3    !!
+       ! ,PART_OWOODOA25_OC, ugC, 2d,AIR_CONCS, SPEC, 3    !!
+       ! ,PART_OFFIREOA25_OC, ugC, 2d,AIR_CONCS, SPEC, 3    !!
+!none yet        ,EC_F_WOOD_NEW , ug, 2d,AIR_CONCS, SPEC,  4    !!
+!none yet        ,EC_F_WOOD_AGE , ug, 2d,AIR_CONCS, SPEC,  4    !!
+       !DS  ,EC_C_WOOD , ug, 2d,AIR_CONCS, SPEC, 3    !!
+!Needed for forest-fire checks
+!        ,NONVOL_FFUELOC25, ug, 2d,AIR_CONCS, SPEC,  4    !!
+       !DS  ,NONVOL_WOODOC25, ug, 2d,AIR_CONCS, SPEC,  4    !!
+!        ,NONVOL_FFIREOC25, ug, 2d,AIR_CONCS, SPEC,  4    !!
+!        ,PART_SOA_OM, ug, 2d,AIR_CONCS, SPEC,  4    !! !NEVER as ugC!
+!
+      !CityZen Outputs
+      !  ,O3        , ug , 2d,AIR_CONCS, SPEC,  4    !! ! test 3d
+      !  ,NO2       , ug , 2d,AIR_CONCS, SPEC,  4    !! ! also have ugN
+      !  ,DUST_NAT_F, ug , 2d,AIR_CONCS, SPEC,  4    !!
+      !  ,DUST_NAT_C, ug , 2d,AIR_CONCS, SPEC,  4    !!
+      !  ,AER_OM_F  , ug , 2d,AIR_CONCS, SPEC,  4    !!  !! NEVER as ugC !!
+      !  ,AER_OC    , ug , 2d,AIR_CONCS, SPEC,  4    !!  !! NEVER as ugC !!
+      !  ,EC_F      , ug , 2d,AIR_CONCS, GROUP,  4    !!
+        !,PART_XO_OFFLOA25_O, ug, 2d,AIR_CONCS, SPEC, 3    !! !NEVER as ugC!
+        !,PART_XO_OWDOA25_O, ug, 2d,AIR_CONCS, SPEC, 3    !! !NEVER as ugC!
+        !,PART_XO_OFFIOA25_O, ug, 2d,AIR_CONCS, SPEC, 3    !! !NEVER as ugC!
+ end
