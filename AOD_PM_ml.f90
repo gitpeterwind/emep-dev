@@ -272,7 +272,7 @@
 
  ext_EC(k)  = (( xn_2d(spec_EC_F_FFUEL_NEW,k) + xn_2d(spec_EC_F_FFUEL_AGE,k) +   &
                     xn_2d(spec_EC_F_WOOD_NEW,k)  + xn_2d(spec_EC_F_WOOD_AGE,k) ) &
-                  * SpecExt_EC           * species(spec_EC_F_FFUEL_NEW)%molwt + &
+                  * SpecExt_EC           * species(spec_EC_F_FFUEL_NEW)%molwt +  &
                     xn_2d(spec_FFIRE_BC,k) * SpecExt_EC  &
                                * species(spec_FFIRE_BC)%molwt ) * 1.0e6 / AVOG
 !                +( xn_2d(spec_EC_C_FFUEL,k) + xn_2d(spec_EC_C_WOOD,k))            &
@@ -288,17 +288,19 @@
 !             + xn_2d(POM_C_FFUEL,k) * species(spec_POM_C_FFUEL)%molwt * SpecExt_OCc
                                                                 * 1.0e6 / AVOG
 
- ext_SS(k)  = ( xn_2d(spec_SEASALT_F,k)  * SpecExt_SSf +   &
-                xn_2d(spec_SEASALT_C,k)  * SpecExt_SSc   ) &
+ ext_SS(k)  = ( xn_2d(spec_SEASALT_F,k)  * SpecExt_SSf +                        &
+                xn_2d(spec_SEASALT_C,k)  * SpecExt_SSc   )                      &
                                 * species(spec_SEASALT_F)%molwt * 1.0e6 / AVOG
 
- ext_DU(k)  = ( (xn_2d(spec_REMPPM25,k) + xn_2d(spec_DUST_WB_F,k) +            &
-                 xn_2d(spec_DUST_SAH_F,k))    * SpecExt_DUf                    &
-               +(xn_2d(spec_REMPPM_C,k) + xn_2d(spec_DUST_WB_C,k)+             &
-                 xn_2d(spec_DUST_SAH_C,k)) * SpecExt_DUc )                     &
-                                * species(spec_DUST_WB_F)%molwt * 1.0e6 / AVOG &
-               + xn_2d(spec_FFIRE_REMPPM25,k) * SpecExt_DUf                    &
-                           * species(spec_FFIRE_REMPPM25)%molwt * 1.0e6 / AVOG
+ ext_DU(k)  = (( xn_2d(spec_REMPPM25,k) * species(spec_REMPPM25)%molwt +        &
+                (xn_2d(spec_DUST_WB_F,k) + xn_2d(spec_DUST_SAH_F,k))            &
+                      * species(spec_DUST_WB_F)%molwt ) * SpecExt_DUf           &                
+             + ( xn_2d(spec_REMPPM_C,k) * species(spec_REMPPM_C)%molwt +        &
+                (xn_2d(spec_DUST_WB_C,k)+ xn_2d(spec_DUST_SAH_C,k))             &
+                      * species(spec_DUST_WB_F)%molwt ) * SpecExt_DUc           &
+             + xn_2d(spec_FFIRE_REMPPM25,k)                                     &
+                   * species(spec_FFIRE_REMPPM25)%molwt * SpecExt_DUf )         &
+                                                                * 1.0e6 / AVOG
 
 
  Extin_coeff(i,j,k) =  ext_SO4(k) + ext_NO3(k) + ext_NH4(k) + ext_EC(k)   &
