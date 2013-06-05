@@ -186,36 +186,41 @@ end subroutine WriteArray
 !============================================================================
 ! A series of find_index routines, for character (c) and integer (i) arrays:
 !============================================================================
-function find_index_c(wanted, list, debug)  result(Index)
+function find_index_c(wanted, list, first_only, debug)  result(Index)
   character(len=*), intent(in) :: wanted
   character(len=*), dimension(:), intent(in) :: list
+  logical, intent(in), optional :: first_only
   logical, intent(in), optional :: debug
 !  Output:
   integer ::   Index
 
   character(len=*), parameter :: &
-             debug_fmt="('debug find_index ',I0,':',A,A2,A)"
-  logical :: debug_print
+             debug_fmt="('debug find_index ',I0, i4,':',A,A2,A)"
+  logical :: debug_print, OnlyFirst
   integer :: n_match ! Count for safety
   integer :: n
 
   n_match  = 0
   Index =  NOT_FOUND
   debug_print=.false.;if(present(debug))debug_print=debug
+  OnlyFirst=.false.;if(present(first_only))OnlyFirst=first_only
 
   do n = 1, size(list)
     if ( wanted == list(n) ) then
       Index = n
       n_match = n_match + 1
+      if( OnlyFirst ) return
       if(debug_print) &
-      print debug_fmt,n,trim(list(n)),"==",trim(wanted)
+      print debug_fmt,n,n_match,trim(list(n)),"==",trim(wanted)
     elseif ( debug_print ) then
-      print debug_fmt,n,trim(list(n)),"/=",trim(wanted)
+      print debug_fmt,n,n_match,trim(list(n)),"/=",trim(wanted)
     endif
   enddo
 
   if ( n_match >  1 ) then !! Too many!
     n_match = -1 * n_match
+      if(debug_print) &
+      print *, "debug find_index REVERSE", n_match
   endif
 end function find_index_c
 
