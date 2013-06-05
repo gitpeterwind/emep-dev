@@ -221,8 +221,8 @@
     SpecExt_EC   = 0.75 * extEC  * massGF_EC / (rhoEC_wet * Reff_EC)
     SpecExt_SSf  = 0.75 * extSSf * massGF_SS / (rhoSS_wet * Reff_SSf)
     SpecExt_SSc  = 0.75 * extSSc * massGF_SS / (rhoSS_wet * Reff_SSc)
-    SpecExt_DUf  = 0.75 * species(DUST_WB_F)%ExtC  / (rhoDU * Reff_DUf)
-    SpecExt_DUc  = 0.75 * species(DUST_WB_C)%ExtC  / (rhoDU * Reff_DUc)
+    SpecExt_DUf  = 0.75 * species(spec_DUST_WB_F)%ExtC  / (rhoDU * Reff_DUf)
+    SpecExt_DUc  = 0.75 * species(spec_DUST_WB_C)%ExtC  / (rhoDU * Reff_DUc)
 !... Faking
     SpecExt_NH4  =  SpecExt_SO4                        
     SpecExt_NO3f = SpecExt_SO4
