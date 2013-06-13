@@ -8,9 +8,20 @@ IMPORTANT NOTE:
     1) Use the make system (stallo/vilje only!), e.g. type:
         make EMEP
         make SR-EMEP
+
+        make EMEP2011 for met year 2011 Base runs
+        make SR-EMEP2011 for met year 2011 SR runs
+
+	make EMEP2010 for met year 2010 Base runs
+	make SR-EMEP2010 for met year 2010 SR runs
+
       or other targets. See Makefile for these
 
        This is the easiest and safest method as of 2012!!
+
+****** PLEASE READ CAREFULLY  "*****Run/Make examples:" SECTION BELOW 
+	BEFORE SUBMITTING ANY RUN  **********************************
+
 
     2) By hand:
 
@@ -27,7 +38,19 @@ IMPORTANT NOTE:
 
    [option: if SR wanted, cp ZD_SR/My* .]
 
-    Run/Make examples:
+*****    Run/Make examples:
+      2011 Base run:
+	* Compile the model with `make EMEP2010` and 
+	  USE_EMERGENCY=.true. in config_EMEPSTD.nml to include 
+	  Grimsvotn volcano data.
+	* run.pl: $year=2011 and $MAKEMODE="EMEP2011", and the program
+          will be compiled by run.pl including Grimsvotn ash tracers.
+      2011 SR run:
+	* Compile the model with `make SR-EMEP2011` and
+	  USE_EMERGENCY=.true. in config_EMEPSTD.nml to include 
+	  Grimsvotn volcano data.
+	 * run.pl: $year=2011 and $MAKEMODE="SR-EMEP2011", and the program
+          will be compiled by run.pl including Grimsvotn ash tracers. 
       2010 Base run
         * Compile the model with `make EMEP2010` and USE_EMERGENCY=.true.
           on ModelConstants_ml to include Eyjafj�ll ash tracers.
