@@ -145,10 +145,10 @@ subroutine Fire_Emis(daynumber)
 
 
   real,allocatable :: rdemis(:,:)  ! Emissions read from file
-  integer :: i,j,nstart, alloc_err, iBB
+  integer :: i,j,nstart, alloc_err, iBB, n
   logical, save :: my_first_call = .true.   ! DSFF
   logical :: my_first_defs = .true. 
-  integer :: dd_old = -1,  n
+  integer, save  :: dd_old = -1, mm_old=-1 
   real    :: fac, to_kgm2s   
 
   integer :: ind, ne
@@ -161,7 +161,7 @@ subroutine Fire_Emis(daynumber)
   character(len=len(GFAS_PATTERN)) :: fname = ''
   logical :: my_debug=.false.,fexist=.false.
   integer, parameter :: verbose = 1
-  integer :: dd1, dd2  ! TESTING
+  integer :: dd1, dd2 ! TESTING
   real,allocatable :: xrdemis(:,:)  !TESTING
   !
   integer :: yyyy, mm  ! instead of associate
@@ -273,7 +273,10 @@ subroutine Fire_Emis(daynumber)
   BiomassBurningEmis(:,:,:) = 0.0
   allocate(rdemis(MAXLIMAX,MAXLJMAX),stat=alloc_err)
   call CheckStop(alloc_err,"ForestFire rdemis alloc problem")
-  if(USES%MONTHLY_FF) allocate(xrdemis(MAXLIMAX,MAXLJMAX),stat=alloc_err)
+  if(USES%MONTHLY_FF.and.mm/=mm_old) then
+    if( MasterProc ) write(*,*) "Start monthly FF ", mm
+    allocate(xrdemis(MAXLIMAX,MAXLJMAX),stat=alloc_err)
+  end if
   
   ! We need to look for forest-fire emissions which are equivalent
   ! to the standard emission files:
@@ -309,7 +312,7 @@ subroutine Fire_Emis(daynumber)
    !end associate ! yyyy, mm
 
          rdemis = 0.0
-         do i =  1, 10 ! dd1, dd2
+         do i =  1, dd1, dd2
             call ReadField_CDF(fname,FF_poll,xrdemis,daynumber,&
                interpol='mass_conservative',&
                needed=.not.FORECAST,UnDef=0.0,debug_flag=DEBUG_FORESTFIRE)
@@ -367,6 +370,10 @@ subroutine Fire_Emis(daynumber)
 
   my_first_defs  = .false.
   deallocate(rdemis)
+  if(USES%MONTHLY_FF.and.mm/=mm_old) then
+     deallocate(xrdemis)
+     mm_old = mm
+  end if
 
   ! For cases where REMPPM25 s derived as the difference between PM25 and (BC+1.7*OC)
   ! we need some safety:

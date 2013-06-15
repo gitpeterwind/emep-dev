@@ -11,6 +11,10 @@
   USES%testname          = "EMEPSTD",
   USES%FOREST_FIRES      = T,
   USES%MONTHLY_FF        = F,
+!
+! and debug:
+  DEBUG%GLOBBC           = F,
+  DEBUG%HOURLY_OUTPUTS   = F,
 !------------------------------
 !
   USE_SOILWATER         = T,          ! Uses SMI from meteo data

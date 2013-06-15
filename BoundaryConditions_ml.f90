@@ -98,7 +98,8 @@ use ModelConstants_ml, only: KMAX_MID  &  ! Number of levels in vertical
                             ,iyr_trend &  ! Used for e.g. future scenarios
                             ,BGND_CH4  &  ! If positive, replaces defaults
                             ,USE_SEASALT & 
-                            ,DEBUG_BCS, DEBUG_i, DEBUG_j, MasterProc, PPB
+                            ,DEBUG  & ! %BCs
+                            ,DEBUG_i, DEBUG_j, MasterProc, PPB
 use Par_ml,          only: &
    MAXLIMAX, MAXLJMAX, limax, ljmax, me &
   ,neighbor, NORTH, SOUTH, EAST, WEST   &  ! domain neighbours
@@ -219,20 +220,20 @@ contains
     integer, save :: idebug=0, itest=1, i_test=0, j_test=0
 
     if (first_call) then
-       if (DEBUG_BCS) write(*,"(a,I3,1X,a,i5)") &
+       if (DEBUG%BCS) write(*,"(a,I3,1X,a,i5)") &
             "FIRST CALL TO BOUNDARY CONDITIONS, me: ", me,  "TREND YR ", iyr_trend
        allocate(misc_bc(NGLOB_BC+1:NTOT_BC,KMAX_MID))
        call My_bcmap(iyr_trend)      ! assigns bc2xn_adv and bc2xn_bgn mappings
        call Set_bcmap()              ! assigns xn2adv_changed, etc.
 
        num_changed = num_adv_changed + num_bgn_changed   !u1
-       if (DEBUG_BCS) write(*, "((A,I0,1X))")           &
+       if (DEBUG%BCS) write(*, "((A,I0,1X))")           &
             "BCs: num_adv_changed: ", num_adv_changed,  &
             "BCs: num_bgn_changed: ", num_bgn_changed,  &
             "BCs: num     changed: ", num_changed
 
     endif ! first call
-    if (DEBUG_BCS) write(*, "((A,I0,1X))")           &
+    if (DEBUG%BCS) write(*, "((A,I0,1X))")           &
          "CALL TO BOUNDARY CONDITIONS, me:", me, &
          "month ", month, "TREND2 YR ", iyr_trend, "me ", me
 
@@ -258,7 +259,7 @@ contains
 !    bc_bgn(:,:,:,:) = 0.0
 
     errcode = 0
-    if (DEBUG_BCS.and.debug_proc) then
+    if (DEBUG%BCS.and.debug_proc) then
        do i = 1, limax
           do j = 1, ljmax
              if (i_fdom(i)==DEBUG_i.and.j_fdom(j)==DEBUG_j) then
@@ -271,7 +272,7 @@ contains
 
     if (first_call) then
        idebug = 1
-       if (DEBUG_BCS) write(*,*) "RESET 3D BOUNDARY CONDITIONS", me
+       if (DEBUG%BCS) write(*,*) "RESET 3D BOUNDARY CONDITIONS", me
        do k = 1, KMAX_MID
           do j = 1, ljmax
              do i = 1, limax
@@ -281,7 +282,7 @@ contains
           enddo
        enddo
     else       
-       if (DEBUG_BCS.and.MasterProc) write(*,*) "RESET LATERAL BOUNDARIES"
+       if (DEBUG%BCS.and.MasterProc) write(*,*) "RESET LATERAL BOUNDARIES"
        do k = 2, KMAX_MID
           do j = lj0, lj1
              !left
@@ -326,7 +327,7 @@ contains
        if (MasterProc) call GetGlobalData(year,month,ibc,bc_used(ibc), &
             iglobact,jglobact,bc_data,io_num,errcode)
 
-       if (DEBUG_BCS.and.MasterProc) &
+       if (DEBUG%BCS.and.MasterProc) &
             write(*, *)'Calls GetGlobalData: year,iyr_trend,ibc,month,bc_used=', &
             year,iyr_trend,ibc,month,bc_used(ibc)
 
@@ -660,7 +661,7 @@ contains
     endif
 
 
-    if (DEBUG_BCS.and.debug_proc.and.i_test>0) then
+    if (DEBUG%BCS.and.debug_proc.and.i_test>0) then
        i = i_test
        j = j_test
        print "(a20,3i4,2f8.2)","DEBUG BCS Rorvik", me, i,j,glon(i,j),glat(i,j)
@@ -671,7 +672,7 @@ contains
        enddo
     endif ! DEBUG
 
-    if (DEBUG_BCS.and.debug_proc) then
+    if (DEBUG%BCS.and.debug_proc) then
        itest = 1
        print *,"BoundaryConditions: No CALLS TO BOUND Cs", first_call,idebug
        !/** the following uses hard-coded  IXADV_ values for testing.
@@ -862,9 +863,9 @@ subroutine Set_bcmap()
     endif
   enddo ! iem
 
-  if (DEBUG_BCS) write(*,*) "TEST SET_BCMAP bc_used: ",&
+  if (DEBUG%BCS) write(*,*) "TEST SET_BCMAP bc_used: ",&
     (bc_used(ibc),ibc=1, NTOT_BC)
-  if (MasterProc.and.DEBUG_BCS) write(*,*)"Finished Set_bcmap: Nbcused is ", sum(bc_used)
+  if (MasterProc.and.DEBUG%BCS) write(*,*)"Finished Set_bcmap: Nbcused is ", sum(bc_used)
 
   allocate(spc_changed2adv(num_adv_changed))
   allocate(spc_changed2bgn(num_bgn_changed))
@@ -953,7 +954,7 @@ subroutine MiscBoundaryConditions(iglobact,jglobact,bc_adv,bc_bgn)
   endif
 
   itest = 1
-  if (DEBUG_BCS.and.debug_proc) write(*,*) "(a50,i4,/,(5es12.4))", &
+  if (DEBUG%BCS.and.debug_proc) write(*,*) "(a50,i4,/,(5es12.4))", &
     "From MiscBoundaryConditions: ITEST (ppb): ",&
     itest, ((bc_adv(spc_adv2changed(itest),1,1,k)/1.0e-9),k=1,20)
 end subroutine MiscBoundaryConditions
@@ -1038,7 +1039,7 @@ subroutine Set_BoundaryConditions(mode,iglobact,jglobact,bc_adv,bc_bgn)
       end do ! j
     end do ! k
    !endforall
-    if ( DEBUG_BCS .and. debug_proc ) then
+    if ( DEBUG%BCS .and. debug_proc ) then
      i=debug_li
      j=debug_lj
      k=KMAX_MID

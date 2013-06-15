@@ -15,7 +15,7 @@
 #Stallo
 #PBS -lnodes=2:ppn=16
 # wall time limit of run
-#PBS -lwalltime=00:20:00
+#PBS -lwalltime=01:20:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
 #PBS -lpmem=1000MB
 #make results readable for others:
@@ -98,6 +98,13 @@ my @MAKE = ("gmake", "-j4", "MACHINE=snow");
 die "Must choose STALLO **or** VILJE !\n"
   unless $STALLO+$VILJE==1;
 my $MAKEMODE=0;  # make EMEP2011, make SR-EMEP2011
+
+my ( $testv, $Chem, $exp_name, $GRID ) = ( "2613", "EmChem09soa", "EMEPSTD", "EECCA" );
+
+#eg ( $testv, $Chem, $exp_name, $GRID ) = ( "tests", "EmChem09", "TESTS", "RCA" );
+#$Chem: EmChem09soa, EmChem09, CRI_v2_R5
+#$GRIDs:EECCA, EMEP, TNO7, TNO14, TNO28, TNO56, MACC02, MACC14 or GLOBAL
+
 
 my %BENCHMARK;
 # OpenSource 2008
@@ -215,7 +222,6 @@ my $NH3EMIS_VAR = 0; # set to 1 if new temp NH3.
 
 my $METformat="cdf"; # felt or cdf
 
-my $GRID = "EECCA"; # TNO7, TNO14, TNO28, TNO56, EMEP, EECCA, MACC02, MACC14 or GLOBAL
    $GRID = $eCWF?"GLOBAL":"MACC14" if $CWF;
    $GRID = $BENCHMARK{'grid'} if %BENCHMARK;
 my $MONTHLY_EMIS = ( $GRID eq "GLOBAL" ); #Switch off if only annual used
@@ -238,7 +244,6 @@ if ($STALLO) {
   $MetDir   = "$DataDir/$GRID/metdata_H20/$year" if $GRID eq "EECCA"; # assumes $METformat eq "cdf";
   $MetDir   = "/global/work/mifapw/emep/ClimData/$year" if ($GRID eq "RCA" );
 
-  $MetDir   = "$DataDir/$GRID/metdata_EC/$year" if ($GRID eq "EECCA" && $year >= 2005 );
  # Now have IFS from 2000. Special 1990 case must be hard-coded (to remind user?)
   $MetDir   = "$DataDir/$GRID/metdata_EC/$year" if ($GRID eq "EECCA" && $year >= 1999 );
 
@@ -268,14 +273,11 @@ my $EmergencyData = "$HOMEROOT/$ALVARO/Unify/MyData";
 my $CityZen = 0 ;
   #$Chem     = "Eucaari_Trends";      # Label for chemical scheme used
 my $VBS   = 0;
-my $Chem     = "EmChem09soa";
-#$Chem     = "CRI_v2_R5";
-   $Chem     = $BENCHMARK{'chem'} if $BENCHMARK{'chem'};
 
-my $exp_name = "EMEPSTD";
+# Modify if needed:
+
+   $Chem     = $BENCHMARK{'chem'} if $BENCHMARK{'chem'};
    $exp_name = ($eCWF)?"EMERGENCY":"FORECAST" if $CWF;
-my $testv = "rv4_3.SVN";
-   $testv = "2606";   # From svn system, as reminder
    $testv.= ($eCWF)?".eCWF":".CWF" if $CWF;
 
 #User directories

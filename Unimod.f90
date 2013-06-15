@@ -359,7 +359,6 @@ do numt = 2, nterm + nadd         ! 3-hourly time-loop
   call SetDailyBVOC(daynumber)
 
   if (USES%FOREST_FIRES) call Fire_Emis(daynumber)
-  if(MasterProc) print *, "TEST DOY ", day_of_year(yyyy,12,31), day_of_year(yyyy,12+1,1) , mm, dd, hh
 
   call Add_2timing(12,tim_after,tim_before,"Fires+BVOC")
 

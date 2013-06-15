@@ -46,6 +46,7 @@ use GridValues_ml,  only: lb2ij, AN, glat_fdom, glon_fdom,A_mid, B_mid
 use Io_ml,          only: IO_GLOBBC, ios, open_file, PrintLog
 use LocalVariables_ml, only : Sub, Grid
 use ModelConstants_ml, only: PPB, KMAX_MID, Pref, MasterProc, DO_SAHARA, &
+                             USES, DEBUG, & !%GLOBBC, &
                           iyr_trend, IIFULLDOM, JJFULLDOM
 use NetCDF_ml,      only: GetCDF, Read_Inter_CDF
 use Par_ml,         only: GIMAX, GJMAX, IRUNBEG, JRUNBEG
@@ -61,7 +62,7 @@ public :: GetGlobalData         ! Opens, reads bc_data, closes global data
 public :: setgl_actarray
 
 logical, parameter, private :: &
-  DEBUG_GLOBBC = .false., &
+!  DEBUG_GLOBBC = .false., &
   DEBUG_Logan  = .false., &
   DEBUG_HZ     = .false.
 
@@ -182,7 +183,7 @@ subroutine GetGlobalData(year,month,ibc,used,        &
   logical :: notfound !set true if NetCDF BIC are not found
   real, parameter :: macehead_lat = 53.3 !latitude of Macehead station
   real, parameter :: macehead_lon = -9.9 !longitude of Macehead station
-  logical,parameter :: MACEHEADFIX=.true.
+!USES  logical,parameter :: MACEHEADFIX=.true.
 
 
 !----------------------------------------------------------
@@ -267,11 +268,11 @@ subroutine GetGlobalData(year,month,ibc,used,        &
   SIAtrend%nox =f0*SIAtrends(i0)%nox + f1*SIAtrends(i1)%nox
   SIAtrend%nh4 =f0*SIAtrends(i0)%nh4 + f1*SIAtrends(i1)%nh4
 
-  if (MasterProc.and.first_call) then
-     write(unit=txtmsg,fmt="(a,2i5,3f8.3)") &
-       "BC:trends SOx,NOx,NH3 ", iyr_trend, SIAtrend
-     call PrintLog(txtmsg)
-  end if
+!  if (MasterProc.and.first_call) then
+!     write(unit=txtmsg,fmt="(a,2i5,3f8.3)") &
+!       "BC:trends SOx,NOx,NH3 ", iyr_trend, SIAtrend
+!     call PrintLog(txtmsg)
+!  end if
 
 !================================================================== 
 ! Trends - derived from EMEP report 3/97
@@ -287,8 +288,8 @@ subroutine GetGlobalData(year,month,ibc,used,        &
     trend_voc= exp(-0.01*0.85*(1990-iyr_trend)) ! Zander,1975-1990
   end if
   if (MasterProc.and.first_call) then
-    write(unit=txtmsg,fmt="(a,i5,3f8.3)") "BC:trends O3,CO,VOC: ", &
-       iyr_trend, trend_o3, trend_co, trend_voc
+    write(unit=txtmsg,fmt="(a,i5,3f8.3,3f9.4)") "BC:trends O3,CO,VOC,SOx,NOx,NH3: ", &
+       iyr_trend, trend_o3, trend_co, trend_voc, SIAtrend%so2, SIAtrend%nox, SIAtrend%nh4
     call PrintLog(txtmsg)
   endif
 
@@ -466,9 +467,9 @@ subroutine GetGlobalData(year,month,ibc,used,        &
     ! The seasonal var of HNO3 is now assumed to be opposite of aNO3.
 
     ! Consistency check:
-    if (DEBUG_GLOBBC) print *, "SPECBC NGLB ",NGLOB_BC
+    if (DEBUG%GLOBBC) print *, "SPECBC NGLB ",NGLOB_BC
     do i = 1, NGLOB_BC
-      if (DEBUG_GLOBBC) print *,"SPECBC i, hmin ",i,SpecBC(i)%surf,SpecBC(i)%hmin
+      if (DEBUG%GLOBBC) print *,"SPECBC i, hmin ",i,SpecBC(i)%surf,SpecBC(i)%hmin
       if( SpecBC(i)%hmin*SpecBC(i)%conv_fac < 1.0e-17) then
         write(unit=txtmsg,fmt="(A,I0)") "PECBC: Error: No SpecBC set for species ", i
         call CheckStop(txtmsg)
@@ -519,13 +520,13 @@ subroutine GetGlobalData(year,month,ibc,used,        &
       read(IO_GLOBBC,*) bc_rawdata
       close(IO_GLOBBC)
     endif
-    if(DEBUG_GLOBBC)print *,"dsOH READ OZONE3 ",trim(fname),": ",&
+    if(DEBUG%GLOBBC)print *,"dsOH READ OZONE3 ",trim(fname),": ",&
       bc_rawdata(IIFULLDOM/2,JJFULLDOM/2,20)
 
     ! Mace Head adjustment: get mean ozone from Eastern sector
     O3fix=0.0
     icount=0
-    if(MACEHEADFIX)then
+    if(USES%MACEHEADFIX)then
       do j=1,JJFULLDOM
         do i=1,IIFULLDOM
           if(glat_fdom(i,j)<macehead_lat+20.0.and.&
@@ -542,7 +543,7 @@ subroutine GetGlobalData(year,month,ibc,used,        &
       ! grid coordinates of Mace Head
       call lb2ij(macehead_lon,macehead_lat, iMH,jMH)
 
-      if(DEBUG_GLOBBC) write(*,"(a10,2f7.2,i4,i6,3f8.3)")"O3FIXes ",iMH,jMH, &
+      if(DEBUG%GLOBBC) write(*,"(a10,2f7.2,i4,i6,3f8.3)")"O3FIXes ",iMH,jMH, &
         month,icount,bc_rawdata(nint(iMH),nint(jMH),20)/PPB,&
         macehead_O3(month),O3fix/PPB
       write(*,"(a,f8.3)")' MaceHead correction for O3: ',-O3fix/PPB
@@ -656,7 +657,7 @@ subroutine GetGlobalData(year,month,ibc,used,        &
     end select
 !================== end select ==================================
 
-  if (DEBUG_GLOBBC) print *,"BCOH FACTOR ", ibc, fname
+  if (DEBUG%GLOBBC) print *,"BCOH FACTOR ", ibc, fname
   call CheckStop(txtmsg)
   if (DEBUG_Logan) then
     print "(a15,3i4,f8.3)","DEBUG:LOGAN: ",ibc, used, month, cosfac

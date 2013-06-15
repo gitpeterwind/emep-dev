@@ -154,6 +154,31 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+15 June 2013  Dave 2613
+
+run.pl - grouped together testv, Chem, exp_name , GRID for clarity and to
+  prevent common mis-matches.
+
+ModelConstants_ml
+  new config DEBUG system started, with:
+   DEBUG%HOURLY_OUTPUTS
+   DEBUG%BCs
+  Also:
+   USES%MACEHEADFIX = .true. by default
+
+BoundaryConditions_ml
+  DEBUG%BCs instead of DEBUG_BCS
+
+ForestFire_ml.f90
+   Improved monthly calculation. Still in development and testing though.
+
+GlobalBCs_ml -  Uses USES%MACEHEADFIX  and DEBUG%GLOBBC
+
+Unimod - removed older TEST DOY printout. That had just shown that DOY was
+  okay with e.g. day_of_year(yyyy,12+1,1)
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 5 June 2013  Svetlana and Alvaro,   2608-12
 
 AOD_PM_ml.f90 - hard-coding removed, MWT for PPM corrected, 

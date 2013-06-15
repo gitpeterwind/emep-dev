@@ -74,9 +74,18 @@ type, public :: emep_useconfig
   character(len=10) :: testname = "STD"
   logical :: &                   ! Forest fire options
      FOREST_FIRES     = .true.  &! 
-    ,MONTHLY_FF       = .false.  ! Creates monthly avg. emissions (for e.g. climate runs)
+    ,MONTHLY_FF       = .false. &! => monthly emissions (for e.g. climate runs)
+    ,MACEHEADFIX      = .true.  ! Correction to O3 BCs (Mace Head Obs.)
 end type emep_useconfig 
 type(emep_useconfig), public, save :: USES
+
+type, public :: emep_debug
+  logical :: &
+     GLOBBC          = .false. &
+    ,HOURLY_OUTPUTS  = .false. &
+    ,BCS             = .false.   ! BoundaryConditions
+end type emep_debug
+type(emep_debug), public, save :: DEBUG
 !-----------------------------------------------------------
 logical, public, save ::             &
   FORECAST              = .false.    &! reset in namelist
@@ -307,9 +316,9 @@ integer, public, parameter :: &
 ! DEBUG_i= 62, DEBUG_j= 45  ! SEA
 ! DEBUG_i= 10, DEBUG_j= 140 !NEGSPOD
 ! DEBUG_i= 70, DEBUG_j= 40 ! Lichtenstein, to test ncc
-!  DEBUG_i= DEBUG_II+OFFSET_i, DEBUG_j= DEBUG_JJ+OFFSET_j    ! EMEP/EECCA
+  DEBUG_i= DEBUG_II+OFFSET_i, DEBUG_j= DEBUG_JJ+OFFSET_j    ! EMEP/EECCA
 ! DEBUG_i= 59, DEBUG_j= 79  ! JCOAST
- DEBUG_i= 48, DEBUG_j= 15  !  BB aug 2006
+! DEBUG_i= 48, DEBUG_j= 15  !  BB aug 2006
 ! DEBUG_i= 9, DEBUG_j= 201                                  ! MACC02
 ! DEBUG_i= 0, DEBUG_j= 0    ! default
 
@@ -321,7 +330,6 @@ integer, public, parameter :: &
    DEBUG_ADV            = .false. &
   ,DEBUG_AOT            = .false. &
   ,DEBUG_AQUEOUS        = .false. &
-  ,DEBUG_BCS            = .false. &
   ,DEBUG_BIO            = .false. &
   ,DEBUG_BLM            = .false. & ! Produces matrix of differnt Kz and Hmix
   ,DEBUG_DERIVED        = .false. &
@@ -514,6 +522,7 @@ subroutine Config_ModelConstants(iolog)
     NAMELIST /ModelConstants_config/ &
       EXP_NAME &  ! e.g. EMEPSTD, FORECAST, TFMM, TodayTest, ....
      ,USES   & ! just testname so far
+     ,DEBUG  & ! started June 2013 
      ,MY_OUTPUTS  &  ! e.g. EMEPSTD, FORECAST, TFMM
      ,USE_SOILWATER, USE_DEGREEDAY_FACTORS &
      ,USE_CONVECTION &
@@ -531,6 +540,7 @@ subroutine Config_ModelConstants(iolog)
      ,EMIS_SOURCE, EMIS_TEST, EMIS_OUT & 
      ,FLUX_VEGS  & ! TESTX
      ,NETCDF_COMPRESS_OUTPUT,  RUNDOMAIN
+
 
     txt = "ok"
     !Can't call check_file due to circularity
