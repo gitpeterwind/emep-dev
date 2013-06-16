@@ -778,9 +778,9 @@ subroutine Emissions(year)
   endforall
 
   if(DEBUG.and.debug_proc.and.iemCO>0) &
-    write(*,"(a,2es10.3)") "SnapPos:" // trim(EMIS_FILE(iem)), &
-      sum(snapemis   (:,debug_li,debug_lj,:,iem)), &
-      sum(snapemis_flat(debug_li,debug_lj,:,iem))
+    write(*,"(a,2es10.3)") "SnapPos:" // trim(EMIS_FILE(iemCO)), &
+      sum(snapemis   (:,debug_li,debug_lj,:,iemCO)), &
+      sum(snapemis_flat(debug_li,debug_lj,:,iemCO))
 
   if(USE_ROADDUST)THEN
     conv = tonne_to_kgm2s

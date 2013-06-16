@@ -154,6 +154,11 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16 June 2013  Dave 2616
+
+Emission_ml: changed unset index iem to iemCO in SnapPos printout 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15 June 2013  Dave 2614-2615
 
 run.pl - grouped together testv, Chem, exp_name , GRID for clarity and to
