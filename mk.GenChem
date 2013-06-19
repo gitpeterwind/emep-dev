@@ -34,6 +34,7 @@ run=CRI_v2_R5
 run=CB05
 run=EmChem09
 run=EmChem09soa
+run=CRI_v2_R5
 
 # Some species which can be common to most schemes are
 # treated here. Also, these are usually not needed for

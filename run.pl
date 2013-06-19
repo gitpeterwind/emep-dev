@@ -11,11 +11,11 @@
 # Ve/Vilje, (take out one # and put one # before the Stallo). 
 #     select= number of nodes, ncpus=number of threads per node to reserve, 
 #     mpiprocs=number of MPI threads per node. For 64 processors:
-##PBS -l select=4:ncpus=32:mpiprocs=32:mem=8gb
+##PBS -l select=2:ncpus=32:mpiprocs=32:mem=8gb
 #Stallo
-#PBS -lnodes=2:ppn=16
+#PBS -lnodes=4:ppn=16
 # wall time limit of run
-#PBS -lwalltime=01:20:00
+#PBS -lwalltime=00:40:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
 #PBS -lpmem=1000MB
 #make results readable for others:
@@ -99,7 +99,8 @@ die "Must choose STALLO **or** VILJE !\n"
   unless $STALLO+$VILJE==1;
 my $MAKEMODE=0;  # make EMEP2011, make SR-EMEP2011
 
-my ( $testv, $Chem, $exp_name, $GRID ) = ( "2613", "EmChem09soa", "EMEPSTD", "EECCA" );
+my ( $testv, $Chem, $exp_name, $GRID ) = ( "2617", "EmChem09soa", "EMEPSTD", "EECCA" );
+#   ( $testv, $Chem, $exp_name, $GRID ) = ( "testc", "EmChem09", "TESTS", "RCA" );
 
 #eg ( $testv, $Chem, $exp_name, $GRID ) = ( "tests", "EmChem09", "TESTS", "RCA" );
 #$Chem: EmChem09soa, EmChem09, CRI_v2_R5
@@ -189,7 +190,7 @@ my $year = "2006";
 
 my $iyr_trend = $year;
 $iyr_trend = "2020" if $SR ;  # 2020 assumed for SR runs here
-#$iyr_trend = "2020" ;  #  TSAP test
+#$iyr_trend = "1990" ;  #  RCA ECLAIRE
 
 print "Year is $yy YEAR $year Trend year $iyr_trend\n";
 
@@ -244,8 +245,9 @@ if ($STALLO) {
   $MetDir   = "$DataDir/$GRID/metdata_H20/$year" if $GRID eq "EECCA"; # assumes $METformat eq "cdf";
   $MetDir   = "/global/work/mifapw/emep/ClimData/$year" if ($GRID eq "RCA" );
 
- # Now have IFS from 2000. Special 1990 case must be hard-coded (to remind user?)
+ # Now have IFS for 1990 and from 2000. 
   $MetDir   = "$DataDir/$GRID/metdata_EC/$year" if ($GRID eq "EECCA" && $year >= 1999 );
+  $MetDir   = "$DataDir/$GRID/metdata_EC/$year" if ($GRID eq "EECCA" && $year == 1990 );
 
 
 } else { #Ve or Vilje
@@ -265,13 +267,14 @@ my $PollenDir = "$HOMEROOT/$BIRTHE/Unify/MyData";
 # Eruption (eEMEP)
 my $EmergencyData = "$HOMEROOT/$ALVARO/Unify/MyData";
    $EmergencyData = 0 unless -d $EmergencyData;
+# Project-specific data:
+my $ProjDataDir = "";          # Change for specific project data
+#  $ProjDataDir = "$WORKROOT/mifads/Data/inputs_projects/eclaire_Jun2013"; #e.g.
 
 
 # Boundary conditions: set source direcories here:
 # BCs can come from Logan, Fortuin, UiO (CTM2) or EMEP model runs:
 
-my $CityZen = 0 ;
-  #$Chem     = "Eucaari_Trends";      # Label for chemical scheme used
 my $VBS   = 0;
 
 # Modify if needed:
@@ -391,6 +394,9 @@ $emisdir = "$EMIS_INP/Modrun12/EMEP_trend_2000-2009/$year" if ( $year > 1999 ) a
 $emisdir = "$EMIS_INP/Modrun12/2012-Trend2010-CEIP" if $year >= 2010 ;
 die "FAILED: Need tor reset EMISDIR for EMEP grid\n" if ( $GRID eq "EMEP" );
 
+#EnsClim - 
+$emisdir = "$ProjDataDir/Interpolations" if ($GRID eq "RCA"  );
+
 #TMP and should be improved because it gives errors for
 # other domains!
 #.. For using emissions of EC/OC instead of PMx
@@ -483,7 +489,7 @@ $month_days[2] += leap_year($year);
 my $mm1 ="06";      # first month, use 2-digits!
 my $mm2 ="06";      # last month, use 2-digits!
 my $dd1 =  1;       # Start day, usually 1
-my $dd2 =  1;       # End day (can be too large; will be limited to max number of days in the month)
+my $dd2 =  0;       # End day (can be too large; will be limited to max number of days in the month)
                     # put dd2=0 for 3 hours run/test.
 # Allways runn full year on benchmark mode
 ($mm1,$mm2,$dd1,$dd2)=("01","12",1,31) if (%BENCHMARK);
@@ -598,6 +604,7 @@ foreach my $scenflag ( @runs ) {
   my $runlabel2    = "$testv\_$Chem\_$scenario\_$year\_Trend$iyr_trend";   # NO SPACES! LONG (written into CDF files)
 
   my $RESDIR = "$WORKDIR/$scenario";
+     $RESDIR = "$WORKDIR/$scenario.$iyr_trend" if ($GRID eq "RCA");
   mkdir_p($RESDIR);
 
   chdir $RESDIR;   ############ ------ Change to RESDIR
@@ -797,22 +804,38 @@ print "TESTING PM $poll $dir\n";
     if ($GRID eq "MACC14") {
       # Only Emis_TNO7.nc available
      }elsif( $GRID eq "RCA"){
-      #EnsClim RCA $ifile{"$dir/grid$gridmap{$poll}"} = "emislist.$poll";
-        $ifile{"$emisdir/EmisOut_$iyr_trend.$poll"} = "emislist.$poll";
-      # and in testing:
-        $ifile{"$SNAP_CDF/Emis_$gridmap{$poll}.nc"}
-                          = "GriddedSnapEmis_$poll.nc" if $SNAP_CDF ;
+      #EnsClim RCA #$ifile{"$dir/grid$gridmap{$poll}"} = "emislist.$poll";
+        #$ifile{"$emisdir/EmisOut_2005.$poll"} = "emislist.$poll";
+        #$ifile{"$emisdir/EmisOut_$iyr_trend.$poll"} = "emislist.$poll";
+        # ECLAIRE - uses 2005 as base for historical
+        $ifile{"$emisdir/Emis_RCA_Grid_2005/EmisOut_2005.$poll"} = "emislist.$poll";
     }elsif(($NH3EMIS_VAR)&&($poll eq "nh3")){
       $dir = "$HOMEROOT/$AGNES/emis_NMR";
       $ifile{"$dir/gridNH3_NMR_$year"} = "emislist.$poll";
     }else{
+
       $ifile{"$dir/grid$gridmap{$poll}"} = "emislist.$poll";
-      # and in testing:
-      $ifile{"$SNAP_CDF/Emis_$gridmap{$poll}.nc"} 
-           = "GriddedSnapEmis_$poll.nc" if $SNAP_CDF ;
+
     }
     $dir=(-e "$emisdir/Emis_TNO7.nc")?$emisdir:$DataDir;
     $ifile{"$dir/Emis_TNO7.nc"} = "EmisFracs_TNO7.nc";
+
+    if ( $SNAP_CDF ) { # in testing:
+      print "SNAP CDF TESTS $poll\n";
+        #$ifile{"$SNAP_CDF/Emis_$gridmap{$poll}.nc"}
+        #2005:
+        $ifile{"$SNAP_CDF/MACC2_Mar2013/2005/Emis_$gridmap{$poll}.nc"}
+                          = "GriddedSnapEmis_$poll.nc" if $SNAP_CDF ;
+
+        #2005 $ifile{"$SNAP_CDF/CdfGlobal/$iyr_trend/Emis_$gridmap{$poll}.nc"}  #2474erca had RCAmap?
+        $ifile{"$SNAP_CDF/CdfGlobal/2005/Emis_$gridmap{$poll}.nc"}  #2474erca had RCAmap?
+           = "GlobalSnapEmis_$poll.nc" if $SNAP_CDF ;
+
+        my $ship = "$SNAP_CDF/CdfGlobal/IPCC_v1_20_04_2009_emep/EmisIPCC_$gridmap{$poll}_ships_$iyr_trend.nc";
+        $ship = "$SNAP_CDF/CdfGlobal/IPCC_v1_20_04_2009_emep/EmisIPCC_$gridmap{$poll}_ships_2000.nc"; #TESTING with 2000
+        $ifile{$ship} = "GlobalShipEmis_$poll.nc" if -e $ship ;
+        #die "SNAP TEST WILL NOT WORK FOR $ship THIS YEAR$iyr_trend  \n" unless -f $ship; #Only 1990, 1990, steps of 10 so far
+    }
 
     # copy pm25 if needed, avoid having 20 different PM25 time-series
 
@@ -878,8 +901,12 @@ print "TESTING PM $poll $dir\n";
 #  if ($EUCAARI) { # DS RE-CHECK shouldn't be needed
 #    $ifile{"$TNOemisDir/femis.dat"} =  "femis.dat";
 #    $ifile{"$DATA_LOCAL/emissions/femis.dat"} =  "femis.dat" if $GRID eq "HIRHAM" ;
-#  } else {
-    $ifile{"$ChemDir/femis.defaults"} =  "femis.defaults";  # created now by GenChem
+
+   if ($ProjDataDir =~ /eclaire/ ) { # As example
+    $ifile{"$ProjDataDir/femis.ecl2005to$iyr_trend"} =  "femis.dat"; 
+   } else {
+    $ifile{"$ChemDir/femis.defaults"} =  "femis.dat";  # created now by GenChem
+   }
 
 # my $old="$DATA_LOCAL/Boundary_and_Initial_Conditions.nc";
 # my $new="Boundary_and_Initial_Conditions.nc";
@@ -967,8 +994,12 @@ print "TESTING PM $poll $dir\n";
   }
 
  #EnsClim RCA, and should be default:
- # $ifile{"$DataDir/VolcanoesLL_2010.dat"} = "VolcanoesLL.dat";
-  $ifile{"$DataDir/VolcanoesLL.dat"} = "VolcanoesLL.dat";
+  if ( $GRID eq "RCA" ) {
+    $ifile{"$DataDir/VolcanoesLL_2010.dat"} = "VolcanoesLL.dat";
+  } else {
+    $ifile{"$DataDir/VolcanoesLL.dat"} = "VolcanoesLL.dat";
+  }
+
 # Emergency senarios (eEMEP)
   if(($MAKEMODE =~ /(2010|2011)/) or ($MAKEMODE =~ /eEMEP/)){
     my $dir="$ProgDir/ZCM_Emergency";

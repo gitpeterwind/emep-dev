@@ -34,6 +34,7 @@ module ModelConstants_ml
  !----------------------------------------------------------------------------
 use PhysicalConstants_ml, only : AVOG
 use Io_Nums_ml, only : IO_NML, IO_LOG
+use SmallUtils_ml, only : find_index
 
 implicit none
 private
@@ -86,6 +87,17 @@ type, public :: emep_debug
     ,BCS             = .false.   ! BoundaryConditions
 end type emep_debug
 type(emep_debug), public, save :: DEBUG
+
+
+  !/ Emissions file treatment. Dims more than used.
+  type, public :: emis_in
+    character(len=50) :: name = "NOTSET" ! e.g. POD1_IAM_DF
+    integer :: Nlist=0, Nincl=0, Nexcl=0
+    character(len=10), dimension(90) ::  incl = "-"
+    character(len=10), dimension(90) ::  excl = "-"
+  endtype emis_in
+  type(emis_in), public, dimension(5) :: emis_inputlist = emis_in()
+
 !-----------------------------------------------------------
 logical, public, save ::             &
   FORECAST              = .false.    &! reset in namelist
@@ -348,7 +360,7 @@ integer, public, parameter :: &
   ,DEBUG_EMISSIONS      = .false. &
   ,DEBUG_EMISTIMEFACS   = .false. &
   ,DEBUG_EQUIB          = .false. &   !MARS, EQSAM etc.
-  ,DEBUG_GETEMIS        = .false. &
+  ,DEBUG_GETEMIS        = .true. &
   ,DEBUG_GRIDVALUES     = .false. &
   ,DEBUG_IOPROG         = .false. &
   ,DEBUG_LANDDEFS       = .false. &
@@ -518,6 +530,7 @@ subroutine Config_ModelConstants(iolog)
     character(len=120)  :: txt
     !logical             :: file_exists
     integer, intent(in) :: iolog ! for Log file
+    integer :: i
 
     NAMELIST /ModelConstants_config/ &
       EXP_NAME &  ! e.g. EMEPSTD, FORECAST, TFMM, TodayTest, ....
@@ -538,9 +551,16 @@ subroutine Config_ModelConstants(iolog)
      ,SEAFIX_GEA_NEEDED & ! only if problems, see text above.
      ,BGND_CH4  & ! Can reset background CH4 values 
      ,EMIS_SOURCE, EMIS_TEST, EMIS_OUT & 
+     ,emis_inputlist &
      ,FLUX_VEGS  & ! TESTX
      ,NETCDF_COMPRESS_OUTPUT,  RUNDOMAIN
 
+
+    !do i = 1, size( emis_inputlist(:)%name )
+    !  emis_inputlist(i)%name = "NOTSET"
+    !  emis_inputlist(i)%incl(:)= "-"
+    !  emis_inputlist(i)%excl(:)= "-"
+    !end do
 
     txt = "ok"
     !Can't call check_file due to circularity
@@ -550,6 +570,14 @@ subroutine Config_ModelConstants(iolog)
     !close(IO_NML)
 
     USE_SOILNOX = USE_EURO_SOILNOX .or. USE_GLOBAL_SOILNOx
+
+    !emis_inputlist(1)%Nlist = 0 ! Store number in 1st record
+    !do i = 1, size( emis_inputlist(:)%name )
+    !  if ( emis_inputlist(i)%name .eq. "NOTSET" ) cycle
+    !  emis_inputlist(1)%Nlist = emis_inputlist(1)%Nlist + 1
+    !  emis_inputlist(i)%Nincl= find_index( "-", emis_inputlist(i)%incl(:), first_only=.true.) -1
+    !  emis_inputlist(i)%Nexcl= find_index( "-", emis_inputlist(i)%excl(:), first_only=.true.) -1
+    !end do
 
     if ( MasterProc )  then
      write(*, * ) "NAMELIST IS "

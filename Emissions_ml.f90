@@ -85,6 +85,7 @@ use ModelConstants_ml,only: &
     KMAX_MID, KMAX_BND, PT ,dt_advec, &
     EMIS_SOURCE,   &    ! emislist, CdfFractions
     EMIS_TEST,     &    ! CdfSnap or none
+    emis_inputlist, &   !TESTC
     EMIS_OUT,      &    ! output emissions in ASCII or not
     IS_GLOBAL, MONTHLY_GRIDEMIS, &  !NML
     NBVOC,         &    ! > 0 if forest voc wanted
@@ -122,6 +123,7 @@ public :: EmisSet           ! Sets emission rates every hour/time-step
 public :: EmisOut           ! Outputs emissions in ascii
 
 ! The main code does not need to know about the following 
+private :: expandcclist            !  expands e.g. EU27, EUMACC2
 private :: consistency_check       ! Safety-checks
 
 INCLUDE 'mpif.h'
@@ -226,6 +228,7 @@ subroutine Emissions(year)
   integer :: isec             ! loop variables: emission sectors
   integer :: iem,iem2         ! loop variable over pollutants (1..NEMIS_FILE)
   integer :: icc,ncc          ! loop variables over  sources
+  integer :: nin, nex         !  include, exclude numbers for emis_inputlist
   character(len=40) :: fname  ! File name
   character(len=300) :: inputline 
   real    :: tmpclimfactor
@@ -234,6 +237,7 @@ subroutine Emissions(year)
   real, dimension(NEMIS_FILE)       :: emsum ! Sum emis over all countries
   real, dimension(NLAND,NEMIS_FILE) :: sumemis, sumemis_local ! Sum of emissions per country
   real, dimension(NEMIS_FILE) :: sumEU ! Sum of emissions in EU
+
 
   ! Road dust emission potential sums (just for testing the code, the actual emissions are weather dependent!)
   real, dimension(NROAD_FILES)       :: roaddustsum    ! Sum emission potential over all countries
@@ -386,6 +390,29 @@ subroutine Emissions(year)
   if(my_first_call) then
     sumemis(:,:) =  0.0       ! initialize sums
     ios = 0
+
+ 
+
+
+    if(EMIS_TEST=="CdfSnap") then  ! Expand groups, e.g. EUMACC2
+      do iemis = 1, size( emis_inputlist(:)%name )
+        if ( emis_inputlist(iemis)%name == "NOTSET" ) then
+           emis_inputlist(iemis)%Nlist = iemis - 1
+           if(MasterProc)  write(*,*)"CdfSnap Nlist=", emis_inputlist(iemis)%Nlist
+           exit
+        end if
+
+        call expandcclist( emis_inputlist(iemis)%incl , n)
+        emis_inputlist(iemis)%Nincl = n
+        if(MasterProc) print *, "INPUTNLIST-INCL", iemis, n
+
+        call expandcclist( emis_inputlist(iemis)%excl , n)
+        emis_inputlist(iemis)%Nexcl = n
+        if(MasterProc) print *, "INPUTNLIST-EXCL", iemis, n
+
+      end do ! iemis
+    end if
+
     call femis()              ! emission factors (femis.dat file)
     if(ios/=0) return
     my_first_call = .false.
@@ -393,19 +420,49 @@ subroutine Emissions(year)
   !>============================
 
   do iem = 1, NEMIS_FILE
-    !TESTING NEW SYSTEM, no effect on results so far
-    ! NB SLOW!
+    !TESTING NEW SYSTEM, no effect on results so far !!! NB SLOW !!!
     if(EMIS_TEST=="CdfSnap") then
+
+   do iemis = 1, size( emis_inputlist(:)%name )
+      fname=emis_inputlist(iemis)%name
+      if ( fname == "NOTSET" ) exit
+      n=index(fname,"POLL") -  1 
+      fname = fname(1:n) // trim(EMIS_FILE(iem)) // ".nc"
+
+      nin = emis_inputlist(iemis)%Nincl
+      nex = emis_inputlist(iemis)%Nexcl
+
+      if(MasterProc) write(*,"(a,2i3,a,2i3)") "INPUTLIST:", iem, iemis, trim(fname), nin, nex
+          
+
+      call CheckStop( nin>0 .and. nex > 0, "emis_inputlists cannot have inc and exc")
+      if ( nin > 0 ) then
+          call EmisGetCdf(iem,fname, incl=emis_inputlist(iemis)%incl(1:nin) )
+      else if (  nex > 0 ) then
+          call EmisGetCdf(iem,fname, excl=emis_inputlist(iemis)%excl(1:nex) ) 
+      else
+          call EmisGetCdf(iem,fname)
+       end if
+
+   end do
      !if ( iem < 3) then
       ! *************************
-      fname="GriddedSnapEmis_"//trim(EMIS_FILE(iem))//".nc"
-      call EmisGetCdf(iem,fname,incl=EUMACC2) 
+      !fname="GriddedSnapEmis_"//trim(EMIS_FILE(iem))//".nc"
+      !call EmisGetCdf(iem,fname,incl=EUMACC2) 
       ! *************************
-      fname="GlobalSnapEmis_"//trim(EMIS_FILE(iem))//".nc"
-      call EmisGetCdf(iem,fname,excl=EUMACC2) 
+!CC      fname="GlobalSnapEmis_"//trim(EMIS_FILE(iem))//".nc"
+      !call EmisGetCdf(iem,fname,excl= (/ EUMACC2, "US", "INTSHIPS" /) ) 
+!CC      call EmisGetCdf(iem,fname,incl=(/ "GB", "DE" /)) 
+      !fname="EmisShips_"//trim(EMIS_FILE(iem))//".nc"
+!      print *, "HUNT Ships", trim(fname), iem
+!if( MasterProc) write(*,*) "HUNT SHIPEMIS ", trim(EMIS_FILE(iem)), iem
+!      fname="EmisShips_voc.nc"
+      !call EmisGetCdf(iem,fname,incl=(/ "INTSHIPS" /)) 
+
       ! *************************
  
       if(debug_proc) then
+print *, "MENCC", me, debug_li, debug_lj, size(nGridEmisCodes)
         ncc =  nGridEmisCodes(debug_li, debug_lj)
         do isec = 1, 11
           write(*,"(a,2i4,4i3,2i4,9f12.4)")"CDF out  "// &
@@ -676,6 +733,7 @@ subroutine Emissions(year)
       if(ccsum>0.0 .or. sum(sumcdfemis(ic,:))>0.0) then
         if(EMIS_TEST=="None") then
           write(*,"(i3,1x,a4,3x,30(f12.2,:))")ic, Country(ic)%code, sumemis(ic,:)
+          write(IO_LOG,"(i3,1x,a4,3x,30(f12.2,:))")ic, Country(ic)%code, sumemis(ic,:)
         else
          write(*,"(a,i3,1x,a4,3x,30(f12.2,:))")"ORIG:",ic, Country(ic)%code, sumemis(ic,:)
          write(*,"(a,i3,1x,a4,3x,30(f12.2,:))")"CDFS:",ic, Country(ic)%code, sumcdfemis(ic,:)
@@ -837,7 +895,40 @@ subroutine Emissions(year)
      call CheckStop(err4, "Allocation error 4 - gridrcroadd0")
   endif
 endsubroutine Emissions
-!***********************************************************************
+!----------------------------------------------------------------------!
+!>
+!! expandcclist converts e.g. EU27 to indivdual countries
+! Only coded for EUMACC2 so far. Should probably use pointers from
+! group names.
+!----------------------------------------------------------------------!
+subroutine expandcclist(xlist, n)
+  character(len=*), dimension(:), intent(inout) :: xlist 
+  integer, intent(out) ::  n
+  character(len=30), dimension(size(xlist)) ::  nlist 
+  integer :: i
+
+    nlist(:) = "-"
+    n = 1
+    CCLIST: do i = 1 , size(xlist)
+!if(MasterProc) print *, "CCNLIST ", me, i, size(xlist), n, xlist(i)
+        select case(xlist(i))
+        case("EUMACC2")
+!if(MasterProc) print *, "NLIST MACC2 ", me, i, size(EUMACC2), n
+             nlist(n:n+size(EUMACC2)-1 ) = (/ EUMACC2 /)
+             n=n+size(EUMACC2)
+        case("-")
+!if(MasterProc) print *, "NLIST ----- ", me, i, n
+             n = n - 1
+             exit CCLIST
+        case default
+!if(MasterProc) print *, "NLIST DEF - ", me, i, n, xlist(i)
+             nlist(n) = xlist(i)
+             n=n+1
+        end select
+    end do CCLIST ! i
+    xlist(1:n) = nlist(1:n) ! overwrites original
+end subroutine expandcclist
+!----------------------------------------------------------------------!
 subroutine consistency_check()
 !----------------------------------------------------------------------!
 !    checks that all the values given so far are consistent
@@ -1575,7 +1666,7 @@ subroutine EmisOut(label, iem,nsources,sources,emis)
     !/ (Need to be careful, local2global changes local arrays. Hence lemis)
     do isec = 1, NSECTORS
       lemis = locemis(:,:,isec)
-      if(DEBUG) write(*,*) trim(txt)//" lemis ",me,iland,maxval(lemis(:,:))
+      if(DEBUG.and.debug_proc) write(*,*) trim(txt)//" lemis ",me,iland,isec,maxval(lemis(:,:))
       call local2global(lemis,gemis,msg)
       if(MasterProc) globemis(:,:,isec) = gemis(:,:) !! for output
     enddo ! isec

@@ -50,6 +50,7 @@
                                NROADDUST
   use GridAllocate_ml,   only: GridAllocate
   use GridValues_ml, only: debug_proc,debug_li,debug_lj, i_fdom, j_fdom !cdfemis
+  use GridValues_ml, only: glon, glat !AFRICA
   use Io_ml,             only: open_file, NO_FILE, ios, IO_EMIS, &
                                Read_Headers, read_line, PrintLog
   use KeyValue_ml,       only: KeyVal
@@ -136,7 +137,7 @@
    character(len=*), intent(in)    :: fname
    character(len=*),dimension(:), optional :: &
        incl, excl ! Arrays of cc to inc/exclude
-   integer :: i,j, ic, isec, allocerr(6), icode
+   integer :: i,j, ic, isec, allocerr(6), icode, status
    real, dimension(NLAND) :: sumcdfemis_loc, sumcdfemis_iem
    integer :: icc, ncc
    character(len=40) :: varname
@@ -150,7 +151,13 @@
 
 !
    if(MasterProc)  print *, "ME INTO EMISGETCDF ", me, trim(fname)&
-       ,present(incl), present(excl)  ! optionals
+        ,present(incl), present(excl)  ! optionals
+   if( present(incl) ) then
+      if(MasterProc) write(*,"(a,i4,99a4)") trim(fname)//":INCL=", size(incl), incl
+   end if
+   if( present(excl) ) then
+      if(MasterProc) write(*,"(a,i4,99a4)") trim(fname)//":EXCL=", size(excl), excl
+   end if
 
    if( my_first_call  )  then
         allocerr = 0
@@ -177,10 +184,16 @@
 !---------------------------------------------------------------
 ! find emis file and  main properties
 
- call check(nf90_open(path = trim(fName), mode = nf90_nowrite, ncid = ncFileID))
+ !HUNT call check(nf90_open(path = trim(fName), mode = nf90_nowrite, ncid = ncFileID))
+ status=nf90_open(path = trim(fName), mode = nf90_nowrite, ncid = ncFileID)
+if( index(fname, "Ship")>0 ) print *, me, " CDFHUNTTOP ", trim(fname)
+ if( status /= nf90_noerr ) then
+  if( MasterProc ) print *, "EmisGetCdf - couldn't open "//trim(fName)
+   return
+ end if
 
  call check(nf90_Inquire(ncFileID,nDimensions,nVariables,nAttributes,timeDimID))
- if( MasterProc ) then
+ if( MasterProc .or. index(fname, "Ship")>0 ) then
   write( *,*) 'Nb of global attributes: ',nAttributes
   write( *,*) 'EmisGetCdf '//trim(fName),' properties: '
   write( *,*) 'EmisGetCdf Nb of dimensions: ',nDimensions
@@ -206,26 +219,26 @@
         if ( find_index( code, excl ) >0 ) then
            !if(MasterProc) print *, "INCEXCTEST-XX ", &
            !    trim(code), find_index( code, excl )
-          !! if(MasterProc) write(*,"(a,a,i5)") "EmisGetCdf"//trim(fname)// &
-           !!    "exludes:", trim(code), find_index( code, excl )
+           if(MasterProc) write(*,"(a,a,i5)") "EmisGetCdf"//trim(fname)// &
+               "exc-exludes:", trim(code), find_index( code, excl )
            cycle
         end if
       end if
       if ( present(incl) ) then
         if ( find_index( code, incl ) <1 ) then
-          !! if(MasterProc) write(*,"(a,a,i5)") "EmisGetCdf"//trim(fname)// &
-          !!     "exludes:", trim(code), find_index( code, excl )
+           if(MasterProc) write(*,"(a,a,i5)") "EmisGetCdf"//trim(fname)// &
+               "inc-exludes:", trim(code) !, find_index( code, excl )
            cycle
         end if
       end if
 
       !if(MasterProc) write(*,"(3a,i5)") "EmisGetCdf"//trim(fname),  &
-      !         "includes:", trim(code), find_index( code, excl )
+      !         "==>includes:", trim(code), find_index( code, incl ), find_index( code, excl )
       !if(MasterProc) print *, "!!EmisGetCdf"//trim(fname),  &
       !         "includes:", trim(code), find_index( code, excl )
 
      ic = find_index( code, Country(:)%code )  !from Country_ml
-     if(MasterProc) print "(a)", "INCEXCTEST-A "//trim(fname)//":"//trim(code)
+     !if(MasterProc) print "(a)", "INCEXCTEST-A "//trim(fname)//":"//trim(code)
 
      if ( Country(ic)%code == "N/A" ) then
           if(MasterProc) print *, "CDFCYCLE ", ic, trim(Country(ic)%code)
@@ -235,21 +248,26 @@
 
      !if( DEBUG .and. debug_proc ) write( *,*) 'EmisGetCdf ', trim(fname), varid,trim(varname), &
      !      " ", trim(code), ic, isec 
-     if( DEBUG .and. debug_proc ) write( *,*) 'EmisGetCdf ', trim(fname), varid,trim(varname), &
-           " ", trim(code), ic, isec 
+     if( DEBUG .and. debug_proc ) write(*,"(2a,i6,a,2i4)") 'EmisGetCdf ', &
+           trim(fname), varid," "//trim(varname)// " "// trim(code), ic, isec 
 
 
      cdfemis = 0.0 ! safety, shouldn't be needed though
+!if( index(fname, "Ship")>0 ) print *, me, " CDFHUNTIN ", trim(fname), trim(varname)
      call ReadField_CDF(fname,varname,cdfemis,1,&
+!??              known_projection='longitude latitude', &
                interpol='mass_conservative',&
                 needed=.false.,UnDef=0.0,debug_flag=.false.)
+!if( index(fname, "Ship")>0 ) print *, me, " CDFHUNTUT ", trim(fname), trim(varname), sum(cdfemis)
 
      if( maxval(cdfemis ) < 1.0e-10 ) cycle ! Likely no emiss in domain
 
      if ( DEBUG .and. debug_proc ) then
+     !if ( DEBUG .and. MasterProc ) then !me has some sea usually !!SHIPHUNT
          ncalls = ncalls + 1
-         write(*,"(2a,2i4,i3,9f12.4)")"CDF emis-in ",&
-           trim(Country(ic)%name)//":"//trim(EMIS_FILE(iem)), &
+         write(*,"(3a,3i4,i3,9f12.4)")"CDF emis-in ",&
+           trim(fname)//":", &
+           trim(Country(ic)%name)//":"//trim(EMIS_FILE(iem)), ic, &
             i_fdom(debug_li),j_fdom(debug_lj),&
              isec, e_fact(isec,ic,iem), &
                 cdfemis(debug_li, debug_lj), maxval(cdfemis)
@@ -264,11 +282,24 @@
         do j = 1, ljmax
             do i = 1, limax
               if( cdfemis(i,j) > 1.0e-10 ) then
+ !if( i_fdom(i) < 33 .and. j_fdom(j) < 15 .and. ic == 60 ) then
+ ! Some bit of Germany found in Africa in MACC2 data. Correct to 
+ if( glat(i,j) < 35 .and. j_fdom(j) < 15 .and. ic == 60 ) then
+ !if( i_fdom(i) < 33 .and. j_fdom(j) < 15 ) then
+        write(*,"(3a,3i4,2f8.3,i3,9f12.4)")"AFRICA:",&
+           trim(fname)//":", &
+           trim(Country(ic)%name)//":"//trim(EMIS_FILE(iem)), ic, &
+            i_fdom(i),j_fdom(j),&
+             glon(i,j), glat(i,j), & 
+             isec, e_fact(isec,ic,iem), &
+                cdfemis(i, j), maxval(cdfemis)
+         ic = 224 ! Change to North Africa from IIASA system
+ end if !========== AFRICA
                 call GridAllocate("GridCode"// trim ( EMIS_FILE(iem) ),&
                   i,j,ic,NCMAX, icode, ncmaxfound,GridEmisCodes,nGridEmisCodes,&
                   debug_flag=.false.)
                  GridEmis(isec,i,j,icode,iem) = &
-                   GridEmis(isec,i,j,icode,iem) + cdfemis(i,j)
+                   GridEmis(isec,i,j,icode,iem) + cdfemis(i,j) * e_fact(isec,ic,iem)
                 !if ( debug_proc .and. i == debug_li .and. j == debug_lj ) then
 
                  ncc = nGridEmisCodes(i,j)
@@ -564,7 +595,9 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 
   e_fact(:,:,:) = 1.0            !/*** default value = 1 ***/
 
+  associate ( debugm0 => ( DEBUG .and. MasterProc ) )
 
+  if( debugm0 ) print *, "Enters femis", me
   call open_file(IO_EMIS,"r","femis.dat",needed=.false.)
 
   if ( ios == NO_FILE ) then
@@ -579,10 +612,10 @@ READEMIS: do   ! ************* Loop over emislist files *******************
   ! Pollutant names wil be checked against those defined in My_Emis_ml 
 
   read(unit=IO_EMIS,fmt="(a200)") txt
-  if(DEBUG_GETEMIS)write(unit=6,fmt=*) "In femis, header0 is: ",  trim(txt)
+  if(debugm0)write(unit=6,fmt=*) "In femis, header0 is: ",  trim(txt)
 
   call wordsplit(txt,NCOLS_MAX,polltxt,ncols,ios)
-  if(DEBUG_GETEMIS) then
+  if(debugm0) then
      write(unit=6,fmt=*) "In femis, header is: ",  txt
      write(unit=6,fmt=*) "In femis, file has ", ncols, " columns (-2)"
   end if
@@ -605,16 +638,19 @@ READEMIS: do   ! ************* Loop over emislist files *******************
                 if ( polltxt(ic+2) == trim ( EMIS_FILE(ie) ) ) then
                     qc(ie) = ic
                     n = n + 1
-                    if(DEBUG_GETEMIS)write(unit=6,fmt=*) "In femis: ", &
+                    if(debugm0)write(unit=6,fmt=*) "In femis: ", &
                        polltxt(ic+2), " assigned to ", ie, EMIS_FILE(ie)
                   exit EMLOOP
                 end if
       end do EMLOOP ! ie
-       if (oldn == n .and.DEBUG_GETEMIS)   &
+       if (oldn == n .and.debugm0)   &
            write(unit=6,fmt=*) "femis: ",polltxt(ic+2)," NOT assigned"
   end do COLS   ! ic
 
+if ( n < NEMIS_FILE ) then
+  print *, "FEMIS me n NEMIS_FILE", me, n, NEMIS_FILE
   call CheckStop( n < NEMIS_FILE , "EmisGet: too few femis items" )
+end if
 
   
   n = 0
@@ -627,15 +663,17 @@ READEMIS: do   ! ************* Loop over emislist files *******************
       call CheckStop( ios > 0 , "EmisGet: read error in femis" )
 
       n = n + 1
-      if(DEBUG_GETEMIS)write(unit=6,fmt=*) "FEMIS READ", inland, &
+      if(debugm0) then
+        write(unit=6,fmt=*) "FEMIS READ", inland, &
           isec, (e_f(ic),ic=1,ncols)
-      write(unit=6,fmt="(2a,I3,a,i3,a)") " Emission factors from femis.dat, ",&
-        "landcode =", inland, ",  sector code =",isec, &
-        " (sector 0 applies to all sectors) :"
-      write(unit=6,fmt="(a,14(a,a,F5.2,a))") " ", (trim(polltxt(qc(ie)+2)),&
-       " =",e_f(qc(ie)), ",  ", ie=1,NEMIS_FILE-1), &
-        (trim(polltxt(qc(ie)+2))," =",e_f(qc(ie))," ", &
+        write(unit=6,fmt="(2a,I3,a,i3,a)") " Emission factors from femis.dat, ",&
+          "landcode =", inland, ",  sector code =",isec, &
+          " (sector 0 applies to all sectors) :"
+        write(unit=6,fmt="(a,14(a,a,F5.2,a))") " ", (trim(polltxt(qc(ie)+2)),&
+         " =",e_f(qc(ie)), ",  ", ie=1,NEMIS_FILE-1), &
+          (trim(polltxt(qc(ie)+2))," =",e_f(qc(ie))," ", &
             ie=NEMIS_FILE,NEMIS_FILE)
+      end if
 
       if (inland == 0 ) then     ! Apply factors to all countries
           iland1 = 1 
@@ -648,7 +686,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
             if(Country(iland1)%index==inland) goto 544
          enddo
 
-         if(me==0) write(*,*)'COUNTRY CODE NOT RECOGNIZED',inland
+         if(MasterProc) write(*,*)'COUNTRY CODE NOT RECOGNIZED',inland
 
          iland1 = 0
          iland2 =-1
@@ -676,7 +714,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
               end do !isec
           end do !iq
 
-          if (DEBUG ) then
+          if (debugm0 ) then
               write(unit=6,fmt=*) "IN NEMIS_FILE LOOP WE HAVE : ", ie, &
                                        qc(ie), e_f( qc(ie) )
               write(unit=6,fmt=*) "loops over ", isec1, isec2, iland1, iland2
@@ -687,8 +725,9 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 
   close(IO_EMIS)
 
-  if(DEBUG_GETEMIS)write(unit=6,fmt=*) "In femis, read ", n, "records from femis."
-  if ( DEBUG.and.MasterProc ) then    ! Extra checks
+  if( MasterProc) write(unit=6,fmt=*) "In femis, read ", n, "records from femis."
+  if(debugm0) then
+    ! Extra checks
      write(unit=6,fmt=*) "DEBUG_EMISGET: UK femis gives: "
      write(unit=6,fmt="(6x, 30a10)") (EMIS_FILE(ie), ie=1,NEMIS_FILE)
      do isec = 1, 11
@@ -697,6 +736,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
      end do
   end if ! DEBUG
   ios = 0
+  end associate ! debugm0
  end subroutine femis
 
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

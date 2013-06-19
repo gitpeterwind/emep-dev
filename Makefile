@@ -176,6 +176,10 @@ EMEP EMEP2010 EMEP2011 MACC MACC-EVA2010 MACC-EVA2011 eEMEP2010: \
 EMCHEM09 eEMEP eEMEP2013: \
 	  ./ZD_OZONE/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
 	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_OZONE/My_SOA_ml.f90 ./ZD_3DVar/My_3DVar_ml.f90
+# CRI_v2_R5 only:
+CRI_v2_R5: \
+	  ./ZD_OZONE/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
+	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_OZONE/My_SOA_ml.f90 ./ZD_3DVar/My_3DVar_ml.f90
 #For SR we use the small My_Derived
 SR-EMEP SR-EMEP2010 SR-EMEP2011 SR-MACC: \
 	  ./ZD_SR/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
@@ -186,6 +190,7 @@ EMEP EMEP2010 EMEP2011 SR-EMEP SR-EMEP2010 SR-EMEP2011 \
 MACC MACC-EVA2010 MACC-EVA2011 SR-MACC eEMEP2010: modules $$@-GenChem-EmChem09soa
 eEMEP eEMEP2013: modules $$@-GenChem-EmChem09  # GenChem-Emergency not yet ready
 EMCHEM09: modules $$@-GenChem-EmChem09
+CRI_v2_R5: modules $$@-GenChem-CRI_v2_R5
 EMEP-GenChem-% EMCHEM09-GenChem-%:
 	mk.GenChem    -r $* -f FINNv1 -e SeaSalt,Dust,Isotopes
 EMEP2010-GenChem-%:

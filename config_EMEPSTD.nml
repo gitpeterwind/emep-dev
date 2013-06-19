@@ -37,11 +37,28 @@
   INERIS_SNAP1          = F,          ! Used for TFMM runs
   INERIS_SNAP2          = F,          ! Used for TFMM runs
 !------------------------------
+  EMIS_SOURCE           = "emislist", ! "emislist" or CdfFractions
+  EMIS_TEST             = CdfSnap,  ! "None" or "CdfSnap" 
+!-----------------------------------------------------------------------------
+! IN TESTING:
+! If EMiS_TEST set, then the emis_inputlists will be used.
+! Below, one can either include or exclude, not both
+! Only recognised group now is EUMACC2
+! (1) From MACC2 7km:
+  emis_inputlist(1)%name     = GriddedSnapEmis_POLL.nc, !
+  emis_inputlist(1)%excl(1:) = US INTSHIP,   ! US lat/long limits wrong
+! (2) Global:
+  emis_inputlist(2)%name     = GlobalSnapEmis_POLL.nc, !
+  emis_inputlist(2)%excl(1:) = EUMACC2 INTSHIPS MEXI ARGE BRAZ CHIL OLAM AUTR NZEL BANG INDI PAKI BHUT BRUN CAMB CHIN TAIW VIET THAI INDO JAPA LAOS MALA   MONG MYAN NEPA KORN PHIL SING KORS SAFR, 
+! (3) Shipping:
+  emis_inputlist(3)%name     = GlobalShipEmis_POLL.nc, !
+  emis_inputlist(3)%incl(1:) = INTSHIPS, 
+!
+  EMIS_OUT              = T,          ! output emissions in separate files (memory demanding)
+!-----------------------------------------------------------------------------
   IS_GLOBAL             = F,          ! Also for EMERGENCY
   MONTHLY_GRIDEMIS      = F,          ! Also for EMERGENCY
   MONTHLY_GRIDEMIS      = F,          ! Also for EMERGENCY
-  EMIS_SOURCE           = "emislist", ! "emislist" or CdfFractions
-  EMIS_TEST             = "None",  ! "None" or "CdfSnap" 
   SELECT_LEVELS_HOURLY  = F,          ! hourly output flag Also for FORECAST, 3DPROFILES
   FORECAST              = F,
   USE_EMERGENCY         = F,          ! Used for FORECASTs usually, EMEP2010
