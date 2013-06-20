@@ -38,7 +38,7 @@
   INERIS_SNAP2          = F,          ! Used for TFMM runs
 !------------------------------
   EMIS_SOURCE           = "emislist", ! "emislist" or CdfFractions
-  EMIS_TEST             = CdfSnap,  ! "None" or "CdfSnap" 
+  EMIS_TEST             = None,  ! "None" or "CdfSnap" 
 !-----------------------------------------------------------------------------
 ! IN TESTING:
 ! If EMiS_TEST set, then the emis_inputlists will be used.

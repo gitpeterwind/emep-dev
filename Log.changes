@@ -154,6 +154,22 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+20 June 2013  Dave 2618
+
+Small tidy up and correction to settings:
+
+mk.GenChem - reset to EmChem09soa default
+
+ModelConstants_ml - debugs false
+
+Emissions_ml.f90 -  commented out code removed
+
+My_Derived_ml.f90 - NMOSAIC print outs commented out.
+
+config_EMEPSTD.nml - EMIS_SOURCE set to None
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 19 June 2013  Dave 2617
 
 emis_inputlist introduced  to read any number of netcdf emission files, as long

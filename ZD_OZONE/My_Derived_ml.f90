@@ -493,7 +493,7 @@ private
 
       !------------- Deposition velocities -----------------------------------
 
-print *, "NMOSAIC MC  ", NMosaic, nVEGO3
+!print *, "NMOSAIC MC  ", NMosaic, nVEGO3
       call Add_NewMosaics(NewMosaic, nMc)
        if(DEBUG .and. MasterProc)  write(*, *) "NEWMOSAIC   NUM ", nMc
       !nOutMos = nMos
@@ -505,7 +505,7 @@ print *, "NMOSAIC MC  ", NMosaic, nVEGO3
       ! adding them to the derived-type array LCC_Met (e.g. => Met_CF)
       !FEB2011  Daiyl output asked for just now. Change larer
 
-print *, "NMOSAIC VEG ", NMosaic, nVEGO3
+!print *, "NMOSAIC VEG ", NMosaic, nVEGO3
       call Add_MosaicMetConcs(MOSAIC_METCONCS,MET_LCS, D, nMET)
       nOutMET = nMET !not needed?
   end if ! SOURCE_RECEPTOR
@@ -513,10 +513,10 @@ print *, "NMOSAIC VEG ", NMosaic, nVEGO3
 
       !------------- end LCC data for d_2d -------------------------
 
-print *, "NMOSAIC PRE ", NMosaic, nVEGO3
+!print *, "NMOSAIC PRE ", NMosaic, nVEGO3
      call CheckStop( NMosaic >= MAX_MOSAIC_OUTPUTS, &
                        "too many nMosaics" )
-print *, "NMOSAIC END ", NMosaic, nVEGO3
+!print *, "NMOSAIC END ", NMosaic, nVEGO3
      call AddArray( MosaicOutput(1:nMosaic)%name, &
                         wanted_deriv2d, NOT_SET_STRING, errmsg)
      call CheckStop( errmsg, errmsg // "MosaicOutput too long" )

@@ -445,24 +445,10 @@ subroutine Emissions(year)
        end if
 
    end do
-     !if ( iem < 3) then
-      ! *************************
-      !fname="GriddedSnapEmis_"//trim(EMIS_FILE(iem))//".nc"
-      !call EmisGetCdf(iem,fname,incl=EUMACC2) 
-      ! *************************
-!CC      fname="GlobalSnapEmis_"//trim(EMIS_FILE(iem))//".nc"
-      !call EmisGetCdf(iem,fname,excl= (/ EUMACC2, "US", "INTSHIPS" /) ) 
-!CC      call EmisGetCdf(iem,fname,incl=(/ "GB", "DE" /)) 
-      !fname="EmisShips_"//trim(EMIS_FILE(iem))//".nc"
-!      print *, "HUNT Ships", trim(fname), iem
-!if( MasterProc) write(*,*) "HUNT SHIPEMIS ", trim(EMIS_FILE(iem)), iem
-!      fname="EmisShips_voc.nc"
-      !call EmisGetCdf(iem,fname,incl=(/ "INTSHIPS" /)) 
 
       ! *************************
  
       if(debug_proc) then
-print *, "MENCC", me, debug_li, debug_lj, size(nGridEmisCodes)
         ncc =  nGridEmisCodes(debug_li, debug_lj)
         do isec = 1, 11
           write(*,"(a,2i4,4i3,2i4,9f12.4)")"CDF out  "// &

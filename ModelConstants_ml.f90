@@ -360,7 +360,7 @@ integer, public, parameter :: &
   ,DEBUG_EMISSIONS      = .false. &
   ,DEBUG_EMISTIMEFACS   = .false. &
   ,DEBUG_EQUIB          = .false. &   !MARS, EQSAM etc.
-  ,DEBUG_GETEMIS        = .true. &
+  ,DEBUG_GETEMIS        = .false. &
   ,DEBUG_GRIDVALUES     = .false. &
   ,DEBUG_IOPROG         = .false. &
   ,DEBUG_LANDDEFS       = .false. &

@@ -33,8 +33,8 @@ ffires=FINNv1  # Can be FINNv1, the other option (GFED) may not be working prope
 run=CRI_v2_R5
 run=CB05
 run=EmChem09
-run=EmChem09soa
 run=CRI_v2_R5
+run=EmChem09soa
 
 # Some species which can be common to most schemes are
 # treated here. Also, these are usually not needed for
