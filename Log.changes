@@ -154,6 +154,26 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+20 June 2013  Dave 2619
+
+RESULTS CHANGE FOR HISTORICAL TREND RUNS < 2000 - tag as rv4.4.1
+
+GlobalBCs_ml - 1) added macehead_default array 
+
+               2) Set USES%MACEHEAD_AVG = T in config to force use of
+               default MH corrections.
+
+               3) Set base-year of O3 trend to 2000, instead of 1990. Seems
+               better compared to observations, Parrish et al. and forthcoming
+               borders paper (with JEJ). This will change O3trends prior to
+               2000.
+
+ModelConstants_ml - Added USES%MACEHEAD_AVG = .false. to namelist variables
+
+Log.changes    - added rv4.4 message to 2599. Probably needs a branch for the
+               final release of rv4.4.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 20 June 2013  Dave 2618
 
 Small tidy up and correction to settings:
@@ -312,7 +332,7 @@ config_EMEPSTD, EMERGENCY, FORECAST, IMPACT2C updated with new USES system.
 
 Both of these features simplify the code and should be expanded.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-31 May 2013  Alvaro, 2595-2599
+31 May 2013  Alvaro, 2595-2599 - to be released as rv4.4 open-source summer 2013
 
 2595: Prepare code for status runs
 2596: eEMEP and FORECAST downstream updates

@@ -76,7 +76,8 @@ type, public :: emep_useconfig
   logical :: &                   ! Forest fire options
      FOREST_FIRES     = .true.  &! 
     ,MONTHLY_FF       = .false. &! => monthly emissions (for e.g. climate runs)
-    ,MACEHEADFIX      = .true.  ! Correction to O3 BCs (Mace Head Obs.)
+    ,MACEHEADFIX      = .true.  &! Correction to O3 BCs (Mace Head Obs.)
+    ,MACEHEAD_AVG     = .false.  ! Uses 10-year avg. Good for e.g. RCA runs.
 end type emep_useconfig 
 type(emep_useconfig), public, save :: USES
 

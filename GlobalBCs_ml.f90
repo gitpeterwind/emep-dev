@@ -169,7 +169,7 @@ subroutine GetGlobalData(year,month,ibc,used,        &
   integer, allocatable,dimension(:,:), save :: lat5     ! for latfunc below
   real, dimension(NGLOB_BC,6:14), save  :: latfunc  ! lat. function
   real, save ::  twopi_yr, cosfac                   ! for time-variations
-  real, dimension(12) :: macehead_O3
+  real, dimension(12) :: macehead_O3, macehead_default
   real :: O3fix
   integer :: i, j, k, i0, i1, j1, icount
   real    :: f0, f1             ! interpolation factors
@@ -183,7 +183,6 @@ subroutine GetGlobalData(year,month,ibc,used,        &
   logical :: notfound !set true if NetCDF BIC are not found
   real, parameter :: macehead_lat = 53.3 !latitude of Macehead station
   real, parameter :: macehead_lon = -9.9 !longitude of Macehead station
-!USES  logical,parameter :: MACEHEADFIX=.true.
 
 
 !----------------------------------------------------------
@@ -279,13 +278,21 @@ subroutine GetGlobalData(year,month,ibc,used,        &
 ! adjustment for years outside the range 1990-2000.
 
   if ( iyr_trend >=  1990 ) then
-    trend_o3 = 1.0
+    !trend_o3 = 1.0
     trend_co = 1.0
     trend_voc= 1.0
   else
-    trend_o3 = exp(-0.01*1.0 *(1990-iyr_trend))
+    !trend_o3 = exp(-0.01*1.0 *(1990-iyr_trend))
     trend_co = exp(-0.01*0.85*(1990-iyr_trend)) ! Zander:CO
     trend_voc= exp(-0.01*0.85*(1990-iyr_trend)) ! Zander,1975-1990
+  end if
+!June 2013 svn 2619:
+! Now assume O3 increases to 2000, consistent with obs. For CO and VOC, keep the
+! 1990 base-year.
+  if ( iyr_trend >=  2000 ) then
+    trend_o3 = 1.0
+  else
+    trend_o3 = exp(-0.01*1.0 *(2000-iyr_trend))
   end if
   if (MasterProc.and.first_call) then
     write(unit=txtmsg,fmt="(a,i5,3f8.3,3f9.4)") "BC:trends O3,CO,VOC,SOx,NOx,NH3: ", &
@@ -309,9 +316,12 @@ subroutine GetGlobalData(year,month,ibc,used,        &
 ! For 2010, 2020 "trend" runs  - use 13 yr average as base-O3
 ! then later scale by trend_o3:
 
-  if ( iyr_trend /= year ) then ! use defaults from 1998-2010 average
-    macehead_O3 = (/ 39.8, 41.9, 45.4, 46.5, 43.2, 36.2, &
+  ! use defaults from 1998-2010 average
+    macehead_default = (/ 39.8, 41.9, 45.4, 46.5, 43.2, 36.2, &
                      30.5, 30.1, 34.1, 37.0, 39.0, 38.5 /)
+
+  if ( iyr_trend /= year  .or. USES%MACEHEAD_AVG) then ! use defaults
+    macehead_O3 = macehead_default
   else
     select case (year)
     case(1990)
@@ -395,8 +405,9 @@ subroutine GetGlobalData(year,month,ibc,used,        &
                      31.0, 31.3, 35.6, 36.7, 33.4, 33.8 /)
 
     case default ! from 1998-2010 average
-    macehead_O3 = (/ 39.8, 41.9, 45.4, 46.5, 43.2, 36.2, &
-                     30.5, 30.1, 34.1, 37.0, 39.0, 38.5 /)
+    !macehead_O3 = (/ 39.8, 41.9, 45.4, 46.5, 43.2, 36.2, &
+    !                 30.5, 30.1, 34.1, 37.0, 39.0, 38.5 /)
+    macehead_O3 = macehead_default
     endselect
   endif
 !=========== Generated from Mace Head Data =======================
@@ -543,9 +554,10 @@ subroutine GetGlobalData(year,month,ibc,used,        &
       ! grid coordinates of Mace Head
       call lb2ij(macehead_lon,macehead_lat, iMH,jMH)
 
-      if(DEBUG%GLOBBC) write(*,"(a10,2f7.2,i4,i6,3f8.3)")"O3FIXes ",iMH,jMH, &
-        month,icount,bc_rawdata(nint(iMH),nint(jMH),20)/PPB,&
-        macehead_O3(month),O3fix/PPB
+      if(DEBUG%GLOBBC) write(*,"(a,i4.2,2f7.2,i6,f8.3,a,4f8.3,2L3)")"O3FIXes ",&
+        month,iMH,jMH, icount,bc_rawdata(nint(iMH),nint(jMH),20)/PPB,&
+        " MH: ", macehead_default(month), macehead_O3(month),O3fix/PPB,&
+        trend_O3, USES%MACEHEADFIX, USES%MACEHEAD_AVG
       write(*,"(a,f8.3)")' MaceHead correction for O3: ',-O3fix/PPB
 
     endif
