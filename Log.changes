@@ -154,10 +154,18 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-25 June 2013  Peter 2621
+25 June 2013  Peter 2622
 
 NetCDF_ml: ReadTimeCDF recognise times unit 'day as %Y%m%d.%f'
 (as in EnsClim BC)
+
+NetCDF_ml:   bug in ReadField_CDF
+      Ndiv=2*nint(Grid_resolution/GRIDWIDTH_M)
+will give strange landuse patterns if all these condition are met:
+1) PolarStereographic projection
+2) Resolution finer than 5km
+3) Emep area
+
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 20 June 2013  Dave 2619
