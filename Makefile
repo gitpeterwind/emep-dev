@@ -163,7 +163,7 @@ touchdepend:
 	touch .depend
 
 # Model/Config specific targets
-EMEP EMEP2010 EMEP2011 EMCHEM09 SR-EMEP SR-EMEP2010 SR-EMEP2011 \
+EMEP EMEP2010 EMEP2011 EMCHEM09 CRI_v2_R5 SR-EMEP SR-EMEP2010 SR-EMEP2011 \
 MACC MACC-EVA2010 MACC-EVA2011 SR-MACC eEMEP eEMEP2010 eEMEP2013:
 	ln -sf $(filter %.f90 %.inc,$+) . && \
 	$(MAKE) MACHINE=$(MACHINE) -j4 $(PROG)
@@ -191,6 +191,8 @@ MACC MACC-EVA2010 MACC-EVA2011 SR-MACC eEMEP2010: modules $$@-GenChem-EmChem09so
 eEMEP eEMEP2013: modules $$@-GenChem-EmChem09  # GenChem-Emergency not yet ready
 EMCHEM09: modules $$@-GenChem-EmChem09
 CRI_v2_R5: modules $$@-GenChem-CRI_v2_R5
+CRI_v2_R5-GenChem-%:
+	mk.GenChem    -r $* -f FINNv1 -e SeaSalt,Dust,Isotopes
 EMEP-GenChem-% EMCHEM09-GenChem-%:
 	mk.GenChem    -r $* -f FINNv1 -e SeaSalt,Dust,Isotopes
 EMEP2010-GenChem-%:

@@ -154,6 +154,41 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+26 June 2013  Dave  2624
+
+CRI_v2_R5 now works again, phew! 
+
+  See caveats below for limitations (BiomassBurning, BPINENE), but these
+  are easily fixed (with some time).
+
+Makefile - added proper dependencies for CRI_v2_R5. Can now type
+
+     make CRI_v2_R5
+
+ 
+
+ZCM_CRI_v2_R5:
+
+  CRI_v2_R5base.reactions file - corrected for rcbio, Rn222 etc,
+
+  BiomassBurning_FINN... file copied from EmChem09. Should
+  really use CRI species.
+
+  EMISPLIT/emissplit.defaults.pmxx - copied from EmChem09
+
+  BPINENE not yet in emissions. Have commented out rcemis term for
+  now, and also "BVOC" label in .species files (otherwise the
+  emep model expects to find an emission fields), but if wanted
+  BPINENE could be taken as a fraction of the APINENE emis.
+
+Also:
+
+  run.pl   $outputs added to stear which config file is used for outputs. No
+           need for different outputs for all exp_names.
+ 
+           + CRI changes, also to use EMISPLIT for now
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26 June 2013  Dave  2623
 
 Radiation_ml: added units for PAR (a user asked what they were)

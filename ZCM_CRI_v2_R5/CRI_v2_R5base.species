@@ -144,7 +144,8 @@ NRN9OOH,1,nrn9ooh,xx,ROOH,ROOH,0,0,0,xx,ROOH,,!C3
 NRN12OOH,1,nrn12ooh,xx,ROOH,ROOH,0,0,0,xx,ROOH,,!C4
 PAN,1,CH3COO2NO2,xx,PAN,xx,0,0,0,xx,PAN;OXN,,!C2
 APINENE,1,C10H16,136.24,xx,xx,0,0,0,xx,biogenic;BVOC,,!C10
-BPINENE,1,C10H16,136.24,xx,xx,0,0,0,xx,biogenic;BVOC,,!C10
+*TMP- not BVOC BPINENE,1,C10H16,136.24,xx,xx,0,0,0,xx,biogenic;BVOC,,!C10
+BPINENE,1,C10H16,136.24,xx,xx,0,0,0,xx,biogenic;TMPBVOC,,!C10
 CARB7,1,carb7,xx,xx,xx,0,0,0,xx,carbonyl,,!C0
 CARB10,1,carb10,xx,xx,xx,0,0,0,xx,carbonyl,,!C4
 CARB13,1,carb13,xx,xx,xx,0,0,0,xx,carbonyl,,!C0
@@ -236,6 +237,6 @@ pOC,1,poc,12.01,PmfS,Pmf,0,0,0,xx,PMFINE,,!C0
 pSOA,1,psoa,12.01,PmfS,Pmf,0,0,0,xx,PMFINE,,!C0
 pMIN,1,pmin,1,Pmc,Pmc,0,0,0,xx,PMCO,,!C0
 pOTH,1,poth,1,Pmc,Pmc,0,0,0,xx,PMCO,,!C0
-Rn222,1,rn222,222,xx,xx,0,0,0,xx,other,,!C0
-Pb210,1,pb210,210,xx,PmfS,0,0,0,xx,other;PMFINE,,!C0
+*Rn222,1,rn222,222,xx,xx,0,0,0,xx,other,,!C0
+*Pb210,1,pb210,210,xx,PmfS,0,0,0,xx,other;PMFINE,,!C0
 *,,,,,,,,,,,,

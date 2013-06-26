@@ -7,8 +7,7 @@
       BiomassBurningMapping = "FINNv1toEmChem09"
   integer, private, parameter :: &
     NBB_DEFS  = 15 & ! No mapping lines below
-   ,NBBSPECS  = 15 & ! No  unique FINN used
-   ,NCMSPECS  = 15   ! No EMEP chemical mech specs used
+   ,NEMEPSPECS  = 13   ! No EMEP chemical mech specs used
 
   !-----------------------------------------------------------------------!
   ! Column-1 gives FINNv1 species ,
@@ -20,6 +19,7 @@
   ! Column-4 gives EMEP species 
   !-----------------------------------------------------------------------!
 
+  !     BBname    unitsfac frac  emep:
   type(bbtype), private, dimension(NBB_DEFS) :: FF_defs = (/ &
     bbtype("CO  ",0.028 , 1.000, CO          ) &
    ,bbtype("NO  ",0.030 , 1.000, NO          ) &

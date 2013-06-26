@@ -13,7 +13,7 @@
 #     mpiprocs=number of MPI threads per node. For 64 processors:
 ##PBS -l select=2:ncpus=32:mpiprocs=32:mem=8gb
 #Stallo
-#PBS -lnodes=4:ppn=16
+#PBS -lnodes=2:ppn=16
 # wall time limit of run
 #PBS -lwalltime=00:40:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
@@ -99,8 +99,8 @@ die "Must choose STALLO **or** VILJE !\n"
   unless $STALLO+$VILJE==1;
 my $MAKEMODE=0;  # make EMEP2011, make SR-EMEP2011
 
-my ( $testv, $Chem, $exp_name, $GRID ) = ( "2617", "EmChem09soa", "EMEPSTD", "EECCA" );
-#   ( $testv, $Chem, $exp_name, $GRID ) = ( "testc", "EmChem09", "TESTS", "RCA" );
+my ( $testv, $Chem, $exp_name, $outputs, $GRID ) = ( "2623", "EmChem09soa", "EMEPSTD", "EMEPSTD", "EECCA" );
+#   ( $testv, $Chem, $exp_name, $outputs, $GRID ) = ( "testcri2", "CRI_v2_R5", "CRITEST", "EMEPSTD", "EECCA" );
 
 #eg ( $testv, $Chem, $exp_name, $GRID ) = ( "tests", "EmChem09", "TESTS", "RCA" );
 #$Chem: EmChem09soa, EmChem09, CRI_v2_R5
@@ -489,7 +489,7 @@ $month_days[2] += leap_year($year);
 my $mm1 ="06";      # first month, use 2-digits!
 my $mm2 ="06";      # last month, use 2-digits!
 my $dd1 =  1;       # Start day, usually 1
-my $dd2 =  0;       # End day (can be too large; will be limited to max number of days in the month)
+my $dd2 =  1;       # End day (can be too large; will be limited to max number of days in the month)
                     # put dd2=0 for 3 hours run/test.
 # Allways runn full year on benchmark mode
 ($mm1,$mm2,$dd1,$dd2)=("01","12",1,31) if (%BENCHMARK);
@@ -752,7 +752,7 @@ foreach my $scenflag ( @runs ) {
   # NML namelist options.
   die "No CONFIG $exp_name" unless -f "$ProgDir/config_$exp_name.nml";
   $ifile{"$ProgDir/config_$exp_name.nml"} = "config_emep.nml";
-  $ifile{"$ProgDir/config_Outputs_$exp_name.nml"} = "config_Outputs.nml";
+  $ifile{"$ProgDir/config_Outputs_$outputs.nml"} = "config_Outputs.nml";
 
 # First, emission files are labelled e.g. gridSOx, which we assign to
 # emislist.sox to ensure compatability with the names (sox,...) used
@@ -864,6 +864,8 @@ print "TESTING PM $poll $dir\n";
     if ( $Chem eq "EmChem09" ) { # e.g. when PM25 is not split, e.g. RCA, make EMCHEM09
       $ifile{"$SplitDir/emissplit.specials.$poll"} = "emissplit.specials.$poll"
       if( -e "$SplitDir/emissplit.specials.$poll" );
+    } elsif ( $Chem eq "CRI_v2_R5" ) { # e.g. TSAP
+       print "NO SPECIALS in EMISSPLIT for $Chem DIR was $SplitDir\n";
     } elsif ( -e "$timeseries/emissplit.$Specials.$poll.$iyr_trend" ) { # e.g. TSAP
       $ifile{"$timeseries/emissplit.$Specials.$poll.$iyr_trend"} =
              "emissplit.specials.$poll"

@@ -651,16 +651,15 @@ rcemis:C2H5OH                         = C2H5OH ;
 rcemis:NPROPOL                        = NPROPOL ;
 rcemis:IPROPOL                        = IPROPOL ;
 rcemis:APINENE                        = APINENE ; # Anthropogenic
-rcemis:BPINENE                        = BPINENE ; # Anthropogenic
+*TMP rcemis:BPINENE                        = BPINENE ; # Anthropogenic
 *
 * <----------- Biogenic/natural emissions ----------------------------->
-rcbio(BIO_ISOP,k)                       = C5H8    ;
-* Dec 2011. We keep only isoprene for Garry's paper:
-*SKIP rcbio(BIO_TERP,k)                       = APINENE ;
-* But add Soil NO
-rcbio(BIO_SOILNO,k)                       = NO ;
-rc_Rn222(k)                             = Rn222    ;
-
+*emisextra:C5H8,APINENE,NO
+rcbio:C5H8                       = C5H8    ;
+rcbio:APINENE                    = APINENE ;
+rcbio:NO                         = NO ;
+*FEB2012 rc_Rn222(k)                                = Rn222    ;
+*FEB2012 rc_Rnwater(k)                             = Rnwater    ;
 *
 * Add ammonia
 * FUTURE rcnh3(k)                          = NH3 ;  # hbNH3
