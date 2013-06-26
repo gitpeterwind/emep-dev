@@ -154,6 +154,11 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+26 June 2013  Dave  2623
+
+Radiation_ml: added units for PAR (a user asked what they were)
+              and slightly more doxygen-friendly comment indicators
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 25 June 2013  Peter 2622
 
 NetCDF_ml: ReadTimeCDF recognise times unit 'day as %Y%m%d.%f'
