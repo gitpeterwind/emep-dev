@@ -432,7 +432,8 @@ contains
     integer :: status,iglobal,jglobal,info,South_pole,North_pole,Ibuff(2)
     real :: ndays(1),x1,x2,x3,x4,P0
     character (len = 50) :: timeunit
- 
+    logical::found_hybrid=.false.
+
     allocate(xm_global(-1:GIMAX+2,-1:GJMAX+2))
     allocate(xm_global_j(-1:GIMAX+2,-1:GJMAX+2))
     allocate(xm_global_i(-1:GIMAX+2,-1:GJMAX+2))
@@ -588,6 +589,12 @@ contains
           A_bnd=P0*A_bnd!different definition in modell and grid_Def
           call check(nf90_inq_varid(ncid = ncFileID, name = "hybi", varID = varID))                 
           call check(nf90_get_var(ncFileID, varID, B_bnd ))          
+          write(*,*)"Hybrid vertical coordinates, P at levels boundaries:"
+          do k=1,KMAX_MID+1
+44           FORMAT(i4,F12.2)
+             write(*,44)k, A_bnd(k)+P0*B_bnd(k)
+          enddo
+          found_hybrid=.true.
        else
           call check(nf90_get_var(ncFileID, varID, sigma_mid ))
        endif
@@ -612,7 +619,8 @@ contains
     enddo
     sigma_bnd(1) = 0.
 
-    if(Grid_Def_exist)then
+    CALL MPI_BCAST(found_hybrid,1,MPI_LOGICAL,0,MPI_COMM_WORLD,INFO)
+    if(found_hybrid.or.Grid_Def_exist)then
        CALL MPI_BCAST(A_bnd,8*(KMAX_MID+1),MPI_BYTE,0,MPI_COMM_WORLD,INFO)
        CALL MPI_BCAST(B_bnd,8*(KMAX_MID+1),MPI_BYTE,0,MPI_COMM_WORLD,INFO)
        CALL MPI_BCAST(A_mid,8*KMAX_MID,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
