@@ -42,12 +42,13 @@ implicit none
 integer ::i,j,n
 character(len=120) :: innfil = '', utfil = ''
 character(len=120), dimension(12)  :: args
-character(len=80)  :: comp = ''
+character(len=80)  :: comp = '', fltfmt = "es15.7", ofmt  ! default outout format
 character(len=12)  :: proj  = 'PS' ! PS or lonlat
 logical ::  print_indices   = .true.  ! Prints i, j with output
 logical ::  print_lonlat    = .false. ! Prints lonlat with output
 logical ::  skip_fillvalue  = .false. !Skip FillValues (assumed -1.0e10)
-integer            :: status
+logical ::  first_record    = .true. 
+integer :: status
 
 do i = 1, iargc()
      call getarg(i,args(i))
@@ -66,6 +67,7 @@ if ( args(1) == "-h" .or. iargc() == 0 ) then
      print *, " "
      print *, "Optional: "
      print *, "   -d  :  only print  data in output, not i,j"
+     print *, "   -f  :  format for output of numbers, e.g. es10.3, f8.3"
      print *, "   -o  :  name of output file, default is OUT_{comp}.txt"
      print *, "   -L  :  output lon, lat, data"
      print *, "   -v  :  print only valid values (assumed > 1-0e10 for now)"
@@ -77,6 +79,7 @@ else
       if ( args(i) == "-o" ) utfil  = args(i+1)
       if ( args(i) == "-c" ) comp   = args(i+1)
       if ( args(i) == "-d" ) print_indices = .false.
+      if ( args(i) == "-f" ) fltfmt = trim( args(i+1) )
       if ( args(i) == "-L" ) print_lonlat  = .true.
       if ( args(i) == "-v" ) skip_fillvalue  = .true.
       print *, "ARGS ", i, trim(args(i)), print_indices
@@ -95,20 +98,41 @@ write(*,*) innfil, utfil, print_indices
 call readnetcdfiles(innfil,comp)
 
 print *, "PROJ PROJ " , proj
+
+! Check for format errors, allowing for 1 space for +ve values, 2 for neg
+ofmt = "(" // trim(fltfmt) // ")" 
+write(ofmt,fmt=ofmt) max( 10*maxval(field), abs(100*minval(field)) )
+if( index(ofmt,"*") > 0 ) then
+  print *, "FMT ERROR: ", trim(fltfmt),  " too small for maxval+1: ", maxval(field)
+  stop 'Use -f option to change fmt'
+end if
+
+ofmt = "(a," // trim(fltfmt) // ")" 
+print ofmt, "MAX VALUE: ", maxval(field)
+print ofmt, "MIN VALUE: ", minval(field)
+
+!write(*,fmt=ofmt,iostat=status) "MAX VALUE: ", maxval(field)
+write(fltfmt,"(i0.0,a)") ntime, trim( fltfmt )  ! Start to build outout format
+ofmt = "(2f10.4," // trim(fltfmt) // ")"        ! default, reset if needed below
+
 open (10,file=utfil)
 do i=1,nx
 do j=1,ny
     if ( skip_fillvalue .and. field(i,j,1)< -1.0e10 ) cycle ! crude FillValue
-    if( print_lonlat .and. proj =="PS"  ) then ! Allow for 366 days of output
-        write (10,"(2f10.4,400es15.7)") xlong2d(i,j),xlat2d(i,j), (field(i,j,n), n=1, ntime)
-    else if( print_lonlat ) then ! Allow for 366 days of output
+    if( print_lonlat .and. proj =="PS"  ) then
+        write (10,ofmt) xlong2d(i,j),xlat2d(i,j), (field(i,j,n), n=1, ntime)
+    else if( print_lonlat ) then
         !print *, i, j, xlong(i),xlat(j), (field(i,j,n), n=1, ntime)
-        write (10,"(2f10.4,400es15.7)") xlong(i),xlat(j), (field(i,j,n), n=1, ntime)
-    else if( print_indices ) then ! Allow for 366 days of output
-        write (10,"(2i4,400es15.7)") i,j, (field(i,j,n), n=1, ntime)
+        write (10,fmt=ofmt) xlong(i),xlat(j), (field(i,j,n), n=1, ntime)
+    else if( print_indices ) then
+        if(first_record) ofmt = "(2i4," // trim(fltfmt) // ")"
+        write (10,fmt=ofmt) i,j, (field(i,j,n), n=1, ntime)
     else
-        write (10,"(400es15.7)") (field(i,j,n), n=1, ntime)
+        if(first_record) ofmt = "(" // trim(fltfmt) // ")"
+        write (10,fmt=ofmt) (field(i,j,n), n=1, ntime)
     endif
+    if( first_record) print *, "Output fmt:", trim(ofmt)
+    first_record=.false.
 enddo
 enddo
 close(10)
@@ -128,6 +152,7 @@ integer            :: ncid, ivar,crd
 integer            :: xdimID, ydimID,xvarID, yvarID
 logical            :: fexist
 integer            :: status
+real :: scalefac=1.0, addoffset=0.0
 real :: tmp
 
 !check whether file exists
@@ -203,6 +228,21 @@ allocate(field(nx,ny,ntime),stat=status)
 
 status = nf90_get_var(ncid, ivar, field(:,:,:) )
 if (status /= nf90_noerr) call handle_cdferr(' ',status)
+
+! get attribute scale_factor and add_offset
+status = nf90_get_att(ncid,ivar,"scale_factor",scalefac)
+if( status == 0 ) then
+  tmp = field(2,2,1)
+  field(:,:,:) =  field(:,:,:)*scalefac
+  print "(a,3es12.3)", "SCALE FAC "//trim(cdfname),  tmp, scalefac, field(2,2,1)
+end if
+
+status = nf90_get_att(ncid,ivar,"add_offset",addoffset)
+if( status == 0 ) then
+   field(:,:,:) =  field(:,:,:) + addofset
+   print "(a,3es12.3)", "SCALE ADD "//trim(cdfname),  tmp, addoffset, field(2,2,1)
+end if
+
 
 ! close the file
 status = nf90_close(ncid)
