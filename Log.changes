@@ -154,6 +154,14 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+1st August 2013  Peter  2627
+
+NetCDF_ml, (CreatenetCDFfile  _Eta):
+Always output lon and lat in netcdf output.
+
+removed "call GlobalPosition" (should not be in use anymore. Can be completely removed some day)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 31 July 2013  Dave  2626
 
 utils/Rd_emepcdf improved:
