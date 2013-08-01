@@ -154,6 +154,13 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+1st August 2013  Dave   2628
+
+utils/Rd_emepcdf.f90 - modified to stop when asking for 1-d variable. Case
+   arose with rotated latlon files. Coding needs more work, but wanted to
+   save.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 1st August 2013  Peter  2627
 
 NetCDF_ml, (CreatenetCDFfile  _Eta):

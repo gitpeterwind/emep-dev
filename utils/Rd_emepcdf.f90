@@ -17,7 +17,7 @@ module nxy
   integer, public, save :: nx, ny, ntime
   real, public, allocatable, dimension(:,:,:) :: field ! =>field(nx,ny,1)
   ! For simple lat, lon based projections we have 1-d arrays
-  real, public, allocatable, dimension(:) :: xlat , xlong
+  real, public, allocatable, dimension(:) :: xlat , xlong, var1d
   ! For stereographic we will need 2-D, and need a copy of field
   real, public, allocatable, dimension(:,:) :: xlat2d , xlong2d
   logical, public, save :: longlat = .false.
@@ -43,7 +43,7 @@ integer ::i,j,n
 character(len=120) :: innfil = '', utfil = ''
 character(len=120), dimension(12)  :: args
 character(len=80)  :: comp = '', fltfmt = "es15.7", ofmt  ! default outout format
-character(len=12)  :: proj  = 'PS' ! PS or lonlat
+character(len=12)  :: proj  = 'NotSet' ! PS or lonlat
 logical ::  print_indices   = .true.  ! Prints i, j with output
 logical ::  print_lonlat    = .false. ! Prints lonlat with output
 logical ::  skip_fillvalue  = .false. !Skip FillValues (assumed -1.0e10)
@@ -119,11 +119,13 @@ open (10,file=utfil)
 do i=1,nx
 do j=1,ny
     if ( skip_fillvalue .and. field(i,j,1)< -1.0e10 ) cycle ! crude FillValue
-    if( print_lonlat .and. proj =="PS"  ) then
+    !if( print_lonlat .and. proj =="NotSet"  ) then
+    ! Use 2d lat/lon for all projs. Should be okay.
+    if( print_lonlat ) then
         write (10,ofmt) xlong2d(i,j),xlat2d(i,j), (field(i,j,n), n=1, ntime)
-    else if( print_lonlat ) then
-        !print *, i, j, xlong(i),xlat(j), (field(i,j,n), n=1, ntime)
-        write (10,fmt=ofmt) xlong(i),xlat(j), (field(i,j,n), n=1, ntime)
+    !else if( print_lonlat ) then
+    !    !print *, i, j, xlong(i),xlat(j), (field(i,j,n), n=1, ntime)
+    !    write (10,fmt=ofmt) xlong(i),xlat(j), (field(i,j,n), n=1, ntime)
     else if( print_indices ) then
         if(first_record) ofmt = "(2i4," // trim(fltfmt) // ")"
         write (10,fmt=ofmt) i,j, (field(i,j,n), n=1, ntime)
@@ -142,7 +144,7 @@ end
 subroutine readnetcdfiles(filename,cdfname) !DS ,field)
 use netcdf
 use nxy, only : nx, ny, ntime, &
-                field, xlong, xlat, xlong2d, xlat2d, crds, proj
+                field, xlong, xlat, var1d, xlong2d, xlat2d, crds, proj
 
 !input
 character(len=*),intent(in) :: filename, cdfname
@@ -154,6 +156,9 @@ logical            :: fexist
 integer            :: status
 real :: scalefac=1.0, addoffset=0.0
 real :: tmp
+!ROT TEST. Had 1-d i, j  float arrays with rot lat/lon. Not sure
+!what that means though in real lat/long. Skip code for now.
+integer :: nvar1d
 
 !check whether file exists
 inquire(file=filename,exist=fexist)
@@ -226,8 +231,24 @@ allocate(field(nx,ny,ntime),stat=status)
 
 ! get the variable itself
 
-status = nf90_get_var(ncid, ivar, field(:,:,:) )
+!ROT LATLON TEST. Have to cope with i,j as coordinates (i=1..85 for RCA) and
+! i, j as variables.
+status = nf90_inquire_variable(ncid, ivar, ndims=nvar1d )
+print *, "TEST VAR NDIMS = ", nvar1d
+if( nvar1d == 1 ) then
+   stop 'Outout of 1-D varoables not coded yet'
+!  status = -1
+!  status = nf90_inquire_dimension(ncid, dimID=ivar, len=nvar1d ) !Obs! reset nvar1d
+!  allocate( var1d(nvar1d) )
+!  status = nf90_get_var(ncid, ivar, var1d(:) )
+!  if( status < 0 ) stop 'TOT ij failed'
+!  print *, "TEXTVAR RCA?",  nvar1d, var1d(1), var1d(2), var1d(nvar1d)
+!!ROT LATLON TEST
+else
+  status = nf90_get_var(ncid, ivar, field(:,:,:) )
+end if
 if (status /= nf90_noerr) call handle_cdferr(' ',status)
+print *, "TESTVAR POINTS?",  nvar1d, field(1,1,1), field(2,2,1)
 
 ! get attribute scale_factor and add_offset
 status = nf90_get_att(ncid,ivar,"scale_factor",scalefac)
