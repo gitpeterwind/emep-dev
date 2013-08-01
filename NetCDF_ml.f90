@@ -271,6 +271,41 @@ endif
     call check(nf90_def_dim(ncid = ncFileID, name = "i", len = GIMAXcdf, dimid = iDimID))
     call check(nf90_def_dim(ncid = ncFileID, name = "j", len = GJMAXcdf, dimid = jDimID))
 
+    scale_at_projection_origin=(1.+sin(ref_latitude*PI/180.))/2.
+    write(projection_params,fmt='(''90.0 '',F5.1,F9.6)')fi,scale_at_projection_origin
+    call check(nf90_put_att(ncFileID, nf90_global, "projection_params",projection_params))
+
+! define coordinate variables
+    call check(nf90_def_var(ncFileID, "i", nf90_float, dimids = iDimID, varID = iVarID) )
+    call check(nf90_put_att(ncFileID, iVarID, "standard_name", "projection_x_coordinate"))
+    call check(nf90_put_att(ncFileID, iVarID, "coord_axis", "x"))
+    call check(nf90_put_att(ncFileID, iVarID, "long_name", "EMEP grid x coordinate"))
+    call check(nf90_put_att(ncFileID, iVarID, "units", "km"))
+
+    call check(nf90_def_var(ncFileID, "i_EMEP", nf90_float, dimids = iDimID, varID = iEMEPVarID) )
+    call check(nf90_put_att(ncFileID, iEMEPVarID, "long_name", "official EMEP grid coordinate i"))
+    call check(nf90_put_att(ncFileID, iEMEPVarID, "units", "gridcells"))
+
+    call check(nf90_def_var(ncFileID, "j", nf90_float, dimids = jDimID, varID = jVarID) )
+    call check(nf90_put_att(ncFileID, jVarID, "standard_name", "projection_y_coordinate"))
+    call check(nf90_put_att(ncFileID, jVarID, "coord_axis", "y"))
+    call check(nf90_put_att(ncFileID, jVarID, "long_name", "EMEP grid y coordinate"))
+    call check(nf90_put_att(ncFileID, jVarID, "units", "km"))
+
+    call check(nf90_def_var(ncFileID, "j_EMEP", nf90_float, dimids = jDimID, varID = jEMEPVarID) )
+    call check(nf90_put_att(ncFileID, jEMEPVarID, "long_name", "official EMEP grid coordinate j"))
+    call check(nf90_put_att(ncFileID, jEMEPVarID, "units", "gridcells"))
+
+    call check(nf90_def_var(ncFileID, "lat", nf90_float, dimids = (/ iDimID, jDimID/), varID = latVarID) )
+    call check(nf90_put_att(ncFileID, latVarID, "long_name", "latitude"))
+    call check(nf90_put_att(ncFileID, latVarID, "units", "degrees_north"))
+    call check(nf90_put_att(ncFileID, latVarID, "standard_name", "latitude"))
+
+    call check(nf90_def_var(ncFileID, "lon", nf90_float, dimids = (/ iDimID, jDimID/), varID = longVarID) )
+    call check(nf90_put_att(ncFileID, longVarID, "long_name", "longitude"))
+    call check(nf90_put_att(ncFileID, longVarID, "units", "degrees_east"))
+    call check(nf90_put_att(ncFileID, longVarID, "standard_name", "longitude"))
+
   elseif(UsedProjection=='lon lat')then
     call check(nf90_def_dim(ncid = ncFileID, name = "lon", len = GIMAXcdf, dimid = iDimID))
     call check(nf90_def_var(ncFileID, "lon", nf90_double, dimids = iDimID, varID = iVarID) )
@@ -296,7 +331,18 @@ endif
     call check(nf90_put_att(ncFileID, jVarID, "long_name", "Rotated latitude"))
     call check(nf90_put_att(ncFileID, jVarID, "units", "degrees"))
     call check(nf90_put_att(ncFileID, jVarID, "axis", "Y"))
-   else !general projection
+
+    call check(nf90_def_var(ncFileID, "lat", nf90_float, dimids = (/ iDimID, jDimID/), varID = latVarID) )
+    call check(nf90_put_att(ncFileID, latVarID, "long_name", "latitude"))
+    call check(nf90_put_att(ncFileID, latVarID, "units", "degrees_north"))
+    call check(nf90_put_att(ncFileID, latVarID, "standard_name", "latitude"))
+
+    call check(nf90_def_var(ncFileID, "lon", nf90_float, dimids = (/ iDimID, jDimID/), varID = longVarID) )
+    call check(nf90_put_att(ncFileID, longVarID, "long_name", "longitude"))
+    call check(nf90_put_att(ncFileID, longVarID, "units", "degrees_east"))
+    call check(nf90_put_att(ncFileID, longVarID, "standard_name", "longitude"))
+
+ else !general projection
     call check(nf90_def_dim(ncid = ncFileID, name = "i", len = GIMAXcdf, dimid = iDimID))
     call check(nf90_def_dim(ncid = ncFileID, name = "j", len = GJMAXcdf, dimid = jDimID))
     call check(nf90_def_var(ncFileID, "i", nf90_float, dimids = iDimID, varID = iVarID) )
@@ -342,42 +388,6 @@ endif
 
   call check(nf90_put_att(ncFileID, nf90_global, "projection",UsedProjection))
 
-  if(UsedProjection=='Stereographic')then
-    scale_at_projection_origin=(1.+sin(ref_latitude*PI/180.))/2.
-    write(projection_params,fmt='(''90.0 '',F5.1,F9.6)')fi,scale_at_projection_origin
-    call check(nf90_put_att(ncFileID, nf90_global, "projection_params",projection_params))
-
-! define coordinate variables
-    call check(nf90_def_var(ncFileID, "i", nf90_float, dimids = iDimID, varID = iVarID) )
-    call check(nf90_put_att(ncFileID, iVarID, "standard_name", "projection_x_coordinate"))
-    call check(nf90_put_att(ncFileID, iVarID, "coord_axis", "x"))
-    call check(nf90_put_att(ncFileID, iVarID, "long_name", "EMEP grid x coordinate"))
-    call check(nf90_put_att(ncFileID, iVarID, "units", "km"))
-
-    call check(nf90_def_var(ncFileID, "i_EMEP", nf90_float, dimids = iDimID, varID = iEMEPVarID) )
-    call check(nf90_put_att(ncFileID, iEMEPVarID, "long_name", "official EMEP grid coordinate i"))
-    call check(nf90_put_att(ncFileID, iEMEPVarID, "units", "gridcells"))
-
-    call check(nf90_def_var(ncFileID, "j", nf90_float, dimids = jDimID, varID = jVarID) )
-    call check(nf90_put_att(ncFileID, jVarID, "standard_name", "projection_y_coordinate"))
-    call check(nf90_put_att(ncFileID, jVarID, "coord_axis", "y"))
-    call check(nf90_put_att(ncFileID, jVarID, "long_name", "EMEP grid y coordinate"))
-    call check(nf90_put_att(ncFileID, jVarID, "units", "km"))
-
-    call check(nf90_def_var(ncFileID, "j_EMEP", nf90_float, dimids = jDimID, varID = jEMEPVarID) )
-    call check(nf90_put_att(ncFileID, jEMEPVarID, "long_name", "official EMEP grid coordinate j"))
-    call check(nf90_put_att(ncFileID, jEMEPVarID, "units", "gridcells"))
-
-    call check(nf90_def_var(ncFileID, "lat", nf90_float, dimids = (/ iDimID, jDimID/), varID = latVarID) )
-    call check(nf90_put_att(ncFileID, latVarID, "long_name", "latitude"))
-    call check(nf90_put_att(ncFileID, latVarID, "units", "degrees_north"))
-    call check(nf90_put_att(ncFileID, latVarID, "standard_name", "latitude"))
-
-    call check(nf90_def_var(ncFileID, "lon", nf90_float, dimids = (/ iDimID, jDimID/), varID = longVarID) )
-    call check(nf90_put_att(ncFileID, longVarID, "long_name", "longitude"))
-    call check(nf90_put_att(ncFileID, longVarID, "units", "degrees_east"))
-    call check(nf90_put_att(ncFileID, longVarID, "standard_name", "longitude"))
-  endif
 
 ! call check(nf90_put_att(ncFileID, nf90_global, "vert_coord", vert_coord))
   call check(nf90_put_att(ncFileID, nf90_global, "period_type", &
@@ -472,13 +482,11 @@ endif
 
     if(DEBUG_NETCDF) write(*,*) "NetCDF: Starting long/lat defs"
     !Define longitude and latitude
-    call GlobalPosition !because this may not yet be done if old version of meteo is used
-    if(ISMBEGcdf+GIMAXcdf-1<=IIFULLDOM .and. JSMBEGcdf+GJMAXcdf-1<=JJFULLDOM)then
-      call check(nf90_put_var(ncFileID, latVarID, &
-        glat_fdom(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)))
-      call check(nf90_put_var(ncFileID, longVarID, &
-        glon_fdom(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)))
-    endif
+!    call GlobalPosition !because this may not yet be done if old version of meteo is used
+    call check(nf90_put_var(ncFileID, latVarID, &
+         glat_fdom(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)))
+    call check(nf90_put_var(ncFileID, longVarID, &
+         glon_fdom(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)))
 
   elseif(UsedProjection=='Rotated_Spherical')then
     do i=1,GIMAXcdf
@@ -489,6 +497,12 @@ endif
     enddo
     call check(nf90_put_var(ncFileID, iVarID, xcoord(1:GIMAXcdf)) )
     call check(nf90_put_var(ncFileID, jVarID, ycoord(1:GJMAXcdf)) )
+
+!Always write out lon and lat
+    call check(nf90_put_var(ncFileID, latVarID, &
+         glat_fdom(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)))
+    call check(nf90_put_var(ncFileID, longVarID, &
+         glon_fdom(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)))
 
   elseif(UsedProjection=='lon lat') then
     do i=1,GIMAXcdf
@@ -516,12 +530,11 @@ endif
    !write(*,*)'coord written'
 
    !Define longitude and latitude
-   if(ISMBEGcdf+GIMAXcdf-1<=IIFULLDOM .and. JSMBEGcdf+GJMAXcdf-1<=JJFULLDOM)then
      call check(nf90_put_var(ncFileID, latVarID, &
        glat_fdom(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)))
      call check(nf90_put_var(ncFileID, longVarID, &
        glon_fdom(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)))
-     endif
+
   endif
   if(DEBUG_NETCDF) write(*,*) "NetCDF: lon lat written"
 
@@ -614,6 +627,41 @@ character (len=*), parameter :: vert_coord='atmosphere_hybrid_sigma_pressure_coo
     call check(nf90_def_dim(ncid = ncFileID, name = "i", len = GIMAXcdf, dimid = iDimID))
     call check(nf90_def_dim(ncid = ncFileID, name = "j", len = GJMAXcdf, dimid = jDimID))
 
+    scale_at_projection_origin=(1.+sin(ref_latitude*PI/180.))/2.
+    write(projection_params,fmt='(''90.0 '',F5.1,F9.6)')fi,scale_at_projection_origin
+    call check(nf90_put_att(ncFileID, nf90_global, "projection_params",projection_params))
+
+! define coordinate variables
+    call check(nf90_def_var(ncFileID, "i", nf90_float, dimids = iDimID, varID = iVarID) )
+    call check(nf90_put_att(ncFileID, iVarID, "standard_name", "projection_x_coordinate"))
+    call check(nf90_put_att(ncFileID, iVarID, "coord_axis", "x"))
+    call check(nf90_put_att(ncFileID, iVarID, "long_name", "EMEP grid x coordinate"))
+    call check(nf90_put_att(ncFileID, iVarID, "units", "km"))
+
+    call check(nf90_def_var(ncFileID, "i_EMEP", nf90_float, dimids = iDimID, varID = iEMEPVarID) )
+    call check(nf90_put_att(ncFileID, iEMEPVarID, "long_name", "official EMEP grid coordinate i"))
+    call check(nf90_put_att(ncFileID, iEMEPVarID, "units", "gridcells"))
+
+    call check(nf90_def_var(ncFileID, "j", nf90_float, dimids = jDimID, varID = jVarID) )
+    call check(nf90_put_att(ncFileID, jVarID, "standard_name", "projection_y_coordinate"))
+    call check(nf90_put_att(ncFileID, jVarID, "coord_axis", "y"))
+    call check(nf90_put_att(ncFileID, jVarID, "long_name", "EMEP grid y coordinate"))
+    call check(nf90_put_att(ncFileID, jVarID, "units", "km"))
+
+    call check(nf90_def_var(ncFileID, "j_EMEP", nf90_float, dimids = jDimID, varID = jEMEPVarID) )
+    call check(nf90_put_att(ncFileID, jEMEPVarID, "long_name", "official EMEP grid coordinate j"))
+    call check(nf90_put_att(ncFileID, jEMEPVarID, "units", "gridcells"))
+
+    call check(nf90_def_var(ncFileID, "lat", nf90_float, dimids = (/ iDimID, jDimID/), varID = latVarID) )
+    call check(nf90_put_att(ncFileID, latVarID, "long_name", "latitude"))
+    call check(nf90_put_att(ncFileID, latVarID, "units", "degrees_north"))
+    call check(nf90_put_att(ncFileID, latVarID, "standard_name", "latitude"))
+
+    call check(nf90_def_var(ncFileID, "lon", nf90_float, dimids = (/ iDimID, jDimID/), varID = longVarID) )
+    call check(nf90_put_att(ncFileID, longVarID, "long_name", "longitude"))
+    call check(nf90_put_att(ncFileID, longVarID, "units", "degrees_east"))
+    call check(nf90_put_att(ncFileID, longVarID, "standard_name", "longitude"))
+
   elseif(UsedProjection=='lon lat')then
     call check(nf90_def_dim(ncid = ncFileID, name = "lon", len = GIMAXcdf, dimid = iDimID))
     call check(nf90_def_var(ncFileID, "lon", nf90_double, dimids = iDimID, varID = iVarID) )
@@ -639,6 +687,16 @@ character (len=*), parameter :: vert_coord='atmosphere_hybrid_sigma_pressure_coo
     call check(nf90_put_att(ncFileID, jVarID, "long_name", "Rotated latitude"))
     call check(nf90_put_att(ncFileID, jVarID, "units", "degrees"))
     call check(nf90_put_att(ncFileID, jVarID, "axis", "Y"))
+
+    call check(nf90_def_var(ncFileID, "lat", nf90_float, dimids = (/ iDimID, jDimID/), varID = latVarID) )
+    call check(nf90_put_att(ncFileID, latVarID, "long_name", "latitude"))
+    call check(nf90_put_att(ncFileID, latVarID, "units", "degrees_north"))
+    call check(nf90_put_att(ncFileID, latVarID, "standard_name", "latitude"))
+
+    call check(nf90_def_var(ncFileID, "lon", nf90_float, dimids = (/ iDimID, jDimID/), varID = longVarID) )
+    call check(nf90_put_att(ncFileID, longVarID, "long_name", "longitude"))
+    call check(nf90_put_att(ncFileID, longVarID, "units", "degrees_east"))
+    call check(nf90_put_att(ncFileID, longVarID, "standard_name", "longitude"))
 
   else !general projection
     call check(nf90_def_dim(ncid = ncFileID, name = "i", len = GIMAXcdf, dimid = iDimID))
@@ -689,43 +747,6 @@ character (len=*), parameter :: vert_coord='atmosphere_hybrid_sigma_pressure_coo
   call check(nf90_put_att(ncFileID, nf90_global, "lastmodified_hour", lastmodified_hour))
 
   call check(nf90_put_att(ncFileID, nf90_global, "projection",UsedProjection))
-
-  if(UsedProjection=='Stereographic')then
-    scale_at_projection_origin=(1.+sin(ref_latitude*PI/180.))/2.
-    write(projection_params,fmt='(''90.0 '',F5.1,F9.6)')fi,scale_at_projection_origin
-    call check(nf90_put_att(ncFileID, nf90_global, "projection_params",projection_params))
-
-! define coordinate variables
-    call check(nf90_def_var(ncFileID, "i", nf90_float, dimids = iDimID, varID = iVarID) )
-    call check(nf90_put_att(ncFileID, iVarID, "standard_name", "projection_x_coordinate"))
-    call check(nf90_put_att(ncFileID, iVarID, "coord_axis", "x"))
-    call check(nf90_put_att(ncFileID, iVarID, "long_name", "EMEP grid x coordinate"))
-    call check(nf90_put_att(ncFileID, iVarID, "units", "km"))
-
-    call check(nf90_def_var(ncFileID, "i_EMEP", nf90_float, dimids = iDimID, varID = iEMEPVarID) )
-    call check(nf90_put_att(ncFileID, iEMEPVarID, "long_name", "official EMEP grid coordinate i"))
-    call check(nf90_put_att(ncFileID, iEMEPVarID, "units", "gridcells"))
-
-    call check(nf90_def_var(ncFileID, "j", nf90_float, dimids = jDimID, varID = jVarID) )
-    call check(nf90_put_att(ncFileID, jVarID, "standard_name", "projection_y_coordinate"))
-    call check(nf90_put_att(ncFileID, jVarID, "coord_axis", "y"))
-    call check(nf90_put_att(ncFileID, jVarID, "long_name", "EMEP grid y coordinate"))
-    call check(nf90_put_att(ncFileID, jVarID, "units", "km"))
-
-    call check(nf90_def_var(ncFileID, "j_EMEP", nf90_float, dimids = jDimID, varID = jEMEPVarID) )
-    call check(nf90_put_att(ncFileID, jEMEPVarID, "long_name", "official EMEP grid coordinate j"))
-    call check(nf90_put_att(ncFileID, jEMEPVarID, "units", "gridcells"))
-
-    call check(nf90_def_var(ncFileID, "lat", nf90_float, dimids = (/ iDimID, jDimID/), varID = latVarID) )
-    call check(nf90_put_att(ncFileID, latVarID, "long_name", "latitude"))
-    call check(nf90_put_att(ncFileID, latVarID, "units", "degrees_north"))
-    call check(nf90_put_att(ncFileID, latVarID, "standard_name", "latitude"))
-
-    call check(nf90_def_var(ncFileID, "lon", nf90_float, dimids = (/ iDimID, jDimID/), varID = longVarID) )
-    call check(nf90_put_att(ncFileID, longVarID, "long_name", "longitude"))
-    call check(nf90_put_att(ncFileID, longVarID, "units", "degrees_east"))
-    call check(nf90_put_att(ncFileID, longVarID, "standard_name", "longitude"))
-  endif
 
 ! call check(nf90_put_att(ncFileID, nf90_global, "vert_coord", vert_coord))
   call check(nf90_put_att(ncFileID, nf90_global, "period_type", &
@@ -839,13 +860,11 @@ character (len=*), parameter :: vert_coord='atmosphere_hybrid_sigma_pressure_coo
 
     if(DEBUG_NETCDF) write(*,*) "NetCDF: Starting long/lat defs"
     !Define longitude and latitude
-    call GlobalPosition !because this may not yet be done if old version of meteo is used
-    if(ISMBEGcdf+GIMAXcdf-1<=IIFULLDOM .and. JSMBEGcdf+GJMAXcdf-1<=JJFULLDOM)then
-      call check(nf90_put_var(ncFileID, latVarID, &
-        glat_fdom(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)))
-      call check(nf90_put_var(ncFileID, longVarID, &
-        glon_fdom(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)))
-    endif
+!    call GlobalPosition !because this may not yet be done if old version of meteo is used
+    call check(nf90_put_var(ncFileID, latVarID, &
+         glat_fdom(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)))
+    call check(nf90_put_var(ncFileID, longVarID, &
+         glon_fdom(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)))
 
   elseif(UsedProjection=='Rotated_Spherical')then
     do i=1,GIMAXcdf
@@ -856,6 +875,12 @@ character (len=*), parameter :: vert_coord='atmosphere_hybrid_sigma_pressure_coo
     enddo
     call check(nf90_put_var(ncFileID, iVarID, xcoord(1:GIMAXcdf)) )
     call check(nf90_put_var(ncFileID, jVarID, ycoord(1:GJMAXcdf)) )
+
+!Always write out lon and lat
+    call check(nf90_put_var(ncFileID, latVarID, &
+         glat_fdom(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)))
+    call check(nf90_put_var(ncFileID, longVarID, &
+         glon_fdom(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)))
 
   elseif(UsedProjection=='lon lat') then
     do i=1,GIMAXcdf
@@ -883,12 +908,10 @@ character (len=*), parameter :: vert_coord='atmosphere_hybrid_sigma_pressure_coo
    !write(*,*)'coord written'
 
    !Define longitude and latitude
-   if(ISMBEGcdf+GIMAXcdf-1<=IIFULLDOM .and. JSMBEGcdf+GJMAXcdf-1<=JJFULLDOM)then
      call check(nf90_put_var(ncFileID, latVarID, &
        glat_fdom(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)))
      call check(nf90_put_var(ncFileID, longVarID, &
        glon_fdom(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)))
-     endif
   endif
   if(DEBUG_NETCDF) write(*,*) "NetCDF: lon lat written"
 
