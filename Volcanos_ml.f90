@@ -64,7 +64,7 @@ use TimeDate_ml,          only: nydays,&           ! No. days per year
                                 startdate,enddate,current_date,&
                                 make_timestamp,tdif_secs
 use TimeDate_ExtraUtil_ml,only: date2string,string2date
-use KeyValue_ml,          only: KeyVal
+use KeyValueTypes,          only: KeyVal
 
 implicit none
 private

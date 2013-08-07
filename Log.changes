@@ -154,6 +154,21 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+7th August 2013  Dave   2630
+
+KeyValueTypes - replaces KeyValues_ml
+
+   - adds funcionality for new key-value pair with (key, float) instead of
+  (key, value). Not used yet, but makes use of config easier, e.g. in ESX
+  config we can now have e.g. 
+esx%Kz_kwargs =
+  "Kza", 0.1
+  "za",  0.5
+
+followed in the relavent code by   za = KeyValue( kwargs, "za" )
+etc. Very useful :-)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 1st August 2013  Dave   2628
 
 utils/Rd_emepcdf.f90 - modified to stop when asking for 1-d variable. Case

@@ -68,7 +68,7 @@ use SmallUtils_ml,     only : find_index
 use Tabulations_ml,    only : tab_esat_Pa
 use TimeDate_ml,       only : current_date
 use TimeDate_ExtraUtil_ml,   only : date2string
-use KeyValue_ml,       only : KeyVal, KeyValue, LENKEYVAL
+use KeyValueTypes,       only : KeyVal, KeyValue, LENKEYVAL
 
 implicit none
 private                     ! stops variables being accessed outside

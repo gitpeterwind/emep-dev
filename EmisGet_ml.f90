@@ -53,7 +53,7 @@
   use GridValues_ml, only: glon, glat !AFRICA
   use Io_ml,             only: open_file, NO_FILE, ios, IO_EMIS, &
                                Read_Headers, read_line, PrintLog
-  use KeyValue_ml,       only: KeyVal
+  use KeyValueTypes,       only: KeyVal
   use ModelConstants_ml, only: NPROC, TXTLEN_NAME, DEBUG => DEBUG_GETEMIS, &
                                DEBUG_i, DEBUG_j, &
                                KMAX_MID, &

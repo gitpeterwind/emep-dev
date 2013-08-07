@@ -36,7 +36,7 @@ use GridValues_ml,  only: glat_fdom, glat    & ! latitude,
                           , debug_proc, debug_li, debug_lj
 use Io_ml,          only: open_file, ios, Read_Headers, Read2DN, IO_TMP &
                          ,IO_DO3SE
-use KeyValue_ml,    only: KeyVal,KeyValue, LENKEYVAL
+use KeyValueTypes,    only: KeyVal,KeyValue, LENKEYVAL
 use LandDefs_ml,    only: Init_LandDefs, LandType, LandDefs, &
                           STUBBLE, Growing_Season,&
                           NLANDUSE_EMEP

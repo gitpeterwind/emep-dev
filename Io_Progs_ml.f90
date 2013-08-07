@@ -43,7 +43,7 @@ use GridValues_ml,          only: i_local, j_local
 use Io_Nums_ml,             only: IO_TMP, IO_LOG
 use ModelConstants_ml,      only: DEBUG_IOPROG, DEBUG_i, DEBUG_j, DomainName, &
                                   MasterProc, IIFULLDOM, JJFULLDOM
-use KeyValue_ml,            only: KeyVal, KeyValue, LENKEYVAL
+use KeyValueTypes,            only: KeyVal, KeyValue, LENKEYVAL
 use Par_ml,                 only: me, limax,ljmax
 use SmallUtils_ml,          only: wordsplit, WriteArray
 use TimeDate_ml,            only: date,current_date

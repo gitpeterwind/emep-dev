@@ -1,8 +1,8 @@
-! <KeyValue_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
+!> MODULE  <KeyValueTypes.f90 - A component of the EMEP MSC-W Unified Eulerian
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2007-2011 met.no
+!*  Copyright (C) 2007-2013 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -25,7 +25,7 @@
 !*    You should have received a copy of the GNU General Public License
 !*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !*****************************************************************************! 
-module KeyValue_ml
+module KeyValueTypes
   
 ! =========================================================
 !  Routines for dealing with a fortran equivalent
@@ -39,12 +39,23 @@ module KeyValue_ml
 implicit none
 
   public :: KeyValue      !  returns value for given key
+  private :: KeyValue_txt  !  returns value for given key
+  private :: KeyValue_flt  !  returns value for given key
   public :: Self_Test
 
 
   !-- for Read_Headers we use a key-value pair, inspired by perl's hash arrays
 
   integer, public, parameter :: LENKEYVAL = 30   ! max length of key or value
+
+  interface KeyValue
+    module procedure KeyValue_txt, KeyValue_flt
+  end interface KeyValue
+
+  type, public :: KeyRealVal
+    character(len=LENKEYVAL) :: key
+    real                     :: num
+  end type KeyRealVal
 
   type, public :: KeyVal
     character(len=LENKEYVAL) :: key
@@ -57,7 +68,7 @@ implicit none
 contains
 
   !=======================================================================
-  function KeyValue(KV,txt)  result(val)
+  function KeyValue_txt(KV,txt)  result(val)
     type(KeyVal), dimension(:), intent(in) :: KV
      character(len=*), intent(in) :: txt
      character(len=LENKEYVAL) :: val
@@ -71,7 +82,23 @@ contains
          end if
      end do
        
-  end function KeyValue
+  end function KeyValue_txt
+  !=======================================================================
+  function KeyValue_flt(KV,txt)  result(num)
+    type(KeyRealVal), dimension(:), intent(in) :: KV
+     character(len=*), intent(in) :: txt
+     real     :: num
+     integer :: i
+
+     num = -999   ! not completely safe, NaN would be better
+     do i = 1, size(KV)
+         if( KV(i)%key == trim(txt) )  then
+             num = KV(i)%num
+             return
+         end if
+     end do
+       
+  end function KeyValue_flt
   !=======================================================================
   subroutine Self_Test()
      type(KeyVal), dimension(3) :: KeyValues = (/ &
@@ -83,4 +110,4 @@ contains
      print *, "Self_Test, First value: ", KeyValues(1)%value
      print *, "Self_Test, using function ", KeyValue(KeyValues,"Units")
   end subroutine Self_Test
-end module KeyValue_ml
+end module KeyValueTypes

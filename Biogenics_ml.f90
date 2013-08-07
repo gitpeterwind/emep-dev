@@ -59,7 +59,7 @@ module Biogenics_ml
   use ChemChemicals_ml,  only : species
   use GridValues_ml    , only : i_fdom,j_fdom, debug_proc,debug_li,debug_lj
   use Io_ml            , only : IO_FORES, open_file, ios, PrintLog, datewrite
-  use KeyValue_ml,       only : KeyVal,KeyValue
+  use KeyValueTypes,     only : KeyVal,KeyValue
   use LandDefs_ml,       only: LandType, LandDefs
   use LandPFT_ml,        only: MapPFT_LAI, pft_lai
   use Landuse_ml,        only : LandCover
