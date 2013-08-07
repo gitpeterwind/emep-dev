@@ -99,7 +99,7 @@ die "Must choose STALLO **or** VILJE !\n"
   unless $STALLO+$VILJE==1;
 my $MAKEMODE=0;  # make EMEP2011, make SR-EMEP2011
 
-my ( $testv, $Chem, $exp_name, $outputs, $GRID ) = ( "2630", "EmChem09soa", "EMEPSTD", "EMEPSTD", "EECCA" );
+my ( $testv, $Chem, $exp_name, $outputs, $GRID ) = ( "2631", "EmChem09soa", "EMEPSTD", "EMEPSTD", "EECCA" );
    ( $testv, $Chem, $exp_name, $outputs, $GRID ) = ( "test", "EmChem09", "EMEPSTD", "EMEPSTD", "EECCA" );
 #   ( $testv, $Chem, $exp_name, $outputs, $GRID ) = ( "testcri2", "CRI_v2_R5", "CRITEST", "EMEPSTD", "EECCA" );
 

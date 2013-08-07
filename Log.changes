@@ -154,7 +154,7 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-7th August 2013  Dave   2630
+7th August 2013  Dave   2630-2631
 
 KeyValueTypes - replaces KeyValues_ml
 
@@ -167,6 +167,21 @@ esx%Kz_kwargs =
 
 followed in the relavent code by   za = KeyValue( kwargs, "za" )
 etc. Very useful :-)
+
+Changes in:
+
+     Biogenics_ml.f90
+     EmisGet_ml.f90
+     Io_Progs_ml.f90
+     KeyValueTypes.f90   NEW
+     KeyValue_ml.f90     DEL
+     LandDefs_ml.f90
+     Landuse_ml.f90
+     Log.changes
+     Makefile.SRCS
+     Sites_ml.f90
+     Volcanos_ml.f90
+     run.pl
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 1st August 2013  Dave   2628
