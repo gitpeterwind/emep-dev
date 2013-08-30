@@ -490,10 +490,10 @@ endif
 
   elseif(UsedProjection=='Rotated_Spherical')then
     do i=1,GIMAXcdf
-      xcoord(i)= (i+ISMBEGcdf-1)*dx_rot+x1_rot
+      xcoord(i)= (i+ISMBEGcdf-2)*dx_rot+x1_rot
     enddo
     do j=1,GJMAXcdf
-      ycoord(j)= (j+JSMBEGcdf-1)*dx_rot+y1_rot
+      ycoord(j)= (j+JSMBEGcdf-2)*dx_rot+y1_rot
     enddo
     call check(nf90_put_var(ncFileID, iVarID, xcoord(1:GIMAXcdf)) )
     call check(nf90_put_var(ncFileID, jVarID, ycoord(1:GJMAXcdf)) )
