@@ -154,6 +154,21 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+25th September 2013  Peter   2635
+
+Bug. in metvar (Met_ml.f90), was:
+   call met_derived(nr) !compute derived meteo fields
+corrected to:
+   call met_derived(1) !compute derived meteo fields
+
+Because met_derived computes fields for "now" (nr=1).
+This caused jumps (but within normal values) in some fields 
+(u_mid, v_mid, u_ref, rho_surf, ustar_nwp, invL_nwp and values derived from these)
+
+This will change results!
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 19th September 2013  Peter   2634
 
 NetCDF_ml.f90: ReadField_CDF. 

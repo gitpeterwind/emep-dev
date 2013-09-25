@@ -1448,7 +1448,7 @@ if( USE_SOILWATER ) then
        endif
 
 
-    call met_derived(nr) !compute derived meteo fields
+    call met_derived(1) !compute derived meteo fields
 
     call BLPhysics(numt)
 
