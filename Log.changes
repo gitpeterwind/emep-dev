@@ -154,6 +154,18 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+26th September 2013  Peter   2636
+
+Temporary solution: the correction 2635 was not correct.
+In met_derived t2_nwp(i,j,1) -> t2_nwp(i,j,nt)
+
+In metvar, call met_derived twice, so that the fields computed in met_derived 
+are pointing to "now" after metvar:
+    call met_derived(nr) !compute derived meteo fields used in BLPhysics
+    call BLPhysics(numt)
+    call met_derived(1) !compute derived meteo fields for nr=1 "now"
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 25th September 2013  Peter   2635
 
 Bug. in metvar (Met_ml.f90), was:

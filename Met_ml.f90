@@ -1448,11 +1448,13 @@ if( USE_SOILWATER ) then
        endif
 
 
-    call met_derived(1) !compute derived meteo fields
+    call met_derived(nr) !compute derived meteo fields used in BLPhysics
 
     call BLPhysics(numt)
 
-  end subroutine metvar
+    call met_derived(1) !compute derived meteo fields for nr=1 "now"
+
+ end subroutine metvar
 
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
@@ -1627,7 +1629,7 @@ if( USE_SOILWATER ) then
 
     forall( i=1:limax, j=1:ljmax )
      invL_nwp(i,j)  = KARMAN * GRAV * fh(i,j,nt) & ! - disliked by gfortran
-            / (CP*rho_surf(i,j) * ustar_nwp(i,j)**3 * t2_nwp(i,j,1) )
+            / (CP*rho_surf(i,j) * ustar_nwp(i,j)**3 * t2_nwp(i,j,nt) )
     end forall
 
     where ( invL_nwp < -1.0 ) 
