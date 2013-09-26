@@ -45,15 +45,16 @@ module Met_ml
 !    BLPhysics(numt)   3h            metvar, after met_derived
 ! 
 ! Alt:
-!  Unimod  do numt = 1, ....
+!  Unimod  do numt = 2, ....
 !              call MeteoRead - puts data into nr
 !              call metvar(numt)
-!                    call met_derived      uses q(...,1)
+!                    call met_derived(nr=2)      uses q(...,nr=2) (future)
 !                    call BLPhysics(numt)  
+!                    call met_derived(nr=1)      uses q(...,nr=1) (now)
 !              call phyche(numt) ... do i = 1, nstep
 !                    chemistry stuff
 !                    call metint 
-!                          call met_derived
+!                          call met_derived(nr=1)
 !  metvar - This routines postprocess the meteo fields:
 !     ! Unit changes, special definitions etc...
 ! 
