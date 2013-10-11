@@ -231,7 +231,7 @@ BIOAER,1,bioaer,xx,xx,xx,0,0,0,xx,SOA,,!C0
 SO4,1,SO4,96.06,PmfS,Pmf,8.5,0,0,xx,PMFINE;SOX;AOD,,!C0
 NH4_f,1,NH4,18.01,PmfN,Pmf,8.5,0,0,xx,PMFINE;RDN;AOD,,!C0
 NO3_f,1,NO3,62,PmfN,Pmf,8.5,0,0,xx,PMFINE;OXN;SIA;AOD,,!C0
-NO3_c,1,NO3,62,Pmc,Pmc,0,0,0,xx,PMCO;PM10;OXN;SIA,,!C0
+NO3_c,1,NO3,62,Pmc,Pmc,0,0,0,xx,PMCO;PM10;OXN;SIA;AOD,,!C0
 pEC,1,pec,35.45,PmfS,Pmf,0,0,0,xx,PMFINE,,!C0
 pOC,1,poc,12.01,PmfS,Pmf,0,0,0,xx,PMFINE,,!C0
 pSOA,1,psoa,12.01,PmfS,Pmf,0,0,0,xx,PMFINE,,!C0

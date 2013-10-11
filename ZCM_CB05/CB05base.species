@@ -78,8 +78,8 @@ SO2,1,SO2,64.06,SO2,SO2,0,0,0,xx,SOx,!
 CH4,1,CH4,16.04,xx,xx,0,0,0,xx,xx,,methane,!
 NH3,1,NH3,17.03,NH3,NH3,0,0,0,xx,RDN,!
 SO4,1,SO4,96.06,PMfS,SO4,8.5,0,0,xx,SOx;PM;AOD,!
-NH4_f,1,NH4,18.01,PMfN,PMf,0,0,0,xx,PM;RDN,!
-NO3_f,1,NO3,62.00,PMfN,PMf,0,0,0,xx,PM;OXN,!
-NO3_c,1,NO3,62.00,PMfN,PMf,0,0,0,xx,PM;OXN,!
+NH4_f,1,NH4,18.01,PMfN,PMf,0,0,0,xx,PM;RDN;AOD,!
+NO3_f,1,NO3,62.00,PMfN,PMf,0,0,0,xx,PM;OXN;AOD,!
+NO3_c,1,NO3,62.00,PMfN,PMf,0,0,0,xx,PM;OXN;AOD,!
 *ISOTOPES Rn222,1,rn222,222.00,xx,xx,0,0,0,xx,,,other,!
 *ISOTOPES Pb210,1,pb210,210.00,PMfS,PMf,0,0,0,xx,xx,,other,!

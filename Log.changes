@@ -154,6 +154,37 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+11th October 2013  Alvaro   2638
+
+AOD calculations free of iadv_*/spec_* indexes:
+  The previous version of AOD_PM_ml, developed specifically for EmChem09soa,
+  made extensive usage of iadv_*/spec_* indexes to avoid hard-codded indexes.
+  The new version gives almost identical results (diff<2.06e-5).
+  I tried to cover all chem. mec., but can not be sure
+  as the current implementation relies on AOD_GROUP and the variable names.
+
+AOD_PM_ml:
+  Rewrite routine avoiding iadv_*/spec_* indexes.
+  Instead use the AOD_GROUP and variable names on a case statement.
+  Work is still needed in order to remove explicit references to the variable
+  names/indexes.
+
+ZCM_EmChem09/EmChem09base.species,ZCM_EmChem09/PMmass.species,
+ZCM_EmChem09soa/VBS_nonvolatile.species,
+ZCM_vbs_tests/VBS_help.species,ZCM_vbs_tests/VBS_help_Detailed.species
+ZCM_CRI_v2_0/CRI_v2_0base.species,ZCM_CRI_v2_R5/CRI_v2_R5base.species
+ZCM_CB04/CB04base.species,ZCM_CB05/CB05base.species:
+  The new wet extinction coefficient calculation (wetExtC function in AOD_PM_ml)
+  relies on the AOD_GROUP. Therefore one must ensure that all variables
+  involved belong to this GROUP.
+
+Derived_ml:
+  remove unused iadv_*/spec_* indexes
+
+AODrh_PM_ml:
+  Old version of AOD_PM_ml. Delete redundant module.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26th September 2013  Peter   2637
 
 Temporary solution: the correction 2635 was not correct.

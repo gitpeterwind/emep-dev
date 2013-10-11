@@ -33,6 +33,6 @@ NONVOL_BGNDOC,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
 NONVOL_FFIREOC25,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
 "***************************************************"
 "** do not include PART_OM in PM10 PMFINE to avoid double-count"
-PART_OM_F,1,sumom,1.,xx,xx,0,0,0,xx,PCM_HELP;PMFINE;PM10,,! Includes OM
+PART_OM_F,1,sumom,1.,xx,xx,0,0,0,xx,PCM_HELP;PMFINE;PM10;AOD,,! Includes OM
 "***************************************************"
 
