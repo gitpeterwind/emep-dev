@@ -67,7 +67,7 @@ logical, save ::      &
 
 integer, parameter :: &
   NMAX_VENT = 24, & ! Max number of locations on processor/subdomain
-  NMAX_ERUP = 90    ! Max number of events def (~3 months per location)
+  NMAX_ERUP =360    ! Max number of events def per location (~3 months of 6 hr.records)
 
 integer, save ::   & ! No. of ... found on processor/subdomain
   nvent              = -1,  & ! Emergency locations

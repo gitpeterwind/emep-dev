@@ -68,9 +68,10 @@ type, public :: group_umap
   real,   pointer,dimension(:) :: uconv=>null() ! conversion factor
 endtype group_umap
 
-type(umap), public, save :: unit_map(19)=(/&
+type(umap), public, save :: unit_map(20)=(/&
 ! Air concentration
   umap("mix_ratio","mol/mol",1.0),&  ! Internal model unit
+  umap("mass_ratio","kg/kg",1.0/ATWAIR), &  ! mass mixing ratio
   umap("ppb" ,"ppb" ,PPBINV),&
   umap("ppbh","ppb h",s2h  ),&  ! PPBINV already included in AOT calculations
   umap("ug" ,"ug/m3" ,ugXm3),&  ! ug* units need to be further multiplied
@@ -114,7 +115,7 @@ subroutine Init_Units()
 
  do i=1,size(unit_map)
    select case (unit_map(i)%utxt)
-    case("ug","mg","uBq","uBqh","mBq","ugm2")
+    case("ug","mg","uBq","uBqh","mBq","ugm2","mass_ratio")
       uconv_spec = species_adv%molwt
     case("ugC","mgC")
       uconv_spec = species_adv%carbons
@@ -211,8 +212,10 @@ function Units_Scale(txtin,iadv,unitstxt,volunit,needroa,debug_msg) result(units
     txt=txt(1:2)
   case("micro g/m3")
     txt="ug"
-  case("mol/mol","mole mole-1","mixratio")
+  case("mol/mol","mole mole-1","mixratio","vmr")
     txt="mix_ratio"
+  case("kg/kg","kg kg-1","massratio","mmr")
+    txt="mass_ratio"
   case("ppbv","ppbV")
     txt="ppb"
   endselect

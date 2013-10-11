@@ -17,10 +17,7 @@ LDFLAGS =  $(F90FLAGS) $(LLIB) $(LIBS)
 MACHINE ?= stallo
 DEBUG ?= no
 ifeq ($(MACHINE),stallo)
-# MODULES = intel-compiler/11.1   openmpi/1.4   netcdf/4.1.1
-# MODULES = intel-compiler/12.1.2 openmpi/1.4.4 netcdf/4.1.3
-# MODULES = intel/13.0.0          openmpi/1.6.2 netcdf/4.2.1.1
-  MODULES = intel/13.0            openmpi/1.6.2 netcdf/4.2.1.1
+  MODULES = intel/13.0 openmpi/1.6.2 netcdf/4.2.1.1
   LIBS += -lnetcdf -lnetcdff
   INCL += $(NETCDF_ROOT)/include
   LLIB += $(NETCDF_ROOT)/lib
@@ -29,28 +26,20 @@ ifeq ($(MACHINE),stallo)
   LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
 else ifeq ($(MACHINE),gstallo)
   # Needs module swap intel gcc/4.7.2
-  NETCDF_ROOT=/global/apps/netcdf/4.2.1.1/gcc/4.7.2
   MODULES = gcc/4.7.2 openmpi/1.6.2 netcdf/4.2.1.1
   LIBS += -lnetcdf -lnetcdff
-  #INCL +=   /usr/include 
-  #LLIB +=   -L/usr/lib  
-  INCL += $(NETCDF_ROOT)/include
+  INCL += $(NETCDF_ROOT)/include $(filter /global/apps/openmpi%,$(subst :, ,$(CPATH)))
   LLIB += $(NETCDF_ROOT)/lib
-  INCL += /global/apps/openmpi/1.6.2/gcc/4.7.2/include
   MAKEDEPF90=/home/mifapw/bin/makedepf90
   LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
   DEBUG_FLAGS =
   OPT_FLAGS =
-  #LD = gfortran
-  #F90 = gfortran
   F90FLAGS = -fbacktrace -fdefault-real-8 -O3 -Wall -ffixed-line-length-none -ffree-line-length-none \
     -fbounds-check -pedantic -fimplicit-none
   FC=mpif90
   LD=mpif90
 else ifeq ($(MACHINE),vilje)
-# MODULES = intelcomp/11.1.073   mpt/2.04 netcdf/4.1.3-intel.11.1.073
-# MODULES = intelcomp/12.0.5.220 mpt/2.06 netcdf/4.1.3
-  MODULES = intelcomp/13.0.1     mpt/2.06 netcdf/4.3.0
+  MODULES = intelcomp/13.0.1 mpt/2.06 netcdf/4.3.0
   LIBS += -lnetcdf -lnetcdff
   INCL += $(NETCDF_PREFIX)/include
   LLIB += $(NETCDF_PREFIX)/lib
@@ -63,7 +52,7 @@ else ifeq ($(MACHINE),byvind)
   LLIB += /software/apps/netcdf/4.1.2/i1210/lib
 # MAKEDEPF90=????
   LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
-else ifeq ($(MACHINE),abel) # titan --> abel
+else ifeq ($(MACHINE),abel)
   MODULES = intel/2011.10 openmpi.intel/1.6.1 netcdf.intel/4.2.1.1
   INTEL  = /cluster/software/VERSIONS/$(subst /,-,$(filter intel%,$(MODULES)))
   NETCDF = /cluster/software/VERSIONS/$(subst /,-,$(filter netcdf%,$(MODULES)))
@@ -71,56 +60,6 @@ else ifeq ($(MACHINE),abel) # titan --> abel
   INCL += $(NETCDF)/include $(INTEL)/include/intel64
   LLIB += -L$(NETCDF)/lib -L$(INTEL)/lib/intel64
   MAKEDEPF90=/usit/$(MACHINE)/u1/mifapw/bin/makedepf90
-else ifeq ($(MACHINE),njord)
-  LIBS += -lnetcdf
-  INCL += /home/ntnu/usrlocal/netcdf/netcdf-3.6.1/include
-  LLIB += -L/home/ntnu/usrlocal/netcdf/netcdf-3.6.1/lib -L/usr/lib
-  MAKEDEPF90=/home/ntnu/mifahik/local/bin/makedepf90
-  F90 = mpxlf90_r
-  F90FLAGS = -q64 -qrealsize=8 -O3 -qarch=pwr5 -qtune=pwr5
-else ifeq ($(MACHINE),RSS)
-  LIBS += -lnetcdf
-  INCL += /usr/local/netcdf/include
-  LLIB += -L/usr/local/netcdf/lib
-  MAKEDEPF90 = /home/davids/local/bin/makedepf90
-  LD = gfortran
-  F90FLAGS = -fdefault-real-8 -O3 -Wall -ffixed-line-length-none -fbacktrace \
-    -fbounds-check -pedantic -fimplicit-none
-else ifeq ($(MACHINE),EeePC)
-  LIBS += -lnetcdf
-  INCL += /home/davids/WRF_2009/netcdf4/include
-  LLIB += -L/home/davids/WRF_2009/netcdf4/lib
-  MAKEDEPF90 = /home/davids/local/bin/makedepf90
-  LD = gfortran
-  F90FLAGS = -fdefault-real-8 -O3 -Wall -ffixed-line-length-none -fbacktrace \
-    -fbounds-check -pedantic -fimplicit-none
-else ifeq ($(MACHINE),TP)
-  LIBS += -lnetcdf
-  INCL += /home/davids/local/netcdf-4.0.1/include
-  LLIB += -L/home/davids/local/netcdf-4.0.1/lib
-  MAKEDEPF90 = /home/davids/local/bin/makedepf90
-  LD = gfortran
-  F90FLAGS = -fdefault-real-8 -O3 -Wall -ffixed-line-length-none -fbacktrace \
-    -fbounds-check -pedantic -fimplicit-none
-else ifeq ($(MACHINE),hardy)  #ubuntu 8.04
-  LIBS += -lnetcdff -lnetcdf
-  INCL += /usr/include
-  LLIB += -L/usr/lib
-  MAKEDEPF90 = $(EMEPLOCAL)/bin/makedepf90
-  LD = gfortran
-  DEBUG_FLAGS =
-  OPT_FLAGS =
-  F90FLAGS = -fdefault-real-8 -O3 -Wall -ffixed-line-length-none -ffree-line-length-none \
-    -fbounds-check -pedantic -fimplicit-none
-else ifeq ($(MACHINE),lucid)  #ubuntu 10.04
-  LIBS += -lnetcdff -lnetcdf
-  INCL +=   /opt/netcdf4.1.1/include/ /usr/include 
-  LLIB += -L/opt/netcdf4.1.1/lib    -L/usr/lib  
-  MAKEDEPF90 = $(EMEPLOCAL)/bin/makedepf90
-  LD = gfortran
-  DEBUG_FLAGS = -Wall -fbacktrace -fbounds-check -pedantic 
-  OPT_FLAGS = -O3  
-  F90FLAGS = -fdefault-real-8 -ffixed-line-length-none -ffree-line-length-none -fimplicit-none
 else ifeq ($(MACHINE),precise)  #ubuntu 12.04
   LIBS += -lnetcdff -lnetcdf
   INCL +=   /usr/include 
@@ -163,75 +102,64 @@ touchdepend:
 	touch .depend
 
 # Model/Config specific targets
-EMEP EMEP2010 EMEP2011 EMCHEM09 CRI_v2_R5 SR-EMEP SR-EMEP2010 SR-EMEP2011 \
+EMEP EMEP2010 EMEP2011 SR-EMEP SR-EMEP2010 SR-EMEP2011 EmChem09 CRI_v2_R5 \
 MACC MACC-EVA2010 MACC-EVA2011 SR-MACC eEMEP eEMEP2010 eEMEP2013:
 	ln -sf $(filter %.f90 %.inc,$+) . && \
-	$(MAKE) MACHINE=$(MACHINE) -j4 $(PROG)
+	$(MAKE) MACHINE=$(MACHINE) DEBUG=$(DEBUG) -j4 $(PROG)
 
 # My_* files pre-requisites
 EMEP EMEP2010 EMEP2011 MACC MACC-EVA2010 MACC-EVA2011 eEMEP2010: \
 	  ./ZD_OZONE/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
 	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_VBS/My_SOA_ml.f90 ./ZD_3DVar/My_3DVar_ml.f90
-# EmChem09 only:
-EMCHEM09 eEMEP eEMEP2013: \
-	  ./ZD_OZONE/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
-	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_OZONE/My_SOA_ml.f90 ./ZD_3DVar/My_3DVar_ml.f90
-# CRI_v2_R5 only:
-CRI_v2_R5: \
+# no SOA:
+EmChem09 CRI_v2_R5 eEMEP eEMEP2013: \
 	  ./ZD_OZONE/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
 	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_OZONE/My_SOA_ml.f90 ./ZD_3DVar/My_3DVar_ml.f90
 #For SR we use the small My_Derived
 SR-EMEP SR-EMEP2010 SR-EMEP2011 SR-MACC: \
 	  ./ZD_SR/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
 	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_VBS/My_SOA_ml.f90 ./ZD_3DVar/My_3DVar_ml.f90
+
 # GenChem config
 .SECONDEXPANSION:
-EMEP EMEP2010 EMEP2011 SR-EMEP SR-EMEP2010 SR-EMEP2011 \
-MACC MACC-EVA2010 MACC-EVA2011 SR-MACC eEMEP2010: modules $$@-GenChem-EmChem09soa
-eEMEP eEMEP2013: modules $$@-GenChem-EmChem09  # GenChem-Emergency not yet ready
-EMCHEM09: modules $$@-GenChem-EmChem09
-CRI_v2_R5: modules $$@-GenChem-CRI_v2_R5
-CRI_v2_R5-GenChem-%:
-	mk.GenChem    -r $* -f FINNv1 -e SeaSalt,Dust,Isotopes
-EMEP-GenChem-% EMCHEM09-GenChem-%:
-	mk.GenChem    -r $* -f FINNv1 -e SeaSalt,Dust,Isotopes
-EMEP2010-GenChem-%:
-	mk.GenChem -q -r $* -f FINNv1 -e SeaSalt,Dust,Isotopes -V 2bin,Eyjafj.ll
-EMEP2011-GenChem-%:
-	mk.GenChem -q -r $* -f FINNv1 -e SeaSalt,Dust,Isotopes -V 2bin,Grimsvotn
-MACC-GenChem-%:
-	mk.GenChem -q -r $* -f GFASv1 -e SeaSalt,Dust,Isotopes,Pollen
-MACC-EVA2010-GenChem-%:
-	mk.GenChem -q -r $* -f GFASv1 -e SeaSalt,Dust,Isotopes -V 2bin,Eyjafj.ll
-MACC-EVA2011-GenChem-%:
-	mk.GenChem -q -r $* -f GFASv1 -e SeaSalt,Dust,Isotopes -V 2bin,Grimsvotn
-SR-EMEP-GenChem-%:
-	mk.GenChem -q -r $* -f FINNv1 -e none
-SR-EMEP2010-GenChem-%:
-	mk.GenChem -q -r $* -f FINNv1 -e none -V 2bin,Eyjafj.ll
-SR-EMEP2011-GenChem-%:
-	mk.GenChem -q -r $* -f FINNv1 -e none -V 2bin,Grimsvotn
-SR-MACC-GenChem-%:
-	mk.GenChem -q -r $* -f GFASv1 -e none
-eEMEP-GenChem-%:
-	mk.GenChem -q -r $* -f GFASv1 -e SeaSalt,Dust -V 7bin,$(VENTS) -N $(NPPAS) -X $(NUCXS)
-eEMEP2010-GenChem-%:
-	mk.GenChem -q -r $* -f FINNv1 -e SeaSalt,Dust,Isotopes -V 2bin,Eyjafj.ll
-eEMEP2013-GenChem-%:
-	mk.GenChem -q -r $* -f GFASv1 -e none                  -N NorthKorea
+EMEP EMEP2010 EMEP2011:             GenChem-EMEP-EmChem09soa
+SR-EMEP SR-EMEP2010 SR-EMEP2011:    GenChem-SR-EMEP-EmChem09soa
+EmChem09 CRI_v2_R5:                 GenChem-EMEP-$$@
+MACC SR-MACC:                       GenChem-$$@-EmChem09soa
+eEMEP:                              GenChem-$$@-EmChem09     # GenChem-Emergency not yet ready
+MACC-EVA2010 MACC-EVA2011:          GenChem-MACCEVA-EmChem09soa
+eEMEP2010:                          GenChem-EMEP-EmChem09soa
+eEMEP2013:                          GenChem-SR-MACC-EmChem09soa
+
+GenChem%:
+	mk.GenChem $(GenChemOptions) -q #-h
+GenChem-%:          GenChemOptions += -r $(lastword $(subst -, ,$*))
+GenChem-EMEP-%:     GenChemOptions += -f FINNv1 -e SeaSalt,Dust,Isotopes
+GenChem-SR-EMEP-%:  GenChemOptions += -f FINNv1 -e none
+GenChem-MACC-%:     GenChemOptions += -f GFASv1 -e SeaSalt,Dust,Isotopes,Pollen
+GenChem-SR-MACC-%:  GenChemOptions += -f GFASv1 -e none
+GenChem-MACCEVA-%:  GenChemOptions += -f GFASv1 -e SeaSalt,Dust
+GenChem-eEMEP-%:    GenChemOptions += -f GFASv1 -e SeaSalt,Dust
+
+# Emergency options
+EMEP2010 SR-EMEP2010 MACC-EVA2010:  GenChemOptions += -V 2bin,Eyjafjoll
+EMEP2011 SR-EMEP2011 MACC-EVA2011:  GenChemOptions += -V 2bin,Grimsvotn
+eEMEP2010:                          GenChemOptions += -V 2bin,Eyjafjoll
+eEMEP2013:                          GenChemOptions += -N NorthKorea
 
 # eEMP Default Vents, NPPs & NUCs
-eEMEP-GenChem-%: VENTS ?= Vesuvius,Etna,Kr.suv.k,Katla,Askja
-eEMEP-GenChem-%: NPPAS ?= Olkiluoto,Loviisa,Kola,Leningrad,Ringhals,Forsmark,Oskarshamn,Torness,Sellafield
-eEMEP-GenChem-%: NUCXS ?= NorthKorea,Tehran
+eEMEP: VENTS ?= Vesuvius,Etna,Kr.suv.k,Katla,Askja
+eEMEP: NPPAS ?= Olkiluoto,Loviisa,Kola,Leningrad,Ringhals,Forsmark,Oskarshamn,Torness,Sellafield
+eEMEP: NUCXS ?= NorthKorea,Tehran
+eEMEP: GenChemOptions += -V 7bin,$(VENTS) -N $(NPPAS) -X $(NUCXS)
 
 # Data assimilation: Bnmc / 3DVar
 %-Bnmc %-3DVar: $$*
-	$(MAKE) MACHINE=$(MACHINE) -C ZD_3DVar/ $(@:$*-%=EXP_%)
+	$(MAKE) MACHINE=$(MACHINE) DEBUG=$(DEBUG) -C ZD_3DVar/ $(@:$*-%=EXP_%)
 
 # Archive: create $(PROG).tar.bz2
 $(PROG) archive: $(PROG)_$(shell date +%Y%m%d).tar.bz2
-%.tar.bz2: $(SRCS) *.inc Makefile Makefile.SRCS .depend *.pl mk.*
+%.tar.bz2: $(SRCS) Makefile Makefile.SRCS .depend $(wildcard *.inc *.pl mk.* *.nml)
 	@echo "Creating archive $@"; tar --dereference -cjf $@ $+
 
 # Check if intended modules are loaded

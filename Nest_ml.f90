@@ -107,11 +107,11 @@ integer ::istart,jstart,iend,jend ! Set on Nest_config namelist
 public  :: readxn
 public  :: wrtxn
 
+private
+
 logical, private, save :: mydebug =  .false.
 integer, private, save :: NHOURSAVE,NHOURREAD ! write/read frequency
 !if(NHOURREAD<NHOURSAVE) the data is interpolated in time
-
-private
 
 integer, parameter :: &
   max_string_length=200 ! large enough for paths to be set on Nest_config namelist
@@ -1034,6 +1034,10 @@ subroutine read_newdata_LATERAL(ndays_indate)
       status = nf90_get_att(ncFileID,VarID,"add_offset",add_offset)
       if(status==nf90_noerr) data=data+add_offset
       status = nf90_get_att(ncFileID,VarID,"units",units)
+      if(units=="1")then
+        if(index(adv_bc(bc)%varname,"vmr")>0)units="vmr"
+        if(index(adv_bc(bc)%varname,"mmr")>0)units="mmr"
+      endif
       if(status==nf90_noerr) then
         if(DEBUG_NEST.or.DEBUG_ICBC) write(*,*)&
           'Nest: variable '//trim(adv_bc(bc)%varname)//' has unit '//trim(units)
@@ -1216,6 +1220,10 @@ subroutine reset_3D(ndays_indate)
       status = nf90_get_att(ncFileID,VarID,"add_offset",add_offset)
       if(status==nf90_noerr) data=data+add_offset
       status = nf90_get_att(ncFileID,VarID,"units",units)
+      if(units=="1")then
+        if(index(adv_ic(n)%varname,"vmr")>0)units="vmr"
+        if(index(adv_ic(n)%varname,"mmr")>0)units="mmr"
+      endif
       if(status==nf90_noerr) then
         if(DEBUG_NEST) write(*,*)&
           'Nest: variable '//trim(adv_ic(n)%varname)//' has unit '//trim(units)

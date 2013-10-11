@@ -154,8 +154,32 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-11th October 2013  Alan Briolat + Dave   2639-2640
+11th October 2013  Alvaro   2642
 
+Clean up & small changes
+
+Makefile
+  Reorganize GenChem targets and remove obsolete MACHINE configurations.
+
+Emergency_ml
+  Increase max number of events def per location (NMAX_ERUP) to 360.
+  This should allow a 3 months eruptuon descroption with 6h records. 
+
+Units_ml
+  Add support for "mass_ratio" units.
+  Units_Scale process "kg/kg","kg kg-1","massratio","mmr" as "mass_ratio",
+  and "vmr" as "mix_ratio".
+
+Nest_ml
+  Add unit support for IFZ-MOZART BC files from FZ Jülich.
+  Variables ending in "vmr" (volume mix.rat.) and "mmr" (volume mix.rat.)
+  have units attribute "1".
+
+GlobalBCs_ml
+  Collect macehead_O3 corrections for each year into one parameter array.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+11th October 2013  Alan Briolat + Dave   2639-2640
 
 ZD_ESX added - for ESX development work.  This should not be used in standard
 EMEP work, but we are working towards an experimental version. Code will be
@@ -164,7 +188,6 @@ shared between EMEP and ESX as far as possible.
 (From ESX own's subversion 202)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
 11th October 2013  Alvaro   2638
 
 AOD calculations free of iadv_*/spec_* indexes:
