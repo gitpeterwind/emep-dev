@@ -32,8 +32,10 @@ contains
       dti     &! time step wanted [s]
      ,Vd      &! deposition velocity [m/s]
      ,Ve      &! escape velocity [m/s]
-     ,Fb      &! bottom boundary flux [g/(m2s)] (+ = down)
-     ,Ft       ! top    boundary flux [g/(m2s)] (+ = up)
+   ! Fluxes, should have units that match chem-solver, but per m2. Could be
+   ! molecules/m2/s or (for tests) unitless (#/m2/s), hence:
+     ,Fb      &! bottom boundary flux [X/(m2s)] (+ = down)
+     ,Ft       ! top    boundary flux [X/(m2s)] (+ = up)
 
    real, dimension(nz), intent(in) :: &
       D        &! 1st order source/sink coefficient [1/s]     = S1

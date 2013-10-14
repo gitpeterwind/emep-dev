@@ -22,8 +22,9 @@ program tester
 
   implicit none
 
-  character(len=100) :: msg = "ok", filename, sname
-  real    :: units
+  character(len=100) :: filename, sname
+  character(len=500) :: plotmsg
+  real    :: units, chem2Kz_units
   integer :: i,idspec, icspec, nprint
   logical :: first=.true.
   integer :: config_io
@@ -86,8 +87,10 @@ program tester
    select case ( esx%units )
    case ( "ppb" ) 
      units = 1.0e9/Zmet(1)%M   !! ppb at surface
+     chem2Kz_units = 1.0e6   ! #/cm2 -> #/m3 inside KzSolver
    case ( "-" ) 
      units = 1.0
+     chem2Kz_units = 1.0
    case default
      stop "DEFINE esx%units"
    end select
@@ -157,7 +160,7 @@ program tester
            associate ( dspec => esx%DiffSpecs(idspec) ) 
               icspec = dspec%ind
 
-              cz(:) = xChem( icspec, : )
+              cz(:) = xChem( icspec, : ) * chem2Kz_units
 
             !! TMP. We should have pollutant-specific gleaf values, but for now just do
 
@@ -176,7 +179,7 @@ program tester
                  Fb=dspec%Fb, Ft=dspec%Ft, fixedBC=esx%fixedBC, &
                  nSubSteps=nt, concn=cz, debug_level=esx%debug_Zdiff )
 
-              xChem(icspec,:) = cz(:)
+              xChem(icspec,:) = cz(:)/ chem2Kz_units
 
            end associate ! dspec
 
@@ -224,10 +227,11 @@ program tester
        call writetdata(filename,  tprint, esx%z(1:nz),  czprint( :,i, 1:nprint-1) )
 
        if ( esx%uses_plotting) then 
-         write(msg,"(9a)") trim( esx%plot_cmds ), " -i ", trim(filename), " -c ", trim(sname)
-         print *, "Plot cmds =", trim(msg)
+         write(plotmsg,"(9a)") trim( esx%plot_cmds ), " -i ", trim(filename),&
+            " -c ", trim(sname), " -o PlotResults"//trim(esx%exp_name) // "_" // trim(sname ) // ".png"
+         print *, "Plot cmds =", trim(plotmsg)
          !call system("cat "//trim(filename) )
-         call system(trim(msg))
+         call system(trim(plotmsg))
        end if
     end do
   end associate

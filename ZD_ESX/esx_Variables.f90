@@ -24,6 +24,7 @@ module esx_Variables
   integer, parameter, public :: ESX_MAXNOUT  = 10 ! No. output species
 
   !> For diffusing species we will allow Vd, Ve, Fb, Ft, so define a type
+  !! For units explanation, see config file.
 
   type DiffSpec_t
     character(len=30) :: name = '-'

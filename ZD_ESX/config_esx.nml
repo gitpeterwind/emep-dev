@@ -3,7 +3,7 @@
 
 ! esx_config sets/resets general run variables (See esx_Variables_ml)
 ! This file is written in pseudo-rst, to allow easy generation of pdf.
-! See end of file for some restrictions
+! See end of file for some restrictions.
 
 ! Start:: 
 
@@ -28,7 +28,7 @@
   esx%uses_diff = T         ! Calls diffusion routines
   esx%uses_veg  = T         ! Uses Veg stuff. Could be false, e.g. for an_sol_c tests
   esx%uses_externData  = F   ! Uses external data file for meteo (EsxInput_data.csv)
-  esx%uses_plotting = F     ! Only possible if graphics scripts available, see below
+  esx%uses_plotting = T     ! Only possible if graphics scripts available, see below
 
 !-----------------------------------------------------------------------------
 
@@ -84,16 +84,24 @@
 ! and more if necessary. Need to specify with name, and any loss/production
 ! terms, but zero is fine for the index. (esx will work that out later.)
 !
-! NOTE. Any loss production given here will be used on top of any explicit
+! NOTE. Any loss or production given here will be used on top of any explicit
 ! deposition or emission calculations, so be careful!::
+! Units? The dispersion model uses metres for spatial dimensions (chemistry
+!  uses cm3 units), so specify Vd, Ve in m/s. 
+!
+! Fluxes are trickier.  If chem units are molec/cm2/s or esx%units=ppb, we need
+! fluxes in molec/m2/s. If esx%units="-" (unitless), give unitless fluxes in
+! amount #/m2/s (NOTE - m2 not cm2! The Kz terms are in m-s units)
+! NOTE - Fb is downward flux. Use -ve for emissions! Ft is upward
 
  esx%DiffSpecs = 
    !species  ind  Vd   Ve  Fb  Ft
-   'TRACER',   0, 0.02,0.0,0.0,0.0
+   'TRACER',   0, 0.0,0.0,-1.0e15,0.0
    'O3',       0, 0.0,0.0,0.0,0.0
    'NO',       0, 0.0,0.0,0.0,0.0
    'NO2',      0, 0.0,0.0,0.0,0.0
-   'NH3',      0, 0.02,0.0,1.0,0.0
+   'NH3',      0, 0.02,0.0,-20.0e14,0.0
+  ! An emission of NH3 of ca. 50 ng/m2/s would be ca 18e14 molec/m2/s
 
 !-----------------------------------------------------------------------------
 !
@@ -191,8 +199,8 @@
 ! Other scripts could also be run (e.g. matlab).  ! Set false (F) if not
 ! wanted, or possible.  
 !
-! Script can save files in many formats, just tell what you want, e.g.
-! PlotFile.eps, Test2.jpg, etc.
+! OLD Script can save files in many formats, just tell what you want, e.g.
+! OLD PlotFile.eps, Test2.jpg, etc.
 
 ! Options so far: zmax
 
@@ -336,9 +344,9 @@
    'conc', 'O3', 'ppb',   40.0, 1, 999
    'conc', 'NO', 'ppb',    2.5, 1, 1
    'conc', 'CO', 'ppb',  150.0, 1, 999
-   'conc', 'SO4', 'ppb',   1.0, 1, 999
-   'conc', 'NH3', 'ppb',  10.0, 1, 999
-   'conc', 'HNO3', 'ppb',   5.0, 1, 999
+   'conc', 'SO4', 'ppb',   0.5, 1, 999
+   'conc', 'NH3', 'ppb',   1.0, 1, 999
+   'conc', 'HNO3', 'ppb',  2.0, 1, 999
 /
 
 !-----------------------------------------------------------------------------
