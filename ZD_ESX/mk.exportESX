@@ -6,7 +6,7 @@ ver=`svnversion|sed "s/:/-/"`
 
 odir=~/Dropbox/Work_2013/ESX/ESX-${label}
 mkdir -p $odir
-cp $odir/D_Plotting
+mkdir $odir/D_Plotting
 
 echo LABEL: $label VERSION $ver ODIR $odir
 
