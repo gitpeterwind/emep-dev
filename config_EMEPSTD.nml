@@ -8,7 +8,7 @@
   MY_OUTPUTS            = 'EMEPSTD',
 !------------------------------
 !USES system started June 2013
-  USES%testname          = "EMEPSTD",
+  USES%testname          = 'EMEPSTD',
   USES%FOREST_FIRES      = T,
   USES%MONTHLY_FF        = F,
 !
@@ -37,22 +37,25 @@
   INERIS_SNAP1          = F,          ! Used for TFMM runs
   INERIS_SNAP2          = F,          ! Used for TFMM runs
 !------------------------------
-  EMIS_SOURCE           = "emislist", ! "emislist" or CdfFractions
-  EMIS_TEST             = None,  ! "None" or "CdfSnap" 
+  EMIS_SOURCE           = 'emislist', ! 'emislist' or CdfFractions
+  EMIS_TEST             = 'None'  ! 'None' or 'CdfSnap' 
 !-----------------------------------------------------------------------------
 ! IN TESTING:
 ! If EMiS_TEST set, then the emis_inputlists will be used.
 ! Below, one can either include or exclude, not both
 ! Only recognised group now is EUMACC2
 ! (1) From MACC2 7km:
-  emis_inputlist(1)%name     = GriddedSnapEmis_POLL.nc, !
-  emis_inputlist(1)%excl(1:) = US INTSHIP,   ! US lat/long limits wrong
+  emis_inputlist(1)%name     = 'GriddedSnapEmis_POLL.nc', !
+  emis_inputlist(1)%excl(1:) = 'US','INTSHIP',   ! US lat/long limits wrong
 ! (2) Global:
-  emis_inputlist(2)%name     = GlobalSnapEmis_POLL.nc, !
-  emis_inputlist(2)%excl(1:) = EUMACC2 INTSHIPS MEXI ARGE BRAZ CHIL OLAM AUTR NZEL BANG INDI PAKI BHUT BRUN CAMB CHIN TAIW VIET THAI INDO JAPA LAOS MALA   MONG MYAN NEPA KORN PHIL SING KORS SAFR, 
+  emis_inputlist(2)%name     = 'GlobalSnapEmis_POLL.nc', !
+  emis_inputlist(2)%excl(1:) = 'EUMACC2','INTSHIPS','MEXI','ARGE','BRAZ','CHIL',
+    'OLAM','AUTR','NZEL','BANG','INDI','PAKI','BHUT','BRUN','CAMB','CHIN','TAIW',
+    'VIET','THAI','INDO','JAPA','LAOS','MALA','MONG','MYAN','NEPA','KORN','PHIL',
+    'SING','KORS','SAFR', 
 ! (3) Shipping:
-  emis_inputlist(3)%name     = GlobalShipEmis_POLL.nc, !
-  emis_inputlist(3)%incl(1:) = INTSHIPS, 
+  emis_inputlist(3)%name     = 'GlobalShipEmis_POLL.nc', !
+  emis_inputlist(3)%incl(1:) = 'INTSHIPS', 
 !
   EMIS_OUT              = T,          ! output emissions in separate files (memory demanding)
 !-----------------------------------------------------------------------------
@@ -67,9 +70,10 @@
 !
   BGND_CH4              = -1,    ! Reset CH4 (use ppb). (Use -1 for defaults)
 !_-
-!--- "fake" vegetation for ozone POD calculations
-FLUX_VEGS = "IAM_CR" "IAM_DF" "IAM_MF"  ! do not need all array elements
-!FLUX_VEGS = "IAM_CR" "IAM_DF" "IAM_MF" "CCE_SPRUCE" "CCE_BEECH" "ACE_PINE" "ACE_OAK" "ACE_BEECH" "NEUR_SPRUCE" "NEUR_BIRCH" "MED_OAK", "MED_PINE" "MED_BEECH"  ! Do not need to fill array :-)
+!--- 'fake' vegetation for ozone POD calculations
+FLUX_VEGS = 'IAM_CR','IAM_DF','IAM_MF', ! do not need all array elements
+          ! 'CCE_SPRUCE','CCE_BEECH','ACE_PINE','ACE_OAK','ACE_BEECH',
+          ! 'NEUR_SPRUCE','NEUR_BIRCH','MED_OAK','MED_PINE','MED_BEECH'
 !-------- Sub domain (x0,x1,y0,y1)
 !!RUNDOMAIN =   1, 100,  1, 100,      ! Orig EMEP domain in EECCA (for benchmarks)
 ! RUNDOMAIN =  40, 210, 12, 184,      ! SR TNO28 area

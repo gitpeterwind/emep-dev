@@ -64,7 +64,7 @@ use ChemChemicals_ml, only : species               !  For mol. wts.
 use ChemSpecs_adv_ml         ! Use NSPEC_ADV, IXADV_ indices
 use EmisDef_ml,     only :  EMIS_FILE
 use GridValues_ml, only : debug_li, debug_lj, debug_proc
-use Io_Nums_ml,   only: IO_TMP !NML
+use Io_Nums_ml,   only: IO_NML !IO_TMP
 use Io_Progs_ml,   only: PrintLog
 use LandDefs_ml,  only : LandDefs, LandType, Check_LandCoverPresent ! e.g. "CF"
 use MetFields_ml,        only : z_bnd, roa
@@ -387,10 +387,12 @@ private
     NAMELIST /OutputConcs_config/OutputConcs
 
 !NML   typ_s5i("HMIX      ", "m",   D2,"HMIX     ","MISC", D)&
-    open(IO_TMP, file="config_Outputs.nml",delim='APOSTROPHE')
-    read(IO_TMP,NML=OutputConcs_config)
-    close(IO_TMP)
-
+!   open(IO_TMP, file="config_Outputs.nml",delim='APOSTROPHE')
+!   read(IO_TMP,NML=OutputConcs_config)
+!   close(IO_TMP)
+   rewind(IO_NML)
+   read(IO_NML,NML=OutputConcs_config)
+   
     !! Find number of wanted OutoutConcs
     nOutputConcs = find_index("NOTSET", OutputConcs(:)%txt1, &
                        first_only=.true. ) -1

@@ -154,7 +154,58 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-17th October 2013  Alvaro   2645
+17-18 October 2013  Alvaro  2645-2646
+
+config_EMEPSTD.nml,config_Outputs_EMEPSTD.nml:
+  Formatting and clean-up and small changes to make them more gfortran friendly
+  
+config_BM-EECCA.nml:
+  Single config_emep.nml file for EECCA 100x100 runs.
+  Will work for any EECCA benchmark year.
+  Benchmarks on other domains will need an specific config file,
+  which can be created using this file as an example.
+
+run.pl,ZD_OZONE/My_Derived_ml.f90:
+  Single namelist file for runs (config_emep.nml).
+  Benchmark runs use domain specific templates.
+  For normal runs, config_emep.nml is created by combining INPUT_PARA (namelist)
+  with config_$exp_name.nml and config_Outputs_$outputs.nml files.
+
+run.pl,Unimod,Met_ml,GridValues_ml:
+  * Replace INPUT.PARA file with a namelist (INPUT_PARA) on single file
+    (config_emep.nml).
+  * New string variable 'meteo' (Met_ml) is read in INPUT_PARA namelist.
+    It contains a filename template for the met files.
+  * MeteoRead, Check_Meteo_Date (Met_ml) and GridRead (GridValues_ml)
+    use this variable and a date to generate the correct met filename.
+  * For non forecast runs, it is not longer needed to link the met files.
+    run.pl only checks existence of first and last meteo file before creating
+    config_emep.nml.
+  * Forecast runs still need linking of met files, as the file names follow
+    a different rule. Nonetheless, the linking of met files has been
+    cleaned up and simplified.
+  * Parts of Met_ml and GridValues_ml have been clean up and re-formatted.
+
+GridValues_ml:
+  Small change to coord_in_gridbox and coord_in_processor,
+  in order to ensure correct result for coordinates outside of the model domain.
+  Error seems to appear only on 3DVar applications.
+
+Met_ml:
+  * Add optional logical variables ('needed' and 'found') to Getmeteofield.
+    If present, found="variable was found"".
+    If present, CheckStop(needed,...) when the variable is not found.
+  * Re-write some of the variable-found logic on MeteoRead,
+    in order to make the code easier to follow.
+
+run.pl:
+  * remove erroneous '$iyr_trend .. if $SR' line
+  * add $MAKEMODE to 'my ($testv,...' definition line
+  * Enforce $BENCHMARK{MAKEMODE} if defined
+  * move special cases of $Chem, $exp_name and $testv
+    for BENCHMARK and CWF runs to their respective code blocks at the
+    begging of the script
+  * simplify felt file handling, and remove obsolete code
 
 GlobalBCs_ml: gfortran compliance
 

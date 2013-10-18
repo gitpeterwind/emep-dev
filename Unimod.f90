@@ -57,11 +57,11 @@ use EcoSystem_ml,     only: Init_EcoSystems
 use Emissions_ml,     only: Emissions, newmonth
 use ForestFire_ml,    only: Fire_Emis
 use GridValues_ml,    only: MIN_ADVGRIDS, GRIDWIDTH_M, Poles, DefDebugProc, GridRead
-use Io_ml,            only: IO_MYTIM,IO_RES,IO_LOG,IO_TMP,IO_DO3SE
+use Io_ml,            only: IO_MYTIM,IO_RES,IO_LOG,IO_NML,IO_DO3SE
 use Io_Progs_ml,      only: read_line, PrintLog
 use Landuse_ml,       only: InitLandUse, SetLanduse, Land_codes
 use MassBudget_ml,    only: Init_massbudget, massbudget
-use Met_ml,           only: metvar, MetModel_LandUse, Meteoread
+use Met_ml,           only: metvar, MetModel_LandUse, Meteoread, meteo
 use ModelConstants_ml,only: MasterProc, &   ! set true for host processor, me==0
                             RUNDOMAIN,  &   ! Model domain
                             NPROC,      &   ! No. processors
@@ -121,6 +121,9 @@ integer :: mm_old   ! month and old-month
 integer :: nproc_mpi,cyclicgrid
 character (len=230) :: errmsg,txt
 
+namelist /INPUT_PARA/iyr_trend,runlabel1,runlabel2,&
+                     startdate,enddate,outdate,meteo
+
 associate ( yyyy => current_date%year, mm => current_date%month, &
               dd => current_date%day,  hh => current_date%hour)
 !
@@ -140,44 +143,24 @@ if(MasterProc)write(*,55)' Found ',NPROC,' MPI processes available'
 call CheckStop(digits(1.0)<50, &
   "COMPILED WRONGLY: Need double precision, e.g. f90 -r8")
 
-
-if (MasterProc) then
-  open(IO_LOG,file='RunLog.out')
-  open(IO_TMP,file='INPUT.PARA')
-endif
-
+if(MasterProc) open(IO_LOG,file='RunLog.out')
 call Config_ModelConstants(IO_LOG)
 
-call read_line(IO_TMP,txt,status(1))
-read(txt,*) iyr_trend
+rewind(IO_NML)
+read(IO_NML,NML=INPUT_PARA)
+startdate(4)=0                ! meteo hour to start/end the run 
+enddate  (4)=0                ! are set in assign_NTERM
+if(MasterProc.and.FORECAST)&  ! dates for nested outputs on FORECAST mode
+  write (*,"(1X,A,10(1X,A,:,','))")'Forecast nest/dump at:',&
+   (date2string("YYYY-MM-DD hh:mm:ss",outdate(i)),i=1,FORECAST_NDUMP)
 
-call read_line(IO_TMP,runlabel1,status(1))! explanation text short
-call read_line(IO_TMP,runlabel2,status(1))! explanation text long
-call read_line(IO_TMP,txt,status(1))  ! meteo year,month,day to start the run
-read(txt,*)startdate(1:3)             ! meteo hour to start the run is set in assign_NTERM
-startdate(4)=0
-call read_line(IO_TMP,txt,status(1))  ! meteo year,month,day to end the run
-read(txt,*)enddate(1:3)               ! meteo hour to end the run is set in assign_NTERM
-enddate(4)=0
-
-if(FORECAST)then  ! read dates of nested outputs on FORECAST mode
-  do i=1,FORECAST_NDUMP
-    call read_line(IO_TMP,txt,status(1))
-    read(txt,"(I4,3(I2),I4)")outdate(i)  ! outputdate YYYYMMDDhhssss
-    if(MasterProc) print *,&
-      date2string(" Forecast nest/dump at YYYY-MM-DD hh:mm:ss",outdate(i))
-  enddo
-end if
-
-if( MasterProc ) then
-  close(IO_TMP)
-  call PrintLog( trim(runlabel1) )
-  call PrintLog( trim(runlabel2) )
-  call PrintLog( date2string("startdate = YYYYMMDD",startdate(1:3)) )
-  call PrintLog( date2string("enddate   = YYYYMMDD",enddate  (1:3)) )
-  write(unit=txt,fmt="(a,i4)") "iyr_trend= ", iyr_trend
-!  call PrintLog( trim(txt) )
-
+if(MasterProc)then
+  call PrintLog(trim(runlabel1))
+  call PrintLog(trim(runlabel2))
+  call PrintLog(date2string("startdate = YYYYMMDD",startdate(1:3)))
+  call PrintLog(date2string("enddate   = YYYYMMDD",enddate  (1:3)))
+! write(txt,"(a,i4)") "iyr_trend= ", iyr_trend
+! call PrintLog(trim(txt))
 endif
 
 !*** Timing ********
@@ -185,13 +168,13 @@ call Init_timing()
 call Code_Timer(tim_before0)
 tim_before = tim_before0
 
-
-call GridRead(cyclicgrid)    !define: 1)grid sizes (IIFULLDOM, JJFULLDOM),
-                             !        2)projection (lon lat or Stereographic etc and Poles),
-                             !        3)rundomain size (GIMAX, GJMAX, IRUNBEG, JRUNBEG)
-                             !        4)subdomain partition (NPROCX, NPROCY, limax,ljmax)
-                             !        5)topology (neighbor, poles)
-                             !        5)grid properties arrays (xm, i_local, j_local etc.)
+call GridRead(meteo,cyclicgrid) ! define:
+! 1) grid sizes (IIFULLDOM, JJFULLDOM),
+! 2) projection (lon lat or Stereographic etc and Poles),
+! 3) rundomain size (GIMAX, GJMAX, IRUNBEG, JRUNBEG)
+! 4) subdomain partition (NPROCX, NPROCY, limax,ljmax)
+! 5) topology (neighbor, poles)
+! 6) grid properties arrays (xm, i_local, j_local etc.)
 
 call Topology(cyclicgrid,Poles)   ! def GlobalBoundaries & subdomain neighbors
 call DefDebugProc()               ! Sets debug_proc, debug_li, debuglj

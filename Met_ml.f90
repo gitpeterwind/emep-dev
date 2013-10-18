@@ -35,7 +35,6 @@ module Met_ml
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 !_____________________________________________________________________________
 !  Subroutines:      Frequency    Called from:
-!    MeteoGridRead                   Unimod
 !    MetModel_LandUse                Unimod
 !    MeteoRead         3h            Unimod    - puts data into nr
 !    metvar            3h            Unimod    -      data into nr
@@ -71,33 +70,33 @@ module Met_ml
 ! 
 !============================================================================= 
 
-  use BLPhysics_ml,         only : &
-     KZ_MINIMUM, KZ_MAXIMUM, KZ_SBL_LIMIT,PIELKE   &
-    ,HmixMethod, UnstableKzMethod, StableKzMethod, KzMethod  &
-    ,USE_MIN_KZ              & ! From old code, is it needed?
-    ,MIN_USTAR_LAND          & ! sets u* > 0.1 m/s over land
-    ,OB_invL_LIMIT           & ! 
-    ,Test_BLM                & ! Tests all Kz, Hmix routines
-    ,PBL_ZiMAX, PBL_ZiMIN    & ! max  and min PBL heights
-    ,JericevicRiB_Hmix       & ! TESTING
-    ,JericevicRiB_Hmix0      & ! Used, now allows shallow SBL
-    ,Venkatram_Hmix          & ! TESTING
-    ,Zilitinkevich_Hmix      & ! TESTING
-    ,SeibertRiB_Hmix_3d      & ! TESTING
-    ,BrostWyngaardKz         & ! TESTING
-    ,JericevicKz             & ! TESTING
-    ,TI_Hmix                 & ! TESTING or orig
-    ,PielkeBlackadarKz       &
-    ,O_BrienKz               &
-    ,NWP_Kz                  & ! Kz from meteo 
-    ,Kz_m2s_toSigmaKz        & 
-    ,Kz_m2s_toEtaKz        & 
-    ,SigmaKz_2_m2s
+use BLPhysics_ml,         only : &
+   KZ_MINIMUM, KZ_MAXIMUM, KZ_SBL_LIMIT,PIELKE   &
+  ,HmixMethod, UnstableKzMethod, StableKzMethod, KzMethod  &
+  ,USE_MIN_KZ              & ! From old code, is it needed?
+  ,MIN_USTAR_LAND          & ! sets u* > 0.1 m/s over land
+  ,OB_invL_LIMIT           & ! 
+  ,Test_BLM                & ! Tests all Kz, Hmix routines
+  ,PBL_ZiMAX, PBL_ZiMIN    & ! max  and min PBL heights
+  ,JericevicRiB_Hmix       & ! TESTING
+  ,JericevicRiB_Hmix0      & ! Used, now allows shallow SBL
+  ,Venkatram_Hmix          & ! TESTING
+  ,Zilitinkevich_Hmix      & ! TESTING
+  ,SeibertRiB_Hmix_3d      & ! TESTING
+  ,BrostWyngaardKz         & ! TESTING
+  ,JericevicKz             & ! TESTING
+  ,TI_Hmix                 & ! TESTING or orig
+  ,PielkeBlackadarKz       &
+  ,O_BrienKz               &
+  ,NWP_Kz                  & ! Kz from meteo 
+  ,Kz_m2s_toSigmaKz        & 
+  ,Kz_m2s_toEtaKz        & 
+  ,SigmaKz_2_m2s
 
-  use CheckStop_ml,         only : CheckStop,StopAll
-  use Functions_ml,         only : Exner_tab, Exner_nd
-  use Functions_ml,         only : T_2_Tpot  !OS_TESTS
-  use GridValues_ml,        only : xmd, i_fdom, j_fdom, i_local,j_local&
+use CheckStop_ml,         only : CheckStop,StopAll
+use Functions_ml,         only : Exner_tab, Exner_nd
+use Functions_ml,         only : T_2_Tpot  !OS_TESTS
+use GridValues_ml,        only : xmd, i_fdom, j_fdom, i_local,j_local&
        ,glon,glat,gl_stagg,gb_stagg,glat_fdom,glon_fdom&
        ,xm_i,xm_j ,xm2,xmd,xm2ji,xmdji,GridArea_m2&
        , projection &
@@ -107,636 +106,535 @@ module Met_ml
        ,debug_proc, debug_li, debug_lj &
        ,grid_north_pole_latitude,grid_north_pole_longitude &
        ,GlobalPosition,DefGrid,gl_stagg,gb_stagg,A_mid,B_mid &
-       ,GridRead,Eta_bnd,Eta_mid,dA,dB,A_mid,B_mid,A_bnd,B_bnd
+       ,Eta_bnd,Eta_mid,dA,dB,A_mid,B_mid,A_bnd,B_bnd
 
-  use Io_ml ,               only : ios, IO_ROUGH, datewrite,PrintLog, &
-                                   IO_CLAY, IO_SAND, open_file, IO_LOG
-  use Landuse_ml, only : water_fraction, water_frac_set, &
-        likely_coastal, mainly_sea
-  use MetFields_ml 
-  use MicroMet_ml, only : PsiH  ! Only if USE_MIN_KZ
-  use ModelConstants_ml,    only : PASCAL, PT, Pref, METSTEP  &
-       ,KMAX_BND,KMAX_MID,NMET,KCHEMTOP &
-       ,IIFULLDOM, JJFULLDOM, RUNDOMAIN,NPROC  &
-       ,MasterProc, DEBUG_MET,DEBUG_i, DEBUG_j, identi, V_RAIN, nmax  &
-       ,DEBUG_BLM, DEBUG_Kz, DEBUG_SOILWATER,DEBUG_LANDIFY & 
-       ,NH3_U10   & !FUTURE
-       ,DomainName & !HIRHAM,EMEP,EECCA etc.
-       ,USE_DUST, USE_SOILWATER & 
-       ,nstep,USE_CONVECTION & 
-       ,LANDIFY_MET  & 
-       ,CW_THRESHOLD,RH_THRESHOLD, CW2CC
-  use Par_ml           ,    only : MAXLIMAX,MAXLJMAX,GIMAX,GJMAX, me  &
-       ,limax,ljmax  &
-       ,neighbor,WEST,EAST,SOUTH,NORTH,NOPROC  &
-       ,MSG_NORTH2,MSG_EAST2,MSG_SOUTH2,MSG_WEST2  &
-       ,IRUNBEG,JRUNBEG, tgi0, tgj0,gi0,gj0  &
-       ,MSG_INIT3,MSG_READ4, tlimax, tljmax
-  use PhysicalConstants_ml, only : KARMAN, KAPPA, RGAS_KG, CP, GRAV    &
-       ,ROWATER, PI
-  use TimeDate_ml,          only : current_date, date,Init_nmdays,nmdays, &
-       add_secs,timestamp,&
-       make_timestamp, make_current_date, nydays, startdate, enddate
-  use ReadField_ml,         only : ReadField ! reads ascii fields
-  use NetCDF_ml,         only : printCDF,ReadField_CDF ! testoutputs
-  use netcdf
-  use TimeDate_ExtraUtil_ml,only: nctime2idate,date2string
+use Io_ml ,               only: ios, IO_ROUGH, datewrite,PrintLog, &
+                                IO_CLAY, IO_SAND, open_file, IO_LOG
+use Landuse_ml,           only: water_fraction, water_frac_set, &
+                                likely_coastal, mainly_sea
+use MetFields_ml 
+use MicroMet_ml, only : PsiH  ! Only if USE_MIN_KZ
+use ModelConstants_ml,    only : PASCAL, PT, Pref, METSTEP  &
+     ,KMAX_BND,KMAX_MID,NMET,KCHEMTOP &
+     ,IIFULLDOM, JJFULLDOM, RUNDOMAIN,NPROC  &
+     ,MasterProc, DEBUG_MET,DEBUG_i, DEBUG_j, identi, V_RAIN, nmax  &
+     ,DEBUG_BLM, DEBUG_Kz, DEBUG_SOILWATER,DEBUG_LANDIFY & 
+     ,NH3_U10   & !FUTURE
+     ,DomainName & !HIRHAM,EMEP,EECCA etc.
+     ,USE_DUST, USE_SOILWATER & 
+     ,nstep,USE_CONVECTION & 
+     ,LANDIFY_MET  & 
+     ,CW_THRESHOLD,RH_THRESHOLD, CW2CC
+use Par_ml           ,    only : MAXLIMAX,MAXLJMAX,GIMAX,GJMAX, me  &
+     ,limax,ljmax  &
+     ,neighbor,WEST,EAST,SOUTH,NORTH,NOPROC  &
+     ,MSG_NORTH2,MSG_EAST2,MSG_SOUTH2,MSG_WEST2  &
+     ,IRUNBEG,JRUNBEG, tgi0, tgj0,gi0,gj0  &
+     ,MSG_INIT3,MSG_READ4, tlimax, tljmax
+use PhysicalConstants_ml, only : KARMAN, KAPPA, RGAS_KG, CP, GRAV    &
+     ,ROWATER, PI
+use TimeDate_ml,          only : current_date, date,Init_nmdays,nmdays, &
+     add_secs,timestamp,&
+     make_timestamp, make_current_date, nydays, startdate, enddate
+use ReadField_ml,         only : ReadField ! reads ascii fields
+use NetCDF_ml,         only : printCDF,ReadField_CDF ! testoutputs
+use netcdf
+use TimeDate_ExtraUtil_ml,only: nctime2idate,date2string
 
-
-
-  implicit none
-  private
+implicit none
+private
 
 
-  INCLUDE 'mpif.h'
-  INTEGER MPISTATUS(MPI_STATUS_SIZE),INFO
+INCLUDE 'mpif.h'
+INTEGER MPISTATUS(MPI_STATUS_SIZE),INFO
 
-!  logical, private, save      ::  debug_procloc = .false.
-  integer, private, save      ::  debug_iloc, debug_jloc  ! local coords
+! logical, private, save      :: debug_procloc = .false.
+integer, private, save      :: debug_iloc, debug_jloc  ! local coords
+integer, save   :: nrec          ! nrec=record in meteofile, for example
+! (Nhh=8): 1=00:00 2=03:00 ... 8=21:00
+! if nhour_first=3 then 1=03:00 2=06:00...8=24:00
 
+logical, save, private      :: xwf_done = .false. ! extended water-fraction array
 
-  integer, save   :: nrec          ! nrec=record in meteofile, for example
-  ! (Nhh=8): 1=00:00 2=03:00 ... 8=21:00
-  ! if nhour_first=3 then 1=03:00 2=06:00...8=24:00
+character(len=*),parameter  :: field_not_found='field_not_found'
+integer(kind=2),allocatable :: var_global(:,:,:)   ! faster if defined with
 
-  logical, save, private  :: xwf_done = .false. ! extended water-fraction array
+! Aid for debugging check routine
+character (len = 100), private, save :: call_msg=" Not set"
 
-  character (len = 100)        ::  field_not_found='field_not_found'
-    integer*2, allocatable ::var_global(:,:,:)   ! faster if defined with
+character (len = 100), public, save  ::  meteo   ! template for meteofile
 
- ! Aid for debugging check routine
-  character (len = 100), private, save :: call_msg=" Not set"
-
-
-  public :: MeteoRead
-  public :: MetModel_LandUse
-  public :: metvar
-  public :: metint
-  public :: BLPhysics
-  public :: GetCDF_short
-  public :: extendarea  ! returns array which includes neighbours
-  public :: Getmeteofield
-  public :: landify     ! replaces met variables from mixed sea/land with land
+public :: MeteoRead
+public :: MetModel_LandUse
+public :: metvar
+public :: metint
+public :: BLPhysics
+public :: GetCDF_short
+public :: extendarea  ! returns array which includes neighbours
+public :: Getmeteofield
+public :: landify     ! replaces met variables from mixed sea/land with land
 
 contains
 
+!>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+subroutine MeteoRead(numt)
+!    the subroutine reads meteorological fields and parameters (every
+!    METSTEP-hours) from NetCDF fields-files, divide the fields into
+!       domains    and sends subfields to the processors
+  implicit none
+  integer, intent(in):: numt
 
+  character (len = 100), save  ::  meteoname   ! name of the meteofile
+  character (len = 100)        ::  namefield & ! name of the requested field
+       ,unit='   ',validity='    '    ! field is either instaneous or averaged
+  integer ::   ndim,nyear,nmonth,nday,nhour
+  integer ::   nr   ! Fields are interpolate in
+                    ! time (NMET = 2): between nr=1 and nr=2
 
-  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-  subroutine MeteoRead(numt)
+  type(date)      ::  next_inptime             ! hfTD,addhours_to_input
+  type(timestamp) ::  ts_now                   ! time in timestamp format
 
-    !    the subroutine reads meteorological fields and parameters (every
-    !    METSTEP-hours) from NetCDF fields-files, divide the fields into
-    !       domains    and sends subfields to the processors
+  real :: nsec                                 ! step in seconds
 
+  real :: buff(MAXLIMAX,MAXLJMAX)!temporary metfields
+  integer :: i, j, isw
+  logical :: fexist,found
 
-    implicit none
+ ! Soil water has many names. Some we can deal with:
+ ! (and all need to end up as SMI)
+  character(len=*), dimension(4), parameter :: possible_soilwater_uppr = (/&
+      "SMI1                " &
+     ,"SMI                 " &
+     ,"soil_water_content  " &
+     ,"soil_wetness_surface" &
+  /)
+  character(len=*), dimension(3), parameter :: possible_soilwater_deep = (/&
+      "SMI3                   " &
+     ,"SMI                    " &
+     ,"deep_soil_water_content" &
+  /)
 
-    integer, intent(in):: numt
+  nr=2 !set to one only when the first time meteo is read
+  call_msg = "Meteoread"
 
-    character (len = 100), save  ::  meteoname   ! name of the meteofile
-    character (len = 100)        ::  namefield & ! name of the requested field
-         ,unit='   ',validity='    '    ! field is either instaneous or averaged
-    integer ::   ndim,nyear,nmonth,nday,nhour
-    integer ::   nr   ! Fields are interpolate in
-                      ! time (NMET = 2): between nr=1 and nr=2
+  if(numt == 1)then !first time meteo is read
+    nr = 1
+    nrec = 0
+    sdot_at_mid = .false.
+    foundustar = .false.
+    foundsdot = .false.
+    foundSST  = .false.
+    foundSoilWater_uppr  = .false.
+    foundSoilWater_deep  = .false.
+    foundKz_met = .false.  ! Kz from meteo
+    foundu10_met = .false. ! from FUTURE NH3emis
+    foundv10_met = .false. ! from FUTURE NH3emis
+    foundprecip = .false.
+    foundcloudwater = .false.
+    foundSMI1=.false.
+    foundSMI3=.false.
 
-    type(date)      ::  next_inptime             ! hfTD,addhours_to_input
-    type(timestamp) ::  ts_now                   ! time in timestamp format
+    next_inptime = current_date
 
-    real :: nsec                                 ! step in seconds
-
-    real :: buff(MAXLIMAX,MAXLJMAX)!temporary metfields
-    integer :: i, j, isw
-    logical :: fexist 
-
-   ! Soil water has many names. Some we can deal with:
-   ! (and all need to end up as SMI)
-    character(len=*), dimension(4), parameter :: possible_soilwater_uppr = (/&
-        "SMI1                " &
-       ,"SMI                 " &
-       ,"soil_water_content  " &
-       ,"soil_wetness_surface" &
-    /)
-    character(len=*), dimension(3), parameter :: possible_soilwater_deep = (/&
-        "SMI3                   " &
-       ,"SMI                    " &
-       ,"deep_soil_water_content" &
-    /)
-
-    nr=2 !set to one only when the first time meteo is read
-    call_msg = "Meteoread"
-
-
-    if(numt == 1)then !first time meteo is read
-       nr = 1
-       nrec = 0
-       sdot_at_mid = .false.
-       foundustar = .false.
-       foundsdot = .false.
-       foundSST  = .false.
-       foundSoilWater_uppr  = .false.
-       foundSoilWater_deep  = .false.
-       foundKz_met = .false.  ! Kz from meteo
-       foundu10_met = .false. ! from FUTURE NH3emis
-       foundv10_met = .false. ! from FUTURE NH3emis
-       foundprecip = .false.
-       foundcloudwater = .false.
-       foundSMI1=.false.
-       foundSMI3=.false.
-
-       next_inptime = current_date
-
-       ! If origin of meteodomain does not coincide with origin of large domain,
-       ! xp and yp should be shifted here, and coordinates must be shifted when
-       ! meteofields are read (not yet implemented)
-
- 
-   if(MasterProc)then
-       allocate(var_global(GIMAX,GJMAX,KMAX_MID))
+    ! If origin of meteodomain does not coincide with origin of large domain,
+    ! xp and yp should be shifted here, and coordinates must be shifted when
+    ! meteofields are read (not yet implemented) 
+    if(MasterProc)then
+      allocate(var_global(GIMAX,GJMAX,KMAX_MID))
     else
-       allocate(var_global(1,1,1)) !just to have the array defined
+      allocate(var_global(1,1,1)) !just to have the array defined
     endif
+  else
+    nsec=METSTEP*3600.0 !from hr to sec
+    ts_now = make_timestamp(current_date)
+    call add_secs(ts_now,nsec)
+    next_inptime=make_current_date(ts_now)
+  endif
 
+  nyear=next_inptime%year
+  nmonth=next_inptime%month
 
-    else
+  nday=next_inptime%day
+  nhour=next_inptime%hour
 
-       nsec=METSTEP*3600.0 !from hr to sec
-       ts_now = make_timestamp(current_date)
-       call add_secs(ts_now,nsec)
-       next_inptime=make_current_date(ts_now)
+  if(current_date%month == 1 .and. &
+     current_date%day   == 1 .and. &
+     current_date%hour  == 0 ) call Init_nmdays(current_date)
 
+  !On first call, check that date from meteo file correspond to dates requested. Also defines nhour_first.
+  if(numt==1) call Check_Meteo_Date !note that all procs read this
+
+  if(MasterProc.and.DEBUG_MET) write(6,*) &
+       '*** nyear,nmonth,nday,nhour,numt,nmdays2'    &
+       ,next_inptime%year,next_inptime%month,next_inptime%day    &
+       ,next_inptime%hour,numt,nmdays(2)
+
+  !Read rec=1 both for h=0 and h=3:00 in case 00:00 from 1st January is missing
+  if((numt-1)*METSTEP<=nhour_first)nrec=0
+  nrec=nrec+1
+
+  if(nrec>Nhh.or.nrec==1) then              ! define a new meteo input file
+!56 FORMAT(a5,i4.4,i2.2,i2.2,a3)
+!   write(meteoname,56)'meteo',nyear,nmonth,nday,'.nc'
+    meteoname = date2string(meteo,next_inptime)
+
+    nrec = 1
+    if(nday==1.and.nmonth==1)then
+      !hour 00:00 from 1st January may be missing;checking first:
+      inquire(file=meteoname,exist=fexist)
+      if(.not.fexist)then
+!       if(MasterProc)write(*,*)trim(meteoname),&
+!           ' does not exist; using data from 31 December'
+!       write(meteoname,56)'meteo',nyear-1,12,31,'.nc'
+        if(MasterProc)write(*,*)trim(meteoname),&
+            ' does not exist; using data from previous day'
+        meteoname=date2string(meteo,next_inptime,-24*3600.0) 
+        nrec=Nhh
+      endif
     endif
+    if(MasterProc)write(*,*)'reading ',trim(meteoname)
+    !could open and close file here instead of in Getmeteofield
+  endif
 
+  if(MasterProc.and.DEBUG_MET) write(*,*)'nrec,nhour=',nrec,nhour
 
-
-
-    nyear=next_inptime%year
-    nmonth=next_inptime%month
-
-    nday=next_inptime%day
-    nhour=next_inptime%hour
-
-    if(  current_date%month == 1 .and.         &
-         current_date%day   == 1 .and.         &
-         current_date%hour  == 0 )         &
-         call Init_nmdays( current_date )
-
-    !On first call, check that date from meteo file correspond to dates requested. Also defines nhour_first.
-    if(numt==1) call Check_Meteo_Date !note that all procs read this
-
-
-    if(MasterProc .and. DEBUG_MET) write(6,*) &
-         '*** nyear,nmonth,nday,nhour,numt,nmdays2'    &
-         ,next_inptime%year,next_inptime%month,next_inptime%day    &
-         ,next_inptime%hour,numt,nmdays(2)
-
-
-    !Read rec=1 both for h=0 and h=3:00 in case 00:00 from 1st January is missing
-    if((numt-1)*METSTEP<=nhour_first)nrec=0
-    nrec=nrec+1
-
-
-
-    if(nrec>Nhh.or.nrec==1) then              ! define a new meteo input file
-56     FORMAT(a5,i4.4,i2.2,i2.2,a3)
-       write(meteoname,56)'meteo',nyear,nmonth,nday,'.nc'
-       nrec = 1
-       if(nday==1.and.nmonth==1)then
-          !hour 00:00 from 1st January may be missing;checking first:
-          inquire(file=meteoname,exist=fexist)
-          if(.not.fexist)then
-             if(MasterProc)write(*,*)trim(meteoname),&
-                  ' does not exist; using data from 31 December'
-             write(meteoname,56)'meteo',nyear-1,12,31,'.nc'
-             nrec=Nhh
-          endif
-       endif
-       if(MasterProc)write(*,*)'reading ',trim(meteoname)
-       !could open and close file here instead of in Getmeteofield
-    endif
-
-
-    if(MasterProc .and. DEBUG_MET) write(*,*)'nrec,nhour=',nrec,nhour
-
-
-
-    !==============    3D fields (surface) (i,j,k) ==========================
-    ndim=3
+  !==============    3D fields (surface) (i,j,k) ==========================
+  ndim=3
 
   !note that u_xmj and v_xmi have dimensions 0:MAXLIJMAX instead of 1:MAXLIJMAX
   !u_xmj(i=0) and v_xmi(j=0) are set in metvar
 
-    namefield='u_wind'
-    call Getmeteofield(meteoname,namefield,nrec,ndim,     &
-         unit,validity,u_xmj(1:MAXLIMAX,1:MAXLJMAX,:,nr))
-       call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
+  namefield='u_wind'
+  call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
+                     u_xmj(1:MAXLIMAX,1:MAXLJMAX,:,nr),needed=.true.)
 
+  namefield='v_wind'
+  call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
+                     v_xmi(1:MAXLIMAX,1:MAXLJMAX,:,nr),needed=.true.)
 
-    namefield='v_wind'
-    call Getmeteofield(meteoname,namefield,nrec,ndim,&
-         unit,validity,v_xmi(1:MAXLIMAX,1:MAXLJMAX,:,nr))
-       call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
+  namefield='specific_humidity'
+  call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
+                     q(:,:,:,nr),needed=.true.)
 
-    namefield='specific_humidity'
-    call Getmeteofield(meteoname,namefield,nrec,ndim,&
-         unit,validity, q(:,:,:,nr))
-       call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
+  namefield='sigma_dot'
+  call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
+                     sdot(:,:,:,nr),found=foundsdot)
+  if(.not.foundsdot.and.MasterProc.and.numt==1)&
+    write(*,*)'WARNING: sigma_dot will be derived from horizontal winds '
 
-    namefield='sigma_dot'
-    call Getmeteofield(meteoname,namefield,nrec,ndim,&
-         unit,validity, sdot(:,:,:,nr))
-    if(validity==field_not_found)then
-       foundsdot = .false.
-       if(MasterProc.and.numt==1)write(*,*)'WARNING: sigma_dot will be derived from horizontal winds '
-    else
-       foundsdot = .true.
+  namefield='potential_temperature'
+  call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
+                     th(:,:,:,nr),needed=.true.)
+
+  namefield='3D_cloudcover'
+  call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
+                     cc3d(:,:,:),found=found)
+  if(found)then
+    if(trim(validity)/='averaged'.and.MasterProc.and.numt==1)&
+      write(*,*)'WARNING: 3D cloud cover is not averaged'
+    cc3d(:,:,:)=max(0.0,min(100.0,cc3d(:,:,:)))!0-100 % clouds
+  else !if available, will use cloudwater to determine the height of release
+    if(MasterProc.and.numt==1)&
+      write(*,*)'WARNING: 3D cloud cover not found, using CloudWater instead'
+    namefield='cloudwater'
+    call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
+                       cc3d(:,:,:),found=foundcloudwater)
+    call CheckStop(.not.foundcloudwater,&
+      "meteo field not found: 3D_cloudcover and"//trim(namefield))
+    cc3d(:,:,:)=max(0.0,min(100.0,cc3d(:,:,:)*CW2CC))!from kg/kg water to % clouds
+  endif
+
+  namefield='precipitation'
+  call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
+                     pr(:,:,:),found=foundprecip)
+  if(foundprecip)then
+    pr=max(0.0,pr)  ! positive precipitation
+  else
+    !Will construct 3D precipitations from 2D precipitations
+    namefield='large_scale_precipitations'
+    call Getmeteofield(meteoname,namefield,nrec,2,unit,validity,&
+                       surface_precip(:,:),needed=.true.)
+
+    namefield='convective_precipitations'
+    call Getmeteofield(meteoname,namefield,nrec,2,unit,validity,&
+                       buff(:,:),needed=.true.)
+    surface_precip=surface_precip+buff
+
+    !if available, will use cloudwater to determine the height of release
+    namefield='cloudwater'
+    if(nr==2)cw(:,:,:,1)=cw(:,:,:,2)
+    call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
+                       cw(:,:,:,nr),found=foundcloudwater)
+    if(MasterProc.and.numt==1)then
+      if(foundcloudwater)then
+        write(*,*)' WARNING: 3D precipitations not found.&
+          & Using 2D precipitations and cloudwater to make 3D'
+        write(unit=IO_LOG,fmt="(a)")&
+          "3D precipitations:  derived from 2D and cloudwater"
+      else !if cloudwater not available, will use RH to determine the height of release
+        write(*,*)' WARNING: 3D precipitations not found.&
+          & Using 2D precipitations and relative humidity to make 3D'
+        write(unit=IO_LOG,fmt="(a)")&
+          "3D precipitations:  derived from 2D and humidity"
+      endif
     endif
+  endif
 
-    namefield='potential_temperature'
-    call Getmeteofield(meteoname,namefield,nrec,ndim,&
-         unit,validity, th(:,:,:,nr))
-       call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
-
-    namefield='3D_cloudcover'
-    call Getmeteofield(meteoname,namefield,nrec,ndim,&
-         unit,validity, cc3d(:,:,:))
-    if(validity/=field_not_found.and.trim(validity)/='averaged')then
-       if(MasterProc.and.numt==1)write(*,*)'WARNING: 3D cloud cover is not averaged'
-    endif
-    if(validity==field_not_found)then
-       !if available, will use cloudwater to determine the height of release
-       namefield='cloudwater'
-       foundcloudwater = .true.
-        call Getmeteofield(meteoname,namefield,nrec,ndim,&
-         unit,validity, cc3d(:,:,:))
-      call CheckStop(validity==field_not_found, "meteo field not found: 3D_cloudcover and" // trim(namefield))
-       cc3d(:,:,:)=max(0.0,min(100.0,cc3d(:,:,:)*CW2CC))!from kg/kg water to % clouds
-       if(MasterProc.and.numt==1)write(*,*)'WARNING: 3D cloud cover not found, using CloudWater instead'
-    else
-       cc3d(:,:,:)=max(0.0,min(100.0,cc3d(:,:,:)))!0-100 % clouds
-    endif
-
-
-    namefield='precipitation'
-    call Getmeteofield(meteoname,namefield,nrec,ndim,&
-         unit,validity, pr(:,:,:))
-    foundprecip = .true.
-    if(validity==field_not_found)then
-       foundprecip = .false.       
-       !Will construct 3D precipitations from 2D precipitations
-       namefield='large_scale_precipitations'
-       call Getmeteofield(meteoname,namefield,nrec,2,&
-            unit,validity, surface_precip(:,:))
-       call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
-       namefield='convective_precipitations'
-       call Getmeteofield(meteoname,namefield,nrec,2,&
-            unit,validity, buff(:,:))
-       call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
-       surface_precip=surface_precip+buff
-
-       !if available, will use cloudwater to determine the height of release
-       namefield='cloudwater'
-       foundcloudwater = .true.
-       if(nr==2)cw(:,:,:,1)=cw(:,:,:,2)
-       call Getmeteofield(meteoname,namefield,nrec,ndim,&
-            unit,validity, cw(:,:,:,nr))
-       if(validity==field_not_found)foundcloudwater = .false.
-       if(MasterProc.and.foundcloudwater)then
-          if(numt==1)write(*,*)' WARNING: 3D precipitations not found. Using 2D precipitations and cloudwater to make 3D'
-          if(numt==1)write(unit=IO_LOG,fmt="(a)")"3D precipitations:  derived from 2D and cloudwater"
-       endif
-       !if cloudwater not available, will use RH to determine the height of release
-       if(MasterProc.and..not.foundcloudwater)then
-          if(numt==1)write(*,*)' WARNING: 3D precipitations not found. Using 2D precipitations and relative humidity to make 3D'
-          if(numt==1)write(unit=IO_LOG,fmt="(a)")"3D precipitations:  derived from 2D and humidity"
-       endif
-
-    else
-       pr=max(0.0,pr)  ! positive precipitation
-    endif
-
-
-    if(USE_CONVECTION)then
-       namefield='convective_updraft_flux'
-       call Getmeteofield(meteoname,namefield,nrec,ndim,&
-            unit,validity, cnvuf(:,:,:))
-       call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
-       cnvuf=max(0.0,cnvuf)!no negative upward fluxes
-       cnvuf(:,:,KMAX_BND)=0.0!no flux through surface
-       cnvuf(:,:,1)=0.0!no flux through top
+  if(USE_CONVECTION)then
+    namefield='convective_updraft_flux'
+    call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
+                      cnvuf(:,:,:),needed=.true.)
+    cnvuf=max(0.0,cnvuf)      !no negative upward fluxes
+    cnvuf(:,:,KMAX_BND)=0.0   !no flux through surface
+    cnvuf(:,:,1)=0.0          !no flux through top
        
-       namefield='convective_downdraft_flux'
-       call Getmeteofield(meteoname,namefield,nrec,ndim,&
-            unit,validity, cnvdf(:,:,:))
-       call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
-       cnvdf=min(0.0,cnvdf)!no positive downward fluxes
-       cnvdf(:,:,KMAX_BND)=0.0!no flux through surface
-       cnvdf(:,:,1)=0.0!no flux through top
-    endif
+    namefield='convective_downdraft_flux'
+    call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
+                       cnvdf(:,:,:),needed=.true.)
+    cnvdf=min(0.0,cnvdf)      !no positive downward fluxes
+    cnvdf(:,:,KMAX_BND)=0.0   !no flux through surface
+    cnvdf(:,:,1)=0.0          !no flux through top
+  endif
 
 ! Kz from meteo
-    if (NWP_Kz) then
-        namefield='eddy_diffusion_coefficient'
-        call Getmeteofield(meteoname,namefield,nrec,ndim,&
-             unit,validity, Kz_met(:,:,:,nr))
-        if(validity==field_not_found)then
-           foundKz_met = .false.
-        if(MasterProc.and.numt==1)write(*,*)' WARNING: Kz will be derived in model '
-        else
-           foundKz_met = .true.
-        endif
-        Kz_met=max(0.0,Kz_met)  ! only positive Kz
+  if(NWP_Kz) then
+    namefield='eddy_diffusion_coefficient'
+    call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
+                      Kz_met(:,:,:,nr),found=foundKz_met)
+    if(.not.foundKz_met.and.MasterProc.and.numt==1)&
+      write(*,*)' WARNING: Kz will be derived in model '
+    Kz_met=max(0.0,Kz_met)  ! only positive Kz
 
-        if( debug_proc .and. DEBUG_Kz)then
-          write(6,*)               &
-         '*** After Kz', sum(Kz_met(:,:,:,nr)), minval(Kz_met(:,:,:,nr)), &
-               maxval(Kz_met(:,:,:,nr)),maxval(Kz_met(:,:,KMAX_BND,nr)), &
-               DEBUG_Kz, NWP_Kz, nr, nrec, ndim, namefield
-        end if
+    if(debug_proc.and.DEBUG_Kz) write(6,*)                           &
+     '*** After Kz', sum(Kz_met(:,:,:,nr)),minval(Kz_met(:,:,:,nr)), &
+           maxval(Kz_met(:,:,:,nr)),maxval(Kz_met(:,:,KMAX_BND,nr)), &
+           DEBUG_Kz, NWP_Kz, nr, nrec, ndim, namefield
+  endif
 
-    endif
+  !==============    2D fields (surface) (i,j)   ============================
+  ndim=2
 
+  namefield='surface_pressure'
+  call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
+                     ps(:,:,nr),needed=.true.)
 
+  namefield='temperature_2m'
+  call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
+                     t2_nwp(:,:,nr),needed=.true.)
+  if(LANDIFY_MET) call landify(t2_nwp(:,:,nr),"t2nwp") 
 
+  namefield='relative_humidity_2m'
+  call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
+                     rh2m(:,:,nr),needed=.false.,found=found)
+  if(found)then
+    rh2m(:,:,nr) = 0.01 * rh2m(:,:,nr)  ! Convert from % to fraction 
+  else
+    if(MasterProc.and.numt==1)write(*,*)'WARNING: relative_humidity_2m not found'
+    rh2m(:,:,nr) = -999.9  ! ?
+  endif
+  if(LANDIFY_MET) call landify(rh2m(:,:,nr),"rh2m") 
 
-    !==============    2D fields (surface) (i,j)   ============================
+  namefield='surface_flux_sensible_heat'
+  call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
+                     fh(:,:,nr),needed=.true.)
+  if(LANDIFY_MET) call landify(fh(:,:,nr),"fh") 
+  if(validity=='averaged')fh(:,:,1)=fh(:,:,nr)
 
-    ndim=2
+  namefield='surface_flux_latent_heat'
+  call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
+                     fl(:,:,nr),needed=.true.)
+  if(LANDIFY_MET) call landify(fl(:,:,nr),"fl") 
+  if(validity=='averaged')fl(:,:,1)=fl(:,:,nr)
 
-    namefield='surface_pressure'
-    call Getmeteofield(meteoname,namefield,nrec,ndim,&
-         unit,validity, ps(:,:,nr))
-       call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
-
-    namefield='temperature_2m'
-    call Getmeteofield(meteoname,namefield,nrec,ndim,&
-         unit,validity, t2_nwp(:,:,nr))
-       call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
-       if(LANDIFY_MET) &
-         call landify(t2_nwp(:,:,nr) ,"t2nwp") 
-
-
-    namefield='relative_humidity_2m'
-    call Getmeteofield(meteoname,namefield,nrec,ndim,&
-         unit,validity, rh2m(:,:,nr))
-    if(validity==field_not_found)then
-        if(MasterProc.and.numt==1)write(*,*)'WARNING: relative_humidity_2m not found'
-        rh2m(:,:,nr) = -999.9  ! ?
-    else
-       call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
-       rh2m(:,:,nr) = 0.01 * rh2m(:,:,nr)  ! Convert from % to fraction 
-    endif
-       if(LANDIFY_MET) &
-         call landify(rh2m(:,:,nr),"rh2m") 
-
-    namefield='surface_flux_sensible_heat'
-    call Getmeteofield(meteoname,namefield,nrec,ndim,&
-         unit,validity, fh(:,:,nr))
-       call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
-       if(LANDIFY_MET) &
-         call landify(fh(:,:,nr) ,"fh") 
-    if(validity=='averaged')fh(:,:,1)=fh(:,:,nr)
-
-    namefield='surface_flux_latent_heat'
-    call Getmeteofield(meteoname,namefield,nrec,ndim,&
-         unit,validity, fl(:,:,nr))
-       call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
-       if(LANDIFY_MET) &
-         call landify(fl(:,:,nr),"fl") 
-    if(validity=='averaged')fl(:,:,1)=fl(:,:,nr)
-
-    namefield='surface_stress'
-    call Getmeteofield(meteoname,namefield,nrec,ndim,&
-         unit,validity, tau(:,:,nr))
-       if(LANDIFY_MET) &
-         call landify(tau(:,:,nr) ,"tau") 
-    if(validity==field_not_found)then
-       namefield='ustar_nwp'
-       call Getmeteofield(meteoname,namefield,nrec,ndim,&
-            unit,validity, ustar_nwp(:,:))
-       if(LANDIFY_MET) &
-         call landify(ustar_nwp(:,:),"ustar") 
-       call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
-       foundustar=.true.
-    else
-       tau=max(0.0,tau)
-       if(validity=='averaged')tau(:,:,1)=tau(:,:,nr)
-    endif
+  namefield='surface_stress'
+  call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
+                     tau(:,:,nr),found=found)
+  if(found)then
+    if(LANDIFY_MET) call landify(tau(:,:,nr),"tau") 
+    tau=max(0.0,tau)
+    if(validity=='averaged')tau(:,:,1)=tau(:,:,nr)
+  else
+    namefield='ustar_nwp'
+    call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
+                       ustar_nwp(:,:),needed=.true.,found=foundustar)
+    if(LANDIFY_MET) call landify(ustar_nwp(:,:),"ustar") 
+  endif
     
-    namefield='sea_surface_temperature'
-    call Getmeteofield(meteoname,namefield,nrec,ndim,&
-        unit,validity, sst(:,:,nr))
-    if(validity==field_not_found)then
-       if(MasterProc.and.numt==1)write(*,*)' WARNING: sea_surface_temperature not found '
-       foundSST = .false.
-    else
-       foundSST = .true.
-    endif
+  namefield='sea_surface_temperature'
+  call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
+                     sst(:,:,nr),found=foundSST)
+  if(.not.foundSST.and.MasterProc.and.numt==1)&
+    write(*,*)' WARNING: sea_surface_temperature not found '
 
-    ! Soil water fields. Somewhat tricky.
-    ! Ideal is soil moisture index, available from IFS, = (SW-PWP)/(FC-PWP)
-    ! Otherwise m3/m3 or m units are converted in metvar
-    !
-    ! Start with shallow
+  ! Soil water fields. Somewhat tricky.
+  ! Ideal is soil moisture index, available from IFS, = (SW-PWP)/(FC-PWP)
+  ! Otherwise m3/m3 or m units are converted in metvar
+  !
+  ! Start with shallow
 
-
-if( USE_DUST .and. .not.USE_SOILWATER ) call StopAll("Inconsistent SM, DUST")
-if( USE_SOILWATER ) then
-    SoilWaterSource = "IFS"! use as default?
-
+  call CheckStop(USE_DUST.and..not.USE_SOILWATER,"Inconsistent SM, DUST")
+  if(USE_SOILWATER) then
+    SoilWaterSource = "IFS" ! use as default?
     do isw = 1, size(possible_soilwater_uppr)
       namefield=possible_soilwater_uppr(isw)
-      if(MasterProc) write(*,*) "Met_ml: soil water search ", isw, trim(namefield)
-      call Getmeteofield(meteoname,namefield,nrec,ndim,&
-        unit,validity, SoilWater_uppr(:,:,nr))
-      if(validity/=field_not_found) then ! found
-        if( index( namefield, "SMI" ) > 0 ) foundSMI1=.true.
-        foundSoilWater_uppr = .true.
-        if( .not.foundSMI1 ) &  ! = 1st call
-           call PrintLog("Met: found SMI1:" // trim( namefield), MasterProc)
+      if(MasterProc) write(*,*) "Met_ml: soil water search ",isw,trim(namefield)
+      call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
+                         SoilWater_uppr(:,:,nr),found=foundSoilWater_uppr)
+      if(foundSoilWater_uppr) then ! found
+        foundSMI1=(index(namefield,"SMI")>0)
         exit
-      end if
-    end do
-       !?if( .not.foundSMI1 ) call PrintLog("Met: found SMI1", MasterProc)
+      endif
+    enddo
+    if(foundSMI1.and.MasterProc.and.numt==1) &  ! = 1st call
+      call PrintLog("Met: found SMI1:"//trim(namefield))
 
-!SW    if(validity/=field_not_found)then
-!SW       if( .not.foundSMI1 ) call PrintLog("Met: found SMI1", MasterProc)
-!SW       foundSMI1=.true.
-!SW       foundSoilWater_uppr = .true.
-!SW    else
-!SW       namefield='SMI'  ! e.g. RCA data have just SMI. Use for SMI1 and SMI3
-!SW       call Getmeteofield(meteoname,namefield,nrec,ndim,&
-!SW              unit,validity, SoilWater_uppr(:,:,nr))
-!SW       foundSMI1=.true.
-!SW       foundSoilWater_uppr = .true.
-!SW       print *, "TEST RCA SMI ", me, validity
+!SW  if(validity/=field_not_found)then
+!SW    if( .not.foundSMI1 ) call PrintLog("Met: found SMI1", MasterProc)
+!SW    foundSMI1=.true.
+!SW    foundSoilWater_uppr = .true.
+!SW  else
+!SW    namefield='SMI'  ! e.g. RCA data have just SMI. Use for SMI1 and SMI3
+!SW    call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
+!SW                       SoilWater_uppr(:,:,nr))
+!SW    foundSMI1=.true.
+!SW    foundSoilWater_uppr = .true.
+!SW    print *, "TEST RCA SMI ", me, validity
 !SW
-!SW      if ( validity==field_not_found)then
-!SW       
-!SW       namefield='soil_water_content'
-!SW       call Getmeteofield(meteoname,namefield,nrec,ndim,&
-!SW            unit,validity, SoilWater_uppr(:,:,nr))
-!SW       if(validity==field_not_found)then
-!SW          namefield='soil_wetness_surface'
-!SW          call Getmeteofield(meteoname,namefield,nrec,ndim,&
-!SW               unit,validity, SoilWater_uppr(:,:,nr))
-!SW       endif
-!SW       if(validity==field_not_found)then
-!SW          if(MasterProc.and.numt==1)write(*,*)' WARNING: SoilWater_uppr not found '
-!SW          foundSoilWater_uppr = .false.
-!SW          
-!SW       else
+!SW    if(validity==field_not_found)then
+!SW      namefield='soil_water_content'
+!SW      call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
+!SW                         SoilWater_uppr(:,:,nr))
+!SW      if(validity==field_not_found)then
+!SW        namefield='soil_wetness_surface'
+!SW        call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
+!SW                           SoilWater_uppr(:,:,nr))
+!SW      endif
+!SW      if(validity==field_not_found)then
+!SW        if(MasterProc.and.numt==1)write(*,*)' WARNING: SoilWater_uppr not found '
+!SW        foundSoilWater_uppr = .false.        
+!SW      else
 
-       if( foundSoilWater_uppr .and.  trim(unit) == "m" ) SoilWaterSource = "PARLAM"
+    if(foundSoilWater_uppr.and.trim(unit)=="m") SoilWaterSource="PARLAM"
 
-!SW              ! PARLAM/HIRLAM has metres of water in top 7.2 cm
-!SW          
-!SW          if(MasterProc.and.numt==1) &
+!SW        ! PARLAM/HIRLAM has metres of water in top 7.2 cm  
+!SW        if(MasterProc.and.numt==1) &
 !SW               write(*,*)'WARNING: Assuming SoilWater  from IFS'
-!SW          foundSoilWater_uppr = .true.
-!SW          SoilWaterSource = "IFS"
-!SW       else
-!SW          foundSoilWater_uppr = .true.
-!SW          SoilWaterSource = "PARLAM"
-!SW       endif
+!SW        foundSoilWater_uppr = .true.
+!SW        SoilWaterSource = "IFS"
+!SW      else
+!SW        foundSoilWater_uppr = .true.
+!SW        SoilWaterSource = "PARLAM"
+!SW      endif
 !SW    endif
-  end if ! USE_SOILWATER first one
+  endif ! USE_SOILWATER first one
 
-  if ( USE_SOILWATER ) then  !just deep here
-
+  if(USE_SOILWATER) then  !just deep here
     do isw = 1, size(possible_soilwater_deep)
       namefield=possible_soilwater_deep(isw)
-       if(DomainName == "HIRHAM" ) then
-           if(MasterProc.and.numt==1)write(*,*) " Rename soil water in HIRHAM"
-           namefield='soil_water_second_layer'
-       end if
+      if(DomainName=="HIRHAM") then
+        if(MasterProc.and.numt==1)write(*,*) " Rename soil water in HIRHAM"
+        namefield='soil_water_second_layer'
+      endif
       if(MasterProc) write(*,*) "Met_ml: deep soil water search ", isw, trim(namefield)
 
-      call Getmeteofield(meteoname,namefield,nrec,ndim,&
-        unit,validity, SoilWater_deep(:,:,nr))
-
-      if(validity/=field_not_found) then ! found
-         if( index( namefield, "SMI" ) > 0 ) foundSMI3=.true.
-         foundSoilWater_deep = .true.
-         if( .not.foundSMI3 ) &  ! = 1st call
-           call PrintLog("Met: found SMI3:" // trim( namefield), MasterProc)
-         exit
-      end if
-    end do
-     !========================================
-     !In the long term, all meteofile should have Soil Moisture Index defined
+      call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
+                         SoilWater_deep(:,:,nr),found=foundSoilWater_deep)
+      if(foundSoilWater_deep) then ! found
+        foundSMI3=(index(namefield,"SMI")>0)
+        if(.not.foundSMI3) &  ! = 1st call
+          call PrintLog("Met: found SMI3:"//trim( namefield), MasterProc)
+        exit
+      endif
+    enddo
+    !========================================
+    !In the long term, all meteofile should have Soil Moisture Index defined
      
-!SW     namefield='SMI3'
-!SW     call Getmeteofield(meteoname,namefield,nrec,ndim,&
-!SW          unit,validity, SoilWater_deep(:,:,nr))
-!SW     
-!SW     if(validity/=field_not_found)then
-!SW        if( .not.foundSMI3 ) call PrintLog("Met: found SMI3", MasterProc)
-!SW        foundSMI3=.true.
-!SW        foundSoilWater_deep = .true.
-!SW        
-!SW     else
-!SW       namefield='SMI'  ! e.g. RCA data have just SMI. Use for SMI1 and SMI3
-!SW       call Getmeteofield(meteoname,namefield,nrec,ndim,&
-!SW              unit,validity, SoilWater_uppr(:,:,nr))
-!SW       foundSMI3=.true.
-!SW       foundSoilWater_deep = .true.
-!SW       print *, "TEST RCA SMI DEEP ", me, validity
+!SW namefield='SMI3'
+!SW call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
+!SW                    SoilWater_deep(:,:,nr))
+!SW if(validity/=field_not_found)then
+!SW   if(.not.foundSMI3 ) call PrintLog("Met: found SMI3", MasterProc)
+!SW   foundSMI3=.true.
+!SW   foundSoilWater_deep = .true.       
+!SW else
+!SW   namefield='SMI'  ! e.g. RCA data have just SMI. Use for SMI1 and SMI3
+!SW   call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
+!SW                      SoilWater_uppr(:,:,nr))
+!SW   foundSMI3=.true.
+!SW   foundSoilWater_deep = .true.
+!SW   print *, "TEST RCA SMI DEEP ", me, validity
 !SW
-!SW      if ( validity==field_not_found)then
-!SW        
-!SW        !Search for other fields which can be used for making SMI
-!SW        namefield='deep_soil_water_content'
-!SW        if(DomainName == "HIRHAM" ) then
-!SW           if(MasterProc.and.numt==1)write(*,*) " Rename soil water in HIRHAM"
-!SW           namefield='soil_water_second_layer'
-!SW        end if
-!SW        call Getmeteofield(meteoname,namefield,nrec,ndim,&
-!SW             unit,validity, SoilWater_deep(:,:,nr))
-!SW        if(validity==field_not_found)then
-!SW           if(MasterProc.and.numt==1)write(*,*)' WARNING: ',trim(namefield),' not found '
-!SW           foundSoilWater_deep = .false.
-!SW        else
-!SW           !<<<<<<< process SW <<<<<<<<<<<<<<<<<<<<<<<
-!SW           foundSoilWater_deep = .true.
-            if(  foundSoilWater_deep ) then
-               if ( trim(unit) == "m" ) then  ! PARLAM has metres of water
-                  SoilWaterSource = "PARLAM"
-              else if(unit(1:5)=='m3/m3')then
+!SW   if(validity==field_not_found)then  
+!SW     !Search for other fields which can be used for making SMI
+!SW     namefield='deep_soil_water_content'
+!SW     if(DomainName == "HIRHAM" ) then
+!SW       if(MasterProc.and.numt==1)write(*,*) " Rename soil water in HIRHAM"
+!SW       namefield='soil_water_second_layer'
+!SW     endif
+!SW     call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
+!SW                        SoilWater_deep(:,:,nr))
+!SW     if(validity==field_not_found)then
+!SW       if(MasterProc.and.numt==1)write(*,*)' WARNING: ',trim(namefield),' not found '
+!SW       foundSoilWater_deep = .false.
+!SW     else
+!SW     !<<<<<<< process SW <<<<<<<<<<<<<<<<<<<<<<<
+!SW     foundSoilWater_deep = .true.
+    if(foundSoilWater_deep ) then
+      if(trim(unit)=="m") then  ! PARLAM has metres of water
+        SoilWaterSource = "PARLAM"
+      elseif(unit(1:5)=='m3/m3')then
 !SW              !IFS has a fairly complex soil water system, with field capacity of 
 !SW              ! up to 0.766 for organic soils. More medium soils have ca. 0.43
 !SW              ! Typical values in January are even down to 0.2. Best to use
 !SW              ! SMI....
-                 SoilWaterSource = "IFS"
-              end if
-!SW           else   ! units not defined yet
-!SW              if(numt==1)write(*,*)trim(unit)
-!SW              call StopAll("Need units for deep soil water")
-!SW           endif
+        SoilWaterSource = "IFS"
+      endif
+!SW       else   ! units not defined yet
+!SW         if(numt==1)write(*,*)trim(unit)
+!SW         call StopAll("Need units for deep soil water")
+!SW       endif
 !SW           
-!SW           if(MasterProc.and.numt==1) write(*,*)'max Met_ml Soilwater_deep: ' // &
-!SW                trim(SoilWaterSource), maxval( SoilWater_deep(:,:,nr) )
+!SW       if(MasterProc.and.numt==1) write(*,*)'max Met_ml Soilwater_deep: ' // &
+!SW         trim(SoilWaterSource), maxval( SoilWater_deep(:,:,nr) )
 !SW
-            endif !found deep_soil_water_content
-!SW
-!SW     endif !SMI3 found
-
-
-     if ( DEBUG_SOILWATER.and.debug_proc ) then
-        i =  debug_li
-        j =  debug_lj
-        write(*,"(a,2i4,f12.4)") "DEBUG_METSWF2 "//trim(SoilWaterSource)//": ", &
+    endif !found deep_soil_water_content
+!SW endif !SMI3 found
+    if(DEBUG_SOILWATER.and.debug_proc) then
+      i=debug_li
+      j=debug_lj
+      write(*,"(a,2i4,f12.4)") "DEBUG_METSWF2 "//trim(SoilWaterSource)//": ", &
           nr, current_date%day, SoilWater_deep(i,j,nr)
-      end if
-  end if ! USE_SOILWATER
+    endif
+  endif ! USE_SOILWATER
   !========================================
 
-    namefield='snow_depth'
-    call Getmeteofield(meteoname,namefield,nrec,ndim,&
-        unit,validity, sdepth(:,:,nr))
-    if(validity==field_not_found)then
-       if(MasterProc.and.numt==1)write(*,*)' WARNING: snow_depth not found '
-       foundsdepth = .false.
-    else
-       foundsdepth = .true.
+  namefield='snow_depth'
+  call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
+                     sdepth(:,:,nr),found=foundsdepth)
+  if(.not.foundsdepth.and.MasterProc.and.numt==1)&
+    write(*,*)' WARNING: snow_depth not found '
+
+  namefield='fraction_of_ice' !is really percentage
+  call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
+                     ice_nwp(:,:,nr),found=foundice)
+  if(.not.foundice.and.MasterProc.and.numt==1)&
+    write(*,*)' WARNING: ice_nwp coverage (%) not found '
+
+  namefield='u10'!first component of ws_10m
+  call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
+                     buff(:,:),found=foundws10_met)
+  if(foundws10_met)then
+    namefield='v10' !second component of ws_10m
+    call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
+                       ws_10m(:,:,nr),found=foundws10_met)
+    if(foundws10_met)then
+      ws_10m(:,:,nr)=sqrt(ws_10m(:,:,nr)**2+buff(:,:)**2)
+      if(LANDIFY_MET) call landify(ws_10m(:,:,nr),"WS10") 
+!      call printCDF('ws_10m',ws_10m(:,:,1),unit)
     endif
-
-
-    namefield='fraction_of_ice' !is really percentage
-    call Getmeteofield(meteoname,namefield,nrec,ndim,&
-        unit,validity, ice_nwp(:,:,nr))
-    if(validity==field_not_found)then
-       if(MasterProc.and.numt==1)write(*,*)' WARNING: ice_nwp coverage (%) not found '
-       foundice = .false.
-    else
-       foundice = .true.
-    endif
-
-    namefield='u10'!first component of ws_10m
-    call Getmeteofield(meteoname,namefield,nrec,ndim,&
-        unit,validity, buff(:,:))
-    if(validity==field_not_found)then
-       foundws10_met = .false.
-    else
-       namefield='v10' !second component of ws_10m
-       call Getmeteofield(meteoname,namefield,nrec,ndim,&
-            unit,validity, ws_10m(:,:,nr))
-       if(validity==field_not_found)then
-          foundws10_met = .false.
-       else
-          foundws10_met = .true.
-          ws_10m(:,:,nr)=sqrt(ws_10m(:,:,nr)**2+buff(:,:)**2)
-          if(LANDIFY_MET) &
-         call landify(ws_10m(:,:,nr),"WS10") 
-!          call printCDF('ws_10m',ws_10m(:,:,1),unit)
-       endif
-    endif
-
-
-  end subroutine Meteoread
-
-  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  endif
+endsubroutine Meteoread
+!>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
   subroutine metvar(numt)
 
@@ -2939,7 +2837,7 @@ if( USE_SOILWATER ) then
 
 
   subroutine Getmeteofield(meteoname,namefield,nrec,&
-       ndim,unit,validity,field)
+       ndim,unit,validity,field,needed,found)
     !
     ! Read the meteofields and distribute to nodes
     !
@@ -2950,11 +2848,13 @@ if( USE_SOILWATER ) then
     real, dimension(*),intent(out)  :: field ! dimensions: (MAXLIMAX,MAXLJMAX)
     ! or     (MAXLIMAX,MAXLJMAX,KMAX)
 
-    character (len = *),intent(in)  ::meteoname,namefield
-    character (len = *),intent(out) ::unit,validity
-    integer,intent(in)              :: nrec,ndim
+    character(len=*),intent(in)  :: meteoname,namefield
+    character(len=*),intent(out) :: unit,validity
+    integer,intent(in)           :: nrec,ndim
+    logical,intent(in) ,optional :: needed
+    logical,intent(out),optional :: found
 
-    integer*2 :: var_local(MAXLIMAX,MAXLJMAX,KMAX_MID)
+    integer(kind=2) :: var_local(MAXLIMAX,MAXLJMAX,KMAX_MID)
 !    integer*2, allocatable ::var_global(:,:,:)   ! faster if defined with
     ! fixed dimensions for all
     ! nodes?
@@ -2970,7 +2870,7 @@ if( USE_SOILWATER ) then
 !       allocate(var_global(GIMAX,GJMAX,KMAX))
        nfetch=1
        call GetCDF_short(namefield,meteoname,var_global,GIMAX,IRUNBEG,GJMAX, &
-            JRUNBEG,KMAX,nrec,nfetch,scalefactors,unit,validity)
+            JRUNBEG,KMAX,nrec,nfetch,scalefactors,unit,validity,needed=needed)
     else
 !       allocate(var_global(1,1,1)) !just to have the array defined
     endif
@@ -2985,6 +2885,7 @@ if( USE_SOILWATER ) then
 !scalefactors=1.0
 !validity=' '
 !unit=' '
+    if(present(found))found=(validity/=field_not_found)
 
 !    deallocate(var_global)
 
@@ -3004,7 +2905,7 @@ if( USE_SOILWATER ) then
 
 
   subroutine GetCDF_short(varname,fileName,var,GIMAX,IRUNBEG,GJMAX,JRUNBEG &
-       ,KMAX,nstart,nfetch,scalefactors,unit,validity)
+       ,KMAX,nstart,nfetch,scalefactors,unit,validity,needed)
     !
     ! open and reads CDF file
     !
@@ -3014,26 +2915,29 @@ if( USE_SOILWATER ) then
     !
     implicit none
 
-    character (len=*),intent(in) :: fileName
+    character(len=*),intent(in) :: fileName
 
-    character (len = *),intent(in) ::varname
-    character (len = *),intent(out) ::unit,validity
+    character(len=*),intent(in)  ::varname
+    character(len=*),intent(out) ::unit,validity
     real,intent(out) :: scalefactors(2)
     integer, intent(in) :: nstart,GIMAX,IRUNBEG,GJMAX,JRUNBEG,KMAX
     integer, intent(inout) ::  nfetch
-    integer*2, dimension(GIMAX*GJMAX*KMAX*NFETCH),intent(out) :: var
+    integer(kind=2), dimension(GIMAX*GJMAX*KMAX*NFETCH),intent(out) :: var
+    logical,intent(in),optional :: needed
     integer :: varID,ndims
     integer :: ncFileID,status
     real :: scale,offset
-    character *100 :: period_read=' '
-    character *200,save :: filename_save='notsaved'
+    character(len=100) :: period_read=' '
+    character(len=200),save :: filename_save='notsaved'
     integer,save :: ncFileID_save=-99
+    logical :: is_needed=.false.
    
     validity='                                     ' !initialisation
     period_read='                                     ' !initialisation
     scalefactors(1) = 1.0 !default
     scalefactors(2) = 0.  !default
     call_msg = "GetCDF_short:"//trim(fileName)
+    is_needed=.false.;if(present(needed))is_needed=needed
 
     ndims=3
     if(KMAX==1)ndims=2
@@ -3051,11 +2955,12 @@ filename_save=trim(filename)
  endif
     !get varID:
     status = nf90_inq_varid(ncid=ncFileID,name=trim(varname),varID=VarID)
-    if(status /= nf90_noerr)then
-       validity=field_not_found
-       var=0.0
-      ! call check(nf90_close(ncFileID))
-       return
+    if(status/=nf90_noerr)then
+      call CheckStop(is_needed,"meteo field not found:"//trim(varname))
+      validity=field_not_found
+      var=0.0
+     ! call check(nf90_close(ncFileID))
+      return
     endif
 
 
@@ -3101,90 +3006,73 @@ filename_save=trim(filename)
 
   end subroutine GetCDF_short
 
+subroutine check(status)
+  implicit none
+  integer, intent (in) :: status
+  call CheckStop(status,nf90_noerr,"Error in Met_ml/NetCDF: "//&
+     trim(call_msg)//" "//trim(nf90_strerror(status)))
+endsubroutine check
 
+subroutine Check_Meteo_Date
+  !On first call, check that dates from meteo file correspond to dates requested. Also defines nhour_first.
+  character(len=len(meteo)) :: meteoname
+  integer :: nyear,nmonth,nday,nhour
+  integer :: status,ncFileID,timeDimID,varid,timeVarID
+  character (len = 50) :: timeunit
+  integer ::ihh,ndate(4),n1,nseconds(1)
+  real :: ndays(1)
+  logical :: date_in_days
+  nyear=startdate(1)
+  nmonth=startdate(2)
+  nday=startdate(3)
 
+!56 FORMAT(a5,i4.4,i2.2,i2.2,a3)
+!   write(meteoname,56)'meteo',nyear,nmonth,nday,'.nc'
+  meteoname=date2string(meteo,startdate) 
+  if(MasterProc)then
+    status=nf90_open(path=trim(meteoname),mode=nf90_nowrite,ncid=ncFileID)
+    call CheckStop(status,nf90_noerr,'meteo file not found: '//trim(meteoname))
 
-  subroutine check(status)
-    implicit none
-    integer, intent ( in) :: status
-
-    call CheckStop( status, nf90_noerr, "Error in Met_ml/NetCDF stuff:" // trim(call_msg) &
-         //  trim( nf90_strerror(status) ) )
-
-  end subroutine check
-
-  subroutine Check_Meteo_Date
-    !On first call, check that dates from meteo file correspond to dates requested. Also defines nhour_first.
-    character (len = 100) ::meteoname
-    integer :: nyear,nmonth,nday,nhour
-    integer :: status,ncFileID,timeDimID,varid,timeVarID
-    character (len = 50) :: timeunit
-    integer ::ihh,ndate(4),n1,nseconds(1)
-    real :: ndays(1)
-    nyear=startdate(1)
-    nmonth=startdate(2)
-    nday=startdate(3)
-56  FORMAT(a5,i4.4,i2.2,i2.2,a3)
-    write(meteoname,56)'meteo',nyear,nmonth,nday,'.nc'
-    if(me==0)then
-    status = nf90_open(path=trim(meteoname),mode=nf90_nowrite,ncid=ncFileID)
-    if(status /= nf90_noerr) then
-       print *,'meteo file not found: ',trim(meteoname)
-       call StopAll("meteo File not found")
-    endif
-
-    call check(nf90_inq_dimid(ncid = ncFileID, name = "time", dimID = timedimID))
-    call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = timeVarID))
+    call check(nf90_inq_dimid(ncid=ncFileID,name="time",dimID=timedimID))
+    call check(nf90_inq_varid(ncid=ncFileID,name="time",varID=timeVarID))
     call check(nf90_inquire_dimension(ncid=ncFileID,dimID=timedimID,len=Nhh))
-
-    call CheckStop(24/Nhh, METSTEP,          "Met_ml: METSTEP != meteostep" )
-
+    call CheckStop(24/Nhh,METSTEP,"Met_ml: METSTEP != meteostep")
     call check(nf90_get_att(ncFileID,timeVarID,"units",timeunit))
+    date_in_days=(trim(timeunit(1:19))==trim("days since 1900-1-1"))
 
     ihh=1
     n1=1
-    if(trim(timeunit(1:19))==trim("days since 1900-1-1"))then
-       if(me==0)write(*,*)'Date in days since 1900-1-1 0:0:0'
-       call check(nf90_get_var(ncFileID,timeVarID,ndays,&
-            start=(/ihh/),count=(/n1 /)))
-       call nctime2idate(ndate,ndays(1))  ! for printout: msg="meteo hour YYYY-MM-DD hh"
+    if(date_in_days)then
+      if(MasterProc)write(*,*)'Date in days since 1900-1-1 0:0:0'
+      call check(nf90_get_var(ncFileID,timeVarID,ndays,start=(/ihh/),count=(/n1/)))
+      call nctime2idate(ndate,ndays(1))    ! for printout: msg="meteo hour YYYY-MM-DD hh"
     else
-       call check(nf90_get_var(ncFileID,timeVarID,nseconds,&
-            start=(/ihh/),count=(/n1 /)))
-       call nctime2idate(ndate,nseconds(1)) ! default
+      call check(nf90_get_var(ncFileID,timeVarID,nseconds,start=(/ihh/),count=(/n1/)))
+      call nctime2idate(ndate,nseconds(1)) ! default
     endif
-    nhour_first=ndate(4)
-    
-    call CheckStop(ndate(1), nyear,  "NetCDF_ml: wrong year" )
-    call CheckStop(ndate(2), nmonth, "NetCDF_ml: wrong month" )
-    call CheckStop(ndate(3), nday,   "NetCDF_ml: wrong day" )
+    nhour_first=ndate(4)  
+    call CheckStop(ndate(1),nyear ,"Met_ml: wrong year" )
+    call CheckStop(ndate(2),nmonth,"Met_ml: wrong month")
+    call CheckStop(ndate(3),nday  ,"Met_ml: wrong day"  )
     
     do ihh=1,Nhh
-       
-       if(trim(timeunit(1:19))==trim("days since 1900-1-1"))then
-          call check(nf90_get_var(ncFileID, timeVarID, ndays,&
-               start=(/ ihh /),count=(/ n1 /)))
-          call nctime2idate(ndate,ndays(1))
-          if(me==0)write(*,*)'ndays ',ndays(1),ndate(3),ndate(4)
-       else
-          call check(nf90_get_var(ncFileID, timeVarID, nseconds,&
-               start=(/ ihh /),count=(/ n1 /)))
-          call nctime2idate(ndate,nseconds(1))
-       endif
-       write(*,*)ihh,METSTEP,nhour_first, ndate(4)
-       call CheckStop( mod((ihh-1)*METSTEP+nhour_first,24), ndate(4),  &
-            date2string("NetCDF_ml: wrong hour YYYY-MM-DD hh",ndate))
-       
+      if(date_in_days)then
+        call check(nf90_get_var(ncFileID,timeVarID,ndays,start=(/ihh/),count=(/n1/)))
+        call nctime2idate(ndate,ndays(1))
+        if(MasterProc)write(*,*)'ndays ',ndays(1),ndate(3),ndate(4)
+      else
+        call check(nf90_get_var(ncFileID,timeVarID,nseconds,start=(/ihh/),count=(/n1/)))
+        call nctime2idate(ndate,nseconds(1))
+      endif
+      write(*,*)ihh,METSTEP,nhour_first,ndate(4)
+      call CheckStop(mod((ihh-1)*METSTEP+nhour_first,24),ndate(4),&
+                     date2string("Met_ml: wrong hour YYYY-MM-DD hh",ndate))
     enddo
     call check(nf90_close(ncFileID))
-    endif
-    CALL MPI_BCAST(nhour_first ,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-   
-  end subroutine Check_Meteo_Date
+  endif
+  CALL MPI_BCAST(nhour_first,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+endsubroutine Check_Meteo_Date
 
-end module met_ml
+endmodule met_ml
 ! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
 !  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
-
-

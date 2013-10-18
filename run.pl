@@ -11,7 +11,7 @@
 # Ve/Vilje, (take out one # and put one # before the Stallo). 
 #     select= number of nodes, ncpus=number of threads per node to reserve, 
 #     mpiprocs=number of MPI threads per node. For 64 processors:
-##PBS -l select=2:ncpus=32:mpiprocs=32:mem=8gb
+##PBS -l select=4:ncpus=32:mpiprocs=32:mem=16gb -v MPI_MSGS_MAX=2097152
 #Stallo
 #PBS -lnodes=2:ppn=16
 # wall time limit of run
@@ -97,15 +97,15 @@ my @MAKE = ("gmake", "-j4", "MACHINE=snow");
    @MAKE = ( "make", "-j4", "MACHINE=stallo") if $STALLO==1 ;
 die "Must choose STALLO **or** VILJE !\n"
   unless $STALLO+$VILJE==1;
-my $MAKEMODE=0;  # make EMEP2011, make SR-EMEP2011
 
-my ( $testv, $Chem, $exp_name, $outputs, $GRID ) = ( "2631", "EmChem09soa", "EMEPSTD", "EMEPSTD", "EECCA" );
-   ( $testv, $Chem, $exp_name, $outputs, $GRID ) = ( "test", "EmChem09", "EMEPSTD", "EMEPSTD", "EECCA" );
-#   ( $testv, $Chem, $exp_name, $outputs, $GRID ) = ( "testcri2", "CRI_v2_R5", "CRITEST", "EMEPSTD", "EECCA" );
+my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2646"    ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA","EMEP");
+#  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
+#  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 
-#eg ( $testv, $Chem, $exp_name, $GRID ) = ( "tests", "EmChem09", "TESTS", "RCA" );
+#eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
 #$Chem: EmChem09soa, EmChem09, CRI_v2_R5
 #$GRIDs:EECCA, EMEP, TNO7, TNO14, TNO28, TNO56, MACC02, MACC14 or GLOBAL
+#$MAKEMODE: EMEP,EMEP2011,eEMEP,MACC,MACC-EVA2011,... see Makefile
 
 
 my %BENCHMARK;
@@ -113,7 +113,8 @@ my %BENCHMARK;
 #  %BENCHMARK = (grid=>"EMEP"  ,year=>2005,emis=>"Modrun07/OpenSourceEmis"           ,archive=>1,chem=>"EmChem03");
 # Dave's preference for EMEP:
 #  %BENCHMARK = (grid=>"EMEP"  ,year=>2006,emis=>"Modrun10/EMEP_trend_2000-2008/2006",archive=>1,chem=>"EmChem09");
-# EECCA Default: %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun11/EMEP_trend_2000-2009/2008",archive=>1,chem=>"EmChem09soa",make=>"EMEP");
+# EECCA Default:
+## %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun11/EMEP_trend_2000-2009/2008",archive=>1,chem=>"EmChem09soa",make=>"EMEP");
 # Status Runs:
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2007,emis=>"Modrun09/2009-Trend2007-CEIP") ;
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun10/2010-Trend2008_CEIP");
@@ -135,7 +136,8 @@ if (%BENCHMARK) {
     unless $BENCHMARK{'chem'};  # chemical mecanism, e.g. OpenSource 2008
   $BENCHMARK{'make'}  = ($BENCHMARK{'chem'} eq "EmChem09soa")?"EMEP":"all"
     unless $BENCHMARK{'make'};  # make target, e.g. Status 2010
-  $MAKEMODE = $BENCHMARK{'make'} unless $MAKEMODE;
+  $Chem     = $BENCHMARK{'chem'} if $BENCHMARK{'chem'};
+  $MAKEMODE = $BENCHMARK{'make'} if $BENCHMARK{'make'};
 }
 
 my $INERIS_FACS=0;  # Used for timefactors, and e,g TNOxx tests
@@ -146,33 +148,38 @@ my $CWF=0;     # Set to N for 'N'-day forecast mode (0 otherwise)
    $CWF=0 if %BENCHMARK;
 my ($CWFBASE, $CWFDAYS, $CWFMETV, @CWFDATE, @CWFDUMP, $eCWF, $aCWF) if $CWF;
 if ($CWF) {
-  chop($CWFBASE = `date +%Y%m%d`);   # Forecast base date     (default today)
-       $CWFDAYS = $CWF;              # Forecast lenght indays (default $CWF)
-       $CWFMETV = "";                # Met.UTC version        (default 'none')
-       $CWFBASE = $ENV{"DATE"} if $ENV{"DATE"}; # Forecast base date, lenght
-       $CWFDAYS = $ENV{"NDAY"} if $ENV{"NDAY"}; #  & MetUTC version can be passed
-       $CWFMETV = $ENV{"UTC"}  if $ENV{"UTC"} ; #  as environment variables
-       $CWFBASE = shift if @ARGV;    # Forecast base date, lenght
-       $CWFDAYS = shift if @ARGV;    #  & MetUTC version can be passed
-       $CWFMETV = shift if @ARGV;    #  as argument to script
-  $eCWF=0;                           # Emergency forecast
-  $aCWF=($CWFMETV =~ /AN/ );         # Analysis
+  $CWFBASE=date2str("today","%Y%m%d");  # Forecast base date     (default today)
+  $CWFDAYS=$CWF;                        # Forecast lenght indays (default $CWF)
+  $CWFMETV="";                          # Met.UTC version        (default 'none')
+  $CWFBASE=$ENV{"DATE"} if $ENV{"DATE"};# Forecast base date, lenght
+  $CWFDAYS=$ENV{"NDAY"} if $ENV{"NDAY"};#  & MetUTC version can be passed
+  $CWFMETV=$ENV{"UTC"}  if $ENV{"UTC"} ;#  as environment variables
+  $CWFBASE=shift if @ARGV;              # Forecast base date, lenght
+  $CWFDAYS=shift if @ARGV;              #  & MetUTC version can be passed
+  $CWFMETV=shift if @ARGV;              #  as argument to script
+  $eCWF=0;                              # Emergency forecast
+  $aCWF=($CWFMETV =~ /AN/ );            # Analysis
   $CWF=($eCWF?"eemep-":"CWF_").($CWFMETV?"$CWFMETV-$CWFBASE":"$CWFBASE");
 # short run: $CWFDAYS= 1 .. 10 --> meteo${CWFBASE}_00d _01d ..
-# long run:  $CWFDAYS= 10 ..   --> 00/01/03d (from CWFMETV) and meteo${DATE}
+# long run:  $CWFDAYS= 10 ..   --> 00|01|02|03d (from CWFMETV) and meteo${DATE}
   $CWFMETV =~s/[^\d.]//g;                           # extract number part
   my $metday = ($CWFMETV)?int($CWFMETV/24+0.99):0;  # hour --> day
-  chop($CWFBASE = `date -d '$CWFBASE $metday day' +%Y%m%d`) if ($metday gt 0) and ($CWFDAYS<=10);
-  chop($CWFDATE[0] = `date -d '$CWFBASE 1 day ago'    +%Y%m%d`);  # yesterday
-       $CWFDATE[1] = $CWFBASE;                                    # start date
-  chop($CWFDATE[2] = `date -d '$CWFBASE ($CWFDAYS-1) day' +%Y%m%d`);  # end date
-##chop($CWFDUMP[0] = `date -d '$CWFBASE'       +%Y-1-1000000`); # dump/nest every day at 00
-  chop($CWFDUMP[0] = `date -d '$CWFBASE 1 day' +%Y%m%d000000`); # 1st dump/nest
-  chop($CWFDUMP[1] = `date -d '$CWFBASE 2 day' +%Y%m%d000000`); # 2nd dump/nest
+  $CWFBASE   =date2str($CWFBASE." $metday day","%Y%m%d") 
+                if ($metday gt 0) and ($CWFDAYS<=10);
+  $CWFDATE[0]=date2str($CWFBASE." 1 day ago"  ,"%Y%m%d");     # yesterday
+  $CWFDATE[1]=$CWFBASE;                                       # start date
+  $CWFDATE[2]=date2str($CWFDATE[0]." $CWFDAYS day","%Y%m%d"); # end date
+##$CWFDUMP[0]=date2str($CWFBASE."                 ,"%Y-1-1"); # dump/nest every day at 00
+  $CWFDUMP[0]=date2str($CWFBASE." 1 day"          ,"%Y%m%d"); # 1st dump/nest
+  $CWFDUMP[1]=date2str($CWFBASE." 2 day"          ,"%Y%m%d"); # 2nd dump/nest
   $MAKEMODE=$eCWF?"eEMEP":"MACC";    # Standard Forecast model setup
-##$MAKEMODE=$eCWF?"eEMEP2010":"MACC-EVA2010";    # 2010 special
-##$MAKEMODE=$eCWF?"eEMEP2013":"MACC";            # 2013 special
   $MAKEMODE .="-3DVar" if($aCWF);
+  $exp_name = ($eCWF)?"EMERGENCY":($aCWF?"ANALYSIS":"FORECAST");
+  $testv.= ($eCWF)?".eCWF":".CWF"
+##$MAKEMODE=$eCWF?"eEMEP2010":"MACC-EVA2010";    # 2010 special
+# $MAKEMODE=$eCWF?"eEMEP2011":"MACC-EVA2011";    # 2011 special
+# $exp_name.=_MACCEVA;
+##$MAKEMODE=$eCWF?"eEMEP2013":"MACC";            # 2013 special
 }
  $MAKEMODE="SR-$MAKEMODE" if($MAKEMODE and $SR);
 
@@ -190,7 +197,6 @@ my $year = "2006";
 # :can be set to meteorology year or arbitrary year, say 2050
 
 my $iyr_trend = $year;
-$iyr_trend = "2020" if $SR ;  # 2020 assumed for SR runs here
 #$iyr_trend = "1990" ;  #  RCA ECLAIRE
 
 print "Year is $yy YEAR $year Trend year $iyr_trend\n";
@@ -278,12 +284,6 @@ my $ProjDataDir = "";          # Change for specific project data
 
 my $VBS   = 0;
 
-# Modify if needed:
-
-   $Chem     = $BENCHMARK{'chem'} if $BENCHMARK{'chem'};
-   $exp_name = ($eCWF)?"EMERGENCY":"FORECAST" if $CWF;
-   $testv.= ($eCWF)?".eCWF":".CWF" if $CWF;
-
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
    $ProgDir  = "/prod/forecast/emep/eemep/src/Unimod.$testv" if $eCWF and ($USER eq $FORCAST);
@@ -332,14 +332,14 @@ $RoadDir = 0 unless -d $RoadDir;#default?
 my ($CWFIC, $CWFBC, $CWFPL) if $CWF;
 my ($cwfic, $cwfbc, $cwfpl) = ("No IC file","No BC file","No Pollen file");
 if ($CWF) {
- ($CWFIC  = "${CWF}_dump.nc" ) =~ s[$CWFBASE][%08d]g;
- ($CWFIC  = "$WORKDIR/$CWFIC") =~ s[$testv.$year][$testv.dump];
-  $CWFIC  =~ s[run/eemep][work/emep/restart] if $eCWF and ($USER eq $FORCAST);
+ ($CWFIC  = "${CWF}_dump.nc" ) =~ s|$CWFBASE|%Y%m%d|g;
+ ($CWFIC  = "$WORKDIR/$CWFIC") =~ s|$testv.$year|$testv.dump|;
+  $CWFIC  =~ s|run/eemep|work/emep/restart| if $eCWF and ($USER eq $FORCAST);
   $CWFBC  = "$DataDir/$GRID/Boundary_conditions/";            # IFS-MOZ
-  $CWFBC .= "%04d_IFS-MOZART_FC/cwf-mozifs_h%08d00_raqbc.nc";# :Forecast
-# $CWFBC .= "%04d_IFS-MOZART_AN/h%08d00_raqbc.nc";           # :ReAnalysus
-# $CWFBC .= "%04d_EVA/EVA_%08d_EU_AQ.nc";                    # :EVA-2010
- ($CWFPL  = $CWFIC) =~ s[_dump][_pollen];
+  $CWFBC .= "%Y_IFS-MOZART_FC/cwf-mozifs_h%Y%m%d00_raqbc.nc";# :Forecast
+# $CWFBC .= "%Y_IFS-MOZART_AN/h%Y%m%d00_raqbc.nc";           # :ReAnalysus
+# $CWFBC .= "%Y_EVA/EVA_%Y%m%d_EU_AQ.nc";                    # :EVA-2010/2011
+ ($CWFPL  = $CWFIC) =~ s|_dump|_pollen|;
 }
 
 #ds check: and change
@@ -601,8 +601,8 @@ foreach my $scenflag ( @runs ) {
   }
   print "STARTING RUN $scenario \n";
 
-  my $runlabel1    = "$scenario";   # NO SPACES! SHORT name (used in CDF names)
-  my $runlabel2    = "$testv\_$Chem\_$scenario\_$year\_Trend$iyr_trend";   # NO SPACES! LONG (written into CDF files)
+  my $runlabel1 = "$scenario";   # NO SPACES! SHORT name (used in CDF names)
+  my $runlabel2 = "$testv\_$Chem\_$scenario\_$year\_Trend$iyr_trend";   # NO SPACES! LONG (written into CDF files)
 
   my $RESDIR = "$WORKDIR/$scenario";
      $RESDIR = "$WORKDIR/$scenario.$iyr_trend" if ($GRID eq "RCA");
@@ -611,133 +611,55 @@ foreach my $scenflag ( @runs ) {
   chdir $RESDIR;   ############ ------ Change to RESDIR
   print "Working in directory: $RESDIR\n";
 
-  if ($METformat eq "felt") {
-    my $nnn = 1;
-    for (my $mm = $mm1; $mm <= $mm2; $mm++) {
-      # Assign met files to fil001...etc.
-      for (my $n = 1; $n <= $month_days[$mm]; $n++) {
-        $nnn = metlink($n, $nnn, $mm);
-      }
-    }
-
-    my $mmlast = $mm2 + 1;
-    my $yylast = $year;
-   if ( $mmlast > 12 ) {
-      $yylast = $yylast + 1;
-      $mmlast = 1;
-    }
-    my $old = sprintf "$MetDir/f00.%04d%02d01", $yylast, $mmlast;
-    my $new = sprintf "fil%04d", $nnn;
-    mylink( "LAST RECORD SET: ", $old,$new ) ;
-
-  } elsif ($CWF) {
-# Forecast Meteorology in NetCDF
+  # Meteorology name in felt/cdf format
+  $METformat=($METformat eq "felt")?"$MetDir/fhh.YYYYMMDD":      # felt
+                                    "$MetDir/meteoYYYYMMDD.nc";  # cdf
+  if($CWF) { # Forecast Meteorology in NetCDF
+    $METformat="./meteoYYYYMMDD.nc"; # link file to work path
+    my $metday = ($CWFMETV)?int($CWFMETV/24+0.99):0;
+    $MetDir=~s/$year/%Y/g;
     for (my $n = 0; $n < $CWFDAYS; $n++) {
-      my $metday = ($CWFMETV)?int($CWFMETV/24+0.99):0;
-     (my $old = "$MetDir/meteo%Y%m%d${CWFMETV}_%%02d.nc") =~ s/$year/%Y/g;
+      my $metfile="$MetDir/meteo%Y%m%d${CWFMETV}_%%02d.nc";
       if($CWFDAYS<=10){
-        chop($old=`date -d '$CWFBASE $metday day ago' '+$old'`);
-        $old = sprintf "$old",$n+$metday;
+        $metfile=sprintf date2str($CWFBASE." $metday day ago",$metfile),$n+$metday;
       }else{
-        $old =~ s/meteo%Y%m%d$CWFMETV/meteo%Y%m%d/g;
-        chop($old=`date -d '$CWFBASE $metday day ago $n day' '+$old'`);
-        $old = sprintf "$old",$metday;
+        $metfile=~s/meteo%Y%m%d$CWFMETV/meteo%Y%m%d/g;
+        $metfile=sprintf date2str($CWFBASE." $metday day ago $n day",$metfile),$metday;
       }
-      if (-e $old) {
-        chop($CWFDATE[2]=`date -d '$CWFBASE $n day' +%Y%m%d`);
-        my $new = "meteo$CWFDATE[2].nc";
-        mylink( "Linking:", $old,$new ) ;
+      # Chech if meteo is in place
+      die "Meteo file $metfile for $CWFBASE not available (yet). Try later...\n"
+        unless (-e $metfile);
+      $CWFDATE[2]=date2str($CWFBASE." $n day","%Y%m%d");
+      mylink("CWF Met:",$metfile,date2str($CWFDATE[2],$METformat)) ;
       # IFS-MOZART BC file
-        $old = sprintf "$CWFBC",substr($CWFDATE[2],0,4),$CWFDATE[2];
-        $new = "EMEP_IN_BC_$CWFDATE[2].nc";
-        if (-e $old) {
-          mylink( "Linking:", $old,$new );
-          $cwfbc=$old;
-        } else {
-          die "BC file for $CWFDATE[2] not available (yet)" if ($CWFBC =~ m/_AN.+h$year/);
-          print "BC file for $CWFDATE[2] not available (yet). Try $CWFDATE[0] BC file\n";
-          $old = sprintf "$CWFBC",substr($CWFDATE[0],0,4),$CWFDATE[0];
-          if (-e $old) {
-            mylink( "Linking:", $old,$new ) if (-e $old);
-            $cwfbc=$old;
-          }
-        }
-      } else {
-      # meteo not in place !!!!!
-        die "Meteo file $old for $CWFBASE not available (yet). Try later ...\n";
-      }
+      $cwfbc=date2str($CWFDATE[2],$CWFBC);
+      $cwfbc=date2str($CWFDATE[0],$CWFBC) unless (-e $cwfbc);
+      mylink("CWF BC :",$cwfbc,"EMEP_IN_BC_${CWFDATE[2]}.nc") if (-e $cwfbc);
     }
 # Forecast nest/dump files
-    my $old = sprintf "$CWFIC",$CWFDATE[0]; # yesterday's dump
-      #$old =~s/AN-//        if($aCWF);     # use Forecast dump on AN runs
-       $old =~s/FC-/AN-/ unless($aCWF);     # use Analyis dump on FC runs
-    if (-e $old) {
-      # we manage to link the dumpfile
-      my $new="EMEP_IN_IC.nc";
-      mylink( "Linking:", $old, $new);
-      $cwfic=$old;
-    } else {
-      # if we have yesterday meteo, we can have an extra spin up day!
-      print "No dumpfile present:\n\t$old,\n\ttrying to take an extra spin-up day!\n";
-      my $old = "$MetDir/meteo${CWFDATE[0]}_00.nc";
-      if (-e $old) {
-        my $new = "meteo${CWFDATE[0]}.nc";
-        mylink( "Linking:", $old, $new);
-        print "Managed to link meteo for an extra spin-up day!\n";
+    $cwfic=date2str($CWFDATE[0],$CWFIC);  # yesterday's dump
+   #$cwfic=~s/AN-//        if($aCWF);     # use Forecast dump on AN runs
+    $cwfic=~s/FC-/AN-/ unless($aCWF);     # use Analyis dump on FC runs
+    my $metfile="$MetDir/meteo${CWFDATE[0]}_00.nc"; # yesterday's met
+    if (-e $metfile and ! -e $cwfic) {
+      print "No dumpfile present:\n\t$cwfbc.\n\tTake extra spin-up day.\n";
       # Update simulation: start-date ($CWFDATE[1]), "yesterday" ($CWFDATE[0])
-        $CWFDATE[1]=$CWFDATE[0];
-        chop($CWFDATE[0]=`date -d '$CWFDATE[0] 1 day ago' +%Y%m%d`);
+      $CWFDATE[1]=$CWFDATE[0];
+      $CWFDATE[0]=date2str($CWFDATE[0]." 1 day ago","%Y%m%d");
+      mylink("CWF Met:",$metfile,date2str($CWFDATE[1],$METformat));
       # IFS-MOZART BC file
-        $old = sprintf "$CWFBC",substr($CWFDATE[1],0,4),$CWFDATE[1];
-        $new = "EMEP_IN_BC_${CWFDATE[1]}.nc";
-        if (-e $old) {
-      # we manage to link the BC file
-          mylink( "Linking:", $old,$new );
-          print "Managed to link BC file for the extra spin-up day!\n";
-          $cwfbc=$old;
-        } else {
-          print "BC file for $CWFDATE[1] not available (yet) (spin-up). Try yesterdays BC file\n";
-          $old = sprintf "$CWFBC",substr($CWFDATE[0],0,4),$CWFDATE[0];
-          if (-e $old) {
-            mylink( "Linking:", $old,$new );
-            print "Managed to link yesterdays BC file for the extra spin-up day!\n";
-            $cwfbc=$old;
-          }
-        }
+      $cwfbc=date2str($CWFDATE[1],$CWFBC);
+      $cwfbc=date2str($CWFDATE[0],$CWFBC) unless (-e $cwfbc);
+      mylink("CWF BC :",$cwfbc,"EMEP_IN_BC_${CWFDATE[1]}.nc") if (-e $cwfbc);
       # see if we can link to a dump file ...
-        my $old = sprintf "$CWFIC",$CWFDATE[0]; # yesterday's dump
-          #$old =~s/AN-//        if($aCWF);     # use Forecast dump on AN runs
-           $old =~s/FC-/AN-/ unless($aCWF);     # use Analyis dump on FC runs
-        if (-e $old) {
-        # we manage to link the dumpfile
-          my $new="EMEP_IN_IC.nc";
-          mylink( "Linking:", $old, $new);
-          $cwfic=$old;
-          print "Managed to link dump file for the extra spin-up day!\n";
-        }
-      }
+      $cwfic=date2str($CWFDATE[0],$CWFIC);  # yesterday's dump
+     #$cwfic=~s/AN-//        if($aCWF);     # use Forecast dump on AN runs
+      $cwfic=~s/FC-/AN-/ unless($aCWF);     # use Analyis dump on FC runs
     }
+    mylink("CWF IC :",$cwfic,"EMEP_IN_IC.nc") if (-e $cwfic);
 # Update start and end months (used for linking some climatological files)
     $mm1=substr($CWFDATE[1],4,2);  # start date
     $mm2=substr($CWFDATE[2],4,2);  # end date
-  } else {
-#meteorology in NetCDF
-    for (my $mm = $mm1; $mm <= $mm2; $mm++) {
-      for (my $n = 1; $n <= $month_days[$mm]; $n++) {
-        my  $old = sprintf "$MetDir/meteo${year}%02d%02d.nc", $mm,$n;
-        my  $new = sprintf "meteo${year}%02d%02d.nc", $mm,$n;
-        mylink( "Linking:", $old,$new ) ;
-      }
-    }
-    my $mmlast = $mm2 + 1;
-    my $yylast = $year;
-    if ( $mmlast > 12 ) {
-      $yylast = $yylast + 1;
-      $mmlast = 1;
-    }
-    my $old = sprintf "$MetDir/meteo%02d%02d01.nc", $yylast, $mmlast;
-    my $new = sprintf "meteo%02d%02d01.nc", $yylast, $mmlast;
-    mylink( "LAST RECORD SET: ", $old,$new ) ;
   }
 
 #Experimental: Grid definitions in a separate file 
@@ -749,11 +671,6 @@ foreach my $scenflag ( @runs ) {
 # ToDo Change noxsplit.default to defaults, as with voc (also in Unimod)
 
   my %ifile   = ();   # List of input data-files
-
-  # NML namelist options.
-  die "No CONFIG $exp_name" unless -f "$ProgDir/config_$exp_name.nml";
-  $ifile{"$ProgDir/config_$exp_name.nml"} = "config_emep.nml";
-  $ifile{"$ProgDir/config_Outputs_$outputs.nml"} = "config_Outputs.nml";
 
 # First, emission files are labelled e.g. gridSOx, which we assign to
 # emislist.sox to ensure compatability with the names (sox,...) used
@@ -801,9 +718,8 @@ $ifile{"$timeseries/EmisHeights.txt"} = "EmisHeights.txt";
     $dir = $pm_emisdir if $poll =~ /forf/;   #
 print "TESTING PM $poll $dir\n";
 
-# hb NH3emis, new emis files
-    if ($GRID eq "MACC14") {
-      # Only Emis_TNO7.nc available
+    if ($GRID eq "MACC14") { # For most cases only Emis_TNO7.nc is available
+      $ifile{"$emisdir/EmisOutFrac.$poll"} = "emislist.$poll" if(-e "$emisdir/EmisOutFrac.$poll");
      }elsif( $GRID eq "RCA"){
       #EnsClim RCA #$ifile{"$dir/grid$gridmap{$poll}"} = "emislist.$poll";
         #$ifile{"$emisdir/EmisOut_2005.$poll"} = "emislist.$poll";
@@ -925,7 +841,7 @@ print "TESTING PM $poll $dir\n";
   $ifile{"$DataDir/ForestFire/FINN/ForestFire_Emis_$year.nc"} =     # FINN emissions
     "FINN_ForestFireEmis_$year.nc" if ($year >= 2002 and $year <= 2011);
   $ifile{"$DataDir/ForestFire/GFAS/GFAS_ForestFireEmis_$year.nc"} = # GFAS emissions
-    "GFAS_ForestFireEmis_$year.nc" if ($year >= 2008 and $year <= 2011);
+    "GFAS_ForestFireEmis_$year.nc" if ($year >= 2008 and $year <= 2012);
   $ifile{"$DataDir/nox_emission_1996-2005.nc"} = "nox_emission_1996-2005.nc";
   $ifile{"$DataDir/AircraftEmis_FL.nc"} = "AircraftEmis_FL.nc";
   $ifile{"$DataDir/SurfacePressure.nc"} = "SurfacePressure.nc";
@@ -1017,6 +933,7 @@ print "TESTING PM $poll $dir\n";
         $efile = "$EmergencyData/${vname}_2bin_${MAKEMODE}.eruptions" if($MAKEMODE =~ /(2010|2011)/);
       # $efile = "$EmergencyData/${vname}_2bin_${MAKEMODE}_SR-SOx.eruptions" if($MAKEMODE =~ /(2010|2011)/);
       # $efile = "$EmergencyData/${vname}_2bin_${MAKEMODE}_SR-PMx.eruptions" if($MAKEMODE =~ /(2010|2011)/);
+        $efile =~ s|bin_SR-|bin_| if($SR); # remove the SR- from $MAKEMODE
         system("cat $efile >> emergency_emission.csv") if (-e $efile);
         $efile = "$EmergencyData/${vname}.accident";           # NPP accident
         system("cat $efile >> emergency_emission.csv") if (-e $efile);
@@ -1031,15 +948,10 @@ print "TESTING PM $poll $dir\n";
   if($PollenDir) {
     $ifile{"$PollenDir/pollen_data.nc"} = "pollen_data.nc";
     if($CWF){
-      my $old=sprintf("$CWFPL",$CWFDATE[0]);
-      if(-e $old){
-        my $new="POLLEN_IN.nc";
-        mylink( "Linking:",$old, $new);
-        $cwfpl=$old;
-      }
+      $cwfpl=date2str($CWFDATE[0],$CWFPL);
+      mylink("Linking:",$cwfpl,"POLLEN_IN.nc") if(-e $cwfpl);
     }
   }
-
 
 # For windblown dust
    if ( $SoilDir ) {
@@ -1105,19 +1017,48 @@ print "TESTING PM $poll $dir\n";
   print RMF "rm $LPROG\n";   # Delete executable also
   close(RMF);
 
-  my $startdate = sprintf "%04d %02d %02d",$year,$mm1,$dd1;
-  my $enddate   = sprintf "%04d %02d %02d",$year,$mm2,$dd2;
-  if ($CWF){    # use forecast start date
-    $startdate = substr($CWFDATE[1],0,4)." ".substr($CWFDATE[1],4,2)." ".substr($CWFDATE[1],6,2);
-    $enddate   = substr($CWFDATE[2],0,4)." ".substr($CWFDATE[2],4,2)." ".substr($CWFDATE[2],6,2);
+  my ($startdate,$enddate)=("$year-$mm1-$dd1","$year-$mm2-$dd2");
+     ($startdate,$enddate)=("$CWFDATE[1]","$CWFDATE[2]") if $CWF;
+# check if first/last met file exists
+  foreach my $f ("$startdate","$enddate") {
+    $f=date2str($f,$METformat);
+    die "METFILE not found:\n\t$f\n" unless -e $f;
   }
 
-# make file with input parameters (to be read by Unimod.f90)
-  unlink("INPUT.PARA");
-  open(TMP,">INPUT.PARA");
-  print TMP "$iyr_trend\n$runlabel1\n$runlabel2\n$startdate\n$enddate\n";
-  print TMP "$CWFDUMP[0]\n$CWFDUMP[1]\n" if $CWF;
-  close(TMP);
+# namelist with input parameters (to be read by Unimod.f90 and other modules)
+  if(%BENCHMARK){
+    # read nml template file
+    my $nml=EMEP::Sr::slurp("$ProgDir/config_BM-$GRID.nml");
+    $nml =~ s/(\!.*|\s+$)//g;  # remove comments, tailing spaces
+    $nml =~ s/\s*\n+/\n/g;     # & empty lines
+    # fill in variables on the template file with corresponding $BENCHMARK{key}
+    $BENCHMARK{'runlabel1'}="$runlabel1";
+    $BENCHMARK{'runlabel2'}="$runlabel2";
+    $BENCHMARK{'METformat'}="$METformat";
+    foreach my $k (keys(%BENCHMARK)) { $nml=~s:\$$k:$BENCHMARK{$k}:g; }
+    open(TMP,">config_emep.nml");
+    print TMP "$nml";
+    close(TMP);
+  } else {
+    my $nml="&INPUT_PARA\n"
+        ."  iyr_trend = $iyr_trend,\n"
+        ."  runlabel1 = '$runlabel1',\n"
+        ."  runlabel2 = '$runlabel2',\n"
+        ."  startdate = ".date2str($startdate ,"%Y,%m,%d,000000,\n")
+        ."  enddate   = ".date2str($enddate   ,"%Y,%m,%d,000000,\n")
+  .($CWF?"  outdate   = ".date2str($CWFDUMP[0],"%Y,%m,%d,000000,")
+                         .date2str($CWFDUMP[1],"%Y,%m,%d,000000,\n"):"")
+        ."  meteo     = '$METformat',\n"
+        ."&end\n";
+    open(TMP,">config_emep.nml");
+    print TMP "$nml";
+    close(TMP);
+    # NML namelist options.
+    foreach my $nml ("config_$exp_name.nml","config_Outputs_$outputs.nml") {
+      die "No CONFIG $nml" unless -f "$ProgDir/$nml";
+      system("cat $ProgDir/$nml >> config_emep.nml");
+    }
+  }
 
   foreach my $exclu ( @exclus) {
     print "starting $PROGRAM with\n".
@@ -1147,6 +1088,12 @@ print "TESTING PM $poll $dir\n";
     print "\n  The program stopped abnormally!! \n" unless $DRY_RUN;
   }
 
+# Special CWF input files
+  my $CWFINPUT=$CWF?"\n".
+    "  IC: ".(-e $cwfic?$cwfic:"Not found")."\n".
+    "  BC: ".(-e $cwfbc?$cwfbc:"Not found")."\n".
+    "  PL: ".(-e $cwfpl?$cwfpl:"Not found"):"";
+
 #move RunLog
   rename "RunLog.out",  "${runlabel1}_RunLog"
     or warn "cannot mv RunLog.out ${runlabel1}_RunLog\n" unless $DRY_RUN;
@@ -1163,10 +1110,7 @@ Version: $testv
 Chemical scheme: $Chem
 @packages
 SR?  $SR
-CWF? $CWF
-IC? $cwfic
-BC? $cwfbc
-PL? $cwfpl
+CWF? $CWF $CWFINPUT
 iyr_trend: $iyr_trend
 ------------------------------
 femis: femis.$scenario
@@ -1205,9 +1149,9 @@ EOT
 
   if ($CWF) {
     my $old="EMEP_OUT.nc";
-       $old=sprintf("EMEP_OUT_%08d.nc",substr($CWFDUMP[0],0,8)) unless (-e "$old");
-       $old=sprintf("EMEP_OUT_%08d.nc",substr($CWFDUMP[1],0,8)) unless (-e "$old");
-    my $new=sprintf("$CWFIC",$CWFBASE);    # today's dump
+       $old=date2str($CWFBASE." 1 day","EMEP_OUT_%Y%m%d.nc") unless (-e "$old");; # 1st dump/nest
+       $old=date2str($CWFBASE." 2 day","EMEP_OUT_%Y%m%d.nc") unless (-e "$old");; # 2nd dump/nest
+    my $new=date2str($CWFBASE,$CWFIC);      # today's dump
     system("mkdir -p `dirname $new`; mv $old $new") if (-e "$old");
     if ($SR) {
       system("rm $cwfic") if (-e $cwfic);   # yesterday's dump
@@ -1220,9 +1164,9 @@ EOT
     }
     # Pollen
     $old="POLLEN_OUT.nc";
-    $old=sprintf("POLLEN_OUT_%08d.nc",substr($CWFDUMP[0],0,8)) unless (-e "$old");
-    $old=sprintf("POLLEN_OUT_%08d.nc",substr($CWFDUMP[1],0,8)) unless (-e "$old");
-    $new=sprintf("$CWFPL",$CWFBASE);        # today's pollen dump
+    $old=date2str($CWFBASE." 1 day","POLLEN_OUT_%Y%m%d.nc") unless (-e $old);; # 1st dump/nest
+    $old=date2str($CWFBASE." 2 day","POLLEN_OUT_%Y%m%d.nc") unless (-e $old);; # 2nd dump/nest
+    $new=date2str($CWFBASE,$CWFPL);        # today's pollen dump
     system("mkdir -p `dirname $new`; mv $old $new") if (-e "$old");
   }
 
@@ -1251,16 +1195,16 @@ sub leap_year {
   }
 }
 
-sub metlink {  #---- meteorological data
-  my ($dd,$nnn,$mm) = ($_[0], $_[1], $_[2]);
-
-  for (my $hh = 0; $hh <= 21; $hh += 3) {
-    my $old = sprintf "$MetDir/f%02d.%04d%02d%02d", $hh, $year, $mm, $dd;
-    my $new = sprintf "fil%04d", $nnn;
-    mylink("Met:", $old, $new);
-    $nnn++;
-  }
-  return $nnn;
+sub date2str { 
+  my ($date,$str) = ("$_[0]","$_[1]");
+  $date =~ s|,000000| 00:00:00|g;
+  $date =~ s|,0000| 00:00|g;
+  $date =~ s|,|-|g;
+  $str =~ s|YYYY|%Y|g;
+  $str =~ s|MM|%m|g;
+  $str =~ s|DD|%d|g;
+  chop($str = `date -d '$date' +'$str'`);
+  return $str;
 }
 
 sub mylink {
