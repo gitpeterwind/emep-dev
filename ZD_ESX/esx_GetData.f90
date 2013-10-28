@@ -1,6 +1,6 @@
 module esx_GetData
   use esx_Variables,  only : Loc
-  use TimeDate,       only : day_of_year, date
+  use TimeDate_ml,    only : day_of_year, date
   implicit none
   private
 

@@ -5,7 +5,7 @@
 !! but if KzMethod is power-law we need more. 
 
 module Kz_ml
-use PhysicalConstants, only : KARMAN, GRAV
+use PhysicalConstants_ml, only : KARMAN, GRAV
 implicit none
 private
 

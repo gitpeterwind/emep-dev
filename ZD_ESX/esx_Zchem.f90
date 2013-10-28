@@ -3,7 +3,7 @@
   use ChemSpecs, only : species, define_chemicals, nspec => NSPEC_TOT
   use ChemRates, only : NCHEMRATES
   use esx_Variables, only:  esx, Zmet
-  use SmallUtils, only: find_index, find_indices, NOT_FOUND
+  use SmallUtils_ml, only: find_index, find_indices, NOT_FOUND
   use ZchemData,  only : Alloc1Dchem, xChem, rcemis
 
   implicit none

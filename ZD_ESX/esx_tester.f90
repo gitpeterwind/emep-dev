@@ -17,8 +17,8 @@ program tester
   use Io_Routines,      only : writetdata
   use ZchemData,        only : Alloc1Dchem, xChem, rcemis
   use Zmet_ml,          only : Set1Dmet
-  use SmallUtils,       only : find_index
-  use TimeDate,         only : current_date, add2current_date
+  use SmallUtils_ml,    only : find_index
+  use TimeDate_ml,      only : current_date, add2current_date
 
   implicit none
 

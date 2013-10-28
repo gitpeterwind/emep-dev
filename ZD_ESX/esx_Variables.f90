@@ -8,9 +8,9 @@ module esx_Variables
   use ChemSpecs, only : species
   use KeyValueTypes, only: KeyValInt, KeyValReal
   use LocalVariables, only : LocDat   !! Data for Sub
-  use PhysicalConstants, only : T0    !! 273.15
-  use SmallUtils, only: LenArray, find_indices
-  use TimeDate,       only : date, current_date
+  use PhysicalConstants_ml, only : T0    !! 273.15
+  use SmallUtils_ml, only: LenArray, find_indices
+  use TimeDate_ml,   only : date, current_date
   implicit none
   private
 

@@ -50,7 +50,7 @@ module Ammonium_ml
 
  use ChemSpecs,            only : species
  use ModelConstants,       only : CHEMTMIN, CHEMTMAX   ! Temp. range
- use SmallUtils,           only : find_index
+ use SmallUtils_ml,        only : find_index
  use ZchemData,            only : xChem
  use Zmet_ml,              only : rh, temp, itemp, amk =>M
  implicit none

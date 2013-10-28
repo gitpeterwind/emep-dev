@@ -1,8 +1,9 @@
-! <SmallUtils_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
-!          Chemical transport Model>
+!> SmallUtils_ml.f90 - MODULE - provides small utility routines to process
+!! test strings and key-valaue pairs
+!! <A component of the EMEP MSC-W Unified Eulerian Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2007-2011 met.no
+!*  Copyright (C) 2007-2013 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -28,25 +29,23 @@
 module SmallUtils_ml
 
 !_____________________________________________________________________________
-! -- small utility provides routines to process text strings,
-!    find array indices, write arrays.
-!
-! Dave Simpson, 1999-2011
-! Language: F-complaint, except system calls in Self_Test
-! (Can be run with F is test-input file created manually
-!  and system calls commented out, as here)
-!_____________________________________________________________________________
+!> @brief small utility provides routines to process text strings,
+!!   find array indices, write arrays.
+!!
+!! @author Dave Simpson, 1999-2011
+!! Language: F-complaint
+!<____________________________________________________________________________
   implicit none
 
-  ! -- subroutines in this module:
+  ! -- subroutines in this TEST module:
 
-  public :: wordsplit    !  Splits input text into words
-  public :: LenArray     ! count No. set strings in array
-  public :: AddArray     ! Adds new char array to old
-  public :: WriteArray   ! Writes out char array, one element per line
-  public :: find_index   ! Finds index of item in list 
-  public :: find_indices ! Finds indices of arrays of items in list 
-  public :: Self_Test    ! For testing
+  public :: wordsplit    !> Splits input text into words
+  public :: LenArray     !> count No. set strings in array
+  public :: AddArray     !> Adds new char array to old
+  public :: WriteArray   !! Writes out char array, one element per line
+  public :: find_index   !! Finds index of item in list 
+  public :: find_indices !< Finds indices of arrays of items in list 
+  public :: Self_Test    !< For testing
 
   private :: find_index_c, find_index_i
 
@@ -131,8 +130,9 @@ subroutine wordsplit(text,nword_max,wordarray,nwords,errcode,separator,&
 end subroutine wordsplit
 
 !============================================================================
+!> LenArray counts number of elements in input array (a)
+!!  which are not equal to notset string
 function LenArray(a,notset) result (N)
-  !+ Counts number of elements in a which are not equal to notset string
   character(len=*), dimension(:), intent(in) :: a
   character(len=*), intent(in) :: notset
   integer :: N, i
@@ -144,8 +144,8 @@ function LenArray(a,notset) result (N)
   enddo
 end function LenArray
 !============================================================================
+!> AddArray adds elements from new array to old array
 subroutine AddArray(new,old,notset,errmsg)
-  !+ Adds elements from new array to old array
   character(len=*), dimension(:), intent(in) :: new
   character(len=*), dimension(:), intent(inout) :: old
   character(len=*), intent(in) :: notset
@@ -183,9 +183,9 @@ subroutine WriteArray(list,NList,txt,io_num)
     write(unit=io,fmt=*) txt, i, list(i)
   enddo
 end subroutine WriteArray
-!============================================================================
-! A series of find_index routines, for character (c) and integer (i) arrays:
-!============================================================================
+!>===========================================================================
+!! A series of find_index routines, for character (c) and integer (i) arrays:
+!!===========================================================================
 function find_index_c(wanted, list, first_only, debug)  result(Index)
   character(len=*), intent(in) :: wanted
   character(len=*), dimension(:), intent(in) :: list

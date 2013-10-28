@@ -39,8 +39,9 @@ module KeyValueTypes
 implicit none
 
   public :: KeyValue      !  returns value for given key
-  private :: KeyValue_txt  !  returns value for given key
-  private :: KeyValue_flt  !  returns value for given key
+  private :: KeyValue_txt  !  returns text  value for given key
+  private :: KeyValue_flt  !  returns float value for given key
+  private :: KeyValue_int  !  returns int   value for given key
   public :: Self_Test
 
 
@@ -49,13 +50,18 @@ implicit none
   integer, public, parameter :: LENKEYVAL = 30   ! max length of key or value
 
   interface KeyValue
-    module procedure KeyValue_txt, KeyValue_flt
+    module procedure KeyValue_txt, KeyValue_flt, KeyValue_int
   end interface KeyValue
 
-  type, public :: KeyRealVal
+  type, public :: KeyValReal
     character(len=LENKEYVAL) :: key
-    real                     :: num
-  end type KeyRealVal
+    real                     :: flt
+  end type KeyValReal
+
+  type, public :: KeyValInt
+    character(len=LENKEYVAL) :: key
+    integer                  :: int
+  end type KeyValInt
 
   type, public :: KeyVal
     character(len=LENKEYVAL) :: key
@@ -84,21 +90,37 @@ contains
        
   end function KeyValue_txt
   !=======================================================================
-  function KeyValue_flt(KV,txt)  result(num)
-    type(KeyRealVal), dimension(:), intent(in) :: KV
+  function KeyValue_flt(KV,txt)  result(flt)
+    type(KeyValReal), dimension(:), intent(in) :: KV
      character(len=*), intent(in) :: txt
-     real     :: num
+     real     :: flt
      integer :: i
 
-     num = -999   ! not completely safe, NaN would be better
+     flt = -999.0   ! not completely safe, NaN would be better
      do i = 1, size(KV)
          if( KV(i)%key == trim(txt) )  then
-             num = KV(i)%num
+             flt = KV(i)%flt
              return
          end if
      end do
        
   end function KeyValue_flt
+  !=======================================================================
+  function KeyValue_int(KV,txt)  result(int)
+    type(KeyValInt), dimension(:), intent(in) :: KV
+     character(len=*), intent(in) :: txt
+     integer :: int
+     integer :: i
+
+     int = -999   ! not completely safe, NaN would be better
+     do i = 1, size(KV)
+         if( KV(i)%key == trim(txt) )  then
+             int = KV(i)%int
+             return
+         end if
+     end do
+       
+  end function KeyValue_int
   !=======================================================================
   subroutine Self_Test()
      type(KeyVal), dimension(3) :: KeyValues = (/ &

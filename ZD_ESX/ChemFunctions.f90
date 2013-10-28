@@ -36,7 +36,7 @@ module ChemFunctions
 !   troe - standrad chemical function
 !____________________________________________________________________
 !ESX use LocalVariables,     only : Grid   ! => izen, is_NWPsea
- use PhysicalConstants,  only : AVOG, RGAS_J, DAY_ZEN
+ use PhysicalConstants_ml, only : AVOG, RGAS_J, DAY_ZEN
  use ZchemData,          only : x=> xChem
  use ZchemData,          only : xSO4, xNO3, xNH4 ! for RiemerN2O5
  use Zmet_ml,            only : temp, tinv, rh, M   !, amk
