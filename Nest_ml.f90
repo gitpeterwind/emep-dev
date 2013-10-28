@@ -561,197 +561,224 @@ subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
 
   !Read dimensions (global)
   if(MasterProc)then
-    status = nf90_open(path=trim(filename_read),mode=nf90_nowrite,ncid=ncFileID)
-    if(status /= nf90_noerr) then
-      print *,'init_Nest: not found',trim(filename_read)
-      return
-    else
-      print *,'init_Nest: reading ',trim(filename_read)
-    endif
+     status = nf90_open(path=trim(filename_read),mode=nf90_nowrite,ncid=ncFileID)
+     if(status /= nf90_noerr) then
+        print *,'init_Nest: not found',trim(filename_read)
+        return
+     else
+        print *,'init_Nest: reading ',trim(filename_read)
+     endif
 
-    projection='Unknown'
-    status = nf90_get_att(ncFileID,nf90_global,"projection",projection)
-    if(status == nf90_noerr) then
-      write(*,*)'Nest: projection: '//trim(projection)
-    else
-      projection='lon lat'
-      write(*,*)'Nest: projection not found for ',&
-              trim(filename_read)//', assuming '//trim(projection)
-    endif
-    !get dimensions id
-    if(trim(projection)=='Stereographic') then
-      call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
-      call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
-    elseif(trim(projection)==trim('lon lat').or. &
-        trim(projection)==trim('lon_lat')) then
-      projection='lon lat'
-      call check(nf90_inq_dimid(ncid = ncFileID, name = "lon", dimID = idimID))
-      call check(nf90_inq_dimid(ncid = ncFileID, name = "lat", dimID = jdimID))
-    else
-      !write(*,*)'GENERAL PROJECTION ',trim(projection)
-      call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
-      call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
-      !WRITE(*,*) 'MPI_ABORT: ', "PROJECTION NOT RECOGNIZED"
-      !call  MPI_ABORT(MPI_COMM_WORLD,9,INFO)
-    endif
+     projection='Unknown'
+     status = nf90_get_att(ncFileID,nf90_global,"projection",projection)
+     if(status == nf90_noerr) then
+        write(*,*)'Nest: projection: '//trim(projection)
+     else
+        projection='lon lat'
+        write(*,*)'Nest: projection not found for ',&
+             trim(filename_read)//', assuming '//trim(projection)
+     endif
+     !get dimensions id
+     if(trim(projection)=='Stereographic') then
+        call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
+        call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
+     elseif(trim(projection)==trim('lon lat').or. &
+          trim(projection)==trim('lon_lat')) then
+        projection='lon lat'
+        call check(nf90_inq_dimid(ncid = ncFileID, name = "lon", dimID = idimID))
+        call check(nf90_inq_dimid(ncid = ncFileID, name = "lat", dimID = jdimID))
+     else
+        !write(*,*)'GENERAL PROJECTION ',trim(projection)
+        call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
+        call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
+        !WRITE(*,*) 'MPI_ABORT: ', "PROJECTION NOT RECOGNIZED"
+        !call  MPI_ABORT(MPI_COMM_WORLD,9,INFO)
+     endif
 
-    status = nf90_inq_dimid(ncid=ncFileID,dimID=kdimID,name="k")
-    if(status/=nf90_noerr) &
-      status=nf90_inq_dimid(ncid=ncFileID,dimID=kdimID,name="mlev")
-    if(status/=nf90_noerr) &
-      status=nf90_inq_dimid(ncid=ncFileID,dimID=kdimID,name="lev")
-    if(status/=nf90_noerr) then
-      !include more possible names here
-      write(*,*)'Nest: vertical levels name not found: ',trim(filename_read)
-      call StopAll('Include new name in init_nest')
-    endif
+     status = nf90_inq_dimid(ncid=ncFileID,dimID=kdimID,name="k")
+     if(status/=nf90_noerr) &
+          status=nf90_inq_dimid(ncid=ncFileID,dimID=kdimID,name="mlev")
+     if(status/=nf90_noerr) &
+          status=nf90_inq_dimid(ncid=ncFileID,dimID=kdimID,name="lev")
+     if(status/=nf90_noerr) then
+        !include more possible names here
+        write(*,*)'Nest: vertical levels name not found: ',trim(filename_read)
+        call StopAll('Include new name in init_nest')
+     endif
 
-    N_ext=0
-    status = nf90_inq_dimid(ncid=ncFileID,name="time",dimID=timeDimID)
-    time_exists=(status==nf90_noerr)
-    if(time_exists) then
-      call check(nf90_inquire_dimension(ncid=ncFileID,dimID=timedimID,len=N_ext))
-    else
-      write(*,*)'Nest: time dimension not found. Assuming only one record '
-      N_ext=1
-    endif
+     N_ext=0
+     status = nf90_inq_dimid(ncid=ncFileID,name="time",dimID=timeDimID)
+     time_exists=(status==nf90_noerr)
+     if(time_exists) then
+        call check(nf90_inquire_dimension(ncid=ncFileID,dimID=timedimID,len=N_ext))
+     else
+        write(*,*)'Nest: time dimension not found. Assuming only one record '
+        N_ext=1
+     endif
 
-    call check(nf90_inquire_dimension(ncid=ncFileID,dimID=idimID,len=GIMAX_ext))
-    call check(nf90_inquire_dimension(ncid=ncFileID,dimID=jdimID,len=GJMAX_ext))
-    call check(nf90_inquire_dimension(ncid=ncFileID,dimID=kdimID,len=KMAX_ext))
+     call check(nf90_inquire_dimension(ncid=ncFileID,dimID=idimID,len=GIMAX_ext))
+     call check(nf90_inquire_dimension(ncid=ncFileID,dimID=jdimID,len=GJMAX_ext))
+     call check(nf90_inquire_dimension(ncid=ncFileID,dimID=kdimID,len=KMAX_ext))
 
-    write(*,*)'Nest: dimensions external grid',GIMAX_ext,GJMAX_ext,KMAX_ext,N_ext
-    if(.not.allocated(ndays_ext))then
-      allocate(ndays_ext(N_ext))
-    elseif(size(ndays_ext)<N_ext)then
-      if(Masterproc)write(*,*)'Nest: Sizes times ',N_ext
-      deallocate(ndays_ext)
-      allocate(ndays_ext(N_ext))
-    endif
+     write(*,*)'Nest: dimensions external grid',GIMAX_ext,GJMAX_ext,KMAX_ext,N_ext
+     if(.not.allocated(ndays_ext))then
+        allocate(ndays_ext(N_ext))
+     elseif(size(ndays_ext)<N_ext)then
+        if(Masterproc)write(*,*)'Nest: Sizes times ',N_ext
+        deallocate(ndays_ext)
+        allocate(ndays_ext(N_ext))
+     endif
 
   endif
   CALL MPI_BCAST(GIMAX_ext,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
   CALL MPI_BCAST(GJMAX_ext,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
   CALL MPI_BCAST(KMAX_ext,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
- !CALL MPI_BCAST(N_ext,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO) !not needed by others than MasterProc
+  !CALL MPI_BCAST(N_ext,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO) !not needed by others than MasterProc
 
   allocate(lon_ext(GIMAX_ext,GJMAX_ext),lat_ext(GIMAX_ext,GJMAX_ext))
   allocate(hyam(KMAX_ext+1),hybm(KMAX_ext+1),P_ext(KMAX_ext))
 
   if(MasterProc)then
-    !Read lon lat of the external grid (global)
-    if(trim(projection)==trim('lon lat')) then
-      call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
-      allocate(temp_ll(GIMAX_ext))
-      call check(nf90_get_var(ncFileID, varID, temp_ll))
-      lon_ext=SPREAD(temp_ll,2,GJMAX_ext)
-      deallocate(temp_ll)
-      call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
-      allocate(temp_ll(GJMAX_ext))
-      call check(nf90_get_var(ncFileID, varID, temp_ll))
-      lat_ext=SPREAD(temp_ll,1,GIMAX_ext)
-      deallocate(temp_ll)
-    else
-      call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
-      call check(nf90_get_var(ncFileID, varID, lon_ext ))
+     !Read lon lat of the external grid (global)
+     if(trim(projection)==trim('lon lat')) then
+        call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
+        allocate(temp_ll(GIMAX_ext))
+        call check(nf90_get_var(ncFileID, varID, temp_ll))
+        lon_ext=SPREAD(temp_ll,2,GJMAX_ext)
+        deallocate(temp_ll)
+        call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
+        allocate(temp_ll(GJMAX_ext))
+        call check(nf90_get_var(ncFileID, varID, temp_ll))
+        lat_ext=SPREAD(temp_ll,1,GIMAX_ext)
+        deallocate(temp_ll)
+     else
+        call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
+        call check(nf90_get_var(ncFileID, varID, lon_ext ))
 
-      call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
-      call check(nf90_get_var(ncFileID, varID, lat_ext ))
-    endif
+        call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
+        call check(nf90_get_var(ncFileID, varID, lat_ext ))
+     endif
      !    call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = varID))
 
      !do n=1,N_ext
      !    call check(nf90_get_var(ncFileID, varID, ndays,start=(/ 1 /),count=(/ 1 /) ))
-    if(time_exists)then
-      call ReadTimeCDF(filename_read,ndays_ext,N_ext)
-    else
-      !cannot read time on file. assumes it is correct
-      ndays_ext(1)=ndays_indate
-    endif
-    if(MODE==100)then
+     if(time_exists)then
+        call ReadTimeCDF(filename_read,ndays_ext,N_ext)
+     else
+        !cannot read time on file. assumes it is correct
+        ndays_ext(1)=ndays_indate
+     endif
+     if(MODE==100)then
         !asuming 12 monthes for BC, and 12 or 1 values for IC
 
-    elseif(ndays_ext(1)-ndays_indate>halfsecond)then
-      call nctime2idate(ndate,ndays_indate,&
-        'WARNING: Nest did not find BIC for date YYYY-MM-DD hh:mm:ss')
-      call nctime2idate(ndate,ndays_ext(1),&
-        'Nest first date found YYYY-MM-DD hh:mm:ss')
-    endif
+     elseif(ndays_ext(1)-ndays_indate>halfsecond)then
+        call nctime2idate(ndate,ndays_indate,&
+             'WARNING: Nest did not find BIC for date YYYY-MM-DD hh:mm:ss')
+        call nctime2idate(ndate,ndays_ext(1),&
+             'Nest first date found YYYY-MM-DD hh:mm:ss')
+     endif
 
-    if(N_ext>1)then
-      NHOURS_Stride_BC = nint((ndays_ext(2)-ndays_ext(1))*24)
-    else
-      !use manually set stride:
-      NHOURS_Stride_BC = NHOURS_Stride_BC_default
-    endif
-    write(*,*)'Nest: new BC record every ',NHOURS_Stride_BC,' hours'
+     if(N_ext>1)then
+        NHOURS_Stride_BC = nint((ndays_ext(2)-ndays_ext(1))*24)
+     else
+        !use manually set stride:
+        NHOURS_Stride_BC = NHOURS_Stride_BC_default
+     endif
+     write(*,*)'Nest: new BC record every ',NHOURS_Stride_BC,' hours'
 
-    !enddo
-    !Read pressure for vertical levels
-    write(*,*)'Nest: reading vertical levels'
+     !enddo
+     !Read pressure for vertical levels
+     write(*,*)'Nest: reading vertical levels'
 
-    status = nf90_inq_varid(ncid = ncFileID, name = "hyam", varID = varID)
-    if(status == nf90_noerr) then
-      call check(nf90_inquire_variable(ncid=ncFileID,varID=varID,dimIDs=dimIDs))
-      call check(nf90_inquire_dimension(ncid=ncFileID,dimID=dimIDs(1),len=k))
-      call CheckStop(k<KMAX_ext,"Nest BC, wrong hyam/hybm dimension")
-      if(USE_LAST_HYBRID_LEVELS)then
-        k_ext=1+k-KMAX_ext ! for 1+k-KMAX_ext .. k levels
-      else
-        k_ext=1            ! for 1 .. KMAX_ext levels
-      endif
-      if(k/=KMAX_ext.and.MasterProc)&
-        write(*,"(A,4(1X,A,I0))")'Nest BC warning:',&
-          'kdim #lev=',KMAX_ext,'and hyam/hybm #lev=',k,&
-          '. Using only levels ',k_ext,'..',k
-      call check(nf90_get_var(ncFileID,varID,hyam,start=(/k_ext/),count=(/KMAX_ext/)))
-      call check(nf90_inq_varid(ncid = ncFileID, name = "hybm", varID = varID))
-      call check(nf90_get_var(ncFileID,varID,hybm,start=(/k_ext/),count=(/KMAX_ext/)))
-    else
-      inquire(file=filename_eta,exist=fexist)
-      status = nf90_inq_varid(ncid = ncFileID, name = "k", varID = varID)
-      if(status == nf90_noerr) then
-        write(*,*)'Nest: assuming sigma level and PT=',PT,KMAX_ext
-        call check(nf90_get_var(ncFileID, varID, hybm,count=(/ KMAX_ext /) ))!NB: here assume = sigma
-        do k=1,KMAX_ext
-          hyam(k)=PT*(1.0-hybm(k))
-        enddo
-      elseif(fexist) then
-        !read eta levels from ad-hoc text file
-        write(*,*)'Nest: Reading vertical level from ',trim(filename_eta)
-        call open_file(IO_TMP,"r",trim(filename_eta),needed=.true.)
-        do n=1,10000
-          read(IO_TMP,*)word
-          if(trim(word)=='vct')exit
-        enddo
-        read(IO_TMP,*)(hyam(k),k=1,KMAX_ext+1)!NB: here = A_bnd, not mid
-        read(IO_TMP,*)(hybm(k),k=1,KMAX_ext+1)!NB: here = B_bnd, not mid
-        close(IO_TMP)
-        !convert to mid levels coefficients
-        do k=1,KMAX_ext
-          hyam(k)=0.5*(hyam(k)+hyam(k+1))
-          hybm(k)=0.5*(hybm(k)+hybm(k+1))
-        enddo
-      else
-        status = nf90_inq_varid(ncid = ncFileID, name = "lev", varID = varID)
-        if(status == nf90_noerr) then
-          call StopAll('Pressure levels not yet implemented')
-          write(*,*)'Nest: assuming pressure levels and hPa'
-          call check(nf90_get_var(ncFileID, varID, hyam,count=(/ KMAX_ext /) ))
-          hyam=100.0*hyam ! hPa ->Pa
-          hybm=0.0
+     status = nf90_inq_varid(ncid = ncFileID, name = "hyam", varID = varID)
+     if(status == nf90_noerr) then
+        write(*,*)'Found hyam type levels (values at level midpoints)'
+        call check(nf90_inquire_variable(ncid=ncFileID,varID=varID,dimIDs=dimIDs))
+        call check(nf90_inquire_dimension(ncid=ncFileID,dimID=dimIDs(1),len=k))
+        call CheckStop(k<KMAX_ext,"Nest BC, wrong hyam/hybm dimension")
+        if(USE_LAST_HYBRID_LEVELS)then
+           k_ext=1+k-KMAX_ext ! for 1+k-KMAX_ext .. k levels
         else
-          call StopAll('Vertical coordinate Unknown/Not yet implemented')
-          !assumes lev=1000*(A+B) (IFS-MOZART?)
-          !call check(nf90_inq_varid(ncid = ncFileID, name = "lev", varID = varID))
-          !call check(nf90_get_var(ncFileID, varID, hybm ))
-          !hybm=hybm/1000.0
-          !hyam=0.0
+           k_ext=1            ! for 1 .. KMAX_ext levels
         endif
-      endif
-    endif
+        if(k/=KMAX_ext.and.MasterProc)&
+             write(*,"(A,4(1X,A,I0))")'Nest BC warning:',&
+             'kdim #lev=',KMAX_ext,'and hyam/hybm #lev=',k,&
+             '. Using only levels ',k_ext,'..',k
+        call check(nf90_get_var(ncFileID,varID,hyam,start=(/k_ext/),count=(/KMAX_ext/)))
+        call check(nf90_inq_varid(ncid = ncFileID, name = "hybm", varID = varID))
+        call check(nf90_get_var(ncFileID,varID,hybm,start=(/k_ext/),count=(/KMAX_ext/)))
+     else
 
-    call check(nf90_close(ncFileID))
+        status = nf90_inq_varid(ncid = ncFileID, name = "hyai", varID = varID)
+        if(status == nf90_noerr) then
+           write(*,*)'Found hyai type levels (values at level interfaces)'
+           call check(nf90_inquire_variable(ncid=ncFileID,varID=varID,dimIDs=dimIDs))
+           call check(nf90_inquire_dimension(ncid=ncFileID,dimID=dimIDs(1),len=k))
+           call CheckStop(k<KMAX_ext+1,"Nest BC, wrong hyai/hybi dimension")
+           if(USE_LAST_HYBRID_LEVELS)then
+              k_ext=1+(k-1)-KMAX_ext ! for 1+k-KMAX_ext .. k levels
+           else
+              k_ext=1            ! for 1 .. KMAX_ext levels
+           endif
+           if(k/=KMAX_ext+1.and.MasterProc)&
+                write(*,"(A,4(1X,A,I0))")'Nest BC warning:',&
+                'kdim #lev=',KMAX_ext,'and hyam/hybm #lev=',k,&
+                '. Using only levels ',k_ext,'..',k
+           call check(nf90_get_var(ncFileID,varID,hyam,start=(/k_ext/),count=(/KMAX_ext+1/)))
+           call check(nf90_inq_varid(ncid = ncFileID, name = "hybi", varID = varID))
+           call check(nf90_get_var(ncFileID,varID,hybm,start=(/k_ext/),count=(/KMAX_ext+1/)))
+           do k=1,KMAX_ext
+              hyam(k)=0.5*(hyam(k)+hyam(k+1))
+              hybm(k)=0.5*(hybm(k)+hybm(k+1))
+           enddo
+
+        else
+           inquire(file=filename_eta,exist=fexist)
+           status = nf90_inq_varid(ncid = ncFileID, name = "k", varID = varID)
+           if(status == nf90_noerr) then
+              write(*,*)'Nest: assuming sigma level and PT=',PT,KMAX_ext
+              call check(nf90_get_var(ncFileID, varID, hybm,count=(/ KMAX_ext /) ))!NB: here assume = sigma
+              do k=1,KMAX_ext
+                 hyam(k)=PT*(1.0-hybm(k))
+              enddo
+           elseif(fexist) then
+              !read eta levels from ad-hoc text file
+              write(*,*)'Nest: Reading vertical level from ',trim(filename_eta)
+              call open_file(IO_TMP,"r",trim(filename_eta),needed=.true.)
+              do n=1,10000
+                 read(IO_TMP,*)word
+                 if(trim(word)=='vct')exit
+              enddo
+              read(IO_TMP,*)(hyam(k),k=1,KMAX_ext+1)!NB: here = A_bnd, not mid
+              read(IO_TMP,*)(hybm(k),k=1,KMAX_ext+1)!NB: here = B_bnd, not mid
+              close(IO_TMP)
+              !convert to mid levels coefficients
+              do k=1,KMAX_ext
+                 hyam(k)=0.5*(hyam(k)+hyam(k+1))
+                 hybm(k)=0.5*(hybm(k)+hybm(k+1))
+              enddo
+           else
+              status = nf90_inq_varid(ncid = ncFileID, name = "lev", varID = varID)
+              if(status == nf90_noerr) then
+                 call StopAll('Pressure levels not yet implemented')
+                 write(*,*)'Nest: assuming pressure levels and hPa'
+                 call check(nf90_get_var(ncFileID, varID, hyam,count=(/ KMAX_ext /) ))
+                 hyam=100.0*hyam ! hPa ->Pa
+                 hybm=0.0
+              else
+                 call StopAll('Vertical coordinate Unknown/Not yet implemented')
+                 !assumes lev=1000*(A+B) (IFS-MOZART?)
+                 !call check(nf90_inq_varid(ncid = ncFileID, name = "lev", varID = varID))
+                 !call check(nf90_get_var(ncFileID, varID, hybm ))
+                 !hybm=hybm/1000.0
+                 !hyam=0.0
+              endif
+           endif
+        endif
+     endif
+
+     call check(nf90_close(ncFileID))
   endif !end MasterProc
 
   CALL MPI_BCAST(lon_ext,8*GIMAX_ext*GJMAX_ext,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
@@ -763,36 +790,36 @@ subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
   !note that i,j are local
   !find the four closest points
   do j=1,ljmax
-    do i=1,limax
-      dist(:)=1.0E40
-      do JJ=1,GJMAX_ext
-        do II=1,GIMAX_ext
-          !distance between (i,j) and (II,JJ)
-          DD=great_circle_distance(lon_ext(II,JJ),lat_ext(II,JJ),glon(i,j),glat(i,j))
-          if    (DD<dist(1))then
-            dist(    1:4)=EOSHIFT(dist(    1:4),-1,BOUNDARY=DD)
-            IIij(i,j,1:4)=EOSHIFT(IIij(i,j,1:4),-1,BOUNDARY=II)
-            JJij(i,j,1:4)=EOSHIFT(JJij(i,j,1:4),-1,BOUNDARY=JJ)
-          elseif(DD<dist(2))then
-            dist(    2:4)=EOSHIFT(dist(    2:4),-1,BOUNDARY=DD)
-            IIij(i,j,2:4)=EOSHIFT(IIij(i,j,2:4),-1,BOUNDARY=II)
-            JJij(i,j,2:4)=EOSHIFT(JJij(i,j,2:4),-1,BOUNDARY=JJ)
-          elseif(DD<dist(3))then
-            dist(    3:4)=EOSHIFT(dist(    3:4),-1,BOUNDARY=DD)
-            IIij(i,j,3:4)=EOSHIFT(IIij(i,j,3:4),-1,BOUNDARY=II)
-            JJij(i,j,3:4)=EOSHIFT(JJij(i,j,3:4),-1,BOUNDARY=JJ)
-          elseif(DD<dist(4))then
-            dist(    4:4)=EOSHIFT(dist(    4:4),-1,BOUNDARY=DD)
-            IIij(i,j,4:4)=EOSHIFT(IIij(i,j,4:4),-1,BOUNDARY=II)
-            JJij(i,j,4:4)=EOSHIFT(JJij(i,j,4:4),-1,BOUNDARY=JJ)
-          endif
+     do i=1,limax
+        dist(:)=1.0E40
+        do JJ=1,GJMAX_ext
+           do II=1,GIMAX_ext
+              !distance between (i,j) and (II,JJ)
+              DD=great_circle_distance(lon_ext(II,JJ),lat_ext(II,JJ),glon(i,j),glat(i,j))
+              if    (DD<dist(1))then
+                 dist(    1:4)=EOSHIFT(dist(    1:4),-1,BOUNDARY=DD)
+                 IIij(i,j,1:4)=EOSHIFT(IIij(i,j,1:4),-1,BOUNDARY=II)
+                 JJij(i,j,1:4)=EOSHIFT(JJij(i,j,1:4),-1,BOUNDARY=JJ)
+              elseif(DD<dist(2))then
+                 dist(    2:4)=EOSHIFT(dist(    2:4),-1,BOUNDARY=DD)
+                 IIij(i,j,2:4)=EOSHIFT(IIij(i,j,2:4),-1,BOUNDARY=II)
+                 JJij(i,j,2:4)=EOSHIFT(JJij(i,j,2:4),-1,BOUNDARY=JJ)
+              elseif(DD<dist(3))then
+                 dist(    3:4)=EOSHIFT(dist(    3:4),-1,BOUNDARY=DD)
+                 IIij(i,j,3:4)=EOSHIFT(IIij(i,j,3:4),-1,BOUNDARY=II)
+                 JJij(i,j,3:4)=EOSHIFT(JJij(i,j,3:4),-1,BOUNDARY=JJ)
+              elseif(DD<dist(4))then
+                 dist(    4:4)=EOSHIFT(dist(    4:4),-1,BOUNDARY=DD)
+                 IIij(i,j,4:4)=EOSHIFT(IIij(i,j,4:4),-1,BOUNDARY=II)
+                 JJij(i,j,4:4)=EOSHIFT(JJij(i,j,4:4),-1,BOUNDARY=JJ)
+              endif
+           enddo
         enddo
-      enddo    
-      Weight(i,j,1)=1.0-3.0*dist(1)/sum(dist(1:4))
-      Weight(i,j,2)=(1.0-Weight(i,j,1))*(1.0-2.0*dist(2)/sum(dist(2:4)))
-      Weight(i,j,3)=(1.0-Weight(i,j,1)-Weight(i,j,2))*(1.0-dist(3)/sum(dist(3:4)))
-      Weight(i,j,4)=1.0-Weight(i,j,1)-Weight(i,j,2)-Weight(i,j,3)
-    enddo
+        Weight(i,j,1)=1.0-3.0*dist(1)/sum(dist(1:4))
+        Weight(i,j,2)=(1.0-Weight(i,j,1))*(1.0-2.0*dist(2)/sum(dist(2:4)))
+        Weight(i,j,3)=(1.0-Weight(i,j,1)-Weight(i,j,2))*(1.0-dist(3)/sum(dist(3:4)))
+        Weight(i,j,4)=1.0-Weight(i,j,1)-Weight(i,j,2)-Weight(i,j,3)
+     enddo
   enddo
   deallocate(lon_ext,lat_ext)
 
@@ -802,67 +829,67 @@ subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
   !We assume constant surface pressure, both for emep and external grid; should not be so
   !   important as long as they are both terrain following.
   do k_ext=1,KMAX_EXT
-    P_ext(k_ext)=hyam(k_ext)+hybm(k_ext)*Pref
-    if(mydebug) write(*,fmt="(A,I3,F10.2)")'Nest: P_ext',k_ext,P_ext(k_ext)
+     P_ext(k_ext)=hyam(k_ext)+hybm(k_ext)*Pref
+     if(mydebug) write(*,fmt="(A,I3,F10.2)")'Nest: P_ext',k_ext,P_ext(k_ext)
   enddo
   reversed_k_BC=(P_ext(1)>P_ext(2))
   ! .true.  --> assumes k_ext=KMAX_EXT is top and k_ext=1 is surface
   ! .false. --> assumes k_ext=1 is top and k_ext=KMAX_EXT is surface
 
   if(reversed_k_BC)then
-    do k=1,KMAX_MID
-      P_emep=A_mid(k)+B_mid(k)*Pref !Pa
-      if(mydebug) write(*,fmt="(A,I3,F10.2)")'Nest: P_emep',k,P_emep
-      !largest available P smaller than P_emep (if possible)
-      k1_ext(k)=1 !start at surface, and go up until P_emep
-      do k_ext=1,KMAX_EXT
-        if(P_ext(k_ext)<P_emep)exit
-        k1_ext(k)=k_ext
-      enddo
-      !smallest available P larger than P_emep (if possible)
-      k2_ext(k)=KMAX_EXT !start at top, and go down until P_emep
-      if(k2_ext(k)==k1_ext(k))k2_ext(k)=KMAX_EXT-1 !avoid k2=k1
-      do k_ext=KMAX_EXT,1,-1
-        if(P_ext(k_ext)>P_emep)exit
-        if(k_ext/=k1_ext(k))k2_ext(k)=k_ext
-      enddo
-      weight_k1(k)=(P_emep-P_ext(k2_ext(k)))/(P_ext(k1_ext(k))-P_ext(k2_ext(k)))
-      weight_k2(k)=1.0-weight_k1(k)
-      if(mydebug)&
-        write(*,fmt="(A,I3,2(A,I2,A,F5.2))")'Nest: level',k,&
-            ' is the sum of level ',k1_ext(k),' weight ',weight_k1(k),&
-                      ' and level ',k2_ext(k),' weight ',weight_k2(k)
-    enddo
+     do k=1,KMAX_MID
+        P_emep=A_mid(k)+B_mid(k)*Pref !Pa
+        if(mydebug) write(*,fmt="(A,I3,F10.2)")'Nest: P_emep',k,P_emep
+        !largest available P smaller than P_emep (if possible)
+        k1_ext(k)=1 !start at surface, and go up until P_emep
+        do k_ext=1,KMAX_EXT
+           if(P_ext(k_ext)<P_emep)exit
+           k1_ext(k)=k_ext
+        enddo
+        !smallest available P larger than P_emep (if possible)
+        k2_ext(k)=KMAX_EXT !start at top, and go down until P_emep
+        if(k2_ext(k)==k1_ext(k))k2_ext(k)=KMAX_EXT-1 !avoid k2=k1
+        do k_ext=KMAX_EXT,1,-1
+           if(P_ext(k_ext)>P_emep)exit
+           if(k_ext/=k1_ext(k))k2_ext(k)=k_ext
+        enddo
+        weight_k1(k)=(P_emep-P_ext(k2_ext(k)))/(P_ext(k1_ext(k))-P_ext(k2_ext(k)))
+        weight_k2(k)=1.0-weight_k1(k)
+        if(mydebug)&
+             write(*,fmt="(A,I3,2(A,I2,A,F5.2))")'Nest: level',k,&
+             ' is the sum of level ',k1_ext(k),' weight ',weight_k1(k),&
+             ' and level ',k2_ext(k),' weight ',weight_k2(k)
+     enddo
 
   else
-    do k=1,KMAX_MID
-      P_emep=A_mid(k)+B_mid(k)*Pref !Pa
-      if(mydebug) write(*,fmt="(A,I3,F10.2)")'Nest: P_emep',k,P_emep
-      !largest available P smaller than P_emep (if possible)
-      k1_ext(k)=KMAX_EXT !start at surface, and go up until P_emep
-      do k_ext=KMAX_EXT,1,-1
-        if(P_ext(k_ext)<P_emep)exit
-        k1_ext(k)=k_ext
-      enddo
-      !smallest available P larger than P_emep (if possible)
-      k2_ext(k)=1 !start at top, and go down until P_emep
-      if(k2_ext(k)==k1_ext(k))k2_ext(k)=2 !avoid k2=k1
-      do k_ext=1,KMAX_EXT
-        if(P_ext(k_ext)>P_emep)exit
-        if(k_ext/=k1_ext(k))k2_ext(k)=k_ext
-      enddo
-      weight_k1(k)=(P_emep-P_ext(k2_ext(k)))/(P_ext(k1_ext(k))-P_ext(k2_ext(k)))
-      weight_k2(k)=1.0-weight_k1(k)
-      if(mydebug) &
-        write(*,fmt="(A,I3,2(A,I2,A,F5.2))")'Nest: level',k,&
-          ' is the sum of level ', k1_ext(k),' weight ',weight_k1(k),&
-                    ' and level ', k2_ext(k),' weight ',weight_k2(k)
-    enddo
+     do k=1,KMAX_MID
+        P_emep=A_mid(k)+B_mid(k)*Pref !Pa
+        if(mydebug) write(*,fmt="(A,I3,F10.2)")'Nest: P_emep',k,P_emep
+        !largest available P smaller than P_emep (if possible)
+        k1_ext(k)=KMAX_EXT !start at surface, and go up until P_emep
+        do k_ext=KMAX_EXT,1,-1
+           if(P_ext(k_ext)<P_emep)exit
+           k1_ext(k)=k_ext
+        enddo
+        !smallest available P larger than P_emep (if possible)
+        k2_ext(k)=1 !start at top, and go down until P_emep
+        if(k2_ext(k)==k1_ext(k))k2_ext(k)=2 !avoid k2=k1
+        do k_ext=1,KMAX_EXT
+           if(P_ext(k_ext)>P_emep)exit
+           if(k_ext/=k1_ext(k))k2_ext(k)=k_ext
+        enddo
+        weight_k1(k)=(P_emep-P_ext(k2_ext(k)))/(P_ext(k1_ext(k))-P_ext(k2_ext(k)))
+        weight_k2(k)=1.0-weight_k1(k)
+        if(mydebug) &
+             write(*,fmt="(A,I3,2(A,I2,A,F5.2))")'Nest: level',k,&
+             ' is the sum of level ', k1_ext(k),' weight ',weight_k1(k),&
+             ' and level ', k2_ext(k),' weight ',weight_k2(k)
+     enddo
   endif
   deallocate(P_ext,hyam,hybm)
 
   if(mydebug) &
-    write(*,*)'Nest: finished determination of interpolation parameters'
+       write(*,*)'Nest: finished determination of interpolation parameters'
 endsubroutine init_nest
 
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
