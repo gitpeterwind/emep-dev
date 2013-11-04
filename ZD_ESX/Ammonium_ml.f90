@@ -27,9 +27,13 @@
 module Ammonium_ml
  !----------------------------------------------------------------------------
  ! Module to set up and process the NH4-NO3-SO4 reaction system
- ! This code represents the earliest EMEP work in the area, which was 
- ! subsequenty replaced with EQSAM and MARS alternatives. Still, this code
- ! is the simplest and most robust.
+ ! This code represents the earliest EMEP work in the area (Hov et al., 
+ ! Calculation of the distribution of NOx compounds in Europe. Troposheric
+ ! ozone. Regional and global scale interactions, I. Isaksen (Ed.), 
+ ! D. Reidel, 1988, 239-262.)
+ !
+ ! This method was subsequenty replaced with EQSAM and MARS alternatives. 
+ ! Still, this code is the simplest and most robust.
  !
  ! Usage:
  !   "call ammonium()"  - from Runchem
@@ -50,7 +54,7 @@ module Ammonium_ml
 
  use ChemSpecs,            only : species
  use ModelConstants,       only : CHEMTMIN, CHEMTMAX   ! Temp. range
- use SmallUtils_ml,        only : find_index
+ use SmallUtils_ml,           only : find_index
  use ZchemData,            only : xChem
  use Zmet_ml,              only : rh, temp, itemp, amk =>M
  implicit none
@@ -102,6 +106,7 @@ module Ammonium_ml
 
    integer, save :: iSO4, iNO3, iNH3, iNH4, iHNO3
    real, pointer, dimension(:) :: SO4, NO3, NH3, NH4, HNO3
+   character(len=15) :: fmt="(a,20(a,es8.2))" 
 
    real, dimension(size(rh)):: &
                eqnh3, delteq, freeSO4 &
@@ -118,12 +123,12 @@ module Ammonium_ml
      iNO3 = find_index( "NO3_F", species(:)%name )
      iNH3 = find_index( "NH3", species(:)%name )
      iNH4 = find_index( "NH4_F", species(:)%name )
-     iHNO3 = find_index( "HNO3", species(:)%name )
+     iHNO3 =find_index( "HNO3", species(:)%name )
+     if(debug_flag) write(*,*) "AMMONIUM setup", iSO4,iNH3, iNO3, iNH4, iHNO3
      
       my_first_call = .false.
    endif
 
-  if(debug_flag) write(*,*), "AMMONIUM iSO4", iSO4
   if( any ( (/ iSO4, iNH3, iNO3, iNH4, iHNO3 /) < 1 ) ) return
 
   SO4  => xChem(iSO4,:)
@@ -132,7 +137,8 @@ module Ammonium_ml
   NH4  => xChem(iNH4,:)
   HNO3 => xChem(iHNO3,:)
 
-  if(debug_flag) write(*,"(a,3es10.2)") "AMMONIUM IN", SO4(1), NO3(1), NH3(1)
+  if(debug_flag) write(*,fmt) "AMMONIUM IN ", " SO4:",  SO4(1), &
+    " NO3:",NO3(1), " NH3:",NH3(1), " NH4:",NH4(1)," HNO3:",HNO3(1)
 
    !--------------------------------------------------------------------------
    ! Calculate the equilibrium constant for the ammonium-suphate
@@ -173,38 +179,40 @@ module Ammonium_ml
 
      where ( 1.5*freeSO4(:) >  NH3 ) ! free SO4 (not in Amm.S form) in excess of NH3
 
-            NH4 = NH4 +  NH3        !hf
+        NH4 = NH4 +  NH3        !hf
 
-            NH3 = 0.
+        NH3 = 0.
 
      elsewhere !NH3 in excess
 
-            NH4 = NH4 + freeSO4*1.5 !hf
+        NH4 = NH4 + freeSO4*1.5 !hf
 
-            NH3 = NH3 - freeSO4*1.5
+        NH3 = NH3 - freeSO4*1.5
 
               
-     ! The equilibrium concentration of NH3 is:
-     eqnh3 = (NH3 - HNO3)*0.5   & 
-                + sqrt( 0.25*(NH3 -HNO3)**2 + rcnh4 )+1.
+      ! The equilibrium concentration of NH3 is:
+        eqnh3 = (NH3 - HNO3)*0.5 + sqrt( 0.25*(NH3 -HNO3)**2 + rcnh4 )+1.
 
-     ! eqnh3  of order 10^20.
+      ! eqnh3  of order 10^20.
 
-     delteq     = eqnh3 - NH3
-     delteq     = min(delteq,NO3)
+        delteq     = eqnh3 - NH3
+        delteq     = min(delteq,NO3)
 
-     NO3     = NO3 - delteq
+        NO3     = NO3 - delteq
 
-     NH3     = NH3  + delteq
-     HNO3    = HNO3 + delteq
+        NH3     = NH3  + delteq
+        HNO3    = HNO3 + delteq
 
-     delteq  = min(delteq,NH4)!in  theory not necessary, 
+        delteq  = min(delteq,NH4)!in  theory not necessary, 
                               !but numerics make very small neg value possible
-     NH4     = NH4  - delteq !hf amsu
+        NH4     = NH4  - delteq !hf amsu
 
      end where
 
-  if(debug_flag) write(*,"(a,3es10.2)") "AMMONIUM OUT", SO4(1), NO3(1), NH3(1)
+  if(debug_flag) write(*,*) "AMMONIUM T", itemp(1)
+  if(debug_flag) write(*,fmt) "AMMONIUM OUT", " SO4:",  SO4(1), &
+    " NO3:",NO3(1), " NH3:",NH3(1), " NH4:",NH4(1)," HNO3:",HNO3(1), &
+        " TC ", itemp(1)-273.0, " Keq ", Kp(1)
    end subroutine ammonium
    !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
