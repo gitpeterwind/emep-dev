@@ -4,13 +4,13 @@
 !----------------------------------------------------------------------------!
 module esx_Variables
   use CheckStops, only : CheckStop
-  ! use ChemDims, only : NSPEC => NSPEC_TOT, NRCT   ! NSPEC, etc...
   use ChemSpecs, only : species
   use KeyValueTypes, only: KeyValInt, KeyValReal
   use LocalVariables, only : LocDat   !! Data for Sub
+  use ModelConstants, only : UNDEF_R
   use PhysicalConstants_ml, only : T0    !! 273.15
   use SmallUtils_ml, only: LenArray, find_indices
-  use TimeDate_ml,   only : date, current_date
+  use TimeDate_ml,       only : date, current_date
   implicit none
   private
 
@@ -20,8 +20,8 @@ module esx_Variables
   !! (Set these limits lowish to stop the output namelist
   !!  arrays becoming excessive. No harm done, but harder to read.)
   integer, parameter, public :: ESX_MAXNZ =   200 ! No. vertical layers
-  integer, parameter, public :: ESX_MAXNDIFF = 10 ! No. diffusive species
-  integer, parameter, public :: ESX_MAXNOUT  = 10 ! No. output species
+  integer, parameter, public :: ESX_MAXNDIFF = 50 ! No. diffusive species
+  integer, parameter, public :: ESX_MAXNOUT  = 50 ! No. output species
 
   !> For diffusing species we will allow Vd, Ve, Fb, Ft, so define a type
   !! For units explanation, see config file.
@@ -54,7 +54,6 @@ module esx_Variables
     logical :: uses_chem = .false.
     logical :: uses_diff = .false.
     logical :: uses_veg  = .false.
-    logical :: uses_ExternData  = .false.
     logical :: uses_plotting = .false.
 
    !> The z-grid variables
@@ -69,10 +68,11 @@ module esx_Variables
      ,zbnd  &!< grid boundary heights: z_1½, z_2½,..., z_n-½
      ,dzmid  !< layer height between grid mid-points: dz_1½, dz_2½,..., dz_n-½ (dzmid_n=z_n+1-z_n)
 
-   !> Remaining variables can be set in config_esx.nml
+   !> Remaining variables can be set in config_esx.nml. See that file for more info
 
-    character(len=30) :: exp_name = "-"  !> Run label
-    character(len=30) :: units    = "-"  !> ppb or - so far
+    character(len=30) :: exp_name    = "-"  !> Run label
+    character(len=30) :: units       = "-"  !> ppb or - so far
+    character(len=30) :: DataSource  =  "-"
 
    !> Start, finish, step, etc.  - basic run times
    !! Usually reset in config_esx.nml
@@ -149,12 +149,12 @@ module esx_Variables
 
   type, public :: Zmet_t
     real :: &
-       rh  = 0.6         &!< RH (fraction)
-      ,VPD = 0.0         &!< VPD (kPa)
+       rh  = UNDEF_R     &!< RH (fraction)
+      ,VPD = UNDEF_R     &!< VPD (kPa)
       ,Pa  =1.0e5        &!< pressure (Pa)
-      ,tzK =298.0        &!< T (degrees K)
-      ,tzC = 298.0 - T0  &!< T (degrees C)
-      ,tleafC = 298.0-T0 &!< Leaf temperature (degrees C)
+      ,tzK = UNDEF_R     &!< T (degrees K)
+      ,tzC =  UNDEF_R    &!< T (degrees C)
+      ,tleafC = UNDEF_R  &!< Leaf temperature (degrees C)
       ,Kz  = 0.0         &!< Eddy diffusivity at grid boundaries
       ,Kz2  = 0.0        &!< Eddy diffusivity - TESTING above hSL
       ,Kz3  = 0.0        &!< Eddy diffusivity - TESTING above hSL

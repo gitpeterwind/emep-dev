@@ -8,13 +8,15 @@
 ! Start:: 
 
  esx%exp_name = "an_sol_c0"
- esx%exp_name = "diffchem"
+ esx%exp_name = "Plume2"
  esx%units       = "ppb"
  esx%year        = 2008
  !esx%daynumber   = 153 
- esx%startdate   = 2008 7 2 12 0   ! year mm dd hh seconds
+ esx%startdate   = 2008 7 1 12 0   ! year mm dd hh seconds
+ esx%endTime     =  3600.0
+ esx%endTime     =  84000.0
  esx%endTime     =  7200.0
- esx%endTime     =   200.0
+ esx%endTime     =  200.0
  esx%dt_extern   =  3600.0  ! Master time step, for e.g. met data change
  esx%dt_phychem  =    20.0  ! time step around chem/diffusion loops
 
@@ -26,9 +28,15 @@
 
   esx%uses_chem = T         ! Calls chemistry routines
   esx%uses_diff = T         ! Calls diffusion routines
-  esx%uses_veg  = T         ! Uses Veg stuff. Could be false, e.g. for an_sol_c tests
-  esx%uses_externData  = F   ! Uses external data file for meteo (EsxInput_data.csv)
+  esx%uses_veg  = F         ! Uses Veg stuff. Could be false, e.g. for an_sol_c tests
   esx%uses_plotting = T     ! Only possible if graphics scripts available, see below
+
+! The code can run with an external data-source, e.g. from a file, or from
+! internal settings. The flag esx%DataSource is used in esx_GetLocData to
+! choose beteween these options. Current coded for::
+
+ !esx%DataSource = "Extern" ! Uses external data file for meteo (EsxInput_data.csv)
+ esx%DataSource = "-"
 
 !-----------------------------------------------------------------------------
 
@@ -42,28 +50,28 @@
 ! Code will calculate central z and other values
 !
 ! Also, we have two choices. Levels can be set explicitly, see next lines, or 
-! as linear spacing between limits, see 'linear' example below
+! as linear spacing between limits, see 'linear' example below::
 
-!e.g.  esx%zbnd = 0.3, 1.0, 2.0, 3.0, 4.0, 6.0, 10.0, 20.0, 35.0, 50.0, 100.0, 200.0, 350.0, 600.0
+  ! e.g.  esx%zbnd = 0.3, 1.0, 2.0, 3.0, 4.0, 6.0, 10.0, 20.0, 35.0, 50.0, 100.0, 200.0, 350.0, 600.0
 
-!Bosco esx%zbnd = 2.0, 8.0, 16.0, 24.0, 32.0, 41.5
+  ! Bosco esx%zbnd = 2.0, 8.0, 16.0, 24.0, 32.0, 41.5
 
 ! Set method first::
 
- esx%zmethod = 'linear'
  esx%zmethod = 'explicit'
+ esx%zmethod = 'linear'
 
 ! An explicit example::
 
  !esx%zbnd = 0.5, 1.5, 2.5, 3.5, 4., 4.5, 5.0, 5.5, 6., 6.5, 7.0, 7.5, 8., 9. 10.
- esx%zbnd = 5., 10.,  15., 20., 32., 64., 100.,200.,300.
- esx%zbnd = 2., 4., 6., 8., 10., 12., 14., 16., 20., 30., 40., 50., 70., 100., 150., 200., 250., 300., 350., 400., 500., 600., 700., 800., 1000., 1200., 1500.
+ !esx%zbnd = 2., 4., 6., 8., 10., 12., 14., 16., 20., 30., 40., 50., 70., 100., 150., 200., 250., 300., 350., 400., 500., 600., 700., 800., 1000.
+ esx%zbnd = 2., 4., 6., 8., 10.,  15., 20., 32., 64., 100.,200.,300.
 
 ! the following are only used if zmethod set to linear::
 
  esx%zfirst  = 0.0
- esx%zlast   = 1500
- esx%nz      =  20 
+ esx%zlast   = 1000.0
+ esx%nz      = 100 
 
 ! These zbnd values are the 'boundary'-levels of cells, the location where
 ! fluxes should be calculated. Given these, the code will calculate the cell
@@ -92,16 +100,34 @@
 ! Fluxes are trickier.  If chem units are molec/cm2/s or esx%units=ppb, we need
 ! fluxes in molec/m2/s. If esx%units="-" (unitless), give unitless fluxes in
 ! amount #/m2/s (NOTE - m2 not cm2! The Kz terms are in m-s units)
-! NOTE - Fb is downward flux. Use -ve for emissions! Ft is upward
+! NOTE - Fb is downward flux. Use -ve for emissions! Ft is upward ::
 
- esx%DiffSpecs = 
-   !species  ind  Vd   Ve  Fb  Ft
-   'TRACER',   0, 0.0,0.0,-1.0e15,0.0
-   'O3',       0, 0.0,0.0,0.0,0.0
-   'NO',       0, 0.0,0.0,0.0,0.0
-   'NO2',      0, 0.0,0.0,0.0,0.0
-   'NH3',      0, 0.02,0.0,-20.0e14,0.0
-  ! An emission of NH3 of ca. 50 ng/m2/s would be ca 18e14 molec/m2/s
+    esx%DiffSpecs = 
+   !species  ind  Vd     Ve     Fbottom  Ftop
+   'TRACER',   0, 0.0,   0.0,  -3.3e15,  0.0
+   'O3',       0, 0.01,  0.0,   0.0,     0.0
+   'NO',       0, 0.0,   0.0,  -1.0e15,  0.0
+   'NO2',      0, 0.01,  0.0,   0.0,     0.0
+   'NH3',      0, 0.02,  0.0,  -2.0e15,  0.0
+   'NH4_F',    0, 0.002, 0.0,   0.0,     0.0
+   'HNO3',     0, 0.04,  0.0,   0.0,     0.0
+   'SO4',      0, 0.002, 0.0,   0.0,     0.0
+
+   ! Plume2, Kuhn et al., AE 1993
+   !'O3',       0, 0.0, 0.0,  0.0,     0.0
+   !'NO',       0, 0.0, 0.0, -3.3e15,  0.0
+   !'NO2',      0, 0.0, 0.0,  0.0,     0.0
+   !'NH3',      0, 0.0, 0.0, -2.0e15,  0.0
+   !'NH4_F',    0, 0.0, 0.0,  0.0,     0.0
+   !'HNO3',     0, 0.0, 0.0,  0.0,     0.0
+   !'SO2',      0, 0.0, 0.0, -2.2e14,  0.0
+   !'CO',       0, 0.0, 0.0, -2.4e15,  0.0
+   !'SO4',      0, 0.0, 0.0,  0.0,     0.0
+   !'C3H6',     0, 0.0, 0.0, -1.0e15,  0.0
+   !'NC4H10',   0, 0.0, 0.0, -2.0e15,  0.0
+
+
+! (An emission of NH3 of ca. 50 ng/m2/s would be ca 1.8e15 molec/m2/s)
 
 !-----------------------------------------------------------------------------
 !
@@ -112,9 +138,9 @@
 ! but if uncommented here the code will take the minumum value of the user 
 ! provided value and the stability-dependent time::
 
-   !esx%dt_Zdiff    = 0.01  ! Usually okay to let code calculate
-   esx%dt_Zdiff    = 1.0   !  Juha-Pekka 2013-
    esx%dt_Zdiff    = 10.0   !  Faster ;-)
+   esx%dt_Zdiff    = 0.01  ! Usually okay to let code calculate
+   esx%dt_Zdiff    = 1.0   ! Compromise?
 !
 ! Top boundary
 ! ------------
@@ -132,14 +158,14 @@
 ! The eddy diffusivity can be set in different ways, so use a flexible system
 ! with a method name (Kz_method) and parameters supplied as key-word arguments (Kz_kwargs)::
 
-   esx%Kz_method = "constant"
-   esx%Kz_kwargs = "const", 0.5
-
    esx%Kz_method = "power"
    esx%Kz_kwargs   = "za", 1.0, "Ka", 0.5, "n",  0.5 
 
-  esx%Kz_method = "Leuning"
- ! No kwargs
+
+   esx%Kz_method = "constant"
+   esx%Kz_kwargs = "const", 500.0
+
+  esx%Kz_method = "Leuning"         ! No kwargs
 
 ! So far we have coded for methods:  constant, power or Leuning
 ! Note: With fortran's namelist system the last set of Kz_method, Kz_kwargs is
@@ -158,9 +184,12 @@
   'O3', 0
   !'NO', 0
   !'NO2', 0
+  !'SO2', 0
+  !'SO4', 0
   'NH3', 0
   'NH4_F', 0
-  !'OH', 0
+  'HNO3', 0
+  'OH', 0
   !'HO2', 0
   !'RO2', 0
 
@@ -180,7 +209,7 @@
 ! ::
 
  !esx%printTime = 0., 1., 2., 10., 20., 30., 40.0, 60.0, 120, 600.0, 2000.0 
- esx%printTime = 0., 100.0, 200.0, 1000.0, 2000.0
+ esx%printTime = 0., 100.0, 200.0, 1000.0, 2000.0, 3600.0, 7200.0, 36000.0,84000.0
 
 !-----------------------------------------------------------------------------
 !
@@ -211,7 +240,7 @@
 ! Here we plot O3, up to 100m::
 ! The esx_tester routine will add filename and component::
 
-   esx%plot_cmds = "D_Plotting/plotZarray.py --tfmt t=%5.1f --zmax 100 --xlow 0"
+   esx%plot_cmds = "D_Plotting/plotZarray.py --tfmt t=%5.1f --zmax 200 --xlow 0"
 
 !
 !-----------------------------------------------------------------------------
@@ -222,11 +251,11 @@
 ! set 0 for none, 1 for light, 2 for extra::
 
  esx%debug_driver = 1     
- esx%debug_Zdiff = 1     
- esx%debug_Zchem = 0       ! 2 will also give namelist out, large
- esx%debug_Zmet  = 1       ! 2 will also give namelist out, large
+ esx%debug_Zdiff = 0     
+ esx%debug_Zchem = 3       ! 2 will also give namelist out, large
+ esx%debug_Zmet  = 0       ! 2 will also give namelist out, large
  esx%debug_Zveg  = 0       !
- esx%debug_gleaf = 1       ! 
+ esx%debug_gleaf = 0       ! 
 
 ! Conductances
 ! -------------
@@ -235,8 +264,8 @@
 ! If gleaf_method do3se, need to specify gsto also.::
 
   esx%gsto_method = 'do3se'
-  esx%gleaf_method = 'gleaf0'
   esx%gleaf_method = 'do3se'
+  esx%gleaf_method = 'gleaf0'
 
 ! Local data config
 ! ------------------
@@ -253,8 +282,8 @@
 
  Loc%ustar = 0.5
  Loc%invL  = 0.0   ! neutral
- Loc%rh    = 0.4   ! near surface (2m) RH, fraction
- Loc%t2    = 305.0 ! near surface (2m) temp, K
+ Loc%rh    = 0.5    ! near surface (2m) RH, fraction
+ Loc%t2C   =  0.0   ! near surface (2m) temp, C
  Loc%psurf = 1.0e5 ! surface pressure (Pa)
  Loc%Hmix  = 1000.0 ! height of mixing layer (m). We will derive hSL from this.
 
@@ -340,14 +369,21 @@
    !   'emis',  'O3', 'molec/cm2/s',   2.5e12, 1, 1
    !   !'conc', 'O3', '-',    2.0,   1, 1
    !
-   'conc', 'TRACER', 'ppb',   40.0, 1, 999
-   'conc', 'O3', 'ppb',   40.0, 1, 999
-   'conc', 'NO', 'ppb',    2.5, 1, 1
-   'conc', 'CO', 'ppb',  150.0, 1, 999
-   'conc', 'SO4', 'ppb',   0.5, 1, 999
-   'conc', 'NH3', 'ppb',   1.0, 1, 999
-   'conc', 'HNO3', 'ppb',  2.0, 1, 999
-/
+   'conc', 'TRACER', 'ppb',   40.0, 2, 2
+   'conc', 'CH4','ppb', 1700.0, 1, 999
+   'conc', 'H2' ,'ppb',  500.0, 1, 999
+   'conc', 'O3', 'ppb',   0.0, 1, 1
+   'conc', 'O3', 'ppb',   50.0, 2, 999
+   'conc', 'HCHO', 'ppb',    1.0, 1, 999
+   'conc', 'NO', 'ppb',    0.2, 1, 999
+   'conc', 'NO2','ppb',    0.5, 1, 999
+   'conc', 'CO', 'ppb',  200.0, 1, 999
+   !'conc', 'SO2', 'ppb',   0.5, 1, 999
+   !'conc', 'SO4', 'ppb',   0.5, 1, 999
+   'conc', 'NH3', 'ppb',   0.2, 1, 1
+   'conc', 'NH4_F', 'ppb', 0.0, 1, 999
+   'conc', 'HNO3', 'ppb',  0.5, 1, 999
+   /
 
 !-----------------------------------------------------------------------------
 

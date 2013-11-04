@@ -104,7 +104,7 @@ function def_Kz_inc(z,uStar,hVeg,hSL,invL,kappa,dPerh) result (Kz)
    Kz = kappa*uStar*(z-d)        !! M-O similarity theory
 
    do k = 1, nsl                 !! QUERY? Not sure of matlab code
-     print *, "KLEU ", k, nsl,  Kz(k), Krsl(k) 
+     print *, "KLEUNING ", k, nsl,  Kz(k), Krsl(k) 
      Kz(k) = max(Kz(k),Krsl(k))             !! match
    end do
 

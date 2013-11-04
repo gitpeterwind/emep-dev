@@ -19,7 +19,8 @@
 
   !MCM coeffs: (not same as EMEP)
     integer, public, parameter ::  &
-      IDAO3    =  2 , IDBO3    =  1 , IDNO2    =  4 , &
+      IDAO3    =  1 , IDBO3    =  2 , IDNO2    =  4 , &
+!TMPTEST      IDAO3    =  2 , IDBO3    =  1 , IDNO2    =  4 , &
       IDH2O2   =  3 , IDHNO3   =  8 , IDACH2O  =  11, &
       IDBCH2O  = 12 , IDCH3CHO = 13 , IDCH3COX = 22 , &
       !TMP IDCH3COY = -1 , IDHCOHCO = -1 , IDRCOHCO = 34 , &
@@ -31,7 +32,7 @@
 
   !ESXTMP- FIX LATER
     integer, public, parameter ::  &
-      IDNO3    =  IDBNO3 !!!??????
+      IDNO3    =  IDANO3 !!!??????   IDANO3 -> NO2+ O3P
     real, private, save :: pi = 4.0*atan(1.0)
 
     integer, public, parameter ::  IDRCOCHO  = IDRCOHCO ! Just tmp

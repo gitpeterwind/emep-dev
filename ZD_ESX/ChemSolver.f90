@@ -78,9 +78,10 @@ contains
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 
-  subroutine chemsolve( dtstep, xn,Dchem,debug_level,itern)
+  subroutine chemsolve( k, dtstep, xn,Dchem,debug_level,itern)
 
     !.. In
+    integer, intent(in) :: k   ! Needed for rates. ESX change?
     real, intent(in) :: dtstep  ! external time-step, e.g. 20 mins for dt_advec
     real, dimension(:), intent(inout) ::  xn    ! Nz,Nspec Concentrations, molec./cm3
     real, dimension(:), intent(inout) ::  Dchem ! Nz,Nspec Tendencies, d xn/dt due to chem
@@ -93,7 +94,7 @@ contains
     real, parameter ::  CPINIT = ZERO ! 1.0e-30  ! small value for init
 
     !  Local
-    integer :: ichem, iter,n,k        ! Loop indices
+    integer :: ichem, iter,n        ! Loop indices
     integer, save ::  nchem, nzlev    ! No chem time-steps, and z-levels
     real    ::  dt2
     real    ::  P, L                ! Production, loss terms
@@ -154,14 +155,14 @@ contains
 !print "(a,i3,a,10es10.2)", "ESX TESTING XN ", ichem, species(ichem)%name, xn_2d(ichem,:)
 !end do
     !ESX do k =  k1, k2   !! ESX KCHEMTOP, KMAX_MID
-    do k =  1,  nzlev 
+!ESXBUG     do k =  1,  nzlev 
 
 
        xnew(:) = xn(:)
 
        x(:)    = xn(:) - Dchem(:)*dti(1)*1.5
-!TEST       x(:)    = max (x(:), ZERO )
-if( debug_level >=3 ) print "(a,i3,10es12.3)", "INCHEM",k, xn(6), x(6), maxval(xn)
+!TEST
+       x(:)    = max (x(:), ZERO )
 
 
        !*************************************
@@ -237,9 +238,15 @@ if( debug_level >=3 ) print "(a,i3,10es12.3)", "INCHEM",k, xn(6), x(6), maxval(x
        !**  Saves tendencies Dchem and returns the new concentrations:
 
             Dchem(:) = (xnew(:) - xn(:))/dtstep
+if(k==5) then
+  print *, "CHEM1D xxxxxxxxxxxxxxxxxxxxxxxxxx"
+  do n = 1, NSPEC_TOT
+    print "(a,9es15.4)", "CHEM1D "//trim(species(n)%name), xn(n), xnew(n), Dchem(n) 
+  end do
+end if
             xn(:) = xnew(:)
 
-    end do ! k vertical loop
+!ESXBUG    end do ! k vertical loop
 
   end subroutine chemsolve
 

@@ -11,6 +11,7 @@ module esx_Zmet
   use esx_Variables, only: L=> Loc, esx, Zmet
   use esx_Zveg, only: Veg
   use Kz_ml                  !! e.g. def_Kz, JericevicKz , O_BrienKz
+  use ModelConstants, only : UNDEF_R
 
   implicit none
   private
@@ -94,6 +95,9 @@ subroutine def_Kz(KzMethod, kwargs)
 
   !> Above surface layer we need to use other Kz values 
 
+  if( KzMethod == "constant" ) then
+    print *, "KzCONST", Zmet(3)%Kz
+else
   if ( L%invL > 0.0 ) then 
 
     Zmet(1:nz)%Kz2 =  JericevicKzE( zlevs,L%Hmix,L%ustar,0.0) 
@@ -106,6 +110,7 @@ subroutine def_Kz(KzMethod, kwargs)
                     debug_flag=esx%debug_Zmet>0 )
     Zmet(nSL+1:nz)%Kz =  Zmet(nSL+1:nz)%Kz3
   end if
+end if
   
 
   call print_Kz()

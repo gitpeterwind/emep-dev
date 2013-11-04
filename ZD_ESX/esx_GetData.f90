@@ -1,10 +1,13 @@
 module esx_GetData
-  use esx_Variables,  only : Loc
-  use TimeDate_ml,    only : day_of_year, date
+  use CheckStops,     only : CheckStop
+  use esx_Variables,  only : esx, Loc
+  use ModelConstants, only : UNDEF_R
+  use TimeDate_ml,       only : day_of_year, date
   implicit none
   private
 
-  public :: GetExternData
+  public :: GetLocMetData
+  private :: GetExternData
 
   type, public ::  InData
     type(date) :: startdate, indate
@@ -22,6 +25,39 @@ contains
   !! model. Can be used to test esx components in semi-realistic mode.
   !---------------------------------------------------------------------------
 
+  subroutine GetLocMetData( metdate )
+    type(date) :: metdate
+
+    if( esx%DataSource=="ExternFile") then
+      call GetExternData(metdate)
+
+!    else if( esx%DataSource=="Plume2") then
+!
+!      Loc%latitude  = 45.0
+!      Loc%longitude =  0.0
+!      Loc%t2C = 15.0
+!      Loc%rh =   0.7  ! CHECK
+
+    else
+      Loc%latitude  = 45.0
+      Loc%longitude = 15.0
+
+    associate ( t2 => Loc%t2, t2C => Loc%t2C, ustar => Loc%ustar, &
+                 rh => Loc%rh,  Precip => Loc%Precip, &
+                 PARsun => Loc%PARsun, PARshd => Loc%PARshade )
+
+      t2 = t2C + 273.15
+      if ( any( (/ t2, rh /) == UNDEF_R )  ) then
+         print *, "STOP T2RH ", t2, rh
+         stop
+      end if
+
+    end associate
+      
+    end if
+
+  end subroutine GetLocMetData
+  !---------------------------------------------------------------------------
   subroutine GetExternData( metdate )
 
     type(date) :: metdate

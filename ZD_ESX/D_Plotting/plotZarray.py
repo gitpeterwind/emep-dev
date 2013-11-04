@@ -33,8 +33,8 @@ Undef= 1.5*v[1:,1:].max() # allows all values
 if opts.u: Undef= float( opts.u )
 print "plotUNDEF ", Undef
 #Test cycling
-colors=('k','r','m','c','b','g','r','#aaaaaa')
-linestyles=('-','--','-.',':')
+colors    =('k','r','m',  'c','b','g','r','#aaaaaa')
+linestyles=('-','--','-.',':','-.','--','..','-')
 
 figure()
 n = 0
@@ -50,7 +50,7 @@ for n in range( n, len(times)):
  #print "U<",Undef,":", c[f]
 
  #plot(c[f],z[f], label="t=%8.3f" %  times[n] )
- nn=min(n,3) # Keeps color+linestyle index in range
+ nn=min(n,len(colors)-1) # Keeps color+linestyle index in range
  plot(c[f],z[f], color=colors[nn],ls=linestyles[nn], lw=2,label= opts.tfmt %  times[n] )
  title(comp)
  #axis([0,5,0,10.0])
@@ -75,6 +75,7 @@ legend(loc=2)
 
 if opts.o:
   savefig("%s" % opts.o)
+  show()
 else:
   show()
 

@@ -40,6 +40,7 @@ module esx_ChemRun
       do i = 1, NPHOTOLRATES  !!! CRUDE. Needs also Z-profile
         call setphotorates( photol_used(i), fakenoon, Jrate, debug_level)
         rcphot(i,:) = Jrate
+print *, "RCPHOTX ", i, photol_used(i), Jrate
       end do
       call setchemrates( debug_level )
 
@@ -62,9 +63,11 @@ module esx_ChemRun
            (xChem( esx%OutSpecs(i)%int,1 )*ppb, i=1, Nout)
       end if
 
+!print "(a,9es13.5)", "CHEMPRE", xChem(18,5), Dchem(18,5)
       do k = 1, Nz
-          call chemsolve( dtchem, xChem(:,k),Dchem(:,k),debug_level )
+          call chemsolve( k, dtchem, xChem(:,k),Dchem(:,k),debug_level )
       end do ! k
+!print "(a,9es13.5)", "CHEMPOS", xChem(18,5), Dchem(18,5)
 
       if( debug_level > 1 ) &
         write(*,"(a,f6.0,20es8.1)") "CHDBG:", esx%Time, &

@@ -22,6 +22,7 @@ contains
     real, dimension(nz) :: esat            ! helper variables for H2O
     real, parameter :: RGAS_KG = 287.0     ! Molar Gas constant (J K-1 kg-1)
     real, parameter :: ATWAIR = 28.964     ! mol wt of air, g/mol
+    integer :: iz ! TMP
  
     !> We need to re-allocate if changes in array size
     !! Should be eonough to test just temperature.
@@ -53,6 +54,12 @@ contains
 
       log300divt(:) = log(300.0*tinv(:))
       logtdiv300(:) = log(temp(:)/300.0)
+
+      !TMP
+      do iz = 1, 5, 4 ! TMP
+        print *, "ZMETTEST ", iz, temp(iz), itemp(iz), rh(iz), M(iz), H2O(iz)
+      end do
+!stop
 
      
   end subroutine Set1Dmet

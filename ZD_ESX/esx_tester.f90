@@ -4,7 +4,7 @@ program tester
   use ChemSpecs,        only : NSPEC_TOT, define_chemicals, species
   use CheckStops,       only : CheckStop
   use esx_gleaf,        only : config_DO3SE, DO3SE_conf => conf, Set1Dgleaf
-  use esx_GetData,      only : GetExternData    !! e.g. hourly surface met
+  use esx_GetData,      only : GetLocMetData    !! e.g. hourly surface met
   use esx_ChemRun,      only : ChemRun
   use esx_MassBudget,   only : mass, TOT, print_mass
   use esx_Variables,    only : Config_esx, esx, Zmet, Zveg, Loc
@@ -17,15 +17,16 @@ program tester
   use Io_Routines,      only : writetdata
   use ZchemData,        only : Alloc1Dchem, xChem, rcemis
   use Zmet_ml,          only : Set1Dmet
-  use SmallUtils_ml,    only : find_index
-  use TimeDate_ml,      only : current_date, add2current_date
+  use SmallUtils_ml,       only : find_index
+  use TimeDate_ml,         only : current_date, add2current_date
 
   implicit none
 
-  character(len=100) :: filename, sname
   character(len=500) :: plotmsg
+  character(len=100) :: filename, sname
+  character(len=30) :: txt
   real    :: units, chem2Kz_units
-  integer :: i,idspec, icspec, nprint
+  integer :: i,idspec, icspec, nprint, io_hour1, io_hour45, old_hour=-999
   logical :: first=.true.
   integer :: config_io
   integer :: nz, nDiffSpecs, nOutSpecs, nteval, nt
@@ -58,14 +59,16 @@ program tester
  
    !> Reads config file, and allocates chemical arrays xChem, rcemis etc.
 
-   !call Alloc1Dchem(esx%nz, esx%debug_Zchem )
-
    call init_Zchem(esx%nz, config_io, debug_level=esx%debug_Zchem )
 
   close (config_io)
 
   !/ Some output files:
   open (newunit=IO_LOG, file="Log.esxtester")
+  open (newunit=io_hour1,file="OuputHourlyt1" // trim(esx%exp_name) // ".csv")
+  open (newunit=io_hour45,file="OuputHourly45" // trim(esx%exp_name) // ".csv")
+  write (io_hour1,'(a,9999(:,",",a10))') "date", species(:)%name
+  write (io_hour45,'(a,9999(:,",",a10))') "date", species(:)%name
 
   nz         = esx%nz
   nDiffSpecs = esx%nDiffSpecs
@@ -118,14 +121,16 @@ program tester
 
       if( esx%debug_driver > 0 ) write(*,"(a,i5,f15.3)") "TLOOP", nDiffSteps, t
 
-   !> Update external met data for this time-step. Assumed hourly for now
+   !> Update external or large-scale met data for this time-step.
 
-      if( esx%uses_ExternData) call GetExternData(current_date)
+      call GetLocMetData(current_date)
 
 
    !> Update time-step met data for this time-step
-   !! (Confusing with 2 calls I admit, but the first is meant to be ESX 
-   !!  specific, and the 2nd EMEP model consistent. Will try to harmonise...)
+   !! (Confusing with 2 calls I admit, but the first is meant to read in for
+   !!  example EMEP model or experimental data, which ESX now has to convert
+   !!  to 1-D arrays. The first is also similar to a routine in the EMEP
+   !!  model. Will try to harmonise...)
 
       call Set_esxZmet()         !> basic met, temp (tzK), rhz, Kz, => Zmet
       call Set1Dmet( nz, Zmet )  !> Includes also derived arrays for chem,
@@ -145,7 +150,9 @@ program tester
 
       if( esx%uses_chem) then
 
+              !print "(a, es18.5)", "PRECHEM ",  xChem( 18, 5)
           call ChemRun( dt, esx%debug_Zchem )
+              !print "(a, es18.5)", "POSCHEM ",  xChem( 18, 5 )
           call Ammonium( esx%debug_Zchem>0 )
       end if
 
@@ -190,7 +197,16 @@ program tester
 
       t = t + dt     !! Update time-step
       call add2current_date(current_date, dt)
-      print *, "CDATE :", current_date
+
+      if ( current_date%hour /= old_hour ) then
+       !print *, "CDATE :", current_date
+       write(txt,fmt="(i4,3i2.2)" ) current_date%year,current_date%month,&
+                current_date%day,current_date%hour
+       write (io_hour1,'(a,9999(:,",",es10.3))') trim(txt), xChem(:,1)
+       write (io_hour45,'(a,9999(:,",",es10.3))') trim(txt), xChem(:,11)
+       old_hour=current_date%hour
+      end if
+
       
 
       !! Store for print out if needed

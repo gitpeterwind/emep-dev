@@ -20,7 +20,7 @@
   !! =========================================================================
   !! Typically, we only need to specify BICs for long-lived species (advected). 
 
-   integer, private, parameter :: MAXBICS = 8  !> Max. No. records with BICs
+   integer, private, parameter :: MAXBICS = 20 !> Max. No. records with BICs
 
    type, private :: BIC_t
      character(len=10) :: type  = '-' ! ! conc or emis
