@@ -34,10 +34,12 @@ if opts.u: Undef= float( opts.u )
 print "plotUNDEF ", Undef
 #Test cycling
 colors    =('k','r','m',  'c','b','g','r','#aaaaaa')
-linestyles=('-','--','-.',':','-.','--','..','-')
+linestyles=('-','--','-.',':','..')
 
 figure()
 n = 0
+ncol=0
+nn=0
 for n in range( n, len(times)):
 
  #c=v[1+n,1:]    # concentrations in z, 1+ needed skips axis
@@ -50,8 +52,12 @@ for n in range( n, len(times)):
  #print "U<",Undef,":", c[f]
 
  #plot(c[f],z[f], label="t=%8.3f" %  times[n] )
- nn=min(n,len(colors)-1) # Keeps color+linestyle index in range
- plot(c[f],z[f], color=colors[nn],ls=linestyles[nn], lw=2,label= opts.tfmt %  times[n] )
+ nn=min(nn,len(colors)-1) # Keeps color+linestyle index in range
+ plot(c[f],z[f], color=colors[ncol],ls=linestyles[nn], lw=2,label= opts.tfmt %  times[n] )
+ nn=nn+1
+ if ( nn%4 == 0 ):
+   ncol= ncol+1
+   nn=0
  title(comp)
  #axis([0,5,0,10.0])
  #print times[n]
