@@ -238,12 +238,12 @@ contains
        !**  Saves tendencies Dchem and returns the new concentrations:
 
             Dchem(:) = (xnew(:) - xn(:))/dtstep
-if(k==5) then
-  print *, "CHEM1D xxxxxxxxxxxxxxxxxxxxxxxxxx"
-  do n = 1, NSPEC_TOT
-    print "(a,9es15.4)", "CHEM1D "//trim(species(n)%name), xn(n), xnew(n), Dchem(n) 
-  end do
-end if
+!!if(k==5) then
+!  print *, "CHEM1D xxxxxxxxxxxxxxxxxxxxxxxxxx"
+!  do n = 1, NSPEC_TOT
+!    print "(a,9es15.4)", "CHEM1D "//trim(species(n)%name), xn(n), xnew(n), Dchem(n) 
+!  end do
+!end if
             xn(:) = xnew(:)
 
 !ESXBUG    end do ! k vertical loop
