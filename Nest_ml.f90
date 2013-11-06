@@ -706,6 +706,13 @@ subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
              'kdim #lev=',KMAX_ext,'and hyam/hybm #lev=',k,&
              '. Using only levels ',k_ext,'..',k
         call check(nf90_get_var(ncFileID,varID,hyam,start=(/k_ext/),count=(/KMAX_ext/)))
+        status = nf90_get_att(ncFileID,VarID,"units",word)
+        if(status==nf90_noerr)then
+           if(word(1:3)=='hPa')then
+              write(*,*)'Changing hyam from hPa to Pa'
+              hyam=100*hyam
+           endif
+        endif
         call check(nf90_inq_varid(ncid = ncFileID, name = "hybm", varID = varID))
         call check(nf90_get_var(ncFileID,varID,hybm,start=(/k_ext/),count=(/KMAX_ext/)))
      else
@@ -713,6 +720,7 @@ subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
         status = nf90_inq_varid(ncid = ncFileID, name = "hyai", varID = varID)
         if(status == nf90_noerr) then
            write(*,*)'Found hyai type levels (values at level interfaces)'
+ 
            call check(nf90_inquire_variable(ncid=ncFileID,varID=varID,dimIDs=dimIDs))
            call check(nf90_inquire_dimension(ncid=ncFileID,dimID=dimIDs(1),len=k))
            call CheckStop(k<KMAX_ext+1,"Nest BC, wrong hyai/hybi dimension")
@@ -726,6 +734,13 @@ subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
                 'kdim #lev=',KMAX_ext,'and hyam/hybm #lev=',k,&
                 '. Using only levels ',k_ext,'..',k
            call check(nf90_get_var(ncFileID,varID,hyam,start=(/k_ext/),count=(/KMAX_ext+1/)))
+           status = nf90_get_att(ncFileID,VarID,"units",word)
+           if(status==nf90_noerr)then
+              if(word(1:3)=='hPa')then
+                 write(*,*)'Changing hyai from hPa to Pa'
+                 hyam=100*hyam
+              endif
+           endif
            call check(nf90_inq_varid(ncid = ncFileID, name = "hybi", varID = varID))
            call check(nf90_get_var(ncFileID,varID,hybm,start=(/k_ext/),count=(/KMAX_ext+1/)))
            do k=1,KMAX_ext
