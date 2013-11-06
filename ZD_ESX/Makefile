@@ -24,9 +24,10 @@
 # esx_tester.f90 Uses Module Io_Routines
 # esx_tester.f90 Uses Module ZchemData
 # esx_tester.f90 Uses Module Zmet_ml
+# esx_tester.f90 Uses Module Zmet_ml
 # esx_tester.f90 Uses Module SmallUtils_ml
 # esx_tester.f90 Uses Module TimeDate_ml
-# Full list of modules in esx_tester.f90: AllocInits Ammonium_ml ChemSpecs CheckStops esx_gleaf esx_GetData esx_ChemRun esx_MassBudget esx_Variables esx_Zchem esx_ZdiffSolver esx_Zgrid esx_Zmet esx_Zveg Io_ml Io_Routines ZchemData Zmet_ml SmallUtils_ml TimeDate_ml 
+# Full list of modules in esx_tester.f90: AllocInits Ammonium_ml ChemSpecs CheckStops esx_gleaf esx_GetData esx_ChemRun esx_MassBudget esx_Variables esx_Zchem esx_ZdiffSolver esx_Zgrid esx_Zmet esx_Zveg Io_ml Io_Routines ZchemData Zmet_ml Zmet_ml SmallUtils_ml TimeDate_ml 
 # Uses AllocInits which is in ./AllocInit.f90
 # process_fsource called with arg ./AllocInit.f90 
 # ./AllocInit.f90 Uses Module CheckStops
@@ -74,10 +75,11 @@
 # ./esx_Variables.f90 Uses Module ChemSpecs
 # ./esx_Variables.f90 Uses Module KeyValueTypes
 # ./esx_Variables.f90 Uses Module LocalVariables
+# ./esx_Variables.f90 Uses Module ModelConstants
 # ./esx_Variables.f90 Uses Module PhysicalConstants_ml
 # ./esx_Variables.f90 Uses Module SmallUtils_ml
 # ./esx_Variables.f90 Uses Module TimeDate_ml
-# Full list of modules in ./esx_Variables.f90: CheckStops ChemSpecs KeyValueTypes LocalVariables PhysicalConstants_ml SmallUtils_ml TimeDate_ml 
+# Full list of modules in ./esx_Variables.f90: CheckStops ChemSpecs KeyValueTypes LocalVariables ModelConstants PhysicalConstants_ml SmallUtils_ml TimeDate_ml 
 # Uses CheckStops which is in ./CheckStops.f90
 # ./CheckStops.f90 already in list
 # Uses ChemSpecs which is in ./CM_ChemSpecs.f90
@@ -88,6 +90,8 @@
 # Uses LocalVariables which is in ./LocalVariables.f90
 # process_fsource called with arg ./LocalVariables.f90 
 # Full list of modules in ./LocalVariables.f90:  
+# Uses ModelConstants which is in ./ModelConstants.f90
+# ./ModelConstants.f90 already in list
 # Uses PhysicalConstants_ml which is in ./PhysicalConstants_ml.f90
 # process_fsource called with arg ./PhysicalConstants_ml.f90 
 # Full list of modules in ./PhysicalConstants_ml.f90:  
@@ -191,11 +195,27 @@
 # DO3SE/src/DO3SE_PhysicalConstants_ml.F90 already in list
 # Uses esx_GetData which is in ./esx_GetData.f90
 # process_fsource called with arg ./esx_GetData.f90 
+# ./esx_GetData.f90 Uses Module CheckStops
 # ./esx_GetData.f90 Uses Module esx_Variables
+# ./esx_GetData.f90 Uses Module ModelConstants
+# ./esx_GetData.f90 Uses Module Radiation_ml
 # ./esx_GetData.f90 Uses Module TimeDate_ml
-# Full list of modules in ./esx_GetData.f90: esx_Variables TimeDate_ml 
+# Full list of modules in ./esx_GetData.f90: CheckStops esx_Variables ModelConstants Radiation_ml TimeDate_ml 
+# Uses CheckStops which is in ./CheckStops.f90
+# ./CheckStops.f90 already in list
 # Uses esx_Variables which is in ./esx_Variables.f90
 # ./esx_Variables.f90 already in list
+# Uses ModelConstants which is in ./ModelConstants.f90
+# ./ModelConstants.f90 already in list
+# Uses Radiation_ml which is in ./Radiation_ml.f90
+# process_fsource called with arg ./Radiation_ml.f90 
+# ./Radiation_ml.f90 Uses Module PhysicalConstants_ml
+# ./Radiation_ml.f90 Uses Module TimeDate_ml
+# Full list of modules in ./Radiation_ml.f90: PhysicalConstants_ml TimeDate_ml 
+# Uses PhysicalConstants_ml which is in ./PhysicalConstants_ml.f90
+# ./PhysicalConstants_ml.f90 already in list
+# Uses TimeDate_ml which is in ./TimeDate_ml.f90
+# ./TimeDate_ml.f90 already in list
 # Uses TimeDate_ml which is in ./TimeDate_ml.f90
 # ./TimeDate_ml.f90 already in list
 # Uses esx_ChemRun which is in ./esx_ChemRun.f90
@@ -205,9 +225,10 @@
 # ./esx_ChemRun.f90 Uses Module ChemSolver
 # ./esx_ChemRun.f90 Uses Module DefPhotolysis
 # ./esx_ChemRun.f90 Uses Module esx_Variables
+# ./esx_ChemRun.f90 Uses Module PhysicalConstants_ml
 # ./esx_ChemRun.f90 Uses Module ZchemData
 # ./esx_ChemRun.f90 Uses Module Zmet_ml
-# Full list of modules in ./esx_ChemRun.f90: ChemSpecs ChemRates ChemSolver DefPhotolysis esx_Variables ZchemData Zmet_ml 
+# Full list of modules in ./esx_ChemRun.f90: ChemSpecs ChemRates ChemSolver DefPhotolysis esx_Variables PhysicalConstants_ml ZchemData Zmet_ml 
 # Uses ChemSpecs which is in ./CM_ChemSpecs.f90
 # ./CM_ChemSpecs.f90 already in list
 # Uses ChemRates which is in ./CM_ChemRates.f90
@@ -270,6 +291,8 @@
 # ./DefPhotolysis.f90 already in list
 # Uses esx_Variables which is in ./esx_Variables.f90
 # ./esx_Variables.f90 already in list
+# Uses PhysicalConstants_ml which is in ./PhysicalConstants_ml.f90
+# ./PhysicalConstants_ml.f90 already in list
 # Uses ZchemData which is in ./ZchemData.f90
 # ./ZchemData.f90 already in list
 # Uses Zmet_ml which is in ./Zmet_ml.f90
@@ -329,7 +352,8 @@
 # ./esx_Zmet.f90 Uses Module esx_Variables
 # ./esx_Zmet.f90 Uses Module esx_Zveg
 # ./esx_Zmet.f90 Uses Module Kz_ml
-# Full list of modules in ./esx_Zmet.f90: CheckStops Io_Routines KeyValueTypes esx_Variables esx_Zveg Kz_ml 
+# ./esx_Zmet.f90 Uses Module ModelConstants
+# Full list of modules in ./esx_Zmet.f90: CheckStops Io_Routines KeyValueTypes esx_Variables esx_Zveg Kz_ml ModelConstants 
 # Uses CheckStops which is in ./CheckStops.f90
 # ./CheckStops.f90 already in list
 # Uses Io_Routines which is in ./Io_Routines.f90
@@ -346,6 +370,8 @@
 # Full list of modules in ./Kz_ml.f90: PhysicalConstants_ml 
 # Uses PhysicalConstants_ml which is in ./PhysicalConstants_ml.f90
 # ./PhysicalConstants_ml.f90 already in list
+# Uses ModelConstants which is in ./ModelConstants.f90
+# ./ModelConstants.f90 already in list
 # Uses esx_Zveg which is in ./esx_Zveg.f90
 # ./esx_Zveg.f90 already in list
 # Uses Io_ml which is in ./Io_ml.f90
@@ -354,6 +380,8 @@
 # ./Io_Routines.f90 already in list
 # Uses ZchemData which is in ./ZchemData.f90
 # ./ZchemData.f90 already in list
+# Uses Zmet_ml which is in ./Zmet_ml.f90
+# ./Zmet_ml.f90 already in list
 # Uses Zmet_ml which is in ./Zmet_ml.f90
 # ./Zmet_ml.f90 already in list
 # Uses SmallUtils_ml which is in ./SmallUtils_ml.f90
@@ -367,8 +395,8 @@ F90=gfortran  -pedantic -Wall -fbounds-check -fdefault-real-8
 # -------------------End-macro-Defs---------------------------
 
 # Here is the link step 
-esx_tester:CheckStops.o AllocInit.o CM_ChemSpecs.o ModelConstants.o SmallUtils_ml.o DefPhotolysis.o ZchemData.o KeyValueTypes.o LocalVariables.o PhysicalConstants_ml.o TimeDate_ml.o esx_Variables.o Zmet_ml.o Ammonium_ml.o Io_Routines.o esx_Zveg.o DO3SE_ModelConstants_ml.o DO3SE_Util_ml.o DO3SE_GstoTypes_ml.o DO3SE_PhysicalConstants_ml.o DO3SE_Gsto_ml.o DO3SE_Photosynthesis_ml.o DO3SE_Resistance_ml.o DO3SE_SMD_ml.o esx_gleaf.o esx_GetData.o ChemFunctions.o CM_ChemRates.o Io_ml.o ChemSolver.o esx_ChemRun.o esx_MassBudget.o esx_Zchem.o esx_ZdiffSolver.o esx_Zgrid.o Kz_ml.o esx_Zmet.o esx_tester.o 
-	 $(F90) -o esx_tester CheckStops.o AllocInit.o CM_ChemSpecs.o ModelConstants.o SmallUtils_ml.o DefPhotolysis.o ZchemData.o KeyValueTypes.o LocalVariables.o PhysicalConstants_ml.o TimeDate_ml.o esx_Variables.o Zmet_ml.o Ammonium_ml.o Io_Routines.o esx_Zveg.o DO3SE_ModelConstants_ml.o DO3SE_Util_ml.o DO3SE_GstoTypes_ml.o DO3SE_PhysicalConstants_ml.o DO3SE_Gsto_ml.o DO3SE_Photosynthesis_ml.o DO3SE_Resistance_ml.o DO3SE_SMD_ml.o esx_gleaf.o esx_GetData.o ChemFunctions.o CM_ChemRates.o Io_ml.o ChemSolver.o esx_ChemRun.o esx_MassBudget.o esx_Zchem.o esx_ZdiffSolver.o esx_Zgrid.o Kz_ml.o esx_Zmet.o esx_tester.o   
+esx_tester:CheckStops.o AllocInit.o CM_ChemSpecs.o ModelConstants.o SmallUtils_ml.o DefPhotolysis.o ZchemData.o KeyValueTypes.o LocalVariables.o PhysicalConstants_ml.o TimeDate_ml.o esx_Variables.o Zmet_ml.o Ammonium_ml.o Io_Routines.o esx_Zveg.o DO3SE_ModelConstants_ml.o DO3SE_Util_ml.o DO3SE_GstoTypes_ml.o DO3SE_PhysicalConstants_ml.o DO3SE_Gsto_ml.o DO3SE_Photosynthesis_ml.o DO3SE_Resistance_ml.o DO3SE_SMD_ml.o esx_gleaf.o Radiation_ml.o esx_GetData.o ChemFunctions.o CM_ChemRates.o Io_ml.o ChemSolver.o esx_ChemRun.o esx_MassBudget.o esx_Zchem.o esx_ZdiffSolver.o esx_Zgrid.o Kz_ml.o esx_Zmet.o esx_tester.o 
+	 $(F90) -o esx_tester CheckStops.o AllocInit.o CM_ChemSpecs.o ModelConstants.o SmallUtils_ml.o DefPhotolysis.o ZchemData.o KeyValueTypes.o LocalVariables.o PhysicalConstants_ml.o TimeDate_ml.o esx_Variables.o Zmet_ml.o Ammonium_ml.o Io_Routines.o esx_Zveg.o DO3SE_ModelConstants_ml.o DO3SE_Util_ml.o DO3SE_GstoTypes_ml.o DO3SE_PhysicalConstants_ml.o DO3SE_Gsto_ml.o DO3SE_Photosynthesis_ml.o DO3SE_Resistance_ml.o DO3SE_SMD_ml.o esx_gleaf.o Radiation_ml.o esx_GetData.o ChemFunctions.o CM_ChemRates.o Io_ml.o ChemSolver.o esx_ChemRun.o esx_MassBudget.o esx_Zchem.o esx_ZdiffSolver.o esx_Zgrid.o Kz_ml.o esx_Zmet.o esx_tester.o   
 
 # Here are the compile steps
  
@@ -405,7 +433,7 @@ PhysicalConstants_ml.o:./PhysicalConstants_ml.f90
 TimeDate_ml.o:./TimeDate_ml.f90  
 	 $(F90) -c ./TimeDate_ml.f90 
 
-esx_Variables.o:./esx_Variables.f90 CheckStops.o CM_ChemSpecs.o KeyValueTypes.o LocalVariables.o PhysicalConstants_ml.o SmallUtils_ml.o TimeDate_ml.o 
+esx_Variables.o:./esx_Variables.f90 CheckStops.o CM_ChemSpecs.o KeyValueTypes.o LocalVariables.o ModelConstants.o PhysicalConstants_ml.o SmallUtils_ml.o TimeDate_ml.o 
 	 $(F90) -c ./esx_Variables.f90 
 
 Zmet_ml.o:./Zmet_ml.f90 esx_Variables.o 
@@ -447,7 +475,10 @@ DO3SE_SMD_ml.o:DO3SE/src/DO3SE_SMD_ml.F90 DO3SE_ModelConstants_ml.o DO3SE_Resist
 esx_gleaf.o:./esx_gleaf.f90 CheckStops.o esx_Variables.o esx_Zveg.o DO3SE_GstoTypes_ml.o DO3SE_Gsto_ml.o DO3SE_Photosynthesis_ml.o DO3SE_SMD_ml.o DO3SE_Util_ml.o DO3SE_PhysicalConstants_ml.o 
 	 $(F90) -c ./esx_gleaf.f90 
 
-esx_GetData.o:./esx_GetData.f90 esx_Variables.o TimeDate_ml.o 
+Radiation_ml.o:./Radiation_ml.f90 PhysicalConstants_ml.o TimeDate_ml.o 
+	 $(F90) -c ./Radiation_ml.f90 
+
+esx_GetData.o:./esx_GetData.f90 CheckStops.o esx_Variables.o ModelConstants.o Radiation_ml.o TimeDate_ml.o 
 	 $(F90) -c ./esx_GetData.f90 
 
 ChemFunctions.o:./ChemFunctions.f90 PhysicalConstants_ml.o ZchemData.o ZchemData.o Zmet_ml.o CM_ChemSpecs.o 
@@ -462,7 +493,7 @@ Io_ml.o:./Io_ml.f90
 ChemSolver.o:./ChemSolver.f90 CheckStops.o DefPhotolysis.o CM_ChemSpecs.o Io_ml.o ModelConstants.o ZchemData.o 
 	 $(F90) -c ./ChemSolver.f90 
 
-esx_ChemRun.o:./esx_ChemRun.f90 CM_ChemSpecs.o CM_ChemRates.o ChemSolver.o DefPhotolysis.o esx_Variables.o ZchemData.o Zmet_ml.o 
+esx_ChemRun.o:./esx_ChemRun.f90 CM_ChemSpecs.o CM_ChemRates.o ChemSolver.o DefPhotolysis.o esx_Variables.o PhysicalConstants_ml.o ZchemData.o Zmet_ml.o 
 	 $(F90) -c ./esx_ChemRun.f90 
 
 esx_MassBudget.o:./esx_MassBudget.f90 CM_ChemSpecs.o esx_Variables.o 
@@ -480,10 +511,10 @@ esx_Zgrid.o:./esx_Zgrid.f90 esx_Variables.o
 Kz_ml.o:./Kz_ml.f90 PhysicalConstants_ml.o 
 	 $(F90) -c ./Kz_ml.f90 
 
-esx_Zmet.o:./esx_Zmet.f90 CheckStops.o Io_Routines.o KeyValueTypes.o esx_Variables.o esx_Zveg.o Kz_ml.o 
+esx_Zmet.o:./esx_Zmet.f90 CheckStops.o Io_Routines.o KeyValueTypes.o esx_Variables.o esx_Zveg.o Kz_ml.o ModelConstants.o 
 	 $(F90) -c ./esx_Zmet.f90 
 
-esx_tester.o:esx_tester.f90 AllocInit.o Ammonium_ml.o CM_ChemSpecs.o CheckStops.o esx_gleaf.o esx_GetData.o esx_ChemRun.o esx_MassBudget.o esx_Variables.o esx_Zchem.o esx_ZdiffSolver.o esx_Zgrid.o esx_Zmet.o esx_Zveg.o Io_ml.o Io_Routines.o ZchemData.o Zmet_ml.o SmallUtils_ml.o TimeDate_ml.o 
+esx_tester.o:esx_tester.f90 AllocInit.o Ammonium_ml.o CM_ChemSpecs.o CheckStops.o esx_gleaf.o esx_GetData.o esx_ChemRun.o esx_MassBudget.o esx_Variables.o esx_Zchem.o esx_ZdiffSolver.o esx_Zgrid.o esx_Zmet.o esx_Zveg.o Io_ml.o Io_Routines.o ZchemData.o Zmet_ml.o Zmet_ml.o SmallUtils_ml.o TimeDate_ml.o 
 	 $(F90) -c esx_tester.f90 
 # This entry allows you to type " make clean " to get rid of
 # all object and module files 

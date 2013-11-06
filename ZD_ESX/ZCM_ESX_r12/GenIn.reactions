@@ -37,7 +37,7 @@ KRO2NO                              NO + RO2  = NO2 +  HO2 + CH3CHO ;
 *
 * Photolysis 
 
-DJ(IDBO3)     O3            = OD             ;   J(5e-5)
+DJ(IDO3_O1D)     O3            = OD             ;   J(5e-5)
 DJ(IDNO2)     NO2           = OP  + NO       ;   J(9e-3)
 DJ(IDCH3CHO)  CH3CHO        = RO2 + HO2 + {CO} ; J(6e-6)
 *

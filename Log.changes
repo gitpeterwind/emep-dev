@@ -154,6 +154,38 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6 November 2013  Dave  2652-2657
+
+ESX changes only
+----------------
+
+Major changes
+
+  1) Photolysis system changed to get rid of hard-coded ID indices, and to
+  use "Phux" algorthims, an
+
+  GenChem.pl 
+  ZCM_EmChem09/GenIn.reactions
+  ZCM_ESX_r12/GenIn.reactions
+  DefPhotolysis
+
+  2) rcemis implemented better in esx_tester and config_esx.nml
+  config and testing done for Plume1 case of Kuhn et al. AE, 1998
+  EmChem09 set as standard chemical package for now
+
+  STILL need to reconcile Fb and rcemis type entries. Will likely
+  move Vd, Fb, etc. to BIC. 
+
+Minor changes:
+
+  ChemSolver - printouts tidied
+  Zmet_ml - printout removed
+  LocalVariables -ZenDeg and CosZ terms added (zenith angle)
+  esx_Zmet_m.f90 - printouts tidied
+  esx_ZdiffSolver.f90 - printouts tidied
+  D_Plotting/plotZarray - colour/linestyle change
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 4 November 2013  Dave  2651
 
 ZD_ESX changes:

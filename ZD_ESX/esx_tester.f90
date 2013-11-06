@@ -17,6 +17,7 @@ program tester
   use Io_Routines,      only : writetdata
   use ZchemData,        only : Alloc1Dchem, xChem, rcemis
   use Zmet_ml,          only : Set1Dmet
+  use Zmet_ml,          only : H2O ! for Plume2 tests
   use SmallUtils_ml,       only : find_index
   use TimeDate_ml,         only : current_date, add2current_date
 
@@ -26,7 +27,7 @@ program tester
   character(len=100) :: filename, sname
   character(len=30) :: txt
   real    :: units, chem2Kz_units
-  integer :: i,idspec, icspec, nprint, io_hour1, io_hour45, old_hour=-999
+  integer :: i,idspec, icspec, nprint, io_hour1, io_hour2, old_hour=-999
   logical :: first=.true.
   integer :: config_io
   integer :: nz, nDiffSpecs, nOutSpecs, nteval, nt
@@ -65,17 +66,17 @@ program tester
 
   !/ Some output files:
   open (newunit=IO_LOG, file="Log.esxtester")
-  open (newunit=io_hour1,file="OuputHourlyt1" // trim(esx%exp_name) // ".csv")
-  open (newunit=io_hour45,file="OuputHourly45" // trim(esx%exp_name) // ".csv")
+  open (newunit=io_hour1,file="OutputHourly1m" // trim(esx%exp_name) // ".csv")
+  open (newunit=io_hour2,file="OutputHourlytop" // trim(esx%exp_name) // ".csv")
   write (io_hour1,'(a,9999(:,",",a10))') "date", species(:)%name
-  write (io_hour45,'(a,9999(:,",",a10))') "date", species(:)%name
+  write (io_hour2,'(a,9999(:,",",a10))') "date", species(:)%name
 
   nz         = esx%nz
   nDiffSpecs = esx%nDiffSpecs
   nOutSpecs  = esx%nOutSpecs
   nteval = maxloc(esx%printTime,dim=1)    ! Number of print-out times
   print "(a,i4, ' zmax=',f8.2,' nteval=',i6)", "CONF Z", nz, esx%z(nz), nteval
-  write(*,"(a,i5,f15.3)") "TLOOPSTART", nDiffSteps
+  !write(*,"(a,i12,f15.3)") "TLOOPSTART", nDiffSteps
 
   call AllocInit( czprint,     0.0, nz,nOutSpecs,nteval, "czprint")
   call AllocInit( cz,          0.0, nz, "cz")
@@ -119,7 +120,7 @@ program tester
     TIMELOOP: do while (t+dt <= tmax)
 
 
-      if( esx%debug_driver > 0 ) write(*,"(a,i5,f15.3)") "TLOOP", nDiffSteps, t
+      if( esx%debug_driver > 0 ) write(*,"(a,i12,f15.3)") "TLOOP", nDiffSteps, t
 
    !> Update external or large-scale met data for this time-step.
 
@@ -135,6 +136,7 @@ program tester
       call Set_esxZmet()         !> basic met, temp (tzK), rhz, Kz, => Zmet
       call Set1Dmet( nz, Zmet )  !> Includes also derived arrays for chem,
                                  !!  e.g. O2, tinv
+      if( esx%exp_name == "Plume2" ) H2O = 2.55e18 !! TESTING
 
    !> Update veg PAR, gs etc if needed: (move inside time-loop soon)
 
@@ -153,7 +155,7 @@ program tester
               !print "(a, es18.5)", "PRECHEM ",  xChem( 18, 5)
           call ChemRun( dt, esx%debug_Zchem )
               !print "(a, es18.5)", "POSCHEM ",  xChem( 18, 5 )
-          call Ammonium( esx%debug_Zchem>0 )
+          !call Ammonium( esx%debug_Zchem>0 )
       end if
 
       !> DISPERSION =====================================:
@@ -202,8 +204,8 @@ program tester
        !print *, "CDATE :", current_date
        write(txt,fmt="(i4,3i2.2)" ) current_date%year,current_date%month,&
                 current_date%day,current_date%hour
-       write (io_hour1,'(a,9999(:,",",es10.3))') trim(txt), xChem(:,1)
-       write (io_hour45,'(a,9999(:,",",es10.3))') trim(txt), xChem(:,11)
+       write (io_hour1,'(a,9999(:,",",es10.3))') trim(txt), xChem(:,1)*units
+       write (io_hour2,'(a,9999(:,",",es10.3))') trim(txt), xChem(:,nz)*units
        old_hour=current_date%hour
       end if
 

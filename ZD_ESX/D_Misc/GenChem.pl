@@ -1202,6 +1202,7 @@ print "ESXDIMS HERE S$adv $nspec_txt{$adv} NCHEMRATES $nrct\n";
   !> CM_ChemRates RCTYPE $rctype sets $description{$rctype}
 
     public :: setchemrates
+    public :: setPhotolUsed
 
      integer, parameter, public :: NCHEMRATES = $nrc   !! No. coefficients
 
@@ -1210,14 +1211,8 @@ print "ESXDIMS HERE S$adv $nspec_txt{$adv} NCHEMRATES $nrct\n";
   my $ndj = @photol_rates;
   print F  "!> Photolysis rates
      integer, parameter, public :: NPHOTOLRATES = $ndj   !! No. DJ vals used
-     integer, parameter, public,dimension(NPHOTOLRATES) :: photol_used= (/&
+     integer, save, public,dimension(NPHOTOLRATES) :: photol_used
 ";
-  my $comma = " ";
-  foreach my $dj ( @photol_rates ){
-	print F "        $comma$dj &\n";
-	$comma = ",";
-  }
-  print F "  /)\n\n";
   #die "NDJ $ndj PHPOT @photol_rates";
      
 
@@ -1225,6 +1220,16 @@ print "ESXDIMS HERE S$adv $nspec_txt{$adv} NCHEMRATES $nrct\n";
 
   if ( $nrc > 0 ) {
         print F "  contains\n  !------------------------------------\n";
+        print F "  subroutine setPhotolUsed() \n";
+        print F "    photol_used = (/ &\n";
+        my $comma = " ";
+        foreach my $dj ( @photol_rates ){
+	   print F "        $comma$dj &\n";
+	   $comma = ",";
+        }
+        print F "    /)\n\n";
+        print F "  end subroutine setPhotolUsed\n";
+        print F "\n  !------------------------------------\n";
         print F "  subroutine setchemrates($subargs) \n";
         print F "    $arglines\n";
 	#ESX if ( $rctype =~ /misc/ && $nrctroe > 0 ) {

@@ -33,11 +33,11 @@ KRO2NO                              NO + RO2  = NO2 +  HO2 + CH3CHO ;
 1.11e-11                            NO2 + OH + {M}  = HNO3  ; DD
 7.5e-12*EXP(290.0*TINV)             CH3COO2 + NO  = NO2 + RO2 + {CO2} ;emep had CH3O2
 4.7e-12                             CH3COO2 + NO2 + {M} = PAN ; DD
-1.95e+16*exp(-13543.0*TINV)            PAN  + {M}    = CH3COO2 + NO2 ; DD !!!!! e16 gave error
+1.95e+16*exp(-13543.0*TINV)         PAN  + {M} = CH3COO2 + NO2 ; DD !! e16 gave error
 *
 * Photolysis 
 
-DJ(IDBO3)     O3            = OD             ;   J(5e-5)
+DJ(IDO3_O1D)     O3            = OD             ;   J(5e-5)
 DJ(IDNO2)     NO2           = OP  + NO       ;   J(9e-3)
 DJ(IDCH3CHO)  CH3CHO        = RO2 + HO2 + {CO} ; J(6e-6)
 *

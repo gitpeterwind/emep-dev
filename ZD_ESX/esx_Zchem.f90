@@ -103,32 +103,41 @@
 
         do iz = iz1, iz2
 
-           if ( BIC(i)%units == "ppb" ) then
-              unitscale = ppb !WILL MAKE z-dep later
-           else if ( BIC(i)%units == "-" ) then
-              unitscale = 1.0
-           else if ( BIC(i)%units == "molec/cm2/s" ) then
+           select case ( BIC(i)%units )
+
+             case ( 'ppb' ) 
+               unitscale = ppb !WILL MAKE z-dep later
+             case ( '-' ) 
+               unitscale = 1.0
+             case ( 'molec/cm2/s' )  !! Surface emission. Check this!
+              call CheckStop( iz/=1, 'Wrong BIC units or k values:'&
+                //trim(BIC(i)%name)//":"//trim(BIC(i)%units) )
               unitscale = 1.0/( 100.0 * esx%dz(iz) ) ! => /cm3/s
-           else
-              call CheckStop(.false., "ERROR: Wrong units in BIC:"//&
-                         trim(BIC(i)%name)//":"//trim(BIC(i)%units) )
-           end if
+             case ( 'molec/cm3/s' )  !! Volume emission
+              unitscale = 1.0        !! already /cm3/s
+             case default
+              call CheckStop("Wrong units in BIC:"//&
+               trim(BIC(i)%name)//":"//trim(BIC(i)%units) )
+           end select
   
-          if(debug_level>0) print "(2a,g12.3,2i4,es12.3)", "BIC unitscale:",&
+           if(debug_level>0) print "(2a,g12.3,2i4,es12.3)", "BIC unitscale:",&
              trim(BIC(i)%type), unitscale, iz1, iz2, BIC(i)%value
     
-           if ( BIC(i)%type == 'conc' ) then
-             xChem( ispec, iz ) = BIC(i)%value * unitscale
-           else if ( BIC(i)%type == 'emis' ) then
-             rcemis( ispec, iz ) = BIC(i)%value * unitscale
-           else 
-
-              call CheckStop(.false., "ERROR: Wrong type in BIC:"//&
+           select case ( BIC(i)%type )
+             case ( 'conc' )
+               xChem( ispec, iz ) = BIC(i)%value * unitscale
+             case ( 'emis' )
+               rcemis( ispec,iz ) = BIC(i)%value * unitscale
+               if( debug_level>0) print *,"SET RCEMIS ", &
+                trim(BIC(i)%name)//":"//trim(BIC(i)%type),iz, rcemis(ispec,iz)
+             case default
+               call CheckStop(.false., 'Wrong type in BIC:'//&
                          trim(BIC(i)%name)//":"//trim(BIC(i)%type) )
-           end if
+           end select
+
 !           if ( debug_level >1 ) write(ilog,"(a,3i4,es12.3,f8.2)") "BIC: "//trim(BIC(i)%type), &
 !              i, ispec, iz, unitscale, BIC(i)%value
-        end do
+        end do ! iz
 
         if( debug_level >0 ) write(*, "(a,2i4,1x,a,2i3,g12.3)")  "BIC:SET ", &
            i, ispec, trim( BIC(i)%name ), iz1, iz2, BIC(i)%value

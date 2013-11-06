@@ -3,7 +3,7 @@
 !! and EMEP/CTM meteorology.
 
 module Zmet_ml
-  use esx_Variables, only : Zmet_t
+  use esx_Variables, only : Zmet_t, esx
   implicit none
   private
   
@@ -55,12 +55,11 @@ contains
       log300divt(:) = log(300.0*tinv(:))
       logtdiv300(:) = log(temp(:)/300.0)
 
-      !TMP
-      do iz = 1, 5, 4 ! TMP
-        print *, "ZMETTEST ", iz, temp(iz), itemp(iz), rh(iz), M(iz), H2O(iz)
-      end do
-!stop
-
+      if( esx%debug_Zchem > 1 ) then
+        print *, "ZMET t,1/t,rh,M,H2O at z1 ", temp(1), itemp(1), rh(1), M(1), H2O(1)
+        print *, "ZMET t,1/t,rh,M,H2O at nz", temp(nz), itemp(nz), rh(nz), M(nz), H2O(nz)
+      end if
+     !stop
      
   end subroutine Set1Dmet
 
