@@ -82,17 +82,17 @@ contains
      print "(a,3g12.3,a,g12.3,i6)", "ZdiffDts:", &
        dti,dtstab,esx%dt_Zdiff, " => dt, nSubSteps", dt, nSubSteps
 
-     if( debug_level>1 ) then !! Show where the stability criteria max is
+     !! Show where the stability criteria max is
+     !! (lowest 20 layers only, to limit print-out)
        print "(a,i6,20es10.3)", "debug-Zdiff start:",nSubSteps, dt
-       print "(a,a6,20a10)", "Zdiff start:","k", "%z(k)",  "dzmid(k)",&
-          "dz(k)", "D(k)", "E(k)", "K(k)", "concn(k)", "Crit."
+       print "(a,a6,3a8,20a10)", "Zdiff start:","k", "%z(k)",  "dzmid",&
+          "dz", "D", "E", "Kz", "concn", "Crit."
 
-       do k =  nz1, 1, -1
+       do k =  min(20,nz1), 1, -1
          stabtest =  Kz(k) * dti/dz(k)**2
          print "(a,i6,3f8.2,20es10.2)", "Kdiff start:",k, z(k+1), dzmid(k), &
           dz(k), D(k), E(k), Kz(k), concn(k),  stabtest
        end do
-     end if
    end if
 
  !>  start solution
