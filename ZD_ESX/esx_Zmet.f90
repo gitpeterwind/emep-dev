@@ -60,6 +60,7 @@ subroutine def_Kz(KzMethod, kwargs)
   real :: za, Ka, n, kappa = 0.4   ! CHANGE kappa later
   real, pointer, dimension(:) :: zlevs
   integer :: nz, nSL   !! index of surface layer ht. in zbnd
+  logical :: first_call=.true.
 
 
   call CheckStop( L%Hmix < 0.0, "Hmix not set!" ) 
@@ -74,7 +75,7 @@ subroutine def_Kz(KzMethod, kwargs)
        L%hSL, nSL, zlevs(nSL), size(zlevs)
 
   if( KzMethod == "constant" ) then
-     print *, "KEYVALS", kwargs(1)
+     if( first_call) print *, "KEYVALS", kwargs(1)
      Zmet%Kz = KeyValue( kwargs(1:1), "const" )
 
   else if( KzMethod == "power" ) then !test case
@@ -96,24 +97,24 @@ subroutine def_Kz(KzMethod, kwargs)
   !> Above surface layer we need to use other Kz values 
 
   if( KzMethod == "constant" ) then
-    print *, "KzCONST", Zmet(3)%Kz
-else
-  if ( L%invL > 0.0 ) then 
-
-    Zmet(1:nz)%Kz2 =  JericevicKzE( zlevs,L%Hmix,L%ustar,0.0) 
-    Zmet(nSL+1:nz)%Kz =  Zmet(nSL+1:nz)%Kz2
-
+    if( first_call) print *, "KzCONST", Zmet(3)%Kz
   else
+    if ( L%invL > 0.0 ) then 
 
-    call O_BrienKz( L%hSL, L%Hmix, zlevs, L%ustar, L%invL, &
+        Zmet(1:nz)%Kz2 =  JericevicKzE( zlevs,L%Hmix,L%ustar,0.0) 
+        Zmet(nSL+1:nz)%Kz =  Zmet(nSL+1:nz)%Kz2
+
+    else
+
+        call O_BrienKz( L%hSL, L%Hmix, zlevs, L%ustar, L%invL, &
                     KzHs=Zmet(nSL)%Kz, KzHmix=0.0, Kz=Zmet(1:nz)%Kz3, &
                     debug_flag=esx%debug_Zmet>0 )
-    Zmet(nSL+1:nz)%Kz =  Zmet(nSL+1:nz)%Kz3
+        Zmet(nSL+1:nz)%Kz =  Zmet(nSL+1:nz)%Kz3
+    end if
   end if
-end if
-  
 
   call print_Kz()
+  first_call=.false.
 
 end subroutine def_kz
 !----------------------------------------------------------------------------
