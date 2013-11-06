@@ -91,6 +91,9 @@ type, public :: LocDat !> Location-specific Data, was SubDat
     ,d         = NOT_SET  & ! displacement height (m)
     ,z_refd    = NOT_SET  & ! z_ref - d (m)
     ,z0        = NOT_SET  & ! roughness length    (m)
+! Radiation
+    ,ZenDeg    = NOT_SET  & ! zenith angle, degrees
+    ,cosZ      = NOT_SET  & ! cosine(Zen)
 ! Canopy-Associated Radiation
     ,PARsun    = NOT_SET  & ! photosynthetic active radn. for sun-leaves
     ,PARshade  = NOT_SET  & !  " " for shade leaves
