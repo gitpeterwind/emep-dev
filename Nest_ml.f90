@@ -612,8 +612,16 @@ subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
      if(time_exists) then
         call check(nf90_inquire_dimension(ncid=ncFileID,dimID=timedimID,len=N_ext))
      else
-        write(*,*)'Nest: time dimension not found. Assuming only one record '
-        N_ext=1
+        status = nf90_inq_dimid(ncid=ncFileID,name="Months",dimID=timeDimID)
+        if(status==nf90_noerr)then
+           call check(nf90_inquire_dimension(ncid=ncFileID,dimID=timedimID,len=N_ext))
+           if(N_ext/=12)then
+              call StopAll('Nest BC: did not find 12 monthes')
+           endif
+        else
+           write(*,*)'Nest: time dimension not found. Assuming only one record '
+           N_ext=1
+        endif
      endif
 
      call check(nf90_inquire_dimension(ncid=ncFileID,dimID=idimID,len=GIMAX_ext))
