@@ -79,7 +79,7 @@ use netcdf_ml,              only: GetCDF,Out_netCDF,Init_new_netCDF,&
 use OwnDataTypes_ml,        only: Deriv
 use Par_ml,                 only: MAXLIMAX,MAXLJMAX,GIMAX,GJMAX,IRUNBEG,JRUNBEG, &
                                   me, li0,li1,lj0,lj1,limax,ljmax
-use TimeDate_ml,            only: date,current_date
+use TimeDate_ml,            only: date,current_date,nmdays
 use TimeDate_ExtraUtil_ml,  only: idate2nctime,nctime2idate,date2string
 use Units_ml,               only: Units_Scale
 implicit none
@@ -678,7 +678,10 @@ subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
      endif
      if(MODE==100)then
         !asuming 12 monthes for BC, and 12 or 1 values for IC
-
+        ndays_ext(1)=0
+        do n=2,N_ext
+           ndays_ext(n)=ndays_ext(n-1)+nmdays(n-1)
+        enddo
      elseif(ndays_ext(1)-ndays_indate>halfsecond)then
         call nctime2idate(ndate,ndays_indate,&
              'WARNING: Nest did not find BIC for date YYYY-MM-DD hh:mm:ss')
@@ -1007,9 +1010,17 @@ subroutine read_newdata_LATERAL(ndays_indate)
     status = nf90_inq_dimid(ncid = ncFileID, name = "time", dimID = timeDimID)
     time_exists=(status==nf90_noerr)
     if(time_exists) then
-      call check(nf90_inquire_dimension(ncid=ncFileID,dimID=timedimID,len=N_ext_BC))
+       call check(nf90_inquire_dimension(ncid=ncFileID,dimID=timedimID,len=N_ext_BC))
     else
-      N_ext_BC=1
+       status = nf90_inq_dimid(ncid=ncFileID,name="Months",dimID=timeDimID)
+       if(status==nf90_noerr)then
+          call check(nf90_inquire_dimension(ncid=ncFileID,dimID=timedimID,len=N_ext_BC))
+          if(N_ext_BC/=12)then
+             call StopAll('Nest BC: did not find 12 monthes')
+          endif
+       else
+          N_ext_BC=1
+       endif
     endif
 
     if(size(ndays_ext)<N_ext_BC)then
