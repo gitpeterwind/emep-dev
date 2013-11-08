@@ -34,9 +34,9 @@ module esx_Zveg
      character(len=15) :: code    = "-"
      character(len=3)  :: type    = "-"   ! Ecocystem type, see headers
      character(len=5)  :: LPJtype = "-"   ! Simplified LPJ assignment
-     real    ::  hveg_max = 0.0
-     real    ::  hveg     = 0.0
-     real    ::  dPerh    = 0.7    ! d/hveg
+     real    ::  hmax     = 0.0
+     real    ::  h        = 0.0
+     real    ::  dPerh    = 0.7    ! d/h
      real    ::  gMax     = 0.0  ! max. conductance, m/s
      real    ::  alpha    = 0.0  !
 
@@ -94,12 +94,12 @@ module esx_Zveg
     dLAI = 0.0
     cumLAI = 0.0
 
-    call def_leaf_profile(Veg%LAI,Veg%hVeg)
+    call def_leaf_profile(Veg%LAI,Veg%h)
 
       !> Output LAI z-distribution
       open(newunit=io,file="LogLAIz.txt")
       write(io, "(a,5f7.2,i3)") "#Zveg:LAI,hveg,htrunk,a,b,nhVeg: " // &
-         trim(veg%profile) , Veg%LAI,Veg%hveg,Veg%canopy_bottom, &
+         trim(veg%profile) , Veg%LAI,Veg%h,Veg%canopy_bottom, &
            Veg%beta_a, Veg%beta_b, esx%nhVeg
       write(io,"(a4,2a7,9a9)") "iz", "z", "zbnd", "dz", "dLAI", "cumLAI"
   

@@ -367,9 +367,13 @@
 # Uses Kz_ml which is in ./Kz_ml.f90
 # process_fsource called with arg ./Kz_ml.f90 
 # ./Kz_ml.f90 Uses Module PhysicalConstants_ml
-# Full list of modules in ./Kz_ml.f90: PhysicalConstants_ml 
+# ./Kz_ml.f90 Uses Module MicroMet_ml
+# Full list of modules in ./Kz_ml.f90: PhysicalConstants_ml MicroMet_ml 
 # Uses PhysicalConstants_ml which is in ./PhysicalConstants_ml.f90
 # ./PhysicalConstants_ml.f90 already in list
+# Uses MicroMet_ml which is in ./MicroMet_ml.f90
+# process_fsource called with arg ./MicroMet_ml.f90 
+# Full list of modules in ./MicroMet_ml.f90:  
 # Uses ModelConstants which is in ./ModelConstants.f90
 # ./ModelConstants.f90 already in list
 # Uses esx_Zveg which is in ./esx_Zveg.f90
@@ -395,8 +399,8 @@ F90=gfortran  -pedantic -Wall -fbounds-check -fdefault-real-8
 # -------------------End-macro-Defs---------------------------
 
 # Here is the link step 
-esx_tester:CheckStops.o AllocInit.o CM_ChemSpecs.o ModelConstants.o SmallUtils_ml.o DefPhotolysis.o ZchemData.o KeyValueTypes.o LocalVariables.o PhysicalConstants_ml.o TimeDate_ml.o esx_Variables.o Zmet_ml.o Ammonium_ml.o Io_Routines.o esx_Zveg.o DO3SE_ModelConstants_ml.o DO3SE_Util_ml.o DO3SE_GstoTypes_ml.o DO3SE_PhysicalConstants_ml.o DO3SE_Gsto_ml.o DO3SE_Photosynthesis_ml.o DO3SE_Resistance_ml.o DO3SE_SMD_ml.o esx_gleaf.o Radiation_ml.o esx_GetData.o ChemFunctions.o CM_ChemRates.o Io_ml.o ChemSolver.o esx_ChemRun.o esx_MassBudget.o esx_Zchem.o esx_ZdiffSolver.o esx_Zgrid.o Kz_ml.o esx_Zmet.o esx_tester.o 
-	 $(F90) -o esx_tester CheckStops.o AllocInit.o CM_ChemSpecs.o ModelConstants.o SmallUtils_ml.o DefPhotolysis.o ZchemData.o KeyValueTypes.o LocalVariables.o PhysicalConstants_ml.o TimeDate_ml.o esx_Variables.o Zmet_ml.o Ammonium_ml.o Io_Routines.o esx_Zveg.o DO3SE_ModelConstants_ml.o DO3SE_Util_ml.o DO3SE_GstoTypes_ml.o DO3SE_PhysicalConstants_ml.o DO3SE_Gsto_ml.o DO3SE_Photosynthesis_ml.o DO3SE_Resistance_ml.o DO3SE_SMD_ml.o esx_gleaf.o Radiation_ml.o esx_GetData.o ChemFunctions.o CM_ChemRates.o Io_ml.o ChemSolver.o esx_ChemRun.o esx_MassBudget.o esx_Zchem.o esx_ZdiffSolver.o esx_Zgrid.o Kz_ml.o esx_Zmet.o esx_tester.o   
+esx_tester:CheckStops.o AllocInit.o CM_ChemSpecs.o ModelConstants.o SmallUtils_ml.o DefPhotolysis.o ZchemData.o KeyValueTypes.o LocalVariables.o PhysicalConstants_ml.o TimeDate_ml.o esx_Variables.o Zmet_ml.o Ammonium_ml.o Io_Routines.o esx_Zveg.o DO3SE_ModelConstants_ml.o DO3SE_Util_ml.o DO3SE_GstoTypes_ml.o DO3SE_PhysicalConstants_ml.o DO3SE_Gsto_ml.o DO3SE_Photosynthesis_ml.o DO3SE_Resistance_ml.o DO3SE_SMD_ml.o esx_gleaf.o Radiation_ml.o esx_GetData.o ChemFunctions.o CM_ChemRates.o Io_ml.o ChemSolver.o esx_ChemRun.o esx_MassBudget.o esx_Zchem.o esx_ZdiffSolver.o esx_Zgrid.o MicroMet_ml.o Kz_ml.o esx_Zmet.o esx_tester.o 
+	 $(F90) -o esx_tester CheckStops.o AllocInit.o CM_ChemSpecs.o ModelConstants.o SmallUtils_ml.o DefPhotolysis.o ZchemData.o KeyValueTypes.o LocalVariables.o PhysicalConstants_ml.o TimeDate_ml.o esx_Variables.o Zmet_ml.o Ammonium_ml.o Io_Routines.o esx_Zveg.o DO3SE_ModelConstants_ml.o DO3SE_Util_ml.o DO3SE_GstoTypes_ml.o DO3SE_PhysicalConstants_ml.o DO3SE_Gsto_ml.o DO3SE_Photosynthesis_ml.o DO3SE_Resistance_ml.o DO3SE_SMD_ml.o esx_gleaf.o Radiation_ml.o esx_GetData.o ChemFunctions.o CM_ChemRates.o Io_ml.o ChemSolver.o esx_ChemRun.o esx_MassBudget.o esx_Zchem.o esx_ZdiffSolver.o esx_Zgrid.o MicroMet_ml.o Kz_ml.o esx_Zmet.o esx_tester.o   
 
 # Here are the compile steps
  
@@ -508,7 +512,10 @@ esx_ZdiffSolver.o:./esx_ZdiffSolver.f90 esx_MassBudget.o esx_Variables.o
 esx_Zgrid.o:./esx_Zgrid.f90 esx_Variables.o 
 	 $(F90) -c ./esx_Zgrid.f90 
 
-Kz_ml.o:./Kz_ml.f90 PhysicalConstants_ml.o 
+MicroMet_ml.o:./MicroMet_ml.f90  
+	 $(F90) -c ./MicroMet_ml.f90 
+
+Kz_ml.o:./Kz_ml.f90 PhysicalConstants_ml.o MicroMet_ml.o 
 	 $(F90) -c ./Kz_ml.f90 
 
 esx_Zmet.o:./esx_Zmet.f90 CheckStops.o Io_Routines.o KeyValueTypes.o esx_Variables.o esx_Zveg.o Kz_ml.o ModelConstants.o 

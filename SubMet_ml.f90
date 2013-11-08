@@ -228,6 +228,8 @@ real :: theta2
 
      if ( FluxPROFILE == "Ln95") then !TESTING
 
+        call StopAll("Ln95 disabled for ESX testing. Needs more work anyway")
+
         theta2 = Grid%t2 * T_2_Tpot( Grid%psurf )
         call Launiainen1995( Grid%u_ref, Sub(iL)%z_refd, Sub(iL)%z0, Sub(iL)%z0, &
          theta2, Grid%theta_ref, Sub(iL)%invL )

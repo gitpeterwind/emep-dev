@@ -154,6 +154,33 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+8 November 2013  Dave   2661
+
+ESX-related changes (also main code, but no effect)
+
+Main directory:
+
+  SubMet_ml.f90   - Ln95 disabled
+  MicroMet_ml.f90 - Ln95 disabled, and linked into ZD_ESX directory
+                  - added phi_h, phi_w
+
+ZD_ESX:
+
+  DefPhotolysis_ml - BUG fix on Phux routine
+
+  MicroMet_ml.f90 - linked into ZD_ESX directory
+
+  Kz_ml - stability corrections added to Leuning code
+
+  esx_Zmet - added safety clause, that hSL > 2 Veg%h
+             added z/h to print_Kz
+             Veg%hVeg renamed to Veg%h
+
+  esx_Zveg - Veg%hVeg renamed to Veg%h 
+  config_esx - Veg%hVeg renamed to Veg%h
+  
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 7 November 2013  Peter  2660
 
 Nest_ml: recognize "Months" as a valid time (testet only for MODE=100)

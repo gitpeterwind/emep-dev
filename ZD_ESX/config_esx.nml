@@ -70,7 +70,7 @@
 ! the following are only used if zmethod set to linear::
 
  esx%zfirst  = 0.0
- esx%zlast   = 1000.0
+ esx%zlast   = 100.0
  esx%nz      = 100
 
 ! These zbnd values are the 'boundary'-levels of cells, the location where
@@ -169,7 +169,7 @@
    esx%Kz_method = "constant"
    esx%Kz_kwargs = "const", 300.
 
-  !esx%Kz_method = "Leuning"         ! No kwargs
+  esx%Kz_method = "Leuning"         ! No kwargs
 
 ! So far we have coded for methods:  constant, power or Leuning
 ! Note: With fortran's namelist system the last set of Kz_method, Kz_kwargs is
@@ -317,7 +317,7 @@
 
   veg%name     = "Temperate/boreal deciduous"
   veg%code     = "DF"
-  veg%hveg     = 20.0
+  veg%h        = 20.0
   veg%dPerh    = 0.65   ! displacement height/hveg
   veg%LAI      =  5.0
   veg%gMax     =  0.02  ! max. conductance, m/s

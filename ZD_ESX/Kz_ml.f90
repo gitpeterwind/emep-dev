@@ -1,20 +1,20 @@
 ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ !
 !> Provides Kz from various methods
-!! Main complexity is those different methods, which we deal with using
-!! key-word arguments, e.g. if KzMethod constant, we need one argument
-!! but if KzMethod is power-law we need more. 
+!! Main complexity is tht the different methods have different arguments. 
+!! Instead of hard-coding all,  we deal with using key-word arguments, 
+!! e.g. if KzMethod constant, we need one argument but if KzMethod is 
+!! power-law we need more. 
+!!
+!! Note that "z" as used here is usually at the boundary levels, not
+!! centres of grid-cells.
 
 module Kz_ml
 use PhysicalConstants_ml, only : KARMAN, GRAV
+use MicroMet_ml, only : wind_at_h, phi_w, phi_h
 implicit none
 private
 
-  !> From J-P matlab code
 
-  public :: def_kz_nsl
-  public :: def_kz_inc
-  public :: def_kz_pow
-  private :: non_rect_hyperbola
 
   !> From EMEP model
 
@@ -22,14 +22,21 @@ private
    public :: Venkatram_Hmix
    public :: Zilitinkevich_Hmix
 
-  ! Kz routines
+  !> Kz routines
+  !> From EMEP code
 
    public :: BrostWyngaardKz
    public :: JericevicKzE
    public :: O_BrienKz
 
+  !> From J-P matlab code
+   public :: def_kz_nsl
+   public :: def_kz_inc
+   public :: def_kz_pow
+
    ! Misc
    public :: risig1
+   private :: non_rect_hyperbola
 
   
 contains
@@ -49,23 +56,38 @@ function def_kz_nsl(z,nsl,ustar) result(K)
 end function def_kz_nsl
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!> Leuning et al AFM 2000 Kz method
-!! NB - stability correction (use of 1/L) not implemented
+!> Leuning et al AFM 2000, BLM 2000 Kz method
+!! Refs:
+!!
+!! Leuning, R., 
+!! Estimation of scalar source/sink distributions in plant canopies
+!! using Lagrangian dispersion analysis: Corrections for atmospheric stability
+!! and comparison with a multilayer canopy model.
+!! Bound.Layer.Meteor., 2000, 96, 293-314:
+!!
+!! Leuning, R.; Denmead, O.; Miyata, A. & Kim, J. 
+!! Source/sink distributions of heat, water vapour, carbon dioxide and methane
+!! in a rice canopy estimated using Lagrangian dispersion analysis
+!! Agric. Forest Meteor., 2000, 104, 233-249
 
 function def_Kz_inc(z,uStar,hVeg,hSL,invL,kappa,dPerh) result (Kz)
- !  neutral Kz in SL, constant above
+
   real, intent(in), dimension(:) :: z   !> heights at which Kz calculated
   real, intent(in) ::  &
-     ustar, hVeg       &   !> Obvious?
+     ustar, hVeg       &   !> Friction vel. (m/s), vegetation ht. (m)
     ,hsl               &   !> Height surface layer (m) and  1/L
-    ,invL              &   !> 1/L (L=Obukhov length, m) NB: no stability corr. yet
+    ,invL              &   !> 1/L (L=Obukhov length, m)
     ,dPerh                 !> = d/hVeg
   real, intent(in) :: kappa !> von Karman constant
 
   real, dimension(size(z)) :: Kz   ! Resulting Kz
-  real, dimension(size(z)) :: zPerh, fac, sigma_w, tau_L, Krsl
-  real :: d
+  real, dimension(size(z)) :: zPerh, fac_s,fac_t, sigma_w, tau_L, Krsl
+  real, dimension(size(z)) :: zL   ! (z-d)/L
+  real :: d           ! zero-plane displacement (m)
+  real :: zhLim       ! scaled matching height  (m)
+  real :: phi_w0, phi_h0   ! value of stability functions for z/L=0
   integer :: nsl, nz, k
+  logical, save :: first_call = .true.
 
  !> Leuning equation params
   real, parameter :: ZH0 = 0.8, ZH1 = 0.25  &
@@ -74,31 +96,55 @@ function def_Kz_inc(z,uStar,hVeg,hSL,invL,kappa,dPerh) result (Kz)
     ,a2 = 0.850, b2 = 0.41, c2 = 0.98, d2 = -1, s2 = 4
 
 
-   d = dPerh*hVeg
-   nsl = count( z < hsl+0.01 )
-   nz = size(z)
+   nsl = count( z < hsl+0.01 )  !! Number of grid-layers in surface layer
+                                !! CONSIDER nsl=0 in future code
+   nz       = size(z)
+   d        = dPerh*hVeg
    zPerh(:) = z(:)/hVeg
+
+   if( first_call ) then
+     phi_w0 = phi_w(0.0)
+     phi_h0 = phi_h(0.0)
+     first_call=.false.
+   end if
+
+  !! z>zlim: M-O, z<zLim: stab = h/L (Leuning, 2000)
+  !! continuity => zLim = h+d (differs from L(2000) who matches tL, 
+  !! resulting in a discontinuous Kz profile)
+
+   zhLim = (hVeg+d)/hVeg
+   where ( zPerh < zhLim )
+     zL(:)    = hVeg*invL    ! stability (z<zLim)
+   else where
+     zL(:)    = (z-d)*invL 
+   end where
+
    print *, "ZPERH ", nsl, zPerh, z(nsl)
 
-   !> From: Leuning et al., AFM, 2000 %%%
-   !> sigma_w:
+  !> factors for Sigma_w: Leuning et al., BLM, 2000 %%%
 
    where ( zPerh < ZH0)
-     fac = e*exp(f*zPerh)
+     fac_s = e*exp(f*zPerh)
    elsewhere
-     fac = non_rect_hyperbola(zPerh,a0,b0,c0,d0)
+     fac_s = non_rect_hyperbola(zPerh,a0,b0,c0,d0)
    end where
 
-   sigma_w = fac*uStar
-
-  !> tau_L:
+  !> factors for tau_L:
    where ( zPerh < ZH1 )
-     fac = non_rect_hyperbola(s2*zPerh,a2,b2,c2,d2)
+     fac_t = non_rect_hyperbola(s2*zPerh,a2,b2,c2,d2)
    elsewhere
-     fac = non_rect_hyperbola(zPerh-s1,a1,b1,c1,d1)
+     fac_t = non_rect_hyperbola(zPerh-s1,a1,b1,c1,d1) !is s1==ZH0? szPerH>s1 always?
    end where
 
-   tau_L = fac*hVeg/uStar
+  !> Assign sigma_w, tau_L
+
+   if ( abs(invL) < 0.001 ) then ! Neutral, CHECK limits
+     sigma_w = fac_s*uStar
+   else
+     sigma_w = fac_s*phi_w(zL)/phi_w0
+     fac_t   = fac_t*phi_h0 * phi_w0**2/ ( phi_h(zL)*phi_w(zL)**2 )
+   end if
+   tau_L = fac_t*hVeg/uStar
 
    Krsl = sigma_w**2 * tau_L     !! in and just above vegetation 
    Kz = kappa*uStar*(z-d)        !! M-O similarity theory

@@ -280,7 +280,7 @@
        eychiz = EMINYZ
      endif
    else
-       eychiz = X * eychiz
+       eychiz = EMINYZ
    end if
    J = X * eychiz
   end function phuxj

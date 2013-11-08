@@ -68,7 +68,8 @@ subroutine def_Kz(KzMethod, kwargs)
   nz = esx%nz
   zlevs => esx%zbnd(1:nz)
 
-  L%hSL = 0.04 * L%Hmix ! Height  of surface layer
+  L%hSL = 0.04 * L%Hmix          ! Height  of surface layer
+  L%hSL = max( L%hSL, 2.0*Veg%h) ! Avoids matching problems in RSL
   nSL = count( zlevs < L%hSL+0.01 )
 
   if( esx%debug_Zmet>0) write(*,*) "esx_Zmet HSL STUFF ", nz, &
@@ -86,11 +87,7 @@ subroutine def_Kz(KzMethod, kwargs)
 
   else if( KzMethod == "Leuning" ) then 
 
-    za = KeyValue( kwargs, "za" )
-    Ka = KeyValue( kwargs, "Ka" )
-    n  = KeyValue( kwargs, "n" )
-
-    Zmet(1:nz)%Kz = def_Kz_inc(zlevs,L%uStar,Veg%hVeg,L%hSL,L%invL,kappa,Veg%dPerh)
+    Zmet(1:nz)%Kz = def_Kz_inc(zlevs,L%uStar,Veg%h,L%hSL,L%invL,kappa,Veg%dPerh)
 
   end if
 
@@ -133,11 +130,12 @@ end subroutine def_kz
 
    nz = esx%nz
    call writedata("LogKz", &
-     (/ "z    ", "dz   ", "dzmid","zbnd ", "T(K) ", "Kz   ", "KzJG ", "KzOB " /) & 
+     (/ "z    ", "dz   ", "dzmid","zbnd ", "zb/h ", "T(K) ", "Kz   ", "KzJG ", "KzOB " /) & 
         ,esx%z(1:nz)   & !coords
         ,reshape( (/ esx%dz(1:nz), esx%dzmid(1:nz), &
-                     esx%zbnd(1:nz), Zmet(1:nz)%tzK, &
-             Zmet(1:nz)%Kz, Zmet(1:nz)%Kz2, Zmet(1:nz)%Kz3 /), (/ nz, 7 /) ),&
+                     esx%zbnd(1:nz), esx%zbnd(1:nz)/Veg%h, &
+             Zmet(1:nz)%tzK, &
+             Zmet(1:nz)%Kz, Zmet(1:nz)%Kz2, Zmet(1:nz)%Kz3 /), (/ nz, 8 /) ),&
       header )
 
  end subroutine  print_Kz
