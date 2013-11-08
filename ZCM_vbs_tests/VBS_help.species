@@ -22,5 +22,5 @@ NONVOL_BGNDOC,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,! Background OC (C-units!)
 NONVOL_FFIREOC25,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,! OA2.5 (C-units) from (primary) non-volatile wildfire OA emissions
 "***************************************************"
 "** NOTE that PART_OM_F is included in the PM10 and PMFINE groups (so the individual OA-components should not be included to avoid double count)"
-PART_OM_F,1,sumom,1.,xx,xx,0,0,0,xx,PCM_HELP;PMFINE;PM10;AOD,,! 
+PART_OM_F,1,sumom,1.,xx,xx,OC,0,0,xx,PCM_HELP;PMFINE;PM10,,! 
 "***************************************************"

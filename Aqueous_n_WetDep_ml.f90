@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************!
 !*
-!*  Copyright (C) 2007-2011 met.no
+!*  Copyright (C) 2007-2013 met.no
 !*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -63,8 +63,7 @@ module Aqueous_ml
   use ChemSpecs_tot_ml
   use ChemSpecs_adv_ml          ! IXADV_SO2, IXADV_SO4, etc.
   use ChemSpecs_shl_ml, only: NSPEC_SHL
-  use ChemGroups_ml,    only: ChemGroups,  INDEX_WDEP_SOX_GROUP, &
-                              INDEX_WDEP_RDN_GROUP, INDEX_WDEP_OXN_GROUP
+  use ChemGroups_ml,    only: ChemGroups
   use DerivedFields_ml, only: f_2d, d_2d     ! Contains Wet deposition fields
   use GridValues_ml,    only: gridwidth_m,xm2,dA,dB
   use Io_ml,            only: IO_DEBUG, datewrite

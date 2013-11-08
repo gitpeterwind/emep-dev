@@ -5,7 +5,7 @@ use warnings;
 #  GenChem - a perl script to read in equations and output
 #  production and loss terms for fortran programmes.
 #
-# Dave Simpson    1998-2012:
+# Dave Simpson    1998-2013:
 # Includes: species checks, atom-balance,  use of shorthands,
 #  rate-simplication, various user-changeable options.
 #
@@ -25,37 +25,37 @@ use warnings;
 # term. This is defined here for the EMEP 3D model, and probably
 # should be changed for other models
 #
- our $DEBUG = 0;
- my $DIMFLAG  =  "k";       # could be ix,iy,iz for 3-D models if wanted
- my $TEMP     =   "XT" ;     # special variable
- my $Krange = "KCHEMTOP:KMAX_MID";
+our $DEBUG = 0;
+my $DIMFLAG= "k";       # could be ix,iy,iz for 3-D models if wanted
+my $TEMP   = "XT";      # special variable
+my $Krange = "KCHEMTOP:KMAX_MID";
 
- my $PROD = "P" ;           # Could be P, P(iq), P(i), whatever
- my $LOSS = "L" ;
- my $CPNEW = "xnew";
- my $CPDIM = "";   # could be ",k" in some routines
+my $PROD = "P" ;           # Could be P, P(iq), P(i), whatever
+my $LOSS = "L" ;
+my $CPNEW = "xnew";
+my $CPDIM = "";   # could be ",k" in some routines
 
- my $LOOP_HEADTEXT =  "";    #  Could be "DO\n" -loop
- my $LOOP_TAILTEXT =  "";    #  e.g.     "END DO\n";
+my $LOOP_HEADTEXT =  "";    #  Could be "DO\n" -loop
+my $LOOP_TAILTEXT =  "";    #  e.g.     "END DO\n";
 
- my $CHEMEQN_TEXT =  "
+my $CHEMEQN_TEXT =  "
       xnew(SPEC)=  ( xold(SPEC) + dt2 * P) /(1.0 + dt2*L )\n";
       #if( xnew(SPEC) < 0.0 ) print *, \"NEGNEG!!! SPEC\", xold(SPEC), P, L\n";
       #xnew(SPEC)=  ( xold(SPEC) + dt2 * P) /(1.0 + dt2*L )\n";
 
- my $CHEMEQN_NOLOSS  =  "
+my $CHEMEQN_NOLOSS  =  "
       xnew(SPEC)=  xold(SPEC) + dt2 * P\n";
 
- my $CHEMEQN_NOPROD  =  "
+my $CHEMEQN_NOPROD  =  "
       xnew(SPEC)=  xold(SPEC) / ( 1.0 + dt2 * L )\n";
 
- my $CHEMEQN_NOTERMS =  "!Nothing to do for SPEC! xnew(SPEC)=  max(0.0, xold(SPEC))\n";
+my $CHEMEQN_NOTERMS =  "!Nothing to do for SPEC! xnew(SPEC)=  max(0.0, xold(SPEC))\n";
 
-    # From the original towstep...
-    #
-    # $CHEMEQN_TEXT =  "      X(iq,SPEC,2)=
-    #      >     (4.0*X(iq,SPEC,1)-X(iq,SPEC,0)+2.0*Ldt*P)/
-    #      >     (3.0 + 2.0*Ldt*L )\n";
+# From the original towstep...
+#
+# $CHEMEQN_TEXT =  "      X(iq,SPEC,2)=
+#      >     (4.0*X(iq,SPEC,1)-X(iq,SPEC,0)+2.0*Ldt*P)/
+#      >     (3.0 + 2.0*Ldt*L )\n";
 
 open(LOG,">Log.GenOut");    # An extensive log - should be read!
 
@@ -70,103 +70,93 @@ our @emis_files = ();
 our @bionat_specs = (); # For isoprene, terpenes, soil-NO etc.
 
 # Some descriptive variables for later output
- my ( $line, $linenum, $rate ) ;  # Input line
- my ( $shl, $adv, $svol, $tot, $tracer )   = ( 0, 1, 2, 3, 4 ) ;
- my $SlowSpec = 9999;   # Index of slowly-reacting species
- my ( %nspec_txt   )  = ( $adv => "NSPEC_ADV",   $shl => "NSPEC_SHL" );
- our ( @species_tot ); # Just used in checking drydep now
-
-# Automates assignement of oxidised nitrogen groups
-# deduced an count{N}>0 and not NH3 or NH4
- my( @ddep_oxngroup, @wdep_oxngroup, @oxngroup);
- my( @ddep_soxgroup, @wdep_soxgroup, @soxgroup);
- my( @ddep_rdngroup, @wdep_rdngroup, @rdngroup);
- my( @ddep_seagroup, @wdep_seagroup, @seagroup);
+my ( $line, $linenum, $rate ) ;  # Input line
+my ( $shl, $adv, $svol, $tot, $tracer )   = ( 0, 1, 2, 3, 4 ) ;
+my $SlowSpec = 9999;   # Index of slowly-reacting species
+my ( %nspec_txt   )  = ( $adv => "NSPEC_ADV",   $shl => "NSPEC_SHL" );
+our ( @species_tot ); # Just used in checking drydep now
 
 #2010: reads groups and headers from GenIn_species.csv
- my( %groups, @headers );
- my @ro2pool = (); # used with new-style GenIn.species from Garry
+my( %groups, @headers );
+my @ro2pool = (); # used with new-style GenIn.species from Garry
 
- my ( $naerosol, $first_semivol, $last_semivol )   = ( 0, 0, 0 ) ;
- my ( @species, @nspecies, @speciesmap ) = ();     # e.g. species[TOT][n]
- my ( @extinc, @CiStar, @DeltaH ); # Aerosol params
+my ( $naerosol, $first_semivol, $last_semivol )   = ( 0, 0, 0 ) ;
+my ( @species, @nspecies, @speciesmap ) = ();     # e.g. species[TOT][n]
+my ( %extinc, @CiStar, @DeltaH ); # Aerosol params
 
 # Arrays for left and righthand side of equations:
- my (@lhs,  @rhs) = ();               # Initialise lhs and rhs species
- my (@lhtracer,  @rhtracer) = ();     # Initialise lhs and rhs tracers
- my (%lhfactor,  %rhfactor ) = ();    # Initialise lhs and rhs factors
- my (%prod,  %loss ) = ();            # Initialise
- my ($neqn, $nrct, $nrctroe, $nrcfunc ) = (0,0,0,0);  # rct = Temp-dependant
- my ( $nddep,  $nwdep ) = (0,0);
- my ( $ddep_txt, $wdep_txt );
- #QUERY? my ( $ddep_txt, $wdep_txt ) = ("","");
- my ( @rate_label, @rct, @rcttext, @rctroe, @rctroetext,
-	 @rcmisc, @rcmisctext ) = ();
- my ( %atoms, %molwt, %count, %nmhc, %shorthand ) = ("", "", "", "" );
+my (@lhs,  @rhs) = ();               # Initialise lhs and rhs species
+my (@lhtracer,  @rhtracer) = ();     # Initialise lhs and rhs tracers
+my (%lhfactor,  %rhfactor ) = ();    # Initialise lhs and rhs factors
+my (%prod,  %loss ) = ();            # Initialise
+my ($neqn, $nrct, $nrctroe, $nrcfunc ) = (0,0,0,0);  # rct = Temp-dependant
+my ( $nddep,  $nwdep ) = (0,0);
+my ( $ddep_txt, $wdep_txt );
+#QUERY? my ( $ddep_txt, $wdep_txt ) = ("","");
+my ( @rate_label, @rct, @rcttext, @rctroe, @rctroetext,
+  @rcmisc, @rcmisctext ) = ();
+my ( %atoms, %molwt, %count, %nmhc, %shorthand ) = ("", "", "", "" );
 
- # Common statements for output:
-  my $CONTLINE = "  &\n     ";      # Fortran'90
-  my $INTPUB   = " integer, public, parameter :: " ;
-  my $LOGPUB   = " logical, public, parameter :: " ;
-  my $HLINE = "!-----------------------------------------------------------\n";
-  my $TLINE = "!>_________________________________________________________<\n";
+# Common statements for output:
+my $CONTLINE = "  &\n     ";      # Fortran'90
+my $INTPUB   = " integer, public, parameter :: " ;
+my $LOGPUB   = " logical, public, parameter :: " ;
+my $HLINE = "!-----------------------------------------------------------\n";
+my $TLINE = "!>_________________________________________________________<\n";
 
 #======================================================================
 # CONSIDER REMOVING!
- my ( $rct )    = qw ( rct );
- my  %description = (
-           $adv => "Advected species",
-           $shl => "Short-lived (non-advected) species ",
-           $tot => "All reacting species ",
-           $rct => "Rate-coefficients - temperature dependant",
-       );
+my ( $rct )    = qw ( rct );
+my %description = ($adv => "Advected species",
+                   $shl => "Short-lived (non-advected) species ",
+                   $tot => "All reacting species ",
+                   $rct => "Rate-coefficients - temperature dependant");
 
 #  These rates require different used variables. The ChemFunctions_ml
 #  is only called if the more complex functions are needed.
 #  but for simplicity we define it anyway.... (ESX check)
- my $txtrcfunc = "";
- $txtrcfunc = "\n  use ChemFunctions_ml       ! => kaero, RiemerN2O5\n" ; #ESX if $nrcfunc>0;
- #printall ("TXTRCFUNC needed? $nrcfunc   TXT:$txtrcfunc");
- my %UsedVariables = (
-	   $rct    => " $txtrcfunc
-  use Setup_1dfields_ml      ! => tinv, h2o, m, Fgas
+my $txtrcfunc = "";
+$txtrcfunc = "\n  use ChemFunctions_ml       ! => kaero, RiemerN2O5\n" ; #ESX if $nrcfunc>0;
+#printall ("TXTRCFUNC needed? $nrcfunc   TXT:$txtrcfunc");
+my %UsedVariables = (
+   $rct    => " $txtrcfunc
+  use Setup_1dfields_ml ! => tinv, h2o, m, Fgas
   use Setup_1dfields_ml, m=> amk
-  use ChemSpecs_tot_ml         ! => PINALD, .... for FgasJ08
-  use ModelConstants_ml,     only : KMAX_MID,KCHEMTOP,DebugCell,DEBUG_RUNCHEM"
-       );
+  use ChemSpecs_tot_ml  ! => PINALD, .... for FgasJ08
+  use ModelConstants_ml, only: KMAX_MID,KCHEMTOP,DebugCell,DEBUG_RUNCHEM");
 
 #======================================================================
 
- read_species();    # Assigns to $species[nspec] array, also calculates
-                    # $molwt{$spec} and $count[$spec][$atom].
-		    print "DONE READ_SPECIES\n";
+read_species();    # Assigns to $species[nspec] array, also calculates
+                   # $molwt{$spec} and $count[$spec][$atom].
+print "DONE READ_SPECIES\n";
 
- print_species();
-		    print "DONE   PR_SPECIES\n";
+print_species();
+print "DONE   PR_SPECIES\n";
 
- read_shorthand();  # Reads and expands shorthand, e.g. KHO2RO2
-		    print "DONE READ_SHORTS\n";
+read_shorthand();  # Reads and expands shorthand, e.g. KHO2RO2
+print "DONE READ_SHORTS\n";
 
- read_reactions();  # Reads reactions, does carbon balance etc.
-		    print "DONE READ_REACTIONS\n";
+read_reactions();  # Reads reactions, does carbon balance etc.
+print "DONE READ_REACTIONS\n";
 
- output_prod_loss();  # Output production and loss file : GenOut_reactions.inc
-		    print "DONE OUT_PROD\n";
+output_prod_loss();  # Output production and loss file : GenOut_reactions.inc
+print "DONE OUT_PROD\n";
 
- print_rates($rct, $nrct,\@rct,\@rcttext) ;
+print_rates($rct, $nrct,\@rct,\@rcttext) ;
 
-
- printmap_dep();
-        print "QQQQQQQQQQQQQQQQQQQQQQQQQQ ; \n";
-	foreach my $gg ( keys %grp ) {
-	  print "  TESTQQ $gg group is: @{ $grp{$gg} }\n";
-	}
- print_groups();   # DDEP_OXNGROUP etc.
- print_emisstuff("File",@emis_files );     #  "nox ", etc.
- print_emisstuff("Specs",@emis_specs );     #  "nox ", etc.
- print_emisstuff("BioNat",@bionat_specs );     #  "nox ", etc.
- print_femis(@emis_files );     #  "nox ", etc.
- print_emislist(@emis_files );     #  "nox ", etc.
+printmap_dep();
+printmap_ext();
+print "QQQQQQQQQQQQQQQQQQQQQQQQQQ ; \n";
+foreach my $gg ( keys %grp ) {
+  print "  TESTQQ $gg group is: @{ $grp{$gg} }\n";
+}
+print_groups();   # DDEP_OXNGROUP etc.
+print_emisstuff("File",@emis_files );     #  "nox ", etc.
+print_emisstuff("Specs",@emis_specs );     #  "nox ", etc.
+print_emisstuff("BioNat",@bionat_specs );     #  "nox ", etc.
+print_femis(@emis_files );     #  "nox ", etc.
+print_emislist(@emis_files );     #  "nox ", etc.
 
 #print_speciesmap() ;
 
@@ -186,116 +176,111 @@ sub read_species {
                                        2 for gas-particle (soa) species
   ...................   \n";
 
-	open(F,"GenIn.species") or die "File GenIn.species not found\n";
+  open(F,"GenIn.species") or die "File GenIn.species not found\n";
 
-	while ( $line = <F> ) {       # Reads a line
-		chomp($line) ;         # Remove newline character
-		next if $line =~ /^\*/ ;   # Skip comments
-		next if $line =~ /^\"\*/ ;   # Skip comments
-                next if $line =~ /^\s*$/ ; # skip empty lines
-                if ( $line =~ /^Spec/ ) {
-			@headers = split(/,/,$line);
-			print join(" ",@headers);
-			next;
-		}
+  while ( $line = <F> ) {       # Reads a line
+    chomp($line) ;         # Remove newline character
+    next if $line =~ /^\*/ ;   # Skip comments
+    next if $line =~ /^\"\*/ ;   # Skip comments
+    next if $line =~ /^\s*$/ ; # skip empty lines
+    if ( $line =~ /^Spec/ ) {
+      @headers = split(/,/,$line);
+      print join(" ",@headers);
+      next;
+    }
 
-		$SlowSpec = $nspecies[$tot] + 1 if $line =~ /^\"#SLOW/ ;
-                next if $line =~ /^"#/ ; # would be OLD_STYLE of SLOW
+    $SlowSpec = $nspecies[$tot] + 1 if $line =~ /^\"#SLOW/ ;
+    next if $line =~ /^"#/ ; # would be OLD_STYLE of SLOW
 
-                my ( $spec, $typ, $formula, $comment, $in_ncarbon, $class );
-		my ( $extinc, $cstar, $DeltaH ) = 0.0x3; # Aerosol params
-		my ( $groups, @groups );
-		@groups = ();
-                my $in_rmm = "-";   # init to "-" for old_style
-		$line =~ s/xx/-/g; # Oocalc didn't like -
-		my @r = split(/,/,$line);
-		$spec     = $r[0];
-		$typ      = $r[1];
-		$formula  = $r[2];
-		$in_rmm   = $r[3];
-		my $dry      = $r[4];
-		my $wet      = $r[5];
-		$extinc   = $r[6];
-		$cstar    = $r[7];
-		$DeltaH   = $r[8];
-		$groups   = $r[10];
-		my $tgroups  = $r[ find_rec("Groups",@headers ) ];
-		#die "TESTED T$tgroups should be ten\n";
+    my ( $spec, $typ, $formula, $comment, $in_ncarbon, $class );
+    my ( $extinc, $cstar, $DeltaH ) = 0.0x3; # Aerosol params
+    my ( $groups, @groups );
+    @groups = ();
+    my $in_rmm = "-";   # init to "-" for old_style
+    $line =~ s/xx/-/g; # Oocalc didn't like -
+    my @r = split(/,/,$line);
+    $spec     = $r[0];
+    $typ      = $r[1];
+    $formula  = $r[2];
+    $in_rmm   = $r[3];
+    my $dry   = $r[4];
+    my $wet   = $r[5];
+    $extinc   = $r[6];
+    $cstar    = $r[7];
+    $DeltaH   = $r[8];
+    $groups   = $r[10];
+    my $tgroups  = $r[ find_rec("Groups",@headers ) ];
+    #die "TESTED T$tgroups should be ten\n";
 
-       		# Assign species to groups if given:
-               	unless ( $groups =~ "-" ) {
-			print "PG SPEC $spec G $groups\n";
-		       process_groups($spec, $groups, $dry, $wet );
-		       #print "PPPPPPPPPPPPPPPPPPPPPPPPPP ; \n";
-		       #foreach my $gg ( keys %grp ) {
-		       #print "  TESTPP $gg group is: @{ $grp{$gg} }\n";
-		       #}
-		}
-		process_alldep ( $dry, $wet, $spec ) unless $dry eq "-" ;
+    # Assign species to groups if given:
+    unless ( $groups =~ "-" ) {
+      print "PG SPEC $spec G $groups\n";
+      process_groups($spec, $groups, $dry, $wet );
+      #print "PPPPPPPPPPPPPPPPPPPPPPPPPP ; \n";
+      #foreach my $gg ( keys %grp ) {
+      #print "  TESTPP $gg group is: @{ $grp{$gg} }\n";
+      #}
+    }
+    process_alldep ( $dry, $wet, $spec ) unless $dry eq "-" ;
 
-		#???? push(@ro2pool,$spec) if $class eq "peroxy";
-		$spec  =~ tr/a-z/A-Z/;   # Upper case
+    #???? push(@ro2pool,$spec) if $class eq "peroxy";
+    $spec  =~ tr/a-z/A-Z/;   # Upper case
 
-		$nspecies[$tot]++;
-		my $n = $nspecies[$tot];
-		$species[$tot][$n ]    = $spec ;
-		$species_tot[$n]       = $spec ;
-		$speciesmap[$tot][$n]  = $n ;
-	        $extinc[$n]  = $extinc;
-	        $CiStar[$n]  = $cstar;
-	        $DeltaH[$n]  = $DeltaH;
-		printall("SPECIES READ => $n $spec N $n DH $DeltaH; ");
+    $nspecies[$tot]++;
+    my $n = $nspecies[$tot];
+    $species[$tot][$n ]    = $spec ;
+    $species_tot[$n]       = $spec ;
+    $speciesmap[$tot][$n]  = $n ;
+    $extinc{$spec} = $extinc unless ($extinc =~ /0|-|^$/);
+    $CiStar[$n]  = $cstar;
+    $DeltaH[$n]  = $DeltaH;
+    printall("SPECIES READ => $n $spec N $n DH $DeltaH; ");
 
-		if ( $typ == 2 ) {
-		    $naerosol++ ;
-		    if ( $naerosol == 1 ) { $first_semivol = $n };
-		    $last_semivol = $n ;
-		    $typ = 1;  # Reset for advection below
-		}
+    if ( $typ == 2 ) {
+      $naerosol++ ;
+      if ( $naerosol == 1 ) { $first_semivol = $n };
+      $last_semivol = $n ;
+      $typ = 1;  # Reset for advection below
+    }
 
-		# also for advected, short-lived, semi-vol types:
+    # also for advected, short-lived, semi-vol types:
 
-		$nspecies[$typ]++;
-		$n = $nspecies[$typ];
-		$species[$typ][$n ]    = $spec ;
-		$speciesmap[$typ][$n]  = $n ;
+    $nspecies[$typ]++;
+    $n = $nspecies[$typ];
+    $species[$typ][$n ]    = $spec ;
+    $speciesmap[$typ][$n]  = $n ;
 
-		print "LINE $line TYPE $typ N $n\n";
+    print "LINE $line TYPE $typ N $n\n";
+    if (is_integer($formula) or is_float($formula)) {
+      $molwt{$spec} = $formula;
+      print LOG "INPUT MOLWT: $spec= $molwt{$spec}\n";
+    } else { 
+    # Get $molwt and $count[$spec][$atom]
+      count_atoms($spec,$formula)
+    }
 
-                if ( is_integer( $formula ) or is_float( $formula ) )
-                {       $molwt{$spec} = $formula;
-                        print LOG "INPUT MOLWT: $spec= $molwt{$spec}\n";
-                }
-		else
-		{ 
-		      # Get $molwt and $count[$spec][$atom]
-                        count_atoms($spec,$formula)
-                }
+    if ($molwt{$spec} == 1 and $in_rmm ne "-" ) {
+      $molwt{$spec} = $in_rmm
+    }
 
+    if (is_float($in_rmm) or is_integer($in_rmm)) {
+      $molwt{$spec} = $in_rmm;
+      print LOG "INPUT MOLWT: $spec= $molwt{$spec}\n";
+    }
 
-                if ($molwt{$spec} == 1 and $in_rmm ne "-" )
-                        { $molwt{$spec} = $in_rmm }
+    unless (defined($count{$spec}{"C"})) {
+      if ($count{$spec}{"C"} == 0 and $in_ncarbon != 0)
+        { $count{$spec}{"C"} = $in_ncarbon }
+    }
 
-                if ( is_float( $in_rmm ) or is_integer( $in_rmm ) )
-                {
-                        $molwt{$spec} = $in_rmm;
-                        print LOG "INPUT MOLWT: $spec= $molwt{$spec}\n";
-                }
-
-
-                unless ( defined ( $count{$spec}{"C"} )) {
-                   if ($count{$spec}{"C"} == 0 and $in_ncarbon != 0)
-                        { $count{$spec}{"C"} = $in_ncarbon }
-		}
-
-	}
-	close(F);
+  }
+  close(F);
 
 
-        print "PPPPPPPPPPPPPPPPPPPPPPPPPP ; \n";
-	foreach my $gg ( keys %grp ) {
-	  print "  TESTPP $gg group is: @{ $grp{$gg} }\n";
-	}
+  print "PPPPPPPPPPPPPPPPPPPPPPPPPP ; \n";
+  foreach my $gg ( keys %grp ) {
+    print "  TESTPP $gg group is: @{ $grp{$gg} }\n";
+  }
 } # end of sub read_species
 
 ########################################################################
@@ -813,8 +798,8 @@ sub output_prod_loss {
 	my( $eqntext, $noloss, $noprod);
 
 	for( my $i=1; $i<=$nspecies[$tot]; $i++){
-	        open(OUTFILE,">GenOut_Reactions1.inc") if $i==1;
-	        open(OUTFILE,">GenOut_Reactions2.inc") if $i==$SlowSpec;
+        open(OUTFILE,">GenOut_Reactions1.inc") if $i==1;
+        open(OUTFILE,">GenOut_Reactions2.inc") if $i==$SlowSpec;
 		print OUTFILE "\n!-> $species[$tot][$i] \n";
 		print OUTFILE $LOOP_HEADTEXT;
 
@@ -978,108 +963,105 @@ sub print_species {
 #    &   OP, OH, O3, HO2
 #        parameter( OP=1)      ! Weight = 16
 ########################################################################
-    my ( $i, $top, $aero_txt );
-    my ( %txt )       = ( $tot => "tot",  $adv => "adv", $shl => "shl" );
-    my ( %nspec_txt ) = ( $tot => "NSPEC_TOT",
-                          $adv => "NSPEC_ADV",
-                          $shl => "NSPEC_SHL" );
-    my($cnum,$nnum,$snum);  # Carbon, nitrogen and sulphur numbers.
-    my($module, $end_of_line, $Use);
+  my ( $i, $top, $aero_txt );
+  my ( %txt )       = ( $tot => "tot",  $adv => "adv", $shl => "shl" );
+  my ( %nspec_txt ) = ( $tot => "NSPEC_TOT",
+                        $adv => "NSPEC_ADV",
+                        $shl => "NSPEC_SHL" );
+  my($cnum,$nnum,$snum);  # Carbon, nitrogen and sulphur numbers.
+  my($module, $end_of_line, $Use);
 
-    my %ixlab     = ( $tot => "",
-                      $adv => "IXADV_",
-                      $shl => "IXSHL_"    ) ;
+  my %ixlab     = ( $tot => "",
+                    $adv => "IXADV_",
+                    $shl => "IXSHL_"    ) ;
 
-    foreach my $s ( $tot, $adv, $shl ) {
-	next if $nspecies[$s] == 0 ;
-	print "PROCESS $s TXT $txt{$s} NSPEC $nspecies[$s] \n";
+  foreach my $s ( $tot, $adv, $shl ) {
+    next if $nspecies[$s] == 0 ;
+    print "PROCESS $s TXT $txt{$s} NSPEC $nspecies[$s] \n";
 
-	$module = "ChemSpecs_$txt{$s}_ml";
-        open(F,">GenOut_$module.inc");
-        $Use = "none";
-        start_module($module,\*F,$Use);
-	print F	"!+ Defines indices and NSPEC for $txt{$s} : $description{$s}\n\n";
+    $module = "ChemSpecs_$txt{$s}_ml";
+    open(F,">GenOut_$module.inc");
+    $Use = "none";
+    start_module($module,\*F,$Use);
+    print F "!+ Defines indices and NSPEC for $txt{$s} : $description{$s}\n\n";
 
-        my $nspectxt = "module $module\n
+    my $nspectxt = "module $module\n
            integer, public, parameter :: $nspec_txt{$s}=$nspecies[$s] \n";
 
-	if ( $s == $tot && $naerosol == 0 ) {   # aerosols kept in totals file
-                $first_semivol=-999;
-                $last_semivol=-999;
-	}
-	if ( $s == $tot  ) {   # aerosols kept in totals file
-		$aero_txt    = "\n  ! Aerosols:
+    if ($s == $tot && $naerosol == 0) {   # aerosols kept in totals file
+      $first_semivol=-999;
+      $last_semivol=-999;
+    }
+    if ($s == $tot) {   # aerosols kept in totals file
+      $aero_txt    = "\n  ! Aerosols:
            integer, public, parameter :: &
                 NAEROSOL=$naerosol,   &!   Number of aerosol species
                 FIRST_SEMIVOL=$first_semivol, &!   First aerosol species
                 LAST_SEMIVOL=$last_semivol     !   Last  aerosol species  \n\n";
-	} else {
-		$aero_txt    = "\n";
-	}
+    } else {
+      $aero_txt    = "\n";
+    }
 
-        # 1 ) nspec and species numbers
-	print F	"!   ( Output from GenChem, sub print_species ) \n";
-	print F "\n  $INTPUB $nspec_txt{$s} = $nspecies[$s] \n $aero_txt";
+    # 1 ) nspec and species numbers
+    print F "!   ( Output from GenChem, sub print_species ) \n";
+    print F "\n  $INTPUB $nspec_txt{$s} = $nspecies[$s] \n $aero_txt";
 
-	for($i=1;$i<=$nspecies[$s]; $i++){
+    for($i=1;$i<=$nspecies[$s]; $i++){
+      if ( $i == 1 || $i%10 == 0 ) { # Declare integer
+        print F	"\n\n  $INTPUB  & \n" ;
+        $end_of_line = "    " ;
+      }
+      printf F  "$end_of_line";
+      my $n = $speciesmap[$s][$i] ;   # Gets n for totals list
+      printf F " $ixlab{$s}%-12s=%4d", $species[$s][$n], $i ;
+      print " S $s IXLABEL $ixlab{$s} SPEC $species[$s][$n] I $i N $n\n";
+      $end_of_line = "   &\n  , ";
+    }
+    print F "\n\n $HLINE  end module $module\n";
+    close(F);
+  } # loop over $s
 
-		if ( $i == 1 || $i%10 == 0 ) { # Declare integer
-			print F	"\n\n  $INTPUB  & \n" ;
-        		$end_of_line = "    " ;
-		}
-		printf F  "$end_of_line";
-		my $n = $speciesmap[$s][$i] ;   # Gets n for totals list
-		printf F " $ixlab{$s}%-12s=%4d", $species[$s][$n], $i ;
-		print " S $s IXLABEL $ixlab{$s} SPEC $species[$s][$n] I $i N $n\n";
-		$end_of_line = "   &\n  , ";
-        }
-	print F "\n\n $HLINE  end module $module\n";
-        close(F);
-     } # loop over $s
 
+  $module = "ChemChemicals_ml";
+  $Use    ="
+use ChemSpecs_tot_ml  ! => NSPEC_TOT, species indices
+use ChemSpecs_shl_ml, only: NSPEC_SHL
+use ChemSpecs_adv_ml, only: NSPEC_ADV";
+  open(F,">GenOut_$module.inc");
+  start_module($module,\*F,$Use);
 
-     $module = "ChemChemicals_ml";
-     $Use    ="
-  use ChemSpecs_tot_ml  ! => NSPEC_TOT, species indices
-  use ChemSpecs_shl_ml, only: NSPEC_SHL
-  use ChemSpecs_adv_ml, only: NSPEC_ADV";
-     open(F,">GenOut_$module.inc");
-     start_module($module,\*F,$Use);
+  print F <<"END_CHEMSTART";
+!/--   Characteristics of species:
+!/--   Number, name, molwt, carbon num, nmhc (1) or not(0)
 
-    print F <<"END_CHEMSTART";
+public :: define_chemicals    ! Sets names, molwts, carbon num, advec, nmhc
 
-  !/--   Characteristics of species:
-  !/--   Number, name, molwt, carbon num, nmhc (1) or not(0)
+type, public :: Chemical
+     character(len=20) :: name
+     real              :: molwt
+     integer           :: nmhc      ! nmhc (1) or not(0)
+     integer           :: carbons   ! Carbon-number
+     real              :: nitrogens ! Nitrogen-number
+     integer           :: sulphurs  ! Sulphur-number
+     real              :: CiStar    ! VBS param
+     real              :: DeltaH    ! VBS param
+endtype Chemical
+type(Chemical), public, dimension(NSPEC_TOT), target :: species
+type(Chemical), public, dimension(:), pointer :: &
+  species_shl=>null(),&             ! => species(..short lived..)
+  species_adv=>null()               ! => species(..advected..)
 
-  public :: define_chemicals    ! Sets names, molwts, carbon num, advec, nmhc
-
-  type, public :: Chemical
-       character(len=20) :: name
-       real              :: molwt
-       integer           :: nmhc      ! nmhc (1) or not(0)
-       integer           :: carbons   ! Carbon-number
-       real              :: nitrogens ! Nitrogen-number
-       integer           :: sulphurs  ! Sulphur-number
-       real              :: ExtC      ! Extinction coef (aerosols)
-       real              :: CiStar     ! VBS param
-       real              :: DeltaH    ! VBS param
-  end type Chemical
-  type(Chemical), public, dimension(NSPEC_TOT), target :: species
-  type(Chemical), public, dimension(:), pointer :: &
-    species_shl=>null(),&             ! => species(..short lived..)
-    species_adv=>null()               ! => species(..advected..)
-
-  contains
-  subroutine define_chemicals()
-  !+
-  ! Pointers to short lived and advected portions of species
-  !
-    species_shl=>species(1:NSPEC_SHL)
-    species_adv=>species(NSPEC_SHL+1:NSPEC_SHL+NSPEC_ADV)
-  !+
-  ! Assigns names, mol wts, carbon numbers, advec,  nmhc to user-defined Chemical
-  ! array, using indices from total list of species (advected + short-lived).
-  !                                           MW  NM   C    N   S  ExtC C*  dH
+contains
+subroutine define_chemicals()
+!+
+! Pointers to short lived and advected portions of species
+!
+  species_shl=>species(1:NSPEC_SHL)
+  species_adv=>species(NSPEC_SHL+1:NSPEC_SHL+NSPEC_ADV)
+!+
+! Assigns names, mol wts, carbon numbers, advec,  nmhc to user-defined Chemical
+! array, using indices from total list of species (advected + short-lived).
+!                                           MW  NM   C    N   S  C*  dH
 END_CHEMSTART
 
   for($i=1;$i<=$nspecies[$tot]; $i++){
@@ -1088,17 +1070,16 @@ END_CHEMSTART
     $nnum = $count{$spec}{"N"};   # to save interpolating inside string!
     $snum = $count{$spec}{"S"};   # to save interpolating inside string!
     printf F
-    "    species(%-12s) = Chemical(\"%-12s\",%9.4f,%3d,%3d,%4d,%3d,%5.1f,%8.4f,%7.1f ) \n",
-            $species[$tot][$i], $species[$tot][$i],$molwt{$spec}, $nmhc{$spec},
-            $cnum, $nnum, $snum, $extinc[$i], $CiStar[$i], $DeltaH[$i];
+    "    species(%-12s) = Chemical(\"%-12s\",%9.4f,%3d,%3d,%4d,%3d,%8.4f,%7.1f ) \n",
+      $species[$tot][$i], $species[$tot][$i],$molwt{$spec}, $nmhc{$spec},
+      $cnum, $nnum, $snum, $CiStar[$i], $DeltaH[$i];
     print "SPECF ",
-            $species[$tot][$i], $species[$tot][$i],$molwt{$spec}, $nmhc{$spec},
-            $cnum, $nnum, $snum, $extinc[$i], $CiStar[$i], $DeltaH[$i], "\n";
+      $species[$tot][$i], $species[$tot][$i],$molwt{$spec}, $nmhc{$spec},
+      $cnum, $nnum, $snum, $CiStar[$i], $DeltaH[$i], "\n";
   }
   print F "  end subroutine define_chemicals\n";
   print F "end module $module\n $HLINE";
   close(F);
-
 } # end of sub write_species
 
 #########################################################################
@@ -1137,24 +1118,24 @@ END_CHEMSTART
 #} # end of sub
 ##################################################################################
 sub start_module {   # Simply writes start of  module with horizontal lines and
-   my($module) = shift ;
-   my($F)       = shift ;
-   my($UsedVariables)  = shift ;
-   my $EndBit ;
+  my($module) = shift ;
+  my($F)       = shift ;
+  my($UsedVariables)  = shift ;
+  my $EndBit ;
 
-   if ( $UsedVariables =~ "none" ) {
-        $UsedVariables = "";
-        $EndBit       = "implicit none";    # Not needed if no use statements
-   } else {
-        $EndBit       = "implicit none\n  private";    # Not needed if no use statements
-   }
+  if($UsedVariables =~ "none") {
+    $UsedVariables = "";
+    $EndBit       = "implicit none";    # Not needed if no use statements
+  } else {
+    $EndBit       = "implicit none\nprivate";    # Not needed if no use statements
+  }
 
    print $F <<"MODSTART";
 $TLINE
-  module  $module
+module $module
 $HLINE
-  $UsedVariables
-  $EndBit
+$UsedVariables
+$EndBit
 MODSTART
 #!/ ...... ..   ( from GenChem )
 } # end of sub start_module
@@ -1268,28 +1249,6 @@ sub print_rates {
 
   # 2010 use group hashes
 
-  foreach my $n ( @{ $grp{"OXN"} } ) {
-    my $same_spec =  specs_equal($adv, $n ); # Ignores case
-    push(@ddep_oxngroup,$adv) if  $same_spec;
-    push(@wdep_oxngroup,$adv) if ( $same_spec && $wdep ne "-" ) ;
-  }
-  foreach my $s ( @{ $grp{"SOX"} } ) {
-    my $same_spec =  specs_equal($adv, $s ); # Ignores case
-    push(@ddep_soxgroup,$adv) if $same_spec ;
-    push(@wdep_soxgroup,$adv) if ($same_spec && $wdep ne "-" ) ;
-  }
-  foreach my $s ( @{ $grp{"SS"} } ) {
-    my $same_spec =  specs_equal($adv, $s ); # Ignores case
-    push(@ddep_seagroup,$adv) if $same_spec ;
-    push(@wdep_seagroup,$adv) if ($same_spec && $wdep ne "-" ) ;
-  }
-  foreach my $r ( @{ $grp{"RDN"} } ) {
-    my $same_spec =  specs_equal($adv, $r ); # Ignores case
-    push(@ddep_rdngroup,$adv) if $same_spec;
-    push(@wdep_rdngroup,$adv) if ( $same_spec && $wdep ne "-" ) ;
-    printall( "WETDRY FOUND RDN WET ADV$adv R$r WDEP$wdep\n") if $adv eq $r;
-  }
-
   unless ($ddep eq "-") {
     my $comma = ($nddep<1)?" ":",";
     $ddep =~ s/DRY_//;
@@ -1307,173 +1266,92 @@ sub print_rates {
 }
 
 ###############################################################################
- sub printmap_dep {
-	printall( "ENTERING CDEP print $nddep NWDEP $nwdep \n");
-         open(DDEP,">GenOut_DryDep.inc") or die "FAIL AllDEP\n"; # if $nddep >  0;
+sub printmap_dep {
+  printall( "ENTERING CDEP print $nddep NWDEP $nwdep \n");
+  open(DDEP,">GenOut_DryDep.inc") or die "FAIL AllDEP\n"; # if $nddep >  0;
 
-	 print DDEP "  integer, public, parameter ::  NDRYDEP_ADV  = $nddep\n";
-	 print DDEP "  type(depmap), public, dimension(NDRYDEP_ADV), parameter:: DDepMap= (/ &\n";
-	 print DDEP "$ddep_txt";
-	 print DDEP "  /)\n";
-         close(DDEP);
+  print DDEP "  integer, public, parameter ::  NDRYDEP_ADV  = $nddep\n";
+  print DDEP "  type(depmap), public, dimension(NDRYDEP_ADV), parameter:: DDepMap= (/ &\n";
+  print DDEP "$ddep_txt";
+  print DDEP "  /)\n";
+  close(DDEP);
 
-         open(WDEP,">GenOut_WetDep.inc") or die "FAIL AllDEP\n"; # if $nddep >  0;
-	 print WDEP "  integer, public, parameter ::  NWETDEP_ADV  = $nwdep\n";
-	 print WDEP "  type(depmap), public, dimension(NWETDEP_ADV), parameter:: WDepMap= (/ &\n";
-	 print WDEP "$wdep_txt";
-	 print WDEP "  /)\n";
-         close(WDEP);
+  open(WDEP,">GenOut_WetDep.inc") or die "FAIL AllDEP\n"; # if $nddep >  0;
+  print WDEP "  integer, public, parameter ::  NWETDEP_ADV  = $nwdep\n";
+  print WDEP "  type(depmap), public, dimension(NWETDEP_ADV), parameter:: WDepMap= (/ &\n";
+  print WDEP "$wdep_txt";
+  print WDEP "  /)\n";
+  close(WDEP);
+}
+
+sub printmap_ext {
+  my $nkey=keys %extinc;
+  my $outline="";
+  printall( "ENTERING CEXT print $nkey \n");
+  foreach my $k (sort keys %extinc) {
+    my ($cext,$mode)=split(/[:;\-\/|]/,$extinc{$k});
+        $mode="Wet" unless $mode;               # WET_MODE by default
+    $outline.=($outline?",":"")."&\n"
+            .sprintf "  ExtEffMap(%-16s,CEXT_%-4s,%3s_MODE)",$k,$cext,uc($mode);
+  }
+  open(CEXT,">GenOut_AerExt.inc") or die "FAIL AerExt\n";
+  print CEXT 
+    "integer, public, parameter :: NUM_EXT = $nkey\n"
+   ."type(ExtEffMap), public, dimension(NUM_EXT), parameter :: ExtMap=(/$outline/)\n";
+  close(CEXT);
+  # define AOD group, for some level of backguard compatibility
+  @{$grp{'AOD'}}=(sort keys %extinc);  
 }
 ###############################################################################
- sub print_groups {
-	my $module = "ChemGroups_ml";
-        open(GROUPS,">GenOut_$module.f90");
-	my $ngroups  = 0;
-	my $groupsub = "\n$HLINE  contains\n subroutine Init_ChemGroups()\n\n" .
-                     "   integer, dimension(:), pointer :: p\n";
-	my $Use    = "use ChemSpecs_tot_ml  ! => species indices\n";
-	   $Use   .= "use OwnDataTypes_ml   ! => typ_sp";
-      # implement later
-      #   use OwnDataTypes_ml, only : gtype  ! => for group defs";
-        start_module($module,\*GROUPS,$Use);
-	print GROUPS	"! Assignment of groups from GenIn.species:\n";
-	print GROUPS	" public :: Init_ChemGroups\n";
+sub print_groups {
+  my $module = "ChemGroups_ml";
+  open(GROUPS,">GenOut_$module.f90");
+  my $ngroups  = 0;
+  my $groupsub = "\n${HLINE}contains\nsubroutine Init_ChemGroups()\n\n";
+  my $Use = "use ChemSpecs_tot_ml  ! => species indices\n"
+           ."use OwnDataTypes_ml   ! => typ_sp";
+  # implement later
+  #   use OwnDataTypes_ml, only : gtype  ! => for group defs";
+  start_module($module,\*GROUPS,$Use);
+  print GROUPS "! Assignment of groups from GenIn.species:\n";
+  print GROUPS "public :: Init_ChemGroups\n\n";
 
-	 my $N = @oxngroup;
-	 my $outline = join(",",@oxngroup);
-	 print GROUPS "\n! ------- Gas/particle species ------------------\n";
+  print "RRRRRRRRRRRRRRRRRRRRRRRRRR ; \n";
 
-        print "RRRRRRRRRRRRRRRRRRRRRRRRRR ; \n";
-	#foreach my $gg ( keys %grp ) {
-        #  my $N = @{ $grp{$gg} };
-	#  print "  TESTRR $gg  N$N group is: @{ $grp{$gg} }\n";
-	#}
+  # groups assigned from GenIn.species
+  # Check first for empty, e.g. SS can be empty
+  foreach my $g (keys %grp) {
+    my $N = @{$grp{$g}};
+    print "DELETE KEY $g\n" if($N<1);
+    delete ($grp{$g})       if($N<1);
+  }
+  foreach my $g (keys %grp) {
+    my $N = @{$grp{$g}};
+    my $outline = join(",",@{$grp{$g}});
+    print "  TESTSS $g  N$N group is: @{$grp{$g}}\n";
+    print GROUPS "integer, public, target, save, dimension($N) :: &\n"
+                ."  ${g}_GROUP = (/ $outline /)\n\n";
+    $ngroups ++;
+    $groupsub .="  chemgroups($ngroups)%name=\"$g\"\n"
+               ."  chemgroups($ngroups)%ptr=>${g}_GROUP\n\n";
+  }
 
-     # 2010 groups  assigned from GenIn.species
-	my $Ngroup = 0;
-	my $MaxNgroup = 0;
-	# Check first for empty, e.g. SS can be empty
-        foreach my $g ( keys %grp ) {
-           my $N = @{ $grp{$g} };
-	   print "DELETE KEY $g\n" if ( $N < 1 ) ;
-	   delete ( $grp{$g} )     if ( $N < 1 ) ;
-	}
-        foreach my $g ( keys %grp ) {
-           my $N = @{ $grp{$g} };
-  	   $Ngroup ++ ;
-	   $MaxNgroup = $N if $N > $MaxNgroup ;
-	   $outline = join(",", @{ $grp{$g} });
-	   print "  TESTSS $g  N$N group is: @{ $grp{$g} }\n";
-           print GROUPS "\n  integer, public, parameter ::  INDEX_${g}_GROUP = $Ngroup";
-           print GROUPS "\n  integer, public, target, save, dimension($N) :: &
-                 ${g}_GROUP     = (/ $outline /)\n";
-	   $ngroups += 1;
-           $groupsub .= "\n p => ${g}_GROUP \n chemgroups($ngroups) = typ_sp(\"$g\", p )\n";
-	}
-	# Tmp for now  and horrible code -
-	# print out again but in group array
- 	# get size of group hash and max size (need to pre-process)
-	my $gsize = keys( %grp );
-	print GROUPS "\n\n!GROUP ARRAY SIZE $gsize MAXN $MaxNgroup \n";
-	print GROUPS "
-  type, public :: gtype
-       character(len=20) :: name
-       integer :: Ngroup
-       integer, dimension($MaxNgroup) :: itot   ! indices from xn_tot arrays
-  end type gtype
+  print GROUPS "\n! ------- RO2 Pool     species ------------------\n";
+  my $N = @ro2pool;
+  my $outline = join(",",@ro2pool);
+  if($N==0) {   # No RO2 pools defined with older style
+    $outline = -99 ; # if  $old_style  ;
+    $N = 1;
+  }
+  print GROUPS "integer, public, parameter :: SIZE_RO2_POOL      = $N\n";
+  print GROUPS "integer, public, parameter, dimension($N) :: &\n"
+              ."  RO2_POOL      = (/ $outline /)\n";
 
-  type(gtype), public, parameter, dimension($gsize) :: &
-       GROUP_ARRAY = (/ &\n";
-
-	my @out = 0;
-	my $comma = "";
-        foreach my $g ( keys %grp ) {
-           my $N = @{ $grp{$g} };
-           for my $col ( 0 .. $MaxNgroup-1 ) { $out[$col] = "0"; };
-  	   my $col = 0;
-  	   for my $gg (  @{ $grp{$g} } )  {
-		$out[$col] = $gg;
-		$col ++;
-	   }
-	   $outline = join(",", @out );
-
-           print GROUPS "$comma gtype( \"${g}\", $N, (/ $outline /) ) &\n";
-	   $comma = ",";
-	}
-	print GROUPS "   /)\n";
-
-	 print GROUPS "\n! ------- Dry dep      species ------------------\n";
-
-	 $N = @ddep_oxngroup;
-	 my $MaxN = $N;  # We need this later
-	 $outline = join(",",@ddep_oxngroup);
-         print GROUPS "  integer, public, parameter, dimension($N) :: &
-               DDEP_OXNGROUP = (/ $outline /)\n";
-
-	 $N = @ddep_soxgroup;
-	 $MaxN = $N if $N > $MaxN ;
-	 $outline = join(",",@ddep_soxgroup);
-         print GROUPS "  integer, public, parameter, dimension($N) :: &
-               DDEP_SOXGROUP = (/ $outline /)\n";
-
-	 $N = @ddep_rdngroup;
-	 $MaxN = $N if $N > $MaxN ;
-
-	 $outline = join(",",@ddep_rdngroup);
-         print GROUPS "  integer, public, parameter, dimension($N) :: &
-               DDEP_RDNGROUP = (/ $outline /)\n";
-         print GROUPS "\n  integer, public, parameter :: NMAX_DDEP = $MaxN\n\n";
-
-
-	 print GROUPS "\n! ------- Wet dep      species ------------------\n";
-
-	 $N = @wdep_oxngroup;
-	 $MaxN = $N;  # reset
-	 $outline = join(",",@wdep_oxngroup);
-         print GROUPS "  integer, public, parameter, dimension($N) :: &
-               WDEP_OXNGROUP = (/ $outline /)\n";
-
-	 $N = @wdep_soxgroup;
-	 $MaxN = $N if $N > $MaxN ;
-	 $outline = join(",",@wdep_soxgroup);
-         print GROUPS "  integer, public, parameter, dimension($N) :: &
-               WDEP_SOXGROUP = (/ $outline /)\n";
-
-	 $N = @wdep_seagroup;
-	 if ( $N > 0 ) {
-	   $MaxN = $N if $N > $MaxN ;
-	   $outline = join(",",@wdep_seagroup);
-           print GROUPS "  integer, public, parameter, dimension($N) :: &
-               WDEP_SSALTGROUP = (/ $outline /)\n";
-         }
-
-	 $N = @wdep_rdngroup;
-	 $MaxN = $N if $N > $MaxN ;
-
-	 $outline = join(",",@wdep_rdngroup);
-         print GROUPS "  integer, public, parameter, dimension($N) :: &
-               WDEP_RDNGROUP = (/ $outline /)\n";
-         print GROUPS "\n  integer, public, parameter :: NMAX_WDEP = $MaxN\n\n";
-
-	 print GROUPS "\n! ------- RO2 Pool     species ------------------\n";
-
-	 $N = @ro2pool;
-	 $outline = join(",",@ro2pool);
-	 if ( $N == 0  ) {   # No RO2 pools defined with older style
-	    $outline = -99 ; # if  $old_style  ;
-	    $N = 1;
-         }
-         print GROUPS
-	    "  integer, public, parameter :: SIZE_RO2_POOL      = $N\n";
-         print GROUPS "  integer, public, parameter, dimension($N) :: &
-     RO2_POOL      = (/ $outline /)\n";
-
-        print GROUPS "   type(typ_sp), dimension($ngroups), public, save :: chemgroups\n\n";
-        print GROUPS $groupsub;
-        print GROUPS "\n   nullify(p)\n";
-        print GROUPS "\n\n end subroutine Init_ChemGroups\n $HLINE";
-        print GROUPS "\n\n end module $module\n $HLINE";
-	close(GROUPS);
+  print GROUPS "type(typ_sp), dimension($ngroups), public, save :: chemgroups\n\n";
+  print GROUPS $groupsub;
+  print GROUPS "endsubroutine Init_ChemGroups\n $HLINE";
+  print GROUPS "endmodule $module\n $HLINE";
+  close(GROUPS);
 }
 ###############################################################################
  sub print_femis {

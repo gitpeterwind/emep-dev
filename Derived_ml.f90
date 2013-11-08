@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************!
 !*
-!*  Copyright (C) 2007-2012 met.no
+!*  Copyright (C) 2007-2013 met.no
 !*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -484,7 +484,7 @@ do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
     case("GROUP") ! groups of species
       iadv = -1     ! Units_Scale(iadv=-1) returns 1.0
                     ! uggroup_calc gets the unit conversion factor from Group_Units
-      igrp = find_index(outname, GROUP_ARRAY(:)%name )
+      igrp = find_index(outname, chemgroups(:)%name )
 !-- Emergency: Volcanic Eruption. Skipp groups if not found
       if(outname(1:3)=="ASH")then
         if(MasterProc.and.USE_EMERGENCY.and.DEBUG_EMERGENCY)&
@@ -1268,29 +1268,27 @@ end do
 
           case ( "SURF_MASS_GROUP" ) !
             igrp = f_2d(n)%index
-            call CheckStop(igrp<1, "NEG GRP "//trim(f_2d(n)%name) )
-            call CheckStop(igrp>size( GROUP_ARRAY(:)%name ), &
-                 "Outside GRP "//trim(f_2d(n)%name) )
-            ngrp = GROUP_ARRAY(igrp)%Ngroup
+            call CheckStop(igrp<1,"NEG GRP "//trim(f_2d(n)%name))
+            call CheckStop(igrp>size(chemgroups(:)%name), &
+                                  "Outside GRP "//trim(f_2d(n)%name))
+            ngrp = size(chemgroups(igrp)%ptr)
 
-            if( GROUP_ARRAY(igrp)%name == "PMFINE" .and. ind_pmfine<0 ) then
-               ind_pmfine = n
-               if( MasterProc) write(*,"(a,2i4,2a15)") "FOUND FINE FRACTION ",&
-                   n, ind_pmfine, &
-                     trim(GROUP_ARRAY(igrp)%name), trim(f_2d(n)%name)
-            end if
-            if( GROUP_ARRAY(igrp)%name == "PM10" .and. ind_pm10<0 ) then
-               ind_pm10 = n
-               if( MasterProc) write(*,"(a,2i4,2a15)") "FOUND PM10 FRACTION ",&
-                   n, ind_pm10, &
-                     trim(GROUP_ARRAY(igrp)%name), trim(f_2d(n)%name)
-            end if
-            if(DEBUG.and. MasterProc ) then
-                write(*,*) "CASEGRP ", n, igrp, ngrp, trim(typ)
-                write(*,*) "CASENAM ", trim(f_2d(n)%name)
-                write(*,*) "CASEGRP:", GROUP_ARRAY(igrp)%itot(1:ngrp)
-                write(*,*) "CASEunit", trim(f_2d(n)%unit)
-            end if
+            if(chemgroups(igrp)%name == "PMFINE" .and. ind_pmfine<0) then
+              ind_pmfine = n
+              if(MasterProc) write(*,"(a,2i4,2a15)") "FOUND FINE FRACTION ",&
+                n, ind_pmfine, trim(chemgroups(igrp)%name), trim(f_2d(n)%name)
+            endif
+            if(chemgroups(igrp)%name == "PM10" .and. ind_pm10<0) then
+              ind_pm10 = n
+              if(MasterProc) write(*,"(a,2i4,2a15)") "FOUND PM10 FRACTION ",&
+                n, ind_pm10, trim(chemgroups(igrp)%name), trim(f_2d(n)%name)
+            endif
+            if(DEBUG.and.MasterProc) then
+              write(*,*) "CASEGRP ", n, igrp, ngrp, trim(typ)
+              write(*,*) "CASENAM ", trim(f_2d(n)%name)
+              write(*,*) "CASEGRP:", chemgroups(igrp)%ptr
+              write(*,*) "CASEunit", trim(f_2d(n)%unit)
+            endif
             call uggroup_calc(d_2d(n,:,:,IOU_INST), density, &
                               f_2d(n)%unit, 0, igrp)
 
@@ -1472,14 +1470,14 @@ end do
 
         case ( "3D_MASS_GROUP" ) !
             igrp = f_3d(n)%index
-            call CheckStop(igrp<1, "NEG GRP "//trim(f_3d(n)%name) )
-            call CheckStop(igrp>size( GROUP_ARRAY(:)%name ), &
-                 "Outside GRP "//trim(f_3d(n)%name) )
-            ngrp = GROUP_ARRAY(igrp)%Ngroup
+            call CheckStop(igrp<1,"NEG GRP "//trim(f_3d(n)%name))
+            call CheckStop(igrp>size(chemgroups(:)%name), &
+                                  "Outside GRP "//trim(f_3d(n)%name))
+            ngrp = size(chemgroups(igrp)%ptr)
             if(DEBUG.and. MasterProc ) then
                 write(*,*) "3DCASEGRP ", n, igrp, ngrp, trim(typ)
                 write(*,*) "3DCASENAM ", trim(f_3d(n)%name)
-                write(*,*) "3DCASEGRP:", GROUP_ARRAY(igrp)%itot(1:ngrp)
+                write(*,*) "3DCASEGRP:", chemgroups(igrp)%ptr
                 write(*,*) "3DCASEunit", trim(f_3d(n)%unit)
             endif
             do k=1,KMAX_MID

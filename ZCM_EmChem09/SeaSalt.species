@@ -1,6 +1,6 @@
 *
 *"*Spec,adv,forumula,MW,DRY,WET,Extinc,Cstar,DeltaH,Empty,Groups,,!Comments*"
 *
-SeaSalt_f,1,xx,58,PMfS,SSf,3.0,0,0,xx,PMFINE;PM10;SS;AOD,,!
-SeaSalt_c,1,xx,58,SSc,SSc,0.4,0,0,xx,PMCO;PM10;SS;AOD,,!
-*SeaSalt_g,1,xx,58,PMg,SSg,0.4,0,0,xx,PMCO;PM10;SS;AOD,,!
+SeaSalt_f,1,xx,58,PMfS,SSf,SSf,0,0,xx,PMFINE;PM10;SS,,!
+SeaSalt_c,1,xx,58,SSc,SSc,SSc,0,0,xx,PMCO;PM10;SS,,!
+*SeaSalt_g,1,xx,58,PMg,SSg,SSc,0,0,xx,PMCO;PM10;SS,,!

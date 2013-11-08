@@ -68,7 +68,7 @@ type, public :: group_umap
   real,   pointer,dimension(:) :: uconv=>null() ! conversion factor
 endtype group_umap
 
-type(umap), public, save :: unit_map(20)=(/&
+type(umap), public, save :: unit_map(20-1)=(/&
 ! Air concentration
   umap("mix_ratio","mol/mol",1.0),&  ! Internal model unit
   umap("mass_ratio","kg/kg",1.0/ATWAIR), &  ! mass mixing ratio
@@ -89,7 +89,7 @@ type(umap), public, save :: unit_map(20)=(/&
   umap("uBqh","uBq h/m3",ugXm3),& ! accumulated exposure over 1 hour
   umap("mBq" ,"mBq/m2"  ,mgXm2),& ! deposition
 ! Aerosol optical properties
-  umap("ext" ,"ext550nm",extX),&! ext* units need to be further multiplied...
+! umap("ext" ,"ext550nm",extX),&! ext* units need to be further multiplied...
 ! Coulumn output
   umap("ugm2"   ,"ug/m2",ugXm3),&  ! ug* units need to be further multiplied
   umap("mcm2"   ,"molec/cm2"    ,to_molec_cm2),&
@@ -123,8 +123,9 @@ subroutine Init_Units()
       uconv_spec = species_adv%nitrogens
     case("ugS","mgS")
       uconv_spec = species_adv%sulphurs
-    case("ext")
-      uconv_spec = species_adv%molwt*species_adv%ExtC
+!   case("ext")
+!     uconv_spec = species_adv%molwt*species_adv%ExtC
+!     uconv_spec = species_adv%molwt*Qm_grp(NSPEC_ADV,[1..NSPEC_ADV]+NSPEC_SHL,rh,...)
     case default
       uconv_spec = 1.0
    endselect
@@ -190,7 +191,6 @@ function Group_Scale(igrp,unit,debug) result(gmap)
   call Group_Units_Asc2D(hr_out,gmap%iadv,gmap%uconv,debug,name=gmap%name)
 end function Group_Scale
 
-
 function Units_Scale(txtin,iadv,unitstxt,volunit,needroa,debug_msg) result(unitscale)
   character(len=*), intent(in) :: txtin
   integer, intent(in) :: iadv  ! species_adv index, used if > 0
@@ -243,6 +243,6 @@ function Units_Scale(txtin,iadv,unitstxt,volunit,needroa,debug_msg) result(units
     call CheckStop(iadv,"Units_Scale Error: Unknown iadv.")
   endselect
 
-end function Units_Scale
+endfunction Units_Scale
 
-end module Units_ml
+endmodule Units_ml

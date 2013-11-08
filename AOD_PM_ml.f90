@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2007-2011 met.no
+!*  Copyright (C) 2007-2013 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -25,21 +25,30 @@
 !*    You should have received a copy of the GNU General Public License
 !*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !*****************************************************************************! 
-
-
 module AOD_PM_ml
 !-----------------------------------------------------------------------! 
 ! Calculates Aerosol Optical Depth (AOD) for 0.5 um radiation based on 
 ! aerosol mass concentrations and specific extinction cross-sections 
-! based on Tegen et al. JGR (1997) and Kinne et al., ACP (2005)
-! (implicit assumption on wetted aerosols)
+! based on Tegen et al. (1997) and Kinne et al. (2005).
+! Humidity dependent specific extinction (or mass extinction efficiency)
+! according to Chin et. al (2002).
 !-----------------------------------------------------------------------!
+! References
+! Tegen et al. (1997): J. Geophys. Res., 102, 23895-23915,
+!   doi:10.1029/97JD01864
+! Kinne et al. (2005): Atmos. Chem. Phys., 6, 1815-1834,
+!   doi:10.5194/acp-6-1815-2006, 2006
+! Chin et. al (2002): J. Atm.Sci., 59, 461-483,
+!   doi:10.1175/1520-0469(2002)059%3C0461:TAOTFT%3E2.0.CO;2
+!-----------------------------------------------------------------------!
+use ChemSpecs_tot_ml
 use Chemfields_ml,        only: AOD, Extin_coeff
+use ChemGroups_ml,        only: chemgroups
 use ChemChemicals_ml,     only: species  
-use ChemGroups_ml,        only: AOD_GROUP
+use CheckStop_ml,         only: CheckStop
 use GridValues_ml,        only: i_fdom, j_fdom
 use MetFields_ml,         only: z_bnd
-use ModelConstants_ml,    only: KMAX_MID, KCHEMTOP
+use ModelConstants_ml,    only: KMAX_MID, KCHEMTOP, ANALYSIS
 use Par_ml,               only: MAXLIMAX,MAXLJMAX   ! => x, y dimensions
 use PhysicalConstants_ml, only: AVOG
 use Setup_1dfields_ml,    only: xn_2d, rh
@@ -49,335 +58,276 @@ implicit none
 private
 !-----------------------------------------------------------------------!
 !// Subroutines
-public :: AOD_calc, AOD_Ext
+public :: AOD_Ext,&
+          AOD_check
 !// Functions
-public :: wetExtC
+public :: Qm_grp ! mass extinction efficiency [m2/g] for any spc/group
 
 real, parameter :: lambda = 0.55e-6
+character(len=*), parameter :: EXT_MODE="WET" ! use wet|dry extinction
+
+!  Note - These dry/wet extinction prototypes are for "master" or model species.
+!  They do not need to be present in the chemical scheme.
+!  However, the chemical scheme needs to define after one of these prototypes.
+!  If you would like other characteristics, add them here.
+integer, public, parameter :: &
+  DRY_MODE=0,WET_MODE=1,& ! DRY/WET extinction calculation for a specie
+  NUM_CEXT=9,           & ! Total number of extinction classes (as follows)
+  CEXT_DDf=1,CEXT_DDc=2,& ! Desert dust: fine,coarse
+  CEXT_SSf=3,CEXT_SSc=4,& ! Sea salt: fine,coarse
+  CEXT_ECn=5,CEXT_ECa=6,& ! Elem. C: new,aged
+  CEXT_EC =CEXT_ECn,    & ! Elem. C: ECn/ECa only diff Qm_dry
+  CEXT_OC =7,           & ! Org. C
+  CEXT_SO4=8,           & ! SO4
+  CEXT_NH4f=CEXT_SO4,   & ! NH4_f as SO4
+  CEXT_NO3f=CEXT_SO4,   & ! NO3_f as SO4
+  CEXT_NO3c=9             ! NO3_c sitting on SSc:
+                          ! assume rho_dry as SO4, Q and GF as SSc
+type :: ExtEffMap
+  integer :: itot,cext,mode
+endtype ExtEffMap
+
+!xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+include 'CM_AerExt.inc'
+!xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+real,parameter,dimension(NUM_CEXT) :: &
+ Qm_dry = & ! (dry) mass extinction efficiency [m2/g] at 550 nm
+         [1.0  ,0.3  ,3.0  ,0.4  ,7.5  ,11.  ,0.0  ,8.5  ,0.0  ], & 
+ rho_dry=[2.6  ,2.6  ,2.2  ,2.2  ,1.0  ,1.0  ,1.8  ,1.6  ,1.6  ], &
+ rad_eff=[0.80 ,4.5  ,0.80 ,5.73 ,0.039,0.039,0.087,0.156,5.73 ]
+        ! 1:DDf 2:DDc 3:SSf 4:SSc 5:ECn 6:ECa 7:OC  8:SO4 9:NO3c
+
+integer, parameter :: NumRH=7
+real, parameter, dimension(NumRH) ::    &
+  RelHum = [0.0  ,0.5  ,0.7  ,0.8  ,0.9  ,0.95 ,0.99 ], &
+  RH_CNT = [1.0  ,1.0  ,1.0  ,1.0  ,1.0  ,1.0  ,1.0  ]
+real, parameter, dimension(NUM_CEXT,NumRH) :: &
+  Gf_ref=reshape(&
+           [RH_CNT,                                     & ! 1:DDf (constant)
+            RH_CNT,                                     & ! 2:DDc (constant)
+            1.0  ,1.6  ,1.8  ,2.0  ,2.4  ,2.9  ,4.8  ,  & ! 3:SSf (SS)
+            1.0  ,1.6  ,1.8  ,2.0  ,2.4  ,2.9  ,4.8  ,  & ! 4:SSc (SS) 
+            1.0  ,1.0  ,1.0  ,1.2  ,1.4  ,1.5  ,1.9  ,  & ! 5:ECn (EC)
+            1.0  ,1.0  ,1.0  ,1.2  ,1.4  ,1.5  ,1.9  ,  & ! 6:ECa (EC)
+            1.0  ,1.2  ,1.4  ,1.5  ,1.6  ,1.8  ,2.2  ,  & ! 7:OC  
+            1.0  ,1.4  ,1.5  ,1.6  ,1.8  ,1.9  ,2.2  ,  & ! 8:SO4 
+            1.0  ,1.6  ,1.8  ,2.0  ,2.4  ,2.9  ,4.8  ], & ! 9:NO3c (SSc)
+            [NUM_CEXT,NumRH],order=[2,1]),&
+  Qm_ref=reshape(& ! (wet) mass extinction efficiency [m2/g] at 550 nm
+           [RH_CNT*Qm_dry(CEXT_DDf),                    & ! 1:DDf (constant)
+            RH_CNT*Qm_dry(CEXT_DDc),                    & ! 2:DDc (constant)
+            2.699,2.547,2.544,2.508,2.444,2.362,2.221,  & ! 3:SSf
+            2.143,2.103,2.090,2.106,2.084,2.070,2.064,  & ! 4:SSc
+            0.483,0.484,0.471,0.417,0.363,0.343,0.332,  & ! 5:ECa (EC)
+            0.483,0.484,0.471,0.417,0.363,0.343,0.332,  & ! 6:ECn (EC)
+            0.560,0.652,0.701,0.741,0.821,0.921,1.181,  & ! 7:OC 
+            1.114,1.545,1.742,1.862,2.036,2.206,2.558,  & ! 8:SO4 (H2SO4)
+            2.143,2.103,2.090,2.106,2.084,2.070,2.064], & ! 9:NO3c (SSc)
+            [NUM_CEXT,NumRH],order=[2,1])
+
+real, allocatable,dimension(:,:,:,:), public,save :: SpecExtCross
 contains
 ! <---------------------------------------------------------->
-function wetExtC(ntot,gtot,rh,debug) result(extC)
-!.. Calculate Rh dependent specific extinction (or mass extinction efficiency)
-!..   according to Chin et.al (J. Atm.Sci., 59, 2001)
-  integer, intent(in) :: ntot
-  integer, dimension(ntot), intent(in) :: gtot
+function Qm(mode,rh,debug) result(Qm_arr)
+!-----------------------------------------------------------------------!
+! Calculate specific extinction (or mass extinction efficiency)
+!-----------------------------------------------------------------------!
+! 'DRY' and 'WET' calulation modes
+!   'DRY' mode: Rh independent values from Qm_dry array
+!   'WET' mode: Rh dependent calc. according to Chin et. al (2002)
+!-----------------------------------------------------------------------!
+  character(len=*), intent(in) :: mode
   real, intent(in) :: rh
   logical, intent(in) :: debug  
-  real, dimension(ntot) :: extC
-  real, parameter :: &
-    rhoSO4=1.6, rhoOC=1.8, rhoEC=1.0, rhoDU=2.6, rhoSS=2.2 , &
-    Reff_SO4 = 0.156, Reff_OC = 0.087, Reff_EC = 0.039, &
-    Reff_DUf = 0.80,  Reff_DUc = 4.5, Reff_SSf = 0.80, Reff_SSc = 5.73
-  integer, parameter :: NumRH=7
-  real, parameter, dimension(NumRH) ::    &
-    RelHum = (/ 0.0,  0.5, 0.7, 0.8, 0.9, 0.95, 0.99 /),  &
-    GF_SO4 = (/ 1.0,  1.4, 1.5, 1.6, 1.8,  1.9,  2.2 /),  &
-    GF_OC  = (/ 1.0,  1.2, 1.4, 1.5, 1.6,  1.8,  2.2 /),  &
-    GF_EC  = (/ 1.0,  1.0, 1.0, 1.2, 1.4,  1.5,  1.9 /),  &
-    GF_SS  = (/ 1.0,  1.6, 1.8, 2.0, 2.4,  2.9,  4.8 /),  &
-!.. 550 nm
-    Ex_SO4 = (/ 1.114, 1.545, 1.742, 1.862, 2.036, 2.206, 2.558/),  &  !H2SO4
-    Ex_OC  = (/ 0.560, 0.652, 0.701, 0.741, 0.821, 0.921, 1.181/),  &
-    Ex_EC  = (/ 0.483, 0.484, 0.471, 0.417, 0.363, 0.343, 0.332/),  &
-    Ex_SSf = (/ 2.699, 2.547, 2.544, 2.508, 2.444, 2.362, 2.221/),  &
-    Ex_SSc = (/ 2.143, 2.103, 2.090, 2.106, 2.084, 2.070, 2.064/)
-
-  logical       :: first_call=.true.
+  real, dimension(NUM_EXT) :: Qm_arr
   integer       :: n
-  real :: gfSO4, gfOC, gfEC, gfSS, &
-    rhoSO4_wet, rhoOC_wet, rhoEC_wet, rhoSS_wet, rhoNO3c_wet,  &
-    massGF_SO4, massGF_OC, massGF_EC, massGF_SS,               &
-    extSO4, extEC, extOC, extSSf, extSSc, &
-    SpecExt_SO4, SpecExt_OC, SpecExt_EC , SpecExt_SSf, SpecExt_SSc, &
-    SpecExt_DUf, SpecExt_DUc, SpecExt_NO3f, SpecExt_NO3c, SpecExt_NH4
-  real, save :: extDUf=0.0, extDUc=0.0
-  real, dimension(NumRH)  :: rh_w
-  integer, save :: iDUST_WB_F, iDUST_WB_C
+  real, dimension(0:1)  :: rh_w
+  real, dimension(NUM_CEXT) :: Gf,ExtEff,Qm_wet
 
-  if(first_call)then
-    n=find_index("DUST_WB_F",species(:)%name)
-    if(n>0)extDUf=species(n)%ExtC
-    iDUST_WB_F=n
-    n=find_index("DUST_WB_C",species(:)%name)
-    if(n>0)extDUc=species(n)%ExtC
-    iDUST_WB_C=n
-    first_call=.false.
-  endif
-  rh_w(:)=0.0
-  if(rh<=RelHum(1))then
-    rh_w(1)=1.0
-  elseif(rh>=RelHum(NumRH))then
-    rh_w(NumRH)=1.0
-  else
-    RHloop: do n = 2, NumRH
-      if(rh>RelHum(n)) cycle RHloop
-!.. rh interpolation weights
-      rh_w(n)  =(rh-RelHum(n-1))/(RelHum(n)-RelHum(n-1))
-      rh_w(n-1)=1.0-rh_w(n)
-      exit RHloop
-    enddo RHloop
-    if(debug) &
-      write(*,'(a15,i3,5f8.2)') '## Rh >> ', &
-        n,rh,RelHum(n),RelHum(n-1),rh_w(n),rh_w(n-1)
-  endif      
-!.. Interpolate: Growth factors
-  gfSO4=dot_product(GF_SO4(:),rh_w(:))
-  gfOC =dot_product(GF_OC (:),rh_w(:))
-  gfEC =dot_product(GF_EC (:),rh_w(:))
-  gfSS =dot_product(GF_SS (:),rh_w(:))
-  if(debug)&
-    write(*,'(a15,5f8.2)')  '## GFs =  ',rh,gfSO4,gfOC,gfEC,gfSS
-!.. Interpolate: Extinction efficiencies
-  extSO4=dot_product(Ex_SO4(:),rh_w(:))
-  extOC =dot_product(Ex_OC (:),rh_w(:))
-  extEC =dot_product(Ex_EC (:),rh_w(:))
-  extSSf=dot_product(Ex_SSf(:),rh_w(:))
-  extSSc=dot_product(Ex_SSc(:),rh_w(:))
-  if(debug)&
-    write(*,'(a15,6f10.3)') '## ExtEff ',rh,extSO4,extOC,extEC,extSSf,extSSc 
-!.. Density of wet aerosol
-!.   rho_w = Vfr_dry*Rho_dry + (1-Vfr_dry)*Rho_water 
-!..  where   Vfr_dry = 1/GF**3 (dry volume fraction)
-  rhoSO4_wet = rhoSO4 / gfSO4**3 + (1.0-1.0/gfSO4**3) ! *1.0 [g/cm3]
-  rhoOC_wet  = rhoOC  / gfOC**3  + (1.0-1.0/gfOC**3)
-  rhoEC_wet  = rhoEC  / gfEC**3  + (1.0-1.0/gfEC**3)
-  rhoSS_wet  = rhoSS  / gfSS**3  + (1.0-1.0/gfSS**3)
-!... Fake
-  rhoNO3c_wet= rhoSO4 / gfSS**3  + (1.0-1.0/gfSS**3)
-!.. Ratio mass_wet / mass_dry (Mwet/Mdry)
-  massGF_SO4 = gfSO4**3 * rhoSO4_wet/rhoSO4
-  massGF_OC  = gfOC**3  * rhoOC_wet/rhoOC
-  massGF_EC  = gfEC**3  * rhoEC_wet/rhoEC
-  massGF_SS  = gfSS**3  * rhoSS_wet/rhoSS
-!.. Specific extinction [m2/g] 
-!   beta = 3/4 * ExtCoef/rho_wet/rad_eff * Mwet/Mdry
-  SpecExt_SO4  = 0.75 * extSO4 * massGF_SO4/ (rhoSO4_wet* Reff_SO4)
-  SpecExt_OC   = 0.75 * extOC  * massGF_OC / (rhoOC_wet * Reff_OC)
-  SpecExt_EC   = 0.75 * extEC  * massGF_EC / (rhoEC_wet * Reff_EC)
-  SpecExt_SSf  = 0.75 * extSSf * massGF_SS / (rhoSS_wet * Reff_SSf)
-  SpecExt_SSc  = 0.75 * extSSc * massGF_SS / (rhoSS_wet * Reff_SSc)
-if(iDUST_WB_F>0) &
-  SpecExt_DUf  = 0.75 * species(iDUST_WB_F)%ExtC/(rhoDU * Reff_DUf)
-if(iDUST_WB_C>0) &
-  SpecExt_DUc  = 0.75 * species(iDUST_WB_C)%ExtC/(rhoDU * Reff_DUc)
-  SpecExt_NH4  = SpecExt_SO4 !... Faking
-  SpecExt_NO3f = SpecExt_SO4 !... Faking
-!.. VERY CRUDE: Assume NOc sitting on SSc: Q and GF for SSc are applied
-  SpecExt_NO3c = 0.75 * extSSc * massGF_SS / (rhoNO3c_wet * Reff_SSc)
-!.. Specific extinction [m2/g] 
-!   beta = 3/4 * ExtCoef/rho_wet/rad_eff * Mwet/Mdry
-!        = 3/4 * ExtCoef/rho_wet/rad_eff * Gf^3*rho_wet/rho_dry
-!        = 3/4 * ExtCoef/rad_eff * Gf^3/rho_dry
-! SpecExt_SO4  = 0.75 * extSO4/Reff_SO4 * gfSO4**3/rhoSO4
-! SpecExt_OC   = 0.75 * extOC /Reff_OC  * gfOC**3 /rhoOC 
-! SpecExt_EC   = 0.75 * extEC /Reff_EC  * gfEC**3 /rhoEC 
-! SpecExt_SSf  = 0.75 * extSSf/Reff_SSf * gfSS**3 /rhoSS 
-! SpecExt_SSc  = 0.75 * extSSc/Reff_SSc * gfSS**3 /rhoSS 
-! SpecExt_DUf  = 0.75 * extDUf/Reff_DUf           /rhoDU 
-! SpecExt_DUc  = 0.75 * extDUc/Reff_DUc           /rhoDU 
-!.. Specific extinction
-  extC(:)=species(gtot(:))%ExtC         ! assume dry
-  do n = 1, ntot
-    select case(species(gtot(n))%name)
-      case("SO4"  )   ;extC(n)=SpecExt_SO4
-      case("NO3_F")   ;extC(n)=SpecExt_NO3f
-      case("NO3_C")   ;extC(n)=SpecExt_NO3f*0.3+SpecExt_NO3c*0.7
-      case("NH4_F")   ;extC(n)=SpecExt_NH4
-!.. Assume NO3f & NH4f as SO4
-!     case("SO4","NO3_F","NH4_F");extC(n)=SpecExt_SO4
-!.. Assume NO3c sitting on SSc: Q and GF for SSc are applied
-!     case("NO3_C")              ;extC(n)=0.3*SpecExt_SO4 &
-!                                        +0.7*SpecExt_SSc*rhoSS/rhoNO3c
-      case("EC_F_FFUEL_NEW","EC_F_FFUEL_AGE",&
-           "EC_F_WOOD_NEW" ,"EC_F_WOOD_AGE" ,&
-           "FFIRE_BC");extC(n)=SpecExt_EC
-!     case("EC_C_FFUEL" ,"EC_C_WOOD" );extC(n)=SpecExt_ECc
-!     case("POM_F_FFUEL","POM_F_WOOD");extC(n)=SpecExt_OC
-!!    case("POM_C_FFUEL"             );extC(n)=SpecExt_OCc
-      case("PART_OM_F","FFIRE_OM"    );extC(n)=SpecExt_OC
-      case("SEASALT_F");extC(n)=SpecExt_SSf
-      case("SEASALT_C");extC(n)=SpecExt_SSc
-      case("PPM25","REMPPM25",&
-           "PPM25_FIRE","FFIRE_REMPPM25",&
-           "DUST_WB_F","DUST_SAH_F");extC(n)=SpecExt_DUf
-      case("PPM_C","REMPPM_C",&
-           "DUST_WB_C","DUST_SAH_C");extC(n)=SpecExt_DUc
-!!    case default     ;extC(n)=0.0     ! disregard un-listed components
-    endselect
-  enddo
-endfunction wetExtC
+  select case(mode)
+  case("d","D","dry","Dry","DRY") ! (dry) mass extinction efficiency [m2/g]
+    Qm_arr(:)=Qm_dry(ExtMap%cext)
+  case("w","W","wet","Wet","WET") ! (wet) mass extinction efficiency [m2/g]
+    if(rh<=RelHum(1))then
+      Gf    =Gf_ref(:,1)          ! Growth factors
+      ExtEff=Qm_ref(:,1)          ! (wet) Extinction efficiencies
+    elseif(rh>=RelHum(NumRH))then
+      Gf    =Gf_ref(:,NumRH)      ! Growth factors
+      ExtEff=Qm_ref(:,NumRH)      ! (wet) Extinction efficiencies
+    else
+      !.. rh interpolation weights
+      RHloop: do n = 2, NumRH
+        if(rh>RelHum(n)) cycle RHloop
+        rh_w(1)=(rh-RelHum(n-1))/(RelHum(n)-RelHum(n-1))
+        rh_w(0)=1.0-rh_w(1)
+        exit RHloop
+      enddo RHloop
+      if(debug) write(*,"(a15,f8.2,'%(',i3,'):',4f8.2,'=',f8.2,'%')") &
+        '## Rh    =',rh*1e2,n,RelHum(n-1:n)*1e2,rh_w(:),&
+                      sum(RelHum(n-1:n)*rh_w)*1e2 ! check interpolation
+      !.. Interpolate
+      Gf    =MATMUL(Gf_ref(:,n-1:n),rh_w) ! Growth factors
+      ExtEff=MATMUL(Qm_ref(:,n-1:n),rh_w) ! (wet) Extinction efficiencies
+      if(debug) write(*,'((a15,9f10.3))') &
+        '## GFs   =',gf(:),'## ExtEff=',ExtEff(:)
+    endif
+
+    !.. mass extinction efficiency [m2/g]
+    !beta = 3/4 * ExtEff/rho_wet/rad_eff * Mwet/Mdry
+    !     = 3/4 * ExtEff/rho_wet/rad_eff * Gf^3*rho_wet/rho_dry
+    !     = 3/4 * ExtEff/rad_eff * Gf^3/rho_dry
+    Qm_wet= 0.75* ExtEff/rad_eff * Gf**3/rho_dry
+
+    !** Backward compatibility: NO3c characterized by
+    !  rho_dry(SO4),rad_eff(SSc),Gf_ref(SSc),Qm_ref(SSc), and
+    !beta = 3/4 * ExtEff(SSc)/rho_wet(NO3c)/rad_eff(SSc) * Mwet(SSc)/Mdry(SSc)
+    !     = 3/4 * ExtEff(SSc)/rho_wet(NO3c)/rad_eff(SSc) * Gf(SSc)^3*rho_wet(SSc)/rho_dry(SSc)
+    !     = Qm_wet(SSc)*rho_wet(SSc)/rho_wet(NO3c)
+    ! with rho_wet(NO3c) derived from rho_dry(SO4) and Gf(SSc)
+    Qm_wet(CEXT_NO3c)=Qm_wet(CEXT_SSc)*rho_wet(CEXT_SSc)/rho_wet(CEXT_NO3c)
+
+    !** Backward compatibility: Different fractions within NO3c
+    Qm_wet(CEXT_NO3c)=0.3*Qm_wet(CEXT_NO3f)+0.7*Qm_wet(CEXT_NO3c)
+
+    !.. mass extinction efficiency [m2/g]
+    where(ExtMap%mode==WET_MODE) 
+      Qm_arr(:)=Qm_wet(ExtMap%cext)
+    elsewhere(ExtMap%mode==DRY_MODE)
+    !** Backward compatibility: Road Dust on "DRY" mode
+      Qm_arr(:)=Qm_dry(ExtMap%cext)
+    elsewhere
+      Qm_arr(:)=0.0
+    endwhere
+  case default
+    call CheckStop("Unknown extinction mode: "//trim(mode))
+  endselect
+contains
+function rho_wet(nc)
+  integer,intent(in) :: nc          ! index: 1..NUM_CEXT
+  real               :: rho_wet     ! Density of wet aerosol
+  real, parameter    :: RHO_H2O=1.0 ! Water density [g/cm3]
+! Vfr_dry = 1/GF**3 (dry volume fraction)
+! rho_wet = Vfr_dry*rho_dry + (1-Vfr_dry)*RHO_H2O
+!         = (rho_dry-RHO_H2O)/GF**3 + RHO_H2O
+  rho_wet = (rho_dry(nc)-RHO_H2O)/Gf(nc)**3 + RHO_H2O
+endfunction rho_wet
+endfunction Qm
 ! <---------------------------------------------------------->
-subroutine AOD_Ext (i,j,debug)
-!------------------------------------------------
-! Calculates AOD
-!-------------------------------------------------
+function Qm_grp(gtot,rh,debug) result(Qm_arr)
+!-----------------------------------------------------------------------!
+! Returns mass extinction efficiencies [m2/g] for any spc array/group
+!-----------------------------------------------------------------------!
+! Returns extinction efficiency array, one value each spc index (itot)
+! in spc array/group (gtot). 
+! When rh is privided (optional variable) 'WET' extinction are returned,
+! 'DRY' extinction are returned otherweise.
+!-----------------------------------------------------------------------!
+  integer,intent(in),dimension(:) :: gtot
+  real,   intent(in),optional     :: rh
+  logical,intent(in),optional     :: debug
+  real,     dimension(size(gtot)) :: Qm_arr
+  
+  integer :: n=0,i=0
+  logical :: my_debug=.false.
+  real, dimension(NUM_EXT) :: Qm_aux
+
+  if(present(debug)) my_debug=debug
+  if(present(rh))then
+    Qm_aux=Qm("WET",rh,my_debug)
+  else
+    Qm_aux=Qm("DRY",0.0,my_debug)
+  endif
+
+  Qm_arr(:)=0
+  do n=1,size(gtot)
+    i=find_index(gtot(n),ExtMap(:)%itot,debug=my_debug)
+    if(1>0)Qm_arr(n)=Qm_aux(i)
+  enddo
+endfunction Qm_grp
+! <---------------------------------------------------------->
+subroutine AOD_check(msg)
+!-----------------------------------------------------------------------!
+! Consistency checks for older model versions using AOD_GROUP
+!-----------------------------------------------------------------------!
+  character(len=*), intent(in) :: msg
+  integer :: igrp=0
+  integer, pointer,dimension(:) :: aod_group=>null()
+  igrp=find_index('AOD',chemgroups%name)
+  if(igrp<1) return   ! AOD group no longer used... nothing to check
+  aod_group=>chemgroups(igrp)%ptr
+  call CheckStop(size(aod_group),NUM_EXT,&
+    trim(msg)//": Incompatibe AOD_GROUP size")
+  call CheckStop(any(aod_group/=ExtMap%itot),&
+    trim(msg)//": Incompatibe AOD_GROUP def.")
+endsubroutine AOD_check
+! <---------------------------------------------------------->
+subroutine AOD_Ext(i,j,debug)
+!-----------------------------------------------------------------------!
+! Calculates AOD on 'DRY'/'WET' mode, as defined by EXT_MODE parameter
+!-----------------------------------------------------------------------!
   implicit none
   integer, intent(in) :: i,j    ! coordinates of column
   logical, intent(in) :: debug
 
-  integer, parameter      :: NumAOD=size(AOD_GROUP)
-  integer                 :: k, n
-  real, dimension(NumAOD) :: kext
+  logical                  :: first_call=.true.
+  integer                  :: k, n
+  real, dimension(NUM_EXT) :: kext
 
-!-----------------------------------------------------------------
-!   AOD_GROUP = (/ SO4, NO3_F, NH4_F, EC_F_NEW, EC_F_AGE, POC_F, &
-!       EXTC  = (/ 8.5, 8.5,   8.5,   7.5,      11.0,     5.7,   &  &.0 for POC!
-!                  SEASALT_F, SEASALT_C, DUST_NAT_F, DUST_NAT_C /)
-!                  3.0,        0.4       1.0,         0.3,      /)
-!__________________________________________________________________
-
-!.. Debug variables for individual components
-  logical :: first_call=.true.
-  logical, dimension(NumAOD) :: &
-    mask_SO4=.false.,mask_NO3=.false.,mask_NH4=.false.,mask_EC=.false.,&
-    mask_OM=.false.,mask_SS=.false.,mask_DU=.false.            !mask_POM=.false.
-
-  real :: ext_SO4,ext_NO3,ext_NH4,ext_EC,ext_OM,ext_SS,ext_DU,&!,ext_POM,
-          AOD_SO4,AOD_NO3,AOD_NH4,AOD_EC,AOD_OM,AOD_SS,AOD_DU  !,AOD_POM
+!.. Debug variables for individual extinction classes
+  real, dimension(NUM_CEXT):: kext_cext,AOD_cext
 
   if(first_call)then
-    do n = 1, NumAOD
-      select case(species(AOD_GROUP(n))%name)
-        case("SO4")          ;mask_SO4(n)=.true.
-        case("NO3_F","NO3_C");mask_NO3(n)=.true.
-        case("NH4_F")        ;mask_NH4(n)=.true.
-        case("EC_F_FFUEL_NEW","EC_F_FFUEL_AGE",&
-             "EC_F_WOOD_NEW" ,"EC_F_WOOD_AGE" ,&
-             "FFIRE_BC")     ;mask_EC (n)=.true.
-!       case("EC_C_FFUEL","EC_C_WOOD"  );mask_EC (n)=.true.
-!       case("POM_F_FFUEL","POM_F_WOOD");mask_POM(n)=.true.
-!!      case("POM_C_FFUEL"             );mask_POM(k)=.true.
-        case("PART_OM_F","FFIRE_OM");mask_OM(n)=.true.
-!       case("POM_C_FFUEL"         );mask_OM(n)=.true.
-        case("SEASALT_F","SEASALT_C");mask_SS(n)=.true.
-        case("PPM25","PPM25_FIRE","PPM_C",&
-             "REMPPM25","FFIRE_REMPPM25","REMPPM_C",&
-             "DUST_WB_F","DUST_SAH_F",&
-             "DUST_WB_C","DUST_SAH_C");mask_DU(n)=.true.
-      endselect
-    enddo
+    call AOD_check("AOD_Ext")
     first_call=.false.
   endif
-
   if(debug)then
-    write(*,*) ' #### in AOD module  ###'
-    AOD_SO4 = 0.0
-    AOD_NO3 = 0.0
-    AOD_NH4 = 0.0
-    AOD_EC  = 0.0
-    AOD_OM  = 0.0
-    AOD_SS  = 0.0
-    AOD_DU  = 0.0
-!   AOD_POM = 0.0
+    write(*,*) '#### in AOD module  ###'
+    AOD_cext(:)=0.0
   endif
+  
+  if(ANALYSIS.and..not.allocated(SpecExtCross)) &
+    allocate(SpecExtCross(NUM_EXT,MAXLIMAX,MAXLJMAX,KMAX_MID))
 
   AOD(i,j) = 0.0
-  kext(:)  = 0.0
+  !===========================================================================
+  ! Extinction coefficients: 
+  !  Kext [1/m] = SpecExtCross [m2/g] * mass [g/m3] summed up for all comp.
+  !  xn_2d(spec,k)*1.e15 *species(ispec)%molwt/AVOG  [molec/m3] -> [ng/m3]
+  !                                             [ng/m3 ] * 1e-9 -> [g/m3]
+  !  => xn_2d(ispec,k) * species(ispec)%molwt * 1.e6 / AVOG  [g/m3]
+  !===========================================================================
+  do k = KCHEMTOP, KMAX_MID
+    !.. SpecExtCross [m2/g]. EXT_MODE: use dry/wet extinction coeficients
+    kext(:)=Qm(EXT_MODE,rh(k),debug.and.((k==KCHEMTOP+1).or.(k==KMAX_MID)))
+    if(allocated(SpecExtCross)) SpecExtCross(:,i,j,k)=kext(:)
 
-  do k = KCHEMTOP, KMAX_MID    !_______________ vertical layer loop
-!.. ===========================================================================
-!..  Extinction coefficients: Kext [1/m] = SpecExtCross [m2/g] * mass [g/m3]
-!..                           summed up for all components  
-!..    xn_2d(spec,k)*1.e15 *species(ispec)%molwt/AVOG   [molec/m3] -> [ng/m3]
-!..                                                   [ng/m3 ] * 1e-9 -> [g/m3]
-!..=>  xn_2d(ispec,k) * species(ispec)%molwt * 1.e6 / AVOG  [g/m3]
-!.. ===========================================================================
+    !.. Specific extinction
+    kext(:)=kext(:) &                                             ! [m2/g]
+      *xn_2d(ExtMap%itot,k)*species(ExtMap%itot)%molwt*1.0e6/AVOG ! [g/m3]
 
-!.. Specific extinction
-! Dry extinction coeficients
-!   kext(:)=xn_2d(AOD_GROUP,k)*species(AOD_GROUP)%molwt &
-!                             *species(AOD_GROUP)%ExtC*1.0e6/AVOG
-! Wet extinction coeficients
-    kext(:)=xn_2d(AOD_GROUP,k)*species(AOD_GROUP)%molwt*1.0e6/AVOG &
-           *wetExtC(NumAOD,AOD_GROUP,rh(k),debug.and.(k==KMAX_MID))
-
-!.. Aerosol extinction optical depth : integral over all vertical layers
-!.. [1/m] * [m]
-    AOD(i,j) = AOD(i,j) + sum(kext(:)) * (z_bnd(i,j,k)-z_bnd(i,j,k+1))
-
-!.. Extinction coefficient on level k
+    !.. Extinction coefficient on level k
     Extin_coeff(i,j,k) = sum(kext(:))
 
+    !.. Aerosol extinction optical depth: integral over all vertical layers
+    AOD(i,j) = AOD(i,j) + sum(kext(:))*(z_bnd(i,j,k)-z_bnd(i,j,k+1)) ! [1/m]*[m]
+
     if(debug)then
-!.. Extinction coefficients for individual components
-      ext_SO4=sum(kext(:),mask_SO4(:))
-      ext_NO3=sum(kext(:),mask_NO3(:))
-      ext_EC =sum(kext(:),mask_EC (:))
-      ext_OM =sum(kext(:),mask_OM (:))
-      ext_SS =sum(kext(:),mask_SS (:))
-      ext_DU =sum(kext(:),mask_DU (:))
-!     ext_POM=sum(kext(:),mask_POM(:))
+      !.. Extinction coefficients for individual components
+      do n = 1,NUM_CEXT
+        kext_cext(n)=sum(kext(:),ExtMap(:)%cext==n)
+      enddo
+      !.. Aerosol optical depth for individual components
+      AOD_cext(:) = AOD_cext(:) + kext_cext(:) * (z_bnd(i,j,k)-z_bnd(i,j,k+1))
 
       if((k==KCHEMTOP+1).or.(k==KMAX_MID))&
-        write(*,'(a15,i3,8es10.3)') 'EXTINCs for k =', &
-          k, Extin_coeff(i,j,k), &
-          ext_SO4,ext_NO3,ext_NH4,ext_EC,ext_OM,ext_SS,ext_DU!,ext_POM
-
-!.. Aerosol optical depth for individual components
-      AOD_SO4 = AOD_SO4 + ext_SO4 * (z_bnd(i,j,k)-z_bnd(i,j,k+1))
-      AOD_NO3 = AOD_NO3 + ext_NO3 * (z_bnd(i,j,k)-z_bnd(i,j,k+1))
-      AOD_NH4 = AOD_NH4 + ext_NH4 * (z_bnd(i,j,k)-z_bnd(i,j,k+1))
-      AOD_EC  = AOD_EC  + ext_EC  * (z_bnd(i,j,k)-z_bnd(i,j,k+1))
-      AOD_OM  = AOD_OM  + ext_OM  * (z_bnd(i,j,k)-z_bnd(i,j,k+1))
-      AOD_SS  = AOD_SS  + ext_SS  * (z_bnd(i,j,k)-z_bnd(i,j,k+1))
-      AOD_DU  = AOD_DU  + ext_DU  * (z_bnd(i,j,k)-z_bnd(i,j,k+1))
-!     AOD_POM = AOD_POM + ext_POM * (z_bnd(i,j,k)-z_bnd(i,j,k+1))
+        write(*,"(a8,'(',i3,')=',es10.3,'=',9(es10.3,:,'+'))") &
+          'EXTINCs', k, Extin_coeff(i,j,k), kext_cext(:)
     endif
-  enddo                        !_______________ vertical layer loop
-
-  if(debug)&
-    write(*,'(a30,2i5,8es15.3)') '>>>  AOD / AODs  <<<',   &
-      i_fdom(i), j_fdom(j), AOD(i,j),   &
-      AOD_SO4,AOD_NO3,AOD_NH4,AOD_EC,AOD_OM,AOD_SS,AOD_DU!,AOD_POM
-endsubroutine AOD_Ext
-! <---------------------------------------------------------->
-! <---------------------------------------------------------->
-subroutine AOD_calc (i,j,debug)
-!------------------------------------------------
-! Calculates AOD.... old, cruder routine
-!-------------------------------------------------
-  implicit none
-  integer, intent(in) :: i,j    ! coordinates of column
-  logical, intent(in) :: debug
-
-  integer :: k
-  real :: kext
-!-----------------------------------------------------------------
-!   AOD_GROUP = (/ SO4, NO3_F, NH4_F, EC_F_NEW, EC_F_AGE, POC_F, &
-!       EXTC  = (/ 8.5, 8.5,   8.5,   7.5,      11.0,     5.7,   &
-!                  SEASALT_F, SEASALT_C, DUST_NAT_F, DUST_NAT_C /)
-!                  3.0,        0.4       1.0,         0.3,      /)
-!-----------------------------------------------------------------
-  AOD(i,j) = 0.0
-
-  do k = KCHEMTOP, KMAX_MID
-!.. ===========================================================================
-!..  Extinction coefficients: Kext [1/m] = SpecExtCross [m2/g] * mass [g/m3]
-!..                           summed up for all components  
-!..    xn_2d(ispec,k)*1.e15 *species(ispec)%molwt/AVOG   [molec/m3] -> [ng/m3]
-!..                                                   [ng/m3 ] * 1e-9 -> [g/m3]
-!..=>  xn_2d(ispec,k) * species(ispec)%molwt * 1.e6 / AVOG  [g/m3]
-!.. ===========================================================================
-    kext=sum(xn_2d(AOD_GROUP,k)*species(AOD_GROUP)%molwt &
-                               *species(AOD_GROUP)%ExtC)*1.0e6/AVOG
-
-!   if(debug.and.(k==18.or.k==KMAX_MID))  &
-!     write(*,'(a17,i4,es15.3)')'> Ext. coeff',k,kext
-
-!.. Aerosol extinction optical depth : integral over all vertical layers
-!.. [1/m] * [m]
-    AOD(i,j) = AOD(i,j) + kext * (z_bnd(i,j,k)-z_bnd(i,j,k+1))
-
-!.. Extinction coefficient on level k
-    Extin_coeff(i,j,k) = kext
-
-!   if(debug.and.(k==18.or.k==KMAX_MID))  & 
-!     write(*,'(a25,i4,2es15.4,2f8.1)') &
-!       '>> Kext AOD for layer',k,kext,AOD(i,j),z_bnd(i,j,k),z_bnd(i,j,k+1)
   enddo
 
-  if(debug) &
-    write(*,'(a30,2i4,es15.3)') '>>>  AOD  <<<',i_fdom(i),j_fdom(j),AOD(i,j)
-endsubroutine AOD_calc
+  if(debug) write(*,"(a24,2i5,es10.3,'=',9(es10.3,:,'+'))") &
+    '>>>  AOD / AODs  <<<', i_fdom(i), j_fdom(j), AOD(i,j), AOD_cext(:)
+endsubroutine AOD_Ext
 endmodule AOD_PM_ml
 

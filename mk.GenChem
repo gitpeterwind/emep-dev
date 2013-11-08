@@ -347,6 +347,7 @@ cat GenOut_ChemGroups_ml.f90            > $odir/CM_ChemGroups_ml.f90
 #mv GenOut_SOA_ml.f90 $odir/CM_SOA_ml.f90
 #mv ChemSOA_ml.f90 $odir/CM_SOA_ml.f90
 
+mv GenOut_AerExt.inc      $odir/CM_AerExt.inc
 mv GenOut_Reactions1.inc  $odir/CM_Reactions1.inc
 mv GenOut_Reactions2.inc  $odir/CM_Reactions2.inc
 mv GenOut_DryDep.inc      $odir/CM_DryDep.inc

@@ -154,6 +154,65 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+8 November 2013  Alvaro 2665
+
+Refactor AOD_PM_ml and clean up CM_ChemGroups_ml.
+
+AOD_PM_ml,GenChem.pl,mk.GenChem:
+- Modify GenChem.pl and *.species files to assign extinction prototype/classes
+  and Wet/Dry mode to each model variable.
+- AOD_GROUP is not longer explicitly defined on the *.species files,
+  instead it is the collection of all model variables with a defined
+  extinction class.
+- The extinction classes and Wet/Dry mode are summarised on mapping file 
+  (CM_AerExt.inc) produced by GenChem.pl/mk.GenChem.
+- Extinction prototype/classes and Wet/Dry mode are defined on AOD_PM_ml.
+
+ZCM_EmChem09/SeaSalt.species,PMmass.species,EmChem09base.species,Dust.species,
+ZCM_EmChem09soa/VBS_nonvolatile.species,
+ZCM_CB04/CB04base.species,ZCM_CB05/CB05base.species,
+ZCM_CRI_v2_0/CRI_v2_0base.species,CRI_v2_R5base.species,
+ZCM_Emergency/NUC.species,ASH_2bin.species,ASH_7bin.species,
+ZCM_vbs_tests/VBS_help.species,VBS_help_Detailed.species,VBS_nonvolatile.species:
+- Define extinction class (e.g. DDf) instead of the value of the 
+  dry mass extinction efficiency at 550 nm (e.g. 1.0 [m2/g]).
+- The Wet/Dry calculation mode can be explicitly defined (e.g. DDf:Dry),
+  otherwise the Wet mode is assumed.
+
+AOD_PM_ml:
+- Partial support to older model versions can be achieved by editing CM_AerExt.inc.
+  If the case, the new subroutine AOD_check ensures the consistency between
+  AOD_GROUP and CM_AerExt.inc.
+- The functionality previously provided by function wetExtC (introduced on 2638) 
+  is now achieved by 2 separate functions: Qm & Qm_grp
+- Private function Qm returns dry/wet mass extinction efficiencies for species
+  in CM_AerExt.inc. Dry/Wet efficiencies are returned depending on the value of
+  mode input parameter.
+- Public function Qm_grp returns the wet extinction efficiencies
+  for given a rel.hum. Dry extinction efficiencies are returned if no rel.hum.
+  is provided.
+- Subroutine AOD_Ext calculates AOD and Extinction coefficient.
+  By default calculations are based on wet mass extinction efficiencies.
+  The default behaviour is controlled by global variable EXT_MODE.
+- Subroutine AOD_calc was removed as is functionality can be reproduced by
+  AOD_Ext with EXT_MODE="DRY".
+
+Units_ml:
+  Remove support for ext550nm units (extinction at 550 nm).
+  Conversion to ext550nm unit was based on dry mass extinction efficiencies.
+  By default, AOD calculations are based wet mass extinction efficiencies,
+  which change with rel.hum.
+  This inconsistency makes the former ext550nm unit conversion misleading.
+
+GenChem.pl(CM_ChemGroups_ml),Aqueous_n_WetDep_ml,Derived_ml,ZD_OZONE/My_Derived_ml:
+  Remove INDEX_*_GROUP, GROUP_ARRAY, and unused/obsolete groups (e.g. DDEP_OXNGROUP).
+  Use find_index('NAME',chemgroups%name) instead of GROUP_ARRAY. 
+
+ZD_ESX/ZCM_ESX_r12/GenIn.species,ZD_ESX/ZCM_EmChem09/GenIn.species,
+ZD_ESX/CM_ChemSpecs,CM_ChemRates,D_Misc/GenChem.pl:
+  AOD relevant changes ported to ESX model.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 8 November 2013  Dave   2661-2664
 
 ESX-related changes (also main code, but no effect)

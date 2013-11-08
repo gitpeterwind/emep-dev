@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************!
 !*
-!*  Copyright (C) 2007-2011 met.no
+!*  Copyright (C) 2007-2013 met.no
 !*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -140,7 +140,7 @@ private
    character(len=3), public, parameter, dimension(1) :: COLUMN_LEVELS = &
       (/  "k20" /) ! , "k16", "k12", "k08" /)
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(4) :: &
+   character(len=TXTLEN_DERIV), public, parameter, dimension(4) :: &
   D2_SR = (/ &
        "SURF_MAXO3    " &
       ,"SURF_PM25water" &
@@ -387,9 +387,6 @@ private
     NAMELIST /OutputConcs_config/OutputConcs
 
 !NML   typ_s5i("HMIX      ", "m",   D2,"HMIX     ","MISC", D)&
-!   open(IO_TMP, file="config_Outputs.nml",delim='APOSTROPHE')
-!   read(IO_TMP,NML=OutputConcs_config)
-!   close(IO_TMP)
    rewind(IO_NML)
    read(IO_NML,NML=OutputConcs_config)
    
@@ -553,20 +550,19 @@ private
               nOutputFields = nOutputFields + 1
               OutputFields(nOutputFields) = OutputConcs(n)
 
-         else if( outtyp == "AIR_CONCS" ) then
+         elseif( outtyp == "AIR_CONCS" ) then
+              select case(outclass)
+                case(SPEC ) ;n1=find_index(outname,species(:)%name)
+                case(GROUP) ;n1=find_index(outname,chemgroups(:)%name)
+                case default;n1=-1
+              endselect
 
-             if( outclass == SPEC ) then ! check if available
-              n1 = find_index(outname,species(:)%name)
-             else if ( outclass == GROUP ) then ! check if available
-              n1 = find_index(outname,GROUP_ARRAY(:)%name)
-             end if
-
-              if ( n1 < 1 ) then
+              if(n1<1) then
                 if(DEBUG.and.MasterProc) write(*,*) "Xd-2d-SKIP ", n, trim(outname)
                 call PrintLog("WARNING: Requested My_Derived OutputField not found: "&
                    // " " //trim(outclass) // ":"   //trim(outname), MasterProc)
                 cycle
-              end if
+              endif
 
 !             end if
 

@@ -529,15 +529,15 @@ CH4,1,CH4,16.04,xx,xx,0,0,0,xx,methane,,!C1
 TRACER,1,tracer,1,xx,xx,0,0,0,xx,tracer,,!C0
 *HCL,1,HCL,36.46,xx,xx,0,0,0,xx,HCl,,!C0
 H2S,1,H2S,34.08,xx,xx,0,0,0,xx,SOX,,!C0
-DMS,1,CH3SCH3,62.13,PmfS,SO4,0,0,0,xx,SOX;AOD,,!C0
+DMS,1,CH3SCH3,62.13,PmfS,SO4,SO4,0,0,xx,SOX,,!C0
 MSA,1,msa,96.1,xx,xx,0,0,0,xx,SOX,,!C0
 *
 *From EmChem09
-SO4,1,SO4,xx,PMfS,SO4,8.5,0,0,xx,PM10;PMFINE;SIA;SOX;AOD,,!
+SO4,1,SO4,xx,PMfS,SO4,SO4,0,0,xx,PM10;PMFINE;SIA;SOX,,!
 NH3,1,NH3,xx,NH3,NH3,0,0,0,xx,RDN,,!
-NO3_f,1,NO3_f,xx,PMfN,PMf,8.5,0,0,xx,PM10;PMFINE;SIA;OXN;TNO3;AOD,,"!in equilib module"
-NO3_c,1,NO3_c,xx,PMc,PMc,0,0,0,xx,PM10;PMCO;SIA;OXN;TNO3;AOD,,"!Coarse nitrate"
-NH4_f,1,NH4_f,xx,PMfN,PMf,8.5,0,0,xx,RDN;PM10;PMFINE;SIA;AOD,,"! in equilib module"
+NO3_f,1,NO3_f,xx,PMfN,PMf,NO3f,0,0,xx,PM10;PMFINE;SIA;OXN;TNO3,,"!in equilib module"
+NO3_c,1,NO3_c,xx,PMc,PMc,NO3c,0,0,xx,PM10;PMCO;SIA;OXN;TNO3,,"!Coarse nitrate"
+NH4_f,1,NH4_f,xx,PMfN,NH4f,8.5,0,0,xx,RDN;PM10;PMFINE;SIA,,"! in equilib module"
 *
 *SO4,1,SO4,96.06,PMfS,SO4,0, 0,0,,0,xx,xx,,PM!
 *NH4_f,1,NH4,18.01,PMf,PMf,0, 0,0,,0,xx,xx,,PM!

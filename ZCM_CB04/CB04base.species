@@ -76,11 +76,11 @@ ORGNIT,1,orgnit,xx,xx,xx,0,0,0,xx,OXN,!
 H2,1,H2,xx,xx,xx,0,0,0,xx,HOx,!
 C2H6,1,C2H6,30.07,xx,xx,0,0,0,xx,xx,,alkane,!
 SO2,1,SO2,64.06,SO2,SO2,0,0,0,xx,SOx,!
-SO4,1,SO4,96.06,PMfS,SO4,8.5,0,0,xx,SOx;PM;AOD,!
+SO4,1,SO4,96.06,PMfS,SO4,SO4,0,0,xx,SOx;PM,!
 CH4,1,CH4,16.04,xx,xx,0,0,0,xx,xx,,methane,!
 NH3,1,NH3,17.03,NH3,NH3,0,0,0,xx,RDN,!
-NH4_f,1,NH4,18.01,PMfN,PMf,0,0,0,xx,PM;RDN;AOD,!
-NO3_f,1,NO3,62.00,PMfN,PMf,0,0,0,xx,PM;OXN;AOD,!
-NO3_c,1,NO3,62.00,PMfN,PMf,0,0,0,xx,PM;OXN;AOD,!
+NH4_f,1,NH4,18.01,PMfN,PMf,NH4f,0,0,xx,PM;RDN,!
+NO3_f,1,NO3,62.00,PMfN,PMf,NO3f,0,0,xx,PM;OXN,!
+NO3_c,1,NO3,62.00,PMfN,PMf,NO3c,0,0,xx,PM;OXN,!
 *ISOTOPES Rn222,1,rn222,222.00,xx,xx,0,0,0,xx,,,other,!
 *ISOTOPES Pb210,1,pb210,210.00,PMfS,PMf,0,0,0,xx,xx,,other,!
