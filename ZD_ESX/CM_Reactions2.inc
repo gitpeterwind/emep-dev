@@ -2,7 +2,8 @@
 !-> SO4 
 
       P =   &
-          rcemis(SO4,k) 
+          1.0e-5 * xnew(SO2 )  &
+        + rcemis(SO4,k) 
       ! L = 0.0
  
 
@@ -27,7 +28,7 @@
 !-> NO3_C 
 
       P =   &
-          rct(61,k) * xnew(HNO3 ) 
+          rct(62,k) * xnew(HNO3 ) 
       ! L = 0.0
  
 

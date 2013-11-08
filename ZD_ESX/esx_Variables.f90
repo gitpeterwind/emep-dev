@@ -158,6 +158,7 @@ module esx_Variables
       ,Kz  = 0.0         &!< Eddy diffusivity at grid boundaries
       ,Kz2  = 0.0        &!< Eddy diffusivity - TESTING above hSL
       ,Kz3  = 0.0        &!< Eddy diffusivity - TESTING above hSL
+      ,Ra   = UNDEF_R    &!< Resistance between layers,Ra1 between z1 to z2
       ,uz  = 0.1         &!< Wind speed (m/s)
       ,CO2 = 392.0       &!< CO2 concentration (ppm)
       ,M  = 2.55e19       ! Air concentration, 3rd body for chem reactions

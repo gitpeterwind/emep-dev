@@ -11,6 +11,7 @@ module esx_Zmet
   use esx_Variables, only: L=> Loc, esx, Zmet
   use esx_Zveg, only: Veg
   use Kz_ml                  !! e.g. def_Kz, JericevicKz , O_BrienKz
+  use MicroMet_ml, only : AerRes !! TEST
   use ModelConstants, only : UNDEF_R
 
   implicit none
@@ -57,11 +58,16 @@ subroutine def_Kz(KzMethod, kwargs)
 
   character(len=*), intent(in) :: KzMethod
   type(KeyValReal), dimension(:) :: kwargs
-  real :: za, Ka, n, kappa = 0.4   ! CHANGE kappa later
+  real :: Ra_MO, za, Ka, n
   real, pointer, dimension(:) :: zlevs
-  integer :: nz, nSL   !! index of surface layer ht. in zbnd
+  integer :: i, iz, nz
+  integer :: nSL   !! index of surface layer ht. in zbnd
   logical :: first_call=.true.
+  integer, parameter :: NFINE = 10
+  real, dimension(NFINE) :: fineZ, fineKz  ! for fine-scale integration of Kz
+  logical :: debug0
 
+  debug0 = ( esx%debug_Zmet>0 .and. first_call ) 
 
   call CheckStop( L%Hmix < 0.0, "Hmix not set!" ) 
   
@@ -72,7 +78,7 @@ subroutine def_Kz(KzMethod, kwargs)
   L%hSL = max( L%hSL, 2.0*Veg%h) ! Avoids matching problems in RSL
   nSL = count( zlevs < L%hSL+0.01 )
 
-  if( esx%debug_Zmet>0) write(*,*) "esx_Zmet HSL STUFF ", nz, &
+  if( debug0 ) write(*,*) "esx_Zmet HSL STUFF ", nz, &
        L%hSL, nSL, zlevs(nSL), size(zlevs)
 
   if( KzMethod == "constant" ) then
@@ -87,7 +93,7 @@ subroutine def_Kz(KzMethod, kwargs)
 
   else if( KzMethod == "Leuning" ) then 
 
-    Zmet(1:nz)%Kz = def_Kz_inc(zlevs,L%uStar,Veg%h,L%hSL,L%invL,kappa,Veg%dPerh)
+    Zmet(1:nz)%Kz = def_Kz_inc(zlevs,L%uStar,Veg%h,L%hSL,L%invL,Veg%dPerh,debug0 )
 
   end if
 
@@ -105,12 +111,40 @@ subroutine def_Kz(KzMethod, kwargs)
 
         call O_BrienKz( L%hSL, L%Hmix, zlevs, L%ustar, L%invL, &
                     KzHs=Zmet(nSL)%Kz, KzHmix=0.0, Kz=Zmet(1:nz)%Kz3, &
-                    debug_flag=esx%debug_Zmet>0 )
+                    debug_flag=debug0)
         Zmet(nSL+1:nz)%Kz =  Zmet(nSL+1:nz)%Kz3
     end if
   end if
 
   call print_Kz()
+
+  ! Testing resistances. In general, Ra(z1,z2) = integral dz/Kz between z1 to z2
+  ! within the surface layer (iz=1..nSL)
+  ! MicroMet AerRes uses the analytical solution of standard M-O theory, so 
+  ! knows nothing about the in-canopy (e.g. Leuning) type effects.
+
+! if ( first_call ) then
+
+    if(debug0) print "(a,2f8.2)", "AERO ustar,1/L ", L%ustar, L%invL
+    do iz  = 1, nSL !-1
+
+       fineZ(:) = (/ ( esx%z(iz)+(i-0.5)*esx%dzmid(iz)/NFINE, i=1,NFINE) /)
+
+       fineKz(:) = def_Kz_inc(fineZ,L%uStar,Veg%h,L%hSL,L%invL,Veg%dPerh,debug0 )
+
+       Ra_MO=AerRes( esx%z(iz), esx%z(iz+1), L%ustar, L%invL,0.4)
+
+       Zmet(iz)%Ra = esx%dzmid(iz)*sum(1.0/fineKz)/NFINE
+
+       if ( debug0 ) then
+         print "(a,i3,f7.1,9(2x,a,2f10.2))", "AERO ", iz, esx%z(iz), &
+           "Kz,dz: ", Zmet(iz)%Kz, esx%dzmid(iz) &
+          ,"Ras: ", Ra_MO, esx%dzmid(iz)/Zmet(iz)%Kz &
+          ,"from Int dz/Kz: ", Zmet(iz)%Ra
+       end if
+
+    end do
+
   first_call=.false.
 
 end subroutine def_kz

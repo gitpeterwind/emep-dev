@@ -24,7 +24,7 @@
 
       L =  &
           rct(1,k)  &
-        + rct(62,k)* xnew(NO ) 
+        + rct(63,k)* xnew(NO ) 
 
       xnew(OP)=  ( xold(OP) + dt2 * P) /(1.0 + dt2*L )
 
@@ -104,10 +104,10 @@
         + 2.2e-11* xnew(MVKO2H )  &
         + 3.7e-11* xnew(ISNIRH )  &
         + 2.9e-11* xnew(MPAN )  &
-        + rct(65,k)* xnew(NO2 )  &
-        + rct(68,k)* xnew(C2H4 )  &
-        + rct(69,k)* xnew(C3H6 )  &
-        + rct(70,k)* xnew(NO ) 
+        + rct(66,k)* xnew(NO2 )  &
+        + rct(69,k)* xnew(C2H4 )  &
+        + rct(70,k)* xnew(C3H6 )  &
+        + rct(71,k)* xnew(NO ) 
 
       xnew(OH)=  ( xold(OH) + dt2 * P) /(1.0 + dt2*L )
 
@@ -252,7 +252,7 @@
 
       P =   &
           rct(32,k) * xnew(ETRO2H ) * xnew(OH )  &
-        + rct(68,k) * xnew(C2H4 ) * xnew(OH ) 
+        + rct(69,k) * xnew(C2H4 ) * xnew(OH ) 
 
       L =  &
           rct(40,k)* xnew(NO )  &
@@ -264,7 +264,7 @@
 
       P =   &
           rct(32,k) * xnew(PRRO2H ) * xnew(OH )  &
-        + rct(69,k) * xnew(OH ) * xnew(C3H6 ) 
+        + rct(70,k) * xnew(OH ) * xnew(C3H6 ) 
 
       L =  &
           rct(40,k)* xnew(NO )  &
@@ -338,21 +338,30 @@
       P =   &
           0.5*rct(54,k) * xnew(MACR ) * xnew(OH )  &
         + 1.87e-11 * xnew(MACO3H ) * xnew(OH )  &
-        + rct(67,k) * xnew(MPAN ) 
+        + rct(68,k) * xnew(MPAN ) 
 
       L =  &
           rct(57,k)* xnew(NO )  &
         + rct(60,k)* xnew(HO2 )  &
-        + rct(66,k)* xnew(NO2 ) 
+        + rct(67,k)* xnew(NO2 ) 
 
       xnew(MACO3)=  ( xold(MACO3) + dt2 * P) /(1.0 + dt2*L )
 
-!-> TRACER 
+!-> TRACER1 
       ! P = 0.0
  
       ! L = 0.0
  
-!Nothing to do for TRACER! xnew(TRACER)=  max(0.0, xold(TRACER))
+!Nothing to do for TRACER1! xnew(TRACER1)=  max(0.0, xold(TRACER1))
+
+!-> TRACER2 
+      ! P = 0.0
+ 
+
+      L =  &
+          0.01 
+
+      xnew(TRACER2)=  xold(TRACER2) / ( 1.0 + dt2 * L )
 
 !-> O3 
 
@@ -404,8 +413,8 @@
         + rct(57,k)* xnew(MACO3 )  &
         + rct(40,k)* xnew(ISNIR )  &
         + rct(40,k)* xnew(ISONO3 )  &
-        + rct(62,k)* xnew(OP )  &
-        + rct(70,k)* xnew(OH ) 
+        + rct(63,k)* xnew(OP )  &
+        + rct(71,k)* xnew(OH ) 
 
       xnew(NO)=  ( xold(NO) + dt2 * P) /(1.0 + dt2*L )
 
@@ -435,10 +444,10 @@
         + 1.9*rct(40,k) * xnew(ISNIR ) * xnew(NO )  &
         + 1.1*rct(40,k) * xnew(ISONO3 ) * xnew(NO )  &
         + 2.9e-11 * xnew(MPAN ) * xnew(OH )  &
-        + rct(62,k) * xnew(OP ) * xnew(NO )  &
-        + rct(64,k) * xnew(N2O5 )  &
-        + rct(67,k) * xnew(PAN )  &
-        + rct(67,k) * xnew(MPAN )  &
+        + rct(63,k) * xnew(OP ) * xnew(NO )  &
+        + rct(65,k) * xnew(N2O5 )  &
+        + rct(68,k) * xnew(PAN )  &
+        + rct(68,k) * xnew(MPAN )  &
         + rcphot(IDHNO3,k) * xnew(HNO3 )  &
         + rcphot(IDNO3,k) * xnew(NO3 )  &
         + rcemis(NO2,k) 
@@ -446,10 +455,10 @@
       L =  &
           rct(6,k)* xnew(O3 )  &
         + rct(11,k)* xnew(NO3 )  &
-        + rct(63,k)* xnew(NO3 )  &
-        + rct(65,k)* xnew(OH )  &
-        + rct(66,k)* xnew(CH3COO2 )  &
-        + rct(66,k)* xnew(MACO3 )  &
+        + rct(64,k)* xnew(NO3 )  &
+        + rct(66,k)* xnew(OH )  &
+        + rct(67,k)* xnew(CH3COO2 )  &
+        + rct(67,k)* xnew(MACO3 )  &
         + rcphot(IDNO2,k) 
 
       xnew(NO2)=  ( xold(NO2) + dt2 * P) /(1.0 + dt2*L )
@@ -457,21 +466,21 @@
 !-> PAN 
 
       P =   &
-          rct(66,k) * xnew(CH3COO2 ) * xnew(NO2 ) 
+          rct(67,k) * xnew(CH3COO2 ) * xnew(NO2 ) 
 
       L =  &
-          rct(67,k) 
+          rct(68,k) 
 
       xnew(PAN)=  ( xold(PAN) + dt2 * P) /(1.0 + dt2*L )
 
 !-> MPAN 
 
       P =   &
-          rct(66,k) * xnew(MACO3 ) * xnew(NO2 ) 
+          rct(67,k) * xnew(MACO3 ) * xnew(NO2 ) 
 
       L =  &
           2.9e-11* xnew(OH )  &
-        + rct(67,k) 
+        + rct(68,k) 
 
       xnew(MPAN)=  ( xold(MPAN) + dt2 * P) /(1.0 + dt2*L )
 
@@ -480,7 +489,7 @@
       P =   &
           rct(6,k) * xnew(O3 ) * xnew(NO2 )  &
         + rct(15,k) * xnew(OH ) * xnew(HNO3 )  &
-        + rct(64,k) * xnew(N2O5 ) 
+        + rct(65,k) * xnew(N2O5 ) 
 
       L =  &
           rct(9,k)* xnew(NO )  &
@@ -488,7 +497,7 @@
         + rct(28,k)* xnew(HCHO )  &
         + 2.5e-12* xnew(MACRO2 )  &
         + rct(59,k)* xnew(C5H8 )  &
-        + rct(63,k)* xnew(NO2 )  &
+        + rct(64,k)* xnew(NO2 )  &
         + rcphot(IDNO3,k) 
 
       xnew(NO3)=  ( xold(NO3) + dt2 * P) /(1.0 + dt2*L )
@@ -496,10 +505,11 @@
 !-> N2O5 
 
       P =   &
-          rct(63,k) * xnew(NO2 ) * xnew(NO3 ) 
+          rct(64,k) * xnew(NO2 ) * xnew(NO3 ) 
 
       L =  &
-          rct(64,k) 
+          rct(61,k)  &
+        + rct(65,k) 
 
       xnew(N2O5)=  ( xold(N2O5) + dt2 * P) /(1.0 + dt2*L )
 
@@ -519,11 +529,12 @@
 
       P =   &
           rct(28,k) * xnew(NO3 ) * xnew(HCHO )  &
-        + rct(65,k) * xnew(NO2 ) * xnew(OH ) 
+        + 2.*rct(61,k) * xnew(N2O5 )  &
+        + rct(66,k) * xnew(NO2 ) * xnew(OH ) 
 
       L =  &
           rct(15,k)* xnew(OH )  &
-        + rct(61,k)  &
+        + rct(62,k)  &
         + rcphot(IDHNO3,k) 
 
       xnew(HNO3)=  ( xold(HNO3) + dt2 * P) /(1.0 + dt2*L )
@@ -531,7 +542,7 @@
 !-> HONO 
 
       P =   &
-          rct(70,k) * xnew(OH ) * xnew(NO ) 
+          rct(71,k) * xnew(OH ) * xnew(NO ) 
 
       L =  &
           rct(18,k)* xnew(OH )  &
@@ -550,7 +561,7 @@
         + 0.41*rct(53,k) * xnew(MACR ) * xnew(O3 )  &
         + rct(57,k) * xnew(MACO3 ) * xnew(NO )  &
         + 1.51e-11 * xnew(MACO2H ) * xnew(OH )  &
-        + rct(67,k) * xnew(PAN )  &
+        + rct(68,k) * xnew(PAN )  &
         + rcphot(IDRCOCHO,k) * xnew(MGLYOX )  &
         + rcphot(IDCH3O2H,k) * xnew(MEKO2H )  &
         + rcphot(IDMEK,k) * xnew(MEK ) 
@@ -561,7 +572,7 @@
         + rct(36,k)* xnew(CH3COO2 )  &
         + rct(36,k)* xnew(CH3COO2 )  &
         + rct(37,k)* xnew(HO2 )  &
-        + rct(66,k)* xnew(NO2 ) 
+        + rct(67,k)* xnew(NO2 ) 
 
       xnew(CH3COO2)=  ( xold(CH3COO2) + dt2 * P) /(1.0 + dt2*L )
 
@@ -765,7 +776,7 @@
 
       L =  &
           rct(43,k)* xnew(O3 )  &
-        + rct(68,k)* xnew(OH ) 
+        + rct(69,k)* xnew(OH ) 
 
       xnew(C2H4)=  ( xold(C2H4) + dt2 * P) /(1.0 + dt2*L )
 
@@ -777,7 +788,7 @@
 
       L =  &
           rct(44,k)* xnew(O3 )  &
-        + rct(69,k)* xnew(OH ) 
+        + rct(70,k)* xnew(OH ) 
 
       xnew(C3H6)=  ( xold(C3H6) + dt2 * P) /(1.0 + dt2*L )
 
@@ -1090,7 +1101,8 @@
 
       P =   &
           rcemis(SO2,k) 
-      ! L = 0.0
- 
 
-      xnew(SO2)=  xold(SO2) + dt2 * P
+      L =  &
+          1.0e-5 
+
+      xnew(SO2)=  ( xold(SO2) + dt2 * P) /(1.0 + dt2*L )

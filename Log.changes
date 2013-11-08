@@ -154,6 +154,29 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+8 November 2013  Dave   2666
+
+More ESX:
+
+   Added Zmet%Ra, using fine-scale calculation of Kz 
+
+   CM_, GenChem stuff
+   Re-introduced Riemer, etc., for more realistic chemistry
+   Added TRACER2 (and TRACER became TRACER1) for Jalle. Provides
+   reacting species.
+
+   
+   Kz_ml
+     - stability effects continued
+     - added Zmet%Ra term, from fine-scale integration of Kz
+
+   esx_Variables
+     - added Zmet%Ra term
+
+   + small tidy-ups in ESX codes.
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 8 November 2013  Alvaro 2665
 
 Refactor AOD_PM_ml and clean up CM_ChemGroups_ml.
@@ -213,6 +236,7 @@ ZD_ESX/CM_ChemSpecs,CM_ChemRates,D_Misc/GenChem.pl:
   AOD relevant changes ported to ESX model.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+>>>>>>> .r2665
 8 November 2013  Dave   2661-2664
 
 ESX-related changes (also main code, but no effect)

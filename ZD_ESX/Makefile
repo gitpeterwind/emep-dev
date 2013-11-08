@@ -352,8 +352,9 @@
 # ./esx_Zmet.f90 Uses Module esx_Variables
 # ./esx_Zmet.f90 Uses Module esx_Zveg
 # ./esx_Zmet.f90 Uses Module Kz_ml
+# ./esx_Zmet.f90 Uses Module MicroMet_ml
 # ./esx_Zmet.f90 Uses Module ModelConstants
-# Full list of modules in ./esx_Zmet.f90: CheckStops Io_Routines KeyValueTypes esx_Variables esx_Zveg Kz_ml ModelConstants 
+# Full list of modules in ./esx_Zmet.f90: CheckStops Io_Routines KeyValueTypes esx_Variables esx_Zveg Kz_ml MicroMet_ml ModelConstants 
 # Uses CheckStops which is in ./CheckStops.f90
 # ./CheckStops.f90 already in list
 # Uses Io_Routines which is in ./Io_Routines.f90
@@ -374,6 +375,8 @@
 # Uses MicroMet_ml which is in ./MicroMet_ml.f90
 # process_fsource called with arg ./MicroMet_ml.f90 
 # Full list of modules in ./MicroMet_ml.f90:  
+# Uses MicroMet_ml which is in ./MicroMet_ml.f90
+# ./MicroMet_ml.f90 already in list
 # Uses ModelConstants which is in ./ModelConstants.f90
 # ./ModelConstants.f90 already in list
 # Uses esx_Zveg which is in ./esx_Zveg.f90
@@ -518,7 +521,7 @@ MicroMet_ml.o:./MicroMet_ml.f90
 Kz_ml.o:./Kz_ml.f90 PhysicalConstants_ml.o MicroMet_ml.o 
 	 $(F90) -c ./Kz_ml.f90 
 
-esx_Zmet.o:./esx_Zmet.f90 CheckStops.o Io_Routines.o KeyValueTypes.o esx_Variables.o esx_Zveg.o Kz_ml.o ModelConstants.o 
+esx_Zmet.o:./esx_Zmet.f90 CheckStops.o Io_Routines.o KeyValueTypes.o esx_Variables.o esx_Zveg.o Kz_ml.o MicroMet_ml.o ModelConstants.o 
 	 $(F90) -c ./esx_Zmet.f90 
 
 esx_tester.o:esx_tester.f90 AllocInit.o Ammonium_ml.o CM_ChemSpecs.o CheckStops.o esx_gleaf.o esx_GetData.o esx_ChemRun.o esx_MassBudget.o esx_Variables.o esx_Zchem.o esx_ZdiffSolver.o esx_Zgrid.o esx_Zmet.o esx_Zveg.o Io_ml.o Io_Routines.o ZchemData.o Zmet_ml.o Zmet_ml.o SmallUtils_ml.o TimeDate_ml.o 

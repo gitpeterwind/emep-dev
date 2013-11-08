@@ -4,7 +4,8 @@
 label=`date +%F`
 ver=`svnversion|sed "s/:/-/"`
 
-odir=~/Dropbox/Work_2013/ESX/ESX-${label}
+#odir=~/Dropbox/Work_2013/ESX/ESX-${label}
+odir=~/Dropbox/Sweden/ExJobb/ESX_Project/ESX-${label}
 mkdir -p $odir
 mkdir $odir/D_Plotting
 
@@ -17,7 +18,8 @@ for i in *f90 *.inc  DO3SE/src/*F90 DO3SE/src/*.h READM* config_esx.*
 do
 cp $i $odir
 done
-cp D_Plotting/plotZarray.py $odir/D_Plotting
+cp D_Plotting/plot*.py  $odir/D_Plotting
+cp D_Plotting/Octave*.m $odir/D_Plotting
 
 cd $odir
 makegf90  -tag "(f90|F90)" esx_tester.f90 > Makefile

@@ -35,6 +35,7 @@
 *-- ;
 * Refs: acp2004 - Atkinson et al, ACP, 2004, 1461-1738, Table 1, reaction numbers given as #Num
 *
+0.01                                TRACER2   =      ; 
 (6.0e-34*O2+5.6e-34*N2)*O2*EXP(-2.6*LogTdiv300)   OP + {O2} + {M}  = O3  ; acp2004, #1
 1.8e-11*N2*EXP(107.0*TINV)          OD + {N2}  = OP           ; A97,J
 3.2e-11*O2*EXP(67.0*TINV)           OD + {O2}  = OP           ; A97,J
@@ -67,6 +68,8 @@ FH2O*1.9e-33*EXP(980.0*TINV)*M    HO2 + HO2 = H2O2          ; IUPAC 2001
 *ESXTMP aqrck(ICLRC1,k)                    SO2 + H2O2 =  SO4   ;  !ox limitation
 *ESXTMP aqrck(ICLRC2,k)                    SO2 + O3 =  SO4   ; 
 *ESXTMP aqrck(ICLRC3,k)                    SO2 + {Fe} =  SO4   ; 
+*ESXTMP:
+   1.0e-5        SO2 =  SO4   ;  jof, kinf
 * ;
 *----- methane chemistry ----------------------------------- ;
 * ;
@@ -187,7 +190,8 @@ KRO2NO                   ISONO3 + NO   = 1.1 NO2 + 0.8 HO2 + 0.85 ISNI + 0.1 MAC
 *FEB2012 *k=1.0/(5.51614*24.0*3600.0):
 *FEB2012 2.1e-6                Rn222 = Pb210 ;
 *FEB2012 2.1e-6                Rnwater = ; # TEST
-*PLUME2 _func_RiemerN2O5()         N2O5 = 2. HNO3                  ;
+*ESX PLUME2
+_func_RiemerN2O5()         N2O5 = 2. HNO3                  ;
 *FEB2012 1.0e-12*h2o                Pb210 = ; # FAKE FAKE TO GET RCMISC(9)
 _func_kaero()              HNO3 = NO3_c        ;
 TROE_NO_OP                 OP + NO  + {M}   = NO2     ; A97,J, jofmiss

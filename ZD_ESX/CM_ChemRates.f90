@@ -18,7 +18,7 @@ implicit none
     public :: setchemrates
     public :: setPhotolUsed
 
-     integer, parameter, public :: NCHEMRATES = 70   !! No. coefficients
+     integer, parameter, public :: NCHEMRATES = 71   !! No. coefficients
 
 !> Photolysis rates
      integer, parameter, public :: NPHOTOLRATES = 13   !! No. DJ vals used
@@ -108,48 +108,49 @@ implicit none
        rct(58,:) = 8.5e-16*exp(-1520.0*TINV) 
        rct(59,:) = 3.15e-12*exp(-450.0*TINV) 
        rct(60,:) = 4.3e-13*exp(1040.0*TINV) 
-       rct(61,:) = KAERO() 
-       rct(62,:) = IUPAC_TROE(1.0e-31*exp(1.6*LOG300DIVT)  &
+       rct(61,:) = RIEMERN2O5() 
+       rct(62,:) = KAERO() 
+       rct(63,:) = IUPAC_TROE(1.0e-31*exp(1.6*LOG300DIVT)  &
          ,3.0E-11*exp(-0.3*LOG300DIVT)  &
          ,0.85  &
          ,M  &
          ,0.75-1.27*LOG10(0.85)) 
-       rct(63,:) = IUPAC_TROE(3.6e-30*exp(4.1*LOG300DIVT)  &
+       rct(64,:) = IUPAC_TROE(3.6e-30*exp(4.1*LOG300DIVT)  &
          ,1.9E-12*exp(-0.2*LOG300DIVT)  &
          ,0.35  &
          ,M  &
          ,0.75-1.27*LOG10(0.35)) 
-       rct(64,:) = IUPAC_TROE(1.3e-3*exp(3.5*LOG300DIVT)*exp(-11000.0*TINV)  &
+       rct(65,:) = IUPAC_TROE(1.3e-3*exp(3.5*LOG300DIVT)*exp(-11000.0*TINV)  &
          ,9.70E14*exp(-0.1*LOG300DIVT)*exp(-11080.0*TINV)  &
          ,0.35  &
          ,M  &
          ,0.75-1.27*LOG10(0.35)) 
-       rct(65,:) = IUPAC_TROE(3.3e-30*exp(3.0*LOG300DIVT)  &
+       rct(66,:) = IUPAC_TROE(3.3e-30*exp(3.0*LOG300DIVT)  &
          ,4.1E-11  &
          ,0.40  &
          ,M  &
          ,0.75-1.27*LOG10(0.4)) 
-       rct(66,:) = IUPAC_TROE(2.7e-28*exp(7.1*LOG300DIVT)  &
+       rct(67,:) = IUPAC_TROE(2.7e-28*exp(7.1*LOG300DIVT)  &
          ,1.2E-11*exp(0.9*LOG300DIVT)  &
          ,0.3  &
          ,M  &
          ,0.75-1.27*LOG10(0.3)) 
-       rct(67,:) = IUPAC_TROE(4.9e-3*exp(-12100.0*TINV)  &
+       rct(68,:) = IUPAC_TROE(4.9e-3*exp(-12100.0*TINV)  &
          ,5.4E16*exp(-13830.0*TINV)  &
          ,0.3  &
          ,M  &
          ,0.75-1.27*LOG10(0.3)) 
-       rct(68,:) = IUPAC_TROE(8.6e-29*exp(3.1*LOG300DIVT)  &
+       rct(69,:) = IUPAC_TROE(8.6e-29*exp(3.1*LOG300DIVT)  &
          ,9.0E-12*exp(0.85*LOG300DIVT)  &
          ,0.48  &
          ,M  &
          ,0.75-1.27*LOG10(0.48)) 
-       rct(69,:) = IUPAC_TROE(8.0e-27*exp(3.5*LOG300DIVT)  &
+       rct(70,:) = IUPAC_TROE(8.0e-27*exp(3.5*LOG300DIVT)  &
          ,3.0E-11*300.0*TINV  &
          ,0.5  &
          ,M  &
          ,0.75-1.27*LOG10(0.5)) 
-       rct(70,:) = IUPAC_TROE(7.4e-31*exp(2.4*LOG300DIVT)  &
+       rct(71,:) = IUPAC_TROE(7.4e-31*exp(2.4*LOG300DIVT)  &
          ,3.3E-11*exp(0.3*LOG300DIVT)  &
          ,exp(-temp/1420.0)  &
          ,M  &

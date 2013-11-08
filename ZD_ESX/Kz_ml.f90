@@ -48,9 +48,8 @@ function def_kz_nsl(z,nsl,ustar) result(K)
   real, intent(in) ::  ustar
   integer, intent(in) :: nsl
   real, dimension(size(z)) :: K
-  real :: kappa = 0.4
  
-  K = kappa*ustar*z
+  K = KARMAN*ustar*z
   K = min(K,K(nsl))  !QUERY???
 
 end function def_kz_nsl
@@ -70,7 +69,7 @@ end function def_kz_nsl
 !! in a rice canopy estimated using Lagrangian dispersion analysis
 !! Agric. Forest Meteor., 2000, 104, 233-249
 
-function def_Kz_inc(z,uStar,hVeg,hSL,invL,kappa,dPerh) result (Kz)
+function def_Kz_inc(z,uStar,hVeg,hSL,invL,dPerh,debug_flag) result (Kz)
 
   real, intent(in), dimension(:) :: z   !> heights at which Kz calculated
   real, intent(in) ::  &
@@ -78,7 +77,7 @@ function def_Kz_inc(z,uStar,hVeg,hSL,invL,kappa,dPerh) result (Kz)
     ,hsl               &   !> Height surface layer (m) and  1/L
     ,invL              &   !> 1/L (L=Obukhov length, m)
     ,dPerh                 !> = d/hVeg
-  real, intent(in) :: kappa !> von Karman constant
+  logical, intent(in), optional :: debug_flag
 
   real, dimension(size(z)) :: Kz   ! Resulting Kz
   real, dimension(size(z)) :: zPerh, fac_s,fac_t, sigma_w, tau_L, Krsl
@@ -87,7 +86,7 @@ function def_Kz_inc(z,uStar,hVeg,hSL,invL,kappa,dPerh) result (Kz)
   real :: zhLim       ! scaled matching height  (m)
   real :: phi_w0, phi_h0   ! value of stability functions for z/L=0
   integer :: nsl, nz, k
-  logical, save :: first_call = .true.
+  logical, save :: first_call = .true., debug=.false.
 
  !> Leuning equation params
   real, parameter :: ZH0 = 0.8, ZH1 = 0.25  &
@@ -95,6 +94,7 @@ function def_Kz_inc(z,uStar,hVeg,hSL,invL,kappa,dPerh) result (Kz)
     ,a1 = 0.256, b1 = 0.40, c1 = 0.98, d1 =  1, s1 = 0.8  &
     ,a2 = 0.850, b2 = 0.41, c2 = 0.98, d2 = -1, s2 = 4
 
+   if ( present(debug_flag) ) debug=debug_flag
 
    nsl = count( z < hsl+0.01 )  !! Number of grid-layers in surface layer
                                 !! CONSIDER nsl=0 in future code
@@ -119,7 +119,7 @@ function def_Kz_inc(z,uStar,hVeg,hSL,invL,kappa,dPerh) result (Kz)
      zL(:)    = (z-d)*invL 
    end where
 
-   print *, "ZPERH ", nsl, zPerh, z(nsl)
+   if(debug) print *, "nsl,znsl,ZPERH(1) ", nsl,z(nsl), zPerh(1)
 
   !> factors for Sigma_w: Leuning et al., BLM, 2000 %%%
 
@@ -147,14 +147,17 @@ function def_Kz_inc(z,uStar,hVeg,hSL,invL,kappa,dPerh) result (Kz)
    tau_L = fac_t*hVeg/uStar
 
    Krsl = sigma_w**2 * tau_L     !! in and just above vegetation 
-   Kz = kappa*uStar*(z-d)        !! M-O similarity theory
+                                 !! CHECK JP's alternate code with sw0
+   Kz = KARMAN*uStar*(z-d)       !! M-O similarity theory
 
-   do k = 1, nsl                 !! QUERY? Not sure of matlab code
-     print *, "KLEUNING ", k, nsl,  Kz(k), Krsl(k) 
+   do k = 1, nsl
+     if(debug) print "(a,2i4,f7.2,2f12.2)","KLEUNING ",k,nsl,z(k),Kz(k),Krsl(k) 
      Kz(k) = max(Kz(k),Krsl(k))             !! match
    end do
 
-   Kz(nsl+1:nz) = maxval( Kz(1:nsl) )  !> constant above SL
+   Kz(nsl+1:nz) = maxval( Kz(1:nsl) )  !> constant above SL. 
+                                       !! Will likely be re-set, e.g. with
+                                       !! O Brien or Jeric.
 
 end function def_Kz_inc
 

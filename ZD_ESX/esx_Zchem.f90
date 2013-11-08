@@ -120,7 +120,7 @@
                trim(BIC(i)%name)//":"//trim(BIC(i)%units) )
            end select
   
-           if(debug_level>0) print "(2a,g12.3,2i4,es12.3)", "BIC unitscale:",&
+          if(debug_level>0) print "(2a,g12.3,2i4,es12.3)", "BIC unitscale:",&
              trim(BIC(i)%type), unitscale, iz1, iz2, BIC(i)%value
     
            select case ( BIC(i)%type )

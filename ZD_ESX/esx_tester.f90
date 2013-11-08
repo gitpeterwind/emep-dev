@@ -155,7 +155,7 @@ program tester
               !print "(a, es18.5)", "PRECHEM ",  xChem( 18, 5)
           call ChemRun( dt, esx%debug_Zchem )
               !print "(a, es18.5)", "POSCHEM ",  xChem( 18, 5 )
-          !call Ammonium( esx%debug_Zchem>0 )
+          call Ammonium( esx%debug_Zchem>0 )
       end if
 
       !> DISPERSION =====================================:
@@ -248,7 +248,6 @@ program tester
          write(plotmsg,"(9a)") trim( esx%plot_cmds ), " -i ", trim(filename),&
             " -c ", trim(sname), " -o PlotResults"//trim(esx%exp_name) // "_" // trim(sname ) // ".png"
          print *, "Plot cmds =", trim(plotmsg)
-         !call system("cat "//trim(filename) )
          call system(trim(plotmsg))
        end if
     end do

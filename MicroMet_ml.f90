@@ -1,5 +1,4 @@
-! <MicroMet_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
-!          Chemical transport Model>
+! <MicroMet_ml.f90 - A component of the EMEP MSC-W Chemical transport Model>
 !*****************************************************************************! 
 !* 
 !*  Copyright (C) 2007-2011 met.no

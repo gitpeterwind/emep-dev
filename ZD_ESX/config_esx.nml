@@ -14,9 +14,11 @@
  !esx%daynumber   = 153 
  esx%startdate   = 2008 7 1 12 0   ! year mm dd hh seconds
  esx%endTime     =  3600.0
+ esx%endTime     =  200.0
  esx%endTime     =  7200.0
  esx%endTime     =  432000.0  ! 5 days
  esx%endTime     =  200.0
+ esx%endTime     =   86400.0  ! 1 day
  esx%dt_extern   =  3600.0  ! Master time step, for e.g. met data change
  esx%dt_phychem  =    20.0  ! time step around chem/diffusion loops
 
@@ -58,20 +60,20 @@
 
 ! Set method first::
 
- esx%zmethod = 'explicit'
  esx%zmethod = 'linear'
+ esx%zmethod = 'explicit'
 
 ! An explicit example::
 
  !esx%zbnd = 0.5, 1.5, 2.5, 3.5, 4., 4.5, 5.0, 5.5, 6., 6.5, 7.0, 7.5, 8., 9. 10.
- !esx%zbnd = 2., 4., 6., 8., 10., 12., 14., 16., 20., 30., 40., 50., 70., 100., 150., 200., 250., 300., 350., 400., 500., 600., 700., 800., 1000.
- esx%zbnd = 2., 4., 6., 8., 10.,  15., 20., 32., 64., 100.,200.,300.
+ esx%zbnd = 2., 4., 6., 8., 10., 12., 14., 16., 20., 30., 40., 50., 70., 100., 150., 200., 250., 300., 350., 400., 500., 600., 700., 800., 1000.
+ !esx%zbnd = 2., 4., 6., 8., 10.,  15., 20., 32., 64., 100.,200.,300.
 
 ! the following are only used if zmethod set to linear::
 
  esx%zfirst  = 0.0
- esx%zlast   = 100.0
- esx%nz      = 100
+ esx%zlast   = 500.0
+ esx%nz      =  10
 
 ! These zbnd values are the 'boundary'-levels of cells, the location where
 ! fluxes should be calculated. Given these, the code will calculate the cell
@@ -101,28 +103,33 @@
 ! fluxes in molec/m2/s. If esx%units="-" (unitless), give unitless fluxes in
 ! amount #/m2/s (NOTE - m2 not cm2! The Kz terms are in m-s units)
 ! NOTE - Fb is downward flux. Use -ve for emissions! Ft is upward ::
+!
+! CHANGE!!! Nov 2013. Better to set emissions in BOC section below, rather
+! than as Fbottom.
 
     esx%DiffSpecs = 
    !species  ind  Vd     Ve     Fbottom  Ftop
-   'TRACER',   0, 0.0,   0.0,  -3.3e15,  0.0
-   !'O3',       0, 0.01,  0.0,   0.0,     0.0
-   !'NO',       0, 0.0,   0.0,  -1.0e15,  0.0
-   !'NO2',      0, 0.01,  0.0,   0.0,     0.0
-   !'NH3',      0, 0.02,  0.0,  -2.0e15,  0.0
-   !'NH4_F',    0, 0.002, 0.0,   0.0,     0.0
-   !'HNO3',     0, 0.04,  0.0,   0.0,     0.0
-   !'SO4',      0, 0.002, 0.0,   0.0,     0.0
+   'TRACER1',   0, 0.002,   0.0,   0.0,     0.0
+   'TRACER2',   0, 0.002,   0.0,   0.0,     0.0
+   'O3',       0, 0.01,  0.0,   0.0,     0.0
+   'NO',       0, 0.0,   0.0,   0.0,     0.0
+   'NO2',      0, 0.01,  0.0,   0.0,     0.0
+   'NH3',      0, 0.02,  0.0,   0.0,     0.0
+   'NH4_F',    0, 0.002, 0.0,   0.0,     0.0
+   'NO3_F',    0, 0.002, 0.0,   0.0,     0.0
+   'HNO3',     0, 0.04,  0.0,   0.0,     0.0
+   'SO4',      0, 0.002, 0.0,   0.0,     0.0
 
    ! Plume2, Kuhn et al., AE 1993 (VOC is v.approx)
-   'O3',       0, 0.0, 0.0,  0.0,     0.0
-   'NO',       0, 0.0, 0.0,  0.0,     0.0
-   'NO2',      0, 0.0, 0.0,  0.0,     0.0
-   'NH3',      0, 0.0, 0.0,  0.0,     0.0
-   'NH4_F',    0, 0.0, 0.0,  0.0,     0.0
-   'HNO3',     0, 0.0, 0.0,  0.0,     0.0
-   'SO2',      0, 0.0, 0.0,  0.0,     0.0
-   'CO',       0, 0.0, 0.0,  0.0,     0.0
-   'SO4',      0, 0.0, 0.0,  0.0,     0.0
+   !'O3',       0, 0.0, 0.0,  0.0,     0.0
+   !'NO',       0, 0.0, 0.0,  0.0,     0.0
+   !'NO2',      0, 0.0, 0.0,  0.0,     0.0
+   !'NH3',      0, 0.0, 0.0,  0.0,     0.0
+   !'NH4_F',    0, 0.0, 0.0,  0.0,     0.0
+   !'HNO3',     0, 0.0, 0.0,  0.0,     0.0
+   !'SO2',      0, 0.0, 0.0,  0.0,     0.0
+   !'CO',       0, 0.0, 0.0,  0.0,     0.0
+   !'SO4',      0, 0.0, 0.0,  0.0,     0.0
 !   'C3H6',     0, 0.0, 0.0,  0.0,     0.0
 !   'HCHO',     0, 0.0, 0.0,  0.0,     0.0
 !   'OXYL',     0, 0.0, 0.0,  0.0,     0.0
@@ -184,17 +191,18 @@
 ! (Remember - upper case)::
 
    esx%OutSpecs =
-  'TRACER', 0
+  'TRACER1', 0
+  'TRACER2', 0
   'O3', 0
   'NO', 0
   'NO2', 0
   !'SO2', 0
-  !'SO4', 0
-  !'NH3', 0
-  !'NH4_F', 0
+  'SO4', 0
+  'NH3', 0
+  'NH4_F', 0
   'HNO3', 0
-  'OH', 0
-  'HO2', 0
+  !'OH', 0
+  !'HO2', 0
   !'RO2', 0
 
 ! OK to specify species which are not in use. Can also specify "All" (not implemented yet)
@@ -257,7 +265,7 @@
  esx%debug_driver = 0     
  esx%debug_Zdiff = 0       ! 1 gives dt info, 2 gives much more
  esx%debug_Zchem = 0       ! 2 will also give namelist out, large
- esx%debug_Zmet  = 0       ! 2 will also give namelist out, large
+ esx%debug_Zmet  = 1       ! 2 will also give namelist out, large
  esx%debug_Zveg  = 0       !
  esx%debug_gleaf = 0       ! 
 
@@ -315,16 +323,16 @@
 ! Veg_config sets/resets cover general vegetation characteristics, e.g. basic
 ! params such as height, max and min LAI, methods for dealing with SGS, etc::
 
-  veg%name     = "Temperate/boreal deciduous"
-  veg%code     = "DF"
-  veg%h        = 20.0
+  veg%name     = "Test-grass"
+  veg%code     = "GR"
+  veg%h        =  0.3
   veg%dPerh    = 0.65   ! displacement height/hveg
   veg%LAI      =  5.0
   veg%gMax     =  0.02  ! max. conductance, m/s
   veg%alpha    =  0.1   !  light response
   veg%profile  =  "beta"
   veg%profile  =  "uniform"
-  veg%canopy_bottom  =  0.1
+  veg%canopy_bottom  =  0.0
 
 ! In-testing/future::
 !
@@ -364,8 +372,8 @@
 !  (set z2 >> nz to ensure top of domain)
 !  an_sol_c0   'conc', 'O3', 'units', 4.0e-11, 1, 1
 
-!  the following is a very simplified set-up for tests, with fake emissions
-!  for O3!
+! CHANGE!!! Nov 2013. Better to set emissions in BOC section below, rather
+! than as Fbottom.
 !  ::
 
   BIC =
@@ -375,7 +383,8 @@
    !   'emis',  'O3', 'molec/cm2/s',   2.5e12, 1, 1
    !   !'conc', 'O3', '-',    2.0,   1, 1
    !
-   'conc', 'TRACER', 'ppb',   40.0, 1,999
+   'conc', 'TRACER1', 'ppb',   40.0, 1,999
+   'conc', 'TRACER2', 'ppb',   40.0, 1,999
    'conc', 'CH4','ppb', 1700.0, 1, 999
    'conc', 'H2' ,'ppb',  500.0, 1, 999
    'conc', 'O3', 'ppb',   50.0, 1, 999
@@ -388,6 +397,8 @@
    'conc', 'NH3', 'ppb',   0.2, 1, 1
    'conc', 'NH4_F', 'ppb', 0.0, 1, 999
    'conc', 'HNO3', 'ppb',  0.5, 1, 999
+   !! Plume-2
+   !'emis', 'TRACER',  'molec/cm3/s', 1.0e6, 1, 999
    'emis', 'NO',  'molec/cm3/s', 1.1e6, 1, 999
    'emis', 'SO2', 'molec/cm3/s', 2.2e5, 1, 999
    'emis', 'CO',  'molec/cm3/s', 2.4e6, 1, 999
@@ -395,6 +406,17 @@
    'emis', 'OXYL','molec/cm3/s', 1.0e6, 1, 999   ! 2% VOC
    'emis', 'C2H5OH','molec/cm3/s', 1.0e6, 1, 999   ! 2% VOC
    'emis', 'NC4H10','molec/cm3/s', 1.0e6, 1, 999   ! 2% VOC
+   'emis', 'NH3',  'molec/cm3/s', 1.1e6, 1, 999
+   !! 
+!   'emis', 'TRACER',  'molec/cm2/s', 1.0e11, 1, 1
+!   'emis', 'NO',  'molec/cm2/s', 1.1e11, 1, 1
+!   'emis', 'SO2', 'molec/cm2/s', 2.2e10, 1, 1
+!   'emis', 'CO',  'molec/cm2/s', 2.4e11, 1, 1
+!   'emis', 'HCHO','molec/cm2/s', 6.0e9, 1, 1   ! 2% VOC
+!   'emis', 'OXYL','molec/cm2/s', 1.0e11, 1, 1   ! 2% VOC
+!   'emis', 'C2H5OH','molec/cm2/s', 1.0e11, 1, 1   ! 2% VOC
+!   'emis', 'NC4H10','molec/cm2/s', 1.0e11, 1, 1   ! 2% VOC
+!   'emis', 'NH3',  'molec/cm2/s', 1.1e11, 1, 1
    /
 
 !-----------------------------------------------------------------------------

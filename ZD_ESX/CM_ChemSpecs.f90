@@ -10,7 +10,7 @@ implicit none
 
 !   ( Output from GenChem, sub print_species ) 
 
-   integer, public, parameter ::  NSPEC_TOT = 74 
+   integer, public, parameter ::  NSPEC_TOT = 75 
  
   ! Aerosols:
            integer, public, parameter :: &
@@ -39,76 +39,77 @@ implicit none
   ,  MVKO2       =  14   &
   ,  MACRO2      =  15   &
   ,  MACO3       =  16   &
-  ,  TRACER      =  17   &
-  ,  O3          =  18   &
-  ,  NO          =  19
+  ,  TRACER1     =  17   &
+  ,  TRACER2     =  18   &
+  ,  O3          =  19
 
    integer, public, parameter ::   & 
-     NO2         =  20   &
-  ,  PAN         =  21   &
-  ,  MPAN        =  22   &
-  ,  NO3         =  23   &
-  ,  N2O5        =  24   &
-  ,  ISONO3      =  25   &
-  ,  HNO3        =  26   &
-  ,  HONO        =  27   &
-  ,  CH3COO2     =  28   &
-  ,  MACR        =  29
+     NO          =  20   &
+  ,  NO2         =  21   &
+  ,  PAN         =  22   &
+  ,  MPAN        =  23   &
+  ,  NO3         =  24   &
+  ,  N2O5        =  25   &
+  ,  ISONO3      =  26   &
+  ,  HNO3        =  27   &
+  ,  HONO        =  28   &
+  ,  CH3COO2     =  29
 
    integer, public, parameter ::   & 
-     ISNI        =  30   &
-  ,  ISNIR       =  31   &
-  ,  GLYOX       =  32   &
-  ,  MGLYOX      =  33   &
-  ,  MAL         =  34   &
-  ,  MEK         =  35   &
-  ,  MVK         =  36   &
-  ,  HCHO        =  37   &
-  ,  CH3CHO      =  38   &
-  ,  C2H6        =  39
+     MACR        =  30   &
+  ,  ISNI        =  31   &
+  ,  ISNIR       =  32   &
+  ,  GLYOX       =  33   &
+  ,  MGLYOX      =  34   &
+  ,  MAL         =  35   &
+  ,  MEK         =  36   &
+  ,  MVK         =  37   &
+  ,  HCHO        =  38   &
+  ,  CH3CHO      =  39
 
    integer, public, parameter ::   & 
-     NC4H10      =  40   &
-  ,  C2H4        =  41   &
-  ,  C3H6        =  42   &
-  ,  OXYL        =  43   &
-  ,  C5H8        =  44   &
-  ,  APINENE     =  45   &
-  ,  CH3O2H      =  46   &
-  ,  C2H5OOH     =  47   &
-  ,  BURO2H      =  48   &
-  ,  ETRO2H      =  49
+     C2H6        =  40   &
+  ,  NC4H10      =  41   &
+  ,  C2H4        =  42   &
+  ,  C3H6        =  43   &
+  ,  OXYL        =  44   &
+  ,  C5H8        =  45   &
+  ,  APINENE     =  46   &
+  ,  CH3O2H      =  47   &
+  ,  C2H5OOH     =  48   &
+  ,  BURO2H      =  49
 
    integer, public, parameter ::   & 
-     PRRO2H      =  50   &
-  ,  OXYO2H      =  51   &
-  ,  MEKO2H      =  52   &
-  ,  MALO2H      =  53   &
-  ,  MVKO2H      =  54   &
-  ,  MACROOH     =  55   &
-  ,  MACO3H      =  56   &
-  ,  MACO2H      =  57   &
-  ,  ISRO2H      =  58   &
-  ,  H2O2        =  59
+     ETRO2H      =  50   &
+  ,  PRRO2H      =  51   &
+  ,  OXYO2H      =  52   &
+  ,  MEKO2H      =  53   &
+  ,  MALO2H      =  54   &
+  ,  MVKO2H      =  55   &
+  ,  MACROOH     =  56   &
+  ,  MACO3H      =  57   &
+  ,  MACO2H      =  58   &
+  ,  ISRO2H      =  59
 
    integer, public, parameter ::   & 
-     CH3COO2H    =  60   &
-  ,  ISONO3H     =  61   &
-  ,  ISNIRH      =  62   &
-  ,  CH3OH       =  63   &
-  ,  C2H5OH      =  64   &
-  ,  ACETOL      =  65   &
-  ,  H2          =  66   &
-  ,  CO          =  67   &
-  ,  CH4         =  68   &
-  ,  SO2         =  69
+     H2O2        =  60   &
+  ,  CH3COO2H    =  61   &
+  ,  ISONO3H     =  62   &
+  ,  ISNIRH      =  63   &
+  ,  CH3OH       =  64   &
+  ,  C2H5OH      =  65   &
+  ,  ACETOL      =  66   &
+  ,  H2          =  67   &
+  ,  CO          =  68   &
+  ,  CH4         =  69
 
    integer, public, parameter ::   & 
-     SO4         =  70   &
-  ,  NH3         =  71   &
-  ,  NO3_F       =  72   &
-  ,  NO3_C       =  73   &
-  ,  NH4_F       =  74
+     SO2         =  70   &
+  ,  SO4         =  71   &
+  ,  NH3         =  72   &
+  ,  NO3_F       =  73   &
+  ,  NO3_C       =  74   &
+  ,  NH4_F       =  75
 
  !-----------------------------------------------------------
  
@@ -116,79 +117,80 @@ implicit none
 
 !   ( Output from GenChem, sub print_species ) 
 
-   integer, public, parameter ::  NSPEC_ADV = 58 
+   integer, public, parameter ::  NSPEC_ADV = 59 
  
 
 
    integer, public, parameter ::   & 
-     IXADV_TRACER      =   1   &
-  ,  IXADV_O3          =   2   &
-  ,  IXADV_NO          =   3   &
-  ,  IXADV_NO2         =   4   &
-  ,  IXADV_PAN         =   5   &
-  ,  IXADV_MPAN        =   6   &
-  ,  IXADV_NO3         =   7   &
-  ,  IXADV_N2O5        =   8   &
-  ,  IXADV_ISONO3      =   9
+     IXADV_TRACER1     =   1   &
+  ,  IXADV_TRACER2     =   2   &
+  ,  IXADV_O3          =   3   &
+  ,  IXADV_NO          =   4   &
+  ,  IXADV_NO2         =   5   &
+  ,  IXADV_PAN         =   6   &
+  ,  IXADV_MPAN        =   7   &
+  ,  IXADV_NO3         =   8   &
+  ,  IXADV_N2O5        =   9
 
    integer, public, parameter ::   & 
-     IXADV_HNO3        =  10   &
-  ,  IXADV_HONO        =  11   &
-  ,  IXADV_CH3COO2     =  12   &
-  ,  IXADV_MACR        =  13   &
-  ,  IXADV_ISNI        =  14   &
-  ,  IXADV_ISNIR       =  15   &
-  ,  IXADV_GLYOX       =  16   &
-  ,  IXADV_MGLYOX      =  17   &
-  ,  IXADV_MAL         =  18   &
-  ,  IXADV_MEK         =  19
+     IXADV_ISONO3      =  10   &
+  ,  IXADV_HNO3        =  11   &
+  ,  IXADV_HONO        =  12   &
+  ,  IXADV_CH3COO2     =  13   &
+  ,  IXADV_MACR        =  14   &
+  ,  IXADV_ISNI        =  15   &
+  ,  IXADV_ISNIR       =  16   &
+  ,  IXADV_GLYOX       =  17   &
+  ,  IXADV_MGLYOX      =  18   &
+  ,  IXADV_MAL         =  19
 
    integer, public, parameter ::   & 
-     IXADV_MVK         =  20   &
-  ,  IXADV_HCHO        =  21   &
-  ,  IXADV_CH3CHO      =  22   &
-  ,  IXADV_C2H6        =  23   &
-  ,  IXADV_NC4H10      =  24   &
-  ,  IXADV_C2H4        =  25   &
-  ,  IXADV_C3H6        =  26   &
-  ,  IXADV_OXYL        =  27   &
-  ,  IXADV_C5H8        =  28   &
-  ,  IXADV_APINENE     =  29
+     IXADV_MEK         =  20   &
+  ,  IXADV_MVK         =  21   &
+  ,  IXADV_HCHO        =  22   &
+  ,  IXADV_CH3CHO      =  23   &
+  ,  IXADV_C2H6        =  24   &
+  ,  IXADV_NC4H10      =  25   &
+  ,  IXADV_C2H4        =  26   &
+  ,  IXADV_C3H6        =  27   &
+  ,  IXADV_OXYL        =  28   &
+  ,  IXADV_C5H8        =  29
 
    integer, public, parameter ::   & 
-     IXADV_CH3O2H      =  30   &
-  ,  IXADV_C2H5OOH     =  31   &
-  ,  IXADV_BURO2H      =  32   &
-  ,  IXADV_ETRO2H      =  33   &
-  ,  IXADV_PRRO2H      =  34   &
-  ,  IXADV_OXYO2H      =  35   &
-  ,  IXADV_MEKO2H      =  36   &
-  ,  IXADV_MALO2H      =  37   &
-  ,  IXADV_MVKO2H      =  38   &
-  ,  IXADV_MACROOH     =  39
+     IXADV_APINENE     =  30   &
+  ,  IXADV_CH3O2H      =  31   &
+  ,  IXADV_C2H5OOH     =  32   &
+  ,  IXADV_BURO2H      =  33   &
+  ,  IXADV_ETRO2H      =  34   &
+  ,  IXADV_PRRO2H      =  35   &
+  ,  IXADV_OXYO2H      =  36   &
+  ,  IXADV_MEKO2H      =  37   &
+  ,  IXADV_MALO2H      =  38   &
+  ,  IXADV_MVKO2H      =  39
 
    integer, public, parameter ::   & 
-     IXADV_MACO3H      =  40   &
-  ,  IXADV_MACO2H      =  41   &
-  ,  IXADV_ISRO2H      =  42   &
-  ,  IXADV_H2O2        =  43   &
-  ,  IXADV_CH3COO2H    =  44   &
-  ,  IXADV_ISONO3H     =  45   &
-  ,  IXADV_ISNIRH      =  46   &
-  ,  IXADV_CH3OH       =  47   &
-  ,  IXADV_C2H5OH      =  48   &
-  ,  IXADV_ACETOL      =  49
+     IXADV_MACROOH     =  40   &
+  ,  IXADV_MACO3H      =  41   &
+  ,  IXADV_MACO2H      =  42   &
+  ,  IXADV_ISRO2H      =  43   &
+  ,  IXADV_H2O2        =  44   &
+  ,  IXADV_CH3COO2H    =  45   &
+  ,  IXADV_ISONO3H     =  46   &
+  ,  IXADV_ISNIRH      =  47   &
+  ,  IXADV_CH3OH       =  48   &
+  ,  IXADV_C2H5OH      =  49
 
    integer, public, parameter ::   & 
-     IXADV_H2          =  50   &
-  ,  IXADV_CO          =  51   &
-  ,  IXADV_CH4         =  52   &
-  ,  IXADV_SO2         =  53   &
-  ,  IXADV_SO4         =  54   &
-  ,  IXADV_NH3         =  55   &
-  ,  IXADV_NO3_F       =  56   &
-  ,  IXADV_NO3_C       =  57   &
-  ,  IXADV_NH4_F       =  58
+     IXADV_ACETOL      =  50   &
+  ,  IXADV_H2          =  51   &
+  ,  IXADV_CO          =  52   &
+  ,  IXADV_CH4         =  53   &
+  ,  IXADV_SO2         =  54   &
+  ,  IXADV_SO4         =  55   &
+  ,  IXADV_NH3         =  56   &
+  ,  IXADV_NO3_F       =  57   &
+  ,  IXADV_NO3_C       =  58   &
+  ,  IXADV_NH4_F       =  59
 
  !-----------------------------------------------------------
  
@@ -269,7 +271,8 @@ subroutine define_chemicals()
     species(MVKO2       ) = Chemical("MVKO2       ", 119.0000,  0,  4,   0,  0,  0.0000,    0.0 ) 
     species(MACRO2      ) = Chemical("MACRO2      ", 119.0000,  0,  4,   0,  0,  0.0000,    0.0 ) 
     species(MACO3       ) = Chemical("MACO3       ", 101.0000,  0,  4,   0,  0,  0.0000,    0.0 ) 
-    species(TRACER      ) = Chemical("TRACER      ",  14.0000,  0,  0,   1,  0,  0.0000,    0.0 ) 
+    species(TRACER1     ) = Chemical("TRACER1     ",  14.0000,  0,  0,   1,  0,  0.0000,    0.0 ) 
+    species(TRACER2     ) = Chemical("TRACER2     ",  14.0000,  0,  0,   1,  0,  0.0000,    0.0 ) 
     species(O3          ) = Chemical("O3          ",  48.0000,  0,  0,   0,  0,  0.0000,    0.0 ) 
     species(NO          ) = Chemical("NO          ",  30.0000,  0,  0,   1,  0,  0.0000,    0.0 ) 
     species(NO2         ) = Chemical("NO2         ",  46.0000,  0,  0,   1,  0,  0.0000,    0.0 ) 

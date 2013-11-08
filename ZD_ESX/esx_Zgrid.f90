@@ -21,23 +21,17 @@ module esx_Zgrid
 
     esx%nz = maxloc(esx%zbnd,dim=1)
     nz     = esx%nz
-print *, "NZ ",nz !!, " ZIN:", zin
+    print *, "NZ ",nz !!, " ZIN:", zin
 
     z => esx%z(1:nz)
     dz => esx%dz(1:nz)
     zbnd => esx%zbnd(1:nz)
     dzmid => esx%dzmid(1:nz)
 
-!ORIG    z(:)       = zin(:)
-!ORIG    zbnd(1:nz-1) = (z(1:nz-1)+z(2:nz))/2    !z_i+½ = (z_i + z_i+1)/2
-
     !zbnd(:)       = zin(:)
     z(1)    = 0.5*zbnd(1)                           !
     z(2:nz) = (zbnd(1:nz-1)+zbnd(2:nz))/2           !z_i+½ = (z_i + z_i+1)/2
  
-    !ORIG dz(2:nz-1) = zbnd(2:nz-1)-zbnd(1:nz-2)  !dz_i = z_i+½ - z_i-½
-    !ORIG dz(nz)   = 2*( z(nz)-zbnd(nz-1) )       !dz_n+1 = 2( z_n - z_n-½ )
-
     dz(1)    = zbnd(1)                              !dz_1 = z_1½ - 0
     dz(2:nz) = zbnd(2:nz)-zbnd(1:nz-1)              !dz_i = z_i+½ - z_i-½
  
