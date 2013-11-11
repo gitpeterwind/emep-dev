@@ -48,5 +48,7 @@ DJ(IDCH3CHO)  CH3CHO        = RO2 + HO2 + {CO} ; J(6e-6)
 * ;
 emisfiles:nox,voc
 *
+rcemis:TRACER1      =  TRACER1 ;
+rcemis:TRACER2      =  TRACER2 ;
 rcemis:NO      =  NO ;
 rcemis:VOC     =  VOC ;

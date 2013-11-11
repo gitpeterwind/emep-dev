@@ -165,13 +165,15 @@
     integer, intent(in) :: debug_level
     real :: J
     integer :: n, ind ! index in Phux array
+    logical :: first_call = .true.
       
     n=1
     do while( idj /= Phux(n)%ind )
       n=n+1
     end do
-    if(debug_level>0) print *, "GETPHOTOL ", idj, n, &
+    if(debug_level>0.and.first_call ) print *, "GETPHOTOL ", idj, n, &
        Phux(n)%ind, adjustl(Phux(n)%reaction)
+    first_call = .false.
 
     J= phuxj(n,Za)   ! Phux is only option just now
 

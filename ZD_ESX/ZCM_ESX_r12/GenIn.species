@@ -6,7 +6,8 @@ OH,0,OH,xx,xx,xx,0,0,0,xx,xx,,!
 HO2,0,HO2,xx,xx,xx,0,0,0,xx,RO2,,!
 RO2,0,CH3O2,xx,xx,xx,0,0,0,xx,RO2,,!
 *
-TRACER,1,N,xx,xx,xx,0,0,0,xx,,,!
+TRACER1,1,N,xx,xx,xx,0,0,0,xx,,,!
+TRACER2,1,N,xx,xx,xx,0,0,0,xx,,,!
 O3,1,O3,xx,O3,xx,0,0,0,xx,OX,,!
 NO,1,NO,xx,xx,xx,0,0,0,xx,NOX;OXN,,!
 NO2,1,NO2,xx,NO2,xx,0,0,0,xx,NOX;OX;OXN,,!

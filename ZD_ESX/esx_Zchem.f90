@@ -20,7 +20,7 @@
   !! =========================================================================
   !! Typically, we only need to specify BICs for long-lived species (advected). 
 
-   integer, private, parameter :: MAXBICS = 20 !> Max. No. records with BICs
+   integer, private, parameter :: MAXBICS = 200 !> Max. No. records with BICs
 
    type, private :: BIC_t
      character(len=10) :: type  = '-' ! ! conc or emis
@@ -109,7 +109,8 @@
                unitscale = ppb !WILL MAKE z-dep later
              case ( '-' ) 
                unitscale = 1.0
-             case ( 'molec/cm2/s' )  !! Surface emission. Check this!
+             case ( 'molec/cm2/s' )  
+               !! Should be surface emission if from config file. Check this!
               call CheckStop( iz/=1, 'Wrong BIC units or k values:'&
                 //trim(BIC(i)%name)//":"//trim(BIC(i)%units) )
               unitscale = 1.0/( 100.0 * esx%dz(iz) ) ! => /cm3/s
@@ -120,8 +121,8 @@
                trim(BIC(i)%name)//":"//trim(BIC(i)%units) )
            end select
   
-          if(debug_level>0) print "(2a,g12.3,2i4,es12.3)", "BIC unitscale:",&
-             trim(BIC(i)%type), unitscale, iz1, iz2, BIC(i)%value
+          if(debug_level>0) print "(2a,g12.3,2i4,2es12.3)", "BIC unitscale:",&
+             trim(BIC(i)%type), unitscale, iz1, iz2, esx%dz(iz), BIC(i)%value
     
            select case ( BIC(i)%type )
              case ( 'conc' )
@@ -148,7 +149,8 @@
 
     if( debug_level >0 ) then
 
-      associate ( list => bic_list(1:nbic) )
+      !associate ( list => bic_list(1:nbic) )
+      associate ( list => bic_list(1:2) )
 
         write(*,"(a,/,a,a3,2x,99a11)") &
           "ZChem_BIC Summary ---------------------",&

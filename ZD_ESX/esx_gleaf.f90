@@ -66,7 +66,7 @@ contains
     nv = esx%nhVeg
     Zveg%gleaf = 0.0
 
-    print *, "GLEAFPARsun ", Loc%PARsun
+    !print *, "GLEAFPARsun ", Loc%PARsun
     select case ( esx%gleaf_method )
      case ( 'gleaf0' ) 
 
