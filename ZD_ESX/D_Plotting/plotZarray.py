@@ -11,6 +11,7 @@ parser.add_option('-u',help="Undefined, eg -u 999 or -u 1.0e90  - only plot valu
 parser.add_option('--tfmt',help="Format string for time labels, e.g. t=%8.3f", dest='tfmt',default='%8.3f')
 parser.add_option('--xlow',help="Min x value")
 parser.add_option('--zmax',help="Max z value")
+parser.add_option('--noshow',action='store_true',help="No output to screen")
 opts, args = parser.parse_args()
 
 if opts.c is None:
@@ -81,8 +82,11 @@ legend(loc=2)
 
 if opts.o:
   savefig("%s" % opts.o)
-  show()
-else:
+  #show()
+#else:
+  #show()
+
+if opts.noshow is None:
   show()
 
 #plot(x)
