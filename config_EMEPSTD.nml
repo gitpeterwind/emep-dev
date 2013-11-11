@@ -8,13 +8,13 @@
   MY_OUTPUTS            = 'EMEPSTD',
 !------------------------------
 !USES system started June 2013
-  USES%testname          = 'EMEPSTD',
-  USES%FOREST_FIRES      = T,
-  USES%MONTHLY_FF        = F,
+  USES%testname         = 'EMEPSTD',
+  USES%FOREST_FIRES     = T,
+  USES%MONTHLY_FF       = F,
 !
 ! and debug:
-  DEBUG%GLOBBC           = F,
-  DEBUG%HOURLY_OUTPUTS   = F,
+  DEBUG%GLOBBC          = F,
+  DEBUG%HOURLY_OUTPUTS  = F,
 !------------------------------
 !
   USE_SOILWATER         = T,          ! Uses SMI from meteo data
@@ -25,7 +25,7 @@
   USE_LIGHTNING_EMIS    = T,          ! 
 !
   USE_EURO_SOILNOX      = T,          ! diff for global + Euro runs
-  EURO_SOILNOX_DEPSCALE  = 1.0,   ! Scale, default 1  (see ModelConstants_ml)
+  EURO_SOILNOX_DEPSCALE = 1.0,        ! Scale, default 1  (see ModelConstants_ml)
   USE_GLOBAL_SOILNOX    = F,          ! diff for global + Euro runs
 !
   USE_POLLEN            = F,          ! EXPERIMENTAL. Only works if start Jan 1
@@ -71,9 +71,9 @@
   BGND_CH4              = -1,    ! Reset CH4 (use ppb). (Use -1 for defaults)
 !_-
 !--- 'fake' vegetation for ozone POD calculations
-FLUX_VEGS = 'IAM_CR','IAM_DF','IAM_MF', ! do not need all array elements
-          ! 'CCE_SPRUCE','CCE_BEECH','ACE_PINE','ACE_OAK','ACE_BEECH',
-          ! 'NEUR_SPRUCE','NEUR_BIRCH','MED_OAK','MED_PINE','MED_BEECH'
+  FLUX_VEGS = 'IAM_CR','IAM_DF','IAM_MF', ! do not need all array elements
+            ! 'CCE_SPRUCE','CCE_BEECH','ACE_PINE','ACE_OAK','ACE_BEECH',
+            ! 'NEUR_SPRUCE','NEUR_BIRCH','MED_OAK','MED_PINE','MED_BEECH'
 !-------- Sub domain (x0,x1,y0,y1)
 !!RUNDOMAIN =   1, 100,  1, 100,      ! Orig EMEP domain in EECCA (for benchmarks)
 ! RUNDOMAIN =  40, 210, 12, 184,      ! SR TNO28 area

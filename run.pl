@@ -71,6 +71,7 @@
 ######################################################################
 
 use 5.6.0;
+use feature qw{ switch };
 use strict;
 use warnings;
 use File::Copy qw();
@@ -83,11 +84,11 @@ $| = 1; # autoflush STDOUT
 #my $STALLO=1; #1 if stallo is used
 my ( $STALLO, $VILJE ) = (0) x 2;
 foreach my $key  qw ( HOSTNAME PBS_SERVER MACHINE ){
-         next unless defined $ENV{$key};
-         $STALLO = 1 if $ENV{$key} =~/stallo/;
-         $VILJE  = 1 if $ENV{$key} =~/vilje/;
-         #my $val = $ENV{$key};
-         #print "KEY $key Val $val  STALLO?? $STALLO VILJE $VILJE\n";
+ next unless defined $ENV{$key};
+ $STALLO = 1 if $ENV{$key} =~/stallo/;
+ $VILJE  = 1 if $ENV{$key} =~/vilje/;
+ #my $val = $ENV{$key};
+ #print "KEY $key Val $val  STALLO?? $STALLO VILJE $VILJE\n";
 }
 print "HOST DETECT: V$VILJE S$STALLO \n";
 
@@ -98,7 +99,7 @@ my @MAKE = ("gmake", "-j4", "MACHINE=snow");
 die "Must choose STALLO **or** VILJE !\n"
   unless $STALLO+$VILJE==1;
 
-my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2646"    ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA","EMEP");
+my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2666"    ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA","EMEP");
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 
@@ -136,8 +137,9 @@ if (%BENCHMARK) {
     unless $BENCHMARK{'chem'};  # chemical mecanism, e.g. OpenSource 2008
   $BENCHMARK{'make'}  = ($BENCHMARK{'chem'} eq "EmChem09soa")?"EMEP":"all"
     unless $BENCHMARK{'make'};  # make target, e.g. Status 2010
-  $Chem     = $BENCHMARK{'chem'} if $BENCHMARK{'chem'};
-  $MAKEMODE = $BENCHMARK{'make'} if $BENCHMARK{'make'};
+  $Chem     = $BENCHMARK{'chem'};
+  $MAKEMODE = $BENCHMARK{'make'};
+  $GRID     = $BENCHMARK{'grid'};
 }
 
 my $INERIS_FACS=0;  # Used for timefactors, and e,g TNOxx tests
@@ -175,11 +177,12 @@ if ($CWF) {
   $MAKEMODE=$eCWF?"eEMEP":"MACC";    # Standard Forecast model setup
   $MAKEMODE .="-3DVar" if($aCWF);
   $exp_name = ($eCWF)?"EMERGENCY":($aCWF?"ANALYSIS":"FORECAST");
-  $testv.= ($eCWF)?".eCWF":".CWF"
+  $testv.= ($eCWF)?".eCWF":".CWF";
 ##$MAKEMODE=$eCWF?"eEMEP2010":"MACC-EVA2010";    # 2010 special
 # $MAKEMODE=$eCWF?"eEMEP2011":"MACC-EVA2011";    # 2011 special
 # $exp_name.=_MACCEVA;
 ##$MAKEMODE=$eCWF?"eEMEP2013":"MACC";            # 2013 special
+  $GRID = ($eCWF)?"GLOBAL":"MACC14";
 }
  $MAKEMODE="SR-$MAKEMODE" if($MAKEMODE and $SR);
 
@@ -230,41 +233,30 @@ my $NH3EMIS_VAR = 0; # set to 1 if new temp NH3.
 
 my $METformat="cdf"; # felt or cdf
 
-   $GRID = $eCWF?"GLOBAL":"MACC14" if $CWF;
-   $GRID = $BENCHMARK{'grid'} if %BENCHMARK;
-my $MONTHLY_EMIS = ( $GRID eq "GLOBAL" ); #Switch off if only annual used
-
-#DS Confusing list of possibilites. Needs  CHECK LATER
-my $MetDriver = "H20" ; # DS consider condition "EC";  #"H20";
-   $MetDriver = "EC" if $year >= 2005; # Available Nov 2011
+my $MONTHLY_EMIS = ($GRID eq "GLOBAL"); #Switch off if only annual used
+   $MONTHLY_EMIS = 0 if ($exp_name =~ /ECLAIRE/);
 
 my ($HOMEROOT, $WORKROOT, $MetDir);
 our $DataDir;
 if ($STALLO) {
   $HOMEROOT = "/home";
   $WORKROOT = "/global/work";
-  $DataDir  = "/global/work/$PETER/Data";
-  $MetDir   = "$DataDir/$GRID/metdata/$year" ;
-  $MetDir   = "$DataDir/$GRID/metdata_EC/$year"  if ($GRID eq "GLOBAL");
-  $MetDir   = "$DataDir/$GRID/metdata_EC/$year"  if ($GRID =~ /TNO/);
-  $MetDir   = "$DataDir/$GRID/metdata_EC/$year"  if ($GRID =~ /MACC/);
+  $DataDir  = "$WORKROOT/$PETER/Data";
+  $MetDir   = "$DataDir/$GRID/metdata_EC/$year";
+  $MetDir   = "$DataDir/$GRID/metdata_H20/$year" unless -d $MetDir;
+  $MetDir   = "$DataDir/$GRID/metdata/$year"     unless -d $MetDir;
+  $MetDir   = "$WORKROOT/$PETER/ClimData/$year"  if ($GRID eq "RCA" );
   $MetDir   = "$DataDir/$GRID/metdata_CWF/$year" if $CWF;
-  $MetDir   = "$DataDir/$GRID/metdata_H20/$year" if $GRID eq "EECCA"; # assumes $METformat eq "cdf";
-  $MetDir   = "/global/work/mifapw/emep/ClimData/$year" if ($GRID eq "RCA" );
-
- # Now have IFS for 1990 and from 2000. 
-  $MetDir   = "$DataDir/$GRID/metdata_EC/$year" if ($GRID eq "EECCA" && $year >= 1999 );
-  $MetDir   = "$DataDir/$GRID/metdata_EC/$year" if ($GRID eq "EECCA" && $year == 1990 );
-
-
 } else { #Ve or Vilje
   $HOMEROOT = "/home/metno";
   $WORKROOT = "$HOMEROOT/$USER/work";
   $DataDir  = "$HOMEROOT/mifapw/work/Data";
-  $MetDir   = "$DataDir/$GRID/metdata_EC/$year" ;
+  $MetDir   = "$DataDir/$GRID/metdata_EC/$year";
   $MetDir   = "$DataDir/$GRID/metdata_CWF/$year" if $CWF;
   $MetDir   = "/prod/forecast/work/emep/ec/prepmet" if $eCWF and ($USER eq $FORCAST);
 }
+#$MetDir   = "/hard/code/path/to/$GRID/metdata/$year/if/necessary";
+die "Missing MetDir='$MetDir'\n" unless -d $MetDir;
 
 # DataDir    = Main general Data directory
 my $DATA_LOCAL = "$DataDir/$GRID";   # Grid specific data , EMEP, EECCA, GLOBAL
@@ -313,20 +305,18 @@ close(CHEM);
 #  ( File::Compare::compare( "$ProgDir/CM_ChemSpecs_ml.f90" , "$ChemDir/CM_ChemSpecs_ml.f90"));
 
 my $WORKDIR = "$WORKROOT/$USER/$testv.$year";  # working and result directory
-   $WORKDIR = "$WORKROOT/$testv.$year" if($WORKROOT =~ /$USER/);  # working and result directory
-   $WORKDIR =~ s/$testv.$year/Benchmark\/$GRID.$year/g if (%BENCHMARK);
+   $WORKDIR = "$WORKROOT/$testv.$year" if($WORKROOT =~ /$USER/);
+   $WORKDIR =~ s|$testv.$year|Benchmark/$GRID.$year|g if (%BENCHMARK);
    $WORKDIR = "/prod/forecast/run/eemep" if $eCWF and ($USER eq $FORCAST);
 my $MyDataDir   = "$HOMEROOT/$USER/Unify/MyData";           # for each user's private input
 my $SoilDir     = "$DATA_LOCAL/dust_input";               # Saharan BIC
-$SoilDir = 0 unless -d "$SoilDir/BC_DUST/2000";
+   $SoilDir = 0 unless -d "$SoilDir/BC_DUST/2000";
 
 # TEST! Road dust NOTE! The road dust code may not be working properly yet! Not tested enough!
-my $RoadDir     = "$HOMEROOT/$ROBERT/Unify/MyData/TNO_traffic/" ;
-   $RoadDir     = "$HOMEROOT/$AGNES/MyData/TNO_traffic/" if $VILJE;
-$RoadDir = 0 if $CWF;
-$RoadDir = 0 unless -d $RoadDir;#default?
-#$RoadDir = 0 ;#default?
-
+my $RoadDir = "$HOMEROOT/$ROBERT/Unify/MyData/TNO_traffic" ;
+   $RoadDir = "$HOMEROOT/$AGNES/MyData/TNO_traffic" if $VILJE;
+   $RoadDir = 0 unless -d $RoadDir;
+   $RoadDir = 0 if $CWF;
 
 # Forecast: nest/dump dir, BCs pattern
 my ($CWFIC, $CWFBC, $CWFPL) if $CWF;
@@ -350,8 +340,8 @@ print "TESTING ENV:", $ENV{PWD}, "\n";
 
 
 # Default emissplits used here. if $Specials is set will look
-my $SplitDir    = "$DataDir/SPLITS_JAN2010/BASE_NAEI2000_GH2009.$Chem" ;
-$SplitDir    = "$ChemDir/EMISSPLIT";
+my $SplitDir = "$DataDir/SPLITS_JAN2010/BASE_NAEI2000_GH2009.$Chem" ;
+   $SplitDir = "$ChemDir/EMISSPLIT";
 #RB:had "~mifarb/Unify/MyData/D_EGU/SPLITS_NOV2009v2/BASE_NAEI2000_GH2009.$Chem" ;
 
 my $version     = "Unimod" ;
@@ -364,70 +354,61 @@ my $subv        = "$testv" ;                  # sub-version (to track changes)
 # The effect is to choose the approproate femis file
 
 my $scenario = "Base";     # Reset later if SR
+my @runs     = ( $scenario );
 
 #Possible emission scenarios for HIRHAM run
 #GEA scenarios: HIGH_CLE, HIGH_FROZEN, LOW_CLE, LOW_SLE
 #Historic emissions from Lamargue et al. : historic_emis
-my $emisscen = "historic_emis";
-my $emisyear = $year;
-$scenario = "${emisscen}_emis${emisyear}_met${year}" if $GRID eq "HIRHAM";
-
-my @runs     = ( $scenario );
+my ($emisscen,$emisyear) = ("historic_emis","$year");
+    $scenario="${emisscen}_emis${emisyear}_met${year}" if $GRID eq "HIRHAM";
 
 #EMISSIONS: default settings
-my ($EMIS_INP, $emisdir, $pm_emisdir);
-$EMIS_INP = "$DATA_LOCAL"                            ;
+my ($EMIS_INP,$emisdir,$pm_emisdir)=("$DATA_LOCAL","none","none");
 
-#FEB 2013 TEST of netcdf emissions
-my $SNAP_CDF = "/global/work/mifapw/temp";  # Use for CdfFractions
-$SNAP_CDF = "/global/work/mifads/cdf_emis";  # Use for CdfSnap
-$SNAP_CDF = 0 unless $STALLO;
-
-
-#dave: Use Modrun11 if possible:
-my $EMIS_OLD = "/global/work/$AGNES/Emission_Trends";
-$emisdir = "$EMIS_OLD/$year" if $year < 2000;
-$emisdir = "$EMIS_INP/Modrun11/EMEP_trend_2000-2009/$year" if ( $year > 1999 ) and ($year < 2009);
-$emisdir = "$EMIS_INP/Modrun11/2011-Trend2009-CEIP" if $year >= 2009 ;
-
-#Modrun12 ok, except for EMEP
-$emisdir = "$EMIS_INP/Modrun12/EMEP_trend_2000-2009/$year" if ( $year > 1999 ) and ($year < 2010);
-$emisdir = "$EMIS_INP/Modrun12/2012-Trend2010-CEIP" if $year >= 2010 ;
-die "FAILED: Need tor reset EMISDIR for EMEP grid\n" if ( $GRID eq "EMEP" );
-
-#EnsClim - 
-$emisdir = "$ProjDataDir/Interpolations" if ($GRID eq "RCA"  );
-
-#TMP and should be improved because it gives errors for
-# other domains!
-#.. For using emissions of EC/OC instead of PMx
-my $RFEmisDir = "/global/work/$SVETLANA/Data_RF"; # Split-Fraction files for EC/OC
-my $TNOemisDir = "/global/work/$SVETLANA/Emis_TNO"; # TNO EC/OC emissions
-
-#$emisdir = $TNOemisDir if $EUCAARI;
-$emisdir = "$EMIS_INP/emissions/${emisscen}/${emisyear}" if $GRID eq "HIRHAM";
-
-$pm_emisdir = $emisdir;
-$pm_emisdir = "$EMIS_INP/2006-Trend2000-V7"  if $year < 2000;
-$pm_emisdir = "/home/$ROBERT/Unify/MyData/D_EGU/${GRID}_GRID" if $VBS;
-
-#EMISSIONS: FORECAST settings
-if ( ($GRID eq "GEMS025") or ($GRID eq "MACC02") or ($GRID eq "MACC14") ) {
-  $EMIS_INP = "$DATA_LOCAL/Emissions";
-  $emisdir = "$EMIS_INP/2008-Trend2006-V9-Extended_PM_corrected-V3";    # GEMS025
-# $emisdir = "$EMIS_INP/2008_emis_EMEP_from_PS50" if $GRID eq "MACC02"; # MACC02
-# $emisdir = "$EMIS_INP/2008_emis_EMEP_MACC"      if $GRID eq "MACC02"; # MACC02
-  $emisdir = "$EMIS_INP/2007_emis_MACC"           if $GRID eq "MACC02"; # MACC02
-  $emisdir = "$EMIS_INP/2009_emis_MACCII"         if $GRID eq "MACC14"; # MACC14
-
-  $pm_emisdir = $emisdir;
+given($GRID){
+  when("EECCA"){given($year){
+    when(2000..2009){$emisdir="$EMIS_INP/Modrun12/EMEP_trend_2000-2009/$year";}
+    when(2010)      {$emisdir="$EMIS_INP/Modrun12/2012-Trend$year-CEIP";}
+    when(2011)      {$emisdir="$EMIS_INP/Modrun13/2013-Trend$year-CEIP";}
+  }}
+  when("EMEP"){given($year){
+    when(1990..1999){$emisdir="/global/work/$AGNES/Emission_Trends/$year";}
+    when(2000..2008){$emisdir="$EMIS_INP/Modrun11/EMEP_trend_2000-2009/$year";}
+    when(2009)      {$emisdir="$EMIS_INP/Modrun11/2011-Trend$year-CEIP";}
+  }}
+  when(/TNO/){
+    $emisdir="$WORKROOT/$AGNES/emis_SRbase/INERIS_direct/$GRID"      if($STALLO);
+    $emisdir="$HOMEROOT/$AGNES/emission/SD_emis/INERIS_direct/$GRID" if($VILJE);
+  }
+  when("GLOBAL"){
+    $emisdir=($eCWF)?"$EMIS_INP/Emissions_June2012":"$EMIS_INP/MonthlyEmis";
+    $emisdir="$EMIS_INP/ECLAIRE_1deg_Feb2013/$iyr_trend" if($exp_name=~/ECLAIRE/);
+  }
+  when("RCA")    {$emisdir="$ProjDataDir/Interpolations";} #EnsClim
+  when("HIRHAM") {$emisdir="$EMIS_INP/emissions/$emisscen/$emisyear";}
+  when("GEMS025"){$emisdir="$EMIS_INP/2008-Trend2006-V9-Extended_PM_corrected-V3";}
+# when("MACC02") {$emisdir="$EMIS_INP/2008_emis_EMEP_from_PS50";}
+# when("MACC02") {$emisdir="$EMIS_INP/2008_emis_EMEP_MACC";}
+  when("MACC02") {$emisdir="$EMIS_INP/2007_emis_MACC";}
+  when("MACC14") {$emisdir="$EMIS_INP/2009_emis_MACCII";}
 }
-if ( $GRID =~ /TNO/)  {  # STALLO ONLY
-  die "Need to set emisdir for TNO, non-stallo/vilje" unless ($STALLO+$VILJE);
-  $EMIS_INP = "$WORKROOT/$AGNES/emis_SRbase/INERIS_direct/$GRID" if($STALLO);
-  $EMIS_INP = "$HOMEROOT/$AGNES/emission/SD_emis/INERIS_direct/$GRID" if($VILJE);
-  $emisdir = $EMIS_INP;
-  $pm_emisdir = $emisdir;
+#TMP and should be improved because it gives errors for other domains!
+#.. For using emissions of EC/OC instead of PMx
+my $RFEmisDir  = "/global/work/$SVETLANA/Data_RF";  # Split-Fraction files for EC/OC
+my $TNOemisDir = "/global/work/$SVETLANA/Emis_TNO"; # TNO EC/OC emissions
+#$emisdir = $TNOemisDir if $EUCAARI;
+
+given($GRID){
+  when("GEMS025"){ $pm_emisdir = $emisdir; }
+  when("MACC02",){ $pm_emisdir = $emisdir; }
+  when("MACC14",){ $pm_emisdir = $emisdir; }
+  when(/TNO/)    { $pm_emisdir = $emisdir; }
+  when("GLOBAL") { $pm_emisdir = $emisdir; }
+  default {
+    $pm_emisdir = $emisdir;
+    $pm_emisdir = "$EMIS_INP/2006-Trend2000-V7"  if $year < 2000;
+    $pm_emisdir = "/home/$ROBERT/Unify/MyData/D_EGU/${GRID}_GRID" if $VBS;
+  }
 }
 
 #EMISSIONS: BENCHMARK settings
@@ -435,6 +416,13 @@ if (%BENCHMARK){
   $emisdir    = "$EMIS_INP/$BENCHMARK{'emis'}";
   $pm_emisdir = $emisdir;
 }
+die "Missing emisdir='$emisdir' for GRID='$GRID'\n"       unless -d $emisdir;
+die "Missing pm_emisdir='$pm_emisdir' for GRID='$GRID'\n" unless -d $pm_emisdir;
+
+#FEB 2013 TEST of netcdf emissions
+my $SNAP_CDF = "/global/work/mifapw/temp";  # Use for CdfFractions
+   $SNAP_CDF = "/global/work/mifads/cdf_emis";  # Use for CdfSnap
+   $SNAP_CDF = 0 unless $STALLO;
 
 #Dave, reset to Emission_Trends for Chem project, Oct 18th
 my $TREND_RUNS = 0;
@@ -444,25 +432,10 @@ if ($STALLO && $TREND_RUNS ) {
   $emisdir = "$EMIS_INP/$year";
   $pm_emisdir = $emisdir;
 }
-#
-if ( $GRID eq "GLOBAL" ) {
-  $EMIS_INP = $DATA_LOCAL;
-  $emisdir = ($eCWF)?"$EMIS_INP/Emissions_June2012":"$EMIS_INP/MonthlyEmis";
-  if ( $exp_name =~ /ECLAIRE/ ) {
-     $MONTHLY_EMIS = 0;
-     $emisdir = "$DATA_LOCAL/ECLAIRE_1deg_Feb2013/$iyr_trend";
-  }
-  $pm_emisdir = $emisdir;
-}
 
 my $RESET        = 0 ;  # usually 0 (false) is ok, but set to 1 for full restart
 my $COMPILE_ONLY = 0 ;  # usually 0 (false) is ok, but set to 1 for compile-only
-my $INTERACTIVE  = 0 ;  # usually 0 (false), but set to 1 to make program stop
 my $DRY_RUN      = 0 ;  # Test script without running model (but compiling)
-
-# just before execution - so code can be run interactivel.
-
-# NDX, NDY  now set dynamically by the model
 
 if (%BENCHMARK and $BENCHMARK{'debug'}){
   die "No debug flags for benchmarks!"
@@ -586,7 +559,6 @@ die "Done. COMPILE ONLY\n" if  $COMPILE_ONLY;  ## exit after make ##
 
 my @list_of_files = ();   # Keep list of data-files
 
-
 ########################### START OF RUNS  ##########################
 ########################### START OF RUNS  ##########################
 ########################### START OF RUNS  ##########################
@@ -674,104 +646,93 @@ foreach my $scenflag ( @runs ) {
 
 # First, emission files are labelled e.g. gridSOx, which we assign to
 # emislist.sox to ensure compatability with the names (sox,...) used
-# in the model. It doesn't matter if we have extra mapping here,it
-# is  GenIn.reactions and the associated emislist that decides what gets used.
+# in the model. It doesn't matter if we have extra mapping here.
+# GenIn.reactions and the associated emislist decides what gets used.
 # e.g. lines such as:
 #  emisfiles:sox,nox,co,voc,nh3
 #  emisfiles:pm25
 # etc.
 
-my $timeseries  = "$DataDir/inputs_emepdefaults_Jun2012";
-my $Tbase = 18 ;  # Base-temperature for Degree-day (HDD) files
+  my $timeseries  = "$DataDir/inputs_emepdefaults_Jun2012";
+  my $Tbase = 18 ;  # Base-temperature for Degree-day (HDD) files
+  ($timeseries,$Tbase)=("$DataDir/inputs_eurodelta_Jun2012",20) if($INERIS_FACS);
 
-if ( $INERIS_FACS  ){
-   $timeseries  = "$DataDir/inputs_eurodelta_Jun2012";
-   $Tbase = 20;
-}
-   #$ifile{"$timeseries/HourlyFacs.EMEP2003"} = "HOURLY-FACS";
-   #$ifile{"$timeseries/HourlyFacs.TNO2005"} = "HOURLY-FACS";
+  #$ifile{"$timeseries/HourlyFacs.EMEP2003"} = "HOURLY-FACS";
+  #$ifile{"$timeseries/HourlyFacs.TNO2005"} = "HOURLY-FACS";
 # INERIS provided the most complete hourly file, we use as default
-$ifile{"$timeseries/HourlyFacs.INERIS"} = "HOURLY-FACS";
+  $ifile{"$timeseries/HourlyFacs.INERIS"} = "HOURLY-FACS";
+  $ifile{"$timeseries/EmisHeights.txt"} = "EmisHeights.txt";
 
-$ifile{"$timeseries/EmisHeights.txt"} = "EmisHeights.txt";
-
-  my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC",
-                  "sox" => "SOx", "nox" => "NOx" ,
-                  "pm10" => "PM10", "pm25" => "PM25", "pmco" => "PMco",
+  my %gridmap=(
+    "co"  =>"CO"  ,"nh3" =>"NH3" ,"voc"=>"NMVOC","sox" =>"SOx","nox"=>"NOx" ,
+    "pm10"=>"PM10","pm25"=>"PM25","pmco"=>"PMco",
  # VBS specials
-                  "pocfwd" => "POCfWD",
-                  "pocffl" => "POCfFL", "poccfl"   => "POCcFL",
-                  "ecfwd" => "ECfWD", "eccwd" => "ECcWD",
-                  "ecffl" => "ECfFL", "eccfl" => "ECcFL",
-                  "forfbc"   => "FORFBC", "forfoc"   => "FORFOC",
+    "pocfwd"=>"POCfWD","pocffl"=>"POCfFL","poccfl"=>"POCcFL",
+    "ecfwd" =>"ECfWD" ,"eccwd" =>"ECcWD" ,"ecffl" =>"ECfFL" ,
+    "eccfl" =>"ECcFL" ,"forfbc"=>"FORFBC","forfoc"=>"FORFOC",
  #  Sometimes used also:
-                  "ecfi" => "ECfine","ecco" => "ECcoar", "ocfi" => "OCfine" ) ;
-                  # sometimes was "ocfi" => "POCfine"   ) ;
+    "ecfi"  =>"ECfine","ecco"  =>"ECcoar","ocfi"  =>"OCfine");
+                         # sometimes was  "ocfi" =>"POCfine");
 
-
-  foreach my $poll  ( @emislist  ) {
+  foreach my $poll (@emislist) {
     my $dir = $emisdir;
     $dir = $pm_emisdir if $poll =~ /pm/;   # FIX needed prior to 2000
  # VBS specials #rb Wood burning, Fossil fuel and Forest fire PM from TNO files
     $dir = $pm_emisdir if $poll =~ /wd/;   #
     $dir = $pm_emisdir if $poll =~ /fl/;   #
     $dir = $pm_emisdir if $poll =~ /forf/;   #
-print "TESTING PM $poll $dir\n";
+    print "TESTING PM $poll $dir\n";
 
     if ($GRID eq "MACC14") { # For most cases only Emis_TNO7.nc is available
       $ifile{"$emisdir/EmisOutFrac.$poll"} = "emislist.$poll" if(-e "$emisdir/EmisOutFrac.$poll");
-     }elsif( $GRID eq "RCA"){
+    }elsif( $GRID eq "RCA"){
       #EnsClim RCA #$ifile{"$dir/grid$gridmap{$poll}"} = "emislist.$poll";
-        #$ifile{"$emisdir/EmisOut_2005.$poll"} = "emislist.$poll";
-        #$ifile{"$emisdir/EmisOut_$iyr_trend.$poll"} = "emislist.$poll";
-        # ECLAIRE - uses 2005 as base for historical
-        $ifile{"$emisdir/Emis_RCA_Grid_2005/EmisOut_2005.$poll"} = "emislist.$poll";
+      #$ifile{"$emisdir/EmisOut_2005.$poll"} = "emislist.$poll";
+      #$ifile{"$emisdir/EmisOut_$iyr_trend.$poll"} = "emislist.$poll";
+      # ECLAIRE - uses 2005 as base for historical
+      $ifile{"$emisdir/Emis_RCA_Grid_2005/EmisOut_2005.$poll"} = "emislist.$poll";
     }elsif(($NH3EMIS_VAR)&&($poll eq "nh3")){
       $dir = "$HOMEROOT/$AGNES/emis_NMR";
       $ifile{"$dir/gridNH3_NMR_$year"} = "emislist.$poll";
     }else{
-
       $ifile{"$dir/grid$gridmap{$poll}"} = "emislist.$poll";
-
     }
     $dir=(-e "$emisdir/Emis_TNO7.nc")?$emisdir:$DataDir;
     $ifile{"$dir/Emis_TNO7.nc"} = "EmisFracs_TNO7.nc";
 
-    if ( $SNAP_CDF ) { # in testing:
+    if($SNAP_CDF) { # in testing:
       print "SNAP CDF TESTS $poll\n";
-        #$ifile{"$SNAP_CDF/Emis_$gridmap{$poll}.nc"}
-        #2005:
-        $ifile{"$SNAP_CDF/MACC2_Mar2013/2005/Emis_$gridmap{$poll}.nc"}
-                          = "GriddedSnapEmis_$poll.nc" if $SNAP_CDF ;
+      #$ifile{"$SNAP_CDF/Emis_$gridmap{$poll}.nc"}
+      #2005:
+      $ifile{"$SNAP_CDF/MACC2_Mar2013/2005/Emis_$gridmap{$poll}.nc"}
+                        = "GriddedSnapEmis_$poll.nc" if $SNAP_CDF ;
 
-        #2005 $ifile{"$SNAP_CDF/CdfGlobal/$iyr_trend/Emis_$gridmap{$poll}.nc"}  #2474erca had RCAmap?
-        $ifile{"$SNAP_CDF/CdfGlobal/2005/Emis_$gridmap{$poll}.nc"}  #2474erca had RCAmap?
-           = "GlobalSnapEmis_$poll.nc" if $SNAP_CDF ;
+      #2005 $ifile{"$SNAP_CDF/CdfGlobal/$iyr_trend/Emis_$gridmap{$poll}.nc"}  #2474erca had RCAmap?
+      $ifile{"$SNAP_CDF/CdfGlobal/2005/Emis_$gridmap{$poll}.nc"}  #2474erca had RCAmap?
+         = "GlobalSnapEmis_$poll.nc" if $SNAP_CDF ;
 
-        my $ship = "$SNAP_CDF/CdfGlobal/IPCC_v1_20_04_2009_emep/EmisIPCC_$gridmap{$poll}_ships_$iyr_trend.nc";
-        $ship = "$SNAP_CDF/CdfGlobal/IPCC_v1_20_04_2009_emep/EmisIPCC_$gridmap{$poll}_ships_2000.nc"; #TESTING with 2000
-        $ifile{$ship} = "GlobalShipEmis_$poll.nc" if -e $ship ;
-        #die "SNAP TEST WILL NOT WORK FOR $ship THIS YEAR$iyr_trend  \n" unless -f $ship; #Only 1990, 1990, steps of 10 so far
+      my $ship = "$SNAP_CDF/CdfGlobal/IPCC_v1_20_04_2009_emep/EmisIPCC_$gridmap{$poll}_ships_$iyr_trend.nc";
+      $ship = "$SNAP_CDF/CdfGlobal/IPCC_v1_20_04_2009_emep/EmisIPCC_$gridmap{$poll}_ships_2000.nc"; #TESTING with 2000
+      $ifile{$ship} = "GlobalShipEmis_$poll.nc" if -e $ship ;
+      #die "SNAP TEST WILL NOT WORK FOR $ship THIS YEAR$iyr_trend  \n" unless -f $ship; #Only 1990, 1990, steps of 10 so far
     }
 
     # copy pm25 if needed, avoid having 20 different PM25 time-series
 
-      if ( -f "$timeseries/MonthlyFac.$poll" ) {
-         print "FINDS??? Daily Fac pm25 fill in for $poll\n";
-         system("wc $timeseries/MonthlyFac.$poll");
-         $ifile{"$timeseries/MonthlyFac.$poll"} = "MonthlyFac.$poll";
-         $ifile{"$timeseries/DailyFac.$poll"} = "DailyFac.$poll";
-      } else { # Assume same as PM25, works e.g for ocffl, etc.
-         print "Monthly Daily Fac pm25 fill in for $poll\n";
-         my $TMPWDIR = "$WORKDIR/$testv.tmpdir";
-         mkdir($TMPWDIR) unless -d $TMPWDIR;
-         cp ("$timeseries/MonthlyFac.pm25", "$TMPWDIR/MonthlyFac.$poll");
-         cp ("$timeseries/DailyFac.pm25",   "$TMPWDIR/DailyFac.$poll");
-         $ifile{"$TMPWDIR/MonthlyFac.$poll"} = "MonthlyFac.$poll";
-         $ifile{"$TMPWDIR/DailyFac.$poll"} = "DailyFac.$poll";
-
-      }
-
+    if ( -f "$timeseries/MonthlyFac.$poll" ) {
+      print "FINDS??? Daily Fac pm25 fill in for $poll\n";
+      system("wc $timeseries/MonthlyFac.$poll");
+      $ifile{"$timeseries/MonthlyFac.$poll"} = "MonthlyFac.$poll";
+      $ifile{"$timeseries/DailyFac.$poll"} = "DailyFac.$poll";
+    } else { # Assume same as PM25, works e.g for ocffl, etc.
+      print "Monthly Daily Fac pm25 fill in for $poll\n";
+      my $TMPWDIR = "$WORKDIR/$testv.tmpdir";
+      mkdir($TMPWDIR) unless -d $TMPWDIR;
+      cp ("$timeseries/MonthlyFac.pm25", "$TMPWDIR/MonthlyFac.$poll");
+      cp ("$timeseries/DailyFac.pm25",   "$TMPWDIR/DailyFac.$poll");
+      $ifile{"$TMPWDIR/MonthlyFac.$poll"} = "MonthlyFac.$poll";
+      $ifile{"$TMPWDIR/DailyFac.$poll"} = "DailyFac.$poll";
+    }
     $ifile{"$SplitDir/emissplit.defaults.$poll"} = "emissplit.defaults.$poll";
     # specials aren't essential, but if available we use them
     # Set $Specials flag for special cases, e.g. TSAP
@@ -805,14 +766,12 @@ print "TESTING PM $poll $dir\n";
         $ifile{"$SoilDir/BC_DUST/2000/$bc.$mm"} =  "$bc.$mm";
       }
     } # dust
-    if ( $GRID eq "GLOBAL" && $MONTHLY_EMIS ) {
+    if($GRID eq "GLOBAL" && $MONTHLY_EMIS) {
       $mm = sprintf "%2.2d", $mmm;
       foreach my $t ( qw (nox voc co nh3 pm25 pmco) ) {
         $ifile{"$emisdir/grid$gridmap{$t}.$mm"} =  "grid$t.$mm";
       }
-      foreach my $t ( qw (so2) ) {
-        $ifile{"$emisdir/gridSO2.$mm"} =  "gridsox.$mm";
-      }
+      $ifile{"$emisdir/gridSO2.$mm"} =  "gridsox.$mm";
     }
   }
 
@@ -821,11 +780,11 @@ print "TESTING PM $poll $dir\n";
 #    $ifile{"$TNOemisDir/femis.dat"} =  "femis.dat";
 #    $ifile{"$DATA_LOCAL/emissions/femis.dat"} =  "femis.dat" if $GRID eq "HIRHAM" ;
 
-   if ($ProjDataDir =~ /eclaire/ ) { # As example
+  if ($ProjDataDir =~ /eclaire/ ) { # As example
     $ifile{"$ProjDataDir/femis.ecl2005to$iyr_trend"} =  "femis.dat"; 
-   } else {
+  } else {
     $ifile{"$ChemDir/femis.defaults"} =  "femis.dat";  # created now by GenChem
-   }
+  }
 
 # my $old="$DATA_LOCAL/Boundary_and_Initial_Conditions.nc";
 # my $new="Boundary_and_Initial_Conditions.nc";
@@ -833,8 +792,7 @@ print "TESTING PM $poll $dir\n";
 #EUCAARI, but all?
 # Skip:  $ifile{"$DATA_LOCAL/Boundary_and_Initial_Conditions.nc"} =
 #                     "Boundary_and_Initial_Conditions.nc" unless ($GRID =~ /MACC/);
-  $ifile{"$DataDir/GLOBAL_O3.nc"} =
-                  "GLOBAL_O3.nc";
+  $ifile{"$DataDir/GLOBAL_O3.nc"} = "GLOBAL_O3.nc";
   $ifile{"$DataDir/amilt42-nox.dat"} = "ancatmil.dat";#RENAME TO AIRCARAFT?!
   $ifile{"$DataDir/GLOBAL_ForestFireEmis.nc"} =                     # GFED emissions
     "GFED_ForestFireEmis.nc";     #if ($year >= 2001 and $year <= 2007);
@@ -849,7 +807,6 @@ print "TESTING PM $poll $dir\n";
 #netcdf RoadDust inputs:
   $ifile{"$DataDir/RoadMap.nc"} = "RoadMap.nc";
   $ifile{"$DataDir/AVG_SMI_2005_2010.nc"} = "AVG_SMI_2005_2010.nc";
-
 
 #TEMPORARY SETUP
 #  my $tmpndep = "/home/$DAVE/Work/RESULTS/MAPS/AnnualSums/AnnualNdep";
@@ -885,35 +842,30 @@ print "TESTING PM $poll $dir\n";
   #$ifile{"$MyDataDir/sitesCPM_ds.dat"} = "sites.dat";
 
 # DEGREE DAYS (Tbase set above, either 18 or 20):
-#
- my $HDD = "$MetDir/HDD${Tbase}-${GRID}-$year.nc";
- print "Looking for DegreeDayFac: $HDD \n";
- my $skipHDD = 0;
- $skipHDD = 1 if $CWF ;
- $skipHDD = 1 if $GRID eq "RCA" ;
- $skipHDD = 1 if $GRID eq "GLOBAL" ;
- unless ( $skipHDD ) {
-   system("ls -lh --time-style=long-iso $HDD");
-   die "NO HDD files " unless -f $HDD;   # Can comment out if USE_DEGREEDAYS
-                                      # set false in ModelConstants_ml
-   $ifile{"$HDD"} = "DegreeDayFactors.nc" if -f $HDD ;
- }
+  unless ($CWF or ($GRID eq "RCA") or ($GRID eq "GLOBAL")) {
+    my $HDD = "$MetDir/HDD${Tbase}-${GRID}-$year.nc";
+    print "Looking for DegreeDayFac: $HDD \n";
+    system("ls -lh --time-style=long-iso $HDD");
+    die "NO HDD files " unless -f $HDD;   # Can comment out if USE_DEGREEDAYS
+                                          # set false in ModelConstants_ml
+    $ifile{"$HDD"} = "DegreeDayFactors.nc" if -f $HDD ;
+  }
 
-  $ifile{"$DataDir/GLOBAL_LAInBVOC.nc"} = "GLOBAL_LAInBVOC.nc";
-#New EURO BVOC
+  $ifile{"$DataDir/GLOBAL_LAInBVOC.nc"} = "GLOBAL_LAInBVOC.nc"; 
+  #New EURO BVOC
   $ifile{"$DataDir/LandInputs_Mar2011/EMEP_EuroBVOC.nc"} = "EMEP_EuroBVOC.nc";
 
 # Seasonal stuff  ----    Can't we improve this? e.g. every month?
-  my %seasons = ( "jan" => "01", "apr" => "02", "jul" => "03" , "oct"=> "04");
-  foreach my $s ( keys(%seasons) ) {
-    $ifile{"$DataDir/a${s}t42-nox.dat"} = "ancat$seasons{$s}.dat";
-    $ifile{"$DataDir/jclear.$s"} = "jclear$seasons{$s}.dat";
-    $ifile{"$DataDir/jcl1.$s"} = "jcl1km$seasons{$s}.dat";
-    $ifile{"$DataDir/jcl3.$s"} = "jcl3km$seasons{$s}.dat";
+  my %seasons = ("jan"=>"01","apr"=>"02","jul"=>"03","oct"=>"04");
+  foreach my $s (keys %seasons) {
+    $ifile{"$DataDir/a${s}t42-nox.dat"}= "ancat$seasons{$s}.dat";
+    $ifile{"$DataDir/jclear.$s"}      = "jclear$seasons{$s}.dat";
+    $ifile{"$DataDir/jcl1.$s"}        = "jcl1km$seasons{$s}.dat";
+    $ifile{"$DataDir/jcl3.$s"}        = "jcl3km$seasons{$s}.dat";
   }
 
  #EnsClim RCA, and should be default:
-  if ( $GRID eq "RCA" ) {
+  if ($GRID eq "RCA") {
     $ifile{"$DataDir/VolcanoesLL_2010.dat"} = "VolcanoesLL.dat";
   } else {
     $ifile{"$DataDir/VolcanoesLL.dat"} = "VolcanoesLL.dat";
@@ -947,58 +899,48 @@ print "TESTING PM $poll $dir\n";
 # For Pollen
   if($PollenDir) {
     $ifile{"$PollenDir/pollen_data.nc"} = "pollen_data.nc";
-    if($CWF){
-      $cwfpl=date2str($CWFDATE[0],$CWFPL);
-      mylink("Linking:",$cwfpl,"POLLEN_IN.nc") if(-e $cwfpl);
-    }
+    $cwfpl=date2str($CWFDATE[0],$CWFPL) if($CWF);
+    $ifile{"$cwfpl"} = "POLLEN_IN.nc"   if(-e $cwfpl);
   }
 
 # For windblown dust
-   if ( $SoilDir ) {
+  if($SoilDir) {
     $ifile{"$SoilDir/clay_isric_percent_ext.dat"} = "clay_frac.dat";
     $ifile{"$SoilDir/sand_isric_percent_ext.dat"} = "sand_frac.dat";
-   }
+  }
 
 # TEST!!! Road dust NOTE! The road dust code is NOT thoroughly tested yet!
 # NOTE ALSO THAT the Climate factors in the file below are just rough estimates based on the TNO soil water data, to be updated with something based on EMEP soil water!
-  if ( ($GRID eq "EECCA") and ($RoadDir) ) {
-      $ifile{"$RoadDir/RoadDust_HIGHWAYplus_emis_potential.txt"} = "HIGHWAYplus";
-      $ifile{"$RoadDir/RoadDust_NonHighway_emis_potential.txt"} = "NONHIGHWAY";
-      $ifile{"$RoadDir/RoughTestClimateFactorSoilWater.txt"} = "ROADDUST_CLIMATE_FAC";
-  }elsif( $GRID =~ /TNO/ ){
-      $ifile{"$DATA_LOCAL/nonHIGHWAYs_RoadDust_potentials.txt"} = "NONHIGHWAY";
-      $ifile{"$DATA_LOCAL/HIGHWAYplus_RoadDust_potentials.txt"} = "HIGHWAYplus";
-      $ifile{"$DATA_LOCAL/ClimateFactors_SMI.txt"} = "ROADDUST_CLIMATE_FAC";
+  if (($GRID eq "EECCA")and($RoadDir)) {
+    $ifile{"$RoadDir/RoadDust_HIGHWAYplus_emis_potential.txt"} = "HIGHWAYplus";
+    $ifile{"$RoadDir/RoadDust_NonHighway_emis_potential.txt"} = "NONHIGHWAY";
+    $ifile{"$RoadDir/RoughTestClimateFactorSoilWater.txt"} = "ROADDUST_CLIMATE_FAC";
+  }elsif($GRID =~ /TNO/){
+    $ifile{"$DATA_LOCAL/nonHIGHWAYs_RoadDust_potentials.txt"} = "NONHIGHWAY";
+    $ifile{"$DATA_LOCAL/HIGHWAYplus_RoadDust_potentials.txt"} = "HIGHWAYplus";
+    $ifile{"$DATA_LOCAL/ClimateFactors_SMI.txt"} = "ROADDUST_CLIMATE_FAC";
   }
 # IFZ-MOZ BCs levels description (in cdo zaxisdes/eta format)
   $ifile{"$DataDir/$GRID/Boundary_conditions/mozart_eta.zaxis"} = "EMEP_IN_BC_eta.zaxis"
     if ( $CWF and -e $cwfbc and $cwfbc =~ m/IFS-MOZART/ );
 
-  foreach my $old ( sort keys %ifile ) {  # CHECK and LINK
-    if ( -r $old ) {
-      my $new =  $ifile{$old};
-      mylink( "Inputs: ", $old,$new ) ;
+  foreach my $f (sort keys %ifile) {  # CHECK and LINK
+    if (-r $f) {
+      mylink("Inputs: ",$f,$ifile{$f}) ;
     } else {
-      print "Missing Input $old !!!\n";
-      die "ERROR: Missing OLD $old (or possibly wrong Chem$Chem\n" unless $old =~ /special/;
+      print "Missing Input $f !!!\n";
+      die "ERROR: Missing OLD $f (or possibly wrong Chem$Chem\n" 
+        unless $f =~ /special/;
     }
   }
 
-  if ($SR) {
-    EMEP::Sr::generate_updated_femis(@$scenflag);
-  }
-
+  EMEP::Sr::generate_updated_femis(@$scenflag) if ($SR);
 #=================== INPUT FILES =========================================
-
-
 # FIX later - was the only emission control thingy....
   my @exclus  = (9 ); #  NBOUND
-
-
 #------------      Run model ------------------------------------------
 #------------      Run model ------------------------------------------
 #------------      Run model ------------------------------------------
-
   print "\n";
 
 # Link executable also, since gridur is funny about these
@@ -1018,6 +960,7 @@ print "TESTING PM $poll $dir\n";
   close(RMF);
 
   my ($startdate,$enddate)=("$year-$mm1-$dd1","$year-$mm2-$dd2");
+     $enddate=date2str($startdate." 1 day ago","%F") unless $dd2;
      ($startdate,$enddate)=("$CWFDATE[1]","$CWFDATE[2]") if $CWF;
 # check if first/last met file exists
   foreach my $f ("$startdate","$enddate") {
@@ -1026,21 +969,17 @@ print "TESTING PM $poll $dir\n";
   }
 
 # namelist with input parameters (to be read by Unimod.f90 and other modules)
+  my $nml="";
   if(%BENCHMARK){
     # read nml template file
-    my $nml=EMEP::Sr::slurp("$ProgDir/config_BM-$GRID.nml");
-    $nml =~ s/(\!.*|\s+$)//g;  # remove comments, tailing spaces
-    $nml =~ s/\s*\n+/\n/g;     # & empty lines
+    $nml=EMEP::Sr::slurp("$ProgDir/config_BM-$GRID.nml");
     # fill in variables on the template file with corresponding $BENCHMARK{key}
-    $BENCHMARK{'runlabel1'}="$runlabel1";
-    $BENCHMARK{'runlabel2'}="$runlabel2";
-    $BENCHMARK{'METformat'}="$METformat";
-    foreach my $k (keys(%BENCHMARK)) { $nml=~s:\$$k:$BENCHMARK{$k}:g; }
-    open(TMP,">config_emep.nml");
-    print TMP "$nml";
-    close(TMP);
+    my %h=(%BENCHMARK,'runlabel1'=>"$runlabel1",'runlabel2'=>"$runlabel2",
+                      'METformat'=>"$METformat");
+    # fill in variables on the template file with corresponding $hash{key}
+    foreach my $k (keys(%h)) { $nml=~s:\$$k:$h{$k}:g; }
   } else {
-    my $nml="&INPUT_PARA\n"
+    $nml="&INPUT_PARA\n"
         ."  iyr_trend = $iyr_trend,\n"
         ."  runlabel1 = '$runlabel1',\n"
         ."  runlabel2 = '$runlabel2',\n"
@@ -1050,15 +989,19 @@ print "TESTING PM $poll $dir\n";
                          .date2str($CWFDUMP[1],"%Y,%m,%d,000000,\n"):"")
         ."  meteo     = '$METformat',\n"
         ."&end\n";
-    open(TMP,">config_emep.nml");
-    print TMP "$nml";
-    close(TMP);
     # NML namelist options.
-    foreach my $nml ("config_$exp_name.nml","config_Outputs_$outputs.nml") {
-      die "No CONFIG $nml" unless -f "$ProgDir/$nml";
-      system("cat $ProgDir/$nml >> config_emep.nml");
+    foreach my $f ("config_$exp_name.nml","config_Outputs_$outputs.nml") {
+      $nml.=EMEP::Sr::slurp("$ProgDir/$f");
     }
   }
+  $nml =~ s/(\s*\!.*|\s+$)//g;  # remove comments, tailing spaces
+  $nml =~ s/\s*\n+/\n/g;        # & empty lines
+  # list of linked files in nml format for compatibility with future nml-only versions
+  $nml.="\n!". "-"x22 ." Linked files ". "-"x22 ."\n";
+  foreach my $k (sort keys %ifile) { $nml.=sprintf "!  %-22s = '%s',\n",$ifile{$k},$k; }
+  open(TMP,">config_emep.nml");
+  print TMP "$nml";
+  close(TMP);
 
   foreach my $exclu ( @exclus) {
     print "starting $PROGRAM with\n".
@@ -1089,10 +1032,11 @@ print "TESTING PM $poll $dir\n";
   }
 
 # Special CWF input files
-  my $CWFINPUT=$CWF?"\n".
-    "  IC: ".(-e $cwfic?$cwfic:"Not found")."\n".
-    "  BC: ".(-e $cwfbc?$cwfbc:"Not found")."\n".
-    "  PL: ".(-e $cwfpl?$cwfpl:"Not found"):"";
+  my $CWFINPUT="CWF? $CWF";
+     $CWFINPUT.="\n".
+     "  IC: ".(-e $cwfic?$cwfic:"Not found")."\n".
+     "  BC: ".(-e $cwfbc?$cwfbc:"Not found")."\n".
+     "  PL: ".(-e $cwfpl?$cwfpl:"Not found") if $CWF;
 
 #move RunLog
   rename "RunLog.out",  "${runlabel1}_RunLog"
@@ -1110,7 +1054,7 @@ Version: $testv
 Chemical scheme: $Chem
 @packages
 SR?  $SR
-CWF? $CWF $CWFINPUT
+$CWFINPUT
 iyr_trend: $iyr_trend
 ------------------------------
 femis: femis.$scenario
@@ -1211,7 +1155,7 @@ sub mylink {
   # links files from the original olcation (old) to
   # the new location (new) - generally the working directory.
   # Keeps track of all such linked files in list_of_files.
-  my ($text, $old,$new) = ($_[0], $_[1], $_[2]);
+  my ($text,$old,$new) = ($_[0],$_[1],$_[2]);
   symlink $old,$new || die "symlink $old $new failed : $!";
   print "$text $old => $new \n";
   push(@list_of_files , $new);    # For later deletion
@@ -1268,37 +1212,22 @@ INIT {
 # Define all countries and nums here: ##
 ########################################
 %country_nums = (
-  AL =>   1,  AT =>   2,  BE =>   3,  BG =>   4, FCS =>   5,
-  DK =>   6,  FI =>   7,  FR =>   8,
-  GR =>  11,  HU =>  12,  IS =>  13,  IE =>  14,  IT =>  15,
-  LU =>  16,  NL =>  17,  NO =>  18,  PL =>  19,  PT =>  20,
-  RO =>  21,  ES =>  22,  SE =>  23,  CH =>  24,  TR =>  25,
- FSU =>  26,  GB =>  27, REM =>  29, BAS =>  30,
- NOS =>  31, ATL =>  32, MED =>  33, BLS =>  34, NAT =>  35,
- RUO =>  36, RUP =>  37, RUA =>  38,  BY =>  39,  UA =>  40,
-  MD =>  41, RUR =>  42,  EE =>  43,  LV =>  44,  LT =>  45,
-  CZ =>  46,  SK =>  47,  SI =>  48,  HR =>  49,  BA =>  50, CS =>  51,
-  RS => 72,   ME =>  73,  MK =>  52,  KZ =>  53,  GE =>  54,  CY =>  55,
-  AM =>  56,  MT =>  57, ASI =>  58,  LI =>  59,  DE =>  60, RU =>  61,
-  MC =>  62, NOA =>  63,  EU =>  64,  US =>  65,
-  CA =>  66, BIC =>  67,  KG =>  68,  AZ =>  69,
-  RUX =>  71,  ATX =>  70,
- RFE => 74, KZE => 75, UZ => 76, TM  => 77, UZE => 78,
- TME => 79, CAS => 80, TJ => 81, ARL => 82, ARE => 83,
- ASM => 84, ASE => 85, AOE => 86,
- RFX => 87, ASX => 88, PAX => 89, AOX => 90,
- NAX => 91,
- KZT => 92, RUE => 93, UZT => 94, TMT => 95, AST => 96,
- BA2 => 302, BA3 => 303, BA4 => 304, BA5 => 305, BA6 => 306, # Baltic sep.
- BA7 => 307, BA8 => 308, BA9 => 309,
- NS2 => 312, NS3 => 313, NS4 => 314, NS5 => 315, NS6 => 316, # N. Sea sep.
- NS7 => 317, NS8 => 318, NS9 => 319,
- AT2 => 322, AT3 => 323, AT4 => 324, AT5 => 325, AT6 => 326, # Atlant. sep.
- AT7 => 327, AT8 => 328, AT9 => 329,
- ME2 => 332, ME3 => 333, ME4 => 334, ME5 => 335, ME6 => 336, # Medit. sep.
- ME7 => 337, ME8 => 338, ME9 => 339,
- BL2 => 342, BL3 => 343, BL4 => 344, BL5 => 345, BL6 => 346, # Bl. Sea sep.
- BL7 => 347, BL8 => 348, BL9 => 349, ALL => 0
+  AL =>  1,AT =>  2,BE =>  3,BG =>  4,FCS=>  5,DK =>  6,FI =>  7,FR =>  8,
+  GR => 11,HU => 12,IS => 13,IE => 14,IT => 15,LU => 16,NL => 17,NO => 18,PL => 19,PT => 20,
+  RO => 21,ES => 22,SE => 23,CH => 24,TR => 25,FSU=> 26,GB => 27,         REM=> 29,BAS=> 30,
+  NOS=> 31,ATL=> 32,MED=> 33,BLS=> 34,NAT=> 35,RUO=> 36,RUP=> 37,RUA=> 38,BY => 39,UA => 40,
+  MD => 41,RUR=> 42,EE => 43,LV => 44,LT => 45,CZ => 46,SK => 47,SI => 48,HR => 49,BA => 50,
+  CS => 51,MK => 52,KZ => 53,GE => 54,CY => 55,AM => 56,MT => 57,ASI=> 58,LI => 59,DE => 60,
+  RU => 61,MC => 62,NOA=> 63,EU => 64,US => 65,CA => 66,BIC=> 67,KG => 68,AZ => 69,ATX=> 70,
+  RUX=> 71,RS => 72,ME => 73,RFE=> 74,KZE=> 75,UZ => 76,TM => 77,UZE=> 78,TME=> 79,CAS=> 80,
+  TJ => 81,ARL=> 82,ARE=> 83,ASM=> 84,ASE=> 85,AOE=> 86,RFX=> 87,ASX=> 88,PAX=> 89,AOX=> 90,
+  NAX=> 91,KZT=> 92,RUE=> 93,UZT=> 94,TMT=> 95,AST=> 96,
+  BA2=>302,BA3=>303,BA4=>304,BA5=>305,BA6=>306,BA7=>307,BA8=>308,BA9=>309, # Baltic sep.  
+  NS2=>312,NS3=>313,NS4=>314,NS5=>315,NS6=>316,NS7=>317,NS8=>318,NS9=>319, # N. Sea sep.
+  AT2=>322,AT3=>323,AT4=>324,AT5=>325,AT6=>326,AT7=>327,AT8=>328,AT9=>329, # Atlant.sep.
+  ME2=>332,ME3=>333,ME4=>334,ME5=>335,ME6=>336,ME7=>337,ME8=>338,ME9=>339, # Medit. sep.
+  BL2=>342,BL3=>343,BL4=>344,BL5=>345,BL6=>346,BL7=>347,BL8=>348,BL9=>349, # Bl.Sea sep.
+  ALL=>  0
 );
 
 # EU countries:
@@ -1340,19 +1269,17 @@ foreach my $task ('PBS_ARRAY_INDEX','PBS_ARRAYID','TASK_ID') {
 ################################
 }
 
-
 sub initRuns {
   my @runs;
   foreach my $cc (@countries) {
-      foreach my $poll (@polls) {
-	  push @runs, [$cc, $poll, $redn];
-      }
-      # run BASE only once (for exactly one cc)!!!
-      @polls = grep {'BASE' ne $_} @polls;
+    foreach my $poll (@polls) {
+      push @runs, [$cc, $poll, $redn];
+    }
+    # run BASE only once (for exactly one cc)!!!
+    @polls = grep {'BASE' ne $_} @polls;
   }
   return @runs;
 }
-
 
 sub getScenario {
   my ($scenflag) = @_;
@@ -1365,23 +1292,24 @@ sub getScenario {
 }
 
 sub generate_updated_femis {
-  my ($cc, $pollut, $redn) = @_;
+  my ($cc,$pollut,$redn) = @_;
   # Initialise to 1.0:
-  my( $sox,$nox,$voc,$nh3,$testp,$co,$pm25,$pmco ) = ("1.0") x 8 ;
-  if( $pollut eq "AV" ) { $voc = $nh3 = $redn  };
-  if( $pollut eq "A" ) { $nh3 = $redn  };
-  if( $pollut eq "V" ) { $voc = $redn  };
-  if( $pollut eq "S" ) { $sox = $redn  };
-  if( $pollut eq "N" ) { $nox = $redn  };
-  if( $pollut eq "P" ) { $pm25 = $pmco = $redn  };
-  if( $pollut eq "NP" ) { $nox = $pm25 = $pmco = $redn  };
-  if( $pollut eq "SNP" ) { $sox = $nox = $pm25 = $pmco =  $redn  };
-  if( $pollut eq "AN" ) { $nh3 = $nox =  $redn  };
-  if( $pollut eq "SNAV" ) { $sox = $nox = $nh3 = $voc =  $redn  };
- #if( $pollut eq BASE ) then no change!
+  my($sox,$nox,$voc,$nh3,$testp,$co,$pm25,$pmco) = ("1.0")x8 ;
+  given($pollut){
+    when("AV"  ){ $voc = $nh3 = $redn };
+    when("A"   ){ $nh3 = $redn };
+    when("V"   ){ $voc = $redn };
+    when("S"   ){ $sox = $redn };
+    when("N"   ){ $nox = $redn };
+    when("P"   ){ $pm25 = $pmco = $redn };
+    when("NP"  ){ $nox = $pm25 = $pmco = $redn };
+    when("SNP" ){ $sox = $nox = $pm25 = $pmco =  $redn };
+    when("AN"  ){ $nh3 = $nox = $redn };
+    when("SNAV"){ $sox = $nox = $nh3 = $voc = $redn };
+   #when("BASE") then no change!
+  }
 
   my $femisdat = slurp("$DataDir/femis.dat");
-
   die "ERROR!! No country Num for $cc!\n" unless defined(my $ccnum = $country_nums{$cc});
 
   # using 0 here as long as emissions are guaranteed to contain either
@@ -1389,55 +1317,26 @@ sub generate_updated_femis {
   my $ss = 0; # 100 = antropogenic sectors (1..10)
               # 0 = all sectors
   $femisdat .= "$ccnum $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\n";
-  if ( $cc eq "DE" ) {  # Add splitted countries
-    foreach my $cx (9, 10) {
-      $femisdat .= "$cx $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\n";
-    }
+  my @cx_add=();
+  given($cc){ # Add split countries
+    when("DE" ){ push(@cx_add,( 9, 10)); }
+    when("KZT"){ push(@cx_add,(53, 75)); }
+    when("TMT"){ push(@cx_add,(77, 79)); }
+    when("UZT"){ push(@cx_add,(76, 78)); }
+    when("RU" ){ push(@cx_add,(36..38, 42)); }
+    when("RUE"){ push(@cx_add,(36, 37, 38, 42, 71, 74)); } # Add RU and RFE
+    when("ASI"){ push(@cx_add,(76, 77, 80, 82, 84)); }     # Add splitted ASI
+    when("AST"){ push(@cx_add,(80, 82, 83, 84, 85)); }     # Add ASI and ASE
+    when("ATL"){ push(@cx_add,(70)); }                     # Add ATL outside EMEP
+              # Add split sea areas
+    when("BAS"){ push(@cx_add,(302..309)); }
+    when("NOS"){ push(@cx_add,(312..319)); }
+    when("ATL"){ push(@cx_add,(322..329)); }
+    when("MED"){ push(@cx_add,(332..339)); }
+    when("BLS"){ push(@cx_add,(342..349)); }
   }
-  if ( $cc eq "KZT" ) {  # Add splitted countries
-    foreach my $cx (53, 75) {
-      $femisdat .= "$cx $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\n";
-    }
-  }
-  if ( $cc eq "TMT" ) {  # Add splitted countries
-    foreach my $cx (77, 79) {
-      $femisdat .= "$cx $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\n";
-    }
-  }
-  if ( $cc eq "UZT" ) {  # Add splitted countries
-    foreach my $cx (76, 78) {
-      $femisdat .= "$cx $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\n";
-    }
-  }
-  if ( $cc eq "RU" ) { # Add splitted and external RU
-    foreach my $cx (36..38, 42) {
-      $femisdat .= "$cx $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\n";
-    }
-  }
-  if ( $cc eq "RUE" ) { # Add RU and RFE
-    foreach my $cx (36, 37, 38, 42, 71, 74) {
-      $femisdat .= "$cx $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\n";
-    }
-  }
-  if ( $cc eq "ASI" ) { # Add splitted ASI
-    foreach my $cx (76, 77, 80, 82, 84) {
-      $femisdat .= "$cx $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\n";
-    }
-  }
-  if ( $cc eq "AST" ) { # Add ASI and ASE
-    foreach my $cx (80, 82, 83, 84, 85) {
-      $femisdat .= "$cx $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\n";
-    }
-  }
-  if ( $cc eq "ATL" ) {  # Add ATL outside EMEP
-    foreach my $cx (70) {
-      $femisdat .= "$cx $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\n";
-    }
-  }
-  if ( 30 <= $ccnum and $ccnum <= 34) { # add splitted sea areas
-    for (my $cx = 10 * $ccnum + 2; $cx <= 10 * $ccnum + 9; $cx++) {
-      $femisdat .= "$cx $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\n";
-    }
+  foreach my $cx (@cx_add) {
+    $femisdat .= "$cx $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\n";
   }
   unlink "femis.dat" if -l "femis.dat";
   open FEMIS, ">femis.dat" or die "Cannot write femis.dat: $!\n";

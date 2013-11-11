@@ -242,7 +242,7 @@ function Qm_grp(gtot,rh,debug) result(Qm_arr)
   Qm_arr(:)=0
   do n=1,size(gtot)
     i=find_index(gtot(n),ExtMap(:)%itot,debug=my_debug)
-    if(1>0)Qm_arr(n)=Qm_aux(i)
+    if(i>0)Qm_arr(n)=Qm_aux(i)
   enddo
 endfunction Qm_grp
 ! <---------------------------------------------------------->

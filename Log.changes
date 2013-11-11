@@ -154,6 +154,34 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+11 November 2013  Alvaro 2667
+
+run.pl:
+- Simplify script/options for
+  - $MetDir in stallo.
+  - $emisdir/$pm_emisdir using given/when cases for $GRID/$year.
+  - $HDD skip cases.
+- Restore '1-step-run if($dd2=0)' functionality lost on 2646.
+- Cleaner config_emep.nml
+  - Do not copy comments config_*.nml templates
+  - Add a list of linked files in namelist style as a comment.
+    This would help to introduce more input files into config_*.nml,
+    and to reproduce model runs with future versions of the model.
+- Reflow/rewrite partial of the SR code
+  - $country_nums definition.
+  - Reduction assignments using given/when cases for $pollut.
+  - Add split countries/sea areas to $femisdat using given/when cases for $cc.
+
+config_BM-EECCA.nml
+  Commented line for a 1 week "Debug-Benchmark" run between Jan 1st and 8th.
+
+config_EMEPSTD.nml
+  Minor formatting changes
+
+AOD_PM_ml
+  Small bug fix on Qm_grp function (introduced on 2665)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 8 November 2013  Dave   2666
 
 More ESX:
@@ -236,7 +264,6 @@ ZD_ESX/CM_ChemSpecs,CM_ChemRates,D_Misc/GenChem.pl:
   AOD relevant changes ported to ESX model.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
->>>>>>> .r2665
 8 November 2013  Dave   2661-2664
 
 ESX-related changes (also main code, but no effect)
