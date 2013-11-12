@@ -60,6 +60,7 @@ use ModelConstants_ml,only: KMAX_MID, nmax, nstep &
                            ,USE_POLLEN, USE_EtaCOORDINATES
 use Nest_ml,          only: readxn, wrtxn
 use Par_ml,           only: me, MAXLIMAX, MAXLJMAX
+use Pollen_ml,        only: pollen_dump,pollen_read
 use SoilWater_ml,     only: Set_SoilWater
 use TimeDate_ml,      only: date,daynumber,day_of_year, add_secs, &
                             current_date, timestamp,  &
@@ -121,6 +122,7 @@ contains
 
         call Code_timer(tim_before)
         call readxn(current_date) !Read xn_adv from earlier runs
+        if(FORECAST.and.USE_POLLEN) call pollen_read ()
         call Add_2timing(19,tim_after,tim_before,"nest: Read")
         if(ANALYSIS.and.numt==2.and.nstep==1)then
           call main_3dvar()   ! 3D-VAR Analysis for "Zero hour"
@@ -251,6 +253,7 @@ contains
             call Add_2timing(46,tim_after,tim_before,'3DVar: Total.')
           endif
           call wrtxn(current_date,.false.) !Write xn_adv for future nesting
+          if(FORECAST.and.USE_POLLEN) call pollen_dump()
           call Add_2timing(18,tim_after,tim_before,"nest: Write")
 
           End_of_Day = (current_date%seconds == 0 .and. &

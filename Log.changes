@@ -154,6 +154,39 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+12 November 2013  Alvaro 2670
+
+Pollen modules for "out of the box" compilation.
+
+Makefile,Makefile.SRCS,ZD_Pollen/My_Pollen_ml,Pollen_ml,Pollen_const_ml
+- Rename FUTURE_Pollen module files and place them on ZD_Pollen directory.
+- Use "real" pollen modules (Pollen_ml,Pollen_const_ml) form MACC compilation
+  target (`make MACC`). For all other compilation targets (e.g. `make EMEP`)
+  use "empty" pollen module (My_Pollen_ml).
+
+Runchem_ml,PhyChem_ml
+- Call Pollen_ml functions
+
+Output_hourly
+- Reflow hr_out%type cases for surface/3d hourly output types.
+- Hourly output types for Pollen_ml variables.
+- CheckStop after CloseNetCDF, so the offending variable is written out
+  and can be examined for debugging.
+
+ZD_OZONE/My_Outputs_ml.f90
+- Hourly AOD output on TRENDS output mode.
+- Hourly pollen output on FORECAST output mode, when USE_POLLEN/DEBUG_POLLEN.
+- Hourly RN222 on FORECAST output mode, when variable is found.
+- Do not CheckStop on FORECAST mode when hourly output fails consistency check.
+  Instead, reduce number of hourly output variables and continue.
+
+run.pl:
+  Fix given/when cases for $year ranges. Bug introduced on 2667.
+  
+utils/compinfos.py 
+  Add scipt for  comparison benchmark *.infov files
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 11 November 2013  Dave 2669
 
 ESX changes:

@@ -99,7 +99,7 @@ my @MAKE = ("gmake", "-j4", "MACHINE=snow");
 die "Must choose STALLO **or** VILJE !\n"
   unless $STALLO+$VILJE==1;
 
-my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2666"    ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA","EMEP");
+my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2670"    ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA","EMEP");
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 
@@ -367,14 +367,14 @@ my ($EMIS_INP,$emisdir,$pm_emisdir)=("$DATA_LOCAL","none","none");
 
 given($GRID){
   when("EECCA"){given($year){
-    when(2000..2009){$emisdir="$EMIS_INP/Modrun12/EMEP_trend_2000-2009/$year";}
-    when(2010)      {$emisdir="$EMIS_INP/Modrun12/2012-Trend$year-CEIP";}
-    when(2011)      {$emisdir="$EMIS_INP/Modrun13/2013-Trend$year-CEIP";}
+    when([2000..2009]){$emisdir="$EMIS_INP/Modrun12/EMEP_trend_2000-2009/$year";}
+    when([2010])      {$emisdir="$EMIS_INP/Modrun12/2012-Trend$year-CEIP";}
+    when([2011])      {$emisdir="$EMIS_INP/Modrun13/2013-Trend$year-CEIP";}
   }}
   when("EMEP"){given($year){
-    when(1990..1999){$emisdir="/global/work/$AGNES/Emission_Trends/$year";}
-    when(2000..2008){$emisdir="$EMIS_INP/Modrun11/EMEP_trend_2000-2009/$year";}
-    when(2009)      {$emisdir="$EMIS_INP/Modrun11/2011-Trend$year-CEIP";}
+    when([1990..1999]){$emisdir="/global/work/$AGNES/Emission_Trends/$year";}
+    when([2000..2008]){$emisdir="$EMIS_INP/Modrun11/EMEP_trend_2000-2009/$year";}
+    when([2009])      {$emisdir="$EMIS_INP/Modrun11/2011-Trend$year-CEIP";}
   }}
   when(/TNO/){
     $emisdir="$WORKROOT/$AGNES/emis_SRbase/INERIS_direct/$GRID"      if($STALLO);

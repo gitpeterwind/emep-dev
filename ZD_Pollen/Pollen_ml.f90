@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************!
 !*
-!*  Copyright (C) 2007-2011 met.no
+!*  Copyright (C) 2007-2013 met.no
 !*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -27,22 +27,17 @@
 !*****************************************************************************!
 module Pollen_ml
 !-----------------------------------------------------------------------!
-! Calculates the emission of birch pollen based on: a paper 
-! M. Sofiev et al. Towards numerical forecastin of long-range air transport of
-! birch pollen: theoretical considerations and a feasibility study, 2006
-! 
-! Pollen emission s based upon meteorology paparameters, and heatsum.
-! Pollen particles are assumed to have 
-! size aroundt 22 um in diameter and 800 kg/m3 in density. 
-! 
+! Birch pollen emission calculation based on
+! M. Sofiev et al. 2006, doi:10.1007/s00484-006-0027-x
 !
+! Pollen emission based upon meteorology paparameters, and heatsum.
+! Pollen particles are assumed of 22 um diameter and 800 kg/m3 density. 
 !-----------------------------------------------------------------------!
   use Pollen_const_ml
-!FEB2012  use ChemSpecs_tot_ml,     only : Pollen_b
+  use PhysicalConstants_ml, only: AVOG
   use Biogenics_ml,         only: EMIS_BioNat, EmisNat 
   use CheckStop_ml,         only: CheckStop
   use ChemChemicals_ml,     only: species
-! use EmisDef_ml,           only: QPOL,NPOL
   use Functions_ml,         only: heaviside
   use GridValues_ml ,       only: glon, glat
   use Landuse_ml,           only: LandCover
@@ -50,10 +45,8 @@ module Pollen_ml
   use MetFields_ml,         only: surface_precip, ws_10m ,rh2m,t2_nwp,&
                                   foundws10_met,foundprecip,pr,u_ref,z_bnd,z_mid
   use MicroMet_ml,          only: Wind_at_h
-  use ModelConstants_ml,    only: KMAX_MID, KMAX_BND, &
-                                  DEBUG=>DEBUG_POLLEN,nmax, nstep,&
-                                  METSTEP, MasterProc, & !, DEBUG_i,DEBUG_j
-                                  FORECAST, IOU_INST, RUNDOMAIN, &
+  use ModelConstants_ml,    only: KMAX_MID, KMAX_BND, nmax, nstep, FORECAST, &
+                                  METSTEP, MasterProc, IOU_INST, RUNDOMAIN, &
                                   dt => dt_advec, IIFULLDOM, JJFULLDOM
   use Nest_ml,              only: outdate
   use NetCDF_ml,            only: ReadField_CDF,Out_netCDF,printCDF,nc_check=>check
@@ -67,10 +60,7 @@ module Pollen_ml
 !-------------------------------------
   implicit none
   private
-
-  public:: Pollen_flux  ! subroutine
-  public:: pollen_dump
-  public:: pollen_read
+  public:: pollen_flux,pollen_dump,pollen_read
 
   !** 1) Public (saved) Variables from module:
 
@@ -93,8 +83,9 @@ module Pollen_ml
     date_last =date(-1,8,1,1,0)
 
   integer, save :: day_first=1,day_last=366
+!-------------------------------------------------------------------------!
 contains
-!<------------------------------------------------------------------------!
+!-------------------------------------------------------------------------!
 function checkdates(nday) result(ok)
   integer, intent(in) :: nday
   logical             :: ok
@@ -106,8 +97,8 @@ function checkdates(nday) result(ok)
   endif
   ok=(day_first<=nday).and.(nday<=day_last)
 endfunction checkdates
-!<------------------------------------------------------------------------!
-subroutine Pollen_flux (i,j,debug_flag) 
+!-------------------------------------------------------------------------!
+subroutine pollen_flux(i,j,debug_flag) 
   implicit none
   integer, intent(in) :: i,j    ! coordinates of column
   logical, intent(in) :: debug_flag
@@ -269,10 +260,10 @@ subroutine Pollen_flux (i,j,debug_flag)
 
   EmisNat(inat_POLL,i,j)      = rcpoll*moleccm3s_2_kgm2h*species(itot_POLL)%molwt
   rcemis (itot_POLL,KMAX_MID) = rcpoll
-endsubroutine Pollen_flux
-  
-! Subroutine for dumping heatsum and pollenrest field for forecast  
-subroutine pollen_read ()
+endsubroutine pollen_flux
+!-------------------------------------------------------------------------! 
+subroutine pollen_read()
+! Read pollen for forecast restart file: heatsum and pollenrest fields
   use netcdf
   logical, save :: first_call = .true.
   integer :: fid,did,vid
@@ -320,7 +311,9 @@ subroutine pollen_read ()
 ! call printCDF("HEAT_GLOB",heatsum,"not")
 ! call printCDF("REST_GLOB",Pollen_rest,"not") 
 endsubroutine pollen_read 
+!-------------------------------------------------------------------------!
 subroutine pollen_dump ()
+! Write pollen for forecast restart file: heatsum and pollenrest fields
   character(len=len(template_pollen_write)) :: filename
   integer     :: i0=60,j0=11,i1=107,j1=58
   type(Deriv) :: def1
@@ -357,14 +350,14 @@ subroutine pollen_dump ()
   call Out_netCDF(IOU_INST,def1,2,1,heatsum,1.0,CDFtype=4,&
         ist=i0,jst=j0,ien=i1,jen=j1,fileName_given=trim(filename)) ! heatsum
 endsubroutine pollen_dump   
-!<-------------------------------------------------------------------  
+!-------------------------------------------------------------------------!
 function heatsum_calc(t2,T_cutoff) result(ff)
 ! The temperature needs to be over the cutoff temperature
   real, intent(in) :: t2,T_cutoff
   real             :: ff
   ff = (t2-T_cutoff)*heaviside(t2-T_cutoff)
 endfunction heatsum_calc
-!<-------------------------------------------------------------------  
+!-------------------------------------------------------------------------!
 function f_wind(u,wstar) result(ff)
 ! Pollen emission increases with wind speeds up to 5 m/s (u_sat).
 ! This term cannot be higher than 1.5 (u_max).
@@ -373,7 +366,7 @@ function f_wind(u,wstar) result(ff)
   real, parameter  :: u_max=1.5,u_sat=5.0
   ff = u_max - exp(-(u+wstar)/u_sat)
 endfunction f_wind
-!<--------------------------------------------------------
+!-------------------------------------------------------------------------!
 function f_cond(x,x_min,x_max) result(ff)
 ! This function is used for both humitidy and rain, as too much 
 ! humidity and rain stops pollen release
@@ -387,7 +380,7 @@ function f_cond(x,x_min,x_max) result(ff)
     ff=(x_max-x)/(x_max-x_min)
   endif
 endfunction f_cond
-!<<------------------------------------------------------
+!-------------------------------------------------------------------------!
 function f_in(h,h_c,prob) result(ff)
 ! takes in account the uncertainity that all the trees start 
 ! to release pollen at the same time
@@ -401,7 +394,7 @@ function f_in(h,h_c,prob) result(ff)
     ff=(h-(1.0-prob)*h_c)/(2.0*prob*h_c)
   endif
 endfunction f_in
-!<<-------------------------------------------------------
+!-------------------------------------------------------------------------!
 function f_out(R,N_tot,prob) result(ff)
 ! takes in account the uncertainity that all the trees stop 
 ! releasing pollen at the same time
@@ -415,6 +408,7 @@ function f_out(R,N_tot,prob) result(ff)
     ff=1.0-(R-(1.0-prob)*N_tot)/(2.0*prob*N_tot)
   endif
 endfunction f_out
+!-------------------------------------------------------------------------!
 endmodule Pollen_ml
   
   

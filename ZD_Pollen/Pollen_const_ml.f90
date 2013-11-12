@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************!
 !*
-!*  Copyright (C) 2007-2011 met.no
+!*  Copyright (C) 2007-2013 met.no
 !*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -27,14 +27,20 @@
 !*****************************************************************************!
 module Pollen_const_ml
 !-----------------------------------------------------------------------!
-! Calculates the emission of birch pollen based on: a paper 
-! M. Sofiev et al. Towards numerical forecastin of long-range air transport of
-! birch pollen: theoretical considerations and a feasibility study, 2006
+! Birch pollen emission calculation based on
+! M. Sofiev et al. 2006, doi:10.1007/s00484-006-0027-x
+!
+! Pollen emission based upon meteorology paparameters, and heatsum.
+! Pollen particles are assumed of 22 um diameter and 800 kg/m3 density. 
 !-----------------------------------------------------------------------!
-  use PhysicalConstants_ml, only: AVOG,PI
+  use PhysicalConstants_ml, only: PI
+  use ModelConstants_ml,    only: USE_POLLEN,DEBUG=>DEBUG_POLLEN
+  use CheckStop_ml,         only: CheckStop
+  use ChemChemicals_ml,     only: species_adv
   implicit none
   public
-  real,public, parameter  :: &
+
+  real, parameter  :: &
     T_cutoff = 273.2+3.5, & ! Cut-off temperature [K]
     dH       = 50*24*3600,& ! Flowering period in degree seconds
     PREC_MIN = 0.0,       & ! Min cut-off precipitation [mm/h]
@@ -48,7 +54,18 @@ module Pollen_const_ml
     D_POLL   = 22.0,      & ! Pollen grain diameter [um]
     POLL_DENS= 800e3        ! Pollen density [g/m3]
 
-  real,public, parameter  :: &
+  real, parameter  :: &
     grain_wt = POLL_DENS*PI*(D_POLL*1e-6)**3/6.0, &! 1 grain weight [g]
     ug2grains= 1e-6/grain_wt
+
+contains
+subroutine pollen_check()
+  logical,save :: fist_call=.true.
+  if(.not.fist_call)return
+  fist_call=.false.
+  call CheckStop(USE_POLLEN.and.all(species_adv(:)%name/="POLLEN_B"),&
+    "USE_POLLEN on model compiled without pollen")
+  call CheckStop(DEBUG.and..not.USE_POLLEN,&
+    "DEBUG_POLLEN on run without USE_POLLEN")
+endsubroutine pollen_check
 endmodule Pollen_const_ml

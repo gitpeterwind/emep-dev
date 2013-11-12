@@ -45,10 +45,10 @@ use ChemGroups_ml,     only: chemgroups
 use DerivedFields_ml,  only: f_2d               ! D2D houtly output type
 use ModelConstants_ml, only: PPBINV, PPTINV, ATWAIR, atwS, atwN, MasterProc, &
                              MY_OUTPUTS, FORECAST, USE_EMERGENCY,DEBUG_EMERGENCY,&
-                             USE_AOD, USE_POLLEN,DEBUG_POLLEN
+                             USE_AOD, USE_POLLEN, DEBUG_POLLEN
 use OwnDataTypes_ml,   only: Asc2D
 use Par_ml,            only: GIMAX,GJMAX,IRUNBEG,JRUNBEG,me
-! FUTURE use Pollen_const_ml,   only: ug2grains  
+use Pollen_const_ml,   only: ug2grains,pollen_check
 use SmallUtils_ml,     only: find_index
 use TimeDate_ml,       only: date
 use Units_ml,          only: Init_Units,&
@@ -302,11 +302,13 @@ subroutine set_output_defs
     endif
     endif
   case("FORECAST")
-    nhourly_out=10
+    nhourly_out=9
+    nlevels_hourly=4
+    if(any(species_adv(:)%name=="RN222"))nhourly_out=nhourly_out+1
     if(USE_AOD     )nhourly_out=nhourly_out+1
     if(USE_POLLEN  )nhourly_out=nhourly_out+1
     if(DEBUG_POLLEN)nhourly_out=nhourly_out+2
-    nlevels_hourly = 4
+    if(USE_POLLEN.or.DEBUG_POLLEN) call pollen_check()
   case("MACC_EVA")
     nhourly_out=4
     nlevels_hourly = 1
@@ -324,6 +326,7 @@ subroutine set_output_defs
     nlevels_hourly = 1
   case("TRENDS")
     nhourly_out=2
+    if(USE_AOD     )nhourly_out=nhourly_out+1
     nlevels_hourly = 1  ! nb zero is *not* one of levels
   case default
     nhourly_out=1
@@ -416,16 +419,14 @@ subroutine set_output_defs
     endif
     endif ! if false
   case("FORECAST")
-!   ix1=IRUNBEG;ix2=IRUNBEG+GIMAX-1
-!   iy1=JRUNBEG;iy2=JRUNBEG+GJMAX-1
     levels_hourly = (/0,4,6,10/)
-    rn222=find_index("RN222"   ,species_adv(:)%name)
     pm25 =find_index("PMFINE"  ,chemgroups(:)%name) !NB There is no "PM25" group
     pm10 =find_index("PM10"    ,chemgroups(:)%name)
+    rn222=find_index("RN222"   ,species_adv(:)%name)
     poll =find_index("POLLEN_B",species_adv(:)%name)
 !**               name     type     ofmt
 !**               ispec    ix1 ix2 iy1 iy2 nk sellev? unit conv  max
-    j=10;hr_out(1:j) = (/&
+    j=9;hr_out(1:j) = (/&
       Asc2D("o3_3km"    ,"BCVugXX",IXADV_O3   ,&
             ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_O3) ,600.0*2.0),&
       Asc2D("no_3km"    ,"BCVugXX",IXADV_NO   ,&
@@ -436,8 +437,6 @@ subroutine set_output_defs
             ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_SO2),-999.9),&
       Asc2D("co_3km"    ,"BCVugXX",IXADV_CO   ,&
             ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_CO) ,-999.9),&
-      Asc2D("Rn222_3km" ,"BCVugXX",rn222,&
-            ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",to_ug_ADV(rn222)    ,-999.9),&
       Asc2D("pm25_3km"  ,"BCVugXXgroup",pm25,&
             ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",1.0                 ,-999.9),&
       Asc2D("pm10_3km"  ,"BCVugXXgroup",pm10,&
@@ -451,16 +450,21 @@ subroutine set_output_defs
       Asc2D("no2_col"   ,"COLUMN",IXADV_NO2  ,&
             ix1,ix2,iy1,iy2,1,"ug",to_ug_ADV(IXADV_NO2)             ,-999.9)/)
 !!          ix1,ix2,iy1,iy2,1,"1e15molec/cm2",to_molec_cm2*1e-15    ,-999.9)/)
+    if(rn222>0)then
+      j=j+1;hr_out(j) = &
+      Asc2D("Rn222_3km" ,"BCVugXX",rn222,&
+            ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",to_ug_ADV(rn222)    ,-999.9)
+    endif
     if(USE_AOD)then
       j=j+1;hr_out(j) = &
       Asc2D("AOD_550nm" ,"AOD"    ,00         ,&
             ix1,ix2,iy1,iy2,1," ",1.0                               ,-999.9)
     endif
- ! FUTURE   if(USE_POLLEN)then
- ! FUTURE     j=j+1;hr_out(j) = &
- ! FUTURE     Asc2D("Pollen"    ,"ADVugXX",poll, &
- ! FUTURE          ix1,ix2,iy1,iy2,1,"grains/m3",to_ug_ADV(poll)*ug2grains ,-999.9)
- ! FUTURE   endif
+    if(USE_POLLEN)then
+      j=j+1;hr_out(j) = &
+      Asc2D("Pollen"    ,"ADVugXX",poll, &
+            ix1,ix2,iy1,iy2,1,"grains/m3",to_ug_ADV(poll)*ug2grains ,-999.9)
+    endif
     if(DEBUG_POLLEN)then
       j=j+2;hr_out(j-1:j) = (/&
       Asc2D("heatsum"    ,"heatsum"    ,00,&
@@ -469,8 +473,6 @@ subroutine set_output_defs
             ix1,ix2,iy1,iy2,1,"grains/m3" ,1.0                      ,-999.9)/)
     endif
   case("MACC_EVA")
-!   ix1=IRUNBEG;ix2=IRUNBEG+GIMAX-1
-!   iy1=JRUNBEG;iy2=JRUNBEG+GJMAX-1
     levels_hourly = (/0/)
     pm25 =find_index("SURF_ug_PM25X_rh50",f_2d(:)%name)
     pm10 =find_index("SURF_ug_PM10_rh50" ,f_2d(:)%name)
@@ -478,9 +480,9 @@ subroutine set_output_defs
 !**         ix1 ix2 iy1 iy2 nk sellev? unit conv  max
     hr_out(:) = (/&
       Asc2D("O3"  ,"BCVugXX",IXADV_O3   ,&
-            ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_O3) ,600.0*2.0),&
+            ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_O3) ,-999.9),&
       Asc2D("NO2" ,"BCVugXX",IXADV_NO2  ,&
-            ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_NO2),600.0*1.91),&
+            ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_NO2),-999.9),&
       Asc2D("PM25","D2D_inst",pm25,&
             ix1,ix2,iy1,iy2,1             ,"ug",1.0                 ,-999.9),&
       Asc2D("PM10","D2D_inst",pm10,&
@@ -602,16 +604,21 @@ subroutine set_output_defs
           ix1,ix2,iy1,iy2,1,"ug/m3",1.0,-999.9) &
     /)
   case("TRENDS")
-    hr_out(:) = (/  &
+    j=2;hr_out(1:j) = (/  &
       Asc2D("o3_3m", "ADVppbv", IXADV_o3, &
                    ix1,ix2,iy1,iy2,1, "ppbv",PPBINV,600.0), &
       Asc2D("no2_col"   ,"COLUMN",IXADV_NO2  ,&
             ix1,ix2,iy1,iy2,1,"molec/cm2",to_molec_cm2,-999.9) &
 !!          ix1,ix2,iy1,iy2,1,"ug",to_ug_ADV(IXADV_NO2),-999.9) &
     /)
+    if(USE_AOD)then
+      j=j+1;hr_out(j) = &
+      Asc2D("AOD_550nm" ,"AOD",00,&
+            ix1,ix2,iy1,iy2,1," ",1.0,-999.9)
+    endif
   case default
     hr_out(:) = (/  &
-      Asc2D("o3_3m", "ADVppbv", IXADV_o3, &
+      Asc2D("o3_3m", "ADVppbv", IXADV_O3, &
                    ix1,ix2,iy1,iy2,1, "ppbv",PPBINV,600.0) &
     /)
   endselect
@@ -621,17 +628,22 @@ subroutine set_output_defs
   ! Was the D2D/Group found?     R: %spec>=0
   ! Is the variable name unique? R: find_index((i)%name,(:)%name)==i
   do i=1,nhourly_out
-    if(MasterProc) write(*,*) "TESTHH O3 ATEND", i, nlevels_hourly
+    if(MasterProc)write(*,*) "TESTHH O3 ATEND", i, nlevels_hourly
     idx = find_index(hr_out(i)%name,hr_out(:)%name)
     if((hr_out(i)%name/="none").and.(hr_out(i)%spec>=0).and.&
        (idx==i)) cycle
-    write(errmsg,"(A,4(1X,A,'=',I0),2(1X,A,':',A))")&
-      "set_output_defs: Failed consistency check",&
-      "Hourly",i, "Nhourly",NHOURLY_OUT,&
-      "HourlyIndex",idx,&
-      "Spec",hr_out(i)%spec,&
-      "Name",trim(hr_out(i)%name),"Type",trim(hr_out(i)%type)
-    call CheckStop(errmsg)
+    if(MasterProc)then
+      write(errmsg,"(A,4(1X,A,'=',I0),2(1X,A,':',A))")&
+        "set_output_defs: Failed consistency check",&
+        "Hourly",i, "Nhourly",NHOURLY_OUT,&
+        "HourlyIndex",idx,"Spec",hr_out(i)%spec,&
+        "Name",trim(hr_out(i)%name),"Type",trim(hr_out(i)%type)
+      call CheckStop(.not.FORECAST,trim(errmsg))
+      write(*,*)trim(errmsg)
+      write(*,*)"Warning: reduced ourly output"
+    endif
+    nhourly_out=i-1
+    exit
   enddo
 
   !/** Wanted dates for instantaneous values output:

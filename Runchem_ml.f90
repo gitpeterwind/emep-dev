@@ -46,7 +46,7 @@ module RunChem_ml
   use My_Timing_ml,     only: Code_timer, Add_2timing,  &
                               tim_before, tim_after
   use Ammonium_ml,      only: Ammonium
-  use AOD_PM_ml,        only: AOD_Ext    !st.. update , AOD_calc
+  use AOD_PM_ml,        only: AOD_Ext
   use Aqueous_ml,       only: Setup_Clouds, prclouds_present, WetDeposition
   use Biogenics_ml,     only: setup_bio
   use CellMet_ml,       only: Get_CellMet
@@ -67,7 +67,7 @@ module RunChem_ml
   use OrganicAerosol_ml,only: ORGANIC_AEROSOLS, OrganicAerosol, &
                               Init_OrganicAerosol, & !FEB2012
                               SOA_MODULE_FLAG   ! ="VBS" or "NotUsed"
-  ! FUTURE use Pollen_ml,        only: Pollen_flux
+  use Pollen_ml,        only: Pollen_flux
   use Par_ml,           only: lj0,lj1,li0,li1, limax, ljmax,  &
                               gi0, gj0, me,IRUNBEG, JRUNBEG  !! for testing
   use SeaSalt_ml,       only: SeaSalt_flux
@@ -139,8 +139,8 @@ subroutine runchem(numt)
       if(USE_DUST)     &
         call WindDust(i,j,debug_flag)     ! sets rcemis(DUST...)
 
-    ! FUTURE  if(USE_POLLEN) &
-    ! FUTURE      call Pollen_flux(i,j,debug_flag)
+      if(USE_POLLEN) &
+        call Pollen_flux(i,j,debug_flag)
 
       call Setup_Clouds(i,j,debug_flag)
 
@@ -214,7 +214,6 @@ subroutine runchem(numt)
 
       !// Calculate Aerosol Optical Depth
       if(USE_AOD)  &
-!st ...update        call AOD_calc(i,j,debug_flag)
         call AOD_Ext(i,j,debug_flag)
 
       !  Calculates PM water: 1. for ambient condition (3D)

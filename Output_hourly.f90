@@ -88,7 +88,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
   use OwnDataTypes_ml,  only: TXTLEN_DERIV,TXTLEN_SHORT
   use Par_ml,           only: MAXLIMAX, MAXLJMAX, GIMAX,GJMAX,        &
                               me, IRUNBEG, JRUNBEG, limax, ljmax
-! FUTURE  use Pollen_ml,        only: heatsum, pollen_left, AreaPOLL
+  use Pollen_ml,        only: heatsum, pollen_left, AreaPOLL
   use TimeDate_ml,      only: current_date
   use TimeDate_ExtraUtil_ml,only : date2string
   use Units_ml,         only: Group_Units
@@ -141,6 +141,8 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
     SRF_TYPE(9)=(/"ADVppbv     ","ADVugXX     ","ADVugXXgroup",&
                   "COLUMN      ","COLUMNgroup ","D2D         ",&
                   "D2D_mean    ","D2D_inst    ","D2D_accum   "/)
+
+  character(len=52) :: errmsg = "ok"
 
   if(NHOURLY_OUT<= 0) then
     if(my_first_call.and.MasterProc.and.DEBUG) &
@@ -227,46 +229,45 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
           trim(name),"INTO HOUR TYPE:", &
           trim(hr_out(ih)%type) // " "//trim(hr_out(ih)%name), " nk:", hr_out_nk
 
-      if(any(hr_out_type==(/"COLUMN     " ,"COLUMNgroup"/)))then
+      select case (hr_out_type)
+      case("COLUMN","COLUMNgroup")
         ik=KMAX_MID-hr_out(ih)%nk+1  ! top of the column
         if(ik>=KMAX_MID)ik=1         ! 1-level column does not make sense
-      else
+      case("D2D")
+        ik=KMAX_MID                  ! surface/lowermost level
+        if(f_2d(ispec)%avg)then ! averaged variables        
+!         hr_out_type="D2D_inst"   ! output instantaneous values
+          hr_out_type="D2D_mean"   ! output mean values
+        else                    ! accumulated variables
+          hr_out_type="D2D_accum"
+        endif
+      case("ADVppbv","ADVugXX","ADVugXXgroup","PMwaterSRF",&
+           "D2D_inst","D2D_mean","D2D_accum")
+        ik=KMAX_MID                  ! surface/lowermost level
+      case default
         ik=KMAX_MID-k+1              ! all levels from model bottom are outputed,
         if(debug_flag) write(*,*)"SELECT LEVELS? ", ik, SELECT_LEVELS_HOURLY
         if(SELECT_LEVELS_HOURLY)then ! or the output levels are taken
           ik=LEVELS_HOURLY(k)        ! from LEVELS_HOURLY array (default)
           hr_out_type=hr_out(ih)%type
           if(debug_flag) write(*,*)"DEBUG SELECT LEVELS", ik, hr_out_type
-          surf_corrected = (ik==0)  ! Will implement cfac
+          surf_corrected = (ik==0)   ! Will implement cfac
           if(debug_flag.and.surf_corrected) &
             write(*,*)"DEBUG HOURLY Surf_correction", ik, k
 !TESTHH QUERY: see below
-          if(ik==0)then
+          select case(ik)
+          case(1:)
+            ik=KMAX_MID-ik+1         ! model level to be outputed
+          case(0)
             ik=KMAX_MID              ! surface/lowermost level
             if(debug_flag) write(*,*)"DEBUG LOWEST LEVELS", ik, hr_out_type
             select case(hr_out_type)
             case("BCVppbv","BCVugXX","BCVugXXgroup")
               hr_out_type(1:3)="ADV" ! ensure surface output
-            case("PMwater")
-              hr_out_type=trim(hr_out_type)//"SRF"
-            case("D2D")
-              if(f_2d(ispec)%avg)then ! averaged variables        
-!               hr_out_type="D2D_inst"   ! output instantaneous values
-                hr_out_type="D2D_mean"   ! output mean values
-              else                    ! accumulated variables
-                hr_out_type="D2D_accum"
-              endif
             endselect
-          else
-!TESTHH QUERY:
-            ik=KMAX_MID-ik+1         ! model level to be outputed
-            select case(hr_out_type)
-            case("ADVppbv","ADVugXX","ADVugXXgroup")
-              ik=KMAX_MID            ! all ADV* types represent surface output
-            endselect
-          endif
+          endselect
         endif
-      endif
+      endselect
 
 
       if(debug_flag) write(*,"(5a,i4)") "DEBUG Hourly MULTI ",&
@@ -467,6 +468,30 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
       case("ws_10m")      ! No cfac for surf.variable; Skip Units conv.
         forall(i=1:limax,j=1:ljmax) hourly(i,j) = ws_10m(i,j,1)
    
+      case("heatsum")
+       !hr_out(ih)%unit='degree_days'
+        if(allocated(heatsum))then
+          forall(i=1:limax,j=1:ljmax) hourly(i,j) = heatsum(i,j)
+        else
+          hourly(:,:) = 0.0
+        endif
+
+      case("pollen_left")
+       !hr_out(ih)%unit=''
+        if(allocated(pollen_left))then
+          forall(i=1:limax,j=1:ljmax) hourly(i,j) = pollen_left(i,j)
+        else
+          hourly(:,:) = 0.0
+        endif
+
+      case("pollen_emiss")
+       !hr_out(ih)%unit='grains/m2/h'
+        if(allocated(AreaPOLL))then
+          forall(i=1:limax,j=1:ljmax) hourly(i,j) = AreaPOLL(i,j)
+        else
+          hourly(:,:) = 0.0
+        endif
+
       case("theta")       ! No cfac for surf.variable; Skip Units conv.
         forall(i=1:limax,j=1:ljmax) hourly(i,j) = th(i,j,KMAX_MID,1)
 
@@ -586,7 +611,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
           write(*,*) "xn_ADV is ", xn_adv(ispec,maxpos(1),maxpos(2),KMAX_MID)
           write(*,*) "cfac   is ",   cfac(ispec,maxpos(1),maxpos(2))
         endif
-        call CheckStop("Error, Output_hourly/hourly_out: too big!")
+        errmsg="Error, Output_hourly/hourly_out: too big!"
       endif
 
 !NetCDF hourly output
@@ -623,16 +648,15 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
     call Out_netCDF(IOU_HOUR,def1,2,1,ps(:,:,1)*0.01,scale,CDFtype,ist,jst,ien,jen)     
   endif
 
-  
-
 !Not closing seems to give a segmentation fault when opening the daily file
 !Probably just a bug in the netcdf4/hdf5 library.
   call CloseNetCDF
+  call CheckStop(errmsg)
 
 ! Write text file wich contents
   if(.not.(FORECAST.and.MasterProc))return
   i=index(filename,'.nc')-1;if(i<1)i=len_trim(filename)
   open(IO_HOURLY,file=filename(1:i)//'.msg',position='append')
-  write(IO_HOURLY,*)date2string('FFF: YYYY-MM-DD hh',current_date)
+  write(IO_HOURLY,*)date2string('FFFF: YYYY-MM-DD hh',current_date)
   close(IO_HOURLY)
 endsubroutine hourly_out
