@@ -169,12 +169,13 @@ call Code_Timer(tim_before0)
 tim_before = tim_before0
 
 call GridRead(meteo,cyclicgrid) ! define:
-! 1) grid sizes (IIFULLDOM, JJFULLDOM),
+! 1) grid sizes (IIFULLDOM, JJFULLDOM,KMAX_MID),
 ! 2) projection (lon lat or Stereographic etc and Poles),
 ! 3) rundomain size (GIMAX, GJMAX, IRUNBEG, JRUNBEG)
-! 4) subdomain partition (NPROCX, NPROCY, limax,ljmax)
-! 5) topology (neighbor, poles)
-! 6) grid properties arrays (xm, i_local, j_local etc.)
+! 4) vertical levels defintion and interpolation coefficients
+! 5) subdomain partition (NPROCX, NPROCY, limax,ljmax)
+! 6) topology (neighbor, poles)
+! 7) grid properties arrays (xm, i_local, j_local etc.)
 
 call Topology(cyclicgrid,Poles)   ! def GlobalBoundaries & subdomain neighbors
 call DefDebugProc()               ! Sets debug_proc, debug_li, debuglj

@@ -70,6 +70,7 @@ module Met_ml
 ! 
 !============================================================================= 
 
+  use OwnDataTypes_ml,   only : Deriv
 use BLPhysics_ml,         only : &
    KZ_MINIMUM, KZ_MAXIMUM, KZ_SBL_LIMIT,PIELKE   &
   ,HmixMethod, UnstableKzMethod, StableKzMethod, KzMethod  &
@@ -106,7 +107,8 @@ use GridValues_ml,        only : xmd, i_fdom, j_fdom, i_local,j_local&
        ,debug_proc, debug_li, debug_lj &
        ,grid_north_pole_latitude,grid_north_pole_longitude &
        ,GlobalPosition,DefGrid,gl_stagg,gb_stagg,A_mid,B_mid &
-       ,Eta_bnd,Eta_mid,dA,dB,A_mid,B_mid,A_bnd,B_bnd
+       ,Eta_bnd,Eta_mid,dA,dB,A_mid,B_mid,A_bnd,B_bnd &
+       ,KMAX_MET,External_Levels_Def,k1_met,k2_met,x_k1_met
 
 use Io_ml ,               only: ios, IO_ROUGH, datewrite,PrintLog, &
                                 IO_CLAY, IO_SAND, open_file, IO_LOG
@@ -124,7 +126,7 @@ use ModelConstants_ml,    only : PASCAL, PT, Pref, METSTEP  &
      ,USE_DUST, USE_SOILWATER & 
      ,nstep,USE_CONVECTION & 
      ,LANDIFY_MET  & 
-     ,CW_THRESHOLD,RH_THRESHOLD, CW2CC
+     ,CW_THRESHOLD,RH_THRESHOLD, CW2CC,IOU_INST
 use Par_ml           ,    only : MAXLIMAX,MAXLJMAX,GIMAX,GJMAX, me  &
      ,limax,ljmax  &
      ,neighbor,WEST,EAST,SOUTH,NORTH,NOPROC  &
@@ -137,7 +139,7 @@ use TimeDate_ml,          only : current_date, date,Init_nmdays,nmdays, &
      add_secs,timestamp,&
      make_timestamp, make_current_date, nydays, startdate, enddate
 use ReadField_ml,         only : ReadField ! reads ascii fields
-use NetCDF_ml,         only : printCDF,ReadField_CDF ! testoutputs
+use NetCDF_ml,         only : printCDF,ReadField_CDF,Out_netCDF ! testoutputs
 use netcdf
 use TimeDate_ExtraUtil_ml,only: nctime2idate,date2string
 
@@ -157,7 +159,8 @@ integer, save   :: nrec          ! nrec=record in meteofile, for example
 logical, save, private      :: xwf_done = .false. ! extended water-fraction array
 
 character(len=*),parameter  :: field_not_found='field_not_found'
-integer(kind=2),allocatable :: var_global(:,:,:)   ! faster if defined with
+integer(kind=2),allocatable :: var_global(:,:,:)
+integer(kind=2),allocatable :: var_local(:,:,:)
 
 ! Aid for debugging check routine
 character (len = 100), private, save :: call_msg=" Not set"
@@ -197,7 +200,7 @@ subroutine MeteoRead(numt)
   real :: nsec                                 ! step in seconds
 
   real :: buff(MAXLIMAX,MAXLJMAX)!temporary metfields
-  integer :: i, j, isw
+  integer :: i, j, isw,KMAX
   logical :: fexist,found
 
  ! Soil water has many names. Some we can deal with:
@@ -239,11 +242,13 @@ subroutine MeteoRead(numt)
     ! If origin of meteodomain does not coincide with origin of large domain,
     ! xp and yp should be shifted here, and coordinates must be shifted when
     ! meteofields are read (not yet implemented) 
+    KMAX=max(KMAX,KMAX_MET)
     if(MasterProc)then
-      allocate(var_global(GIMAX,GJMAX,KMAX_MID))
+      allocate(var_global(GIMAX,GJMAX,KMAX))
     else
       allocate(var_global(1,1,1)) !just to have the array defined
     endif
+    allocate(var_local(MAXLIMAX,MAXLJMAX,KMAX))
   else
     nsec=METSTEP*3600.0 !from hr to sec
     ts_now = make_timestamp(current_date)
@@ -417,6 +422,8 @@ subroutine MeteoRead(numt)
   namefield='surface_pressure'
   call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
                      ps(:,:,nr),needed=.true.)
+!  if(me==0)write(*,*)'METML PS=1000!!!'
+!  ps(:,:,nr)=1000.0!NBNBNB
 
   namefield='temperature_2m'
   call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
@@ -988,7 +995,6 @@ endsubroutine Meteoread
              z_bnd(i,j,k) = z_bnd(i,j,k+1) + (th(i,j,k,nr)*            &
                   (exf1(k+1) - exf1(k)))/GRAV
 
-
              !     height of the full levels.
 
              z_mid(i,j,k) = z_bnd(i,j,k+1) + (th(i,j,k,nr)*            &
@@ -1198,7 +1204,7 @@ endsubroutine Meteoread
           Etadot(i,j,1,nr)=0.0! Is zero anyway from relations above
        enddo
     enddo
-
+  
  endif
 
    if( USE_SOILWATER ) then
@@ -2854,17 +2860,16 @@ endsubroutine Meteoread
     logical,intent(in) ,optional :: needed
     logical,intent(out),optional :: found
 
-    integer(kind=2) :: var_local(MAXLIMAX,MAXLJMAX,KMAX_MID)
 !    integer*2, allocatable ::var_global(:,:,:)   ! faster if defined with
     ! fixed dimensions for all
     ! nodes?
     real :: scalefactors(2)
-    integer :: KMAX,ijk,i,k,j,nfetch
+    integer :: KMAX,ijk,i,k,j,nfetch,k1,k2
 
     validity=''
     call_msg = "GetMeteofield" // trim(namefield)
 
-    if(ndim==3)KMAX=KMAX_MID
+    if(ndim==3)KMAX=KMAX_MET
     if(ndim==2)KMAX=1
     if(MasterProc)then
 !       allocate(var_global(GIMAX,GJMAX,KMAX))
@@ -2889,17 +2894,42 @@ endsubroutine Meteoread
 
 !    deallocate(var_global)
 
-
-    ijk=0
-    do k=1,KMAX ! KMAX is =1 for 2D arrays
+    if(KMAX==1)then       
+       ijk=0
+       k=1
        do j=1,MAXLJMAX
           do i=1,MAXLIMAX
              ijk=ijk+1
              field(ijk)=var_local(i,j,k)*scalefactors(1)+scalefactors(2)
           enddo
        enddo
-    enddo
-
+    else
+       if(External_Levels_Def)then
+          !interpolate vertically if the levels are not identical
+          ijk=0
+          do k=1,KMAX_MID
+             k1=k1_met(k)
+             k2=k2_met(k)
+             do j=1,MAXLJMAX
+                do i=1,MAXLIMAX
+                   ijk=ijk+1
+                   field(ijk)=(x_k1_met(k)*var_local(i,j,k1)+(1.0-x_k1_met(k))*var_local(i,j,k2))&
+                        *scalefactors(1)+scalefactors(2)
+                enddo
+             enddo
+          enddo
+       else
+          ijk=0
+          do k=1,KMAX_MID!=KMAX
+             do j=1,MAXLJMAX
+                do i=1,MAXLIMAX
+                   ijk=ijk+1
+                   field(ijk)=var_local(i,j,k)*scalefactors(1)+scalefactors(2)
+                enddo
+             enddo
+          enddo
+       endif
+    endif
   end subroutine Getmeteofield
 
 

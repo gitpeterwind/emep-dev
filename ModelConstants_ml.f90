@@ -159,7 +159,7 @@ logical, public, parameter ::         &
   EXTENDEDMASSBUDGET = .false.,       & ! extended massbudget outputs
   LANDIFY_MET        = .false.          ! extended massbudget outputs
 
-logical, public, parameter ::  USE_EtaCOORDINATES=.false.!temporay parameter; will be set true and removed after testing
+logical, public ::  USE_EtaCOORDINATES=.false.!temporay parameter; will be set true and removed after testing
 
 !IN-TESTING (reset in NML if wanted)
 !Boundary layer profiles

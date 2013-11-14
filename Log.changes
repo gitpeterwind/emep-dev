@@ -154,6 +154,23 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+14 November 2013  Peter 2671
+
+Flexible vertical coordinates.
+If a file Vertical_levels.txt is found at run time, the defintion of the 
+vertical levels are read (in hybrid coordinates) and used for the run. 
+The meteorology must be defined in hybrid coordinates too 
+only defined so far with 37 levels:
+EECCA/metdata_EC/2009_k
+GLOBAL/metdata_EC/2009_k
+Link in run.pl to one of the files given in the ProgDIr, or make your own
+
+Modified:
+Met_ml.f90, GridValues_ml.f90, run.pl (and ModelConstants_ml.f90, Unimod.f90)
+Added:
+Vertical_levels20.txt Vertical_levels30.txt Vertical_levels34.txt Vertical_levels.txt
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 12 November 2013  Alvaro 2670
 
 Pollen modules for "out of the box" compilation.

@@ -44,13 +44,13 @@ Module GridValues_ml
 
 use CheckStop_ml,           only: CheckStop,StopAll
 use Functions_ml,           only: great_circle_distance
-use Io_Nums_ml,             only: IO_LOG
+use Io_Nums_ml,             only: IO_LOG,IO_TMP
 use MetFields_ml 
 use ModelConstants_ml,      only: &
   KMAX_BND, KMAX_MID, & ! vertical extent
   DEBUG_i,DEBUG_j,    & ! full-domain coordinate of debug-site
   DEBUG_GRIDVALUES,MasterProc,NPROC,IIFULLDOM,JJFULLDOM,RUNDOMAIN,&
-  PT,Pref,NMET,METSTEP
+  PT,Pref,NMET,METSTEP,USE_EtaCOORDINATES
 use Par_ml, only : &
   MAXLIMAX,MAXLJMAX,  & ! max. possible i, j in this domain
   limax,ljmax,        & ! actual max.   i, j in this domain
@@ -112,6 +112,8 @@ integer, public, allocatable, save, dimension(:) :: &
 real, public, save,allocatable,  dimension(:) ::  &
   A_bnd,B_bnd,&         ! first [Pa],second [1] constants at layer boundary
                         ! (i.e. half levels in EC nomenclature)
+  A_bnd_met,B_bnd_met,&         ! first [Pa],second [1] constants at layer boundary
+                        ! (i.e. half levels in EC nomenclature)
   A_mid,B_mid,&         ! first [Pa],second [1] constants at middle of layer
                         ! (i.e. full levels in EC nomenclature)
   dA,dB,&               ! A_bnd(k+1)-A_bnd(k) [Pa],B_bnd(k+1)-B_bnd(k) [1]
@@ -160,6 +162,12 @@ integer, public :: Pole_Singular  ! Pole_included=1 or 2 if the grid include
                                   ! at least one pole and has lat lon projection
 logical, public :: Grid_Def_exist
 
+character(len=230), public  :: filename_vert
+integer, allocatable, public :: k1_met(:),k2_met(:)
+real, allocatable, public :: x_k1_met(:)
+logical, public, save ::  External_Levels_Def=.false.
+integer, public, save :: KMAX_MET !number of vertical levels from the meteo files
+
 contains
 
 subroutine GridRead(meteo,cyclicgrid)
@@ -173,7 +181,6 @@ subroutine GridRead(meteo,cyclicgrid)
   integer                    :: nyear,nmonth,nday,nhour,k
   integer                    :: KMAX,MIN_GRIDS
   character(len=len(meteo))  :: filename !name of the input file
-  character (len=230) :: txt
   logical :: Use_Grid_Def=.false.!Experimental for now
 
   nyear=startdate(1)
@@ -197,10 +204,28 @@ subroutine GridRead(meteo,cyclicgrid)
   endif
   if(MasterProc)write(*,*)'reading domain sizes from ',trim(filename)
 
-  call GetFullDomainSize(filename,IIFULLDOM,JJFULLDOM,KMAX,Pole_Singular,projection)
+  call GetFullDomainSize(filename,IIFULLDOM,JJFULLDOM,KMAX_MET,Pole_Singular,projection)
 ! call CheckStop(KMAX_MID/=KMAX,"vertical cordinates not yet flexible")
 
-  KMAX_MID=KMAX
+  filename_vert='Vertical_levels.txt'
+  inquire(file=filename_vert,exist=External_Levels_Def)!done by all procs
+  if(External_Levels_Def)then
+     !define own vertical coordinates
+     !Must use eta coordinates
+     USE_EtaCOORDINATES=.true.
+     allocate(A_bnd_met(KMAX_MET+1),B_bnd_met(KMAX_MET+1))
+     if(me==0)then !onlyme=0 read the file
+        write(*,*)'Define vertical levels from ',trim(filename_vert)
+        write(*,*)'using eta coordinates '
+        open(IO_TMP,file=filename_vert,action="read")
+        read(IO_TMP,*)KMAX_MID
+        write(*,*)KMAX_MID, 'vertical levels '
+      endif
+      CALL MPI_BCAST(KMAX_MID ,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+!      External_Levels_Def=.true.
+  else
+     KMAX_MID=KMAX_MET
+  endif
   KMAX_BND=KMAX_MID+1
 
   allocate(A_bnd(KMAX_BND),B_bnd(KMAX_BND))
@@ -240,7 +265,8 @@ subroutine GridRead(meteo,cyclicgrid)
   call Getgridparams(filename,GRIDWIDTH_M,xp,yp,fi,&
        ref_latitude,sigma_mid,cyclicgrid)
 
-
+  if(External_Levels_Def.and.me==0)close(IO_TMP)
+ 
     if(MasterProc .and. DEBUG_GRIDVALUES)then
        write(*,*)'sigma_mid:',(sigma_mid(k),k=1,20)
        write(*,*)'grid resolution:',GRIDWIDTH_M
@@ -380,7 +406,7 @@ subroutine GridRead(meteo,cyclicgrid)
     real, intent(out) :: GRIDWIDTH_M,xp,yp,fi, ref_latitude,sigma_mid(KMAX_MID)
     integer, intent(out):: cyclicgrid
 
-    integer :: nseconds(1),n1,i,j,k,im,jm,i0,j0
+    integer :: nseconds(1),n1,i,j,k,kk,im,jm,i0,j0
     integer :: ncFileID,idimID,jdimID, kdimID,timeDimID,varid,timeVarID
     integer :: GIMAX_file,GJMAX_file,KMAX_file,ihh,ndate(4)
     !    realdimension(-1:GIMAX+2,-1:GJMAX+2) ::xm_global,xm_global_j,xm_global_i
@@ -531,25 +557,56 @@ subroutine GridRead(meteo,cyclicgrid)
        endif
 
        status=nf90_inq_varid(ncid = ncFileID, name = "k", varID = varID)
-       if(status /= nf90_noerr)then
-          call check(nf90_inq_varid(ncid = ncFileID, name = "hyam", varID = varID))                 
-          call check(nf90_get_var(ncFileID, varID, A_mid ))
-          call check(nf90_inq_varid(ncid = ncFileID, name = "P0", varID = varID))                 
-          call check(nf90_get_var(ncFileID, varID, P0 ))
-          A_mid=P0*A_mid!different definition in modell and grid_Def
-          call check(nf90_inq_varid(ncid = ncFileID, name = "hybm", varID = varID))                 
-          call check(nf90_get_var(ncFileID, varID,B_mid))
+       if(status /= nf90_noerr.or.External_Levels_Def)then
+          write(*,*)'reading met hybrid levels from ',trim(filename)
+!          call check(nf90_inq_varid(ncid = ncFileID, name = "hyam", varID = varID))                 
+!          call check(nf90_get_var(ncFileID, varID, A_mid ))
+!          A_mid=P0*A_mid!different definition in modell and grid_Def
+!          call check(nf90_inq_varid(ncid = ncFileID, name = "hybm", varID = varID))                 
+!          call check(nf90_get_var(ncFileID, varID,B_mid))
+             call check(nf90_inq_varid(ncid = ncFileID, name = "P0", varID = varID))                 
+             call check(nf90_get_var(ncFileID, varID, P0 ))
+             call check(nf90_inq_varid(ncid = ncFileID, name = "hyai", varID = varID))                 
+             call check(nf90_get_var(ncFileID, varID, A_bnd_met ))
+             A_bnd_met=P0*A_bnd_met!different definition in model and grid_Def
+             call check(nf90_inq_varid(ncid = ncFileID, name = "hybi", varID = varID))                 
+             call check(nf90_get_var(ncFileID, varID, B_bnd_met ))          
+
+          if(External_Levels_Def)then
+             !model levels defined from external text file
+             write(*,*)'reading external hybrid levels from ',trim(filename_vert)
+             P0=Pref
+             do k=1,KMAX_MID+1
+                read(IO_TMP,*)kk,A_bnd(k),B_bnd(k)
+                if(kk/=k)write(*,*)'WARNING: unexpected format for vertical levels ',k,kk
+             enddo        
+          else
+             !vertical model levels are the same as in meteo 
+             A_bnd=A_bnd_met
+             B_bnd=B_bnd_met
+          endif
+          
+          do k=1,KMAX_MID
+             A_mid(k)=0.5*(A_bnd(k)+A_bnd(k+1))
+             B_mid(k)=0.5*(B_bnd(k)+B_bnd(k+1))
+          enddo
           sigma_mid =B_mid!for Hybrid coordinates sigma_mid=B if A*P0=PT-sigma_mid*PT
-          call check(nf90_inq_varid(ncid = ncFileID, name = "hyai", varID = varID))                 
-          call check(nf90_get_var(ncFileID, varID, A_bnd ))
-          A_bnd=P0*A_bnd!different definition in modell and grid_Def
-          call check(nf90_inq_varid(ncid = ncFileID, name = "hybi", varID = varID))                 
-          call check(nf90_get_var(ncFileID, varID, B_bnd ))          
+          
           write(*,*)"Hybrid vertical coordinates, P at levels boundaries:"
           do k=1,KMAX_MID+1
-44           FORMAT(i4,F12.2)
+44           FORMAT(i4,10F12.2)
              write(*,44)k, A_bnd(k)+P0*B_bnd(k)
           enddo
+!test if the levels can cope with highest mountains (400 hPa)
+          do k=1,KMAX_MID
+             if(A_bnd(k+1)+40000*B_bnd(k+1)-(A_bnd(k)+40000*B_bnd(k))<0.0)then
+                write(*,*)'WARNING: hybrid vertical level definition may cause negative level thickness when pressure below 400 hPa '
+                write(*,*)'Pressure at level ',k,' is ',A_bnd(k)+40000*B_bnd(k)
+                write(*,*)'Pressure at level ',k+1,' is ',A_bnd(k+1)+40000*B_bnd(k+1),' (should be higher)'
+                call StopAll('GridValues_ml: possible negative level thickness ')
+             endif
+          enddo
+
           found_hybrid=.true.
        else
           call check(nf90_get_var(ncFileID, varID, sigma_mid ))
@@ -574,7 +631,6 @@ subroutine GridRead(meteo,cyclicgrid)
        sigma_bnd(k) = 2.*sigma_mid(k) - sigma_bnd(k+1)
     enddo
     sigma_bnd(1) = 0.
-
     CALL MPI_BCAST(found_hybrid,1,MPI_LOGICAL,0,MPI_COMM_WORLD,INFO)
     if(found_hybrid.or.Grid_Def_exist)then
        CALL MPI_BCAST(A_bnd,8*(KMAX_MID+1),MPI_BYTE,0,MPI_COMM_WORLD,INFO)
@@ -599,6 +655,8 @@ subroutine GridRead(meteo,cyclicgrid)
        Eta_mid(k)=A_mid(k)/Pref+B_mid(k)
     enddo
     Eta_bnd(KMAX_MID+1)=A_bnd(KMAX_MID+1)/Pref+B_bnd(KMAX_MID+1)
+    if(me==0)write(*,*)'External_Levels ',External_Levels_Def
+    if(External_Levels_Def)call make_vertical_levels_interpolation_coeff
 
     CALL MPI_BCAST(xm_global_i(1:GIMAX,1:GJMAX),8*GIMAX*GJMAX,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
     CALL MPI_BCAST(xm_global_j(1:GIMAX,1:GJMAX),8*GIMAX*GJMAX,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
@@ -1678,8 +1736,46 @@ endfunction coord_in_processor
     allocate(z_bnd(MAXLIMAX,MAXLJMAX,KMAX_BND))
     allocate(z_mid(MAXLIMAX,MAXLJMAX,KMAX_MID))
 
-
   end subroutine Alloc_GridFields
+
+  subroutine make_vertical_levels_interpolation_coeff
+    !make interpolation coefficients to convert the levels defined in meteo 
+    !into the levels defined in Vertical_levels.txt
+    integer ::i,j,k,k_met
+    real ::p_met,p_mod,p1,p2
+    if(.not. allocated(k1_met))allocate(k1_met(KMAX_MID),k2_met(KMAX_MID),x_k1_met(KMAX_MID))
+
+    if(me==0)then
+
+       !only me=0 has the values for A_bnd_met and B_bnd_met
+       do k=1,KMAX_MID
+          P_mod=A_mid(k)+Pref*B_mid(k)
+          !find the lowest met level higher than the model level 
+          !do k_met=1,KMAX_MET
+          k_met=KMAX_MET-1
+          p_met=0.5*(A_bnd_met(k_met+1)+A_bnd_met(k_met))+Pref*0.5*(B_bnd_met(k_met+1)+B_bnd_met(k_met))
+         do while(p_met>P_mod.and.k_met>0)
+            ! write(*,*)P_mod,p_met
+             k_met=k_met-1
+             p_met=0.5*(A_bnd_met(k_met+1)+A_bnd_met(k_met))+Pref*0.5*(B_bnd_met(k_met+1)+B_bnd_met(k_met))
+          enddo
+          k1_met(k)=k_met
+          k2_met(k)=k_met+1
+          k_met=k1_met(k)
+          p1=0.5*(A_bnd_met(k_met+1)+A_bnd_met(k_met))+Pref*0.5*(B_bnd_met(k_met+1)+B_bnd_met(k_met))
+          k_met=k2_met(k)
+          p2=0.5*(A_bnd_met(k_met+1)+A_bnd_met(k_met))+Pref*0.5*(B_bnd_met(k_met+1)+B_bnd_met(k_met))
+          x_k1_met(k)=(p_mod-p2)/(p1-p2)
+          write(*,77)k, 'interpolated from levels ', k1_met(k),' and ',k2_met(k),P_mod,p1,p2,x_k1_met(k)
+77 format(I4,A,I3,A,I3,13f11.3)
+       enddo
+    endif
+
+    CALL MPI_BCAST(k1_met,4*KMAX_MID,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+    CALL MPI_BCAST(k2_met,4*KMAX_MID,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+    CALL MPI_BCAST(x_k1_met,8*KMAX_MID,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+
+  end subroutine make_vertical_levels_interpolation_coeff
 
 end module GridValues_ml
 !==============================================================================
