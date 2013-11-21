@@ -1,5 +1,4 @@
 PROGRAM unimod_B_nmc
-  use ModelConstants_ml, only: IIFULLDOM, JJFULLDOM, KMAX_MID
   use DA_ml,             only: debug=>DA_DEBUG,DAFMT_DEF=>NMC_FMT_DEF,&
                                dafmt=>da_fmt_msg,damsg=>da_msg
   use ChemChemicals_ml,     only: define_chemicals,species    ! specie names
@@ -11,7 +10,10 @@ PROGRAM unimod_B_nmc
   use Util_ml
   use exd_domain_ml
   use stddev_ml
-  use covmat_ml
+  use covmat_ml,            only: dlon=>dxdim,dlat=>dydim, &
+                                  set_chemobs_idx,allocate_covmat,&
+                                  update_covmat,update_unobs_covmat,&
+                                  normalise_covmat,diagonalise_covmat
   use spectralcov
   implicit none
 !+------------------------------------------------------------------
@@ -27,7 +29,7 @@ PROGRAM unimod_B_nmc
   character(len=112) :: inFileName(2)=''!, ncFileName=''
   character(len=016) :: varName(maxVar)='',obsVarName(maxVar)=''
   logical            :: observedVar(maxVar)=.false.
-  real(8) :: dlon=0.25, dlat=0.25
+! real(8) :: dlon=0.25, dlat=0.125
   namelist /NMC_VAR/ nChem, nChemObs, varName, obsVarName, observedVar
   namelist /NMC_CONFIG/ numNMC, nX,  nY, nLev,&
                     nXex, nYex, nex, nCorr, dlon, dlat
@@ -121,14 +123,10 @@ PROGRAM unimod_B_nmc
 !+------------------------------------------------------------------
 !
 !+------------------------------------------------------------------
-  nx=IIFULLDOM;ny=JJFULLDOM;nXex=0;nYex=0;dLon=0.0;dLat=0.0;
-!+------------------------------------------------------------------
-!
-!+------------------------------------------------------------------
+  nx=0;ny=0;nLev=0;nXex=0;nYex=0;dLon=0.0;dLat=0.0;
   read(unit=inNml,nml=NMC_CONFIG,iostat=ierr)
   call io_check(ierr,'read namelist: NMC_CONFIG')
-  call CheckStop(any((/nX,nY,nLev/)>(/IIFULLDOM,JJFULLDOM,KMAX_MID/)),&
-          'Dimensions error: nX>IIFULLDOM.or.nY>JJFULLDOM.or.nLev>KMAX_MID.')
+  call CheckStop(any((/nX,nY,nLev/)<1),'Dimensions error: nX<1.or.nY<1.or.nLev<1.')
 !+------------------------------------------------------------------
 ! EXTENDED DOMAIN FOR FFT: default size
 !+------------------------------------------------------------------
@@ -190,7 +188,7 @@ PROGRAM unimod_B_nmc
       call CheckStop(any((/numLon,numLat/)/=(/NX,NY/)),&
                 'Dimensions error: numLon/=NX.or.numLat/=NY for '//&
                  trim(inFileName(1)))
-      call GetNCRec(ncFileID,current_date,rec)
+      call GetNCRec(ncFileID,current_date,rec,exact=debug)
       if(debug.and.nnmc==1.and.secTime==secSTime)call PrintNCDim(ncFileID,dOut)
       do nvar=1,nChem
         !24h forecast
@@ -209,7 +207,7 @@ PROGRAM unimod_B_nmc
       call nc_check(nf90_close(ncFileID))
       call nc_check(nf90_open(nctime2string(inFileName(2),secTime48,debug=debug),&
               nf90_nowrite,ncFileID))
-      call GetNCRec(ncFileID,current_date,rec)
+      call GetNCRec(ncFileID,current_date,rec,exact=debug)
       if(debug.and.nnmc==1.and.secTime==secSTime) call PrintNCDim(ncFileID,dOut)
       do nvar=1,nChem
         !48h forecast
@@ -276,7 +274,7 @@ PROGRAM unimod_B_nmc
 !+------------------------------------------------------------------
       call nc_check(nf90_open(nctime2string(inFileName(1),secTime24,debug=debug),&
               nf90_nowrite,ncFileID))
-      call GetNCRec(ncFileID,current_date,rec)
+      call GetNCRec(ncFileID,current_date,rec,exact=debug)
       do nvar=1,nChem
         !24h forecast
         call GetNCVar(ncFileID,varName(nvar),var3D=var_nc,rec=rec,unitconv=FGSCALE)
@@ -287,7 +285,7 @@ PROGRAM unimod_B_nmc
       call nc_check(nf90_open(nctime2string(inFileName(2),secTime48,debug=debug),&
               nf90_nowrite,ncFileID))
       if(debug.and.nnmc==1.and.secTime==secSTime) call PrintNCDim(ncFileID,dOut)
-      call GetNCRec(ncFileID,current_date,rec)
+      call GetNCRec(ncFileID,current_date,rec,exact=debug)
       do nvar=1,nChem
         !48h forecast
         call GetNCVar(ncFileID,varName(nvar),var3D=var_nc,rec=rec,unitconv=FGSCALE)

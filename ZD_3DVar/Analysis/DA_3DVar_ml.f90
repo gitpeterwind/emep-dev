@@ -1,7 +1,7 @@
 module DA_3DVar_ml
 use TimeDate_ml,      only: date,current_date
 use My_Timing_ml,     only: Code_timer,Add_2timing
-use ModelConstants_ml,only: KMAX_MID,PPB,PPBINV,ANALYSIS,MasterProc
+use ModelConstants_ml,only: KMAX_MID,KCHEMTOP,RUNDOMAIN,PPB,PPBINV,ANALYSIS,MasterProc
 use ChemSpecs_shl_ml, only: NSPEC_SHL        ! Maps indices
 !se ChemSpecs_tot_ml, only: NSPEC_TOT
 use ChemChemicals_ml, only: species          ! Gives names
@@ -26,16 +26,18 @@ use spectralcov,      only: nx,ny,nlev,nchem,nxex,nyex,nex,&
                             FGSCALE,FGSCALE_INV,DAPREC
 implicit none
 integer,private,parameter :: ANALYSIS_NDATE = 4 ! Number of analysis to perform
+real, parameter, private  :: ANALYSIS_RELINC_MAX=5.0 ! Limit dx,du to 500%
 type(date),private :: analysis_date(ANALYSIS_NDATE)=(/& ! when to perform the analysys.
                  date(-1,-1,-1,00,0),&              ! By default an analysis
                  date(-1,-1,-1,06,0),&              ! it will be done every
                  date(-1,-1,-1,12,0),&              ! 00,06,12,18 UTC
                  date(-1,-1,-1,18,0)/)
 integer, parameter, private :: maxiter=100*5,maxsim=100*5
-integer, parameter, private :: debug_n=1,debug_p=0,debug_k=1
+integer, parameter, private :: debug_n=1,debug_p=1,debug_k=1
 integer, allocatable, dimension(:), private :: ipar
 real, allocatable, dimension(:,:,:,:), private :: dx,du
 contains
+!-----------------------------------------------------------------------
 subroutine main_3dvar()
 !-----------------------------------------------------------------------
 ! @description
@@ -85,11 +87,18 @@ namelist /DA_CONFIG/ analysis_date, nChem, nChemObs,&
 ! call Init_ChemGroups()
 ! dafmt=DAFMT_DEF
   k=find_index("DAOBS",chemgroups(:)%name)
+  call CheckStop(k<1,'DA group not found: "DAOBS".')
   nChemObs=size(chemgroups(k)%ptr)
   obsVarName(:nChemObs)=species(chemgroups(k)%ptr)%name
+  varName(:nChemObs)=obsVarName(:nChemObs)
   k=find_index("DAUNOBS",chemgroups(:)%name)
+  if(k>0)then
   nChem=nChemObs+size(chemgroups(k)%ptr(:))
-  varName(:nChem)=(/obsVarName(:nChemObs),species(chemgroups(k)%ptr)%name/)
+    varName(nChemObs+1:nChem)=species(chemgroups(k)%ptr)%name
+  else
+    nChem=nChemObs
+    if(MasterProc)print dafmt,'WARNING: DA group not found: "DAUNOBS".'
+  endif
   observedVar(:)=.false.
 !+------------------------------------------------------------------
 !
@@ -106,6 +115,7 @@ namelist /DA_CONFIG/ analysis_date, nChem, nChemObs,&
     call CheckStop(k<1,'Unknown observed variable: '//trim(obsVarName(nvar)))
     observedVar(k)=.true.
   enddo
+  call CheckStop(.not.any(observedVar),'No observed variables found (observedVar).')
   ! sort obsVarName following varName order
   nChemObs=0 ! count(observedVar)
   do nvar=1,nChem
@@ -114,6 +124,7 @@ namelist /DA_CONFIG/ analysis_date, nChem, nChemObs,&
       obsVarName(nChemObs)=varName(nvar)
     endif
   enddo
+  call CheckStop(nChemObs<1,'No observed variables found (nChemObs).')
   if(debug.and.MasterProc) then
     print dafmt,'B matrix description'
     print "(2(A,:,'(',I0,')'))",&
@@ -156,6 +167,9 @@ namelist /DA_CONFIG/ analysis_date, nChem, nChemObs,&
 !-----------------------------------------------------------------------
   call set_chemobs_idx(nchem,observedVar(1:nchem))
   call read_speccov
+  call CheckStop(nX,RUNDOMAIN(2)-RUNDOMAIN(1)+1,"init_3dvar: Inconsistent NX")
+  call CheckStop(nY,RUNDOMAIN(4)-RUNDOMAIN(3)+1,"init_3dvar: Inconsistent NY")
+  call CheckStop(nLev,KMAX_MID-KCHEMTOP+1      ,"init_3dvar: Inconsistent NLEV")
 end subroutine init_3dvar
 subroutine generic3dvar(ierr)
 !-----------------------------------------------------------------------
@@ -236,12 +250,12 @@ real, allocatable, dimension(:) :: flat,flon,falt,obs,obsstddev1
 !-----------------------------------------------------------------------
 ! allocate work arrrays
 !-----------------------------------------------------------------------
-  if(.not.allocated(dx))then
+  if(.not.allocated(dx).and.nchemobs>0)then
     allocate(dx(nxex,nyex,nlev,nchemobs),stat=ierr)
     call CheckStop(ierr,'Allocation error: dx.')
     dx=0e0
   endif
-  if(.not.allocated(du))then
+  if(.not.allocated(du).and.nchem>nchemobs)then
 !   allocate(du(nxex,nyex,nlev,nchem-nchemobs),stat=ierr)
     allocate(du(nx,ny,nlev,nchem-nchemobs),stat=ierr)
     call CheckStop(ierr,'Allocation error: du.')
@@ -265,12 +279,15 @@ real, allocatable, dimension(:) :: flat,flon,falt,obs,obsstddev1
 !-----------------------------------------------------------------------
 ! forall(i=1:nxex,j=1:nyex,ilev=1:nlev)
 ! forall(i=2:nx-1,j=2:ny-1,ilev=2:nlev)
-  ilev0=max(2,KMAX_MID-nlev+1) ! ilev0=KMAX_MID-nlev+1;if(ilev0==1)ilev0=2
-  forall(i=2:nx-1,j=2:ny-1,ilev=ilev0:nlev)
-! try also xn_adv_ex=dim(xn_adv_ex,-dx)
-    xn_adv_ex(i,j,ilev,ichemobs  )=max(xn_adv_ex(i,j,ilev,ichemobs  )+dx(i,j,ilev,:),0.0)
-    xn_adv_ex(i,j,ilev,ichemnoobs)=max(xn_adv_ex(i,j,ilev,ichemnoobs)+du(i,j,ilev,:),0.0)
-  end forall
+  ilev0=max(KCHEMTOP,KMAX_MID-nlev+1)
+  if(allocated(dx))forall(i=2:nx-1,j=2:ny-1,ilev=ilev0:nlev)&
+    xn_adv_ex(i,j,ilev,ichemObs  )=&
+      min(max(xn_adv_ex(i,j,ilev,ichemObs  )+dx(i,j,ilev,:),0.0),&
+              xn_adv_ex(i,j,ilev,ichemObs  )*ANALYSIS_RELINC_MAX)
+  if(allocated(du))forall(i=2:nx-1,j=2:ny-1,ilev=ilev0:nlev)&
+    xn_adv_ex(i,j,ilev,ichemNoObs)=&
+      min(max(xn_adv_ex(i,j,ilev,ichemNoObs)+du(i,j,ilev,:),0.0),&
+              xn_adv_ex(i,j,ilev,ichemNoObs)*ANALYSIS_RELINC_MAX)
 ! if(debug.and.MasterProc) then
 !   k=ichemobs(1)
 !   kk=varSpec(k)
@@ -675,10 +692,8 @@ subroutine costFunction(ind,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
     endif
 !     zero elements:
 !AMVB 2009-12-11: Bug found my MK 2009-12-09
-    m=mm(kx)
-    n=nn(ky)
-!   m=mm(kx)
-!   n=mm(ky)
+    m=mm(kx);n=nn(ky)
+!   m=mm(kx);n=mm(ky)
     chi_arr(i,1,1)=cmplx(real(chi_arr(i,1,1)),0e0)
     if(mod(nxex,2)==0)&
       chi_arr(i,m,1)=cmplx(real(chi_arr(i,m,1)),0e0)
@@ -960,9 +975,13 @@ subroutine update_unobserved(chi)
   complex :: c(nxex,nyex)
   complex, allocatable :: temp1(:), temp2(:), temp3(:,:,:)
 
+  if(nchem==nchemObs)then
+    print dafmt,'WARNING no unobserved to update'
+    return
+  endif
   lenwork=2*nxex*nyex
-  nchemnoobs=nchem-nchemobs
-  ndim=nchemobs*nlev
+  nchemNoObs=nchem-nchemObs
+  ndim=nchemObs*nlev
   du=0e0
 !-----------------------------------------------------------------------
 ! Compute c = X * \Lambda^{-1/2} * \chi, where \Lambda is the

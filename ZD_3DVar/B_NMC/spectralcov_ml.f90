@@ -7,25 +7,25 @@ implicit none
  real, parameter :: FGSCALE=1e9,FGSCALE_INV=1e-9
  real, parameter :: DAPREC=PPT*FGSCALE_INV !1e0/2**22; 5.96e-08=2**-24 (single precission)
 
-integer, save :: nx,ny,nlev,nchem,nchemobs,nchemnoobs
+integer, save :: nchem,nchemobs,nchemnoobs,nx,ny,nlev
 integer, save :: nex,nxex,nyex,nbg1,nv1
 integer, save :: nkstar,kx,kxmin,ky,kymin,lensav
 integer, dimension(:,:), allocatable, save :: ikstar
-integer, dimension(:), allocatable, save :: nmin,nmax
-integer, dimension(:), allocatable, save :: mm,nn
-integer, dimension(:), allocatable, save :: ichemInv,ichemObs,ichemNoObs
-real, dimension(:), allocatable, save :: kstar,wsave
-real, dimension(:,:), allocatable, save :: sqrt_gamma
-real, dimension(:,:,:,:), allocatable, save :: stddev
-real, dimension(:,:,:), allocatable, save :: vt
-real, dimension(:,:), allocatable, save :: sqrt_lambda
-real, dimension(:,:,:), allocatable, save :: ucovmat
-real, dimension(:,:), allocatable :: covmat
+integer, dimension(:),   allocatable, save :: nmin,nmax
+integer, dimension(:),   allocatable, save :: mm,nn
+integer, dimension(:),   allocatable, save :: ichemInv,ichemObs,ichemNoObs
+real, dimension(:),      allocatable, save :: kstar,wsave
+real, dimension(:,:),    allocatable, save :: sqrt_gamma
+real, dimension(:,:,:,:),allocatable, save :: stddev
+real, dimension(:,:,:),  allocatable, save :: vt
+real, dimension(:,:),    allocatable, save :: sqrt_lambda
+real, dimension(:,:,:),  allocatable, save :: ucovmat
+real, dimension(:,:),    allocatable, save :: covmat
 
 integer :: nstarmax,nttot,ncorr
-integer, dimension(:), allocatable :: nstar
+integer, dimension(:),   allocatable :: nstar
 integer, dimension(:,:), allocatable :: mt, nt
-real, dimension(:,:), allocatable :: intweight
+real, dimension(:,:),    allocatable :: intweight
 !#define DEBUG_B
 
 contains

@@ -1,31 +1,3 @@
-! <Nest_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
-!          Chemical transport Model>
-!*****************************************************************************!
-!*
-!*  Copyright (C) 2007-2011 met.no
-!*
-!*  Contact information:
-!*  Norwegian Meteorological Institute
-!*  Box 43 Blindern
-!*  0313 OSLO
-!*  NORWAY
-!*  email: emep.mscw@met.no
-!*  http://www.emep.int
-!*
-!*    This program is free software: you can redistribute it and/or modify
-!*    it under the terms of the GNU General Public License as published by
-!*    the Free Software Foundation, either version 3 of the License, or
-!*    (at your option) any later version.
-!*
-!*    This program is distributed in the hope that it will be useful,
-!*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-!*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!*    GNU General Public License for more details.
-!*
-!*    You should have received a copy of the GNU General Public License
-!*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************!
-
 module Nest_ml
 ! This module performs the reading or writing of data for nested runs
 !
@@ -66,6 +38,7 @@ use CheckStop_ml,           only: CheckStop,StopAll
 use ChemChemicals_ml,       only: species_adv
 use Chemfields_ml,          only: xn_adv    ! emep model concs.
 use ChemSpecs_adv_ml,       only: NSPEC_ADV
+use ChemSpecs_shl_ml,       only: NSPEC_SHL
 use Functions_ml,           only: great_circle_distance
 use GridValues_ml,          only: A_mid,B_mid, glon,glat
 use Io_ml,                  only: open_file,IO_TMP,IO_NML
@@ -82,6 +55,8 @@ use Par_ml,                 only: MAXLIMAX,MAXLJMAX,GIMAX,GJMAX,IRUNBEG,JRUNBEG,
 use TimeDate_ml,            only: date,current_date,nmdays
 use TimeDate_ExtraUtil_ml,  only: idate2nctime,nctime2idate,date2string
 use Units_ml,               only: Units_Scale
+use SmallUtils_ml,          only: find_index
+use ChemGroups_ml,          only: chemgroups
 implicit none
 
 INCLUDE 'mpif.h'
@@ -95,9 +70,10 @@ INTEGER INFO
 integer, public, save :: MODE
 
 ! Nested input/output on FORECAST mode
-integer, public, parameter :: FORECAST_NDUMP = 1  ! Number of nested output
-! on FORECAST mode (1: starnt next forecast; 2: NMC statistics)
-type(date), public :: outdate(FORECAST_NDUMP)=date(-1,-1,-1,-1,-1)
+integer,private,parameter :: FORECAST_NDUMP_MAX = 2  ! Number of nested output
+integer, public, save     :: FORECAST_NDUMP     = 1  ! Read by Unimod.f90
+! on FORECAST mode (1: start next forecast; 2: NMC statistics)
+type(date), public :: outdate(FORECAST_NDUMP_MAX)=date(-1,-1,-1,-1,-1)
 
 !coordinates of subdomain to write, relative to FULL domain (only used in write mode)
 integer ::istart,jstart,iend,jend ! Set on Nest_config namelist
@@ -111,6 +87,7 @@ private
 
 logical, private, save :: mydebug =  .false.
 integer, private, save :: NHOURSAVE,NHOURREAD ! write/read frequency
+logical, private, save :: NMC_OUTPUT = .false.  ! For NMC statistics (3DVar)
 !if(NHOURREAD<NHOURSAVE) the data is interpolated in time
 
 integer, parameter :: &
@@ -152,11 +129,11 @@ type(icbc), private, pointer, dimension(:) :: &
 contains
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
 subroutine Config_Nest()
-  integer :: ios
+  integer :: ios,i
   logical, save :: first_call=.true.
   NAMELIST /Nest_config/ MODE,NHOURSAVE,NHOURREAD, &
     template_read_3D,template_read_BC,template_write,&
-    istart,jstart,iend,jend
+    istart,jstart,iend,jend,NMC_OUTPUT,FORECAST_NDUMP,outdate
 
   if(.not.first_call)return
   mydebug = DEBUG_NEST.and.MasterProc
@@ -187,6 +164,12 @@ subroutine Config_Nest()
 ! Ensure sub-domain is not larger than run-domain
   istart=max(istart,RUNDOMAIN(1));iend=min(iend,RUNDOMAIN(2))
   jstart=max(jstart,RUNDOMAIN(3));jend=min(jend,RUNDOMAIN(4))
+! Ensure that only FORECAST_NDUMP are taking into account
+  if(FORECAST.and.(FORECAST_NDUMP<FORECAST_NDUMP_MAX))&
+    outdate(FORECAST_NDUMP+1:FORECAST_NDUMP_MAX)%day=0
+  if(MasterProc.and.FORECAST)&
+    write (*,"(1X,A,10(1X,A,:,','))")'Forecast nest/dump at:',&
+     (date2string("YYYY-MM-DD hh:mm:ss",outdate(i)),i=1,FORECAST_NDUMP)
   first_call=.false.
 endsubroutine Config_Nest
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
@@ -335,7 +318,7 @@ subroutine wrtxn(indate,WriteNow)
   real,allocatable, dimension(:,:,:) :: data ! Data arrays
 
   type(Deriv) :: def1 ! definition of fields
-  integer :: n,iotyp,ndim,kmax
+  integer :: n,iotyp,ndim,kmax,igrp,grp
   real :: scale
   logical :: fexist, lsend, lrecv
 
@@ -389,6 +372,19 @@ subroutine wrtxn(indate,WriteNow)
   !do first one loop to define the fields, without writing them (for performance purposes)
   if(.not.fexist)then
     call init_icbc(cdate=indate)
+    if(FORECAST.and.NMC_OUTPUT)then ! For NMC statistics (3DVar)
+      adv_ic(:)%wanted=.false.
+      do grp=1,4
+        select case(grp)
+          case(1);igrp=find_index("DAOBS"  ,chemgroups(:)%name)
+          case(2);igrp=find_index("DAUNOBS",chemgroups(:)%name)
+          case(3);igrp=find_index("PM10"   ,chemgroups(:)%name)
+          case(4);igrp=find_index("AOD"    ,chemgroups(:)%name)
+          case default;igrp=-1
+        endselect
+        if(igrp>0)adv_ic(chemgroups(igrp)%ptr-NSPEC_SHL)%wanted=.true.
+      enddo
+    endif
     do n= 1, NSPEC_ADV
       def1%name= species_adv(n)%name       !written
       if(.not.adv_ic(n)%wanted)then
@@ -400,7 +396,7 @@ subroutine wrtxn(indate,WriteNow)
         cycle
       endif
       data=xn_adv(n,:,:,:)
-      if(FORECAST.and..false.)then
+      if(FORECAST.and.NMC_OUTPUT)then !reduce NMC output
         lsend=any(data/=0.0)
         CALL MPI_ALLREDUCE(lsend,lrecv,1,MPI_LOGICAL,MPI_LOR,MPI_COMM_WORLD,INFO)
         adv_ic(n)%wanted=lrecv

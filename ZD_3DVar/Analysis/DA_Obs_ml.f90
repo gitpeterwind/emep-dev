@@ -36,7 +36,7 @@ type obs_data
   character(len=064) :: name='',unit='',deriv=''
   character(len=256) :: file='',tag=''
 end type
-integer            :: nobsData
+integer            :: nobsData=0
 integer, parameter :: nobsDataMax=50
 type(obs_data)     :: obsData(nobsDataMax)
 namelist /OBSERVATIONS/nobsData,obsData
@@ -249,9 +249,7 @@ subroutine H_op(lat,lon,alt,n,yn,rho0,ipar)
      ('Model',H_int(p)*100,glon(i(p),j(p)),glat(i(p),j(p)),z_mid(i(p),j(p),ll)*1e-3,p=1,4)
   endif
 ! interpolated air density:
-  rho0=dot_product(H_int(:),&
-       (/roa(i(1),j(1),ll,1),roa(i(2),j(2),ll,1),&
-         roa(i(3),j(3),ll,1),roa(i(4),j(4),ll,1)/))
+  rho0=dot_product(H_int(:),(/(roa(i(p),j(p),ll,1),p=1,4)/))
 !-----------------------------------------------------------------------
 !
 !-----------------------------------------------------------------------
@@ -283,10 +281,9 @@ subroutine H_op(lat,lon,alt,n,yn,rho0,ipar)
   if(obsData(ipar)%found.and.obsData(ipar)%deriv=='mod-lev')then
     unitconv=obsData(ipar)%unitconv
     if(obsData(ipar)%unitroa)&
-      H_int(:)=H_int(:)*(/roa(i(1),j(1),ll,1),roa(i(2),j(2),ll,1),&
-                          roa(i(3),j(3),ll,1),roa(i(4),j(4),ll,1)/)
-    k=obsData(ipar)%ichem
-    kk=ichemobs(k)
+      H_int(:)=H_int(:)*(/(roa(i(p),j(p),ll,1),p=1,4)/)
+    k =obsData(ipar)%ichem
+    kk=obsData(ipar)%ichemObs!ichemobs(k)
     yn=0e0
     pidx(n)%i(:)=i(:)
     pidx(n)%j(:)=j(:)
@@ -303,11 +300,10 @@ subroutine H_op(lat,lon,alt,n,yn,rho0,ipar)
   elseif(obsData(ipar)%found.and.obsData(ipar)%deriv=='surface')then
     unitconv=obsData(ipar)%unitconv
     if(obsData(ipar)%unitroa)&
-      H_int(:)=H_int(:)*(/roa(i(1),j(1),ll,1),roa(i(2),j(2),ll,1),&
-                          roa(i(3),j(3),ll,1),roa(i(4),j(4),ll,1)/)
+      H_int(:)=H_int(:)*(/(roa(i(p),j(p),ll,1),p=1,4)/)
     ispec=obsData(ipar)%ispec
-    k=obsData(ipar)%ichem
-    kk=ichemobs(k)
+    k =obsData(ipar)%ichem
+    kk=obsData(ipar)%ichemObs!ichemobs(k)
     yn=0e0
     pidx(n)%i(:)=i(:)
     pidx(n)%j(:)=j(:)

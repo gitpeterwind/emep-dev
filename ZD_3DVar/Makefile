@@ -47,8 +47,11 @@ ifdef EXP
         $(call modulecheck,$(filter mkl%,$(MODULES)))
       endif
     else ifeq ($(MACHINE),vilje)
-      MODULES += $(MKL:1=intelcomp/12.0.5.220)
-      ifneq (,$(call modulefind,intelcomp/12.0.5.220))
+      MODULES += $(MKL:1=intelcomp/13.0.1)
+      ifneq (,$(call modulefind,intelcomp/13.0.1))
+        INCL += $(MKLPATH)/include $(MKLPATH)/include/intel64/lp64
+        LLIB += -L$(MKLPATH)/lib/intel64
+      else ifneq (,$(call modulefind,intelcomp/12.0.5.220))
         INCL += $(MKLPATH)/include $(MKLPATH)/include/intel64/lp64
         LLIB += -L$(MKLPATH)/lib/intel64
       else
@@ -81,8 +84,9 @@ CC  = mpicc
 CCFLAGS = $(filter-out -r8 -recursive -convert big_endian,$(F90FLAGS))
 
 SUFFIXES += .F .f
+F90FLAGS += -module ../ # .mod files in same dir
 %.o:%.f90
-	$(F90) $(F90FLAGS) -c $< -o $@ -module ./
+	$(F90) $(F90FLAGS) -c $< -o $@ #-module $(@D)/ # .mod & .o files in same dir
 %.o:%.f
 	$(F90) $(F90FLAGS) -c $< -o $@
 %.o:%.F
@@ -98,16 +102,13 @@ SUFFIXES += .F .f
 allprog: CLEANCPP=1
 allprog: EXP_Unimod EXP_3DVar EXP_Bnmc
 EXP_Unimod%:
-	$(MAKE) MACHINE=$(MACHINE) -C ../ MACC$*
+	$(MAKE) MACHINE=$(MACHINE) DEBUG=$(DEBUG) -C ../ MACC$*
 EXP_%:
-	$(MAKE) MACHINE=$(MACHINE) -C ./ -j4 CLEANCPP=$(CLEANCPP) MKL=$(MKL) \
+	$(MAKE) MACHINE=$(MACHINE) DEBUG=$(DEBUG) -C ./ -j4 CLEANCPP=$(CLEANCPP) MKL=$(MKL) \
 	  EXP=$* PROG=$(@:EXP%=$(PROG)%)
 
 $(PROG): modules depend info-varaiable-MAKECMDGOALS
 
 info-varaiable-%:
 	@echo -e "Variable: $*='$(value $*)'"
-
-tgz:
-	tar -vczf `date -I`.tgz -h *.f90 Make*
 ##########################################################

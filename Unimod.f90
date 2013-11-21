@@ -1,30 +1,3 @@
-! <Unimod.f90 - A component of the EMEP MSC-W Unified Eulerian
-!          Chemical transport Model>
-!*****************************************************************************!
-!*
-!*  Copyright (C) 2007-2011 met.no
-!*
-!*  Contact information:
-!*  Norwegian Meteorological Institute
-!*  Box 43 Blindern
-!*  0313 OSLO
-!*  NORWAY
-!*  email: emep.mscw@met.no
-!*  http://www.emep.int
-!*
-!*    This program is free software: you can redistribute it and/or modify
-!*    it under the terms of the GNU General Public License as published by
-!*    the Free Software Foundation, either version 3 of the License, or
-!*    (at your option) any later version.
-!*
-!*    This program is distributed in the hope that it will be useful,
-!*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-!*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!*    GNU General Public License for more details.
-!*
-!*    You should have received a copy of the GNU General Public License
-!*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************!
 program myeul
 !-----------------------------------------------------------------------!
 !
@@ -83,9 +56,7 @@ use TimeDate_ml,      only: date, current_date, day_of_year, daynumber,&
                             startdate, enddate
 use TimeDate_ExtraUtil_ml,only : date2string, assign_NTERM
 use Trajectory_ml,    only: trajectory_init,trajectory_in
-use Nest_ml,          only: wrtxn,          & ! write nested output (IC/BC)
-                            FORECAST_NDUMP, & ! FORECAST mode: number of IC output
-                            outdate           ! and dates for IC output
+use Nest_ml,          only: wrtxn     ! write nested output (IC/BC)
 !--------------------------------------------------------------------
 !
 !  Variables. There are too many to list here. Still, here are a
@@ -122,7 +93,7 @@ integer :: nproc_mpi,cyclicgrid
 character (len=230) :: errmsg,txt
 
 namelist /INPUT_PARA/iyr_trend,runlabel1,runlabel2,&
-                     startdate,enddate,outdate,meteo
+                     startdate,enddate,meteo
 
 associate ( yyyy => current_date%year, mm => current_date%month, &
               dd => current_date%day,  hh => current_date%hour)
@@ -150,9 +121,6 @@ rewind(IO_NML)
 read(IO_NML,NML=INPUT_PARA)
 startdate(4)=0                ! meteo hour to start/end the run 
 enddate  (4)=0                ! are set in assign_NTERM
-if(MasterProc.and.FORECAST)&  ! dates for nested outputs on FORECAST mode
-  write (*,"(1X,A,10(1X,A,:,','))")'Forecast nest/dump at:',&
-   (date2string("YYYY-MM-DD hh:mm:ss",outdate(i)),i=1,FORECAST_NDUMP)
 
 if(MasterProc)then
   call PrintLog(trim(runlabel1))

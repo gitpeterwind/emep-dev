@@ -26,7 +26,7 @@ character(len=30),public, save :: &
 integer,save, public :: &
   iw=-1, ie=-1, js=-1, jn=-1, kt=-1 ! i West/East bnd; j North/South bnd; k Top
 
-character(len=80),public, save :: &
+character(len=100),public, save :: &
   filename_eta     = 'EMEP_IN_BC_eta.zaxis'
 
 
@@ -111,7 +111,6 @@ subroutine set_extbic(idate)
 !--- Determine %version to look for
   select case (EXP_NAME)
   case("FORECAST")
-   !ydmh=idate(1)*1000000+idate(2)*10000+idate(3)*100+idate(4)
     ydmh=dot_product(idate,nint((/1e6,1e4,1e2,1e0/)))
     select case (ydmh)
       case(:2011113023);bctype_name='IFS_MOZ_f7kn'  ! Untill 2011-11-30 23:00      
@@ -126,7 +125,7 @@ subroutine set_extbic(idate)
   READ_NML: do
     read(IO_NML,NML=ExternalBICs_bc,iostat=ios)
     if(ios/=0) exit READ_NML
-    if(DEBUG.and.MasterProc) write(*,DEBUG_FMT) "set_extbic read_nml bc",&
+    if(DEBUG.and.MasterProc) write(*,DEBUG_FMT) "set_extbic","read_nml bc",&
       trim(description%name)//"/"//trim(description%version)
     EXTERNAL_BIC_SET=&
       EXTERNAL_BIC_NAME==description%name.and.&
@@ -150,7 +149,7 @@ subroutine set_extbic(idate)
     EXTERNAL_BC(n)%ixadv=find_index(EXTERNAL_BC(n)%spcname,species_adv(:)%name)
     if(EXTERNAL_BC(n)%ixadv<1)then
       EXTERNAL_BC(n)%wanted=.false.
-      if(MasterProc) write(*,DEBUG_FMT) "set_extbic unknow variable",&
+      if(MasterProc) write(*,DEBUG_FMT) "set_extbic","unknow variable",&
         trim(EXTERNAL_BC(n)%spcname)
     endif
   enddo

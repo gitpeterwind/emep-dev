@@ -2,7 +2,7 @@ module Util_ml
 use netcdf
 use ModelConstants_ml,      only: MasterProc
 use TimeDate_ml,            only: date
-use TimeDate_ExtraUtil_ml,  only: date2nctime
+use TimeDate_ExtraUtil_ml,  only: date2nctime,date2string,nctime2string
 use CheckStop_ml,           only: CheckStop
 implicit none
 integer(4) :: numLev,numLon,numLat,numRec
@@ -277,7 +277,7 @@ subroutine PrintNCDim(ncFileID,dOut)
   implicit none
   integer(4), intent(in) :: ncFileID, dOut
   integer(4) :: i, j, ind
-  real(8), dimension(:), pointer :: lon, lat
+  real(8), dimension(:), pointer :: lon=>null(), lat=>null()
   character(len=64) :: fmtll
   call GetNCDim(ncFileID,'lon' ,numLon,varReal=lon)
   call GetNCDim(ncFileID,'lat' ,numLat,varReal=lat)
@@ -357,11 +357,13 @@ subroutine GetNCVar(ncFileID,name,var2D,var3D,rec,unitconv)
     if(present(unitconv))var3D=var3D*unitconv
   endif
 end subroutine GetNCVar
-subroutine GetNCRec(ncFileID,ncDate,rec)
+subroutine GetNCRec(ncFileID,ncDate,rec,exact)
   implicit none
   integer(4), intent(in) :: ncFileID
   type(date), intent(in) :: ncDate
-  integer(4), intent(out) :: rec
+  integer(4), intent(out):: rec
+  logical,    intent(in),optional :: exact
+  logical, paremeter :: debug=.false.
 ! integer(4) :: ncTime
 ! integer(4), dimension(:), pointer :: time
   real(8) :: ncTime
@@ -370,13 +372,19 @@ subroutine GetNCRec(ncFileID,ncDate,rec)
 ! call GetNCDim(ncFileID,'time',numRec,varInt=time)
   call GetNCDim(ncFileID,'time',numRec,varReal=time)
   call date2nctime(ncDate,ncTime)
+  if(debug)print "(/A)","Looking for "//date2string("YYYY-MM-DD hh:mm",ncDate)
   recloop: do rec=1,numRec
+    if(debug)print "(I4.4,': ',A)",rec,nctime2string("YYYY-MM-DD hh:mm",time(rec))
     if(abs(ncTime-time(rec))<halfsec) exit recloop
   enddo recloop
-  if(rec>numRec.or.ncTime/=time(rec))then
+  if(rec>numRec.or.abs(ncTime-time(rec))>=halfsec)then
+    if(present(exact)) &
+      call CheckStop(exact,date2string('Date '//"YYYY-MM-DD hh:mm",ncDate)//&
+                           ' not found on File!')
     rec=numRec
-    print*,'WARNING: date not found on File! Using lastrecord:',rec
+    print*,'WARNING: date '//date2string("YYYY-MM-DD hh:mm",ncDate)//&
+           ' not found on File! Using lastrecord:',rec
   endif
-end subroutine GetNCRec
-end module Util_ml
+endsubroutine GetNCRec
+endmodule Util_ml
 

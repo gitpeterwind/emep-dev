@@ -154,6 +154,84 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21 November 2013  Alvaro 2673
+
+Update Copyright text and Forecast/Analysis running modes.
+
+mk.OpenSource, Copyright.txt
+- Remove the need of Copyright text on *.f90 files.
+  The Copyright text is kept on Copyright.txt and will be inserted to *.f90
+  files by mk.OpenSource.
+- For files already containg Copyright text,
+  the year is updated by mk.OpenSource
+
+Unimod.f90,Nest_ml,Nest_ml,OutputChem_ml
+- Remove Copyright text from files
+
+run.pl:
+- Fix incomplete emissions path for GEMS25, MACC02 & MACC14 domains.
+  Bug introduced on 2667.
+- Change file name convetion for 00 and 12 UTC versions of forecast metyeorology.
+  Assume that 00/12 UTC versions are kept on different direcotries.
+  00/12 UTC versions are no longer distingused by 00/12 tag on file name.
+- Hash variable %inml collects input files to be defined in config_emep.nml.
+  This should slowly replace %ifile/linking.
+  See $inml{'filename_eta'} for an usage example.
+- Vertical description of External BCs used on Forecast runs defined
+  by $inml{'filename_eta'} in run.pl, instead of linking the file.
+- Additional model setup information written to config_emep.nml.
+
+Unimod.f90,Nest_ml,run.pl:
+- Move Forecast restart/dump dates (outdate in Nest_ml; $CWFDUMP in run.pl)
+  from INPUT_PARA namelist (read by Unimod.f90)
+  to Nest_config namelist (read by Nest_ml)
+
+Nest_ml:
+- Set number of forecast restart/dump records (FORECAST_NDUMP) on running time.
+- New logical vaiable NMC_OUTPUT to reduce the output on restart/dump records.
+  Only members of DAobs, DAunobs, PM10 and AOD groups are written out.
+- FORECAST_NDUMP and NMC_OUTPUT read from Nest_config namelist.
+
+config_FORECAST.nml:
+- Port updates to config_EMEPSTD.nml
+- Add NMC_OUTPUT and FORECAST_NDUMP to Nest_config.
+- Set outdate (Nest_config) and filename_eta (ExternalBICs_config)
+  by run.pl using hash/keys.
+- Remove some unused/commented options.
+
+ExternalBICs_ml:
+- Extend char/len of filename_eta
+- Fix minor error for DEBUG output.
+
+OutputChem_ml:
+- Redefine Jan_1st in Wrtchem as the first day of run.
+  This variable is used to avoid writing partial results on the first
+  run day that only contains 00-06 UTC data.
+
+TimeDate_ExtraUtil_ml:
+- Add FFFF format tag for forecast step (fstep)
+
+Makefile,ZD_3DVar/DA_ml,Analysis/DA_Obs_ml,B_NMC/spectralcov_ml
+  minor updates
+
+ZD_3DVar/Makefile:
+- MKL path for intelcomp/13.0.1 module
+- Compile/link options for all *.mod files in the same directory.
+- Pass $(DEBUG) to sub-make calls
+
+ZD_3DVar/B_NMC/Util_ml
+- Add (optional) debug check to GetNCRec for fetching exact time records.
+
+ZD_3DVar/B_NMC/covmat_ml,Unimod_B_nmc.f90
+- Rename resolution variables from dx/dy variables dxdim/dydim.
+- Change default domain resolution from dx=dy=0.25 to TNO14 (dxdim=0.25;dydim=0.125).
+- Check nchemNoObs>0 before allocate/read ucovmat and related variables.
+
+ZD_3DVar/Analysis/DA_3DVar_ml
+- Limit analysis increments (dx/du) to 500% (ANALYSIS_RELINC_MAX=5.0).
+- Check nchemNoObs>0 before unsing ucovmat and related variables.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 14 November 2013  Peter 2672
 
 Flexible vertical coordinates.

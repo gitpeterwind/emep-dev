@@ -19,7 +19,7 @@ use MKL95_LAPACK,     only: spevx
 use My_LAPACK77_ml,   only: lamch=>dlamch, spevx=>dspevx
 #endif
 implicit none
-real, parameter :: dx=0.25, dy=0.25
+real,public,save :: dxdim=0.25, dydim=0.125
 integer :: nv=500, nbg=500
 contains
 subroutine set_chemobs_idx(nchem,observedVar)
@@ -44,16 +44,17 @@ integer :: ierr,nvar
   if(allocated(ichemObs))then
     call CheckStop(size(ichemObs)/=nchemObs,'Wrong size ichemObs.')
   else
-    allocate(ichemobs(nchemObs),stat=ierr)
+    allocate(ichemObs(nchemObs),stat=ierr)
     call CheckStop(ierr,'Allocation error: ICHEMOBS.')
     ichemObs=0
   endif
   call CheckStop(nchemNoObs<0.or.nchemNoObs>nchem,'Wrong nchemNoObs.')
   if(allocated(ichemNoObs))then
     call CheckStop(size(ichemNoObs)/=nchemNoObs,'Wrong size ichemNoObs.')
+  elseif(nchemNoObs==0) then
+    print dafmt,'WARNING nchemNoObs==0'
   else
-    if(nchemNoObs==0) print dafmt,'WARNING nchemNoObs==0'
-    allocate(ichemnoobs(nchemNoObs),stat=ierr)
+    allocate(ichemNoObs(nchemNoObs),stat=ierr)
     call CheckStop(ierr,'Allocation error: ICHEMNOOBS.')
     ichemNoObs=0
   endif
@@ -78,7 +79,7 @@ logical, optional :: selective
 integer :: ierr
 logical :: allocate_all
   allocate_all=.true.;if(present(selective))allocate_all=.not.selective
-  call CheckStop(.not.(allocated(ichemobs).and.allocated(ichemnoobs)),&
+  call CheckStop(.not.(allocated(ichemobs).and.(allocated(ichemnoobs).or.nchemNoObs==0)),&
      'Allocation error: COVMAT/UCOVMAT. Frist call set_chemobs_idx.')
   if(.not.allocated(covmat).and.allocate_all)then
    !allocate(covmat(ncorr,nex),stat=ierr)
@@ -86,7 +87,7 @@ logical :: allocate_all
     call CheckStop(ierr,'Allocation error: COVMAT.')
     covmat=0e0
   endif
-  if(.not.allocated(ucovmat))then
+  if(.not.allocated(ucovmat).and.nchemNoObs>0)then
     allocate(ucovmat(nlev*nchemnoobs,nlev*nchemobs,nkstar),stat=ierr)
     call CheckStop(ierr,'Allocation error: UCOVMAT.')
     ucovmat=0e0
@@ -169,6 +170,11 @@ subroutine update_unobs_covmat(nxex,nyex,nlev,nconcmlp,nchem,concmlp)
   integer m,n,l1,l2,k1,k2,kk1,kk2,ir,ii,ik,ibox,jbox,i
  !integer bindex,bidx
   real dc!,denom,num
+
+  if(nchemnoobs<1)then
+    print dafmt,'WARNING no unobserved to update'
+    return
+  endif
 
   ir=nconcmlp-1
   ii=nconcmlp
@@ -365,9 +371,9 @@ subroutine write_stat(nex,nxex,nyex,nlev,gamma,avgstddev)
 ! write horizontal length scales as a function of altitude:
 !-----------------------------------------------------------------------
   if(nxex.gt.nyex) then
-    rdim=dx/1e3
+    rdim=dxdim/1e3
   else
-    rdim=dy/1e3
+    rdim=dydim/1e3
   endif
   open(10,file='horiz_lengthscale.dat')
   write(10,*)'horizontal length scale as a function of level height'
@@ -429,6 +435,7 @@ subroutine normalise_covmat(nxex,nyex,nlev,nttot)
 !   enddo
 ! enddo
   covmat (:,:)  =covmat (:,:)  /float(nttot)/twopi
+  if(nchemNoObs>0) &
   ucovmat(:,:,:)=ucovmat(:,:,:)/float(nttot)/twopi
   allocate(gamma(nlev*nchemobs,nex),avgstddev(nlev,nchemobs))
 
@@ -481,7 +488,7 @@ subroutine normalise_covmat(nxex,nyex,nlev,nttot)
   close(10)
   !save ucovmat in file:
   open(10,file='ucovmat.cov')
-  write(10,*) ucovmat
+  if(nchemNoObs>0)write(10,*) ucovmat
   close(10)
 
   deallocate(gamma,avgstddev)
@@ -716,7 +723,7 @@ subroutine read_speccov
   call allocate_covmat(nex,nlev,nkstar,selective=.true.)
   open(10,file='ucovmat.cov',status='OLD',iostat=ierr)
   call io_check(ierr,'open ucovmat.cov')
-  read(10,*)ucovmat
+  if(nchemNoObs>0)read(10,*)ucovmat
   close(10)
 
   allocate(sqrt_gamma(nbg1,nex),stat=ierr)

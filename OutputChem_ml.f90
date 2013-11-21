@@ -1,30 +1,3 @@
-! <OutputChem_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
-!          Chemical transport Model>
-!*****************************************************************************!
-!*
-!*  Copyright (C) 2007-2011 met.no
-!*
-!*  Contact information:
-!*  Norwegian Meteorological Institute
-!*  Box 43 Blindern
-!*  0313 OSLO
-!*  NORWAY
-!*  email: emep.mscw@met.no
-!*  http://www.emep.int
-!*
-!*    This program is free software: you can redistribute it and/or modify
-!*    it under the terms of the GNU General Public License as published by
-!*    the Free Software Foundation, either version 3 of the License, or
-!*    (at your option) any later version.
-!*
-!*    This program is distributed in the hope that it will be useful,
-!*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-!*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!*    GNU General Public License for more details.
-!*
-!*    You should have received a copy of the GNU General Public License
-!*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************!
 module OutputChem_ml
 
 use CheckStop_ml,      only: CheckStop
@@ -43,7 +16,7 @@ use NetCDF_ml,         only: CloseNetCDF, Out_netCDF
 use OwnDataTypes_ml,   only: Deriv, print_deriv_type
 use Par_ml,            only: MAXLIMAX,MAXLJMAX,GIMAX,GJMAX,     &
                               IRUNBEG,JRUNBEG
-use TimeDate_ml,       only: current_date, max_day  ! days in month
+use TimeDate_ml,       only: current_date,startdate, max_day  ! days in month
 use TimeDate_ExtraUtil_ml,only: date2string
 
 
@@ -91,7 +64,7 @@ subroutine Wrtchem(numt)
 
   dd_out = nday
   mm_out = nmonth
-  Jan_1st    = ( nmonth == 1 .and. nday == 1 )
+  Jan_1st    = all((/nyear,nmonth,nday/)==startdate(1:3))
   End_of_Run = ( mod(numt,nprint) == 0       )
 
   if(MasterProc .and. DEBUG) write(6,"(a12,i5,5i4)") "DAILY DD_OUT ",   &

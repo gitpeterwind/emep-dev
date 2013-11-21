@@ -99,7 +99,7 @@ my @MAKE = ("gmake", "-j4", "MACHINE=snow");
 die "Must choose STALLO **or** VILJE !\n"
   unless $STALLO+$VILJE==1;
 
-my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2670"    ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA","EMEP");
+my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2673"    ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA","EMEP");
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 
@@ -174,7 +174,7 @@ if ($CWF) {
 ##$CWFDUMP[0]=date2str($CWFBASE."                 ,"%Y-1-1"); # dump/nest every day at 00
   $CWFDUMP[0]=date2str($CWFBASE." 1 day"          ,"%Y%m%d"); # 1st dump/nest
   $CWFDUMP[1]=date2str($CWFBASE." 2 day"          ,"%Y%m%d"); # 2nd dump/nest
-  $MAKEMODE=$eCWF?"eEMEP":"MACC";    # Standard Forecast model setup
+  $MAKEMODE=($eCWF)?"eEMEP":"MACC";    # Standard Forecast model setup
   $MAKEMODE .="-3DVar" if($aCWF);
   $exp_name = ($eCWF)?"EMERGENCY":($aCWF?"ANALYSIS":"FORECAST");
   $testv.= ($eCWF)?".eCWF":".CWF";
@@ -386,11 +386,11 @@ given($GRID){
   }
   when("RCA")    {$emisdir="$ProjDataDir/Interpolations";} #EnsClim
   when("HIRHAM") {$emisdir="$EMIS_INP/emissions/$emisscen/$emisyear";}
-  when("GEMS025"){$emisdir="$EMIS_INP/2008-Trend2006-V9-Extended_PM_corrected-V3";}
-# when("MACC02") {$emisdir="$EMIS_INP/2008_emis_EMEP_from_PS50";}
-# when("MACC02") {$emisdir="$EMIS_INP/2008_emis_EMEP_MACC";}
-  when("MACC02") {$emisdir="$EMIS_INP/2007_emis_MACC";}
-  when("MACC14") {$emisdir="$EMIS_INP/2009_emis_MACCII";}
+  when("GEMS025"){$emisdir="$EMIS_INP/Emissions/2008-Trend2006-V9-Extended_PM_corrected-V3";}
+# when("MACC02") {$emisdir="$EMIS_INP/Emissions/2008_emis_EMEP_from_PS50";}
+# when("MACC02") {$emisdir="$EMIS_INP/Emissions/2008_emis_EMEP_MACC";}
+  when("MACC02") {$emisdir="$EMIS_INP/Emissions/2007_emis_MACC";}
+  when("MACC14") {$emisdir="$EMIS_INP/Emissions/2009_emis_MACCII";}
 }
 #TMP and should be improved because it gives errors for other domains!
 #.. For using emissions of EC/OC instead of PMx
@@ -587,15 +587,19 @@ foreach my $scenflag ( @runs ) {
   $METformat=($METformat eq "felt")?"$MetDir/fhh.YYYYMMDD":      # felt
                                     "$MetDir/meteoYYYYMMDD.nc";  # cdf
   if($CWF) { # Forecast Meteorology in NetCDF
-    $METformat="./meteoYYYYMMDD.nc"; # link file to work path
-    my $metday = ($CWFMETV)?int($CWFMETV/24+0.99):0;
-    $MetDir=~s/$year/%Y/g;
+    $METformat="./meteoYYYYMMDD.nc";            # link file to work path
+    my $metday = 0;
+    if($CWFMETV) {
+      $metday = int($CWFMETV/24+0.99);          # time offset on days
+      my $UTCdir = sprintf "_%02dUTC",$CWFMETV; # 00/12 UTC versions
+      $MetDir.= $UTCdir if(-d $MetDir.$UTCdir); # if the _??UTC apth exists
+    }
+    $MetDir=~s:$year:%Y:g;                      # Genereal case for Jan 1st
     for (my $n = 0; $n < $CWFDAYS; $n++) {
-      my $metfile="$MetDir/meteo%Y%m%d${CWFMETV}_%%02d.nc";
-      if($CWFDAYS<=10){
+      my $metfile="$MetDir/meteo%Y%m%d_%%02d.nc";
+      if($CWFDAYS<=10){  # forecast with 00/12 UTC FC met.
         $metfile=sprintf date2str($CWFBASE." $metday day ago",$metfile),$n+$metday;
-      }else{
-        $metfile=~s/meteo%Y%m%d$CWFMETV/meteo%Y%m%d/g;
+      }else{             # hindcast using day 0,..,3 FC met.
         $metfile=sprintf date2str($CWFBASE." $metday day ago $n day",$metfile),$metday;
       }
       # Chech if meteo is in place
@@ -645,7 +649,8 @@ foreach my $scenflag ( @runs ) {
 #=================== INPUT FILES =========================================
 # ToDo Change noxsplit.default to defaults, as with voc (also in Unimod)
 
-  my %ifile   = ();   # List of input data-files
+  my %ifile = ();   # List of input data-files
+  my %inml  = ();   # List of input data-files in nml format
 
 # First, emission files are labelled e.g. gridSOx, which we assign to
 # emislist.sox to ensure compatability with the names (sox,...) used
@@ -924,7 +929,7 @@ foreach my $scenflag ( @runs ) {
     $ifile{"$DATA_LOCAL/ClimateFactors_SMI.txt"} = "ROADDUST_CLIMATE_FAC";
   }
 # IFZ-MOZ BCs levels description (in cdo zaxisdes/eta format)
-  $ifile{"$DataDir/$GRID/Boundary_conditions/mozart_eta.zaxis"} = "EMEP_IN_BC_eta.zaxis"
+  $inml{'filename_eta'}= "$DataDir/$GRID/Boundary_conditions/mozart_eta.zaxis"
     if ( $CWF and -e $cwfbc and $cwfbc =~ m/IFS-MOZART/ );
 
   foreach my $f (sort keys %ifile) {  # CHECK and LINK
@@ -932,7 +937,7 @@ foreach my $scenflag ( @runs ) {
       mylink("Inputs: ",$f,$ifile{$f}) ;
     } else {
       print "Missing Input $f !!!\n";
-      die "ERROR: Missing OLD $f (or possibly wrong Chem$Chem\n" 
+      die "ERROR: Missing $f (or possibly wrong Chem$Chem)\n" 
         unless $f =~ /special/;
     }
   }
@@ -973,14 +978,12 @@ foreach my $scenflag ( @runs ) {
 
 # namelist with input parameters (to be read by Unimod.f90 and other modules)
   my $nml="";
+  my %h=(%inml,%BENCHMARK);
   if(%BENCHMARK){
     # read nml template file
     $nml=EMEP::Sr::slurp("$ProgDir/config_BM-$GRID.nml");
-    # fill in variables on the template file with corresponding $BENCHMARK{key}
-    my %h=(%BENCHMARK,'runlabel1'=>"$runlabel1",'runlabel2'=>"$runlabel2",
-                      'METformat'=>"$METformat");
     # fill in variables on the template file with corresponding $hash{key}
-    foreach my $k (keys(%h)) { $nml=~s:\$$k:$h{$k}:g; }
+    %h=(%h,'runlabel1'=>"$runlabel1",'runlabel2'=>"$runlabel2",'METformat'=>"$METformat");
   } else {
     $nml="&INPUT_PARA\n"
         ."  iyr_trend = $iyr_trend,\n"
@@ -988,19 +991,28 @@ foreach my $scenflag ( @runs ) {
         ."  runlabel2 = '$runlabel2',\n"
         ."  startdate = ".date2str($startdate ,"%Y,%m,%d,000000,\n")
         ."  enddate   = ".date2str($enddate   ,"%Y,%m,%d,000000,\n")
-  .($CWF?"  outdate   = ".date2str($CWFDUMP[0],"%Y,%m,%d,000000,")
-                         .date2str($CWFDUMP[1],"%Y,%m,%d,000000,\n"):"")
         ."  meteo     = '$METformat',\n"
         ."&end\n";
     # NML namelist options.
     foreach my $f ("config_$exp_name.nml","config_Outputs_$outputs.nml") {
       $nml.=EMEP::Sr::slurp("$ProgDir/$f");
     }
+    # fill in variables on the template file with corresponding $hash{key}
+    %h=(%h,'outdate'=>date2str($CWFDUMP[0],"%Y,%m,%d,000000,")
+                     .date2str($CWFDUMP[1],"%Y,%m,%d,000000")) if $CWF;
   }
   $nml =~ s/(\s*\!.*|\s+$)//g;  # remove comments, tailing spaces
   $nml =~ s/\s*\n+/\n/g;        # & empty lines
+  $nml.="\n"                    # restore newline at the end of last namelist
+  # fill in variables on the template file with corresponding $hash{key}
+  foreach my $k (keys(%h)) { $nml=~s:\$$k:$h{$k}:g; }
+  # list mode setup variables
+  $nml.="!". "-"x22 ." Model set-up ". "-"x22 ."\n";
+  %h=('testv'=>"$testv",'Chem'=>"$Chem",'exp_name'=>"$exp_name",
+      'outputs'=>"$outputs",'GRID'=>"$GRID",'MAKEMODE'=>"$MAKEMODE");
+  foreach my $k (sort keys %h) { $nml.=sprintf "!  %-22s = '%s',\n",$k,$h{$k}; }
   # list of linked files in nml format for compatibility with future nml-only versions
-  $nml.="\n!". "-"x22 ." Linked files ". "-"x22 ."\n";
+  $nml.="!". "-"x22 ." Linked files ". "-"x22 ."\n";
   foreach my $k (sort keys %ifile) { $nml.=sprintf "!  %-22s = '%s',\n",$ifile{$k},$k; }
   open(TMP,">config_emep.nml");
   print TMP "$nml";
