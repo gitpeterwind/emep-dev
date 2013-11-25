@@ -1,5 +1,4 @@
-! <%filename% - A component of the EMEP MSC-W
-!   Unified Eulerian Chemical transport Model, version %vers%>
+! <%filename% - A component of the EMEP MSC-W Chemical transport Model, version %vers%>
 !*****************************************************************************!
 !*
 !*  Copyright (C) 2007-%year% met.no

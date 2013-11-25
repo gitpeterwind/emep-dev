@@ -18,6 +18,7 @@ make EMEP
 
 #-- 1)  Code ------------------------------------------------------------------
 
+vers+="(`svnversion|tr -d M`)"
 for i in *.f90 *.inc gpl.txt modrun.sh; do
   case $i in
   FUTURE*);;         # FUTURE routines not wanted

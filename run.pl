@@ -1003,9 +1003,9 @@ foreach my $scenflag ( @runs ) {
   }
   $nml =~ s/(\s*\!.*|\s+$)//g;  # remove comments, tailing spaces
   $nml =~ s/\s*\n+/\n/g;        # & empty lines
-  $nml.="\n"                    # restore newline at the end of last namelist
+  $nml.="\n";                   # restore newline at the end of last namelist
   # fill in variables on the template file with corresponding $hash{key}
-  foreach my $k (keys(%h)) { $nml=~s:\$$k:$h{$k}:g; }
+  foreach my $k (keys %h) { $nml=~s:\$$k:$h{$k}:g; }
   # list mode setup variables
   $nml.="!". "-"x22 ." Model set-up ". "-"x22 ."\n";
   %h=('testv'=>"$testv",'Chem'=>"$Chem",'exp_name'=>"$exp_name",
