@@ -154,10 +154,15 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-26 November 2013  Alan Briolat  2675
+26 November 2013  Alan Briolat  2675-2676
 
 ZD_ESX/esx_DO3SE.f90, ZD_ESX/esx_gleaf.f90, ZD_ESX/esx_tester.f90:
 - Move ESX-DO3SE integraton to its own module
+
+DryDep_ml.f90, Makefile, Makefile.SRCS, ModelConstants_ml.f90,
+ZD_ESX/My_ESX_ml.f90, ZD_EXTRA/My_ESX_ml.f90:
+- Integrate ESX into the build system in a similar way to MACC pollen, and
+  other optional components.  Can build ESX variant with "make EmChem09-ESX".
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 21/25 November 2013  Alvaro 2673/2674

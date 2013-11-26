@@ -20,4 +20,18 @@ SRCS =	Aero_Vds_ml.f90 Ammonium_ml.f90 AOD_PM_ml.f90 Advection_ml.f90 AirEmis_ml
 	SeaSalt_ml.f90 StoFlux_ml.f90 \
 	SubMet_ml.f90 Tabulations_ml.f90 TimeDate_ml.f90 TimeDate_ExtraUtil_ml.f90 Timefactors_ml.f90 Timing_ml.f90 \
 	Trajectory_ml.f90 Units_ml.f90 Unimod.f90 Volcanos_ml.f90 Wesely_ml.f90 \
-	global2local.f90 local2global.f90 PhyChem_ml.f90 My_3DVar_ml.f90 My_Pollen_ml.f90
+	global2local.f90 local2global.f90 PhyChem_ml.f90 My_3DVar_ml.f90 My_Pollen_ml.f90 My_ESX_ml.f90
+
+ESX_SRCS = ZD_ESX/AllocInit.f90 \
+		   ZD_ESX/CheckStops.f90 \
+		   ZD_ESX/ChemFunctions.f90 \
+		   ZD_ESX/CM_ChemDims.f90 \
+		   ZD_ESX/CM_ChemRates.f90 \
+		   ZD_ESX/CM_ChemSpecs.f90 \
+		   ZD_ESX/DefPhotolysis.f90 \
+		   ZD_ESX/esx_Variables.f90 \
+		   ZD_ESX/LocalVariables.f90 \
+		   ZD_ESX/ModelConstants.f90 \
+		   ZD_ESX/ZchemData.f90 \
+		   ZD_ESX/Zmet_ml.f90 \
+		   ZD_ESX/My_ESX_ml.f90

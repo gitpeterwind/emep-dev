@@ -92,6 +92,7 @@ module DryDep_ml
  use ModelConstants_ml,only : dt_advec,PT,KMAX_MID, KMAX_BND ,&
                                   DEBUG_i, DEBUG_j, NPROC, &
                                   DEBUG_DRYDEP, DEBUG_ECOSYSTEMS, DEBUG_VDS,&
+                                  USES, &
                                   MasterProc, &
                                   DEBUG_AOT, & !JUST TESTING
                                   ATWAIR, atwS, atwN, PPBINV,&
@@ -112,6 +113,7 @@ module DryDep_ml
  use ChemSpecs_shl_ml,  only :  NSPEC_SHL
  use TimeDate_ml,       only : daynumber, current_date
  use Wesely_ml         ! ... Init_GasCoeff, DRx, Rb_Cor, ...
+ use ESX_ml,            only : Init_ESX, ESX
 
 
  implicit none
@@ -178,6 +180,10 @@ module DryDep_ml
 
      call Init_DepMap()               ! Maps CDDEP to IXADV
      call Init_GasCoeff()             ! Sets Wesely coeffs.
+
+     if (USES%ESX) then
+       call Init_ESX()
+     end if
 
      nadv = 0
      do n = 1, NDRYDEP_ADV  
@@ -872,6 +878,11 @@ integer :: nglob
 
        call Add_MosaicOutput(debug_flag,i,j,convfac2,&
            DepAdv2Calc, fluxfrac_adv, Deploss ) 
+
+
+      if (USES%ESX) then
+        call ESX()
+      end if
 
 
       !----------------------------------------------------------------
