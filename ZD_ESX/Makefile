@@ -109,13 +109,8 @@
 # ./esx_gleaf.f90 Uses Module CheckStops
 # ./esx_gleaf.f90 Uses Module esx_Variables
 # ./esx_gleaf.f90 Uses Module esx_Zveg
-# ./esx_gleaf.f90 Uses Module DO3SE_GstoTypes_ml
-# ./esx_gleaf.f90 Uses Module DO3SE_Gsto_ml
-# ./esx_gleaf.f90 Uses Module DO3SE_Photosynthesis_ml
-# ./esx_gleaf.f90 Uses Module DO3SE_SMD_ml
-# ./esx_gleaf.f90 Uses Module DO3SE_Util_ml
-# ./esx_gleaf.f90 Uses Module DO3SE_PhysicalConstants_ml
-# Full list of modules in ./esx_gleaf.f90: CheckStops esx_Variables esx_Zveg DO3SE_GstoTypes_ml DO3SE_Gsto_ml DO3SE_Photosynthesis_ml DO3SE_SMD_ml DO3SE_Util_ml DO3SE_PhysicalConstants_ml 
+# ./esx_gleaf.f90 Uses Module esx_DO3SE
+# Full list of modules in ./esx_gleaf.f90: CheckStops esx_Variables esx_Zveg esx_DO3SE 
 # Uses CheckStops which is in ./CheckStops.f90
 # ./CheckStops.f90 already in list
 # Uses esx_Variables which is in ./esx_Variables.f90
@@ -133,6 +128,18 @@
 # Uses Io_Routines which is in ./Io_Routines.f90
 # process_fsource called with arg ./Io_Routines.f90 
 # Full list of modules in ./Io_Routines.f90:  
+# Uses esx_DO3SE which is in ./esx_DO3SE.f90
+# process_fsource called with arg ./esx_DO3SE.f90 
+# ./esx_DO3SE.f90 Uses Module CheckStops
+# ./esx_DO3SE.f90 Uses Module DO3SE_GstoTypes_ml
+# ./esx_DO3SE.f90 Uses Module DO3SE_Gsto_ml
+# ./esx_DO3SE.f90 Uses Module DO3SE_Photosynthesis_ml
+# ./esx_DO3SE.f90 Uses Module DO3SE_SMD_ml
+# ./esx_DO3SE.f90 Uses Module DO3SE_Util_ml
+# ./esx_DO3SE.f90 Uses Module DO3SE_PhysicalConstants_ml
+# Full list of modules in ./esx_DO3SE.f90: CheckStops DO3SE_GstoTypes_ml DO3SE_Gsto_ml DO3SE_Photosynthesis_ml DO3SE_SMD_ml DO3SE_Util_ml DO3SE_PhysicalConstants_ml 
+# Uses CheckStops which is in ./CheckStops.f90
+# ./CheckStops.f90 already in list
 # Uses DO3SE_GstoTypes_ml which is in DO3SE/src/DO3SE_GstoTypes_ml.F90
 # process_fsource called with arg DO3SE/src/DO3SE_GstoTypes_ml.F90 
 # DO3SE/src/DO3SE_GstoTypes_ml.F90 Uses Module DO3SE_Util_ml
@@ -402,8 +409,8 @@ F90=gfortran  -pedantic -Wall -fbounds-check -fdefault-real-8
 # -------------------End-macro-Defs---------------------------
 
 # Here is the link step 
-esx_tester:CheckStops.o AllocInit.o CM_ChemSpecs.o ModelConstants.o SmallUtils_ml.o DefPhotolysis.o ZchemData.o KeyValueTypes.o LocalVariables.o PhysicalConstants_ml.o TimeDate_ml.o esx_Variables.o Zmet_ml.o Ammonium_ml.o Io_Routines.o esx_Zveg.o DO3SE_ModelConstants_ml.o DO3SE_Util_ml.o DO3SE_GstoTypes_ml.o DO3SE_PhysicalConstants_ml.o DO3SE_Gsto_ml.o DO3SE_Photosynthesis_ml.o DO3SE_Resistance_ml.o DO3SE_SMD_ml.o esx_gleaf.o Radiation_ml.o esx_GetData.o ChemFunctions.o CM_ChemRates.o Io_ml.o ChemSolver.o esx_ChemRun.o esx_MassBudget.o esx_Zchem.o esx_ZdiffSolver.o esx_Zgrid.o MicroMet_ml.o Kz_ml.o esx_Zmet.o esx_tester.o 
-	 $(F90) -o esx_tester CheckStops.o AllocInit.o CM_ChemSpecs.o ModelConstants.o SmallUtils_ml.o DefPhotolysis.o ZchemData.o KeyValueTypes.o LocalVariables.o PhysicalConstants_ml.o TimeDate_ml.o esx_Variables.o Zmet_ml.o Ammonium_ml.o Io_Routines.o esx_Zveg.o DO3SE_ModelConstants_ml.o DO3SE_Util_ml.o DO3SE_GstoTypes_ml.o DO3SE_PhysicalConstants_ml.o DO3SE_Gsto_ml.o DO3SE_Photosynthesis_ml.o DO3SE_Resistance_ml.o DO3SE_SMD_ml.o esx_gleaf.o Radiation_ml.o esx_GetData.o ChemFunctions.o CM_ChemRates.o Io_ml.o ChemSolver.o esx_ChemRun.o esx_MassBudget.o esx_Zchem.o esx_ZdiffSolver.o esx_Zgrid.o MicroMet_ml.o Kz_ml.o esx_Zmet.o esx_tester.o   
+esx_tester:CheckStops.o AllocInit.o CM_ChemSpecs.o ModelConstants.o SmallUtils_ml.o DefPhotolysis.o ZchemData.o KeyValueTypes.o LocalVariables.o PhysicalConstants_ml.o TimeDate_ml.o esx_Variables.o Zmet_ml.o Ammonium_ml.o Io_Routines.o esx_Zveg.o DO3SE_ModelConstants_ml.o DO3SE_Util_ml.o DO3SE_GstoTypes_ml.o DO3SE_PhysicalConstants_ml.o DO3SE_Gsto_ml.o DO3SE_Photosynthesis_ml.o DO3SE_Resistance_ml.o DO3SE_SMD_ml.o esx_DO3SE.o esx_gleaf.o Radiation_ml.o esx_GetData.o ChemFunctions.o CM_ChemRates.o Io_ml.o ChemSolver.o esx_ChemRun.o esx_MassBudget.o esx_Zchem.o esx_ZdiffSolver.o esx_Zgrid.o MicroMet_ml.o Kz_ml.o esx_Zmet.o esx_tester.o 
+	 $(F90) -o esx_tester CheckStops.o AllocInit.o CM_ChemSpecs.o ModelConstants.o SmallUtils_ml.o DefPhotolysis.o ZchemData.o KeyValueTypes.o LocalVariables.o PhysicalConstants_ml.o TimeDate_ml.o esx_Variables.o Zmet_ml.o Ammonium_ml.o Io_Routines.o esx_Zveg.o DO3SE_ModelConstants_ml.o DO3SE_Util_ml.o DO3SE_GstoTypes_ml.o DO3SE_PhysicalConstants_ml.o DO3SE_Gsto_ml.o DO3SE_Photosynthesis_ml.o DO3SE_Resistance_ml.o DO3SE_SMD_ml.o esx_DO3SE.o esx_gleaf.o Radiation_ml.o esx_GetData.o ChemFunctions.o CM_ChemRates.o Io_ml.o ChemSolver.o esx_ChemRun.o esx_MassBudget.o esx_Zchem.o esx_ZdiffSolver.o esx_Zgrid.o MicroMet_ml.o Kz_ml.o esx_Zmet.o esx_tester.o   
 
 # Here are the compile steps
  
@@ -479,7 +486,10 @@ DO3SE_Resistance_ml.o:DO3SE/src/DO3SE_Resistance_ml.F90 DO3SE_ModelConstants_ml.
 DO3SE_SMD_ml.o:DO3SE/src/DO3SE_SMD_ml.F90 DO3SE_ModelConstants_ml.o DO3SE_Resistance_ml.o DO3SE_Util_ml.o 
 	 $(F90) -c DO3SE/src/DO3SE_SMD_ml.F90 
 
-esx_gleaf.o:./esx_gleaf.f90 CheckStops.o esx_Variables.o esx_Zveg.o DO3SE_GstoTypes_ml.o DO3SE_Gsto_ml.o DO3SE_Photosynthesis_ml.o DO3SE_SMD_ml.o DO3SE_Util_ml.o DO3SE_PhysicalConstants_ml.o 
+esx_DO3SE.o:./esx_DO3SE.f90 CheckStops.o DO3SE_GstoTypes_ml.o DO3SE_Gsto_ml.o DO3SE_Photosynthesis_ml.o DO3SE_SMD_ml.o DO3SE_Util_ml.o DO3SE_PhysicalConstants_ml.o 
+	 $(F90) -c ./esx_DO3SE.f90 
+
+esx_gleaf.o:./esx_gleaf.f90 CheckStops.o esx_Variables.o esx_Zveg.o esx_DO3SE.o 
 	 $(F90) -c ./esx_gleaf.f90 
 
 Radiation_ml.o:./Radiation_ml.f90 PhysicalConstants_ml.o TimeDate_ml.o 
