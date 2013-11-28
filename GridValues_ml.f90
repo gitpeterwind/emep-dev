@@ -213,7 +213,6 @@ subroutine GridRead(meteo,cyclicgrid)
      !define own vertical coordinates
      !Must use eta coordinates
      USE_EtaCOORDINATES=.true.
-     allocate(A_bnd_met(KMAX_MET+1),B_bnd_met(KMAX_MET+1))
      if(me==0)then !onlyme=0 read the file
         write(*,*)'Define vertical levels from ',trim(filename_vert)
         write(*,*)'using eta coordinates '
@@ -566,6 +565,7 @@ subroutine GridRead(meteo,cyclicgrid)
 !          call check(nf90_get_var(ncFileID, varID,B_mid))
              call check(nf90_inq_varid(ncid = ncFileID, name = "P0", varID = varID))                 
              call check(nf90_get_var(ncFileID, varID, P0 ))
+             if(.not.allocated(A_bnd_met))allocate(A_bnd_met(KMAX_MET+1),B_bnd_met(KMAX_MET+1))
              call check(nf90_inq_varid(ncid = ncFileID, name = "hyai", varID = varID))                 
              call check(nf90_get_var(ncFileID, varID, A_bnd_met ))
              A_bnd_met=P0*A_bnd_met!different definition in model and grid_Def
