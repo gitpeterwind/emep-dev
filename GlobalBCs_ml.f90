@@ -123,6 +123,9 @@ end type SIAfac
 integer, save, private  :: iglbeg, iglend, jglbeg, jglend
 ! -----------------------------------------------------------------------
 integer,parameter ::KMAX20=20
+!temporary used by BoundaryConditions
+real,public :: O3fix
+real,public :: trend_o3, trend_co, trend_voc
 
 contains
 
@@ -213,13 +216,11 @@ subroutine GetGlobalData(year,month,ibc,used,        &
     (/39.8,41.9,45.4,46.5,43.2,36.2,30.5,30.1,34.1,37.0,39.0,38.5/)
   real, dimension(12):: macehead_O3=macehead_default
   !---------------------------------------------------------------------------
-  real :: O3fix
   integer :: i, j, k, i0, i1, j1, icount
   real    :: f0, f1             ! interpolation factors
   character(len=30) :: fname    ! input filename
   character(len=99) :: txtmsg   ! error messages
   character(len=30) :: BCpoll   ! pollutant name
-  real :: trend_o3, trend_co, trend_voc
   real,allocatable,save, dimension(:) :: p_kPa, h_km  !Use of standard atmosphere
 
   real :: scale_old, scale_new,iMH,jMH

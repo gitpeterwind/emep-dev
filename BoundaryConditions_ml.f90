@@ -85,7 +85,8 @@ use GlobalBCs_ml,      only:  &
   ,IBC_O3,IBC_HNO3,IBC_PAN,IBC_CO,IBC_C2H6   &
   ,IBC_C4H10, IBC_NO ,IBC_NO2,IBC_NH4_f,IBC_NO3_f,IBC_NO3_c&
   ,IBC_H2O2, IBC_DUST_f, IBC_DUST_c,IBC_SEASALT_F, IBC_SEASALT_C &
-  ,IBC_SEASALT_G ,setgl_actarray
+  ,IBC_SEASALT_G ,setgl_actarray&
+  ,O3fix,trend_o3!temporary
 use GridValues_ml,     only: glon, glat   & ! full domain lat, long
                             ,sigma_mid    & !sigma layer midpoint
                             ,debug_proc, debug_li, debug_lj & ! debugging
@@ -100,6 +101,7 @@ use ModelConstants_ml, only: KMAX_MID  &  ! Number of levels in vertical
                             ,USE_SEASALT & 
                             ,DEBUG  & ! %BCs
                             ,DEBUG_i, DEBUG_j, MasterProc, PPB
+use NetCDF_ml,         only:ReadField_CDF,vertical_interpolate
 use Par_ml,          only: &
    MAXLIMAX, MAXLJMAX, limax, ljmax, me &
   ,neighbor, NORTH, SOUTH, EAST, WEST   &  ! domain neighbours
@@ -218,6 +220,9 @@ contains
 
     integer  :: iglobact, jglobact, errcode
     integer, save :: idebug=0, itest=1, i_test=0, j_test=0
+    real, allocatable,dimension(:,:,:)   :: O3_logan,O3_logan_emep
+    character(len = 100) ::fileName,varname
+    logical :: NewLogan=.false.! under testing
 
     if (first_call) then
        if (DEBUG%BCS) write(*,"(a,I3,1X,a,i5)") &
@@ -324,44 +329,77 @@ contains
     !== BEGIN READ_IN OF GLOBAL DATA
 
     do ibc = 1, NGLOB_BC
+      
        if (MasterProc) call GetGlobalData(year,month,ibc,bc_used(ibc), &
             iglobact,jglobact,bc_data,io_num,errcode)
-
+       
        if (DEBUG%BCS.and.MasterProc) &
             write(*, *)'Calls GetGlobalData: year,iyr_trend,ibc,month,bc_used=', &
             year,iyr_trend,ibc,month,bc_used(ibc)
-
+       
        call CheckStop(ibc==1.and.errcode/= 0,&
             "ERRORBCs: GetGlobalData, failed in BoundaryConditions_ml")
-
+       
        !-- If the read-in bcs are required, we broadcast and use:
        if ( bc_used(ibc) > 0 ) then
           CALL MPI_BCAST(bc_data,8*iglobact*jglobact*KMAX_MID,MPI_BYTE,0,&
                MPI_COMM_WORLD,INFO)
-
+          
           ! - set bc_adv: advected species
-!          do i = 1, bc_used_adv(ibc)
-!             iem = spc_used_adv(ibc,i)
-!             iem1 = spc_adv2changed(iem)
-!             bc_adv (iem1,:,:,:) = bc_adv(iem1,:,:,:) &
-!                  + bc_data(:,:,:)*bc2xn_adv(ibc,iem)
-!          enddo
-
+          !          do i = 1, bc_used_adv(ibc)
+          !             iem = spc_used_adv(ibc,i)
+          !             iem1 = spc_adv2changed(iem)
+          !             bc_adv (iem1,:,:,:) = bc_adv(iem1,:,:,:) &
+          !                  + bc_data(:,:,:)*bc2xn_adv(ibc,iem)
+          !          enddo
+          
           ! - set bc_bgn: background (prescribed) species
-!          do i = 1, bc_used_bgn(ibc)
-!             iem = spc_used_bgn(ibc,i)
-!             iem1 = spc_bgn2changed(iem)
-             !             bc_bgn(iem1,:,:,:) = bc_bgn(iem1,:,:,:) &
-             !                  +  bc_data(:,:,:)*bc2xn_bgn(ibc,iem)
-!          enddo
+          !          do i = 1, bc_used_bgn(ibc)
+          !             iem = spc_used_bgn(ibc,i)
+          !             iem1 = spc_bgn2changed(iem)
+          !             bc_bgn(iem1,:,:,:) = bc_bgn(iem1,:,:,:) &
+          !                  +  bc_data(:,:,:)*bc2xn_bgn(ibc,iem)
+          !          enddo
        endif    ! bc_used
-
+       
        !   if (MasterProc) close(io_num)
+
+       if(ibc==1.and. NewLogan)then !temporary fix, assumes IBC_O3=1
+!This should have been in GetGlobalData, but GetGlobalData is called only by MasterPoroc.
+!So we overwrite whatever O3 is read in from  GetGlobalData
+          if(Masterproc)write(*,*)'OVERWRITING LOGAN'
+ 
+          !Read Logan BC in pressure coordinates
+          if(.not.allocated(O3_logan))allocate(O3_logan(13,MAXLIMAX,MAXLJMAX))
+          if(.not.allocated(O3_logan_emep))allocate(O3_logan_emep(MAXLIMAX,MAXLJMAX,KMAX_MID))
+          filename='/global/work/mifapw/emep/Data/Logan_clim/Logan.nc'!will be put in run.pl in due time
+          varname='O3'
+          call  ReadField_CDF(fileName,varname,O3_logan,nstart=month,kstart=1,kend=13,interpol='conservative', &
+              needed=.true.,debug_flag=.true.)
+          CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
+           !interpolate vertically
+          call vertical_interpolate(filename,O3_logan,13,O3_logan_emep,Masterproc)
+          do k = 1, KMAX_MID
+             do j = 1, ljmax
+                do i = 1, limax
+                   bc_data(i_fdom(i)-IRUNBEG+1,j_fdom(j)-JRUNBEG+1,k)=O3_logan_emep(i,j,k)
+                enddo
+             enddo
+          enddo
+!MaceHead correction
+          CALL MPI_BCAST(trend_o3,8,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+          CALL MPI_BCAST(O3fix,8,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+          if(masterProc)write(*,*)'O3fix,trend_o3 ',O3fix,trend_o3
+          bc_data = max(15.0*PPB,bc_data-O3fix)
+          bc_data = bc_data*trend_o3
+                
+       endif
 
        if (first_call) then
 
           ! Set 3-D arrays of new BCs
           do n = 1, bc_used_adv(ibc)
+
              iem = spc_used_adv(ibc,n)
              ntot = iem + NSPEC_SHL 
 
@@ -707,6 +745,7 @@ contains
 !    endif
 
     if (first_call) first_call = .false.
+
   end subroutine BoundaryConditions
 
 subroutine My_bcmap(iyr_trend)

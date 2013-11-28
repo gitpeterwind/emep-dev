@@ -154,6 +154,18 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+28 November 2013  Peter  2677
+
+NetCDF_ml.f90:
+vertical interpolation routine.
+NB: this routine does assume Pref at surface everywhere!
+BoundaryConditions_ml:
+Hardcoded option (NewLogan), to run with a  new Logan BC for O3
+The new file is in the original pressure grid:
+/global/work/mifapw/emep/Data/Logan_clim/Logan.nc
+This is a temporary setup. Hopefully the entire BIC routine will be reviewd.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26 November 2013  Alan Briolat  2675-2676
 
 ZD_ESX/esx_DO3SE.f90, ZD_ESX/esx_gleaf.f90, ZD_ESX/esx_tester.f90:
