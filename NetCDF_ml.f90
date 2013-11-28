@@ -120,6 +120,7 @@
   public :: Read_Inter_CDF
   public :: ReadField_CDF
   public :: ReadTimeCDF
+  public :: vertical_interpolate
   public :: check
 
   private :: CreatenetCDFfile
@@ -2046,7 +2047,8 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   !dimensions and indices:
   !Rvar is assumed to have declared dimensions MAXLIMAX,MAXLJMAX in 2D.
   !If 3D, k coordinate in Rvar assumed as first coordinate. Could consider to change this.
-  !nstart (otional) is the index of last dimension in the netcdf file, generally time dimension.
+  !If kstart<0, then all vertical levels are read in
+  !nstart (optional) is the index of last dimension in the netcdf file, generally time dimension.
   !
   !undefined field values:
   !Some data can be missing/not defined for some gridpoints;
@@ -2113,7 +2115,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   integer, optional, intent(out)  ::Ncc_out(*), CC_out(MAXLIMAX*MAXLJMAX,*) !Number of country-codes and Country codes
 
   logical, save :: debug_ij
-  logical ::fractions
+  logical ::fractions,interpolate_vertical
   integer :: ncFileID,VarID,lonVarID,latVarID,status,xtype,ndims,dimids(NF90_MAX_VAR_DIMS),nAtts
   integer :: VarIDCC,VarIDNCC,VarIDfrac,NdimID
   integer :: dims(NF90_MAX_VAR_DIMS),NCdims(NF90_MAX_VAR_DIMS),totsize,i,j,k
@@ -2149,7 +2151,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   real, allocatable ::fraction_in(:,:)
   integer, allocatable ::CC(:,:),Ncc(:)
   real ::total,UnDef_local
-  integer ::N_out,Ng,Nmax
+  integer ::N_out,Ng,Nmax,kstart_loc,kend_loc
 
   !_______________________________________________________________________________
   !
@@ -2169,7 +2171,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   !open an existing netcdf dataset
   status=nf90_open(path = trim(fileName), mode = nf90_nowrite, ncid = ncFileID)
   if(status == nf90_noerr) then
-     if ( debug ) write(*,*) 'ReadCDF reading ',trim(filename), 'nstart ', nstart
+     if ( debug ) write(*,*) 'ReadCDF reading ',trim(filename), ' nstart ', nstart
   else
      if(fileneeded)then
         print *, 'file does not exist: ',trim(fileName),nf90_strerror(status)
@@ -2219,9 +2221,12 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
 
   data3D=.false.
   if(present(kstart).or.present(kend))then
-     call CheckStop((.not. present(kend).or. .not. present(kend)), &
+     call CheckStop((.not. present(kstart).or. .not. present(kend)), &
           "ReadField_CDF : both or none kstart and kend should be present")
+     kstart_loc=kstart
+     kend_loc=kend
      data3D=.true.
+
   endif
 
   !Check first that variable has data covering the relevant part of the grid:
@@ -2239,8 +2244,10 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
      if ( debug ) write(*,*) 'minlat attribute found: ',minlat_var
      call CheckStop(fractions, &
           "ReadField_CDF: minlat not implemented for fractions")     
+     call CheckStop(kstart_loc<0, &
+          "ReadField_CDF: minlat not implemented for vertical interpolation")     
      k2=1
-     if(data3D)k2=kend-kstart+1
+     if(data3D)k2=kend_loc-kstart_loc+1
      ijk=MAXLIMAX*MAXLJMAX*k2
      if(minlat_var>maxlat)then
         !the data is outside range. put zero or Undef.
@@ -2412,7 +2419,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
            call ReadField_CDF('SurfacePressure.nc','surface_pressure',&
                 Psurf_ref,current_date%month,needed=.true.,interpol='zero_order',debug_flag=debug_flag)
         else
-           call CheckStop(trim(name)/='k'.and.trim(name)/='N',"vertical coordinate (k or N) not found")
+           call CheckStop(trim(name)/='k'.and.trim(name)/='N'.and.trim(name)/='lev',"vertical coordinate (k, lev or N) not found")
         endif
      endif
 
@@ -2486,7 +2493,6 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
      if ( debug ) write(*,"(a,4f8.2,6i8)") 'ReadCDF minmax ',&
           minlon,maxlon,minlat,maxlat,imin,imax,jmin,jmax
 
-
      startvec(1)=imin
      startvec(2)=jmin
      if(ndims>2)startvec(ndims)=nstart
@@ -2495,8 +2501,17 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
      dims(2)=jmax-jmin+1
 
      if(data3D)then
-        startvec(3)=kstart
-        dims(3)=kend-kstart+1
+        if(kstart_loc<0)then
+           !take all levels
+           kstart_loc=1
+           kend_loc=dims(3)
+!NB: size of Rvar is not computable (by ifort)
+!           call CheckStop(size(Rvar)<MAXLIMAX*MAXLJMAX*(kend_loc-kstart_loc+1), &
+!          "ReadField_CDF: size of Rvar is too small")
+           interpolate_vertical=.true.
+        endif
+        startvec(3)=kstart_loc
+        dims(3)=kend_loc-kstart_loc+1
         if(Flight_Levels)dims(3)=NFL
         if(Flight_Levels)startvec(3)=1
         if(ndims>3)startvec(ndims)=nstart
@@ -2614,7 +2629,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
            if(me==0)write(*,*)'WARNING: interpolation method may be CPU demanding'
         endif
         k2=1
-        if(data3D)k2=kend-kstart+1
+        if(data3D)k2=kend_loc-kstart_loc+1
         allocate(Ivalues(MAXLIMAX*MAXLJMAX*k2))
         allocate(Nvalues(MAXLIMAX*MAXLJMAX*k2))
         do ij=1,MAXLIMAX*MAXLJMAX*k2
@@ -2636,7 +2651,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
                     if(i>=1.and.i<=limax.and.j>=1.and.j<=ljmax)then
                        ij=i+(j-1)*MAXLIMAX
                        k2=1
-                       if(data3D)k2=kend-kstart+1
+                       if(data3D)k2=kend_loc-kstart_loc+1
                        if(.not. Flight_Levels)then
                           do k=1,k2
                              ijk=k+(ij-1)*k2
@@ -2726,7 +2741,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
         enddo
 
         k2=1
-        if(data3D)k2=kend-kstart+1
+        if(data3D)k2=kend_loc-kstart_loc+1
         do k=1,k2
            do i=1,limax
               do j=1,ljmax
@@ -2776,7 +2791,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
         !nearest gridcell
         ijk=0
         k2=1
-        if(data3D)k2=kend-kstart+1
+        if(data3D)k2=kend_loc-kstart_loc+1
         do k=1,k2
            do j=1,ljmax
               do i=1,limax
@@ -2892,7 +2907,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
            if(me==0)write(*,*)'WARNING: interpolation method may be CPU demanding:',projection
         endif
         k2=1
-        if(data3D)k2=kend-kstart+1
+        if(data3D)k2=kend_loc-kstart_loc+1
         allocate(Ivalues(MAXLIMAX*MAXLJMAX*k2))
         allocate(Nvalues(MAXLIMAX*MAXLJMAX*k2))
         do ij=1,MAXLIMAX*MAXLJMAX*k2
@@ -2925,7 +2940,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
                     if(i>=1.and.i<=limax.and.j>=1.and.j<=ljmax)then
                        ij=i+(j-1)*MAXLIMAX
                        k2=1
-                       if(data3D)k2=kend-kstart+1
+                       if(data3D)k2=kend_loc-kstart_loc+1
                        do k=1,k2
                           ijk=k+(ij-1)*k2
                           Ivalues(ijk)=Ivalues(ijk)+1
@@ -2946,7 +2961,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
            enddo
         enddo
         k2=1
-        if(data3D)k2=kend-kstart+1
+        if(data3D)k2=kend_loc-kstart_loc+1
         do k=1,k2
            do i=1,limax
               do j=1,ljmax
@@ -3013,7 +3028,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
         j_ext=nint(buffer2(1,1))
         call ij2lb(i_ext,j_ext,lon,lat,fi_ext,an_ext_div,xp_ext_div,yp_ext_div)
         k2=1
-        if(data3D)k2=kend-kstart+1
+        if(data3D)k2=kend_loc-kstart_loc+1
         do j=1,ljmax
            do i=1,limax
               ij=i+(j-1)*MAXLIMAX
@@ -3231,6 +3246,13 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
      endif!conservative
   endif!general projection
 
+!  if(interpolate_vertical)then
+!do the interpolation in the vertical direction only
+!filename is used only to define the vertical coordinates
+!     call vertical_interpolate(filename,Rvar,dims(3),debug)
+
+!  endif
+
 
   deallocate(Rvalues)
   deallocate(Rlon)
@@ -3265,7 +3287,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
 
   if(data3D)then
      return
-     k2=kend-kstart+1
+     k2=kend_loc-kstart_loc+1
      n=3
 
      call Out_netCDF(IOU_INST,def1,n,k2, &
@@ -3279,7 +3301,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
      !        enddo
      !     enddo
      !     do k=KMAX_MID,KMAX_MID-k2+1,-1
-     !        write(*,*)k,k+(KMAX_MID-k2),kend,kstart
+     !        write(*,*)k,k+(KMAX_MID-k2),kend_loc,kstart_loc
      !       do j=1,ljmax
      !           do i=1,limax
      !              ijk=k-(KMAX_MID-k2)+(i+(j-1)*MAXLIMAX-1)*k2
@@ -3480,5 +3502,148 @@ subroutine printCDF(name, array,unit)
     call check(nf90_close(ncFileID))
     deallocate(times)
   endsubroutine ReadTimeCDF
+
+  subroutine   vertical_interpolate(filename,Rvar,KMAX_ext,Rvar_emep,debug)
+    character(len = *),intent(in) ::fileName
+    real,intent(in) :: Rvar(*)
+    real,intent(out) :: Rvar_emep(*)
+    integer, intent(in)::KMAX_ext
+    logical, optional, intent(in) :: debug!output only masterproc
+    real, allocatable,dimension(:)::hyam_ext,hybm_ext,P_ext,weight_k1
+    integer, allocatable,dimension(:)::k1_ext,k2_ext
+    integer :: ncFileID,varID,status,n,k,k_ext,ij,ijk
+    real :: P_emep,P0
+    character(len = 100) ::word
+    logical ::reversed_k
+
+    allocate(k1_ext(KMAX_MID),k2_ext(KMAX_MID))
+    allocate(weight_k1(KMAX_MID))
+   !Read pressure for vertical levels
+    if(MasterProc)write(*,*)'vertical_interpolate: reading vertical levels'
+    if(MasterProc)write(*,*)'filename ',trim(filename)
+    allocate(P_ext(KMAX_ext),hyam_ext(KMAX_ext+1),hybm_ext(KMAX_ext+1))
+    call check(nf90_open(path=fileName, mode=nf90_nowrite, ncid=ncFileID),&
+         errmsg="ReadTimeCDF, file not found: "//trim(fileName))
+   
+    status = nf90_inq_varid(ncid = ncFileID, name = "hyam", varID = varID)
+    if(status == nf90_noerr) then
+       if(debug) write(*,*)'Found hyam type levels (values at level midpoints)'
+       call check(nf90_get_var(ncFileID,varID,hyam_ext(1:KMAX_ext)))
+       status = nf90_get_att(ncFileID,VarID,"units",word)
+       if(status==nf90_noerr)then
+          if(word(1:3)=='hPa')then
+             write(*,*)'Changing hyam from hPa to Pa'
+             hyam_ext=100*hyam_ext
+          endif
+       endif
+       call check(nf90_inq_varid(ncid = ncFileID, name = "hybm", varID = varID))
+       call check(nf90_get_var(ncFileID,varID,hybm_ext(1:KMAX_ext)))
+    else
+       
+       status = nf90_inq_varid(ncid = ncFileID, name = "hyai", varID = varID)
+       if(status == nf90_noerr) then
+          if(debug)write(*,*)'Found hyai type levels (values at level interfaces)'          
+          call check(nf90_get_var(ncFileID,varID,hyam_ext))
+          status = nf90_get_att(ncFileID,VarID,"units",word)
+          if(status==nf90_noerr)then
+             if(word(1:3)=='hPa')then
+                if(debug)write(*,*)'Changing hyai from hPa to Pa'
+                hyam_ext=100*hyam_ext
+             endif
+          endif
+          call check(nf90_inq_varid(ncid = ncFileID, name = "hybi", varID = varID))
+          call check(nf90_get_var(ncFileID,varID,hybm_ext))
+          do k=1,KMAX_ext
+             hyam_ext(k)=0.5*(hyam_ext(k)+hyam_ext(k+1))
+             hybm_ext(k)=0.5*(hybm_ext(k)+hybm_ext(k+1))
+          enddo
+       else
+          call StopAll('levels not yet implemented')
+       endif
+    endif
+    status=nf90_inq_varid(ncid = ncFileID, name = "P0", varID = varID)                 
+    if(status == nf90_noerr) then
+       call check(nf90_get_var(ncFileID, varID, P0 ))
+       if(debug)write(*,*)'Multiplying hyam with P0 ',P0
+       hyam_ext=hyam_ext*P0
+    else
+       if(debug)write(*,*)'did not find P0 ',status
+    endif
+    !find vertical interpolation coefficients
+    !use pressure as reference
+    !we want, if possible, P_ext(k1) and P_ext(k2) to be on each side of P_emep
+    !We assume constant surface pressure, both for emep and external grid; should not be so
+    !   important as long as they are both terrain following.
+    do k_ext=1,KMAX_EXT
+       P_ext(k_ext)=hyam_ext(k_ext)+hybm_ext(k_ext)*Pref
+       if(debug) write(*,fmt="(A,I3,F10.2)")'vert_inter: P_ext',k_ext,P_ext(k_ext)
+    enddo
+    reversed_k=(P_ext(1)>P_ext(2))
+    ! .true.  --> assumes k_ext=KMAX_EXT is top and k_ext=1 is surface
+    ! .false. --> assumes k_ext=1 is top and k_ext=KMAX_EXT is surface
+    
+    if(reversed_k)then
+       do k=1,KMAX_MID
+          P_emep=A_mid(k)+B_mid(k)*Pref !Pa
+          if(debug) write(*,fmt="(A,I3,F10.2)")'vert_inter: P_emep',k,P_emep
+          !largest available P smaller than P_emep (if possible)
+          k1_ext(k)=1 !start at surface, and go up until P_emep
+          do k_ext=1,KMAX_EXT
+             if(P_ext(k_ext)<P_emep)exit
+             k1_ext(k)=k_ext
+          enddo
+          !smallest available P larger than P_emep (if possible)
+          k2_ext(k)=KMAX_EXT !start at top, and go down until P_emep
+          if(k2_ext(k)==k1_ext(k))k2_ext(k)=KMAX_EXT-1 !avoid k2=k1
+          do k_ext=KMAX_EXT,1,-1
+             if(P_ext(k_ext)>P_emep)exit
+             if(k_ext/=k1_ext(k))k2_ext(k)=k_ext
+          enddo
+          weight_k1(k)=(P_emep-P_ext(k2_ext(k)))/(P_ext(k1_ext(k))-P_ext(k2_ext(k)))
+          if(debug)&
+               write(*,fmt="(A,I4,2(A,I4,A,F5.2))")'vert_inter: level',k,&
+               ' is the sum of level ',k1_ext(k),' weight ',weight_k1(k),&
+               ' and level ',k2_ext(k),' weight ',1-weight_k1(k)
+       enddo
+       
+    else
+       do k=1,KMAX_MID
+          P_emep=A_mid(k)+B_mid(k)*Pref !Pa
+          if(debug) write(*,fmt="(A,I3,F10.2)")'vert_inter: P_emep',k,P_emep
+          !largest available P smaller than P_emep (if possible)
+          k1_ext(k)=KMAX_EXT !start at surface, and go up until P_emep
+          do k_ext=KMAX_EXT,1,-1
+             if(P_ext(k_ext)<P_emep)exit
+             k1_ext(k)=k_ext
+          enddo
+          !smallest available P larger than P_emep (if possible)
+          k2_ext(k)=1 !start at top, and go down until P_emep
+          if(k2_ext(k)==k1_ext(k))k2_ext(k)=2 !avoid k2=k1
+          do k_ext=1,KMAX_EXT
+             if(P_ext(k_ext)>P_emep)exit
+             if(k_ext/=k1_ext(k))k2_ext(k)=k_ext
+          enddo
+          weight_k1(k)=(P_emep-P_ext(k2_ext(k)))/(P_ext(k1_ext(k))-P_ext(k2_ext(k)))
+          if(debug) &
+               write(*,fmt="(A,I4,2(A,I4,A,F5.2))")'Nest: level',k,&
+               ' is the sum of level ', k1_ext(k),' weight ',weight_k1(k),&
+               ' and level ', k2_ext(k),' weight ',1-weight_k1(k)
+       enddo
+    endif
+
+    do ij=1,MAXLIMAX*MAXLJMAX
+       do k=1,KMAX_MID
+          ijk=ij+(k-1)*MAXLIMAX*MAXLJMAX
+          !put interpolated values in Rvar
+          Rvar_emep(ijk)=weight_k1(k)*Rvar(k1_ext(k)+(ij-1)*KMAX_ext)+(1.0-weight_k1(k))*Rvar(k2_ext(k)+(ij-1)*KMAX_ext)
+       enddo
+    enddo
+
+    
+    deallocate(P_ext,hyam_ext,hybm_ext,k1_ext,k2_ext,weight_k1)
+    call check(nf90_close(ncFileID))
+
+
+  end subroutine vertical_interpolate
 
 end module NetCDF_ml
