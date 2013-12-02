@@ -99,7 +99,7 @@ use ModelConstants_ml, only: KMAX_MID  &  ! Number of levels in vertical
                             ,iyr_trend &  ! Used for e.g. future scenarios
                             ,BGND_CH4  &  ! If positive, replaces defaults
                             ,USE_SEASALT & 
-                            ,DEBUG  & ! %BCs
+                            ,USES,DEBUG  & ! %BCs
                             ,DEBUG_i, DEBUG_j, MasterProc, PPB
 use NetCDF_ml,         only:ReadField_CDF,vertical_interpolate
 use Par_ml,          only: &
@@ -386,13 +386,14 @@ contains
                 enddo
              enddo
           enddo
-!MaceHead correction
-          CALL MPI_BCAST(trend_o3,8,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-          CALL MPI_BCAST(O3fix,8,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-          if(masterProc)write(*,*)'O3fix,trend_o3 ',O3fix,trend_o3
-          bc_data = max(15.0*PPB,bc_data-O3fix)
-          bc_data = bc_data*trend_o3
-                
+          if(USES%MACEHEADFIX)then
+             !MaceHead correction
+             CALL MPI_BCAST(trend_o3,8,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+             CALL MPI_BCAST(O3fix,8,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+             if(masterProc)write(*,*)'O3fix,trend_o3 ',O3fix,trend_o3
+             bc_data = max(15.0*PPB,bc_data-O3fix)
+             bc_data = bc_data*trend_o3
+          endif
        endif
 
        if (first_call) then

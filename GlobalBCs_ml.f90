@@ -124,8 +124,8 @@ integer, save, private  :: iglbeg, iglend, jglbeg, jglend
 ! -----------------------------------------------------------------------
 integer,parameter ::KMAX20=20
 !temporary used by BoundaryConditions
-real,public :: O3fix
-real,public :: trend_o3, trend_co, trend_voc
+real,public :: O3fix=0.0
+real,public :: trend_o3=1.0, trend_co, trend_voc
 
 contains
 
