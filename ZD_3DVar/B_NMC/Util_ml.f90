@@ -363,7 +363,7 @@ subroutine GetNCRec(ncFileID,ncDate,rec,exact)
   type(date), intent(in) :: ncDate
   integer(4), intent(out):: rec
   logical,    intent(in),optional :: exact
-  logical, paremeter :: debug=.false.
+  logical, parameter :: debug=.false.
 ! integer(4) :: ncTime
 ! integer(4), dimension(:), pointer :: time
   real(8) :: ncTime
