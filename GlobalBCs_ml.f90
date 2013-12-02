@@ -482,7 +482,7 @@ subroutine GetGlobalData(year,month,ibc,used,        &
       close(IO_GLOBBC)
     endif
     if(DEBUG%GLOBBC)print *,"dsOH READ OZONE3 ",trim(fname),": ",&
-      bc_rawdata(IIFULLDOM/2,JJFULLDOM/2,20)
+      bc_rawdata(IIFULLDOM/2,JJFULLDOM/2,KMAX_MID)
 
     ! Mace Head adjustment: get mean ozone from Eastern sector
     O3fix=0.0
@@ -494,7 +494,7 @@ subroutine GetGlobalData(year,month,ibc,used,        &
               glat_fdom(i,j)>macehead_lat-25.0.and.&
               glon_fdom(i,j)<macehead_lon     .and.&
               glon_fdom(i,j)>macehead_lon-40.0)then
-              O3fix=O3fix+bc_rawdata(i,j,20)
+              O3fix=O3fix+bc_rawdata(i,j,KMAX_MID)
               icount=icount+1
           endif
         enddo
