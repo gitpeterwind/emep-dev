@@ -154,6 +154,12 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+5th December 2013  Dave,Peter  2684
+
+2684 - Dave updated Log.changes with this info
+2683 - Sketch added to ESX Zgrid_mk
+2682 - Peter - MaceHead
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 2nd December 2013  Peter  2681
 
 Corrected MaceHead corrrection for NewLogan (can still bbe improved)
