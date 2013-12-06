@@ -144,7 +144,7 @@ subroutine readstacks(io)
      ! 1) Header line
       if ( txtinput(1:1) == "#" ) then  ! Figure out emissions indices
                                         ! from header
-        if( first_header == .false. ) cycle ! Currently units line
+        if( .not. first_header ) cycle ! Currently units line
         first_header = .false.    
 
         call wordsplit(txtinput,MAX_POLLS+9,words,nwords,errcode,&
