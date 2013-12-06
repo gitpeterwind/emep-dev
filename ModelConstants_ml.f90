@@ -71,6 +71,8 @@ CHARACTER(LEN=30), public, save :: MY_OUTPUTS="EMEPSTD"
 ! Some flags for model setup
 !------------ NAMELIST VARIABLES - can be reset by emep_namelist.nml file
 ! USES system introduced June 2013--------------------------
+
+logical, private, parameter :: F = .false.
 type, public :: emep_useconfig
   character(len=10) :: testname = "STD"
   logical :: &                   ! Forest fire options
@@ -78,7 +80,12 @@ type, public :: emep_useconfig
     ,MONTHLY_FF       = .false. &! => monthly emissions (for e.g. climate runs)
     ,MACEHEADFIX      = .true.  &! Correction to O3 BCs (Mace Head Obs.)
     ,MACEHEAD_AVG     = .false. &! Uses 10-year avg. Good for e.g. RCA runs.
-    ,ESX              = .false.  ! Uses ESX
+    ,ESX              = .false. &! Uses ESX
+    ,EMIS             = .false. &! Uses ESX
+    ,EMISSTACKS      = F        !
+
+ ! If USES%EMISTACKS, need to set:
+  character(len=4) :: PlumeMethod = "none" !MKPS:"ASME","NILU","PVDI"
 end type emep_useconfig 
 type(emep_useconfig), public, save :: USES
 
@@ -121,6 +128,7 @@ logical, public, save ::             &
  ,USE_EMERGENCY      = .false.       & ! Emergency: Volcanic Eruption & Nuclear Accident. Under development.
  ,USE_AOD            = .false.       &
  ,USE_POLLEN         = .false.       &  ! EXPERIMENTAL. Only works if start Jan 1
+ ,USE_AMINEAQ        = .false.       &  ! MKPS
  ,ANALYSIS           = .false.       &  ! EXPERIMENTAL: 3DVar data assimilation
 !
 ! Output flags
@@ -161,6 +169,8 @@ logical, public, parameter ::         &
   LANDIFY_MET        = .false.          ! extended massbudget outputs
 
 logical, public ::  USE_EtaCOORDINATES=.false.!temporay parameter; will be set true and removed after testing
+
+
 
 !IN-TESTING (reset in NML if wanted)
 !Boundary layer profiles
@@ -351,6 +361,7 @@ integer, public, parameter :: &
   ,DEBUG_DO3SE          = .false. &
   ,DEBUG_DRYRUN         = .false. & ! Skips fast chemistry to save some CPU
   ,DEBUG_ECOSYSTEMS     = .false. &
+  ,DEBUG_EMISSTACKS     = .false. &
   ,DEBUG_FORESTFIRE     = .false. &
   ,DEBUG_Kz             = .false. &
   ,DEBUG_MY_DERIVED     = .false. &

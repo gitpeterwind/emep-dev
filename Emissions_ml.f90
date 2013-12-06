@@ -93,6 +93,7 @@ use ModelConstants_ml,only: &
     DEBUG => DEBUG_EMISSIONS,  MasterProc, & 
     DEBUG_SOILNOX, DEBUG_EMISTIMEFACS, DEBUG_ROADDUST, DEBUG_I,DEBUG_J, &
     USE_DEGREEDAY_FACTORS, & 
+    USES,  &  ! Gives USES%EMISSTACKS, & ! MKPS
     SEAFIX_GEA_NEEDED, & ! see below
     USE_LIGHTNING_EMIS,USE_AIRCRAFT_EMIS,USE_ROADDUST, &
     USE_EURO_SOILNOX, USE_GLOBAL_SOILNOX, EURO_SOILNOX_DEPSCALE! one or the other
@@ -100,6 +101,7 @@ use NetCDF_ml,        only: ReadField_CDF
 use Par_ml,           only: MAXLIMAX,MAXLJMAX, GIMAX,GJMAX, IRUNBEG,JRUNBEG,&
                             me,limax,ljmax, MSG_READ1,MSG_READ7
 use PhysicalConstants_ml,only: GRAV, AVOG
+use PointSource_ml,      only: readstacks !MKPS
 use Setup_1dfields_ml,only: rcemis   ! ESX
 use SmallUtils_ml,    only: find_index
 use ReadField_ml,     only: ReadField    ! Reads ascii fields
@@ -307,6 +309,8 @@ subroutine Emissions(year)
 
   call EmisHeights()     ! vertical emissions profile
   KEMISTOP = KMAX_MID - nemis_kprofile + 1
+
+  if( USES%EMISSTACKS ) call readstacks(IO_EMIS)
 
   if(MasterProc) then   !::::::: ALL READ-INS DONE IN HOST PROCESSOR ::::
     write(*,*) "Reading monthly and daily timefactors"

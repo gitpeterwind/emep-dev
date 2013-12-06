@@ -13,9 +13,9 @@
 #     mpiprocs=number of MPI threads per node. For 64 processors:
 ##PBS -l select=4:ncpus=32:mpiprocs=32:mem=16gb -v MPI_MSGS_MAX=2097152
 #Stallo
-#PBS -lnodes=2:ppn=16
+#PBS -lnodes=4:ppn=16
 # wall time limit of run
-#PBS -lwalltime=00:40:00
+#PBS -lwalltime=07:40:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
 #PBS -lpmem=1000MB
 #make results readable for others:
@@ -99,7 +99,7 @@ my @MAKE = ("gmake", "-j4", "MACHINE=snow");
 die "Must choose STALLO **or** VILJE !\n"
   unless $STALLO+$VILJE==1;
 
-my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2673"    ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA","EMEP");
+my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2685"    ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA","EMEP");
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 
@@ -463,7 +463,7 @@ $month_days[2] += leap_year($year);
 my $mm1 ="06";      # first month, use 2-digits!
 my $mm2 ="06";      # last month, use 2-digits!
 my $dd1 =  1;       # Start day, usually 1
-my $dd2 =  1;       # End day (can be too large; will be limited to max number of days in the month)
+my $dd2 =  0;       # End day (can be too large; will be limited to max number of days in the month)
                     # put dd2=0 for 3 hours run/test.
 # Allways runn full year on benchmark mode
 ($mm1,$mm2,$dd1,$dd2)=("01","12",1,31) if (%BENCHMARK);
@@ -848,6 +848,11 @@ foreach my $scenflag ( @runs ) {
   #DS RCA:$ifile{"$MyDataDir/sondesLLBC.dat"} = "sondes.dat";
   # Extended to get isoprene, HCHO EC, OC /(huge list!)
   #$ifile{"$MyDataDir/sitesCPM_ds.dat"} = "sites.dat";
+
+  #LPS: point sources can  be added if needed.
+  $ifile{"$MyDataDir/PointSources.txt"} = "PointSources.txt";
+
+
 
 # DEGREE DAYS (Tbase set above, either 18 or 20):
   unless ($CWF or ($GRID eq "RCA") or ($GRID eq "GLOBAL")) {

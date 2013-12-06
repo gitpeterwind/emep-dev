@@ -154,6 +154,46 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6th December 2013  Matthias, Dave  2685
+
+
+Point-source code added: implementation of NILU and other plume-rise methods,
+ with Peter's spread-plume routine to assign emissions to layers
+
+ No change in results unless USES%EMISSTACKS=T
+
+  ** New **  PointSource_ml
+  ** New **  PlumeRise_ml   
+
+The code will read coordinates and emissions from a file PointSources.txt.
+Plume rise and hence effective emissions height  is calculated from the
+stack parameters and meteorology, and the spread into the z-layers using
+an assumed standard deviation of the emissions (=25% of the plume-rise
+delta). Can work with any z-layers (no hard coding :-)
+
+Changes in:
+
+   Makefile.SRCS
+   Emissions_ml      - USES%EMISSTACKS and USES%PlumeMethod
+   ModelConstants_ml - USES%EMISSTACKS and USES%PlumeMethod
+   RunChem_ml - if (USES%EMISSTACKS) call point_sources...
+   Emissions_ml - if (USES%EMISSTACKS) call point_sources...
+   run.pl  - links PointSources.txt file (from MyData so far)
+
+Also:
+   OwnDerived_ml - added UNDEFS, initialisation of Asc2D, and print_Asc2D
+
+Caveats
+
+   Currently the meteorology assumes lowest layer has 90m depth. Should in
+   future also make wind-speed and dt/dz depend on z values.
+
+   Currently emissions make use of EmisNat arrays, since this was easier
+   for non SNAP emissions. Will modify.
+
+   Need to harmonise with volcanic and emergency emissions.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 5th December 2013  Dave,Peter  2684
 
 2684 - Dave updated Log.changes with this info

@@ -1,8 +1,7 @@
-! <Runchem_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
-!          Chemical transport Model>
+! <Runchem_ml.f90 - A component of the EMEP MSC-W Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2007-2012 met.no
+!*  Copyright (C) 2007-2013 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -63,6 +62,8 @@ module RunChem_ml
   use MassBudget_ml,    only: emis_massbudget_1d
   use ModelConstants_ml,only: USE_DUST, USE_SEASALT, USE_AOD, USE_POLLEN, & 
                               KMAX_MID, nprint, END_OF_EMEPDAY, nstep,  &
+                              USES, & ! need USES%EMISSTACKS 
+                              DEBUG_EMISSTACKS, & ! MKPS
                               DebugCell, DEBUG => DEBUG_RUNCHEM
   use OrganicAerosol_ml,only: ORGANIC_AEROSOLS, OrganicAerosol, &
                               Init_OrganicAerosol, & !FEB2012
@@ -70,6 +71,7 @@ module RunChem_ml
   use Pollen_ml,        only: Pollen_flux
   use Par_ml,           only: lj0,lj1,li0,li1, limax, ljmax,  &
                               gi0, gj0, me,IRUNBEG, JRUNBEG  !! for testing
+  use PointSource_ml,    only: pointsources, get_pointsources
   use SeaSalt_ml,       only: SeaSalt_flux
   use Setup_1d_ml,      only: setup_1d, setup_rcemis, reset_3d
                       !FUTURE setup_nh3  ! NH3emis (NMR-NH3 project)
@@ -139,6 +141,10 @@ subroutine runchem(numt)
       if(USE_DUST)     &
         call WindDust(i,j,debug_flag)     ! sets rcemis(DUST...)
 
+      if ( USES%EMISSTACKS ) then
+         if ( pointsources(i,j) ) call get_pointsources(i,j,DEBUG_EMISSTACKS)
+      end if
+    
       if(USE_POLLEN) &
         call Pollen_flux(i,j,debug_flag)
 
