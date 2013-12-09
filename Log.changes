@@ -155,10 +155,24 @@ changes here (and when committing svn), and Dave will tag as required
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-9th December 2013  Peter  2688
+9th December 2013  Peter  2688-9
+
+Start of a reorganisation of the meteorological fields.
+Introduced the "metfield" type.
+This is meant to do be used for all the transformations that are done sytematically, 
+like the time integration.
+The "normal" fields (ps, SigmaKz etc...) are still there and connected with pointers 
+(pointer means that basically there are 2 names for the same data: change the values 
+in one of the arrays, and the data is changed in the other too)
+
+For now only time integration is done in this way (metfieldint). Metint will be removed.
+
+The fields are hardcoded in MetFields. Please I want it like that, at least for the near future!
 
 Bug in Met_ml introduced in 2672. KMAX not inititalized. Would probably cause 
 crashe if not initialized to any reasonable value. 
+
+Changes: Met_ml, MetFields_ml, PhyChem_ml
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 9th December 2013  Peter, Birthe, Anna  2687

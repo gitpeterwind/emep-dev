@@ -46,7 +46,7 @@ use DryDep_ml,        only: init_drydep
 use Emissions_ml,     only: EmisSet
 use GridValues_ml,    only: debug_proc,debug_li,debug_lj,&
                             glon,glat,projection
-use Met_ml,           only: metint
+use Met_ml,           only: metint,metfieldint
 use MetFields_ml,     only: ps,roa,z_bnd,z_mid,cc3dmax, &
                             zen,coszen,Idirect,Idiffuse
 use ModelConstants_ml,only: KMAX_MID, nmax, nstep &
@@ -298,7 +298,7 @@ contains
           call Add_2timing(35,tim_after,tim_before,"phyche:outs")
 
 
-          call metint
+          call metfieldint
 
 
           call adv_int

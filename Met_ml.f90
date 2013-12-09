@@ -171,6 +171,7 @@ public :: MeteoRead
 public :: MetModel_LandUse
 public :: metvar
 public :: metint
+public :: metfieldint
 public :: BLPhysics
 public :: GetCDF_short
 public :: extendarea  ! returns array which includes neighbours
@@ -456,6 +457,7 @@ subroutine MeteoRead(numt)
   namefield='surface_stress'
   call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
                      tau(:,:,nr),found=found)
+
   if(found)then
     if(LANDIFY_MET) call landify(tau(:,:,nr),"tau") 
     tau=max(0.0,tau)
@@ -632,8 +634,8 @@ subroutine MeteoRead(numt)
                      buff(:,:),found=foundws10_met)
   if(foundws10_met)then
     namefield='v10' !second component of ws_10m
-    call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
-                       ws_10m(:,:,nr),found=foundws10_met)
+    call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,& 
+                      ws_10m(:,:,nr),found=foundws10_met)
     if(foundws10_met)then
       ws_10m(:,:,nr)=sqrt(ws_10m(:,:,nr)**2+buff(:,:)**2)
       if(LANDIFY_MET) call landify(ws_10m(:,:,nr),"WS10") 
@@ -1363,7 +1365,42 @@ endsubroutine Meteoread
 
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
+  subroutine metfieldint
 
+    !     this routine does the forward linear stepping of the meteorological
+    !     fields read or derived every 3 hours.
+
+    implicit none
+
+    real :: div
+    integer :: ix
+
+    if (nstep.lt.nmax) then
+
+       div = 1./real(nmax-(nstep-1))
+       do ix=1,Nmetfields
+          if(met(ix)%time_interpolate)then
+             
+             if(me==0.and.DEBUG_MET)write(*,*)'interpolating in time ',ix,met(ix)%name
+
+                   met(ix)%field(:,:,:,1)    = met(ix)%field(:,:,:,1)                 &
+            + (met(ix)%field(:,:,:,2) - met(ix)%field(:,:,:,1))*div
+          endif
+       enddo
+
+    else
+
+       do ix=1,Nmetfields
+          if(met(ix)%time_interpolate)then
+                   met(ix)%field(:,:,:,1)    = met(ix)%field(:,:,:,2)     
+          endif
+       enddo
+
+    endif
+
+    call met_derived(1) !update derived meteo fields
+
+  end subroutine metfieldint
 
   subroutine metint
 
@@ -1397,6 +1434,8 @@ endsubroutine Meteoread
             + (EtaKz(:,:,:,2) - EtaKz(:,:,:,1))*div
        roa(:,:,:,1)  = roa(:,:,:,1)                 &
             + (roa(:,:,:,2) - roa(:,:,:,1))*div
+
+
        ps(:,:,1)     = ps(:,:,1)                 &
             + (ps(:,:,2) - ps(:,:,1))*div
        t2_nwp(:,:,1) = t2_nwp(:,:,1)                 &
@@ -1407,8 +1446,6 @@ endsubroutine Meteoread
             + (SoilWater_uppr(:,:,2) - SoilWater_uppr(:,:,1))*div
        SoilWater_deep(:,:,1) = SoilWater_deep(:,:,1)    &
             + (SoilWater_deep(:,:,2) - SoilWater_deep(:,:,1))*div
-
-
        fh(:,:,1)     = fh(:,:,1)                 &
             + (fh(:,:,2) - fh(:,:,1))*div
        fl(:,:,1)     = fl(:,:,1)                 &
