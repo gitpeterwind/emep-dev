@@ -242,7 +242,7 @@ subroutine MeteoRead(numt)
     ! If origin of meteodomain does not coincide with origin of large domain,
     ! xp and yp should be shifted here, and coordinates must be shifted when
     ! meteofields are read (not yet implemented) 
-    KMAX=max(KMAX,KMAX_MET)
+    KMAX=max(KMAX_MID,KMAX_MET)
     if(MasterProc)then
       allocate(var_global(GIMAX,GJMAX,KMAX))
     else
