@@ -597,6 +597,13 @@ subroutine GridRead(meteo,cyclicgrid)
 44           FORMAT(i4,10F12.2)
              write(*,44)k, A_bnd(k)+P0*B_bnd(k)
           enddo
+!test if the top is within the height defined in the meteo files
+          if(External_Levels_Def.and.(A_bnd(1)+P0*B_bnd(1)<A_bnd_met(1)+P0*B_bnd_met(1)))then
+             write(*,*)'Pressure at top of defined levels is ',A_bnd(1)+P0*B_bnd(1)
+             write(*,*)'Pressure at top defined in meteo files is ',A_bnd_met(1)+P0*B_bnd_met(1)
+             write(*,*)'Pressure at op must be higher (lower altitude) than top defined in meteo '
+             call StopAll('Top level too high! Change values in Vertical_levels.txt')
+          endif
 !test if the levels can cope with highest mountains (400 hPa)
           do k=1,KMAX_MID
              if(A_bnd(k+1)+40000*B_bnd(k+1)-(A_bnd(k)+40000*B_bnd(k))<0.0)then

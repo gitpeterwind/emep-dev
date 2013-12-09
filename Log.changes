@@ -154,6 +154,12 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+9th December 2013  Peter, Birthe, Anna  2687
+
+GridValues_ml: Check that the highest level in meteo grid is at least as high as the one in  VerticalLevels.txt.
+Output_hourly: Put height Z of the "surface level" in hourly output at 3 meters.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 6th December 2013  Matthias, Dave  2685
 
 

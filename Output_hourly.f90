@@ -411,7 +411,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
         name = "Z_MID"
         unit_conv =  hr_out(ih)%unitconv
         if(surf_corrected)then
-          forall(i=1:limax,j=1:ljmax) hourly(i,j) = 0.0
+          forall(i=1:limax,j=1:ljmax) hourly(i,j) = 3.0
         else
           forall(i=1:limax,j=1:ljmax) hourly(i,j) = z_mid(i,j,ik)*unit_conv
         endif
