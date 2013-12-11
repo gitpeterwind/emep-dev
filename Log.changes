@@ -153,6 +153,21 @@ info on unused variables, etc.
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+11th December 2013  Peter  2690
+
+Big reorgarnization of loops: the loop within PhyChem is merged with the loop in Unimod.
+Now there is only one main time loop in Unimod, whith timestep=dt_advec.
+numt does not exist anymore.
+The routine must themself check that the time is correct for what they intend to do.
+Some cleanup too.
+
+The results should be identical as before. If not there is a bug.
+
+Modified:
+Biogenics_ml.f90 Landuse_ml.f90 Trajectory_ml.f90 Runchem_ml.f90 OutputChem_ml.f90 
+Advection_ml.f90 PhyChem_ml.f90 MetFields_ml.f90 PointSource_ml.f90 Sites_ml.f90 
+Met_ml.f90 Unimod.f90 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 9th December 2013  Peter  2688-9

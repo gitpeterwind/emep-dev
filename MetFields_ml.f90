@@ -232,6 +232,8 @@ module MetFields_ml
   type(metfield),  public :: met(NmetfieldsMax)!size can be larger
   integer, public, save   :: Nmetfields! number of fields defined in met
   integer, public, save   :: N3Dmetfields! number of 3D fields defined in met
+  real,target, public,save,allocatable, dimension(:,:,:) :: uw,ue
+  real,target, public,save,allocatable, dimension(:,:,:) :: vs,vn
 
   public :: Alloc_MetFields !allocate arrays
 
@@ -657,6 +659,54 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%zsize = 1
   met(ix)%msize = 1
 
+  ix=ix+1
+  met(ix)%name             = 'neigbors_wind-uw'
+  met(ix)%dim              = 2
+  met(ix)%frequency        = 3
+  met(ix)%time_interpolate = .true.
+  met(ix)%read_meteo       = .false.
+  met(ix)%found            = .false.
+  allocate(uw(MAXLJMAX,KMAX_MID,NMET))
+  met(ix)%field(1:1,1:MAXLJMAX,1:KMAX_MID,1:NMET)  => uw
+  met(ix)%zsize = KMAX_MID
+  met(ix)%msize = NMET
+
+  ix=ix+1
+  met(ix)%name             = 'neigbors_wind-ue'
+  met(ix)%dim              = 2
+  met(ix)%frequency        = 3
+  met(ix)%time_interpolate = .true.
+  met(ix)%read_meteo       = .false.
+  met(ix)%found            = .false.
+  allocate(ue(MAXLJMAX,KMAX_MID,NMET))
+  met(ix)%field(1:1,1:MAXLJMAX,1:KMAX_MID,1:NMET)  => ue
+  met(ix)%zsize = KMAX_MID
+  met(ix)%msize = NMET
+
+  ix=ix+1
+  met(ix)%name             = 'neigbors_wind-vs'
+  met(ix)%dim              = 2
+  met(ix)%frequency        = 3
+  met(ix)%time_interpolate = .true.
+  met(ix)%read_meteo       = .false.
+  met(ix)%found            = .false.
+  allocate(vs(MAXLIMAX,KMAX_MID,NMET))
+  met(ix)%field(1:MAXLIMAX,1:1,1:KMAX_MID,1:NMET)  => vs
+  met(ix)%zsize = KMAX_MID
+  met(ix)%msize = NMET
+
+  ix=ix+1
+  met(ix)%name             = 'neigbors_wind-vn'
+  met(ix)%dim              = 2
+  met(ix)%frequency        = 3
+  met(ix)%time_interpolate = .true.
+  met(ix)%read_meteo       = .false.
+  met(ix)%found            = .false.
+  allocate(vn(MAXLIMAX,KMAX_MID,NMET))
+  met(ix)%field(1:MAXLIMAX,1:1,1:KMAX_MID,1:NMET)  => vn
+  met(ix)%zsize = KMAX_MID
+  met(ix)%msize = NMET
+
   Nmetfields=ix
   if(Nmetfields>NmetfieldsMax)then
      write(*,*)"Increase NmetfieldsMax! "
@@ -683,5 +733,8 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
 
 
   end subroutine Alloc_MetFields
+
+! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
 
 end module MetFields_ml

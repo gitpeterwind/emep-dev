@@ -312,7 +312,7 @@ subroutine get_pointsources(i,j, debug_flag)
           Mh = 1.36e-3 * stack(n)%flue * (stack(n)%Ts-283.15)
           dh = Plume_PreggerFriedrich( Mh, Grid%u_ref, stack(n)%Vs, stack(n)%d )
           he = stack(n)%hs + dh      
-          if (n==1) write(*,"(a,i3,f10.4,f10.4)") "Plume_PVDI: stack he dh",n,he,dh
+          if (DEBUG .and. n==1) write(*,"(a,i3,f10.4,f10.4)") "Plume_PVDI: stack he dh",n,he,dh
 
        else
 

@@ -38,7 +38,7 @@ use CoDep_ml,         only: make_so2nh3_24hr
 use ChemSpecs_adv_ml, only: IXADV_SO2, IXADV_NH3, IXADV_O3
 use My_Outputs_ml ,   only: NHOURLY_OUT, FREQ_SITE, FREQ_SONDE, FREQ_HOURLY
 use My_Timing_ml,     only: Code_timer, Add_2timing, tim_before, tim_after
-use Advection_ml,     only:  advecdiff_poles,advecdiff_Eta,adv_int
+use Advection_ml,     only:  advecdiff_poles,advecdiff_Eta!,adv_int
 use Chemfields_ml,    only: xn_adv,cfac,xn_shl
 use Derived_ml,       only: DerivedProds, Derived, num_deriv2d
 use DerivedFields_ml, only: d_2d, f_2d
@@ -46,7 +46,6 @@ use DryDep_ml,        only: init_drydep
 use Emissions_ml,     only: EmisSet
 use GridValues_ml,    only: debug_proc,debug_li,debug_lj,&
                             glon,glat,projection
-use Met_ml,           only: metint,metfieldint
 use MetFields_ml,     only: ps,roa,z_bnd,z_mid,cc3dmax, &
                             zen,coszen,Idirect,Idiffuse
 use ModelConstants_ml,only: KMAX_MID, nmax, nstep &
@@ -84,231 +83,219 @@ private :: debug_concs
 
 contains
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- subroutine phyche(numt)
-   integer, intent(in) ::  numt
+  subroutine phyche()
 
-   logical, save :: End_of_Day = .false.
-
-   integer :: ndays
-   real :: thour
-
-
-   type(timestamp) :: ts_now !date in timestamp format
+    logical, save :: End_of_Day = .false.
+    integer :: ndays
+    real :: thour
+    type(timestamp) :: ts_now !date in timestamp format
+    logical,save :: first_call = .true.
 
     !------------------------------------------------------------------
-    !     start of inner time loop which calls the physical and
-    !     chemical routines.
+    !     physical and  chemical routines.
 
 
-    DO_OUTER: do nstep = 1,nmax
 
-       !     Hours since midnight at any time-step
-       !    using current_date we have already nstep taken into account
+    !     Hours since midnight at any time-step
+    !    using current_date we have already nstep taken into account
 
-       thour = real(current_date%hour) + current_date%seconds/3600.0
+    thour = real(current_date%hour) + current_date%seconds/3600.0
 
-       if ( DEBUG_PHYCHEM .and. debug_proc ) then
-          call debug_concs("PhyChe start ")
-          if ( current_date%hour == 12 ) then
+    if ( DEBUG_PHYCHEM .and. debug_proc ) then
+       call debug_concs("PhyChe start ")
+       if ( current_date%hour == 12 ) then
 
-               ndays = day_of_year(current_date%year,current_date%month, &
-                                    current_date%day)
-               write(6,*) 'thour,ndays,nstep,dt', thour,ndays,nstep,dt_advec
-           endif
+          ndays = day_of_year(current_date%year,current_date%month, &
+               current_date%day)
+          write(6,*) 'thour,ndays,nstep,dt', thour,ndays,nstep,dt_advec
+       endif
 
-        endif
+    endif
 
-        if (me == 0) write(6,"(a15,i6,f8.3)") 'timestep nr.',nstep,thour
+!    if (me == 0) write(6,"(a15,i6,f8.3)") 'timestep nr.',nstep,thour
 
-        call Code_timer(tim_before)
-        call readxn(current_date) !Read xn_adv from earlier runs
-        if(FORECAST.and.USE_POLLEN) call pollen_read ()
-        call Add_2timing(19,tim_after,tim_before,"nest: Read")
-        if(ANALYSIS.and.numt==2.and.nstep==1)then
-          call main_3dvar()   ! 3D-VAR Analysis for "Zero hour"
-          call Add_2timing(46,tim_after,tim_before,'3DVar: Total.')
-        endif
-        if(FORECAST.and.numt==2.and.nstep==1)call hourly_out()!Zero hour output
-        call Add_2timing(35,tim_after,tim_before,"phyche:outs")
+    call Code_timer(tim_before)
+    call readxn(current_date) !Read xn_adv from earlier runs
+    if(FORECAST.and.USE_POLLEN) call pollen_read ()
+    call Add_2timing(19,tim_after,tim_before,"nest: Read")
+    if(ANALYSIS.and.first_call)then
+       call main_3dvar()   ! 3D-VAR Analysis for "Zero hour"
+       call Add_2timing(46,tim_after,tim_before,'3DVar: Total.')
+    endif
+    if(FORECAST.and.first_call)call hourly_out()!Zero hour output
+    call Add_2timing(35,tim_after,tim_before,"phyche:outs")
 
 
-        call EmisSet(current_date)
-        call Add_2timing(15,tim_after,tim_before,"phyche:EmisSet")
+    call EmisSet(current_date)
+    call Add_2timing(15,tim_after,tim_before,"phyche:EmisSet")
 
-!       For safety we initialise instant. values here to zero.
-!       Usually not needed, but sometimes
-!       ==================
-         d_2d(:,:,:,IOU_INST) = 0.0
-!       ==================
+    !       For safety we initialise instant. values here to zero.
+    !       Usually not needed, but sometimes
+    !       ==================
+    d_2d(:,:,:,IOU_INST) = 0.0
+    !       ==================
 
 
-       !===================================
+    !===================================
 
-        call SolarSetup(current_date%year,current_date%month, &
-                           current_date%day,thour)
+    call SolarSetup(current_date%year,current_date%month, &
+         current_date%day,thour)
 
-        call ZenithAngle(thour, glat, glon, zen, coszen )
+    call ZenithAngle(thour, glat, glon, zen, coszen )
 
-        if( DEBUG_PHYCHEM .and. debug_proc  ) then
-          write(*,*) "PhyChem ZenRad ", current_date%day, current_date%hour, &
-               thour, glon(debug_li,debug_lj),glat(debug_li,debug_lj), &
-                     zen(debug_li,debug_lj),coszen(debug_li,debug_lj)
-        end if
+    if( DEBUG_PHYCHEM .and. debug_proc  ) then
+       write(*,*) "PhyChem ZenRad ", current_date%day, current_date%hour, &
+            thour, glon(debug_li,debug_lj),glat(debug_li,debug_lj), &
+            zen(debug_li,debug_lj),coszen(debug_li,debug_lj)
+    end if
 
-        call ClearSkyRadn(ps(:,:,1),coszen,Idirect,Idiffuse)
+    call ClearSkyRadn(ps(:,:,1),coszen,Idirect,Idiffuse)
 
-        call CloudAtten(cc3dmax(:,:,KMAX_MID),Idirect,Idiffuse)
+    call CloudAtten(cc3dmax(:,:,KMAX_MID),Idirect,Idiffuse)
 
-       !===================================
-        call Add_2timing(16,tim_after,tim_before,"phyche:ZenAng")
+    !===================================
+    call Add_2timing(16,tim_after,tim_before,"phyche:ZenAng")
 
 
-        !================
-! advecdiff_poles considers the local courant number along a 1D line
-! and divides the advection step "locally" in a number of substeps.
-! Up north in a LatLong domain such as MACC02, mapfactors go up to four,
-! so using advecdiff_poles pays off, even though none of the poles are
-! included in the domain.
-! For efficient parallellisation each subdomain needs to have the same work 
-! load; this can be obtained by setting NPROCY=1 (number of subdomains in 
-! latitude- or y-direction).
-! Then, all subdomains have exactly the same geometry.
+    !================
+    ! advecdiff_poles considers the local Courant number along a 1D line
+    ! and divides the advection step "locally" in a number of substeps.
+    ! Up north in a LatLong domain such as MACC02, mapfactors go up to four,
+    ! so using advecdiff_poles pays off, even though none of the poles are
+    ! included in the domain.
+    ! For efficient parallellisation each subdomain needs to have the same work 
+    ! load; this can be obtained by setting NPROCY=1 (number of subdomains in 
+    ! latitude- or y-direction).
+    ! Then, all subdomains have exactly the same geometry.
 
-        if(USE_EtaCOORDINATES)then
-           call advecdiff_Eta
-        else
-           call advecdiff_poles
-        endif
+    if(USE_EtaCOORDINATES)then
+       call advecdiff_Eta
+    else
+       call advecdiff_poles
+    endif
 
-        call Add_2timing(17,tim_after,tim_before,"phyche:advecdiff")
-        !================
+    call Add_2timing(17,tim_after,tim_before,"phyche:advecdiff")
+    !================
 
-        call Code_timer(tim_before)
+    call Code_timer(tim_before)
 
 
-       !/ See if we are calculating any before-after chemistry productions:
+    !/ See if we are calculating any before-after chemistry productions:
 
-          !=============================
-          if ( nstep == nmax ) call DerivedProds("Before",dt_advec)
-          !=============================
+    !=============================
+    if ( nstep == nmax ) call DerivedProds("Before",dt_advec)
+    !=============================
 
-          call Add_2timing(26,tim_after,tim_before,"phyche:prod")
+    call Add_2timing(26,tim_after,tim_before,"phyche:prod")
 
-         !===================================
-           call Set_SoilWater()
-           call Set_SoilNOx()
+    !===================================
+    call Set_SoilWater()
+    call Set_SoilNOx()!hourly
 
-         !===================================
-           call init_drydep()
-         !===================================
+    !===================================
+    call init_drydep()
+    !===================================
 
-         !=========================================================!
-          call debug_concs("PhyChe pre-chem ")
+    !=========================================================!
+    call debug_concs("PhyChe pre-chem ")
 
-         !************ NOW THE HEAVY BIT **************************!
+    !************ NOW THE HEAVY BIT **************************!
 
-          call runchem(numt)   !  calls setup subs and runs chemistry
+    call runchem()   !  calls setup subs and runs chemistry
 
-          call Add_2timing(28,tim_after,tim_before,"Runchem")
-          call debug_concs("PhyChe post-chem ")
+    call Add_2timing(28,tim_after,tim_before,"Runchem")
+    call debug_concs("PhyChe post-chem ")
 
-         !*********************************************************!
-         !========================================================!
+    !*********************************************************!
+    !========================================================!
 
 
-         !/ See if we are calculating any before-after chemistry productions:
+    !/ See if we are calculating any before-after chemistry productions:
 
-          !=============================
-          if ( nstep == nmax ) call DerivedProds("After",dt_advec)
-          !=============================
+    !=============================
+    if ( nstep == nmax ) call DerivedProds("After",dt_advec)
+    !=============================
 
-          call Code_timer(tim_before)
-          !=============================
-          call Add_2timing(34,tim_after,tim_before,"phyche:drydep")
+    call Code_timer(tim_before)
+    !=============================
+    call Add_2timing(34,tim_after,tim_before,"phyche:drydep")
 
 
 
-          !=============================
-          ! this output needs the 'old' current_date_hour
+    !=============================
+    ! this output needs the 'old' current_date_hour
 
-           call trajectory_out
-          !=============================
+    call trajectory_out
+    !=============================
 
-!    the following partly relates to end of time step - hourly output
-!    partly not depends on current_date
-!    => add dt_advec to current_date already here
+    !    the following partly relates to end of time step - hourly output
+    !    partly not depends on current_date
+    !    => add dt_advec to current_date already here
 
 
-          !====================================
-          ts_now = make_timestamp(current_date)
+    !====================================
+    ts_now = make_timestamp(current_date)
 
-          call add_secs(ts_now,dt_advec)
+    call add_secs(ts_now,dt_advec)
 
-          current_date = make_current_date(ts_now)
+    current_date = make_current_date(ts_now)
 
-          !====================================
-          call Add_2timing(35,tim_after,tim_before,"phyche:outs")
-          if(ANALYSIS)then
-            call main_3dvar()   ! 3D-VAR Analysis for "non-Zero hours"
-            call Add_2timing(46,tim_after,tim_before,'3DVar: Total.')
-          endif
-          call wrtxn(current_date,.false.) !Write xn_adv for future nesting
-          if(FORECAST.and.USE_POLLEN) call pollen_dump()
-          call Add_2timing(18,tim_after,tim_before,"nest: Write")
+    !====================================
+    call Add_2timing(35,tim_after,tim_before,"phyche:outs")
+    if(ANALYSIS)then
+       call main_3dvar()   ! 3D-VAR Analysis for "non-Zero hours"
+       call Add_2timing(46,tim_after,tim_before,'3DVar: Total.')
+    endif
+    call wrtxn(current_date,.false.) !Write xn_adv for future nesting
+    if(FORECAST.and.USE_POLLEN) call pollen_dump()
+    call Add_2timing(18,tim_after,tim_before,"nest: Write")
 
-          End_of_Day = (current_date%seconds == 0 .and. &
-                        current_date%hour    == END_OF_EMEPDAY)
+    End_of_Day = (current_date%seconds == 0 .and. &
+         current_date%hour    == END_OF_EMEPDAY)
 
-          if( End_of_Day .and. me == 0 ) then
-             print "(a,i2.2,a,i2.2,a,i2.2,a)",' End of EMEP-day (',&
-                  current_date%hour, ':',current_date%seconds/60,':'&
-                  ,current_date%seconds-60*(current_date%seconds/60),')'
-             if(DEBUG_PHYCHEM)write(*,"(a20,2i4,i6)") "END_OF_EMEPDAY ", &
-                END_OF_EMEPDAY, current_date%hour,current_date%seconds
-          endif
+    if( End_of_Day .and. me == 0 ) then
+       print "(a,i2.2,a,i2.2,a,i2.2,a)",' End of EMEP-day (',&
+            current_date%hour, ':',current_date%seconds/60,':'&
+            ,current_date%seconds-60*(current_date%seconds/60),')'
+       if(DEBUG_PHYCHEM)write(*,"(a20,2i4,i6)") "END_OF_EMEPDAY ", &
+            END_OF_EMEPDAY, current_date%hour,current_date%seconds
+    endif
 
-          call debug_concs("PhyChe pre-Derived ")
-          call Derived(dt_advec,End_of_Day)
+    call debug_concs("PhyChe pre-Derived ")
+    call Derived(dt_advec,End_of_Day)
 
 
-         ! Hourly Outputs:
-          if ( current_date%seconds == 0 ) then
+    ! Hourly Outputs:
+    if ( current_date%seconds == 0 ) then
 
-            if ( .not.SOURCE_RECEPTOR .and. FREQ_SITE > 0 .and.  &
-                  modulo(current_date%hour, FREQ_SITE) == 0 )  &
-              call siteswrt_surf(xn_adv,cfac,xn_shl)
+       if ( .not.SOURCE_RECEPTOR .and. FREQ_SITE > 0 .and.  &
+            modulo(current_date%hour, FREQ_SITE) == 0 )  &
+            call siteswrt_surf(xn_adv,cfac,xn_shl)
 
-            if ( .not.SOURCE_RECEPTOR .and. FREQ_SONDE > 0 .and. &
-                 modulo(current_date%hour, FREQ_SONDE) == 0 ) &
-              call siteswrt_sondes(xn_adv,xn_shl)
+       if ( .not.SOURCE_RECEPTOR .and. FREQ_SONDE > 0 .and. &
+            modulo(current_date%hour, FREQ_SONDE) == 0 ) &
+            call siteswrt_sondes(xn_adv,xn_shl)
 
-            if ((.not.SOURCE_RECEPTOR.or.FORECAST).and.NHOURLY_OUT > 0 .and. &
-                 modulo(current_date%hour, FREQ_HOURLY) == 0 ) &
-              call hourly_out()
+       if ((.not.SOURCE_RECEPTOR.or.FORECAST).and.NHOURLY_OUT > 0 .and. &
+            modulo(current_date%hour, FREQ_HOURLY) == 0 ) &
+            call hourly_out()
 
-          end if
-          !CoDep
-             if ( modulo(current_date%hour, 1) == 0 ) & !every hour
-                  call make_so2nh3_24hr(current_date%hour,&
-                  xn_adv(IXADV_SO2,:,:,KMAX_MID),&
-                  xn_adv(IXADV_NH3,:,:,KMAX_MID),&
-                  cfac(IXADV_SO2,:,:),&
-                  cfac(IXADV_NH3,:,:))
+    end if
+    !CoDep
+    if ( modulo(current_date%hour, 1) == 0 ) & !every hour
+         call make_so2nh3_24hr(current_date%hour,&
+         xn_adv(IXADV_SO2,:,:,KMAX_MID),&
+         xn_adv(IXADV_NH3,:,:,KMAX_MID),&
+         cfac(IXADV_SO2,:,:),&
+         cfac(IXADV_NH3,:,:))
 
-          call Add_2timing(35,tim_after,tim_before,"phyche:outs")
+    call Add_2timing(35,tim_after,tim_before,"phyche:outs")
 
 
-          call metfieldint
+    first_call=.false.
+    return
 
-
-          call adv_int
-
-
-          call Add_2timing(36,tim_after,tim_before,"phyche:ints")
-
-      enddo DO_OUTER
-
-   end subroutine phyche
+  end subroutine phyche
    !--------------------------------------------------------------------------
    subroutine debug_concs(txt)
      character(len=*), intent(in) :: txt

@@ -453,7 +453,7 @@ subroutine siteswrt_surf(xn_adv,cfac,xn_shl)
         nn=nn+1
 
         if ( d2index < 1 ) then
-           if( my_first_call) write(*,*) &
+           if(MasterProc .and. my_first_call) write(*,*) &
                  "WARNING: SITES D2D NOT FOUND"//trim(d2code)
            !cycle
            out(nn,i)   = -999.9

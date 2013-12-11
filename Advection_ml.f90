@@ -76,7 +76,8 @@
                   dt_advec, dt_advec_inv,  PT,Pref, KCHEMTOP, NPROCX,NPROCY,NPROC, &
                   FORECAST,& 
                   USE_CONVECTION,DEBUG_ADV
-  use MetFields_ml,      only : ps,sdot,Etadot,SigmaKz,EtaKz,u_xmj,v_xmi,cnvuf,cnvdf
+  use MetFields_ml,      only : ps,sdot,Etadot,SigmaKz,EtaKz,u_xmj,v_xmi,cnvuf,cnvdf&
+                                ,uw,ue,vs,vn
   use MassBudget_ml,     only : fluxin,fluxout
   use My_Timing_ml,      only : Code_timer, Add_2timing, tim_before,tim_after
   use Par_ml,            only : MAXLIMAX,MAXLJMAX,GJMAX,GIMAX,me,mex,mey,&
@@ -89,7 +90,7 @@
   private
 
   INCLUDE 'mpif.h'
-  INTEGER STATUS(MPI_STATUS_SIZE)
+  INTEGER MPISTATUS(MPI_STATUS_SIZE)
   integer, private, parameter :: NADVS      =  3
 
   real, private, save, allocatable,dimension(:)  ::  dhs1, dhs1i, dhs2i
@@ -98,9 +99,8 @@
   real, private, save, allocatable, dimension(:,:,:)  ::  alfnew
   real, private, save, dimension(3)  ::  alfbegnew,alfendnew
 
-  real, private,save,allocatable, dimension(:,:,:) :: uw,ue
-
-  real, private,save,allocatable, dimension(:,:,:) :: vs,vn
+!  real, private,save,allocatable, dimension(:,:,:) :: uw,ue
+!  real, private,save,allocatable, dimension(:,:,:) :: vs,vn
 
   integer, public, parameter :: ADVEC_TYPE = 1 ! Divides by advected p*
 ! integer, public, parameter :: ADVEC_TYPE = 2 ! Divides by "meteorologically" 
@@ -114,8 +114,8 @@
   public :: advecdiff
   public :: advecdiff_poles
   public :: advecdiff_Eta
-  public :: adv_var
-  public :: adv_int
+!  public :: adv_var
+!  public :: adv_int
 
   private :: advvk
   private :: advx
@@ -1118,14 +1118,14 @@
                      mey*NPROCX,100*mey+j+1000,MPI_COMM_WORLD,INFO)
                 !receive averages from mex=0
                 CALL MPI_RECV(xn_advjk,8*NSPEC_ADV,MPI_BYTE, &
-                     mey*NPROCX,100*mey+j+3000,MPI_COMM_WORLD,STATUS,INFO)
+                     mey*NPROCX,100*mey+j+3000,MPI_COMM_WORLD,MPISTATUS,INFO)
 
              else
                 xn_advjktot(:) = xn_advjk(:)
                 isumtot=isum
                 do iproc=1,NPROCX-1
                    CALL MPI_RECV(xn_advjk,8*NSPEC_ADV,MPI_BYTE, &
-                        iproc+mey*NPROCX,100*mey+j+1000,MPI_COMM_WORLD,STATUS,INFO)
+                        iproc+mey*NPROCX,100*mey+j+1000,MPI_COMM_WORLD,MPISTATUS,INFO)
                    xn_advjktot(:) = xn_advjktot(:)+xn_advjk(:)
                    !             isumtot=isumtot+isum
                 enddo
@@ -1736,14 +1736,14 @@
                      mey*NPROCX,100*mey+j+1000,MPI_COMM_WORLD,INFO)
                 !receive averages from mex=0
                 CALL MPI_RECV(xn_advjk,8*NSPEC_ADV,MPI_BYTE, &
-                     mey*NPROCX,100*mey+j+3000,MPI_COMM_WORLD,STATUS,INFO)
+                     mey*NPROCX,100*mey+j+3000,MPI_COMM_WORLD,MPISTATUS,INFO)
 
              else
                 xn_advjktot(:) = xn_advjk(:)
                 isumtot=isum
                 do iproc=1,NPROCX-1
                    CALL MPI_RECV(xn_advjk,8*NSPEC_ADV,MPI_BYTE, &
-                        iproc+mey*NPROCX,100*mey+j+1000,MPI_COMM_WORLD,STATUS,INFO)
+                        iproc+mey*NPROCX,100*mey+j+1000,MPI_COMM_WORLD,MPISTATUS,INFO)
                    xn_advjktot(:) = xn_advjktot(:)+xn_advjk(:)
                    !             isumtot=isumtot+isum
                 enddo
@@ -3690,9 +3690,9 @@
     else
 
       CALL MPI_RECV( xnbeg, 8*MAXLJMAX*3*NSPEC_ADV, MPI_BYTE, &
-          neighbor(WEST), msgnr+200, MPI_COMM_WORLD, STATUS, INFO)
+          neighbor(WEST), msgnr+200, MPI_COMM_WORLD, MPISTATUS, INFO)
       CALL MPI_RECV( psbeg, 8*MAXLJMAX*3          , MPI_BYTE, &
-          neighbor(WEST), msgnr+300, MPI_COMM_WORLD, STATUS, INFO)
+          neighbor(WEST), msgnr+300, MPI_COMM_WORLD, MPISTATUS, INFO)
     endif
 
     if (neighbor(EAST).lt.0) then
@@ -3720,19 +3720,19 @@
     else
 
       CALL MPI_RECV( xnend, 8*MAXLJMAX*3*NSPEC_ADV, MPI_BYTE, &
-          neighbor(EAST), msgnr    , MPI_COMM_WORLD, STATUS, INFO)
+          neighbor(EAST), msgnr    , MPI_COMM_WORLD, MPISTATUS, INFO)
       CALL MPI_RECV( psend, 8*MAXLJMAX*3          , MPI_BYTE, &
-          neighbor(EAST), msgnr+100, MPI_COMM_WORLD, STATUS, INFO)
+          neighbor(EAST), msgnr+100, MPI_COMM_WORLD, MPISTATUS, INFO)
     endif
 
     !  synchronizing sent buffers (must be done for all ISENDs!!!)
     if (neighbor(WEST) .ge. 0) then
-      CALL MPI_WAIT(request_xn_w, STATUS, INFO)
-      CALL MPI_WAIT(request_ps_w, STATUS, INFO)
+      CALL MPI_WAIT(request_xn_w, MPISTATUS, INFO)
+      CALL MPI_WAIT(request_ps_w, MPISTATUS, INFO)
     endif
     if (neighbor(EAST) .ge. 0) then
-      CALL MPI_WAIT(request_xn_e, STATUS, INFO)
-      CALL MPI_WAIT(request_ps_e, STATUS, INFO)
+      CALL MPI_WAIT(request_xn_e, MPISTATUS, INFO)
+      CALL MPI_WAIT(request_ps_e, MPISTATUS, INFO)
     endif
   end subroutine preadvx
 
@@ -3829,9 +3829,9 @@
     else
 
       CALL MPI_RECV( xnbeg, 8*3*NSPEC_ADV, MPI_BYTE, &
-          neighbor(WEST), msgnr+200, MPI_COMM_WORLD, STATUS, INFO)
+          neighbor(WEST), msgnr+200, MPI_COMM_WORLD, MPISTATUS, INFO)
       CALL MPI_RECV( psbeg, 8*3          , MPI_BYTE, &
-          neighbor(WEST), msgnr+300, MPI_COMM_WORLD, STATUS, INFO)
+          neighbor(WEST), msgnr+300, MPI_COMM_WORLD, MPISTATUS, INFO)
     endif
 
     if (neighbor(EAST).lt.0) then
@@ -3859,19 +3859,19 @@
     else
 
       CALL MPI_RECV( xnend, 8*3*NSPEC_ADV, MPI_BYTE, &
-          neighbor(EAST), msgnr    , MPI_COMM_WORLD, STATUS, INFO)
+          neighbor(EAST), msgnr    , MPI_COMM_WORLD, MPISTATUS, INFO)
       CALL MPI_RECV( psend, 8*3          , MPI_BYTE, &
-          neighbor(EAST), msgnr+100, MPI_COMM_WORLD, STATUS, INFO)
+          neighbor(EAST), msgnr+100, MPI_COMM_WORLD, MPISTATUS, INFO)
     endif
 
     !  synchronizing sent buffers (must be done for all ISENDs!!!)
     if (neighbor(WEST) .ge. 0) then
-      CALL MPI_WAIT(request_xn_w, STATUS, INFO)
-      CALL MPI_WAIT(request_ps_w, STATUS, INFO)
+      CALL MPI_WAIT(request_xn_w, MPISTATUS, INFO)
+      CALL MPI_WAIT(request_ps_w, MPISTATUS, INFO)
     endif
     if (neighbor(EAST) .ge. 0) then
-      CALL MPI_WAIT(request_xn_e, STATUS, INFO)
-      CALL MPI_WAIT(request_ps_e, STATUS, INFO)
+      CALL MPI_WAIT(request_xn_e, MPISTATUS, INFO)
+      CALL MPI_WAIT(request_ps_e, MPISTATUS, INFO)
     endif
   end subroutine preadvx2
 
@@ -3971,9 +3971,9 @@
     else
 
       CALL MPI_RECV( xnbeg, 8*MAXLIMAX*3*NSPEC_ADV, MPI_BYTE,&
-            neighbor(SOUTH), msgnr    , MPI_COMM_WORLD, STATUS, INFO)
+            neighbor(SOUTH), msgnr    , MPI_COMM_WORLD, MPISTATUS, INFO)
       CALL MPI_RECV( psbeg, 8*MAXLIMAX*3          , MPI_BYTE,&
-            neighbor(SOUTH), msgnr+100, MPI_COMM_WORLD, STATUS, INFO)
+            neighbor(SOUTH), msgnr+100, MPI_COMM_WORLD, MPISTATUS, INFO)
     endif
 
     if (neighbor(NORTH).lt.0) then
@@ -4003,19 +4003,19 @@
     else
 
       CALL MPI_RECV( xnend, 8*MAXLIMAX*3*NSPEC_ADV, MPI_BYTE,&
-            neighbor(NORTH), msgnr    , MPI_COMM_WORLD, STATUS, INFO)
+            neighbor(NORTH), msgnr    , MPI_COMM_WORLD, MPISTATUS, INFO)
       CALL MPI_RECV( psend, 8*MAXLIMAX*3          , MPI_BYTE,&
-            neighbor(NORTH), msgnr+100, MPI_COMM_WORLD, STATUS, INFO)
+            neighbor(NORTH), msgnr+100, MPI_COMM_WORLD, MPISTATUS, INFO)
     endif
 
 !  synchronizing sent buffers (must be done for all ISENDs!!!)
     if (neighbor(SOUTH) .ge. 0) then
-      CALL MPI_WAIT(request_xn_s, STATUS, INFO)
-      CALL MPI_WAIT(request_ps_s, STATUS, INFO)
+      CALL MPI_WAIT(request_xn_s, MPISTATUS, INFO)
+      CALL MPI_WAIT(request_ps_s, MPISTATUS, INFO)
     endif
     if (neighbor(NORTH) .ge. 0) then
-      CALL MPI_WAIT(request_xn_n, STATUS, INFO)
-      CALL MPI_WAIT(request_ps_n, STATUS, INFO)
+      CALL MPI_WAIT(request_xn_n, MPISTATUS, INFO)
+      CALL MPI_WAIT(request_ps_n, MPISTATUS, INFO)
     endif
 
   end subroutine preadvy
@@ -4115,9 +4115,9 @@
     else
 
       CALL MPI_RECV( xnbeg, 8*3*NSPEC_ADV, MPI_BYTE,&
-            neighbor(SOUTH), msgnr    , MPI_COMM_WORLD, STATUS, INFO)
+            neighbor(SOUTH), msgnr    , MPI_COMM_WORLD, MPISTATUS, INFO)
       CALL MPI_RECV( psbeg, 8*3         , MPI_BYTE,&
-            neighbor(SOUTH), msgnr+100, MPI_COMM_WORLD, STATUS, INFO)
+            neighbor(SOUTH), msgnr+100, MPI_COMM_WORLD, MPISTATUS, INFO)
     endif
 
     if (neighbor(NORTH).lt.0) then
@@ -4147,178 +4147,24 @@
     else
 
       CALL MPI_RECV( xnend, 8*3*NSPEC_ADV, MPI_BYTE,&
-            neighbor(NORTH), msgnr    , MPI_COMM_WORLD, STATUS, INFO)
+            neighbor(NORTH), msgnr    , MPI_COMM_WORLD, MPISTATUS, INFO)
       CALL MPI_RECV( psend, 8*3          , MPI_BYTE,&
-            neighbor(NORTH), msgnr+100, MPI_COMM_WORLD, STATUS, INFO)
+            neighbor(NORTH), msgnr+100, MPI_COMM_WORLD, MPISTATUS, INFO)
     endif
 
 !  synchronizing sent buffers (must be done for all ISENDs!!!)
     if (neighbor(SOUTH) .ge. 0) then
-      CALL MPI_WAIT(request_xn_s, STATUS, INFO)
-      CALL MPI_WAIT(request_ps_s, STATUS, INFO)
+      CALL MPI_WAIT(request_xn_s, MPISTATUS, INFO)
+      CALL MPI_WAIT(request_ps_s, MPISTATUS, INFO)
     endif
     if (neighbor(NORTH) .ge. 0) then
-      CALL MPI_WAIT(request_xn_n, STATUS, INFO)
-      CALL MPI_WAIT(request_ps_n, STATUS, INFO)
+      CALL MPI_WAIT(request_xn_n, MPISTATUS, INFO)
+      CALL MPI_WAIT(request_ps_n, MPISTATUS, INFO)
     endif
 
   end subroutine preadvy2
 
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
-  subroutine adv_var(numt)
-    integer,intent(in)::  numt
-
-!    local
-
-    integer i,j,k,info,nr
-    integer request_s,request_n,request_e,request_w
-    real buf_uw(MAXLJMAX,KMAX_MID)
-    real buf_ue(MAXLJMAX,KMAX_MID)
-    real buf_vn(MAXLIMAX,KMAX_MID)
-    real buf_vs(MAXLIMAX,KMAX_MID)
-
-    nr = 2
-    if (numt.eq.1) nr = 1
-
-!     send to WEST neighbor if any
-
-    if (neighbor(WEST) .ne. NOPROC) then
-      if(neighbor(WEST) .ne. me)then
-        do k = 1,KMAX_MID
-          do j = 1,ljmax
-            buf_uw(j,k) = u_xmj(1,j,k,nr)
-          enddo
-        enddo
-
-        CALL MPI_ISEND(buf_uw(1,1), 8*MAXLJMAX*KMAX_MID, MPI_BYTE, &
-              neighbor(WEST), MSG_EAST2, MPI_COMM_WORLD, request_w, INFO)
-      else
-        ! cyclic grid: own neighbor
-        do k = 1,KMAX_MID
-          do j = 1,ljmax
-            ue(j,k,nr) = u_xmj(1,j,k,nr)
-          enddo
-        enddo
-      endif
-    endif
-
-!     send to EAST neighbor if any
-
-    if (neighbor(EAST) .ne. NOPROC) then
-      if (neighbor(EAST) .ne. me) then
-        do k = 1,KMAX_MID
-          do j = 1,ljmax
-            buf_ue(j,k) = u_xmj(limax-1,j,k,nr)
-          enddo
-        enddo
-        CALL MPI_ISEND(buf_ue(1,1), 8*MAXLJMAX*KMAX_MID, MPI_BYTE, &
-              neighbor(EAST), MSG_WEST2, MPI_COMM_WORLD, request_e, INFO)
-      else
-        ! cyclic grid: own neighbor
-        do k = 1,KMAX_MID
-          do j = 1,ljmax
-            uw(j,k,nr) = u_xmj(limax-1,j,k,nr)
-          enddo
-        enddo
-      endif
-    endif
-
-!     send to SOUTH neighbor if any
-
-    if (neighbor(SOUTH) .ne. NOPROC) then
-      do k = 1,KMAX_MID
-        do i = 1,limax
-          buf_vs(i,k) = v_xmi(i,1,k,nr)
-        enddo
-      enddo
-
-      CALL MPI_ISEND(buf_vs(1,1), 8*MAXLIMAX*KMAX_MID, MPI_BYTE, &
-            neighbor(SOUTH), MSG_NORTH2, MPI_COMM_WORLD, request_s, INFO)
-    endif
-
-!     send to NORTH neighbor if any
-
-    if (neighbor(NORTH) .ne. NOPROC) then
-      do k = 1,KMAX_MID
-        do i = 1,limax
-          buf_vn(i,k) = v_xmi(i,ljmax-1,k,nr)
-        enddo
-      enddo
-
-      CALL MPI_ISEND(buf_vn(1,1), 8*MAXLIMAX*KMAX_MID, MPI_BYTE, &
-            neighbor(NORTH), MSG_SOUTH2, MPI_COMM_WORLD, request_n, INFO)
-    endif
-
-!     receive from EAST neighbor if any
-
-    if (neighbor(EAST) .ne. NOPROC .and. neighbor(EAST) .ne. me) then
-      CALL MPI_RECV(ue(1,1,nr), 8*MAXLJMAX*KMAX_MID, MPI_BYTE, &
-          neighbor(EAST), MSG_EAST2, MPI_COMM_WORLD, STATUS, INFO)
-    endif
-
-!     receive from WEST neighbor if any
-
-    if (neighbor(WEST) .ne. NOPROC .and. neighbor(WEST) .ne. me) then
-      CALL MPI_RECV(uw(1,1,nr), 8*MAXLJMAX*KMAX_MID, MPI_BYTE, &
-           neighbor(WEST), MSG_WEST2, MPI_COMM_WORLD, STATUS, INFO)
-    endif
-
-!     receive from NORTH neighbor if any
-
-    if (neighbor(NORTH) .ne. NOPROC) then
-      CALL MPI_RECV(vn(1,1,nr), 8*MAXLIMAX*KMAX_MID, MPI_BYTE, &
-           neighbor(NORTH), MSG_NORTH2, MPI_COMM_WORLD, STATUS, INFO)
-    endif
-
-!     receive from SOUTH neighbor if any
-
-    if (neighbor(SOUTH) .ne. NOPROC) then
-      CALL MPI_RECV(vs(1,1,nr), 8*MAXLIMAX*KMAX_MID, MPI_BYTE, &
-          neighbor(SOUTH), MSG_SOUTH2, MPI_COMM_WORLD, STATUS, INFO)
-     endif
-
-    if (neighbor(EAST) .ne. NOPROC .and. neighbor(EAST) .ne. me) then
-      CALL MPI_WAIT(request_e, STATUS, INFO)
-    endif
-
-    if (neighbor(WEST) .ne. NOPROC .and. neighbor(WEST) .ne. me) then
-      CALL MPI_WAIT(request_w, STATUS, INFO)
-    endif
-
-    if (neighbor(NORTH) .ne. NOPROC) then
-      CALL MPI_WAIT(request_n, STATUS, INFO)
-    endif
-
-    if (neighbor(SOUTH) .ne. NOPROC) then
-      CALL MPI_WAIT(request_s, STATUS, INFO)
-    endif
-
-    return
-  end subroutine adv_var
-
-! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
-  subroutine adv_int
-    implicit none
-
-    real div
-
-    if (nstep.lt.nmax) then
-      div = 1./real(nmax-(nstep-1))
-      ue(:,:,1) = ue(:,:,1) + (ue(:,:,2) - ue(:,:,1))*div
-      uw(:,:,1) = uw(:,:,1) + (uw(:,:,2) - uw(:,:,1))*div
-      vs(:,:,1) = vs(:,:,1) + (vs(:,:,2) - vs(:,:,1))*div
-      vn(:,:,1) = vn(:,:,1) + (vn(:,:,2) - vn(:,:,1))*div
-    else
-      ue(:,:,1) = ue(:,:,2)
-      uw(:,:,1) = uw(:,:,2)
-      vs(:,:,1) = vs(:,:,2)
-      vn(:,:,1) = vn(:,:,2)
-    endif
-
-  end subroutine adv_int
-
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 !  subroutine convection_pstar(ps3d,dt_conv)
@@ -4329,12 +4175,11 @@
   subroutine alloc_adv_arrays
 
     !allocate the arrays once
-    allocate(uw(MAXLJMAX,KMAX_MID,NMET),ue(MAXLJMAX,KMAX_MID,NMET))
-    allocate(vs(MAXLIMAX,KMAX_MID,NMET),vn(MAXLIMAX,KMAX_MID,NMET))
+!    allocate(uw(MAXLJMAX,KMAX_MID,NMET),ue(MAXLJMAX,KMAX_MID,NMET))
+!    allocate(vs(MAXLIMAX,KMAX_MID,NMET),vn(MAXLIMAX,KMAX_MID,NMET))
     allocate(dhs1(KMAX_BND), dhs1i(KMAX_BND), dhs2i(KMAX_BND))
     allocate(alfnew(9,2:KMAX_MID,0:1))
 
   end subroutine alloc_adv_arrays
-
 
 end module Advection_ml

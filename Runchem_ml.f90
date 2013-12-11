@@ -85,8 +85,8 @@ module RunChem_ml
   public :: runchem
 contains
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-subroutine runchem(numt)
-  integer, intent(in) :: numt      
+subroutine runchem()
+
 !  local
   integer :: i, j
   integer :: errcode
@@ -100,7 +100,6 @@ subroutine runchem(numt)
   nhour  = current_date%hour
 
   Jan_1st    = ( nmonth == 1 .and. nday == 1 )
-  End_of_Run = ( mod(numt,nprint) == 0       )
 
   if(ORGANIC_AEROSOLS.and.first_call) &
     call CheckStop(SOA_MODULE_FLAG == "NotUsed", & ! Just safety

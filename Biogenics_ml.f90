@@ -390,11 +390,10 @@ module Biogenics_ml
    end subroutine MergedBVOC
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-  subroutine SetDailyBVOC(daynumber)
+  subroutine SetDailyBVOC()
 
       ! Scales emission potentials for daily LAI changes
 
-      integer, intent(in) :: daynumber
       integer, save :: last_daynumber = -999, alloc_err
       integer :: i, j, nlu, iL, iiL, ibvoc
       real :: LAIfac  ! Multiplies by land-fraction

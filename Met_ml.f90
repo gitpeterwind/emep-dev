@@ -170,6 +170,7 @@ character (len = 100), public, save  ::  meteo   ! template for meteofile
 public :: MeteoRead
 public :: MetModel_LandUse
 public :: metvar
+!public :: adv_var
 public :: metint
 public :: metfieldint
 public :: BLPhysics
@@ -181,12 +182,11 @@ public :: landify     ! replaces met variables from mixed sea/land with land
 contains
 
 !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-subroutine MeteoRead(numt)
+subroutine MeteoRead()
 !    the subroutine reads meteorological fields and parameters (every
 !    METSTEP-hours) from NetCDF fields-files, divide the fields into
 !       domains    and sends subfields to the processors
   implicit none
-  integer, intent(in):: numt
 
   character (len = 100), save  ::  meteoname   ! name of the meteofile
   character (len = 100)        ::  namefield & ! name of the requested field
@@ -203,6 +203,7 @@ subroutine MeteoRead(numt)
   real :: buff(MAXLIMAX,MAXLJMAX)!temporary metfields
   integer :: i, j, isw,KMAX
   logical :: fexist,found
+  logical,save :: first_call = .true.
 
  ! Soil water has many names. Some we can deal with:
  ! (and all need to end up as SMI)
@@ -218,10 +219,13 @@ subroutine MeteoRead(numt)
      ,"deep_soil_water_content" &
   /)
 
-  nr=2 !set to one only when the first time meteo is read
-  call_msg = "Meteoread"
 
-  if(numt == 1)then !first time meteo is read
+    if(current_date%seconds /= 0 .or. (mod(current_date%hour,METSTEP)/=0) )return
+
+    nr=2 !set to one only when the first time meteo is read
+    call_msg = "Meteoread"
+
+  if(first_call)then !first time meteo is read
     nr = 1
     nrec = 0
     sdot_at_mid = .false.
@@ -265,18 +269,19 @@ subroutine MeteoRead(numt)
 
   if(current_date%month == 1 .and. &
      current_date%day   == 1 .and. &
-     current_date%hour  == 0 ) call Init_nmdays(current_date)
+     current_date%hour  == 0 ) call Init_nmdays(current_date)!new year starts
 
   !On first call, check that date from meteo file correspond to dates requested. Also defines nhour_first.
-  if(numt==1) call Check_Meteo_Date !note that all procs read this
+  if(first_call) call Check_Meteo_Date !note that all procs read this
 
   if(MasterProc.and.DEBUG_MET) write(6,*) &
-       '*** nyear,nmonth,nday,nhour,numt,nmdays2'    &
+       '*** nyear,nmonth,nday,nhour,nmdays2'    &
        ,next_inptime%year,next_inptime%month,next_inptime%day    &
-       ,next_inptime%hour,numt,nmdays(2)
+       ,next_inptime%hour,nmdays(2)
 
-  !Read rec=1 both for h=0 and h=3:00 in case 00:00 from 1st January is missing
-  if((numt-1)*METSTEP<=nhour_first)nrec=0
+  !Read rec=1 both for h=0 and h=3:00 in case 00:00 in 1st meteofile  is missing
+!  if((numt-1)*METSTEP<=nhour_first)nrec=0
+
   nrec=nrec+1
 
   if(nrec>Nhh.or.nrec==1) then              ! define a new meteo input file
@@ -325,7 +330,7 @@ subroutine MeteoRead(numt)
   namefield='sigma_dot'
   call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
                      sdot(:,:,:,nr),found=foundsdot)
-  if(.not.foundsdot.and.MasterProc.and.numt==1)&
+  if(.not.foundsdot.and.MasterProc.and.first_call)&
     write(*,*)'WARNING: sigma_dot will be derived from horizontal winds '
 
   namefield='potential_temperature'
@@ -336,11 +341,11 @@ subroutine MeteoRead(numt)
   call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
                      cc3d(:,:,:),found=found)
   if(found)then
-    if(trim(validity)/='averaged'.and.MasterProc.and.numt==1)&
+    if(trim(validity)/='averaged'.and.MasterProc.and.first_call)&
       write(*,*)'WARNING: 3D cloud cover is not averaged'
     cc3d(:,:,:)=max(0.0,min(100.0,cc3d(:,:,:)))!0-100 % clouds
   else !if available, will use cloudwater to determine the height of release
-    if(MasterProc.and.numt==1)&
+    if(MasterProc.and.first_call)&
       write(*,*)'WARNING: 3D cloud cover not found, using CloudWater instead'
     namefield='cloudwater'
     call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
@@ -371,7 +376,7 @@ subroutine MeteoRead(numt)
     if(nr==2)cw(:,:,:,1)=cw(:,:,:,2)
     call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
                        cw(:,:,:,nr),found=foundcloudwater)
-    if(MasterProc.and.numt==1)then
+    if(MasterProc.and.first_call)then
       if(foundcloudwater)then
         write(*,*)' WARNING: 3D precipitations not found.&
           & Using 2D precipitations and cloudwater to make 3D'
@@ -407,7 +412,7 @@ subroutine MeteoRead(numt)
     namefield='eddy_diffusion_coefficient'
     call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
                       Kz_met(:,:,:,nr),found=foundKz_met)
-    if(.not.foundKz_met.and.MasterProc.and.numt==1)&
+    if(.not.foundKz_met.and.MasterProc.and.first_call)&
       write(*,*)' WARNING: Kz will be derived in model '
     Kz_met=max(0.0,Kz_met)  ! only positive Kz
 
@@ -437,7 +442,7 @@ subroutine MeteoRead(numt)
   if(found)then
     rh2m(:,:,nr) = 0.01 * rh2m(:,:,nr)  ! Convert from % to fraction 
   else
-    if(MasterProc.and.numt==1)write(*,*)'WARNING: relative_humidity_2m not found'
+    if(MasterProc.and.first_call)write(*,*)'WARNING: relative_humidity_2m not found'
     rh2m(:,:,nr) = -999.9  ! ?
   endif
   if(LANDIFY_MET) call landify(rh2m(:,:,nr),"rh2m") 
@@ -472,7 +477,7 @@ subroutine MeteoRead(numt)
   namefield='sea_surface_temperature'
   call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
                      sst(:,:,nr),found=foundSST)
-  if(.not.foundSST.and.MasterProc.and.numt==1)&
+  if(.not.foundSST.and.MasterProc.and.first_call)&
     write(*,*)' WARNING: sea_surface_temperature not found '
 
   ! Soil water fields. Somewhat tricky.
@@ -486,7 +491,7 @@ subroutine MeteoRead(numt)
     SoilWaterSource = "IFS" ! use as default?
     do isw = 1, size(possible_soilwater_uppr)
       namefield=possible_soilwater_uppr(isw)
-      if(MasterProc) write(*,*) "Met_ml: soil water search ",isw,trim(namefield)
+      if((DEBUG_SOILWATER .or. first_call).and.MasterProc) write(*,*) "Met_ml: soil water search ",isw,trim(namefield)
       call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
                          SoilWater_uppr(:,:,nr),found=foundSoilWater_uppr)
       if(foundSoilWater_uppr) then ! found
@@ -494,7 +499,7 @@ subroutine MeteoRead(numt)
         exit
       endif
     enddo
-    if(foundSMI1.and.MasterProc.and.numt==1) &  ! = 1st call
+    if(foundSMI1.and.MasterProc.and.first_call) &  ! = 1st call
       call PrintLog("Met: found SMI1:"//trim(namefield))
 
 !SW  if(validity/=field_not_found)then
@@ -541,10 +546,10 @@ subroutine MeteoRead(numt)
     do isw = 1, size(possible_soilwater_deep)
       namefield=possible_soilwater_deep(isw)
       if(DomainName=="HIRHAM") then
-        if(MasterProc.and.numt==1)write(*,*) " Rename soil water in HIRHAM"
+        if(MasterProc.and.first_call)write(*,*) " Rename soil water in HIRHAM"
         namefield='soil_water_second_layer'
       endif
-      if(MasterProc) write(*,*) "Met_ml: deep soil water search ", isw, trim(namefield)
+      if(MasterProc.and.first_call) write(*,*) "Met_ml: deep soil water search ", isw, trim(namefield)
 
       call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
                          SoilWater_deep(:,:,nr),found=foundSoilWater_deep)
@@ -620,13 +625,13 @@ subroutine MeteoRead(numt)
   namefield='snow_depth'
   call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
                      sdepth(:,:,nr),found=foundsdepth)
-  if(.not.foundsdepth.and.MasterProc.and.numt==1)&
+  if(.not.foundsdepth.and.MasterProc.and.first_call)&
     write(*,*)' WARNING: snow_depth not found '
 
   namefield='fraction_of_ice' !is really percentage
   call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
                      ice_nwp(:,:,nr),found=foundice)
-  if(.not.foundice.and.MasterProc.and.numt==1)&
+  if(.not.foundice.and.MasterProc.and.first_call)&
     write(*,*)' WARNING: ice_nwp coverage (%) not found '
 
   namefield='u10'!first component of ws_10m
@@ -642,18 +647,22 @@ subroutine MeteoRead(numt)
 !      call printCDF('ws_10m',ws_10m(:,:,1),unit)
     endif
   endif
+
+  if(first_call.and.next_inptime%hour<nhour_first)nrec=0!not yet reached first available time in meteo file
+
+  first_call=.false.
+  return
+
 endsubroutine Meteoread
 !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-  subroutine metvar(numt)
+  subroutine metvar()
 
     ! This routines postprocess the meteo fields:
     ! Unit changes, special definitions etc...
 
 
     implicit none
-
-    integer, intent(in):: numt
 
     !    local
 
@@ -677,9 +686,17 @@ endsubroutine Meteoread
     real :: tmpsw, landfrac, sumland  ! for soil water averaging
     real :: tmpmax ! debug 
 
+    real buf_uw(MAXLJMAX,KMAX_MID)
+    real buf_ue(MAXLJMAX,KMAX_MID)
+    real buf_vn(MAXLIMAX,KMAX_MID)
+    real buf_vs(MAXLIMAX,KMAX_MID)
+
+    logical,save :: first_call = .true.
+
+    if(current_date%seconds /= 0 .or. (mod(current_date%hour,METSTEP)/=0) )return
 
     nr = 2
-    if (numt == 1) then
+    if (first_call) then
 
        nr = 1
 
@@ -691,7 +708,6 @@ endsubroutine Meteoread
         debug_iloc = debug_li
         debug_jloc = debug_lj
 
-       if( debug_proc ) write(*,*) "DEBUG EXNER me", me, Exner_nd(99500.0)
        !-------------------------------------------------------------------
        ! Notes on IFS:
        ! Fc  has max 1.0. Set to 1.0 over sea
@@ -731,7 +747,7 @@ endsubroutine Meteoread
                   minval( pwp), minval( fc)
         end if
        endif
-    end if !numt == 1
+    end if !first_call
 
 
     divt = 1./(3600.0*METSTEP)
@@ -1357,11 +1373,130 @@ endsubroutine Meteoread
 
     call met_derived(nr) !compute derived meteo fields used in BLPhysics
 
-    call BLPhysics(numt)
+    call BLPhysics()
 
     call met_derived(1) !compute derived meteo fields for nr=1 "now"
 
+
+    !windspeed of neighbor subdomains at edges (used for advection)
+    !It the windspeed divided by xm which must be used here.
+!     send to WEST neighbor if any
+    if (neighbor(WEST) .ne. NOPROC) then
+      if(neighbor(WEST) .ne. me)then
+        do k = 1,KMAX_MID
+          do j = 1,ljmax
+            buf_uw(j,k) = u_xmj(1,j,k,nr)
+          enddo
+        enddo
+
+        CALL MPI_ISEND(buf_uw(1,1), 8*MAXLJMAX*KMAX_MID, MPI_BYTE, &
+              neighbor(WEST), MSG_EAST2, MPI_COMM_WORLD, request_w, INFO)
+      else
+        ! cyclic grid: own neighbor
+        do k = 1,KMAX_MID
+          do j = 1,ljmax
+            ue(j,k,nr) = u_xmj(1,j,k,nr)
+          enddo
+        enddo
+      endif
+    endif
+
+!     send to EAST neighbor if any
+
+    if (neighbor(EAST) .ne. NOPROC) then
+      if (neighbor(EAST) .ne. me) then
+        do k = 1,KMAX_MID
+          do j = 1,ljmax
+            buf_ue(j,k) = u_xmj(limax-1,j,k,nr)
+          enddo
+        enddo
+        CALL MPI_ISEND(buf_ue(1,1), 8*MAXLJMAX*KMAX_MID, MPI_BYTE, &
+              neighbor(EAST), MSG_WEST2, MPI_COMM_WORLD, request_e, INFO)
+      else
+        ! cyclic grid: own neighbor
+        do k = 1,KMAX_MID
+          do j = 1,ljmax
+            uw(j,k,nr) = u_xmj(limax-1,j,k,nr)
+          enddo
+        enddo
+      endif
+    endif
+
+!     send to SOUTH neighbor if any
+
+    if (neighbor(SOUTH) .ne. NOPROC) then
+      do k = 1,KMAX_MID
+        do i = 1,limax
+          buf_vs(i,k) = v_xmi(i,1,k,nr)
+        enddo
+      enddo
+
+      CALL MPI_ISEND(buf_vs(1,1), 8*MAXLIMAX*KMAX_MID, MPI_BYTE, &
+            neighbor(SOUTH), MSG_NORTH2, MPI_COMM_WORLD, request_s, INFO)
+    endif
+
+!     send to NORTH neighbor if any
+
+    if (neighbor(NORTH) .ne. NOPROC) then
+      do k = 1,KMAX_MID
+        do i = 1,limax
+          buf_vn(i,k) = v_xmi(i,ljmax-1,k,nr)
+        enddo
+      enddo
+
+      CALL MPI_ISEND(buf_vn(1,1), 8*MAXLIMAX*KMAX_MID, MPI_BYTE, &
+            neighbor(NORTH), MSG_SOUTH2, MPI_COMM_WORLD, request_n, INFO)
+    endif
+
+!     receive from EAST neighbor if any
+
+    if (neighbor(EAST) .ne. NOPROC .and. neighbor(EAST) .ne. me) then
+      CALL MPI_RECV(ue(1,1,nr), 8*MAXLJMAX*KMAX_MID, MPI_BYTE, &
+          neighbor(EAST), MSG_EAST2, MPI_COMM_WORLD, MPISTATUS, INFO)
+    endif
+
+!     receive from WEST neighbor if any
+
+    if (neighbor(WEST) .ne. NOPROC .and. neighbor(WEST) .ne. me) then
+      CALL MPI_RECV(uw(1,1,nr), 8*MAXLJMAX*KMAX_MID, MPI_BYTE, &
+           neighbor(WEST), MSG_WEST2, MPI_COMM_WORLD, MPISTATUS, INFO)
+    endif
+
+!     receive from NORTH neighbor if any
+
+    if (neighbor(NORTH) .ne. NOPROC) then
+      CALL MPI_RECV(vn(1,1,nr), 8*MAXLIMAX*KMAX_MID, MPI_BYTE, &
+           neighbor(NORTH), MSG_NORTH2, MPI_COMM_WORLD, MPISTATUS, INFO)
+    endif
+
+!     receive from SOUTH neighbor if any
+
+    if (neighbor(SOUTH) .ne. NOPROC) then
+      CALL MPI_RECV(vs(1,1,nr), 8*MAXLIMAX*KMAX_MID, MPI_BYTE, &
+          neighbor(SOUTH), MSG_SOUTH2, MPI_COMM_WORLD, MPISTATUS, INFO)
+     endif
+
+    if (neighbor(EAST) .ne. NOPROC .and. neighbor(EAST) .ne. me) then
+      CALL MPI_WAIT(request_e, MPISTATUS, INFO)
+    endif
+
+    if (neighbor(WEST) .ne. NOPROC .and. neighbor(WEST) .ne. me) then
+      CALL MPI_WAIT(request_w, MPISTATUS, INFO)
+    endif
+
+    if (neighbor(NORTH) .ne. NOPROC) then
+      CALL MPI_WAIT(request_n, MPISTATUS, INFO)
+    endif
+
+    if (neighbor(SOUTH) .ne. NOPROC) then
+      CALL MPI_WAIT(request_s, MPISTATUS, INFO)
+    endif
+
+    first_call=.false.
+    return
+
  end subroutine metvar
+
 
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
@@ -1385,6 +1520,7 @@ endsubroutine Meteoread
 
                    met(ix)%field(:,:,:,1)    = met(ix)%field(:,:,:,1)                 &
             + (met(ix)%field(:,:,:,2) - met(ix)%field(:,:,:,1))*div
+
           endif
        enddo
 
@@ -1669,7 +1805,7 @@ endsubroutine Meteoread
 
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-  subroutine BLPhysics(numt)
+  subroutine BLPhysics()
     !c
     !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
     !c    First written by Trond Iversen,  modified by Hugo Jakobsen, 060994
@@ -1712,9 +1848,10 @@ endsubroutine Meteoread
     real, dimension(KMAX_MID) :: Kz_nwp 
     real    :: Kz_min, stab_h
 
-    integer i,j,k,numt, nr
+    integer i,j,k,nr
     real :: theta2
     logical :: debug_flag
+    logical,save :: first_call = .true.
 
     call CheckStop( KZ_SBL_LIMIT < 1.01*KZ_MINIMUM,   &
          "SBLlimit too low! in Met_ml")
@@ -1722,7 +1859,7 @@ endsubroutine Meteoread
     !     Preliminary definitions
 
     nr = 2
-    if (numt == 1) nr = 1
+    if (first_call) nr = 1
 
     Kz_m2s(:,:,:)= 0.
     Kz_nwp(:)    = -99.0   ! store for printout. only set if read from NWP
@@ -2022,6 +2159,8 @@ endsubroutine Meteoread
     end if
     !***************************************************
 
+    first_call=.false.
+    return
 
   end subroutine BLPhysics
 
@@ -2350,7 +2489,7 @@ endsubroutine Meteoread
     end do ! j
 
     !if ( DEBUG_MET .and. debug_proc ) write(*,*) "Landify done"
-    if ( debug_proc ) then
+    if ( DEBUG_LANDIFY .and. debug_proc ) then
         call datewrite("LandifyDONE: "//trim(intxt), (/ oldx, x(debug_li,debug_lj) /) )
     end if
 
