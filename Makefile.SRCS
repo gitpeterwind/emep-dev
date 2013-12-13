@@ -30,6 +30,10 @@ ESX_SRCS = ZD_ESX/AllocInit.f90 \
 		   ZD_ESX/CM_ChemSpecs.f90 \
 		   ZD_ESX/DefPhotolysis.f90 \
 		   ZD_ESX/esx_Variables.f90 \
+		   ZD_ESX/esx_Zchem.f90 \
+		   ZD_ESX/esx_Zgrid.f90 \
+		   ZD_ESX/esx_Zveg.f90 \
+		   ZD_ESX/Io_Routines.f90 \
 		   ZD_ESX/LocalVariables.f90 \
 		   ZD_ESX/ModelConstants.f90 \
 		   ZD_ESX/ZchemData.f90 \

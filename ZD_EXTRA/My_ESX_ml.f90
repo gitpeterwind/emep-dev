@@ -5,15 +5,15 @@ module ESX_ml
   private
 
   public :: Init_ESX
-  public :: ESX
+  public :: Run_ESX
 
 contains
 
   subroutine Init_ESX()
   end subroutine Init_ESX
 
-  subroutine ESX()
-  end subroutine ESX
+  subroutine Run_ESX()
+  end subroutine Run_ESX
 
 end module ESX_ml
 

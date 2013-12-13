@@ -113,7 +113,7 @@ module DryDep_ml
  use ChemSpecs_shl_ml,  only :  NSPEC_SHL
  use TimeDate_ml,       only : daynumber, current_date
  use Wesely_ml         ! ... Init_GasCoeff, DRx, Rb_Cor, ...
- use ESX_ml,            only : Init_ESX, ESX
+ use ESX_ml,            only : Init_ESX, Run_ESX
 
 
  implicit none
@@ -881,7 +881,7 @@ integer :: nglob
 
 
       if (USES%ESX) then
-        call ESX()
+        call Run_ESX()
       end if
 
 
