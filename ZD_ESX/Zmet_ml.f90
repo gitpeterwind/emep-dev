@@ -3,6 +3,7 @@
 !! and EMEP/CTM meteorology.
 
 module Zmet_ml
+  use AllocInits, only : AllocInit
   use esx_Variables, only : Zmet_t, esx
   implicit none
   private
@@ -23,44 +24,35 @@ contains
     real, parameter :: RGAS_KG = 287.0     ! Molar Gas constant (J K-1 kg-1)
     real, parameter :: ATWAIR = 28.964     ! mol wt of air, g/mol
     integer :: iz ! TMP
- 
-    !> We need to re-allocate if changes in array size
-    !! Should be eonough to test just temperature.
-      if ( allocated( temp) ) then
-        if ( size( temp) /= nz ) deallocate(temp, rh, tinv, lt300, M, O2, H2O,&
-                                            log300divt, logtdiv300, itemp )
-      end if
-      if ( .not. allocated( temp) ) then
-          allocate(temp(nz), rh(nz), tinv(nz), lt300(nz), M(nz), O2(nz), H2O(nz) )
-          allocate(log300divt(nz), logtdiv300(nz)) ! For chemistry
-          allocate(itemp(nz)) ! For chemistry
-      end if
 
-      temp = Zdata(1:nz)%tzK
-      itemp = nint( temp -1.0e-9 ) ! e-9 avoids some machine problems
-      M    = Zdata(1:nz)%M
-      rh   = Zdata(1:nz)%rh
+    call AllocInit(temp, Zdata(1:nz)%tzK, nz, "temp")
+    call AllocInit(M,    Zdata(1:nz)%M,   nz, "M")
+    call AllocInit(rh,   Zdata(1:nz)%rh,  nz, "rh")
 
-      !> Assume we have RH in Zdata, need to calculate H2O from Teten etc.:
-      !! nb 611 is sat. vapour pressure (Pa) at 273K
+    !> Assume we have RH in Zdata, need to calculate H2O from Teten etc.:
+    !! nb 611 is sat. vapour pressure (Pa) at 273K
 
-      esat(:) = 611.0 * exp(0.622*2.5e6*((1.0/273.15) - (1.0/temp(:)))/ RGAS_KG )
-      H2O(:)  = rh(:)* esat(:)/Zdata(1:nz)%Pa * M(:)*ATWAIR/18.0
+    esat(:) = 611.0 * exp(0.622*2.5e6*((1.0/273.15) - (1.0/temp(:)))/ RGAS_KG )
+    call AllocInit(H2O, 0.0, nz, "H2O")
+    H2O(:)  = rh(:)* esat(:)/Zdata(1:nz)%Pa * M(:)*ATWAIR/18.0
 
+    call AllocInit(tinv, 1.0/temp(:), nz, "tinv")
+    call AllocInit(N2,   0.79*M(:),   nz, "N2")
+    call AllocInit(O2,   0.29*M(:),   nz, "O2")
 
-      tinv = 1.0/temp
-      N2   = 0.79 * M
-      O2   = 0.29 * M
+    ! For chemistry
+    call AllocInit(itemp,      nint(temp(:)-1.0e-9), nz, "itemp") ! e-9 avoids some machine problems
+    call AllocInit(log300divt, log(300.0*tinv(:)),   nz, "log300divt")
+    call AllocInit(logtdiv300, log(temp(:)/300.0),   nz, "logtdiv300")
 
-      log300divt(:) = log(300.0*tinv(:))
-      logtdiv300(:) = log(temp(:)/300.0)
+    call AllocInit(lt300, 0.0, nz, "lt300")   ! TODO: remove this? it isn't used...
 
-      if( esx%debug_Zchem > 1 ) then
-        print *, "ZMET t,1/t,rh,M,H2O at z1 ", temp(1), itemp(1), rh(1), M(1), H2O(1)
-        print *, "ZMET t,1/t,rh,M,H2O at nz", temp(nz), itemp(nz), rh(nz), M(nz), H2O(nz)
-      end if
-     !stop
-     
+    if( esx%debug_Zchem > 1 ) then
+      print *, "ZMET t,1/t,rh,M,H2O at z1 ", temp(1), itemp(1), rh(1), M(1), H2O(1)
+      print *, "ZMET t,1/t,rh,M,H2O at nz", temp(nz), itemp(nz), rh(nz), M(nz), H2O(nz)
+    end if
+    !stop
+
   end subroutine Set1Dmet
 
 end module Zmet_ml

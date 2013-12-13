@@ -35,27 +35,20 @@
     !! EMEP to ESX
 
       if( debug_level > 0 ) print *, "ALLOCATE xCHEM?? ", nspec, nz, size(xChem, 1)
-      if ( allocated( xChem) ) then
-        if ( size( xChem, 1) /= nz ) deallocate(xChem, Dchem, rcemis, rct, rcphot )
-      end if
-      if ( allocated( xSO4) ) then
-        if ( size( xSO4) /= nz ) deallocate(xSO4, xNO3, xNH4 )
-      end if
 
       if ( .not. allocated( xChem) ) then
-
           if( debug_level > 0 ) print *, "ALLOCATES xCHEM ", nspec, nz
-          call AllocInit( xChem,  0.0, nspec, nz, "set1D:xChem")
-          call AllocInit( Dchem,  0.0, nspec, nz, "set1D:Dchem")
-          call AllocInit( rcemis, 0.0, nspec, nz, "set1D:rcemis")
-          call AllocInit( rct,    0.0,  nrct, nz, "set1D:rct")
-          call AllocInit( rcphot, 0.0,  MAXRCPHOT, nz, "set1D:rct")
-
-          call AllocInit( xSO4,    0.0, nz, "set1D:xSO4")
-          call AllocInit( xNO3,    0.0, nz, "set1D:xNO3")
-          call AllocInit( xNH4,    0.0, nz, "set1D:xNH4")
-
       end if
+
+      call AllocInit( xChem,  0.0, nspec, nz, "set1D:xChem")
+      call AllocInit( Dchem,  0.0, nspec, nz, "set1D:Dchem")
+      call AllocInit( rcemis, 0.0, nspec, nz, "set1D:rcemis")
+      call AllocInit( rct,    0.0,  nrct, nz, "set1D:rct")
+      call AllocInit( rcphot, 0.0,  MAXRCPHOT, nz, "set1D:rct")
+
+      call AllocInit( xSO4,    0.0, nz, "set1D:xSO4")
+      call AllocInit( xNO3,    0.0, nz, "set1D:xNO3")
+      call AllocInit( xNH4,    0.0, nz, "set1D:xNH4")
 
   end subroutine Alloc1Dchem
 

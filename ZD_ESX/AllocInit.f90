@@ -8,60 +8,112 @@ module AllocInits
   private
 
   public :: AllocInit
-  private :: Alloc1d  ! Alloc/init for 1-D arrays
-  private :: Alloc2d  ! Alloc/init for 2-D arrays
-  private :: Alloc3d  ! Alloc/init for 3-D arrays
 
   interface AllocInit
-    module procedure Alloc1d
-    module procedure Alloc1d_int
-    module procedure Alloc2d
-    module procedure Alloc3d
+    module procedure alloc_real_1d_init_scalar
+    module procedure alloc_real_1d_init_array
+    module procedure alloc_real_2d_init_scalar
+    module procedure alloc_real_3d_init_scalar
+    module procedure alloc_integer_1d_init_scalar
+    module procedure alloc_integer_1d_init_array
   end interface AllocInit
 
 contains
 
-  subroutine Alloc1d( a, init, n1, txt)
+  subroutine alloc_real_1d_init_scalar(a, init, n1, txt)
     real, allocatable, dimension(:), intent(inout) :: a
     real, intent(in) :: init
+    integer, intent(in) :: n1
     character(len=*), intent(in) :: txt
-    integer :: n1, istat
 
-    allocate( a(n1), stat = istat )
-    call CheckStop ( istat /= 0, "ERROR 1d Alloc: "//trim(txt) )
+    integer :: istat
+
+    if (allocated(a) .and. any(shape(a) /= [n1])) deallocate(a)
+    if (.not. allocated(a)) then
+      allocate(a(n1), stat=istat)
+      call CheckStop(istat /= 0, "ERROR alloc_real_1d_init_scalar:"//trim(txt))
+    end if
     a = init
-  end subroutine Alloc1d
+  end subroutine alloc_real_1d_init_scalar
 
-  subroutine Alloc1d_int( a, init, n1, txt)
-    integer, allocatable, dimension(:), intent(inout) :: a
-    integer, intent(in) :: init
+  subroutine alloc_real_1d_init_array(a, init, n1, txt)
+    real, allocatable, dimension(:), intent(inout) :: a
+    real, dimension(n1), intent(in) :: init
+    integer, intent(in) :: n1
     character(len=*), intent(in) :: txt
-    integer :: n1, istat
 
-    allocate( a(n1), stat = istat )
-    call CheckStop ( istat /= 0, "ERROR 1d_int Alloc: "//trim(txt) )
+    integer :: istat
+
+    if (allocated(a) .and. any(shape(a) /= [n1])) deallocate(a)
+    if (.not. allocated(a)) then
+      allocate(a(n1), stat=istat)
+      call CheckStop(istat /= 0, "ERROR alloc_real_1d_init_array:"//trim(txt))
+    end if
     a = init
-  end subroutine Alloc1d_int
+  end subroutine alloc_real_1d_init_array
 
-  subroutine Alloc2d( a, init, n1,n2, txt)
+  subroutine alloc_real_2d_init_scalar(a, init, n1, n2, txt)
     real, allocatable, dimension(:,:), intent(inout) :: a
     real, intent(in) :: init
+    integer, intent(in) :: n1, n2
     character(len=*), intent(in) :: txt
-    integer :: n1, n2, istat
 
-    allocate( a(n1,n2), stat = istat )
-    call CheckStop ( istat /= 0, "ERROR 2d Alloc: "//trim(txt) )
+    integer :: istat
+
+    if (allocated(a) .and. any(shape(a) /= [n1, n2])) deallocate(a)
+    if (.not. allocated(a)) then
+      allocate(a(n1, n2), stat=istat)
+      call CheckStop(istat /= 0, "ERROR alloc_real_2d_init_scalar:"//trim(txt))
+    end if
     a = init
-  end subroutine Alloc2d
+  end subroutine alloc_real_2d_init_scalar
 
-  subroutine Alloc3d( a, init, n1,n2,n3, txt)
+  subroutine alloc_real_3d_init_scalar(a, init, n1, n2, n3, txt)
     real, allocatable, dimension(:,:,:), intent(inout) :: a
     real, intent(in) :: init
+    integer, intent(in) :: n1, n2, n3
     character(len=*), intent(in) :: txt
-    integer :: n1, n2,n3, istat
 
-    allocate( a(n1,n2,n3), stat = istat )
-    call CheckStop ( istat /= 0, "ERROR 2d Alloc: "//trim(txt) )
+    integer :: istat
+
+    if (allocated(a) .and. any(shape(a) /= [n1, n2, n3])) deallocate(a)
+    if (.not. allocated(a)) then
+      allocate(a(n1, n2, n3), stat=istat)
+      call CheckStop(istat /= 0, "ERROR alloc_real_3d_init_scalar:"//trim(txt))
+    end if
     a = init
-  end subroutine Alloc3d
+  end subroutine alloc_real_3d_init_scalar
+
+  subroutine alloc_integer_1d_init_scalar(a, init, n1, txt)
+    integer, allocatable, dimension(:), intent(inout) :: a
+    integer, intent(in) :: init
+    integer, intent(in) :: n1
+    character(len=*), intent(in) :: txt
+
+    integer :: istat
+
+    if (allocated(a) .and. any(shape(a) /= [n1])) deallocate(a)
+    if (.not. allocated(a)) then
+      allocate(a(n1), stat=istat)
+      call CheckStop(istat /= 0, "ERROR alloc_integer_1d_init_scalar:"//trim(txt))
+    end if
+    a = init
+  end subroutine alloc_integer_1d_init_scalar
+
+  subroutine alloc_integer_1d_init_array(a, init, n1, txt)
+    integer, allocatable, dimension(:), intent(inout) :: a
+    integer, dimension(n1), intent(in) :: init
+    integer, intent(in) :: n1
+    character(len=*), intent(in) :: txt
+
+    integer :: istat
+
+    if (allocated(a) .and. any(shape(a) /= [n1])) deallocate(a)
+    if (.not. allocated(a)) then
+      allocate(a(n1), stat=istat)
+      call CheckStop(istat /= 0, "ERROR alloc_integer_1d_init_scalar:"//trim(txt))
+    end if
+    a = init
+  end subroutine alloc_integer_1d_init_array
+
 end module AllocInits

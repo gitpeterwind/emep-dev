@@ -154,6 +154,17 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+13th December 2013  Alan Briolat  2691-2692
+
+ZD_ESX/{AllocInit.f90,Zmet_ml.f90,ZchemData.f90}:
+    Reworked the AllocInit subroutine to allow array initialisers and
+    automatic reallocation when new shapes are required.  Updated ESX Zmet
+    and ZchemData to rely on the new AllocInit.
+
+ZD_ESX/My_ESX_ml.f90, ZD_EXTRA/My_ESX_ml.f90, DryDep_ml.f90, Makefile.SRCS:
+    Added basic ESX initialisation, called from DryDep.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 11th December 2013  Peter  2690
 
 Big reorgarnization of loops: the loop within PhyChem is merged with the loop in Unimod.
