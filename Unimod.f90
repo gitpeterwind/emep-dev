@@ -34,7 +34,7 @@ program myeul
   use Io_Progs_ml,      only: read_line, PrintLog
   use Landuse_ml,       only: InitLandUse, SetLanduse, Land_codes
   use MassBudget_ml,    only: Init_massbudget, massbudget
-  use Met_ml,           only: metvar, metfieldint, MetModel_LandUse, Meteoread, meteo
+  use Met_ml,           only: metfieldint, MetModel_LandUse, Meteoread, meteo
   use ModelConstants_ml,only: MasterProc, &   ! set true for host processor, me==0
        RUNDOMAIN,  &   ! Model domain
        NPROC,      &   ! No. processors
@@ -53,7 +53,7 @@ program myeul
   use Sites_ml,         only: sitesdef  ! to get output sites
   use Tabulations_ml,   only: tabulate
   use TimeDate_ml,      only: date, current_date, day_of_year, daynumber,&
-       tdif_secs,date,timestamp,make_timestamp,startdate, enddate
+       tdif_secs,date,timestamp,make_timestamp,startdate, enddate,Init_nmdays
   use TimeDate_ExtraUtil_ml,only : date2string, assign_NTERM
   use Trajectory_ml,    only: trajectory_init,trajectory_in
   use Nest_ml,          only: wrtxn     ! write nested output (IC/BC)
@@ -224,7 +224,6 @@ program myeul
   if (wanted_iou(IOU_MON)) &
        call Init_new_netCDF(trim(runlabel1)//'_month.nc',IOU_MON)
 
-  call metvar()
   call Add_2timing(4,tim_after,tim_before,"After tabs, defs, adv_var")
 
   tim_before = tim_before0
@@ -255,6 +254,8 @@ program myeul
 
      ! daynumber needed for BCs
      daynumber=day_of_year(yyyy,mm,dd)
+     
+     if(mm==1 .and. dd==1 .and. hh==0)call Init_nmdays(current_date)!new year starts
 
      call Code_timer(tim_before)
      if (mm_old /= mm) then   ! START OF NEW MONTH !!!!!
@@ -304,6 +305,7 @@ program myeul
      call Add_2timing(11,tim_after,tim_before,"SetLanduse")
 
      call Meteoread() ! 3-hourly or hourly
+
      call Add_2timing(10,tim_after,tim_before,"Meteoread")
 
      call SetDailyBVOC() !daily
@@ -320,7 +322,7 @@ program myeul
           date2string("YYYY-MM-DD hh:mm:ss",current_date)
 
      call Code_timer(tim_before)
-     call metvar()
+!     call metvar()
 
      call Add_2timing(13,tim_after,tim_before,"metvar")
 

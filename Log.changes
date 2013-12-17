@@ -154,6 +154,16 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+17th December 2013  Peter  2693
+
+ Complete reorganization of MeteoRead. The fields are systematically read from
+the met(ix) "list".
+Metvar is now integrated into MeteoRead (since everything was put there anyway).
+Lot of clean up. 
+The weird definition of precipitation is corrected (as planend in 2010...); 
+Now pr is simply the precipitation (forced positive) in mm/s. 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 13th December 2013  Alan Briolat  2691-2692
 
 ZD_ESX/{AllocInit.f90,Zmet_ml.f90,ZchemData.f90}:

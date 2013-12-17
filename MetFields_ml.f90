@@ -1,5 +1,7 @@
 module MetFields_ml
 
+  use ModelConstants_ml,    only : USE_CONVECTION,USE_SOILWATER
+
   implicit none
   private
 
@@ -103,7 +105,7 @@ module MetFields_ml
        th      &  ! Potential teperature  ( deg. k )
 !       ,q      &  ! Specific humidity
        ,roa    &  ! kg/m3
-       ,cw        ! cloudwater
+       ,cw_met    ! cloudwater from meteo file (not always defined!)
   real,target,public, save,allocatable, dimension(:,:,:,:) :: &
         EtaKz    &! vertical diffusivity in Eta coords
        ,SigmaKz  &! vertical diffusivity in sigma coords
@@ -181,7 +183,7 @@ module MetFields_ml
 
   ! Different NWP outputs for soil water are possible. We can currently
   ! cope with two:
-  character(len=10), public, save  :: SoilWaterSource  ! IFS or PARLAM
+  character(len=10), public, save  :: SoilWaterSource="IFS"  ! IFS or PARLAM
 
   real,target,public, save, allocatable,dimension(:,:) :: &
     fSW     ! fSW= f(relative extractable water) =  (sw-swmin)/(swFC-swmin)
@@ -195,33 +197,46 @@ module MetFields_ml
        ,nhour_first  ! time of the first meteo stored
 ! Logical flags, used to determine if some met fields are present in the
 ! input or not:
-  logical, public, save :: &
-     foundustar     & ! Used for MM5-type, where u_xmj* but not tau
-    ,foundsdot      & ! If not found: compute using divergence=0
-    ,sdot_at_mid    & ! set false if sdot is defined
-    ,foundSST       & ! false if no SeaSurfaceT in metdata
-    ,foundSoilWater_uppr  & ! false if no SW-shallow
-    ,foundSoilWater_deep  & ! false if no SW-deep
-    ,foundsdepth    & ! false if no snow_flag depth in metdata
-    ,foundice       & ! false if no ice_nwp coverage (%) in metdata
-    ,foundKz_met    & ! false if no Kz from meteorology
-    ,foundconv      & ! false if convection not found or not used
+  logical, target, public, save :: &
+     foundustar= .false.     & ! Used for MM5-type, where u_xmj* but not tau
+    ,foundsdot= .false.      & ! If not found: compute using divergence=0
+    ,sdot_at_mid= .false.    & ! set false if sdot is defined
+    ,foundcc3d = .false.     & ! false if no cc3d in metdata
+    ,foundSST= .false.       & ! false if no SeaSurfaceT in metdata
+    ,foundSoilWater_uppr= .false.  & ! false if no SW-shallow
+    ,foundSoilWater_deep= .false.  & ! false if no SW-deep
+    ,foundrh2m= .false.   & ! false if no relative_humidity_2m in metdata
+    ,foundtau= .false.   & ! false if no surface_stress in metdata
+    ,foundsdepth= .false.    & ! false if no snow_flag depth in metdata
+    ,foundice= .false.       & ! false if no ice_nwp coverage (%) in metdata
+    ,foundKz_met= .false.    & ! false if no Kz from meteorology
+    ,foundconv= .false.      & ! false if convection not found or not used
   ! Introduced for FUTURE NH3, but also sea-salt
-    ,foundws10_met   & ! false if no u10 from meteorology
-    ,foundu10_met   & ! false if no u10 from meteorology
-    ,foundv10_met   & ! false if no v10 from meteorology
-    ,foundprecip    & ! false if no precipitationfrom meteorology
-    ,foundcloudwater& !false if no cloudwater found
-    ,foundSMI1& ! false if no Soil Moisture Index level 1 (shallow)
-    ,foundSMI3 ! false if no Soil Moisture Index level 3 (deep)
+    ,foundws10_met= .false.   & ! false if no u10 from meteorology
+    ,foundu10_met= .false.   & ! false if no u10 from meteorology
+    ,foundv10_met= .false.   & ! false if no v10 from meteorology
+    ,foundprecip= .false.    & ! false if no precipitationfrom meteorology
+    ,foundcloudwater= .false.& !false if no cloudwater found
+    ,foundSMI1= .true.& ! false if no Soil Moisture Index level 1 (shallow)
+    ,foundSMI3= .true. ! false if no Soil Moisture Index level 3 (deep)
+
+! specific indices of met
+  integer, public, save   :: ix_u_xmj,ix_v_xmi, ix_q, ix_th, ix_sdot, ix_cc3d, ix_pr, ix_cw_met, ix_cnvuf, &
+       ix_cnvdf, ix_Kz_met, ix_roa, ix_SigmaKz, ix_EtaKz, ix_Etadot, ix_cc3dmax, ix_lwc, ix_Kz_m2s, &
+       ix_u_mid, ix_v_mid, ix_ps, ix_t2_nwp, ix_rh2m, ix_fh, ix_fl, ix_tau, ix_ustar_nwp, ix_sst, &
+       ix_SoilWater_uppr, ix_SoilWater_deep, ix_sdepth, ix_ice_nwp, ix_ws_10m, ix_surface_precip, &
+       ix_uw, ix_ue, ix_vs, ix_vn  
 
   type,  public :: metfield
      character(len = 100) :: name = 'empty' !name as defined in external meteo file
+     character(len = 100) :: unit = 'notset' !unit required by the model
+     character(len = 100) :: validity = 'notset' !special conditions set by the external meteo file
      integer :: dim = 3 !number of dimension (2 for 2D, 3 for 3D)
      integer :: frequency =3  ! How many hours between two fields
      logical :: time_interpolate = .true. ! Interpolate in time  
-     logical :: read_meteo = .false. ! The values will be looked for in the external meteo file
-     logical :: found= .false. ! The values have been found in the external meteo file
+     logical :: read_meteo = .false. ! The field will be looked for in the external meteo file
+     logical :: needed= .true. ! The field must be present in the external meteo file
+     logical, pointer :: found => null()  ! The field has been found in the external meteo file
 !note that it is not allowed in fortran to define a target in a derived type
      real, pointer :: field(:,:,:,:) => null() !actual values for the fields; must be pointed to
      integer :: zsize = 1 ! field, size of third index
@@ -229,11 +244,13 @@ module MetFields_ml
   endtype metfield
 
   integer, public, parameter   :: NmetfieldsMax=100 !maxnumber of metfields
-  type(metfield),  public :: met(NmetfieldsMax)!size can be larger
+  type(metfield),  public :: met(NmetfieldsMax)  !To put the metfirelds that need systematic treatment
+  logical, target :: metfieldfound(NmetfieldsMax)=.false. !default for met(ix)%found 
   integer, public, save   :: Nmetfields! number of fields defined in met
   integer, public, save   :: N3Dmetfields! number of 3D fields defined in met
   real,target, public,save,allocatable, dimension(:,:,:) :: uw,ue
   real,target, public,save,allocatable, dimension(:,:,:) :: vs,vn
+
 
   public :: Alloc_MetFields !allocate arrays
 
@@ -246,17 +263,24 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
   integer, intent(in) ::MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET
   integer ::ix
 
+  do ix=1,NmetfieldsMax
+     met(ix)%found => metfieldfound(ix)!default target
+  enddo
+
   ix=1
   met(ix)%name             = 'u_wind'
   met(ix)%dim              = 3
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .true.
   met(ix)%read_meteo       = .true.
+  met(ix)%needed           = .true.
   met(ix)%found            = .false.
   allocate(u_xmj(0:MAXLIMAX,1:MAXLJMAX,KMAX_MID,NMET))
+  u_xmj=0.0
   met(ix)%field(0:MAXLIMAX,1:MAXLJMAX,1:KMAX_MID,1:NMET)  => u_xmj
   met(ix)%zsize = KMAX_MID
   met(ix)%msize = NMET
+  ix_u_xmj=ix
 
   ix=ix+1
   met(ix)%name             = 'v_wind'
@@ -264,11 +288,14 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .true.
   met(ix)%read_meteo       = .true.
+  met(ix)%needed           = .true.
   met(ix)%found            = .false.
   allocate(v_xmi(1:MAXLIMAX,0:MAXLJMAX,KMAX_MID,NMET))
+  v_xmi=0.0
   met(ix)%field(1:MAXLIMAX,0:MAXLJMAX,1:KMAX_MID,1:NMET)  => v_xmi
   met(ix)%zsize = KMAX_MID
   met(ix)%msize = NMET
+  ix_v_xmi=ix
 
   ix=ix+1
   met(ix)%name             = 'specific_humidity'
@@ -276,11 +303,14 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .true.
   met(ix)%read_meteo       = .true.
+  met(ix)%needed           = .true.
   met(ix)%found            = .false.
   allocate(q(MAXLIMAX,MAXLJMAX,KMAX_MID,NMET))
+  q=0.0
   met(ix)%field => q 
   met(ix)%zsize = KMAX_MID
   met(ix)%msize = NMET
+  ix_q=ix
 
   ix=ix+1
   met(ix)%name             = 'potential_temperature'
@@ -288,11 +318,14 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .true.
   met(ix)%read_meteo       = .true.
+  met(ix)%needed           = .true.
   met(ix)%found            = .false.
   allocate(th(MAXLIMAX,MAXLJMAX,KMAX_MID,NMET))
+  th=0.0
   met(ix)%field(1:MAXLIMAX,1:MAXLJMAX,1:KMAX_MID,1:NMET)  => th
   met(ix)%zsize = KMAX_MID
   met(ix)%msize = NMET
+  ix_th=ix
 
   ix=ix+1
   met(ix)%name             = 'sigma_dot'
@@ -300,11 +333,14 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .true.
   met(ix)%read_meteo       = .true.
-  met(ix)%found            = .false.
+  met(ix)%needed           = .false.
+  met(ix)%found            => foundsdot
   allocate(sdot(MAXLIMAX,MAXLJMAX,KMAX_BND,NMET))
+  sdot=0.0
   met(ix)%field(1:MAXLIMAX,1:MAXLJMAX,1:KMAX_BND,1:NMET)  => sdot
   met(ix)%zsize = KMAX_BND
   met(ix)%msize = NMET
+  ix_sdot=ix
 
   ix=ix+1
   met(ix)%name             = '3D_cloudcover'
@@ -312,11 +348,14 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .false.
   met(ix)%read_meteo       = .true.
-  met(ix)%found            = .false.
+  met(ix)%needed           = .false.
+  met(ix)%found            => foundcc3d 
   allocate(cc3d(MAXLIMAX,MAXLJMAX,KMAX_MID))
+  cc3d=0.0
   met(ix)%field(1:MAXLIMAX,1:MAXLJMAX,1:KMAX_MID,1:1)  => cc3d
   met(ix)%zsize = KMAX_MID
   met(ix)%msize = 1
+  ix_cc3d=ix
 
   ix=ix+1
   met(ix)%name             = 'precipitation'
@@ -324,47 +363,59 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .false.
   met(ix)%read_meteo       = .true.
-  met(ix)%found            = .false.
+  met(ix)%needed           = .false.
+  met(ix)%found            => foundprecip
   allocate(pr(MAXLIMAX,MAXLJMAX,KMAX_MID))
+  pr=0.0
   met(ix)%field(1:MAXLIMAX,1:MAXLJMAX,1:KMAX_MID,1:1)  => pr
   met(ix)%zsize = KMAX_MID
   met(ix)%msize = 1
+  ix_pr=ix
 
   ix=ix+1
   met(ix)%name             = 'cloudwater'
   met(ix)%dim              = 3
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .false.
-  met(ix)%read_meteo       = .true.
-  met(ix)%found            = .false.
-  allocate(cw(MAXLIMAX,MAXLJMAX,KMAX_MID,NMET))!should not be NMET?
-  met(ix)%field(1:MAXLIMAX,1:MAXLJMAX,1:KMAX_MID,1:NMET)  => cw
+  met(ix)%read_meteo       = .false.
+  met(ix)%needed           = .false.
+  met(ix)%found            => foundcloudwater
+  allocate(cw_met(MAXLIMAX,MAXLJMAX,KMAX_MID,NMET))
+  cw_met=0.0
+  met(ix)%field(1:MAXLIMAX,1:MAXLJMAX,1:KMAX_MID,1:NMET)  => cw_met
   met(ix)%zsize = KMAX_MID
   met(ix)%msize = NMET
+  ix_cw_met=ix
 
   ix=ix+1
   met(ix)%name             = 'convective_updraft_flux'
   met(ix)%dim              = 3
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .false.
-  met(ix)%read_meteo       = .true.
+  met(ix)%read_meteo       = USE_CONVECTION
+  met(ix)%needed           = .true.
   met(ix)%found            = .false.
   allocate(cnvuf(MAXLIMAX,MAXLJMAX,KMAX_BND))
+  cnvuf=0.0
   met(ix)%field(1:MAXLIMAX,1:MAXLJMAX,1:KMAX_BND,1:1)  => cnvuf
   met(ix)%zsize = KMAX_BND
   met(ix)%msize = 1
+  ix_cnvuf=ix
 
   ix=ix+1
   met(ix)%name             = 'convective_downdraft_flux'
   met(ix)%dim              = 3
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .false.
-  met(ix)%read_meteo       = .true.
+  met(ix)%read_meteo       = USE_CONVECTION
+  met(ix)%needed           = .true.
   met(ix)%found            = .false.
   allocate(cnvdf(MAXLIMAX,MAXLJMAX,KMAX_BND))
+  cnvdf=0.0
   met(ix)%field(1:MAXLIMAX,1:MAXLJMAX,1:KMAX_BND,1:1)  => cnvdf
   met(ix)%zsize = KMAX_BND
   met(ix)%msize = 1
+  ix_cnvdf=ix
 
   ix=ix+1
   met(ix)%name             = 'eddy_diffusion_coefficient'
@@ -372,11 +423,14 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .false.
   met(ix)%read_meteo       = .true.
-  met(ix)%found            = .false.
+  met(ix)%needed           = .false.
+  met(ix)%found            => foundKz_met
   allocate(Kz_met(MAXLIMAX,MAXLJMAX,KMAX_BND,NMET))
+  Kz_met=0.0
   met(ix)%field(1:MAXLIMAX,1:MAXLJMAX,1:KMAX_BND,1:NMET)  => Kz_met
   met(ix)%zsize = KMAX_BND
   met(ix)%msize = NMET
+  ix_Kz_met=ix
 
   ix=ix+1
   met(ix)%name             = 'air_density'
@@ -384,11 +438,14 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .true.
   met(ix)%read_meteo       = .false.
+  met(ix)%needed           = .false.
   met(ix)%found            = .false.
   allocate(roa(MAXLIMAX,MAXLJMAX,KMAX_MID,NMET))
+  roa=0.0
   met(ix)%field(1:MAXLIMAX,1:MAXLJMAX,1:KMAX_MID,1:NMET)  => roa
   met(ix)%zsize = KMAX_MID
   met(ix)%msize = NMET
+  ix_roa=ix
 
   ix=ix+1
   met(ix)%name             = 'Kz_sigmacoordinates'
@@ -396,11 +453,14 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .true.
   met(ix)%read_meteo       = .false.
+  met(ix)%needed           = .false.
   met(ix)%found            = .false.
   allocate(SigmaKz(MAXLIMAX,MAXLJMAX,KMAX_BND,NMET))
+  SigmaKz=0.0
   met(ix)%field(1:MAXLIMAX,1:MAXLJMAX,1:KMAX_BND,1:NMET)  => SigmaKz
   met(ix)%zsize = KMAX_BND
   met(ix)%msize = NMET
+  ix_SigmaKz=ix
 
   ix=ix+1
   met(ix)%name             = 'Kz_Etacoordinates'
@@ -408,12 +468,14 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .true.
   met(ix)%read_meteo       = .false.
+  met(ix)%needed           = .false.
   met(ix)%found            = .false.
   allocate(EtaKz(MAXLIMAX,MAXLJMAX,KMAX_BND,NMET))
+  EtaKz=0.0
   met(ix)%field(1:MAXLIMAX,1:MAXLJMAX,1:KMAX_BND,1:NMET)  => EtaKz
   met(ix)%zsize = KMAX_BND
   met(ix)%msize = NMET
-
+  ix_EtaKz=ix
 
   ix=ix+1
   met(ix)%name             = 'etadot'
@@ -421,11 +483,14 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .true.
   met(ix)%read_meteo       = .false.
+  met(ix)%needed           = .false.
   met(ix)%found            = .false.
   allocate(Etadot(MAXLIMAX,MAXLJMAX,KMAX_BND,NMET))
+  Etadot=0.0
   met(ix)%field(1:MAXLIMAX,1:MAXLJMAX,1:KMAX_BND,1:NMET)  => Etadot
   met(ix)%zsize = KMAX_BND
   met(ix)%msize = NMET
+  ix_Etadot=ix
 
   ix=ix+1
   met(ix)%name             = 'max_cloudcover'
@@ -433,11 +498,14 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .false.
   met(ix)%read_meteo       = .false.
+  met(ix)%needed           = .false.
   met(ix)%found            = .false.
   allocate(cc3dmax(MAXLIMAX,MAXLJMAX,KMAX_MID))
+  cc3dmax=0.0
   met(ix)%field(1:MAXLIMAX,1:MAXLJMAX,1:KMAX_MID,1:1)  => cc3dmax
   met(ix)%zsize = KMAX_MID
   met(ix)%msize = 1
+  ix_cc3dmax=ix
 
   ix=ix+1
   met(ix)%name             = 'cloud_liquid_water'
@@ -445,11 +513,14 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .false.
   met(ix)%read_meteo       = .false.
+  met(ix)%needed           = .false.
   met(ix)%found            = .false.
   allocate(lwc(MAXLIMAX,MAXLJMAX,KMAX_MID))
+  lwc=0.0
   met(ix)%field(1:MAXLIMAX,1:MAXLJMAX,1:KMAX_MID,1:1)  => lwc
   met(ix)%zsize = KMAX_MID
   met(ix)%msize = 1
+  ix_lwc=ix
 
   ix=ix+1
   met(ix)%name             = 'Kz'
@@ -457,11 +528,14 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .false.
   met(ix)%read_meteo       = .false.
+  met(ix)%needed           = .false.
   met(ix)%found            = .false.
   allocate(Kz_m2s(MAXLIMAX,MAXLJMAX,KMAX_MID))
+  Kz_m2s=0.0
   met(ix)%field(1:MAXLIMAX,1:MAXLJMAX,1:KMAX_MID,1:1)  => Kz_m2s
   met(ix)%zsize = KMAX_MID
   met(ix)%msize = 1
+  ix_Kz_m2s=ix
 
   ix=ix+1
   met(ix)%name             = 'u_wind_3D'
@@ -469,11 +543,14 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .false.
   met(ix)%read_meteo       = .false.
+  met(ix)%needed           = .false.
   met(ix)%found            = .false.
   allocate(u_mid(MAXLIMAX,MAXLJMAX,KMAX_MID))
+  u_mid=0.0
   met(ix)%field(1:MAXLIMAX,1:MAXLJMAX,1:KMAX_MID,1:1)  => u_mid
   met(ix)%zsize = KMAX_MID
   met(ix)%msize = 1
+  ix_u_mid=ix
 
   ix=ix+1
   met(ix)%name             = 'v_wind_3D'
@@ -481,14 +558,19 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .false.
   met(ix)%read_meteo       = .false.
+  met(ix)%needed           = .false.
   met(ix)%found            = .false.
   allocate(v_mid(MAXLIMAX,MAXLJMAX,KMAX_MID))
+  v_mid=0.0
   met(ix)%field(1:MAXLIMAX,1:MAXLJMAX,1:KMAX_MID,1:1)  => v_mid
   met(ix)%zsize = KMAX_MID
   met(ix)%msize = 1
+  ix_v_mid=ix
 
   N3Dmetfields=ix
-
+!  write(*,*)'number of 3D metfields: ',N3Dmetfields
+!________________________________________________________________
+! 2D fields
 
   ix=ix+1
   met(ix)%name             = 'surface_pressure'
@@ -496,11 +578,14 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .true.
   met(ix)%read_meteo       = .true.
+  met(ix)%needed           = .true.
   met(ix)%found            = .false.
   allocate(ps(MAXLIMAX,MAXLJMAX,NMET))
+  ps=1.0
   met(ix)%field(1:MAXLIMAX,1:MAXLJMAX,1:1,1:NMET)  => ps
   met(ix)%zsize = 1
   met(ix)%msize = NMET
+  ix_ps=ix
 
   ix=ix+1
   met(ix)%name             = 'temperature_2m'
@@ -508,11 +593,14 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .true.
   met(ix)%read_meteo       = .true.
+  met(ix)%needed           = .true.
   met(ix)%found            = .false.
   allocate(t2_nwp(MAXLIMAX,MAXLJMAX,NMET))
+  t2_nwp=1.0
   met(ix)%field(1:MAXLIMAX,1:MAXLJMAX,1:1,1:NMET)  => t2_nwp
   met(ix)%zsize = 1
   met(ix)%msize = NMET
+  ix_t2_nwp=ix
 
   ix=ix+1
   met(ix)%name             = 'relative_humidity_2m'
@@ -520,11 +608,14 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .true.
   met(ix)%read_meteo       = .true.
-  met(ix)%found            = .false.
+  met(ix)%needed           = .false.
+  met(ix)%found            => foundrh2m
   allocate(rh2m(MAXLIMAX,MAXLJMAX,NMET))
+  rh2m=1.0
   met(ix)%field(1:MAXLIMAX,1:MAXLJMAX,1:1,1:NMET)  => rh2m
   met(ix)%zsize = 1
   met(ix)%msize = NMET
+  ix_rh2m=ix
 
   ix=ix+1
   met(ix)%name             = 'surface_flux_sensible_heat'
@@ -532,11 +623,14 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .true.
   met(ix)%read_meteo       = .true.
+  met(ix)%needed           = .true.
   met(ix)%found            = .false.
   allocate(fh(MAXLIMAX,MAXLJMAX,NMET))
+  fh=0.0
   met(ix)%field(1:MAXLIMAX,1:MAXLJMAX,1:1,1:NMET)  => fh
   met(ix)%zsize = 1
   met(ix)%msize = NMET
+  ix_fh=ix
 
   ix=ix+1
   met(ix)%name             = 'surface_flux_latent_heat'
@@ -544,11 +638,14 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .true.
   met(ix)%read_meteo       = .true.
+  met(ix)%needed           = .true.
   met(ix)%found            = .false.
   allocate(fl(MAXLIMAX,MAXLJMAX,NMET))
+  fl=0.0
   met(ix)%field(1:MAXLIMAX,1:MAXLJMAX,1:1,1:NMET)  => fl
   met(ix)%zsize = 1
   met(ix)%msize = NMET
+  ix_fl=ix
 
   ix=ix+1
   met(ix)%name             = 'surface_stress'
@@ -556,24 +653,29 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .true.
   met(ix)%read_meteo       = .true.
-  met(ix)%found            = .false.
+  met(ix)%needed           = .false.
+  met(ix)%found            => foundtau
   allocate(tau(MAXLIMAX,MAXLJMAX,NMET))
+  tau=0.0
   met(ix)%field(1:MAXLIMAX,1:MAXLJMAX,1:1,1:NMET)  => tau
   met(ix)%zsize = 1
   met(ix)%msize = NMET
+  ix_tau=ix
 
   ix=ix+1
   met(ix)%name             = 'ustar_nwp'
   met(ix)%dim              = 2
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .false.
-  met(ix)%read_meteo       = .true.
+  met(ix)%read_meteo       = .false.
+  met(ix)%needed           = .true.
   met(ix)%found            = .false.
   allocate(ustar_nwp(MAXLIMAX,MAXLJMAX))
+  ustar_nwp=0.0
   met(ix)%field(1:MAXLIMAX,1:MAXLJMAX,1:1,1:1)  => ustar_nwp
   met(ix)%zsize = 1
   met(ix)%msize = 1
-
+  ix_ustar_nwp=ix
 
   ix=ix+1
   met(ix)%name             = 'sea_surface_temperature'
@@ -581,35 +683,44 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .true.
   met(ix)%read_meteo       = .true.
-  met(ix)%found            = .false.
+  met(ix)%needed           = .false.
+  met(ix)%found            => foundSST
   allocate(sst(MAXLIMAX,MAXLJMAX,NMET))
+  sst=1.0
   met(ix)%field(1:MAXLIMAX,1:MAXLJMAX,1:1,1:NMET)  => sst
   met(ix)%zsize = 1
   met(ix)%msize = NMET
+  ix_sst=ix
 
   ix=ix+1
   met(ix)%name             = 'SMI1'
   met(ix)%dim              = 2
   met(ix)%frequency        = 3
-  met(ix)%time_interpolate = .true.
-  met(ix)%read_meteo       = .true.
-  met(ix)%found            = .false.
+  met(ix)%time_interpolate = USE_SOILWATER
+  met(ix)%read_meteo       = USE_SOILWATER
+  met(ix)%needed           = .false.
+  met(ix)%found            => foundSoilWater_uppr
   allocate(SoilWater_uppr(MAXLIMAX,MAXLJMAX,NMET))
+  SoilWater_uppr=0.0
   met(ix)%field(1:MAXLIMAX,1:MAXLJMAX,1:1,1:NMET)  => SoilWater_uppr
   met(ix)%zsize = 1
   met(ix)%msize = NMET
+  ix_SoilWater_uppr=ix
 
   ix=ix+1
   met(ix)%name             = 'SMI3'
   met(ix)%dim              = 2
   met(ix)%frequency        = 3
-  met(ix)%time_interpolate = .true.
-  met(ix)%read_meteo       = .true.
-  met(ix)%found            = .false.
+  met(ix)%time_interpolate = USE_SOILWATER
+  met(ix)%read_meteo       = USE_SOILWATER
+  met(ix)%needed           = .false.
+  met(ix)%found            =>  foundSoilWater_deep
   allocate(SoilWater_deep(MAXLIMAX,MAXLJMAX,NMET))
+  SoilWater_deep=0.0
   met(ix)%field(1:MAXLIMAX,1:MAXLJMAX,1:1,1:NMET)  => SoilWater_deep
   met(ix)%zsize = 1
   met(ix)%msize = NMET
+  ix_SoilWater_deep=ix
 
   ix=ix+1
   met(ix)%name             = 'snow_depth'
@@ -617,11 +728,14 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .true.
   met(ix)%read_meteo       = .true.
-  met(ix)%found            = .false.
+  met(ix)%needed           = .false.
+  met(ix)%found            => foundsdepth
   allocate(sdepth(MAXLIMAX,MAXLJMAX,NMET))
+  sdepth=0.0
   met(ix)%field(1:MAXLIMAX,1:MAXLJMAX,1:1,1:NMET)  => sdepth
   met(ix)%zsize = 1
   met(ix)%msize = NMET
+  ix_sdepth=ix
 
   ix=ix+1
   met(ix)%name             = 'fraction_of_ice'
@@ -629,11 +743,14 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .true.
   met(ix)%read_meteo       = .true.
-  met(ix)%found            = .false.
+  met(ix)%needed           = .false.
+  met(ix)%found            => foundice
   allocate(ice_nwp(MAXLIMAX,MAXLJMAX,NMET))
+  ice_nwp=0.0
   met(ix)%field(1:MAXLIMAX,1:MAXLJMAX,1:1,1:NMET)  => ice_nwp
   met(ix)%zsize = 1
   met(ix)%msize = NMET
+  ix_ice_nwp=ix
 
   ix=ix+1
   met(ix)%name             = 'u10'
@@ -641,23 +758,29 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .true.
   met(ix)%read_meteo       = .true.
-  met(ix)%found            = .false.
+  met(ix)%needed           = .false.
+  met(ix)%found            => foundws10_met
   allocate(ws_10m(MAXLIMAX,MAXLJMAX,NMET))
+  ws_10m=0.0
   met(ix)%field(1:MAXLIMAX,1:MAXLJMAX,1:1,1:NMET)  => ws_10m
   met(ix)%zsize = 1
   met(ix)%msize = NMET
+  ix_ws_10m=ix
 
   ix=ix+1
   met(ix)%name             = 'large_scale_precipitations'
   met(ix)%dim              = 2
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .false.
-  met(ix)%read_meteo       = .true.
+  met(ix)%read_meteo       = .false.
+  met(ix)%needed           = .true.
   met(ix)%found            = .false.
   allocate(surface_precip(MAXLIMAX,MAXLJMAX))
+  surface_precip=0.0
   met(ix)%field(1:MAXLIMAX,1:MAXLJMAX,1:1,1:1)  => surface_precip
   met(ix)%zsize = 1
   met(ix)%msize = 1
+  ix_surface_precip=ix
 
   ix=ix+1
   met(ix)%name             = 'neigbors_wind-uw'
@@ -665,11 +788,14 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .true.
   met(ix)%read_meteo       = .false.
+  met(ix)%needed           = .true.
   met(ix)%found            = .false.
   allocate(uw(MAXLJMAX,KMAX_MID,NMET))
+  uw=0.0
   met(ix)%field(1:1,1:MAXLJMAX,1:KMAX_MID,1:NMET)  => uw
   met(ix)%zsize = KMAX_MID
   met(ix)%msize = NMET
+  ix_uw=ix
 
   ix=ix+1
   met(ix)%name             = 'neigbors_wind-ue'
@@ -677,11 +803,14 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .true.
   met(ix)%read_meteo       = .false.
+  met(ix)%needed           = .true.
   met(ix)%found            = .false.
   allocate(ue(MAXLJMAX,KMAX_MID,NMET))
+  ue=0.0
   met(ix)%field(1:1,1:MAXLJMAX,1:KMAX_MID,1:NMET)  => ue
   met(ix)%zsize = KMAX_MID
   met(ix)%msize = NMET
+  ix_ue=ix
 
   ix=ix+1
   met(ix)%name             = 'neigbors_wind-vs'
@@ -689,11 +818,14 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .true.
   met(ix)%read_meteo       = .false.
+  met(ix)%needed           = .true.
   met(ix)%found            = .false.
   allocate(vs(MAXLIMAX,KMAX_MID,NMET))
+  vs=0.0
   met(ix)%field(1:MAXLIMAX,1:1,1:KMAX_MID,1:NMET)  => vs
   met(ix)%zsize = KMAX_MID
   met(ix)%msize = NMET
+  ix_vs=ix
 
   ix=ix+1
   met(ix)%name             = 'neigbors_wind-vn'
@@ -701,11 +833,14 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .true.
   met(ix)%read_meteo       = .false.
+  met(ix)%needed           = .true.
   met(ix)%found            = .false.
   allocate(vn(MAXLIMAX,KMAX_MID,NMET))
+  vn=0.0
   met(ix)%field(1:MAXLIMAX,1:1,1:KMAX_MID,1:NMET)  => vn
   met(ix)%zsize = KMAX_MID
   met(ix)%msize = NMET
+  ix_vn=ix
 
   Nmetfields=ix
   if(Nmetfields>NmetfieldsMax)then

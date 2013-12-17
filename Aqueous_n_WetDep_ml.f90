@@ -78,7 +78,7 @@ module Aqueous_ml
      ,dt => dt_advec          &       ! -> model timestep
      ,IOU_INST                &       ! Index: instantaneous values
      ,ATWAIR                           ! -> atw. air
-  use MetFields_ml,       only: pr, roa, z_bnd, cc3d, lwc,cw
+  use MetFields_ml,       only: pr, roa, z_bnd, cc3d, lwc
   use MetFields_ml,       only: ps
   use OrganicAerosol_ml,  only: ORGANIC_AEROSOLS
   use OwnDataTypes_ml,    only: depmap  ! has adv, calc, vg
@@ -388,10 +388,16 @@ subroutine Setup_Clouds(i,j,debug_flag)
   integer :: k
 
 ! Add up the precipitation in the column:
-  pr_acc(KUPPER) = sum ( pr(i,j,1:KUPPER) ) ! prec. from above
-  do k= KUPPER+1, KMAX_MID
-    pr_acc(k) = pr_acc(k-1) + pr(i,j,k)
-    pr_acc(k) = max( pr_acc(k), 0.0 )
+!old defintion:
+!  pr_acc(KUPPER) = sum ( pr(i,j,1:KUPPER) ) ! prec. from above
+!  do k= KUPPER+1, KMAX_MID
+!    pr_acc(k) = pr_acc(k-1) + pr(i,j,k)
+!    pr_acc(k) = max( pr_acc(k), 0.0 )
+!  enddo
+
+!now pr is already defined correctly (>=0)
+  do k= KUPPER, KMAX_MID
+    pr_acc(k) = pr(i,j,k)
   enddo
 
   prclouds_present=(pr_acc(KMAX_MID)>PR_LIMIT) ! --> precipitation at the surface
@@ -789,7 +795,7 @@ subroutine WetDeposition(i,j,debug_flag)
       enddo ! is
     enddo ! k loop
 
-    if(DEBUG.and.debug_flag.and.pr_acc(20)>1.0e-5) then
+    if(DEBUG.and.debug_flag.and.pr_acc(KMAX_MID)>1.0e-5) then
       do k = kcloudtop, KMAX_MID
         write(*,"(a,2i4,a,9es12.2)") "DEBUG_WDEP, k, icalc, spec", k, &
           icalc, trim(species_adv(iadv)%name), vw(k), pr_acc(k), lossfac(k)
@@ -798,7 +804,7 @@ subroutine WetDeposition(i,j,debug_flag)
 
   enddo ! icalc loop
 
-  d_2d(WDEP_PREC,i,j,IOU_INST) = sum (pr(i,j,:)) * dt ! Same for all models
+  d_2d(WDEP_PREC,i,j,IOU_INST) = pr(i,j,KMAX_MID) * dt ! Same for all models
 
 ! add other losses into twetdep and wdep arrays:
   call WetDep_Budget(i,j,invgridarea,debug_flag)

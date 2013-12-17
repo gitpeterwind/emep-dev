@@ -517,7 +517,7 @@ subroutine Emissions(year)
         write(varname,"(A,I2.2)")trim(varname),isec
         call ReadField_CDF('EmisFracs_TNO7.nc',varname,emis_tot(1,1),nstart=1,&
              interpol='mass_conservative',fractions_out=fractions,&
-             CC_out=landcode,Ncc_out=nlandcode,needed=.true.,debug_flag=.true.,&
+             CC_out=landcode,Ncc_out=nlandcode,needed=.true.,debug_flag=.false.,&
              Undef=0.0)
 
         if(debug_proc) write(*,*) "CDFTNO ",me,iem,isec,trim(varname)
@@ -661,11 +661,11 @@ subroutine Emissions(year)
         call ReadField_CDF('RoadMap.nc',varname,roaddust_emis_pot(1,1,1,iem),&
           nstart=1,interpol='mass_conservative',fractions_out=fractions,&
           CC_out=road_landcode,Ncc_out=road_nlandcode,needed=.true.,&
-          debug_flag=.true.,Undef=0.0)
+          debug_flag=.false.,Undef=0.0)
         if(.not.SMI_defined)then
           varname='SMI1'
           call ReadField_CDF('AVG_SMI_2005_2010.nc',varname,SMI,nstart=1,&
-               interpol='conservative',needed=.true.,debug_flag=.true.)
+               interpol='conservative',needed=.true.,debug_flag=.false.)
           SMI_defined=.true.
         endif
 
