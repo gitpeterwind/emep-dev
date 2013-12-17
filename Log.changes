@@ -154,7 +154,7 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-17th December 2013  Peter  2693-4
+17th December 2013  Peter  2693-5
 
  Complete reorganization of MeteoRead. The fields are systematically read from
 the met(ix) "list".
@@ -164,6 +164,9 @@ The weird definition of precipitation is corrected (as planend in 2010...);
 Now pr is simply the precipitation (forced positive) in mm/s. 
 
 All results should be identical
+
+NewLogan in BoundaryConditions_ml: path to Logan_P.nc, which takes into account 
+surface pressure (tests show better correlation than when constant surface pressure is assumed).
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 13th December 2013  Alan Briolat  2691-2692

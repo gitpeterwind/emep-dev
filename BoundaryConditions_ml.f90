@@ -372,7 +372,7 @@ contains
           !Read Logan BC in pressure coordinates
           if(.not.allocated(O3_logan))allocate(O3_logan(13,MAXLIMAX,MAXLJMAX))
           if(.not.allocated(O3_logan_emep))allocate(O3_logan_emep(MAXLIMAX,MAXLJMAX,KMAX_MID))
-          filename='/global/work/mifapw/emep/Data/Logan_clim/Logan.nc'!will be put in run.pl in due time
+          filename='/global/work/mifapw/emep/Data/Logan_P.nc'!will be put in run.pl in due time
           varname='O3'
           call  ReadField_CDF(fileName,varname,O3_logan,nstart=month,kstart=1,kend=13,interpol='conservative', &
               needed=.true.,debug_flag=.true.)
