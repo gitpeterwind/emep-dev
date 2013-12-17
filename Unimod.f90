@@ -322,11 +322,6 @@ program myeul
           date2string("YYYY-MM-DD hh:mm:ss",current_date)
 
      call Code_timer(tim_before)
-!     call metvar()
-
-     call Add_2timing(13,tim_after,tim_before,"metvar")
-
-     call Code_timer(tim_before)
 
      call phyche()
 

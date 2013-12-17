@@ -37,30 +37,26 @@ module Met_ml
 !  Subroutines:      Frequency    Called from:
 !    MetModel_LandUse                Unimod
 !    MeteoRead         3h            Unimod    - puts data into nr
-!    metint            20 min        PhyChem, ends with call met_derived
-!    met_derived       20 min        metvar, metint - gets u_mid, rho_sruf,
+!    metfieldint       dt_advec        PhyChem, ends with call met_derived
+!    met_derived       dt_advec        MeteoRead and  metfieldint- gets u_mid, rho_sruf,
 !                                       ustar_nwp, inL_nwp
-!    BLPhysics(numt)   3h            metvar, after met_derived
+!    BLPhysics(numt)   3h            MeteoRead, after met_derived
 ! 
 ! Alt:
-!  Unimod  do numt = 2, ....
+!  Unimod  do every dt_advec , ....
 !              call MeteoRead - puts data into nr
-!              call metvar(numt)
+!                    Unit changes, special definitions etc...
+!                    e.g. converts wind to u_xmj, v_xmi
 !                    call met_derived(nr=2)      uses q(...,nr=2) (future)
-!                    call BLPhysics(numt)  
+!                    call BLPhysics(nr=2)  
 !                    call met_derived(nr=1)      uses q(...,nr=1) (now)
-!              call phyche(numt) ... do i = 1, nstep
+!              call phyche() ... 
 !                    chemistry stuff
-!                    call metint 
-!                          call met_derived(nr=1)
-!  metvar - This routines postprocess the meteo fields:
-!     ! Unit changes, special definitions etc...
+!              call metfieldint 
+!                  call met_derived(nr=1)
 ! 
-!     e.g. converts wind to u_xmj, v_xmi
 ! 
-!     call BLPhysics(numt)
-! 
-!  metint
+!  metfieldint
 ! 
 !     !     this routine does the forward linear stepping of the meteorological
 !     !     fields read or derived every 3 hours.
@@ -168,9 +164,6 @@ character (len = 100), public, save  ::  meteo   ! template for meteofile
 
 public :: MeteoRead
 public :: MetModel_LandUse
-!public :: metvar
-!public :: adv_var
-public :: metint
 public :: metfieldint
 public :: BLPhysics
 public :: GetCDF_short
@@ -556,7 +549,7 @@ contains
 
     ! Soil water fields. Somewhat tricky.
     ! Ideal is soil moisture index, available from IFS, = (SW-PWP)/(FC-PWP)
-    ! Otherwise m3/m3 or m units are converted in metvar
+    ! Otherwise m3/m3 or m units are converted
     !
     ! Start with shallow
 
@@ -565,7 +558,7 @@ contains
     if(USE_SOILWATER) then
        ! Soil water fields. Somewhat tricky.
        ! Ideal is soil moisture index, available from IFS, = (SW-PWP)/(FC-PWP)
-       ! Otherwise m3/m3 or m units are converted in metvar
+       ! Otherwise m3/m3 or m units are converted 
        !
        ! Start with shallow
        if(.not.foundSoilWater_uppr) then
@@ -920,7 +913,6 @@ contains
     call BLPhysics()
 
     call met_derived(1) !compute derived meteo fields for nr=1 "now"
-!    call metvar()
 
     !windspeed of neighbor subdomains at edges (used for advection)
     !It the windspeed divided by xm which must be used here.
@@ -1048,105 +1040,6 @@ contains
     call met_derived(1) !update derived meteo fields
 
   end subroutine metfieldint
-
-  subroutine metint
-
-    !     this routine does the forward linear stepping of the meteorological
-    !     fields read or derived every 3 hours.
-
-
-    implicit none
-
-    real :: div
-
-    if (nstep.lt.nmax) then
-
-       div = 1./real(nmax-(nstep-1))
-
-       u_xmj(:,:,:,1)    = u_xmj(:,:,:,1)                 &
-            + (u_xmj(:,:,:,2) - u_xmj(:,:,:,1))*div
-       v_xmi(:,:,:,1)    = v_xmi(:,:,:,1)                 &
-            + (v_xmi(:,:,:,2) - v_xmi(:,:,:,1))*div
-       sdot(:,:,:,1) = sdot(:,:,:,1)             &
-            + (sdot(:,:,:,2) - sdot(:,:,:,1))*div
-       Etadot(:,:,:,1) = Etadot(:,:,:,1)             &
-            + (Etadot(:,:,:,2) - Etadot(:,:,:,1))*div
-       th(:,:,:,1)   = th(:,:,:,1)                 &
-            + (th(:,:,:,2) - th(:,:,:,1))*div
-       q(:,:,:,1)    = q(:,:,:,1)                 &
-            + (q(:,:,:,2) - q(:,:,:,1))*div
-       SigmaKz(:,:,:,1)  = SigmaKz(:,:,:,1)                 &
-            + (SigmaKz(:,:,:,2) - SigmaKz(:,:,:,1))*div
-       EtaKz(:,:,:,1)  = EtaKz(:,:,:,1)                 &
-            + (EtaKz(:,:,:,2) - EtaKz(:,:,:,1))*div
-       roa(:,:,:,1)  = roa(:,:,:,1)                 &
-            + (roa(:,:,:,2) - roa(:,:,:,1))*div
-
-
-       ps(:,:,1)     = ps(:,:,1)                 &
-            + (ps(:,:,2) - ps(:,:,1))*div
-       t2_nwp(:,:,1) = t2_nwp(:,:,1)                 &
-            + (t2_nwp(:,:,2) - t2_nwp(:,:,1))*div
-       rh2m(:,:,1) = rh2m(:,:,1)  &
-            + (rh2m(:,:,2) - rh2m(:,:,1))*div
-       SoilWater_uppr(:,:,1) = SoilWater_uppr(:,:,1)   &
-            + (SoilWater_uppr(:,:,2) - SoilWater_uppr(:,:,1))*div
-       SoilWater_deep(:,:,1) = SoilWater_deep(:,:,1)    &
-            + (SoilWater_deep(:,:,2) - SoilWater_deep(:,:,1))*div
-       fh(:,:,1)     = fh(:,:,1)                 &
-            + (fh(:,:,2) - fh(:,:,1))*div
-       fl(:,:,1)     = fl(:,:,1)                 &
-            + (fl(:,:,2) - fl(:,:,1))*div
-       tau(:,:,1)    = tau(:,:,1)                 &
-            + (tau(:,:,2) - tau(:,:,1))*div
-       sst(:,:,1)    = sst(:,:,1)                 &
-            + (sst(:,:,2)   - sst(:,:,1))*div
-       sdepth(:,:,1)    = sdepth(:,:,1)                 &
-            + (sdepth(:,:,2)   - sdepth(:,:,1))*div
-       ice_nwp(:,:,1)    = ice_nwp(:,:,1)                 &
-            + (ice_nwp(:,:,2)   - ice_nwp(:,:,1))*div
-       if(foundws10_met) ws_10m(:,:,1) = ws_10m(:,:,1) &
-            + (ws_10m(:,:,2) - ws_10m(:,:,1))*div
-
-       !  precipitation and cloud cover are no longer interpolated
-
-    else
-
-       !     assign the the meteorological data at time-level 2 to level 1 for
-       !     the next 6 hours integration period before leaving the inner loop.
-
-       u_xmj(:,:,:,1)    = u_xmj(:,:,:,2)
-       v_xmi(:,:,:,1)    = v_xmi(:,:,:,2)
-       sdot(:,:,:,1) = sdot(:,:,:,2)
-       Etadot(:,:,:,1) = Etadot(:,:,:,2)
-       th(:,:,:,1)   = th(:,:,:,2)
-       q(:,:,:,1)    = q(:,:,:,2)
-       SigmaKz(:,:,:,1)  = SigmaKz(:,:,:,2)
-       EtaKz(:,:,:,1)  = EtaKz(:,:,:,2)
-       roa(:,:,:,1)  = roa(:,:,:,2)
-       !  - note we need pressure first before surface_pressure
-       ps(:,:,1)     = ps(:,:,2)
-       t2_nwp(:,:,1) = t2_nwp(:,:,2)
-       rh2m(:,:,1) = rh2m(:,:,2)
-       SoilWater_uppr(:,:,1) = SoilWater_uppr(:,:,2)
-       SoilWater_deep(:,:,1) = SoilWater_deep(:,:,2)
-       sdepth(:,:,1) = sdepth(:,:,2)
-       ice_nwp(:,:,1) = ice_nwp(:,:,2)
-
-       fh(:,:,1)     = fh(:,:,2)
-       tau(:,:,1)    = tau(:,:,2)
-       fl(:,:,1)     = fl(:,:,2)
-
-       sst(:,:,1)    = sst(:,:,2)
-
-       if(foundws10_met) ws_10m(:,:,1) = ws_10m(:,:,2)
-
-    endif
-
-    call met_derived(1) !update derived meteo fields
-
-  end subroutine metint
-
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
   subroutine met_derived(nt)
@@ -1156,7 +1049,7 @@ contains
     ! fields here are derived from the interpolated fields after
     ! each interpolation (i.e. every dt_advec).
     ! CPU costly fields (those with special functions like log )
-    ! can be computed in metvar only once every METSTEP and interpolated
+    ! can be computed in MeteoRead  only once every METSTEP and interpolated
     ! in metint.
 
     !horizontal wind speed (averaged over the four edges)
