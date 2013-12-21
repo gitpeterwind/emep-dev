@@ -11,7 +11,7 @@
   USES%testname         = 'EMEPSTD',
   USES%FOREST_FIRES     = T,
   USES%MONTHLY_FF       = F,
-  USES%EMISSTACKS       = T,         ! Reads PointSources file
+  USES%EMISSTACKS       = F,         ! Reads PointSources file
   USES%PlumeMethod      = 'PVDI',    ! default PVDI, possible: NILU, ASMI, PVDI
 !
 ! and debug:

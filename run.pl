@@ -83,7 +83,7 @@ $| = 1; # autoflush STDOUT
 #my $VILJE=0;  #1 if Ve or Vilje is used
 #my $STALLO=1; #1 if stallo is used
 my ( $STALLO, $VILJE ) = (0) x 2;
-foreach my $key  qw ( HOSTNAME PBS_SERVER MACHINE ){
+foreach my $key  qw ( PBS_O_HOST HOSTNAME PBS_SERVER MACHINE ){
  next unless defined $ENV{$key};
  $STALLO = 1 if $ENV{$key} =~/stallo/;
  $VILJE  = 1 if $ENV{$key} =~/vilje/;

@@ -154,6 +154,13 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+17th December 2013  Peter  2696
+
+Small cleaning: 
+added  "PBS_O_HOST" in run.pl, so that it finds Stallo
+USES%EMISSTACKS = F in config_EMEP_STD.nml
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 17th December 2013  Peter  2693-5
 
  Complete reorganization of MeteoRead. The fields are systematically read from
