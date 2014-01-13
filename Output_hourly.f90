@@ -214,16 +214,14 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
   hourly(:,:) = 0.0 ! initialize
 
   HLOOP: do ih = 1, NHOURLY_OUT
-
-    hr_out_type=trim(hr_out(ih)%type)
     hr_out_nk=hr_out(ih)%nk
-    if(any(hr_out_type==SRF_TYPE))hr_out_nk=1
+    if(any(hr_out(ih)%type==SRF_TYPE))hr_out_nk=1
 
     KVLOOP: do k = 1,hr_out_nk
-
       msnr  = 3475 + ih
       ispec = hr_out(ih)%spec
       name  = hr_out(ih)%name
+      hr_out_type=hr_out(ih)%type
       if(debug_flag) &
         write(*,'(a,2i4,1X,a,/a,1X,2a,i3)')"DEBUG DERIV HOURLY", ih, ispec, &
           trim(name),"INTO HOUR TYPE:", &
@@ -249,7 +247,6 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
         if(debug_flag) write(*,*)"SELECT LEVELS? ", ik, SELECT_LEVELS_HOURLY
         if(SELECT_LEVELS_HOURLY)then ! or the output levels are taken
           ik=LEVELS_HOURLY(k)        ! from LEVELS_HOURLY array (default)
-          hr_out_type=hr_out(ih)%type
           if(debug_flag) write(*,*)"DEBUG SELECT LEVELS", ik, hr_out_type
           surf_corrected = (ik==0)   ! Will implement cfac
           if(debug_flag.and.surf_corrected) &
@@ -411,7 +408,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
         name = "Z_MID"
         unit_conv =  hr_out(ih)%unitconv
         if(surf_corrected)then
-          forall(i=1:limax,j=1:ljmax) hourly(i,j) = 3.0
+          forall(i=1:limax,j=1:ljmax) hourly(i,j) = 3.0*unit_conv
         else
           forall(i=1:limax,j=1:ljmax) hourly(i,j) = z_mid(i,j,ik)*unit_conv
         endif

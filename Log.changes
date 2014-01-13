@@ -154,6 +154,15 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+13th January 2014  Alvaro  2697
+
+Output_hourly: Fix bug introduced on 2670 (Nov 2013)
+  Multilevel output for hourly types BCVppbv, BCVugXX & BCVugXXgroup
+  outputted the surface values (from the corresponding ADV* type)
+  for all values if surface and model levels were requested
+  (LEVELS_HOURLY(:)=[0,...] and SELECT_LEVELS_HOURLY=.true.)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 17th December 2013  Peter  2696
 
 Small cleaning: 
