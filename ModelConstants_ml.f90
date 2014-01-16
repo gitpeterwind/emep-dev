@@ -123,6 +123,7 @@ logical, public, save ::             &
  ,DO_SAHARA             = .false.    & ! Turn on/off BG Saharan Dust
  ,USE_ROADDUST          = .false.    & ! TNO Road Dust routine. So far with simplified "climate-correction" factor
  ,USE_DUST              = .false.    &! Experimental
+ ,TEGEN_DATA            = .true.     &! Interpolate global data to make dust if  USE_DUST=.true.
  ,INERIS_SNAP1       = .false.       & !(EXP_NAME=="TFMM"), & ! Switches off decadal trend
  ,INERIS_SNAP2       = .false.       & !(EXP_NAME=="TFMM"), & ! Allows near-zero summer values
  ,USE_EMERGENCY      = .false.       & ! Emergency: Volcanic Eruption & Nuclear Accident. Under development.

@@ -837,11 +837,15 @@ foreach my $scenflag ( @runs ) {
   $ifile{"$DataDir/Landuse/landuseGLC2000_INT1.nc"} ="GLOBAL_landuse.nc";
 
   $ifile{"$DataDir/LanduseGLC.nc"} ="LanduseGLC.nc";
-  # Apr 2 Peter's new file:
+  # NB: a 1km Landuse is also available 
   $ifile{"$DataDir/Landuse/Landuse_PS_5km_LC.nc"} ="Landuse_PS_5km_LC.nc";
+#  $ifile{"$DataDir/Landuse/Landuse_PS_1km_LC.nc"} ="Landuse_PS_5km_LC.nc";
 
   $ifile{"$DataDir/LandInputs_Mar2013/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
   $ifile{"$DataDir/LandInputs_Mar2013/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
+
+#For dust: clay and sand fractions
+  $ifile{"$DataDir/Soil_Tegen.nc"} ="Soil_Tegen.nc";
 
   $ifile{"$DataDir/sondesLL.dat"} = "sondes.dat";
   $ifile{"$DataDir/sitesLL.dat"} = "sites.dat";

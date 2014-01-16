@@ -118,7 +118,7 @@ use ModelConstants_ml,    only : PASCAL, PT, Pref, METSTEP  &
      ,DEBUG_BLM, DEBUG_Kz, DEBUG_SOILWATER,DEBUG_LANDIFY & 
      ,NH3_U10   & !FUTURE
      ,DomainName & !HIRHAM,EMEP,EECCA etc.
-     ,USE_DUST, USE_SOILWATER & 
+     ,USE_DUST, TEGEN_DATA, USE_SOILWATER & 
      ,nstep,USE_CONVECTION & 
      ,LANDIFY_MET  & 
      ,CW_THRESHOLD,RH_THRESHOLD, CW2CC,IOU_INST
@@ -1163,37 +1163,41 @@ contains
       ios = 0
 
       if ( USE_DUST ) then
-        if ( MasterProc  ) then
-           write(fname,fmt='(''clay_frac.dat'')') 
-           write(6,*) 'filename for clay fraction ',fname, IO_CLAY, ios
-        end if
+         if ( TEGEN_DATA ) then
+            !use global data interpolated to present grid
 
-        call ReadField(IO_CLAY,fname,clay_frac)
-   
- ! Convert from percent to fraction
-      
-        do j=1,ljmax
-           do i=1,limax
-              clay_frac(i,j) = 0.01 * clay_frac(i,j)
-           enddo
-        enddo
-!.. Sand soil content
-     ios = 0
+            fname='Soil_Tegen.nc'
+            if(MasterProc)write(6,*)'Sand and clay fractions from ',fname
+            
+            call ReadField_CDF(fname,'clay',clay_frac,1,  &
+             interpol='conservative',needed=.true.,debug_flag=.true.)
+            call ReadField_CDF(fname,'sand',sand_frac,1,  &
+                 interpol='conservative',needed=.true.,debug_flag=.true.)
 
-        if ( me == 0  ) then
-           write(fname,fmt='(''sand_frac.dat'')') 
-           write(6,*) 'filename for sand fraction ',fname, IO_SAND, ios
-        end if
+         else
+            !use grid specific data
+            write(fname,fmt='(''clay_frac.dat'')') 
+            if (MasterProc)write(6,*)'filename for clay fraction ',fname, IO_CLAY, ios
+            call ReadField(IO_CLAY,fname,clay_frac)   
+            ! Convert from percent to fraction      
+            do j=1,ljmax
+               do i=1,limax
+                  clay_frac(i,j) = 0.01 * clay_frac(i,j)
+               enddo
+            enddo
+            !.. Sand soil content
+            ios = 0
+            write(fname,fmt='(''sand_frac.dat'')') 
+            if (MasterProc)write(6,*) 'filename for sand fraction ',fname, IO_SAND, ios
+            call ReadField(IO_SAND,fname,sand_frac)
+            ! Convert from percent to fraction      
+            do j=1,ljmax
+               do i=1,limax
+                  sand_frac(i,j) = 0.01 * sand_frac(i,j)
+               enddo
+            enddo
+        endif
 
-        call ReadField(IO_SAND,fname,sand_frac)
-   
- ! Convert from percent to fraction
-      
-        do j=1,ljmax
-           do i=1,limax
-              sand_frac(i,j) = 0.01 * sand_frac(i,j)
-           enddo
-        enddo
       end if ! USE_DUST
  
     end if ! callnum == 1
