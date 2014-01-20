@@ -218,7 +218,7 @@ contains
     !   bc_adv(NSPEC_ADV,IGLOB,JGLOB,KMAX_MID)
     !   bc_bgn(NSPEC_BGN,IGLOB,JGLOB,KMAX_MID)
 
-    integer  :: iglobact, jglobact, errcode
+    integer  :: iglobact, jglobact, errcode, Nlevel_logan
     integer, save :: idebug=0, itest=1, i_test=0, j_test=0
     real, allocatable,dimension(:,:,:)   :: O3_logan,O3_logan_emep
     character(len = 100) ::fileName,varname
@@ -370,15 +370,16 @@ contains
           if(Masterproc)write(*,*)'OVERWRITING LOGAN'
  
           !Read Logan BC in pressure coordinates
-          if(.not.allocated(O3_logan))allocate(O3_logan(13,MAXLIMAX,MAXLJMAX))
+          Nlevel_logan=30
+          if(.not.allocated(O3_logan))allocate(O3_logan(Nlevel_logan,MAXLIMAX,MAXLJMAX))
           if(.not.allocated(O3_logan_emep))allocate(O3_logan_emep(MAXLIMAX,MAXLJMAX,KMAX_MID))
           filename='/global/work/mifapw/emep/Data/Logan_P.nc'!will be put in run.pl in due time
           varname='O3'
-          call  ReadField_CDF(fileName,varname,O3_logan,nstart=month,kstart=1,kend=13,interpol='conservative', &
+          call  ReadField_CDF(fileName,varname,O3_logan,nstart=month,kstart=1,kend=Nlevel_logan,interpol='conservative', &
               needed=.true.,debug_flag=.true.)
           CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
            !interpolate vertically
-          call vertical_interpolate(filename,O3_logan,13,O3_logan_emep,Masterproc)
+          call vertical_interpolate(filename,O3_logan,Nlevel_logan,O3_logan_emep,Masterproc)
           do k = 1, KMAX_MID
              do j = 1, ljmax
                 do i = 1, limax
