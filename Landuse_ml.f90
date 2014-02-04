@@ -569,13 +569,19 @@ contains
           LandCover(i,j)%fraction(:)  = landuse_data(i,j,:)
           sumfrac = sum( LandCover(i,j)%fraction(:) )
 
-          if (  sumfrac < 0.99 .or. sumfrac > 1.01 ) then
-             write(unit=errmsg,fmt="(a19,3i4,f12.4,8i4)") &
-                  "Land SumFrac Error ", me,  &
-                  i_fdom(i),j_fdom(j), sumfrac, limax,  ljmax, &
-                  i_fdom(1), j_fdom(1), i_fdom(limax), j_fdom(ljmax)
-             call CheckStop(errmsg)
-          end if
+
+            if (  sumfrac < 0.99 .or. sumfrac > 1.01 ) then
+               write(unit=errmsg,fmt="(a19,3i4,f12.4,8i4)") &
+                 "Land SumFrac Error ", me,  &
+                    i_fdom(i),j_fdom(j), sumfrac, limax,  ljmax, &
+                       i_fdom(1), j_fdom(1), i_fdom(limax), j_fdom(ljmax)
+               if(abs(sumfrac-1.0)<0.1.and.abs(glat(i,j))>89.0)then
+                  write(*,*)'WARNING: ',errmsg,glat(i,j)
+               else
+                   write(*,*)'latitude: ',errmsg,glat(i,j)
+                 call CheckStop(errmsg)
+               endif
+             end if
 
        end do  !j
     end do  !i

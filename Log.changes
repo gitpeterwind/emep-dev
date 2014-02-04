@@ -154,6 +154,15 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+4th February 2014  Peter  2701
+
+Landuse_ml.f90 allow sumfrac up to 1.2 around poles.
+run.pl: removed "ppn=16", as Stallo has now many nodes with 20 cpus too. 
+        removed mem=16gb for Vilje, as nodes on vilje have about 28 gb memeory
+        do not stop the run.pl when natso2 not found (as it can be neglected, 
+                                                  and many grid don't have it)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 20th January 2014  Peter  2700
 
 Number of level for use of "NewLogan" was set wrongly. 

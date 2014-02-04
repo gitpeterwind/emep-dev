@@ -6,14 +6,14 @@
 # queue commands for PBS
 
 #Queue system commands start with #PBS (these are not comments!)
-# lnodes= number of nodes, ppn=processor per node (max8 on stallo)
+# lnodes= number of nodes, ppn=processor per node (max16 or 20 on stallo)
 # Stallo, use ib for infiniband (fast interconnect).
 # Ve/Vilje, (take out one # and put one # before the Stallo). 
 #     select= number of nodes, ncpus=number of threads per node to reserve, 
 #     mpiprocs=number of MPI threads per node. For 64 processors:
-##PBS -l select=4:ncpus=32:mpiprocs=32:mem=16gb -v MPI_MSGS_MAX=2097152
-#Stallo
-#PBS -lnodes=4:ppn=16
+##PBS -l select=4:ncpus=32:mpiprocs=32 -v MPI_MSGS_MAX=2097152
+#Stallo. Some nodes on Stallo have 16 some others 20 cpus
+#PBS -lnodes=64
 # wall time limit of run
 #PBS -lwalltime=07:40:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
@@ -642,7 +642,7 @@ foreach my $scenflag ( @runs ) {
   my $old = "$DATA_LOCAL/Grid_Def.nc";
   my $new = "Grid_Def.nc";
   mylink( "Linking:", $old, $new);
-#  my $old = "$ProgDir/Vertical_levels.txt";
+#  my $old = "$ProgDir/Vertical_levels20.txt";
 #  my $new = "Vertical_levels.txt";
 #  mylink( "Linking:", $old, $new);
 
@@ -947,7 +947,7 @@ foreach my $scenflag ( @runs ) {
     } else {
       print "Missing Input $f !!!\n";
       die "ERROR: Missing $f (or possibly wrong Chem$Chem)\n" 
-        unless $f =~ /special/;
+        unless( $f =~ /special/ or $f =~ /natso2/ );#natso2 not needed
     }
   }
 
