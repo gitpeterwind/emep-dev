@@ -750,7 +750,7 @@ end if
 
    integer :: k_up
    real,allocatable:: emis_P_level(:)
-   real :: P_emep,frac
+   real :: P_emep,frac,sum
    real, parameter:: PT_EMEP=10000.0!Pa = 100 hPa
    integer :: isec,k_ext,k1_ext(KMAX_BND),nemis_hprofile
 
@@ -915,7 +915,22 @@ end if
             write(*,fmt="(A,I5,A,20F6.3)")'sector: ',isec,' fractions: ',(emis_kprofile(k,isec),k=1,nemis_kprofile)
          enddo
       endif
+
    endif
+
+!check normalization of distributions:
+   do isec=1,NSECTORS
+      sum=0.0
+      do k=1,nemis_kprofile
+         sum=sum+emis_kprofile(k,isec)
+      enddo
+      if(abs(sum-1.0)>0.01)then
+        if(MasterProc)then
+           write(*,*)'WARNING emis height distribution not normalized : ',sum,(emis_kprofile(k,isec),k=1,nemis_kprofile)
+           call StopAll( 'emis height distribution not normalized  ')
+        endif
+      endif
+   enddo
 
  end subroutine EmisHeights
 !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
