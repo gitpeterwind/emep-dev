@@ -263,6 +263,9 @@ contains
 
        call Exner_tab()!init table
 
+       debug_iloc = debug_li
+       debug_jloc = debug_lj
+
     else
        nsec=METSTEP*3600.0 !from hr to sec
        ts_now = make_timestamp(current_date)

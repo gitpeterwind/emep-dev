@@ -154,6 +154,39 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6th February 2014  Peter  2702
+
+EmisGet_ml.f90
+Can define emission release distribution in explicit Pressure levels instead 
+of model levels.
+
+To use Pressure levels, simply add one line to EmisHeights.txt, using keyword "Plevels", see example:
+stallo: /global/work/mifapw/emep/Data/inputs_emepdefaults_Jun2012/EmisHeights_P.txt
+
+# Emissions distribution for EMEP2012 version rv4
+# Has 100% SNAP2 emissions in lowest layer
+# Plevels are pressure in Pa at top of corresponding levels (P Surface = 101325.0=
+Nklevels 7   Vertical Levels 
+Plevels 100229.1 99133.2 97489.35 95206.225 92283.825 88722.15 84521.2
+1         0.0      0.00     0.15     0.40     0.30     0.15     0.00    ! SNAP1
+2         1.0      0.00     0.00     0.00     0.00     0.00     0.0     ! SNAP2
+3         0.1      0.10     0.15     0.30     0.30     0.05     0.0     ! SNAP3
+4         0.9      0.10     0.00     0.00     0.00     0.00     0.0     ! SNAP4
+5         0.9      0.10     0.00     0.00     0.00     0.00     0.0     ! SNAP5
+6         1.0      0.00     0.00     0.00     0.00     0.00     0.0     ! SNAP6
+7         1.0      0.00     0.00     0.00     0.00     0.00     0.0     ! SNAP7
+8         1.0      0.00     0.00     0.00     0.00     0.00     0.0     ! SNAP8
+9         0.1      0.15     0.40     0.35     0.00     0.00     0.0     ! SNAP9
+10        1.0      0.00     0.00     0.00     0.00     0.00     0.0     ! SNAP10
+11        1.0      0.00     0.00     0.00     0.00     0.00     0.0     ! SNAP11
+
+
+Emissions_ml: removed a double output of country emission in RunLog
+
+Met_ml: retablished the definition of debug_iloc, debug_jloc, which was deleted 
+inadvertently in a previous version and made the DEBUG version fail.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 4th February 2014  Peter  2701
 
 Landuse_ml.f90 allow sumfrac up to 1.2 around poles.

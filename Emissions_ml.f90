@@ -728,7 +728,6 @@ subroutine Emissions(year)
          write(*,"(a,i3,1x,a4,3x,30(f12.2,:))")"ORIG:",ic, Country(ic)%code, sumemis(ic,:)
          write(*,"(a,i3,1x,a4,3x,30(f12.2,:))")"CDFS:",ic, Country(ic)%code, sumcdfemis(ic,:)
         endif
-        write(IO_LOG,"(i3,1x,a4,3x,30(f12.2,:))")ic, Country(ic)%code, sumemis(ic,:)
         if(find_index(Country(ic)%code,EU27(:))>0) sumEU = sumEU + sumemis(ic,:)
       endif
     enddo

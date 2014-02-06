@@ -670,6 +670,7 @@ foreach my $scenflag ( @runs ) {
 # INERIS provided the most complete hourly file, we use as default
   $ifile{"$timeseries/HourlyFacs.INERIS"} = "HOURLY-FACS";
   $ifile{"$timeseries/EmisHeights.txt"} = "EmisHeights.txt";
+#  $ifile{"$timeseries/EmisHeights_P.txt"} = "EmisHeights.txt"; #not much tested yet
 
   my %gridmap=(
     "co"  =>"CO"  ,"nh3" =>"NH3" ,"voc"=>"NMVOC","sox" =>"SOx","nox"=>"NOx" ,

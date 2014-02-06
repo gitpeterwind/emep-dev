@@ -50,13 +50,13 @@
                                NROADDUST
   use GridAllocate_ml,   only: GridAllocate
   use GridValues_ml, only: debug_proc,debug_li,debug_lj, i_fdom, j_fdom !cdfemis
-  use GridValues_ml, only: glon, glat !AFRICA
+  use GridValues_ml, only: glon, glat, A_bnd, B_bnd
   use Io_ml,             only: open_file, NO_FILE, ios, IO_EMIS, &
                                Read_Headers, read_line, PrintLog
   use KeyValueTypes,       only: KeyVal
   use ModelConstants_ml, only: NPROC, TXTLEN_NAME, DEBUG => DEBUG_GETEMIS, &
                                DEBUG_i, DEBUG_j, &
-                               KMAX_MID, &
+                               KMAX_MID,KMAX_BND, Pref,&
               SEAFIX_GEA_NEEDED, & ! only if emission problems over sea
                                MasterProc,DEBUG_GETEMIS,DEBUG_ROADDUST,USE_ROADDUST
   use NetCDF_ml, only  : ReadField_CDF  !CDF_SNAP
@@ -110,6 +110,7 @@
   ! vertical profiles for SNAP emis, read from EmisHeights.txt
   integer, public, save :: nemis_kprofile
   real, public,allocatable, dimension(:,:), save :: emis_kprofile
+  real, public,allocatable, dimension(:,:), save :: emis_hprofile
 
   ! some common variables
   character(len=80), private :: fname             ! File name
@@ -740,39 +741,183 @@ end if
  end subroutine femis
 
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-  subroutine EmisHeights()
-    integer :: snap, k, allocerr
-    real :: tmp(KMAX_MID)  ! values 
-    character(len=200) :: txtinput               ! For read-in 
-    character(len=20) :: txt1
-     call open_file(IO_EMIS,"r","EmisHeights.txt",needed=.true.)
-   
-     do
-        call read_line(IO_EMIS,txtinput,ios,'EmisHeight')
-        if(me==1) print *, "EMIS HEIGHTS " // trim(txtinput)!, ios
-        if ( ios <  0 ) exit     ! End of file
-          if( index(txtinput,"#")>0 ) then ! Headers
-            call PrintLog(trim(txtinput),MasterProc)
-            cycle
-          else if( index(txtinput,"Nklevels")>0 ) then !  Number levels
-            read(txtinput,fmt=*,iostat=ios)  txt1, nemis_kprofile
-            call PrintLog(trim(txtinput),MasterProc)
-            allocate(emis_kprofile(nemis_kprofile,NSECTORS),stat=allocerr)
-            call CheckStop(allocerr, "Allocation error for emis_kprofile")
-            emis_kprofile(:,:) = -999.9 
-            cycle
-          else
-            read(txtinput,fmt=*,iostat=ios) snap, (tmp(k),k=1, nemis_kprofile)
-            if( DEBUG ) write(*,*) "VER=> ",snap, tmp(1), tmp(3)
-            emis_kprofile(1:nemis_kprofile,snap) = tmp(1:nemis_kprofile)
-          end if
-      end do
+ subroutine EmisHeights()
+   integer :: snap, k, allocerr
+   real :: tmp(KMAX_MID)  ! values 
+   character(len=200) :: txtinput               ! For read-in 
+   character(len=20) :: txt1
 
-     call CheckStop(nemis_kprofile < 1,"EmisGet: No EmisHeights set!!")
-     call CheckStop( any( emis_kprofile(:,:) < 0 ), "EmisHeight read failure" )
 
-     close(IO_EMIS)
-  end subroutine EmisHeights
+   integer :: k_up
+   real,allocatable:: emis_P_level(:)
+   real :: P_emep,frac
+   real, parameter:: PT_EMEP=10000.0!Pa = 100 hPa
+   integer :: isec,k_ext,k1_ext(KMAX_BND),nemis_hprofile
+
+   !emis_hprofile are read from file. 
+   !emis_kprofile are the fraction values converted into model levels
+
+   !REMARK: if you only change nemis_hprofile, but keep exactely the same
+   !        emissions, the results will still be sligthly changed.
+   !        This is because nemis_hprofile is used to define KEMISTOP, which 
+   !        defines the levels where to use 2 or 3 chemical "2steps" iterations.
+
+   !use old format
+   call open_file(IO_EMIS,"r","EmisHeights.txt",needed=.true.)
+
+
+   do
+      call read_line(IO_EMIS,txtinput,ios,'EmisHeight')
+
+      if(me==1) write(*,fmt='(A)') "read from EmisHeights.txt : " // trim(txtinput)!, ios
+      if ( ios <  0 ) exit     ! End of file
+      if( index(txtinput,"#")>0 ) then ! Headers
+         call PrintLog(trim(txtinput),MasterProc)
+         cycle
+      else if( index(txtinput,"Nklevels")>0 ) then !  Number levels
+         read(txtinput,fmt=*,iostat=ios)  txt1, nemis_hprofile
+         call PrintLog(trim(txtinput),MasterProc)
+         allocate(emis_hprofile(nemis_hprofile+1,NSECTORS),stat=allocerr)
+         allocate(emis_P_level(0:nemis_hprofile),stat=allocerr)
+         emis_P_level=0.0
+         call CheckStop(allocerr, "Allocation error for emis_P_level")
+         emis_hprofile(:,:) = -999.9 
+         emis_hprofile(1:nemis_hprofile+1,:) = 0.0
+         cycle
+      else if( index(txtinput,"Plevels")>0 ) then ! Pressure levels 
+         read(txtinput,fmt=*,iostat=ios)  txt1, (emis_P_level(k),k=1, nemis_hprofile)
+         call PrintLog(trim(txtinput),MasterProc)
+         call CheckStop(allocerr, "Allocation error for emis_kprofile")
+         emis_hprofile(:,:) = -999.9 
+         emis_hprofile(1:nemis_hprofile+1,:) = 0.0
+         cycle
+      else
+         read(txtinput,fmt=*,iostat=ios) snap, (tmp(k),k=1, nemis_hprofile)
+         if( DEBUG.and.MasterProc ) write(*,*) "VER=> ",snap, tmp(1), tmp(3)
+         emis_hprofile(1:nemis_hprofile,snap) = tmp(1:nemis_hprofile)
+      end if
+   end do
+
+   call CheckStop(nemis_hprofile < 1,"EmisGet: No EmisHeights set!!")
+   call CheckStop( any( emis_hprofile(:,:) < 0 ), "EmisHeight read failure" )
+
+   close(IO_EMIS)
+
+   !Pressure boundaries for emission levels defined in EmisHeights.txt
+   !NB in emis_P_level, k increase means higher up, i.e. smaller P (opposite as emep)
+   emis_P_level(0)=Pref
+
+   !can hardcode/override the values here. do not write more than nemis_kprofile (7?)
+   !examples emep sigma levels:
+   !  emis_P_level=0.0
+   !  emis_P_level(1)=0.988 * (Pref-PT_EMEP)+PT_EMEP
+   !  emis_P_level(2)=0.976 * (Pref-PT_EMEP)+PT_EMEP
+   !  emis_P_level(3)=0.958 * (Pref-PT_EMEP)+PT_EMEP
+   !  emis_P_level(4)=0.933 * (Pref-PT_EMEP)+PT_EMEP
+   !  emis_P_level(5)=0.901 * (Pref-PT_EMEP)+PT_EMEP
+   !  emis_P_level(6)=0.862 * (Pref-PT_EMEP)+PT_EMEP
+   !  emis_P_level(7)=0.816 * (Pref-PT_EMEP)+PT_EMEP
+   !!  emis_P_level(8)=0.763 * (Pref-PT_EMEP)+PT_EMEP
+   !!  emis_P_level(9)=0.703 * (Pref-PT_EMEP)+PT_EMEP
+   !!  emis_P_level(10)=0.636 * (Pref-PT_EMEP)+PT_EMEP
+
+   if(emis_P_level(1)<1.0)then
+      !the levels were not found in file. Assume lowest model levels
+      if(me==1)write(*,*)'emission heights: assuming model levels'
+      k_up=0
+      do k=KMAX_BND-1,KMAX_BND-nemis_hprofile,-1
+         k_up=k_up+1
+         emis_P_level(KMAX_BND-k)=A_bnd(k)+B_bnd(k)*Pref !not used
+      enddo
+      nemis_kprofile=nemis_hprofile
+      allocate(emis_kprofile(nemis_kprofile,NSECTORS),stat=allocerr)
+      emis_kprofile(1:nemis_kprofile,:)=emis_hprofile(1:nemis_hprofile,:)
+
+   else
+
+      if(Masterproc)then
+         write(*,*)'emission heights: defined from pressure levels'
+         do k=0,nemis_hprofile
+            write(*,*)'P emis levels : ',k,emis_P_level(k)
+         enddo
+      endif
+      !stop
+      !find highest level used
+      nemis_kprofile = 0
+      do k=KMAX_BND-1,1,-1
+         nemis_kprofile = nemis_kprofile + 1
+         if(A_bnd(k)+B_bnd(k)*Pref-0.0001<emis_P_level(nemis_hprofile))exit
+      enddo
+      if(MasterProc) write(*,*)'Emissions distributed among ',nemis_kprofile,' lowest levels'
+
+      allocate(emis_kprofile(nemis_kprofile,NSECTORS),stat=allocerr)
+      emis_kprofile=0.0
+
+      !convert height (given as pressure) distribution into model level distribution
+      k1_ext(KMAX_BND)=0
+      do isec=1,NSECTORS! could put inside but easier for debugging to put here now
+         if(debug.and.MasterProc) write(*,*)'Sector ',isec
+         do k=KMAX_BND-1,max(1,KMAX_BND-nemis_kprofile),-1
+
+!count all contributions to model level k
+!i.e. between P_emep(k+1) and P_emep(k)
+
+            P_emep=A_bnd(k)+B_bnd(k)*Pref !Pa
+            if(debug.and.MasterProc) write(*,fmt="(A,I3,F10.2)")'vert_inter: P_emep',k,P_emep
+            !largest available P_ext smaller than P_emep (if possible)
+            !k1_ext(k) is the external layer just below P_emep(k)
+            k1_ext(k)= 0 !start at surface, and go up until P_emep
+            do k_ext=1,nemis_kprofile
+               if(emis_P_level(k_ext)<P_emep)exit
+               k1_ext(k)=k_ext
+            enddo
+            if(debug.and.MasterProc) write(*,*)k,k1_ext(k),k1_ext(k+1)
+
+            !sum all contributions starting from last counted level (i.e. P_emep(k+1))
+
+!part just above P_emep(k+1)
+            if(emis_P_level(k1_ext(k+1)+1)>P_emep)then
+               !part below k1_ext(k+1)+1  above P_emep(k+1)
+               frac=((A_bnd(k+1)+B_bnd(k+1)*Pref )-emis_P_level(k1_ext(k+1)+1))/(emis_P_level(k1_ext(k+1))-emis_P_level(k1_ext(k+1)+1))
+               emis_kprofile(KMAX_BND-k,isec)=frac*emis_hprofile(k1_ext(k+1)+1,isec)
+               if(debug.and.MasterProc) write(*,fmt="(A,I5,6F10.2)")'adding fraction of level',&
+                    k1_ext(k+1)+1,frac,emis_hprofile(k1_ext(k+1)+1,isec),emis_P_level(k1_ext(k+1)+1),&
+                    (A_bnd(k+1)+B_bnd(k+1)*Pref ),emis_P_level(k1_ext(k+1)+1),(emis_P_level(k1_ext(k+1))-emis_P_level(k1_ext(k+1)+1))
+            else
+               !everything between P_emep(k+1) and P_emep(k)
+               frac=((A_bnd(k+1)+B_bnd(k+1)*Pref )-P_emep)/(emis_P_level(k1_ext(k+1))-emis_P_level(k1_ext(k+1)+1))
+               emis_kprofile(KMAX_BND-k,isec)=frac*emis_hprofile(k1_ext(k+1)+1,isec)
+               if(debug.and.MasterProc) write(*,fmt="(A,I5,6F10.2)")'adding fraction of level between P_emep(k+1) and P_emep(k)',&
+                    k1_ext(k+1)+1,frac,emis_hprofile(k1_ext(k+1)+1,isec),emis_P_level(k1_ext(k+1)+1),&
+                    (A_bnd(k+1)+B_bnd(k+1)*Pref ),P_emep,(emis_P_level(k1_ext(k+1))-emis_P_level(k1_ext(k+1)+1))
+            endif
+
+            !add all full levels in between
+            do k_ext=k1_ext(k+1)+2,k1_ext(k)
+               emis_kprofile(KMAX_BND-k,isec)=emis_kprofile(KMAX_BND-k,isec)+emis_hprofile(k_ext,isec)
+               if(debug.and.MasterProc) write(*,fmt="(A,I5,6F10.2)")'adding entire level',k_ext,emis_hprofile(k_ext,isec),emis_P_level(k_ext)
+            enddo
+
+            !add level just below P_emep(k), if not already counted, above k1_ext(k)  below P_emep
+            if(emis_P_level(k1_ext(k+1)+1)>P_emep)then
+               frac=(emis_P_level(k1_ext(k))-P_emep)/(emis_P_level(k1_ext(k))-emis_P_level(k1_ext(k)+1))
+               emis_kprofile(KMAX_BND-k,isec)=emis_kprofile(KMAX_BND-k,isec)+frac*emis_hprofile(k1_ext(k)+1,isec)
+               if(debug.and.MasterProc) write(*,fmt="(A,I5,6F10.2)")'adding last fraction of level',k1_ext(k)+1,&
+                    frac,emis_hprofile(k1_ext(k)+1,isec),emis_P_level(k1_ext(k+1)+1),emis_P_level(k1_ext(k)),P_emep,&
+                    (emis_P_level(k1_ext(k))-emis_P_level(k1_ext(k)+1))
+            endif
+
+         enddo
+      enddo
+      if(MasterProc)then
+         write(*,*)'Distribution of emission into levels:'
+         do isec=1,NSECTORS! could put inside but easier for debugging to put here now
+            write(*,fmt="(A,I5,A,20F6.3)")'sector: ',isec,' fractions: ',(emis_kprofile(k,isec),k=1,nemis_kprofile)
+         enddo
+      endif
+   endif
+
+ end subroutine EmisHeights
 !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
   subroutine EmisSplit()

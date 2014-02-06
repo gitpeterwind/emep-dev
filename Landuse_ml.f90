@@ -575,8 +575,8 @@ contains
                  "Land SumFrac Error ", me,  &
                     i_fdom(i),j_fdom(j), sumfrac, limax,  ljmax, &
                        i_fdom(1), j_fdom(1), i_fdom(limax), j_fdom(ljmax)
-               if(abs(sumfrac-1.0)<0.1.and.abs(glat(i,j))>89.0)then
-                  write(*,*)'WARNING: ',errmsg,glat(i,j)
+               if(abs(sumfrac-1.0)<0.2.and.abs(glat(i,j))>89.0)then
+                  write(*,*)'WARNING: ',errmsg,sumfrac,glat(i,j)
                else
                    write(*,*)'latitude: ',errmsg,glat(i,j)
                  call CheckStop(errmsg)
