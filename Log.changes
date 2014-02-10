@@ -154,7 +154,7 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-10th February 2014  Peter  2704
+10th February 2014  Peter  2705
 
 Bug in Nest for eta coordinates.
 The program crashed when it did not find "k" as vertical coordinate.
@@ -208,7 +208,7 @@ Number of level for use of "NewLogan" was set wrongly.
 (does only affect runs if you explicitely set NewLogan=.true.)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-16th January 2014  Setlana, Peter  2699
+16th January 2014  Svetlana, Peter  2699
 
 Flexible dust. Dust can now be used for any grid. It is interpolated from a 
 global file. 
