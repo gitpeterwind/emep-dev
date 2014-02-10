@@ -1081,13 +1081,15 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
            call CheckStop(idimID <0 ,&
              "ReadField_CDF: no dimID found for"//trim(fileName_given))
 
-           call check(nf90_inq_dimid(ncid = ncFileID, name = "k", dimID = kdimID))
+           if(USE_EtaCOORDINATES)then
+              call check(nf90_inq_dimid(ncid = ncFileID, name = "lev", dimID = kdimID))
+           else
+              call check(nf90_inq_dimid(ncid = ncFileID, name = "k", dimID = kdimID))
+           endif
            call check(nf90_inquire_dimension(ncid=ncFileID,dimID=idimID,len=GIMAX_old))
            call check(nf90_inquire_dimension(ncid=ncFileID,dimID=jdimID,len=GJMAX_old))
            call check(nf90_inquire_dimension(ncid=ncFileID,dimID=kdimID,len=KMAX_old))
 
-           !         write(6,*)'existing file ', trim(fileName_given),' has dimensions'
-           !         write(6,*)GIMAX_old,GJMAX_old,KMAX_old
            if(GIMAX_old<GIMAXcdf .or. GJMAX_old<GJMAXcdf .or.  KMAX_old<KMAX)then
               write(6,*)'existing file ', trim(fileName_given),' has wrong dimensions'
               write(6,*)GIMAX_old,GIMAXcdf,GJMAX_old,GJMAXcdf,KMAX_old,KMAX

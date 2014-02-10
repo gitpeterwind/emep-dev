@@ -154,6 +154,12 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+10th February 2014  Peter  2704
+
+Bug in Nest for eta coordinates.
+The program crashed when it did not find "k" as vertical coordinate.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 6th February 2014  Peter  2703
 
 EmisGet_ml.f90
