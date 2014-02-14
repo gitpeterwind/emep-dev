@@ -416,8 +416,9 @@ if (%BENCHMARK){
   $emisdir    = "$EMIS_INP/$BENCHMARK{'emis'}";
   $pm_emisdir = $emisdir;
 }
-die "Missing emisdir='$emisdir' for GRID='$GRID'\n"       unless -d $emisdir;
-die "Missing pm_emisdir='$pm_emisdir' for GRID='$GRID'\n" unless -d $pm_emisdir;
+my $CDF_EMIS=0;#put one if TNO7.nc emissions are used
+die "Missing emisdir='$emisdir' for GRID='$GRID'\n"       unless (-d $emisdir or $CDF_EMIS);
+die "Missing pm_emisdir='$pm_emisdir' for GRID='$GRID'\n" unless (-d $pm_emisdir or $CDF_EMIS);
 
 #FEB 2013 TEST of netcdf emissions
 my $SNAP_CDF = "/global/work/mifapw/temp";  # Use for CdfFractions
@@ -703,6 +704,8 @@ foreach my $scenflag ( @runs ) {
     }elsif(($NH3EMIS_VAR)&&($poll eq "nh3")){
       $dir = "$HOMEROOT/$AGNES/emis_NMR";
       $ifile{"$dir/gridNH3_NMR_$year"} = "emislist.$poll";
+    }elsif($CDF_EMIS){
+	#no linking
     }else{
       $ifile{"$dir/grid$gridmap{$poll}"} = "emislist.$poll";
     }
@@ -801,6 +804,7 @@ foreach my $scenflag ( @runs ) {
 #EUCAARI, but all?
 # Skip:  $ifile{"$DATA_LOCAL/Boundary_and_Initial_Conditions.nc"} =
 #                     "Boundary_and_Initial_Conditions.nc" unless ($GRID =~ /MACC/);
+  $ifile{"$DataDir/Logan_P.nc"} = "Logan_P.nc";#instead of GLOBAL_O3.nc
   $ifile{"$DataDir/GLOBAL_O3.nc"} = "GLOBAL_O3.nc";
   $ifile{"$DataDir/amilt42-nox.dat"} = "ancatmil.dat";#RENAME TO AIRCARAFT?!
   $ifile{"$DataDir/GLOBAL_ForestFireEmis.nc"} =                     # GFED emissions

@@ -364,7 +364,7 @@ contains
        
        !   if (MasterProc) close(io_num)
 
-       if(ibc==1.and. NewLogan)then !temporary fix, assumes IBC_O3=1
+       if(ibc==IBC_O3 .and. (NewLogan.or.KMAX_MID/=20))then !temporary fix, assumes IBC_O3=1
 !This should have been in GetGlobalData, but GetGlobalData is called only by MasterPoroc.
 !So we overwrite whatever O3 is read in from  GetGlobalData
           if(Masterproc)write(*,*)'OVERWRITING LOGAN'
@@ -373,9 +373,9 @@ contains
           Nlevel_logan=30
           if(.not.allocated(O3_logan))allocate(O3_logan(Nlevel_logan,MAXLIMAX,MAXLJMAX))
           if(.not.allocated(O3_logan_emep))allocate(O3_logan_emep(MAXLIMAX,MAXLJMAX,KMAX_MID))
-          filename='/global/work/mifapw/emep/Data/Logan_P.nc'!will be put in run.pl in due time
+          filename='Logan_P.nc'!will be put in run.pl in due time
           varname='O3'
-          call  ReadField_CDF(fileName,varname,O3_logan,nstart=month,kstart=1,kend=Nlevel_logan,interpol='conservative', &
+          call  ReadField_CDF(fileName,varname,O3_logan,nstart=month,kstart=1,kend=Nlevel_logan,interpol='zero_order', &
               needed=.true.,debug_flag=.true.)
           CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
            !interpolate vertically

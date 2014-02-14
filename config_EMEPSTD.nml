@@ -59,7 +59,7 @@
   emis_inputlist(3)%name     = 'GlobalShipEmis_POLL.nc', !
   emis_inputlist(3)%incl(1:) = 'INTSHIPS', 
 !
-  EMIS_OUT              = T,          ! output emissions in separate files (memory demanding)
+  EMIS_OUT              = F,          ! output emissions in separate files (memory demanding)
 !-----------------------------------------------------------------------------
   IS_GLOBAL             = F,          ! Also for EMERGENCY
   MONTHLY_GRIDEMIS      = F,          ! Also for EMERGENCY

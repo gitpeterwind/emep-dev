@@ -910,6 +910,21 @@ contains
 
 
     endif
+    if(met(ix_Etadot)%found)then
+       !convert from mid values to boundary values
+       if(write_now)write(*,*)'interpolating etadot from mid to boundary levels'
+       do k = KMAX_MID,2,-1
+       do j = 1,ljmax
+          do i = 1,limax
+          Etadot(i,j,k,nr) = Etadot(i,j,k-1,nr)            &
+               + (Etadot(i,j,k,nr)-Etadot(i,j,k-1,nr))   &
+               * (Eta_bnd(k)-Eta_mid(k-1))       &
+               / (Eta_mid(k)-Eta_mid(k-1))
+       enddo       
+       enddo       
+       enddo     
+       Etadot(:,:,1,nr)=0.0!no exchanges above top (should not be useed anyway)
+    endif
 
     call met_derived(nr) !compute derived meteo fields used in BLPhysics
 

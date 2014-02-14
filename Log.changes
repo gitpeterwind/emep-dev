@@ -154,6 +154,19 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+14th February 2014  Peter  2706
+
+Small changes:
+BoundaryConditions_ml: use Logan_P.nc whenever KMAX_MID /=20. Path in run.pl
+EmisGet: MPI_Barrier for nicer output
+Timings: format for larger grid
+GridValues: format of output
+Met_ml.f90: Interpolate etadot from mid to boundary when read from metdata
+NetCDF: force monotone lon in the lon lat projection 
+(last lon was set to -179.75 instead of +180.25 in the GLOBAL05 grid!).  
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 10th February 2014  Peter  2705
 
 Bug in Nest for eta coordinates.

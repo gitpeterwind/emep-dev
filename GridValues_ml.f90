@@ -1773,7 +1773,7 @@ endfunction coord_in_processor
           k_met=k2_met(k)
           p2=0.5*(A_bnd_met(k_met+1)+A_bnd_met(k_met))+Pref*0.5*(B_bnd_met(k_met+1)+B_bnd_met(k_met))
           x_k1_met(k)=(p_mod-p2)/(p1-p2)
-          write(*,77)k, 'interpolated from levels ', k1_met(k),' and ',k2_met(k),P_mod,p1,p2,x_k1_met(k)
+          write(*,77)k, ' interpolated from levels ', k1_met(k),' and ',k2_met(k),P_mod,p1,p2,x_k1_met(k)
 77 format(I4,A,I3,A,I3,13f11.3)
        enddo
     endif

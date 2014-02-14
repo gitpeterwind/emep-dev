@@ -909,6 +909,9 @@ end if
 
          enddo
       enddo
+      
+      CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)!so that output from different CPU does not get mixed up
+      
       if(MasterProc)then
          write(*,*)'Distribution of emission into levels:'
          do isec=1,NSECTORS! could put inside but easier for debugging to put here now

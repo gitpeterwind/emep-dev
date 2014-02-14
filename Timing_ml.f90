@@ -98,8 +98,8 @@ subroutine Output_timing(io, me,np,nt,nx,ny)
   integer :: n
 
   open(io,file='Timing.out')
-  write(io,"(a40,3i5)") "Timing for No. grids, procs, time-steps",nx*ny,np,nt
-  write( 6,"(a40,3i5)") "Timing for No. grids, procs, time-steps",nx*ny,np,nt
+  write(io,"(a40,I7,3i5)") "Timing for No. grids, procs, time-steps",nx*ny,np,nt
+  write( 6,"(a40,I7,3i5)") "Timing for No. grids, procs, time-steps",nx*ny,np,nt
 
   do n=1,NTIMING
     if((timing(n)=="").and.(mytimm(n)==0.0)) cycle

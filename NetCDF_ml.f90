@@ -508,6 +508,8 @@ endif
   elseif(UsedProjection=='lon lat') then
     do i=1,GIMAXcdf
       xcoord(i)= glon_fdom(i+ISMBEGcdf-1,1)
+      !force monotone values:
+      if(i>1.and.xcoord(i)<xcoord(i-1).and.xcoord(i)<0)xcoord(i)=xcoord(i)+360.0
     enddo
     do j=1,GJMAXcdf
       ycoord(j)= glat_fdom(1,j+JSMBEGcdf-1)
@@ -886,6 +888,8 @@ character (len=*), parameter :: vert_coord='atmosphere_hybrid_sigma_pressure_coo
   elseif(UsedProjection=='lon lat') then
     do i=1,GIMAXcdf
       xcoord(i)= glon_fdom(i+ISMBEGcdf-1,1)
+      !force monotone values:
+      if(i>1.and.xcoord(i)<xcoord(i-1).and.xcoord(i)<0)xcoord(i)=xcoord(i)+360.0
     enddo
     do j=1,GJMAXcdf
       ycoord(j)= glat_fdom(1,j+JSMBEGcdf-1)
@@ -3440,7 +3444,7 @@ subroutine printCDF(name, array,unit)
 
           if(DEBUG_NETCDF.and.MasterProc)&
                write(*,"(A,I4.4,2('-',I2.2),A,I2.2,2(':',I2.2))")&
-               'nest refdate ',yyyy,mo,dd,' time ',hh,mi,ss
+               ' refdate ',yyyy,mo,dd,' time ',hh,mi,ss
           ss=ss+60*mi+3600*hh
           julian=julian_date(yyyy,mo,dd)
           julian_1900=julian_date(1900,1,1)
@@ -3627,7 +3631,7 @@ subroutine printCDF(name, array,unit)
           enddo
           weight_k1(k)=(P_emep-P_ext(k2_ext(k)))/(P_ext(k1_ext(k))-P_ext(k2_ext(k)))
           if(debug) &
-               write(*,fmt="(A,I4,2(A,I4,A,F5.2))")'Nest: level',k,&
+               write(*,fmt="(A,I4,2(A,I4,A,F5.2))")'vertical_interpolate: level',k,&
                ' is the sum of level ', k1_ext(k),' weight ',weight_k1(k),&
                ' and level ', k2_ext(k),' weight ',1-weight_k1(k)
        enddo
