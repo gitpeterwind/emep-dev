@@ -1,31 +1,3 @@
-! <GridValues_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
-!          Chemical transport Model>
-!***************************************************************************! 
-!* 
-!*  Copyright (C) 2007-2012 met.no
-!* 
-!*  Contact information:
-!*  Norwegian Meteorological Institute
-!*  Box 43 Blindern
-!*  0313 OSLO
-!*  NORWAY
-!*  email: emep.mscw@met.no
-!*  http://www.emep.int
-!*  
-!*    This program is free software: you can redistribute it and/or modify
-!*    it under the terms of the GNU General Public License as published by
-!*    the Free Software Foundation, either version 3 of the License, or
-!*    (at your option) any later version.
-!* 
-!*    This program is distributed in the hope that it will be useful,
-!*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-!*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!*    GNU General Public License for more details.
-!* 
-!*    You should have received a copy of the GNU General Public License
-!*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!***************************************************************************! 
-
 Module GridValues_ml
 
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
@@ -1664,14 +1636,20 @@ subroutine range_check(vname,var,vrange,fatal)
   endif
 endsubroutine range_check
 subroutine coord_check(msg,lon,lat,fix)
+!-------------------------------------------------------------------!
+! lon/lat range check. 
+!   Some longitude range errors can be corrected, when fix=.true.
+!   Latitude range errors are always fatal.
+!-------------------------------------------------------------------!
   character(len=*), intent(in) :: msg
   real, intent(inout) :: lon,lat
   logical :: fix
-  call range_check(trim(msg)//" lat",lat,(/ -90.0, 90.0/),fatal=.not.fix)
+  call range_check(trim(msg)//" lat",lat,(/ -90.0, 90.0/),fatal=.true.)
   call range_check(trim(msg)//" lon",lon,(/-180.0,180.0/),fatal=.not.fix)
   if(fix)then
-    lat=modulo(lat      , 90.0)       ! lat/gb_stagg range  -90 .. 90
-    lon=modulo(lon+180.0,360.0)-180.0 ! lon/gl_stagg range -180 .. 180
+!!  lat=mod(lat      , 90.0)       ! lat/gb_stagg range  -90 .. 90
+    lon=mod(lon+180.0,360.0)-180.0 ! lon/gl_stagg range -180 .. 180
+    call range_check(trim(msg)//" lon",lon,(/-180.0,180.0/),fatal=.true.)
   endif
 endsubroutine coord_check
 function coord_in_gridbox(lon,lat,iloc,jloc) result(in)

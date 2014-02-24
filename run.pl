@@ -99,7 +99,7 @@ my @MAKE = ("gmake", "-j4", "MACHINE=snow");
 die "Must choose STALLO **or** VILJE !\n"
   unless $STALLO+$VILJE==1;
 
-my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2685"    ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA","EMEP");
+my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2707"    ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA","EMEP");
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 
@@ -107,7 +107,7 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2685"    ,"EmChem09soa"
 #$Chem: EmChem09soa, EmChem09, CRI_v2_R5
 #$GRIDs:EECCA, EMEP, TNO7, TNO14, TNO28, TNO56, MACC02, MACC14 or GLOBAL
 #$MAKEMODE: EMEP,EMEP2011,eEMEP,MACC,MACC-EVA2011,... see Makefile
-
+#$MAKEMODE=0; # Avoid model re-compilation
 
 my %BENCHMARK;
 # OpenSource 2008
