@@ -1647,8 +1647,8 @@ subroutine coord_check(msg,lon,lat,fix)
   call range_check(trim(msg)//" lat",lat,(/ -90.0, 90.0/),fatal=.true.)
   call range_check(trim(msg)//" lon",lon,(/-180.0,180.0/),fatal=.not.fix)
   if(fix)then
-!!  lat=mod(lat      , 90.0)       ! lat/gb_stagg range  -90 .. 90
-    lon=mod(lon+180.0,360.0)-180.0 ! lon/gl_stagg range -180 .. 180
+!!  lat=mod   (lat      , 90.0)       ! lat/gb_stagg range  -90 .. 90
+    lon=modulo(lon+180.0,360.0)-180.0 ! lon/gl_stagg range -180 .. 180
     call range_check(trim(msg)//" lon",lon,(/-180.0,180.0/),fatal=.true.)
   endif
 endsubroutine coord_check

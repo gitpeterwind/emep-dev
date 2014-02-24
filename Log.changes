@@ -153,7 +153,7 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-24th February 2014  Alvaro  2707
+24th February 2014  Alvaro,Birthe  2707-2708
 
 GridValues_ml:
   Fix error on procedure coord_check. Wrong/Unnecessary latitude coordinate range fix.
