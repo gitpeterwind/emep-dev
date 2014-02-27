@@ -1,30 +1,3 @@
-! <Pollen_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
-!          Chemical transport Model>
-!*****************************************************************************!
-!*
-!*  Copyright (C) 2007-2013 met.no
-!*
-!*  Contact information:
-!*  Norwegian Meteorological Institute
-!*  Box 43 Blindern
-!*  0313 OSLO
-!*  NORWAY
-!*  email: emep.mscw@met.no
-!*  http://www.emep.int
-!*
-!*    This program is free software: you can redistribute it and/or modify
-!*    it under the terms of the GNU General Public License as published by
-!*    the Free Software Foundation, either version 3 of the License, or
-!*    (at your option) any later version.
-!*
-!*    This program is distributed in the hope that it will be useful,
-!*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-!*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!*    GNU General Public License for more details.
-!*
-!*    You should have received a copy of the GNU General Public License
-!*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************!
 module Pollen_const_ml
 !-----------------------------------------------------------------------!
 ! Birch pollen emission calculation based on
@@ -42,10 +15,11 @@ module Pollen_const_ml
 
   real, parameter  :: &
     T_cutoff = 273.2+3.5, & ! Cut-off temperature [K]
-    dH       = 50*24*3600,& ! Flowering period in degree seconds
+    dH_d     = 50,        & ! Flowering period [degree days]
+    dH       = dH_d*86400,& ! Flowering period [degree seconds]
     PREC_MIN = 0.0,       & ! Min cut-off precipitation [mm/h]
     PREC_MAX = 0.5,       & ! Max cut-off precipitation [mm/h]
-    N_TOT    = 3.7e8,     & ! Available pollen [grains/m2] (Could be a fild)
+    N_TOT    = 1e9,       & ! Available pollen [grains/m2] (Could be a fild)
     RH_LOW   = 0.50,      & ! Min cut-off relative humidity [ ]
     RH_HIGH  = 0.80,      & ! Max cut-off relative humidity [ ]
     PROB_IN  = 0.2,       & ! Probability for flowering to start

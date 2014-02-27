@@ -65,10 +65,11 @@
 !                    $year,-1,15,00,0000,     ! 15th of every month at 00:00
 &end
 &ExternalBICs_config
-  USE_EXTERNAL_BIC  = T,                      ! .false. to deactivate
-  EXTERNAL_BIC_NAME = 'IFS-MOZART',
-  TOP_BC            = T,
-  filename_eta      = '$filename_eta',
+  USE_EXTERNAL_BIC     = T,                   ! .false. to deactivate
+  EXTERNAL_BIC_NAME    = 'IFS-MOZART',
+  EXTERNAL_BIC_VERSION = 'MACC_ENS',          ! alias for IFS_MOZ_f7kn|fkya|fnyp
+  TOP_BC               = T,
+  filename_eta         = '$filename_eta',
 &end
 &ExternalBICs_bc
 ! BC from IFS-MOZ exp id: f7kn (before 2011-12-01)
@@ -85,7 +86,7 @@
         'CH3CHO','CH3CHO_VMR_inst',1.0,T,F,-1,
 &end
 &ExternalBICs_bc
-! BC from IFS-MOZ exp id: fkya (since 2011-12-01)
+! BC from IFS-MOZ exp id: fkya (between 2011-12-01 and 2012-09-03)
   description='IFS-MOZART','IFS_MOZ_fkya',9,  ! name,version,size
   map_bc=! emep,external,frac,wanted,found,IXADV,
         'O3'    ,'O3'    ,1.0,T,F,-1,
@@ -97,6 +98,23 @@
         'C2H6'  ,'C2H6'  ,1.0,T,F,-1,
         'HCHO'  ,'CH2O'  ,1.0,T,F,-1,
         'CH3CHO','CH3CHO',1.0,T,F,-1,
+&end
+&ExternalBICs_bc
+! BC from IFS-MOZ exp id: fnyp (available since 2012-09-04, used since 2014-01-??)
+  description='IFS-MOZART','IFS_MOZ_fnyp',12,  ! name,version,size
+  map_bc=! emep,external,frac,wanted,found,IXADV,
+        'O3'    ,'O3'    ,1.0,T,F,-1, ! same as fkya
+        'NO'    ,'NO'    ,1.0,T,F,-1, ! same as fkya
+        'NO2'   ,'NO2'   ,1.0,T,F,-1, ! same as fkya
+        'CH4'   ,'CH4'   ,1.0,T,F,-1,
+        'HNO3'  ,'HNO3'  ,1.0,T,F,-1, ! same as fkya
+        'SO2'   ,'SO2'   ,1.0,T,F,-1, 
+        'CO'    ,'CO'    ,1.0,T,F,-1, ! same as fkya
+        'C5H8'  ,'ISOP'  ,1.0,T,F,-1, 
+        'PAN'   ,'PAN'   ,1.0,T,F,-1, ! same as fkya
+        'HCHO'  ,'CH2O'  ,1.0,T,F,-1, ! same as fkya
+        'C2H6'  ,'C2H6'  ,1.0,T,F,-1, ! same as fkya
+        'CH3CHO','CH3CHO',1.0,T,F,-1, ! not in fnyp, back compat. w/fkya
 &end
 &ExternalBICs_bc
 ! BC for MACC-EVA: IFS-MOZ (MACC-GRG) & IFS-AER (MACC-AER)
@@ -111,10 +129,10 @@
         'C2H6'      ,'C2H6'        ,1.0,T,F,-1, ! same as fkya
         'HCHO'      ,'CH2O'        ,1.0,T,F,-1, ! same as fkya
         'CH3CHO'    ,'CH3CHO'      ,1.0,T,F,-1, ! same as fkya
-        'CH4'       ,'CH4'         ,1.0,T,F,-1, 
-        'SO2'       ,'SO2'         ,1.0,T,F,-1, 
+        'CH4'       ,'CH4'         ,1.0,T,F,-1, ! same as fnyp
+        'SO2'       ,'SO2'         ,1.0,T,F,-1, ! same as fnyp 
         'H2O2'      ,'H2O2'        ,1.0,T,F,-1, 
-        'C5H8'      ,'ISOP'        ,1.0,T,F,-1, 
+        'C5H8'      ,'ISOP'        ,1.0,T,F,-1, ! same as fnyp
         'OH'        ,'OH'          ,1.0,F,F,-1, ! do not use, not ADV
         'NO2'       ,'HO2NO2'      ,1.0,T,F,-1, 
         'C3H6'      ,'BIGENE'      ,1.0,T,F,-1, 

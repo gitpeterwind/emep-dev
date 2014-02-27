@@ -42,6 +42,7 @@ use ChemSpecs_shl_ml,       only: NSPEC_SHL
 use Functions_ml,           only: great_circle_distance
 use GridValues_ml,          only: A_mid,B_mid, glon,glat
 use Io_ml,                  only: open_file,IO_TMP,IO_NML
+use Io_Progs_ml,            only: PrintLog
 use ModelConstants_ml,      only: Pref,PPB,PT,KMAX_MID, MasterProc, NPROC     &
   , IOU_INST,IOU_HOUR,IOU_YEAR,IOU_MON,IOU_DAY, RUNDOMAIN  &
   , FORECAST, DEBUG_NEST, DEBUG_ICBC=>DEBUG_NEST_ICBC
@@ -476,25 +477,30 @@ subroutine init_icbc(idate,cdate,ndays,nsecs)
   adv_ic(:)%frac=1.0
   adv_ic(:)%wanted=.true.
   adv_ic(:)%found=find_icbc(filename_read_3D,adv_ic%varname(:))
-  if(mydebug) then
-    do n = 1,size(adv_ic%varname)
-      if(adv_ic(n)%found) write(*,*) &
-        "init_icbc filled adv_ic "//trim(adv_ic(n)%varname)
-    enddo
-  endif
   if(EXTERNAL_BIC_SET) then
     adv_bc=>EXTERNAL_BC
     adv_bc(:)%found=find_icbc(filename_read_bc,adv_bc%varname(:))
   else
     adv_bc=>adv_ic
   endif
-  if(mydebug) then
-   do n = 1,size(adv_bc%varname)
-     if(adv_bc(n)%found) write(*,*) &
-        "init_icbc filled adv_bc "//trim(adv_bc(n)%varname)
-   enddo
+  
+  if(MasterProc)then
+    do n = 1,size(adv_ic%varname)
+      if(.not.adv_ic(n)%found)then
+        call PrintLog("WARNING: IC variable '"//trim(adv_ic(n)%varname)//" 'not found")
+      elseif(DEBUG_NEST.or.DEBUG_ICBC)then 
+        write(*,*) "init_icbc filled adv_ic "//trim(adv_ic(n)%varname)
+      endif
+    enddo
+    do n = 1,size(adv_bc%varname)
+      if(.not.adv_bc(n)%found)then
+        call PrintLog("WARNING: BC variable '"//trim(adv_bc(n)%varname)//" 'not found")
+      elseif(DEBUG_NEST.or.DEBUG_ICBC)then 
+        write(*,*) "init_icbc filled adv_bc "//trim(adv_bc(n)%varname)
+      endif
+    enddo
   endif
-
+  
   if((DEBUG_NEST.or.DEBUG_ICBC).and.MasterProc)then
     write(*,"(a)") "Nest: DEBUG_ICBC Variables:"
     write(*,"((1X,A,I3,'->',"//ICBC_FMT//"))") &

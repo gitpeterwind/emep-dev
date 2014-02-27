@@ -1,30 +1,3 @@
-! <Pollen_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
-!          Chemical transport Model>
-!*****************************************************************************!
-!*
-!*  Copyright (C) 2007-2013 met.no
-!*
-!*  Contact information:
-!*  Norwegian Meteorological Institute
-!*  Box 43 Blindern
-!*  0313 OSLO
-!*  NORWAY
-!*  email: emep.mscw@met.no
-!*  http://www.emep.int
-!*
-!*    This program is free software: you can redistribute it and/or modify
-!*    it under the terms of the GNU General Public License as published by
-!*    the Free Software Foundation, either version 3 of the License, or
-!*    (at your option) any later version.
-!*
-!*    This program is distributed in the hope that it will be useful,
-!*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-!*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!*    GNU General Public License for more details.
-!*
-!*    You should have received a copy of the GNU General Public License
-!*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************!
 module Pollen_ml
 !-----------------------------------------------------------------------!
 ! Birch pollen emission calculation based on
@@ -160,8 +133,8 @@ subroutine pollen_flux(i,j,debug_flag)
     ! reduce birch from 60 degrees north:
     forall(ii=1:MAXLIMAX,jj=1:MAXLIMAX,glat(ii,jj)>=60.0) &
       birch_frac(ii,jj)=birch_frac(ii,jj)&
-                       *max(0.3,1.0-0.005*(glat(ii,jj)-60.0))
-
+!!                     *max(0.3,1.0-0.005*(glat(ii,jj)-60.0))
+                       *(1-0.7*(glat(ii,jj)-60)/10)
    ! start of pollen forecast
     if(daynumber==day_first.and.MasterProc)&
       write(*,*) "POLLEN setup ",date2string("YYYY-MM-DD hh:mm",current_date)
@@ -196,7 +169,8 @@ subroutine pollen_flux(i,j,debug_flag)
   if(heatsum(i,j)<lim           &
      .or.t2_nwp(i,j,1)<T_cutoff &
      .or. prec>prec_max         &
-     .or. R(i,j)>N_TOT*corr(i,j)) then 
+     .or. R(i,j)>N_TOT*corr(i,j)&
+     .or. heatsum(i,j)>h_c(i,j)+dH_d ) then 
     EmisNat(inat_POLL,i,j)      = 0.0
     rcemis (itot_POLL,KMAX_MID) = 0.0
     return

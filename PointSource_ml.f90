@@ -105,7 +105,7 @@ subroutine readstacks(io)
    
    real :: he_max  ! max limit for emissions, found from max(he+2*stdev)
    real :: p
-   logical :: debug_flag, first_header=.true.
+   logical :: first_header=.true., debug_flag=.false.
    character(len=20), dimension(MAX_POLLS+9) :: words
    integer :: errcode, ncol, emcol, nemis_cols, ispec, nn, nem, nwords, iemis
    debug_flag = DEBUG !! .and. MasterProc 

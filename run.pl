@@ -6,23 +6,23 @@
 # queue commands for PBS
 
 #Queue system commands start with #PBS (these are not comments!)
-# lnodes= number of nodes, ppn=processor per node (max16 or 20 on stallo)
-# Stallo, use ib for infiniband (fast interconnect).
-# Ve/Vilje, (take out one # and put one # before the Stallo). 
-#     select= number of nodes, ncpus=number of threads per node to reserve, 
-#     mpiprocs=number of MPI threads per node. For 64 processors:
+# Vilje: (take out one # and put one # before the Stallo). 
+#   select= number of nodes, ncpus=number of threads per node to reserve, 
+#   mpiprocs=number of MPI threads per node. For 64 processors:
 ##PBS -l select=4:ncpus=32:mpiprocs=32 -v MPI_MSGS_MAX=2097152
-#Stallo. Some nodes on Stallo have 16 some others 20 cpus
-#PBS -lnodes=64
-# wall time limit of run
+# Stallo:
+#   Some nodes on Stallo have 16 some others 20 cpus
+#   use ib for infiniband (fast interconnect).
+#   lnodes= number of nodes, ppn=processor per node (max16 or 20 on stallo)
+#   lpmeme=memory to reserve per processor (max 16GB per node)
+#PBS -lnodes=64 -lpmem=1000MB
+# Wall time limit of run
 #PBS -lwalltime=07:40:00
-# lpmeme=memory to reserve per processor (max 16GB per node)
-#PBS -lpmem=1000MB
-#make results readable for others:
+# Make results readable for others:
 #PBS -W umask=0022
-# account for billing
+# Account for billing
 #PBS -A nn2890k
-# multiple tasks for paralel SR runs (one task per country)
+# Multiple tasks for paralel SR runs (one task per country)
 ##PBS -t 1-56
 #___________________________________________________________________
 
@@ -99,7 +99,7 @@ my @MAKE = ("gmake", "-j4", "MACHINE=snow");
 die "Must choose STALLO **or** VILJE !\n"
   unless $STALLO+$VILJE==1;
 
-my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2707"    ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA","EMEP");
+my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2708"    ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA","EMEP");
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 
@@ -111,24 +111,20 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2707"    ,"EmChem09soa"
 
 my %BENCHMARK;
 # OpenSource 2008
-#  %BENCHMARK = (grid=>"EMEP"  ,year=>2005,emis=>"Modrun07/OpenSourceEmis"           ,archive=>1,chem=>"EmChem03");
+#  %BENCHMARK = (grid=>"EMEP"  ,year=>2005,emis=>"Modrun07/OpenSourceEmis"           ,chem=>"EmChem03");
 # Dave's preference for EMEP:
-#  %BENCHMARK = (grid=>"EMEP"  ,year=>2006,emis=>"Modrun10/EMEP_trend_2000-2008/2006",archive=>1,chem=>"EmChem09");
+#  %BENCHMARK = (grid=>"EMEP"  ,year=>2006,emis=>"Modrun10/EMEP_trend_2000-2008/2006",chem=>"EmChem09");
 # EECCA Default:
-## %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun11/EMEP_trend_2000-2009/2008",archive=>1,chem=>"EmChem09soa",make=>"EMEP");
+## %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun11/EMEP_trend_2000-2009/2008",chem=>"EmChem09soa",make=>"EMEP");
 # Status Runs:
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2007,emis=>"Modrun09/2009-Trend2007-CEIP") ;
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun10/2010-Trend2008_CEIP");
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2009,emis=>"Modrun11/2011-Trend2009-CEIP");
-#  %BENCHMARK = (grid=>"EECCA" ,year=>2010,emis=>"Modrun12/2012-Trend2010-CEIP",archive=>1,chem=>"EmChem09soa",make=>"EMEP2010");
-#  %BENCHMARK = (grid=>"EECCA" ,year=>2011,emis=>"Modrun13/2013-Trend2011-CEIP",archive=>1,chem=>"EmChem09soa",make=>"EMEP2011");
+#  %BENCHMARK = (grid=>"EECCA" ,year=>2010,emis=>"Modrun12/2012-Trend2010-CEIP",chem=>"EmChem09soa",make=>"EMEP2010");
+#  %BENCHMARK = (grid=>"EECCA" ,year=>2011,emis=>"Modrun13/2013-Trend2011-CEIP",chem=>"EmChem09soa",make=>"EMEP2011");
 # Alternative domains:
-#  %BENCHMARK = (grid=>"TNO28" ,year=>2008,emis=>"emis_TNO28"         ,archive=>1);
-#  %BENCHMARK = (grid=>"MACC02",year=>2008,emis=>"2008_emis_EMEP_MACC",archive=>1) ;
-# Candidate for removal/update: Do not arrchive!
-#  %BENCHMARK = (grid=>"EECCA" ,year=>2005,emis=>"Modrun11/EMEP_trend_2000-2009/2005");
-#  %BENCHMARK = (grid=>"EECCA" ,year=>2006,emis=>"Modrun11/EMEP_trend_2000-2009/2006");
-#  %BENCHMARK = (grid=>"EECCA" ,year=>2007,emis=>"Modrun11/EMEP_trend_2000-2009/2007");
+#  %BENCHMARK = (grid=>"TNO28" ,year=>2008,emis=>"emis_TNO28"         );
+#  %BENCHMARK = (grid=>"MACC02",year=>2008,emis=>"2008_emis_EMEP_MACC") ;
 if (%BENCHMARK) {
   $BENCHMARK{'archive'} = 1;                        # save summary info in $DataDir
   $BENCHMARK{'debug'} = $BENCHMARK{'archive'};      # chech if all debug flags are .false.
@@ -146,28 +142,29 @@ my $INERIS_FACS=0;  # Used for timefactors, and e,g TNOxx tests
 my $SR= 0;     # Set to 1 if source-receptor calculation
                # check also variables in package EMEP::Sr below!!
 
-my $CWF=0;     # Set to N for 'N'-day forecast mode (0 otherwise)
+my $CWF=4;     # Set to N for 'N'-day forecast mode (0 otherwise)
    $CWF=0 if %BENCHMARK;
 my ($CWFBASE, $CWFDAYS, $CWFMETV, @CWFDATE, @CWFDUMP, $eCWF, $aCWF) if $CWF;
 if ($CWF) {
-  $CWFBASE=date2str("today","%Y%m%d");  # Forecast base date     (default today)
-  $CWFDAYS=$CWF;                        # Forecast lenght indays (default $CWF)
-  $CWFMETV="";                          # Met.UTC version        (default 'none')
-  $CWFBASE=$ENV{"DATE"} if $ENV{"DATE"};# Forecast base date, lenght
-  $CWFDAYS=$ENV{"NDAY"} if $ENV{"NDAY"};#  & MetUTC version can be passed
-  $CWFMETV=$ENV{"UTC"}  if $ENV{"UTC"} ;#  as environment variables
+  $CWFBASE=$ENV{"DATE"}?$ENV{"DATE"}:"today"; # Forecast base date     (default today)
+  $CWFDAYS=$ENV{"NDAY"}?$ENV{"NDAY"}:$CWF;    # Forecast lenght indays (default $CWF)
+  $CWFMETV=$ENV{"UTC"}?$ENV{"UTC"}:"12";      # Met.UTC version        (default 12UTC)
   $CWFBASE=shift if @ARGV;              # Forecast base date, lenght
   $CWFDAYS=shift if @ARGV;              #  & MetUTC version can be passed
   $CWFMETV=shift if @ARGV;              #  as argument to script
+  $CWFBASE="tomorrow" if($CWFBASE eq "today")and($CWFMETV =~ /12/);  # default date for 12UTC version 
+  $CWFBASE=date2str($CWFBASE,"%Y%m%d");
+# $CWFMETV:
+# Forecast/Analysis ($CWFDAYS<=10): meteo${CWFBASE}_{00,01,..}d.nc
+#   AN00|AN Analysis w/ 00UTC met
+#   FC12|12 Forecast w/ 12UTC met
+# Hindcast ($CWFDAYS>10): meteo{DAY1,DAY2,..}_??d.nc
+#   *00|24|48|72 run w/ 00UTC met 00d|01d|02d|03d
+#   *12|36|60|84 run w/ 12UTC met 01d|02d|03d|04d
   $eCWF=0;                              # Emergency forecast
   $aCWF=($CWFMETV =~ /AN/ );            # Analysis
   $CWF=($eCWF?"eemep-":"CWF_").($CWFMETV?"$CWFMETV-$CWFBASE":"$CWFBASE");
-# short run: $CWFDAYS= 1 .. 10 --> meteo${CWFBASE}_00d _01d ..
-# long run:  $CWFDAYS= 10 ..   --> 00|01|02|03d (from CWFMETV) and meteo${DATE}
   $CWFMETV =~s/[^\d.]//g;                           # extract number part
-  my $metday = ($CWFMETV)?int($CWFMETV/24+0.99):0;  # hour --> day
-  $CWFBASE   =date2str($CWFBASE." $metday day","%Y%m%d") 
-                if ($metday gt 0) and ($CWFDAYS<=10);
   $CWFDATE[0]=date2str($CWFBASE." 1 day ago"  ,"%Y%m%d");     # yesterday
   $CWFDATE[1]=$CWFBASE;                                       # start date
   $CWFDATE[2]=date2str($CWFDATE[0]." $CWFDAYS day","%Y%m%d"); # end date
@@ -590,10 +587,11 @@ foreach my $scenflag ( @runs ) {
   if($CWF) { # Forecast Meteorology in NetCDF
     $METformat="./meteoYYYYMMDD.nc";            # link file to work path
     my $metday = 0;
-    if($CWFMETV) {
-      $metday = int($CWFMETV/24+0.99);          # time offset on days
-      my $UTCdir = sprintf "_%02dUTC",$CWFMETV; # 00/12 UTC versions
-      $MetDir.= $UTCdir if(-d $MetDir.$UTCdir); # if the _??UTC apth exists
+    if($CWFMETV) { # UTC version and DAY offset for MET.UTC version
+      $metday = int($CWFMETV/24+0.99);             # DAY offset
+      $MetDir.= sprintf("_%02dUTC",($CWFMETV%24)) # 00/12 UTC versions
+                unless ($USER eq $FORCAST);
+      die "Missing MetDir='$MetDir'\n" unless -d $MetDir;
     }
     $MetDir=~s:$year:%Y:g;                      # Genereal case for Jan 1st
     for (my $n = 0; $n < $CWFDAYS; $n++) {
@@ -615,8 +613,14 @@ foreach my $scenflag ( @runs ) {
     }
 # Forecast nest/dump files
     $cwfic=date2str($CWFDATE[0],$CWFIC);  # yesterday's dump
-   #$cwfic=~s/AN-//        if($aCWF);     # use Forecast dump on AN runs
-    $cwfic=~s/FC-/AN-/ unless($aCWF);     # use Analyis dump on FC runs
+    if($aCWF){                              # CWF_AN run: if dump not found
+      $cwfic=~s/AN-/FC-/ unless(-e $cwfic); # use CWF_FC dump
+      $cwfic=~s/FC-//    unless(-e $cwfic); # use CWF dump
+      die "$CWF restart file for $CWFBASE not available (yet):\n\t$CWFIC\n"
+          ."Try later...\n" unless(-e $cwfic);
+    }else{                                  # CWF_FC run: always from Analysis
+      $cwfic=~s/FC-/AN-/;                   # use CWF_AN dump
+    }
     my $metfile="$MetDir/meteo${CWFDATE[0]}_00.nc"; # yesterday's met
     if (-e $metfile and ! -e $cwfic) {
       print "No dumpfile present:\n\t$cwfbc.\n\tTake extra spin-up day.\n";
@@ -859,9 +863,8 @@ foreach my $scenflag ( @runs ) {
   #$ifile{"$MyDataDir/sitesCPM_ds.dat"} = "sites.dat";
 
   #LPS: point sources can  be added if needed.
-  $ifile{"$MyDataDir/PointSources.txt"} = "PointSources.txt";
-
-
+  $ifile{"$MyDataDir/PointSources.txt"} = "PointSources.txt" 
+   if(-e "$MyDataDir/PointSources.txt");
 
 # DEGREE DAYS (Tbase set above, either 18 or 20):
   unless ($CWF or ($GRID eq "RCA") or ($GRID eq "GLOBAL")) {

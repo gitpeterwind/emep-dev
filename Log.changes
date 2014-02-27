@@ -151,13 +151,46 @@ info on unused variables, etc.
 
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-??th February 2014 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+27th February 2014  Alvaro,Birthe  2709-2710
 
-Pollen_ml, Pollen_const:
-  Increased the available pollen amount to 1e9 grains/m2, set a heatsum
-  condition for season end and a new routine for limiting pollen north 
-  of 60 degrees.
+ZD_Pollen/Pollen_ml,Pollen_const_ml,My_Pollen_ml
+  - Increased the available birch pollen amount to 1e9 grains/m2.
+  - Set a heatsum condition for season end.
+  - New birch pollen limiting formula, for latitudes north of 60 degrees.
+  - Remove Copyright notice from My_Pollen_ml.
+
+config_FORECAST.nml,ExternalBICs_ml:
+  - Additional species for IFS-MOZ (fnyp) BCs.
+  - Explicitly set the BC version name (EXTERNAL_BIC_VERSION) on
+    ExternalBICs_config namelist.
+
+run.pl:
+  - Join stallo PBS commands for CPU (-lnodes) and memory (-lpmem)
+    in a single line to facilitate switching between vilje/stallo.
+  - Clean up BENCHMARK setings: archive option is set only once
+    and remove behckmarks marked as "Candidate for removal".
+  - Improve support for different met versions on FORECAST (FC) runs.
+    The usage of $CWFMETV was extended so
+    now 00|24|48|72 means 00UTC met starting from 00d|01d|02d|03d
+    and 12|36|60|84 means 12UTC met starting from 01d|02d|03d|04d.
+  - Improve IC/restart/dump file search ANALYSIS (AN) runs.
+    An AN run will only start if a IC file is found. 
+    When the IC file from the AN chain is not found,
+    attempts are made to link a suitable IC file from one the FC chains.
+  - Link PointSources.txt file only when found.
+
+PointSource_ml:
+  - Small change so BENCHMARK archive conditions can be met.
+
+ZD_SR/My_Derived_ml,ZD_OZONE/My_Derived_ml:
+  - Implement OutputConcs_config namelist on SR version.
+  - Remove Copyright notice from OZONE version.
+
+Nest_ml:
+  - Add warnings messages when IC/BC varables are not found on
+    their corresponding files.
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 24th February 2014  Alvaro,Birthe  2707-2708
 
