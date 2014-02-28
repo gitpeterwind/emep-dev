@@ -119,7 +119,7 @@ use ModelConstants_ml,    only : PASCAL, PT, Pref, METSTEP  &
      ,NH3_U10   & !FUTURE
      ,DomainName & !HIRHAM,EMEP,EECCA etc.
      ,USE_DUST, TEGEN_DATA, USE_SOILWATER & 
-     ,nstep,USE_CONVECTION & 
+     ,nstep,USE_CONVECTION,USE_EtaCOORDINATES & 
      ,LANDIFY_MET  & 
      ,CW_THRESHOLD,RH_THRESHOLD, CW2CC,IOU_INST
 use Par_ml           ,    only : MAXLIMAX,MAXLJMAX,GIMAX,GJMAX, me  &
@@ -911,6 +911,8 @@ contains
 
     endif
     if(met(ix_Etadot)%found)then
+       call CheckStop(.not.USE_EtaCOORDINATES,&
+            "Conflict: requested etadot, but does not use eta coordinates")
        !convert from mid values to boundary values
        if(write_now)write(*,*)'interpolating etadot from mid to boundary levels'
        do k = KMAX_MID,2,-1
