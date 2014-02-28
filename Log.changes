@@ -152,6 +152,12 @@ info on unused variables, etc.
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+28th February 2014  Peter  2711
+
+Do not recalculate etadot and sdot if etadot is read from metdata.
+Met_ml.f90
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 27th February 2014  Alvaro,Birthe  2709-2710
 
 ZD_Pollen/Pollen_ml,Pollen_const_ml,My_Pollen_ml
