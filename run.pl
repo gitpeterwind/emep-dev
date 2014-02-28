@@ -142,7 +142,7 @@ my $INERIS_FACS=0;  # Used for timefactors, and e,g TNOxx tests
 my $SR= 0;     # Set to 1 if source-receptor calculation
                # check also variables in package EMEP::Sr below!!
 
-my $CWF=4;     # Set to N for 'N'-day forecast mode (0 otherwise)
+my $CWF=0;     # Set to N for 'N'-day forecast mode (0 otherwise)
    $CWF=0 if %BENCHMARK;
 my ($CWFBASE, $CWFDAYS, $CWFMETV, @CWFDATE, @CWFDUMP, $eCWF, $aCWF) if $CWF;
 if ($CWF) {
