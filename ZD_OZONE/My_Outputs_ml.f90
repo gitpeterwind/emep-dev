@@ -1,30 +1,3 @@
-! <My_Outputs_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
-!          Chemical transport Model>
-!*****************************************************************************!
-!*
-!*  Copyright (C) 2007-2011 met.no
-!*
-!*  Contact information:
-!*  Norwegian Meteorological Institute
-!*  Box 43 Blindern
-!*  0313 OSLO
-!*  NORWAY
-!*  email: emep.mscw@met.no
-!*  http://www.emep.int
-!*
-!*    This program is free software: you can redistribute it and/or modify
-!*    it under the terms of the GNU General Public License as published by
-!*    the Free Software Foundation, either version 3 of the License, or
-!*    (at your option) any later version.
-!*
-!*    This program is distributed in the hope that it will be useful,
-!*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-!*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!*    GNU General Public License for more details.
-!*
-!*    You should have received a copy of the GNU General Public License
-!*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************!
 module  My_Outputs_ml
 ! -----------------------------------------------------------------------
 ! Allows user to specify which species are output to various
@@ -206,7 +179,8 @@ subroutine set_output_defs
    implicit none
 
   character(len=144) :: errmsg   ! Local error message
-  integer            :: i,j,ash,nuc_conc,nuc_wdep,nuc_ddep,rn222,pm25,pm10,poll,igrp,idx ! Loop & group indexes
+  integer            :: i,j,ash,nuc_conc,nuc_wdep,nuc_ddep,& ! Loop & group indexes
+                        rn222,pm25,pm10,nmvoc,poll,igrp,idx
   character(len=256)   :: name     ! Volcano (vent) name
 
   real, parameter :: atwC=12.0
@@ -301,9 +275,9 @@ subroutine set_output_defs
       enddo
     endif
     endif
-  case("FORECAST")
-    nhourly_out=9
-    nlevels_hourly=4
+  case("MACC_ENS","FORECAST")
+    nhourly_out=15
+    nlevels_hourly=9
     if(any(species_adv(:)%name=="RN222"))nhourly_out=nhourly_out+1
     if(USE_AOD     )nhourly_out=nhourly_out+1
     if(USE_POLLEN  )nhourly_out=nhourly_out+1
@@ -418,37 +392,50 @@ subroutine set_output_defs
       enddo
     endif
     endif ! if false
-  case("FORECAST")
-    levels_hourly = (/0,4,6,10/)
+  case("MACC_ENS","FORECAST")
+    levels_hourly = (/0,1,2,3,4,6,9,10,12/)
     pm25 =find_index("PMFINE"  ,chemgroups(:)%name) !NB There is no "PM25" group
     pm10 =find_index("PM10"    ,chemgroups(:)%name)
+    nmvoc=find_index("NMVOC"   ,chemgroups(:)%name)
     rn222=find_index("RN222"   ,species_adv(:)%name)
     poll =find_index("POLLEN_B",species_adv(:)%name)
 !**               name     type     ofmt
 !**               ispec    ix1 ix2 iy1 iy2 nk sellev? unit conv  max
-    j=9;hr_out(1:j) = (/&
-      Asc2D("o3_3km"    ,"BCVugXX",IXADV_O3   ,&
+    j=15;hr_out(1:j) = (/&
+      Asc2D("o3_5km"    ,"BCVugXX",IXADV_O3   ,&
             ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_O3) ,600.0*2.0),&
-      Asc2D("no_3km"    ,"BCVugXX",IXADV_NO   ,&
+      Asc2D("no_5km"    ,"BCVugXX",IXADV_NO   ,&
             ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_NO) ,-999.9),&
-      Asc2D("no2_3km"   ,"BCVugXX",IXADV_NO2  ,&
+      Asc2D("no2_5km"   ,"BCVugXX",IXADV_NO2  ,&
             ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_NO2),600.0*1.91),&
-      Asc2D("so2_3km"   ,"BCVugXX",IXADV_SO2  ,&
+      Asc2D("so2_5km"   ,"BCVugXX",IXADV_SO2  ,&
             ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_SO2),-999.9),&
-      Asc2D("co_3km"    ,"BCVugXX",IXADV_CO   ,&
+      Asc2D("co_5km"    ,"BCVugXX",IXADV_CO   ,&
             ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_CO) ,-999.9),&
-      Asc2D("pm25_3km"  ,"BCVugXXgroup",pm25,&
+      Asc2D("nh3_5km"   ,"BCVugXX",IXADV_NH3  ,&
+            ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_NH3),-999.9),&
+      Asc2D("pan_5km"   ,"BCVugXX",IXADV_PAN  ,&
+            ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_PAN),-999.9),&
+      Asc2D("nmvoc_5km" ,"BCVugXXgroup",nmvoc,&
+            ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ugC",1.0                ,-999.9),&
+      Asc2D("pm25_5km"  ,"BCVugXXgroup",pm25,&
             ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",1.0                 ,-999.9),&
-      Asc2D("pm10_3km"  ,"BCVugXXgroup",pm10,&
+      Asc2D("pm10_5km"  ,"BCVugXXgroup",pm10,&
             ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",1.0                 ,-999.9),&
-      Asc2D("pm_h2o_3km","PMwater",00         ,&
+      Asc2D("pm_h2o_5km","PMwater",00         ,&
             ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",1.0                 ,-999.9),&
 !! Partial/Full COLUMN/COLUMgroup calculations:kk$
 !!   hr_out%nk indecate the number of levels in the column,
 !!     1<%nk<KMAX_MID  ==>  Partial column: %nk lowermost levels
 !!       otherwise     ==>  Full column: all model levels
       Asc2D("no2_col"   ,"COLUMN",IXADV_NO2  ,&
-            ix1,ix2,iy1,iy2,1,"ug",to_ug_ADV(IXADV_NO2)             ,-999.9)/)
+            ix1,ix2,iy1,iy2,1,"ug",to_ug_ADV(IXADV_NO2)             ,-999.9),&
+      Asc2D("o3_col"    ,"COLUMN",IXADV_O3   ,&
+            ix1,ix2,iy1,iy2,1,"ug",to_ug_ADV(IXADV_O3)              ,-999.9),&
+      Asc2D("co_col"    ,"COLUMN",IXADV_CO   ,&
+            ix1,ix2,iy1,iy2,1,"ug",to_ug_ADV(IXADV_CO)              ,-999.9),&
+      Asc2D("hcho_col"  ,"COLUMN",IXADV_HCHO ,&
+            ix1,ix2,iy1,iy2,1,"ug",to_ug_ADV(IXADV_HCHO)            ,-999.9)/)
 !!          ix1,ix2,iy1,iy2,1,"1e15molec/cm2",to_molec_cm2*1e-15    ,-999.9)/)
     if(rn222>0)then
       j=j+1;hr_out(j) = &

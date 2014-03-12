@@ -75,7 +75,7 @@ F90FLAGS += $(addprefix -I,$(INCL)) \
 
 .SUFFIXES: $(SUFFIXES) .f90
 
-.f90.o:
+%.o:%.f90
 	$(F90) $(F90FLAGS) -c $< -o $@
 
 
@@ -152,7 +152,7 @@ GenChem%:
 GenChem-%:          GenChemOptions += -r $(lastword $(subst -, ,$*))
 GenChem-EMEP-%:     GenChemOptions += -f FINNv1 -e SeaSalt,Dust,Isotopes
 GenChem-SR-EMEP-%:  GenChemOptions += -f FINNv1 -e none
-GenChem-MACC-%:     GenChemOptions += -f GFASv1 -e SeaSalt,Dust,Isotopes,Pollen
+GenChem-MACC-%:     GenChemOptions += -f GFASv1 -e SeaSalt,Dust,Pollen
 GenChem-SR-MACC-%:  GenChemOptions += -f GFASv1 -e none
 GenChem-MACCEVA-%:  GenChemOptions += -f GFASv1 -e SeaSalt,Dust
 GenChem-eEMEP-%:    GenChemOptions += -f GFASv1 -e SeaSalt,Dust

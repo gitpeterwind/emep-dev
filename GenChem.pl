@@ -272,6 +272,10 @@ sub read_species {
       if ($count{$spec}{"C"} == 0 and $in_ncarbon != 0)
         { $count{$spec}{"C"} = $in_ncarbon }
     }
+    #AMVB: NMVOC group
+    push @{$grp{'NMVOC'}},uc($spec) 
+      if($typ eq $adv)and($count{$spec}{"C"}>0)and
+        (uc($spec)ne"CO")and(uc($spec)ne"CH4");
 
   }
   close(F);
@@ -1479,33 +1483,33 @@ print "PROCESS_EMIS $arg  $rcemis : $spec \n";
 }
 #########################################################################
 sub process_groups {
-	my ( $spec, $groups , $dry, $wet )  =  @_ ;
-	$groups = uc($groups);
-   	my @groups = split(/;/,$groups);
-	  print "TESTGROUP $groups\n";
-	foreach my $g ( @groups ) {
-	  print "TESTG $g\n";
-	  #$g = process_group_params($spec,$g) if $g =~ /:/;
-	  #push(@grp[$g],$spec);
-	  push @{ $grp{$g}},uc($spec);
-	  foreach my $gg ( keys %grp ) {
-	      print "  TESTGG $gg group is: @{ $grp{$gg} }\n" if $g eq "SOX";
-	  }
-	  if( $wet ne "-" ) { # Creates groups such as WET_OXN, WET_xxxx ... many!
-	    my $gwet = "WDEP_$g";
-	    push @{ $grp{$gwet}},uc($spec);
-	    foreach my $gg ( keys %grp ) {
-	     # print "  TESTWETGG $gwet $gg group is: @{ $grp{$gg} }\n"; # if $g eq "SOX";
-	    }
-	  } # wet
-	  if( $dry ne "-" ) { # Creates groups such as DRY_OXN, DRY_xxxx ... many!
-	    my $gdry = "DDEP_$g";
-	    push @{ $grp{$gdry}},uc($spec);
-	    foreach my $gg ( keys %grp ) {
-	     # print "  TESTdry $gdry $gg group is: @{ $grp{$gg} }\n"; # if $g eq "SOX";
-	    }
-	  } # dry
-   	}
+  my ( $spec, $groups , $dry, $wet )  =  @_ ;
+  $groups = uc($groups);
+  my @groups = split(/;/,$groups);
+  print "TESTGROUP $groups\n";
+  foreach my $g ( @groups ) {
+    print "TESTG $g\n";
+    #$g = process_group_params($spec,$g) if $g =~ /:/;
+    #push(@grp[$g],$spec);
+    push @{ $grp{$g}},uc($spec);
+    foreach my $gg ( keys %grp ) {
+      print "  TESTGG $gg group is: @{ $grp{$gg} }\n" if $g eq "SOX";
+    }
+    if( $wet ne "-" ) { # Creates groups such as WET_OXN, WET_xxxx ... many!
+      my $gwet = "WDEP_$g";
+      push @{ $grp{$gwet}},uc($spec);
+      foreach my $gg ( keys %grp ) {
+       # print "  TESTWETGG $gwet $gg group is: @{ $grp{$gg} }\n"; # if $g eq "SOX";
+      }
+    } # wet
+    if( $dry ne "-" ) { # Creates groups such as DRY_OXN, DRY_xxxx ... many!
+      my $gdry = "DDEP_$g";
+      push @{ $grp{$gdry}},uc($spec);
+      foreach my $gg ( keys %grp ) {
+       # print "  TESTdry $gdry $gg group is: @{ $grp{$gg} }\n"; # if $g eq "SOX";
+      }
+    } # dry
+  }
 } # end of process_groups
 #########################################################################
 #sub process_group_params {
