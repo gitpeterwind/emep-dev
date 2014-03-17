@@ -84,9 +84,11 @@ CC  = mpicc
 CCFLAGS = $(filter-out -r8 -recursive -convert big_endian,$(F90FLAGS))
 
 SUFFIXES += .F .f
-F90FLAGS += -module ../ # .mod files in same dir
+# -J/-module option sets the path for the .mod files
+# e.g. $(if $(filter gfortran,$(LD)),-J,-module )$(@D)/  # same path as source
+F90FLAGS += $(if $(filter gfortran,$(LD)),-J,-module ) ../
 %.o:%.f90
-	$(F90) $(F90FLAGS) -c $< -o $@ #-module $(@D)/ # .mod & .o files in same dir
+	$(F90) $(F90FLAGS) -c $< -o $@
 %.o:%.f
 	$(F90) $(F90FLAGS) -c $< -o $@
 %.o:%.F

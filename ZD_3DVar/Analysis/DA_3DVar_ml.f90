@@ -711,7 +711,7 @@ subroutine costFunction(ind,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
 !-----------------------------------------------------------------------
   if(ind==-1)then
     call Add_2timing(44,tim_after,tim_before,'3DVar: Update observed species.')
-#ifndef  NO_UPDATE_UNOBSERVED
+#ifndef NO_UPDATE_UNOBSERVED
     if(debug.and.MasterProc) print dafmt,"Update unobserved species"
     call update_unobserved(chi_arr)
     call Add_2timing(45,tim_after,tim_before,'3DVar: Update unobserved species.')
@@ -766,6 +766,15 @@ subroutine costFunction(ind,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
       print *,'xxx1:',yn(n),H_jac(n,p,l1,k),dx(i,j,l1,k)
     end if
   endif
+!-----------------------------------------------------------------------
+! chi^2 eval and return:
+!----------------------------------------------------------------------- 
+  if(ind==-1)then
+    call chisq_over_nobs2(nobs,innov+yn) ! departures: dep=H(xb)+H_jac*dx-y
+    call Add_2timing(46,tim_after,tim_before,'3DVar: CHI^2 evaluation.')
+    call my_deallocate(.false.,"NoMessage")
+    return
+  endif
 #ifdef OLD_MATCH_CODE
 !-----------------------------------------------------------------------
 ! departures H(xb)+H_jac*dx-y
@@ -773,15 +782,6 @@ subroutine costFunction(ind,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
   do n=1,nobs
     dep(n)=innov(n)+yn(n)
   enddo
-!-----------------------------------------------------------------------
-! chi^2 eval and return:
-!----------------------------------------------------------------------- 
-  if(ind==-1)then
-    call chisq_over_nobs2(nobs,dep)
-    call Add_2timing(46,tim_after,tim_before,'3DVar: CHI^2 evaluation.')
-    call my_deallocate(.false.,"NoMessage")
-    return
-  endif
 !-----------------------------------------------------------------------
 ! O^{-1} * [ H(xb)+H_jac*dx-y ]
 !-----------------------------------------------------------------------

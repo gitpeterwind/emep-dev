@@ -139,6 +139,8 @@ subroutine read_obs(maxobs,flat,flon,falt,y,stddev,ipar,iostat)
 !
 !-----------------------------------------------------------------------
   nobs=0
+  obsData%iobs(0)=0
+  obsData%iobs(1)=0
 !-----------------------------------------------------------------------
 ! open observational data file in standard format, if applicable
 !-----------------------------------------------------------------------
@@ -544,7 +546,7 @@ subroutine chisq_over_nobs2(nobs,dep)
       h(:,:,:,:)=0e0 ! observation operator for this observations
       do p=1,4
         i = pidx(n)%i(p)
-        j = pidx(n)%i(p)
+        j = pidx(n)%j(p)
         h(i,j,:,:)=H_jac(n,p,:,ichemobs(:))
       enddo
       call chitox_adj(uh,h)                 ! to spectral space
@@ -565,7 +567,7 @@ subroutine chisq_over_nobs2(nobs,dep)
 
   file=trim(runlabel1)//"_chisqr.dat"
   open(IO_TMP,file=file,form="FORMATTED",position="APPEND")
-  write(IO_TMP,'(A,I3,50(G12.4,I7,:))'),&
+  write(IO_TMP,"(A,';',I3,50(';',G12.4,';',I7,:))"),&
     date2string("YYYY-MM-DD hh:mm",current_date),nobsData,&
     (chisq(ipar),nm(ipar),ipar=1,nobsData)
   close(IO_TMP)

@@ -120,7 +120,7 @@ contains
     call Add_2timing(19,tim_after,tim_before,"nest: Read")
     if(ANALYSIS.and.first_call)then
        call main_3dvar()   ! 3D-VAR Analysis for "Zero hour"
-       call Add_2timing(46,tim_after,tim_before,'3DVar: Total.')
+       call Add_2timing(47,tim_after,tim_before,'3DVar: Total.')
     endif
     if(FORECAST.and.first_call)call hourly_out()!Zero hour output
     call Add_2timing(35,tim_after,tim_before,"phyche:outs")
@@ -244,7 +244,7 @@ contains
     call Add_2timing(35,tim_after,tim_before,"phyche:outs")
     if(ANALYSIS)then
        call main_3dvar()   ! 3D-VAR Analysis for "non-Zero hours"
-       call Add_2timing(46,tim_after,tim_before,'3DVar: Total.')
+            call Add_2timing(47,tim_after,tim_before,'3DVar: Total.')
     endif
     call wrtxn(current_date,.false.) !Write xn_adv for future nesting
     if(FORECAST.and.USE_POLLEN) call pollen_dump()
@@ -255,8 +255,8 @@ contains
 
     if( End_of_Day .and. me == 0 ) then
        print "(a,i2.2,a,i2.2,a,i2.2,a)",' End of EMEP-day (',&
-            current_date%hour, ':',current_date%seconds/60,':'&
-            ,current_date%seconds-60*(current_date%seconds/60),')'
+            current_date%hour, ':',current_date%seconds/60,&
+                           ':',mod(current_date%seconds,60),')'
        if(DEBUG_PHYCHEM)write(*,"(a20,2i4,i6)") "END_OF_EMEPDAY ", &
             END_OF_EMEPDAY, current_date%hour,current_date%seconds
     endif

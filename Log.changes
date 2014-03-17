@@ -152,7 +152,7 @@ info on unused variables, etc.
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-17 March 2014  Alvaro  2715
+17 March 2014  Alvaro  2715,2716
 
 Nest_ml,config_FORECAST.nml
   - Additional variables on Nest_config namelist to explicitly define
@@ -165,6 +165,23 @@ Nest_ml,config_FORECAST.nml
 config_EMEPSTD.nml,config_BM-EECCA.nml,config_FORECAST.nml,config_EMERGENCY.nml
   - Update comments regarding variables EXP_NAME and MY_OUTPUTS.
   - Homogenize comments and variable setting among NML files.
+
+PhyChem_ml,Timing_ml
+  Fix error on 3DVar timing.
+  - '3DVar: Total' and  "'3DVar: CHI^2 evaluation.' time strings were assigned
+    to timing index 46.
+
+ZD_3DVar/Makefile
+  - gFortran option for all .mod files to be kept in main path.
+  
+ZD_3DVar/Analysis/DA_3DVar_ml,DA_Obs_ml
+  Fix errors o implementation of the chi^2 evaluation (2599).
+  - The return after chisq_over_nobs2 call was never reach
+    due to wrong if/else logic.
+  - Wrong index on chisq_over_nobs2 calculation
+
+ZD_3DVar/B_NMC/Unimod_B_nmc
+  - deallocate(ucovmat) only if allocated
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 12 March 2014  Alvaro  2714

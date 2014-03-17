@@ -324,8 +324,7 @@ PROGRAM unimod_B_nmc
   !normalise covariances
 ! call normalise_covmat(nex,nxex,nyex,nlev,nttot,nkstar,nstar,kstar,ikstar)
   call normalise_covmat(    nxex,nyex,nlev,nttot)
-  deallocate(ucovmat)
-
+  if(allocated(ucovmat))deallocate(ucovmat)
 !-----------------------------------------------
 ! DIAGONALISE COVARIANCE MATRICES
 ! (one cov-matrix for each wavenumber kstar):
