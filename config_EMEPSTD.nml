@@ -1,35 +1,32 @@
-&ModelConstants_config
-!-------- Experiment name -----
-!  EMEPSTD     Standard run & output
-!  EMEP2010    EMEPSTD with Iceland Volcanic Eruption input
-!  TFMM        EMEPSTD, but with INERIS_SNAP & TFMM hourly output
+!-------- Experiment Description
+!  EXP_NAME     one word description, e.g. EMEPSTD,EMEP2010,TFMM
+!  MY_OUTPUTS   hourly outputs, e.g. EMEPSTD,TFMM,EMERGENCY
+!  IC/BC        see namelists Nest_config,ExternalBICs_config,ExternalBICs_bc
 !------------------------------
+&ModelConstants_config
   EXP_NAME              = 'EMEPSTD',
   MY_OUTPUTS            = 'EMEPSTD',
 !------------------------------
-!USES system started June 2013
+!USES/DEBUG system started June 2013
   USES%testname         = 'EMEPSTD',
   USES%FOREST_FIRES     = T,
   USES%MONTHLY_FF       = F,
   USES%EMISSTACKS       = F,         ! Reads PointSources file
   USES%PlumeMethod      = 'PVDI',    ! default PVDI, possible: NILU, ASMI, PVDI
-!
-! and debug:
   DEBUG%GLOBBC          = F,
   DEBUG%HOURLY_OUTPUTS  = F,
 !------------------------------
-!
   USE_SOILWATER         = T,          ! Uses SMI from meteo data
   USE_CONVECTION        = F,
   USE_DEGREEDAY_FACTORS = T,
   USE_SEASALT           = T,
   USE_AIRCRAFT_EMIS     = T,          ! Needs global file, see manual
   USE_LIGHTNING_EMIS    = T,          ! 
-!
+!------------------------------
   USE_EURO_SOILNOX      = T,          ! diff for global + Euro runs
   EURO_SOILNOX_DEPSCALE = 1.0,        ! Scale, default 1  (see ModelConstants_ml)
   USE_GLOBAL_SOILNOX    = F,          ! diff for global + Euro runs
-!
+!------------------------------
   USE_POLLEN            = F,          ! EXPERIMENTAL. Only works if start Jan 1
   DO_SAHARA             = T,
   USE_ROADDUST          = T,          ! Only EECCA?
@@ -39,9 +36,9 @@
   INERIS_SNAP1          = F,          ! Used for TFMM runs
   INERIS_SNAP2          = F,          ! Used for TFMM runs
 !------------------------------
-  EMIS_SOURCE           = 'emislist', ! 'emislist' or CdfFractions
-  EMIS_TEST             = 'None'  ! 'None' or 'CdfSnap' 
-!-----------------------------------------------------------------------------
+  EMIS_SOURCE           = 'emislist', ! 'emislist' or 'CdfFractions'
+  EMIS_TEST             = 'None',     ! 'None' or 'CdfSnap' 
+!------------------------------
 ! IN TESTING:
 ! If EMiS_TEST set, then the emis_inputlists will be used.
 ! Below, one can either include or exclude, not both
@@ -59,19 +56,16 @@
   emis_inputlist(3)%name     = 'GlobalShipEmis_POLL.nc', !
   emis_inputlist(3)%incl(1:) = 'INTSHIPS', 
 !
-  EMIS_OUT              = F,          ! output emissions in separate files (memory demanding)
-!-----------------------------------------------------------------------------
+  EMIS_OUT              = F,          ! Output emissions in separate files (memory demanding)
+!------------------------------
   IS_GLOBAL             = F,          ! Also for EMERGENCY
-  MONTHLY_GRIDEMIS      = F,          ! Also for EMERGENCY
   MONTHLY_GRIDEMIS      = F,          ! Also for EMERGENCY
   SELECT_LEVELS_HOURLY  = F,          ! hourly output flag Also for FORECAST, 3DPROFILES
   FORECAST              = F,
   USE_EMERGENCY         = F,          ! Used for FORECASTs usually, EMEP2010
   ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
   USE_AOD               = F,          ! Used for FORECASTs usually
-!
   BGND_CH4              = -1,    ! Reset CH4 (use ppb). (Use -1 for defaults)
-!_-
 !--- 'fake' vegetation for ozone POD calculations
   FLUX_VEGS = 'IAM_CR','IAM_DF','IAM_MF', ! do not need all array elements
             ! 'CCE_SPRUCE','CCE_BEECH','ACE_PINE','ACE_OAK','ACE_BEECH',

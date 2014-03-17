@@ -50,7 +50,7 @@ use MetFields_ml,           only: roa
 use netcdf
 use netcdf_ml,              only: GetCDF,Out_netCDF,Init_new_netCDF,&
                                   Int1,Int2,Int4,Real4,Real8,ReadTimeCDF
-use OwnDataTypes_ml,        only: Deriv
+use OwnDataTypes_ml,        only: Deriv,TXTLEN_SHORT
 use Par_ml,                 only: MAXLIMAX,MAXLJMAX,GIMAX,GJMAX,IRUNBEG,JRUNBEG, &
                                   me, li0,li1,lj0,lj1,limax,ljmax
 use TimeDate_ml,            only: date,current_date,nmdays
@@ -88,7 +88,6 @@ private
 
 logical, private, save :: mydebug =  .false.
 integer, private, save :: NHOURSAVE,NHOURREAD ! write/read frequency
-logical, private, save :: NMC_OUTPUT = .false.  ! For NMC statistics (3DVar)
 !if(NHOURREAD<NHOURSAVE) the data is interpolated in time
 
 integer, parameter :: &
@@ -101,6 +100,11 @@ character(len=max_string_length),private, save ::  &
   filename_read_3D = 'template_read_3D',& ! Overwritten in readxn and wrtxn.
   filename_read_BC = 'template_read_BC',& ! Filenames are updated according to date
   filename_write   = 'template_write'     ! following respective templates
+
+! Limit output, e.g. for NMC statistics (3DVar)
+character(len=TXTLEN_SHORT), private, save, dimension(10) :: &
+  WRITE_SPC = "", &   ! If these varables remain ""
+  WRITE_GRP = ""      ! all advected species will be written out.
 
 real(kind=8), parameter :: halfsecond=0.5/(24.0*3600.0)!used to avoid rounding errors
 !BC values at boundaries in present grid
@@ -134,7 +138,7 @@ subroutine Config_Nest()
   logical, save :: first_call=.true.
   NAMELIST /Nest_config/ MODE,NHOURSAVE,NHOURREAD, &
     template_read_3D,template_read_BC,template_write,&
-    istart,jstart,iend,jend,NMC_OUTPUT,FORECAST_NDUMP,outdate
+    istart,jstart,iend,jend,WRITE_SPC,WRITE_GRP,FORECAST_NDUMP,outdate
 
   if(.not.first_call)return
   mydebug = DEBUG_NEST.and.MasterProc
@@ -319,9 +323,9 @@ subroutine wrtxn(indate,WriteNow)
   real,allocatable, dimension(:,:,:) :: data ! Data arrays
 
   type(Deriv) :: def1 ! definition of fields
-  integer :: n,iotyp,ndim,kmax,igrp,grp
+  integer :: n,iotyp,ndim,kmax,i
   real :: scale
-  logical :: fexist, lsend, lrecv
+  logical :: fexist, lsend, lrecv 
 
   call Config_Nest()
   if(MODE /= 1.and.MODE /= 3.and.MODE /= 10.and.MODE /= 12.and. .not.FORECAST)return
@@ -373,17 +377,33 @@ subroutine wrtxn(indate,WriteNow)
   !do first one loop to define the fields, without writing them (for performance purposes)
   if(.not.fexist)then
     call init_icbc(cdate=indate)
-    if(FORECAST.and.NMC_OUTPUT)then ! For NMC statistics (3DVar)
+    ! Limit output, e.g. for NMC statistics (3DVar)
+    if(any([WRITE_GRP,WRITE_SPC]/=""))then
       adv_ic(:)%wanted=.false.
-      do grp=1,4
-        select case(grp)
-          case(1);igrp=find_index("DAOBS"  ,chemgroups(:)%name)
-          case(2);igrp=find_index("DAUNOBS",chemgroups(:)%name)
-          case(3);igrp=find_index("PM10"   ,chemgroups(:)%name)
-          case(4);igrp=find_index("AOD"    ,chemgroups(:)%name)
-          case default;igrp=-1
-        endselect
-        if(igrp>0)adv_ic(chemgroups(igrp)%ptr-NSPEC_SHL)%wanted=.true.
+      do n=1,size(WRITE_GRP)
+        if(WRITE_GRP(n)=="")cycle
+        i=find_index(WRITE_GRP(n),chemgroups(:)%name)
+        if(i>0)then
+          where(chemgroups(i)%ptr>NSPEC_SHL) &
+            adv_ic(chemgroups(i)%ptr-NSPEC_SHL)%wanted=.true.
+        elseif(MasterProc)then
+          write(*,"(A,':',/2(2X,A,1X,'''',A,'''',A,'.'))")&
+           "Warning (wrtxn)", &
+           "Wanted group",WRITE_GRP(n),"was not found", &
+           "Can not be written to file:",trim(filename_write),""
+        endif
+      enddo
+      do n=1,size(WRITE_SPC)
+        if(WRITE_SPC(n)=="")cycle
+        i=find_index(WRITE_SPC(n),species_adv(:)%name)
+        if(i>0)then
+          adv_ic(i)%wanted=.true.
+        elseif((DEBUG_NEST.or.DEBUG_ICBC).and.MasterProc)then
+          write(*,"(A,':',/2(2X,A,1X,'''',A,'''',A,'.'))")&
+           "Warning (wrtxn)", &
+           "Wanted specie",WRITE_SPC(n),"was not found", &
+           "Can not be written to file:",trim(filename_write),""
+        endif
       enddo
     endif
     do n= 1, NSPEC_ADV
@@ -397,18 +417,18 @@ subroutine wrtxn(indate,WriteNow)
         cycle
       endif
       data=xn_adv(n,:,:,:)
-      if(FORECAST.and.NMC_OUTPUT)then !reduce NMC output
-        lsend=any(data/=0.0)
-        CALL MPI_ALLREDUCE(lsend,lrecv,1,MPI_LOGICAL,MPI_LOR,MPI_COMM_WORLD,INFO)
-        adv_ic(n)%wanted=lrecv
-        if(.not.adv_ic(n)%wanted)then
-          if((DEBUG_NEST.or.DEBUG_ICBC).and.MasterProc)&
-          write(*,"(A,':',/2(2X,A,1X,'''',A,'''',A,'.'))")"Nest(wrtxn) DEBUG_ICBC",&
-              "Variable",trim(def1%name),"was found constant=0.0",&
-              "Will not be written to IC file:",trim(filename_write),""
-          cycle
-        endif
-      endif
+!     if(FORECAST.and.NMC_OUTPUT)then !reduce NMC output
+!       lsend=any(data/=0.0)
+!       CALL MPI_ALLREDUCE(lsend,lrecv,1,MPI_LOGICAL,MPI_LOR,MPI_COMM_WORLD,INFO)
+!       adv_ic(n)%wanted=lrecv
+!       if(.not.adv_ic(n)%wanted)then
+!         if((DEBUG_NEST.or.DEBUG_ICBC).and.MasterProc)&
+!         write(*,"(A,':',/2(2X,A,1X,'''',A,'''',A,'.'))")"Nest(wrtxn) DEBUG_ICBC",&
+!             "Variable",trim(def1%name),"was found constant=0.0",&
+!             "Will not be written to file:",trim(filename_write),""
+!         cycle
+!       endif
+!     endif
       call Out_netCDF(iotyp,def1,ndim,kmax,data,scale,CDFtype=Real4,&
             ist=istart,jst=jstart,ien=iend,jen=jend,&
             fileName_given=fileName_write,create_var_only=.true.)
@@ -487,14 +507,14 @@ subroutine init_icbc(idate,cdate,ndays,nsecs)
   if(MasterProc)then
     do n = 1,size(adv_ic%varname)
       if(.not.adv_ic(n)%found)then
-        call PrintLog("WARNING: IC variable '"//trim(adv_ic(n)%varname)//" 'not found")
+        call PrintLog("WARNING: IC variable '"//trim(adv_ic(n)%varname)//"' not found")
       elseif(DEBUG_NEST.or.DEBUG_ICBC)then 
         write(*,*) "init_icbc filled adv_ic "//trim(adv_ic(n)%varname)
       endif
     enddo
     do n = 1,size(adv_bc%varname)
       if(.not.adv_bc(n)%found)then
-        call PrintLog("WARNING: BC variable '"//trim(adv_bc(n)%varname)//" 'not found")
+        call PrintLog("WARNING: BC variable '"//trim(adv_bc(n)%varname)//"' not found")
       elseif(DEBUG_NEST.or.DEBUG_ICBC)then 
         write(*,*) "init_icbc filled adv_bc "//trim(adv_bc(n)%varname)
       endif

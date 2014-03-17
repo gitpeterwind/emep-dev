@@ -1,24 +1,32 @@
+!-------- Experiment Description
+!  EXP_NAME     one word description, e.g. EMEPSTD,EMEP2010,TFMM
+!  MY_OUTPUTS   hourly outputs, e.g. EMEPSTD,TFMM,EMERGENCY
+!  IC/BC        see namelists Nest_config,ExternalBICs_config,ExternalBICs_bc
+!------------------------------
 &ModelConstants_config
-!-------- Experiment name -----
-!  FORECAST    Forecast run, MACC-ENS hourly output & BC
-!  MACC_EVA    FORECAST with MACC-EVA hourly output & BC
-!  EMERGENCY   FORECAST with ONLY Volcanic Eruption & Nuclear Accident
-!------------------------------
   EXP_NAME              = 'FORECAST',
-  MY_OUTPUTS            = 'FORECAST',
+  MY_OUTPUTS            = 'MACC_ENS',
 !------------------------------
-!USES system started June 2013
-  USES%testname         = "FORECAST",
+!USES/DEBUG system started June 2013
+  USES%testname         = 'FORECAST',
   USES%FOREST_FIRES     = T,
   USES%MONTHLY_FF       = F,
+  USES%EMISSTACKS       = F,         ! Reads PointSources file
+  USES%PlumeMethod      = 'PVDI',    ! default PVDI, possible: NILU, ASMI, PVDI
+  DEBUG%GLOBBC          = F,
+  DEBUG%HOURLY_OUTPUTS  = F,
 !------------------------------
   USE_SOILWATER         = F,          ! Uses SMI from meteo data
   USE_CONVECTION        = F,
   USE_DEGREEDAY_FACTORS = F,
   USE_SEASALT           = T,
+  USE_AIRCRAFT_EMIS     = T,          ! Needs global file, see manual
+  USE_LIGHTNING_EMIS    = T,          ! 
+!------------------------------
   USE_EURO_SOILNOX      = F,          ! diff for global + Euro runs
   EURO_SOILNOX_DEPSCALE = 1.0,        ! Scale, default 1  (see ModelConstants_ml)
   USE_GLOBAL_SOILNOX    = F,          ! diff for global + Euro runs
+!------------------------------
   USE_POLLEN            = T,          ! EXPERIMENTAL. Only works if start Jan 1
   DO_SAHARA             = F,
   USE_ROADDUST          = F,          ! Only EECCA?
@@ -28,9 +36,9 @@
   INERIS_SNAP1          = F,          ! Used for TFMM runs
   INERIS_SNAP2          = F,          ! Used for TFMM runs
 !------------------------------
-  EMIS_SOURCE           = emislist,   ! "emislist" or "CdfFractions"
-  EMIS_TEST             = None,       ! "None" or "CdfSnap" 
-!!EMIS_SOURCE=CdfFractions,EMIS_OUT=T,! Output gridded emissions
+  EMIS_SOURCE           = 'emislist', ! 'emislist' or 'CdfFractions'
+  EMIS_TEST             = 'None',     ! 'None' or 'CdfSnap' 
+!!EMIS_SOURCE='CdfFractions',EMIS_OUT=T,! Output gridded emissions
 !------------------------------
   IS_GLOBAL             = F,          ! Also for EMERGENCY
   MONTHLY_GRIDEMIS      = F,          ! Also for EMERGENCY
@@ -39,6 +47,11 @@
   USE_EMERGENCY         = F,          ! Used for FORECASTs usually, EMEP2010
   ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
   USE_AOD               = T,          ! Used for FORECASTs usually
+  BGND_CH4              = -1,         ! Reset CH4 (use ppb). (Use -1 for defaults)
+!--- 'fake' vegetation for ozone POD calculations
+  FLUX_VEGS = 'IAM_CR','IAM_DF','IAM_MF', ! do not need all array elements
+            ! 'CCE_SPRUCE','CCE_BEECH','ACE_PINE','ACE_OAK','ACE_BEECH',
+            ! 'NEUR_SPRUCE','NEUR_BIRCH','MED_OAK','MED_PINE','MED_BEECH'
 !-------- Sub domain (x0,x1,y0,y1)
 !!RUNDOMAIN =   1, 201,  1, 161,      ! EMEP-CWF, GEMS 0.25 domain
 !!RUNDOMAIN =   1, 301, 26, 221,      ! EMEP-CWF, GEMS 0.25 extended domain
@@ -57,7 +70,8 @@
   template_read_BC = 'EMEP_IN_BC_YYYYMMDD.nc',! will be replaced with numbers
   template_write   = 'EMEP_OUT_YYYYMMDD.nc',  ! in Nest_ml
 !-------- CWF dump/restart
-! NMC_OUTPUT       = T,                       ! For NMC statistics (3DVar)
+! WRITE_SPC        = 'NO2','O3','SO2','CO',   ! reduce output for NMC statistics (3DVar)
+! WRITE_GRP        = 'DAOBS','DAUNOBS','PM10','AOD',
   FORECAST_NDUMP   = 1,                       ! Nr. CWF dump dates
   outdate          = $outdate,                ! 1st,2nd CWF dump dates
 ! outdate(1)       = -1,-1,-1,00,0000,        ! dump everyday at 00:00

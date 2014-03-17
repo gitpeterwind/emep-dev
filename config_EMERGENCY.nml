@@ -1,22 +1,32 @@
-&ModelConstants_config
-!-------- Experiment name -----
-!  FORECAST    Forecast run, MACC-ENS hourly output & BC
-!  EVA2010     FORECAST with MACC-EVA2010 hourly output & BC
-!  EMERGENCY   FORECAST with ONLY Volcanic Eruption & Nuclear Accident
+!-------- Experiment Description
+!  EXP_NAME     one word description, e.g. EMEPSTD,EMEP2010,TFMM
+!  MY_OUTPUTS   hourly outputs, e.g. EMEPSTD,TFMM,EMERGENCY
+!  IC/BC        see namelists Nest_config,ExternalBICs_config,ExternalBICs_bc
 !------------------------------
+&ModelConstants_config
   EXP_NAME              = 'EMERGENCY',
   MY_OUTPUTS            = 'EMERGENCY',
 !------------------------------
 !USES system started June 2013
-  USES%testname          = "EMERGENCY",
-  USES%FOREST_FIRES      = T,
-  USES%MONTHLY_FF        = F,
+  USES%testname         = 'EMERGENCY',
+  USES%FOREST_FIRES     = T,
+  USES%MONTHLY_FF       = F,
+  USES%EMISSTACKS       = F,         ! Reads PointSources file
+  USES%PlumeMethod      = 'PVDI',    ! default PVDI, possible: NILU, ASMI, PVDI
+  DEBUG%GLOBBC          = F,
+  DEBUG%HOURLY_OUTPUTS  = F,
 !------------------------------
   USE_SOILWATER         = F,          ! Uses SMI from meteo data
+  USE_CONVECTION        = F,
   USE_DEGREEDAY_FACTORS = F,
-!xx  USE_FOREST_FIRES      = T,
   USE_SEASALT           = T,
-  USE_SOILNOX           = T,          ! diff for global + Euro runs
+  USE_AIRCRAFT_EMIS     = T,          ! Needs global file, see manual
+  USE_LIGHTNING_EMIS    = T,          ! 
+!------------------------------
+  USE_EURO_SOILNOX      = F,          ! diff for global + Euro runs
+  EURO_SOILNOX_DEPSCALE = 1.0,        ! Scale, default 1  (see ModelConstants_ml)
+  USE_GLOBAL_SOILNOX    = F,          ! diff for global + Euro runs
+!------------------------------
   USE_POLLEN            = F,          ! EXPERIMENTAL. Only works if start Jan 1
   DO_SAHARA             = F,
   USE_ROADDUST          = F,          ! Only EECCA?
@@ -25,6 +35,10 @@
 !-------- Can switch on INERIS-type degreeday stuff
   INERIS_SNAP1          = F,          ! Used for TFMM runs
   INERIS_SNAP2          = F,          ! Used for TFMM runs
+!------------------------------
+  EMIS_SOURCE           = 'emislist', ! 'emislist' or 'CdfFractions'
+  EMIS_TEST             = 'None',     ! 'None' or 'CdfSnap' 
+  EMIS_OUT              = F,          ! Output emissions in separate files (memory demanding)
 !------------------------------
   IS_GLOBAL             = T,          ! Also for EMERGENCY
   MONTHLY_GRIDEMIS      = T,          ! Also for EMERGENCY
@@ -37,6 +51,7 @@
 !!RUNDOMAIN =   1, 201,  1, 161,      ! EMEP-CWF, GEMS 0.25 domain
 !!RUNDOMAIN =   1, 301, 26, 221,      ! EMEP-CWF, GEMS 0.25 extended domain
 !!RUNDOMAIN =   1, 321,  1, 221,      ! EMEP-CWF, MACC 0.20 domain
+!!RUNDOMAIN =   1, 301,  1, 369,      ! EMEP-CWF, MACC 14km domain
 &end
 &Nest_config
 !-------- Nesting MODEs
@@ -45,15 +60,15 @@
 !  10=write at end of run; 11=read at start; 12=read at start and write at end (BIC)
 !------------------------------
   MODE             = 0,
-! NHOURSAVE        = 3,                       ! hours between saves. Fraction of 24
-! NHOURREAD        = 1,                       ! hours between reads. Fraction of 24
 !-------- File name templates for Nest I/O
-! template_read_3D = 'EMEP_IN.nc',            ! a different path can be set here
-! template_read_BC = 'EMEP_IN.nc',            ! for each of the IO IC/BC files,
-! template_write   = 'EMEP_OUT.nc',           ! if needed.
   template_read_3D = 'EMEP_IN_YYYYMMDD.nc',   ! YYYY, YY, MM, DD, hh strings
   template_read_BC = 'EMEP_IN_YYYYMMDD.nc',   ! will be replaced with numbers
   template_write   = 'EMEP_OUT_YYYYMMDD.nc',  ! in Nest_ml
+!-------- CWF dump/restart
+! WRITE_SPC        = 'NO2','O3','SO2','CO',   ! reduce output for NMC statistics (3DVar)
+! WRITE_GRP        = 'DAOBS','DAUNOBS','PM10','AOD',
+  FORECAST_NDUMP   = 1,                       ! Nr. CWF dump dates
+  outdate          = $outdate,                ! 1st,2nd CWF dump dates
 &end
 &ExternalBICs_config
   USE_EXTERNAL_BIC  = F,              ! .false. to deactivate

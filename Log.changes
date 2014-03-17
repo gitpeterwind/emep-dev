@@ -152,6 +152,21 @@ info on unused variables, etc.
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+17 March 2014  Alvaro  2715
+
+Nest_ml,config_FORECAST.nml
+  - Additional variables on Nest_config namelist to explicitly define
+    which advected variables should be written filename_write.
+  - By default all advected variables will be written.
+  - If WRITE_GRP or WRITE_SPC are found the namelist,
+    only the varables specified on WRITE_SPC and WRITE_GRP (group members)
+  - Remove NMC_OUTPUT variable. Functionality achieved by WRITE_SPC/WRITE_GRP.
+
+config_EMEPSTD.nml,config_BM-EECCA.nml,config_FORECAST.nml,config_EMERGENCY.nml
+  - Update comments regarding variables EXP_NAME and MY_OUTPUTS.
+  - Homogenize comments and variable setting among NML files.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 12 March 2014  Alvaro  2714
 
 GenChem.pl:
