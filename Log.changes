@@ -152,6 +152,16 @@ info on unused variables, etc.
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+20 March 2014  Dave 2718, 2719
+
+ESX changes only.
+
+Added GenChem.rst in ZD_ESX/D_Misc as a start on GenChem documentation, to
+  help Alan in conversion of ESX's GenChem.py to python. This script is
+  intended for the full EMEP system in the end, but will be tested in 
+  ESX first.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 17 March 2014  Alvaro  2715,2716
 
 Nest_ml,config_FORECAST.nml
