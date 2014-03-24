@@ -1,6 +1,43 @@
 GenChem
 =======
 
+Ideas for perl -> python
+------------------------
+
+The heart of GenChem.pl are the calls to::
+
+   read_species()
+
+   read_shorthand()
+
+   read_reactions()
+
+
+then various printouts to modules. I suggest simply making python equivalents for each, in turn. Thus, start with read_species, since this actually does a lot of useful work. I  have made some documentation of this below, but basically this routine reads the GenIn.species file, and assigns species to various characteristic types and groups.  The main types are as specified in the "adv" column, and this is used to assign species to the EMEP model's short-lived (adv=0 -> SHL) or advected species (adv=1 or 2 -> ADV) sets, with e.g. O3 ending up with an index IXADV_O3 within the advected set, and simply O3 within the total indices. A final main type is for organic aerosol (adv=2), which is both advected, and given some special treatments in the EMEP code.
+
+In addition, the column for groups allows species to be allocated to groups, e.g. NO, NO2, HNO3 etc. all have the OXN group, and where deposited this results in a DRYDEP_OXN group. See the output CM_ChemGroups file mentioned below to see such how these groupins look.
+
+
+The main first job though is just  to parse GenIn.species, and start collecting names ands groups in appropriate arrays. GenChem.pl also does nice tricks to calculate mol. wts if the chemical formula is given.
+
+
+read_species - changes in python?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1) Changed integer to text flag for adv
+
+GenChem currently assumes that first we have  short-lived species, then longer-lived, so it gets confused if the user starts to add new sets of short-lived later. The new code should allow for species in any order. Also, I am tempted to replace the current use of adv=0, adv=1, etc. by more explicit characters, e.g. "SHL" instead of adv=0, "ADV" instead of adv=1. The current use of adv=2 for SOA species can be replaced by using something in the group column
+instead, I can work that out later.
+
+ 
+2) Remove use of "SLOW"
+
+Currently GenChem scans the GenIn.species file for the text marker SLOW, and
+produces one CM_Reactions1.inc file for species above that, and another
+CM_Reactions2.inc for the species below. I suggest we use the new "adv" type to indicate slowness, but still keep the CM_Reactions2.inc outputs.
+
+This would again allow species files to be easily added (or 'catted' to one another, without regard to the position of short-lived, slow, or other types of species).
+
 
 Background
 ----------
@@ -42,23 +79,16 @@ These files, and their processing are discussed below.
 GenIn.species
 -------------
 
+This file lists the chemical species, and their properties. The file format is excel/gnumeric friendly, something like::
 
-This file lists the chemical species, and their properties. The file format is excel/gnumeric friendly:
+   Spec adv formula              MW DRY    WET   Extinc Cstar DeltaH Empty Groups  !Comments
+   ---- --- -------------------- -- -----  ----- ------ ----- ------ ----- ------  ---------
+   OD   0   O                    xx xx    xx    0      0     0       xx    xx      !
+   HNO3 1   HNO3                 xx HNO3  HNO3  0      0     0       xx    OXN     !
+   MPAN 1   CH2CH(CH3)C(=0)O2NO2 xx PAN   xx    0      0     0       xx    OXN     !( from macr degredation)
+   ---- --- -------------------- -- -----  ----- ------ ----- ------ ----- ------  ---------
 
-   Spec,adv,forumula,MW,DRY,WET,Extinc,Cstar,DeltaH,Empty,Groups,,!Comments
-   OD,0,O,xx,xx,xx,0,0,0,xx,xx,,!
-   OP,0,O,xx,xx,xx,0,0,0,xx,xx,,!
-   O3,1,O3,xx,O3,xx,0,0,0,xx,OX,,!
-   NO,1,NO,xx,xx,xx,0,0,0,xx,NOX;OXN,,!
-   NO2,1,NO2,xx,NO2,xx,0,0,0,xx,NOX;OX;OXN;daObs,,!
-   PAN,1,CH3COO2NO2,xx,PAN,xx,0,0,0,xx,OXN,,!
-   MPAN,1,CH2CH(CH3)C(=0)O2NO2,xx,PAN,xx,0,0,0,xx,OXN,,"!( from macr degredation)"
-   NO3,1,NO3,xx,xx,xx,0,0,0,xx,OXN,,!
-   N2O5,1,N2O5,xx,xx,xx,0,0,0,xx,OXN,,!
-   ISONO3,1,isono3,xx,xx,xx,0,0,0,xx,OXN,,"!isoprene-NO3 adduct"
-   HNO3,1,HNO3,xx,HNO3,HNO3,0,0,0,xx,OXN,,!
-
-(Looks nicer in excel!)
+(File really has commas for separator.)
 
 There are also some header lines which are worth reading. The columns are::
 
