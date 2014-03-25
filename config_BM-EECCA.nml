@@ -40,7 +40,7 @@
   DO_SAHARA             = T,
   USE_ROADDUST          = T,          ! Only EECCA?
   USE_DUST              = T,          ! Only EECCA?
-  NETCDF_COMPRESS_OUTPUT= T,
+  NETCDF_DEFLATE_LEVEL  = 4,          ! 1-9 GZIP compress, 0 no compress, -1 nc3
 !-------- Can switch on INERIS-type degreeday stuff
   INERIS_SNAP1          = F,          ! Used for TFMM runs
   INERIS_SNAP2          = F,          ! Used for TFMM runs

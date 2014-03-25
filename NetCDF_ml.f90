@@ -67,7 +67,7 @@
                                ,Eta_bnd,Eta_mid,A_bnd,B_bnd,A_mid,B_mid
   use InterpolationRoutines_ml,  only : grid2grid_coeff
   use ModelConstants_ml, only : KMAX_MID,KMAX_BND, runlabel1, runlabel2 &
-                               ,MasterProc, FORECAST, NETCDF_COMPRESS_OUTPUT &
+                               ,MasterProc, FORECAST, NETCDF_DEFLATE_LEVEL &
                                ,DEBUG_NETCDF, DEBUG_NETCDF_RF &
                                ,NPROC, IIFULLDOM,JJFULLDOM &
                                ,IOU_INST,IOU_HOUR,IOU_HOUR_MEAN, IOU_YEAR &
@@ -259,7 +259,7 @@ endif
   if(DEBUG_NETCDF)write(*,fmt='(A,8I7)')'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',&
     GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf
 
-  if(NETCDF_COMPRESS_OUTPUT)then
+  if(NETCDF_DEFLATE_LEVEL >= 0)then
     call check(nf90_create(path = trim(fileName), &
       cmode = nf90_hdf5, ncid = ncFileID),"create:"//trim(fileName))
   else
@@ -617,7 +617,7 @@ character (len=*), parameter :: vert_coord='atmosphere_hybrid_sigma_pressure_coo
   if(DEBUG_NETCDF)write(*,*)'UsedProjection ',trim(UsedProjection)
   if(DEBUG_NETCDF)write(*,fmt='(A,8I7)')'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',&
     GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf
-  if(NETCDF_COMPRESS_OUTPUT)then
+  if(NETCDF_DEFLATE_LEVEL >= 0)then
     call check(nf90_create(path = trim(fileName), &
       cmode = nf90_hdf5, ncid = ncFileID),"create:"//trim(fileName))
   else
@@ -1009,7 +1009,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
     overwrite,      &     ! overwrite if file already exists (in case fileName_given)
     create_var_only       ! only create the variable, without writing the data content
   integer, dimension(ndim), intent(in), optional :: &
-    chunksizes            ! nc4zip outpur writen in slizes, see NETCDF_COMPRESS_OUTPUT
+    chunksizes            ! nc4zip outpur writen in slizes, see NETCDF_DEFLATE_LEVEL
   logical:: create_var_only_local !only create the variable, without writing the data content
 
   character(len=len(def1%name)) :: varname
@@ -1486,8 +1486,8 @@ subroutine  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype,chunksize
      print *, 'createnewvariable: unexpected ndim ',ndim
   endif
 !define variable as to be compressed
-  if(NETCDF_COMPRESS_OUTPUT) then
-    call check(nf90_def_var_deflate(ncFileid,varID,shuffle=0,deflate=1,deflate_level=4))
+  if(NETCDF_DEFLATE_LEVEL >= 0) then
+    call check(nf90_def_var_deflate(ncFileid,varID,shuffle=0,deflate=1,deflate_level=NETCDF_DEFLATE_LEVEL))
     if(present(chunksizes)) &     ! set chunk-size for 2d slices of 3d output
       call check(nf90_def_var_chunking(ncFileID,varID,NF90_CHUNKED,chunksizes(:)))
   endif

@@ -9,7 +9,7 @@
 !------------------------------
 !USES system started June 2013
   USES%testname         = 'EMERGENCY',
-  USES%FOREST_FIRES     = T,
+  USES%FOREST_FIRES     = F,
   USES%MONTHLY_FF       = F,
   USES%EMISSTACKS       = F,         ! Reads PointSources file
   USES%PlumeMethod      = 'PVDI',    ! default PVDI, possible: NILU, ASMI, PVDI
@@ -20,8 +20,8 @@
   USE_CONVECTION        = F,
   USE_DEGREEDAY_FACTORS = F,
   USE_SEASALT           = T,
-  USE_AIRCRAFT_EMIS     = T,          ! Needs global file, see manual
-  USE_LIGHTNING_EMIS    = T,          ! 
+  USE_AIRCRAFT_EMIS     = F,          ! Needs global file, see manual
+  USE_LIGHTNING_EMIS    = F,          ! 
 !------------------------------
   USE_EURO_SOILNOX      = F,          ! diff for global + Euro runs
   EURO_SOILNOX_DEPSCALE = 1.0,        ! Scale, default 1  (see ModelConstants_ml)
@@ -31,7 +31,7 @@
   DO_SAHARA             = F,
   USE_ROADDUST          = F,          ! Only EECCA?
   USE_DUST              = F,          ! Only EECCA?
-  NETCDF_COMPRESS_OUTPUT= T,
+  NETCDF_DEFLATE_LEVEL  = 1,          ! 1-9 GZIP compress, 0 no compress, -1 nc3
 !-------- Can switch on INERIS-type degreeday stuff
   INERIS_SNAP1          = F,          ! Used for TFMM runs
   INERIS_SNAP2          = F,          ! Used for TFMM runs
@@ -67,7 +67,7 @@
 !-------- CWF dump/restart
 ! WRITE_SPC        = 'NO2','O3','SO2','CO',   ! reduce output for NMC statistics (3DVar)
 ! WRITE_GRP        = 'DAOBS','DAUNOBS','PM10','AOD',
-  FORECAST_NDUMP   = 1,                       ! Nr. CWF dump dates
+  FORECAST_NDUMP   = 0,                       ! Nr. CWF dump dates
   outdate          = $outdate,                ! 1st,2nd CWF dump dates
 &end
 &ExternalBICs_config

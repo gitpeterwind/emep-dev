@@ -152,6 +152,11 @@ info on unused variables, etc.
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+25 March 2014 Heiko 2723
+
+NETCDF_DEFLATE_LEVEL (-1 to 9) instead of NETCDF_COMPRESS_OUTPUT (T/F)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 24 March 2014  Dave 2720-2721
 
 ESX changes only:  Updates to GenChem.rst

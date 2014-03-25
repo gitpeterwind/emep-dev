@@ -421,8 +421,8 @@ integer, public, parameter :: &
 
 logical, public, parameter :: SOURCE_RECEPTOR = .false.
 
-! Compress NetCDF output? (nc4 feature)
-logical, public, save :: NETCDF_COMPRESS_OUTPUT=.true.
+! Compress NetCDF output? (nc4 feature, use -1 for netcdf3 output)
+integer, public, save :: NETCDF_DEFLATE_LEVEL=4
 
 !Hourly output in single file or monthly/daily files:
 !NB: will not work well by default on Stallo per 14th Feb 2012 because of library bugs!
@@ -567,7 +567,7 @@ subroutine Config_ModelConstants(iolog)
      ,EMIS_SOURCE, EMIS_TEST, EMIS_OUT & 
      ,emis_inputlist &
      ,FLUX_VEGS  & ! TESTX
-     ,NETCDF_COMPRESS_OUTPUT,  RUNDOMAIN
+     ,NETCDF_DEFLATE_LEVEL,  RUNDOMAIN
 
 
     !do i = 1, size( emis_inputlist(:)%name )
