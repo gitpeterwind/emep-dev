@@ -152,6 +152,16 @@ info on unused variables, etc.
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+27 March 2014  Alan  2724
+
+ESX changes only.
+
+Added D_Misc/GenChem.py and mk.GenChemPy in ZD_ESX:
+  Started implementing Python port of GenChem.pl, implemented reading
+  GenIn.shorthand, copied mk.GenChem to make a version that runs GenChem.py
+  instead of GenChem.pl.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 25 March 2014 Heiko 2723
 
 NETCDF_DEFLATE_LEVEL (-1 to 9) instead of NETCDF_COMPRESS_OUTPUT (T/F)
