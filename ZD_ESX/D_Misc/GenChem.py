@@ -114,7 +114,7 @@ class SpeciesReader(object):
     log = IndentingLogger(logging.getLogger('species'))
 
     def __init__(self, shorthand, stream):
-        self.species = list()
+        self.species = collections.OrderedDict()
 
         slow = False
 
@@ -133,18 +133,23 @@ class SpeciesReader(object):
 
             # Strip out ignored field(s)
             del row[None]
-            # Replace xx fields with None
-            row = dict((k, None if v == 'xx' else v) for k, v in row.iteritems())
+            # Replace "blank" fields with None
+            row = dict((k, None if v == 'xx' or v == '' else v) for k, v in row.iteritems())
             # Store 'slow' value
             row['slow'] = slow
 
             self.log.debug('SPEC %(Spec)s', row)
             self.log.indent()
 
-            if row['groups'] is not None:
-                #process_groups
-                #self.log.debug('PG SPEC %(Spec)s G %(groups)s', row)
-                pass
+            #process_groups
+            if row['groups'] is None:
+                row['groups'] = []
+            else:
+                groups = row['groups'].upper().split(';')
+                wet_groups = [] if row['wet'] is None else ['WDEP_' + g for g in groups]
+                dry_groups = [] if row['dry'] is None else ['DDEP_' + g for g in groups]
+                row['groups'] = groups + wet_groups + dry_groups
+                self.log.debug('In groups: ' + ', '.join(row['groups']))
 
             if row['dry'] is not None:
                 #process_alldep
@@ -164,14 +169,26 @@ class SpeciesReader(object):
                 row['molwt'] = float(row['in_rmm'])
                 self.log.debug('INPUT MOLWT: %(molwt)s', row)
 
-            self.species.append(row)
+            self.species[row['Spec']] = row
             self.log.outdent()
 
         self.log.outdent()
         self.log.info('%s species processed.', len(self.species))
 
-    def _process_groups(self, row):
-        pass
+        self.log.info('Processing groups...')
+        self.log.indent()
+
+        # Build groups of species from the groups declared for each species
+        self.groups = collections.defaultdict(list)
+        for s in self.species.itervalues():
+            for g in s['groups']:
+                self.groups[g].append(s['Spec'])
+
+        for g in sorted(self.groups):
+            self.log.debug('%-11s  =>  %s', g, ', '.join(self.groups[g]))
+
+        self.log.outdent()
+        self.log.info('%s groups created.', len(self.groups))
 
 
 class ReactionsReader(object):
@@ -182,6 +199,7 @@ class ReactionsReader(object):
 if __name__ == '__main__':
     # Send logging output to stderr
     stream_handler = logging.StreamHandler()
+    #stream_handler.setLevel(logging.INFO)
     stream_handler.setFormatter(logging.Formatter('[%(levelname).1s] %(message)s'))
     # Send logging output to Log.GenOut
     file_handler = logging.FileHandler('Log.GenOut', 'w')
