@@ -151,19 +151,27 @@ class SpeciesReader(object):
                 row['groups'] = groups + wet_groups + dry_groups
                 self.log.debug('In groups: ' + ', '.join(row['groups']))
 
+            # First part of process_alldep: expand shorthands
+            # TODO: codegen part of process_alldep
             if row['dry'] is not None:
-                #process_alldep
-                pass
+                row['dry'] = shorthand.expand(row['dry'])
+                self.log.debug('DDEP_EXPANDED: %(dry)s', row)
+            if row['wet'] is not None:
+                row['wet'] = shorthand.expand(row['wet'])
+                self.log.debug('WDEP_EXPANDED: %(wet)s', row)
 
             if row['type'] == 2:
                 #aerosol?
                 pass
 
+            # Get molecular weight, NMHC flag and atom counts from formula
+            row['molwt'], row['nmhc'], row['counts'] = self._count_atoms(row['formula'])
+            # Above still works if formula is a number instead, resulting in (0, 0, {}),
+            # but a numeric formula should be treated as the molecular weight
+            # TODO: can we fix this in GenIn.species? seems to duplicate in_rmm...
             if is_numeric(row['formula']):
+                self.log.warn('numeric formula')
                 row['molwt'] = float(row['formula'])
-            else:
-                #count_atoms
-                pass
 
             if is_numeric(row['in_rmm']):
                 row['molwt'] = float(row['in_rmm'])
@@ -189,6 +197,35 @@ class SpeciesReader(object):
 
         self.log.outdent()
         self.log.info('%s groups created.', len(self.groups))
+
+    def _count_atoms(self, formula):
+        """Calculate molecular weight, NMHC flag and atom counts for *formula*.
+        
+        Returns ``(molwt, nmhc, counts)``.
+        """
+        ATOMS = {'C': 12, 'H': 1, 'N': 14, 'O': 14, 'S': 32}
+        counts = collections.Counter()
+
+        # Count atoms in the formula
+        for atom, n in re.findall('([A-Z][a-z]?)(\d*)', formula):
+            n = int(n) if n else 1
+            # Only store counts for atoms we care about
+            if atom in ATOMS:
+                counts.update({atom: n})
+
+        # Sum the molecular weight for the formula
+        molwt = sum(ATOMS[atom] * n for atom, n in counts.iteritems())
+
+        # Test for NMHC, contains only C(+H), not O, S, N. Exclude CH4
+        # TODO: can NMHC become True/False instead of an integer?
+        if set(counts) == {'C', 'H'} and counts['C'] >= 2:
+            nmhc = 1
+        else:
+            nmhc = 0
+
+        self.log.debug('count_atoms: %s  =>  MOLWT=%s, NHMC=%s, COUNTS=%r',
+                       formula, molwt, nmhc, dict(counts))
+        return (molwt, nmhc, counts)
 
 
 class ReactionsReader(object):
