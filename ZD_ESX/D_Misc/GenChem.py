@@ -10,6 +10,49 @@ import re
 import collections
 
 
+class IndentingLogger(logging.LoggerAdapter):
+    """Stateful logger adapter that indents messages.
+
+    Provides :meth:`indent` and :meth:`outdent` to increase and decrease the
+    indent level.  All messages have the indentation prepended to them when
+    they pass through the adapter.
+
+    >>> log = IndentingLogger(logging.getLogger('foo'))
+    >>> log.debug('hello world')
+    >>> log.indent()
+    >>> log.debug('I am indented')
+    >>> log.outdent()
+    >>> log.debug('and now I am not')
+    """
+    INDENT_STRING = '  '
+    _indent_level = 0
+
+    def __init__(self, log):
+        super(IndentingLogger, self).__init__(log, None)
+
+    def indent(self):
+        self._indent_level += 1
+
+    def outdent(self):
+        self._indent_level = max(0, self._indent_level - 1)
+
+    def process(self, msg, kwargs):
+        return ((self.INDENT_STRING * self._indent_level + msg), kwargs)
+
+
+def is_numeric(n):
+    """Check if *n* is numeric.
+
+    This replaces ``is_integer`` and ``is_float`` from ``GenChem.pl``.  Valid
+    floats are a superset of valid integers, so just uses ``float()`` to check.
+    """
+    try:
+        x = float(n)
+        return True
+    except (TypeError, ValueError):
+        return False
+
+
 class ShorthandMap(object):
     """Read shorthands from *stream*.
 
@@ -26,12 +69,13 @@ class ShorthandMap(object):
 
         self.mapping['FH2O'] = '(1.+1.4e-21*H2O(IQ)*EXP(2200./TEMP(IQ)))'
     """
-    log = logging.getLogger('shorthand')
+    log = IndentingLogger(logging.getLogger('shorthand'))
 
     def __init__(self, stream):
         self.mapping = collections.OrderedDict()
 
-        self.log.info('Processing shorthands')
+        self.log.info('Processing shorthands...')
+        self.log.indent()
         for line in stream:
             line = line.strip().upper()
             # Skip empty lines and comments
@@ -44,7 +88,10 @@ class ShorthandMap(object):
                 expanded = self.expand(parts[1])
 
                 self.mapping[pattern] = expanded
-                self.log.debug('{:12}  =>  {}'.format(pattern, expanded))
+                self.log.debug('%-12s  =>  %s', pattern, expanded)
+
+        self.log.outdent()
+        self.log.info('%s shorthands processed.', len(self.mapping))
 
     def expand(self, eqn):
         """Expand shorthand in *eqn*."""
@@ -59,21 +106,91 @@ class ShorthandMap(object):
         return re.sub('|'.join(self.mapping), replace, eqn)
 
 
+class SpeciesReader(object):
+    """Read species from *stream*.
+    """
+    FIELDS = ('Spec', 'type', 'formula', 'in_rmm', 'dry', 'wet', 'extinc',
+              'cstar', 'DeltaH', None, 'groups', None, 'comment')
+    log = IndentingLogger(logging.getLogger('species'))
+
+    def __init__(self, shorthand, stream):
+        self.species = list()
+
+        slow = False
+
+        reader = csv.DictReader(stream, self.FIELDS)
+        self.log.info('Processing species...')
+        self.log.indent()
+        for row in reader:
+            # After encountering #SLOW, use self.slow_species
+            if row['Spec'] == '#SLOW':
+                slow = True
+                continue
+
+            # Skip empty/comment rows
+            if not row['Spec'] or row['Spec'] == 'Spec' or row['Spec'][0] in {'*', '#'}:
+                continue
+
+            # Strip out ignored field(s)
+            del row[None]
+            # Replace xx fields with None
+            row = dict((k, None if v == 'xx' else v) for k, v in row.iteritems())
+            # Store 'slow' value
+            row['slow'] = slow
+
+            self.log.debug('SPEC %(Spec)s', row)
+            self.log.indent()
+
+            if row['groups'] is not None:
+                #process_groups
+                #self.log.debug('PG SPEC %(Spec)s G %(groups)s', row)
+                pass
+
+            if row['dry'] is not None:
+                #process_alldep
+                pass
+
+            if row['type'] == 2:
+                #aerosol?
+                pass
+
+            if is_numeric(row['formula']):
+                row['molwt'] = float(row['formula'])
+            else:
+                #count_atoms
+                pass
+
+            if is_numeric(row['in_rmm']):
+                row['molwt'] = float(row['in_rmm'])
+                self.log.debug('INPUT MOLWT: %(molwt)s', row)
+
+            self.species.append(row)
+            self.log.outdent()
+
+        self.log.outdent()
+        self.log.info('%s species processed.', len(self.species))
+
+    def _process_groups(self, row):
+        pass
+
+
 class ReactionsReader(object):
     def __init__(self, reactions_file):
         pass
 
 
-class SpeciesReader(object):
-    FIELDS = ('Spec', 'type', 'formula', 'in_rmm', 'dry', 'wet', 'extinc',
-              'cstar', 'DeltaH', None, 'groups', None, 'comment')
-
-    def __init__(self, species_file):
-        pass
-
-
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG, format='%(message)s')
+    # Send logging output to stderr
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(logging.Formatter('[%(levelname).1s] %(message)s'))
+    # Send logging output to Log.GenOut
+    file_handler = logging.FileHandler('Log.GenOut', 'w')
+    file_handler.setFormatter(logging.Formatter('%(message)s'))
+    # Attach log handlers
+    rootlogger = logging.getLogger('')
+    rootlogger.setLevel(logging.DEBUG)
+    rootlogger.addHandler(stream_handler)
+    rootlogger.addHandler(file_handler)
 
     shorthand = ShorthandMap(open('GenIn.shorthand', 'r'))
-    #species = list(SpeciesReader('GenIn.species'))
+    species = SpeciesReader(shorthand, open('GenIn.species', 'r'))
