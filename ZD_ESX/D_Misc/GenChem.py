@@ -113,7 +113,7 @@ class SpeciesReader(object):
               'cstar', 'DeltaH', None, 'groups', None, 'comment')
     log = IndentingLogger(logging.getLogger('species'))
 
-    def __init__(self, shorthand, stream):
+    def __init__(self, stream):
         self.species = collections.OrderedDict()
 
         slow = False
@@ -151,14 +151,9 @@ class SpeciesReader(object):
                 row['groups'] = groups + wet_groups + dry_groups
                 self.log.debug('In groups: ' + ', '.join(row['groups']))
 
-            # First part of process_alldep: expand shorthands
-            # TODO: codegen part of process_alldep
-            if row['dry'] is not None:
-                row['dry'] = shorthand.expand(row['dry'])
-                self.log.debug('DDEP_EXPANDED: %(dry)s', row)
-            if row['wet'] is not None:
-                row['wet'] = shorthand.expand(row['wet'])
-                self.log.debug('WDEP_EXPANDED: %(wet)s', row)
+            # First part of process_alldep (expanding shorthands) is redundant
+            # since in GenChem.pl shorthands haven't been read yet at this point.
+            # TODO: remove this comment
 
             if row['type'] == 2:
                 #aerosol?
@@ -248,4 +243,4 @@ if __name__ == '__main__':
     rootlogger.addHandler(file_handler)
 
     shorthand = ShorthandMap(open('GenIn.shorthand', 'r'))
-    species = SpeciesReader(shorthand, open('GenIn.species', 'r'))
+    species = SpeciesReader(open('GenIn.species', 'r'))
