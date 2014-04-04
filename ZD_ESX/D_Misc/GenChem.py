@@ -103,7 +103,7 @@ class ShorthandMap(object):
         def replace(matchobj):
             return self.mapping[matchobj.group(0)]
 
-        return re.sub('|'.join(self.mapping), replace, eqn)
+        return re.sub(pattern, replace, eqn)
 
 
 class SpeciesReader(object):
