@@ -45,6 +45,7 @@ module SmallUtils_ml
   public :: WriteArray   !! Writes out char array, one element per line
   public :: find_index   !! Finds index of item in list 
   public :: find_indices !< Finds indices of arrays of items in list 
+  public :: trims        !> removes all blanks from string
   public :: Self_Test    !< For testing
 
   private :: find_index_c, find_index_i
@@ -286,7 +287,21 @@ end function find_index_i
     enddo
   enddo
 end function find_indices
+!=======================================================================
+ function trims(str)  result(trimmed)
+  character(len=*), intent(in) :: str
+  character(len=len(str)) :: trimmed
+  character :: c
+  integer :: i
+  
+  trimmed = ''
+  do i = 1, len_trim( str )
+     c = str(i:i)
+     if (  c == ' ' ) cycle
+     trimmed = trim(trimmed) // c
+  end do
 
+ end function trims
 !============================================================================
 subroutine Self_test()
 
