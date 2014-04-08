@@ -40,6 +40,24 @@ class IndentingLogger(logging.LoggerAdapter):
         return ((self.INDENT_STRING * self._indent_level + msg), kwargs)
 
 
+# A horrible horrible hack to work around http://bugs.python.org/issue21172
+old_LogRecord_init = logging.LogRecord.__init__
+# This argument list is only correct for Python 2.7
+def new_LogRecord_init(self, name, level, pathname, lineno,
+                       msg, args, exc_info, func=None):
+    # Initialise LogRecord as normal
+    old_LogRecord_init(self, name, level, pathname, lineno,
+                       msg, args, exc_info, func)
+    # Perform same check as the original constructor, but replace
+    # isinstance(args[0], dict) check with hasattr(args[0], '__getitem__'), to
+    # match the expectations of the % operator
+    if args and len(args) == 1 and hasattr(args[0], '__getitem__') and args[0]:
+        # Don't re-do the special case if it succeeded the first time
+        if self.args is not args[0]:
+            self.args = args[0]
+logging.LogRecord.__init__ = new_LogRecord_init
+
+
 def is_numeric(n):
     """Check if *n* is numeric.
 
@@ -106,6 +124,54 @@ class ShorthandMap(object):
         return re.sub(pattern, replace, eqn)
 
 
+class Species(object):
+    def __init__(self, **kwargs):
+        self.name = None
+        self.type = None
+        self.formula = None
+        self.molwt = None
+        self.groups = []
+        self.extinc = None
+        self.cstar = None
+        self.DeltaH = None
+        self.counts = collections.Counter()
+        self.NMHC = False
+
+        for k, v in kwargs.iteritems():
+            if not hasattr(self, k):
+                raise KeyError(k)
+            setattr(self, k, v)
+
+    def __getitem__(self, key):
+        """Redirect dict-like access to attribute access.
+
+        Particularly useful for the old-style string formatting still used by
+        the logging module, e.g. ``"%(name)s" % spec``.
+        """
+        return getattr(self, key)
+
+    def process_formula(self):
+        """Calculate molwt, NMHC flag and atom counts from formula."""
+        formula = self.formula or ''
+
+        ATOMS = {'C': 12, 'H': 1, 'N': 14, 'O': 14, 'S': 32}
+        self.counts = collections.Counter()
+
+        # Count atoms in the formula
+        for atom, n in re.findall('([A-Z][a-z]?)(\d*)', formula):
+            n = int(n) if n else 1
+            # Only store counts for atoms we care about
+            if atom in ATOMS:
+                self.counts.update({atom: n})
+
+        # Sum the molecular weight for the formula
+        self.molwt = float(sum(ATOMS[atom] * n for atom, n in self.counts.iteritems()))
+
+        # Test for non-methane hydrocarbon (NMHC) - contains only C and H atoms
+        # but excluding CH4
+        self.NMHC = set(self.counts) == {'C', 'H'} and self.counts['C'] >= 2
+
+
 class SpeciesReader(object):
     """Read species from *stream*.
     """
@@ -134,45 +200,41 @@ class SpeciesReader(object):
             # Strip out ignored field(s)
             del row[None]
             # Replace "blank" fields with None
-            row = dict((k, None if v == 'xx' or v == '' else v) for k, v in row.iteritems())
+            for k, v in row.iteritems():
+                if v == 'xx' or v == '':
+                    row[k] = None
             # Store 'slow' value
             row['slow'] = slow
 
-            self.log.debug('SPEC %(Spec)s', row)
+            spec = Species(name=row['Spec'],
+                           type=3 if slow else int(row['type']),  # TODO: stop using #SLOW
+                           formula=row['formula'],
+                           extinc=row['extinc'],
+                           cstar=row['cstar'],
+                           DeltaH=row['DeltaH'])
+
+            self.log.debug('SPEC %(name)s', spec)
             self.log.indent()
 
             #process_groups
-            if row['groups'] is None:
-                row['groups'] = []
-            else:
+            if row['groups'] is not None:
                 groups = row['groups'].upper().split(';')
                 wet_groups = [] if row['wet'] is None else ['WDEP_' + g for g in groups]
                 dry_groups = [] if row['dry'] is None else ['DDEP_' + g for g in groups]
-                row['groups'] = groups + wet_groups + dry_groups
-                self.log.debug('In groups: ' + ', '.join(row['groups']))
-
-            # First part of process_alldep (expanding shorthands) is redundant
-            # since in GenChem.pl shorthands haven't been read yet at this point.
-            # TODO: remove this comment
-
-            if row['type'] == 2:
-                #aerosol?
-                pass
+                spec.groups = groups + wet_groups + dry_groups
+                self.log.debug('In groups: ' + ', '.join(spec.groups))
 
             # Get molecular weight, NMHC flag and atom counts from formula
-            row['molwt'], row['nmhc'], row['counts'] = self._count_atoms(row['formula'])
-            # Above still works if formula is a number instead, resulting in (0, 0, {}),
-            # but a numeric formula should be treated as the molecular weight
-            # TODO: can we fix this in GenIn.species? seems to duplicate in_rmm...
-            if is_numeric(row['formula']):
-                self.log.warn('numeric formula')
-                row['molwt'] = float(row['formula'])
+            spec.process_formula()
+            self.log.debug('process_formula: %s  =>  MOLWT=%s, NHMC=%s, COUNTS=%r',
+                           spec.formula, spec.molwt, spec.NMHC, dict(spec.counts))
 
-            if is_numeric(row['in_rmm']):
-                row['molwt'] = float(row['in_rmm'])
-                self.log.debug('INPUT MOLWT: %(molwt)s', row)
+            # If molecular weight has been specified, use that instead
+            if row['in_rmm'] is not None:
+                spec.molwt = float(row['in_rmm'])
+                self.log.debug('INPUT MOLWT: %(molwt)s', spec)
 
-            self.species[row['Spec']] = row
+            self.species[spec.name] = spec
             self.log.outdent()
 
         self.log.outdent()
@@ -184,43 +246,14 @@ class SpeciesReader(object):
         # Build groups of species from the groups declared for each species
         self.groups = collections.defaultdict(list)
         for s in self.species.itervalues():
-            for g in s['groups']:
-                self.groups[g].append(s['Spec'])
+            for g in s.groups:
+                self.groups[g].append(s.name)
 
         for g in sorted(self.groups):
             self.log.debug('%-11s  =>  %s', g, ', '.join(self.groups[g]))
 
         self.log.outdent()
         self.log.info('%s groups created.', len(self.groups))
-
-    def _count_atoms(self, formula):
-        """Calculate molecular weight, NMHC flag and atom counts for *formula*.
-        
-        Returns ``(molwt, nmhc, counts)``.
-        """
-        ATOMS = {'C': 12, 'H': 1, 'N': 14, 'O': 14, 'S': 32}
-        counts = collections.Counter()
-
-        # Count atoms in the formula
-        for atom, n in re.findall('([A-Z][a-z]?)(\d*)', formula):
-            n = int(n) if n else 1
-            # Only store counts for atoms we care about
-            if atom in ATOMS:
-                counts.update({atom: n})
-
-        # Sum the molecular weight for the formula
-        molwt = sum(ATOMS[atom] * n for atom, n in counts.iteritems())
-
-        # Test for NMHC, contains only C(+H), not O, S, N. Exclude CH4
-        # TODO: can NMHC become True/False instead of an integer?
-        if set(counts) == {'C', 'H'} and counts['C'] >= 2:
-            nmhc = 1
-        else:
-            nmhc = 0
-
-        self.log.debug('count_atoms: %s  =>  MOLWT=%s, NHMC=%s, COUNTS=%r',
-                       formula, molwt, nmhc, dict(counts))
-        return (molwt, nmhc, counts)
 
 
 class ReactionsReader(object):
