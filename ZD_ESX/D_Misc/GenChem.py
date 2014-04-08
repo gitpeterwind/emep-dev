@@ -8,6 +8,9 @@ import logging
 import csv
 import re
 import collections
+import itertools
+from textwrap import dedent
+import sys
 
 
 class IndentingLogger(logging.LoggerAdapter):
@@ -25,10 +28,10 @@ class IndentingLogger(logging.LoggerAdapter):
     >>> log.debug('and now I am not')
     """
     INDENT_STRING = '  '
-    _indent_level = 0
 
     def __init__(self, log):
         super(IndentingLogger, self).__init__(log, None)
+        self._indent_level = 0
 
     def indent(self):
         self._indent_level += 1
@@ -38,6 +41,32 @@ class IndentingLogger(logging.LoggerAdapter):
 
     def process(self, msg, kwargs):
         return ((self.INDENT_STRING * self._indent_level + msg), kwargs)
+
+
+class IndentingStreamWriter(object):
+    """Stateful stream wrapper that indents written strings.
+
+    Provides :meth:`indent` and :meth:`outdent` to increase and decrease the
+    indent level.  All messages have the indentation prepended to them when
+    they pass through :meth:`write` unless ``indent=False`` is present.
+    """
+    INDENT_STRING = '  '
+
+    def __init__(self, stream):
+        self._stream = stream
+        self._indent_level = 0
+
+    def indent(self):
+        self._indent_level += 1
+
+    def outdent(self):
+        self._indent_level = max(0, self._indent_level - 1)
+
+    def write(self, data, indent=True):
+        if indent:
+            data = ''.join(self.INDENT_STRING * self._indent_level + line
+                             for line in data.splitlines(True))
+        self._stream.write(data)
 
 
 # A horrible horrible hack to work around http://bugs.python.org/issue21172
@@ -191,8 +220,8 @@ class SpeciesReader(object):
     log = IndentingLogger(logging.getLogger('species'))
 
     def __init__(self):
-        self.species = collections.OrderedDict()
-        self.groups = collections.defaultdict(list)
+        self._species = collections.OrderedDict()
+        self._groups = collections.defaultdict(list)
 
     def read(self, stream):
         """Read species from *stream*."""
@@ -228,7 +257,7 @@ class SpeciesReader(object):
                            cstar=row['cstar'],
                            DeltaH=row['DeltaH'])
 
-            if spec.name in self.species:
+            if spec.name in self._species:
                 raise ValueError("SPEC %s already defined!" % spec.name)
 
             self.log.debug('SPEC %(name)s', spec)
@@ -252,7 +281,7 @@ class SpeciesReader(object):
                 spec.molwt = float(row['in_rmm'])
                 self.log.debug('INPUT MOLWT: %(molwt)s', spec)
 
-            self.species[spec.name] = spec
+            self._species[spec.name] = spec
             new_species.append(spec.name)
             self.log.outdent()
 
@@ -265,16 +294,128 @@ class SpeciesReader(object):
         # Collect new group memberships from species
         new_groups = collections.defaultdict(list)
         for s in new_species:
-            for g in self.species[s].groups:
+            for g in self._species[s].groups:
                 new_groups[g].append(s)
 
         # Merge (and log) group changes
         for g in sorted(new_groups):
-            self.groups[g].extend(new_groups[g])
+            self._groups[g].extend(new_groups[g])
             self.log.debug('%-11s  =>  %s', g, ', '.join(new_groups[g]))
 
         self.log.outdent()
         self.log.info('%s groups processed.', len(new_groups))
+
+    def species_list(self):
+        """Get a list of Species objects ordered by type."""
+        return sorted(self._species.values(), key=lambda spec: spec.type)
+
+
+class CodeGenerator(object):
+    INDENT_STRING = '  '
+
+    MODULE = dedent("""\
+    module {module}
+    """)
+
+    @classmethod
+    def indent(cls, text, amount=1):
+        return ''.join(cls.INDENT_STRING * amount + line for line in text.splitlines(True))
+
+
+class SpeciesWriter(CodeGenerator):
+    log = IndentingLogger(logging.getLogger('write_species'))
+
+    TYPES = collections.OrderedDict([
+        (None, {
+            'txt': 'tot',
+            'desc': 'All reacting species',
+            'nspec': 'NSPEC_TOT',
+            'ixlab': '',
+        }),
+        (Species.ADVECTED, {
+            'txt': 'adv',
+            'desc': 'Advected species',
+            'nspec': 'NSPEC_ADV',
+            'ixlab': 'IXADV_',
+        }),
+        (Species.SHORT_LIVED, {
+            'txt': 'shl',
+            'desc': 'Short-lived (non-advected) species',
+            'nspec': 'NSPEC_SHL',
+            'ixlab': 'IXSHL_',
+        }),
+    ])
+
+    INDICES_HEADER = dedent("""
+    !+ Defines indices and NSPEC for {txt} : {desc}
+
+    integer, public, parameter :: {nspec}={count}
+    """)
+
+    AEROSOL_BLOCK = dedent("""
+    integer, public, parameter :: &
+      NAEROSOL={count:<5},      & ! Number of aerosol species
+      FIRST_SEMIVOL={first:<5}, & ! First aerosol species
+      LAST_SEMIVOL={last:<5}     ! Last aerosol species
+    """)
+
+    def write(self, stream, all_species):
+        self.log.info('Writing species')
+        self.log.indent()
+
+        # Wrap stream in indenting writer
+        stream = IndentingStreamWriter(stream)
+
+        # Group species into (type, species) pairs
+        groups = [(t, list(g)) for t, g in itertools.groupby(all_species, lambda s: s.type)]
+
+        # Find first and last aerosol species
+        offset = 0
+        for type, species in groups:
+            if type == Species.SEMIVOL:
+                count = len(species)
+                first = offset + 1
+                last = offset + count
+                break
+            else:
+                offset += len(species)
+        else:
+            # If we didn't find aerosol type (didn't hit "break") then
+            # set default values
+            count = 0
+            first = -999
+            last = -999
+
+        # Write information for all species
+        info = self.TYPES[None]
+        self.log.info('PROCESS %s NSPEC %s', info['txt'], len(all_species))
+        stream.write(self.INDICES_HEADER.format(count=len(all_species), **info))
+        stream.write(self.AEROSOL_BLOCK.format(count=count, first=first, last=last))
+        stream.write(self._gen_indices(all_species, info['ixlab']))
+
+        # Write information for individual types
+        for type, species in groups:
+            # Skip types we don't have information for
+            if type not in self.TYPES:
+                continue
+            info = self.TYPES[type]
+            self.log.info('PROCESS %s NSPEC %s', info['txt'], len(species))
+            species = list(species)
+            stream.write(self.INDICES_HEADER.format(count=len(species), **info))
+            stream.write(self._gen_indices(species, info['ixlab']))
+
+        self.log.outdent()
+
+    def _gen_indices(self, species, prefix=''):
+        INDEX = '{prefix}{spec.name:<12}={i:4d}'
+        INDEX_GROUP = dedent("""
+        integer, public, parameter :: &
+          {}
+        """)
+        indices = [INDEX.format(prefix=prefix, i=i, spec=spec) for i, spec in enumerate(species, 1)]
+        chunks = (indices[i:i+10] for i in xrange(0, len(indices), 10))
+        groups = (INDEX_GROUP.format(self.indent('   &\n, '.join(chunk))) for chunk in chunks)
+        return ''.join(groups)
 
 
 class ReactionsReader(object):
@@ -297,5 +438,8 @@ if __name__ == '__main__':
     rootlogger.addHandler(file_handler)
 
     shorthand = ShorthandMap(open('GenIn.shorthand', 'r'))
-    species = SpeciesReader()
-    species.read(open('GenIn.species', 'r'))
+    species_reader = SpeciesReader()
+    species_reader.read(open('GenIn.species', 'r'))
+
+    species_writer = SpeciesWriter()
+    species_writer.write(open('CM_ChemSpecs.f90', 'w'), species_reader.species_list())
