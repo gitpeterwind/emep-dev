@@ -125,6 +125,21 @@ class ShorthandMap(object):
 
 
 class Species(object):
+    # Species type constants
+    SHORT_LIVED = 0
+    ADVECTED = 1
+    SEMIVOL = 2
+    SLOW = 3
+
+    # Atomic weights of atoms we care about
+    ATOMS = {
+        'C': 12,
+        'H': 1,
+        'N': 14,
+        'O': 16,
+        'S': 32,
+    }
+
     def __init__(self, **kwargs):
         self.name = None
         self.type = None
@@ -154,18 +169,16 @@ class Species(object):
         """Calculate molwt, NMHC flag and atom counts from formula."""
         formula = self.formula or ''
 
-        ATOMS = {'C': 12, 'H': 1, 'N': 14, 'O': 14, 'S': 32}
-        self.counts = collections.Counter()
-
         # Count atoms in the formula
+        self.counts = collections.Counter()
         for atom, n in re.findall('([A-Z][a-z]?)(\d*)', formula):
             n = int(n) if n else 1
             # Only store counts for atoms we care about
-            if atom in ATOMS:
+            if atom in self.ATOMS:
                 self.counts.update({atom: n})
 
         # Sum the molecular weight for the formula
-        self.molwt = float(sum(ATOMS[atom] * n for atom, n in self.counts.iteritems()))
+        self.molwt = float(sum(self.ATOMS[atom] * n for atom, n in self.counts.iteritems()))
 
         # Test for non-methane hydrocarbon (NMHC) - contains only C and H atoms
         # but excluding CH4
@@ -173,22 +186,24 @@ class Species(object):
 
 
 class SpeciesReader(object):
-    """Read species from *stream*.
-    """
     FIELDS = ('Spec', 'type', 'formula', 'in_rmm', 'dry', 'wet', 'extinc',
               'cstar', 'DeltaH', None, 'groups', None, 'comment')
     log = IndentingLogger(logging.getLogger('species'))
 
-    def __init__(self, stream):
+    def __init__(self):
         self.species = collections.OrderedDict()
+        self.groups = collections.defaultdict(list)
 
+    def read(self, stream):
+        """Read species from *stream*."""
         slow = False
 
         reader = csv.DictReader(stream, self.FIELDS)
         self.log.info('Processing species...')
         self.log.indent()
+        new_species = []
         for row in reader:
-            # After encountering #SLOW, use self.slow_species
+            # After encountering #SLOW, mark species as Species.SLOW
             if row['Spec'] == '#SLOW':
                 slow = True
                 continue
@@ -207,11 +222,14 @@ class SpeciesReader(object):
             row['slow'] = slow
 
             spec = Species(name=row['Spec'],
-                           type=3 if slow else int(row['type']),  # TODO: stop using #SLOW
+                           type=Species.SLOW if slow else int(row['type']),  # TODO: stop using #SLOW
                            formula=row['formula'],
-                           extinc=row['extinc'],
+                           extinc=None if row['extinc'] == '0' else row['extinc'],
                            cstar=row['cstar'],
                            DeltaH=row['DeltaH'])
+
+            if spec.name in self.species:
+                raise ValueError("SPEC %s already defined!" % spec.name)
 
             self.log.debug('SPEC %(name)s', spec)
             self.log.indent()
@@ -235,25 +253,28 @@ class SpeciesReader(object):
                 self.log.debug('INPUT MOLWT: %(molwt)s', spec)
 
             self.species[spec.name] = spec
+            new_species.append(spec.name)
             self.log.outdent()
 
         self.log.outdent()
-        self.log.info('%s species processed.', len(self.species))
+        self.log.info('%s species processed.', len(new_species))
 
         self.log.info('Processing groups...')
         self.log.indent()
 
-        # Build groups of species from the groups declared for each species
-        self.groups = collections.defaultdict(list)
-        for s in self.species.itervalues():
-            for g in s.groups:
-                self.groups[g].append(s.name)
+        # Collect new group memberships from species
+        new_groups = collections.defaultdict(list)
+        for s in new_species:
+            for g in self.species[s].groups:
+                new_groups[g].append(s)
 
-        for g in sorted(self.groups):
-            self.log.debug('%-11s  =>  %s', g, ', '.join(self.groups[g]))
+        # Merge (and log) group changes
+        for g in sorted(new_groups):
+            self.groups[g].extend(new_groups[g])
+            self.log.debug('%-11s  =>  %s', g, ', '.join(new_groups[g]))
 
         self.log.outdent()
-        self.log.info('%s groups created.', len(self.groups))
+        self.log.info('%s groups processed.', len(new_groups))
 
 
 class ReactionsReader(object):
@@ -276,4 +297,5 @@ if __name__ == '__main__':
     rootlogger.addHandler(file_handler)
 
     shorthand = ShorthandMap(open('GenIn.shorthand', 'r'))
-    species = SpeciesReader(open('GenIn.species', 'r'))
+    species = SpeciesReader()
+    species.read(open('GenIn.species', 'r'))
