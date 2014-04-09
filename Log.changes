@@ -152,12 +152,12 @@ info on unused variables, etc.
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-09 April 2014  Alan  2742-2743
+09 April 2014  Alan  2742-2745
 
 ESX changes only.
 
 ZD_ESX/D_Misc/GenChem.py:
-  Can now generate CM_ChemRates.f90.
+  Can now generate CM_ChemRates.f90 and CM_ChemGroups.f90 (mostly).
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 09 April 2014  Dave  2741     

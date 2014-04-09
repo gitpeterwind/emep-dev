@@ -334,6 +334,9 @@ class SpeciesReader(object):
         """Get a list of Species objects ordered by type."""
         return sorted(self._species.values(), key=lambda spec: spec.type)
 
+    def group_list(self):
+        return self._groups.items()
+
 
 class CodeGenerator(object):
     def write_module_header(self, stream, module, use=None):
@@ -342,7 +345,7 @@ class CodeGenerator(object):
         stream.indent()
         if use is not None:
             for line in use:
-                stream.write(use + '\n')
+                stream.write(line + '\n')
             stream.write('\n')
         stream.write('implicit none\n')
         # Duplicate behaviour of GenChem.pl (TODO: can we *alway* add this?)
@@ -510,6 +513,66 @@ class SpeciesWriter(CodeGenerator):
         stream.write(SPEC_FORMAT.format(s=spec, nmhc=(1 if spec.NMHC else 0)))
 
 
+class GroupsWriter(CodeGenerator):
+    log = IndentingLogger(logging.getLogger('write_groups'))
+
+    DECLS = dedent("""
+    ! Assignment of groups from GenIn.species
+    public :: Init_ChemGroups
+
+    type(typ_sp), dimension({ngroups}), public, save :: chemgroups
+    """)
+
+    DECLARE_GROUP = dedent("""
+    integer, public, target, save, dimension ({size}) :: &
+      {group}_GROUP = (/ {specs} /)
+    """)
+
+    DEFINE_GROUP = dedent("""
+    chemgroups({i})%name="{group}"
+    chemgroups({i})%ptr=>{group}_GROUP
+    """)
+
+    def write(self, stream, groups):
+        self.log.info('Writing groups')
+        self.log.indent()
+
+        # Wrap stream in indenting writer
+        stream = IndentingStreamWriter(stream)
+
+        self.write_module_header(stream, 'ChemGroups',
+                                 ['use ChemSpecs        ! => species indices',
+                                  'use OwnDataTypes     ! => typ_sp'])
+
+        stream.write(self.DECLS.format(ngroups=len(groups)))
+
+        for g, specs in groups:
+            self.log.info('PROCESS %-12s N=%2d  =>  %s', g, len(specs), ', '.join(specs))
+            stream.write(self.DECLARE_GROUP.format(size=len(specs), group=g,
+                                                   specs=','.join(specs)))
+
+        # TODO: RO2 pool species
+        stream.write(dedent("""
+        ! ------- RO2 Pool     species ------------------
+        integer, public, parameter :: SIZE_RO2_POOL = 1
+        integer, public, parameter, dimension(1) :: &
+          RO2_POOL = (/ -99 /)
+        """))
+
+        self.write_contains(stream)
+
+        stream.write('\nsubroutine Init_ChemGroups()\n')
+        stream.indent()
+        for i, (g, specs) in enumerate(groups, 1):
+            stream.write(self.DEFINE_GROUP.format(i=i, group=g))
+        stream.outdent()
+        stream.write('\nend subroutine Init_ChemGroups\n')
+
+        self.write_module_footer(stream, 'ChemGroups')
+
+        self.log.outdent()
+
+
 class ReactionsReader(object):
     def __init__(self, reactions_file):
         pass
@@ -535,3 +598,6 @@ if __name__ == '__main__':
 
     species_writer = SpeciesWriter()
     species_writer.write(open('CM_ChemSpecs.f90', 'w'), species_reader.species_list())
+
+    groups_writer = GroupsWriter()
+    groups_writer.write(open('CM_ChemGroups.f90', 'w'), species_reader.group_list())
