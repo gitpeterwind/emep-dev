@@ -47,6 +47,8 @@ module SmallUtils_ml
   public :: find_indices !< Finds indices of arrays of items in list 
   public :: trims        !> removes all blanks from string
   public :: num2str      !> converts  numbers to string
+  private :: num2str_i  
+  private :: num2str_r 
   public :: Self_Test    !< For testing
 
   private :: find_index_c, find_index_i
@@ -58,6 +60,11 @@ module SmallUtils_ml
     module procedure find_index_c   ! For character arrays
     module procedure find_index_i   ! For integer arrays
   end interface find_index
+
+  interface num2str
+    module procedure num2str_r   ! For real
+    module procedure num2str_i   ! For integer
+  end interface num2str
 
 contains
 
@@ -304,12 +311,9 @@ end function find_indices
 
  end function trims
 !=======================================================================
- !function num2str(x,n1,n2str)  result(str)
- function num2str(x,xfmt)  result(str)
+ function num2str_r(x,xfmt)  result(str)
   real, intent(in) :: x
   character(len=*), intent(in), optional :: xfmt
-
-!  integer, intent(in) :: n1, n2
   character(len=19) :: str
 
   if( present( xfmt ) ) then
@@ -322,13 +326,24 @@ end function find_indices
   else
      write(str, * ) x
   end if
-!  character(len=10) :: f
-!  integer :: i
-!  write(f, *) "(", n1, ".", n2, "f)"
-!  
-!  write(str, fmt=trims(f) )
-!
- end function num2str
+ end function num2str_r
+!============================================================================
+ function num2str_i(n,xfmt)  result(str)
+  integer, intent(in):: n
+  character(len=*), intent(in), optional :: xfmt
+  character(len=19) :: str
+
+  if( present( xfmt ) ) then
+     write(str, xfmt ) n
+     if ( index(str,'*') > 0  ) then
+      print *, "Problem with format", trim(str)
+      write(str, * ) n
+      print *, "Re-format to ", trim(str)
+     end if
+  else
+     write(str, * ) n
+  end if
+ end function num2str_i
 !============================================================================
 subroutine Self_test()
 

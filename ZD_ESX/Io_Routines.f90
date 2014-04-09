@@ -8,6 +8,7 @@
    module Io_Routines
 ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ !
 
+  use Io_ml, only : IO_LOG 
   implicit none
   private
 
@@ -17,28 +18,29 @@
 
 contains
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!> writedata example:
-!! call writedata("LogLAI", (/ "z  ", "LAI" /), Data(:,:), "LAI profile")
-!! The 2d Data(:,:) is usually replaced by a list of 1-d arrays
-!! and reshape command. 
-
-subroutine writedata(ofile, headers,coord, data, headerline)
+subroutine writedata(ofile, headers,coord, data, headerline, odir)
 
  !/ Writes out data in form which is easy to plot. One
  !/ line of headers (prefix #), then 2-D data array. Needs two calls
+!! and reshape command. 
 
   character(len=*)    :: ofile    !> outout file, will add .txt below
   character(len=*), dimension(:)    :: headers
   real,             dimension(:)    :: coord   !(e.g. z, x)
   real,             dimension(:,:)  :: data
   character(len=*), optional        :: headerline
+  character(len=*), optional        :: odir  ! output directory
   integer :: ic, iz, ncols, nrows, io
+  character(len=100) :: outfile  ! output directory
+
+  outfile = trim( ofile )// ".txt"
+  if( present( odir ) ) outfile = trim(odir)// "/" // trim(ofile)
 
     nrows = size(data,1)
     ncols = size(data,2)    ! +1 for coord
-    !print *, "WRITEDATA rows, cols ", nrows, ncols 
+    print *, "WRITEDATA rows, cols ", nrows, ncols , "FILE ", trim(ofile)
 
-    open(newunit=io,file=trim(ofile) // ".txt" )
+    open(newunit=io,file=trim(ofile) )
     if( present( headerline) ) write(io,"(a)") trim(headerline)
     write(io,"(a,100a12)" )  "#",( trim(headers(ic)), ic=1, ncols+1) ! Header line
 
@@ -53,16 +55,24 @@ end subroutine writedata
 !> write_tdata  outputs time-varying arrays in form which is easy to plot. One
 !! line of headers, then 2-D data array.
 
-subroutine writetdata(ofile, times,coord, data)
+subroutine writetdata(ofile, times,coord, data, odir)
 
   character(len=*)    :: ofile    !> outout file, will add .txt below
   real, intent(in), dimension(:)    :: coord   !(e.g. z, x)
   real, intent(in), dimension(:)    :: times   ! e.g. 0.1, 10.0, 100.
   real, intent(in), dimension(:,:)  :: data
+  character(len=*), optional        :: odir  ! output directory
+
+  character(len=100) :: outfile  ! output directory
   real, dimension(size(data,2))  :: odata
   integer :: ic, iz, ncols, nrows, io
   character(len=20), dimension(size(times)+1) :: headers
   character(len=100) :: fmt
+
+  outfile = trim( ofile )// ".txt"
+  if( present( odir ) ) outfile = trim(odir)// "/" // trim(ofile)
+  print *, "OUTFILE BBB", trim(outfile)
+!stop 'BBB'
 
     nrows = size(data,1)
     ncols = size(data,2)    ! +1 for coord

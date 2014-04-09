@@ -73,6 +73,7 @@ module esx_Variables
     character(len=30) :: exp_name    = "-"  !> Run label
     character(len=30) :: units       = "-"  !> ppb or - so far
     character(len=30) :: DataSource  =  "-"
+    character(len=30) :: odir        =  "." !> output directory
 
    !> Start, finish, step, etc.  - basic run times
    !! Usually reset in config_esx.nml
@@ -150,8 +151,9 @@ module esx_Variables
   type, public :: Zmet_t
     real :: &
        rh  = UNDEF_R     &!< RH (fraction)
+      ,Hum = UNDEF_R     &! Specific humidity (UNIT=
       ,VPD = UNDEF_R     &!< VPD (kPa)
-      ,Pa  =1.0e5        &!< pressure (Pa)
+      ,Pa  = UNDEF_R     &!< pressure (Pa)
       ,tzK = UNDEF_R     &!< T (degrees K)
       ,tzC =  UNDEF_R    &!< T (degrees C)
       ,tleafC = UNDEF_R  &!< Leaf temperature (degrees C)
@@ -161,7 +163,7 @@ module esx_Variables
       ,Ra   = UNDEF_R    &!< Resistance between layers,Ra1 between z1 to z2
       ,uz  = 0.1         &!< Wind speed (m/s)
       ,CO2 = 392.0       &!< CO2 concentration (ppm)
-      ,M  = 2.55e19       ! Air concentration, 3rd body for chem reactions
+      ,M  =  UNDEF_R      ! Air concentration, 3rd body for chem reactions
   end type
 
   type(Zmet_t), target, dimension(ESX_MAXNZ), public, save :: Zmet = Zmet_t()
@@ -233,7 +235,8 @@ contains
        find_indices( esx%OutSpecs(1:nspecs)%key, species(:)%name )
 
     if( writelog ) then
-      open(newunit=ilog,file="LogConfig.esx")
+      call system("mkdir " // esx%odir)
+      open(newunit=ilog,file=trim(esx%odir)//"/LogConfig.esx")
       write(ilog,"(a)") "CONFIG ESX===================================="
       write(ilog, nml=esxDriver_config)
       close(ilog)

@@ -40,7 +40,7 @@
 
   contains
   !--------------------------------------------------------------------------!
-  subroutine init_zchem(nz, ioconfig, debug_level) !!, errmsg)
+  subroutine init_Zchem(nz, ioconfig, debug_level) !!, errmsg)
     integer, intent(in) ::  nz   ! Number of layers
     integer, intent(in) :: ioconfig
     integer, intent(in) ::  debug_level  ! 0, 1 or 2
@@ -68,8 +68,8 @@
     print *, "INTO ZCHEM==================================="
     rewind(ioconfig)
     read (ioconfig, nml=chem_config)
-    if(  debug_level > 1 ) then
-      open(newunit=ilog,file="LogConfig.Zchem")
+    if(  debug_level > 0 ) then
+      open(newunit=ilog,file=trim(esx%odir)//"/LogConfig.Zchem")
       write(ilog,"(a)") "CONFIG chem ================================"
       write(ilog,nml=chem_config)
     end if

@@ -5,14 +5,16 @@
 module Zmet_ml
   use AllocInits, only : AllocInit
   use esx_Variables, only : Zmet_t, esx
+  use Io_Progs,   only : PrintLog
   implicit none
   private
   
   public :: Set1Dmet
 
   !COMPILER PROBLEM: real, pointer, public, save,  dimension(:) :: temp, ..
-  real, public, save,  allocatable, dimension(:) :: temp, rh, tinv, lt300, M, N2, O2, H2O
-  real, public, save,  allocatable, dimension(:) :: log300divt, logtdiv300
+  real, public, save,  allocatable, dimension(:) :: &
+             temp, rh, tinv, M, N2, O2, H2O  &
+            ,log300divt, logtdiv300
   integer, public, save,  allocatable, dimension(:) :: itemp  ! inverse T
 
 contains
@@ -23,7 +25,9 @@ contains
     real, dimension(nz) :: esat            ! helper variables for H2O
     real, parameter :: RGAS_KG = 287.0     ! Molar Gas constant (J K-1 kg-1)
     real, parameter :: ATWAIR = 28.964     ! mol wt of air, g/mol
-    integer :: iz ! TMP
+    integer :: iz
+    character(len=200) :: txt
+    logical, save :: my_first_call = .true.
 
     call AllocInit(temp, Zdata(1:nz)%tzK, nz, "temp")
     call AllocInit(M,    Zdata(1:nz)%M,   nz, "M")
@@ -41,17 +45,23 @@ contains
     call AllocInit(O2,   0.29*M(:),   nz, "O2")
 
     ! For chemistry
-    call AllocInit(itemp,      nint(temp(:)-1.0e-9), nz, "itemp") ! e-9 avoids some machine problems
+    ! e-9 avoids some machine problems
+    call AllocInit(itemp,      nint(temp(:)-1.0e-9), nz, "itemp") 
     call AllocInit(log300divt, log(300.0*tinv(:)),   nz, "log300divt")
     call AllocInit(logtdiv300, log(temp(:)/300.0),   nz, "logtdiv300")
 
-    call AllocInit(lt300, 0.0, nz, "lt300")   ! TODO: remove this? it isn't used...
 
-    if( esx%debug_Zchem > 1 ) then
-      print *, "ZMET t,1/t,rh,M,H2O at z1 ", temp(1), itemp(1), rh(1), M(1), H2O(1)
-      print *, "ZMET t,1/t,rh,M,H2O at nz", temp(nz), itemp(nz), rh(nz), M(nz), H2O(nz)
+    if( esx%debug_Zchem > 0 .and. my_first_call  ) then
+      txt="ZMET temp, rh, tinv,  M, N2, O2, H2O,log300divt, logtdiv300"
+      call PrintLog( txt)
+      do iz = 1, nz, nz-1
+        write(txt,"(a,i3,2f8.3,20es10.2)") "ZMET ",iz, temp(iz), rh(iz), &
+            tinv(iz), &
+            M(iz), N2(iz), O2(iz), H2O(iz),log300divt(iz), logtdiv300(iz)
+        call PrintLog( txt)
+      end do
+      my_first_call = .false.
     end if
-    !stop
 
   end subroutine Set1Dmet
 

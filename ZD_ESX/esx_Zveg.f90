@@ -71,7 +71,7 @@ module esx_Zveg
     rewind(io)
     read (io, nml=esxVeg_config)
     if(  writelog ) then
-      open(newunit=ilog,file="LogConfig.Zveg")
+      open(newunit=ilog,file=trim(esx%odir)//"/LogConfig.Zveg")
       write(ilog,nml=esxVeg_config)
       close(ilog)
     end if
@@ -97,7 +97,7 @@ module esx_Zveg
     call def_leaf_profile(Veg%LAI,Veg%h)
 
       !> Output LAI z-distribution
-      open(newunit=io,file="LogLAIz.txt")
+      open(newunit=io,file=trim(esx%odir)//"/LogLAIz.txt")
       write(io, "(a,5f7.2,i3)") "#Zveg:LAI,hveg,htrunk,a,b,nhVeg: " // &
          trim(veg%profile) , Veg%LAI,Veg%h,Veg%canopy_bottom, &
            Veg%beta_a, Veg%beta_b, esx%nhVeg
@@ -131,7 +131,8 @@ module esx_Zveg
 
        if( esx%debug_Zveg > 0 ) then
           print *, "SET1dPAR ", Zveg(1)%PARz, Zveg(nv)%PARz,Zveg(nz)%PARz
-          call writedata("LogPARngs",(/"  z", "PAR", " gs"/), esx%z(1:nz), &
+          call writedata(trim(esx%odir)//"/LogPARngs",&
+             (/"  z", "PAR", " gs"/), esx%z(1:nz), &
              reshape( (/ Zveg(1:nz)%PARz, Zveg(1:nz)%gleaf /), (/ nz, 2 /) ) &
             ,"# Vegetation radiation and condutance profiles" )
        end if

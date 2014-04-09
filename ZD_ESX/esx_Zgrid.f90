@@ -25,7 +25,9 @@
 !! 
 
 module esx_Zgrid
-  use esx_Variables, only:  esx
+  use esx_Variables, only: esx
+  use Io_Progs,      only: PrintLog  
+  use SmallUtils_ml, only: num2str
 
   implicit none
   private
@@ -36,14 +38,15 @@ module esx_Zgrid
  contains
 
   !----------------------------------------------------------------------------
-  subroutine init_Zgrid()
+  subroutine init_Zgrid(io)
 
+    integer, intent(in) :: io
     integer :: nz
     real, pointer, dimension(:) :: z, dz, zbnd, dzmid
 
     esx%nz = maxloc(esx%zbnd,dim=1)
     nz     = esx%nz
-    print *, "NZ ",nz !!, " ZIN:", zin
+    call PrintLog("NZ " // num2str(nz, '(i4)') ) !!, " ZIN:", zin
 
     z => esx%z(1:nz)
     dz => esx%dz(1:nz)
@@ -74,7 +77,7 @@ module esx_Zgrid
       esx%zbnd = 0.0
       esx%zbnd(1:14) = ztest(:)
 
-    call init_Zgrid()
+    call init_Zgrid(ionum)
 
     write(ionum,"(3a3,4a12)") "nz","n ","n-1","z(i)","zbnd(i)", "dz(i)", "dzmid(i)"
     do i = 1,  esx%nz

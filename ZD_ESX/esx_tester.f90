@@ -14,21 +14,23 @@ program tester
   use esx_Zmet,         only : set_esxZmet
   use esx_Zveg,         only : Config_Zveg, init_Zveg, Set1dPAR
   use Io_ml,            only : IO_LOG
+  use Io_Progs,         only : PrintLog
   use Io_Routines,      only : writetdata
   use ZchemData,        only : Alloc1Dchem, xChem, rcemis
   use Zmet_ml,          only : Set1Dmet
   use Zmet_ml,          only : H2O ! for Plume2 tests
-  use SmallUtils_ml,       only : find_index
-  use TimeDate_ml,         only : current_date, add2current_date
+  use SmallUtils_ml,    only : find_index, trims, num2str
+  use TimeDate_ml,      only : current_date, add2current_date
 
   implicit none
 
   character(len=500) :: plotmsg
   character(len=100) :: filename, sname
-  character(len=30) :: txt
+  character(len=50) :: txt
   real    :: units, chem2Kz_units
   integer :: i,idspec, icspec, nprint, io_hour1, io_hour2, old_hour=-999
   logical :: first=.true.
+  logical, save ::   my_first_call = .true.
   integer :: config_io
   integer :: nz, nDiffSpecs, nOutSpecs, nteval, nt
 
@@ -54,7 +56,9 @@ program tester
 
    call Config_esx(config_io, writelog=.true.)   !> Sets esx%nz, etc.
 
-   call init_Zgrid()                             !> esx%nz, esx%z, etc, ..
+   open (newunit=IO_LOG, file=trim(esx%odir)//"/Log.esxtester")
+
+   call init_Zgrid(IO_LOG)                       !> esx%nz, esx%z, etc, ..
 
    call config_Zveg(config_io, writelog=.true.)  !> Sets Zveg%zbnd, etc.
  
@@ -65,9 +69,10 @@ program tester
   close (config_io)
 
   !/ Some output files:
-  open (newunit=IO_LOG, file="Log.esxtester")
-  open (newunit=io_hour1,file="OutputHourly1m" // trim(esx%exp_name) // ".csv")
-  open (newunit=io_hour2,file="OutputHourlytop" // trim(esx%exp_name) // ".csv")
+  txt=trim(esx%odir)// "/OutputHourly"
+  open (newunit=io_hour1,file=trims( txt // "1m " // esx%exp_name // ".csv") )
+  open (newunit=io_hour2,file=trims( txt // "top " // esx%exp_name // ".csv") )
+!  open (newunit=io_hour2,file="OutputHourlytop" // trim(esx%exp_name) // ".csv")
   write (io_hour1,'(a,9999(:,",",a10))') "date", species(:)%name
   write (io_hour2,'(a,9999(:,",",a10))') "date", species(:)%name
 
@@ -75,7 +80,8 @@ program tester
   nDiffSpecs = esx%nDiffSpecs
   nOutSpecs  = esx%nOutSpecs
   nteval = maxloc(esx%printTime,dim=1)    ! Number of print-out times
-  print "(a,i4, ' zmax=',f8.2,' nteval=',i6)", "CONF Z", nz, esx%z(nz), nteval
+  write(txt,"(a,i4, ' zmax=',f8.2,' nteval=',i6)") "CONF Z", nz, esx%z(nz), nteval
+  call PrintLog( txt )
   !write(*,"(a,i12,f15.3)") "TLOOPSTART", nDiffSteps
 
   call AllocInit( czprint,     0.0, nz,nOutSpecs,nteval, "czprint")
@@ -85,32 +91,7 @@ program tester
 
   call init_Zveg()    !> dLAI, cumLAI, => LogLAIz.txt output
 
-  ! testing
   
-   nprint = 1 
-   select case ( esx%units )
-   case ( "ppb" ) 
-     units = 1.0e9/Zmet(1)%M   !! ppb at surface
-     chem2Kz_units = 1.0e6   ! #/cm2 -> #/m3 inside KzSolver
-   case ( "-" ) 
-     units = 1.0
-     chem2Kz_units = 1.0
-   case default
-     stop "DEFINE esx%units"
-   end select
-
-   do i = 1, nOutSpecs
-     icspec = esx%OutSpecs(i)%int
-     if( icspec < 1 ) print *, "ICSPEC NEG ", icspec, esx%OutSpecs(i)%key
-     czprint(:, i , nprint) = xChem(icspec,:)*units
-   end do
-   nprint = nprint + 1
-
-!/  Massbudget, initialise
-
-   do i = 1, NSPEC_TOT
-     mass(i)%init   = dot_product( xChem(i,:), esx%dz(1:esx%nz) )
-   end do
 
 !/ Solve 
 
@@ -136,6 +117,11 @@ program tester
       call Set_esxZmet()         !> basic met, temp (tzK), rhz, Kz, => Zmet
       call Set1Dmet( nz, Zmet )  !> Includes also derived arrays for chem,
                                  !!  e.g. O2, tinv
+
+      txt =  "DMET P1,Pnz:" // num2str( Zmet(1)%Pa, '(es10.3)') // &
+              num2str( Zmet(nz)%Pa, '(es10.3)')
+      call PrintLog( txt )
+
       if( esx%exp_name == "Plume2" ) H2O = 2.55e18 !! TESTING
 
    !> Update veg PAR, gs etc if needed: (move inside time-loop soon)
@@ -144,6 +130,37 @@ program tester
           call Set1dPAR  ()
           call Set1Dgleaf() 
       end if
+  !----------------- for printouts and logs -----------------------------------
+   select case ( esx%units )
+   case ( "ppb" ) 
+     units = 1.0e9/Zmet(1)%M   !! ppb at surface
+     chem2Kz_units = 1.0e6   ! #/cm2 -> #/m3 inside KzSolver
+   case ( "-" ) 
+     units = 1.0
+     chem2Kz_units = 1.0
+   case default
+     stop "DEFINE esx%units"
+   end select
+ 
+   if ( my_first_call ) then
+     nprint = 1 
+     do i = 1, nOutSpecs
+       icspec = esx%OutSpecs(i)%int
+       if( icspec < 1 ) print *, "ICSPEC NEG ", icspec, esx%OutSpecs(i)%key
+       czprint(:, i , nprint) = xChem(icspec,:)*units
+     end do
+     nprint = nprint + 1
+
+!/  Massbudget, initialise
+
+     do i = 1, NSPEC_TOT
+       mass(i)%init   = dot_product( xChem(i,:), esx%dz(1:esx%nz) )
+     end do
+     my_first_call = .false.
+   end if ! my_first_call
+   print *, "UNITS ppb ", Zmet(1)%M, units
+!stop 'PPB'
+  !----------------- for printouts and logs -----------------------------------
 
       !> CHEMISTRY ======================================:
       !> The chemical scheme includes any emission terms, typically
@@ -152,9 +169,9 @@ program tester
 
       if( esx%uses_chem) then
 
-              !print "(a, es18.5)", "PRECHEM ",  xChem( 18, 5)
+              print "(a, es18.5)", "PRECHEM ",  xChem( 18, 5)
           call ChemRun( dt, esx%debug_Zchem )
-              !print "(a, es18.5)", "POSCHEM ",  xChem( 18, 5 )
+              print "(a, es18.5)", "POSCHEM ",  xChem( 18, 5 )
           call Ammonium( esx%debug_Zchem>0 )
       end if
 
@@ -217,6 +234,7 @@ program tester
           do i = 1, nOutSpecs
             icspec = esx%OutSpecs(i)%int
             sname  = esx%OutSpecs(i)%key
+            print *, trim("CZPRINT " // sname), xChem(icspec,1), units, esx%units
             print "(a20,2i3,f8.2,i4,es12.3,a,2es12.3)", "CZPRINT " // sname, &
               nprint,  i, t, icspec, xChem(icspec,1)*units, &
               "    MASS ", dot_product( xChem(icspec,:), esx%dz(1:esx%nz) ), &
@@ -232,6 +250,9 @@ program tester
 
     end do TIMELOOP
 
+!!print *, "TEST TRIMS ", trim(trims ("abc def")) // "XX"
+!print *, "TEST TRIMS ", trim(trims (" abc def "))// "XX"
+!stop 'TR'
 
     do i = 1, nOutSpecs !> Output to files
 
@@ -241,12 +262,14 @@ program tester
        call print_mass( icspec, nDiffSteps, nz, &
                          xChem(icspec,:), species(icspec)%name )
 
-       filename="Results_"//trim(esx%exp_name) // "_" // trim(sname ) // ".txt"
-       call writetdata(filename,  tprint, esx%z(1:nz),  czprint( :,i, 1:nprint-1) )
+       filename=trim(esx%odir) // "/Results_"//trim(esx%exp_name) &
+           // "_" // trim(sname ) // ".txt"
+       call writetdata(filename, tprint, esx%z(1:nz), czprint( :,i, 1:nprint-1) )
 
        if ( esx%uses_plotting) then 
          write(plotmsg,"(9a)") trim( esx%plot_cmds ), " -i ", trim(filename),&
-            " -c ", trim(sname), " -o PlotResults"//trim(esx%exp_name) // "_" // trim(sname ) // ".png"
+            " -c ", trim(sname), " -o PlotResults"//trim(esx%exp_name) &
+            // "_" // trim(sname ) // ".png"
          print *, "Plot cmds =", trim(plotmsg)
          call system(trim(plotmsg))
        end if

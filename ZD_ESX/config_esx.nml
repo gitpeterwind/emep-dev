@@ -9,6 +9,7 @@
 
  esx%exp_name = "an_sol_c0"
  esx%exp_name = "Plume2"
+ esx%odir     = "D_LOGS"
  esx%units       = "ppb"
  esx%year        = 2008
  !esx%daynumber   = 153 
@@ -17,8 +18,8 @@
  esx%endTime     =  200.0
  esx%endTime     =  7200.0
  esx%endTime     =  432000.0  ! 5 days
- esx%endTime     =  200.0
  esx%endTime     =   86400.0  ! 1 day
+ esx%endTime     =  200.0
  esx%dt_extern   =  3600.0  ! Master time step, for e.g. met data change
  esx%dt_phychem  =    20.0  ! time step around chem/diffusion loops
 
@@ -264,7 +265,7 @@
 
  esx%debug_driver = 0     
  esx%debug_Zdiff = 0       ! 1 gives dt info, 2 gives much more
- esx%debug_Zchem = 0       ! 2 will also give namelist out, large
+ esx%debug_Zchem = 1       ! 2 will also give namelist out, large
  esx%debug_Zmet  = 1       ! 2 will also give namelist out, large
  esx%debug_Zveg  = 0       !
  esx%debug_gleaf = 0       ! 

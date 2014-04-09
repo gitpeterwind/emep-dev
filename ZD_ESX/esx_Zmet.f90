@@ -13,6 +13,7 @@ module esx_Zmet
   use Kz_ml                  !! e.g. def_Kz, JericevicKz , O_BrienKz
   use MicroMet_ml, only : AerRes !! TEST
   use ModelConstants, only : UNDEF_R
+  use PhysicalConstants_ml, only : RGAS_J, AVOG
 
   implicit none
   private
@@ -42,8 +43,23 @@ module esx_Zmet
         nz, L%t2,L%rh,L%psurf
       Zmet(1:nz)%tzK = L%t2   
       Zmet(1:nz)%rh  = L%rh
-      Zmet(1:nz)%Pa  = L%psurf
+
+print *, "DMET INIT" 
     end if
+print *, "DMET THEN ",  Zmet(1)%tzK, Zmet(1)%rh 
+
+   !JH:
+   !> From Seinfeld and Pandis (1998), 
+   !! "Atmospheric chemistry and physics", page 10:
+   !! Pressure decrease with height is approximately exponential:
+   !!        p(z)=p(z0)*exp(-z/H)
+   !! In lower troposphere H ~8000m, Seinfeld and Pandis (1988)
+
+    Zmet(1:nz)%Pa  = L%psurf *exp(-esx%z(1:nz)/8000.0)
+
+    Zmet(1:nz)%M = AVOG*1e-6*Zmet(1:nz)%Pa/(RGAS_J*Zmet(1:nz)%tzK)  
+
+print *, "DMET sets ", nz, esx%z(1), Zmet(1)%Pa, esx%z(nz), Zmet(nz)%Pa, Zmet(nz)%M
 
     call def_Kz( esx%Kz_method, esx%Kz_kwargs )
 
@@ -163,7 +179,7 @@ end subroutine def_kz
    ! need to reshape 1-D arrays into 2-D for writedata:
 
    nz = esx%nz
-   call writedata("LogKz", &
+   call writedata(trim(esx%odir)//"/LogKz", &
      (/ "z    ", "dz   ", "dzmid","zbnd ", "zb/h ", "T(K) ", "Kz   ", "KzJG ", "KzOB " /) & 
         ,esx%z(1:nz)   & !coords
         ,reshape( (/ esx%dz(1:nz), esx%dzmid(1:nz), &
