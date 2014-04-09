@@ -17,7 +17,7 @@
 #   lpmeme=memory to reserve per processor (max 16GB per node)
 #PBS -lnodes=64 -lpmem=1000MB
 # Wall time limit of run
-#PBS -lwalltime=07:40:00
+#PBS -lwalltime=00:20:00
 # Make results readable for others:
 #PBS -W umask=0022
 # Account for billing
@@ -99,15 +99,22 @@ my @MAKE = ("gmake", "-j4", "MACHINE=snow");
 die "Must choose STALLO **or** VILJE !\n"
   unless $STALLO+$VILJE==1;
 
+# Setup of code, domain,  outputs, chemistry
+# $Chem: EmChem09soa, EmChem09, CRI_v2_R5
+# $GRIDs:EECCA, EMEP, TNO7, TNO14, TNO28, TNO56, MACC02, MACC14 or GLOBAL
+# MAKEMODE - be careful!
+# By default $MAKEMODE is set to EMEP, which implies EmChem09soa.
+# $MAKEMODE: EMEP,EMEP2011,eEMEP,MACC,MACC-EVA2011,... see Makefile
+# $MAKEMODE=0; # Avoid model re-compilation (skips call to GenChem)
+#
+# You could set $MAKEMODE to "EmChem09". For instance:
+# my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) =
+#    ("2674","EmChem09","EMEPSTD","EMEPSTD","EECCA","EmChem09");
+#
 my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2708"    ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA","EMEP");
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
-
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
-#$Chem: EmChem09soa, EmChem09, CRI_v2_R5
-#$GRIDs:EECCA, EMEP, TNO7, TNO14, TNO28, TNO56, MACC02, MACC14 or GLOBAL
-#$MAKEMODE: EMEP,EMEP2011,eEMEP,MACC,MACC-EVA2011,... see Makefile
-#$MAKEMODE=0; # Avoid model re-compilation
 
 my %BENCHMARK;
 # OpenSource 2008
