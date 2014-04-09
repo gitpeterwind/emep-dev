@@ -17,6 +17,16 @@ def indent(data, amount=1, string='  '):
     return ''.join(string * amount + line for line in data.splitlines(True))
 
 
+def ichunk(iterable, size):
+    i = iter(iterable)
+    while True:
+        chunk = list(itertools.islice(i, size))
+        if len(chunk) == 0:
+            break
+        else:
+            yield chunk
+
+
 class IndentingLogger(logging.LoggerAdapter):
     """Stateful logger adapter that indents messages.
 
@@ -253,8 +263,8 @@ class SpeciesReader(object):
                            type=Species.SLOW if slow else int(row['type']),  # TODO: stop using #SLOW
                            formula=row['formula'],
                            extinc=None if row['extinc'] == '0' else row['extinc'],
-                           cstar=row['cstar'],
-                           DeltaH=row['DeltaH'])
+                           cstar=float(row['cstar']),
+                           DeltaH=float(row['DeltaH']))
 
             if spec.name in self._species:
                 raise ValueError("SPEC %s already defined!" % spec.name)
@@ -310,10 +320,27 @@ class SpeciesReader(object):
 
 
 class CodeGenerator(object):
-    MODULE = dedent("""\
-    module {module}
-    """)
+    def write_module_header(self, stream, module, use=None):
+        """Write module header to *stream*, leaving *stream* indented."""
+        stream.write('module {}\n\n'.format(module))
+        stream.indent()
+        if use is not None:
+            for line in use:
+                stream.write(use + '\n')
+            stream.write('\n')
+        stream.write('implicit none\n')
+        # Duplicate behaviour of GenChem.pl (TODO: can we *alway* add this?)
+        if use is not None:
+            stream.write('private\n')
 
+    def write_contains(self, stream):
+        stream.outdent()
+        stream.write('\ncontains\n')
+        stream.indent()
+
+    def write_module_footer(self, stream, module):
+        stream.outdent()
+        stream.write('\nend module {}\n'.format(module))
 
 
 class SpeciesWriter(CodeGenerator):
@@ -347,11 +374,49 @@ class SpeciesWriter(CodeGenerator):
     """)
 
     AEROSOL_BLOCK = dedent("""
+    ! Aerosols
     integer, public, parameter :: &
       NAEROSOL={count:<5},      & ! Number of aerosol species
       FIRST_SEMIVOL={first:<5}, & ! First aerosol species
       LAST_SEMIVOL={last:<5}     ! Last aerosol species
     """)
+
+    DECLS = dedent("""
+    !/--   Characteristics of species:
+    !/--   Number, name, molwt, carbon num, nmhc (1) or not(0)
+
+    public :: define_chemicals    ! Sets names, molwts, carbon num, advec, nmhc
+
+    type, public :: Chemical
+         character(len=20) :: name
+         real              :: molwt
+         integer           :: nmhc      ! nmhc (1) or not(0)
+         integer           :: carbons   ! Carbon-number
+         real              :: nitrogens ! Nitrogen-number
+         integer           :: sulphurs  ! Sulphur-number
+         real              :: CiStar     ! VBS param
+         real              :: DeltaH    ! VBS param
+    endtype Chemical
+    type(Chemical), public, dimension(NSPEC_TOT), target :: species
+    type(Chemical), public, dimension(:), pointer :: &
+      species_shl=>null(),&             ! => species(..short lived..)
+      species_adv=>null()               ! => species(..advected..)
+    """)
+
+    DEFINE_HEADER = dedent("""
+    subroutine define_chemicals()
+    !+
+    ! Pointers to short lived and advected portions of species
+    !
+      species_shl=>species(1:NSPEC_SHL)
+      species_adv=>species(NSPEC_SHL+1:NSPEC_SHL+NSPEC_ADV)
+    !+
+    ! Assigns names, mol wts, carbon numbers, advec,  nmhc to user-defined Chemical
+    ! array, using indices from total list of species (advected + short-lived).
+    !                                                        MW  NM   C    N   S       C*      dH
+    """)
+
+    DEFINE_FOOTER = 'end subroutine define_chemicals\n'
 
     def write(self, stream, all_species):
         self.log.info('Writing species')
@@ -380,12 +445,14 @@ class SpeciesWriter(CodeGenerator):
             first = -999
             last = -999
 
+        self.write_module_header(stream, 'ChemSpecs')
+
         # Write information for all species
         info = self.TYPES[None]
         self.log.info('PROCESS %s NSPEC %s', info['txt'], len(all_species))
         stream.write(self.INDICES_HEADER.format(count=len(all_species), **info))
         stream.write(self.AEROSOL_BLOCK.format(count=count, first=first, last=last))
-        stream.write(self._gen_indices(all_species, info['ixlab']))
+        self._write_indices(stream, all_species, info['ixlab'])
 
         # Write information for individual types
         for type, species in groups:
@@ -394,22 +461,37 @@ class SpeciesWriter(CodeGenerator):
                 continue
             info = self.TYPES[type]
             self.log.info('PROCESS %s NSPEC %s', info['txt'], len(species))
-            species = list(species)
             stream.write(self.INDICES_HEADER.format(count=len(species), **info))
-            stream.write(self._gen_indices(species, info['ixlab']))
+            self._write_indices(stream, species, info['ixlab'])
+
+        stream.write(self.DECLS)
+
+        self.write_contains(stream)
+
+        stream.write(self.DEFINE_HEADER)
+        stream.indent()
+        for spec in all_species:
+            self._write_spec(stream, spec)
+        stream.outdent()
+        stream.write(self.DEFINE_FOOTER)
+
+        self.write_module_footer(stream, 'ChemSpecs')
 
         self.log.outdent()
 
-    def _gen_indices(self, species, prefix=''):
+    def _write_indices(self, stream, species, prefix):
+        INDEX_HEADER = '\ninteger, public, parameter :: &\n  '
         INDEX = '{prefix}{spec.name:<12}={i:4d}'
-        INDEX_GROUP = dedent("""
-        integer, public, parameter :: &
-          {}
-        """)
-        indices = [INDEX.format(prefix=prefix, i=i, spec=spec) for i, spec in enumerate(species, 1)]
-        chunks = (indices[i:i+10] for i in xrange(0, len(indices), 10))
-        groups = (INDEX_GROUP.format(self.indent('   &\n, '.join(chunk))) for chunk in chunks)
-        return ''.join(groups)
+        indices = (INDEX.format(prefix=prefix, i=i, spec=spec) for i, spec in enumerate(species, 1))
+        for chunk in ichunk(indices, 10):
+            stream.write(INDEX_HEADER)
+            stream.write('  &\n  , '.join(chunk) + '\n')
+
+    def _write_spec(self, stream, spec):
+        SPEC_FORMAT = ('species({s.name:<12}) = Chemical("{s.name:<12}",{s.molwt:9.4f},'
+                       '{nmhc:3d},{s.counts[C]:3d},{s.counts[N]:4d},{s.counts[S]:3d},'
+                       '{s.cstar:8.4f},{s.DeltaH:7.1f} )\n')
+        stream.write(SPEC_FORMAT.format(s=spec, nmhc=(1 if spec.NMHC else 0)))
 
 
 class ReactionsReader(object):
