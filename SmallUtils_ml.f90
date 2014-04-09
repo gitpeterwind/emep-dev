@@ -46,6 +46,7 @@ module SmallUtils_ml
   public :: find_index   !! Finds index of item in list 
   public :: find_indices !< Finds indices of arrays of items in list 
   public :: trims        !> removes all blanks from string
+  public :: num2str      !> converts  numbers to string
   public :: Self_Test    !< For testing
 
   private :: find_index_c, find_index_i
@@ -302,6 +303,32 @@ end function find_indices
   end do
 
  end function trims
+!=======================================================================
+ !function num2str(x,n1,n2str)  result(str)
+ function num2str(x,xfmt)  result(str)
+  real, intent(in) :: x
+  character(len=*), intent(in), optional :: xfmt
+
+!  integer, intent(in) :: n1, n2
+  character(len=19) :: str
+
+  if( present( xfmt ) ) then
+     write(str, xfmt ) x
+     if ( index(str,'*') > 0  ) then
+      print *, "Problem with format", trim(str)
+      write(str, "(es15.3)" ) x
+      print *, "Re-format to ", trim(str)
+     end if
+  else
+     write(str, * ) x
+  end if
+!  character(len=10) :: f
+!  integer :: i
+!  write(f, *) "(", n1, ".", n2, "f)"
+!  
+!  write(str, fmt=trims(f) )
+!
+ end function num2str
 !============================================================================
 subroutine Self_test()
 
@@ -346,6 +373,19 @@ subroutine Self_test()
   wantedx(2) =  "second  "
   call AddArray(wanted1,wantedx,NOT_SET_STRING,errmsg)
   call WriteArray(wantedx,size(wantedx),"Testing AddArray")
+
+
+  print "(/,a)", "4) Self-test - num2str   ================================="
+  print *, "1.23 Without fmt ", trim( num2str( 1.23 ))
+  print *, "1.23e19 Without fmt ", trim( num2str( 1.23e19 ))
+  print *, "1.23e19 With fmt es15.3 ", trim( num2str( 1.23e19, '(es15.3)' ))
+  print *, "1.23e19 With fmt f10.2 ", trim( num2str( 1.23e19, '(f10.2)' ))
+  
 end subroutine Self_test
 
 end module SmallUtils_ml
+
+!DSX program tester
+!DSX   use SmallUtils_ml, only : Self_test
+!DSX   call Self_test()
+!DSX end program tester
