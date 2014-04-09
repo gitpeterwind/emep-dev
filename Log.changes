@@ -152,6 +152,22 @@ info on unused variables, etc.
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+09 April 2014  Dave  2736-2739
+
+  SmallUtils_ml - added num2str function to convert 
+  run.pl  - added more comments w.r.t. MAKEMODE
+  Makefile.SRCS - added Precision_ml.f90
+
+**NEW**
+
+  Precision_ml - to enable use of real(kind=dp) declarations.
+  More consistent with other codes. (We use values from KPP system.)
+
+   (Not yet used, but quick tests in Solver_ml suggest real(kind=dp)
+    produces identical output to standard runs.)
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 08 April 2014  Alan  2733-2735
 
 ESX changes only.
