@@ -13,6 +13,10 @@ from textwrap import dedent
 import sys
 
 
+def indent(data, amount=1, string='  '):
+    return ''.join(string * amount + line for line in data.splitlines(True))
+
+
 class IndentingLogger(logging.LoggerAdapter):
     """Stateful logger adapter that indents messages.
 
@@ -27,8 +31,6 @@ class IndentingLogger(logging.LoggerAdapter):
     >>> log.outdent()
     >>> log.debug('and now I am not')
     """
-    INDENT_STRING = '  '
-
     def __init__(self, log):
         super(IndentingLogger, self).__init__(log, None)
         self._indent_level = 0
@@ -40,7 +42,7 @@ class IndentingLogger(logging.LoggerAdapter):
         self._indent_level = max(0, self._indent_level - 1)
 
     def process(self, msg, kwargs):
-        return ((self.INDENT_STRING * self._indent_level + msg), kwargs)
+        return (indent(msg, self._indent_level), kwargs)
 
 
 class IndentingStreamWriter(object):
@@ -50,8 +52,6 @@ class IndentingStreamWriter(object):
     indent level.  All messages have the indentation prepended to them when
     they pass through :meth:`write` unless ``indent=False`` is present.
     """
-    INDENT_STRING = '  '
-
     def __init__(self, stream):
         self._stream = stream
         self._indent_level = 0
@@ -62,10 +62,9 @@ class IndentingStreamWriter(object):
     def outdent(self):
         self._indent_level = max(0, self._indent_level - 1)
 
-    def write(self, data, indent=True):
-        if indent:
-            data = ''.join(self.INDENT_STRING * self._indent_level + line
-                             for line in data.splitlines(True))
+    def write(self, data, skip_indent=False):
+        if not skip_indent:
+            data = indent(data, self._indent_level)
         self._stream.write(data)
 
 
@@ -311,15 +310,10 @@ class SpeciesReader(object):
 
 
 class CodeGenerator(object):
-    INDENT_STRING = '  '
-
     MODULE = dedent("""\
     module {module}
     """)
 
-    @classmethod
-    def indent(cls, text, amount=1):
-        return ''.join(cls.INDENT_STRING * amount + line for line in text.splitlines(True))
 
 
 class SpeciesWriter(CodeGenerator):
