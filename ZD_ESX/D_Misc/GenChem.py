@@ -27,6 +27,20 @@ def ichunk(iterable, size):
             yield chunk
 
 
+class DefaultListOrderedDict(collections.OrderedDict):
+    """An ordered dictionary that also acts like ``defaultdict(list)``.
+
+    We have a lot of key -> list mappings in this script, it's nice to keep
+    insertion order, so this is a special case that does what we want.
+    """
+    def __getitem__(self, key):
+        try:
+            return collections.OrderedDict.__getitem__(self, key)
+        except KeyError:
+            self[key] = new_list = list()
+            return new_list
+
+
 class IndentingLogger(logging.LoggerAdapter):
     """Stateful logger adapter that indents messages.
 
@@ -230,7 +244,7 @@ class SpeciesReader(object):
 
     def __init__(self):
         self._species = collections.OrderedDict()
-        self._groups = collections.defaultdict(list)
+        self._groups = DefaultListOrderedDict()
 
     def read(self, stream):
         """Read species from *stream*."""
@@ -274,10 +288,12 @@ class SpeciesReader(object):
 
             #process_groups
             if row['groups'] is not None:
-                groups = row['groups'].upper().split(';')
-                wet_groups = [] if row['wet'] is None else ['WDEP_' + g for g in groups]
-                dry_groups = [] if row['dry'] is None else ['DDEP_' + g for g in groups]
-                spec.groups = groups + wet_groups + dry_groups
+                for g in row['groups'].upper().split(';'):
+                    spec.groups.append(g)
+                    if row['wet'] is not None:
+                        spec.groups.append('WDEP_' + g)
+                    if row['dry'] is not None:
+                        spec.groups.append('DDEP_' + g)
                 self.log.debug('In groups: ' + ', '.join(spec.groups))
 
             # Get molecular weight, NMHC flag and atom counts from formula
@@ -301,13 +317,13 @@ class SpeciesReader(object):
         self.log.indent()
 
         # Collect new group memberships from species
-        new_groups = collections.defaultdict(list)
+        new_groups = DefaultListOrderedDict()
         for s in new_species:
             for g in self._species[s].groups:
                 new_groups[g].append(s)
 
         # Merge (and log) group changes
-        for g in sorted(new_groups):
+        for g in new_groups:
             self._groups[g].extend(new_groups[g])
             self.log.debug('%-11s  =>  %s', g, ', '.join(new_groups[g]))
 
