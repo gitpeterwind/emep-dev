@@ -32,8 +32,7 @@ module LocalVariables
 ! e.g. for a measurement site or for a specific landuse within a grid square
 ! -----------------------------------------------------------------------
 
- !use ModelConstants, only: dp !! NLANDUSEMAX
-!ESX use Wesely_ml,         only: NDRYDEP_CALC
+  use Wesely_ml,         only: NDRYDEP_CALC
 
 implicit none
 private
@@ -115,15 +114,13 @@ type, public :: LocDat !> Location-specific Data, was SubDat
     ,cano3_ppb  = 0.0     & ! Use 0.0 to make d_2d behave better
     ,cano3_nmole= 0.0     & ! Use 0.0 to make d_2d behave better
     ,FstO3      = 0.0       ! leaf O3 flux, nmole/m2/s
-  !ESX real, dimension(NDRYDEP_CALC) :: & ! for species subject to dry depostion
-!ESX8  real, allocatable,  dimension(:) :: & ! for species subject to dry depostion
-!ESX8     Vg_ref   &  ! Grid average of Vg at ref ht. (effective Vg for cell)
-!ESX8    ,Vg_3m    &  ! and at 3m
-!ESX8    ,Gsur,Gns
+   real, dimension(NDRYDEP_CALC) :: & ! for species subject to dry depostion
+     Vg_ref   &  ! Grid average of Vg at ref ht. (effective Vg for cell)
+    ,Vg_3m    &  ! and at 3m
+    ,Gsur,Gns
 end type LocDat
 
-!ESX type(SubDat), public, dimension(0:NLANDUSEMAX), save :: Sub
-type(LocDat), public, allocatable, dimension(:), save :: Sub ! NOTE- was ZERO:..
+!! type(LocDat), public, allocatable, dimension(:), save :: Sub ! NOTE- was ZERO:..
 type(LocDat), public, save :: L         ! For just one land-class
 type(LocDat), public, save :: ResetSub  ! Keeps NOT_SET values
 end module LocalVariables
