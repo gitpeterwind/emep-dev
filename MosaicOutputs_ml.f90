@@ -80,8 +80,6 @@ type(Deriv), public, &
 type(group_umap), private, target, &
   dimension( MAX_MOSAIC_OUTPUTS ), save :: dryGroupUnits
 
-!!type(SubDat), public, dimension(0:NLANDUSEMAX), save :: Sub
-
 
 contains
 
@@ -250,10 +248,7 @@ subroutine Add_MosaicVEGO3(iotype,nVEGO3)
    end if
    MosaicOutput(nMosaic) = Deriv(  &
       name, veg%class,  veg%defn, veg%TXTLC, units, &
-        !CORR:
           n, -99, dt_scale,  scale,  F,   iotype ) 
-        !n, -99, T,  scale,  dt_scale,   iotype ) 
-        !SPODBUG n, -99, T,  scale,  F,   iotype ) 
 
   enddo VEGO3_LC !n
 endsubroutine Add_MosaicVEGO3
@@ -383,8 +378,9 @@ endsubroutine Add_MosaicDDEP
     subclass = MosaicOutput(imc)%subclass
     f2d      = MosaicOutput(imc)%f2d
     nadv     = MosaicOutput(imc)%Index  ! can be negatve for groups
-    iLC  = find_MosaicLC(imc)   ! Used for many cases, but replaced by iEco sometimes
-    L        = Sub(iLC)
+    iLC      = find_MosaicLC(imc)   ! Used for many cases, but replaced
+                                    ! by iEco sometimes
+    if( iLC > 0 ) L  = Sub(iLC) ! Avoid imc=0==Grid. L only used for POD,AOT
 
     if(class=="AOT") subclass=class
     if(class=="POD") subclass=class
