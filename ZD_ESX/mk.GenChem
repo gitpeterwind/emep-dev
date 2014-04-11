@@ -18,7 +18,7 @@ echo $prog $idir
 cd $idir
 $prog
 
-for i in CM_ChemRates.f90 CM_ChemSpecs.f90 CM_Reaction*
+for i in CM_ChemRates.f90 CM_ChemSpecs.f90 CM_Reaction* CM_DryDep.inc CM_WetDep.inc
 do
   cp $i ..
 done
