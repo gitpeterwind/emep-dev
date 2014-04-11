@@ -189,16 +189,16 @@
       integer, dimension(MAXRCPHOT), save :: mapindex = -1
       integer :: imap
 
-      MAPPING : if( mapindex(ind) < 1 ) then
-        do imap = 1, size(dj%ind)
+      if( mapindex(ind) < 1 ) then
+      MAPPING:   do imap = 1, size(dj%ind)
           if ( dj(imap)%ind == ind ) then
              mapindex(ind) = imap
              exit MAPPING
           end if
-        end do
+        end do MAPPING
         print *, "DJ MAP FAILED", ind
         stop "DJ MAP FAILED"
-      end if MAPPING
+      end if
 
       imap = mapindex(ind)
 
