@@ -32,7 +32,7 @@
   esx%uses_chem = T         ! Calls chemistry routines
   esx%uses_diff = T         ! Calls diffusion routines
   esx%uses_veg  = F         ! Uses Veg stuff. Could be false, e.g. for an_sol_c tests
-  esx%uses_plotting = T     ! Only possible if graphics scripts available, see below
+  esx%uses_plotting = F     ! Only possible if graphics scripts available, see below
 
 ! The code can run with an external data-source, e.g. from a file, or from
 ! internal settings. The flag esx%DataSource is used in esx_GetLocData to
