@@ -39,13 +39,14 @@ use EcoSystem_ml,     only: NDEF_ECOSYSTEMS, DEF_ECOSYSTEMS, EcoSystemFrac, &
 use Io_Progs_ml,      only: datewrite
 use LandDefs_ml,      only: LandDefs, LandType, Check_LandCoverPresent ! e.g. "CF"
 use Landuse_ml,       only: LandCover ! for POD
-use LocalVariables_ml,only: Sub, Grid
+use LocalVariables_ml,only: Grid,SubDat, L
 use MetFields_ml
-use ModelConstants_ml,only: MasterProc, DEBUG => DEBUG_MOSAICS,&
+use ModelConstants_ml,only: MasterProc, DEBUG, MYDEBUG => DEBUG_MOSAICS,&
                             NLANDUSEMAX, IOU_INST
 use OwnDataTypes_ml,  only: Deriv, print_deriv_type, typ_s5i, typ_si, typ_s3,&
                             TXTLEN_DERIV, TXTLEN_SHORT
 use SmallUtils_ml,    only: find_index
+use SubMet_ml,        only: Sub
 use TimeDate_ml,      only: current_date, effectivdaynumber
 use Units_ml,         only: Units_Scale,Group_Scale,group_umap
 use Wesely_ml,        only: NDRYDEP_CALC
@@ -78,6 +79,9 @@ type(Deriv), public, &
 
 type(group_umap), private, target, &
   dimension( MAX_MOSAIC_OUTPUTS ), save :: dryGroupUnits
+
+!!type(SubDat), public, dimension(0:NLANDUSEMAX), save :: Sub
+
 
 contains
 
@@ -140,7 +144,7 @@ subroutine Add_MosaicMetConcs(MOSAIC_METCONCS,MET_LCS,iotyp, nMET)
           MosaicOutput(nMosaic)%dt_scale  =  .true.
       endselect
 
-      if(DEBUG.and.MasterProc) call print_deriv_type(MosaicOutput(nMosaic))
+      if(MYDEBUG.and.MasterProc) call print_deriv_type(MosaicOutput(nMosaic))
     enddo MET_LC !n
   enddo ! ilab
  endsubroutine Add_MosaicMetConcs
@@ -189,7 +193,7 @@ subroutine Add_MosaicMetConcs(MOSAIC_METCONCS,MET_LCS,iotyp, nMET)
           iadv, -99, F , 1.0,  T, Mc(n)%ind ) ! ind gives iotype
     endselect
 
-    if(DEBUG.and.MasterProc) write(*,*) "DEBUG nMc ", &
+    if(MYDEBUG.and.MasterProc) write(*,*) "DEBUG nMc ", &
       trim(name)//":"//trim(Mc(n)%txt2)//":"//trim(Mc(n)%txt3), iadv, iLC
   enddo MC_LOOP
 endsubroutine Add_NewMosaics
@@ -225,7 +229,7 @@ subroutine Add_MosaicVEGO3(iotype,nVEGO3)
     dt_scale = .true.
     !TEST dt_scale = .false. ! TEST
   case default
-    call CheckStop(DEBUG,"MosaicOuputs: vegclass errror"//veg%class )
+    call CheckStop(MYDEBUG,"MosaicOuputs: vegclass errror"//veg%class )
   endselect
 
   !------------------- Check if LC present in this array ------!
@@ -241,7 +245,7 @@ subroutine Add_MosaicVEGO3(iotype,nVEGO3)
   !Deriv(name, class,    subc,  txt,           unit
   !Deriv index, f2d,LC, scale dt_scale avg? Inst Yr Mn Day
   ! Use index for veg array. No need to set iadv for VEGO3. Always O3.
-   if(DEBUG.and.MasterProc) then
+   if(MYDEBUG.and.MasterProc) then
      write(*,*) "Moscaics", nMosaic, trim(name) // "->" //trim(veg%TXTLC)
    end if
    MosaicOutput(nMosaic) = Deriv(  &
@@ -289,9 +293,9 @@ subroutine Add_MosaicDDEP(DDEP_ECOS,DDEP_WANTED,nDD)
                       ! Add_MosaicOutput gets the unit conversion factor from Group_Scale
         iadv = -igrp  ! use negative values for groups (e.g. DDEP_SOX)
         dryGroupUnits(nMosaic) = Group_Scale(igrp,DDEP_WANTED(i)%txt3,&
-                                             debug=DEBUG.and.MasterProc)
+                                             debug=MYDEBUG.and.MasterProc)
       case default
-        call CheckStop(DEBUG,"MosaicOuputs: unknown MosaicDDEP type "//trim(DDEP_WANTED(i)%txt2))
+        call CheckStop(MYDEBUG,"MosaicOuputs: unknown MosaicDDEP type "//trim(DDEP_WANTED(i)%txt2))
       endselect
       name = "DDEP_"//trim(name)//"_m2"//trim(DDEP_ECOS(n)%name)
 
@@ -301,7 +305,7 @@ subroutine Add_MosaicDDEP(DDEP_ECOS,DDEP_WANTED,nDD)
         name, "Mosaic", "DDEP", DDEP_ECOS(n)%name, units, &
           iadv,-99, F, unitscale, F, DDEP_ECOS(n)%ind )
 
-      if(DEBUG.and.MasterProc) then
+      if(MYDEBUG.and.MasterProc) then
         write(*,*) "DDEP setups"
         call print_deriv_type(MosaicOutput(nMosaic))
       endif
@@ -350,11 +354,11 @@ endsubroutine Add_MosaicDDEP
   if(first_call) then  ! need to find indices
     do imc = 1, nMosaic
      MosaicOutput(imc)%f2d  = find_index(MosaicOutput(imc)%name ,f_2d(:)%name)
-     if(DEBUG .and. MasterProc) write(*,*) "MOS f2D", imc, &
+     if(MYDEBUG .and. MasterProc) write(*,*) "MOS f2D", imc, &
          trim(MosaicOutput(imc)%name),  MosaicOutput(imc)%f2d
     enddo
 
-    if(DEBUG.and.debug_flag) then
+    if(MYDEBUG.and.debug_flag) then
       write(*,*)  "ECOAREAS ", i,j
       do n=1,NDEF_ECOSYSTEMS
         write(*,"(a,i3,a,f14.4,g12.3)")  "ECOCHECK ", n, &
@@ -380,6 +384,7 @@ endsubroutine Add_MosaicDDEP
     f2d      = MosaicOutput(imc)%f2d
     nadv     = MosaicOutput(imc)%Index  ! can be negatve for groups
     iLC  = find_MosaicLC(imc)   ! Used for many cases, but replaced by iEco sometimes
+    L        = Sub(iLC)
 
     if(class=="AOT") subclass=class
     if(class=="POD") subclass=class
@@ -394,7 +399,7 @@ endsubroutine Add_MosaicDDEP
     !    call CheckStop(iLC<FULL_LCGRID, "ILC ERROR: "//MosaicOutput(imc)%name)
     !    call CheckStop(f2d<1, "f2d ERROR:  "//MosaicOutput(imc)%name)
     !end if
-    if(DEBUG.and.debug_flag) &
+    if(MYDEBUG.and.debug_flag) &
       write(*,"(a,a)",advance='no') "Add_Mosaic: "// &
             trim(MosaicOutput(imc)%name), ", " // trim(subclass)
 
@@ -418,7 +423,7 @@ endsubroutine Add_MosaicDDEP
         call CheckStop("MosaicOuputs: unknown DDEP Specie/Group")
       endselect
 
-      if(DEBUG.and.Fflux<0.0) then
+      if(MYDEBUG.and.Fflux<0.0) then
         write(*,"(a,3i4,a)") "DDEP Fflux CATASTR ", imc, f2d, iEco, &
               trim(MosaicOutput(imc)%name)
         call CheckStop("CATASTROPHE: "//MosaicOutput(imc)%name)
@@ -428,7 +433,7 @@ endsubroutine Add_MosaicDDEP
       ! ecosystem, to give deposition in units of mg/m2 of ecosystem.
 
       output = Fflux * convfac * invEcoFrac(iEco)
-      if(DEBUG.and.debug_flag) &
+      if(MYDEBUG.and.debug_flag) &
          write(*,"(3i4,3es12.3)") imc, nadv, iEco, Fflux, output
 
       case("METCONC")     ! hard-coded bit n' pieces
@@ -442,7 +447,7 @@ endsubroutine Add_MosaicDDEP
         if(n==MMC_GSTO   ) output = Sub(iLC)%g_sto
         if(n==MMC_EVAP   ) output = Sub(iLC)%EvapTransp
 
-        if(DEBUG.and.debug_flag.and.n==MMC_CANO3.and.iLC==2) & !DF
+        if(MYDEBUG.and.debug_flag.and.n==MMC_CANO3.and.iLC==2) & !DF
           write(*,"(a,4i5,f10.4)") "MYDDEP CANO3 ", &
             current_date%month, current_date%day, &
             current_date%hour, current_date%seconds,   output
@@ -457,7 +462,9 @@ endsubroutine Add_MosaicDDEP
 
       case("AOT")         ! AOTX
         n =  MosaicOutput(imc)%Index !Index in VEGO3_OUPUTS
-        call Calc_AOTx( n, iLC, output, debug_flag) 
+        if(MYDEBUG.and.debug_flag.and. Sub(iLC)%cano3_ppb> 40.0) &
+             write(*,*) "MOSAIC preAOT", n,iLC, Sub(iLC)%cano3_ppb
+        call calc_AOTx( n, iLC, output, debug_flag) 
 
       case ( "VG", "Rs ", "Rns", "Gns" ) ! could we use RG_LABELS? 
         cdep = DepAdv2Calc( nadv ) ! e.g. IXADV_O3 to calc index
@@ -465,7 +472,7 @@ endsubroutine Add_MosaicDDEP
         Gns  = Sub(iLC)%Gns(cdep)
 
        !It is easy to make mistakes with Vg, so we have som extra checks here
-        if(DEBUG.and.cdep<1) then
+        if(MYDEBUG.and.cdep<1) then
           write(*,*) "ERROR: OutVgR name", MosaicOutput(imc)%name
           write(*,*) "ERROR: Negative cdep", cdep, imc, MosaicOutput(imc)%Index
           write(*,*) "ERROR: DEPADV2CALC had size", size(DepAdv2Calc)
@@ -478,7 +485,7 @@ endsubroutine Add_MosaicDDEP
         select case(subclass)
         case("VG" )
           output = Sub(iLC)%Vg_3m(cdep)  ! CHECK iLC
-          if(DEBUG.and.debug_flag) then !DF
+          if(MYDEBUG.and.debug_flag) then !DF
             call datewrite(":: ",iLC,(/ output /) )
            !call datewrite("MYDDEP VGVG "//trim( MosaicOutput(imc)%name),&
            !    iLC,  (/ output /) )
@@ -501,7 +508,7 @@ endsubroutine Add_MosaicDDEP
           endif
         endselect ! subclass
 
-        if(DEBUG.and.debug_flag) &
+        if(MYDEBUG.and.debug_flag) &
           write(*,"(2i4,f9.3)") cdep, iLC, output
 
       case default
@@ -513,7 +520,7 @@ endsubroutine Add_MosaicDDEP
         endif
       endselect
 
-      if(DEBUG.and.debug_flag) &
+      if(MYDEBUG.and.debug_flag) &
         write(*,"(a,es12.3)") "ADDED output: ",  output
       d_2d( f2d,i,j,IOU_INST) = output
     enddo ! Mosaic

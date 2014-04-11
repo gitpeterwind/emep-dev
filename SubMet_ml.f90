@@ -42,7 +42,7 @@ use BLPhysics_ml, only : MIN_USTAR_LAND
 use CheckStop_ml, only : CheckStop
 use LandDefs_ml,   only: LandType
 use Landuse_ml,    only: LandCover
-use LocalVariables_ml, only: Grid, Sub
+use LocalVariables_ml, only: Grid, SubDat
 use MicroMet_ml, only :  PsiM, AerRes    !functions
 use MicroMet_ml, only :  Launiainen1995
 use ModelConstants_ml, only :  DEBUG_SUBMET &  ! Needs DEBUG_RUNCHEM to get debug_flag
@@ -50,12 +50,14 @@ use ModelConstants_ml, only :  DEBUG_SUBMET &  ! Needs DEBUG_RUNCHEM to get debu
                               , FluxPROFILE &
                               , LANDIFY_MET   &
                               , USE_SOILWATER 
+use ModelConstants_ml, only: NLANDUSEMAX
 use PhysicalConstants_ml, only : PI, RGAS_KG, CP, GRAV, KARMAN, CHARNOCK, T0
 
 implicit none
 private
 
   public :: Get_Submet    ! calculates met. data for sub-grid areas
+  type(SubDat), public, dimension(0:NLANDUSEMAX), save :: Sub
 
 contains
 !=======================================================================

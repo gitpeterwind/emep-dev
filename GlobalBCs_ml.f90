@@ -44,7 +44,6 @@ use GridValues_ml,  only: glat_fdom, GlobalPosition
 use Functions_ml,   only: StandardAtmos_kPa_2_km ! for use in Hz scaling
 use GridValues_ml,  only: lb2ij, AN, glat_fdom, glon_fdom,A_mid, B_mid
 use Io_ml,          only: IO_GLOBBC, ios, open_file, PrintLog
-use LocalVariables_ml, only : Sub, Grid
 use ModelConstants_ml, only: PPB, KMAX_MID, Pref, MasterProc, DO_SAHARA, &
                              USES, DEBUG, & !%GLOBBC, &
                           iyr_trend, IIFULLDOM, JJFULLDOM

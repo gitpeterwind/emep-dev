@@ -56,7 +56,7 @@
  use Landuse_ml,           only : LandCover, NLUMAX 
  use Landuse_ml,           only : water_fraction ! DSA12
  use LandDefs_ml,          only:  LandType
- use LocalVariables_ml,    only : Sub, Grid
+ use LocalVariables_ml,    only : Grid
  use MetFields_ml,         only : z_bnd, z_mid, u_ref, ustar_nwp, roa,    &
                                   t2_nwp, sdepth, fh, ps, surface_precip, &
                                   rho_surf, &
@@ -75,6 +75,7 @@
  use Setup_1dfields_ml,    only : rcemis 
  use Setup_1dfields_ml,    only : rh
  use SmallUtils_ml,        only : find_index
+ use SubMet_ml,            only : Sub
  use TimeDate_ml,          only : daynumber
 
 !-----------------------------------------------

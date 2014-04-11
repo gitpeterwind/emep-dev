@@ -49,7 +49,7 @@
  use GridValues_ml,        only : glat, glon, i_fdom, j_fdom 
  use Io_Progs_ml,          only : PrintLog
  use Landuse_ml,           only : LandCover, water_fraction
- use LocalVariables_ml,    only : Sub, Grid
+ use LocalVariables_ml,    only : Grid
  use MetFields_ml,         only : u_ref, z_bnd, z_mid, sst,  &
                                   u_ref, foundSST, &
                                    foundws10_met,ws_10m
@@ -61,6 +61,7 @@
  use PhysicalConstants_ml, only : CHARNOCK, AVOG ,PI
  use Setup_1dfields_ml,    only : rcemis 
  use SmallUtils_ml,        only : find_index
+ use SubMet_ml,            only : Sub
  use TimeDate_ml,          only : current_date
 
  !-------------------------------------

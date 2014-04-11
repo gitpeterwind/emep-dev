@@ -39,7 +39,7 @@ use CheckStop_ml, only : CheckStop
 use GridValues_ml, only :  sigma_bnd,dA,dB
 use Landuse_ml, only : LandCover, ice_landcover    ! Provides SGS, hveg, LAI ....
 use Landuse_ml, only : mainly_sea
-use LocalVariables_ml, only: Grid, Sub, ResetSub
+use LocalVariables_ml, only: Grid, ResetSub
 use MicroMet_ml, only :  PsiH, PsiM, AerRes    !functions
 use MetFields_ml, only: ps, u_ref
 use MetFields_ml, only: cc3dmax, sdepth,ice_nwp, surface_precip, &
@@ -48,7 +48,7 @@ use MetFields_ml, only: cc3dmax, sdepth,ice_nwp, surface_precip, &
 use ModelConstants_ml,    only : KMAX_MID, KMAX_BND, PT, USE_ZREF
 use PhysicalConstants_ml, only : PI, RGAS_KG, CP, GRAV, KARMAN, CHARNOCK, T0
 use SoilWater_ml, only : fSW
-use SubMet_ml, only : Get_SubMet
+use SubMet_ml, only : Get_SubMet, Sub
 use TimeDate_ml, only: current_date
 
 implicit none
