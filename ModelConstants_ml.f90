@@ -50,7 +50,7 @@ public :: Config_ModelConstants
 !  EVA2010     FORECAST with MACC-EVA2010 hourly output & BC
 !  EMERGENCY   FORECAST with ONLY Volcanic Eruption & Nuclear Accident.
 !
-!DS Mar 2013. We separate the concept of exp_name and the
+! We separate the concept of exp_name and the
 ! variable used to set the type of output in My_outputs_ml.
 ! The longer term solution puts the outputs into namelists
 ! but for now we use the MY_OUTPUTS flag. EXP_NAME can
@@ -91,9 +91,12 @@ type(emep_useconfig), public, save :: USES
 
 type, public :: emep_debug
   logical :: &
-     GLOBBC          = .false. &
-    ,HOURLY_OUTPUTS  = .false. &
-    ,BCS             = .false.   ! BoundaryConditions
+     AOT             = .false. &
+    ,BCS             = .false. & ! BoundaryConditions
+    ,COLUMN          = .false. & !  Used in Derived_ml for column integratton
+    ,DERIVED         = .false. & ! 
+    ,GLOBBC          = .false. &
+    ,HOURLY_OUTPUTS  = .false.  
 end type emep_debug
 type(emep_debug), public, save :: DEBUG
 
@@ -316,12 +319,12 @@ integer, private, parameter :: &
 ! DEBUG_ii=111, DEBUG_jj= 54 ! High VG_PMCO_CF!
 ! DEBUG_ii=101, DEBUG_jj= 51 ! Schauinsland
 ! DEBUG_ii=103, DEBUG_jj= 50 ! Mid-Europe
-! DEBUG_ii= 93, DEBUG_jj= 57 ! Elspeetsche (52d12',5d45') 92.83, 56.64
+ DEBUG_ii= 93, DEBUG_jj= 57 ! Elspeetsche (52d12',5d45') 92.83, 56.64
 ! DEBUG_ii= 92, DEBUG_jj= 56 ! Cabauw
 ! DEBUG_ii= 97, DEBUG_jj= 62 ! Waldhof
 ! DEBUG_ii=116, DEBUG_jj= 63 ! K-Puszta
 ! DEBUG_ii=102, DEBUG_jj= 48 ! Payerne
- DEBUG_ii= 85, DEBUG_jj= 50 ! Harwell
+! DEBUG_ii= 85, DEBUG_jj= 50 ! Harwell
 ! DEBUG_ii= 88, DEBUG_jj= 99 ! Harwell TNO TEST
 ! DEBUG_ii= 93, DEBUG_jj= 47 !  Grignon, France
 ! DEBUG_ii= 90, DEBUG_jj= 104 !  Wetland, Tundra
@@ -353,7 +356,6 @@ integer, public, parameter :: &
 ! Debug flag DEBUG_XXX  applied in subroutine XXX
  logical, public, parameter ::    &
    DEBUG_ADV            = .false. &
-  ,DEBUG_AOT            = .false. &
   ,DEBUG_AQUEOUS        = .false. &
   ,DEBUG_BIO            = .false. &
   ,DEBUG_BLM            = .false. & ! Produces matrix of differnt Kz and Hmix
