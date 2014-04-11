@@ -152,7 +152,7 @@ info on unused variables, etc.
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-11 April 2014  Dave   2746-2747
+11 April 2014  Dave   2746-2748
 
    More namelisting:
   
@@ -167,6 +167,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
      config_BM-EECCA.nml
 
    Plus test of real(kind=dp) in Solver.f90
+
      Use of real(ken=dp) has no effect numerically, but is designed to move
      towards integration with other chemistry codes, e.g. KPP
 
