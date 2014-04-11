@@ -92,8 +92,8 @@ use ModelConstants_ml, only: &
   ,PPTINV       & ! 1.0e12, for conversion of units
   ,MFAC         & ! converts roa (kg/m3 to M, molec/cm3)
   ,DEBUG_i, DEBUG_j &
-  ,DEBUG_AOT       &
-  ,DEBUG => DEBUG_DERIVED,  DEBUG_COLUMN, MasterProc &
+  ,DEBUG        & ! gives DEBUG%AOT
+  ,MasterProc &
   ,SOURCE_RECEPTOR &
   ,USE_EMERGENCY,DEBUG_EMERGENCY &
   ,PT           &
@@ -178,7 +178,7 @@ private
              voc_index, &     ! Index of VOC in xn_adv
              voc_carbon       ! Number of C atoms
 
-   logical, private, save :: debug_flag, Is3D
+   logical, private, save :: debug_flag, debugMaster, Is3D
    character(len=100), private :: errmsg
 
    integer, private :: i,j,k,n, ivoc, index    ! Local loop variables
@@ -194,11 +194,12 @@ private
   !=========================================================================
   subroutine Init_Derived()
     integer :: alloc_err
+    debugMaster = (DEBUG%DERIVED .and. MasterProc ) 
 
     allocate(D2_O3_DAY( MAXLIMAX, MAXLJMAX, NTDAY))
      D2_O3_DAY = 0.0
 
-    if(MasterProc .and. DEBUG ) write(*,*) "INIT My DERIVED STUFF"
+    if(debugMaster ) write(*,*) "INIT My DERIVED STUFF"
     call Init_My_Deriv()  !-> wanted_deriv2d, wanted_deriv3d
 
     ! get lengths of wanted arrays (excludes notset values)
@@ -208,7 +209,7 @@ private
     call CheckStop(num_deriv2d<1,"num_deriv2d<1 !!")
 
     if(num_deriv2d > 0) then
-      if(DEBUG .and. MasterProc ) write(*,*) "Allocate arrays for 2d:",&
+      if(debugMaster ) write(*,*) "Allocate arrays for 2d:",&
                                               num_deriv2d
       allocate(f_2d(num_deriv2d),stat=alloc_err)
       call CheckStop(alloc_err,"Allocation of f_2d")
@@ -220,7 +221,7 @@ private
       nav_2d = 0
     endif
     if(num_deriv3d > 0) then
-      if(DEBUG .and. MasterProc ) write(*,*) "Allocate arrays for 3d: ",&
+      if(debugMaster ) write(*,*) "Allocate arrays for 3d: ",&
                                               num_deriv3d
       allocate(f_3d(num_deriv3d),stat=alloc_err)
       call CheckStop(alloc_err,"Allocation of f_3d")
@@ -250,7 +251,7 @@ private
     case(25);fracPM25=0.37
     case(30);fracPM25=0.27
     endselect
-    if(DEBUG)print *,  ' CFAC INIT PMFRACTION ', fracPM25, diam(2), nint(1.0e7*diam(2))
+    if(debugMaster)print *,  ' CFAC INIT PMFRACTION ', fracPM25, diam(2), nint(1.0e7*diam(2))
     call CheckStop( fracPM25 < 0.01, "NEED TO SET FRACPM25")
 
   end subroutine Init_Derived
@@ -258,7 +259,6 @@ private
    !=========================================================================
     subroutine AddNewDeriv( name,class,subclass,txt,unit,index,f2d,&
            dt_scale,scale, avg,iotype,Is3D)
-           !FEN2011 dt_scale,scale, avg,inst,year,month,day,Is3D)
 
        character(len=*), intent(in) :: name ! e.g. DDEP_SO2_m2Conif
        character(len=*), intent(in) :: class ! Type of data, e.g. ADV or VOC
@@ -276,11 +276,12 @@ private
        logical, intent(in), optional :: Is3D
        type(Deriv) :: inderiv
 
-if( trim(name) == "HMIX" .and. MasterProc ) print *, "ADDNEWDERIVE", iotype !NOV2011
+       if( trim(name) == "HMIX" .and. MasterProc ) &
+             write(*,*) "ADDNEWDERIVE", iotype
+
        inderiv = Deriv(trim(name),trim(class),trim(subclass),&
                            trim(txt),trim(unit),index,f2d,dt_scale, scale,&
                             avg,iotype)
-                            !FEN2011 avg,inst,year,month,day)
 
        if ( present(Is3D) ) then
           call AddDeriv(inderiv,Is3D)
@@ -296,25 +297,25 @@ if( trim(name) == "HMIX" .and. MasterProc ) print *, "ADDNEWDERIVE", iotype !NOV
        logical, intent(in), optional :: Is3D
        logical :: Is3D_local
 
+       debugMaster = (DEBUG%DERIVED .and. MasterProc ) 
        Is3D_local = .false.
        if ( present(Is3D) ) Is3D_local = Is3D
 
        if ( Is3D_local ) then
          Nadded3d = Nadded3d + 1
          N = Nadded3d
-         if ( DEBUG .and. MasterProc   ) &
-                  write(*,*) "Define 3d deriv ", N, trim(inderiv%name)
+         if ( debugMaster ) write(*,*) "Define 3d deriv ", N, trim(inderiv%name)
          call CheckStop(N>MAXDEF_DERIV3D,"Nadded3d too big!")
          def_3d(N) = inderiv
 
        else
          Nadded2d = Nadded2d + 1
          N = Nadded2d
-         if (  DEBUG .and. MasterProc ) &
+         if (  debugMaster ) &
             write(*,"((a,i4,1x,4a,i4))") "DEBUG AddDeriv 2d ", N, &
                trim(inderiv%name), " Class:", trim(inderiv%class), &
               " Ind:", inderiv%index
-         !if (  DEBUG .and. MasterProc )  write(*,*) "DALL", inderiv
+         !if (  debugMaster  )  write(*,*) "DALL", inderiv
          call CheckStop(N>MAXDEF_DERIV2D,"Nadded2d too big!")
          def_2d(N) = inderiv
 
@@ -346,7 +347,8 @@ if( trim(name) == "HMIX" .and. MasterProc ) print *, "ADDNEWDERIVE", iotype !NOV
         integer, dimension(MAXDEF_DERIV3D) :: found_ind3d = 0
 
 
-    if(DEBUG .and. MasterProc ) write(6,*) " START DEFINE DERIVED "
+    debugMaster = (DEBUG%DERIVED .and. MasterProc ) 
+    if(debugMaster ) write(6,*) " START DEFINE DERIVED "
     !   same mol.wt assumed for PPM25 and PPMCOARSE
 
 
@@ -362,23 +364,23 @@ if( trim(name) == "HMIX" .and. MasterProc ) print *, "ADDNEWDERIVE", iotype !NOV
 
 !-------------------------------------------------------------------------------
   do n = 1, nMosaic
-    if ( DEBUG.and.MasterProc ) write(*,*) "DEBUG into AddDeriv ", n, MosaicOutput(n)
+    if ( debugMaster ) write(*,*) "DEBUG into AddDeriv ", n, MosaicOutput(n)
     call AddDeriv( MosaicOutput(n) )
   end do
 !-------------------------------------------------------------------------------
 ! Areas of deposition-related ecosystems. Set externally
   do n = 1, NDEF_ECOSYSTEMS
-     if(DEBUG.and.MasterProc) write(*,*) "ECODEF ",n, trim( DepEcoSystem(n)%name )
+     if(debugMaster) write(*,*) "ECODEF ",n, trim( DepEcoSystem(n)%name )
 
      call AddDeriv( DepEcoSystem(n) )
 
   end do
 !!-------------------------------------------------------------------------------
 
-      !Deriv(name, class,    subc,  txt,           unit
-      !Deriv index, f2d, dt_scale, scale, avg? rho Inst Yr Mn Day atw
-      ! for AOT we can use index for the threshold, usually 40
-call AddNewDeriv( "AOT40_Grid", "GRIDAOT","subclass","-", "ppb h", &
+        !Deriv(name, class,    subc,  txt,           unit
+        !Deriv index, f2d, dt_scale, scale, avg? rho Inst Yr Mn Day atw
+        ! for AOT we can use index for the threshold, usually 40
+  call AddNewDeriv( "AOT40_Grid", "GRIDAOT","subclass","-", "ppb h", &
            40, -99, T, 1.0/3600.0, F,   IOU_DAY    )
 !
 !-------------------------------------------------------------------------------
@@ -508,7 +510,7 @@ do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
 
     dname = "SURF_" // trim( outunit ) // "_" // trim( outname )
 
-    if( DEBUG.and.MasterProc ) write(*,"(a,2i4,3(1x,a),2L3,i4,es10.2)") &
+    if( debugMaster ) write(*,"(a,2i4,3(1x,a),2L3,i4,es10.2)") &
     "ADD   ", ind, iout, trim(dname),";", trim(class), outmm, outdd, &
           OutputFields(ind)%ind,unitscale
 
@@ -669,19 +671,19 @@ end do
         call CheckStop("OOPS STOPPED" // trim( wanted_deriv2d(i) ) )
       endif
     endif
-    if (DEBUG.and.MasterProc) print "(2(a,i4),3(1x,a))","Index f_2d ",i,  &
+    if ( debugMaster ) print "(2(a,i4),3(1x,a))","Index f_2d ",i,  &
       " = def ",ind,trim(def_2d(ind)%name),trim(def_2d(ind)%unit),trim(def_2d(ind)%class)
   enddo
 
   do i = 1, num_deriv3d
-    if (DEBUG.and.MasterProc) print *,"CHECK 3d", &
+    if (debugMaster) print *,"CHECK 3d", &
       num_deriv3d, i, trim(wanted_deriv3d(i))
     ind = find_index( wanted_deriv3d(i), def_3d(:)%name )
     call CheckStop ( found_ind3d(ind) > 0,  &
       "REQUESTED 3D DERIVED ALREADY DEFINED: "// trim(def_3d(ind)%name)  )
     found_ind3d(ind)  = 1
     f_3d(i) = def_3d(ind)
-    if (DEBUG.and.MasterProc) print "(2(a,i4),3(1x,a))","Index f_3d ",i,  &
+    if (debugMaster) print "(2(a,i4),3(1x,a))","Index f_3d ",i,  &
       " = def ",ind,trim(def_3d(ind)%name),trim(def_3d(ind)%unit),trim(def_3d(ind)%class)
   enddo
 
@@ -690,7 +692,7 @@ end do
   if (num_deriv2d > 0) d_2d(:,:,:,:) = 0.0
   if (num_deriv3d > 0) d_3d(:,:,:,:,:) = 0.0
 
-  debug_flag = ( DEBUG  .and. debug_proc )
+  debug_flag = ( DEBUG%DERIVED  .and. debug_proc )
 
   ! Determine actual output time ranges for Wanted output
   iou_min=+999
@@ -1036,7 +1038,7 @@ end do
                                      + d_2d(ind_pmwater,i,j,IOU_INST)
             end forall
 
-            if(DEBUG.and. debug_proc )  then
+            if(DEBUG%DERIVED .and. debug_proc )  then
               if(first_call)then
                 call CheckStop(f_2d(n)%unit/="ug","Wrong unit for "//trim(typ))
                 call CheckStop(iadv_NO3_C      <1,"Unknown specie NO3_C")
@@ -1142,7 +1144,7 @@ end do
             d_2d(n, 1:limax, 1:ljmax, IOU_INST) = &
                  Calc_GridAOTx( f_2d(n)%index, debug_proc,"DERIVAOT")
 
-           if( DEBUG_AOT .and. debug_proc ) then
+           if( DEBUG%AOT .and. debug_proc ) then
              call datewrite("AOTDEBUG" // trim(f_2d(n)%name), n, &
                (/ zen(debug_li,debug_lj), real(f_2d(n)%index), &
                   xn_adv(iadv_O3,debug_li,debug_lj,KMAX_MID)*&
@@ -1167,7 +1169,7 @@ end do
               if(dayfrac<0)then !only at midnight: write on d_2d
 
 
-                 call somo_calc( n, f_2d(n)%index, DEBUG .and. debug_proc )
+                 call somo_calc( n, f_2d(n)%index, DEBUG%DERIVED .and. debug_proc )
                  d_2d(n,:,:,IOU_MON )  = d_2d(n,:,:,IOU_MON )  + d_2d(n,:,:,IOU_DAY)
 
                 ! if(current_date%month>=4.and.current_date%month<=9)then
@@ -1197,7 +1199,7 @@ end do
                   tmpwork( i,j ) = tmpwork( i,j ) + &
                     xn_adv(index,i,j,k)  * &
                     roa(i,j,k,1) * (z_bnd(i,j,k)-z_bnd(i,j,k+1))
-                  if( DEBUG_COLUMN .and. debug_flag .and. &
+                  if( DEBUG%COLUMN .and. debug_flag .and. &
                          i == debug_li .and. j == debug_lj ) then
                      write(*,"(a,3i4,a4,f8.3,f8.1,2es12.3)") &
                         trim(f_2d(n)%name), n, index, k, " => ", &
@@ -1284,7 +1286,7 @@ end do
               if(MasterProc) write(*,"(a,2i4,2a15)") "FOUND PM10 FRACTION ",&
                 n, ind_pm10, trim(chemgroups(igrp)%name), trim(f_2d(n)%name)
             endif
-            if(DEBUG.and.MasterProc) then
+            if(debugMaster) then
               write(*,*) "CASEGRP ", n, igrp, ngrp, trim(typ)
               write(*,*) "CASENAM ", trim(f_2d(n)%name)
               write(*,*) "CASEGRP:", chemgroups(igrp)%ptr
@@ -1293,12 +1295,12 @@ end do
             call uggroup_calc(d_2d(n,:,:,IOU_INST), density, &
                               f_2d(n)%unit, 0, igrp)
 
-            if(DEBUG.and. debug_proc .and. n==ind_pmfine )  then
+            if(DEBUG%DERIVED .and. debug_proc .and. n==ind_pmfine )  then
                 i= debug_li; j=debug_lj
                 write(*,"(a,2i4,3es12.3)") "PMFINE FRACTION:", n, ind_pmfine,  &
                    d_2d(ind_pmfine,i,j,IOU_INST)
             end if
-            if(DEBUG.and. debug_proc .and. n==ind_pm10 )  then
+            if(DEBUG%DERIVED .and. debug_proc .and. n==ind_pm10 )  then
                 i= debug_li; j=debug_lj
                 write(*,"(a,2i4,3es12.3)") "PM10 FRACTION:", n, ind_pm10,  &
                    d_2d(ind_pm10,i,j,IOU_INST)
@@ -1475,7 +1477,7 @@ end do
             call CheckStop(igrp>size(chemgroups(:)%name), &
                                   "Outside GRP "//trim(f_3d(n)%name))
             ngrp = size(chemgroups(igrp)%ptr)
-            if(DEBUG.and. MasterProc ) then
+            if( debugMaster ) then
                 write(*,*) "3DCASEGRP ", n, igrp, ngrp, trim(typ)
                 write(*,*) "3DCASENAM ", trim(f_3d(n)%name)
                 write(*,*) "3DCASEGRP:", chemgroups(igrp)%ptr
@@ -1686,10 +1688,10 @@ subroutine uggroup_calc( ug_2d, density, unit, ik, igrp)
   integer, pointer, dimension(:) :: gspec=>null()       ! group array of indexes
   real,    pointer, dimension(:) :: gunit_conv=>null()  ! & unit conv. factors
 
-  if(DEBUG.and.debug_proc) &
+  if(DEBUG%DERIVED .and.debug_proc) &
     write(*,"(a,L1,2i4)") "DEBUG GROUP-PM-N",debug_proc,me,ik
   call CheckStop(unit(1:2)/="ug","uggroup: Invalid deriv/level")
-  call Group_Units(igrp,unit,gspec,gunit_conv,debug=DEBUG.and.debug_proc)
+  call Group_Units(igrp,unit,gspec,gunit_conv,debug=DEBUG%DERIVED.and.debug_proc)
 
   if(ik==0)then
     forall(i=1:limax,j=1:ljmax) &
