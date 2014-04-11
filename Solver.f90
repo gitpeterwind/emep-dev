@@ -65,6 +65,7 @@
                                  DEBUG_DRYRUN, USE_SEASALT
     use Par_ml,            only: me, MAXLIMAX, MAXLJMAX
     use PhysicalConstants_ml, only:  RGAS_J
+    use Precision_ml, only:  dp
     use Setup_1dfields_ml, only: rcemis,        & ! photolysis, emissions
                                  xn_2d,         &
                                  rh,            &
@@ -103,33 +104,37 @@ contains
 
     logical, save ::  first_call = .true.
 
-    real, parameter ::  CPINIT = 0.0 ! 1.0e-30  ! small value for init
+    real(kind=dp), parameter ::  CPINIT = 0.0 ! 1.0e-30  ! small value for init
 
     !  Local
     integer, dimension(KCHEMTOP:KMAX_MID) :: toiter
     integer ::  k, ichem, iter,n    ! Loop indices
     integer, save ::  nchem         ! No chem time-steps
-    real    ::  dt2
-    real    ::  P, L                ! Production, loss terms
-    real    :: xextrapol   !help variable
+    real(kind=dp)    ::  dt2
+    real(kind=dp)    ::  P, L                ! Production, loss terms
+    real(kind=dp)    :: xextrapol   !help variable
 
     ! Concentrations : xold=old, x=current, xnew=predicted
     ! - dimensioned to have same size as "x"
 
-    real, dimension(NSPEC_TOT)      :: &
+    real(kind=dp), dimension(NSPEC_TOT)      :: &
                         x, xold ,xnew   ! Working array [molecules/cm3]
-    real, dimension(nchemMAX), save :: &
+    real(kind=dp), dimension(nchemMAX), save :: &
                         dti             ! variable timestep*(c+1)/(c+2)
-    real, dimension(nchemMAX), save :: &
+    real(kind=dp), dimension(nchemMAX), save :: &
                         coeff1,coeff2,cc ! coefficients for variable timestep
+    ! Test of precision
+     real(kind=dp) :: pi = 4.0*atan(1.0_dp)
 
 !======================================================
+
 
     if ( first_call ) then
        allocate( Dchem(NSPEC_TOT,KCHEMTOP:KMAX_MID,MAXLIMAX,MAXLJMAX))
        Dchem=0.0
        call makedt(dti,nchem,coeff1,coeff2,cc)
        if ( MasterProc ) then
+           write(IO_LOG,*) "PRECISION TEST ", pi
            write(IO_LOG,"(a,i4)") 'Chem dts: nchemMAX: ', nchemMAX
            write(IO_LOG,"(a,i4)") 'Chem dts: nchem: ', nchem
            write(IO_LOG,"(a,i4)") 'Chem dts: NUM_INITCHEM: ', NUM_INITCHEM
