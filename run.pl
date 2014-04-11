@@ -15,7 +15,8 @@
 #   use ib for infiniband (fast interconnect).
 #   lnodes= number of nodes, ppn=processor per node (max16 or 20 on stallo)
 #   lpmeme=memory to reserve per processor (max 16GB per node)
-#PBS -lnodes=64 -lpmem=1000MB
+##PBS -lnodes=64 -lpmem=1000MB
+#PBS -lnodes=2:ppn=16 -lpmem=1000MB
 # Wall time limit of run
 #PBS -lwalltime=00:20:00
 # Make results readable for others:
@@ -111,7 +112,7 @@ die "Must choose STALLO **or** VILJE !\n"
 # my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) =
 #    ("2674","EmChem09","EMEPSTD","EMEPSTD","EECCA","EmChem09");
 #
-my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2708"    ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA","EMEP");
+my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2749"    ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA","EMEP");
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
@@ -468,7 +469,7 @@ $month_days[2] += leap_year($year);
 my $mm1 ="06";      # first month, use 2-digits!
 my $mm2 ="06";      # last month, use 2-digits!
 my $dd1 =  1;       # Start day, usually 1
-my $dd2 =  0;       # End day (can be too large; will be limited to max number of days in the month)
+my $dd2 =  2;       # End day (can be too large; will be limited to max number of days in the month)
                     # put dd2=0 for 3 hours run/test.
 # Allways runn full year on benchmark mode
 ($mm1,$mm2,$dd1,$dd2)=("01","12",1,31) if (%BENCHMARK);
@@ -1100,10 +1101,12 @@ femis: femis.$scenario
 ------------------------------
 EOT
   close RUNLOG;
+  if ( -s "$runlabel1\_fullrun.nc") {
+    system("cdo infov $runlabel1\_fullrun.nc > $runlabel1\_fullrun.infov");
+  }
 
 # BENCHMARK summary info
   if (%BENCHMARK and -s "$runlabel1\_fullrun.nc") {
-    system("cdo infov $runlabel1\_fullrun.nc > $runlabel1\_fullrun.infov");
     system("ls -lh --time-style=long-iso * > $runlabel1\_filelist");
     if ($BENCHMARK{'archive'}) {
       my @fileBM=( "$runlabel1\_fullrun.infov", "$runlabel1\_RunLog",
