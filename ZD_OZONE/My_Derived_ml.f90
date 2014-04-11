@@ -79,10 +79,13 @@ private
 
     logical, parameter, private :: T=.true., F=.false.
 
-  !============ parameters for concentration outputs ========================!
+  !============ parameters for concentration + dep outputs ==================!
 
     integer, public, parameter :: MAX_NUM_DERIV2D = 200
-    integer, public, parameter :: MAX_NUM_DERIV3D =   5
+    integer, public, parameter :: MAX_NUM_DERIV3D =   5 
+    integer, public, parameter :: MAX_NUM_DDEP_ECOS = 6 ! Grid, Conif, etc.
+    integer, public, parameter :: MAX_NUM_DDEP_WANTED = NSPEC_ADV  !plenty big
+    integer, public, parameter :: MAX_NUM_WDEP_WANTED = NSPEC_ADV  !plenty big
     character(len=TXTLEN_DERIV), public, save, &
          dimension(MAX_NUM_DERIV2D) :: wanted_deriv2d = NOT_SET_STRING
     character(len=TXTLEN_DERIV), public, save, &
@@ -102,9 +105,21 @@ private
    !REMEMBER - KEEP UPPER CASE FOR ALL GASES
    type(typ_s5i), public, save, dimension(MAX_NUM_DERIV2D) :: OutputFields
    integer, public, save :: nOutputFields = 0
+   integer, public, save :: nOutputWdep   = 0
 
    type(typ_s5i), public, save, dimension(MAX_NUM_DERIV2D) :: OutputConcs = &
           typ_s5i("NOTSET","-","-","-","-",-999)
+
+   ! Depositions
+  type(typ_si), public, save, dimension(MAX_NUM_DDEP_ECOS) :: DDEP_ECOS = &
+     typ_si("NOTSET", -999 )  ! e.g. "Grid     ", D), 
+
+  type(typ_s3), public, save, dimension(MAX_NUM_DDEP_WANTED) :: &
+    DDEP_WANTED = typ_s3('NOTSET', '-', ' -' )
+! e.g.     typ_s3("SO2      ", SPEC, "mgS"), &
+
+  type(typ_s3), public, save, dimension(MAX_NUM_WDEP_WANTED) :: &
+    WDEP_WANTED = typ_s3('NOTSET', '-', ' -' )
 
 ! Tropospheric columns
    integer, public, parameter, dimension(1) :: COLUMN_MOLEC_CM2 = &
@@ -152,8 +167,8 @@ private
    ! Specify some species and land-covers we want to output
    ! depositions for in netcdf files. DDEP_ECOS must match one of
    ! the DEP_RECEIVERS  from EcoSystem_ml.
-  type(typ_s3), public, parameter, dimension(3) :: &
-    DDEP_WANTED = (/ &
+!NML  type(typ_s3), public, parameter, dimension(3) :: &
+!NML    DDEP_WANTED = (/ &
     !EnsClim extra
 !     typ_s3("SO2      ", SPEC, "mgS"), &
 !     typ_s3("SO4      ", SPEC, "mgS"), &
@@ -170,9 +185,9 @@ private
 !     typ_s3("SEASALT_C", SPEC, "mg"), &
     !EnsClim
     !
-      typ_s3("SOX      ",GROUP, "mgS"), &
-      typ_s3("OXN      ",GROUP, "mgN"), &
-      typ_s3("RDN      ",GROUP, "mgN")/)
+!NML      typ_s3("SOX      ",GROUP, "mgS"), &
+!NML      typ_s3("OXN      ",GROUP, "mgN"), &
+!NML      typ_s3("RDN      ",GROUP, "mgN")/)
 !-- Emergency: Nuclear accident (5 entries)
     ! typ_s3("CS137    ", SPEC, "mBq"), &
     ! typ_s3("I131     ", SPEC, "mBq"), &
@@ -182,14 +197,15 @@ private
     !!typ_s3("XE131    ", SPEC, "mBq"), &
     !!typ_s3("NUC      ",GROUP, "mBq")/)
 
-  type(typ_si), public, parameter, dimension(6) :: &
-    DDEP_ECOS  = (/ &
-      typ_si("Grid     ", D),&
-      typ_si("Conif    ", M),&
-      typ_si("Seminat  ", M),&
-      typ_si("Water_D  ", Y),&
-      typ_si("Decid    ", Y),&
-      typ_si("Crops    ", Y)/)
+!NML  type(typ_si), public, parameter, dimension(1) :: &
+!NML    DDEP_ECOS  = (/ &
+!NML      typ_si("Grid     ", D)&
+!JEJ     ,typ_si("Conif    ", M),&
+!JEJ     ,typ_si("Seminat  ", M),&
+!JEJ     ,typ_si("Water_D  ", Y),&
+!JEJ     ,typ_si("Decid    ", Y),&
+!JEJ     ,typ_si("Crops    ", Y)
+!NML /)
 
   ! Have many combinations: species x ecosystems
 !  type(Deriv), public, &
@@ -300,24 +316,24 @@ private
 !----------------------
 
 
-  type(typ_s3), dimension(6), public, parameter :: &
-    WDEP_WANTED = (/ &
-      typ_s3("PREC     ","PREC","mm")   &
-     ,typ_s3("SOX      ",GROUP,"mgS")   & ! Will get WDEP_SOX group
-     ,typ_s3("OXN      ",GROUP,"mgN")   &
-     ,typ_s3("RDN      ",GROUP,"mgN")  &
-!    ,typ_s3("SS       ",GROUP,"mg ")   &
-     ,typ_s3("SO2      ", SPEC,"mgS")   & ! Makes WPEP_SO2
-!     typ_s3("SO4      ", SPEC,"mgS")   &
-    ,typ_s3("HNO3     ", SPEC,"mgN")  &
-!    ,typ_s3("HONO     ", SPEC,"mgN")  &
-!    ,typ_s3("NO3_F    ", SPEC,"mgN")   &
-!    ,typ_s3("NO3_C    ", SPEC,"mgN")   &
-!    ,typ_s3("NH4_F    ", SPEC,"mgN")   &
-!    ,typ_s3("NH3      ", SPEC,"mgN") &
-!    ,typ_s3("SEASALT_F", SPEC,"mg ")   &
-!    ,typ_s3("SEASALT_C", SPEC,"mg ") &
-/)
+!NML  type(typ_s3), dimension(6), public, parameter :: &
+!NML    WDEP_WANTED = (/ &
+!NML      typ_s3("PREC     ","PREC","mm")   &
+!NML     ,typ_s3("SOX      ",GROUP,"mgS")   & ! Will get WDEP_SOX group
+!NML     ,typ_s3("OXN      ",GROUP,"mgN")   &
+!NML     ,typ_s3("RDN      ",GROUP,"mgN")  &
+!NML!    ,typ_s3("SS       ",GROUP,"mg ")   &
+!NML     ,typ_s3("SO2      ", SPEC,"mgS")   & ! Makes WPEP_SO2
+!NML!     typ_s3("SO4      ", SPEC,"mgS")   &
+!NML    ,typ_s3("HNO3     ", SPEC,"mgN")  &
+!NML!    ,typ_s3("HONO     ", SPEC,"mgN")  &
+!NML!    ,typ_s3("NO3_F    ", SPEC,"mgN")   &
+!NML!    ,typ_s3("NO3_C    ", SPEC,"mgN")   &
+!NML!    ,typ_s3("NH4_F    ", SPEC,"mgN")   &
+!NML!    ,typ_s3("NH3      ", SPEC,"mgN") &
+!NML!    ,typ_s3("SEASALT_F", SPEC,"mg ")   &
+!NML!    ,typ_s3("SEASALT_C", SPEC,"mg ") &
+!NML/)
 !-- Emergency: Nuclear accident (5 entries)
     ! typ_s3("CS137    ", SPEC, "mBq"), &
     ! typ_s3("I131     ", SPEC, "mBq"), &
@@ -344,7 +360,8 @@ private
  !=========================================================================
   subroutine Init_My_Deriv()
 
-    integer :: i, itot, nDD, nMET, nVEGO3, n1, n2,istat, nMc, nOutputConcs
+    integer :: i, itot, nDD, nMET, nVEGO3, n1, n2,istat, nMc
+    integer :: nOutputConcs
     character(len=TXTLEN_DERIV) :: txt
     character(len=TXTLEN_DERIV), &
     dimension(size(COLUMN_MOLEC_CM2)*size(COLUMN_LEVELS)) ::&
@@ -357,18 +374,33 @@ private
     character(len=TXTLEN_SHORT) :: outname, outunit, outdim, outtyp, outclass
 
     NAMELIST /OutputConcs_config/OutputConcs
+    NAMELIST /OutputDep_config/DDEP_ECOS, DDEP_WANTED, WDEP_WANTED
 
 !NML   typ_s5i("HMIX      ", "m",   D2,"HMIX     ","MISC", D)&
    rewind(IO_NML)
    read(IO_NML,NML=OutputConcs_config)
+   read(IO_NML,NML=OutputDep_config)
    
     !! Find number of wanted OutoutConcs
     nOutputConcs = find_index("NOTSET", OutputConcs(:)%txt1, &
+                       first_only=.true. ) -1
+    nOutputWdep  = find_index("NOTSET", WDEP_WANTED(:)%txt1, &
                        first_only=.true. ) -1
        
     if(MasterProc) then
       do i = 1,nOutputConcs  
         write(*,"(2a,2i3)") "NMLOUT ", OutputConcs(i)%txt1, OutputConcs(i)%ind
+      end do
+      do i = 1,size(DDEP_ECOS)  
+        if( DDEP_ECOS(i)%ind < 1 ) exit
+        write(*,"(2a,2i3)") "NMLOUT ", DDEP_ECOS(i)%name, DDEP_ECOS(i)%ind
+      end do
+      do i = 1,size(DDEP_WANTED)  
+        if( DDEP_WANTED(i)%txt1 == 'NOTSET' ) exit
+        write(*,"(2a)") "NMLOUT DDEP ", DDEP_WANTED(i)%txt1
+      end do
+      do i = 1,nOutputWdep  
+        write(*,"(3a)") "NMLOUT WDEP ", WDEP_WANTED(i)%txt1, WDEP_WANTED(i)%txt3
       end do
     end if
 
@@ -380,7 +412,8 @@ private
 
    ! Build up the array wanted_deriv2d with the required field names
 
-     call AddArray( "WDEP_" // WDEP_WANTED(:)%txt1, wanted_deriv2d, NOT_SET_STRING,errmsg)
+     call AddArray( "WDEP_" // WDEP_WANTED(1:nOutputWdep)%txt1, &
+           wanted_deriv2d, NOT_SET_STRING,errmsg)
      call CheckStop( errmsg, errmsg // "WDEP_WANTED too long" )
 !TEST     call AddArray( D2_SR,  wanted_deriv2d, NOT_SET_STRING, errmsg)
 !TEST     call CheckStop( errmsg, errmsg // "D2_SR too long" )

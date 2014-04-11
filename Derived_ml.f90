@@ -54,6 +54,7 @@ use My_Derived_ml,  only : &
       COLUMN_LEVELS   , &
       OutputFields,  &
       nOutputFields,  &
+      nOutputWdep,  &
       WDEP_WANTED, &
       D3_OTHER
 
@@ -538,7 +539,7 @@ enddo ! OutputFields
 
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-do ind = 1, size(WDEP_WANTED(:)%txt1)
+do ind = 1, size(WDEP_WANTED(1:nOutputWdep)%txt1)
   dname = "WDEP_"//trim(WDEP_WANTED(ind)%txt1)
   select case(WDEP_WANTED(ind)%txt2)
   case("PREC")

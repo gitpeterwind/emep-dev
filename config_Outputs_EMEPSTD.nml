@@ -1,5 +1,7 @@
 !-------------------- ---------------------------------------------------------
 ! Common 2D and 3D outputs. Select here, giving unit, type, etc. 
+! 1) OutputConcs
+! 2) DDEP_ECO
 ! If the variables are model-species, depositions, then processing is easy
 ! If something else (typ=MISC, e.g. HMIX, T2m), needs to be defined 
 ! in Derived_ml
@@ -172,3 +174,81 @@ OutputConcs=
     ! 'PART_XO_OWDOA25_O'   ,'ug'  ,'2d','AIR_CONCS','SPEC' ,3, !! NEVER as ugC
     ! 'PART_XO_OFFIOA25_O'  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,3, !! NEVER as ugC
 &end
+
+! nb freq =  IOU_YEAR=2,IOU_MON=3, IOU_DAY=4,IOU_HOUR=6, IOU_HOUR_MEAN=7
+!         *NOTE* only the day, month, year flags work so far.
+
+&OutputDep_config
+  DDEP_ECOS =
+    'Grid     ', 4,
+    'Conif    ', 3,
+    'Seminat  ', 3,  
+    'Water_D  ', 2,
+    'Decid    ', 2,
+    'Crops    ', 2,
+
+  DDEP_WANTED =
+    'SOX      ', 'GROUP', 'mgS',
+    'OXN      ', 'GROUP', 'mgN',
+    'RDN      ', 'GROUP', 'mgN',
+
+  WDEP_WANTED = 
+    'PREC     ','PREC ','mm '
+    'SOX      ','GROUP','mgS'
+    'OXN      ','GROUP','mgN'
+    'RDN      ','GROUP','mgN'
+    'SO2      ','SPEC ','mgS'
+    'HNO3     ','SPEC ','mgN'
+
+!----------------------------------------
+!Older DDEP_WANTED stuff. re-format as required
+   !'SO2      ', 'SPEC ', 'mgS'
+!   'SO4      ', SPEC,'mgS')   &
+!   'SS       ',GROUP,'mg ')   &
+!   'HONO     ', SPEC,'mgN')  &
+!   'NO3_F    ', SPEC,'mgN')   &
+!   'NO3_C    ', SPEC,'mgN')   &
+!   'NH4_F    ', SPEC,'mgN')   &
+!   'NH3      ', SPEC,'mgN') &
+!   'SEASALT_F', SPEC,'mg ')   &
+!   'SEASALT_C', SPEC,'mg ') &
+!-- Emergency: Nuclear accident (5 entries)
+    ! typ_s3('CS137    ', SPEC, 'mBq'), &
+    ! typ_s3('I131     ', SPEC, 'mBq'), &
+    ! typ_s3('SR90     ', SPEC, 'mBq'), &
+    ! typ_s3('KR85     ', SPEC, 'mBq'), &
+    ! typ_s3('NUCRACT  ',GROUP, 'mBq'), &
+    !!typ_s3('XE131    ', SPEC, 'mBq'), &
+    !!typ_s3('NUC      ',GROUP, 'mBq')/)
+
+!----------------------------------------
+!Older DDEP_WANTED stuff. re-format as required
+   !EnsClim extra
+!     typ_s3("SO2      ", SPEC, "mgS"), &
+!     typ_s3("SO4      ", SPEC, "mgS"), &
+!     typ_s3("NH3      ", SPEC, "mgN"), &
+!     typ_s3("NH4_F    ", SPEC, "mgN"), &
+!     typ_s3("NO2      ", SPEC, "mgN"), &
+!     typ_s3("HNO3     ", SPEC, "mgN"), &
+!     typ_s3("HONO     ", SPEC, "mgN"), &
+!     typ_s3("PAN      ", SPEC, "mgN"), &
+!     typ_s3("MPAN     ", SPEC, "mgN"), &
+!     typ_s3("NO3_F    ", SPEC, "mgN"), &
+!     typ_s3("NO3_C    ", SPEC, "mgN"), &
+!     typ_s3("SEASALT_F", SPEC, "mg"), &
+!     typ_s3("SEASALT_C", SPEC, "mg"), &
+    !EnsClim
+!-- Emergency: Nuclear accident (5 entries)
+    ! typ_s3("CS137    ", SPEC, "mBq"), &
+    ! typ_s3("I131     ", SPEC, "mBq"), &
+    ! typ_s3("SR90     ", SPEC, "mBq"), &
+    ! typ_s3("KR85     ", SPEC, "mBq"), &
+    ! typ_s3("NUCRACT  ",GROUP, "mBq"), &
+    !!typ_s3("XE131    ", SPEC, "mBq"), &
+    !!typ_s3("NUC      ",GROUP, "mBq")/)
+
+
+&end
+!     ,typ_si("Water_D  ", Y),&
+!     ,typ_si("Decid    ", Y),&
+!JEJ     ,typ_si("Crops    ", Y)

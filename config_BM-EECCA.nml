@@ -250,3 +250,30 @@ OutputConcs=
     ! 'PART_XO_OWDOA25_O'   ,'ug'  ,'2d','AIR_CONCS','SPEC' ,3, !! NEVER as ugC
     ! 'PART_XO_OFFIOA25_O'  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,3, !! NEVER as ugC
 &end
+
+! nb freq =  IOU_YEAR=2,IOU_MON=3, IOU_DAY=4,IOU_HOUR=6, IOU_HOUR_MEAN=7
+!         *NOTE* only the day, month, year flags work so far.
+
+&OutputDep_config
+  DDEP_ECOS =
+   'Grid     ', 4,
+   'Conif    ', 3,
+   'Seminat  ', 3,
+   'Water_D  ', 2,
+   'Decid    ', 2,
+   'Crops    ', 2,
+
+ DDEP_WANTED =
+   'SOX      ', 'GROUP', 'mgS',
+   'OXN      ', 'GROUP', 'mgN',
+   'RDN      ', 'GROUP', 'mgN',
+
+  WDEP_WANTED =
+   'PREC     ','PREC ','mm '
+   'SOX      ','GROUP','mgS'
+   'OXN      ','GROUP','mgN'
+   'RDN      ','GROUP','mgN'
+   'SO2      ','SPEC ','mgS'
+   'HNO3     ','SPEC ','mgN'
+&end 
+

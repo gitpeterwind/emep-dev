@@ -152,6 +152,25 @@ info on unused variables, etc.
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+11 April 2014  Dave   2746-2747
+
+   More namelisting:
+  
+     DDEP_ECO, DDEP_WANTED, WDEP_WANTED now specified in config_Outputs
+
+   Changes in
+
+     My_Derived_ml
+     Derived_ml
+     Aqueous_ml
+     config_Outputs_EMEPSTD.nml
+     config_BM-EECCA.nml
+
+   Plus test of real(kind=dp) in Solver.f90
+     Use of real(ken=dp) has no effect numerically, but is designed to move
+     towards integration with other chemistry codes, e.g. KPP
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 09 April 2014  Alan  2742-2745
 
 ESX changes only.

@@ -58,6 +58,7 @@ module Aqueous_ml
 !-----------------------------------------------------------------------
 
   use My_Derived_ml,    only: WDEP_WANTED ! Which outputs wanted!
+  use My_Derived_ml,    only: nWDEP => nOutputWdep ! number WDEP used
   use CheckStop_ml,     only: CheckStop
   use ChemChemicals_ml, only: species_adv
   use ChemSpecs_tot_ml
@@ -294,13 +295,13 @@ subroutine Init_WetDep()
 !####################### gather indices from My_Derived
 ! WDEP_WANTED array, and determine needed indices in d_2d
 
-  nwspec=count(WDEP_WANTED(:)%txt2=="SPEC")
-  nwgrp =count(WDEP_WANTED(:)%txt2=="GROUP")
+  nwspec=count(WDEP_WANTED(1:nWDEP)%txt2=="SPEC")
+  nwgrp =count(WDEP_WANTED(1:nWDEP)%txt2=="GROUP")
   allocate(wetSpec(nwspec),wetGroup(nwgrp),wetGroupUnits(nwgrp),stat=alloc_err)
   call CheckStop(alloc_err, "alloc error wetSpec/wetGroup")
 
   nwspec=0;nwgrp=0
-  do n = 1, size(WDEP_WANTED(:)%txt1)
+  do n = 1, nWDEP ! size(WDEP_WANTED(:)%txt1)
     dname = "WDEP_"//trim(WDEP_WANTED(n)%txt1)
     f2d = find_index(dname,f_2d(:)%name)
     call CheckStop(f2d<1, "AQUEOUS f_2d PROBLEM: "//trim(dname))

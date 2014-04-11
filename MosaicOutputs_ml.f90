@@ -268,7 +268,9 @@ subroutine Add_MosaicDDEP(DDEP_ECOS,DDEP_WANTED,nDD)
 ! adding them to the derived-type array OutDDep (e.g. => D2_SO4_m2Conif)
   nDD = 0
   do i=1,size(DDEP_WANTED)
+    if (DDEP_WANTED(i)%txt1 == 'NOTSET') exit
     do n=1,size(DDEP_ECOS)
+      if (DDEP_ECOS(n)%ind < 1) exit
       nDD = nDD + 1
       name  = DDEP_WANTED(i)%txt1
       nMosaic = nMosaic + 1
