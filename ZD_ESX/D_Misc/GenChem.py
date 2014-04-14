@@ -256,7 +256,8 @@ class SpeciesReader(object):
         new_species = []
         for row in reader:
             # After encountering #SLOW, mark species as Species.SLOW
-            if row['Spec'] == '#SLOW':
+            if row['Spec'].startswith('#SLOW'):
+                self.log.debug('FOUND #SLOW, REST OF SPECIES ARE ADV=3')
                 slow = True
                 continue
 
