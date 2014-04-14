@@ -236,6 +236,10 @@ class Species(object):
         # but excluding CH4
         self.NMHC = set(self.counts) == {'C', 'H'} and self.counts['C'] >= 2
 
+    def is_advected(self):
+        """Is this an advected species?"""
+        return self.type > 0
+
 
 class SpeciesReader(object):
     FIELDS = ('Spec', 'type', 'formula', 'in_rmm', 'dry', 'wet', 'extinc',
@@ -366,26 +370,30 @@ class CodeGenerator(object):
 class SpeciesWriter(CodeGenerator):
     log = IndentingLogger(logging.getLogger('write_species'))
 
-    TYPES = collections.OrderedDict([
-        (None, {
+    # Groups of species indices to write out
+    INDEX_GROUPS = [
+        {
+            'filter': None,
             'txt': 'tot',
             'desc': 'All reacting species',
             'nspec': 'NSPEC_TOT',
             'ixlab': '',
-        }),
-        (Species.ADVECTED, {
+        },
+        {
+            'filter': lambda s: s.is_advected(),
             'txt': 'adv',
             'desc': 'Advected species',
             'nspec': 'NSPEC_ADV',
             'ixlab': 'IXADV_',
-        }),
-        (Species.SHORT_LIVED, {
+        },
+        {
+            'filter': lambda s: s.type == Species.SHORT_LIVED,
             'txt': 'shl',
             'desc': 'Short-lived (non-advected) species',
             'nspec': 'NSPEC_SHL',
             'ixlab': 'IXSHL_',
-        }),
-    ])
+        },
+    ]
 
     INDICES_HEADER = dedent("""
     !+ Defines indices and NSPEC for {txt} : {desc}
@@ -445,19 +453,25 @@ class SpeciesWriter(CodeGenerator):
         # Wrap stream in indenting writer
         stream = IndentingStreamWriter(stream)
 
-        # Group species into (type, species) pairs
-        groups = [(t, list(g)) for t, g in itertools.groupby(all_species, lambda s: s.type)]
+        self.write_module_header(stream, 'ChemSpecs')
+
+        # Write each defined group of indices
+        for info in self.INDEX_GROUPS:
+            species = filter(info['filter'], all_species)
+            self.log.info('PROCESS %s NSPEC %s', info['txt'], len(species))
+            stream.write(self.INDICES_HEADER.format(count=len(species), **info))
+            self._write_indices(stream, species, info['ixlab'])
 
         # Find first and last aerosol species
         offset = 0
-        for type, species in groups:
-            if type == Species.SEMIVOL:
-                count = len(species)
+        for is_semivol, species in itertools.groupby(all_species, lambda s: s.type == Species.SEMIVOL):
+            if is_semivol:
+                count = len(list(species))
                 first = offset + 1
                 last = offset + count
                 break
             else:
-                offset += len(species)
+                offset += len(list(species))
         else:
             # If we didn't find aerosol type (didn't hit "break") then
             # set default values
@@ -465,24 +479,8 @@ class SpeciesWriter(CodeGenerator):
             first = -999
             last = -999
 
-        self.write_module_header(stream, 'ChemSpecs')
-
-        # Write information for all species
-        info = self.TYPES[None]
-        self.log.info('PROCESS %s NSPEC %s', info['txt'], len(all_species))
-        stream.write(self.INDICES_HEADER.format(count=len(all_species), **info))
+        # Write aerosol indices
         stream.write(self.AEROSOL_BLOCK.format(count=count, first=first, last=last))
-        self._write_indices(stream, all_species, info['ixlab'])
-
-        # Write information for individual types
-        for type, species in groups:
-            # Skip types we don't have information for
-            if type not in self.TYPES:
-                continue
-            info = self.TYPES[type]
-            self.log.info('PROCESS %s NSPEC %s', info['txt'], len(species))
-            stream.write(self.INDICES_HEADER.format(count=len(species), **info))
-            self._write_indices(stream, species, info['ixlab'])
 
         stream.write(self.DECLS)
 
