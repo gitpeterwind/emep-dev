@@ -49,6 +49,7 @@ module SmallUtils_ml
   public :: num2str      !> converts  numbers to string
   private :: num2str_i  
   private :: num2str_r 
+  public :: to_upper     !> Converts string to upper case
   public :: Self_Test    !< For testing
 
   private :: find_index_c, find_index_i
@@ -345,6 +346,34 @@ end function find_indices
   end if
  end function num2str_i
 !============================================================================
+!> Function posted by SethMMorton at: 
+!! http://stackoverflow.com/questions/10759375/how-can-i-write-a-to-upper-or-to-lower-function-in-f90
+!> Simpler to understand than use of iachar etc. (see same web side).
+
+Pure Function to_upper (str) Result (string)
+
+!   ==============================
+!   Changes a string to upper case
+!   ==============================
+
+    Implicit None
+    Character(*), Intent(In) :: str
+    Character(LEN(str))      :: string
+
+    Integer :: ic, i
+
+    Character(26), Parameter :: cap = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    Character(26), Parameter :: low = 'abcdefghijklmnopqrstuvwxyz'
+
+!   Capitalize each letter if it is lowecase
+    string = str
+    do i = 1, LEN_TRIM(str)
+        ic = INDEX(low, str(i:i))
+        if (ic > 0) string(i:i) = cap(ic:ic)
+    end do
+
+End Function to_upper
+!============================================================================
 subroutine Self_test()
 
   character(len=100) :: text = "Here is a line,split by spaces: note, commas don't work"
@@ -396,6 +425,9 @@ subroutine Self_test()
   print *, "1.23e19 With fmt es15.3 ", trim( num2str( 1.23e19, '(es15.3)' ))
   print *, "1.23e19 With fmt f10.2 ", trim( num2str( 1.23e19, '(f10.2)' ))
   
+  print "(/,a)", "4) Self-test - to_upper  ================================="
+  print *, "Upper case of AbCd efG is ", trim(to_Upper("AbCd efG"))
+
 end subroutine Self_test
 
 end module SmallUtils_ml
