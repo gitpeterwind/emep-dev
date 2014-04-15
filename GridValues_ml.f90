@@ -363,12 +363,6 @@ subroutine GridRead(meteo,cyclicgrid)
     !
     ! This routine is called only once (and is therefore not optimized for speed)
     !
-!    use ChemSpecs_adv_ml,  only: NSPEC_ADV         ! => No. species 
-!    use ChemSpecs_shl_ml,  only: NSPEC_SHL         ! => No. species 
-!    use Chemfields_ml, only:xn_adv, xn_shl, xn_bgn, PM25_water, PM25_water, PM25_water_rh50&
-!         ,AOD,cfac,so2nh3_24hr,Grid_snow&
-!         ,NSPEC_BGN,NSPEC_COL
-
   use netcdf
 
     implicit none
