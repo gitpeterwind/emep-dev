@@ -32,8 +32,9 @@ module ModelConstants_ml
  ! the module PhysicalConstants_ml.f90)
  !
  !----------------------------------------------------------------------------
-use PhysicalConstants_ml, only : AVOG
 use Io_Nums_ml, only : IO_NML, IO_LOG
+use PhysicalConstants_ml, only : AVOG
+use Precision_ml, only : dp
 use SmallUtils_ml, only : find_index
 
 implicit none
@@ -80,6 +81,7 @@ type, public :: emep_useconfig
     ,MONTHLY_FF       = .false. &! => monthly emissions (for e.g. climate runs)
     ,MACEHEADFIX      = .true.  &! Correction to O3 BCs (Mace Head Obs.)
     ,MACEHEAD_AVG     = .false. &! Uses 10-year avg. Good for e.g. RCA runs.
+    ,MINCONC          = .false. &! Experimental. To avoid problems with miniscule numbers
     ,ESX              = .false. &! Uses ESX
     ,EMIS             = .false. &! Uses ESX
     ,EMISSTACKS      = F        !
@@ -503,6 +505,11 @@ character(len=120), public, save :: runlabel1&!SHORT Allows explanatory text
 real, public, parameter, dimension(2) ::  SEA_LIMIT = (/ 0.2, 0.5 /)
 
 real, public, parameter :: &
+  MINCONC  = 1.0e-25   ! Experimental. To avoid problems with miniscule numbers
+                       ! so that DEBUG runs have same values as normal. Uses if
+                       ! USES%MINCONC = T, set in config
+
+real, public, parameter :: &
   EPSIL  = 1.0e-30         &  ! small number
 , PASCAL = 100.0           &  ! Conv. from hPa to Pa
 , PPB    = 1.0e-9          &  ! parts per billion (mixing ratio)
@@ -551,8 +558,8 @@ subroutine Config_ModelConstants(iolog)
     NAMELIST /ModelConstants_config/ &
       EXP_NAME &  ! e.g. EMEPSTD, FORECAST, TFMM, TodayTest, ....
      ,USES   & ! just testname so far
-     ,DEBUG  & ! started June 2013 
-     ,MY_OUTPUTS  &  ! e.g. EMEPSTD, FORECAST, TFMM
+     ,DEBUG  & !
+     ,MY_OUTPUTS  &  ! e.g. EMEPSTD, FORECAST, TFMM 
      ,USE_SOILWATER, USE_DEGREEDAY_FACTORS &
      ,USE_CONVECTION &
      ,USE_AIRCRAFT_EMIS,USE_LIGHTNING_EMIS  &  
