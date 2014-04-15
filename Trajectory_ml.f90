@@ -40,7 +40,6 @@ module Trajectory_ml
 
   use My_Outputs_ml,      only : NADV_FLIGHT, FLIGHT_ADV !ds - added
   use Chemfields_ml  ,    only : xn_adv
-  use ChemSpecs_adv_ml
   use GridValues_ml ,     only : glon, glat
   use Io_ml,              only : IO_AIRCR
   use MetFields_ml,             only : z_bnd,z_mid

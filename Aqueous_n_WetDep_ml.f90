@@ -60,10 +60,11 @@ module Aqueous_ml
   use My_Derived_ml,    only: WDEP_WANTED ! Which outputs wanted!
   use My_Derived_ml,    only: nWDEP => nOutputWdep ! number WDEP used
   use CheckStop_ml,     only: CheckStop
-  use ChemChemicals_ml, only: species_adv
-  use ChemSpecs_tot_ml
-  use ChemSpecs_adv_ml          ! IXADV_SO2, IXADV_SO4, etc.
-  use ChemSpecs_shl_ml, only: NSPEC_SHL
+  use ChemSpecs                 
+!CMR  use ChemSpecs_tot_ml
+!CMR  use ChemSpecs_adv_ml          ! IXADV_SO2, IXADV_SO4, etc.
+!CMR  use ChemSpecs_shl_ml, only: NSPEC_SHL
+!CMR  use ChemChemicals_ml, only: species_adv
   use ChemGroups_ml,    only: ChemGroups
   use DerivedFields_ml, only: f_2d, d_2d     ! Contains Wet deposition fields
   use GridValues_ml,    only: gridwidth_m,xm2,dA,dB

@@ -53,8 +53,10 @@
     !ESX use EmisDef_ml,        only: QSSFI, QSSCO, QDUFI, QDUCO, QPOL, &
     !ESX                              QROADDUST_FI, QROADDUST_CO
     use Emissions_ml,      only: KEMISTOP
+    use ChemFunctions_ml, only :VOLFACSO4,VOLFACNO3,VOLFACNH4 !TEST TTTT
     use ChemGroups_ml,     only: RO2_POOL, RO2_GROUP
-    use ChemSpecs_tot_ml           ! => NSPEC_TOT, O3, NO2, etc.
+!CMR    use ChemSpecs_tot_ml           ! => NSPEC_TOT, O3, NO2, etc.
+    use ChemSpecs                  ! => NSPEC_TOT, O3, NO2, etc.
     use Chemfields_ml, only : NSPEC_BGN  ! => IXBGN_  indices and xn_2d_bgn
     use ChemRates_rct_ml,   only: rct
     !ESX use ChemRates_rcmisc_ml,only: rcmisc
@@ -73,7 +75,6 @@
                                  amk
                                  !FUTURE rcnh3,         & ! NH3emis
  use Setup_1dfields_ml,     only : itemp, tinv, rh, x=> xn_2d, amk
-    use ChemFunctions_ml, only :VOLFACSO4,VOLFACNO3,VOLFACNH4 !TEST TTTT
   implicit none
 
   private

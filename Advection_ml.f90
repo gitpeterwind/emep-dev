@@ -66,7 +66,8 @@
 !
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
   use Chemfields_ml,     only : xn_adv
-  use ChemSpecs_adv_ml , only : NSPEC_ADV
+  use ChemSpecs,         only : NSPEC_ADV
+!CRM  use ChemSpecs_adv_ml , only : NSPEC_ADV
   use CheckStop_ml,      only : CheckStop
   use Convection_ml,     only : convection_pstar,convection_Eta
   use GridValues_ml,     only : GRIDWIDTH_M,xm2,xmd,xm2ji,xmdji, &
@@ -2115,7 +2116,7 @@
 !     using 2'nd order polynomial in the vertical.
 
     use ModelConstants_ml   , only : EPSIL, dt_advec
-    use ChemSpecs_adv_ml , only : NSPEC_ADV
+    use ChemSpecs,         only : NSPEC_ADV
     implicit none
 
 !    input
@@ -2297,7 +2298,7 @@
 !     executes vertical diffusion
 
     use ModelConstants_ml  , only : KCHEMTOP, EPSIL
-    use ChemSpecs_adv_ml , only : NSPEC_ADV
+    use ChemSpecs,         only : NSPEC_ADV
 
     implicit none
 
@@ -2359,7 +2360,7 @@
 !            = SigmaKz(k+1)*dt_advec/(sigma_bnd(k+1)-sigma_bnd(k))/(sigma_mid(k)-sigma_mid(k-1))
 
     use ModelConstants_ml  , only : KCHEMTOP, EPSIL
-    use ChemSpecs_adv_ml , only : NSPEC_ADV
+    use ChemSpecs,         only : NSPEC_ADV
 
     implicit none
 
@@ -2422,7 +2423,7 @@
 !     executes vertical diffusion ndiff times
 
     use ModelConstants_ml  , only : KCHEMTOP, EPSIL
-    use ChemSpecs_adv_ml , only : NSPEC_ADV
+    use ChemSpecs,         only : NSPEC_ADV
 
     implicit none
 
@@ -2495,7 +2496,7 @@
 !     (small effects on results: less than 1%)
 
     use Par_ml   , only : me,li0,li1,limax
-    use ChemSpecs_adv_ml , only : NSPEC_ADV
+    use ChemSpecs,         only : NSPEC_ADV
     use MassBudget_ml , only : fluxin,fluxout
     implicit none
 
@@ -3043,7 +3044,7 @@
 !
 
     use Par_ml   , only : lj0,lj1,ljmax
-    use ChemSpecs_adv_ml , only : NSPEC_ADV
+    use ChemSpecs,         only : NSPEC_ADV
     use MassBudget_ml , only : fluxin,fluxout
     implicit none
 
@@ -3607,7 +3608,7 @@
                     ,psbeg, psend)
 
     use Par_ml , only : lj0,lj1,li1,neighbor,WEST,EAST
-    use ChemSpecs_adv_ml , only : NSPEC_ADV
+    use ChemSpecs,         only : NSPEC_ADV
     implicit none
 
 !    input
@@ -3746,7 +3747,7 @@
 !send only one row
 
     use Par_ml , only : lj0,lj1,li1,neighbor,WEST,EAST
-    use ChemSpecs_adv_ml , only : NSPEC_ADV
+    use ChemSpecs,         only : NSPEC_ADV
     implicit none
 
 !    input
@@ -3883,7 +3884,7 @@
                     ,psbeg, psend)
 
     use Par_ml , only : li0,li1,lj0,lj1,ljmax,neighbor,NORTH,SOUTH
-    use ChemSpecs_adv_ml , only : NSPEC_ADV
+    use ChemSpecs,         only : NSPEC_ADV
     implicit none
 
 !    input
@@ -4028,7 +4029,7 @@
                      ,psbeg, psend,i_send)
 
     use Par_ml , only : li0,li1,lj0,lj1,ljmax,neighbor,NORTH,SOUTH
-    use ChemSpecs_adv_ml , only : NSPEC_ADV
+    use ChemSpecs,         only : NSPEC_ADV
     implicit none
 
 !    input

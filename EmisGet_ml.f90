@@ -36,9 +36,10 @@
 
   use CheckStop_ml,      only: CheckStop
   use CheckStop_ml,      only: StopAll ! tmp debug
-  use ChemSpecs_adv_ml,  only: NSPEC_ADV ! max possible number in split 
-  use ChemSpecs_tot_ml,  only: NSPEC_TOT 
-  use ChemChemicals_ml,  only: species
+!CMR  use ChemSpecs_adv_ml,  only: NSPEC_ADV ! max possible number in split 
+!CMR  use ChemSpecs_tot_ml,  only: NSPEC_TOT 
+!CMR  use ChemChemicals_ml,  only: species
+  use ChemSpecs,         only: NSPEC_ADV, NSPEC_TOT, species 
   use Country_ml,        only: NLAND, IC_NAT, IC_VUL, Country, &
                                ! NMR-NH3 specific variables (hb NH3Emis)
                                IC_NMR 

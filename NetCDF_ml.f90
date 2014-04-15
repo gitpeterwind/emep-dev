@@ -47,10 +47,11 @@
                                 NLEVELS_HOURLY
   use Chemfields_ml,     only : xn_shl,xn_adv
   use CheckStop_ml,      only : CheckStop,StopAll
-  use ChemSpecs_shl_ml,  only : NSPEC_SHL
-  use ChemSpecs_adv_ml,  only : NSPEC_ADV
-  use ChemSpecs_tot_ml,  only : NSPEC_TOT
-  use ChemChemicals_ml,  only : species
+  use ChemSpecs,         only : NSPEC_SHL, NSPEC_ADV, NSPEC_TOT, species
+!CMR  use ChemSpecs_shl_ml,  only : NSPEC_SHL
+!CMR  use ChemSpecs_adv_ml,  only : NSPEC_ADV
+!CMR  use ChemSpecs_tot_ml,  only : NSPEC_TOT
+!CMR  use ChemChemicals_ml,  only : species
   use GridValues_ml,     only : GRIDWIDTH_M,fi,xp,yp,xp_EMEP_official&
                                ,debug_proc, debug_li, debug_lj &
                                ,yp_EMEP_official,fi_EMEP,GRIDWIDTH_M_EMEP&

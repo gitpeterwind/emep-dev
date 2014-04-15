@@ -41,10 +41,11 @@ module AOD_PM_ml
 ! Chin et. al (2002): J. Atm.Sci., 59, 461-483,
 !   doi:10.1175/1520-0469(2002)059%3C0461:TAOTFT%3E2.0.CO;2
 !-----------------------------------------------------------------------!
-use ChemSpecs_tot_ml
+use ChemSpecs
+!CRM use ChemSpecs_tot_ml
+!CRM use ChemChemicals_ml,     only: species  
 use Chemfields_ml,        only: AOD, Extin_coeff
 use ChemGroups_ml,        only: chemgroups
-use ChemChemicals_ml,     only: species  
 use CheckStop_ml,         only: CheckStop
 use GridValues_ml,        only: i_fdom, j_fdom
 use MetFields_ml,         only: z_bnd

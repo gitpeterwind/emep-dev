@@ -38,9 +38,10 @@ module Emissions_ml
 
 use Biogenics_ml,     only: SoilNOx, AnnualNdep
 use CheckStop_ml,     only: CheckStop,StopAll
-use ChemSpecs_shl_ml, only: NSPEC_SHL
-use ChemSpecs_tot_ml, only: NSPEC_TOT,NO2
-use ChemChemicals_ml, only: species
+use ChemSpecs,        only: NSPEC_SHL, NSPEC_TOT,NO2, species
+!CMR use ChemSpecs_shl_ml, only: NSPEC_SHL
+!CMR use ChemSpecs_tot_ml, only: NSPEC_TOT,NO2
+!CMR use ChemChemicals_ml, only: species
 use Country_ml,       only: NLAND,Country_Init,Country,IC_NAT,IC_FI,IC_NO,IC_SE
 use Country_ml,       only: EU27, EUMACC2 !CdfSnap
 use EmisDef_ml,       only: &

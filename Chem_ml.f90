@@ -34,13 +34,13 @@
 ! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 !_____________________________________________________________________________
-use Par_ml               , only: MAXLIMAX,MAXLJMAX   ! => x, y dimensions
+use ChemSpecs,         only: NSPEC_ADV, NSPEC_SHL, NSPEC_TOT ! => No. species 
+!CMR use ChemSpecs_adv_ml,  only: NSPEC_ADV         ! => No. species 
+!CMR use ChemSpecs_shl_ml,  only: NSPEC_SHL         ! => No. species 
+!CMR use ChemSpecs_tot_ml,      only :  NSPEC_TOT
 use ModelConstants_ml    , only: KMAX_MID, KCHEMTOP     ! =>  z dimension
-use ChemSpecs_adv_ml,  only: NSPEC_ADV         ! => No. species 
-use ChemSpecs_shl_ml,  only: NSPEC_SHL         ! => No. species 
+use Par_ml               , only: MAXLIMAX,MAXLJMAX   ! => x, y dimensions
 use Setup_1dfields_ml
-use ChemSpecs_tot_ml,      only :  NSPEC_TOT
-!see belowuse ChemSpecs_bgn_ml,  only: NSPEC_BGN         ! => No. species 
 implicit none
 private
 

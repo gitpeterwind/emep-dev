@@ -36,9 +36,10 @@ module Emergency_ml
 !   erup : emission parameters
 !-----------------------------------------------------------------------!
 use CheckStop_ml,         only: CheckStop
-use ChemChemicals_ml,     only: species
-use ChemSpecs_shl_ml,     only: NSPEC_SHL
-use ChemSpecs_tot_ml,     only: NSPEC_TOT
+use ChemSpecs,            only: NSPEC_TOT, NSPEC_SHL, species
+!CMR use ChemChemicals_ml,     only: species
+!CMR use ChemSpecs_shl_ml,     only: NSPEC_SHL
+!CMR use ChemSpecs_tot_ml,     only: NSPEC_TOT
 use ChemGroups_ml,        only: chemgroups
 use GridValues_ml,        only: xm2,sigma_bnd,GridArea_m2,&
                                 coord_in_processor,coord_in_gridbox

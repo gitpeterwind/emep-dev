@@ -47,11 +47,12 @@
   use Emissions_ml,          only:  gridrcemis, gridrcroadd, KEMISTOP
   use ForestFire_ml,         only: Fire_rcemis, burning
   use Functions_ml,          only:  Tpot_2_T
-  use ChemChemicals_ml,      only:  species
-  use ChemSpecs_tot_ml,      only:  SO4,C5H8,NO,NO2,SO2,CO
-  use ChemSpecs_adv_ml,      only:  NSPEC_ADV, IXADV_NO2, IXADV_O3, &
-                                    IXADV_SO4, IXADV_NO3_f, IXADV_NH4_F
-  use ChemSpecs_shl_ml,      only:  NSPEC_SHL
+  use ChemSpecs  !,             only:  SO4,C5H8,NO,NO2,SO2,CO,
+!CMR   use ChemChemicals_ml,      only:  species
+!CMR   use ChemSpecs_tot_ml,      only:  SO4,C5H8,NO,NO2,SO2,CO
+!CMR   use ChemSpecs_adv_ml,      only:  NSPEC_ADV, IXADV_NO2, IXADV_O3, &
+!CMR                                     IXADV_SO4, IXADV_NO3_f, IXADV_NH4_F
+!CMR   use ChemSpecs_shl_ml,      only:  NSPEC_SHL
   use ChemRates_rct_ml,      only:  set_rct_rates, rct
   use GridValues_ml,         only:  xmd, GridArea_m2, & 
                                      debug_proc, debug_li, debug_lj,&
@@ -68,6 +69,7 @@
     ,DEBUG_SETUP_1DCHEM              &
     ,DEBUG_SETUP_1DBIO               &
     ,DEBUG_MASS                      &
+!EXCL    ,USES, MINCONC                   & ! conc.limit if USES%MINCONC
     ,dt_advec                        & ! time-step
     ,PT                              & ! Pressure at top
     ,MFAC                            & ! converts roa (kg/m3 to M, molec/cm3)
@@ -110,6 +112,11 @@
   integer, private, parameter :: iROADF=1,  iROADC=2
   integer, private, save :: inat_RDF,  inat_RDC, inat_Rn222
   integer, private, save :: itot_RDF=-999,  itot_RDC=-999, itot_Rn222=-999
+
+ ! Minimum concentration allowed for advected species. Avoids some random
+ ! variations between debugged/normal runs with concs of e.g. 1.0e-23 ppb or
+ ! less. 1.0e-20 ppb is ca. 2.5e-10 molec/cm3 at sea-level, ca. 2.5e-11 at top
+ ! e.g.: MINCONC = 1.0e-29
 
   !DUST_ROAD_F
 
@@ -162,6 +169,10 @@ contains
         do n = 1, NSPEC_ADV
               ispec = NSPEC_SHL + n
               xn_2d(ispec,k) = max(0.0,xn_adv(n,i,j,k)*amk(k))
+!EXp.             ! Avoids tiny numbers that complicate comparisons in DEBUG mode
+!EXp.              if( USES%MINCONC ) then
+!EXp.                if( xn_2d(ispec,k) < MINCONC ) xn_2d(ispec,k) = 0.0
+!EXp.              end if
         end do ! ispec
 
         ! 3)/ Background species ( * CTM2 with units in mix. ratio)

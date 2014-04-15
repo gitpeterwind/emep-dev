@@ -25,7 +25,8 @@ module PointSource_ml
   ! --- prelim module to introduce point sources.
   !
   use CheckStop_ml,      only : CheckStop
-  use ChemChemicals_ml,  only : species
+!CMR  use ChemChemicals_ml,  only : species
+  use ChemSpecs,         only : species
   use Functions_ml,      only : StandardAtmos_kPa_2_km, Tpot_2_T
   use GridValues_ml,     only : sigma_bnd, debug_proc &
                            , lb2ij, coord_in_processor, i_local, j_local &

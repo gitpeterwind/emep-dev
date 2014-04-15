@@ -44,9 +44,11 @@
 !----------------------------------------------------------------------
 
  use CheckStop_ml,         only :  StopAll, CheckStop
- use ChemSpecs_tot_ml,     only :  SO4, NH3, HNO3, NO3_f, NH4_f
- use ChemSpecs_shl_ml,     only :  NSPEC_SHL
- use ChemChemicals_ml,     only :  species
+ use ChemSpecs,            only :  SO4, NH3, HNO3, NO3_f, NH4_f, &
+                                     NSPEC_SHL, species
+!CMR  use ChemSpecs_tot_ml,     only :  SO4, NH3, HNO3, NO3_f, NH4_f
+!CMR  use ChemSpecs_shl_ml,     only :  NSPEC_SHL
+!CMR  use ChemChemicals_ml,     only :  species
  use Chemfields_ml,        only :  PM25_water, PM25_water_rh50,  & !PMwater 
                                    cfac
  use EQSAM_v03d_ml,        only :  eqsam_v03d

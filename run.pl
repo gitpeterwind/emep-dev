@@ -16,9 +16,9 @@
 #   lnodes= number of nodes, ppn=processor per node (max16 or 20 on stallo)
 #   lpmeme=memory to reserve per processor (max 16GB per node)
 ##PBS -lnodes=64 -lpmem=1000MB
-#PBS -lnodes=2:ppn=16 -lpmem=1000MB
+#PBS -lnodes=4:ppn=16 -lpmem=1000MB
 # Wall time limit of run
-#PBS -lwalltime=00:20:00
+#PBS -lwalltime=05:20:00
 # Make results readable for others:
 #PBS -W umask=0022
 # Account for billing
@@ -112,7 +112,7 @@ die "Must choose STALLO **or** VILJE !\n"
 # my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) =
 #    ("2674","EmChem09","EMEPSTD","EMEPSTD","EECCA","EmChem09");
 #
-my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2749"    ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA","EMEP");
+my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA","EMEP");
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
@@ -123,7 +123,8 @@ my %BENCHMARK;
 # Dave's preference for EMEP:
 #  %BENCHMARK = (grid=>"EMEP"  ,year=>2006,emis=>"Modrun10/EMEP_trend_2000-2008/2006",chem=>"EmChem09");
 # EECCA Default:
-## %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun11/EMEP_trend_2000-2009/2008",chem=>"EmChem09soa",make=>"EMEP");
+##
+%BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun11/EMEP_trend_2000-2009/2008",chem=>"EmChem09soa",make=>"EMEP");
 # Status Runs:
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2007,emis=>"Modrun09/2009-Trend2007-CEIP") ;
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun10/2010-Trend2008_CEIP");

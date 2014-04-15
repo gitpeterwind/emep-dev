@@ -152,6 +152,20 @@ info on unused variables, etc.
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+15 April 2014  Dave  2766
+
+ **NEW** ChemSpecs_tmp.f90
+
+  LOTS of routines now "use" ChemSpec from here.
+
+  wrapper for the ChemSpecs_adv etc sub-modules, to allow
+  other routines to "use ChemSpecs". Previous calls such
+  as use ChemSpecs_adv removed in many routines, see !CMR comments
+  (This is a step towards a simpler GenChem script.)
+
+  Makefile.SRCS
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15 April 2014  Alan  2765
 
 ESX changes only.
@@ -160,6 +174,12 @@ ZD_ESX/D_Misc/GenChem.py:
   Process species index groups in a more generic way (remove special case for
   SOA).
 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+15 April 2014  Dave  2760-2764
+
+  GridValues_ml     - clean up - remove commented out lines
+  ModelConstants_ml - added experimental MINCONC stuff
+  Setup_1d_ml       - clean up - remove commented out lines
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15 April 2014  Dave  2760-2761
 

@@ -65,10 +65,11 @@ use CheckStop_ml,     only: CheckStop, StopAll
 use Chemfields_ml,    only: xn_adv, xn_shl, cfac,xn_bgn, AOD,  &
                             PM25_water, PM25_water_rh50
 use ChemGroups_ml     ! SIA_GROUP, PMCO_GROUP -- use tot indices
-use ChemSpecs_adv_ml         ! Use NSPEC_ADV amd any of IXADV_ indices
-use ChemSpecs_shl_ml
-use ChemSpecs_tot_ml
-use ChemChemicals_ml, only: species,species_adv
+use ChemSpecs       ! Use NSPEC_ADV amd any of IXADV_ indices
+!CMR use ChemSpecs_adv_ml         ! Use NSPEC_ADV amd any of IXADV_ indices
+!CMR use ChemSpecs_shl_ml
+!CMR use ChemSpecs_tot_ml
+!CMR use ChemChemicals_ml, only: species,species_adv
 use Chemfields_ml ,   only: so2nh3_24hr,Grid_snow
 use DerivedFields_ml, only: MAXDEF_DERIV2D, MAXDEF_DERIV3D, &
                             def_2d, def_3d, f_2d, f_3d, d_2d, d_3d

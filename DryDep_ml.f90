@@ -68,11 +68,12 @@ module DryDep_ml
  use Chemfields_ml , only : cfac, so2nh3_24hr,Grid_snow 
 
 
- use ChemChemicals_ml, only : species
- use ChemSpecs_adv_ml         ! several species needed
- use ChemSpecs_shl_ml, only : NSPEC_SHL
- use ChemSpecs_tot_ml, only : NSPEC_TOT, FIRST_SEMIVOL, LAST_SEMIVOL, &
-                               NO2, SO2, NH3, O3
+ use ChemSpecs                ! several species needed
+!CMR  use ChemChemicals_ml, only : species
+!CMR  use ChemSpecs_adv_ml         ! several species needed
+!CMR  use ChemSpecs_shl_ml, only : NSPEC_SHL
+!CMR  use ChemSpecs_tot_ml, only : NSPEC_TOT, FIRST_SEMIVOL, LAST_SEMIVOL, &
+!CMR                                NO2, SO2, NH3, O3
  use DO3SE_ml,         only : do3se
  use EcoSystem_ml,     only : EcoSystemFrac, Is_EcoSystem,  &
                              NDEF_ECOSYSTEMS, DEF_ECOSYSTEMS

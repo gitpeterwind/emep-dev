@@ -45,7 +45,8 @@
 !-----------------------------------------------------------------------------
 
  use Biogenics_ml,         only : EMIS_BioNat, EmisNat  
- use ChemChemicals_ml,     only : species
+!CMR  use ChemChemicals_ml,     only : species
+ use ChemSpecs,            only : species
  use GridValues_ml,        only : glat, glon, i_fdom, j_fdom 
  use Io_Progs_ml,          only : PrintLog
  use Landuse_ml,           only : LandCover, water_fraction

@@ -56,7 +56,8 @@ module Biogenics_ml
   !---------------------------------------------------------------------------
 
   use CheckStop_ml,      only: CheckStop
-  use ChemChemicals_ml,  only : species
+!CMR   use ChemChemicals_ml,  only : species
+  use ChemSpecs,         only : species
   use GridValues_ml    , only : i_fdom,j_fdom, debug_proc,debug_li,debug_lj
   use Io_ml            , only : IO_FORES, open_file, ios, PrintLog, datewrite
   use KeyValueTypes,     only : KeyVal,KeyValue

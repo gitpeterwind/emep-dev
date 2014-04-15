@@ -51,10 +51,11 @@ use GridValues_ml,     only : lb2ij, i_fdom, j_fdom &
 use Io_ml,             only : check_file,open_file,ios &
                               , fexist, IO_SITES, IO_SONDES &
                               , Read_Headers,read_line
-use ChemSpecs_adv_ml
-use ChemSpecs_shl_ml,  only : NSPEC_SHL
+!CMR use ChemSpecs_adv_ml
+!CMR use ChemSpecs_shl_ml,  only : NSPEC_SHL
+!CMR use ChemChemicals_ml,  only : species               ! for species names
+use ChemSpecs
 use ChemGroups_ml,     only : OXN_GROUP, PMFINE_GROUP, PMCO_GROUP
-use ChemChemicals_ml,  only : species               ! for species names
 use MetFields_ml,      only : t2_nwp, th, pzpbl  &  ! output with concentrations
                               , z_bnd, z_mid, roa, Kz_m2s, q
 use MetFields_ml,      only : u_xmj, v_xmi, ps

@@ -33,12 +33,13 @@ module OrganicAerosol_ml
    ! Contact David.Simpson@met.no for more information if interested in SOA
    ! schemes
    !--------------------------------------------------------------------------
+!CMR   use ChemChemicals_ml,      only : species   ! for molwts
+!CMR   use ChemSpecs_tot_ml,  A1 => FIRST_SEMIVOL , A2 => LAST_SEMIVOL
+   use ChemSpecs,  only:  A1 => FIRST_SEMIVOL , A2 => LAST_SEMIVOL, species
    use ModelConstants_ml,    only : CHEMTMIN, CHEMTMAX, &
                                     K2 => KMAX_MID, K1 => KCHEMTOP
    use PhysicalConstants_ml, only : AVOG
    use Setup_1dfields_ml,    only : itemp, xn => xn_2d
-   use ChemChemicals_ml,      only : species   ! for molwts
-   use ChemSpecs_tot_ml,  A1 => FIRST_SEMIVOL , A2 => LAST_SEMIVOL
    implicit none
 
    !/-- subroutines

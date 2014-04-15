@@ -41,9 +41,10 @@ module Volcanos_ml
 !-----------------------------------------------------------------------!
 
 use CheckStop_ml,         only: CheckStop
-use ChemChemicals_ml,     only: species
-use ChemSpecs_shl_ml,     only: NSPEC_SHL
-use ChemSpecs_tot_ml,     only: NSPEC_TOT, SO2
+!CMR use ChemChemicals_ml,     only: species
+!CMR use ChemSpecs_shl_ml,     only: NSPEC_SHL
+!CMR use ChemSpecs_tot_ml,     only: NSPEC_TOT, SO2
+use ChemSpecs,            only: species, NSPEC_SHL, NSPEC_TOT, SO2
 use ChemGroups_ml,        only: chemgroups
 use EmisDef_ml,           only: VOLCANOES_LL
 use GridValues_ml,        only: GRIDWIDTH_M, xm2, dA, dB,  &

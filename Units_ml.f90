@@ -1,11 +1,11 @@
 module Units_ml
 use CheckStop_ml,     only: CheckStop
-use ChemChemicals_ml, only: species_adv
 use ChemGroups_ml,    only: chemgroups
-use ChemSpecs_adv_ml, only: NSPEC_ADV
-use ChemSpecs_shl_ml, only: NSPEC_SHL
+!CMR use ChemSpecs_adv_ml, only: NSPEC_ADV
+!CMR use ChemSpecs_shl_ml, only: NSPEC_SHL
+!CMR use ChemChemicals_ml, only: species_adv
+use ChemSpecs,        only : NSPEC_ADV, NSPEC_SHL, species_adv
 use ModelConstants_ml,only: PPBINV,ATWAIR,atwS,atwN,MFAC
-!se PhysicalConstants_ml,only: AVOG
 use OwnDataTypes_ml,  only: TXTLEN_DERIV,TXTLEN_SHORT,Asc2D
 use SmallUtils_ml,    only: find_index
 

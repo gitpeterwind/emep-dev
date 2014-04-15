@@ -21,7 +21,8 @@ program myeul
   use BoundaryConditions_ml, only: BoundaryConditions
   use CheckStop_ml,     only: CheckStop
   use Chemfields_ml,    only: alloc_ChemFields
-  use ChemChemicals_ml, only: define_chemicals
+!CMR  use ChemChemicals_ml, only: define_chemicals
+  use ChemSpecs,        only: define_chemicals
   use ChemGroups_ml,    only: Init_ChemGroups
   use DefPhotolysis_ml, only: readdiss
   use Derived_ml,       only: Init_Derived, iou_min, iou_max

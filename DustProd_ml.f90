@@ -49,7 +49,8 @@
  use Biogenics_ml,         only : EmisNat, EMIS_BioNat
  use CheckStop_ml,         only : CheckStop
  use Functions_ml,         only : ERFfunc
- use ChemChemicals_ml,     only : species
+!CMR use ChemChemicals_ml,     only : species
+ use ChemSpecs,            only : species
  use GridValues_ml,        only : glat, glon, glat_fdom, glon_fdom, i_fdom, j_fdom 
  use GridValues_ml,        only : debug_proc, debug_li, debug_lj
  use Io_ml,                only : PrintLog, datewrite

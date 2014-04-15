@@ -30,8 +30,9 @@ module MosaicOutputs_ml
 use AOTx_ml,          only: Calc_AOTx, Calc_POD, O3cl, VEGO3_OUTPUTS
 use AOTx_ml,          only: Calc_SPOD
 use CheckStop_ml,     only: CheckStop
-use ChemChemicals_ml, only: species_adv
-use ChemSpecs_adv_ml, only: NSPEC_ADV
+!CRM use ChemChemicals_ml, only: species_adv
+!CRM use ChemSpecs_adv_ml, only: NSPEC_ADV
+use ChemSpecs,        only: NSPEC_ADV, species_adv
 use ChemGroups_ml,    only: chemgroups
 use DerivedFields_ml, only: f_2d, d_2d
 use EcoSystem_ml,     only: NDEF_ECOSYSTEMS, DEF_ECOSYSTEMS, EcoSystemFrac, &

@@ -52,8 +52,9 @@ module RunChem_ml
   use CheckStop_ml,     only: CheckStop
   use Chemfields_ml,    only: xn_adv    ! For DEBUG 
   use Chemsolver_ml,    only: chemistry
-  use ChemSpecs_tot_ml                  ! DEBUG ONLY
-  use ChemSpecs_adv_ml                  ! DEBUG ONLY
+!CMR  use ChemSpecs_tot_ml                  ! DEBUG ONLY
+!CMR  use ChemSpecs_adv_ml                  ! DEBUG ONLY
+  use ChemSpecs                         ! DEBUG ONLY
   use DefPhotolysis_ml, only: setup_phot
   use DryDep_ml,        only: drydep
   use DustProd_ml,      only: WindDust

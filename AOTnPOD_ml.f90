@@ -26,9 +26,10 @@
 !*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !*****************************************************************************! 
 module AOTx_ml
-  use CheckStop_ml, only : checkStop
+  use CheckStop_ml,  only : checkStop
   use Chemfields_ml, only : xn_adv, cfac
-  use ChemSpecs_adv_ml, only : IXADV_O3
+  use ChemSpecs,     only : IXADV_O3
+!CMR   use ChemSpecs_adv_ml, only : IXADV_O3
   use DO3SE_ml  ! SPOD NEG
   use GridValues_ml, only : debug_li, debug_lj, debug_proc, i_fdom, j_fdom
   use Io_Progs_ml,   only : datewrite

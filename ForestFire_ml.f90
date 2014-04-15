@@ -54,9 +54,9 @@ module ForestFire_ml
  !   Biogeosciences, 9, 527-554, doi:10.5194/bg-9-527-2012, 2012.
  !----------------------------------------------------------------
   use CheckStop_ml,      only : CheckStop
-  use ChemChemicals_ml,  only : species
-  use ChemSpecs_tot_ml
-
+!CMR  use ChemChemicals_ml,  only : species
+!CMR  use ChemSpecs_tot_ml
+  use ChemSpecs           
   use GridValues_ml,     only : i_fdom, j_fdom, debug_li, debug_lj, &
                                  debug_proc,xm2,GRIDWIDTH_M
   use Io_ml,             only : PrintLog, datewrite

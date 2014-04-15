@@ -10,7 +10,8 @@
 module Pollen_const_ml
   use PhysicalConstants_ml, only: PI
   use ModelConstants_ml,    only: USE_POLLEN,DEBUG=>DEBUG_POLLEN
-  use ChemChemicals_ml,     only: species_adv
+!CRM  use ChemChemicals_ml,     only: species_adv
+  use ChemSpecs,            only: species_adv
   use CheckStop_ml,         only: CheckStop
   implicit none
   public

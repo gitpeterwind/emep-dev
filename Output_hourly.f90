@@ -69,8 +69,9 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
   use Derived_ml,       only: num_deriv2d,nav_2d        ! D2D houtly output type
   use DerivedFields_ml, only: f_2d,d_2d          ! D2D houtly output type
   use OwnDataTypes_ml,  only: Asc2D, Deriv
-  use ChemSpecs_shl_ml ,only: NSPEC_SHL          ! Maps indices
-  use ChemChemicals_ml ,only: species            ! Gives names
+  use ChemSpecs,        only: NSPEC_SHL, species
+!CMR  use ChemSpecs_shl_ml ,only: NSPEC_SHL          ! Maps indices
+!CMR  use ChemChemicals_ml ,only: species            ! Gives names
   use GridValues_ml,    only: i_fdom, j_fdom,&   ! Gives emep coordinates
                               debug_proc, debug_li,debug_lj
   use Io_ml,            only: IO_HOURLY

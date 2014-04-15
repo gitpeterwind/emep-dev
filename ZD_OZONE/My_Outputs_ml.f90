@@ -9,10 +9,11 @@ module  My_Outputs_ml
 ! -----------------------------------------------------------------------
 
 use CheckStop_ml,      only: CheckStop
-use ChemSpecs_tot_ml
-use ChemSpecs_adv_ml
-use ChemSpecs_shl_ml
-use ChemChemicals_ml,  only: species,species_adv
+use ChemSpecs
+!CMR use ChemSpecs_tot_ml
+!CMR use ChemSpecs_adv_ml
+!CMR use ChemSpecs_shl_ml
+!CMR use ChemChemicals_ml,  only: species,species_adv
 
 use ChemGroups_ml,     only: chemgroups
 use DerivedFields_ml,  only: f_2d               ! D2D houtly output type

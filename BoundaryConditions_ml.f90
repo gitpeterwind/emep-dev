@@ -74,10 +74,11 @@ module BoundaryConditions_ml
 ! -----------------------------------------------------------------------
 
 use CheckStop_ml,      only: CheckStop
-use ChemChemicals_ml         ! provide species names
 use Chemfields_ml,     only: xn_adv, xn_bgn, NSPEC_BGN  ! emep model concs.
-use ChemSpecs_adv_ml         ! provide NSPEC_ADV and IXADV_*
-use ChemSpecs_shl_ml         ! provide NSPEC_SHL
+use ChemSpecs                ! provide NSPEC_ADV and IXADV_*
+!CMR use ChemChemicals_ml         ! provide species names
+!CMR use ChemSpecs_adv_ml         ! provide NSPEC_ADV and IXADV_*
+!CMR use ChemSpecs_shl_ml         ! provide NSPEC_SHL
 use GlobalBCs_ml,      only:  &
    NGLOB_BC                   &  ! Number of species from global-model
   ,GetGlobalData              &  ! Sub., reads global data+vert interp.
