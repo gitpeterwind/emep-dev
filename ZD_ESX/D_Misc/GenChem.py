@@ -374,39 +374,38 @@ class SpeciesWriter(CodeGenerator):
     INDEX_GROUPS = [
         {
             'filter': None,
-            'txt': 'tot',
+            'tag': 'TOT',
             'desc': 'All reacting species',
-            'nspec': 'NSPEC_TOT',
             'ixlab': '',
         },
         {
             'filter': lambda s: s.is_advected(),
-            'txt': 'adv',
+            'tag': 'ADV',
             'desc': 'Advected species',
-            'nspec': 'NSPEC_ADV',
             'ixlab': 'IXADV_',
         },
         {
             'filter': lambda s: s.type == Species.SHORT_LIVED,
-            'txt': 'shl',
+            'tag': 'SHL',
             'desc': 'Short-lived (non-advected) species',
-            'nspec': 'NSPEC_SHL',
             'ixlab': 'IXSHL_',
+        },
+        {
+            'filter': lambda s: s.type == Species.SEMIVOL,
+            'tag': 'SEMIVOL',
+            'desc': 'Semi-volatile organic aerosols',
+            'ixlab': 'IXSOA_',
         },
     ]
 
     INDICES_HEADER = dedent("""
-    !+ Defines indices and NSPEC for {txt} : {desc}
+    !+ Defines indices and NSPEC for {tag} : {desc}
 
-    integer, public, parameter :: {nspec}={count}
+    integer, public, parameter :: NSPEC_{tag}={count}
     """)
-
-    AEROSOL_BLOCK = dedent("""
-    ! Aerosols
-    integer, public, parameter :: &
-      NAEROSOL={count:<5},      & ! Number of aerosol species
-      FIRST_SEMIVOL={first:<5}, & ! First aerosol species
-      LAST_SEMIVOL={last:<5}     ! Last aerosol species
+    INDICES_HEADER_WITH_EXTENT = INDICES_HEADER.rstrip() + dedent("""
+    integer, public, parameter :: FIRST_{tag}={first}, &
+                                   LAST_{tag}={last}
     """)
 
     DECLS = dedent("""
@@ -426,23 +425,11 @@ class SpeciesWriter(CodeGenerator):
          real              :: DeltaH    ! VBS param
     endtype Chemical
     type(Chemical), public, dimension(NSPEC_TOT), target :: species
-    type(Chemical), public, dimension(:), pointer :: &
-      species_shl=>null(),&             ! => species(..short lived..)
-      species_adv=>null()               ! => species(..advected..)
+
+    ! Pointers to parts of species (e.g. short-lived, advected)
     """)
 
-    DEFINE_HEADER = dedent("""
-    subroutine define_chemicals()
-    !+
-    ! Pointers to short lived and advected portions of species
-    !
-      species_shl=>species(1:NSPEC_SHL)
-      species_adv=>species(NSPEC_SHL+1:NSPEC_SHL+NSPEC_ADV)
-    !+
-    ! Assigns names, mol wts, carbon numbers, advec,  nmhc to user-defined Chemical
-    ! array, using indices from total list of species (advected + short-lived).
-    !                                                        MW  NM   C    N   S       C*      dH
-    """)
+    DEFINE_HEADER = 'subroutine define_chemicals()\n'
 
     DEFINE_FOOTER = 'end subroutine define_chemicals\n'
 
@@ -457,39 +444,59 @@ class SpeciesWriter(CodeGenerator):
 
         # Write each defined group of indices
         for info in self.INDEX_GROUPS:
-            species = filter(info['filter'], all_species)
-            self.log.info('PROCESS %s NSPEC %s', info['txt'], len(species))
-            stream.write(self.INDICES_HEADER.format(count=len(species), **info))
+            if info['filter'] is None:
+                species = all_species
+                stream.write(self.INDICES_HEADER.format(count=len(species), **info))
+            else:
+                species, first, last = self._find_extent(all_species, info['filter'])
+                stream.write(self.INDICES_HEADER_WITH_EXTENT.format(
+                    count=len(species), first=first, last=last, **info))
+
+            self.log.info('PROCESS %s NSPEC %s', info['tag'], len(species))
             self._write_indices(stream, species, info['ixlab'])
 
-        # Find first and last aerosol species
-        offset = 0
-        for is_semivol, species in itertools.groupby(all_species, lambda s: s.type == Species.SEMIVOL):
-            if is_semivol:
-                count = len(list(species))
-                first = offset + 1
-                last = offset + count
-                break
-            else:
-                offset += len(list(species))
-        else:
-            # If we didn't find aerosol type (didn't hit "break") then
-            # set default values
-            count = 0
-            first = -999
-            last = -999
-
-        # Write aerosol indices
-        stream.write(self.AEROSOL_BLOCK.format(count=count, first=first, last=last))
+        # Compatibility with existing code
+        # TODO: remove this
+        stream.write(dedent("""\
+        ! Compatibility with existing code
+        integer, public, parameter :: NAEROSOL=NSPEC_SEMIVOL
+        """))
 
         stream.write(self.DECLS)
+
+        for info in self.INDEX_GROUPS:
+            if info['filter'] is not None:
+                stream.write('type(Chemical), public, dimension(:), pointer :: species_{tag}=>null()\n'
+                             .format(tag=info['tag'].lower()))
 
         self.write_contains(stream)
 
         stream.write(self.DEFINE_HEADER)
         stream.indent()
+
+        stream.write(dedent("""\
+        !+
+        ! Pointers to parts of species (e.g. short-lived, advected), only assigned if
+        ! non-empty.
+        !
+        """))
+        for info in self.INDEX_GROUPS:
+            if info['filter'] is not None:
+                stream.write(dedent("""\
+                if (NSPEC_{tag_uc} > 0) then
+                  species_{tag_lc} => species(FIRST_{tag_uc}:LAST_{tag_uc})
+                end if
+                """).format(tag_uc=info['tag'], tag_lc=info['tag'].lower()))
+
+        stream.write(dedent("""
+        !+
+        ! Assigns names, mol wts, carbon numbers, advec,  nmhc to user-defined Chemical
+        ! array, using indices from total list of species (advected + short-lived).
+        !                                                        MW  NM   C    N   S       C*      dH
+        """))
         for spec in all_species:
             self._write_spec(stream, spec)
+
         stream.outdent()
         stream.write(self.DEFINE_FOOTER)
 
@@ -510,6 +517,23 @@ class SpeciesWriter(CodeGenerator):
                        '{nmhc:3d},{s.counts[C]:3d},{s.counts[N]:4d},{s.counts[S]:3d},'
                        '{s.cstar:8.4f},{s.DeltaH:7.1f} )\n')
         stream.write(SPEC_FORMAT.format(s=spec, nmhc=(1 if spec.NMHC else 0)))
+
+    def _find_extent(self, all_species, predicate):
+        """Find ``(species, first_ix, last_ix)`` for species matching *predicate*.
+
+        Assumes *all_species* is ordered in such a way that everything matching
+        *predicate* is in one contiguous group.  Returns ``([], -999, -999)``
+        if nothing is matched.
+        """
+        offset = 0
+        for check, species in itertools.groupby(all_species, predicate):
+            if check:
+                species = list(species)
+                return (species, offset + 1, offset + len(species))
+            else:
+                offset += len(list(species))
+        else:
+            return ([], -999, -999)
 
 
 class GroupsWriter(CodeGenerator):

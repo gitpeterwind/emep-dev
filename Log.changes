@@ -152,6 +152,15 @@ info on unused variables, etc.
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+15 April 2014  Alan  2765
+
+ESX changes only.
+
+ZD_ESX/D_Misc/GenChem.py:
+  Process species index groups in a more generic way (remove special case for
+  SOA).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15 April 2014  Dave  2760-2761
 
   SmallUtils_ml. Added to_Upper function for strings
