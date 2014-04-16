@@ -152,6 +152,31 @@ info on unused variables, etc.
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16 April 2014  Peter  2767
+
+Makes NetCDF output of sites and sondes.
+
+I tried first to define a new variable for each station/species pair, but this
+ was very slow (double cpu time) and also the compression did not work well.
+What I did not like when defining the stations as dimension, is that you have
+ to first find which index correspond to which station; we have to live with that for now.
+
+I was not able to use the string type in NetCDF (defining xtype = nf90_string
+ gives the error message
+ "Mapped access for atomic types only" when trying to write the strings with put_var)
+
+We can add more attributes to the file, as required. This is hard coded now, and 
+I would recommend NOT to have the attributes too flexible, i.e. to have them as
+ an input to the model. This should not be changed to much by the user, so that the attribute are a sort of standard which can be trusted by scripts.
+
+I thought it would be relatively simple, but the code in Sites_ml got a bit messy. 
+Lots of small details which complicates (info available on different CPUs, surface 
+pressure to add, differences between species, station and global attributes etc).
+
+I put only the meteo path (and size) as info about the grid. We do not have the name 
+of the grid (EECCA, TNO14..) directly availble in the model. We could add it some time.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15 April 2014  Dave  2766
 
  **NEW** ChemSpecs_tmp.f90
