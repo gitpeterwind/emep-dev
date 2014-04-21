@@ -152,6 +152,16 @@ info on unused variables, etc.
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21 April 2014  Peter  2768
+
+Bug for rho_surf in Met_ml, introduced probably (by me) 11 December 2013 (2690).
+ps in still hPa instead of Pa when calculating rho_surf.
+rho_surf is normally overwritten (several times!) later in the code, so this 
+has no effect normally.
+Only case where it has consequences, is when 'ustar_nwp' is read from metdata,
+which is only used for WRF metdata.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16 April 2014  Peter  2767
 
 Makes NetCDF output of sites and sondes.

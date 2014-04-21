@@ -489,9 +489,6 @@ contains
     !large_scale_precipitations+convective_precipitations)
     surface_precip(:,:) = pr(:,:,KMAX_MID) * inv_METSTEP 
 
-    rho_surf(:,:)  = ps(:,:,nr)/(RGAS_KG * t2_nwp(:,:,nr) )
-
-
     if(USE_CONVECTION)then
        cnvuf=max(0.0,cnvuf)      !no negative upward fluxes
        cnvuf(:,:,KMAX_BND)=0.0   !no flux through surface
@@ -545,6 +542,8 @@ contains
        call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
             ustar_nwp(:,:),needed=.true.,found=foundustar)
        if(LANDIFY_MET) call landify(ustar_nwp(:,:),"ustar") 
+       !Ps in Pa here
+       rho_surf(:,:)  = ps(:,:,nr)/(RGAS_KG * t2_nwp(:,:,nr) )
        tau(:,:,nr)    = ustar_nwp(:,:)*ustar_nwp(:,:)* rho_surf(:,:)
     endif
 
