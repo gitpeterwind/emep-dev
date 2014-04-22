@@ -92,7 +92,7 @@ module DryDep_ml
  use MetFields_ml,     only : tau, sdepth, SoilWater_deep, th,pzpbl
  use MicroMet_ml,      only : AerRes, Wind_at_h
  use ModelConstants_ml,only : dt_advec,PT,KMAX_MID, KMAX_BND ,&
-                                  DEBUG_i, DEBUG_j, NPROC, &
+                                  NPROC, &
                                   DEBUG_DRYDEP, DEBUG_ECOSYSTEMS, DEBUG_VDS,&
                                   USES, &
                                   MasterProc, &

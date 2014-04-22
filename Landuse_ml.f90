@@ -42,7 +42,7 @@ use LandDefs_ml,    only: Init_LandDefs, LandType, LandDefs, &
                           NLANDUSE_EMEP
                           !APR2013 NLANDUSE_DEF,NLANDUSE_EMEP
 use LandPFT_ml,       only: MapPFT_LAI, pft_lai
-use ModelConstants_ml,only: DEBUG_i, DEBUG_j, NLANDUSEMAX, &
+use ModelConstants_ml,only: DEBUG, NLANDUSEMAX, &
                             SEA_LIMIT, & 
                             USE_PFT_MAPS, DEBUG_LANDPFTS, &
                             FLUX_VEGS,  nFluxVegs, & 

@@ -34,8 +34,7 @@
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 
-  use CheckStop_ml,      only: CheckStop
-  use CheckStop_ml,      only: StopAll ! tmp debug
+  use CheckStop_ml,      only: CheckStop, StopAll
 !CMR  use ChemSpecs_adv_ml,  only: NSPEC_ADV ! max possible number in split 
 !CMR  use ChemSpecs_tot_ml,  only: NSPEC_TOT 
 !CMR  use ChemChemicals_ml,  only: species
@@ -55,18 +54,15 @@
   use Io_ml,             only: open_file, NO_FILE, ios, IO_EMIS, &
                                Read_Headers, read_line, PrintLog
   use KeyValueTypes,       only: KeyVal
-  use ModelConstants_ml, only: NPROC, TXTLEN_NAME, DEBUG => DEBUG_GETEMIS, &
-                               DEBUG_i, DEBUG_j, &
-                               KMAX_MID,KMAX_BND, Pref,&
+  use ModelConstants_ml, only: NPROC, TXTLEN_NAME, &
+                               DEBUG,  KMAX_MID,KMAX_BND, Pref,&
               SEAFIX_GEA_NEEDED, & ! only if emission problems over sea
                                MasterProc,DEBUG_GETEMIS,DEBUG_ROADDUST,USE_ROADDUST
   use NetCDF_ml, only  : ReadField_CDF  !CDF_SNAP
 
-  use Par_ml,            only: me
-  use Par_ml,            only: MAXLIMAX, MAXLJMAX, limax, ljmax   !cdfemis
+  use Par_ml,            only: MAXLIMAX, MAXLJMAX, limax, ljmax, me
   use SmallUtils_ml,     only: wordsplit, find_index
   use Volcanos_ml
-!TESTE
   use netcdf
   use NetCDF_ml, only  : check
 
@@ -248,9 +244,9 @@ if( index(fname, "Ship")>0 ) print *, me, " CDFHUNTTOP ", trim(fname)
      end if
      call CheckStop( ic < 1 , "CDFEMIS NegIC:"//trim(fname)//":"//trim(code) )
 
-     !if( DEBUG .and. debug_proc ) write( *,*) 'EmisGetCdf ', trim(fname), varid,trim(varname), &
+     !if( DEBUG_GETEMIS .and. debug_proc ) write( *,*) 'EmisGetCdf ', trim(fname), varid,trim(varname), &
      !      " ", trim(code), ic, isec 
-     if( DEBUG .and. debug_proc ) write(*,"(2a,i6,a,2i4)") 'EmisGetCdf ', &
+     if( DEBUG_GETEMIS .and. debug_proc ) write(*,"(2a,i6,a,2i4)") 'EmisGetCdf ', &
            trim(fname), varid," "//trim(varname)// " "// trim(code), ic, isec 
 
 
@@ -264,8 +260,8 @@ if( index(fname, "Ship")>0 ) print *, me, " CDFHUNTTOP ", trim(fname)
 
      if( maxval(cdfemis ) < 1.0e-10 ) cycle ! Likely no emiss in domain
 
-     if ( DEBUG .and. debug_proc ) then
-     !if ( DEBUG .and. MasterProc ) then !me has some sea usually !!SHIPHUNT
+     if ( DEBUG_GETEMIS .and. debug_proc ) then
+     !if ( DEBUG_GETEMIS .and. MasterProc ) then !me has some sea usually !!SHIPHUNT
          ncalls = ncalls + 1
          write(*,"(3a,3i4,i3,9f12.4)")"CDF emis-in ",&
            trim(fname)//":", &
@@ -305,7 +301,7 @@ if( index(fname, "Ship")>0 ) print *, me, " CDFHUNTTOP ", trim(fname)
                 !if ( debug_proc .and. i == debug_li .and. j == debug_lj ) then
 
                  ncc = nGridEmisCodes(i,j)
-                if ( DEBUG .and. &
+                if ( DEBUG_GETEMIS .and. &
                 !if ( &
                         debug_proc .and. i==debug_li .and. j==debug_lj ) then
                     write(*,"(a,7i4,2es12.3,3x,99i3)")"CDF emis-alloc ",&
@@ -388,7 +384,7 @@ if( index(fname, "Ship")>0 ) print *, me, " CDFHUNTTOP ", trim(fname)
       globemis   (:,:,:,:) = 0.0
       globemis_flat(:,:,:) = 0.0
 
-      !if (DEBUG) write(unit=6,fmt=*) "Called EmisGet with index, name", &
+      !if (DEBUG_GETEMIS) write(unit=6,fmt=*) "Called EmisGet with index, name", &
       !     iemis, trim(emisname)
       write( *,*) "Called EmisGet with index, name", &
            iemis, trim(emisname)
@@ -404,9 +400,9 @@ READEMIS: do   ! ************* Loop over emislist files *******************
             read(unit=IO_EMIS,fmt=*,iostat=ios) iic,i,j, duml,dumh,  &
                                     (tmpsec(isec),isec=1,NSECTORS)
 
-            if( DEBUG .and. i==DEBUG_i .and. j==DEBUG_j ) write(*,*) &
+            if( DEBUG_GETEMIS .and. i==DEBUG%IJ(1) .and. j==DEBUG%IJ(2) ) write(*,*) &
                 "DEBUG GetEmis "//trim(emisname) // ":" , iic, duml,dumh
-            !if( j== DEBUG_j ) write(*,*) &
+            !if( j== DEBUG%IJ(2) ) write(*,*) &
             !    "DEBUG GetEmis "//trim(emisname) // ":" , iic, duml,dumh
             if ( ios <  0 ) exit READEMIS            ! End of file
             call CheckStop(ios > 0,"EmisGet: ios error in emission file")
@@ -492,7 +488,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
               if ( trim ( emisname ) == "sox" ) then
                 if (ic == IC_VUL) then
                   volc_no=volc_no+1
-                  if (DEBUG) write(*,*)'Volcano no. ',volc_no
+                  if (DEBUG_GETEMIS) write(*,*)'Volcano no. ',volc_no
                   i_volc(volc_no)=i
                   j_volc(volc_no)=j
 
@@ -597,7 +593,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 
   e_fact(:,:,:) = 1.0            !/*** default value = 1 ***/
 
-  associate ( debugm0 => ( DEBUG .and. MasterProc ) )
+  associate ( debugm0 => ( DEBUG_GETEMIS .and. MasterProc ) )
 
   if( debugm0 ) print *, "Enters femis", me
   call open_file(IO_EMIS,"r","femis.dat",needed=.false.)
@@ -720,7 +716,7 @@ end if
               write(unit=6,fmt=*) "IN NEMIS_FILE LOOP WE HAVE : ", ie, &
                                        qc(ie), e_f( qc(ie) )
               write(unit=6,fmt=*) "loops over ", isec1, isec2, iland1, iland2
-          end if ! DEBUG
+          end if ! DEBUG_GETEMIS
       end do !ie
           
   enddo READFILE ! Loop over femis
@@ -794,7 +790,7 @@ end if
          cycle
       else
          read(txtinput,fmt=*,iostat=ios) snap, (tmp(k),k=1, nemis_hprofile)
-         if( DEBUG.and.MasterProc ) write(*,*) "VER=> ",snap, tmp(1), tmp(3)
+         if( DEBUG_GETEMIS.and.MasterProc ) write(*,*) "VER=> ",snap, tmp(1), tmp(3)
          emis_hprofile(1:nemis_hprofile,snap) = tmp(1:nemis_hprofile)
       end if
    end do
@@ -857,14 +853,14 @@ end if
       !convert height (given as pressure) distribution into model level distribution
       k1_ext(KMAX_BND)=0
       do isec=1,NSECTORS! could put inside but easier for debugging to put here now
-         if(debug.and.MasterProc) write(*,*)'Sector ',isec
+         if(DEBUG_GETEMIS.and.MasterProc) write(*,*)'Sector ',isec
          do k=KMAX_BND-1,max(1,KMAX_BND-nemis_kprofile),-1
 
 !count all contributions to model level k
 !i.e. between P_emep(k+1) and P_emep(k)
 
             P_emep=A_bnd(k)+B_bnd(k)*Pref !Pa
-            if(debug.and.MasterProc) write(*,fmt="(A,I3,F10.2)")'vert_inter: P_emep',k,P_emep
+            if(DEBUG_GETEMIS.and.MasterProc) write(*,fmt="(A,I3,F10.2)")'vert_inter: P_emep',k,P_emep
             !largest available P_ext smaller than P_emep (if possible)
             !k1_ext(k) is the external layer just below P_emep(k)
             k1_ext(k)= 0 !start at surface, and go up until P_emep
@@ -872,7 +868,7 @@ end if
                if(emis_P_level(k_ext)<P_emep)exit
                k1_ext(k)=k_ext
             enddo
-            if(debug.and.MasterProc) write(*,*)k,k1_ext(k),k1_ext(k+1)
+            if(DEBUG_GETEMIS.and.MasterProc) write(*,*)k,k1_ext(k),k1_ext(k+1)
 
             !sum all contributions starting from last counted level (i.e. P_emep(k+1))
 
@@ -881,14 +877,14 @@ end if
                !part below k1_ext(k+1)+1  above P_emep(k+1)
                frac=((A_bnd(k+1)+B_bnd(k+1)*Pref )-emis_P_level(k1_ext(k+1)+1))/(emis_P_level(k1_ext(k+1))-emis_P_level(k1_ext(k+1)+1))
                emis_kprofile(KMAX_BND-k,isec)=frac*emis_hprofile(k1_ext(k+1)+1,isec)
-               if(debug.and.MasterProc) write(*,fmt="(A,I5,6F10.2)")'adding fraction of level',&
+               if(DEBUG_GETEMIS.and.MasterProc) write(*,fmt="(A,I5,6F10.2)")'adding fraction of level',&
                     k1_ext(k+1)+1,frac,emis_hprofile(k1_ext(k+1)+1,isec),emis_P_level(k1_ext(k+1)+1),&
                     (A_bnd(k+1)+B_bnd(k+1)*Pref ),emis_P_level(k1_ext(k+1)+1),(emis_P_level(k1_ext(k+1))-emis_P_level(k1_ext(k+1)+1))
             else
                !everything between P_emep(k+1) and P_emep(k)
                frac=((A_bnd(k+1)+B_bnd(k+1)*Pref )-P_emep)/(emis_P_level(k1_ext(k+1))-emis_P_level(k1_ext(k+1)+1))
                emis_kprofile(KMAX_BND-k,isec)=frac*emis_hprofile(k1_ext(k+1)+1,isec)
-               if(debug.and.MasterProc) write(*,fmt="(A,I5,6F10.2)")'adding fraction of level between P_emep(k+1) and P_emep(k)',&
+               if(DEBUG_GETEMIS.and.MasterProc) write(*,fmt="(A,I5,6F10.2)")'adding fraction of level between P_emep(k+1) and P_emep(k)',&
                     k1_ext(k+1)+1,frac,emis_hprofile(k1_ext(k+1)+1,isec),emis_P_level(k1_ext(k+1)+1),&
                     (A_bnd(k+1)+B_bnd(k+1)*Pref ),P_emep,(emis_P_level(k1_ext(k+1))-emis_P_level(k1_ext(k+1)+1))
             endif
@@ -896,14 +892,14 @@ end if
             !add all full levels in between
             do k_ext=k1_ext(k+1)+2,k1_ext(k)
                emis_kprofile(KMAX_BND-k,isec)=emis_kprofile(KMAX_BND-k,isec)+emis_hprofile(k_ext,isec)
-               if(debug.and.MasterProc) write(*,fmt="(A,I5,6F10.2)")'adding entire level',k_ext,emis_hprofile(k_ext,isec),emis_P_level(k_ext)
+               if(DEBUG_GETEMIS.and.MasterProc) write(*,fmt="(A,I5,6F10.2)")'adding entire level',k_ext,emis_hprofile(k_ext,isec),emis_P_level(k_ext)
             enddo
 
             !add level just below P_emep(k), if not already counted, above k1_ext(k)  below P_emep
             if(emis_P_level(k1_ext(k+1)+1)>P_emep)then
                frac=(emis_P_level(k1_ext(k))-P_emep)/(emis_P_level(k1_ext(k))-emis_P_level(k1_ext(k)+1))
                emis_kprofile(KMAX_BND-k,isec)=emis_kprofile(KMAX_BND-k,isec)+frac*emis_hprofile(k1_ext(k)+1,isec)
-               if(debug.and.MasterProc) write(*,fmt="(A,I5,6F10.2)")'adding last fraction of level',k1_ext(k)+1,&
+               if(DEBUG_GETEMIS.and.MasterProc) write(*,fmt="(A,I5,6F10.2)")'adding last fraction of level',k1_ext(k)+1,&
                     frac,emis_hprofile(k1_ext(k)+1,isec),emis_P_level(k1_ext(k+1)+1),emis_P_level(k1_ext(k)),P_emep,&
                     (emis_P_level(k1_ext(k))-emis_P_level(k1_ext(k)+1))
             endif
@@ -985,10 +981,13 @@ end if
   integer  :: idef              ! Set to   0  for defaults, 1 for specials
   integer  :: iland1, iland2    ! loop variables over countries
   logical  :: defaults          ! Set to true for defaults, false for specials
+  logical  :: debugm            ! debug flag on master proc 
 !-----------------------------------------------
 
   iqrc = 0               ! Starting index in emisfrac array
   nrcsplit= 0                 !
+
+  debugm = (DEBUG_GETEMIS.and.MasterProc) 
 
   do ie = 1, NEMIS_FILE 
 
@@ -1018,8 +1017,8 @@ end if
           endif
        end if
 
-       if (DEBUG.and.MasterProc) write(unit=6,fmt=*) &
-             "DEBUG_EMISGET split defaults=", defaults, fname
+
+       if (debugm) write(*,*) "DEBUG_EMISGET split defaults=", defaults,fname
  
        !/ Read text line and speciation:
        !  the following lines expect one line of a header text with the
@@ -1053,15 +1052,15 @@ end if
 
               call CountEmisSpecs( intext(idef,i) )
 
-              if(MasterProc.and.DEBUG_GETEMIS) write(*,*) "SPLITINFO iem ",&
-                    i,idef, intext(idef,i)
+              if (debugm) write(*,*) "SPLITINFO iem ", i,idef, intext(idef,i)
+
               itot = find_index(intext(idef,i), species(:)%name )
               if ( defaults ) then
                 if ( Headers(i+2) /= "UNREAC" ) then 
                   iqrc = iqrc + 1
                   emis_nsplit(ie) = emis_nsplit(ie) + 1
                
-                  if ( me ==0 .and. itot<1 ) then 
+                  if ( MasterProc .and. itot<1 ) then 
                       print *, "EmisSplit FAILED idef ", me, idef, i, nsplit, trim( intext(idef,i) )
                       print *, " Failed Splitting ", trim(EMIS_FILE(ie)), &
                           " emissions into ",&
@@ -1082,16 +1081,15 @@ end if
                       tmp_emis_masscorr(iqrc) = 1.0/Emis_MolWt(ie)
                   end if
                 end if ! defaults
-                if ( MasterProc .and.DEBUG_GETEMIS.and. itot>0 ) &
+                if (debugm .and. itot>0 )  then
                    write(6,"(a,i2,i4,a,i4,a,a,f6.1)") &
                    "Mapping idef,iqrc:", idef, iqrc, "->", itot, &
                      trim(species(itot)%name ), " MW:", &
                        1.0/tmp_emis_masscorr(iqrc)
-                 end if
-              !end if defaults
+                end if
+              end if
            end do
-           if ( MasterProc.and.DEBUG_GETEMIS ) &
-               write(6,"(a,i4,a,i4)") "Compare ns: used=", &
+           if (debugm ) write(6,"(a,i4,a,i4)") "Compare ns: used=", &
                 emis_nsplit(ie), "including any UNREAC:", nsplit
            
         n = 0
@@ -1109,7 +1107,7 @@ end if
            end if
 
            n = n + 1
-           if ( DEBUG .and. MasterProc ) then
+           if (debugm ) then
                write(6,"(a,i3,a,3i3,50f8.2)") "Splits: ",  n, trim(fname),&
                   iland, isec, nsplit, tmp(1:nsplit)
            end if
@@ -1128,7 +1126,7 @@ end if
            end if
            if ( .not. defaults ) then
              ! Check that specials headers match defaults
-              if ( DEBUG .and. MasterProc ) print *,"SPLIT CHECK SPECIES",idef
+              if (debugm ) print *,"SPLIT CHECK SPECIES",idef
               do nn=1,emis_nsplit(ie)  
                   if ( MasterProc ) then
                     if (intext(1,nn) /= intext(0,nn) ) then
@@ -1160,7 +1158,7 @@ end if
 
                 ! just a check
                 !if ( DEBUG .and. iland == 27.and.MasterProc ) then 
-                if ( DEBUG .and. iland == 101.and.MasterProc ) then 
+                if ( DEBUG_GETEMIS .and. iland == 101.and.MasterProc ) then 
                     itot = tmp_iqrc2itot(iqrc)
                     write(*,"(a35,4i3,i4,a,f10.4)") &
                       "DEBUG_EMISGET splitdef UK", isec, ie, i,  &
@@ -1175,8 +1173,8 @@ end if
 
        call CheckStop(  defaults .and. n  /=  NSECTORS, &
                         "ERROR: EmisGet: defaults .and. n  /=  NSECTORS" )
-       if(MasterProc.and.DEBUG_GETEMIS) &
-           write(unit=6,fmt=*) "Read ", n, " records from ",fname
+
+       if (debugm ) write(*,*) "Read ", n, " records from ",fname
 
     end do IDEF_LOOP 
   end do ! ie
@@ -1304,7 +1302,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 
 !            write(*,*)'dust to dust',iic,i,j, tmpdust
 
-            if( DEBUG_ROADDUST .and. i==DEBUG_i .and. j==DEBUG_j ) write(*,*) &
+            if( DEBUG_ROADDUST .and. i==DEBUG%IJ(1) .and. j==DEBUG%IJ(2) ) write(*,*) &
                 "DEBUG RoadDustGet "//trim(emisname) // ":" , iic, tmpdust
             if ( ios <  0 ) exit READEMIS            ! End of file
             call CheckStop(ios > 0,"RoadDustGet: ios error2 in emission file")
@@ -1340,7 +1338,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 
               globroad_dust_pot(i,j,iland) = globroad_dust_pot(i,j,iland) &
                         + tmpdust
-            if( DEBUG_ROADDUST .and. i==DEBUG_i .and. j==DEBUG_j ) write(*,*) &
+            if( DEBUG_ROADDUST .and. i==DEBUG%IJ(1) .and. j==DEBUG%IJ(2) ) write(*,*) &
                 "DEBUG RoadDustGet iland, globrdp",iland,globroad_dust_pot(i,j,iland)
 
 !   NOTE!!!! A climatological factor is still missing for the road dust!

@@ -98,7 +98,15 @@ type, public :: emep_debug
     ,COLUMN          = .false. & !  Used in Derived_ml for column integratton
     ,DERIVED         = .false. & ! 
     ,GLOBBC          = .false. &
-    ,HOURLY_OUTPUTS  = .false.  
+    ,GRIDVALUES      = .false. &
+    ,HOURLY_OUTPUTS  = .false. & !  
+    ,IOPROG          = .false. &
+    ,MAINCODE        = .false. & 
+    ,PHYCHEM         = .false. &
+    ,FORESTFIRE      = .false. &
+    ,SOA             = .false.  
+   integer, dimension(2) ::   IJ = (/ -999, -999 /)
+   integer               ::   SPEC = -999
 end type emep_debug
 type(emep_debug), public, save :: DEBUG
 
@@ -307,8 +315,9 @@ logical, public, save ::  DebugCell  = .false.
 ! For debugging, we often want to print out for  a specific location
 ! Set here:
 
+!Apr 2014  ALL MOVED TO CONFIG SYSTEM DEBUG%IJ
 ! The coordinates given here only apply for the standard EMEP domain
-integer, private, parameter :: &
+!integer, private, parameter :: &
 !  DEBUG_ii= -99, DEBUG_jj= -99 ! none
 ! DEBUG_ii= 79, DEBUG_jj= 56 ! Eskdalemuir
 ! DEBUG_ii= 73, DEBUG_jj= 48 ! Mace Head
@@ -321,7 +330,7 @@ integer, private, parameter :: &
 ! DEBUG_ii=111, DEBUG_jj= 54 ! High VG_PMCO_CF!
 ! DEBUG_ii=101, DEBUG_jj= 51 ! Schauinsland
 ! DEBUG_ii=103, DEBUG_jj= 50 ! Mid-Europe
- DEBUG_ii= 93, DEBUG_jj= 57 ! Elspeetsche (52d12',5d45') 92.83, 56.64
+! DEBUG_ii= 93, DEBUG_jj= 57 ! Elspeetsche (52d12',5d45') 92.83, 56.64
 ! DEBUG_ii= 92, DEBUG_jj= 56 ! Cabauw
 ! DEBUG_ii= 97, DEBUG_jj= 62 ! Waldhof
 ! DEBUG_ii=116, DEBUG_jj= 63 ! K-Puszta
@@ -342,11 +351,12 @@ integer, private, parameter :: &
 ! DEBUG_ii=103, DEBUG_jj= 32 ! Prades, SMDge
 ! DEBUG_ii=128, DEBUG_jj= 13 !  Desert?
 
-integer, public, parameter :: &
+!integer, public, parameter :: &
 ! DEBUG_i= 62, DEBUG_j= 45  ! SEA
 ! DEBUG_i= 10, DEBUG_j= 140 !NEGSPOD
 ! DEBUG_i= 70, DEBUG_j= 40 ! Lichtenstein, to test ncc
-  DEBUG_i= DEBUG_II+OFFSET_i, DEBUG_j= DEBUG_JJ+OFFSET_j    ! EMEP/EECCA
+!  DEBUG_i= DEBUG_II+OFFSET_i, DEBUG_j= DEBUG_JJ+OFFSET_j    ! EMEP/EECCA
+!  DEBUG_i= 60, DEBUG_j=  50  ! Bremen
 ! DEBUG_i= 59, DEBUG_j= 79  ! JCOAST
 ! DEBUG_i= 48, DEBUG_j= 15  !  BB aug 2006
 ! DEBUG_i= 9, DEBUG_j= 201                                  ! MACC02
@@ -367,7 +377,6 @@ integer, public, parameter :: &
   ,DEBUG_DRYRUN         = .false. & ! Skips fast chemistry to save some CPU
   ,DEBUG_ECOSYSTEMS     = .false. &
   ,DEBUG_EMISSTACKS     = .false. &
-  ,DEBUG_FORESTFIRE     = .false. &
   ,DEBUG_Kz             = .false. &
   ,DEBUG_MY_DERIVED     = .false. &
   ,DEBUG_DRYDEP         = .false. &
@@ -379,8 +388,6 @@ integer, public, parameter :: &
   ,DEBUG_EMISTIMEFACS   = .false. &
   ,DEBUG_EQUIB          = .false. &   !MARS, EQSAM etc.
   ,DEBUG_GETEMIS        = .false. &
-  ,DEBUG_GRIDVALUES     = .false. &
-  ,DEBUG_IOPROG         = .false. &
   ,DEBUG_LANDDEFS       = .false. &
   ,DEBUG_LANDUSE        = .false. &
   ,DEBUG_LANDPFTS       = .false. &
@@ -396,7 +403,6 @@ integer, public, parameter :: &
   ,DEBUG_OUTPUTCHEM     = .false. & ! Output of netcdf results
   ,DEBUG_OUT_HOUR       = .false. & ! Debug Output_hourly.f90
   ,DEBUG_pH             = .false. &
-  ,DEBUG_PHYCHEM        = .false. &
   ,DEBUG_POLLEN         = .false.  &
   ,DEBUG_RUNCHEM        = .false. & ! DEBUG_RUNCHEM is SPECIAL
     ,DEBUG_AEROSOL      = .false. & ! ...needed for intended debugs are to work

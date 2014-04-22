@@ -7,14 +7,13 @@
   EXP_NAME              = 'EMEPSTD',
   MY_OUTPUTS            = 'EMEPSTD',
 !------------------------------
-!USES/DEBUG system started June 2013
+!USES system started June 2013
+! Only partially implemented. See below and ModelConstants_ml
   USES%testname         = 'EMEPSTD',
   USES%FOREST_FIRES     = T,
   USES%MONTHLY_FF       = F,
   USES%EMISSTACKS       = F,         ! Reads PointSources file
   USES%PlumeMethod      = 'PVDI',    ! default PVDI, possible: NILU, ASMI, PVDI
-  DEBUG%GLOBBC          = F,
-  DEBUG%HOURLY_OUTPUTS  = F,
 !------------------------------
   USE_SOILWATER         = T,          ! Uses SMI from meteo data
   USE_CONVECTION        = F,
@@ -85,6 +84,19 @@
 ! RUNDOMAIN =   1, 132,  1, 159,      ! EECCA, rep10
 ! RUNDOMAIN =  20, 167,  1, 122,      ! OSPAR/HELCOM domain
 ! RUNDOMAIN =  18, 169,  1, 124,      ! OSPAR/HELCOM domain+borders
+!
+!DEBUG system started June 2013 -------------------
+! Only partially implemented. See ModelConstants_ml
+  DEBUG%AOT             = F,
+  DEBUG%FORESTFIRE      = F,
+  DEBUG%GLOBBC          = F,
+  DEBUG%GRIDVALUES      = F,
+  DEBUG%HOURLY_OUTPUTS  = F,
+  DEBUG%PHYCHEM         = F,
+  DEBUG%SOA             = F,
+! Specify here the coords and species index (tot, see CM_ChemSpecs_tot)
+  DEBUG%IJ              = 60, 50      ! Bremem
+  DEBUG%SPEC            = 84,
 &end
 &Nest_config
 !-------- Nesting MODEs

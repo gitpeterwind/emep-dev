@@ -34,6 +34,7 @@
 ! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 !_____________________________________________________________________________
+use AllocInits,        only: AllocInit
 use ChemSpecs,         only: NSPEC_ADV, NSPEC_SHL, NSPEC_TOT ! => No. species 
 !CMR use ChemSpecs_adv_ml,  only: NSPEC_ADV         ! => No. species 
 !CMR use ChemSpecs_shl_ml,  only: NSPEC_SHL         ! => No. species 
@@ -93,6 +94,7 @@ contains
   subroutine alloc_ChemFields
 
     implicit none
+    integer :: nk
 
     allocate(xn_adv(NSPEC_ADV,MAXLIMAX,MAXLJMAX,KMAX_MID))
     xn_adv=0.0
@@ -117,10 +119,14 @@ contains
     allocate(xn_2d_bgn(1,KCHEMTOP:KMAX_MID))
 
     allocate(xn_2d(NSPEC_TOT,KCHEMTOP:KMAX_MID))
+  xn_2d = 0.0
+ !   nk = KMAX_MID-KCHEMTOP+1   ! number of levels used in column chemistry
+ !   call AllocInit(xn_2d,0.0, NSPEC_TOT, nk)
     allocate(Fgas(NSPEC_TOT,KCHEMTOP:KMAX_MID),Fpart(NSPEC_TOT,KCHEMTOP:KMAX_MID))
     Fgas  = 1.0! Fraction as gas-phase
     Fpart = 0.0
     allocate(rcemis(NSPEC_SHL+1:NSPEC_TOT,KCHEMTOP:KMAX_MID))
+rcemis = 0.0
     allocate(rh(KCHEMTOP:KMAX_MID),amk(KCHEMTOP:KMAX_MID),o2(KCHEMTOP:KMAX_MID))
     allocate(n2(KCHEMTOP:KMAX_MID),h2o(KCHEMTOP:KMAX_MID),temp(KCHEMTOP:KMAX_MID))
     allocate(tinv(KCHEMTOP:KMAX_MID),pp(KCHEMTOP:KMAX_MID))

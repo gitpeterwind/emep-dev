@@ -20,8 +20,8 @@ use Io_Nums_ml,             only: IO_LOG,IO_TMP
 use MetFields_ml 
 use ModelConstants_ml,      only: &
   KMAX_BND, KMAX_MID, & ! vertical extent
-  DEBUG_i,DEBUG_j,    & ! full-domain coordinate of debug-site
-  DEBUG_GRIDVALUES,MasterProc,NPROC,IIFULLDOM,JJFULLDOM,RUNDOMAIN,&
+  DEBUG,              & ! DEBUG%GRIDVALUES
+  MasterProc,NPROC,IIFULLDOM,JJFULLDOM,RUNDOMAIN,&
   PT,Pref,NMET,METSTEP,USE_EtaCOORDINATES
 use Par_ml, only : &
   MAXLIMAX,MAXLJMAX,  & ! max. possible i, j in this domain
@@ -238,7 +238,7 @@ subroutine GridRead(meteo,cyclicgrid)
 
   if(External_Levels_Def.and.me==0)close(IO_TMP)
  
-    if(MasterProc .and. DEBUG_GRIDVALUES)then
+    if(MasterProc .and. DEBUG%GRIDVALUES)then
        write(*,*)'sigma_mid:',(sigma_mid(k),k=1,20)
        write(*,*)'grid resolution:',GRIDWIDTH_M
        write(*,*)'xcoordinate of North Pole, xp:',xp
@@ -750,7 +750,7 @@ subroutine GridRead(meteo,cyclicgrid)
        endif
     enddo
 
-    if(MasterProc .and. DEBUG_GRIDVALUES)write(*,*)'CYCLICGRID:',Cyclicgrid
+    if(MasterProc .and. DEBUG%GRIDVALUES)write(*,*)'CYCLICGRID:',Cyclicgrid
 
     !complete (extrapolate) along the four lateral sides
     do i=1,GIMAX
@@ -917,7 +917,7 @@ subroutine GridRead(meteo,cyclicgrid)
     ! projection='Stereographic'
     call Position()
 
-    if(DEBUG_GRIDVALUES) then
+    if(DEBUG%GRIDVALUES) then
        if(MasterProc) then
           write(*,800) "GRIDTAB","me","ISM","JSM","gi0","gj0",&
                "li0","li1","lix","MXI",&
@@ -952,7 +952,7 @@ subroutine GridRead(meteo,cyclicgrid)
 
     do i = li0, li1
        do j = lj0, lj1
-          if( i_fdom(i) == DEBUG_i .and. j_fdom(j) == DEBUG_j ) then
+          if( i_fdom(i) == DEBUG%IJ(1) .and. j_fdom(j) == DEBUG%IJ(2) ) then
              debug_li = i
              debug_lj = j
              debug_proc = .true.
@@ -962,14 +962,14 @@ subroutine GridRead(meteo,cyclicgrid)
 
     if(debug_proc) write(*,*) "GridValues debug_proc found:", &
          me, debug_li, debug_lj
-    if(DEBUG_GRIDVALUES) then
+    if(DEBUG%GRIDVALUES) then
        if(MasterProc) write(*,"(a,2a4,a3,4a4,a2,2a4,4a12)") "GridValues debug:", &
             "D_i", "D_j", "me", "li0", "li1", "lj0", "lj1", &
             "dp" , "d_li", "d_lj", "i_fdom(li0)","i_fdom(li1)", &
             "j_fdom(lj0)", "j_fdom(lj1)"
 
        write(*,"(a,2i4,i3,4i4,L2,2i4,4i12)") "GridValues debug:", &
-            DEBUG_i, DEBUG_j, me, li0, li1, lj0, lj1, &
+            DEBUG%IJ(1), DEBUG%IJ(2), me, li0, li1, lj0, lj1, &
             debug_proc , debug_li, debug_lj, &
             i_fdom(li0),i_fdom(li1), j_fdom(lj0), j_fdom(lj1)
     endif
@@ -1054,10 +1054,10 @@ subroutine GridRead(meteo,cyclicgrid)
          " GridValues: max/min for lat,lon ", &
          gbacmax,gbacmin,glacmax,glacmin
 
-    if(DEBUG_GRIDVALUES) then
+    if(DEBUG%GRIDVALUES) then
        do j = 1, MAXLJMAX
           do i = 1, MAXLIMAX
-             if ( i_fdom(i) == DEBUG_i .and. j_fdom(j) == DEBUG_j ) then
+             if ( i_fdom(i) == DEBUG%IJ(1) .and. j_fdom(j) == DEBUG%IJ(2) ) then
                 write(*,"(a15,a30,5i4,2f8.2,f7.3)") "DEBUGPosition: ",  &
                      " me,i,j,i_fdom,j_fdom,glon,glat,rp: ", &
                      me, i,j, i_fdom(i), j_fdom(j), glon(i,j), glat(i,j),rp

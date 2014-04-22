@@ -91,8 +91,8 @@ use ModelConstants_ml,only: &
     IS_GLOBAL, MONTHLY_GRIDEMIS, &  !NML
     NBVOC,         &    ! > 0 if forest voc wanted
     INERIS_SNAP2 , &    ! INERIS/TFMM HDD20 method
-    DEBUG => DEBUG_EMISSIONS,  MasterProc, & 
-    DEBUG_SOILNOX, DEBUG_EMISTIMEFACS, DEBUG_ROADDUST, DEBUG_I,DEBUG_J, &
+    DEBUG, MYDEBUG => DEBUG_EMISSIONS,  MasterProc, & 
+    DEBUG_SOILNOX, DEBUG_EMISTIMEFACS, DEBUG_ROADDUST, &
     USE_DEGREEDAY_FACTORS, & 
     USES,  &  ! Gives USES%EMISSTACKS, & ! MKPS
     SEAFIX_GEA_NEEDED, & ! see below
@@ -346,7 +346,7 @@ subroutine Emissions(year)
   ! allocate for me=0 only:
   err1 = 0
   if(MasterProc) then
-    if(DEBUG) write(*,*) "TTT me ", me , "pre-allocate" 
+    if(MYDEBUG) write(*,*) "TTT me ", me , "pre-allocate" 
     allocate(globnland(GIMAX,GJMAX),stat=err1)
     allocate(globland(GIMAX,GJMAX,NCMAX),stat=err2)
     allocate(globemis(NSECTORS,GIMAX,GJMAX,NCMAX),stat=err3)
@@ -600,7 +600,7 @@ subroutine Emissions(year)
              j<=0 .or. j>GJMAX) cycle READCLIMATEFACTOR
 
           RoadDustEmis_climate_factor(i,j) = tmpclimfactor
-          if(DEBUG_ROADDUST.and.i==DEBUG_i.and.j==DEBUG_j) write(*,*) &
+          if(DEBUG_ROADDUST.and.i==DEBUG%IJ(1).and.j==dEBUG%IJ(2)) write(*,*) &
              "DEBUG RoadDust climate factor (read from file)",&
              RoadDustEmis_climate_factor(i,j)
 
@@ -799,7 +799,7 @@ subroutine Emissions(year)
   ! with (nydays*24*60*60)s and (h*h)m2 and multiply by 1.e+3.
   ! The conversion factor then equals 1.27e-14
   tonne_to_kgm2s  = 1.0e3 / (nydays * 24.0 * 3600.0 * GRIDWIDTH_M * GRIDWIDTH_M)
-  if(DEBUG.and.MasterProc) then
+  if(MYDEBUG.and.MasterProc) then
     write(*,*) "CONV:me, nydays, gridwidth = ",me,nydays,GRIDWIDTH_M
     write(*,*) "No. days in Emissions: ", nydays
     write(*,*) "tonne_to_kgm2s in Emissions: ", tonne_to_kgm2s
@@ -812,7 +812,7 @@ subroutine Emissions(year)
   iemCO=find_index("co",EMIS_FILE(:)) ! save this index
   conv = tonne_to_kgm2s
     
-  if(DEBUG.and.debug_proc.and.iemCO>0) &
+  if(MYDEBUG.and.debug_proc.and.iemCO>0) &
     write(*,"(a,2es10.3)") "SnapPre:" // trim(EMIS_FILE(iemCO)), &
       sum(snapemis   (:,debug_li,debug_lj,:,iemCO)), &
       sum(snapemis_flat(debug_li,debug_lj,:,iemCO))
@@ -825,7 +825,7 @@ subroutine Emissions(year)
     snapemis_flat(i,j,fic,iem) = snapemis_flat(i,j,fic,iem) * conv * xm2(i,j)
   endforall
 
-  if(DEBUG.and.debug_proc.and.iemCO>0) &
+  if(MYDEBUG.and.debug_proc.and.iemCO>0) &
     write(*,"(a,2es10.3)") "SnapPos:" // trim(EMIS_FILE(iemCO)), &
       sum(snapemis   (:,debug_li,debug_lj,:,iemCO)), &
       sum(snapemis_flat(debug_li,debug_lj,:,iemCO))
@@ -1243,7 +1243,7 @@ endsubroutine consistency_check
           endif ! ROADDUST
         enddo   ! i
       enddo     ! j
-      if(DEBUG.and.debug_proc) &    ! emis sum kg/m2/s
+      if(MYDEBUG.and.debug_proc) &    ! emis sum kg/m2/s
         call datewrite("SnapSum, kg/m2/s:"//trim(EMIS_FILE(iemCO)), &
               (/ SumSnapEmis(debug_li,debug_lj,iemCO)  /) )
 
@@ -1454,7 +1454,7 @@ subroutine newmonth
 
   ktonne_to_kgm2s = 1.0e6/(nydays*24.*60.*60.*GRIDWIDTH_M*GRIDWIDTH_M)
 
-  if(MasterProc.and.DEBUG) then
+  if(MasterProc.and.MYDEBUG) then
     write(*,*) 'Enters newmonth, mm, ktonne_to_kgm2s = ', &
         current_date%month,ktonne_to_kgm2s
     write(*,*) ' first_dms_read = ', first_dms_read
@@ -1490,7 +1490,7 @@ subroutine newmonth
             flat_landcode(i,j,n) = IQ_DMS   ! country code 35 
             if(n>flat_ncmaxfound) then
               flat_ncmaxfound = n 
-              if (DEBUG) write(6,*)'DMS Increased flat_ncmaxfound to ',n 
+              if (MYDEBUG) write(6,*)'DMS Increased flat_ncmaxfound to ',n 
               call CheckStop( n > FNCMAX, "IncreaseFNCMAX for dms")
             endif
           else  ! We know that DMS lies last in the array, so:
@@ -1502,7 +1502,7 @@ subroutine newmonth
       enddo   ! j
 
       if(first_dms_read) then
-        if(DEBUG) &
+        if(MYDEBUG) &
           write(*,*)'me ',me, ' Increased flat_ncmaxfound to ',flat_ncmaxfound 
         first_dms_read = .false.
       endif
@@ -1607,7 +1607,7 @@ subroutine EmisOut(label, iem,nsources,sources,emis)
   txt = trim(label)//"."//trim(EMIS_FILE(iem))
   msg(:) = 0
 
-  if(DEBUG) write(*,*)"CALLED "//trim(txt),me,&
+  if(MYDEBUG) write(*,*)"CALLED "//trim(txt),me,&
     maxval(emis),maxval(nsources),maxval(sources)
 
   if(MasterProc) then
@@ -1642,7 +1642,7 @@ subroutine EmisOut(label, iem,nsources,sources,emis)
         do icc = 1, ncc
           if(sources(i,j,icc)==iland) then
             locemis(i,j,: ) = emis(:, i,j,icc)
-            if(DEBUG) call CheckStop(any(locemis(i,j,:)< 0.0),"NEG LOCEMIS")
+            if(MYDEBUG) call CheckStop(any(locemis(i,j,:)< 0.0),"NEG LOCEMIS")
           endif
         enddo
       enddo
@@ -1656,7 +1656,7 @@ subroutine EmisOut(label, iem,nsources,sources,emis)
     !/ (Need to be careful, local2global changes local arrays. Hence lemis)
     do isec = 1, NSECTORS
       lemis = locemis(:,:,isec)
-      if(DEBUG.and.debug_proc) write(*,*) trim(txt)//" lemis ",me,iland,isec,maxval(lemis(:,:))
+      if(MYDEBUG.and.debug_proc) write(*,*) trim(txt)//" lemis ",me,iland,isec,maxval(lemis(:,:))
       call local2global(lemis,gemis,msg)
       if(MasterProc) globemis(:,:,isec) = gemis(:,:) !! for output
     enddo ! isec

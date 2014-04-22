@@ -57,7 +57,7 @@
  use MicroMet_ml,          only : Wind_at_h
  use ModelConstants_ml,    only : KMAX_MID, KMAX_BND, &
                                   MasterProc, & 
-                                  DEBUG_SEASALT, DEBUG_i,DEBUG_j
+                                  DEBUG_SEASALT
  use Par_ml,               only : MAXLIMAX,MAXLJMAX   ! => x, y dimensions
  use PhysicalConstants_ml, only : CHARNOCK, AVOG ,PI
  use Setup_1dfields_ml,    only : rcemis 

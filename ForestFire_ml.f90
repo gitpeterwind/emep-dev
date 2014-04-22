@@ -63,7 +63,7 @@ module ForestFire_ml
   use MetFields_ml,      only : z_bnd
   use ModelConstants_ml, only : MasterProc, KMAX_MID, &
                                 USES, & !TESTING 
-                                DEBUG_FORESTFIRE, FORECAST, &
+                                DEBUG, FORECAST, &
                                 IOU_INST,IOU_HOUR,IOU_HOUR_MEAN, IOU_YEAR
   use NetCDF_ml,         only : ReadField_CDF, Out_netCDF,Real4 ! Reads, writes 
   use OwnDataTypes_ml,   only : Deriv, TXTLEN_SHORT
@@ -176,9 +176,9 @@ subroutine Fire_Emis(daynumber)
 
   select case(verbose)
     case(:0);my_debug=.false.
-    case(1) ;my_debug=DEBUG_FORESTFIRE.and.MasterProc.and.my_first_call
-    case(2) ;my_debug=DEBUG_FORESTFIRE.and.MasterProc
-    case(3) ;my_debug=DEBUG_FORESTFIRE
+    case(1) ;my_debug=DEBUG%FORESTFIRE.and.MasterProc.and.my_first_call
+    case(2) ;my_debug=DEBUG%FORESTFIRE.and.MasterProc
+    case(3) ;my_debug=DEBUG%FORESTFIRE
     case(4:);my_debug=.true.
   endselect
 
@@ -187,7 +187,7 @@ subroutine Fire_Emis(daynumber)
 
   case("GFED") ! 8-day values
 
-    if(DEBUG_FORESTFIRE.and.MasterProc) write(*,*) "FIRE selects GFED"
+    if(DEBUG%FORESTFIRE.and.MasterProc) write(*,*) "FIRE selects GFED"
     select case(yyyy)
     case(2001:2007)
       if(MasterProc)&
@@ -199,7 +199,7 @@ subroutine Fire_Emis(daynumber)
       my_first_call = .false.
       return
     endselect
-    if(DEBUG_FORESTFIRE.and.MasterProc) &
+    if(DEBUG%FORESTFIRE.and.MasterProc) &
       write(*,*) "GFED FIRE days:", yyyy, daynumber, dd_old, mod(daynumber,8), my_first_call
 
     ! GFED Fire emissions are called at 8 days intervals (1, 9, 17, ....)
@@ -210,17 +210,18 @@ subroutine Fire_Emis(daynumber)
     nstart=( yyyy -2001)*46+(daynumber+7)/8
 
   case("FINN")
-    if(DEBUG_FORESTFIRE.and.MasterProc) write(*,*) "FIRE selects FINN"
+    !write(*,*) "FIRE selects FINN",me, DEBUG%FORESTFIRE, MasterProc
+    if(DEBUG%FORESTFIRE.and.MasterProc) write(*,*) "FIRE selects FINN"
 
   case("GFAS")
-    if(DEBUG_FORESTFIRE.and.MasterProc) write(*,*) "FIRE selects GFAS"
+    if(DEBUG%FORESTFIRE.and.MasterProc) write(*,*) "FIRE selects GFAS"
 
   case default
     call CheckStop("Unknown B.B.Mapping: "//trim(BiomassBurningMapping))
   endselect
 
 
-  if(DEBUG_FORESTFIRE.and.MasterProc) &
+  if(DEBUG%FORESTFIRE.and.MasterProc) &
     write(*,*) "Starting FIRE days:", yyyy, &
       daynumber, dd_old, mod(daynumber,8), my_first_call
 
@@ -269,7 +270,7 @@ subroutine Fire_Emis(daynumber)
     return
   endif
 
-  if(DEBUG_FORESTFIRE.and.MasterProc) write(*,*) "FOREST_FIRE: ", daynumber,nstart
+  if(DEBUG%FORESTFIRE.and.MasterProc) write(*,*) "FOREST_FIRE: ", daynumber,nstart
   BiomassBurningEmis(:,:,:) = 0.0
   allocate(rdemis(MAXLIMAX,MAXLJMAX),stat=alloc_err)
   call CheckStop(alloc_err,"ForestFire rdemis alloc problem")
@@ -285,7 +286,7 @@ subroutine Fire_Emis(daynumber)
     iemep   = FF_defs(iBB)%emep  ! 
     ind     = find_index( iemep, emep_used )  !  Finds 1st emep in BiomassBurning
 
-    if(DEBUG_FORESTFIRE.and.MasterProc) &
+    if(DEBUG%FORESTFIRE.and.MasterProc) &
       write(*,"( a,3i5, a8,i3)") "FIRE SETUP: ", iBB,iemep,ind, &
         trim(FF_poll), len_trim(FF_poll)
 
@@ -297,7 +298,7 @@ subroutine Fire_Emis(daynumber)
       if(my_debug) &
         write(*,*) "FFIRE GFED ", me, iBB, nstart,  trim(FF_poll), trim(fname)
       call ReadField_CDF(fname,FF_poll,rdemis,nstart,interpol='zero_order',&
-        needed=.not.FORECAST,UnDef=0.0,debug_flag=DEBUG_FORESTFIRE)
+        needed=.not.FORECAST,UnDef=0.0,debug_flag=DEBUG%FORESTFIRE)
       !unit conversion to GFED [g/m2/8day]->[kg/m2/s]
       to_kgm2s = 1.0e-3 /(8*24.0*3600.0)
       forall(j=1:ljmax,i=1:limax) rdemis(i,j)=rdemis(i,j)*to_kgm2s
@@ -315,19 +316,19 @@ subroutine Fire_Emis(daynumber)
          do i =  1, dd1, dd2
             call ReadField_CDF(fname,FF_poll,xrdemis,daynumber,&
                interpol='mass_conservative',&
-               needed=.not.FORECAST,UnDef=0.0,debug_flag=DEBUG_FORESTFIRE)
+               needed=.not.FORECAST,UnDef=0.0,debug_flag=DEBUG%FORESTFIRE)
             rdemis = rdemis + xrdemis/real(dd2-dd1+1)  ! Get monthly avg.
          end do
       else
          call ReadField_CDF(fname,FF_poll,rdemis,daynumber,&
               interpol='mass_conservative',&
-              needed=.not.FORECAST,UnDef=0.0,debug_flag=DEBUG_FORESTFIRE)
+              needed=.not.FORECAST,UnDef=0.0,debug_flag=DEBUG%FORESTFIRE)
               
       end if ! USES%MONTHLY_FF 
 
       !else
       !call ReadField_CDF(fname,FF_poll,rdemis,daynumber,interpol='mass_conservative',&
-      !  needed=.not.FORECAST,UnDef=0.0,debug_flag=DEBUG_FORESTFIRE)
+      !  needed=.not.FORECAST,UnDef=0.0,debug_flag=DEBUG%FORESTFIRE)
       !end if
       !MONTHLY FF
       !unit conversion to FINN: Can be negative if REMPPM to be calculated
@@ -344,7 +345,7 @@ subroutine Fire_Emis(daynumber)
       if(my_debug) &
         write(*,*) "FFIRE GFAS ", me, iBB, n, nstart,  trim(FF_poll), trim(fname)
       call ReadField_CDF(fname,FF_poll,rdemis,nstart,interpol='conservative',&
-          needed=.not.FORECAST,debug_flag=DEBUG_FORESTFIRE)
+          needed=.not.FORECAST,debug_flag=DEBUG%FORESTFIRE)
       ! GFAS units are [kg/m2/s]. No further unit conversion is needed.
       ! However, fac can be /=1, e.g. when REMPPM is calculated
       fac=FF_defs(iBB)%unitsfac * FF_defs(iBB)%frac
@@ -365,7 +366,7 @@ subroutine Fire_Emis(daynumber)
     if(my_first_defs) call PrintLog(&
       "ForestFire_ml :: Assigns "//trim(FF_poll) , MasterProc)
 
-    if(DEBUG_FORESTFIRE) sum_emis(ind)=sum_emis(ind)+sum(BiomassBurningEmis(ind,:,:))
+    if(DEBUG%FORESTFIRE) sum_emis(ind)=sum_emis(ind)+sum(BiomassBurningEmis(ind,:,:))
   enddo ! BB_DEFS
 
   my_first_defs  = .false.
@@ -388,7 +389,7 @@ subroutine Fire_Emis(daynumber)
   ! Some databases (e.g. FINN, GFED) have both total PM25 and EC, OC. The difference
   ! REMPPM25, is created by the BiomasBurning mapping procedure, but we just
   ! check here
-  if(DEBUG_FORESTFIRE.and.debug_proc) then
+  if(DEBUG%FORESTFIRE.and.debug_proc) then
     n = ieCO
     loc_maxemis = maxloc(BiomassBurningEmis(n,:,: ) )
 
@@ -427,7 +428,7 @@ subroutine Fire_rcemis(i,j)
   real    :: origrc, bbe, fac
   logical :: debug_flag
 
-  debug_flag = (DEBUG_FORESTFIRE.and.debug_proc .and.&
+  debug_flag = (DEBUG%FORESTFIRE.and.debug_proc .and.&
                 i==debug_li.and.j==debug_lj)
   if(debug_flag.and.BiomassBurningEmis(ieCO,i,j) > 1.0e-10)  &
     write(*,"(a,5i4,es12.3,f9.3)") "BurningDEBUG ", me, i,j, &

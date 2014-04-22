@@ -46,7 +46,7 @@ program myeul
        IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY, &
        USES, USE_LIGHTNING_EMIS, &
        FORECAST       ! FORECAST mode
-  use ModelConstants_ml,only: Config_ModelConstants
+  use ModelConstants_ml,only: Config_ModelConstants,DEBUG
   use NetCDF_ml,        only: Init_new_netCDF
   use OutputChem_ml,    only: WrtChem, wanted_iou
   use Par_ml,           only: me, GIMAX, GJMAX, Topology, parinit
@@ -87,7 +87,6 @@ program myeul
   INCLUDE 'mpif.h'
   INTEGER STATUS(MPI_STATUS_SIZE),INFO
 
-  logical, parameter :: DEBUG_UNI = .false.
   integer :: i, oldseason, newseason
   integer :: mm_old   ! month and old-month
   integer :: nproc_mpi,cyclicgrid
@@ -184,7 +183,7 @@ program myeul
 
   call Add_2timing(3,tim_after,tim_before,"After infield")
 
-  if (MasterProc.and.DEBUG_UNI) print *,"Calling emissions with year",yyyy
+  if (MasterProc.and.DEBUG%MAINCODE) print *,"Calling emissions with year",yyyy
 
   call Emissions(yyyy)
 
@@ -206,10 +205,10 @@ program myeul
   ! (read input files "sites.dat" and "sondes.dat" )
 
   call vgrid           !  initialisation of constants used in vertical advection
-  if (MasterProc.and.DEBUG_UNI) print *,"vgrid finish"
+  if (MasterProc.and.DEBUG%MAINCODE ) print *,"vgrid finish"
 
   ! open only output netCDF files if needed
-  if(MasterProc.and.DEBUG_UNI)print *, "NETCDFINITS: minval, maxval", iou_min, iou_max
+  if(MasterProc.and.DEBUG%MAINCODE )print *, "NETCDFINITS: minval, maxval", iou_min, iou_max
   ! The fullrun file contains the accumulated or average results
   ! over the full run period, often a year, but even just for
   ! a few timesteps if that is all that is run:
@@ -265,13 +264,13 @@ program myeul
         !subroutines/data that must be updated every month
         call readdiss(newseason)
 
-        if (MasterProc.and.DEBUG_UNI) print *,'maaned og sesong', &
+        if (MasterProc.and.DEBUG%MAINCODE ) print *,'maaned og sesong', &
              mm,mm_old,newseason,oldseason
 
         call Add_2timing(6,tim_after,tim_before,"readdiss, aircr_nox")
 
         call MetModel_LandUse(2)   ! e.g.  gets snow_flag
-        if ( MasterProc .and. DEBUG_UNI) write(6,*)"vnewmonth start"
+        if ( MasterProc .and. DEBUG%MAINCODE ) write(6,*)"vnewmonth start"
 
         call newmonth
 
@@ -283,15 +282,15 @@ program myeul
 
         call Add_2timing(8,tim_after,tim_before,"init_aqueous")
         ! Monthly call to BoundaryConditions.
-        if (DEBUG_UNI) print *, "Into BCs" , me
+        if (DEBUG%MAINCODE ) print *, "Into BCs" , me
         ! We set BCs using the specified iyr_trend
         !   which may or may not equal the meteorology year
         call BoundaryConditions(yyyy,mm)
-        if (DEBUG_UNI) print *, "Finished BCs" , me
+        if (DEBUG%MAINCODE ) print *, "Finished BCs" , me
 
         !must be called only once, after BC is set
         if(mm_old==0)call Init_massbudget()
-        if (DEBUG_UNI) print *, "Finished Initmass" , me
+        if (DEBUG%MAINCODE ) print *, "Finished Initmass" , me
 
      endif
 
@@ -300,7 +299,7 @@ program myeul
 
      call Add_2timing(9,tim_after,tim_before,"BoundaryConditions")
 
-     if (DEBUG_UNI) print *, "1st Infield" , me
+     if (DEBUG%MAINCODE ) print *, "1st Infield" , me
 
      call SetLandUse(daynumber, mm) !daily
      call Add_2timing(11,tim_after,tim_before,"SetLanduse")

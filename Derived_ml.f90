@@ -92,7 +92,6 @@ use ModelConstants_ml, only: &
   ,PPBINV       & ! 1.0e9, for conversion of units
   ,PPTINV       & ! 1.0e12, for conversion of units
   ,MFAC         & ! converts roa (kg/m3 to M, molec/cm3)
-  ,DEBUG_i, DEBUG_j &
   ,DEBUG        & ! gives DEBUG%AOT
   ,MasterProc &
   ,SOURCE_RECEPTOR &

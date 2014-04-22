@@ -152,6 +152,44 @@ info on unused variables, etc.
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+22 April 2014  Dave   2769-2770
+
+** NEW ** AllocInit.f90 - to encourage setting of initial values when
+   allocating. Almost identical to ESX.
+
+   Added in Makefile.SRCs, but not used yet
+
+** Debug changes. More use of config.
+
+  Note: DEBUG_i, DEBUG_j now replaced by DEBUG%IJ array, set through config.
+
+  BoundaryConditions - used DEBUG%IJ
+  Chem_ml 
+  EmisGet  - had to change meaning of DEBUG (was => DEBUG_GETEMIS)
+  Emissions - had to change meaning of DEBUG (was => DEBUG_EMISSIONS)
+  ForestFire_ml, DEBUG%FORESTFIRE
+  GridValues_ml, DEBUG%GRIDVALUES
+  IoProgs_ml,    DEBUG%IOPROG
+  ModelConstants_ml 
+  PhyChem_ml,     DEBUG%PHYCHEM, now uses DEBUG%SPEC
+  Unimod,         DEBUG%MAINCODE instead of DEBUG_UNI
+
+  config_EMEPSTD.nml - DEBUG changes
+
+  Some code had "use DEBUG_i" which wasn't used at all:
+
+  Derived_ml
+  DryDep_ml
+  Landuse_ml
+  Met_ml
+  SeaSalt_ml
+  Setup_1d_ml
+
+ Clean-up (incomplete!)
+  ZD_VBS/My_SOA_ml
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 21 April 2014  Peter  2768
 
 Bug for rho_surf in Met_ml, introduced probably (by me) 11 December 2013 (2690).

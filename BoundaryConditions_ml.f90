@@ -101,7 +101,7 @@ use ModelConstants_ml, only: KMAX_MID  &  ! Number of levels in vertical
                             ,BGND_CH4  &  ! If positive, replaces defaults
                             ,USE_SEASALT & 
                             ,USES,DEBUG  & ! %BCs
-                            ,DEBUG_i, DEBUG_j, MasterProc, PPB
+                            ,MasterProc, PPB
 use NetCDF_ml,         only:ReadField_CDF,vertical_interpolate
 use Par_ml,          only: &
    MAXLIMAX, MAXLJMAX, limax, ljmax, me &
@@ -268,7 +268,7 @@ contains
     if (DEBUG%BCS.and.debug_proc) then
        do i = 1, limax
           do j = 1, ljmax
-             if (i_fdom(i)==DEBUG_i.and.j_fdom(j)==DEBUG_j) then
+             if (i_fdom(i)==DEBUG%IJ(1).and.j_fdom(j)==DEBUG%IJ(2)) then
                 i_test = i
                 j_test = j
              endif

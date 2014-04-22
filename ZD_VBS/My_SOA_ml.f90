@@ -30,6 +30,7 @@ module OrganicAerosol_ml
 
   ! Functions + GridValues + PT only for BGNDOC
    use Functions_ml, only: StandardAtmos_kPa_2_km !ds for use in Hz scaling
+use CheckStop_ml, only : StopAll  ! CHECKXN
    use ChemFields_ml,      only : Fgas3d   !  stores 3-d  between time-steps
    use ChemChemicals_ml,      only : species   ! for molwts
    use ChemSpecs_tot_ml,  S1 => FIRST_SEMIVOL , S2 => LAST_SEMIVOL
@@ -51,13 +52,13 @@ module OrganicAerosol_ml
   ,NVFFIREOC25 => NVFFIREOC25_GROUP  ! only non-vol. FFIREOC emissions
                                      ! (zero in VBS-PAX type runs)
 
-   use GridValues_ml, only: A_mid,B_mid
+   use GridValues_ml, only: A_mid,B_mid, debug_proc, debug_li, debug_lj
    use ModelConstants_ml,    only :  PT
 
    use ModelConstants_ml,    only : CHEMTMIN, CHEMTMAX, &
                                     MasterProc, DEBUG => DEBUG_SOA, &
                                     K2 => KMAX_MID, K1 => KCHEMTOP
-   use Par_ml,               only : LIDIM => MAXLIMAX, LJDIM => MAXLJMAX
+   use Par_ml,               only : LIDIM => MAXLIMAX, LJDIM => MAXLJMAX, me
    use PhysicalConstants_ml, only : AVOG, RGAS_J 
    use Setup_1dfields_ml,    only : itemp, xn => xn_2d, Fgas, Fpart
    use TimeDate_ml,       only: current_date
@@ -203,7 +204,6 @@ module OrganicAerosol_ml
          end if
 
 
-       ! print *, "FEB2012 ALLOCATE ", S1,S2, K1, K2
          allocate( Fgas3d(S1:S2,LIDIM,LJDIM,K1:K2) )
 
        !+ initial guess (1st time-step only)
@@ -219,6 +219,11 @@ module OrganicAerosol_ml
 
            !VBS Grid_avg_mw    = 250.0              ! Da
            !EXC Grid_SOA_gamma = 1.0
+    !=========================================================================
+!     if (debug_proc .and. i == debug_li .and. j == debug_lj ) then
+!          print *, " CHECKXN xn(PART_FFIREOA25_OC,k) ",me,i,j, xn(PART_FFIREOA25_OC,K2)
+!     end if
+       
     !=========================================================================
         my_first_call = .false.
     end if ! my_first_call
@@ -371,7 +376,7 @@ module OrganicAerosol_ml
 
    Fgas(S1:S2,:)  = 1.0 - Fpart(S1:S2,:)
    Grid_COA(i_pos,j_pos,:)              = COA(:)
-   Fgas3d(S1:S2,i_pos,j_pos,:) = Fgas(S1:S2,:) !FEB2012
+   Fgas3d(S1:S2,i_pos,j_pos,:) = Fgas(S1:S2,:) 
 
 ! PCM_F is for output only. Has MW 1 to avoid confusion with OC
 ! do not use ugC outputs, just ug
@@ -389,6 +394,7 @@ module OrganicAerosol_ml
   !    Total TC and EC (and TC2.5, TC10, EC2.5 and EC10) would also be useful.
   !    Also perhaps the names of these species should reflect 
   !    that they are in units of C?   
+
    do k = K1, K2
      xn(PART_ASOA_OC,k)  = sum ( Fpart(ASOA,k) *xn(ASOA,k)  *species(ASOA)%carbons )
      xn(GAS_ASOA_OC,k)  = sum ( Fgas(ASOA,k) * xn(ASOA,k)  *species(ASOA)%carbons )

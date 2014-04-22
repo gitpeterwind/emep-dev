@@ -37,7 +37,7 @@ use Advection_ml,     only:  advecdiff_poles,advecdiff_Eta!,adv_int
 use Biogenics_ml,     only: Set_SoilNOx
 use Chemfields_ml,    only: xn_adv,cfac,xn_shl
 !CMR use ChemSpecs_adv_ml, only: IXADV_SO2, IXADV_NH3, IXADV_O3
-use ChemSpecs,        only: IXADV_SO2, IXADV_NH3, IXADV_O3
+use ChemSpecs,        only: IXADV_SO2, IXADV_NH3, IXADV_O3, NSPEC_SHL, species
 use CoDep_ml,         only: make_so2nh3_24hr
 use DA_3DVar_ml,      only: main_3dvar   ! 3D-VAR Analysis
 use Derived_ml,       only: DerivedProds, Derived, num_deriv2d
@@ -48,7 +48,7 @@ use GridValues_ml,    only: debug_proc,debug_li,debug_lj,&
                             glon,glat,projection
 use ModelConstants_ml,only: KMAX_MID, nmax, nstep &
                            ,dt_advec       & ! time-step for phyche/advection
-                           ,DEBUG_PHYCHEM, PPBINV  & 
+                           ,DEBUG, PPBINV, PPTINV  & 
                            ,END_OF_EMEPDAY & ! (usually 6am)
                            ,IOU_INST       & !
                            ,FORECAST       & !use advecdiff_poles on FORECAST mode
@@ -102,7 +102,8 @@ contains
 
     thour = real(current_date%hour) + current_date%seconds/3600.0
 
-    if ( DEBUG_PHYCHEM .and. debug_proc ) then
+    if ( DEBUG%PHYCHEM.and. first_call  )  print *, "PhyChe First", me, debug_proc
+    if ( DEBUG%PHYCHEM .and. debug_proc ) then
        call debug_concs("PhyChe start ")
        if ( current_date%hour == 12 ) then
 
@@ -144,7 +145,7 @@ contains
 
     call ZenithAngle(thour, glat, glon, zen, coszen )
 
-    if( DEBUG_PHYCHEM .and. debug_proc  ) then
+    if( DEBUG%PHYCHEM .and. debug_proc  ) then
        write(*,*) "PhyChem ZenRad ", current_date%day, current_date%hour, &
             thour, glon(debug_li,debug_lj),glat(debug_li,debug_lj), &
             zen(debug_li,debug_lj),coszen(debug_li,debug_lj)
@@ -258,7 +259,7 @@ contains
        print "(a,i2.2,a,i2.2,a,i2.2,a)",' End of EMEP-day (',&
             current_date%hour, ':',current_date%seconds/60,&
                            ':',mod(current_date%seconds,60),')'
-       if(DEBUG_PHYCHEM)write(*,"(a20,2i4,i6)") "END_OF_EMEPDAY ", &
+       if(DEBUG%PHYCHEM)write(*,"(a20,2i4,i6)") "END_OF_EMEPDAY ", &
             END_OF_EMEPDAY, current_date%hour,current_date%seconds
     endif
 
@@ -300,14 +301,28 @@ contains
    !--------------------------------------------------------------------------
    subroutine debug_concs(txt)
      character(len=*), intent(in) :: txt
+     character(len=6) :: unit
+     real :: c1, c2
+     integer :: ind
+
       ! Simple sub to print out eg O3 concentrations for different stages
       ! of calculation. Saves lots of messy lines above.
 
-       if ( DEBUG_PHYCHEM .and. debug_proc ) then
-           write(6,"(a,2i3,i5,i3,f9.4)") trim(txt), me, &
+       if ( DEBUG%PHYCHEM .and. debug_proc .and. DEBUG%SPEC > 0 ) then
+
+           if ( DEBUG%SPEC > NSPEC_SHL ) then
+              ind =   DEBUG%SPEC - NSPEC_SHL
+              c1=    xn_adv(DEBUG%SPEC,debug_li,debug_lj,KMAX_MID)*PPBINV 
+              c2=    c1* cfac(DEBUG%SPEC,debug_li,debug_lj)*PPBINV
+              unit = 'ppbv'
+           else
+              c1  =   xn_shl(DEBUG%SPEC,debug_li,debug_lj,KMAX_MID)*PPTINV
+              c2=     -1.0
+              unit = 'pptv'
+           end if
+           write(6,"(a,2i3,i5,i3,a12,2g12.4,1x,a4)") trim(txt), me, &
               current_date%hour, current_date%seconds, nstep,&
-                  xn_adv(IXADV_O3,debug_li,debug_lj,KMAX_MID)*&
-                  cfac(IXADV_O3,debug_li,debug_lj)*PPBINV
+                   trim(species(DEBUG%SPEC)%name), c1, c2, unit
        end if
    end subroutine debug_concs
    !--------------------------------------------------------------------------
