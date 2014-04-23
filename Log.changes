@@ -153,7 +153,17 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-23 April 2014  Dave   2774
+23 April 2014  Dave   2774-2778
+
+RESULTS change!!!!! Mainly for BSOA, but also other
+
+BUG fix - TERPperoxy added in EmChem09.species, to ensure treatment as SHL
+
+ZCM_vbs_tests/VBS_SOAformation.species - TERPPeroxy removed
+
+ZCM_vbs_tests/VBS_partitoining.reactions - now HO2 and NO reactions with
+    TERPperoxy set oxidant neutral (in []). (Since we don't have the 
+    gas-phase chemistry to do this properly.)
 
 ESX only. Small changes to FortranTips.txt
 
