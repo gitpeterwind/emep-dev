@@ -29,6 +29,7 @@ MALO2,0,CH3COCH(OH)CH(O2)CHO,xx,xx,xx,0,0,0,xx,RO2,,!
 MVKO2,0,HOCH2CH(OO)C(CH3)=O,xx,xx,xx,0,0,0,xx,RO2,,"!(also OOCH2CH(OH)C(CH3)=CH2 - see P&S"
 MACRO2,0,O=CHC(O2)(CH3)CH2OH,xx,xx,xx,0,0,0,xx,RO2,,"!(from macr degredation; from MCM)"
 MACO3,0,CH2C(CH3)C(=O)O2,xx,xx,xx,0,0,0,xx,RO2,,"!(from macr degredation; from MCM)"
+TERPPeroxy,0,terpperoxy,xx,xx,xx,0,0,0,xx,RO2,,"!From terpene degradation"
 O3,1,O3,xx,O3,xx,0,0,0,xx,OX,,!
 NO,1,NO,xx,xx,xx,0,0,0,xx,NOX;OXN,,!
 NO2,1,NO2,xx,NO2,xx,0,0,0,xx,NOX;OX;OXN;daObs,,!
