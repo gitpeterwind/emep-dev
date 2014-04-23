@@ -432,11 +432,14 @@ subroutine siteswrt_surf(xn_adv,cfac,xn_shl)
 
   ! assign local data to out
 
+  i_Att=0
+  NSpec_Att=1 !number of Spec attributes defined
   do i = 1, nlocal_sites
     ix = site_x(i)
     iy = site_y(i)
     iz = site_z(i)
 
+    i_Att=0
     do ispec = 1, NADV_SITE
       if (iz == KMAX_MID ) then ! corrected to surface
         out(ispec,i) = xn_adv( SITE_ADV(ispec) ,ix,iy,KMAX_MID ) * &
@@ -444,11 +447,18 @@ subroutine siteswrt_surf(xn_adv,cfac,xn_shl)
       else                      ! Mountain sites not corrected to surface
         out(ispec,i)  = xn_adv( SITE_ADV(ispec) ,ix,iy,iz ) * PPBINV
       endif
+      i_Att=i_Att+1
+      Spec_AttributeNames(i_Att,1)='units'
+      Spec_AttributeValues(i_Att,1)='ppb'
+ 
     enddo
 
 
     do ispec = 1, NSHL_SITE
       out(NADV_SITE+ispec,i)  = xn_shl( SITE_SHL(ispec) ,ix,iy,iz )
+      i_Att=i_Att+1
+      Spec_AttributeNames(i_Att,1)='units'
+      Spec_AttributeValues(i_Att,1)='ppb'
     end do
 
     ! XTRA parameters, usually the temmp or pressure
@@ -459,10 +469,16 @@ subroutine siteswrt_surf(xn_adv,cfac,xn_shl)
         select case ( trim(SITE_XTRA_MISC(ispec)) )
           case ( "T2" )
             out(nn,i)   = t2_nwp(ix,iy,1) - 273.15
+          i_Att=i_Att+1
+          Spec_AttributeNames(i_Att,1)='units'
+          Spec_AttributeValues(i_Att,1)='K'
           case ( "th" )
             out(nn,i)   = th(ix,iy,iz,1)
 !         case ( "hmix" )
 !           out(nn,i)   = pzpbl(ix,iy)
+          i_Att=i_Att+1
+          Spec_AttributeNames(i_Att,1)='units'
+          Spec_AttributeValues(i_Att,1)='K'
          case default
            call CheckStop("Error, Sites_ml/siteswrt_surf: SITE_XTRA_MISC:"&
                                // trim(SITE_XTRA_MISC(ispec)))
@@ -479,10 +495,16 @@ subroutine siteswrt_surf(xn_adv,cfac,xn_shl)
            if(MasterProc .and. my_first_call) write(*,*) &
                  "WARNING: SITES D2D NOT FOUND"//trim(d2code)
            !cycle
+          i_Att=i_Att+1
            out(nn,i)   = -999.9
+          Spec_AttributeNames(i_Att,1)='output'
+          Spec_AttributeValues(i_Att,1)='undefined'!to improve?
         else
            !call CheckStop( d2index<1, "SITES D2D NOT FOUND"//trim(d2code) )
            out(nn,i)   = d_2d(d2index,ix,iy,IOU_INST)
+          i_Att=i_Att+1
+          Spec_AttributeNames(i_Att,1)='units'
+          Spec_AttributeValues(i_Att,1)='?'!to improve?
         end if
 
         !May25 call CheckStop( d2index<1, "SITES D2D NOT FOUND"//trim(d2code) )
@@ -741,12 +763,18 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
       return
   end select
 
-  write(suffix,fmt="(i4)") current_date%year
+  write(suffix,fmt="(i4)") prev_year(type)
   fileName = fname // "_" // suffix // ".nc"!Name of the NetCDF file. Will overwrite any preexisting file
 
 !  if ( MasterProc .and. current_date%month /= prev_month(type)) then
-  if (current_date%year /= prev_year(type) ) then
+  if (current_date%year /= prev_year(type) & 
+       !We do not consider midnight as a new year
+       .and.(current_date%month/=1.or.current_date%hour/=0.or.current_date%seconds/=0)&
+       ) then
       prev_year(type) = current_date%year
+      write(suffix,fmt="(i4)") current_date%year
+      fileName = fname // "_" // suffix // ".nc"!Name of the NetCDF file. Will overwrite any preexisting file
+
       if (MasterProc  ) then
       if ( prev_year(type) > 0 ) close(io_num)  ! Close last-year file
       prev_year(type) = current_date%year
@@ -857,13 +885,13 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
      enddo
      !take Spec_Attributes from any processor with at least one site/sonde
      if(i_Att>0.and.i_Att/=NSPEC)then
-        write(*,*)'MISSING SPECIES? ',i_Att,NSPEC
+        write(*,*)'MISSING species attribute? ',i_Att,NSPEC
      endif
      do d = 1, NPROC-1
         call MPI_RECV(i_Att_MPI, 4*1, MPI_BYTE, d, 746, MPI_COMM_WORLD,STATUS, INFO)
         if(i_Att_MPI>0)then
            if(i_Att_MPI/=NSPEC)then
-              write(*,*)'MISSING SPECIES? ',i_Att_MPI,NSPEC
+              write(*,*)'MISSING species attribute? ',i_Att_MPI,NSPEC
            endif
            call MPI_RECV(Spec_AttributeNames, Spec_Att_Size*N_Spec_Att_MAX*NSPECMAX, &
                 MPI_BYTE, d, 747, MPI_COMM_WORLD,STATUS, INFO)

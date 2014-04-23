@@ -190,6 +190,14 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+23 April 2014  Peter  2770
+
+Bug in the netcdf sites output: attributes for Sites where undefined.
+
+In addition the sondes/sites at 31st December midnight are now written in the 
+previous year, instead of the next year (this was also done in the csv output).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 21 April 2014  Peter  2768
 
 Bug for rho_surf in Met_ml, introduced probably (by me) 11 December 2013 (2690).
