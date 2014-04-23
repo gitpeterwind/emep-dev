@@ -2,7 +2,7 @@
 * We need the RO2 from terpenes in VBS schemes. Seems to be ok
 * to add another short-lived here. GenChem adds it to correct list.
 *
-TERPPeroxy,1,terpperoxy,xx,xx,xx,0,0,0,xx,RO2,,"!From terpene degradation"
+* IN EmChem09 now. TERPPeroxy,1,terpperoxy,xx,xx,xx,0,0,0,xx,RO2,,"!From terpene degradation"
 *
 "**************************************************"
 *"*Spec,adv,forumula,MW,DRY,WET,Extinc,Cstar,DeltaH,Empty,Groups,,!Comments"
