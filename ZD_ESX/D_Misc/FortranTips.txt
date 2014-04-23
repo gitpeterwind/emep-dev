@@ -3,6 +3,13 @@ Fortran tips
 
 General Fortran guidelines as used in EMEP/ESX work. 
 
+Implicit none
+-------------
+
+Use this *always* !
+Place at the top of the module (see example below), and it will prevent very common mistakes due to mistyping, etc.
+
+
 
 Modules
 --------
@@ -12,6 +19,7 @@ The aim is to use modern fortran, with modules as the central unit.  Modules sho
   module Example
     use AAA, only : a,b,c     ! Now we know that AAA is only used to get a,b and c
     use BBB                   ! Here get everything which is public in BBB. Best avoided
+    implicit none
     private                   ! ** default is private ** for safety
   
     public :: subroutine1     ! Make public for others to use
