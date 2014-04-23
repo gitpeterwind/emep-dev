@@ -151,6 +151,20 @@ info on unused variables, etc.
 
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+23 April 2014  Dave   2774
+
+ESX only. Small changes to FortranTips.txt
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+23 April 2014  Peter  2773
+
+Bug in the netcdf sites output: attributes for Sites where undefined.
+
+In addition the sondes/sites at 31st December midnight are now written in the 
+previous year, instead of the next year (this was also done in the csv output).
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 22 April 2014  Dave   2769-2770
 
@@ -188,14 +202,6 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
  Clean-up (incomplete!)
   ZD_VBS/My_SOA_ml
 
-
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-23 April 2014  Peter  2773
-
-Bug in the netcdf sites output: attributes for Sites where undefined.
-
-In addition the sondes/sites at 31st December midnight are now written in the 
-previous year, instead of the next year (this was also done in the csv output).
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 21 April 2014  Peter  2768
