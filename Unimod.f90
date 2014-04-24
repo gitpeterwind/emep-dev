@@ -117,6 +117,8 @@ program myeul
        "COMPILED WRONGLY: Need double precision, e.g. f90 -r8")
 
   if(MasterProc) open(IO_LOG,file='RunLog.out')
+!TEST
+  call define_chemicals()    ! sets up species details
   call Config_ModelConstants(IO_LOG)
 
   rewind(IO_NML)
@@ -168,7 +170,7 @@ program myeul
   call Add_2timing(1,tim_after,tim_before,"Before define_Chemicals")
 
   call alloc_ChemFields     !allocate chemistry arrays
-  call define_chemicals()    ! sets up species details
+!TEST  call define_chemicals()    ! sets up species details
   call Init_ChemGroups()    ! sets up species details
 
   call assign_nmax(METSTEP)   ! No. timesteps in inner loop

@@ -153,6 +153,21 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+24 April 2014  Dave   2779
+
+  DEBUG%SPEC is now the name of the species wanted. Used so far only in
+  PhyChem, but recommended for more general use. The variable DEBUG%ISPEC
+  gives the index in species(:)%name that corresponds to this.
+
+  ModelConstants_ml - DEGUG%SPEC, DEBUG%ISPEC defined. Latter calculated
+   in Config subroutine. Also some cleanup.
+
+  PhyChem - DEBUG%SPEC used in debug_conc
+
+  Unimod.f90 - moved called define_species before Config_ModelConstants
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23 April 2014  Dave   2774-2778
 
 RESULTS change!!!!! Mainly for BSOA, but also other

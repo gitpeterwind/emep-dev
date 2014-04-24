@@ -27,15 +27,18 @@
 !*****************************************************************************!
 module ModelConstants_ml
  !+
- ! Specifies a number of constants used in the model. Note that
- ! physical constants (e.g. gravity, Cp, etc ( are specified in
+ ! Specifies a number of constants used in the model, and reads namelist
+ ! file to (re-)configure where possible. 
+ ! Note that physical constants (e.g. gravity, Cp, etc ( are specified in
  ! the module PhysicalConstants_ml.f90)
  !
  !----------------------------------------------------------------------------
-use Io_Nums_ml, only : IO_NML, IO_LOG
+use CheckStop_ml,         only : CheckStop
+use ChemSpecs,            only : species
+use Io_Nums_ml,           only : IO_NML, IO_LOG
 use PhysicalConstants_ml, only : AVOG
-use Precision_ml, only : dp
-use SmallUtils_ml, only : find_index
+use Precision_ml,         only : dp
+use SmallUtils_ml,        only : find_index
 
 implicit none
 private
@@ -106,7 +109,8 @@ type, public :: emep_debug
     ,FORESTFIRE      = .false. &
     ,SOA             = .false.  
    integer, dimension(2) ::   IJ = (/ -999, -999 /)
-   integer               ::   SPEC = -999
+   character(len=20)     ::   SPEC = 'O3'  ! default. 
+   integer               ::   ISPEC = -999 ! Will be set after NML
 end type emep_debug
 type(emep_debug), public, save :: DEBUG
 
@@ -557,9 +561,9 @@ character(len=*), public, parameter :: model="EMEP_MSC-W"
 contains
 subroutine Config_ModelConstants(iolog)
     character(len=120)  :: txt
-    !logical             :: file_exists
     integer, intent(in) :: iolog ! for Log file
-    integer :: i
+    integer :: i, ispec
+    logical :: first_call = .true.
 
     NAMELIST /ModelConstants_config/ &
       EXP_NAME &  ! e.g. EMEPSTD, FORECAST, TFMM, TodayTest, ....
@@ -584,13 +588,6 @@ subroutine Config_ModelConstants(iolog)
      ,FLUX_VEGS  & ! TESTX
      ,NETCDF_DEFLATE_LEVEL,  RUNDOMAIN
 
-
-    !do i = 1, size( emis_inputlist(:)%name )
-    !  emis_inputlist(i)%name = "NOTSET"
-    !  emis_inputlist(i)%incl(:)= "-"
-    !  emis_inputlist(i)%excl(:)= "-"
-    !end do
-
     txt = "ok"
     !Can't call check_file due to circularity
     !call check_file('emep_settings.nml', file_exists, needed=.true., errmsg=txt)
@@ -600,13 +597,16 @@ subroutine Config_ModelConstants(iolog)
 
     USE_SOILNOX = USE_EURO_SOILNOX .or. USE_GLOBAL_SOILNOx
 
-    !emis_inputlist(1)%Nlist = 0 ! Store number in 1st record
-    !do i = 1, size( emis_inputlist(:)%name )
-    !  if ( emis_inputlist(i)%name .eq. "NOTSET" ) cycle
-    !  emis_inputlist(1)%Nlist = emis_inputlist(1)%Nlist + 1
-    !  emis_inputlist(i)%Nincl= find_index( "-", emis_inputlist(i)%incl(:), first_only=.true.) -1
-    !  emis_inputlist(i)%Nexcl= find_index( "-", emis_inputlist(i)%excl(:), first_only=.true.) -1
-    !end do
+    ! Convert DEBUG%SPEC to index
+
+    if( first_call ) then
+        ispec = find_index( DEBUG%SPEC, species(:)%name )
+        !print *, "debug%spec testing", ispec, trim(DEBUG%SPEC)
+        call CheckStop( ispec < 1, &
+              "debug%spec not found"//trim(DEBUG%SPEC))
+        DEBUG%ISPEC = ispec
+        first_call = .false.
+    end if
 
     if ( MasterProc )  then
      write(*, * ) "NAMELIST IS "

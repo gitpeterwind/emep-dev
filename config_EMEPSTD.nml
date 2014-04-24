@@ -95,8 +95,8 @@
   DEBUG%PHYCHEM         = F,
   DEBUG%SOA             = F,
 ! Specify here the coords and species index (tot, see CM_ChemSpecs_tot)
-  DEBUG%IJ              = 60, 50      ! Bremem
-  DEBUG%SPEC            = 84,
+  DEBUG%IJ              = 60, 50      ! Bremen
+  DEBUG%SPEC            = 'OH',
 &end
 &Nest_config
 !-------- Nesting MODEs
