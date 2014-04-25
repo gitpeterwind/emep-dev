@@ -50,8 +50,8 @@ use My_Derived_ml, only : &
             wanted_deriv2d, wanted_deriv3d  &! names of wanted derived fields
            ,Init_My_Deriv, My_DerivFunc
 use My_Derived_ml,  only : &
-      COLUMN_MOLEC_CM2, &
-      COLUMN_LEVELS   , &
+!      COLUMN_MOLEC_CM2, &
+!      COLUMN_LEVELS   , &
       OutputFields,  &
       nOutputFields,  &
       nOutputWdep,  &
@@ -66,10 +66,6 @@ use Chemfields_ml,    only: xn_adv, xn_shl, cfac,xn_bgn, AOD,  &
                             PM25_water, PM25_water_rh50
 use ChemGroups_ml     ! SIA_GROUP, PMCO_GROUP -- use tot indices
 use ChemSpecs       ! Use NSPEC_ADV amd any of IXADV_ indices
-!CMR use ChemSpecs_adv_ml         ! Use NSPEC_ADV amd any of IXADV_ indices
-!CMR use ChemSpecs_shl_ml
-!CMR use ChemSpecs_tot_ml
-!CMR use ChemChemicals_ml, only: species,species_adv
 use Chemfields_ml ,   only: so2nh3_24hr,Grid_snow
 use DerivedFields_ml, only: MAXDEF_DERIV2D, MAXDEF_DERIV3D, &
                             def_2d, def_3d, f_2d, f_3d, d_2d, d_3d
@@ -103,7 +99,8 @@ use ModelConstants_ml, only: &
   ,IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY, IOU_YEAR_LASTHH, IOU_HOUR, IOU_HOUR_MEAN
 
 use MosaicOutputs_ml, only: nMosaic, MosaicOutput
-use OwnDataTypes_ml, only: Deriv,TXTLEN_DERIV,TXTLEN_SHORT ! type & length of names
+use OwnDataTypes_ml, only: Deriv, print_Deriv_type, &
+                  TXTLEN_DERIV,TXTLEN_SHORT ! type & length of names
 use Par_ml,    only: MAXLIMAX,MAXLJMAX, &   ! => max. x, y dimensions
                      me,                &   ! for print outs
                      gi0,gj0,IRUNBEG,JRUNBEG,&! for i_fdom, j_fdom
@@ -160,7 +157,7 @@ private
 
    ! Fraction of NO3_c below 2.5 um (v. crude so far)
 
-     real, save, private :: fracPM25
+     real, save, private :: fracPM25 = -999.9
 
 
   ! Counters to keep track of averaging
@@ -311,10 +308,10 @@ private
        else
          Nadded2d = Nadded2d + 1
          N = Nadded2d
-         if (  debugMaster ) &
-            write(*,"((a,i4,1x,4a,i4))") "DEBUG AddDeriv 2d ", N, &
-               trim(inderiv%name), " Class:", trim(inderiv%class), &
-              " Ind:", inderiv%index
+         if (  debugMaster ) then
+            write(*,"(a,i6)") "DEBUG AddDeriv 2d ", N
+            call print_Deriv_type(inderiv)
+         end if
          !if (  debugMaster  )  write(*,*) "DALL", inderiv
          call CheckStop(N>MAXDEF_DERIV2D,"Nadded2d too big!")
          def_2d(N) = inderiv
@@ -386,20 +383,20 @@ private
 !-------------------------------------------------------------------------------
 !-- Tropospheric columns
 !
-  do n = 1, size(COLUMN_MOLEC_CM2)
-  do n2 = 1, size(COLUMN_LEVELS)
-
-    itot = COLUMN_MOLEC_CM2(n)
-    iadv = itot - NSPEC_SHL
-      !Deriv(name, class,    subc,  txt,           unit
-      !Deriv index, f2d, dt_scale, scale, avg? rho Inst Yr Mn Day atw
-     dname = "COLUMN_" //trim(species( itot )%name) //"_"//COLUMN_LEVELS(n2)
-     subclass = COLUMN_LEVELS(n2)
-     read(unit=subclass(2:3),fmt="(i2)") iLC  ! Faking vertical index with iLC :-(
-     call AddNewDeriv( dname, "COLUMN ",subclass,"-", "molec/cm2", &
-               iadv, -99,  F,    1.0,     T,   IOU_DAY )
-  end do
-  end do
+!  do n = 1, size(COLUMN_MOLEC_CM2)
+!  do n2 = 1, size(COLUMN_LEVELS)
+!
+!    itot = COLUMN_MOLEC_CM2(n)
+!    iadv = itot - NSPEC_SHL
+!      !Deriv(name, class,    subc,  txt,           unit
+!      !Deriv index, f2d, dt_scale, scale, avg? rho Inst Yr Mn Day atw
+!     dname = "COLUMN_" //trim(species( itot )%name) //"_"//COLUMN_LEVELS(n2)
+!     subclass = COLUMN_LEVELS(n2)
+!     read(unit=subclass(2:3),fmt="(i2)") iLC  ! Faking vertical index with iLC :-(
+!     call AddNewDeriv( dname, "COLUMN ",subclass,"-", "molec/cm2", &
+!               iadv, -99,  F,    1.0,     T,   IOU_DAY )
+!  end do
+!  end do
 !-------------------------------------------------------------------------------
 !
        !Deriv(name, class,    subc,  txt,           unit
@@ -451,10 +448,12 @@ do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
 
    outname = trim( OutputFields(ind)%txt1 )
    outunit= trim( OutputFields(ind)%txt2 )   ! eg ugN, which gives unitstxt ugN/m3
-   outdim = trim( OutputFields(ind)%txt3 )   ! 2d or 3d
-   outtyp = trim( OutputFields(ind)%txt5 )   ! SPEC or GROUP
+   outdim = trim( OutputFields(ind)%txt3 )   ! 2d or 3d or e.g. k20
+   outtyp = trim( OutputFields(ind)%txt5 )   ! SPEC or GROUP or MISC
    outind = OutputFields(ind)%ind    !  H, D, M - fequency of output
    txt2   = "-" ! not needed?
+
+  subclass = '-' ! default
 
   if ( outtyp == "MISC" ) then ! Simple species
 
@@ -469,11 +468,19 @@ do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
       unitscale = Units_Scale(outunit, iadv, unittxt, volunit)
       if(MasterProc) write(*,*)"FRACTION UNITSCALE ", unitscale
     endif
+   !COL  'NO2',          'molec/cm2' ,'k20','COLUMN'   ,'MISC' ,4,
+    if( class == 'COLUMN' ) then
+      iout = find_index(outname, species_adv(:)%name )
+      call CheckStop(iout<0,"OutputFields COLUMN not found "//trim(outname))
+      outtyp = "COLUMN"
+      subclass = outdim   ! k20, k16...
+      outname = "COLUMN_" // trim(outname) // "_" // trim(subclass)
+    end if
 
     if(MasterProc ) write(*,"(i3,a,i4,a)")  me, &
         "Deriv:D2MET " // trim(outname), outind, trim(class)
 
-    call AddNewDeriv( outname,class,  "-","-",  outunit, &
+    call AddNewDeriv( outname,class,  subclass ,"-",  outunit, &
                   iout,  -99,  F, unitscale,  T, outind )
 
   else ! SPEC and GROUPS of specs.
@@ -1186,6 +1193,7 @@ end do
           case ( "COLUMN" ) ! MFAC gives #/cm3, 100 is for m -> cm
 
             read(unit=f_2d(n)%subclass,fmt="(a1,i2)") txt2, klow ! Connvert e.g. k20 to klow=20
+if(MasterProc) print *, "COLUMN TEST subclass ", f_2d(n)%subclass, f_2d(n)%index, klow
             !klow = f_2d(n)%LC  ! here we have used LC to set vertical limit
 
             do j = 1, ljmax

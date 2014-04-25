@@ -16,6 +16,7 @@
 &OutputConcs_config
 OutputConcs= 
       'HMIX'                ,'m'   ,'2d','HMIX'     ,'MISC' ,7, !! hourly tests
+      'NO2',          'molec/cm2' ,'k20','COLUMN'   ,'MISC' ,4, !! New Column system
       'USTAR_NWP'           ,'m/s' ,'2d','USTAR_NWP','MISC' ,7, !! hourly tests
       'Kz_m2s'              ,'m2/s','2d','Kz_m2s'   ,'MISC' ,7, !! hourly tests
 !     'ws_10m'              ,'m'   ,'2d','ws_10m'   ,'MISC' ,7, !! hourly tests
@@ -200,6 +201,7 @@ OutputConcs=
     'SO2      ','SPEC ','mgS'
     'HNO3     ','SPEC ','mgN'
 
+
 !----------------------------------------
 !Older DDEP_WANTED stuff. re-format as required
    !'SO2      ', 'SPEC ', 'mgS'
@@ -249,6 +251,12 @@ OutputConcs=
 
 
 &end
+
+&OutputMisc_config
+  COLUMNDAT_WANTED = 
+     'NO2     ', 'k20'
+&end
+!
 !     ,typ_si("Water_D  ", Y),&
 !     ,typ_si("Decid    ", Y),&
 !JEJ     ,typ_si("Crops    ", Y)

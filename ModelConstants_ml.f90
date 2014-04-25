@@ -105,6 +105,7 @@ type, public :: emep_debug
     ,HOURLY_OUTPUTS  = .false. & !  
     ,IOPROG          = .false. &
     ,MAINCODE        = .false. & 
+    ,MY_DERIVED      = .false. &
     ,PHYCHEM         = .false. &
     ,FORESTFIRE      = .false. &
     ,SOA             = .false.  
@@ -382,7 +383,6 @@ logical, public, save ::  DebugCell  = .false.
   ,DEBUG_ECOSYSTEMS     = .false. &
   ,DEBUG_EMISSTACKS     = .false. &
   ,DEBUG_Kz             = .false. &
-  ,DEBUG_MY_DERIVED     = .false. &
   ,DEBUG_DRYDEP         = .false. &
     ,DEBUG_VDS          = .false. &
     ,DEBUG_MY_DRYDEP    = .false. &

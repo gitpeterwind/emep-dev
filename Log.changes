@@ -153,6 +153,23 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+25 April 2014  Dave   2780 
+
+  COLUMN data requests  moved from My_Derived to config_Outputs, plus tidy-up
+  of debug output. Changes in:
+
+   My_Derived_ml
+   Derived_ml
+   ModelConstants_ml   now has DEBUG%MY_DERIVED 
+   OwnData
+
+   config_Outputs_EMEPSTD.nml
+
+
+   My_Derived is rapudly approaching zero in hard-coded requests, and can
+   hopefully be completely repalced by config requests soon :-)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 24 April 2014  Dave   2779
 
   DEBUG%SPEC is now the name of the species wanted. Used so far only in

@@ -31,7 +31,7 @@ implicit none
   ! depmap
   ! gtype for species groups, used in CM_ChemSpecs and Derived
 
-  public :: print_deriv_type
+  public :: print_Deriv_type
   public :: print_Asc2D
   integer, public, parameter :: TXTLEN_DERIV = 34
   integer, public, parameter :: TXTLEN_SHORT = 28
