@@ -1,6 +1,6 @@
 module esx_DO3SE
 
-  use CheckStops, only: CheckStop_TF, CheckStop
+  use CheckStop_ml, only: CheckStop_TF, CheckStop
   use DO3SE_GstoTypes_ml, only: GstoConfig_t, GstoParams_t, check_GstoConfig
   use DO3SE_Gsto_ml
   use DO3SE_Photosynthesis_ml, only: gsto_pn, &
