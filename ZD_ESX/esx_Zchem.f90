@@ -1,5 +1,5 @@
  module esx_Zchem
-  use CheckStops, only : CheckStop
+  use CheckStop_ml, only : CheckStop
   use ChemSpecs, only : species, define_chemicals, nspec => NSPEC_TOT
   use ChemRates, only : NCHEMRATES
   use esx_Variables, only:  esx, Zmet
