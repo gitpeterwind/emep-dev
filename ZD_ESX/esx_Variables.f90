@@ -3,7 +3,7 @@
 !! Stores and configs various run settings.
 !----------------------------------------------------------------------------!
 module esx_Variables
-  use CheckStops, only : CheckStop
+  use CheckStop_ml, only : CheckStop
   use ChemSpecs, only : species
   use KeyValueTypes, only: KeyValInt, KeyValReal
   use LocalVariables, only : LocDat   !! Data for Sub
