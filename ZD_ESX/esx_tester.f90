@@ -2,7 +2,7 @@ program tester
   use AllocInits,       only : AllocInit
   use Ammonium_ml,      only : Ammonium   ! Testing equilib system
   use ChemSpecs,        only : NSPEC_TOT, define_chemicals, species
-  use CheckStops,       only : CheckStop
+  use CheckStop_ml,       only : CheckStop
   use esx_gleaf,        only : Set1Dgleaf
   use esx_GetData,      only : GetLocMetData    !! e.g. hourly surface met
   use esx_ChemRun,      only : ChemRun
