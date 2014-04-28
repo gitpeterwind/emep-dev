@@ -8,7 +8,7 @@
 !   call CheckStop( t>t1, "Exceeded time")
 !   call CheckStop( errmsg /= "ok", "Error: "// errmsg)
 !
-module Checkstops
+module CheckStop_ml
   implicit none
   private
  
@@ -51,5 +51,5 @@ module Checkstops
 
  end subroutine CheckStop_TF
 
-end module Checkstops
+end module CheckStop_ml
 !_____________________________________________________________________________
