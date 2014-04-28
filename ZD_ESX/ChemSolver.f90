@@ -47,7 +47,7 @@
   !=======================================================================!
 
     !use ModelConstants, only: dp
-    use CheckStops,      only: CheckStop
+    use CheckStop_ml,      only: CheckStop
     use DefPhotolysis         ! => IDHNO3, etc.
     use ChemSpecs           ! => NSPEC_TOT, O3, NO2, etc.
 !ESX    use ChemRates,   only: rct
