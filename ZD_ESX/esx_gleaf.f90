@@ -3,7 +3,7 @@
 !! as part of DO3SE_ml?
 module esx_gleaf
 
-  use CheckStops, only: CheckStop_TF, CheckStop
+  use CheckStop_ml, only: CheckStop_TF, CheckStop
   use esx_Variables, only: esx, Zveg, Loc, NZMAX => ESX_MAXNZ
   use esx_Zveg, only: Veg
   use esx_DO3SE, only: config_DO3SE, DO3SE_gleaf
