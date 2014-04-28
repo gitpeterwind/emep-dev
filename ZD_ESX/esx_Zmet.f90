@@ -5,7 +5,7 @@
 !   (Can/should be reset by real programmes!)
 
 module esx_Zmet
-  use CheckStops,    only: CheckStop
+  use CheckStop_ml,    only: CheckStop
   use Io_Routines,   only: writedata
   use KeyValueTypes, only: KeyValue, KeyValReal
   use esx_Variables, only: L=> Loc, esx, Zmet
