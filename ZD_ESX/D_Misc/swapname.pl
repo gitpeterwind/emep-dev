@@ -6,8 +6,10 @@
 use strict;
 
 my %swaps = (
-  'real(dp)' => "real"
+  'CheckStops' => "CheckStop_ml",
+  'Checkstops' => "CheckStop_ml"
 );
+#  'real(dp)' => "real"
 # done
 #    zmid => "zbnd"
 #Not done
