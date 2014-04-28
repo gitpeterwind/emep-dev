@@ -3,7 +3,7 @@
 !! initialised. (gfortran doesn't catch this.)
 
 module AllocInits
-  use CheckStops, only : CheckStop
+  use CheckStop_ml, only : CheckStop
   implicit none
   private
 
