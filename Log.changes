@@ -153,6 +153,33 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+29 April 2014  Dave   2795 
+
+   More DEBUG moved to config:
+   (All not yet written into config_EMEPSTD files. Am considering 
+    leaving that for user. There are so many.)
+
+     DEBUG%AQEUOUS
+     DEBUG%DRYRUN
+     DEBUG%DO3SE
+     DEBUG%EQUIB
+     DEBUG%pH
+     DEBUG%RUNCHEM
+     DEBUG%SETUP_1DCHEM
+
+    Aqueous_n_WetDep_ml
+    DO3SE_ml
+    MARS_ml
+    ModelConstants_ml
+    My_Aerosols
+    RunChem_ml
+    Setup_1d_ml
+    Solver_ml
+
+    GenChem.pl - DEBUG_RUNCHEM now just DEBUG
+    config_EMEPSTD.nml - some of above added
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 28 April 2014  Dave   2794 
 
   ZD_ESX changes only. Changed calls to CheckStops to CheckStop_ml, to allow

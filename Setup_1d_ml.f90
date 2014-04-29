@@ -66,8 +66,7 @@
                                   ,zen, Idirect, Idiffuse,z_bnd
   use ModelConstants_ml,     only:   &
      ATWAIR                          &
-    ,DEBUG_SETUP_1DCHEM              &
-    ,DEBUG_SETUP_1DBIO               &
+    ,DEBUG                           &
     ,DEBUG_MASS                      &
 !EXCL    ,USES, MINCONC                   & ! conc.limit if USES%MINCONC
     ,dt_advec                        & ! time-step
@@ -201,15 +200,15 @@ contains
 
    call set_rct_rates()
 
-  if ( DEBUG_SETUP_1DCHEM .and. debug_proc .and.  &
+  if ( DEBUG%SETUP_1DCHEM .and. debug_proc .and.  &
             i==debug_li .and. j==debug_lj .and. &
             current_date%seconds == 0 ) then
-      write(*,"(a,10es10.3)") " DEBUG_SETUP_1DCHEM RCT ", &
+      write(*,"(a,10es10.3)") " DEBUG%SETUP_1DCHEM RCT ", &
             rct(3,KMAX_MID), rct(4,KMAX_MID)
-      write(*,"(a,10es10.3)") " DEBUG_SETUP_1DCHEM XN  ", &
+      write(*,"(a,10es10.3)") " DEBUG%SETUP_1DCHEM XN  ", &
         amk(KMAX_MID),  xn_2d(IXADV_O3+NSPEC_SHL,KMAX_MID), &
           xn_2d(IXADV_NO2+NSPEC_SHL,KMAX_MID)
-      write(*,"(a,10es10.3)") " DEBUG_SETUP_1D-Riemer",&
+      write(*,"(a,10es10.3)") " DEBUG%SETUP_1D-Riemer",&
         xn_2d(IXADV_SO4+NSPEC_SHL,KMAX_MID) &
        ,xn_2d(IXADV_NO3_F+NSPEC_SHL,KMAX_MID)
   end if
@@ -301,7 +300,7 @@ contains
                               + 0.05 * airlig(k,i,j)
 
         enddo
-        if ( DEBUG_SETUP_1DCHEM .and. debug_proc .and.  &
+        if ( DEBUG%SETUP_1DCHEM .and. debug_proc .and.  &
                i==debug_li .and. j==debug_lj ) write(*,"(a,10es10.3)") &
                  " DEBUG_SETUP_AIRNOX ", airn(KMAX_MID,i,j),airlig(KMAX_MID,i,j)
 
@@ -316,7 +315,7 @@ contains
                               + 0.05 * airn(k,i,j)
 
         enddo
-        if ( DEBUG_SETUP_1DCHEM .and. debug_proc .and.  &
+        if ( DEBUG%SETUP_1DCHEM .and. debug_proc .and.  &
                i==debug_li .and. j==debug_lj ) write(*,"(a,10es10.3)") &
                  " DEBUG_SETUP_AIRNOX ", airn(KMAX_MID,i,j),airlig(KMAX_MID,i,j)
 

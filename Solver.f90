@@ -63,8 +63,7 @@
     use GridValues_ml,     only : GRIDWIDTH_M
     use Io_ml,             only : IO_LOG, datewrite
     use ModelConstants_ml, only: KMAX_MID, KCHEMTOP, dt_advec,dt_advec_inv, &
-                                 DebugCell, MasterProc, DEBUG_SOLVER,       &
-                                 DEBUG_DRYRUN, USE_SEASALT
+                                 DebugCell, MasterProc, DEBUG, USE_SEASALT
     use Par_ml,            only: me, MAXLIMAX, MAXLJMAX
     use PhysicalConstants_ml, only:  RGAS_J
     use Precision_ml, only:  dp
@@ -141,7 +140,7 @@ contains
            write(IO_LOG,"(a,i4)") 'Chem dts: NUM_INITCHEM: ', NUM_INITCHEM
            write(IO_LOG,"(a,f7.2)") 'Chem dts: DT_INITCHEM: ', DT_INITCHEM
            write(IO_LOG,"(a,i4)") 'Chem dts: EXTRA_ITER: ', EXTRA_ITER
-           if(DEBUG_DRYRUN) write(*,*) "DEBUG_DRYRUN Solver"
+           if(DEBUG%DRYRUN) write(*,*) "DEBUG%DRYRUN Solver"
        end if
        first_call = .false.
     endif
@@ -198,7 +197,7 @@ contains
 
 !== Here comes all chemical reactions
 !=============================================================================
-          if ( DEBUG_DRYRUN ) then
+          if ( DEBUG%DRYRUN ) then
             ! Skip fast chemistry
           else
 
@@ -233,7 +232,7 @@ contains
           !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
            include 'CM_Reactions2.inc'
           !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-          end if ! DEBUG_DRYRUN
+          end if ! DEBUG%DRYRUN
 
        end do ! ichem
 

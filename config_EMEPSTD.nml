@@ -93,6 +93,8 @@
   DEBUG%GRIDVALUES      = F,
   DEBUG%HOURLY_OUTPUTS  = F,
   DEBUG%PHYCHEM         = F,
+  DEBUG%SETUP_1DBIO     = F,
+  DEBUG%SETUP_1DCHEM    = F,
   DEBUG%SOA             = F,
 ! Specify here the coords and species index (tot, see CM_ChemSpecs_tot)
   DEBUG%IJ              = 60, 50      ! Bremen

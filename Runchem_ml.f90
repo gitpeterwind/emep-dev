@@ -52,8 +52,6 @@ module RunChem_ml
   use CheckStop_ml,     only: CheckStop
   use Chemfields_ml,    only: xn_adv    ! For DEBUG 
   use Chemsolver_ml,    only: chemistry
-!CMR  use ChemSpecs_tot_ml                  ! DEBUG ONLY
-!CMR  use ChemSpecs_adv_ml                  ! DEBUG ONLY
   use ChemSpecs                         ! DEBUG ONLY
   use DefPhotolysis_ml, only: setup_phot
   use DryDep_ml,        only: drydep
@@ -65,7 +63,7 @@ module RunChem_ml
                               KMAX_MID, nprint, END_OF_EMEPDAY, nstep,  &
                               USES, & ! need USES%EMISSTACKS 
                               DEBUG_EMISSTACKS, & ! MKPS
-                              DebugCell, DEBUG => DEBUG_RUNCHEM
+                              DebugCell, DEBUG    ! RUNCHEM
   use OrganicAerosol_ml,only: ORGANIC_AEROSOLS, OrganicAerosol, &
                               Init_OrganicAerosol, & !FEB2012
                               SOA_MODULE_FLAG   ! ="VBS" or "NotUsed"
@@ -118,7 +116,7 @@ subroutine runchem()
 
       !****** debug cell set here *******
       debug_flag =  .false.  
-      if(DEBUG.and.debug_proc) then
+      if(DEBUG%RUNCHEM.and.debug_proc) then
         debug_flag = (debug_li==i .and. debug_lj==j) 
         DebugCell = debug_flag
         if(debug_flag) write(*,*) "RUNCHEM DEBUG START!"
@@ -162,7 +160,7 @@ subroutine runchem()
       ! Called every adv step, only updated every third hour
 !FUTURE call setup_nh3(i,j)    ! NH3emis, experimental (NMR-NH3)
 
-      if(DEBUG.and.debug_flag) &
+      if(DEBUG%RUNCHEM.and.debug_flag) &
         call datewrite("Runchem Pre-Chem", (/ rcemis(NO,20), &
           rcemis(C5H8,KMAX_MID), xn_2d(NO,20),xn_2d(C5H8,20) /) )
 
@@ -172,16 +170,16 @@ subroutine runchem()
       call Add_2timing(30,tim_after,tim_before,"Runchem:2nd setups")
       call Add_2timing(27,tim_after,tim_before,"Runchem:setup_1d+rcemis")
 
-!     if(DEBUG.and.debug_flag) &
+!     if(DEBUG%RUNCHEM.and.debug_flag) &
 !       call datewrite("RUNCHEM PRE-CHEM",(/xn_2d(PPM25,20),xn_2d(AER_BGNDOC,20)/))
 !     !-------------------------------------------------
 !     !-------------------------------------------------
 !     !-------------------------------------------------
-      call chemistry(i,j,DEBUG.and.debug_flag)
+      call chemistry(i,j,DEBUG%RUNCHEM.and.debug_flag)
 !     !-------------------------------------------------
 !     !-------------------------------------------------
 !     !-------------------------------------------------
-      if(DEBUG.and.debug_flag)&
+      if(DEBUG%RUNCHEM.and.debug_flag)&
         call datewrite("Runchem Post-Chem",(/xn_2d(NO,20),xn_2d(C5H8,20)/))
       !_________________________________________________
 
@@ -204,7 +202,7 @@ subroutine runchem()
 
       call Add_2timing(32,tim_after,tim_before,"Runchem:ammonium+Drydep")
 
-!     if ( DEBUG .and. debug_flag  ) then
+!     if ( DEBUG%RUNCHEM .and. debug_flag  ) then
 !       write(6,"(a,10es12.3)") "DEBUG_RUNCHEM me RIEMER, aero", &
 !         xn_2d(SO4,20), xn_2d(aNO3,20), xn_2d(aNH4,20),tmpOut1, tmpOut2
 !      !write(6,*) "DEBUG_RUNCHEM me pre WetDep", me, prclouds_present
