@@ -153,6 +153,14 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+30 April 2014  Peter   2799
+
+Advection_ml: for eta coordinates, corrected bug (fluxin,fluxout) in mass balance diagnostic 
+(only massbalance diagnostic, not concentrations are changed).
+
+run.pl: uodate 2012 forestfire and 2012 EECCA emission
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 29 April 2014  Dave   2795-2798
 
    More DEBUG moved to config:

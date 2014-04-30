@@ -124,7 +124,7 @@ my %BENCHMARK;
 #  %BENCHMARK = (grid=>"EMEP"  ,year=>2006,emis=>"Modrun10/EMEP_trend_2000-2008/2006",chem=>"EmChem09");
 # EECCA Default:
 ##
-%BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun11/EMEP_trend_2000-2009/2008",chem=>"EmChem09soa",make=>"EMEP");
+#%BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun11/EMEP_trend_2000-2009/2008",chem=>"EmChem09soa",make=>"EMEP");
 # Status Runs:
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2007,emis=>"Modrun09/2009-Trend2007-CEIP") ;
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun10/2010-Trend2008_CEIP");
@@ -376,6 +376,7 @@ given($GRID){
     when([2000..2009]){$emisdir="$EMIS_INP/Modrun12/EMEP_trend_2000-2009/$year";}
     when([2010])      {$emisdir="$EMIS_INP/Modrun12/2012-Trend$year-CEIP";}
     when([2011])      {$emisdir="$EMIS_INP/Modrun13/2013-Trend$year-CEIP";}
+    when([2012])      {$emisdir="$EMIS_INP/Modrun14/2014-Trend$year-CEIP";}
   }}
   when("EMEP"){given($year){
     when([1990..1999]){$emisdir="/global/work/$AGNES/Emission_Trends/$year";}
@@ -823,7 +824,7 @@ foreach my $scenflag ( @runs ) {
   $ifile{"$DataDir/GLOBAL_ForestFireEmis.nc"} =                     # GFED emissions
     "GFED_ForestFireEmis.nc";     #if ($year >= 2001 and $year <= 2007);
   $ifile{"$DataDir/ForestFire/FINN/ForestFire_Emis_$year.nc"} =     # FINN emissions
-    "FINN_ForestFireEmis_$year.nc" if ($year >= 2002 and $year <= 2011);
+    "FINN_ForestFireEmis_$year.nc" if ($year >= 2002 and $year <= 2012);
   $ifile{"$DataDir/ForestFire/GFAS/GFAS_ForestFireEmis_$year.nc"} = # GFAS emissions
     "GFAS_ForestFireEmis_$year.nc" if ($year >= 2008 and $year <= 2012);
   $ifile{"$DataDir/nox_emission_1996-2005.nc"} = "nox_emission_1996-2005.nc";

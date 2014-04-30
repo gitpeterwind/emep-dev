@@ -1289,7 +1289,7 @@
 
     integer ::isum,isumtot,iproc
     real :: xn_advjktot(NSPEC_ADV),xn_advjk(NSPEC_ADV),rfac
-    real :: dpdeta0,mindpdeta
+    real :: dpdeta0,mindpdeta,xxdg,fac1
 
     !NITERXMAX=max value of iterations accepted for fourth order Bott scheme.
     !If the calculated number of iterations (determined from Courant number)
@@ -1299,6 +1299,7 @@
     !poles in long-lat coordinates.
     integer,parameter :: NITERXMAX=10
 
+    xxdg=GRIDWIDTH_M*GRIDWIDTH_M/GRAV !constant used in loops
 
     call Code_timer(tim_before)
 
@@ -1469,6 +1470,7 @@
 
           iterxys = iterxys + 1
           do k = 1,KMAX_MID
+             fac1=(dA(k)/Pref+dB(k))*xxdg
              do j = lj0,lj1
                 if(niterx(j,k)<=NITERXMAX)then
                    dth = dt_x(j,k)/GRIDWIDTH_M
@@ -1486,7 +1488,7 @@
                            ,xn_adv(1,1,j,k),xnw,xne               &
                            ,dpdeta(1,j,k),psw,pse                   &
                            ,xm2(0,j),xmd(0,j)                     &
-                           ,dth,carea(k))
+                           ,dth,fac1)!carea(k))
                       do i = li0,li1
                          dpdeta0=(dA(k)+dB(k)*ps(i,j,1))/(dA(k)/Pref+dB(k))
                          psi = dpdeta0/max(dpdeta(i,j,k),1.0)
@@ -1520,7 +1522,7 @@
                         ,xn_adv(1,i,1,k),xns,xnn                   &
                         ,dpdeta(i,1,k),pss,psn                       &
                         ,xm2ji(0,i),xmdji(0,i)                     &
-                        ,dth,carea(k))
+                        ,dth,fac1)!carea(k))
                    do j = lj0,lj1
                       dpdeta0=(dA(k)+dB(k)*ps(i,j,1))/(dA(k)/Pref+dB(k))
                       psi = dpdeta0/max(dpdeta(i,j,k),1.0)
@@ -1576,6 +1578,7 @@
 
           iterxys = iterxys + 1
           do k = 1,KMAX_MID
+             fac1=(dA(k)/Pref+dB(k))*xxdg
              do i = li0,li1
                 dth = dt_y(i,k)/GRIDWIDTH_M
                 do itery=1,nitery(i,k)
@@ -1587,13 +1590,12 @@
                         ,pss, psn,i)
 
                    ! y-direction
-
                    call advy(                                    &
                         v_xmi(i,0,k,1),vs(i,k,1),vn(i,k,1)           &
                         ,xn_adv(1,i,1,k),xns,xnn                  &
                         ,dpdeta(i,1,k),pss,psn                      &
                         ,xm2ji(0,i),xmdji(0,i)                    &
-                        ,dth,carea(k))
+                        ,dth,fac1)!carea(k))
 
                    do j = lj0,lj1
                       dpdeta0=(dA(k)+dB(k)*ps(i,j,1))/(dA(k)/Pref+dB(k))
@@ -1628,7 +1630,7 @@
                            ,xn_adv(1,1,j,k),xnw,xne               &
                            ,dpdeta(1,j,k),psw,pse                   &
                            ,xm2(0,j),xmd(0,j)                     &
-                           ,dth,carea(k))
+                           ,dth,fac1)!carea(k))
 
                       do i = li0,li1
                          dpdeta0=(dA(k)+dB(k)*ps(i,j,1))/(dA(k)/Pref+dB(k))
@@ -1831,10 +1833,10 @@
           do j = lj0,lj1
              where(xn_adv(:,i,j,1) .gt. xntop(:,i,j))
                 fluxout(:) = fluxout(:) + &
-                     (xn_adv(:,i,j,1)-xntop(:,i,j))*(dA(1)+dB(1)*ps(i,j,1))/GRAV*GRIDWIDTH_M*GRIDWIDTH_M*xmd(i,j)
+                     (xn_adv(:,i,j,1)-xntop(:,i,j))*(dA(1)+dB(1)*ps(i,j,1))*xxdg*xmd(i,j)
              elsewhere
                 fluxin(:) = fluxin(:) + &
-                     (xntop(:,i,j)-xn_adv(:,i,j,1))*(dA(1)+dB(1)*ps(i,j,1))/GRAV*GRIDWIDTH_M*GRIDWIDTH_M*xmd(i,j)
+                     (xntop(:,i,j)-xn_adv(:,i,j,1))*(dA(1)+dB(1)*ps(i,j,1))*xxdg*xmd(i,j)
              end where
           enddo
        enddo
