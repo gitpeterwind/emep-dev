@@ -326,16 +326,18 @@ program myeul
      call Code_timer(tim_before)
 
      call phyche()
-
      call Add_2timing(14,tim_after,tim_before,"phyche")
  
-     call metfieldint
-
-     call Add_2timing(36,tim_after,tim_before,"metfieldint")
-
      call WrtChem()
+
      call trajectory_in
      call Add_2timing(37,tim_after,tim_before,"massbud,wrtchem,trajectory_in")
+
+
+     call metfieldint
+     call Add_2timing(36,tim_after,tim_before,"metfieldint")
+
+
 
      !this is a bit complicated because it must account for the fact that for instance 3feb24:00 = 4feb00:00 
      ts1=make_timestamp(current_date)

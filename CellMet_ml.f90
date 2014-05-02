@@ -111,7 +111,7 @@ contains
 !Eta coordinates:
 !dp = dA+dB*Ps
      Grid%DeltaZ  &!  = z_bnd(i,j,KMAX_BND-1) ! NB! Approx,updated every 3h
-                = (dA(KMAX_MID)+dB(KMAX_MID)*ps(i,j,1) )/(GRAV*roa(i,j,20,1))
+                = (dA(KMAX_MID)+dB(KMAX_MID)*ps(i,j,1) )/(GRAV*roa(i,j,KMAX_MID,1))
 
      Grid%u_ref    = u_ref(i,j)
      Grid%qw_ref    =  q(i,j,KMAX_MID,1)   ! specific humidity

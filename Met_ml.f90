@@ -1112,6 +1112,16 @@ contains
        rho_surf(i,j)  = ps(i,j,nt)/(RGAS_KG * t2_nwp(i,j,nt) )
     end forall
 
+!update z_bnd
+       !z_bnd(:,:,KMAX_MID+1)=0.0 !should never change
+       do k = KMAX_MID,1,-1
+          do j = 1,ljmax
+             do i = 1,limax
+                z_bnd(i,j,k)=z_bnd(i,j,k+1) + (dA(k)+dB(k)*ps(i,j,nt))/(roa(i,j,k,nt)*GRAV)
+             enddo
+          enddo
+       enddo
+
 !    if(.not. foundustar)then
 !17/12/2013 : always use tau, since ustar_nwp is not interpolated in time (in metfieldint)
        forall( i=1:limax, j=1:ljmax )

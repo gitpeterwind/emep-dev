@@ -153,6 +153,29 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+2nd May 2014  Peter   2801
+
+z_bnd in (Met_ml) is now updated every timestep (dt_advec), instead of
+every METSTEP (3 hours).
+
+Expected (small?) changes in results related to:
+AOD_Ext
+(setup_phot, only in rare cases)
+COLUMN output
+Emergency
+ForestFire emissions
+Pointsources
+Rn222 emissions
+Trajectory
+
+CellMet_ml: hardcoded 20 in roa changed to KMAX_MID
+     Grid%DeltaZ  = (dA(KMAX_MID)+dB(KMAX_MID)*ps(i,j,1) )/(GRAV*roa(i,j,KMAX_MID,1))
+
+
+Moved call to metfieldint after vall to WrtChem() and  trajectory_in, since we do not want
+to write or use metdata which has not yet been used.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 2nd May 2014  Peter   2800
 
 Define density (roa) from pressure and heights, so that they are consistent.

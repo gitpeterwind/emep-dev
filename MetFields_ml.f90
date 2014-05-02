@@ -87,9 +87,9 @@ module MetFields_ml
   !   Vertical level geopotential heights:
 
   real,public, save, allocatable,&
-       dimension(:,:,:) :: z_bnd ! height of full layers
+       dimension(:,:,:) :: z_bnd ! height of full layers. Updated each timestep
   real,public, save,allocatable, &
-       dimension(:,:,:) :: z_mid ! height of half layers
+       dimension(:,:,:) :: z_mid ! height of half layers. Updated each METSTEP
 
   !   Two sets of Met. fields are read in, and a linear interpolation is made
   !   between these two points in time. NMET  == 2 (two points in time)
