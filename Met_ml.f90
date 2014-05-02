@@ -740,12 +740,14 @@ contains
                   (exf1(k+1) - exf1(k)))/GRAV
 
              !     height of the full levels.
-
              z_mid(i,j,k) = z_bnd(i,j,k+1) + (th(i,j,k,nr)*            &
                   (exf1(k+1) - exf2(k)))/GRAV
 
-             roa(i,j,k,nr) = CP*(A_mid(k)+B_mid(k)*ps(i,j,nr))/      &
-                  (RGAS_KG*th(i,j,k,nr)*exf2(k))
+!             roa(i,j,k,nr) = CP*(A_mid(k)+B_mid(k)*ps(i,j,nr))/      &
+!                  (RGAS_KG*th(i,j,k,nr)*exf2(k))
+!We derive density from pressure and heights, so that they are consistent.
+             roa(i,j,k,nr) = (dA(k)+dB(k)*ps(i,j,nr))/&
+                             (GRAV*(z_bnd(i,j,k)-z_bnd(i,j,k+1)))
 
           enddo  ! k
 
