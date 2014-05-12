@@ -714,7 +714,7 @@ subroutine siteswrt_sondes(xn_adv,xn_shl)
 end subroutine siteswrt_sondes
 !==================================================================== >
 subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
-                        s_gindex,s_name,s_gx,s_gy,s_gz,s_species,out,ps_sonde)
+     s_gindex,s_name,s_gx,s_gy,s_gz,s_species,out,ps_sonde)
   ! -------------------------------------------------------------------
   ! collects data from local nodes and writes out to sites/sondes.dat
   ! -------------------------------------------------------------------
@@ -740,7 +740,7 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
   integer ::  type=-1                   ! = 1 for sites, 2 for sondes
   integer, save, dimension(NTYPES):: prev_month = (/ -99, -99 /) ! Initialise
   integer, save, dimension(NTYPES):: prev_year = (/ -99, -99 /) ! Initialise
-  integer :: ii
+  integer :: ii,nn
 
   integer, parameter :: NattributesMAX=100
   character(len=100),allocatable  :: SpecName(:)
@@ -749,176 +749,192 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
   character(len=100)              :: fileName
   real,allocatable  :: CoordValues(:,:)
   integer,allocatable  :: NAttributes(:),NCoords(:)
-  integer  :: Nlevels,ispec,NSPEC,NStations
+  integer  :: Nlevels,ispec,NSPEC,NStations,Ndoublestations
   real ::Values(KMAX_MID)
   integer ::i_Att_MPI
 
   select case (fname)
-    case ("sites" )
-      type = 1
-    case ("sondes" )
-      type = 2
-    case default
-      write(6,*) "non-possible type in siteswrt_out for ", fname
-      return
+  case ("sites" )
+     type = 1
+  case ("sondes" )
+     type = 2
+  case default
+     write(6,*) "non-possible type in siteswrt_out for ", fname
+     return
   end select
 
   write(suffix,fmt="(i4)") prev_year(type)
   fileName = fname // "_" // suffix // ".nc"!Name of the NetCDF file. Will overwrite any preexisting file
 
-!  if ( MasterProc .and. current_date%month /= prev_month(type)) then
+  !  if ( MasterProc .and. current_date%month /= prev_month(type)) then
   if (current_date%year /= prev_year(type) & 
-       !We do not consider midnight as a new year
+                                !We do not consider midnight as a new year
        .and.(current_date%month/=1.or.current_date%hour/=0.or.current_date%seconds/=0)&
        ) then
-      prev_year(type) = current_date%year
-      write(suffix,fmt="(i4)") current_date%year
-      fileName = fname // "_" // suffix // ".nc"!Name of the NetCDF file. Will overwrite any preexisting file
-
-      if (MasterProc  ) then
-      if ( prev_year(type) > 0 ) close(io_num)  ! Close last-year file
-      prev_year(type) = current_date%year
-
-     ! Open new file for write-out
-
+     prev_year(type) = current_date%year
      write(suffix,fmt="(i4)") current_date%year
-     outfile = fname // "_" // suffix // ".csv"
+     fileName = fname // "_" // suffix // ".nc"!Name of the NetCDF file. Will overwrite any preexisting file
 
-     open(file=outfile,unit=io_num,action="write",form='FORMATTED')
+     if (MasterProc  ) then
 
-     write(io_num,"(i3,2x,a,a, 4i4)") nglobal, fname, " in domain",RUNDOMAIN
-     write(io_num,"(i3,a)") f, " Hours between outputs"
+        if ( prev_year(type) > 0 ) close(io_num)  ! Close last-year file
+        prev_year(type) = current_date%year
 
-     do n = 1, nglobal
-        write(io_num,'(a50,3(",",i4))') s_name(n), s_gx(n), s_gy(n),s_gz(n)
-     end do ! nglobal
+        ! Open new file for write-out
 
-     write(io_num,'(i3,a)') size(s_species), " Variables units: ppb"
-     !MV write(io_num,'(a9,<size(s_species)>(",",a))')"site,date",(trim(s_species(i)),i=1,size(s_species))
-     write(io_num,'(9999a)')"site,date", (",", (trim(s_species(i)) ),i=1,size(s_species))
+        write(suffix,fmt="(i4)") current_date%year
+        outfile = fname // "_" // suffix // ".csv"
 
-!defintions of file for NetCDF output
+        open(file=outfile,unit=io_num,action="write",form='FORMATTED')
 
-     if(trim(fname)=="sondes")then
-        NLevels = NLEVELS_SONDE !number of vertical levels (counting from surface)
-        NSPEC=NSPC_SONDE!number of species defined for sondes
-     else
-        NLevels = 1
-        NSPEC=NSPC_SITE!number of species defined for sites
-     endif
+        write(io_num,"(i3,2x,a,a, 4i4)") nglobal, fname, " in domain",RUNDOMAIN
+        write(io_num,"(i3,a)") f, " Hours between outputs"
 
-     NStations = nglobal!number of sondes or sites defined
+        do n = 1, nglobal
+           write(io_num,'(a50,3(",",i4))') s_name(n), s_gx(n), s_gy(n),s_gz(n)
+        end do ! nglobal
 
+        write(io_num,'(i3,a)') size(s_species), " Variables units: ppb"
+        !MV write(io_num,'(a9,<size(s_species)>(",",a))')"site,date",(trim(s_species(i)),i=1,size(s_species))
+        write(io_num,'(9999a)')"site,date", (",", (trim(s_species(i)) ),i=1,size(s_species))
 
-     allocate(SpecName(NSPEC),AttributeNames(0:NStations,NattributesMAX))
-     allocate(AttributeValues(0:NStations,NattributesMAX),CoordNames(0:NStations,NattributesMAX))
-     allocate(CoordValues(0:NStations,NattributesMAX))
-     allocate(NAttributes(0:NStations),NCoords(0:NStations))
+        !defintions of file for NetCDF output
 
-     n = 0!index for global attributes. Do not modify this line.
-     NAttributes(n) = 2 !number of global string attributes
-     call CheckStop(NAttributes(n)>NattributesMAX,'NattributesMAX too small')
-     AttributeNames(n,1) = "File_Type"!name of the global attribute. For instance "File_Type"
-     AttributeValues(n,1)= trim(fname)!string for that attribute. For instance "Sondes"
-
-     AttributeNames(n,2) = 'meteo_source'
-     AttributeValues(n,2)= trim(meteo)
-
-     NCoords(n) = 4 !number of real-valued global attributes defined
-     call CheckStop(NCoords(n)>NattributesMAX,'Coords: NattributesMAX too small')
-     CoordNames(n,1) = "Number_of_hours_bewtween_outputs"!name of the global attribute. For instance "Number of hours bewtween outputs"
-     CoordValues(n,1)= 1.0 !value for that attribute. For instance "1.0"
-     CoordNames(n,2) = "Number_of_stations_defined"
-     CoordValues(n,2)= NStations
-     CoordNames(n,3) = "Model_domain_x_size"
-     CoordValues(n,3)= GIMAX
-     CoordNames(n,4) = "Model_domain_y_size"
-     CoordValues(n,4)= GJMAX
-     if(IRUNBEG>1)then
-        NCoords(n) = NCoords(n)+1
-        CoordNames(n,NCoords(n)) = "Model_domain_x_shift_origin"
-        CoordValues(n,NCoords(n))= IRUNBEG
-     endif
-     if(JRUNBEG>1)then
-        NCoords(n) = NCoords(n)+1
-        CoordNames(n,NCoords(n)) = "Model_domain_y_shift_origin"
-        CoordValues(n,NCoords(n))= JRUNBEG
-     endif
-
-     do ispec=1,NSPEC
-        SpecName(ispec)=trim(site_species(ispec))!name of the  species
-     enddo
-
-     do n = 1, NStations
-
-        NAttributes(n) = 1 !number of string attributes defined for the variable
-        call CheckStop(NAttributes(n)>NattributesMAX,'NattributesMAX too small')
-        !NB: attribute with index 1 MUST be the name of the station
-        AttributeNames(n,1) = 'Name_of_station'!name of the attribute. For instance "Station_Type"
-        AttributeValues(n,1)= trim(s_name(n))!string for that attribute. For instance "Urban"
-
-        if(trim(fname)=="sites")then
-           NCoords(n)=5 !number of real-valued attributes defined for the sondes variable
-        else
-           NCoords(n)=4 !number of real-valued attributes defined for the sites variable
-        endif
-        call CheckStop(NCoords(n)>NattributesMAX,'Coords: NattributesMAX too small')
-      
-        CoordNames(n,1) = 'model_x_coordinate'!name of the attribute. For instance "Station_longitude"
-        CoordValues(n,1)= s_gx(n)!value for that attribute. For instance "20.6"
-        CoordNames(n,2) = 'model_y_coordinate'
-        CoordValues(n,2)= s_gy(n)
-        if(trim(fname)=="sites")then
-           CoordNames(n,3) = 'model_level'
-           CoordValues(n,3)= s_gz(n)
-           CoordNames(n,4) = 'site_longitude_coordinate'
-           CoordValues(n,4)= Sites_lon(n)
-           CoordNames(n,5) = 'site_latitude_coordinate'
-           CoordValues(n,5)= Sites_lat(n)
-        endif
         if(trim(fname)=="sondes")then
-           CoordNames(n,3) = 'sonde_longitude_coordinate'
-           CoordValues(n,3)= Sondes_lon(n)
-           CoordNames(n,4) = 'sonde_latitude_coordinate'
-           CoordValues(n,4)= Sondes_lat(n)
+           NLevels = NLEVELS_SONDE !number of vertical levels (counting from surface)
+           NSPEC=NSPC_SONDE!number of species defined for sondes
+        else
+           NLevels = 1
+           NSPEC=NSPC_SITE!number of species defined for sites
         endif
-     enddo
-     !take Spec_Attributes from any processor with at least one site/sonde
-     if(i_Att>0.and.i_Att/=NSPEC)then
-        write(*,*)'MISSING species attribute? ',i_Att,NSPEC
-     endif
-     do d = 1, NPROC-1
-        call MPI_RECV(i_Att_MPI, 4*1, MPI_BYTE, d, 746, MPI_COMM_WORLD,STATUS, INFO)
-        if(i_Att_MPI>0)then
-           if(i_Att_MPI/=NSPEC)then
-              write(*,*)'MISSING species attribute? ',i_Att_MPI,NSPEC
+
+        NStations = nglobal!number of sondes or sites defined
+
+
+        allocate(SpecName(NSPEC),AttributeNames(0:NStations,NattributesMAX))
+        allocate(AttributeValues(0:NStations,NattributesMAX),CoordNames(0:NStations,NattributesMAX))
+        allocate(CoordValues(0:NStations,NattributesMAX))
+        allocate(NAttributes(0:NStations),NCoords(0:NStations))
+
+        n = 0!index for global attributes. Do not modify this line.
+        NAttributes(n) = 2 !number of global string attributes
+        call CheckStop(NAttributes(n)>NattributesMAX,'NattributesMAX too small')
+        AttributeNames(n,1) = "File_Type"!name of the global attribute. For instance "File_Type"
+        AttributeValues(n,1)= trim(fname)!string for that attribute. For instance "Sondes"
+
+        AttributeNames(n,2) = 'meteo_source'
+        AttributeValues(n,2)= trim(meteo)
+
+        NCoords(n) = 4 !number of real-valued global attributes defined
+        call CheckStop(NCoords(n)>NattributesMAX,'Coords: NattributesMAX too small')
+        CoordNames(n,1) = "Number_of_hours_bewtween_outputs"!name of the global attribute. For instance "Number of hours bewtween outputs"
+        CoordValues(n,1)= 1.0 !value for that attribute. For instance "1.0"
+        CoordNames(n,2) = "Number_of_stations_defined"
+        CoordValues(n,2)= NStations
+        CoordNames(n,3) = "Model_domain_x_size"
+        CoordValues(n,3)= GIMAX
+        CoordNames(n,4) = "Model_domain_y_size"
+        CoordValues(n,4)= GJMAX
+        if(IRUNBEG>1)then
+           NCoords(n) = NCoords(n)+1
+           CoordNames(n,NCoords(n)) = "Model_domain_x_shift_origin"
+           CoordValues(n,NCoords(n))= IRUNBEG
+        endif
+        if(JRUNBEG>1)then
+           NCoords(n) = NCoords(n)+1
+           CoordNames(n,NCoords(n)) = "Model_domain_y_shift_origin"
+           CoordValues(n,NCoords(n))= JRUNBEG
+        endif
+
+        do ispec=1,NSPEC
+           SpecName(ispec)=trim(site_species(ispec))!name of the  species
+        enddo
+
+
+        do n = 1, NStations
+
+           !check to avoid two stations with same name, since this will give problems when writing in 
+           !the netcdf output
+           Ndoublestations=0
+           do nn = n+1, NStations
+              if(trim(s_name(n))==trim(s_name(nn)))then
+                 if(Ndoublestations<1)write(*,*)'ERROR, ', trim(fname),' with same name: '
+                 Ndoublestations=Ndoublestations+1
+                 write(*,*) 'station ',trim(s_name(n)),', number ',n,' and',nn
+              endif
+           enddo
+           call CheckStop(Ndoublestations>0,&
+                "Two stations with identical name. Remove or rename one of them")
+
+           NAttributes(n) = 1 !number of string attributes defined for the variable
+           call CheckStop(NAttributes(n)>NattributesMAX,'NattributesMAX too small')
+           !NB: attribute with index 1 MUST be the name of the station
+           AttributeNames(n,1) = 'Name_of_station'!name of the attribute. For instance "Station_Type"
+           AttributeValues(n,1)= trim(s_name(n))!string for that attribute. For instance "Urban"
+
+
+           if(trim(fname)=="sites")then
+              NCoords(n)=5 !number of real-valued attributes defined for the sondes variable
+           else
+              NCoords(n)=4 !number of real-valued attributes defined for the sites variable
            endif
-           call MPI_RECV(Spec_AttributeNames, Spec_Att_Size*N_Spec_Att_MAX*NSPECMAX, &
-                MPI_BYTE, d, 747, MPI_COMM_WORLD,STATUS, INFO)
-           call MPI_RECV(Spec_AttributeValues, Spec_Att_Size*N_Spec_Att_MAX*NSPECMAX, &
-                MPI_BYTE, d, 748, MPI_COMM_WORLD,STATUS, INFO)
+           call CheckStop(NCoords(n)>NattributesMAX,'Coords: NattributesMAX too small')
+
+           CoordNames(n,1) = 'model_x_coordinate'!name of the attribute. For instance "Station_longitude"
+           CoordValues(n,1)= s_gx(n)!value for that attribute. For instance "20.6"
+           CoordNames(n,2) = 'model_y_coordinate'
+           CoordValues(n,2)= s_gy(n)
+           if(trim(fname)=="sites")then
+              CoordNames(n,3) = 'model_level'
+              CoordValues(n,3)= s_gz(n)
+              CoordNames(n,4) = 'site_longitude_coordinate'
+              CoordValues(n,4)= Sites_lon(n)
+              CoordNames(n,5) = 'site_latitude_coordinate'
+              CoordValues(n,5)= Sites_lat(n)
+           endif
+           if(trim(fname)=="sondes")then
+              CoordNames(n,3) = 'sonde_longitude_coordinate'
+              CoordValues(n,3)= Sondes_lon(n)
+              CoordNames(n,4) = 'sonde_latitude_coordinate'
+              CoordValues(n,4)= Sondes_lat(n)
+           endif
+        enddo
+        !take Spec_Attributes from any processor with at least one site/sonde
+        if(i_Att>0.and.i_Att/=NSPEC)then
+           write(*,*)'MISSING species attribute? ',i_Att,NSPEC
         endif
-     enddo
+        do d = 1, NPROC-1
+           call MPI_RECV(i_Att_MPI, 4*1, MPI_BYTE, d, 746, MPI_COMM_WORLD,STATUS, INFO)
+           if(i_Att_MPI>0)then
+              if(i_Att_MPI/=NSPEC)then
+                 write(*,*)'MISSING species attribute? ',i_Att_MPI,NSPEC
+              endif
+              call MPI_RECV(Spec_AttributeNames, Spec_Att_Size*N_Spec_Att_MAX*NSPECMAX, &
+                   MPI_BYTE, d, 747, MPI_COMM_WORLD,STATUS, INFO)
+              call MPI_RECV(Spec_AttributeValues, Spec_Att_Size*N_Spec_Att_MAX*NSPECMAX, &
+                   MPI_BYTE, d, 748, MPI_COMM_WORLD,STATUS, INFO)
+           endif
+        enddo
 
-     call Create_CDF_sondes(fileName,SpecName,NSPEC,NStations,AttributeNames,AttributeValues,&
-          NAttributes,CoordNames,CoordValues,NCoords,Spec_AttributeNames,Spec_AttributeValues,&
-          NSpec_Att,NLevels,debug=.false.)
+        call Create_CDF_sondes(fileName,SpecName,NSPEC,NStations,AttributeNames,AttributeValues,&
+             NAttributes,CoordNames,CoordValues,NCoords,Spec_AttributeNames,Spec_AttributeValues,&
+             NSpec_Att,NLevels,debug=.false.)
 
-     deallocate(SpecName,AttributeNames)
-     deallocate(AttributeValues,CoordNames)
-     deallocate(CoordValues)
-     deallocate(NAttributes,NCoords)
-     write(*,*)'Created ',trim(fileName)
-  else
-     !not MasterProc
-     i_Att_MPI=i_Att
-     call MPI_SEND(i_Att_MPI, 4*1, MPI_BYTE, 0, 746, MPI_COMM_WORLD, INFO)
-     if(i_Att>0)then
-        call MPI_SEND(Spec_AttributeNames, Spec_Att_Size*N_Spec_Att_MAX*NSPECMAX, MPI_BYTE, 0, 747, MPI_COMM_WORLD, INFO)
-        call MPI_SEND(Spec_AttributeValues, Spec_Att_Size*N_Spec_Att_MAX*NSPECMAX, MPI_BYTE, 0, 748, MPI_COMM_WORLD, INFO)
-     endif
-      prev_year(type) = current_date%year
-  endif ! MasterProc 
+        deallocate(SpecName,AttributeNames)
+        deallocate(AttributeValues,CoordNames)
+        deallocate(CoordValues)
+        deallocate(NAttributes,NCoords)
+        write(*,*)'Created ',trim(fileName)
+     else
+        !not MasterProc
+        i_Att_MPI=i_Att
+        call MPI_SEND(i_Att_MPI, 4*1, MPI_BYTE, 0, 746, MPI_COMM_WORLD, INFO)
+        if(i_Att>0)then
+           call MPI_SEND(Spec_AttributeNames, Spec_Att_Size*N_Spec_Att_MAX*NSPECMAX, MPI_BYTE, 0, 747, MPI_COMM_WORLD, INFO)
+           call MPI_SEND(Spec_AttributeValues, Spec_Att_Size*N_Spec_Att_MAX*NSPECMAX, MPI_BYTE, 0, 748, MPI_COMM_WORLD, INFO)
+        endif
+        prev_year(type) = current_date%year
+     endif ! MasterProc 
 
   endif ! current_date%year /= prev_year(type)
 
@@ -926,68 +942,68 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
 
   if ( .not.MasterProc ) then   ! send data to me=0 (MasterProc)
 
-    call MPI_SEND(nlocal, 4*1, MPI_BYTE, 0, 346, MPI_COMM_WORLD, INFO)
-    call MPI_SEND(out, 8*nout*nlocal, MPI_BYTE, 0, 347, MPI_COMM_WORLD, INFO)
-    if(trim(fname)=="sondes")&
-         call MPI_SEND(ps_sonde, 8*nlocal, MPI_BYTE, 0, 347, MPI_COMM_WORLD, INFO)
+     call MPI_SEND(nlocal, 4*1, MPI_BYTE, 0, 346, MPI_COMM_WORLD, INFO)
+     call MPI_SEND(out, 8*nout*nlocal, MPI_BYTE, 0, 347, MPI_COMM_WORLD, INFO)
+     if(trim(fname)=="sondes")&
+          call MPI_SEND(ps_sonde, 8*nlocal, MPI_BYTE, 0, 347, MPI_COMM_WORLD, INFO)
 
   else ! MasterProc
 
-    ! first, assign me=0 local data to g_out
-    if ( DEBUG ) print *, "ASSIGNS ME=0 NLOCAL_SITES", me, nlocal
+     ! first, assign me=0 local data to g_out
+     if ( DEBUG ) print *, "ASSIGNS ME=0 NLOCAL_SITES", me, nlocal
 
-    do n = 1, nlocal
-      nglob = s_gindex(0,n)
-      g_out(:,nglob) = out(:,n)
-      if(trim(fname)=="sondes")g_ps(n) = ps_sonde(n)
-    enddo ! n
-
-    do d = 1, NPROC-1
-      call MPI_RECV(nloc, 4*1, MPI_BYTE, d, 346, MPI_COMM_WORLD,STATUS, INFO)
-      call MPI_RECV(out, 8*nout*nloc, MPI_BYTE, d, 347, MPI_COMM_WORLD, &
-                    STATUS, INFO)
-      if(trim(fname)=="sondes")call MPI_RECV(ps_sonde, 8*nloc, MPI_BYTE, d, &
-           347, MPI_COMM_WORLD, STATUS, INFO)
-      do n = 1, nloc
-        nglob = s_gindex(d,n)
+     do n = 1, nlocal
+        nglob = s_gindex(0,n)
         g_out(:,nglob) = out(:,n)
-        if(trim(fname)=="sondes")g_ps(nglob) = ps_sonde(n)
-      enddo ! n
-    enddo ! d
+        if(trim(fname)=="sondes")g_ps(n) = ps_sonde(n)
+     enddo ! n
 
-    ! some computers print out e.g. "2.23-123" instead of "2.23e-123"
-    ! when numbes get too small. Here we make a correction for this:
-    where( abs(g_out)>0.0 .and. abs(g_out)<1.0e-99 ) g_out = 0.0
+     do d = 1, NPROC-1
+        call MPI_RECV(nloc, 4*1, MPI_BYTE, d, 346, MPI_COMM_WORLD,STATUS, INFO)
+        call MPI_RECV(out, 8*nout*nloc, MPI_BYTE, d, 347, MPI_COMM_WORLD, &
+             STATUS, INFO)
+        if(trim(fname)=="sondes")call MPI_RECV(ps_sonde, 8*nloc, MPI_BYTE, d, &
+             347, MPI_COMM_WORLD, STATUS, INFO)
+        do n = 1, nloc
+           nglob = s_gindex(d,n)
+           g_out(:,nglob) = out(:,n)
+           if(trim(fname)=="sondes")g_ps(nglob) = ps_sonde(n)
+        enddo ! n
+     enddo ! d
 
-    ! Final output
-    do n = 1, nglobal
+     ! some computers print out e.g. "2.23-123" instead of "2.23e-123"
+     ! when numbes get too small. Here we make a correction for this:
+     where( abs(g_out)>0.0 .and. abs(g_out)<1.0e-99 ) g_out = 0.0
 
-!! Massimo Vieno change the ouput style make the output csv
-!! Oct 2012 Formatting changed (DS,AMV) for gfortran compliance
-!! and compactness. 
-       write (io_num,'(a,9999(:,",",es10.3))') & 
-            trim(s_name(n)) // date2string(", DD/MM/YYYY hh:00",current_date),& 
-            ( g_out(ii,n), ii =1, nout ) 
-       ! (The ':' format control item will stop processing once the g_out
-       !  is done, avoiding runtime warnings.)
+     ! Final output
+     do n = 1, nglobal
 
-    enddo
+        !! Massimo Vieno change the ouput style make the output csv
+        !! Oct 2012 Formatting changed (DS,AMV) for gfortran compliance
+        !! and compactness. 
+        write (io_num,'(a,9999(:,",",es10.3))') & 
+             trim(s_name(n)) // date2string(", DD/MM/YYYY hh:00",current_date),& 
+             ( g_out(ii,n), ii =1, nout ) 
+        ! (The ':' format control item will stop processing once the g_out
+        !  is done, avoiding runtime warnings.)
 
-    if(trim(fname)=="sondes")then
-       NLevels = NLEVELS_SONDE !number of vertical levels (counting from surface)
-       NSPEC=NSPC_SONDE!number of species defined for sondes
-    else
-       NLevels=1
-       NSPEC=NSPC_SITE!number of species defined for sites
-    endif
-    allocate(SpecName(NSPEC))
+     enddo
 
-    do ispec=1,NSPEC
-       SpecName(ispec)=trim(site_species(ispec))!name of the variable for one sites/sonde and species          
-    enddo ! n
+     if(trim(fname)=="sondes")then
+        NLevels = NLEVELS_SONDE !number of vertical levels (counting from surface)
+        NSPEC=NSPC_SONDE!number of species defined for sondes
+     else
+        NLevels=1
+        NSPEC=NSPC_SITE!number of species defined for sites
+     endif
+     allocate(SpecName(NSPEC))
 
-    call Out_CDF_sondes(fileName,SpecName,NSPEC,g_out,NLevels,g_ps,debug=.false.)
-    deallocate(SpecName)
+     do ispec=1,NSPEC
+        SpecName(ispec)=trim(site_species(ispec))!name of the variable for one sites/sonde and species          
+     enddo ! n
+
+     call Out_CDF_sondes(fileName,SpecName,NSPEC,g_out,NLevels,g_ps,debug=.false.)
+     deallocate(SpecName)
 
   endif ! MasterProc
 
