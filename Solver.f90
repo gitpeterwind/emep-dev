@@ -281,10 +281,13 @@ subroutine  makedt(dti,nchem,coeff1,coeff2,cc)
 
    dt_init = NUM_INITCHEM*DT_INITCHEM
 
- ! - put special cases here:
-  !NOT NEEDED? if(GRIDWIDTH_M>60000.0)nchem=15
+!we require at least one extra iteration (this could easily be changed)
+   call CheckStop(dt_advec<2*DT_INITCHEM, &
+        "Error in Solver/makedt: dt_advec too small!")
 
-!/ ** For smaller scales, but not tested
+ ! - put special cases here:
+
+!/ ** For small scales
   if(dt_advec<620.0) nchem = NUM_INITCHEM +int((dt_advec- dt_init) / dt_init )
 
 !/ Used for >21km resolution and dt_advec>520 seconds:
@@ -300,8 +303,6 @@ subroutine  makedt(dti,nchem,coeff1,coeff2,cc)
    endif
 !/ **
 
-   call CheckStop(dt_advec<DT_INITCHEM, &
-        "Error in Solver/makedt: dt_advec too small!")
    call CheckStop(nchem>nchemMAX,&
         "Error in Solver/makedt: nchemMAX too small!")
 

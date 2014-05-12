@@ -153,6 +153,12 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+12th May 2014  Peter, Birthe   2802
+
+Solver_ml.f90: error message when dt_advec < 200 seconds.
+(we haven't implemented for small dt_advec, although it would be very easy to do)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 2nd May 2014  Peter   2801
 
 z_bnd in (Met_ml) is now updated every timestep (dt_advec), instead of
