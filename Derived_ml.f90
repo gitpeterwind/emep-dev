@@ -63,7 +63,7 @@ use AOTx_ml,          only: Calc_GridAOTx
 use Biogenics_ml,     only: EmisNat, NEMIS_BioNat, EMIS_BioNat
 use CheckStop_ml,     only: CheckStop, StopAll
 use Chemfields_ml,    only: xn_adv, xn_shl, cfac,xn_bgn, AOD,  &
-                            PM25_water, PM25_water_rh50
+                            Extin_coeff, PM25_water, PM25_water_rh50
 use ChemGroups_ml     ! SIA_GROUP, PMCO_GROUP -- use tot indices
 use ChemSpecs       ! Use NSPEC_ADV amd any of IXADV_ indices
 use Chemfields_ml ,   only: so2nh3_24hr,Grid_snow
@@ -77,7 +77,7 @@ use GridValues_ml,    only: debug_li, debug_lj, debug_proc, sigma_mid, xm2, &
                          GRIDWIDTH_M, GridArea_m2
 use Io_Progs_ml,      only: datewrite
 use MetFields_ml,     only: roa,pzpbl,Kz_m2s,th,zen, ustar_nwp, z_bnd,u_ref,&
-         ws_10m, rh2m
+         ws_10m, rh2m, z_mid
 use MetFields_ml,     only: ps, t2_nwp
 use MetFields_ml,     only: SoilWater_deep, SoilWater_uppr, Idirect, Idiffuse
 use ModelConstants_ml, only: &
@@ -440,7 +440,6 @@ call AddNewDeriv( "Idirect","Idirect",  "-","-",   "W/m2", &
 call AddNewDeriv( "Idiffuse","Idiffuse",  "-","-",   "W/m2", &
                -99,  -99, F, 1.0,  T,  IOU_DAY )
 
-
 ! OutputFields can contain both 2d and 3d specs. We automatically
 ! set 2d if 3d wanted
 
@@ -651,6 +650,18 @@ do ind = 1, size(D3_OTHER)
     call AddNewDeriv("D3_T","T", "-","-",   "K", &
          -99, -99, F,  1.0,  T,  IOU_MON,     Is3D )
 
+   case ("D3_Zmid")
+    call AddNewDeriv("D3_Zmid", "Zmid_3d", "-", "-", "m", &
+                      -99 , -99, F, 1.0,   T, IOU_DAY,    Is3D  )
+
+   case ("D3_Zlev")
+    call AddNewDeriv("D3_Zlev", "Zbnd_3d", "-", "-", "m", &
+                      -99 , -99, F, 1.0,   T, IOU_DAY,    Is3D  )
+
+! extinction coefficiants 3D_ExtinCoef
+  case ("D3_ExtinCoef")
+    call AddNewDeriv("D3_ExtinCoef", "ExtinCoef_3d", "-", "-", "m-1", &
+                      -99 , -99, F, 1.0,   T, IOU_DAY,    Is3D  )
   end select
 end do
 
@@ -1193,7 +1204,7 @@ end do
           case ( "COLUMN" ) ! MFAC gives #/cm3, 100 is for m -> cm
 
             read(unit=f_2d(n)%subclass,fmt="(a1,i2)") txt2, klow ! Connvert e.g. k20 to klow=20
-if(MasterProc) print *, "COLUMN TEST subclass ", f_2d(n)%subclass, f_2d(n)%index, klow
+!if(MasterProc) print *, "COLUMN TEST subclass ", f_2d(n)%subclass, f_2d(n)%index, klow
             !klow = f_2d(n)%LC  ! here we have used LC to set vertical limit
 
             do j = 1, ljmax
@@ -1502,6 +1513,22 @@ if(MasterProc) print *, "COLUMN TEST subclass ", f_2d(n)%subclass, f_2d(n)%index
               d_3d( n, i,j,k,IOU_INST) = Kz_m2s(i,j,k)
             end forall
 
+         case ( "Zmid_3d" )    ! Mid-layer heigh
+            forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
+              d_3d( n, i,j,k,IOU_INST) = z_mid(i,j,k)
+            end forall
+
+         case ( "Zbnd_3d" )    ! Mid-layer heigh
+            forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
+              d_3d( n, i,j,k,IOU_INST) = z_bnd(i,j,k)
+            end forall
+
+! Extinction coefficient
+          case ( "ExtinCoef_3d" )        
+
+            forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
+              d_3d( n, i,j,k,IOU_INST) = Extin_coeff(i,j,k)   
+            end forall
 
           case  default
 
