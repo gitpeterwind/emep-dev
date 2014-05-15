@@ -389,8 +389,10 @@ subroutine GetGlobalData(year,month,ibc,used,        &
     SpecBC(IBC_NO2  )  = sineconc( 0.1  , 15.0, 0.03, 4.0  , 0.05, 0.04,PPB)
     SpecBC(IBC_PAN  )  = sineconc( 0.20 ,120.0, 0.15, 999.9, 0.20, 0.1 ,PPB)!Kz change vmin
     SpecBC(IBC_CO   )  = sineconc( 125.0, 75.0, 35.0, 25.0 , 70.0, 30.0,PPB)!JEJ-W
-    SpecBC(IBC_SEASALT_F)=sineconc( 0.5  , 15.0,  0.3,  1.6 , 0.01, 0.01,PPB)
-    SpecBC(IBC_SEASALT_C)=sineconc( 3.0  , 15.0,  1.0,  1.6 , 0.01, 0.01,PPB)
+!st 14.05.2014    SpecBC(IBC_SEASALT_F)=sineconc( 0.5  , 15.0,  0.3,  1.6 , 0.01, 0.01,PPB)
+!st 14.05.2014    SpecBC(IBC_SEASALT_C)=sineconc( 3.0  , 15.0,  1.0,  1.6 , 0.01, 0.01,PPB)
+    SpecBC(IBC_SEASALT_F)=sineconc( 0.2  , 15.0,  0.05,  1.6 , 0.01, 0.01,PPB)
+    SpecBC(IBC_SEASALT_C)=sineconc( 1.5  , 15.0,  0.25,  1.6 , 0.01, 0.01,PPB)
     SpecBC(IBC_SEASALT_G)=sineconc( 1.0  , 15.0,  0.5,  1.0 , 0.01, 0.01,PPB)
     SpecBC(IBC_C2H6 )  = sineconc( 2.0  , 75.0, 1.0 , 10.0 , 0.05, 0.05,PPB)
     SpecBC(IBC_C4H10)  = sineconc( 2.0  , 45.0, 1.0 , 6.0  , 0.05, 0.05,PPB)
