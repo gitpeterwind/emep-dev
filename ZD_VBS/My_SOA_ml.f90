@@ -164,7 +164,7 @@ use CheckStop_ml, only : StopAll  ! CHECKXN
 
        p_kPa(:) = 0.001*( A_mid(:)+B_mid(:)*101325.0 ) ! Pressure in kPa
        h_km     = StandardAtmos_kPa_2_km(p_kPa)
-       BGND_OC(:)= 0.5 * 1.005 ! ng/m3 !!! will give 0.5 ugC/m3 at z=0 m
+       BGND_OC(:)= 0.4 * 1.005 ! ng/m3 !!! will give 0.5 ugC/m3 at z=0 m
 
        do k = K1, K2
             BGND_OC(k) = BGND_OC(k) * exp( -h_km(k)/9.1 )

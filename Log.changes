@@ -153,6 +153,13 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+15th May 2014  Robert/Dave (via Svetlana)   2807
+
+My_SOA_ml.f90 - Backgroung level of OC (BGND_OC) is reduced from 0.5 to 0.4 ugC/m3
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15th May 2014  Svetlana   2804/2805
 
 Aero_Vd_ml.f90 - MMD for coarse sea salt is set to 4.8 um (from 4.0)
