@@ -153,9 +153,9 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-21st May 2014  Dave   2810
+21st May 2014  Dave   2812
 
-ESX change only - use of odir in esx plot outputs
+ESX changes only - use of odir in esx plot outputs, minor stuff
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15th May 2014  Robert/Dave/Peter (via Svetlana)   2808/9
