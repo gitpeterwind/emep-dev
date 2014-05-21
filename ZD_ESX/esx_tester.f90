@@ -262,14 +262,14 @@ program tester
        call print_mass( icspec, nDiffSteps, nz, &
                          xChem(icspec,:), species(icspec)%name )
 
-       filename=trim(esx%odir) // "/Results_"//trim(esx%exp_name) &
-           // "_" // trim(sname ) // ".txt"
+       txt =trims( esx%exp_name // "_" // sname  ) ! label for ascii and plot files
+       filename=trims(esx%odir // "/Results_"// txt // ".txt" )
+
        call writetdata(filename, tprint, esx%z(1:nz), czprint( :,i, 1:nprint-1) )
 
        if ( esx%uses_plotting) then 
          write(plotmsg,"(9a)") trim( esx%plot_cmds ), " -i ", trim(filename),&
-            " -c ", trim(sname), " -o PlotResults"//trim(esx%exp_name) &
-            // "_" // trim(sname ) // ".png"
+          " -c ", trim(sname), " -o ", trims(esx%odir // "/PlotRes_"// txt // ".png" )
          print *, "Plot cmds =", trim(plotmsg)
          call system(trim(plotmsg))
        end if
