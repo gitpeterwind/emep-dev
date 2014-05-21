@@ -5,7 +5,8 @@ label=`date +%F`
 ver=`svnversion|sed "s/:/-/"`
 
 #odir=~/Dropbox/Work_2013/ESX/ESX-${label}
-odir=~/Dropbox/Sweden/ExJobb/ESX_Project/ESX-${label}
+#odir=~/Dropbox/Sweden/ExJobb/ESX_Project/ESX-${label}
+odir=~/ESX-${label}
 mkdir -p $odir
 mkdir $odir/D_Plotting
 
