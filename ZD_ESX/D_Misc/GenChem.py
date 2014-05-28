@@ -357,8 +357,9 @@ class SpeciesReader(object):
 class ReactionsReader(object):
     log = IndentingLogger(logging.getLogger('reactions'))
 
-    def __init__(self):
-        pass
+    def __init__(self, shorthand):
+        self.shorthand = shorthand
+        self.emisfiles = set()
 
     def read(self, stream):
         """Read reactions from *stream*."""
@@ -373,11 +374,11 @@ class ReactionsReader(object):
             # Strip comment from end of line
             line = line.partition(';')[0].strip()
 
-            self.log.debug('Line %3d: %s', linenum, line)
+            self.log.info('Line %3d: %s', linenum, line)
             self.log.indent()
 
             if line.startswith('EMISFILES:'):
-                self._read_emisfiles(line.split(':', 1)[1])
+                self._read_emisfiles(split(line, ':', 1)[1].lower())
             else:
                 self._read_reaction(line)
 
@@ -386,9 +387,14 @@ class ReactionsReader(object):
         self.log.outdent()
 
     def _read_emisfiles(self, emisfiles):
-        self.log.warning('emisfiles not handled - FIXME')
+        """Handle the "foo,bar,baz" from an "emisfiles:foo,bar,baz" line."""
+        # Split comma-separated files and add them to the set of emisfiles
+        emisfiles = split(emisfiles, ',')
+        self.emisfiles.update(emisfiles)
+        self.log.info('EMISFILES added %s, now: %s', emisfiles, self.emisfiles)
 
     def _read_reaction(self, reaction):
+        """Handle a "<rate> <LHS> = <RHS>" definition of a reaction."""
         assert '=' in reaction
         # Split up "<rate> <reactants> = <products>"
         rate, terms = reaction.split(None, 1)
@@ -399,9 +405,9 @@ class ReactionsReader(object):
         # Make sure we don't have [] terms on the RHS
         assert all(type != 'catalyst' for type, _, _ in rhs), '[] terms not allowed in RHS'
 
-        self.log.debug('rate: %s', rate)
-        self.log.debug('LHS: %s', lhs)
-        self.log.debug('RHS: %s', rhs)
+        self.log.debug('rate: %s,  LHS: %s,  RHS: %s', rate, lhs, rhs)
+
+        rate = self._read_reaction_rate(rate)
 
     def _read_reaction_term(self, term):
         """reactant or product -> (type, factor, species)"""
@@ -421,6 +427,54 @@ class ReactionsReader(object):
             type = None
 
         return (type, factor, species)
+
+    def _read_reaction_rate(self, rate):
+        """Process a rate, defining new coefficients if necessary, and return
+        a usable Fortran expression to refer to the rate."""
+        expanded_rate = self.shorthand.expand(rate)
+        if expanded_rate != rate:
+            self.log.debug('expanded rate: %s', expanded_rate)
+        rate = expanded_rate
+
+        # TODO: why do we care?
+        if 'TROE' in rate:
+            self.log.debug('is TROE')
+
+        # Clean up the rate a bit
+        # Lowercase EXP() (TODO: do we need to?)
+        #rate = re.sub(r'\bEXP\b', 'exp', rate)
+        # Normalise e-notation
+        rate = re.sub(r'([\d\.])[EdD]([\+\-]?\d)', r'\1e\2', rate)
+        # Replace 1. -> 1.0
+        rate = re.sub(r'\.(?=\D)', r'.0', rate)
+        self.log.debug('cleaned rate: %s', rate)
+
+        # Resolve rates to Fortran expressions.  In genchem.pl, appears to
+        # define rct (the rate coefficient expression), rcttext (a reference to
+        # all values for a coefficient in rct) and k/rate_label (the expression
+        # to return from define_rates and use in building the overall rate).
+        if is_numeric(rate):
+            # Use numeric rate as-is
+            return rate
+        if rate.startswith('RCEMIS:') or rate.startswith('RCBIO:'):
+            #rate = process_emis(rate)
+            pass
+        elif rate.startswith('DJ('):
+            #rate = process_Jrate(rate)
+            pass
+        elif 'AQRCK' in rate:
+            # Use rate as-is
+            return rate
+        elif rate.startswith('_FUNC_'):
+            # strip _FUNC_
+            # define new rct as the rate
+            # use reference rct array element as rate
+            # TODO: why is this given special treatment?
+            pass
+        else:
+            # see if rate already defined, use reference to rct array element if so
+            # otherwise define new rct as above and use that rct element
+            pass
 
 
 class CodeGenerator(object):
@@ -717,13 +771,12 @@ if __name__ == '__main__':
     rootlogger.addHandler(stream_handler)
     rootlogger.addHandler(file_handler)
 
-    shorthand = ShorthandMap(open('GenIn.shorthand', 'r'))
-
     species_reader = SpeciesReader()
     with open('GenIn.species', 'r') as f:
         species_reader.read(f)
 
-    reactions_reader = ReactionsReader()
+    shorthand = ShorthandMap(open('GenIn.shorthand', 'r'))
+    reactions_reader = ReactionsReader(shorthand)
     with open('GenIn.reactions', 'r') as f:
         reactions_reader.read(f)
 
