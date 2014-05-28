@@ -679,9 +679,33 @@ class GroupsWriter(CodeGenerator):
         self.log.outdent()
 
 
+class PrettyStreamHandler(logging.StreamHandler):
+    """A :class:`logging.StreamHandler` that wraps log messages with
+    severity-dependent ANSI colours."""
+    #: Mapping from logging levels to ANSI colours.
+    COLOURS = {
+        logging.DEBUG: '\033[36m',      # Cyan
+        logging.WARNING: '\033[33m',    # Yellow foreground
+        logging.ERROR: '\033[31m',      # Red foreground
+        logging.CRITICAL: '\033[31;7m'  # Red foreground, inverted
+    }
+    #: ANSI code for resetting the terminal to default colour.
+    COLOUR_END = '\033[0m'
+
+    def format(self, record):
+        """Call :meth:`logging.StreamHandler.format`, and apply a colour to the
+        message if output stream is a TTY."""
+        msg = super(PrettyStreamHandler, self).format(record)
+        if self.stream.isatty():
+            colour = self.COLOURS.get(record.levelno, '')
+            return colour + msg + self.COLOUR_END
+        else:
+            return msg
+
+
 if __name__ == '__main__':
     # Send logging output to stderr
-    stream_handler = logging.StreamHandler()
+    stream_handler = PrettyStreamHandler()
     #stream_handler.setLevel(logging.INFO)
     stream_handler.setFormatter(logging.Formatter('[%(levelname).1s] %(message)s'))
     # Send logging output to Log.GenOut
