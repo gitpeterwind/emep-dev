@@ -361,6 +361,9 @@ class ReactionsReader(object):
         self.shorthand = shorthand
         self.emisfiles = set()
         self.rate_coefficients = []
+        self.photol_specs = set()
+        self.emis_specs = set()
+        self.bionat_specs = set()
 
     def read(self, stream):
         """Read reactions from *stream*."""
@@ -410,6 +413,8 @@ class ReactionsReader(object):
 
         rate = self._read_reaction_rate(rate)
 
+        self.log.debug('processed rate: %s', rate)
+
     def _read_reaction_term(self, term):
         """reactant or product -> (type, factor, species)"""
         # Split "<factor> <species>" pair
@@ -457,26 +462,68 @@ class ReactionsReader(object):
         if is_numeric(rate):
             # Use numeric rate as-is
             return rate
-        if rate.startswith('RCEMIS:') or rate.startswith('RCBIO:'):
-            #rate = process_emis(rate)
-            pass
-        elif rate.startswith('DJ('):
-            #rate = process_Jrate(rate)
-            pass
+        elif 'RCEMIS' in rate or 'RCBIO' in rate:
+            # Turn rcemis:foo into rcemis(foo,k)
+            return re.sub(r'(RCEMIS|RCBIO):(\w+)', self._get_emis_rate, rate)
+        elif 'DJ' in rate:
+            # Turn DJ(foo) into rcphot(foo,k)
+            return re.sub(r'DJ\((\w+)\)', self._get_Jrate, rate)
         elif 'AQRCK' in rate:
             # Use rate as-is
             return rate
         elif rate.startswith('_FUNC_'):
-            # strip _FUNC_
-            # define new rct as the rate
-            # use reference rct array element as rate
-            # TODO: why is this given special treatment?
-            pass
-        else:
-            # see if rate already defined, use reference to rct array element if so
-            # otherwise define new rct as above and use that rct element
+            # Strip _func_ and then get/create rate coefficient as below
+            # TODO: remove _func_ instances from input files
+            rate = rate[6:]
             rct = self._get_rate_coefficient(rate)
             return rct['rate_label']
+        else:
+            # Get/create rate coefficient and return expression referring to it
+            rct = self._get_rate_coefficient(rate)
+            return rct['rate_label']
+
+    def _get_emis_rate(self, match):
+        """Get expression for emission rate.
+
+        *match* is a :class:`re.MatchObject` which should have the type (RCEMIS
+        or RCBIO) in ``match.group(1)`` and emission species in
+        ``match.group(2)``.  Use with :func:`re.sub`.
+        """
+        type, spec = match.group(1, 2)
+        self.log.debug('PROCESS EMIS: %s : %s', type, spec)
+        self.log.indent()
+
+        if spec in self.emis_specs:
+            self.log.debug('RCEMIS FOUND: %s, rate = 0', spec)
+            rate = '0'
+        else:
+            self.log.debug('RCEMIS NEW: %s', spec)
+            self.emis_specs.add(spec)
+            rate = 'rcemis({},k)'.format(spec)
+
+        if type == 'RCBIO':
+            if spec in self.bionat_specs:
+                self.log.debug('BIONAT FOUND: %s', spec)
+            else:
+                self.log.debug('BIONAT NEW: %s', spec)
+                self.bionat_specs.add(spec)
+
+        self.log.outdent()
+        return rate
+
+    def _get_Jrate(self, match):
+        """Get expression for photolysis rate.
+
+        *match* is a :class:`re.MatchObject` which should have the photolysis
+        species in ``match.group(1)``.  Use with :func:`re.sub`.
+        """
+        id = match.group(1)
+        if id in self.photol_specs:
+            self.log.debug('PHOTOL FOUND: %s', id)
+        else:
+            self.log.debug('PHOTOL NEW: %s', id)
+            self.photol_specs.add(id)
+        return 'rcphot({},k)'.format(id)
 
     def _get_rate_coefficient(self, rate):
         """Get (or create, if necessary) a rate coefficient from *rate*."""
