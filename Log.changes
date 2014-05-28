@@ -153,6 +153,15 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+28 May 2014  Alan  2813-2819
+
+ESX changes only.
+
+ZD_ESX/D_Misc/{GenChem.py,ordered_set.py}:
+  Started work on reading GenIn.reactions, implemented most of the replacement
+  for define_rates.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 21st May 2014  Dave   2812
 
 ESX changes only - use of odir in esx plot outputs, minor stuff
