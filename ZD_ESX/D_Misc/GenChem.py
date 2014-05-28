@@ -12,6 +12,8 @@ import itertools
 from textwrap import dedent
 import sys
 
+from ordered_set import OrderedSet
+
 
 def indent(data, amount=1, string='  '):
     return ''.join(string * amount + line for line in data.splitlines(True))
@@ -359,11 +361,11 @@ class ReactionsReader(object):
 
     def __init__(self, shorthand):
         self.shorthand = shorthand
-        self.emisfiles = set()
+        self.emisfiles = OrderedSet()
         self.rate_coefficients = []
-        self.photol_specs = set()
-        self.emis_specs = set()
-        self.bionat_specs = set()
+        self.photol_specs = OrderedSet()
+        self.emis_specs = OrderedSet()
+        self.bionat_specs = OrderedSet()
 
     def read(self, stream):
         """Read reactions from *stream*."""
@@ -394,7 +396,7 @@ class ReactionsReader(object):
         """Handle the "foo,bar,baz" from an "emisfiles:foo,bar,baz" line."""
         # Split comma-separated files and add them to the set of emisfiles
         emisfiles = split(emisfiles, ',')
-        self.emisfiles.update(emisfiles)
+        self.emisfiles |= emisfiles
         self.log.info('EMISFILES added %s, now: %s', emisfiles, self.emisfiles)
 
     def _read_reaction(self, reaction):
@@ -494,19 +496,19 @@ class ReactionsReader(object):
         self.log.indent()
 
         if spec in self.emis_specs:
-            self.log.debug('RCEMIS FOUND: %s, rate = 0', spec)
+            self.log.debug('RCEMIS found: %s, rate = 0', spec)
             rate = '0'
         else:
-            self.log.debug('RCEMIS NEW: %s', spec)
             self.emis_specs.add(spec)
+            self.log.debug('RCEMIS new: %s, now: %s', spec, self.emis_specs)
             rate = 'rcemis({},k)'.format(spec)
 
         if type == 'RCBIO':
             if spec in self.bionat_specs:
-                self.log.debug('BIONAT FOUND: %s', spec)
+                self.log.debug('BIONAT found: %s', spec)
             else:
-                self.log.debug('BIONAT NEW: %s', spec)
                 self.bionat_specs.add(spec)
+                self.log.debug('BIONAT new: %s, now: %s', spec, self.bionat_specs)
 
         self.log.outdent()
         return rate
@@ -519,9 +521,9 @@ class ReactionsReader(object):
         """
         id = match.group(1)
         if id in self.photol_specs:
-            self.log.debug('PHOTOL FOUND: %s', id)
+            self.log.debug('PHOTOL found: %s', id)
         else:
-            self.log.debug('PHOTOL NEW: %s', id)
+            self.log.debug('PHOTOL new: %s', id)
             self.photol_specs.add(id)
         return 'rcphot({},k)'.format(id)
 
