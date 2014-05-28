@@ -360,6 +360,7 @@ class ReactionsReader(object):
     def __init__(self, shorthand):
         self.shorthand = shorthand
         self.emisfiles = set()
+        self.rate_coefficients = []
 
     def read(self, stream):
         """Read reactions from *stream*."""
@@ -474,8 +475,30 @@ class ReactionsReader(object):
         else:
             # see if rate already defined, use reference to rct array element if so
             # otherwise define new rct as above and use that rct element
-            pass
+            rct = self._get_rate_coefficient(rate)
+            return rct['rate_label']
 
+    def _get_rate_coefficient(self, rate):
+        """Get (or create, if necessary) a rate coefficient from *rate*."""
+        # Bail out early if this rate already has a rate coefficient defined
+        for rct in self.rate_coefficients:
+            if rct['rct'] == rate:
+                self.log.debug('Found rate coefficient for %r: %r', rate, rct)
+                return rct
+
+        # Otherwise, define a new rate coefficient
+        # (Most of these names are based on those used in GenChem.pl)
+        # TODO: handle this whole DIMFLAG/ESXFLAG crazyness from GenChem.pl
+        index = len(self.rate_coefficients) + 1
+        rct = {
+            'index': index,
+            'rct': rate,
+            'rcttext': 'rct(%d,:)' % index,
+            'rate_label': 'rct(%d,k)' % index,
+        }
+        self.log.info('NEW RCT: %s', rct)
+        self.rate_coefficients.append(rct)
+        return rct
 
 class CodeGenerator(object):
     def write_module_header(self, stream, module, use=None):
