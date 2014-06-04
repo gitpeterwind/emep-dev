@@ -1,0 +1,83 @@
+!-------------------- ---------------------------------------------------------
+! Common 2D and 3D outputs. Select here, giving unit, type, etc. 
+! 1) OutputConcs
+! 2) DDEP_ECO
+! If the variables are model-species, depositions, then processing is easy
+! If something else (typ=MISC, e.g. HMIX, T2m), needs to be defined 
+! in Derived_ml
+! Hourly outputs are set in My_Outputs_ml
+!-----------------------------------------------------------------------------
+!  items:
+!         name      Unit   dim  typ   class  freq
+!
+! where freq =  IOU_YEAR=2,IOU_MON=3, IOU_DAY=4,IOU_HOUR=6, IOU_HOUR_MEAN=7
+!         *NOTE* only the day, month, year flags work so far.
+!
+&OutputConcs_config
+OutputConcs= 
+      'SURF_ppbC_VOC'       ,'ppb' ,'2d','VOC'      ,'MISC' ,4,
+! ug/m3                                                    
+      'SO2'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
+      'NH3'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
+      'HNO3'                ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
+      'NO2'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
+      'NO'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
+      'SO4'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
+      'NO3_F'               ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
+      'NO3_C'               ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
+      'NH4_F'               ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
+      'REMPPM25'            ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
+      'REMPPM_C'            ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
+! ppb                                                      
+      'O3'                  ,'ppb' ,'2d','AIR_CONCS','SPEC' ,4, !! test 3d
+! GenChem produces a number of groups of species.
+! Here we say which ones we want for different units
+! ****** UPPER CASE ONLY ************
+! ugC/m3
+      'OXN'                 ,'ugN' ,'2d','AIR_CONCS','GROUP',4,
+      'NOX'                 ,'ugN' ,'2d','AIR_CONCS','GROUP',4,
+      'RDN'                 ,'ugN' ,'2d','AIR_CONCS','GROUP',4,
+      'TNO3'                ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
+      'SIA'                 ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
+      'PMFINE'              ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
+      'PM10'                ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
+      'PMCO'                ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
+      'PPM25'               ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
+      'PPM_C'               ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
+! SOA, PCM_F etc. are special and need appropriate units. Do not confuse! 
+! Only PCM has proper ug units, the others are carbon-eqiuvalents 
+! (PCM is particulate carbonaceous matter = sum of all EC and OM components.)
+      'PPM25_FIRE'          ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
+! ============================================================
+! SOA additions (26 entries)
+      'PART_OM_F'           ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
+      'OMCOARSE'            ,'ug'  ,'2d','AIR_CONCS','GROUP',4, !! NEVER as ugC
+      'ECFINE'              ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
+      'ECCOARSE'            ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
+      'PART_OC10'           ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
+      'PART_OC25'           ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC AND..
+!SPECIAL PM25 will be sum of fine + fraction coarse
+      'SURF_ug_PM25'        ,'ug'  ,'2d','PM25'      ,'MISC',4,
+      'SURF_ug_PM25_rh50'   ,'ug'  ,'2d','PM25_rh50' ,'MISC',4,
+      'SURF_ug_PM10_rh50'   ,'ug'  ,'2d','PM10_rh50' ,'MISC',4,
+!---------------------------------------------
+&end
+
+! nb freq =  IOU_YEAR=2,IOU_MON=3, IOU_DAY=4,IOU_HOUR=6, IOU_HOUR_MEAN=7
+!         *NOTE* only the day, month, year flags work so far.
+
+&OutputDep_config
+  DDEP_ECOS =
+    'Grid     ', 4,
+
+  DDEP_WANTED =
+    'SOX      ', 'GROUP', 'mgS',
+    'OXN      ', 'GROUP', 'mgN',
+    'RDN      ', 'GROUP', 'mgN',
+
+  WDEP_WANTED = 
+    'SOX      ','GROUP','mgS'
+    'OXN      ','GROUP','mgN'
+    'RDN      ','GROUP','mgN'
+&end
+

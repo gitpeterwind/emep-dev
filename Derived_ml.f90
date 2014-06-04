@@ -1,32 +1,3 @@
-! <Derived_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
-!          Chemical transport Model>
-!*****************************************************************************!
-!*
-!*  Copyright (C) 2007-2013 met.no
-!*
-!*  Contact information:
-!*  Norwegian Meteorological Institute
-!*  Box 43 Blindern
-!*  0313 OSLO
-!*  NORWAY
-!*  email: emep.mscw@met.no
-!*  http://www.emep.int
-!*
-!*    This program is free software: you can redistribute it and/or modify
-!*    it under the terms of the GNU General Public License as published by
-!*    the Free Software Foundation, either version 3 of the License, or
-!*    (at your option) any later version.
-!*
-!*    This program is distributed in the hope that it will be useful,
-!*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-!*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!*    GNU General Public License for more details.
-!*
-!*    You should have received a copy of the GNU General Public License
-!*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************!
-
-!==============================================================================
 module Derived_ml
 
   !---------------------------------------------------------------------------
@@ -724,11 +695,10 @@ end do
     iou_max=max(iou_max,maxval(f_3d%iotype))
   endif
 
-  if (SOURCE_RECEPTOR.and..not.FORECAST)&  ! We assume that no daily & hourly outputs
-    iou_max=IOU_MON                        ! are wanted on SOURCE_RECEPTOR mode
-
-  if (SOURCE_RECEPTOR) &                   ! We need yearly for SR always
-    iou_min=IOU_YEAR                       !
+  if (SOURCE_RECEPTOR)then                 ! We include daily and monthly also 
+    iou_max=IOU_DAY                        ! for SOURCE_RECEPTOR mode which makes
+    iou_min=IOU_YEAR                       ! it easy for debugging. !SVS 22May2014
+  endif
 
   if (FORECAST) &                          ! Only dayly & hourly outputs
     iou_min=IOU_DAY                        ! are wanted on FORECAST mode
