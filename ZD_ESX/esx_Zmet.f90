@@ -13,7 +13,8 @@ module esx_Zmet
   use Kz_ml                  !! e.g. def_Kz, JericevicKz , O_BrienKz
   use MicroMet_ml, only : AerRes !! TEST
   use ModelConstants, only : UNDEF_R
-  use PhysicalConstants_ml, only : RGAS_J, AVOG
+  use PhysicalConstants_ml, only : RGAS_J, AVOG, KARMAN
+  use SmallUtils_ml,  only : num2str
 
   implicit none
   private
@@ -107,6 +108,10 @@ subroutine def_Kz(KzMethod, kwargs)
     n  = KeyValue( kwargs, "n" )
     Zmet%Kz =  def_kz_pow(zlevs, za, Ka, n )
 
+  else if( KzMethod == "Neutral" ) then 
+
+    Zmet(1:nz)%Kz = KARMAN * L%ustar * zlevs
+
   else if( KzMethod == "Leuning" ) then 
 
     Zmet(1:nz)%Kz = def_Kz_inc(zlevs,L%uStar,Veg%h,L%hSL,L%invL,Veg%dPerh,debug0 )
@@ -148,13 +153,14 @@ subroutine def_Kz(KzMethod, kwargs)
 
        fineKz(:) = def_Kz_inc(fineZ,L%uStar,Veg%h,L%hSL,L%invL,Veg%dPerh,debug0 )
 
-       Ra_MO=AerRes( esx%z(iz), esx%z(iz+1), L%ustar, L%invL,0.4)
+       Ra_MO=AerRes( esx%z(iz), esx%z(iz+1), L%ustar, L%invL,KARMAN)
 
        Zmet(iz)%Ra = esx%dzmid(iz)*sum(1.0/fineKz)/NFINE
 
        if ( debug0 ) then
          print "(a,i3,f7.1,9(2x,a,2f10.2))", "AERO ", iz, esx%z(iz), &
-           "Kz,dz: ", Zmet(iz)%Kz, esx%dzmid(iz) &
+           "Kz-nuetral,L%invL: ", KARMAN*L%ustar*zlevs(iz), L%invL &
+          ,"Kz,dz: ", Zmet(iz)%Kz, esx%dzmid(iz) &
           ,"Ras: ", Ra_MO, esx%dzmid(iz)/Zmet(iz)%Kz &
           ,"from Int dz/Kz: ", Zmet(iz)%Ra
        end if
@@ -174,18 +180,19 @@ end subroutine def_kz
  subroutine print_Kz()
    character(len=100) :: header
    integer :: nz
-   header = "Kz method = "// trim(esx%Kz_method)
+   header = "#Kz method = "// trim(esx%Kz_method) // "; Hveg = " // trim(num2str(veg%h,"(f6.2)"))
 
    ! need to reshape 1-D arrays into 2-D for writedata:
 
    nz = esx%nz
    call writedata(trim(esx%odir)//"/LogKz", &
-     (/ "z    ", "dz   ", "dzmid","zbnd ", "zb/h ", "T(K) ", "Kz   ", "KzJG ", "KzOB " /) & 
+     (/ "z    ", "dz   ", "dzmid","zbnd ", "zb/h ", "T(K) ", "Kz   ", "KzJG ", "KzOB ", "Kzu*Z" /) & 
         ,esx%z(1:nz)   & !coords
         ,reshape( (/ esx%dz(1:nz), esx%dzmid(1:nz), &
                      esx%zbnd(1:nz), esx%zbnd(1:nz)/Veg%h, &
              Zmet(1:nz)%tzK, &
-             Zmet(1:nz)%Kz, Zmet(1:nz)%Kz2, Zmet(1:nz)%Kz3 /), (/ nz, 8 /) ),&
+             Zmet(1:nz)%Kz, Zmet(1:nz)%Kz2, Zmet(1:nz)%Kz3, &
+              KARMAN*L%ustar*esx%zbnd(1:nz) /), (/ nz, 9 /) ),&
       header )
 
  end subroutine  print_Kz

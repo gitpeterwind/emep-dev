@@ -45,7 +45,7 @@ contains
     rewind(config_io)
     read (config_io, nml=do3se_config)
     close(config_io)
-    open(newunit=io,file="LogConfig.do3se")
+    open(newunit=io,file=trim(esx%odir)//"/LogConfig.do3se")
     write(io,nml=do3se_config)
     close(io)
     if ( esx%debug_gleaf>0) write(*,nml=do3se_config)

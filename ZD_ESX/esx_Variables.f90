@@ -187,7 +187,7 @@ contains
   subroutine Config_esx(io, writelog)
     integer, intent(in) :: io
     logical, intent(in) :: writelog
-    integer :: ilog, nspecs, iz
+    integer :: ispec, ilog, nspecs, iz
     real :: zinc
     namelist /esxDriver_config/ esx, Loc
 
@@ -217,7 +217,15 @@ contains
       
     else  ! derived from explicit config data:
 
-       esx%nz     = maxloc(esx%zbnd,dim=1)
+      ! Check for mal-formed input of zbnds (e.g. double defn)
+      do iz = 2, ESX_MAXNZ
+         if ( esx%zbnd(iz) > 0.0 .and. (esx%zbnd(iz) < esx%zbnd(iz-1)) ) then
+              print *, "zbnds ERRROR", iz, esx%zbnd(iz),  esx%zbnd(iz-1)
+              call CheckStop( "zbnds not increasing linearly. Check config file")
+         end if
+      end do
+      esx%nz     = maxloc(esx%zbnd,dim=1)
+
 
     end if 
     !! find the indices in the chemical mechanism corresponding
@@ -233,6 +241,13 @@ contains
     esx%nOutSpecs = nspecs
     esx%OutSpecs(1:nspecs)%int =  &
        find_indices( esx%OutSpecs(1:nspecs)%key, species(:)%name )
+
+    do ispec = 1, nspecs
+       if( esx%DiffSpecs(ispec)%ind < 1 ) & 
+         call CheckStop("DiffSpec not in CM:"//esx%DiffSpecs(ispec)%name )
+       if( esx%OutSpecs(ispec)%int < 1 ) &
+         call CheckStop("OutSpec not in CM:"//esx%OutSpecs(ispec)%key )
+    end do
 
     if( writelog ) then
       call system("mkdir " // esx%odir)

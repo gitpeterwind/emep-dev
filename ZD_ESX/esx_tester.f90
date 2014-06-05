@@ -27,7 +27,7 @@ program tester
   character(len=500) :: plotmsg
   character(len=100) :: filename, sname
   character(len=50) :: txt
-  real    :: units, chem2Kz_units
+  real    :: units, pcm3_to_pm3, pm3_to_pcm3
   integer :: i,idspec, icspec, nprint, io_hour1, io_hour2, old_hour=-999
   logical :: first=.true.
   logical, save ::   my_first_call = .true.
@@ -134,20 +134,24 @@ program tester
    select case ( esx%units )
    case ( "ppb" ) 
      units = 1.0e9/Zmet(1)%M   !! ppb at surface
-     chem2Kz_units = 1.0e6   ! #/cm2 -> #/m3 inside KzSolver
+     pcm3_to_pm3 = 1.0e6   ! #/cm3 -> #/m3 inside KzSolver
    case ( "-" ) 
      units = 1.0
-     chem2Kz_units = 1.0
+     pcm3_to_pm3 = 1.0
    case default
      stop "DEFINE esx%units"
    end select
+   pm3_to_pcm3 = 1.0/pcm3_to_pm3
  
    if ( my_first_call ) then
      nprint = 1 
      do i = 1, nOutSpecs
        icspec = esx%OutSpecs(i)%int
-       if( icspec < 1 ) print *, "ICSPEC NEG ", icspec, esx%OutSpecs(i)%key
-       czprint(:, i , nprint) = xChem(icspec,:)*units
+       if( icspec < 1 ) then
+           print *, "ICSPEC not found: ", icspec, esx%OutSpecs(i)%key
+       else ! ok
+           czprint(:, i , nprint) = xChem(icspec,:)*units
+       end if
      end do
      nprint = nprint + 1
 
@@ -186,7 +190,10 @@ program tester
            associate ( dspec => esx%DiffSpecs(idspec) ) 
               icspec = dspec%ind
 
-              cz(:) = xChem( icspec, : ) * chem2Kz_units
+            !! chem has molec/cm3.
+            !! Needs to be in molec/m3 to match units of z, Kz, etc.
+
+              cz(:) = xChem( icspec, : ) * pcm3_to_pm3
 
             !! TMP. We should have pollutant-specific gleaf values, but for now just do
 
@@ -205,7 +212,7 @@ program tester
                  Fb=dspec%Fb, Ft=dspec%Ft, fixedBC=esx%fixedBC, &
                  nSubSteps=nt, concn=cz, debug_level=esx%debug_Zdiff )
 
-              xChem(icspec,:) = cz(:)/ chem2Kz_units
+              xChem(icspec,:) = cz(:) * pm3_to_pcm3
 
            end associate ! dspec
 
