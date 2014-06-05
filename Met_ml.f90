@@ -387,7 +387,7 @@ contains
     else !if available, will use cloudwater to determine the height of release
        if(write_now)write(*,*)'WARNING: deriving 3D cloud cover (cc3d) from cloud water '
        namefield='cloudwater'
-       call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
+       call Getmeteofield(meteoname,namefield,nrec,3,unit,validity,&
             cc3d(:,:,:),found=foundcloudwater)
        call CheckStop(.not.foundcloudwater,&
             "meteo field not found: 3D_cloudcover and"//trim(namefield))
@@ -418,7 +418,7 @@ contains
        !NB: array cw_met only used here
        namefield='cloudwater'
        if(nr==2)cw_met(:,:,:,1)=cw_met(:,:,:,2)!save previous value
-       call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
+       call Getmeteofield(meteoname,namefield,nrec,3,unit,validity,&
             cw_met(:,:,:,nr),found=foundcloudwater)
        if(foundcloudwater)then
           if(write_now)write(*,*)'release height for 3D precipitations derived from cloudwater'
