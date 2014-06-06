@@ -195,21 +195,39 @@ class ShorthandMap(object):
         return re.sub(pattern, replace, eqn)
 
 
+#: Atomic weights of atoms we care about
+ATOMS = {
+    'C': 12,
+    'H': 1,
+    'N': 14,
+    'O': 16,
+    'S': 32,
+}
+
+
+def count_atoms(formula):
+    """formula -> (counts, molwt)
+
+    Process a formula to find out how many of each atom in *ATOMS* it contains
+    and the molecular weight from only those atoms.
+    """
+    counts = collections.Counter()
+    # Count atoms in the formula
+    for atom, n in re.findall('([A-Z][a-z]?)(\d*)', formula):
+        n = int(n) if n else 1
+        if atom in ATOMS:
+            counts.update({atom: n})
+    # Sum the molecular weight
+    molwt = float(sum(ATOMS[atom] * n for atom, n in counts.iteritems()))
+    return (counts, molwt)
+
+
 class Species(object):
     # Species type constants
     SHORT_LIVED = 0
     ADVECTED = 1
     SEMIVOL = 2
     SLOW = 3
-
-    # Atomic weights of atoms we care about
-    ATOMS = {
-        'C': 12,
-        'H': 1,
-        'N': 14,
-        'O': 16,
-        'S': 32,
-    }
 
     def __init__(self, **kwargs):
         self.name = None
@@ -240,16 +258,8 @@ class Species(object):
         """Calculate molwt, NMHC flag and atom counts from formula."""
         formula = self.formula or ''
 
-        # Count atoms in the formula
-        self.counts = collections.Counter()
-        for atom, n in re.findall('([A-Z][a-z]?)(\d*)', formula):
-            n = int(n) if n else 1
-            # Only store counts for atoms we care about
-            if atom in self.ATOMS:
-                self.counts.update({atom: n})
-
-        # Sum the molecular weight for the formula
-        self.molwt = float(sum(self.ATOMS[atom] * n for atom, n in self.counts.iteritems()))
+        # Count atoms, get molecular weight
+        self.counts, self.molwt = count_atoms(formula)
 
         # Test for non-methane hydrocarbon (NMHC) - contains only C and H atoms
         # but excluding CH4
