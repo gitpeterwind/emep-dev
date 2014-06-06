@@ -227,6 +227,8 @@ class ChemicalScheme(object):
     def __init__(self):
         self.species = collections.OrderedDict()
         self.groups = DefaultListOrderedDict()
+        self.emis_files = OrderedSet()
+        self.reactions = []
 
     def add_species(self, spec):
         """Add *spec* to species, updating groups as necessary."""
@@ -237,6 +239,15 @@ class ChemicalScheme(object):
 
         for group in spec.groups:
             self.groups[group].append(spec.name)
+
+    def add_emis_files(self, files):
+        """Add *files* to emis_files."""
+        self.emis_files |= files
+        LOG.info('EMISFILES added %s, now: %s', files, self.emis_files)
+
+    def add_reaction(self, reaction):
+        """Add *reaction* to reactions."""
+        self.reactions.append(reaction)
 
     def get_species_list(self):
         """Get a list of species sorted by type."""
@@ -357,15 +368,78 @@ class SpeciesReader(object):
 Term = collections.namedtuple('Term', ['species', 'factor', 'type'])
 
 
+class Reaction(object):
+    def __init__(self, rate, LHS, RHS):
+        self.rate = rate
+        # Make sure we don't have factors on the LHS
+        assert all(_.factor == '1.0' for _ in LHS), 'factors not allowed in LHS'
+        self.LHS = LHS
+        # Make sure we don't have [] terms on the RHS
+        assert all(_.type != 'catalyst' for _ in RHS), '[] terms not allowed in RHS'
+        self.RHS = RHS
+
+    def __repr__(self):
+        return 'Reaction(rate=%r, LHS=%r, RHS=%r)' % (self.rate, self.LHS, self.RHS)
+
+    def __str__(self):
+        return self.__repr__()
+
+    @property
+    def reactants(self):
+        """Reaction reactants (from LHS)."""
+        return [_ for _ in self.LHS if _.type is None]
+
+    @property
+    def catalysts(self):
+        """Reaction catalysts (from LHS)."""
+        return [_ for _ in self.LHS if _.type == 'catalyst']
+
+    @property
+    def products(self):
+        """Reaction products (from RHS)."""
+        return [_ for _ in self.RHS if _.type is None]
+
+    @property
+    def tracers(self):
+        """Reaction tracers (from RHS)."""
+        return [_ for _ in self.RHS if _.type is not None]
+
+    def get_full_rate(self):
+        """Full rate, including rates contributed by LHS catalysts."""
+        rate = self.rate[:]
+        for term in self.catalysts:
+            rate.extend(['*', ('amount', term.species)])
+        return rate
+
+    def get_loss_rates(self):
+        """Iterate over ``(species, rate)`` pairs for this reaction's losses."""
+        base_rate = self.get_full_rate()
+        for term, others in element_remainder_pairs(self.reactants):
+            # Multiply rate by amounts of all other reactants
+            term_rate = []
+            for t in others:
+                term_rate.extend(['*', ('amount', t.species)])
+            yield (term.species, base_rate + term_rate)
+
+    def get_prod_rates(self):
+        """Iterate over ``(species, rate)`` pairs for this reaction's production."""
+        base_rate = self.get_full_rate()
+        # Multiply rate by amounts of all reactants
+        for term in self.reactants:
+            base_rate.extend(['*', ('amount', term.species)])
+        for term in self.products:
+            # Include product factor if present
+            if term.factor == '1.0':
+                term_rate = []
+            else:
+                term_rate = [term.factor + '*']
+            yield (term.species, term_rate + base_rate)
+
+
 class ReactionsReader(object):
-    def __init__(self, shorthand):
+    def __init__(self, scheme, shorthand):
+        self.scheme = scheme
         self.shorthand = shorthand
-        self.emisfiles = OrderedSet()
-        self.rate_coefficients = []
-        self.photol_specs = OrderedSet()
-        self.emis_specs = OrderedSet()
-        self.loss_terms = DefaultListOrderedDict()
-        self.prod_terms = DefaultListOrderedDict()
 
     def read(self, stream):
         """Read reactions from *stream*."""
@@ -384,88 +458,50 @@ class ReactionsReader(object):
             LOG.indent()
 
             if line.startswith('EMISFILES:'):
-                self._read_emisfiles(split(line, ':', 1)[1].lower())
+                files = split(line, ':', 1)[1].lower()
+                self.scheme.add_emis_files(split(files, ','))
             else:
-                self._read_reaction(line)
+                self.scheme.add_reaction(self._read_reaction(line))
 
             LOG.outdent()
 
         LOG.outdent()
 
-    def _read_emisfiles(self, emisfiles):
-        """Handle the "foo,bar,baz" from an "emisfiles:foo,bar,baz" line."""
-        # Split comma-separated files and add them to the set of emisfiles
-        emisfiles = split(emisfiles, ',')
-        self.emisfiles |= emisfiles
-        LOG.info('EMISFILES added %s, now: %s', emisfiles, self.emisfiles)
-
     def _read_reaction(self, reaction):
-        """Handle a "<rate> <LHS> = <RHS>" definition of a reaction."""
+        """Turn a "<rate> <LHS> = <RHS>" definition into a Reaction object."""
         assert '=' in reaction
         # Split up "<rate> <reactants> = <products>"
         rate, terms = reaction.split(None, 1)
         lhs, rhs = split(terms, '=', 1)
-        # Parse terms
+        # Parse LHS and RHS terms
         lhs = [self._read_reaction_term(_) for _ in split(lhs, '+')]
         rhs = [self._read_reaction_term(_) for _ in split(rhs, '+')]
-        # Make sure we don't have factors on the LHS
-        assert all(term.factor == '1.0' for term in lhs), 'factors not allowed on LHS'
-        # Make sure we don't have [] terms on the RHS
-        assert all(term.type != 'catalyst' for term in rhs), '[] terms not allowed in RHS'
 
-        # Process rate, creating coefficient variables etc. as necessary
-        LOG.debug('rate: %s,  LHS: %s,  RHS: %s', rate, lhs, rhs)
+        # Process rate and create reaction
         rate = self._read_reaction_rate(rate)
-        LOG.debug('processed rate: %s', rate)
+        reaction = Reaction(rate, lhs, rhs)
+        LOG.debug('%s', reaction)
 
-        # Process LHS tracers, creating them if necessary.  Catalysts get added
-        # as rate factors.
-        lhs_tracers = [_ for _ in lhs if _.type is not None]
-        rate_factors = [rate]
-        for term in lhs_tracers:
-            LOG.debug('processing LHS %s: %s', term.type, term.species)
-            # TODO: register/count tracer
-            if term.type == 'catalyst':
-                # add rate factor
-                # TODO: check that spec exists?
-                rate_factors.append('xnew({})'.format(term.species))
-                LOG.debug('added rate factor: %s', rate_factors[-1])
+        # TODO: check that specs exist, where appropriate
+        # TODO: check reaction balance
+        # TODO: what is check_multipliers()?
+        # TODO: RHS tracers?
 
-        rate = '*'.join(rate_factors)
-        LOG.debug('rate after LHS: %s', rate)
+        LOG.debug('full rate including catalysts: %r', reaction.get_full_rate())
 
-        # Process LHS reactants, adding loss terms
-        lhs_reactants = [_ for _ in lhs if _.type is None]
-        assert len(lhs_reactants) <= 2, 'too many LHS terms'
-        for term, others in element_remainder_pairs(lhs_reactants):
-            LOG.debug('processing LHS reactant: %s', term.species)
-            # TODO: what is check_multipilers()?
-            # TODO: check spec exists
-            # gather loss factors from other reactants
-            # TODO: this is overcomplicated for n=2, but maybe want to support more in the future?
-            loss_factors = ['xnew({})'.format(t.species) for t in others]
-            # add loss term
-            loss = ' * '.join([rate] + loss_factors)
-            LOG.debug('adding loss to %s: %s', term.species, loss)
-            self.loss_terms[term.species].append(loss)
+        LOG.debug('loss rates:')
+        LOG.indent()
+        for spec, rate in reaction.get_loss_rates():
+            LOG.debug('%s: %s', spec, rate)
+        LOG.outdent()
 
-        # Process RHS tracers, creating them if necessary.
-        rhs_tracers = [_ for _ in lhs if _.type is not None]
-        for term in rhs_tracers:
-            # TODO: register/count tracer
-            pass
+        LOG.debug('prod rates:')
+        LOG.indent()
+        for spec, rate in reaction.get_prod_rates():
+            LOG.debug('%s: %s', spec, rate)
+        LOG.outdent()
 
-        # Process RHS products, adding production terms
-        flux_factors = [rate] + ['xnew({})'.format(t.species) for t in lhs_reactants]
-        rhs_products = [_ for _ in rhs if _.type is None]
-        for term in rhs_products:
-            # TODO: check spec exists
-            # include product factor (if present)
-            prod_factors = ([term.factor] if term.factor != '1.0' else []) + flux_factors
-            # add production term
-            prod = '(' + ' * '.join(prod_factors) + ')'
-            LOG.debug('adding prod to %s: %s', term.species, prod)
-            self.prod_terms[term.species].append(prod)
+        return reaction
 
     def _read_reaction_term(self, term):
         """reactant or product -> (type, factor, species)"""
@@ -487,8 +523,24 @@ class ReactionsReader(object):
         return Term(species, factor, type)
 
     def _read_reaction_rate(self, rate):
-        """Process a rate, defining new coefficients if necessary, and return
-        a usable Fortran expression to refer to the rate."""
+        """Process *rate* into a list of rate parts.
+
+        The rate first has shorthand expansions and some basic cleanup applied
+        to it.  It's then split by "top-level" operators (operators that don't
+        appear inside parentheses) and each "part" is checked for special forms
+        that need special handling instead of being included as-is in the rate.
+        The special forms are replaced with ``(kind, arg)`` tuples, and
+        everything else is left as literal strings.
+
+        For example, ``DJ(IDNO2)*0.222`` becomes ``[('photol', 'IDNO2'), '*0.222']``.
+        The responsibility for turning this into a Fortran expression describing
+        the rate (e.g. ``rcphot(IDNO2,k)*0.222``) belongs to the code generator.
+
+        Non-trivial rates that do not cause any special handling become
+        ``[('coeff', rate)]``, which gets used in the code generator to re-use
+        rate calculations.
+        """
+        # Expand shorthands in the rate
         expanded_rate = self.shorthand.expand(rate)
         if expanded_rate != rate:
             LOG.debug('expanded rate: %s', expanded_rate)
@@ -507,90 +559,78 @@ class ReactionsReader(object):
         rate = re.sub(r'\.(?=\D)', r'.0', rate)
         LOG.debug('cleaned rate: %s', rate)
 
-        # Resolve rates to Fortran expressions.  In genchem.pl, appears to
-        # define rct (the rate coefficient expression), rcttext (a reference to
-        # all values for a coefficient in rct) and k/rate_label (the expression
-        # to return from define_rates and use in building the overall rate).
-        if is_numeric(rate):
-            # Use numeric rate as-is
-            return rate
-        elif 'RCEMIS' in rate:
-            # Turn rcemis:foo into rcemis(foo,k)
-            return re.sub(r'RCEMIS:(\w+)',
-                          lambda m: self._get_emis_rate(m.group(1)),
-                          rate)
-        elif 'RCBIO' in rate:
-            # Turn rcbio:foo into rcemis(foo,k)
-            # TODO: remove this, after fixing input files
-            LOG.warning('rcbio:spec deprecated, replace with rcemis:spec')
-            return re.sub(r'RCBIO:(\w+)',
-                          lambda m: self._get_emis_rate(m.group(1)),
-                          rate)
-        elif 'DJ' in rate:
-            # Turn DJ(foo) into rcphot(foo,k)
-            return re.sub(r'DJ\((\w+)\)',
-                          lambda m: self._get_Jrate(m.group(1)),
-                          rate)
-        elif 'AQRCK' in rate:
-            # Use rate as-is
-            return rate
+        # Short-circuit some cases where we just want the literal rate
+        if is_numeric(rate) or 'AQRCK' in rate:
+            return [rate]
         elif rate.startswith('_FUNC_'):
-            # Strip _func_ and then get/create rate coefficient as below
-            # TODO: remove _func_ instances from input files
-            rate = rate[6:]
-            rct = self._get_rate_coefficient(rate)
-            return rct['rate_label']
-        else:
-            # Get/create rate coefficient and return expression referring to it
-            rct = self._get_rate_coefficient(rate)
-            return rct['rate_label']
+            return [rate[6:]]
 
-    def _get_emis_rate(self, spec):
-        """Get expression for emission rate of *spec*."""
-        LOG.debug('PROCESS EMIS: %s', spec)
-        LOG.indent()
+        parts = []
+        def handle_part(part, op=None):
+            # Recognise and replace special forms with (kind, arg) tuples
+            if part.startswith('RCEMIS:'):
+                # rcemis:foo -> ('emis', 'foo')
+                part = ('emis', part[7:])
+            elif part.startswith('RCBIO:'):
+                # rcbio:foo -> ('emis', 'foo')
+                # TODO: remove this, after fixing input files
+                LOG.warning('rcbio:spec deprecated, replace with rcemis:spec')
+                part = ('emis', part[6:])
+            elif part.startswith('DJ('):
+                # DJ(foo) -> ('photol', 'foo')
+                part = ('photol', part[3:-1])
 
-        if spec in self.emis_specs:
-            LOG.warning('RCEMIS duplicate: %s (using rate = 0)', spec)
-            rate = '0'
-        else:
-            self.emis_specs.add(spec)
-            LOG.debug('RCEMIS new: %s, now: %s', spec, self.emis_specs)
-            rate = 'rcemis({},k)'.format(spec)
+            # If this is the first part, a special case, or follows a special
+            # case, save as a new part, otherwise append it to the previous one.
+            # (Keeps it down to the most concise form that still represents the
+            # rate properly.)
+            if isinstance(part, tuple) or len(parts) == 0 or isinstance(parts[-1], tuple):
+                parts.append(part)
+            else:
+                parts[-1] += part
 
-        LOG.outdent()
-        return rate
+            # If the part has an associated operator (rather than terminated by
+            # the end of the string), add that to the most recent part if it
+            # was a string, or start a new part if it was a special case.
+            if op is not None:
+                if isinstance(parts[-1], tuple):
+                    parts.append(op)
+                else:
+                    parts[-1] += op
 
-    def _get_Jrate(self, spec):
-        """Get expression for photolysis rate of *spec*."""
-        if spec in self.photol_specs:
-            LOG.debug('PHOTOL found: %s', spec)
-        else:
-            LOG.debug('PHOTOL new: %s', spec)
-            self.photol_specs.add(spec)
-        return 'rcphot({},k)'.format(spec)
+        # Process the rate, splitting on operators, but never breaking inside
+        # parentheses.  Use the handle_part function above to handle each part.
+        OPS = set('+-/*')
+        part_start = 0
+        paren_depth = 0
+        for i, c in enumerate(rate):
+            if c == '(':
+                paren_depth += 1
+            elif c == ')':
+                paren_depth -= 1
+            elif paren_depth == 0 and c in OPS:
+                # Found an operator outside of paretheses, end the current part
+                # and process it
+                handle_part(rate[part_start:i], rate[i])
+                # Start a new part
+                part_start = i + 1
+            else:
+                # Proceed to next character, accumulating the current part
+                pass
+        assert paren_depth == 0, 'mismatched parentheses'
+        # Handle final part
+        handle_part(rate[part_start:])
 
-    def _get_rate_coefficient(self, rate):
-        """Get (or create, if necessary) a rate coefficient from *rate*."""
-        # Bail out early if this rate already has a rate coefficient defined
-        for rct in self.rate_coefficients:
-            if rct['rct'] == rate:
-                LOG.debug('Found rate coefficient for %r: %r', rate, rct)
-                return rct
+        # If we just have just a single literal expression by this point, it
+        # should probably be a rate coefficient (see the short-circuit section
+        # at the top of this function for cases where this won't happen).  The
+        # code generator can build a database of rate coefficients and reuse
+        # calculations.
+        if parts == [rate]:
+            parts = [('coeff', rate)]
 
-        # Otherwise, define a new rate coefficient
-        # (Most of these names are based on those used in GenChem.pl)
-        # TODO: handle this whole DIMFLAG/ESXFLAG crazyness from GenChem.pl
-        index = len(self.rate_coefficients) + 1
-        rct = {
-            'index': index,
-            'rct': rate,
-            'rcttext': 'rct(%d,:)' % index,
-            'rate_label': 'rct(%d,k)' % index,
-        }
-        LOG.info('NEW RCT: %s', rct)
-        self.rate_coefficients.append(rct)
-        return rct
+        return parts
+
 
 class CodeGenerator(object):
     def write_module_header(self, stream, module, use=None):
@@ -683,9 +723,14 @@ class SpeciesWriter(CodeGenerator):
 
     DEFINE_FOOTER = 'end subroutine define_chemicals\n'
 
-    def write(self, stream, all_species):
+    def __init__(self, scheme):
+        self.scheme = scheme
+
+    def write(self, stream):
         LOG.info('Writing species')
         LOG.indent()
+
+        all_species = self.scheme.get_species_list()
 
         # Wrap stream in indenting writer
         stream = IndentingStreamWriter(stream)
@@ -804,9 +849,14 @@ class GroupsWriter(CodeGenerator):
     chemgroups({i})%ptr=>{group}_GROUP
     """)
 
-    def write(self, stream, groups):
+    def __init__(self, scheme):
+        self.scheme = scheme
+
+    def write(self, stream):
         LOG.info('Writing groups')
         LOG.indent()
+
+        groups = self.scheme.get_group_list()
 
         # Wrap stream in indenting writer
         stream = IndentingStreamWriter(stream)
@@ -889,13 +939,12 @@ if __name__ == '__main__':
         species_reader.read(f)
 
     shorthand = ShorthandMap(open('GenIn.shorthand', 'r'))
-    # TODO: read reactions into *scheme*
-    reactions_reader = ReactionsReader(shorthand)
+    reactions_reader = ReactionsReader(scheme, shorthand)
     with open('GenIn.reactions', 'r') as f:
         reactions_reader.read(f)
 
-    species_writer = SpeciesWriter()
-    species_writer.write(open('CM_ChemSpecs.f90', 'w'), scheme.get_species_list())
+    species_writer = SpeciesWriter(scheme)
+    species_writer.write(open('CM_ChemSpecs.f90', 'w'))
 
-    groups_writer = GroupsWriter()
-    groups_writer.write(open('CM_ChemGroups.f90', 'w'), scheme.get_group_list())
+    groups_writer = GroupsWriter(scheme)
+    groups_writer.write(open('CM_ChemGroups.f90', 'w'))
