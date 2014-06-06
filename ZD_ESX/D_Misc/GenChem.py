@@ -188,7 +188,7 @@ class ShorthandMap(object):
         if len(self.mapping) == 0:
             return eqn
 
-        pattern = r'\b' + '|'.join(self.mapping) + r'\b'
+        pattern = r'\b(' + '|'.join(self.mapping) + r')\b'
 
         def replace(matchobj):
             return self.mapping[matchobj.group(0)]
