@@ -88,6 +88,9 @@ class IndentingLogger(logging.LoggerAdapter):
         return (indent(msg, self._indent_level), kwargs)
 
 
+LOG = IndentingLogger(logging.getLogger(''))
+
+
 class IndentingStreamWriter(object):
     """Stateful stream wrapper that indents written strings.
 
@@ -158,13 +161,11 @@ class ShorthandMap(object):
 
         self.mapping['FH2O'] = '(1.+1.4e-21*H2O(IQ)*EXP(2200./TEMP(IQ)))'
     """
-    log = IndentingLogger(logging.getLogger('shorthand'))
-
     def __init__(self, stream):
         self.mapping = collections.OrderedDict()
 
-        self.log.info('Processing shorthands...')
-        self.log.indent()
+        LOG.info('Processing shorthands...')
+        LOG.indent()
         for line in stream:
             line = line.strip().upper()
             # Skip empty lines and comments
@@ -177,10 +178,10 @@ class ShorthandMap(object):
                 expanded = self.expand(parts[1])
 
                 self.mapping[pattern] = expanded
-                self.log.debug('%-12s  =>  %s', pattern, expanded)
+                LOG.debug('%-12s  =>  %s', pattern, expanded)
 
-        self.log.outdent()
-        self.log.info('%s shorthands processed.', len(self.mapping))
+        LOG.outdent()
+        LOG.info('%s shorthands processed.', len(self.mapping))
 
     def expand(self, eqn):
         """Expand shorthand in *eqn*."""
@@ -273,8 +274,6 @@ class Species(object):
 class SpeciesReader(object):
     FIELDS = ('Spec', 'type', 'formula', 'in_rmm', 'dry', 'wet', 'extinc',
               'cstar', 'DeltaH', None, 'groups', None, 'comment')
-    log = IndentingLogger(logging.getLogger('species'))
-
     def __init__(self):
         self._species = collections.OrderedDict()
         self._groups = DefaultListOrderedDict()
@@ -284,13 +283,13 @@ class SpeciesReader(object):
         slow = False
 
         reader = csv.DictReader(stream, self.FIELDS)
-        self.log.info('Processing species...')
-        self.log.indent()
+        LOG.info('Processing species...')
+        LOG.indent()
         new_species = []
         for row in reader:
             # After encountering #SLOW, mark species as Species.SLOW
             if row['Spec'].startswith('#SLOW'):
-                self.log.debug('FOUND #SLOW, REST OF SPECIES ARE ADV=3')
+                LOG.warning('FOUND #SLOW, REST OF SPECIES ARE ADV=3 (deprecated, use adv=3)')
                 slow = True
                 continue
 
@@ -317,8 +316,8 @@ class SpeciesReader(object):
             if spec.name in self._species:
                 raise ValueError("SPEC %s already defined!" % spec.name)
 
-            self.log.debug('SPEC %(name)s', spec)
-            self.log.indent()
+            LOG.debug('SPEC %(name)s', spec)
+            LOG.indent()
 
             #process_groups
             if row['groups'] is not None:
@@ -328,27 +327,27 @@ class SpeciesReader(object):
                         spec.groups.append('WDEP_' + g)
                     if row['dry'] is not None:
                         spec.groups.append('DDEP_' + g)
-                self.log.debug('In groups: ' + ', '.join(spec.groups))
+                LOG.debug('In groups: ' + ', '.join(spec.groups))
 
             # Get molecular weight, NMHC flag and atom counts from formula
             spec.process_formula()
-            self.log.debug('process_formula: %s  =>  MOLWT=%s, NHMC=%s, COUNTS=%r',
+            LOG.debug('process_formula: %s  =>  MOLWT=%s, NHMC=%s, COUNTS=%r',
                            spec.formula, spec.molwt, spec.NMHC, dict(spec.counts))
 
             # If molecular weight has been specified, use that instead
             if row['in_rmm'] is not None:
                 spec.molwt = float(row['in_rmm'])
-                self.log.debug('INPUT MOLWT: %(molwt)s', spec)
+                LOG.debug('INPUT MOLWT: %(molwt)s', spec)
 
             self._species[spec.name] = spec
             new_species.append(spec.name)
-            self.log.outdent()
+            LOG.outdent()
 
-        self.log.outdent()
-        self.log.info('%s species processed.', len(new_species))
+        LOG.outdent()
+        LOG.info('%s species processed.', len(new_species))
 
-        self.log.info('Processing groups...')
-        self.log.indent()
+        LOG.info('Processing groups...')
+        LOG.indent()
 
         # Collect new group memberships from species
         new_groups = DefaultListOrderedDict()
@@ -359,10 +358,10 @@ class SpeciesReader(object):
         # Merge (and log) group changes
         for g in new_groups:
             self._groups[g].extend(new_groups[g])
-            self.log.debug('%-11s  =>  %s', g, ', '.join(new_groups[g]))
+            LOG.debug('%-11s  =>  %s', g, ', '.join(new_groups[g]))
 
-        self.log.outdent()
-        self.log.info('%s groups processed.', len(new_groups))
+        LOG.outdent()
+        LOG.info('%s groups processed.', len(new_groups))
 
     def species_list(self):
         """Get a list of Species objects ordered by type."""
@@ -376,8 +375,6 @@ Term = collections.namedtuple('Term', ['species', 'factor', 'type'])
 
 
 class ReactionsReader(object):
-    log = IndentingLogger(logging.getLogger('reactions'))
-
     def __init__(self, shorthand):
         self.shorthand = shorthand
         self.emisfiles = OrderedSet()
@@ -389,8 +386,8 @@ class ReactionsReader(object):
 
     def read(self, stream):
         """Read reactions from *stream*."""
-        self.log.info('Processing reactions...')
-        self.log.indent()
+        LOG.info('Processing reactions...')
+        LOG.indent()
         for linenum, line in enumerate(stream, 1):
             # Strip whitespace, convert to uppercase
             line = line.strip().upper()
@@ -400,24 +397,24 @@ class ReactionsReader(object):
             # Strip comment from end of line
             line = line.partition(';')[0].strip()
 
-            self.log.info('Line %3d: %s', linenum, line)
-            self.log.indent()
+            LOG.info('Line %3d: %s', linenum, line)
+            LOG.indent()
 
             if line.startswith('EMISFILES:'):
                 self._read_emisfiles(split(line, ':', 1)[1].lower())
             else:
                 self._read_reaction(line)
 
-            self.log.outdent()
+            LOG.outdent()
 
-        self.log.outdent()
+        LOG.outdent()
 
     def _read_emisfiles(self, emisfiles):
         """Handle the "foo,bar,baz" from an "emisfiles:foo,bar,baz" line."""
         # Split comma-separated files and add them to the set of emisfiles
         emisfiles = split(emisfiles, ',')
         self.emisfiles |= emisfiles
-        self.log.info('EMISFILES added %s, now: %s', emisfiles, self.emisfiles)
+        LOG.info('EMISFILES added %s, now: %s', emisfiles, self.emisfiles)
 
     def _read_reaction(self, reaction):
         """Handle a "<rate> <LHS> = <RHS>" definition of a reaction."""
@@ -434,31 +431,31 @@ class ReactionsReader(object):
         assert all(term.type != 'catalyst' for term in rhs), '[] terms not allowed in RHS'
 
         # Process rate, creating coefficient variables etc. as necessary
-        self.log.debug('rate: %s,  LHS: %s,  RHS: %s', rate, lhs, rhs)
+        LOG.debug('rate: %s,  LHS: %s,  RHS: %s', rate, lhs, rhs)
         rate = self._read_reaction_rate(rate)
-        self.log.debug('processed rate: %s', rate)
+        LOG.debug('processed rate: %s', rate)
 
         # Process LHS tracers, creating them if necessary.  Catalysts get added
         # as rate factors.
         lhs_tracers = [_ for _ in lhs if _.type is not None]
         rate_factors = [rate]
         for term in lhs_tracers:
-            self.log.debug('processing LHS %s: %s', term.type, term.species)
+            LOG.debug('processing LHS %s: %s', term.type, term.species)
             # TODO: register/count tracer
             if term.type == 'catalyst':
                 # add rate factor
                 # TODO: check that spec exists?
                 rate_factors.append('xnew({})'.format(term.species))
-                self.log.debug('added rate factor: %s', rate_factors[-1])
+                LOG.debug('added rate factor: %s', rate_factors[-1])
 
         rate = '*'.join(rate_factors)
-        self.log.debug('rate after LHS: %s', rate)
+        LOG.debug('rate after LHS: %s', rate)
 
         # Process LHS reactants, adding loss terms
         lhs_reactants = [_ for _ in lhs if _.type is None]
         assert len(lhs_reactants) <= 2, 'too many LHS terms'
         for term, others in element_remainder_pairs(lhs_reactants):
-            self.log.debug('processing LHS reactant: %s', term.species)
+            LOG.debug('processing LHS reactant: %s', term.species)
             # TODO: what is check_multipilers()?
             # TODO: check spec exists
             # gather loss factors from other reactants
@@ -466,7 +463,7 @@ class ReactionsReader(object):
             loss_factors = ['xnew({})'.format(t.species) for t in others]
             # add loss term
             loss = ' * '.join([rate] + loss_factors)
-            self.log.debug('adding loss to %s: %s', term.species, loss)
+            LOG.debug('adding loss to %s: %s', term.species, loss)
             self.loss_terms[term.species].append(loss)
 
         # Process RHS tracers, creating them if necessary.
@@ -484,7 +481,7 @@ class ReactionsReader(object):
             prod_factors = ([term.factor] if term.factor != '1.0' else []) + flux_factors
             # add production term
             prod = '(' + ' * '.join(prod_factors) + ')'
-            self.log.debug('adding prod to %s: %s', term.species, prod)
+            LOG.debug('adding prod to %s: %s', term.species, prod)
             self.prod_terms[term.species].append(prod)
 
     def _read_reaction_term(self, term):
@@ -511,12 +508,12 @@ class ReactionsReader(object):
         a usable Fortran expression to refer to the rate."""
         expanded_rate = self.shorthand.expand(rate)
         if expanded_rate != rate:
-            self.log.debug('expanded rate: %s', expanded_rate)
+            LOG.debug('expanded rate: %s', expanded_rate)
         rate = expanded_rate
 
         # TODO: why do we care?
         if 'TROE' in rate:
-            self.log.debug('is TROE')
+            LOG.debug('is TROE')
 
         # Clean up the rate a bit
         # Lowercase EXP() (TODO: do we need to?)
@@ -525,7 +522,7 @@ class ReactionsReader(object):
         rate = re.sub(r'([\d\.])[EdD]([\+\-]?\d)', r'\1e\2', rate)
         # Replace 1. -> 1.0
         rate = re.sub(r'\.(?=\D)', r'.0', rate)
-        self.log.debug('cleaned rate: %s', rate)
+        LOG.debug('cleaned rate: %s', rate)
 
         # Resolve rates to Fortran expressions.  In genchem.pl, appears to
         # define rct (the rate coefficient expression), rcttext (a reference to
@@ -542,7 +539,7 @@ class ReactionsReader(object):
         elif 'RCBIO' in rate:
             # Turn rcbio:foo into rcemis(foo,k)
             # TODO: remove this, after fixing input files
-            self.log.warning('rcbio:spec deprecated, replace with rcemis:spec')
+            LOG.warning('rcbio:spec deprecated, replace with rcemis:spec')
             return re.sub(r'RCBIO:(\w+)',
                           lambda m: self._get_emis_rate(m.group(1)),
                           rate)
@@ -567,26 +564,26 @@ class ReactionsReader(object):
 
     def _get_emis_rate(self, spec):
         """Get expression for emission rate of *spec*."""
-        self.log.debug('PROCESS EMIS: %s', spec)
-        self.log.indent()
+        LOG.debug('PROCESS EMIS: %s', spec)
+        LOG.indent()
 
         if spec in self.emis_specs:
-            self.log.warning('RCEMIS duplicate: %s (using rate = 0)', spec)
+            LOG.warning('RCEMIS duplicate: %s (using rate = 0)', spec)
             rate = '0'
         else:
             self.emis_specs.add(spec)
-            self.log.debug('RCEMIS new: %s, now: %s', spec, self.emis_specs)
+            LOG.debug('RCEMIS new: %s, now: %s', spec, self.emis_specs)
             rate = 'rcemis({},k)'.format(spec)
 
-        self.log.outdent()
+        LOG.outdent()
         return rate
 
     def _get_Jrate(self, spec):
         """Get expression for photolysis rate of *spec*."""
         if spec in self.photol_specs:
-            self.log.debug('PHOTOL found: %s', spec)
+            LOG.debug('PHOTOL found: %s', spec)
         else:
-            self.log.debug('PHOTOL new: %s', spec)
+            LOG.debug('PHOTOL new: %s', spec)
             self.photol_specs.add(spec)
         return 'rcphot({},k)'.format(spec)
 
@@ -595,7 +592,7 @@ class ReactionsReader(object):
         # Bail out early if this rate already has a rate coefficient defined
         for rct in self.rate_coefficients:
             if rct['rct'] == rate:
-                self.log.debug('Found rate coefficient for %r: %r', rate, rct)
+                LOG.debug('Found rate coefficient for %r: %r', rate, rct)
                 return rct
 
         # Otherwise, define a new rate coefficient
@@ -608,7 +605,7 @@ class ReactionsReader(object):
             'rcttext': 'rct(%d,:)' % index,
             'rate_label': 'rct(%d,k)' % index,
         }
-        self.log.info('NEW RCT: %s', rct)
+        LOG.info('NEW RCT: %s', rct)
         self.rate_coefficients.append(rct)
         return rct
 
@@ -640,8 +637,6 @@ class CodeGenerator(object):
 
 
 class SpeciesWriter(CodeGenerator):
-    log = IndentingLogger(logging.getLogger('write_species'))
-
     # Groups of species indices to write out
     INDEX_GROUPS = [
         {
@@ -706,8 +701,8 @@ class SpeciesWriter(CodeGenerator):
     DEFINE_FOOTER = 'end subroutine define_chemicals\n'
 
     def write(self, stream, all_species):
-        self.log.info('Writing species')
-        self.log.indent()
+        LOG.info('Writing species')
+        LOG.indent()
 
         # Wrap stream in indenting writer
         stream = IndentingStreamWriter(stream)
@@ -724,7 +719,7 @@ class SpeciesWriter(CodeGenerator):
                 stream.write(self.INDICES_HEADER_WITH_EXTENT.format(
                     count=len(species), first=first, last=last, **info))
 
-            self.log.info('PROCESS %s NSPEC %s', info['tag'], len(species))
+            LOG.info('PROCESS %s NSPEC %s', info['tag'], len(species))
             self._write_indices(stream, species, info['ixlab'])
 
         # Compatibility with existing code
@@ -774,7 +769,7 @@ class SpeciesWriter(CodeGenerator):
 
         self.write_module_footer(stream, 'ChemSpecs')
 
-        self.log.outdent()
+        LOG.outdent()
 
     def _write_indices(self, stream, species, prefix):
         INDEX_HEADER = '\ninteger, public, parameter :: &\n  '
@@ -809,8 +804,6 @@ class SpeciesWriter(CodeGenerator):
 
 
 class GroupsWriter(CodeGenerator):
-    log = IndentingLogger(logging.getLogger('write_groups'))
-
     DECLS = dedent("""
     ! Assignment of groups from GenIn.species
     public :: Init_ChemGroups
@@ -829,8 +822,8 @@ class GroupsWriter(CodeGenerator):
     """)
 
     def write(self, stream, groups):
-        self.log.info('Writing groups')
-        self.log.indent()
+        LOG.info('Writing groups')
+        LOG.indent()
 
         # Wrap stream in indenting writer
         stream = IndentingStreamWriter(stream)
@@ -842,7 +835,7 @@ class GroupsWriter(CodeGenerator):
         stream.write(self.DECLS.format(ngroups=len(groups)))
 
         for g, specs in groups:
-            self.log.info('PROCESS %-12s N=%2d  =>  %s', g, len(specs), ', '.join(specs))
+            LOG.info('PROCESS %-12s N=%2d  =>  %s', g, len(specs), ', '.join(specs))
             stream.write(self.DECLARE_GROUP.format(size=len(specs), group=g,
                                                    specs=','.join(specs)))
 
@@ -865,7 +858,7 @@ class GroupsWriter(CodeGenerator):
 
         self.write_module_footer(stream, 'ChemGroups')
 
-        self.log.outdent()
+        LOG.outdent()
 
 
 class PrettyStreamHandler(logging.StreamHandler):
