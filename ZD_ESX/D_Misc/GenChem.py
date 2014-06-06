@@ -913,6 +913,24 @@ class ReactionsWriter(CodeGenerator):
         (False, False): CHEMEQN_NONE,
     }
 
+    CHEMRATES_USE = [
+        'use Zmet_ml        ! => tinv, h2o, m, Fgas !ESX',
+        'use ZchemData      ! => rct',
+        'use ChemSpecs      ! => NSPEC_TOT, PINALD, .... for FgasJ08',
+        'use DefPhotolysis  ! => IDNO2 etc.',
+    ]
+
+    CHEMRATES_DECLS = dedent("""
+    public :: setChemRates
+    public :: setPhotolUsed
+
+    integer, parameter, public :: NCHEMRATES = {coeff_count}  ! No. coefficients
+
+    ! Photolysis rates
+    integer, parameter, public :: NPHOTOLRATES = {photol_count}  ! No. DJ vals used
+    integer, save, public, dimension(NPHOTOLRATES) :: photol_used
+    """)
+
     def __init__(self, scheme):
         self.scheme = scheme
         self.coefficients = OrderedSet()
@@ -1016,6 +1034,46 @@ class ReactionsWriter(CodeGenerator):
 
         LOG.outdent()
 
+    def write_rates(self, stream):
+        LOG.info("Writing rates...")
+        LOG.indent()
+
+        stream = IndentingStreamWriter(stream)
+
+        self.write_module_header(stream, 'ChemRates', self.CHEMRATES_USE)
+        stream.write(self.CHEMRATES_DECLS.format(coeff_count=len(self.coefficients),
+                                                 photol_count=len(self.photol_specs)))
+        self.write_contains(stream)
+
+        stream.write('\nsubroutine setPhotolUsed()\n')
+        stream.indent()
+        stream.write('photol_used = (/ &\n    ' +
+                     '  &\n  , '.join(self.photol_specs) +
+                     '  &\n/)')
+        stream.outdent()
+        stream.write('\nend subroutine setPhotolUsed\n')
+
+        stream.write(dedent("""
+        subroutine setChemRates(debug_level)
+          integer, intent(in) :: debug_level
+
+        """))
+        stream.indent()
+
+        for i, rate in enumerate(self.coefficients, 1):
+            # Replace XT with temp
+            # TODO: shouldn't this be in shorthands or ... the input?
+            rate = re.sub(r'\b(XT|xt)\b', 'temp', rate)
+            # TODO: wrap equations so the lines aren't too long for the compiler
+            stream.write((self.COEFF_ALL + ' = {rate}\n').format(i=i, rate=rate))
+
+        stream.outdent()
+        stream.write('\nend subroutine setChemRates\n')
+
+        self.write_module_footer(stream, 'ChemRates')
+
+        LOG.outdent()
+
 
 class PrettyStreamHandler(logging.StreamHandler):
     """A :class:`logging.StreamHandler` that wraps log messages with
@@ -1075,3 +1133,5 @@ if __name__ == '__main__':
     reactions_writer = ReactionsWriter(scheme)
     with open('CM_Reactions1.inc', 'w') as f1, open('CM_Reactions2.inc', 'w') as f2:
         reactions_writer.write_prod_loss(f1, f2)
+    with open('CM_ChemRates.f90', 'w') as f:
+        reactions_writer.write_rates(f)
