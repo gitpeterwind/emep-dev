@@ -894,6 +894,129 @@ class GroupsWriter(CodeGenerator):
         LOG.outdent()
 
 
+class ReactionsWriter(CodeGenerator):
+    EMIS_REF = 'rcemis({spec},k)'
+    PHOTOL_REF = 'rcphot({spec},k)'
+    COEFF_REF = 'rct({i},k)'
+    COEFF_ALL = 'rct({i},:)'
+    AMOUNT_REF = 'xnew({spec})'
+
+    CHEMEQN_FULL = 'xnew({spec}) = (xold({spec}) + dt2 * P) / (1.0 + dt2 * L)\n'
+    CHEMEQN_NOPROD = 'xnew({spec}) = xold({spec}) / (1.0 + dt2 * L)\n'
+    CHEMEQN_NOLOSS = 'xnew({spec}) = xold({spec}) + dt2 * P\n'
+    CHEMEQN_NONE = '! Nothing to do for {spec}! xnew({spec}) = max(0.0, xold({spec}))\n'
+    # Map (has_prod, has_loss) to an equation string
+    CHEMEQN_LOOKUP = {
+        (True, True): CHEMEQN_FULL,
+        (False, True): CHEMEQN_NOPROD,
+        (True, False): CHEMEQN_NOLOSS,
+        (False, False): CHEMEQN_NONE,
+    }
+
+    def __init__(self, scheme):
+        self.scheme = scheme
+        self.coefficients = OrderedSet()
+
+        self.prod = DefaultListOrderedDict()
+        self.loss = DefaultListOrderedDict()
+        self.emis_specs = OrderedSet()
+        self.photol_specs = OrderedSet()
+        self.coefficients = OrderedSet()
+
+        LOG.info('Extracting prod/loss from reactions...')
+        LOG.indent()
+
+        def process_rate_part(part):
+            if isinstance(part, tuple):
+                kind, arg = part
+                if kind == 'emis':
+                    if arg in self.emis_specs:
+                        LOG.warning('RCEMIS duplicate: %s (using rate = 0)', arg)
+                        return '0'
+                    else:
+                        self.emis_specs.add(arg)
+                        LOG.debug('RCEMIS new: %s', arg)
+                        return self.EMIS_REF.format(spec=arg)
+                elif kind == 'photol':
+                    if arg in self.photol_specs:
+                        LOG.debug('PHOTOL found: %s', arg)
+                    else:
+                        LOG.debug('PHOTOL new: %s', arg)
+                        self.photol_specs.add(arg)
+                    return self.PHOTOL_REF.format(spec=arg)
+                elif kind == 'coeff':
+                    if arg not in self.coefficients:
+                        LOG.debug('RCT NEW %2d: %s', len(self.coefficients), arg)
+                    index = self.coefficients.add(arg) + 1
+                    return self.COEFF_REF.format(i=index)
+                elif kind == 'amount':
+                    return self.AMOUNT_REF.format(spec=arg)
+                else:
+                    raise ValueError('unhandled rate part', part)
+            else:
+                return part
+
+        for reaction in self.scheme.reactions:
+            LOG.info('PROCESS %r', reaction)
+            LOG.indent()
+            for spec, rate in reaction.get_prod_rates():
+                LOG.info('PROD  %-12s: %s', spec, rate)
+                LOG.indent()
+                processed_rate = ' '.join(process_rate_part(r) for r in rate)
+                self.prod[spec].append(processed_rate)
+                LOG.info('RATE: %s', processed_rate)
+                LOG.outdent()
+            for spec, rate in reaction.get_loss_rates():
+                LOG.info('LOSS  %-12s: %s', spec, rate)
+                LOG.indent()
+                processed_rate = ' '.join(process_rate_part(r) for r in rate)
+                self.loss[spec].append(processed_rate)
+                LOG.info('RATE: %s', processed_rate)
+                LOG.outdent()
+            LOG.outdent()
+
+        LOG.outdent()
+
+    def write_prod_loss(self, normal, slow):
+        LOG.info('Writing prod/loss files...')
+        LOG.indent()
+
+        # Wrap streams in indenting writers
+        normal = IndentingStreamWriter(normal)
+        slow = IndentingStreamWriter(slow)
+
+        # TODO: handle "RO2POOL"
+        for spec in self.scheme.get_species_list():
+            prod = self.prod[spec.name]
+            loss = self.loss[spec.name]
+            LOG.info('SPEC %-12s: nprod=%2d, nloss=%2d', spec.name, len(prod), len(loss))
+            # Choose appropriate output stream
+            stream = slow if spec.type == Species.SLOW else normal
+
+            stream.write('!-> {spec}\n\n'.format(spec=spec.name))
+            stream.indent()
+
+            if prod:
+                stream.write('P = ' + '  &\n  + '.join(prod) + '\n')
+            else:
+                stream.write('! P = 0.0\n')
+            stream.write('\n')
+
+            if loss:
+                stream.write('L = ' + '  &\n  + '.join(loss) + '\n')
+            else:
+                stream.write('! L = 0.0\n')
+            stream.write('\n')
+
+            eqn = self.CHEMEQN_LOOKUP[(bool(prod), bool(loss))].format(spec=spec.name)
+            stream.write(eqn)
+
+            stream.outdent()
+            stream.write('\n\n')
+
+        LOG.outdent()
+
+
 class PrettyStreamHandler(logging.StreamHandler):
     """A :class:`logging.StreamHandler` that wraps log messages with
     severity-dependent ANSI colours."""
@@ -948,3 +1071,7 @@ if __name__ == '__main__':
 
     groups_writer = GroupsWriter(scheme)
     groups_writer.write(open('CM_ChemGroups.f90', 'w'))
+
+    reactions_writer = ReactionsWriter(scheme)
+    with open('CM_Reactions1.inc', 'w') as f1, open('CM_Reactions2.inc', 'w') as f2:
+        reactions_writer.write_prod_loss(f1, f2)
