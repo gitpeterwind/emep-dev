@@ -411,10 +411,9 @@ class ReactionsReader(object):
         # Make sure we don't have [] terms on the RHS
         assert all(type != 'catalyst' for type, _, _ in rhs), '[] terms not allowed in RHS'
 
+        # Process rate, creating coefficient variables etc. as necessary
         self.log.debug('rate: %s,  LHS: %s,  RHS: %s', rate, lhs, rhs)
-
         rate = self._read_reaction_rate(rate)
-
         self.log.debug('processed rate: %s', rate)
 
     def _read_reaction_term(self, term):
@@ -464,12 +463,23 @@ class ReactionsReader(object):
         if is_numeric(rate):
             # Use numeric rate as-is
             return rate
-        elif 'RCEMIS' in rate or 'RCBIO' in rate:
+        elif 'RCEMIS' in rate:
             # Turn rcemis:foo into rcemis(foo,k)
-            return re.sub(r'(RCEMIS|RCBIO):(\w+)', self._get_emis_rate, rate)
+            return re.sub(r'RCEMIS:(\w+)',
+                          lambda m: self._get_emis_rate(m.group(1)),
+                          rate)
+        elif 'RCBIO' in rate:
+            # Turn rcbio:foo into rcemis(foo,k)
+            # TODO: remove this, after fixing input files
+            self.log.warning('rcbio:spec deprecated, replace with rcemis:spec')
+            return re.sub(r'RCBIO:(\w+)',
+                          lambda m: self._get_emis_rate(m.group(1)),
+                          rate)
         elif 'DJ' in rate:
             # Turn DJ(foo) into rcphot(foo,k)
-            return re.sub(r'DJ\((\w+)\)', self._get_Jrate, rate)
+            return re.sub(r'DJ\((\w+)\)',
+                          lambda m: self._get_Jrate(m.group(1)),
+                          rate)
         elif 'AQRCK' in rate:
             # Use rate as-is
             return rate
@@ -484,48 +494,30 @@ class ReactionsReader(object):
             rct = self._get_rate_coefficient(rate)
             return rct['rate_label']
 
-    def _get_emis_rate(self, match):
-        """Get expression for emission rate.
-
-        *match* is a :class:`re.MatchObject` which should have the type (RCEMIS
-        or RCBIO) in ``match.group(1)`` and emission species in
-        ``match.group(2)``.  Use with :func:`re.sub`.
-        """
-        type, spec = match.group(1, 2)
-        self.log.debug('PROCESS EMIS: %s : %s', type, spec)
+    def _get_emis_rate(self, spec):
+        """Get expression for emission rate of *spec*."""
+        self.log.debug('PROCESS EMIS: %s', spec)
         self.log.indent()
 
         if spec in self.emis_specs:
-            self.log.debug('RCEMIS found: %s, rate = 0', spec)
+            self.log.warning('RCEMIS duplicate: %s (using rate = 0)', spec)
             rate = '0'
         else:
             self.emis_specs.add(spec)
             self.log.debug('RCEMIS new: %s, now: %s', spec, self.emis_specs)
             rate = 'rcemis({},k)'.format(spec)
 
-        if type == 'RCBIO':
-            if spec in self.bionat_specs:
-                self.log.debug('BIONAT found: %s', spec)
-            else:
-                self.bionat_specs.add(spec)
-                self.log.debug('BIONAT new: %s, now: %s', spec, self.bionat_specs)
-
         self.log.outdent()
         return rate
 
-    def _get_Jrate(self, match):
-        """Get expression for photolysis rate.
-
-        *match* is a :class:`re.MatchObject` which should have the photolysis
-        species in ``match.group(1)``.  Use with :func:`re.sub`.
-        """
-        id = match.group(1)
-        if id in self.photol_specs:
-            self.log.debug('PHOTOL found: %s', id)
+    def _get_Jrate(self, spec):
+        """Get expression for photolysis rate of *spec*."""
+        if spec in self.photol_specs:
+            self.log.debug('PHOTOL found: %s', spec)
         else:
-            self.log.debug('PHOTOL new: %s', id)
-            self.photol_specs.add(id)
-        return 'rcphot({},k)'.format(id)
+            self.log.debug('PHOTOL new: %s', spec)
+            self.photol_specs.add(spec)
+        return 'rcphot({},k)'.format(spec)
 
     def _get_rate_coefficient(self, rate):
         """Get (or create, if necessary) a rate coefficient from *rate*."""
