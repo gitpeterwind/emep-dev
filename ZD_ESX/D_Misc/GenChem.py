@@ -40,6 +40,12 @@ def ichunk(iterable, size):
             yield chunk
 
 
+def element_remainder_pairs(elements):
+    """'ABC' -> [('A', 'BC'), ('B', 'AC'), ('C', 'AB')]"""
+    for i, x in enumerate(elements):
+        yield (x, elements[:i] + elements[i+1:])
+
+
 class DefaultListOrderedDict(collections.OrderedDict):
     """An ordered dictionary that also acts like ``defaultdict(list)``.
 
@@ -356,6 +362,9 @@ class SpeciesReader(object):
         return self._groups.items()
 
 
+Term = collections.namedtuple('Term', ['species', 'factor', 'type'])
+
+
 class ReactionsReader(object):
     log = IndentingLogger(logging.getLogger('reactions'))
 
@@ -365,7 +374,8 @@ class ReactionsReader(object):
         self.rate_coefficients = []
         self.photol_specs = OrderedSet()
         self.emis_specs = OrderedSet()
-        self.bionat_specs = OrderedSet()
+        self.loss_terms = DefaultListOrderedDict()
+        self.prod_terms = DefaultListOrderedDict()
 
     def read(self, stream):
         """Read reactions from *stream*."""
@@ -408,13 +418,64 @@ class ReactionsReader(object):
         # Parse terms
         lhs = [self._read_reaction_term(_) for _ in split(lhs, '+')]
         rhs = [self._read_reaction_term(_) for _ in split(rhs, '+')]
+        # Make sure we don't have factors on the LHS
+        assert all(term.factor == '1.0' for term in lhs), 'factors not allowed on LHS'
         # Make sure we don't have [] terms on the RHS
-        assert all(type != 'catalyst' for type, _, _ in rhs), '[] terms not allowed in RHS'
+        assert all(term.type != 'catalyst' for term in rhs), '[] terms not allowed in RHS'
 
         # Process rate, creating coefficient variables etc. as necessary
         self.log.debug('rate: %s,  LHS: %s,  RHS: %s', rate, lhs, rhs)
         rate = self._read_reaction_rate(rate)
         self.log.debug('processed rate: %s', rate)
+
+        # Process LHS tracers, creating them if necessary.  Catalysts get added
+        # as rate factors.
+        lhs_tracers = [_ for _ in lhs if _.type is not None]
+        rate_factors = [rate]
+        for term in lhs_tracers:
+            self.log.debug('processing LHS %s: %s', term.type, term.species)
+            # TODO: register/count tracer
+            if term.type == 'catalyst':
+                # add rate factor
+                # TODO: check that spec exists?
+                rate_factors.append('xnew({})'.format(term.species))
+                self.log.debug('added rate factor: %s', rate_factors[-1])
+
+        rate = '*'.join(rate_factors)
+        self.log.debug('rate after LHS: %s', rate)
+
+        # Process LHS reactants, adding loss terms
+        lhs_reactants = [_ for _ in lhs if _.type is None]
+        assert len(lhs_reactants) <= 2, 'too many LHS terms'
+        for term, others in element_remainder_pairs(lhs_reactants):
+            self.log.debug('processing LHS reactant: %s', term.species)
+            # TODO: what is check_multipilers()?
+            # TODO: check spec exists
+            # gather loss factors from other reactants
+            # TODO: this is overcomplicated for n=2, but maybe want to support more in the future?
+            loss_factors = ['xnew({})'.format(t.species) for t in others]
+            # add loss term
+            loss = ' * '.join([rate] + loss_factors)
+            self.log.debug('adding loss to %s: %s', term.species, loss)
+            self.loss_terms[term.species].append(loss)
+
+        # Process RHS tracers, creating them if necessary.
+        rhs_tracers = [_ for _ in lhs if _.type is not None]
+        for term in rhs_tracers:
+            # TODO: register/count tracer
+            pass
+
+        # Process RHS products, adding production terms
+        flux_factors = [rate] + ['xnew({})'.format(t.species) for t in lhs_reactants]
+        rhs_products = [_ for _ in rhs if _.type is None]
+        for term in rhs_products:
+            # TODO: check spec exists
+            # include product factor (if present)
+            prod_factors = ([term.factor] if term.factor != '1.0' else []) + flux_factors
+            # add production term
+            prod = '(' + ' * '.join(prod_factors) + ')'
+            self.log.debug('adding prod to %s: %s', term.species, prod)
+            self.prod_terms[term.species].append(prod)
 
     def _read_reaction_term(self, term):
         """reactant or product -> (type, factor, species)"""
@@ -433,7 +494,7 @@ class ReactionsReader(object):
         else:
             type = None
 
-        return (type, factor, species)
+        return Term(species, factor, type)
 
     def _read_reaction_rate(self, rate):
         """Process a rate, defining new coefficients if necessary, and return
