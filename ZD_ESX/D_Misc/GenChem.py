@@ -223,6 +223,30 @@ def count_atoms(formula):
     return (counts, molwt)
 
 
+class ChemicalScheme(object):
+    def __init__(self):
+        self.species = collections.OrderedDict()
+        self.groups = DefaultListOrderedDict()
+
+    def add_species(self, spec):
+        """Add *spec* to species, updating groups as necessary."""
+        if spec.name in self.species:
+            raise ValueError("SPEC %s already defined!" % spec.name)
+
+        self.species[spec.name] = spec
+
+        for group in spec.groups:
+            self.groups[group].append(spec.name)
+
+    def get_species_list(self):
+        """Get a list of species sorted by type."""
+        return sorted(self.species.values(), key=lambda spec: spec.type)
+
+    def get_group_list(self):
+        """Get a list of groups."""
+        return self.groups.items()
+
+
 class Species(object):
     # Species type constants
     SHORT_LIVED = 0
@@ -230,22 +254,30 @@ class Species(object):
     SEMIVOL = 2
     SLOW = 3
 
-    def __init__(self, **kwargs):
-        self.name = None
-        self.type = None
-        self.formula = None
-        self.molwt = None
-        self.groups = []
-        self.extinc = None
-        self.cstar = None
-        self.DeltaH = None
-        self.counts = collections.Counter()
-        self.NMHC = False
+    def __init__(self, name, type, formula, extinc, cstar, DeltaH, molwt=None, groups=None):
+        # Arguments simply copied to attributes
+        self.name = name
+        self.type = type
+        self.formula = formula
+        self.extinc = extinc
+        self.cstar = float(cstar)
+        self.DeltaH = float(DeltaH)
 
-        for k, v in kwargs.iteritems():
-            if not hasattr(self, k):
-                raise KeyError(k)
-            setattr(self, k, v)
+        # Calculate atom counts and molecular weight from formula
+        self.counts, self.molwt = count_atoms(self.formula or '')
+        # Is non-methane hydrocarbon?
+        self.NMHC = set(self.counts) == {'C', 'H'} and self.counts['C'] >= 2
+
+        LOG.debug('processed formula: %s  =>  MOLWT=%s, NMHC=%s, COUNTS=%r',
+                  self.formula, self.molwt, self.NMHC, dict(self.counts))
+
+        # Override molecular weight?
+        if molwt is not None:
+            self.molwt = float(molwt)
+            LOG.debug('override MOLWT: %s', self.molwt)
+
+        # Groups, default to empty list
+        self.groups = groups or []
 
     def __getitem__(self, key):
         """Redirect dict-like access to attribute access.
@@ -255,17 +287,6 @@ class Species(object):
         """
         return getattr(self, key)
 
-    def process_formula(self):
-        """Calculate molwt, NMHC flag and atom counts from formula."""
-        formula = self.formula or ''
-
-        # Count atoms, get molecular weight
-        self.counts, self.molwt = count_atoms(formula)
-
-        # Test for non-methane hydrocarbon (NMHC) - contains only C and H atoms
-        # but excluding CH4
-        self.NMHC = set(self.counts) == {'C', 'H'} and self.counts['C'] >= 2
-
     def is_advected(self):
         """Is this an advected species?"""
         return self.type > 0
@@ -274,18 +295,17 @@ class Species(object):
 class SpeciesReader(object):
     FIELDS = ('Spec', 'type', 'formula', 'in_rmm', 'dry', 'wet', 'extinc',
               'cstar', 'DeltaH', None, 'groups', None, 'comment')
-    def __init__(self):
-        self._species = collections.OrderedDict()
-        self._groups = DefaultListOrderedDict()
+    def __init__(self, scheme):
+        self.scheme = scheme
 
     def read(self, stream):
         """Read species from *stream*."""
         slow = False
 
-        reader = csv.DictReader(stream, self.FIELDS)
         LOG.info('Processing species...')
         LOG.indent()
-        new_species = []
+
+        reader = csv.DictReader(stream, self.FIELDS)
         for row in reader:
             # After encountering #SLOW, mark species as Species.SLOW
             if row['Spec'].startswith('#SLOW'):
@@ -303,72 +323,35 @@ class SpeciesReader(object):
             for k, v in row.iteritems():
                 if v == 'xx' or v == '':
                     row[k] = None
-            # Store 'slow' value
-            row['slow'] = slow
+
+            LOG.debug('SPEC %s', row['Spec'])
+            LOG.indent()
+
+            # Process groups
+            groups = []
+            if row['groups'] is not None:
+                for g in row['groups'].upper().split(';'):
+                    groups.append(g)
+                    if row['wet'] is not None:
+                        groups.append('WDEP_' + g)
+                    if row['dry'] is not None:
+                        groups.append('DDEP_' + g)
+                LOG.debug('In groups: ' + ', '.join(groups))
 
             spec = Species(name=row['Spec'],
                            type=Species.SLOW if slow else int(row['type']),  # TODO: stop using #SLOW
                            formula=row['formula'],
                            extinc=None if row['extinc'] == '0' else row['extinc'],
-                           cstar=float(row['cstar']),
-                           DeltaH=float(row['DeltaH']))
+                           cstar=row['cstar'],
+                           DeltaH=row['DeltaH'],
+                           molwt=row['in_rmm'],
+                           groups=groups)
 
-            if spec.name in self._species:
-                raise ValueError("SPEC %s already defined!" % spec.name)
+            self.scheme.add_species(spec)
 
-            LOG.debug('SPEC %(name)s', spec)
-            LOG.indent()
-
-            #process_groups
-            if row['groups'] is not None:
-                for g in row['groups'].upper().split(';'):
-                    spec.groups.append(g)
-                    if row['wet'] is not None:
-                        spec.groups.append('WDEP_' + g)
-                    if row['dry'] is not None:
-                        spec.groups.append('DDEP_' + g)
-                LOG.debug('In groups: ' + ', '.join(spec.groups))
-
-            # Get molecular weight, NMHC flag and atom counts from formula
-            spec.process_formula()
-            LOG.debug('process_formula: %s  =>  MOLWT=%s, NHMC=%s, COUNTS=%r',
-                           spec.formula, spec.molwt, spec.NMHC, dict(spec.counts))
-
-            # If molecular weight has been specified, use that instead
-            if row['in_rmm'] is not None:
-                spec.molwt = float(row['in_rmm'])
-                LOG.debug('INPUT MOLWT: %(molwt)s', spec)
-
-            self._species[spec.name] = spec
-            new_species.append(spec.name)
             LOG.outdent()
 
         LOG.outdent()
-        LOG.info('%s species processed.', len(new_species))
-
-        LOG.info('Processing groups...')
-        LOG.indent()
-
-        # Collect new group memberships from species
-        new_groups = DefaultListOrderedDict()
-        for s in new_species:
-            for g in self._species[s].groups:
-                new_groups[g].append(s)
-
-        # Merge (and log) group changes
-        for g in new_groups:
-            self._groups[g].extend(new_groups[g])
-            LOG.debug('%-11s  =>  %s', g, ', '.join(new_groups[g]))
-
-        LOG.outdent()
-        LOG.info('%s groups processed.', len(new_groups))
-
-    def species_list(self):
-        """Get a list of Species objects ordered by type."""
-        return sorted(self._species.values(), key=lambda spec: spec.type)
-
-    def group_list(self):
-        return self._groups.items()
 
 
 Term = collections.namedtuple('Term', ['species', 'factor', 'type'])
@@ -899,17 +882,20 @@ if __name__ == '__main__':
     rootlogger.addHandler(stream_handler)
     rootlogger.addHandler(file_handler)
 
-    species_reader = SpeciesReader()
+    scheme = ChemicalScheme()
+
+    species_reader = SpeciesReader(scheme)
     with open('GenIn.species', 'r') as f:
         species_reader.read(f)
 
     shorthand = ShorthandMap(open('GenIn.shorthand', 'r'))
+    # TODO: read reactions into *scheme*
     reactions_reader = ReactionsReader(shorthand)
     with open('GenIn.reactions', 'r') as f:
         reactions_reader.read(f)
 
     species_writer = SpeciesWriter()
-    species_writer.write(open('CM_ChemSpecs.f90', 'w'), species_reader.species_list())
+    species_writer.write(open('CM_ChemSpecs.f90', 'w'), scheme.get_species_list())
 
     groups_writer = GroupsWriter()
-    groups_writer.write(open('CM_ChemGroups.f90', 'w'), species_reader.group_list())
+    groups_writer.write(open('CM_ChemGroups.f90', 'w'), scheme.get_group_list())
