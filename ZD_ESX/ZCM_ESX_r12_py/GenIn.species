@@ -1,0 +1,33 @@
+"#GROUPED_STYLE - species in reduced ESX mechanism",,,,,,,,,,,,
+Spec,adv,forumula,MW,DRY,WET,Extinc,Cstar,DeltaH,Empty,Groups,,!Comments
+OD,0,O,xx,xx,xx,0,0,0,xx,xx,,!
+OP,0,O,xx,xx,xx,0,0,0,xx,xx,,!
+OH,0,OH,xx,xx,xx,0,0,0,xx,xx,,!
+HO2,0,HO2,xx,xx,xx,0,0,0,xx,RO2,,!
+RO2,0,CH3O2,xx,xx,xx,0,0,0,xx,RO2,,!
+*
+TRACER1,1,N,xx,xx,xx,0,0,0,xx,,,!
+TRACER2,1,N,xx,xx,xx,0,0,0,xx,,,!
+O3,1,O3,xx,O3,xx,0,0,0,xx,OX,,!
+NO,1,NO,xx,xx,xx,0,0,0,xx,NOX;OXN,,!
+NO2,1,NO2,xx,NO2,xx,0,0,0,xx,NOX;OX;OXN,,!
+HNO3,1,HNO3,xx,HNO3,HNO3,0,0,0,xx,OXN,,!
+VOC,1,nC4H10,xx,xx,xx,0,0,0,xx,xx,,!
+CH3CHO,1,CH3CHO,xx,ALD,xx,0,0,0,xx,xx,,!
+PAN,1,CH3COO2NO2,xx,PAN,xx,0,0,0,xx,OXN,,!
+CH3COO2,1,CH3COO2,xx,xx,xx,0,0,0,xx,xx,,!
+SO2,1,SO2,xx,SO2,SO2,0,0,0,xx,SOX,,"! in equilib module"
+SO4,1,SO4,xx,PMfS,SO4,SO4,0,0,xx,PM10;PMFINE;SIA;SOX,,!
+NH3,1,NH3,xx,NH3,NH3,0,0,0,xx,RDN,,!
+NO3_f,1,NO3_f,xx,PMfN,PMf,NO3f,0,0,xx,PM10;PMFINE;SIA;OXN;TNO3,,"!in equilib module"
+*NO3_c,1,NO3_c,xx,PMc,PMc,NO3c,0,0,xx,PM10;PMCO;SIA;OXN;TNO3,,"!Coarse nitrate"
+NH4_f,1,NH4_f,xx,PMfN,PMf,NH4f,0,0,xx,RDN;PM10;PMFINE;SIA,,"! in equilib module"
+*
+*slow...
+"*Spec,adv,forumula,MW,DRY,WET,Extinc,Cstar,DeltaH,Empty,Groups,,!Comments"
+CO,3,CO,xx,xx,xx,0,0,0,xx,xx,,!
+
+*future?
+*H2O2,1,H2O2,xx,SO2,H2O2,0,0,0,xx,ROOH,,"!re-consider dry dep link"
+*CH3COO2H,1,CH3COO2H,xx,xx,xx,0,0,0,xx,ROOH,,!
+*

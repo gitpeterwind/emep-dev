@@ -311,18 +311,15 @@ class SpeciesReader(object):
 
     def read(self, stream):
         """Read species from *stream*."""
-        slow = False
-
         LOG.info('Processing species...')
         LOG.indent()
 
         reader = csv.DictReader(stream, self.FIELDS)
         for row in reader:
-            # After encountering #SLOW, mark species as Species.SLOW
+            # The #SLOW line is the old way of doing adv=3, and is inflexible.
+            # We don't allow it here.
             if row['Spec'].startswith('#SLOW'):
-                LOG.warning('FOUND #SLOW, REST OF SPECIES ARE ADV=3 (deprecated, use adv=3)')
-                slow = True
-                continue
+                raise ValueError('#SLOW not allowed, use adv=3')
 
             # Skip empty/comment rows
             if not row['Spec'] or row['Spec'] == 'Spec' or row['Spec'][0] in {'*', '#'}:
@@ -350,7 +347,7 @@ class SpeciesReader(object):
                 LOG.debug('In groups: ' + ', '.join(groups))
 
             spec = Species(name=row['Spec'],
-                           type=Species.SLOW if slow else int(row['type']),  # TODO: stop using #SLOW
+                           type=int(row['type']),
                            formula=row['formula'],
                            extinc=None if row['extinc'] == '0' else row['extinc'],
                            cstar=row['cstar'],
@@ -1112,6 +1109,14 @@ if __name__ == '__main__':
     rootlogger.setLevel(logging.DEBUG)
     rootlogger.addHandler(stream_handler)
     rootlogger.addHandler(file_handler)
+
+    # Hook unhandled exception handling into logging
+    def excepthook(type, value, tb):
+        import traceback
+        for part in traceback.format_exception(type, value, tb):
+            for line in part.splitlines():
+                LOG.critical(line)
+    sys.excepthook = excepthook
 
     scheme = ChemicalScheme()
 

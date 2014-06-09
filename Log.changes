@@ -153,6 +153,18 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+9th June 2014  Alan  2837
+
+ESX changes only.
+
+ZD_ESX/D_Misc/GenChem.py:
+  Remove #SLOW handling of slow advected species (now an error).
+
+ZD_ESX/ZCM_{ESX_r12,EmChem09,EmChem09soa}_py/*:
+  Make copies of some chemical schemes and replace #SLOW with setting adv=3
+  to test GenChem.py.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 6th June 2014  Alan  2827-2836
 
 ESX changes only.
