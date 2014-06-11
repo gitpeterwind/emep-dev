@@ -1,30 +1,3 @@
-! <Emergency_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
-!          Chemical transport Model>
-!*****************************************************************************!
-!*
-!*  Copyright (C) 2007-2011 met.no
-!*
-!*  Contact information:
-!*  Norwegian Meteorological Institute
-!*  Box 43 Blindern
-!*  0313 OSLO
-!*  NORWAY
-!*  email: emep.mscw@met.no
-!*  http://www.emep.int
-!*
-!*    This program is free software: you can redistribute it and/or modify
-!*    it under the terms of the GNU General Public License as published by
-!*    the Free Software Foundation, either version 3 of the License, or
-!*    (at your option) any later version.
-!*
-!*    This program is distributed in the hope that it will be useful,
-!*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-!*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!*    GNU General Public License for more details.
-!*
-!*    You should have received a copy of the GNU General Public License
-!*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************!
 module Emergency_ml
 !-----------------------------------------------------------------------!
 ! Emissions for emergency (eEEMP) scenarios
@@ -93,10 +66,9 @@ type :: erup
           rate=-1.0                           ! Source strenght: Total release for period [kg/s]
   character(len=len(SDATE_FMT)) :: sbeg=SDATE_FMT,send=SDATE_FMT
   integer :: vent=-1,spc=-1                   ! Which vent,(adv)spc
-  logical :: edef=.true.                      ! default setings?
+  logical :: dsec=.false.,edef=.true.         ! rate/=secs(send-sbeg),default setings?
 endtype erup
-type(erup), save, dimension(0:NMAX_VENT,NMAX_ERUP):: &
-  erupdef=erup('UNDEF','UNKNOWN',-999.0,-999.0,-999.0,"??","??",-1,-1,.true.)
+type(erup), save,  allocatable ,dimension(:,:):: erupdef
 
 character(len=*),parameter :: &
   fventdef="emergency_location.csv",   &   ! see ventdef
@@ -155,14 +127,15 @@ function EmergencyRate(i,j) result(emiss)
     doERUP: do e=1,nerup(v)
       sbeg=date2string(erupdef(v,e)%sbeg,current_date)
       send=date2string(erupdef(v,e)%send,current_date)
-      if(snow<sbeg.or.send<snow)& ! Outside time window
+      if(snow<sbeg.or.send<=snow)& ! Outside time window
         cycle doERUP
       itot=erupdef(v,e)%spc
       k0=getModLev(i,j,erupdef(v,e)%base)
       k1=getModLev(i,j,erupdef(v,e)%top)
-!   uconv=1e6/(tdif_secs(make_timestamp(string2date(sbeg,SDATE_FMT)),&
-!                        make_timestamp(string2date(send,SDATE_FMT))+1) ! Tg --> 10^6 g/s
       uconv=1e-3                                                        ! Kg/s --> 10^6 g/s
+      if(erupdef(v,e)%dsec)uconv=1e6/max(dt_advec,&
+        tdif_secs(make_timestamp(string2date(sbeg,SDATE_FMT)),&
+                  make_timestamp(string2date(send,SDATE_FMT)))) 		! Tg --> 10^6 g/s
       uconv=uconv/(GridArea_m2(i,j)*DIM(z_bnd(i,j,k1),z_bnd(i,j,k0+1))) ! --> g/s/cm3
       uconv=uconv*AVOG/species(itot)%molwt                              ! --> molecules/s/cm3
       emiss(itot,k1:k0)=emiss(itot,k1:k0)+erupdef(v,e)%rate*uconv
@@ -222,6 +195,10 @@ function EmergencyRate(i,j) result(emiss)
       return
     endif
     first_call=.false.
+    if(.not.allocated(erupdef)) then
+       allocate(erupdef(0:NMAX_VENT,NMAX_ERUP))
+       erupdef(:,:) = erup('UNDEF','UNKNOWN',-999.0,-999.0,-999.0,"??","??",-1,-1,.false.,.true.)
+    endif
   !----------------------------!
   ! Read Vent CVS
   !----------------------------!
@@ -391,7 +368,7 @@ function EmergencyRate(i,j) result(emiss)
     character(len=*)            :: line
     type(erup)                  :: def
     character(len=TXTLEN_SHORT) :: words(10)=''  ! Array of paramaters
-    logical :: edef=.true.                       ! default setings?
+    logical :: dsec=.false.,edef=.true.          ! rate/=secs(send-sbeg),default setings?
     integer :: stat,nwords,ivent,ispc=0
     real    :: base,top,rate,frac,dhh
     call wordsplit(line,size(words),words,nwords,stat,strict_separator=",",empty_words=.true.)
@@ -425,16 +402,26 @@ function EmergencyRate(i,j) result(emiss)
       case default;read(words(7),*)frac
     endselect
     select case (words(5))  ! dt[h]
-    case("1dt")
-      dhh=(dt_advec-0.1)/3600.0 ! only one time step
-      frac=frac*dt_advec_inv    ! assume rate=total emission
+    case("1dt","1DT","1adv","1ADV")
+      dhh=dt_advec/3600           ! only one time step
+      frac=frac*dt_advec_inv      ! assume rate=total emission in [Kg]
+      dsec=.false.
+    case("total","TOTAL","event","EVENT")     
+!     dsec=tdif_secs(make_timestamp(string2date(words(8),SDATE_FMT)),&
+!                    make_timestamp(string2date(words(9),SDATE_FMT)))
+!     dsec=max(dsec,dt_advec)
+!     frac=frac*1e3/dsec          ! assume rate=total emission [Tg] instead of [Kg/s]
+!     dhh=dsec/3600.              ! [s] --> [h]
+      dsec=.true.
     case default
-      read(words(5),*)dhh
+      read(words(5),*)dhh         ! assume rate in [Kg/s]
+      dhh=max(dhh,dt_advec/3600)  ! at least 1 time step
+      dsec=.false.
     endselect   
     words(8)=getDate(words(8),words(8),words(9),dhh,debug=DEBUG) ! Start [date/code]
     words(9)=getDate(words(9),words(8),words(9),dhh,debug=DEBUG) ! End   [date/code]
     def=erup(trim(words(1)),trim(words(2)),base,top,rate*frac,&
-      trim(words(8)),trim(words(9)),max(ivent,0),max(ispc,0),edef)
+      trim(words(8)),trim(words(9)),max(ivent,0),max(ispc,0),dsec,edef)
   endfunction getErup
 !----------------------------!
 ! Time/Date CODE--> YYYY-MM-DD hh:mm:ss
