@@ -34,9 +34,9 @@ module Pollen_const_ml
 
 contains
 subroutine pollen_check()
-  logical,save :: fist_call=.true.
-  if(.not.fist_call)return
-  fist_call=.false.
+  logical,save :: first_call=.true.
+  if(.not.first_call)return
+  first_call=.false.
   call CheckStop(USE_POLLEN.and.all(species_adv(:)%name/="POLLEN_B"),&
     "USE_POLLEN on model compiled without pollen")
   call CheckStop(DEBUG.and..not.USE_POLLEN,&

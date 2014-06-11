@@ -153,7 +153,7 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-11th June 2014  Alvaro,Birthe  2838-2839
+11th June 2014  Alvaro,Birthe  2838-2840
 
 Emergency_ml
   - Emission definitions (erupdef) are not allocatable, so is it possible
@@ -169,6 +169,26 @@ Derived_ml,Units_ml
   - Rename subroutine uggroup_calc group_calc (Derived_ml)
     and extended to handle ppb, ppbC, ppbN & ppbS units for groups.
   - Add support for ppbC, ppbN & ppbS units (Units_ml)
+
+Changes implemented over current MACC-ENS forecast version (2708--2716)
+for MACC-EVA 2012 runs
+
+config_FORECAST.nml,config_BM-EECCA.nml,config_Outputs_EMEPSTD.nml
+  - Correct typo on MACC_EVA BCs
+  - Correct typo on commented output
+
+Makefile
+  - Add MACC-EVA & MACC-NMC compilation targets
+
+ZD_OZONE/My_Outputs_ml.f90
+  - Hourly output definition for NMC runs
+
+run.pl
+  - $MAKEMODE, $CWFBC and $RESDIR for EVA & NMC runs
+
+ZD_Pollen/Pollen_ml,Pollen_const_ml,My_Pollen_ml
+  - Include Sub array from SubMet_ml, previously from LocalVariables_ml.
+  - Correct typo on first_call variable name
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 9th June 2014  Alan  2837

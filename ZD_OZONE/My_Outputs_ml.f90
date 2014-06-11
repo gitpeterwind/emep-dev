@@ -276,7 +276,7 @@ subroutine set_output_defs
       enddo
     endif
     endif
-  case("MACC_ENS","FORECAST")
+  case("MACC_ENS","FORECAST","MACC_NMC")
     nhourly_out=15
     nlevels_hourly=9
     if(any(species_adv(:)%name=="RN222"))nhourly_out=nhourly_out+1
@@ -393,8 +393,9 @@ subroutine set_output_defs
       enddo
     endif
     endif ! if false
-  case("MACC_ENS","FORECAST")
+  case("MACC_ENS","FORECAST","MACC_NMC")
     levels_hourly = (/0,1,2,3,4,6,9,10,12/)
+    if(MY_OUTPUTS=="MACC_NMC")nlevels_hourly=1    
     pm25 =find_index("PMFINE"  ,chemgroups(:)%name) !NB There is no "PM25" group
     pm10 =find_index("PM10"    ,chemgroups(:)%name)
     nmvoc=find_index("NMVOC"   ,chemgroups(:)%name)

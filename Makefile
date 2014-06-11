@@ -1,6 +1,6 @@
 #
 #
-PROG =	Unimod
+PROG ?=	Unimod
 ###################################################
 
 include Makefile.SRCS
@@ -104,12 +104,12 @@ touchdepend:
 
 # Model/Config specific targets
 EMEP EMEP2010 EMEP2011 SR-EMEP SR-EMEP2010 SR-EMEP2011 EmChem09 EmChem09-ESX CRI_v2_R5 \
-MACC MACC-EVA2010 MACC-EVA2011 SR-MACC eEMEP eEMEP2010 eEMEP2013:
+MACC MACC-EVA MACC-EVA2010 MACC-EVA2011 SR-MACC eEMEP eEMEP2010 eEMEP2013:
 	ln -sf $(filter %.f90 %.inc,$+) . && \
 	$(MAKE) MACHINE=$(MACHINE) DEBUG=$(DEBUG) -j4 $(PROG)
 
 # My_* files pre-requisites
-EMEP EMEP2010 EMEP2011 MACC MACC-EVA2010 MACC-EVA2011 eEMEP2010: \
+EMEP EMEP2010 EMEP2011 MACC MACC-EVA MACC-EVA2010 MACC-EVA2011 eEMEP2010: \
 	  ./ZD_OZONE/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
 	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_VBS/My_SOA_ml.f90 \
 	  ./ZD_3DVar/My_3DVar_ml.f90 ./ZD_Pollen/My_Pollen_ml.f90 \
@@ -121,12 +121,15 @@ EmChem09 EmChem09-ESX CRI_v2_R5 eEMEP eEMEP2013: \
 	  ./ZD_3DVar/My_3DVar_ml.f90 ./ZD_Pollen/My_Pollen_ml.f90 \
 	  ./ZD_EXTRA/My_ESX_ml.f90
 
-#For SR we use the small My_Derived
+# For SR we use the small My_Derived
 SR-EMEP SR-EMEP2010 SR-EMEP2011 SR-MACC: \
 	  ./ZD_SR/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
 	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_VBS/My_SOA_ml.f90 \
 	  ./ZD_3DVar/My_3DVar_ml.f90 ./ZD_Pollen/My_Pollen_ml.f90 \
 	  ./ZD_EXTRA/My_ESX_ml.f90
+
+# NMC is an EVA run, with different nest/dump output
+MACC-NMC: MACC-EVA
 
 # Pollen for MACC FC runs
 MACC: SRCS := $(filter-out My_Pollen_ml.f90,$(SRCS)) Pollen_ml.f90 Pollen_const_ml.f90
@@ -142,8 +145,8 @@ SR-EMEP SR-EMEP2010 SR-EMEP2011:    GenChem-SR-EMEP-EmChem09soa
 EmChem09 CRI_v2_R5:                 GenChem-EMEP-$$@
 EmChem09-ESX:                       GenChem-EMEP-EmChem09
 MACC SR-MACC:                       GenChem-$$@-EmChem09soa
-eEMEP:                              GenChem-$$@-EmChem09     # GenChem-Emergency not yet ready
-MACC-EVA2010 MACC-EVA2011:          GenChem-MACCEVA-EmChem09soa
+eEMEP:                              GenChem-$$@-EmChem09  # GenChem-Emergency not yet ready
+MACC-EVA MACC-EVA2010 MACC-EVA2011: GenChem-MACCEVA-EmChem09soa
 eEMEP2010:                          GenChem-EMEP-EmChem09soa
 eEMEP2013:                          GenChem-SR-MACC-EmChem09soa
 
@@ -171,7 +174,7 @@ eEMEP: GenChemOptions += -V 7bin,$(VENTS) -N $(NPPAS) -X $(NUCXS)
 
 # Data assimilation: Bnmc / 3DVar
 %-Bnmc %-3DVar: $$*
-	$(MAKE) MACHINE=$(MACHINE) DEBUG=$(DEBUG) -C ZD_3DVar/ $(@:$*-%=EXP_%)
+	$(MAKE) MACHINE=$(MACHINE) DEBUG=$(DEBUG) -C ZD_3DVar/  $(@:$*-%=EXP_%)
 
 # Archive: create $(PROG).tar.bz2
 archive: $(PROG)_$(shell date +%Y%m%d).tar.bz2

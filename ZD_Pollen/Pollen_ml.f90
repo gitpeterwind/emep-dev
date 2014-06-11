@@ -1,3 +1,4 @@
+
 module Pollen_ml
 !-----------------------------------------------------------------------!
 ! Birch pollen emission calculation based on
@@ -14,7 +15,8 @@ module Pollen_ml
   use Functions_ml,         only: heaviside
   use GridValues_ml ,       only: glon, glat
   use Landuse_ml,           only: LandCover
-  use LocalVariables_ml,    only: Grid, Sub
+  use LocalVariables_ml,    only: Grid
+  use SubMet_ml,            only: Sub
   use MetFields_ml,         only: surface_precip, ws_10m ,rh2m,t2_nwp,&
                                   foundws10_met,foundprecip,pr,u_ref,z_bnd,z_mid
   use MicroMet_ml,          only: Wind_at_h

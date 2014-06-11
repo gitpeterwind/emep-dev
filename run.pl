@@ -112,7 +112,7 @@ die "Must choose STALLO **or** VILJE !\n"
 # my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) =
 #    ("2674","EmChem09","EMEPSTD","EMEPSTD","EECCA","EmChem09");
 #
-my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2779"    ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA","EMEP");
+my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_5"   ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA","EMEP");
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
@@ -123,8 +123,7 @@ my %BENCHMARK;
 # Dave's preference for EMEP:
 #  %BENCHMARK = (grid=>"EMEP"  ,year=>2006,emis=>"Modrun10/EMEP_trend_2000-2008/2006",chem=>"EmChem09");
 # EECCA Default:
-##
-#%BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun11/EMEP_trend_2000-2009/2008",chem=>"EmChem09soa",make=>"EMEP");
+##%BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun11/EMEP_trend_2000-2009/2008",chem=>"EmChem09soa",make=>"EMEP");
 # Status Runs:
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2007,emis=>"Modrun09/2009-Trend2007-CEIP") ;
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun10/2010-Trend2008_CEIP");
@@ -181,13 +180,17 @@ if ($CWF) {
   $CWFDUMP[0]=date2str($CWFBASE." 1 day"          ,"%Y%m%d"); # 1st dump/nest
   $CWFDUMP[1]=date2str($CWFBASE." 2 day"          ,"%Y%m%d"); # 2nd dump/nest
   $MAKEMODE=($eCWF)?"eEMEP":"MACC";    # Standard Forecast model setup
+##$MAKEMODE=($eCWF)?"eEMEP2010":"MACC-EVA2010";    # 2010 special
+##$MAKEMODE=($eCWF)?"eEMEP2011":"MACC-EVA2011";    # 2011 special
+##$MAKEMODE=($eCWF)?"eEMEP":"MACC-EVA";            # 2012 special
+##$MAKEMODE=($eCWF)?"eEMEP2013":"MACC";            # 2013 special
+  $MAKEMODE="MACC-EVA" if($ENV{"PBS_JOBNAME"}=~/eva/);# EVA run
+  $MAKEMODE="MACC-NMC" if($ENV{"PBS_JOBNAME"}=~/nmc/);# NMC run
   $MAKEMODE .="-3DVar" if($aCWF);
   $exp_name = ($eCWF)?"EMERGENCY":($aCWF?"ANALYSIS":"FORECAST");
+  $exp_name.= "_REVA" if($MAKEMODE=~/EVA/);
+  $exp_name.= "_NMC"  if($MAKEMODE=~/NMC/);
   $testv.= ($eCWF)?".eCWF":".CWF";
-##$MAKEMODE=$eCWF?"eEMEP2010":"MACC-EVA2010";    # 2010 special
-# $MAKEMODE=$eCWF?"eEMEP2011":"MACC-EVA2011";    # 2011 special
-# $exp_name.=_MACCEVA;
-##$MAKEMODE=$eCWF?"eEMEP2013":"MACC";            # 2013 special
   $GRID = ($eCWF)?"GLOBAL":"MACC14";
 }
  $MAKEMODE="SR-$MAKEMODE" if($MAKEMODE and $SR);
@@ -332,9 +335,13 @@ if ($CWF) {
  ($CWFIC  = "$WORKDIR/$CWFIC") =~ s|$testv.$year|$testv.dump|;
   $CWFIC  =~ s|run/eemep|work/emep/restart| if $eCWF and ($USER eq $FORCAST);
   $CWFBC  = "$DataDir/$GRID/Boundary_conditions/";            # IFS-MOZ
-  $CWFBC .= "%Y_IFS-MOZART_FC/cwf-mozifs_h%Y%m%d00_raqbc.nc";# :Forecast
-# $CWFBC .= "%Y_IFS-MOZART_AN/h%Y%m%d00_raqbc.nc";           # :ReAnalysus
-# $CWFBC .= "%Y_EVA/EVA_%Y%m%d_EU_AQ.nc";                    # :EVA-2010/2011
+  if($MAKEMODE=~/(EVA|NMC)/){
+  # $CWFBC.="%Y_IFS-MOZART_AN/h%Y%m%d00_raqbc.nc";           # :ReAnalysus
+    $CWFBC.="%Y_EVA/EVA_%Y%m%d_EU_AQ.nc";                    # :EVA-2010..2012
+  }else{
+    $CWFBC.="%Y_IFS-MOZART_FC/cwf-mozifs_h%Y%m%d00_raqbc.nc";# :Forecast
+  }
+
  ($CWFPL  = $CWFIC) =~ s|_dump|_pollen|;
 }
 
@@ -586,6 +593,8 @@ foreach my $scenflag ( @runs ) {
 
   my $RESDIR = "$WORKDIR/$scenario";
      $RESDIR = "$WORKDIR/$scenario.$iyr_trend" if ($GRID eq "RCA");
+     $RESDIR.= ".REVA" if($MAKEMODE=~/EVA/);
+     $RESDIR.= ".NMC"  if($MAKEMODE=~/NMC/);
   mkdir_p($RESDIR);
 
   chdir $RESDIR;   ############ ------ Change to RESDIR
@@ -624,9 +633,9 @@ foreach my $scenflag ( @runs ) {
 # Forecast nest/dump files
     $cwfic=date2str($CWFDATE[0],$CWFIC);  # yesterday's dump
     if($aCWF){                              # CWF_AN run: if dump not found
-      $cwfic=~s/AN-/FC-/ unless(-e $cwfic); # use CWF_FC dump
-      $cwfic=~s/FC-//    unless(-e $cwfic); # use CWF dump
-      die "$CWF restart file for $CWFBASE not available (yet):\n\t$CWFIC\n"
+      $cwfic=~s/AN-/FC-/        unless(-e $cwfic); # use CWF_FC dump
+      $cwfic=~s/CWF_.*FC-/CWF_/ unless(-e $cwfic); # use CWF dump
+      die "$CWF restart file for $CWFBASE not available (yet):\n\t$CWFIC\n\t$cwfic\n"
           ."Try later...\n" unless(-e $cwfic);
     }else{                                  # CWF_FC run: always from Analysis
       $cwfic=~s/FC-/AN-/;                   # use CWF_AN dump
@@ -826,7 +835,7 @@ foreach my $scenflag ( @runs ) {
   $ifile{"$DataDir/ForestFire/FINN/ForestFire_Emis_$year.nc"} =     # FINN emissions
     "FINN_ForestFireEmis_$year.nc" if ($year >= 2002 and $year <= 2012);
   $ifile{"$DataDir/ForestFire/GFAS/GFAS_ForestFireEmis_$year.nc"} = # GFAS emissions
-    "GFAS_ForestFireEmis_$year.nc" if ($year >= 2008 and $year <= 2012);
+    "GFAS_ForestFireEmis_$year.nc" if ($year >= 2008 and $year <= 2013);
   $ifile{"$DataDir/nox_emission_1996-2005.nc"} = "nox_emission_1996-2005.nc";
   $ifile{"$DataDir/AircraftEmis_FL.nc"} = "AircraftEmis_FL.nc";
   $ifile{"$DataDir/SurfacePressure.nc"} = "SurfacePressure.nc";
@@ -1025,7 +1034,8 @@ foreach my $scenflag ( @runs ) {
       $nml.=EMEP::Sr::slurp("$ProgDir/$f");
     }
     # fill in variables on the template file with corresponding $hash{key}
-    %h=(%h,'outdate'=>date2str($CWFDUMP[0],"%Y,%m,%d,000000,")
+    %h=(%h,'year'=>$year,'utc'=>$CWFMETV,
+           'outdate'=>date2str($CWFDUMP[0],"%Y,%m,%d,000000,")
                      .date2str($CWFDUMP[1],"%Y,%m,%d,000000")) if $CWF;
   }
   $nml =~ s/(\s*\!.*|\s+$)//g;  # remove comments, tailing spaces
@@ -1136,9 +1146,10 @@ EOT
   }
 
   if ($CWF) {
+    die "$CWF did not fiished as expected!\n" unless -e "modelrun.finished";
     my $old="EMEP_OUT.nc";
-       $old=date2str($CWFBASE." 1 day","EMEP_OUT_%Y%m%d.nc") unless (-e "$old");; # 1st dump/nest
-       $old=date2str($CWFBASE." 2 day","EMEP_OUT_%Y%m%d.nc") unless (-e "$old");; # 2nd dump/nest
+       $old=date2str($CWFBASE." 1 day","EMEP_OUT_%Y%m%d.nc") unless (-e "$old"); # 1st dump/nest
+       $old=date2str($CWFBASE." 2 day","EMEP_OUT_%Y%m%d.nc") unless (-e "$old"); # 2nd dump/nest
     my $new=date2str($CWFBASE,$CWFIC);      # today's dump
     system("mkdir -p `dirname $new`; mv $old $new") if (-e "$old");
     if ($SR) {

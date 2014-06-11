@@ -135,7 +135,7 @@
   description='IFS-MOZART','IFS_MACC_EVA',27, ! name,version,size
   map_bc=! emep,external,frac,wanted,found,IXADV,
         'O3'        ,'O3'          ,1.0,T,F,-1, ! same as fkya
-        'NO''       ,'NO'          ,1.0,T,F,-1, ! same as fkya
+        'NO'        ,'NO'          ,1.0,T,F,-1, ! same as fkya
         'NO2'       ,'NO2'         ,1.0,T,F,-1, ! same as fkya
         'PAN'       ,'PAN'         ,1.0,T,F,-1, ! same as fkya
         'HNO3'      ,'HNO3'        ,1.0,T,F,-1, ! same as fkya
