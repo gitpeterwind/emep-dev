@@ -27,6 +27,7 @@ use spectralcov,      only: nx,ny,nlev,nchem,nxex,nyex,nex,&
 implicit none
 integer,private,parameter :: ANALYSIS_NDATE = 4 ! Number of analysis to perform
 real, parameter, private  :: ANALYSIS_RELINC_MAX=5.0 ! Limit dx,du to 500%
+logical,   private :: calculate_chisq = .true.
 type(date),private :: analysis_date(ANALYSIS_NDATE)=(/& ! when to perform the analysys.
                  date(-1,-1,-1,00,0),&              ! By default an analysis
                  date(-1,-1,-1,06,0),&              ! it will be done every
@@ -72,7 +73,8 @@ implicit none
 integer(4) :: inNml=172
 integer    :: nvar,k,ierr
 namelist /DA_CONFIG/ analysis_date, nChem, nChemObs,&
-                     varName, obsVarName, observedVar
+                     varName, obsVarName, observedVar,&
+                     calculate_chisq
 !-----------------------------------------------------------------------
 ! Read config: variable names (observed & unobserved)
 !-----------------------------------------------------------------------
@@ -716,6 +718,7 @@ subroutine costFunction(ind,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
     call update_unobserved(chi_arr)
     call Add_2timing(45,tim_after,tim_before,'3DVar: Update unobserved species.')
 #endif
+    if(.not.calculate_chisq)return
   endif ! return after chi^2 eval
 !-----------------------------------------------------------------------
 ! conversion from model to observation space
@@ -770,7 +773,8 @@ subroutine costFunction(ind,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
 ! chi^2 eval and return:
 !----------------------------------------------------------------------- 
   if(ind==-1)then
-    call chisq_over_nobs2(nobs,innov+yn) ! departures: dep=H(xb)+H_jac*dx-y
+    if(calculate_chisq) &
+      call chisq_over_nobs2(nobs,innov+yn) ! departures: dep=H(xb)+H_jac*dx-y
     call Add_2timing(46,tim_after,tim_before,'3DVar: CHI^2 evaluation.')
     call my_deallocate(.false.,"NoMessage")
     return

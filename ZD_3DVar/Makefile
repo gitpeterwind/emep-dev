@@ -98,7 +98,7 @@ F90FLAGS += $(if $(filter gfortran,$(LD)),-J,-module ) ../
 
 .PHONY: $(PHONY) depend modules \
   $(if $(filter 1,$(CLEANCPP)),\
-    $(patsubst .*,.o,$(shell grep -l -s '\#if' $(SRCS))))
+    $(patsubst .*,.o,DA_ml.f90  $(shell grep -l -s '\#if' $(SRCS))))
 .NOTPARALLEL: $(NOTPARALLEL) EXP_Unimod EXP_3DVar EXP_Bnmc
 
 allprog: CLEANCPP=1

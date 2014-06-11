@@ -153,7 +153,7 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-11th June 2014  Alvaro,Birthe  2838-2840
+11th June 2014  Alvaro,Birthe  2838-2841
 
 Emergency_ml
   - Emission definitions (erupdef) are not allocatable, so is it possible
@@ -189,6 +189,15 @@ run.pl
 ZD_Pollen/Pollen_ml,Pollen_const_ml,My_Pollen_ml
   - Include Sub array from SubMet_ml, previously from LocalVariables_ml.
   - Correct typo on first_call variable name
+
+ZD_3DVar/Makefile,Makefile.SRCS
+  - Force DA_ml.o compilation
+  - Update SRCS.Bnmc
+
+ZD_3DVar/Analysis/DA_3DVar_ml,DA_Obs_ml
+  - Optional chi^2 calculation, controlled by calculate_chisq variable
+    read from DA_CONFIG namelist.
+  - Write number of observations found in each ObsData file to RunLog
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 9th June 2014  Alan  2837

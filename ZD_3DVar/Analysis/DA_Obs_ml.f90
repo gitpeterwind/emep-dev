@@ -11,6 +11,7 @@ use ChemSpecs_adv_ml, only: NSPEC_ADV
 use ChemChemicals_ml, only: species
 use ChemGroups_ml,    only: chemgroups
 use Io_ml,            only: IO_TMP
+use Io_Progs_ml,      only: PrintLog
 use ModelConstants_ml,only: KMAX_MID,MasterProc,runlabel1
 use SmallUtils_ml,    only: find_index
 use TimeDate_ExtraUtil_ml, only: date2string
@@ -129,8 +130,8 @@ subroutine read_obs(maxobs,flat,flon,falt,y,stddev,ipar,iostat)
   real flat(maxobs),flon(maxobs),falt(maxobs)
 
   integer :: lu1=20
-  integer no,iobsData
-  character(len=256) file
+  integer :: no,iobsData
+  character(len=256) :: file
 
 ! #     include "DATAASSIM.INC"
 ! #     include "MPP.INC"
@@ -208,7 +209,21 @@ subroutine read_obs(maxobs,flat,flon,falt,y,stddev,ipar,iostat)
     close(lu1)
     obsData(iobsData)%iobs(1)=nobs
   enddo
-end subroutine read_obs
+! Write #obs to log file
+  if(MasterProc)then
+    do iobsData=1,nobsData
+      file=date2string(obsData(iobsData)%file,current_date)
+      no=DIM(obsData(iobsData)%iobs(1)+1,obsData(iobsData)%iobs(0))
+      if(all(obsData(iobsData)%iobs==0))no=0
+      write(damsg,"('obsData(',I0,') contains ',I0,3(1X,A))")&
+        iobsData,no,trim(obsData(iobsData)%name),&
+        trim(obsData(iobsData)%deriv),"observations"
+      write(damsg,dafmt)trim(damsg)
+      call PrintLog(damsg)
+      call PrintLog(file)
+    enddo
+  endif
+endsubroutine read_obs
 subroutine H_op(lat,lon,alt,n,yn,rho0,ipar)
 !-----------------------------------------------------------------------
 ! @description
