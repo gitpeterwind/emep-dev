@@ -68,11 +68,14 @@ type, public :: group_umap
   real,   pointer,dimension(:) :: uconv=>null() ! conversion factor
 endtype group_umap
 
-type(umap), public, save :: unit_map(20-1)=(/&
+type(umap), public, save :: unit_map(23-1)=(/&
 ! Air concentration
   umap("mix_ratio","mol/mol",1.0),&  ! Internal model unit
   umap("mass_ratio","kg/kg",1.0/ATWAIR), &  ! mass mixing ratio
   umap("ppb" ,"ppb" ,PPBINV),&
+  umap("ppbC","ppbC",PPBINV),&
+  umap("ppbN","ppbN",PPBINV),&
+  umap("ppbS","ppbS",PPBINV),&
   umap("ppbh","ppb h",s2h  ),&  ! PPBINV already included in AOT calculations
   umap("ug" ,"ug/m3" ,ugXm3),&  ! ug* units need to be further multiplied
   umap("ugC","ugC/m3",ugCm3),&  !   by the air density (roa) as part of the
@@ -117,11 +120,11 @@ subroutine Init_Units()
    select case (unit_map(i)%utxt)
     case("ug","mg","uBq","uBqh","mBq","ugm2","mass_ratio")
       uconv_spec = species_adv%molwt
-    case("ugC","mgC")
+    case("ugC","mgC","ppbC")
       uconv_spec = species_adv%carbons
-    case("ugN","mgN")
+    case("ugN","mgN","ppbN")
       uconv_spec = species_adv%nitrogens
-    case("ugS","mgS")
+    case("ugS","mgS","ppbS")
       uconv_spec = species_adv%sulphurs
 !   case("ext")
 !     uconv_spec = species_adv%molwt*species_adv%ExtC

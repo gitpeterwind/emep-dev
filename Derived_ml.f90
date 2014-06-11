@@ -96,7 +96,7 @@ private
  public :: Derived              ! Calculations of sums, avgs etc.
  private :: voc_2dcalc          ! Calculates sum of VOC for 2d fields
  private :: voc_3dcalc          ! Calculates sum of VOC for 3d fields
- private :: uggroup_calc        ! Calculates sum of groups, e.g. pm25
+ private :: group_calc          ! Calculates sum of groups, e.g. pm25
                                 ! from new group arrays
 
 
@@ -434,7 +434,7 @@ do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
     if(any(class==(/"PM25      ","PM25X     ",&
                     "PM25_rh50 ","PM25X_rh50","PM10_rh50 "/)))then
       iadv = -1 ! Units_Scale(iadv=-1) returns 1.0
-                ! uggroup_calc gets the unit conversion factor from Group_Units
+                ! group_calc gets the unit conversion factor from Group_Units
       unitscale = Units_Scale(outunit, iadv, unittxt, volunit)
       if(MasterProc) write(*,*)"FRACTION UNITSCALE ", unitscale
     endif
@@ -463,7 +463,7 @@ do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
       iout = iadv
     case("GROUP") ! groups of species
       iadv = -1     ! Units_Scale(iadv=-1) returns 1.0
-                    ! uggroup_calc gets the unit conversion factor from Group_Units
+                    ! group_calc gets the unit conversion factor from Group_Units
       igrp = find_index(outname, chemgroups(:)%name )
 !-- Emergency: Volcanic Eruption. Skipp groups if not found
       if(outname(1:3)=="ASH")then
@@ -482,8 +482,8 @@ do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
 
     class = "SURF_MASS_" // trim(outtyp)
     if(volunit) class = "SURF_PPB_" // trim(outtyp)
-    call CheckStop(class=="SURF_PPB_GROUP",&
-      "SURF_PPB_GROUPS not implemented yet:"// trim(dname) )
+!   call CheckStop(class=="SURF_PPB_GROUP",&
+!     "SURF_PPB_GROUPS not implemented yet:"// trim(dname) )
 
     dname = "SURF_" // trim( outunit ) // "_" // trim( outname )
 
@@ -695,17 +695,17 @@ end do
     iou_max=max(iou_max,maxval(f_3d%iotype))
   endif
 
-  if (SOURCE_RECEPTOR)then                 ! We include daily and monthly also 
+  if(SOURCE_RECEPTOR)then                  ! We include daily and monthly also 
     iou_max=IOU_DAY                        ! for SOURCE_RECEPTOR mode which makes
     iou_min=IOU_YEAR                       ! it easy for debugging. !SVS 22May2014
   endif
 
-  if (FORECAST) &                          ! Only dayly & hourly outputs
+  if(FORECAST) &                           ! Only dayly & hourly outputs
     iou_min=IOU_DAY                        ! are wanted on FORECAST mode
 
-  if (MasterProc) print "(a,2i4)","IOU_MAX ",  iou_max, iou_min
+  if(MasterProc) print "(a,2i4)","IOU_MAX ",  iou_max, iou_min
 
-  end subroutine Define_Derived
+  endsubroutine Define_Derived
  !=========================================================================
   subroutine Setups()
      integer :: n
@@ -1258,7 +1258,7 @@ end do
                    n, f_2d(n)%name, " is ", d_2d(n,debug_li,debug_lj,IOU_INST)
 
 
-          case ( "SURF_MASS_GROUP" ) !
+          case ( "SURF_MASS_GROUP","SURF_PPB_GROUP" ) !
             igrp = f_2d(n)%index
             call CheckStop(igrp<1,"NEG GRP "//trim(f_2d(n)%name))
             call CheckStop(igrp>size(chemgroups(:)%name), &
@@ -1281,18 +1281,14 @@ end do
               write(*,*) "CASEGRP:", chemgroups(igrp)%ptr
               write(*,*) "CASEunit", trim(f_2d(n)%unit)
             endif
-            call uggroup_calc(d_2d(n,:,:,IOU_INST), density, &
-                              f_2d(n)%unit, 0, igrp)
+            call group_calc(d_2d(n,:,:,IOU_INST),density,f_2d(n)%unit,0,igrp)
 
-            if(DEBUG%DERIVED .and. debug_proc .and. n==ind_pmfine )  then
+            if(DEBUG%DERIVED.and.debug_proc)then
                 i= debug_li; j=debug_lj
-                write(*,"(a,2i4,3es12.3)") "PMFINE FRACTION:", n, ind_pmfine,  &
-                   d_2d(ind_pmfine,i,j,IOU_INST)
-            end if
-            if(DEBUG%DERIVED .and. debug_proc .and. n==ind_pm10 )  then
-                i= debug_li; j=debug_lj
-                write(*,"(a,2i4,3es12.3)") "PM10 FRACTION:", n, ind_pm10,  &
-                   d_2d(ind_pm10,i,j,IOU_INST)
+              if(n==ind_pmfine)write(*,"(a,i4,es12.3)")&
+                "PMFINE FRACTION:",n,d_2d(n,i,j,IOU_INST)
+              if(n==ind_pm10  )write(*,"(a,i4,es12.3)") &
+                "PM10 FRACTION:"  ,n,d_2d(n,i,j,IOU_INST)
             end if
 
           case  default
@@ -1473,7 +1469,7 @@ end do
                 write(*,*) "3DCASEunit", trim(f_3d(n)%unit)
             endif
             do k=1,KMAX_MID
-              call uggroup_calc(d_3d(n,:,:,k,IOU_INST), roa(:,:,k,1), &
+              call group_calc(d_3d(n,:,:,k,IOU_INST), roa(:,:,k,1), &
                                 f_3d(n)%unit, k, igrp)
             enddo
 
@@ -1679,13 +1675,13 @@ end do
 
    end subroutine voc_3dcalc
  !=========================================================================
-subroutine uggroup_calc( ug_2d, density, unit, ik, igrp)
+subroutine group_calc( g2d, density, unit, ik, igrp)
 
   !/--  calulates e.g. SIA = SO4 + pNO3_f + pNO3_c + aNH4
   ! (only SIA converted to new group system so far, rv3_5_6 )
   !/--  calulates also PM10  = SIA + PPM2.5 + PPMCOARSE
 
-  real, dimension(:,:), intent(out) :: ug_2d  ! i,j section of d_2d arrays
+  real, dimension(:,:), intent(out) :: g2d  ! i,j section of d_2d arrays
   real, intent(in), dimension(MAXLIMAX,MAXLJMAX)  :: density
   character(len=*), intent(in) :: unit
   integer, intent(in) :: ik,igrp
@@ -1695,21 +1691,34 @@ subroutine uggroup_calc( ug_2d, density, unit, ik, igrp)
 
   if(DEBUG%DERIVED .and.debug_proc) &
     write(*,"(a,L1,2i4)") "DEBUG GROUP-PM-N",debug_proc,me,ik
-  call CheckStop(unit(1:2)/="ug","uggroup: Invalid deriv/level")
   call Group_Units(igrp,unit,gspec,gunit_conv,debug=DEBUG%DERIVED.and.debug_proc)
 
-  if(ik==0)then
-    forall(i=1:limax,j=1:ljmax) &
-      ug_2d(i,j) = dot_product(xn_adv(gspec(:),i,j,KMAX_MID),&
+  select case(unit)
+  case("ppb","ppb h","ppbC","ppbN","ppbS")
+    if(ik==0)then
+      forall(i=1:limax,j=1:ljmax) &
+        g2d(i,j) = dot_product(xn_adv(gspec(:),i,j,KMAX_MID),&
+                               cfac(gspec(:),i,j)*gunit_conv(:))
+    else
+      forall(i=1:limax,j=1:ljmax) &
+        g2d(i,j) = dot_product(xn_adv(gspec(:),i,j,ik),gunit_conv(:))
+    endif
+  case("ug/m3","ugC/m3","ugN/m3","ugS/m3")
+    if(ik==0)then
+      forall(i=1:limax,j=1:ljmax) &
+        g2d(i,j) = dot_product(xn_adv(gspec(:),i,j,KMAX_MID),&
                                cfac(gspec(:),i,j)*gunit_conv(:)) &
                  * density(i,j)
-  else
-    forall(i=1:limax,j=1:ljmax) &
-      ug_2d(i,j) = dot_product(xn_adv(gspec(:),i,j,ik),gunit_conv(:)) &
+    else
+      forall(i=1:limax,j=1:ljmax) &
+        g2d(i,j) = dot_product(xn_adv(gspec(:),i,j,ik),gunit_conv(:)) &
                  * density(i,j)
-  endif
+    endif
+  case default
+    call CheckStop("group_calc: Invalid deriv unit '"//trim(unit)//"'")
+  endselect
   deallocate(gspec,gunit_conv)
-end subroutine uggroup_calc
+endsubroutine group_calc
  !=========================================================================
 
   subroutine somo_calc( n, iX, debug_flag )

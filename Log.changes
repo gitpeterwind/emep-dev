@@ -153,7 +153,7 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-11th June 2014  Birthe,Alvaro  2838
+11th June 2014  Alvaro,Birthe  2838-2839
 
 Emergency_ml
   - Emission definitions (erupdef) are not allocatable, so is it possible
@@ -164,6 +164,11 @@ Emergency_ml
   - A "1-puff" emission [Kg] can me set with D="1DT".
     For a longer release, the total emission  [Tg] can be set with D="TOTAL".
     Default behaviour is emission rate [Kg/s].
+
+Derived_ml,Units_ml
+  - Rename subroutine uggroup_calc group_calc (Derived_ml)
+    and extended to handle ppb, ppbC, ppbN & ppbS units for groups.
+  - Add support for ppbC, ppbN & ppbS units (Units_ml)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 9th June 2014  Alan  2837
