@@ -257,6 +257,22 @@ class ChemicalScheme(object):
         """Get a list of groups."""
         return self.groups.items()
 
+    def get_dry_deposition_map(self):
+        """Get mapping of species to dry deposition surrogates."""
+        mapping = collections.OrderedDict()
+        for spec in self.species.itervalues():
+            if spec.dry is not None:
+                mapping[spec.name] = spec.dry
+        return mapping
+
+    def get_wet_deposition_map(self):
+        """Get mapping of species to wet deposition surrogates."""
+        mapping = collections.OrderedDict()
+        for spec in self.species.itervalues():
+            if spec.wet is not None:
+                mapping[spec.name] = spec.wet
+        return mapping
+
 
 class Species(object):
     # Species type constants
@@ -265,7 +281,8 @@ class Species(object):
     SEMIVOL = 2
     SLOW = 3
 
-    def __init__(self, name, type, formula, extinc, cstar, DeltaH, molwt=None, groups=None):
+    def __init__(self, name, type, formula, extinc, cstar, DeltaH, \
+                 wet=None, dry=None, molwt=None, groups=None):
         # Arguments simply copied to attributes
         self.name = name
         self.type = type
@@ -273,6 +290,8 @@ class Species(object):
         self.extinc = extinc
         self.cstar = float(cstar)
         self.DeltaH = float(DeltaH)
+        self.wet = wet              # Wet deposition surrogate species
+        self.dry = dry              # Dry deposition surrogate species
 
         # Calculate atom counts and molecular weight from formula
         self.counts, self.molwt = count_atoms(self.formula or '')
@@ -352,6 +371,8 @@ class SpeciesReader(object):
                            extinc=None if row['extinc'] == '0' else row['extinc'],
                            cstar=row['cstar'],
                            DeltaH=row['DeltaH'],
+                           wet=row['wet'],
+                           dry=row['dry'],
                            molwt=row['in_rmm'],
                            groups=groups)
 
@@ -827,6 +848,27 @@ class SpeciesWriter(CodeGenerator):
         else:
             return ([], -999, -999)
 
+    DEPMAP = dedent("""\
+    integer, public, parameter :: N{kind}DEP_ADV = {count}
+    type(depmap), public, dimension(N{kind}DEP_ADV), parameter :: {kind:.1}DepMap = (/ &
+      {map} &
+    /)
+    """)
+
+    DEPMAP_SPEC = 'depmap(IXADV_{spec:10}, C{kind:.1}DEP_{other:10}, -1)'
+
+    def _write_depmap(self, stream, kind, depmap):
+        """Write a deposition surrogate map for *depmap* to *stream*."""
+        stream.write(self.DEPMAP.format(
+            kind=kind, count=len(depmap),
+            map=' &\n, '.join((self.DEPMAP_SPEC.format(kind=kind, spec=k, other=v)
+                               for k, v in depmap.iteritems()))))
+
+    def write_depmaps(self, dry, wet):
+        """Write maps for dry/wet deposition surrogates."""
+        self._write_depmap(dry, 'DRY', self.scheme.get_dry_deposition_map())
+        self._write_depmap(wet, 'WET', self.scheme.get_wet_deposition_map())
+
 
 class GroupsWriter(CodeGenerator):
     DECLS = dedent("""
@@ -1130,7 +1172,10 @@ if __name__ == '__main__':
         reactions_reader.read(f)
 
     species_writer = SpeciesWriter(scheme)
-    species_writer.write(open('CM_ChemSpecs.f90', 'w'))
+    with open('CM_ChemSpecs.f90', 'w') as f:
+        species_writer.write(f)
+    with open('CM_DryDep.inc', 'w') as dry, open('CM_WetDep.inc', 'w') as wet:
+        species_writer.write_depmaps(dry, wet)
 
     groups_writer = GroupsWriter(scheme)
     groups_writer.write(open('CM_ChemGroups.f90', 'w'))
