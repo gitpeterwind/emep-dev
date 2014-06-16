@@ -226,6 +226,7 @@ def count_atoms(formula):
 class ChemicalScheme(object):
     def __init__(self):
         self.species = collections.OrderedDict()
+        self._species_nocase = {}
         self.groups = DefaultListOrderedDict()
         self.emis_files = OrderedSet()
         self.reactions = []
@@ -236,9 +237,14 @@ class ChemicalScheme(object):
             raise ValueError("SPEC %s already defined!" % spec.name)
 
         self.species[spec.name] = spec
+        self._species_nocase[spec.name.upper()] = spec
 
         for group in spec.groups:
             self.groups[group].append(spec.name)
+
+    def find_species(self, name):
+        """Find a species by case-insensitive lookup."""
+        return self._species_nocase[name.upper()]
 
     def add_emis_files(self, files):
         """Add *files* to emis_files."""
@@ -500,24 +506,11 @@ class ReactionsReader(object):
         reaction = Reaction(rate, lhs, rhs)
         LOG.debug('%s', reaction)
 
-        # TODO: check that specs exist, where appropriate
         # TODO: check reaction balance
         # TODO: what is check_multipliers()?
         # TODO: RHS tracers?
 
         LOG.debug('full rate including catalysts: %r', reaction.get_full_rate())
-
-        LOG.debug('loss rates:')
-        LOG.indent()
-        for spec, rate in reaction.get_loss_rates():
-            LOG.debug('%s: %s', spec, rate)
-        LOG.outdent()
-
-        LOG.debug('prod rates:')
-        LOG.indent()
-        for spec, rate in reaction.get_prod_rates():
-            LOG.debug('%s: %s', spec, rate)
-        LOG.outdent()
 
         return reaction
 
@@ -532,11 +525,15 @@ class ReactionsReader(object):
         if species.startswith('[') and species.endswith(']'):
             type = 'catalyst'
             species = species[1:-1]
+            # Check species exists and use its canonical name
+            species = self.scheme.find_species(species).name
         elif species.startswith('{') and species.endswith('}'):
             type = 'tracer'
             species = species[1:-1]
         else:
             type = None
+            # Check species exists and use its canonical name
+            species = self.scheme.find_species(species).name
 
         return Term(species, factor, type)
 
