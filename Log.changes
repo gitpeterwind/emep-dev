@@ -153,7 +153,7 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-16th June 2014  Alan  2842-48
+16th June 2014  Alan  2842-49
 
 ESX changes only.
 
@@ -161,6 +161,8 @@ ZD_ESX/D_Misc/GenChem.py:
   - Generate WetDep, DryDep, AerExt and emis outputs.
   - Add reaction species checking.
   - Add reaction balance checking.
+  - Handle RO2POOL.
+  - Resolve some TODOs.
 
 ZD_ESX/ZCM_{EmChem09,EmChem09soa}_py/*:
   - Fix a couple of malformed reactions (discovered by reaction species

@@ -515,9 +515,6 @@ class ReactionsReader(object):
         if any(abs(lhs_sum[a] - rhs_sum[a]) > 0.001 for a in ATOMS):
             LOG.warning('Reaction unbalanced! LHS=%r, RHS=%r', lhs_sum, rhs_sum)
 
-        # TODO: what is check_multipliers()?
-        # TODO: RHS tracers?
-
         LOG.debug('full rate including catalysts: %r', reaction.get_full_rate())
 
         return reaction
@@ -583,10 +580,6 @@ class ReactionsReader(object):
         if expanded_rate != rate:
             LOG.debug('expanded rate: %s', expanded_rate)
         rate = expanded_rate
-
-        # TODO: why do we care?
-        if 'TROE' in rate:
-            LOG.debug('is TROE')
 
         # Clean up the rate a bit
         # Lowercase EXP() (TODO: do we need to?)
@@ -957,14 +950,6 @@ class GroupsWriter(CodeGenerator):
             stream.write(self.DECLARE_GROUP.format(size=len(specs), group=g,
                                                    specs=','.join(specs)))
 
-        # TODO: RO2 pool species
-        stream.write(dedent("""
-        ! ------- RO2 Pool     species ------------------
-        integer, public, parameter :: SIZE_RO2_POOL = 1
-        integer, public, parameter, dimension(1) :: &
-          RO2_POOL = (/ -99 /)
-        """))
-
         self.write_contains(stream)
 
         stream.write('\nsubroutine Init_ChemGroups()\n')
@@ -997,6 +982,8 @@ class ReactionsWriter(CodeGenerator):
         (True, False): CHEMEQN_NOLOSS,
         (False, False): CHEMEQN_NONE,
     }
+    # Special case for RO2 pool
+    CHEMEQN_RO2POOL = 'xnew(RO2POOL) = sum(xnew(RO2_GROUP))\n'
 
     CHEMRATES_USE = [
         'use Zmet_ml        ! => tinv, h2o, m, Fgas !ESX',
@@ -1088,11 +1075,20 @@ class ReactionsWriter(CodeGenerator):
         normal = IndentingStreamWriter(normal)
         slow = IndentingStreamWriter(slow)
 
-        # TODO: handle "RO2POOL"
         for spec in self.scheme.get_species_list():
-            prod = self.prod[spec.name]
-            loss = self.loss[spec.name]
-            LOG.info('SPEC %-12s: nprod=%2d, nloss=%2d', spec.name, len(prod), len(loss))
+            if spec.name == "RO2POOL":
+                # Special case for RO2 pool pseudo-species
+                prod = []
+                loss = []
+                LOG.info('RO2POOL FOUND')
+                eqn = self.CHEMEQN_RO2POOL
+            else:
+                # All other species
+                prod = self.prod[spec.name]
+                loss = self.loss[spec.name]
+                LOG.info('SPEC %-12s: nprod=%2d, nloss=%2d', spec.name, len(prod), len(loss))
+                eqn = self.CHEMEQN_LOOKUP[(bool(prod), bool(loss))].format(spec=spec.name)
+
             # Choose appropriate output stream
             stream = slow if spec.type == Species.SLOW else normal
 
@@ -1111,7 +1107,6 @@ class ReactionsWriter(CodeGenerator):
                 stream.write('! L = 0.0\n')
             stream.write('\n')
 
-            eqn = self.CHEMEQN_LOOKUP[(bool(prod), bool(loss))].format(spec=spec.name)
             stream.write(eqn)
 
             stream.outdent()
