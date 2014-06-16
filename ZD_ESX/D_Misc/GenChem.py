@@ -506,13 +506,36 @@ class ReactionsReader(object):
         reaction = Reaction(rate, lhs, rhs)
         LOG.debug('%s', reaction)
 
-        # TODO: check reaction balance
+        # Calculate atom sums for both sides
+        lhs_sum = self._sum_atoms(reaction.LHS)
+        rhs_sum = self._sum_atoms(reaction.RHS)
+        LOG.debug('LHS atoms: %r', lhs_sum)
+        LOG.debug('RHS atoms: %r', rhs_sum)
+        # Warn if the two sides don't match
+        if any(abs(lhs_sum[a] - rhs_sum[a]) > 0.001 for a in ATOMS):
+            LOG.warning('Reaction unbalanced! LHS=%r, RHS=%r', lhs_sum, rhs_sum)
+
         # TODO: what is check_multipliers()?
         # TODO: RHS tracers?
 
         LOG.debug('full rate including catalysts: %r', reaction.get_full_rate())
 
         return reaction
+
+    def _sum_atoms(self, terms):
+        """Create a sum of the atoms in all of *terms*."""
+        # TODO: check atom counts work properly, match GenChem.pl
+        atoms = collections.Counter()
+        for term in terms:
+            if term.species in self.scheme.species:
+                spec = self.scheme.species[term.species]
+                spec_atoms = spec.counts
+            else:
+                spec_atoms, _ = count_atoms(term.species)
+            factor = float(term.factor)
+            # Accumulate atom counts, scaled by the term's factor
+            atoms.update({a: n * factor for a, n in spec_atoms.iteritems()})
+        return atoms
 
     def _read_reaction_term(self, term):
         """reactant or product -> (type, factor, species)"""
@@ -1207,13 +1230,14 @@ class PrettyStreamHandler(logging.StreamHandler):
 
 
 if __name__ == '__main__':
+    formatter = logging.Formatter('[%(levelname).1s%(levelname).1s] %(message)s')
     # Send logging output to stderr
     stream_handler = PrettyStreamHandler()
     #stream_handler.setLevel(logging.INFO)
-    stream_handler.setFormatter(logging.Formatter('[%(levelname).1s] %(message)s'))
+    stream_handler.setFormatter(formatter)
     # Send logging output to Log.GenOut
     file_handler = logging.FileHandler('Log.GenOut', 'w')
-    file_handler.setFormatter(logging.Formatter('%(message)s'))
+    file_handler.setFormatter(formatter)
     # Attach log handlers
     rootlogger = logging.getLogger('')
     rootlogger.setLevel(logging.DEBUG)
