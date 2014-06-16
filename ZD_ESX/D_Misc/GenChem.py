@@ -1183,7 +1183,7 @@ class ReactionsWriter(CodeGenerator):
         LOG.outdent()
 
     def write_femis(self, stream):
-        # TODO: document this - what is femis.defaults?
+        """Write default emission control options to *stream*."""
         LOG.info('Writing femis.defaults...')
         stream.write('Name  {}  '.format(len(self.scheme.emis_files)))
         for f in self.scheme.emis_files:
@@ -1195,7 +1195,6 @@ class ReactionsWriter(CodeGenerator):
 
     def write_emis_list(self, stream):
         """Write CSV list of emission files to *stream*."""
-        # TODO: doesn't this just duplicate what's in CM_EmisFile.inc?
         LOG.info('Writing CM_emislist.csv...')
         stream.write(','.join(self.scheme.emis_files) + '\n')
 
