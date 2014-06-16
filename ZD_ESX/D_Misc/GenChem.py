@@ -869,6 +869,32 @@ class SpeciesWriter(CodeGenerator):
         self._write_depmap(dry, 'DRY', self.scheme.get_dry_deposition_map())
         self._write_depmap(wet, 'WET', self.scheme.get_wet_deposition_map())
 
+    EXTMAP = dedent("""\
+    integer, public, parameter :: NUM_EXT = {count}
+    type(ExtEffMap), public, dimension(NUM_EXT), parameter :: ExtMap = (/ &
+      {map} &
+    /)
+    """)
+
+    EXTMAP_SPEC = 'ExtEffMap({spec:16}, CEXT_{cext:8}, {mode}_MODE)'
+
+    def write_extmap(self, stream):
+        LOG.info('Writing extmap...')
+        LOG.indent()
+
+        extmap = []
+        for spec in self.scheme.species.itervalues():
+            if spec.extinc is not None:
+                LOG.debug('%s: extinc=%s', spec.name, spec.extinc)
+                match = re.match(r'(?P<cext>\w+)([:;/-](?P<mode>\w+))?', spec.extinc)
+                mode = match.group('mode') or 'WET'
+                extmap.append(self.EXTMAP_SPEC.format(
+                    spec=spec.name, cext=match.group('cext'), mode=mode.upper()))
+
+        stream.write(self.EXTMAP.format(count=len(extmap), map=' &\n, '.join(extmap)))
+
+        LOG.outdent()
+
 
 class GroupsWriter(CodeGenerator):
     DECLS = dedent("""
@@ -1176,6 +1202,8 @@ if __name__ == '__main__':
         species_writer.write(f)
     with open('CM_DryDep.inc', 'w') as dry, open('CM_WetDep.inc', 'w') as wet:
         species_writer.write_depmaps(dry, wet)
+    with open('GenOut_AerExt.inc', 'w') as f:
+        species_writer.write_extmap(f)
 
     groups_writer = GroupsWriter(scheme)
     groups_writer.write(open('CM_ChemGroups.f90', 'w'))
