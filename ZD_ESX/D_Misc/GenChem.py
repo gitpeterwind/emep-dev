@@ -1167,6 +1167,23 @@ class ReactionsWriter(CodeGenerator):
         self._write_emis(stream, 'Specs', self.emis_specs)
         LOG.outdent()
 
+    def write_femis(self, stream):
+        # TODO: document this - what is femis.defaults?
+        LOG.info('Writing femis.defaults...')
+        stream.write('Name  {}  '.format(len(self.scheme.emis_files)))
+        for f in self.scheme.emis_files:
+            stream.write('{:>10}'.format(f))
+        stream.write('\n 28   0  ')
+        for f in self.scheme.emis_files:
+            stream.write('{:10.1f}'.format(1.0))
+        stream.write('\n')
+
+    def write_emis_list(self, stream):
+        """Write CSV list of emission files to *stream*."""
+        # TODO: doesn't this just duplicate what's in CM_EmisFile.inc?
+        LOG.info('Writing CM_emislist.csv...')
+        stream.write(','.join(self.scheme.emis_files) + '\n')
+
 
 class PrettyStreamHandler(logging.StreamHandler):
     """A :class:`logging.StreamHandler` that wraps log messages with
@@ -1245,3 +1262,7 @@ if __name__ == '__main__':
         reactions_writer.write_emis_files(f)
     with open('CM_EmisSpecs.inc', 'w') as f:
         reactions_writer.write_emis_specs(f)
+    with open('femis.defaults', 'w') as f:
+        reactions_writer.write_femis(f)
+    with open('CM_emislist.csv', 'w') as f:
+        reactions_writer.write_emis_list(f)
