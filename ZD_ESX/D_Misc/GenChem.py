@@ -1047,14 +1047,14 @@ class ReactionsWriter(CodeGenerator):
                 LOG.indent()
                 processed_rate = ' '.join(process_rate_part(r) for r in rate)
                 self.prod[spec].append(processed_rate)
-                LOG.info('RATE: %s', processed_rate)
+                LOG.debug('RATE: %s', processed_rate)
                 LOG.outdent()
             for spec, rate in reaction.get_loss_rates():
                 LOG.info('LOSS  %-12s: %s', spec, rate)
                 LOG.indent()
                 processed_rate = ' '.join(process_rate_part(r) for r in rate)
                 self.loss[spec].append(processed_rate)
-                LOG.info('RATE: %s', processed_rate)
+                LOG.debug('RATE: %s', processed_rate)
                 LOG.outdent()
             LOG.outdent()
 
@@ -1139,6 +1139,34 @@ class ReactionsWriter(CodeGenerator):
 
         LOG.outdent()
 
+    EMIS = dedent("""\
+    integer, parameter, public :: NEMIS_{name} = {count}
+    character(len={maxlen}), save, dimension(NEMIS_{name}), public :: EMIS_{name} = (/ &
+      {contents} &
+    /)
+    """)
+
+    def _write_emis(self, stream, name, items):
+        maxlen = max(len(_) for _ in items)
+        fmt = '"{{:{maxlen}}}"'.format(maxlen=maxlen)
+        stream.write(self.EMIS.format(
+            name=name, count=len(items), maxlen=maxlen,
+            contents=' &\n, '.join(fmt.format(_) for _ in items)))
+
+    def write_emis_files(self, stream):
+        """Write emission file array definition to *stream*."""
+        LOG.info('Writing emission file array (%s)...',
+                 ', '.join(self.scheme.emis_files))
+        self._write_emis(stream, 'File', self.scheme.emis_files)
+
+    def write_emis_specs(self, stream):
+        """Write emission species array definition to *stream*."""
+        LOG.info('Writing emission species array...')
+        LOG.indent()
+        LOG.info(', '.join(self.emis_specs))
+        self._write_emis(stream, 'Specs', self.emis_specs)
+        LOG.outdent()
+
 
 class PrettyStreamHandler(logging.StreamHandler):
     """A :class:`logging.StreamHandler` that wraps log messages with
@@ -1213,3 +1241,7 @@ if __name__ == '__main__':
         reactions_writer.write_prod_loss(f1, f2)
     with open('CM_ChemRates.f90', 'w') as f:
         reactions_writer.write_rates(f)
+    with open('CM_EmisFile.inc', 'w') as f:
+        reactions_writer.write_emis_files(f)
+    with open('CM_EmisSpecs.inc', 'w') as f:
+        reactions_writer.write_emis_specs(f)
