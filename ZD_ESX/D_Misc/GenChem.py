@@ -1262,7 +1262,7 @@ if __name__ == '__main__':
         species_writer.write(f)
     with open('CM_DryDep.inc', 'w') as dry, open('CM_WetDep.inc', 'w') as wet:
         species_writer.write_depmaps(dry, wet)
-    with open('GenOut_AerExt.inc', 'w') as f:
+    with open('CM_AerExt.inc', 'w') as f:
         species_writer.write_extmap(f)
 
     groups_writer = GroupsWriter(scheme)
