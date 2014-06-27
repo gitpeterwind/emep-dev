@@ -1,5 +1,4 @@
-! <Volcanos_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
-!          Chemical transport Model>
+! <Volcanos_ml.f90 - A component of the EMEP MSC-W Chemical transport Model>
 !*****************************************************************************!
 !*
 !*  Copyright (C) 2007-2011 met.no
@@ -41,9 +40,6 @@ module Volcanos_ml
 !-----------------------------------------------------------------------!
 
 use CheckStop_ml,         only: CheckStop
-!CMR use ChemChemicals_ml,     only: species
-!CMR use ChemSpecs_shl_ml,     only: NSPEC_SHL
-!CMR use ChemSpecs_tot_ml,     only: NSPEC_TOT, SO2
 use ChemSpecs,            only: species, NSPEC_SHL, NSPEC_TOT, SO2
 use ChemGroups_ml,        only: chemgroups
 use EmisDef_ml,           only: VOLCANOES_LL

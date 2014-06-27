@@ -1,5 +1,4 @@
-! <Setup_1d_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
-!          Chemical transport Model>
+! <Setup_1d_ml.f90 - A component of the EMEP MSC-W  Chemical transport Model>
 !*****************************************************************************!
 !*
 !*  Copyright (C) 2007-2012 met.no
@@ -48,11 +47,6 @@
   use ForestFire_ml,         only: Fire_rcemis, burning
   use Functions_ml,          only:  Tpot_2_T
   use ChemSpecs  !,             only:  SO4,C5H8,NO,NO2,SO2,CO,
-!CMR   use ChemChemicals_ml,      only:  species
-!CMR   use ChemSpecs_tot_ml,      only:  SO4,C5H8,NO,NO2,SO2,CO
-!CMR   use ChemSpecs_adv_ml,      only:  NSPEC_ADV, IXADV_NO2, IXADV_O3, &
-!CMR                                     IXADV_SO4, IXADV_NO3_f, IXADV_NH4_F
-!CMR   use ChemSpecs_shl_ml,      only:  NSPEC_SHL
   use ChemRates_rct_ml,      only:  set_rct_rates, rct
   use GridValues_ml,         only:  xmd, GridArea_m2, & 
                                      debug_proc, debug_li, debug_lj,&

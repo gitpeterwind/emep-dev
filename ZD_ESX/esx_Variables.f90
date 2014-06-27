@@ -65,7 +65,7 @@ module esx_Variables
        z     &!< grid centre point heights: z_1, z_2,..., z_n
       ,dz    &!< layer heights between boundaries: dz_1, dz_2,..., dz_n (dz_n=zbnd_n+1-zbnd_n)
   !  real :: & ! only zn-1 used, but we dimension zn anyway
-     ,zbnd  &!< grid boundary heights: z_1½, z_2½,..., z_n-½
+     ,zbnd = UNDEF_R  &!< grid boundary heights: z_1½, z_2½,..., z_n-½
      ,dzmid  !< layer height between grid mid-points: dz_1½, dz_2½,..., dz_n-½ (dzmid_n=z_n+1-z_n)
 
    !> Remaining variables can be set in config_esx.nml. See that file for more info
@@ -216,6 +216,9 @@ contains
       end do
       
     else  ! derived from explicit config data:
+
+print *, "ZBND 1 ", esx%zbnd(1), UNDEF_R
+      call CheckStop( esx%zbnd(1) == UNDEF_R, "zbnds not set. Check config file")
 
       ! Check for mal-formed input of zbnds (e.g. double defn)
       do iz = 2, ESX_MAXNZ

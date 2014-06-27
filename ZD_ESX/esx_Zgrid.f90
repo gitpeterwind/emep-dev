@@ -25,8 +25,10 @@
 !! 
 
 module esx_Zgrid
+  use CheckStop_ml,  only: CheckStop
   use esx_Variables, only: esx
   use Io_Progs,      only: PrintLog  
+  use ModelConstants, only : UNDEF_R
   use SmallUtils_ml, only: num2str
 
   implicit none

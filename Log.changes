@@ -153,6 +153,11 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+27th June 2014  Alan  2853
+
+  Tidy ups - removed commented out !CMR lines from some modules. These were
+   from the older GenChem system with separate modules.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16th June 2014  Alan  2842-49
 
 ESX changes only.
@@ -171,6 +176,7 @@ ZD_ESX/ZCM_{EmChem09,EmChem09soa}_py/*:
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 11th June 2014  Alvaro,Birthe  2838-2841
 
+=======
 Emergency_ml
   - Emission definitions (erupdef) are not allocatable, so is it possible
     to have more than 2000 releases (NMAX_ERUP) without compilation issues.
@@ -247,6 +253,12 @@ ZD_ESX/esx_Zmet - extra Kz output
 ZD_ESX/esx_DO3SE - uses odir for output Log
 ZD_ESX/esx_Variables - more checks on z_bnds and DiffSpecs, OutSpecs
 ZD_ESX/esx_tester - some more comments, pcm3_to_pm3 replaces chem2Kz_units
+
+**NEW** scripts directory added
+
+  added fmkmf - now original script from Univ. Edinburgh, replaces makegf90
+  mk.Makefile - does same job as older mk.makegf90, but using fmkmf
+  mk.docESX moved here
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 5 June 2014  Peter  2823

@@ -38,7 +38,7 @@ contains
 
   subroutine alloc_real_1d_init_array(a, init, n1, txt)
     real, allocatable, dimension(:), intent(inout) :: a
-    real, dimension(n1), intent(in) :: init
+    real, dimension(:), intent(in) :: init
     integer, intent(in) :: n1
     character(len=*), intent(in) :: txt
 
@@ -102,7 +102,7 @@ contains
 
   subroutine alloc_integer_1d_init_array(a, init, n1, txt)
     integer, allocatable, dimension(:), intent(inout) :: a
-    integer, dimension(n1), intent(in) :: init
+    integer, dimension(:), intent(in) :: init
     integer, intent(in) :: n1
     character(len=*), intent(in) :: txt
 
