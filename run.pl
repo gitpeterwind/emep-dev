@@ -84,7 +84,7 @@ $| = 1; # autoflush STDOUT
 #my $VILJE=0;  #1 if Ve or Vilje is used
 #my $STALLO=1; #1 if stallo is used
 my ( $STALLO, $VILJE ) = (0) x 2;
-foreach my $key  qw ( PBS_O_HOST HOSTNAME PBS_SERVER MACHINE ){
+foreach my $key  (qw ( PBS_O_HOST HOSTNAME PBS_SERVER MACHINE )) {
  next unless defined $ENV{$key};
  $STALLO = 1 if $ENV{$key} =~/stallo/;
  $VILJE  = 1 if $ENV{$key} =~/vilje/;
@@ -1207,10 +1207,12 @@ sub date2str {
 }
 
 sub mylink {
-  # links files from the original olcation (old) to
+  # links files from the original location (old) to
   # the new location (new) - generally the working directory.
   # Keeps track of all such linked files in list_of_files.
   my ($text,$old,$new) = ($_[0],$_[1],$_[2]);
+  # remove new file if already exists and is symlink
+  unlink $new if -l $new;
   symlink ($old,$new) || die "symlink $old $new failed : $!";
   print "$text $old => $new \n";
   push(@list_of_files , $new);    # For later deletion

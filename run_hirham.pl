@@ -980,10 +980,11 @@ sub metlink {  #---- meteorological data
 }
 
 sub mylink {
-  # links files from the original olcation (old) to
+  # links files from the original location (old) to
   # the new location (new) - generally the working directory.
   # Keeps track of all such linked files in list_of_files.
   my ($text, $old,$new) = ($_[0], $_[1], $_[2]);
+  unlink $new if -l $new;
   symlink ($old,$new) || die "symlink $old $new failed : $!";
   print "$text $old => $new \n";
   push(@list_of_files , $new);    # For later deletion
