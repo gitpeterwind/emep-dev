@@ -9,7 +9,7 @@ module Radiation_ml
   !  F-compliant.  Module usable by stand-alone deposition code.
 
   use PhysicalConstants_ml  , only: PI, DEG2RAD, RAD2DEG, DAY_ZEN, DAY_COSZEN
-  use TimeDate_ml  , only: julian_date, day_of_year
+  use TimeDate_ml  , only: julian_date, day_of_year, date
   implicit none
   private
 
@@ -20,8 +20,17 @@ module Radiation_ml
   public :: ClearSkyRadn  !> => irradiance (W/m2), clear-sky
   public :: CloudAtten    !> => Cloud-Attenuation factor
   public :: CanopyPAR     !> => sun & shade PAR  values, and LAIsunfrac
+  public :: MultiLayerPAR   !> => sun & shade PAR  values, and LAIsunfrac, as f(z)
   public :: ScaleRad      !>  Scales modelled radiation where observed values
                           !!  available.
+  private :: rSolarSetup  !! "Real" subroutine
+  private :: SolarSetup_t  !! Takes input as type date      and calls rSolarSetup 
+  private :: SolarSetup_i  !! Takes input as yy,mm,dd, hh.. and calls rSolarSetup
+
+  interface SolarSetup
+    module procedure SolarSetup_t
+    module procedure SolarSetup_i
+  end interface SolarSetup
 
   !/ Functions:
   public :: daytime       !> true if zen < 89.9 deg
@@ -79,7 +88,18 @@ logical, private, parameter :: DEBUG = .false.
 contains
 
  !<===========================================================================
-  subroutine SolarSetup(year,month,day,hour)
+  subroutine SolarSetup_i(year,month,day,hour)
+    integer, intent(in) :: year,month,day
+    real, intent(in) :: hour
+    call rSolarSetup(year,month,day,hour)
+  end subroutine SolarSetup_i
+  !---------------------------------------------
+  subroutine SolarSetup_t(d)
+    type(date), intent(in) ::d  ! date
+    call rSolarSetup(d%year,d%month,d%day,d%hour+d%seconds/3600.0)
+  end subroutine SolarSetup_t
+  !---------------------------------------------
+  subroutine rSolarSetup(year,month,day,hour)
 
     ! Sets up decelention and related terms, as well as Ashrae coefficients
     ! Should be called before other routines.
@@ -181,7 +201,7 @@ contains
              ( ASHRAE_REV(i)%c - ASHRAE_REV(i-1)%c )*dayinc
       end if
 
- end subroutine SolarSetup
+ end subroutine rSolarSetup
 
 
  !<===========================================================================
@@ -343,9 +363,20 @@ contains
 
 
 
+    !if ( Idrctt < 1.0e-3 ) then
+    if ( sinB < 1.0e-6 ) then
+if( Idrctt > 0.0 ) print *, "SINB ", asin( sinB ) * RAD2DEG , Idrctt !Allows 140 W/ms?!
+       PARsun     = 0.0
+       PARshade   = 0.0
+       LAIsunfrac = 0.0 ! for printouts
+       return
+    end if
+      
     LAIsun = (1.0 - exp(-0.5*LAI/sinB) ) * sinB/cosA
     LAIsunfrac = LAIsun/LAI
 
+!if(LAIsunfrac > 1.0 )print *, "RADLLL", LAI, sinB, (1.0 - exp(-0.5*LAI/sinB) ), sinB/cosA, LAIsunfrac, Idrctt
+if(LAIsunfrac > 1.0 ) stop 'RADLLL'
 ! PAR flux densities evaluated using method of
 ! Norman (1982, p.79): 
 ! "conceptually, 0.07 represents a scattering coefficient"  
@@ -361,6 +392,49 @@ contains
     PARsun   = PARsun   * Wm2_2uEPAR 
 
   end subroutine CanopyPAR
+
+!===========================================================================
+    elemental subroutine MultiLayerPAR(LAI,sinB,Idrctt,Idfuse,&
+                            PARsun,PARshade,LAIsunfrac)
+!===========================================================================
+!
+!    Based upon Zhang et al., AE, 2001
+
+!     input arguments:
+
+    real, intent(in)  :: LAI       ! leaf area index (m^2/m^2), one-sided
+    real, intent(in)  :: sinB      ! B = solar elevation angle; sinB = CosZen
+    real, intent(in)  :: Idrctt, Idfuse     ! Direct, diffuse Radn, W/m2
+    real, intent(out) :: PARsun, PARshade   ! Photosyn
+    real, intent(out) :: LAIsunfrac
+
+
+!     internal variables:
+
+    real :: LAIsun    ! sunlit LAI
+
+    real, parameter :: cosA    = 0.5   ! A = mean leaf inclination (60 deg.), 
+     ! where it is assumed that leaf inclination has a spherical distribution
+
+
+
+    LAIsun = (1.0 - exp(-0.5*LAI/sinB) ) * sinB/cosA
+    LAIsunfrac = LAIsun/LAI
+
+! PAR flux densities evaluated using method of
+! Zhang et al, eqns. 8, 2.
+
+    PARshade = Idfuse * exp(-0.65*LAI**1.5) +  &
+               0.07 * Idrctt  * (1.1-0.1*LAI)*exp(-sinB)   
+
+    PARsun = Idrctt *cosA/sinB + PARshade
+
+!.. Convert units, and to PAR fraction
+
+    PARshade = PARshade * Wm2_2uEPAR 
+    PARsun   = PARsun   * Wm2_2uEPAR 
+
+  end subroutine MultiLayerPAR
 
 !--------------------------------------------------------------------
 
@@ -447,3 +521,38 @@ contains
 !===============================================================
 end module Radiation_ml
 !===============================================================
+!TSTESXprogram testrdn
+!TSTESX  use PhysicalConstants_ml  , only: PI, DEG2RAD
+!TSTESX  use Radiation_ml, only: CanopyPAR, MultiLayerPAR
+!TESTESX implicit none
+!TSTESX    real :: LAI,PARsun,PARshade,LAIsunfrac
+!TSTESX    real, dimension(5) :: zLAI,cumLAI,zPARsun,zPARshade,zLAIsunfrac
+!TSTESX    real :: Idrctt=600.0, Idfuse=100.0, sinB=sin( 15.0**DEG2RAD )
+!TSTESX    zLAI = (/ 0.1, 0.5, 1.4, 2.0, 1.0 /) ! Sum 5
+!TSTESX    LAI = sum(zLAI)
+!TSTESX    print *, " 1) CanopyPar for whole canopy:"
+!TSTESX    call CanopyPAR(LAI,sinB,Idrctt,Idfuse,&
+!TSTESX                            PARsun,PARshade,LAIsunfrac)
+!TSTESX    print "(i3,f7.1, 3f10.3)", 0, LAI, PARsun,PARshade,LAIsunfrac
+!TSTESX    print *, " 2) CanopyPar and MultiLayerPAR for layers:"
+!TSTESX    print "(a3,a7,2(3x,3a10))", "iz", "cumLAI", &
+!TSTESX        "PARsun","PARshade","LAIsunfrc",&
+!TSTESX        "ZPARsun","ZPARshade","ZLAIsunfr"
+!TSTESX    do iz = 1, size(zLAI)
+!TSTESX      cumLAI(iz) = sum( zLAI(1:iz) )
+!TSTESX      call CanopyPAR(cumLAI(iz),sinB,Idrctt,Idfuse,&
+!TSTESX                            PARsun,PARshade,LAIsunfrac)
+!TSTESX      call MultiLayerPAR(cumLAI(iz),sinB,Idrctt,Idfuse,&
+!TSTESX                            zPARsun(iz),zPARshade(iz),zLAIsunfrac(iz))
+!TSTESX      print "(i3,f7.1,2(3x,3f10.3))", iz, cumLAI(iz), &
+!TSTESX        PARsun,PARshade,LAIsunfrac,&
+!TSTESX           zPARsun(iz),zPARshade(iz),zLAIsunfrac(iz)
+!TSTESX    end do
+!TSTESX    print *, " 3) MultiLayerPAR as vector:"
+!TSTESX    call MultiLayerPAR(cumLAI,sinB,Idrctt,Idfuse,&
+!TSTESX                            zPARsun,zPARshade,zLAIsunfrac)
+!TSTESX    do iz = 1, size(zLAI)
+!TSTESX      print "(i3,f7.1,2(3x,3f10.3))", iz, cumLAI(iz), &
+!TSTESX           zPARsun(iz),zPARshade(iz),zLAIsunfrac(iz)
+!TSTESX    end do
+!TSTESXend program testrdn
