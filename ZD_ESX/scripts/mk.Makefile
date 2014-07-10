@@ -9,8 +9,16 @@
 if [ -z "$1" ]; then
   echo "No argument supplied! "
   echo " "
-  echo " Usage: mk.Makefile testfile.f90"
+  echo " Usage: mk.Makefile testfile.f90  [MAKEFILE_name]" 
   exit 1
+fi
+
+if [ -z "$2" ]; then
+  Mfile=Makefile # defaul
+  echo "HERE A ",$2
+else
+  Mfile=$2
+  echo "HERE B ",$2
 fi
 
 # Now, we need to know where the scripts directory is (home of this)
@@ -40,8 +48,8 @@ echo " -> reldir ", $reldir
 
 $progdir/fmkmf  \
      -p .:$reldir/DO3SE/src \
-     -f90 "gfortran  -pedantic -Wall -fbounds-check -fdefault-real-8"\
-     -tag "(f95|F95|f90|F90)" $1 > Makefile
+     -f90 "gfortran  -pedantic -Wall -fbounds-check -fdefault-real-8 -finit-real=nan"\
+     -tag "(f95|F95|f90|F90)" $1 > $Mfile
 
 echo "(IGNORE warning about iso_fortran_env. This has no impact)"
 echo " "
