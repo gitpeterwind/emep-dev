@@ -56,12 +56,14 @@ module RunChem_ml
   use DefPhotolysis_ml, only: setup_phot
   use DryDep_ml,        only: drydep
   use DustProd_ml,      only: WindDust
+  use FastJ_ml,         only: setup_phot_fastj,phot_fastj_interpolate
   use GridValues_ml,    only: debug_proc, debug_li, debug_lj
   use Io_Progs_ml,      only: datewrite
   use MassBudget_ml,    only: emis_massbudget_1d
   use ModelConstants_ml,only: USE_DUST, USE_SEASALT, USE_AOD, USE_POLLEN, & 
                               KMAX_MID, nprint, END_OF_EMEPDAY, nstep,  &
                               USES, & ! need USES%EMISSTACKS 
+                              USE_FASTJ, &
                               DEBUG_EMISSTACKS, & ! MKPS
                               DebugCell, DEBUG    ! RUNCHEM
   use OrganicAerosol_ml,only: ORGANIC_AEROSOLS, OrganicAerosol, &
@@ -153,7 +155,13 @@ subroutine runchem()
       call emis_massbudget_1d(i,j)   ! Adds bio/nat to rcemis
       call Add_2timing(28,tim_after,tim_before,"Runchem:setup_cl/bio")
 
-      call setup_phot(i,j,errcode)
+      if(USE_FASTJ)then
+!         call setup_phot_fastj(i,j,errcode,0)! recalculate the column
+         call  phot_fastj_interpolate(i,j,errcode)!interpolate (intelligently) from 3-hourly values
+      else
+         call setup_phot(i,j,errcode)
+      endif
+
       call CheckStop(errcode,"setup_photerror in Runchem") 
       call Add_2timing(29,tim_after,tim_before,"Runchem:1st setups")
 

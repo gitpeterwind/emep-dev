@@ -153,6 +153,27 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+15 July 2014 Peter, Jan Eiof, Dave 2861
+
+FastJ_ml: 
+put USE_FASTJ=.true. in ModelConstants_ml and fastj is used for photolysis rates.
+Need also to link a few data files from run.pl
+
+Added FastJ_ml.f90
+modified: ModelConstants_ml, Runchem_ml, DefPhotolysis_ml, Met_ml, Makefile.SRC
+
+First work version. A lot should be revised and upgraded and tested!
+In particular:
+.-mapping of photolysis rates
+.-components should be synchronised with GenChem (or similar). Hardcoded now
+.-interpolating functions should be systematically reviewed
+.-cloud ice and water 
+.-Idiffuse Idirect can be provided for surface
+.-aerosol = 0 for now
+.-reflectivities must be provided (basic default from fastj used now)
+.-probably much more
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 27th June - 10th July 2014  Dave  2853..2859
 
   Tidy ups - removed commented out !CMR lines from some modules. These were

@@ -478,7 +478,7 @@ $month_days[2] += leap_year($year);
 my $mm1 ="06";      # first month, use 2-digits!
 my $mm2 ="06";      # last month, use 2-digits!
 my $dd1 =  1;       # Start day, usually 1
-my $dd2 =  2;       # End day (can be too large; will be limited to max number of days in the month)
+my $dd2 =  0;       # End day (can be too large; will be limited to max number of days in the month)
                     # put dd2=0 for 3 hours run/test.
 # Allways runn full year on benchmark mode
 ($mm1,$mm2,$dd1,$dd2)=("01","12",1,31) if (%BENCHMARK);
@@ -670,6 +670,31 @@ foreach my $scenflag ( @runs ) {
 #  my $new = "Vertical_levels.txt";
 #  mylink( "Linking:", $old, $new);
 
+#To use FastJ some data files are required. Could be moved elsewhere 
+ my $FASTJ = 0;
+ if($FASTJ) { 
+  $old = "$DataDir/fastj/FJX_j2j.dat";
+  $new = "FJX_j2j.dat";
+  mylink( "Linking:", $old, $new);
+  $old = "$DataDir/fastj/FJX_scat-aer.dat";
+  $new = "FJX_scat-aer.dat";
+  mylink( "Linking:", $old, $new);
+  $old = "$DataDir/fastj/FJX_scat-cld.dat";
+  $new = "FJX_scat-cld.dat";
+  mylink( "Linking:", $old, $new);
+  $old = "$DataDir/fastj/FJX_scat-UMa.dat";
+  $new = "FJX_scat-UMa.dat";
+  mylink( "Linking:", $old, $new);
+  $old = "$DataDir/fastj/FJX_spec-200nm-2013c.dat";
+  $new = "FJX_spec-200nm-2013c.dat";
+  mylink( "Linking:", $old, $new);
+  $old = "$DataDir/fastj/FJX_spec.dat";
+  $new = "FJX_spec.dat";
+  mylink( "Linking:", $old, $new);
+  $old = "$DataDir/fastj/FJX_spec-std-2013c.dat";
+  $new = "FJX_spec-std-2013c.dat";
+  mylink( "Linking:", $old, $new);
+ }
 #=================== INPUT FILES =========================================
 # ToDo Change noxsplit.default to defaults, as with voc (also in Unimod)
 

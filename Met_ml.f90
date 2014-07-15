@@ -65,7 +65,7 @@ module Met_ml
 ! 
 !============================================================================= 
 
-  use OwnDataTypes_ml,   only : Deriv
+use OwnDataTypes_ml,      only : Deriv
 use BLPhysics_ml,         only : &
    KZ_MINIMUM, KZ_MAXIMUM, KZ_SBL_LIMIT,PIELKE   &
   ,HmixMethod, UnstableKzMethod, StableKzMethod, KzMethod  &
@@ -90,6 +90,7 @@ use BLPhysics_ml,         only : &
   ,SigmaKz_2_m2s
 
 use CheckStop_ml,         only : CheckStop,StopAll
+use FastJ_ml,             only : setup_phot_fastj,rcphot_3D
 use Functions_ml,         only : Exner_tab, Exner_nd
 use Functions_ml,         only : T_2_Tpot  !OS_TESTS
 use GridValues_ml,        only : xmd, i_fdom, j_fdom, i_local,j_local&
@@ -119,7 +120,7 @@ use ModelConstants_ml,    only : PASCAL, PT, Pref, METSTEP  &
      ,NH3_U10   & !FUTURE
      ,DomainName & !HIRHAM,EMEP,EECCA etc.
      ,USE_DUST, TEGEN_DATA, USE_SOILWATER & 
-     ,nstep,USE_CONVECTION,USE_EtaCOORDINATES & 
+     ,nstep,USE_CONVECTION,USE_EtaCOORDINATES,USE_FASTJ & 
      ,LANDIFY_MET  & 
      ,CW_THRESHOLD,RH_THRESHOLD, CW2CC,IOU_INST
 use Par_ml           ,    only : MAXLIMAX,MAXLJMAX,GIMAX,GJMAX, me  &
@@ -1013,6 +1014,15 @@ contains
       CALL MPI_WAIT(request_s, MPISTATUS, INFO)
     endif
 
+    if(USE_FASTJ)then
+       !compute photolysis rates from FastJ    
+       if(nr==2)rcphot_3D(:,:,:,:,1)=rcphot_3D(:,:,:,:,2)
+       do j = 1,ljmax
+          do i = 1,limax
+             call setup_phot_fastj(i,j,INFO,nr)
+          enddo
+       enddo
+    endif
 
     if(first_call.and.next_inptime%hour<nhour_first)nrec=0!not yet reached first available time in meteo file
 

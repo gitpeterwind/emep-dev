@@ -112,7 +112,7 @@
 
 
         if(first_call)then
-           allocate(rcphot(NRCPHOT,KCHEMTOP:KMAX_MID))
+           if(.not.(allocated(rcphot)))allocate(rcphot(NRCPHOT,KCHEMTOP:KMAX_MID))
            allocate(dj(NPHODIS,KCHEMTOP:KMAX_MID,HORIZON,NLAT))
            allocate(djcl1(NPHODIS,KCHEMTOP:KMAX_MID,HORIZON))
            allocate(djcl3(NPHODIS,KCHEMTOP:KMAX_MID,HORIZON))

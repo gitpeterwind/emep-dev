@@ -159,6 +159,7 @@ logical, public, save ::             &
  ,USE_POLLEN         = .false.       &  ! EXPERIMENTAL. Only works if start Jan 1
  ,USE_AMINEAQ        = .false.       &  ! MKPS
  ,ANALYSIS           = .false.       &  ! EXPERIMENTAL: 3DVar data assimilation
+ ,USE_FASTJ          = .false.       & !use FastJ_ml for computing rcphot
 !
 ! Output flags
  ,SELECT_LEVELS_HOURLY  = .false.      ! for FORECAST, 3DPROFILES
