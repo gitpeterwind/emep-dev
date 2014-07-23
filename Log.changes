@@ -153,7 +153,7 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-15 July 2014 Peter, Jan Eiof, Dave 2861
+15 and 23 July 2014 Peter, Jan Eiof, Dave 2862
 
 FastJ_ml: 
 put USE_FASTJ=.true. in ModelConstants_ml and fastj is used for photolysis rates.

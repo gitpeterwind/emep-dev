@@ -3698,13 +3698,13 @@ use netcdf
      AERSP(L,2)  = AER2(L)
   enddo
   ZZZ(1) = 0.d0
-  do L = 1,L_FastJ
+  do L = 1,L_FastJ-1
      DDD(L)  = (PPP(L)-PPP(L+1))*MASFAC
      SCALEH      = 1.3806d-19*MASFAC*TTT(L)
      ZZZ(L+1) = ZZZ(L) -( LOG(PPP(L+1)/PPP(L)) * SCALEH )
   enddo
-!  DDD(L_FastJ+1)  = (PPP(L_FastJ+1)-0.0)*MASFAC
-!  ZZZ(L_FastJ+1+1) = ZZZ(L_FastJ+1) + 5.d5
+  DDD(L_FastJ)  = (PPP(L_FastJ)-0.0)*MASFAC
+  ZZZ(L_FastJ+1) = ZZZ(L_FastJ) + 5.d5
   REFLB = ALBEDO
   LPRTJ = .true.
 
@@ -3749,7 +3749,7 @@ use netcdf
   !-----------------------------------------------------------------------
 
   !---map the J-values from fast-JX onto CTM (ZPJ) using JIND & JFACTA
-  do L = 1,L_FastJ
+  do L = 1,L_FastJ-1
      do J = 1,NRATJ
         if (JIND(J).gt.0) then
            ZPJ(L,J) = VALJXX(L,JIND(J))*JFACTA(J)
