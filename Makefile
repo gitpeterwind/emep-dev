@@ -14,8 +14,8 @@ F90FLAGS = -shared-intel -r8 -recursive -convert big_endian -IPF_fp_relaxed \
            -cpp $(DFLAGS)
 LDFLAGS =  $(F90FLAGS) $(LLIB) $(LIBS)
 
-MACHINE ?= stallo
-DEBUG ?= no
+export MACHINE ?= stallo
+export DEBUG ?= no
 ifeq ($(MACHINE),stallo)
   MODULES = intel/13.0 openmpi/1.6.2 netcdf/4.2.1.1
   LIBS += -lnetcdf -lnetcdff
@@ -40,9 +40,8 @@ else ifeq ($(MACHINE),gstallo)
   LD=mpif90
 else ifeq ($(MACHINE),vilje)
   MODULES = intelcomp/13.0.1 mpt/2.06 netcdf/4.3.0
-  LIBS += -lnetcdf -lnetcdff
-  INCL += $(NETCDF_PREFIX)/include
-  LLIB += $(NETCDF_PREFIX)/lib
+# MODULES = intelcomp/14.0.1 mpt/2.09 netcdf/4.3.1
+  LDFLAGS += $(shell nc-config --flibs --fflags)
   MAKEDEPF90=/home/metno/mifapw/bin/makedepf90
   LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
 else ifeq ($(MACHINE),byvind)
@@ -89,8 +88,9 @@ else ifneq (,$(filter all $(PROG) %.o,$(MAKECMDGOALS)))
   include .depend
 endif
 
-#
-.depend depend: Makefile Makefile.SRCS $(SRCS)
+# File dependencies
+.depend: Makefile Makefile.SRCS depend
+depend: $(SRCS)
 	test -n "$(MAKEDEPF90)" && $(MAKEDEPF90) $(SRCS) $(DFLAGS) \
 	  -o '$$(PROG)' -l '$$(F90) -o $$@ $$(FOBJ) $$(LDFLAGS)' > .depend
 
@@ -134,6 +134,7 @@ MACC-NMC: MACC-EVA
 # Pollen for MACC FC runs
 MACC: SRCS := $(filter-out My_Pollen_ml.f90,$(SRCS)) Pollen_ml.f90 Pollen_const_ml.f90
 MACC: ./ZD_Pollen/Pollen_ml.f90 ./ZD_Pollen/Pollen_const_ml.f90 | depend
+MACC: PHONY+=Pollen_const_ml.o
 # ESX
 EmChem09-ESX: SRCS := $(filter-out My_ESX_ml.f90,$(SRCS)) $(ESX_SRCS)
 EmChem09-ESX: $(ESX_SRCS) | depend
@@ -173,17 +174,19 @@ eEMEP: NUCXS ?= NorthKorea,Tehran
 eEMEP: GenChemOptions += -V 7bin,$(VENTS) -N $(NPPAS) -X $(NUCXS)
 
 # Data assimilation: Bnmc / 3DVar
-%-Bnmc %-3DVar: $$*
-	$(MAKE) MACHINE=$(MACHINE) DEBUG=$(DEBUG) -C ZD_3DVar/  $(@:$*-%=EXP_%)
+%-Bnmc %-3DVar: GenChem-MACCEVA-EmChem09soa
+	$(MAKE) -C ZD_3DVar/  $(@:$*-%=EXP_%)
 
 # Archive: create $(PROG).tar.bz2
 archive: $(PROG)_$(shell date +%Y%m%d).tar.bz2
 %.tar.bz2: $(SRCS) Makefile Makefile.SRCS .depend $(wildcard *.inc *.pl mk.* *.nml)
 	@echo "Creating archive $@"; tar --dereference -cjf $@ $+
 
+# Always re-make this targets
+.PHONY: $(PHONY) all depend modules
+
 # Check if intended modules are loaded
-modulelist = $(if $(filter byvind,$(MACHINE)),/etc/cmod/bash.init,/etc/profile.d/modules.sh)
-modulelist:= $(shell bash -c '. $(modulelist); module list' 2>&1)
+modulelist = $(subst :, ,$(LOADEDMODULES))
 modulefind = $(findstring $(1),$(modulelist))
 modulecheck= $(if $(call modulefind,$(1)),$(info Found module: $(1)),\
   $(error Missing module $(1): try 'module load $(1)'))
@@ -191,4 +194,5 @@ checkmodules = $(foreach m,$(subst _,/,$(1)),$(call modulecheck,$(m)))
 check-module-%:
 	$(call checkmodules,$*)
 modules: $(foreach m,$(MODULES),check-module-$(subst /,_,$(m)))
+	@echo "Loaded modules: $(modulelist)"
 ##########################################################

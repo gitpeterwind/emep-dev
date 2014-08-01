@@ -32,13 +32,13 @@ type(H_jac_idx), dimension(:), allocatable, save :: pidx
 !-----------------------------------------------------------------------
 type obs_data
   logical            :: set=.false.,found=.false.,unitroa=.false.
-  integer            :: ispec=-1,ichem=-1,ichemObs=-1,iobs(0:1)=-1
+  integer            :: ispec=-1,ichem=-1,ichemObs=-1,iobs(0:1)=-1,nobs
   real               :: min=0.0,max=1e3,error_rel=-1e0,error_rep=-1e0,unitconv=-1e0
   character(len=064) :: name='',unit='',deriv=''
   character(len=256) :: file='',tag=''
-end type
+endtype
 integer            :: nobsData=0
-integer, parameter :: nobsDataMax=50
+integer, parameter :: nobsDataMax=6
 type(obs_data)     :: obsData(nobsDataMax)
 namelist /OBSERVATIONS/nobsData,obsData
 !-----------------------------------------------------------------------
@@ -142,25 +142,25 @@ subroutine read_obs(maxobs,flat,flon,falt,y,stddev,ipar,iostat)
   nobs=0
   obsData%iobs(0)=0
   obsData%iobs(1)=0
+  obsData%nobs=0
 !-----------------------------------------------------------------------
 ! open observational data file in standard format, if applicable
 !-----------------------------------------------------------------------
+  if(any(obsData(:nobsData)%file==""))then
+    print dafmt,'No observation file specified'
+    return
+  endif
   do iobsData=1,nobsData
-    if (obsData(iobsData)%file/="") then
-      iostat=0
-      file=date2string(obsData(iobsData)%file,current_date)
-      open(lu1,file=file,form='formatted',status='old',iostat=iostat)
-      if(iostat/=0)then
-        print dafmt,"Obsdata not opened "//trim(file)
-        close(lu1)
-        iostat=-1
-        cycle
-      else
-        print dafmt,"Obsdata opened "//trim(file)
-      endif
+    iostat=0
+    file=date2string(obsData(iobsData)%file,current_date)
+    open(lu1,file=file,form='formatted',status='old',iostat=iostat)
+    if(iostat/=0)then
+      print dafmt,"Obsdata not opened "//trim(file)
+      close(lu1)
+      iostat=-1
+      cycle
     else
-      print dafmt,'No observation file specified'
-      return
+      print dafmt,"Obsdata opened "//trim(file)
     endif
 !-----------------------------------------------------------------------
 ! read data
@@ -209,20 +209,40 @@ subroutine read_obs(maxobs,flat,flon,falt,y,stddev,ipar,iostat)
     close(lu1)
     obsData(iobsData)%iobs(1)=nobs
   enddo
-! Write #obs to log file
-  if(MasterProc)then
-    do iobsData=1,nobsData
+!-----------------------------------------------------------------------
+! Setup obsData &  Write #obs to log file
+!-----------------------------------------------------------------------
+  do iobsData=1,nobsData
+    if(.not.obsData(iobsData)%set)then
+      no=find_index(obsData(iobsData)%name,obsVarName(:))
+      obsData(iobsData)%found=(no>0)
+      if(obsData(iobsData)%found)then
+        obsData(iobsData)%ichem=no                    ! index observed
+        obsData(iobsData)%ichemObs=ichemobs(no)       ! index observed/unobserved
+        obsData(iobsData)%ispec=varSpec(ichemobs(no)) ! index species
+        obsData(iobsData)%unitconv=Units_Scale(obsData(iobsData)%unit,&
+          obsData(iobsData)%ispec,needroa=obsData(iobsData)%unitroa)
+      endif
+      call CheckStop(obsData(iobsData)%deriv=='',&
+        "read_obs: Inconsistent obsData%deriv")
+      write(obsData(iobsData)%tag,"(2(A,1X),'(',A,')')")&
+        trim(obsData(iobsData)%name),trim(obsData(iobsData)%deriv),&
+        trim(obsData(iobsData)%unit)
+      obsData(iobsData)%set=.true.
+    endif
+    if(any(obsData(iobsData)%iobs/=0)) obsData(iobsData)%nobs=&
+      DIM(obsData(iobsData)%iobs(1)+1,obsData(iobsData)%iobs(0))
+    call CheckStop(obsData(iobsData)%nobs,count(ipar(:nobs)==iobsData),&
+      "read_obs: Inconsistent obsData%nobs")
+    if(MasterProc)then
       file=date2string(obsData(iobsData)%file,current_date)
-      no=DIM(obsData(iobsData)%iobs(1)+1,obsData(iobsData)%iobs(0))
-      if(all(obsData(iobsData)%iobs==0))no=0
-      write(damsg,"('obsData(',I0,') contains ',I0,3(1X,A))")&
-        iobsData,no,trim(obsData(iobsData)%name),&
-        trim(obsData(iobsData)%deriv),"observations"
+      write(damsg,"('obsData(',I0,') contains ',I0,1X,A,' observations')")&
+        iobsData,obsData(iobsData)%nobs,trim(obsData(iobsData)%tag)
       write(damsg,dafmt)trim(damsg)
       call PrintLog(damsg)
       call PrintLog(file)
-    enddo
-  endif
+    endif
+  enddo
 endsubroutine read_obs
 subroutine H_op(lat,lon,alt,n,yn,rho0,ipar)
 !-----------------------------------------------------------------------
@@ -270,24 +290,6 @@ subroutine H_op(lat,lon,alt,n,yn,rho0,ipar)
 !-----------------------------------------------------------------------
 !
 !-----------------------------------------------------------------------
-  if(.not.obsData(ipar)%set)then
-    k=find_index(obsData(ipar)%name,obsVarName(:))
-    if(k>0)then
-      obsData(ipar)%found=.true.
-      obsData(ipar)%ichem=k                     ! index observed
-      obsData(ipar)%ichemObs=ichemobs(k)        ! index observed/unobserved
-      obsData(ipar)%ispec=varSpec(ichemobs(k))  ! index species
-      obsData(ipar)%unitconv=Units_Scale(obsData(ipar)%unit,obsData(ipar)%ispec,&
-        needroa=obsData(ipar)%unitroa)
-    endif
-    if(obsData(ipar)%deriv=='')then
-                  obsData(ipar)%deriv='mod-lev'
-      if(alt==0.0)obsData(ipar)%deriv='surface'
-    endif
-    write(obsData(ipar)%tag,"(2(A,1X),'(',A,')')")&
-      trim(obsData(ipar)%name),trim(obsData(ipar)%deriv),trim(obsData(ipar)%unit)
-    obsData(ipar)%set=.true.
-  endif
   if(n==obsData(ipar)%iobs(0)) &
     print dafmt,"Analysis of "//trim(obsData(ipar)%tag)
   print '(4(A,I0))','Obs:',n,'/',nobs,',',n-obsData(ipar)%iobs(0)+1,&
@@ -554,7 +556,8 @@ subroutine chisq_over_nobs2(nobs,dep)
   nm(:)=0
 ! frac=nobs/max(nobs/5,min(200,nobs)) ! 1 (up to 200 obs) .. 5 (from 1000 obs)
   do ipar=1,nobsData
-    n=obsData(ipar)%iobs(1)-obsData(ipar)%iobs(0)+1
+    n=obsData(ipar)%nobs
+    if(n==0)cycle
     frac=n/max(n/5,min(200,n))        ! 1 (up to 200 obs) .. 5 (from 1000 obs)
     do n=obsData(ipar)%iobs(0)+frac,& ! only use every frac'th observation, i.e.
          obsData(ipar)%iobs(1),frac   ! between all obs (up to 200) and 1/5th
@@ -577,8 +580,7 @@ subroutine chisq_over_nobs2(nobs,dep)
 
   if(MasterProc) print '((X,I3,A,X,G12.4,X,3(A,I0)))',&
     (ipar,'CHI^2/nobs=',chisq(ipar),'nobs=',nm(ipar),&
-      '/',obsData(ipar)%iobs(1)-obsData(ipar)%iobs(0)+1,&
-      '/',nobs,ipar=1,nobsData)
+      '/',obsData(ipar)%nobs,'/',nobs,ipar=1,nobsData)
 
   file=trim(runlabel1)//"_chisqr.dat"
   open(IO_TMP,file=file,form="FORMATTED",position="APPEND")

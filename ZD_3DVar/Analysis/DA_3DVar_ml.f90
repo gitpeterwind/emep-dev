@@ -15,6 +15,7 @@ use DA_ml,            only: debug=>DA_DEBUG,DAFMT_DEF=>DA_FMT_DEF,&
                             dafmt=>da_fmt_msg,damsg=>da_msg,&
                             tim_before=>datim_before,tim_after=>datim_after
 use DA_Obs_ml
+use DA_Bias_ml
 use Util_ml,          only: io_check,compare_date,norm
 use exd_domain_ml,    only: EXT_DOMAIN,EXT_DOMAIN_INV
 use covmat_ml,        only: set_chemobs_idx,read_speccov
@@ -58,11 +59,10 @@ integer :: ierr
     call init_3dvar()
     first_call=.false.
   endif
- !if(debug.and.MasterProc)print dafmt,'Test analysis'
   if(.not.compare_date(ANALYSIS_NDATE,current_date,analysis_date,wildcard=-1))return
   if(debug.and.MasterProc)print dafmt,'Start analysis'
   call generic3dvar(ierr)
-end subroutine main_3dvar
+endsubroutine main_3dvar
 subroutine init_3dvar()
 !-----------------------------------------------------------------------
 ! @description
@@ -141,11 +141,7 @@ namelist /DA_CONFIG/ analysis_date, nChem, nChemObs,&
     enddo
     if(mod(nChem,5)/=0)print *,''
   endif
-#ifdef gFortran
-  if(debug) write(*,nml=DA_CONFIG)
-#else
-  if(debug) write(*,nml=DA_CONFIG,delim='QUOTE')
-#endif
+  if(debug) write(*,nml=DA_CONFIG,delim='APOSTROPHE')
 !-----------------------------------------------------------------------
 ! From observed/unobserved variable names (varName) to model species
 !-----------------------------------------------------------------------
@@ -165,6 +161,14 @@ namelist /DA_CONFIG/ analysis_date, nChem, nChemObs,&
   read(unit=inNml,nml=OBSERVATIONS,iostat=ierr)
   call io_check(ierr,'read namelist: OBSERVATIONS')
 !-----------------------------------------------------------------------
+! Read bias parameters
+!-----------------------------------------------------------------------
+#if BIAS_CORRECTION
+  read(unit=inNml,nml=BIAS_PREDICTOR,iostat=ierr)
+  call io_check(ierr,'read namelist: BIAS_PREDICTOR')
+  call CheckStop(nbiasData,nobsData,'init_3dvar: nbiasData')
+#endif
+!-----------------------------------------------------------------------
 ! Read the rest of the variables
 !-----------------------------------------------------------------------
   call set_chemobs_idx(nchem,observedVar(1:nchem))
@@ -172,7 +176,7 @@ namelist /DA_CONFIG/ analysis_date, nChem, nChemObs,&
   call CheckStop(nX,RUNDOMAIN(2)-RUNDOMAIN(1)+1,"init_3dvar: Inconsistent NX")
   call CheckStop(nY,RUNDOMAIN(4)-RUNDOMAIN(3)+1,"init_3dvar: Inconsistent NY")
   call CheckStop(nLev,KMAX_MID-KCHEMTOP+1      ,"init_3dvar: Inconsistent NLEV")
-end subroutine init_3dvar
+endsubroutine init_3dvar
 subroutine generic3dvar(ierr)
 !-----------------------------------------------------------------------
 ! @description
@@ -193,7 +197,7 @@ real(kind=8) :: dzs=0.0
 !-----------------------------------------------------------------------
 ! Local parameters
 !-----------------------------------------------------------------------
-integer i,j,ilev,ilev0,k,kk,ntot,ii,maxobs,nv,nv2,nvar
+integer i,j,ilev,ilev0,k,kk,ntot,ii,maxobs,nv,nv2,nvar,nv2np
 real, allocatable, dimension(:) :: flat,flon,falt,obs,obsstddev1
 !external costFunction
 !-----------------------------------------------------------------------
@@ -202,6 +206,7 @@ real, allocatable, dimension(:) :: flat,flon,falt,obs,obsstddev1
   ntot=nxex*nyex*nlev*nchemobs
   nv=min(nv1,ntot)
   nv2=nv*nxex*nyex
+  nv2np=nv2+(NBIAS_PREDICTORS+1)*nobsData
   maxobs=nx*ny
 !-----------------------------------------------------------------------
 ! read observations
@@ -216,6 +221,16 @@ real, allocatable, dimension(:) :: flat,flon,falt,obs,obsstddev1
     return
   endif
   if(debug.and.MasterProc)print "(1X,I0,1X,A)",nobs,'observations read.'
+!-----------------------------------------------------------------------
+! scale bias data
+!-----------------------------------------------------------------------
+#ifdef BIAS_CORRECTION
+  call allocate_bias()
+  if(FGSCALE/=1e0)then
+    bias(:)=bias(:)*FGSCALE
+    biasStdDev(:)=biasStdDev(:)*FGSCALE
+  endif
+#endif
 !-----------------------------------------------------------------------
 ! extend & scale background field
 !-----------------------------------------------------------------------
@@ -264,7 +279,11 @@ real, allocatable, dimension(:) :: flat,flon,falt,obs,obsstddev1
     du=0e0
   endif
   if(.not.allocated(chi))then
+#ifdef BIAS_CORRECTION
+    allocate(chi(nv2np),stat=ierr)
+#else
     allocate(chi(nv2),stat=ierr)
+#endif
     call CheckStop(ierr,'Allocation error: CHI.')
     chi=0e0
   endif
@@ -272,7 +291,11 @@ real, allocatable, dimension(:) :: flat,flon,falt,obs,obsstddev1
 ! perform variational analysis
 !-----------------------------------------------------------------------
   if(debug.and.MasterProc) print dafmt,'call var3d'
+#ifdef BIAS_CORRECTION
+  call var3d(nv2np,Jcost,chi,ntot,dzs)
+#else
   call var3d(nv2,Jcost,chi,ntot,dzs)
+#endif
 !-----------------------------------------------------------------------
 ! read result for \delta x and \delta u and add to background field;
 !-----------------------------------------------------------------------
@@ -310,6 +333,16 @@ real, allocatable, dimension(:) :: flat,flon,falt,obs,obsstddev1
            xn_adv(varSpec(nvar),:,:,KMAX_MID-nlev+1:KMAX_MID))
   enddo
 !-----------------------------------------------------------------------
+! update & descale bias data
+!-----------------------------------------------------------------------
+#ifdef BIAS_CORRECTION
+  if(FGSCALE/=1e0)then
+    bias(:)=(bias(:)+dbias(:))*FGSCALE_INV
+    biasStdDev(:)=biasStdDev(:)*FGSCALE_INV
+  endif
+  call write_bias("bias_YYYYMMDD_hh.nml")
+#endif
+!-----------------------------------------------------------------------
 ! deallocate observation arrays
 !-----------------------------------------------------------------------
   call my_deallocate(debug.and.MasterProc,'end generic3dvar')
@@ -328,6 +361,7 @@ subroutine my_deallocate(verb,msg)
   if(allocated(obsstddev1)) deallocate(obsstddev1)
   if(allocated(xn_adv_ex))  deallocate(xn_adv_ex)
   call deallocate_obs()
+  call deallocate_bias()
   if(allocated(dx))         deallocate(dx)
   if(allocated(du))         deallocate(du)
   if(allocated(chi))        deallocate(chi)
@@ -398,13 +432,13 @@ subroutine var3d(nv2,Jcost,chi,ntot,dzs)
 !     do n=1,nobs
 !       do l=pidx(n)%l(0),pidx(n)%l(1)
 !         do p=1,4
-!           print "(2(A,I0,2(',',I0)),1X,A,30(1X,A,'=',E12.3,:))",&
+!           print "(2(A,I0,2(',',I0)),1X,A,30(1X,A,'=',ES12.3,:))",&
 !                 '#',n,p,l,"-->",pidx(n)%i(p),pidx(n)%j(p),KMAX_MID-nlev+l,&
 !                 'H_jac',(trim(obsVarName(k)),H_jac(n,p,l,k),k=1,nChemObs)
 !         enddo
 !       enddo
 !     enddo
-!     print "(2(1X,A,'=',E12.3))",'||DJ||',norm(gradJcost),'||DH||',norm(H_jac)
+!     print "(2(1X,A,'=',ES12.3))",'||DJ||',norm(gradJcost),'||DH||',norm(H_jac)
 !     call CheckStop('Debug Jcost')
 !   endif
   else
@@ -424,7 +458,7 @@ subroutine var3d(nv2,Jcost,chi,ntot,dzs)
     reverse=0!;if(debug)reverse=1
     niter=maxiter
     nsim =maxsim
-  !nrz=size(rz)
+   !nrz=size(rz)
     nrz=4*nv2+nupdates*(2*nv2+1)
     allocate(rz(nrz),stat=ierr)
     call CheckStop(ierr,'Allocation error: RZ.')
@@ -552,11 +586,15 @@ subroutine get_innovations(maxobs,flat,flon,falt,obs,obs_stddev)
 !   endif
     innov(n)=yn-obs(n)*FGSCALE
     obsstddev(n)=obs_stddev(n)*FGSCALE
-    if(debug.and.MasterProc) print "('#',I0,2(1X,A3,':',E12.3))",&
+    if(debug.and.MasterProc) print "('#',I0,2(1X,A3,':',ES12.3))",&
       n,'Observation',obs(n),'Model',yn*FGSCALE_INV
   enddo DO_OBS
 end subroutine get_innovations
+#ifdef BIAS_CORRECTION
+subroutine costFunction(ind,nv2np,chi,Jcost,gradJcost,ntot,rzs,dzs)
+#else
 subroutine costFunction(ind,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
+#endif
 !-----------------------------------------------------------------------
 ! @description
 ! Compute the costfunction and its gradient
@@ -567,9 +605,16 @@ subroutine costFunction(ind,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
 ! Formal parameters
 !-----------------------------------------------------------------------
   integer, intent(inout) :: ind
+#ifdef BIAS_CORRECTION
+  integer, intent(in)    :: nv2np
+  integer                :: nv2!!=nv2np-(NBIAS_PREDICTORS+1)*nobsData
+  real, intent(in)       :: chi(nv2np)
+  real, intent(inout)    :: Jcost,gradJcost(nv2np)
+#else
   integer, intent(in)    :: nv2
   real, intent(in)       :: chi(nv2)
   real, intent(inout)    :: Jcost,gradJcost(nv2)
+#endif
 !-----------------------------------------------------------------------
 ! Dummy parameters
 !-----------------------------------------------------------------------
@@ -586,10 +631,10 @@ subroutine costFunction(ind,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
  !real yn(nobs),dep(nobs),Oinvdep(nobs)
  !real dx(nxex,nyex,nlev,nchemobs)
  !real work(2*nxex*nyex),jobs,jb
-  integer p
-  real, allocatable, dimension(:) :: yn,dep,Oinvdep
-  real jobs,jb
-  integer kx1,ky1,kxm1,kym1,kx2
+  integer :: p
+  real, allocatable, dimension(:) :: yn,dep,Oinvdep,bn,Binvdep 
+  real :: jobs,jb,jbias
+  integer :: kx1,ky1,kxm1,kym1,kx2
 !-----------------------------------------------------------------------
 !
 !-----------------------------------------------------------------------
@@ -603,6 +648,9 @@ subroutine costFunction(ind,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
     if(debug.and.MasterProc) print dafmt,"Optimization costFunction"
   endselect
   call Add_2timing(42,tim_after,tim_before,'3DVar: Optimization.')
+#ifdef BIAS_CORRECTION
+  nv2=nv2np-(NBIAS_PREDICTORS+1)*nobsData
+#endif
 ! maxobs=nx*ny
 ! no4=4*nobs
 ! no8=8*nobs
@@ -708,6 +756,9 @@ subroutine costFunction(ind,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
 ! conversion from spectral to model space
 !-----------------------------------------------------------------------
   call chitox(chi_arr,dx)
+#ifdef BIAS_CORRECTION
+  dbias=chi(nv2+1:)
+#endif
 !-----------------------------------------------------------------------
 ! update unobserved species:
 !-----------------------------------------------------------------------
@@ -724,6 +775,10 @@ subroutine costFunction(ind,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
 ! conversion from model to observation space
 !-----------------------------------------------------------------------
   allocate(yn(nobs),dep(nobs),Oinvdep(nobs))
+#ifdef BIAS_CORRECTION
+  allocate(bn(nobsData),Binvdep(nobsData))
+#endif
+
 ! do n=1,nobs
 !   yn(n)=0e0
 !   do p=1,no4
@@ -814,26 +869,48 @@ subroutine costFunction(ind,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
   jb=0.5e0*jb
 #else
 !-----------------------------------------------------------------------
+! Jb = 0.5 * \chi^{\dagger}*\chi
+!-----------------------------------------------------------------------
+ !jb=0.5*sum(conjg(chi_arr)*chi_arr)
+  jb=0.5*norm(chi_arr,squared=.true.)
+!-----------------------------------------------------------------------
 ! Jobs = 0.5 * [ H(xb)+H_jac*dx-y ]^{T} * O^{-1} * [ H(xb)+H_jac*dx-y ]
 !-----------------------------------------------------------------------
-  dep=innov+yn                            ! departures: H(xb)+H_jac*dx-y
-  Oinvdep=dep/(obsstddev**2)              ! O^{-1} * [ H(xb)+H_jac*dx-y ]
+  dep=innov+yn                  ! departures: h(xb)-y=H(xb)-y+H_jac*dx
+# ifdef BIAS_CORRECTION
+  bn=bias+dbias
+do n=1,nobsData
+  if(all(obsData(n)%iobs==0))cycle
+  i=obsData(n)%iobs(0);j=obsData(n)%iobs(1)
+  call CheckStop(any(ipar(i:j)/=n),"Inconsistent ipar/obsData")
+  print "('#',3(1X,I0,1X,ES12.3))",&
+    n,bn(n)*FGSCALE_INV,i,dep(i)*FGSCALE_INV,j,dep(j)*FGSCALE_INV
+enddo
+  dep=dep+bn(ipar(:nobs))       ! departures: h(xb)+bias(x,beta)-y
+# endif
+  Oinvdep=dep/(obsstddev**2)    ! O^{-1} * [ H(xb)+H_jac*dx-y ]
   jobs=0.5*dot_product(dep,Oinvdep)
-! if(debug.and.MasterProc)print "(5(1X,A,'=',E12.3))",&
+! if(debug.and.MasterProc)print "(5(1X,A,'=',ES12.3))",&
 !   '||H(xb)-y||',norm(innov),&
 !   '||H_jac*dx||',norm(yn),&
 !   '||H(xb)+H_jac*dx-y||',norm(dep),&
 !   '||O^-1*[H(xb)+H_jac*dx-y]||',norm(Oinvdep),&
 !   'Jo=1/2 * [H(xb)+H_jac*dx-y]^T * O^-1 * [H(xb)+H_jac*dx-y]',Jobs
 !-----------------------------------------------------------------------
-! Jb = 0.5 * \chi^{\dagger}*\chi
+! Jbias = 0.5 * [ beta_b-beta ]^{T} * Bb^{-1} * [ beta_b-beta ]
 !-----------------------------------------------------------------------
- !jb=0.5*sum(conjg(chi_arr)*chi_arr)
-  jb=0.5*norm(chi_arr,squared=.true.)
+# ifdef BIAS_CORRECTION
+  Binvdep=dbias*biasWeight/(biasStdDev**2)
+  print "('#',1X,I0,2(1X,ES12.3))",&
+    (n,dbias(n)*FGSCALE_INV,Binvdep(n)*FGSCALE_INV,n=1,nobsData)
+  jbias=0.5*dot_product(dbias,Binvdep)
+# else
+  jbias=0.0
+# endif
 !-----------------------------------------------------------------------
-! J = Jb + Jobs
+! J = Jb + Jobs + Jbias
 !-----------------------------------------------------------------------
-  Jcost = jb + jobs
+  Jcost = jb + jobs + jbias
 #endif
 !-----------------------------------------------------------------------
 ! grad Jb = independent elements of \chi
@@ -845,6 +922,15 @@ subroutine costFunction(ind,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
   enddo
 #else
   gradJcost(:)=chi(:)
+!-----------------------------------------------------------------------
+!  Bb^{-1} * [ beta_b-beta ] + bias_jac^{T} * O^{-1} * [ h(x)+bias(x,beta)-y ]
+!-----------------------------------------------------------------------
+# ifdef BIAS_CORRECTION 
+  do n=1,nobsData
+    i=obsData(n)%iobs(0);j=obsData(n)%iobs(1)
+    gradJcost(nv2+n)=Binvdep(n)+sum(Oinvdep(i:j))
+  enddo
+# endif
 #endif
 !-----------------------------------------------------------------------
 !  H_jac^{T} * O^{-1} * [ H(xb)+H_jac*dx-y ]
@@ -892,7 +978,7 @@ subroutine costFunction(ind,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
 ! grad J = grad Jb + grad Jobs
 !-----------------------------------------------------------------------
   call chitox_adj(chi_arr,dx)
-! if(debug.and.MasterProc) print "(2(1X,A,'=',E12.3))",&
+! if(debug.and.MasterProc) print "(2(1X,A,'=',ES12.3))",&
 !   '||dx||',norm(dx),'||chi_arr||',norm(chi_arr)
 !-----------------------------------------------------------------------
 ! only add independent elements of grad Jobs to array gradJcost:
@@ -942,10 +1028,18 @@ subroutine costFunction(ind,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
   enddo
 !-----------------------------------------------------------------------
   if(debug.and.MasterProc)then
-    print "(4(1X,A,'=',E12.3),$)",'J',Jcost,'Jb',Jb,'Jo',Jobs,'nobs/2',nobs*0.5
+    print "(5(1X,A,'=',ES12.3),$)",'J',Jcost,&
+      'Jb',Jb,'Jo',Jobs,'Jbias',Jbias,'nobs/2',nobs*0.5
+#ifdef BIAS_CORRECTION
+    Jb=norm(chi(:nv2))
+    Jbias=norm(chi(nv2+1:))
+#else
     Jb=norm(chi)
-    Jobs=DIM(norm(gradJcost),Jb)
-    print "(3(1X,A,'=',E12.3))",'||DJb||',Jb,'||DJo||',Jobs,'||DJ||',Jb+Jobs
+    Jbias=0.0
+#endif
+    Jobs=DIM(norm(gradJcost),Jb+Jbias)
+    print "(4(1X,A,'=',ES12.3))",'||DJb||',Jb,&
+      '||DJo||',Jobs,'||DJbias||',Jbias,'||DJ||',Jb+Jobs+Jbias
   endif
  !ind=4
   call Add_2timing(43,tim_after,tim_before,'3DVar: costFunction.')
@@ -961,6 +1055,7 @@ subroutine my_deallocate(verb,msg)
   if(allocated(yn))       deallocate(yn)
   if(allocated(dep))      deallocate(dep)
   if(allocated(Oinvdep))  deallocate(Oinvdep)
+  if(allocated(Binvdep))  deallocate(Binvdep)
 endsubroutine my_deallocate
 endsubroutine costFunction
 subroutine update_unobserved(chi)
