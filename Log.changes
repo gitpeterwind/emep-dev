@@ -152,6 +152,15 @@ info on unused variables, etc.
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+1st August  Alvaro  2863
+
+run.pl:
+- Re-implement "month trimming". The day of the Start/End of the run
+  are adjusted so they do not exceed the length of the corresponding month.
+- Ensure all met files are present before starting the simulation.
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15 and 23 July 2014 Peter, Jan Eiof, Dave 2862
 
@@ -200,7 +209,6 @@ ZD_ESX/ZCM_{EmChem09,EmChem09soa}_py/*:
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 11th June 2014  Alvaro,Birthe  2838-2841
 
-=======
 Emergency_ml
   - Emission definitions (erupdef) are not allocatable, so is it possible
     to have more than 2000 releases (NMAX_ERUP) without compilation issues.

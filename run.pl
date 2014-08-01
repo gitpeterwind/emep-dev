@@ -482,6 +482,8 @@ my $dd2 =  0;       # End day (can be too large; will be limited to max number o
                     # put dd2=0 for 3 hours run/test.
 # Allways runn full year on benchmark mode
 ($mm1,$mm2,$dd1,$dd2)=("01","12",1,31) if (%BENCHMARK);
+$dd1=($dd1>$month_days[$mm1])?$month_days[$mm1]:$dd1;
+$dd2=($dd2>$month_days[$mm2])?$month_days[$mm2]:$dd2;
 
 # <---------- end of normal use section ---------------------->
 # <---------- end of user-changeable section ----------------->
@@ -912,7 +914,7 @@ foreach my $scenflag ( @runs ) {
 
 # DEGREE DAYS (Tbase set above, either 18 or 20):
   unless ($CWF or ($GRID eq "RCA") or ($GRID eq "GLOBAL")) {
-    my $HDD = "$MetDir/HDD${Tbase}-${GRID}-$year.nc";
+    my $HDD = "$MetDir/HDD$Tbase-$GRID-$year.nc";
     print "Looking for DegreeDayFac: $HDD \n";
     system("ls -lh --time-style=long-iso $HDD");
     die "NO HDD files " unless -f $HDD;   # Can comment out if USE_DEGREEDAYS
@@ -1030,10 +1032,12 @@ foreach my $scenflag ( @runs ) {
 
   my ($startdate,$enddate)=("$year-$mm1-$dd1","$year-$mm2-$dd2");
      $enddate=date2str($startdate." 1 day ago","%F") unless $dd2;
-     ($startdate,$enddate)=("$CWFDATE[1]","$CWFDATE[2]") if $CWF;
-# check if first/last met file exists
-  foreach my $f ("$startdate","$enddate") {
-    $f=date2str($f,$METformat);
+  ($startdate,$enddate)=("$CWFDATE[1]","$CWFDATE[2]") if $CWF;
+  $startdate=date2str("$startdate","%Y%m%d");
+  $enddate  =date2str("$enddate"  ,"%Y%m%d");
+# check if met-files exist
+  for (my $d="$startdate";$d<=$enddate;$d=date2str($d." 1 day","%Y%m%d")) {
+    my $f=date2str($d,$METformat);
     die "METFILE not found:\n\t$f\n" unless -e $f;
   }
 
