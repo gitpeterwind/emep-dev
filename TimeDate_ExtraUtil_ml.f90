@@ -153,6 +153,7 @@ function ikey2str(iname,key,val) result(fname)
   character(len=9)             :: ifmt="(I??.??)"
   integer :: ind=0,n=0
   fname=iname
+  if(val<0)return   ! fmt=Ix.x --> negative numbers are printed as ****
   ind=index(fname,trim(key))
   if(ind==0)return
   n=len_trim(key)
@@ -171,6 +172,7 @@ function rkey2str(iname,key,val) result(fname)
   character(len=9)             :: ifmt="(F??.??)"
   integer :: ind=0,n=0,n1=0
   fname=iname
+  if(val<0.0)return  ! fmt=Fx.x --> negative numbers are printed as ****
   ind=index(fname,trim(key))
   if(ind==0)return
   n=len_trim(key)
