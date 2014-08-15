@@ -2390,7 +2390,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   integer :: startvec(NF90_MAX_VAR_DIMS),Nstartvec(NF90_MAX_VAR_DIMS)
   integer ::alloc_err
   character*100 ::name
-  real :: scale,offset,scalefactors(2),dloni,dlati
+  real :: scale,offset,scalefactors(2),dloni,dlati,dlon,dlat
   integer ::ij,jdiv,idiv,Ndiv,Ndiv2,igjgk,ig,jg,ijk,n
   integer ::imin,imax,jmin,jjmin,jmax,igjg,k2
   integer, allocatable:: Ivalues(:)  ! I counts all data
@@ -3344,10 +3344,11 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
         call CheckStop(data3D,"3D data in general projection not yet implemented for conservative interpoaltion")        
         status=nf90_get_att(ncFileID, nf90_global, "Grid_resolution", Grid_resolution )
         call CheckStop(status /= nf90_noerr,"Grid_resolution attribute not found")
-        Ndiv=nint(Grid_resolution/GRIDWIDTH_M)
+        Ndiv=3*nint(Grid_resolution/GRIDWIDTH_M)
         Ndiv=max(1,Ndiv)
+        Ndiv2=Ndiv*Ndiv
         if(Ndiv>1.and.MasterProc)then
-           write(*,*)'performing zero_order interpolation only!',Ndiv
+           write(*,*)'dividing each gridcell into ',Ndiv2,' pieces'
         endif
         k2=1
         allocate(Ivalues(MAXLIMAX*MAXLJMAX*k2))
@@ -3364,22 +3365,49 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
         call check(nf90_get_var(ncFileID, VarID, Rvalues,start=startvec,count=dims),&
              errmsg="Read Rvalues failed")
 
+!not 100% robust: assumes i increases with longitude, j with latitude. and i almost parallel with longitudes
         do jg=1,dims(2)
-           do ig=1,dims(1)
-              igjg=ig+(jg-1)*dims(1)               
-              call lb2ij(Rlon(igjg),Rlat(igjg),ir,jr)!back to model (fulldomain) coordinates
-              i=nint(ir)-gi0-IRUNBEG+2
-              j=nint(jr)-gj0-JRUNBEG+2
-              if(i>=1.and.i<=limax.and.j>=1.and.j<=ljmax)then
-                 ij=i+(j-1)*MAXLIMAX
-                 Ivalues(ij)=Ivalues(ij)+1
-                 if(OnlyDefinedValues.or.Rvalues(igjg)/=FillValue)then
-                    Rvar(ij)=Rvar(ij)+Rvalues(igjg)
-                 else
-                    !Not defined: don't include this Rvalue
-                    Ivalues(ij)=Ivalues(ij)-1
-                 endif
-              endif
+           do jdiv=1,Ndiv              
+              do ig=1,dims(1)
+                 do idiv=1,Ndiv
+                    igjg=ig+(jg-1)*dims(1)
+                    if(Ndiv>1)then
+                       if(ig>1.and.jg>1)then
+                          dlat=(Rlat(igjg)-Rlat(ig-1+(jg-2)*dims(1)))/Ndiv
+                          dlon=(Rlon(igjg)-Rlon(ig-1+(jg-2)*dims(1)))/Ndiv
+                       else
+                          if(ig>1)then
+                             dlat=-((Rlat(igjg)-Rlat(ig-1+(jg)*dims(1)))/Ndiv)
+                             dlon=((Rlon(igjg)-Rlon(ig-1+(jg)*dims(1)))/Ndiv)
+                          else if(jg>1)then
+                             dlat=((Rlat(igjg)-Rlat(ig+1+(jg-2)*dims(1)))/Ndiv)
+                             dlon=-((Rlon(igjg)-Rlon(ig+1+(jg-2)*dims(1)))/Ndiv)
+                          else
+                             dlat=-((Rlat(igjg)-Rlat(ig+1+(jg)*dims(1)))/Ndiv)
+                             dlon=-((Rlon(igjg)-Rlon(ig+1+(jg)*dims(1)))/Ndiv)
+                          endif
+                       endif
+                       lon=Rlon(igjg)+dlon*(idiv-0.5-0.5*Ndiv)
+                       lat=Rlat(igjg)+dlat*(jdiv-0.5-0.5*Ndiv)
+                    else
+                       lon=Rlon(igjg)
+                       lat=Rlat(igjg)
+                    endif
+                    call lb2ij(lon,lat,ir,jr)!back to model (fulldomain) coordinates
+                    i=nint(ir)-gi0-IRUNBEG+2
+                    j=nint(jr)-gj0-JRUNBEG+2
+                    if(i>=1.and.i<=limax.and.j>=1.and.j<=ljmax)then
+                       ij=i+(j-1)*MAXLIMAX
+                       Ivalues(ij)=Ivalues(ij)+1
+                       if(OnlyDefinedValues.or.Rvalues(igjg)/=FillValue)then
+                          Rvar(ij)=Rvar(ij)+Rvalues(igjg)
+                       else
+                          !Not defined: don't include this Rvalue
+                          Ivalues(ij)=Ivalues(ij)-1
+                       endif
+                    endif
+                 enddo
+              enddo
            enddo
         enddo
         do i=1,limax
@@ -3399,7 +3427,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
               else
                  if(interpol_used=='mass_conservative')then
                     !used for example for emissions in kg (or kg/s)
-                    !Rvar(ij)=Rvar(ij) !nothing to do
+                    Rvar(ij)=Rvar(ij)/Ndiv2
                  else
                     !used for example for emissions in kg/m2 (or kg/m2/s)
                     ! integral is approximately conserved
