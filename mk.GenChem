@@ -139,7 +139,7 @@ GETOPTS(){
         volcan[$N]=$rdir/ASH$tracer
         sed "s/_ASH_/$tracer/g;" $vdir/ASH_$vbin.species   > ${volcan[$N]}.species
         sed "s/_ASH_/$tracer/g;" $vdir/ASH_$vbin.reactions > ${volcan[$N]}.reactions
-        [[ -s $vdir/${tracer}_$vbin.eruptions ]] && cat $vdir/${tracer}_$vbin.eruptions >> $LocCSV
+        [[ -s $vdir/${tracer}_$vbin.eruptions ]] && cat $vdir/${tracer}_$vbin.eruptions >> $EmiCSV
       done;;
     N)nucppa=( );EE=( )
       [[ "$OPTARG" = \-* ]] || [[ "$OPTARG" = none ]] || EE=( ${OPTARG//,/ } )

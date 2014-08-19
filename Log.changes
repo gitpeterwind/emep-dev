@@ -154,12 +154,19 @@ changes here (and when committing svn), and Dave will tag as required
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+20th August  Alvaro 2867
+
+mk.GenChem: Bug fix for eEMEP.
+  Historical eruption data (V*.eruptions) on ZCM_Emergency/
+  was appended to emergency_location.csv instead of emergency_emission.csv.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15th August  Peter, Massimo 2866
 
 NetCDF_ml: "mass conservative" interpolation from general projection improved
 (when model resolution has fine resolution).
-Not 100% robust: may not always work well when the interpolated data is not approximately 
-aligned with lon-lat.
+Not 100% robust: may not always work well when the interpolated data is not 
+approximately aligned with lon-lat.
 Tested by Massimo for "Amersfoort" projection (1km resolution) to 1km resolution.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
