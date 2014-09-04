@@ -46,6 +46,40 @@ def element_remainder_pairs(elements):
         yield (x, elements[:i] + elements[i+1:])
 
 
+def expression_wrap(expr, maxlen, split):
+    """Wrap an expression to a maximum length.
+
+    After splitting *expr* after any run of the characters in *split*, return a
+    list of expression fragments that are ideally no longer than *maxlen*. Some
+    may be longer if the expression couldn't be split any smaller. If *maxlen*
+    is None, then there will be a new fragment for every split.
+
+    >>> expression_wrap('abc+def+ghi', 8, '+')
+    ['abc+def+', 'ghi+jkl']
+    >>> expression_wrap('abc+def+ghi', None, '+')
+    ['abc+', 'def+', 'ghi+', 'jkl']
+    """
+    regex = re.compile(r'([{}]+)'.format(re.escape(split)))
+    parts = regex.split(expr)
+
+    # Join separators with the string they follow
+    parts = [a + b for a, b in itertools.izip_longest(parts[0::2], parts[1::2],
+                                                      fillvalue='')]
+
+    # If we're not recombining up to maxlen, return the elements now
+    if maxlen is None:
+        return parts
+
+    # Combine parts into chunks that are still no larger than maxlen
+    chunks = [parts[0]]
+    for p in parts[1:]:
+        if len(chunks[-1]) + len(p) > maxlen:
+            chunks.append(p)
+        else:
+            chunks[-1] += p
+    return chunks
+
+
 class DefaultListOrderedDict(collections.OrderedDict):
     """An ordered dictionary that also acts like ``defaultdict(list)``.
 
@@ -1144,8 +1178,19 @@ class ReactionsWriter(CodeGenerator):
             # Replace XT with temp
             # TODO: shouldn't this be in shorthands or ... the input?
             rate = re.sub(r'\b(XT|xt)\b', 'temp', rate)
-            # TODO: wrap equations so the lines aren't too long for the compiler
-            stream.write((self.COEFF_ALL + ' = {rate}\n').format(i=i, rate=rate))
+            # LHS of coefficient
+            rct = self.COEFF_ALL.format(i=i) + ' = '
+            # RHS of coefficient, wrapped to prevent long lines
+            if ',' in rate:
+                # Always split function-like coefficients at commas
+                rate_parts = expression_wrap(rate, None, ',')
+            else:
+                # Anything else, try to keep to less than 60 chars wide by
+                # breaking at closing parentheses
+                rate_parts = expression_wrap(rate, 60, ')')
+            # Re-join and write the coefficient
+            sep = '  &\n' + ' '*(len(rct)-2) + '& '
+            stream.write(rct + sep.join(rate_parts) + '\n')
 
         stream.outdent()
         stream.write('\nend subroutine setChemRates\n')
