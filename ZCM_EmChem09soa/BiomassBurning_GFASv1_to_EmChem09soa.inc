@@ -6,8 +6,8 @@
   character(len=*), public, parameter :: &
     BiomassBurningMapping = "GFASv1toEmChem09"
   integer, private, parameter :: &
-    NBB_DEFS   = 23, & ! No mapping lines below
-    NEMEPSPECS = 21    ! No EMEP chemical mech specs used
+    NBB_DEFS   = 25-2, & ! No mapping lines below
+    NEMEPSPECS = 20-1    ! No EMEP chemical mech specs used
 
 !-----------------------------------------------------------------------!
 ! Column-1 gives GFASv1 species,

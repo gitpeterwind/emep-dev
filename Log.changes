@@ -153,6 +153,35 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+10th September 2014 Alvaro 2869
+
+InterpolationRoutines_ml
+- New subroutine point2grid_coeff takes care of the inner loops of grid2grid_coeff.
+- Consilidate Weight1,..Weight4(NX,NY) output variables on grid2grid_coeff
+  into a single output variable Weight(4,NX,NY), and update dimensions of output variables IIij,JJij(4,NXG,NYG).
+
+InterpolationRoutines_ml,NetCDF_ml,Nest_ml
+- Update grid2grid_coeff calls and IIij,JJij,Weight variables on
+  Nearest4interp (InterpolationRoutines_ml) and ReadField_CDF (NetCDF_ml).
+- Remove Copyright notice as it will be added by mk.OpenSource.
+- Minor formatting changes.
+
+Nest_ml
+- call grid2grid_coeff on init_nest instead local (equivalent) code.
+- Update IIij,JJij,Weight variables on init_nest, read_newdata_LATERAL and
+  reset_3D (Nest_ml).
+- Bug fix on readxn. Avoid div0 on time weights calculation (lines 282--288).
+- On FORECAST mode, set filename_read_3D and filename_read_BC using ndate for 
+  correct debug messages
+
+NetCDF_ml,
+- Fix DEBUG=yes error on CreatenetCDFfile, xcoord loop lines 743--748.
+
+ZCM_EmChem09/BiomassBurning_GFASv1_to_EmChem09.inc,
+ZCM_EmChem09soa/BiomassBurning_GFASv1_to_EmChem09soa.inc
+- Fix DEBUG=yes error, wrong NEMEPSPECS.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 4th September 2014  Alan  2868
 
 ZD_ESX/D_Misc/GenChem.py:

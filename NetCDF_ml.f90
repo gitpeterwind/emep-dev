@@ -1,32 +1,4 @@
-! <NetCDF_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
-!          Chemical transport Model>
-!*****************************************************************************!
-!*
-!*  Copyright (C) 2007-2012 met.no
-!*
-!*  Contact information:
-!*  Norwegian Meteorological Institute
-!*  Box 43 Blindern
-!*  0313 OSLO
-!*  NORWAY
-!*  email: emep.mscw@met.no
-!*  http://www.emep.int
-!*
-!*    This program is free software: you can redistribute it and/or modify
-!*    it under the terms of the GNU General Public License as published by
-!*    the Free Software Foundation, either version 3 of the License, or
-!*    (at your option) any later version.
-!*
-!*    This program is distributed in the hope that it will be useful,
-!*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-!*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!*    GNU General Public License for more details.
-!*
-!*    You should have received a copy of the GNU General Public License
-!*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************!
-
-       module NetCDF_ml
+module NetCDF_ml
 !
 ! Routines for netCDF output
 !
@@ -768,10 +740,11 @@ endif
          glon_fdom(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)))
 
   elseif(UsedProjection=='lon lat') then
-    do i=1,GIMAXcdf
+    xcoord(1)=glon_fdom(ISMBEGcdf,1)
+    do i=2,GIMAXcdf
       xcoord(i)= glon_fdom(i+ISMBEGcdf-1,1)
       !force monotone values:
-      if(i>1.and.xcoord(i)<xcoord(i-1).and.xcoord(i)<0)xcoord(i)=xcoord(i)+360.0
+      if(xcoord(i)<xcoord(i-1).and.xcoord(i)<0)xcoord(i)=xcoord(i)+360.0
     enddo
     do j=1,GJMAXcdf
       ycoord(j)= glat_fdom(1,j+JSMBEGcdf-1)
@@ -2405,13 +2378,12 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   real :: P_FL(0:NFLmax),P_FL0,Psurf_ref(MAXLIMAX, MAXLJMAX),P_EMEP,dp!
   logical ::  OnlyDefinedValues
 
-  real, allocatable :: Weight1(:,:),Weight2(:,:),Weight3(:,:),Weight4(:,:)
+  real, pointer :: Weight(:,:,:), ww(:)
   integer, allocatable :: IIij(:,:,:),JJij(:,:,:)
   real :: FillValue=0,Pcounted
   logical :: Flight_Levels
   integer :: k_FL,k_FL2
-  real, dimension(4) :: Weight
-  real               :: sumWeights
+  real    :: sumWeights
   integer, dimension(4) :: ijkn
   integer :: ii, jj,i_ext,j_ext
   real::an_ext,xp_ext,yp_ext,fi_ext,ref_lat_ext,xp_ext_div,yp_ext_div,Grid_resolution_div,an_ext_div
@@ -3438,108 +3410,89 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
         enddo
         deallocate(Ivalues)
      else
-        call CheckStop(interpol_used=='mass_conservative', "ReadField_CDF: only linear interpolation implemented")
-        if(interpol_used=='zero_order'.and.MasterProc.and.debug)&
-             write(*,*)'zero_order interpolation asked, but performing linear interpolation'
+       call CheckStop(interpol_used=='mass_conservative', "ReadField_CDF: only linear interpolation implemented")
+       if(interpol_used=='zero_order'.and.MasterProc.and.debug)&
+         write(*,*)'zero_order interpolation asked, but performing linear interpolation'
 
-        call CheckStop(data3D, "ReadField_CDF : 3D not yet implemented for general projection")
-        call CheckStop(present(UnDef), "Default values filling not implemented")
+      call CheckStop(data3D, "ReadField_CDF : 3D not yet implemented for general projection")
+      call CheckStop(present(UnDef), "Default values filling not implemented")
 
-        allocate(Weight1(MAXLIMAX,MAXLJMAX))
-        allocate(Weight2(MAXLIMAX,MAXLJMAX))
-        allocate(Weight3(MAXLIMAX,MAXLJMAX))
-        allocate(Weight4(MAXLIMAX,MAXLJMAX))
-        allocate(IIij(MAXLIMAX,MAXLJMAX,4))
-        allocate(JJij(MAXLIMAX,MAXLJMAX,4))
+      allocate(Weight(4,MAXLIMAX,MAXLJMAX),&
+                 IIij(4,MAXLIMAX,MAXLJMAX),&
+                 JJij(4,MAXLIMAX,MAXLJMAX))
 
-        !Make interpolation coefficients.
-        !Coefficients could be saved and reused if called several times.
-        if( DEBUG_NETCDF_RF .and. debug_proc .and. i==debug_li .and. j==debug_lj ) then
-           write(*,"(a)") "DEBUG_RF G2G ", me, debug_proc
-        end if
-        call grid2grid_coeff(glon,glat,IIij,JJij,Weight1,Weight2,Weight3,Weight4,&
-             Rlon,Rlat,dims(1),dims(2), MAXLIMAX, MAXLJMAX, limax, ljmax,&
-             ( DEBUG_NETCDF_RF .and. debug_proc ), &
-             debug_li, debug_lj )
+      !Make interpolation coefficients.
+      !Coefficients could be saved and reused if called several times.
+      if(DEBUG_NETCDF_RF.and.debug_proc.and.i==debug_li.and.j==debug_lj)&
+         write(*,"(a)") "DEBUG_RF G2G ", me, debug_proc
+      call grid2grid_coeff(glon,glat,IIij,JJij,Weight,&
+           Rlon,Rlat,dims(1),dims(2), MAXLIMAX, MAXLJMAX, limax, ljmax,&
+           (DEBUG_NETCDF_RF.and.debug_proc), debug_li, debug_lj )
 
-        startvec(1)=minval(IIij(1:limax,1:ljmax,1:4))
-        startvec(2)=minval(JJij(1:limax,1:ljmax,1:4))
-        if(ndims>2)startvec(ndims)=nstart
-        dims=1
-        dims(1)=maxval(IIij(1:limax,1:ljmax,1:4))-startvec(1)+1
-        dims(2)=maxval(JJij(1:limax,1:ljmax,1:4))-startvec(2)+1
+      startvec(1)=minval(IIij(:,:limax,:ljmax))
+      startvec(2)=minval(JJij(:,:limax,:ljmax))
+      if(ndims>2)startvec(ndims)=nstart
+      dims=1
+      dims(1)=maxval(IIij(:,:limax,:ljmax))-startvec(1)+1
+      dims(2)=maxval(JJij(:,:limax,:ljmax))-startvec(2)+1
 
-        totsize=1
-        do i=1,ndims
-           totsize=totsize*dims(i)
+      totsize=1
+      do i=1,ndims
+        totsize=totsize*dims(i)
+      enddo
+
+      allocate(Rvalues(totsize), stat=alloc_err)
+      if(debug) then
+        write(*,"(2a)") 'ReadCDF VarID ', trim(varname)
+        do i=1, ndims
+          write(*,"(a,6i8)") 'ReadCDF ',i, dims(i),startvec(i)
         enddo
+        write(*,*)'total size variable (part read only)',totsize
+      endif
 
-        allocate(Rvalues(totsize), stat=alloc_err)
-        if ( debug ) then
-           write(*,"(2a)") 'ReadCDF VarID ', trim(varname)
-           do i=1, ndims
-              write(*,"(a,6i8)") 'ReadCDF ',i, dims(i),startvec(i)
-           end do
-           write(*,*)'total size variable (part read only)',totsize
-        end if
+      call check(nf90_get_var(ncFileID, VarID, Rvalues,start=startvec,count=dims),&
+            errmsg="RRvalues")
 
-        call check(nf90_get_var(ncFileID, VarID, Rvalues,start=startvec,count=dims),&
-             errmsg="RRvalues")
+      if(xtype==NF90_INT.or.xtype==NF90_SHORT.or.xtype==NF90_BYTE)then
+        !scale data if it is packed
+        scalefactors(1) = 1.0 !default
+        scalefactors(2) = 0.  !default
+        status = nf90_get_att(ncFileID, VarID, "scale_factor", scale  )
+        if(status == nf90_noerr) scalefactors(1) = scale
+        status = nf90_get_att(ncFileID, VarID, "add_offset",  offset )
+        if(status == nf90_noerr) scalefactors(2) = offset
+        Rvalues=Rvalues*scalefactors(1)+scalefactors(2)
+      endif
 
-        if(xtype==NF90_INT.or.xtype==NF90_SHORT.or.xtype==NF90_BYTE)then
-           !scale data if it is packed
-           scalefactors(1) = 1.0 !default
-           scalefactors(2) = 0.  !default
-           status = nf90_get_att(ncFileID, VarID, "scale_factor", scale  )
-           if(status == nf90_noerr) scalefactors(1) = scale
-           status = nf90_get_att(ncFileID, VarID, "add_offset",  offset )
-           if(status == nf90_noerr) scalefactors(2) = offset
-           Rvalues=Rvalues*scalefactors(1)+scalefactors(2)
-        endif
+      k=1
+      do i=1,limax
+        do j=1,ljmax
+          ww => Weight(:,i,j)
+          ijkn(:)=IIij(:,i,j)-startvec(1)+1+(JJij(:,i,j)-startvec(2))*dims(1)
 
-        k=1
-        do i=1,limax
-           do j=1,ljmax
+          ijk=i+(j-1)*MAXLIMAX
+          Rvar(ijk)    = 0.0
+          sumWeights   = 0.0
 
-              Weight(1) = Weight1(i,j)
-              Weight(2) = Weight2(i,j)
-              Weight(3) = Weight3(i,j)
-              Weight(4) = Weight4(i,j)
+          do k = 1, 4
+            ii = IIij(k,i,j)
+            jj = JJij(k,i,j)
+            if(Rvalues(ijkn(k))/=FillValue) then
+              Rvar(ijk)  = Rvar(ijk) + ww(k)*Rvalues(ijkn(k))
+              sumWeights = sumWeights+ ww(k)
+            endif
+          enddo !k
 
-              ijkn(1)=IIij(i,j,1)-startvec(1)+1+(JJij(i,j,1)-startvec(2))*dims(1)
-              ijkn(2)=IIij(i,j,2)-startvec(1)+1+(JJij(i,j,2)-startvec(2))*dims(1)
-              ijkn(3)=IIij(i,j,3)-startvec(1)+1+(JJij(i,j,3)-startvec(2))*dims(1)
-              ijkn(4)=IIij(i,j,4)-startvec(1)+1+(JJij(i,j,4)-startvec(2))*dims(1)
+          if(sumWeights>1.0e-9) then
+            Rvar(ijk) =  Rvar(ijk)/sumWeights
+          else
+            Rvar(ijk) = FillValue
+          endif
+        enddo !j
+      enddo !i
 
-              ijk=i+(j-1)*MAXLIMAX
-              Rvar(ijk)    = 0.0
-              sumWeights   = 0.0
-
-              do k = 1, 4
-                 ii = IIij(i,j,k)
-                 jj = JJij(i,j,k)
-                 if ( Rvalues(ijkn(k) )  /= FillValue ) then
-                    Rvar(ijk) =  Rvar(ijk) + Weight(k)*Rvalues(ijkn(k))
-                    sumWeights = sumWeights + Weight(k)
-                 end if
-              enddo !k
-
-              if ( sumWeights > 1.0e-9 ) then
-                 Rvar(ijk) =  Rvar(ijk)/sumWeights
-              else
-                 Rvar(ijk) = FillValue
-              end if
-
-           enddo !j
-        enddo !i
-
-        deallocate(Weight1)
-        deallocate(Weight2)
-        deallocate(Weight3)
-        deallocate(Weight4)
-        deallocate(IIij)
-        deallocate(JJij)
-     endif!conservative
+      deallocate(Weight,IIij,JJij)
+    endif!conservative
   endif!general projection
 
 !  if(interpolate_vertical)then
