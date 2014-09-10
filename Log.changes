@@ -153,18 +153,16 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-10th September 2014 Alvaro 2869
+10th September 2014 Alvaro 2869-2870
 
 InterpolationRoutines_ml
 - New subroutine point2grid_coeff takes care of the inner loops of grid2grid_coeff.
 - Consilidate Weight1,..Weight4(NX,NY) output variables on grid2grid_coeff
   into a single output variable Weight(4,NX,NY), and update dimensions of output variables IIij,JJij(4,NXG,NYG).
 
-InterpolationRoutines_ml,NetCDF_ml,Nest_ml
+InterpolationRoutines_ml,NetCDF_ml
 - Update grid2grid_coeff calls and IIij,JJij,Weight variables on
   Nearest4interp (InterpolationRoutines_ml) and ReadField_CDF (NetCDF_ml).
-- Remove Copyright notice as it will be added by mk.OpenSource.
-- Minor formatting changes.
 
 Nest_ml
 - call grid2grid_coeff on init_nest instead local (equivalent) code.
@@ -174,12 +172,104 @@ Nest_ml
 - On FORECAST mode, set filename_read_3D and filename_read_BC using ndate for 
   correct debug messages
 
+CheckStop_ml
+- Add CheckStop_range subroutine to CheckStop interface.
+  CheckStop(var,(/vr0,vr1/),msg) will stop the model if .not.(vr0<=var<=vr1).
+
+TimeDate_ExtraUtil_ml
+- add text keys "PPP" and "PPPP" to output processor number (me) from
+  date2string interface (function cd2str).
+
+Par_ml,ModelConstants_ml
+- Add variable DOMAIN_DECOM_MODE (ModelConstants_ml) to be read on ModelConstants_config.
+- On subroutine parinit (Par_ml), when DOMAIN_DECOM_MODE is set by the user
+  it will override the default domain decomposition mode based on Pole_singular.
+
+Timing_ml,Unimod,PhyChem_ml
+ZD_3DVar/My_3DVar_ml,Analysis/DA_3DVar_ml
+- Add parameter NTIMING_UNIMOD (39) and NTIMING variable (Timing_ml)
+  to keep track of the "standard Unimod" time traking indices (hard coded trough Unimod)
+  and the total number of time traking indices.
+- Add optional input ntim to subroutine Init_timing (Timing_ml).
+  If present, this variable can be used to increase (or decrease) the number of
+  time traking indices (39 by default).
+- On subroutine Add_2timing (Timing_ml) ensure that only time traking indices
+  are acceseed (return if .not.(1<=n<=NTIMING)).
+- Add parameter NTIMING_3DVAR=0 on for non 3DVar runs (My_3DVar_ml)
+  and NTIMING_3DVAR=8 for 3DVar runs (DA_3DVar_ml)
+- call Init_timing(NTIMING_UNIMOD+NTIMING_3DVAR) on Unimod, to allocate
+  NTIMING_3DVAR time traking indices for 3DVar ussage.
+- call Add_2timing(T_3DVAR,..) on PhyChem_ml for total 3DVar ussage on ANALYSIS runs.
+
+Makefile
+- Extend DEBUG=yes options from -check bounds (-CB) to
+  -check all -check noarg_temp_created 
+- Change order between My_*.f90 file dependency and linking, so .depend target
+  options are correctly displayed.
+- Remove -j4 option from $(MAKE) call, as this option is already set on run.pl
+
+Makefile.SRCS
+- Define SRCS only if not already set (SRCS ?=), so .depend target
+  options are correctly displayed.
+- Add Pollen_const_ml.o dependecy to My_Pollen_ml.o
+  so pollen_const_ml.mod is up to date.
+
 NetCDF_ml,
 - Fix DEBUG=yes error on CreatenetCDFfile, xcoord loop lines 743--748.
 
 ZCM_EmChem09/BiomassBurning_GFASv1_to_EmChem09.inc,
 ZCM_EmChem09soa/BiomassBurning_GFASv1_to_EmChem09soa.inc
 - Fix DEBUG=yes error, wrong NEMEPSPECS.
+
+InterpolationRoutines_ml,NetCDF_ml,Nest_ml,CheckStop_ml,Par_ml,PhyChem_ml,Timing_ml
+- Remove Copyright notice as it will be added by mk.OpenSource.
+- Minor formatting changes.
+
+ZD_3DVar/Analysis/DA_3DVar_ml
+- Use parameters to designate the index and text of time traking indices,
+  eg Add_2timing(T_3DVAR,..) instead of Add_2timing(47,..)
+- Rename logical variable calculate_chisq to use_chisq 
+- Replace compilation flag NO_UPDATE_UNOBSERVED by logical variable use_unobserved.
+- Read use_chisq, use_unobserved variables and m1qn3 paremeters maxiter,maxsim
+  on DA_CONFIG namelist.
+- Reduce m1qn3 progress output and write it to a separate log file for each processor.
+
+ZD_3DVar/Analysis/DA_Obs_ml
+- Add interpolation_method variable, to be read on OBSERVATIONS namelist.
+- Use interpolation_method in call to get_interpol_const (subroutine H_op).
+- Add input variable method to subroutine get_interpol_const:
+  'distance-weighted' method calls point2grid_coeff (InterpolationRoutines_ml);
+  'nearest-neighbor' methods also calls point2grid_coeff, but only uses the 1st value;
+  'local' method calls a local implementation of point2grid_coeff for test/debuging.
+
+ZD_3DVar/Makefile,Analysis/DA_3DVar_ml,DA_Bias_ml
+- Temporary disable bias correction (DA_Bias_ml)
+
+ZD_3DVar/Makefile,Makefile.SRCS,
+ZD_3DVar/Analysis/ufftw3_ml,chitox_ml,
+- Add linking options for FFTW3 library.
+- Add FFTW3 util/wrapper module and FFTW3 based subrutines (chitox_ml).
+
+ZD_3DVar/Analysis/DA_3DVar_ml,DA_Obs_ml
+- Use FFTW3 variables and methods provided by chitox_ml.
+- Remove unused output variable iostat from subroutine read_obs.
+- Remove OLD_MATCH_CODE & old commented code.
+
+ZD_3DVar/DA_ml.f90,Analysis/DA_3DVar_ml
+- Add DA_NAMELIST parameter (DA_ml) for the name of the DA namelist file.
+
+ZD_3DVar/B_NMC/spectralcov_ml.f90
+- Set tarameter DAPREC (used on m1qn3 settings) to single real precission.
+  Previous setting was unrealisticly low.
+
+ZD_3DVar/B_NMC/cplx_fft_2d.F
+- Fix bug on eliptic truincation reported by Arjo Segers.
+
+ZD_3DVar/Makefile,Makefile.SRCS,
+ZD_3DVar/B_NMC/quicksort.c,
+ZD_3DVar/Analysis/chitox.F,chitox_adj.F
+- Remove obsolete subrutines quicksort (C version) & chitox*.F (based on FFTpack5).
+- Remove no longer needed compilation rule for C (%.o:%.c).
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 4th September 2014  Alan  2868

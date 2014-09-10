@@ -1,30 +1,3 @@
-! <PhyChem_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
-!          Chemical transport Model>
-!*****************************************************************************!
-!*
-!*  Copyright (C) 2007-2011 met.no
-!*
-!*  Contact information:
-!*  Norwegian Meteorological Institute
-!*  Box 43 Blindern
-!*  0313 OSLO
-!*  NORWAY
-!*  email: emep.mscw@met.no
-!*  http://www.emep.int
-!*
-!*    This program is free software: you can redistribute it and/or modify
-!*    it under the terms of the GNU General Public License as published by
-!*    the Free Software Foundation, either version 3 of the License, or
-!*    (at your option) any later version.
-!*
-!*    This program is distributed in the hope that it will be useful,
-!*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-!*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!*    GNU General Public License for more details.
-!*
-!*    You should have received a copy of the GNU General Public License
-!*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************!
 module PhyChem_ml
 !
 !     physical and chemical routine calls within one advection step
@@ -38,7 +11,7 @@ use Biogenics_ml,     only: Set_SoilNOx
 use Chemfields_ml,    only: xn_adv,cfac,xn_shl
 use ChemSpecs,        only: IXADV_SO2, IXADV_NH3, IXADV_O3, NSPEC_SHL, species
 use CoDep_ml,         only: make_so2nh3_24hr
-use DA_3DVar_ml,      only: main_3dvar   ! 3D-VAR Analysis
+use DA_3DVar_ml,      only: main_3dvar, T_3DVAR ! 3D-VAR Analysis
 use Derived_ml,       only: DerivedProds, Derived, num_deriv2d
 use DerivedFields_ml, only: d_2d, f_2d
 use DryDep_ml,        only: init_drydep
@@ -123,7 +96,7 @@ contains
     call Add_2timing(19,tim_after,tim_before,"nest: Read")
     if(ANALYSIS.and.first_call)then
        call main_3dvar()   ! 3D-VAR Analysis for "Zero hour"
-       call Add_2timing(47,tim_after,tim_before,'3DVar: Total.')
+       call Add_2timing(T_3DVAR,tim_after,tim_before)
     endif
     if(FORECAST.and.first_call)call hourly_out()!Zero hour output
     call Add_2timing(35,tim_after,tim_before,"phyche:outs")
@@ -247,7 +220,7 @@ contains
     call Add_2timing(35,tim_after,tim_before,"phyche:outs")
     if(ANALYSIS)then
        call main_3dvar()   ! 3D-VAR Analysis for "non-Zero hours"
-            call Add_2timing(47,tim_after,tim_before,'3DVar: Total.')
+       call Add_2timing(T_3DVAR,tim_after,tim_before)
     endif
     call wrtxn(current_date,.false.) !Write xn_adv for future nesting
     if(FORECAST.and.USE_POLLEN) call pollen_dump()

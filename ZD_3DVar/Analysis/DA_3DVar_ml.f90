@@ -1,9 +1,10 @@
 module DA_3DVar_ml
 use TimeDate_ml,      only: date,current_date
-use My_Timing_ml,     only: Code_timer,Add_2timing
+use Io_ml,            only: IO_TMP
+use My_Timing_ml,     only: Code_timer,Add_2timing,NTIMING_UNIMOD
+use Par_ml,           only: me
 use ModelConstants_ml,only: KMAX_MID,KCHEMTOP,RUNDOMAIN,PPB,PPBINV,ANALYSIS,MasterProc
 use ChemSpecs_shl_ml, only: NSPEC_SHL        ! Maps indices
-!se ChemSpecs_tot_ml, only: NSPEC_TOT
 use ChemChemicals_ml, only: species          ! Gives names
 use ChemGroups_ml,    only: chemgroups       ! group  names
 use Chemfields_ml,    only: xn_adv
@@ -12,10 +13,12 @@ use CheckStop_ml,     only: CheckStop
 use SmallUtils_ml,    only: find_index
 use TimeDate_ExtraUtil_ml,only: date2string
 use DA_ml,            only: debug=>DA_DEBUG,DAFMT_DEF=>DA_FMT_DEF,&
-                            dafmt=>da_fmt_msg,damsg=>da_msg,&
+                            danml=>da_namelist,dafmt=>da_fmt_msg,damsg=>da_msg,&
                             tim_before=>datim_before,tim_after=>datim_after
 use DA_Obs_ml
+#if BIAS_CORRECTION
 use DA_Bias_ml
+#endif
 use Util_ml,          only: io_check,compare_date,norm
 use exd_domain_ml,    only: EXT_DOMAIN,EXT_DOMAIN_INV
 use covmat_ml,        only: set_chemobs_idx,read_speccov
@@ -25,19 +28,43 @@ use spectralcov,      only: nx,ny,nlev,nchem,nxex,nyex,nex,&
                             ucovmat,sqrt_lambda,sqrt_gamma,stddev,&
                             kx,kxmin,ky,kymin,lensav,wsave,&
                             FGSCALE,FGSCALE_INV,DAPREC
+use chitox_ml,       only:  ufft, chitox, chitox_adj
 implicit none
-integer,private,parameter :: ANALYSIS_NDATE = 4 ! Number of analysis to perform
-real, parameter, private  :: ANALYSIS_RELINC_MAX=5.0 ! Limit dx,du to 500%
-logical,   private :: calculate_chisq = .true.
-type(date),private :: analysis_date(ANALYSIS_NDATE)=(/& ! when to perform the analysys.
-                 date(-1,-1,-1,00,0),&              ! By default an analysis
-                 date(-1,-1,-1,06,0),&              ! it will be done every
-                 date(-1,-1,-1,12,0),&              ! 00,06,12,18 UTC
-                 date(-1,-1,-1,18,0)/)
-integer, parameter, private :: maxiter=100*5,maxsim=100*5
-integer, parameter, private :: debug_n=1,debug_p=1,debug_k=1
-integer, allocatable, dimension(:), private :: ipar
-real, allocatable, dimension(:,:,:,:), private :: dx,du
+private
+public :: NTIMING_3DVAR,T_3DVAR,main_3dvar
+integer, parameter :: ANALYSIS_NDATE = 4 ! Number of analysis to perform
+real,    parameter :: ANALYSIS_RELINC_MAX=5.0 ! Limit dx,du to 500%
+logical :: use_chisq=.true.,use_unobserved=.true.
+integer :: maxiter=500,maxsim=500
+type(date) :: analysis_date(ANALYSIS_NDATE)=(/& ! when to perform the analysys.
+  date(-1,-1,-1,00,0),&              ! By default an analysis
+  date(-1,-1,-1,06,0),&              ! it will be done every
+  date(-1,-1,-1,12,0),&              ! 00,06,12,18 UTC
+  date(-1,-1,-1,18,0)/)
+integer, parameter :: debug_n=1,debug_p=1,debug_k=1
+integer, allocatable, dimension(:) :: ipar
+real, allocatable, dimension(:,:,:,:) :: dx,du
+integer, parameter ::       &
+  T_DOMEX=NTIMING_UNIMOD+1, & ! 40: Domain extension
+  T_INNOV=NTIMING_UNIMOD+2, & ! 41: Get innovations from observations
+  T_OPTIM=NTIMING_UNIMOD+3, & ! 42: Optimization
+  T_COSTF=NTIMING_UNIMOD+4, & ! 43: costFunction
+  T_OBSPC=NTIMING_UNIMOD+5, & ! 44: Update observed species
+  T_UOSPC=NTIMING_UNIMOD+6, & ! 45: Update unobserved species
+  T_CHISQ=NTIMING_UNIMOD+7, & ! 46: CHI^2 evaluation
+  T_3DVAR=NTIMING_UNIMOD+8, & ! 47: Total
+  NTIMING_3DVAR=8
+character(len=*), parameter, dimension(NTIMING_3DVAR) ::    &
+  TIMING_3DVAR=['3DVar: Domain extension.',                 &
+                '3DVar: Get innovations from observations.',&
+                '3DVar: Optimization.',                     &
+                '3DVar: costFunction.',                     &
+                '3DVar: Update observed species.',          &
+                '3DVar: Update unobserved species.',        &
+                '3DVar: CHI^2 evaluation.',                 &
+                '3DVar: Total.']
+
+INCLUDE 'mpif.h'
 contains
 !-----------------------------------------------------------------------
 subroutine main_3dvar()
@@ -59,9 +86,29 @@ integer :: ierr
     call init_3dvar()
     first_call=.false.
   endif
+
+ !if(debug.and.MasterProc)print dafmt,'Test analysis'
   if(.not.compare_date(ANALYSIS_NDATE,current_date,analysis_date,wildcard=-1))return
   if(debug.and.MasterProc)print dafmt,'Start analysis'
+!-----------------------------------------------------------------------
+! Spectral decomposition
+!-----------------------------------------------------------------------
+  ! init new fft, will be applied on extended domain
+  call ufft%Init(nxex, nyex, comm=MPI_COMM_WORLD)
+#ifdef DA_MPI
+  ! extract info on y-decomposition used by fftw ;
+  ! note that this is defined on the extended domain !
+  call ufft%Get(ny_local=ny_local, iy_offset=iy_offset )
+!-- original model decomposition on standard domain: doms_*_m
+!-- define new local decomposition on standard domain: doms_*_f
+!-- define new local decomposition on standard domain: doms_an_f
+  ! extract shape of local fftw spectral fields:
+  call ufft%Get(nxf=nxf, nyf_local=nyf_local, iyf_offset=iyf_offset )
+!-- complex field on local y slab: doms_an_fex
+!-- original model decomposition on standard domain: doms_*_m
+#endif
   call generic3dvar(ierr)
+  call ufft%Done()
 endsubroutine main_3dvar
 subroutine init_3dvar()
 !-----------------------------------------------------------------------
@@ -74,20 +121,23 @@ integer(4) :: inNml=172
 integer    :: nvar,k,ierr
 namelist /DA_CONFIG/ analysis_date, nChem, nChemObs,&
                      varName, obsVarName, observedVar,&
-                     calculate_chisq
+                     use_chisq,use_unobserved,maxiter,maxsim
+!-----------------------------------------------------------------------
+! Set timming messages
+!-----------------------------------------------------------------------
+  call Code_timer(tim_before)
+  do k=1,NTIMING_3DVAR
+    call Add_2timing(NTIMING_UNIMOD+k,tim_after,tim_before,TIMING_3DVAR(k))
+  enddo
 !-----------------------------------------------------------------------
 ! Read config: variable names (observed & unobserved)
 !-----------------------------------------------------------------------
-  open(unit=inNml,file='namelist.nml',status='OLD',action='READ',&
+  open(unit=inNml,file=danml,status='OLD',action='READ',&
        form='FORMATTED',iostat=ierr)
   call io_check(ierr,'open namelist')
 !+------------------------------------------------------------------
 !
 !+------------------------------------------------------------------
-! nChemObs=0;observedVar(:)=.false.
-! call define_chemicals()
-! call Init_ChemGroups()
-! dafmt=DAFMT_DEF
   k=find_index("DAOBS",chemgroups(:)%name)
   call CheckStop(k<1,'DA group not found: "DAOBS".')
   nChemObs=size(chemgroups(k)%ptr)
@@ -98,6 +148,7 @@ namelist /DA_CONFIG/ analysis_date, nChem, nChemObs,&
   nChem=nChemObs+size(chemgroups(k)%ptr(:))
     varName(nChemObs+1:nChem)=species(chemgroups(k)%ptr)%name
   else
+    use_unobserved=.false.
     nChem=nChemObs
     if(MasterProc)print dafmt,'WARNING: DA group not found: "DAUNOBS".'
   endif
@@ -141,7 +192,7 @@ namelist /DA_CONFIG/ analysis_date, nChem, nChemObs,&
     enddo
     if(mod(nChem,5)/=0)print *,''
   endif
-  if(debug) write(*,nml=DA_CONFIG,delim='APOSTROPHE')
+  if(debug) write(*,nml=DA_CONFIG,delim='QUOTE')
 !-----------------------------------------------------------------------
 ! From observed/unobserved variable names (varName) to model species
 !-----------------------------------------------------------------------
@@ -169,10 +220,10 @@ namelist /DA_CONFIG/ analysis_date, nChem, nChemObs,&
   call CheckStop(nbiasData,nobsData,'init_3dvar: nbiasData')
 #endif
 !-----------------------------------------------------------------------
-! Read the rest of the variables
+! Read covariance matrix
 !-----------------------------------------------------------------------
   call set_chemobs_idx(nchem,observedVar(1:nchem))
-  call read_speccov
+  call read_speccov() ! & set extended domain dimensions (nxex,nyex)
   call CheckStop(nX,RUNDOMAIN(2)-RUNDOMAIN(1)+1,"init_3dvar: Inconsistent NX")
   call CheckStop(nY,RUNDOMAIN(4)-RUNDOMAIN(3)+1,"init_3dvar: Inconsistent NY")
   call CheckStop(nLev,KMAX_MID-KCHEMTOP+1      ,"init_3dvar: Inconsistent NLEV")
@@ -206,7 +257,9 @@ real, allocatable, dimension(:) :: flat,flon,falt,obs,obsstddev1
   ntot=nxex*nyex*nlev*nchemobs
   nv=min(nv1,ntot)
   nv2=nv*nxex*nyex
+#ifdef BIAS_CORRECTION
   nv2np=nv2+(NBIAS_PREDICTORS+1)*nobsData
+#endif
   maxobs=nx*ny
 !-----------------------------------------------------------------------
 ! read observations
@@ -215,7 +268,7 @@ real, allocatable, dimension(:) :: flat,flon,falt,obs,obsstddev1
   allocate(ipar(maxobs),flat(maxobs),flon(maxobs),falt(maxobs),&
            obs(maxobs),obsstddev1(maxobs),stat=ierr)
   call CheckStop(ierr,'Allocation error: IPAR.')
-  call read_obs(maxobs,flat,flon,falt,obs,obsstddev1,ipar,ierr)
+  call read_obs(maxobs,flat,flon,falt,obs,obsstddev1,ipar)
   if(nobs==0)then
     call my_deallocate(MasterProc,'WARNING: No obserations found')
     return
@@ -252,12 +305,12 @@ real, allocatable, dimension(:) :: flat,flon,falt,obs,obsstddev1
   enddo
   if(debug.and.MasterProc)print *,''
   if(FGSCALE/=1e0) xn_adv_ex(:,:,:,:)=xn_adv_ex(:,:,:,:)*FGSCALE
-  call Add_2timing(40,tim_after,tim_before,'3DVar: Domain extension.')
+  call Add_2timing(T_DOMEX,tim_after,tim_before)
 !-----------------------------------------------------------------------
 ! compute innovations H(xb)-y, save in file
 !-----------------------------------------------------------------------
   call get_innovations(maxobs,flat,flon,falt,obs,obsstddev1)
-  call Add_2timing(41,tim_after,tim_before,'3DVar: Get innovations from observations.')
+  call Add_2timing(T_INNOV,tim_after,tim_before)
   if(all(innov==0.0))then
     call my_deallocate(MasterProc,'WARNING: No innovations found')
     return
@@ -302,8 +355,6 @@ real, allocatable, dimension(:) :: flat,flon,falt,obs,obsstddev1
 ! Only update whithin the non-extended zone (since there are no obs. in
 ! that zone => zero increment). Leave BCs (lateral & top) unchanged.
 !-----------------------------------------------------------------------
-! forall(i=1:nxex,j=1:nyex,ilev=1:nlev)
-! forall(i=2:nx-1,j=2:ny-1,ilev=2:nlev)
   ilev0=max(KCHEMTOP,KMAX_MID-nlev+1)
   if(allocated(dx))forall(i=2:nx-1,j=2:ny-1,ilev=ilev0:nlev)&
     xn_adv_ex(i,j,ilev,ichemObs  )=&
@@ -313,16 +364,6 @@ real, allocatable, dimension(:) :: flat,flon,falt,obs,obsstddev1
     xn_adv_ex(i,j,ilev,ichemNoObs)=&
       min(max(xn_adv_ex(i,j,ilev,ichemNoObs)+du(i,j,ilev,:),0.0),&
               xn_adv_ex(i,j,ilev,ichemNoObs)*ANALYSIS_RELINC_MAX)
-! if(debug.and.MasterProc) then
-!   k=ichemobs(1)
-!   kk=varSpec(k)
-!   do i=1,nx
-!     do j=1,ny
-!       if(xn_adv_ex(i,j,nlev,k)==0.0) &
-!        print *,i,j,dx(i,j,nlev,1),xn_adv(kk,i,j,KMAX_MID)
-!     enddo
-!   enddo
-! endif
 !-----------------------------------------------------------------------
 ! descale & crop background field:
 !-----------------------------------------------------------------------
@@ -361,7 +402,9 @@ subroutine my_deallocate(verb,msg)
   if(allocated(obsstddev1)) deallocate(obsstddev1)
   if(allocated(xn_adv_ex))  deallocate(xn_adv_ex)
   call deallocate_obs()
+#ifdef BIAS_CORRECTION
   call deallocate_bias()
+#endif
   if(allocated(dx))         deallocate(dx)
   if(allocated(du))         deallocate(du)
   if(allocated(chi))        deallocate(chi)
@@ -380,17 +423,15 @@ subroutine var3d(nv2,Jcost,chi,ntot,dzs)
   integer,      intent(in)    :: nv2,ntot
   real(kind=8), intent(inout) :: Jcost,chi(nv2),dzs
   real :: rzs,Jcost0
-! logical lqc
-! external simul
 !-----------------------------------------------------------------------
 ! Work arrays
 !-----------------------------------------------------------------------
   integer, parameter ::nupdates=4
- !real(kind=8) :: gradJcost(nv2),rz(4*nv2+nupdates*(2*nv2+1))
   real(kind=8), allocatable :: gradJcost(:),rz(:)
 !-----------------------------------------------------------------------
 ! Local parameters
 !-----------------------------------------------------------------------
+  character(len=*),parameter :: LOGFILE="YYYYMMDDhh-PPP_m1qn3.log"
   character(len=*),parameter :: omode_str(-1:7)=(/&
   "('ERROR on m1qn3. omode==',I0,': ',A)",&
     "ERROR on m1qn3. omode==0: The simulator asks to stop by returning the value (indic=0)",&
@@ -403,12 +444,15 @@ subroutine var3d(nv2,Jcost,chi,ntot,dzs)
     "ERROR on m1qn3. omode==7: Either <g,d> is nonnegative or <y,s> is nonpositive"/)
   character(len=3) :: normtype='dfn'
   integer, parameter :: &
-    impres=5,&        ! verbosity level: 0=No print .. 5=Full verbosity
-    io=6,&            ! write unit for m1qn3 printouts
-    imode(3)=(/ 1,&   ! run in SIS mode
-                0,&   ! cold start
-                0/)   ! calculate Jcost,gradJcost every interation
+    OKmode(4)=[1,4,5,6],& ! omode accepted codes
+    impres=3,&            ! verbosity level: 0=No print .. 5=Full verbosity
+    io=IO_TMP,&           ! write unit for m1qn3 printouts
+    imode(3)=[1,&         ! run in SIS mode
+              0,&         ! cold start
+              0]          ! calculate Jcost,gradJcost every interation
   real(kind=8), parameter :: dxmin=DAPREC ! norm resolution
+
+  logical      :: first_call
   integer      :: iz(5),nrz,indic,omode,niter,nsim,reverse,ierr
   real(kind=8) :: epsg,df1
   integer      :: n,p,l,k
@@ -418,86 +462,71 @@ subroutine var3d(nv2,Jcost,chi,ntot,dzs)
 !-----------------------------------------------------------------------
   allocate(gradJcost(nv2),stat=ierr)
   call CheckStop(ierr,'Allocation error: gradJcost.')
-  indic=4
-  if(debug.and.MasterProc) print dafmt,'call costFunction'
-  call costFunction(indic,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
-  Jcost0=Jcost  ! Initial cost function
-!-----------------------------------------------------------------------
-!
-!-----------------------------------------------------------------------
-  if(norm(gradJcost)<=1e-20)then
-    print dafmt,'WARNING Starting point is almost optimal.&
-      & No optimization needed..'
-!   if(debug.and.MasterProc) then
-!     do n=1,nobs
-!       do l=pidx(n)%l(0),pidx(n)%l(1)
-!         do p=1,4
-!           print "(2(A,I0,2(',',I0)),1X,A,30(1X,A,'=',ES12.3,:))",&
-!                 '#',n,p,l,"-->",pidx(n)%i(p),pidx(n)%j(p),KMAX_MID-nlev+l,&
-!                 'H_jac',(trim(obsVarName(k)),H_jac(n,p,l,k),k=1,nChemObs)
-!         enddo
-!       enddo
-!     enddo
-!     print "(2(1X,A,'=',ES12.3))",'||DJ||',norm(gradJcost),'||DH||',norm(H_jac)
-!     call CheckStop('Debug Jcost')
-!   endif
-  else
 !-----------------------------------------------------------------------
 ! Call minimization routine (m1qn3-3.3;2009)
 ! subroutine m1qn3 (simul, prosca, ctonb, ctcab, n, x, f, g,
 !                   dxmin, df1, epsg, normtype, impres, io,
 !                   imode, omode, niter, nsim, iz, dz, ndz,
 !                   reverse, indic, izs, rzs, dzs)
-! Very old call minimization routine (m1qn3-2.0d;1996)
-! subroutine m1qn3 (simul, prosca, ctonb, ctcab, n, x, f, g,
-!                   dxmin, df1, epsg,           impres, io,
-!                   mode,         niter, nsim, iz, rz, nrz)
 !-----------------------------------------------------------------------
-    epsg=dxmin**0.9
-    df1=Jcost*0.5
-    reverse=0!;if(debug)reverse=1
-    niter=maxiter
-    nsim =maxsim
-   !nrz=size(rz)
-    nrz=4*nv2+nupdates*(2*nv2+1)
-    allocate(rz(nrz),stat=ierr)
-    call CheckStop(ierr,'Allocation error: RZ.')
-    if(debug.and.MasterProc.and.impres>0)then
-      write(damsg,"(A,'=',3(I0,:,','),3(1X,A,'=',I0,:,','))"),&
-        'mode',imode,'reverse',reverse,'niter',niter,'nsim',nsim
-      print dafmt,'Calling m1qn3 '//trim(damsg)
+  open(io,file=date2string(LOGFILE,current_date),iostat=ierr)
+  call io_check(ierr,'open m1qn3 logfile')
+
+  call Code_timer(tim_before)
+  omode=-1                    ! trigger .not.OKmode, unless m1qn3 is called
+  reverse=1                   ! reverse comunication mode
+  indic=4                     ! calculate costFunction
+  first_call=.true.           ! 1st call to costFunction
+  epsg=dxmin**0.9             ! precision of the stopping criterion, based on ||gradient||
+  niter=maxiter               ! maximal number of iterations accepted
+  nsim =maxsim                ! maximal number of simulations accepted
+  nrz=4*nv2+nupdates*(2*nv2+1)! rz dimension
+  allocate(rz(nrz),stat=ierr) ! working array for m1qn3
+  call CheckStop(ierr,'Allocation error: RZ.')
+
+  write(damsg,"(A,'#',I3.3,': ',A,'=',3(I0,:,','),3(1X,A,'=',I0,:,','))"),&
+    'Start  m1qn3',me,'mode',imode,'reverse',reverse,'niter',niter,'nsim',nsim
+  print dafmt,trim(damsg)
+
+  do while(reverse>=0)
+    call costFunction(indic,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
+    if(first_call)then
+      first_call=.false.
+      Jcost0=Jcost  ! initial cost function
+      df1=Jcost*0.5 ! expected decrease estimate in f during the first iteration
+      if(norm(gradJcost)<=1e-20)then
+        print dafmt,'WARNING Starting point is almost optimal.&
+          & No optimization needed..'
+        reverse=-9  ! skipp m1qn3 call
+        omode=1     ! fake OKmode
+      endif
     endif
-    call Code_timer(tim_before)
-    if(reverse==0)then
-      call m1qn3(costFunction,euclid,ctonbe,ctcabe,nv2,chi,Jcost,gradJcost,&
+    if(reverse>=0)&
+      call m1qn3(simul_rc,euclid,ctonbe,ctcabe,nv2,chi,Jcost,gradJcost,&
                 dxmin,df1,epsg,normtype,impres,io,&
                 imode,omode,niter,nsim,iz,rz,nrz,&
                 reverse,indic,ntot,rzs,dzs)
-    else
-      m1qn3_call: do
-        call m1qn3(simul_rc,euclid,ctonbe,ctcabe,nv2,chi,Jcost,gradJcost,&
-                  dxmin,df1,epsg,normtype,impres,io,&
-                  imode,omode,niter,nsim,iz,rz,nrz,&
-                  reverse,indic,ntot,rzs,dzs)
-        if(reverse<0) exit m1qn3_call
-        call costFunction(indic,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
-      enddo m1qn3_call
-    endif
+  enddo
 
-    if(debug.and.MasterProc.and.impres>0)then
-      write(damsg,"(A,'=',3(I0,:,','),3(1X,A,'=',I0,:,','))"),&
-        'mode',imode,'reverse',reverse,'niter',niter,'nsim',nsim
-      print dafmt,'Finish  m1qn3 '//trim(damsg)
-    endif
-    if(omode<0.or.omode>7)then
-      write(damsg,omode_str(-1))omode,"Unknown omode"
-    else
-      damsg=trim(omode_str(omode))
-    endif
-    if(debug.and.MasterProc)print *,trim(damsg)
-    call CheckStop(.not.any(omode==(/1,4,5,6/)),trim(damsg))
-    call Add_2timing(42,tim_after,tim_before,'3DVar: Optimization.')
+  write(damsg,"(A,'#',I3.3,': ',A,'=',3(I0,:,','),3(1X,A,'=',I0,:,','))"),&
+    'Finish m1qn3',me,'mode',imode,'reverse',reverse,'niter',niter,'nsim',nsim
+  print dafmt,trim(damsg)
+
+  select case(omode)
+  case(1:7)
+    damsg=trim(omode_str(omode))
+  case default
+    write(damsg,omode_str(-1))omode,"Unknown omode"
+  endselect
+  write(io,*)trim(damsg)
+  if(debug)then
+    write(damsg,"('m1qn3#',I3.3,'. ',A)")me,trim(damsg)
+    print dafmt,trim(damsg)
   endif
+  call CheckStop(all(omode/=OKmode),trim(damsg))
+
+  close(io)
+  call Add_2timing(T_OPTIM,tim_after,tim_before)
 !-----------------------------------------------------------------------
 ! Make a final call to costFunction for converting \chi to \delta x.
 !-----------------------------------------------------------------------
@@ -537,58 +566,35 @@ subroutine get_innovations(maxobs,flat,flon,falt,obs,obs_stddev)
 
   integer i,j,l,k,n,ilev,err,ierr
   real yn,alt(nx,ny,nlev),rho0
-! logical inside
 !-----------------------------------------------------------------------
 ! Allocate & initialise dynamic arrays:
 !-----------------------------------------------------------------------
   call allocate_obs()
-! print *,size(flat),size(flon),size(falt),size(ipar)
 !-----------------------------------------------------------------------
 ! x,y grid coordinates of observations:
 !-----------------------------------------------------------------------
-  DO_OBS: do n=1,nobs
-!   if((.not.coord_in_processor(flon(n),flat(n))).or.&
-!      (obs(n)<obsData(ipar(n))%min).or.&
-!      (obs(n)>obsData(ipar(n))%max))then
-!     innov(n)=0e0
-!     cycle DO_OBS
-!   endif
+  do n=1,nobs
     call CheckStop(.not.coord_in_processor(flon(n),flat(n)),&
       "Observation outside geographical domain")
-    call CheckStop((obs(n)<obsData(ipar(n))%min).or.&
-                   (obs(n)>obsData(ipar(n))%max),&
+    call CheckStop(obs(n),[obsData(ipar(n))%min,obsData(ipar(n))%max],&
       "Observation outside accepted value range")
 !-----------------------------------------------------------------------
 ! mapping from model to obs-space:
 !-----------------------------------------------------------------------
+! Units Conversion:
+!   Model [mol/mol] to Obs [obsData(ipar)%unit] conversion is handeled 
+!   by H_op (DA_Obs_ml) via Units_Scale (Units_ml). Conversion info
+!   is stored on obsData(ipar)%unitconv and obsData(ipar)%unitroa.
+!-----------------------------------------------------------------------
     call H_op(flat(n),flon(n),falt(n),n,yn,rho0,ipar(n))
-!   if(obsData(ipar(n))%error_rel>0)&
-!     obs_stddev(n)=max(obs_stddev(n),obs(n)*obsData(ipar(n))%error_rel)
-!   if(obsData(ipar(n))%error_rep>0)&
-!     obs_stddev(n)=max(obs_stddev(n),obsData(ipar(n))%error_rep)
 !-----------------------------------------------------------------------
-!**************** check  Unimod units **********************************
 ! Innovation = yn-y
-!  for chemical observations: on input, obs(n)=y=observation [g/m3];
-!    on output innov(n)=innovation [g/kg].
-!    Convert standard deviation from g/m3 to g/kg
-!  for NO2 Trop.Col. observation are converted to [g/kg] uppon reading
-!    with the use of sfalling factors
-!  for lidar observations: on input, obs(n)=y [1/m/sr]
-!    likewise on output
 !-----------------------------------------------------------------------
-!   if(trim(obspararr(ipar(n)))=='BSCA')then
-!     innov(n)=yn-obs(n)
-!     obsstddev(n)=obs_stddev(n)
-!   else
-!     innov(n)=yn-obs(n)/rho0
-!     obsstddev(n)=obs_stddev(n)/rho0
-!   endif
     innov(n)=yn-obs(n)*FGSCALE
     obsstddev(n)=obs_stddev(n)*FGSCALE
-    if(debug.and.MasterProc) print "('#',I0,2(1X,A3,':',ES12.3))",&
+    if(debug.and.MasterProc) print "('#',I0,2(1X,A3,':',E12.3))",&
       n,'Observation',obs(n),'Model',yn*FGSCALE_INV
-  enddo DO_OBS
+  enddo
 end subroutine get_innovations
 #ifdef BIAS_CORRECTION
 subroutine costFunction(ind,nv2np,chi,Jcost,gradJcost,ntot,rzs,dzs)
@@ -625,7 +631,7 @@ subroutine costFunction(ind,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
 ! Local variables
 !-----------------------------------------------------------------------
  !complex chi_arr(nv1,nxex,nyex)
-  complex(kind=8), allocatable, dimension(:,:,:) :: chi_arr
+  complex(kind=8), allocatable, dimension(:,:,:) :: chi_arr,chi_hc
   integer lenwork,i,ik,j,k,kk,l,l0,l1,m,n,m1,n1,mneg,nneg
  !integer maxobs,p,ij
  !real yn(nobs),dep(nobs),Oinvdep(nobs)
@@ -644,23 +650,29 @@ subroutine costFunction(ind,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
     return
   case(-1)
     if(debug.and.MasterProc) print dafmt,"Update observed species"
+    call Add_2timing(T_OPTIM,tim_after,tim_before)
   case default
     if(debug.and.MasterProc) print dafmt,"Optimization costFunction"
   endselect
-  call Add_2timing(42,tim_after,tim_before,'3DVar: Optimization.')
+  call Add_2timing(T_OPTIM,tim_after,tim_before)
+!-----------------------------------------------------------------------
+! storage for increment field (global)
+!-----------------------------------------------------------------------
+#ifdef DA_MPI
+! extract info on spectral size and y-decomposition used by fftw ;
+! nxf is roughly nxex/2, other half is redundant ;
+! note that fftw might deceide to have no values in y-slab on certain pe ..
+  call ufft%Get(nx=nxg, ny=nyg, ny_local=lnyg, iy_offset=iyg0, &
+                nxf=nxf, nyf=nyf, nyf_local=lnyf, iyf_offset=iyf0 )
+#endif
 #ifdef BIAS_CORRECTION
   nv2=nv2np-(NBIAS_PREDICTORS+1)*nobsData
 #endif
-! maxobs=nx*ny
-! no4=4*nobs
-! no8=8*nobs
   kx1=kx+1
   ky1=ky+1
   kxm1=kxmin+1
   kym1=kymin+1
   kx2=nxex-kxmin+1
-!   if(debug.and.MasterProc) print "(4(1X,A,'=',I0))",&
-!     'kx',kx,'ky',ky,'kxmin',kxmin,'kymin',kymin
 !-----------------------------------------------------------------------
 ! Copy chi (in compact storage format) into chi_arr (in matrix format),
 ! taking into account the relation chi_arr(i,m,n)=conjg(chi_arr(i,-m,-n))
@@ -741,9 +753,7 @@ subroutine costFunction(ind,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
       enddo
     endif
 !     zero elements:
-!AMVB 2009-12-11: Bug found my MK 2009-12-09
     m=mm(kx);n=nn(ky)
-!   m=mm(kx);n=mm(ky)
     chi_arr(i,1,1)=cmplx(real(chi_arr(i,1,1)),0e0)
     if(mod(nxex,2)==0)&
       chi_arr(i,m,1)=cmplx(real(chi_arr(i,m,1)),0e0)
@@ -755,7 +765,28 @@ subroutine costFunction(ind,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
 !-----------------------------------------------------------------------
 ! conversion from spectral to model space
 !-----------------------------------------------------------------------
-  call chitox(chi_arr,dx)
+  ! Fill non-redundant part, or above called "independent" part.
+  ! Use same real-to-complex decoding to transform 'chi' into 'chi_hc' ;
+  ! experiments showd that in a serial run the first part of the
+  ! full complex field 'chi_arr' is a proper input to the fftw routines,
+  ! that is, the first half of the first dimension is sufficient:
+  !     chi_arr(iv,1:nxf,1:nyf)
+#ifdef DA_MPI
+  if(lnyf>0)then  ! defined local y-slab
+    call ufft%Get(nxf=m1,nyf=n1)        !  m1=nXex/2+1,n1=nYex
+    allocate(chi_hc(m1,n1,nv1))
+    forall(i=1:nv1) &                   ! copy non-redundant slab, 
+      chi_hc(:,:,i) = chi_arr(i,:m1,:n1)! 'chi_arr' is the same on every proc
+  else
+    allocate(chi_hc(1,1,1)) ! dummy
+  endif
+#else
+    call ufft%Get(nxf=m1,nyf=n1)        !  m1=nXex/2+1,n1=nYex
+    allocate(chi_hc(m1,n1,nv1))
+    forall(i=1:nv1) &                   ! copy non-redundant slab, 
+      chi_hc(:,:,i) = chi_arr(i,:m1,:n1)! 'chi_arr' is the same on every proc
+#endif
+  call chitox(chi_hc,dx(:nX,:nY,:,:))
 #ifdef BIAS_CORRECTION
   dbias=chi(nv2+1:)
 #endif
@@ -763,13 +794,10 @@ subroutine costFunction(ind,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
 ! update unobserved species:
 !-----------------------------------------------------------------------
   if(ind==-1)then
-    call Add_2timing(44,tim_after,tim_before,'3DVar: Update observed species.')
-#ifndef NO_UPDATE_UNOBSERVED
+    call Add_2timing(T_OBSPC,tim_after,tim_before)
     if(debug.and.MasterProc) print dafmt,"Update unobserved species"
-    call update_unobserved(chi_arr)
-    call Add_2timing(45,tim_after,tim_before,'3DVar: Update unobserved species.')
-#endif
-    if(.not.calculate_chisq)return
+    if(use_unobserved) call update_unobserved(chi_arr)
+    call Add_2timing(T_UOSPC,tim_after,tim_before)
   endif ! return after chi^2 eval
 !-----------------------------------------------------------------------
 ! conversion from model to observation space
@@ -778,33 +806,14 @@ subroutine costFunction(ind,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
 #ifdef BIAS_CORRECTION
   allocate(bn(nobsData),Binvdep(nobsData))
 #endif
-
-! do n=1,nobs
-!   yn(n)=0e0
-!   do p=1,no4
-!     i=pidx(p)
-!     j=pidx(p+no4)
-!     l=pidx(p+no8)
-!     do k=1,nchemobs
-!       kk=ichemobs(k)
-!       yn(n)=yn(n)+H_jac(n,p,kk)*dx(i,j,l,k)
-!     enddo
-!   enddo
-! enddo
   do n=1,nobs
     yn(n)=0e0
     do p=1,4
       i=pidx(n)%i(p)
       j=pidx(n)%j(p)
-#ifdef OLD_MATCH_CODE
-      do l=pidx(n)%l(0),pidx(n)%l(1)
-        yn(n)=yn(n)+dot_product(H_jac(n,p,l,:),dx(i,j,l,:))
-      enddo
-#else
-     l0=pidx(n)%l(0)
-     l1=pidx(n)%l(1)
-     yn(n)=yn(n)+sum(H_jac(n,p,l0:l1,:)*dx(i,j,l0:l1,:))
-#endif
+      l0=pidx(n)%l(0)
+      l1=pidx(n)%l(1)
+      yn(n)=yn(n)+sum(H_jac(n,p,l0:l1,:)*dx(i,j,l0:l1,:))
     enddo
   enddo
   if(debug.and.MasterProc)then
@@ -828,56 +837,21 @@ subroutine costFunction(ind,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
 ! chi^2 eval and return:
 !----------------------------------------------------------------------- 
   if(ind==-1)then
-    if(calculate_chisq) &
+    if(use_chisq) &
       call chisq_over_nobs2(nobs,innov+yn) ! departures: dep=H(xb)+H_jac*dx-y
-    call Add_2timing(46,tim_after,tim_before,'3DVar: CHI^2 evaluation.')
+    call Add_2timing(T_CHISQ,tim_after,tim_before)
     call my_deallocate(.false.,"NoMessage")
     return
   endif
-#ifdef OLD_MATCH_CODE
-!-----------------------------------------------------------------------
-! departures H(xb)+H_jac*dx-y
-!-----------------------------------------------------------------------
-  do n=1,nobs
-    dep(n)=innov(n)+yn(n)
-  enddo
-!-----------------------------------------------------------------------
-! O^{-1} * [ H(xb)+H_jac*dx-y ]
-!-----------------------------------------------------------------------
-  do n=1,nobs
-    Oinvdep(n)=dep(n)/(obsstddev(n)**2)
-  enddo
-!-----------------------------------------------------------------------
-! Jobs = 0.5 * [ H(xb)+H_jac*dx-y ]^{T} * O^{-1} * [ H(xb)+H_jac*dx-y ]
-!-----------------------------------------------------------------------
-  jobs=0e0
-  do n=1,nobs
-    jobs=jobs+dep(n)*Oinvdep(n)
-  enddo
-  jobs=0.5e0*jobs
 !-----------------------------------------------------------------------
 ! Jb = 0.5 * \chi^{\dagger}*\chi
 !-----------------------------------------------------------------------
-  jb=0e0
-  do i=1,nv1
-    do m=1,nxex
-      do n=1,nyex
-        jb=jb+real(chi_arr(i,m,n))**2+aimag(chi_arr(i,m,n))**2
-      enddo
-    enddo
-  enddo
-  jb=0.5e0*jb
-#else
-!-----------------------------------------------------------------------
-! Jb = 0.5 * \chi^{\dagger}*\chi
-!-----------------------------------------------------------------------
- !jb=0.5*sum(conjg(chi_arr)*chi_arr)
   jb=0.5*norm(chi_arr,squared=.true.)
 !-----------------------------------------------------------------------
 ! Jobs = 0.5 * [ H(xb)+H_jac*dx-y ]^{T} * O^{-1} * [ H(xb)+H_jac*dx-y ]
 !-----------------------------------------------------------------------
   dep=innov+yn                  ! departures: h(xb)-y=H(xb)-y+H_jac*dx
-# ifdef BIAS_CORRECTION
+#ifdef BIAS_CORRECTION
   bn=bias+dbias
 do n=1,nobsData
   if(all(obsData(n)%iobs==0))cycle
@@ -887,7 +861,7 @@ do n=1,nobsData
     n,bn(n)*FGSCALE_INV,i,dep(i)*FGSCALE_INV,j,dep(j)*FGSCALE_INV
 enddo
   dep=dep+bn(ipar(:nobs))       ! departures: h(xb)+bias(x,beta)-y
-# endif
+#endif
   Oinvdep=dep/(obsstddev**2)    ! O^{-1} * [ H(xb)+H_jac*dx-y ]
   jobs=0.5*dot_product(dep,Oinvdep)
 ! if(debug.and.MasterProc)print "(5(1X,A,'=',ES12.3))",&
@@ -899,67 +873,42 @@ enddo
 !-----------------------------------------------------------------------
 ! Jbias = 0.5 * [ beta_b-beta ]^{T} * Bb^{-1} * [ beta_b-beta ]
 !-----------------------------------------------------------------------
-# ifdef BIAS_CORRECTION
+#ifdef BIAS_CORRECTION
   Binvdep=dbias*biasWeight/(biasStdDev**2)
   print "('#',1X,I0,2(1X,ES12.3))",&
     (n,dbias(n)*FGSCALE_INV,Binvdep(n)*FGSCALE_INV,n=1,nobsData)
   jbias=0.5*dot_product(dbias,Binvdep)
-# else
+#else
   jbias=0.0
-# endif
+#endif
 !-----------------------------------------------------------------------
 ! J = Jb + Jobs + Jbias
 !-----------------------------------------------------------------------
   Jcost = jb + jobs + jbias
-#endif
 !-----------------------------------------------------------------------
 ! grad Jb = independent elements of \chi
 !-----------------------------------------------------------------------
-#ifdef OLD_MATCH_CODE
-  gradJcost=0e0
-  do i=1,nv2
-    gradJcost(i)=chi(i)
-  enddo
-#else
   gradJcost(:)=chi(:)
 !-----------------------------------------------------------------------
 !  Bb^{-1} * [ beta_b-beta ] + bias_jac^{T} * O^{-1} * [ h(x)+bias(x,beta)-y ]
 !-----------------------------------------------------------------------
-# ifdef BIAS_CORRECTION 
+#ifdef BIAS_CORRECTION 
   do n=1,nobsData
     i=obsData(n)%iobs(0);j=obsData(n)%iobs(1)
     gradJcost(nv2+n)=Binvdep(n)+sum(Oinvdep(i:j))
   enddo
-# endif
 #endif
 !-----------------------------------------------------------------------
 !  H_jac^{T} * O^{-1} * [ H(xb)+H_jac*dx-y ]
 !-----------------------------------------------------------------------
   dx=0e0
-! do p=1,no4
-!   i=pidx(p)
-!   j=pidx(p+no4)
-!   l=pidx(p+no8)
-!   do k=1,nchemobs
-!     kk=ichemobs(k)
-!     do n=1,nobs
-!       dx(i,j,l,k)=dx(i,j,l,k)+H_jac(n,p,kk)*Oinvdep(n)
-!     enddo
-!   enddo
-! enddo
   do n=1,nobs
     do p=1,4
       i=pidx(n)%i(p)
       j=pidx(n)%j(p)
-#ifdef OLD_MATCH_CODE
-      do l=pidx(n)%l(0),pidx(n)%l(1)
-        dx(i,j,l,:)=dx(i,j,l,:)+H_jac(n,p,l,:)*Oinvdep(n)
-      enddo
-#else
-     l0=pidx(n)%l(0)
-     l1=pidx(n)%l(1)
-     dx(i,j,l0:l1,:)=dx(i,j,l0:l1,:)+H_jac(n,p,l0:l1,:)*Oinvdep(n)
-#endif
+      l0=pidx(n)%l(0)
+      l1=pidx(n)%l(1)
+      dx(i,j,l0:l1,:)=dx(i,j,l0:l1,:)+H_jac(n,p,l0:l1,:)*Oinvdep(n)
     enddo
   enddo
   if(debug.and.MasterProc)then
@@ -977,8 +926,35 @@ enddo
 ! grad Jobs = U^{-+}*H_jac^{T} * O^{-1} * [ H(xb)+H_jac*dx-y ],
 ! grad J = grad Jb + grad Jobs
 !-----------------------------------------------------------------------
-  call chitox_adj(chi_arr,dx)
-! if(debug.and.MasterProc) print "(2(1X,A,'=',ES12.3))",&
+  ! apply fft etc on local dx field, return result in half-complex form:
+  call chitox_adj(chi_hc,dx(:,:,:,:))
+  ! collect global field on every process:
+  ! call doms_an_fex%AllGather( chi_hc, chi_hc_glb, status )
+
+  ! full complex form
+  call ufft%Get(nxf=m1,nyf=n1)    !  m1:=nXex/2+1,n1:=nYex
+! forall(i=1:nv1) &
+!   chi_arr(i,:m1,:n1) = chi_hc(:,:,i)
+! if(m1<nXex) forall(m=m1+1:nXex,n=2:nYex) &
+!   chi_arr(:,m,n) = conjg(chi_hc(nXex-m+2,nYex-n+2,:))
+! if(n1<nYex) forall(m=2:nXex,n=n1+1:nYex) &
+!   chi_arr(:,m,n) = conjg(chi_hc(nXex-m+2,nYex-n+2,:))
+!!forall(i=1:nv1)
+!!  chi_arr(i,:m1,:n1) =     chi_hc(:,:,i)
+!!  chi_arr(i,m1+1:,:)=conjg(chi_hc(:2:-1,:2:-1,i))
+!!  chi_arr(i,:,n1+1:)=conjg(chi_hc(:2:-1,:2:-1,i))
+!!endforall
+  do i=1,nv1
+    do m=1,m1
+      chi_arr(i,m,:) = chi_hc(m,:,i)
+    enddo
+    do m=nxex,m1+1,-1
+      do n=nyex,2,-1  ! (m=1||n=1) is a model bnd and does not change (?)
+        chi_arr(i,m,n) = conjg(chi_hc(nxex-m+2,nyex-n+2,i))
+      enddo
+    enddo
+  enddo
+! if(debug.and.MasterProc) print "(2(1X,A,'=',E12.3))",&
 !   '||dx||',norm(dx),'||chi_arr||',norm(chi_arr)
 !-----------------------------------------------------------------------
 ! only add independent elements of grad Jobs to array gradJcost:
@@ -1042,7 +1018,7 @@ enddo
       '||DJo||',Jobs,'||DJbias||',Jbias,'||DJ||',Jb+Jobs+Jbias
   endif
  !ind=4
-  call Add_2timing(43,tim_after,tim_before,'3DVar: costFunction.')
+  call Add_2timing(T_COSTF,tim_after,tim_before)
   call my_deallocate(.false.,"NoMessage")
 !-----------------------------------------------------------------------
 contains
@@ -1052,6 +1028,7 @@ subroutine my_deallocate(verb,msg)
   character(len=*), intent(in) :: msg
   if(verb) print dafmt,msg
   if(allocated(chi_arr))  deallocate(chi_arr)
+  if(allocated(chi_hc))   deallocate(chi_hc)
   if(allocated(yn))       deallocate(yn)
   if(allocated(dep))      deallocate(dep)
   if(allocated(Oinvdep))  deallocate(Oinvdep)

@@ -8,7 +8,8 @@ include Makefile.SRCS
 ###################################################
 
 F90 = mpif90
-DEBUG_FLAGS = -CB -debug-parameters all -traceback -ftrapuv -g -fpe0 -O0
+DEBUG_FLAGS = -check all -check noarg_temp_created -debug-parameters all \
+              -traceback -ftrapuv -g -fpe0 -O0
 OPT_FLAGS = -O3 -ftz
 F90FLAGS = -shared-intel -r8 -recursive -convert big_endian -IPF_fp_relaxed \
            -cpp $(DFLAGS)
@@ -73,10 +74,8 @@ F90FLAGS += $(addprefix -I,$(INCL)) \
    $(if $(filter yes,$(DEBUG)),$(DEBUG_FLAGS),$(OPT_FLAGS))
 
 .SUFFIXES: $(SUFFIXES) .f90
-
 %.o:%.f90
 	$(F90) $(F90FLAGS) -c $< -o $@
-
 
 # Include the dependency-list created by makedepf90 below
 all:  $(PROG)
@@ -102,12 +101,9 @@ diskclean:
 touchdepend:
 	touch .depend
 
+###
 # Model/Config specific targets
-EMEP EMEP2010 EMEP2011 SR-EMEP SR-EMEP2010 SR-EMEP2011 EmChem09 EmChem09-ESX CRI_v2_R5 \
-MACC MACC-EVA MACC-EVA2010 MACC-EVA2011 SR-MACC eEMEP eEMEP2010 eEMEP2013:
-	ln -sf $(filter %.f90 %.inc,$+) . && \
-	$(MAKE) MACHINE=$(MACHINE) DEBUG=$(DEBUG) -j4 $(PROG)
-
+###
 # My_* files pre-requisites
 EMEP EMEP2010 EMEP2011 MACC MACC-EVA MACC-EVA2010 MACC-EVA2011 eEMEP2010: \
 	  ./ZD_OZONE/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
@@ -132,12 +128,17 @@ SR-EMEP SR-EMEP2010 SR-EMEP2011 SR-MACC: \
 MACC-NMC: MACC-EVA
 
 # Pollen for MACC FC runs
-MACC: SRCS := $(filter-out My_Pollen_ml.f90,$(SRCS)) Pollen_ml.f90 Pollen_const_ml.f90
-MACC: ./ZD_Pollen/Pollen_ml.f90 ./ZD_Pollen/Pollen_const_ml.f90 | depend
-MACC: PHONY+=Pollen_const_ml.o
+MACC: export SRCS := Pollen_ml.f90 Pollen_const_ml.f90 $(filter-out My_Pollen_ml.f90,$(SRCS))
+MACC: ./ZD_Pollen/Pollen_ml.f90 ./ZD_Pollen/Pollen_const_ml.f90
+
 # ESX
 EmChem09-ESX: SRCS := $(filter-out My_ESX_ml.f90,$(SRCS)) $(ESX_SRCS)
 EmChem09-ESX: $(ESX_SRCS) | depend
+
+# Link My_* files and MAKE target
+EMEP EMEP2010 EMEP2011 SR-EMEP SR-EMEP2010 SR-EMEP2011 EmChem09 EmChem09-ESX CRI_v2_R5 \
+MACC MACC-EVA MACC-EVA2010 MACC-EVA2011 SR-MACC eEMEP eEMEP2010 eEMEP2013:
+	ln -sf $(filter %.f90 %.inc,$+) . && $(MAKE)
 
 # GenChem config
 .SECONDEXPANSION:

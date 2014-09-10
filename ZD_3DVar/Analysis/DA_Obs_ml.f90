@@ -4,14 +4,14 @@ use TimeDate_ml,      only: current_date
 use CheckStop_ml,     only: CheckStop
 use Functions_ml,     only: great_circle_distance
 use GridValues_ml,    only: glon,glat,coord_in_processor
-use Par_ml,           only: limax,ljmax
+use Par_ml,           only: limax,ljmax,me
 use Chemfields_ml,    only: xn_adv,cfac,PM25_water,PM25_water_rh50
 !se ChemSpecs_shl_ml, only: NSPEC_SHL        ! Maps indices
 use ChemSpecs_adv_ml, only: NSPEC_ADV
 use ChemChemicals_ml, only: species
 use ChemGroups_ml,    only: chemgroups
-use Io_ml,            only: IO_TMP
-use Io_Progs_ml,      only: PrintLog
+use Io_ml,            only: IO_TMP,PrintLog
+use InterpolationRoutines_ml,  only : point2grid_coeff
 use ModelConstants_ml,only: KMAX_MID,MasterProc,runlabel1
 use SmallUtils_ml,    only: find_index
 use TimeDate_ExtraUtil_ml, only: date2string
@@ -20,6 +20,7 @@ use DA_ml,            only: debug=>DA_DEBUG,dafmt=>da_fmt_msg,damsg=>da_msg
 use Util_ml,          only: norm
 use spectralcov,      only: nx,ny,nlev,nchem,nxex,nyex,nv1,FGSCALE,&
                             nChemObs,nChemNoObs,iChemInv,iChemObs,iChemNoObs
+use chitox_ml,       only:  chitox_adj
 implicit none
 integer, save :: nobs!,matidx
 ! integer, dimension(:), allocatable, save :: pidx
@@ -40,7 +41,8 @@ endtype
 integer            :: nobsData=0
 integer, parameter :: nobsDataMax=6
 type(obs_data)     :: obsData(nobsDataMax)
-namelist /OBSERVATIONS/nobsData,obsData
+character(len=032) :: interpolation_method='distance-weighted'
+namelist /OBSERVATIONS/nobsData,obsData,interpolation_method
 !-----------------------------------------------------------------------
 real, dimension(:,:,:,:), allocatable :: xn_adv_ex
 integer               :: varSpec(NSPEC_ADV),varSpecInv(NSPEC_ADV)
@@ -88,17 +90,13 @@ subroutine allocate_obs()
 !   pidx(n)%i(4)=i_n+1, pidx(n)%j(4)=j_n+1,
 !-----------------------------------------------------------------------
   if(.not.allocated(H_jac))then
-   !allocate(H_jac(nobs,4*nobs,nchem),stat=ierr)
-   !allocate(H_jac(nobs,4*nobs,nlev,nchem),stat=ierr)
     allocate(H_jac(nobs,4,nlev,nchemobs),stat=ierr)
     call CheckStop(ierr,'Allocation error: H_JAC.')
     H_jac=0.0
   endif
   if(.not.allocated(pidx))then
-   !allocate(pidx(12*nobs),stat=ierr)
     allocate(pidx(nobs),stat=ierr)
     call CheckStop(ierr,'Allocation error: PIDX.')
-   !pidx=0
     pidx=H_jac_idx((/0,0,0,0/),(/0,0,0,0/),(/0,0/))
   endif
 end subroutine allocate_obs
@@ -116,7 +114,7 @@ subroutine deallocate_obs()
   if(allocated(H_jac))    deallocate(H_jac)
   if(allocated(pidx))     deallocate(pidx)
 endsubroutine deallocate_obs
-subroutine read_obs(maxobs,flat,flon,falt,y,stddev,ipar,iostat)
+subroutine read_obs(maxobs,flat,flon,falt,y,stddev,ipar)
 !-----------------------------------------------------------------------
 ! @description
 ! Read in observations y in standard format
@@ -125,17 +123,12 @@ subroutine read_obs(maxobs,flat,flon,falt,y,stddev,ipar,iostat)
 !-----------------------------------------------------------------------
   implicit none
 
-  integer maxobs,iostat,ipar(maxobs)
-  real y(maxobs),stddev(maxobs)
-  real flat(maxobs),flon(maxobs),falt(maxobs)
+  integer :: maxobs,ipar(maxobs)
+  real :: y(maxobs),stddev(maxobs),flat(maxobs),flon(maxobs),falt(maxobs)
 
-  integer :: lu1=20
-  integer :: no,iobsData
+  integer            :: no,iobsData,ierr
   character(len=256) :: file
-
-! #     include "DATAASSIM.INC"
-! #     include "MPP.INC"
-! #     include "CONST.INC"
+  logical            :: exist
 !-----------------------------------------------------------------------
 !
 !-----------------------------------------------------------------------
@@ -146,36 +139,42 @@ subroutine read_obs(maxobs,flat,flon,falt,y,stddev,ipar,iostat)
 !-----------------------------------------------------------------------
 ! open observational data file in standard format, if applicable
 !-----------------------------------------------------------------------
-  if(any(obsData(:nobsData)%file==""))then
-    print dafmt,'No observation file specified'
-    return
-  endif
   do iobsData=1,nobsData
-    iostat=0
-    file=date2string(obsData(iobsData)%file,current_date)
-    open(lu1,file=file,form='formatted',status='old',iostat=iostat)
-    if(iostat/=0)then
-      print dafmt,"Obsdata not opened "//trim(file)
-      close(lu1)
-      iostat=-1
+    if(obsData(iobsData)%file=="")then
+      write(damsg,"(A,I0,1X,A)")'WARNING: obsData#',iobsData,"file not specified"
+      if(MasterProc) print dafmt,damsg
       cycle
-    else
-      print dafmt,"Obsdata opened "//trim(file)
     endif
+    file=date2string(obsData(iobsData)%file,current_date)
+    inquire(file=file,exist=exist)
+    if(.not.exist)then
+      write(damsg,"(A,I0,1X,A)")'WARNING: obsData#',iobsData,"file not found"
+      if(MasterProc) print dafmt,damsg
+      cycle
+    endif
+    open(IO_TMP,file=file,form='formatted',status='old',iostat=ierr)
+    if(ierr/=0)then
+      write(damsg,"(A,I0,1X,A)")'WARNING: obsData#',iobsData,"file not opened"
+      if(MasterProc) print dafmt,damsg
+      close(IO_TMP)
+      cycle
+    endif
+    print dafmt,"Obsdata opened "//trim(file)
 !-----------------------------------------------------------------------
 ! read data
 !-----------------------------------------------------------------------
     obsData(iobsData)%iobs(0)=nobs+1
-    do while(iostat==0)
+    do while(ierr==0)
       if(nobs>=maxobs)then
         print dafmt,'ERROR reading observations, maxobs too small'
-        iostat=-2
+        ierr=-2
         cycle
       endif
       nobs=nobs+1
       ipar(nobs)=iobsData
-      read(lu1,*,iostat=iostat)no,flat(nobs),flon(nobs),falt(nobs),y(nobs),stddev(nobs)
-      select case(iostat)
+      read(IO_TMP,*,iostat=ierr)no,flat(nobs),flon(nobs),falt(nobs),&
+                                   y(nobs),stddev(nobs)
+      select case(ierr)
       case(0)
         if((.not.coord_in_processor(flon(nobs),flat(nobs))).or.&
            (y(nobs)<obsData(iobsData)%min).or.&
@@ -190,23 +189,15 @@ subroutine read_obs(maxobs,flat,flon,falt,y,stddev,ipar,iostat)
           print dafmt,'WARNING obs stddev <= 0'
           stddev(nobs)=1e-9
         endif
-!       if(obsData(iobsData)%scale<0e0)then ! initialize scale
-! !         print dafmt,'WARNING obs scale <= 0'
-!         obsData(iobsData)%scale=1e0/Units_Scale(obsData(iobsData)%unit,obsData(iobsData)%ispec) !unit conversion factor
-!       endif
-!       if(obsData(iobsData)%scale/=1e0)then
-!         y     (nobs)=y     (nobs)*obsData(iobsData)%scale
-!         stddev(nobs)=stddev(nobs)*obsData(iobsData)%scale
-!       endif
       case(:-1)     !reached EOF: nothing readed
         nobs=nobs-1
       case(1:)
         print dafmt,'ERROR reading observations'
         nobs=nobs-1
-        iostat=-1
+        ierr=-1
       endselect
     enddo
-    close(lu1)
+    close(IO_TMP)
     obsData(iobsData)%iobs(1)=nobs
   enddo
 !-----------------------------------------------------------------------
@@ -257,7 +248,7 @@ subroutine H_op(lat,lon,alt,n,yn,rho0,ipar)
   real, intent(inout) :: yn
   real, intent(out)   :: rho0
 
-  integer i(4),j(4),p,l,ll,k,kk,igrp,g,ispec
+  integer i(4),j(4),p,l,ll,k,kk,igrp,g,ispec,nn
   real xn,Hj,H_int(4),T1,QML1,PS1,Hchem(nchem),unitconv
   integer, pointer, dimension(:) :: gspec=>null()      ! group array of indexes
   real,    pointer, dimension(:) :: gunit_conv=>null() ! group array of unit conv. factors
@@ -270,7 +261,7 @@ subroutine H_op(lat,lon,alt,n,yn,rho0,ipar)
 ! operator for horizontal four-point interpolation between nearest
 ! neighbouring grid points:
 !-----------------------------------------------------------------------
-  call get_interpol_const(lon,lat,i,j,H_int)
+  call get_interpol_const(lon,lat,i,j,H_int,interpolation_method)
 !-----------------------------------------------------------------------
 ! z grid coordinate of observations:
 !-----------------------------------------------------------------------
@@ -290,10 +281,11 @@ subroutine H_op(lat,lon,alt,n,yn,rho0,ipar)
 !-----------------------------------------------------------------------
 !
 !-----------------------------------------------------------------------
+  nn=n-obsData(ipar)%iobs(0)+1
   if(n==obsData(ipar)%iobs(0)) &
     print dafmt,"Analysis of "//trim(obsData(ipar)%tag)
-  print '(4(A,I0))','Obs:',n,'/',nobs,',',n-obsData(ipar)%iobs(0)+1,&
-                  '/',obsData(ipar)%iobs(1)-obsData(ipar)%iobs(0)+1
+  if(debug.or.nn==obsData(ipar)%nobs) print '(5(A,I0))',&
+    'Obs(',me,'):',n,'/',nobs,',',nn,'/',obsData(ipar)%nobs
 !-----------------------------------------------------------------------
 ! analysis of direct observations: model mid-levels
 !-----------------------------------------------------------------------
@@ -590,54 +582,53 @@ subroutine chisq_over_nobs2(nobs,dep)
   close(IO_TMP)
   deallocate(chisq,nm)
 endsubroutine chisq_over_nobs2
-! function great_circle_distance(fi1,lambda1,fi2,lambda2) result(dist)
-!   !compute the great circle distance between to points given in
-!   !spherical coordinates. Sphere has radius 1.
-!   real, intent(in) ::fi1,lambda1,fi2,lambda2 !NB: in DEGREES here
-!   real :: dist
-!   dist=2*asin(sqrt(sind(0.5*(lambda1-lambda2+360.0))**2+&
-!         cosd(lambda1+360.0)*cosd(lambda2+360.0)*sind(0.5*(fi1-fi2+360.0))**2))
-! end function great_circle_distance
-subroutine get_interpol_const(lon,lat,IIij,JJij,Weight)
-  !find interpolation constants
-  !note that i,j are local
-  !find the four closest points
-  real,    intent(in)    :: lon,lat
-  integer, intent(inout) :: IIij(4),JJij(4)
-  real,    intent(out)   :: Weight(4)
-  integer :: i,j
-  real :: dist(0:4)
+subroutine get_interpol_const(lon,lat,IIij,JJij,Weight,method)
+! find the four closest points & calulcate distance weights
+  real,    intent(in)         :: lon,lat
+  integer, intent(out)        :: IIij(4),JJij(4)
+  real,    intent(out)        :: Weight(4)
+  character(len=*),intent(in) :: method
+!!logical, parameter :: debug=.true.
+  integer :: n
+
+  select case(method)
+  case('old','local')
+    call get_coeff()
+  case('dis','nearest4','distance-weighted') ! 4-point distance-weighted
+    call point2grid_coeff(lon,lat,IIij,JJij,Weight,&
+      glon(:limax,:ljmax),glat(:limax,:ljmax),limax,ljmax,debug)
+  case('nnn','nearest1','nearest-neighbor')  ! 1-point nearest-neighbor
+    call point2grid_coeff(lon,lat,IIij,JJij,Weight,&
+      glon(:limax,:ljmax),glat(:limax,:ljmax),limax,ljmax,debug)
+    Weight(:)=(/1.0,0.0,0.0,0.0/) ! Only use nearest grid cell
+    IIij(2:4)=IIij(1)             ! Reset unused indices, 
+    JJij(2:4)=JJij(1)             ! these elements have weight zero.
+  case default  
+    call CheckStop("get_interpol_const: "//&
+      "Unknown interpolation method '"//trim(method)//"'.")
+  endselect
+  if(debug) print "(A,1X,A,4(1X,I0,1X,I0,1X,F5.3,','))",&
+    'get_interpol_const',trim(method),(IIij(n),JJij(n),Weight(n),n=1,4)
+contains
+subroutine get_coeff()
+  integer :: i,j,n
+  real :: d,dist(4)
   dist=1.0E40
   do j=1,ljmax
     do i=1,limax
       !distance between (lon(i,j),lat(i,j) and (lon,lat)
-      dist(0)=great_circle_distance(lon,lat,glon(i,j),glat(i,j))
-      if(dist(0)<dist(1))then
-        dist(4)=dist(3);dist(3)=dist(2);dist(2)=dist(1);dist(1)=dist(0)
-        IIij(4)=IIij(3);IIij(3)=IIij(2);IIij(2)=IIij(1);IIij(1)=i
-        JJij(4)=JJij(3);JJij(3)=JJij(2);JJij(2)=JJij(1);JJij(1)=j
-      elseif(dist(0)<dist(2))then
-        dist(4)=dist(3);dist(3)=dist(2);dist(2)=dist(0)
-        IIij(4)=IIij(3);IIij(3)=IIij(2);IIij(2)=i
-        JJij(4)=JJij(3);JJij(3)=JJij(2);JJij(2)=j
-      elseif(dist(0)<dist(3))then
-        dist(4)=dist(3);dist(3)=dist(0)
-        IIij(4)=IIij(3);IIij(3)=i
-        JJij(4)=JJij(3);JJij(3)=j
-      elseif(dist(0)<dist(4))then
-        dist(4)=dist(0)
-        IIij(4)=i
-        JJij(4)=j
-      endif
+      d=great_circle_distance(lon,lat,glon(i,j),glat(i,j))
+      if(d>=dist(4))cycle
+      n=MINVAL([1,2,3,4],MASK=(d<dist))
+      dist(n:4)=EOSHIFT(dist(n:4),-1,BOUNDARY=d)
+      IIij(n:4)=EOSHIFT(IIij(n:4),-1,BOUNDARY=i)
+      JJij(n:4)=EOSHIFT(JJij(n:4),-1,BOUNDARY=j)
     enddo
   enddo
-  dist(0)=(dist(1)+dist(2)+dist(3)+dist(4))
-  Weight(1)=1.0-3.0*dist(1)/dist(0)
-  dist(0)=(dist(2)+dist(3)+dist(4))
-  Weight(2)=(1.0-Weight(1))*(1.0-2.0*dist(2)/dist(0))
-  dist(0)=(dist(3)+dist(4))
-  Weight(3)=(1.0-Weight(1)-Weight(2))*(1.0-dist(3)/dist(0))
+  Weight(1)=1.0-3.0*dist(1)/sum(dist(1:4))
+  Weight(2)=(1.0-Weight(1))*(1.0-2.0*dist(2)/sum(dist(2:4)))
+  Weight(3)=(1.0-Weight(1)-Weight(2))*(1.0-dist(3)/sum(dist(3:4)))
   Weight(4)=1.0-Weight(1)-Weight(2)-Weight(3)
-end subroutine get_interpol_const
-
-end module DA_Obs_ml
+endsubroutine get_coeff
+endsubroutine get_interpol_const
+endmodule DA_Obs_ml

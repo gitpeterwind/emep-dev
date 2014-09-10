@@ -1,30 +1,3 @@
-! <ModelConstants_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
-!          Chemical transport Model>
-!*****************************************************************************!
-!*
-!*  Copyright (C) 2007-2013 met.no
-!*
-!*  Contact information:
-!*  Norwegian Meteorological Institute
-!*  Box 43 Blindern
-!*  0313 OSLO
-!*  NORWAY
-!*  email: emep.mscw@met.no
-!*  http://www.emep.int
-!*
-!*    This program is free software: you can redistribute it and/or modify
-!*    it under the terms of the GNU General Public License as published by
-!*    the Free Software Foundation, either version 3 of the License, or
-!*    (at your option) any later version.
-!*
-!*    This program is distributed in the hope that it will be useful,
-!*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-!*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!*    GNU General Public License for more details.
-!*
-!*    You should have received a copy of the GNU General Public License
-!*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************!
 module ModelConstants_ml
  !+
  ! Specifies a number of constants used in the model, and reads namelist
@@ -317,6 +290,9 @@ integer, public, save, dimension(4) ::   &
 
 integer, public, save ::  & ! Actual number of processors in longitude, latitude
   NPROCX, NPROCY, NPROC     ! and total. NPROCY must be 2 for GLOBAL runs.
+  
+CHARACTER(LEN=3), public, save :: &
+  DOMAIN_DECOM_MODE=''      ! override parinit(Pole_singular) option (Par_ml)
 
 !=============================================================================
 !+ 2) Define  debug flags.
@@ -588,7 +564,7 @@ subroutine Config_ModelConstants(iolog)
      ,EMIS_SOURCE, EMIS_TEST, EMIS_OUT & 
      ,emis_inputlist &
      ,FLUX_VEGS  & ! TESTX
-     ,NETCDF_DEFLATE_LEVEL,  RUNDOMAIN
+     ,NETCDF_DEFLATE_LEVEL,  RUNDOMAIN, DOMAIN_DECOM_MODE
 
     txt = "ok"
     !Can't call check_file due to circularity

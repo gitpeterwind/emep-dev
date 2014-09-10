@@ -13,7 +13,7 @@ program myeul
   use My_Timing_ml,     only: lastptim, mytimm, Output_timing, &
        Init_timing, Add_2timing, Code_timer, &
        tim_before, tim_before0, tim_before1, &
-       tim_after, tim_after0
+       tim_after, tim_after0, NTIMING_UNIMOD
   use Advection_ml,     only: vgrid, assign_nmax, assign_dtadvec
   use Aqueous_ml,       only: init_aqueous, Init_WetDep   !  Initialises & tabulates
   use AirEmis_ml,       only: lightning
@@ -57,6 +57,7 @@ program myeul
   use TimeDate_ExtraUtil_ml,only : date2string, assign_NTERM
   use Trajectory_ml,    only: trajectory_init,trajectory_in
   use Nest_ml,          only: wrtxn     ! write nested output (IC/BC)
+  use DA_3DVar_ml,      only: NTIMING_3DVAR
   !--------------------------------------------------------------------
   !
   !  Variables. There are too many to list here. Still, here are a
@@ -135,7 +136,7 @@ program myeul
   endif
 
   !*** Timing ********
-  call Init_timing()
+  call Init_timing(NTIMING_UNIMOD+NTIMING_3DVAR)
   call Code_Timer(tim_before0)
   tim_before = tim_before0
 

@@ -8,20 +8,29 @@ ifeq ($(EXP),Unimod)
 endif
 export CLEANCPP ?= 1
 export MKL ?= 1
+export FFTW ?=1
 
 #stop: info-varaiable-EXP info-varaiable-PROG
 ifdef EXP
-# override F90FLAGS += -shared-intel -mcmodel=medium
-  override DFLAGS += -DOLD_FFT -DOLD_SPL -DNO_UPDATE_UNOBSERVED \
-    $(if $(filter yes,$(DEBUG)),-DDEBUG_B)
- #override DFLAGS += -DOLD_MATCH_CODE
-  override DFLAGS += -DBIAS_CORRECTION
+  override DFLAGS += -DOLD_FFT -DOLD_SPL $(if $(filter yes,$(DEBUG)),-DDEBUG_B)
+# override DFLAGS += -DBIAS_CORRECTION
   ifneq (,$(findstring OLD_FFT,$(DFLAGS)))
     $(PROG): fftpack5/libfftpack_r8.a
     LIBS += -lfftpack_r8
     LLIB += -L./fftpack5/
   else
     SRCS.$(EXP) += fftpack5.1.f90
+  endif
+  ifdef FFTW
+    ifeq ($(MACHINE),vilje)
+      MODULES += $(FFTW:1=fftw/3.3.3)
+      ifneq (,$(call modulefind,fftw/3.3.3))
+        FFTW3_ROOT = /sw/sdev/Modules/fftw/fftw-3.3.3
+        LIBS += -lfftw3_mpi -lfftw3
+        INCL += $(FFTW3_ROOT)/include
+        LLIB += -L$(FFTW3_ROOT)/lib -Wl,-rpath,$(FFTW3_ROOT)/lib
+      endif
+    endif
   endif
   ifneq (,$(findstring OLD_SPL,$(DFLAGS)))
     SRCS.$(EXP) += ./B_NMC/fitpack.F
@@ -65,14 +74,6 @@ ifdef EXP
       else
         $(call modulecheck,$(filter intelcomp%,$(MODULES)))
       endif
-    else ifeq ($(MACHINE),titan)
-      MODULES += $(MKL:1=intel/11.1u8)
-      ifneq (,$(call modulefind,intel/11.1u8))
-        INCL += -I$(subst lib,include,$(MKLPATH))lp64
-        LLIB += -L$(MKLPATH)
-      else
-        $(call modulecheck,$(filter intel%,$(MODULES)))
-      endif
     endif
   else
     SRCS.$(EXP) += ./B_NMC/My_LAPACK77_ml.f90
@@ -81,30 +82,24 @@ ifdef EXP
       MODULES += netlib/1.8.0
       LLIB += /global/apps/netlib/lib
     else ifeq ($(MACHINE),vilje)
-    else ifeq ($(MACHINE),titan)
-      LLIB += -L/usr/lib64
     endif
   endif
-  SRCS:=$(SRCS.$(EXP))
+  override SRCS:=$(SRCS.$(EXP))
+  export SRCS
   depend: $(SRCS)
 # stop: info-varaiable-SRCS
 endif
 
-CC  = mpicc
-CCFLAGS = $(filter-out -r8 -recursive -convert big_endian,$(F90FLAGS))
-
-SUFFIXES += .F .f
 # -J/-module option sets the path for the .mod files
 # e.g. $(if $(filter gfortran,$(LD)),-J,-module )$(@D)/  # same path as source
 F90FLAGS += $(if $(filter gfortran,$(LD)),-J,-module ) ../
+SUFFIXES += .F .f
 %.o %.mod:%.f90
 	$(F90) $(F90FLAGS) -c $< -o $*.o
 %.o:%.f
 	$(F90) $(F90FLAGS) -c $< -o $@
 %.o:%.F
 	$(F90) $(F90FLAGS) -c $< -o $@
-%.o:%.c
-	$(CC)  $(CCFLAGS)  -c $< -o $@
 
 fftpack5/libfftpack_r8.a:
 	$(MAKE) -C $(@D) intel
@@ -121,8 +116,8 @@ EXP_Unimod%:
 EXP_%:
 	$(MAKE) -C ./ -j4 EXP=$* PROG=$(@:EXP%=$(PROG)%)
 
-$(PROG): depend modules info-varaiable-MAKECMDGOALS
-
+$(PROG): depend modules info-varaiable-MAKECMDGOALS info-varaiable-SRCS
+modules: $(foreach m,$(MODULES),check-module-$(subst /,_,$(m)))
 info-varaiable-%:
 	@echo -e "Variable: $*='$(value $*)'"
 ##########################################################

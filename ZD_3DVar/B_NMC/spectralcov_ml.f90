@@ -5,7 +5,10 @@ implicit none
 !real, parameter :: FGSCALE=PPBINV,FGSCALE_INV=PPB
 !real, parameter :: FGSCALE=PPB,FGSCALE_INV=PPBINV
  real, parameter :: FGSCALE=1e9,FGSCALE_INV=1e-9
- real, parameter :: DAPREC=PPT*FGSCALE_INV !1e0/2**22; 5.96e-08=2**-24 (single precission)
+!real, parameter :: DAPREC=PPT*FGSCALE    ! 1 ppt=1e-3
+!real, parameter :: DAPREC=1e0/2**22      ! 2**-22=2.38e-07 1/real4 wont't overflow
+ real, parameter :: DAPREC=1e0/2**24      ! 2**-24=5.96e-08 real4 precission
+!real, parameter :: DAPREC=PPT*FGSCALE_INV! v2708 (unrealistic)
 
 integer, save :: nchem,nchemobs,nchemnoobs,nx,ny,nlev
 integer, save :: nex,nxex,nyex,nbg1,nv1

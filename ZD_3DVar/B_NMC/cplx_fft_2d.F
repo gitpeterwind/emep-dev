@@ -71,8 +71,10 @@ c-----------------------------------------------------------------------
         do n=1,nx
           j=nyex-n+2
           if(j.gt.nyex)j=j-nyex
+!         if((n.le.nmin(m).or.n.ge.nmax(m)).and.
+!    &       (i.le.nmin(j).or.i.ge.nmax(j)))c(i,j)=conjg(c(m,n))
           if((n.le.nmin(m).or.n.ge.nmax(m)).and.
-     &       (i.le.nmin(j).or.i.ge.nmax(j)))c(i,j)=conjg(c(m,n))
+     &       (j.le.nmin(i).or.j.ge.nmax(i)))c(i,j)=conjg(c(m,n))
         enddo
       enddo
       c(1,1)=cmplx(real(c(1,1)),0e0)

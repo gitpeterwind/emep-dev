@@ -8,10 +8,9 @@ SRCS :=	$(addprefix ../,$(SRCS))
 INCL = $(sort $(dir $(SRCS)))
 
 SRCS.3DVar=DA_ml.f90 $(filter-out ../My_3DVar_ml.f90,$(SRCS)) \
-	$(addprefix ./B_NMC/,Util_ml.f90 cplx_fft_2d.F \
+	$(addprefix ./B_NMC/,Util_ml.f90 \
 		ext_domain_ml.f90 spectralcov_ml.f90 covmat_ml.f90) \
-	$(addprefix ./Analysis/,DA_3DVar_ml.f90 DA_Obs_ml.f90 DA_Bias_ml.f90 \
-		chitox.F chitox_adj.F) \
+	$(addprefix ./Analysis/,DA_3DVar_ml.f90 DA_Obs_ml.f90 ufftw3_ml.f90 chitox_ml.f90) \
 	m1qn3-3.3-distrib/src/m1qn3.f
 
 SRCS.Bnmc=CheckStop_ml.f90 TimeDate_ml.f90 TimeDate_ExtraUtil_ml.f90 \
