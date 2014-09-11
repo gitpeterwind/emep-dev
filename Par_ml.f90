@@ -165,6 +165,7 @@ integer :: ime, imex, imey, rest,i
   select case(DOMAIN_DECOM_MODE)
   case("X*Y","XY")            ! try X,Y values until X*Y==NPROC
     NPROCX=nint(sqrt(1.0*NPROC))
+    NPROCY=1!defsult (for instance when NPROC=1)
     do i=1,NPROC-NPROCX
       NPROCY=NPROC/NPROCX
       if(NPROCX*NPROCY==NPROC)exit ! we found some values that divide NPROC
