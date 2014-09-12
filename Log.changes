@@ -153,6 +153,13 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+12th September 2014  Alan  2872
+
+ZD_ESX/D_Misc/GenChem.py:
+  - Remove deprecated 'rcbio:' support
+  - Always process 'rcemis:' rates
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 10th September 2014 Alvaro 2869-2870
 
 InterpolationRoutines_ml

@@ -636,11 +636,6 @@ class ReactionsReader(object):
             if part.startswith('RCEMIS:'):
                 # rcemis:foo -> ('emis', 'foo')
                 part = ('emis', part[7:])
-            elif part.startswith('RCBIO:'):
-                # rcbio:foo -> ('emis', 'foo')
-                # TODO: remove this, after fixing input files
-                LOG.warning('rcbio:spec deprecated, replace with rcemis:spec')
-                part = ('emis', part[6:])
             elif part.startswith('DJ('):
                 # DJ(foo) -> ('photol', 'foo')
                 part = ('photol', part[3:-1])
@@ -1055,12 +1050,11 @@ class ReactionsWriter(CodeGenerator):
                 kind, arg = part
                 if kind == 'emis':
                     if arg in self.emis_specs:
-                        LOG.warning('RCEMIS duplicate: %s (using rate = 0)', arg)
-                        return '0'
+                        LOG.debug('RCEMIS found: %s', arg)
                     else:
                         self.emis_specs.add(arg)
                         LOG.debug('RCEMIS new: %s', arg)
-                        return self.EMIS_REF.format(spec=arg)
+                    return self.EMIS_REF.format(spec=arg)
                 elif kind == 'photol':
                     if arg in self.photol_specs:
                         LOG.debug('PHOTOL found: %s', arg)
