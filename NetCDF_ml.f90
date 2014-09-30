@@ -1124,7 +1124,10 @@ character (len=*), parameter :: vert_coord='atmosphere_hybrid_sigma_pressure_coo
     do i=1,GIMAXcdf
       xcoord(i)= glon_fdom(i+ISMBEGcdf-1,1)
       !force monotone values:
-      if(i>1.and.xcoord(i)<xcoord(i-1).and.xcoord(i)<0)xcoord(i)=xcoord(i)+360.0
+      if(i>1)then
+         !must first check that i>1 before testing xcoord(i-1) (to avoid debug errors)
+         if(xcoord(i)<xcoord(i-1).and.xcoord(i)<0)xcoord(i)=xcoord(i)+360.0
+      endif
     enddo
     do j=1,GJMAXcdf
       ycoord(j)= glat_fdom(1,j+JSMBEGcdf-1)

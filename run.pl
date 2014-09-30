@@ -11,12 +11,12 @@
 #   mpiprocs=number of MPI threads per node. For 64 processors:
 ##PBS -l select=4:ncpus=32:mpiprocs=32 -v MPI_MSGS_MAX=2097152
 # Stallo:
-#   Some nodes on Stallo have 16 some others 20 cpus
+#   Some nodes on Stallo have 16, most have 20 cpus
 #   use ib for infiniband (fast interconnect).
-#   lnodes= number of nodes, ppn=processor per node (max16 or 20 on stallo)
+#   lnodes= number of nodes, ppn=processor per node (max 20 on stallo)
 #   lpmeme=memory to reserve per processor (max 16GB per node)
 ##PBS -lnodes=64 -lpmem=1000MB
-#PBS -lnodes=4:ppn=16 -lpmem=1000MB
+#PBS -lnodes=80
 # Wall time limit of run
 #PBS -lwalltime=05:20:00
 # Make results readable for others:

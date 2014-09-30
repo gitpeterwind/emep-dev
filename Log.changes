@@ -153,6 +153,24 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+30th September 2014 Peter 2873
+JUMPOVER29FEB can be set true in config file, and the 29th of February will 
+be jumped over. This is to be used in the case where it is not available in a 
+leap year (typically climate runs).
+Note that this is difficult to do this in a 100% consistent way: date are 
+everywhere and used through TimeDate_ml libraries. For instance the number 
+of days in a leap year will still be 366, even if the 29th is jumped over; 
+therefore some diagnostics values may be wrong.
+Met_ml.f90
+PhyChem_ml.f90
+ModelConstants_ml.f90
+
+utils/meteoPreProc.f90 modified to allow leap years with 365 days.
+
+Small change in NetCDF to avoid compielr error in debug mode.
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 12th September 2014  Alan  2872
 
 ZD_ESX/D_Misc/GenChem.py:

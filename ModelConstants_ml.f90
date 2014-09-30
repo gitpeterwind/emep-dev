@@ -135,7 +135,10 @@ logical, public, save ::             &
  ,USE_FASTJ          = .false.       & !use FastJ_ml for computing rcphot
 !
 ! Output flags
- ,SELECT_LEVELS_HOURLY  = .false.      ! for FORECAST, 3DPROFILES
+ ,SELECT_LEVELS_HOURLY  = .false.    & ! for FORECAST, 3DPROFILES
+ ,JUMPOVER29FEB      = .false.         ! When current date is 29th February, jump to next date. 
+                                       !NB: this is not identical to assuming not a leap year,
+                                       !for instance the assumed number of days in the year will still be 366
 
 ! Soil NOx. Choose EURO for better spatial and temp res, but for 
 ! global runs need global monthly. Variable USE_SOILNOX set from
@@ -169,7 +172,7 @@ logical, public, parameter ::         &
   USE_ZREF           = .false.,       & ! testing
   USE_PFT_MAPS       = .false.,       & ! Future option
   EXTENDEDMASSBUDGET = .false.,       & ! extended massbudget outputs
-  LANDIFY_MET        = .false.          ! extended massbudget outputs
+  LANDIFY_MET        = .false.         
 
 logical, public ::  USE_EtaCOORDINATES=.false.!temporay parameter; will be set true and removed after testing
 
@@ -564,7 +567,8 @@ subroutine Config_ModelConstants(iolog)
      ,EMIS_SOURCE, EMIS_TEST, EMIS_OUT & 
      ,emis_inputlist &
      ,FLUX_VEGS  & ! TESTX
-     ,NETCDF_DEFLATE_LEVEL,  RUNDOMAIN, DOMAIN_DECOM_MODE
+     ,NETCDF_DEFLATE_LEVEL,  RUNDOMAIN, DOMAIN_DECOM_MODE &
+     ,JUMPOVER29FEB
 
     txt = "ok"
     !Can't call check_file due to circularity

@@ -122,7 +122,7 @@ use ModelConstants_ml,    only : PASCAL, PT, Pref, METSTEP  &
      ,USE_DUST, TEGEN_DATA, USE_SOILWATER & 
      ,nstep,USE_CONVECTION,USE_EtaCOORDINATES,USE_FASTJ & 
      ,LANDIFY_MET  & 
-     ,CW_THRESHOLD,RH_THRESHOLD, CW2CC,IOU_INST
+     ,CW_THRESHOLD,RH_THRESHOLD, CW2CC,IOU_INST,JUMPOVER29FEB
 use Par_ml           ,    only : MAXLIMAX,MAXLJMAX,GIMAX,GJMAX, me  &
      ,limax,ljmax  &
      ,neighbor,WEST,EAST,SOUTH,NORTH,NOPROC  &
@@ -271,6 +271,10 @@ contains
        nsec=METSTEP*3600.0 !from hr to sec
        ts_now = make_timestamp(current_date)
        call add_secs(ts_now,nsec)
+       if(JUMPOVER29FEB.and.current_date%month==2.and.current_date%day==29)then
+          if(MasterProc)write(*,*)'Jumping over one day for meteo_date!'
+          call add_secs(ts_now,24*3600.)
+       endif
        next_inptime=make_current_date(ts_now)
     endif
 

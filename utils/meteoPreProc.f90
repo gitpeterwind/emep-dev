@@ -89,18 +89,29 @@ jday = 0
 read(unit=year,fmt="(i4)",iostat=ioerror) iyear
 read(unit=cTemp,fmt="(i)",iostat=ioerror) Tbase
 if( mod( iyear, 4 ) == 0 ) mdays(2) = 29
+!/ Test for 29th Feb
+if(mdays(2) == 29)then
+   fname = trim(metdir)//"/meteo"//year//"0229.nc"
+   status = nf90_open(fname,nf90_nowrite,ncid=ncid)
+   if ( status /= 0 ) then
+      write(*,*)'WARNING!'
+      write(*,*)'Did not find 29th February. Will jump over that date'    
+      mdays(2) = 28
+   endif
+endif
 ndays = sum( mdays )
 print *, "IYEAR year ", iyear, " No days ", ndays, "FILE OUT ", trim(OutFileName)
 
-!/ Test for 1st and last files
+!/ Test for 1st and last files and 29th Feb
 
 fname = trim(metdir)//"/meteo"//year//"0101.nc"
 status = nf90_open(fname,nf90_nowrite,ncid=ncid)
-call checkStop(status, "Missing 1st Jan? Or wrong directory? Or forgot to comile with netcdf4 :: "// fname )
+call checkStop(status, "Missing 1st Jan? Or wrong directory? Or forgot to compile with netcdf4 :: "// fname )
 
 fname = trim(metdir)//"/meteo"//year//"1231.nc"
 status = nf90_open(fname,nf90_nowrite,ncid=ncid)
 call checkStop(status,"Missing 31st Dec? :: "// fname )
+
 
 
 do im=1, 12

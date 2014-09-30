@@ -26,7 +26,7 @@ use ModelConstants_ml,only: KMAX_MID, nmax, nstep &
                            ,FORECAST       & !use advecdiff_poles on FORECAST mode
                            ,ANALYSIS       & ! 3D-VAR Analysis
                            ,SOURCE_RECEPTOR&
-                           ,USE_POLLEN, USE_EtaCOORDINATES
+                           ,USE_POLLEN, USE_EtaCOORDINATES,JUMPOVER29FEB
 use MetFields_ml,     only: ps,roa,z_bnd,z_mid,cc3dmax, &
                             zen,coszen,Idirect,Idiffuse
 use My_Outputs_ml ,   only: NHOURLY_OUT, FREQ_SITE, FREQ_SONDE, FREQ_HOURLY
@@ -213,7 +213,10 @@ contains
     ts_now = make_timestamp(current_date)
 
     call add_secs(ts_now,dt_advec)
-
+    if(JUMPOVER29FEB.and.current_date%month==2.and.current_date%day==29)then
+       if(me==0)write(*,*)'Jumping over one day for current_date!'
+       call add_secs(ts_now,24*3600.)
+    endif
     current_date = make_current_date(ts_now)
 
     !====================================
