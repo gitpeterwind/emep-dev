@@ -38,6 +38,7 @@ use SoilWater_ml,     only: Set_SoilWater
 use TimeDate_ml,      only: date,daynumber,day_of_year, add_secs, &
                             current_date, timestamp,  &
                             make_timestamp, make_current_date
+use TimeDate_ExtraUtil_ml,only : date2string
 use Trajectory_ml,    only: trajectory_out     ! 'Aircraft'-type  outputs
 use Radiation_ml,     only: SolarSetup,       &! sets up radn params
                             ZenithAngle,      &! gets zenith angle
@@ -213,11 +214,17 @@ contains
     ts_now = make_timestamp(current_date)
 
     call add_secs(ts_now,dt_advec)
+    current_date = make_current_date(ts_now)
+
     if(JUMPOVER29FEB.and.current_date%month==2.and.current_date%day==29)then
        if(me==0)write(*,*)'Jumping over one day for current_date!'
+       if(me==0) print "(2(1X,A))",'current date and time before jump:',&
+            date2string("YYYY-MM-DD hh:mm:ss",current_date)
        call add_secs(ts_now,24*3600.)
-    endif
-    current_date = make_current_date(ts_now)
+       current_date = make_current_date(ts_now)       
+      if(me==0) print "(2(1X,A))",'current date and time after jump:',&
+          date2string("YYYY-MM-DD hh:mm:ss",current_date)
+   endif
 
     !====================================
     call Add_2timing(35,tim_after,tim_before,"phyche:outs")
