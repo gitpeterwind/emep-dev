@@ -209,7 +209,7 @@ subroutine readxn(indate)
   if(FORECAST)then ! FORECAST mode superseeds nest MODE
   ! Update filenames according to date following templates defined on Nest_config nml
     filename_read_3D=date2string(template_read_3D,ndate,debug=mydebug)
-    filename_read_BC=date2string(template_read_BC,ndate,debug=mydebug)
+    filename_read_BC=date2string(template_read_BC,date_nextfile,debug=mydebug)
 
     if(first_call)then
       first_call=.false.
@@ -248,11 +248,11 @@ subroutine readxn(indate)
 
 !never comes to this point if MODE=11 or 12
 
-  if(MasterProc) write(*,*) 'Nest: kt', kt, first_data
+  if((DEBUG_NEST.and.MasterProc) write(*,*) 'Nest: kt', kt, first_data
 
 ! Update filenames according to date following templates defined on Nest_config nml
   filename_read_3D=date2string(template_read_3D,ndate,debug=mydebug)
-  filename_read_BC=date2string(template_read_BC,ndate,debug=mydebug)
+  filename_read_BC=date2string(template_read_BC,date_nextfile,debug=mydebug)
 
   if(first_data==-1)then
     if(.not.FORECAST)then
