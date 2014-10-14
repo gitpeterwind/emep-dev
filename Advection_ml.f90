@@ -151,7 +151,7 @@
     implicit none
     real, intent(in) ::GRIDWIDTH_M
 
-    if(GRIDWIDTH_M>76000.0) dt_advec=1800.0
+    dt_advec=1800.0
     if(GRIDWIDTH_M<61000.0) dt_advec=1200.0
     if(GRIDWIDTH_M<21000.0) dt_advec= 900.0
     if(GRIDWIDTH_M<11000.0) dt_advec= 600.0

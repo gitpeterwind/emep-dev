@@ -153,6 +153,12 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+14th October 2014 Birthe (Peter) 2875
+
+Bug for grid resolution between 61 and 76 km, dt_advec was not set.
+Advection_ml:  dt_advec=1800.0 for resolutions coarser than 61km
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 30th September 2014 Peter 2874
 JUMPOVER29FEB can be set true in config file, and the 29th of February will 
 be jumped over. This is to be used in the case where it is not available in a 
