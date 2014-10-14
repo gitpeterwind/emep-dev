@@ -592,7 +592,7 @@ subroutine get_innovations(maxobs,flat,flon,falt,obs,obs_stddev)
 !-----------------------------------------------------------------------
     innov(n)=yn-obs(n)*FGSCALE
     obsstddev(n)=obs_stddev(n)*FGSCALE
-    if(debug.and.MasterProc) print "('#',I0,2(1X,A3,':',E12.3))",&
+    if(debug.and.MasterProc) print "('#',I0,2(1X,A3,':',ES12.3))",&
       n,'Observation',obs(n),'Model',yn*FGSCALE_INV
   enddo
 end subroutine get_innovations

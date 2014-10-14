@@ -152,7 +152,7 @@ my $SR= 0;     # Set to 1 if source-receptor calculation
 
 my $CWF=0;     # Set to N for 'N'-day forecast mode (0 otherwise)
    $CWF=0 if %BENCHMARK;
-my ($CWFBASE, $CWFDAYS, $CWFMETV, @CWFDATE, @CWFDUMP, $eCWF, $aCWF) if $CWF;
+my ($CWFBASE, $CWFDAYS, $CWFMETV, @CWFDATE, @CWFDUMP, $eCWF, $aCWF, $CWFTAG) if $CWF;
 if ($CWF) {
   $CWFBASE=$ENV{"DATE"}?$ENV{"DATE"}:"today"; # Forecast base date     (default today)
   $CWFDAYS=$ENV{"NDAY"}?$ENV{"NDAY"}:$CWF;    # Forecast lenght indays (default $CWF)
@@ -176,6 +176,7 @@ if ($CWF) {
   $CWFDATE[0]=date2str($CWFBASE." 1 day ago"  ,"%Y%m%d");     # yesterday
   $CWFDATE[1]=$CWFBASE;                                       # start date
   $CWFDATE[2]=date2str($CWFDATE[0]." $CWFDAYS day","%Y%m%d"); # end date
+  $CWFDATE[3]=$CWFDATE[2];                        # date loop index
 ##$CWFDUMP[0]=date2str($CWFBASE."                 ,"%Y-1-1"); # dump/nest every day at 00
   $CWFDUMP[0]=date2str($CWFBASE." 1 day"          ,"%Y%m%d"); # 1st dump/nest
   $CWFDUMP[1]=date2str($CWFBASE." 2 day"          ,"%Y%m%d"); # 2nd dump/nest
@@ -190,8 +191,12 @@ if ($CWF) {
   $exp_name = ($eCWF)?"EMERGENCY":($aCWF?"ANALYSIS":"FORECAST");
   $exp_name.= "_REVA" if($MAKEMODE=~/EVA/);
   $exp_name.= "_NMC"  if($MAKEMODE=~/NMC/);
+  $exp_name.= "-dbg"  if($ENV{"DEBUG"} eq "yes");
   $testv.= ($eCWF)?".eCWF":".CWF";
   $GRID = ($eCWF)?"GLOBAL":"MACC14";
+  $CWFTAG.= ".REVA" if($MAKEMODE=~/EVA/);
+  $CWFTAG.= ".NMC"  if($MAKEMODE=~/NMC/);
+  $CWFTAG.= "_".$ENV{'TAG'}  if($ENV{'TAG'});
 }
  $MAKEMODE="SR-$MAKEMODE" if($MAKEMODE and $SR);
 
@@ -334,14 +339,16 @@ if ($CWF) {
  ($CWFIC  = "${CWF}_dump.nc" ) =~ s|$CWFBASE|%Y%m%d|g;
  ($CWFIC  = "$WORKDIR/$CWFIC") =~ s|$testv.$year|$testv.dump|;
   $CWFIC  =~ s|run/eemep|work/emep/restart| if $eCWF and ($USER eq $FORCAST);
-  $CWFBC  = "$DataDir/$GRID/Boundary_conditions/";            # IFS-MOZ
+  $CWFBC  = "$DataDir/$GRID/Boundary_conditions/"; # IFS-MOZ/C-IFS
   if($MAKEMODE=~/(EVA|NMC)/){
-  # $CWFBC.="%Y_IFS-MOZART_AN/h%Y%m%d00_raqbc.nc";           # :ReAnalysus
-    $CWFBC.="%Y_EVA/EVA_%Y%m%d_EU_AQ.nc";                    # :EVA-2010..2012
+    $CWFBC .= ($year <= 2009)?
+      "%Y_EVA/h%Y%m%d00_raqbc.nc":            # IFS-MOZ ReAnalysis
+      "%Y_EVA/EVA_%Y%m%d_EU_AQ.nc";           # EVA 2010/2011/2012
   }else{
-    $CWFBC.="%Y_IFS-MOZART_FC/cwf-mozifs_h%Y%m%d00_raqbc.nc";# :Forecast
+    $CWFBC .= ($CWFBASE <= 20140917)?
+      "%Y_ENS/cwf-mozifs_h%Y%m%d00_raqbc.nc": # IFS-MOZ Forecast
+      "%Y_ENS/cwf-cifs_h%Y%m%d00_raqbc.nc";   # C-IFS   Forecast
   }
-
  ($CWFPL  = $CWFIC) =~ s|_dump|_pollen|;
 }
 
@@ -595,8 +602,7 @@ foreach my $scenflag ( @runs ) {
 
   my $RESDIR = "$WORKDIR/$scenario";
      $RESDIR = "$WORKDIR/$scenario.$iyr_trend" if ($GRID eq "RCA");
-     $RESDIR.= ".REVA" if($MAKEMODE=~/EVA/);
-     $RESDIR.= ".NMC"  if($MAKEMODE=~/NMC/);
+     $RESDIR.= $CWFTAG if($CWF and $CWFTAG);
   mkdir_p($RESDIR);
 
   chdir $RESDIR;   ############ ------ Change to RESDIR
@@ -615,7 +621,7 @@ foreach my $scenflag ( @runs ) {
       die "Missing MetDir='$MetDir'\n" unless -d $MetDir;
     }
     $MetDir=~s:$year:%Y:g;                      # Genereal case for Jan 1st
-    for (my $n = 0; $n < $CWFDAYS; $n++) {
+    for my $n (0,1..($CWFDAYS-1)) {
       my $metfile="$MetDir/meteo%Y%m%d_%%02d.nc";
       if($CWFDAYS<=10){  # forecast with 00/12 UTC FC met.
         $metfile=sprintf date2str($CWFBASE." $metday day ago",$metfile),$n+$metday;
@@ -625,18 +631,19 @@ foreach my $scenflag ( @runs ) {
       # Chech if meteo is in place
       die "Meteo file $metfile for $CWFBASE not available (yet). Try later...\n"
         unless (-e $metfile);
-      $CWFDATE[2]=date2str($CWFBASE." $n day","%Y%m%d");
-      mylink("CWF Met:",$metfile,date2str($CWFDATE[2],$METformat)) ;
-      # IFS-MOZART BC file
-      $cwfbc=date2str($CWFDATE[2],$CWFBC);
+      $CWFDATE[3]=date2str($CWFBASE." $n day","%Y%m%d");
+      mylink("CWF Met:",$metfile,date2str($CWFDATE[3],$METformat)) ;
+      # IFS-MOZ/C-IFS BC file
+      $cwfbc=date2str($CWFDATE[3],$CWFBC);
       $cwfbc=date2str($CWFDATE[0],$CWFBC) unless (-e $cwfbc);
-      mylink("CWF BC :",$cwfbc,"EMEP_IN_BC_${CWFDATE[2]}.nc") if (-e $cwfbc);
     }
 # Forecast nest/dump files
+unless($MAKEMODE=~/EVA/){
     $cwfic=date2str($CWFDATE[0],$CWFIC);  # yesterday's dump
     if($aCWF){                              # CWF_AN run: if dump not found
-      $cwfic=~s/AN-/FC-/        unless(-e $cwfic); # use CWF_FC dump
-      $cwfic=~s/CWF_.*FC-/CWF_/ unless(-e $cwfic); # use CWF dump
+      $cwfic=~s/AN-/FC-/      unless(-e $cwfic); # try CWF_00FC dump
+      $cwfic=~s/FC-/-/        unless(-e $cwfic); # try CWF_00 dump
+      $cwfic=~s/CWF_.*-/CWF_/ unless(-e $cwfic); # try CWF dump
       die "$CWF restart file for $CWFBASE not available (yet):\n\t$CWFIC\n\t$cwfic\n"
           ."Try later...\n" unless(-e $cwfic);
     }else{                                  # CWF_FC run: always from Analysis
@@ -649,16 +656,15 @@ foreach my $scenflag ( @runs ) {
       $CWFDATE[1]=$CWFDATE[0];
       $CWFDATE[0]=date2str($CWFDATE[0]." 1 day ago","%Y%m%d");
       mylink("CWF Met:",$metfile,date2str($CWFDATE[1],$METformat));
-      # IFS-MOZART BC file
+      # IFS-MOZ/C-IFS BC file
       $cwfbc=date2str($CWFDATE[1],$CWFBC);
       $cwfbc=date2str($CWFDATE[0],$CWFBC) unless (-e $cwfbc);
-      mylink("CWF BC :",$cwfbc,"EMEP_IN_BC_${CWFDATE[1]}.nc") if (-e $cwfbc);
       # see if we can link to a dump file ...
       $cwfic=date2str($CWFDATE[0],$CWFIC);  # yesterday's dump
      #$cwfic=~s/AN-//        if($aCWF);     # use Forecast dump on AN runs
       $cwfic=~s/FC-/AN-/ unless($aCWF);     # use Analyis dump on FC runs
     }
-    mylink("CWF IC :",$cwfic,"EMEP_IN_IC.nc") if (-e $cwfic);
+}
 # Update start and end months (used for linking some climatological files)
     $mm1=substr($CWFDATE[1],4,2);  # start date
     $mm2=substr($CWFDATE[2],4,2);  # end date
@@ -818,7 +824,7 @@ foreach my $scenflag ( @runs ) {
     }
   }
 
-  foreach my $mmm ( $mm1 .. $mm2, $mm1, $mm2 ) {
+  foreach my $mmm ($mm1,($mm1+1)..($mm2-1),$mm2) {
     my $mm = sprintf "%2.2d", $mmm;
     $ifile{"$DATA_LOCAL/natso2$mm.dat"} =  "natso2$mm.dat" unless ($GRID eq "MACC14");
     $ifile{"$DataDir/lt21-nox.dat$mm"} =  "lightning$mm.dat";
@@ -993,7 +999,7 @@ foreach my $scenflag ( @runs ) {
   }
 # IFZ-MOZ BCs levels description (in cdo zaxisdes/eta format)
   $inml{'filename_eta'}= "$DataDir/$GRID/Boundary_conditions/mozart_eta.zaxis"
-    if ( $CWF and -e $cwfbc and $cwfbc =~ m/IFS-MOZART/ );
+    if ($CWF and -e $cwfbc);
 
   foreach my $f (sort keys %ifile) {  # CHECK and LINK
     if (-r $f) {
@@ -1064,6 +1070,7 @@ foreach my $scenflag ( @runs ) {
     }
     # fill in variables on the template file with corresponding $hash{key}
     %h=(%h,'year'=>$year,'utc'=>$CWFMETV,
+           'inic'=>$cwfic,'inbc'=>$cwfbc,'dump'=>date2str($CWFBASE,$CWFIC),
            'outdate'=>date2str($CWFDUMP[0],"%Y,%m,%d,000000,")
                      .date2str($CWFDUMP[1],"%Y,%m,%d,000000")) if $CWF;
   }

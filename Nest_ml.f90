@@ -72,9 +72,9 @@ INTEGER INFO
 integer, public, save :: MODE
 
 ! Nested input/output on FORECAST mode
-integer,private,parameter :: FORECAST_NDUMP_MAX = 2  ! Number of nested output
+integer,private,parameter :: FORECAST_NDUMP_MAX = 4  ! Number of nested output
 integer, public, save     :: FORECAST_NDUMP     = 1  ! Read by Unimod.f90
-! on FORECAST mode (1: start next forecast; 2: NMC statistics)
+! on FORECAST mode (1: start next forecast; 2-4: NMC statistics)
 type(date), public :: outdate(FORECAST_NDUMP_MAX)=date(-1,-1,-1,-1,-1)
 
 !coordinates of subdomain to write, relative to FULL domain (only used in write mode)
@@ -451,7 +451,7 @@ endsubroutine wrtxn
 subroutine check(status,msg)
   integer, intent(in) :: status
   character(len=*),intent(in),optional::msg
-  if(present(msg))write(*,*)msg
+  if(mydebug.and.present(msg))write(*,*)msg
   call CheckStop(status,nf90_noerr,"Error in Nest_ml. "//trim(nf90_strerror(status)))
 endsubroutine check
 
@@ -571,13 +571,13 @@ subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
   real, intent(out), dimension(*) :: weight_k1,weight_k2
   integer ,intent(out)::N_ext,KMAX_ext,GIMAX_ext,GJMAX_ext
   real(kind=8) :: ndays_indate
-  integer :: ncFileID,idimID,jdimID,kdimID,timeDimID,varid,status,dimIDs(3) !,timeVarID
+  integer :: ncFileID,timeDimID,varid,status,dimIDs(3) !,timeVarID
   integer :: ndate(4) !nseconds_indate,
   real :: DD,dist(4),P_emep
   integer :: i,j,k,n,k_ext,II,JJ !nseconds(1),n,n1,k
   real, allocatable, dimension(:,:) ::lon_ext,lat_ext
   real, allocatable, dimension(:) ::hyam,hybm,P_ext,temp_ll
-  character(len=80) ::projection,word
+  character(len=80) ::projection,word,iDName,jDName
   logical :: reversed_k_BC,time_exists,fexist
 
   rtime_saved = -99999.9 !initialization
@@ -595,39 +595,38 @@ subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
     projection='Unknown'
     status = nf90_get_att(ncFileID,nf90_global,"projection",projection)
     if(status == nf90_noerr) then
+      if(projection=='lon_lat')projection='lon lat'
       write(*,*)'Nest: projection: '//trim(projection)
     else
       projection='lon lat'
       write(*,*)'Nest: projection not found for ',&
            trim(filename_read)//', assuming '//trim(projection)
     endif
-    !get dimensions id
-    if(trim(projection)=='Stereographic') then
-      call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
-      call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
-    elseif(trim(projection)==trim('lon lat').or. &
-           trim(projection)==trim('lon_lat')) then
-      projection='lon lat'
-      call check(nf90_inq_dimid(ncid = ncFileID, name = "lon", dimID = idimID))
-      call check(nf90_inq_dimid(ncid = ncFileID, name = "lat", dimID = jdimID))
-    else
+    !get dimensions id/name/len: include more dimension names, if necessary
+    GIMAX_ext=get_dimLen(["i","lon","longitude"],name=iDName)
+    GJMAX_ext=get_dimLen(["j","lat","latitude" ],name=jDName)
+    KMAX_ext =get_dimLen(["k","mlev","lev","level"])
+
+    select case(projection)
+    case('Stereographic')
+      call CheckStop("i",iDName,"Nest: unsuported "//&
+        trim(iDName)//" as i-dimension on "//trim(projection)//" projection")
+      call CheckStop("j",jDName,"Nest: unsuported "//&
+        trim(jDName)//" as j-dimension on "//trim(projection)//" projection")
+    case('lon lat')
+      call CheckStop("lon",iDName(1:3),"Nest: unsuported "//&
+        trim(iDName)//" as i-dimension on "//trim(projection)//" projection")
+      call CheckStop("lat",jDName(1:3),"Nest: unsuported "//&
+        trim(jDName)//" as j-dimension on "//trim(projection)//" projection")
+    case default
       !write(*,*)'GENERAL PROJECTION ',trim(projection)
-      call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
-      call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
+      call CheckStop("i",iDName,"Nest: unsuported "//&
+        trim(iDName)//" as i-dimension on "//trim(projection)//" projection")
+      call CheckStop("j",jDName,"Nest: unsuported "//&
+        trim(jDName)//" as j-dimension on "//trim(projection)//" projection")
       !WRITE(*,*) 'MPI_ABORT: ', "PROJECTION NOT RECOGNIZED"
       !call  MPI_ABORT(MPI_COMM_WORLD,9,INFO)
-    endif
-
-    status = nf90_inq_dimid(ncid=ncFileID,dimID=kdimID,name="k")
-    if(status/=nf90_noerr) &
-      status=nf90_inq_dimid(ncid=ncFileID,dimID=kdimID,name="mlev")
-    if(status/=nf90_noerr) &
-      status=nf90_inq_dimid(ncid=ncFileID,dimID=kdimID,name="lev")
-    if(status/=nf90_noerr) then
-    !include more possible names here
-      write(*,*)'Nest: vertical levels name not found: ',trim(filename_read)
-      call StopAll('Include new name in init_nest')
-    endif
+    endselect
 
     N_ext=0
     status = nf90_inq_dimid(ncid=ncFileID,name="time",dimID=timeDimID)
@@ -644,10 +643,6 @@ subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
         N_ext=1
       endif
     endif
-
-    call check(nf90_inquire_dimension(ncid=ncFileID,dimID=idimID,len=GIMAX_ext))
-    call check(nf90_inquire_dimension(ncid=ncFileID,dimID=jdimID,len=GJMAX_ext))
-    call check(nf90_inquire_dimension(ncid=ncFileID,dimID=kdimID,len=KMAX_ext))
 
     write(*,*)'Nest: dimensions external grid',GIMAX_ext,GJMAX_ext,KMAX_ext,N_ext
     if(.not.allocated(ndays_ext))then
@@ -670,21 +665,23 @@ subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
   if(MasterProc)then
     !Read lon lat of the external grid (global)
     if(trim(projection)==trim('lon lat')) then
-      call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
+      call check(nf90_inq_varid(ncid=ncFileID,varID=varID,name=iDName),&
+        "Read lon-variable: "//trim(iDName))
       allocate(temp_ll(GIMAX_ext))
       call check(nf90_get_var(ncFileID, varID, temp_ll))
       lon_ext=SPREAD(temp_ll,2,GJMAX_ext)
       deallocate(temp_ll)
-      call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
+      call check(nf90_inq_varid(ncid=ncFileID,varID=varID,name=jDName),&
+        "Read lat-variable: "//trim(jDName))
       allocate(temp_ll(GJMAX_ext))
       call check(nf90_get_var(ncFileID, varID, temp_ll))
       lat_ext=SPREAD(temp_ll,1,GIMAX_ext)
       deallocate(temp_ll)
     else
-      call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
+      call check(nf90_inq_varid(ncid=ncFileID,varID=varID,name="lon"))
       call check(nf90_get_var(ncFileID, varID, lon_ext ))
 
-      call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
+      call check(nf90_inq_varid(ncid=ncFileID,varID=varID,name="lat"))
       call check(nf90_get_var(ncFileID, varID, lat_ext ))
     endif
     !    call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = varID))
@@ -910,6 +907,27 @@ subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
 
   if(mydebug) &
     write(*,*)'Nest: finished determination of interpolation parameters'
+contains
+function get_dimLen(dimName,id,name) result(len)
+  character(len=*), dimension(:), intent(in) :: dimName
+  integer,          optional,     intent(out):: id
+  character(len=*), optional,     intent(out):: name
+  integer :: d, dID, len
+
+  do d=1,size(dimName)
+    status = nf90_inq_dimid(ncid=ncFileID,dimID=dID,name=dimName(d))
+    if(status==nf90_noerr)then
+      if(present(id))  id=dID
+      if(present(name))name=trim(dimName(d))
+      call check(nf90_inquire_dimension(ncid=ncFileID,dimID=dID,len=len),&
+        "get_dimLen: "//trim(dimName(d)))
+      exit
+    endif
+  enddo
+  call CheckStop(status,nf90_noerr,'Nest: '//&
+    trim(dimName(1))//'-dimension not found: '//&
+    trim(filename_read)//'. Include new name in init_nest')
+endfunction get_dimLen
 endsubroutine init_nest
 
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!

@@ -66,9 +66,9 @@
 !------------------------------
   MODE             = 0,
 !-------- File name templates for Nest I/O
-  template_read_3D = 'EMEP_IN_IC.nc',         ! YYYY, YY, MM, DD, hh strings
-  template_read_BC = 'EMEP_IN_BC_YYYYMMDD.nc',! will be replaced with numbers
-  template_write   = 'EMEP_OUT_YYYYMMDD.nc',  ! in Nest_ml
+  template_read_3D = '$inic',                 ! YYYY, YY, MM, DD, hh strings
+  template_read_BC = '$inbc',                 ! will be replaced with numbers
+  template_write   = '$dump',                 ! in Nest_ml
 !-------- CWF dump/restart
 ! WRITE_SPC        = 'NO2','O3','SO2','CO',   ! reduce output for NMC statistics (3DVar)
 ! WRITE_GRP        = 'DAOBS','DAUNOBS','PM10','AOD',
@@ -80,14 +80,14 @@
 &end
 &ExternalBICs_config
   USE_EXTERNAL_BIC     = T,                   ! .false. to deactivate
-  EXTERNAL_BIC_NAME    = 'IFS-MOZART',
+  EXTERNAL_BIC_NAME    = 'MACC_ENS',
   EXTERNAL_BIC_VERSION = 'MACC_ENS',          ! alias for IFS_MOZ_f7kn|fkya|fnyp
   TOP_BC               = T,
   filename_eta         = '$filename_eta',
 &end
 &ExternalBICs_bc
 ! BC from IFS-MOZ exp id: f7kn (before 2011-12-01)
-  description='IFS-MOZART','IFS_MOZ_f7kn',9,  ! name,version,size
+  description='MACC_ENS','IFS_MOZ_f7kn',9,  ! name,version,size
   map_bc=! emep,external,frac,wanted,found,IXADV,
         'O3'    ,'O3_VMR_inst'    ,1.0,T,F,-1,
         'NO'    ,'NO_VMR_inst'    ,1.0,T,F,-1,
@@ -100,8 +100,8 @@
         'CH3CHO','CH3CHO_VMR_inst',1.0,T,F,-1,
 &end
 &ExternalBICs_bc
-! BC from IFS-MOZ exp id: fkya (between 2011-12-01 and 2012-09-03)
-  description='IFS-MOZART','IFS_MOZ_fkya',9,  ! name,version,size
+! BC from IFS-MOZ exp id: fkya (2011-12-01..2012-09-03)
+  description='MACC_ENS','IFS_MOZ_fkya',9,  ! name,version,size
   map_bc=! emep,external,frac,wanted,found,IXADV,
         'O3'    ,'O3'    ,1.0,T,F,-1,
         'NO'    ,'NO'    ,1.0,T,F,-1,
@@ -114,8 +114,8 @@
         'CH3CHO','CH3CHO',1.0,T,F,-1,
 &end
 &ExternalBICs_bc
-! BC from IFS-MOZ exp id: fnyp (available since 2012-09-04, used since 2014-01-??)
-  description='IFS-MOZART','IFS_MOZ_fnyp',12,  ! name,version,size
+! BC from IFS-MOZ exp id: fnyp (2012-09-04..2014-09-30, used 2014-01-15..2014-09-17)
+  description='MACC_ENS','IFS_MOZ_fnyp',12,  ! name,version,size
   map_bc=! emep,external,frac,wanted,found,IXADV,
         'O3'    ,'O3'    ,1.0,T,F,-1, ! same as fkya
         'NO'    ,'NO'    ,1.0,T,F,-1, ! same as fkya
@@ -131,8 +131,39 @@
         'CH3CHO','CH3CHO',1.0,T,F,-1, ! not in fnyp, back compat. w/fkya
 &end
 &ExternalBICs_bc
+! BC from C-IFS exp id: g4e2  (from 2014-09-18)
+  description='MACC_ENS','IFS_CMP_g4e2',24,  ! name,version,size
+  map_bc=! emep,external,frac,wanted,found,IXADV,
+        'O3'        ,'go3'    ,1.0,T,F,-1, ! GEMS Ozone
+        'CO'        ,'co'     ,1.0,T,F,-1, ! Carbon monoxide
+        'NO'        ,'no'     ,1.0,T,F,-1, ! Nitrogen monoxide
+        'NO2'       ,'no2'    ,1.0,T,F,-1, ! Nitrogen dioxide
+        'PAN'       ,'pan'    ,1.0,T,F,-1, ! Peroxyacetyl nitrate
+        'HNO3'      ,'hno3'   ,1.0,T,F,-1, ! Nitric acid
+        'HCHO'      ,'hcho'   ,1.0,T,F,-1, ! Formaldehyde
+        'SO2'       ,'so2'    ,1.0,T,F,-1, ! Sulphur dioxide
+        'CH4'       ,'ch4'    ,1.0,T,F,-1, ! Methane
+        'C5H8'      ,'c5h8'   ,1.0,T,F,-1, ! Isoprene
+        'C2H6'      ,'c2h6'   ,1.0,T,F,-1, ! Ethane
+        'SEASALT_F' ,'aermr01',1.0,T,F,-1, ! ss_f: 0.03 - 0.5  um
+        'SEASALT_F' ,'aermr02',1.0,F,F,-1, ! ss_c: 0.5  - 5.0  um
+        'SEASALT_C' ,'aermr02',1.0,T,F,-1, ! ss_c: 0.5  - 5.0  um
+        'SEASALT_C' ,'aermr03',1.0,F,F,-1, ! ss_g: 5.0  - 20   um 
+        'DUST_SAH_F','aermr04',1.0,T,F,-1, ! dd_f: 0.03 - 0.55 um
+        'DUST_SAH_F','aermr05',1.0,T,F,-1, ! dd_c: 0.55 - 0.9  um
+        'DUST_SAH_F','aermr06',.15,T,F,-1, ! dd_g: 0.9  - 20   um
+        'DUST_SAH_C','aermr06',.35,T,F,-1, ! dd_g: 0.9  - 20   um
+        'FFIRE_OM'  ,'aermr07',1.7,F,F,-1, ! Hydrophobic OM: do not use
+        'FFIRE_OM'  ,'aermr08',1.7,F,F,-1, ! Hydrophilic OM: do not use
+        'FFIRE_BC'  ,'aermr09',1.0,F,F,-1, ! Hydrophobic BC: do not use
+        'FFIRE_BC'  ,'aermr10',1.0,F,F,-1, ! Hydrophilic BC: do not use
+        'SO4'       ,'aermr11',1.0,T,F,-1, ! Sulphate
+        'SO2'       ,'aermr12',1.0,F,F,-1, ! SO2 precursor: do not use
+!       '???'       ,'aerlg'  ,1.0,F,F,-1, ! large mode: do not use
+&end
+&ExternalBICs_bc
 ! BC for MACC-EVA: IFS-MOZ (MACC-GRG) & IFS-AER (MACC-AER)
-  description='IFS-MOZART','IFS_MACC_EVA',27, ! name,version,size
+  description='MACC_EVA','IFS_MACC_EVA',27, ! name,version,size
   map_bc=! emep,external,frac,wanted,found,IXADV,
         'O3'        ,'O3'          ,1.0,T,F,-1, ! same as fkya
         'NO'        ,'NO'          ,1.0,T,F,-1, ! same as fkya
@@ -145,7 +176,7 @@
         'CH3CHO'    ,'CH3CHO'      ,1.0,T,F,-1, ! same as fkya
         'CH4'       ,'CH4'         ,1.0,T,F,-1, ! same as fnyp
         'SO2'       ,'SO2'         ,1.0,T,F,-1, ! same as fnyp 
-        'H2O2'      ,'H2O2'        ,1.0,T,F,-1, 
+        'H2O2'      ,'H2O2'        ,1.0,T,F,-1,
         'C5H8'      ,'ISOP'        ,1.0,T,F,-1, ! same as fnyp
         'OH'        ,'OH'          ,1.0,F,F,-1, ! do not use, not ADV
         'NO2'       ,'HO2NO2'      ,1.0,T,F,-1, 

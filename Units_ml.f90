@@ -214,7 +214,7 @@ function Units_Scale(txtin,iadv,unitstxt,volunit,needroa,debug_msg) result(units
     txt="ug"
   case("mol/mol","mole mole-1","mixratio","vmr")
     txt="mix_ratio"
-  case("kg/kg","kg kg-1","massratio","mmr")
+  case("kg/kg","kg kg-1","kg kg**-1","massratio","mmr")
     txt="mass_ratio"
   case("ppbv","ppbV")
     txt="ppb"

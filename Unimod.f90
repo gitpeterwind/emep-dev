@@ -353,7 +353,7 @@ program myeul
   !
   !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-  call wrtxn(current_date,.true.)
+  if(.not.FORECAST) call wrtxn(current_date,.true.)
   call massbudget()
 
   if(MasterProc)then

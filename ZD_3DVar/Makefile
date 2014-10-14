@@ -13,7 +13,7 @@ export FFTW ?=1
 #stop: info-varaiable-EXP info-varaiable-PROG
 ifdef EXP
   override DFLAGS += -DOLD_FFT -DOLD_SPL $(if $(filter yes,$(DEBUG)),-DDEBUG_B)
-# override DFLAGS += -DBIAS_CORRECTION
+  override DFLAGS += -DBIAS_CORRECTION
   ifneq (,$(findstring OLD_FFT,$(DFLAGS)))
     $(PROG): fftpack5/libfftpack_r8.a
     LIBS += -lfftpack_r8
@@ -22,13 +22,20 @@ ifdef EXP
     SRCS.$(EXP) += fftpack5.1.f90
   endif
   ifdef FFTW
-    ifeq ($(MACHINE),vilje)
+    ifeq ($(MACHINE),stallo)
+      MODULES += $(FFTW:1=fftw/3.3.3.mpi)
+      ifneq (,$(call modulefind,fftw/3.3.3.mpi))
+        LIBS += -lfftw3_mpi -lfftw3
+        INCL += $(FFTW_ROOT)/include
+        LLIB += -L$(FFTW_ROOT)/lib -Wl,-rpath,$(FFTW_ROOT)/lib
+      endif
+    else ifeq ($(MACHINE),vilje)
       MODULES += $(FFTW:1=fftw/3.3.3)
       ifneq (,$(call modulefind,fftw/3.3.3))
-        FFTW3_ROOT = /sw/sdev/Modules/fftw/fftw-3.3.3
+        FFTW_ROOT = /sw/sdev/Modules/fftw/fftw-3.3.3
         LIBS += -lfftw3_mpi -lfftw3
-        INCL += $(FFTW3_ROOT)/include
-        LLIB += -L$(FFTW3_ROOT)/lib -Wl,-rpath,$(FFTW3_ROOT)/lib
+        INCL += $(FFTW_ROOT)/include
+        LLIB += -L$(FFTW_ROOT)/lib -Wl,-rpath,$(FFTW_ROOT)/lib
       endif
     endif
   endif
@@ -46,33 +53,19 @@ ifdef EXP
     MKLPATH=$(firstword $(subst :, ,$(MKLROOT) $(MKL_ROOT)))
     ifeq ($(MACHINE),stallo)
       MODULES += $(MKL:1=mkl/10.3.8)
-      ifneq (,$(call modulefind,mkl/10.2.0.013))
-        INCL += $(MKLPATH)/include $(MKLPATH)/include/em64t/lp64
-        LLIB += -L$(MKLPATH)/lib/em64t
-      else ifneq (,$(call modulefind,mkl/10.3.8))
+      ifneq (,$(call modulefind,mkl/10.3.8 mkl/11.0.0 mkl/11.1))
         INCL += $(MKLPATH)/include $(MKLPATH)/include/intel64/lp64
         LLIB += -L$(MKL)/lib/intel64
-      else ifneq (,$(call modulefind,mkl/11.2.137))
-        MKLPATH=/global/apps/intel/XE_2011/mkl
-        INCL += $(MKLPATH)/include
-        LLIB += -L$(MKLPATH)/lib/intel64
       else
-        $(call modulecheck,$(filter mkl%,$(MODULES)))
+        $(call modulecheck,$(filter mkl%,$(modulelist)))
       endif
     else ifeq ($(MACHINE),vilje)
-      MODULES += $(MKL:1=intelcomp/13.0.1)
-#     MODULES += $(MKL:1=intelcomp/14.0.1)
-      ifneq (,$(call modulefind,intelcomp/14.0.1))     
-        INCL += $(MKLPATH)/include $(MKLPATH)/include/intel64/lp64
-        LLIB += -L$(MKLPATH)/lib/intel64
-      else ifneq (,$(call modulefind,intelcomp/13.0.1))
-        INCL += $(MKLPATH)/include $(MKLPATH)/include/intel64/lp64
-        LLIB += -L$(MKLPATH)/lib/intel64
-      else ifneq (,$(call modulefind,intelcomp/12.0.5.220))
+      MODULES += $(MKL:1=$(filter intelcomp%,$(modulelist)))
+      ifneq (,$(call modulefind,intelcomp/12.0.5.220 intelcomp/13.0.1 intelcomp/14.0.1))
         INCL += $(MKLPATH)/include $(MKLPATH)/include/intel64/lp64
         LLIB += -L$(MKLPATH)/lib/intel64
       else
-        $(call modulecheck,$(filter intelcomp%,$(MODULES)))
+        $(call modulecheck,$(filter intelcomp%,$(modulelist)))
       endif
     endif
   else
@@ -94,8 +87,6 @@ endif
 # e.g. $(if $(filter gfortran,$(LD)),-J,-module )$(@D)/  # same path as source
 F90FLAGS += $(if $(filter gfortran,$(LD)),-J,-module ) ../
 SUFFIXES += .F .f
-%.o %.mod:%.f90
-	$(F90) $(F90FLAGS) -c $< -o $*.o
 %.o:%.f
 	$(F90) $(F90FLAGS) -c $< -o $@
 %.o:%.F

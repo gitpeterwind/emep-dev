@@ -1,6 +1,6 @@
 #
 #
-PROG ?=	Unimod
+export PROG ?= Unimod
 ###################################################
 
 include Makefile.SRCS
@@ -19,18 +19,14 @@ export MACHINE ?= stallo
 export DEBUG ?= no
 ifeq ($(MACHINE),stallo)
   MODULES = intel/13.0 openmpi/1.6.2 netcdf/4.2.1.1
-  LIBS += -lnetcdf -lnetcdff
-  INCL += $(NETCDF_ROOT)/include
-  LLIB += $(NETCDF_ROOT)/lib
+  LDFLAGS += $(shell nc-config --flibs --fflags)
   MAKEDEPF90=/home/mifapw/bin/makedepf90
   OPT_FLAGS = -O2 -ftz
   LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
 else ifeq ($(MACHINE),gstallo)
   # Needs module swap intel gcc/4.7.2
   MODULES = gcc/4.7.2 openmpi/1.6.2 netcdf/4.2.1.1
-  LIBS += -lnetcdf -lnetcdff
-  INCL += $(NETCDF_ROOT)/include $(filter /global/apps/openmpi%,$(subst :, ,$(CPATH)))
-  LLIB += $(NETCDF_ROOT)/lib
+  LDFLAGS += $(shell nc-config --flibs --fflags)
   MAKEDEPF90=/home/mifapw/bin/makedepf90
   LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
   DEBUG_FLAGS =
@@ -61,9 +57,7 @@ else ifeq ($(MACHINE),abel)
   LLIB += -L$(NETCDF)/lib -L$(INTEL)/lib/intel64
   MAKEDEPF90=/usit/$(MACHINE)/u1/mifapw/bin/makedepf90
 else ifeq ($(MACHINE),precise)  #ubuntu 12.04
-  LIBS += -lnetcdff -lnetcdf
-  INCL +=   /usr/include 
-  LLIB +=   -L/usr/lib  
+  LDFLAGS += $(shell nc-config --flibs --fflags)
   MAKEDEPF90 = $(EMEPLOCAL)/bin/makedepf90
   LD = gfortran
   DEBUG_FLAGS = -Wall -fbacktrace -fbounds-check -pedantic 
@@ -88,8 +82,8 @@ else ifneq (,$(filter all $(PROG) %.o,$(MAKECMDGOALS)))
 endif
 
 # File dependencies
-.depend: Makefile Makefile.SRCS depend
-depend: $(SRCS)
+.depend: depend
+depend: Makefile Makefile.SRCS $(SRCS)
 	test -n "$(MAKEDEPF90)" && $(MAKEDEPF90) $(SRCS) $(DFLAGS) \
 	  -o '$$(PROG)' -l '$$(F90) -o $$@ $$(FOBJ) $$(LDFLAGS)' > .depend
 
@@ -147,7 +141,7 @@ SR-EMEP SR-EMEP2010 SR-EMEP2011:    GenChem-SR-EMEP-EmChem09soa
 EmChem09 CRI_v2_R5:                 GenChem-EMEP-$$@
 EmChem09-ESX:                       GenChem-EMEP-EmChem09
 MACC SR-MACC:                       GenChem-$$@-EmChem09soa
-eEMEP:                              GenChem-$$@-EmChem09  # GenChem-Emergency not yet ready
+eEMEP:                              GenChem-$$@-EmChem09     # GenChem-Emergency not yet ready
 MACC-EVA MACC-EVA2010 MACC-EVA2011: GenChem-MACCEVA-EmChem09soa
 eEMEP2010:                          GenChem-EMEP-EmChem09soa
 eEMEP2013:                          GenChem-SR-MACC-EmChem09soa
@@ -187,8 +181,9 @@ archive: $(PROG)_$(shell date +%Y%m%d).tar.bz2
 .PHONY: $(PHONY) all depend modules
 
 # Check if intended modules are loaded
+LOADEDMODULES ?= $(shell bash -c 'module list' 2>&1)
 modulelist = $(subst :, ,$(LOADEDMODULES))
-modulefind = $(findstring $(1),$(modulelist))
+modulefind = $(filter $(1),$(modulelist))
 modulecheck= $(if $(call modulefind,$(1)),$(info Found module: $(1)),\
   $(error Missing module $(1): try 'module load $(1)'))
 checkmodules = $(foreach m,$(subst _,/,$(1)),$(call modulecheck,$(m)))

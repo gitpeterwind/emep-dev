@@ -120,9 +120,10 @@ subroutine set_extbic(idate)
       EXTERNAL_BIC_VERSION='IFS_MOZ_f7kn'
     case(2011120100:2014011423)  ! 2011-12-01 00:00 to 2014-01-14 23:00
       EXTERNAL_BIC_VERSION='IFS_MOZ_fkya'
-    case(2014011500:)            ! from 2014-01-15 00:00 (available from 2012-09-04)
-!   case(2014030100:)            ! from 2014-03-01 00:00 (available from 2012-09-04)
+    case(2014030100:2014091723)  ! 2014-03-01 00:00 to 2014-09-17 23:00 (avail. 2012-09-04)
       EXTERNAL_BIC_VERSION='IFS_MOZ_fnyp'
+    case(2014091800:)            ! from 2014-09-18 00:00
+      EXTERNAL_BIC_VERSION='IFS_CMP_g4e2'
     endselect
   case("MACC_EVA","IFS_MACC_EVA")  ! EVA2010/2011: GRG & AER    
     EXTERNAL_BIC_VERSION='IFS_MACC_EVA'
