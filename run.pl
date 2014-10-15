@@ -336,9 +336,9 @@ my $RoadDir = "$HOMEROOT/$ROBERT/Unify/MyData/TNO_traffic" ;
 my ($CWFIC, $CWFBC, $CWFPL) if $CWF;
 my ($cwfic, $cwfbc, $cwfpl) = ("No IC file","No BC file","No Pollen file");
 if ($CWF) {
- ($CWFIC  = "${CWF}_dump.nc" ) =~ s|$CWFBASE|%Y%m%d|g;
- ($CWFIC  = "$WORKDIR/$CWFIC") =~ s|$testv.$year|$testv.dump|;
-  $CWFIC  =~ s|run/eemep|work/emep/restart| if $eCWF and ($USER eq $FORCAST);
+ ($CWFIC = "${CWF}_dump.nc" ) =~ s|$CWFBASE|%Y%m%d|g;
+ ($CWFIC = "$WORKDIR/$CWFIC") =~ s|$testv.$year|$testv.dump|;
+  $CWFIC =~ s|run/eemep|work/emep/restart| if $eCWF and ($USER eq $FORCAST);
   $CWFBC  = "$DataDir/$GRID/Boundary_conditions/"; # IFS-MOZ/C-IFS
   if($MAKEMODE=~/(EVA|NMC)/){
     $CWFBC .= ($year <= 2009)?
@@ -349,7 +349,7 @@ if ($CWF) {
       "%Y_ENS/cwf-mozifs_h%Y%m%d00_raqbc.nc": # IFS-MOZ Forecast
       "%Y_ENS/cwf-cifs_h%Y%m%d00_raqbc.nc";   # C-IFS   Forecast
   }
- ($CWFPL  = $CWFIC) =~ s|_dump|_pollen|;
+ ($CWFPL = $CWFIC) =~ s|_dump|_pollen|;
 }
 
 #ds check: and change
@@ -863,12 +863,9 @@ unless($MAKEMODE=~/EVA/){
   $ifile{"$DataDir/Logan_P.nc"} = "Logan_P.nc";#instead of GLOBAL_O3.nc
   $ifile{"$DataDir/GLOBAL_O3.nc"} = "GLOBAL_O3.nc";
   $ifile{"$DataDir/amilt42-nox.dat"} = "ancatmil.dat";#RENAME TO AIRCARAFT?!
-  $ifile{"$DataDir/GLOBAL_ForestFireEmis.nc"} =                     # GFED emissions
-    "GFED_ForestFireEmis.nc";     #if ($year >= 2001 and $year <= 2007);
-  $ifile{"$DataDir/ForestFire/FINN/ForestFire_Emis_$year.nc"} =     # FINN emissions
-    "FINN_ForestFireEmis_$year.nc" if ($year >= 2002 and $year <= 2012);
-  $ifile{"$DataDir/ForestFire/GFAS/GFAS_ForestFireEmis_$year.nc"} = # GFAS emissions
-    "GFAS_ForestFireEmis_$year.nc" if ($year >= 2008 and $year <= 2013);
+  $inml{'GFED'}="$DataDir/GLOBAL_ForestFireEmis.nc";                    # GFED emissions
+  $inml{'FINN'}="$DataDir/ForestFire/FINN/ForestFire_Emis_YYYY.nc";     # FINN emissions
+  $inml{'GFAS'}="$DataDir/ForestFire/GFAS/GFAS_ForestFireEmis_YYYY.nc"; # GFAS emissions
   $ifile{"$DataDir/nox_emission_1996-2005.nc"} = "nox_emission_1996-2005.nc";
   $ifile{"$DataDir/AircraftEmis_FL.nc"} = "AircraftEmis_FL.nc";
   $ifile{"$DataDir/SurfacePressure.nc"} = "SurfacePressure.nc";
@@ -1038,7 +1035,7 @@ unless($MAKEMODE=~/EVA/){
 
   my ($startdate,$enddate)=("$year-$mm1-$dd1","$year-$mm2-$dd2");
      $enddate=date2str($startdate." 1 day ago","%F") unless $dd2;
-  ($startdate,$enddate)=("$CWFDATE[1]","$CWFDATE[2]") if $CWF;
+     ($startdate,$enddate)=("$CWFDATE[1]","$CWFDATE[2]") if $CWF;
   $startdate=date2str("$startdate","%Y%m%d");
   $enddate  =date2str("$enddate"  ,"%Y%m%d");
 # check if met-files exist

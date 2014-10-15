@@ -10,7 +10,6 @@
 !USES/DEBUG system started June 2013
   USES%testname         = 'FORECAST',
   USES%FOREST_FIRES     = T,
-  USES%MONTHLY_FF       = F,
   USES%EMISSTACKS       = F,         ! Reads PointSources file
   USES%PlumeMethod      = 'PVDI',    ! default PVDI, possible: NILU, ASMI, PVDI
   DEBUG%GLOBBC          = F,
@@ -76,7 +75,12 @@
   outdate          = $outdate,                ! 1st,2nd CWF dump dates
 ! outdate(1)       = -1,-1,-1,00,0000,        ! dump everyday at 00:00
 ! outdate(1:2)     = $year,-1,01,00,0000,     !  1st of every month at 00:00
-!                    $year,-1,15,00,0000,     ! 15th of every month at 00:00
+!                    $year,-1,16,00,0000,     ! 15th of every month at 00:00
+&end
+&Fire_config
+  GFED_PATTERN="$GFED",
+  FINN_PATTERN="$FINN",
+  GFAS_PATTERN="$GFAS",
 &end
 &ExternalBICs_config
   USE_EXTERNAL_BIC     = T,                   ! .false. to deactivate

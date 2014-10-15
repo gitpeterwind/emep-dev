@@ -248,7 +248,7 @@ subroutine readxn(indate)
 
 !never comes to this point if MODE=11 or 12
 
-  if((DEBUG_NEST.and.MasterProc) write(*,*) 'Nest: kt', kt, first_data
+  if(DEBUG_NEST.and.MasterProc) write(*,*) 'Nest: kt', kt, first_data
 
 ! Update filenames according to date following templates defined on Nest_config nml
   filename_read_3D=date2string(template_read_3D,ndate,debug=mydebug)

@@ -54,7 +54,6 @@ type, public :: emep_useconfig
   character(len=10) :: testname = "STD"
   logical :: &                   ! Forest fire options
      FOREST_FIRES     = .true.  &! 
-    ,MONTHLY_FF       = .false. &! => monthly emissions (for e.g. climate runs)
     ,MACEHEADFIX      = .true.  &! Correction to O3 BCs (Mace Head Obs.)
     ,MACEHEAD_AVG     = .false. &! Uses 10-year avg. Good for e.g. RCA runs.
     ,MINCONC          = .false. &! Experimental. To avoid problems with miniscule numbers
@@ -386,7 +385,7 @@ logical, public, save ::  DebugCell  = .false.
   ,DEBUG_MET            = .false. &
   ,DEBUG_MOSAICS        = .false. &
   ,DEBUG_NEST           = .false. &
-  ,DEBUG_NEST_ICBC      = .false. & ! IFS-MOZART BC
+  ,DEBUG_NEST_ICBC      = .false. & ! IFS-MOZART/C-IFS BC
   ,DEBUG_NETCDF         = .false. &
   ,DEBUG_NETCDF_RF      = .false. & ! ReadField_CDF in NetCDF_ml
   ,DEBUG_NH3            = .false. & ! NH3Emis experimental

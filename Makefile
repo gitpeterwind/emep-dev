@@ -170,7 +170,8 @@ eEMEP: GenChemOptions += -V 7bin,$(VENTS) -N $(NPPAS) -X $(NUCXS)
 
 # Data assimilation: Bnmc / 3DVar
 %-Bnmc %-3DVar: GenChem-MACCEVA-EmChem09soa
-	$(MAKE) -C ZD_3DVar/  $(@:$*-%=EXP_%)
+	$(MAKE) -C ZD_3DVar/  \
+	  $(if $(filter clean,$(MAKECMDGOALS)),$(@:$*-%=EXP=%) clean,$(@:$*-%=EXP_%))
 
 # Archive: create $(PROG).tar.bz2
 archive: $(PROG)_$(shell date +%Y%m%d).tar.bz2

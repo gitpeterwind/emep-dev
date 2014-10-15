@@ -19,7 +19,6 @@
 !USES/DEBUG system started June 2013
   USES%testname         = 'EMEPSTD',
   USES%FOREST_FIRES     = T,
-  USES%MONTHLY_FF       = F,
   USES%EMISSTACKS       = F,         ! Reads PointSources file
   USES%PlumeMethod      = 'PVDI',    ! default PVDI, possible: NILU, ASMI, PVDI
   DEBUG%GLOBBC          = F,
@@ -71,6 +70,11 @@
 !  10=write at end of run; 11=read at start; 12=read at start and write at end (BIC)
 !------------------------------
   MODE             = 0,
+&end
+&Fire_config
+  GFED_PATTERN="$GFED",
+  FINN_PATTERN="$FINN",
+  GFAS_PATTERN="$GFAS",
 &end
 &ExternalBICs_config
   USE_EXTERNAL_BIC  = F,              ! .false. to deactivate

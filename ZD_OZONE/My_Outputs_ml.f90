@@ -33,6 +33,7 @@ implicit none
 
 logical, public, parameter :: out_binary = .false.
 logical, public, parameter :: Ascii3D_WANTED = .false.
+logical, private,parameter :: DEBUG_PBL = .false.
 
 ! Site outputs   (used in Sites_ml)
 !==============================================================
@@ -284,6 +285,7 @@ subroutine set_output_defs
     if(USE_POLLEN  )nhourly_out=nhourly_out+1
     if(DEBUG_POLLEN)nhourly_out=nhourly_out+2
     if(USE_POLLEN.or.DEBUG_POLLEN) call pollen_check()
+    if(DEBUG_PBL   )nhourly_out=nhourly_out+3
   case("MACC_EVA")
     nhourly_out=4
     nlevels_hourly = 1
@@ -460,6 +462,15 @@ subroutine set_output_defs
             ix1,ix2,iy1,iy2,1,"degree day",1.0                      ,-999.9),&
       Asc2D("Pollen_left","pollen_left",00, &
             ix1,ix2,iy1,iy2,1,"grains/m3" ,1.0                      ,-999.9)/)
+    endif
+    if(DEBUG_PBL   )then
+      j=j+3;hr_out(j-2:j) = (/&
+      Asc2D("HMIX","D2D_inst",find_index("HMIX",f_2d(:)%name), &
+            ix1,ix2,iy1,iy2,1, "m",1.0,10000.0), &
+      Asc2D("USTAR_NWP","D2D_inst",find_index("USTAR_NWP",f_2d(:)%name), &
+            ix1,ix2,iy1,iy2,1, "m/s",1.0,-999.9), &
+      Asc2D("Kz_m2s","D2D_inst",find_index("Kz_m2s",f_2d(:)%name), &
+            ix1,ix2,iy1,iy2,1, "m2/s",1.0,-999.9)/)
     endif
   case("MACC_EVA")
     levels_hourly = (/0/)

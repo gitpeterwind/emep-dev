@@ -1,139 +1,169 @@
-! < ForestFire_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
-!          Chemical transport Model>
-!*****************************************************************************!
-!*
-!*  Copyright (C) 2007-2013 met.no
-!*
-!*  Contact information:
-!*  Norwegian Meteorological Institute
-!*  Box 43 Blindern
-!*  0313 OSLO
-!*  NORWAY
-!*  email: emep.mscw@met.no
-!*  http://www.emep.int
-!*
-!*    This program is free software: you can redistribute it and/or modify
-!*    it under the terms of the GNU General Public License as published by
-!*    the Free Software Foundation, either version 3 of the License, or
-!*    (at your option) any later version.
-!*
-!*    This program is distributed in the hope that it will be useful,
-!*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-!*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!*    GNU General Public License for more details.
-!*
-!*    You should have received a copy of the GNU General Public License
-!*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************!
-
 module ForestFire_ml
- !----------------------------------------------------------------
- ! Uses emissions from either:
- !
- ! 1) FINNv1 daily data 2002 - 2011
- ! REFERENCE:
- ! Wiedinmyer, C., Akagi, S. K., Yokelson, R. J., Emmons, L. K., Al-Saadi,
- ! J. A., Orlando, J. J., and Soja, A. J.: The Fire INventory from NCAR (FINN) 
- ! - a high resolution global model to estimate the emissions from open 
- !  burning, Geosci. Model Dev. Discuss., 3, 2439-2476, 
- !   doi:10.5194/gmdd-3-2439-2010, 2010.
- ! http://www.geosci-model-dev-discuss.net/3/2439/2010/gmdd-3-2439-2010.html
- !
- ! 2)  GFED 3 (Global Forest Emission database)
- ! http://www.falw.vu/~gwerf/GFED/
- ! Currently programmed for 8-daily data (available for 2001 - 2007)
- !
- ! 3) GFASv1 Real-Time Fire Emissions
- ! Daily data. Available since 2003 or 2011, depending on version, from MARS
- !   http://www.gmes-atmosphere.eu/about/project_structure/input_data/d_fire/ProductsInMARS/
- ! REFERENCE:
- ! Kaiser, J.W., Heil, A., Andreae, M.O., Benedetti, A., Chubarova, N.,
- !   Jones, L., Morcrette, J.-J., Razinger, M., Schultz, M. G., Suttie, M.,
- !   and van der Werf, G. R.: Biomass burning emissions estimated with a global
- !   fire assimilation system based on observed fire radiative power,
- !   Biogeosciences, 9, 527-554, doi:10.5194/bg-9-527-2012, 2012.
- !----------------------------------------------------------------
-  use CheckStop_ml,      only : CheckStop
-!CMR  use ChemChemicals_ml,  only : species
-!CMR  use ChemSpecs_tot_ml
-  use ChemSpecs           
-  use GridValues_ml,     only : i_fdom, j_fdom, debug_li, debug_lj, &
-                                 debug_proc,xm2,GRIDWIDTH_M
-  use Io_ml,             only : PrintLog, datewrite
-  use MetFields_ml,      only : z_bnd
-  use ModelConstants_ml, only : MasterProc, KMAX_MID, &
-                                USES, & !TESTING 
-                                DEBUG, FORECAST, &
-                                IOU_INST,IOU_HOUR,IOU_HOUR_MEAN, IOU_YEAR
-  use NetCDF_ml,         only : ReadField_CDF, Out_netCDF,Real4 ! Reads, writes 
-  use OwnDataTypes_ml,   only : Deriv, TXTLEN_SHORT
-  use Par_ml,            only : MAXLIMAX, MAXLJMAX, me,limax,ljmax
-  use PhysicalConstants_ml, only : AVOG
-  use Setup_1dfields_ml, only : rcemis
-  use SmallUtils_ml,     only : find_index
- ! No. days per year, date-type :
-  use TimeDate_ml,only : nydays, nmdays, date, current_date, day_of_year
-  use TimeDate_ExtraUtil_ml,  only: date2string
-  implicit none
+!----------------------------------------------------------------
+! Uses emissions from either:
+!
+! 1) FINNv1 daily data 2002 - 2011
+! REFERENCE:
+! Wiedinmyer, C., Akagi, S. K., Yokelson, R. J., Emmons, L. K., Al-Saadi,
+! J. A., Orlando, J. J., and Soja, A. J.: The Fire INventory from NCAR (FINN) 
+! - a high resolution global model to estimate the emissions from open 
+!  burning, Geosci. Model Dev. Discuss., 3, 2439-2476, 
+!   doi:10.5194/gmdd-3-2439-2010, 2010.
+! http://www.geosci-model-dev-discuss.net/3/2439/2010/gmdd-3-2439-2010.html
+!
+! 2)  GFED 3 (Global Forest Emission database)
+! http://www.falw.vu/~gwerf/GFED/
+! Currently programmed for 8-daily data (available for 2001 - 2007)
+!
+! 3) GFASv1 Real-Time Fire Emissions
+! Daily data. Available since 2003 or 2011, depending on version, from MARS
+!   http://www.gmes-atmosphere.eu/about/project_structure/input_data/d_fire/ProductsInMARS/
+! REFERENCE:
+! Kaiser, J.W., Heil, A., Andreae, M.O., Benedetti, A., Chubarova, N.,
+!   Jones, L., Morcrette, J.-J., Razinger, M., Schultz, M. G., Suttie, M.,
+!   and van der Werf, G. R.: Biomass burning emissions estimated with a global
+!   fire assimilation system based on observed fire radiative power,
+!   Biogeosciences, 9, 527-554, doi:10.5194/bg-9-527-2012, 2012.
+!----------------------------------------------------------------
+use CheckStop_ml,      only : CheckStop
+use ChemSpecs
+use GridValues_ml,     only : i_fdom, j_fdom, debug_li, debug_lj, &
+                               debug_proc,xm2,GRIDWIDTH_M
+use Io_ml,             only : PrintLog, datewrite, IO_NML
+use MetFields_ml,      only : z_bnd
+use ModelConstants_ml, only : MasterProc, KMAX_MID, &
+                              DEBUG, FORECAST, &
+                              IOU_INST,IOU_HOUR,IOU_HOUR_MEAN, IOU_YEAR
+use NetCDF_ml,         only : ReadTimeCDF,ReadField_CDF,Out_netCDF,Real4 ! Reads, writes 
+use OwnDataTypes_ml,   only : Deriv, TXTLEN_SHORT
+use Par_ml,            only : MAXLIMAX, MAXLJMAX, me,limax,ljmax
+use PhysicalConstants_ml, only : AVOG
+use Setup_1dfields_ml, only : rcemis
+use SmallUtils_ml,     only : find_index
+! No. days per year, date-type :
+use TimeDate_ml,only : current_date,day_of_year,max_day
+use TimeDate_ExtraUtil_ml,  only: nctime2string,date2nctime
+implicit none
 
 !  Unimod calls just call Fire_Emis(daynumber)
 !  and put the day-testing code here. This lets the module decide if new
 !  emissions are needed, and keeps all forest-fire logic here
 !
 
-  public :: Fire_Emis
-  public :: Fire_rcemis
-  private :: Export_FireNc
+public :: Fire_Emis
+public :: Fire_rcemis
+private :: Export_FireNc
 
-  logical, public, allocatable, dimension(:,:), save ::  burning
-  real, private, allocatable, dimension(:,:,:), save :: BiomassBurningEmis
+logical, public, allocatable, dimension(:,:), save ::  burning
+real, private, allocatable, dimension(:,:,:), save :: BiomassBurningEmis
 
-  integer, private, save ::  ieCO=-1 ! index for CO
+integer, private, save ::  ieCO=-1 ! index for CO
 
-  character(len=TXTLEN_SHORT), private :: FF_poll
-  integer :: iemep
+character(len=TXTLEN_SHORT), private :: FF_poll
+integer :: iemep
 
-  !/ Defintions of BB data. If known, we assign the BB pollutant which
-  !  corresponds to each possible EMEP emission file. 
+!/ Defintions of BB data. If known, we assign the BB pollutant which
+!  corresponds to each possible EMEP emission file. 
 
-  ! Assign mol. wts of the BB data  where known. If mol. wt set to
-  ! zero, the code in Fire-rcemis will use the values from the
-  ! ChemSpecs_ml, species()%molwt.
-  !
-  ! If BB doesn't have emissionss, set a "-" for BB, then the
-  ! desired emission factor (g/kg DW), and then follow the
-  ! example in Fire_setups for NH3 (GFED):
-  ! (above text if old. May need update)
-  !
+! Assign mol. wts of the BB data  where known. If mol. wt set to
+! zero, the code in Fire-rcemis will use the values from the
+! ChemSpecs_ml, species()%molwt.
+!
+! If BB doesn't have emissionss, set a "-" for BB, then the
+! desired emission factor (g/kg DW), and then follow the
+! example in Fire_setups for NH3 (GFED):
+! (above text if old. May need update)
+!
 
-  ! =======================================================================
-  !  Mapping to EMEP species
-  !
-  type, private :: bbtype
-    character(len=TXTLEN_SHORT) :: BBname
-    real :: unitsfac
-    real :: frac
-    integer :: emep
-  endtype bbtype
+! =======================================================================
+!  Mapping to EMEP species
+!
+type, private :: bbtype
+  character(len=TXTLEN_SHORT) :: BBname
+  real :: unitsfac
+  real :: frac
+  integer :: emep
+endtype bbtype
 
-  ! Here we include the relevant mapping file, which depends on
-  ! the source of ffire data and the chemical mechanism (CM)
-  !----------------------------------------------
-  !=> NBB_DEFS, NEMEPSPECS, FF_defs(NBB_DEFS)
+! Here we include the relevant mapping file, which depends on
+! the source of ffire data and the chemical mechanism (CM)
+!----------------------------------------------
+!=> NBB_DEFS, NEMEPSPECS, FF_defs(NBB_DEFS)
 
-    include 'BiomassBurningMapping.inc' 
+  include 'BiomassBurningMapping.inc' 
 
-  !----------------------------------------------
-  ! matrix to get from forest-fire species to EMEP ones
+!----------------------------------------------
+! matrix to get from forest-fire species to EMEP ones
 
-  integer, private, save :: emep_used(NEMEPSPECS) = 0
-  real   , private, save :: sum_emis(NEMEPSPECS) = 0
+integer, private, save :: emep_used(NEMEPSPECS) = 0
+real   , private, save :: sum_emis(NEMEPSPECS) = 0
 
-  ! =======================================================================
-
-
-
+! =======================================================================
+character(len=TXTLEN_SHORT), private :: MODE="DAILY_REC"
+integer, private, parameter :: &
+  max_string_length=200 ! large enough for paths to be set on Fire_config namelist
+character(len=max_string_length), private, save :: &
+  GFED_PATTERN = 'GFED_ForestFireEmis.nc',&
+  FINN_PATTERN = 'FINN_ForestFireEmis_YYYY.nc',&
+  GFAS_PATTERN = 'GFAS_ForestFireEmis_YYYY.nc'
+integer, private, save :: &
+  verbose=1,     &    ! debug verbosity 0,..,4
+  persistence=1, &    ! persistence in days
+  fire_year=-1,  &    ! override current year
+  nread=-1            ! records in forest fire file
+real, dimension(366), save :: fdays
+! =======================================================================
 contains
+subroutine Config_Fire()
+  logical, save :: first_call=.true.
+  integer :: ios, ne, n
+  NAMELIST /Fire_config/MODE,verbose,persistence,&
+    GFED_PATTERN,FINN_PATTERN,GFAS_PATTERN
+
+  if(.not.first_call)return
+  call PrintLog("Biomass Mapping: "//trim(BiomassBurningMapping),MasterProc)
+
+  if(DEBUG%FORESTFIRE.and.MasterProc) &
+    write(*,*) "FIRE selects "//BiomassBurningMapping(1:4)
+  select case(BiomassBurningMapping(1:4))
+    case("GFED");persistence=8 ! 8-day records
+    case("FINN");persistence=1 ! 1-day records
+    case("GFAS");persistence=3 ! 1-day records, valid for 3 day in FORECAST mode
+    case default;call CheckStop("Unknown B.B.Mapping")
+  endselect
+
+  rewind(IO_NML)
+  read(IO_NML,NML=Fire_config,iostat=ios)
+  call CheckStop(ios,"NML=Fire_config")  
+  if(DEBUG%FORESTFIRE.and.MasterProc)then
+    write(*,*) "NAMELIST IS "
+    write(*,NML=Fire_config)
+  endif
+
+  allocate(BiomassBurningEmis(NEMEPSPECS,MAXLIMAX,MAXLJMAX),&
+           burning(MAXLIMAX,MAXLJMAX),stat=ios)
+  call CheckStop(ios,"ForestFire BiomassBurningEmis alloc problem")
+  ne = 0     ! number-index of emep species
+
+  do n=1, NBB_DEFS            ! Only unique EMEP SPECS in emep_used
+    iemep = FF_defs(n)%emep 
+    if(find_index(iemep,emep_used(:))>0) cycle
+    
+    ne = ne + 1
+    emep_used(ne) = iemep
+
+    ! CO is special. Keep the index
+    if(species(iemep)%name=="CO") ieCO=ne
+
+    if(MasterProc) write(*,"(a,2i4,a17)") "FFIRE Mapping EMEP ", &
+      ne, iemep, trim(species(iemep)%name)
+  enddo !n
+  call CheckStop(ieCO<1,"No mapping for 'CO' found on "//BiomassBurningMapping)
+  call CheckStop(any(emep_used<1),"UNSET FFIRE EMEP "//BiomassBurningMapping)
+
+  first_call=.false.
+endsubroutine Config_Fire
+
 subroutine Fire_Emis(daynumber)
 !.....................................................................
 !**    DESCRIPTION:
@@ -146,138 +176,56 @@ subroutine Fire_Emis(daynumber)
 
   real,allocatable :: rdemis(:,:)  ! Emissions read from file
   integer :: i,j,nstart, alloc_err, iBB, n
-  logical, save :: my_first_call = .true.   ! DSFF
-  logical :: my_first_defs = .true. 
-  integer, save  :: dd_old = -1, mm_old=-1 
+  logical, save :: first_call = .true.
+  integer, save  :: dd_old=-1,mm_old=-1 
   real    :: fac, to_kgm2s   
 
-  integer :: ind, ne
+  integer :: ind
   integer :: loc_maxemis(2) ! debug
 
-  character(len=*), parameter :: &
-    GFED_PATTERN = 'GFED_ForestFireEmis.nc',&
-    FINN_PATTERN = 'FINN_ForestFireEmis_YYYY.nc',&
-    GFAS_PATTERN = 'GFAS_ForestFireEmis_YYYY.nc'
-  character(len=len(GFAS_PATTERN)) :: fname = ''
-  logical :: my_debug=.false.,fexist=.false.
-  integer, parameter :: verbose = 1
-  integer :: dd1, dd2 ! TESTING
-  real,allocatable :: xrdemis(:,:)  !TESTING
-  !
-  integer :: yyyy, mm  ! instead of associate
+  character(len=max_string_length) :: fname='new'
+  logical :: my_debug=.false.
+  real, allocatable :: xrdemis(:,:) ! MONTHLY_AVG
+  integer :: dd1, dd2, ndd          ! MONTHLY_AVG
+  integer :: yyyy, mm, dd
 
-  !FAILED with ifort 12.0 :-(
-  !ACDATES: associate ( yyyy => current_date%year, mm => current_date%month )
-  yyyy = current_date%year
-  mm = current_date%month 
-
-  if(my_first_call) &
-    call PrintLog("Biomass Mapping: "//trim(BiomassBurningMapping),MasterProc)
-
+  if(first_call) call Config_Fire()
   select case(verbose)
     case(:0);my_debug=.false.
-    case(1) ;my_debug=DEBUG%FORESTFIRE.and.MasterProc.and.my_first_call
+    case(1) ;my_debug=DEBUG%FORESTFIRE.and.MasterProc.and.first_call
     case(2) ;my_debug=DEBUG%FORESTFIRE.and.MasterProc
     case(3) ;my_debug=DEBUG%FORESTFIRE
     case(4:);my_debug=.true.
   endselect
 
-  nstart = -1 ! reset for GFED
-  select case(BiomassBurningMapping(1:4))
-
-  case("GFED") ! 8-day values
-
-    if(DEBUG%FORESTFIRE.and.MasterProc) write(*,*) "FIRE selects GFED"
-    select case(yyyy)
-    case(2001:2007)
-      if(MasterProc)&
-        write(*,*) "WARNING! FFIRE GFED USED! May not be working properly check results!"
-    case default
-      if(my_first_call)&
-        call PrintLog("8d GFED Forest Fires: only between 2001--2007",MasterProc)
-      call CheckStop("GFED not available. Use other FF data, or set USE_FOREST_FIRES .false. in ModelConstants")
-      my_first_call = .false.
-      return
-    endselect
+  yyyy = current_date%year
+  mm   = current_date%month 
+  dd   = current_date%day
+  if(fire_year>1) yyyy=fire_year
+  
+  select case(MODE)
+  case("DAILY_REC","D","d")
+    if(dd_old==daynumber) return  ! Calculate once per day
+    dd_old=daynumber
+                                  ! Continue if new record||file  
+    if(.not.newFFrecord([yyyy,mm,dd])) return
     if(DEBUG%FORESTFIRE.and.MasterProc) &
-      write(*,*) "GFED FIRE days:", yyyy, daynumber, dd_old, mod(daynumber,8), my_first_call
+      write(*,*) "Starting FIRE days:", yyyy, daynumber, first_call
+  case("MONTHLY_AVG","M","m")
+    if(mm_old==mm) return         ! Calculate once per month
+    mm_old=mm
 
-    ! GFED Fire emissions are called at 8 days intervals (1, 9, 17, ....)
-    ! 46 values available each year: day 361 is the last one.
-    ! Return unless new period
-
-    if(.not.my_first_call.and.mod(daynumber,8)/= 1) return
-    nstart=( yyyy -2001)*46+(daynumber+7)/8
-
-  case("FINN")
-    !write(*,*) "FIRE selects FINN",me, DEBUG%FORESTFIRE, MasterProc
-    if(DEBUG%FORESTFIRE.and.MasterProc) write(*,*) "FIRE selects FINN"
-
-  case("GFAS")
-    if(DEBUG%FORESTFIRE.and.MasterProc) write(*,*) "FIRE selects GFAS"
-
+    if(DEBUG%FORESTFIRE.and.MasterProc) &
+      write(*,*) "Starting FIRE month:", yyyy, mm, first_call
+    allocate(xrdemis(MAXLIMAX,MAXLJMAX),stat=alloc_err)
   case default
-    call CheckStop("Unknown B.B.Mapping: "//trim(BiomassBurningMapping))
+    call CheckStop("Unknown ForestFire MODE="//trim(MODE))
   endselect
 
-
-  if(DEBUG%FORESTFIRE.and.MasterProc) &
-    write(*,*) "Starting FIRE days:", yyyy, &
-      daynumber, dd_old, mod(daynumber,8), my_first_call
-
-  if(dd_old==daynumber) return   ! Only calculate once per day max
-  dd_old = daynumber
-
-  if(my_first_call)then
-
-    allocate(BiomassBurningEmis(NEMEPSPECS,MAXLIMAX,MAXLJMAX),&
-             burning(MAXLIMAX,MAXLJMAX),stat=alloc_err)
-    call CheckStop(alloc_err,"ForestFire BiomassBurningEmis alloc problem")
-    my_first_call = .false.
-    ne = 0     ! number-index of emep species
-
-    do n=1, NBB_DEFS            ! Only unique EMEP SPECS in emep_used
-      iemep = FF_defs(n)%emep 
-      if(find_index(iemep,emep_used(:))>0) cycle
-      
-      ne = ne + 1
-      emep_used(ne) = iemep
-
-      ! CO is special. Keep the index
-      if(species(iemep)%name=="CO") ieCO=ne
-
-      if(MasterProc) write(*,"(a,2i4,a17)") "FFIRE Mapping EMEP ", &
-        ne, iemep, trim(species(iemep)%name)
-    enddo !n
-    call CheckStop(ieCO<0,"No mapping for 'CO' found on "//BiomassBurningMapping)
-    call CheckStop(any(emep_used<0),"UNSET FFIRE EMEP "//BiomassBurningMapping)
-
-  endif !my first call
-
-! Check if ForestFire file exists
-  select case(BiomassBurningMapping(1:4))
-    case("GFED");fname=date2string(GFED_PATTERN,current_date)
-    case("FINN");fname=date2string(FINN_PATTERN,current_date)
-    case("GFAS");fname=date2string(GFAS_PATTERN,current_date)
-  endselect
-  inquire(file=fname,exist=fexist)
-  if(.not.fexist)then
-    if(MasterProc)then
-      write(*,*)"ForestFire file not found: "//trim(fname)
-      call CheckStop(.not.FORECAST,"Missing ForestFire file")
-    endif
-    burning(:,:) = .false.
-    return
-  endif
-
-  if(DEBUG%FORESTFIRE.and.MasterProc) write(*,*) "FOREST_FIRE: ", daynumber,nstart
+  if(DEBUG%FORESTFIRE.and.MasterProc) write(*,*) "FOREST_FIRE: ",daynumber,nstart
   BiomassBurningEmis(:,:,:) = 0.0
   allocate(rdemis(MAXLIMAX,MAXLJMAX),stat=alloc_err)
   call CheckStop(alloc_err,"ForestFire rdemis alloc problem")
-  if(USES%MONTHLY_FF.and.mm/=mm_old) then
-    if( MasterProc ) write(*,*) "Start monthly FF ", mm
-    allocate(xrdemis(MAXLIMAX,MAXLJMAX),stat=alloc_err)
-  end if
   
   ! We need to look for forest-fire emissions which are equivalent
   ! to the standard emission files:
@@ -297,84 +245,99 @@ subroutine Fire_Emis(daynumber)
     case("GFED")
       if(my_debug) &
         write(*,*) "FFIRE GFED ", me, iBB, nstart,  trim(FF_poll), trim(fname)
-      call ReadField_CDF(fname,FF_poll,rdemis,nstart,interpol='zero_order',&
-        needed=.not.FORECAST,UnDef=0.0,debug_flag=DEBUG%FORESTFIRE)
+      select case(MODE)
+      case("MONTHLY_AVG","M","m") ! Calculate once per month
+        dd1=day_of_year(yyyy,mm,1)
+        dd2=dd1+max_day(mm,yyyy)-1
+        rdemis = 0.0
+        ndd=0
+        do dd = dd1, dd2
+          if(newFFrecord([yyyy,mm,dd])) &
+          call ReadField_CDF(fname,FF_poll,xrdemis,nstart,interpol='zero_order',&
+            needed=.not.FORECAST,UnDef=0.0,debug_flag=my_debug)
+          rdemis = rdemis + xrdemis                 ! month total
+          ndd    = ndd + 1
+        enddo
+      case default
+        ndd=1
+        call ReadField_CDF(fname,FF_poll,rdemis,nstart,interpol='zero_order',&
+          needed=.not.FORECAST,UnDef=0.0,debug_flag=my_debug)
+      endselect
       !unit conversion to GFED [g/m2/8day]->[kg/m2/s]
       to_kgm2s = 1.0e-3 /(8*24.0*3600.0)
+      if(ndd>1) to_kgm2s=to_kgm2s/ndd               ! total-->avg.
       forall(j=1:ljmax,i=1:limax) rdemis(i,j)=rdemis(i,j)*to_kgm2s
-
     case("FINN")
       if(my_debug) &
         write(*,*) "FFIRE FINN ", me, iBB, daynumber,  trim(FF_poll), trim(fname)
-      if( USES%MONTHLY_FF ) then
-   !associate ( yyyy => current_date%year, mm => current_date%month )
-         dd1=day_of_year(yyyy,mm,1)
-         dd2=day_of_year(yyyy,mm+1,1) - 1  ! Ok for Dec also, gets 367-1.
-   !end associate ! yyyy, mm
-
-         rdemis = 0.0
-         do i =  1, dd1, dd2
-            call ReadField_CDF(fname,FF_poll,xrdemis,daynumber,&
-               interpol='mass_conservative',&
-               needed=.not.FORECAST,UnDef=0.0,debug_flag=DEBUG%FORESTFIRE)
-            rdemis = rdemis + xrdemis/real(dd2-dd1+1)  ! Get monthly avg.
-         end do
-      else
-         call ReadField_CDF(fname,FF_poll,rdemis,daynumber,&
-              interpol='mass_conservative',&
-              needed=.not.FORECAST,UnDef=0.0,debug_flag=DEBUG%FORESTFIRE)
-              
-      end if ! USES%MONTHLY_FF 
-
-      !else
-      !call ReadField_CDF(fname,FF_poll,rdemis,daynumber,interpol='mass_conservative',&
-      !  needed=.not.FORECAST,UnDef=0.0,debug_flag=DEBUG%FORESTFIRE)
-      !end if
-      !MONTHLY FF
-      !unit conversion to FINN: Can be negative if REMPPM to be calculated
-      !unit conversion to FINN: Can be negative if REMPPM to be calculated
-      fac=FF_defs(iBB)%unitsfac * FF_defs(iBB)%frac  ! --> [kg/day]
+      select case(MODE)
+      case("MONTHLY_AVG","M","m") ! Calculate once per month
+        dd1=day_of_year(yyyy,mm,1)
+        dd2=dd1+max_day(mm,yyyy)-1
+        rdemis = 0.0
+        ndd=0
+        do dd = dd1, dd2
+          if(newFFrecord([yyyy,mm,dd])) &
+          call ReadField_CDF(fname,FF_poll,xrdemis,nstart,interpol='mass_conservative',&
+            needed=.not.FORECAST,UnDef=0.0,debug_flag=my_debug)
+          rdemis = rdemis + xrdemis                 ! month total
+          ndd    = ndd + 1
+        enddo
+      case default
+        ndd=1
+        call ReadField_CDF(fname,FF_poll,rdemis,daynumber,interpol='mass_conservative',&
+            needed=.not.FORECAST,UnDef=0.0,debug_flag=my_debug)
+      endselect
+      ! unit conversion to FINN: Can be negative if REMPPM to be calculated
+      fac=FF_defs(iBB)%unitsfac * FF_defs(iBB)%frac ! --> [kg/day]
       fac=fac/(GRIDWIDTH_M*GRIDWIDTH_M*24.0*3600.0) ! [kg/day]->[kg/m2/s]
+      if(ndd>1) fac=fac/ndd                         ! total-->avg.
       forall(j=1:ljmax,i=1:limax) rdemis(i,j)=rdemis(i,j)*fac*xm2(i,j)
-
     case("GFAS")
-      nstart = daynumber
-! something more sophisticated is needed for YYYY_ or YYYYMM_ files,
-! e.g. use ReadTimeCDF and nctime2idate/idate2nctime to find the right record:
-!  nstart=FindTimeCDFRecord(fname,current_date,prec_ss=3600.0*12)
       if(my_debug) &
         write(*,*) "FFIRE GFAS ", me, iBB, n, nstart,  trim(FF_poll), trim(fname)
-      call ReadField_CDF(fname,FF_poll,rdemis,nstart,interpol='conservative',&
-          needed=.not.FORECAST,debug_flag=DEBUG%FORESTFIRE)
+      select case(MODE)
+      case("MONTHLY_AVG","M","m") ! Calculate once per month
+        dd1=day_of_year(yyyy,mm,1)
+        dd2=dd1+max_day(mm,yyyy)-1
+        rdemis = 0.0
+        ndd=0
+        do dd = dd1, dd2
+          if(newFFrecord([yyyy,mm,dd])) &
+          call ReadField_CDF(fname,FF_poll,xrdemis,nstart,interpol='conservative',&
+            needed=.not.FORECAST,debug_flag=my_debug)
+          rdemis = rdemis + xrdemis                 ! month total
+          ndd    = ndd + 1
+        enddo
+      case default
+        ndd=1
+        call ReadField_CDF(fname,FF_poll,rdemis,nstart,interpol='conservative',&
+            needed=.not.FORECAST,debug_flag=my_debug)
+      endselect
       ! GFAS units are [kg/m2/s]. No further unit conversion is needed.
       ! However, fac can be /=1, e.g. when REMPPM is calculated
       fac=FF_defs(iBB)%unitsfac * FF_defs(iBB)%frac
+      if(ndd>1) fac=fac/ndd                         ! total-->avg.
       if(fac/=1.0) forall(j=1:ljmax,i=1:limax) rdemis(i,j)=rdemis(i,j)*fac
-    end select
-
+    endselect
 
    ! Assign . units should be [kg/m2/s] here 
-    forall(j=1:ljmax,i=1:limax) 
+    forall(j=1:ljmax,i=1:limax) &
       BiomassBurningEmis(ind,i,j) = BiomassBurningEmis(ind,i,j) + rdemis(i,j) 
-    endforall
 
     if(my_debug)  write(*,"(3a10,i4,f8.3,es12.3)") "FFIRE SUMS:", &
       trim(FF_poll), trim( species(iemep)%name), ind, &
       species(iemep)%molwt, sum( BiomassBurningEmis(ind,:,:) )
 
-
-    if(my_first_defs) call PrintLog(&
-      "ForestFire_ml :: Assigns "//trim(FF_poll) , MasterProc)
+    call PrintLog("ForestFire_ml :: Assigns "//trim(FF_poll),&
+      first_call.and.MasterProc)
 
     if(DEBUG%FORESTFIRE) sum_emis(ind)=sum_emis(ind)+sum(BiomassBurningEmis(ind,:,:))
   enddo ! BB_DEFS
 
-  my_first_defs  = .false.
+  first_call  = .false.
   deallocate(rdemis)
-  if(USES%MONTHLY_FF.and.mm/=mm_old) then
-     deallocate(xrdemis)
-     mm_old = mm
-  end if
+  if(allocated(xrdemis)) deallocate(xrdemis)
 
   ! For cases where REMPPM25 s derived as the difference between PM25 and (BC+1.7*OC)
   ! we need some safety:
@@ -405,7 +368,68 @@ subroutine Fire_Emis(daynumber)
     end associate ! idbg, jdbg
   endif ! debug_proc
   !end associate ACDATES
-end subroutine Fire_Emis
+
+contains
+
+function newFFrecord(ymd) result(new)
+  integer, intent(in) :: ymd(3)
+  logical :: new
+
+  character(len=max_string_length), save :: file_old='old'
+  integer, save :: record_old=-1
+  logical :: fexist=.false.
+  real :: ncday(0:1)
+  
+  ! Check if ForestFire file exists
+  call date2nctime(ymd,ncday(1))
+  ncday(0)=ncday(1)-persistence
+  select case(BiomassBurningMapping(1:4))
+    case("GFED");fname=nctime2string(GFED_PATTERN,ncday(1))
+    case("FINN");fname=nctime2string(FINN_PATTERN,ncday(1))
+    case("GFAS");fname=nctime2string(GFAS_PATTERN,ncday(1))
+  endselect
+  new=(fname/=file_old)
+  if(new)then
+    file_old=fname
+    if(DEBUG%FORESTFIRE.and.MasterProc) &
+      write(*,*)"ForestFire new file: ",trim(fname)
+    inquire(file=fname,exist=fexist)    ! check if fname exixts
+    if(.not.fexist)then
+      if(MasterProc)then
+        write(*,*)"ForestFire file not found: ",trim(fname)
+        call CheckStop(.not.FORECAST,"Missing ForestFire file")
+      endif
+      burning(:,:) = .false.
+      new=.false.
+      return
+    endif
+    nread=-1                            ! read all
+    fdays(:)=-1.0                       ! times records
+    call ReadTimeCDF(fname,fdays,nread) ! in fname
+  endif
+
+  nstart=MAXLOC(fdays(:nread),DIM=1,&
+    MASK=(fdays(:nread)>=ncday(0)).and.(fdays(:nread)<(ncday(1)+1.0)))
+  new=new.or.(nstart/=record_old)
+  if(new)then
+    record_old=nstart
+    if(DEBUG%FORESTFIRE.and.MasterProc) &
+      write(*,*)"ForestFire new record: ",&
+        nstart,nctime2string("(YYYY-MM-DD hh:mm)",fdays(nstart))
+    if((fdays(nstart)<ncday(0)).or.(fdays(nstart)>=(ncday(1)+1.0)))then
+      if(MasterProc)then
+        write(*,*)"ForestFire: no records between ",&
+          nctime2string("YYYY-MM-DD 00:00",ncday(0))," and ",&
+          nctime2string("YYYY-MM-DD 23:59",ncday(1))
+        call CheckStop(.not.FORECAST,"Missing ForestFire records")
+      endif
+      burning(:,:) = .false.
+      new=.false.
+      return
+    endif
+  endif
+endfunction newFFrecord
+endsubroutine Fire_Emis
 
 !=============================================================================
 
@@ -480,7 +504,6 @@ subroutine Fire_rcemis(i,j)
 
   enddo ! n
  !       call Export_FireNc() ! Caused problems on last attempt
-
 endsubroutine Fire_rcemis
 !=============================================================================
 subroutine Export_FireNc()

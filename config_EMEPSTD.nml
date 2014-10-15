@@ -11,7 +11,6 @@
 ! Only partially implemented. See below and ModelConstants_ml
   USES%testname         = 'EMEPSTD',
   USES%FOREST_FIRES     = T,
-  USES%MONTHLY_FF       = F,
   USES%EMISSTACKS       = F,         ! Reads PointSources file
   USES%PlumeMethod      = 'PVDI',    ! default PVDI, possible: NILU, ASMI, PVDI
 !------------------------------
@@ -121,6 +120,11 @@
 ! jstart =  11,   ! default RUNDOMAIN(3)+1
 ! iend   = 107,   ! default RUNDOMAIN(2)-1
 ! jend   =  58,   ! default RUNDOMAIN(4)-1
+&end
+&Fire_config
+  GFED_PATTERN="$GFED",
+  FINN_PATTERN="$FINN",
+  GFAS_PATTERN="$GFAS",
 &end
 &ExternalBICs_config
   USE_EXTERNAL_BIC  = F,              ! .false. to deactivate

@@ -1,35 +1,4 @@
-! <Emissions_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
-!          Chemical transport Model>
-!*****************************************************************************! 
-!* 
-!*  Copyright (C) 2007-2013 met.no
-!* 
-!*  Contact information:
-!*  Norwegian Meteorological Institute
-!*  Box 43 Blindern
-!*  0313 OSLO
-!*  NORWAY
-!*  email: emep.mscw@met.no
-!*  http://www.emep.int
-!*  
-!*    This program is free software: you can redistribute it and/or modify
-!*    it under the terms of the GNU General Public License as published by
-!*    the Free Software Foundation, either version 3 of the License, or
-!*    (at your option) any later version.
-!* 
-!*    This program is distributed in the hope that it will be useful,
-!*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-!*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!*    GNU General Public License for more details.
-!* 
-!*    You should have received a copy of the GNU General Public License
-!*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************! 
-!_____________________________________________________________________________
-! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
 module Emissions_ml
-! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 !  Calls up emission read/set routines
 !  This routine interfaces the stand-alone emission-file reading routines
@@ -387,6 +356,17 @@ subroutine Emissions(year)
       road_globland(:,:,:)=0
       globroad_dust_pot(:,:,:)=0.
       RoadDustEmis_climate_factor(:,:)=1.0 ! default, no scaling
+    endif ! road dust
+  else
+    ! needed for DEBUG=yes compilation options
+    allocate(globnland(1,1),flat_globnland(1,1),&
+             globland(1,1,1),flat_globland(1,1,1),&
+             globemis(1,1,1,1),globemis_flat(1,1,1),stat=err6)
+    call CheckStop(err6, "Allocation error 6 - dummy globland")
+      if(USE_ROADDUST)then
+      allocate(road_globnland(1,1),road_globland(1,1,1),&
+               globroad_dust_pot(1,1,1),stat=err9)
+      call CheckStop(err9, "Allocation error 9 - dummy roadglob")
     endif ! road dust
   endif
 
@@ -869,6 +849,16 @@ subroutine Emissions(year)
       call CheckStop(err7, "De-Allocation error 7 - roadglob")
       call CheckStop(err8, "De-Allocation error 8 - roadglob")
       call CheckStop(err9, "De-Allocation error 9 - roadglob")
+    endif
+  else
+    ! needed for DEBUG=yes compilation options
+    deallocate(globnland,flat_globnland,&
+               globland,flat_globland,&
+               globemis,globemis_flat ,stat=err6)
+    call CheckStop(err6, "De-Allocation error 6 - dummy globland")
+    if(USE_ROADDUST)THEN
+      deallocate(road_globnland,road_globland,globroad_dust_pot,stat=err9)
+      call CheckStop(err9, "De-Allocation error 9 - dummy roadglob")
     endif
   endif
 
