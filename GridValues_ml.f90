@@ -163,6 +163,8 @@ subroutine GridRead(meteo,cyclicgrid)
   call Init_nmdays( current_date )
 
   !*********initialize grid parameters*********
+
+!check first if grid is defined in a separate file:
   filename='Grid_Def.nc'
   inquire(file=filename,exist=Grid_Def_exist)
   Grid_Def_exist=Grid_Def_exist.and.Use_Grid_Def
@@ -178,25 +180,32 @@ subroutine GridRead(meteo,cyclicgrid)
 
   call GetFullDomainSize(filename,IIFULLDOM,JJFULLDOM,KMAX_MET,Pole_Singular,projection)
 ! call CheckStop(KMAX_MID/=KMAX,"vertical cordinates not yet flexible")
-
-  filename_vert='Vertical_levels.txt'
-  inquire(file=filename_vert,exist=External_Levels_Def)!done by all procs
-  if(External_Levels_Def)then
-     !define own vertical coordinates
-     !Must use eta coordinates
-     USE_EtaCOORDINATES=.true.
-     if(me==0)then !onlyme=0 read the file
-        write(*,*)'Define vertical levels from ',trim(filename_vert)
-        write(*,*)'using eta coordinates '
-        open(IO_TMP,file=filename_vert,action="read")
-        read(IO_TMP,*)KMAX_MID
-        write(*,*)KMAX_MID, 'vertical levels '
-      endif
-      CALL MPI_BCAST(KMAX_MID ,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-!      External_Levels_Def=.true.
+  
+  !temporary fix to avoid using eta levels for old meteo format
+  if(KMAX_MET /= 20)then
+     filename_vert='Vertical_levels.txt'
+     inquire(file=filename_vert,exist=External_Levels_Def)!done by all procs
+     if(External_Levels_Def)then
+        !define own vertical coordinates
+        !Must use eta coordinates
+        USE_EtaCOORDINATES=.true.
+        if(me==0)then !onlyme=0 read the file
+           write(*,*)'Define vertical levels from ',trim(filename_vert)
+           write(*,*)'using eta coordinates '
+           open(IO_TMP,file=filename_vert,action="read")
+           read(IO_TMP,*)KMAX_MID
+           write(*,*)KMAX_MID, 'vertical levels '
+        endif
+        CALL MPI_BCAST(KMAX_MID ,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+        !      External_Levels_Def=.true.
+     else
+        KMAX_MID=KMAX_MET
+     endif
   else
+     if(me==0)write(*,*)'Warning: disregarding levels from Vertical_levels.txt!'
      KMAX_MID=KMAX_MET
   endif
+
   KMAX_BND=KMAX_MID+1
 
   allocate(A_bnd(KMAX_BND),B_bnd(KMAX_BND))

@@ -153,6 +153,21 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+15th October 2014  Peter 2879
+
+run.pl:
+link always to Vertical_levels.txt. This used to work only for meteo files in 
+new format.
+removed link to GridDef.nc (nobody used it)
+
+GridValues_ml: 
+Avoid reading Vertical_levels.txt if another than 20 levels are found in the meteo file.
+(this might be a problem only if there are 20 levels in the meteo file, but 
+another number is wanted. Not likely to happen often)
+
+Trajectory_ml: default month 16 to avoid unnecessary MPI communication
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15th October 2014  Alvaro 2878
 
 ForestFire_ml

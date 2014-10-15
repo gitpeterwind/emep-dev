@@ -671,12 +671,15 @@ unless($MAKEMODE=~/EVA/){
   }
 
 #Experimental: Grid definitions in a separate file 
-  my $old = "$DATA_LOCAL/Grid_Def.nc";
-  my $new = "Grid_Def.nc";
+  #my $old = "$DATA_LOCAL/Grid_Def.nc";
+  #my $new = "Grid_Def.nc";
+  #mylink( "Linking:", $old, $new);
+
+  # can choose predefined 20, 30 or 34 levels, or define own file with levels
+  #NB: link/define "EmisHeights_P.txt" if you are using different 6 lowest levels (for instance 34 levels);
+  my  $old = "$DataDir/Vertical_levels20.txt";
+  my  $new = "Vertical_levels.txt";
   mylink( "Linking:", $old, $new);
-#  my $old = "$ProgDir/Vertical_levels20.txt";
-#  my $new = "Vertical_levels.txt";
-#  mylink( "Linking:", $old, $new);
 
 #To use FastJ some data files are required. Could be moved elsewhere 
  my $FASTJ = 0;
@@ -727,6 +730,7 @@ unless($MAKEMODE=~/EVA/){
 # INERIS provided the most complete hourly file, we use as default
   $ifile{"$timeseries/HourlyFacs.INERIS"} = "HOURLY-FACS";
   $ifile{"$timeseries/EmisHeights.txt"} = "EmisHeights.txt";
+#emission levels defined by pressure instead of level number:
 #  $ifile{"$timeseries/EmisHeights_P.txt"} = "EmisHeights.txt"; #not much tested yet
 
   my %gridmap=(
