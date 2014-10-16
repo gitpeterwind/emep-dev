@@ -153,6 +153,14 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16th October 2014  Alvaro 2880
+
+ForestFire_ml
+- Add fire_year to Fire_config namelist, missing on 2878.
+- Fix bug introduced on 2878. MODE="MONTHLY_AVG" gave wrong output.
+- Calculate yearly averages from available records if MODE="YEARLY_AVG".
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15th October 2014  Peter 2879
 
 run.pl:
@@ -171,12 +179,11 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15th October 2014  Alvaro 2878
 
 ForestFire_ml
-- Read time records insread of assuming 1-record/N-day strcture.
+- Read time records instead of assuming 1-record/N-day structure.
 - Implement persistence of forest fires. This is relevant for FORECASTS,
-  when there no record can be found for current_date.
-- Simplify GFED 8 day, using 8-day persistence.
-- Implement montly averaged fires (MODE="MONTHLY_AVG").
-  Calculate montly averages from available records.
+  or when no record can be found for current_date.
+- Simplify GFED reading using 8-day persistence.
+- Calculate monthly averages from available records if MODE="MONTHLY_AVG".
 - Read config param from Fire_config namelist:
     MODE          "DAILY_REC" (default) || "MONTHLY_AVG"
     verbose       debug verbosity 0,..,4

@@ -42,7 +42,7 @@ use Setup_1dfields_ml, only : rcemis
 use SmallUtils_ml,     only : find_index
 ! No. days per year, date-type :
 use TimeDate_ml,only : current_date,day_of_year,max_day
-use TimeDate_ExtraUtil_ml,  only: nctime2string,date2nctime
+use TimeDate_ExtraUtil_ml,  only: date2string,nctime2string,date2nctime
 implicit none
 
 !  Unimod calls just call Fire_Emis(daynumber)
@@ -111,13 +111,13 @@ integer, private, save :: &
   persistence=1, &    ! persistence in days
   fire_year=-1,  &    ! override current year
   nread=-1            ! records in forest fire file
-real, dimension(366), save :: fdays
+logical, dimension(-1:5), private,  save :: debug_level=.false.
 ! =======================================================================
 contains
 subroutine Config_Fire()
   logical, save :: first_call=.true.
   integer :: ios, ne, n
-  NAMELIST /Fire_config/MODE,verbose,persistence,&
+  NAMELIST /Fire_config/MODE,verbose,persistence,fire_year,&
     GFED_PATTERN,FINN_PATTERN,GFAS_PATTERN
 
   if(.not.first_call)return
@@ -126,9 +126,9 @@ subroutine Config_Fire()
   if(DEBUG%FORESTFIRE.and.MasterProc) &
     write(*,*) "FIRE selects "//BiomassBurningMapping(1:4)
   select case(BiomassBurningMapping(1:4))
-    case("GFED");persistence=8 ! 8-day records
-    case("FINN");persistence=1 ! 1-day records
-    case("GFAS");persistence=3 ! 1-day records, valid for 3 day in FORECAST mode
+    case("GFED");persistence=8  ! 8-day records
+    case("FINN");persistence=1  ! 1-day records
+    case("GFAS");persistence=3  ! 1-day records, valid for 3 day in FORECAST mode
     case default;call CheckStop("Unknown B.B.Mapping")
   endselect
 
@@ -139,13 +139,21 @@ subroutine Config_Fire()
     write(*,*) "NAMELIST IS "
     write(*,NML=Fire_config)
   endif
+  
+  ! set vebosity levels
+  verbose=min(max(0,verbose),4) ! debug verbosity 0,..,4
+  debug_level(:0)=.false.
+  debug_level(1)=DEBUG%FORESTFIRE.and.MasterProc.and.first_call
+  debug_level(2)=DEBUG%FORESTFIRE.and.MasterProc
+  debug_level(3)=DEBUG%FORESTFIRE
+  debug_level(4:)=.true.
 
   allocate(BiomassBurningEmis(NEMEPSPECS,MAXLIMAX,MAXLJMAX),&
            burning(MAXLIMAX,MAXLJMAX),stat=ios)
   call CheckStop(ios,"ForestFire BiomassBurningEmis alloc problem")
   ne = 0     ! number-index of emep species
 
-  do n=1, NBB_DEFS            ! Only unique EMEP SPECS in emep_used
+  do n=1, NBB_DEFS              ! Only unique EMEP SPECS in emep_used
     iemep = FF_defs(n)%emep 
     if(find_index(iemep,emep_used(:))>0) cycle
     
@@ -177,26 +185,21 @@ subroutine Fire_Emis(daynumber)
   real,allocatable :: rdemis(:,:)  ! Emissions read from file
   integer :: i,j,nstart, alloc_err, iBB, n
   logical, save :: first_call = .true.
-  integer, save  :: dd_old=-1,mm_old=-1 
+  integer, save  :: nn_old=-1
   real    :: fac, to_kgm2s   
 
   integer :: ind
   integer :: loc_maxemis(2) ! debug
 
   character(len=max_string_length) :: fname='new'
-  logical :: my_debug=.false.
-  real, allocatable :: xrdemis(:,:) ! MONTHLY_AVG
-  integer :: dd1, dd2, ndd          ! MONTHLY_AVG
+  logical :: debug_ff=.false.,debug_nc=.false.
+  real, allocatable :: xrdemis(:,:) ! MODE=*_AVG
+  integer :: dn1, dn2, ndn          ! MODE=*_AVG
   integer :: yyyy, mm, dd
 
   if(first_call) call Config_Fire()
-  select case(verbose)
-    case(:0);my_debug=.false.
-    case(1) ;my_debug=DEBUG%FORESTFIRE.and.MasterProc.and.first_call
-    case(2) ;my_debug=DEBUG%FORESTFIRE.and.MasterProc
-    case(3) ;my_debug=DEBUG%FORESTFIRE
-    case(4:);my_debug=.true.
-  endselect
+  debug_ff=debug_level(verbose)
+  debug_nc=debug_level(verbose-1)
 
   yyyy = current_date%year
   mm   = current_date%month 
@@ -205,24 +208,35 @@ subroutine Fire_Emis(daynumber)
   
   select case(MODE)
   case("DAILY_REC","D","d")
-    if(dd_old==daynumber) return  ! Calculate once per day
-    dd_old=daynumber
-                                  ! Continue if new record||file  
-    if(.not.newFFrecord([yyyy,mm,dd])) return
-    if(DEBUG%FORESTFIRE.and.MasterProc) &
-      write(*,*) "Starting FIRE days:", yyyy, daynumber, first_call
+    if(nn_old==daynumber) return  ! Calculate once per day
+    nn_old=daynumber
+    dn1=dd
+    dn2=dd
   case("MONTHLY_AVG","M","m")
-    if(mm_old==mm) return         ! Calculate once per month
-    mm_old=mm
-
-    if(DEBUG%FORESTFIRE.and.MasterProc) &
-      write(*,*) "Starting FIRE month:", yyyy, mm, first_call
-    allocate(xrdemis(MAXLIMAX,MAXLJMAX),stat=alloc_err)
+    if(nn_old==mm) return         ! Calculate once per month
+    nn_old=mm
+    dn1=day_of_year(yyyy,mm,01)
+    dn2=dn1+max_day(mm,yyyy)-1
+  case("YEARLY_AVG","Y","y")
+    if(nn_old==yyyy) return       ! Calculate once per year
+    nn_old=yyyy
+    dn1=day_of_year(yyyy,01,01)
+    dn2=day_of_year(yyyy,12,31)
   case default
     call CheckStop("Unknown ForestFire MODE="//trim(MODE))
   endselect
+  if(dn1<dn2)then
+    allocate(xrdemis(MAXLIMAX,MAXLJMAX),stat=alloc_err)
+  else
+    ! newFFrecord: has pollutant|fname|record changed since last call?
+    FF_poll=""
+    if(.not.newFFrecord([yyyy,mm,dd]))&
+      return                        ! Continue if new record||file  
+  endif
+  if(DEBUG%FORESTFIRE.and.MasterProc) &
+    write(*,*) "Starting FIRE MODE=",trim(MODE),&
+      date2string(" YYYY-MM-DD",[yyyy,mm,dd]),first_call
 
-  if(DEBUG%FORESTFIRE.and.MasterProc) write(*,*) "FOREST_FIRE: ",daynumber,nstart
   BiomassBurningEmis(:,:,:) = 0.0
   allocate(rdemis(MAXLIMAX,MAXLJMAX),stat=alloc_err)
   call CheckStop(alloc_err,"ForestFire rdemis alloc problem")
@@ -243,81 +257,72 @@ subroutine Fire_Emis(daynumber)
 
     select case(BiomassBurningMapping(1:4))
     case("GFED")
-      if(my_debug) &
+      if(debug_ff) &
         write(*,*) "FFIRE GFED ", me, iBB, nstart,  trim(FF_poll), trim(fname)
-      select case(MODE)
-      case("MONTHLY_AVG","M","m") ! Calculate once per month
-        dd1=day_of_year(yyyy,mm,1)
-        dd2=dd1+max_day(mm,yyyy)-1
+      if(dn1<dn2)then
         rdemis = 0.0
-        ndd=0
-        do dd = dd1, dd2
-          if(newFFrecord([yyyy,mm,dd])) &
+        ndn=0
+        do dd = dn1, dn2
+          if(newFFrecord([yyyy,01,dd])) &
           call ReadField_CDF(fname,FF_poll,xrdemis,nstart,interpol='zero_order',&
-            needed=.not.FORECAST,UnDef=0.0,debug_flag=my_debug)
+            needed=.not.FORECAST,UnDef=0.0,debug_flag=debug_nc)
           rdemis = rdemis + xrdemis                 ! month total
-          ndd    = ndd + 1
+          ndn    = ndn + 1
         enddo
-      case default
-        ndd=1
+      else
+        ndn=1
         call ReadField_CDF(fname,FF_poll,rdemis,nstart,interpol='zero_order',&
-          needed=.not.FORECAST,UnDef=0.0,debug_flag=my_debug)
-      endselect
+          needed=.not.FORECAST,UnDef=0.0,debug_flag=debug_nc)
+      endif
       !unit conversion to GFED [g/m2/8day]->[kg/m2/s]
       to_kgm2s = 1.0e-3 /(8*24.0*3600.0)
-      if(ndd>1) to_kgm2s=to_kgm2s/ndd               ! total-->avg.
+      if(ndn>1) to_kgm2s=to_kgm2s/ndn               ! total-->avg.
       forall(j=1:ljmax,i=1:limax) rdemis(i,j)=rdemis(i,j)*to_kgm2s
     case("FINN")
-      if(my_debug) &
+      if(debug_ff) &
         write(*,*) "FFIRE FINN ", me, iBB, daynumber,  trim(FF_poll), trim(fname)
-      select case(MODE)
-      case("MONTHLY_AVG","M","m") ! Calculate once per month
-        dd1=day_of_year(yyyy,mm,1)
-        dd2=dd1+max_day(mm,yyyy)-1
+     if(dn1<dn2)then
         rdemis = 0.0
-        ndd=0
-        do dd = dd1, dd2
-          if(newFFrecord([yyyy,mm,dd])) &
+        ndn=0
+        do dd = dn1, dn2
+          if(newFFrecord([yyyy,01,dd])) &
           call ReadField_CDF(fname,FF_poll,xrdemis,nstart,interpol='mass_conservative',&
-            needed=.not.FORECAST,UnDef=0.0,debug_flag=my_debug)
+            needed=.not.FORECAST,UnDef=0.0,debug_flag=debug_nc)
           rdemis = rdemis + xrdemis                 ! month total
-          ndd    = ndd + 1
+          ndn    = ndn + 1
         enddo
-      case default
-        ndd=1
+      else
+        ndn=1
         call ReadField_CDF(fname,FF_poll,rdemis,daynumber,interpol='mass_conservative',&
-            needed=.not.FORECAST,UnDef=0.0,debug_flag=my_debug)
-      endselect
+            needed=.not.FORECAST,UnDef=0.0,debug_flag=debug_nc)
+      endif
       ! unit conversion to FINN: Can be negative if REMPPM to be calculated
       fac=FF_defs(iBB)%unitsfac * FF_defs(iBB)%frac ! --> [kg/day]
       fac=fac/(GRIDWIDTH_M*GRIDWIDTH_M*24.0*3600.0) ! [kg/day]->[kg/m2/s]
-      if(ndd>1) fac=fac/ndd                         ! total-->avg.
+      if(ndn>1) fac=fac/ndn                         ! total-->avg.
       forall(j=1:ljmax,i=1:limax) rdemis(i,j)=rdemis(i,j)*fac*xm2(i,j)
     case("GFAS")
-      if(my_debug) &
+      if(debug_ff) &
         write(*,*) "FFIRE GFAS ", me, iBB, n, nstart,  trim(FF_poll), trim(fname)
-      select case(MODE)
-      case("MONTHLY_AVG","M","m") ! Calculate once per month
-        dd1=day_of_year(yyyy,mm,1)
-        dd2=dd1+max_day(mm,yyyy)-1
+      if(dn1<dn2)then
         rdemis = 0.0
-        ndd=0
-        do dd = dd1, dd2
-          if(newFFrecord([yyyy,mm,dd])) &
+        ndn=0
+        do dd = dn1, dn2
+          if(newFFrecord([yyyy,01,dd])) &
           call ReadField_CDF(fname,FF_poll,xrdemis,nstart,interpol='conservative',&
-            needed=.not.FORECAST,debug_flag=my_debug)
+            needed=.not.FORECAST,debug_flag=debug_nc)
           rdemis = rdemis + xrdemis                 ! month total
-          ndd    = ndd + 1
+          ndn    = ndn + 1
         enddo
-      case default
-        ndd=1
+      else
+        ndn=1
         call ReadField_CDF(fname,FF_poll,rdemis,nstart,interpol='conservative',&
-            needed=.not.FORECAST,debug_flag=my_debug)
-      endselect
+            needed=.not.FORECAST,debug_flag=debug_nc)
+      endif
       ! GFAS units are [kg/m2/s]. No further unit conversion is needed.
       ! However, fac can be /=1, e.g. when REMPPM is calculated
       fac=FF_defs(iBB)%unitsfac * FF_defs(iBB)%frac
-      if(ndd>1) fac=fac/ndd                         ! total-->avg.
+      if(ndn>1) fac=fac/ndn                         ! total-->avg.
       if(fac/=1.0) forall(j=1:ljmax,i=1:limax) rdemis(i,j)=rdemis(i,j)*fac
     endselect
 
@@ -325,7 +330,7 @@ subroutine Fire_Emis(daynumber)
     forall(j=1:ljmax,i=1:limax) &
       BiomassBurningEmis(ind,i,j) = BiomassBurningEmis(ind,i,j) + rdemis(i,j) 
 
-    if(my_debug)  write(*,"(3a10,i4,f8.3,es12.3)") "FFIRE SUMS:", &
+    if(debug_ff)  write(*,"(3a10,i4,f8.3,es12.3)") "FFIRE SUMS:", &
       trim(FF_poll), trim( species(iemep)%name), ind, &
       species(iemep)%molwt, sum( BiomassBurningEmis(ind,:,:) )
 
@@ -375,12 +380,14 @@ function newFFrecord(ymd) result(new)
   integer, intent(in) :: ymd(3)
   logical :: new
 
-  character(len=max_string_length), save :: file_old='old'
-  integer, save :: record_old=-1
+  character(len=TXTLEN_SHORT), save      :: poll_old=''
+  character(len=max_string_length), save :: file_old=''
+  integer, save                          :: record_old=-1
+  real, dimension(366), save :: fdays=-1
   logical :: fexist=.false.
   real :: ncday(0:1)
-  
-  ! Check if ForestFire file exists
+
+  ! Check new file
   call date2nctime(ymd,ncday(1))
   ncday(0)=ncday(1)-persistence
   select case(BiomassBurningMapping(1:4))
@@ -427,6 +434,14 @@ function newFFrecord(ymd) result(new)
       new=.false.
       return
     endif
+  endif
+  
+  ! Check new pollutant
+  if(FF_poll/=poll_old)then
+    new=.true.
+    poll_old=FF_poll
+    if(DEBUG%FORESTFIRE.and.MasterProc) &
+      write(*,*)"ForestFire new pollutant: ",trim(FF_poll)
   endif
 endfunction newFFrecord
 endsubroutine Fire_Emis
