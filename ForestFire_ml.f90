@@ -387,7 +387,7 @@ function newFFrecord(ymd) result(new)
   logical :: fexist=.false.
   real :: ncday(0:1)
 
-  ! Check new file
+  ! Check: New file
   call date2nctime(ymd,ncday(1))
   ncday(0)=ncday(1)-persistence
   select case(BiomassBurningMapping(1:4))
@@ -395,9 +395,7 @@ function newFFrecord(ymd) result(new)
     case("FINN");fname=nctime2string(FINN_PATTERN,ncday(1))
     case("GFAS");fname=nctime2string(GFAS_PATTERN,ncday(1))
   endselect
-  new=(fname/=file_old)
-  if(new)then
-    file_old=fname
+  if(fname/=file_old)then
     if(DEBUG%FORESTFIRE.and.MasterProc) &
       write(*,*)"ForestFire new file: ",trim(fname)
     inquire(file=fname,exist=fexist)    ! check if fname exixts
@@ -412,14 +410,20 @@ function newFFrecord(ymd) result(new)
     endif
     nread=-1                            ! read all
     fdays(:)=-1.0                       ! times records
-    call ReadTimeCDF(fname,fdays,nread) ! in fname
+    call ReadTimeCDF(fname,fdays,nread) ! in fname,
+    record_old=-1                       ! and process them
   endif
 
+  ! Check: New pollutant
+  if(FF_poll/=poll_old)then
+    if(DEBUG%FORESTFIRE.and.MasterProc) &
+      write(*,*)"ForestFire new pollutant: ",trim(FF_poll)
+  endif
+
+  ! Check: New time record
   nstart=MAXLOC(fdays(:nread),DIM=1,&
     MASK=(fdays(:nread)>=ncday(0)).and.(fdays(:nread)<(ncday(1)+1.0)))
-  new=new.or.(nstart/=record_old)
-  if(new)then
-    record_old=nstart
+  if(nstart/=record_old)then
     if(DEBUG%FORESTFIRE.and.MasterProc) &
       write(*,*)"ForestFire new record: ",&
         nstart,nctime2string("(YYYY-MM-DD hh:mm)",fdays(nstart))
@@ -436,12 +440,12 @@ function newFFrecord(ymd) result(new)
     endif
   endif
   
-  ! Check new pollutant
-  if(FF_poll/=poll_old)then
-    new=.true.
+  ! Update if new
+  new=(fname/=file_old).or.(nstart/=record_old).or.(FF_poll/=poll_old)
+  if(new)then
+    file_old=fname
     poll_old=FF_poll
-    if(DEBUG%FORESTFIRE.and.MasterProc) &
-      write(*,*)"ForestFire new pollutant: ",trim(FF_poll)
+    record_old=nstart
   endif
 endfunction newFFrecord
 endsubroutine Fire_Emis
