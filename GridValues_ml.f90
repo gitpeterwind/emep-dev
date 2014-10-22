@@ -150,7 +150,7 @@ subroutine GridRead(meteo,cyclicgrid)
 
   character(len=*),intent(in):: meteo   ! template for meteofile
   integer,  intent(out)      :: cyclicgrid
-  integer                    :: nyear,nmonth,nday,nhour,k
+  integer                    :: nyear,nmonth,nday,nhour,k,ios
   integer                    :: KMAX,MIN_GRIDS
   character(len=len(meteo))  :: filename !name of the input file
   logical :: Use_Grid_Def=.false.!Experimental for now
@@ -179,30 +179,30 @@ subroutine GridRead(meteo,cyclicgrid)
   if(MasterProc)write(*,*)'reading domain sizes from ',trim(filename)
 
   call GetFullDomainSize(filename,IIFULLDOM,JJFULLDOM,KMAX_MET,Pole_Singular,projection)
-! call CheckStop(KMAX_MID/=KMAX,"vertical cordinates not yet flexible")
-  
-  !temporary fix to avoid using eta levels for old meteo format
-  if(KMAX_MET /= 20)then
-     filename_vert='Vertical_levels.txt'
-     inquire(file=filename_vert,exist=External_Levels_Def)!done by all procs
-     if(External_Levels_Def)then
+
+  KMAX_MID=0!initialize
+  filename_vert='Vertical_levels.txt'
+  if(me==0)then !onlyme=0 read the file
+     open(IO_TMP,file=filename_vert,action="read",iostat=ios)
+     if(ios==0)then
         !define own vertical coordinates
-        !Must use eta coordinates
-        USE_EtaCOORDINATES=.true.
-        if(me==0)then !onlyme=0 read the file
-           write(*,*)'Define vertical levels from ',trim(filename_vert)
-           write(*,*)'using eta coordinates '
-           open(IO_TMP,file=filename_vert,action="read")
-           read(IO_TMP,*)KMAX_MID
-           write(*,*)KMAX_MID, 'vertical levels '
-        endif
-        CALL MPI_BCAST(KMAX_MID ,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-        !      External_Levels_Def=.true.
+        write(*,*)'Define vertical levels from ',trim(filename_vert)
+        read(IO_TMP,*)KMAX_MID
+        write(*,*)KMAX_MID, 'vertical levels '
      else
-        KMAX_MID=KMAX_MET
+        KMAX_MID=-1!tag to show the file was not found
      endif
+  endif
+  CALL MPI_BCAST(KMAX_MID ,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+
+  if(KMAX_MID>0)then
+     External_Levels_Def=.true.
+     !Must use eta coordinates
+     if(.not.USE_EtaCOORDINATES)write(*,*)'WARNING: using hybrid levels even if not asked to! '
+     USE_EtaCOORDINATES=.true.   
   else
-     if(me==0)write(*,*)'Warning: disregarding levels from Vertical_levels.txt!'
+     External_Levels_Def=.false.
+     close(IO_TMP)
      KMAX_MID=KMAX_MET
   endif
 
@@ -531,7 +531,12 @@ subroutine GridRead(meteo,cyclicgrid)
        endif
 
        status=nf90_inq_varid(ncid = ncFileID, name = "k", varID = varID)
-       if(status /= nf90_noerr.or.External_Levels_Def)then
+       if(status /= nf90_noerr)then
+          !always use hybrid coordinates at output, if hybrid in input
+          if(.not.USE_EtaCOORDINATES)then
+             write(*,*)'WARNING: using hybrid levels even if not asked to! ',trim(filename)
+             USE_EtaCOORDINATES=.true.
+          endif
           write(*,*)'reading met hybrid levels from ',trim(filename)
 !          call check(nf90_inq_varid(ncid = ncFileID, name = "hyam", varID = varID))                 
 !          call check(nf90_get_var(ncFileID, varID, A_mid ))
@@ -1732,6 +1737,11 @@ endfunction coord_in_processor
     integer ::i,j,k,k_met
     real ::p_met,p_mod,p1,p2
     if(.not. allocated(k1_met))allocate(k1_met(KMAX_MID),k2_met(KMAX_MID),x_k1_met(KMAX_MID))
+    if(.not. allocated(A_bnd_met))then
+       allocate(A_bnd_met(KMAX_MID+1),B_bnd_met(KMAX_MID+1))
+       A_bnd_met=A_bnd
+       B_bnd_met=B_bnd
+    endif
 
     if(me==0)then
 

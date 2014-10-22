@@ -153,6 +153,16 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+22th October 2014  Peter 2884
+
+Set USE_EtaCOORDINATES=.true. as default.
+Should now work in any case.
+GridValues_ml.f90: changed the setup for eta_coordinates.
+Now eta_coordinates can be choosen as output, even if sigma are used in meteo.
+
+(also the potential problem when nlevels is 20 mentioned in rv 2879 is solved.)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 22th October 2014  Alvaro 2882,2883
 
 NetCDF_ml
