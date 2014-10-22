@@ -99,6 +99,7 @@ integer, private, save :: emep_used(NEMEPSPECS) = 0
 real   , private, save :: sum_emis(NEMEPSPECS) = 0
 
 ! =======================================================================
+character(len=4), private, parameter :: BBMAP=BiomassBurningMapping(1:4)
 character(len=TXTLEN_SHORT), private :: MODE="DAILY_REC"
 integer, private, parameter :: &
   max_string_length=200 ! large enough for paths to be set on Fire_config namelist
@@ -123,9 +124,8 @@ subroutine Config_Fire()
   if(.not.first_call)return
   call PrintLog("Biomass Mapping: "//trim(BiomassBurningMapping),MasterProc)
 
-  if(DEBUG%FORESTFIRE.and.MasterProc) &
-    write(*,*) "FIRE selects "//BiomassBurningMapping(1:4)
-  select case(BiomassBurningMapping(1:4))
+  if(DEBUG%FORESTFIRE.and.MasterProc) write(*,*) "FIRE selects ",BBMAP
+  select case(BBMAP)
     case("GFED");persistence=8  ! 8-day records
     case("FINN");persistence=1  ! 1-day records
     case("GFAS");persistence=3  ! 1-day records, valid for 3 day in FORECAST mode
@@ -227,6 +227,7 @@ subroutine Fire_Emis(daynumber)
   endselect
   if(dn1<dn2)then
     allocate(xrdemis(MAXLIMAX,MAXLJMAX),stat=alloc_err)
+    nstart=daynumber    ! for debug info
   else
     ! newFFrecord: has pollutant|fname|record changed since last call?
     FF_poll=""
@@ -255,10 +256,10 @@ subroutine Fire_Emis(daynumber)
    ! FORECAST mode: if file/variable/timestep not found it should not crash
     rdemis(:,:)=0.0
 
-    select case(BiomassBurningMapping(1:4))
+    if(debug_ff) &
+      write(*,*) "FFIRE ",BBMAP,":",me,iBB,nstart,trim(FF_poll),trim(fname)
+    select case(BBMAP)
     case("GFED")
-      if(debug_ff) &
-        write(*,*) "FFIRE GFED ", me, iBB, nstart,  trim(FF_poll), trim(fname)
       if(dn1<dn2)then
         rdemis = 0.0
         ndn=0
@@ -279,8 +280,6 @@ subroutine Fire_Emis(daynumber)
       if(ndn>1) to_kgm2s=to_kgm2s/ndn               ! total-->avg.
       forall(j=1:ljmax,i=1:limax) rdemis(i,j)=rdemis(i,j)*to_kgm2s
     case("FINN")
-      if(debug_ff) &
-        write(*,*) "FFIRE FINN ", me, iBB, daynumber,  trim(FF_poll), trim(fname)
      if(dn1<dn2)then
         rdemis = 0.0
         ndn=0
@@ -293,7 +292,7 @@ subroutine Fire_Emis(daynumber)
         enddo
       else
         ndn=1
-        call ReadField_CDF(fname,FF_poll,rdemis,daynumber,interpol='mass_conservative',&
+        call ReadField_CDF(fname,FF_poll,rdemis,nstart,interpol='mass_conservative',&
             needed=.not.FORECAST,UnDef=0.0,debug_flag=debug_nc)
       endif
       ! unit conversion to FINN: Can be negative if REMPPM to be calculated
@@ -302,8 +301,6 @@ subroutine Fire_Emis(daynumber)
       if(ndn>1) fac=fac/ndn                         ! total-->avg.
       forall(j=1:ljmax,i=1:limax) rdemis(i,j)=rdemis(i,j)*fac*xm2(i,j)
     case("GFAS")
-      if(debug_ff) &
-        write(*,*) "FFIRE GFAS ", me, iBB, n, nstart,  trim(FF_poll), trim(fname)
       if(dn1<dn2)then
         rdemis = 0.0
         ndn=0
@@ -390,7 +387,7 @@ function newFFrecord(ymd) result(new)
   ! Check: New file
   call date2nctime(ymd,ncday(1))
   ncday(0)=ncday(1)-persistence
-  select case(BiomassBurningMapping(1:4))
+  select case(BBMAP)
     case("GFED");fname=nctime2string(GFED_PATTERN,ncday(1))
     case("FINN");fname=nctime2string(FINN_PATTERN,ncday(1))
     case("GFAS");fname=nctime2string(GFAS_PATTERN,ncday(1))

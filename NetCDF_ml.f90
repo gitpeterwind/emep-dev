@@ -2437,6 +2437,8 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
        'interpolation method not recognized')
   if ( debug ) write(*,*) 'ReadCDFstereo interp set: ',trim(filename),':', trim(interpol)
 
+  UnDef_local=0.0
+  if(present(UnDef))UnDef_local=UnDef
 
   !test if the variable is defined and get varID:
   status = nf90_inq_varid(ncid = ncFileID, name = trim(varname), varID = VarID)
@@ -2458,9 +2460,6 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
 
   fractions=.false.
   if(present(fractions_out))fractions=.true.
-
-  UnDef_local=0.0
-  if(present(UnDef))UnDef_local=UnDef
 
   data3D=.false.
   if(present(kstart).or.present(kend))then
