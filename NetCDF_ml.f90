@@ -2443,19 +2443,21 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   !test if the variable is defined and get varID:
   status = nf90_inq_varid(ncid = ncFileID, name = trim(varname), varID = VarID)
   if(status == nf90_noerr) then
-     if ( debug ) write(*,*) 'ReadCDF variable exists: ',trim(varname)
+    if(debug) write(*,*) 'ReadCDF variable exists: ',trim(varname)
   else
-     !     nfetch=0
-     if(fileneeded)then
-        if(MasterProc)write(*,*)'variable does not exist: ',trim(varname),': set to ',UnDef_local
-        Rvar(1:MAXLIMAX*MAXLJMAX)=UnDef_local
-        !call CheckStop(fileneeded, "ReadField_CDF : variable needed but not found")
-        return
-     else
+    !     nfetch=0
+    if(fileneeded)then
+      print *, 'variable does not exist: ',trim(varname),nf90_strerror(status)
+      call CheckStop(fileneeded, "ReadField_CDF : variable needed but not found")
+!     if(MasterProc)&
+!       write(*,*)'variable does not exist: ',trim(varname),' set to ',UnDef_local
+!     Rvar(1:MAXLIMAX*MAXLJMAX)=UnDef_local
+!     return
+    else
         print *, 'variable does not exist (but not needed): ',trim(varname),nf90_strerror(status)
         call check(nf90_close(ncFileID))
         return
-     endif
+    endif
   endif
 
   fractions=.false.

@@ -153,19 +153,23 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-16th,17th,22th October 2014  Alvaro 2880,2881,2882
+22th October 2014  Alvaro 2882,2883
+
+NetCDF_ml
+  Fix minor bug on ReadField_CDF introduced on 2634:
+- When a variable was not found in file (e.g. due a stallo disk hiccup)
+  UnDef_local was used before definition (line 2449 Rvar=UnDef_local).
+  Then, the model crashed if compiled with DEBUG=yes.
+- Move UnDef_local assignment before nf90_inq_varid call.
+- Restore "if(needed) STOP" behaviour lost on 2634.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16th,17th October 2014  Alvaro 2880,2881
 
 ForestFire_ml
 - Add fire_year to Fire_config namelist, missing on 2878.
 - Fix bug introduced on 2878. MODE="MONTHLY_AVG" gave wrong output.
 - Calculate yearly averages from available records if MODE="YEARLY_AVG".
-
-NetCDF_ml
-  Fix minor bug introduced on 2634:
-- When a variable was not found in file (e.g. due a stallo disk hickup)
-  ReadField_CDF used UnDef_local before definition (line 2449 Rvar=UnDef_local).
-  Then, the model crashed if compiled with DEBUG=yes.
-- Move UnDef_local assignment before nf90_inq_varid call.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15th October 2014  Peter 2879
