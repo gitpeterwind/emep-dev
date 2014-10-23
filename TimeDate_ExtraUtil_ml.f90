@@ -433,6 +433,7 @@ subroutine secs1970_to_int(id,nsecs,msg)
   type(timestamp) :: ts
 
   call secs1970_to_ts(ts,nsecs,msg=msg)
+  ts%secs=nint(ts%secs)!to avoid 3599.9999 seconds
   id=to_idate(ts,size(id))
 endsubroutine secs1970_to_int
 

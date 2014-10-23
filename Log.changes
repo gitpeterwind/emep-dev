@@ -153,6 +153,24 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+23rd October 2014  Peter; Massimo 2885
+
+TimeDate_ExtraUitls_ml.f90
+
+bug in our Time_Date library:
+1412125200 seconds corresponds to 1st October 2014 01:00
+but nctime2idate(ndate,1412125200) will return a date with hour=0; 
+because it compute seconds = 3599.99999, but these are not returned.
+
+Superficial fix this by putting  
+ts%secs=nint(ts%secs) in  secs1970_to_int.
+
+This is just correcting this particular case. Somewhere deep in the method there is still a 
+flaw with an improper mixing of real and int. Not nice to know that this can happen at anytime.
+
+Probably no consequences, because we do not use "seconds since 1970" for many years.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 22th October 2014  Peter 2884
 
 Set USE_EtaCOORDINATES=.true. as default.
