@@ -88,7 +88,7 @@
 
   ! e_fact is the emission control factor (increase/decrease/switch-off)
   ! e_fact is read in from the femis file and applied within EmisGet
-  real, private, save, &
+  real, public, save, &
          dimension(NSECTORS,NLAND,NEMIS_FILE)  :: e_fact 
 
   ! emisfrac is used at each time-step of the model run to split

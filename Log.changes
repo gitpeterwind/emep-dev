@@ -153,6 +153,14 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+29th October 2014  Peter 2886
+
+Femis working for NetCDF-fractions emissions.
+Mask put in place but not tested.
+
+EmisGet_ml.f90 Emissions_ml.f90 NetCDF_ml.f90
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23rd October 2014  Peter; Massimo 2885
 
 TimeDate_ExtraUitls_ml.f90

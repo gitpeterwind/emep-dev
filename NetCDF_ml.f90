@@ -23,6 +23,7 @@ module NetCDF_ml
   use ChemSpecs_adv_ml,  only : NSPEC_ADV
   use ChemSpecs_tot_ml,  only : NSPEC_TOT
   use ChemChemicals_ml,  only : species
+  use Country_ml,        only : NLAND
   use GridValues_ml,     only : GRIDWIDTH_M,fi,xp,yp,xp_EMEP_official&
                                ,debug_proc, debug_li, debug_lj &
                                ,yp_EMEP_official,fi_EMEP,GRIDWIDTH_M_EMEP&
@@ -2282,7 +2283,7 @@ end subroutine Read_Inter_CDF
 
 recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      known_projection,  &! can be provided by user, eg. for MEGAN.
-     fractions_out,CC_out,Ncc_out,&! additional output for emissions given with country-codes
+     fractions_out,CC_out,Ncc_out,Reduc,Mask,Mask_Stride,&! additional output for emissions given with country-codes
      needed,debug_flag,UnDef)
   !
   !reads data from netcdf file and interpolates data into model local (subdomain) grid
@@ -2357,6 +2358,10 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   real, optional, intent(in) :: UnDef ! Value put into the undefined gridcells
   real , optional, intent(out) ::fractions_out(MAXLIMAX*MAXLJMAX,*) !fraction assigned to each country 
   integer, optional, intent(out)  ::Ncc_out(*), CC_out(MAXLIMAX*MAXLJMAX,*) !Number of country-codes and Country codes
+  real, optional, intent(in) :: Reduc(NLAND)
+  real, optional, intent(in) :: Mask(*)!two-dimensional array in the calling routine!
+  integer , optional, intent(in) :: Mask_Stride!first dimension of the array Mask as defined in the calling routine
+  real  :: factor
 
   logical, save :: debug_ij
   logical ::fractions,interpolate_vertical
@@ -2914,8 +2919,11 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
                                    CC_out(ijk, N_out)=CC(igjgk,Ng)
                                    fractions_out(ijk,N_out)=0.0
 731                                continue
+                                   factor=1.0!default reduction factor
+                                   if(present(Reduc).and.CC(igjgk,Ng)>0.and.CC(igjgk,Ng)<=NLAND)factor=Reduc(CC(igjgk,Ng))
+                                   if(present(Mask).and.present(Mask_Stride))factor=factor*Mask(startvec(1)-1+ig+Mask_Stride*(startvec(2)-2+jg))
                                    !update fractions
-                                   total=Rvar(ijk)+Rvalues(igjgk)*fraction_in(igjgk,Ng)
+                                   total=Rvar(ijk)+Rvalues(igjgk)*fraction_in(igjgk,Ng)*factor
                                    if(debug.and.fraction_in(igjgk,Ng)>1.001)then
                                       write(*,*)'fractions_in TOO LARGE ',Ng,ig,jg,k,fraction_in(igjgk,Ng)
                                       stop
@@ -2926,7 +2934,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
                                          fractions_out(ijk,N)=fractions_out(ijk,N)*Rvar(ijk)/total
                                       enddo
                                       !increase fraction of this country (yes, after having reduced it!)
-                                      fractions_out(ijk,N_out)=fractions_out(ijk,N_out)+Rvalues(igjgk)*fraction_in(igjgk,Ng)/total
+                                      fractions_out(ijk,N_out)=fractions_out(ijk,N_out)+Rvalues(igjgk)*fraction_in(igjgk,Ng)/total*factor
                                    else
                                       !should try to keep proportions right in case cancellation of positive an negative; not finished!
                                       do N=1,Ncc_out(ijk)
@@ -2934,7 +2942,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
                                          fractions_out(ijk,N)=fractions_out(ijk,N)/Ncc_out(ijk)
                                       enddo
                                       !increase fraction of this country (yes, after having reduced it!)
-                                      fractions_out(ijk,N_out)=fractions_out(ijk,N_out)+Rvalues(igjgk)*fraction_in(igjgk,Ng)/Ncc_out(ijk)
+                                      fractions_out(ijk,N_out)=fractions_out(ijk,N_out)+Rvalues(igjgk)*fraction_in(igjgk,Ng)/Ncc_out(ijk)*factor
                                    endif
                                    Rvar(ijk)=total
                                 enddo

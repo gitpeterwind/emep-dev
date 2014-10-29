@@ -35,6 +35,7 @@ use EmisGet_ml,       only: &
      EmisGet, EmisSplit &
     ,EmisGetCdf,GridEmis,nGridEmisCodes,GridEmisCodes,sumcdfemis  &  ! cdfemis
     ,femis                       &  ! Gets scaling factors -> e_fact
+    ,e_fact                      &  ! scaling factors
     ,EmisHeights                 &  ! Generates vertical distrib
     ,nrcemis, nrcsplit, emisfrac &  ! speciation routines and array
     ,nemis_kprofile, emis_kprofile &! Vertical emissions profile
@@ -215,7 +216,7 @@ subroutine Emissions(year)
   real, dimension(NROAD_FILES)       :: roaddustsum    ! Sum emission potential over all countries
   real, dimension(NLAND,NROAD_FILES) :: sumroaddust    ! Sum of emission potentials per country
   real, dimension(NLAND,NROAD_FILES) :: sumroaddust_local    ! Sum of emission potentials per country in subdomain
-  real :: fractions(MAXLIMAX,MAXLJMAX,NCMAX),SMI(MAXLIMAX,MAXLJMAX),SMI_roadfactor
+  real :: fractions(MAXLIMAX,MAXLJMAX,NCMAX),SMI(MAXLIMAX,MAXLJMAX),Reduc(NLAND),SMI_roadfactor
   logical ::SMI_defined=.false.
   logical :: my_first_call=.true.  ! Used for femis call
   real, allocatable ::emis_tot(:,:)
@@ -376,9 +377,6 @@ subroutine Emissions(year)
     sumemis(:,:) =  0.0       ! initialize sums
     ios = 0
 
- 
-
-
     if(EMIS_TEST=="CdfSnap") then  ! Expand groups, e.g. EUMACC2
       do iemis = 1, size( emis_inputlist(:)%name )
         if ( emis_inputlist(iemis)%name == "NOTSET" ) then
@@ -496,12 +494,12 @@ subroutine Emissions(year)
           case(7);varname='PMco_sec'
         endselect
         write(varname,"(A,I2.2)")trim(varname),isec
+        Reduc=e_fact(isec,:,iem)
         call ReadField_CDF('EmisFracs_TNO7.nc',varname,emis_tot(1,1),nstart=1,&
              interpol='mass_conservative',fractions_out=fractions,&
-             CC_out=landcode,Ncc_out=nlandcode,needed=.true.,debug_flag=.false.,&
+             CC_out=landcode,Ncc_out=nlandcode,Reduc=Reduc,needed=.true.,debug_flag=.false.,&
              Undef=0.0)
 
-        if(debug_proc) write(*,*) "CDFTNO ",me,iem,isec,trim(varname)
         do j=1,ljmax
           do i=1,limax                   
             if(nlandcode(i,j)>NCMAX)then
@@ -516,9 +514,9 @@ subroutine Emissions(year)
               if(landcode(i,j,n)<=NLAND) &
                 ic=landcode(i,j,n) ! most country_index are equal to country_code
 !TESTE
-              if(debug_proc.and.i==debug_li.and.j==debug_lj) & !  .and. iem == iemCO ) then
-                write(*,"(a,2i3,4es10.3)") "FracCdf: "//trim(EMIS_FILE(iem)), &
-                  isec,n,emis_tot(i,j),fractions(i,j,n),fractions(i,j,n)*emis_tot(i,j)
+!              if(debug_proc.and.i==debug_li.and.j==debug_lj) & !  .and. iem == iemCO ) then
+!                write(*,"(a,2i3,4es10.3)") "FracCdf: "//trim(EMIS_FILE(iem)), &
+!                  isec,n,emis_tot(i,j),fractions(i,j,n),fractions(i,j,n)*emis_tot(i,j)
 !TESTE
               if(Country(ic)%index/=landcode(i,j,n))then
                 !if not equal, find which index correspond to country_code
