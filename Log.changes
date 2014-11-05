@@ -153,6 +153,19 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+5th November 2014  Alvaro 2887
+
+ForestFire_ml,config_FORECAST.nml:
+- Add 3 logical variables read trough Fire_config: need_file, need_date, need_poll.
+  If .true. the model will crash when the file/date/pollutant is not found (default).
+  For "skip pollutant if not found" behaviour (2634--2882),
+  required for FINN 2012 emissions, set in Fire_config (config_*.nml):
+    need_file=T, need_date=T, need_poll=F, 
+- Replace dependency to FORECAST variable.
+  "Skip file|date|polutant if not found" behaviour by setting (config_FORECAST.nml):
+    need_file=F, need_date=F, need_poll=F, 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 29th October 2014  Peter 2886
 
 Femis working for NetCDF-fractions emissions.

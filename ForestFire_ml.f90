@@ -25,41 +25,37 @@ module ForestFire_ml
 !   fire assimilation system based on observed fire radiative power,
 !   Biogeosciences, 9, 527-554, doi:10.5194/bg-9-527-2012, 2012.
 !----------------------------------------------------------------
-use CheckStop_ml,      only : CheckStop
-use ChemSpecs
-use GridValues_ml,     only : i_fdom, j_fdom, debug_li, debug_lj, &
-                               debug_proc,xm2,GRIDWIDTH_M
-use Io_ml,             only : PrintLog, datewrite, IO_NML
-use MetFields_ml,      only : z_bnd
-use ModelConstants_ml, only : MasterProc, KMAX_MID, &
-                              DEBUG, FORECAST, &
-                              IOU_INST,IOU_HOUR,IOU_HOUR_MEAN, IOU_YEAR
-use NetCDF_ml,         only : ReadTimeCDF,ReadField_CDF,Out_netCDF,Real4 ! Reads, writes 
-use OwnDataTypes_ml,   only : Deriv, TXTLEN_SHORT
-use Par_ml,            only : MAXLIMAX, MAXLJMAX, me,limax,ljmax
-use PhysicalConstants_ml, only : AVOG
-use Setup_1dfields_ml, only : rcemis
-use SmallUtils_ml,     only : find_index
-! No. days per year, date-type :
-use TimeDate_ml,only : current_date,day_of_year,max_day
-use TimeDate_ExtraUtil_ml,  only: date2string,nctime2string,date2nctime
-implicit none
-
 !  Unimod calls just call Fire_Emis(daynumber)
 !  and put the day-testing code here. This lets the module decide if new
 !  emissions are needed, and keeps all forest-fire logic here
-!
+!----------------------------------------------------------------
+use CheckStop_ml,         only: CheckStop
+use ChemSpecs
+use GridValues_ml,        only: i_fdom, j_fdom, debug_li, debug_lj, &
+                                debug_proc,xm2,GRIDWIDTH_M
+use Io_ml,                only: PrintLog, datewrite, IO_NML
+use MetFields_ml,         only: z_bnd
+use ModelConstants_ml,    only: MasterProc, KMAX_MID, DEBUG, IOU_INST
+use NetCDF_ml,            only: ReadTimeCDF,ReadField_CDF,Out_netCDF,Real4 ! Reads, writes 
+use OwnDataTypes_ml,      only: Deriv, TXTLEN_SHORT
+use Par_ml,               only: MAXLIMAX, MAXLJMAX, me,limax,ljmax
+use PhysicalConstants_ml, only: AVOG
+use Setup_1dfields_ml,    only: rcemis
+use SmallUtils_ml,        only: find_index
+! No. days per year, date-type:
+use TimeDate_ml,          only: current_date,day_of_year,max_day
+use TimeDate_ExtraUtil_ml,only: date2string,nctime2string,date2nctime
 
-public :: Fire_Emis
-public :: Fire_rcemis
-private :: Export_FireNc
+implicit none
+private
+public :: Fire_Emis, Fire_rcemis, burning
 
-logical, public, allocatable, dimension(:,:), save ::  burning
-real, private, allocatable, dimension(:,:,:), save :: BiomassBurningEmis
+logical, allocatable, dimension(:,:), save :: burning
+real,  allocatable, dimension(:,:,:), save :: BiomassBurningEmis
 
-integer, private, save ::  ieCO=-1 ! index for CO
+integer, save :: ieCO=-1 ! index for CO
 
-character(len=TXTLEN_SHORT), private :: FF_poll
+character(len=TXTLEN_SHORT) :: FF_poll
 integer :: iemep
 
 !/ Defintions of BB data. If known, we assign the BB pollutant which
@@ -78,7 +74,7 @@ integer :: iemep
 ! =======================================================================
 !  Mapping to EMEP species
 !
-type, private :: bbtype
+type :: bbtype
   character(len=TXTLEN_SHORT) :: BBname
   real :: unitsfac
   real :: frac
@@ -95,32 +91,38 @@ endtype bbtype
 !----------------------------------------------
 ! matrix to get from forest-fire species to EMEP ones
 
-integer, private, save :: emep_used(NEMEPSPECS) = 0
-real   , private, save :: sum_emis(NEMEPSPECS) = 0
+integer, save :: emep_used(NEMEPSPECS) = 0
+real,    save :: sum_emis(NEMEPSPECS) = 0
 
-! =======================================================================
-character(len=4), private, parameter :: BBMAP=BiomassBurningMapping(1:4)
-character(len=TXTLEN_SHORT), private :: MODE="DAILY_REC"
-integer, private, parameter :: &
+character(len=4), parameter :: BBMAP=BiomassBurningMapping(1:4)
+character(len=TXTLEN_SHORT) :: MODE="DAILY_REC"
+
+integer, parameter :: &
   max_string_length=200 ! large enough for paths to be set on Fire_config namelist
-character(len=max_string_length), private, save :: &
+character(len=max_string_length), save :: &
   GFED_PATTERN = 'GFED_ForestFireEmis.nc',&
   FINN_PATTERN = 'FINN_ForestFireEmis_YYYY.nc',&
   GFAS_PATTERN = 'GFAS_ForestFireEmis_YYYY.nc'
-integer, private, save :: &
-  verbose=1,     &    ! debug verbosity 0,..,4
-  persistence=1, &    ! persistence in days
-  fire_year=-1,  &    ! override current year
+
+integer, save ::    &
+  verbose=1,        & ! debug verbosity 0,..,4
+  persistence=1,    & ! persistence in days
+  fire_year=-1,     & ! override current year
   nread=-1            ! records in forest fire file
-logical, dimension(-1:5), private,  save :: debug_level=.false.
+logical, save ::    &
+  need_file=.true., & ! stop if don't find file
+  need_date=.true., & ! stop if don't find time record
+  need_poll=.true., & ! stop if don't find pollutant
+  debug_level(-1:5)=.false.
 ! =======================================================================
 contains
 subroutine Config_Fire()
   logical, save :: first_call=.true.
   integer :: ios, ne, n
   NAMELIST /Fire_config/MODE,verbose,persistence,fire_year,&
-    GFED_PATTERN,FINN_PATTERN,GFAS_PATTERN
-
+                        need_file,need_date,need_poll,&
+                        GFED_PATTERN,FINN_PATTERN,GFAS_PATTERN
+                        
   if(.not.first_call)return
   call PrintLog("Biomass Mapping: "//trim(BiomassBurningMapping),MasterProc)
 
@@ -253,7 +255,7 @@ subroutine Fire_Emis(daynumber)
       write(*,"( a,3i5, a8,i3)") "FIRE SETUP: ", iBB,iemep,ind, &
         trim(FF_poll), len_trim(FF_poll)
 
-   ! FORECAST mode: if file/variable/timestep not found it should not crash
+   ! if(.not.need_file|time|poll) continue if file|time|poll is not found
     rdemis(:,:)=0.0
 
     if(debug_ff) &
@@ -266,14 +268,14 @@ subroutine Fire_Emis(daynumber)
         do dd = dn1, dn2
           if(newFFrecord([yyyy,01,dd])) &
           call ReadField_CDF(fname,FF_poll,xrdemis,nstart,interpol='zero_order',&
-            needed=.not.FORECAST,UnDef=0.0,debug_flag=debug_nc)
+            needed=need_poll,UnDef=0.0,debug_flag=debug_nc)
           rdemis = rdemis + xrdemis                 ! month total
           ndn    = ndn + 1
         enddo
       else
         ndn=1
         call ReadField_CDF(fname,FF_poll,rdemis,nstart,interpol='zero_order',&
-          needed=.not.FORECAST,UnDef=0.0,debug_flag=debug_nc)
+          needed=need_poll,UnDef=0.0,debug_flag=debug_nc)
       endif
       !unit conversion to GFED [g/m2/8day]->[kg/m2/s]
       to_kgm2s = 1.0e-3 /(8*24.0*3600.0)
@@ -286,14 +288,14 @@ subroutine Fire_Emis(daynumber)
         do dd = dn1, dn2
           if(newFFrecord([yyyy,01,dd])) &
           call ReadField_CDF(fname,FF_poll,xrdemis,nstart,interpol='mass_conservative',&
-            needed=.not.FORECAST,UnDef=0.0,debug_flag=debug_nc)
+            needed=need_poll,UnDef=0.0,debug_flag=debug_nc)
           rdemis = rdemis + xrdemis                 ! month total
           ndn    = ndn + 1
         enddo
       else
         ndn=1
         call ReadField_CDF(fname,FF_poll,rdemis,nstart,interpol='mass_conservative',&
-            needed=.not.FORECAST,UnDef=0.0,debug_flag=debug_nc)
+            needed=need_poll,UnDef=0.0,debug_flag=debug_nc)
       endif
       ! unit conversion to FINN: Can be negative if REMPPM to be calculated
       fac=FF_defs(iBB)%unitsfac * FF_defs(iBB)%frac ! --> [kg/day]
@@ -307,14 +309,14 @@ subroutine Fire_Emis(daynumber)
         do dd = dn1, dn2
           if(newFFrecord([yyyy,01,dd])) &
           call ReadField_CDF(fname,FF_poll,xrdemis,nstart,interpol='conservative',&
-            needed=.not.FORECAST,debug_flag=debug_nc)
+            needed=need_poll,debug_flag=debug_nc)
           rdemis = rdemis + xrdemis                 ! month total
           ndn    = ndn + 1
         enddo
       else
         ndn=1
         call ReadField_CDF(fname,FF_poll,rdemis,nstart,interpol='conservative',&
-            needed=.not.FORECAST,debug_flag=debug_nc)
+            needed=need_poll,debug_flag=debug_nc)
       endif
       ! GFAS units are [kg/m2/s]. No further unit conversion is needed.
       ! However, fac can be /=1, e.g. when REMPPM is calculated
@@ -399,7 +401,7 @@ function newFFrecord(ymd) result(new)
     if(.not.fexist)then
       if(MasterProc)then
         write(*,*)"ForestFire file not found: ",trim(fname)
-        call CheckStop(.not.FORECAST,"Missing ForestFire file")
+        call CheckStop(need_file,"Missing ForestFire file")
       endif
       burning(:,:) = .false.
       new=.false.
@@ -429,7 +431,7 @@ function newFFrecord(ymd) result(new)
         write(*,*)"ForestFire: no records between ",&
           nctime2string("YYYY-MM-DD 00:00",ncday(0))," and ",&
           nctime2string("YYYY-MM-DD 23:59",ncday(1))
-        call CheckStop(.not.FORECAST,"Missing ForestFire records")
+        call CheckStop(need_date,"Missing ForestFire records")
       endif
       burning(:,:) = .false.
       new=.false.
