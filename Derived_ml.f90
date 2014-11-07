@@ -487,14 +487,16 @@ do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
 
     dname = "SURF_" // trim( outunit ) // "_" // trim( outname )
 
-    if( debugMaster ) write(*,"(a,2i4,3(1x,a),2L3,i4,es10.2)") &
-    "ADD   ", ind, iout, trim(dname),";", trim(class), outmm, outdd, &
-          OutputFields(ind)%ind,unitscale
+    if((outdim/="3d").or.(find_index(dname,def_2d(:)%name)<1))then
 
-    call AddNewDeriv( dname, class, "-", "-", trim( unittxt ) , &
-          iout  , -99,  F,   unitscale,     T,  OutputFields(ind)%ind )
+      if( debugMaster ) write(*,"(a,2i4,3(1x,a),2L3,i4,es10.2)") &
+      "ADD   ", ind, iout, trim(dname),";", trim(class), outmm, outdd, &
+            OutputFields(ind)%ind,unitscale
 
-    if(outdim == "3d") then
+      call AddNewDeriv( dname, class, "-", "-", trim( unittxt ) , &
+            iout  , -99,  F,   unitscale,     T,  OutputFields(ind)%ind )
+
+    elseif(outdim == "3d") then
 
       class = "3D_MASS_"//trim(outtyp)
       if(volunit .and. iadv > 0) class = "3D_PPB_"//trim(outtyp)
