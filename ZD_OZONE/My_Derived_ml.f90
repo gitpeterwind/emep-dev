@@ -507,14 +507,15 @@ private
                 cycle
               endif
 
-              tag_name(1) = "SURF_" // trim(outunit) // "_" //  trim(outname)
-              call AddArray(  tag_name(1:1) , wanted_deriv2d, &
-                     NOT_SET_STRING, errmsg)
-              call CheckStop( errmsg, errmsg // trim(outname) // " too long" )
-              nOutputFields = nOutputFields + 1
-              OutputFields(nOutputFields) = OutputConcs(n)
+              if( outdim /= "3d" ) then
+                   tag_name(1) = "SURF_" // trim(outunit) // "_" //  trim(outname)
+                   call AddArray(  tag_name(1:1) , wanted_deriv2d, &
+                          NOT_SET_STRING, errmsg)
+                   call CheckStop( errmsg, errmsg // trim(outname) // " too long" )
+                   nOutputFields = nOutputFields + 1
+                   OutputFields(nOutputFields) = OutputConcs(n)
 
-              if( outdim == "3d" ) then
+              elseif( outdim == "3d" ) then
                   tag_name(1) = "D3_" // trim(outunit) // "_" //  trim(outname)
                   call AddArray(  tag_name(1:1) , wanted_deriv3d, &
                      NOT_SET_STRING, errmsg)
