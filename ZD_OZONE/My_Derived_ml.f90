@@ -97,7 +97,7 @@ private
 
   ! some shorthands for this table
    character(len=TXTLEN_SHORT), private, parameter ::&
-        D2    = "2d", D3 = "3d", SPEC  = "SPEC", GROUP ="GROUP"
+        D2    = "2d", D3 = "3d", SPEC  = "SPEC", GROUP ="GROUP", SHL ="SHL"
 
    !REMEMBER - KEEP UPPER CASE FOR ALL GASES
    type(typ_s5i), public, save, dimension(MAX_NUM_DERIV2D) :: OutputFields
@@ -496,6 +496,7 @@ private
          elseif( outtyp == "AIR_CONCS" ) then
               select case(outclass)
                 case(SPEC ) ;n1=find_index(outname,species(:)%name)
+                case(SHL ) ;n1=find_index(outname,species(:)%name)
                 case(GROUP) ;n1=find_index(outname,chemgroups(:)%name)
                 case default;n1=-1
               endselect

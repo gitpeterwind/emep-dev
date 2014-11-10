@@ -308,7 +308,7 @@ private
     character(len=TXTLEN_SHORT) ::  outname, outunit, outtyp, outdim
     integer :: outind
 
-   integer :: ind, iadv, itot, idebug, n, n2, iLC, igrp, iout
+   integer :: ind, iadv, ishl, itot, idebug, n, n2, iLC, igrp, iout
 
   ! - And to check if a wanted field has been previously defined.
         integer, dimension(MAXDEF_DERIV2D) :: found_ind2d = 0
@@ -461,6 +461,12 @@ do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
       call CheckStop(iadv<0,"OutputFields Species not found "//trim(outname))
       txt = "SURF_UG"
       iout = iadv
+    case("SHL")
+      ishl = find_index(outname,species_shl(:)%name)
+      unitscale = Units_Scale(outunit, ishl, unittxt, volunit)
+      call CheckStop(ishl<0,"OutputFields Short lived Species not found "//trim(outname))
+      if(MasterProc) write(*,*)"OutputFields Short lived Species found: "//trim(outname)//","//trim(outtyp)//","//trim(class)
+      iout = ishl
     case("GROUP") ! groups of species
       iadv = -1     ! Units_Scale(iadv=-1) returns 1.0
                     ! group_calc gets the unit conversion factor from Group_Units
@@ -1450,6 +1456,12 @@ end do
               d_3d( n, i,j,k,IOU_INST) = xn_adv(index,i,j,k)
             end forall
            if ( debug_flag ) call write_debugadv(n,index, 1.0, "3D PPB OUTS")
+
+        case ( "3D_PPB_SHL" )
+
+            forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
+              d_3d( n, i,j,k,IOU_INST) = xn_shl(index,i,j,k)
+            end forall
 
         case ( "3D_MASS_SPEC" )
 
