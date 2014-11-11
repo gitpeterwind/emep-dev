@@ -471,69 +471,68 @@ private
 
       do n = 1, nOutputConcs ! size( OutputConcs(:)%txt1 )
 
-         outname= trim(OutputConcs(n)%txt1)
-         outunit= trim(OutputConcs(n)%txt2)
-         outdim = trim(OutputConcs(n)%txt3)
-         outtyp = trim(OutputConcs(n)%txt4)
-         outclass = trim(OutputConcs(n)%txt5) ! MISC or SPEC or GROUP
+        outname= trim(OutputConcs(n)%txt1)
+        outunit= trim(OutputConcs(n)%txt2)
+        outdim = trim(OutputConcs(n)%txt3)
+        outtyp = trim(OutputConcs(n)%txt4)
+        outclass=trim(OutputConcs(n)%txt5) ! MISC or SPEC or GROUP
 
-!NOTUSED?         if( outdim == "3d" ) txt = "D3"  ! Will simplify later
-!NOTUSED?         if( outdim == "2d" ) txt = "SURF"  ! Will simplify later
+        if(outclass=="MISC") then
+          tag_name(1)= trim(outname) ! Just use raw name here
+          if(outtyp=="COLUMN")&
+            tag_name(1)= "COLUMN_" // trim(outname) //"_"//trim(outdim)
 
-         if( outclass == "MISC" ) then
+          call AddArray( tag_name(1:1) , wanted_deriv2d, &
+               NOT_SET_STRING, errmsg)
+          nOutputFields = nOutputFields + 1
+          OutputFields(nOutputFields) = OutputConcs(n)
 
-              tag_name(1)= trim(outname) ! Just use raw name here
+         elseif(outtyp=="AIR_CONCS") then
+            select case(outclass)
+              case(SPEC ) ;n1=find_index(outname,species(:)%name)
+              case(SHL  ) ;n1=find_index(outname,species(:)%name)
+              case(GROUP) ;n1=find_index(outname,chemgroups(:)%name)
+              case default;n1=-1
+            endselect
 
-              if( outtyp == "COLUMN" ) then
-                 tag_name(1)= "COLUMN_" // trim(outname) //"_"//trim(outdim)
-              end if
+            if(n1<1) then
+              if( debug0 ) write(*,*) "Xd-2d-SKIP ", n, trim(outname)
+              call PrintLog("WARNING: Requested My_Derived OutputField not found: "&
+                  //trim(outclass)//":"//trim(outname), MasterProc)
+              cycle
+            endif
 
-              call AddArray( tag_name(1:1) , wanted_deriv2d, &
-                     NOT_SET_STRING, errmsg)
+            select case(outdim)
+            case("2d","2D","SURF")   
+              tag_name(1) = "SURF_" // trim(outunit) // "_" //  trim(outname)
+              call AddArray(  tag_name(1:1) , wanted_deriv2d, &
+                        NOT_SET_STRING, errmsg)
+              call CheckStop( errmsg, errmsg // trim(outname) // " too long" )
               nOutputFields = nOutputFields + 1
               OutputFields(nOutputFields) = OutputConcs(n)
 
-         elseif( outtyp == "AIR_CONCS" ) then
-              select case(outclass)
-                case(SPEC ) ;n1=find_index(outname,species(:)%name)
-                case(SHL ) ;n1=find_index(outname,species(:)%name)
-                case(GROUP) ;n1=find_index(outname,chemgroups(:)%name)
-                case default;n1=-1
-              endselect
+            case("3d","3D","MLEV")
+              tag_name(1) = "D3_" // trim(outunit) // "_" //  trim(outname)
+              call AddArray(  tag_name(1:1) , wanted_deriv3d, &
+                   NOT_SET_STRING, errmsg)
+              call CheckStop( errmsg, errmsg // trim(outname) // " too long" )
+              nOutputFields = nOutputFields + 1
+                OutputFields(nOutputFields) = OutputConcs(n)
 
-              if(n1<1) then
-                if( debug0 ) write(*,*) "Xd-2d-SKIP ", n, trim(outname)
-                call PrintLog("WARNING: Requested My_Derived OutputField not found: "&
-                   // " " //trim(outclass) // ":"   //trim(outname), MasterProc)
-                cycle
-              endif
-
-              if( outdim /= "3d" ) then
-                   tag_name(1) = "SURF_" // trim(outunit) // "_" //  trim(outname)
-                   call AddArray(  tag_name(1:1) , wanted_deriv2d, &
-                          NOT_SET_STRING, errmsg)
-                   call CheckStop( errmsg, errmsg // trim(outname) // " too long" )
-                   nOutputFields = nOutputFields + 1
-                   OutputFields(nOutputFields) = OutputConcs(n)
-
-              elseif( outdim == "3d" ) then
-                  tag_name(1) = "D3_" // trim(outunit) // "_" //  trim(outname)
-                  call AddArray(  tag_name(1:1) , wanted_deriv3d, &
-                     NOT_SET_STRING, errmsg)
-                  call CheckStop( errmsg, errmsg // trim(outname) // " too long" )
-                  nOutputFields = nOutputFields + 1
-                  OutputFields(nOutputFields) = OutputConcs(n)
-              end if
-
-
+            case default
+              if( debug0 ) write(*,*) "Xd-2d-SKIP ", n, trim(outname)
+              call PrintLog("WARNING: Unsupported My_Derived OutputField%outdim: "&
+                  //trim(outclass)//":"//trim(outname)//":"//trim(outdim), MasterProc)
+              cycle
+            endselect
          else
-            call StopAll("My_Deriv: Not coded yet" // &
-              trim(outname) //":"//trim(outtyp) )
-         end if
+            call StopAll("My_Deriv: Unsupported OutputConcs" // &
+              trim(outname)//":"//trim(outtyp)//":"//trim(outdim))
+         endif
          if( debug0 ) write(*,*) "OutputFields-tags ", n, trim(outname)&
                      // "->"//tag_name(1)
 
-      end do
+      enddo
 
    ! ditto wanted_deriv3d....
 

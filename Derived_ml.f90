@@ -32,7 +32,7 @@ use My_Derived_ml,  only : &
 use Aero_Vds_ml,      only: diam  !aerosol MMD (um)
 use AOTx_ml,          only: Calc_GridAOTx
 use Biogenics_ml,     only: EmisNat, NEMIS_BioNat, EMIS_BioNat
-use CheckStop_ml,     only: CheckStop, StopAll
+use CheckStop_ml,     only: CheckStop
 use Chemfields_ml,    only: xn_adv, xn_shl, cfac,xn_bgn, AOD,  &
                             Extin_coeff, PM25_water, PM25_water_rh50
 use ChemGroups_ml     ! SIA_GROUP, PMCO_GROUP -- use tot indices
@@ -416,10 +416,10 @@ call AddNewDeriv( "Idiffuse","Idiffuse",  "-","-",   "W/m2", &
 
 do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
 
-   outname = trim( OutputFields(ind)%txt1 )
-   outunit= trim( OutputFields(ind)%txt2 )   ! eg ugN, which gives unitstxt ugN/m3
-   outdim = trim( OutputFields(ind)%txt3 )   ! 2d or 3d or e.g. k20
-   outtyp = trim( OutputFields(ind)%txt5 )   ! SPEC or GROUP or MISC
+   outname= trim(OutputFields(ind)%txt1)
+   outunit= trim(OutputFields(ind)%txt2)   ! eg ugN, which gives unitstxt ugN/m3
+   outdim = trim(OutputFields(ind)%txt3)   ! 2d or 3d or e.g. k20
+   outtyp = trim(OutputFields(ind)%txt5)   ! SPEC or GROUP or MISC
    outind = OutputFields(ind)%ind    !  H, D, M - fequency of output
    txt2   = "-" ! not needed?
 
@@ -481,19 +481,20 @@ do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
       txt = "SURF_UG_GROUP"   ! ppb not implementde yet
       iout = igrp
     case default
-      call StopAll("Derived:OutputFields Error "//trim(outtyp)//":"//trim(outname))
+      call CheckStop("Derived: Unsupported OutputFields%outtyp "//&
+        trim(outtyp)//":"//trim(outname)//":"//trim(outdim))
     endselect
 
     unitscale = Units_Scale(outunit, iadv, unittxt, volunit)
 
-    class = "SURF_MASS_" // trim(outtyp)
-    if(volunit) class = "SURF_PPB_" // trim(outtyp)
-!   call CheckStop(class=="SURF_PPB_GROUP",&
-!     "SURF_PPB_GROUPS not implemented yet:"// trim(dname) )
+    select case(outdim)
+    case("2d","2D","SURF")   
+      class = "SURF_MASS_" // trim(outtyp)
+      if(volunit) class = "SURF_PPB_" // trim(outtyp)
 
-    dname = "SURF_" // trim( outunit ) // "_" // trim( outname )
-
-    if((outdim/="3d").or.(find_index(dname,def_2d(:)%name)<1))then
+      dname = "SURF_" // trim( outunit ) // "_" // trim( outname )
+      call CheckStop(find_index(dname,def_2d(:)%name)>0,&
+        "OutputFields already defined output "//trim(dname))
 
       if( debugMaster ) write(*,"(a,2i4,3(1x,a),2L3,i4,es10.2)") &
       "ADD   ", ind, iout, trim(dname),";", trim(class), outmm, outdd, &
@@ -502,12 +503,13 @@ do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
       call AddNewDeriv( dname, class, "-", "-", trim( unittxt ) , &
             iout  , -99,  F,   unitscale,     T,  OutputFields(ind)%ind )
 
-    elseif(outdim == "3d") then
-
+    case("3d","3D","MLEV")
       class = "3D_MASS_"//trim(outtyp)
       if(volunit .and. iadv > 0) class = "3D_PPB_"//trim(outtyp)
 
       dname = "D3_"//trim(outunit)//"_"//trim(outname)
+      call CheckStop(find_index(dname,def_3d(:)%name)>0,&
+        "OutputFields already defined output "//trim(dname))
 
       ! Always print out 3D info. Good to help avoid using 3d unless really needed!
       if( MasterProc ) write(*,"(a,3(1x,a),a,L3,a,L3,i4,es10.2)") " ADDED 3D outputs",  &
@@ -517,9 +519,11 @@ do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
       call AddNewDeriv(dname, class, "-", "-", trim( unittxt ) , &
           iout  , -99, F,   unitscale,     T,   OutputFields(ind)%ind, &
           Is3D=.true. )
-    endif ! 3d
-
-   endif
+    case default
+      call CheckStop("Derived: Unsupported OutputFields%outdim "//&
+        trim(outtyp)//":"//trim(outname)//":"//trim(outdim))
+    endselect
+  endif
 enddo ! OutputFields
 
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
