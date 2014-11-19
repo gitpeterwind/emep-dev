@@ -153,6 +153,25 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+19th November 2014  Dave   2893  - new label v4.6gamma if needed.
+
+NOTE: CHANGES IN RESULTS!!!!
+
+This is the first in a series of changes that will modify results. Next
+change will be bug-fix for PM deposition. Then hopefully coarse nitrate
+and something with stratospheric O3, etc.... 
+
+
+NO2 bias changed from 10 to 6 for 2008 BM. Small changes for secondary components.
+
+Added USE_SOILNO test to see if "no2fac" should be activated.
+
+The intention was that no2fac reduces NO2 deposition for low NO2 (< 4ppb), which
+is a crude way to mimic expected soil NO emissions. However, when we have
+explicit emissions, no2fac should not be used.
+
+SO: rv4.5 series below.....
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 11th November 2014  Alvaro 2892
 
 Derived_ml,ZD_OZONE/My_Derived_ml:

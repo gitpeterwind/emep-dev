@@ -2,30 +2,6 @@
 ! <DryDep_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
 !          Chemical transport Model>
 !*****************************************************************************! 
-!* 
-!*  Copyright (C) 2007-2013 met.no
-!* 
-!*  Contact information:
-!*  Norwegian Meteorological Institute
-!*  Box 43 Blindern
-!*  0313 OSLO
-!*  NORWAY
-!*  email: emep.mscw@met.no
-!*  http://www.emep.int
-!*  
-!*    This program is free software: you can redistribute it and/or modify
-!*    it under the terms of the GNU General Public License as published by
-!*    the Free Software Foundation, either version 3 of the License, or
-!*    (at your option) any later version.
-!* 
-!*    This program is distributed in the hope that it will be useful,
-!*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-!*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!*    GNU General Public License for more details.
-!* 
-!*    You should have received a copy of the GNU General Public License
-!*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************! 
 
 module DryDep_ml
 
@@ -69,11 +45,6 @@ module DryDep_ml
 
 
  use ChemSpecs                ! several species needed
-!CMR  use ChemChemicals_ml, only : species
-!CMR  use ChemSpecs_adv_ml         ! several species needed
-!CMR  use ChemSpecs_shl_ml, only : NSPEC_SHL
-!CMR  use ChemSpecs_tot_ml, only : NSPEC_TOT, FIRST_SEMIVOL, LAST_SEMIVOL, &
-!CMR                                NO2, SO2, NH3, O3
  use DO3SE_ml,         only : do3se
  use EcoSystem_ml,     only : EcoSystemFrac, Is_EcoSystem,  &
                              NDEF_ECOSYSTEMS, DEF_ECOSYSTEMS
@@ -95,6 +66,7 @@ module DryDep_ml
                                   NPROC, &
                                   DEBUG_DRYDEP, DEBUG_ECOSYSTEMS, DEBUG_VDS,&
                                   USES, &
+                                  USE_SOILNOX, &
                                   MasterProc, &
                                   DEBUG, & ! for DEBUG%AOT
                                   ATWAIR, atwS, atwN, PPBINV,&
@@ -408,15 +380,18 @@ integer :: nglob
     Grid%latitude = glat(i,j) !SPOD tests
     Grid%longitude = glon(i,j)
 
-  ! Surrogate for NO2 compensation point approach, assuming 
+  ! If we do not have soil NO emissions active, we use instead a 
+  ! surrogate for NO2 compensation point approach, assuming 
   ! c.p.=4 ppb (actually use 1.0e11 #/cm3):        
   ! Aiming at dC/dt = -Vg.(C-4)/dz instead of -Vg.C/dz
   ! factor difference is then:   C-4/C in ppb units
   ! Note, xn_2d has no2 in #/cm-3
 
-    no2fac = 1.0 ! QUERY!!!!
-    no2fac = max( 1.0, xn_2d(NO2,KMAX_MID) )
-    no2fac = max(0.00001,  (no2fac-1.0e11)/no2fac)
+    no2fac = 1.0
+    if ( .not. USE_SOILNOX ) then ! TEST_2014
+      no2fac = max( 1.0, xn_2d(NO2,KMAX_MID) )
+      no2fac = max(0.00001,  (no2fac-1.0e11)/no2fac)
+    end if
 
 
     if ( DEBUG_DRYDEP .and. debug_flag ) then
