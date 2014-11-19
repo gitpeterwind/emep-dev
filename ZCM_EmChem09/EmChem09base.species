@@ -97,7 +97,7 @@ SO4,1,SO4,xx,PMfS,SO4,SO4,0,0,xx,PM10;PMFINE;SIA;SOX,,!
 NH3,1,NH3,xx,NH3,NH3,0,0,0,xx,RDN,,!
 NO3_f,1,NO3_f,xx,PMfN,PMf,NO3f,0,0,xx,PM10;PMFINE;SIA;OXN;TNO3,,"!in equilib module"
 NO3_c,1,NO3_c,xx,PMc,PMc,NO3c,0,0,xx,PM10;PMCO;SIA;OXN;TNO3,,"!Coarse nitrate"
-NH4_f,1,NH4_f,xx,PMfN,PMf,NH4f,0,0,xx,RDN;PM10;PMFINE;SIA,,"! in equilib module"
+NH4_f,1,NH4_f,xx,PMfNH4,PMf,NH4f,0,0,xx,RDN;PM10;PMFINE;SIA,,"! in equilib module"
 *FEB2012 Rn222,1,xx,222,xx,xx,0,0,0,xx,xx,,!
 *FEB2012 Rnwater,1,xx,222,xx,xx,0,0,0,xx,xx,,!
 *FEB2012 Pb210,1,xx,210,PMfS,PMf,0,0,0,xx,xx,,!

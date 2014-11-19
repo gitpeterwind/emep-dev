@@ -113,6 +113,12 @@ module DryDep_ml
   integer, public, parameter :: FLUX_ADV   = IXADV_O3
   integer, public, parameter :: FLUX_TOT   = O3
 
+ ! WE ALSO NEED NO3_f and NH4_f for deposition.
+ ! (set to one for non-no3/nh4 models)
+
+  integer, public, parameter :: pNO3  = NO3_f
+  integer, public, parameter :: pNH4  = NH4_f
+
 
   logical, public, parameter :: COMPENSATION_PT = .false. 
 
@@ -270,8 +276,8 @@ module DryDep_ml
       integer, dimension(NLUMAX)  :: iL_used, iL_fluxes
       real :: wet, dry         ! Fractions
       real :: snow_iL          !snow_flag fraction for one landuse
-      real :: Vds              ! Aerosol
-      real :: Vg_3mN           ! Crude nitrate correction
+      real :: Vds              ! Aerosol near-surface deposition rate (m/s)
+      real :: no3nh4ratio      ! Crude NH4/NO3 for Vds ammonium 
 
       real :: c_hveg, Ra_diff, surf_ppb  ! for O3 fluxes and Fst where needed
       real :: c_hveg3m, o3_45m  !TESTS ONLY
@@ -380,19 +386,29 @@ integer :: nglob
     Grid%latitude = glat(i,j) !SPOD tests
     Grid%longitude = glon(i,j)
 
-  ! If we do not have soil NO emissions active, we use instead a 
-  ! surrogate for NO2 compensation point approach, assuming 
-  ! c.p.=4 ppb (actually use 1.0e11 #/cm3):        
-  ! Aiming at dC/dt = -Vg.(C-4)/dz instead of -Vg.C/dz
-  ! factor difference is then:   C-4/C in ppb units
-  ! Note, xn_2d has no2 in #/cm-3
+   !---------------------------------------------------------
+   !> NH4NO3 deposition will need this ratio for the NH4 part
 
+    no3nh4ratio = 1.0
+    if( xn_2d(pNH4,KMAX_MID) > 1.0  ) then
+       no3nh4ratio = xn_2d(pNO3,KMAX_MID) / xn_2d(pNH4,KMAX_MID)
+       no3nh4ratio = min( 1.0,  no3nh4ratio )
+    end if
+
+   !---------------------------------------------------------
+   ! If we do not have soil NO emissions active, we use instead a 
+   ! surrogate for NO2 compensation point approach, assuming 
+   ! c.p.=4 ppb (actually use 1.0e11 #/cm3):        
+   ! Aiming at dC/dt = -Vg.(C-4)/dz instead of -Vg.C/dz
+   ! factor difference is then:   C-4/C in ppb units
+   ! Note, xn_2d has no2 in #/cm-3
+ 
     no2fac = 1.0
-    if ( .not. USE_SOILNOX ) then ! TEST_2014
+    if ( .not. USE_SOILNOX ) then
       no2fac = max( 1.0, xn_2d(NO2,KMAX_MID) )
       no2fac = max(0.00001,  (no2fac-1.0e11)/no2fac)
     end if
-
+   !---------------------------------------------------------
 
     if ( DEBUG_DRYDEP .and. debug_flag ) then
          write(*,"(a,2i4,4es12.4)") "DRYDEP CONCS SO2,NH3,O3 (ppb) ", i,j, &
@@ -496,11 +512,18 @@ integer :: nglob
 
               end if
 
-             ! We allow fine N-patricles to deposit x 3, in
+             ! We allow fine NH4NO3 particles to deposit x 3, in
              ! unstable conditions. (F_N in ACP68)
+             ! Now, MARS/EQSAM etc only provide NO3_f, NH4_f, but some of the
+             ! latter is (NH4)xSO4. Now, as all NO3_f is associated with NH4NO3, 
+             ! we can scale any NH4_f deposition with the ratio
+
               if (n==CDDEP_PMfN .and. L%invL<0.0 ) then 
                    Vds = Vds * 3.0 ! for nitrate-like
+              else if (n==CDDEP_PMfNH4 .and. L%invL<0.0 ) then 
+                   Vds = Vds * 3.0 * no3nh4ratio ! for nitrate-like
               end if
+!PNH4 if(L%invL< 0.0.and. n>11) print "(a,4i4,4es12.3)", "PNH4", me,n,CDDEP_PMfN,CDDEP_PMfNH4, xn_2d(pNO3,KMAX_MID), xn_2d(pNH4,KMAX_MID), no3nh4ratio, Vds
 
             ! Use non-electrical-analogy version of Venkatram+Pleim (AE,1999)
             ! ACP70
@@ -648,6 +671,7 @@ integer :: nglob
        !=======================
        !=======================
 
+!PNH4 if(L%invL< 0.0) call CheckStop( "PNH4")
          call Calc_StoFlux(nFlux, iL_fluxes(1:nFlux), debug_flag )
 
 

@@ -110,8 +110,6 @@ integer, public, parameter :: &
 ! example, if DDEP_NH3=4 then the 4th element of DRYDEP must be WES_NH3.
 
 integer, public, parameter :: NDRYDEP_GASES = 11  ! gases
-integer, public, parameter :: NDRYDEP_AER = 6   ! aerosols
-integer, public, parameter :: NDRYDEP_CALC = NDRYDEP_GASES + NDRYDEP_AER
 
 integer, public, parameter :: &
   CDDEP_HNO3 =  1, CDDEP_O3  =  2, CDDEP_SO2 = 3, &
@@ -124,13 +122,19 @@ integer, public, parameter :: CDDEP_RCHO = CDDEP_ALD ! Convenience
 integer, public, parameter :: &
   CDDEP_PMfS= 12, CDDEP_PMfN= 13, CDDEP_PMc  = 14, &
   CDDEP_SSc = 15, CDDEP_DUc = 16, CDDEP_POLLd= 17
+integer, public, parameter :: CDDEP_PMfNH4 = 18  ! TEST_2014
+integer, public, parameter :: CDDEP_LASTPM = 18  ! Safety. Catches changes
+
+integer, dimension(CDDEP_PMfS:CDDEP_LASTPM), public, parameter :: &
+  AERO_SIZE = (/ 1, 1, 2, 3, 4, 5, 1 /) !1=fine,2=coarse,3=coarse sea salt, 4=dust, 5 = pollen
+
+integer, public, parameter :: NDRYDEP_AER = 7   ! aerosols with CDDEP_PMfNH4 
+integer, public, parameter :: NDRYDEP_CALC = NDRYDEP_GASES + NDRYDEP_AER
+
 integer, public, parameter :: &
   CDDEP_ASH1=CDDEP_PMfS,CDDEP_ASH2=CDDEP_PMfS,CDDEP_ASH3=CDDEP_PMfS,&
   CDDEP_ASH4=CDDEP_PMfS,CDDEP_ASH5=CDDEP_PMc ,CDDEP_ASH6=CDDEP_PMc, &
   CDDEP_ASH7=CDDEP_PMc
-
-integer, dimension(CDDEP_PMfS:CDDEP_POLLd), public, parameter :: &
-  AERO_SIZE = (/ 1, 1, 2, 3, 4, 5/) !1=fine,2=coarse,3=coarse sea salt, 4=dust, 5 = pollen
 
 integer, public, parameter :: CDDEP_SET = -99
 

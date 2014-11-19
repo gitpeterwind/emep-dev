@@ -153,6 +153,19 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+19th November 2014  Dave   2894  - still v4.6gamma if needed.
+
+NOTE: MORE CHANGES IN RESULTS!!!!
+
+DryDep_ml.f90  - added no3nh4 ratio and usage
+Wesely_ml.f90  - added CDDEP_PMfNH4 and CDDEP_LASTPM
+ZCM_EmChem09/EmChenm09base.species - used CDDEP_PMfNH4 for NH4_f
+
+Corrected bug in NH4 deposition (it was all depositing at the faster NH4NO3 rate, 
+ whereas (NH4)xSO4 should deposit as SO4. See no3nh4ratio in DryDep_ml
+ Needed new assigment CDDEP_PMfNH4
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 19th November 2014  Dave   2893  - new label v4.6gamma if needed.
 
 NOTE: CHANGES IN RESULTS!!!!
