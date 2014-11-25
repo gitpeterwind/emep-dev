@@ -1188,9 +1188,12 @@ character (len=*), parameter :: vert_coord='atmosphere_hybrid_sigma_pressure_coo
         Bcdf(k)=B_mid(k)
         Aicdf(k)=A_bnd(k)
         Bicdf(k)=B_bnd(k)
-
       if(DEBUG_NETCDF) write(*,*) "TESTHH netcdf  no KLEVcdf ", k, Acdf(k)
     enddo
+    k=KMAX_MID+1
+    Aicdf(k)=A_bnd(k)
+    Bicdf(k)=B_bnd(k)
+
   else
     do k=1,KMAXcdf
       !REVERSE order of k !

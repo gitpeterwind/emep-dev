@@ -153,6 +153,13 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+25th November 2014  Peter 2895
+
+hyai(21) and hybi(21) where not set in the netcdf output in some cases.
+(got random values)
+NetCDF_ml.f90
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 19th November 2014  Dave   2894  - still v4.6gamma if needed.
 
 NOTE: MORE CHANGES IN RESULTS!!!!
