@@ -1,30 +1,6 @@
-! <Landuse_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
-!          Chemical transport Model>
-!***************************************************************************! 
-!* 
-!*  Copyright (C) 2007-2013 met.no
-!* 
-!*  Contact information:
-!*  Norwegian Meteorological Institute
-!*  Box 43 Blindern
-!*  0313 OSLO
-!*  NORWAY
-!*  email: emep.mscw@met.no
-!*  http://www.emep.int
-!*  
-!*    This program is free software: you can redistribute it and/or modify
-!*    it under the terms of the GNU General Public License as published by
-!*    the Free Software Foundation, either version 3 of the License, or
-!*    (at your option) any later version.
-!* 
-!*    This program is distributed in the hope that it will be useful,
-!*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-!*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!*    GNU General Public License for more details.
-!* 
-!*    You should have received a copy of the GNU General Public License
-!*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!***************************************************************************! 
+!> <Landuse_ml.f90 - A component of the EMEP MSC-W Chemical transport Model>
+!! ************************************************************************! 
+
 module Landuse_ml
 
 use CheckStop_ml,   only: CheckStop,StopAll
@@ -44,7 +20,7 @@ use LandDefs_ml,    only: Init_LandDefs, LandType, LandDefs, &
 use LandPFT_ml,       only: MapPFT_LAI, pft_lai
 use ModelConstants_ml,only: DEBUG, NLANDUSEMAX, &
                             SEA_LIMIT, & 
-                            USE_PFT_MAPS, DEBUG_LANDPFTS, &
+                            USES, emep_debug, &
                             FLUX_VEGS,  nFluxVegs, & 
                             DEBUG_LANDUSE, NPROC, IIFULLDOM, JJFULLDOM, &
                             DomainName, MasterProc
@@ -110,8 +86,8 @@ private
   logical, public,save, allocatable,dimension(:,:) :: likely_coastal 
   logical, public,save, allocatable,dimension(:,:) :: mainly_sea 
 
-  integer, public,save, allocatable,dimension(:,:) :: &
-          WheatGrowingSeason  ! Growing season (days), IAM_WHEAT =1 for true
+  !DS2014 integer, public,save, allocatable,dimension(:,:) :: &
+  !DS2014        WheatGrowingSeason  ! Growing season (days), IAM_WHEAT =1 for true
  
  real,public,save, allocatable,dimension(:,:) :: water_fraction, ice_landcover 
  logical,public,save :: water_frac_set = .false.
@@ -133,7 +109,7 @@ contains
     allocate(LandCover(MAXLIMAX,MAXLJMAX))
     allocate(likely_coastal(MAXLIMAX,MAXLJMAX) )
     allocate(mainly_sea(MAXLIMAX,MAXLJMAX) )
-    allocate(WheatGrowingSeason(MAXLIMAX,MAXLJMAX))
+    !DS2014 allocate(WheatGrowingSeason(MAXLIMAX,MAXLJMAX))
     allocate(water_fraction(MAXLIMAX,MAXLJMAX), ice_landcover(MAXLIMAX,MAXLJMAX))
 
     ! First, check the number of "extra" (fake) vegetation 
@@ -509,48 +485,6 @@ contains
        if ( DEBUG_LANDUSE .and. MasterProc )write(*,*) "LANDUSE: LC: not found "//trim(fName1)
        call CheckStop("Landuse: No landcover files")
 
-       !the landcode where not read from the file, hardcoded one are used instead
-
-!USELC       NLand_codes=19
-!USELC       Land_codes(1) = 'CF' 
-!USELC       Land_codes(2) = 'DF' 
-!USELC       Land_codes(3) = 'NF' 
-!USELC       Land_codes(4) = 'BF' 
-!USELC       Land_codes(5) = 'TC' 
-!USELC       Land_codes(6) = 'MC' 
-!USELC       Land_codes(7) = 'RC' 
-!USELC       Land_codes(8) = 'SNL' 
-!USELC       Land_codes(9) = 'GR' 
-!USELC       Land_codes(10) = 'MS' 
-!USELC       Land_codes(11) = 'WE' 
-!USELC       Land_codes(12) = 'TU' 
-!USELC       Land_codes(13) = 'DE' 
-!USELC       Land_codes(14) = 'W' 
-!USELC       Land_codes(15) = 'ICE' 
-!USELC       Land_codes(16) = 'U' 
-!USELC       Land_codes(17) = 'IAM_CR' 
-!USELC       Land_codes(18) = 'IAM_DF'
-!USELC       Land_codes(19) = 'IAM_MF'
-!USELC       do lu=1,NLand_codes
-!USELC          !
-!USELC          if(me==0)write(*,*)'Reading landuse ',trim(Land_codes(lu))
-!USELC          !   call ReadField_CDF('/global/work/mifapw/emep/Data/LanduseGLC.nc',&!fast but unprecise
-!USELC          call ReadField_CDF('Landuse_PS_5km.nc',& !SLOW!
-!USELC               Land_codes(lu),landuse_in(1,1,lu),1,interpol='conservative', &
-!USELC               needed=.true.,debug_flag=.false.,UnDef=-9.9E19) !NB: Undef must be largenegative, 
-!USELC          !          because it is averagad over many points, and the final result must still be negative
-!USELC          call ReadField_CDF('LanduseGLC.nc',&
-!USELC               Land_codes(lu),landuse_tmp,1,interpol='conservative', &
-!USELC               needed=.true.,debug_flag=.false.)
-!USELC          do j = 1, ljmax
-!USELC             do i = 1, limax
-!USELC                if(landuse_in(i,j,lu)<-0.1)landuse_in(i,j,lu)=landuse_tmp(i,j)
-!USELC                !TESTX if(lu > 16) landuse_in(i,j,lu)=landuse_in(i,j,lu)/nFluxVegs !  TESTX
-!USELC             end do  !j
-!USELC          end do  !i
-!USELC       enddo
-!USELC       ! call printCDF('LU_cdf', landuse_in(:,:,1),'??')
-
     endif !switch hardcoded/fileread lu definitions
 
     do i = 1, limax
@@ -640,11 +574,13 @@ contains
    !Landcover data can be set either from simplified LPJ
    !PFTs, or from the "older" DO3SE inputs file
 
-     if ( USE_PFT_MAPS ) then !- Check for LPJ-derived data -
+     if ( USES%PFT_MAPS ) then !- Check for LPJ-derived data -
+if(MasterProc) print *, "PFTMAPS ", month, old_month
          if ( month /= old_month ) then 
            call MapPFT_LAI( month )
          end if
      end if
+!call StopAll("PFT")
 
     
      do i = 1, limax
@@ -660,6 +596,7 @@ contains
                   LandCover(i,j)%ncodes, daynumber
                  write(*,*) "LANDUSE DATE ", current_date
           end if
+
           do ilu= 1, LandCover(i,j)%ncodes
              lu      = LandCover(i,j)%codes(ilu)
              pft     = LandType(lu)%pft
@@ -703,11 +640,20 @@ contains
             end if
 
 
-            if ( DEBUG_LANDPFTS .and. debug_flag.and. USE_PFT_MAPS ) then
-                 if ( pft > 0.0 ) then
-                   write(*,"(2a,i4,i6,2f8.3)") "LANDUSE PFTS COMP? ", &
-                      LandDefs(lu)%name, daynumber, pft,&
-                       LandCover(i,j)%LAI(ilu), pft_lai(i,j, pft)
+            if ( USES%PFT_MAPS ) then
+                if ( DEBUG%PFT_MAPS .and. debug_flag ) then
+                     if ( pft > 0 ) then
+                       write(*,"(2a,i4,i6,2f8.3)") "LANDUSE PFTS COMP? ", &
+                          LandDefs(lu)%name, daynumber, pft,&
+                           LandCover(i,j)%LAI(ilu), pft_lai(i,j, pft)*LandDefs(lu)%LAImax
+                     else
+                       write(*,"(2a,i4,i6,2f8.3)") "LANDUSE PFTS COMP? ", &
+                          LandDefs(lu)%name, daynumber, pft,&
+                           LandCover(i,j)%LAI(ilu), -1.0
+                     end if
+                 end if
+                 if ( pft > 0 ) then !PFT OVERWRITE!
+                    LandCover(i,j)%LAI(ilu)= pft_lai(i,j, pft)*LandDefs(lu)%LAImax
                  end if
             end if
 
@@ -717,14 +663,14 @@ contains
 
              if (  LandType(lu)%is_crop ) then
 
-                if ( LandType(lu)%is_iam  ) then ! IAM wheat
-                    if  ( effectivdaynumber >= LandCover(i,j)%SGS(ilu) .and. &
-                          effectivdaynumber <= LandCover(i,j)%EGS(ilu)  ) then
-                            WheatGrowingSeason(i,j) =  1
-                    else
-                            WheatGrowingSeason(i,j) =  0
-                    end if
-                end if
+                !DS2014 if ( LandType(lu)%is_iam  ) then ! IAM wheat
+                !DS2014     if  ( effectivdaynumber >= LandCover(i,j)%SGS(ilu) .and. &
+                !DS2014           effectivdaynumber <= LandCover(i,j)%EGS(ilu)  ) then
+                !DS2014             WheatGrowingSeason(i,j) =  1
+                !DS2014     else
+                !DS2014             WheatGrowingSeason(i,j) =  0
+                !DS2014     end if
+                !DS2014 end if
 
                ! Note that IAM crops have SLAIlen=0, so are immediately
                ! given LAI=3.5, SAI=5.

@@ -153,6 +153,35 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+27th November 2014  Dave  2896
+
+Interim commit, which enables LPJ-GUESS LAI variation for global landcover
+
+config_EMEPSTD.nml
+
+      - added USES%PFT_MAPS, DEBUG%PFT_MAPS, DEBUG%BIO
+      - added need_poll = F  in Fire_config, to avoid ISOP problems with eg 2012
+
+
+AOTnPOD_ml - removed WheatGrowingSeason (not used)
+
+Biogenics_ml - uses DEBUG%BIO and some clean-up
+
+ModelConstants_ml
+
+       - added USES%PFT_MAPS, DEBUG%PFT_MAPS, DEBUG%BIO
+       - some extra comments
+       - added PFT_MAPPINGS, but not used yet. Might change in next iteration
+
+LandPFT_ml - re-enable functionality for LAI changes
+
+Landuse_ml - make use of monthly PFT_MAPS if requested
+           - removed WheatGrowingSeason (not used)
+           - removed commented out USELC lines (eg Land_codes(1) = 'CF' etc)
+
+OwnDataTypes - removed header lines
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 25th November 2014  Peter 2895
 
 hyai(21) and hybi(21) where not set in the netcdf output in some cases.

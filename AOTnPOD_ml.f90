@@ -1,40 +1,14 @@
-! <AOTx_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
-!          Chemical transport Model>
-!*****************************************************************************! 
-!* 
-!*  Copyright (C) 2007-2013 met.no
-!* 
-!*  Contact information:
-!*  Norwegian Meteorological Institute
-!*  Box 43 Blindern
-!*  0313 OSLO
-!*  NORWAY
-!*  email: emep.mscw@met.no
-!*  http://www.emep.int
-!*  
-!*    This program is free software: you can redistribute it and/or modify
-!*    it under the terms of the GNU General Public License as published by
-!*    the Free Software Foundation, either version 3 of the License, or
-!*    (at your option) any later version.
-!* 
-!*    This program is distributed in the hope that it will be useful,
-!*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-!*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!*    GNU General Public License for more details.
-!* 
-!*    You should have received a copy of the GNU General Public License
-!*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************! 
+!> <AOTx_ml.f90 - A component of the EMEP MSC-W Chemical transport Model>
+!  **********************************************************************! 
+
 module AOTx_ml
   use CheckStop_ml,  only : checkStop
   use Chemfields_ml, only : xn_adv, cfac
   use ChemSpecs,     only : IXADV_O3
-!CMR   use ChemSpecs_adv_ml, only : IXADV_O3
   use DO3SE_ml  ! SPOD NEG
   use GridValues_ml, only : debug_li, debug_lj, debug_proc, i_fdom, j_fdom
   use Io_Progs_ml,   only : datewrite
   use LandDefs_ml,   only : LandType
-  use Landuse_ml,    only : WheatGrowingSeason
   use LocalVariables_ml, only : Grid, L
   use MetFields_ml, only: zen
   use ModelConstants_ml, only : dt_advec, KMAX_MID &
@@ -49,7 +23,7 @@ module AOTx_ml
   public :: Calc_AOTx          ! called from AddMosaicOutput, My_DryDep
   public :: Calc_POD           ! called from AddMosaicOutput
   public :: Calc_GridAOTx      ! called from Derived_ml
-  public :: Calc_SPOD          !  Experimental, JAN2013
+  public :: Calc_SPOD          ! Experimental, JAN2013
 
 ! Limit of daylight zenith angle for AOTs
   integer, private,  parameter :: AOT_HORIZON  = 89         
@@ -189,7 +163,7 @@ contains
         if ( DEBUG%AOT .and. debug_flag .and. present( debug_txt )) then
           write(*,*) 'AOTiO3CL ', iLC, iO3cl, L%SGS, jday
           write(*,*) 'AOTiO3CLL', LandType(iLC)%is_crop, &
-              LandType(iLC)%is_iam, WheatGrowingSeason(i,j) 
+              LandType(iLC)%is_iam
         end if
        if ( jday < L%SGS .or.  &
             jday > L%EGS ) then

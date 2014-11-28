@@ -9,6 +9,7 @@ module ModelConstants_ml
 use CheckStop_ml,         only : CheckStop
 use ChemSpecs,            only : species
 use Io_Nums_ml,           only : IO_NML, IO_LOG
+use OwnDataTypes_ml,      only : typ_ss
 use PhysicalConstants_ml, only : AVOG
 use Precision_ml,         only : dp
 use SmallUtils_ml,        only : find_index
@@ -59,7 +60,8 @@ type, public :: emep_useconfig
     ,MINCONC          = .false. &! Experimental. To avoid problems with miniscule numbers
     ,ESX              = .false. &! Uses ESX
     ,EMIS             = .false. &! Uses ESX
-    ,EMISSTACKS      = F        !
+    ,EMISSTACKS       = F       &!
+    ,PFT_MAPS         = .false.  ! Future option
 
  ! If USES%EMISTACKS, need to set:
   character(len=4) :: PlumeMethod = "none" !MKPS:"ASME","NILU","PVDI"
@@ -71,6 +73,7 @@ type, public :: emep_debug
      AOT             = .false. &
     ,AQUEOUS         = .false. &
     ,BCS             = .false. & ! BoundaryConditions
+    ,BIO             = .false. & !< Biogenic emissions
     ,COLUMN          = .false. & !  Used in Derived_ml for column integratton
     ,DERIVED         = .false. & ! 
     ,DO3SE           = .false. &
@@ -81,7 +84,8 @@ type, public :: emep_debug
     ,GRIDVALUES      = .false. &
     ,HOURLY_OUTPUTS  = .false. & !  
     ,IOPROG          = .false. &
-    ,MAINCODE        = .false. & 
+    ,PFT_MAPS        = .false. & !< Future option
+    ,MAINCODE        = .false. & !< debugs main code (Unimod) driver
     ,MY_DERIVED      = .false. &
     ,pH              = .false. &
     ,PHYCHEM         = .false. &
@@ -169,7 +173,6 @@ logical, public, parameter ::         &
   NO_CROPNH3DEP      = .true.,        & ! Stop NH3 deposition for growing crops
   USE_SOILNH3        = .false.,       & ! DUMMY VALUES, DO NOT USE!
   USE_ZREF           = .false.,       & ! testing
-  USE_PFT_MAPS       = .false.,       & ! Future option
   EXTENDEDMASSBUDGET = .false.,       & ! extended massbudget outputs
   LANDIFY_MET        = .false.         
 
@@ -361,7 +364,6 @@ logical, public, save ::  DebugCell  = .false.
 ! Debug flag DEBUG_XXX  applied in subroutine XXX
  logical, public, parameter ::    &
    DEBUG_ADV            = .false. &
-  ,DEBUG_BIO            = .false. &
   ,DEBUG_BLM            = .false. & ! Produces matrix of differnt Kz and Hmix
   ,DEBUG_DERIVED        = .false. &
     ,DEBUG_COLUMN       = .false. & ! Extra option in Derived
@@ -378,7 +380,6 @@ logical, public, save ::  DebugCell  = .false.
   ,DEBUG_GETEMIS        = .false. &
   ,DEBUG_LANDDEFS       = .false. &
   ,DEBUG_LANDUSE        = .false. &
-  ,DEBUG_LANDPFTS       = .false. &
   ,DEBUG_LANDIFY        = .false. &
   ,DEBUG_MASS           = .false. &
   ,DEBUG_MET            = .false. &
@@ -450,6 +451,12 @@ integer, public, parameter ::  &
 !Namelist controlled: which veg do we want flux-outputs for
 character(len=15), public, save, dimension(20) :: FLUX_VEGS=""
 integer, public, save :: nFluxVegs = 0 ! reset in Landuse_ml
+
+! To use external maps of plant functional types we need to
+! map between EMEP codes and netcdf file codes
+!NOT USED YET.
+type(typ_ss), public, save, dimension(NLANDUSEMAX) :: &
+  PFT_MAPPINGS=typ_ss('-','-')
     
 
 ! EMEP measurements end at 6am, used in  daily averages
@@ -564,7 +571,8 @@ subroutine Config_ModelConstants(iolog)
      ,BGND_CH4  & ! Can reset background CH4 values 
      ,EMIS_SOURCE, EMIS_TEST, EMIS_OUT & 
      ,emis_inputlist &
-     ,FLUX_VEGS  & ! TESTX
+     ,FLUX_VEGS  & ! Allows user to add veg categories for eg IAM ouput
+     ,PFT_MAPPINGS &  ! Allows use of external LAI maps
      ,NETCDF_DEFLATE_LEVEL,  RUNDOMAIN, DOMAIN_DECOM_MODE &
      ,JUMPOVER29FEB
 

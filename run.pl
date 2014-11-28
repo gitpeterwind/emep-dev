@@ -16,6 +16,7 @@
 #   lnodes= number of nodes, ppn=processor per node (max 20 on stallo)
 #   lpmeme=memory to reserve per processor (max 16GB per node)
 ##PBS -lnodes=64 -lpmem=1000MB
+##PBS -lnodes=16 -lpmem=1000MB
 #PBS -lnodes=80
 # Wall time limit of run
 #PBS -lwalltime=05:20:00
@@ -112,10 +113,11 @@ die "Must choose STALLO **or** VILJE !\n"
 # my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) =
 #    ("2674","EmChem09","EMEPSTD","EMEPSTD","EECCA","EmChem09");
 #
-my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_5"   ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA","EMEP");
+my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA","EMEP");
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
+($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2896"   ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA","EMEP");
 
 my %BENCHMARK;
 # OpenSource 2008

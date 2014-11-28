@@ -13,6 +13,7 @@
   USES%FOREST_FIRES     = T,
   USES%EMISSTACKS       = F,         ! Reads PointSources file
   USES%PlumeMethod      = 'PVDI',    ! default PVDI, possible: NILU, ASMI, PVDI
+  USES%PFT_MAPS         = F,         ! PFT LAI tests
 !------------------------------
   USE_SOILWATER         = T,          ! Uses SMI from meteo data
   USE_CONVECTION        = F,
@@ -87,10 +88,12 @@
 !DEBUG system started June 2013 -------------------
 ! Only partially implemented. See ModelConstants_ml
   DEBUG%AOT             = F,
+  DEBUG%BIO             = F,   ! BVOC emissions, etc.
   DEBUG%FORESTFIRE      = F,
   DEBUG%GLOBBC          = F,
   DEBUG%GRIDVALUES      = F,
   DEBUG%HOURLY_OUTPUTS  = F,
+  DEBUG%PFT_MAPS        = F,   ! in testing
   DEBUG%PHYCHEM         = F,
   DEBUG%SETUP_1DBIO     = F,
   DEBUG%SETUP_1DCHEM    = F,
@@ -125,6 +128,7 @@
   GFED_PATTERN="$GFED",
   FINN_PATTERN="$FINN",
   GFAS_PATTERN="$GFAS",
+  need_poll = F,        ! Avoids problems with missing ISOP in later FINN data
 &end
 &ExternalBICs_config
   USE_EXTERNAL_BIC  = F,              ! .false. to deactivate
