@@ -19,7 +19,7 @@ use ChemGroups_ml,     only: chemgroups
 use DerivedFields_ml,  only: f_2d               ! D2D houtly output type
 use ModelConstants_ml, only: PPBINV, PPTINV, ATWAIR, atwS, atwN, MasterProc, &
                              MY_OUTPUTS, FORECAST, USE_EMERGENCY,DEBUG_EMERGENCY,&
-                             USE_AOD, USE_POLLEN, DEBUG_POLLEN
+                             USE_AOD, USE_POLLEN, DEBUG_POLLEN, SELECT_LEVELS_HOURLY
 use OwnDataTypes_ml,   only: Asc2D
 use Par_ml,            only: GIMAX,GJMAX,IRUNBEG,JRUNBEG,me
 use Pollen_const_ml,   only: ug2grains,pollen_check
@@ -292,6 +292,7 @@ subroutine set_output_defs
   case("3DPROFILES")
     nhourly_out=2
     nlevels_hourly = 2  ! nb zero is one of levels in this system
+    SELECT_LEVELS_HOURLY = .true.    
   case("IMPACT2C")
     nhourly_out=4  ! Dave's starting set
     nlevels_hourly = 2  ! nb zero is one of levels, so we have 3m and 45m
