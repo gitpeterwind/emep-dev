@@ -36,7 +36,7 @@ module NetCDF_ml
                                ,glat,lb2ij,A_bnd,B_bnd&
                                ,lb2ij,lb2ijm,ij2lb&
                                ,ref_latitude_EMEP,xp_EMEP_old,yp_EMEP_old&
-                               ,i_local,j_local&
+                               ,i_local,j_local,i_fdom,j_fdom&
                                ,Eta_bnd,Eta_mid,A_bnd,B_bnd,A_mid,B_mid
   use InterpolationRoutines_ml,  only : grid2grid_coeff
   use ModelConstants_ml, only : KMAX_MID,KMAX_BND, runlabel1, runlabel2 &
@@ -89,6 +89,7 @@ module NetCDF_ml
   public :: CloseNetCDF
   public :: Init_new_netCDF
   public :: GetCDF
+  public :: GetCDF_modelgrid
   public :: WriteCDF !for testing purposes
   public :: Read_Inter_CDF
   public :: ReadField_CDF
@@ -1940,6 +1941,146 @@ subroutine GetCDF(varname,fileName,Rvar,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,
   call check(nf90_close(ncFileID))
 
 end subroutine GetCDF
+subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,needed)
+  !
+  ! open and reads CDF file 
+  ! The grid MUST be identical to the model grid
+  ! the field are read directly into the subdomains
+  ! k_start,k_end are the vertical levels to read, k=k_start,k_end
+  ! for instance k_start=KMAX_MID,k_end=KMAX_MID gives only surface
+  ! for instance k_start1,k_end=KMAX_MID gives all levels
+  ! the diemnsions of Rvar is assumed:
+  ! Rvar(MAXLIMAX,MAXLJMAX,k_end-k_start+1,nfetch)
+
+  use netcdf
+  implicit none
+  character (len=*),intent(in) :: fileName
+
+  character (len = *),intent(in) ::varname
+  integer, intent(in) :: nstart,k_start,k_end
+  integer, intent(inout) ::  nfetch
+  real, intent(out) :: Rvar(MAXLIMAX,MAXLJMAX,k_end-k_start+1,nfetch)
+  logical, optional,intent(in) :: needed
+
+  logical :: fileneeded
+  integer :: status,ndims,alloc_err
+  integer :: totsize,xtype,dimids(NF90_MAX_VAR_DIMS),nAtts
+  integer :: dims(NF90_MAX_VAR_DIMS),startvec(NF90_MAX_VAR_DIMS)
+  integer :: ncFileID,VarID,i,j,k,n,it
+  character*100::name
+  real :: scale,offset,scalefactors(2)
+  integer, allocatable:: Ivalues(:)
+
+  if(MasterProc.and.DEBUG_NETCDF)print *,'GetCDF_modelgrid  reading ',trim(fileName), ' nstart ', nstart
+  !open an existing netcdf dataset
+  fileneeded=.true.!default
+  if(present(needed))then
+     fileneeded=needed
+  endif
+
+  if(fileneeded)then
+     call check(nf90_open(path = trim(fileName), mode = nf90_nowrite, ncid = ncFileID))
+  else
+     status=nf90_open(path = trim(fileName), mode = nf90_nowrite, ncid = ncFileID)
+     if(status/= nf90_noerr)then
+        write(*,*)trim(fileName),' not found (but not needed)'
+        nfetch=0
+        return
+     endif
+  endif
+
+  !get global attributes
+  !example:
+!  call check(nf90_get_att(ncFileID, nf90_global, "lastmodified_hour", attribute ))
+!  call check(nf90_get_att(ncFileID, nf90_global, "lastmodified_date", attribute2 ))
+!  print *,'file last modified (yyyymmdd hhmmss.sss) ',attribute2,' ',attribute
+
+  !test if the variable is defined and get varID:
+  status = nf90_inq_varid(ncid = ncFileID, name = varname, varID = VarID)
+
+  if(status == nf90_noerr) then
+     if(DEBUG_NETCDF)write(*,*) 'variable exists: ',trim(varname)
+  else
+     print *, 'variable does not exist: ',trim(varname),nf90_strerror(status)
+     nfetch=0
+     call CheckStop(fileneeded, "NetCDF_ml : variable needed but not found")
+     return
+  endif
+
+  !get dimensions
+  call check(nf90_Inquire_Variable(ncFileID,VarID,name,xtype,ndims,dimids,nAtts))
+  dims=0
+  do i=1,ndims
+     call check(nf90_inquire_dimension(ncid=ncFileID, dimID=dimids(i),  len=dims(i)))
+  enddo
+
+  write(*,*)'dimensions ',(dims(i),i=1,ndims)
+  if(dims(1)/=IIFULLDOM.or.dims(2)/=JJFULLDOM)then
+     write(*,*)'grid has different different than model grid',dims(1),IIFULLDOM,dims(2),JJFULLDOM
+     Call StopAll('GetCDF_modelgrid: incompatible grid. This routine does not interpolate')
+  endif
+
+  if(ndims>3.and.dims(3)>k_end)then
+     write(*,*)'Warning: not reading all levels ',dims(3),k_end
+!     Call StopAll('GetCDF not reading all levels')
+  endif
+
+  if(nstart+nfetch-1>dims(ndims))then
+     write(*,*)'WARNING: did not find all data'
+     nfetch=dims(ndims)-nstart+1
+     if(nfetch<=0)Call StopAll('GetCDF_modelgrid  nfetch<0')
+  endif
+
+  startvec=1
+  startvec(1)=i_fdom(1)
+  startvec(2)=j_fdom(1)
+  startvec(3)=k_start
+  startvec(ndims)=nstart
+  dims(1)=limax
+  dims(2)=ljmax
+  dims(3)=k_end-k_start+1
+  if(dims(3)<=0)then
+     write(*,*)'WARNING: k_end<k_start. Not fetching anything'
+     return
+  endif
+  dims(ndims)=nfetch!NB: for 2D ndims=3 and we overwrite it!
+
+  totsize=dims(1)*dims(2)*(k_end-k_start+1)*dims(ndims)
+  if(xtype==NF90_SHORT.or.xtype==NF90_INT.or.xtype==NF90_BYTE)then
+     allocate(Ivalues(totsize), stat=alloc_err)
+     call check(nf90_get_var(ncFileID, VarID, Ivalues,start=startvec,count=dims))
+
+    scalefactors(1) = 1.0 !default
+    scalefactors(2) = 0.  !default
+    status = nf90_get_att(ncFileID, VarID, "scale_factor", scale  )
+    if(status == nf90_noerr) scalefactors(1) = scale
+    status = nf90_get_att(ncFileID, VarID, "add_offset",  offset )
+    if(status == nf90_noerr) scalefactors(2) = offset
+    it=0
+    do i=1,dims(1)
+       do j=1,dims(2)
+          do k=1,dims(3)
+             do n=1,dims(4)
+                it=it+1
+                Rvar(i,j,k,n)=Ivalues(it)*scalefactors(1)+scalefactors(2)
+             enddo
+          enddo
+       enddo
+    enddo
+
+     deallocate(Ivalues)
+  elseif(xtype==NF90_FLOAT .or. xtype==NF90_DOUBLE)then
+     call check(nf90_get_var(ncFileID, VarID, Rvar,start=startvec,count=dims))
+     if(DEBUG_NETCDF) &
+         write(*,*)'datatype real, read', me, maxval(Rvar), minval(Rvar)
+  else
+     write(*,*)'datatype not yet supported'!Char
+     Call StopAll('GetCDF  datatype not yet supported')
+  endif
+
+  call check(nf90_close(ncFileID))
+
+end subroutine GetCDF_modelgrid
 
 subroutine WriteCDF(varname,vardate,filename_given,newfile)
 
