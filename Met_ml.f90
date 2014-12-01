@@ -775,7 +775,7 @@ contains
     Etadot(:,:,KMAX_BND,nr)=0.0
     Etadot(:,:,1,nr)=0.0
     if(.not.foundsdot .and. .not.met(ix_Etadot)%found)then
-       if(write_now)write(*,*)'WARNING: sigma_dot derived from horizontal winds '
+       if(write_now)write(*,*)'WARNING: Etadot derived from horizontal winds '
        ! sdot derived from divergence=0 principle
        do j = 1,ljmax
           do i = 1,limax

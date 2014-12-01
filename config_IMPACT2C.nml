@@ -27,7 +27,6 @@
   INERIS_SNAP1          = F,          ! Used for TFMM runs
   INERIS_SNAP2          = F,          ! Used for TFMM runs
 !------------------------------
-  IS_GLOBAL             = F,          ! Also for EMERGENCY
   MONTHLY_GRIDEMIS      = F,          ! Also for EMERGENCY
   SELECT_LEVELS_HOURLY  = T,          ! hourly output flag Also for FORECAST, *IMPACT2C*
   FORECAST              = F,

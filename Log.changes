@@ -153,6 +153,16 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+1st December 2014  Peter, Dave  2897
+
+small cleanups
+Emissions_ml: DEBUG=yes error when using monthly emissions.
+Output_hourly: surf_corrected initialized to true. NB: it does not work anymore to output 21 levels (i.e all levels+surface)
+NetCDF_ml: new routine for reading in without interpolating if the grid is identical to the met grid (not tested yet!)
+Met_ml: "warning" for sdot -> etadot
+ModelConstants_ml.f90, config*nml: removed "IS_GLOBAL" (was not used anymore)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 27th November 2014  Dave  2896
 
 Interim commit, which enables LPJ-GUESS LAI variation for global landcover

@@ -39,7 +39,6 @@
   EMIS_TEST             = 'None',     ! 'None' or 'CdfSnap' 
 !!EMIS_SOURCE='CdfFractions',EMIS_OUT=T,! Output gridded emissions
 !------------------------------
-  IS_GLOBAL             = F,          ! Also for EMERGENCY
   MONTHLY_GRIDEMIS      = F,          ! Also for EMERGENCY
   SELECT_LEVELS_HOURLY  = T,          ! hourly output flag Also for FORECAST, 3DPROFILES
   FORECAST              = T,

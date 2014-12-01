@@ -57,7 +57,6 @@
 !
   EMIS_OUT              = F,          ! Output emissions in separate files (memory demanding)
 !------------------------------
-  IS_GLOBAL             = F,          ! Also for EMERGENCY
   MONTHLY_GRIDEMIS      = F,          ! Also for EMERGENCY
   SELECT_LEVELS_HOURLY  = F,          ! hourly output flag Also for FORECAST, 3DPROFILES
   FORECAST              = F,

@@ -58,7 +58,7 @@ use ModelConstants_ml,only: &
     EMIS_TEST,     &    ! CdfSnap or none
     emis_inputlist, &   !TESTC
     EMIS_OUT,      &    ! output emissions in ASCII or not
-    IS_GLOBAL, MONTHLY_GRIDEMIS, &  !NML
+    MONTHLY_GRIDEMIS, &  !NML
     NBVOC,         &    ! > 0 if forest voc wanted
     INERIS_SNAP2 , &    ! INERIS/TFMM HDD20 method
     DEBUG, MYDEBUG => DEBUG_EMISSIONS,  MasterProc, & 
@@ -1301,7 +1301,6 @@ subroutine newmonth
   logical :: needed_found
 
   ! For now, only the global runs use the Monthly files
-  !NML logical, parameter :: MONTHLY_GRIDEMIS= IS_GLOBAL      
   integer :: kstart,kend,nstart,Nyears
   real :: buffer(MAXLIMAX,MAXLJMAX),SumSoilNOx
         
@@ -1515,8 +1514,12 @@ subroutine newmonth
     tonnemonth_to_kgm2s = 1.0e3 &
                         /(nmdays(month)*24.*60.*60.*GRIDWIDTH_M*GRIDWIDTH_M)
     if(MasterProc)then
-      allocate(globemis(NSECTORS,GIMAX,GJMAX,NCMAX),stat=err3)
-      call CheckStop(err3, "Allocation error err3 - globland")
+       allocate(globemis(NSECTORS,GIMAX,GJMAX,NCMAX),stat=err3)
+       call CheckStop(err3, "Allocation error err3 master - globland")
+    else
+       ! needed for DEBUG=yes compilation options
+      allocate(globemis(1,1,1,1),stat=err3)
+      call CheckStop(err3, "Allocation error err3 not master - globland")
     endif
     do iem = 1,NEMIS_FILE
 !      if (trim(EMIS_NAME(iem)).ne.'nox' .and. trim(EMIS_NAME(iem)).ne.'co'.and.&
@@ -1569,7 +1572,7 @@ subroutine newmonth
         enddo
      enddo
     enddo !iem
-    if(MasterProc) deallocate(globemis)
+    deallocate(globemis)
   endif
 endsubroutine newmonth
 !***********************************************************************

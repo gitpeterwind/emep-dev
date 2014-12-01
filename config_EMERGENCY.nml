@@ -39,7 +39,6 @@
   EMIS_TEST             = 'None',     ! 'None' or 'CdfSnap' 
   EMIS_OUT              = F,          ! Output emissions in separate files (memory demanding)
 !------------------------------
-  IS_GLOBAL             = T,          ! Also for EMERGENCY
   MONTHLY_GRIDEMIS      = T,          ! Also for EMERGENCY
   SELECT_LEVELS_HOURLY  = T,          ! hourly output flag Also for FORECAST, 3DPROFILES
   FORECAST              = T,

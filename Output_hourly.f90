@@ -136,7 +136,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
   character(len=len(fileName_hour)) :: filename
   logical       :: file_exist=.false.
   logical, save :: debug_flag      ! = ( MasterProc .and. DEBUG )
-  logical       :: surf_corrected  ! to get 3m values
+  logical       :: surf_corrected=.true.  ! to get 3m values
 
   character(len=*), parameter :: &
     SRF_TYPE(9)=(/"ADVppbv     ","ADVugXX     ","ADVugXXgroup",&
