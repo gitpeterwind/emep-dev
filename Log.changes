@@ -153,6 +153,16 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+1st December 2014  Peter  2900
+
+New routine is now tested and developed: GetCDF_modelgrid
+It read a NetCDF file which has same projection and resoltution as model grid.
+
+You can still shift the origin. This can be used for instance when files from
+Nest_ml (MODE=1) are written, since they do not include the outer frame. 
+In this case use "i_start=2,j_start=2".
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 1st December 2014  Peter, Dave  2899
 
 small cleanups

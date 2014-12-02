@@ -1941,15 +1941,17 @@ subroutine GetCDF(varname,fileName,Rvar,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,
   call check(nf90_close(ncFileID))
 
 end subroutine GetCDF
-subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,needed)
+
+subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,i_start,j_start,needed)
   !
   ! open and reads CDF file 
-  ! The grid MUST be identical to the model grid
+  ! The grid MUST be in the same projection and resolution as the model grid
   ! the field are read directly into the subdomains
   ! k_start,k_end are the vertical levels to read, k=k_start,k_end
   ! for instance k_start=KMAX_MID,k_end=KMAX_MID gives only surface
   ! for instance k_start1,k_end=KMAX_MID gives all levels
-  ! the diemnsions of Rvar is assumed:
+  ! i_start,j_start can give a new origin instead of (1,1)
+  ! the dimensions of Rvar are assumed:
   ! Rvar(MAXLIMAX,MAXLJMAX,k_end-k_start+1,nfetch)
 
   use netcdf
@@ -1957,20 +1959,25 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,ne
   character (len=*),intent(in) :: fileName
 
   character (len = *),intent(in) ::varname
-  integer, intent(in) :: nstart,k_start,k_end
-  integer, intent(inout) ::  nfetch
+  integer, intent(in) :: nstart,nfetch,k_start,k_end
   real, intent(out) :: Rvar(MAXLIMAX,MAXLJMAX,k_end-k_start+1,nfetch)
+  integer, optional, intent(in) ::  i_start,j_start
   logical, optional,intent(in) :: needed
 
   logical :: fileneeded
   integer :: status,ndims,alloc_err
   integer :: totsize,xtype,dimids(NF90_MAX_VAR_DIMS),nAtts
   integer :: dims(NF90_MAX_VAR_DIMS),startvec(NF90_MAX_VAR_DIMS)
-  integer :: ncFileID,VarID,i,j,k,n,it
+  integer :: ncFileID,VarID,i,j,k,n,it,i1,j1,i0,j0
   character*100::name
   real :: scale,offset,scalefactors(2)
   integer, allocatable:: Ivalues(:)
-
+  i0=0
+  j0=0
+  if(present(i_start))i0=i_start-1
+  if(present(j_start))j0=j_start-1
+  call CheckStop(i0>limax, "NetCDF_ml i: subdomain not compatible. cannot handle this")
+  call CheckStop(j0>ljmax, "NetCDF_ml j: subdomain not compatible. cannot handle this")
   if(MasterProc.and.DEBUG_NETCDF)print *,'GetCDF_modelgrid  reading ',trim(fileName), ' nstart ', nstart
   !open an existing netcdf dataset
   fileneeded=.true.!default
@@ -1984,7 +1991,6 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,ne
      status=nf90_open(path = trim(fileName), mode = nf90_nowrite, ncid = ncFileID)
      if(status/= nf90_noerr)then
         write(*,*)trim(fileName),' not found (but not needed)'
-        nfetch=0
         return
      endif
   endif
@@ -2002,7 +2008,6 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,ne
      if(DEBUG_NETCDF)write(*,*) 'variable exists: ',trim(varname)
   else
      print *, 'variable does not exist: ',trim(varname),nf90_strerror(status)
-     nfetch=0
      call CheckStop(fileneeded, "NetCDF_ml : variable needed but not found")
      return
   endif
@@ -2014,10 +2019,14 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,ne
      call check(nf90_inquire_dimension(ncid=ncFileID, dimID=dimids(i),  len=dims(i)))
   enddo
 
-  write(*,*)'dimensions ',(dims(i),i=1,ndims)
+  if(DEBUG_NETCDF)write(*,*)'dimensions ',(dims(i),i=1,ndims)
   if(dims(1)/=IIFULLDOM.or.dims(2)/=JJFULLDOM)then
-     write(*,*)'grid has different different than model grid',dims(1),IIFULLDOM,dims(2),JJFULLDOM
-     Call StopAll('GetCDF_modelgrid: incompatible grid. This routine does not interpolate')
+   82 format(3A,2I5,A,2I5)
+    if(me==0)write(*,82)'WARNING : grid ',trim(fileName),' has different dimensions than model grid: ',&
+         dims(1),dims(2),' instead of ',IIFULLDOM,JJFULLDOM
+     if(.not.present(i_start))then
+     Call StopAll('GetCDF_modelgrid: incompatible grid. This routine does not interpolate. Give i_start, j_start')
+     endif
   endif
 
   if(ndims>3.and.dims(3)>k_end)then
@@ -2027,24 +2036,45 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,ne
 
   if(nstart+nfetch-1>dims(ndims))then
      write(*,*)'WARNING: did not find all data'
-     nfetch=dims(ndims)-nstart+1
-     if(nfetch<=0)Call StopAll('GetCDF_modelgrid  nfetch<0')
+     if(dims(ndims)-nstart+1<=0)Call StopAll('GetCDF_modelgrid  nfetch<0')
   endif
 
   startvec=1
   startvec(1)=i_fdom(1)
   startvec(2)=j_fdom(1)
+  if(i_fdom(1)/=1)startvec(1)= startvec(1)-i0
+  if(j_fdom(1)/=1)startvec(2)= startvec(2)-j0
   startvec(3)=k_start
   startvec(ndims)=nstart
-  dims(1)=limax
-  dims(2)=ljmax
+  if(startvec(1)+limax-1<dims(1))then
+     dims(1)=limax
+  else
+     dims(1)=dims(1)-startvec(1)+1
+  endif
+  if(startvec(2)+ljmax-1<dims(2))then
+     dims(2)=ljmax
+  else
+     dims(2)=dims(2)-startvec(2)+1
+  endif
+  if(i_fdom(1)==1)dims(1)=dims(1)-i0
+  if(j_fdom(1)==1)dims(2)=dims(2)-j0
+
   dims(3)=k_end-k_start+1
   if(dims(3)<=0)then
      write(*,*)'WARNING: k_end<k_start. Not fetching anything'
      return
   endif
   dims(ndims)=nfetch!NB: for 2D ndims=3 and we overwrite it!
+  83 format(I4,A,3I5,A,5I5)
+  if(DEBUG_NETCDF) write(*,83)me,' Reading from ',startvec(1),startvec(2),startvec(3),' to ',&
+       startvec(1)+dims(1)-1,startvec(2)+dims(2)-1,startvec(3)+dims(3)-1
 
+
+  i1=1
+  j1=1
+  if(i_fdom(1)==1)i1=i0+1
+  if(j_fdom(1)==1)j1=j0+1
+  Rvar=0.0
   totsize=dims(1)*dims(2)*(k_end-k_start+1)*dims(ndims)
   if(xtype==NF90_SHORT.or.xtype==NF90_INT.or.xtype==NF90_BYTE)then
      allocate(Ivalues(totsize), stat=alloc_err)
@@ -2057,8 +2087,8 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,ne
     status = nf90_get_att(ncFileID, VarID, "add_offset",  offset )
     if(status == nf90_noerr) scalefactors(2) = offset
     it=0
-    do i=1,dims(1)
-       do j=1,dims(2)
+    do i=i1,dims(1)+i1-1
+       do j=j1,dims(2)+j1-1
           do k=1,dims(3)
              do n=1,dims(4)
                 it=it+1
@@ -2070,7 +2100,10 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,ne
 
      deallocate(Ivalues)
   elseif(xtype==NF90_FLOAT .or. xtype==NF90_DOUBLE)then
-     call check(nf90_get_var(ncFileID, VarID, Rvar,start=startvec,count=dims))
+     if(DEBUG_NETCDF)  write(*,83)me,'writing to ',i1,j1,1,' to ',dims(1)+i1-1,dims(2)+j1-1,dims(3)
+     call check(nf90_get_var(ncFileID, VarID, &
+          Rvar(i1:dims(1)+i1-1,j1:dims(2)+j1-1,1:dims(3),1:dims(4)),start=startvec,count=dims))
+!      call check(nf90_get_var(ncFileID, VarID, Rvar,start=startvec,count=dims))
      if(DEBUG_NETCDF) &
          write(*,*)'datatype real, read', me, maxval(Rvar), minval(Rvar)
   else
