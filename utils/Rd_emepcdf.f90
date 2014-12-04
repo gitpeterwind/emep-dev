@@ -43,6 +43,7 @@ integer ::i,j,n
 character(len=120) :: innfil = '', utfil = ''
 character(len=120), dimension(12)  :: args
 character(len=80)  :: comp = '', fltfmt = "es15.7", ofmt  ! default outout format
+character(len=20)  :: sitexy = '-'     ! default site txt (e.g. "52.0,11.2")
 character(len=12)  :: proj  = 'NotSet' ! PS or lonlat
 logical ::  print_indices   = .true.  ! Prints i, j with output
 logical ::  print_lonlat    = .false. ! Prints lonlat with output
@@ -81,6 +82,7 @@ else
       if ( args(i) == "-d" ) print_indices = .false.
       if ( args(i) == "-f" ) fltfmt = trim( args(i+1) )
       if ( args(i) == "-L" ) print_lonlat  = .true.
+      if ( args(i) == "-s" ) sitexy = trim( args(i+1) )
       if ( args(i) == "-v" ) skip_fillvalue  = .true.
       print *, "ARGS ", i, trim(args(i)), print_indices
    end do
@@ -95,7 +97,7 @@ if( len_trim(utfil) == 0 ) utfil = "OUT_" // trim(comp) // ".txt"
 
 write(*,*) innfil, utfil, print_indices
 
-call readnetcdfiles(innfil,comp)
+call readnetcdfiles(innfil,comp,sitexy)
 
 print *, "PROJ PROJ " , proj
 
@@ -141,17 +143,19 @@ close(10)
 
 end
 
-subroutine readnetcdfiles(filename,cdfname) !DS ,field)
+subroutine readnetcdfiles(filename,cdfname,sitexy) !DS ,field)
 use netcdf
 use nxy, only : nx, ny, ntime, &
                 field, xlong, xlat, var1d, xlong2d, xlat2d, crds, proj
 
 !input
-character(len=*),intent(in) :: filename, cdfname
+character(len=*),intent(in) :: filename, cdfname, sitexy
 
 !local
 integer            :: ncid, ivar,crd
 integer            :: xdimID, ydimID,xvarID, yvarID
+real               :: xsite, ysite, rdist, rdist2
+integer            :: xmin, ymin, io_s
 logical            :: fexist
 integer            :: status
 real :: scalefac=1.0, addoffset=0.0
@@ -268,6 +272,35 @@ end if
 ! close the file
 status = nf90_close(ncid)
 if (status /= nf90_noerr) call handle_cdferr(' ',status)
+
+if( sitexy /= "-" )  then
+   open(newunit=io_s,file="OUT_Site.txt")
+   rdist = 1.0e10
+   read( sitexy, * ) xsite, ysite
+   print *, "SITEXY ", xsite, ysite , trim(cdfname)
+   print *, "SITEXLON ", xlong2D(1,1), xlong2D(nx,ny)
+   print *, "SITEXLAT ", xlat2D(1,1), xlat2D(nx,ny)
+   do j = 1, ny
+   do i = 1, nx
+     if( abs(xlong2D(i,j) - xsite) > 5.0 ) cycle
+     if( abs(xlat2D(i,j) - ysite) > 5.0 ) cycle
+       rdist2 = (xlong2D(i,j) - xsite)**2 + (xlat2D(i,j) - ysite)**2
+       if(rdist2 < rdist ) then
+         rdist=rdist2 ! still squared
+         xmin = i; ymin = j
+         print "(a,2i4,5f8.3)", "Site searching ", i,j, xsite, ysite,&
+             xlong2D(i,j), xlat2D(i,j), sqrt(rdist)
+       end if
+   end do
+   end do
+   i = xmin; j=ymin
+   write (*,"(a,2f8.3,2i4,2f8.3)") "#Sites:", xsite, ysite, i,j, xlong2d(i,j),xlat2d(i,j)
+   write (io_s,"(a,2f8.3,2i4,2f8.3)") "#Sites:", xsite, ysite, i,j, xlong2d(i,j),xlat2d(i,j)
+   do n=1, ntime
+     write (*,"(a,i5,f12.3)") "Sites  ", n,  field(i,j,n)
+     write (io_s,"(a,i5,f12.3)") "Sites  ", n,  field(i,j,n)
+   end do
+end if
 
 end subroutine
 
