@@ -845,7 +845,7 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
         endif
 
         do ispec=1,NSPEC
-           SpecName(ispec)=trim(site_species(ispec))!name of the  species
+           SpecName(ispec)=trim(s_species(ispec))!name of the  species
         enddo
 
 
@@ -997,7 +997,7 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
      allocate(SpecName(NSPEC))
 
      do ispec=1,NSPEC
-        SpecName(ispec)=trim(site_species(ispec))!name of the variable for one sites/sonde and species          
+        SpecName(ispec)=trim(s_species(ispec))!name of the variable for one sites/sonde and species          
      enddo ! n
 
      call Out_CDF_sondes(fileName,SpecName,NSPEC,g_out,NLevels,g_ps,debug=.false.)
