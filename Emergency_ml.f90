@@ -440,7 +440,7 @@ function EmergencyRate(i,j) result(emiss)
       str=date2string(SDATE_FMT,startdate,addsecs=dh*36e2+dt_advec,debug=mydebug)
     case("SE+D")        ! Start eruption + dh; no wildcards in SE allowed
       str=date2string(SDATE_FMT,string2date(se,SDATE_FMT,debug=mydebug),addsecs=dh*36e2,debug=mydebug)
-    case("EE+D")        ! End eruption   - dh; no wildcards in EE allowed
+    case("EE-D")        ! End eruption   - dh; no wildcards in EE allowed
       str=date2string(SDATE_FMT,string2date(ee,SDATE_FMT,debug=mydebug),addsecs=-dh*36e2,debug=mydebug)
     case("ER-D")        ! End of the simulation - dh
       str=date2string(SDATE_FMT,enddate,addsecs=-dh*36e2,debug=mydebug)

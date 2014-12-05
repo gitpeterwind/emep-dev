@@ -388,7 +388,7 @@ function newFFrecord(ymd) result(new)
 
   ! Check: New file
   call date2nctime(ymd,ncday(1))
-  ncday(0)=ncday(1)-persistence
+  ncday(0)=ncday(1)-persistence+1
   select case(BBMAP)
     case("GFED");fname=nctime2string(GFED_PATTERN,ncday(1))
     case("FINN");fname=nctime2string(FINN_PATTERN,ncday(1))

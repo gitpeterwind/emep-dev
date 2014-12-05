@@ -194,34 +194,34 @@ OutputConcs=
     'RDN      ', 'GROUP', 'mgN',
 
   WDEP_WANTED = 
-    'PREC     ','PREC ','mm '
-    'SOX      ','GROUP','mgS'
-    'OXN      ','GROUP','mgN'
-    'RDN      ','GROUP','mgN'
-    'SO2      ','SPEC ','mgS'
-    'HNO3     ','SPEC ','mgN'
+    'PREC     ','PREC ','mm ',
+    'SOX      ','GROUP','mgS',
+    'OXN      ','GROUP','mgN',
+    'RDN      ','GROUP','mgN',
+    'SO2      ','SPEC ','mgS',
+    'HNO3     ','SPEC ','mgN',
 
 
 !----------------------------------------
-!Older DDEP_WANTED stuff. re-format as required
-   !'SO2      ', 'SPEC ', 'mgS'
-!   'SO4      ', SPEC,'mgS')   &
-!   'SS       ',GROUP,'mg ')   &
-!   'HONO     ', SPEC,'mgN')  &
-!   'NO3_F    ', SPEC,'mgN')   &
-!   'NO3_C    ', SPEC,'mgN')   &
-!   'NH4_F    ', SPEC,'mgN')   &
-!   'NH3      ', SPEC,'mgN') &
-!   'SEASALT_F', SPEC,'mg ')   &
-!   'SEASALT_C', SPEC,'mg ') &
+!Older DDEP_WANTED stuff.
+   !'SO2      ','SPEC ','mgS',
+!   'SO4      ','SPEC ','mgS',
+!   'SS       ','GROUP','mg ',
+!   'HONO     ','SPEC ','mgN',
+!   'NO3_F    ','SPEC ','mgN',
+!   'NO3_C    ','SPEC ','mgN',
+!   'NH4_F    ','SPEC ','mgN',
+!   'NH3      ','SPEC ','mgN',
+!   'SEASALT_F','SPEC ','mg ',
+!   'SEASALT_C','SPEC ','mg ',
 !-- Emergency: Nuclear accident (5 entries)
-    ! typ_s3('CS137    ', SPEC, 'mBq'), &
-    ! typ_s3('I131     ', SPEC, 'mBq'), &
-    ! typ_s3('SR90     ', SPEC, 'mBq'), &
-    ! typ_s3('KR85     ', SPEC, 'mBq'), &
-    ! typ_s3('NUCRACT  ',GROUP, 'mBq'), &
-    !!typ_s3('XE131    ', SPEC, 'mBq'), &
-    !!typ_s3('NUC      ',GROUP, 'mBq')/)
+   !'CS137    ','SPEC ','mBq',
+   !'I131     ','SPEC ','mBq',
+   !'SR90     ','SPEC ','mBq',
+   !'KR85     ','SPEC ','mBq',
+   !'NUCRACT  ','GROUP','mBq',
+   !'XE131    ','SPEC ','mBq',
+   !'NUC      ','GROUP','mBq',
 
 !----------------------------------------
 !Older DDEP_WANTED stuff. re-format as required
@@ -239,17 +239,6 @@ OutputConcs=
 !     typ_s3("NO3_C    ", SPEC, "mgN"), &
 !     typ_s3("SEASALT_F", SPEC, "mg"), &
 !     typ_s3("SEASALT_C", SPEC, "mg"), &
-    !EnsClim
-!-- Emergency: Nuclear accident (5 entries)
-    ! typ_s3("CS137    ", SPEC, "mBq"), &
-    ! typ_s3("I131     ", SPEC, "mBq"), &
-    ! typ_s3("SR90     ", SPEC, "mBq"), &
-    ! typ_s3("KR85     ", SPEC, "mBq"), &
-    ! typ_s3("NUCRACT  ",GROUP, "mBq"), &
-    !!typ_s3("XE131    ", SPEC, "mBq"), &
-    !!typ_s3("NUC      ",GROUP, "mBq")/)
-
-
 &end
 
 &OutputMisc_config

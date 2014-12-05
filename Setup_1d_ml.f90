@@ -1,116 +1,86 @@
-! <Setup_1d_ml.f90 - A component of the EMEP MSC-W  Chemical transport Model>
-!*****************************************************************************!
-!*
-!*  Copyright (C) 2007-2012 met.no
-!*
-!*  Contact information:
-!*  Norwegian Meteorological Institute
-!*  Box 43 Blindern
-!*  0313 OSLO
-!*  NORWAY
-!*  email: emep.mscw@met.no
-!*  http://www.emep.int
-!*
-!*    This program is free software: you can redistribute it and/or modify
-!*    it under the terms of the GNU General Public License as published by
-!*    the Free Software Foundation, either version 3 of the License, or
-!*    (at your option) any later version.
-!*
-!*    This program is distributed in the hope that it will be useful,
-!*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-!*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!*    GNU General Public License for more details.
-!*
-!*    You should have received a copy of the GNU General Public License
-!*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************!
-!_____________________________________________________________________________!
- module Setup_1d_ml
+module Setup_1d_ml
+!-----------------------------------------------------------------------!
+! DESCRIPTION
+! Generates arrays for 1-D column , for input to chemical solver. The output
+! fields are stored in the Setup_1dfields_ml module.
+!-----------------------------------------------------------------------!
 
-  ! DESCRIPTION
-  ! Generates arrays for 1-D column , for input to chemical solver. The output
-  ! fields are stored in the Setup_1dfields_ml module.
-
-
-  !-----------------------------------------------------------------------!
-  !FUTURE use NH3variables_ml,       only : NNH3 ! hb NH3emis
-  use AirEmis_ml,            only :  airn, airlig   ! airborne NOx emissions
-  use Biogenics_ml,        only : SoilNOx
-  use Biogenics_ml,        only : EMIS_BioNat, EmisNat  
-  use Chemfields_ml,         only :  xn_adv,xn_bgn,xn_shl, &
-                                   NSPEC_COL, NSPEC_BGN, xn_2d_bgn
-  use CheckStop_ml,          only :  CheckStop
-  use DerivedFields_ml,            only : d_2d
-                                  !FUTURE ,NH3EMIS_VAR ! FUTURE NH3Emis
-  use EmisGet_ml,            only:  nrcemis, iqrc2itot  !DSRC added nrcemis
-  use Emissions_ml,          only:  gridrcemis, gridrcroadd, KEMISTOP
-  use ForestFire_ml,         only: Fire_rcemis, burning
-  use Functions_ml,          only:  Tpot_2_T
-  use ChemSpecs  !,             only:  SO4,C5H8,NO,NO2,SO2,CO,
-  use ChemRates_rct_ml,      only:  set_rct_rates, rct
-  use GridValues_ml,         only:  xmd, GridArea_m2, & 
-                                     debug_proc, debug_li, debug_lj,&
-                                     A_mid,B_mid,gridwidth_m,dA,dB,&
-                                     i_fdom, j_fdom
-  use Io_Progs_ml,           only: datewrite !MASS
-  use LocalVariables_ml,     only: Grid
-  use MassBudget_ml,         only: totem    ! sum of emissions
-  use MetFields_ml,          only: ps
-  use MetFields_ml,          only: roa, th, q, t2_nwp, cc3dmax &
-                                  ,zen, Idirect, Idiffuse,z_bnd
-  use ModelConstants_ml,     only:   &
-     ATWAIR                          &
-    ,DEBUG                           &
-    ,DEBUG_MASS                      &
-!EXCL    ,USES, MINCONC                   & ! conc.limit if USES%MINCONC
-    ,dt_advec                        & ! time-step
-    ,PT                              & ! Pressure at top
-    ,MFAC                            & ! converts roa (kg/m3 to M, molec/cm3)
-    ,USES                            & ! Forest fires so far
-!FUTURE    ,USE_POLLEN                      & ! Pollen
-    ,USE_SEASALT                     &
-    ,USE_LIGHTNING_EMIS, USE_AIRCRAFT_EMIS              & !
-    ,USE_GLOBAL_SOILNOX, USE_DUST, USE_ROADDUST    & !
-    ,USE_EMERGENCY,DEBUG_EMERGENCY   & ! Emergency: Volcanic Eruption
-    ,KMAX_MID ,KMAX_BND, KCHEMTOP      ! Start and upper k for 1d fields
-  use Landuse_ml,            only: water_fraction, ice_landcover
-  use Par_ml,                only:  me,MAXLIMAX,MAXLJMAX & 
-                             ,gi0,gi1,gj0,gj1,IRUNBEG,JRUNBEG
-  use PhysicalConstants_ml,  only:  AVOG, PI, GRAV
-  use Radiation_ml,          only: PARfrac, Wm2_uE
-  use Setup_1dfields_ml,     only: &
-     xn_2d                &  ! concentration terms
-    ,rcemis               &  ! emission terms
-    ,rh, temp, tinv, itemp,pp      &  !
-    ,amk, o2, n2, h2o    ! &  ! Air concentrations
+!FUTURE use NH3variables_ml,only : NNH3 ! hb NH3emis
+use AirEmis_ml,          only: airn, airlig   ! airborne NOx emissions
+use Biogenics_ml,        only: SoilNOx
+use Biogenics_ml,        only: EMIS_BioNat, EmisNat  
+use Chemfields_ml,       only: xn_adv,xn_bgn,xn_shl, &
+                               NSPEC_COL, NSPEC_BGN, xn_2d_bgn
+use CheckStop_ml,        only:  CheckStop
+use DerivedFields_ml,          only : d_2d
+                              !FUTURE ,NH3EMIS_VAR ! FUTURE NH3Emis
+use EmisGet_ml,          only:  nrcemis, iqrc2itot  !DSRC added nrcemis
+use Emissions_ml,        only:  gridrcemis, gridrcroadd, KEMISTOP
+use ForestFire_ml,       only: Fire_rcemis, burning
+use Functions_ml,        only:  Tpot_2_T
+use ChemSpecs  !,           only:  SO4,C5H8,NO,NO2,SO2,CO,
+use ChemRates_rct_ml,    only:  set_rct_rates, rct
+use GridValues_ml,       only:  xmd, GridArea_m2, & 
+                                 debug_proc, debug_li, debug_lj,&
+                                 A_mid,B_mid,gridwidth_m,dA,dB,&
+                                 i_fdom, j_fdom
+use Io_Progs_ml,         only: datewrite !MASS
+use LocalVariables_ml,   only: Grid
+use MassBudget_ml,       only: totem    ! sum of emissions
+use MetFields_ml,        only: ps
+use MetFields_ml,        only: roa, th, q, t2_nwp, cc3dmax, &
+                               zen, Idirect, Idiffuse,z_bnd
+use ModelConstants_ml,   only:  &
+   DEBUG,DEBUG_MASS             &
+!EXCL    ,USES, MINCONC                & ! conc.limit if USES%MINCONC
+  ,dt_advec                     & ! time-step
+  ,PT                           & ! Pressure at top
+  ,USES                         & ! Forest fires so far
+  ,USE_SEASALT                  &
+  ,USE_LIGHTNING_EMIS, USE_AIRCRAFT_EMIS      & !
+  ,USE_GLOBAL_SOILNOX, USE_DUST, USE_ROADDUST & !
+  ,USE_EMERGENCY,DEBUG_EMERGENCY   & ! Emergency: Volcanic Eruption
+  ,KMAX_MID ,KMAX_BND, KCHEMTOP      ! Start and upper k for 1d fields
+use Landuse_ml,          only: water_fraction, ice_landcover
+use Par_ml,              only: me,MAXLIMAX,MAXLJMAX, & 
+                               gi0,gi1,gj0,gj1,IRUNBEG,JRUNBEG
+use PhysicalConstants_ml,only: ATWAIR, AVOG, PI, GRAV
+use Radiation_ml,        only: PARfrac, Wm2_uE
+use Setup_1dfields_ml,   only: &
+   xn_2d                &  ! concentration terms
+  ,rcemis               &  ! emission terms
+  ,rh, temp, tinv, itemp,pp      &  !
+  ,amk, o2, n2, h2o    ! &  ! Air concentrations
 !FUTURE    ,rcnh3                   ! NH3emis
-  use SmallUtils_ml,          only: find_index
-  use Tabulations_ml,         only: tab_esat_Pa
-  use TimeDate_ml,            only: current_date, date
-  use Volcanos_ml
-  use Emergency_ml,           only: EmergencyRate
-  implicit none
-  private
-  !-----------------------------------------------------------------------!
+use SmallUtils_ml,       only: find_index
+use Tabulations_ml,      only: tab_esat_Pa
+use TimeDate_ml,         only: current_date, date
+use Volcanos_ml
+use Emergency_ml,        only: EmergencyRate
+use Units_ml,            only: to_number_cm3 ! converts roa [kg/m3] to M [molec/cm3]
 
-  public :: setup_1d   ! Extracts results for i,j column from 3-D fields
-  public :: setup_rcemis ! Emissions  (formerly "poll")
- !FUTURE public :: setup_nh3 ! NH3emis   , experimental version
-  public :: reset_3d     ! Exports results for i,j column to 3-D fields
+implicit none
+private
+!-----------------------------------------------------------------------!
+
+public :: setup_1d   ! Extracts results for i,j column from 3-D fields
+public :: setup_rcemis ! Emissions  (formerly "poll")
+!FUTURE public :: setup_nh3 ! NH3emis   , experimental version
+public :: reset_3d     ! Exports results for i,j column to 3-D fields
 
 ! Indices for the species defined in this routine. Only set if found
- ! Hard-coded for 2 specs just now. Could extend and allocate.
-  integer, private, parameter :: NROADDUST = 2
-  integer, private, parameter :: iROADF=1,  iROADC=2
-  integer, private, save :: inat_RDF,  inat_RDC, inat_Rn222
-  integer, private, save :: itot_RDF=-999,  itot_RDC=-999, itot_Rn222=-999
+! Hard-coded for 2 specs just now. Could extend and allocate.
+integer, private, parameter :: NROADDUST = 2
+integer, private, parameter :: iROADF=1,  iROADC=2
+integer, private, save :: inat_RDF,  inat_RDC, inat_Rn222
+integer, private, save :: itot_RDF=-999,  itot_RDC=-999, itot_Rn222=-999
 
- ! Minimum concentration allowed for advected species. Avoids some random
- ! variations between debugged/normal runs with concs of e.g. 1.0e-23 ppb or
- ! less. 1.0e-20 ppb is ca. 2.5e-10 molec/cm3 at sea-level, ca. 2.5e-11 at top
- ! e.g.: MINCONC = 1.0e-29
+! Minimum concentration allowed for advected species. Avoids some random
+! variations between debugged/normal runs with concs of e.g. 1.0e-23 ppb or
+! less. 1.0e-20 ppb is ca. 2.5e-10 molec/cm3 at sea-level, ca. 2.5e-11 at top
+! e.g.: MINCONC = 1.0e-29
 
-  !DUST_ROAD_F
+!DUST_ROAD_F
 
 contains
  !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -129,10 +99,10 @@ contains
 
     do k = KCHEMTOP, KMAX_MID
 
-  !- MFAC - to scale from  density (roa, kg/m3) to  molecules/cm3
+  !- to_number_cm3 - to scale from  density (roa, kg/m3) to  molecules/cm3
   ! (kg/m3 = 1000 g/m3 = 0.001 * Avog/Atw molecules/cm3)
 
-       amk(k) = roa(i,j,k,1) * MFAC  ! molecules air/cm3
+       amk(k) = roa(i,j,k,1) * to_number_cm3  ! molecules air/cm3
 
        h2o(k) = max( 1.e-5*amk(k), &
                      q(i,j,k,1)*amk(k)*ATWAIR/18.0)

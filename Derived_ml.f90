@@ -55,10 +55,9 @@ use ModelConstants_ml, only: &
    KMAX_MID     & ! =>  z dimension (layer number)
   ,KMAX_BND     & ! =>  z dimension (level number)
   ,NPROC        & ! No. processors
-  ,atwS, atwN, ATWAIR, dt_advec  &
+  ,dt_advec  &
   ,PPBINV       & ! 1.0e9, for conversion of units
   ,PPTINV       & ! 1.0e12, for conversion of units
-  ,MFAC         & ! converts roa (kg/m3 to M, molec/cm3)
   ,DEBUG        & ! gives DEBUG%AOT
   ,MasterProc &
   ,SOURCE_RECEPTOR &
@@ -79,7 +78,8 @@ use Par_ml,    only: MAXLIMAX,MAXLJMAX, &   ! => max. x, y dimensions
 use PhysicalConstants_ml,  only : PI,KAPPA
 use SmallUtils_ml,  only: find_index, LenArray, NOT_SET_STRING
 use TimeDate_ml,    only: day_of_year,daynumber,current_date
-use Units_ml,       only: Units_Scale,Group_Units
+use Units_ml,       only: Units_Scale,Group_Units,&
+                          to_number_cm3 ! converts roa [kg/m3] to M [molec/cm3]
 implicit none
 private
 
@@ -302,7 +302,7 @@ private
     logical :: volunit   ! set true for volume units, e.g. ppb
     logical :: outmm, outdd  ! sets time-intervals
 
-    character(len=30) :: dname, txt, txt2, class
+    character(len=30) :: dname, class
     character(len=10) :: unittxt
     character(len=3)  :: subclass
     character(len=TXTLEN_SHORT) ::  outname, outunit, outtyp, outdim
@@ -416,13 +416,11 @@ call AddNewDeriv( "Idiffuse","Idiffuse",  "-","-",   "W/m2", &
 
 do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
 
-   outname= trim(OutputFields(ind)%txt1)
-   outunit= trim(OutputFields(ind)%txt2)   ! eg ugN, which gives unitstxt ugN/m3
-   outdim = trim(OutputFields(ind)%txt3)   ! 2d or 3d or e.g. k20
-   outtyp = trim(OutputFields(ind)%txt5)   ! SPEC or GROUP or MISC
-   outind = OutputFields(ind)%ind    !  H, D, M - fequency of output
-   txt2   = "-" ! not needed?
-
+  outname= trim(OutputFields(ind)%txt1)
+  outunit= trim(OutputFields(ind)%txt2)   ! eg ugN, which gives unitstxt ugN/m3
+  outdim = trim(OutputFields(ind)%txt3)   ! 2d or 3d or e.g. k20
+  outtyp = trim(OutputFields(ind)%txt5)   ! SPEC or GROUP or MISC
+  outind = OutputFields(ind)%ind    !  H, D, M - fequency of output
   subclass = '-' ! default
 
   if ( outtyp == "MISC" ) then ! Simple species
@@ -435,7 +433,7 @@ do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
                     "PM25_rh50 ","PM25X_rh50","PM10_rh50 "/)))then
       iadv = -1 ! Units_Scale(iadv=-1) returns 1.0
                 ! group_calc gets the unit conversion factor from Group_Units
-      unitscale = Units_Scale(outunit, iadv, unittxt, volunit)
+      unitscale = Units_Scale(outunit, iadv, unittxt)
       if(MasterProc) write(*,*)"FRACTION UNITSCALE ", unitscale
     endif
    !COL  'NO2',          'molec/cm2' ,'k20','COLUMN'   ,'MISC' ,4,
@@ -459,17 +457,18 @@ do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
     case("SPEC")  ! Simple species
       iadv = find_index(outname, species_adv(:)%name )
       call CheckStop(iadv<0,"OutputFields Species not found "//trim(outname))
-      txt = "SURF_UG"
       iout = iadv
+      unitscale = Units_Scale(outunit, iadv, unittxt, volunit)
     case("SHL")
       ishl = find_index(outname,species_shl(:)%name)
-      unitscale = Units_Scale(outunit, ishl, unittxt, volunit)
       call CheckStop(ishl<0,"OutputFields Short lived Species not found "//trim(outname))
-      if(MasterProc) write(*,*)"OutputFields Short lived Species found: "//trim(outname)//","//trim(outtyp)//","//trim(class)
+      if(MasterProc) &
+        write(*,*)"OutputFields Short lived Species found: "//trim(outname)
       iout = ishl
+      unitscale = 1.0
+      unittxt = "molecules/cm3"
+      volunit = .true.
     case("GROUP") ! groups of species
-      iadv = -1     ! Units_Scale(iadv=-1) returns 1.0
-                    ! group_calc gets the unit conversion factor from Group_Units
       igrp = find_index(outname, chemgroups(:)%name )
 !-- Emergency: Volcanic Eruption. Skipp groups if not found
       if(outname(1:3)=="ASH")then
@@ -478,21 +477,20 @@ do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
         if(igrp<1)cycle
       endif
       call CheckStop(igrp<0,"OutputFields Group not found "//trim(outname))
-      txt = "SURF_UG_GROUP"   ! ppb not implementde yet
       iout = igrp
+      unitscale = Units_Scale(outunit, -1, unittxt, volunit)
+      ! Units_Scale(iadv=-1) returns 1.0
+      ! group_calc gets the unit conversion factor from Group_Units
     case default
       call CheckStop("Derived: Unsupported OutputFields%outtyp "//&
         trim(outtyp)//":"//trim(outname)//":"//trim(outdim))
     endselect
 
-    unitscale = Units_Scale(outunit, iadv, unittxt, volunit)
-
+    class="MASS";if(volunit)class="PPB"
     select case(outdim)
-    case("2d","2D","SURF")   
-      class = "SURF_MASS_" // trim(outtyp)
-      if(volunit) class = "SURF_PPB_" // trim(outtyp)
-
-      dname = "SURF_" // trim( outunit ) // "_" // trim( outname )
+    case("2d","2D","SURF")
+      class = "SURF_"//trim(class)  //"_"//trim(outtyp)
+      dname = "SURF_"//trim(outunit)//"_"//trim(outname)
       call CheckStop(find_index(dname,def_2d(:)%name)>0,&
         "OutputFields already defined output "//trim(dname))
 
@@ -504,9 +502,7 @@ do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
             iout  , -99,  F,   unitscale,     T,  OutputFields(ind)%ind )
 
     case("3d","3D","MLEV")
-      class = "3D_MASS_"//trim(outtyp)
-      if(volunit .and. iadv > 0) class = "3D_PPB_"//trim(outtyp)
-
+      class = "3D_"//trim(class)  //"_"//trim(outtyp)
       dname = "D3_"//trim(outunit)//"_"//trim(outname)
       call CheckStop(find_index(dname,def_3d(:)%name)>0,&
         "OutputFields already defined output "//trim(dname))
@@ -788,7 +784,7 @@ end do
 
       real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: inv_air_density3D
                 ! Inverse of No. air mols/cm3 = 1/M
-                ! where M =  roa (kgair m-3) * MFAC  when ! scale in ug,  else 1
+                ! where M =  roa (kgair m-3) * to_number_cm3  when ! scale in ug,  else 1
       logical, save :: first_call = .true.
       integer :: ipm25, ipmc ! will save some calcs for pm10
       integer :: igrp, ngrp  ! group methods
@@ -1107,17 +1103,17 @@ end do
             else
                forall ( i=1:limax, j=1:ljmax )
                  d_2d( n, i,j,IOU_DAY) = max( d_2d( n, i,j,IOU_DAY), &
-                     xn_shl(index,i,j,KMAX_MID)  / (density(i,j)*MFAC) )
+                     xn_shl(index,i,j,KMAX_MID)  / (density(i,j)*to_number_cm3) )
                end forall
             end if
 
 
             if ( debug_flag ) then
-               write(*, *) "SHL:MAX.,MFAC ", n, index  , MFAC
+               write(*, *) "SHL:MAX.,to_number_cm3 ", n, index  , to_number_cm3
                write(*,fmt="(a12,2i4,4es12.3)") "SHL MAX. ", n, index  &
                       , d_2d(n,debug_li,debug_lj,IOU_DAY) &
                       ,  xn_shl(index,debug_li,debug_lj,KMAX_MID)  &
-                      ,  density(debug_li,debug_lj), MFAC
+                      ,  density(debug_li,debug_lj), to_number_cm3
             end if
 
             !Monthly and yearly ARE averaged over days
@@ -1183,7 +1179,7 @@ end do
 !                   n, trim(f_2d(n)%name), d_2d(n,debug_li,debug_lj,IOU_INST)
 !            Nothing to do - all set in My_DryDep
 
-          case ( "COLUMN" ) ! MFAC gives #/cm3, 100 is for m -> cm
+          case ( "COLUMN" ) ! to_number_cm3 gives #/cm3, 100 is for m -> cm
 
             read(unit=f_2d(n)%subclass,fmt="(a1,i2)") txt2, klow ! Connvert e.g. k20 to klow=20
 !if(MasterProc) print *, "COLUMN TEST subclass ", f_2d(n)%subclass, f_2d(n)%index, klow
@@ -1208,7 +1204,7 @@ end do
                         xn_adv(index,i,j,k),tmpwork(i,j)
                   end if
                end do ! k
-               d_2d( n, i, j, IOU_INST) = MFAC * 100.0 * tmpwork( i, j ) ! Should be molec/cm2
+               d_2d( n, i, j, IOU_INST) = to_number_cm3 * 100.0 * tmpwork( i, j ) ! Should be molec/cm2
 
 
             end do !i
@@ -1372,7 +1368,7 @@ end do
             inv_air_density3D(:,:,:) = 1.0
        else  !OLD if ( f_3d(n)%rho ) then
             forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
-                inv_air_density3D(i,j,k) = 1.0/( roa(i,j,k,1) * MFAC )
+                inv_air_density3D(i,j,k) = 1.0/( roa(i,j,k,1) * to_number_cm3 )
             end forall
         end if
 
@@ -1706,35 +1702,24 @@ subroutine group_calc( g2d, density, unit, ik, igrp)
 
   integer, pointer, dimension(:) :: gspec=>null()       ! group array of indexes
   real,    pointer, dimension(:) :: gunit_conv=>null()  ! & unit conv. factors
-
+  logical :: needroa
+  
   if(DEBUG%DERIVED .and.debug_proc) &
     write(*,"(a,L1,2i4)") "DEBUG GROUP-PM-N",debug_proc,me,ik
-  call Group_Units(igrp,unit,gspec,gunit_conv,debug=DEBUG%DERIVED.and.debug_proc)
+  call Group_Units(igrp,unit,gspec,gunit_conv,&
+    debug=DEBUG%DERIVED.and.debug_proc,needroa=needroa)
 
-  select case(unit)
-  case("ppb","ppb h","ppbC","ppbN","ppbS")
-    if(ik==0)then
-      forall(i=1:limax,j=1:ljmax) &
-        g2d(i,j) = dot_product(xn_adv(gspec(:),i,j,KMAX_MID),&
-                               cfac(gspec(:),i,j)*gunit_conv(:))
-    else
-      forall(i=1:limax,j=1:ljmax) &
-        g2d(i,j) = dot_product(xn_adv(gspec(:),i,j,ik),gunit_conv(:))
-    endif
-  case("ug/m3","ugC/m3","ugN/m3","ugS/m3")
-    if(ik==0)then
-      forall(i=1:limax,j=1:ljmax) &
-        g2d(i,j) = dot_product(xn_adv(gspec(:),i,j,KMAX_MID),&
-                               cfac(gspec(:),i,j)*gunit_conv(:)) &
-                 * density(i,j)
-    else
-      forall(i=1:limax,j=1:ljmax) &
-        g2d(i,j) = dot_product(xn_adv(gspec(:),i,j,ik),gunit_conv(:)) &
-                 * density(i,j)
-    endif
-  case default
-    call CheckStop("group_calc: Invalid deriv unit '"//trim(unit)//"'")
-  endselect
+  if(ik==0)then
+    forall(i=1:limax,j=1:ljmax) &
+      g2d(i,j) = dot_product(xn_adv(gspec(:),i,j,KMAX_MID),&
+                             cfac(gspec(:),i,j)*gunit_conv(:))
+  else
+    forall(i=1:limax,j=1:ljmax) &
+      g2d(i,j) = dot_product(xn_adv(gspec(:),i,j,ik),gunit_conv(:))
+  endif
+  if(needroa)&
+    forall(i=1:limax,j=1:ljmax) &
+      g2d(i,j) = g2d(i,j) * density(i,j)
   deallocate(gspec,gunit_conv)
 endsubroutine group_calc
  !=========================================================================

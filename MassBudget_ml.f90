@@ -1,6 +1,3 @@
-! <MassBudget_ml.f90 - A component of the EMEP MSC-W Chemical transport Model>
-!*****************************************************************************!
-! ----------------------------------------------------------------------------
 module   MassBudget_ml
 ! ----------------------------------------------------------------------------
 ! DESCRIPTION
@@ -18,18 +15,17 @@ use ModelConstants_ml,  only: KMAX_MID,KCHEMTOP,& ! Start and upper k for 1d fie
                               MasterProc,       & ! Master processor
                               dt_advec,         & ! time-step
                               PT,               & ! Pressure at top
-                              ATWAIR,           & ! Mol. weight of air(Jones,1992)
                               DEBUG_MASS,EXTENDEDMASSBUDGET
 use Par_ml,             only: &
   li0,li1,& ! First/Last local index in longitude when outer boundary is excluded
   lj0,lj1   ! First/Last local index in latitude  when outer boundary is excluded
-use PhysicalConstants_ml,only: GRAV
+use PhysicalConstants_ml,only: GRAV,ATWAIR! Mol. weight of air(Jones,1992)
 use Setup_1dfields_ml,  only: amk, rcemis ! Air concentrations , emissions
-
+use mpi,                only: MPI_COMM_WORLD, MPI_ALLREDUCE, MPI_IN_PLACE,&
+                              MPI_DOUBLE_PRECISION, MPI_SUM, MPI_MIN, MPI_MAX
 implicit none
 private
-INCLUDE 'mpif.h'
-INTEGER STATUS(MPI_STATUS_SIZE),INFO
+INTEGER :: INFO
 
 ! Some work arrays used in Aqueous_ml and (in future) DryDry:
 ! Use ADV index, as Dry/WetDep makes no seance for SHL.

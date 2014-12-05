@@ -1,31 +1,3 @@
-! <Output_hourly.f90 - A component of the EMEP MSC-W Unified Eulerian
-!          Chemical transport Model>
-!*****************************************************************************!
-!*
-!*  Copyright (C) 2007-2011 met.no
-!*
-!*  Contact information:
-!*  Norwegian Meteorological Institute
-!*  Box 43 Blindern
-!*  0313 OSLO
-!*  NORWAY
-!*  email: emep.mscw@met.no
-!*  http://www.emep.int
-!*
-!*    This program is free software: you can redistribute it and/or modify
-!*    it under the terms of the GNU General Public License as published by
-!*    the Free Software Foundation, either version 3 of the License, or
-!*    (at your option) any later version.
-!*
-!*    This program is distributed in the hope that it will be useful,
-!*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-!*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!*    GNU General Public License for more details.
-!*
-!*    You should have received a copy of the GNU General Public License
-!*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************!
-!***********************************************************************
 subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
 !***********************************************************************
 !**    DESCRIPTION:
@@ -57,44 +29,44 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
 !   For ug/m3     output, set hr_out%unitconv=to_ug_ADV(ixadv).
 !   For ugX/m3    output, set hr_out%unitconv=to_ug_X(ixadv).
 !*************************************************************************
-  use My_Outputs_ml,    only: NHOURLY_OUT,    & ! No. outputs
-                              NLEVELS_HOURLY, & ! No. output levels
-                              hr_out,         & ! Required outputs
-                              LEVELS_HOURLY ! Output selected model levels
-            !NML SELECT_LEVELS_HOURLY, LEVELS_HOURLY ! Output selected model levels
+use My_Outputs_ml,    only: NHOURLY_OUT,    & ! No. outputs
+                            NLEVELS_HOURLY, & ! No. output levels
+                            hr_out,         & ! Required outputs
+                            LEVELS_HOURLY ! Output selected model levels
+          !NML SELECT_LEVELS_HOURLY, LEVELS_HOURLY ! Output selected model levels
 
-  use CheckStop_ml,     only: CheckStop
-  use Chemfields_ml,    only: xn_adv,xn_shl,cfac,PM25_water,PM25_water_rh50,AOD
-  use ChemGroups_ml,    only: chemgroups
-  use Derived_ml,       only: num_deriv2d,nav_2d        ! D2D houtly output type
-  use DerivedFields_ml, only: f_2d,d_2d          ! D2D houtly output type
-  use OwnDataTypes_ml,  only: Asc2D, Deriv
-  use ChemSpecs,        only: NSPEC_SHL, species
+use CheckStop_ml,     only: CheckStop
+use Chemfields_ml,    only: xn_adv,xn_shl,cfac,PM25_water,PM25_water_rh50,AOD
+use ChemGroups_ml,    only: chemgroups
+use Derived_ml,       only: num_deriv2d,nav_2d        ! D2D houtly output type
+use DerivedFields_ml, only: f_2d,d_2d          ! D2D houtly output type
+use OwnDataTypes_ml,  only: Asc2D, Deriv
+use ChemSpecs,        only: NSPEC_SHL, species
 !CMR  use ChemSpecs_shl_ml ,only: NSPEC_SHL          ! Maps indices
 !CMR  use ChemChemicals_ml ,only: species            ! Gives names
-  use GridValues_ml,    only: i_fdom, j_fdom,&   ! Gives emep coordinates
-                              debug_proc, debug_li,debug_lj
-  use Io_ml,            only: IO_HOURLY
-  use ModelConstants_ml,only: KMAX_MID, MasterProc, &
-                              IOU_INST, IOU_HOUR, IOU_YEAR, IOU_YEAR_LASTHH, &
-                              DEBUG => DEBUG_OUT_HOUR,runlabel1,HOURLYFILE_ending,&
-                              FORECAST
-  use ModelConstants_ml,only: SELECT_LEVELS_HOURLY !NML
-  use ModelConstants_ml,only: MFAC! TESTSHL
-  use MetFields_ml,     only: t2_nwp,th, roa, surface_precip, ws_10m ,rh2m,&
-                              pzpbl, ustar_nwp, Kz_m2s, &
-                              Idirect, Idiffuse, z_bnd, z_mid,ps
-  use NetCDF_ml,        only: Out_netCDF, CloseNetCDF, Init_new_netCDF, fileName_hour, &
-                              Int1, Int2, Int4, Real4, Real8  !Output data type to choose
-  use OwnDataTypes_ml,  only: TXTLEN_DERIV,TXTLEN_SHORT
-  use Par_ml,           only: MAXLIMAX, MAXLJMAX, GIMAX,GJMAX,        &
-                              me, IRUNBEG, JRUNBEG, limax, ljmax
-  use Pollen_ml,        only: heatsum, pollen_left, AreaPOLL
-  use TimeDate_ml,      only: current_date
-  use TimeDate_ExtraUtil_ml,only : date2string
-  use Units_ml,         only: Group_Units
+use GridValues_ml,    only: i_fdom, j_fdom,&   ! Gives emep coordinates
+                            debug_proc, debug_li,debug_lj
+use Io_ml,            only: IO_HOURLY
+use ModelConstants_ml,only: KMAX_MID, MasterProc, &
+                            IOU_INST, IOU_HOUR, IOU_YEAR, IOU_YEAR_LASTHH, &
+                            DEBUG => DEBUG_OUT_HOUR,runlabel1,HOURLYFILE_ending,&
+                            FORECAST
+use ModelConstants_ml,only: SELECT_LEVELS_HOURLY !NML
+use MetFields_ml,     only: t2_nwp,th, roa, surface_precip, ws_10m ,rh2m,&
+                            pzpbl, ustar_nwp, Kz_m2s, &
+                            Idirect, Idiffuse, z_bnd, z_mid,ps
+use NetCDF_ml,        only: Out_netCDF, CloseNetCDF, Init_new_netCDF, fileName_hour, &
+                            Int1, Int2, Int4, Real4, Real8  !Output data type to choose
+use OwnDataTypes_ml,  only: TXTLEN_DERIV,TXTLEN_SHORT
+use Par_ml,           only: MAXLIMAX, MAXLJMAX, GIMAX,GJMAX,        &
+                            me, IRUNBEG, JRUNBEG, limax, ljmax
+use Pollen_ml,        only: heatsum, pollen_left, AreaPOLL
+use TimeDate_ml,      only: current_date
+use TimeDate_ExtraUtil_ml,only : date2string
+use Units_ml,         only: Group_Units,&
+                            to_number_cm3 ! converts roa [kg/m3] to M [molec/cm3]
 
-  implicit none
+implicit none
 
 !*.. Components of  hr_out
 !* character(len=TXTLEN_DERIV):: name   ! netCDF variable name
@@ -289,21 +261,21 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
         unit_conv =  hr_out(ih)%unitconv
         if(itot < NSPEC_SHL .and.  debug_proc) write(*,"(a,a,4es12.3)") &
           "OUT3D MAR22 ", trim(name), unit_conv, &
-           MFAC,roa(2,2,ik,1)*MFAC, xn_shl(ispec,2,2,ik)
+           to_number_cm3,roa(2,2,ik,1)*to_number_cm3, xn_shl(ispec,2,2,ik)
 
         !MAR22 Added SHL option.
         if( itot <= NSPEC_SHL ) then !TESTSHL
          ! CRUDE units fix. Sort out later.
          !   Inverse of No. air mols/cm3 = 1/M
-         ! where M =  roa (kgair m-3) * MFAC  when ! scale in ug,  else 1
-         !inv_air_density3D(i,j,k) = 1.0/( roa(i,j,k,1) * MFAC )
+         ! where M =  roa (kgair m-3) * to_number_cm3  when ! scale in ug,  else 1
+         !inv_air_density3D(i,j,k) = 1.0/( roa(i,j,k,1) * to_number_cm3 )
 
           forall(i=1:limax,j=1:ljmax)
              hourly(i,j) = xn_shl(ispec,i,j,ik)
           end forall
           if(index(hr_out(ih)%unit,"ppt")>0) then
             forall(i=1:limax,j=1:ljmax)
-                hourly(i,j) = hourly(i,j)/( roa(i,j,ik,1) * MFAC ) * 1.0e9
+                hourly(i,j) = hourly(i,j)/( roa(i,j,ik,1) * to_number_cm3 ) * 1.0e9
             end forall
           else
             call CheckStop("SHL Out3D option not coded yet")

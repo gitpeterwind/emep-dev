@@ -6,13 +6,12 @@ module ModelConstants_ml
  ! the module PhysicalConstants_ml.f90)
  !
  !----------------------------------------------------------------------------
-use CheckStop_ml,         only : CheckStop
-use ChemSpecs,            only : species
-use Io_Nums_ml,           only : IO_NML, IO_LOG
-use OwnDataTypes_ml,      only : typ_ss
-use PhysicalConstants_ml, only : AVOG
-use Precision_ml,         only : dp
-use SmallUtils_ml,        only : find_index
+use CheckStop_ml,         only: CheckStop
+use ChemSpecs,            only: species
+use Io_Nums_ml,           only: IO_NML, IO_LOG
+use OwnDataTypes_ml,      only: typ_ss
+use Precision_ml,         only: dp
+use SmallUtils_ml,        only: find_index
 
 implicit none
 private
@@ -516,18 +515,6 @@ real, public, parameter :: &
 , TINY   = 1.0e-9             ! -1.E-9" is sometimes used  in order to avoid
                               ! different roundings on different machines.
 
-real, public, parameter :: &
-  ATWAIR = 28.964          & ! Mol. weight of air (Jones, 1992)
-, atwS   = 32.             & ! Atomic weight of Sulphur
-, atwN   = 14.             & ! Atomic weight of Nitrogen
-, atwPM  = 100.
-
-! MFAC replaces earlier use of CHEFAC and ATWAIR - to scale from
-! density (roa, kg/m3) to  molecules/cm3
-! (kg/m3 = 1000 g/m3 = 0.001 * Avog/Atw molecules/cm3)
-real, public, parameter :: MFAC = 0.001*AVOG/ATWAIR
-
-
 ! Define output types.
 !   Derived output types: First 4 types (instantaneous,year,month,day),
 !                         refer to output variables defined in Derived_ml.
@@ -540,7 +527,7 @@ integer, public, parameter ::  &
   IOU_HOUR=6, IOU_HOUR_MEAN=7                   & ! Hourly  output
   ,IOU_MAX_MAX=7                                  ! Max values for of IOU (for array declarations)
 
-character(len=*), public, parameter :: model="EMEP_MSC-W"
+character(len=*), public, parameter :: model="EMEP_MSC-W "//VERSION
 
 !----------------------------------------------------------------------------
 contains

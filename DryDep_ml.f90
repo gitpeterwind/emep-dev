@@ -1,150 +1,132 @@
-!*****************************************************************************! 
-! <DryDep_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
-!          Chemical transport Model>
-!*****************************************************************************! 
-
 module DryDep_ml
+! Dry deposition scheme uses a mosaic approach. Updated extensively
+! in 2010-2011.
+! History
+! Module started from the drag-coefficient based approach of BJ98:
+! Berge, E. and  Jakobsen, H.A., A regional scale multi-layer model
+! for the calculation of long-term transport and deposition of air
+! pollution in Europe, Tellus B (1998), 50, 105-223.
 
-  ! Dry deposition scheme uses a mosaic approach. Updated extensively
-  ! in 2010-2011.
-  ! History
-  ! Module started from the drag-coefficient based approach of BJ98:
-  ! Berge, E. and  Jakobsen, H.A., A regional scale multi-layer model
-  ! for the calculation of long-term transport and deposition of air
-  ! pollution in Europe, Tellus B (1998), 50, 105-223.
+! but has been extensively re-written since. See ....
+! Emberson, L.,Simpson, D.,Tuovinen, J.-P.,Ashmore, M.R., Cambridge, H.M.",
+!  2000, Towards a model of ozone deposition and stomatal uptake over 
+!  Europe, EMEP MSC-W Note 6/2000,
+! Simpson, D.,Tuovinen, J.-P.,Emberson, L.D.,Ashmore, M.R.,2001,
+!  "Characteristics of an ozone deposition module",WASP:Focus,1,253-262
+! Simpson, D.,Tuovinen, J.-P.,Emberson, L.D.,Ashmore, M.R.,2003,
+!  "Characteristics of an ozone deposition module II: sensitivity analysis",
+!   WASP, 143, 123-137
+! Tuovinen, J.-P.,Ashmore, M.R.,Emberson, L.D.,Simpson, D., 2004, "Testing
+!   and improving the EMEP ozone deposition module", Atmos.Env.,38,2373-2385
+!
+! Also, handling of dry/wet and co-dep procedure changed following discussions
+! with CEH:
 
-  ! but has been extensively re-written since. See ....
-  ! Emberson, L.,Simpson, D.,Tuovinen, J.-P.,Ashmore, M.R., Cambridge, H.M.",
-  !  2000, Towards a model of ozone deposition and stomatal uptake over 
-  !  Europe, EMEP MSC-W Note 6/2000,
-  ! Simpson, D.,Tuovinen, J.-P.,Emberson, L.D.,Ashmore, M.R.,2001,
-  !  "Characteristics of an ozone deposition module",WASP:Focus,1,253-262
-  ! Simpson, D.,Tuovinen, J.-P.,Emberson, L.D.,Ashmore, M.R.,2003,
-  !  "Characteristics of an ozone deposition module II: sensitivity analysis",
-  !   WASP, 143, 123-137
-  ! Tuovinen, J.-P.,Ashmore, M.R.,Emberson, L.D.,Simpson, D., 2004, "Testing
-  !   and improving the EMEP ozone deposition module", Atmos.Env.,38,2373-2385
-  !
-  ! Also, handling of dry/wet and co-dep procedure changed following discussions
-  ! with CEH:
-
-  ! Latest documentation and ACP eqn references in code below from
-  !  Simpson, D., Benedictow, A., Berge, H., Bergstr\"om, R., Emberson, L. D.,
-  !  Fagerli, H., Flechard, C. R.,  Hayman, G. D., Gauss, M., Jonson, J. E., 
-  !  Jenkin, M. E., Ny\'{\i}ri, A., Richter, C., Semeena, V. S., Tsyro, S.,
-  !  Tuovinen, J.-P., Valdebenito, \'{A}., and Wind, P.: 
-  !  The EMEP MSC-W chemical transport model -- technical description, 
-  !  Atmos. Chem. Phys., 12, 7825--7865, 2012.
+! Latest documentation and ACP eqn references in code below from
+!  Simpson, D., Benedictow, A., Berge, H., Bergstr\"om, R., Emberson, L. D.,
+!  Fagerli, H., Flechard, C. R.,  Hayman, G. D., Gauss, M., Jonson, J. E., 
+!  Jenkin, M. E., Ny\'{\i}ri, A., Richter, C., Semeena, V. S., Tsyro, S.,
+!  Tuovinen, J.-P., Valdebenito, \'{A}., and Wind, P.: 
+!  The EMEP MSC-W chemical transport model -- technical description, 
+!  Atmos. Chem. Phys., 12, 7825--7865, 2012.
   
+use My_Aerosols_ml,   only: NSIZE  
+use Aero_Vds_ml,      only: SettlingVelocity, GPF_Vds300, Wesely300
+use CheckStop_ml,     only: CheckStop
+use Chemfields_ml ,   only: cfac, so2nh3_24hr,Grid_snow 
+use ChemSpecs                ! several species needed
+use DO3SE_ml,         only: do3se
+use EcoSystem_ml,     only: EcoSystemFrac, Is_EcoSystem,  &
+                            NDEF_ECOSYSTEMS, DEF_ECOSYSTEMS
+use GridValues_ml ,   only: GRIDWIDTH_M,xmd,xm2, glat,dA,dB, &
+     glon,   debug_proc, debug_li, debug_lj, i_fdom, j_fdom   ! for testing
 
- use My_Aerosols_ml,    only : NSIZE  
+use Io_Nums_ml,       only: IO_SPOD
+use Io_Progs_ml,      only: datewrite
+use Landuse_ml,       only: SetLandUse, Land_codes  & 
+                           ,NLUMAX &  ! Max. no countries per grid
+                           ,LandCover   ! Provides codes, SGS, LAI, etc,
+use LandDefs_ml,      only: LandType, LandDefs, STUBBLE
+use LocalVariables_ml,only: Grid, L, iL ! Grid and sub-scale Met/Veg data
+use MassBudget_ml,    only: totddep
+use MetFields_ml,     only: u_ref, rh2m
+use MetFields_ml,     only: tau, sdepth, SoilWater_deep, th,pzpbl
+use MicroMet_ml,      only: AerRes, Wind_at_h
+use ModelConstants_ml,only: dt_advec,PT,KMAX_MID, KMAX_BND ,&
+                            NPROC, &
+                            DEBUG_DRYDEP, DEBUG_ECOSYSTEMS, DEBUG_VDS,&
+                            USES, &
+                            USE_SOILNOX, &
+                            MasterProc, &
+                            DEBUG, & ! for DEBUG%AOT
+                            PPBINV,&
+                            KUPPER, NLANDUSEMAX
 
- use Aero_Vds_ml,  only : SettlingVelocity, GPF_Vds300, Wesely300
- use CheckStop_ml, only: CheckStop
- use Chemfields_ml , only : cfac, so2nh3_24hr,Grid_snow 
+use MosaicOutputs_ml,     only: Add_MosaicOutput, MMC_RH
+use OwnDataTypes_ml,      only: depmap
+use Par_ml,               only: limax,ljmax, me,li0,li1,lj0,lj1
+use PhysicalConstants_ml, only: ATWAIR,PI,KARMAN,GRAV,RGAS_KG,CP,AVOG,NMOLE_M3
+use Rb_ml,                only: Rb_gas
+use Rsurface_ml
+use Setup_1dfields_ml,    only: xn_2d,amk, Fpart, Fgas
+use Sites_ml, only : nlocal_sites, site_x, site_y, site_name, site_gn
+use SoilWater_ml,         only: fSW !  =1.0 unless set by Met_ml
+use StoFlux_ml,  only:   unit_flux, &! = sto. flux per m2
+                        lai_flux,  &! = lai * unit_flux
+                        Setup_StoFlux, Calc_StoFlux  ! subs
+use SubMet_ml,            only: Sub
+use TimeDate_ml,          only: daynumber, current_date
+use Wesely_ml         ! ... Init_GasCoeff, DRx, Rb_Cor, ...
+use ESX_ml,               only: Init_ESX, Run_ESX
 
+implicit none
+private
 
- use ChemSpecs                ! several species needed
- use DO3SE_ml,         only : do3se
- use EcoSystem_ml,     only : EcoSystemFrac, Is_EcoSystem,  &
-                             NDEF_ECOSYSTEMS, DEF_ECOSYSTEMS
- use GridValues_ml ,   only : GRIDWIDTH_M,xmd,xm2, glat,dA,dB, &
-       glon,   debug_proc, debug_li, debug_lj, i_fdom, j_fdom   ! for testing
- 
- use Io_Nums_ml,       only : IO_SPOD
- use Io_Progs_ml,      only : datewrite
- use Landuse_ml,       only : SetLandUse, Land_codes  & 
-                              ,NLUMAX &  ! Max. no countries per grid
-                              ,LandCover   ! Provides codes, SGS, LAI, etc,
- use LandDefs_ml,      only : LandType, LandDefs, STUBBLE
- use LocalVariables_ml,only : Grid, L, iL ! Grid and sub-scale Met/Veg data
- use MassBudget_ml,    only : totddep
- use MetFields_ml,     only : u_ref, rh2m
- use MetFields_ml,     only : tau, sdepth, SoilWater_deep, th,pzpbl
- use MicroMet_ml,      only : AerRes, Wind_at_h
- use ModelConstants_ml,only : dt_advec,PT,KMAX_MID, KMAX_BND ,&
-                                  NPROC, &
-                                  DEBUG_DRYDEP, DEBUG_ECOSYSTEMS, DEBUG_VDS,&
-                                  USES, &
-                                  USE_SOILNOX, &
-                                  MasterProc, &
-                                  DEBUG, & ! for DEBUG%AOT
-                                  ATWAIR, atwS, atwN, PPBINV,&
-                                  KUPPER, NLANDUSEMAX
+public  :: DryDep, init_drydep
+private :: Init_DepMap
 
- use MosaicOutputs_ml,     only : Add_MosaicOutput, MMC_RH
- use OwnDataTypes_ml,      only : depmap
- use Par_ml,               only : limax,ljmax, me,li0,li1,lj0,lj1
- use PhysicalConstants_ml, only : PI, KARMAN, GRAV, RGAS_KG, CP, AVOG, NMOLE_M3
- use Rb_ml,                only : Rb_gas
- use Rsurface_ml
- use Setup_1dfields_ml,    only : xn_2d,amk, Fpart, Fgas
- use Sites_ml, only : nlocal_sites, site_x, site_y, site_name, site_gn
- use SoilWater_ml,         only : fSW !  =1.0 unless set by Met_ml
- use StoFlux_ml,  only:   unit_flux, &! = sto. flux per m2
-                          lai_flux,  &! = lai * unit_flux
-                          Setup_StoFlux, Calc_StoFlux  ! subs
- use SubMet_ml,            only : Sub
- use TimeDate_ml,       only : daynumber, current_date
- use Wesely_ml         ! ... Init_GasCoeff, DRx, Rb_Cor, ...
- use ESX_ml,            only : Init_ESX, Run_ESX
+integer, private, save :: P != IO_SPOD + me
+! Maps from adv index to one of calc indices
+integer, public, save, dimension(NSPEC_ADV) :: DepAdv2Calc 
 
+logical, private, save :: my_first_call = .true.
+character(len=30),private, save :: errmsg = "ok"
 
- implicit none
- private
+! WE NEED A FLUX_CDDEP, FLUX_ADV FOR OZONE;
+! (set to one for non-ozone models)
 
- public  :: DryDep, init_drydep
- private :: Init_DepMap
- 
- INCLUDE 'mpif.h'
- INTEGER STATUS(MPI_STATUS_SIZE),INFO
+integer, public, parameter :: FLUX_CDDEP  = CDDEP_O3
+integer, public, parameter :: FLUX_ADV   = IXADV_O3
+integer, public, parameter :: FLUX_TOT   = O3
 
-  integer, private, save :: P != IO_SPOD + me
-  ! Maps from adv index to one of calc indices
-  integer, public, save, dimension(NSPEC_ADV) :: DepAdv2Calc 
+! WE ALSO NEED NO3_f and NH4_f for deposition.
+! (set to one for non-no3/nh4 models)
 
-  logical, private, save :: my_first_call = .true.
-  character(len=30),private, save :: errmsg = "ok"
+integer, public, parameter :: pNO3  = NO3_f
+integer, public, parameter :: pNH4  = NH4_f
 
- ! WE NEED A FLUX_CDDEP, FLUX_ADV FOR OZONE;
- ! (set to one for non-ozone models)
-
-  integer, public, parameter :: FLUX_CDDEP  = CDDEP_O3
-  integer, public, parameter :: FLUX_ADV   = IXADV_O3
-  integer, public, parameter :: FLUX_TOT   = O3
-
- ! WE ALSO NEED NO3_f and NH4_f for deposition.
- ! (set to one for non-no3/nh4 models)
-
-  integer, public, parameter :: pNO3  = NO3_f
-  integer, public, parameter :: pNH4  = NH4_f
-
-
-  logical, public, parameter :: COMPENSATION_PT = .false. 
-
-
+logical, public, parameter :: COMPENSATION_PT = .false. 
 
 !/**************************************************************************
 !  Specifies which of the possible species (from Wesely's list)
 !  are required in the current air pollution model   
 !/**************************************************************************
-   ! .... Define the mapping between the advected species and
-   !      the specied for which the calculation needs to be done.
-   !  We also define the number of species which will be deposited in
-   ! total, NDRYDEP_ADV. This number should be >= NDRYDEP_GASES
-   ! The actual species used and their relation to the CDDEP_ indices
-   ! above will be defined in Init_DepMap
+! .... Define the mapping between the advected species and
+!      the specied for which the calculation needs to be done.
+!  We also define the number of species which will be deposited in
+! total, NDRYDEP_ADV. This number should be >= NDRYDEP_GASES
+! The actual species used and their relation to the CDDEP_ indices
+! above will be defined in Init_DepMap
 
-   !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+!xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-       include 'CM_DryDep.inc'
+ include 'CM_DryDep.inc'
 
-   !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+!xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-   logical, public, dimension(NDRYDEP_ADV), save :: vg_set 
+logical, public, dimension(NDRYDEP_ADV), save :: vg_set 
 
-
- contains
+contains
 
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
      subroutine init_drydep

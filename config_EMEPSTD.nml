@@ -124,9 +124,9 @@
 ! jend   =  58,   ! default RUNDOMAIN(4)-1
 &end
 &Fire_config
-  GFED_PATTERN="$GFED",
-  FINN_PATTERN="$FINN",
-  GFAS_PATTERN="$GFAS",
+  GFED_PATTERN="$GFED",#GFED
+  FINN_PATTERN="$FINN",#FINN
+  GFAS_PATTERN="$GFAS",#GFAS
   need_poll = F,        ! Avoids problems with missing ISOP in later FINN data
 &end
 &ExternalBICs_config

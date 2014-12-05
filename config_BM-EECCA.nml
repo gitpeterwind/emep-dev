@@ -71,9 +71,9 @@
   MODE             = 0,
 &end
 &Fire_config
-  GFED_PATTERN="$GFED",
-  FINN_PATTERN="$FINN",
-  GFAS_PATTERN="$GFAS",
+  GFED_PATTERN="$GFED",#GFED
+  FINN_PATTERN="$FINN",#FINN
+  GFAS_PATTERN="$GFAS",#GFAS
 &end
 &ExternalBICs_config
   USE_EXTERNAL_BIC  = F,              ! .false. to deactivate

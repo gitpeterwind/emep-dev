@@ -64,9 +64,9 @@
 !------------------------------
   MODE             = 0,
 !-------- File name templates for Nest I/O
-  template_read_3D = '$inic',                 ! YYYY, YY, MM, DD, hh strings
-  template_read_BC = '$inbc',                 ! will be replaced with numbers
-  template_write   = '$dump',                 ! in Nest_ml
+  template_read_3D = '$inic',#inic             ! YYYY, YY, MM, DD, hh strings
+  template_read_BC = '$inbc',#inbc             ! will be replaced with numbers
+  template_write   = '$dump',#dump             ! in Nest_ml
 !-------- CWF dump/restart
 ! WRITE_SPC        = 'NO2','O3','SO2','CO','NO',      ! reduce output for
 ! WRITE_GRP        = 'DAOBS','DAUNOBS','PM10','AOD',  ! NMC statistics (3DVar)
@@ -83,16 +83,16 @@
   need_file=F,                                ! continue if don't find file
   need_date=F,                                ! continue if don't find time record
   need_poll=F,                                ! continue if don't find pollutant
-  GFED_PATTERN="$GFED",
-  FINN_PATTERN="$FINN",
-  GFAS_PATTERN="$GFAS",
+  GFED_PATTERN="$GFED",#GFED
+  FINN_PATTERN="$FINN",#FINN
+  GFAS_PATTERN="$GFAS",#GFAS
 &end
 &ExternalBICs_config
   USE_EXTERNAL_BIC     = T,                   ! .false. to deactivate
   EXTERNAL_BIC_NAME    = 'MACC_ENS',
   EXTERNAL_BIC_VERSION = 'MACC_ENS',          ! alias for IFS_MOZ_f7kn|fkya|fnyp
   TOP_BC               = T,
-  filename_eta         = '$filename_eta',
+  filename_eta         = '$filename_eta',#filename_eta
 &end
 &ExternalBICs_bc
 ! BC from IFS-MOZ exp id: f7kn (before 2011-12-01)

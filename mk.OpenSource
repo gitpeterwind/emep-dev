@@ -1,4 +1,4 @@
-vers=rv4_4;year=2013                  # Input version/year flags
+vers=rv4.6g;year=2014                  # Input version/year flags
 tdir=$HOME/Unify                      # top directory - change $HOME as required
 idir=$tdir/Unimod.$vers               # Input dir
 
@@ -29,7 +29,7 @@ for i in *.f90 *.inc gpl.txt modrun.sh; do
         $cdir/$i
     else
       cat copyright.txt $i > $cdir/$i
-      sed -i "s/%filename%/$i/;s/%vers%/$vers/;s/%year%/$year/;" $cdir/$i
+      sed -i "s:%filename%:$i:;s:%vers%:$vers:;s://VERSION://'$vers':;s:%year%:$year:;" $cdir/$i
     fi;;
   *)cp -u $i $cdir;;
   esac

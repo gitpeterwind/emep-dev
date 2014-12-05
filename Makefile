@@ -1,6 +1,7 @@
 #
 #
 export PROG ?= Unimod
+VERSION ?= rv4.6g($(shell svn info|grep Revision:|sed "s/.*: //;"))
 ###################################################
 
 include Makefile.SRCS
@@ -14,6 +15,7 @@ OPT_FLAGS = -O3 -ftz
 F90FLAGS = -shared-intel -r8 -recursive -convert big_endian -IPF_fp_relaxed \
            -cpp $(DFLAGS)
 LDFLAGS =  $(F90FLAGS) $(LLIB) $(LIBS)
+DFLAGS = -D'VERSION="$(VERSION)"'
 
 export MACHINE ?= stallo
 export DEBUG ?= no
@@ -169,9 +171,9 @@ eEMEP: NUCXS ?= NorthKorea,Tehran
 eEMEP: GenChemOptions += -V 7bin,$(VENTS) -N $(NPPAS) -X $(NUCXS)
 
 # Data assimilation: Bnmc / 3DVar
+%-Bnmc %-3DVar: PASS_GOALS=$(filter clean modules,$(MAKECMDGOALS))
 %-Bnmc %-3DVar: GenChem-MACCEVA-EmChem09soa
-	$(MAKE) -C ZD_3DVar/  \
-	  $(if $(filter clean,$(MAKECMDGOALS)),$(@:$*-%=EXP=%) clean,$(@:$*-%=EXP_%))
+	$(MAKE) -C ZD_3DVar/ $(if $(PASS_GOALS),$(@:$*-%=EXP=%) $(PASS_GOALS),$(@:$*-%=EXP_%))
 
 # Archive: create $(PROG).tar.bz2
 archive: $(PROG)_$(shell date +%Y%m%d).tar.bz2

@@ -58,8 +58,9 @@ use MetFields_ml,      only : t2_nwp, th, pzpbl  &  ! output with concentrations
                               , z_bnd, z_mid, roa, Kz_m2s, q
 use MetFields_ml,      only : u_xmj, v_xmi, ps
 use ModelConstants_ml, only : NMET,PPBINV,PPTINV, KMAX_MID, MasterProc &
-                              ,KMAX_BND,PT,ATWAIR, NPROC, DEBUG => DEBUG_SITES &
+                              ,KMAX_BND,PT, NPROC, DEBUG => DEBUG_SITES &
                               ,DomainName, RUNDOMAIN, IOU_INST, SOURCE_RECEPTOR
+use PhysicalConstants_ml,only: ATWAIR
 use NetCDF_ml,         only : Create_CDF_sondes,Out_CDF_sondes
 use Par_ml,            only : li0,lj0,li1,lj1 &
                               ,GIMAX,GJMAX,IRUNBEG,JRUNBEG&

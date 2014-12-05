@@ -17,7 +17,7 @@ use ChemSpecs
 
 use ChemGroups_ml,     only: chemgroups
 use DerivedFields_ml,  only: f_2d               ! D2D houtly output type
-use ModelConstants_ml, only: PPBINV, PPTINV, ATWAIR, atwS, atwN, MasterProc, &
+use ModelConstants_ml, only: PPBINV, PPTINV, MasterProc, &
                              MY_OUTPUTS, FORECAST, USE_EMERGENCY,DEBUG_EMERGENCY,&
                              USE_AOD, USE_POLLEN, DEBUG_POLLEN, SELECT_LEVELS_HOURLY
 use OwnDataTypes_ml,   only: Asc2D

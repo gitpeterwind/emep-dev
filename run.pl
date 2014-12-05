@@ -1073,23 +1073,33 @@ unless($MAKEMODE=~/EVA/){
     }
     # fill in variables on the template file with corresponding $hash{key}
     %h=(%h,'year'=>$year,'utc'=>$CWFMETV,
+           'INIC'=>$CWFIC,'INBC'=>$CWFBC,'DUMP'=>$CWFIC,
            'inic'=>$cwfic,'inbc'=>$cwfbc,'dump'=>date2str($CWFBASE,$CWFIC),
            'outdate'=>date2str($CWFDUMP[0],"%Y,%m,%d,000000,")
                      .date2str($CWFDUMP[1],"%Y,%m,%d,000000")) if $CWF;
   }
-  $nml =~ s/(\s*\!.*|\s+$)//g;  # remove comments, tailing spaces
-  $nml =~ s/\s*\n+/\n/g;        # & empty lines
-  $nml.="\n";                   # restore newline at the end of last namelist
   # fill in variables on the template file with corresponding $hash{key}
-  foreach my $k (keys %h) { $nml=~s:\$$k:$h{$k}:g; }
+  foreach my $k (keys %h) {
+    $nml=~s:\$$k:$h{$k}:g;  # replace keyword ('$key') by its value $h{'key'}
+    my $dk=(-e $h{$k})?`date -r $h{$k} +"\#%F %R %Z"`:"\n";
+    $nml=~s:\#$k:$dk:g;     # and ('#file') by its time stamp
+  }
   # list mode setup variables
-  $nml.="!". "-"x22 ." Model set-up ". "-"x22 ."\n";
+  $nml.="#". "-"x22 ." Model set-up ". "-"x22 ."\n";
   %h=('testv'=>"$testv",'Chem'=>"$Chem",'exp_name'=>"$exp_name",
       'outputs'=>"$outputs",'GRID'=>"$GRID",'MAKEMODE'=>"$MAKEMODE");
-  foreach my $k (sort keys %h) { $nml.=sprintf "!  %-22s = '%s',\n",$k,$h{$k}; }
+  foreach my $k (sort keys %h) {
+    $nml.=sprintf "#  %-22s = '%s',\n";
+  }
   # list of linked files in nml format for compatibility with future nml-only versions
-  $nml.="!". "-"x22 ." Linked files ". "-"x22 ."\n";
-  foreach my $k (sort keys %ifile) { $nml.=sprintf "!  %-22s = '%s',\n",$ifile{$k},$k; }
+  $nml.="#". "-"x22 ." Linked files ". "-"x22 ."\n";
+  foreach my $k (sort keys %ifile) {
+    $nml.=sprintf "#  %-22s = '%s',%s",$ifile{$k},$k,`date -r $k +"\#%F %R %Z"`;
+  }
+  $nml =~ s/(\s*\!.*|\s+$)//g;  # remove comments (!) and tailing spaces
+  $nml =~ s/\#/\!/g;            # annotations (#) as comments (!)
+  $nml =~ s/\s*\n+/\n/g;        # remove empty lines
+  $nml.="\n";                   # restore newline at the end of last namelist
   open(TMP,">config_emep.nml");
   print TMP "$nml";
   close(TMP);

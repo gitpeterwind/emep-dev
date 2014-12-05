@@ -153,6 +153,69 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+5th December 2014  Alvaro 2902
+
+Derived_ml:
+- Explicitely set unitscale, unittxt and volunit for SHL output,
+  as they are NOT supported by Units_Scale (Units_ml)
+- Allow all units supported by Group_Units to be used on group_calc.
+  Use needroa optional output on Group_Units to determine when to multiply
+  by density
+
+Units_ml:
+- Declare explicitely when a suported unit should be trated on Derived_ml
+  as PPB class (unit_map%volunit).
+- Declare explicitely when a suported unit needs to be multipied
+  by the air density to complete the unit conversion (unit_map%needroa).
+- Return unit_map%volunit and unit_map%needroa as optional output on
+  Group_Units, Group_Scale and Units_Scale subroutines/functions.
+
+ModelConstants_ml,Units_ml,Output_hourly:
+- Rename MFAC to to_number_cm3 and move it from ModelConstants_ml to Units_ml.
+- Move atwS, atwN from ModelConstants_ml to Units_ml.
+- Remove unused atwPM variable.
+
+ModelConstants_ml,PhysicalConstants_ml,
+Sites_ml,MassBudget_ml,DryDep_ml,Aqueous_n_WetDep_ml,Setup_1d_ml,
+ZD_OZONE/My_Outputs_ml:
+- ATWAIR was defined twice, on ModelConstants_ml and PhysicalConstants_ml.
+  Remove ATWAIR definition on ModelConstants_ml, and
+  use PhysicalConstants_ml definition instead.
+
+ModelConstants_ml,Makefile,mk.OpenSource:
+- Attach model version (eg rv4.6g) and svn revision (eg 2902) to model string
+  in ModelConstants_ml.
+- Variable VERSION on ModelConstants_ml is set/calculated in:
+  - Makefile (eg "rv4.6g(2902)") and passed down to
+    ModelConstants_ml by cpp/define flag -D'VERSION="$(VERSION)"';
+  - mk.OpenSource and replaced in ModelConstants_ml by sed command.
+
+run.pl,config_FORECAST.nml,config_EMEPSTD.nml,config_BM-EECCA.nml
+- File-date annotations (#fileKey) annotations in in config_$exp_name.nml
+  are replaced for comment ile date containing in config_emep.nml
+- Add file date comments to config_emep.nml for each linked file
+
+Emergency_ml:
+- Fix typo on "EE-D" keyword processing
+
+ForestFire_ml:
+- Fix persistence calculation. For example,
+  persistence=1 should mean "since today 00:UTC" and
+  persistence=2 should mean "since 2 days ago 00:UTC".
+  Previous code tool one day too many.
+
+MassBudget_ml:
+- replace INCLUDE 'mpif.h' by use mpi statement.
+
+DryDep_ml
+- remove unused INCLUDE 'mpif.h' statement.
+
+Output_hourly,PhysicalConstants_ml,MassBudget_ml,DryDep_ml,
+Aqueous_n_WetDep_ml,Setup_1d_ml:
+- Remove Copyright notice as it will be added by mk.OpenSource.
+- Minor formatting changes.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 4th December 2014  Dave   2901
 
 utils/Rd_emepcdf modified to extra data from nearest cell. Use -s option.
@@ -255,7 +318,7 @@ Derived_ml,ZD_OZONE/My_Derived_ml:
   with the same temporal resolution.
   From 2888 "2D" and "3D" could be requested with different temporal resolutions,
   as long "2D" was requested before "3D".
-  Now "2D" and "3D" need separate requestes, one each.
+  Now "2D" and "3D" need individual requests, one each.
 - Add warning messages (PrintLog) for Unsupported (Not coded yet) outclass/outtyp/outdim
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
