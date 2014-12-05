@@ -527,7 +527,7 @@ integer, public, parameter ::  &
   IOU_HOUR=6, IOU_HOUR_MEAN=7                   & ! Hourly  output
   ,IOU_MAX_MAX=7                                  ! Max values for of IOU (for array declarations)
 
-character(len=*), public, parameter :: model="EMEP_MSC-W "//VERSION
+character(len=*), public, parameter :: model="EMEP_MSC-W "!! //VERSION
 
 !----------------------------------------------------------------------------
 contains

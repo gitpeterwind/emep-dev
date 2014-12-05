@@ -21,11 +21,12 @@ use Par_ml,             only: &
   lj0,lj1   ! First/Last local index in latitude  when outer boundary is excluded
 use PhysicalConstants_ml,only: GRAV,ATWAIR! Mol. weight of air(Jones,1992)
 use Setup_1dfields_ml,  only: amk, rcemis ! Air concentrations , emissions
-use mpi,                only: MPI_COMM_WORLD, MPI_ALLREDUCE, MPI_IN_PLACE,&
-                              MPI_DOUBLE_PRECISION, MPI_SUM, MPI_MIN, MPI_MAX
+!DS use mpi,                only: MPI_COMM_WORLD, MPI_ALLREDUCE, MPI_IN_PLACE,&
+!DS                               MPI_DOUBLE_PRECISION, MPI_SUM, MPI_MIN, MPI_MAX
 implicit none
 private
-INTEGER :: INFO
+INCLUDE 'mpif.h'
+INTEGER STATUS(MPI_STATUS_SIZE),INFO
 
 ! Some work arrays used in Aqueous_ml and (in future) DryDry:
 ! Use ADV index, as Dry/WetDep makes no seance for SHL.

@@ -17,9 +17,10 @@
 #   lpmeme=memory to reserve per processor (max 16GB per node)
 ##PBS -lnodes=64 -lpmem=1000MB
 ##PBS -lnodes=16 -lpmem=1000MB
-#PBS -lnodes=80
+##PBS -lnodes=80
+#PBS -lnodes=4:ppn=20
 # Wall time limit of run
-#PBS -lwalltime=05:20:00
+#PBS -lwalltime=00:20:00
 # Make results readable for others:
 #PBS -W umask=0022
 # Account for billing
@@ -117,7 +118,7 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
-($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2896"   ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA","EMEP");
+($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2904"   ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA","EMEP");
 
 my %BENCHMARK;
 # OpenSource 2008
@@ -207,7 +208,7 @@ if ($CWF) {
 #  --- Here, the main changeable parameters are given. The variables
 #      are explained below, and derived variables set later.-
 
-my $year = "2006";
+my $year = "2012";
    $year = substr($CWFBASE,0,4) if $CWF;
    $year = $BENCHMARK{"year"} if %BENCHMARK;
 ( my $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
@@ -487,7 +488,7 @@ $month_days[2] += leap_year($year);
 my $mm1 ="06";      # first month, use 2-digits!
 my $mm2 ="06";      # last month, use 2-digits!
 my $dd1 =  1;       # Start day, usually 1
-my $dd2 =  0;       # End day (can be too large; will be limited to max number of days in the month)
+my $dd2 =  1;       # End day (can be too large; will be limited to max number of days in the month)
                     # put dd2=0 for 3 hours run/test.
 # Allways runn full year on benchmark mode
 ($mm1,$mm2,$dd1,$dd2)=("01","12",1,31) if (%BENCHMARK);
@@ -600,7 +601,8 @@ foreach my $scenflag ( @runs ) {
   print "STARTING RUN $scenario \n";
 
   my $runlabel1 = "$scenario";   # NO SPACES! SHORT name (used in CDF names)
-  my $runlabel2 = "$testv\_$Chem\_$scenario\_$year\_Trend$iyr_trend";   # NO SPACES! LONG (written into CDF files)
+  my $svn = qx(svnversion -n);
+  my $runlabel2 = "$testv\_$Chem\_svn$svn\_$scenario\_$year\_Trend$iyr_trend";   # NO SPACES! LONG (written into CDF files)
 
   my $RESDIR = "$WORKDIR/$scenario";
      $RESDIR = "$WORKDIR/$scenario.$iyr_trend" if ($GRID eq "RCA");
