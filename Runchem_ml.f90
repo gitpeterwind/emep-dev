@@ -7,7 +7,7 @@
 
 module RunChem_ml
 
-  use My_Aerosols_ml,   only: My_MARS, My_EQSAM, &
+  use AerosolCalls,     only: My_MARS, My_EQSAM, &
                               Aero_water, Aero_water_MARS   !DUST -> USE_DUST
   use My_Timing_ml,     only: Code_timer, Add_2timing,  &
                               tim_before, tim_after

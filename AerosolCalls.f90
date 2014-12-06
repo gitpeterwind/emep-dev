@@ -1,47 +1,12 @@
-! <My_Aerosols_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
-!          Chemical transport Model>
-!*****************************************************************************! 
-!* 
-!*  Copyright (C) 2007-2011 met.no
-!* 
-!*  Contact information:
-!*  Norwegian Meteorological Institute
-!*  Box 43 Blindern
-!*  0313 OSLO
-!*  NORWAY
-!*  email: emep.mscw@met.no
-!*  http://www.emep.int
-!*  
-!*    This program is free software: you can redistribute it and/or modify
-!*    it under the terms of the GNU General Public License as published by
-!*    the Free Software Foundation, either version 3 of the License, or
-!*    (at your option) any later version.
-!* 
-!*    This program is distributed in the hope that it will be useful,
-!*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-!*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!*    GNU General Public License for more details.
-!* 
-!*    You should have received a copy of the GNU General Public License
-!*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************! 
-!_____________________________________________________________________________
-! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
+!>  AerosolCalls.f90 - A component of the EMEP MSC-W Chemical transport Model
+!!****************************************************************************! 
+!!
+!> Options for aerosol-gas equilibrium partitioning:
+!! * EQUILIB_EMEP - old EMEP scheme
+!! * EQUILIB_MARS - run MARS equilibrium model
+!! * EQUILIB_EQSAM - run EQSAM equilibrium model
 
-                           module My_Aerosols_ml
-
-! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
-! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-!----------------------------------------------------------------------
-! Allows to select aerosol types for the model run:
-! 1. AERO_DYNAMICS - for running UNI-AERO (presently not included)
-! Options for aeroso-gas equilibrium partitioning:
-! 2. EQUILIB_EMEP - old EMEP scheme
-! 3. EQUILIB_MARS - run MARS equilibrium model
-! 4. EQUILIB_EQSAM - run EQSAM equilibrium model
-!----------------------------------------------------------------------
+module AerosolCalls
 
  use CheckStop_ml,         only :  StopAll, CheckStop
  use ChemSpecs,            only :  SO4, NH3, HNO3, NO3_f, NH4_f, &
@@ -53,11 +18,12 @@
  use ModelConstants_ml,    only :  KMAX_MID, KCHEMTOP, DEBUG
  use PhysicalConstants_ml, only :  AVOG
  use Setup_1dfields_ml,    only :  xn_2d, temp, rh, pp
-
-
  implicit none
+ private
 
-   !/-- public           !!  true if wanted
+ !/-- public           !!  true if wanted
+
+ public :: My_MARS, My_EQSAM, Aero_Water, Aero_Water_MARS
                     
 !    logical, public, parameter :: AERO_DYNAMICS     = .false.  &  
 !                                , EQUILIB_EMEP      = .false.  & !old Ammonium stuff
@@ -374,7 +340,7 @@ contains
  end subroutine  Aero_water_MARS
 !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
- end module My_Aerosols_ml
+end module AerosolCalls
 
 
 

@@ -101,20 +101,20 @@ touchdepend:
 # My_* files pre-requisites
 EMEP EMEP2010 EMEP2011 MACC MACC-EVA MACC-EVA2010 MACC-EVA2011 eEMEP2010: \
 	  ./ZD_OZONE/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
-	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_VBS/My_SOA_ml.f90 \
+	  ./ZD_VBS/My_SOA_ml.f90 \
 	  ./ZD_3DVar/My_3DVar_ml.f90 ./ZD_Pollen/My_Pollen_ml.f90 \
 	  ./ZD_EXTRA/My_ESX_ml.f90
 # no SOA:
 EmChem09 EmChem09-ESX CRI_v2_R5 eEMEP eEMEP2013: \
 	  ./ZD_OZONE/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
-	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_OZONE/My_SOA_ml.f90 \
+	  ./ZD_OZONE/My_SOA_ml.f90 \
 	  ./ZD_3DVar/My_3DVar_ml.f90 ./ZD_Pollen/My_Pollen_ml.f90 \
 	  ./ZD_EXTRA/My_ESX_ml.f90
 
 # For SR we use the small My_Derived
 SR-EMEP SR-EMEP2010 SR-EMEP2011 SR-MACC: \
 	  ./ZD_SR/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
-	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_VBS/My_SOA_ml.f90 \
+	  ./ZD_VBS/My_SOA_ml.f90 \
 	  ./ZD_3DVar/My_3DVar_ml.f90 ./ZD_Pollen/My_Pollen_ml.f90 \
 	  ./ZD_EXTRA/My_ESX_ml.f90
 
