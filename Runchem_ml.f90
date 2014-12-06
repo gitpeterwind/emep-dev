@@ -1,46 +1,13 @@
-! <Runchem_ml.f90 - A component of the EMEP MSC-W Chemical transport Model>
-!*****************************************************************************! 
-!* 
-!*  Copyright (C) 2007-2013 met.no
-!* 
-!*  Contact information:
-!*  Norwegian Meteorological Institute
-!*  Box 43 Blindern
-!*  0313 OSLO
-!*  NORWAY
-!*  email: emep.mscw@met.no
-!*  http://www.emep.int
-!*  
-!*    This program is free software: you can redistribute it and/or modify
-!*    it under the terms of the GNU General Public License as published by
-!*    the Free Software Foundation, either version 3 of the License, or
-!*    (at your option) any later version.
-!* 
-!*    This program is distributed in the hope that it will be useful,
-!*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-!*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!*    GNU General Public License for more details.
-!* 
-!*    You should have received a copy of the GNU General Public License
-!*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************! 
-!_____________________________________________________________________________
-! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
+!> Runchem_ml.f90 - A component of the EMEP MSC-W Chemical transport Model
+!!---------------------------------------------------------------------
+!! Calls for routines calculating chemical and physical processes: 
+!! irreversible and equilibrium chemistry, dry and wet deposition,
+!! sea salt production, particle water etc.
+!!---------------------------------------------------------------------
 
 module RunChem_ml
 
-! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
-! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-!----------------------------------------------------------------------
-! Calls for routines calculating chemical and physical processes: 
-! irreversible and equilibrium chemistry, dry and wet deposition,
-! sea salt production, particle water etc.
-!    
-!----------------------------------------------------------------------
-
-  use My_Aerosols_ml,   only: My_MARS, My_EQSAM, AERO_DYNAMICS,      &
-                              EQUILIB_EMEP, EQUILIB_MARS, EQUILIB_EQSAM,  &
+  use My_Aerosols_ml,   only: My_MARS, My_EQSAM, &
                               Aero_water, Aero_water_MARS   !DUST -> USE_DUST
   use My_Timing_ml,     only: Code_timer, Add_2timing,  &
                               tim_before, tim_after
@@ -62,7 +29,7 @@ module RunChem_ml
   use MassBudget_ml,    only: emis_massbudget_1d
   use ModelConstants_ml,only: USE_DUST, USE_SEASALT, USE_AOD, USE_POLLEN, & 
                               KMAX_MID, nprint, END_OF_EMEPDAY, nstep,  &
-                              USES, & ! need USES%EMISSTACKS 
+                              AERO,  USES, & ! need USES%EMISSTACKS 
                               USE_FASTJ, &
                               DEBUG_EMISSTACKS, & ! MKPS
                               DebugCell, DEBUG    ! RUNCHEM
@@ -196,15 +163,15 @@ subroutine runchem()
       !  Alternating Dry Deposition and Equilibrium chemistry
       !  Check that one and only one eq is chosen
       if(mod(nstep,2)/=0) then 
-        if(EQUILIB_EMEP ) call ammonium() 
-        if(EQUILIB_MARS ) call My_MARS(debug_flag)
-        if(EQUILIB_EQSAM) call My_EQSAM(debug_flag) 
+        if(AERO%EQUILIB=='EMEP' ) call ammonium() 
+        if(AERO%EQUILIB=='MARS' ) call My_MARS(debug_flag)
+        if(AERO%EQUILIB=='EQSAM') call My_EQSAM(debug_flag) 
         call DryDep(i,j)
       else !do drydep first, then eq
         call DryDep(i,j)
-        if(EQUILIB_EMEP ) call ammonium() 
-        if(EQUILIB_MARS ) call My_MARS(debug_flag)
-        if(EQUILIB_EQSAM) call My_EQSAM(debug_flag) 
+        if(AERO%EQUILIB=='EMEP' ) call ammonium() 
+        if(AERO%EQUILIB=='MARS' ) call My_MARS(debug_flag)
+        if(AERO%EQUILIB=='EQSAM') call My_EQSAM(debug_flag) 
       endif
       !????????????????????????????????????????????????????
 

@@ -46,31 +46,27 @@
  use CheckStop_ml,         only :  StopAll, CheckStop
  use ChemSpecs,            only :  SO4, NH3, HNO3, NO3_f, NH4_f, &
                                      NSPEC_SHL, species
-!CMR  use ChemSpecs_tot_ml,     only :  SO4, NH3, HNO3, NO3_f, NH4_f
-!CMR  use ChemSpecs_shl_ml,     only :  NSPEC_SHL
-!CMR  use ChemChemicals_ml,     only :  species
  use Chemfields_ml,        only :  PM25_water, PM25_water_rh50,  & !PMwater 
                                    cfac
  use EQSAM_v03d_ml,        only :  eqsam_v03d
  use MARS_ml,              only :  rpmares
  use ModelConstants_ml,    only :  KMAX_MID, KCHEMTOP, DEBUG
  use PhysicalConstants_ml, only :  AVOG
- use Setup_1dfields_ml,    only :  xn_2d,       & ! SIA concentration 
-                                   temp, rh, pp
+ use Setup_1dfields_ml,    only :  xn_2d, temp, rh, pp
 
 
  implicit none
 
    !/-- public           !!  true if wanted
                     
-    logical, public, parameter :: AERO_DYNAMICS     = .false.  &  
-                                , EQUILIB_EMEP      = .false.  & !old Ammonium stuff
-                                , EQUILIB_MARS      = .true.  & !MARS
-                                , EQUILIB_EQSAM     = .false.     !EQSAM
+!    logical, public, parameter :: AERO_DYNAMICS     = .false.  &  
+!                                , EQUILIB_EMEP      = .false.  & !old Ammonium stuff
+!                                , EQUILIB_MARS      = .true.  & !MARS
+!                                , EQUILIB_EQSAM     = .false.     !EQSAM
                                 
- !.. Number of aerosol sizes (1-fine, 2-coarse, 3-'giant' for sea salt )
-    integer, public, parameter :: NSIZE = 5
-           !   FINE_PM = 1, COAR_NO3 = 2, COAR_SS = 3, COAR DUST = 4,pollen = 5    
+!.. Number of aerosol sizes (1-fine, 2-coarse, 3-'giant' for sea salt )
+!    integer, public, parameter :: NSIZE = 5
+!           !   FINE_PM = 1, COAR_NO3 = 2, COAR_SS = 3, COAR DUST = 4,pollen = 5    
 
 
 contains

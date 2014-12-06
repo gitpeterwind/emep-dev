@@ -1,31 +1,5 @@
-! <EmisGet_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
-!          Chemical transport Model>
+!> EmisGet_ml.f90 - A component of the EMEP MSC-W Chemical transport Model
 !*****************************************************************************! 
-!* 
-!*  Copyright (C) 2007-2011 met.no
-!* 
-!*  Contact information:
-!*  Norwegian Meteorological Institute
-!*  Box 43 Blindern
-!*  0313 OSLO
-!*  NORWAY
-!*  email: emep.mscw@met.no
-!*  http://www.emep.int
-!*  
-!*    This program is free software: you can redistribute it and/or modify
-!*    it under the terms of the GNU General Public License as published by
-!*    the Free Software Foundation, either version 3 of the License, or
-!*    (at your option) any later version.
-!* 
-!*    This program is distributed in the hope that it will be useful,
-!*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-!*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!*    GNU General Public License for more details.
-!* 
-!*    You should have received a copy of the GNU General Public License
-!*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************! 
-! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
 
                      module EmisGet_ml
@@ -35,9 +9,6 @@
 
 
   use CheckStop_ml,      only: CheckStop, StopAll
-!CMR  use ChemSpecs_adv_ml,  only: NSPEC_ADV ! max possible number in split 
-!CMR  use ChemSpecs_tot_ml,  only: NSPEC_TOT 
-!CMR  use ChemChemicals_ml,  only: species
   use ChemSpecs,         only: NSPEC_ADV, NSPEC_TOT, species 
   use Country_ml,        only: NLAND, IC_NAT, IC_VUL, Country, &
                                ! NMR-NH3 specific variables (hb NH3Emis)
@@ -182,7 +153,6 @@
 !---------------------------------------------------------------
 ! find emis file and  main properties
 
- !HUNT call check(nf90_open(path = trim(fName), mode = nf90_nowrite, ncid = ncFileID))
  status=nf90_open(path = trim(fName), mode = nf90_nowrite, ncid = ncFileID)
 if( index(fname, "Ship")>0 ) print *, me, " CDFHUNTTOP ", trim(fname)
  if( status /= nf90_noerr ) then
@@ -367,20 +337,6 @@ if( index(fname, "Ship")>0 ) print *, me, " CDFHUNTTOP ", trim(fname)
   integer, save :: ncmaxfound = 0          ! Max no. countries found in grid
   integer, save :: flat_ncmaxfound = 0     ! Max no. countries found in grid
                                            ! including flat emissions
-
-
-   !>============================
-!rv4_2.1 
-!rv4_2.1    if ( my_first_call ) then
-!rv4_2.1         sumemis(:,:) =  0.0       ! initialize sums
-!rv4_2.1         ios = 0
-!rv4_2.1         call femis()              ! emission factors (femis.dat file)
-!rv4_2.1         if ( ios /= 0 )return
-!rv4_2.1         my_first_call = .false.
-!rv4_2.1    endif
-  !>============================
-
-
       globemis   (:,:,:,:) = 0.0
       globemis_flat(:,:,:) = 0.0
 

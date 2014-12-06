@@ -30,7 +30,7 @@ module DryDep_ml
 !  The EMEP MSC-W chemical transport model -- technical description, 
 !  Atmos. Chem. Phys., 12, 7825--7865, 2012.
   
-use My_Aerosols_ml,   only: NSIZE  
+!DS use My_Aerosols_ml,   only: NSIZE  
 use Aero_Vds_ml,      only: SettlingVelocity, GPF_Vds300, Wesely300
 use CheckStop_ml,     only: CheckStop
 use Chemfields_ml ,   only: cfac, so2nh3_24hr,Grid_snow 
@@ -55,7 +55,7 @@ use MicroMet_ml,      only: AerRes, Wind_at_h
 use ModelConstants_ml,only: dt_advec,PT,KMAX_MID, KMAX_BND ,&
                             NPROC, &
                             DEBUG_DRYDEP, DEBUG_ECOSYSTEMS, DEBUG_VDS,&
-                            USES, &
+                            USES, AERO, &
                             USE_SOILNOX, &
                             MasterProc, &
                             DEBUG, & ! for DEBUG%AOT
@@ -245,7 +245,7 @@ contains
                      ! z = height of layer)
 
     integer :: nae
-    real, dimension(NSIZE)::  Vs
+    !DS real, dimension(NSIZE)::  Vs
 
 
      real, save :: inv_gridarea  ! inverse of grid area, m2
@@ -402,14 +402,17 @@ integer :: nglob
 
 ! - can set settling velcoty here since not landuse dependent
 
-    Vs = SettlingVelocity( Grid%t2, Grid%rho_ref )
+    do nae = 1, AERO%NSIZE
+      AERO%Vs(nae) = SettlingVelocity( Grid%t2, Grid%rho_ref, &
+                       AERO%sigma(nae), AERO%diam(nae), AERO%PMdens(nae) )
+    end do
 
   ! Restrict settling velocity to 2cm/s. Seems
   ! very high otherwise,  e.g. see Fig. 4, Petroff et al., 2008 (Part I), where
   ! observed Vg for forests is usually < 2cm/s.
 
     if ( DEBUG_DRYDEP .and. debug_flag ) then
-         call datewrite("DRYDEP VS",NSIZE,(/ Grid%t2, Grid%rho_ref, Vs /) )
+         call datewrite("DRYDEP VS",AERO%NSIZE,(/ Grid%t2, Grid%rho_ref, AERO%Vs /) )
    !      if( maxval(Vs) > 0.02 ) write(*,*) "DRYDEP LIM!"
     end if
 
@@ -510,8 +513,8 @@ integer :: nglob
             ! Use non-electrical-analogy version of Venkatram+Pleim (AE,1999)
             ! ACP70
 
-              Vg_ref(n) =  Vs(nae)/ ( 1.0 - exp( -( L%Ra_ref + 1.0/Vds)* Vs(nae)))
-              Vg_3m (n) =  Vs(nae)/ ( 1.0 - exp( -( L%Ra_3m  + 1.0/Vds)* Vs(nae)))
+              Vg_ref(n) =  AERO%Vs(nae)/ ( 1.0 - exp( -( L%Ra_ref + 1.0/Vds)* AERO%Vs(nae)))
+              Vg_3m (n) =  AERO%Vs(nae)/ ( 1.0 - exp( -( L%Ra_3m  + 1.0/Vds)* AERO%Vs(nae)))
 
 
         if ( DEBUG_VDS ) then
@@ -519,7 +522,7 @@ integer :: nglob
               write(*,"(a,5i3,2i4,2f7.3,f8.2,20f7.2)") "AEROCHECK", imm, idd, ihh, &
               n, iL, i_fdom(i), j_fdom(j), L%ustar,  L%invL, pzpbl(i,j), &
                 Grid%ustar, Grid%Hd,  100.0*Vds, &
-              100.0*Vs(nae), 100.0*Vg_ref(n),  100.0*Vg_3m (n) &
+              100.0*AERO%Vs(nae), 100.0*Vg_ref(n),  100.0*Vg_3m (n) &
              , Grid%t2, Grid%rho_ref 
                write(*,"(a,2i4,3es10.3)") "VDS CHECK ",n, nae, Vds, Vg_ref(n)
             

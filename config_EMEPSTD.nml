@@ -35,6 +35,8 @@
   INERIS_SNAP1          = F,          ! Used for TFMM runs
   INERIS_SNAP2          = F,          ! Used for TFMM runs
 !------------------------------
+!  AERO%EQUILIB          = 'EMEP ',     ! MARS, EQSAM, or EMEP
+!------------------------------
   EMIS_SOURCE           = 'emislist', ! 'emislist' or 'CdfFractions'
   EMIS_TEST             = 'None',     ! 'None' or 'CdfSnap' 
 !------------------------------

@@ -70,6 +70,7 @@ type(emep_useconfig), public, save :: USES
 type, public :: emep_debug
   logical :: &
      AOT             = .false. &
+    ,AEROSOL         = .false. & ! ...needed for intended debugs are to work
     ,AQUEOUS         = .false. &
     ,BCS             = .false. & ! BoundaryConditions
     ,BIO             = .false. & !< Biogenic emissions
@@ -391,7 +392,6 @@ logical, public, save ::  DebugCell  = .false.
   ,DEBUG_OUT_HOUR       = .false. & ! Debug Output_hourly.f90
   ,DEBUG_POLLEN         = .false.  &
 !MV  ,DEBUG_RUNCHEM        = .false. & ! DEBUG_RUNCHEM is SPECIAL
-    ,DEBUG_AEROSOL      = .false. & ! ...needed for intended debugs are to work
     ,DEBUG_DUST           = .false. & ! Skips fast chemistry to save some CPU
     ,DEBUG_ROADDUST     = .false. &
     ,DEBUG_SEASALT      = .false. &
@@ -445,6 +445,22 @@ integer, public, parameter ::  &
 , KCLOUDTOP    = 8     &    ! limit of clouds (for MADE dj ??)
 , KUPPER       = 6          ! limit of clouds (for wet dep.)
 
+!Namelist controlled: aerosols
+!Number of aerosol sizes (1-fine, 2-coarse, 3-'giant' for sea salt )
+! FINE_PM = 1, COAR_NO3 = 2, COAR_SS = 3, COAR DUST = 4,pollen = 5    
+
+type, public :: aero_type
+  character(len=5) :: EQUILIB  = 'MARS ' !aerosol themodynamics
+  logical          :: DYNAMICS = .false.
+  integer          :: NSIZE    = 5
+  real, dimension(5) :: &
+     diam = (/ 0.33e-6, 3.0e-6, 4.8e-6, 5.0e-6 ,22e-6 /) &
+    ,sigma  = (/ 1.8, 2.0, 2.0, 2.2 ,2.0/)               &
+    ,PMdens = (/ 1600.0, 2200.0, 2200.0, 2600.0, 800.0/) & ! kg/m3
+    ,Vs = 0.0   ! Settling velocity (m/s). Easiest to define here
+
+end type aero_type
+type(aero_type), public, save :: AERO = aero_type()
 
 !Namelist controlled: which veg do we want flux-outputs for
 character(len=15), public, save, dimension(20) :: FLUX_VEGS=""
@@ -540,6 +556,7 @@ subroutine Config_ModelConstants(iolog)
     NAMELIST /ModelConstants_config/ &
       EXP_NAME &  ! e.g. EMEPSTD, FORECAST, TFMM, TodayTest, ....
      ,USES   & ! just testname so far
+     ,AERO   & ! Aerosol settings
      ,DEBUG  & !
      ,MY_OUTPUTS  &  ! e.g. EMEPSTD, FORECAST, TFMM 
      ,USE_SOILWATER, USE_DEGREEDAY_FACTORS &

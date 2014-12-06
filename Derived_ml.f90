@@ -21,15 +21,13 @@ use My_Derived_ml, only : &
             wanted_deriv2d, wanted_deriv3d  &! names of wanted derived fields
            ,Init_My_Deriv, My_DerivFunc
 use My_Derived_ml,  only : &
-!      COLUMN_MOLEC_CM2, &
-!      COLUMN_LEVELS   , &
       OutputFields,  &
       nOutputFields,  &
       nOutputWdep,  &
       WDEP_WANTED, &
       D3_OTHER
 
-use Aero_Vds_ml,      only: diam  !aerosol MMD (um)
+!DS use Aero_Vds_ml,      only: diam  !aerosol MMD (um)
 use AOTx_ml,          only: Calc_GridAOTx
 use Biogenics_ml,     only: EmisNat, NEMIS_BioNat, EMIS_BioNat
 use CheckStop_ml,     only: CheckStop
@@ -61,6 +59,7 @@ use ModelConstants_ml, only: &
   ,DEBUG        & ! gives DEBUG%AOT
   ,MasterProc &
   ,SOURCE_RECEPTOR &
+  ,AERO         & ! for diam -  aerosol MMD (um)
   ,USE_EMERGENCY,DEBUG_EMERGENCY &
   ,PT           &
   ,FORECAST     & ! only dayly (and hourly) output on FORECAST mode
@@ -215,11 +214,12 @@ private
     call Define_Derived()
     call Setups()  ! just for VOC now
 
-    select case(nint(diam(2)*1e7))
+    select case(nint(AERO%diam(2)*1e7))
     case(25);fracPM25=0.37
     case(30);fracPM25=0.27
     endselect
-    if(debugMaster)print *,  ' CFAC INIT PMFRACTION ', fracPM25, diam(2), nint(1.0e7*diam(2))
+    if(debugMaster) write(*,"(a,2g12.3,i4)") ' CFAC INIT PMFRACTION ', &
+        fracPM25, AERO%diam(2), nint(1.0e7*AERO%diam(2))
     call CheckStop( fracPM25 < 0.01, "NEED TO SET FRACPM25")
 
   end subroutine Init_Derived

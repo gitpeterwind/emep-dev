@@ -152,6 +152,34 @@ info on unused variables, etc.
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6th December 2014 Dave,  2905
+
+AERO% created as namelist variable, contains NSIZE, EQUILIB, diam, etc., plus Vs
+(enables faster switch from MARS to othe schemes.)
+
+AERO Changes in:
+
+ - Aero_Vds_ml - SettlingVelocity now elemental
+ - Derived_ml
+ - DryDep_ml
+ - ModelConstants_ml
+ - RunChem_ml
+
+Plus tidy-ups in:
+
+ - EmisGet_ml
+ - NetCDF_ml - more use of MasterProc
+
+Extra print ut
+
+ - GridValues - some prints to figure out south pole stuff (unfinished)
+
+Corrected text in
+
+utils/Rd_emepcdf.90
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 5th December 2014 Dave,  2904
 
@@ -197,102 +225,6 @@ ModelConstants_ml,Units_ml,Output_hourly:
 ModelConstants_ml,PhysicalConstants_ml,
 Sites_ml,MassBudget_ml,DryDep_ml,Aqueous_n_WetDep_ml,Setup_1d_ml,
 ZD_OZONE/My_Outputs_ml:
-- ATWAIR was defined twice, on ModelConstants_ml and PhysicalConstants_ml.
-  Remove ATWAIR definition on ModelConstants_ml, and
-  use PhysicalConstants_ml definition instead.
-
-ModelConstants_ml,Makefile,mk.OpenSource:
-- Attach model version (eg rv4.6g) and svn revision (eg 2902) to model string
-  in ModelConstants_ml.
-- Variable VERSION on ModelConstants_ml is set/calculated in:
-  - Makefile (eg "rv4.6g(2902)") and passed down to
-    ModelConstants_ml by cpp/define flag -D'VERSION="$(VERSION)"';
-  - mk.OpenSource and replaced in ModelConstants_ml by sed command.
-
-run.pl,config_FORECAST.nml,config_EMEPSTD.nml,config_BM-EECCA.nml
-- File-date annotations (#fileKey) annotations in in config_$exp_name.nml
-  are replaced for comment ile date containing in config_emep.nml
-- Add file date comments to config_emep.nml for each linked file
-
-Emergency_ml:
-- Fix typo on "EE-D" keyword processing
-
-ForestFire_ml:
-- Fix persistence calculation. For example,
-  persistence=1 should mean "since today 00:UTC" and
-  persistence=2 should mean "since 2 days ago 00:UTC".
-  Previous code tool one day too many.
-
-MassBudget_ml:
-- replace INCLUDE 'mpif.h' by use mpi statement.
-
-DryDep_ml
-- remove unused INCLUDE 'mpif.h' statement.
-
-Output_hourly,PhysicalConstants_ml,MassBudget_ml,DryDep_ml,
-Aqueous_n_WetDep_ml,Setup_1d_ml:
-- Remove Copyright notice as it will be added by mk.OpenSource.
-- Minor formatting changes.
-
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-4th December 2014  Dave   2901
-
-utils/Rd_emepcdf modified to extra data from nearest cell. Use -s option.
-
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-1st December 2014  Peter  2900
-
-New routine is now tested and developed: GetCDF_modelgrid
-It read a NetCDF file which has same projection and resoltution as model grid.
-
-You can still shift the origin. This can be used for instance when files from
-Nest_ml (MODE=1) are written, since they do not include the outer frame. 
-In this case use "i_start=2,j_start=2".
-
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-1st December 2014  Peter, Dave  2899
-
-small cleanups
-Emissions_ml: DEBUG=yes error when using monthly emissions.
-Output_hourly: surf_corrected initialized to true. 
-ZD_OZONE/My_Outputs_ml:   case("3DPROFILES") SELECT_LEVELS_HOURLY = .true. 
-NetCDF_ml: new routine for reading in without interpolating if the grid is identical to the met grid (not tested yet!)
-Met_ml: "warning" for sdot -> etadot
-ModelConstants_ml.f90, config*nml: removed "IS_GLOBAL" (was not used anymore)
-
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-27th November 2014  Dave  2896
-
-Interim commit, which enables LPJ-GUESS LAI variation for global landcover
-
-config_EMEPSTD.nml
-
-      - added USES%PFT_MAPS, DEBUG%PFT_MAPS, DEBUG%BIO
-      - added need_poll = F  in Fire_config, to avoid ISOP problems with eg 2012
-
-
-AOTnPOD_ml - removed WheatGrowingSeason (not used)
-
-Biogenics_ml - uses DEBUG%BIO and some clean-up
-
-ModelConstants_ml
-
-       - added USES%PFT_MAPS, DEBUG%PFT_MAPS, DEBUG%BIO
-       - some extra comments
-       - added PFT_MAPPINGS, but not used yet. Might change in next iteration
-
-LandPFT_ml - re-enable functionality for LAI changes
-
-Landuse_ml - make use of monthly PFT_MAPS if requested
-           - removed WheatGrowingSeason (not used)
-           - removed commented out USELC lines (eg Land_codes(1) = 'CF' etc)
-
-OwnDataTypes - removed header lines
-
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-25th November 2014  Peter 2895
-
-hyai(21) and hybi(21) where not set in the netcdf output in some cases.
 (got random values)
 NetCDF_ml.f90
 
@@ -13110,221 +13042,6 @@ In other routines, most changes are to "use Derived" instead of
 BUG-FIX - c_hveg O3 calculation improved in DryDep_ml
 
 BUG-FIX -  grun.pl improved for usage of mkp.pmadd
-
-TSO4 removed from Derived list. This leaves compnr 620 for D2_SO4
-
-FIX: landuse.dec2003 used instead of landuse.nov2003 - solves "line"
-problem at ixx153
-
-
-xxxxxxxxxxxxxxxxxx Dave,     19/12/2003, rv1_9_15 xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-DepVariables_ml   ... BEECH added
-
-My_DryDep_ml  - to get FST for wheat, Beech (D2_FSTWH00, etc.)
-
-My_Outputs_ml - NLEVELS_SONDE added - gives number of vertical levels for
-                which sonde data are output.
-
-                Also, Some text to comment in/out for MERLIN cities
-                IMPORTANT - COMMENT OUT THE CORRECT BIT!
-                (default should be non-merlin)
-
-Sites_ml      - make uses of NLEVELS_SONDE.
-
-Rsurface_ml: g_temp function changed.
-
-UK_ml   - MM_gfac1.dat not lde_gfac1.
-
-grun.pl - MM_gfac1.dat not lde_gfac1, and $MERLIN_CITIES option
-
-
-xxxxxxxxxxxxxxxxxx Dave,     18/12/2003, rv1_9_14 xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-grun.pl changed - to add Afican emissions and PM emissions where needed
-
-
-xxxxxxxxxxxxxxxxxx Peter     16/12/2003, rv1_9_13 xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-NB: Default is no binary (felt) output!
-
-My_Outputs_ml: define Hourly_ASCIIx.false. and out_binaryx.false. in order
-	       		to have only NetCDF output.
-Output_hourly: ASCII Hourly files written only if Hourly_ASCIIxtrue.
-	       netCDFName can be 120 characters
-Output_binary: binary output only if out_binaryxtrue
-
-NetCDF_ml:do not attepmt to write or create files if dimensions are <x0
-	  do not write the _3D suffix in variable names
-          use FREQ_HOURLY to find middle of hourly period
-
-Unimod.f90 : Hourly netCDFfile not initiated here.
-
-grun.pl : removed double definition of femis.dat
-	  create a file RunLog.${runlabel1}.out
-
-xxxxxxxxxxxxxxxxxx Dave     13/12/2003, rv1_9_12 xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-Bug-fix. Submet_ml:
-Svetlana found negative RH. Vapour pressure e now restricted to be
-at least 0.1% of esat, and <x esat.
-
-xxxxxxxxxxxxxxxxxx Hilde    12/12/2003, rv1_9_11 xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-NH4 and NO3 BCs added:
-My_BoundConditions
-GlobalBCs
-
-N2O5 hydrolysis improved:
-SOlver
-My_Reactions.inc
-ModelConstants
-Setup_1d_ml
-My_Chem
-
-(Changes only in ZD_OZONE for the My_ files)
-
-xxxxxxxxxxxxxxxxxxx Dave    6/12/2003, rv1_9_10 xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-Improved VOC definitions:
-Derived_ml: Setup_VOC now uses carbon numbers to define VOC, excluding
-            CO and CH4 by name.
-ZD_OZONE/My_Chem_ml: Completed carbon numbers
-
-xxxxxxxxxxxxxxxxxxx Peter  23/11/2003, rv1_9_9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-Increased max sizes for Netcdf filenames to 125
-
-xxxxxxxxxxxxxxxxxxx Peter  23/11/2003, rv1_9_8 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-Corrected Output_hourly.f90 such that runlabel1 is also written
-for hourly output.
-
-grun.pl : define runlabel also for ACID
-NetCDF: corrected small bug for dates in monthly and yearly files.
-
-xxxxxxxxxxxxxxxxxxx Dave  23/11/2003, rv1_9_7 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-Correction! Use lde_biomass instead of tf2_biomass in grun.pl, UKsetup_ml
-WHEAT used properly to set Wheat g_potx0.8 in DryDep_ml
-grun.pl changes:
-    $SR introduced - to help in setting iyr_trend and emisdir properly
-    $emisyear removed, replaced by just $emisdir.
-
-xxxxxxxxxxxxxxxxxxx Peter  20/11/2003, rv1_9_6 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-runlabel read in grun.pl used to "label" the output
-
-Small Netcdf changes: use runlabel1 in file names.
-	              CDF time is set to current time - half period
-Unimod.f90: read runlabels
-Emissions: inverted a do and a if loop
-ModelConstants: define runlabel1 and runlabel2
-grun.pl: define runlabel1 and runlabel
-
-xxxxxxxxxxxxxxxxxxx Dave  18/11/2003, rv1_9_5 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-Correction. WHEAT x 9, not 10!
-
-xxxxxxxxxxxxxxxxxxx Dave  18/11/2003, rv1_9_4 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-*** New landuse.nov2003 used *****
-
-Changes and cleanup in UK_ml.f90
-
-And....
-
-EQSAM_ml.f90 in Makefile, not EQSAM-v03d_ml.f90
-
-Output to RunLog.out added (with IO_LOG) to provide output file with emissions.
-(Maybe good for SR runs?)
-   x> Changes in Emissions_ml, Unimod
-
-
-WHEAT(x10) added to DepVariables.
-Used in UK_ml  (to provide more obvious hard-coding   ;-)
-
-
-xxxxxxxxxxxxxxxxxxx Dave  13/11/2003, rv1_9_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-EQSAM-v03d_ml.f90 moved to EQSAM_ml.f90. The former had't been "added"
-to the CVS and anyway it is better to update old file names than
-add new ones.
-
-xxxxxxxxxxxxxxxxxxx Hilde 13/11/2003, rv1_9_2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-EQSAM version v03d added to OZONE and ACID. Now used as default.
-
-Files changed:
-Setup_1d_ml.f90
-Setup_1dfields_ml.f90
-My_Aerosols_ml.f90 (both ACID and OZONE)
-Makefile
-EQSAM_v03d_ml.f90 added
-
-xxxxxxxxxxxxxxxxxxx Joffen 13/11/2003, rv1_9_1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-Country numbers for REM, etc. corrected. NLAND extended to 69 with dummy values
-for America, EU etc.
-
-xxxxxxxxxxxxxxxxxxx Hilde, 12  Nov 2003, rv1_9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-N2O5 changes added.
-
-Setup_1d_ml,
-Setup_1d_fields_ml
-Solver
-My_Reactions.inc
-
-updated to include changes of N2O5 hydrolysis rate on fine particles. Now we use
-the method of Riemer et al (2003) with a
-'base' reaction probability of 0.02 (before 0.1) and then scaled with the realtive
-mass of SO4 and NO3, SO4/(NO3+SO4). Only NO3 fine particles would led to a reaction
-probability of 0.002.
-
-xxxxxxxxxxxxxxxxxx Dave, 17  Oct 2003, rv1_8_5 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-Bug-fix:
-ZD_OZONE/My_Emis_ml: Order of QRC assigments should be same as in vocsplit files
-(Of course, I could have changed the vocsplit files, but this was easier!)
-
-xxxxxxxxxxxxxxxxxxx Peter, 17  Oct 2003, rv1_8_4 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-NetCDF_ml,Output_hourly:Allow choice of datatype
-
-xxxxxxxxxxxxxxxxxxx Peter, 14  Oct 2003, rv1_8_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-My_Outputs_ml: Defined number of vertical levels in Asc2d%nk
-
-Output_hourly: Allow hourly output in NetCDF format on a restricted
-               domain and in a new file every month.
-
-NetCDF_ml:Sizes of restricted domain can be given (horizontal and vertical).
-          Create new files for example each month in Hourly output.
-          EMEP coordinates and long lat given in output.
-
-My_Derived_ml:defined IOU_HOURx5
-
-GridValues_ml: Defined EMEP coordinate specifications (xp_EMEP etc.)
-               ij2ij: interpolate (used in nesting)
-
-xxxxxxxxxxxxxxxxxxx Dave, 25  Sep 2003, rv1_8_2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-ds rv1_8_2: Added possibility of multi-layer output. Specify
-
-    NLEVELS_HOURLY in My_Outputs_ml, and in hr_out defs use either:
-
-         ADVppbv to get surface concentrations (onyl relevant for
-                 layer kx20 of course - gives meaningless  number f
-                  or higher levels.
-   Or,
-         BCVppbv to get grid-centre concentrations (relevant for
-         all layers.
-
-Dave, 23/9/2003 - removed double definition of iland in Functions_ml
-
-xxxxxxxxxxxxxxxxxxx Peter, 23 Sep 2003, 1.8.1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-Several changes for nesting purposes and netcdf.
-	If you do only "usual" calculations: use EMEP grid
-	and H50 meteo and you will not nest or use NetCDF output etc..
-	then these changes do not affect the results.
-
-Output_binary: bug for instantaneous output. Should not divide scale by nav
-               if inst output
 
 NetCDF_ml: write NetCDF output files
 	   new definition of projection_params
