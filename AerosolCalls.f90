@@ -48,6 +48,7 @@ contains
 
  logical, intent(in) :: debug_flag 
  real, parameter ::    FLOOR = 1.0E-30         ! minimum concentration  
+ real, parameter ::    FLOOR2 = 1.0E-9         ! minimum concentration  
 
  !.. local
   real    :: so4in, no3in, nh4in, hno3in, nh3in,   &
@@ -60,12 +61,14 @@ contains
 
    do k = KCHEMTOP, KMAX_MID
   
+
 !//.... molec/cm3 -> ug/m3
-      so4in  = xn_2d(SO4,k) * species(SO4)%molwt  *coef
-      hno3in = xn_2d(HNO3,k)* species(HNO3)%molwt *coef 
-      nh3in  = xn_2d(NH3,k) * species(NH3)%molwt  *coef
-      no3in  = xn_2d(NO3_f,k) * species(NO3_f)%molwt  *coef
-      nh4in  = xn_2d(NH4_f,k) * species(NH4_f)%molwt  *coef
+!DEC2014. Use FLOOR2 = 1.0e-8 molec/cm3 for input. Too many problems
+      so4in  = max(FLOOR2, xn_2d(SO4,k)) * species(SO4)%molwt  *coef
+      hno3in = max(FLOOR2, xn_2d(HNO3,k))* species(HNO3)%molwt *coef 
+      nh3in  = max(FLOOR2, xn_2d(NH3,k)) * species(NH3)%molwt  *coef
+      no3in  = max(FLOOR2, xn_2d(NO3_f,k)) * species(NO3_f)%molwt  *coef
+      nh4in  = max(FLOOR2, xn_2d(NH4_f,k)) * species(NH4_f)%molwt  *coef
 
  !--------------------------------------------------------------------------                
       call rpmares (so4in, hno3in,no3in ,nh3in, nh4in , rh(k), temp(k),   &

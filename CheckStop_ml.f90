@@ -39,7 +39,7 @@ subroutine StopAll(errmsg)
   ! INFO is the error message from MPI
 
   if(errmsg/="ok") then
-    write(*,*) "ERROR: ", trim(errmsg)
+    write(*,*) "STOP-ALL ERROR: ", trim(errmsg)
     call MPI_ABORT(MPI_COMM_WORLD,9,INFO)
   endif
 endsubroutine StopAll

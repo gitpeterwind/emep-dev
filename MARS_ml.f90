@@ -700,7 +700,11 @@ if( DEBUG%EQUIB .and. debug_flag ) print *, "MARS DISC NEG2 ", XNO3, WH2O, DISC
              DD = SQRT( DISC )
              XXQ = -0.5 * ( BB + SIGN ( 1.0, BB ) * DD )
              RR1 = XXQ / AA
+if( XXQ > 1.0e-30 ) then!CRUDE FIX
              RR2 = CC / XXQ
+else
+             RR2 = 1.0e30 !CRUDEVIX
+end if
              
              !...choose minimum positve root         
              

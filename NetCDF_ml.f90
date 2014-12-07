@@ -2273,8 +2273,9 @@ endif
      print *, 'file does not exist: ',trim(varname),nf90_strerror(status)
      call CheckStop(fileneeded, "Read_Inter_CDF : file needed but not found")
      else
-     print *, 'file does not exist (but not needed): ',trim(varname),nf90_strerror(status)
-        print *, 'file not needed '
+     if(MasterProc) write(*,*)'file does not exist (but not needed): ',&
+          trim(varname),nf90_strerror(status)
+      !  print *, 'file not needed '
      return
      endif
   endif
@@ -2290,7 +2291,8 @@ endif
         print *, 'variable does not exist: ',trim(varname),nf90_strerror(status)
         call CheckStop(fileneeded, "Read_Inter_CDF : variable needed but not found")
      else
-        print *, 'variable does not exist (but not needed): ',trim(varname),nf90_strerror(status)
+        if(MasterProc)write(*,*) 'variable does not exist (but not needed): ',&
+           trim(varname),nf90_strerror(status)
         return
      endif
   endif
@@ -2602,7 +2604,8 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
         print *, 'file does not exist: ',trim(fileName),nf90_strerror(status)
         call CheckStop(fileneeded, "ReadField_CDF : file needed but not found")
      else
-        print *,'file does not exist (but not needed): ',trim(fileName),nf90_strerror(status)
+        if(MasterProc) write(*,*)'file does not exist (but not needed): ',&
+              trim(fileName),nf90_strerror(status)
         return
      endif
   endif
@@ -2636,7 +2639,8 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
 !     Rvar(1:MAXLIMAX*MAXLJMAX)=UnDef_local
 !     return
     else
-        print *, 'variable does not exist (but not needed): ',trim(varname),nf90_strerror(status)
+        if(MasterProc)write(*,*) 'variable does not exist (but not needed): ',&
+             trim(varname),nf90_strerror(status)
         call check(nf90_close(ncFileID))
         return
     endif

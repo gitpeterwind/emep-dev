@@ -32,7 +32,7 @@ module DryDep_ml
   
 !DS use My_Aerosols_ml,   only: NSIZE  
 use Aero_Vds_ml,      only: SettlingVelocity, GPF_Vds300, Wesely300
-use CheckStop_ml,     only: CheckStop
+use CheckStop_ml,     only: CheckStop, StopAll
 use Chemfields_ml ,   only: cfac, so2nh3_24hr,Grid_snow 
 use ChemSpecs                ! several species needed
 use DO3SE_ml,         only: do3se
@@ -263,6 +263,7 @@ contains
 
       real :: c_hveg, Ra_diff, surf_ppb  ! for O3 fluxes and Fst where needed
       real :: c_hveg3m, o3_45m  !TESTS ONLY
+real :: tmpv0, tmpv1, tmpv2 ! testing 1-exp
 ! temporary for POD/SPOD
 logical, parameter :: SPOD_OUT = .false.  ! MAKES HUGE FILES. Not for routine use!
 logical, save      :: first_spod = .true.
@@ -478,10 +479,10 @@ integer :: nglob
             if ( n > NDRYDEP_GASES )  then    ! particles
 
                 !nae = n - NDRYDEP_GASES 
-                nae = AERO_SIZE(n)
+                nae = AERO_SIZE(n) ! See Wesely_ml
 
 
-              if ( LandType(iL)%is_forest  ) then ! Vds NOV08
+              if ( LandType(iL)%is_forest  ) then 
 
                  !/ Use eqn *loosely* derived from Petroff results
                  ! ACP67-69
@@ -496,6 +497,7 @@ integer :: nglob
                  Vds = Wesely300( L%ustar, L%invL )
 
               end if
+              tmpv0 = Vds
 
              ! We allow fine NH4NO3 particles to deposit x 3, in
              ! unstable conditions. (F_N in ACP68)
@@ -505,14 +507,29 @@ integer :: nglob
 
               if (n==CDDEP_PMfN .and. L%invL<0.0 ) then 
                    Vds = Vds * 3.0 ! for nitrate-like
+
               else if (n==CDDEP_PMfNH4 .and. L%invL<0.0 ) then 
-                   Vds = Vds * 3.0 * no3nh4ratio ! for nitrate-like
+
+                   !2907 Vds = Vds * 3.0 * no3nh4ratio ! for nitrate-like
+                   !Vds = Vds* [ ( 1 - no3ratio) +  3 * no3nh4ratio ]
+
+                   Vds = Vds * (1 + 2 * no3nh4ratio) 
+
               end if
 !PNH4 if(L%invL< 0.0.and. n>11) print "(a,4i4,4es12.3)", "PNH4", me,n,CDDEP_PMfN,CDDEP_PMfNH4, xn_2d(pNO3,KMAX_MID), xn_2d(pNH4,KMAX_MID), no3nh4ratio, Vds
 
             ! Use non-electrical-analogy version of Venkatram+Pleim (AE,1999)
             ! ACP70
 
+if( AERO%Vs(nae) < 1.0e-8 .or. Vds < 1.0e-8 ) then
+   print "(a,3i3,9g11.3)", "AEROVSNA", n, nae, iL, AERO%Vs(nae), no3nh4ratio, &
+       xn_2d(pNO3,KMAX_MID),  xn_2d(pNH4,KMAX_MID), tmpv0, Vds
+              tmpv1     =  1.0 - exp( -( L%Ra_ref + 1.0/Vds)* AERO%Vs(nae) )
+              tmpv2     =  1.0 - exp( -( L%Ra_3m  + 1.0/Vds)* AERO%Vs(nae) )
+   print "(a,2i4,9g11.3)", "AEROVSNB", n, nae, AERO%sigma(nae), AERO%diam(nae),&
+         AERO%PMdens(nae), AERO%Vs(nae), Vds, tmpv1, tmpv2
+   call StopAll("AEROVSN")
+end if
               Vg_ref(n) =  AERO%Vs(nae)/ ( 1.0 - exp( -( L%Ra_ref + 1.0/Vds)* AERO%Vs(nae)))
               Vg_3m (n) =  AERO%Vs(nae)/ ( 1.0 - exp( -( L%Ra_3m  + 1.0/Vds)* AERO%Vs(nae)))
 
