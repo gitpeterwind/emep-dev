@@ -7,11 +7,11 @@
 
 module RunChem_ml
 
-  use AerosolCalls,     only: My_MARS, My_EQSAM, &
-                              Aero_water, Aero_water_MARS   !DUST -> USE_DUST
+  use AerosolCalls,     only: AerosolEquilib & !DEC2014 My_MARS, My_EQSAM, &
+                             ,Aero_water, Aero_water_MARS   !DUST -> USE_DUST
   use My_Timing_ml,     only: Code_timer, Add_2timing,  &
                               tim_before, tim_after
-  use Ammonium_ml,      only: Ammonium
+  !DEC2014use Ammonium_ml,      only: Ammonium
   use AOD_PM_ml,        only: AOD_Ext
   use Aqueous_ml,       only: Setup_Clouds, prclouds_present, WetDeposition
   use Biogenics_ml,     only: setup_bio
@@ -163,15 +163,17 @@ subroutine runchem()
       !  Alternating Dry Deposition and Equilibrium chemistry
       !  Check that one and only one eq is chosen
       if(mod(nstep,2)/=0) then 
-        if(AERO%EQUILIB=='EMEP' ) call ammonium() 
-        if(AERO%EQUILIB=='MARS' ) call My_MARS(debug_flag)
-        if(AERO%EQUILIB=='EQSAM') call My_EQSAM(debug_flag) 
+        call AerosolEquilib(debug_flag)
+        !if(AERO%EQUILIB=='EMEP' ) call ammonium() 
+        !if(AERO%EQUILIB=='MARS' ) call My_MARS(debug_flag)
+        !if(AERO%EQUILIB=='EQSAM') call My_EQSAM(debug_flag) 
         call DryDep(i,j)
       else !do drydep first, then eq
         call DryDep(i,j)
-        if(AERO%EQUILIB=='EMEP' ) call ammonium() 
-        if(AERO%EQUILIB=='MARS' ) call My_MARS(debug_flag)
-        if(AERO%EQUILIB=='EQSAM') call My_EQSAM(debug_flag) 
+        call AerosolEquilib(debug_flag)
+        !if(AERO%EQUILIB=='EMEP' ) call ammonium() 
+        !if(AERO%EQUILIB=='MARS' ) call My_MARS(debug_flag)
+        !if(AERO%EQUILIB=='EQSAM') call My_EQSAM(debug_flag) 
       endif
       !????????????????????????????????????????????????????
 

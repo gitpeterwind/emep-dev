@@ -1,21 +1,26 @@
 !>  AerosolCalls.f90 - A component of the EMEP MSC-W Chemical transport Model
 !!****************************************************************************! 
-!!
 !> Options for aerosol-gas equilibrium partitioning:
-!! * EQUILIB_EMEP - old EMEP scheme
-!! * EQUILIB_MARS - run MARS equilibrium model
-!! * EQUILIB_EQSAM - run EQSAM equilibrium model
+!!
+!! * EMEP - old EMEP scheme with (NH4)1.5 SO4
+!! * MARS - run MARS equilibrium model
+!! * EQSAM - run EQSAM equilibrium model
+!! * ISORROPIA - run ISORROPIA II equilibrium model (in testing)
 
 module AerosolCalls
 
- use CheckStop_ml,         only :  StopAll, CheckStop
- use ChemSpecs,            only :  SO4, NH3, HNO3, NO3_f, NH4_f, &
-                                     NSPEC_SHL, species
+ use Ammonium_ml,          only : Ammonium
+ use CheckStop_ml,         only : StopAll, CheckStop
+ use ChemGroups_ml,         only : SS_GROUP, RDN_GROUP
+ use ChemSpecs
+! use ChemSpecs,            only :  SO4, NH3, HNO3, NO3_f, NH4_f, &
+!                                     SEASALT_F, & ! ISORROPIA
+!                                     NSPEC_SHL, species
  use Chemfields_ml,        only :  PM25_water, PM25_water_rh50,  & !PMwater 
                                    cfac
  use EQSAM_v03d_ml,        only :  eqsam_v03d
  use MARS_ml,              only :  rpmares
- use ModelConstants_ml,    only :  KMAX_MID, KCHEMTOP, DEBUG
+ use ModelConstants_ml,    only :  KMAX_MID, KCHEMTOP, DEBUG, MasterProc, AERO
  use PhysicalConstants_ml, only :  AVOG
  use Setup_1dfields_ml,    only :  xn_2d, temp, rh, pp
  implicit none
@@ -23,7 +28,9 @@ module AerosolCalls
 
  !/-- public           !!  true if wanted
 
- public :: My_MARS, My_EQSAM, Aero_Water, Aero_Water_MARS
+ public :: AerosolEquilib
+ public :: emep2MARS, emep2EQSAM, Aero_Water, Aero_Water_MARS
+ private :: emep2isorropia
                     
 !    logical, public, parameter :: AERO_DYNAMICS     = .false.  &  
 !                                , EQUILIB_EMEP      = .false.  & !old Ammonium stuff
@@ -38,8 +45,96 @@ module AerosolCalls
 contains
 
  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  subroutine AerosolEquilib(debug_flag)
+    logical, intent(in) :: debug_flag
+    logical, save :: my_first_call
 
-      subroutine My_MARS(debug_flag)
+    select case ( AERO%EQUILIB )
+      case ( 'EMEP' )
+        call ammonium()
+      case ( 'MARS' )
+        call emep2MARS(debug_flag)
+      case ( 'EQSAM' )
+        call emep2EQSAM(debug_flag)
+      case ( 'ISORROPIA' )
+        call emep2Isorropia(debug_flag)
+      case default
+        if( my_first_call .and. MasterProc ) then
+          write(*,*) 'WARNING: AerosolEquilib: nothing chosen:'
+        end if
+    end select
+    my_first_call = .false.
+
+  end subroutine AerosolEquilib
+
+ !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+ ! Adapted from List 10, p130, Isoropia manual
+
+ subroutine emep2isorropia(debug_flag)
+   logical, intent(in) :: debug_flag
+
+   real, dimension(8) :: wi = 0.0, wt
+   real, dimension(3) :: gas
+   real, dimension(15) :: aerliq
+   real, dimension(19) :: aersld
+   real, parameter, dimension(2) :: CNTRL =  (/ 0, 0 /)
+   real, dimension(9) :: other
+   !real :: rhi, tempi
+   character(len=15) :: scase
+
+  ! DS added
+   real, parameter :: Ncm3_to_molesm3 = 1.0e6/AVOG    ! #/cm3 to moles/m3
+   real, parameter :: molesm3_to_Ncm3 = 1.0/Ncm3_to_molesm3
+   real :: FLOOR = 1.0e-30               !
+   integer :: i, ispec, k
+   real :: atwNa =  22.989770, atwCl = 35.453   ! g/mole !DOCS had 36.5?
+   real :: tmpno3, tmpnh4
+
+   ! WI(1)  = max(FLOOR2, xn_2d(Na,k))  / species(Na)%molwt  * Ncm3_to_molesm3
+   ! 5=Cl, 6=Ca, 7=K, 8=Mg
+
+   do k = KMAX_MID, KMAX_MID  ! TESTING KCHEMTOP, KMAX_MID
+
+     WI(1)  = 0.0 !FINE sum( xn_2d(SS_GROUP,k) ) * Ncm3_to_molesm3
+     WI(2)  = xn_2d(SO4,k)             * Ncm3_to_molesm3
+     WI(3)  = sum( xn_2d(RDN_GROUP,k) ) * Ncm3_to_molesm3  !NH3, NH4
+     !FINE WI(4)  = ( xn_2d(NO3_F,k) + xn_2d(NO3_C,k) + xn_2d(HNO3,k) )&
+     WI(4)  = ( xn_2d(NO3_F,k) + xn_2d(HNO3,k) )&
+                * Ncm3_to_molesm3
+     WI(5)  =0.0 !FINE  WI(1)  ! Cl only from sea-salt. Needs consideration!
+
+     call isoropia ( wi, rh(k), temp(k), CNTRL,&
+                     wt, gas, aerliq, aersld, scase, other)
+
+    ! gas outputs are in moles/m3(air)
+
+     xn_2d(NH3,k)  = gas(1) * molesm3_to_Ncm3
+     xn_2d(HNO3,k) = gas(2) * molesm3_to_Ncm3
+     !xn_2d(HCl,k) = gas(3) * molesm3_to_Ncm3
+
+    ! aerosol outputs are in moles/m3(air)
+    ! 1=H+, 2=Na+, 3=NH4+, 4=Cl-, 5=SO42-, 6=HSO4-, 7=NO3-, 8=Ca2+
+    ! 9=K+, 10=Mg2+
+     !xn_2d(NH4_F,k) = MOLAL(3)
+
+    ! Just use those needed:
+    ! QUERY: Is NaNO3 always solid? Ans = No!
+
+      !xn_2d(NO3_c,k ) = aeroHCl * molesm3_to_Ncm3 ! assume all HCl from NaNO3 formation?
+      !FINE xn_2d(NO3_f,k ) = tmpno3 - xn_2d(NO3_c,k ) - xn_2d(HNO3,k)
+      xn_2d(NO3_f,k ) = tmpno3 - xn_2d(HNO3,k)
+
+     if( debug_flag ) then 
+       write(*, "(a,2f8.3,99g12.3)") "ISORROPIA ", rh(k), temp(k), gas
+     end if
+     !call StopAll("ISOR")
+     
+   end do
+ end subroutine emep2isorropia
+ !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+      subroutine emep2MARS(debug_flag)
 
  !..................................................................
  ! Pretty old F. Binkowski code from EPA CMAQ-Models3
@@ -90,13 +185,13 @@ contains
 
    enddo  ! K-levels
 
- end subroutine My_MARS
+ end subroutine emep2MARS
 
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-      subroutine My_EQSAM(debug_flag)
+      subroutine emep2EQSAM(debug_flag)
  logical, intent(in) :: debug_flag 
 
     !..................................................................
@@ -172,11 +267,10 @@ contains
                xn_2d(NH3,20),xn_2d(NO3_f,20),xn_2d(NH4_f,20)
   endif
 
- end subroutine My_EQSAM
+ end subroutine emep2EQSAM
 
 
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
 
 
  !water 
@@ -344,9 +438,5 @@ contains
 !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 end module AerosolCalls
-
-
-
-
 
 
