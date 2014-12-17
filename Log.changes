@@ -152,6 +152,15 @@ info on unused variables, etc.
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+17th December 2014 Peter,  2911
+MARS_ml
+             if( abs(XXQ) > 1.0e-30 ) then!CRUDE FIX
+                RR2 = CC / XXQ
+             else
+                RR2 = 1.0e30 !CRUDEVIX
+             end if
+"abs" was missing, and RR2 got 1.0e30 even when xxq negative but reasonable.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
