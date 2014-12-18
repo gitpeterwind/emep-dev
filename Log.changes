@@ -153,15 +153,46 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-17th December 2014 Peter,  2911
-MARS_ml
-             if( abs(XXQ) > 1.0e-30 ) then!CRUDE FIX
-                RR2 = CC / XXQ
-             else
-                RR2 = 1.0e30 !CRUDEVIX
-             end if
-"abs" was missing, and RR2 got 1.0e30 even when xxq negative but reasonable.
+18th December 2014 Peter, Dave, Svetlana  2911-2912
 
+Test versions of MARS. We have now:
+
+MARS_2900 : version that we had up to now
+GEOSCHEM : GEOSCHEM version. NB: this version is not continuous
+MARS : Small (?) improvements compared to MARS_2900. Complete list of improvements:
+1) TSO4 = MAX( FLOOR, TSO4  ) 
+2) IF ( fRH .LT. 0.01 ) -> return original values
+3) if( (TSO4 <= MINSO4 ) (instead of "<")
+4) IF ( .NOT. ( IS_SAFE_DIV( GAMAS2, GAMAS1*GAMAS1*GAMAS1, R4=.TRUE. )& 
+                 .AND. IS_SAFE_DIV( KNA, GAMANA*GAMANA, R4=.TRUE. ) & 
+                 ) ) THEN
+                WRITE(6,*) 'RPMARES: not safe to divide...exit'
+               call CheckStop("UNDER/OVERFLOW in rpmares (MARS)")
+
+5) IF (HPLUS <= 0d0)-> return original values    
+6) MHSO4 = MAX( 1.0d-10, MHSO4 ) 
+7) if(abs(GAMANA)<FLOOR  .or. abs(GAMAS1)<FLOOR) -> return original values
+8) ASO4_Low = MSO4 * WH2O * MWSO4 !pw added after [rjp, 12/12/01]
+9)  after 1601      ASO4_Low = TSO4 * MWSO4    ! PW after [rjp, 12/17/01]
+(8) and 9) showed no effect in a 1 month test) 
+10) ANH4 = NH4, GNO3 = HNO3 if((TSO4 <= MINSO4 ) .and. (TNO3 < MINNO3)), and under IF ( TNO3 <= MINNO3 )
+11)removed if( XXQ > 1.0e-30 )  (introduced 2907) . NB: XXQ always <0!
+
+One month run (June, EECCA) showed a max difference of 0.15 ug/m3 for SIA 
+and much less in random places.(new MARS-GEOSCHEM)
+
+Between "new" and "old"(2900) MARS the SIA differences were less than 0.01 ug/m3 at max.
+
+In addition small (?) change in awater in MARS_Aero_water_ml when x < 1.9999
+Y2     = ( 1.0 - MFSSO4 ) / MFSSO4
+(MARS_2900 use also the new version of awater)
+
+
+AerosolCalls.f90 adapted for allowing "MARS_2900" and "GEOSCHEM"
+config_EMEPSTD: adapted comments for AERO%EQUILIB
+ModelConstants_ml: character(len=15) :: EQUILIB  (was only len=5, too small)
+
+Netcdf_ml: sondes.nc, positive = "up"
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 10th December 2014 Dave,  2908-2909

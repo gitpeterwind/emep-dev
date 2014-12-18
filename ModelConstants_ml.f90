@@ -450,7 +450,7 @@ integer, public, parameter ::  &
 ! FINE_PM = 1, COAR_NO3 = 2, COAR_SS = 3, COAR DUST = 4,pollen = 5    
 
 type, public :: aero_type
-  character(len=5) :: EQUILIB  = 'MARS ' !aerosol themodynamics
+  character(len=15) :: EQUILIB  = 'MARS ' !aerosol themodynamics
   logical          :: DYNAMICS = .false.
   integer          :: NSIZE    = 5
   real, dimension(5) :: &

@@ -35,7 +35,7 @@
   INERIS_SNAP1          = F,          ! Used for TFMM runs
   INERIS_SNAP2          = F,          ! Used for TFMM runs
 !------------------------------
-!  AERO%EQUILIB          = 'EMEP ',     ! MARS, EQSAM, or EMEP
+!  AERO%EQUILIB          = 'MARS ',      ! MARS, MARS_2900, GEOSCHEM, EQSAM, or EMEP
 !  AERO%NSIZE etc... see ModelConstants
 !------------------------------
   EMIS_SOURCE           = 'emislist', ! 'emislist' or 'CdfFractions'
