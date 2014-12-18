@@ -226,7 +226,7 @@ subroutine Create_CDF_sondes(fileName,SpecName,NSpec,NStations,AttributeNames,At
         call check(nf90_def_var(ncFileID, "lev", nf90_double, dimids = levDimID, varID = levVarID) )
         call check(nf90_put_att(ncFileID, levVarID, "standard_name","atmosphere_hybrid_sigma_pressure_coordinate"))
         call check(nf90_put_att(ncFileID, levVarID, "long_name", "hybrid level at layer midpoints (A/P0+B)"))
-        call check(nf90_put_att(ncFileID, levVarID, "positive", "down"))
+        call check(nf90_put_att(ncFileID, levVarID, "positive", "up"))
         call check(nf90_put_att(ncFileID, levVarID, "formula_terms","ap: hyam b: hybm ps: PS p0: P0"))
         !p(n,k,j,i) = a(k)+ b(k)*ps(n,j,i)
         call check(nf90_def_var(ncFileID, "P0", nf90_double,  varID = VarID) )
@@ -247,7 +247,7 @@ subroutine Create_CDF_sondes(fileName,SpecName,NSpec,NStations,AttributeNames,At
         call check(nf90_def_var(ncFileID, "ilev", nf90_double, dimids = ilevDimID, varID = ilevVarID) )
         call check(nf90_put_att(ncFileID, ilevVarID, "standard_name","atmosphere_hybrid_sigma_pressure_coordinate"))
         call check(nf90_put_att(ncFileID, ilevVarID, "long_name", "hybrid level at layer interfaces (A/P0+B)"))
-        call check(nf90_put_att(ncFileID, ilevVarID, "positive", "down"))
+        call check(nf90_put_att(ncFileID, ilevVarID, "positive", "up"))
         call check(nf90_put_att(ncFileID, ilevVarID, "formula_terms","ap: hyai b: hybi ps: PS p0: P0"))
         call check(nf90_def_var(ncFileID, "hyai", nf90_double, dimids = ilevDimID,  varID = hyaiVarID) )
         call check(nf90_put_att(ncFileID, hyaiVarID, "long_name","hybrid A coefficient at layer interfaces"))
@@ -1942,7 +1942,7 @@ subroutine GetCDF(varname,fileName,Rvar,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,
 
 end subroutine GetCDF
 
-subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,i_start,j_start,needed)
+subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,i_start,j_start,reverse_k,needed,found)
   !
   ! open and reads CDF file 
   ! The grid MUST be in the same projection and resolution as the model grid
@@ -1950,6 +1950,7 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,i_
   ! k_start,k_end are the vertical levels to read, k=k_start,k_end
   ! for instance k_start=KMAX_MID,k_end=KMAX_MID gives only surface
   ! for instance k_start1,k_end=KMAX_MID gives all levels
+  ! if reverse_k=.true. , the k dimension in the file is reversed
   ! i_start,j_start can give a new origin instead of (1,1)
   ! the dimensions of Rvar are assumed:
   ! Rvar(MAXLIMAX,MAXLJMAX,k_end-k_start+1,nfetch)
@@ -1962,16 +1963,24 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,i_
   integer, intent(in) :: nstart,nfetch,k_start,k_end
   real, intent(out) :: Rvar(MAXLIMAX,MAXLJMAX,k_end-k_start+1,nfetch)
   integer, optional, intent(in) ::  i_start,j_start
+  logical, optional,intent(in) :: reverse_k
   logical, optional,intent(in) :: needed
+  logical, optional,intent(out) :: found
 
   logical :: fileneeded
   integer :: status,ndims,alloc_err
   integer :: totsize,xtype,dimids(NF90_MAX_VAR_DIMS),nAtts
   integer :: dims(NF90_MAX_VAR_DIMS),startvec(NF90_MAX_VAR_DIMS)
-  integer :: ncFileID,VarID,i,j,k,n,it,i1,j1,i0,j0
+  integer :: ncFileID,VarID,i,j,k,n,it,i1,j1,i0,j0,ijkn
   character*100::name
   real :: scale,offset,scalefactors(2)
   integer, allocatable:: Ivalues(:)
+  real, allocatable:: Rvalues(:)
+  logical :: reverse_k_loc
+
+  reverse_k_loc=.false.
+  if(present(reverse_k))reverse_k_loc=reverse_k
+
   i0=0
   j0=0
   if(present(i_start))i0=i_start-1
@@ -1979,11 +1988,14 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,i_
   call CheckStop(i0>limax, "NetCDF_ml i: subdomain not compatible. cannot handle this")
   call CheckStop(j0>ljmax, "NetCDF_ml j: subdomain not compatible. cannot handle this")
   if(MasterProc.and.DEBUG_NETCDF)print *,'GetCDF_modelgrid  reading ',trim(fileName), ' nstart ', nstart
+print *,me,'GetCDF_modelgrid  reading ',trim(fileName), ' nstart ', nstart
+
   !open an existing netcdf dataset
   fileneeded=.true.!default
   if(present(needed))then
      fileneeded=needed
   endif
+  if(present(found))found=.false.
 
   if(fileneeded)then
      call check(nf90_open(path = trim(fileName), mode = nf90_nowrite, ncid = ncFileID))
@@ -2006,9 +2018,11 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,i_
 
   if(status == nf90_noerr) then
      if(DEBUG_NETCDF)write(*,*) 'variable exists: ',trim(varname)
+     if(present(found))found=.true.
   else
      print *, 'variable does not exist: ',trim(varname),nf90_strerror(status)
      call CheckStop(fileneeded, "NetCDF_ml : variable needed but not found")
+     call check(nf90_close(ncFileID))
      return
   endif
 
@@ -2022,7 +2036,7 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,i_
   if(DEBUG_NETCDF)write(*,*)'dimensions ',(dims(i),i=1,ndims)
   if(dims(1)/=IIFULLDOM.or.dims(2)/=JJFULLDOM)then
    82 format(3A,2I5,A,2I5)
-    if(me==0)write(*,82)'WARNING : grid ',trim(fileName),' has different dimensions than model grid: ',&
+    if(me==0.and..not.present(i_start))write(*,82)'WARNING : grid ',trim(fileName),' has different dimensions than model grid: ',&
          dims(1),dims(2),' instead of ',IIFULLDOM,JJFULLDOM
      if(.not.present(i_start))then
      Call StopAll('GetCDF_modelgrid: incompatible grid. This routine does not interpolate. Give i_start, j_start')
@@ -2042,8 +2056,8 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,i_
   startvec=1
   startvec(1)=i_fdom(1)
   startvec(2)=j_fdom(1)
-  if(i_fdom(1)/=1)startvec(1)= startvec(1)-i0
-  if(j_fdom(1)/=1)startvec(2)= startvec(2)-j0
+  startvec(1)= max(1,startvec(1)-i0)
+  startvec(2)= max(1,startvec(2)-j0)
   startvec(3)=k_start
   startvec(ndims)=nstart
   if(startvec(1)+limax-1<dims(1))then
@@ -2056,8 +2070,8 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,i_
   else
      dims(2)=dims(2)-startvec(2)+1
   endif
-  if(i_fdom(1)==1)dims(1)=dims(1)-i0
-  if(j_fdom(1)==1)dims(2)=dims(2)-j0
+  if(i_fdom(1)==1)dims(1)=min(dims(1),dims(1)-i0)
+  if(j_fdom(1)==1)dims(2)=min(dims(2),dims(2)-j0)
 
   dims(3)=k_end-k_start+1
   if(dims(3)<=0)then
@@ -2065,7 +2079,7 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,i_
      return
   endif
   dims(ndims)=nfetch!NB: for 2D ndims=3 and we overwrite it!
-  83 format(I4,A,3I5,A,5I5)
+  83 format(I4,A,3I5,A,15I5)
   if(DEBUG_NETCDF) write(*,83)me,' Reading from ',startvec(1),startvec(2),startvec(3),' to ',&
        startvec(1)+dims(1)-1,startvec(2)+dims(2)-1,startvec(3)+dims(3)-1
 
@@ -2100,10 +2114,29 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,i_
 
      deallocate(Ivalues)
   elseif(xtype==NF90_FLOAT .or. xtype==NF90_DOUBLE)then
-     if(DEBUG_NETCDF)  write(*,83)me,'writing to ',i1,j1,1,' to ',dims(1)+i1-1,dims(2)+j1-1,dims(3)
+     if(reverse_k_loc)then
+        allocate(Rvalues(totsize), stat=alloc_err)
+        call check(nf90_get_var(ncFileID, VarID, Rvalues,start=startvec,count=dims))
+        ijkn=0
+        do n=1,nfetch
+           do k=1,k_end-k_start+1,-1
+              do j=j1,dims(2)+j1-1
+                 do i=i1,dims(1)+i1-1
+                    ijkn=ijkn+1
+                    Rvar(i,j,k,n)=Rvalues(ijkn)
+                 enddo
+              enddo
+           enddo
+        enddo
+        deallocate(Rvalues)
+     else
+     i1=max(1,i1)
+     j1=max(1,j1)
+     if(DEBUG_NETCDF)write(*,83)me,'writing to ',i1,j1,1,' to ',dims(1)+i1-1,dims(2)+j1-1,k_end-k_start+1,nfetch
      call check(nf90_get_var(ncFileID, VarID, &
-          Rvar(i1:dims(1)+i1-1,j1:dims(2)+j1-1,1:dims(3),1:dims(4)),start=startvec,count=dims))
+          Rvar(i1:dims(1)+i1-1,j1:dims(2)+j1-1,1:k_end-k_start+1,1:nfetch),start=startvec,count=dims))
 !      call check(nf90_get_var(ncFileID, VarID, Rvar,start=startvec,count=dims))
+  endif
      if(DEBUG_NETCDF) &
          write(*,*)'datatype real, read', me, maxval(Rvar), minval(Rvar)
   else
@@ -2111,8 +2144,12 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,i_
      Call StopAll('GetCDF  datatype not yet supported')
   endif
 
-  call check(nf90_close(ncFileID))
 
+  call check(nf90_close(ncFileID))
+write(*,*)'finished GetCDF_modelgrid', me
+ 
+  if(DEBUG_NETCDF)write(*,*)'finished GetCDF_modelgrid', me
+ 
 end subroutine GetCDF_modelgrid
 
 subroutine WriteCDF(varname,vardate,filename_given,newfile)

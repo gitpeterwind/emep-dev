@@ -251,7 +251,11 @@ module MetFields_ml
   real,target, public,save,allocatable, dimension(:,:,:) :: uw,ue
   real,target, public,save,allocatable, dimension(:,:,:) :: vs,vn
 
-
+  logical, public :: USE_WRF_MET_NAMES = .false.
+  logical, public :: WRF_MET_CORRECTIONS = .false.
+  logical, public :: MET_SHORT = .true.!metfields are stored as "short" (integer*2 and scaling)
+  logical, public :: MET_C_GRID = .false.!true if u and v wind fields are in a C-staggered, larger grid.
+  logical, public :: MET_REVERSE_K = .false.!set true if met fields are stored with lowest k at surface
   public :: Alloc_MetFields !allocate arrays
 
 contains
@@ -847,6 +851,30 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
      write(*,*)"Increase NmetfieldsMax! "
      stop
   endif
+
+if(USE_WRF_MET_NAMES)then
+   WRF_MET_CORRECTIONS = .true.
+   MET_C_GRID = .true.
+   MET_SHORT = .false. !metfields are stored as "float"
+   MET_REVERSE_K = .true.!reverse k coordinates when reading
+!names used in WRF metfiles
+!3D
+   met(ix_u_xmj)%name             = 'U'
+   met(ix_v_xmi)%name             = 'V'
+   met(ix_q)%name                 = 'QVAPOR'
+   met(ix_th)%name                = 'T'
+   met(ix_pr)%name                = 'QRAIN'
+   met(ix_cc3d)%name             = 'CLDFRA'
+!2D
+   met(ix_ps)%name                = 'PSFC'
+   met(ix_t2_nwp)%name            = 'T2'
+   met(ix_fh)%name                = 'HFX'
+   met(ix_fl)%name                = 'LH'
+   met(ix_ustar_nwp)%name         = 'UST'
+   met(ix_sst)%name               = 'SST'
+!... addmore
+endif
+
 
     allocate(u_ref(MAXLIMAX,MAXLJMAX))
     allocate(rho_surf(MAXLIMAX,MAXLJMAX))

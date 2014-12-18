@@ -33,7 +33,7 @@ use Par_ml, only : &
   gi1,gj1,            & ! full-dom coordinates of domain uppet r.h. corner
   me,                 & ! local processor
   parinit
-use PhysicalConstants_ml,     only: GRAV, PI ! gravity, pi
+use PhysicalConstants_ml,     only: GRAV, PI, EARTH_RADIUS ! gravity, pi
 use TimeDate_ml,              only: current_date,date,Init_nmdays,nmdays,startdate
 use TimeDate_ExtraUtil_ml,    only: nctime2idate,date2string
 use InterpolationRoutines_ml, only: inside_1234
@@ -293,17 +293,34 @@ subroutine GridRead(meteo,cyclicgrid)
 
        !          print *,'  reading ',trim(filename)
        projection=''
-       call check(nf90_get_att(ncFileID,nf90_global,"projection",projection))
+       status = nf90_get_att(ncFileID,nf90_global,"projection",projection)
+       if(status /= nf90_noerr) then
+!WRF projection format
+          call check(nf90_get_att(ncFileID,nf90_global,"MAP_PROJ_CHAR",projection))
+       endif
+
+!put into emep standard
+       if(trim(projection)=='Polar Stereographic')projection='Stereographic'
+
        if(trim(projection)=='Rotated_Spherical'.or.trim(projection)=='rotated_spherical'&
             .or.trim(projection)=='rotated_pole'.or.trim(projection)=='rotated_latitude_longitude')then
           projection='Rotated_Spherical'
        endif
+       
        write(*,*)'projection: ',trim(projection)
 
        !get dimensions id
        if(trim(projection)=='Stereographic') then
-          call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
-          call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
+          status = nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID)
+          if(status /= nf90_noerr) then
+             !WRF  format
+             call check(nf90_inq_dimid(ncid = ncFileID, name = "west_east", dimID = idimID))
+          endif
+          status = nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID)
+          if(status /= nf90_noerr) then
+             !WRF  format
+             call check(nf90_inq_dimid(ncid = ncFileID, name = "south_north", dimID = jdimID))
+          endif
        elseif(trim(projection)==trim('lon lat')) then
           call check(nf90_inq_dimid(ncid = ncFileID, name = "lon", dimID = idimID))
           call check(nf90_inq_dimid(ncid = ncFileID, name = "lat", dimID = jdimID))
@@ -315,7 +332,11 @@ subroutine GridRead(meteo,cyclicgrid)
 
        status=nf90_inq_dimid(ncid = ncFileID, name = "k", dimID = kdimID)
        if(status /= nf90_noerr)then
-          call check(nf90_inq_dimid(ncid = ncFileID, name = "lev", dimID = kdimID))       
+          status=nf90_inq_dimid(ncid = ncFileID, name = "lev", dimID = kdimID)!hybrid coordinates
+          if(status /= nf90_noerr) then
+             !WRF  format
+             call check(nf90_inq_dimid(ncid = ncFileID, name = "bottom_top", dimID = kdimID))      
+          endif
        endif
 
        !get dimensions length
@@ -367,7 +388,7 @@ subroutine GridRead(meteo,cyclicgrid)
   subroutine Getgridparams(filename,GRIDWIDTH_M,xp,yp,fi,&
        ref_latitude,sigma_mid,cyclicgrid)
     !
-    ! Get grid and time parameters as defined in the meteo file
+    ! Get grid and time parameters as defined in the meteo or Grid_Def file
     ! Do some checks on sizes and dates
     !
     ! This routine is called only once (and is therefore not optimized for speed)
@@ -389,6 +410,7 @@ subroutine GridRead(meteo,cyclicgrid)
     real :: ndays(1),x1,x2,x3,x4,P0
     character (len = 50) :: timeunit
     logical::found_hybrid=.false.
+    real :: CEN_LAT, CEN_LON
 
     allocate(xm_global(-1:GIMAX+2,-1:GJMAX+2))
     allocate(xm_global_j(-1:GIMAX+2,-1:GJMAX+2))
@@ -409,13 +431,19 @@ subroutine GridRead(meteo,cyclicgrid)
           call StopAll("GridValues: File not found")
        endif
 
-       !          print *,'  reading ',trim(filename)
-
        !get dimensions id
        if(trim(projection)=='Stereographic') then
-          call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
-          call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
-       elseif(trim(projection)==trim('lon lat')) then
+          status = nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID)
+          if(status /= nf90_noerr) then
+             !WRF  format
+             call check(nf90_inq_dimid(ncid = ncFileID, name = "west_east", dimID = idimID))
+          endif
+          status = nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID)
+          if(status /= nf90_noerr) then
+             !WRF  format
+             call check(nf90_inq_dimid(ncid = ncFileID, name = "south_north", dimID = jdimID))
+          endif
+        elseif(trim(projection)==trim('lon lat')) then
           call check(nf90_inq_dimid(ncid = ncFileID, name = "lon", dimID = idimID))
           call check(nf90_inq_dimid(ncid = ncFileID, name = "lat", dimID = jdimID))
        else
@@ -425,15 +453,42 @@ subroutine GridRead(meteo,cyclicgrid)
        endif
 
        !get global attributes
-       call check(nf90_get_att(ncFileID,nf90_global,"Grid_resolution",GRIDWIDTH_M))
+       status = nf90_get_att(ncFileID,nf90_global,"Grid_resolution",GRIDWIDTH_M)
+       if(status /= nf90_noerr) then
+          !WRF  format
+          call check(nf90_get_att(ncFileID,nf90_global,"DX",GRIDWIDTH_M))
+       endif
        write(*,*)"Grid_resolution",GRIDWIDTH_M
        if(trim(projection)=='Stereographic')then
-          call check(nf90_get_att(ncFileID,nf90_global,"ref_latitude",ref_latitude))
-          call check(nf90_get_att(ncFileID, nf90_global, "xcoordinate_NorthPole" &
-               ,xp ))
-          call check(nf90_get_att(ncFileID, nf90_global, "ycoordinate_NorthPole" &
+          status = nf90_get_att(ncFileID,nf90_global,"ref_latitude",ref_latitude)
+          if(status /= nf90_noerr) then
+             !WRF  format
+             call check(nf90_get_att(ncFileID,nf90_global,"TRUELAT1",ref_latitude))
+          endif
+          status = nf90_get_att(ncFileID, nf90_global, "fi",fi )
+          if(status /= nf90_noerr) then
+             !WRF  format
+             call check(nf90_get_att(ncFileID, nf90_global, "STAND_LON",fi ))
+          endif
+          status = nf90_get_att(ncFileID, nf90_global, "xcoordinate_NorthPole",xp )
+          if(status /= nf90_noerr) then
+             !WRF  format compute from grid center coordinates
+             call check(nf90_get_att(ncFileID, nf90_global, "CEN_LAT" &
+                  , CEN_LAT))
+             call check(nf90_get_att(ncFileID, nf90_global, "CEN_LON" &
+                  , CEN_LON))
+             xp = 0.5 + 0.5*IIFULLDOM - EARTH_RADIUS/GRIDWIDTH_M*(1+sin(ref_latitude*PI/180.))*tan(PI/4-CEN_LAT*PI/180./2)*sin((CEN_LON-fi)*PI/180.)
+             yp = 0.5 + 0.5*JJFULLDOM + EARTH_RADIUS/GRIDWIDTH_M*(1+sin(ref_latitude*PI/180.))*tan(PI/4-CEN_LAT*PI/180./2)*cos((CEN_LON-fi)*PI/180.)
+!correct for last digits. Assume that numbers are close enough to an integer
+             if(abs(nint(xp)-xp)<0.01)xp=nint(xp)
+             if(abs(nint(yp)-yp)<0.01)yp=nint(yp)
+
+             write(*,*)"M= ",EARTH_RADIUS/GRIDWIDTH_M*(1+sin(ref_latitude*PI/180.))
+             write(*,*)"coordinates of North pole ",xp,yp
+          else
+             call check(nf90_get_att(ncFileID, nf90_global, "ycoordinate_NorthPole" &
                ,yp ))
-          call check(nf90_get_att(ncFileID, nf90_global, "fi",fi ))
+          endif
 
           call GlobalPosition
        elseif(trim(projection)==trim('lon lat')) then
@@ -516,16 +571,21 @@ subroutine GridRead(meteo,cyclicgrid)
           enddo
 
        else
+
           !map factor are already staggered
           status=nf90_inq_varid(ncid=ncFileID, name="map_factor_i", varID=varID)
-
-          !BUGCHECK - moved here... (deleted if loop)
-          call CheckStop( status, nf90_noerr, "erro rreading map factor" )
-
-          write(*,*)GIMAX,GJMAX,IRUNBEG,JRUNBEG
+          if(status /= nf90_noerr)then
+             !WRF  format
+             call check(nf90_inq_varid(ncid=ncFileID, name="MAPFAC_VX", varID=varID))             
+          endif
           call check(nf90_get_var(ncFileID, varID, xm_global_i(1:GIMAX,1:GJMAX) &
                ,start=(/ IRUNBEG,JRUNBEG /),count=(/ GIMAX,GJMAX /)))
-          call check(nf90_inq_varid(ncid=ncFileID, name="map_factor_j", varID=varID))
+
+          status=nf90_inq_varid(ncid=ncFileID, name="map_factor_j", varID=varID)
+          if(status /= nf90_noerr)then
+             !WRF  format
+             call check(nf90_inq_varid(ncid=ncFileID, name="MAPFAC_UY", varID=varID))
+          endif
           call check(nf90_get_var(ncFileID, varID, xm_global_j(1:GIMAX,1:GJMAX) &
                ,start=(/ IRUNBEG,JRUNBEG /),count=(/ GIMAX,GJMAX /)))
        endif
@@ -543,15 +603,23 @@ subroutine GridRead(meteo,cyclicgrid)
 !          A_mid=P0*A_mid!different definition in modell and grid_Def
 !          call check(nf90_inq_varid(ncid = ncFileID, name = "hybm", varID = varID))                 
 !          call check(nf90_get_var(ncFileID, varID,B_mid))
-             call check(nf90_inq_varid(ncid = ncFileID, name = "P0", varID = varID))                 
-             call check(nf90_get_var(ncFileID, varID, P0 ))
-             if(.not.allocated(A_bnd_met))allocate(A_bnd_met(KMAX_MET+1),B_bnd_met(KMAX_MET+1))
-             call check(nf90_inq_varid(ncid = ncFileID, name = "hyai", varID = varID))                 
-             call check(nf90_get_var(ncFileID, varID, A_bnd_met ))
-             A_bnd_met=P0*A_bnd_met!different definition in model and grid_Def
-             call check(nf90_inq_varid(ncid = ncFileID, name = "hybi", varID = varID))                 
-             call check(nf90_get_var(ncFileID, varID, B_bnd_met ))          
-
+             status=nf90_inq_varid(ncid = ncFileID, name = "P0", varID = varID) 
+             if(status /= nf90_noerr)then
+                if(External_Levels_Def)then
+                   write(*,*)'WARNING: did not find P0. Assuming vertical levels from ',trim(filename_vert)
+                else
+                   write(*,*)'Do not know how to define vertical levels '
+                   call StopAll('Define levels in Vertical_levels.txt')
+               endif
+             else
+                call check(nf90_get_var(ncFileID, varID, P0 ))
+                if(.not.allocated(A_bnd_met))allocate(A_bnd_met(KMAX_MET+1),B_bnd_met(KMAX_MET+1))
+                call check(nf90_inq_varid(ncid = ncFileID, name = "hyai", varID = varID))                 
+                call check(nf90_get_var(ncFileID, varID, A_bnd_met ))
+                A_bnd_met=P0*A_bnd_met!different definition in model and grid_Def
+                call check(nf90_inq_varid(ncid = ncFileID, name = "hybi", varID = varID))                 
+                call check(nf90_get_var(ncFileID, varID, B_bnd_met ))          
+             endif
           if(External_Levels_Def)then
              !model levels defined from external text file
              write(*,*)'reading external hybrid levels from ',trim(filename_vert)
@@ -559,7 +627,13 @@ subroutine GridRead(meteo,cyclicgrid)
              do k=1,KMAX_MID+1
                 read(IO_TMP,*)kk,A_bnd(k),B_bnd(k)
                 if(kk/=k)write(*,*)'WARNING: unexpected format for vertical levels ',k,kk
-             enddo        
+             enddo    
+             if(status /= nf90_noerr)then
+                !assume levels from metdata are defined in filename_vert
+                if(.not.allocated(A_bnd_met))allocate(A_bnd_met(KMAX_MET+1),B_bnd_met(KMAX_MET+1))
+                A_bnd_met=A_bnd
+                B_bnd_met=B_bnd
+             endif
           else
              !vertical model levels are the same as in meteo 
              A_bnd=A_bnd_met

@@ -135,7 +135,7 @@ use TimeDate_ml,          only : current_date, date,nmdays, &
      add_secs,timestamp,&
      make_timestamp, make_current_date, nydays, startdate, enddate
 use ReadField_ml,         only : ReadField ! reads ascii fields
-use NetCDF_ml,         only : printCDF,ReadField_CDF,Out_netCDF ! testoutputs
+use NetCDF_ml,         only : printCDF,ReadField_CDF,Out_netCDF,GetCDF_modelgrid ! testoutputs
 use netcdf
 use TimeDate_ExtraUtil_ml,only: nctime2idate,date2string
 
@@ -261,7 +261,7 @@ contains
 
        !On first call, check that date from meteo file correspond to dates requested. Also defines nhour_first.
        call Check_Meteo_Date !note that all procs read this
-
+ 
        call Exner_tab()!init table
 
        debug_iloc = debug_li
@@ -384,8 +384,20 @@ contains
        enddo
     enddo
 
+    if(WRF_MET_CORRECTIONS)then
+       !WRF temperatures are shifted by  300:
+       th(:,:,:,nr) = th(:,:,:,nr) + 300.0
+    endif
+
+!correct surface pressure here, because we will need it before we get to the 2D block
+    !     conversion of pressure from hPa to Pascal.
+    if(.not.WRF_MET_CORRECTIONS)ps(:,:,nr) = ps(:,:,nr)*PASCAL 
 
     if(foundcc3d)then
+       if(WRF_MET_CORRECTIONS)then
+          !WRF clouds in fraction, multiply by 100:
+          cc3d(:,:,:) = 100*cc3d(:,:,:) 
+       endif
        if(trim(met(ix_cc3d)%validity)/='averaged'.and.write_now)&
             write(*,*)'WARNING: 3D cloud cover are instantaneous values'
        cc3d(:,:,:) = 0.01*max(0.0,min(100.0,cc3d(:,:,:)))!0-100 % clouds to fraction
@@ -457,20 +469,20 @@ contains
                 pr(i,j,KMAX_MID)= surface_precip(i,j)*METSTEP*3600.0*1000.0!guarantees precip at surface
                 do k=1,KMAX_MID-1
                    !convert from potential temperature into absolute temperature
-                   temperature = th(i,j,k,nr)*exp(KAPPA*log((A_mid(k) + B_mid(k)*ps(i,j,nr)*100)*1.e-5))!Pa, Ps still in hPa here
+                   temperature = th(i,j,k,nr)*exp(KAPPA*log((A_mid(k) + B_mid(k)*ps(i,j,nr))*1.e-5))!Pa, Ps in Pa here
                    !saturation water pressure
                    swp=611.2*exp(17.67*(temperature-273.15)/(temperature-29.65))
                    !water pressure
-                   wp=q(i,j,k,nr)*(A_mid(k) + B_mid(k)*ps(i,j,nr)*100)/0.622
+                   wp=q(i,j,k,nr)*(A_mid(k) + B_mid(k)*ps(i,j,nr))/0.622!Ps in Pa here
                    relh2=wp/swp
                    !convert from potential temperature into absolute temperature
                    !Factor 100 for Pa, Ps still in hPa here
                    temperature = th(i,j,k,1)* &   
-                        exp(KAPPA*log((A_mid(k) + B_mid(k)*ps(i,j,1)*100)*1.e-5))
+                        exp(KAPPA*log((A_mid(k) + B_mid(k)*ps(i,j,1))*1.e-5))!Ps in Pa here
                    !saturation water pressure
                    swp=611.2*exp(17.67*(temperature-273.15)/(temperature-29.65))
                    !water pressure
-                   wp=q(i,j,k,1)*(A_mid(k) + B_mid(k)*ps(i,j,1)*100)/0.622
+                   wp=q(i,j,k,1)*(A_mid(k) + B_mid(k)*ps(i,j,1))/0.622!Ps in Pa here
                    relh1=wp/swp
                    if(relh1>RH_THRESHOLD.or.relh2>RH_THRESHOLD)then
                       !fill the column up to this level with constant precip
@@ -514,7 +526,7 @@ contains
     ndim=2
 
     !     conversion of pressure from hPa to Pascal.
-    ps(:,:,nr) = ps(:,:,nr)*PASCAL
+    !ps(:,:,nr) = ps(:,:,nr)*PASCAL moved higher up!
 
 
     if(foundrh2m)then
@@ -522,6 +534,12 @@ contains
     else
        if(MasterProc.and.first_call)write(*,*)'WARNING: relative_humidity_2m not found'
        rh2m(:,:,nr) = -999.9  ! ?
+    endif
+
+    if(WRF_MET_CORRECTIONS)then
+       !flux defined with opposite signs
+       fh(:,:,nr)=-fh(:,:,nr)
+       fl(:,:,nr)=-fl(:,:,nr)
     endif
 
     if(LANDIFY_MET)then
@@ -543,13 +561,13 @@ contains
        !     For WRF we get u*, not tau. Since it seems better to
        !     interpolate tau than u*  between time-steps we convert
        if(write_now)write(*,*)' tau derived from ustar_nwp'
-       namefield='ustar_nwp'
+       namefield=met(ix_ustar_nwp)%name
        call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,&
             ustar_nwp(:,:),needed=.true.,found=foundustar)
        if(LANDIFY_MET) call landify(ustar_nwp(:,:),"ustar") 
        !Ps in Pa here
-       rho_surf(:,:)  = ps(:,:,nr)/(RGAS_KG * t2_nwp(:,:,nr) )
-       tau(:,:,nr)    = ustar_nwp(:,:)*ustar_nwp(:,:)* rho_surf(:,:)
+       rho_surf(1:limax,1:ljmax)  = ps(1:limax,1:ljmax,nr)/(RGAS_KG * t2_nwp(1:limax,1:ljmax,nr) )
+       tau(1:limax,1:ljmax,nr)    = ustar_nwp(1:limax,1:ljmax)*ustar_nwp(1:limax,1:ljmax)* rho_surf(1:limax,1:ljmax)
     endif
 
     if(.not.foundSST.and.write_now)write(*,*)' WARNING: sea_surface_temperature not found '
@@ -2488,75 +2506,92 @@ contains
     logical,intent(in) ,optional :: needed
     logical,intent(out),optional :: found
 
-!    integer*2, allocatable ::var_global(:,:,:)   ! faster if defined with
+    !    integer*2, allocatable ::var_global(:,:,:)   ! faster if defined with
     ! fixed dimensions for all
     ! nodes?
     real :: scalefactors(2)
-    integer :: KMAX,ijk,i,k,j,nfetch,k1,k2
+    integer :: KMAX,ijk,i,k,j,nfetch,k1,k2,istart,jstart
+    logical :: reverse_k
 
     validity=''
     call_msg = "GetMeteofield" // trim(namefield)
 
     if(ndim==3)KMAX=KMAX_MET
     if(ndim==2)KMAX=1
-    if(MasterProc)then
-!       allocate(var_global(GIMAX,GJMAX,KMAX))
-       nfetch=1
-       call GetCDF_short(namefield,meteoname,var_global,GIMAX,IRUNBEG,GJMAX, &
-            JRUNBEG,KMAX,nrec,nfetch,scalefactors,unit,validity,needed=needed)
-    else
-!       allocate(var_global(1,1,1)) !just to have the array defined
-    endif
+    if(MET_SHORT)then
+       if(MasterProc)then
+          !       allocate(var_global(GIMAX,GJMAX,KMAX))
+          nfetch=1
+          call GetCDF_short(namefield,meteoname,var_global,GIMAX,IRUNBEG,GJMAX, &
+               JRUNBEG,KMAX,nrec,nfetch,scalefactors,unit,validity,needed=needed)
+       else
+          !       allocate(var_global(1,1,1)) !just to have the array defined
+       endif
 
-    !note: var_global is defined only for me=0
-    call global2local_short(var_global,var_local,MSG_READ4,GIMAX,GJMAX,&
-         KMAX,1,1)
+       !note: var_global is defined only for me=0
+       call global2local_short(var_global,var_local,MSG_READ4,GIMAX,GJMAX,&
+            KMAX,1,1)
 
-    CALL MPI_BCAST(scalefactors,8*2,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-    CALL MPI_BCAST(validity,50,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-    CALL MPI_BCAST(unit,50,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-!scalefactors=1.0
-!validity=' '
-!unit=' '
-    if(present(found))found=(validity/=field_not_found)
+       CALL MPI_BCAST(scalefactors,8*2,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+       CALL MPI_BCAST(validity,50,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+       CALL MPI_BCAST(unit,50,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+       !scalefactors=1.0
+       !validity=' '
+       !unit=' '
+       if(present(found))found=(validity/=field_not_found)
 
-!    deallocate(var_global)
+       !    deallocate(var_global)
 
-    if(KMAX==1)then       
-       ijk=0
-       k=1
-       do j=1,MAXLJMAX
-          do i=1,MAXLIMAX
-             ijk=ijk+1
-             field(ijk)=var_local(i,j,k)*scalefactors(1)+scalefactors(2)
-          enddo
-       enddo
-    else
-       if(External_Levels_Def)then
-          !interpolate vertically if the levels are not identical
+       if(KMAX==1)then       
           ijk=0
-          do k=1,KMAX_MID
-             k1=k1_met(k)
-             k2=k2_met(k)
-             do j=1,MAXLJMAX
-                do i=1,MAXLIMAX
-                   ijk=ijk+1
-                   field(ijk)=(x_k1_met(k)*var_local(i,j,k1)+(1.0-x_k1_met(k))*var_local(i,j,k2))&
-                        *scalefactors(1)+scalefactors(2)
-                enddo
+          k=1
+          do j=1,MAXLJMAX
+             do i=1,MAXLIMAX
+                ijk=ijk+1
+                field(ijk)=var_local(i,j,k)*scalefactors(1)+scalefactors(2)
              enddo
           enddo
        else
-          ijk=0
-          do k=1,KMAX_MID!=KMAX
-             do j=1,MAXLJMAX
-                do i=1,MAXLIMAX
-                   ijk=ijk+1
-                   field(ijk)=var_local(i,j,k)*scalefactors(1)+scalefactors(2)
+          if(External_Levels_Def)then
+             !interpolate vertically if the levels are not identical
+             ijk=0
+             do k=1,KMAX_MID
+                k1=k1_met(k)
+                k2=k2_met(k)
+                do j=1,MAXLJMAX
+                   do i=1,MAXLIMAX
+                      ijk=ijk+1
+                      field(ijk)=(x_k1_met(k)*var_local(i,j,k1)+(1.0-x_k1_met(k))*var_local(i,j,k2))&
+                           *scalefactors(1)+scalefactors(2)
+                   enddo
                 enddo
              enddo
-          enddo
+          else
+             ijk=0
+             do k=1,KMAX_MID!=KMAX
+                do j=1,MAXLJMAX
+                   do i=1,MAXLIMAX
+                      ijk=ijk+1
+                      field(ijk)=var_local(i,j,k)*scalefactors(1)+scalefactors(2)
+                   enddo
+                enddo
+             enddo
+          endif
        endif
+    else
+       !data are read as real
+!could also use ReadField to interpolate into a different grid!
+       !if(MasterProc)write(*,*)'reading ',trim(namefield)
+       write(*,*)me,'reading ',trim(namefield)
+       nfetch=1
+       istart=1
+       jstart=1
+       if(namefield==met(ix_u_xmj)%name .and. MET_C_GRID)istart=0!set origin at (2,1) for u-wind
+       if(namefield==met(ix_v_xmi)%name .and. MET_C_GRID)jstart=0!set origin at (1,2) for v-wind
+       reverse_k=.false.
+       if(MET_REVERSE_K)reverse_k=.true.
+       call GetCDF_modelgrid(namefield,meteoname,field,1,KMAX,nrec,nfetch,i_start=istart,&
+            j_start=jstart,reverse_k=reverse_k,needed=needed,found=found)
     endif
   end subroutine Getmeteofield
 
@@ -2690,8 +2725,15 @@ subroutine Check_Meteo_Date
   if(MasterProc)then
     status=nf90_open(path=trim(meteoname),mode=nf90_nowrite,ncid=ncFileID)
     call CheckStop(status,nf90_noerr,'meteo file not found: '//trim(meteoname))
-
-    call check(nf90_inq_dimid(ncid=ncFileID,name="time",dimID=timedimID))
+    
+    status=nf90_inq_dimid(ncid=ncFileID,name="time",dimID=timedimID)
+    if(status/=nf90_noerr)then
+       !could possibly use "Times"?
+       if(MasterProc)write(*,*)'time variable not found'
+       nhour_first=0 !hour of the first record
+       if(MasterProc)write(*,*)'Did not check times, and assume nhour_first =',nhour_first
+       goto 777
+    endif
     call check(nf90_inq_varid(ncid=ncFileID,name="time",varID=timeVarID))
     call check(nf90_inquire_dimension(ncid=ncFileID,dimID=timedimID,len=Nhh))
     call CheckStop(24/Nhh,METSTEP,"Met_ml: METSTEP != meteostep")
@@ -2726,7 +2768,8 @@ subroutine Check_Meteo_Date
       call CheckStop(mod((ihh-1)*METSTEP+nhour_first,24),ndate(4),&
                      date2string("Met_ml: wrong hour YYYY-MM-DD hh",ndate))
     enddo
-    call check(nf90_close(ncFileID))
+ 777 continue
+   call check(nf90_close(ncFileID))
   endif
   CALL MPI_BCAST(nhour_first,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
 endsubroutine Check_Meteo_Date
