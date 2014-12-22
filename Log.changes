@@ -153,7 +153,7 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-22nd December 2014 Peter  2915
+22nd December 2014 Peter  2916
 
 Emissions can be reduced according to a mask file. The mask file must be of the same
 size as the native emissions (i.e. not necessarily the same as model grid).
@@ -172,7 +172,7 @@ in ReadField_CDF the following optional variables can be set:
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-22th December 2014 Alvaro  2914
+22th December 2014 Alvaro  2914,2915,2917(Log.changes)
 
 Sites_ml,NetCDF_ml:
 - Rewrite siteswrt_surf, siteswrt_sondes, siteswrt_out (Sites_ml), 
@@ -195,6 +195,39 @@ Following changes on config_EMEPSTD.nml
 - Remove unused DEBUG%GLOBBC and DEBUG%HOURLY_OUTPUTS
 - Add USES%PFT_MAPS 
 - Set EMIS_OUT=F and need_poll=F
+
+Convection_ml,Derived_ml
+- Remove unused INCLUDE 'mpif.h' statement.
+
+MassBudget_ml:
+- Add comment about "use mpi" statement.
+- Remove unused MPI variables.
+
+run.pl,Makefile:
+- Write svnversion to .version with `make version`,
+  so run.pl has access to version number in vilje compute nodes.
+- Keep linked files on BM runs
+- Reduce the FORECAST/HINDCAST threshold from 10 days to 6 days for MACC-ENS/EVA.
+- Increase MPI_BUFS_PER_PROC on vilje runs
+
+Makefile:
+- Use `nc-config --cflags` (only include paths)
+  instead of `nc-config --fflags` (include paths and optimization options)
+  to avoid possible incompatibilities with options on OPT_FLAGS or DEBUG_FLAGS
+- Move -cpp $(DFLAGS) from line 15 to line 71 so they are available to all
+  supporeted machines/compilers
+
+Derived_ml:
+- Use to_molec_cm3 instead of to_number_cm3 (same constant) to improve readability.
+
+CoDep_ml,DryDep_ml,Convection_ml,OutputChem_ml,GridValues_ml,BoundaryConditions_ml,
+Setup_1d_ml,DO3SE_ml,Io_Progs_ml,Volcanos_ml,EmisGet_ml,Landuse_ml,Derived_ml,
+Emergency_ml,Wesely_ml,LandDefs_ml,Rsurface_ml,ZD_OZONE/My_Outputs_ml:
+- Replace '/**' in comments by '***', as they cause an error for gfrtran -cpp.
+
+CoDep_ml,BoundaryConditions_ml,DO3SE_ml,Io_Progs_ml,Volcanos_ml,
+Wesely_ml,Rsurface_ml,Sites_ml:
+- Remove Copyright notice as it will be added by mk.OpenSource.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
