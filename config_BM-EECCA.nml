@@ -21,8 +21,7 @@
   USES%FOREST_FIRES     = T,
   USES%EMISSTACKS       = F,         ! Reads PointSources file
   USES%PlumeMethod      = 'PVDI',    ! default PVDI, possible: NILU, ASMI, PVDI
-  DEBUG%GLOBBC          = F,
-  DEBUG%HOURLY_OUTPUTS  = F,
+  USES%PFT_MAPS         = F,         ! PFT LAI tests
 !------------------------------
   USE_SOILWATER         = T,          ! Uses SMI from meteo data
   USE_CONVECTION        = F,
@@ -39,14 +38,14 @@
   DO_SAHARA             = T,
   USE_ROADDUST          = T,          ! Only EECCA?
   USE_DUST              = T,          ! Only EECCA?
-  NETCDF_DEFLATE_LEVEL  = 4,          ! 1-9 GZIP compress, 0 no compress, -1 nc3
+  NETCDF_DEFLATE_LEVEL  = 4,          ! 1-9 GZIP compress, 0 no compress, -1 netcdf3
 !-------- Can switch on INERIS-type degreeday stuff
   INERIS_SNAP1          = F,          ! Used for TFMM runs
   INERIS_SNAP2          = F,          ! Used for TFMM runs
 !------------------------------
   EMIS_SOURCE           = 'emislist', ! 'emislist' or 'CdfFractions'
   EMIS_TEST             = 'None',     ! 'None' or 'CdfSnap' 
-  EMIS_OUT              = T,          ! Output emissions in separate files (memory demanding)
+  EMIS_OUT              = F,          ! Output emissions in separate files (memory demanding)
 !------------------------------
   MONTHLY_GRIDEMIS      = F,          ! Also for EMERGENCY
   SELECT_LEVELS_HOURLY  = F,          ! hourly output flag Also for FORECAST, 3DPROFILES
@@ -74,6 +73,7 @@
   GFED_PATTERN="$GFED",#GFED
   FINN_PATTERN="$FINN",#FINN
   GFAS_PATTERN="$GFAS",#GFAS
+  need_poll = F,        ! Avoids problems with missing ISOP in later FINN data
 &end
 &ExternalBICs_config
   USE_EXTERNAL_BIC  = F,              ! .false. to deactivate

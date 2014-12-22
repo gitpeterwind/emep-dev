@@ -53,7 +53,7 @@ module NetCDF_ml
                         MAXLIMAX, MAXLJMAX,IRUNBEG,JRUNBEG,limax,ljmax,gi0,gj0
   use PhysicalConstants_ml,  only : PI, EARTH_RADIUS
   use TimeDate_ml,       only: nmdays,leapyear ,current_date, date,julian_date
-  use TimeDate_ExtraUtil_ml,only: idate2nctime
+  use TimeDate_ExtraUtil_ml,only: idate2nctime,date2nctime
   use Functions_ml,       only: StandardAtmos_km_2_kPa
   use SmallUtils_ml,      only: wordsplit
 
@@ -117,10 +117,10 @@ subroutine Out_CDF_sondes(fileName,SpecName,NSpec,Values,NLevels,g_ps,debug)
   logical, intent(in), optional  :: debug
   logical  :: debug_1D
   integer :: ncFileID,status
-  integer :: varID,timeDimID,timeVarID,stationDimID
+  integer :: varID,dimID
   character(len=8)  :: lastmodified_date
   character(len=10) :: lastmodified_hour
-  integer :: i,j,k,n,iSpec,nrecords,ndate(4),nstations
+  integer :: i,j,k,n,iSpec,nrecords,nstations
   real :: rdays,x
   real,save,allocatable :: buff(:,:)
 
@@ -129,243 +129,346 @@ subroutine Out_CDF_sondes(fileName,SpecName,NSpec,Values,NLevels,g_ps,debug)
   if(present(debug))debug_1D = debug .or. debug_1D
   
   if(MasterProc)then
-     if(debug_1D)write(*,*)'writing in ',trim(fileName)
-     !The file must have been created already with "Create_CDF_1D"
-     call check(nf90_open(path = trim(fileName), mode = nf90_share+nf90_write, ncid = ncFileID))
-     call Date_And_Time(date=lastmodified_date,time=lastmodified_hour)
-     call check(nf90_inq_dimid(ncid = ncFileID, name = "time", dimID = timeDimID))
-     call check(nf90_inquire_dimension(ncid=ncFileID,dimID=timedimID, len = nrecords))
-     call check(nf90_inq_dimid(ncid = ncFileID, name = "station", dimID = stationDimID))
-     call check(nf90_inquire_dimension(ncid=ncFileID,dimID=stationdimID, len = nstations))
-     if(debug_1D)write(*,*)'number of stations ',nstations
-     nrecords=nrecords+1
-     if(debug_1D)write(*,*)'writing on record ',nrecords
-     call check(nf90_inq_varid(ncid = ncFileID, name = "time", VarID = timeVarID))
-     ndate(1)  = current_date%year
-     ndate(2)  = current_date%month
-     ndate(3)  = current_date%day
-     ndate(4)  = current_date%hour
-     call idate2nctime(ndate,rdays)
-     call check(nf90_put_var(ncFileID, timeVarID, rdays, start = (/nrecords/) ) )
-     if(.not.allocated(buff).and.NLevels>1)allocate(buff(nstations,Nlevels))
-     do iSpec=1,NSpec
-        !The variable must have been created already with "Create_CDF_1D"
-        call check(nf90_inq_varid(ncid = ncFileID, name = SpecName(iSpec), varID = VarID))
-        if(debug_1D)write(*,*)'writing ',trim(SpecName(iSpec)),NLevels,nstations
-        if(NLevels==1)then
-           call check(nf90_put_var(ncFileID, VarID, Values(1,1,1:nstations), start = (/ 1, nrecords /),count = (/ nstations, 1 /)))
-        else
-           do i=1,nstations     
-              buff(i,1:NLevels)=Values(1:NLevels,iSpec,i)!NB: indices are switched (transposed of matrix)
-           enddo
-           call check(nf90_put_var(ncFileID, VarID, buff, start = (/ 1, 1, nrecords /),count = (/ nstations, NLevels, 1 /)))
-!           call check(nf90_put_var(ncFileID, VarID, buff, start = (/ 1, 1, nrecords /),count = (/ 1, 1, 1 /)))
-        endif
-        if(NLevels>1)then
-           call check(nf90_inq_varid(ncid = ncFileID, name = 'PS', varID = VarID))
-           call check(nf90_put_var(ncFileID, VarID, g_ps(1:nstations), start = (/ 1, nrecords /),count = (/ nstations, 1 /)))        
-        endif
-     enddo
-     call check(nf90_put_att(ncFileID, nf90_global, "lastmodified_date", lastmodified_date))
-     call check(nf90_put_att(ncFileID, nf90_global, "lastmodified_hour", lastmodified_hour))
-
-     call check(nf90_close(ncFileID))
-
+    if(debug_1D)write(*,*)'writing in ',trim(fileName)
+    !The file must have been created already with "Create_CDF_1D"
+    call check(nf90_open(fileName,nf90_share+nf90_write,ncFileID))
+  ! netCDF functions calls (optional=arg)
+  ! nf90_open(path,cmode,ncid)
+  ! nf90_inq_dimid(ncid,name,dimid)
+  ! nf90_inquire_dimension(ncid,dimid,name=name,len=len)
+  ! nf90_inq_varid(ncid,name,varid)
+  ! nf90_put_var(ncid,varid,values,start=start,count=count)
+    call Date_And_Time(date=lastmodified_date,time=lastmodified_hour)
+    call check(nf90_inq_dimid(ncFileID,"time",dimID),"dim:time")
+    call check(nf90_inquire_dimension(ncFileID,dimID,len=nrecords),"len:time")
+    call check(nf90_inq_dimid(ncFileID,"station",dimID),"dim:station")
+    call check(nf90_inquire_dimension(ncFileID,dimID,len=nstations),"len:station")
+    if(debug_1D)write(*,*)'number of stations ',nstations
+    nrecords=nrecords+1
+    if(debug_1D)write(*,*)'writing on record ',nrecords
+    call check(nf90_inq_varid(ncFileID,"time",varID),"inq:time")
+    call date2nctime(current_date,rdays)
+    call check(nf90_put_var(ncFileID,varID,rdays,start=[nrecords]),"put:time")
+    if(.not.allocated(buff).and.NLevels>1)allocate(buff(nstations,Nlevels))
+    do iSpec=1,NSpec
+      !The variable must have been created already with "Create_CDF_1D"
+      call check(nf90_inq_varid(ncFileID,SpecName(iSpec),varID),"inq:"//trim(SpecName(iSpec)))
+      if(debug_1D)write(*,*)'writing ',trim(SpecName(iSpec)),NLevels,nstations
+      if(NLevels==1)then
+        call check(nf90_put_var(ncFileID,varID,values(1,1,1:nstations),&
+            start=[1,nrecords],count=[nstations,1]),"put:"//trim(SpecName(iSpec)))
+      else
+        do i=1,nstations     
+           buff(i,1:NLevels)=Values(1:NLevels,iSpec,i)!NB: indices are switched (transposed of matrix)
+        enddo
+        call check(nf90_put_var(ncFileID,varID,buff,&
+            start=[1,1,nrecords],count=[nstations,NLevels,1]),"put:"//trim(SpecName(iSpec)))
+    !   call check(nf90_put_var(ncFileID,varID,buff,start=[1,1,nrecords],count=[1,1,1]))
+      endif
+      if(NLevels>1)then
+        call check(nf90_inq_varid(ncFileID,'PS',varID),"inq:PS")
+        call check(nf90_put_var(ncFileID,varID,g_ps(1:nstations),&
+            start=[1,nrecords],count=[nstations,1]),"put:PS")
+      endif
+    enddo
+    call check(nf90_put_att(ncFileID,nf90_global,"lastmodified_date",lastmodified_date))
+    call check(nf90_put_att(ncFileID,nf90_global,"lastmodified_hour",lastmodified_hour))
+    call check(nf90_close(ncFileID))
   endif !Masterproc
-  
-end subroutine Out_CDF_sondes
+endsubroutine Out_CDF_sondes
 
-subroutine Create_CDF_sondes(fileName,SpecName,NSpec,NStations,AttributeNames,AttributeValues,NAttributes,&
-     CoordNames,CoordValues,NCoords,Spec_AttributeNames,Spec_AttributeValues,NSpec_Att,KMAXcdf,CDFtype,debug)
-  !Create a NetCDF file with given attributes. if Nvalues>1 define vertical coordinates.
-  !"variables" with index zero in attributes, are written as global attributes.
-  character(len=*),  intent(in)  :: fileName,SpecName(NSpec),AttributeNames(0:NStations,*)
-  character(len=*),  intent(in)  :: AttributeValues(0:NStations,*),CoordNames(0:NStations,*)
-  character(len=*),  intent(in)  :: Spec_AttributeNames(NSpec,*),Spec_AttributeValues(NSpec,*)
-  integer, intent(in)  :: KMAXcdf,NSpec,NStations,NAttributes(0:NStations),NCoords(0:NStations),NSpec_Att
-  real,intent(in)  :: CoordValues(0:NStations,*)
-  integer, intent(in),optional  :: CDFtype
-  logical, intent(in), optional  :: debug
+subroutine Create_CDF_sondes(fileName,NSpec,NSpec_Att,SpecDef,&
+        NStations,NMetaData,MetaData,KMAXcdf,CDFtype,debug)
+! Create a NetCDF file with given attributes.
+! if Nvalues>1 define vertical coordinates.
+  integer, intent(in)  :: KMAXcdf,NSpec,NStations,NSpec_Att,NMetaData
+  character(len=*),  intent(in) :: fileName, &
+    SpecDef(NSpec,0:NSpec_Att),MetaData(0:NStations,NMetaData)
+  integer, intent(in), optional :: CDFtype
+  logical, intent(in), optional :: debug
   logical  :: debug_1D
-  integer :: OUTtype,ncFileID,status,levDimID,ilevDimID,ilevVarID,levVarID,timeDimID
-  integer :: varID,hyamVarID,hybmVarID,hyaiVarID,hybiVarID,StationDimID,StationVarID,StringDimID
+  integer :: OUTtype,ncFileID,status,levDimID,ilevDimID,timeDimID
+  integer :: varID,StationDimID,StationVarID,StringDimID
   character (len=*), parameter :: vert_coord='atmosphere_hybrid_sigma_pressure_coordinate'
   character(len=8)  :: lastmodified_date
   character(len=10) :: lastmodified_hour
   integer :: i,j,k,n,iSpec,iSta
   real :: kcoord(KMAXcdf+1)
   real :: Acdf(KMAXcdf),Bcdf(KMAXcdf),Aicdf(KMAXcdf+1),Bicdf(KMAXcdf+1)
-  integer,parameter :: MAX_String_length=30
-  character(len= MAX_String_length) :: string
+  integer,parameter :: MAX_String_length=36
+  character(len=100) :: auxL(3)
+  character(len=MAX_String_length) :: metaName,metaType,auxC(NStations)
+  integer :: auxI(NStations),ierr
+  real :: auxR(NStations)
 
   debug_1D=DEBUG_NETCDF
   if(present(debug))debug_1D = debug .or. debug_1D
   
   if(MasterProc)then
-     !Create file if it does not yet exist
-     if(debug_1D)write(*,*)'creating ',trim(fileName)
-     if(NETCDF_DEFLATE_LEVEL >= 0)then
-        call check(nf90_create(path = trim(fileName), &
-             cmode = nf90_hdf5, ncid = ncFileID),"create:"//trim(fileName))
-     else
-        call check(nf90_create(path = trim(fileName), &
-             cmode = nf90_clobber, ncid = ncFileID),"create:"//trim(fileName))
-     endif
-     
-     call check(nf90_def_dim(ncid = ncFileID, name = "time", len = nf90_unlimited, dimid = timeDimID))
-     call check(nf90_def_dim(ncid = ncFileID, name = "station", len = NStations, dimid = StationDimID))
-     call check(nf90_def_dim(ncid = ncFileID, name = "string_length", len = MAX_String_length, dimid = StringDimID))
+    !Create file if it does not yet exist
+    if(debug_1D)write(*,*)'creating ',trim(fileName)
+    call check(nf90_create(fileName,nf90_clobber,ncFileID),"create:"//trim(fileName))
+  ! netCDF functions calls (wo optional arg.)
+  ! nf90_create(path,cmode,ncid)
+  ! nf90_def_dim(ncid,name,len,dimid)
+  ! nf90_def_var(ncid,name,xtype,dimids,varid)
+  ! nf90_put_att(ncid,varid,name,values)
+  ! nf90_inq_varid(ncid,name,varid)
+  ! nf90_put_var(ncid,varid,values)
+    call check(nf90_def_dim(ncFileID,"time",nf90_unlimited,timeDimID),"dim:time")
+    call check(nf90_def_dim(ncFileID,"station",NStations,StationDimID),"dim:station")
+    call check(nf90_def_dim(ncFileID,"string_length",MAX_String_length,StringDimID),"dim:slen")
 
-
-     if(KMAXcdf>1)then
-        if(debug_1D)write(*,*)'defining vertical levels ',KMAXcdf
-        call check(nf90_def_dim(ncid = ncFileID, name = "lev", len = KMAXcdf, dimid = levDimID))
-        call check(nf90_def_dim(ncid = ncFileID, name = "ilev", len = KMAXcdf+1, dimid = ilevDimID))
-        
-        call check(nf90_put_att(ncFileID, nf90_global, "vert_coord", vert_coord))
-        call check(nf90_def_var(ncFileID, "lev", nf90_double, dimids = levDimID, varID = levVarID) )
-        call check(nf90_put_att(ncFileID, levVarID, "standard_name","atmosphere_hybrid_sigma_pressure_coordinate"))
-        call check(nf90_put_att(ncFileID, levVarID, "long_name", "hybrid level at layer midpoints (A/P0+B)"))
-        call check(nf90_put_att(ncFileID, levVarID, "positive", "up"))
-        call check(nf90_put_att(ncFileID, levVarID, "formula_terms","ap: hyam b: hybm ps: PS p0: P0"))
+    if(KMAXcdf>1)then
+      if(debug_1D)write(*,*)'defining vertical levels ',KMAXcdf
+      call check(nf90_put_att(ncFileID,nf90_global,"vert_coord",vert_coord))
+      call check(nf90_def_dim(ncFileID, "lev",KMAXcdf  , levDimID),"dim:lev")
+      call check(nf90_def_dim(ncFileID,"ilev",KMAXcdf+1,ilevDimID),"dim:ilev")        
+      call check(nf90_def_var(ncFileID,"lev",nf90_double,levDimID,varID))
+      call check(nf90_put_att(ncFileID,varID,"standard_name","atmosphere_hybrid_sigma_pressure_coordinate"))
+       call check(nf90_put_att(ncFileID,varID,"long_name","hybrid level at layer midpoints (A/P0+B)"))
+      call check(nf90_put_att(ncFileID,varID,"positive","up"))
+      call check(nf90_put_att(ncFileID,varID,"formula_terms","ap: hyam b: hybm ps: PS p0: P0"))
         !p(n,k,j,i) = a(k)+ b(k)*ps(n,j,i)
-        call check(nf90_def_var(ncFileID, "P0", nf90_double,  varID = VarID) )
-        call check(nf90_put_att(ncFileID, VarID, "units", "hPa"))
-        call check(nf90_put_var(ncFileID, VarID, Pref/100.0 ))
+      call check(nf90_def_var(ncFileID,"ilev",nf90_double,ilevDimID,varID))
+      call check(nf90_put_att(ncFileID,varID,"standard_name","atmosphere_hybrid_sigma_pressure_coordinate"))
+      call check(nf90_put_att(ncFileID,varID,"long_name","hybrid level at layer interfaces (A/P0+B)"))
+      call check(nf90_put_att(ncFileID,varID,"positive","up"))
+      call check(nf90_put_att(ncFileID,varID,"formula_terms","ap: hyai b: hybi ps: PS p0: P0"))
 
-        call check(nf90_def_var(ncFileID, "PS", nf90_double, dimids = (/ StationDimID, timeDimID/), varID = VarID) )
-        call check(nf90_put_att(ncFileID, VarID, "long_name", "Surface pressure"))
-        call check(nf90_put_att(ncFileID, VarID, "units", "hPa"))
+      call check(nf90_def_var(ncFileID,"P0",nf90_double,varID))
+      call check(nf90_put_att(ncFileID,varID,"units","hPa"))
+      call check(nf90_def_var(ncFileID,"PS",nf90_double,[StationDimID,timeDimID],varID))
+      call check(nf90_put_att(ncFileID,varID,"long_name","Surface pressure"))
+      call check(nf90_put_att(ncFileID,varID,"units","hPa"))
         
-        !The hybrid sigma-pressure coordinate for level k is defined as ap(k)/p0+b(k). 
-        call check(nf90_def_var(ncFileID, "hyam", nf90_double,dimids = levDimID,  varID = hyamVarID) )
-        call check(nf90_put_att(ncFileID, hyamVarID, "long_name","hybrid A coefficient at layer midpoints"))
-        call check(nf90_put_att(ncFileID, hyamVarID, "units","hPa"))
-        call check(nf90_def_var(ncFileID, "hybm", nf90_double,dimids = levDimID,  varID = hybmVarID) )
-        call check(nf90_put_att(ncFileID, hybmVarID, "long_name","hybrid B coefficient at layer midpoints"))
+      !The hybrid sigma-pressure coordinate for level k is defined as ap(k)/p0+b(k). 
+      call check(nf90_def_var(ncFileID,"hyam",nf90_double,levDimID,varID))
+      call check(nf90_put_att(ncFileID,varID,"long_name","hybrid A coefficient at layer midpoints"))
+      call check(nf90_put_att(ncFileID,varID,"units","hPa"))
+      call check(nf90_def_var(ncFileID,"hybm",nf90_double,levDimID,varID))
+      call check(nf90_put_att(ncFileID,varID,"long_name","hybrid B coefficient at layer midpoints"))
         
-        call check(nf90_def_var(ncFileID, "ilev", nf90_double, dimids = ilevDimID, varID = ilevVarID) )
-        call check(nf90_put_att(ncFileID, ilevVarID, "standard_name","atmosphere_hybrid_sigma_pressure_coordinate"))
-        call check(nf90_put_att(ncFileID, ilevVarID, "long_name", "hybrid level at layer interfaces (A/P0+B)"))
-        call check(nf90_put_att(ncFileID, ilevVarID, "positive", "up"))
-        call check(nf90_put_att(ncFileID, ilevVarID, "formula_terms","ap: hyai b: hybi ps: PS p0: P0"))
-        call check(nf90_def_var(ncFileID, "hyai", nf90_double, dimids = ilevDimID,  varID = hyaiVarID) )
-        call check(nf90_put_att(ncFileID, hyaiVarID, "long_name","hybrid A coefficient at layer interfaces"))
-        call check(nf90_put_att(ncFileID, hyaiVarID, "units","hPa"))
-        call check(nf90_def_var(ncFileID, "hybi", nf90_double, dimids = ilevDimID,  varID = hybiVarID) )
-        call check(nf90_put_att(ncFileID, hybiVarID, "long_name","hybrid B coefficient at layer interfaces"))
-        
-        do k=1,KMAXcdf
-           !REVERSE order of k !
-           Acdf(k)=A_mid(KMAX_MID-k+1)
-           Bcdf(k)=B_mid(KMAX_MID-k+1)
-           Aicdf(k)=A_bnd(KMAX_BND-k+1)
-           Bicdf(k)=B_bnd(KMAX_BND-k+1)
-           if(k==KMAXcdf)then
-              Aicdf(k+1)=A_bnd(KMAX_BND-k)
-              Bicdf(k+1)=B_bnd(KMAX_BND-k)
-           endif
-        enddo
-        
-        call check(nf90_put_var(ncFileID, hyamVarID, Acdf(1:KMAXcdf)/100.0) )
-        call check(nf90_put_var(ncFileID, hybmVarID, Bcdf(1:KMAXcdf)) )
-        call check(nf90_put_var(ncFileID, hyaiVarID, Aicdf(1:KMAXcdf+1)/100.0) )
-        call check(nf90_put_var(ncFileID, hybiVarID, Bicdf(1:KMAXcdf+1)) )
-        do i=1,KMAXcdf
-           kcoord(i)=Acdf(i)/Pref+Bcdf(i)
-        enddo
-        call check(nf90_put_var(ncFileID, levVarID, kcoord(1:KMAXcdf)) )
-        do i=1,KMAXcdf+1
-           kcoord(i)=Aicdf(i)/Pref+Bicdf(i)
-        enddo
-        call check(nf90_put_var(ncFileID, ilevVarID, kcoord(1:KMAXcdf+1)) )
-     else
-        if(debug_1D)write(*,*)'not defining vertical levels ',KMAXcdf
-     endif
+      call check(nf90_def_var(ncFileID,"hyai",nf90_double,ilevDimID,varID))
+      call check(nf90_put_att(ncFileID,varID,"long_name","hybrid A coefficient at layer interfaces"))
+      call check(nf90_put_att(ncFileID,varID,"units","hPa"))
+      call check(nf90_def_var(ncFileID,"hybi",nf90_double,ilevDimID,varID) )
+      call check(nf90_put_att(ncFileID,varID,"long_name","hybrid B coefficient at layer interfaces"))       
+    else
+      if(debug_1D)write(*,*)'not defining vertical levels ',KMAXcdf
+    endif
 
+    call check(nf90_def_var(ncFileID,"time",nf90_double,timeDimID,varID))
+    call check(nf90_put_att(ncFileID,varID,"long_name", "time (instantaneous)"))
+    call check(nf90_put_att(ncFileID,varID,"units","days since 1900-1-1 0:0:0"))
 
-     call check(nf90_def_var(ncFileID, "time", nf90_double, dimids = timeDimID, varID = VarID) )
-     call check(nf90_put_att(ncFileID, VarID, "long_name", "time (instantaneous)"))
-     call check(nf90_put_att(ncFileID, VarID, "units", "days since 1900-1-1 0:0:0"))
-
-     call Date_And_Time(date=lastmodified_date,time=lastmodified_hour)
-     call check(nf90_put_att(ncFileID, nf90_global, "created_date", lastmodified_date))
-     call check(nf90_put_att(ncFileID, nf90_global, "created_hour", lastmodified_hour))
+    call Date_And_Time(date=lastmodified_date,time=lastmodified_hour)
+    call check(nf90_put_att(ncFileID,nf90_global,"created_date",lastmodified_date))
+    call check(nf90_put_att(ncFileID,nf90_global,"created_hour",lastmodified_hour))
          
-     !global attributes:
-     do n=1,NAttributes(0)
-        if(debug_1D)write(*,*)'Global Attribute ',trim(AttributeNames(0,n)),' ',trim(AttributeValues(0,n))
-        call check(nf90_put_att(ncFileID, nf90_global, trim(AttributeNames(0,n)), trim(AttributeValues(0,n))))
-     enddo
-     do n=1,NCoords(0)
-        if(debug_1D)write(*,*)'Global Coords ',trim(CoordNames(0,n)),CoordValues(0,n)
-        call check(nf90_put_att(ncFileID, nf90_global, trim(CoordNames(0,n)),CoordValues(0,n) ))
-     enddo
+    !global attributes
+    do n=1,NMetaData
+      if(MetaData(0,n)=="")cycle
+      if(debug_1D)write(*,*)'Global Attribute ',trim(MetaData(0,n))
+      call wordsplit(trim(MetaData(0,n)),3,auxL,k,ierr,separator=':')
+      call CheckStop(3,k,&
+        "NetCDF_ml: too short metadata definition "//trim(MetaData(0,n)))
+      select case(auxL(2))
+      case("c","C","s","S") ! string/char attribute
+        call check(nf90_put_att(ncFileID,nf90_global,trim(auxL(1)),trim(auxL(3))),&
+                   "MetaData="//trim(MetaData(0,n)))
+      case("i","I","n","N") ! integer attribute
+        read(auxL(3),*)auxI(1)
+        call check(nf90_put_att(ncFileID,nf90_global,trim(auxL(1)),auxI(1)),&
+                   "MetaData="//trim(MetaData(0,n)))
+      case("f","F","d","D") ! float/double attribute
+        read(auxL(3),*)auxR(1)
+        call check(nf90_put_att(ncFileID,nf90_global,trim(auxL(1)),auxR(1)),&
+                   "MetaData="//trim(MetaData(0,n)))
+      case default
+        call CheckStop("NetCDF_ml: unknown metadata-type "//trim(MetaData(0,n)))
+      endselect
+    enddo
      
-     OUTtype=Real4  !default value
-     if(present(CDFtype))OUTtype=CDFtype
-     if(OUTtype==Int1)then
-        OUTtype=nf90_byte
-     elseif(OUTtype==Int2)then
-        OUTtype=nf90_short
-     elseif(OUTtype==Int4)then
-        OUTtype=nf90_int
-     elseif(OUTtype==Real4)then
-        OUTtype=nf90_float
-     elseif(OUTtype==Real8)then
-        OUTtype=nf90_double
-     else
+    OUTtype=Real4  !default value
+    if(present(CDFtype))OUTtype=CDFtype
+    select case(OUTtype)
+      case(Int1 );OUTtype=nf90_byte
+      case(Int2 );OUTtype=nf90_short
+      case(Int4 );OUTtype=nf90_int
+      case(Real4);OUTtype=nf90_float
+      case(Real8);OUTtype=nf90_double
+      case default;
         call CheckStop("NetCDF_ml:undefined datatype")
-     endif
+    endselect
 
-     do iSpec=1,NSpec
-        !define the variables
-        if(debug_1D)write(*,*)'Defining new variable ',trim(SpecName(iSpec)),OUTtype
-        if(KMAXcdf>1)then
-           call check(nf90_def_var(ncid = ncFileID, name = SpecName(iSpec), xtype = OUTtype,&
-                dimids = (/ StationDimID, levDimID, timeDimID/), varID=varID ) )
-        else
-           call check(nf90_def_var(ncid = ncFileID, name = SpecName(iSpec), xtype = OUTtype,&
-                dimids = (/ StationDimID, timeDimID/), varID=varID ) )
+    do iSpec=1,NSpec
+      !define the variables
+      if(debug_1D)write(*,*)'Defining new variable ',trim(SpecDef(iSpec,0)),OUTtype
+      if(KMAXcdf>1)then
+        call check(nf90_def_var(ncFileID,SpecDef(iSpec,0),OUTtype,&
+              [StationDimID,levDimID,timeDimID],varID))
+      else
+        call check(nf90_def_var(ncFileID,SpecDef(iSpec,0),OUTtype,&
+              [StationDimID,timeDimID],varID))
+      endif
+      !species attributes:
+      do n=1,NSpec_Att
+        if(SpecDef(iSpec,n)=="")cycle
+        call wordsplit(trim(SpecDef(iSpec,n)),3,auxL,k,ierr,separator=':')
+        call CheckStop(3,k,&
+          "NetCDF_ml: too short metadata definition "//trim(SpecDef(iSpec,n)))
+        select case(auxL(1))
+        case("_FillValue")      ! ensure that OUTtype/_FillValue types match
+          select case(OUTtype)  ! even under -r8 compilation option
+          case(NF90_BYTE)   ! _FillValue=achar(0)
+            call check(nf90_put_att(ncFileID,varID,trim(auxL(1)),NF90_FILL_BYTE))
+          case(NF90_SHORT)  ! _FillValue=-32767
+            call check(nf90_put_att(ncFileID,varID,trim(auxL(1)),NF90_FILL_SHORT))
+          case(NF90_INT)    ! _FillValue=-2147483647
+            call check(nf90_put_att(ncFileID,varID,trim(auxL(1)),NF90_FILL_INT))
+          case(NF90_FLOAT)  ! _FillValue=9.9692099683868690e+36
+            call check(nf90_put_att(ncFileID,varID,trim(auxL(1)),NF90_FILL_FLOAT))
+          case(NF90_DOUBLE) ! _FillValue=9.9692099683868690e+36
+            call check(nf90_put_att(ncFileID,varID,trim(auxL(1)),NF90_FILL_DOUBLE))
+          endselect
+        case default
+          auxC(1)=NF90_FILL_CHAR
+          auxI(1)=NF90_FILL_INT
+          auxR(1)=NF90_FILL_DOUBLE
+          select case(auxL(2))
+          case("c","C","s","S") ! string/char attribute
+            if(auxL(3)/="missing")auxC(1)=trim(auxL(3))
+            call check(nf90_put_att(ncFileID,varID,trim(auxL(1)),trim(auxC(1))),&
+                       "SpecDef="//trim(SpecDef(iSpec,n)))
+          case("i","I","n","N") ! integer attribute
+            if(auxL(3)/="missing")read(auxL(3),*)auxI(1)
+            call check(nf90_put_att(ncFileID,varID,trim(auxL(1)),auxI(1)),&
+                       "SpecDef="//trim(SpecDef(iSpec,n)))
+          case("f","F","d","D") ! float/double attribute
+            if(auxL(3)/="missing")read(auxL(3),*)auxR(1)
+            call check(nf90_put_att(ncFileID,varID,trim(auxL(1)),auxR(1)),&
+                       "SpecDef="//trim(SpecDef(iSpec,n)))
+          case default
+            call CheckStop("NetCDF_ml: unknown metadata-type "//trim(SpecDef(iSpec,n)))
+          endselect
+        endselect
+      enddo
+    enddo
+
+    if(debug_1D)write(*,*)'Defining station meta-data'
+    do n=1,NMetaData
+      if(MetaData(1,n)=="")cycle
+      if(debug_1D)write(*,*)'Defining station ',trim(MetaData(1,n))
+      call wordsplit(trim(MetaData(1,n)),3,auxL,k,ierr,separator=':')
+      call CheckStop(3,k,&
+        "NetCDF_ml: too short metadata definition "//trim(MetaData(1,n)))
+      select case(auxL(2))
+      case("c","C","s","S") ! string/char attribute
+        call check(nf90_def_var(ncFileID,auxL(1),nf90_char,&
+            [StringDimID,StationDimID],varID),"def:"//trim(auxL(1)))
+        call check(nf90_put_att(ncFileID,varID,"_FillValue",NF90_FILL_CHAR),&
+            "def:"//trim(auxL(1))//"@_FillValue")
+      case("i","I","n","N") ! integer attribute
+        call check(nf90_def_var(ncFileID,auxL(1),nf90_int,&
+            StationDimID,varID),"def:"//trim(auxL(1)))
+       call check(nf90_put_att(ncFileID,varID,"_FillValue",NF90_FILL_INT),&
+            "def:"//trim(auxL(1))//"@_FillValue")
+      case("f","F","d","D") ! float/double attribute
+        call check(nf90_def_var(ncFileID,auxL(1),nf90_double,&
+            StationDimID,varID),"def:"//trim(auxL(1)))
+        call check(nf90_put_att(ncFileID,varID,"_FillValue",NF90_FILL_DOUBLE),&
+            "def:"//trim(auxL(1))//"@_FillValue")
+      case default
+        call CheckStop("NetCDF_ml: unknown metadata-type "//trim(MetaData(1,n)))
+      endselect
+    enddo
+
+    call check(nf90_put_att(ncFileID,nf90_global,"lastmodified_date",lastmodified_date))
+    call check(nf90_put_att(ncFileID,nf90_global,"lastmodified_hour",lastmodified_hour))
+    call check(nf90_enddef(ncFileID),"define_done"//trim(fileName))
+
+    if(debug_1D)write(*,*)'Writing station meta-data'
+    do n=1,NMetaData
+      if(MetaData(1,n)=="")cycle
+      if(debug_1D)write(*,*)'Writing station ',trim(MetaData(1,n))
+      call wordsplit(trim(MetaData(1,n)),3,auxL,k,ierr,separator=':')
+      call CheckStop(3,k,&
+        "NetCDF_ml: too short metadata definition "//trim(MetaData(1,n)))
+      metaName=auxL(1)
+      metaType=auxL(2)
+      auxC(:)=NF90_FILL_CHAR
+      auxI(:)=NF90_FILL_INT
+      auxR(:)=NF90_FILL_DOUBLE
+      do iSta=1,NStations
+        if(MetaData(iSta,n)=="")cycle
+        call wordsplit(trim(MetaData(iSta,n)),3,auxL,k,ierr,separator=':')
+        call CheckStop(3,k,&
+          "NetCDF_ml: too short metadata definition "//trim(MetaData(iSta,n)))
+        call CheckStop(metaName,auxL(1),&
+          "NetCDF_ml: inconsistent metadata-name definition "//trim(MetaData(iSta,n)))
+        call CheckStop(metaType,auxL(2),&
+          "NetCDF_ml: inconsistent metadata-type definition "//trim(MetaData(iSta,n)))
+        if(auxL(3)=="missing")cycle
+        select case(metaType)
+          case("c","C","s","S");auxC(iSta)=trim(auxL(3))  ! string/char attribute
+          case("i","I","n","N");read(auxL(3),*)auxI(iSta) ! integer attribute
+          case("f","F","d","D");read(auxL(3),*)auxR(iSta) ! float/double attribute
+        endselect
+      enddo
+      call check(nf90_inq_varid(ncFileID,metaName,varID),"inq:"//trim(metaName))
+      select case(metaType)
+      case("c","C","s","S") ! string/char attribute
+        call check(nf90_put_var(ncFileID,varID,auxC),"put:"//trim(metaType))
+      case("i","I","n","N") ! integer attribute
+        call check(nf90_put_var(ncFileID,varID,auxI),"put:"//trim(metaType))
+      case("f","F","d","D") ! float/double attribute
+        call check(nf90_put_var(ncFileID,varID,auxR),"put:"//trim(metaType))
+      case default
+        call CheckStop("NetCDF_ml: wrong metadata-type definition "//trim(metaType))
+      endselect
+    enddo
+
+    if(KMAXcdf>1)then
+      call check(nf90_inq_varid(ncFileID,"P0",varID),"inq:P0")
+      call check(nf90_put_var(ncFileID,varID,Pref/100.0 ),"put:P0")
+
+      do k=1,KMAXcdf
+       !REVERSE order of k !
+        Acdf(k)=A_mid(KMAX_MID-k+1)
+        Bcdf(k)=B_mid(KMAX_MID-k+1)
+        Aicdf(k)=A_bnd(KMAX_BND-k+1)
+        Bicdf(k)=B_bnd(KMAX_BND-k+1)
+        if(k==KMAXcdf)then
+          Aicdf(k+1)=A_bnd(KMAX_BND-k)
+          Bicdf(k+1)=B_bnd(KMAX_BND-k)
         endif
-        !species attributes:
-        do n=1,NSpec_Att
-           call check(nf90_put_att(ncFileID, VarID, trim(Spec_AttributeNames(iSpec,n)), trim(Spec_AttributeValues(iSpec,n))))
-        enddo
-     enddo
+      enddo
+        
+      call check(nf90_inq_varid(ncFileID,"hyam",varID),"inq:hyam")
+      call check(nf90_put_var(ncFileID,varID,Acdf(1:KMAXcdf)/1e2),"put:hyam")
+      call check(nf90_inq_varid(ncFileID,"hybm",varID),"inq:hybm")
+      call check(nf90_put_var(ncFileID,varID,Bcdf(1:KMAXcdf)),"put:hybm")
+      call check(nf90_inq_varid(ncFileID,"hyai",varID),"inq:hyai")
+      call check(nf90_put_var(ncFileID,varID,Aicdf(1:KMAXcdf+1)/1e2),"put:hyai")
+      call check(nf90_inq_varid(ncFileID,"hybi",varID),"inq:hybi")
+      call check(nf90_put_var(ncFileID,varID,Bicdf(1:KMAXcdf+1)),"put:hybi")
 
-     if(debug_1D)write(*,*)'Defining station dimension '
-     call check(nf90_def_var(ncid = ncFileID, name = 'station', xtype = nf90_char,&
-          dimids = (/ StringDimID, StationDimID /), varID=StationvarID ) )
-!Comment: defining xtype = nf90_string gives the error message 
-!         "Mapped access for atomic types only" when trying to write the strings with put_var
+      do i=1,KMAXcdf
+        kcoord(i)=Acdf(i)/Pref+Bcdf(i)
+      enddo
+      call check(nf90_inq_varid(ncFileID,"lev",varID),"inq:lev")
+      call check(nf90_put_var(ncFileID,varID,kcoord(1:KMAXcdf))   ,"put:lev")
 
-     do iSta=1,NStations
-        !stations attributes:
-        string=trim(AttributeValues(iSta,1))
-        if(debug_1D)write(*,*)'Defining station name ',iSta,string
-        call check(nf90_put_var(ncFileID, StationvarID, string, start = (/1, iSta/) ))
-       
-        call check(nf90_def_var(ncid = ncFileID, name = trim(string), xtype = nf90_char, varID=VarID ) )
-        call check(nf90_put_att(ncFileID, VarID, 'NetCDF_internal_index', iSta))
-        do n=1,NAttributes(iSta)
-           if(debug_1D)write(*,*)'Attribute ',trim(AttributeNames(iSta,n)),' ',trim(AttributeValues(iSta,n))
-           call check(nf90_put_att(ncFileID, VarID, trim(AttributeNames(iSta,n)), trim(AttributeValues(iSta,n))))
-        enddo
-        do n=1,NCoords(iSta)
-           if(debug_1D)write(*,*)'Coords ',trim(CoordNames(iSta,n)),CoordValues(iSta,n)
-           call check(nf90_put_att(ncFileID, VarID, trim(CoordNames(iSta,n)),CoordValues(iSta,n) ))
-        enddo
-     enddo
-    
-     call check(nf90_put_att(ncFileID, nf90_global, "lastmodified_date", lastmodified_date))
-     call check(nf90_put_att(ncFileID, nf90_global, "lastmodified_hour", lastmodified_hour))
-     
-     call check(nf90_close(ncFileID))
-     
+      do i=1,KMAXcdf+1
+        kcoord(i)=Aicdf(i)/Pref+Bicdf(i)
+      enddo
+      call check(nf90_inq_varid(ncFileID,"ilev",varID),"inq:ilev")
+      call check(nf90_put_var(ncFileID,varID,kcoord(1:KMAXcdf+1)),"put:ilev")
+    endif
+    call check(nf90_close(ncFileID))    
   endif !Masterproc
-  
-end subroutine Create_CDF_sondes
+endsubroutine Create_CDF_sondes
 
 subroutine Init_new_netCDF(fileName,iotyp)
 integer,  intent(in) :: iotyp
@@ -2165,14 +2268,10 @@ subroutine WriteCDF(varname,vardate,filename_given,newfile)
  real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: dat ! Data arrays
  character (len=100):: fileName
  real ::scale
- integer :: n,iotyp,ndim,kmax,icmp,ndate(4),nseconds
+ integer :: n,iotyp,ndim,kmax,icmp,nseconds
  type(Deriv) :: def1 ! definition of fields
 
- ndate(1)=vardate%year
- ndate(2)=vardate%month
- ndate(3)=vardate%day
- ndate(4)=vardate%hour
- call idate2nctime(ndate,nseconds)
+ call date2nctime(vardate,nseconds)
  nseconds=nseconds+vardate%seconds
  write(*,*)nseconds
 

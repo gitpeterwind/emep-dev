@@ -98,8 +98,8 @@ type(umap), public, save :: unit_map(23-1)=(/&
 ! umap("ext" ,"ext550nm",F,T,extX),&! ext* units need to be further multiplied...
 ! Coulumn output
   umap("ugm2"   ,"ug/m2"        ,F,T,ugXm3),&  ! ug* units need to be further multiplied
-  umap("mcm2"   ,"molec/cm2"    ,F,F,to_molec_cm2),&
-  umap("e15mcm2","1e15molec/cm2",F,F,to_molec_cm2*1e-15)/)
+  umap("mcm2"   ,"molec/cm2"    ,F,T,to_molec_cm2),&
+  umap("e15mcm2","1e15molec/cm2",F,T,to_molec_cm2*1e-15)/)
 
 logical, private, save :: Initialize_Units = .true.
 

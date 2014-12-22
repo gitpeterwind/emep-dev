@@ -153,6 +153,31 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+22th December 2014 Alvaro  2914
+
+Sites_ml,NetCDF_ml:
+- Rewrite siteswrt_surf, siteswrt_sondes, siteswrt_out (Sites_ml), 
+  Create_CDF_sondes & Out_CDF_sondes (NetCDF_ml), so the station meta-data 
+  can is stored on variables instead of attributes.
+- Instead of using multiple arrays for attribute names and values for each 
+  attribute type (string/integer/real), use string arrays to hold all
+  meta-data.
+- Global attributes and station meta data are collected on MetaData array, and
+  variables names attributes (long_name, units, _FillValue) on SpecDef array.
+  MetaData and SpecDef are phrased on Create_CDF_sondes to retrieve the information.
+- Special care is taken to match variables and _FilValue types.
+
+Units_ml:
+- Correct mcm2 (molec/cm2) and e15mcm2 (1e15molec/cm2) definitions.
+  This units do need to be further multiplied by roa to complete the conversion.
+
+config_BM-EECCA.nml:
+Following changes on config_EMEPSTD.nml
+- Remove unused DEBUG%GLOBBC and DEBUG%HOURLY_OUTPUTS
+- Add USES%PFT_MAPS 
+- Set EMIS_OUT=F and need_poll=F
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 18th December 2014 Peter, Massimo  2913
 
 Additional "if" that allows to use WRF metdata directly from WRF output.
@@ -162,7 +187,6 @@ MetFields_ml
 GridValues_ml.f90
 NetCDF_ml.f90
 Met_ml.f90
-
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 18th December 2014 Peter, Dave, Svetlana  2911-2912
@@ -331,19 +355,19 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 5th December 2014  Alvaro 2902
 
 Derived_ml:
-- Explicitely set unitscale, unittxt and volunit for SHL output,
+- Explicitly set unitscale, unittxt and volunit for SHL output,
   as they are NOT supported by Units_Scale (Units_ml)
 - Allow all units supported by Group_Units to be used on group_calc.
   Use needroa optional output on Group_Units to determine when to multiply
   by density
 
 Units_ml:
-- Declare explicitely when a suported unit should be trated on Derived_ml
-  as PPB class (unit_map%volunit).
-- Declare explicitely when a suported unit needs to be multipied
+- Declare explicitly when a supported unit should be treated
+  as PPB class by Derived_ml (unit_map%volunit).
+- Declare explicitly when a supported unit needs to be multiplied
   by the air density to complete the unit conversion (unit_map%needroa).
 - Return unit_map%volunit and unit_map%needroa as optional output on
-  Group_Units, Group_Scale and Units_Scale subroutines/functions.
+  Group_Units, Group_Scale and Units_Scale 
 
 ModelConstants_ml,Units_ml,Output_hourly:
 - Rename MFAC to to_number_cm3 and move it from ModelConstants_ml to Units_ml.
