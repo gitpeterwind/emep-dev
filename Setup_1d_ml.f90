@@ -92,7 +92,7 @@ contains
 
     integer, intent(in) :: i,j    ! coordinates of column
 
-   !/* local
+   !** local
 
     integer           :: k, n, ispec    ! loop variables
     real              :: qsat ! saturation water content
@@ -220,7 +220,7 @@ contains
         end do ! iqrc
      enddo
 
-     !/** Add volcanoe emissions
+     !*** Add volcanoe emissions
 
      if ( Volcanoes_found  ) then ! for models that include volcanos
                       !QRCVOL=QRCSO2 for models with volcanos
@@ -252,7 +252,7 @@ contains
 !   EmergencyRate(i,j) returns an array of rcemis size.
     if(USE_EMERGENCY) rcemis(:,:)=rcemis(:,:)+EmergencyRate(i,j)
 
-    !/** lightning and aircraft ... Airial NOx emissions if required:
+    !*** lightning and aircraft ... Airial NOx emissions if required:
 
      if ( USE_LIGHTNING_EMIS  ) then
 
@@ -285,7 +285,7 @@ contains
 
      end if ! AIRCRAFT NOX
 
-     !/** Add sea salt production
+     !*** Add sea salt production
 
      if ( USE_ROADDUST .and. itot_RDF>0  ) then  ! Hard-code indices for now
 

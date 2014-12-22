@@ -33,7 +33,7 @@ use TimeDate_ExtraUtil_ml,only: date2string,string2date
 implicit none
 private
 
- !/* subroutines:
+!** subroutines:
 public :: EmergencyRate      ! Emission rate
 
 logical, save ::      &

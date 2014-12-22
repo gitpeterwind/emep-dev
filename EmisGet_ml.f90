@@ -534,7 +534,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 ! top line. 
 !-------------------------------------------------------------------------
 
-  !/** local variables **/
+  !*** local variables ***
   integer            :: ie, iq, ic, iland1, iland2 & ! loop variables
                        ,inland                     & ! Country read from femis
                        ,isec, isec1 , isec2        & ! loop vars: emis sectors
@@ -547,7 +547,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
  !--------------------------------------------------------
 
 
-  e_fact(:,:,:) = 1.0            !/*** default value = 1 ***/
+  e_fact(:,:,:) = 1.0            !**** default value = 1 ****
 
   associate ( debugm0 => ( DEBUG_GETEMIS .and. MasterProc ) )
 
@@ -557,7 +557,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
   if ( ios == NO_FILE ) then
         ios = 0
         write( *,*) "WARNING: NO FEMIS FILE"
-        return !/** if no femis file, e_fact=1 as default **/ 
+        return !*** if no femis file, e_fact=1 as default *** 
   endif
   call CheckStop( ios < 0 ,"EmisGet:ios error in femis.dat")
 
@@ -1107,7 +1107,7 @@ end if
            do iland = iland1, iland2
              do i = 1, emis_nsplit(ie) !DSRC do i = 1, EMIS_NSPLIT(isp)
 
-                !/** assign and convert from percent to fractions: **/
+                !*** assign and convert from percent to fractions: ***
 
                 iqrc = sum(emis_nsplit(1:ie-1)) + i
                 tmp_emisfrac(iqrc,isec,iland) = 0.01 * tmp(i)

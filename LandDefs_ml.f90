@@ -27,11 +27,11 @@ module LandDefs_ml
 ! Language: F-compliant
 
   ! 2 ) Phenology part
-  !/*** DESCRIPTION**********************************************************
-  !/   reads in or sets phenology data used for the default deposition module
-  !/   Users with own phenology data can simply provide their own subroutines
-  !/   (replacing Init_phenology and Phenology)
-  !/*************************************************************************
+!**** DESCRIPTION**********************************************************
+! reads in or sets phenology data used for the default deposition module
+! Users with own phenology data can simply provide their own subroutines
+! (replacing Init_phenology and Phenology)
+!**************************************************************************
 
  public  :: Init_LandDefs         ! Sets table for LAI, SAI, hveg
  public  :: Growing_season 
@@ -47,7 +47,7 @@ end interface Check_LandCoverPresent
                                                 !in EMEP grid (per April 2013)
  integer, public, save :: iLC_grass    ! Used with clover outputs
 
- !/*****   Data to be read from Phenology_inputs.dat:
+!******   Data to be read from Phenology_inputs.dat:
 
   type, public :: land_input
      character(len=15) :: name

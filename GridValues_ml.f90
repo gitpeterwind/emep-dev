@@ -112,7 +112,7 @@ real, public, parameter :: &
   an_EMEP=237.7316364, &! = 6.370e6*(1.0+0.5*sqrt(3.0))/50000.
   xp_EMEP_old=43.0,yp_EMEP_old=121.0
 
-!/** Map factor stuff:
+!*** Map factor stuff:
 real, public, save,allocatable, dimension(:,:) ::  &
   xm_i,     & ! map-factor in i direction, between cell j and j+1
   xm_j,     & ! map-factor in j direction, between cell i and i+1
@@ -120,7 +120,7 @@ real, public, save,allocatable, dimension(:,:) ::  &
   xmd,      & ! 1/xm2  
   xm2ji,xmdji
 
-!/** Grid Area
+!*** Grid Area
 real, public, save,allocatable, dimension(:,:) :: GridArea_m2
 
 integer, public, save :: &

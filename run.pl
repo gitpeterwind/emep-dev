@@ -9,7 +9,7 @@
 # Vilje: (take out one # and put one # before the Stallo). 
 #   select= number of nodes, ncpus=number of threads per node to reserve, 
 #   mpiprocs=number of MPI threads per node. For 64 processors:
-##PBS -l select=4:ncpus=32:mpiprocs=32 -v MPI_MSGS_MAX=2097152
+##PBS -l select=4:ncpus=32:mpiprocs=32 -v MPI_MSGS_MAX=2097152,MPI_BUFS_PER_PROC=2048
 # Stallo:
 #   Some nodes on Stallo have 16, most have 20 cpus
 #   use ib for infiniband (fast interconnect).
@@ -138,7 +138,8 @@ my %BENCHMARK;
 #  %BENCHMARK = (grid=>"MACC02",year=>2008,emis=>"2008_emis_EMEP_MACC") ;
 if (%BENCHMARK) {
   $BENCHMARK{'archive'} = 1;                        # save summary info in $DataDir
-  $BENCHMARK{'debug'} = $BENCHMARK{'archive'};      # chech if all debug flags are .false.
+  $BENCHMARK{'debug'} = $BENCHMARK{'archive'}; # chech if all debug flags are .false.
+  $BENCHMARK{'cleanup'}=$BENCHMARK{'archive'}; # remove @list_of_files after run 
 # Default setting, if not previously specified
   $BENCHMARK{'chem'}  = "EmChem09soa"
     unless $BENCHMARK{'chem'};  # chemical mecanism, e.g. OpenSource 2008
@@ -601,7 +602,8 @@ foreach my $scenflag ( @runs ) {
   print "STARTING RUN $scenario \n";
 
   my $runlabel1 = "$scenario";   # NO SPACES! SHORT name (used in CDF names)
-  my $svn = qx(svnversion -n);
+  my $svn = "$ProgDir/.version";
+     $svn = (-e $svn)?EMEP::Sr::slurp($svn):qx(svnversion -n);
   my $runlabel2 = "$testv\_$Chem\_svn$svn\_$scenario\_$year\_Trend$iyr_trend";   # NO SPACES! LONG (written into CDF files)
 
   my $RESDIR = "$WORKDIR/$scenario";
@@ -627,7 +629,7 @@ foreach my $scenflag ( @runs ) {
     $MetDir=~s:$year:%Y:g;                      # Genereal case for Jan 1st
     for my $n (0,1..($CWFDAYS-1)) {
       my $metfile="$MetDir/meteo%Y%m%d_%%02d.nc";
-      if($CWFDAYS<=10){  # forecast with 00/12 UTC FC met.
+      if($CWFDAYS<=6){   # forecast with 00/12 UTC FC met.
         $metfile=sprintf date2str($CWFBASE." $metday day ago",$metfile),$n+$metday;
       }else{             # hindcast using day 0,..,3 FC met.
         $metfile=sprintf date2str($CWFBASE." $metday day ago $n day",$metfile),$metday;
@@ -1184,7 +1186,7 @@ EOT
   if ($DRY_RUN or $SR){ # keep femis.dat
     @list_of_files = grep {$_ ne 'femis.dat'} @list_of_files;
   }
-  unlink ( @list_of_files );
+  unlink ( @list_of_files ) unless(%BENCHMARK and not $BENCHMARK{'cleanup'});
 
 #tar sites and sondes. Use sondes to check as these are produced les frequently.
   my $last_sondes = sprintf  "sondes.%02d%02d", $mm2, $yy;

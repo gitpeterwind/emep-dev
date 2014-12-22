@@ -1,30 +1,3 @@
-! <Wesely_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
-!          Chemical transport Model>
-!*****************************************************************************!
-!*
-!*  Copyright (C) 2007-2011 met.no
-!*
-!*  Contact information:
-!*  Norwegian Meteorological Institute
-!*  Box 43 Blindern
-!*  0313 OSLO
-!*  NORWAY
-!*  email: emep.mscw@met.no
-!*  http://www.emep.int
-!*
-!*    This program is free software: you can redistribute it and/or modify
-!*    it under the terms of the GNU General Public License as published by
-!*    the Free Software Foundation, either version 3 of the License, or
-!*    (at your option) any later version.
-!*
-!*    This program is distributed in the hope that it will be useful,
-!*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-!*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!*    GNU General Public License for more details.
-!*
-!*    You should have received a copy of the GNU General Public License
-!*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************!
 module Wesely_ml
 !..............................................................................
 ! specifies data for deposition modelling using procedures recommended by
@@ -96,7 +69,7 @@ integer, public, parameter :: &
   WES_H2O2=  6, WES_ALD=  7, WES_HCHO=  8, WES_OP =  9, WES_PAA = 10, &
   WES_ORA = 11, WES_NH3= 12, WES_PAN = 13, WES_HNO2=14
 
-!/** Variables used in deposition calculations
+!*** Variables used in deposition calculations
 
 ! DDEP_xx gives the index that will be used in the EMEP model
 ! WES_xx gives the index of the Wesely gas to which this corresponds
@@ -106,7 +79,7 @@ integer, public, parameter :: &
 ! can use the rates for other similar species. (e.g. AMSU can use
 ! the Vg for SO4.  Must set NDRYDEP_CALC species
 
-!/** IMPORTANT: the variables below must match up in the sense that, for
+!*** IMPORTANT: the variables below must match up in the sense that, for
 ! example, if DDEP_NH3=4 then the 4th element of DRYDEP must be WES_NH3.
 
 integer, public, parameter :: NDRYDEP_GASES = 11  ! gases

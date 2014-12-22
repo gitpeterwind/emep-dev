@@ -1,31 +1,3 @@
-! <BoundaryConditions_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
-!          Chemical transport Model>
-!*****************************************************************************!
-!*
-!*  Copyright (C) 2007-2013 met.no
-!*
-!*  Contact information:
-!*  Norwegian Meteorological Institute
-!*  Box 43 Blindern
-!*  0313 OSLO
-!*  NORWAY
-!*  email: emep.mscw@met.no
-!*  http://www.emep.int
-!*
-!*    This program is free software: you can redistribute it and/or modify
-!*    it under the terms of the GNU General Public License as published by
-!*    the Free Software Foundation, either version 3 of the License, or
-!*    (at your option) any later version.
-!*
-!*    This program is distributed in the hope that it will be useful,
-!*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-!*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!*    GNU General Public License for more details.
-!*
-!*    You should have received a copy of the GNU General Public License
-!*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************!
-! -----------------------------------------------------------------------
 module BoundaryConditions_ml
 ! -----------------------------------------------------------------------
 ! This module is the main driver module for defining and setting
@@ -716,8 +688,8 @@ contains
     if (DEBUG%BCS.and.debug_proc) then
        itest = 1
        print *,"BoundaryConditions: No CALLS TO BOUND Cs", first_call,idebug
-       !/** the following uses hard-coded  IXADV_ values for testing.
-       !    Remove later **/
+       !*** the following uses hard-coded  IXADV_ values for testing.
+       !    Remove later **
        info = 1   ! index for ozone in bcs
        print *,"BCs: bc2xn(info,itest) : ", bc2xn_adv(info,itest)
 

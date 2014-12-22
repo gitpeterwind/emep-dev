@@ -1,29 +1,3 @@
-! <Volcanos_ml.f90 - A component of the EMEP MSC-W Chemical transport Model>
-!*****************************************************************************!
-!*
-!*  Copyright (C) 2007-2011 met.no
-!*
-!*  Contact information:
-!*  Norwegian Meteorological Institute
-!*  Box 43 Blindern
-!*  0313 OSLO
-!*  NORWAY
-!*  email: emep.mscw@met.no
-!*  http://www.emep.int
-!*
-!*    This program is free software: you can redistribute it and/or modify
-!*    it under the terms of the GNU General Public License as published by
-!*    the Free Software Foundation, either version 3 of the License, or
-!*    (at your option) any later version.
-!*
-!*    This program is distributed in the hope that it will be useful,
-!*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-!*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!*    GNU General Public License for more details.
-!*
-!*    You should have received a copy of the GNU General Public License
-!*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************!
 module Volcanos_ml
 !-----------------------------------------------------------------------!
 ! Processes SOx emission heights from volcanoes
@@ -66,7 +40,7 @@ use KeyValueTypes,          only: KeyVal
 implicit none
 private
 
- !/* subroutines:
+ !** subroutines:
 public :: VolcGet,Set_Volc,Scale_Volc
 
 integer, public, parameter :: &
@@ -170,7 +144,7 @@ subroutine VolcGet(height_volc)
             'VOLCIJ:found i,j,height,ios',i,j,height,ios
           if ( ios /= 0 ) exit READVOLC
 
-          !/** Set the volcano number to be the same as in emission data (gridSOx)
+          !*** Set the volcano number to be the same as in emission data (gridSOx)
           do volc_no=1,nvolc
             if ((i_volc(volc_no)==i) .and. (j_volc(volc_no)==j)) then
               height_volc(volc_no)=height
@@ -244,7 +218,7 @@ subroutine VolcGet(height_volc)
     emis_volc(volc_no) = emis_volc(volc_no)* conv * xm2(i,j)
   enddo !volc_no
 
-  !/** broadcast volcano heights
+  !*** broadcast volcano heights
   CALL MPI_BCAST(height_volc,4*NMAX_VOLC,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
 
 end subroutine VolcGet
@@ -260,7 +234,7 @@ subroutine Set_Volc
   rcemis_volc0(:) = 0.0
   unit_conv1      = 0.0
 
-  !/** Set volcano
+  !*** Set volcano
   do volc_no=1,nvolc
     k=height_volc(volc_no)
     i=i_local(i_volc(volc_no))

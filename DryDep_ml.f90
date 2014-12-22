@@ -107,10 +107,10 @@ integer, public, parameter :: pNH4  = NH4_f
 
 logical, public, parameter :: COMPENSATION_PT = .false. 
 
-!/**************************************************************************
+!***************************************************************************
 !  Specifies which of the possible species (from Wesely's list)
 !  are required in the current air pollution model   
-!/**************************************************************************
+!***************************************************************************
 ! .... Define the mapping between the advected species and
 !      the specied for which the calculation needs to be done.
 !  We also define the number of species which will be deposited in

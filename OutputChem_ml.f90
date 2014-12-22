@@ -22,7 +22,7 @@ use TimeDate_ExtraUtil_ml,only: date2string
 
 implicit none
 
-!/* subroutines:
+!** subroutines:
 public :: Wrtchem
 public :: Output_fields   ! (iotyp)
 public :: wanted_iou      ! (iotyp, def%iotyp)

@@ -86,7 +86,7 @@ character(len=24), public, parameter, dimension(NXTRA_SITE_D2D) :: &
 !   "COLUMN_CO_k20  ","COLUMN_C2H6_k20","COLUMN_HCHO_k20","COLUMN_CH4_k20 ",
     "COLUMN_NO2_k20         " /)
 
-!/*** Aircraft outputs   (used in Polinat_ml)
+!**** Aircraft outputs   (used in Polinat_ml)
 !==============================================================
 !   Specify the species to be output by Polinat for aircraft flight tracks
 
@@ -99,7 +99,7 @@ integer, public, parameter, dimension(NADV_FLIGHT) :: &
   FLIGHT_ADV =  (/ IXADV_O3 /)
 
 
-!/*** Sonde outputs   (used in Sites_ml)
+!**** Sonde outputs   (used in Sites_ml)
 !==============================================================
 !     Specify the species to be output to the sondes.out file
 !  We typically deal with fewer species for sonde output than
@@ -129,7 +129,7 @@ character(len=10), public, parameter, dimension(NXTRA_SONDE) :: &
 !   setting "D3D" above and say D3_XKSIG12 here:
 
 !====================================================================
-!/*** Hourly outputs   (from hourly_out routine) to print out
+!**** Hourly outputs   (from hourly_out routine) to print out
 !     concentrations  or even met. parameters every hour
 !     (or multiple: HOURLY_FREQ) for specified sub-grid.
 !     Note: as to met. parameters, only temp2m Th arespecified
@@ -166,7 +166,7 @@ integer, public, dimension(:), allocatable :: levels_hourly  ! Set below
 
 type(Asc2D), public, dimension(:), allocatable :: hr_out  ! Set below
 
-!/** wanted binary dates... specify days for which full binary
+!*** wanted binary dates... specify days for which full binary
 !    output is wanted. Replaces the hard-coding which was in wrtchem:
 integer, public, parameter :: NBDATES = 3
 type(date), public, save, dimension(NBDATES) :: wanted_dates_inst
@@ -213,7 +213,7 @@ subroutine set_output_defs
   !==============================================================
   call Init_Units()
 
-  !/** Hourly outputs
+  !*** Hourly outputs
   !    Note that the hourly output uses **lots** of disc space, so specify
   !    as few as you need and with as small format as possible (cf max value).
 
@@ -624,7 +624,7 @@ subroutine set_output_defs
     /)
   endselect
 
-  !/** Consistency check:
+  !*** Consistency check:
   ! Was the array set?           R: %name/=none
   ! Was the D2D/Group found?     R: %spec>=0
   ! Is the variable name unique? R: find_index((i)%name,(:)%name)==i
@@ -647,7 +647,7 @@ subroutine set_output_defs
     exit
   enddo
 
-  !/** Wanted dates for instantaneous values output:
+  !*** Wanted dates for instantaneous values output:
   !    specify months,days,hours for which full output is wanted.
   wanted_dates_inst(1) = date(-1,1,1,0,0)
   wanted_dates_inst(2) = date(-1,1,1,3,0)

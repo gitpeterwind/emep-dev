@@ -1,30 +1,3 @@
-! <Rsurface_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
-!          Chemical transport Model>
-!*****************************************************************************! 
-!* 
-!*  Copyright (C) 2007-2012 met.no
-!* 
-!*  Contact information:
-!*  Norwegian Meteorological Institute
-!*  Box 43 Blindern
-!*  0313 OSLO
-!*  NORWAY
-!*  email: emep.mscw@met.no
-!*  http://www.emep.int
-!*  
-!*    This program is free software: you can redistribute it and/or modify
-!*    it under the terms of the GNU General Public License as published by
-!*    the Free Software Foundation, either version 3 of the License, or
-!*    (at your option) any later version.
-!* 
-!*    This program is distributed in the hope that it will be useful,
-!*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-!*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!*    GNU General Public License for more details.
-!* 
-!*    You should have received a copy of the GNU General Public License
-!*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************! 
 module Rsurface_ml
 use LandDefs_ml,       only : LandDefs, LandType
 use CheckStop_ml,      only : CheckStop
@@ -198,7 +171,7 @@ contains
     leafy_canopy = ( L%LAI > SMALLSAI ) ! - can include grass
 
   !===========================================================================
-  !/**  Adjustment for low temperatures (Wesely, 1989, p.1296, left column)
+  !***  Adjustment for low temperatures (Wesely, 1989, p.1296, left column)
   !     (ACP63)
 
     lowTcorr = exp(0.2*(-1 -L%t2C))!Zhang,2003 & Erisman 1994
@@ -226,8 +199,8 @@ contains
 
 !##############   1. Calculate In-Canopy Resistance, Rinc    ################
 
-  !/** For canopies:
-  !/** Calculate stomatal conductance if daytime and LAI > 0 and snowdepth
+  !*** For canopies:
+  !*** Calculate stomatal conductance if daytime and LAI > 0 and snowdepth
   !    less than 1m above vegetation (1m chosen arbitrary)
 
    !g_sto 0 when snow covering canopy
@@ -262,7 +235,7 @@ contains
    end if
 
 
-  !/** Calculate Rinc, Gext   (ACPs8.6.1)
+  !*** Calculate Rinc, Gext   (ACPs8.6.1)
 
      if(  canopy ) then   
 

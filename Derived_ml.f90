@@ -1,21 +1,20 @@
 module Derived_ml
-
-  !---------------------------------------------------------------------------
-  ! DESCRIPTION
-  ! This module performs the calculations associated with "derived" 2D and 3D,
-  ! such as accumulated precipitation or sulphate, daily, monthly or yearly
-  ! averages, depositions. These fields are all typically output as netCDF
-  ! fields.
-  !
-  ! This routine defines many possible derived  outputs.
-  ! The names of the derived fields actualy required should have been specified
-  !  in the user-defined My_Derived_ml.
-  !
-  ! User-defined routines and treatments are often needed here. Here there is
-  ! added stuff for VOC, AOTs, accsu. In
-  ! general such code should be added in such a way that it isn't activated if
-  ! not needed. It then doesn't need to be commented out if not used.
-  !---------------------------------------------------------------------------
+!---------------------------------------------------------------------------
+! DESCRIPTION
+! This module performs the calculations associated with "derived" 2D and 3D,
+! such as accumulated precipitation or sulphate, daily, monthly or yearly
+! averages, depositions. These fields are all typically output as netCDF
+! fields.
+!
+! This routine defines many possible derived  outputs.
+! The names of the derived fields actualy required should have been specified
+!  in the user-defined My_Derived_ml.
+!
+! User-defined routines and treatments are often needed here. Here there is
+! added stuff for VOC, AOTs, accsu. In
+! general such code should be added in such a way that it isn't activated if
+! not needed. It then doesn't need to be commented out if not used.
+!---------------------------------------------------------------------------
 
 use My_Derived_ml, only : &
             wanted_deriv2d, wanted_deriv3d  &! names of wanted derived fields
@@ -42,13 +41,12 @@ use EcoSystem_ml,     only: DepEcoSystem, NDEF_ECOSYSTEMS, &
                             EcoSystemFrac,FULL_ECOGRID
 use EmisDef_ml,       only: EMIS_FILE
 use Emissions_ml,     only: SumSnapEmis
-use GridValues_ml,    only: debug_li, debug_lj, debug_proc, sigma_mid, xm2, &
-                         GRIDWIDTH_M, GridArea_m2
+use GridValues_ml,    only: debug_li, debug_lj, debug_proc, A_mid, B_mid, &
+                            xm2, GRIDWIDTH_M, GridArea_m2
 use Io_Progs_ml,      only: datewrite
-use MetFields_ml,     only: roa,pzpbl,Kz_m2s,th,zen, ustar_nwp, z_bnd,u_ref,&
-         ws_10m, rh2m, z_mid
-use MetFields_ml,     only: ps, t2_nwp
-use MetFields_ml,     only: SoilWater_deep, SoilWater_uppr, Idirect, Idiffuse
+use MetFields_ml,     only: roa,pzpbl,Kz_m2s,th,zen, ustar_nwp, u_ref,&
+                            ws_10m, rh2m, z_bnd, z_mid, ps, t2_nwp, &
+                            SoilWater_deep, SoilWater_uppr, Idirect, Idiffuse
 use ModelConstants_ml, only: &
    KMAX_MID     & ! =>  z dimension (layer number)
   ,KMAX_BND     & ! =>  z dimension (level number)
@@ -78,85 +76,77 @@ use PhysicalConstants_ml,  only : PI,KAPPA
 use SmallUtils_ml,  only: find_index, LenArray, NOT_SET_STRING
 use TimeDate_ml,    only: day_of_year,daynumber,current_date
 use Units_ml,       only: Units_Scale,Group_Units,&
-                          to_number_cm3 ! converts roa [kg/m3] to M [molec/cm3]
+                          to_molec_cm3 ! converts roa [kg/m3] to M [molec/cm3]
 implicit none
 private
 
- public  :: Init_Derived         !
- public  :: ResetDerived         ! Resets values to zero
- public  :: DerivedProds         ! Calculates any production terms
- public  :: AddDeriv             ! Adds Deriv type to def_2d, def_3d
- public  :: AddNewDeriv          ! Creates & Adds Deriv type to def_2d, def_3d
- private :: Define_Derived       !
- private :: Setups
- private :: write_debug
- private :: write_debugadv
+public  :: Init_Derived         !
+public  :: ResetDerived         ! Resets values to zero
+public  :: DerivedProds         ! Calculates any production terms
+public  :: AddDeriv             ! Adds Deriv type to def_2d, def_3d
+public  :: AddNewDeriv          ! Creates & Adds Deriv type to def_2d, def_3d
+private :: Define_Derived       !
+private :: Setups
+private :: write_debug
+private :: write_debugadv
 
- public :: Derived              ! Calculations of sums, avgs etc.
- private :: voc_2dcalc          ! Calculates sum of VOC for 2d fields
- private :: voc_3dcalc          ! Calculates sum of VOC for 3d fields
- private :: group_calc          ! Calculates sum of groups, e.g. pm25
-                                ! from new group arrays
+public :: Derived              ! Calculations of sums, avgs etc.
+private :: voc_2dcalc          ! Calculates sum of VOC for 2d fields
+private :: voc_3dcalc          ! Calculates sum of VOC for 3d fields
+private :: group_calc          ! Calculates sum of groups, e.g. pm25
+                               ! from new group arrays
 
+logical, private, parameter :: T = .true., F = .false. ! shorthands only
+integer, public, save :: num_deriv2d, num_deriv3d
+integer, private, save :: Nadded2d = 0, Nadded3d=0 ! No. defined derived
+integer, public, save :: iou_min=IOU_INST, iou_max=IOU_HOUR_MEAN
 
-   INCLUDE 'mpif.h'
-   INTEGER STATUS(MPI_STATUS_SIZE),INFO
-   logical, private, parameter :: T = .true., F = .false. ! shorthands only
+! The 2-d and 3-d fields use the above as a time-dimension. We define
+! LENOUTxD according to how fine resolution we want on output. For 2d
+! fields we use daily outputs. For the big 3d fields, monthly output
+! is sufficient.
 
+integer, public, parameter ::  LENOUT2D = IOU_YEAR_LASTHH  ! Allows INST..DAY,H.PREV. for 2d fields
+integer, public, parameter ::  LENOUT3D = IOU_DAY            ! Allows INST..DAY for 3d fields
 
-   integer, public, save :: num_deriv2d, num_deriv3d
-   integer, private, save :: Nadded2d = 0, Nadded3d=0 ! No. defined derived
-   integer, public, save :: iou_min=IOU_INST, iou_max=IOU_HOUR_MEAN
-
-  ! The 2-d and 3-d fields use the above as a time-dimension. We define
-  ! LENOUTxD according to how fine resolution we want on output. For 2d
-  ! fields we use daily outputs. For the big 3d fields, monthly output
-  ! is sufficient.
-
-   integer, public, parameter ::  LENOUT2D = IOU_YEAR_LASTHH  ! Allows INST..DAY,H.PREV. for 2d fields
-   integer, public, parameter ::  LENOUT3D = IOU_DAY            ! Allows INST..DAY for 3d fields
-
-  !will be used for:
-  !e.g. d_2d( num_deriv2d,MAXLIMAX, MAXLJMAX, LENOUT2D)
-  ! &   d_3d( num_deriv3d,MAXLIMAX, MAXLJMAX, KMAX_MID, LENOUT3D )
+!will be used for:
+!e.g. d_2d( num_deriv2d,MAXLIMAX, MAXLJMAX, LENOUT2D)
+! &   d_3d( num_deriv3d,MAXLIMAX, MAXLJMAX, KMAX_MID, LENOUT3D )
 
 
-   ! save O3 every hour during one day to find running max
-    real, save  , allocatable , public :: &     ! to be used for SOMO35
-     D2_O3_DAY( :,:,:)
+! save O3 every hour during one day to find running max
+real, save  , allocatable , public :: &     ! to be used for SOMO35
+  D2_O3_DAY( :,:,:)
 
-   ! Fraction of NO3_c below 2.5 um (v. crude so far)
+! Fraction of NO3_c below 2.5 um (v. crude so far)
 
-     real, save, private :: fracPM25 = -999.9
+real, save, private :: fracPM25 = -999.9
 
+! Counters to keep track of averaging
+! Initialise to zero in Init.
 
-  ! Counters to keep track of averaging
-  ! Initialise to zero in Init.
+integer, public, allocatable, dimension(:,:), save :: nav_2d,nav_3d
 
-    integer, public, allocatable, dimension(:,:), save :: nav_2d
-    integer, public, allocatable, dimension(:,:), save :: nav_3d
+!-- some variables for the VOC sum done for ozone models
+!   (have no effect in non-ozone models - leave in code)
 
+integer, private, save :: nvoc   ! No. VOCs
+integer, private, dimension(NSPEC_ADV), save :: &
+         voc_index, &     ! Index of VOC in xn_adv
+         voc_carbon       ! Number of C atoms
 
-   !-- some variables for the VOC sum done for ozone models
-   !   (have no effect in non-ozone models - leave in code)
+logical, private, save :: debug_flag, debugMaster, Is3D
+character(len=100), private :: errmsg
 
-   integer, private, save :: nvoc   ! No. VOCs
-   integer, private, dimension(NSPEC_ADV), save :: &
-             voc_index, &     ! Index of VOC in xn_adv
-             voc_carbon       ! Number of C atoms
+integer, private :: i,j,k,n, ivoc, index    ! Local loop variables
 
-   logical, private, save :: debug_flag, debugMaster, Is3D
-   character(len=100), private :: errmsg
+integer, private, save :: iadv_O3=-999,     & ! Avoid hard codded IXADV_SPCS
+  iadv_NO3_C=-999,iadv_EC_C_WOOD=-999,iadv_EC_C_FFUEL=-999,iadv_POM_C_FFUEL=-999
 
-   integer, private :: i,j,k,n, ivoc, index    ! Local loop variables
+real, private, save ::                      & ! Avoid hard codded molwt
+  ug_NO3_C=-999.0,ug_EC_C_WOOD=-999.0,ug_EC_C_FFUEL=-999.0,ug_POM_C_FFUEL=-999.0
 
-  integer, private, save :: iadv_O3=-999,     & ! Avoid hard codded IXADV_SPCS
-    iadv_NO3_C=-999,iadv_EC_C_WOOD=-999,iadv_EC_C_FFUEL=-999,iadv_POM_C_FFUEL=-999
-
-  real, private, save ::                      & ! Avoid hard codded molwt
-    ug_NO3_C=-999.0,ug_EC_C_WOOD=-999.0,ug_EC_C_FFUEL=-999.0,ug_POM_C_FFUEL=-999.0
-
-  contains
+contains
 
   !=========================================================================
   subroutine Init_Derived()
@@ -718,11 +708,11 @@ end do
   subroutine Setups()
      integer :: n
 
-    !/** flexibility note. By making use of character-based tests such
+    !*** flexibility note. By making use of character-based tests such
     !    as for "VOC" below, we achieve code which can stay for
     !    different chemical mechanisms, without having to define non-used indices.
 
-    !/ ** if voc wanted, set up voc_array. Works for all ozone chemistries
+    !*** if voc wanted, set up voc_array. Works for all ozone chemistries
 
       if ( any(  f_2d(:)%class == "VOC" ) ) then !TMP .or. &
           !TMP           any(  f_3d(:)%class == "VOC" )  ) then
@@ -761,7 +751,7 @@ end do
 
     subroutine Derived(dt,End_of_Day)
 
-    !/** DESCRIPTION
+    !*** DESCRIPTION
     !  Integration and averaging of chemical fields. Intended to be
     !  a more flexible version of the old chemint routine.
     !  Includes AOT40, AOT60 if present
@@ -784,7 +774,7 @@ end do
 
       real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: inv_air_density3D
                 ! Inverse of No. air mols/cm3 = 1/M
-                ! where M =  roa (kgair m-3) * to_number_cm3  when ! scale in ug,  else 1
+                ! where M =  roa (kgair m-3) * to_molec_cm3  when ! scale in ug,  else 1
       logical, save :: first_call = .true.
       integer :: ipm25, ipmc ! will save some calcs for pm10
       integer :: igrp, ngrp  ! group methods
@@ -804,7 +794,7 @@ end do
            density(i,j) = roa(i,j,KMAX_MID,1)
       end forall
 
-     !/***** 2-D fields **************************
+     !****** 2-D fields **************************
 
      ipm25 = 0  ! Reset once pm25 calculated
      ipmc  = 0  ! pm-coarse
@@ -819,7 +809,7 @@ end do
 
 
 
-        !/** user-defined time-averaging. Here we have defined TADV and TVOC
+        !*** user-defined time-averaging. Here we have defined TADV and TVOC
         !    so that 8-hour daytime averages will be calculated.
         !    Just comment out if not wanted, or (better!) don't define any
         !    f_2d as TADV or TVOC
@@ -1103,17 +1093,17 @@ end do
             else
                forall ( i=1:limax, j=1:ljmax )
                  d_2d( n, i,j,IOU_DAY) = max( d_2d( n, i,j,IOU_DAY), &
-                     xn_shl(index,i,j,KMAX_MID)  / (density(i,j)*to_number_cm3) )
+                     xn_shl(index,i,j,KMAX_MID)  / (density(i,j)*to_molec_cm3) )
                end forall
             end if
 
 
             if ( debug_flag ) then
-               write(*, *) "SHL:MAX.,to_number_cm3 ", n, index  , to_number_cm3
+               write(*, *) "SHL:MAX.,to_molec_cm3 ", n, index  , to_molec_cm3
                write(*,fmt="(a12,2i4,4es12.3)") "SHL MAX. ", n, index  &
                       , d_2d(n,debug_li,debug_lj,IOU_DAY) &
                       ,  xn_shl(index,debug_li,debug_lj,KMAX_MID)  &
-                      ,  density(debug_li,debug_lj), to_number_cm3
+                      ,  density(debug_li,debug_lj), to_molec_cm3
             end if
 
             !Monthly and yearly ARE averaged over days
@@ -1179,7 +1169,7 @@ end do
 !                   n, trim(f_2d(n)%name), d_2d(n,debug_li,debug_lj,IOU_INST)
 !            Nothing to do - all set in My_DryDep
 
-          case ( "COLUMN" ) ! to_number_cm3 gives #/cm3, 100 is for m -> cm
+          case ( "COLUMN" ) ! to_molec_cm3 gives #/cm3, 100 is for m -> cm
 
             read(unit=f_2d(n)%subclass,fmt="(a1,i2)") txt2, klow ! Connvert e.g. k20 to klow=20
 !if(MasterProc) print *, "COLUMN TEST subclass ", f_2d(n)%subclass, f_2d(n)%index, klow
@@ -1204,7 +1194,7 @@ end do
                         xn_adv(index,i,j,k),tmpwork(i,j)
                   end if
                end do ! k
-               d_2d( n, i, j, IOU_INST) = to_number_cm3 * 100.0 * tmpwork( i, j ) ! Should be molec/cm2
+               d_2d( n, i, j, IOU_INST) = to_molec_cm3 * 100.0 * tmpwork( i, j ) ! Should be molec/cm2
 
 
             end do !i
@@ -1317,7 +1307,7 @@ end do
         end select
 
 
-        !/** add to daily, monthly and yearly average, and increment counters
+        !*** add to daily, monthly and yearly average, and increment counters
         !  Note that the MAXADV and MAXSHL and SOMO needn't be summed here, but
         !  since the INST values are zero it doesn't harm, and the code is
         !  shorter. These d_2d ( MAXADV, MAXSHL, SOMO) are set elsewhere
@@ -1352,7 +1342,7 @@ end do
 
      end do   ! num_deriv2d
 
-     !/***** 3-D fields **************************
+     !****** 3-D fields **************************
 
        if(debug_flag) then ! RUN through indices etc.
             write(*, "(a12,2i4,f12.3)") "3D3D TIME ",  me, num_deriv3d, &
@@ -1368,7 +1358,7 @@ end do
             inv_air_density3D(:,:,:) = 1.0
        else  !OLD if ( f_3d(n)%rho ) then
             forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
-                inv_air_density3D(i,j,k) = 1.0/( roa(i,j,k,1) * to_number_cm3 )
+                inv_air_density3D(i,j,k) = 1.0/( roa(i,j,k,1) * to_molec_cm3 )
             end forall
         end if
 
@@ -1409,7 +1399,8 @@ end do
 
             forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
                d_3d( n, i,j,k,IOU_INST) = th(i,j,k,1)&
-                   *exp(KAPPA*log((PT+sigma_mid(k)*(ps(i,j,1) - PT))*1.e-5))
+!!                 *exp(KAPPA*log((PT+sigma_mid(k)*(ps(i,j,1) - PT))*1.e-5))
+                   *exp(KAPPA*log((A_mid(k) + B_mid(k)*ps(i,j,1))*1.e-5))
                  !NB: PT and PS in Pa
             end forall
 
@@ -1522,7 +1513,7 @@ end do
         end select
 
 
-      !/** add to monthly and yearly average, and increment counters
+       !*** add to monthly and yearly average, and increment counters
        !    ( no daily averaging done for 3-D fields so far).
 
 
@@ -1564,7 +1555,7 @@ end do
         endif
 
 
-!      !/** add to monthly and yearly average, and increment counters
+!      !*** add to monthly and yearly average, and increment counters
 !      !    ( no daily averaging done for 3-D fields so far).
 !
 !       d_3d(n,:,:,:,IOU_MON ) = d_3d(n,:,:,:,IOU_MON ) &
@@ -1583,7 +1574,7 @@ end do
 
     subroutine DerivedProds(text,dt)
 
-    !/** DESCRIPTION
+    !*** DESCRIPTION
     !  Calculates chemical changes by comparing values before and  after
     !  chemistry subroutine. Intended to be a more flexible version of the old
     !  PRODO3  calculation
@@ -1601,7 +1592,7 @@ end do
 
       timefrac = dt/3600.0
 
-     !/***** 3-D fields **************************
+     !****** 3-D fields **************************
 
      do n = 1, num_deriv3d
 

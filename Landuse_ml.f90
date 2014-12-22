@@ -246,9 +246,9 @@ contains
    maxlufound = 0   
    Nlines = 0
 
-   landuse_ncodes(:,:)   = 0     !/**  initialise  **/
-   landuse_codes(:,:,:)  = 0     !/**  initialise  **/
-   landuse_data  (:,:,:) = 0.0   !/**  initialise  **/
+   landuse_ncodes(:,:)   = 0     !***  initialise  ***
+   landuse_codes(:,:,:)  = 0     !***  initialise  ***
+   landuse_data  (:,:,:) = 0.0   !***  initialise  ***
 
 !------------------------------------------------------------------------------
 
@@ -378,10 +378,10 @@ contains
 
     maxlufound = 0   
 
-    landuse_ncodes(:,:)   = 0     !/**  initialise  **/
-    landuse_codes(:,:,:)  = 0     !/**  initialise  **/
-    landuse_data  (:,:,:) = 0.0   !/**  initialise  **/
-    landuse_in = 0.0              !/**  initialise  **/
+    landuse_ncodes(:,:)   = 0     !***  initialise  ***
+    landuse_codes(:,:,:)  = 0     !***  initialise  ***
+    landuse_data  (:,:,:) = 0.0   !***  initialise  ***
+    landuse_in = 0.0              !***  initialise  ***
 
     !Landusefile where landcodes are not predefined, but read from the file.
     fName1='Landuse_PS_5km_LC.nc'

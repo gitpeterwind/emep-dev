@@ -11,34 +11,37 @@ F90 = mpif90
 DEBUG_FLAGS = -check all -check noarg_temp_created -debug-parameters all \
               -traceback -ftrapuv -g -fpe0 -O0
 OPT_FLAGS = -O3 -ftz
-F90FLAGS = -shared-intel -r8 -recursive -convert big_endian -IPF_fp_relaxed \
-           -cpp $(DFLAGS)
+F90FLAGS = -shared-intel -r8 -recursive -convert big_endian -IPF_fp_relaxed
 LDFLAGS =  $(F90FLAGS) $(LLIB) $(LIBS)
 
 export MACHINE ?= stallo
 export DEBUG ?= no
 ifeq ($(MACHINE),stallo)
   MODULES = intel/13.0 openmpi/1.6.2 netcdf/4.2.1.1
-  LDFLAGS += $(shell nc-config --flibs --fflags)
+  LDFLAGS +=  $(shell nc-config --flibs)
+  F90FLAGS += $(shell nc-config --cflags)
   MAKEDEPF90=/home/mifapw/bin/makedepf90
   OPT_FLAGS = -O2 -ftz
   LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
 else ifeq ($(MACHINE),gstallo)
   # Needs module swap intel gcc/4.7.2
   MODULES = gcc/4.7.2 openmpi/1.6.2 netcdf/4.2.1.1
-  LDFLAGS += $(shell nc-config --flibs --fflags)
+  F90FLAGS = -fbacktrace -fdefault-real-8 -O3 -Wall \
+    -ffixed-line-length-none -ffree-line-length-none \
+    -fbounds-check -pedantic -fimplicit-none
+  LDFLAGS += $(shell nc-config --flibs)
+  F90FLAGS+= $(shell nc-config --cflags)
   MAKEDEPF90=/home/mifapw/bin/makedepf90
   LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
   DEBUG_FLAGS =
   OPT_FLAGS =
-  F90FLAGS = -fbacktrace -fdefault-real-8 -O3 -Wall -ffixed-line-length-none -ffree-line-length-none \
-    -fbounds-check -pedantic -fimplicit-none
   FC=mpif90
   LD=mpif90
 else ifeq ($(MACHINE),vilje)
   MODULES = intelcomp/13.0.1 mpt/2.06 netcdf/4.3.0
 # MODULES = intelcomp/14.0.1 mpt/2.09 netcdf/4.3.1
-  LDFLAGS += $(shell nc-config --flibs --fflags)
+  LDFLAGS += $(shell nc-config --flibs)
+  F90FLAGS+= $(shell nc-config --cflags)
   MAKEDEPF90=/home/metno/mifapw/bin/makedepf90
   LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
 else ifeq ($(MACHINE),byvind)
@@ -57,14 +60,15 @@ else ifeq ($(MACHINE),abel)
   LLIB += -L$(NETCDF)/lib -L$(INTEL)/lib/intel64
   MAKEDEPF90=/usit/$(MACHINE)/u1/mifapw/bin/makedepf90
 else ifeq ($(MACHINE),precise)  #ubuntu 12.04
-  LDFLAGS += $(shell nc-config --flibs --fflags)
+  F90FLAGS = -fdefault-real-8 -ffixed-line-length-none -ffree-line-length-none -fimplicit-none
+  LDFLAGS += $(shell nc-config --flibs)
+  F90FLAGS+= $(shell nc-config --cflags)
   MAKEDEPF90 = $(EMEPLOCAL)/bin/makedepf90
   LD = gfortran
   DEBUG_FLAGS = -Wall -fbacktrace -fbounds-check -pedantic 
   OPT_FLAGS = -O3  
-  F90FLAGS = -fdefault-real-8 -ffixed-line-length-none -ffree-line-length-none -fimplicit-none
 endif
-F90FLAGS += $(addprefix -I,$(INCL)) \
+F90FLAGS += -cpp $(DFLAGS) $(addprefix -I,$(INCL)) \
    $(if $(filter yes,$(DEBUG)),$(DEBUG_FLAGS),$(OPT_FLAGS))
 
 .SUFFIXES: $(SUFFIXES) .f90
@@ -85,7 +89,10 @@ endif
 .depend: depend
 depend: Makefile Makefile.SRCS $(SRCS)
 	test -n "$(MAKEDEPF90)" && $(MAKEDEPF90) $(SRCS) $(DFLAGS) \
-	  -o '$$(PROG)' -l '$$(F90) -o $$@ $$(FOBJ) $$(LDFLAGS)' > .depend
+	  -o '$$(PROG)' -l '$$(F90) -o $$@ $$(FOBJ) $$(LDFLAGS)' > .$@
+.version: version
+version: Makefile Makefile.SRCS $(SRCS)
+	svnversion -n > .$@
 
 clean: diskclean touchdepend depend
 
