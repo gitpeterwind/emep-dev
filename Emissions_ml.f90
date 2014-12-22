@@ -217,9 +217,9 @@ subroutine Emissions(year)
   real, dimension(NLAND,NROAD_FILES) :: sumroaddust    ! Sum of emission potentials per country
   real, dimension(NLAND,NROAD_FILES) :: sumroaddust_local    ! Sum of emission potentials per country in subdomain
   real :: fractions(MAXLIMAX,MAXLJMAX,NCMAX),SMI(MAXLIMAX,MAXLJMAX),Reduc(NLAND),SMI_roadfactor
+  real :: emis_tot(MAXLIMAX,MAXLJMAX)
   logical ::SMI_defined=.false.
   logical :: my_first_call=.true.  ! Used for femis call
-  real, allocatable ::emis_tot(:,:)
   character(len=40) :: varname 
 
   if (MasterProc) write(6,*) "Reading emissions for year",  year
@@ -480,7 +480,7 @@ subroutine Emissions(year)
     case("CdfFractions")
       !use grid independent netcdf emission file
       !experimental so far. Needs a lot of reorganization
-      if(.not.allocated(emis_tot)) allocate(emis_tot(MAXLIMAX,MAXLJMAX))
+
       sumemis_local(:,iem)=0.0
 
       do isec=1,NSECTORS
@@ -788,7 +788,6 @@ subroutine Emissions(year)
   endif
 
   iemCO=find_index("co",EMIS_FILE(:)) ! save this index
-  conv = tonne_to_kgm2s
     
   if(MYDEBUG.and.debug_proc.and.iemCO>0) &
     write(*,"(a,2es10.3)") "SnapPre:" // trim(EMIS_FILE(iemCO)), &
@@ -796,11 +795,11 @@ subroutine Emissions(year)
       sum(snapemis_flat(debug_li,debug_lj,:,iemCO))
 
   forall (ic=1:NCMAX, j=1:ljmax, i=1:limax, isec=1:NSECTORS,iem=1:NEMIS_FILE)
-    snapemis (isec,i,j,ic,iem) = snapemis (isec,i,j,ic,iem) * conv * xm2(i,j)
+    snapemis (isec,i,j,ic,iem) = snapemis (isec,i,j,ic,iem) * tonne_to_kgm2s * xm2(i,j)
   endforall
 
   forall (fic=1:FNCMAX, j=1:ljmax, i=1:limax,iem=1:NEMIS_FILE)
-    snapemis_flat(i,j,fic,iem) = snapemis_flat(i,j,fic,iem) * conv * xm2(i,j)
+    snapemis_flat(i,j,fic,iem) = snapemis_flat(i,j,fic,iem) * tonne_to_kgm2s * xm2(i,j)
   endforall
 
   if(MYDEBUG.and.debug_proc.and.iemCO>0) &
@@ -809,10 +808,9 @@ subroutine Emissions(year)
       sum(snapemis_flat(debug_li,debug_lj,:,iemCO))
 
   if(USE_ROADDUST)THEN
-    conv = tonne_to_kgm2s
     forall (ic=1:NCMAX, j=1:ljmax, i=1:limax, iem=1:NROAD_FILES)
       roaddust_emis_pot(i,j,ic,iem) = &
-        roaddust_emis_pot(i,j,ic,iem) * conv * xm2(i,j)
+        roaddust_emis_pot(i,j,ic,iem) * tonne_to_kgm2s * xm2(i,j)
     endforall
   endif !road dust
 
@@ -1288,10 +1286,10 @@ subroutine newmonth
   integer i, j,k, iyr
   integer n, flat_ncmaxfound         ! Max. no. countries w/flat emissions
   real :: rdemis(MAXLIMAX,MAXLJMAX)  ! Emissions read from file
-  character(len=20) :: fname
+  character(len=100) :: fname,NC_EMIS_SPEC(NEMIS_FILE)
   real ktonne_to_kgm2s, tonnemonth_to_kgm2s  ! Units conversion
   integer :: IQSO2                   ! Index of sox in  EMIS_FILE
-  integer errcode
+  integer errcode,iland
   real,    allocatable, dimension(:,:,:,:)  :: globemis 
   integer :: month,iem,ic,iic,isec, err3,icc
   real :: duml,dumh,tmpsec(NSECTORS),conv
@@ -1302,8 +1300,16 @@ subroutine newmonth
 
   ! For now, only the global runs use the Monthly files
   integer :: kstart,kend,nstart,Nyears
-  real :: buffer(MAXLIMAX,MAXLJMAX),SumSoilNOx
-        
+  real :: buffer(MAXLIMAX,MAXLJMAX),SumSoilNOx,ccsum
+  real :: fractions(MAXLIMAX,MAXLJMAX,NCMAX),Reduc(NLAND)
+  real :: emis_tot(MAXLIMAX,MAXLJMAX)
+  real, dimension(NEMIS_FILE)       :: emsum ! Sum emis over all countries
+  real, dimension(NLAND,NEMIS_FILE) :: sumemis, sumemis_local ! Sum of emissions per country
+  character(len=40) :: varname 
+   character(len=125) ::Mask_fileName,Mask_varname
+  real :: Mask_ReducFactor
+  integer :: NMask_Code,Mask_Code(NLAND)
+      
   if(.not.allocated(airn).and.(USE_LIGHTNING_EMIS.or.USE_AIRCRAFT_EMIS))&
     allocate(airn(KCHEMTOP:KMAX_MID,MAXLIMAX,MAXLJMAX))
         
@@ -1500,6 +1506,8 @@ subroutine newmonth
 
   if(MONTHLY_GRIDEMIS)then
     !Read monthly emission files
+    select case('CdfFractions')!can set CdfFractions or emislist
+    case("emislist")
     if(first_call)then
       do j=1,ljmax
         do i=1,limax
@@ -1573,6 +1581,115 @@ subroutine newmonth
      enddo
     enddo !iem
     deallocate(globemis)
+
+   case("CdfFractions")
+
+!NB: must match the order from "e_fact", and the names in the netCDF emission file
+      NC_EMIS_SPEC = (/ "SOx","NOx","CO","NMVOC ","NH3","PM2.5","PMco"/)
+      if(MasterProc)then
+         write(*,*)'emis names ',(EMIS_FILE(iem),iem=1,NEMIS_FILE)
+         write(*,*)'NetCDF emis names ',(NC_EMIS_SPEC(iem),iem=1,NEMIS_FILE)
+         do iem = 1,NEMIS_FILE
+             write(*,"(a16,2i5,10f12.2)") "femis e-fact   ",  me,iem  &
+                     ,(e_fact(isec,6,iem),isec=1,10)
+         end do
+      endif
+
+!reset emissions (except flat emissions!)
+      snapemis(:,:,:,:,:) = 0.
+      fractions(:,:,:)    = 0.
+      emis_tot(:,:)       = 0.
+      sumemis_local       = 0.
+      emsum               = 0.
+
+      tonnemonth_to_kgm2s = 1.0e3 &
+                        /(nmdays(current_date%month)*24.*60.*60.*GRIDWIDTH_M*GRIDWIDTH_M)
+      write(fname,'(''Emis_GLOB_01deg_'',i2.2,''.nc'')')current_date%month
+      if(MasterProc)write(*,*)'filename for GLOBAL emission ',trim(fname)
+      do iem = 1,NEMIS_FILE
+         do  isec = 1,NSECTORS
+            write(varname,'(A,''_sec'',i2.2)')trim(NC_EMIS_SPEC(iem)),isec
+            if(MasterProc) write(*,*) 'varname  ',trim(varname)
+            
+
+            !define mask (can be omitted if not sent to readfield) 
+            NMask_Code=0
+            !example if code reductions defined from "femis.dat" shoudl be used to define mask countries
+            do iland = 1,NLAND
+               if (abs(e_fact(isec,iland,iem)-1.0)>0.000001)then
+                  NMask_Code=NMask_Code+1
+                  Mask_Code(NMask_Code) = iland!codes from mask file to be reduced
+                  Mask_ReducFactor=e_fact(isec,iland,iem)!NB: will only take the last defined value!
+                  !if(me==0)write(*,*)'maskcode ',iland,isec,iem,Mask_ReducFactor
+               endif
+            end do
+            
+            !example if hardcoded definitions are to be used. Here multiply country_code=18 emissions with 0.8
+            !Mask_ReducFactor=0.8
+            !NMask_Code=1
+            !Mask_Code(1)=18
+            
+            !NB: "traditional" femis.dat can be used on top of MASK reductions. 
+            !    Country codes from Mask_Code will be applied for Mask, and country codes from Reduc 
+            !    will be applied to countries defined in emissions file 
+            
+            Reduc=e_fact(isec,:,iem)
+
+            call  ReadField_CDF(fname,varname,emis_tot(1,1),nstart=1,&
+                 interpol='mass_conservative',fractions_out=fractions,&
+                 CC_out=landcode,Ncc_out=nlandcode,Reduc=Reduc,needed=.true., & 
+                 Mask_fileName='sourceNC.nc',Mask_varname='source_code',Mask_Code=Mask_Code,&
+                 NMask_Code=NMask_Code,Mask_ReducFactor=Mask_ReducFactor,&
+                 debug_flag=.true.,Undef=0.0)
+            
+            do j=1,ljmax
+               do i=1,limax                   
+                  if(nlandcode(i,j)>NCMAX)then
+                     write(*,*)"To many emitter countries in one gridcell: ",&
+                          me,i,j,nlandcode(i,j)
+                     call StopAll("To many countries in one gridcell ")
+                  endif
+                  do n=1,nlandcode(i,j)
+                     snapemis(isec,i,j,n,iem)=snapemis(isec,i,j,n,iem)&
+                          +fractions(i,j,n)*emis_tot(i,j)*tonnemonth_to_kgm2s*xm2(i,j)                
+                     ic=1
+                     if(landcode(i,j,n)<=NLAND) &
+                          ic=landcode(i,j,n) ! most country_index are equal to country_code
+                     if(Country(ic)%index/=landcode(i,j,n))then
+                        !if not equal, find which index correspond to country_code
+                        do ic=1,NLAND
+                           if(Country(ic)%index==landcode(i,j,n))exit
+                        enddo
+                        if(ic>NLAND)then
+                           write(*,*)"COUNTRY CODE NOT RECOGNIZED OR UNDEFINED: ",landcode(i,j,n)
+                           call StopAll("COUNTRY CODE NOT RECOGNIZED ")
+                        endif
+                     endif
+                     sumemis_local(ic,iem)=sumemis_local(ic,iem)&
+                          +0.001*snapemis(isec,i,j,n,iem)/(tonnemonth_to_kgm2s*xm2(i,j))!for diagnostics, mass balance
+                  enddo
+               enddo
+            enddo
+         enddo!sectors
+
+         CALL MPI_REDUCE(sumemis_local(1,iem),sumemis(1,iem),NLAND,MPI_REAL8,&
+              MPI_SUM,0,MPI_COMM_WORLD,INFO) 
+         emsum(iem)= sum(sumemis(:,iem))
+         if(MasterProc)write(*,"(a15,f12.2)")NC_EMIS_SPEC(iem)//' TOTAL (tonnes):',emsum(iem)
+
+      enddo!emis
+      do ic = 1, NLAND
+         ccsum = sum( sumemis(ic,:) )
+         !if ( ccsum > 0.0 ) then
+         if(ccsum>0.0 .and. MasterProc ) then
+            write(*,"(i5,1x,a10,3x,30(f12.2,:))")ic, Country(ic)%code, sumemis(ic,:)
+            write(IO_LOG,"(i5,1x,a10,3x,30(f12.2,:))")ic, Country(ic)%code, sumemis(ic,:)
+         endif
+      enddo
+   case default
+      call CheckStop("EMIS_SOURCE not set"//trim(EMIS_SOURCE))
+   end select
+
   endif
 endsubroutine newmonth
 !***********************************************************************

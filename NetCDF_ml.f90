@@ -2598,7 +2598,8 @@ end subroutine Read_Inter_CDF
 
 recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      known_projection,  &! can be provided by user, eg. for MEGAN.
-     fractions_out,CC_out,Ncc_out,Reduc,Mask,Mask_Stride,&! additional output for emissions given with country-codes
+     fractions_out,CC_out,Ncc_out,Reduc,&! additional output for emissions given with country-codes
+     Mask_fileName,Mask_varname,Mask_Code,NMask_Code,Mask_ReducFactor,&
      needed,debug_flag,UnDef)
   !
   !reads data from netcdf file and interpolates data into model local (subdomain) grid
@@ -2651,6 +2652,18 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   !Presently only lat-lon projection of input file supported
   !negative data not finished/tested (can give 0 totals, definition of fractions?)
 
+  !MASK:
+  !set up to reduce emissions in the native grid. The file MUST be the same size as the emission grid 
+  !the routine will however be able to reverse the latitude direction, if necessary.
+  !the reduction can applied on top of the reduction from "Reduc"
+  !Mask_fileName -> name of the file
+  !Mask_varname -> name of the variable used for mask ,
+  !Mask_Code(1:NMask_Code) -> values from the mask_value for which to apply 
+  !    the reduction (reduction is applied if any of the Mask_Code=Mask_value)
+  !NMask_Code -> size of the array Mask_Code with defined values
+  !Mask_ReducFactor -> multiplicative factor for reduction where mask applies
+
+
   !Technical, future developements:
   !This routine is likely to change a lot in the future: should be divided into simpler routines;
   !more functionalities will be introduced.
@@ -2674,24 +2687,27 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   real , optional, intent(out) ::fractions_out(MAXLIMAX*MAXLJMAX,*) !fraction assigned to each country 
   integer, optional, intent(out)  ::Ncc_out(*), CC_out(MAXLIMAX*MAXLJMAX,*) !Number of country-codes and Country codes
   real, optional, intent(in) :: Reduc(NLAND)
-  real, optional, intent(in) :: Mask(*)!two-dimensional array in the calling routine!
-  integer , optional, intent(in) :: Mask_Stride!first dimension of the array Mask as defined in the calling routine
+  character(len = *), optional,intent(in) :: Mask_filename,Mask_varname
+  integer , optional, intent(in) :: Mask_Code(*),NMask_Code! reduce only where mask take this value. If not defined, multiply by mask
+  real, optional, intent(in) :: Mask_ReducFactor!multiply by this. default 0, i.e. reduce by 100% according to Mask
   real  :: factor
 
   logical, save :: debug_ij
   logical ::fractions,interpolate_vertical
   integer :: ncFileID,VarID,lonVarID,latVarID,status,xtype,ndims,dimids(NF90_MAX_VAR_DIMS),nAtts
   integer :: VarIDCC,VarIDNCC,VarIDfrac,NdimID
+  integer :: ncFileID_Mask, VarID_Mask,ndims_Mask,dimids_Mask(NF90_MAX_VAR_DIMS),xtype_Mask,isize,jsize
   integer :: dims(NF90_MAX_VAR_DIMS),NCdims(NF90_MAX_VAR_DIMS),totsize,i,j,k
   integer :: startvec(NF90_MAX_VAR_DIMS),Nstartvec(NF90_MAX_VAR_DIMS)
   integer ::alloc_err
   character*100 ::name
   real :: scale,offset,scalefactors(2),dloni,dlati,dlon,dlat
-  integer ::ij,jdiv,idiv,Ndiv,Ndiv2,igjgk,ig,jg,ijk,n
+  integer ::ij,jdiv,idiv,Ndiv,Ndiv2,igjgk,ig,jg,ijk,n,im,jm,ijm
   integer ::imin,imax,jmin,jjmin,jmax,igjg,k2
   integer, allocatable:: Ivalues(:)  ! I counts all data
   integer, allocatable:: Nvalues(:)  !ds counts all values
-  real, allocatable:: Rvalues(:),Rlon(:),Rlat(:)
+  real, allocatable:: Rvalues(:),Rlon(:),Rlat(:),lon_mask(:),lat_mask(:)
+  integer, allocatable:: Mask_values(:)
   real ::lat,lon,maxlon,minlon,maxlat,minlat,maxlon_var,minlon_var,maxlat_var,minlat_var
   logical ::fileneeded, debug,data3D
   character(len = 50) :: interpol_used, data_projection=""
@@ -2714,7 +2730,8 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   real, allocatable ::fraction_in(:,:)
   integer, allocatable ::CC(:,:),Ncc(:)
   real ::total,UnDef_local
-  integer ::N_out,Ng,Nmax,kstart_loc,kend_loc
+  integer ::N_out,Ng,Nmax,kstart_loc,kend_loc,lon_shift_Mask,startlat_Mask
+  logical :: Reverse_lat_direction_Mask
 
   !_______________________________________________________________________________
   !
@@ -2750,13 +2767,11 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   interpol_used='zero_order'!default
   if(present(interpol))then
      interpol_used=interpol
-     if ( debug ) write(*,*) 'ReadCDF interp request: ',trim(filename),':', trim(interpol)
   endif
   call CheckStop(interpol_used/='zero_order'.and.&
        interpol_used/='conservative'.and.&
        interpol_used/='mass_conservative',&
        'interpolation method not recognized')
-  if ( debug ) write(*,*) 'ReadCDFstereo interp set: ',trim(filename),':', trim(interpol)
 
   UnDef_local=0.0
   if(present(UnDef))UnDef_local=UnDef
@@ -2868,7 +2883,6 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   call CheckStop(xtype==NF90_CHAR,"ReadField_CDF: Datatype not recognised")
 
   !Find whether Fill values are defined
-  if ( debug ) write(*,*) 'PreFillCheck ',FillValue
   status=nf90_get_att(ncFileID, VarID, "_FillValue", FillValue)
   OnlyDefinedValues=.true.
   if(status == nf90_noerr)then
@@ -2880,9 +2894,10 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
      if(status == nf90_noerr)then
         OnlyDefinedValues=.false.
         if ( debug ) write(*,*)' FillValue found from missing_value (not counted)',FillValue
+     else
+        if ( debug ) write(*,*) 'FillValue not found, using ',FillValue
      end if
   endif
-  if ( debug ) write(*,*) 'PostFillCheck ',FillValue
 
   !get dimensions
   startvec=1
@@ -2909,7 +2924,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
      ! here we have simple 1-D lat, lon
      allocate(Rlon(dims(1)), stat=alloc_err)
      allocate(Rlat(dims(2)), stat=alloc_err)
-     if ( debug ) write(*,"(a,a,i5,i5,a,i5)") 'alloc_err lon lat ',&
+     if ( debug ) write(*,"(a,a,i5,i5,a,i5)") 'alloc_flag lon lat ',&
           trim(data_projection), alloc_err, dims(1), "x", dims(2)
   else
      allocate(Rlon(dims(1)*dims(2)), stat=alloc_err)
@@ -2947,8 +2962,33 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   call CheckStop(fractions.and.trim(data_projection)/="lon lat", &
        "ReadField_CDF: only implemented lon lat projection for fractions")     
 
+  !if Mask_filename is given, open that file
+  if(present(Mask_fileName))then
+     if ( debug ) write(*,*) 'ReadCDF reading also ',trim(Mask_fileName)
+     N=1
+     if(present(NMask_Code))N=NMask_Code
+     if(N>0)then!otherwise no need to do anything!
+     call check(nf90_open(path = trim(Mask_fileName), mode = nf90_nowrite, ncid = ncFileID_Mask))
+    !verify that x, y dimensions have same size
+     call check(nf90_inq_varid(ncid = ncFileID_Mask, name = trim(Mask_varname), varID = VarID_Mask),"Var_Mask")
+     call check(nf90_Inquire_Variable(ncFileID_Mask,VarID_Mask,name,xtype_Mask,ndims_Mask,dimids_Mask,nAtts),"GetDimsId_Mask")
+     call check(nf90_inquire_dimension(ncid=ncFileID_Mask, dimID=dimids_Mask(1),  len=isize))
+     call check(nf90_inquire_dimension(ncid=ncFileID_Mask, dimID=dimids_Mask(2),  len=jsize))
+     if(isize/=dims(1).or.jsize/=dims(2))then
+        write(*,*)'Mask file and Variable files have different dimensions'
+        write(*,*)'Sizes '//trim(fileName),dims(1),dims(2)
+        write(*,*)'Sizes '//trim(Mask_fileName),isize,jsize
+        call StopAll("ReadField_CDF: Incompatible file sizes")
+     endif
+     if(ndims_Mask/=2)then
+        call StopAll("ReadField_CDF: only 2 dimensional mask implemented")
+     endif
+     else
+        if (debug)write(*,*) 'ReadCDF MASK: no need to reduce anything for ', trim(varname)
+     endif
+  endif
 
-  if ( debug .and. filename == "DegreeDayFac.nc" ) print *, 'ABCD2 got to here'
+
   !_______________________________________________________________________________
   !
   !2)        Coordinates conversion and interpolation
@@ -2996,7 +3036,6 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
      dlati=1.0/(Rlat(2)-Rlat(1))
 
      Grid_resolution = EARTH_RADIUS*360.0/dims(1)*PI/180.0
-     if ( debug .and. filename == "DegreeDayFac.nc" ) print *, 'ABCD3 got to here'
 
      !the method chosen depends on the relative resolutions
      if(.not.present(interpol).and.Grid_resolution/GRIDWIDTH_M>4)then
@@ -3007,7 +3046,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
 
      if(debug) then
         write(*,*) "SET Grid resolution:" // trim(fileName), Grid_resolution
-        write(*,"(a,6f8.2,2x,4f8.2)") 'ReadCDF LL stuff ',&
+        write(*,"(a,6f8.2,2x,4f8.2)") 'ReadCDF LL values ',&
              Rlon(2),Rlon(1),dloni, Rlat(2),Rlat(1), dlati, &
              maxlon, minlon, maxlat, minlat
      end if
@@ -3056,7 +3095,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
         imax=dims(1)
      endif
 
-     if ( debug ) write(*,"(a,4f8.2,6i8)") 'ReadCDF minmax ',&
+     if ( debug ) write(*,"(a,4f8.2,6i8)") 'ReadCDF minmax values ',&
           minlon,maxlon,minlat,maxlat,imin,imax,jmin,jmax
 
      startvec(1)=imin
@@ -3090,14 +3129,75 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
 
      allocate(Rvalues(totsize), stat=alloc_err)
      if ( debug ) then
-        write(*,"(a,1i6,a)") 'ReadCDF VarID ', VarID,trim(varname)
         do i=1, ndims ! NF90_MAX_VAR_DIMS would be 1024
-           write(*,"(a,6i8)") 'ReadCDF ',i, dims(i),startvec(i)
+           write(*,"(a,6i8)") 'ReadCDF reading chunk ',i ,startvec(i), dims(i)
         end do
-        write(*,*)'total size variable (part read only)',totsize
      end if
      call check(nf90_get_var(ncFileID, VarID, Rvalues,start=startvec,count=dims),&
           errmsg="RRvalues")
+
+     if(present(Mask_filename))then
+        N=1
+        if(present(NMask_Code))N=NMask_Code
+        if(N>0)then!otherwise no need to do anything!
+      ! assume that mask file has exactely the same size
+        allocate(Mask_values(totsize))
+        allocate(lon_mask(isize))
+        allocate(lat_mask(jsize))
+        ! find origin and dimensions
+        Reverse_lat_direction_Mask=.false.
+        status=nf90_get_var(ncFileID_Mask, dimids_Mask(2), lat_mask)
+        if(status==nf90_noerr.and.(lat_mask(2)-lat_mask(1))*(Rlat(2)-Rlat(1))<0)then
+           Reverse_lat_direction_Mask=.true.
+           if ( debug ) write(*,*) 'ReadCDF mask: reverting latitude direction'
+        else
+           if (debug) write(*,*) 'ReadCDF mask: not reverting latitude direction',(lat_mask(2)-lat_mask(1))*(Rlat(2)-Rlat(1)),status==nf90_noerr
+        endif
+        lon_shift_Mask=0
+        status=nf90_get_var(ncFileID_Mask, dimids_Mask(1), lon_mask)
+        if(status==nf90_noerr)then
+           lon_shift_Mask=nint((Rlon(1)-lon_mask(1))*dloni)
+           if(lon_shift_Mask/=0)then
+              write(*,*)'ReadCDF mask: should shifting longitude by ',lon_shift_Mask,'=',Rlon(1)-lon_mask(1),'degrees'
+              call StopAll("Longitude shift for Mask not implemented")
+           endif
+        endif
+        startlat_Mask=startvec(2)    
+        if(Reverse_lat_direction_Mask)startlat_Mask=jsize-startvec(2)-dims(2)+2
+        call check(nf90_get_var(ncFileID_Mask, VarID_Mask, Mask_values,&
+             start=(/startvec(1)+lon_shift_Mask,startlat_Mask/),count=(/dims(1),dims(2)/)),&
+          errmsg="Maskvalues")
+        !reduce values according to Mask conditions:
+       if(present(Mask_Code))then
+         factor=0.0
+         if(present(Mask_ReducFactor))factor=Mask_ReducFactor
+         92 format(A,F5.2,A,500I4)
+         if(debug.and.N>0)write(*,92)'multiplying values by ',factor,'where mask has one of values: ',Mask_Code(1:N)
+         j=0
+           do i=1,totsize
+              im=mod(i-1,dims(1))+1
+              jm=mod(i-1,dims(1)*dims(2))/dims(1)+1
+              ijm=im+(jm-1)*dims(1)
+              if(Reverse_lat_direction_Mask)ijm=im+(dims(2)-jm)*dims(1)
+              if( any(Mask_Code(1:N)==Mask_values(ijm)))then
+                 Rvalues(i)=Rvalues(i)*factor
+                 j=j+1
+              endif
+           enddo
+          if ( debug )write(*,*)'reduced ',j,' values by ',factor
+       else
+           factor=1.0
+           if(present(Mask_ReducFactor))factor=Mask_ReducFactor
+           if ( debug ) write(*,*)'multiplying values by ',factor,'and Mask '
+           do i=1,totsize
+              Rvalues(i)=Rvalues(i)*Mask_values(i)*factor
+           enddo
+        endif
+        call check(nf90_close(ncFileID_Mask))
+        deallocate(Mask_values,lon_mask,lat_mask)
+        endif
+     endif
+
 
      !test if this is "fractions" type data
      fractions=.false.
@@ -3110,7 +3210,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
         fractions=.true.
      end if
      if(fractions)then
-        if ( debug ) write(*,*) 'fractions method. reading data '
+        if ( debug ) write(*,*) 'fractions method. Reading data '
         Nstartvec=startvec!set 2 first dimensions
         Nstartvec(3)=1
         NCdims=dims!set 2 first dimensions
@@ -3175,8 +3275,6 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
      else ! Real
         if ( debug ) then
            write(*,*)' xtype real ',xtype
-           write(*,*)' FillValue still',FillValue
-           write(*,*)' Max(RValues)   ',maxval(RValues)
         end if
      endif
 
@@ -3238,7 +3336,6 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
 731                                continue
                                    factor=1.0!default reduction factor
                                    if(present(Reduc).and.CC(igjgk,Ng)>0.and.CC(igjgk,Ng)<=NLAND)factor=Reduc(CC(igjgk,Ng))
-                                   if(present(Mask).and.present(Mask_Stride))factor=factor*Mask(startvec(1)-1+ig+Mask_Stride*(startvec(2)-2+jg))
                                    !update fractions
                                    total=Rvar(ijk)+Rvalues(igjgk)*fraction_in(igjgk,Ng)*factor
                                    if(debug.and.fraction_in(igjgk,Ng)>1.001)then

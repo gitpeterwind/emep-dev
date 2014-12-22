@@ -153,6 +153,25 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+22nd December 2014 Peter  2915
+
+Emissions can be reduced according to a mask file. The mask file must be of the same
+size as the native emissions (i.e. not necessarily the same as model grid).
+
+Usage:
+in ReadField_CDF the following optional variables can be set:
+
+     Mask_fileName,Mask_varname,Mask_Code,NMask_Code,Mask_ReducFactor
+
+  !Mask_fileName -> name of the file
+  !Mask_varname -> name of the variable used for mask ,
+  !Mask_Code(1:NMask_Code) -> values from the mask_value for which to apply 
+  !the reduction (reduction is applied if any of the Mask_Code=Mask_value)
+  !NMask_Code -> size of the array Mask_Code with defined values
+  !Mask_ReducFactor -> multiplicative factor for reduction where mask applies
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 22th December 2014 Alvaro  2914
 
 Sites_ml,NetCDF_ml:
@@ -178,6 +197,7 @@ Following changes on config_EMEPSTD.nml
 - Set EMIS_OUT=F and need_poll=F
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 18th December 2014 Peter, Massimo  2913
 
 Additional "if" that allows to use WRF metdata directly from WRF output.
