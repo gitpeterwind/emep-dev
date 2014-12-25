@@ -153,6 +153,38 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+25th December 2014 Dave   2918
+
+NB: Bug discovered in Landuse_ml: effectivdaynumber usage gives wrong
+  growing seasons. Will be fixed in next days.
+
+AOTnPOD_ml: added SpringWheat, WinterWheat PODs
+DO3SE_ml: increased MAXnSumVPD
+DryDep_ml: DEBUG for DRYDEP now as DEBUG%DRYDEP
+LandDefs_ml: DEBUG for LandDefs_ml now as DEBUG%LANDDEFS
+Landuse_ml:
+   Added initial code to read growing seasons from GAEZ-CRU system, with
+    VEG_2dGS, Veg_2dGSparams from config
+   DEBUG for Landuse_ml now as DEBUG%LANDUSE
+   Added initial code for SpringWheat, WinterWheat
+   Added some extra debugs while chasing effectivdaynumber bug
+ModelConstants_ml
+   Moved DEBUG as decribed above
+   Added VEG_2dGS, Veg_2dGSparams for config
+MosaicOutputs_ml
+   Added LAI as one of the MOSAIC_METCONCS array (gives e.g. LAI_GR - exposes bug very well
+   near equator!)
+   DEBUG for MOSAICS now as DEBUG%MOSAICS
+My_Derived_ml 
+   Added MMC_LAI
+   Added PODs for SpringWheat, WinterWheat PODs
+   (should all be moved to config!)
+   More MET_LCS to get LAI while chasing bug 
+StoFlux_ml
+   DEBUG for STOFLUX now as DEBUG%STOFLUX
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 22nd December 2014 Peter  2916
 
 Emissions can be reduced according to a mask file. The mask file must be of the same

@@ -6,7 +6,7 @@ module LandDefs_ml
  use Io_ml, only : IO_TMP, open_file, ios, Read_Headers, read_line
  use KeyValueTypes, only :  KeyVal
  use LandPFT_ml,  only : PFT_CODES
- use ModelConstants_ml, only : NLANDUSEMAX, MasterProc, DEBUG_LANDDEFS
+ use ModelConstants_ml, only : NLANDUSEMAX, MasterProc, DEBUG
  use ModelConstants_ml, only :  FLUX_VEGS
  use SmallUtils_ml, only : find_index
   implicit none
@@ -184,7 +184,7 @@ contains
             LandDefs(n) = LandInput
             nn = nn + 1
            !############################
-            if ( DEBUG_LANDDEFS .and. MasterProc ) then
+            if ( DEBUG%LANDDEFS .and. MasterProc ) then
                  !write(*,"(a)") trim(txtinput)
                  write(unit=*,fmt="(a,2i3,a,a,f7.3,f10.3)") "LANDDEFS N ", &
                   n,nn, trim(LandInput%name), trim(LandInput%code),&
@@ -197,7 +197,7 @@ contains
            LandDefs(n)%LAImax   = max( LandDefs(n)%LAImax,   0.0)
 
 
-            if ( DEBUG_LANDDEFS .and. MasterProc ) then
+            if ( DEBUG%LANDDEFS .and. MasterProc ) then
                  write(*,"(a)") trim(txtinput)
                  write(unit=*,fmt="(a,i3,3a,2i4)") "LANDPHEN match? ", n, &
                    trim(LandInput%name)//" ",  trim(LandInput%code)//" ", &
@@ -224,7 +224,7 @@ contains
             LandType(n)%has_lpj   =  &
                 ( LandInput%type /= "NOLPJ" )
             LandType(n)%pft = find_index( LandDefs(n)%LPJtype, PFT_CODES)
-            if ( DEBUG_LANDDEFS .and. MasterProc ) then
+            if ( DEBUG%LANDDEFS .and. MasterProc ) then
                  write(unit=*,fmt=*) "LANDPFT  match? ", n, &
                    LandInput%name, LandInput%code, wanted_codes(n), LandType(n)%pft
             end if

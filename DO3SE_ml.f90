@@ -68,7 +68,7 @@ module DO3SE_ml
 
   ! For some veg we have a SumVPD limitation. Usually just for a few,
   ! so we assume max 3 for now
-  integer, private, parameter :: MAXnSumVPD=3
+  integer, private, parameter :: MAXnSumVPD=10
   integer, public, save       :: nSumVPD
   integer, public, dimension(MAXnSumVPD), save :: SumVPD_LC
 

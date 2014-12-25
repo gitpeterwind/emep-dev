@@ -43,8 +43,8 @@ use ModelConstants_ml, only : MasterProc, SOURCE_RECEPTOR  &
                         , KMAX_MID   ! =>  z dimension
 use MosaicOutputs_ml, only : nMosaic, MAX_MOSAIC_OUTPUTS, MosaicOutput, & !
   Init_MosaicMMC,  Add_MosaicMetConcs, &
-  Add_NewMosaics, Add_MosaicVEGO3, Add_MosaicDDEP, &
-  MMC_USTAR, MMC_INVL, MMC_RH, MMC_CANO3, MMC_VPD, MMC_FST, MMC_GSTO, MMC_EVAP
+  Add_NewMosaics, Add_MosaicVEGO3, Add_MosaicDDEP!, &
+!  MMC_USTAR, MMC_INVL, MMC_RH, MMC_CANO3, MMC_VPD, MMC_FST, MMC_GSTO, MMC_EVAP
 
 use OwnDataTypes_ml, only : Deriv, print_deriv_type, TXTLEN_DERIV, &
            TXTLEN_SHORT, typ_ss, typ_s3, typ_s4, typ_s5i, typ_si
@@ -199,7 +199,7 @@ private
 ! VEGO3 outputs for PODY and AOTX - see AOTnPOD_ml for definitions,
 ! Any string used here must have been defined in AOTnPOD_ml.
 !
-    character(len=TXTLEN_DERIV), public, parameter, dimension(25) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(26) :: &
      VEGO3_WANTED  =  (/ &
          "POD1_IAM_DF     ",&
          "POD1_IAM_MF     ",&
@@ -213,19 +213,27 @@ private
 !         "SPOD10_spruce   ",&
 !         "SPOD15_crops    ",&
 !         "SPOD25_crops    ",&
+        !CEH ECLGLOB
+         "POD1_WinterWheat",&
+         "POD3_WinterWheat",&
+         "POD6_WinterWheat",&
+         "POD1_SpringWheat",&
+         "POD3_SpringWheat",&
+         "POD6_SpringWheat",&
         !WIMMAX:
-         "POD1_NEUR_SPRUCE",&
-         "POD1_NEUR_BIRCH ",&
-         "POD1_ACE_PINE   ",&
-         "POD1_ACE_OAK    ",&
-         "POD1_ACE_BEECH  ",&
-         "POD1_CCE_SPRUCE ",&
+        ! "POD1_NEUR_SPRUCE",&
+        ! "POD1_NEUR_BIRCH ",&
+        ! "POD1_ACE_PINE   ",&
+        ! "POD1_ACE_OAK    ",&
+        ! "POD1_ACE_BEECH  ",&
+        ! "POD1_CCE_SPRUCE ",&
          "POD1_CCE_BEECH  ",&
          "POD1_MED_OAK    ",&
          "POD1_MED_PINE   ",&
          "POD1_MED_BEECH  ",&
         ! "POD3_TC30d     ",&
         ! "POD3_TC55d     ",&
+         "POD1_IAM_CR     ",&
          "POD3_IAM_CR     ",&
          "POD6_IAM_CR     ",&
         ! "POD3_IAM_CR30d ",&
@@ -247,8 +255,8 @@ private
 ! For met-data and canopy concs/fluxes ...
 
 !TFMM    character(len=TXTLEN_DERIV), public, parameter, dimension(3) :: &
-    character(len=TXTLEN_DERIV), public, parameter, dimension(1) :: &
-      MOSAIC_METCONCS = (/ "USTAR" /) ! TFMM "VPD     "  &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(2) :: &
+      MOSAIC_METCONCS = (/ "USTAR", "LAI  " /) ! TFMM "VPD     "  &
                          ! ,"CanopyO3" & !SKIP
          !,"VPD     ", "FstO3   " "EVAP    ", "Gsto    " &
                         !SKIP
@@ -256,9 +264,10 @@ private
    !TFMM                    /)
                           ! "g_sto" needs more work - only set as L%g_sto
 
-    character(len=TXTLEN_DERIV), public, save, dimension(2) :: &
-      MET_LCS  = (/ "DF    ", "GR    " /) !, "CF    ", "BF    ", "NF    " /) !,
-                                !"IAM_DF", "IAM_MF"/)
+    character(len=TXTLEN_DERIV), public, save, dimension(6) :: &
+      MET_LCS  = (/ "DF    ", "GR    " , & !! /) !, "CF    ", "BF    ", "NF    " /) !,
+                    "BF    ", "TC    ", &  
+                    "IAM_DF", "IAM_CR"/)
 
       !MET_LCS  = (/ "GR    " , "IAM_CR", "IAM_DF", "IAM_MF"/)
     !character(len=TXTLEN_DERIV), public, parameter, dimension(5) :: &

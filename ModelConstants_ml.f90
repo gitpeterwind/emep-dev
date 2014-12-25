@@ -77,6 +77,7 @@ type, public :: emep_debug
     ,COLUMN          = .false. & !  Used in Derived_ml for column integratton
     ,DERIVED         = .false. & ! 
     ,DO3SE           = .false. &
+    ,DRYDEP          = .false. & ! Skips fast chemistry to save some CPU
     ,DRYRUN          = .false. & ! Skips fast chemistry to save some CPU
     ,EQUIB           = .false. &   !MARS, EQSAM etc.
     ,FORESTFIRE      = .false. &
@@ -84,8 +85,11 @@ type, public :: emep_debug
     ,GRIDVALUES      = .false. &
     ,HOURLY_OUTPUTS  = .false. & !  
     ,IOPROG          = .false. &
+    ,LANDDEFS        = .false. &
+    ,LANDUSE         = .false. &
     ,PFT_MAPS        = .false. & !< Future option
     ,MAINCODE        = .false. & !< debugs main code (Unimod) driver
+    ,MOSAICS         = .false. &
     ,MY_DERIVED      = .false. &
     ,pH              = .false. &
     ,PHYCHEM         = .false. &
@@ -94,7 +98,8 @@ type, public :: emep_debug
     ,SETUP_1DCHEM    = .false. &
     ,SETUP_1DBIO     = .false. &
     ,SOLVER          = .false. &
-    ,SOA             = .false.  
+    ,SOA             = .false. &
+    ,STOFLUX         = .false. 
    integer, dimension(2) ::   IJ = (/ -999, -999 /)
    character(len=20)     ::   SPEC = 'O3'  ! default. 
    integer               ::   ISPEC = -999 ! Will be set after NML
@@ -369,20 +374,16 @@ logical, public, save ::  DebugCell  = .false.
   ,DEBUG_ECOSYSTEMS     = .false. &
   ,DEBUG_EMISSTACKS     = .false. &
   ,DEBUG_Kz             = .false. &
-  ,DEBUG_DRYDEP         = .false. &
+  !!,DEBUG_DRYDEP         = .false. &
     ,DEBUG_VDS          = .false. &
     ,DEBUG_MY_DRYDEP    = .false. &
     ,DEBUG_CLOVER       = .false. &
-    ,DEBUG_STOFLUX      = .false. &
   ,DEBUG_EMISSIONS      = .false. &
   ,DEBUG_EMISTIMEFACS   = .false. &
   ,DEBUG_GETEMIS        = .false. &
-  ,DEBUG_LANDDEFS       = .false. &
-  ,DEBUG_LANDUSE        = .false. &
   ,DEBUG_LANDIFY        = .false. &
   ,DEBUG_MASS           = .false. &
   ,DEBUG_MET            = .false. &
-  ,DEBUG_MOSAICS        = .false. &
   ,DEBUG_NEST           = .false. &
   ,DEBUG_NEST_ICBC      = .false. & ! IFS-MOZART/C-IFS BC
   ,DEBUG_NETCDF         = .false. &
@@ -462,8 +463,12 @@ type, public :: aero_type
 end type aero_type
 type(aero_type), public, save :: AERO = aero_type()
 
-!Namelist controlled: which veg do we want flux-outputs for
+!> Namelist controlled: which veg do we want flux-outputs for
+!! We will put the filename, and params (SGS, EGS, etc) in
+!! the _Params array.
 character(len=15), public, save, dimension(20) :: FLUX_VEGS=""
+character(len=15), public, save, dimension(20) :: VEG_2dGS=""
+character(len=99), public, save, dimension(10) :: VEG_2dGS_Params=""
 integer, public, save :: nFluxVegs = 0 ! reset in Landuse_ml
 
 ! To use external maps of plant functional types we need to
@@ -574,6 +579,8 @@ subroutine Config_ModelConstants(iolog)
      ,EMIS_SOURCE, EMIS_TEST, EMIS_OUT & 
      ,emis_inputlist &
      ,FLUX_VEGS  & ! Allows user to add veg categories for eg IAM ouput
+     ,VEG_2dGS & ! Allows 2d maps of growing seasons
+     ,VEG_2dGS_Params & ! Allows 2d maps of growing seasons
      ,PFT_MAPPINGS &  ! Allows use of external LAI maps
      ,NETCDF_DEFLATE_LEVEL,  RUNDOMAIN, DOMAIN_DECOM_MODE &
      ,JUMPOVER29FEB

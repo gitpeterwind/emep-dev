@@ -57,7 +57,7 @@ module AOTx_ml
     type(O3cl), public, allocatable, dimension(:) :: &
      VEGO3_OUTPUTS
 
-    type(O3cl), public, parameter, dimension(40) :: &
+    type(O3cl), public, parameter, dimension(46) :: &
      VEGO3_DEFS    =  (/ &
          ! name               class X/Y   defn   txtLC relSGS Sacc Eacc
    O3cl( "POD1_IAM_DF   ",   "POD", 1.0,  "- ", "IAM_DF",F,0,999 ), & 
@@ -67,6 +67,13 @@ module AOTx_ml
    O3cl( "POD1_DF       ",   "POD", 1.0,  "- ", "DF    ",F,0,999 ), &
    O3cl( "POD1_CF       ",   "POD", 1.0,  "- ", "CF    ",F,0,999 ), &
    O3cl( "POD3_TC       ",   "POD", 3.0,  "- ", "TC    ",F,0,999 ), & !=7
+!CEH ECLGLOB
+   O3cl( "POD1_WinterWheat",   "POD", 1.0,  "- ", "WinterWheat",F,0,999 ), & !=7
+   O3cl( "POD3_WinterWheat",   "POD", 3.0,  "- ", "WinterWheat",F,0,999 ), & !=7
+   O3cl( "POD6_WinterWheat",   "POD", 6.0,  "- ", "WinterWheat",F,0,999 ), & !=7
+   O3cl( "POD1_SpringWheat",   "POD", 1.0,  "- ", "SpringWheat",F,0,999 ), & !=7
+   O3cl( "POD3_SpringWheat",   "POD", 3.0,  "- ", "SpringWheat",F,0,999 ), & !=7
+   O3cl( "POD6_SpringWheat",   "POD", 6.0,  "- ", "SpringWheat",F,0,999 ), & !=7
 !
 !SPOD is being developed for Swedish NV
    O3cl( "SPOD15_birch  ",   "SPOD", 15.0, "- ", "NEUR_BIRCH",F,0,999 ), & 

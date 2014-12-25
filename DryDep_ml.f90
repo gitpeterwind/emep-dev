@@ -54,11 +54,10 @@ use MetFields_ml,     only: tau, sdepth, SoilWater_deep, th,pzpbl
 use MicroMet_ml,      only: AerRes, Wind_at_h
 use ModelConstants_ml,only: dt_advec,PT,KMAX_MID, KMAX_BND ,&
                             NPROC, &
-                            DEBUG_DRYDEP, DEBUG_ECOSYSTEMS, DEBUG_VDS,&
+                            DEBUG, DEBUG_ECOSYSTEMS, DEBUG_VDS,&
                             USES, AERO, &
                             USE_SOILNOX, &
                             MasterProc, &
-                            DEBUG, & ! for DEBUG%AOT
                             PPBINV,&
                             KUPPER, NLANDUSEMAX
 
@@ -154,7 +153,7 @@ contains
      end do
 
      my_first_call = .false.
-     if( MasterProc  .and. DEBUG_DRYDEP) write(*,*) "INIT_DRYDEP day ", &
+     if( MasterProc  .and. DEBUG%DRYDEP) write(*,*) "INIT_DRYDEP day ", &
            daynumber, old_daynumber
 
 !=============================================================================
@@ -200,7 +199,7 @@ contains
 
      do i = 1, NDRYDEP_ADV  ! 22
       iadv = DDepMap(i)%ind
-      if(DEBUG_DRYDEP .and. MasterProc) &
+      if(DEBUG%DRYDEP .and. MasterProc) &
          write(6,*) "DEPMAP   ", DDepMap(i)%ind, DDepMap(i)%calc
       call CheckStop( iadv < 1, "ERROR: Negative iadv" )
       DepAdv2Calc(iadv) = DDepMap(i)%calc
@@ -209,7 +208,7 @@ contains
    ! We process the various combinations of gas-species and ecosystem:
    ! starting with DryDep, e.g. DDEP_SO2_m2CF
  
-     if(MasterProc.and.DEBUG_DRYDEP) write(6,*) "Init_DepMap D2D FINISHED"
+     if(MasterProc.and.DEBUG%DRYDEP) write(6,*) "Init_DepMap D2D FINISHED"
 
   end subroutine Init_DepMap
 
@@ -329,7 +328,7 @@ integer :: nglob
 
       dtz      = dt_advec/Grid%DeltaZ
 
-      if ( DEBUG_DRYDEP .and. debug_flag ) then
+      if ( DEBUG%DRYDEP .and. debug_flag ) then
          write(*,"(a,4i4)") "DMET me, i,j ", me, i,j
          write(*,"(a,i4,3i3,i6,4f8.3,10f8.2)") "DMET SOL", &
               daynumber, imm, idd, ihh, current_date%seconds, &
@@ -393,7 +392,7 @@ integer :: nglob
     end if
    !---------------------------------------------------------
 
-    if ( DEBUG_DRYDEP .and. debug_flag ) then
+    if ( DEBUG%DRYDEP .and. debug_flag ) then
          write(*,"(a,2i4,4es12.4)") "DRYDEP CONCS SO2,NH3,O3 (ppb) ", i,j, &
           xn_2d(SO2,KMAX_MID)*surf_ppb, xn_2d(NH3,KMAX_MID)*surf_ppb, &
             xn_2d(O3,KMAX_MID)*surf_ppb, no2fac
@@ -412,7 +411,7 @@ integer :: nglob
   ! very high otherwise,  e.g. see Fig. 4, Petroff et al., 2008 (Part I), where
   ! observed Vg for forests is usually < 2cm/s.
 
-    if ( DEBUG_DRYDEP .and. debug_flag ) then
+    if ( DEBUG%DRYDEP .and. debug_flag ) then
          call datewrite("DRYDEP VS",AERO%NSIZE,(/ Grid%t2, Grid%rho_ref, AERO%Vs /) )
    !      if( maxval(Vs) > 0.02 ) write(*,*) "DRYDEP LIM!"
     end if
@@ -443,7 +442,7 @@ integer :: nglob
 
         L = Sub(iL)    ! ! Assign e.g. Sub(iL)ustar to ustar
 
-             if ( DEBUG_DRYDEP .and. debug_flag ) then
+             if ( DEBUG%DRYDEP .and. debug_flag ) then
                 write(6,"(a,3i3,f6.1,2i4,3f7.3,i4,9f8.3)") "DVEG: ", &
                     nlu,iiL, iL, glat(i,j), L%SGS, L%EGS, &
                    L%coverage, L%LAI, L%hveg,daynumber, &
@@ -609,7 +608,7 @@ end if
          end if
 
 
-        if ( DEBUG_DRYDEP .and. debug_flag ) then
+        if ( DEBUG%DRYDEP .and. debug_flag ) then
             do n = CDDEP_O3 , CDDEP_O3 !!! 1,NDRYDEP_GASES 
                call datewrite("DEPO3 ", iL, &
                    (/ Vg_ref(n), Sub(iL)%Vg_ref(n) /) )
@@ -677,7 +676,7 @@ end if
          call Calc_StoFlux(nFlux, iL_fluxes(1:nFlux), debug_flag )
 
 
-        if ( DEBUG_DRYDEP .and. Sumland > 1.011  ) then
+        if ( DEBUG%DRYDEP .and. Sumland > 1.011  ) then
             call CheckStop( "DryDep:SUMLAND TOO BIG")
         end if
 
@@ -688,7 +687,7 @@ end if
             gradient_fac(:) = sea_ratio(:)
         end if
 
-        if ( DEBUG_DRYDEP .and. debug_flag ) then
+        if ( DEBUG%DRYDEP .and. debug_flag ) then
             call datewrite("DEP VGR snow_flag Vg", (/ Grid%sdepth, & 
              !SUB0 (/ (100.0*Grid%Vg_Ref(n), n = 1, min(4,NDRYDEP_GASES )) , &
                 (100.0*Sub(0)%Vg_Ref(n), n = 1, min(4,NDRYDEP_GASES )) , &
@@ -754,7 +753,7 @@ end if
 
            Grid%O3factor = vg_fac(ncalc)
 
-           if ( DEBUG_DRYDEP .and. debug_flag ) then
+           if ( DEBUG%DRYDEP .and. debug_flag ) then
               call datewrite("O3_ppb_ratios ", n, (/ &
                  Grid%surf_o3_ppb, Grid%O3factor /) )
            end if ! DEBUG
@@ -772,7 +771,7 @@ end if
                   lossfrac = ( 1.0 - DepLoss(nadv)/ &
                                 (DepLoss(nadv)+xn_2d( ntot,KMAX_MID)))
               end if
-              if ( DEBUG_DRYDEP .and. lossfrac < 0.1 ) then
+              if ( DEBUG%DRYDEP .and. lossfrac < 0.1 ) then
                   call datewrite( "LOSSFRACING ", nadv, (/ 1.0*iL, &
                   !SUB0 Grid%Vg_Ref(n), DepLoss(nadv), vg_fac(ncalc), lossfrac /) )
                     Sub(0)%Vg_Ref(n), DepLoss(nadv), vg_fac(ncalc), lossfrac /) )
@@ -816,7 +815,7 @@ end if
           ! is in grid, so we don't need cover. Instead:
 
 
-            if ( DEBUG_DRYDEP .and. debug_flag ) then
+            if ( DEBUG%DRYDEP .and. debug_flag ) then
             if ( iL == 1 ) then ! SO2, CF
 
                if ( vg_set(n) )  then
@@ -841,7 +840,7 @@ end if
 !         totddep( nadv ) = totddep (nadv) + Deploss(nadv) * convfac
 
 
-        if ( DEBUG_DRYDEP .and. debug_flag ) then
+        if ( DEBUG%DRYDEP .and. debug_flag ) then
           if ( vg_set(n) ) then
               write(*, "(a,2i4,f8.3)") "DEBUG DryDep SET ", &
                    n,nadv, DDepMap(n)%vg
