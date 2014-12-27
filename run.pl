@@ -18,7 +18,7 @@
 ##PBS -lnodes=64 -lpmem=1000MB
 ##PBS -lnodes=16 -lpmem=1000MB
 ##PBS -lnodes=80
-#PBS -lnodes=4:ppn=20
+#PBS -lnodes=2:ppn=20
 # Wall time limit of run
 #PBS -lwalltime=00:20:00
 # Make results readable for others:
@@ -118,15 +118,14 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
-($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2917lai"   ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA","EMEP");
+($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2919"   ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA","EMEP");
 
 my %BENCHMARK;
 # OpenSource 2008
 #  %BENCHMARK = (grid=>"EMEP"  ,year=>2005,emis=>"Modrun07/OpenSourceEmis"           ,chem=>"EmChem03");
 # Dave's preference for EMEP:
 #  %BENCHMARK = (grid=>"EMEP"  ,year=>2006,emis=>"Modrun10/EMEP_trend_2000-2008/2006",chem=>"EmChem09");
-# EECCA Default:
-##%BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun11/EMEP_trend_2000-2009/2008",chem=>"EmChem09soa",make=>"EMEP");
+# EECCA Default: %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun11/EMEP_trend_2000-2009/2008",chem=>"EmChem09soa",make=>"EMEP");
 # Status Runs:
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2007,emis=>"Modrun09/2009-Trend2007-CEIP") ;
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun10/2010-Trend2008_CEIP");
@@ -209,7 +208,7 @@ if ($CWF) {
 #  --- Here, the main changeable parameters are given. The variables
 #      are explained below, and derived variables set later.-
 
-my $year = "2012";
+my $year = "2010";
    $year = substr($CWFBASE,0,4) if $CWF;
    $year = $BENCHMARK{"year"} if %BENCHMARK;
 ( my $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
@@ -909,8 +908,11 @@ unless($MAKEMODE=~/EVA/){
   $ifile{"$DataDir/Landuse/Landuse_PS_5km_LC.nc"} ="Landuse_PS_5km_LC.nc";
 #  $ifile{"$DataDir/Landuse/Landuse_PS_1km_LC.nc"} ="Landuse_PS_5km_LC.nc";
 
-  $ifile{"$DataDir/LandInputs_Mar2013/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
-  $ifile{"$DataDir/LandInputs_Mar2013/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
+  #CEH GLOBAL
+  #$ifile{"$DataDir/LandInputs_Mar2013/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
+  #$ifile{"$DataDir/LandInputs_Mar2013/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
+  $ifile{"$MyDataDir/LandInputs_Dec2014/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
+  $ifile{"$MyDataDir/LandInputs_Dec2014/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
 
 #For dust: clay and sand fractions
   $ifile{"$DataDir/Soil_Tegen.nc"} ="Soil_Tegen.nc";
@@ -922,6 +924,10 @@ unless($MAKEMODE=~/EVA/){
   #$ifile{"$MyDataDir/sitesCPM_ds.dat"} = "sites.dat";
 
   #LPS: point sources can  be added if needed.
+  $ifile{"$MyDataDir/PointSources.txt"} = "PointSources.txt" 
+   if(-e "$MyDataDir/PointSources.txt");
+
+  #ECLGLOB: point sources can  be added if needed.
   $ifile{"$MyDataDir/PointSources.txt"} = "PointSources.txt" 
    if(-e "$MyDataDir/PointSources.txt");
 

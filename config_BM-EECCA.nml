@@ -21,7 +21,7 @@
   USES%FOREST_FIRES     = T,
   USES%EMISSTACKS       = F,         ! Reads PointSources file
   USES%PlumeMethod      = 'PVDI',    ! default PVDI, possible: NILU, ASMI, PVDI
-  USES%PFT_MAPS         = F,         ! PFT LAI tests
+  USES%PFT_MAPS         = T,         ! PFT LAI tests
 !------------------------------
   USE_SOILWATER         = T,          ! Uses SMI from meteo data
   USE_CONVECTION        = F,

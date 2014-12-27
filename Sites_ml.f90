@@ -716,7 +716,7 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
   integer  :: Nlevels,ispec,NSPEC,NStations,NMetaData
   real ::Values(KMAX_MID)
   integer ::i_Att_MPI
-  logical :: debug_1d=.true.
+  logical :: debug_1d=.false.
 
   select case (fname)
   case("sites") ;type=1

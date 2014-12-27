@@ -76,7 +76,6 @@ type, public :: emep_debug
     ,BIO             = .false. & !< Biogenic emissions
     ,COLUMN          = .false. & !  Used in Derived_ml for column integratton
     ,DERIVED         = .false. & ! 
-    ,DO3SE           = .false. &
     ,DRYDEP          = .false. & ! Skips fast chemistry to save some CPU
     ,DRYRUN          = .false. & ! Skips fast chemistry to save some CPU
     ,EQUIB           = .false. &   !MARS, EQSAM etc.
@@ -86,8 +85,6 @@ type, public :: emep_debug
     ,HOURLY_OUTPUTS  = .false. & !  
     ,IOPROG          = .false. &
     ,LANDDEFS        = .false. &
-    ,LANDUSE         = .false. &
-    ,PFT_MAPS        = .false. & !< Future option
     ,MAINCODE        = .false. & !< debugs main code (Unimod) driver
     ,MOSAICS         = .false. &
     ,MY_DERIVED      = .false. &
@@ -100,6 +97,12 @@ type, public :: emep_debug
     ,SOLVER          = .false. &
     ,SOA             = .false. &
     ,STOFLUX         = .false. 
+  ! integer debug options allow different levels of verbosity
+   integer               :: &
+      PFT_MAPS  = 0            & !< Future option
+     ,LANDUSE   = 0            & !
+     ,DO3SE     = 0
+  !----------------------------------------------------------
    integer, dimension(2) ::   IJ = (/ -999, -999 /)
    character(len=20)     ::   SPEC = 'O3'  ! default. 
    integer               ::   ISPEC = -999 ! Will be set after NML

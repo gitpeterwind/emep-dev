@@ -153,6 +153,43 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+27th December 2014 Dave   2919-2920
+
+NB: IN-PROGRESS VERSION
+  Bug mentioned below is partially fixed if USES%PFT_MAPS set to true, but
+  not all implications workde out yet. Also need to add SGS, EGS for crops
+  which are not dealt with by PFT_MAPS. Also need to consider use of SGS in
+  Biogenics_ml
+
+  In other words, if considering global runs, THINK and CHECK!
+
+
+MARS_ml (2919)
+  Crashed on 23rd May 2010 global run. Now replaced CheckStop with write-out and
+  exit from routine. Needs attention? (See DSMARS lines, and nMarsErrors usage)
+
+  
+Landuse_ml
+ModelConstants
+config_EMEPSTD
+(Other configs will need adapting!)
+
+  DEBUG% PFT_MAPS, LANDUSE and DO3SE now use integers. Specify 1 for basic
+   debug, 2 for more verbose.
+
+DO3SE_ml
+  Added gsf scaling factor to fPhenology to account (in a crude way) for EGS-SGS < 90 days.
+  Removed elemental tag to allow print out.
+
+LandDefs_ml
+   Small debug output change
+
+Sites_ml
+  Set debug_1d = .false. to avoid excessive printouts.
+
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 25th December 2014 Dave   2918
 
 NB: Bug discovered in Landuse_ml: effectivdaynumber usage gives wrong

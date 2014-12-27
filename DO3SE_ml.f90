@@ -126,14 +126,14 @@ contains
 
             do3se(iLC) = input_do3se  
 
-            if ( DEBUG%DO3SE .and. MasterProc ) then
+            if ( DEBUG%DO3SE>0 .and. MasterProc ) then
                 write(*,*) " DO3SE iLC", iLC,  do3se(iLC)%code, wanted_codes(iLC)
             end if
             if ( do3se(iLC)%VPDcrit > 0.0 ) then
               nSumVPD = nSumVPD + 1
               call CheckStop( nSumVPD > MAXnSumVPD, "DO3SE nSumVPD")
               SumVPD_LC(nSumVPD) = iLC
-              if(DEBUG%DO3SE .and. MasterProc) &
+              if(DEBUG%DO3SE>0 .and. MasterProc) &
                 write(*,*)'VPDlimit ',do3se(iLC)%VPDcrit,' for iLC ',iLC, nSumVPD
             end if
 
@@ -255,14 +255,14 @@ contains
          max( do3se(iLC)%f_min,  L%f_temp * L%f_vpd * L%fSW )
 
 
-   if ( DEBUG%DO3SE .and. debug_flag ) then ! EXTRA
+   if ( DEBUG%DO3SE>0 .and. debug_flag ) then ! EXTRA
        write(*,"(a,5i5,i3,L2,99f10.4)") "IN RSUR gstomatal ", &
               current_date, iLC, USE_SOILWATER, L%PARsun, L%PARshade,&
               do3se(iLC)%g_max, L%g_sto, L%f_env,  L%f_phen, L%f_vpd,&
               L%fSW, L%g_sto * L%f_sun/L%f_light, L%g_sun 
    end if
 
-    if ( DEBUG%DO3SE ) then
+    if ( DEBUG%DO3SE>0 ) then
         needed = (/ L%t2C,L%t2,L%vpd ,L%SWP ,&
                     L%PARsun ,L%PARshade ,L%LAIsunfrac /)
         if ( any( needed(:) < -998.0 )) then
@@ -290,7 +290,8 @@ contains
 
 !===========================================================================
 
- elemental function fPhenology(iLC,jday,SGS,EGS,debug_flag) result (fphen)
+ !elemental function fPhenology(iLC,jday,SGS,EGS,debug_flag) result (fphen)
+ function fPhenology(iLC,jday,SGS,EGS,debug_flag) result (fphen)
   real :: fphen
 
 ! Input
@@ -299,16 +300,25 @@ contains
   integer, intent(in):: SGS, EGS
   logical, intent(in) :: debug_flag
   real  :: a,b,c,d,Slen,Elen,Astart, Aend
+  real  :: gsf  ! factor to scale for short growing-seasons
+
+ !CEH 2014 GAEZ
+  gsf =  1.0
+  if( EGS - SGS  < 90 ) then
+     gsf = (EGS - SGS)/90.0
+     if( debug_flag ) write(*,"(a,2i5,f8.4)") "DO3SE gsf ", SGS, EGS, gsf
+  end if
+    
 
         a =  do3se(iLC)%f_phen_a
         b =  do3se(iLC)%f_phen_b
         c =  do3se(iLC)%f_phen_c
         d =  do3se(iLC)%f_phen_d
-        Slen =  do3se(iLC)%f_phen_Slen  ! e
-        Elen =  do3se(iLC)%f_phen_Elen  ! f
+        Slen =  gsf * do3se(iLC)%f_phen_Slen  ! e
+        Elen =  gsf * do3se(iLC)%f_phen_Elen  ! f
 
-        Astart   = SGS  + do3se(iLC)%Astart_rel
-        Aend   = EGS  - do3se(iLC)%Aend_rel
+        Astart   = SGS  + gsf * do3se(iLC)%Astart_rel
+        Aend   = EGS  - gsf * do3se(iLC)%Aend_rel
 
 
         if ( jday <  SGS ) then

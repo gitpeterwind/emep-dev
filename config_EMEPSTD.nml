@@ -13,7 +13,7 @@
   USES%FOREST_FIRES     = T,
   USES%EMISSTACKS       = F,         ! Reads PointSources file
   USES%PlumeMethod      = 'PVDI',    ! default PVDI, possible: NILU, ASMI, PVDI
-  USES%PFT_MAPS         = F,         ! PFT LAI tests
+  USES%PFT_MAPS         = T,         ! PFT LAI tests
 !------------------------------
   USE_SOILWATER         = T,          ! Uses SMI from meteo data
   USE_CONVECTION        = F,
@@ -95,13 +95,17 @@
   DEBUG%GLOBBC          = F,
   DEBUG%GRIDVALUES      = F,
   DEBUG%HOURLY_OUTPUTS  = F,
-  DEBUG%PFT_MAPS        = F,   ! in testing
   DEBUG%PHYCHEM         = F,
   DEBUG%SETUP_1DBIO     = F,
   DEBUG%SETUP_1DCHEM    = F,
   DEBUG%SOA             = F,
+  DEBUG%STOFLUX         = F,
+! Use integers to control debug level:
+  DEBUG%PFT_MAPS        = 0,   ! in testing
+  DEBUG%LANDUSE         = 0,
 ! Specify here the coords and species index (tot, see CM_ChemSpecs_tot)
-  DEBUG%IJ              = 60, 50      ! Bremen
+!  DEBUG%IJ              = 60, 50      ! Bremen
+  DEBUG%IJ              = 189, 144     ! Bremen, global
   DEBUG%SPEC            = 'OH',
 &end
 &Nest_config

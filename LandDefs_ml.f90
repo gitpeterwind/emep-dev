@@ -149,7 +149,7 @@ contains
       if ( MasterProc ) then
          write(*,*) "INIT_LANDDEFS for Ncodes= ", ncodes
          do n = 1, ncodes
-            write(*,*) "INLC ",n, trim(wanted_codes(n))
+            write(*,*) "LANDDEFS INLC  wants ",n, trim(wanted_codes(n))
          end do
          call open_file(IO_TMP,"r",fname,needed=.true.)
          call CheckStop(ios,"open_file error on " // fname )
@@ -185,7 +185,6 @@ contains
             nn = nn + 1
            !############################
             if ( DEBUG%LANDDEFS .and. MasterProc ) then
-                 !write(*,"(a)") trim(txtinput)
                  write(unit=*,fmt="(a,2i3,a,a,f7.3,f10.3)") "LANDDEFS N ", &
                   n,nn, trim(LandInput%name), trim(LandInput%code),&
                     LandDefs(n)%LAImax, LandDefs(n)%Emtp
