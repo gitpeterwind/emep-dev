@@ -464,6 +464,8 @@ module MARS_ml
       real ::ASO4_Low1, ANO3_Low1, AH2O_Low1, ANH4_Low1, GNH3_Low1, GNO3_Low1,diff2
       real::TSO4_HighA,TSO4_LowA,High_Factor,X
 !-----------------------------------------------------------------------
+      integer, save :: nMarsErrors = 0 ! tracks solution failures DSMARS
+!-----------------------------------------------------------------------
 !  begin body of subroutine RPMARES
                                                                          
 !ASO4=FLOOR;ANO3=FLOOR;AH2O=FLOOR;ANH4=FLOOR;GNO3=FLOOR;GNH3=FLOOR 
@@ -1014,8 +1016,14 @@ if( DEBUG%EQUIB .and. debug_flag ) print "(a,4es10.3)", "MARS NONDEGEN  ",  AA, 
                 .AND. IS_SAFE_DIV( KNA, GAMANA*GAMANA, R4=.TRUE. ) & 
                 ) ) THEN
                
-               WRITE(6,*) 'RPMARES: not safe to divide...exit'
-               call CheckStop("UNDER/OVERFLOW in rpmares (MARS)")
+               if( nMarsErrors < 500 ) then
+                  nMarsErrors = nMarsErrors + 1
+                  WRITE(6,"(a,2i7,f7.2,4es11.2,4es12.3)") &
+                    'RPMARES: not safe to divide...exit?', &
+                     NNN, nMarsErrors, fRH, TSO4_LowA, TNH4, TNO3, AH2O, &
+                     GAMAS2, GAMAS1*GAMAS1*GAMAS1, KNA, GAMANA*GAMANA
+               end if
+!DSMARS                call CheckStop("UNDER/OVERFLOW in rpmares (MARS)")
 !could continue: remove the stop and the warning if necessary
 
                GOTO 1601
