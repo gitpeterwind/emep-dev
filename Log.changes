@@ -153,6 +153,21 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+30th December 2014 Peter   2921
+
+MARS_ml.f90 in some situations the "IS_SAFE_DIV" got true (once encountered for 
+GLOBAL run once for MACC14). It does not happen often.
+This is probably because the test is done assuming that we use real*4.
+We have set our "small numbers" as 1E-30, and the actcof routine contains a 
+GAMA=10.0**TRM which can be as much as 1E30. 
+sometimes (in combination with other small numbers) this triggers the test.
+
+Threfore I have set: 
+IS_SAFE_DIV: R4=.FALSE. (for the "MARS" case)
+Which did not trigger IS_SAFE_DIV, at least in the GLOBAL case.
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 27th December 2014 Dave   2919-2920
 
 NB: IN-PROGRESS VERSION

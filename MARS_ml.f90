@@ -1012,8 +1012,8 @@ if( DEBUG%EQUIB .and. debug_flag ) print "(a,4es10.3)", "MARS NONDEGEN  ",  AA, 
 
 !GEOS added:
             IF ( .NOT. (& 
-               IS_SAFE_DIV( GAMAS2, GAMAS1*GAMAS1*GAMAS1, R4=.TRUE. )& 
-                .AND. IS_SAFE_DIV( KNA, GAMANA*GAMANA, R4=.TRUE. ) & 
+               IS_SAFE_DIV( GAMAS2, GAMAS1*GAMAS1*GAMAS1, R4=.FALSE. )& 
+                .AND. IS_SAFE_DIV( KNA, GAMANA*GAMANA, R4=.FALSE. ) & 
                 ) ) THEN
                
                if( nMarsErrors < 500 ) then
