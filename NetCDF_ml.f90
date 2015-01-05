@@ -155,7 +155,7 @@ subroutine Out_CDF_sondes(fileName,SpecName,NSpec,Values,NLevels,g_ps,debug)
       call check(nf90_inq_varid(ncFileID,SpecName(iSpec),varID),"inq:"//trim(SpecName(iSpec)))
       if(debug_1D)write(*,*)'writing ',trim(SpecName(iSpec)),NLevels,nstations
       if(NLevels==1)then
-        call check(nf90_put_var(ncFileID,varID,values(1,1,1:nstations),&
+        call check(nf90_put_var(ncFileID,varID,values(1,iSpec,1:nstations),&
             start=[1,nrecords],count=[nstations,1]),"put:"//trim(SpecName(iSpec)))
       else
         do i=1,nstations     
