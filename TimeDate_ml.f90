@@ -40,6 +40,8 @@ MODULE TimeDate_ml
 IMPLICIT NONE
 
 !/ Functions ...............
+public :: print_date            ! Simple print, YYYY-MM-DD-HH-SSSS
+public :: same_date             ! True if dates identical
 public :: make_current_date     ! convert timestamp to current_date
 public :: add2current_date      ! Increment current_date
 public :: make_timestamp        ! convert current_date(yyyy,mon,day,hour,secs)
@@ -81,6 +83,7 @@ type, public :: date
 end type date
 
 type(date), public, save :: current_date
+logical, save :: new_hour = .true.  ! eg to control print-out frequency
 
 !==============================================================================
 
@@ -110,6 +113,34 @@ CHARACTER(LEN=3),DIMENSION(0:6), public :: short_day =  &
   (/"Sun","Mon","Tue","Wed","Thu","Fri","Sat" /)
 
 CONTAINS
+
+!> FUNCTION print_date: produces  YYYY-MM-DD-HH-SSSS
+
+function print_date(cd) result(str)
+  type(date) :: cd
+  character(len=18) :: str
+  write(str,"(i4,3(a,i2.2),a,i4.4)") &
+    cd%year, "-",  &
+    cd%month, "-",  &
+    cd%day, "-",  &
+    cd%hour, "-",  &
+    cd%seconds
+end function print_date
+   
+!> FUNCTION same_date
+!! DS Returns true if dates equal
+
+function same_date(cd1,cd2) result(tf)
+  type(date) :: cd1, cd2
+  logical :: tf
+  tf = ( & 
+    cd1%year     == cd2%year  .and. &
+    cd1%month    == cd2%month  .and. &
+    cd1%day      == cd2%day  .and. &
+    cd1%hour     == cd2%hour  .and. &
+    cd1%seconds  == cd2%seconds )
+end function same_date
+   
 
 FUNCTION make_timestamp (cd) RESULT (ts)
   TYPE(timestamp)              :: ts
@@ -353,3 +384,7 @@ SUBROUTINE Init_nmdays (indate)
 END SUBROUTINE Init_nmdays
 
 END MODULE TimeDate_ml
+!TSTESX program testr
+!TSTESX use TimeDate_ml, only : date, print_date
+!TSTESX print *, "DATE is ", print_date( date( 1999, 3, 2,21, 0 ))
+!TSTESX end program testr
