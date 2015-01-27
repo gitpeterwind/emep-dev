@@ -30,11 +30,12 @@ use Chemfields_ml, only : xn_adv, xn_shl, cfac
 use ChemSpecs      ! Use IXADV_ indices...
 use ChemGroups_ml  ! Allow all groups to ease compilation
                    !  eg. OXN_GROUP, DDEP_OXNGROUP, BVOC_GROUP
-use EmisDef_ml,     only :  EMIS_FILE
-use GridValues_ml, only : debug_li, debug_lj, debug_proc
-use Io_Nums_ml,   only: IO_NML
-use Io_Progs_ml,   only: PrintLog
-use LandDefs_ml,  only : LandDefs, LandType, Check_LandCoverPresent ! e.g. "CF"
+use EmisDef_ml,     only : EMIS_FILE
+use EmisGet_ml,      only: nrcemis, iqrc2itot
+use GridValues_ml,  only : debug_li, debug_lj, debug_proc
+use Io_Nums_ml,      only: IO_NML
+use Io_Progs_ml,     only: PrintLog
+use LandDefs_ml,    only : LandDefs, LandType, Check_LandCoverPresent ! e.g. "CF"
 use MetFields_ml,        only : z_bnd, roa
 use ModelConstants_ml, only : MasterProc, SOURCE_RECEPTOR  &
                         , USE_AOD &
@@ -289,6 +290,8 @@ private
        D3_OTHER  != (/ "D3_PM25water" /) !**** Under construction *******
      != (/ "D3_m_TH", "D3_m2s_Kz" /)
 
+    logical, parameter, public :: EmisSplit_OUT = .false.
+
     integer, private :: i,j,k,n, ivoc, index    ! Local loop variables
 
    contains
@@ -379,7 +382,12 @@ private
      call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
    end if
 
-
+   if(EmisSplit_OUT)then
+      do i=1,max(18,nrcemis)
+         tag_name(1) = "EmisSplit_mgm2_"//trim(species(iqrc2itot(i))%name)
+         call AddArray(tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
+      enddo
+   endif
 
 ! Do SR last, so we get PM25 after groups have been done
      call AddArray( D2_SR,  wanted_deriv2d, NOT_SET_STRING, errmsg)

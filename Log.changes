@@ -153,6 +153,19 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+27th January  2014 Peter, Jan Eiof    2925
+
+Possibility to get total emissions after splits and including all natural 
+emissions. Units are mg/m2 (uses molecular weight of components, not only "N" etc.)
+Put EmisSplit_OUT = .true. in My_Derived_ml.f90
+For now put 18 splits (can be increased)
+Modified:
+Derived_ml.f90 
+Setup_1d_ml.f90
+Emissions_ml.f90
+ZD_OZONE/My_Derived_ml.f90
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16th January  2014 Dave    2923-2924
 
 TimeDate_ml - added same_date and print_date routines

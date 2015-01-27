@@ -40,7 +40,8 @@ use DerivedFields_ml, only: MAXDEF_DERIV2D, MAXDEF_DERIV3D, &
 use EcoSystem_ml,     only: DepEcoSystem, NDEF_ECOSYSTEMS, &
                             EcoSystemFrac,FULL_ECOGRID
 use EmisDef_ml,       only: EMIS_FILE
-use Emissions_ml,     only: SumSnapEmis
+use EmisGet_ml,       only: nrcemis,iqrc2itot
+use Emissions_ml,     only: SumSnapEmis, SumSplitEmis
 use GridValues_ml,    only: debug_li, debug_lj, debug_proc, A_mid, B_mid, &
                             xm2, GRIDWIDTH_M, GridArea_m2
 use Io_Progs_ml,      only: datewrite
@@ -572,6 +573,12 @@ do  ind = 1, size(EMIS_FILE)
                      ind , -99, T,  1.0e6,  F,  IOU_DAY )
 end do ! ind
 
+!Splitted total emissions (inclusive Natural)
+do ind=1,max(18,nrcemis)
+  dname = "EmisSplit_mgm2_"//trim(species(iqrc2itot(ind))%name)
+call AddNewDeriv(dname, "EmisSplit_mgm2", "-", "-", "mg/m2", &
+                      ind , -99, T, 1.0e6,   F,  IOU_DAY )
+enddo
 
 call AddNewDeriv("SURF_PM25water", "PM25water", "-", "-", "-", &
                       -99 , -99, F, 1.0,   T,  IOU_DAY )
@@ -1246,7 +1253,11 @@ end do
               call datewrite("SnapEmis-in-Derived, still kg/m2/s", n, & !f_2d(n)%Index,&
                     (/   SumSnapEmis( debug_li,debug_lj, f_2d(n)%Index ) /) )
 
-
+          case ( "EmisSplit_mgm2" )      ! Splitted total emissions (Inclusive natural)
+              forall ( i=1:limax, j=1:ljmax )
+                 d_2d( n, i,j,IOU_INST) = SumSplitEmis(i,j,f_2d(n)%Index)
+              end forall
+ 
           case ( "EXT" )
 
           ! Externally set for IOU_INST (in other routines); so no new work

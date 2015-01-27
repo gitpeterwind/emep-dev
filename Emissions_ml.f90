@@ -68,6 +68,7 @@ use ModelConstants_ml,only: &
     SEAFIX_GEA_NEEDED, & ! see below
     USE_LIGHTNING_EMIS,USE_AIRCRAFT_EMIS,USE_ROADDUST, &
     USE_EURO_SOILNOX, USE_GLOBAL_SOILNOX, EURO_SOILNOX_DEPSCALE! one or the other
+use My_Derived_ml,    only: EmisSplit_OUT
 use NetCDF_ml,        only: ReadField_CDF
 use Par_ml,           only: MAXLIMAX,MAXLJMAX, GIMAX,GJMAX, IRUNBEG,JRUNBEG,&
                             me,limax,ljmax, MSG_READ1,MSG_READ7
@@ -129,7 +130,7 @@ real, private, allocatable, dimension(:,:,:,:), save :: &
   roaddust_emis_pot ! main road dust emission potential arrays, in kg/m2/s (to be scaled!)
 
 ! We store the emissions for output to d_2d files and netcdf in kg/m2/s
-real, public, allocatable, dimension(:,:,:), save :: SumSnapEmis
+real, public, allocatable, dimension(:,:,:), save :: SumSnapEmis,SumSplitEmis
 
 logical, save, private  :: first_dms_read
 
@@ -244,7 +245,6 @@ subroutine Emissions(year)
   roaddust_emis_pot=0.0
   allocate(SumSnapEmis(MAXLIMAX,MAXLJMAX,NEMIS_FILE))
   SumSnapEmis=0.0
-
   !=========================
   call Country_Init() ! In Country_ml, => NLAND, country codes and names, timezone
 
@@ -291,6 +291,12 @@ subroutine Emissions(year)
   endif
   !=========================
   call EmisSplit()    ! In EmisGet_ml, => emisfrac
+  !=========================
+!Must first call EmisSplit, to get nrcemis defined
+  if(EmisSplit_OUT)then
+     allocate(SumSplitEmis(MAXLIMAX,MAXLJMAX,nrcemis))
+     SumSplitEmis=0.0
+  endif
   !=========================
   call CheckStop(ios, "ioserror: EmisSplit")
   ! ####################################
@@ -478,9 +484,12 @@ subroutine Emissions(year)
       endif
 
     case("CdfFractions")
+
+       if(MONTHLY_GRIDEMIS)return!will read monthly emissions later
+
       !use grid independent netcdf emission file
       !experimental so far. Needs a lot of reorganization
-
+       
       sumemis_local(:,iem)=0.0
 
       do isec=1,NSECTORS

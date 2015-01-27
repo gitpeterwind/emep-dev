@@ -15,7 +15,7 @@ use CheckStop_ml,        only:  CheckStop
 use DerivedFields_ml,          only : d_2d
                               !FUTURE ,NH3EMIS_VAR ! FUTURE NH3Emis
 use EmisGet_ml,          only:  nrcemis, iqrc2itot  !DSRC added nrcemis
-use Emissions_ml,        only:  gridrcemis, gridrcroadd, KEMISTOP
+use Emissions_ml,        only:  gridrcemis, gridrcroadd, SumSplitEmis, KEMISTOP
 use ForestFire_ml,       only: Fire_rcemis, burning
 use Functions_ml,        only:  Tpot_2_T
 use ChemSpecs  !,           only:  SO4,C5H8,NO,NO2,SO2,CO,
@@ -41,6 +41,7 @@ use ModelConstants_ml,   only:  &
   ,USE_GLOBAL_SOILNOX, USE_DUST, USE_ROADDUST & !
   ,USE_EMERGENCY,DEBUG_EMERGENCY   & ! Emergency: Volcanic Eruption
   ,KMAX_MID ,KMAX_BND, KCHEMTOP      ! Start and upper k for 1d fields
+use My_Derived_ml,       only: EmisSplit_OUT
 use Landuse_ml,          only: water_fraction, ice_landcover
 use Par_ml,              only: me,MAXLIMAX,MAXLJMAX, & 
                                gi0,gi1,gj0,gj1,IRUNBEG,JRUNBEG
@@ -306,6 +307,19 @@ contains
      if( USE_GLOBAL_SOILNOX)then !NEEDS CHECKING NOV2011
         rcemis(NO,KMAX_MID)=rcemis(NO,KMAX_MID)+SoilNOx(i,j)
      endif
+
+    if(EmisSplit_OUT)then
+!put all added emissions in EmisSplit_OUT, also natural emissions
+       SumSplitEmis(i,j,:)=0.0
+      do k=KCHEMTOP, KMAX_MID
+         do iqrc=1,nrcemis
+            !give unit mg/m2/s dt_advec multiplied in Derived_ml 
+            SumSplitEmis(i,j,iqrc) = SumSplitEmis(i,j,iqrc)+&
+                 rcemis(iqrc2itot(iqrc),k)*species(iqrc2itot(iqrc))%molwt*&
+                 (dA(k)+dB(k)*ps(i,j,1))/(GRAV*amk(k)*ATWAIR)
+         enddo
+      enddo
+    endif
 
 
   ! Soil Rn222 emissions from non-ice covered land, + water
