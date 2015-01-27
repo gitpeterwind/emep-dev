@@ -485,7 +485,7 @@ subroutine Emissions(year)
 
     case("CdfFractions")
 
-       if(MONTHLY_GRIDEMIS)return!will read monthly emissions later
+       if(.not.MONTHLY_GRIDEMIS)then!will read monthly emissions later
 
       !use grid independent netcdf emission file
       !experimental so far. Needs a lot of reorganization
@@ -549,7 +549,7 @@ subroutine Emissions(year)
 
       if(EMIS_OUT)&
         call EmisOut("Frac",iem,nlandcode,landcode,snapemis(:,:,:,:,iem)) !cdfemis
-
+      endif
     case default
       call CheckStop("EMIS_SOURCE not set"//trim(EMIS_SOURCE))
     endselect
