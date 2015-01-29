@@ -152,7 +152,24 @@ info on unused variables, etc.
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+29th January  2014 Peter    2927
+
+Completely decoupled the array index in Country_ml and the country-code used in 
+emission files.
+This is both more logical (you now choose for instance a country code= 1000000 without problems, 
+giving more flexibility for systematicdefinitions)
+and will save array sizes, since NLAND is now exactely equal to the number of countries.
+
+It does not give exactely the same results, because there was some bugs in the earlier version.
+(Russia?). Hopefully this only affected a timefactor or split.
+Modified:
+Country_ml
+Unimod
+Timefactors_ml
+EmisGet_ml
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 27th January  2014 Peter, Jan Eiof    2926
 
 Possibility to get total emissions after splits and including all natural 

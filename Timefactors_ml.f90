@@ -47,7 +47,7 @@
 !_____________________________________________________________________________
 
   use CheckStop_ml, only : CheckStop
-  use Country_ml,   only : NLAND
+  use Country_ml,   only : NLAND,Country
   use EmisDef_ml,   only : NSECTORS, NEMIS_FILE, EMIS_FILE, ISNAP_DOM
   use GridValues_ml    , only : i_fdom,j_fdom, debug_proc,debug_li,debug_lj
   use InterpolationRoutines_ml, only : Averageconserved_interpolate
@@ -60,6 +60,7 @@
   use Par_ml,       only : MAXLIMAX,MAXLJMAX, me, li0, lj0, li1, lj1
   use Par_ml,       only : IRUNBEG, JRUNBEG, MSG_READ8
   use PhysicalConstants_ml, only : PI
+  use SmallUtils_ml,    only: find_index
   use Io_ml,        only :            &
                      open_file,       & ! subroutine
                      check_file,       & ! subroutine
@@ -82,12 +83,12 @@
 
   !-- time factor stuff: 
 
-  real, public, save, &
-     dimension(NLAND,NSECTORS,NEMIS_FILE) :: timefac ! overall emission 
+  real, public, save, allocatable,&
+     dimension(:,:,:) :: timefac ! overall emission 
                                                       ! timefactor 
                                                       ! calculated daily
-  real, public, save,  &
-     dimension(NLAND,12,NSECTORS,NEMIS_FILE) :: fac_emm  ! Monthly factors
+  real, public, save, allocatable, &
+     dimension(:,:,:,:) :: fac_emm  ! Monthly factors
 
  ! Hourly for each day ! From EURODELTA/INERIS
   real, public, save,  &
@@ -95,14 +96,14 @@
 
  ! We keep track of min value for degree-day work
  !
-  real, public, save,  &
-     dimension(NLAND,NSECTORS,NEMIS_FILE) :: fac_min ! Min of Monthly factors
+  real, public, save, allocatable, &
+     dimension(:,:,:) :: fac_min ! Min of Monthly factors
  !
-  real, public, save,  &
+  real, public, save, &
      dimension(12) :: fac_cemm  ! Change in monthly factors over the years
 
-  real, public, save,  &
-     dimension(NLAND, 7,NSECTORS,NEMIS_FILE) :: fac_edd  ! Daily factors
+  real, public, save,allocatable,  &
+     dimension(:,:,:,:) :: fac_edd  ! Daily factors
 
   ! Heating-degree day factor for SNAP-2. Independent of country:
   logical, public, save :: Gridded_SNAP2_Factors = .false.
@@ -146,7 +147,7 @@ contains
   character(len=200) :: inputline
   real :: fracchange
   real, dimension(NLAND,NEMIS_FILE):: sumfacc !factor to normalize monthly changes                                                         
-  real :: Start, Endval, Average, x
+  real :: Start, Endval, Average, x, buff(12)
 
   if (DEBUG) write(unit=6,fmt=*) "into timefactors "
 
@@ -192,16 +193,22 @@ contains
        n = 0
        do 
            read(IO_TIMEFACS,fmt=*,iostat=ios) inland, insec, &
-             (fac_emm(inland,mm,insec,iemis),mm=1,12)
+                (buff(mm),mm=1,12)
+!             (fac_emm(inland,mm,insec,iemis),mm=1,12)
            if ( ios <  0 ) exit     ! End of file
-
+           ic=find_index(inland,Country(:)%icode)
+           if(ic<1.or.ic>NLAND)then
+              if(me==0.and.insec==1.and.iemis==1)write(*,*)"Monthlyfac code not used",inland
+              cycle
+           endif
+           fac_emm(ic,1:12,insec,iemis)=buff(1:12)
            !defined after renormalization and send to al processors:
            ! fac_min(inland,insec,iemis) = minval( fac_emm(inland,:,insec,iemis) )
 
            if( DEBUG.and.insec==ISNAP_DOM  ) &
               write(*,"(a,3i3,f7.3,a,12f6.2)") "emm tfac ", &
-               inland,insec,iemis, fac_min(inland,insec,iemis),&
-                 " : ",  ( fac_emm(inland,mm,insec,iemis), mm=1,12)
+               inland,insec,iemis, fac_min(ic,insec,iemis),&
+                 " : ",  ( fac_emm(ic,mm,insec,iemis), mm=1,12)
 
            call CheckStop( ios, "Timefactors: Read error in Monthlyfac")
 
@@ -243,15 +250,21 @@ contains
        n = 0
        do
          read(IO_TIMEFACS,fmt=*,iostat=ios) inland, insec, &
-             (fac_edd(inland,i,insec,iemis),i=1,7)
+              (buff(i),i=1,7)
+             !(fac_edd(inland,i,insec,iemis),i=1,7)
            if ( ios <  0 ) exit   ! End of file
-
+           ic=find_index(inland,Country(:)%icode)
+           if(ic<1.or.ic>NLAND)then
+              if(me==0.and.insec==1.and.iemis==1)write(*,*)"Dailyfac code not used",inland
+              cycle
+           endif
+           fac_edd(ic,1:7,insec,iemis)=buff(1:7)
            call CheckStop( ios, "Timefactors: Read error in Dailyfac")
 
            n = n + 1
 
            !-- Sum over days 1-7
-           xday =  sum( fac_edd(inland,1:7,insec,iemis) ) / 7.0
+           xday =  sum( fac_edd(ic,1:7,insec,iemis) ) / 7.0
 
            call CheckStop( xday > 1.001 .or. xday < 0.999, &
                 "Timefactors: ERROR: Dailyfac - not normalised")

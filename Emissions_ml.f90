@@ -11,7 +11,7 @@ use ChemSpecs,        only: NSPEC_SHL, NSPEC_TOT,NO2, species
 !CMR use ChemSpecs_shl_ml, only: NSPEC_SHL
 !CMR use ChemSpecs_tot_ml, only: NSPEC_TOT,NO2
 !CMR use ChemChemicals_ml, only: species
-use Country_ml,       only: NLAND,Country_Init,Country,IC_NAT,IC_FI,IC_NO,IC_SE
+use Country_ml,       only: MAXNLAND,NLAND,Country,IC_NAT,IC_FI,IC_NO,IC_SE
 use Country_ml,       only: EU27, EUMACC2 !CdfSnap
 use EmisDef_ml,       only: &
       NSECTORS      & ! No. sectors
@@ -245,8 +245,17 @@ subroutine Emissions(year)
   roaddust_emis_pot=0.0
   allocate(SumSnapEmis(MAXLIMAX,MAXLJMAX,NEMIS_FILE))
   SumSnapEmis=0.0
+
   !=========================
-  call Country_Init() ! In Country_ml, => NLAND, country codes and names, timezone
+!  call Country_Init() ! In Country_ml, => NLAND, country codes and names, timezone
+
+  allocate(e_fact(NSECTORS,NLAND,NEMIS_FILE))!NLAND defined in Country_Init()
+  e_fact=0.0
+  allocate(sumcdfemis(NLAND,NEMIS_FILE))
+  if(.not.allocated(timefac))allocate(timefac(NLAND,NSECTORS,NEMIS_FILE))
+  if(.not.allocated(fac_emm))allocate(fac_emm(NLAND,12,NSECTORS,NEMIS_FILE))
+  if(.not.allocated(fac_min))allocate(fac_min(NLAND,NSECTORS,NEMIS_FILE))
+  if(.not.allocated(fac_edd))allocate(fac_edd(NLAND, 7,NSECTORS,NEMIS_FILE))
 
   ! The GEA emission data, which is used for EUCAARI runs on the HIRHAM
   ! domain have in several sea grid cells non-zero emissions in other sectors
@@ -260,7 +269,7 @@ subroutine Emissions(year)
     ! Could have hard-coded 30-34, but best to avoid:
     do n=1,5
       select case(n)
-        case(1);ic=find_index("BAS",Country(:)%code)
+        case(1);ic=find_index("BAS",Country(:)%code)!could also use directly ic=IC_BAS
         case(2);ic=find_index("NOS",Country(:)%code)
         case(3);ic=find_index("ATL",Country(:)%code)
         case(4);ic=find_index("MED",Country(:)%code)
@@ -299,6 +308,7 @@ subroutine Emissions(year)
   endif
   !=========================
   call CheckStop(ios, "ioserror: EmisSplit")
+
   ! ####################################
   ! Broadcast  monthly and Daily factors (and hourly factors if needed/wanted)
   CALL MPI_BCAST(fac_emm,8*NLAND*12*NSECTORS*NEMIS_FILE,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
@@ -485,7 +495,7 @@ subroutine Emissions(year)
 
     case("CdfFractions")
 
-       if(.not.MONTHLY_GRIDEMIS)then!will read monthly emissions later
+       if(MONTHLY_GRIDEMIS)return!will read monthly emissions later
 
       !use grid independent netcdf emission file
       !experimental so far. Needs a lot of reorganization
@@ -519,23 +529,15 @@ subroutine Emissions(year)
             do n=1,nlandcode(i,j)
               snapemis(isec,i,j,n,iem)=snapemis(isec,i,j,n,iem)&
                                       +fractions(i,j,n)*emis_tot(i,j)                      
-              ic=1
-              if(landcode(i,j,n)<=NLAND) &
-                ic=landcode(i,j,n) ! most country_index are equal to country_code
-!TESTE
-!              if(debug_proc.and.i==debug_li.and.j==debug_lj) & !  .and. iem == iemCO ) then
-!                write(*,"(a,2i3,4es10.3)") "FracCdf: "//trim(EMIS_FILE(iem)), &
-!                  isec,n,emis_tot(i,j),fractions(i,j,n),fractions(i,j,n)*emis_tot(i,j)
-!TESTE
-              if(Country(ic)%index/=landcode(i,j,n))then
-                !if not equal, find which index correspond to country_code
-                do ic=1,NLAND
-                  if(Country(ic)%index==landcode(i,j,n))exit
-                enddo
-                if(ic>NLAND)then
-                  write(*,*)"COUNTRY CODE NOT RECOGNIZED OR UNDEFINED: ",landcode(i,j,n)
-                  call StopAll("COUNTRY CODE NOT RECOGNIZED ")
-                endif
+
+              ic=find_index(landcode(i,j,n),Country(:)%icode)
+              if(Country(ic)%icode/=landcode(i,j,n))then
+                 write(*,*)"COUNTRY CODE ERROR: ",landcode(i,j,n),ic,Country(ic)%icode
+                 call StopAll("COUNTRY CODE ERROR ")
+              endif
+              if(ic>NLAND)then
+                 write(*,*)"COUNTRY CODE NOT RECOGNIZED OR UNDEFINED: ",landcode(i,j,n)
+                 call StopAll("COUNTRY CODE NOT RECOGNIZED ")
               endif
               sumemis_local(ic,iem)=sumemis_local(ic,iem)&
                                    +0.001*snapemis(isec,i,j,n,iem)!for diagnostics, mass balance
@@ -549,7 +551,7 @@ subroutine Emissions(year)
 
       if(EMIS_OUT)&
         call EmisOut("Frac",iem,nlandcode,landcode,snapemis(:,:,:,:,iem)) !cdfemis
-      endif
+
     case default
       call CheckStop("EMIS_SOURCE not set"//trim(EMIS_SOURCE))
     endselect
@@ -668,36 +670,32 @@ subroutine Emissions(year)
                                             *fractions(i,j,iic)*SMI_roadfactor
             enddo
           enddo
-        enddo
+       enddo
         sumroaddust_local(:,iem)=0.0
         do i=1,LIMAX
           do j=1,LJMAX
-            do iic=1,road_nlandcode(i,j)
-              ic=1
-              if(road_landcode(i,j,iic)<=NLAND) &
-                ic=road_landcode(i,j,iic) ! most country_index are equal to country_code
-              if(Country(ic)%index/=road_landcode(i,j,iic))then
-                !if not equal, find which index correspond to country_code
-                do ic=1,NLAND
-                  if((Country(ic)%index==road_landcode(i,j,iic)))exit
-                enddo
-                if(ic>NLAND)then
-                  write(*,*)"COUNTRY CODE NOT RECOGNIZED OR UNDEFINED: ", &
-                    road_landcode(i,j,iic)
-                  call StopAll("COUNTRY CODE NOT RECOGNIZED ")
+             do iic=1,road_nlandcode(i,j)
+                if(road_landcode(i,j,iic)<=NLAND) &
+                     ic=find_index(road_landcode(i,j,iic),Country(:)%icode)
+                if(Country(ic)%icode/=road_landcode(i,j,iic))then
+                   write(*,*)"COUNTRY ROAD CODE ERROR: ",road_landcode(i,j,iic),ic,Country(ic)%icode
+                   call StopAll("COUNTRY CODE ERROR ")
                 endif
-              endif
-              sumroaddust_local(ic,iem)=sumroaddust_local(ic,iem)&
-                                       +0.001*roaddust_emis_pot(i,j,iic,iem)
+                if(ic>NLAND)then
+                   write(*,*)"COUNTRY CODE NOT RECOGNIZED OR UNDEFINED: ",road_landcode(i,j,iic)
+                   call StopAll("COUNTRY CODE NOT RECOGNIZED ")
+                endif
+                sumroaddust_local(ic,iem)=sumroaddust_local(ic,iem)&
+                     +0.001*roaddust_emis_pot(i,j,iic,iem)
              enddo
           enddo
-        enddo
-      enddo ! iem = 1, NROAD_FILES-loop
-      sumroaddust=0.0
-      CALL MPI_REDUCE(sumroaddust_local,sumroaddust,NLAND*NROAD_FILES,MPI_REAL8,&
-                      MPI_SUM,0,MPI_COMM_WORLD,INFO) 
-    endif
-  endif !USE_ROADDUST
+       enddo
+    enddo ! iem = 1, NROAD_FILES-loop
+    sumroaddust=0.0
+    CALL MPI_REDUCE(sumroaddust_local,sumroaddust,NLAND*NROAD_FILES,MPI_REAL8,&
+         MPI_SUM,0,MPI_COMM_WORLD,INFO) 
+ endif
+endif !USE_ROADDUST
 
   if(MasterProc) then
     call PrintLog("Total emissions by countries:")
@@ -959,8 +957,8 @@ endsubroutine consistency_check
   integer :: itot             ! index in xn()
 
   ! Save daytime value between calls, initialise to zero
-  integer, save, dimension(NLAND) ::  daytime = 0  !  0=night, 1=day
-  integer, save, dimension(NLAND) ::  localhour = 1  ! 1-24 local hour in the different countries, ? How to handle Russia, with multiple timezones???
+  integer, save, dimension(MAXNLAND) ::  daytime = 0  !  0=night, 1=day
+  integer, save, dimension(MAXNLAND) ::  localhour = 1  ! 1-24 local hour in the different countries, ? How to handle Russia, with multiple timezones???
   integer                         ::  hourloc      !  local hour 
   logical                         ::  hourchange   !             
   real, dimension(NRCEMIS)        ::  tmpemis      !  local array for emissions
@@ -1040,8 +1038,12 @@ endsubroutine consistency_check
         !*************************************************
         tmpemis(:)=0.
         do icc = 1, ncc
-          iland = landcode(i,j,icc)     ! 1=Albania, etc.
-          iland_timefac = Country(iland)%timefac_index
+!          iland = landcode(i,j,icc)     ! 1=Albania, etc.
+          iland=find_index(landcode(i,j,icc),Country(:)%icode) !array index
+
+          !array index of country that should be used as reference for timefactor
+          iland_timefac = find_index(Country(iland)%timefac_index,Country(:)%timefac_index)
+
           if(Country(iland)%timezone==-100)then
             daytime_iland=daytime_longitude
             hour_iland=hour_longitude + 1   ! add 1 to get 1..24 
@@ -1077,6 +1079,7 @@ endsubroutine consistency_check
             do iem = 1, NEMIS_FILE 
               tfac = timefac(iland_timefac,isec,iem) &
                    * fac_ehh24x7(isec,hour_iland,wday_loc)
+
 
               if(debug_tfac.and.iem==1) &
                 write(*,"(a,2i4,f8.3)")"EmisSet DAY TFAC:",isec,hour_iland,tfac
@@ -1136,7 +1139,8 @@ endsubroutine consistency_check
         tmpemis(:)=0.
         fncc = flat_nlandcode(i,j) ! No. of countries with flat emissions in grid
         do ficc = 1, fncc
-          flat_iland = flat_landcode(i,j,ficc) ! 30=BAS etc.
+          !flat_iland = flat_landcode(i,j,ficc) ! 30=BAS etc.
+          flat_iland = find_index(flat_landcode(i,j,ficc),Country(:)%icode) !array index
           if(Country(flat_iland)%is_sea) then  ! saves if statements below
             isec = ISNAP_SHIP 
           else
@@ -1190,7 +1194,8 @@ endsubroutine consistency_check
 
             ncc = road_nlandcode(i,j) ! number of countries in grid point
             do icc = 1, ncc    
-              iland = road_landcode(i,j,icc)
+              !iland = road_landcode(i,j,icc)
+              iland = find_index(road_landcode(i,j,icc),Country(:)%icode)
               if(Country(iland)%timezone==-100)then
                 hour_iland=hour_longitude+1
               else
@@ -1204,7 +1209,7 @@ endsubroutine consistency_check
                 if(wday_loc>7 )wday_loc=1 
               endif
 
-              if(ANY(icc==(/IC_FI,IC_NO,IC_SE/)).and. & ! Nordic countries
+              if(ANY(iland==(/IC_FI,IC_NO,IC_SE/)).and. & ! Nordic countries
                  ANY(indate%month==(/3,4,5/)))then      ! spring road dust
                  tfac = fac_ehh24x7(ISNAP_TRAF,hour_iland,wday_loc)*2.0 ! Doubling in Mar-May (as in TNO model)
               else
@@ -1489,7 +1494,7 @@ subroutine newmonth
           if(first_dms_read) then 
             flat_nlandcode(i,j) = flat_nlandcode(i,j) + 1 
             n = flat_nlandcode(i,j)
-            flat_landcode(i,j,n) = IQ_DMS   ! country code 35 
+            flat_landcode(i,j,n) = IQ_DMS !=Country(IC_NAT)%icode   ! IQ_DMS country code index 35 
             if(n>flat_ncmaxfound) then
               flat_ncmaxfound = n 
               if (MYDEBUG) write(6,*)'DMS Increased flat_ncmaxfound to ',n 
@@ -1661,19 +1666,17 @@ subroutine newmonth
                   do n=1,nlandcode(i,j)
                      snapemis(isec,i,j,n,iem)=snapemis(isec,i,j,n,iem)&
                           +fractions(i,j,n)*emis_tot(i,j)*tonnemonth_to_kgm2s*xm2(i,j)                
-                     ic=1
-                     if(landcode(i,j,n)<=NLAND) &
-                          ic=landcode(i,j,n) ! most country_index are equal to country_code
-                     if(Country(ic)%index/=landcode(i,j,n))then
-                        !if not equal, find which index correspond to country_code
-                        do ic=1,NLAND
-                           if(Country(ic)%index==landcode(i,j,n))exit
-                        enddo
-                        if(ic>NLAND)then
-                           write(*,*)"COUNTRY CODE NOT RECOGNIZED OR UNDEFINED: ",landcode(i,j,n)
-                           call StopAll("COUNTRY CODE NOT RECOGNIZED ")
-                        endif
+
+                     ic=find_index(landcode(i,j,n),Country(:)%icode)
+                     if(Country(ic)%icode/=landcode(i,j,n))then
+                        write(*,*)"COUNTRY CODE ERROR: ",landcode(i,j,n),ic,Country(ic)%icode
+                        call StopAll("COUNTRY CODE ERROR ")
                      endif
+                     if(ic>NLAND)then
+                        write(*,*)"COUNTRY CODE NOT RECOGNIZED OR UNDEFINED: ",landcode(i,j,n)
+                        call StopAll("COUNTRY CODE NOT RECOGNIZED ")
+                     endif
+
                      sumemis_local(ic,iem)=sumemis_local(ic,iem)&
                           +0.001*snapemis(isec,i,j,n,iem)/(tonnemonth_to_kgm2s*xm2(i,j))!for diagnostics, mass balance
                   enddo

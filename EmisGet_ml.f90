@@ -59,8 +59,9 @@
 
   ! e_fact is the emission control factor (increase/decrease/switch-off)
   ! e_fact is read in from the femis file and applied within EmisGet
-  real, public, save, &
-         dimension(NSECTORS,NLAND,NEMIS_FILE)  :: e_fact 
+  real, public, save, allocatable, &
+!         dimension(NSECTORS,NLAND,NEMIS_FILE)  :: e_fact 
+         dimension(:,:,:)  :: e_fact 
 
   ! emisfrac is used at each time-step of the model run to split
   ! emissions such as VOC, PM into species. 
@@ -90,7 +91,7 @@
   logical, dimension(NEMIS_SPECS) :: EmisSpecFound = .false.
 
   !CDF cdfemis tests
-   real, public, save,  dimension(NLAND,NEMIS_FILE) ::&
+   real, public, save,  allocatable,dimension(:,:) ::&
       sumcdfemis ! Only used for MasterProc
    real, allocatable, private, save,  dimension(:,:) :: cdfemis
    integer, allocatable, public, save,  dimension(:,:) :: nGridEmisCodes
@@ -264,7 +265,7 @@ if( index(fname, "Ship")>0 ) print *, me, " CDFHUNTTOP ", trim(fname)
          ic = 224 ! Change to North Africa from IIASA system
  end if !========== AFRICA
                 call GridAllocate("GridCode"// trim ( EMIS_FILE(iem) ),&
-                  i,j,ic,NCMAX, icode, ncmaxfound,GridEmisCodes,nGridEmisCodes,&
+                  i,j,Country(ic)%icode,NCMAX, icode, ncmaxfound,GridEmisCodes,nGridEmisCodes,&
                   debug_flag=.false.)
                  GridEmis(isec,i,j,icode,iem) = &
                    GridEmis(isec,i,j,icode,iem) + cdfemis(i,j) * e_fact(isec,ic,iem)
@@ -367,7 +368,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
             ! from Countries_ml, i.e. corresponds to numbering index ic
 
             do ic=1,NLAND
-               if((Country(ic)%index==iic))&
+               if((Country(ic)%icode==iic))&
                     goto 543
             enddo 
             write(unit=errmsg,fmt=*) &
@@ -416,7 +417,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
                enddo
               ! end test
 
-               call GridAllocate("FLat",i,j,ic,FNCMAX, flat_iland, &
+               call GridAllocate("FLat",i,j,Country(ic)%icode,FNCMAX, flat_iland, &
                    flat_ncmaxfound,flat_globland,flat_globnland)
               ! ...................................................
               ! Assign e_fact corrected emissions to global FLAT 
@@ -489,7 +490,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
              ! country "ic" has already  been found within that grid. If not,
              ! then ic is added to landcode and nlandcode increased by one.
 
-              call GridAllocate("SNAP"// trim ( emisname ),i,j,ic,NCMAX, &
+              call GridAllocate("SNAP"// trim ( emisname ),i,j,Country(ic)%icode,NCMAX, &
                                  iland,ncmaxfound,globland,globnland)
 
               globemis(:,i,j,iland) = globemis(:,i,j,iland) &
@@ -637,7 +638,7 @@ end if
 
 ! find country number  corresponding to index as written in emisfile
          do iland1=1,NLAND
-            if(Country(iland1)%index==inland) goto 544
+            if(Country(iland1)%icode==inland) goto 544
          enddo
 
          if(MasterProc) write(*,*)'COUNTRY CODE NOT RECOGNIZED',inland
@@ -933,7 +934,7 @@ end if
   real, dimension(NMAX ) :: tmp 
   real     :: sumtmp
   integer  :: nsplit   &         ! No.columns data to be read
-             ,iland,isec,i,n,nn, allocerr
+             ,iland,isec,i,n,nn, allocerr,iland_icode
   integer  :: idef              ! Set to   0  for defaults, 1 for specials
   integer  :: iland1, iland2    ! loop variables over countries
   logical  :: defaults          ! Set to true for defaults, false for specials
@@ -1054,13 +1055,18 @@ end if
 
            call read_line(IO_EMIS,txtinput,ios)
            if ( ios /=  0 ) exit READ_DATA     ! End of file
-           read(unit=txtinput,fmt=*,iostat=ios)  iland, isec, (tmp(i),i=1, nsplit)
+           read(unit=txtinput,fmt=*,iostat=ios)  iland_icode, isec, (tmp(i),i=1, nsplit)
            if( MasterProc .and. ios /= 0 ) then
                print *, "ERROR: EmisGet: Failure reading emispslit file"
                print *, "Expecting to split into nsplit=", nsplit
                print *, "reading this record:", trim(txtinput)
               call CheckStop( ios ,"EmisGet: ios error on "//trim(fname) )
            end if
+           if(iland_icode==0)then
+              iland=0!special meaning
+           else
+              iland=find_index(iland_icode,Country(:)%icode)!find country array index from code. 
+           endif
 
            n = n + 1
            if (debugm ) then
@@ -1267,7 +1273,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
             ! from Countries_ml, i.e. corresponds to numbering index ic
 
             do ic=1,NLAND
-               if((Country(ic)%index==iic))&
+               if((Country(ic)%icode==iic))&
                     goto 654
             enddo
             write(unit=errmsg,fmt=*) &
@@ -1289,7 +1295,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
              ! country "ic" has already  been found within that grid. If not,
              ! then ic is added to landcode and nlandcode increased by one.
 
-              call GridAllocate("ROAD"// trim ( emisname ),i,j,ic,NCMAX, &
+              call GridAllocate("ROAD"// trim ( emisname ),i,j,Country(ic)%icode,NCMAX, &
                                  iland,ncmaxfound,road_globland,road_globnland)
 
               globroad_dust_pot(i,j,iland) = globroad_dust_pot(i,j,iland) &

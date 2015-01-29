@@ -23,6 +23,7 @@ program myeul
   use Chemfields_ml,    only: alloc_ChemFields
   use ChemSpecs,        only: define_chemicals
   use ChemGroups_ml,    only: Init_ChemGroups
+  use Country_ml,       only: Country_Init
   use DefPhotolysis_ml, only: readdiss
   use Derived_ml,       only: Init_Derived, iou_min, iou_max
   use DerivedFields_ml, only: f_2d, f_3d
@@ -178,6 +179,8 @@ program myeul
   call trajectory_init()
 
   call Add_2timing(2,tim_after,tim_before,"After define_Chems, readpar")
+
+  call Country_Init() ! In Country_ml, => NLAND, country codes and names, timezone
 
   call SetLandUse(daynumber, mm) !  Reads Inputs.Landuse, Inputs.LandPhen
 
