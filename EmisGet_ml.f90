@@ -226,7 +226,7 @@ if( index(fname, "Ship")>0 ) print *, me, " CDFHUNTTOP ", trim(fname)
      call ReadField_CDF(fname,varname,cdfemis,1,&
 !??              known_projection='longitude latitude', &
                interpol='mass_conservative',&
-                needed=.false.,UnDef=0.0,debug_flag=.false.)
+                needed=.false.,UnDef=0.0,debug_flag=.false.,ncFileID_given=ncFileID)
 !if( index(fname, "Ship")>0 ) print *, me, " CDFHUNTUT ", trim(fname), trim(varname), sum(cdfemis)
 
      if( maxval(cdfemis ) < 1.0e-10 ) cycle ! Likely no emiss in domain

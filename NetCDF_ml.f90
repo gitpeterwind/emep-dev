@@ -2600,7 +2600,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
      known_projection,  &! can be provided by user, eg. for MEGAN.
      fractions_out,CC_out,Ncc_out,Reduc,&! additional output for emissions given with country-codes
      Mask_fileName,Mask_varname,Mask_Code,NMask_Code,Mask_ReducFactor,&
-     needed,debug_flag,UnDef)
+     needed,debug_flag,UnDef,ncFileID_given)
   !
   !reads data from netcdf file and interpolates data into model local (subdomain) grid
   !under development!
@@ -2663,6 +2663,9 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   !NMask_Code -> size of the array Mask_Code with defined values
   !Mask_ReducFactor -> multiplicative factor for reduction where mask applies
 
+  !ncFileID_given , if present gives the ncFileID value AND assumes the file 
+  !is already open. It is not closed on exit either. 
+  !Much faster if little to do.
 
   !Technical, future developements:
   !This routine is likely to change a lot in the future: should be divided into simpler routines;
@@ -2690,6 +2693,8 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   character(len = *), optional,intent(in) :: Mask_filename,Mask_varname
   integer , optional, intent(in) :: Mask_Code(*),NMask_Code! reduce only where mask take this value. If not defined, multiply by mask
   real, optional, intent(in) :: Mask_ReducFactor!multiply by this. default 0, i.e. reduce by 100% according to Mask
+  integer , optional, intent(in) :: ncFileID_given
+
   real  :: factor
 
   logical, save :: debug_ij
@@ -2745,11 +2750,14 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
      debug = debug_flag .and. MasterProc
      if ( debug ) write(*,*) 'ReadCDF start: ',trim(filename),':', trim(varname)
   end if
-
   if(present(needed))   fileneeded=needed
+  if(present(ncFileID_given))then
+     ncFileID = ncFileID_given
+  else
+     !open an existing netcdf dataset
+     status=nf90_open(path = trim(fileName), mode = nf90_nowrite, ncid = ncFileID)
+  endif
 
-  !open an existing netcdf dataset
-  status=nf90_open(path = trim(fileName), mode = nf90_nowrite, ncid = ncFileID)
   if(status == nf90_noerr) then
      if ( debug ) write(*,*) 'ReadCDF reading ',trim(filename), ' nstart ', nstart
   else
@@ -2792,7 +2800,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
     else
         if(MasterProc)write(*,*) 'variable does not exist (but not needed): ',&
              trim(varname),nf90_strerror(status)
-        call check(nf90_close(ncFileID))
+          if(.not. present(ncFileID_given))call check(nf90_close(ncFileID))
         return
     endif
   endif
@@ -2834,7 +2842,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
         !the data is outside range. put zero or Undef.
         Rvar(1:ijk)=UnDef_local
         if ( debug ) write(*,*) 'data out of maxlat range ',maxlat
-        call check(nf90_close(ncFileID))
+        if(.not. present(ncFileID_given))call check(nf90_close(ncFileID))
         return
      endif
      status = nf90_get_att(ncFileID, VarID, "maxlat", maxlat_var  )
@@ -2844,7 +2852,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
            !the data is outside range. put zero or Undef.
            Rvar(1:ijk)=UnDef_local
            if ( debug ) write(*,*) 'data out of minlat range ',minlat
-           call check(nf90_close(ncFileID))
+           if(.not. present(ncFileID_given))call check(nf90_close(ncFileID))
            return
         endif
      endif
@@ -2855,7 +2863,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
            !the data is outside range. put zero or Undef.
            Rvar(1:ijk)=UnDef_local
            if ( debug ) write(*,*) 'data out of minlon range ',minlon
-           call check(nf90_close(ncFileID))
+           if(.not. present(ncFileID_given))call check(nf90_close(ncFileID))
            return
         endif
      endif
@@ -2866,7 +2874,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
            !the data is outside range. put zero or Undef.
            Rvar(1:ijk)=UnDef_local
            if ( debug ) write(*,*) 'data out of maxlon range ',maxlon
-           call check(nf90_close(ncFileID))
+           if(.not. present(ncFileID_given))call check(nf90_close(ncFileID))
            return
         endif
      endif
@@ -2907,7 +2915,6 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
           len=dims(i)),"GetDims")
      if ( debug ) write(*,*) 'ReadCDF size variable ',i,dims(i)
   enddo
-
 
   if( present(known_projection) ) then
      data_projection = trim(known_projection)
@@ -3193,7 +3200,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
               Rvalues(i)=Rvalues(i)*Mask_values(i)*factor
            enddo
         endif
-        call check(nf90_close(ncFileID_Mask))
+        if(.not. present(ncFileID_given))call check(nf90_close(ncFileID_Mask))
         deallocate(Mask_values,lon_mask,lat_mask)
         endif
      endif
@@ -3477,7 +3484,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
         enddo
 
      endif
-     !_________________________________________________________________________________________________________
+    !_________________________________________________________________________________________________________
      !_________________________________________________________________________________________________________
   elseif(data_projection=="Stereographic")then
      !we assume that data is originally in Polar Stereographic projection
@@ -3935,7 +3942,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   if(fractions)then
      deallocate(NCC,CC,fraction_in)
   endif
-  call check(nf90_close(ncFileID))
+  if(.not. present(ncFileID_given))call check(nf90_close(ncFileID))
 
 
   !  CALL MPI_FINALIZE(INFO)

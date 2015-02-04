@@ -153,6 +153,16 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+4th February  2014 Peter    2928
+
+NetCDF_ml, ReadField_CDF: ncFileID_given when the file is already open. 
+                          The file is not closed on exit.
+
+EmisGet_ml: ncFileID_given=ncFileID in EmisGetCdf. 
+Much faster if no emissions are read (took about 0.3 seconds to open the file).
+Now "all" emissions can be read in about 3 minutes (instead of 18). 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 29th January  2014 Peter    2927
 
 Completely decoupled the array index in Country_ml and the country-code used in 
