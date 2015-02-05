@@ -8,15 +8,14 @@ SRCS :=	$(addprefix ../,$(SRCS))
 INCL = $(sort $(dir $(SRCS)))
 
 SRCS.3DVar=DA_ml.f90 $(filter-out ../My_3DVar_ml.f90,$(SRCS)) \
-	$(addprefix ./B_NMC/,Util_ml.f90 \
-		ext_domain_ml.f90 spectralcov_ml.f90 covmat_ml.f90) \
+	$(addprefix ./B_NMC/,Util_ml.f90 spectralcov_ml.f90 covmat_ml.f90) \
 	$(addprefix ./Analysis/,DA_3DVar_ml.f90 DA_Obs_ml.f90 DA_Bias_ml.f90 ufftw3_ml.f90 chitox_ml.f90) \
 	m1qn3-3.3-distrib/src/m1qn3.f
 
 SRCS.Bnmc=CheckStop_ml.f90 TimeDate_ml.f90 TimeDate_ExtraUtil_ml.f90 \
 	PhysicalConstants_ml.f90 ModelConstants_ml.f90 My_Outputs_ml.f90 \
-	CM_ChemSpecs_ml.f90 CM_ChemGroups_ml.f90 OwnDataTypes_ml.f90 Par_ml.f90 \
-	DerivedFields_ml.f90 SmallUtils_ml.f90 Units_ml.f90 My_Pollen_ml.f90 Io_Nums_ml.f90
+	CM_ChemSpecs_tmp.f90 CM_ChemSpecs_ml.f90 CM_ChemGroups_ml.f90 OwnDataTypes_ml.f90 Par_ml.f90 \
+    Precision_ml.f90 DerivedFields_ml.f90 SmallUtils_ml.f90 Units_ml.f90 My_Pollen_ml.f90 Io_Nums_ml.f90
 SRCS.Bnmc:=DA_ml.f90 $(addprefix ../,$(SRCS.Bnmc)) \
 	$(addprefix ./B_NMC/,Util_ml.f90 cplx_fft_2d.F \
 		ext_domain_ml.f90 spectralcov_ml.f90 covmat_ml.f90 \

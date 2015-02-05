@@ -68,8 +68,8 @@
   template_read_BC = '$inbc',#inbc             ! will be replaced with numbers
   template_write   = '$dump',#dump             ! in Nest_ml
 !-------- CWF dump/restart
-! WRITE_SPC        = 'NO2','O3','SO2','CO','NO',      ! reduce output for
-! WRITE_GRP        = 'DAOBS','DAUNOBS','PM10','AOD',  ! NMC statistics (3DVar)
+! WRITE_SPC = 'NO2','O3','SO2','REMPPM25','REMPPM_C', ! reduce output for
+! WRITE_GRP = 'DAOBS','DAUNOBS','PM10','AOD',         ! NMC statistics (3DVar)
   FORECAST_NDUMP   = 1,                       ! Nr. CWF dump dates
   outdate          = $outdate,                ! 1st,2nd CWF dump dates
 ! outdate(1:4)     = -1,-1,-1,00,0000,        ! everyday at 00:00
@@ -78,6 +78,10 @@
 !                    -1,-1,-1,18,0000,        ! everyday at 18:00
 ! outdate(1:2)     = $year,-1,01,00,0000,     !  1st of every month at 00:00
 !                    $year,-1,16,00,0000,     ! 16th of every month at 00:00
+! outdate(1:4)     = -1,01,01,00,0000,        ! Jan 1st at 00:00
+!                    -1,04,01,00,0000,        ! Apr 1st at 00:00
+!                    -1,07,01,00,0000,        ! Jul 1st at 00:00
+!                    -1,10,01,00,0000,        ! Oct 1st at 00:00
 &end
 &Fire_config
   need_file=F,                                ! continue if don't find file

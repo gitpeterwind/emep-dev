@@ -153,12 +153,12 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-5th February  2014 Anna, Peter    2933
+5th February 2015 Anna, Peter    2933
 
 Mace Head correction for 2012 included
  
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-5th February 2015 Alvaro  2930--2932
+5th February 2015 Alvaro  2930--2932,2934
 
 ModelConstants_ml, Output_hourly:
 - HOURLYFILE_ending from ModelConstants_config
@@ -168,10 +168,10 @@ Output_hourly:
   Output was PM25_water (ambient) instead of PM25_water_rh50.
 
 ZD_OZONE/My_Outputs_ml:
-- DEBUG_PM10 option for MACC_ENS/MACC_EVA
+- DEBUG_PM10 option for MACC_ENS/MACC_EVA.
 
 Sites_ml:
-- Use D2D unit conversion (f_2d%scale) for NXTRA_SITE_D2D output
+- Use D2D unit conversion (f_2d%scale) for NXTRA_SITE_D2D output.
 
 Derived_ml:
 - Additional units options for COLUMN output (MISC). 
@@ -203,60 +203,86 @@ Nest_ml:
 Functions_ml:
 - Remove Copyright notice as it will be added by mk.OpenSource.
 
+GridValues_ml:
+- New function coord_in_domain. Functions coord_in_domain and coord_in_processor
+  are special cases of coord_in_domain.
+
 Makefile:
-- delegate 'clean' & 'modules' to 3DVar/Makefile for %-Bnmc & %-3DVar targets
+- delegate 'clean' & 'modules' to 3DVar/Makefile for %-Bnmc & %-3DVar targets.
 
 run.pl:
 - Use variable $KEEP_LINKS instead of $BENCHMARK{'cleanup'} to indicate if the
-  links to input files are to be kept or removed
-- CWF MAKEMODE and CWFBC for MACC EVA 2013 runs
+  links to input files are to be kept or removed.
+- CWF MAKEMODE and CWFBC for MACC EVA 2013 runs.
+  
+config_FORECAST.nml:
+- Update NMC options.
+
+ZCM_EmChem09/EmChem09base.species
+- O3 is now a member of DAOBS group, together with NO2.
+  By default, the model is set up for assimilation of NO2 and O3 observations.
 
 ZD_3DVar/B_NMC/Unimod_B_nmc:
-- Read nv from and USE_EtaCOORDINATES from namelist.nml
+- Read nv from and USE_EtaCOORDINATES from namelist.nml.
 - Add logical variables trimX/trimY (unused) and deltaDateHH,
-  read from namelist.nml
+  read from namelist.nml.
 
 ZD_3DVar/B_NMC/Util_ml:
 - Read vertical coordinate ('lev'/'k') according to USE_EtaCOORDINATES.
 
 ZD_3DVar/Makefile,B_NMC/spectralcov_ml:
-- remove -DDEBUG_B cpp option and #ifdef DEBUG_B code
-- temporally disable BIAS_CORRECTION
+- remove -DDEBUG_B cpp option and #ifdef DEBUG_B code.
+- temporally disable BIAS_CORRECTION.
 
 ZD_3DVar/B_NMC/spectralcov_ml:
 - Resize nstar(nex),mt(nex,nex),nt(nex,nex)
-  to nstar(nxex*nyex),mt(nxex*nyex,nex),nt(nxex*nyex,nex)
+  to nstar(nxex*nyex),mt(nxex*nyex,nex),nt(nxex*nyex,nex).
 - New function atan2PI to reproduce MATCH code.
   Intrinsic atan2 gives a different result.
 
 ZD_3DVar/B_NMC/covmat_ml:
 - write_stat:
-  - revert to old code on PS calculation (avoid real overflow)
-  - reference level for correlations (lref)
-  - check nmin/nmax range
+  - revert to old code on PS calculation (avoid real overflow);
+  - reference level for correlations (lref);
+  - check nmin/nmax range.
 - diagonalise_covmat
   - Resize lambda(nv),ifail(nv)
-    to vt(nbg,nv),lambda(nbg),ifail(nbg)
+    to vt(nbg,nv),lambda(nbg),ifail(nbg).
 
 ZD_3DVar/B_NMC/stddev_ml:
-- 6-hourly NMC
+- 6-hourly NMC.
+
+ZD_3DVar/DA_ml,DA_Obs_ml:
+- New logical variable DA_DEBUG_OBS.
+- Tag DA info/debug messages with processor.
 
 ZD_3DVar/Analysis/DA_Bias_ml:
 - Change default value of biasStdDev (biasData%stddev read from BIAS_PREDICTOR namelist)
   to avoid DIV0 errors on new obs types.
 
+ZD_3DVar/Makefile.SRCS,Analysis/DA_3DVar_ml,DA_Obs_ml:
+- remove unused EXT_DOMAIN,EXT_DOMAIN_INV dependecy.
+- use new space conversion (x<-->chi) subroutines from chitox_ml.
+- Replace array xn_adv_ex by an_bgd,an_inc pointers.
+- organize re-write loops withing H_op.
+- track if an observation bellong to the local domain (pidx%local).
+- Additional timining items (DA_3DVar_ml).
+
+ZD_3DVar/Analysis/chitox_ml:
+- new subroutines chi_Init initalizes space conversion (x<-->chi).
+
 ZD_3DVar/B_NMC/Unimod_B_nmc,spectralcov_ml,Util_ml,
-ZD_3DVar/Analysis/DA_3DVar_ml,DA_Obs_ml,DA_Bias_ml:
-- Use HERE(MSG) macro on CheckStop calls
+ZD_3DVar/Analysis/DA_3DVar_ml,DA_Obs_ml,DA_Bias_ml,ufftw3_ml,chitox_ml:
+- Use HERE(MSG) macro on CheckStop calls.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-5th February  2014 Peter    2929
+5th February  2015 Peter    2929
 
 utils/Rd_csvsondes.f90 - added bug fix for undefined, and UNDEF_R to make it
     clearer. Also used site and pollutant name in output files.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-4th February  2014 Peter    2928
+4th February  2015 Peter    2928
 
 NetCDF_ml, ReadField_CDF: ncFileID_given when the file is already open. 
                           The file is not closed on exit.
@@ -266,7 +292,7 @@ Much faster if no emissions are read (took about 0.3 seconds to open the file).
 Now "all" emissions can be read in about 3 minutes (instead of 18). 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-29th January  2014 Peter    2927
+29th January  2015 Peter    2927
 
 Completely decoupled the array index in Country_ml and the country-code used in 
 emission files.
@@ -283,7 +309,7 @@ Timefactors_ml
 EmisGet_ml
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-27th January  2014 Peter, Jan Eiof    2926
+27th January  2015 Peter, Jan Eiof    2926
 
 Possibility to get total emissions after splits and including all natural 
 emissions. Units are mg/m2 (uses molecular weight of components, not only "N" etc.)
@@ -296,7 +322,7 @@ Emissions_ml.f90
 ZD_OZONE/My_Derived_ml.f90
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-16th January  2014 Dave    2923-2924
+16th January  2015 Dave    2923-2924
 
 TimeDate_ml - added same_date and print_date routines
 

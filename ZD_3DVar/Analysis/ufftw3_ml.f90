@@ -13,6 +13,9 @@
 ! @author A Segers
 !
 !#######################################################################
+#define STRING2(x) #x
+#define STRING(x) STRING2(x)
+#define HERE(MSG) MSG//" ("//__FILE__//":"//STRING(__LINE__)//")."
 module FFTW3_MPI
 use, intrinsic :: iso_c_binding
 implicit none
@@ -203,7 +206,7 @@ subroutine Forward(self, input, output)
       write(*,'("ERROR - real input sizes do not match:")')
       write(*,'("ERROR -   argument : ",2i6)') shape(input)
       write(*,'("ERROR -   intern   : ",2i6)') self%nx,self%ny_local
-      call CheckStop(rname)
+      call CheckStop(HERE(rname))
     end if
     ! fill input, pad extra elements with zeros:
     self%input = 0.0
@@ -220,7 +223,7 @@ subroutine Forward(self, input, output)
       write(*,'("ERROR - complex output sizes do not match:")')
       write(*,'("ERROR -   argument : ",2i6)') shape(output)
       write(*,'("ERROR -   intern   : ",2i6)') shape(self%output)
-      call CheckStop(rname)
+      call CheckStop(HERE(rname))
     endif
     ! copy result, scale:
     output = self%output * self%ufactor
@@ -243,7 +246,7 @@ subroutine Inverse(self, output, input)
       write(*,'("ERROR - complex input sizes do not match:")')
       write(*,'("ERROR -   argument : ",2i6)') shape(output)
       write(*,'("ERROR -   intern   : ",2i6)') shape(self%output)
-      call CheckStop(rname)
+      call CheckStop(HERE(rname))
     endif
     ! copy into alligned memory:
     self%output = output
@@ -259,7 +262,7 @@ subroutine Inverse(self, output, input)
       write(*,'("ERROR - real output do not match:")')
       write(*,'("ERROR -   argument : ",2i6)') shape(input)
       write(*,'("ERROR -   intern   : ",2i6)') self%nx,self%ny_local
-      call CheckStop(rname)
+      call CheckStop(HERE(rname))
     endif
     ! extract from padded array, scale result:
     input = self%input2(1:self%nx,1:self%ny_local) * self%ufactor
@@ -353,7 +356,7 @@ subroutine Init(self, nx, ny, nz, comm)
   ! adhoc ...
   if(self%nzf_local==0)then
     write(*,'("ufftw3 3D not prepared for zero sized slabs yet ...")')
-    call CheckStop(rname)
+    call CheckStop(HERE(rname))
   endif
 
   ! grid point decomposition is the same as spectral ...
@@ -446,7 +449,7 @@ subroutine Forward(self, input, output)
     write(*,'("ERROR - real input sizes do not match:")')
     write(*,'("ERROR -   argument : ",3i6)') shape(input)
     write(*,'("ERROR -   intern   : ",3i6)') self%nx,self%ny,self%nz
-    call CheckStop(rname)
+    call CheckStop(HERE(rname))
   endif
   ! fill input, pad extra elements with zeros:
   self%input = 0.0
@@ -460,7 +463,7 @@ subroutine Forward(self, input, output)
     write(*,'("ERROR - complex output sizes do not match:")')
     write(*,'("ERROR -   argument : ",3i6)') shape(output)
     write(*,'("ERROR -   intern   : ",3i6)') shape(self%output)
-    call CheckStop(rname)
+    call CheckStop(HERE(rname))
   endif
   ! copy result, scale:
   output = self%output * self%ufactor
@@ -480,7 +483,7 @@ subroutine Inverse(self, output, input)
     write(*,'("ERROR - complex input sizes do not match:")')
     write(*,'("ERROR -   argument : ",3i6)') shape(output)
     write(*,'("ERROR -   intern   : ",3i6)') shape(self%output)
-    call CheckStop(rname)
+    call CheckStop(HERE(rname))
   endif
   ! copy into alligned memory:
   self%output = output
@@ -493,7 +496,7 @@ subroutine Inverse(self, output, input)
     write(*,'("ERROR - real output do not match:")')
     write(*,'("ERROR -   argument : ",3i6)') shape(input)
     write(*,'("ERROR -   intern   : ",3i6)') self%nx,self%ny,self%nz
-    call CheckStop(rname)
+    call CheckStop(HERE(rname))
   endif
   ! extract from padded array, scale result:
   input = self%input2(1:self%nx,1:self%ny,1:self%nzf_local) * self%ufactor

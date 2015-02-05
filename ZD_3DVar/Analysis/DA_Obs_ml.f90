@@ -1,9 +1,13 @@
+#define STRING2(x) #x
+#define STRING(x) STRING2(x)
+#define HERE(MSG) MSG//" ("//__FILE__//":"//STRING(__LINE__)//")."
 module DA_Obs_ml
 use MetFields_ml,     only: z_bnd,z_mid,roa,th,q,ps
 use TimeDate_ml,      only: current_date
 use CheckStop_ml,     only: CheckStop
 use Functions_ml,     only: great_circle_distance
-use GridValues_ml,    only: glon,glat,coord_in_processor
+use GridValues_ml,    only: glon,glat,glon_fdom,glat_fdom,&
+                            i_local,j_local,coord_in_domain
 use Par_ml,           only: limax,ljmax,me
 use Chemfields_ml,    only: xn_adv,cfac,PM25_water,PM25_water_rh50
 !se ChemSpecs_shl_ml, only: NSPEC_SHL        ! Maps indices
@@ -12,22 +16,25 @@ use ChemChemicals_ml, only: species
 use ChemGroups_ml,    only: chemgroups
 use Io_ml,            only: IO_TMP,PrintLog
 use InterpolationRoutines_ml,  only : point2grid_coeff
-use ModelConstants_ml,only: KMAX_MID,MasterProc,runlabel1
+use ModelConstants_ml,only: KMAX_MID,IIFULLDOM,JJFULLDOM,MasterProc,runlabel1
 use SmallUtils_ml,    only: find_index
 use Functions_ml,     only: norm
 use TimeDate_ExtraUtil_ml, only: date2string
 use Units_ml,         only: Units_Scale,Group_Units
-use DA_ml,            only: debug=>DA_DEBUG,dafmt=>da_fmt_msg,damsg=>da_msg
+use DA_ml,            only: debug=>DA_DEBUG,debug_obs=>DA_DEBUG_OBS,&
+                            dafmt=>da_fmt_msg,damsg=>da_msg
 use spectralcov,      only: nx,ny,nlev,nchem,nxex,nyex,nv1,FGSCALE,&
                             nChemObs,nChemNoObs,iChemInv,iChemObs,iChemNoObs
-use chitox_ml,        only: chitox_adj
+use chitox_ml,        only: matched_domain,iyf,chitox_adj
+use mpi,              only: MPI_COMM_WORLD,MPI_ALLREDUCE,MPI_SUM,&
+                            MPI_IN_PLACE,MPI_INTEGER
 implicit none
 integer, save :: nobs!,matidx
-! integer, dimension(:), allocatable, save :: pidx
 real, dimension(:), allocatable, save :: innov,obsstddev
 real, dimension(:,:,:,:), allocatable, save :: H_jac
 type H_jac_idx
   integer :: i(4),j(4),l(0:1)
+  logical :: local(4)
 end type
 type(H_jac_idx), dimension(:), allocatable, save :: pidx
 !-----------------------------------------------------------------------
@@ -44,7 +51,6 @@ type(obs_data)     :: obsData(nobsDataMax)
 character(len=032) :: interpolation_method='distance-weighted'
 namelist /OBSERVATIONS/nobsData,obsData,interpolation_method
 !-----------------------------------------------------------------------
-real, dimension(:,:,:,:), allocatable :: xn_adv_ex
 integer               :: varSpec(NSPEC_ADV),varSpecInv(NSPEC_ADV)
 character(len=016)    :: varName(NSPEC_ADV)='',obsVarName(NSPEC_ADV)=''
 logical               :: observedVar(NSPEC_ADV)=.false.
@@ -57,26 +63,23 @@ subroutine allocate_obs()
 ! one time step to the next
 ! @author AMVB
 !-----------------------------------------------------------------------
+  logical, parameter :: F=.false.
   integer :: ierr
-! no4=nobs*4
-! no8=nobs*8
-! no12=nobs*12
-! matidx=0
   if(.not.allocated(innov))then
     allocate(innov(nobs),stat=ierr)
-    call CheckStop(ierr,'Allocation error: INNOV.')
+    call CheckStop(ierr,HERE('Allocate INNOV'))
     innov=0.0
   endif
   if(.not.allocated(obsstddev))then
     allocate(obsstddev(nobs),stat=ierr)
-    call CheckStop(ierr,'Allocation error: OBSSTDDEV.')
+    call CheckStop(ierr,HERE('Allocation OBSSTDDEV'))
     obsstddev=0.0
   endif
 !-----------------------------------------------------------------------
 ! H_jac is a matrix with components H_{n;i,j,l,k}, where
 !   n=1,...,nobs     (observation index)
-!   i=1,...,nx       (longitude index)
-!   j=1,...,ny       (latitude index)
+!   i=1,...,nx       (longitude index in full/global domain)
+!   j=1,...,ny       (latitude  index in full/global domain)
 !   l=1,...,nlev     (altitude index)
 !   k=1,...,nchemobs (observed chemical component)
 ! Due to the 4-point interpolation in the horizontal direction
@@ -91,13 +94,13 @@ subroutine allocate_obs()
 !-----------------------------------------------------------------------
   if(.not.allocated(H_jac))then
     allocate(H_jac(nobs,4,nlev,nchemobs),stat=ierr)
-    call CheckStop(ierr,'Allocation error: H_JAC.')
+    call CheckStop(ierr,HERE('Allocate H_JAC'))
     H_jac=0.0
   endif
   if(.not.allocated(pidx))then
     allocate(pidx(nobs),stat=ierr)
-    call CheckStop(ierr,'Allocation error: PIDX.')
-    pidx=H_jac_idx((/0,0,0,0/),(/0,0,0,0/),(/0,0/))
+    call CheckStop(ierr,HERE('Allocate PIDX'))
+    pidx=H_jac_idx([0,0,0,0],[0,0,0,0],[0,0],[F,F,F,F])
   endif
 end subroutine allocate_obs
 subroutine deallocate_obs()
@@ -114,7 +117,7 @@ subroutine deallocate_obs()
   if(allocated(H_jac))    deallocate(H_jac)
   if(allocated(pidx))     deallocate(pidx)
 endsubroutine deallocate_obs
-subroutine read_obs(maxobs,flat,flon,falt,y,stddev,ipar)
+subroutine read_obs(domain,maxobs,flat,flon,falt,y,stddev,ipar)
 !-----------------------------------------------------------------------
 ! @description
 ! Read in observations y in standard format
@@ -123,10 +126,11 @@ subroutine read_obs(maxobs,flat,flon,falt,y,stddev,ipar)
 !-----------------------------------------------------------------------
   implicit none
 
+  character(len=*), intent(in) :: domain
   integer :: maxobs,ipar(maxobs)
   real :: y(maxobs),stddev(maxobs),flat(maxobs),flon(maxobs),falt(maxobs)
 
-  integer            :: no,iobsData,ierr
+  integer            :: no,nd,ierr
   character(len=256) :: file
   logical            :: exist
 !-----------------------------------------------------------------------
@@ -139,22 +143,22 @@ subroutine read_obs(maxobs,flat,flon,falt,y,stddev,ipar)
 !-----------------------------------------------------------------------
 ! open observational data file in standard format, if applicable
 !-----------------------------------------------------------------------
-  do iobsData=1,nobsData
-    if(obsData(iobsData)%file=="")then
-      write(damsg,"(A,I0,1X,A)")'WARNING: obsData#',iobsData,"file not specified"
+  do nd=1,nobsData
+    if(obsData(nd)%file=="")then
+      write(damsg,"(A,I0,1X,A)")'WARNING: obsData#',nd,"file not specified"
       if(MasterProc) print dafmt,damsg
       cycle
     endif
-    file=date2string(obsData(iobsData)%file,current_date)
+    file=date2string(obsData(nd)%file,current_date)
     inquire(file=file,exist=exist)
     if(.not.exist)then
-      write(damsg,"(A,I0,1X,A)")'WARNING: obsData#',iobsData,"file not found"
+      write(damsg,"(A,I0,1X,A)")'WARNING: obsData#',nd,"file not found"
       if(MasterProc) print dafmt,damsg
       cycle
     endif
     open(IO_TMP,file=file,form='formatted',status='old',iostat=ierr)
     if(ierr/=0)then
-      write(damsg,"(A,I0,1X,A)")'WARNING: obsData#',iobsData,"file not opened"
+      write(damsg,"(A,I0,1X,A)")'WARNING: obsData#',nd,"file not opened"
       if(MasterProc) print dafmt,damsg
       close(IO_TMP)
       cycle
@@ -163,7 +167,7 @@ subroutine read_obs(maxobs,flat,flon,falt,y,stddev,ipar)
 !-----------------------------------------------------------------------
 ! read data
 !-----------------------------------------------------------------------
-    obsData(iobsData)%iobs(0)=nobs+1
+    obsData(nd)%iobs(0)=nobs+1
     do while(ierr==0)
       if(nobs>=maxobs)then
         print dafmt,'ERROR reading observations, maxobs too small'
@@ -171,20 +175,20 @@ subroutine read_obs(maxobs,flat,flon,falt,y,stddev,ipar)
         cycle
       endif
       nobs=nobs+1
-      ipar(nobs)=iobsData
+      ipar(nobs)=nd
       read(IO_TMP,*,iostat=ierr)no,flat(nobs),flon(nobs),falt(nobs),&
                                    y(nobs),stddev(nobs)
       select case(ierr)
       case(0)
-        if((.not.coord_in_processor(flon(nobs),flat(nobs))).or.&
-           (y(nobs)<obsData(iobsData)%min).or.&
-           (y(nobs)>obsData(iobsData)%max))then
+        if((.not.coord_in_domain(domain,flon(nobs),flat(nobs))).or.&
+           (y(nobs)<obsData(nd)%min).or.&
+           (y(nobs)>obsData(nd)%max))then
          nobs=nobs-1
          cycle
         endif
         stddev(nobs)=max(stddev(nobs),&
-          y(nobs)*obsData(iobsData)%error_rel,&
-          obsData(iobsData)%error_rep)
+          y(nobs)*obsData(nd)%error_rel,&
+          obsData(nd)%error_rep)
         if(stddev(nobs)<=0e0)then
           print dafmt,'WARNING obs stddev <= 0'
           stddev(nobs)=1e-9
@@ -198,44 +202,50 @@ subroutine read_obs(maxobs,flat,flon,falt,y,stddev,ipar)
       endselect
     enddo
     close(IO_TMP)
-    obsData(iobsData)%iobs(1)=nobs
+    obsData(nd)%iobs(1)=nobs
   enddo
 !-----------------------------------------------------------------------
 ! Setup obsData &  Write #obs to log file
 !-----------------------------------------------------------------------
-  do iobsData=1,nobsData
-    if(.not.obsData(iobsData)%set)then
-      no=find_index(obsData(iobsData)%name,obsVarName(:))
-      obsData(iobsData)%found=(no>0)
-      if(obsData(iobsData)%found)then
-        obsData(iobsData)%ichem=no                    ! index observed
-        obsData(iobsData)%ichemObs=ichemobs(no)       ! index observed/unobserved
-        obsData(iobsData)%ispec=varSpec(ichemobs(no)) ! index species
-        obsData(iobsData)%unitconv=Units_Scale(obsData(iobsData)%unit,&
-          obsData(iobsData)%ispec,needroa=obsData(iobsData)%unitroa)
+  do nd=1,nobsData
+    if(.not.obsData(nd)%set)then
+      no=find_index(obsData(nd)%name,obsVarName(:))
+      obsData(nd)%found=(no>0)
+      if(obsData(nd)%found)then
+        obsData(nd)%ichem=no                    ! index observed
+        obsData(nd)%ichemObs=ichemobs(no)       ! index observed/unobserved
+        obsData(nd)%ispec=varSpec(ichemobs(no)) ! index species
+        obsData(nd)%unitconv=Units_Scale(obsData(nd)%unit,&
+          obsData(nd)%ispec,needroa=obsData(nd)%unitroa)
+      else
+        obsData(nd)%ichem=find_index(obsData(nd)%name,chemgroups(:)%name)
+        obsData(nd)%unitconv=Units_Scale(obsData(nd)%unit,&
+          -1,needroa=obsData(nd)%unitroa)
       endif
-      call CheckStop(obsData(iobsData)%deriv=='',&
-        "read_obs: Inconsistent obsData%deriv")
-      write(obsData(iobsData)%tag,"(2(A,1X),'(',A,')')")&
-        trim(obsData(iobsData)%name),trim(obsData(iobsData)%deriv),&
-        trim(obsData(iobsData)%unit)
-      obsData(iobsData)%set=.true.
+      call CheckStop(obsData(nd)%deriv=='',&
+        HERE("Inconsistent obsData%deriv"))
+      write(obsData(nd)%tag,"(2(A,1X),'(',A,')')")&
+        trim(obsData(nd)%name),trim(obsData(nd)%deriv),&
+        trim(obsData(nd)%unit)
+      call CheckStop(obsData(nd)%ichem<1,&
+        HERE("Unsupported obsData "//trim(obsData(nd)%tag)))
+      obsData(nd)%set=.true.
     endif
-    if(any(obsData(iobsData)%iobs/=0)) obsData(iobsData)%nobs=&
-      DIM(obsData(iobsData)%iobs(1)+1,obsData(iobsData)%iobs(0))
-    call CheckStop(obsData(iobsData)%nobs,count(ipar(:nobs)==iobsData),&
-      "read_obs: Inconsistent obsData%nobs")
+    if(any(obsData(nd)%iobs/=0)) obsData(nd)%nobs=&
+      DIM(obsData(nd)%iobs(1)+1,obsData(nd)%iobs(0))
+    call CheckStop(obsData(nd)%nobs,count(ipar(:nobs)==nd),&
+      HERE("Inconsistent obsData%nobs"))
     if(MasterProc)then
-      file=date2string(obsData(iobsData)%file,current_date)
+      file=date2string(obsData(nd)%file,current_date)
       write(damsg,"('obsData(',I0,') contains ',I0,1X,A,' observations')")&
-        iobsData,obsData(iobsData)%nobs,trim(obsData(iobsData)%tag)
+        nd,obsData(nd)%nobs,trim(obsData(nd)%tag)
       write(damsg,dafmt)trim(damsg)
       call PrintLog(damsg)
       call PrintLog(file)
     endif
   enddo
 endsubroutine read_obs
-subroutine H_op(lat,lon,alt,n,yn,rho0,ipar)
+subroutine H_op(lat,lon,alt,n,yn,ipar)
 !-----------------------------------------------------------------------
 ! @description
 ! H operator mapping from model to observation space;
@@ -246,272 +256,223 @@ subroutine H_op(lat,lon,alt,n,yn,rho0,ipar)
   integer, intent(in) :: n,ipar
   real, intent(in)    :: lat,lon,alt
   real, intent(inout) :: yn
-  real, intent(out)   :: rho0
 
-  integer i(4),j(4),p,l,ll,k,kk,igrp,g,ispec,nn
-  real xn,Hj,H_int(4),T1,QML1,PS1,Hchem(nchem),unitconv
+  integer :: i(4),j(4),p,l,ll,k,kk,igrp,g,ispec,nn,INFO
+  real :: xn,Hj,H_int(4),T1,QML1,PS1,Hchem(nchem),unitconv
   integer, pointer, dimension(:) :: gspec=>null()      ! group array of indexes
   real,    pointer, dimension(:) :: gunit_conv=>null() ! group array of unit conv. factors
-!-----------------------------------------------------------------------
-!
-!-----------------------------------------------------------------------
-! no4=4*nobs
-! no8=8*nobs
-!-----------------------------------------------------------------------
-! operator for horizontal four-point interpolation between nearest
-! neighbouring grid points:
-!-----------------------------------------------------------------------
-  call get_interpol_const(lon,lat,i,j,H_int,interpolation_method)
-!-----------------------------------------------------------------------
-! z grid coordinate of observations:
-!-----------------------------------------------------------------------
-  ll=KMAX_MID
-  do while(alt>z_bnd(i(1),j(1),ll).and.ll>=1)
-    ll=ll-1
-  enddo
-  l=ll+nlev-KMAX_MID  ! B might have a reduced number of levels...
-  if(debug.and.MasterProc) then
-    print dafmt,'Observation/Model Location:Weight[%],lon[deg],lat[deg],alt[km]'
-    print "('#',I0,5(1X,A3,':',F0.1,3(',',F0.2)))",&
-    n,'Observation',100.0,lon,lat,alt,&
-     ('Model',H_int(p)*100,glon(i(p),j(p)),glat(i(p),j(p)),z_mid(i(p),j(p),ll)*1e-3,p=1,4)
-  endif
-! interpolated air density:
-  rho0=dot_product(H_int(:),(/(roa(i(p),j(p),ll,1),p=1,4)/))
 !-----------------------------------------------------------------------
 !
 !-----------------------------------------------------------------------
   nn=n-obsData(ipar)%iobs(0)+1
   if(n==obsData(ipar)%iobs(0)) &
     print dafmt,"Analysis of "//trim(obsData(ipar)%tag)
-  if(debug.or.nn==obsData(ipar)%nobs) print '(5(A,I0))',&
+  if(debug_obs.or.(nn==obsData(ipar)%nobs.and.MasterProc)) print '(5(A,I0))',&
     'Obs(',me,'):',n,'/',nobs,',',nn,'/',obsData(ipar)%nobs
 !-----------------------------------------------------------------------
-! analysis of direct observations: model mid-levels
+! operator for horizontal four-point interpolation between nearest
+! neighbouring grid points:
 !-----------------------------------------------------------------------
-  if(obsData(ipar)%found.and.obsData(ipar)%deriv=='mod-lev')then
-    unitconv=obsData(ipar)%unitconv
-    if(obsData(ipar)%unitroa)&
-      H_int(:)=H_int(:)*(/(roa(i(p),j(p),ll,1),p=1,4)/)
-    k =obsData(ipar)%ichem
-    kk=obsData(ipar)%ichemObs!ichemobs(k)
-    yn=0e0
-    pidx(n)%i(:)=i(:)
-    pidx(n)%j(:)=j(:)
-    pidx(n)%l(:)=l
-    do p=1,4
-      H_jac(n,p,l,k)=H_int(p)                       & ! interpolation
-        * unitconv                                    ! unit conversion
-      xn=xn_adv_ex(i(p),j(p),l,kk)
-      yn=yn+H_jac(n,p,l,k)*xn
-    enddo
+  call get_interpol_const(lon,lat,i,j,H_int,interpolation_method)
+  pidx(n)%i=i;i=i_local(i)  ! save global indexing
+  pidx(n)%j=j;j=j_local(j)  ! and use local indexing
+  pidx(n)%local=(H_int>0.0).and.(i>=1).and.(i<=limax).and.(j>=1).and.(j<=ljmax)
 !-----------------------------------------------------------------------
-! analysis of direct observations: surface level
+! z grid coordinate of observations:
 !-----------------------------------------------------------------------
-  elseif(obsData(ipar)%found.and.obsData(ipar)%deriv=='surface')then
-    unitconv=obsData(ipar)%unitconv
-    if(obsData(ipar)%unitroa)&
-      H_int(:)=H_int(:)*(/(roa(i(p),j(p),ll,1),p=1,4)/)
-    ispec=obsData(ipar)%ispec
-    k =obsData(ipar)%ichem
-    kk=obsData(ipar)%ichemObs!ichemobs(k)
-    yn=0e0
-    pidx(n)%i(:)=i(:)
-    pidx(n)%j(:)=j(:)
-    pidx(n)%l(:)=l
-    do p=1,4
-      H_jac(n,p,l,k)=H_int(p)                       & ! interpolation
-        * unitconv                                  & ! unit conversion
-        * cfac(ispec,i(p),j(p))                       ! 50m->3m conversion
-      xn=xn_adv_ex(i(p),j(p),l,kk)
-      yn=yn+H_jac(n,p,l,k)*xn
-    enddo
-!-----------------------------------------------------------------------
-! analysis of indirect observations: COLUMN (eg NO2tc)
-!-----------------------------------------------------------------------
-  elseif(obsData(ipar)%found.and.obsData(ipar)%deriv=='Trop.Col.')then
-    unitconv=obsData(ipar)%unitconv
-    ispec=obsData(ipar)%ispec
-    k=obsData(ipar)%ichem
-    kk=ichemobs(k)
-    yn=0e0
-    pidx(n)%i(:)=i(:)
-    pidx(n)%j(:)=j(:)
-    pidx(n)%l(:)=(/1,nlev/)
-    do ll=1,KMAX_MID-nlev   ! B might have a reduced number of levels...
-      do p=1,4
-        Hj=H_int(p)                                   & ! interpolation
-          * unitconv                                  & ! unit conversion
-          * roa(i(p),j(p),ll,1)                       & ! density.
-          * (z_bnd(i(p),j(p),ll)-z_bnd(i(p),j(p),ll+1)) ! level thickness
-        xn=xn_adv(ispec,i(p),j(p),ll)*FGSCALE
-        yn=yn+Hj*xn
-      enddo
-    enddo
-    do l=1,nlev
-      ll=KMAX_MID-nlev+l
-      do p=1,4
-        H_jac(n,p,l,k)=H_int(p)                       & ! interpolation
-          * unitconv                                  & ! unit conversion
-          * roa(i(p),j(p),ll,1)                       & ! density.
-          * (z_bnd(i(p),j(p),ll)-z_bnd(i(p),j(p),ll+1)) ! level thickness
-        xn=xn_adv_ex(i(p),j(p),l,kk)
-        yn=yn+H_jac(n,p,l,k)*xn
-      enddo
-    enddo
-!-----------------------------------------------------------------------
-! analysis of indirect observations: model mid-levels
-!  PM* (eg PM10), BSC and EXT GROUPs (wavelength is in the %unit)
-!-----------------------------------------------------------------------
-  elseif((index(obsData(ipar)%name,'PM')>0.or.&
-          any(obsData(ipar)%name==(/'BSC','EXT'/)))&
-         .and.obsData(ipar)%deriv=='mod-lev')then
-!   call CheckStop(.not.obsData(ipar)%unitroa.or.&
-!     (index(obsData(ipar)%name,'PM')>0.and.obsData(ipar)%unit(1:2)/='ug'),&
-!     "Unsupported obsData unit for: "//trim(obsData(ipar)%tag))
-    igrp=find_index(obsData(ipar)%name,chemgroups(:)%name)
-    if(igrp<1)then
-      if(MasterProc) print dafmt,"ERROR obsData not yet supported"
-      return
-    endif
-    call Group_Units(igrp,obsData(ipar)%unit,gspec,gunit_conv,debug)
-    yn=0e0
-    pidx(n)%i(:)=i(:)
-    pidx(n)%j(:)=j(:)
-    pidx(n)%l(:)=l
-    do g=1,size(gspec)
-      kk=varSpecInv(gspec(g))
-      if(kk>0.and.observedVar(kk))then
-        k=ichemInv(kk)
-        do p=1,4
-          H_jac(n,p,l,k)=H_int(p)                       & ! interpolation
-            * gunit_conv(g)                             & ! unit conversion
-            * roa(i(p),j(p),ll,1)                         ! density.
-          xn=xn_adv_ex(i(p),j(p),l,kk)
-          yn=yn+H_jac(n,p,l,k)*xn
-        enddo
-      else
-        do p=1,4
-          Hj=H_int(p)                                   & ! interpolation
-            * gunit_conv(g)                             & ! unit conversion
-            * roa(i(p),j(p),ll,1)                         ! density.
-          xn=xn_adv(gspec(g),i(p),j(p),ll)*FGSCALE
-          yn=yn+Hj*xn
-        enddo
-      endif
-    enddo
-    if(index(obsData(ipar)%name,'PM')>0)then
-      do p=1,4
-        yn=yn+PM25_water(i(p),j(p),ll)*FGSCALE ! PM water content in ug/m3 at model mid-levels
-      enddo
-    endif
-!-----------------------------------------------------------------------
-! analysis of indirect observations: model mid-levels
-!  PM* (eg PM10), BSC and EXT GROUPs (wavelength is in the %unit)
-!-----------------------------------------------------------------------
-  elseif((index(obsData(ipar)%name,'PM')>0.or.&
-          any(obsData(ipar)%name==(/'BSC','EXT'/)))&
-         .and.obsData(ipar)%deriv=='surface')then
-!   call CheckStop(.not.obsData(ipar)%unitroa.or.&
-!     (index(obsData(ipar)%name,'PM')>0.and.obsData(ipar)%unit(1:2)/='ug'),&
-!     "Unsupported obsData unit for: "//trim(obsData(ipar)%tag))
-    igrp=find_index(obsData(ipar)%name,chemgroups(:)%name)
-    if(igrp<1)then
-      if(MasterProc) print dafmt,"ERROR obsData not yet supported"
-      return
-    endif
-    print *,igrp,chemgroups(igrp)%name
-    call Group_Units(igrp,obsData(ipar)%unit,gspec,gunit_conv,debug)
-    yn=0e0
-    pidx(n)%i(:)=i(:)
-    pidx(n)%j(:)=j(:)
-    pidx(n)%l(:)=l
-    do g=1,size(gspec)
-      kk=varSpecInv(gspec(g))
-      if(kk>0.and.observedVar(kk))then
-        k=ichemInv(kk)
-        do p=1,4
-          H_jac(n,p,l,k)=H_int(p)                       & ! interpolation
-            * gunit_conv(g)                             & ! unit conversion
-            * roa(i(p),j(p),ll,1)                       & ! density.
-            * cfac(gspec(g),i(p),j(p))                    ! 50m->3m conversion
-          xn=xn_adv_ex(i(p),j(p),l,kk)
-          yn=yn+H_jac(n,p,l,k)*xn
-        enddo
-      else
-        do p=1,4
-          Hj=H_int(p)                                   & ! interpolation
-            * gunit_conv(g)                             & ! unit conversion
-            * roa(i(p),j(p),ll,1)                       & ! density.
-            * cfac(gspec(g),i(p),j(p))                    ! 50m->3m conversion
-          xn=xn_adv(gspec(g),i(p),j(p),ll)*FGSCALE
-          yn=yn+Hj*xn
-        enddo
-      endif
-    enddo
-    if(index(obsData(ipar)%name,'PM')>0)then
-      do p=1,4
-        yn=yn+PM25_water_rh50(i(p),j(p))*FGSCALE ! PM water content in ug/m3 at surface level
-      enddo
-    endif
-!-----------------------------------------------------------------------
-! analysis of indirect observations: column
-!  AOD GROUP (wavelength is in the %unit)
-!-----------------------------------------------------------------------
-  elseif((obsData(ipar)%name=='AOD').or.&
-         (obsData(ipar)%name=='EXT'.and.obsData(ipar)%deriv=='Trop.Col.'))then
-    igrp=find_index(obsData(ipar)%name,chemgroups(:)%name)
-    if(igrp<1)then
-      if(MasterProc) print dafmt,"ERROR obsData not yet supported"
-      return
-    endif
-    call Group_Units(igrp,obsData(ipar)%unit,gspec,gunit_conv,debug)
-    yn=0e0
-    pidx(n)%i(:)=i(:)
-    pidx(n)%j(:)=j(:)
-    pidx(n)%l(:)=l
-    pidx(n)%l(:)=(/1,nlev/)
-    do g=1,size(gspec)
-      kk=varSpecInv(gspec(g))
-      if(kk>0.and.observedVar(kk))then
-        k=ichemInv(kk)
-        do ll=1,KMAX_MID-nlev
-          do p=1,4
-            Hj=H_int(p)                                   & ! interpolation
-              * gunit_conv(g)                             & ! unit conversion
-              * roa(i(p),j(p),ll,1)                       & ! density.
-              * (z_bnd(i(p),j(p),ll)-z_bnd(i(p),j(p),ll+1)) ! level thickness
-            xn=xn_adv(gspec(g),i(p),j(p),ll)*FGSCALE
-            yn=yn+Hj*xn
-          enddo
-        enddo
-        do l=1,nlev
-          ll=KMAX_MID-nlev+l
-          do p=1,4
-            H_jac(n,p,l,k)=H_int(p)                       & ! interpolation
-              * gunit_conv(g)                             & ! unit conversion
-              * roa(i(p),j(p),ll,1)                       & ! density.
-              * (z_bnd(i(p),j(p),ll)-z_bnd(i(p),j(p),ll+1)) ! level thickness
-            xn=xn_adv_ex(i(p),j(p),l,kk)
-            yn=yn+H_jac(n,p,l,k)*xn
-          enddo
-        enddo
-      else
-        do ll=1,KMAX_MID
-          do p=1,4
-            Hj=H_int(p)                                   & ! interpolation
-              * gunit_conv(g)                             & ! unit conversion
-              * roa(i(p),j(p),ll,1)                       & ! density.
-              * (z_bnd(i(p),j(p),ll)-z_bnd(i(p),j(p),ll+1)) ! level thickness
-            xn=xn_adv(gspec(g),i(p),j(p),ll)*FGSCALE
-            yn=yn+Hj*xn
-          enddo
-        enddo
-      endif
+  if(pidx(n)%local(1))then  ! p:=1 has H_int maxval
+    ll=KMAX_MID             ! calcualte level on p:=1
+    do while(alt>z_bnd(i(1),j(1),ll).and.ll>=1)
+      ll=ll-1
     enddo
   else
-    if(MasterProc) print dafmt,"ERROR obsData not yet supported"
-    return
+    ll=0
+  endif ! share ll from p:=1 host CPU to all CPUs
+  CALL MPI_ALLREDUCE(MPI_IN_PLACE,ll,1,MPI_INTEGER,MPI_SUM,MPI_COMM_WORLD,INFO)
+  l=ll+nlev-KMAX_MID  ! B might have a reduced number of levels...
+  if((l<1).or.(debug_obs.and.any(pidx(n)%local))) then
+    print dafmt,'Observation/Model Location:Weight[%],lon[deg],lat[deg],alt[km]'
+    print "('#',I0,5(1X,A3,':',F0.1,3(',',F0.2)))",&
+      n,'Observation',100.0,lon,lat,alt,&
+       ('Model',H_int(p)*100,glon(i(p),j(p)),glat(i(p),j(p)),&
+                z_mid(i(p),j(p),ll)*1e-3,p=1,4)
+    call CheckStop(l<1,HERE("Out of bounds level"))
+  endif
+!-----------------------------------------------------------------------
+! analysis of direct observations: NO2, O3, SO2, etc
+!-----------------------------------------------------------------------
+  if(obsData(ipar)%found)then
+    unitconv=obsData(ipar)%unitconv
+    ispec=obsData(ipar)%ispec
+    k =obsData(ipar)%ichem
+    yn=0e0
+    select case(obsData(ipar)%deriv)
+!-----------------------------------------------------------------------
+! direct observations: model mid-levels
+!-----------------------------------------------------------------------
+    case('mod-lev')
+      pidx(n)%l(:)=l
+      if(obsData(ipar)%unitroa)&
+        forall(p=1:4,pidx(n)%local(p)) &
+          H_int(p)=H_int(p)*roa(i(p),j(p),ll,1)
+      do p=1,4
+        if(.not.pidx(n)%local(p))cycle
+        Hj=H_int(p)*unitconv                       ! interpolation,unit conversion        
+        xn=xn_adv(ispec,i(p),j(p),ll)*FGSCALE
+        yn=yn+Hj*xn
+        H_jac(n,p,l,k)=Hj
+      enddo
+!-----------------------------------------------------------------------
+! direct observations: surface level
+!-----------------------------------------------------------------------
+    case('surface')
+      pidx(n)%l(:)=l
+      if(obsData(ipar)%unitroa)&
+        forall(p=1:4,pidx(n)%local(p)) &
+          H_int(p)=H_int(p)*roa(i(p),j(p),ll,1)
+      do p=1,4
+        if(.not.pidx(n)%local(p))cycle
+        Hj=H_int(p)*unitconv*cfac(ispec,i(p),j(p))  ! interpolation,unit conversion,50m->3m
+        xn=xn_adv(ispec,i(p),j(p),ll)*FGSCALE
+        yn=yn+Hj*xn
+        H_jac(n,p,l,k)=Hj
+      enddo
+!-----------------------------------------------------------------------
+! direct observations: COLUMN (eg NO2tc)
+!-----------------------------------------------------------------------
+    case('Trop.Col.')
+      pidx(n)%l(:)=(/1,nlev/)
+      call CheckStop(.not.obsData(ipar)%unitroa,&
+        "Unsupported obsData unit for: "//trim(obsData(ipar)%tag))     
+      do p=1,4
+        if(.not.pidx(n)%local(p))cycle
+        do ll=1,KMAX_MID
+          Hj=H_int(p)*unitconv            & ! interpolation,unit conversion
+            * roa(i(p),j(p),ll,1)                       & ! density.
+            * (z_bnd(i(p),j(p),ll)-z_bnd(i(p),j(p),ll+1)) ! level thickness
+          xn=xn_adv(ispec,i(p),j(p),ll)*FGSCALE
+          yn=yn+Hj*xn
+          l=ll+nlev-KMAX_MID  ! B might have a reduced number of levels...
+          if(l>0)H_jac(n,p,l,k)=Hj
+      enddo
+    enddo
+!-----------------------------------------------------------------------
+!
+!-----------------------------------------------------------------------
+    case default
+      call CheckStop(HERE("obsData not yet supported "//trim(obsData(ipar)%tag)))
+    endselect
+!-----------------------------------------------------------------------
+! analysis of indirect observations:
+!   PM* (eg PM10), BSC and EXT GROUPs (wavelength is in %unit)
+!-----------------------------------------------------------------------
+  elseif(index(obsData(ipar)%name,'PM')>0.or.&
+         any(obsData(ipar)%name==['BSC','EXT','AOD']))then
+    call CheckStop(any(obsData(ipar)%name==['BSC','EXT','AOD']),&
+      HERE("obsData not yet supported "//trim(obsData(ipar)%tag)))
+!   call CheckStop(.not.obsData(ipar)%unitroa.or.&
+!     (index(obsData(ipar)%name,'PM')>0.and.obsData(ipar)%unit(1:2)/='ug'),&
+!     "Unsupported obsData unit for: "//trim(obsData(ipar)%tag))
+    call CheckStop((obsData(ipar)%name=='AOD').and.(obsData(ipar)%deriv/='Trop.Col.'),&
+      HERE("Unsupported obsData "//trim(obsData(ipar)%tag)))
+    igrp=obsData(ipar)%ispec
+!!  print *,igrp,chemgroups(igrp)%name
+    call Group_Units(igrp,obsData(ipar)%unit,gspec,gunit_conv,debug)
+    yn=0e0
+    select case(obsData(ipar)%deriv)
+!-----------------------------------------------------------------------
+! indirect observations: model mid-levels
+!-----------------------------------------------------------------------
+    case('mod-lev')
+      if(index(obsData(ipar)%name,'PM')>0)then
+        do p=1,4 ! PM water content in ug/m3 at model mid-levels
+          if(.not.pidx(n)%local(p))cycle
+          yn=yn+H_int(p)*PM25_water(i(p),j(p),ll)*FGSCALE
+        enddo
+      endif
+      pidx(n)%l(:)=l
+      if(obsData(ipar)%unitroa)&
+        forall(p=1:4,pidx(n)%local(p)) &
+          H_int(p)=H_int(p)*roa(i(p),j(p),ll,1)
+      do p=1,4
+        if(.not.pidx(n)%local(p))cycle
+        do g=1,size(gspec)
+          Hj=H_int(p)*gunit_conv(g)       ! interpolation,unit conversion
+          xn=xn_adv(gspec(g),i(p),j(p),ll)*FGSCALE
+          yn=yn+Hj*xn
+          kk=varSpecInv(gspec(g))
+          k=0;if(kk>0.and.observedVar(kk))k=ichemInv(kk)
+          if(k>0)H_jac(n,p,l,k)=Hj
+        enddo
+      enddo
+!-----------------------------------------------------------------------
+! indirect observations: surface level
+!-----------------------------------------------------------------------
+    case('surface')
+      if(index(obsData(ipar)%name,'PM')>0)then
+        do p=1,4 ! PM water content in ug/m3 at surface level
+          if(.not.pidx(n)%local(p))cycle
+          yn=yn+H_int(p)*PM25_water_rh50(i(p),j(p))*FGSCALE
+        enddo
+      endif
+      pidx(n)%l(:)=l
+      if(obsData(ipar)%unitroa)&
+        forall(p=1:4,pidx(n)%local(p)) &
+          H_int(p)=H_int(p)*roa(i(p),j(p),ll,1)
+      do p=1,4
+        if(.not.pidx(n)%local(p))cycle
+        do g=1,size(gspec)
+          Hj=H_int(p)*gunit_conv(g)     & ! interpolation,unit conversion
+            * cfac(gspec(g),i(p),j(p))    ! 50m->3m conversion
+          xn=xn_adv(gspec(g),i(p),j(p),ll)*FGSCALE
+          yn=yn+Hj*xn
+          kk=varSpecInv(gspec(g))
+          k=0;if(kk>0.and.observedVar(kk))k=ichemInv(kk)
+          if(k>0)H_jac(n,p,l,k)=Hj
+        enddo
+      enddo
+!-----------------------------------------------------------------------
+! direct observations: COLUMN (eg AOD)
+!-----------------------------------------------------------------------
+    case('Trop.Col.')
+      if(index(obsData(ipar)%name,'PM')>0)then
+        do p=1,4 ! PM water content in ug/m3 at model mid-levels
+          if(.not.pidx(n)%local(p))cycle
+          xn=0.0
+          do ll=1,KMAX_MID
+            xn=xn+PM25_water(i(p),j(p),ll) &
+              * (z_bnd(i(p),j(p),ll)-z_bnd(i(p),j(p),ll+1)) ! level thickness
+          enddo
+          yn=yn+H_int(p)*xn*FGSCALE
+        enddo
+      endif
+      pidx(n)%l(:)=(/1,nlev/)
+      do p=1,4
+        if(.not.pidx(n)%local(p))cycle
+        do ll=1,KMAX_MID
+          Hj=H_int(p)*roa(i(p),j(p),ll,1)           & ! interpolation,density
+              * (z_bnd(i(p),j(p),ll)-z_bnd(i(p),j(p),ll+1)) ! level thickness
+          l=ll+nlev-KMAX_MID  ! B might have a reduced number of levels...
+          do g=1,size(gspec)
+            xn=xn_adv(gspec(g),i(p),j(p),ll)*gunit_conv(g)*FGSCALE
+            yn=yn+Hj*xn
+            kk=varSpecInv(gspec(g))
+            k=0;if(kk>0.and.observedVar(kk))k=ichemInv(kk)
+            if(k>0.and.l>0)H_jac(n,p,l,k)=Hj*gunit_conv(g)
+          enddo
+        enddo
+      enddo
+!-----------------------------------------------------------------------
+!
+!-----------------------------------------------------------------------
+    case default
+      call CheckStop(HERE("obsData not yet supported "//trim(obsData(ipar)%tag)))
+    endselect
+!-----------------------------------------------------------------------
+!
+!-----------------------------------------------------------------------
+  else
+    call CheckStop(HERE("obsData not yet supported "//trim(obsData(ipar)%tag)))
   endif
 end subroutine H_op
 !-----------------------------------------------------------------------
@@ -525,11 +486,11 @@ end subroutine H_op
 subroutine chisq_over_nobs2(nobs,dep)
   integer :: nobs                    ! number of observations,...
   real    :: dep(nobs)               ! Analysis departure from background
-  integer :: i,j,n,p,frac,ipar
+  integer :: i,j,n,p,frac,ipar,iyf0,iyf1
   real :: hbh
   integer, allocatable :: nm(:)      ! number of used observations
   real, allocatable :: chisq(:),&    ! chi-square
-                       h(:,:,:,:)    ! Work array for observation operator
+                   h_loc(:,:,:,:)    ! Work array for observation operator
   complex, allocatable :: uh(:,:,:)  ! .. on spectral space
   character(len=128) :: file
 !-----------------------------------------------------------------------
@@ -539,33 +500,35 @@ subroutine chisq_over_nobs2(nobs,dep)
   endif
 !----------------------------------------------------------------------- 
   if(MasterProc) print dafmt,'CHI^2 calculations' 
-  allocate(chisq(nobsData),nm(nobsData),&
-           h(nxex,nyex,nlev,nchemobs),uh(nv1,nxex,nyex))
+  iyf0=iyf(0,me);iyf1=iyf(1,me)       ! local y-slab
+  allocate(chisq(nobsData),nm(nobsData),h_loc(nxex,iyf0:iyf1,nlev,nchemobs),&
+           uh(nv1,nxex,nyex))
+  chisq(:)=0e0
+  nm(:)=0
+  h_loc(:,:,:,:)=0e0
 !-----------------------------------------------------------------------
 ! Determine (H^T)_n; compute U^{-\dagger}*(H^T)_n, n: nth component of H^T, n=1..nobs
 !-----------------------------------------------------------------------
-  chisq(:)=0e0
-  nm(:)=0
-! frac=nobs/max(nobs/5,min(200,nobs)) ! 1 (up to 200 obs) .. 5 (from 1000 obs)
   do ipar=1,nobsData
     n=obsData(ipar)%nobs
     if(n==0)cycle
     frac=n/max(n/5,min(200,n))        ! 1 (up to 200 obs) .. 5 (from 1000 obs)
     do n=obsData(ipar)%iobs(0)+frac,& ! only use every frac'th observation, i.e.
          obsData(ipar)%iobs(1),frac   ! between all obs (up to 200) and 1/5th
-      h(:,:,:,:)=0e0 ! observation operator for this observations
-      do p=1,4
+      do p=1,4                        ! observation operator for this observation
         i = pidx(n)%i(p)
         j = pidx(n)%j(p)
-        h(i,j,:,:)=H_jac(n,p,:,ichemobs(:))
+        if((j>=iyf0).and.(j<=iyf1)) & ! local y-slab
+          h_loc(i,j,:,:)=H_jac(n,p,:,ichemobs(:))
       enddo
-      call chitox_adj(uh,h)                 ! to spectral space
+      call chitox_adj(uh,h_loc)             ! to spectral space
       hbh=norm(uh,squared=.true.)+obsstddev(n)**2  ! HBH+R
       chisq(ipar)=chisq(ipar)+dep(n)**2/hbh ! chi-square for this observation & sum
       nm(ipar)=nm(ipar)+1                   ! number of used observations
+     h_loc(pidx(n)%i,pidx(n)%j,:,:)=0e0     ! clean up for next iteration
     enddo
   enddo
-  deallocate(h,uh)
+  deallocate(h_loc,uh)
 ! CALL MPI_ALLREDUCE(MPI_IN_PLACE,chisq,ipar,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD,INFO)
 ! CALL MPI_ALLREDUCE(MPI_IN_PLACE,nm   ,ipar,MPI_INTEGER         ,MPI_SUM,MPI_COMM_WORLD,INFO)
   where(nm(:)>0) chisq(:)=chisq(:)/nm(:)     ! Normalize by number of used observations
@@ -588,7 +551,7 @@ subroutine get_interpol_const(lon,lat,IIij,JJij,Weight,method)
   integer, intent(out)        :: IIij(4),JJij(4)
   real,    intent(out)        :: Weight(4)
   character(len=*),intent(in) :: method
-!!logical, parameter :: debug=.true.
+  logical, parameter :: debug=.false.
   integer :: n
 
   select case(method)
@@ -596,16 +559,16 @@ subroutine get_interpol_const(lon,lat,IIij,JJij,Weight,method)
     call get_coeff()
   case('dis','nearest4','distance-weighted') ! 4-point distance-weighted
     call point2grid_coeff(lon,lat,IIij,JJij,Weight,&
-      glon(:limax,:ljmax),glat(:limax,:ljmax),limax,ljmax,debug)
+      glon_fdom,glat_fdom,IIFULLDOM,JJFULLDOM,debug)
   case('nnn','nearest1','nearest-neighbor')  ! 1-point nearest-neighbor
     call point2grid_coeff(lon,lat,IIij,JJij,Weight,&
-      glon(:limax,:ljmax),glat(:limax,:ljmax),limax,ljmax,debug)
+      glon_fdom,glat_fdom,IIFULLDOM,JJFULLDOM,debug)
     Weight(:)=(/1.0,0.0,0.0,0.0/) ! Only use nearest grid cell
     IIij(2:4)=IIij(1)             ! Reset unused indices, 
     JJij(2:4)=JJij(1)             ! these elements have weight zero.
   case default  
     call CheckStop("get_interpol_const: "//&
-      "Unknown interpolation method '"//trim(method)//"'.")
+      HERE("Unknown interpolation method '"//trim(method)))
   endselect
   if(debug) print "(A,1X,A,4(1X,I0,1X,I0,1X,F5.3,','))",&
     'get_interpol_const',trim(method),(IIij(n),JJij(n),Weight(n),n=1,4)
@@ -614,10 +577,10 @@ subroutine get_coeff()
   integer :: i,j,n
   real :: d,dist(4)
   dist=1.0E40
-  do j=1,ljmax
-    do i=1,limax
+  do j=1,JJFULLDOM
+    do i=1,IIFULLDOM
       !distance between (lon(i,j),lat(i,j) and (lon,lat)
-      d=great_circle_distance(lon,lat,glon(i,j),glat(i,j))
+      d=great_circle_distance(lon,lat,glon_fdom(i,j),glat_fdom(i,j))
       if(d>=dist(4))cycle
       n=MINVAL([1,2,3,4],MASK=(d<dist))
       dist(n:4)=EOSHIFT(dist(n:4),-1,BOUNDARY=d)

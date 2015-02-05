@@ -55,8 +55,9 @@ public :: ij2lb   ! polar stereo grid to longitude latitude
 
 public :: GlobalPosition
 private :: Position ! => lat(glat), long (glon)
-public :: coord_in_gridbox,  &  ! Are coord (lon/lat) is inside gridbox(i,j)?
-          coord_in_processor    ! Are coord (lon/lat) is inside local domain?
+public :: coord_in_gridbox,  &  ! Are coord (lon/lat) inside gridbox(i,j)?
+          coord_in_processor,&  ! Are coord (lon/lat) inside local domain?
+          coord_in_domain       ! Are coord (lon/lat) inside "domain"?
 
 public :: GridRead,Getgridparams
 private :: Alloc_GridFields
@@ -1736,44 +1737,60 @@ subroutine coord_check(msg,lon,lat,fix)
     call range_check(trim(msg)//" lon",lon,(/-180.0,180.0/),fatal=.true.)
   endif
 endsubroutine coord_check
-function coord_in_gridbox(lon,lat,iloc,jloc) result(in)
+function coord_in_domain(domain,lon,lat,iloc,jloc,iglob,jglob) result(in)
+!-------------------------------------------------------------------!
+! Is coord (lon/lat) is inside global domain|local domain|grid cell?
+!-------------------------------------------------------------------!
+  character(len=*), intent(in) :: domain
+  real, intent(inout) :: lon,lat
+  integer, intent(inout),optional :: iloc,jloc
+  integer, intent(out)  ,optional :: iglob,jglob
+  logical :: in
+  integer :: i,j
+  real    :: xr,yr
+  call coord_check("coord_in_"//trim(domain),lon,lat,fix=.true.)
+  call lb2ij(lon,lat,xr,yr)
+  i=nint(xr);j=nint(yr)
+  if(present(iglob))iglob=i
+  if(present(jglob))jglob=j
+  in=(i>=1).and.(i<=IIFULLDOM).and.(j>=1).and.(j<=JJFULLDOM)
+  i=max(1,min(i,IIFULLDOM));i=i_local(i)
+  j=max(1,min(j,JJFULLDOM));j=j_local(j)
+  select case(domain)
+  case("g","G","global","full")
+    if(present(iloc))iloc=i
+    if(present(jloc))jloc=j
+  case("l","L","local","processor")
+    if(in) in=(i>=1).and.(i<=limax).and.(j>=1).and.(j<=ljmax)
+    if(present(iloc))iloc=i
+    if(present(jloc))jloc=j
+  case("c","C","cell","gridbox")
+    call CheckStop(.not.(present(iloc).and.present(jloc)),&
+      "Wrong options for coord_in_"//trim(domain))
+    if(in) in=(i==iloc).and.(j==jloc)
+  case default
+    call CheckStop("Unsupporter coord_in_"//trim(domain))
+  endselect
+endfunction coord_in_domain
+function coord_in_processor(lon,lat,iloc,jloc,iglob,jglob) result(in)
+!-------------------------------------------------------------------!
+! Is coord (lon/lat) is inside local domain?
+!-------------------------------------------------------------------!
+  real, intent(inout) :: lon,lat
+  integer, intent(out),optional:: iloc,jloc,iglob,jglob
+  logical :: in
+  in=coord_in_domain("processor",lon,lat,iloc,jloc,iglob,jglob)
+endfunction coord_in_processor
+function coord_in_gridbox(lon,lat,iloc,jloc,iglob,jglob) result(in)
 !-------------------------------------------------------------------!
 ! Is coord (lon/lat) is inside gridbox(iloc,jloc)?
 !-------------------------------------------------------------------!
   real, intent(inout) :: lon,lat
   integer, intent(inout) :: iloc,jloc
+  integer, intent(out),optional:: iglob,jglob
   logical :: in
-  integer :: i,j
-  real    :: xr,yr
-  call coord_check("coord_in_gridbox",lon,lat,fix=.true.)
-  call lb2ij(lon,lat,xr,yr)
-  i=nint(xr);j=nint(yr)
-  in=(i>=1).and.(i<=IIFULLDOM).and.(j>=1).and.(j<=JJFULLDOM)
-  if(in)then
-    i=i_local(i);j=j_local(j)
-    in=(i==iloc).and.(j==jloc)
-  endif
+  in=coord_in_domain("gridbox",lon,lat,iloc,jloc,iglob,jglob)
 endfunction coord_in_gridbox
-function coord_in_processor(lon,lat,iloc,jloc) result(in)
-!-------------------------------------------------------------------!
-! Is coord (lon/lat) is inside local domain?
-!-------------------------------------------------------------------!
-  real, intent(inout) :: lon,lat
-  integer, intent(out),optional:: iloc,jloc
-  logical :: in
-  integer :: i,j
-  real    :: xr,yr
-  call coord_check("coord_in_processor",lon,lat,fix=.true.)
-  call lb2ij(lon,lat,xr,yr)
-  i=nint(xr);j=nint(yr)
-  in=(i>=1).and.(i<=IIFULLDOM).and.(j>=1).and.(j<=JJFULLDOM)
-  if(in)then
-    i=i_local(i);j=j_local(j)
-    in=(i>=1).and.(i<=limax).and.(j>=1).and.(j<=ljmax)
-  endif
-  if(present(iloc))iloc=i
-  if(present(jloc))jloc=j
-endfunction coord_in_processor
 
   subroutine Alloc_GridFields(GIMAX,GJMAX,MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND)
 
