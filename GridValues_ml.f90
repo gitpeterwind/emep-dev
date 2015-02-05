@@ -14,7 +14,7 @@ Module GridValues_ml
 ! Nov. 2001 - tidied up a bit (ds). Use statements moved to top of module
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 
-use CheckStop_ml,           only: CheckStop,StopAll
+use CheckStop_ml,           only: CheckStop,StopAll,check=>CheckNC
 use Functions_ml,           only: great_circle_distance
 use Io_Nums_ml,             only: IO_LOG,IO_TMP
 use MetFields_ml 
@@ -37,6 +37,9 @@ use PhysicalConstants_ml,     only: GRAV, PI, EARTH_RADIUS ! gravity, pi
 use TimeDate_ml,              only: current_date,date,Init_nmdays,nmdays,startdate
 use TimeDate_ExtraUtil_ml,    only: nctime2idate,date2string
 use InterpolationRoutines_ml, only: inside_1234
+use netcdf,                   only: NF90_OPEN,NF90_NOWRITE,NF90_NOERR,NF90_CLOSE,&
+        NF90_GET_ATT,NF90_GLOBAL,NF90_INQ_DIMID,NF90_INQUIRE_DIMENSION,&
+        NF90_INQ_VARID,NF90_GET_VAR
 
 implicit none
 private
@@ -269,8 +272,6 @@ subroutine GridRead(meteo,cyclicgrid)
     ! Get input grid sizes 
     !
 
-  use netcdf
-
     implicit none
 
     character (len = *), intent(in) ::filename
@@ -393,7 +394,6 @@ subroutine GridRead(meteo,cyclicgrid)
     !
     ! This routine is called only once (and is therefore not optimized for speed)
     !
-  use netcdf
 
     implicit none
 
@@ -1774,16 +1774,6 @@ function coord_in_processor(lon,lat,iloc,jloc) result(in)
   if(present(iloc))iloc=i
   if(present(jloc))jloc=j
 endfunction coord_in_processor
-
-  subroutine check(status)
-    use netcdf
-    implicit none
-    integer, intent ( in) :: status
-
-    call CheckStop( status, nf90_noerr, "Error in GridValues_ml/NetCDF parts:"  &
-         //  trim( nf90_strerror(status) ) )
-
-  end subroutine check
 
   subroutine Alloc_GridFields(GIMAX,GJMAX,MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND)
 

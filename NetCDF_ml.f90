@@ -18,7 +18,7 @@ module NetCDF_ml
                                 !NML SELECT_LEVELS_HOURLY, LEVELS_HOURLY, &
                                 NLEVELS_HOURLY
   use Chemfields_ml,     only : xn_shl,xn_adv
-  use CheckStop_ml,      only : CheckStop,StopAll
+  use CheckStop_ml,      only : CheckStop,StopAll,check=>CheckNC
   use ChemSpecs_shl_ml,  only : NSPEC_SHL
   use ChemSpecs_adv_ml,  only : NSPEC_ADV
   use ChemSpecs_tot_ml,  only : NSPEC_TOT
@@ -270,7 +270,7 @@ subroutine Create_CDF_sondes(fileName,NSpec,NSpec_Att,SpecDef,&
     do n=1,NMetaData
       if(MetaData(0,n)=="")cycle
       if(debug_1D)write(*,*)'Global Attribute ',trim(MetaData(0,n))
-      call wordsplit(trim(MetaData(0,n)),3,auxL,k,ierr,separator=':')
+      call wordsplit(trim(MetaData(0,n)),3,auxL,k,ierr,strict_separator=':')
       call CheckStop(3,k,&
         "NetCDF_ml: too short metadata definition "//trim(MetaData(0,n)))
       select case(auxL(2))
@@ -315,7 +315,7 @@ subroutine Create_CDF_sondes(fileName,NSpec,NSpec_Att,SpecDef,&
       !species attributes:
       do n=1,NSpec_Att
         if(SpecDef(iSpec,n)=="")cycle
-        call wordsplit(trim(SpecDef(iSpec,n)),3,auxL,k,ierr,separator=':')
+        call wordsplit(trim(SpecDef(iSpec,n)),3,auxL,k,ierr,strict_separator=':')
         call CheckStop(3,k,&
           "NetCDF_ml: too short metadata definition "//trim(SpecDef(iSpec,n)))
         select case(auxL(1))
@@ -360,7 +360,7 @@ subroutine Create_CDF_sondes(fileName,NSpec,NSpec_Att,SpecDef,&
     do n=1,NMetaData
       if(MetaData(1,n)=="")cycle
       if(debug_1D)write(*,*)'Defining station ',trim(MetaData(1,n))
-      call wordsplit(trim(MetaData(1,n)),3,auxL,k,ierr,separator=':')
+      call wordsplit(trim(MetaData(1,n)),3,auxL,k,ierr,strict_separator=':')
       call CheckStop(3,k,&
         "NetCDF_ml: too short metadata definition "//trim(MetaData(1,n)))
       select case(auxL(2))
@@ -392,7 +392,7 @@ subroutine Create_CDF_sondes(fileName,NSpec,NSpec_Att,SpecDef,&
     do n=1,NMetaData
       if(MetaData(1,n)=="")cycle
       if(debug_1D)write(*,*)'Writing station ',trim(MetaData(1,n))
-      call wordsplit(trim(MetaData(1,n)),3,auxL,k,ierr,separator=':')
+      call wordsplit(trim(MetaData(1,n)),3,auxL,k,ierr,strict_separator=':')
       call CheckStop(3,k,&
         "NetCDF_ml: too short metadata definition "//trim(MetaData(1,n)))
       metaName=auxL(1)
@@ -402,7 +402,7 @@ subroutine Create_CDF_sondes(fileName,NSpec,NSpec_Att,SpecDef,&
       auxR(:)=NF90_FILL_DOUBLE
       do iSta=1,NStations
         if(MetaData(iSta,n)=="")cycle
-        call wordsplit(trim(MetaData(iSta,n)),3,auxL,k,ierr,separator=':')
+        call wordsplit(trim(MetaData(iSta,n)),3,auxL,k,ierr,strict_separator=':')
         call CheckStop(3,k,&
           "NetCDF_ml: too short metadata definition "//trim(MetaData(iSta,n)))
         call CheckStop(metaName,auxL(1),&
@@ -1881,18 +1881,6 @@ subroutine  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype,chunksize
 
 end subroutine  createnewvariable
 !_______________________________________________________________________
-
-subroutine check(status,errmsg)
-  implicit none
-  integer, intent ( in) :: status
-  character(len=*), intent(in), optional :: errmsg
-
-  if(status /= nf90_noerr) then
-    print *, trim(nf90_strerror(status))
-    if(present(errmsg)) print *, "ERRMSG: ", trim(errmsg)
-    call CheckStop("NetCDF_ml : error in netcdf routine")
-  endif
-endsubroutine check
 
 subroutine CloseNetCDF
 !close open files

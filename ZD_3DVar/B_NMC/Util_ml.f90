@@ -1,18 +1,14 @@
+#define STRING2(x) #x
+#define STRING(x) STRING2(x)
+#define HERE(MSG) MSG//" ("//__FILE__//":"//STRING(__LINE__)//")."
 module Util_ml
 use netcdf
-use ModelConstants_ml,      only: MasterProc
+use ModelConstants_ml,      only: MasterProc,USE_EtaCOORDINATES
 use TimeDate_ml,            only: date
 use TimeDate_ExtraUtil_ml,  only: date2nctime,date2string,nctime2string
-use CheckStop_ml,           only: CheckStop
+use CheckStop_ml,           only: CheckStop,CheckNC
 implicit none
 integer(4) :: numLev,numLon,numLat,numRec
-public  :: norm
-private :: norm_r8d1,norm_r8d2,norm_r8d3,norm_r8d4,&
-           norm_c8d1,norm_c8d2,norm_c8d3,norm_c8d4
-interface norm
-  module procedure norm_r8d1,norm_r8d2,norm_r8d3,norm_r8d4,&
-                   norm_c8d1,norm_c8d2,norm_c8d3,norm_c8d4
-end interface norm
 public  :: infovar
 private :: info_1var2d,info_2var2d,info_3var2d
 interface infovar
@@ -114,163 +110,37 @@ function info_3var2d(var1,var2,var3,trimdomain) result(msg)
   endif
 end function info_3var2d
 !+------------------------------------------------------------------
-! nc_check (CDF_Utils.check)
-!   check wether the function returns nf90_noerr
-! io_check
-!   check wether the function returns zero
-!+------------------------------------------------------------------
-subroutine io_check(status,msg)
-  implicit none
-  integer, intent (in) :: status
-  character(len=*), intent (in) :: msg
-  select case (status)
-    case(0) ! correct IO
-   !case()  ! recoverable errors
-   !  if(MasterProc) print *,"RecoverableError in I/O call: "//trim(msg))
-    case default
-      call CheckStop("Error in I/O call: "//trim(msg))
-   endselect
-end subroutine io_check
-subroutine nc_check(status)
-  use netcdf
-  implicit none
-  integer, intent (in) :: status
-  call CheckStop(status,nf90_noerr,"Error in NetCDF call: "//trim(nf90_strerror(status)))
-end subroutine nc_check
-!+------------------------------------------------------------------
 !
 !+------------------------------------------------------------------
-function norm_r8d1(a,squared) result(norm)
-  implicit none
-  intent(in)      :: a,squared
-  optional        :: squared
-  logical         :: squared,sq
-  real(kind=8)    :: a(:),norm
-  sq=.false.;if(present(squared))sq=squared
-  norm=sum(a**2)
-  if(.not.sq)norm=sqrt(norm)
-end function norm_r8d1
-function norm_c8d1(a,squared) result(norm)
-  implicit none
-  intent(in)      :: a,squared
-  optional        :: squared
-  logical         :: squared,sq
-  complex(kind=8) :: a(:)
-  real(kind=8)    :: norm
-  sq=.false.;if(present(squared))sq=squared
-  norm=sum(conjg(a)*a)
-  if(.not.sq)norm=sqrt(norm)
-end function norm_c8d1
-function norm_r8d2(a,squared) result(norm)
-  implicit none
-  intent(in)      :: a,squared
-  optional        :: squared
-  logical         :: squared,sq
-  real(kind=8)    :: a(:,:),norm
-  sq=.false.;if(present(squared))sq=squared
-  norm=sum(a**2)
-  if(.not.sq)norm=sqrt(norm)
-end function norm_r8d2
-function norm_c8d2(a,squared) result(norm)
-  implicit none
-  intent(in)      :: a,squared
-  optional        :: squared
-  logical         :: squared,sq
-  complex(kind=8) :: a(:,:)
-  real(kind=8)    :: norm
-  sq=.false.;if(present(squared))sq=squared
-  norm=sum(conjg(a)*a)
-  if(.not.sq)norm=sqrt(norm)
-end function norm_c8d2
-function norm_r8d3(a,squared) result(norm)
-  implicit none
-  intent(in)      :: a,squared
-  optional        :: squared
-  logical         :: squared,sq
-  real(kind=8)    :: a(:,:,:),norm
-  sq=.false.;if(present(squared))sq=squared
-  norm=sum(a**2)
-  if(.not.sq)norm=sqrt(norm)
-end function norm_r8d3
-function norm_c8d3(a,squared) result(norm)
-  implicit none
-  intent(in)      :: a,squared
-  optional        :: squared
-  logical         :: squared,sq
-  complex(kind=8) :: a(:,:,:)
-  real(kind=8)    :: norm
-  sq=.false.;if(present(squared))sq=squared
-  norm=sum(conjg(a)*a)
-  if(.not.sq)norm=sqrt(norm)
-end function norm_c8d3
-function norm_r8d4(a,squared) result(norm)
-  implicit none
-  intent(in)      :: a,squared
-  optional        :: squared
-  logical         :: squared,sq
-  real(kind=8)    :: a(:,:,:,:),norm
-  sq=.false.;if(present(squared))sq=squared
-  norm=sum(a**2)
-  if(.not.sq)norm=sqrt(norm)
-end function norm_r8d4
-function norm_c8d4(a,squared) result(norm)
-  implicit none
-  intent(in)      :: a,squared
-  optional        :: squared
-  logical         :: squared,sq
-  complex(kind=8) :: a(:,:,:,:)
-  real(kind=8)    :: norm
-  sq=.false.;if(present(squared))sq=squared
-  norm=sum(conjg(a)*a)
-  if(.not.sq)norm=sqrt(norm)
-end function norm_c8d4
-!+------------------------------------------------------------------
-!
-!+------------------------------------------------------------------
-function compare_date(n,dateA,dateB,wildcard) result(equal)
-  implicit none
-  integer,   intent(in)           :: n
-  type(date),intent(in)           :: dateA,dateB(n)
-  integer,   intent(in), optional :: wildcard
-  logical :: equal
-  integer :: dA(5),dB(5),i
-  equal=.false.
-  dA=(/dateA%year,dateA%month,dateA%day,dateA%hour,dateA%seconds/)
-  do i=1,n
-    dB=(/dateB(i)%year,dateB(i)%month,dateB(i)%day,&
-         dateB(i)%hour,dateB(i)%seconds/)
-    if(present(wildcard))then
-      equal=equal.or.all((dA==dB).or.(dA==wildcard).or.(dB==wildcard))
-    else
-      equal=equal.or.all(dA==dB)
-    endif
-  enddo
-end function compare_date
-!+------------------------------------------------------------------
-!
-!+------------------------------------------------------------------
-subroutine GetNCDim(ncFileID,name,num,varInt,varReal)
+subroutine GetNCDim(ncFileID,iname,num,varInt,varReal)
   implicit none
   integer(4), intent(in) :: ncFileID
-  character(len=*), intent(in):: name
+  character(len=*), intent(in):: iname
   integer, intent(inout) :: num
 !   integer(4), dimension(:), pointer, intent(out), optional :: varInt
 !   real(8),    dimension(:), pointer, intent(out), optional :: varReal
+  character(len=len(iname)) :: name
   integer(4), dimension(:), pointer, optional :: varInt
   real(8),    dimension(:), pointer, optional :: varReal
   integer(4) :: varID, dimID, ierr
-  call nc_check(nf90_inq_dimid(ncFileID,trim(name),dimID))
-  call nc_check(nf90_inquire_dimension(ncFileID,dimID,len=num))
-  call nc_check(nf90_inq_varid(ncFileID,trim(name),varID))
+  name=trim(iname)
+  if(USE_EtaCOORDINATES)then
+    if(name=='k')name='lev'
+  else
+    if(name=='lev')name='k'
+  endif
+  call CheckNC(nf90_inq_dimid(ncFileID,trim(name),dimID))
+  call CheckNC(nf90_inquire_dimension(ncFileID,dimID,len=num))
+  call CheckNC(nf90_inq_varid(ncFileID,trim(name),varID))
   if(present(varInt))then
     if(associated(varInt))deallocate(varInt)
     allocate(varInt(num),stat=ierr)
-    call nc_check(nf90_get_var(ncFileID,varID,varInt))
+    call CheckNC(nf90_get_var(ncFileID,varID,varInt))
   endif
   if(present(varReal))then
     if(associated(varReal))deallocate(varReal)
     allocate(varReal(num),stat=ierr)
-    call nc_check(nf90_get_var(ncFileID,varID,varReal))
+    call CheckNC(nf90_get_var(ncFileID,varID,varReal))
   endif
 end subroutine GetNCDim
 subroutine PrintNCDim(ncFileID,dOut)
@@ -281,7 +151,7 @@ subroutine PrintNCDim(ncFileID,dOut)
   character(len=64) :: fmtll
   call GetNCDim(ncFileID,'lon' ,numLon,varReal=lon)
   call GetNCDim(ncFileID,'lat' ,numLat,varReal=lat)
-  call GetNCDim(ncFileID,'k'   ,numLev)
+  call GetNCDim(ncFileID,'lev' ,numLev)
   call GetNCDim(ncFileID,'time',numRec)
   print "(/A,':',4(1X,A,':',I0))",'NC File: Dimensions',&
       'numLon',numLon,'numLat',numLat,'numLev',numLev,'numRec',numRec
@@ -346,13 +216,13 @@ subroutine GetNCVar(ncFileID,name,var2D,var3D,rec,unitconv)
   endif
 !e.g. ps(lon,lat,time) ;
   if(present(var2D))then
-    call nc_check(nf90_get_var(ncFileID,varID,var2D,start=beg,count=cnt))
+    call CheckNC(nf90_get_var(ncFileID,varID,var2D,start=beg,count=cnt))
     var2D=var2D*scale_factor+add_offset
     if(present(unitconv))var2D=var2D*unitconv
   endif
 !e.g. no2(lon,lat,k,time) ;
   if(present(var3D))then
-    call nc_check(nf90_get_var(ncFileID,varID,var3D,start=beg,count=cnt))
+    call CheckNC(nf90_get_var(ncFileID,varID,var3D,start=beg,count=cnt))
     var3D=var3D*scale_factor+add_offset
     if(present(unitconv))var3D=var3D*unitconv
   endif
@@ -365,9 +235,9 @@ subroutine GetNCRec(ncFileID,ncDate,rec,exact)
   logical,    intent(in),optional :: exact
   logical, parameter :: debug=.false.
 ! integer(4) :: ncTime
-! integer(4), dimension(:), pointer :: time
+! integer(4), dimension(:), pointer :: time=>null()
   real(8) :: ncTime
-  real(8), dimension(:), pointer :: time
+  real(8), dimension(:), pointer :: time=>null()
   real,  parameter :: halfsec=1e0/(24*3600*2e0)
 ! call GetNCDim(ncFileID,'time',numRec,varInt=time)
   call GetNCDim(ncFileID,'time',numRec,varReal=time)

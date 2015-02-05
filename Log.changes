@@ -153,7 +153,7 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-5th February 2015 Alvaro  2930
+5th February 2015 Alvaro  2930,2931
 
 ModelConstants_ml, Output_hourly:
 - HOURLYFILE_ending from ModelConstants_config
@@ -168,11 +168,35 @@ Sites_ml:
 - Use D2D unit conversion (f_2d%scale) for NXTRA_SITE_D2D output
 
 Derived_ml:
-- More units options for COLUMN output (MISC). 
+- Additional units options for COLUMN output (MISC). 
   Units can be specified in OutputConcs_config namelist
   by their unit name ('ug/m2,'molec/cm2,'1e15molec/cm2), or 
   by their keyword ('mcm2,'ugm2','e15mcm2').
-  
+
+Functions_ml,TimeDate_ExtraUtil_ml,ZD_3DVar/B_NMC/Util_ml
+- Move norm function(s) from Util_ml to Functions_ml.
+- Move compare_date from Util_ml to TimeDate_ExtraUtil_ml.
+
+NetCDF_ml,CheckStop_ml,EmisGet_ml,GridValues_ml,ZD_3DVar/B_NMC/Util_ml:
+- Rename/Move check in NetCDF_ml to CheckNC in CheckStop_ml.
+- Use CheckNC instead of local implementation.
+
+EmisGet_ml,GridValues_ml:
+- Explicitelly declare the variables/procuderes in use netcdf.
+
+NetCDF_ml:
+- Bug fix on Create_CDF_sondes.
+  Units with spaces in the text where wrongly pharsed.
+
+ZD_3DVar/B_NMC/Util_ml:
+- Read vertical coordinate ('lev'/'k') according to USE_EtaCOORDINATES.
+
+Nest_ml:
+- On FORECAST, use compare_date fuinction (TimeDate_ExtraUtil_ml)
+  to determine the dates/times to write out a restart/dump file.
+
+Functions_ml:
+- Remove Copyright notice as it will be added by mk.OpenSource.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 5th February  2014 Peter    2929

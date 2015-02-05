@@ -55,14 +55,14 @@ use OwnDataTypes_ml,        only: Deriv,TXTLEN_SHORT
 use Par_ml,                 only: MAXLIMAX,MAXLJMAX,GIMAX,GJMAX,IRUNBEG,JRUNBEG, &
                                   me, li0,li1,lj0,lj1,limax,ljmax
 use TimeDate_ml,            only: date,current_date,nmdays
-use TimeDate_ExtraUtil_ml,  only: idate2nctime,nctime2idate,date2string
+use TimeDate_ExtraUtil_ml,  only: idate2nctime,nctime2idate,date2string,compare_date
 use Units_ml,               only: Units_Scale
 use SmallUtils_ml,          only: find_index
 use ChemGroups_ml,          only: chemgroups
 implicit none
 
 INCLUDE 'mpif.h'
-INTEGER INFO
+INTEGER :: INFO
 
 ! Nesting modes:
 ! produces netcdf dump of concentrations if wanted, or initialises mode runs
@@ -333,14 +333,10 @@ subroutine wrtxn(indate,WriteNow)
 
   if(FORECAST)then ! FORECAST mode superseeds nest MODE
     outdate(:)%seconds=0   ! output only at full hours
-    if(.not.any((indate%year   ==outdate%year   .or.outdate%year   ==-1).and.&
-                (indate%month  ==outdate%month  .or.outdate%month  ==-1).and.&
-                (indate%day    ==outdate%day    .or.outdate%day    ==-1).and.&
-                (indate%hour   ==outdate%hour   .or.outdate%hour   ==-1).and.&
-                (indate%seconds==outdate%seconds.or.outdate%seconds==-1)))return
-   if(MasterProc) write(*,*)&
+    if(.not.compare_date(FORECAST_NDUMP,indate,outdate(:FORECAST_NDUMP),&
+                         wildcard=-1))return
+    if(MasterProc) write(*,*)&
       date2string(" Forecast nest/dump at YYYY-MM-DD hh:mm:ss",indate)
-
     istart=RUNDOMAIN(1)
     jstart=RUNDOMAIN(3)
     iend=RUNDOMAIN(2)

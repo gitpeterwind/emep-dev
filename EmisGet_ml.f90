@@ -1,107 +1,96 @@
-!> EmisGet_ml.f90 - A component of the EMEP MSC-W Chemical transport Model
-!*****************************************************************************! 
-! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
+module EmisGet_ml
 
-                     module EmisGet_ml
+use CheckStop_ml,     only: CheckStop, StopAll, check=>CheckNC
+use ChemSpecs,        only: NSPEC_ADV, NSPEC_TOT, species 
+use Country_ml,       only: NLAND, IC_NAT, IC_VUL, Country, &
+                             ! NMR-NH3 specific variables (hb NH3Emis)
+                             IC_NMR 
+use EmisDef_ml,       only: NSECTORS, ANTROP_SECTORS, NCMAX, FNCMAX, & 
+                            NEMIS_FILE, EMIS_FILE, & 
+                            ISNAP_SHIP, ISNAP_NAT, VOLCANOES_LL, &
+                          ! NMR-NH3 specific variables (for FUTURE )
+                            NH3EMIS_VAR,dknh3_agr,ISNAP_AGR,ISNAP_TRAF, &
+                            NROADDUST
+use GridAllocate_ml,  only: GridAllocate
+use GridValues_ml,    only: debug_proc,debug_li,debug_lj, i_fdom, j_fdom !cdfemis
+use GridValues_ml,    only: glon, glat, A_bnd, B_bnd
+use Io_ml,            only: open_file, NO_FILE, ios, IO_EMIS, &
+                             Read_Headers, read_line, PrintLog
+use KeyValueTypes,    only: KeyVal
+use ModelConstants_ml,only: NPROC, TXTLEN_NAME, &
+                             DEBUG,  KMAX_MID,KMAX_BND, Pref,&
+            SEAFIX_GEA_NEEDED, & ! only if emission problems over sea
+                             MasterProc,DEBUG_GETEMIS,DEBUG_ROADDUST,USE_ROADDUST
+use NetCDF_ml, only  : ReadField_CDF  !CDF_SNAP
 
-! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
-! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+use Par_ml,            only: MAXLIMAX, MAXLJMAX, limax, ljmax, me
+use SmallUtils_ml,     only: wordsplit, find_index
+use Volcanos_ml
+use netcdf,            only: NF90_OPEN,NF90_NOERR,NF90_NOWRITE,&
+                             NF90_INQUIRE,NF90_INQUIRE_VARIABLE,NF90_CLOSE
 
-
-  use CheckStop_ml,      only: CheckStop, StopAll
-  use ChemSpecs,         only: NSPEC_ADV, NSPEC_TOT, species 
-  use Country_ml,        only: NLAND, IC_NAT, IC_VUL, Country, &
-                               ! NMR-NH3 specific variables (hb NH3Emis)
-                               IC_NMR 
-  use EmisDef_ml,        only: NSECTORS, ANTROP_SECTORS, NCMAX, FNCMAX, & 
-                               NEMIS_FILE, EMIS_FILE, & 
-                               ISNAP_SHIP, ISNAP_NAT, VOLCANOES_LL, &
-                               ! NMR-NH3 specific variables (for FUTURE )
-                               NH3EMIS_VAR,dknh3_agr,ISNAP_AGR,ISNAP_TRAF, &
-                               NROADDUST
-  use GridAllocate_ml,   only: GridAllocate
-  use GridValues_ml, only: debug_proc,debug_li,debug_lj, i_fdom, j_fdom !cdfemis
-  use GridValues_ml, only: glon, glat, A_bnd, B_bnd
-  use Io_ml,             only: open_file, NO_FILE, ios, IO_EMIS, &
-                               Read_Headers, read_line, PrintLog
-  use KeyValueTypes,       only: KeyVal
-  use ModelConstants_ml, only: NPROC, TXTLEN_NAME, &
-                               DEBUG,  KMAX_MID,KMAX_BND, Pref,&
-              SEAFIX_GEA_NEEDED, & ! only if emission problems over sea
-                               MasterProc,DEBUG_GETEMIS,DEBUG_ROADDUST,USE_ROADDUST
-  use NetCDF_ml, only  : ReadField_CDF  !CDF_SNAP
-
-  use Par_ml,            only: MAXLIMAX, MAXLJMAX, limax, ljmax, me
-  use SmallUtils_ml,     only: wordsplit, find_index
-  use Volcanos_ml
-  use netcdf
-  use NetCDF_ml, only  : check
-
-  implicit none
-  private
+implicit none
+private
 
  ! subroutines:
+public  :: EmisGet           ! Collects emissions of each pollutant
+public  :: EmisGetCdf        ! cdfemis
+public  :: EmisSplit         ! => emisfrac, speciation of voc, pm25, etc.
+public  :: EmisHeights       ! => nemis_kprofile, emis_kprofile
+                             !     vertical emissions profile
+public  :: RoadDustGet       ! Collects road dust emission potentials
+public  :: femis             ! Sets emissions control factors 
+private :: CountEmisSpecs    !
 
-  public  :: EmisGet           ! Collects emissions of each pollutant
-  public  :: EmisGetCdf        ! cdfemis
-  public  :: EmisSplit         ! => emisfrac, speciation of voc, pm25, etc.
-  public  :: EmisHeights       ! => nemis_kprofile, emis_kprofile
-                               !     vertical emissions profile
-  public  :: RoadDustGet       ! Collects road dust emission potentials
-  public :: femis             ! Sets emissions control factors 
-  private :: CountEmisSpecs    !
+INCLUDE 'mpif.h'
+INTEGER :: INFO
+!logical, private, save :: my_first_call = .true.
+logical, private, save :: my_first_road = .true.
 
-
-  INCLUDE 'mpif.h'
-  INTEGER STATUS(MPI_STATUS_SIZE),INFO
-!  logical, private, save :: my_first_call = .true.
-  logical, private, save :: my_first_road = .true.
-
-  ! e_fact is the emission control factor (increase/decrease/switch-off)
-  ! e_fact is read in from the femis file and applied within EmisGet
-  real, public, save, allocatable, &
+! e_fact is the emission control factor (increase/decrease/switch-off)
+! e_fact is read in from the femis file and applied within EmisGet
+real, public, save, allocatable, &
 !         dimension(NSECTORS,NLAND,NEMIS_FILE)  :: e_fact 
-         dimension(:,:,:)  :: e_fact 
+   dimension(:,:,:)  :: e_fact 
 
-  ! emisfrac is used at each time-step of the model run to split
-  ! emissions such as VOC, PM into species. 
+! emisfrac is used at each time-step of the model run to split
+! emissions such as VOC, PM into species. 
 
-  integer, public, parameter :: NMAX = NSPEC_ADV 
-  integer, public, save :: nrcemis, nrcsplit
-  integer, public, dimension(NEMIS_FILE) , save :: emis_nsplit
-  real, public,allocatable, dimension(:,:,:), save :: emisfrac
-  integer, public,allocatable, dimension(:), save :: iqrc2itot
-  integer, public, dimension(NSPEC_TOT), save :: itot2iqrc
-  integer, public, dimension(NEMIS_FILE), save :: Emis_MolWt
-  real, public,allocatable, dimension(:), save :: emis_masscorr
-  real, public,allocatable, dimension(:), save :: roaddust_masscorr
+integer, public, parameter :: NMAX = NSPEC_ADV 
+integer, public, save :: nrcemis, nrcsplit
+integer, public, dimension(NEMIS_FILE) , save :: emis_nsplit
+real, public,allocatable, dimension(:,:,:), save :: emisfrac
+integer, public,allocatable, dimension(:), save :: iqrc2itot
+integer, public, dimension(NSPEC_TOT), save :: itot2iqrc
+integer, public, dimension(NEMIS_FILE), save :: Emis_MolWt
+real, public,allocatable, dimension(:), save :: emis_masscorr
+real, public,allocatable, dimension(:), save :: roaddust_masscorr
 
-  ! vertical profiles for SNAP emis, read from EmisHeights.txt
-  integer, public, save :: nemis_kprofile
-  real, public,allocatable, dimension(:,:), save :: emis_kprofile
-  real, public,allocatable, dimension(:,:), save :: emis_hprofile
+! vertical profiles for SNAP emis, read from EmisHeights.txt
+integer, public, save :: nemis_kprofile
+real, public,allocatable, dimension(:,:), save :: emis_kprofile
+real, public,allocatable, dimension(:,:), save :: emis_hprofile
 
-  ! some common variables
-  character(len=80), private :: fname             ! File name
-  character(len=80), private :: errmsg
+! some common variables
+character(len=80), private :: fname             ! File name
+character(len=80), private :: errmsg
 
- ! Import list of the emitted species we need to find in the 
- ! emissplit files.
-  include 'CM_EmisSpecs.inc'
-  logical, dimension(NEMIS_SPECS) :: EmisSpecFound = .false.
+! Import list of the emitted species we need to find in the 
+! emissplit files.
+include 'CM_EmisSpecs.inc'
+logical, dimension(NEMIS_SPECS) :: EmisSpecFound = .false.
 
-  !CDF cdfemis tests
-   real, public, save,  allocatable,dimension(:,:) ::&
-      sumcdfemis ! Only used for MasterProc
-   real, allocatable, private, save,  dimension(:,:) :: cdfemis
-   integer, allocatable, public, save,  dimension(:,:) :: nGridEmisCodes
-   integer, allocatable, public, save,  dimension(:,:,:):: GridEmisCodes
-   real, allocatable, public, save,  dimension(:,:,:,:,:):: GridEmis
- contains
+!CDF cdfemis tests
+real, public, save,  allocatable,dimension(:,:) ::&
+  sumcdfemis ! Only used for MasterProc
+real, allocatable, private, save,  dimension(:,:) :: cdfemis
+integer, allocatable, public, save,  dimension(:,:) :: nGridEmisCodes
+integer, allocatable, public, save,  dimension(:,:,:):: GridEmisCodes
+real, allocatable, public, save,  dimension(:,:,:,:,:):: GridEmis
 
+contains
 
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
   subroutine EmisGetCdf(iem, fname,incl,excl)
    integer, intent(in) :: iem ! index in EMIS_FILE array and GridEmis output
    character(len=*), intent(in)    :: fname

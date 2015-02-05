@@ -19,7 +19,8 @@ public :: &
   nctime2idate,     & ! idate2nctime inverse
   date2nctime,      & ! date (various formats)--> secs since(int)/days since(real)
   nctime2date,      & ! date2nctime inverse
-  nctime2string       ! as date2string, but from  secs/days since...
+  nctime2string,    & ! as date2string, but from  secs/days since...
+  compare_date        ! compare dates, accepts wildcards
 
 interface date2string
   module procedure detail2str,cd2str,int2str,ts2str,cd2str_add,int2str_add
@@ -32,6 +33,7 @@ end interface idate2nctime
 interface nctime2idate
   module procedure secs1970_to_int,days1900_to_int
 end interface nctime2idate
+
 interface date2nctime
   module procedure ts_to_secs1970,cd_to_secs1970,int_to_secs1970,&
                    ts_to_days1900,cd_to_days1900,int_to_days1900
@@ -524,4 +526,23 @@ subroutine assign_NTERM(NTERM)
   endif
 endsubroutine assign_NTERM
 
+function compare_date(n,dateA,dateB,wildcard) result(equal)
+  implicit none
+  integer,   intent(in)           :: n
+  type(date),intent(in)           :: dateA,dateB(n)
+  integer,   intent(in), optional :: wildcard
+  logical :: equal
+  integer :: dA(5),dB(5),i
+  equal=.false.
+  dA=(/dateA%year,dateA%month,dateA%day,dateA%hour,dateA%seconds/)
+  do i=1,n
+    dB=(/dateB(i)%year,dateB(i)%month,dateB(i)%day,&
+         dateB(i)%hour,dateB(i)%seconds/)
+    if(present(wildcard))then
+      equal=equal.or.all((dA==dB).or.(dA==wildcard).or.(dB==wildcard))
+    else
+      equal=equal.or.all(dA==dB)
+    endif
+  enddo
+endfunction compare_date
 ENDMODULE TimeDate_ExtraUtil_ml

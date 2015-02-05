@@ -11,11 +11,11 @@ module CheckStop_ml
 !   (e)  logical  expression = true  (e.g. lu < 0 for landuse index)
 !   (f)  range    outside [range(0)..range(1)]
 
+use netcdf, only: NF90_NOERR,NF90_STRERROR
 implicit none
 INCLUDE 'mpif.h'
-INTEGER, private :: STATUS(MPI_STATUS_SIZE),INFO
 
-public  :: StopAll, CheckStop
+public  :: StopAll, CheckStop, CheckNC
 private :: CheckStop_ok, CheckStop_okinfo, CheckStop_int1, CheckStop_int2, &
            CheckStop_str2, CheckStop_TF, CheckStop_range
 
@@ -33,6 +33,7 @@ contains
 
 subroutine StopAll(errmsg)
   character(len=*), intent(in) :: errmsg
+  INTEGER :: INFO
   ! Stops all processors.
   ! MPI_COMM_WORLD indicates all processors, in other programs you could have
   ! different groups of processes.
@@ -120,6 +121,18 @@ subroutine CheckStop_range(var,vrange,infomsg)  ! test .not.(vrange(0)<=var<=vra
     call StopAll(infomsg)
   endif
 endsubroutine CheckStop_range
+
+subroutine CheckNC(status,errmsg)
+  implicit none
+  integer, intent ( in) :: status
+  character(len=*), intent(in), optional :: errmsg
+
+  if(status /= nf90_noerr) then
+    print *, trim(nf90_strerror(status))
+    if(present(errmsg)) print *, "ERRMSG: ", trim(errmsg)
+    call StopAll("Error in netcdf routine")
+  endif
+endsubroutine CheckNC
 
 endmodule CheckStop_ml
 
