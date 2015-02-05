@@ -153,13 +153,14 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-5th February 2015 Alvaro  2930,2931
+5th February 2015 Alvaro  2930--2932
 
 ModelConstants_ml, Output_hourly:
 - HOURLYFILE_ending from ModelConstants_config
 
 Output_hourly:
-- PMwater @ SRF fix
+- Fix bug on PMwater at SRF level, likely introduced in 2597 (June 2013).
+  Output was PM25_water (ambient) instead of PM25_water_rh50.
 
 ZD_OZONE/My_Outputs_ml:
 - DEBUG_PM10 option for MACC_ENS/MACC_EVA
@@ -173,11 +174,13 @@ Derived_ml:
   by their unit name ('ug/m2,'molec/cm2,'1e15molec/cm2), or 
   by their keyword ('mcm2,'ugm2','e15mcm2').
 
-Functions_ml,TimeDate_ExtraUtil_ml,ZD_3DVar/B_NMC/Util_ml
+Functions_ml,TimeDate_ExtraUtil_ml,ZD_3DVar/B_NMC/Util_ml,
+ZD_3DVar/Analysis/DA_3DVar_ml,DA_Obs_ml,DA_Bias_ml:
 - Move norm function(s) from Util_ml to Functions_ml.
 - Move compare_date from Util_ml to TimeDate_ExtraUtil_ml.
 
-NetCDF_ml,CheckStop_ml,EmisGet_ml,GridValues_ml,ZD_3DVar/B_NMC/Util_ml:
+NetCDF_ml,CheckStop_ml,EmisGet_ml,GridValues_ml,
+ZD_3DVar/B_NMC/Util_ml,Unimod_B_nmc:
 - Rename/Move check in NetCDF_ml to CheckNC in CheckStop_ml.
 - Use CheckNC instead of local implementation.
 
@@ -186,17 +189,60 @@ EmisGet_ml,GridValues_ml:
 
 NetCDF_ml:
 - Bug fix on Create_CDF_sondes.
-  Units with spaces in the text where wrongly pharsed.
-
-ZD_3DVar/B_NMC/Util_ml:
-- Read vertical coordinate ('lev'/'k') according to USE_EtaCOORDINATES.
+  Units with spaces in the text where wrongly parsed.
 
 Nest_ml:
-- On FORECAST, use compare_date fuinction (TimeDate_ExtraUtil_ml)
+- On FORECAST, use compare_date function (TimeDate_ExtraUtil_ml)
   to determine the dates/times to write out a restart/dump file.
 
 Functions_ml:
 - Remove Copyright notice as it will be added by mk.OpenSource.
+
+Makefile:
+- delegate 'clean' & 'modules' to 3DVar/Makefile for %-Bnmc & %-3DVar targets
+
+run.pl:
+- Use variable $KEEP_LINKS instead of $BENCHMARK{'cleanup'} to indicate if the
+  links to input files are to be kept or removed
+- CWF MAKEMODE and CWFBC for MACC EVA 2013 runs
+
+ZD_3DVar/B_NMC/Unimod_B_nmc:
+- Read nv from and USE_EtaCOORDINATES from namelist.nml
+- Add logical variables trimX/trimY (unused) and deltaDateHH,
+  read from namelist.nml
+
+ZD_3DVar/B_NMC/Util_ml:
+- Read vertical coordinate ('lev'/'k') according to USE_EtaCOORDINATES.
+
+ZD_3DVar/Makefile,B_NMC/spectralcov_ml:
+- remove -DDEBUG_B cpp option and #ifdef DEBUG_B code
+- temporally disable BIAS_CORRECTION
+
+ZD_3DVar/B_NMC/spectralcov_ml:
+- Resize nstar(nex),mt(nex,nex),nt(nex,nex)
+  to nstar(nxex*nyex),mt(nxex*nyex,nex),nt(nxex*nyex,nex)
+- New function atan2PI to reproduce MATCH code.
+  Intrinsic atan2 gives a different result.
+
+ZD_3DVar/B_NMC/covmat_ml:
+- write_stat:
+  - revert to old code on PS calculation (avoid real overflow)
+  - reference level for correlations (lref)
+  - check nmin/nmax range
+- diagonalise_covmat
+  - Resize lambda(nv),ifail(nv)
+    to vt(nbg,nv),lambda(nbg),ifail(nbg)
+
+ZD_3DVar/B_NMC/stddev_ml:
+- 6-hourly NMC
+
+ZD_3DVar/Analysis/DA_Bias_ml:
+- Change default value of biasStdDev (biasData%stddev read from BIAS_PREDICTOR namelist)
+  to avoid DIV0 errors on new obs types.
+
+ZD_3DVar/B_NMC/Unimod_B_nmc,spectralcov_ml,Util_ml,
+ZD_3DVar/Analysis/DA_3DVar_ml,DA_Obs_ml,DA_Bias_ml:
+- Use HERE(MSG) macro on CheckStop calls
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 5th February  2014 Peter    2929

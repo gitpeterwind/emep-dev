@@ -118,8 +118,9 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
-($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2919"   ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA","EMEP");
+($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2932"   ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA","EMEP");
 
+my $KEEP_LINKS=0; # do not cleanup links
 my %BENCHMARK;
 # OpenSource 2008
 #  %BENCHMARK = (grid=>"EMEP"  ,year=>2005,emis=>"Modrun07/OpenSourceEmis"           ,chem=>"EmChem03");
@@ -132,13 +133,14 @@ my %BENCHMARK;
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2009,emis=>"Modrun11/2011-Trend2009-CEIP");
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2010,emis=>"Modrun12/2012-Trend2010-CEIP",chem=>"EmChem09soa",make=>"EMEP2010");
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2011,emis=>"Modrun13/2013-Trend2011-CEIP",chem=>"EmChem09soa",make=>"EMEP2011");
+#  %BENCHMARK = (grid=>"EECCA" ,year=>2012,emis=>"Modrun14/2014-Trend2012-CEIP",chem=>"EmChem09soa",make=>"EMEP");
 # Alternative domains:
 #  %BENCHMARK = (grid=>"TNO28" ,year=>2008,emis=>"emis_TNO28"         );
 #  %BENCHMARK = (grid=>"MACC02",year=>2008,emis=>"2008_emis_EMEP_MACC") ;
 if (%BENCHMARK) {
   $BENCHMARK{'archive'} = 1;                        # save summary info in $DataDir
   $BENCHMARK{'debug'} = $BENCHMARK{'archive'}; # chech if all debug flags are .false.
-  $BENCHMARK{'cleanup'}=$BENCHMARK{'archive'}; # remove @list_of_files after run 
+  $KEEP_LINKS=not $BENCHMARK{'archive'}; # keep @list_of_files after run 
 # Default setting, if not previously specified
   $BENCHMARK{'chem'}  = "EmChem09soa"
     unless $BENCHMARK{'chem'};  # chemical mecanism, e.g. OpenSource 2008
@@ -183,11 +185,13 @@ if ($CWF) {
 ##$CWFDUMP[0]=date2str($CWFBASE."                 ,"%Y-1-1"); # dump/nest every day at 00
   $CWFDUMP[0]=date2str($CWFBASE." 1 day"          ,"%Y%m%d"); # 1st dump/nest
   $CWFDUMP[1]=date2str($CWFBASE." 2 day"          ,"%Y%m%d"); # 2nd dump/nest
-  $MAKEMODE=($eCWF)?"eEMEP":"MACC";    # Standard Forecast model setup
-##$MAKEMODE=($eCWF)?"eEMEP2010":"MACC-EVA2010";    # 2010 special
-##$MAKEMODE=($eCWF)?"eEMEP2011":"MACC-EVA2011";    # 2011 special
-##$MAKEMODE=($eCWF)?"eEMEP":"MACC-EVA";            # 2012 special
-##$MAKEMODE=($eCWF)?"eEMEP2013":"MACC";            # 2013 special
+  given(substr($CWFBASE,0,4)){
+    when([2010]){$MAKEMODE=($eCWF)?"eEMEP2010":"MACC-EVA2010";} # 2010 EVA
+    when([2011]){$MAKEMODE=($eCWF)?"eEMEP2011":"MACC-EVA2011";} # 2011 EVA
+    when([2012]){$MAKEMODE=($eCWF)?"eEMEP"    :"MACC-EVA";}     # 2012 EVA
+    when([2013]){$MAKEMODE=($eCWF)?"eEMEP2013":"MACC-EVA";}     # 2013 EVA
+    default     {$MAKEMODE=($eCWF)?"eEMEP":"MACC";} # Standard Forecast model setup
+  }
   $MAKEMODE="MACC-EVA" if($ENV{"PBS_JOBNAME"}=~/eva/);# EVA run
   $MAKEMODE="MACC-NMC" if($ENV{"PBS_JOBNAME"}=~/nmc/);# NMC run
   $MAKEMODE .="-3DVar" if($aCWF);
@@ -344,13 +348,14 @@ if ($CWF) {
   $CWFIC =~ s|run/eemep|work/emep/restart| if $eCWF and ($USER eq $FORCAST);
   $CWFBC  = "$DataDir/$GRID/Boundary_conditions/"; # IFS-MOZ/C-IFS
   if($MAKEMODE=~/(EVA|NMC)/){
-    $CWFBC .= ($year <= 2009)?
-      "%Y_EVA/h%Y%m%d00_raqbc.nc":            # IFS-MOZ ReAnalysis
-      "%Y_EVA/EVA_%Y%m%d_EU_AQ.nc";           # EVA 2010/2011/2012
+##  $CWFBC .= "YYYY_EVA/hYYYYMMDD00_raqbc.nc":     # IFS-MOZ ReAnalysis
+    $CWFBC .= ($CWFBASE <= 20121231)?
+      "YYYY_EVA/EVA_YYYYMMDD_EU_AQ.nc":    # EVA 2008..2012
+      "YYYY_EVA/EVA_YYYYMMDD_EU_EVA.nc";   # EVA 2013
   }else{
     $CWFBC .= ($CWFBASE <= 20140917)?
-      "%Y_ENS/cwf-mozifs_h%Y%m%d00_raqbc.nc": # IFS-MOZ Forecast
-      "%Y_ENS/cwf-cifs_h%Y%m%d00_raqbc.nc";   # C-IFS   Forecast
+      "YYYY_ENS/cwf-mozifs_hYYYYMMDD00_raqbc.nc": # IFS-MOZ Forecast
+      "YYYY_ENS/cwf-cifs_hYYYYMMDD00_raqbc.nc";   # C-IFS   Forecast
   }
  ($CWFPL = $CWFIC) =~ s|_dump|_pollen|;
 }
@@ -423,9 +428,7 @@ my $TNOemisDir = "/global/work/$SVETLANA/Emis_TNO"; # TNO EC/OC emissions
 #$emisdir = $TNOemisDir if $EUCAARI;
 
 given($GRID){
-  when("GEMS025"){ $pm_emisdir = $emisdir; }
-  when("MACC02",){ $pm_emisdir = $emisdir; }
-  when("MACC14",){ $pm_emisdir = $emisdir; }
+  when("GEMS025","MACC02","MACC14"){ $pm_emisdir = $emisdir; }
   when(/TNO/)    { $pm_emisdir = $emisdir; }
   when("GLOBAL") { $pm_emisdir = $emisdir; }
   default {
@@ -602,7 +605,7 @@ foreach my $scenflag ( @runs ) {
 
   my $runlabel1 = "$scenario";   # NO SPACES! SHORT name (used in CDF names)
   my $svn = "$ProgDir/.version";
-     $svn = (-e $svn)?EMEP::Sr::slurp($svn):qx(svnversion -n);
+  chop($svn = (-e $svn)?qx(cat -s $svn):qx(svnversion -n));
   my $runlabel2 = "$testv\_$Chem\_svn$svn\_$scenario\_$year\_Trend$iyr_trend";   # NO SPACES! LONG (written into CDF files)
 
   my $RESDIR = "$WORKDIR/$scenario";
@@ -1192,7 +1195,7 @@ EOT
   if ($DRY_RUN or $SR){ # keep femis.dat
     @list_of_files = grep {$_ ne 'femis.dat'} @list_of_files;
   }
-  unlink ( @list_of_files ) unless(%BENCHMARK and not $BENCHMARK{'cleanup'});
+ unlink ( @list_of_files ) unless($KEEP_LINKS);
 
 #tar sites and sondes. Use sondes to check as these are produced les frequently.
   my $last_sondes = sprintf  "sondes.%02d%02d", $mm2, $yy;

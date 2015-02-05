@@ -1,3 +1,6 @@
+#define STRING2(x) #x
+#define STRING(x) STRING2(x)
+#define HERE(MSG) MSG//" ("//__FILE__//":"//STRING(__LINE__)//")."
 module covmat_ml
 use Par_ml,           only: me
 use DA_ml,            only: debug=>DA_DEBUG,dafmt=>da_fmt_msg,damsg=>da_msg
@@ -10,7 +13,6 @@ use spectralcov,      only: covmat,ucovmat,ncorr,&
                             kx,kxmin,ky,kymin,lensav,wsave,&
                             stddev,sqrt_gamma,vt,sqrt_lambda,spec_allocate,&
                             nstar,w=>intweight,mt,nt,DAPREC
-use Util_ml,          only: io_check
 #ifdef MKL
 ! use MKL95_LAPACK,     only: lamch=>dlamch, spevx
 use My_LAPACK77_ml,   only: lamch=>dlamch
@@ -34,28 +36,28 @@ integer :: ierr,nvar
 ! call allocvar(ichemObs,nchemObs,(/1,nchemObs/),'ichemObs',dafmt)
 ! call allocvar(ichemNoObs,nchemNoObs,(/0,nchemNoObs/),'ichemNoObs',dafmt)
   if(allocated(ichemInv))then
-    call CheckStop(size(ichemInv)/=nchem,'Wrong size ichemInv.')
+    call CheckStop(size(ichemInv)/=nchem,HERE('Wrong size ichemInv'))
   else
     allocate(ichemInv(nchem),stat=ierr)
-    call CheckStop(ierr,'Allocation error: ICHEMINV.')
+    call CheckStop(ierr,HERE('Allocate ICHEMINV'))
     ichemInv=0
   endif
-  call CheckStop(nchemobs<=0.or.nchemobs>nchem,'Wrong nchemObs.')
+  call CheckStop(nchemobs<=0.or.nchemobs>nchem,HERE('Wrong nchemObs'))
   if(allocated(ichemObs))then
-    call CheckStop(size(ichemObs)/=nchemObs,'Wrong size ichemObs.')
+    call CheckStop(size(ichemObs)/=nchemObs,HERE('Wrong size ichemObs'))
   else
     allocate(ichemObs(nchemObs),stat=ierr)
-    call CheckStop(ierr,'Allocation error: ICHEMOBS.')
+    call CheckStop(ierr,HERE('Allocate ICHEMOBS'))
     ichemObs=0
   endif
-  call CheckStop(nchemNoObs<0.or.nchemNoObs>nchem,'Wrong nchemNoObs.')
+  call CheckStop(nchemNoObs<0.or.nchemNoObs>nchem,HERE('Wrong nchemNoObs'))
   if(allocated(ichemNoObs))then
-    call CheckStop(size(ichemNoObs)/=nchemNoObs,'Wrong size ichemNoObs.')
+    call CheckStop(size(ichemNoObs)/=nchemNoObs,HERE('Wrong size ichemNoObs'))
   elseif(nchemNoObs==0) then
     print dafmt,'WARNING nchemNoObs==0'
   else
     allocate(ichemNoObs(nchemNoObs),stat=ierr)
-    call CheckStop(ierr,'Allocation error: ICHEMNOOBS.')
+    call CheckStop(ierr,HERE('Allocate ICHEMNOOBS'))
     ichemNoObs=0
   endif
   nchemObs=0
@@ -80,16 +82,16 @@ integer :: ierr
 logical :: allocate_all
   allocate_all=.true.;if(present(selective))allocate_all=.not.selective
   call CheckStop(.not.(allocated(ichemobs).and.(allocated(ichemnoobs).or.nchemNoObs==0)),&
-     'Allocation error: COVMAT/UCOVMAT. Frist call set_chemobs_idx.')
+     HERE('Allocate COVMAT/UCOVMAT. Frist call set_chemobs_idx'))
   if(.not.allocated(covmat).and.allocate_all)then
    !allocate(covmat(ncorr,nex),stat=ierr)
     allocate(covmat(ncorr,nkstar),stat=ierr)
-    call CheckStop(ierr,'Allocation error: COVMAT.')
+    call CheckStop(ierr,HERE('Allocate COVMAT'))
     covmat=0e0
   endif
   if(.not.allocated(ucovmat).and.nchemNoObs>0)then
     allocate(ucovmat(nlev*nchemnoobs,nlev*nchemobs,nkstar),stat=ierr)
-    call CheckStop(ierr,'Allocation error: UCOVMAT.')
+    call CheckStop(ierr,HERE('Allocate UCOVMAT'))
     ucovmat=0e0
   endif
 end subroutine allocate_covmat
@@ -231,9 +233,6 @@ subroutine write_stat(nex,nxex,nyex,nlev,gamma,avgstddev)
   character*(19) file
 
   integer bindex,bidx
-
-! #     include "CONST.INC"
-
   bindex(m,n)=m+((n-1)*(2*nlev*nchemobs-n))/2
   pi=acos(-1e0)
 
@@ -244,17 +243,14 @@ subroutine write_stat(nex,nxex,nyex,nlev,gamma,avgstddev)
   do l=1,nlev
     do k=1,nchemobs
       ibox=(k-1)*nlev+l
-!     sps=0e0
-!     do ik=1,nkstar
-!       PS(l,k,ik)=kstar(ik)*gamma(ibox,ik)/float(nex**2)
-!       sps=sps+PS(l,k,ik)
-!     enddo
-!     do ik=1,nkstar
-!       PS(l,k,ik)=PS(l,k,ik)/sps
-!     enddo
-      PS(l,k,:)=kstar(:)*gamma(ibox,:)
-      sps=sum(PS(l,k,:))*float(nex**2)
-      PS(l,k,:)=PS(l,k,:)/sps
+      sps=0e0
+      do ik=1,nkstar
+        PS(l,k,ik)=kstar(ik)*gamma(ibox,ik)/float(nex**2)
+        sps=sps+PS(l,k,ik)
+      enddo
+      do ik=1,nkstar
+        PS(l,k,ik)=PS(l,k,ik)/sps
+      enddo
     enddo
   enddo
 !-----------------------------------------------------------------------
@@ -300,7 +296,7 @@ subroutine write_stat(nex,nxex,nyex,nlev,gamma,avgstddev)
 !-----------------------------------------------------------------------
 ! write vertical correlations as a function of horizontal scale:
 !-----------------------------------------------------------------------
-  lref=18 !reference level for correlations:
+  lref=min(18,nlev) !reference level for correlations:
 !-------
 
   open(10,file='vertical_corr.dat')
@@ -386,9 +382,12 @@ subroutine write_stat(nex,nxex,nyex,nlev,gamma,avgstddev)
       denom=0e0
       do m=1,nxex
         do n=1,nyex
+! AMVB 2014-11-10
+if(n<=nmin(m).or.n>=nmax(m))then
           ik=ikstar(m,n)
           num=num+covmat(bidx,ik)
           denom=denom+covmat(bidx,ik)*kstar(ik)**2
+endif
         enddo
       enddo
       lscale(k)=rdim*nex * sqrt(2e0*num/denom) /(2e0*pi)
@@ -461,12 +460,8 @@ subroutine normalise_covmat(nxex,nyex,nlev,nttot)
   call write_stat(nex,nxex,nyex,nlev,                    gamma,avgstddev)
 
   !convert gamma to sqrt(gamma):
-! do ik=1,nkstar
-!   do ibox=1,nlev*nchemobs
-!     gamma(ibox,ik)=sqrt(gamma(ibox,ik))
-!   enddo
-! enddo
-  gamma(:,:)=sqrt(gamma(:,:))
+  forall(ik=1:nkstar,ibox=1:nlev*nchemobs) &
+    gamma(ibox,ik)=sqrt(gamma(ibox,ik))
 
   !use gamma to normalise covariance matrix:
   do ik=1,nkstar
@@ -558,8 +553,8 @@ subroutine write_covmat(nbg,nv,ik,vt,lambda)
   write(6,*)'Number of eigenvalues larger than 2 percent of max ',nv02
   write(6,*)'Number of eigenvalues larger than 1 percent of max ',nv01
 
- !write(6,*)'Conditioning number: ',lambda(nv)/lambda(1)
-  write(6,*)'Conditioning number: ',maxval(abs(lambda))/minval(abs(lambda))
+  write(6,*)'Conditioning number: ',&
+    maxval(abs(lambda))/max(minval(abs(lambda)),1e-30)
 
   write(6,*)'lambda'
   write(6,*)(lambda(k),k=1,nv)
@@ -567,12 +562,9 @@ subroutine write_covmat(nbg,nv,ik,vt,lambda)
 ! Write \Lambda^{1/2} and X to files, where \Lambda is the diagonal
 ! matrix of eigenvalues, and X is the orthogonal matrix of eigenvectors:
 !-----------------------------------------------------------------------
-! do k=1,nv
-!   lambda(k)=sqrt(max(0e0,lambda(k)))
-! enddo
   lambda(:)=sqrt(max(0e0,lambda(:)))
 
-  call CheckStop(ik>99999,'ERROR: ik too large.')
+  call CheckStop(ik>99999,HERE('ik too large'))
 
   write (file,'(a,"_",i5.5,".",a)')"eigenvec",ik,"cov"
   open(10,file=file)
@@ -594,29 +586,23 @@ subroutine diagonalise_covmat(nex,nxex,nyex,nx,ny,nlev,nchem,nkstar,nstarmax)
 ! background error covariance matrix
 ! @author M Kahnert
 !-----------------------------------------------------------------------
-  implicit none
-
-  integer nex,nxex,nyex,nx,ny,nlev,nchem,nkstar
+  integer :: nex,nxex,nyex,nx,ny,nlev,nchem,nkstar,nstarmax
  !real kstar(nex)
  !integer ikstar(nxex,nyex),nstarmax
-  integer nstarmax
 
 ! real vt(nlev*nchemobs,nv),lambda(nv)
 ! real accu,work(8*nlev*nchemobs)
 ! integer iw(5*nlev*nchemobs),ifail(nv),il,iu,nfound,ik,iostat
-  real, allocatable :: vt(:,:),lambda(:)
   integer, allocatable :: ifail(:)
+  real, allocatable :: vt(:,:),lambda(:)
 #ifdef MKL
-  real accu
+  real ::accu
   integer(kind=4) :: il,iu,iostat ! for compatibility with mkl_lapack95_lp64
-  integer nfound,ik
+  integer :: nfound,ik
 #else
-  real accu,work(8*nlev*nchemobs)
-  integer iw(5*nlev*nchemobs),il,iu,nfound,ik,iostat
+  real :: accu,work(8*nlev*nchemobs)
+  integer :: iw(5*nlev*nchemobs),il,iu,nfound,ik,iostat
 #endif
-
-
-! #     include "DATAASSIM.INC"
 
   nbg=nlev*nchemobs
   nv=min(nv,nbg)
@@ -629,21 +615,21 @@ subroutine diagonalise_covmat(nex,nxex,nyex,nx,ny,nlev,nchem,nkstar,nstarmax)
  !accu=1e0/float(2**22)
   accu=2*lamch('S')
 #endif
- !accu=max(accu,1e-3*DAPREC)<-- TEY THIS NEX TIME
+ !accu=max(accu,1e-3*DAPREC)<-- TRY THIS IN FUTURE
 
-  allocate(vt(nbg,nv),lambda(nv),ifail(nv),stat=iostat)
-  call CheckStop(iostat,'Allocation error: vt,lambda.')
+  allocate(vt(nbg,nv),lambda(nbg),ifail(nbg),stat=iostat)
+  call CheckStop(iostat,HERE('Allocate vt,lambda,ifail'))
 
   do ik=1,nkstar
     vt=0e0
-!$$$call sspev('V','L',nbg,covmat(1,ik),lambda,vt,nbg,work,iostat)
-!$$$call CheckStop(iostat,"ERROR in ssyev")
+!##call sspev('V','L',nbg,covmat(1,ik),lambda,vt,nbg,work,iostat)
+!##call CheckStop(iostat,HERE("ssyev"))
    !write(6,*)'calling sspevx with accuracy ',accu
    !write(6,*)'il,iu=',il,iu
 !       [s/d]spevx
 !  call dspevx('V','I','L',nbg,covmat(1,ik),0,0,il,iu,&
 !        accu,nfound,lambda,vt,nbg,work,iw,ifail,iostat)
-!  call CheckStop(iostat,"ERROR in sspevx")
+!  call CheckStop(iostat,HERE("sspevx"))
    !accu=1e-6
     write(damsg,"(A,'=',E12.3,2(:,',',1X,A,'=',I0))"),&
         'accuracy',accu,'il',il,'iu',iu
@@ -666,20 +652,21 @@ subroutine diagonalise_covmat(nex,nxex,nyex,nx,ny,nlev,nchem,nkstar,nstarmax)
       print *,"WARNING:",iostat,"eigenvectors failed to converge:",ifail(1:iostat)
       print *,"TRY TO REDUCEING 'nv' to",minval((/nv,nfound,nv-iostat/))
     endif
-    call CheckStop(iostat<0,"ERROR in spevx: i-th argument had an illegal value")
-    call CheckStop(iostat>0,"ERROR in spevx: i eigenvectors failed to converge")
+    call CheckStop(iostat<0,HERE("spevx, i-th argument had an illegal value"))
+    call CheckStop(iostat>0,HERE("spevx, i eigenvectors failed to converge"))
 !-----------------------------------------------
 !     Write output files and diagnostics
 !-----------------------------------------------
    !call write_covmat(nex,nxex,nyex,nbg,nv,ik,kstar,ikstar,nkstar,vt,lambda)
-    call write_covmat(nbg,nv,ik,vt,lambda)
+    call write_covmat(nbg,nv,ik,vt,lambda(:nv))
   enddo
-  deallocate(vt,lambda,ifail)
+  deallocate(vt,lambda,ifail,stat=iostat)
+  call CheckStop(iostat,HERE('Deallocate vt,lambda,ifail'))
 
   open(12,file='dim.tmp')
   write(12,*)nex,nxex,nyex,nbg,nv,nx,ny,nlev,nchem,nchemobs,nstarmax
   close(12)
-end subroutine diagonalise_covmat
+endsubroutine diagonalise_covmat
 subroutine read_speccov
 !-----------------------------------------------------------------------
 ! @description
@@ -700,7 +687,7 @@ subroutine read_speccov
   character(len=18) file
 
   open(10,file='dim.tmp',status='OLD',iostat=ierr)
-  call io_check(ierr,'open dim.tmp')
+  call CheckStop(ierr,HERE('open dim.tmp'))
   if(debug.and.me==0)print dafmt,'Reading extended domain size from file'
   read(10,*)nex,nxex,nyex,nbg1,nv1,nx,ny,nlev,nchem,nchemobs,nstarmax
   close(10)
@@ -709,7 +696,7 @@ subroutine read_speccov
     'nlev',nlev,'nchem',nchem,'nchemobs',nchemobs,'nstarmax',nstarmax
   call spec_allocate(selective=.true.)
   open(10,file='kstar.tmp',status='OLD',iostat=ierr)
-  call io_check(ierr,'open kstar.tmp')
+  call CheckStop(ierr,HERE('open kstar.tmp'))
   read(10,*)nkstar
   read(10,*)ikstar
   read(10,*)kstar
@@ -722,53 +709,53 @@ subroutine read_speccov
 
   call allocate_covmat(nex,nlev,nkstar,selective=.true.)
   open(10,file='ucovmat.cov',status='OLD',iostat=ierr)
-  call io_check(ierr,'open ucovmat.cov')
+  call CheckStop(ierr,HERE('open ucovmat.cov'))
   if(nchemNoObs>0)read(10,*)ucovmat
   close(10)
 
   allocate(sqrt_gamma(nbg1,nex),stat=ierr)
-  call CheckStop(ierr,'Allocation error: SQRT_GAMMA.')
+  call CheckStop(ierr,HERE('Allocation error: SQRT_GAMMA.'))
   open(10,file='gamma.cov',status='OLD',iostat=ierr)
-  call io_check(ierr,'open gamma.cov')
+  call CheckStop(ierr,HERE('open gamma.cov'))
   read(10,*)sqrt_gamma
   close(10)
 
   allocate(stddev(nxex,nyex,nlev,nchem),stat=ierr)
-  call CheckStop(ierr,'Allocation error: STDDEV.')
+  call CheckStop(ierr,HERE('Allocate STDDEV'))
   open(10,file='stddev.tmp',status='OLD',iostat=ierr)
-  call io_check(ierr,'open stddev.tmp')
+  call CheckStop(ierr,HERE('open stddev.tmp'))
   read(10,*)stddev
   close(10)
 
   open(10,file='fft.tmp',status='OLD',iostat=ierr)
   read(10,*)lensav
   allocate(wsave(lensav),stat=ierr)
-  call CheckStop(ierr,'Allocation error: WSAVE.')
+  call CheckStop(ierr,HERE('Allocate WSAVE'))
   read(10,*)wsave
   close(10)
 
   allocate(vt(nbg1,nv1,nex),sqrt_lambda(nv1,nex),&
            vt0(nbg1,nv1),sq0(nv1),stat=ierr)
-  call CheckStop(ierr,'Allocation error: VT,..')
+  call CheckStop(ierr,HERE('Allocate VT,..'))
 
-  call CheckStop(nkstar>99999,'ERROR: nkstar too large.')
+  call CheckStop(nkstar>99999,HERE('nkstar too large'))
   do ik=1,nkstar ! start loop over wavenumbers
     write(file,'(A,"_",I5.5,".",A)')"eigenvec",ik,"cov"
     open(10,file=file,status='OLD',iostat=ierr)
-    call io_check(ierr,'open '//trim(file))
+    call CheckStop(ierr,HERE('open '//trim(file)))
     read(10,*)vt0
     close(10)
     vt(:,:,ik)=vt0(:,:)
 
     write(file,'(A,"_",I5.5,".",A)')"eigenval",ik,"cov"
     open(10,file=file,status='OLD',iostat=ierr)
-    call io_check(ierr,'open '//trim(file))
+    call CheckStop(ierr,HERE('open '//trim(file)))
     read(10,*)sq0
     close(10)
     sqrt_lambda(:,ik)=sq0(:)
   enddo
   deallocate(vt0,sq0,stat=ierr)
-  call CheckStop(ierr,'Deallocation error: VT0,SQ0.')
+  call CheckStop(ierr,HERE('Deallocate VT0,SQ0'))
 
 end subroutine read_speccov
 ! function bindex(k1,l1,k2,l2,upper_only) result(bidx)

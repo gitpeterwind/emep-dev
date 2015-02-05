@@ -8,35 +8,27 @@ ifeq ($(EXP),Unimod)
 endif
 export CLEANCPP ?= 1
 export MKL ?= 1
-export FFTW ?=1
 
 #stop: info-varaiable-EXP info-varaiable-PROG
 ifdef EXP
-  override DFLAGS += -DOLD_FFT -DOLD_SPL $(if $(filter yes,$(DEBUG)),-DDEBUG_B)
-  override DFLAGS += -DBIAS_CORRECTION
-  ifneq (,$(findstring OLD_FFT,$(DFLAGS)))
-    $(PROG): fftpack5/libfftpack_r8.a
-    LIBS += -lfftpack_r8
-    LLIB += -L./fftpack5/
-  else
-    SRCS.$(EXP) += fftpack5.1.f90
-  endif
-  ifdef FFTW
-    ifeq ($(MACHINE),stallo)
-      MODULES += $(FFTW:1=fftw/3.3.3.mpi)
-      ifneq (,$(call modulefind,fftw/3.3.3.mpi))
-        LIBS += -lfftw3_mpi -lfftw3
-        INCL += $(FFTW_ROOT)/include
-        LLIB += -L$(FFTW_ROOT)/lib -Wl,-rpath,$(FFTW_ROOT)/lib
-      endif
-    else ifeq ($(MACHINE),vilje)
-      MODULES += $(FFTW:1=fftw/3.3.3)
-      ifneq (,$(call modulefind,fftw/3.3.3))
-        FFTW_ROOT = /sw/sdev/Modules/fftw/fftw-3.3.3
-        LIBS += -lfftw3_mpi -lfftw3
-        INCL += $(FFTW_ROOT)/include
-        LLIB += -L$(FFTW_ROOT)/lib -Wl,-rpath,$(FFTW_ROOT)/lib
-      endif
+  override DFLAGS += -DOLD_SPL #-DBIAS_CORRECTION
+  $(PROG): fftpack5/libfftpack_r8.a
+  LIBS += -lfftpack_r8
+  LLIB += -L./fftpack5/
+  ifeq ($(MACHINE),stallo)
+    MODULES += fftw/3.3.3.mpi
+    ifneq (,$(call modulefind,fftw/3.3.3.mpi))
+      LIBS += -lfftw3_mpi -lfftw3
+      INCL += $(FFTW_ROOT)/include
+      LLIB += -L$(FFTW_ROOT)/lib -Wl,-rpath,$(FFTW_ROOT)/lib
+    endif
+  else ifeq ($(MACHINE),vilje)
+    MODULES += fftw/3.3.3
+    ifneq (,$(call modulefind,fftw/3.3.3))
+      FFTW_ROOT = /sw/sdev/Modules/fftw/fftw-3.3.3
+      LIBS += -lfftw3_mpi -lfftw3
+      INCL += $(FFTW_ROOT)/include
+      LLIB += -L$(FFTW_ROOT)/lib -Wl,-rpath,$(FFTW_ROOT)/lib
     endif
   endif
   ifneq (,$(findstring OLD_SPL,$(DFLAGS)))

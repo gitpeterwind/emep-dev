@@ -1,16 +1,20 @@
+#define STRING2(x) #x
+#define STRING(x) STRING2(x)
+#define HERE(MSG) MSG//" ("//__FILE__//":"//STRING(__LINE__)//")."
 PROGRAM unimod_B_nmc
-  use DA_ml,             only: debug=>DA_DEBUG,DAFMT_DEF=>NMC_FMT_DEF,&
-                               dafmt=>da_fmt_msg,damsg=>da_msg
+  use ModelConstants_ml,    only: USE_EtaCOORDINATES
+  use DA_ml,                only: debug=>DA_DEBUG,DAFMT_DEF=>NMC_FMT_DEF,&
+                                  dafmt=>da_fmt_msg,damsg=>da_msg
   use ChemChemicals_ml,     only: define_chemicals,species    ! specie names
   use ChemGroups_ml,        only: Init_ChemGroups,chemgroups  ! group  names
-  use CheckStop_ml,         only: CheckStop
+  use CheckStop_ml,         only: CheckStop,CheckNC
   use SmallUtils_ml,        only: find_index
   use TimeDate_ml,          only: current_date
   use TimeDate_ExtraUtil_ml,only: date2nctime, nctime2date, date2string, nctime2string
   use Util_ml
   use exd_domain_ml
   use stddev_ml
-  use covmat_ml,            only: dlon=>dxdim,dlat=>dydim, &
+  use covmat_ml,            only: dlon=>dxdim,dlat=>dydim, nv,&
                                   set_chemobs_idx,allocate_covmat,&
                                   update_covmat,update_unobs_covmat,&
                                   normalise_covmat,diagonalise_covmat
@@ -25,15 +29,16 @@ PROGRAM unimod_B_nmc
 !+------------------------------------------------------------------
   integer, dimension(5) :: ncSDate, ncEDate
   integer(4) :: secSTime, secETime, secTime, secTime24, secTime48, &
-                deltaHour(2), numNMC, ncFileID
+                deltaDateHH,deltaHour(2), numNMC, ncFileID
   character(len=112) :: inFileName(2)=''!, ncFileName=''
   character(len=016) :: varName(maxVar)='',obsVarName(maxVar)=''
   logical            :: observedVar(maxVar)=.false.
 ! real(8) :: dlon=0.25, dlat=0.125
+  logical            :: trimX=.false., trimY=.false.
   namelist /NMC_VAR/ nChem, nChemObs, varName, obsVarName, observedVar
-  namelist /NMC_CONFIG/ numNMC, nX,  nY, nLev,&
-                    nXex, nYex, nex, nCorr, dlon, dlat
-  namelist /NMC/ ncSDATE, ncEDATE, inFileName, deltaHour
+  namelist /NMC_CONFIG/ numNMC, nX,  nY, nLev, trimX, trimY, &
+                    nXex, nYex, nex, nCorr, nv, dlon, dlat, USE_EtaCOORDINATES
+  namelist /NMC/ ncSDATE, ncEDATE, inFileName, deltaDateHH, deltaHour
   integer(4) :: h, k, rec, nnmc, nvar, ierr!, i, j, ij,
  !integer(4),    dimension(:), pointer :: time
  !real(8),       dimension(:), pointer :: lon, lat, lev
@@ -47,14 +52,9 @@ PROGRAM unimod_B_nmc
 !+------------------------------------------------------------------
 !
 !+------------------------------------------------------------------
-#ifdef gFortran
-  open(unit=inNml,file='namelist.nml',status='OLD',action='READ',&
-       form='FORMATTED',iostat=ierr)
-#else
   open(unit=inNml,file='namelist.nml',status='OLD',action='READ',&
        form='FORMATTED',delim='APOSTROPHE',iostat=ierr)
-#endif
-  call io_check(ierr,'open namelist')
+  call CheckStop(ierr,HERE('open namelist'))
 !+------------------------------------------------------------------
 !
 !+------------------------------------------------------------------
@@ -62,12 +62,12 @@ PROGRAM unimod_B_nmc
   call Init_ChemGroups()
   dafmt=DAFMT_DEF
   k=find_index("DAOBS",chemgroups(:)%name)
-  call CheckStop(k<1,'Unknown DAOBS group.')
+  call CheckStop(k<1,HERE('Unknown DAOBS group'))
   nChemObs=size(chemgroups(k)%ptr)
   obsVarName(:nChemObs)=species(chemgroups(k)%ptr)%name
   varName(:nChem)=(/obsVarName(:nChemObs),species(chemgroups(k)%ptr)%name/)
   k=find_index("DAUNOBS",chemgroups(:)%name)
- !CheckStop(k<1,'Unknown DAUNOBS group.')
+ !CheckStop(k<1,HERE('Unknown DAUNOBS group'))
   if(k>0)then
     nChem=nChemObs+size(chemgroups(k)%ptr(:))
     varName(:nChem)=(/obsVarName(:nChemObs),species(chemgroups(k)%ptr)%name/)
@@ -80,17 +80,19 @@ PROGRAM unimod_B_nmc
 !+------------------------------------------------------------------
 !
 !+------------------------------------------------------------------
+  deltaDateHH=24
   deltaHour(1:2)=(/48,24/)
   read(unit=inNml,nml=NMC_VAR,iostat=ierr)
-  call io_check(ierr,'read namelist: NMC_VAR')
+  call CheckStop(ierr,HERE('read namelist: NMC_VAR'))
   call CheckStop(nChemObs>0.eqv.any(observedVar),&
-    'Incomplete/Redundant definition of nChemObs and observedVar on NMC_VAR namelist.')
+    'Incomplete/Redundant definition of nChemObs &
+    &and observedVar on NMC_VAR namelist'//HERE(''))
 !+------------------------------------------------------------------
 !
 !+------------------------------------------------------------------
   do nvar=1,nChemObs
     k=find_index(obsVarName(nvar),varName(:nChem))
-    call CheckStop(k<1,'Unknown observed variable: '//trim(obsVarName(nvar)))
+    call CheckStop(k<1,HERE('Unknown observed variable: '//trim(obsVarName(nvar))))
     observedVar(k)=.true.
   enddo
   ! sort obsVarName following varName order
@@ -115,18 +117,15 @@ PROGRAM unimod_B_nmc
     enddo
     if(mod(nChem,5)/=0)print *,''
   endif
-#ifdef gFortran
-  if(debug) write(*,nml=NMC_VAR)
-#else
   if(debug) write(*,nml=NMC_VAR,delim='QUOTE')
-#endif
 !+------------------------------------------------------------------
 !
 !+------------------------------------------------------------------
   nx=0;ny=0;nLev=0;nXex=0;nYex=0;dLon=0.0;dLat=0.0;
   read(unit=inNml,nml=NMC_CONFIG,iostat=ierr)
-  call io_check(ierr,'read namelist: NMC_CONFIG')
-  call CheckStop(any((/nX,nY,nLev/)<1),'Dimensions error: nX<1.or.nY<1.or.nLev<1.')
+  call CheckStop(ierr,HERE('read namelist: NMC_CONFIG'))
+  call CheckStop(any((/nX,nY,nLev/)<1),&
+    HERE('Dimensions error: nX<1.or.nY<1.or.nLev<1.'))
 !+------------------------------------------------------------------
 ! EXTENDED DOMAIN FOR FFT: default size
 !+------------------------------------------------------------------
@@ -138,16 +137,14 @@ PROGRAM unimod_B_nmc
     print*,'WARNING: using extended domain default size'
     if(dLon==0.0) dLon=0.25
     if(dLat==0.0) dLat=0.25
-    if(nXex==0) NXEX=NX+INT(12.0/dLon)
-    if(nYex==0) NYEX=NY+INT(12.0/dLat)
+    if(trimX) NX=NX-INT(12.0/dLon)      ! trim   12 degrees
+    if(trimY) NY=NY-INT(12.0/dLat)      ! trim   12 degrees
+    if(nXex==0) NXEX=NX+INT(12.0/dLon)  ! extend 12 degrees
+    if(nYex==0) NYEX=NY+INT(12.0/dLat)  ! extend 12 degrees
   endif
   NEX=MAX(NXEX,NYEX)
   NCORR=((NLEV*NCHEM)*(NLEV*NCHEM+1))/2
-#ifdef gFortran
-  if(debug) write(*,nml=NMC_CONFIG)
-#else
   if(debug) write(*,nml=NMC_CONFIG,delim='QUOTE')
-#endif
 !+------------------------------------------------------------------
 !
 !+------------------------------------------------------------------
@@ -160,34 +157,29 @@ PROGRAM unimod_B_nmc
 !
 !+------------------------------------------------------------------
   allocate(var_ex(nXex,nYex,nLev,2,nChem),stat=ierr)
-  call CheckStop(ierr,'Allocation error: VAR_EX.')
+  call CheckStop(ierr,HERE('Allocate VAR_EX'))
 !-----------------------------------------------
 ! FIRST TIME-LOOP FOR COMPUTING BIASES AND STD DEV
 !-----------------------------------------------
   do nnmc=1,numNMC
     read(unit=inNml,nml=NMC,iostat=ierr)
-    call io_check(ierr,'read namelist: NMC')
-#ifdef gFortran
-    if(debug) write(*,nml=NMC)
-#else
+    call CheckStop(ierr,HERE('read namelist: NMC'))
     if(debug) write(*,nml=NMC,delim='QUOTE')
-#endif
     call date2nctime(ncSDate,secSTime)
     call date2nctime(ncEDate,secETime)
-    do secTime=secSTime,secETime,3600*24
+    do secTime=secSTime,secETime,deltaDateHH*3600
       call nctime2date(current_date,secTime)
       dafmt=date2string(DAFMT_DEF,current_date)
       secTime24=secTime-deltaHour(1)*3600
       secTime48=secTime-deltaHour(2)*3600
 !+------------------------------------------------------------------
-      call nc_check(nf90_open(nctime2string(inFileName(1),secTime24,debug=debug),&
+      call CheckNC(nf90_open(nctime2string(inFileName(1),secTime24,debug=debug),&
               nf90_nowrite,ncFileID))
       call GetNCDim(ncFileID,'lon' ,numLon)
       call GetNCDim(ncFileID,'lat' ,numLat)
-      call GetNCDim(ncFileID,'k'   ,numLev)
+      call GetNCDim(ncFileID,'lev',numLev)
       call CheckStop(any((/numLon,numLat/)/=(/NX,NY/)),&
-                'Dimensions error: numLon/=NX.or.numLat/=NY for '//&
-                 trim(inFileName(1)))
+        'Dimensions error: numLon/=NX.or.numLat/=NY for '//HERE(trim(inFileName(1))))
       call GetNCRec(ncFileID,current_date,rec,exact=debug)
       if(debug.and.nnmc==1.and.secTime==secSTime)call PrintNCDim(ncFileID,dOut)
       do nvar=1,nChem
@@ -204,8 +196,8 @@ PROGRAM unimod_B_nmc
                        trimdomain=.true.),k=1,nLev,nLev-1)
         endif
       enddo
-      call nc_check(nf90_close(ncFileID))
-      call nc_check(nf90_open(nctime2string(inFileName(2),secTime48,debug=debug),&
+      call CheckNC(nf90_close(ncFileID))
+      call CheckNC(nf90_open(nctime2string(inFileName(2),secTime48,debug=debug),&
               nf90_nowrite,ncFileID))
       call GetNCRec(ncFileID,current_date,rec,exact=debug)
       if(debug.and.nnmc==1.and.secTime==secSTime) call PrintNCDim(ncFileID,dOut)
@@ -223,7 +215,7 @@ PROGRAM unimod_B_nmc
                        trimdomain=.true.),k=1,nLev,nLev-1)
         endif
       enddo
-      call nc_check(nf90_close(ncFileID))
+      call CheckNC(nf90_close(ncFileID))
 !+------------------------------------------------------------------
       !compute standard deviations:
       do nvar=1,nChem
@@ -255,24 +247,20 @@ PROGRAM unimod_B_nmc
 
   nvar=1
   rewind(unit=inNml,iostat=ierr)
-  call io_check(ierr,'rewind namelist')
+  call CheckStop(ierr,HERE('rewind namelist'))
   do nnmc=1,numNMC
     read(unit=inNml,nml=NMC,iostat=ierr)
-    call io_check(ierr,'read namelist: NMC')
-#ifdef gFortran
-    if(debug) write(*,nml=NMC)
-#else
+    call CheckStop(ierr,HERE('read namelist: NMC'))
     if(debug) write(*,nml=NMC,delim='QUOTE')
-#endif
     call date2nctime(ncSDate,secSTime)
     call date2nctime(ncEDate,secETime)
-    do secTime=secSTime,secETime,3600*24
+    do secTime=secSTime,secETime,deltaDateHH*3600
       call nctime2date(current_date,secTime)
       dafmt=date2string(DAFMT_DEF,current_date)
       secTime24=secTime-deltaHour(1)*3600
       secTime48=secTime-deltaHour(2)*3600
 !+------------------------------------------------------------------
-      call nc_check(nf90_open(nctime2string(inFileName(1),secTime24,debug=debug),&
+      call CheckNC(nf90_open(nctime2string(inFileName(1),secTime24,debug=debug),&
               nf90_nowrite,ncFileID))
       call GetNCRec(ncFileID,current_date,rec,exact=debug)
       do nvar=1,nChem
@@ -281,8 +269,8 @@ PROGRAM unimod_B_nmc
         !extended domain for periodic boundary conditions:
         CALL EXT_DOMAIN(NX,NY,NLEV,NXEX,NYEX,var_nc(:,:,numLev-nlev+1:numLev,rec),var_ex(:,:,:,1,nvar))
       enddo
-      call nc_check(nf90_close(ncFileID))
-      call nc_check(nf90_open(nctime2string(inFileName(2),secTime48,debug=debug),&
+      call CheckNC(nf90_close(ncFileID))
+      call CheckNC(nf90_open(nctime2string(inFileName(2),secTime48,debug=debug),&
               nf90_nowrite,ncFileID))
       if(debug.and.nnmc==1.and.secTime==secSTime) call PrintNCDim(ncFileID,dOut)
       call GetNCRec(ncFileID,current_date,rec,exact=debug)
@@ -292,7 +280,7 @@ PROGRAM unimod_B_nmc
         !extended domain for periodic boundary conditions:
         CALL EXT_DOMAIN(NX,NY,NLEV,NXEX,NYEX,var_nc(:,:,numLev-nlev+1:numLev,rec),var_ex(:,:,:,2,nvar))
       enddo
-      call nc_check(nf90_close(ncFileID))
+      call CheckNC(nf90_close(ncFileID))
       !compute normalised model errors:
       call get_moderr(nxex,nyex,nlev,2,nchem,1,current_date%hour,var_ex)
       !Fourier-transform model errors from physical to spectral space:
@@ -319,7 +307,7 @@ PROGRAM unimod_B_nmc
     enddo
 !+------------------------------------------------------------------
   enddo
-  deallocate(bias)
+  if(allocated(bias))deallocate(bias)
 
   !normalise covariances
 ! call normalise_covmat(nex,nxex,nyex,nlev,nttot,nkstar,nstar,kstar,ikstar)

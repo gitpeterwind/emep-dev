@@ -14,13 +14,13 @@ use Io_ml,            only: IO_TMP,PrintLog
 use InterpolationRoutines_ml,  only : point2grid_coeff
 use ModelConstants_ml,only: KMAX_MID,MasterProc,runlabel1
 use SmallUtils_ml,    only: find_index
+use Functions_ml,     only: norm
 use TimeDate_ExtraUtil_ml, only: date2string
 use Units_ml,         only: Units_Scale,Group_Units
 use DA_ml,            only: debug=>DA_DEBUG,dafmt=>da_fmt_msg,damsg=>da_msg
-use Util_ml,          only: norm
 use spectralcov,      only: nx,ny,nlev,nchem,nxex,nyex,nv1,FGSCALE,&
                             nChemObs,nChemNoObs,iChemInv,iChemObs,iChemNoObs
-use chitox_ml,       only:  chitox_adj
+use chitox_ml,        only: chitox_adj
 implicit none
 integer, save :: nobs!,matidx
 ! integer, dimension(:), allocatable, save :: pidx

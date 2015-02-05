@@ -2,7 +2,7 @@ MODULE stddev_ml
 use CheckStop_ml, only : CheckStop
 use spectralcov,  only : stddev
 implicit none
-integer, parameter :: HH0=0, HH1=0 ! HH1=23
+integer, parameter :: nHH=6, HH0=0, HH1=24/nHH-1 ! HH1=23
 real, parameter :: KTRUNC=0e0
 real, dimension(:,:,:,:,:), allocatable :: bias,variance
 real, dimension(:,:),       allocatable :: nt0
@@ -48,13 +48,14 @@ integer, intent(in) :: nxex,nyex,nlev,nconcmlp,nchem,k,hour
 real,    intent(in) :: concmlp(nxex,nyex,nlev,nconcmlp)
 
 real epsilon
-integer i,j,ilev!,it
+integer i,j,ilev,it
 
   if(.not.allocated(bias)    .or.&
      .not.allocated(variance).or.&
      .not.allocated(nt0)) call allocate_stddev(nxex,nyex,nlev,nchem)
 
-  nt0(k,HOUR)=nt0(k,HOUR)+1e0
+  it=hour/nHH
+  nt0(k,it)=nt0(k,it)+1e0
 !-----------------------------------------------------------------------
 !     Update bias and variance:
 !     This subroutine performs the adding of the fields at the current
@@ -73,15 +74,15 @@ integer i,j,ilev!,it
     do j=1,nyex
       do i=1,nxex
         epsilon=CONCMLP(i,j,ilev,2)-CONCMLP(i,j,ilev,1)
-        bias    (i,j,ilev,k,HOUR)=bias    (i,j,ilev,k,HOUR)+epsilon
-        variance(i,j,ilev,k,HOUR)=variance(i,j,ilev,k,HOUR)+epsilon**2
+        bias    (i,j,ilev,k,it)=bias    (i,j,ilev,k,it)+epsilon
+        variance(i,j,ilev,k,it)=variance(i,j,ilev,k,it)+epsilon**2
       enddo
     enddo
   enddo
 !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
   if(debug_ij)then
-    write(*,*)'xxx1 b,s:',bias(debug_i,debug_j,max(nlev-debug_k,1),min(debug_c,nchem),HOUR),&
-                      variance(debug_i,debug_j,max(nlev-debug_k,1),min(debug_c,nchem),HOUR)
+    write(*,*)'xxx1 b,s:',bias(debug_i,debug_j,max(nlev-debug_k,1),min(debug_c,nchem),it),&
+                      variance(debug_i,debug_j,max(nlev-debug_k,1),min(debug_c,nchem),it)
   endif
 !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 end subroutine update_stddev
@@ -175,16 +176,17 @@ implicit none
 integer, intent(in) :: nxex,nyex,nlev,nconcmlp,nchem,k,hour
 real,  intent(inout):: concmlp(nxex,nyex,nlev,nconcmlp)
 real epsilon
-integer i,j,ilev!,it
+integer i,j,ilev,it
 !-----------------------------------------------------------------------
 ! The error epsilon is defined as epsilon= ( x-x' ), where x' is some perturbed field
 ! The normalised errors are stored in CONCMLP(i,j,ilev,nconcmlp-1):
 !-----------------------------------------------------------------------
   call CheckStop(k<0.or.k>nchem,'get_moderr: index k out of range')
+  it=hour/nHH
   do ilev=1,nlev
     do j=1,nyex
       do i=1,nxex
-        epsilon=CONCMLP(i,j,ilev,2)-CONCMLP(i,j,ilev,1)-bias(i,j,ilev,k,HOUR)
+        epsilon=CONCMLP(i,j,ilev,2)-CONCMLP(i,j,ilev,1)-bias(i,j,ilev,k,it)
         CONCMLP(i,j,ilev,1)=epsilon/stddev(i,j,ilev,k)
       enddo
     enddo

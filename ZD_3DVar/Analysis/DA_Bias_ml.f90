@@ -1,3 +1,6 @@
+#define STRING2(x) #x
+#define STRING(x) STRING2(x)
+#define HERE(MSG) MSG//" ("//__FILE__//":"//STRING(__LINE__)//")."
 module DA_Bias_ml
 use CheckStop_ml,     only: CheckStop
 use Io_ml,            only: IO_TMP,PrintLog
@@ -5,7 +8,6 @@ use SmallUtils_ml,    only: find_index
 use TimeDate_ml,      only: date,current_date
 use TimeDate_ExtraUtil_ml, only: date2string
 use Units_ml,         only: Units_Scale,Group_Units
-use Util_ml,          only: io_check
 use DA_ml,            only: debug=>DA_DEBUG,dafmt=>da_fmt_msg,damsg=>da_msg
 use DA_Obs_ml,        only: nobsData,nobsDataMax,obsData
 !-----------------------------------------------------------------------
@@ -13,7 +15,7 @@ implicit none
 integer, parameter :: NBIAS_PREDICTORS=0
 !-----------------------------------------------------------------------
 type, private :: bias_data
-  real :: beta(0:NBIAS_PREDICTORS)=0.0,stddev=0.0,obsFrac=1e2,weight=1e4
+  real :: beta(0:NBIAS_PREDICTORS)=0e0,stddev=1e3,obsFrac=1e2,weight=1e6
 endtype
 integer :: nbiasData
 type(bias_data), target, save :: biasData(nobsDataMax)
@@ -26,8 +28,8 @@ real, dimension(:), allocatable, save :: dbias
 contains
 subroutine allocate_bias()
   integer :: ierr,ipar
-  call CheckStop(nbiasData,nobsData,'allocate_bias: Inconsistent nbiasData')
-  call CheckStop(any(.not.obsData(:nobsData)%set),'allocate_bias: .not.obsData%set')
+  call CheckStop(nbiasData,nobsData,HERE('Inconsistent nbiasData'))
+  call CheckStop(any(.not.obsData(:nobsData)%set),HERE('.not.obsData%set'))
   if(.not.associated(bias))       &
     bias=>biasData(:nobsData)%beta(0)
   if(.not.associated(biasStdDev)) &
@@ -40,7 +42,7 @@ subroutine allocate_bias()
   endif
   if(.not.allocated(dbias))then
     allocate(dbias(nobsData),stat=ierr)
-    call CheckStop(ierr,'Allocation error: DBIAS')
+    call CheckStop(ierr,HERE('Allocate DBIAS'))
     dbias=0.0
   endif
   do ipar=1,nobsData
@@ -66,9 +68,9 @@ subroutine write_bias(fname)
     open(unit=IO_TMP,file='namelist.nml',&
       status='OLD',action='WRITE',position='APPEND',form='FORMATTED',iostat=ierr)
   endif
-  call io_check(ierr,'open namelist: BIAS_PREDICTOR')
+  call CheckStop(ierr,HERE('open namelist: BIAS_PREDICTOR'))
   write(unit=IO_TMP,nml=BIAS_PREDICTOR,iostat=ierr)
-  call io_check(ierr,'write namelist: BIAS_PREDICTOR')
+  call CheckStop(ierr,HERE('write namelist: BIAS_PREDICTOR'))
   close(IO_TMP)
 endsubroutine
 endmodule DA_Bias_ml

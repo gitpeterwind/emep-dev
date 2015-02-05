@@ -1,3 +1,6 @@
+#define STRING2(x) #x
+#define STRING(x)  STRING2(x)
+#define HERE(MSG)  MSG//" ("//__FILE__//":"//STRING(__LINE__)//")."
 module DA_3DVar_ml
 use TimeDate_ml,      only: date,current_date
 use Io_ml,            only: IO_TMP
@@ -9,9 +12,11 @@ use ChemChemicals_ml, only: species          ! Gives names
 use ChemGroups_ml,    only: chemgroups       ! group  names
 use Chemfields_ml,    only: xn_adv
 use GridValues_ml,    only: coord_in_processor
+use TimeDate_ml,      only: date,current_date
+use TimeDate_ExtraUtil_ml,only: date2string, compare_date
 use CheckStop_ml,     only: CheckStop
 use SmallUtils_ml,    only: find_index
-use TimeDate_ExtraUtil_ml,only: date2string
+use Functions_ml,     only: norm
 use DA_ml,            only: debug=>DA_DEBUG,DAFMT_DEF=>DA_FMT_DEF,&
                             danml=>da_namelist,dafmt=>da_fmt_msg,damsg=>da_msg,&
                             tim_before=>datim_before,tim_after=>datim_after
@@ -19,7 +24,6 @@ use DA_Obs_ml
 #if BIAS_CORRECTION
 use DA_Bias_ml
 #endif
-use Util_ml,          only: io_check,compare_date,norm
 use exd_domain_ml,    only: EXT_DOMAIN,EXT_DOMAIN_INV
 use covmat_ml,        only: set_chemobs_idx,read_speccov
 use spectralcov,      only: nx,ny,nlev,nchem,nxex,nyex,nex,&
@@ -134,12 +138,12 @@ namelist /DA_CONFIG/ analysis_date, nChem, nChemObs,&
 !-----------------------------------------------------------------------
   open(unit=inNml,file=danml,status='OLD',action='READ',&
        form='FORMATTED',iostat=ierr)
-  call io_check(ierr,'open namelist')
+  call CheckStop(ierr,HERE('open namelist'))
 !+------------------------------------------------------------------
 !
 !+------------------------------------------------------------------
   k=find_index("DAOBS",chemgroups(:)%name)
-  call CheckStop(k<1,'DA group not found: "DAOBS".')
+  call CheckStop(k<1,HERE('DA group not found: "DAOBS"'))
   nChemObs=size(chemgroups(k)%ptr)
   obsVarName(:nChemObs)=species(chemgroups(k)%ptr)%name
   varName(:nChemObs)=obsVarName(:nChemObs)
@@ -157,18 +161,19 @@ namelist /DA_CONFIG/ analysis_date, nChem, nChemObs,&
 !
 !+------------------------------------------------------------------
   read(unit=inNml,nml=DA_CONFIG,iostat=ierr)
-  call io_check(ierr,'read namelist: DA_CONFIG')
-  call CheckStop(nChemObs>0.eqv.any(observedVar),&
-    'Incomplete/Redundant definition of nChemObs and observedVar on DA_CONFIG namelist.')
+  call CheckStop(ierr,HERE('read namelist: DA_CONFIG'))
+  call CheckStop(nChemObs>0.eqv.any(observedVar),'Incomplete/Redundant &
+    &definition of nChemObs and observedVar on DA_CONFIG namelist'//HERE(''))
 !+------------------------------------------------------------------
 !
 !+------------------------------------------------------------------
   do nvar=1,nChemObs
     k=find_index(obsVarName(nvar),varName(:nChem))
-    call CheckStop(k<1,'Unknown observed variable: '//trim(obsVarName(nvar)))
+    call CheckStop(k<1,HERE('Unknown observed variable: '//trim(obsVarName(nvar))))
     observedVar(k)=.true.
   enddo
-  call CheckStop(.not.any(observedVar),'No observed variables found (observedVar).')
+  call CheckStop(.not.any(observedVar),&
+    HERE('No observed variables found (observedVar)'))
   ! sort obsVarName following varName order
   nChemObs=0 ! count(observedVar)
   do nvar=1,nChem
@@ -177,7 +182,7 @@ namelist /DA_CONFIG/ analysis_date, nChem, nChemObs,&
       obsVarName(nChemObs)=varName(nvar)
     endif
   enddo
-  call CheckStop(nChemObs<1,'No observed variables found (nChemObs).')
+  call CheckStop(nChemObs<1,HERE('No observed variables found (nChemObs)'))
   if(debug.and.MasterProc) then
     print dafmt,'B matrix description'
     print "(2(A,:,'(',I0,')'))",&
@@ -200,9 +205,9 @@ namelist /DA_CONFIG/ analysis_date, nChem, nChemObs,&
   varSpecInv=-1
   do nvar=1,nChem
     call CheckStop(count(varName(:nvar)==varName(nvar))>1,&
-         'Multiple definitions of variable name: '//trim(varName(nvar)))
+         HERE('Multiple definitions of variable name: '//trim(varName(nvar))))
     k=find_index(varName(nvar),species(NSPEC_SHL+1:)%name)
-    call CheckStop(k<1,'Wrong variable name: '//trim(varName(nvar)))
+    call CheckStop(k<1,HERE('Wrong variable name: '//trim(varName(nvar))))
     varSpec(nvar)=k
     varSpecInv(k)=nvar
   enddo
@@ -210,23 +215,23 @@ namelist /DA_CONFIG/ analysis_date, nChem, nChemObs,&
 ! Read observation parameters
 !-----------------------------------------------------------------------
   read(unit=inNml,nml=OBSERVATIONS,iostat=ierr)
-  call io_check(ierr,'read namelist: OBSERVATIONS')
+  call CheckStop(ierr,HERE('read namelist: OBSERVATIONS'))
 !-----------------------------------------------------------------------
 ! Read bias parameters
 !-----------------------------------------------------------------------
 #if BIAS_CORRECTION
   read(unit=inNml,nml=BIAS_PREDICTOR,iostat=ierr)
-  call io_check(ierr,'read namelist: BIAS_PREDICTOR')
-  call CheckStop(nbiasData,nobsData,'init_3dvar: nbiasData')
+  call CheckStop(ierr,HERE('read namelist: BIAS_PREDICTOR'))
+  call CheckStop(nbiasData,nobsData,HERE('init_3dvar: nbiasData'))
 #endif
 !-----------------------------------------------------------------------
 ! Read covariance matrix
 !-----------------------------------------------------------------------
   call set_chemobs_idx(nchem,observedVar(1:nchem))
   call read_speccov() ! & set extended domain dimensions (nxex,nyex)
-  call CheckStop(nX,RUNDOMAIN(2)-RUNDOMAIN(1)+1,"init_3dvar: Inconsistent NX")
-  call CheckStop(nY,RUNDOMAIN(4)-RUNDOMAIN(3)+1,"init_3dvar: Inconsistent NY")
-  call CheckStop(nLev,KMAX_MID-KCHEMTOP+1      ,"init_3dvar: Inconsistent NLEV")
+  call CheckStop(nX,RUNDOMAIN(2)-RUNDOMAIN(1)+1,HERE("Inconsistent NX"))
+  call CheckStop(nY,RUNDOMAIN(4)-RUNDOMAIN(3)+1,HERE("Inconsistent NY"))
+  call CheckStop(nLev,KMAX_MID-KCHEMTOP+1      ,HERE("Inconsistent NLEV"))
 endsubroutine init_3dvar
 subroutine generic3dvar(ierr)
 !-----------------------------------------------------------------------
@@ -461,7 +466,7 @@ subroutine var3d(nv2,Jcost,chi,ntot,dzs)
 ! Make one first call to the objective function
 !-----------------------------------------------------------------------
   allocate(gradJcost(nv2),stat=ierr)
-  call CheckStop(ierr,'Allocation error: gradJcost.')
+  call CheckStop(ierr,HERE('Allocate gradJcost'))
 !-----------------------------------------------------------------------
 ! Call minimization routine (m1qn3-3.3;2009)
 ! subroutine m1qn3 (simul, prosca, ctonb, ctcab, n, x, f, g,
@@ -470,7 +475,7 @@ subroutine var3d(nv2,Jcost,chi,ntot,dzs)
 !                   reverse, indic, izs, rzs, dzs)
 !-----------------------------------------------------------------------
   open(io,file=date2string(LOGFILE,current_date),iostat=ierr)
-  call io_check(ierr,'open m1qn3 logfile')
+  call CheckStop(ierr,HERE('open m1qn3 logfile'))
 
   call Code_timer(tim_before)
   omode=-1                    ! trigger .not.OKmode, unless m1qn3 is called
@@ -482,7 +487,7 @@ subroutine var3d(nv2,Jcost,chi,ntot,dzs)
   nsim =maxsim                ! maximal number of simulations accepted
   nrz=4*nv2+nupdates*(2*nv2+1)! rz dimension
   allocate(rz(nrz),stat=ierr) ! working array for m1qn3
-  call CheckStop(ierr,'Allocation error: RZ.')
+  call CheckStop(ierr,HERE('Allocate RZ.'))
 
   write(damsg,"(A,'#',I3.3,': ',A,'=',3(I0,:,','),3(1X,A,'=',I0,:,','))"),&
     'Start  m1qn3',me,'mode',imode,'reverse',reverse,'niter',niter,'nsim',nsim
@@ -523,7 +528,7 @@ subroutine var3d(nv2,Jcost,chi,ntot,dzs)
     write(damsg,"('m1qn3#',I3.3,'. ',A)")me,trim(damsg)
     print dafmt,trim(damsg)
   endif
-  call CheckStop(all(omode/=OKmode),trim(damsg))
+  call CheckStop(all(omode/=OKmode),HERE(trim(damsg)))
 
   close(io)
   call Add_2timing(T_OPTIM,tim_after,tim_before)
@@ -575,9 +580,9 @@ subroutine get_innovations(maxobs,flat,flon,falt,obs,obs_stddev)
 !-----------------------------------------------------------------------
   do n=1,nobs
     call CheckStop(.not.coord_in_processor(flon(n),flat(n)),&
-      "Observation outside geographical domain")
+      HERE("Observation outside geographical domain"))
     call CheckStop(obs(n),[obsData(ipar(n))%min,obsData(ipar(n))%max],&
-      "Observation outside accepted value range")
+      HERE("Observation outside accepted value range"))
 !-----------------------------------------------------------------------
 ! mapping from model to obs-space:
 !-----------------------------------------------------------------------

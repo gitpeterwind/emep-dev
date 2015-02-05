@@ -29,8 +29,6 @@ integer :: nstarmax,nttot,ncorr
 integer, dimension(:),   allocatable :: nstar
 integer, dimension(:,:), allocatable :: mt, nt
 real, dimension(:,:),    allocatable :: intweight
-!#define DEBUG_B
-
 contains
 subroutine spec_allocate(selective)
 logical, optional :: selective
@@ -43,17 +41,17 @@ logical :: allocate_all
     intweight=0e0
   endif
   if(.not.allocated(nstar).and.allocate_all)then
-    allocate(nstar(nex),stat=ierr)
+    allocate(nstar(nxex*nyex),stat=ierr)
     call CheckStop(ierr,'Allocation error: NSTAR.')
     nstar=0
   endif
   if(.not.allocated(mt).and.allocate_all)then
-    allocate(mt(nex,nex),stat=ierr)
+    allocate(mt(nxex*nyex,nex),stat=ierr)
     call CheckStop(ierr,'Allocation error: MT.')
     mt=0
   endif
   if(.not.allocated(nt).and.allocate_all)then
-    allocate(nt(nex,nex),stat=ierr)
+    allocate(nt(nxex*nyex,nex),stat=ierr)
     call CheckStop(ierr,'Allocation error: NT.')
     nt=0
   endif
@@ -99,15 +97,9 @@ subroutine write_kstar(nstarmax)
 implicit none
 integer, intent(in) :: nstarmax
 integer :: m,n,m1,n1,ik,i,j,k,l,l1,j1,j0
-real :: pi,pi2,twopi,dy,dx!,sum
-real :: theta(nstarmax+1)
-#ifdef DEBUG_B
-  character(len=18) :: file
-#endif
-  pi=acos(-1e0)
-  pi2=pi/2e0
-  twopi=2e0*pi
-
+real,parameter :: pi=acos(-1e0),pi2=pi/2e0,twopi=2e0*pi
+real :: dy,dx,theta(nstarmax+1)
+character(len=18) :: file
 !-----------------------------------------------------------------------
 ! For each wavenumber kstar, find the set of wavevector components
 ! (m,n) with corresponding angles theta=arctan[(n/Nyex)/(m/Nxex)]
@@ -136,12 +128,7 @@ real :: theta(nstarmax+1)
             i=i+1
             mt(i,ik)=m1
             nt(i,ik)=n1
-!           if(m==0)then
-!             theta(i)=pi2
-!           else
-!             theta(i)=atan(dy/dx)
-!           endif
-            theta(i)=atan2(dy,dx)
+            theta(i)=atan2PI(dy,dx)
           endif
         endif
       enddo
@@ -157,8 +144,7 @@ real :: theta(nstarmax+1)
           i=i+1
           mt(i,ik)=m1
           nt(i,ik)=n1
-!         theta(i)=pi+atan(dy/dx)
-          theta(i)=atan2(dy,dx)
+          theta(i)=atan2PI(dy,dx)
         endif
       enddo
     enddo
@@ -173,12 +159,7 @@ real :: theta(nstarmax+1)
           i=i+1
           mt(i,ik)=m1
           nt(i,ik)=n1
-!         if(m==0)then
-!           theta(i)=3*pi2
-!         else
-!           theta(i)=pi+atan(dy/dx)
-!         endif
-          theta(i)=atan2(dy,dx)
+          theta(i)=atan2PI(dy,dx)
        endif
       enddo
     enddo
@@ -195,8 +176,7 @@ real :: theta(nstarmax+1)
             i=i+1
             mt(i,ik)=m1
             nt(i,ik)=n1
-!           theta(i)=twopi+atan(dy/dx)
-            theta(i)=atan2(dy,dx)
+            theta(i)=atan2PI(dy,dx)
           endif
         endif
       enddo
@@ -207,7 +187,6 @@ real :: theta(nstarmax+1)
 !-----------------------------------------------------------------------
 ! sort angles in ascending order
 !-----------------------------------------------------------------------
-   !call quicksort(theta,1,i,mt(:,ik),nt(:,ik))
     call Qsort(theta(:i),mt(:i,ik),nt(:i,ik))
 !-----------------------------------------------------------------------
 ! determine trapezoid weights for isotropic integration
@@ -278,18 +257,6 @@ real :: theta(nstarmax+1)
       enddo
       intweight(1,1)=twopi/float(nstar(1))
     endif
-#ifdef DEBUG_B
-  write (file,'(a,"_",i5.5,".",a)')"w",ik,"aux"
-  open(11,file=file)
-  write(11,*)nxex,nyex,nex,ik,nstar(ik),nstarmax
-  if(nstar(ik)>0) write(11,*)intweight(:nstar(ik),ik)
-  close(11)
-  write (file,'(a,"_",i5.5,".",a)')"t",ik,"aux"
-  open(11,file=file)
-  write(11,*)ik,i,nstarmax+1
-  if(nstar(i)>0) write(11,*)theta(:i)
-  close(11)
-#endif
   enddo ! end of loop over wavenumbers
 !-----------------------------------------------------------------------
 !     Store results in file:
@@ -304,51 +271,57 @@ real :: theta(nstarmax+1)
   write(13,*)nn
   write(13,*)kx,kxmin,ky,kymin
   close(13)
-  contains
+contains
+function atan2PI(Y,X) result(theta)
+  real,intent(in)::y,x
+  real::theta       
+  theta=atan2(y,x)                ! in [-pi..pi]
+  if(theta<0.0)theta=theta+twopi ! in [0..2pi]
+endfunction atan2PI
 ! http://rosettacode.org/wiki/Sorting_algorithms/Quicksort#Fortran
-  RECURSIVE SUBROUTINE Qsort(a,m,n)
-    REAL,    INTENT(INOUT) :: a(:)
-    INTEGER, INTENT(INOUT) :: m(:),n(:)
-    INTEGER :: split
-    IF(size(a) > 1) THEN
-      CALL Partition(a,m,n,split)
-      CALL Qsort(a(:split-1),m(:split-1),n(:split-1))
-      CALL Qsort(a(split:)  ,m(split:)  ,n(split:))
-    ENDIF
-  END SUBROUTINE Qsort
-  SUBROUTINE Partition(a,m,n,marker)
-    REAL,    INTENT(INOUT) :: a(:)
-    INTEGER, INTENT(INOUT) :: m(:),n(:)
-    INTEGER, INTENT(OUT)   :: marker
-    INTEGER :: left, right, itemp
-    REAL :: pivot, rtemp
+RECURSIVE SUBROUTINE Qsort(a,m,n)
+  REAL,    INTENT(INOUT) :: a(:)
+  INTEGER, INTENT(INOUT) :: m(:),n(:)
+  INTEGER :: split
+  IF(size(a) > 1) THEN
+    CALL Partition(a,m,n,split)
+    CALL Qsort(a(:split-1),m(:split-1),n(:split-1))
+    CALL Qsort(a(split:)  ,m(split:)  ,n(split:))
+  ENDIF
+ENDSUBROUTINE Qsort
+SUBROUTINE Partition(a,m,n,marker)
+  REAL,    INTENT(INOUT) :: a(:)
+  INTEGER, INTENT(INOUT) :: m(:),n(:)
+  INTEGER, INTENT(OUT)   :: marker
+  INTEGER :: left, right, itemp
+  REAL :: pivot, rtemp
 
-    pivot = (a(1)+a(size(a)))/2  ! Average of first and last elements to prevent quadratic
-    left  = 0                    ! behavior with sorted or reverse sorted data
-    right = size(a)+1
-    DO WHILE(left < right)
+  pivot = (a(1)+a(size(a)))/2  ! Average of first and last elements to prevent quadratic
+  left  = 0                    ! behavior with sorted or reverse sorted data
+  right = size(a)+1
+  DO WHILE(left < right)
+    right = right-1
+    DO WHILE(a(right) > pivot)
       right = right-1
-      DO WHILE(a(right) > pivot)
-        right = right-1
-      ENDDO
-      left = left+1
-      DO WHILE(a(left) < pivot)
-        left = left+1
-      ENDDO
-      IF(left < right) THEN
-        rtemp=a(left);a(left)=a(right);a(right)=rtemp
-        itemp=m(left);m(left)=m(right);m(right)=itemp
-        itemp=n(left);n(left)=n(right);n(right)=itemp
-      ENDIF
     ENDDO
-
-    IF(left == right) THEN
-      marker = left+1
-    ELSE
-      marker = left
+    left = left+1
+    DO WHILE(a(left) < pivot)
+      left = left+1
+    ENDDO
+    IF(left < right) THEN
+      rtemp=a(left);a(left)=a(right);a(right)=rtemp
+      itemp=m(left);m(left)=m(right);m(right)=itemp
+      itemp=n(left);n(left)=n(right);n(right)=itemp
     ENDIF
-  END SUBROUTINE Partition
-end subroutine write_kstar
+  ENDDO
+
+  IF(left == right) THEN
+    marker = left+1
+  ELSE
+    marker = left
+  ENDIF
+ENDSUBROUTINE Partition
+endsubroutine write_kstar
 subroutine initfft()
 !-----------------------------------------------------------------------
 ! @description
@@ -362,7 +335,10 @@ integer :: ierr
   call CheckStop(ierr,'Allocation error: WSAVE.')
   call cfft2i(nxex,nyex,wsave,lensav,ierr)
   call CheckStop(ierr,'ERROR IN CFFT2I')
-  open(10,file='fft.tmp');write(10,*)lensav;write(10,*)wsave;close(10)
+  open(10,file='fft.tmp')
+  write(10,*)lensav
+  write(10,*)wsave
+  close(10)
 end subroutine initfft
 subroutine initspec()
 !-----------------------------------------------------------------------
@@ -377,11 +353,8 @@ implicit none
 integer m,n,ntrunc!,Kx,Ky,Kxmin,Kymin
 !real theta(nxex*nyex+1)
 integer m1,n1,ik!,i,j,k,l,l1,j1,j0
-real rkstar, dkstar,kstar_min!,pi,pi2,twopi,dy,dx,sum
+real rkstar, dkstar,kstar_min
 
-! pi=acos(-1e0)
-! pi2=pi/2e0
-! twopi=2e0*pi
   dkstar=3e0
   call spec_allocate()
 
