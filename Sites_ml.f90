@@ -459,22 +459,20 @@ subroutine siteswrt_surf(xn_adv,cfac,xn_shl)
         d2index = find_index(d2code, f_2d(:)%name)
         nn=nn+1
 
+        !call CheckStop(d2index<1,"SITES D2D NOT FOUND"//trim(d2code))
         if(d2index<1) then
-           if(MasterProc.and.my_first_call) write(*,*) &
-                 "WARNING: SITES D2D NOT FOUND"//trim(d2code)
-           !cycle
+          if(MasterProc.and.my_first_call) &
+            write(*,*) "WARNING: SITES D2D NOT FOUND"//trim(d2code)
+          !cycle
           out(nn,i) = NF90_FILL_DOUBLE
           i_Att=i_Att+1
           Spec_Att(i_Att,1)='output:C:undefined'  !to improve?
         else
-           !call CheckStop( d2index<1, "SITES D2D NOT FOUND"//trim(d2code) )
-           out(nn,i) = d_2d(d2index,ix,iy,IOU_INST)
+          out(nn,i) = d_2d(d2index,ix,iy,IOU_INST)*f_2d(d2index)%scale
           i_Att=i_Att+1
           Spec_Att(i_Att,1)='units:C:'//trim(f_2d(d2index)%unit)
         end if
 
-        !May25 call CheckStop( d2index<1, "SITES D2D NOT FOUND"//trim(d2code) )
-        !May25 out(nn,i)   = d_2d(d2index,ix,iy,IOU_INST)
         if( DEBUG ) &
           write(6,"(a,3i3,a,i4,es10.3)") "DEBUG ", me, nn, i,&
             trim(d2code), d2index, out(nn,i)

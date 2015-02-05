@@ -142,10 +142,10 @@ implicit none
     navg(:)=0.0                 ! D2D average counter
   endif  ! first_call
 
-  filename=trim(runlabel1)//date2string(HOURLYFILE_ending,current_date)
+  filename=trim(runlabel1)//date2string(trim(HOURLYFILE_ending),current_date)
   inquire(file=filename,exist=file_exist)
   if(my_first_call.or..not.file_exist)then
-    if(debug_flag) write(*,*) "DEBUG ",HOURLYFILE_ending,"-Hourlyfile ", trim(filename)
+    if(debug_flag) write(*,*) "DEBUG ",trim(HOURLYFILE_ending),"-Hourlyfile ", trim(filename)
     call Init_new_netCDF(trim(filename),IOU_HOUR)
 
   !! Create variables first, without writing them (for performance purposes)   
@@ -231,9 +231,11 @@ implicit none
           case(0)
             ik=KMAX_MID              ! surface/lowermost level
             if(debug_flag) write(*,*)"DEBUG LOWEST LEVELS", ik, hr_out_type
-            select case(hr_out_type)
+            select case(hr_out_type) ! ensure surface output
             case("BCVppbv","BCVugXX","BCVugXXgroup")
-              hr_out_type(1:3)="ADV" ! ensure surface output
+              hr_out_type(1:3)="ADV"
+            case("PMwater")
+              hr_out_type=trim(hr_out_type)//"SRF"
             endselect
           endselect
         endif

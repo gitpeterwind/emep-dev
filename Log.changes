@@ -152,6 +152,27 @@ info on unused variables, etc.
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+5th February 2015 Alvaro  2930
+
+ModelConstants_ml, Output_hourly:
+- HOURLYFILE_ending from ModelConstants_config
+
+Output_hourly:
+- PMwater @ SRF fix
+
+ZD_OZONE/My_Outputs_ml:
+- DEBUG_PM10 option for MACC_ENS/MACC_EVA
+
+Sites_ml:
+- Use D2D unit conversion (f_2d%scale) for NXTRA_SITE_D2D output
+
+Derived_ml:
+- More units options for COLUMN output (MISC). 
+  Units can be specified in OutputConcs_config namelist
+  by their unit name ('ug/m2,'molec/cm2,'1e15molec/cm2), or 
+  by their keyword ('mcm2,'ugm2','e15mcm2').
+  
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 5th February  2014 Peter    2929

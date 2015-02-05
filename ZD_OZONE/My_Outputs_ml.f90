@@ -33,7 +33,7 @@ implicit none
 
 logical, public, parameter :: out_binary = .false.
 logical, public, parameter :: Ascii3D_WANTED = .false.
-logical, private,parameter :: DEBUG_PBL = .false.
+logical, private,parameter :: DEBUG_PBL = .false., DEBUG_PM10 = .false.
 
 ! Site outputs   (used in Sites_ml)
 !==============================================================
@@ -286,9 +286,11 @@ subroutine set_output_defs
     if(DEBUG_POLLEN)nhourly_out=nhourly_out+2
     if(USE_POLLEN.or.DEBUG_POLLEN) call pollen_check()
     if(DEBUG_PBL   )nhourly_out=nhourly_out+3
+    if(DEBUG_PM10  )nhourly_out=nhourly_out+5
   case("MACC_EVA")
     nhourly_out=4
     nlevels_hourly = 1
+    if(DEBUG_PM10  )nhourly_out=nhourly_out+5
   case("3DPROFILES")
     nhourly_out=2
     nlevels_hourly = 2  ! nb zero is one of levels in this system
@@ -473,6 +475,19 @@ subroutine set_output_defs
       Asc2D("Kz_m2s","D2D_inst",find_index("Kz_m2s",f_2d(:)%name), &
             ix1,ix2,iy1,iy2,1, "m2/s",1.0,-999.9)/)
     endif
+    if(DEBUG_PM10  )then
+      j=j+5;hr_out(j-4:j) = (/&
+      Asc2D("sia_5km" ,"BCVugXXgroup",find_index("SIA"  ,chemgroups(:)%name),&
+            ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",1.0                 ,-999.9),&
+      Asc2D("dust_5km" ,"BCVugXXgroup",find_index("DUST",chemgroups(:)%name),&
+            ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",1.0                 ,-999.9),&
+      Asc2D("salt_5km","BCVugXXgroup",find_index("SS"   ,chemgroups(:)%name),&
+            ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",1.0                 ,-999.9),&
+      Asc2D("ppm_5km" ,"BCVugXXgroup",find_index("PPM10",chemgroups(:)%name),&
+            ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",1.0                 ,-999.9),&
+      Asc2D("fire_5km","BCVugXXgroup",find_index("PPM25_FIRE",chemgroups(:)%name),&
+            ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",1.0                 ,-999.9)/)
+    endif
   case("MACC_EVA")
     levels_hourly = (/0/)
     pm25 =find_index("SURF_ug_PM25X_rh50",f_2d(:)%name)
@@ -488,6 +503,19 @@ subroutine set_output_defs
             ix1,ix2,iy1,iy2,1             ,"ug",1.0                 ,-999.9),&
       Asc2D("PM10","D2D_inst",pm10,&
             ix1,ix2,iy1,iy2,1             ,"ug",1.0                 ,-999.9)/)
+    if(DEBUG_PM10  )then
+      j=j+5;hr_out(j-4:j) = (/&
+      Asc2D("sia_5km" ,"BCVugXXgroup",find_index("SIA"  ,chemgroups(:)%name),&
+            ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",1.0                 ,-999.9),&
+      Asc2D("dust_5km" ,"BCVugXXgroup",find_index("DUST",chemgroups(:)%name),&
+            ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",1.0                 ,-999.9),&
+      Asc2D("salt_5km","BCVugXXgroup",find_index("SS"   ,chemgroups(:)%name),&
+            ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",1.0                 ,-999.9),&
+      Asc2D("ppm_5km" ,"BCVugXXgroup",find_index("PPM10",chemgroups(:)%name),&
+            ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",1.0                 ,-999.9),&
+      Asc2D("fire_5km","BCVugXXgroup",find_index("PPM25_FIRE",chemgroups(:)%name),&
+            ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",1.0                 ,-999.9)/)
+    endif
   case("IMPACT2C") ! Dave's starting set. Uses Out3D to get 3m and 45m concs.
     levels_hourly = (/ (i, i= 0,nlevels_hourly-1) /)  ! -1 will give surfac
     hr_out(:)= (/ &

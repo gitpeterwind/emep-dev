@@ -423,7 +423,7 @@ integer, public, save :: NETCDF_DEFLATE_LEVEL=4
 !Hourly output in single file or monthly/daily files:
 !NB: will not work well by default on Stallo per 14th Feb 2012 because of library bugs!
 !Until this is fixed, you must compile with netcdf/4.1.3 and link and run with compiler 12.1.2
-character(len=*), public, parameter :: &! ending depeding on date:
+character(len=30), public, save :: &! ending depeding on date:
 ! HOURLYFILE_ending="_hour_YYYYMM.nc"   ! MM  -> month (01 .. 12)
 ! HOURLYFILE_ending="_hour_YYYYMMDD.nc" ! DD  -> day of the month (00 .. 31)
 ! HOURLYFILE_ending="_hour_YYYYJJJ.nc"  ! JJJ -> the day of the year (001 .. 366)
@@ -551,7 +551,7 @@ integer, public, parameter ::  &
   IOU_HOUR=6, IOU_HOUR_MEAN=7                   & ! Hourly  output
   ,IOU_MAX_MAX=7                                  ! Max values for of IOU (for array declarations)
 
-character(len=*), public, parameter :: model="EMEP_MSC-W "!! //VERSION
+character(len=*), public, parameter :: model="EMEP_MSC-W "
 
 !----------------------------------------------------------------------------
 contains
@@ -586,7 +586,7 @@ subroutine Config_ModelConstants(iolog)
      ,VEG_2dGS_Params & ! Allows 2d maps of growing seasons
      ,PFT_MAPPINGS &  ! Allows use of external LAI maps
      ,NETCDF_DEFLATE_LEVEL,  RUNDOMAIN, DOMAIN_DECOM_MODE &
-     ,JUMPOVER29FEB
+     ,JUMPOVER29FEB, HOURLYFILE_ending
 
     txt = "ok"
     !Can't call check_file due to circularity

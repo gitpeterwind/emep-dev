@@ -431,6 +431,7 @@ do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
     if( class == 'COLUMN' ) then
       iout = find_index(outname, species_adv(:)%name )
       call CheckStop(iout<0,"OutputFields COLUMN not found "//trim(outname))
+      unitscale = Units_Scale(outunit, iout, unittxt)
       outtyp = "COLUMN"
       subclass = outdim   ! k20, k16...
       outname = "COLUMN_" // trim(outname) // "_" // trim(subclass)
@@ -1176,40 +1177,31 @@ end do
 !                   n, trim(f_2d(n)%name), d_2d(n,debug_li,debug_lj,IOU_INST)
 !            Nothing to do - all set in My_DryDep
 
-          case ( "COLUMN" ) ! to_molec_cm3 gives #/cm3, 100 is for m -> cm
-
+          case ( "COLUMN" ) ! unit conversion factor stored in f_2d(n)%scale
             read(unit=f_2d(n)%subclass,fmt="(a1,i2)") txt2, klow ! Connvert e.g. k20 to klow=20
 !if(MasterProc) print *, "COLUMN TEST subclass ", f_2d(n)%subclass, f_2d(n)%index, klow
-            !klow = f_2d(n)%LC  ! here we have used LC to set vertical limit
-
             do j = 1, ljmax
             do i = 1, limax
-               k = 1
-               tmpwork( i,j ) =  &
-                    xn_adv(index,i,j,k)  * &
-                    roa(i,j,k,1)* (z_bnd(i,j,k)-z_bnd(i,j,k+1))
+              k = 1
+              tmpwork(i,j) =  &
+                xn_adv(index,i,j,k)*roa(i,j,k,1)*(z_bnd(i,j,k)-z_bnd(i,j,k+1))
+              do k = 2, klow   !!! KMAX_MID
+                tmpwork(i,j) = tmpwork(i,j) + &
+                xn_adv(index,i,j,k)*roa(i,j,k,1)*(z_bnd(i,j,k)-z_bnd(i,j,k+1))
 
-               do k = 2, klow   !!! KMAX_MID
-                  tmpwork( i,j ) = tmpwork( i,j ) + &
-                    xn_adv(index,i,j,k)  * &
-                    roa(i,j,k,1) * (z_bnd(i,j,k)-z_bnd(i,j,k+1))
-                  if( DEBUG%COLUMN .and. debug_flag .and. &
-                         i == debug_li .and. j == debug_lj ) then
-                     write(*,"(a,3i4,a4,f8.3,f8.1,2es12.3)") &
-                        trim(f_2d(n)%name), n, index, k, " => ", &
-                        roa(i,j,k,1), z_bnd(i,j,k)-z_bnd(i,j,k+1), &
-                        xn_adv(index,i,j,k),tmpwork(i,j)
-                  end if
-               end do ! k
-               d_2d( n, i, j, IOU_INST) = to_molec_cm3 * 100.0 * tmpwork( i, j ) ! Should be molec/cm2
-
-
-            end do !i
-            end do !j
-            if( debug_flag ) &
-                write(*,"(a18,es12.3)") "COLUMN d2_2d", &
-                     d_2d( n, debug_li, debug_lj, IOU_INST)
-
+                if(DEBUG%COLUMN.and.debug_flag.and.&
+                   i==debug_li.and.j==debug_lj) &
+                  write(*,"(a,3i4,a4,f8.3,f8.1,2es12.3)") &
+                    trim(f_2d(n)%name), n, index, k, " => ", &
+                    roa(i,j,k,1), z_bnd(i,j,k)-z_bnd(i,j,k+1), &
+                    xn_adv(index,i,j,k),tmpwork(i,j)
+               enddo ! k
+               d_2d(n,i,j,IOU_INST) = tmpwork(i,j) ! unit conversion
+                     ! is completed elsewere by *f_2d(n)%scale
+            enddo !i
+            enddo !j
+            if(debug_flag) write(*,"(a18,es12.3)") &
+              "COLUMN d2_2d",d_2d(n,debug_li,debug_lj,IOU_INST)*f_2d(n)%scale
 
          case ( "EcoFrac" ) ! ODD TO HAVE FRAC AND AREA BELOW:"ECOAREA" )
 
