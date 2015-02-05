@@ -9,6 +9,7 @@ implicit none
 !
 
 
+real, parameter :: UNDEF_R = -huge(0.0)
 character(len=100) :: infile   ! for GetArg
 integer, parameter :: IO_5=5, IO_IN = 10,  &
    IO_SNAM=12, IO_DMAX=14, IO_MMEAN=15, IO_VALS=16, IO_DATES= 17, &
@@ -17,12 +18,12 @@ integer, parameter :: IO_5=5, IO_IN = 10,  &
 character(len=35000) :: longline
 character(len=20), dimension(MAX_SITES) :: sitename
 character(len=20), dimension(MAX_SPEC) :: specname
-real             , dimension(NK,MAX_SPEC) :: xin
-real             , dimension(366,0:23,NK) :: data
+real             , dimension(NK,MAX_SPEC) :: xin = UNDEF_R
+real             , dimension(366,0:23,NK) :: data = -UNDEF_R
 integer          , dimension(366) :: cmonth, cday
-real :: maxx = -9.99e19   ! Max xin value found in 1:NK range 
-character(len=20) :: fmt
-character(len=20) :: insite, wpoll, wsite, date, txt1, txt2
+real :: maxx = UNDEF_R    ! Max xin value found in 1:NK range 
+character(len=40) :: prefix
+character(len=20) :: wpoll, wsite, date, txt1, txt2, fmt
 integer :: comma, comma2
 integer :: yy, mm, dd, hh, freq, last_day, jd, old_dd
 integer :: i, k, n, nspec, nsites, isite  !csv, ispec
@@ -56,11 +57,12 @@ real :: mmean(12)
    open(IO_IN,file=infile)
 
   !Out
-   open(IO_VALS,file="SONDES.vals")
-   open(IO_SNAM,file="SONDES.sname")
-   open(IO_DMAX,file="SONDES.dmax")
-   open(IO_MMEAN,file="SONDES.mmean")
-   open(IO_DATES,file="SONDES.dates")
+   prefix="SONDES_" // trim(wsite) // "_" // trim(wpoll)
+   open(IO_VALS,file=trim(prefix)//"_vals.txt")
+   open(IO_SNAM,file=trim(prefix)//"_sname.txt")
+   open(IO_DMAX,file=trim(prefix)//"_dmax.txt")
+   open(IO_MMEAN,file=trim(prefix)//"_mmean.txt")
+   open(IO_DATES,file=trim(prefix)//"_dates.txt")
 
    read(IO_IN,*)  nsites
    read(IO_IN,*)  freq
@@ -119,7 +121,7 @@ real :: mmean(12)
 !IN:Uccle, 01/01/2006 01:00, 3.282E+01, 3.591E+01, 3.624E+01, 3.709E+01, 3.811E+01, 
 !IN:..
 
-   data(:,:,:) = 0.0
+   !F15 data(:,:,:) = 0.0
    jd = 0
    old_dd = 0
 
@@ -150,7 +152,7 @@ real :: mmean(12)
       !print *, "longline ", longline(1:40)
        read(longline,*) ( xin(1:NK,n), n=1, nspec )
 
-      if( DEBUG ) print *, insite, yy, mm, dd, hh
+!      if( DEBUG ) print *, yy, mm, dd, hh
 !stop "HERE"
 
         if (isite == wanted_site ) then
@@ -178,12 +180,12 @@ real :: mmean(12)
 
     do jd = 1, last_day
 
+      if ( data(jd,0,1) == UNDEF_R ) data(jd,0,:) = data(jd,1,:) ! Fill in 1st hh=0
       do hh = 0, 23, freq
         write(IO_VALS,fmt=fmt) jd, cmonth(jd), cday(jd),hh, (data(jd,hh,k), k= 1, NK )
       end do
 
       write(IO_DMAX,"(3i4,30es10.3)") jd, cmonth(jd), cday(jd), (maxval(data(jd,:,k)), k=1,NK)
-
 
     end do ! dd
 
@@ -193,14 +195,20 @@ real :: mmean(12)
       nmm(mm) = 0
       do jd = 1, last_day
         mm = cmonth(jd)
+        if( jd > 300 .and. mm == 1 ) exit !hit start of next year
         if( mm /= old_mm ) then
            nmm(mm) = 0
            old_mm = mm
         end if
         nmm(mm) = nmm(mm) + 1
+
+        if( any( data(jd,:,k) ==UNDEF_R ) ) stop 'DD'
+
         mmean( mm ) =  mmean( mm )  + sum( data(jd,:, k)/24.0 )
        !print *, "Last ", jd, last_day
       end do
+      if( DEBUG ) print "(a,i3,2i4,2g12.3)", "MMEAN ", k, &
+           nmm(1), nmm(12), mmean(1)/nmm(1), mmean(12)/nmm(12)
       write(IO_MMEAN,"(i4, 12f10.3)") k, (mmean(mm)/nmm(mm), mm= 1, 12) 
     end do
 
