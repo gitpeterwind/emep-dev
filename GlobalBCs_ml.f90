@@ -1,29 +1,4 @@
-! <GlobalBCs_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
-!          Chemical transport Model>
-!*****************************************************************************!
-!*
-!*  Copyright (C) 2007-2013 met.no
-!*
-!*  Contact information:
-!*  Norwegian Meteorological Institute
-!*  Box 43 Blindern
-!*  0313 OSLO
-!*  NORWAY
-!*  email: emep.mscw@met.no
-!*  http://www.emep.int
-!*
-!*    This program is free software: you can redistribute it and/or modify
-!*    it under the terms of the GNU General Public License as published by
-!*    the Free Software Foundation, either version 3 of the License, or
-!*    (at your option) any later version.
-!*
-!*    This program is distributed in the hope that it will be useful,
-!*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-!*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!*    GNU General Public License for more details.
-!*
-!*    You should have received a copy of the GNU General Public License
-!*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+! <GlobalBCs_ml.f90 - A component of the EMEP MSC-W Chemical transport Model>
 !*****************************************************************************!
 module GlobalBCs_ml
 ! -----------------------------------------------------------------------
@@ -61,7 +36,6 @@ public :: GetGlobalData         ! Opens, reads bc_data, closes global data
 public :: setgl_actarray
 
 logical, parameter, private :: &
-!  DEBUG_GLOBBC = .false., &
   DEBUG_Logan  = .false., &
   DEBUG_HZ     = .false.
 
@@ -174,7 +148,8 @@ subroutine GetGlobalData(year,month,ibc,used,        &
   !---------------------------------------------------------------------------
   ! Mace Head ozone concentrations for backgroudn sectors
   ! from Fig 5.,  Derwent et al., 1998, AE Vol. 32, No. 2, pp 145-157
-  real, dimension(12,1990:2012), parameter :: macehead_year=reshape(&
+  integer, parameter :: MH_YEAR1 = 1990, MH_YEAR2 = 2012
+  real, dimension(12,MH_YEAR1:MH_YEAR2), parameter :: macehead_year=reshape(&
    [35.3,36.3,38.4,43.0,41.2,33.4,35.1,27.8,33.7,36.2,28.4,37.7,& !1990
     36.1,38.7,37.7,45.8,38.8,36.3,29.6,33.1,33.4,35.7,37.3,36.7,& !1991
     36.1,37.3,41.8,39.6,41.2,31.5,28.3,30.3,31.3,34.2,36.1,34.9,& !1992
@@ -355,7 +330,7 @@ subroutine GetGlobalData(year,month,ibc,used,        &
 !      Later we use iyr_trend to adjust for other years, say for 2050.
 ! For 2020 "trend" runs  - use 13 yr average as base-O3 (macehead_default)
 ! then later scale by trend_o3:
-  if((iyr_trend==year).and.(year>=1990).and.(year<=2011))then
+  if((iyr_trend==year).and.(year>=MH_YEAR1).and.(year<=MH_YEAR2))then
     macehead_O3=macehead_year(:,year)
   else
     macehead_O3=macehead_default

@@ -118,7 +118,7 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
-($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2932"   ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA","EMEP");
+($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2936"   ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA","EMEP");
 
 my $KEEP_LINKS=0; # do not cleanup links
 my %BENCHMARK;

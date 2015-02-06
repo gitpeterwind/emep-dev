@@ -153,6 +153,17 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6th February 2015 Dave, 2936
+
+GlobalBCs_ml 
+  Mace Head correction for 2012 corrected.... 
+   if((iyr_trend==year).and.(year>=1990).and.(year<=2011))then
+  
+  changed to use of MH_YEAR1=1990, MH_YEAR2=2012 (for now)
+
+Also header comments removed.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 5th February 2015 Anna, Peter    2933
 
 Mace Head correction for 2012 included
@@ -276,7 +287,7 @@ ZD_3DVar/Analysis/DA_3DVar_ml,DA_Obs_ml,DA_Bias_ml,ufftw3_ml,chitox_ml:
 - Use HERE(MSG) macro on CheckStop calls.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-5th February  2015 Peter    2929
+5th February  2015 Dave     2929
 
 utils/Rd_csvsondes.f90 - added bug fix for undefined, and UNDEF_R to make it
     clearer. Also used site and pollutant name in output files.
