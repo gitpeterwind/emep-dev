@@ -336,8 +336,13 @@ subroutine GetGlobalData(year,month,ibc,used,        &
 ! then later scale by trend_o3:
   if((iyr_trend==year).and.(year>=MH_YEAR1).and.(year<=MH_YEAR2))then
     macehead_O3=macehead_year(:,year)
+    write(unit=txtmsg,fmt="(a,i5)") "BC: O3 Mace Head correction for year ", year
   else
     macehead_O3=macehead_default
+    write(unit=txtmsg,fmt="(a)") "BC: O3 default Mace Head correction"
+  endif
+  if (MasterProc.and.first_call) then
+    call PrintLog(txtmsg)
   endif
 !=========== Generated from Mace Head Data =======================
 
