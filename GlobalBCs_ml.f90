@@ -23,7 +23,7 @@ use ModelConstants_ml, only: PPB, KMAX_MID, Pref, MasterProc, DO_SAHARA, &
                              USES, DEBUG, & !%GLOBBC, &
                           iyr_trend, IIFULLDOM, JJFULLDOM
 use NetCDF_ml,      only: GetCDF, Read_Inter_CDF
-use Par_ml,         only: GIMAX, GJMAX, IRUNBEG, JRUNBEG
+use Par_ml,         only: GIMAX, GJMAX, IRUNBEG, JRUNBEG,me
 use PhysicalConstants_ml, only: PI
 use TimeDate_ml,    only: daynumber
 use TimeDate_ExtraUtil_ml,only: date2string
@@ -305,7 +305,11 @@ subroutine GetGlobalData(year,month,ibc,used,        &
     trend_co = 1.0
     trend_voc= 1.0
   case(1990:1999)
-    trend_o3 = exp(-0.01*1.0 *(2000-iyr_trend))
+	if( USES%MACEHEADFIX ) then
+       trend_o3 = 1.0
+    else
+       trend_o3 = exp(-0.01*1.0 *(2000-iyr_trend))
+    end if
     trend_co = 1.0
     trend_voc= 1.0
   case default
@@ -360,7 +364,8 @@ subroutine GetGlobalData(year,month,ibc,used,        &
     !                           surf   dmax   amp   hz    vmin  hmin conv_fac!ref
     !                            ppb          ppb   km   hmin,vmin:same units as input data=conv_fac
     SpecBC(IBC_SO2  )  = sineconc( 0.15 , 15.0, 0.05, 999.9, 0.03, 0.03,PPB)!W99, bcKz vmin
-    SpecBC(IBC_SO4  )  = sineconc( 0.15 ,180.0, 0.00, 1.6  , 0.05, 0.03,PPB)!W99
+!pwds    SpecBC(IBC_SO4  )  = sineconc( 0.15 ,180.0, 0.00, 1.6  , 0.05, 0.03,PPB)!W99
+    SpecBC(IBC_SO4  )  = sineconc( 0.15 ,180.0, 0.00, 999.9, 0.05, 0.03,PPB)!W99
     SpecBC(IBC_NO   )  = sineconc( 0.1  , 15.0, 0.03, 4.0  , 0.03, 0.02,PPB)
     SpecBC(IBC_NO2  )  = sineconc( 0.1  , 15.0, 0.03, 4.0  , 0.05, 0.04,PPB)
     SpecBC(IBC_PAN  )  = sineconc( 0.20 ,120.0, 0.15, 999.9, 0.20, 0.1 ,PPB)!Kz change vmin
@@ -416,20 +421,22 @@ subroutine GetGlobalData(year,month,ibc,used,        &
 
     ! Latitude functions taken from Lagrangian model, see Simpson (1992)
     latfunc(:,6:14) = 1.0    ! default
+    if(me==0)write(*,*)'WARNING SET LATFUNC TO CONSTANT 1'
+!Dave, Peter 10th Feb 2015: simplify and set to 1!
                               !  30        40        50       60         70 degN
-    latfunc(IBC_SO2 ,6:14) = (/ 0.05,0.15,0.3 ,0.8 ,1.0 ,0.6 ,0.2 ,0.12,0.05/)
-    latfunc(IBC_HNO3,6:14) = (/ 1.00,1.00,1.00,0.85,0.7 ,0.55,0.4 ,0.3 ,0.2 /)
-    latfunc(IBC_PAN ,6:14) = (/ 0.15,0.33,0.5 ,0.8 ,1.0 ,0.75,0.5 ,0.3 ,0.1 /)
-    latfunc(IBC_CO  ,6:14) = (/ 0.6 ,0.7 ,0.8 ,0.9 ,1.0 ,1.0 ,0.95,0.85,0.8 /)
-
-    latfunc(IBC_SO4   ,:) = latfunc(IBC_SO2 ,:)
-    latfunc(IBC_NO    ,:) = latfunc(IBC_SO2 ,:)
-    latfunc(IBC_NO2   ,:) = latfunc(IBC_SO2 ,:)
-    latfunc(IBC_HCHO  ,:) = latfunc(IBC_HNO3,:)
-    latfunc(IBC_CH3CHO,:) = latfunc(IBC_HNO3,:)
-    latfunc(IBC_NH4_f ,:) = latfunc(IBC_SO2 ,:)
-    latfunc(IBC_NO3_f ,:) = latfunc(IBC_SO2 ,:)
-    latfunc(IBC_NO3_c ,:) = latfunc(IBC_SO2 ,:)
+!    latfunc(IBC_SO2 ,6:14) = (/ 0.05,0.15,0.3 ,0.8 ,1.0 ,0.6 ,0.2 ,0.12,0.05/)
+!    latfunc(IBC_HNO3,6:14) = (/ 1.00,1.00,1.00,0.85,0.7 ,0.55,0.4 ,0.3 ,0.2 /)
+!    latfunc(IBC_PAN ,6:14) = (/ 0.15,0.33,0.5 ,0.8 ,1.0 ,0.75,0.5 ,0.3 ,0.1 /)
+!    latfunc(IBC_CO  ,6:14) = (/ 0.6 ,0.7 ,0.8 ,0.9 ,1.0 ,1.0 ,0.95,0.85,0.8 /)
+!
+!    latfunc(IBC_SO4   ,:) = latfunc(IBC_SO2 ,:)
+!    latfunc(IBC_NO    ,:) = latfunc(IBC_SO2 ,:)
+!    latfunc(IBC_NO2   ,:) = latfunc(IBC_SO2 ,:)
+!    latfunc(IBC_HCHO  ,:) = latfunc(IBC_HNO3,:)
+!    latfunc(IBC_CH3CHO,:) = latfunc(IBC_HNO3,:)
+!    latfunc(IBC_NH4_f ,:) = latfunc(IBC_SO2 ,:)
+!    latfunc(IBC_NO3_f ,:) = latfunc(IBC_SO2 ,:)
+!    latfunc(IBC_NO3_c ,:) = latfunc(IBC_SO2 ,:)
 
     ! Use Standard Atmosphere to get average heights of layers
     p_kPa(:) = 0.001*( A_mid(:) + B_mid(:)*Pref ) ! Pressure in kPa
@@ -496,12 +503,16 @@ subroutine GetGlobalData(year,month,ibc,used,        &
      bc_rawdata=1.0E-25
 
   case (IBC_NO  ,IBC_NO2  ,IBC_HNO3,IBC_CO, &
-        IBC_C2H6,IBC_C4H10,IBC_PAN ,IBC_NO3_c)
+        IBC_C2H6,IBC_C4H10,IBC_PAN ,IBC_NO3_c,&
+        IBC_SO2   , IBC_SO4  , IBC_HCHO , &
+        IBC_SEASALT_f,IBC_SEASALT_C, IBC_SEASALT_G, &
+        IBC_CH3CHO, IBC_NH4_f, IBC_NO3_f)
     ! NB since we only call once per month we add 15 days to
     ! day-number to get a mid-month value
     cosfac = cos( twopi_yr * (daynumber+15.0-SpecBC(ibc)%dmax))
     bc_rawdata(:,:,KMAX_MID) = SpecBC(ibc)%surf + SpecBC(ibc)%amp*cosfac
 
+    if(SpecBC(ibc)%hz<100.0)then
     !/ - correct for other heights
     do k = 1, KMAX_MID-1
       scale_new = exp( -h_km(k)/SpecBC(ibc)%hz )
@@ -513,46 +524,19 @@ subroutine GetGlobalData(year,month,ibc,used,        &
           h_km(k), p_kPa(k), scale_old, scale_new
       endif ! DEBUG_HZ
     enddo
+
+    else    
+       do k = 1, KMAX_MID-1
+          bc_rawdata(:,:,k) = bc_rawdata(:,:,KMAX_MID)
+       enddo
+    endif
+
     bc_rawdata = max( bc_rawdata, SpecBC(ibc)%vmin )
 
     !/ - correct for latitude functions
     forall(i=1:IIFULLDOM,j=1:JJFULLDOM)
       bc_rawdata(i,j,:) = bc_rawdata(i,j,:) * latfunc(ibc,lat5(i,j))
     endforall
-
-    !/ trend adjustments
-    if( ibc == IBC_C4H10 .or. ibc == IBC_C2H6 )then
-      bc_rawdata =  bc_rawdata*trend_voc
-    elseif( ibc == IBC_CO )then
-      bc_rawdata =  bc_rawdata*trend_co
-    endif
-
-  case (IBC_SO2   , IBC_SO4  , IBC_HCHO , &
-!        IBC_SEASALT_f,IBC_SEASALT_C, &
-        IBC_CH3CHO, IBC_NH4_f, IBC_NO3_f)
-    ! (No vertical variation for S in marine atmosphere, see W99)
-    ! aNO3 and NH4 assumed to act as SO4
-    !  and PAN is just temporary, with some guessing that
-    !  since sources decrease with altitude, but lifetime
-    !  increases the concs don't change much.
-    cosfac = cos( twopi_yr * (daynumber+15.0-SpecBC(ibc)%dmax))
-    bc_rawdata(:,:,:) =    SpecBC(ibc)%surf  + SpecBC(ibc)%amp*cosfac
-
-  case (IBC_SEASALT_f, IBC_SEASALT_C, IBC_SEASALT_G)
-    ! In BoundaryConditions, overland BICs will be reduced, but here
-    ! we set the full 3-D array.
-     cosfac = cos( twopi_yr * (daynumber+15.0-SpecBC(ibc)%dmax))
-     bc_rawdata(:,:,:) =    SpecBC(ibc)%surf  + SpecBC(ibc)%amp*cosfac
-
-    !/ - correct for latitude functions
-    if (DEBUG_Logan) print *,"LOGAN HORIZ",ibc,SpecBC(ibc)%surf,cosfac
-    do i = 1, IIFULLDOM
-      do j = 1, JJFULLDOM
-        bc_rawdata(i,j,:) = bc_rawdata(i,j,:) * latfunc(ibc,lat5(i,j))
-        if ( DEBUG_Logan ) print "(2i4,f8.2,f15.4)",&
-          j,lat5(i,j),latfunc(ibc,lat5(i,j)),bc_rawdata(36,j,1)
-      enddo
-    enddo
 
     case (IBC_DUST_c,IBC_dust_f)
       ! Dust: Sahara BIC from monthly 2000 data from CTM
@@ -611,15 +595,22 @@ subroutine GetGlobalData(year,month,ibc,used,        &
   !/ - correction for latitude functions
   bc_rawdata = max( bc_rawdata, SpecBC(ibc)%hmin )
 
-  !/ trend adjustments
-  select case (ibc)
-  case(IBC_SO2,IBC_SO4)
-    bc_rawdata = bc_rawdata*SIAtrend%so2
-  case(IBC_NH4_f)
-    bc_rawdata = bc_rawdata*SIAtrend%nh4
-  case(IBC_NO3_f,IBC_NO3_c,IBC_HNO3,IBC_NO2,IBC_NO,IBC_PAN)
-    bc_rawdata = bc_rawdata*SIAtrend%nox
-  endselect
+
+    !/ trend adjustments
+   select case (ibc)
+   case (IBC_C4H10 , IBC_C2H6 )
+      bc_rawdata =  bc_rawdata*trend_voc
+   case ( IBC_CO )
+      bc_rawdata =  bc_rawdata*trend_co
+    if(ibc==IBC_CO)write(*,*)'PWPWCO4',bc_rawdata(1,1,KMAX_MID),SpecBC(ibc)%surf,SpecBC(ibc)%amp,cosfac
+   case ( IBC_SO2,IBC_SO4)
+      bc_rawdata = bc_rawdata*SIAtrend%so2
+   case( IBC_NH4_f)
+      bc_rawdata = bc_rawdata*SIAtrend%nh4
+   case ( IBC_NO3_f,IBC_NO3_c,IBC_HNO3,IBC_NO2,IBC_NO,IBC_PAN)
+      bc_rawdata = bc_rawdata*SIAtrend%nox
+   end select
+
 
 
   if (DEBUG_Logan) print *,"LOGAN NEW MIN", minval ( bc_rawdata )

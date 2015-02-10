@@ -153,6 +153,20 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+10th February 2015 Peter, Dave 2937
+
+Changes in BIC, GlobalBCs_ml :
+
+all Latitude profiles are removed! (set to 1)
+
+Vertical profiles implemented for IBC_HCHO ,IBC_SEASALT_f, 
+IBC_SEASALT_C, IBC_SEASALT_G, IBC_CH3CHO, IBC_NH4_f, IBC_NO3_f
+(were missing)
+
+trend for O3 removed when Mace Head correction is applied for year 1990-1999
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 6th February 2015 Dave, 2936
 
 GlobalBCs_ml 
