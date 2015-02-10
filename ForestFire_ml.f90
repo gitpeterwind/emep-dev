@@ -36,7 +36,8 @@ use GridValues_ml,        only: i_fdom, j_fdom, debug_li, debug_lj, &
 use Io_ml,                only: PrintLog, datewrite, IO_NML
 use MetFields_ml,         only: z_bnd
 use ModelConstants_ml,    only: MasterProc, KMAX_MID, DEBUG, IOU_INST
-use NetCDF_ml,            only: ReadTimeCDF,ReadField_CDF,Out_netCDF,Real4 ! Reads, writes 
+use netcdf
+use NetCDF_ml,            only: ReadTimeCDF,ReadField_CDF,Out_netCDF,Real4, check
 use OwnDataTypes_ml,      only: Deriv, TXTLEN_SHORT
 use Par_ml,               only: MAXLIMAX, MAXLJMAX, me,limax,ljmax
 use PhysicalConstants_ml, only: AVOG
@@ -190,7 +191,7 @@ subroutine Fire_Emis(daynumber)
   integer, save  :: nn_old=-1
   real    :: fac, to_kgm2s   
 
-  integer :: ind
+  integer :: ind, ncFileID
   integer :: loc_maxemis(2) ! debug
 
   character(len=max_string_length) :: fname='new'
@@ -244,6 +245,8 @@ subroutine Fire_Emis(daynumber)
   allocate(rdemis(MAXLIMAX,MAXLJMAX),stat=alloc_err)
   call CheckStop(alloc_err,"ForestFire rdemis alloc problem")
   
+  !open the file only once
+  call check(nf90_open(path = trim(fname), mode = nf90_nowrite, ncid = ncFileID))
   ! We need to look for forest-fire emissions which are equivalent
   ! to the standard emission files:
   do iBB = 1, NBB_DEFS
@@ -268,14 +271,14 @@ subroutine Fire_Emis(daynumber)
         do dd = dn1, dn2
           if(newFFrecord([yyyy,01,dd])) &
           call ReadField_CDF(fname,FF_poll,xrdemis,nstart,interpol='zero_order',&
-            needed=need_poll,UnDef=0.0,debug_flag=debug_nc)
+          needed=need_poll,UnDef=0.0,debug_flag=debug_nc,ncFileID_given=ncFileID)
           rdemis = rdemis + xrdemis                 ! month total
           ndn    = ndn + 1
         enddo
       else
         ndn=1
         call ReadField_CDF(fname,FF_poll,rdemis,nstart,interpol='zero_order',&
-          needed=need_poll,UnDef=0.0,debug_flag=debug_nc)
+          needed=need_poll,UnDef=0.0,debug_flag=debug_nc,ncFileID_given=ncFileID)
       endif
       !unit conversion to GFED [g/m2/8day]->[kg/m2/s]
       to_kgm2s = 1.0e-3 /(8*24.0*3600.0)
@@ -288,14 +291,14 @@ subroutine Fire_Emis(daynumber)
         do dd = dn1, dn2
           if(newFFrecord([yyyy,01,dd])) &
           call ReadField_CDF(fname,FF_poll,xrdemis,nstart,interpol='mass_conservative',&
-            needed=need_poll,UnDef=0.0,debug_flag=debug_nc)
+            needed=need_poll,UnDef=0.0,debug_flag=debug_nc,ncFileID_given=ncFileID)
           rdemis = rdemis + xrdemis                 ! month total
           ndn    = ndn + 1
         enddo
       else
         ndn=1
         call ReadField_CDF(fname,FF_poll,rdemis,nstart,interpol='mass_conservative',&
-            needed=need_poll,UnDef=0.0,debug_flag=debug_nc)
+            needed=need_poll,UnDef=0.0,debug_flag=debug_nc,ncFileID_given=ncFileID)
       endif
       ! unit conversion to FINN: Can be negative if REMPPM to be calculated
       fac=FF_defs(iBB)%unitsfac * FF_defs(iBB)%frac ! --> [kg/day]
@@ -309,14 +312,14 @@ subroutine Fire_Emis(daynumber)
         do dd = dn1, dn2
           if(newFFrecord([yyyy,01,dd])) &
           call ReadField_CDF(fname,FF_poll,xrdemis,nstart,interpol='conservative',&
-            needed=need_poll,debug_flag=debug_nc)
+            needed=need_poll,debug_flag=debug_nc,ncFileID_given=ncFileID)
           rdemis = rdemis + xrdemis                 ! month total
           ndn    = ndn + 1
         enddo
       else
         ndn=1
         call ReadField_CDF(fname,FF_poll,rdemis,nstart,interpol='conservative',&
-            needed=need_poll,debug_flag=debug_nc)
+            needed=need_poll,debug_flag=debug_nc,ncFileID_given=ncFileID)
       endif
       ! GFAS units are [kg/m2/s]. No further unit conversion is needed.
       ! However, fac can be /=1, e.g. when REMPPM is calculated
@@ -338,6 +341,8 @@ subroutine Fire_Emis(daynumber)
 
     if(DEBUG%FORESTFIRE) sum_emis(ind)=sum_emis(ind)+sum(BiomassBurningEmis(ind,:,:))
   enddo ! BB_DEFS
+
+  call check(nf90_close(ncFileID))!has to close the file here
 
   first_call  = .false.
   deallocate(rdemis)
