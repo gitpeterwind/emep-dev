@@ -118,7 +118,7 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
-($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2936"   ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA","EMEP");
+($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2938"   ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA","EMEP");
 
 my $KEEP_LINKS=0; # do not cleanup links
 my %BENCHMARK;
@@ -911,11 +911,11 @@ unless($MAKEMODE=~/EVA/){
   $ifile{"$DataDir/Landuse/Landuse_PS_5km_LC.nc"} ="Landuse_PS_5km_LC.nc";
 #  $ifile{"$DataDir/Landuse/Landuse_PS_1km_LC.nc"} ="Landuse_PS_5km_LC.nc";
 
+  $ifile{"$DataDir/LandInputs_Mar2013/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
+  $ifile{"$DataDir/LandInputs_Mar2013/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
   #CEH GLOBAL
-  #$ifile{"$DataDir/LandInputs_Mar2013/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
-  #$ifile{"$DataDir/LandInputs_Mar2013/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
-  $ifile{"$MyDataDir/LandInputs_Dec2014/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
-  $ifile{"$MyDataDir/LandInputs_Dec2014/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
+  #CEH $ifile{"$MyDataDir/LandInputs_Dec2014/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
+  #CEH $ifile{"$MyDataDir/LandInputs_Dec2014/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
 
 #For dust: clay and sand fractions
   $ifile{"$DataDir/Soil_Tegen.nc"} ="Soil_Tegen.nc";
