@@ -607,7 +607,6 @@ subroutine GetGlobalData(year,month,ibc,used,        &
       bc_rawdata =  bc_rawdata*trend_voc
    case ( IBC_CO )
       bc_rawdata =  bc_rawdata*trend_co
-    if(ibc==IBC_CO)write(*,*)'PWPWCO4',bc_rawdata(1,1,KMAX_MID),SpecBC(ibc)%surf,SpecBC(ibc)%amp,cosfac
    case ( IBC_SO2,IBC_SO4)
       bc_rawdata = bc_rawdata*SIAtrend%so2
    case( IBC_NH4_f)
