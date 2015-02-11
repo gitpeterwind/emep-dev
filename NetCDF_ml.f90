@@ -2744,21 +2744,20 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   else
      !open an existing netcdf dataset
      status=nf90_open(path = trim(fileName), mode = nf90_nowrite, ncid = ncFileID)
-  endif
 
-  if(status == nf90_noerr) then
-     if ( debug ) write(*,*) 'ReadCDF reading ',trim(filename), ' nstart ', nstart
-  else
-     if(fileneeded)then
-        print *, 'file does not exist: ',trim(fileName),nf90_strerror(status)
-        call CheckStop(fileneeded, "ReadField_CDF : file needed but not found")
+     if(status == nf90_noerr) then
+        if ( debug ) write(*,*) 'ReadCDF reading ',trim(filename), ' nstart ', nstart
      else
-        if(MasterProc) write(*,*)'file does not exist (but not needed): ',&
-              trim(fileName),nf90_strerror(status)
-        return
+        if(fileneeded)then
+           print *, 'file does not exist: ',trim(fileName),nf90_strerror(status)
+           call CheckStop(fileneeded, "ReadField_CDF : file needed but not found")
+        else
+           if(MasterProc) write(*,*)'file does not exist (but not needed): ',&
+                trim(fileName),nf90_strerror(status)
+           return
+        endif
      endif
   endif
-
 
   interpol_used='zero_order'!default
   if(present(interpol))then
