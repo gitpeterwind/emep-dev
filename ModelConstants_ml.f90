@@ -132,7 +132,6 @@ logical, public, save ::             &
  ,USE_LIGHTNING_EMIS = .true.        & ! 
 !
 ! More experimental:
- ,DO_SAHARA             = .false.    & ! Turn on/off BG Saharan Dust
  ,USE_ROADDUST          = .false.    & ! TNO Road Dust routine. So far with simplified "climate-correction" factor
  ,USE_DUST              = .false.    &! Experimental
  ,TEGEN_DATA            = .true.     &! Interpolate global data to make dust if  USE_DUST=.true.
@@ -570,7 +569,7 @@ subroutine Config_ModelConstants(iolog)
      ,USE_SOILWATER, USE_DEGREEDAY_FACTORS &
      ,USE_CONVECTION &
      ,USE_AIRCRAFT_EMIS,USE_LIGHTNING_EMIS  &  
-     ,DO_SAHARA, USE_ROADDUST, USE_DUST &
+     ,USE_ROADDUST, USE_DUST &
      ,USE_EURO_SOILNOX, USE_GLOBAL_SOILNOX, EURO_SOILNOX_DEPSCALE &
      ,USE_SEASALT ,USE_POLLEN &
      ,INERIS_SNAP1, INERIS_SNAP2 &   ! Used for TFMM time-factors

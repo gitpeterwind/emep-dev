@@ -19,7 +19,6 @@
   USE_SEASALT           = T,
   USE_SOILNOX           = F,          ! diff for global + Euro runs, *NOT for IMPACT2C*
   USE_POLLEN            = F,          ! EXPERIMENTAL. Only works if start Jan 1
-  DO_SAHARA             = F,   !???IMPACT2C?
   USE_ROADDUST          = F,          ! Only EECCA?
   USE_DUST              = F,          ! Only EECCA?
   NETCDF_DEFLATE_LEVEL  = 4,          ! 1-9 GZIP compress, 0 no compress, -1 nc3

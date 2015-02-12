@@ -153,6 +153,20 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+12th February 2015 Peter 2943
+
+Refactoring the GlobalBC_ml  and BoundaryConditions_ml.
+
+All fulldomain arrays are removed and a lot of unnecessary buffer and indices.
+GlobalBC_ml is not in use anymore; most of the content is moved into GetBICData, 
+but with local arrays instead of fulldomain arrays.
+
+O3 read from Logan_P.nc, which is flexible wrt number of vertical levels.
+Can slightly change O3 (<0.1 ppb?) compared to earlier versions.
+
+DO_SAHARA removed. (DUST BC will be replaced by global values in later revision)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 11th February 2015 Peter, Dave 2937-2942
 
 Changes in BIC, GlobalBCs_ml :
