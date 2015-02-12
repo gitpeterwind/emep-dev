@@ -866,8 +866,7 @@ subroutine GridRead(meteo,cyclicgrid)
     j=1
     i=1
     if(abs(1.5*glat_fdom(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)-0.5*glat_fdom(gi0+i+IRUNBEG-2,gj0+j+1+JRUNBEG-2))>89.5)then
-       !DS write(*,*)'south pole' !xm is infinity
-       write(*,"(a,3i4,f12.3)")'south pole DS',me,gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2,&
+      if(MasterProc) write(*,"(a,3i4,f12.3)")'south pole ',me,gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2,&
            glat_fdom(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)  !xm is infinity
        xm_global_i(:,0)=1.0E19
        xm_global_i(:,-1)=1.0E19

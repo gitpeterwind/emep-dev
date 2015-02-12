@@ -19,7 +19,7 @@ module AerosolCalls
  use Chemfields_ml,        only :  PM25_water, PM25_water_rh50,  & !PMwater 
                                    cfac
  use EQSAM_v03d_ml,        only :  eqsam_v03d
- use MARS_ml,              only :  rpmares
+ use MARS_ml,              only :  rpmares, rpmares_2900, DO_RPMARES_new
  use ModelConstants_ml,    only :  KMAX_MID, KCHEMTOP, DEBUG, MasterProc, AERO
  use PhysicalConstants_ml, only :  AVOG
  use Setup_1dfields_ml,    only :  xn_2d, temp, rh, pp
@@ -47,12 +47,15 @@ contains
  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
   subroutine AerosolEquilib(debug_flag)
     logical, intent(in) :: debug_flag
-    logical, save :: my_first_call
-
+    logical, save :: my_first_call=.true.
+    
+    if( my_first_call .and. MasterProc ) then
+       write(*,*) 'AerosolEquilib: chosen: ',AERO%EQUILIB 
+    end if
     select case ( AERO%EQUILIB )
       case ( 'EMEP' )
         call ammonium()
-      case ( 'MARS' )
+      case ( 'MARS' , 'MARS_2900', 'GEOSCHEM')
         call emep2MARS(debug_flag)
       case ( 'EQSAM' )
         call emep2EQSAM(debug_flag)
@@ -150,6 +153,7 @@ contains
              aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out,   &
              coef
   integer :: k, errmark
+  logical,save  :: firstcall=.true.
  !-----------------------------------
 
    coef = 1.e12 / AVOG
@@ -166,9 +170,20 @@ contains
       nh4in  = max(FLOOR2, xn_2d(NH4_f,k)) * species(NH4_f)%molwt  *coef
 
  !--------------------------------------------------------------------------                
-      call rpmares (so4in, hno3in,no3in ,nh3in, nh4in , rh(k), temp(k),   &
-                    aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out, &
-                    ERRMARK,debug_flag) 
+      if(AERO%EQUILIB=='MARS')then 
+         call rpmares (so4in, hno3in,no3in ,nh3in, nh4in , rh(k), temp(k),   &
+              aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out, &
+              ERRMARK,debug_flag) 
+      elseif(AERO%EQUILIB=='MARS_2900')then!svn version 2908, for testing if there are significant differences. will be deleted
+         call rpmares_2900 (so4in, hno3in,no3in ,nh3in, nh4in , rh(k), temp(k),   &
+              aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out, &
+              ERRMARK,debug_flag) 
+      elseif(AERO%EQUILIB=='GEOSCHEM')then
+         call DO_RPMARES_new (so4in, hno3in,no3in ,nh3in, nh4in , rh(k), temp(k),   &
+              aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out, &
+              ERRMARK,debug_flag)
+      endif
+
  !--------------------------------------------------------------------------
 
       if( DEBUG%EQUIB) then
@@ -404,10 +419,20 @@ contains
 
 
  !--------------------------------------------------------------------------                
-      call rpmares (so4in, hno3in,no3in ,nh3in, nh4in , rlhum(k), tmpr(k),   &
-                    aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out, &
-                    ERRMARK,debug_flag) 
- !--------------------------------------------------------------------------
+      if(AERO%EQUILIB=='MARS')then 
+         call rpmares (so4in, hno3in,no3in ,nh3in, nh4in , rlhum(k), tmpr(k),   &
+              aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out, &
+              ERRMARK,debug_flag) 
+      elseif(AERO%EQUILIB=='MARS_2900')then!svn version 2908, for testing if there are significant differences. will be deleted
+         call rpmares_2900 (so4in, hno3in,no3in ,nh3in, nh4in , rlhum(k), tmpr(k),   &
+              aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out, &
+              ERRMARK,debug_flag) 
+      elseif(AERO%EQUILIB=='GEOSCHEM')then
+         call DO_RPMARES_new (so4in, hno3in,no3in ,nh3in, nh4in , rlhum(k), tmpr(k),   &
+              aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out, &
+              ERRMARK,debug_flag) 
+      endif
+      !--------------------------------------------------------------------------
 
 !//....aerosol water (ug/m**3) 
       PM25_water(i,j,k) = max (0., aH2Oout )
@@ -426,10 +451,20 @@ contains
       no3in  = xn_2d(NO3_f,k) * species(NO3_f)%molwt *coef *cfac(NO3_f-NSPEC_SHL,i,j)
       nh4in  = xn_2d(NH4_f,k) * species(NH4_f)%molwt *coef *cfac(NH4_f-NSPEC_SHL,i,j)
 !--------------------------------------------------------------------------                
-      call rpmares (so4in, hno3in,no3in ,nh3in, nh4in , rlhum(k), tmpr(k),   &
-                    aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out, &
-                    ERRMARK,debug_flag) 
- !--------------------------------------------------------------------------
+     if(AERO%EQUILIB=='MARS')then 
+         call rpmares (so4in, hno3in,no3in ,nh3in, nh4in , rlhum(k), tmpr(k),   &
+              aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out, &
+              ERRMARK,debug_flag) 
+      elseif(AERO%EQUILIB=='MARS_2900')then!svn version 2908, for testing if there are significant differences. will be deleted
+         call rpmares_2900 (so4in, hno3in,no3in ,nh3in, nh4in , rlhum(k), tmpr(k),   &
+              aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out, &
+              ERRMARK,debug_flag) 
+      elseif(AERO%EQUILIB=='GEOSCHEM')then
+         call DO_RPMARES_new (so4in, hno3in,no3in ,nh3in, nh4in , rlhum(k), tmpr(k),   &
+              aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out, &
+              ERRMARK,debug_flag) 
+      endif
+  !--------------------------------------------------------------------------
 
       PM25_water_rh50 (i,j) = max (0., aH2Oout )
 
