@@ -153,6 +153,12 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+19th February 2015 Peter 2947
+
+Bug in trend_o3, was applied twice.
+Affects runs with year_trend<1990 or  (year_trend<2000 and USES%MACEHEADFIX=false)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 12th February 2015 Peter 2943-6
 
 Refactoring the GlobalBC_ml  and BoundaryConditions_ml.

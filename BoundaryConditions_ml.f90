@@ -1238,7 +1238,6 @@ real :: trend_o3=1.0, trend_co, trend_voc
        if (me==0)write(*,"(a,4f8.3)")'Mace Head correction for O3, trend and Mace Head value',-O3fix/PPB,trend_o3,macehead_O3(month)
        bc_data = max(15.0*PPB,bc_data-O3fix)
     endif
-    bc_data = bc_data*trend_o3
   case ( IBC_H2O2 )
 
      bc_data=1.0E-25
