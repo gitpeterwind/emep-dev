@@ -153,6 +153,13 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21st February 2015 Peter 2948
+
+Bug from version 2943
+BoundaryConditions: the allocatable arrays for O3 BC where not saved, causing 
+the program to crashe sometimes at new monthes.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 19th February 2015 Peter 2947
 
 Bug in trend_o3, was applied twice.

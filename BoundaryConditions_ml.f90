@@ -156,7 +156,7 @@ integer, allocatable, dimension(:,:),save :: &
                            ! bc (eg i=1,2 for ibc=HNO3 when HNO3 from CTM2
                            ! is used as bc both for HNO3 and SO4) spc_used_adv
                            ! gives the index in the row of advected species
-real, allocatable,dimension(:,:,:)   :: O3_logan,O3_logan_emep
+real, allocatable,dimension(:,:,:),save   :: O3_logan,O3_logan_emep
 
 INCLUDE 'mpif.h'
 INTEGER STATUS(MPI_STATUS_SIZE),INFO
@@ -184,7 +184,7 @@ contains
     logical :: bc_seaspec  ! if sea-salt species
 
     !/ data arrays for boundary data (BCs) - quite large, so NOT saved
-    real, allocatable,dimension(:,:,:)   :: bc_data   ! for one bc species
+    real, save, allocatable,dimension(:,:,:)   :: bc_data   ! for one bc species
 
     integer  :: errcode, Nlevel_logan
     integer, save :: idebug=0, itest=1, i_test=0, j_test=0
@@ -1199,6 +1199,9 @@ real :: trend_o3=1.0, trend_co, trend_voc
      Nlevel_logan=30
      if(.not.allocated(O3_logan))allocate(O3_logan(Nlevel_logan,MAXLIMAX,MAXLJMAX))
      if(.not.allocated(O3_logan_emep))allocate(O3_logan_emep(MAXLIMAX,MAXLJMAX,KMAX_MID))
+     O3_logan=0.0
+     O3_logan_emep=0.0
+ 
      filename='Logan_P.nc'!will be put in run.pl in due time
      varname='O3'
      call  ReadField_CDF(fileName,varname,O3_logan,nstart=month,kstart=1,kend=Nlevel_logan,interpol='zero_order', &
