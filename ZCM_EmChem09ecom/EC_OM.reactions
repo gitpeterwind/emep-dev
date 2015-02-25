@@ -1,0 +1,31 @@
+*
+* File when emissions use OM, EC, REMPPM separately
+*
+emisfiles:omfi,ecfi,omco,ecco,remppm25,remppmco
+*
+rcemis:REMPPM25                  = REMPPM25 ;
+rcemis:REMPPM_C                  = REMPPM_C ;
+*
+rcemis:POM_f_FFUEL               = POM_f_FFUEL ;
+rcemis:POM_f_WOOD                = POM_f_WOOD ;
+rcemis:POM_c_FFUEL               = POM_c_FFUEL ;
+*
+rcemis:EC_f_FFUEL_new            = EC_f_FFUEL_new ;
+rcemis:EC_f_FFUEL_age            = EC_f_FFUEL_age ;
+rcemis:EC_f_WOOD_new             = EC_f_WOOD_new ;
+rcemis:EC_f_WOOD_age             = EC_f_WOOD_age ;
+rcemis:EC_c_FFUEL                = EC_c_FFUEL ;
+*
+*rcemis:EC_f_WOOD                 = EC_f_WOOD ;
+*
+rcemis:FFIRE_OM                   = FFIRE_OM ;
+rcemis:FFIRE_BC                   = FFIRE_BC ;
+rcemis:FFIRE_REMPPM25             = FFIRE_REMPPM25 ;
+
+*<----- EC ageing ------- -------------------------------------------->
+* ;
+_func_ec_ageing_rate()               EC_f_WOOD_new  = EC_f_WOOD_age ;
+_func_ec_ageing_rate()               EC_f_FFUEL_new = EC_f_FFUEL_age ;
+
+*ECageing                            EC_f_new = EC_f_age ; # to use const ageing rate
+*ECageing                            EC_c_new = EC_c_age ; # to use const ageing rate

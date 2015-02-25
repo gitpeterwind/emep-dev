@@ -1,0 +1,20 @@
+# ECfine splits for EmChemXX
+# 
+# Wood burning emissions in coarse mode very uncertain, but levoglucosan
+# has been found in coarse PM; so we assume same split as fine.
+# Key-word, MASS_ASSUMED= 0 by default, 
+# change when emissions have artificial mass, e.g. 46 for NOx as NO2
+: MASS_ASSUMED 0 
+99 99   EC_C_FFUEL  EC_C_WOOD  #HEADERS
+#DATA
+0   1   100.0   0.0
+0   2    90.0  10.0
+0   3   100.0   0.0
+0   4   100.0   0.0
+0   5   100.0   0.0
+0   6   100.0   0.0
+0   7   100.0   0.0
+0   8   100.0   0.0
+0   9   100.0   0.0
+0   10  100.0   0.0
+0   11  100.0   0.0
