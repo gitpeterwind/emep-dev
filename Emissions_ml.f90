@@ -1599,7 +1599,9 @@ subroutine newmonth
    case("CdfFractions")
 
 !NB: must match the order from "e_fact", and the names in the netCDF emission file
-      NC_EMIS_SPEC = (/ "SOx","NOx","CO","NMVOC ","NH3","PM2.5","PMco"/)
+      !FEB25 NC_EMIS_SPEC = (/ "SOx","NOx","CO","NMVOC ","NH3","PM2.5","PMco"/)
+      ! WILL CRASH NETCDF - but allow EmChem09ecoc to compile
+      ! NEEDS FIXING
       if(MasterProc)then
          write(*,*)'emis names ',(EMIS_FILE(iem),iem=1,NEMIS_FILE)
          write(*,*)'NetCDF emis names ',(NC_EMIS_SPEC(iem),iem=1,NEMIS_FILE)

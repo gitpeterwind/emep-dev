@@ -35,6 +35,7 @@ run=CB05
 run=EmChem09
 run=CRI_v2_R5
 run=EmChem09soa
+#run=EmChem09ecom # for G20
 
 # Some species which can be common to most schemes are
 # treated here. Also, these are usually not needed for
@@ -203,6 +204,18 @@ elif [ $run == EmChem09soa ]; then
           ./VBS_emissions_nonvolatilePOA_FromPM25  ) # VBS NPNA
   bics=( $xdir/EmChem09base )  # No special SOA BICs (yet)
 
+elif [ $run == EmChem09ecom ]; then
+  echo "RUN EmChem09ecom chosen. Remember to cp ZD_VBS/My_SOA_ml.f90!!"
+  sdir=$PWD/ZCM_EmChem09soa
+  echo "SOA DIR ", $sdir
+  spcs=( $xdir/EmChem09base ${emergency[@]} \
+         ../ZCM_vbs_tests/VBS_help    \
+          $sdir/VBS_nonvolatile ../ZCM_vbs_tests/VBS_partitioning )  #  VBS NPNA
+  rcns=( $xdir/EmChem09base ${emergency[@]} \
+         ../ZCM_vbs_tests/VBS_SOAformation ../ZCM_vbs_tests/VBS_SOAageing \
+          ./EC_OM  )
+  bics=( $xdir/EmChem09base )  # No special SOA BICs (yet)
+
 elif [ $run == CRI_v2_R5 ]; then
   echo "RUN CRI_v2_R5 chosen"
   spcs=( CRI_v2_R5base $xdir/PMmass )
@@ -292,6 +305,8 @@ for FF in ${spcs[@]}; do
     echo "+ SPECIES  FILE" $FF
   echo -n " $spec" >> CM_chempackages.txt
     cat $FF.species  >> GenIn.species
+  else
+    echo "MISSING SPECIES  FILE" $FF
   fi
 done
 echo " " >> CM_chempackages.txt

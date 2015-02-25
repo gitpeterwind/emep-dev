@@ -153,6 +153,27 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+25th February 2015 Dave  2949
+
+For G20 but also other projects - new system which expects separate OM, EC
+and REMPPM for fine and coarse aerosols.
+
+Added
+
+  ZCM_EmChem09ecom directory
+      - has EC_OM.reactions with these new emissions
+      - EMISPLIT files
+      - Biomass files
+
+  mk.GenChem has added EmChem09ecom option
+
+WARNING:
+
+Emissions_ml had hard-coded NC_EMIS_SPEC names, which will not work with
+the new system. This needs to be altered anyway, so for now has been
+commented out. CAN NOT USE cdf-fractions untuil this is fixed!!!
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 21st February 2015 Peter 2948
 
 Bug from version 2943
