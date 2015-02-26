@@ -443,7 +443,6 @@ if (%BENCHMARK){
   $emisdir    = "$EMIS_INP/$BENCHMARK{'emis'}";
   $pm_emisdir = $emisdir;
 }
-my $CDF_EMIS=0;#put one if TNO7.nc emissions are used
 die "Missing emisdir='$emisdir' for GRID='$GRID'\n"       unless (-d $emisdir or $CDF_EMIS);
 die "Missing pm_emisdir='$pm_emisdir' for GRID='$GRID'\n" unless (-d $pm_emisdir or $CDF_EMIS);
 
@@ -777,8 +776,13 @@ unless($MAKEMODE=~/EVA/){
     }else{
       $ifile{"$dir/grid$gridmap{$poll}"} = "emislist.$poll";
     }
-    $dir=(-e "$emisdir/Emis_TNO7.nc")?$emisdir:$DataDir;
-    $ifile{"$dir/Emis_TNO7.nc"} = "EmisFracs_TNO7.nc";
+    #$dir=(-e "$emisdir/Emis_TNO7.nc")?$emisdir:$DataDir;
+    #$ifile{"$dir/Emis_TNO7.nc"} = "EmisFracs.nc";
+    my $CDF_EMIS=0;#put one if Emis_TNO7.nc emissions are used
+
+    $dir=(-e "$emisdir/Emis_GLOB_05.nc")?$emisdir:$DataDir;
+    $ifile{"$dir/Emis_GLOB_05.nc"} = "EmisFracs.nc";
+    $CDF_EMIS=0;#put one if Emis_GLOB_05.nc  emissions are used
 
     if($SNAP_CDF) { # in testing:
       print "SNAP CDF TESTS $poll\n";
