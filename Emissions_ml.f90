@@ -503,18 +503,20 @@ subroutine Emissions(year)
       sumemis_local(:,iem)=0.0
 
       do isec=1,NSECTORS
-        select case(iem)
-          case(1);varname='SOx_sec'
-          case(2);varname='NOx_sec'
-          case(3);varname='CO_sec'
-          case(4);varname='NMVOC_sec'
-          case(5);varname='NH3_sec'
-          case(6);varname='PM25_sec'
-          case(7);varname='PMco_sec'
-        endselect
-        write(varname,"(A,I2.2)")trim(varname),isec
+         
+       ! select case(iem)
+       !   case(1);varname='SOx_sec'
+       !   case(2);varname='NOx_sec'
+       !   case(3);varname='CO_sec'
+       !   case(4);varname='NMVOC_sec'
+       !   case(5);varname='NH3_sec'
+       !   case(6);varname='PM25_sec'
+       !   case(7);varname='PMco_sec'
+       ! endselect
+         
+        write(varname,"(A,I2.2)")trim(EMIS_FILE(iem))//'_sec',isec
         Reduc=e_fact(isec,:,iem)
-        call ReadField_CDF('EmisFracs_TNO7.nc',varname,emis_tot(1,1),nstart=1,&
+        call ReadField_CDF('EmisFracs.nc',varname,emis_tot(1,1),nstart=1,&
              interpol='mass_conservative',fractions_out=fractions,&
              CC_out=landcode,Ncc_out=nlandcode,Reduc=Reduc,needed=.true.,debug_flag=.false.,&
              Undef=0.0)
@@ -1600,9 +1602,24 @@ subroutine newmonth
 
 !NB: must match the order from "e_fact", and the names in the netCDF emission file
       !FEB25 NC_EMIS_SPEC = (/ "SOx","NOx","CO","NMVOC ","NH3","PM2.5","PMco"/)
-      ! WILL CRASH NETCDF - but allow EmChem09ecoc to compile
-      ! NEEDS FIXING
-      if(MasterProc)then
+
+      !not tested:
+      do iem = 1,NEMIS_FILE
+         select case(trim(EMIS_FILE(iem)))
+         case('sox');  NC_EMIS_SPEC(iem)='SOx'
+         case('nox');  NC_EMIS_SPEC(iem)='NOx'
+         case('co');   NC_EMIS_SPEC(iem)='CO'
+         case('voc');  NC_EMIS_SPEC(iem)='NMVOC'
+         case('nh3');  NC_EMIS_SPEC(iem)='NH3'
+         case('pm25'); NC_EMIS_SPEC(iem)='PM2.5'
+         case('pmco'); NC_EMIS_SPEC(iem)='PMco'
+         case default
+            write(*,*)'WARNING: did not recognize emitted species!',trim(EMIS_FILE(iem))
+            cycle
+        endselect
+      enddo
+
+       if(MasterProc)then
          write(*,*)'emis names ',(EMIS_FILE(iem),iem=1,NEMIS_FILE)
          write(*,*)'NetCDF emis names ',(NC_EMIS_SPEC(iem),iem=1,NEMIS_FILE)
          do iem = 1,NEMIS_FILE
