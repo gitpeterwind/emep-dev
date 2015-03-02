@@ -23,7 +23,7 @@ module NetCDF_ml
   use ChemSpecs_adv_ml,  only : NSPEC_ADV
   use ChemSpecs_tot_ml,  only : NSPEC_TOT
   use ChemChemicals_ml,  only : species
-  use Country_ml,        only : NLAND
+  use Country_ml,        only : NLAND, Country
   use GridValues_ml,     only : GRIDWIDTH_M,fi,xp,yp,xp_EMEP_official&
                                ,debug_proc, debug_li, debug_lj &
                                ,yp_EMEP_official,fi_EMEP,GRIDWIDTH_M_EMEP&
@@ -55,7 +55,7 @@ module NetCDF_ml
   use TimeDate_ml,       only: nmdays,leapyear ,current_date, date,julian_date
   use TimeDate_ExtraUtil_ml,only: idate2nctime,date2nctime
   use Functions_ml,       only: StandardAtmos_km_2_kPa
-  use SmallUtils_ml,      only: wordsplit
+  use SmallUtils_ml,      only: wordsplit, find_index
 
   implicit none
 
@@ -2695,7 +2695,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   integer ::alloc_err
   character*100 ::name
   real :: scale,offset,scalefactors(2),dloni,dlati,dlon,dlat
-  integer ::ij,jdiv,idiv,Ndiv,Ndiv2,igjgk,ig,jg,ijk,n,im,jm,ijm
+  integer ::ij,jdiv,idiv,Ndiv,Ndiv2,igjgk,ig,jg,ijk,n,im,jm,ijm,ic
   integer ::imin,imax,jmin,jjmin,jmax,igjg,k2
   integer, allocatable:: Ivalues(:)  ! I counts all data
   integer, allocatable:: Nvalues(:)  !ds counts all values
@@ -3329,7 +3329,15 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
                                    fractions_out(ijk,N_out)=0.0
 731                                continue
                                    factor=1.0!default reduction factor
-                                   if(present(Reduc).and.CC(igjgk,Ng)>0.and.CC(igjgk,Ng)<=NLAND)factor=Reduc(CC(igjgk,Ng))
+                                   if(present(Reduc).and.CC(igjgk,Ng)>0)then
+                                      ic=find_index(CC(igjgk,Ng),Country(:)%icode)
+                                      if(ic>NLAND.or.ic<1)then
+                                         write(*,*)"ReadField_cdf: COUNTRY CODE NOT RECOGNIZED OR UNDEFINED: ",&
+                                              CC(igjgk,Ng)
+                                         call StopAll("COUNTRY CODE NOT RECOGNIZED ")
+                                      endif
+                                      factor=Reduc(ic)
+                                   endif
                                    !update fractions
                                    total=Rvar(ijk)+Rvalues(igjgk)*fraction_in(igjgk,Ng)*factor
                                    if(debug.and.fraction_in(igjgk,Ng)>1.001)then
