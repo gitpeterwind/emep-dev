@@ -707,18 +707,19 @@ endif !USE_ROADDUST
     sumEU(:) = 0.0
     do ic = 1, NLAND
       ccsum = sum( sumemis(ic,:) )
-      !if ( ccsum > 0.0 ) then
-      if(ccsum>0.0 .or. sum(sumcdfemis(ic,:))>0.0) then
-         icc=Country(ic)%icode
-         if(EMIS_TEST=="None") then
+      icc=Country(ic)%icode
+      if(EMIS_TEST=="None") then
+         if ( ccsum > 0.0 )then
             write(*,"(i4,1x,a4,3x,30(f12.2,:))")icc, Country(ic)%code, sumemis(ic,:)
             write(IO_LOG,"(i4,1x,a4,3x,30(f12.2,:))")icc, Country(ic)%code, sumemis(ic,:)
-         else
+         endif
+      else
+         if(ccsum>0.0 .or. sum(sumcdfemis(ic,:))>0.0) then
             write(*,"(a,i4,1x,a4,3x,30(f12.2,:))")"ORIG:",icc, Country(ic)%code, sumemis(ic,:)
             write(*,"(a,i4,1x,a4,3x,30(f12.2,:))")"CDFS:",icc, Country(ic)%code, sumcdfemis(ic,:)
          endif
-        if(find_index(Country(ic)%code,EU27(:))>0) sumEU = sumEU + sumemis(ic,:)
       endif
+      if(find_index(Country(ic)%code,EU27(:))>0) sumEU = sumEU + sumemis(ic,:)
     enddo
     write(*     ,"(i4,1x,a4,3x,30(f12.2,:))") 0, "EU", sumEU(:)
     write(IO_LOG,"(i4,1x,a4,3x,30(f12.2,:))") 0, "EU", sumEU(:)
