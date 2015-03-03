@@ -709,19 +709,19 @@ endif !USE_ROADDUST
       ccsum = sum( sumemis(ic,:) )
       !if ( ccsum > 0.0 ) then
       if(ccsum>0.0 .or. sum(sumcdfemis(ic,:))>0.0) then
-         icc=find_index(ic,Country(:)%icode)
-        if(EMIS_TEST=="None") then
-          write(*,"(i3,1x,a4,3x,30(f12.2,:))")icc, Country(ic)%code, sumemis(ic,:)
-          write(IO_LOG,"(i3,1x,a4,3x,30(f12.2,:))")icc, Country(ic)%code, sumemis(ic,:)
-        else
-         write(*,"(a,i3,1x,a4,3x,30(f12.2,:))")"ORIG:",icc, Country(ic)%code, sumemis(ic,:)
-         write(*,"(a,i3,1x,a4,3x,30(f12.2,:))")"CDFS:",icc, Country(ic)%code, sumcdfemis(ic,:)
-        endif
+         icc=Country(ic)%icode
+         if(EMIS_TEST=="None") then
+            write(*,"(i4,1x,a4,3x,30(f12.2,:))")icc, Country(ic)%code, sumemis(ic,:)
+            write(IO_LOG,"(i4,1x,a4,3x,30(f12.2,:))")icc, Country(ic)%code, sumemis(ic,:)
+         else
+            write(*,"(a,i4,1x,a4,3x,30(f12.2,:))")"ORIG:",icc, Country(ic)%code, sumemis(ic,:)
+            write(*,"(a,i4,1x,a4,3x,30(f12.2,:))")"CDFS:",icc, Country(ic)%code, sumcdfemis(ic,:)
+         endif
         if(find_index(Country(ic)%code,EU27(:))>0) sumEU = sumEU + sumemis(ic,:)
       endif
     enddo
-    write(*     ,"(i3,1x,a4,3x,30(f12.2,:))") 0, "EU", sumEU(:)
-    write(IO_LOG,"(i3,1x,a4,3x,30(f12.2,:))") 0, "EU", sumEU(:)
+    write(*     ,"(i4,1x,a4,3x,30(f12.2,:))") 0, "EU", sumEU(:)
+    write(IO_LOG,"(i4,1x,a4,3x,30(f12.2,:))") 0, "EU", sumEU(:)
    
 
     if(USE_ROADDUST)THEN
@@ -733,9 +733,9 @@ endif !USE_ROADDUST
       do ic = 1, NLAND
         ccsum = sum( sumroaddust(ic,:))
         if(ccsum>0.0) then
-         icc=find_index(ic,Country(:)%icode)
-          write(*     ,"(i3,1x,a4,3x,30(f12.2,:))")icc, Country(ic)%code, sumroaddust(ic,:)
-          write(IO_LOG,"(i3,1x,a4,3x,30(f12.2,:))")icc, Country(ic)%code, sumroaddust(ic,:)
+         icc=Country(ic)%icode
+          write(*     ,"(i4,1x,a4,3x,30(f12.2,:))")icc, Country(ic)%code, sumroaddust(ic,:)
+          write(IO_LOG,"(i4,1x,a4,3x,30(f12.2,:))")icc, Country(ic)%code, sumroaddust(ic,:)
         endif
       enddo
     endif ! ROAD DUST
