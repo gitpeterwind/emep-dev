@@ -153,11 +153,13 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-2nd March 2015 Peter  2955
+3rd March 2015 Peter  2955-2956
 
 Bug introduced in version 2927. Femis reduction for countries with code higher 
 than 93 would not function if the emissions were in NetCDF.
 (A conversion between country code and index was missing in Netcdf_ml)
+
+Also the CC in RunLog was wrong
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26th February 2015 Dave  2954
