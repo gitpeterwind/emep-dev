@@ -928,7 +928,7 @@ character(len=8)  :: created_date,lastmodified_date
 character(len=10) :: created_hour,lastmodified_hour
 integer :: iDimID,jDimID,kDimID,timeDimID,VarID,iVarID,jVarID,kVarID,i,j,k
 integer :: hyamVarID,hybmVarID,hyaiVarID,hybiVarID,ilevVarID,levVarID,levDimID,ilevDimID
-integer :: ncFileID,iEMEPVarID,jEMEPVarID,latVarID,longVarID,PTVarID
+integer :: ncFileID,iEMEPVarID,jEMEPVarID,latVarID,longVarID,PTVarID,P0VarID
 real :: scale_at_projection_origin
 character(len=80) ::UsedProjection
 character (len=*), parameter :: vert_coord='atmosphere_hybrid_sigma_pressure_coordinate'
@@ -1102,9 +1102,9 @@ character (len=*), parameter :: vert_coord='atmosphere_hybrid_sigma_pressure_coo
   call check(nf90_put_att(ncFileID, levVarID, "positive", "down"))
   call check(nf90_put_att(ncFileID, levVarID, "formula_terms","ap: hyam b: hybm ps: PS p0: P0"))
 !p(n,k,j,i) = a(k)+ b(k)*ps(n,j,i)
-  call check(nf90_def_var(ncFileID, "P0", nf90_double,  varID = VarID) )
-  call check(nf90_put_att(ncFileID, VarID, "units", "hPa"))
-  call check(nf90_put_var(ncFileID, VarID, Pref/100.0 ))
+  call check(nf90_def_var(ncFileID, "P0", nf90_double,  varID = P0VarID) )
+  call check(nf90_put_att(ncFileID, P0VarID, "units", "hPa"))
+!  call check(nf90_put_var(ncFileID, P0VarID, Pref/100.0 )) !must be moved after enddef
 
 !The hybrid sigma-pressure coordinate for level k is defined as ap(k)/p0+b(k). 
   call check(nf90_def_var(ncFileID, "hyam", nf90_double,dimids = levDimID,  varID = hyamVarID) )
@@ -1157,7 +1157,7 @@ character (len=*), parameter :: vert_coord='atmosphere_hybrid_sigma_pressure_coo
   ! Leave define mode
   call check(nf90_enddef(ncFileID), "define_done"//trim(fileName) )
 
-!  call check(nf90_open(path = trim(fileName), mode = nf90_write, ncid = ncFileID))
+  call check(nf90_put_var(ncFileID, P0VarID, Pref/100.0 ))
 
 ! Define horizontal distances
 
