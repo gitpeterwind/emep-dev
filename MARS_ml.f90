@@ -1018,10 +1018,10 @@ if( DEBUG%EQUIB .and. debug_flag ) print "(a,4es10.3)", "MARS NONDEGEN  ",  AA, 
                
                if( nMarsErrors < 500 ) then
                   nMarsErrors = nMarsErrors + 1
-                  WRITE(6,"(a,2i7,f7.2,4es11.2,4es12.3)") &
+                  WRITE(6,"(a,2i7,f7.2,4es11.2,14es12.3)") &
                     'RPMARES: not safe to divide...exit?', &
                      NNN, nMarsErrors, fRH, TSO4_LowA, TNH4, TNO3, AH2O, &
-                     GAMAS2, GAMAS1*GAMAS1*GAMAS1, KNA, GAMANA*GAMANA
+                     GAMAS2, GAMAS1*GAMAS1*GAMAS1, KNA, GAMANA*GAMANA,SO4, HNO3, NO3, NH3, NH4, RH, TEMP
                end if
 !DSMARS                call CheckStop("UNDER/OVERFLOW in rpmares (MARS)")
 !could continue: remove the stop and the warning if necessary
