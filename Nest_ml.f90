@@ -324,7 +324,7 @@ subroutine wrtxn(indate,WriteNow)
   real,allocatable, dimension(:,:,:) :: data ! Data arrays
 
   type(Deriv) :: def1 ! definition of fields
-  integer :: n,iotyp,ndim,kmax,i
+  integer :: n,iotyp,ndim,kmax,i,ncfileID
   real :: scale
   logical :: fexist, lsend, lrecv
 
@@ -432,14 +432,16 @@ subroutine wrtxn(indate,WriteNow)
     enddo
   endif
 
+  ncfileID=-1!must be <0 as initial value
   do n= 1, NSPEC_ADV
     if(.not.adv_ic(n)%wanted)cycle
     def1%name= species_adv(n)%name       !written
     data=xn_adv(n,:,:,:)
     call Out_netCDF(iotyp,def1,ndim,kmax,data,scale,CDFtype=Real4,&
           ist=istart,jst=jstart,ien=iend,jen=jend,&
-          fileName_given=fileName_write,create_var_only=.false.)
+          fileName_given=fileName_write,create_var_only=.false.,ncFileID_given=ncFileID)
   enddo
+  if(me==0)call check(nf90_close(ncFileID))
   deallocate(data)
 endsubroutine wrtxn
 

@@ -1335,7 +1335,7 @@ end subroutine CreatenetCDFfile_Eta
 !_______________________________________________________________________
 
 subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,&
-                      fileName_given,overwrite,create_var_only,chunksizes)
+                      fileName_given,overwrite,create_var_only,chunksizes,ncfileID_given)
 !The use of fileName_given is probably slower than the implicit filename used by defining iotyp.
 
 ! Mandatary arguments:
@@ -1356,6 +1356,9 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
     create_var_only       ! only create the variable, without writing the data content
   integer, dimension(ndim), intent(in), optional :: &
     chunksizes            ! nc4zip outpur writen in slizes, see NETCDF_DEFLATE_LEVEL
+  integer, optional, intent(inout) ::  ncFileID_given  !if present, do not close the file at return
+                                                       !if >=0 at input, the file is already open 
+                                                       !       and  ncFileID=ncFileID_given
   logical:: create_var_only_local !only create the variable, without writing the data content
 
   character(len=len(def1%name)) :: varname
@@ -1405,7 +1408,22 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
      if(present(overwrite))overwrite_local=overwrite
      if(MasterProc)then
         !try to open the file
-        status=nf90_open(path = trim(fileName_given), mode = nf90_share+nf90_write, ncid = ncFileID)
+        if(present(ncFileID_given))then
+           if(DEBUG_NETCDF) write(*,*)'Out_NetCDF: ncFileID_given ' , ncFileID_given
+           if(ncFileID_given<0)then
+              status=nf90_open(path = trim(fileName_given), mode = nf90_share+nf90_write, ncid = ncFileID)
+              ncFileID_given=ncFileID         
+              if(DEBUG_NETCDF) write(*,*)'Out_NetCDF: opened a file ' , ncFileID_given
+           else
+              !the file must already be open
+              ncFileID=ncFileID_given
+              status = nf90_noerr
+              if(DEBUG_NETCDF) write(*,*)'Out_NetCDF: assuming file already open ', trim(fileName_given)
+          endif
+        else
+           status=nf90_open(path = trim(fileName_given), mode = nf90_write, ncid = ncFileID)
+        endif
+              
         if(DEBUG_NETCDF) write(*,*)'Out_NetCDF: fileName_given ' , trim(fileName_given),overwrite_local,status == nf90_noerr, ncfileID,trim(nf90_strerror(status))
         ISMBEGcdf=IRUNBEG+i1-1
         JSMBEGcdf=JRUNBEG+j1-1
@@ -1539,7 +1557,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
      !Don't write the data
      !For performance: need to create all variables before writing data
      if(DEBUG_NETCDF.and.MasterProc)write(*,*)'variable ONLY created. Finished'
-     if(MasterProc.and.iotyp_new==1)call check(nf90_close(ncFileID))
+     if(MasterProc.and.iotyp_new==1.and. .not.present(ncFileID_given))call check(nf90_close(ncFileID))
      return
   endif!create var only
 
@@ -1762,7 +1780,11 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
 
      !close file if present(fileName_given)
      if(iotyp_new==1)then
-        call check(nf90_close(ncFileID))
+        if(present(ncFileID_given))then
+           !write(*,*)'keep open ',ncFileID,trim(def1%name)           
+        else
+           call check(nf90_close(ncFileID))
+        endif
      endif
   endif !me=0
 
