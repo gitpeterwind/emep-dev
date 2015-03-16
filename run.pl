@@ -878,6 +878,7 @@ unless($MAKEMODE=~/EVA/){
 # Skip:  $ifile{"$DATA_LOCAL/Boundary_and_Initial_Conditions.nc"} =
 #                     "Boundary_and_Initial_Conditions.nc" unless ($GRID =~ /MACC/);
   $ifile{"$DataDir/Logan_P.nc"} = "Logan_P.nc";#instead of GLOBAL_O3.nc
+  $ifile{"$DataDir/Dust.nc"} = "Dust.nc";#BIC for DUST
   $ifile{"$DataDir/GLOBAL_O3.nc"} = "GLOBAL_O3.nc";
   $ifile{"$DataDir/amilt42-nox.dat"} = "ancatmil.dat";#RENAME TO AIRCARAFT?!
   $inml{'GFED'}="$DataDir/GLOBAL_ForestFireEmis.nc";                    # GFED emissions

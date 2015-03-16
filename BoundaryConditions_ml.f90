@@ -43,6 +43,7 @@ use GridValues_ml,     only: glon, glat   & ! full domain lat, long
 use Io_Progs_ml,       only: datewrite, PrintLog
 use Landuse_ml,        only: mainly_sea
 use LocalVariables_ml, only: Grid
+use MetFields_ml,      only: roa
 use ModelConstants_ml, only: KMAX_MID  &  ! Number of levels in vertical
                             ,iyr_trend &  ! Used for e.g. future scenarios
                             ,BGND_CH4  &  ! If positive, replaces defaults
@@ -55,7 +56,7 @@ use Par_ml,          only: &
   ,neighbor, NORTH, SOUTH, EAST, WEST   &  ! domain neighbours
   ,NOPROC&
   ,IRUNBEG,JRUNBEG,li1,li0,lj0,lj1
-use PhysicalConstants_ml, only: PI
+use PhysicalConstants_ml, only: PI, ATWAIR
 use SmallUtils_ml, only : find_index 
 use TimeDate_ml,    only: daynumber
 use TimeDate_ExtraUtil_ml,only: date2string
@@ -157,6 +158,7 @@ integer, allocatable, dimension(:,:),save :: &
                            ! is used as bc both for HNO3 and SO4) spc_used_adv
                            ! gives the index in the row of advected species
 real, allocatable,dimension(:,:,:),save   :: O3_logan,O3_logan_emep
+real, allocatable,dimension(:,:,:),save   :: Dust_3D, Dust_3D_emep
 
 INCLUDE 'mpif.h'
 INTEGER STATUS(MPI_STATUS_SIZE),INFO
@@ -934,7 +936,7 @@ real :: trend_o3=1.0, trend_co, trend_voc
     (/39.8,41.9,45.4,46.5,43.2,36.2,30.5,30.1,34.1,37.0,39.0,38.5/)
   real, dimension(12):: macehead_O3=macehead_default
   !---------------------------------------------------------------------------
-  integer :: i, j, k, i0, i1, j1, icount, Nlevel_logan, ierror
+  integer :: i, j, k, i0, i1, j1, icount, Nlevel_logan, Nlevel_Dust, ierror
   real    :: f0, f1             ! interpolation factors
   character(len=30) :: fname    ! input filename
   character(len=99) :: txtmsg   ! error messages
@@ -947,7 +949,7 @@ real :: trend_o3=1.0, trend_co, trend_voc
   real, parameter :: macehead_lon = -9.9 !longitude of Macehead station
   character(len = 100) ::fileName,varname
   real count,count_loc,O3fix_loc, mpi_rcv(2),mpi_snd(2)
-
+  real :: conv_fac
 
 !----------------------------------------------------------
 !Trends 1980-2003 derived from EPA emissions of so2,nox.
@@ -1202,11 +1204,10 @@ real :: trend_o3=1.0, trend_co, trend_voc
      O3_logan=0.0
      O3_logan_emep=0.0
  
-     filename='Logan_P.nc'!will be put in run.pl in due time
+     filename='Logan_P.nc'
      varname='O3'
      call  ReadField_CDF(fileName,varname,O3_logan,nstart=month,kstart=1,kend=Nlevel_logan,interpol='zero_order', &
           needed=.true.,debug_flag=.false.)
-     CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
      !interpolate vertically
      call vertical_interpolate(filename,O3_logan,Nlevel_logan,O3_logan_emep,Masterproc)
      do k = 1, KMAX_MID
@@ -1282,11 +1283,41 @@ real :: trend_o3=1.0, trend_co, trend_voc
       bc_data(i,j,:) = bc_data(i,j,:) * latfunc(ibc,lat5(i,j))
     endforall
 
-    case (IBC_DUST_c,IBC_dust_f)
-       !SAHARA for EECCA not implemented!
-      !call CheckStop(DO_SAHARA,'SAHARA NOT IMPLEMENTED!')
-      if(me==0)write(*,*)'WARNING: DUST BIC set to zero'
-         bc_data(:,:,:) = 0.0
+    case (IBC_DUST_C,IBC_DUST_F)
+      if(me==0)write(*,*)'DUST BIC read from climatological file'
+!         bc_data(:,:,:) = 0.0
+
+!dust are read from the results of a Global run
+         Nlevel_Dust=20
+         if(.not.allocated(Dust_3D))allocate(Dust_3D(Nlevel_Dust,MAXLIMAX,MAXLJMAX))
+         if(.not.allocated(Dust_3D_emep))allocate(Dust_3D_emep(MAXLIMAX,MAXLJMAX,KMAX_MID))
+         Dust_3D=0.0
+         Dust_3D_emep=0.0
+ 
+         filename='Dust.nc'
+         if(ibc==IBC_DUST_C)then
+            varname='D3_ug_DUST_WB_C'
+         else if(ibc==IBC_DUST_F)then
+            varname='D3_ug_DUST_WB_F'
+         else
+            call CheckStop('IBC dust case error')
+         endif
+         call  ReadField_CDF(fileName,varname,Dust_3D,nstart=month,kstart=1,kend=Nlevel_Dust,&
+              interpol='zero_order', needed=.true.,debug_flag=.false.)
+
+         !interpolate vertically
+         call vertical_interpolate(filename,Dust_3D,Nlevel_Dust,Dust_3D_emep,Masterproc)
+
+!has to convert from ug/m3 into mixing ratio. NB: Dust in Netcdf file has molwt = 200 g/mol
+         conv_fac=ATWAIR/200.*1.E-9
+         do k = 1, KMAX_MID
+            do j = 1, ljmax
+               do i = 1, limax
+                  bc_data(i,j,k)=Dust_3D_emep(i,j,k)*conv_fac/roa(i,j,k,1)           
+               enddo
+            enddo
+         enddo
+         
 
     case  default
       print *,"Error with specified BCs:", ibc
