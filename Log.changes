@@ -153,6 +153,16 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+17th March 2015 Peter  2963
+
+Bug when there is no stations in the rundomain. The program crashed with error:
+ NetCDF: NC_UNLIMITED size already in use
+ ERRMSG: dim:station
+
+Added two if(NStations>0)then conditions, which avoid creating and writing the 
+NetCDF sites/sondes file.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16th March 2015 Peter, Svetlana  2962
 
 Dust BIC is read from a Global NetCDF file. The values have been obtained with a 

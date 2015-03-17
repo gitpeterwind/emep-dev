@@ -842,14 +842,20 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
           SpecDef(i,n+3)=trim(Spec_Att(i,n))  ! redefine long_name|units|_FillValue
         enddo
       enddo
-
-      call Create_CDF_sondes(fileName,&
-        NSPEC,NSpec_Att+3,SpecDef(:,0:NSpec_Att+3),&
-        NStations,NMetaData,MetaData(:,1:NMetaData),&
-        NLevels,debug=debug_1d)
+      if(NStations>0)then
+         call Create_CDF_sondes(fileName,&
+              NSPEC,NSpec_Att+3,SpecDef(:,0:NSpec_Att+3),&
+              NStations,NMetaData,MetaData(:,1:NMetaData),&
+              NLevels,debug=debug_1d)
+         
+         write(*,*)'Created ',trim(fileName)
+      else
+         write(*,*)'No Stations found! not creating ',trim(fileName)
+      endif
 
       deallocate(SpecDef,MetaData)
-      write(*,*)'Created ',trim(fileName)
+
+
     else
       !not MasterProc
       i_Att_MPI=i_Att
@@ -918,8 +924,10 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
     do ispec=1,NSPEC
       SpecName(ispec)=trim(s_species(ispec))!name of the variable for one sites/sonde and species          
     enddo ! n
+    if(nglobal>0)then
+       call Out_CDF_sondes(fileName,SpecName,NSPEC,g_out,NLevels,g_ps,debug=debug_1d)
+    endif
 
-    call Out_CDF_sondes(fileName,SpecName,NSPEC,g_out,NLevels,g_ps,debug=debug_1d)
     deallocate(SpecName)
   endif ! MasterProc
 endsubroutine siteswrt_out
