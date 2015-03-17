@@ -153,6 +153,30 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+17th March 2015 Peter  2964
+
+Gridded monthly timefactors can be switched on with 
+USE_GRIDDED_EMIS_MONTHLY_FACTOR
+in  ModelConstants_ml.f90
+It uses the file ECLIPSEv5_monthly_patterns.nc and the mapping between sectors is 
+defined (hardcoded) in Read_monthly_emis_grid_fac in Timefactors_ml.f90 
+
+Careful with normalization:
+A constant emission means a value of nmdays(month)/nydays in ECLIPSEv5_monthly_patterns.nc,
+but when use as a multiplicative factor for tfac, GridTfac = 1.0 corresponds to constant 
+emissions.
+
+Careful with normalization 2:
+The fac_emm which normally (in case ASCII factors) are used for monthly timefactors, are now used to
+renormalize the monthes, in order to correct for varying number of week-ends.
+
+The ASCII monthly factors are overwritten, i.e. not used if 
+USE_GRIDDED_EMIS_MONTHLY_FACTOR=.true.
+
+Modified:
+Timefactors_ml.f90 NetCDF_ml.f90 ModelConstants_ml.f90 run.pl Emissions_ml.f90
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 17th March 2015 Peter  2963
 
 Bug when there is no stations in the rundomain. The program crashed with error:

@@ -118,7 +118,7 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
-($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2938"   ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA","EMEP");
+($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2964"   ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA","EMEP");
 
 my $KEEP_LINKS=0; # do not cleanup links
 my %BENCHMARK;
@@ -784,6 +784,9 @@ unless($MAKEMODE=~/EVA/){
     $dir=(-e "$emisdir/Emis_GLOB_05.nc")?$emisdir:$DataDir;
     $ifile{"$dir/Emis_GLOB_05.nc"} = "EmisFracs.nc";
     #put $CDF_EMIS=1 above, if Emis_GLOB_05.nc emissions are used
+
+#gridded monthly emission factors
+    $ifile{"$DataDir/ECLIPSEv5_monthly_patterns.nc"} = "ECLIPSEv5_monthly_patterns.nc";
 
     if($SNAP_CDF) { # in testing:
       print "SNAP CDF TESTS $poll\n";

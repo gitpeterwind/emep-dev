@@ -2792,6 +2792,8 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
 
   UnDef_local=0.0
   if(present(UnDef))UnDef_local=UnDef
+  OnlyDefinedValues=.true.
+  if(present(UnDef)) OnlyDefinedValues=.false.
 
   !test if the variable is defined and get varID:
   status = nf90_inq_varid(ncid = ncFileID, name = trim(varname), varID = VarID)
@@ -2901,7 +2903,6 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
 
   !Find whether Fill values are defined
   status=nf90_get_att(ncFileID, VarID, "_FillValue", FillValue)
-  OnlyDefinedValues=.true.
   if(status == nf90_noerr)then
      OnlyDefinedValues=.false.
      if ( debug ) write(*,*)' FillValue (not counted)',FillValue
@@ -2912,7 +2913,12 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
         OnlyDefinedValues=.false.
         if ( debug ) write(*,*)' FillValue found from missing_value (not counted)',FillValue
      else
-        if ( debug ) write(*,*) 'FillValue not found, using ',FillValue
+        if(xtype==NF90_BYTE)FillValue=NF90_FILL_BYTE
+        if(xtype==NF90_INT)FillValue=NF90_FILL_INT
+        if(xtype==NF90_FLOAT)FillValue=NF90_FILL_FLOAT
+        if(xtype==NF90_REAL )FillValue=NF90_FILL_REAL 
+        if(xtype==NF90_DOUBLE)FillValue=NF90_FILL_DOUBLE
+         if ( debug ) write(*,*) 'FillValue not found, using ',FillValue
      end if
   endif
 
@@ -3491,7 +3497,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
                  ig=max(1,min(dims(1),ig))
                  jg=max(1,min(dims(2),nint((glat(i,j)-Rlat(startvec(2)))*dlati)+1))
                  igjgk=ig+(jg-1)*dims(1)+(k-1)*dims(1)*dims(2)
-                 if(OnlyDefinedValues.or.Rvalues(igjgk)/=FillValue)then
+                 if(OnlyDefinedValues.or.(Rvalues(igjgk)/=FillValue.and. .not.isnan(Rvalues(igjgk))))then
                     Rvar(ijk)=Rvalues(igjgk)
                  else
                     Rvar(ijk)=UnDef
@@ -3731,7 +3737,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
 
                     igjgk=i_ext+(j_ext-1)*dims(1)+(k-1)*dims(1)*dims(2)
 
-                    if(OnlyDefinedValues.or.Rvalues(igjgk)/=FillValue)then
+                    if(OnlyDefinedValues.or.(Rvalues(igjgk)/=FillValue.and. .not.isnan(Rvalues(igjgk))))then
                        Rvar(ijk)=Rvalues(igjgk)
                     else
                        if(present(UnDef))then

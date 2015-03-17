@@ -63,7 +63,7 @@ use ModelConstants_ml,only: &
     INERIS_SNAP2 , &    ! INERIS/TFMM HDD20 method
     DEBUG, MYDEBUG => DEBUG_EMISSIONS,  MasterProc, & 
     DEBUG_SOILNOX, DEBUG_EMISTIMEFACS, DEBUG_ROADDUST, &
-    USE_DEGREEDAY_FACTORS, & 
+    USE_DEGREEDAY_FACTORS,USE_GRIDDED_EMIS_MONTHLY_FACTOR, & 
     USES,  &  ! Gives USES%EMISSTACKS, & ! MKPS
     SEAFIX_GEA_NEEDED, & ! see below
     USE_LIGHTNING_EMIS,USE_AIRCRAFT_EMIS,USE_ROADDUST, &
@@ -84,7 +84,9 @@ use Timefactors_ml,   only: &
     ,DegreeDayFactors       & ! degree-days used for SNAP-2
     ,Gridded_SNAP2_Factors, gridfac_HDD & 
     ,fac_min,timefactors   &                  ! subroutine
-    ,fac_ehh24x7 ,fac_emm, fac_edd, timefac   ! time-factors
+    ,fac_ehh24x7 ,fac_emm, fac_edd, timefac & ! time-factors
+    ,Read_monthly_emis_grid_fac &
+    ,GridTfac !array with monthly gridded time factors
 use Volcanos_ml
 
 implicit none
@@ -294,6 +296,10 @@ subroutine Emissions(year)
 
   if(MasterProc) then   !::::::: ALL READ-INS DONE IN HOST PROCESSOR ::::
     write(*,*) "Reading monthly and daily timefactors"
+    if(USE_GRIDDED_EMIS_MONTHLY_FACTOR)then
+       write(*,*)"Emissions using gridded monhtly timefactors "
+       write(IO_LOG,*)"Emissions using gridded monhtly timefactors "       
+    endif
     !=========================
     call timefactors(year)               ! => fac_emm, fac_edd
     !=========================
@@ -469,7 +475,6 @@ subroutine Emissions(year)
           globemis,globnland,globland,sumemis,&
           globemis_flat,flat_globnland,flat_globland)
         ! *****************
-
         emsum(iem) = sum(globemis(:,:,:,:)) + sum(globemis_flat(:,:,:))    ! hf
       endif  ! MasterProc
       call CheckStop(ios, "ios error: EmisGet")
@@ -1089,6 +1094,10 @@ endsubroutine consistency_check
               if(debug_tfac.and.iem==1) &
                 write(*,"(a,2i4,f8.3)")"EmisSet DAY TFAC:",isec,hour_iland,tfac
   
+!it is best to multiply only if USE_GRIDDED_EMIS_MONTHLY_FACTOR
+!in order not to access the array and waste cache if not necessary
+              if(USE_GRIDDED_EMIS_MONTHLY_FACTOR)tfac=tfac* GridTfac(i,j,isec,iem)
+
               !Degree days - only SNAP-2 
               if(USE_DEGREEDAY_FACTORS .and. &
                  isec==ISNAP_DOM .and. Gridded_SNAP2_Factors) then
@@ -1332,6 +1341,12 @@ subroutine newmonth
   if(.not.allocated(airn).and.(USE_LIGHTNING_EMIS.or.USE_AIRCRAFT_EMIS))&
     allocate(airn(KCHEMTOP:KMAX_MID,MAXLIMAX,MAXLJMAX))
         
+
+  if(USE_GRIDDED_EMIS_MONTHLY_FACTOR)then
+     call Read_monthly_emis_grid_fac(current_date%month)
+  endif
+
+
   if(USE_AIRCRAFT_EMIS)then
     airn = 0.0
     kstart=KCHEMTOP

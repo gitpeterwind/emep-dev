@@ -44,6 +44,14 @@
 !  Sets the day/night emissions variation in day_factor
 !
 !  D. Simpson,    3/2/99-11 0 H. Fagerli, 2011
+!
+!  Gridded Monthly factors:
+!  If gridded monthly timefactors are choosen, the fac_emm only contains a 
+!  normalisation factor. This normalization factor ensures that (before 
+!  the proper Gridded Monthly factors correction is applied) each month 
+!  contributes equally, i.e. the fac_emm will 
+!  correct for differences causes by different number of week-ends, but not 
+!  for differences in number of days in the month
 !_____________________________________________________________________________
 
   use CheckStop_ml, only : CheckStop
@@ -54,9 +62,9 @@
   use Met_ml,       only : Getmeteofield
   use ModelConstants_ml, only : MasterProc, DEBUG => DEBUG_EMISTIMEFACS
   use ModelConstants_ml, only : IIFULLDOM, JJFULLDOM
-  use ModelConstants_ml, only : iyr_trend
+  use ModelConstants_ml, only : iyr_trend ,USE_GRIDDED_EMIS_MONTHLY_FACTOR 
   use ModelConstants_ml, only : INERIS_SNAP1, INERIS_SNAP2
-  use NetCDF_ml,    only : GetCDF 
+  use NetCDF_ml,    only : GetCDF , ReadField_CDF
   use Par_ml,       only : MAXLIMAX,MAXLJMAX, me, li0, lj0, li1, lj1
   use Par_ml,       only : IRUNBEG, JRUNBEG, MSG_READ8
   use PhysicalConstants_ml, only : PI
@@ -80,6 +88,7 @@
   public :: NewDayFactors
   public :: timefactors
   public :: DegreeDayFactors
+  public :: Read_monthly_emis_grid_fac
 
   !-- time factor stuff: 
 
@@ -113,6 +122,8 @@
   ! Used for general file calls and mpi routines below
 
   character(len=30), private :: fname2   ! input filename - do not change 
+
+  real, allocatable, public, save,  dimension(:,:,:,:):: GridTfac
 
 contains
 
@@ -158,11 +169,13 @@ contains
       "Timefactors: ERR:Day-Night dimension wrong!")
 
 
-!  #################################
-!  1) Read in Monthly factors, and determine min value (for baseload)
-
    fac_emm(:,:,:,:) = 1.0
    fac_min(:,:,:) = 1.0
+
+   if(.not. USE_GRIDDED_EMIS_MONTHLY_FACTOR)then
+
+!  #################################
+!  1) Read in Monthly factors, and determine min value (for baseload)
 
   ! Summer/winter SNAP1 ratios reduced from 1990 to 2010:
    fac_cemm(:) = 1.0
@@ -234,6 +247,7 @@ contains
        if (DEBUG) write(unit=6,fmt=*) "Read ", n, " records from ", fname2 
    enddo  ! iemis
 
+   endif
 
 ! #################################
 ! 2) Read in Daily factors
@@ -346,7 +360,41 @@ contains
 
   write(unit=6,fmt="(a,I6,a,I5)")" Time factors normalisation: ",nydays,' days in ',year 
 
-  do iemis = 1, NEMIS_FILE
+  
+   if(USE_GRIDDED_EMIS_MONTHLY_FACTOR)then
+      write(*,*)'Normalizing monthly emission time factors'
+      fac_emm=1.0
+      !enforce a constant integral of daily timefactors over each month
+      !note that the subsequent interpolation does not change this integral
+      do iemis = 1, NEMIS_FILE
+         n = 0
+         do isec = 1, NSECTORS
+            do ic = 1, NLAND
+               iday = 0
+               do mm = 1, 12     ! Jan - Dec
+                  sumfac = 0.0
+                  do idd = 1, nmdays(mm)
+                     
+                     weekday=day_of_week (year,mm,idd)
+                     
+                     if ( weekday == 0 ) weekday = 7  ! restores Sunday to 7
+                     sumfac = sumfac + fac_edd(ic,weekday,isec,iemis)   
+                     
+                  end do ! idd
+                  ! redefine monthly factor to enforce this
+                  fac_emm(ic,mm,isec,iemis)=nmdays(mm)/sumfac
+
+               end do ! mm
+               
+            end do ! ic
+       enddo ! isec
+
+      enddo ! iemis
+
+   endif
+
+! normalize the factors over the year 
+   do iemis = 1, NEMIS_FILE
        n = 0
        do isec = 1, NSECTORS
            do ic = 1, NLAND
@@ -363,7 +411,7 @@ contains
                    mm2 = mm + 1 
                    if( mm2  > 12 ) mm2 = 1          ! December+1 => January
                    mm0 = mm - 1 
-                   if( mm0 < 1   ) mm0 = 12          ! December+1 => January
+                   if( mm0 < 1   ) mm0 = 12          ! January-1 => December
                    Start= 0.5*(fac_emm(ic,mm0,isec,iemis)+fac_emm(ic,mm,isec,iemis))
                    Endval= 0.5*(fac_emm(ic,mm,isec,iemis)+fac_emm(ic,mm2,isec,iemis))                   
                    Average=fac_emm(ic,mm,isec,iemis)
@@ -377,6 +425,19 @@ contains
              end do ! mm
 
              sumfac = real(nydays)/sumfac    
+
+             if(USE_GRIDDED_EMIS_MONTHLY_FACTOR)then
+                ! should already almost be normalized (almost, because there is still some 
+                ! variation left due to the differences occuring when week-ends are in the 
+                ! middle or end of the month (linear_interpolation*day_factor is not linear)
+               if ( sumfac < 0.999 .or. sumfac > 1.001 ) then
+                 write(unit=errmsg,fmt=*) &
+                   "GRIDDED Time-factor error! for ",iemis, isec, ic," sumfac ",sumfac
+                 call CheckStop(errmsg)
+              end if
+               
+             endif
+              if ( sumfac < 0.99 .or. sumfac > 1.01 )write(*,*)'sumfac: ',iemis,isec,ic,sumfac   
 
               if ( sumfac < 0.97 .or. sumfac > 1.03 ) then
                  write(unit=errmsg,fmt=*) &
@@ -570,5 +631,67 @@ contains
 
    end subroutine DegreeDayFactors
 
+   subroutine Read_monthly_emis_grid_fac(month)
+
+     implicit none
+     integer, intent(in) ::month
+     integer ::iemis,isec,i
+     character(len=20) ::sector_map(NSECTORS,NEMIS_FILE),name
+     real :: x(12)
+! sector_map(sector,emis) = name_in_netcdf_file
+     sector_map(:,:)='default'
+     sector_map(2,:)='dom'
+     sector_map(1,:)='ene'
+     sector_map(10,:)='agr'
+     do iemis=1,NEMIS_FILE
+        if(trim(EMIS_File(iemis))=='nh3')sector_map(10,iemis)='agr_NH3'
+     enddo
+     sector_map(3,:)='ind'
+     sector_map(4,:)='ind'
+     sector_map(7,:)='tra'
+
+     if(.not.allocated(GridTfac))then
+        allocate(GridTfac(MAXLIMAX,MAXLJMAX,NSECTORS,NEMIS_FILE))
+        GridTfac=dble(nmdays(month))/nydays !default, multiplied by inverse later!!
+     endif
+
+     name='none'
+     do isec=1,NSECTORS
+        do iemis=1,NEMIS_FILE
+
+           if(sector_map(isec,iemis)=='default')then
+              GridTfac(:,:,isec,iemis)=dble(nmdays(month))/nydays!default, multiplied by inverse later!!
+              cycle
+           endif
+           if(sector_map(isec,iemis)==name.and.iemis>1)then
+              !has same values as before, no need to read again
+              GridTfac(:,:,isec,iemis)=GridTfac(:,:,isec,iemis-1)
+           else
+              
+              name=sector_map(isec,iemis)
+              
+              call ReadField_CDF('ECLIPSEv5_monthly_patterns.nc',&
+                   name,GridTfac(:,:,isec,iemis),month,interpol='zero_order',&
+                   known_projection='lon lat',needed=.true.,debug_flag=.false.,&
+                   Undef=dble(nmdays(month))/nydays )!default, multiplied by inverse later!!
+
+           endif
+        enddo
+     enddo
+
+!normalizations:
+! in ECLIPSEv5_monthly_patterns.nc the "default" timefactors are defines as
+! nmdays(month)/nydays
+   
+!the normalization until here is such that GridTfac gives the relative contribution from each month
+!However we want to use it as a multiplicative factor, which gives the total as the sum (integral) of the
+!factor over the number of days. Therefore as a multiplicative factor it has to be divided by the number 
+!of days in the month. 
+
+        GridTfac = GridTfac*nydays/nmdays(month)
+
+!The normalization now, gives for instance GridTfac = 1 for constant emissions.
+
+      end subroutine Read_monthly_emis_grid_fac
 end module Timefactors_ml
 

@@ -124,6 +124,7 @@ logical, public, save ::             &
   FORECAST              = .false.    &! reset in namelist
  ,USE_SOILWATER         = .false.    &!
  ,USE_DEGREEDAY_FACTORS = .false.    &!
+ ,USE_GRIDDED_EMIS_MONTHLY_FACTOR = .false. &
  ,USE_SEASALT           = .true.     & !
  ,USE_CONVECTION        = .false.    & ! false works best for Euro runs,
 !
