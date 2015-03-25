@@ -1369,7 +1369,7 @@ contains
        ! LAter we should remove Kz_met and Kz_m2s
 
        forall(i=1:limax,j=1:ljmax,k=2:KMAX_MID)
-             SigmaKz(i,j,k,nr)=Kz_met(i,j,k,nr)/(60*60*3)
+             SigmaKz(i,j,k,nr)=Kz_met(i,j,k,nr)/(60*60*METSTEP)
 
        end forall
 

@@ -153,6 +153,13 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+25th March 2015 Peter  2965
+
+Removed a hardcoded "3" which should be METSTEP.
+(does not make any difference for now, but it is easy to forget if we change
+metstep one in the future) 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 17th March 2015 Peter  2964
 
 Gridded monthly timefactors can be switched on with 
