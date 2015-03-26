@@ -141,6 +141,7 @@ logical, public, save ::             &
  ,USE_EMERGENCY      = .false.       & ! Emergency: Volcanic Eruption & Nuclear Accident. Under development.
  ,USE_AOD            = .false.       &
  ,USE_POLLEN         = .false.       &  ! EXPERIMENTAL. Only works if start Jan 1
+! ,USE_GRAVSET        = .false.       &  ! Gravitationsl settlign, very hardcoded, just testing
  ,USE_AMINEAQ        = .false.       &  ! MKPS
  ,ANALYSIS           = .false.       &  ! EXPERIMENTAL: 3DVar data assimilation
  ,USE_FASTJ          = .false.       & !use FastJ_ml for computing rcphot
