@@ -1834,7 +1834,7 @@ endfunction coord_in_gridbox
           !do k_met=1,KMAX_MET
           k_met=KMAX_MET-1
           p_met=0.5*(A_bnd_met(k_met+1)+A_bnd_met(k_met))+Pref*0.5*(B_bnd_met(k_met+1)+B_bnd_met(k_met))
-         do while(p_met>P_mod.and.k_met>0)
+         do while(p_met>P_mod.and.k_met>1)
             ! write(*,*)P_mod,p_met
              k_met=k_met-1
              p_met=0.5*(A_bnd_met(k_met+1)+A_bnd_met(k_met))+Pref*0.5*(B_bnd_met(k_met+1)+B_bnd_met(k_met))

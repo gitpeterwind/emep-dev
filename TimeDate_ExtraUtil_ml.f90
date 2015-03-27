@@ -14,38 +14,46 @@ PRIVATE
 public :: &
   assign_NTERM,     & ! set NTERM, the number of 3-hourly periods
   date2string,      & ! date (various formats) --> formatted string
+  date2file,        & ! date (various formats) --> file name w/option for old file version
   string2date,      & ! formatted string & format (pattern) --> date (CD format)
   idate2nctime,     & ! idate (int array)--> secs since(int)/days since(real)
   nctime2idate,     & ! idate2nctime inverse
   date2nctime,      & ! date (various formats)--> secs since(int)/days since(real)
   nctime2date,      & ! date2nctime inverse
   nctime2string,    & ! as date2string, but from  secs/days since...
-  compare_date        ! compare dates, accepts wildcards
+  compare_date,     & ! compare dates, accepts wildcards
+  to_stamp,         & ! extended interface for make_timestamp (TimeDate_ml)
+  to_date,          & ! extended interface for make_current_date (TimeDate_ml)
+  to_idate            ! create int array from timestap or date
 
 interface date2string
-  module procedure detail2str,cd2str,int2str,ts2str,cd2str_add,int2str_add
+  module procedure :: detail2str,cd2str,int2str,ts2str,cd2str_add,int2str_add
 end interface date2string
 
+interface date2file
+  module procedure :: cd2file,int2file,ts2file
+end interface date2file
+
 interface idate2nctime
-  module procedure int_to_secs1970,int_to_days1900
+  module procedure :: int_to_secs1970,int_to_days1900
 end interface idate2nctime
 
 interface nctime2idate
-  module procedure secs1970_to_int,days1900_to_int
+  module procedure :: secs1970_to_int,days1900_to_int
 end interface nctime2idate
 
 interface date2nctime
-  module procedure ts_to_secs1970,cd_to_secs1970,int_to_secs1970,&
-                   ts_to_days1900,cd_to_days1900,int_to_days1900
+  module procedure :: ts_to_secs1970,cd_to_secs1970,int_to_secs1970,&
+                      ts_to_days1900,cd_to_days1900,int_to_days1900
 end interface date2nctime
 
 interface nctime2date
-  module procedure secs1970_to_ts,secs1970_to_cd,secs1970_to_int,&
-                   days1900_to_ts,days1900_to_cd,days1900_to_int
+  module procedure :: secs1970_to_ts,secs1970_to_cd,secs1970_to_int,&
+                      days1900_to_ts,days1900_to_cd,days1900_to_int
 end interface nctime2date
 
 interface nctime2string
-  module procedure secs2str,days2str
+  module procedure :: secs2str,days2str
 end interface nctime2string
 
 character(len=*), public, parameter :: &  ! Keywords for ncdate2string
@@ -59,13 +67,11 @@ private ::  &
   detail2str,str2detail, & ! detailed date input<--> formatted string
   cd2str,int2str,ts2str, & ! date/idate (int array)/timestamp --> formatted string
   cd2str_add,int2str_add,& ! optional addsecs parameter
+  cd2file,int2file,ts2file,&  ! * --> file name w/option for old file version
   ts_to_secs1970,cd_to_secs1970,int_to_secs1970,& ! * --> secs since 1970-01-01 00:00 UTC (int)
   ts_to_days1900,cd_to_days1900,int_to_days1900,& ! * --> days since 1900-01-01 00:00 UTC (real)
   secs1970_to_ts,secs1970_to_cd,secs1970_to_int,& ! *_to_secs1970 inverse
   days1900_to_ts,days1900_to_cd,days1900_to_int,& ! *_to_days1900 inverse
-  to_stamp,         & ! extended interface for make_timestamp (TimeDate_ml)
-  to_date,          & ! extended interface for make_current_date (TimeDate_ml)
-  to_idate,         & ! create int array from timestap or date
   int2ts,int2date,ts2int,date2int,& ! auxiliary dateformat transformation tools
   init_ts             ! init 1900 & 1970 timestamps
 
@@ -545,4 +551,48 @@ function compare_date(n,dateA,dateB,wildcard) result(equal)
     endif
   enddo
 endfunction compare_date
+
+function ts2file(iname,ts,max_age,age_unit,debug) result(fname)
+  character(len=*), intent(in)      :: iname,age_unit
+  character(len=len(iname))         :: fname
+  type(timestamp), intent(in)       :: ts
+  integer, intent(in)               :: max_age
+  logical, intent(in), optional     :: debug
+  integer :: age
+  real :: nsecs
+  logical :: fexist
+  select case(age_unit)
+  case('s','second','seconds','S','SECOND','SECONDS')
+    nsecs=1e0
+  case('h','hour','hours','H','HOUR','HOURS')
+    nsecs=36e2
+  case('d','day','days','D','DAY','DAYS')
+    nsecs=864e2
+  case default
+    call CheckStop("ERROR in string2file: unknown age_unit="//trim(age_unit))
+  endselect
+  do age=0,max_age
+    fname=date2string(iname,ts,addsecs=-age*nsecs,debug=debug)
+    inquire(file=fname,exist=fexist)
+    if(fexist)exit
+  enddo
+endfunction ts2file
+
+function cd2file(iname,cd,max_age,age_unit,debug) result(fname)
+  character(len=*), intent(in)      :: iname,age_unit
+  character(len=len(iname))         :: fname
+  type(date),intent(in)             :: cd
+  integer, intent(in)               :: max_age
+  logical, intent(in), optional     :: debug
+  fname=ts2file(iname,to_stamp(cd),max_age,age_unit,debug=debug)
+endfunction cd2file
+
+function int2file(iname,id,max_age,age_unit,debug) result(fname)
+  character(len=*), intent(in)      :: iname,age_unit
+  character(len=len(iname))         :: fname
+  integer, intent(in), dimension(:) :: id
+  integer, intent(in)               :: max_age
+  logical, intent(in), optional     :: debug
+  fname=ts2file(iname,to_stamp(id),max_age,age_unit,debug=debug)
+endfunction int2file
 ENDMODULE TimeDate_ExtraUtil_ml

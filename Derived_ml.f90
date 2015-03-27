@@ -33,7 +33,7 @@ use CheckStop_ml,     only: CheckStop
 use Chemfields_ml,    only: xn_adv, xn_shl, cfac,xn_bgn, AOD,  &
                             Extin_coeff, PM25_water, PM25_water_rh50
 use ChemGroups_ml     ! SIA_GROUP, PMCO_GROUP -- use tot indices
-use ChemSpecs       ! Use NSPEC_ADV amd any of IXADV_ indices
+use ChemSpecs         ! Use NSPEC_ADV amd any of IXADV_ indices
 use Chemfields_ml ,   only: so2nh3_24hr,Grid_snow
 use DerivedFields_ml, only: MAXDEF_DERIV2D, MAXDEF_DERIV3D, &
                             def_2d, def_3d, f_2d, f_3d, d_2d, d_3d
@@ -48,7 +48,7 @@ use Io_Progs_ml,      only: datewrite
 use MetFields_ml,     only: roa,pzpbl,Kz_m2s,th,zen, ustar_nwp, u_ref,&
                             ws_10m, rh2m, z_bnd, z_mid, ps, t2_nwp, &
                             SoilWater_deep, SoilWater_uppr, Idirect, Idiffuse
-use ModelConstants_ml, only: &
+use ModelConstants_ml,only: &
    KMAX_MID     & ! =>  z dimension (layer number)
   ,KMAX_BND     & ! =>  z dimension (level number)
   ,NPROC        & ! No. processors
@@ -66,36 +66,37 @@ use ModelConstants_ml, only: &
   ! output types corresponding to instantaneous,year,month,day
   ,IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY, IOU_YEAR_LASTHH, IOU_HOUR, IOU_HOUR_MEAN
 
-use MosaicOutputs_ml, only: nMosaic, MosaicOutput
-use OwnDataTypes_ml, only: Deriv, print_Deriv_type, &
-                  TXTLEN_DERIV,TXTLEN_SHORT ! type & length of names
-use Par_ml,    only: MAXLIMAX,MAXLJMAX, &   ! => max. x, y dimensions
-                     me,                &   ! for print outs
-                     gi0,gj0,IRUNBEG,JRUNBEG,&! for i_fdom, j_fdom
-                     li0,lj0,limax, ljmax    ! => used x, y area
-use PhysicalConstants_ml,  only : PI,KAPPA
-use SmallUtils_ml,  only: find_index, LenArray, NOT_SET_STRING
-use TimeDate_ml,    only: day_of_year,daynumber,current_date
-use Units_ml,       only: Units_Scale,Group_Units,&
-                          to_molec_cm3 ! converts roa [kg/m3] to M [molec/cm3]
+use MosaicOutputs_ml,     only: nMosaic, MosaicOutput
+use OwnDataTypes_ml,      only: Deriv, print_Deriv_type, &
+                                TXTLEN_DERIV,TXTLEN_SHORT ! type & length of names
+use Par_ml,               only: MAXLIMAX,MAXLJMAX, &      ! => max. x, y dimensions
+                                me,                &      ! for print outs
+                                gi0,gj0,IRUNBEG,JRUNBEG,& ! for i_fdom, j_fdom
+                                li0,lj0,limax, ljmax      ! => used x, y area
+use PhysicalConstants_ml, only: PI,KAPPA
+use SmallUtils_ml,        only: find_index, LenArray, NOT_SET_STRING
+use TimeDate_ml,          only: day_of_year,daynumber,current_date,&
+                                tdif_days,startdate,enddate
+use TimeDate_ExtraUtil_ml,only: to_stamp
+use Units_ml,             only: Units_Scale,Group_Units,&
+                                to_molec_cm3 ! converts roa [kg/m3] to M [molec/cm3]
 implicit none
 private
 
-public  :: Init_Derived         !
-public  :: ResetDerived         ! Resets values to zero
-public  :: DerivedProds         ! Calculates any production terms
-public  :: AddDeriv             ! Adds Deriv type to def_2d, def_3d
-public  :: AddNewDeriv          ! Creates & Adds Deriv type to def_2d, def_3d
-private :: Define_Derived       !
+public  :: Init_Derived
+public  :: ResetDerived   ! Resets values to zero
+public  :: DerivedProds   ! Calculates any production terms
+public  :: AddDeriv       ! Adds Deriv type to def_2d, def_3d
+public  :: AddNewDeriv    ! Creates & Adds Deriv type to def_2d, def_3d
+private :: Define_Derived
 private :: Setups
 private :: write_debug
 private :: write_debugadv
 
-public :: Derived              ! Calculations of sums, avgs etc.
-private :: voc_2dcalc          ! Calculates sum of VOC for 2d fields
-private :: voc_3dcalc          ! Calculates sum of VOC for 3d fields
-private :: group_calc          ! Calculates sum of groups, e.g. pm25
-                               ! from new group arrays
+public  :: Derived        ! Calculations of sums, avgs etc.
+private :: voc_2dcalc     ! Calculates sum of VOC for 2d fields
+private :: voc_3dcalc     ! Calculates sum of VOC for 3d fields
+private :: group_calc     ! Calculates sum of groups, e.g. pm25 from group array
 
 logical, private, parameter :: T = .true., F = .false. ! shorthands only
 integer, public, save :: num_deriv2d, num_deriv3d
@@ -701,13 +702,18 @@ end do
     iou_max=max(iou_max,maxval(f_3d%iotype))
   endif
 
-  if(SOURCE_RECEPTOR)then                  ! We include daily and monthly also 
-    iou_max=IOU_DAY                        ! for SOURCE_RECEPTOR mode which makes
-    iou_min=IOU_YEAR                       ! it easy for debugging. !SVS 22May2014
+  if(SOURCE_RECEPTOR)then             ! We include daily and monthly also 
+    iou_max=IOU_DAY                   ! for SOURCE_RECEPTOR mode which makes
+    iou_min=IOU_YEAR                  ! it easy for debugging. !SVS 22May2014
   endif
 
-  if(FORECAST) &                           ! Only dayly & hourly outputs
-    iou_min=IOU_DAY                        ! are wanted on FORECAST mode
+  if(FORECAST)then                    ! reduce output on FORECAST mode
+    select case(nint(tdif_days(to_stamp(startdate),to_stamp(enddate))))
+      case(   : 27);iou_min=IOU_DAY   ! Only dayly & hourly outputs
+      case( 28:180);iou_min=IOU_MON   ! .. and monthly
+      case(181:   );iou_min=IOU_YEAR  ! .. and full-run
+    endselect
+  endif
 
   if(MasterProc) print "(a,2i4)","IOU_MAX ",  iou_max, iou_min
 

@@ -153,9 +153,8 @@ contains
        call advecdiff_poles
     endif
 
-    if (USE_GRAVSET) then
-       call gravset
-    endif
+!   if(USE_GRAVSET) call gravset
+
 
     call Add_2timing(17,tim_after,tim_before,"phyche:advecdiff")
     !================

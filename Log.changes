@@ -145,13 +145,109 @@ Also - GenChem makes femis.defaults in the ZCM_... directory
 !----------------------------------------------------------
 CLEAN-UP: all code should be checked to remove old comments before
 the public release. Ideally compile code on PC with gfortran's
-pedantic debug switches (see Makefile_gfortran) - gives loads of
+pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+27th March 2015 Alvaro 2972
+
+PhyChem_ml:
+- comment call to gravset (included on 2968)
+
+GridValues_ml:
+- Fix minor bug in Alloc_GridFields. Wrong exit condition on vertical level
+  interpolation.
+
+CheckStop_ml:
+- Add integer range check (rangeI) to CheckStop interface
+- Rename real range check (rangeR) on CheckStop interface
+
+TimeDate_ExtraUtil_ml:
+- Declare function interfaces for swapping between different date formats as public.
+  to_stamp, to_date and to_idate take a date on any supported format:
+  timestamp (type), date (type) or idate (int array). 
+- Add interface date2file. Like date2string transforms a date (various formats)
+  into a string, with additional options for looking for over previous dates
+  if the file for the specific date is not found.
+
+Derived_ml:
+- On FORECAST mode select output depending on length of run (number fo days)
+
+Unimod.f90:
+- Replace hard--coded 39 length of lastptim on MPI_SEND/RECV calls,
+  so additional timing IDs used for 3DVar are also sent/received.
+
+ForestFire_ml:
+- Adapt "single opening of file" feature (introduced on 2942) to work
+  on FORECAST mode. New files are opened inside newFFrecord function.
+- Use date2file instead of nctime2string for persistence.
+
+ForestFire_ml, Nest_ml, :
+- Use CheckNC (CheckStop_ml) instead of check (NetCDF_ml).
+- Explicitly declare variables and functions used from netcdf module.
+- Clean up calls to necdf procedures.
+
+ExternalBICs_ml, config_FORECAST.nml:
+- Year dependant mappings versions for MACC_EVA:
+  Rename IFS_MACC_EVA mapping version to EVA_EU_AN (up to 2012),
+  and add EVA_EU_FC (from 2013).
+- Accept explicit mappings for MACC_ENS and MACC_EVA versions.
+- Remove EnsClimRCA BICs mapping from config_FORECAST.nml, as it is never used
+  on FORCAST/ANALYSIS runs.
+
+ExternalBICs_ml, Nest_ml:
+- When the BC file for a given date, look for a file from a previous date up
+  to BC_DAYS old. This is used for re-runs with MACC_ENS BCs,which contain 5 days each. 
+  The previous implementation switched BC file after reading all records in it.
+
+Nest_ml
+- FORECAST no longer supersedes MODE, in order to smplify the code.
+- Use new logical variables native_grid_3D and native_grid_BC,
+  read in Nest_config namelist, to indicate if the IC/BC files are on the same
+  grid/domain as the current run. This is used to skip the expensive call to 
+  grid2grid_coeff in init_nest.
+- Use new logical variable omit_zero_write, read in Nest_config namelist,
+  to indicate if constant=0.0 variables are to be skiped from output.
+- Update filename_read_3D, filename_read_BC and filename_write from their
+  respective templates within init_icbc.
+- Call init_icbc on Config_Nest to ensure that the variables for IC/BC mappings
+  are found.
+- Set output type for all variables (Real4) in a consistent manner
+  (DFtype=>Real4), instead of in each Out_netCDF call.
+- Declare coordinates of sub-domain to write as public.
+- Replace StopAll by CheckStop calls.
+
+NetCDF_ml, Nest_ml:
+- Rename and move max_string_length parameter in Nest_ml to max_filename_length
+  in NetCDF_ml
+- Set all fileName* variables (NetCDF_ml) to max_filename_length,
+  to ensure that the full path/fileNames from Nest_ml are kept.
+
+NetCDF_ml:
+- Out_netCDF:
+  - Ensure ncfileID_given input/output variable (introduced in 2961)
+    contains the correct valid ncID when create_var_only=.true.
+  - New parmeter IOU_GIVEN=-IOU_INST to indicate present(ncfileID_given).
+  - Use variable iotyp_new in Out_netCDF to hold iotyp or IOU_GIVEN.
+- GetCDF_modelgrid:
+  - Remove duplicated output from .not.MasterProc.
+- vertical_interpolate:
+  - Use explicit array dimensions on Rvar (input) and Rvar_emep (output) variables.
+    Previous version could exceeld variable boundaries, depending on the
+    domain and NPROC.
+- createnewvariable, GetCDF_modelgrid, Out_netCDF and vertical_interpolate:
+  - Add crash/debug information to necdf calls trough check function (CheckNC).
+  - Clean up calls to netcdf procedures.
+  - Replace StopAll by CheckStop calls.
+
+Makefile
+- Add $(SRCS.$(EXP)) to %.tar.bz2, so source code from ZD_3DVar/Make.SRCS
+  is also archived.
+        
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 27th March 2015 Peter  2971
 

@@ -13,7 +13,7 @@ program myeul
   use My_Timing_ml,     only: lastptim, mytimm, Output_timing, &
        Init_timing, Add_2timing, Code_timer, &
        tim_before, tim_before0, tim_before1, &
-       tim_after, tim_after0, NTIMING_UNIMOD
+       tim_after, tim_after0, NTIMING_UNIMOD,NTIMING
   use Advection_ml,     only: vgrid, assign_nmax, assign_dtadvec
   use Aqueous_ml,       only: init_aqueous, Init_WetDep   !  Initialises & tabulates
   use AirEmis_ml,       only: lightning
@@ -30,7 +30,8 @@ program myeul
   use EcoSystem_ml,     only: Init_EcoSystems
   use Emissions_ml,     only: Emissions, newmonth
   use ForestFire_ml,    only: Fire_Emis
-  use GridValues_ml,    only: MIN_ADVGRIDS, GRIDWIDTH_M, Poles, DefDebugProc, GridRead
+  use GridValues_ml,    only: MIN_ADVGRIDS, GRIDWIDTH_M, Poles,&
+                              DefDebugProc, GridRead
   use Io_ml,            only: IO_MYTIM,IO_RES,IO_LOG,IO_NML,IO_DO3SE
   use Io_Progs_ml,      only: read_line, PrintLog
   use Landuse_ml,       only: InitLandUse, SetLanduse, Land_codes
@@ -363,13 +364,13 @@ program myeul
      print *,'programme is finished'
      ! Gather timing info:
      if(NPROC-1> 0)then
-        CALL MPI_RECV(lastptim,8*39,MPI_BYTE,NPROC-1,765,MPI_COMM_WORLD,STATUS,INFO)
+        CALL MPI_RECV(lastptim,NTIMING*8,MPI_BYTE,NPROC-1,765,MPI_COMM_WORLD,STATUS,INFO)
      else
         lastptim(:) = mytimm(:)
      endif
      call Output_timing(IO_MYTIM,me,NPROC,nterm,GIMAX,GJMAX)
   elseif(me==NPROC-1) then
-     CALL MPI_SEND(mytimm,8*39,MPI_BYTE,0,765,MPI_COMM_WORLD,INFO)
+     CALL MPI_SEND(mytimm,NTIMING*8,MPI_BYTE,0,765,MPI_COMM_WORLD,INFO)
   endif
 
   ! write 'modelrun.finished' file to flag the end of the FORECAST

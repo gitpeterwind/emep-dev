@@ -10,11 +10,16 @@ use ChemSpecs,              only: NSPEC_ADV, species_adv
 use Io_ml,                  only: PrintLog,IO_NML
 use ModelConstants_ml,      only: MasterProc, DEBUG=>DEBUG_NEST_ICBC
 use SmallUtils_ml,          only: find_index
+use TimeDate_ml,            only: date
 use TimeDate_ExtraUtil_ml,  only: date2string
 implicit none
 
 private
 public :: set_extbic
+
+interface set_extbic
+  module procedure :: set_extbic_id,set_extbic_cd
+end interface set_extbic
 
 logical, public, save :: &
   USE_EXTERNAL_BIC = .false., & ! use external (non Unimod) BCs
@@ -29,13 +34,15 @@ character(len=BIC_NAME_LEN),public, save :: &
   EXTERNAL_BIC_VERSION = "use_any"
 
 integer,save, public :: &
-  iw=-1, ie=-1, js=-1, jn=-1, kt=-1 ! i West/East bnd; j North/South bnd; k Top
+  iw=-1, ie=-1, js=-1, jn=-1, kt=-1, & ! i West/East bnd; j North/South bnd; k Top
+  BC_DAYS=0   ! #days in one BC file, for use old BCs in a FORECAST
+              ! 0 means "do not look for old files"
 
 character(len=100),public, save :: &
   filename_eta     = 'EMEP_IN_BC_eta.zaxis'
 
 character(len=*),public, parameter :: &
-  ICBC_FMT="(A24,'=',A24,'*',F7.2,2L2,'=',I3)"
+  ICBC_FMT="(A24,'=',A24,'*',F7.2,2L2,'=',I4)"
 type, public :: icbc                ! Inital (IC) & Boundary Conditions (BC)
   character(len=24) :: spcname="none",varname="none" ! Unimod,BC_file names
   real              :: frac=1.0                      ! fraction to unimod variable
@@ -81,7 +88,7 @@ subroutine Config_ExternalBICs()
   endif
 endsubroutine Config_ExternalBICs
 
-subroutine set_extbic(idate)
+subroutine set_extbic_id(idate)
 !----------------------------------------------------------------------------!
 ! Read external (non Unimod) BCs description/setup.
 ! ICs are assumed to come from Unimod (Nest_ml.init_icbc).
@@ -125,10 +132,22 @@ subroutine set_extbic(idate)
     case(2014091800:)            ! from 2014-09-18 00:00
       EXTERNAL_BIC_VERSION='IFS_CMP_g4e2'
     endselect
-  case("MACC_EVA","IFS_MACC_EVA")  ! EVA2010/2011: GRG & AER    
-    EXTERNAL_BIC_VERSION='IFS_MACC_EVA'
+    BC_DAYS=5   ! if BC file is not found, look for 1..5-day old files
+  case("IFS_MOZ_f7kn","IFS_MOZ_fkya","IFS_MOZ_fnyp","IFS_CMP_g4e2") 
+    BC_DAYS=5   ! explicit MACC_ENS BC mapping version
+  case("MACC_EVA","REANALYSIS")  ! GRG & AER    
+    select case (idate(1))
+    case(:2012)
+      EXTERNAL_BIC_VERSION='EVA_EU_AN'
+    case(2013:)
+      EXTERNAL_BIC_VERSION='EVA_EU_FC'
+    endselect
+    BC_DAYS=1   ! if BC file is not found, look for 1-day old file
+  case("EVA_EU_AN","EVA_EU_FC")
+    BC_DAYS=1   ! explicit MACC_EVA BC mapping version
   case default
     EXTERNAL_BIC_VERSION='use_any'
+    BC_DAYS=0   ! do not look for old BC files
   endselect
 
 !--- Look for a ExternalBICs_bc with the correct %name and %version
@@ -169,6 +188,9 @@ subroutine set_extbic(idate)
     call PrintLog("External BICs set for "//EXTERNAL_BIC_NAME)
   EXTERNAL_BIC_SET = .true.
   first_call = .false.
-endsubroutine set_extbic
-
+endsubroutine set_extbic_id
+subroutine set_extbic_cd(cdate)
+  type(date) :: cdate
+  call set_extbic_id([cdate%year,cdate%month,cdate%day,cdate%hour])
+endsubroutine set_extbic_cd
 endmodule ExternalBICs_ml

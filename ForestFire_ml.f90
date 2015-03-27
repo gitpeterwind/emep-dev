@@ -29,15 +29,16 @@ module ForestFire_ml
 !  and put the day-testing code here. This lets the module decide if new
 !  emissions are needed, and keeps all forest-fire logic here
 !----------------------------------------------------------------
-use CheckStop_ml,         only: CheckStop
+use CheckStop_ml,         only: CheckStop,CheckNC
 use ChemSpecs
 use GridValues_ml,        only: i_fdom, j_fdom, debug_li, debug_lj, &
                                 debug_proc,xm2,GRIDWIDTH_M
 use Io_ml,                only: PrintLog, datewrite, IO_NML
 use MetFields_ml,         only: z_bnd
 use ModelConstants_ml,    only: MasterProc, KMAX_MID, DEBUG, IOU_INST
-use netcdf
-use NetCDF_ml,            only: ReadTimeCDF,ReadField_CDF,Out_netCDF,Real4, check
+use netcdf,               only: nf90_open, nf90_nowrite, nf90_close
+use NetCDF_ml,            only: ReadTimeCDF,ReadField_CDF,Out_netCDF,Real4,&
+                                closedID
 use OwnDataTypes_ml,      only: Deriv, TXTLEN_SHORT
 use Par_ml,               only: MAXLIMAX, MAXLJMAX, me,limax,ljmax
 use PhysicalConstants_ml, only: AVOG
@@ -45,7 +46,7 @@ use Setup_1dfields_ml,    only: rcemis
 use SmallUtils_ml,        only: find_index
 ! No. days per year, date-type:
 use TimeDate_ml,          only: current_date,day_of_year,max_day
-use TimeDate_ExtraUtil_ml,only: date2string,nctime2string,date2nctime
+use TimeDate_ExtraUtil_ml,only: date2string,nctime2string,date2nctime,date2file
 
 implicit none
 private
@@ -191,7 +192,7 @@ subroutine Fire_Emis(daynumber)
   integer, save  :: nn_old=-1
   real    :: fac, to_kgm2s   
 
-  integer :: ind, ncFileID
+  integer :: ind, ncFileID=closedID
   integer :: loc_maxemis(2) ! debug
 
   character(len=max_string_length) :: fname='new'
@@ -245,8 +246,6 @@ subroutine Fire_Emis(daynumber)
   allocate(rdemis(MAXLIMAX,MAXLJMAX),stat=alloc_err)
   call CheckStop(alloc_err,"ForestFire rdemis alloc problem")
   
-  !open the file only once
-  call check(nf90_open(path = trim(fname), mode = nf90_nowrite, ncid = ncFileID))
   ! We need to look for forest-fire emissions which are equivalent
   ! to the standard emission files:
   do iBB = 1, NBB_DEFS
@@ -342,7 +341,8 @@ subroutine Fire_Emis(daynumber)
     if(DEBUG%FORESTFIRE) sum_emis(ind)=sum_emis(ind)+sum(BiomassBurningEmis(ind,:,:))
   enddo ! BB_DEFS
 
-  call check(nf90_close(ncFileID))!has to close the file here
+  call CheckNC(nf90_close(ncFileID),"close:"//trim(fname)) ! has to close the file here
+  ncFileID=closedID
 
   first_call  = .false.
   deallocate(rdemis)
@@ -392,16 +392,19 @@ function newFFrecord(ymd) result(new)
   real :: ncday(0:1)
 
   ! Check: New file
-  call date2nctime(ymd,ncday(1))
-  ncday(0)=ncday(1)-persistence+1
   select case(BBMAP)
-    case("GFED");fname=nctime2string(GFED_PATTERN,ncday(1))
-    case("FINN");fname=nctime2string(FINN_PATTERN,ncday(1))
-    case("GFAS");fname=nctime2string(GFAS_PATTERN,ncday(1))
+    case("GFED");fname=date2file(GFED_PATTERN,ymd,persistence-1,"days")
+    case("FINN");fname=date2file(FINN_PATTERN,ymd,persistence-1,"days")
+    case("GFAS");fname=date2file(GFAS_PATTERN,ymd,persistence-1,"days")
   endselect
   if(fname/=file_old)then
     if(DEBUG%FORESTFIRE.and.MasterProc) &
       write(*,*)"ForestFire new file: ",trim(fname)
+  ! close old ncFile, if already open
+    if(ncFileID/=closedID)&
+      call CheckNC(nf90_close(ncFileID),"close:"//trim(file_old))
+    ncFileID=closedID
+  ! check if new file exists
     inquire(file=fname,exist=fexist)    ! check if fname exixts
     if(.not.fexist)then
       if(MasterProc)then
@@ -412,10 +415,11 @@ function newFFrecord(ymd) result(new)
       new=.false.
       return
     endif
-    nread=-1                            ! read all
-    fdays(:)=-1.0                       ! times records
-    call ReadTimeCDF(fname,fdays,nread) ! in fname,
-    record_old=-1                       ! and process them
+  ! read all times records in fname, and process them
+    nread=-1                            
+    fdays(:)=-1.0                       
+    call ReadTimeCDF(fname,fdays,nread) 
+    record_old=-1                       
   endif
 
   ! Check: New pollutant
@@ -425,6 +429,8 @@ function newFFrecord(ymd) result(new)
   endif
 
   ! Check: New time record
+  call date2nctime(ymd,ncday(1))
+  ncday(0)=ncday(1)-persistence+1
   nstart=MAXLOC(fdays(:nread),DIM=1,&
     MASK=(fdays(:nread)>=ncday(0)).and.(fdays(:nread)<(ncday(1)+1.0)))
   if(nstart/=record_old)then
@@ -447,6 +453,8 @@ function newFFrecord(ymd) result(new)
   ! Update if new
   new=(fname/=file_old).or.(nstart/=record_old).or.(FF_poll/=poll_old)
   if(new)then
+    if(ncFileID==closedID) & ! open the file only once
+      call CheckNC(nf90_open(fname,nf90_nowrite,ncFileID),"open:"//trim(fname))
     file_old=fname
     poll_old=FF_poll
     record_old=nstart

@@ -9,7 +9,8 @@ module CheckStop_ml
 !   (c)  int1     /= int2
 !   (d)  string1  /= string2
 !   (e)  logical  expression = true  (e.g. lu < 0 for landuse index)
-!   (f)  range    outside [range(0)..range(1)]
+!   (f)  rangeR   real outside [range(0)..range(1)]
+!   (g)  rangeI   int  outside [range(0)..range(1)]
 
 use netcdf, only: NF90_NOERR,NF90_STRERROR
 implicit none
@@ -17,7 +18,7 @@ INCLUDE 'mpif.h'
 
 public  :: StopAll, CheckStop, CheckNC
 private :: CheckStop_ok, CheckStop_okinfo, CheckStop_int1, CheckStop_int2, &
-           CheckStop_str2, CheckStop_TF, CheckStop_range
+           CheckStop_str2, CheckStop_TF, CheckStop_rangeI, CheckStop_rangeR
 
 interface CheckStop
    module procedure CheckStop_ok
@@ -26,7 +27,7 @@ interface CheckStop
    module procedure CheckStop_int2
    module procedure CheckStop_str2
    module procedure CheckStop_TF
-   module procedure CheckStop_range
+   module procedure CheckStop_rangeI,CheckStop_rangeR
 end interface CheckStop
 
 contains
@@ -109,7 +110,7 @@ subroutine CheckStop_TF(is_error, infomsg)   ! Test expression, e.g. lu<0
   endif
 endsubroutine CheckStop_TF
 
-subroutine CheckStop_range(var,vrange,infomsg)  ! test .not.(vrange(0)<=var<=vrange(1))
+subroutine CheckStop_rangeR(var,vrange,infomsg)  ! test .not.(vrange(0)<=var<=vrange(1))
   real, intent(in) :: var,vrange(0:1)
   character(len=*), intent(in) :: infomsg
   character(len=*), parameter :: &
@@ -120,7 +121,20 @@ subroutine CheckStop_range(var,vrange,infomsg)  ! test .not.(vrange(0)<=var<=vra
    !write(*,*) "                             infomsg ", infomsg
     call StopAll(infomsg)
   endif
-endsubroutine CheckStop_range
+endsubroutine CheckStop_rangeR
+
+subroutine CheckStop_rangeI(var,vrange,infomsg)  ! test .not.(vrange(0)<=var<=vrange(1))
+  integer, intent(in) :: var,vrange(0:1)
+  character(len=*), intent(in) :: infomsg
+  character(len=*), parameter :: &
+    errfmt="(A,'=',I0,' is out of range ',I0,'..',I0)"
+
+  if(var<vrange(0).or.var>vrange(1))then
+    write(*,errfmt) "CheckStopl_range: variable",var,vrange
+   !write(*,*) "                             infomsg ", infomsg
+    call StopAll(infomsg)
+  endif
+endsubroutine CheckStop_rangeI
 
 subroutine CheckNC(status,errmsg)
   implicit none
