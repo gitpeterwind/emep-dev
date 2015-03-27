@@ -153,6 +153,17 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+27th March 2015 Peter  2971
+
+adv_vert_fourth, 4th order Bott for the vertical routine available 
+(but not used).
+Only there for possible test in the future (not switch included).
+Only small differences noticed for O3 (a few ppb), much less for SIA.
+
+adv_vert_zero, also available, but give large differences, and may therefore 
+still have bugs.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26th March 2015 Birthe  2968
 
 Added Gravset_ml for gravitational settling hardcoded for ash, and added
