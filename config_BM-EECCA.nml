@@ -115,7 +115,6 @@ OutputConcs=
       'NH4_F'               ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
       'SEASALT_F'           ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
       'SEASALT_C'           ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-      'POLLEN_B'            ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
       'DUST_ROAD_F'         ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
       'DUST_ROAD_C'         ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
       'DUST_WB_F'           ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,

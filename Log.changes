@@ -153,10 +153,11 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-27th March 2015 Alvaro 2972
+27th March 2015 Alvaro, Birthe 2972-2973
 
 PhyChem_ml:
 - comment call to gravset (included on 2968)
+- uncomment ANALYSIS calls (commented on 2967)
 
 GridValues_ml:
 - Fix minor bug in Alloc_GridFields. Wrong exit condition on vertical level
@@ -204,14 +205,16 @@ ExternalBICs_ml, Nest_ml:
   to BC_DAYS old. This is used for re-runs with MACC_ENS BCs,which contain 5 days each. 
   The previous implementation switched BC file after reading all records in it.
 
-Nest_ml
-- FORECAST no longer supersedes MODE, in order to smplify the code.
+Nest_ml, config_FORECAST.nml
 - Use new logical variables native_grid_3D and native_grid_BC,
   read in Nest_config namelist, to indicate if the IC/BC files are on the same
   grid/domain as the current run. This is used to skip the expensive call to 
   grid2grid_coeff in init_nest.
 - Use new logical variable omit_zero_write, read in Nest_config namelist,
   to indicate if constant=0.0 variables are to be skiped from output.
+
+Nest_ml
+- FORECAST no longer supersedes MODE, in order to smplify the code.
 - Update filename_read_3D, filename_read_BC and filename_write from their
   respective templates within init_icbc.
 - Call init_icbc on Config_Nest to ensure that the variables for IC/BC mappings
@@ -244,10 +247,37 @@ NetCDF_ml:
   - Clean up calls to netcdf procedures.
   - Replace StopAll by CheckStop calls.
 
-Makefile
+Makefile:
 - Add $(SRCS.$(EXP)) to %.tar.bz2, so source code from ZD_3DVar/Make.SRCS
   is also archived.
-        
+
+run.pl,config_FORECAST.nml:
+- Set $MAKEMODE for MACC runs based on $ENV{"PBS_JOBNAME"}.
+- Always recompile model (make clean) for MACC runs.
+- So not interpolate vertical leveld on meteo for MACC14 domain.
+- Do not link $HDD file for MACC14 domain.
+- Write full path to pollen input files into Pollen_config namelist.
+
+ZD_Pollen/My_Pollen_ml,Pollen_const_ml,
+- new version with grass & olive pollen, in addition to birch pollen.
+
+ZCM_EmChem09/Pollen.species,Pollen.reactions:
+- rename POLLEN_B specie to POLLEN_BIRTCH
+- add POLLEN_OLIVE and POLEN_GRASS species
+- add POLLEN group for all POLLEN_* species
+
+config_Outputs_EMEPSTD.nml:
+- Add POLLEN (GROUP) output for MACC-ENS runs
+- Add O3 output in ug/m3 for MACC-EVA runs
+
+config_Outputs_EMEPSTD.nml, config_BM-EECCA.nml:
+- Remove POLLEN_B (SPC) output
+
+ZD_OZONE/My_Outputs_ml.f90, Output_hourly:
+- MACC_ENS mode: output grass & olive pollen, in addition to birch pollen.
+- MACC_EVA mode: use D2D_inst outputs
+- MACC_NMC mode: do not output hourly
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 27th March 2015 Peter  2971
 
@@ -333,7 +363,6 @@ Another indirect solution which is implemented in this revision, is to keep the
 file open between each component write; this is also faster.
 
 Modified NetCDF_ml, Nest_ml
-
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 5th March 2015 Peter, Alvaro  2959-60

@@ -30,6 +30,7 @@ OutputConcs=
       'SO2'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
       'NH3'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
       'HNO3'                ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
+      'O3'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
       'NO2'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
       'NO'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
       'SO4'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
@@ -38,7 +39,6 @@ OutputConcs=
       'NH4_F'               ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
       'SEASALT_F'           ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
       'SEASALT_C'           ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-      'POLLEN_B'            ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
       'DUST_ROAD_F'         ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
       'DUST_ROAD_C'         ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
       'DUST_WB_F'           ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
@@ -58,7 +58,7 @@ OutputConcs=
 ! GenChem produces a number of groups of species.
 ! Here we say which ones we want for different units
 ! ****** UPPER CASE ONLY ************
-! ugC/m3
+! ug/m3 ugN/m3 ugC/m3
       'OXN'                 ,'ugN' ,'2d','AIR_CONCS','GROUP',4,
       'NOX'                 ,'ugN' ,'2d','AIR_CONCS','GROUP',4,
       'RDN'                 ,'ugN' ,'2d','AIR_CONCS','GROUP',4,
@@ -73,6 +73,7 @@ OutputConcs=
       'DUST_NAT_F'          ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
       'DUST_NAT_C'          ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
       'DUST'                ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
+      'POLLEN'              ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
 ! SOA, PCM_F etc. are special and need appropriate units. Do not confuse! 
 ! Only PCM has proper ug units, the others are carbon-eqiuvalents 
 ! (PCM is particulate carbonaceous matter = sum of all EC and OM components.)

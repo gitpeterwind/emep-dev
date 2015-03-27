@@ -118,7 +118,7 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
-($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2964"   ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA","EMEP");
+($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2972"   ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA","EMEP");
 
 my $KEEP_LINKS=0; # do not cleanup links
 my %BENCHMARK;
@@ -168,10 +168,10 @@ if ($CWF) {
   $CWFBASE="tomorrow" if($CWFBASE eq "today")and($CWFMETV =~ /12/);  # default date for 12UTC version 
   $CWFBASE=date2str($CWFBASE,"%Y%m%d");
 # $CWFMETV:
-# Forecast/Analysis ($CWFDAYS<=10): meteo${CWFBASE}_{00,01,..}d.nc
+# Forecast/Analysis ($CWFDAYS<=6): meteo${CWFBASE}_{00,01,..}d.nc
 #   AN00|AN Analysis w/ 00UTC met
 #   FC12|12 Forecast w/ 12UTC met
-# Hindcast ($CWFDAYS>10): meteo{DAY1,DAY2,..}_??d.nc
+# Hindcast ($CWFDAYS>6): meteo{DAY1,DAY2,..}_??d.nc
 #   *00|24|48|72 run w/ 00UTC met 00d|01d|02d|03d
 #   *12|36|60|84 run w/ 12UTC met 01d|02d|03d|04d
   $eCWF=0;                              # Emergency forecast
@@ -185,15 +185,22 @@ if ($CWF) {
 ##$CWFDUMP[0]=date2str($CWFBASE."                 ,"%Y-1-1"); # dump/nest every day at 00
   $CWFDUMP[0]=date2str($CWFBASE." 1 day"          ,"%Y%m%d"); # 1st dump/nest
   $CWFDUMP[1]=date2str($CWFBASE." 2 day"          ,"%Y%m%d"); # 2nd dump/nest
-  given(substr($CWFBASE,0,4)){
-    when([2010]){$MAKEMODE=($eCWF)?"eEMEP2010":"MACC-EVA2010";} # 2010 EVA
-    when([2011]){$MAKEMODE=($eCWF)?"eEMEP2011":"MACC-EVA2011";} # 2011 EVA
-    when([2012]){$MAKEMODE=($eCWF)?"eEMEP"    :"MACC-EVA";}     # 2012 EVA
-    when([2013]){$MAKEMODE=($eCWF)?"eEMEP2013":"MACC-EVA";}     # 2013 EVA
-    default     {$MAKEMODE=($eCWF)?"eEMEP":"MACC";} # Standard Forecast model setup
+  given($ENV{"PBS_JOBNAME"}){
+  when(/nmc/){
+    $MAKEMODE="MACC-NMC";} # standard NMC run
+  when(/eva/){
+    given(substr($CWFBASE,0,4)){  # YEAR
+      when([2010]){$MAKEMODE="MACC-EVA2010";} # 2010 EVA
+      when([2011]){$MAKEMODE="MACC-EVA2011";} # 2011 EVA
+      default     {$MAKEMODE="MACC-EVA";}}} # standard EVA run
+  default{
+    given(substr($CWFBASE,0,4)){  # YEAR
+      when([2010]){$MAKEMODE=($eCWF)?"eEMEP2010":"MACC";}
+      when([2011]){$MAKEMODE=($eCWF)?"eEMEP2011":"MACC";}
+      when([2013]){$MAKEMODE=($eCWF)?"eEMEP2013":"MACC";}
+      default     {$MAKEMODE=($eCWF)?"eEMEP"    :"MACC";}}} # Standard Forecast model setup
   }
-  $MAKEMODE="MACC-EVA" if($ENV{"PBS_JOBNAME"}=~/eva/);# EVA run
-  $MAKEMODE="MACC-NMC" if($ENV{"PBS_JOBNAME"}=~/nmc/);# NMC run
+  $MAKEMODE=$ENV{"MAKEMODE"} if($ENV{"MAKEMODE"}); # override by env variable
   $MAKEMODE .="-3DVar" if($aCWF);
   $exp_name = ($eCWF)?"EMERGENCY":($aCWF?"ANALYSIS":"FORECAST");
   $exp_name.= "_REVA" if($MAKEMODE=~/EVA/);
@@ -555,11 +562,11 @@ chdir "$ProgDir";
 #-- generate Makefile each time, to avoid forgetting changed "pat" file!
 
 
-if ( $RESET ) { ########## Recompile everything!
-
+if($RESET or ($MAKEMODE=~/MACC/)) { ########## Recompile everything!
   # For now, we simply recompile everything!
   system(@MAKE, "clean");
   if ($MAKEMODE) {
+    system(@MAKE, "clean", "$MAKEMODE") if ($MAKEMODE=~/3DVar/);
     system(@MAKE, "$MAKEMODE");
   } else {
     system(@MAKE, "depend");
@@ -687,7 +694,7 @@ unless($MAKEMODE=~/EVA/){
   #NB: link/define "EmisHeights_P.txt" if you are using different 6 lowest levels (for instance 34 levels);
   my  $old = "$DataDir/Vertical_levels20.txt";
   my  $new = "Vertical_levels.txt";
-  mylink( "Linking:", $old, $new);
+  mylink( "Linking:", $old, $new) unless($CWF and ($GRID eq "MACC14"));
 
 #To use FastJ some data files are required. Could be moved elsewhere 
  my $FASTJ = 0;
@@ -763,6 +770,9 @@ unless($MAKEMODE=~/EVA/){
 
     if ($GRID eq "MACC14") { # For most cases only Emis_TNO7.nc is available
       $ifile{"$emisdir/EmisOutFrac.$poll"} = "emislist.$poll" if(-e "$emisdir/EmisOutFrac.$poll");
+      # untested
+      my $enc="$emisdir/Emis_TNO7_2751.nc";
+      $ifile{"$enc"} = "EmisFracs.nc" if(-e $enc);
     }elsif( $GRID eq "RCA"){
       #EnsClim RCA #$ifile{"$dir/grid$gridmap{$poll}"} = "emislist.$poll";
       #$ifile{"$emisdir/EmisOut_2005.$poll"} = "emislist.$poll";
@@ -944,7 +954,7 @@ unless($MAKEMODE=~/EVA/){
    if(-e "$MyDataDir/PointSources.txt");
 
 # DEGREE DAYS (Tbase set above, either 18 or 20):
-  unless ($CWF or ($GRID eq "RCA") or ($GRID eq "GLOBAL")) {
+  unless ($CWF or ($GRID eq "MACC14") or ($GRID eq "RCA") or ($GRID eq "GLOBAL")) {
     my $HDD = "$MetDir/HDD$Tbase-$GRID-$year.nc";
     print "Looking for DegreeDayFac: $HDD \n";
     system("ls -lh --time-style=long-iso $HDD");
@@ -1000,9 +1010,15 @@ unless($MAKEMODE=~/EVA/){
 
 # For Pollen
   if($PollenDir) {
-    $ifile{"$PollenDir/pollen_data.nc"} = "pollen_data.nc";
-    $cwfpl=date2str($CWFDATE[0],$CWFPL) if($CWF);
-    $ifile{"$cwfpl"} = "POLLEN_IN.nc"   if(-e $cwfpl);
+    $inml{'birch_frac'}="$PollenDir/birch_frac.nc";
+    $inml{'birch_data'}="$PollenDir/pollen_data.nc";
+    $inml{'olive_data'}="$PollenDir/oliven_data.nc";
+    $inml{'grass_time'}="$PollenDir/grass_time.nc";
+    $inml{'grass_frac'}="$PollenDir/grass_frac.nc";
+    if($CWF){
+      $inml{'poll_read'}=$cwfpl=date2str($CWFDATE[0],$CWFPL);
+      $inml{'poll_write'}=date2str($CWFBASE,$CWFPL);
+    }
   }
 
 # For windblown dust
@@ -1111,7 +1127,7 @@ unless($MAKEMODE=~/EVA/){
   %h=('testv'=>"$testv",'Chem'=>"$Chem",'exp_name'=>"$exp_name",
       'outputs'=>"$outputs",'GRID'=>"$GRID",'MAKEMODE'=>"$MAKEMODE");
   foreach my $k (sort keys %h) {
-    $nml.=sprintf "#  %-22s = '%s',\n";
+    $nml.=sprintf "#  %-22s = '%s',\n",$k,$h{$k};
   }
   # list of linked files in nml format for compatibility with future nml-only versions
   $nml.="#". "-"x22 ." Linked files ". "-"x22 ."\n";
@@ -1232,12 +1248,6 @@ EOT
           if (-e $old) && ($ENV{$task});
       }
     }
-    # Pollen
-    $old="POLLEN_OUT.nc";
-    $old=date2str($CWFBASE." 1 day","POLLEN_OUT_%Y%m%d.nc") unless (-e $old);; # 1st dump/nest
-    $old=date2str($CWFBASE." 2 day","POLLEN_OUT_%Y%m%d.nc") unless (-e $old);; # 2nd dump/nest
-    $new=date2str($CWFBASE,$CWFPL);        # today's pollen dump
-    system("mkdir -p `dirname $new`; mv $old $new") if (-e "$old");
   }
 
 ################################## END OF RUNS ######################

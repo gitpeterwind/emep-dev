@@ -7,70 +7,147 @@ module Pollen_ml
 ! Pollen emission based upon meteorology paparameters, and heatsum.
 ! Pollen particles are assumed of 22 um diameter and 800 kg/m3 density. 
 !-----------------------------------------------------------------------!
-  use Pollen_const_ml
-  use PhysicalConstants_ml, only: AVOG
-  use Biogenics_ml,         only: EMIS_BioNat, EmisNat 
-  use CheckStop_ml,         only: CheckStop
-  use ChemChemicals_ml,     only: species
-  use Functions_ml,         only: heaviside
-  use GridValues_ml ,       only: glon, glat
-  use Landuse_ml,           only: LandCover
-  use LocalVariables_ml,    only: Grid
-  use SubMet_ml,            only: Sub
-  use MetFields_ml,         only: surface_precip, ws_10m ,rh2m,t2_nwp,&
-                                  foundws10_met,foundprecip,pr,u_ref,z_bnd,z_mid
-  use MicroMet_ml,          only: Wind_at_h
-  use ModelConstants_ml,    only: KMAX_MID, KMAX_BND, nmax, nstep, FORECAST, &
-                                  METSTEP, MasterProc, IOU_INST, RUNDOMAIN, &
-                                  dt => dt_advec, IIFULLDOM, JJFULLDOM
-  use Nest_ml,              only: outdate
-  use NetCDF_ml,            only: ReadField_CDF,Out_netCDF,printCDF,nc_check=>check
-  use Par_ml,               only: limax, ljmax, MAXLIMAX,MAXLJMAX,GIMAX,GJMAX, &
-                                  me, MSG_READ9, IRUNBEG,JRUNBEG  ! => x, y dimensions
-  use OwnDataTypes_ml,      only: Deriv
-  use Setup_1dfields_ml,    only: rcemis 
-  use SmallUtils_ml,        only: find_index
-  use TimeDate_ml,          only: current_date,daynumber,date,day_of_year
-  use TimeDate_ExtraUtil_ml,only: date2string
+use Pollen_const_ml
+use PhysicalConstants_ml, only: AVOG
+use Biogenics_ml,         only: EMIS_BioNat, EmisNat 
+use CheckStop_ml,         only: CheckStop,CheckNC
+use ChemChemicals_ml,     only: species
+use Functions_ml,         only: heaviside
+use GridValues_ml ,       only: glon, glat, debug_proc, debug_li, debug_lj
+use Landuse_ml,           only: LandCover
+use LocalVariables_ml,    only: Grid
+use MetFields_ml,         only: surface_precip, ws_10m ,rh2m,t2_nwp,&
+                                foundws10_met,foundprecip,pr,u_ref,z_bnd,z_mid
+use MicroMet_ml,          only: Wind_at_h
+use ModelConstants_ml,    only: KMAX_MID, nstep, FORECAST, &
+                                METSTEP, MasterProc, IOU_INST, RUNDOMAIN, &
+                                dt=>dt_advec, DEBUG=>DEBUG_POLLEN
+use Nest_ml,              only: outdate,FORECAST_NDUMP,istart,jstart,iend,jend,&
+                                template_read_IC=>template_read_3D,&
+                                template_write_IC=>template_write
+use NetCDF_ml,            only: ReadField_CDF,Out_netCDF,GetCDF_modelgrid,&
+                                ReadTimeCDF,CDFtype=>Real4
+use netcdf,               only: nf90_close
+use Par_ml,               only: limax, ljmax, MAXLIMAX, MAXLJMAX, me
+use PhysicalConstants_ml, only: PI
+use OwnDataTypes_ml,      only: Deriv
+use Setup_1dfields_ml,    only: rcemis 
+use SmallUtils_ml,        only: find_index
+use SubMet_ml,            only: Sub
+use TimeDate_ml,          only: current_date,daynumber,date,day_of_year
+use TimeDate_ExtraUtil_ml,only: date2string,compare_date,date2nctime
+use Io_ml,                only: IO_NML
+use mpi,                  only: MPI_COMM_WORLD,MPI_DOUBLE_PRECISION,&
+                                MPI_IN_PLACE,MPI_MIN,MPI_MAX!,MPI_ALLREDUCE
+! openMPI has no explicit interface for MPI_ALLREDUCE
 !-------------------------------------
-  implicit none
-  private
-  public:: pollen_flux,pollen_dump,pollen_read
+implicit none
+private
+public:: pollen_flux,pollen_dump,pollen_read
 
-  !** 1) Public (saved) Variables from module:
+!** 1) Public (saved) Variables from module:
 
-  real, public,save , allocatable, dimension(:,:)::&
-    AreaPOLL,     & ! emission of pollen 
-    heatsum,      & ! heatsum, needs to be remembered for forecast
-    R,            & ! Summed pollen release
-    Pollen_rest,  & ! what is available pollen pr m2, fr forecast
-    Pollen_left     ! amount of pollen left in catkins, relative amount... 0:sr 1:end 
+real, public,save , allocatable, dimension(:,:,:)::&
+  AreaPOLL,     & ! emission of pollen 
+  heatsum,      & ! heatsum, needs to be remembered for forecast
+  R,            & ! Summed pollen release
+  Pollen_rest,  & ! what is available pollen pr m2, fr forecast
+  Pollen_left     ! amount of pollen left in catkins, relative amount... 0:sr 1:end 
 
- !  logical, public,save, dimension(FORECAST_NDUMP) ::  dump_pollen = .true.
- !  integer                                       ::  fdump = 1
-  character(len=*), parameter :: &
-    pollen_data="pollen_data.nc",&
-    template_pollen_read ="POLLEN_IN.nc",&
-    template_pollen_write="POLLEN_OUT.nc"
+character(len=*), parameter :: &
+  BIRCH = "POLLEN_BIRCH",&
+  OLIVE = "POLLEN_OLIVE",&
+  GRASS = "POLLEN_GRASS"
 
-  type(date), parameter :: &
-    date_first=date(-1,3,1,1,0),&
-    date_last =date(-1,8,1,1,0)
+integer, save :: &
+  inat_BIRCH=-1,inat_OLIVE=-1,inat_GRASS=-1,&
+  itot_BIRCH=-1,itot_OLIVE=-1,itot_GRASS=-1
 
-  integer, save :: day_first=1,day_last=366
+integer, parameter :: &
+  max_string_length=200 ! large enough for paths to be set on Pollen_config namelist
+character(len=max_string_length), save ::  &  
+  birch_frac_nc ="birch_frac",&
+  birch_data_nc ="pollen_data.nc",&
+  olive_data_nc ="maccoliven_data.nc",&
+  grass_field_nc="grass_frac.nc",&
+  grass_time_nc ="grass_time.nc",&
+  template_read ="POLLEN_IN.nc",&
+  template_write="POLLEN_OUT.nc"
+
+type(date), parameter :: &
+  date_first_birch=date(-1,3,1,0,0),date_last_birch=date(-1,8,1,0,0),&
+  date_first_olive=date(-1,1,1,0,0),date_last_olive=date_last_birch
+type(date), save :: & ! will be updated when grass_time.nc is read
+  date_first_grass=date(-1,2,7,0,0),date_last_grass=date(-1,9,23,0,0)
+
+integer, save :: day_first=1,day_last=366
+
+real, save, allocatable, dimension(:,:) :: &
+  grass_start, & ! Stard day of grass, read in
+  grass_len      ! length of gras blooming, read in
+
+logical, parameter :: DEBUG_NC=.false.
+
 !-------------------------------------------------------------------------!
 contains
 !-------------------------------------------------------------------------!
-function checkdates(nday) result(ok)
-  integer, intent(in) :: nday
-  logical             :: ok
+subroutine Config_Pollen()
+  integer :: ios
   logical, save :: first_call = .true.
+  NAMELIST /Pollen_config/&
+    birch_frac_nc,birch_data_nc,olive_data_nc,grass_field_nc,grass_time_nc,&
+    template_read,template_write
+
+  if(.not.first_call)return
+  first_call = .false.
+  
+  template_read =template_read_IC   ! by default read/write
+  template_write=template_write_IC  ! to Next IC/restart file
+  rewind(IO_NML)
+  read(IO_NML,NML=Pollen_config,iostat=ios)
+  call CheckStop(ios,"NML=Pollen_config")  
+  if(debug.and.MasterProc)then
+    write(*,*) "NAMELIST IS "
+    write(*,NML=Pollen_config)
+  endif
+endsubroutine Config_Pollen
+!-------------------------------------------------------------------------!
+function checkdates(nday,spc,update) result(ok)
+  integer, intent(in)           :: nday
+  character(len=*), intent(in)  :: spc
+  logical, intent(in), optional :: update
+  logical :: ok
+  integer, save :: day_first_b=1,day_last_b=366,&
+                   day_first_o=1,day_last_o=366,&
+                   day_first_g=1,day_last_g=366
+  logical, save :: first_call = .true.
+  if(present(update))first_call=first_call.and.update
   if(first_call)then
-    day_first=day_of_year(current_date%year,date_first%month,date_first%day)
-    day_last =day_of_year(current_date%year,date_last%month ,date_last%day)
+    day_first_b=day_of_year(current_date%year,date_first_birch%month,date_first_birch%day)
+    day_first_o=day_of_year(current_date%year,date_first_olive%month,date_first_olive%day)
+    day_first_g=day_of_year(current_date%year,date_first_grass%month,date_first_grass%day)
+    day_first_g=day_first_g-uncert_grass_day
+    day_first=min(day_first_b,day_first_o,day_first_g)
+
+    day_last_b=day_of_year(current_date%year,date_last_birch%month,date_last_birch%day)
+    day_last_o=day_of_year(current_date%year,date_last_olive%month,date_last_olive%day)
+    day_last_g=day_of_year(current_date%year,date_last_grass%month,date_last_grass%day)
+    day_last_g=day_last_g+uncert_grass_day
+    day_last=max(day_last_b,day_last_o,day_last_g)
     first_call = .false.
   endif
-  ok=(day_first<=nday).and.(nday<=day_last)
+  select case(spc)
+  case("POLLEN","P","p","pollen")
+    ok=(day_first  <=nday).and.(nday<=day_last  )
+  case(BIRCH,"B","b","birch")
+    ok=(day_first_b<=nday).and.(nday<=day_last_b)
+  case(OLIVE,"O","o","olive")
+    ok=(day_first_o<=nday).and.(nday<=day_last_o)
+  case(GRASS,"G","g","grass")
+    ok=(day_first_g<=nday).and.(nday<=day_last_g)
+  case default
+    call CheckStop("Unknown pollen type: "//trim(spc))
+  endselect
 endfunction checkdates
 !-------------------------------------------------------------------------!
 subroutine pollen_flux(i,j,debug_flag) 
@@ -78,75 +155,134 @@ subroutine pollen_flux(i,j,debug_flag)
   integer, intent(in) :: i,j    ! coordinates of column
   logical, intent(in) :: debug_flag
 
-  real, parameter :: Z10 = 10.0  ! 10m height
-
-  integer, save :: ipoll,inat_POLL,itot_POLL,poll_day  !DS replaces Pollen_b
-  real,    save :: moleccm3s_2_kgm2h 
-  logical, save :: first_call = .true.
+  real, parameter :: &
+    Z10 = 10.0, &  ! 10m height
+    UnDef= 0.0
+  logical, save :: first_call=.true.
+  logical :: &
+    debug_ij=.false., out_birch=.false., out_olive=.false., out_grass=.false.
    
-  integer :: ii, jj, nlu, ilu, lu
-  real :: scale,lim,invdz,rcpoll,n2m,u10,prec,relhum
+  integer :: ii, jj, nlu, ilu, lu, info
+  real :: scale,lim_birch,lim_olive,invdz,rcpoll,&
+       n2m_birch,n2m_olive,n2m_grass,u10,prec,relhum,&
+       dfirst_g,dlast_g,moleccm3s_2_kgm2h
 
   real, save, allocatable, dimension(:,:) :: &
-    birch_frac, & ! Fraction of birch, read in
-    h_c,        & ! Fraction of birch, read in
+    birch_frac, & ! fraction of birch, read in
+    birch_h_c,  & ! temperature treshold birch, read in
     corr,       & ! correction field for p.emission, read in
-    h_day         ! Temperature summed over a day
+    olive_frac, & ! fraction of olive, read in
+    olive_h_c,  & ! temperature treshold olive, read in
+    grass_frac, & ! fraction of grass, read in
+    h_day         ! temperature summed over a day
+
   integer,save,allocatable, dimension(:,:) :: &
     p_day
-
-  if(.not.checkdates(daynumber)) return
-! Reas in the different fields
-
+ 
+  ! Read in the different fields
   if(first_call) then 
-    inat_POLL = find_index("POLLEN_B",EMIS_BioNat(:))
-    itot_POLL = find_index("POLLEN_B",species(:)%name)
+    if(.not.checkdates(daynumber,"pollen"))return
+    call Config_Pollen() 
 
-    allocate(pollen_left(MAXLIMAX,MAXLJMAX),p_day(MAXLIMAX,MAXLJMAX))
-    pollen_left(:,:) = 1
+    inat_BIRCH = find_index(BIRCH,EMIS_BioNat(:))
+    inat_OLIVE = find_index(OLIVE,EMIS_BioNat(:))
+    inat_GRASS = find_index(GRASS,EMIS_BioNat(:))
+    itot_BIRCH = find_index(BIRCH,species(:)%name)
+    itot_OLIVE = find_index(OLIVE,species(:)%name)
+    itot_GRASS = find_index(GRASS,species(:)%name)
+    if(MasterProc)write(*,"(A,3(' adv#',I3,'=',A))") "Pollen: ",&
+      itot_BIRCH,BIRCH,itot_OLIVE,OLIVE,itot_GRASS,GRASS
+
+    allocate(Pollen_left(MAXLIMAX,MAXLJMAX,3),p_day(MAXLIMAX,MAXLJMAX))
+    Pollen_left(:,:,:) = 1
     p_day(:,:) =current_date%day
 
     if(FORECAST) call pollen_read()
     if(.not.allocated(heatsum))then
-      allocate(heatsum(MAXLIMAX,MAXLJMAX))
-      heatsum(:,:) = 0.00
+      allocate(heatsum(MAXLIMAX,MAXLJMAX,2)) ! Grass does not need heatsum
+      if(MasterProc) write(*,*) "Heatsum allocated!"
+      heatsum(:,:,:) = 0.00 
     endif
     if(.not.allocated(Pollen_rest))then
-      allocate(Pollen_rest(MAXLIMAX,MAXLJMAX))
-      Pollen_rest(:,:) = N_TOT
+      allocate(Pollen_rest(MAXLIMAX,MAXLJMAX,3))
+      Pollen_rest(:,:,1) = N_TOT_birch
+      Pollen_rest(:,:,2) = N_TOT_olive
+      Pollen_rest(:,:,3) = N_TOT_grass
     endif
     if(.not.allocated(R))then
-      allocate(R(MAXLIMAX,MAXLJMAX))
-      R(:,:) = 0.0
+      allocate(R(MAXLIMAX,MAXLJMAX,3))
+      R(:,:,:) = 0.0
     endif
 
-    allocate(AreaPOLL(MAXLIMAX,MAXLJMAX),h_day(MAXLIMAX,MAXLJMAX))
-    AreaPOLL(:,:)=0.0
+    allocate(AreaPOLL(MAXLIMAX,MAXLJMAX,3),h_day(MAXLIMAX,MAXLJMAX))
+    AreaPOLL(:,:,:)=0.0
     h_day(:,:)=0.0
       
-    allocate(birch_frac(MAXLIMAX,MAXLJMAX),h_c(MAXLIMAX,MAXLJMAX),corr(MAXLIMAX,MAXLJMAX))
-    call ReadField_CDF(pollen_data,'birch',birch_frac,2, &
-       interpol = 'conservative',needed=.true.,debug_flag=DEBUG,UnDef=0.0)
-    call ReadField_CDF(pollen_data,'h_c',h_c,2, &
-       interpol = 'conservative',needed=.true.,debug_flag=DEBUG,UnDef=0.0)
-    call ReadField_CDF(pollen_data,'cross',corr,2, &
-       interpol = 'conservative',needed=.true.,debug_flag=DEBUG,UnDef=0.0)
+    allocate(birch_frac(MAXLIMAX,MAXLJMAX),birch_h_c(MAXLIMAX,MAXLJMAX),&
+             corr(MAXLIMAX,MAXLJMAX))
+    allocate(olive_frac(MAXLIMAX,MAXLJMAX),olive_h_c(MAXLIMAX,MAXLJMAX))
+    allocate(grass_frac(MAXLIMAX,MAXLJMAX),grass_start(MAXLIMAX,MAXLJMAX),&
+             grass_len(MAXLIMAX,MAXLJMAX))
+    call ReadField_CDF(birch_frac_nc,'birch_frac',birch_frac,2, &
+       interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
+    call ReadField_CDF(birch_data_nc,'h_c',birch_h_c,2, &
+       interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
+    call ReadField_CDF(birch_data_nc,'cross',corr,2, &
+       interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
+    call ReadField_CDF(olive_data_nc,'olive_frac',olive_frac,2, &
+       interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
+    call ReadField_CDF(olive_data_nc,'olive_th',olive_h_c,2, &
+       interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
+    call ReadField_CDF(grass_field_nc,'grass_frac',grass_frac,2, &
+       interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
+    call ReadField_CDF(grass_time_nc,'grass_start',grass_start,2, &
+       interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
+    call ReadField_CDF(grass_time_nc,'grass_length',grass_len,2, &
+       interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
 
     ! reduce birch from 60 degrees north:
-    forall(ii=1:MAXLIMAX,jj=1:MAXLIMAX,glat(ii,jj)>=60.0) &
+    forall(ii=1:limax,jj=1:ljmax,glat(ii,jj)>=60.0) &
       birch_frac(ii,jj)=birch_frac(ii,jj)&
-!!                     *max(0.3,1.0-0.005*(glat(ii,jj)-60.0))
-                       *(1-0.7*(glat(ii,jj)-60)/10)
-   ! start of pollen forecast
-    if(daynumber==day_first.and.MasterProc)&
-      write(*,*) "POLLEN setup ",date2string("YYYY-MM-DD hh:mm",current_date)
+                       *max(0.3,1.0-0.005*(glat(ii,jj)-60.0))
 
+    ! start/end of grass pollen season
+    dfirst_g=minval(grass_start(:limax,:ljmax),&
+                    MASK=(grass_start(:limax,:ljmax)/=UnDef))
+    CALL MPI_ALLREDUCE(MPI_IN_PLACE,dfirst_g,1,MPI_DOUBLE_PRECISION,&
+                       MPI_MIN,MPI_COMM_WORLD,INFO)
+    date_first_grass=date(-1,1,floor(dfirst_g),0,0)
+    
+    dlast_g=maxval(grass_start(:limax,:ljmax)+grass_len(:limax,:ljmax),&
+                   MASK=(grass_start(:limax,:ljmax)/=UnDef))
+    CALL MPI_ALLREDUCE(MPI_IN_PLACE,dlast_g ,1,MPI_DOUBLE_PRECISION,&
+                       MPI_MAX,MPI_COMM_WORLD,INFO)
+    date_last_grass=date(-1,1,ceiling(dlast_g),0,0)
+
+    ! start of pollen forecast
+    if(checkdates(daynumber,"pollen",update=.true.).and.MasterProc)&
+      write(*,*) "POLLEN setup ",date2string("YYYY-MM-DD hh:mm",current_date)
     first_call = .false. 
-  endif  !first_call
+  endif !first_call
+  debug_ij=all([DEBUG.or.debug_flag,debug_proc,i==debug_li,j==debug_lj])
  
-  if(birch_frac(i,j)==0.0 .or. h_c(i,j)==0.0)then
-    EmisNat(inat_POLL,i,j)      = 0.0
-    rcemis (itot_POLL,KMAX_MID) = 0.0
+  out_birch=.not.checkdates(daynumber,BIRCH)&
+    .or.any([birch_frac(i,j),birch_h_c(i,j)]==UnDef)
+
+  out_olive=.not.checkdates(daynumber,OLIVE)&
+    .or.any([olive_frac(i,j),olive_h_c(i,j)]==UnDef)
+
+  out_grass=.not.checkdates(daynumber,GRASS)&
+    .or.(daynumber<(grass_start(i,j)-uncert_grass_day))&
+    .or.(daynumber>(grass_start(i,j)+uncert_grass_day+grass_len(i,j)))&
+    .or.any([grass_frac(i,j),grass_start(i,j)]==UnDef)
+  
+  if(all([out_olive,out_birch,out_grass]))then
+    EmisNat(inat_BIRCH,i,j)      = 0.0
+    EmisNat(inat_OLIVE,i,j)      = 0.0
+    EmisNat(inat_GRASS,i,j)      = 0.0
+    rcemis (itot_BIRCH,KMAX_MID) = 0.0
+    rcemis (itot_OLIVE,KMAX_MID) = 0.0
+    rcemis (itot_GRASS,KMAX_MID) = 0.0
     return
   endif
 
@@ -157,8 +293,12 @@ subroutine pollen_flux(i,j,debug_flag)
   if(nstep==1) then ! Heatsum calculation only each meteorological timestep
     if(p_day(i,j)==current_date%day) then
       h_day(i,j) = h_day(i,j) + t2_nwp(i,j,1)
-      if(current_date%hour==21) &
-        heatsum(i,j)=heatsum(i,j)+heatsum_calc((h_day(i,j)/(24/METSTEP)),T_cutoff)
+      if(current_date%hour==21)then
+        if(.not.out_birch) &
+          heatsum(i,j,1)=heatsum(i,j,1)+heatsum_calc((h_day(i,j)/(24/METSTEP)),T_cutoff_birch)
+        if(.not.out_olive) &
+           heatsum(i,j,2)=heatsum(i,j,2)+heatsum_calc((h_day(i,j)/(24/METSTEP)),T_cutoff_olive)
+      endif
     else 
       p_day(i,j) = current_date%day  
       h_day(i,j) = t2_nwp(i,j,1)
@@ -167,28 +307,10 @@ subroutine pollen_flux(i,j,debug_flag)
   endif ! heatsum calc each timestep
   ! if heatsum is over heatsum threhold for the grid cell, the pollen
   ! emission can start calculating 
-  lim = (1-prob_in)*h_c(i,j)
-  if(heatsum(i,j)<lim           &
-     .or.t2_nwp(i,j,1)<T_cutoff &
-     .or. prec>prec_max         &
-     .or. R(i,j)>N_TOT*corr(i,j)&
-     .or. heatsum(i,j)>h_c(i,j)+dH_d ) then 
-    EmisNat(inat_POLL,i,j)      = 0.0
-    rcemis (itot_POLL,KMAX_MID) = 0.0
-    return
-  endif
+  lim_birch = (1-prob_in_birch)*birch_h_c(i,j)
+  lim_olive = (1-prob_in_olive)*olive_h_c(i,j)
+!  if (i == 15 .and. j == 23 ) write(*,*) "Heatsum ",heatsum(i,j,2),lim_olive,olive_h_c(i,j),i,j,out_birch,out_olive
 
-  ! calculating grains to molecular weight   grains/m2/s --> mol/cm3/s 
-  invdz      = 1e-6/Grid%DeltaZ         ! 1/dZ [1/cm3]
-  n2m        = invdz*grain_wt*AVOG/species(itot_POLL)%molwt
-
-  ! For EmisNat, need kg/m2/h from molec/cm3/s
-  moleccm3s_2_kgm2h = Grid%DeltaZ * 1e6 * 3600.0  &! /cm3/s > /m2/hr
-                     /AVOG * 1e-6  ! kg  after *MW
-
-  rcpoll        = 0.0
-  AreaPOLL(i,j) = 0.0
-  scale         = 0.0
 
   !Need to set the meteorological fields if not defined in nwp.
   relhum = 0.0
@@ -201,9 +323,9 @@ subroutine pollen_flux(i,j,debug_flag)
     lu = LandCover(i,j)%codes(ilu)
     relhum = Sub(lu)%rh
     !wind
-    if(.not.foundws10_met)&
-      u10=Wind_at_h(Grid%u_ref,Grid%z_ref,Z10,Sub(lu)%d,Sub(lu)%z0,Sub(lu)%invL)
-
+    if(.not.foundws10_met .and. Sub(lu)%z0 > 1.0)&
+      u10=Wind_at_h(Grid%u_ref, Grid%z_ref, Z10,&
+      Sub(lu)%d, Sub(lu)%z0, Sub(lu)%invL)
     if(relhum>=0.0 .and. u10>=0.0) exit
   enddo
 
@@ -213,46 +335,168 @@ subroutine pollen_flux(i,j,debug_flag)
   else
     prec=surface_precip(i,j)
   endif
-!<----------------------------------------------------------------------------------------------- 
-!  Scale is calculated from the different meteorological conditions using functions below  
-  scale=corr(i,j)*(t2_nwp(i,j,1)-T_cutoff)/dH &
-       *f_wind(u10,Grid%wstar)              & ! wind dependece
-       *f_in(heatsum(i,j),h_c(i,j),PROB_IN) & ! probability for flowering to start
-       *f_out(R(i,j),N_TOT,PROB_OUT)        & ! probability for flowering to end
-       *f_cond(relhum,RH_LOW,RH_HIGH)       & ! rh dependence
-       *f_cond(prec,PREC_MIN,PREC_MAX)        ! precipitation dependence
 
-    R(i,j)=R(i,j)+N_TOT*scale*dt              ! R is to check the remains of pollen available
-    rcpoll       =N_TOT*scale*birch_frac(i,j) ! The pollen grains production [grains/m2/s]
-    AreaPOLL(i,j)=rcpoll*3600                 ! [grains/m2/h]
-!<-----------------------------------------------------------------------------------------------
-  !!! Need to convert grains/m2/s --> mol/cm3/s
-    rcpoll = rcpoll * n2m             ! [mol/cm3/s]
-    Pollen_rest(i,j) = N_TOT - R(i,j) ! pollen grains left after release [grains/m2]
-    pollen_left(i,j) = Pollen_rest(i,j)/N_TOT ! idem [ ]
+  out_birch=out_birch&
+    .or. (heatsum(i,j,1)<lim_birch) &
+    .or.(t2_nwp(i,j,1)<T_cutoff_birch) &
+    .or.(prec>prec_max)         &
+    .or.(relhum > RH_HIGH)      &
+    .or.(R(i,j,1)>N_TOT_birch*corr(i,j)) & 
+    .or.(heatsum(i,j,1)-birch_h_c(i,j)> dH_d_birch)
+  
+  out_olive=out_olive&
+    .or.(heatsum(i,j,2)<lim_olive)     &
+    .or.(t2_nwp(i,j,1)<T_cutoff_olive) &
+    .or.(prec>prec_max)         &
+    .or.(relhum > RH_HIGH)      &
+    .or.(R(i,j,2)>N_TOT_olive)  &
+    .or.(heatsum(i,j,2)-olive_h_c(i,j)> dH_d_olive)
+  
+  out_grass=out_grass&
+    .or.(R(i,j,3)>N_TOT_grass)  &  
+    .or.(relhum > RH_HIGH)      &
+    .or.(prec>prec_max) 
+
+  ! grains to molecular weight: grains/m2/s --> mol/cm3/s 
+  invdz     = 1e-6/Grid%DeltaZ         ! 1/dZ [1/cm3]
+  n2m_birch = invdz*grain_wt*AVOG/species(itot_BIRCH)%molwt
+  n2m_olive = invdz*grain_wt*AVOG/species(itot_OLIVE)%molwt
+  n2m_grass = invdz*grain_wt*AVOG/species(itot_GRASS)%molwt
+!  write(*,*) "n2m_diff ", n2m_birch, n2m_olive,n2m_grass
+
+  ! EmisNat: molec/cm3/s --> kg/m2/h
+  moleccm3s_2_kgm2h = Grid%DeltaZ * 1e6 * 3600.0  &! /cm3/s > /m2/hr
+                     /AVOG * 1e-6  ! kg  after *MW
+
+  rcpoll         =0.0
+  AreaPOLL(i,j,:)=0.0
+  scale          =0.0
+!------------------------
+! Birch
+!------------------------
+  if(out_birch)then
+    EmisNat(inat_BIRCH,i,j)      = 0.0
+    rcemis (itot_BIRCH,KMAX_MID) = 0.0
+  else
+    !------------------------
+    ! scale factor for different meteorological conditions
+    !------------------------
+    scale=corr(i,j)*(t2_nwp(i,j,1)-T_cutoff_birch)/dH_birch &
+      *f_wind(u10,Grid%wstar)              & ! wind dependece
+      *f_in(heatsum(i,j,1),birch_h_c(i,j),PROB_IN_birch) & ! probability for flowering to start
+      *f_out(R(i,j,1),N_TOT_birch,PROB_OUT_birch)        & ! probability for flowering to end
+      *f_cond(relhum,RH_LOW,RH_HIGH)       & ! rh dependence
+      *f_cond(prec,PREC_MIN,PREC_MAX)        ! precipitation dependence
+
+    R(i,j,1)=R(i,j,1)+N_TOT_birch*scale*dt              ! R is to check the remains of pollen available
+    rcpoll       =N_TOT_birch*scale*birch_frac(i,j) ! The pollen grains production [grains/m2/s]
+    AreaPOLL(i,j,1)=rcpoll*3600                 ! [grains/m2/h]
+
+    !------------------------
+    ! grains/m2/s --> mol/cm3/s
+    !------------------------
+    rcpoll = rcpoll * n2m_birch             ! [mol/cm3/s]
+    Pollen_rest(i,j,1) = N_TOT_birch - R(i,j,1) ! pollen grains left after release [grains/m2]
+    Pollen_left(i,j,1) = Pollen_rest(i,j,1)/N_TOT_birch ! idem [ ]
       
-    if(debug_flag.or.DEBUG)&
-      write(6,'(a,2f10.5,f10.5)')"Result: ",rcpoll,R(i,j)/N_TOT,AreaPOLL(i,j)
+    if(debug_ij) write(6,'(a,3(1x,I3),3(1x,es10.3))')&
+      "Result: Birch",me,i,j,rcpoll,R(i,j,1)/N_TOT_birch,AreaPOLL(i,j,1)
 
-  EmisNat(inat_POLL,i,j)      = rcpoll*moleccm3s_2_kgm2h*species(itot_POLL)%molwt
-  rcemis (itot_POLL,KMAX_MID) = rcpoll
+     EmisNat(inat_BIRCH,i,j)      = rcpoll*moleccm3s_2_kgm2h*species(itot_BIRCH)%molwt
+     rcemis (itot_BIRCH,KMAX_MID) = rcpoll
+  endif
+!------------------------
+! Olive
+!------------------------
+  if(out_olive)then 
+    EmisNat(inat_OLIVE,i,j)      = 0.0
+    rcemis (itot_OLIVE,KMAX_MID) = 0.0
+  else
+    !------------------------
+    ! scale factor for different meteorological conditions
+    !------------------------
+    scale=(t2_nwp(i,j,1)-T_cutoff_olive)/dH_olive &
+      *f_wind(u10,Grid%wstar)              & ! wind dependece
+      *f_in(heatsum(i,j,2),olive_h_c(i,j),PROB_IN_olive) & ! probability for flowering to start
+      *f_out(R(i,j,2),N_TOT_olive,PROB_OUT_olive)        & ! probability for flowering to end
+      *f_cond(relhum,RH_LOW,RH_HIGH)       & ! rh dependence
+      *f_cond(prec,PREC_MIN,PREC_MAX)        ! precipitation dependence
+
+    R(i,j,2)=R(i,j,2)+N_TOT_olive*scale*dt              ! R is to check the remains of pollen available
+    rcpoll       =N_TOT_olive*scale*olive_frac(i,j)/100! The pollen grains production [grains/m2/s]
+    AreaPOLL(i,j,2)=rcpoll*3600                 ! [grains/m2/h]
+
+    !------------------------
+    ! grains/m2/s --> mol/cm3/s
+    !------------------------
+    rcpoll = rcpoll * n2m_olive             ! [mol/cm3/s]
+    Pollen_rest(i,j,2) = N_TOT_olive - R(i,j,2) ! pollen grains left after release [grains/m2]
+    Pollen_left(i,j,2) = Pollen_rest(i,j,2)/N_TOT_olive ! idem [ ]
+      
+    if(debug_ij) write(6,'(a,3(1x,I3),3(1x,es10.3))')&
+      "Result: Olive",me,i,j,rcpoll,R(i,j,2)/N_TOT_olive,AreaPOLL(i,j,2)
+     
+     EmisNat(inat_OLIVE,i,j)      = rcpoll*moleccm3s_2_kgm2h*species(itot_OLIVE)%molwt
+     rcemis (itot_OLIVE,KMAX_MID) = rcpoll
+  endif
+!------------------------
+! Grass
+!------------------------
+  if(out_grass)then
+    EmisNat(inat_GRASS,i,j)      = 0.0
+    rcemis (itot_GRASS,KMAX_MID) = 0.0
+  else
+    !------------------------
+    ! scale factor for different meteorological conditions
+    !------------------------
+    scale=f_wind(u10,Grid%wstar)           & ! wind dependece
+      *f_cond(relhum,RH_LOW,RH_HIGH)       & ! rh dependence
+      *(1. - prec/PREC_MAX)      &  ! precipitation dependence
+      *f_fade_in(real(daynumber)/grass_start(i,j), &
+                 uncert_grass_day/grass_start(i,j))  & ! CD-fade-in
+      *f_fade_out(real(daynumber)/(grass_start(i,j)+grass_len(i,j)), &
+                  uncert_grass_day/grass_start(i,j))&   !CD fade-out
+      *f_fade_out(1.- (Pollen_rest(i,j,3)/N_TOT_grass),&
+                  (1-uncert_tot_grass_poll))    !total-pollen fade-out
+    
+     ! Full-emission rate is total pollen divided by the total duration of the season
+    scale = scale/(grass_start(i,j)+grass_len(i,j) -daynumber+uncert_grass_day)/(grass_len(i,j)*86400)
+
+    R(i,j,3)=R(i,j,3)+N_TOT_grass*scale*dt              ! R is to check the remains of pollen available
+    rcpoll       =N_TOT_grass*scale*grass_frac(i,j)     ! The pollen grains production [grains/m2/s]
+    AreaPOLL(i,j,3)=rcpoll*3600                 ! [grains/m2/h]
+
+    !------------------------
+    ! grains/m2/s --> mol/cm3/s
+    !------------------------
+    rcpoll = rcpoll * n2m_grass             ! [mol/cm3/s]
+    Pollen_rest(i,j,3) = N_TOT_grass - R(i,j,3) ! pollen grains left after release [grains/m2]
+    Pollen_left(i,j,3) = Pollen_rest(i,j,3)/N_TOT_grass ! idem [ ]
+
+    if(debug_ij) write(6,'(a,3(1x,I3),3(1x,es10.3))')&
+      "Result: Grass",me,i,j,rcpoll,R(i,j,3)/N_TOT_grass,AreaPOLL(i,j,3)
+     
+     EmisNat(inat_GRASS,i,j)      = rcpoll*moleccm3s_2_kgm2h*species(itot_GRASS)%molwt
+     rcemis (itot_GRASS,KMAX_MID) = rcpoll
+  endif
 endsubroutine pollen_flux
 !-------------------------------------------------------------------------! 
 subroutine pollen_read()
 ! Read pollen for forecast restart file: heatsum and pollenrest fields
-  use netcdf
   logical, save :: first_call = .true.
-  integer :: fid,did,vid
-  logical :: fexist
-  integer :: nlon,nlat
-  character(len=len(template_pollen_read)) :: filename
-  real,  allocatable, dimension(:,:) :: h_gl,r_gl
+  logical :: fexist,found
+  integer :: nread,nstart
+  real(kind=8), parameter :: sec2day=1e0/(24.0*3600.0)
+  real, dimension(366), save :: fdays=-1
+  real :: ncday(0:1)
+  character(len=len(template_read)) :: filename
 
-  if(.not.checkdates(daynumber)) return
+  if(.not.checkdates(daynumber,"pollen")) return
   if(.not.first_call) return
   first_call=.false.
 
-  filename=date2string(template_pollen_read,current_date)
+  call Config_Pollen()
+  filename=date2string(template_read,current_date)
   inquire(file=filename,exist=fexist)
   if(FORECAST.and..not.fexist)then
     if(MasterProc) write(*,*)"Warning Polen dump file not found: "//trim(filename)
@@ -260,71 +504,116 @@ subroutine pollen_read()
   endif
   call CheckStop(.not.fexist,"Did not find file: "//trim(filename))
 
-  allocate(h_gl(GIMAX,GJMAX),r_gl(GIMAX,GJMAX))
-  if(MasterProc)then
-    if(DEBUG)write(*,*) "Read Pollen dump ",trim(filename),MAXLIMAX,MAXLJMAX,GIMAX,GJMAX
-    call nc_check(nf90_open(path=trim(filename),mode=nf90_nowrite,ncID=fid),"Pollen_dump")
-    if(DEBUG)then
-      call nc_check(nf90_inq_dimid(ncID=fid,name="lon",dimID=did))
-      call nc_check(nf90_inquire_dimension(ncID=fid,dimID=did,len=nlon))
-      call nc_check(nf90_inq_dimid(ncID=fid,name="lat",dimID=did))
-      call nc_check(nf90_inquire_dimension(ncID=fid,dimID=did,len=nlat))
-      write(*,*) "POLLEN TESTER",nlon,nlat
-    endif
-    call nc_check(nf90_inq_varid(ncID=fid,name="Heatsum"    ,varID=vid),"Heatsum")
-    call nc_check(nf90_get_var(ncID=fid,varid=vid,values=h_gl,count=(/GIMAX,GJMAX/)))
-    call nc_check(nf90_inq_varid(ncID=fid,name="Pollen_rest",varID=vid),"Pollen_rest")
-    call nc_check(nf90_get_var(ncID=fid,varid=vid,values=r_gl,count=(/GIMAX,GJMAX/)))
-  endif
+  nread=-1                                ! read all
+  fdays(:)=-1.0                           ! times records
+  call ReadTimeCDF(filename,fdays,nread)  ! in fname
+  call date2nctime(current_date,ncday(1))
+  ncday(0)=ncday(1)-dt*sec2day    ! to avoid rounding errors
+  ncday(1)=ncday(1)+dt*sec2day    ! look for records in +/- 1dt
+
+  nstart=MINLOC(fdays(:nread),DIM=1,&
+    MASK=(fdays(:nread)>=ncday(0)).and.(fdays(:nread)<ncday(1)))
+
+  if(.not.FORECAST)&
+    call CheckStop(fdays(nstart),ncday(:),&
+      "no records for"//date2string(" YYYY-MM-DD hh:mm ",current_date)//&
+      "found in "//trim(filename))
+
   if(allocated(heatsum))    deallocate(heatsum)
   if(allocated(Pollen_rest))deallocate(Pollen_rest)
   if(allocated(R))          deallocate(R)
-  allocate(heatsum(MAXLIMAX,MAXLJMAX),Pollen_rest(MAXLIMAX,MAXLJMAX),R(MAXLIMAX,MAXLJMAX))
-  call global2local(h_gl,heatsum    ,MSG_READ9,1,GIMAX,GJMAX,1,IRUNBEG,JRUNBEG)
-  call global2local(r_gl,Pollen_rest,MSG_READ9,1,GIMAX,GJMAX,1,IRUNBEG,JRUNBEG)
-  R(:,:)=N_TOT-Pollen_rest(:,:)
-  deallocate(h_gl,r_gl)
-! call printCDF("HEAT_GLOB",heatsum,"not")
-! call printCDF("REST_GLOB",Pollen_rest,"not") 
+  allocate(heatsum(MAXLIMAX,MAXLJMAX,2),&
+           Pollen_rest(MAXLIMAX,MAXLJMAX,3),&
+           R(MAXLIMAX,MAXLJMAX,3))
+
+  if(MasterProc)&
+    write(*,"(3(A,1X),I0)") "Read Pollen dump",trim(filename),"record",nstart
+
+  call GetCDF_modelgrid(BIRCH//"_heatsum",filename,heatsum(:,:,1),&
+        1,1,nstart,1,needed=.not.FORECAST,found=found)
+  if(.not.found)heatsum(:,:,1)=0.0
+  call GetCDF_modelgrid(OLIVE//"_heatsum",filename,heatsum(:,:,2),&
+        1,1,nstart,1,needed=.not.FORECAST,found=found)
+  if(.not.found)heatsum(:,:,2)=0.0
+
+  call GetCDF_modelgrid(BIRCH//"_rest",filename,Pollen_rest(:,:,1),&
+        1,1,nstart,1,needed=.not.FORECAST,found=found)
+  if(.not.found)Pollen_rest(:,:,1)=N_TOT_birch
+  call GetCDF_modelgrid(OLIVE//"_rest",filename,Pollen_rest(:,:,2),&
+        1,1,nstart,1,needed=.not.FORECAST,found=found)
+  if(.not.found)Pollen_rest(:,:,2)=N_TOT_olive
+  call GetCDF_modelgrid(GRASS//"_rest",filename,Pollen_rest(:,:,3),&
+        1,1,nstart,1,needed=.not.FORECAST,found=found)
+  if(.not.found)Pollen_rest(:,:,3)=N_TOT_grass
+
+  R(:,:,1)=N_TOT_birch-Pollen_rest(:,:,1)
+  R(:,:,2)=N_TOT_olive-Pollen_rest(:,:,2)
+  R(:,:,3)=N_TOT_grass-Pollen_rest(:,:,3)
 endsubroutine pollen_read 
 !-------------------------------------------------------------------------!
 subroutine pollen_dump ()
 ! Write pollen for forecast restart file: heatsum and pollenrest fields
-  character(len=len(template_pollen_write)) :: filename
-  integer     :: i0=60,j0=11,i1=107,j1=58
+  character(len=len(template_write)) :: filename
+  integer     :: ncfileID
   type(Deriv) :: def1
+  character(len=*), parameter :: dfmt="('Write: ',A,' [',A,'].')"
 
-! call printCDF("HEAT2",heatsum,"not")
-  if(.not.checkdates(daynumber)) return
-  if(.not.any((current_date%year   ==outdate%year   .or.outdate%year   ==-1).and.&
-              (current_date%month  ==outdate%month  .or.outdate%month  ==-1).and.&
-              (current_date%day    ==outdate%day    .or.outdate%day    ==-1).and.&
-              (current_date%hour   ==outdate%hour   .or.outdate%hour   ==-1).and.&
-              (current_date%seconds==outdate%seconds.or.outdate%seconds==-1)))return
+  if(.not.checkdates(daynumber,"pollen")) return
+  if(.not.compare_date(FORECAST_NDUMP,current_date,&
+                       outdate(:FORECAST_NDUMP),wildcard=-1))return
   call CheckStop(allocated(Pollen_rest).NEQV.allocated(heatsum),&
     "Pollen: rest/heatsum allocated error")
   if(.not.(allocated(Pollen_rest).and.allocated(heatsum))) return
 
-  filename = date2string(template_pollen_write,current_date)
-  write(*,*) "Pollen filename ",trim(filename)
+  filename = date2string(template_write,current_date)
+  if(MasterProc)&
+    write(*,*) "Write Pollen dump ",trim(filename)
 
-  i0=RUNDOMAIN(1);j0=RUNDOMAIN(3)
-  i1=RUNDOMAIN(2);j1=RUNDOMAIN(4)
+  def1%class='pollen_out' !written
+  def1%avg=.false.        !not used
+  def1%index=0            !not used
+  def1%scale=1.0          !not used
+  ncfileID=-1 ! must be <0 as initial value
+!------------------------
+! heatsum
+!------------------------
+  def1%unit="degreedays"      ! written
 
-  def1%class='pollen_out' !writtenclass='pollen_out' !written
-  def1%avg=.false.      !not used
-  def1%index=0          !not used
-  def1%scale=1.0        !not used
+  def1%name=BIRCH//"_heatsum" ! written
+  if(DEBUG.and.MasterProc) print dfmt,trim(def1%name),trim(def1%unit)
+  call Out_netCDF(IOU_INST,def1,2,1,heatsum(:,:,1),1.0,CDFtype=CDFtype,&
+        ist=istart,jst=jstart,ien=iend,jen=jend,&
+        fileName_given=trim(filename),ncFileID_given=ncFileID)
+  
+  def1%name=OLIVE//"_heatsum" ! written
+  if(DEBUG.and.MasterProc) print dfmt,trim(def1%name),trim(def1%unit)
+  call Out_netCDF(IOU_INST,def1,2,1,heatsum(:,:,2),1.0,CDFtype=CDFtype,&
+        ist=istart,jst=jstart,ien=iend,jen=jend,&
+        fileName_given=trim(filename),ncFileID_given=ncFileID)
+!------------------------
+! pollen_rest
+!------------------------
+  def1%unit="pollengrains"
 
-  def1%name=trim("Pollen_rest")   ! written
-  def1%unit=trim("pollengrains")
-  call Out_netCDF(IOU_INST,def1,2,1,Pollen_rest,1.0,CDFtype=4,&
-        ist=i0,jst=j0,ien=i1,jen=j1,fileName_given=trim(filename)) ! pollen_rest
+  def1%name=BIRCH//"_rest"    ! written
+  if(DEBUG.and.MasterProc) print dfmt,trim(def1%name),trim(def1%unit)
+  call Out_netCDF(IOU_INST,def1,2,1,Pollen_rest(:,:,1),1.0,CDFtype=CDFtype,&
+        ist=istart,jst=jstart,ien=iend,jen=jend,&
+        fileName_given=trim(filename),ncFileID_given=ncFileID)
 
-  def1%name=trim("Heatsum")   ! written
-  def1%unit=trim("degreedays")
-  call Out_netCDF(IOU_INST,def1,2,1,heatsum,1.0,CDFtype=4,&
-        ist=i0,jst=j0,ien=i1,jen=j1,fileName_given=trim(filename)) ! heatsum
+  def1%name=OLIVE//"_rest"    ! written
+  if(DEBUG.and.MasterProc) print dfmt,trim(def1%name),trim(def1%unit)
+  call Out_netCDF(IOU_INST,def1,2,1,Pollen_rest(:,:,2),1.0,CDFtype=CDFtype,&
+        ist=istart,jst=jstart,ien=iend,jen=jend,&
+        fileName_given=trim(filename),ncFileID_given=ncFileID)
+
+  def1%name=GRASS//"_rest"    ! written
+  if(DEBUG.and.MasterProc) print dfmt,trim(def1%name),trim(def1%unit)
+  call Out_netCDF(IOU_INST,def1,2,1,Pollen_rest(:,:,3),1.0,CDFtype=CDFtype,&
+        ist=istart,jst=jstart,ien=iend,jen=jend,&
+        fileName_given=trim(filename),ncFileID_given=ncFileID)
+
+  if(MasterProc)call CheckNC(nf90_close(ncFileID),"close:"//trim(filename))
 endsubroutine pollen_dump   
 !-------------------------------------------------------------------------!
 function heatsum_calc(t2,T_cutoff) result(ff)
@@ -384,6 +673,32 @@ function f_out(R,N_tot,prob) result(ff)
     ff=1.0-(R-(1.0-prob)*N_tot)/(2.0*prob*N_tot)
   endif
 endfunction f_out
+!-------------------------------------------------------------------------!
+function f_fade_in(value_rel,uncert_rel_) result(ff)
+! Computes the linear fade-in function. It is 0 at vaule_rel = 1.-uncert_rel
+! Grows to 0.5 at vaule_rel = 1 and grows to 1 at value_rel = 1.+uncert_rel
+  real, intent(in) :: value_rel,uncert_rel_
+  real             :: uncert_rel,ff
+
+  uncert_rel = max(uncert_rel_,1e-5) ! avoid zero uncertainty
+  ff = min(1.0,max(0.0,(value_rel-1.0+uncert_rel)/(2.0*uncert_rel)))
+endfunction f_fade_in
+!-------------------------------------------------------------------------!
+function f_fade_out(value_rel,uncert_rel_) result(ff)
+! Computes the linear fade-in function. It is 0 at vaule_rel = 1.-uncert_rel
+! Grows to 0.5 at vaule_rel = 1 and grows to 1 at value_rel = 1.+uncert_rel
+  real, intent(in) :: value_rel,uncert_rel_
+  real             :: uncert_rel,ff
+
+  uncert_rel = max(uncert_rel_,1e-5) ! avoid zero uncertainty
+  if (value_rel > 1.0 + uncert_rel) then
+    ff = 0.0
+  elseif (value_rel < 1.0 - uncert_rel) then
+    ff = 1.0
+  else 
+    ff = (1.0+uncert_rel-value_rel)/(2.0*uncert_rel)
+  endif
+endfunction f_fade_out
 !-------------------------------------------------------------------------!
 endmodule Pollen_ml
   

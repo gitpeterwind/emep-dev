@@ -61,6 +61,15 @@
   FINN_PATTERN="$FINN",#FINN
   GFAS_PATTERN="$GFAS",#GFAS
 &end
+&Pollen_config
+  birch_frac_nc  = '$birch_frac',#birch_frac
+  birch_data_nc  = '$birch_data',#birch_data
+  olive_data_nc  = '$olive_data',#olive_data
+  grass_field_nc = '$grass_frac',#grass_frac
+  grass_time_nc  = '$grass_time',#grass_time
+  template_read  = '$poll_read',#poll_read
+  template_write = '$poll_write',#poll_write
+&end
 &Nest_config
 !-------- Nesting MODEs
 ! Produce netcdf dump of concentrations if wanted, or init. run from such a file
@@ -69,12 +78,15 @@
 !------------------------------
   MODE             = 0,
 !-------- File name templates for Nest I/O
-  template_read_3D = '$inic',#inic             ! YYYY, YY, MM, DD, hh strings
-  template_read_BC = '$inbc',#inbc             ! will be replaced with numbers
-  template_write   = '$dump',#dump             ! in Nest_ml
+  template_read_3D = '$inic',#inic            ! YYYY, YY, MM, DD, hh strings
+  template_read_BC = '$INBC',#inbc            ! will be replaced with numbers
+  template_write   = '$dump',#dump            ! in Nest_ml
+  native_grid_3D = T,                         ! restart file on the same grid
+  native_grid_BC = F,                         ! nest-bc file on a different grid
 !-------- CWF dump/restart
 ! WRITE_SPC = 'NO2','O3','SO2','REMPPM25','REMPPM_C', ! reduce output for
 ! WRITE_GRP = 'DAOBS','DAUNOBS','PM10','AOD',         ! NMC statistics (3DVar)
+! omit_zero_write  = T,                               ! further reduce output
   FORECAST_NDUMP   = 1,                       ! Nr. CWF dump dates
   outdate          = $outdate,                ! 1st,2nd CWF dump dates
 ! outdate(1:4)     = -1,-1,-1,00,0000,        ! everyday at 00:00

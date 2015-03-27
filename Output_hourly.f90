@@ -81,8 +81,7 @@ implicit none
 !* real             :: max      ! Max allowed value for output
 
 ! local variables
-  logical, save     :: my_first_call = .true. ! Set false after file opened
-  integer msnr                        ! Message number for rsend
+  logical, save     :: first_call = .true. ! Set false after file opened
   real hourly(MAXLIMAX,MAXLJMAX)      ! Local hourly value  (e.g. ppb)
   real ghourly(GIMAX,GJMAX)           ! Global hourly value (e.g. ppb)
   real :: arrmax                      ! Maximum value from array
@@ -105,8 +104,8 @@ implicit none
 
   integer, allocatable, dimension(:), save :: navg ! D2D average counter
 
-  character(len=len(fileName_hour)) :: filename
-  logical       :: file_exist=.false.
+  character(len=len(fileName_hour))      :: filename
+  character(len=len(fileName_hour)),save :: filename_old="no file"
   logical, save :: debug_flag      ! = ( MasterProc .and. DEBUG )
   logical       :: surf_corrected=.true.  ! to get 3m values
 
@@ -117,16 +116,17 @@ implicit none
 
   character(len=52) :: errmsg = "ok"
 
-  if(NHOURLY_OUT<= 0) then
-    if(my_first_call.and.MasterProc.and.DEBUG) &
-       write(*,*) "DEBUG Hourly_out: nothing to output!"
-    my_first_call = .false.
+  if(NHOURLY_OUT<=0)then
+    if(first_call.and.MasterProc.and.DEBUG) &
+      write(*,*)"DEBUG Hourly_out: nothing to output!"
+    first_call=.false.
     return
   endif
 
-  if(my_first_call) then
-    debug_flag=(debug_proc.and.DEBUG)
+  if(first_call) then
+    first_call = .false.
 
+    debug_flag=(debug_proc.and.DEBUG)
   !/ Ensure that domain limits specified in My_Outputs lie within
   !  model domain. In emep coordinates we have:
     do ih = 1, NHOURLY_OUT
@@ -143,9 +143,12 @@ implicit none
   endif  ! first_call
 
   filename=trim(runlabel1)//date2string(trim(HOURLYFILE_ending),current_date)
-  inquire(file=filename,exist=file_exist)
-  if(my_first_call.or..not.file_exist)then
-    if(debug_flag) write(*,*) "DEBUG ",trim(HOURLYFILE_ending),"-Hourlyfile ", trim(filename)
+  if(filename/=filename_old)then
+    filename_old=filename
+
+    if(debug_flag)&
+      write(*,*) "DEBUG ",trim(HOURLYFILE_ending),"-Hourlyfile ",trim(filename)
+  !! filename will be overwritten
     call Init_new_netCDF(trim(filename),IOU_HOUR)
 
   !! Create variables first, without writing them (for performance purposes)   
@@ -171,8 +174,6 @@ implicit none
       endselect
     enddo
   endif
-
-  my_first_call = .false.
 !......... Uses concentration/met arrays from Chem_ml or Met_ml ..................
 !
 !        real xn_adv(NSPEC_ADV,MAXLIMAX,MAXLJMAX,KMAX_MID)
@@ -191,7 +192,6 @@ implicit none
     if(any(hr_out(ih)%type==SRF_TYPE))hr_out_nk=1
 
     KVLOOP: do k = 1,hr_out_nk
-      msnr  = 3475 + ih
       ispec = hr_out(ih)%spec
       name  = hr_out(ih)%name
       hr_out_type=hr_out(ih)%type
@@ -388,6 +388,12 @@ implicit none
           forall(i=1:limax,j=1:ljmax) hourly(i,j) = z_mid(i,j,ik)*unit_conv
         endif
 
+      case("dZ","dZ_BND")  ! level thickness
+        name = "dZ_BND"
+        unit_conv =  hr_out(ih)%unitconv
+        forall(i=1:limax,j=1:ljmax) &
+          hourly(i,j)=(z_bnd(i,i,ik)-z_bnd(i,i,ik+1))*unit_conv
+
       case("AOD")
         name = "AOD 550nm"
         forall(i=1:limax,j=1:ljmax) hourly(i,j) = AOD(i,j)
@@ -442,24 +448,33 @@ implicit none
    
       case("heatsum")
        !hr_out(ih)%unit='degree_days'
+        ik = hr_out(ih)%spec
         if(allocated(heatsum))then
-          forall(i=1:limax,j=1:ljmax) hourly(i,j) = heatsum(i,j)
+          call CheckStop(ik,[1,size(heatsum,DIM=3)],"Hourly_out: '"//&
+            trim(hr_out(ih)%type)//"' out of bounds!")
+          forall(i=1:limax,j=1:ljmax) hourly(i,j)=heatsum(i,j,ik)
         else
           hourly(:,:) = 0.0
         endif
 
       case("pollen_left")
-       !hr_out(ih)%unit=''
+       !hr_out(ih)%unit='grains/m3'
+        ik = hr_out(ih)%spec
         if(allocated(pollen_left))then
-          forall(i=1:limax,j=1:ljmax) hourly(i,j) = pollen_left(i,j)
+          call CheckStop(ik,[1,size(pollen_left,DIM=3)],"Hourly_out: '"//&
+            trim(hr_out(ih)%type)//"' out of bounds!")
+          forall(i=1:limax,j=1:ljmax) hourly(i,j) = pollen_left(i,j,ik)
         else
           hourly(:,:) = 0.0
         endif
 
       case("pollen_emiss")
        !hr_out(ih)%unit='grains/m2/h'
+        ik = hr_out(ih)%spec
         if(allocated(AreaPOLL))then
-          forall(i=1:limax,j=1:ljmax) hourly(i,j) = AreaPOLL(i,j)
+          call CheckStop(ik,[1,size(AreaPOLL,DIM=3)],"Hourly_out: '"//&
+            trim(hr_out(ih)%type)//"' out of bounds!")
+          forall(i=1:limax,j=1:ljmax) hourly(i,j) = AreaPOLL(i,j,ik)
         else
           hourly(:,:) = 0.0
         endif
