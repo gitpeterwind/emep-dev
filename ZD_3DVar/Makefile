@@ -7,7 +7,6 @@ ifeq ($(EXP),Unimod)
   override EXP :=
 endif
 export CLEANCPP ?= 1
-export MKL ?= 1
 
 #stop: info-varaiable-EXP info-varaiable-PROG
 ifdef EXP
@@ -36,37 +35,27 @@ ifdef EXP
   else
     SRCS.$(EXP) += spl.f90
   endif
-  ifdef MKL
-    SRCS.$(EXP) += ./B_NMC/My_LAPACK77_ml.f90
-    LIBS += -lmkl_lapack95_lp64 -lmkl_blas95_lp64 \
-            -Wl,--start-group -lmkl_intel_lp64 -lmkl_sequential -lmkl_core \
-            -Wl,--end-group
-    override DFLAGS += -DMKL
-    MKLPATH=$(firstword $(subst :, ,$(MKLROOT) $(MKL_ROOT)))
-    ifeq ($(MACHINE),stallo)
-      MODULES += $(MKL:1=mkl/10.3.8)
-      ifneq (,$(call modulefind,mkl/10.3.8 mkl/11.0.0 mkl/11.1))
-        INCL += $(MKLPATH)/include $(MKLPATH)/include/intel64/lp64
-        LLIB += -L$(MKL)/lib/intel64
-      else
-        $(call modulecheck,$(filter mkl%,$(modulelist)))
-      endif
-    else ifeq ($(MACHINE),vilje)
-      MODULES += $(MKL:1=$(filter intelcomp%,$(modulelist)))
-      ifneq (,$(call modulefind,intelcomp/12.0.5.220 intelcomp/13.0.1 intelcomp/14.0.1))
-        INCL += $(MKLPATH)/include $(MKLPATH)/include/intel64/lp64
-        LLIB += -L$(MKLPATH)/lib/intel64
-      else
-        $(call modulecheck,$(filter intelcomp%,$(modulelist)))
-      endif
+  SRCS.$(EXP) += ./B_NMC/My_LAPACK77_ml.f90
+  LIBS += -lmkl_lapack95_lp64 -lmkl_blas95_lp64 \
+          -Wl,--start-group -lmkl_intel_lp64 -lmkl_sequential -lmkl_core \
+          -Wl,--end-group
+  override DFLAGS += -DMKL
+  MKLPATH=$(firstword $(subst :, ,$(MKLROOT) $(MKL_ROOT)))
+  ifeq ($(MACHINE),stallo)
+    MODULES += mkl/10.3.8
+    ifneq (,$(call modulefind,mkl/10.3.8 mkl/11.0.0 mkl/11.1))
+      INCL += $(MKLPATH)/include $(MKLPATH)/include/intel64/lp64
+      LLIB += -L$(MKLPATH)/lib/intel64
+    else
+      $(call modulecheck,$(filter mkl%,$(modulelist)))
     endif
-  else
-    SRCS.$(EXP) += ./B_NMC/My_LAPACK77_ml.f90
-    LIBS += -llapack -lblas #-Wl,--start-group -llapack -lblas -Wl,--end-group
-    ifeq ($(MACHINE),stallo)
-      MODULES += netlib/1.8.0
-      LLIB += /global/apps/netlib/lib
-    else ifeq ($(MACHINE),vilje)
+  else ifeq ($(MACHINE),vilje)
+    MODULES += $(filter intelcomp%,$(modulelist))
+    ifneq (,$(call modulefind,intelcomp/12.0.5.220 intelcomp/13.0.1 intelcomp/14.0.1))
+      INCL += $(MKLPATH)/include $(MKLPATH)/include/intel64/lp64
+      LLIB += -L$(MKLPATH)/lib/intel64
+    else
+      $(call modulecheck,$(filter intelcomp%,$(modulelist)))
     endif
   endif
   override SRCS:=$(SRCS.$(EXP))

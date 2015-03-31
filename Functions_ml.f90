@@ -4,7 +4,9 @@ module Functions_ml
 ! Including Troe, sine and cosine curves,
 ! and Standard Atmosphere p -> H conversion
 !-------------------------------------------------------------------
-use PhysicalConstants_ml, only : KAPPA, PI, DEG2RAD
+use PhysicalConstants_ml, only: KAPPA, PI, DEG2RAD
+use mpi,                  only: MPI_COMM_WORLD,MPI_SUM,MPI_IN_PLACE,&
+                                MPI_DOUBLE_PRECISION!,MPI_ALLREDUCE
 implicit none
 private
 
@@ -525,88 +527,152 @@ endfunction heaviside
 !+------------------------------------------------------------------
 !
 !+------------------------------------------------------------------
-function norm_r8d1(a,squared) result(norm)
+function norm_r8d1(a,w,squared,reduce) result(norm)
   implicit none
-  intent(in)      :: a,squared
-  optional        :: squared
-  logical         :: squared,sq
+  intent(in)      :: a,w,squared,reduce
+  optional        :: w,squared,reduce
+  logical         :: squared,sq,reduce,rd
   real(kind=8)    :: a(:),norm
+  integer         :: w(size(a)),info
+  if(present(w))then
+    norm=sum(w*a**2)
+  else
+    norm=sum(a**2)
+  endif
   sq=.false.;if(present(squared))sq=squared
-  norm=sum(a**2)
   if(.not.sq)norm=sqrt(norm)
+  rd=.false.;if(present(reduce))rd=reduce
+  if(rd)CALL MPI_ALLREDUCE(MPI_IN_PLACE,norm,1,MPI_DOUBLE_PRECISION,MPI_SUM,&
+                           MPI_COMM_WORLD,INFO)
 endfunction norm_r8d1
-function norm_c8d1(a,squared) result(norm)
+function norm_c8d1(a,w,squared,reduce) result(norm)
   implicit none
-  intent(in)      :: a,squared
-  optional        :: squared
-  logical         :: squared,sq
+  intent(in)      :: a,w,squared,reduce
+  optional        :: w,squared,reduce
+  logical         :: squared,sq,reduce,rd
   complex(kind=8) :: a(:)
+  integer         :: w(size(a)),info
   real(kind=8)    :: norm
+  if(present(w))then
+    norm=sum(w*conjg(a)*a)
+  else
+    norm=sum(conjg(a)*a)
+  endif
   sq=.false.;if(present(squared))sq=squared
-  norm=sum(conjg(a)*a)
   if(.not.sq)norm=sqrt(norm)
+  rd=.false.;if(present(reduce))rd=reduce
+  if(rd)CALL MPI_ALLREDUCE(MPI_IN_PLACE,norm,1,MPI_DOUBLE_PRECISION,MPI_SUM,&
+                           MPI_COMM_WORLD,INFO)
 endfunction norm_c8d1
-function norm_r8d2(a,squared) result(norm)
+function norm_r8d2(a,w,squared,reduce) result(norm)
   implicit none
-  intent(in)      :: a,squared
-  optional        :: squared
-  logical         :: squared,sq
+  intent(in)      :: a,w,squared,reduce
+  optional        :: w,squared,reduce
+  logical         :: squared,sq,reduce,rd
   real(kind=8)    :: a(:,:),norm
+  integer         :: w(size(a,dim=1),size(a,dim=2)),info
+  if(present(w))then
+    norm=sum(w*a**2)
+  else
+    norm=sum(a**2)
+  endif
   sq=.false.;if(present(squared))sq=squared
-  norm=sum(a**2)
   if(.not.sq)norm=sqrt(norm)
+  rd=.false.;if(present(reduce))rd=reduce
+  if(rd)CALL MPI_ALLREDUCE(MPI_IN_PLACE,norm,1,MPI_DOUBLE_PRECISION,MPI_SUM,&
+                           MPI_COMM_WORLD,INFO)
 endfunction norm_r8d2
-function norm_c8d2(a,squared) result(norm)
+function norm_c8d2(a,w,squared,reduce) result(norm)
   implicit none
-  intent(in)      :: a,squared
-  optional        :: squared
-  logical         :: squared,sq
+  intent(in)      :: a,w,squared,reduce
+  optional        :: w,squared,reduce
+  logical         :: squared,sq,reduce,rd
   complex(kind=8) :: a(:,:)
+  integer         :: w(size(a,dim=1),size(a,dim=2)),info
   real(kind=8)    :: norm
+  if(present(w))then
+    norm=sum(w*conjg(a)*a)
+  else
+    norm=sum(conjg(a)*a)
+  endif
   sq=.false.;if(present(squared))sq=squared
-  norm=sum(conjg(a)*a)
   if(.not.sq)norm=sqrt(norm)
+  rd=.false.;if(present(reduce))rd=reduce
+  if(rd)CALL MPI_ALLREDUCE(MPI_IN_PLACE,norm,1,MPI_DOUBLE_PRECISION,MPI_SUM,&
+                           MPI_COMM_WORLD,INFO)
 endfunction norm_c8d2
-function norm_r8d3(a,squared) result(norm)
+function norm_r8d3(a,w,squared,reduce) result(norm)
   implicit none
-  intent(in)      :: a,squared
-  optional        :: squared
-  logical         :: squared,sq
+  intent(in)      :: a,w,squared,reduce
+  optional        :: w,squared,reduce
+  logical         :: squared,sq,reduce,rd
   real(kind=8)    :: a(:,:,:),norm
+  integer         :: w(size(a,dim=1),size(a,dim=2),size(a,dim=3)),info
+  if(present(w))then
+    norm=sum(w*a**2)
+  else
+    norm=sum(a**2)
+  endif
   sq=.false.;if(present(squared))sq=squared
-  norm=sum(a**2)
   if(.not.sq)norm=sqrt(norm)
+  rd=.false.;if(present(reduce))rd=reduce
+  if(rd)CALL MPI_ALLREDUCE(MPI_IN_PLACE,norm,1,MPI_DOUBLE_PRECISION,MPI_SUM,&
+                           MPI_COMM_WORLD,INFO)
 endfunction norm_r8d3
-function norm_c8d3(a,squared) result(norm)
+function norm_c8d3(a,w,squared,reduce) result(norm)
   implicit none
-  intent(in)      :: a,squared
-  optional        :: squared
-  logical         :: squared,sq
+  intent(in)      :: a,w,squared,reduce
+  optional        :: w,squared,reduce
+  logical         :: squared,sq,reduce,rd
   complex(kind=8) :: a(:,:,:)
+  integer         :: w(size(a,dim=1),size(a,dim=2),size(a,dim=3)),info
   real(kind=8)    :: norm
+  if(present(w))then
+    norm=sum(w*conjg(a)*a)
+  else
+    norm=sum(conjg(a)*a)
+  endif
   sq=.false.;if(present(squared))sq=squared
-  norm=sum(conjg(a)*a)
   if(.not.sq)norm=sqrt(norm)
+  rd=.false.;if(present(reduce))rd=reduce
+  if(rd)CALL MPI_ALLREDUCE(MPI_IN_PLACE,norm,1,MPI_DOUBLE_PRECISION,MPI_SUM,&
+                           MPI_COMM_WORLD,INFO)
 endfunction norm_c8d3
-function norm_r8d4(a,squared) result(norm)
+function norm_r8d4(a,w,squared,reduce) result(norm)
   implicit none
-  intent(in)      :: a,squared
-  optional        :: squared
-  logical         :: squared,sq
+  intent(in)      :: a,w,squared,reduce
+  optional        :: w,squared,reduce
+  logical         :: squared,sq,reduce,rd
   real(kind=8)    :: a(:,:,:,:),norm
+  integer         :: w(size(a,dim=1),size(a,dim=2),size(a,dim=3),size(a,dim=4)),info
+  if(present(w))then
+    norm=sum(w*a**2)
+  else
+    norm=sum(a**2)
+  endif
   sq=.false.;if(present(squared))sq=squared
-  norm=sum(a**2)
   if(.not.sq)norm=sqrt(norm)
+  rd=.false.;if(present(reduce))rd=reduce
+  if(rd)CALL MPI_ALLREDUCE(MPI_IN_PLACE,norm,1,MPI_DOUBLE_PRECISION,MPI_SUM,&
+                           MPI_COMM_WORLD,INFO)
 endfunction norm_r8d4
-function norm_c8d4(a,squared) result(norm)
+function norm_c8d4(a,w,squared,reduce) result(norm)
   implicit none
-  intent(in)      :: a,squared
-  optional        :: squared
-  logical         :: squared,sq
+  intent(in)      :: a,w,squared,reduce
+  optional        :: w,squared,reduce
+  logical         :: squared,sq,reduce,rd
   complex(kind=8) :: a(:,:,:,:)
+  integer         :: w(size(a,dim=1),size(a,dim=2),size(a,dim=3),size(a,dim=4)),info
   real(kind=8)    :: norm
+  if(present(w))then
+    norm=sum(w*conjg(a)*a)
+  else
+    norm=sum(conjg(a)*a)
+  endif
   sq=.false.;if(present(squared))sq=squared
-  norm=sum(conjg(a)*a)
   if(.not.sq)norm=sqrt(norm)
+  rd=.false.;if(present(reduce))rd=reduce
+  if(rd)CALL MPI_ALLREDUCE(MPI_IN_PLACE,norm,1,MPI_DOUBLE_PRECISION,MPI_SUM,&
+                           MPI_COMM_WORLD,INFO)
 endfunction norm_c8d4
 endmodule Functions_ml

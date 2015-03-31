@@ -153,13 +153,43 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-31th March 2015 Alvaro 2974
+31th March 2015 Alvaro, Arjo 2974,2975
+
+run.pl:
+- Use $CDF_EMIS as the file to be used for "CdfFractions",
+  instead of relying on commented/uncommented sections of the script.
+- Link "CdfFractions" file for MACC14 emissions.
+
+Functions_ml:
+- optional arguments to norm_* functions available trough norm interface:
+  w: integer array of weights of the same dimension as the variable.
+  reduce: logical input to calculate the norm of a variable stored on 
+    local/partial arrays on each PROC (call MPI_ALLREDUCE).
+
+ZD_3DVar/DA_ml,Analysis//DA_3DVar_ml,DA_Obs_ml:
+- Specific debug variables/options for 3Dvar and Obs modules.
+
+ZD_3DVar/Makefile,Makefile.SRCS
+- MPI version of optimization utility (m1qn3-mpi.f)
+- Remove non-MKL blas library options
+
+ZD_3DVar/Analysis/DA_3DVar_ml,chitox_ml,ufftw3_ml
+- Avoid half<-->full complex transformations, by only using half-complex arrays
+  and calculating the norm as a weighed L2 norm.
+- Distinguish between eVal/eVec on the local/global (nvLoc/nvTot) spectral grid.
+- Rename/move subroutine update_unobserved (DA_3DVar_ml) to chitou (chitox_ml).
+
+ZD_3DVar/Analysis/DA_3DVar_ml,DA_Obs_ml
+- Remove 4-point interpolation options.
+  Only use the grid-cell that contains the observation.
+- Update bias correction routines for MPI calculations (untested)
+- Increase memory on optimization calls (nupdates from 4 to 20)
 
 ZD_3DVar/B_NMC/covmat_ml:
-- write correlation matrix
+- write correlation matrix.
 
 ZD_3DVar/B_NMC/spectralcov_ml,stddev_ml,spectral_filter:
-- KTRUNC --> parameter in spectralcov module
+- Make KTRUNC a parameter in spectralcov module.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 27th March 2015 Alvaro, Birthe 2972-2973

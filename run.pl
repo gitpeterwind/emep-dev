@@ -118,7 +118,7 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
-($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2972"   ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA","EMEP");
+($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2975"   ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA","EMEP");
 
 my $KEEP_LINKS=0; # do not cleanup links
 my %BENCHMARK;
@@ -450,7 +450,7 @@ if (%BENCHMARK){
   $emisdir    = "$EMIS_INP/$BENCHMARK{'emis'}";
   $pm_emisdir = $emisdir;
 }
-my $CDF_EMIS=0;#put one if Emis_TNO7.nc emissions are used
+my $CDF_EMIS=0; # 0=none, othereise set to "Emis_TNO7.nc" or "Emis_GLOB_05.nc"
 die "Missing emisdir='$emisdir' for GRID='$GRID'\n"       unless (-d $emisdir or $CDF_EMIS);
 die "Missing pm_emisdir='$pm_emisdir' for GRID='$GRID'\n" unless (-d $pm_emisdir or $CDF_EMIS);
 
@@ -769,10 +769,12 @@ unless($MAKEMODE=~/EVA/){
     print "TESTING PM $poll $dir\n";
 
     if ($GRID eq "MACC14") { # For most cases only Emis_TNO7.nc is available
-      $ifile{"$emisdir/EmisOutFrac.$poll"} = "emislist.$poll" if(-e "$emisdir/EmisOutFrac.$poll");
-      # untested
-      my $enc="$emisdir/Emis_TNO7_2751.nc";
-      $ifile{"$enc"} = "EmisFracs.nc" if(-e $enc);
+    # $ifile{"$emisdir/EmisOutFrac.$poll"} = "emislist.$poll"
+    #   if(-e "$emisdir/EmisOutFrac.$poll");
+      $ifile{"$dir/grid$gridmap{$poll}"} = "emislist.$poll"
+        if(-e "$emisdir/grid$gridmap{$poll}");
+      $ifile{"$emisdir/Emis_TNO7_2751.nc"} = "EmisFracs.nc"
+        if(-e "$emisdir/Emis_TNO7_2751.nc");
     }elsif( $GRID eq "RCA"){
       #EnsClim RCA #$ifile{"$dir/grid$gridmap{$poll}"} = "emislist.$poll";
       #$ifile{"$emisdir/EmisOut_2005.$poll"} = "emislist.$poll";
@@ -783,17 +785,11 @@ unless($MAKEMODE=~/EVA/){
       $dir = "$HOMEROOT/$AGNES/emis_NMR";
       $ifile{"$dir/gridNH3_NMR_$year"} = "emislist.$poll";
     }elsif($CDF_EMIS){
-	#no linking
+      $dir=(-e "$emisdir/$CDF_EMIS")?$emisdir:$DataDir;
+      $ifile{"$dir/$CDF_EMIS"} = "EmisFracs.nc";
     }else{
       $ifile{"$dir/grid$gridmap{$poll}"} = "emislist.$poll";
     }
-    #$dir=(-e "$emisdir/Emis_TNO7.nc")?$emisdir:$DataDir;
-    #$ifile{"$dir/Emis_TNO7.nc"} = "EmisFracs.nc";
-    #put $CDF_EMIS=1 above, if Emis_TNO7.nc emissions are used
-
-    $dir=(-e "$emisdir/Emis_GLOB_05.nc")?$emisdir:$DataDir;
-    $ifile{"$dir/Emis_GLOB_05.nc"} = "EmisFracs.nc";
-    #put $CDF_EMIS=1 above, if Emis_GLOB_05.nc emissions are used
 
 #gridded monthly emission factors
     $ifile{"$DataDir/ECLIPSEv5_monthly_patterns.nc"} = "ECLIPSEv5_monthly_patterns.nc";
@@ -1034,8 +1030,8 @@ unless($MAKEMODE=~/EVA/){
     $ifile{"$RoadDir/RoadDust_NonHighway_emis_potential.txt"} = "NONHIGHWAY";
     $ifile{"$RoadDir/RoughTestClimateFactorSoilWater.txt"} = "ROADDUST_CLIMATE_FAC";
   }elsif($GRID =~ /TNO/){
-    $ifile{"$DATA_LOCAL/nonHIGHWAYs_RoadDust_potentials.txt"} = "NONHIGHWAY";
     $ifile{"$DATA_LOCAL/HIGHWAYplus_RoadDust_potentials.txt"} = "HIGHWAYplus";
+    $ifile{"$DATA_LOCAL/nonHIGHWAYs_RoadDust_potentials.txt"} = "NONHIGHWAY";
     $ifile{"$DATA_LOCAL/ClimateFactors_SMI.txt"} = "ROADDUST_CLIMATE_FAC";
   }
 # IFZ-MOZ BCs levels description (in cdo zaxisdes/eta format)

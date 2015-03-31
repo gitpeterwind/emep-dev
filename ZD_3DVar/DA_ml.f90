@@ -1,6 +1,8 @@
 module DA_ml
 implicit none
-logical, parameter            :: DA_DEBUG=.false., DA_DEBUG_OBS=.false.
+logical, parameter            :: DA_DEBUG=.false., &
+                                 DA_DEBUG_3DV=.false., &
+                                 DA_DEBUG_OBS=.false.
 character(len=*), parameter   ::                &
   DA_NAMELIST="namelist.nml",                   &
   DA_FMT_DEF ="('3DVar@PPP YYYY-MM-DD hh: ',A,'.')",&

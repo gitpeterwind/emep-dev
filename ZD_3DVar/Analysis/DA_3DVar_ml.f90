@@ -18,24 +18,25 @@ use CheckStop_ml,     only: CheckStop
 use SmallUtils_ml,    only: find_index
 use Functions_ml,     only: norm
 use DA_ml,            only: debug=>DA_DEBUG,DAFMT_DEF=>DA_FMT_DEF,&
+                            debug_3dv=>DA_DEBUG_3DV,debug_obs=>DA_DEBUG_OBS,&
                             danml=>da_namelist,dafmt=>da_fmt_msg,damsg=>da_msg,&
                             tim_before=>datim_before,tim_after=>datim_after
-use DA_Obs_ml
+use DA_Obs_ml,       only:  varName,obsVarName,observedVar,varSpec,varSpecInv,&
+                            OBSERVATIONS,nobs,nobsData,obsData,&
+                            innov,obsstddev,H_jac,pidx,H_op,chisq_over_nobs2,&
+                            allocate_obs,read_obs,deallocate_obs
 #if BIAS_CORRECTION
 use DA_Bias_ml
 #endif
 use covmat_ml,        only: set_chemobs_idx,read_speccov
-use spectralcov,      only: nx,ny,nlev,nchem,nxex,nyex,nex,&
-                            nchemObs,ichemObs,nchemNoObs,ichemNoObs,&
-                            nv1,mm,nn,nkstar,ikstar,vt,&
-                            ucovmat,sqrt_lambda,sqrt_gamma,stddev,&
-                            kx,kxmin,ky,kymin,lensav,wsave,&
-                            FGSCALE,FGSCALE_INV,DAPREC
-use chitox_ml,        only: matched_domain,iyf, &
-                            chitox, chitox_adj, chi_Init, chi_Done, &
-                            chi_vec2fc, chi_fc2vec, chi_fc2hc, chi_hc2fc
-use mpi,              only: MPI_COMM_WORLD,MPI_BARRIER,MPI_ALLREDUCE,MPI_SUM,MPI_LAND,&
+use spectralcov,      only: nx,ny,nlev,nchem,nxex,nyex,nex,iChemInv,&
+                            nchemObs,nv1,FGSCALE,FGSCALE_INV,DAPREC
+use chitox_ml,        only: matched_domain, iyf, nhcrTot, nhcrLoc, &
+                            chitox, chitou, chitox_adj, chi_Init, chi_Done, &
+                            chi_vec2hc, chi_hc2vec, l2wR, l2wC
+use mpi,              only: MPI_COMM_WORLD,MPI_BARRIER,MPI_SUM,MPI_LAND,&
                             MPI_IN_PLACE,MPI_LOGICAL,MPI_INTEGER,MPI_DOUBLE_PRECISION
+!                           MPI_ALLREDUCE
 implicit none
 private
 public :: NTIMING_3DVAR,T_3DVAR,main_3dvar
@@ -252,7 +253,7 @@ real(kind=8) :: dzs=0.0
 !-----------------------------------------------------------------------
 ! Local parameters
 !-----------------------------------------------------------------------
-integer :: i,j,k,kLev0,kLev1,kk,ntot,maxobs,nv,nv2,nvar,nv2np,INFO,gIJ(4)
+integer :: i,j,k,kLev0,kLev1,kk,ntot,maxobs,nv,nv2,nvTot,nvLoc,nvar,nv2np,INFO,gIJ(4)
 logical :: laux
 real, allocatable, dimension(:) :: flat,flon,falt,obs,obsstddev1
 real, dimension(:,:,:), pointer :: an_bgd=>null(),an_inc=>null()
@@ -261,8 +262,10 @@ real, dimension(:,:,:), pointer :: an_bgd=>null(),an_inc=>null()
 !-----------------------------------------------------------------------
   ntot=nxex*nyex*nlev*nchemobs
   nv=min(nv1,ntot)
-  nv2=nv*nxex*nyex
+  nvTot=nhcrTot*nv1  ! total number of half-complex-to-real values
+  nvLoc=nhcrLoc*nv1  ! local number of half-complex-to-real values
 #ifdef BIAS_CORRECTION
+  nv2=nv*nxex*nyex
   nv2np=nv2+(NBIAS_PREDICTORS+1)*nobsData
 #endif
   maxobs=nx*ny
@@ -297,7 +300,6 @@ real, dimension(:,:,:), pointer :: an_bgd=>null(),an_inc=>null()
 ! compute innovations H(xb)-y, save in file
 !-----------------------------------------------------------------------
   call get_innovations(maxobs,flat,flon,falt,obs,obsstddev1)
-  call Add_2timing(T_INNOV,tim_after,tim_before)
   if(all(innov==0.0))then
     call my_deallocate(MasterProc,'WARNING: No innovations found')
     return
@@ -320,7 +322,11 @@ real, dimension(:,:,:), pointer :: an_bgd=>null(),an_inc=>null()
 #ifdef BIAS_CORRECTION
     allocate(chi(nv2np),stat=ierr)
 #else
-    allocate(chi(nv2),stat=ierr)
+    if(nvLoc>0)then
+      allocate(chi(nvLoc),stat=ierr)
+    else
+      allocate(chi(1),stat=ierr)  ! dummy
+    endif
 #endif
     call CheckStop(ierr,HERE('Allocate CHI'))
     chi=0e0
@@ -332,7 +338,7 @@ real, dimension(:,:,:), pointer :: an_bgd=>null(),an_inc=>null()
 #ifdef BIAS_CORRECTION
   call var3d(nv2np,Jcost,chi,ntot,dzs)
 #else
-  call var3d(nv2,Jcost,chi,ntot,dzs)
+  call var3d(nvTot,nvLoc,Jcost,chi,ntot,dzs)
 #endif
 !-----------------------------------------------------------------------
 ! update (local) background field:
@@ -413,7 +419,7 @@ subroutine my_deallocate(verb,msg)
 #endif
 endsubroutine  
 endsubroutine generic3dvar
-subroutine var3d(nv2,Jcost,chi,ntot,dzs)
+subroutine var3d(nvTot,nvLoc,Jcost,chi,ntot,dzs)
 !-----------------------------------------------------------------------
 ! @description
 ! 3-D variational analysis
@@ -423,13 +429,13 @@ subroutine var3d(nv2,Jcost,chi,ntot,dzs)
 !-----------------------------------------------------------------------
 ! Formal parameters
 !-----------------------------------------------------------------------
-  integer,      intent(in)    :: nv2,ntot
-  real(kind=8), intent(inout) :: Jcost,chi(nv2),dzs
+  integer,      intent(in)    :: nvTot,nvLoc,ntot
+  real(kind=8), intent(inout) :: Jcost,chi(nvLoc),dzs
   real :: rzs,Jcost0
 !-----------------------------------------------------------------------
 ! Work arrays
 !-----------------------------------------------------------------------
-  integer, parameter ::nupdates=4
+  integer, parameter :: nupdates=20
   real(kind=8), allocatable :: gradJcost(:),rz(:)
 !-----------------------------------------------------------------------
 ! Local parameters
@@ -456,14 +462,14 @@ subroutine var3d(nv2,Jcost,chi,ntot,dzs)
   real(kind=8), parameter :: dxmin=DAPREC ! norm resolution
 
   logical      :: first_call
-  integer      :: iz(5),nrz,indic,omode,niter,nsim,reverse,ierr
+  integer      :: iz(5),nrzTot,nrzLoc,indic,omode,niter,nsim,reverse,ierr
   real(kind=8) :: epsg,df1
   integer      :: n,p,l,k
-  external simul_rc,euclid,ctonbe,ctcabe
+  external simul_rc,euclid_weight_mpi,ctonbe,ctcabe
 !-----------------------------------------------------------------------
 ! Make one first call to the objective function
 !-----------------------------------------------------------------------
-  allocate(gradJcost(nv2),stat=ierr)
+  allocate(gradJcost(nvLoc),stat=ierr)
   call CheckStop(ierr,HERE('Allocate gradJcost'))
 !-----------------------------------------------------------------------
 ! Call minimization routine (m1qn3-3.3;2009)
@@ -476,45 +482,48 @@ subroutine var3d(nv2,Jcost,chi,ntot,dzs)
   call CheckStop(ierr,HERE('open m1qn3 logfile'))
 
   call Code_timer(tim_before)
-  omode=-1                    ! trigger .not.OKmode, unless m1qn3 is called
-  reverse=1                   ! reverse comunication mode
-  indic=4                     ! calculate costFunction
-  first_call=.true.           ! 1st call to costFunction
-  epsg=dxmin**0.9             ! precision of the stopping criterion, based on ||gradient||
-  niter=maxiter               ! maximal number of iterations accepted
-  nsim =maxsim                ! maximal number of simulations accepted
-  nrz=4*nv2+nupdates*(2*nv2+1)! rz dimension
-  allocate(rz(nrz),stat=ierr) ! working array for m1qn3
+  omode=-1          ! trigger .not.OKmode, unless m1qn3 is called
+  reverse=1         ! reverse comunication mode
+  indic=4           ! calculate costFunction
+  first_call=.true. ! 1st call to costFunction
+  epsg=dxmin**0.9   ! precision of the stopping criterion, based on ||gradient||
+  niter=maxiter     ! maximal number of iterations accepted
+  nsim =maxsim      ! maximal number of simulations accepted
+  nrzLoc=4*nvLoc+nupdates*(2*nvLoc+1) ! rz dimension
+  nrzTot=4*nvTot+nupdates*(2*nvTot+1) ! for m1qn3 to estimate nupdates 
+  allocate(rz(nrzLoc),stat=ierr)      ! working array for m1qn3
   call CheckStop(ierr,HERE('Allocate RZ.'))
 
   write(damsg,"(A,'#',I3.3,': ',A,'=',3(I0,:,','),3(1X,A,'=',I0,:,','))"),&
     'Start  m1qn3',me,'mode',imode,'reverse',reverse,'niter',niter,'nsim',nsim
-  print dafmt,trim(damsg)
+  if(MasterProc.or.debug_3dv)print dafmt,trim(damsg)
 
   do while(reverse>=0)
-    call costFunction(indic,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
+    call costFunction(indic,nvLoc,chi,Jcost,gradJcost)
     if(first_call)then
       first_call=.false.
       Jcost0=Jcost  ! initial cost function
       df1=Jcost*0.5 ! expected decrease estimate in f during the first iteration
-      if(norm(gradJcost)<=1e-20)then
-        print dafmt,'WARNING Starting point is almost optimal.&
-          & No optimization needed..'
+      if(norm(gradJcost,l2wR,reduce=.true.)<=1e-20)then
+        if(MasterProc)&
+          print dafmt,'WARNING Starting point is almost optimal.&
+            & No optimization needed..'
         reverse=-9  ! skipp m1qn3 call
         omode=1     ! fake OKmode
       endif
     endif
     if(reverse>=0)&
-      call m1qn3(simul_rc,euclid,ctonbe,ctcabe,nv2,chi,Jcost,gradJcost,&
+      call m1qn3(simul_rc,euclid_weight_mpi,ctonbe,ctcabe,&
+                nvTot,nvLoc,chi,Jcost,gradJcost,&
                 dxmin,df1,epsg,normtype,impres,io,&
-                imode,omode,niter,nsim,iz,rz,nrz,&
-                reverse,indic,ntot,rzs,dzs)
+                imode,omode,niter,nsim,iz,rz,nrzTot,nrzLoc,&
+                reverse,indic,l2wR,rzs,dzs)
     if(mod(niter,50)==0)FLUSH(io)
   enddo
 
   write(damsg,"(A,'#',I3.3,': ',A,'=',3(I0,:,','),3(1X,A,'=',I0,:,','))"),&
     'Finish m1qn3',me,'mode',imode,'reverse',reverse,'niter',niter,'nsim',nsim
-  print dafmt,trim(damsg)
+  if(MasterProc.or.debug_3dv)print dafmt,trim(damsg)
 
   select case(omode)
   case(1:7)
@@ -530,18 +539,19 @@ subroutine var3d(nv2,Jcost,chi,ntot,dzs)
   call CheckStop(all(omode/=OKmode),HERE(trim(damsg)))
 
   close(io)
-  call Add_2timing(T_OPTIM,tim_after,tim_before)
 !-----------------------------------------------------------------------
 ! Make a final call to costFunction for converting \chi to \delta x.
 !-----------------------------------------------------------------------
   indic=-1
-  call costFunction(indic,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
+  call costFunction(indic,nvLoc,chi,Jcost,gradJcost)
   call my_deallocate(.false.,"NoMessage")
 !-----------------------------------------------------------------------
 !
 !-----------------------------------------------------------------------
   write(damsg,*)Jcost0,'-->',Jcost,'=',(1.0-Jcost/Jcost0)*100
-  print dafmt,'Cost function '//trim(ADJUSTL(damsg))//'% Reduction'
+  if(MasterProc.or.debug_3dv)&
+    print dafmt,'Cost function '//trim(ADJUSTL(damsg))//'% Reduction'
+  call Add_2timing(T_OPTIM,tim_after,tim_before)
 !-----------------------------------------------------------------------
 contains
 !-----------------------------------------------------------------------
@@ -564,10 +574,8 @@ subroutine get_innovations(maxobs,flat,flon,falt,obs,obs_stddev)
 ! @author M.Kahnert
 !-----------------------------------------------------------------------
   implicit none
-
-  integer maxobs!,ipar(maxobs)
+  integer :: maxobs
   real, dimension(maxobs) :: flat,flon,falt,obs,obs_stddev
-
   integer :: n,INFO
   real :: alt(nx,ny,nlev)
   real, allocatable :: yn(:)
@@ -593,7 +601,7 @@ subroutine get_innovations(maxobs,flat,flon,falt,obs,obs_stddev)
 !   is stored on obsData(ipar)%unitconv and obsData(ipar)%unitroa.
 !-----------------------------------------------------------------------
     call H_op(flat(n),flon(n),falt(n),n,yn(n),ipar(n))
-    if(debug_obs.and.any(pidx(n)%local))&
+    if(debug_obs.and.pidx(n)%in_mgrid)&
       print "(I3,'#',I0,2(1X,A3,':',ES12.3))",me,&
         n,'Observation',obs(n),'Model',yn(n)*FGSCALE_INV
   enddo
@@ -609,16 +617,14 @@ subroutine get_innovations(maxobs,flat,flon,falt,obs,obs_stddev)
   innov=yn-obs*FGSCALE
   obsstddev=obs_stddev*FGSCALE
   deallocate(yn)
-  if(debug)then
-    info=sum((/(count(pidx%local(n)),n=1,4)/))
-    print "(2(1X,A,1X,I0))","observations @",me,&
-    '%local',nint(info*25.0/nobs) ! 0..4 pidx%local per obs
-  endif
+  if(debug)& ! local obs
+    print "(2(1X,A,1X,I0))","observations @",me,'%in_mgrid',count(pidx%in_mgrid)
+  call Add_2timing(T_INNOV,tim_after,tim_before)
 end subroutine get_innovations
 #ifdef BIAS_CORRECTION
-subroutine costFunction(ind,nv2np,chi,Jcost,gradJcost,ntot,rzs,dzs)
+subroutine costFunction(ind,nvLoc,npLoc,chi,Jcost,gradJcost)
 #else
-subroutine costFunction(ind,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
+subroutine costFunction(ind,nvLoc,chi,Jcost,gradJcost)
 #endif
 !-----------------------------------------------------------------------
 ! @description
@@ -631,65 +637,49 @@ subroutine costFunction(ind,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
 !-----------------------------------------------------------------------
   integer, intent(inout) :: ind
 #ifdef BIAS_CORRECTION
-  integer, intent(in)    :: nv2np
-  integer                :: nv2!!=nv2np-(NBIAS_PREDICTORS+1)*nobsData
-  real, intent(in)       :: chi(nv2np)
-  real, intent(inout)    :: Jcost,gradJcost(nv2np)
+  integer, intent(in)    :: nvLoc,npLoc!!=(NBIAS_PREDICTORS+1)*nobsData in NPROC-1
+  real, intent(in)       :: chi(nvLoc+npLoc)
+  real, intent(inout)    :: Jcost,gradJcost(nvLoc+npLoc)
 #else
-  integer, intent(in)    :: nv2
-  real, intent(in)       :: chi(nv2)
-  real, intent(inout)    :: Jcost,gradJcost(nv2)
+  integer, intent(in)    :: nvLoc
+  real, intent(in)       :: chi(nvLoc)
+  real, intent(inout)    :: Jcost,gradJcost(nvLoc)
 #endif
-!-----------------------------------------------------------------------
-! Dummy parameters
-!-----------------------------------------------------------------------
-  integer, intent(in)      :: ntot
-  real, intent(in)         :: rzs
-  real(kind=8), intent(in) :: dzs
 !-----------------------------------------------------------------------
 ! Local variables
 !-----------------------------------------------------------------------
- !complex chi_arr(nv1,nxex,nyex)
-  complex(kind=8), pointer, dimension(:,:,:) :: chi_arr=>null(),chi_hc=>null()
+  complex(kind=8), pointer, dimension(:,:,:) :: chi_hc=>null()
   integer lenwork,i,ik,j,j0,j1,k,kk,l,l0,l1,m,n,m1,n1,mneg,nneg
- !integer maxobs,p,ij
- !real yn(nobs),dep(nobs),Oinvdep(nobs)
- !real dx(nxex,nyex,nlev,nchemobs)
- !real work(2*nxex*nyex),jobs,jb
   integer :: p, INFO, iyf0, iyf1
-  real, pointer, dimension(:,:,:,:) :: dx_loc=>null()
+  real, pointer, dimension(:,:,:,:) :: dx_loc=>null(),du_loc=>null()
   real, allocatable, dimension(:) :: yn,dep,Oinvdep,bn,Binvdep
   real :: jobs,jb,jbias
 !-----------------------------------------------------------------------
 !
 !-----------------------------------------------------------------------
+  call Add_2timing(T_OPTIM,tim_after,tim_before)
   select case(ind)
   case (1)
     if(debug.and.MasterProc) print dafmt,"Free call to costFunction"
     return
   case(-1)
     if(debug.and.MasterProc) print dafmt,"Update observed species"
-    call Add_2timing(T_OPTIM,tim_after,tim_before)
   case default
     if(debug.and.MasterProc) print dafmt,"Optimization costFunction"
   endselect
-  call Add_2timing(T_OPTIM,tim_after,tim_before)
-#ifdef BIAS_CORRECTION
-  nv2=nv2np-(NBIAS_PREDICTORS+1)*nobsData
-#endif
-!-----------------------------------------------------------------------
-! Copy chi (in compact storage format) into chi_arr (in matrix format),
-! and select non reduntant part for FFTW3 (chi_hc)
-!-----------------------------------------------------------------------
-#ifdef BIAS_CORRECTION
-  call chi_vec2fc(nv2np,chi,chi_arr)
-#else
-  call chi_vec2fc(nv2,chi,chi_arr)
-#endif
 !-----------------------------------------------------------------------
 ! conversion from spectral to model space
 !-----------------------------------------------------------------------
-  call chi_fc2hc(chi_arr,chi_hc)
+#ifdef BIAS_CORRECTION
+  call CheckStop((me<(NPROC-1)).and.(npLoc>0),&
+    HERE("Only NPROC-1 allocates bias indexes on CHI"))
+  call chi_vec2hc(nvLoc,chi(:nvLoc),chi_hc)
+  ! only NPROC-1 allocates bias indexes on CHI
+  if(me==(NPROC-1))dbias=chi(nvLoc+1:)
+  CALL MPI_BCAST(dbias,1,MPI_DOUBLE_PRECISION,NPROC-1,MPI_COMM_WORLD,INFO)
+#else
+  call chi_vec2hc(nvLoc,chi,chi_hc)
+#endif
   iyf0=iyf(0,me);iyf1=iyf(1,me) ! local y-slab
   dx_loc=>dx(:,iyf0:iyf1,:,:)
   call chitox(chi_hc,dx_loc)
@@ -701,26 +691,33 @@ subroutine costFunction(ind,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
         CALL MPI_BCAST(dx(:,iyf(0,n):iyf(1,n),:,:),&
                   size(dx(:,iyf(0,n):iyf(1,n),:,:)),&
           MPI_DOUBLE_PRECISION,n,MPI_COMM_WORLD,INFO)
-    enddo
-        endif
-    print "(I3,3(1X,A,'=',ES9.3))",me,&
-      '||chi||',norm(chi),'||chi_arr||',norm(chi_arr),'||dx||',norm(dx)
+      enddo
+    endif
+    if(debug)&
+      write(damsg,"(I3,3(1X,A,'=',ES10.3))")me,&
+        '||chi||',norm(chi,l2wR,reduce=.true.),&
+        '||chi_arr||',norm(chi_hc,l2wC,reduce=.true.),&
+        '||dx||',norm(dx)
+    if(MasterProc.and.debug) print *,trim(damsg)
     call Add_2timing(T_DOMEX,tim_after,tim_before)
-  else
-    print "(I3,3(1X,A,'=',ES9.3))",me,&
-      '||chi||',norm(chi),'||chi_arr||',norm(chi_arr),'||dx_loc||',norm(dx_loc)
+ else
+    if(debug_3dv)&
+      write(damsg,"(I3,3(1X,A,'=',ES10.3))")me,&
+        '||chi||',norm(chi,l2wR,reduce=.true.),&
+        '||chi_arr||',norm(chi_hc,l2wC,reduce=.true.),&
+        '||dx||',norm(dx_loc,reduce=.true.)
+    if(MasterProc.and.debug_3dv) print *,trim(damsg)
     call Add_2timing(T_CHI2X,tim_after,tim_before)
   endif
-#ifdef BIAS_CORRECTION
-  dbias=chi(nv2+1:)
-#endif
 !-----------------------------------------------------------------------
-! update unobserved species:
+!
 !-----------------------------------------------------------------------
   if(ind==-1)then
+! update unobserved species:
     if(use_unobserved)then
-    if(debug.and.MasterProc) print dafmt,"Update unobserved species"
-      call update_unobserved(chi_arr)
+      if(debug.and.MasterProc) print dafmt,"Update unobserved species"
+      du_loc=>du(:,iyf0:iyf1,:,:)
+      call chitou(chi_hc,du_loc)
 ! Brodcast du: y-slab --> xy-domain
       if(.not.matched_domain)then
         do n=0,NPROC-1
@@ -729,115 +726,111 @@ subroutine costFunction(ind,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
                     size(du(:,iyf(0,n):iyf(1,n),:,:)),&
             MPI_DOUBLE_PRECISION,n,MPI_COMM_WORLD,INFO)
         enddo
-        if(debug) print "(I3,1(1X,A,'=',E10.3))",me,'||du||',norm(du)
+        if(debug) &
+          print "(I3,1(1X,A,'=',E10.3))",me,'||du||',norm(du)
         call Add_2timing(T_DOMEX,tim_after,tim_before)
       endif
     call Add_2timing(T_UOSPC,tim_after,tim_before)
     endif
-  endif ! return after chi^2 eval
-!-----------------------------------------------------------------------
 ! chi^2 eval and return:
-!-----------------------------------------------------------------------
-  if(ind==-1)then
     if(use_chisq)then
       ! departures: dep=H(xb)+H_jac*dx-y=innov+yn
       ! dx|yn defined over full y-range
-  do n=1,nobs
-    do p=1,4
-      i=pidx(n)%i(p)
-      j=pidx(n)%j(p)
-      l0=pidx(n)%l(0)
-      l1=pidx(n)%l(1)
-          innov(n)=innov(n)+sum(H_jac(n,p,l0:l1,:)*dx(i,j,l0:l1,:))
-    enddo
-  enddo
-      call chisq_over_nobs2(nobs,innov)
-    end if
+      allocate(dep(nobs))
+      do n=1,nobs
+        i=pidx(n)%i;j=pidx(n)%j;l0=pidx(n)%l0;l1=pidx(n)%l1
+#ifdef BIAS_CORRECTION
+        dep(n)=innov(n)+sum(H_jac(n,l0:l1,:)*dx(i,j,l0:l1,:))+bn(ipar(n))
+#else
+        dep(n)=innov(n)+sum(H_jac(n,l0:l1,:)*dx(i,j,l0:l1,:))
+#endif
+      enddo
+      call chisq_over_nobs2(nobs,dep)
+    endif
     call Add_2timing(T_CHISQ,tim_after,tim_before)
     call my_deallocate(.false.,"NoMessage")
     return
   endif
 !-----------------------------------------------------------------------
-! Jb = 0.5 * \chi^{\dagger}*\chi
+! Jbias = 0.5 * [ beta_b-beta ]^{T} * Bb^{-1} * [ beta_b-beta ]
 !-----------------------------------------------------------------------
-  jb=0.5*norm(chi_arr,squared=.true.)
-  call Add_2timing(T_OPTIM,tim_after,tim_before)
-!-----------------------------------------------------------------------
-! conversion from model to observation space
-!-----------------------------------------------------------------------
-  allocate(yn(nobs),dep(nobs),Oinvdep(nobs))
+  jbias=0.0
 #ifdef BIAS_CORRECTION
   allocate(bn(nobsData),Binvdep(nobsData))
-#endif
-! dx|yn defined only over y-slab (iyf0:iyf1)
-  do n=1,nobs
-    yn(n)=0e0
-    do p=1,4
-      i=pidx(n)%i(p)
-      j=pidx(n)%j(p)
-      l0=pidx(n)%l(0)
-      l1=pidx(n)%l(1)
-      if(j>=iyf0.and.j<=iyf1)&
-        yn(n)=yn(n)+sum(H_jac(n,p,l0:l1,:)*dx(i,j,l0:l1,:))
-    enddo
-  enddo
-  CALL MPI_ALLREDUCE(MPI_IN_PLACE,yn,nobs,MPI_DOUBLE_PRECISION,MPI_SUM,&
-    MPI_COMM_WORLD,INFO)
-  call Add_2timing(T_MPICF,tim_after,tim_before) ! MPI costFunction
-!-----------------------------------------------------------------------
-! Jobs = 0.5 * [ H(xb)+H_jac*dx-y ]^{T} * O^{-1} * [ H(xb)+H_jac*dx-y ]
-!-----------------------------------------------------------------------
-  dep=innov+yn                  ! departures: h(xb)-y=H(xb)-y+H_jac*dx
-#ifdef BIAS_CORRECTION
   bn=bias+dbias
 ! do n=1,nobsData
-!   if(all(obsData(n)%iobs==0))cycle
+!   if(obsData(n)%nobs<=0)cycle
 !   i=obsData(n)%iobs(0);j=obsData(n)%iobs(1)
 !   call CheckStop(any(ipar(i:j)/=n),"Inconsistent ipar/obsData")
 !   print "('#',3(1X,I0,1X,ES12.3))",&
 !     n,bn(n)*FGSCALE_INV,i,dep(i)*FGSCALE_INV,j,dep(j)*FGSCALE_INV
 ! enddo
-  dep=dep+bn(ipar(:nobs))       ! departures: h(xb)+bias(x,beta)-y
+  Binvdep=0.0   ! only NPROC-1 has jbias>0
+  if(me==(NPROC-1))Binvdep=dbias*biasWeight/(biasStdDev**2)
+  jbias=0.5*dot_product(dbias,Binvdep)
+! print "(('#',2(1X,I0),2(1X,ES12.3)))",&
+!   (me,n,dbias(n)*FGSCALE_INV,Binvdep(n)*FGSCALE_INV,n=1,nobsData)
 #endif
-  Oinvdep=dep/(obsstddev**2)    ! O^{-1} * [ H(xb)+H_jac*dx-y ]
+!-----------------------------------------------------------------------
+! Jb = 0.5 * \chi^{\dagger}*\chi
+!-----------------------------------------------------------------------
+  jb=0.5*norm(chi_hc,l2wC,squared=.true.,reduce=.false.)
+!-----------------------------------------------------------------------
+! conversion from model to observation space
+!-----------------------------------------------------------------------
+  allocate(yn(nobs),dep(nobs),Oinvdep(nobs))
+! dx|yn|dep defined only over y-slab (iyf0:iyf1)
+  yn(:)=0e0
+  dep(:)=0e0
+  do n=1,nobs
+    if(.not.pidx(n)%in_yslab)cycle
+    i=pidx(n)%i;j=pidx(n)%j;l0=pidx(n)%l0;l1=pidx(n)%l1
+    yn(n)=sum(H_jac(n,l0:l1,:)*dx(i,j,l0:l1,:))
+! departures: h(xb)+bias(x,beta)-y=H(xb)-y+H_jac*dx+bias(x,beta)
+#ifdef BIAS_CORRECTION
+    dep(n)=innov(n)+yn(n)+bn(ipar(n))
+#else
+    dep(n)=innov(n)+yn(n)
+#endif
+  enddo
+!-----------------------------------------------------------------------
+! Jobs = 0.5 * [ H(xb)+H_jac*dx-y ]^{T} * O^{-1} * [ H(xb)+H_jac*dx-y ]
+!-----------------------------------------------------------------------
+  Oinvdep=dep/(obsstddev**2)  ! O^{-1} * [ H(xb)+H_jac*dx-y ]
   jobs=0.5*dot_product(dep,Oinvdep)
-! if(debug)print "(I3,5(1X,A,'=',ES9.3))",me,&
+! if(debug)print "(I3,5(1X,A,'=',ES10.3))",me,&
 !   '||H(xb)-y||',norm(innov),&
 !   '||H_jac*dx||',norm(yn),&
 !   '||H(xb)+H_jac*dx-y||',norm(dep),&
 !   '||O^-1*[H(xb)+H_jac*dx-y]||',norm(Oinvdep),&
 !   'Jo=1/2 * [H(xb)+H_jac*dx-y]^T * O^-1 * [H(xb)+H_jac*dx-y]',Jobs
 !-----------------------------------------------------------------------
-! Jbias = 0.5 * [ beta_b-beta ]^{T} * Bb^{-1} * [ beta_b-beta ]
-!-----------------------------------------------------------------------
-#ifdef BIAS_CORRECTION
-  Binvdep=dbias*biasWeight/(biasStdDev**2)
-! print "(('#',2(1X,I0),2(1X,ES12.3)))",&
-!   (me,n,dbias(n)*FGSCALE_INV,Binvdep(n)*FGSCALE_INV,n=1,nobsData)
-  jbias=0.5*dot_product(dbias,Binvdep)
-#else
-  jbias=0.0
-#endif
-!-----------------------------------------------------------------------
 ! J = Jb + Jobs + Jbias
 !-----------------------------------------------------------------------
   Jcost = jb + jobs + jbias
+  call Add_2timing(T_COSTF,tim_after,tim_before)
+  CALL MPI_ALLREDUCE(MPI_IN_PLACE,Jcost,1,MPI_DOUBLE_PRECISION,MPI_SUM,&
+    MPI_COMM_WORLD,INFO)
+  call Add_2timing(T_MPICF,tim_after,tim_before) ! MPI costFunction
 !-----------------------------------------------------------------------
 ! grad J = grad Jb + grad Jobs + grad Jbias
 !-----------------------------------------------------------------------
 ! grad Jb = independent elements of \chi
 !-----------------------------------------------------------------------
-  gradJcost(:nv2)=chi(:nv2)
+  gradJcost(:nvLoc)=chi(:nvLoc)
 !-----------------------------------------------------------------------
 !  Bb^{-1} * [ beta_b-beta ] + bias_jac^{T} * O^{-1} * [ h(x)+bias(x,beta)-y ]
 !-----------------------------------------------------------------------
 #ifdef BIAS_CORRECTION 
-  gradJcost(nv2+1:)=0.0
+  gradJbias(:)=0.0
   do n=1,nobsData
-    if(obsData(n)%nobs<=0)CYCLE
+    if(obsData(n)%nobs<=0)cycle
     i=obsData(n)%iobs(0);j=obsData(n)%iobs(1)
-    gradJcost(nv2+n)=Binvdep(n)+sum(Oinvdep(i:j))
+    gradJbias(n)=Binvdep(n)+sum(Oinvdep(i:j))
   enddo
+  ! only NPROC-1 allocates bias indexes on CHI
+  CALL MPI_REDUCE(gradJbias,gradJcost(nvLoc+1:),nobsData,&
+       MPI_DOUBLE_PRECISION,MPI_SUM,NPROC-1,MPI_COMM_WORLD,INFO)
 #endif
 !-----------------------------------------------------------------------
 ! grad Jobs = U^{-+}*H_jac^{T} * O^{-1} * [ H(xb)+H_jac*dx-y ]
@@ -846,44 +839,39 @@ subroutine costFunction(ind,nv2,chi,Jcost,gradJcost,ntot,rzs,dzs)
 !-----------------------------------------------------------------------
   dx=0e0
   do n=1,nobs
-    do p=1,4
-      i=pidx(n)%i(p)
-      j=pidx(n)%j(p)
-      l0=pidx(n)%l(0)
-      l1=pidx(n)%l(1)
-      dx(i,j,l0:l1,:)=dx(i,j,l0:l1,:)+H_jac(n,p,l0:l1,:)*Oinvdep(n)
-    enddo
+    if(.not.pidx(n)%in_yslab)cycle
+    i=pidx(n)%i;j=pidx(n)%j;l0=pidx(n)%l0;l1=pidx(n)%l1
+    dx(i,j,l0:l1,:)=dx(i,j,l0:l1,:)+H_jac(n,l0:l1,:)*Oinvdep(n)
   enddo
-  call Add_2timing(T_OPTIM,tim_after,tim_before)
+  call Add_2timing(T_COSTF,tim_after,tim_before)
 !-----------------------------------------------------------------------
 ! apply fft etc on dx field:
 !-----------------------------------------------------------------------
   call chitox_adj(chi_hc,dx_loc)   ! half-complex from (y-slab)
-  call chi_hc2fc(chi_arr,chi_hc)   ! full complex form (full y)
-! if(debug) print "(I3,3(1X,A,'=',ES9.3))",me,&
-!  '||chi||',norm(chi),'||chi_arr||',norm(chi_arr),'||dx||',norm(dx)
 !-----------------------------------------------------------------------
 ! add independent elements of grad Jobs to array gradJcost:
 ! grad Jobs = U^{-+}*H_jac^{T} * O^{-1} * [ H(xb)+H_jac*dx-y ]
+! and store L2 weights for half-complex-real packaging (l2w)
 !-----------------------------------------------------------------------
-  call chi_fc2vec(nv2,gradJcost,chi_arr)
+  call chi_hc2vec(nvLoc,gradJcost,chi_hc)
   call Add_2timing(T_CHI2X,tim_after,tim_before)
 !-----------------------------------------------------------------------
   if(debug)then
-    write(damsg,"(5(1X,A,'=',ES9.3))"),&
+    write(damsg,"(5(1X,A,'=',ES10.3))"),&
       'J',Jcost,'Jb',Jb,'Jo',Jobs,'Jbias',Jbias,'nobs/2',nobs*0.5
 #ifdef BIAS_CORRECTION
-    Jb=norm(chi(:nv2))
-    Jbias=norm(chi(nv2+1:))
+    Jb=norm(chi(:nvLoc),l2wR,reduce=.true.)
+    ! only NPROC-1 allocates bias indexes on CHI
+    if(me==(NPROC-1))Jbias=norm(chi(nvLoc+1:),reduce=.true.)
+    CALL MPI_BCAST(Jbias,1,MPI_DOUBLE_PRECISION,NPROC-1,MPI_COMM_WORLD,INFO)
 #else
-    Jb=norm(chi)
+    Jb=norm(chi,l2wR,reduce=.true.)
     Jbias=0.0
 #endif
-    Jobs=DIM(norm(gradJcost),Jb+Jbias)
-    print "(I3,A,4(1X,A,'=',ES9.3))",me,trim(damsg),&
+    Jobs=DIM(norm(gradJcost,l2wR,reduce=.true.),Jb+Jbias)
+    print "(I3,A,4(1X,A,'=',ES10.3))",me,trim(damsg),&
       '||DJ||',Jb+Jobs+Jbias,'||DJb||',Jb,'||DJo||',Jobs,'||DJbias||',Jbias
   endif
- !ind=4
   call Add_2timing(T_COSTF,tim_after,tim_before)
   call my_deallocate(.false.,"NoMessage")
 ! CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
@@ -896,7 +884,7 @@ subroutine my_deallocate(verb,msg)
   character(len=*), intent(in) :: msg
   integer :: ierr=0
   if(verb) print dafmt,msg
-  if(associated(chi_arr)) deallocate(chi_arr)
+!!if(associated(chi_arr)) deallocate(chi_arr)
   if(associated(chi_hc))  deallocate(chi_hc)
   if(allocated(yn))       deallocate(yn)
   if(allocated(dep))      deallocate(dep)
@@ -904,87 +892,4 @@ subroutine my_deallocate(verb,msg)
   if(allocated(Binvdep))  deallocate(Binvdep)
 endsubroutine my_deallocate
 endsubroutine costFunction
-subroutine update_unobserved(chi)
-!-----------------------------------------------------------------------
-! @description
-! Update unobserved species once the variational analysis has converged
-! @author M.Kahnert
-!-----------------------------------------------------------------------
-  implicit none
-
-  complex chi(nv1,nxex,nyex)
-
- !real du(nxex,nyex,nlev,nchem-nchemobs)
-  integer i,j,k,kk,l,ik,m,n,lenwork,ierr,ibox,jbox,ndim
-  real work(2*nxex*nyex)
-  complex :: c(nxex,nyex)
-  complex, allocatable :: temp1(:), temp2(:), temp3(:,:,:)
-
-  if(nchem==nchemObs)then
-    print dafmt,'WARNING no unobserved to update'
-    return
-  endif
-  lenwork=2*nxex*nyex
-  nchemNoObs=nchem-nchemObs
-  ndim=nchemObs*nlev
-  du=0e0
-!-----------------------------------------------------------------------
-! Compute c = X * \Lambda^{-1/2} * \chi, where \Lambda is the
-! diagonal matrix containing the reduced set of eigenvalues of the
-! spectral covariance matrix, and X is the matrix containing the
-! corresponding eigenvectors:
-!-----------------------------------------------------------------------
-  allocate(temp1(nv1),temp2(ndim),temp3(ndim,nxex,nyex))
-  do n=1,nyex
-    do m=1,nxex
-      ik=ikstar(m,n)
-      if(ik<=nkstar)then
-        temp1(:)=chi(:,m,n)/sqrt_lambda(:,ik)
-        temp2(:)=matmul(vt(:,:,ik),temp1)
-        temp3(:,m,n)=temp2(:)/sqrt_gamma(:,ik)
-      endif
-    enddo
-  enddo
-  do k=1,nchemnoobs
-    kk=ichemnoobs(k)
-    do l=1,nlev
-      ibox=(k-1)*nlev+l
-! nested double loop over 2D spectral space coordinates:
-!-----------------------------------------------------------------------
-! Multiply from the left with L, where L is a diagonal matrix
-! with elements 1/sqrt(\gamma_i) along the diagonal, where \gamma_i
-! denotes the bi-Fourier spectral density of the variance for
-! level/component ibox:
-!-----------------------------------------------------------------------
-      c=cmplx(0e0,0e0)
-      forall(n=1:nyex,m=1:nxex,ikstar(m,n)<=nkstar) &
-        c(m,n)=sum(ucovmat(ibox,:,ikstar(m,n))*temp3(:,m,n))
-!-----------------------------------------------------------------------
-! Perform inverse 2d-FFT:
-!-----------------------------------------------------------------------
-      call cfft2b(nxex,nxex,nyex,c,wsave,lensav,work,lenwork,ierr)
-! nested double loop over horizontal physical space coordinates:
-!-----------------------------------------------------------------------
-! Only update whithin the non-extended zone (since there are no
-! observations in that zone => zero increment):
-!-----------------------------------------------------------------------
-! Multiply from the left with S, where S is a diagonal matrix
-! containing the standard deviations sqrt(sigma).
-!-----------------------------------------------------------------------
-      forall(i=1:nx,j=1:ny) du(i,j,l,k)=real(c(i,j))*stddev(i,j,l,kk)
-    enddo ! level l
-  enddo   ! component k
-  call my_deallocate(.false.,"NoMessage")
-!-----------------------------------------------------------------------
-contains
-!-----------------------------------------------------------------------
-subroutine my_deallocate(verb,msg)
-  logical, intent(in) :: verb
-  character(len=*), intent(in) :: msg
-  if(verb) print dafmt,msg
-  if(allocated(temp1))  deallocate(temp1)
-  if(allocated(temp2))  deallocate(temp2)
-  if(allocated(temp3))  deallocate(temp3)
-endsubroutine my_deallocate 
-endsubroutine update_unobserved
 endmodule DA_3DVar_ml
