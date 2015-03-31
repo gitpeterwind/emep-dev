@@ -1,9 +1,8 @@
 MODULE stddev_ml
 use CheckStop_ml, only : CheckStop
-use spectralcov,  only : stddev
+use spectralcov,  only : stddev!,KTRUNC
 implicit none
 integer, parameter :: nHH=6, HH0=0, HH1=24/nHH-1 ! HH1=23
-real, parameter :: KTRUNC=0e0
 real, dimension(:,:,:,:,:), allocatable :: bias,variance
 real, dimension(:,:),       allocatable :: nt0
 logical, parameter, private :: debug_ij=.true.
@@ -133,6 +132,7 @@ character(len=18) file
       enddo
     enddo
   enddo
+!!sigmamin=minval(stddev,MASK=(stddev>0e0))
 !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
   if(debug_ij)then
     write(*,*)'xxx2 b,s:',  bias(debug_i,debug_j,max(nlev-debug_k,1),min(debug_c,nchem),0),&
@@ -143,7 +143,7 @@ character(len=18) file
 
   do k=1,nchem
     do ilev=1,nlev
-      call spectral_filter(ilev,k,KTRUNC)
+      call spectral_filter(ilev,k)!,KTRUNC)
       do j=1,nyex
         do i=1,nxex
           if(stddev(i,j,ilev,k).le.0e0)then

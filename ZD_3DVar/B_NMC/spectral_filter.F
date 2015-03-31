@@ -15,20 +15,18 @@ C
 C
 C
 C---- Comment End ---------------------------------
-      subroutine spectral_filter(ilev,k,ktrunc)
+      subroutine spectral_filter(ilev,k)!,ktrunc)
       use spectralcov
       implicit none
 
 c     input:
       integer ilev,k
-      real ktrunc
+!     real ktrunc
 
 c     local variables:
       complex c(nxex,nyex)
       integer m,n,ik,iostat,lenwork,n0,i,j!,m1,n1
       real work(2*nxex*nyex),avg
-
-! #     include "DATAASSIM.INC"
 
       if(ilev.eq.1.and.k.eq.1) print *,'ktrunc:',ktrunc
 

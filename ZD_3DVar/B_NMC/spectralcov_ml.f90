@@ -9,6 +9,11 @@ implicit none
  real, parameter :: DAPREC=1e0/2**22      ! 2**-22=2.38e-07 1/real4 wont't overflow
 !real, parameter :: DAPREC=1e0/2**24      ! 2**-24=5.96e-08 real4 precission
 !real, parameter :: DAPREC=PPT*FGSCALE_INV! v2708 (unrealistic)
+ real, parameter :: DKSTAR=3e0            ! original MATCH
+!real, parameter :: DKSTAR=4.5            ! test
+ real, parameter :: KTRUNC=0e0            ! original MATCH: average all k*
+!real, parameter :: KTRUNC=DKSTAR*077.5   ! test: filter 1/2 k*
+!real, parameter :: KTRUNC=DKSTAR*155.5   ! test: no filter/average
 
 integer, save :: nchem,nchemobs,nchemnoobs,nx,ny,nlev
 integer, save :: nex,nxex,nyex,nbg1,nv1
@@ -353,11 +358,9 @@ implicit none
 integer m,n,ntrunc!,Kx,Ky,Kxmin,Kymin
 !real theta(nxex*nyex+1)
 integer m1,n1,ik!,i,j,k,l,l1,j1,j0
-real rkstar, dkstar,kstar_min
+real :: rkstar, kstar_min
 
-  dkstar=3e0
   call spec_allocate()
-
 !-----------------------------------------------------------------------
 ! convert Fourier indices mm=1,...,Kx' to m=-Kxmin,...,Kx
 !-----------------------------------------------------------------------
@@ -417,10 +420,6 @@ real rkstar, dkstar,kstar_min
 ! kstar_min=nex*sqrt(1e0/float(Kx)**2+1e0/float(Ky)**2)
 
   Nkstar=-9999
-
-! do ik=1,nex
-!   Nstar(ik)=0
-! enddo
   Nstar(:)=0
 
 !-----------------------------------------------------------------------

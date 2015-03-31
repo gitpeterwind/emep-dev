@@ -2,6 +2,7 @@
 #define STRING(x) STRING2(x)
 #define HERE(MSG) MSG//" ("//__FILE__//":"//STRING(__LINE__)//")."
 module covmat_ml
+use ModelConstants_ml,only: MasterProc
 use Par_ml,           only: me
 use DA_ml,            only: debug=>DA_DEBUG,dafmt=>da_fmt_msg,damsg=>da_msg
 use CheckStop_ml,     only: CheckStop
@@ -54,7 +55,7 @@ integer :: ierr,nvar
   if(allocated(ichemNoObs))then
     call CheckStop(size(ichemNoObs)/=nchemNoObs,HERE('Wrong size ichemNoObs'))
   elseif(nchemNoObs==0) then
-    print dafmt,'WARNING nchemNoObs==0'
+    if(MasterProc)print dafmt,'WARNING nchemNoObs==0'
   else
     allocate(ichemNoObs(nchemNoObs),stat=ierr)
     call CheckStop(ierr,HERE('Allocate ICHEMNOOBS'))
@@ -75,7 +76,6 @@ integer :: ierr,nvar
   enddo
 end subroutine set_chemobs_idx
 subroutine allocate_covmat(nex,nlev,nkstar,selective)
-implicit none
 integer, intent(in) :: nex,nlev,nkstar
 logical, optional :: selective
 integer :: ierr
@@ -105,11 +105,8 @@ subroutine update_covmat(nxex,nyex,nlev,nconcmlp,nchem,nttot,&
 ! horizontal isotropy
 ! @author M.Kahnert
 !-----------------------------------------------------------------------
-  implicit none
-  integer nxex,nyex,nlev,nconcmlp,nchem,nttot!,nex,nkstar
- !integer nstar(nex),nmin(nxex),nmax(nxex),ikstar(nxex,nyex)
-  real concmlp(nxex,nyex,nlev,nconcmlp,nchem)!,w(nxex*nyex,nex)
- !integer mt(nex,nex),nt(nex,nex)
+  integer nxex,nyex,nlev,nconcmlp,nchem,nttot
+  real concmlp(nxex,nyex,nlev,nconcmlp,nchem)
 
   integer m,n,l1,l2,k1,k2,kk1,kk2,ir,ii,ik,ibox,jbox,i
   integer bindex,bidx
@@ -163,18 +160,15 @@ subroutine update_unobs_covmat(nxex,nyex,nlev,nconcmlp,nchem,concmlp)
 ! the cross-covariances between observed and unobserved species
 ! @author M Kahnert
 !-----------------------------------------------------------------------
-  implicit none
-  integer nxex,nyex,nlev,nconcmlp,nchem!,nex,nkstar
- !integer nstar(nex),nmin(nxex),nmax(nxex)
-  real concmlp(nxex,nyex,nlev,nconcmlp,nchem)!,w(nxex*nyex,nex)
- !integer mt(nex,nex),nt(nex,nex)
+  integer nxex,nyex,nlev,nconcmlp,nchem
+  real concmlp(nxex,nyex,nlev,nconcmlp,nchem)
 
   integer m,n,l1,l2,k1,k2,kk1,kk2,ir,ii,ik,ibox,jbox,i
  !integer bindex,bidx
   real dc!,denom,num
 
   if(nchemnoobs<1)then
-    print dafmt,'WARNING no unobserved to update'
+    if(MasterProc)print dafmt,'WARNING no unobserved to update'
     return
   endif
 
@@ -214,8 +208,6 @@ subroutine write_stat(nex,nxex,nyex,nlev,gamma,avgstddev)
 ! Write various statistical functions and fields to file
 ! @author M Kahnert
 !-----------------------------------------------------------------------
-  implicit none
-
   character(len=*), parameter :: &
     FMT1001="(17e15.4)",&   !"(18e15.4)"
     FMT1002="(22e15.4)",&
@@ -223,19 +215,17 @@ subroutine write_stat(nex,nxex,nyex,nlev,gamma,avgstddev)
     FMT1004="(18e15.4)",&   !"(19e15.4)"
     FMT1005="(i4,17e15.4)"  !"(i4,18e15.4)"
 
-  integer nex,nxex,nyex,nlev!,nkstar
-  real gamma(nlev*nchemobs,nex),avgstddev(nlev,nchemobs)!,kstar(nex)
- !integer ikstar(nxex,nyex)
+  integer :: nex,nxex,nyex,nlev!,nkstar
+  real :: gamma(nlev*nchemobs,nex),avgstddev(nlev,nchemobs)!,kstar(nex)
 
-  integer ik,l,k,kk,m,n,ibox,jbox,lref
-  real pi,vcorr(nlev),ccorr(nchemobs),num,denom,lscale(nchemobs)
-  real sps,PS(nlev,nchemobs,nex),rdim
-  character*(19) file
+  integer :: ik,l,k,kk,m,n,ibox,jbox,lref,ib,jb
+  real :: pi,vcorr(nlev),ccorr(nchemobs),num,denom,lscale(nchemobs)
+  real :: sps,PS(nlev,nchemobs,nex),rdim
+  character(len=19) :: file=""
 
   integer bindex,bidx
   bindex(m,n)=m+((n-1)*(2*nlev*nchemobs-n))/2
   pi=acos(-1e0)
-
 !-----------------------------------------------------------------------
 ! power spectra of spectral densities of horizontal
 ! correlation functions, normalised to unity:
@@ -300,7 +290,7 @@ subroutine write_stat(nex,nxex,nyex,nlev,gamma,avgstddev)
 !-------
 
   open(10,file='vertical_corr.dat')
-  write(10,*)'vertical correlation wrt reference level l=',lref
+  write(10,*)'vertical covariance wrt reference level l=',lref
   write(10,*)'as a function of wavenumber'
   write(10,*)'(one column for each level, one row for each kstar,'
   write(10,*)'one table for each species)'
@@ -330,7 +320,6 @@ subroutine write_stat(nex,nxex,nyex,nlev,gamma,avgstddev)
 !-----------------------------------------------------------------------
 ! write correlations at different levels (one file for each wavenumber):
 !-------
-
   do ik=1,nkstar
     if(ik.gt.99999)then
       print*,'ERROR: ik too large'
@@ -339,7 +328,7 @@ subroutine write_stat(nex,nxex,nyex,nlev,gamma,avgstddev)
 
     write (file,'(a,"_",i5.5,".",a)')"chem_corr",ik,"dat"
     open(10,file=file)
-    write(10,*)'chemical correlation at k=',kstar(ik)
+    write(10,*)'chemical covariance at k=',kstar(ik)
     write(10,*)'(one matrix for each level)'
 
     do l=1,nlev
@@ -363,6 +352,32 @@ subroutine write_stat(nex,nxex,nyex,nlev,gamma,avgstddev)
     enddo
     close(10)
   enddo
+!-----------------------------------------------------------------------
+! write covmat matrix
+!-----------------------------------------------------------------------
+  open(10,file='chem_corr_matrix.dat')
+  write(10,*)'chemical correlations (nchemobs*nlev)x(nchemobs*nlev)'
+  do ik=1,nkstar
+    write(10,*)'k=',kstar(ik)
+    do ibox=1,nchemobs*nlev
+      do k=1,nchemobs
+        do l=1,nlev
+          jbox=(k-1)*nlev+l
+          !covmat only contains the lower triangle => use symmetry of matrix:
+          if(jbox>=ibox)then
+            bidx=bindex(jbox,ibox)
+          else
+            bidx=bindex(ibox,jbox)
+          endif
+          ib=bindex(ibox,ibox)
+          jb=bindex(jbox,jbox)
+          vcorr(l)=covmat(bidx,ik)/sqrt(covmat(ib,ik)*covmat(jb,ik))
+        enddo
+        write(10,FMT1002)(vcorr(l),l=1,nlev)
+      enddo
+    enddo
+  enddo
+  close(10)
 !-----------------------------------------------------------------------
 ! write horizontal length scales as a function of altitude:
 !-----------------------------------------------------------------------
@@ -405,18 +420,12 @@ subroutine normalise_covmat(nxex,nyex,nlev,nttot)
 ! matrix by use of the spectral densities of horizontal error correlations
 ! @author M Kahnert
 !-----------------------------------------------------------------------
-  implicit none
-
   integer nxex,nyex,nlev,nttot!,nex,nkstar
- !real kstar(nex)
- !integer ikstar(nxex,nyex),nstar(nex)
-
   integer ik,l,k,m,n,ibox,jbox
   real g,twopi!,gamma(nlev*nchemobs,nex),avgstddev(nlev,nchemobs)
   real, allocatable :: gamma(:,:),avgstddev(:,:)
 
   integer bindex,bidx
- !character(len=18) :: file
 
   bindex(m,n)=m+((n-1)*(2*nlev*nchemobs-n))/2
   twopi=2e0*acos(-1e0)
@@ -497,18 +506,10 @@ subroutine write_covmat(nbg,nv,ik,vt,lambda)
 ! parameters to output files
 ! @author M Kahnert
 !-----------------------------------------------------------------------
-  implicit none
-
   integer ik,nbg,nv!,nex,nxex,nyex
- !real kstar(nex)
   real vt(nbg,nv),lambda(nv)
- !integer ikstar(nxex,nyex),nkstar
-
   integer :: k,nvpos,nvneg,nv01,nv02,nv05,nv10!,i,j
   character(len=18) :: file
-
-! #     include "MPP.INC"
-
 !-----------------------------------------------------------------------
 ! Diagnostics of the diagonalisation of the covariance matrix:
 !-----------------------------------------------------------------------
@@ -587,12 +588,7 @@ subroutine diagonalise_covmat(nex,nxex,nyex,nx,ny,nlev,nchem,nkstar,nstarmax)
 ! @author M Kahnert
 !-----------------------------------------------------------------------
   integer :: nex,nxex,nyex,nx,ny,nlev,nchem,nkstar,nstarmax
- !real kstar(nex)
- !integer ikstar(nxex,nyex),nstarmax
-
-! real vt(nlev*nchemobs,nv),lambda(nv)
-! real accu,work(8*nlev*nchemobs)
-! integer iw(5*nlev*nchemobs),ifail(nv),il,iu,nfound,ik,iostat
+  logical :: ierrN=.false.,ierrP=.false.
   integer, allocatable :: ifail(:)
   real, allocatable :: vt(:,:),lambda(:)
 #ifdef MKL
@@ -644,7 +640,6 @@ subroutine diagonalise_covmat(nex,nxex,nyex,nx,ny,nlev,nchem,nkstar,nstarmax)
    !where(abs(lambda)<1e-15)lambda=0.0!accu/2
     lambda=ANINT(lambda/(accu*0.5))*accu*0.5  ! <-- NEEDED? -- 2011-11-23
    !lambda=ANINT(lambda*1d15)*1d-15
-   !lambda=lambda*PPB ! <-- ERROR -- 2011-11-22
     if((nfound<nv).or.(iostat>0))then
       if(nfound<nv)&
       print *,"WARNING: only",nfound,"eigenvalues converged"
@@ -652,8 +647,8 @@ subroutine diagonalise_covmat(nex,nxex,nyex,nx,ny,nlev,nchem,nkstar,nstarmax)
       print *,"WARNING:",iostat,"eigenvectors failed to converge:",ifail(1:iostat)
       print *,"TRY TO REDUCEING 'nv' to",minval((/nv,nfound,nv-iostat/))
     endif
-    call CheckStop(iostat<0,HERE("spevx, i-th argument had an illegal value"))
-    call CheckStop(iostat>0,HERE("spevx, i eigenvectors failed to converge"))
+    ierrN=ierrN.or.(iostat<0)
+    ierrP=ierrP.or.(iostat>0)
 !-----------------------------------------------
 !     Write output files and diagnostics
 !-----------------------------------------------
@@ -666,6 +661,8 @@ subroutine diagonalise_covmat(nex,nxex,nyex,nx,ny,nlev,nchem,nkstar,nstarmax)
   open(12,file='dim.tmp')
   write(12,*)nex,nxex,nyex,nbg,nv,nx,ny,nlev,nchem,nchemobs,nstarmax
   close(12)
+  call CheckStop(ierrN,HERE("spevx, i-th argument had an illegal value"))
+  call CheckStop(ierrP,HERE("spevx, i eigenvectors failed to converge"))
 endsubroutine diagonalise_covmat
 subroutine read_speccov
 !-----------------------------------------------------------------------
@@ -680,8 +677,6 @@ subroutine read_speccov
 !   vt:
 ! @author AMVB
 !-----------------------------------------------------------------------
-  implicit none
-
   integer :: i,j,k,ik,ierr
   real, allocatable :: sq0(:),vt0(:,:)
   character(len=18) file
