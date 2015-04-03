@@ -120,6 +120,7 @@ $txtrcfunc = "\n  use ChemFunctions_ml       ! => kaero, RiemerN2O5\n" ; #ESX if
 #printall ("TXTRCFUNC needed? $nrcfunc   TXT:$txtrcfunc");
 my %UsedVariables = (
    $rct    => " $txtrcfunc
+!SOON:  use AeroFunctions     ! => UpdakeRate, cMolSpeed
   use Setup_1dfields_ml ! => tinv, h2o, m, Fgas
   use Setup_1dfields_ml, m=> amk
   use ChemSpecs_tot_ml  ! => PINALD, .... for FgasJ08
@@ -1188,22 +1189,13 @@ sub print_rates {
 	#ESX if ( $rctype =~ /misc/ && $nrctroe > 0 ) {
 	if ( $nrctroe > 0 ) {
 		print F  "     real, dimension(KCHEMTOP:KMAX_MID) :: log300divt, logtdiv300\n";
-		print F  "!     real, dimension(KCHEMTOP:KMAX_MID) :: BranchingNO\n";
-		print F  "!     real, dimension(KCHEMTOP:KMAX_MID) :: BranchingHO2\n";
 		print F  "     logical,save::first_call=.true.\n";
 		print F  "     if(first_call)then\n";
 		print F  "       allocate($defrc($Nrctype,$Krange))\n";
-		print F  "     endif	\n";
+		print F  "       $defrc=0.0\n";
+		print F  "     endif\n";
 		print F  "       log300divt(:) = log(300.0*tinv(:))\n";
 		print F  "       logtdiv300(:) = log(temp(:)/300.0)\n";
-		print F  "!       BranchingNO(:) = 1.0e-11*xn_2d(NO,:)/ &
-                !( 1.0e-11*xn_2d(NO,:) + 4.2e-12*exp(180*TINV(:))*xn_2d(HO2,:) )\n";
-		print F  "!       BranchingHO2(:) = 1.0 - BranchingNO(:)\n\n";
-#		print F  "       if ( DEBUG_RUNCHEM .and. DebugCell ) &
-#         write(*,"(a,9es12.3)") "BRANCHING RCMISC", &
-#                xn_2d(NO,KMAX_MID), xn_2d(HO2,KMAX_MID), &
-#                BranchingNO(KMAX_MID),  BranchingHO2(KMAX_MID)
-     
 
 	}
 

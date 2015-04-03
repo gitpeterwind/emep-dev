@@ -59,6 +59,8 @@ type, public :: emep_useconfig
     ,MINCONC          = .false. &! Experimental. To avoid problems with miniscule numbers
     ,ESX              = .false. &! Uses ESX
     ,EMIS             = .false. &! Uses ESX
+    ,GRIDDED_EMIS_MONTHLY_FACTOR = .false. & ! .true. triggers ECLIPSE monthly factors
+    ,DEGREEDAY_FACTORS = .false.    &!
     ,EMISSTACKS       = F       &!
     ,PFT_MAPS         = .false.  ! Future option
 
@@ -92,8 +94,10 @@ type, public :: emep_debug
     ,PHYCHEM         = .false. &
     ,RUNCHEM         = .false. & ! DEBUG%RUNCHEM is SPECIAL
        ,MY_WETDEP    = .false. &
+    ,SEASALT         = .false. &
     ,SETUP_1DCHEM    = .false. &
     ,SETUP_1DBIO     = .false. &
+    ,SITES           = .false. &
     ,SOLVER          = .false. &
     ,SOA             = .false. &
     ,STOFLUX         = .false. 
@@ -123,8 +127,6 @@ type(emep_debug), public, save :: DEBUG
 logical, public, save ::             &
   FORECAST              = .false.    &! reset in namelist
  ,USE_SOILWATER         = .false.    &!
- ,USE_DEGREEDAY_FACTORS = .false.    &!
- ,USE_GRIDDED_EMIS_MONTHLY_FACTOR = .false. &
  ,USE_SEASALT           = .true.     & !
  ,USE_CONVECTION        = .false.    & ! false works best for Euro runs,
 !
@@ -399,13 +401,11 @@ logical, public, save ::  DebugCell  = .false.
 !MV  ,DEBUG_RUNCHEM        = .false. & ! DEBUG_RUNCHEM is SPECIAL
     ,DEBUG_DUST           = .false. & ! Skips fast chemistry to save some CPU
     ,DEBUG_ROADDUST     = .false. &
-    ,DEBUG_SEASALT      = .false. &
     ,DEBUG_SOA          = .false. &
     ,DEBUG_SUBMET         = .false. &
     ,DEBUG_WETDEP       = .false. &
   ,DEBUG_RSUR           = .false. &
   ,DEBUG_RB             = .false. &
-  ,DEBUG_SITES          = .false. &
   ,DEBUG_SOILWATER      = .false. &
   ,DEBUG_SOILNOX        = .false. &
   ,DEBUG_VOLC           = .false. & ! Volcanoes
@@ -568,7 +568,7 @@ subroutine Config_ModelConstants(iolog)
      ,AERO   & ! Aerosol settings
      ,DEBUG  & !
      ,MY_OUTPUTS  &  ! e.g. EMEPSTD, FORECAST, TFMM 
-     ,USE_SOILWATER, USE_DEGREEDAY_FACTORS &
+     ,USE_SOILWATER &
      ,USE_CONVECTION &
      ,USE_AIRCRAFT_EMIS,USE_LIGHTNING_EMIS  &  
      ,USE_ROADDUST, USE_DUST &

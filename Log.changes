@@ -153,12 +153,49 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+3rd April 2015  Dave 2976-2977
+- small preparations for new aerosol system
+
+config_EMEPGLOB.nml - NEW
+- defines settings for global runs, which typically differ from EECCA runs, 
+  eg PFT_MAPS, GRIDDED_MONTHLY_FACTOR
+  Needs care with emissions settings! This version uses emislist.
+
+NumberConstants - NEW (from ESX)
+-  defines UNDEF_R, UNDEF_I which can be used in initialisations
+
+OwnDataTypes 
+- now uses NumberConstants to get UNDEF_R, UNDEF_I
+
+Makefiles.SRC
+- added NumberConstants
+
+ModelConstants, Emissions_ml, TimeFactors_ml, config_XXXX
+- Changed USE_DEGREEDAY_FACTORS, USE_GRIDDED_MONTHLY_FACTOR to USES% system, so
+  now in config
+ 
+SeaSalt_ml
+- uses DEBUG%SEASALT instead of DEBUG_SEASALT
+
+Setup_1d_ml
+- Added isnan test on 1st call to set_rct_rates (suggested by Peter)
+- Also added cleaner debug_flag system, isnan on NO2, and removed IXADV_ + NSPEC_SHL usage
+
+Sites_ml
+- reduced outputs to MasterProc
+
+GenChem.pl
+- added safety setting of rct to zero
+- removed unused Branching statements
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 31th March 2015 Alvaro, Arjo 2974,2975
 
 run.pl:
 - Use $CDF_EMIS as the file to be used for "CdfFractions",
   instead of relying on commented/uncommented sections of the script.
 - Link "CdfFractions" file for MACC14 emissions.
+- Small clean-up - suggest deletion of emis_, but much more needed.
 
 Functions_ml:
 - optional arguments to norm_* functions available trough norm interface:

@@ -20,7 +20,7 @@
 ##PBS -lnodes=80
 #PBS -lnodes=2:ppn=20
 # Wall time limit of run
-#PBS -lwalltime=00:20:00
+#PBS -lwalltime=07:20:00
 # Make results readable for others:
 #PBS -W umask=0022
 # Account for billing
@@ -118,7 +118,7 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
-($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2975"   ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA","EMEP");
+($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2976"   ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
 
 my $KEEP_LINKS=0; # do not cleanup links
 my %BENCHMARK;
@@ -126,7 +126,8 @@ my %BENCHMARK;
 #  %BENCHMARK = (grid=>"EMEP"  ,year=>2005,emis=>"Modrun07/OpenSourceEmis"           ,chem=>"EmChem03");
 # Dave's preference for EMEP:
 #  %BENCHMARK = (grid=>"EMEP"  ,year=>2006,emis=>"Modrun10/EMEP_trend_2000-2008/2006",chem=>"EmChem09");
-# EECCA Default: %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun11/EMEP_trend_2000-2009/2008",chem=>"EmChem09soa",make=>"EMEP");
+# EECCA Default:
+%BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun11/EMEP_trend_2000-2009/2008",chem=>"EmChem09soa",make=>"EMEP");
 # Status Runs:
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2007,emis=>"Modrun09/2009-Trend2007-CEIP") ;
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun10/2010-Trend2008_CEIP");
@@ -219,7 +220,7 @@ if ($CWF) {
 #  --- Here, the main changeable parameters are given. The variables
 #      are explained below, and derived variables set later.-
 
-my $year = "2010";
+my $year = "2012";
    $year = substr($CWFBASE,0,4) if $CWF;
    $year = $BENCHMARK{"year"} if %BENCHMARK;
 ( my $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
@@ -430,8 +431,8 @@ given($GRID){
 }
 #TMP and should be improved because it gives errors for other domains!
 #.. For using emissions of EC/OC instead of PMx
-my $RFEmisDir  = "/global/work/$SVETLANA/Data_RF";  # Split-Fraction files for EC/OC
-my $TNOemisDir = "/global/work/$SVETLANA/Emis_TNO"; # TNO EC/OC emissions
+#DEL? my $RFEmisDir  = "/global/work/$SVETLANA/Data_RF";  # Split-Fraction files for EC/OC
+#DEL? my $TNOemisDir = "/global/work/$SVETLANA/Emis_TNO"; # TNO EC/OC emissions
 #$emisdir = $TNOemisDir if $EUCAARI;
 
 given($GRID){
@@ -935,19 +936,14 @@ unless($MAKEMODE=~/EVA/){
 #For dust: clay and sand fractions
   $ifile{"$DataDir/Soil_Tegen.nc"} ="Soil_Tegen.nc";
 
-  $ifile{"$DataDir/sondesLL.dat"} = "sondes.dat";
-  $ifile{"$DataDir/sitesLL.dat"} = "sites.dat";
-  #DS RCA:$ifile{"$MyDataDir/sondesLLBC.dat"} = "sondes.dat";
-  # Extended to get isoprene, HCHO EC, OC /(huge list!)
-  #$ifile{"$MyDataDir/sitesCPM_ds.dat"} = "sites.dat";
+  #$ifile{"$DataDir/sondesLL.dat"} = "sondes.dat";
+  #$ifile{"$DataDir/sitesLL.dat"} = "sites.dat";
+  $ifile{"$MyDataDir/sondesLL_Aerocom2.dat"} = "sondes.dat";
+  $ifile{"$MyDataDir/sitesLL_Aerocom2.dat"} = "sites.dat";
 
   #LPS: point sources can  be added if needed.
-  $ifile{"$MyDataDir/PointSources.txt"} = "PointSources.txt" 
-   if(-e "$MyDataDir/PointSources.txt");
-
-  #ECLGLOB: point sources can  be added if needed.
-  $ifile{"$MyDataDir/PointSources.txt"} = "PointSources.txt" 
-   if(-e "$MyDataDir/PointSources.txt");
+  #$ifile{"$MyDataDir/PointSources.txt"} = "PointSources.txt" 
+  # if(-e "$MyDataDir/PointSources.txt");
 
 # DEGREE DAYS (Tbase set above, either 18 or 20):
   unless ($CWF or ($GRID eq "MACC14") or ($GRID eq "RCA") or ($GRID eq "GLOBAL")) {

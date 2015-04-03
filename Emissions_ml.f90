@@ -63,8 +63,7 @@ use ModelConstants_ml,only: &
     INERIS_SNAP2 , &    ! INERIS/TFMM HDD20 method
     DEBUG, MYDEBUG => DEBUG_EMISSIONS,  MasterProc, & 
     DEBUG_SOILNOX, DEBUG_EMISTIMEFACS, DEBUG_ROADDUST, &
-    USE_DEGREEDAY_FACTORS,USE_GRIDDED_EMIS_MONTHLY_FACTOR, & 
-    USES,  &  ! Gives USES%EMISSTACKS, & ! MKPS
+    USES,  &  ! Gives USES%EMISSTACKS, DEGREEDAY_FACTORS,GRIDDED_EMIS_MONTHLY_FACTOR
     SEAFIX_GEA_NEEDED, & ! see below
     USE_LIGHTNING_EMIS,USE_AIRCRAFT_EMIS,USE_ROADDUST, &
     USE_EURO_SOILNOX, USE_GLOBAL_SOILNOX, EURO_SOILNOX_DEPSCALE! one or the other
@@ -287,7 +286,7 @@ subroutine Emissions(year)
   !=========================
   ios = 0
 
-  if(USE_DEGREEDAY_FACTORS) call DegreeDayFactors(0)! See if we have gridded SNAP-2
+  if(USES%DEGREEDAY_FACTORS) call DegreeDayFactors(0)! See if we have gridded SNAP-2
 
   call EmisHeights()     ! vertical emissions profile
   KEMISTOP = KMAX_MID - nemis_kprofile + 1
@@ -296,7 +295,7 @@ subroutine Emissions(year)
 
   if(MasterProc) then   !::::::: ALL READ-INS DONE IN HOST PROCESSOR ::::
     write(*,*) "Reading monthly and daily timefactors"
-    if(USE_GRIDDED_EMIS_MONTHLY_FACTOR)then
+    if(USES%GRIDDED_EMIS_MONTHLY_FACTOR)then
        write(*,*)"Emissions using gridded monhtly timefactors "
        write(IO_LOG,*)"Emissions using gridded monhtly timefactors "       
     endif
@@ -1005,7 +1004,7 @@ endsubroutine consistency_check
     if(indate%day/=oldday)then
       !==========================
       call NewDayFactors(indate)
-      if(USE_DEGREEDAY_FACTORS) call DegreeDayFactors(daynumber) ! => fac_emm, fac_edd
+      if(USES%DEGREEDAY_FACTORS) call DegreeDayFactors(daynumber) ! => fac_emm, fac_edd
       !==========================
       ! for ROADDUST
       wday=day_of_week(indate%year,indate%month,indate%day)
@@ -1094,12 +1093,12 @@ endsubroutine consistency_check
               if(debug_tfac.and.iem==1) &
                 write(*,"(a,2i4,f8.3)")"EmisSet DAY TFAC:",isec,hour_iland,tfac
   
-!it is best to multiply only if USE_GRIDDED_EMIS_MONTHLY_FACTOR
+!it is best to multiply only if USES%GRIDDED_EMIS_MONTHLY_FACTOR
 !in order not to access the array and waste cache if not necessary
-              if(USE_GRIDDED_EMIS_MONTHLY_FACTOR)tfac=tfac* GridTfac(i,j,isec,iem)
+              if(USES%GRIDDED_EMIS_MONTHLY_FACTOR)tfac=tfac* GridTfac(i,j,isec,iem)
 
               !Degree days - only SNAP-2 
-              if(USE_DEGREEDAY_FACTORS .and. &
+              if(USES%DEGREEDAY_FACTORS .and. &
                  isec==ISNAP_DOM .and. Gridded_SNAP2_Factors) then
                 oldtfac = tfac
                 ! If INERIS_SNAP2  set, the fac_min will be zero, otherwise
@@ -1342,7 +1341,7 @@ subroutine newmonth
     allocate(airn(KCHEMTOP:KMAX_MID,MAXLIMAX,MAXLJMAX))
         
 
-  if(USE_GRIDDED_EMIS_MONTHLY_FACTOR)then
+  if(USES%GRIDDED_EMIS_MONTHLY_FACTOR)then
      call Read_monthly_emis_grid_fac(current_date%month)
   endif
 

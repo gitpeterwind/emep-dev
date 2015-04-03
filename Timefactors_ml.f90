@@ -62,7 +62,7 @@
   use Met_ml,       only : Getmeteofield
   use ModelConstants_ml, only : MasterProc, DEBUG => DEBUG_EMISTIMEFACS
   use ModelConstants_ml, only : IIFULLDOM, JJFULLDOM
-  use ModelConstants_ml, only : iyr_trend ,USE_GRIDDED_EMIS_MONTHLY_FACTOR 
+  use ModelConstants_ml, only : iyr_trend ,USES  ! for GRIDDED_EMIS_MONTHLY_FACTOR 
   use ModelConstants_ml, only : INERIS_SNAP1, INERIS_SNAP2
   use NetCDF_ml,    only : GetCDF , ReadField_CDF
   use Par_ml,       only : MAXLIMAX,MAXLJMAX, me, li0, lj0, li1, lj1
@@ -172,7 +172,7 @@ contains
    fac_emm(:,:,:,:) = 1.0
    fac_min(:,:,:) = 1.0
 
-   if(.not. USE_GRIDDED_EMIS_MONTHLY_FACTOR)then
+   if(.not. USES%GRIDDED_EMIS_MONTHLY_FACTOR)then
 
 !  #################################
 !  1) Read in Monthly factors, and determine min value (for baseload)
@@ -361,7 +361,7 @@ contains
   write(unit=6,fmt="(a,I6,a,I5)")" Time factors normalisation: ",nydays,' days in ',year 
 
   
-   if(USE_GRIDDED_EMIS_MONTHLY_FACTOR)then
+   if(USES%GRIDDED_EMIS_MONTHLY_FACTOR)then
       write(*,*)'Normalizing monthly emission time factors'
       fac_emm=1.0
       !enforce a constant integral of daily timefactors over each month
@@ -426,7 +426,7 @@ contains
 
              sumfac = real(nydays)/sumfac    
 
-             if(USE_GRIDDED_EMIS_MONTHLY_FACTOR)then
+             if(USES%GRIDDED_EMIS_MONTHLY_FACTOR)then
                 ! should already almost be normalized (almost, because there is still some 
                 ! variation left due to the differences occuring when week-ends are in the 
                 ! middle or end of the month (linear_interpolation*day_factor is not linear)

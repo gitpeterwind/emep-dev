@@ -10,24 +10,25 @@
 !USES system started June 2013
 ! Only partially implemented. See below and ModelConstants_ml
   USES%testname         = 'EMEPSTD',
-  USES%FOREST_FIRES     = T,
+  USES%FOREST_FIRES     = T, 
   USES%EMISSTACKS       = F,         ! Reads PointSources file
-  USES%DEGREEDAY_FACTORS = T,
+  USES%DEGREEDAY_FACTORS = F,
+  USES%GRIDDED_EMIS_MONTHLY_FACTOR = T, !
   USES%PlumeMethod      = 'PVDI',    ! default PVDI, possible: NILU, ASMI, PVDI
   USES%PFT_MAPS         = T,         ! PFT LAI tests
 !------------------------------
   USE_SOILWATER         = T,          ! Uses SMI from meteo data
-  USE_CONVECTION        = F,
+  USE_CONVECTION        = T,
   USE_SEASALT           = T,
   USE_AIRCRAFT_EMIS     = T,          ! Needs global file, see manual
   USE_LIGHTNING_EMIS    = T,          ! 
 !------------------------------
-  USE_EURO_SOILNOX      = T,          ! diff for global + Euro runs
+  USE_EURO_SOILNOX      = F,          ! diff for global + Euro runs
   EURO_SOILNOX_DEPSCALE = 1.0,        ! Scale, default 1  (see ModelConstants_ml)
-  USE_GLOBAL_SOILNOX    = F,          ! diff for global + Euro runs
+  USE_GLOBAL_SOILNOX    = T,          ! diff for global + Euro runs
 !------------------------------
   USE_POLLEN            = F,          ! EXPERIMENTAL. Only works if start Jan 1
-  USE_ROADDUST          = T,          ! Only EECCA?
+  USE_ROADDUST          = F,          ! Only EECCA?
   USE_DUST              = T,          ! Only EECCA?
   NETCDF_DEFLATE_LEVEL  = 4,          ! 1-9 GZIP compress, 0 no compress, -1 netcdf3
 !-------- Can switch on INERIS-type degreeday stuff
@@ -37,6 +38,7 @@
 !  AERO%EQUILIB          = 'MARS ',      ! MARS, MARS_2900, GEOSCHEM, EQSAM, or EMEP
 !  AERO%NSIZE etc... see ModelConstants
 !------------------------------
+  !EMIS_SOURCE           = 'CdfFractions', ! 'emislist' or 'CdfFractions'
   EMIS_SOURCE           = 'emislist', ! 'emislist' or 'CdfFractions'
   EMIS_TEST             = 'None',     ! 'None' or 'CdfSnap' 
 !------------------------------
@@ -88,15 +90,19 @@
 !
 !DEBUG system started June 2013 -------------------
 ! Only partially implemented. See ModelConstants_ml
+  DEBUG%AEROSOL         = F,
   DEBUG%AOT             = F,
   DEBUG%BIO             = F,   ! BVOC emissions, etc.
+  DEBUG%DERIVED         = F,   ! BVOC emissions, etc.
   DEBUG%FORESTFIRE      = F,
   DEBUG%GLOBBC          = F,
   DEBUG%GRIDVALUES      = F,
   DEBUG%HOURLY_OUTPUTS  = F,
   DEBUG%PHYCHEM         = F,
+  DEBUG%RUNCHEM         = F,
   DEBUG%SETUP_1DBIO     = F,
   DEBUG%SETUP_1DCHEM    = F,
+  DEBUG%SEASALT         = F,
   DEBUG%SOA             = F,
   DEBUG%STOFLUX         = F,
 ! Use integers to control debug level:
@@ -104,6 +110,8 @@
   DEBUG%LANDUSE         = 0,
 ! Specify here the coords and species index (tot, see CM_ChemSpecs_tot)
 !  DEBUG%IJ              = 60, 50      ! Bremen
+!  DEBUG%IJ              = 15, 15      ! sea
+!  DEBUG%IJ              = 186, 113      ! Sahara
   DEBUG%IJ              = 189, 144     ! Bremen, global
   DEBUG%SPEC            = 'OH',
 &end

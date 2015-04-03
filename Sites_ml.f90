@@ -31,7 +31,7 @@ use MetFields_ml,      only : t2_nwp, th, pzpbl  &  ! output with concentrations
                               , z_bnd, z_mid, roa, Kz_m2s, q
 use MetFields_ml,      only : u_xmj, v_xmi, ps
 use ModelConstants_ml, only : NMET,PPBINV,PPTINV, KMAX_MID, MasterProc &
-                              ,KMAX_BND,PT, NPROC, DEBUG => DEBUG_SITES &
+                              ,KMAX_BND,PT, NPROC, DEBUG & ! => DEBUG%SITES &
                               ,DomainName, RUNDOMAIN, IOU_INST, SOURCE_RECEPTOR
 use PhysicalConstants_ml,only: ATWAIR
 use NetCDF_ml,         only : Create_CDF_sondes,Out_CDF_sondes,&
@@ -146,7 +146,7 @@ subroutine sitesdef()
   call set_species(SITE_ADV,SITE_SHL,SITE_XTRA,site_species)
   call set_species(SONDE_ADV,SONDE_SHL,SONDE_XTRA,sonde_species)
 
-  if ( DEBUG ) then
+  if ( DEBUG%SITES ) then
      write(6,*) "sitesdef After nlocal ", nlocal_sites, " on me ", me
      do i = 1, nlocal_sites
        write(6,*) "sitesdef After set_species x,y ", &
@@ -293,7 +293,8 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
       endif
 
       s_name(n)  = s !!! remove comments// comment
-      if (DEBUG) write(6,"(a,i3,i4,a)") "sitesdef s_name : ", me, n, trim(s_name(n))
+      if (DEBUG%SITES.and.MasterProc) write(6,"(a,i4,a)") "sitesdef s_name : ",&
+            n, trim(s_name(n))
     endif
 
   enddo SITELOOP
@@ -323,7 +324,7 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
       s_z(nlocal) = s_gz(n)
       s_n(nlocal) = n
 
-      if (DEBUG) &
+      if (DEBUG%SITES) &
         write(6,"(a,i3,a,2i3,3i4,a,3i4)") "sitesdef Site on me : ", me, &
          " Nos. ", n, nlocal, s_gx(n), s_gy(n) , s_gz(n), " =>  ", &
           s_x(nlocal), s_y(nlocal), s_z(nlocal)
@@ -335,7 +336,7 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
   enddo ! nglobal
 
   ! inform me=0 of local array indices:
-  if(DEBUG) write(6,*) "sitesdef ", fname, " before gc NLOCAL_SITES", &
+  if(DEBUG%SITES) write(6,*) "sitesdef ", fname, " before gc NLOCAL_SITES", &
                            me, nlocal
 
   if ( .not.MasterProc ) then
@@ -343,7 +344,7 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
     if(nlocal>0) call MPI_SEND(s_n, 4*nlocal, MPI_BYTE, 0, 334, &
                                MPI_COMM_WORLD, INFO)
   else
-    if(DEBUG) write(6,*) "sitesdef for me =0 LOCAL_SITES", me, nlocal
+    if(DEBUG%SITES) write(6,*) "sitesdef for me =0 LOCAL_SITES", me, nlocal
     do n = 1, nlocal
       s_gindex(me,n) = s_n(n)
     enddo
@@ -351,17 +352,17 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
       call MPI_RECV(nloc, 4*1, MPI_BYTE, d, 333, MPI_COMM_WORLD,STATUS, INFO)
       if(nloc>0) call MPI_RECV(s_n_recv, 4*nloc, MPI_BYTE, d, 334, &
                                MPI_COMM_WORLD,STATUS, INFO)
-      if(DEBUG) write(6,*) "sitesdef: recv d ", fname, d,  &
+      if(DEBUG%SITES) write(6,*) "sitesdef: recv d ", fname, d,  &
                   " zzzz nloc : ", nloc, " zzzz me0 nlocal", nlocal
       do n = 1, nloc
         s_gindex(d,n) = s_n_recv(n)
-        if(DEBUG) write(6,*) "sitesdef: for d =", fname, d, &
+        if(DEBUG%SITES) write(6,*) "sitesdef: for d =", fname, d, &
           " nloc = ", nloc, " n: ",  n,  " gives nglob ", s_gindex(d,n)
       enddo ! n
     enddo ! d
   endif ! MasterProc
 
-  if ( DEBUG ) write(6,*) 'sitesdef on me', me, ' = ', nlocal
+  if ( DEBUG%SITES ) write(6,*) 'sitesdef on me', me, ' = ', nlocal
 
 end subroutine Init_sites
 !==================================================================== >
@@ -386,7 +387,7 @@ subroutine siteswrt_surf(xn_adv,cfac,xn_shl)
 
   real,dimension(NOUT_SITE,NSITES_MAX) :: out  ! for output, local node
 
-  if ( DEBUG ) then
+  if ( DEBUG%SITES ) then
     write(6,*) "sitesdef Into surf  nlocal ", nlocal_sites, " on me ", me
     do i = 1, nlocal_sites
       write(6,*) "sitesdef Into surf  x,y ",site_x(i),site_y(i),&
@@ -396,7 +397,8 @@ subroutine siteswrt_surf(xn_adv,cfac,xn_shl)
     if ( MasterProc ) then
       write(6,*) "======= site_gindex ======== sitesdef ============"
       do n = 1, nglobal_sites
-        write(6,'(a12,i4,2x,80(i4,:))') "sitesdef ", n, &
+        !write(6,'(a12,i4,2x,80(i4,:))') "sitesdef ", n, &
+        write(6,'(a12,i4,2x,200i4)') "sitesdef ", n, &
                 (site_gindex(d,n),d=0,NPROC-1)
       enddo
       write(6,*) "======= site_end    ======== sitesdef ============"
@@ -473,7 +475,7 @@ subroutine siteswrt_surf(xn_adv,cfac,xn_shl)
           Spec_Att(i_Att,1)='units:C:'//trim(f_2d(d2index)%unit)
         end if
 
-        if( DEBUG ) &
+        if( DEBUG%SITES ) &
           write(6,"(a,3i3,a,i4,es10.3)") "DEBUG ", me, nn, i,&
             trim(d2code), d2index, out(nn,i)
         call CheckStop( abs(out(nn,i))>1.0e99, &
@@ -874,7 +876,7 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
         call MPI_SEND(ps_sonde, 8*nlocal, MPI_BYTE, 0, 347, MPI_COMM_WORLD, INFO)
   else ! MasterProc
     ! first, assign me=0 local data to g_out
-    if ( DEBUG ) print *, "ASSIGNS ME=0 NLOCAL_SITES", me, nlocal
+    if ( DEBUG%SITES ) print *, "ASSIGNS ME=0 NLOCAL_SITES", me, nlocal
 
     do n = 1, nlocal
       nglob = s_gindex(0,n)

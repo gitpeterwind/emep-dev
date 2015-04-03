@@ -1,32 +1,5 @@
-! <SeaSalt_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
-!          Chemical transport Model>
+! <SeaSalt_ml.f90 - A component of the EMEP MSC-W Chemical transport Model>
 !*****************************************************************************! 
-!* 
-!*  Copyright (C) 2007-2012 met.no
-!* 
-!*  Contact information:
-!*  Norwegian Meteorological Institute
-!*  Box 43 Blindern
-!*  0313 OSLO
-!*  NORWAY
-!*  email: emep.mscw@met.no
-!*  http://www.emep.int
-!*  
-!*    This program is free software: you can redistribute it and/or modify
-!*    it under the terms of the GNU General Public License as published by
-!*    the Free Software Foundation, either version 3 of the License, or
-!*    (at your option) any later version.
-!* 
-!*    This program is distributed in the hope that it will be useful,
-!*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-!*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!*    GNU General Public License for more details.
-!* 
-!*    You should have received a copy of the GNU General Public License
-!*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************! 
-!_____________________________________________________________________________
-! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
 
                           module SeaSalt_ml
@@ -45,7 +18,6 @@
 !-----------------------------------------------------------------------------
 
  use Biogenics_ml,         only : EMIS_BioNat, EmisNat  
-!CMR  use ChemChemicals_ml,     only : species
  use ChemSpecs,            only : species
  use GridValues_ml,        only : glat, glon, i_fdom, j_fdom 
  use Io_Progs_ml,          only : PrintLog
@@ -57,7 +29,7 @@
  use MicroMet_ml,          only : Wind_at_h
  use ModelConstants_ml,    only : KMAX_MID, KMAX_BND, &
                                   MasterProc, & 
-                                  DEBUG_SEASALT
+                                  DEBUG   ! -> SEASALT
  use Par_ml,               only : MAXLIMAX,MAXLJMAX   ! => x, y dimensions
  use PhysicalConstants_ml, only : CHARNOCK, AVOG ,PI
  use Setup_1dfields_ml,    only : rcemis 
@@ -128,7 +100,7 @@
     itot_SSFI = find_index( "SEASALT_F", species(:)%name    )
     itot_SSCO = find_index( "SEASALT_C", species(:)%name    )
 
-    if(DEBUG_SEASALT .and. MasterProc ) &
+    if(DEBUG%SEASALT .and. MasterProc ) &
         write(*,*) "SSALT INIT", inat_SSFI, itot_SSFI
 
     if ( inat_SSFI < 1 ) then
@@ -175,7 +147,7 @@
 
        if ( Sub(lu)%is_water ) then
 
-          if(DEBUG_SEASALT .and. debug_flag) then
+          if(DEBUG%SEASALT .and. debug_flag) then
               write(6,'(a,2i4,f8.4,f12.4,3f8.3)') &
                 'SSALT ** Charnock, ustar_nwp, d, Z0, SST ** ',&
                    i_fdom(i), j_fdom(j), & 
@@ -196,7 +168,7 @@
 
          u10_341=exp(log(u10) * (3.41))
 
-         if(DEBUG_SEASALT .and. debug_flag) &
+         if(DEBUG%SEASALT .and. debug_flag) &
              write(6,'(a,L2,4f12.4,es14.4)')'SSALT ** U*, Uref, U10, Uh, invL ** ',&
                foundws10_met, Sub(lu)%ustar, Grid%u_ref, u10, &
                Wind_at_h (Grid%u_ref, Grid%z_ref, Z10, Sub(lu)%d,   &
@@ -229,7 +201,7 @@
 
                total_flux =  total_flux + ss_flux(ii)
 
-               if(DEBUG_SEASALT .and. debug_flag) write(6,'(a20,i5,es13.4)') &
+               if(DEBUG%SEASALT .and. debug_flag) write(6,'(a20,i5,es13.4)') &
                   'SSALT Flux Maarten ->  ',ii, ss_flux(ii)
           enddo
 
@@ -243,11 +215,11 @@
 
                total_flux =  total_flux + ss_flux(ii) 
 
-               if(DEBUG_SEASALT .and. debug_flag) &
+               if(DEBUG%SEASALT .and. debug_flag) &
                    write(6,'(a20,i5,es13.4)') 'SSALT Flux Monah ->  ',ii, ss_flux(jj)
           enddo
 
-         if(DEBUG_SEASALT .and. debug_flag) &
+         if(DEBUG%SEASALT .and. debug_flag) &
                write(6,'(a20,es13.3)') 'SSALT Total SS flux ->  ',  total_flux
 
 
@@ -270,7 +242,7 @@
                  !! ESX SS_prod(QSSFI,i,j) = SS_prod(QSSFI,i,j)   &
                                   + ss_flux(ii) * d3(ii) * n2m   &
                                   * water_fraction(i,j) 
-            if(DEBUG_SEASALT .and. debug_flag) &
+            if(DEBUG%SEASALT .and. debug_flag) &
             write(6,'(a20,i5,2es13.4)') 'SSALT Flux fine ->  ',ii,d3(ii), rcss( iSSFI ) !ESX SS_prod(QSSFI,i,j)
           enddo
 
@@ -280,7 +252,7 @@
                  !!ESX SS_prod(QSSCO,i,j) = SS_prod(QSSCO,i,j)   &
                                   + ss_flux(ii) * d3(ii) * n2m   &
                                   * water_fraction(i,j)
-            if(DEBUG_SEASALT .and. debug_flag) &
+            if(DEBUG%SEASALT .and. debug_flag) &
             write(6,'(a20,i5,2es13.4)') 'SSALT Flux coarse ->  ',ii,d3(ii), rcss( iSSCO ) !ESX SS_prod(QSSCO,i,j)
           enddo
 
@@ -293,7 +265,7 @@
                rcss( iSSCO ) = 0.2 * rcss( iSSCO )
           endif
   
-          if(DEBUG_SEASALT .and. debug_flag) write(6,'(a35,2es15.4)')  &
+          if(DEBUG%SEASALT .and. debug_flag) write(6,'(a35,2es15.4)')  &
              '>> SSALT production fine/coarse  >>', &
                 rcss(  iSSFI ), rcss( iSSCO )
                           

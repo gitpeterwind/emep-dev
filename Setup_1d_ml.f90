@@ -5,7 +5,6 @@ module Setup_1d_ml
 ! fields are stored in the Setup_1dfields_ml module.
 !-----------------------------------------------------------------------!
 
-!FUTURE use NH3variables_ml,only : NNH3 ! hb NH3emis
 use AirEmis_ml,          only: airn, airlig   ! airborne NOx emissions
 use Biogenics_ml,        only: SoilNOx
 use Biogenics_ml,        only: EMIS_BioNat, EmisNat  
@@ -13,7 +12,6 @@ use Chemfields_ml,       only: xn_adv,xn_bgn,xn_shl, &
                                NSPEC_COL, NSPEC_BGN, xn_2d_bgn
 use CheckStop_ml,        only:  CheckStop
 use DerivedFields_ml,          only : d_2d
-                              !FUTURE ,NH3EMIS_VAR ! FUTURE NH3Emis
 use EmisGet_ml,          only:  nrcemis, iqrc2itot  !DSRC added nrcemis
 use Emissions_ml,        only:  gridrcemis, gridrcroadd, SumSplitEmis, KEMISTOP
 use ForestFire_ml,       only: Fire_rcemis, burning
@@ -52,7 +50,6 @@ use Setup_1dfields_ml,   only: &
   ,rcemis               &  ! emission terms
   ,rh, temp, tinv, itemp,pp      &  !
   ,amk, o2, n2, h2o    ! &  ! Air concentrations
-!FUTURE    ,rcnh3                   ! NH3emis
 use SmallUtils_ml,       only: find_index
 use Tabulations_ml,      only: tab_esat_Pa
 use TimeDate_ml,         only: current_date, date
@@ -66,7 +63,6 @@ private
 
 public :: setup_1d   ! Extracts results for i,j column from 3-D fields
 public :: setup_rcemis ! Emissions  (formerly "poll")
-!FUTURE public :: setup_nh3 ! NH3emis   , experimental version
 public :: reset_3d     ! Exports results for i,j column to 3-D fields
 
 ! Indices for the species defined in this routine. Only set if found
@@ -92,11 +88,21 @@ contains
  !
 
     integer, intent(in) :: i,j    ! coordinates of column
+    character(len=9)  :: sub='setup_1d:'
+    character(len=30)  :: fmt="(a,i3,99g12.3)"  ! default format
+    logical :: debug_flag
+    logical, save :: first_call = .true.
+
 
    !** local
 
     integer           :: k, n, ispec    ! loop variables
     real              :: qsat ! saturation water content
+
+    debug_flag =  ( DEBUG%SETUP_1DCHEM .and. debug_proc .and.  &
+      i==debug_li .and. j==debug_lj .and. current_date%seconds == 0 )
+    if( debug_flag ) write(*,*) sub//"====================  "
+
 
     do k = KCHEMTOP, KMAX_MID
 
@@ -146,10 +152,9 @@ contains
    end do ! k
 
 ! Check that concentrations are not "contaminated" with NaN
-   if ( .not.xn_2d(IXADV_NO2+NSPEC_SHL,KMAX_MID)+1>&
-                        xn_2d(IXADV_NO2+NSPEC_SHL,KMAX_MID) ) then
-      print *, "NANAN ", trim(species(IXADV_NO2+NSPEC_SHL)%name)
-   call CheckStop( "Detected non numerical concentrations (NaN)")
+   if ( isnan( xn_2d(NO2,KMAX_MID) ) ) then
+      print *, "NANAN ", trim(species(NO2)%name)
+      call CheckStop( "Detected non numerical concentrations (NaN)")
    end if
 
    o2(:) = 0.21 *amk(:)
@@ -165,17 +170,18 @@ contains
 
    call set_rct_rates()
 
-  if ( DEBUG%SETUP_1DCHEM .and. debug_proc .and.  &
-            i==debug_li .and. j==debug_lj .and. &
-            current_date%seconds == 0 ) then
-      write(*,"(a,10es10.3)") " DEBUG%SETUP_1DCHEM RCT ", &
+   if ( first_call ) then
+     call CheckStop( any(isnan(rct(:,:))), sub//"RCT NAN'd")
+     first_call = .false.
+   end if
+
+  if( debug_flag ) then
+      write(*,"(a,10es10.3)") sub//"RCT ", &
             rct(3,KMAX_MID), rct(4,KMAX_MID)
-      write(*,"(a,10es10.3)") " DEBUG%SETUP_1DCHEM XN  ", &
-        amk(KMAX_MID),  xn_2d(IXADV_O3+NSPEC_SHL,KMAX_MID), &
-          xn_2d(IXADV_NO2+NSPEC_SHL,KMAX_MID)
-      write(*,"(a,10es10.3)") " DEBUG%SETUP_1D-Riemer",&
-        xn_2d(IXADV_SO4+NSPEC_SHL,KMAX_MID) &
-       ,xn_2d(IXADV_NO3_F+NSPEC_SHL,KMAX_MID)
+      write(*,"(a,10es10.3)") sub//"XN  ", &
+        amk(KMAX_MID),  xn_2d(O3,KMAX_MID),  xn_2d(NO2,KMAX_MID)
+      write(*,"(a,10es10.3)") sub//"1D-Riemer", xn_2d(SO4,KMAX_MID),&
+        xn_2d(NO3_F,KMAX_MID)
   end if
 
 

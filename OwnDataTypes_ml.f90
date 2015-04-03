@@ -2,7 +2,9 @@
 !! ***************************************************************************! 
 
 module OwnDataTypes_ml
+use NumberConstants, only : UNDEF_R, UNDEF_I
 implicit none
+private
 
   ! depmap
   ! gtype for species groups, used in CM_ChemSpecs and Derived
@@ -93,9 +95,9 @@ implicit none
     integer :: iotype         ! sets output timing
   endtype
 
- ! Sentinel values
-  real,    private, parameter :: UNDEF_R = -huge(0.0)
-  integer, private, parameter :: UNDEF_I = -huge(0)
+ ! Sentinel values (moved to NumberConstants)
+ ! real,    private, parameter :: UNDEF_R = -huge(0.0)
+ ! integer, private, parameter :: UNDEF_I = -huge(0)
 
   !==================
   !+ Hourly ASCII/NetCDF output type

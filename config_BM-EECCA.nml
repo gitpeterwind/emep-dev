@@ -25,7 +25,7 @@
 !------------------------------
   USE_SOILWATER         = T,          ! Uses SMI from meteo data
   USE_CONVECTION        = F,
-  USE_DEGREEDAY_FACTORS = T,
+  USES%DEGREEDAY_FACTORS = T,
   USE_SEASALT           = T,
   USE_AIRCRAFT_EMIS     = T,          ! Needs global file, see manual
   USE_LIGHTNING_EMIS    = T,          ! 
