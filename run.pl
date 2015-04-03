@@ -936,10 +936,10 @@ unless($MAKEMODE=~/EVA/){
 #For dust: clay and sand fractions
   $ifile{"$DataDir/Soil_Tegen.nc"} ="Soil_Tegen.nc";
 
-  #$ifile{"$DataDir/sondesLL.dat"} = "sondes.dat";
-  #$ifile{"$DataDir/sitesLL.dat"} = "sites.dat";
-  $ifile{"$MyDataDir/sondesLL_Aerocom2.dat"} = "sondes.dat";
-  $ifile{"$MyDataDir/sitesLL_Aerocom2.dat"} = "sites.dat";
+  $ifile{"$DataDir/sondesLL.dat"} = "sondes.dat";
+  $ifile{"$DataDir/sitesLL.dat"} = "sites.dat";
+  #$ifile{"$MyDataDir/sondesLL_Aerocom2.dat"} = "sondes.dat";
+  #$ifile{"$MyDataDir/sitesLL_Aerocom2.dat"} = "sites.dat";
 
   #LPS: point sources can  be added if needed.
   #$ifile{"$MyDataDir/PointSources.txt"} = "PointSources.txt" 

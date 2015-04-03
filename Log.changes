@@ -153,7 +153,7 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-3rd April 2015  Dave 2976-2977
+3rd April 2015  Dave 2976-2978
 - small preparations for new aerosol system
 
 config_EMEPGLOB.nml - NEW
