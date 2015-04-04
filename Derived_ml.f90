@@ -31,6 +31,7 @@ use AOTx_ml,          only: Calc_GridAOTx
 use Biogenics_ml,     only: EmisNat, NEMIS_BioNat, EMIS_BioNat
 use CheckStop_ml,     only: CheckStop
 use Chemfields_ml,    only: xn_adv, xn_shl, cfac,xn_bgn, AOD,  &
+                            SurfArea_um2cm3, &
                             Extin_coeff, PM25_water, PM25_water_rh50
 use ChemGroups_ml     ! SIA_GROUP, PMCO_GROUP -- use tot indices
 use ChemSpecs         ! Use NSPEC_ADV amd any of IXADV_ indices
@@ -48,7 +49,7 @@ use Io_Progs_ml,      only: datewrite
 use MetFields_ml,     only: roa,pzpbl,Kz_m2s,th,zen, ustar_nwp, u_ref,&
                             ws_10m, rh2m, z_bnd, z_mid, ps, t2_nwp, &
                             SoilWater_deep, SoilWater_uppr, Idirect, Idiffuse
-use ModelConstants_ml,only: &
+use ModelConstants_ml, only: &
    KMAX_MID     & ! =>  z dimension (layer number)
   ,KMAX_BND     & ! =>  z dimension (level number)
   ,NPROC        & ! No. processors
@@ -58,7 +59,7 @@ use ModelConstants_ml,only: &
   ,DEBUG        & ! gives DEBUG%AOT
   ,MasterProc &
   ,SOURCE_RECEPTOR &
-  ,AERO         & ! for diam -  aerosol MMD (um)
+  ,AERO         & ! for DpgV (was diam) -  aerosol MMD (um)
   ,USE_EMERGENCY,DEBUG_EMERGENCY &
   ,PT           &
   ,FORECAST     & ! only dayly (and hourly) output on FORECAST mode
@@ -206,12 +207,12 @@ contains
     call Define_Derived()
     call Setups()  ! just for VOC now
 
-    select case(nint(AERO%diam(2)*1e7))
+    select case(nint(AERO%DpgV(2)*1e7))
     case(25);fracPM25=0.37
     case(30);fracPM25=0.27
     endselect
     if(debugMaster) write(*,"(a,2g12.3,i4)") ' CFAC INIT PMFRACTION ', &
-        fracPM25, AERO%diam(2), nint(1.0e7*AERO%diam(2))
+        fracPM25, AERO%DpgV(2), nint(1.0e7*AERO%DpgV(2))
     call CheckStop( fracPM25 < 0.01, "NEED TO SET FRACPM25")
 
   end subroutine Init_Derived
@@ -866,6 +867,28 @@ end do
             forall ( i=1:limax, j=1:ljmax )
               d_2d( n, i,j,IOU_INST) = rh2m(i,j,1)
           end forall
+!GERBER
+          case ( "SurfAreaNSDF_um2cm3" )
+            forall ( i=1:limax, j=1:ljmax )
+              d_2d( n, i,j,IOU_INST) = SurfArea_um2cm3(AERO%NSD_F,i,j)
+          end forall
+          case ( "SurfAreaSSF_um2cm3" )
+            forall ( i=1:limax, j=1:ljmax )
+              d_2d( n, i,j,IOU_INST) = SurfArea_um2cm3(AERO%SS_F,i,j)
+          end forall
+          case ( "SurfAreaSSC_um2cm3" )
+            forall ( i=1:limax, j=1:ljmax )
+              d_2d( n, i,j,IOU_INST) = SurfArea_um2cm3(AERO%SS_C,i,j)
+          end forall
+          case ( "SurfAreaDUF_um2cm3" )
+            forall ( i=1:limax, j=1:ljmax )
+              d_2d( n, i,j,IOU_INST) = SurfArea_um2cm3(AERO%DU_F,i,j)
+          end forall
+          case ( "SurfAreaDUC_um2cm3" )
+            forall ( i=1:limax, j=1:ljmax )
+              d_2d( n, i,j,IOU_INST) = SurfArea_um2cm3(AERO%DU_C,i,j)
+          end forall
+!GERBER
           case ( "u_ref" )
             forall ( i=1:limax, j=1:ljmax )
               d_2d( n, i,j,IOU_INST) = u_ref(i,j)

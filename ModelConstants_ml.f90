@@ -6,6 +6,7 @@ module ModelConstants_ml
  ! the module PhysicalConstants_ml.f90)
  !
  !----------------------------------------------------------------------------
+use Aerofunctions,        only: DpgV2DpgN
 use CheckStop_ml,         only: CheckStop
 use ChemSpecs,            only: species
 use Io_Nums_ml,           only: IO_NML, IO_LOG
@@ -54,6 +55,7 @@ type, public :: emep_useconfig
   character(len=10) :: testname = "STD"
   logical :: &                   ! Forest fire options
      FOREST_FIRES     = .true.  &! 
+    ,SURF_AREA        = .true.  &! For improved aerosol uptake
     ,MACEHEADFIX      = .true.  &! Correction to O3 BCs (Mace Head Obs.)
     ,MACEHEAD_AVG     = .false. &! Uses 10-year avg. Good for e.g. RCA runs.
     ,MINCONC          = .false. &! Experimental. To avoid problems with miniscule numbers
@@ -459,11 +461,20 @@ type, public :: aero_type
   logical          :: DYNAMICS = .false.
   integer          :: NSIZE    = 5
   real, dimension(5) :: &
-     diam = (/ 0.33e-6, 3.0e-6, 4.8e-6, 5.0e-6 ,22e-6 /) &
+!ds   diam = (/ 0.33e-6, 3.0e-6, 4.8e-6, 5.0e-6 ,22e-6 /) & ! to be replaced by 
+     DpgV = (/ 0.33e-6, 3.0e-6, 4.8e-6, 5.0e-6 ,22e-6 /) & ! DpgV
+    ,DpgN   = (/-1.0,-1.0,-1.0,-1.0,-1.0/)               & ! to be calc
     ,sigma  = (/ 1.8, 2.0, 2.0, 2.2 ,2.0/)               &
     ,PMdens = (/ 1600.0, 2200.0, 2200.0, 2600.0, 800.0/) & ! kg/m3
     ,Vs = 0.0   ! Settling velocity (m/s). Easiest to define here
-
+  !
+  ! For surface area we track the following (NSD=not seasalt or dust)
+   integer  :: NSD_F=1, SS_F=2, DU_F=3, NSD_C=4, SS_C=5, DU_C=6, NSAREA=6
+  ! Mappings to DpgV types above, and Gerber types (see AeroFunctions).
+  ! For Gerber, -1 indicates to use dry radius
+   integer, dimension(6) ::&
+          Ddry = (/  1,      1,      1,       2,      3,      4 /), &
+          Gb   = (/  1,      2,     -1,       1,      2,     -1 /)
 end type aero_type
 type(aero_type), public, save :: AERO = aero_type()
 
@@ -607,6 +618,12 @@ subroutine Config_ModelConstants(iolog)
               "debug%spec not found"//trim(DEBUG%SPEC))
         DEBUG%ISPEC = ispec
         first_call = .false.
+
+       !GERBER work
+        do i = 1, size(AERO%DpgN(:))
+           AERO%DpgN(i) = DpgV2DpgN( AERO%DpgV(i), AERO%sigma(i) )
+        end do
+       
     end if
 
     if ( MasterProc )  then

@@ -95,8 +95,11 @@
   DEBUG%GRIDVALUES      = F,
   DEBUG%HOURLY_OUTPUTS  = F,
   DEBUG%PHYCHEM         = F,
+  DEBUG%RUNCHEM         = F,
+    DEBUG%SEASALT         = F, ! depends on RUNCHEM
   DEBUG%SETUP_1DBIO     = F,
   DEBUG%SETUP_1DCHEM    = F,
+  DEBUG%SITES           = F,
   DEBUG%SOA             = F,
   DEBUG%STOFLUX         = F,
 ! Use integers to control debug level:
@@ -104,7 +107,8 @@
   DEBUG%LANDUSE         = 0,
 ! Specify here the coords and species index (tot, see CM_ChemSpecs_tot)
 !  DEBUG%IJ              = 60, 50      ! Bremen
-  DEBUG%IJ              = 189, 144     ! Bremen, global
+!  DEBUG%IJ              = 189, 144     ! Bremen, global
+  DEBUG%IJ              =  3, 50       ! sea I hope...
   DEBUG%SPEC            = 'OH',
 &end
 &Nest_config

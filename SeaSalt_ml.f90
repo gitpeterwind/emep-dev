@@ -1,13 +1,9 @@
 ! <SeaSalt_ml.f90 - A component of the EMEP MSC-W Chemical transport Model>
 !*****************************************************************************! 
-! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
 
                           module SeaSalt_ml
 
-! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
-! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-!-----------------------------------------------------------------------------
+!*****************************************************************************! 
 ! Calculates production of sea salt based on: 
 ! Maartinsson et al.(2003) JGR,100,D8      for particles with Ddry<1.25um  
 ! Monahan et al.(1986) J.Phys.Oceanogr,10  for particles with Ddry=~1.25-5um  
@@ -17,6 +13,7 @@
 ! Programmed by Svetlana Tsyro
 !-----------------------------------------------------------------------------
 
+ use AeroFunctions,        only : WetRad, umWetRad, GbSeaSalt
  use Biogenics_ml,         only : EMIS_BioNat, EmisNat  
  use ChemSpecs,            only : species
  use GridValues_ml,        only : glat, glon, i_fdom, j_fdom 
@@ -363,13 +360,29 @@
 !.. Equilibrium wet radius from Gerber(1985) (Gong&Barrie [1997], JGR)
 
      do i = 1, SS_MONA
-        radSS(i) = ( K1*rdry(i)**K2 /(K3 *rdry(i)**K4 -     &
-                     log10(0.8))+rdry(i)**3) ** third
-        lim1 = ( K1*RLIM(i+1)**K2 /(K3 *RLIM(i+1)**K4 -     &
-                 log10(0.8))+RLIM(i+1)**3) ** third
-        lim2 = ( K1*RLIM(i)**K2 /(K3 *RLIM(i)**K4 -         &
-                 log10(0.8))+RLIM(i)**3) ** third
+        !Gb radSS(i) = ( K1*rdry(i)**K2 /(K3 *rdry(i)**K4 -     &
+        !Gb              log10(0.8))+rdry(i)**3) ** third
+        !Gb lim1 = ( K1*RLIM(i+1)**K2 /(K3 *RLIM(i+1)**K4 -     &
+        !Gb          log10(0.8))+RLIM(i+1)**3) ** third
+        !Gb lim2 = ( K1*RLIM(i)**K2 /(K3 *RLIM(i)**K4 -         &
+        !Gb          log10(0.8))+RLIM(i)**3) ** third
+
+        !ds now use Gerber functions
+        radSS(i) = umWetRad(rdry(i), 0.8, GbSeaSalt)
+        lim1     = umWetRad(rlim(i+1), 0.8, GbSeaSalt)
+        lim2     = umWetRad(rlim(i), 0.8, GbSeaSalt)
         Rrange(i) = lim1 - lim2       ! bin size intervals 
+
+       if( DEBUG%SEASALT ) then
+         ! WetRad takes radius in m
+        write(*,"(a,i4,9g10.3)") "SSALT WETRAD ", i, radSS(i), lim1, lim2 !,  &
+!          WetRad(rdry(i)*MKM, 0.8, GbSeaSalt)/MKM,&
+!          WetRad(RLIM(i+1)*MKM, 0.8, GbSeaSalt)/MKM,&
+!          WetRad(RLIM(i)*MKM, 0.8, GbSeaSalt)/MKM, &
+!          umWetRad(rdry(i), 0.8, GbSeaSalt),&
+!          umWetRad(RLIM(i+1), 0.8, GbSeaSalt),&
+!          umWetRad(RLIM(i), 0.8, GbSeaSalt)
+       end if
      enddo
 
 !.. Help parameter

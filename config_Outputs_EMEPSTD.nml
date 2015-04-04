@@ -16,6 +16,11 @@
 &OutputConcs_config
 OutputConcs= 
       'HMIX'                ,'m'   ,'2d','HMIX'     ,'MISC' ,7, !! hourly tests
+      'SurfAreaNSDF_um2cm3' ,'um2/cm3' ,'2d','SurfAreaNSDF_um2cm3'    ,'MISC' ,4, !
+      'SurfAreaSSF_um2cm3' ,'um2/cm3' ,'2d','SurfAreSSF_um2cm3'    ,'MISC' ,4, !!
+      'SurfAreaSSC_um2cm3' ,'um2/cm3' ,'2d','SurfAreSSC_um2cm3'    ,'MISC' ,4, !!
+      'SurfAreaDUF_um2cm3' ,'um2/cm3' ,'2d','SurfAreaDUF_um2cm3'    ,'MISC' ,4, !!
+      'SurfAreaDUC_um2cm3' ,'um2/cm3' ,'2d','SurfAreaDUC_um2cm3'    ,'MISC' ,4, !!
       'NO2',          'molec/cm2' ,'k20','COLUMN'   ,'MISC' ,4, !! New Column system
       'USTAR_NWP'           ,'m/s' ,'2d','USTAR_NWP','MISC' ,7, !! hourly tests
       'Kz_m2s'              ,'m2/s','2d','Kz_m2s'   ,'MISC' ,7, !! hourly tests

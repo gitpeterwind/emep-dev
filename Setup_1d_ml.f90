@@ -5,17 +5,20 @@ module Setup_1d_ml
 ! fields are stored in the Setup_1dfields_ml module.
 !-----------------------------------------------------------------------!
 
+use AeroFunctions,       only: umWetRad, pmSurfArea, cMolSpeed, UptakeRate
 use AirEmis_ml,          only: airn, airlig   ! airborne NOx emissions
 use Biogenics_ml,        only: SoilNOx
 use Biogenics_ml,        only: EMIS_BioNat, EmisNat  
 use Chemfields_ml,       only: xn_adv,xn_bgn,xn_shl, &
                                NSPEC_COL, NSPEC_BGN, xn_2d_bgn
+use ChemGroups_ml,       only: WDEP_PM10_GROUP, chemgroups
 use CheckStop_ml,        only:  CheckStop
-use DerivedFields_ml,          only : d_2d
+use DerivedFields_ml,    only: d_2d
 use EmisGet_ml,          only:  nrcemis, iqrc2itot  !DSRC added nrcemis
 use Emissions_ml,        only:  gridrcemis, gridrcroadd, SumSplitEmis, KEMISTOP
 use ForestFire_ml,       only: Fire_rcemis, burning
 use Functions_ml,        only:  Tpot_2_T
+use ChemFields_ml,       only: SurfArea_um2cm3
 use ChemSpecs  !,           only:  SO4,C5H8,NO,NO2,SO2,CO,
 use ChemRates_rct_ml,    only:  set_rct_rates, rct
 use GridValues_ml,       only:  xmd, GridArea_m2, & 
@@ -31,6 +34,7 @@ use MetFields_ml,        only: roa, th, q, t2_nwp, cc3dmax, &
 use ModelConstants_ml,   only:  &
    DEBUG,DEBUG_MASS             &
 !EXCL    ,USES, MINCONC                & ! conc.limit if USES%MINCONC
+  ,AERO                         & ! for wet radii and surf area.
   ,dt_advec                     & ! time-step
   ,PT                           & ! Pressure at top
   ,USES                         & ! Forest fires so far
@@ -49,7 +53,9 @@ use Setup_1dfields_ml,   only: &
    xn_2d                &  ! concentration terms
   ,rcemis               &  ! emission terms
   ,rh, temp, tinv, itemp,pp      &  !
-  ,amk, o2, n2, h2o    ! &  ! Air concentrations
+  ,amk, o2, n2, h2o     &  ! Air concentrations
+  ,cN2O5, cHO2, cO3, cHNO3 &  ! mol speeds, m/s
+  ,ugdryPM,DpgNw,S_m2m3    ! for wet diameter and surf area
 use SmallUtils_ml,       only: find_index
 use Tabulations_ml,      only: tab_esat_Pa
 use TimeDate_ml,         only: current_date, date
@@ -92,7 +98,10 @@ contains
     character(len=30)  :: fmt="(a,i3,99g12.3)"  ! default format
     logical :: debug_flag
     logical, save :: first_call = .true.
-
+    real :: wradR,wradS,wradU, ugdryPM, ugDustF, ugSSaltF
+    real, dimension(6)  :: umRdry ! 6 is hard-coded equiv of AERO%NSAREA.
+    real :: wradSC,wradUC, ugDustC, ugSSaltC
+    integer :: iw, ipm ! for wet rad
 
    !** local
 
@@ -149,6 +158,120 @@ contains
               xn_2d_bgn(n,k) = max(0.0,xn_bgn(n,i,j,k)*amk(k))
         end do ! ispec
 
+      ! Surf Area
+        if ( USES%SURF_AREA ) then ! GERBER
+
+           ispec=NO3_c ! CRUDE HARD CODE for now
+           ugdryPM     = 0.27*xn_2d(ispec,k)*species(ispec)%molwt*1.0e12/AVOG
+
+           ugDustF  = 0.0
+           ugSSaltF = 0.0
+           ugDustC  = 0.0
+           ugSSaltC = 0.0
+
+           do ipm = 1, size( WDEP_PM10_GROUP ) !! PMFINE_GROUP )
+             ispec = WDEP_PM10_GROUP(ipm)
+
+             if( index( species(ispec)%name, 'SEASALT_F' )>0) then
+
+                ugSSaltF = ugSSaltF + xn_2d(ispec,k)*species(ispec)%molwt*1.0e12/AVOG
+           if( debug_flag .and. k==20 )  print fmt, "GERB ugSS "// trim(species(ispec)%name),ispec, ugSSaltF
+             else if( index( species(ispec)%name, 'SEASALT_C' )>0) then
+                ugSSaltC = ugSSaltC + xn_2d(ispec,k)*species(ispec)%molwt*1.0e12/AVOG
+
+             else if ( index( species(ispec)%name, 'DUST' )>0) then
+                if( index( species(ispec)%name, '_F' )>0) then
+                    ugDustF = ugDustF + xn_2d(ispec,k)*species(ispec)%molwt*1.0e12/AVOG
+
+           if( debug_flag .and. k==20 )  print fmt, "GERB ugDU "// trim(species(ispec)%name),ispec, ugDUSTF
+                else
+                    ugDustC = ugDustC + xn_2d(ispec,k)*species(ispec)%molwt*1.0e12/AVOG
+                end if
+
+             else ! don't distinguish F from C for NSD
+               ugdryPM = ugdryPM + &
+                xn_2d(ispec,k)*species(ispec)%molwt*1.0e12/AVOG !-> ug/m3
+           if( debug_flag .and. k==20 )  print fmt, "GERB ugPM "// trim(species(ispec)%name),ispec, ugdryPM
+             end if
+           end do !ipm
+
+          ! call, for fine aeroso
+           ! excludign dust and sea-salt,
+           ! GERBER equations for wet radius
+
+          DpgNw(AERO%NSD_F,:)=AERO%DpgN(1)
+          DpgNw(AERO%NSD_C,:)=AERO%DpgN(2)
+          DpgNw(AERO%SS_F,:)=AERO%DpgN(1)
+          DpgNw(AERO%SS_C,:)=AERO%DpgN(3)
+          DpgNw(AERO%DU_F,:)=AERO%DpgN(1)
+          DpgNw(AERO%DU_C,:)=AERO%DpgN(4)
+
+          do iw = 1, AERO%NSAREA 
+           umRdry(iw) =  0.5e6*AERO%DpgN( AERO%Ddry(iw))
+           if( AERO%Gb(iw) > 0 ) then
+              DpgNw(iw,k)  = 2 * 1.0e-6*umWetRad( umRdry(iw), rh(k), AERO%Gb(iw)) 
+           else ! index -1 indicates use dry (for dust)
+              DpgNw(iw,k)  = AERO%DpgN( AERO%Ddry(iw))
+           end if
+          end do
+
+           iw= AERO%NSD_F
+           S_m2m3(iw,k) = pmSurfArea(ugdryPM,Dp=2*umRdry(iw), Dpw=DpgNw(iw,k))
+
+           iw= AERO%SS_F
+           S_m2m3(iw,k) = pmSurfArea(ugSsaltF,Dp=2*umRdry(iw), Dpw=DpgNw(iw,k))
+
+           iw= AERO%SS_C
+           S_m2m3(iw,k) = pmSurfArea(ugSsaltC,Dp=2*umRdry(iw), Dpw=DpgNw(iw,k))
+
+          ! dust - just use dry radius
+           iw= AERO%DU_F
+           S_m2m3(iw,k) = pmSurfArea(ugDustF,Dp=2*umRdry(iw), Dpw=2*umRdry(iw))
+           iw= AERO%DU_C
+           S_m2m3(iw,k) = pmSurfArea(ugDustC,Dp=2*umRdry(iw), Dpw=2*umRdry(iw))
+
+!           call CheckStop (  S_m2m3(k) < 0.0 , "NEGS_m2m3" )
+!           if( debug_flag .and. k==20 )  print fmt, "GERB ugdry ", k, wradR*1.0e6, S_m2m3(k)*1.0e6
+
+           if( debug_flag .and. k==20 )  then
+            print fmt,  sub//" SAREAugPM in  ", k, ugdryPM, ugSSaltC, ugDustC
+            do iw = 1, AERO%NSAREA
+             print fmt, sub//"GERB ugDU  ", iw, umRdry(iw), S_m2m3(iw,k)
+            end do
+           end if
+
+           S_m2m3(:,k) = min( S_m2m3(:,k), 6.0e-3)  !! Allow max 6000 um2/cm3
+
+           ! m2/m3 -> um2/cm3 = 1.0e6, for output to netcdf
+           if( k == KMAX_MID ) then 
+              do iw = 1, AERO%NSAREA
+                SurfArea_um2cm3(iw,i,j) = 1.0e6* S_m2m3(iw,k)
+              end do
+           end if
+
+!         if( me==36 .and. i==5.and.j==31.and. Sarea_um2(kpm) > 1.0e5 ) then
+!             print "(a,4i4,g12.3,f7.2,es12.3)", "SURFAREA ",me,i,j,kpm,
+!             ugdryPM(kpm), rh(kpm), Sarea_um2(kpm)
+!             !call StopAll('SSS')
+!         end if
+
+         !! Mol. speeds for aerosol uptake
+
+          cn2o5 = cMolSpeed(temp,108.0)
+          chno3 = cMolSpeed(temp, 63.0)
+          cho2  = cMolSpeed(temp, 33.0)
+          co3   = cMolSpeed(temp, 48.0)
+
+! if( debug_flag .and. k==20 ) then
+!    print fmt, "SSGAMMA ",k, rh(k), rct(71,k),cN2O5(k), DpgNWS(k),S_SSFM2M3(k),
+!    UPTAKERATE(0.5*DPGNWS(k),CN2O5(k),gam=GammaN2O5_EJSS(rh(k)),S=S_SSFM2M3(k))
+!end if
+
+         end if ! GERBER
+
+
+      ! End Surf Area
+    
    end do ! k
 
 ! Check that concentrations are not "contaminated" with NaN

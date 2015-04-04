@@ -404,7 +404,7 @@ integer :: nglob
 
     do nae = 1, AERO%NSIZE
       AERO%Vs(nae) = SettlingVelocity( Grid%t2, Grid%rho_ref, &
-                       AERO%sigma(nae), AERO%diam(nae), AERO%PMdens(nae) )
+                       AERO%sigma(nae), AERO%DpgV(nae), AERO%PMdens(nae) )
     end do
 
   ! Restrict settling velocity to 2cm/s. Seems
@@ -525,7 +525,7 @@ if( AERO%Vs(nae) < 1.0e-8 .or. Vds < 1.0e-8 ) then
        xn_2d(pNO3,KMAX_MID),  xn_2d(pNH4,KMAX_MID), tmpv0, Vds
               tmpv1     =  1.0 - exp( -( L%Ra_ref + 1.0/Vds)* AERO%Vs(nae) )
               tmpv2     =  1.0 - exp( -( L%Ra_3m  + 1.0/Vds)* AERO%Vs(nae) )
-   print "(a,2i4,9g11.3)", "AEROVSNB", n, nae, AERO%sigma(nae), AERO%diam(nae),&
+   print "(a,2i4,9g11.3)", "AEROVSNB", n, nae, AERO%sigma(nae), AERO%DpgV(nae),&
          AERO%PMdens(nae), AERO%Vs(nae), Vds, tmpv1, tmpv2
    call StopAll("AEROVSN")
 end if

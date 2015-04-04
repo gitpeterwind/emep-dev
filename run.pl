@@ -18,7 +18,7 @@
 ##PBS -lnodes=64 -lpmem=1000MB
 ##PBS -lnodes=16 -lpmem=1000MB
 ##PBS -lnodes=80
-#PBS -lnodes=2:ppn=20
+#PBS -lnodes=4:ppn=20
 # Wall time limit of run
 #PBS -lwalltime=07:20:00
 # Make results readable for others:
@@ -118,7 +118,7 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
-($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2976"   ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
+($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2979"   ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
 
 my $KEEP_LINKS=0; # do not cleanup links
 my %BENCHMARK;
@@ -127,7 +127,7 @@ my %BENCHMARK;
 # Dave's preference for EMEP:
 #  %BENCHMARK = (grid=>"EMEP"  ,year=>2006,emis=>"Modrun10/EMEP_trend_2000-2008/2006",chem=>"EmChem09");
 # EECCA Default:
-%BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun11/EMEP_trend_2000-2009/2008",chem=>"EmChem09soa",make=>"EMEP");
+ %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun11/EMEP_trend_2000-2009/2008",chem=>"EmChem09soa",make=>"EMEP");
 # Status Runs:
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2007,emis=>"Modrun09/2009-Trend2007-CEIP") ;
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun10/2010-Trend2008_CEIP");
@@ -499,7 +499,7 @@ $month_days[2] += leap_year($year);
 my $mm1 ="06";      # first month, use 2-digits!
 my $mm2 ="06";      # last month, use 2-digits!
 my $dd1 =  1;       # Start day, usually 1
-my $dd2 =  1;       # End day (can be too large; will be limited to max number of days in the month)
+my $dd2 =  0;       # End day (can be too large; will be limited to max number of days in the month)
                     # put dd2=0 for 3 hours run/test.
 # Allways runn full year on benchmark mode
 ($mm1,$mm2,$dd1,$dd2)=("01","12",1,31) if (%BENCHMARK);
