@@ -153,13 +153,21 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+12 April 2015  Dave 2980-2982
+
+
+AeroFunctions - NEW!
+- functions to calculate wet-radius (Gerber method), surface area, etc.
+
+ZD_ESX/refman.pdf deleted. Was starting to take space, and can anyway be
+  generated from script.
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 4th April 2015  Dave 2979
 - introduction of surface area calculations. So far not used, but intended
   as outputs.
 - results so far identical to 2976
-
-AeroFunctions - NEW!
-- functions to calculate wet-radius (Gerber method), surface area, etc.
 
 Chem_ml, Setup_1dfields, Setup_1d_ml
 - adapted to provide and calculate SurfArea_m2m3 and S_m2m3
