@@ -121,6 +121,7 @@ use ModelConstants_ml,    only : PASCAL, PT, Pref, METSTEP  &
      ,DomainName & !HIRHAM,EMEP,EECCA etc.
      ,USE_DUST, TEGEN_DATA, USE_SOILWATER & 
      ,nstep,USE_CONVECTION,USE_EtaCOORDINATES,USE_FASTJ & 
+     ,CONVECTION_FACTOR & 
      ,LANDIFY_MET  & 
      ,CW_THRESHOLD,RH_THRESHOLD, CW2CC,IOU_INST,JUMPOVER29FEB
 use Par_ml           ,    only : MAXLIMAX,MAXLJMAX,GIMAX,GJMAX, me  &
@@ -513,6 +514,13 @@ contains
        cnvdf=min(0.0,cnvdf)      !no positive downward fluxes
        cnvdf(:,:,KMAX_BND)=0.0   !no flux through surface
        cnvdf(:,:,1)=0.0          !no flux through top
+
+      ! Sometimes the NWP calculated fluxes are too high.
+      ! can be scaled via config:
+       if( abs( CONVECTION_FACTOR - 1 ) > 0.001 ) then
+         cnvuf(:,:,:) = cnvuf(:,:,:) * CONVECTION_FACTOR
+         cnvdf(:,:,:) = cnvdf(:,:,:) * CONVECTION_FACTOR
+       end if
     endif
 
     ! Kz from meteo

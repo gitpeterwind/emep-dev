@@ -153,6 +153,13 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+14 April 2015  Dave 2983
+
+ModelConstants_ml, Met_ml, config_EMEPGLOB.nml
+
+ - added CONVECTION_FACTOR. Values < 1.0 reduce convective fluxes from default
+   value (=1)
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 12-14 April 2015  Dave 2980-2982
 
 NEW - start of easier outputs for d_2d fields. The OutputMisc field system

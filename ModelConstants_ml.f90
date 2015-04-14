@@ -128,6 +128,10 @@ type(emep_debug), public, save :: DEBUG
   type(emis_in), public, dimension(5) :: emis_inputlist = emis_in()
 
 !-----------------------------------------------------------
+! Convection factor - reduces convective fluxes (which can be
+! too high in some NWPs)
+real, public, save :: CONVECTION_FACTOR = 1.0
+!-----------------------------------------------------------
 logical, public, save ::             &
   FORECAST              = .false.    &! reset in namelist
  ,USE_SOILWATER         = .false.    &!
@@ -585,6 +589,7 @@ subroutine Config_ModelConstants(iolog)
      ,MY_OUTPUTS  &  ! e.g. EMEPSTD, FORECAST, TFMM 
      ,USE_SOILWATER &
      ,USE_CONVECTION &
+     ,CONVECTION_FACTOR &
      ,USE_AIRCRAFT_EMIS,USE_LIGHTNING_EMIS  &  
      ,USE_ROADDUST, USE_DUST &
      ,USE_EURO_SOILNOX, USE_GLOBAL_SOILNOX, EURO_SOILNOX_DEPSCALE &
