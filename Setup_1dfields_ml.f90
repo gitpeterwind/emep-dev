@@ -54,7 +54,8 @@
          ,cHNO3               & ! mol speed, HNO3 
          ,cHO2                & ! mol speed, HO2  
          ,cO3                 & ! mol speed, O3   
-         ,ugdryPM             & ! for wet radius from Gerber, etc.
+        ,aero_fom, aero_fss, aero_fdust & ! fractions
+!         ,ugdryPM             & ! for wet radius from Gerber, etc.
          ,pp                     !pressure
 
    integer, public, allocatable, dimension(:), save :: &

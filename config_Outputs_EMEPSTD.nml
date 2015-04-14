@@ -13,12 +13,26 @@
 ! where freq =  IOU_YEAR=2,IOU_MON=3, IOU_DAY=4,IOU_HOUR=6, IOU_HOUR_MEAN=7
 !         *NOTE* only the day, month, year flags work so far.
 !
+! Derived has_
+! OutputMisc:
+!   If class==USET, then d_2d will be set somewhere in the code by the user.
 &OutputConcs_config
+OutputMisc=
+ ! name        class    subclass txt   unit index f2d dt_scale scale avg period
+ 'AeroOrig',   'USET', 'rct',   'rct', '/s', 62,   -1,       F,   1.0, T, 4,
+ 'AeroDSmix',  'USET', 'rct',   'rct', '/s', 61,   -1,       F,   1.0, T, 4
+ 'Aerok',      'USET', 'rct',   'rct', '/s', 63,   -1,       F,   1.0, T, 4
+ 'AeroHNO3SS', 'USET', 'rct',   'rct', '/s', 72,   -1,       F,   1.0, T, 4
+ 'AeroHNO3DU', 'USET', 'rct',   'rct', '/s', 73,   -1,       F,   1.0, T, 4
+ 'AeroHO2PM',  'USET', 'rct',   'rct', '/s', 74,   -1,       F,   1.0, T, 4
+ 'AeroO3DU',   'USET', 'rct',   'rct', '/s', 75,   -1,       F,   1.0, T, 4
+!
 OutputConcs= 
       'HMIX'                ,'m'   ,'2d','HMIX'     ,'MISC' ,7, !! hourly tests
-      'SurfAreaNSDF_um2cm3' ,'um2/cm3' ,'2d','SurfAreaNSDF_um2cm3'    ,'MISC' ,4, !
-      'SurfAreaSSF_um2cm3' ,'um2/cm3' ,'2d','SurfAreSSF_um2cm3'    ,'MISC' ,4, !!
-      'SurfAreaSSC_um2cm3' ,'um2/cm3' ,'2d','SurfAreSSC_um2cm3'    ,'MISC' ,4, !!
+      'SurfAreaPMF_um2cm3' ,'um2/cm3' ,'2d','SurfAreaPMF_um2cm3'    ,'MISC' ,4, !
+      'SurfAreaPMC_um2cm3' ,'um2/cm3' ,'2d','SurfAreaPMC_um2cm3'    ,'MISC' ,4, !
+      'SurfAreaSSF_um2cm3' ,'um2/cm3' ,'2d','SurfAreaSSF_um2cm3'    ,'MISC' ,4, !!
+      'SurfAreaSSC_um2cm3' ,'um2/cm3' ,'2d','SurfAreaSSC_um2cm3'    ,'MISC' ,4, !!
       'SurfAreaDUF_um2cm3' ,'um2/cm3' ,'2d','SurfAreaDUF_um2cm3'    ,'MISC' ,4, !!
       'SurfAreaDUC_um2cm3' ,'um2/cm3' ,'2d','SurfAreaDUC_um2cm3'    ,'MISC' ,4, !!
       'NO2',          'molec/cm2' ,'k20','COLUMN'   ,'MISC' ,4, !! New Column system

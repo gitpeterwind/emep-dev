@@ -120,7 +120,7 @@ $txtrcfunc = "\n  use ChemFunctions_ml       ! => kaero, RiemerN2O5\n" ; #ESX if
 #printall ("TXTRCFUNC needed? $nrcfunc   TXT:$txtrcfunc");
 my %UsedVariables = (
    $rct    => " $txtrcfunc
-!SOON:  use AeroFunctions     ! => UpdakeRate, cMolSpeed
+  use AeroFunctions     ! => UpdakeRate, cMolSpeed
   use Setup_1dfields_ml ! => tinv, h2o, m, Fgas
   use Setup_1dfields_ml, m=> amk
   use ChemSpecs_tot_ml  ! => PINALD, .... for FgasJ08

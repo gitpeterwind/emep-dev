@@ -98,7 +98,7 @@ contains
     Fgas  = 1.0! Fraction as gas-phase
     Fpart = 0.0
     allocate(rcemis(NSPEC_SHL+1:NSPEC_TOT,KCHEMTOP:KMAX_MID))
-rcemis = 0.0
+    rcemis = 0.0
     allocate(rh(KCHEMTOP:KMAX_MID),amk(KCHEMTOP:KMAX_MID),o2(KCHEMTOP:KMAX_MID))
     allocate(n2(KCHEMTOP:KMAX_MID),h2o(KCHEMTOP:KMAX_MID),temp(KCHEMTOP:KMAX_MID))
     allocate(tinv(KCHEMTOP:KMAX_MID),pp(KCHEMTOP:KMAX_MID))
@@ -114,12 +114,6 @@ rcemis = 0.0
 
    ! wet DpgN and defaults from dry values
     allocate(DpgNw(AERO%NSAREA, KCHEMTOP:KMAX_MID))
-    DpgNw(AERO%NSD_F,:)=AERO%DpgN(1)
-    DpgNw(AERO%NSD_C,:)=AERO%DpgN(2)
-    DpgNw(AERO%SS_F,:)=AERO%DpgN(1)
-    DpgNw(AERO%SS_C,:)=AERO%DpgN(3)
-    DpgNw(AERO%DU_F,:)=AERO%DpgN(1)
-    DpgNw(AERO%DU_C,:)=AERO%DpgN(4)
 
     allocate(S_m2m3(AERO%NSAREA, KCHEMTOP:KMAX_MID)) ! GERBER
 
@@ -130,6 +124,11 @@ rcemis = 0.0
     chno3=UNDEF_R
     cho2= UNDEF_R
     co3=  UNDEF_R
+    allocate(aero_fom(KCHEMTOP:KMAX_MID),aero_fdust(KCHEMTOP:KMAX_MID),&
+              aero_fss(KCHEMTOP:KMAX_MID))
+    aero_fom    = UNDEF_R
+    aero_fss    = UNDEF_R
+    aero_fdust  = UNDEF_R
   
 !end if
 

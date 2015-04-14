@@ -20,12 +20,14 @@
   USES%testname         = 'EMEPSTD',
   USES%FOREST_FIRES     = T,
   USES%EMISSTACKS       = F,         ! Reads PointSources file
+  USES%DEGREEDAY_FACTORS = T,
   USES%PlumeMethod      = 'PVDI',    ! default PVDI, possible: NILU, ASMI, PVDI
+!  USES%n2o5HydrolysisMethod = "Smix" ! "mixedPMF" ! "RiemerPMF" ! "RiemerSIAc3"  ! "RiemerSIAc3"  ! "OrigRiemer"
   USES%PFT_MAPS         = T,         ! PFT LAI tests
 !------------------------------
   USE_SOILWATER         = T,          ! Uses SMI from meteo data
   USE_CONVECTION        = F,
-  USES%DEGREEDAY_FACTORS = T,
+!  USES%DEGREEDAY_FACTORS = T,
   USE_SEASALT           = T,
   USE_AIRCRAFT_EMIS     = T,          ! Needs global file, see manual
   USE_LIGHTNING_EMIS    = T,          ! 
@@ -41,6 +43,9 @@
 !-------- Can switch on INERIS-type degreeday stuff
   INERIS_SNAP1          = F,          ! Used for TFMM runs
   INERIS_SNAP2          = F,          ! Used for TFMM runs
+!------------------------------
+!  AERO%EQUILIB          = 'MARS ',      ! MARS, MARS_2900, GEOSCHEM, EQSAM, or EMEP
+!  AERO%NSIZE etc... see ModelConstants
 !------------------------------
   EMIS_SOURCE           = 'emislist', ! 'emislist' or 'CdfFractions'
   EMIS_TEST             = 'None',     ! 'None' or 'CdfSnap' 
@@ -92,8 +97,24 @@
 !         *NOTE* only the day, month, year flags work so far.
 !
 &OutputConcs_config
+OutputMisc=
+ ! name        class    subclass txt   unit index f2d dt_scale scale avg period
+ 'AeroOrig',   'USET', 'rct',   'rct', '/s', 62,   -1,       F,   1.0, T, 3,
+ 'AeroDSmix',  'USET', 'rct',   'rct', '/s', 61,   -1,       F,   1.0, T, 3,
+ 'AerokRH',    'USET', 'rct',   'rct', '/s', 63,   -1,       F,   1.0, T, 3,
+! 'AeroHNO3SS', 'USET', 'rct',   'rct', '/s', 72,   -1,       F,   1.0, T, 3,
+! 'AeroHNO3DU', 'USET', 'rct',   'rct', '/s', 73,   -1,       F,   1.0, T, 3,
+! 'AeroHO2PM',  'USET', 'rct',   'rct', '/s', 74,   -1,       F,   1.0, T, 3,
+! 'AeroO3DU',   'USET', 'rct',   'rct', '/s', 75,   -1,       F,   1.0, T, 3,
+ 'USTAR_d',    'USTAR_NWP', '-', '-', 'm/s', -99,  -99,      F,   1.0, T, 3,
+!
 OutputConcs= 
       'HMIX'                ,'m'   ,'2d','HMIX'     ,'MISC' ,7, !! hourly tests
+      'SurfAreaNSDF_um2cm3' ,'um2/cm3' ,'2d','SurfAreaNSDF_um2cm3'    ,'MISC' ,4, !
+      'SurfAreaSSF_um2cm3' ,'um2/cm3' ,'2d','SurfAreaSSF_um2cm3'    ,'MISC' ,4, !!
+      'SurfAreaSSC_um2cm3' ,'um2/cm3' ,'2d','SurfAreaSSC_um2cm3'    ,'MISC' ,4, !!
+      'SurfAreaDUF_um2cm3' ,'um2/cm3' ,'2d','SurfAreaDUF_um2cm3'    ,'MISC' ,4, !!
+      'SurfAreaDUC_um2cm3' ,'um2/cm3' ,'2d','SurfAreaDUC_um2cm3'    ,'MISC' ,4, !!
       'USTAR_NWP'           ,'m/s' ,'2d','USTAR_NWP','MISC' ,7, !! hourly tests
       'Kz_m2s'              ,'m2/s','2d','Kz_m2s'   ,'MISC' ,7, !! hourly tests
 !     'ws_10m'              ,'m'   ,'2d','ws_10m'   ,'MISC' ,7, !! hourly tests

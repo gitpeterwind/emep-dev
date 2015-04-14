@@ -22,11 +22,11 @@ use My_Derived_ml, only : &
 use My_Derived_ml,  only : &
       OutputFields,  &
       nOutputFields,  &
+      nOutputMisc, OutputMisc,    &
       nOutputWdep,  &
       WDEP_WANTED, &
       D3_OTHER
 
-!DS use Aero_Vds_ml,      only: diam  !aerosol MMD (um)
 use AOTx_ml,          only: Calc_GridAOTx
 use Biogenics_ml,     only: EmisNat, NEMIS_BioNat, EMIS_BioNat
 use CheckStop_ml,     only: CheckStop
@@ -293,12 +293,13 @@ contains
 
     real    :: unitscale
     logical :: volunit   ! set true for volume units, e.g. ppb
-    logical :: outmm, outdd  ! sets time-intervals
+    !FAILED logical :: outmm, outdd  ! sets time-intervals
 
     character(len=30) :: dname, class
     character(len=10) :: unittxt
     character(len=3)  :: subclass
     character(len=TXTLEN_SHORT) ::  outname, outunit, outtyp, outdim
+    character(len=11), parameter  :: sub="DefDerived:"
     integer :: outind
 
    integer :: ind, iadv, ishl, itot, idebug, n, n2, iLC, igrp, iout
@@ -432,7 +433,7 @@ do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
    !COL  'NO2',          'molec/cm2' ,'k20','COLUMN'   ,'MISC' ,4,
     if( class == 'COLUMN' ) then
       iout = find_index(outname, species_adv(:)%name )
-      call CheckStop(iout<0,"OutputFields COLUMN not found "//trim(outname))
+      call CheckStop(iout<0,sub//"OutputFields COLUMN not found "//trim(outname))
       unitscale = Units_Scale(outunit, iout, unittxt)
       outtyp = "COLUMN"
       subclass = outdim   ! k20, k16...
@@ -450,12 +451,12 @@ do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
     select case(outtyp)
     case("SPEC")  ! Simple species
       iadv = find_index(outname, species_adv(:)%name )
-      call CheckStop(iadv<0,"OutputFields Species not found "//trim(outname))
+      call CheckStop(iadv<0,sub//"OutputFields Species not found "//trim(outname))
       iout = iadv
       unitscale = Units_Scale(outunit, iadv, unittxt, volunit)
     case("SHL")
       ishl = find_index(outname,species_shl(:)%name)
-      call CheckStop(ishl<0,"OutputFields Short lived Species not found "//trim(outname))
+      call CheckStop(ishl<0,sub//"OutputFields Short lived Species not found "//trim(outname))
       if(MasterProc) &
         write(*,*)"OutputFields Short lived Species found: "//trim(outname)
       iout = ishl
@@ -470,13 +471,13 @@ do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
           write(*,"(A,1X,I0,':',A)")'EMERGENCY: group ',igrp,trim(outname)
         if(igrp<1)cycle
       endif
-      call CheckStop(igrp<0,"OutputFields Group not found "//trim(outname))
+      call CheckStop(igrp<0,sub//"OutputFields Group not found "//trim(outname))
       iout = igrp
       unitscale = Units_Scale(outunit, -1, unittxt, volunit)
       ! Units_Scale(iadv=-1) returns 1.0
       ! group_calc gets the unit conversion factor from Group_Units
     case default
-      call CheckStop("Derived: Unsupported OutputFields%outtyp "//&
+      call CheckStop(sub//" Unsupported OutputFields%outtyp "//&
         trim(outtyp)//":"//trim(outname)//":"//trim(outdim))
     endselect
 
@@ -486,10 +487,12 @@ do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
       class = "SURF_"//trim(class)  //"_"//trim(outtyp)
       dname = "SURF_"//trim(outunit)//"_"//trim(outname)
       call CheckStop(find_index(dname,def_2d(:)%name)>0,&
-        "OutputFields already defined output "//trim(dname))
+        sub//"OutputFields already defined output "//trim(dname))
 
-      if( debugMaster ) write(*,"(a,2i4,3(1x,a),2L3,i4,es10.2)") &
-      "ADD   ", ind, iout, trim(dname),";", trim(class), outmm, outdd, &
+      !FAILED if( debugMaster ) write(*,"(a,2i4,3(1x,a),2L3,i4,es10.2)") &
+      !FAILED "ADD   ", ind, iout, trim(dname),";", trim(class), outmm, outdd, &
+      if( debugMaster ) write(*,"(a,2i4,3(1x,a),i4,es10.2)") &
+      "ADD   ", ind, iout, trim(dname),";", trim(class), & ! outmm, outdd, &
             OutputFields(ind)%ind,unitscale
 
       call AddNewDeriv( dname, class, "-", "-", trim( unittxt ) , &
@@ -499,24 +502,31 @@ do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
       class = "3D_"//trim(class)  //"_"//trim(outtyp)
       dname = "D3_"//trim(outunit)//"_"//trim(outname)
       call CheckStop(find_index(dname,def_3d(:)%name)>0,&
-        "OutputFields already defined output "//trim(dname))
+        sub//"OutputFields already defined output "//trim(dname))
 
       ! Always print out 3D info. Good to help avoid using 3d unless really needed!
-      if( MasterProc ) write(*,"(a,3(1x,a),a,L3,a,L3,i4,es10.2)") " ADDED 3D outputs",  &
-        trim(dname)," ; class =", trim(class), ', monthly =',outmm,', daily =',outdd
-        !, OutputFields(ind)%ind,unitscale
+      !FAILED if( MasterProc ) write(*,"(a,3(1x,a),a,L3,a,L3,i4,es10.2)") " ADDED 3D outputs",  &
+      !FAILED   trim(dname)," ; class =", trim(class), ', monthly =',outmm,', daily =',outdd
+      if( MasterProc ) write(*,"(a,3(1x,a),a,a,i4,es10.2)") " ADDED 3D outputs",  &
+        trim(dname)," ; class =", trim(class), ', monthly =',', daily =' & !
+        , OutputFields(ind)%ind,unitscale
 
       call AddNewDeriv(dname, class, "-", "-", trim( unittxt ) , &
           iout  , -99, F,   unitscale,     T,   OutputFields(ind)%ind, &
           Is3D=.true. )
     case default
-      call CheckStop("Derived: Unsupported OutputFields%outdim "//&
+      call CheckStop(sub//" Unsupported OutputFields%outdim "//&
         trim(outtyp)//":"//trim(outname)//":"//trim(outdim))
     endselect
   endif
 enddo ! OutputFields
 
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+do ind = 1, nOutputMisc
+      if( MasterProc ) print *, "ADDMISC ", OutputMisc(ind)%name
+      call AddDeriv(OutputMisc(ind))
+end do
 
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -656,7 +666,7 @@ end do
           end do
 
       call CheckStop ( found_ind2d(ind) > 0,  &
-        "REQUESTED 2D DERIVED ALREADY DEFINED: " // trim( def_2d(ind)%name) )
+        sub//"REQUESTED 2D DERIVED ALREADY DEFINED: " // trim( def_2d(ind)%name) )
        end if
       found_ind2d(ind)  = 1
     else
@@ -665,7 +675,7 @@ end do
       if (MasterProc) then
         print "(a,i4,a)",("Had def_2d: ",idebug,&
           trim(def_2d(idebug)%name),idebug = 1, Nadded2d)
-        call CheckStop("OOPS STOPPED" // trim( wanted_deriv2d(i) ) )
+        call CheckStop(sub//"OOPS STOPPED" // trim( wanted_deriv2d(i) ) )
       endif
     endif
     if ( debugMaster ) print "(2(a,i4),3(1x,a))","Index f_2d ",i,  &
@@ -683,7 +693,6 @@ end do
     if (debugMaster) print "(2(a,i4),3(1x,a))","Index f_3d ",i,  &
       " = def ",ind,trim(def_3d(ind)%name),trim(def_3d(ind)%unit),trim(def_3d(ind)%class)
   enddo
-
 
   !Initialise to zero
   if (num_deriv2d > 0) d_2d(:,:,:,:) = 0.0
@@ -868,14 +877,16 @@ end do
               d_2d( n, i,j,IOU_INST) = rh2m(i,j,1)
           end forall
 !GERBER
-          case ( "SurfAreaNSDF_um2cm3" )
+          case ( "SurfAreaPMF_um2cm3" )
             forall ( i=1:limax, j=1:ljmax )
-              d_2d( n, i,j,IOU_INST) = SurfArea_um2cm3(AERO%NSD_F,i,j)
-          end forall
+              d_2d( n, i,j,IOU_INST) = SurfArea_um2cm3(AERO%PM_F,i,j)
+            end forall
+            if ( debug_flag ) call write_debug(n,index, "SurfArea_NSDF")
           case ( "SurfAreaSSF_um2cm3" )
             forall ( i=1:limax, j=1:ljmax )
               d_2d( n, i,j,IOU_INST) = SurfArea_um2cm3(AERO%SS_F,i,j)
-          end forall
+            end forall
+            if ( debug_flag ) call write_debug(n,index, "SurfArea_SSF")
           case ( "SurfAreaSSC_um2cm3" )
             forall ( i=1:limax, j=1:ljmax )
               d_2d( n, i,j,IOU_INST) = SurfArea_um2cm3(AERO%SS_C,i,j)
@@ -1320,6 +1331,10 @@ end do
               if(n==ind_pm10  )write(*,"(a,i4,es12.3)") &
                 "PM10 FRACTION:"  ,n,d_2d(n,i,j,IOU_INST)
             end if
+
+          case  ( "USET" )
+            if ( debug_flag ) write(*,"(a18,i4,a12,a4,es12.3)")"USET d_2d",&
+                   n, f_2d(n)%name, " is ", d_2d(n,debug_li,debug_lj,IOU_INST)
 
           case  default
 

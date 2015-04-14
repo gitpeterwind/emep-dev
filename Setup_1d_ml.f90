@@ -5,15 +5,15 @@ module Setup_1d_ml
 ! fields are stored in the Setup_1dfields_ml module.
 !-----------------------------------------------------------------------!
 
-use AeroFunctions,       only: umWetRad, pmSurfArea, cMolSpeed, UptakeRate
+use AeroFunctions,       only: umWetRad,WetRad, pmSurfArea, cMolSpeed, UptakeRate
 use AirEmis_ml,          only: airn, airlig   ! airborne NOx emissions
 use Biogenics_ml,        only: SoilNOx
 use Biogenics_ml,        only: EMIS_BioNat, EmisNat  
 use Chemfields_ml,       only: xn_adv,xn_bgn,xn_shl, &
                                NSPEC_COL, NSPEC_BGN, xn_2d_bgn
-use ChemGroups_ml,       only: WDEP_PM10_GROUP, chemgroups
+use ChemGroups_ml,       only: PM10_GROUP, PMFINE_GROUP, SIA_GROUP, SS_GROUP, DUST_GROUP
 use CheckStop_ml,        only:  CheckStop
-use DerivedFields_ml,    only: d_2d
+use DerivedFields_ml,    only: d_2d, f_2d
 use EmisGet_ml,          only:  nrcemis, iqrc2itot  !DSRC added nrcemis
 use Emissions_ml,        only:  gridrcemis, gridrcroadd, SumSplitEmis, KEMISTOP
 use ForestFire_ml,       only: Fire_rcemis, burning
@@ -36,6 +36,8 @@ use ModelConstants_ml,   only:  &
 !EXCL    ,USES, MINCONC                & ! conc.limit if USES%MINCONC
   ,AERO                         & ! for wet radii and surf area.
   ,dt_advec                     & ! time-step
+  ,IOU_INST                     & ! for OUTMISC
+  ,MasterProc                   &
   ,PT                           & ! Pressure at top
   ,USES                         & ! Forest fires so far
   ,USE_SEASALT                  &
@@ -55,7 +57,8 @@ use Setup_1dfields_ml,   only: &
   ,rh, temp, tinv, itemp,pp      &  !
   ,amk, o2, n2, h2o     &  ! Air concentrations
   ,cN2O5, cHO2, cO3, cHNO3 &  ! mol speeds, m/s
-  ,ugdryPM,DpgNw,S_m2m3    ! for wet diameter and surf area
+  ,DpgNw,S_m2m3   &  ! for wet diameter and surf area
+  ,aero_fom, aero_fss, aero_fdust
 use SmallUtils_ml,       only: find_index
 use Tabulations_ml,      only: tab_esat_Pa
 use TimeDate_ml,         only: current_date, date
@@ -95,22 +98,30 @@ contains
 
     integer, intent(in) :: i,j    ! coordinates of column
     character(len=9)  :: sub='setup_1d:'
-    character(len=30)  :: fmt="(a,i3,99g12.3)"  ! default format
+    character(len=30)  :: fmt="(a,i3,99g13.4)"  ! default format
     logical :: debug_flag
     logical, save :: first_call = .true.
-    real :: wradR,wradS,wradU, ugdryPM, ugDustF, ugSSaltF
-    real, dimension(6)  :: umRdry ! 6 is hard-coded equiv of AERO%NSAREA.
-    real :: wradSC,wradUC, ugDustC, ugSSaltC
+   ! for surface area calcs: 
+    real :: ugtmp, ugsiaPM, ugDustF, ugSSaltF, ugDustC, ugSSaltC
+    real :: ugSO4, ugNO3f, ugNO3c, ugRemF, ugRemC, ugpmF, ugpmC
+    logical :: is_finepm, is_ssalt, is_dust
+    real, dimension(size(AERO%Inddry))  :: Ddry ! Dry diameter
     integer :: iw, ipm ! for wet rad
+   ! if rates are wanted for d_2d output, we use these indices:
+    integer, dimension(10), save :: d2index, id2rct 
+    integer, save :: nd2d
+    integer :: itmp
 
-   !** local
+   ! local
 
     integer           :: k, n, ispec    ! loop variables
     real              :: qsat ! saturation water content
 
     debug_flag =  ( DEBUG%SETUP_1DCHEM .and. debug_proc .and.  &
       i==debug_li .and. j==debug_lj .and. current_date%seconds == 0 )
-    if( debug_flag ) write(*,*) sub//"====================  "
+    if( first_call.and.debug_proc ) debug_flag = .true.  ! make sure we see 1st i,j combo
+
+    if( debug_flag ) write(*,*) sub//"=DBG=======  ", first_call, me
 
 
     do k = KCHEMTOP, KMAX_MID
@@ -161,88 +172,125 @@ contains
       ! Surf Area
         if ( USES%SURF_AREA ) then ! GERBER
 
-           ispec=NO3_c ! CRUDE HARD CODE for now
-           ugdryPM     = 0.27*xn_2d(ispec,k)*species(ispec)%molwt*1.0e12/AVOG
+           !ispec=NO3_c ! CRUDE HARD CODE for now, but NO3 is special
+
+           ugSO4       = 0.0
+           ugRemF      = 0.0
+           ugRemC      = 0.0
+           ugpmF       = 0.0
+           ugpmC       = 0.0
+           ugNO3f      = 0.0 !  0.27*xn_2d(ispec,k)*species(ispec)%molwt*1.0e12/AVOG
+           ugNO3c      = 0.0 !  0.27*xn_2d(ispec,k)*species(ispec)%molwt*1.0e12/AVOG
+           ugsiaPM     = 0.0 
+
 
            ugDustF  = 0.0
            ugSSaltF = 0.0
            ugDustC  = 0.0
            ugSSaltC = 0.0
 
-           do ipm = 1, size( WDEP_PM10_GROUP ) !! PMFINE_GROUP )
-             ispec = WDEP_PM10_GROUP(ipm)
+           do ipm = 1, size( PM10_GROUP )
+             ispec = PM10_GROUP(ipm)
 
-             if( index( species(ispec)%name, 'SEASALT_F' )>0) then
-
-                ugSSaltF = ugSSaltF + xn_2d(ispec,k)*species(ispec)%molwt*1.0e12/AVOG
-           if( debug_flag .and. k==20 )  print fmt, "GERB ugSS "// trim(species(ispec)%name),ispec, ugSSaltF
-             else if( index( species(ispec)%name, 'SEASALT_C' )>0) then
-                ugSSaltC = ugSSaltC + xn_2d(ispec,k)*species(ispec)%molwt*1.0e12/AVOG
-
-             else if ( index( species(ispec)%name, 'DUST' )>0) then
-                if( index( species(ispec)%name, '_F' )>0) then
-                    ugDustF = ugDustF + xn_2d(ispec,k)*species(ispec)%molwt*1.0e12/AVOG
-
-           if( debug_flag .and. k==20 )  print fmt, "GERB ugDU "// trim(species(ispec)%name),ispec, ugDUSTF
-                else
-                    ugDustC = ugDustC + xn_2d(ispec,k)*species(ispec)%molwt*1.0e12/AVOG
-                end if
-
-             else ! don't distinguish F from C for NSD
-               ugdryPM = ugdryPM + &
-                xn_2d(ispec,k)*species(ispec)%molwt*1.0e12/AVOG !-> ug/m3
-           if( debug_flag .and. k==20 )  print fmt, "GERB ugPM "// trim(species(ispec)%name),ispec, ugdryPM
+             ugtmp  = xn_2d(ispec,k)*species(ispec)%molwt*1.0e12/AVOG
+             is_finepm = ( find_index( ispec, PMFINE_GROUP) > 0 )
+             is_ssalt  = ( find_index( ispec, SS_GROUP ) >0)
+             is_dust   = ( find_index( ispec, DUST_GROUP )>0)
+             if( is_finepm ) then
+               ugpmF  = ugpmF   + ugtmp
+               if(is_ssalt) ugSSaltF = ugSSaltF  +  ugtmp
+               if(is_dust ) ugDustF  = ugDustF   +  ugtmp
+               if( find_index( ispec, SIA_GROUP )>0 ) &
+                    ugsiaPM  = ugsiaPM + ugtmp
+             else
+                ugpmC  = ugpmC   + ugtmp
+               if(is_ssalt) ugSSaltC = ugSSaltC  +  ugtmp
+               if(is_dust ) ugDustC  = ugDustC   +  ugtmp
              end if
-           end do !ipm
 
-          ! call, for fine aeroso
-           ! excludign dust and sea-salt,
-           ! GERBER equations for wet radius
+             if (  species(ispec)%name == 'SO4' ) then
+               ugSO4 = ugSO4  +  ugtmp
+             else if ( index( species(ispec)%name, 'NO3_F' )>0) then
+               ugNO3f= ugNO3f +  ugtmp
+             else if ( index( species(ispec)%name, 'NO3_C' )>0) then
+               ugNO3c= ugNO3c +  ugtmp
+             end if
 
-          DpgNw(AERO%NSD_F,:)=AERO%DpgN(1)
-          DpgNw(AERO%NSD_C,:)=AERO%DpgN(2)
-          DpgNw(AERO%SS_F,:)=AERO%DpgN(1)
-          DpgNw(AERO%SS_C,:)=AERO%DpgN(3)
-          DpgNw(AERO%DU_F,:)=AERO%DpgN(1)
-          DpgNw(AERO%DU_C,:)=AERO%DpgN(4)
+             if( debug_flag .and. k==20 ) write(*, *) &
+                  sub//"UGSIA:"//trim(species(ispec)%name), &
+                     find_index( ispec, SIA_GROUP ), ugtmp, ugpmF, ugpmC
+           end do
+
+           !if( debug_flag .and. k==20 )  print fmt, "GERB ugDU "// trim(species(ispec)%name),ispec, ugDUSTF
+
+         ! FRACTIONS used for N2O5 hydrolysis
+         ! We use mass fractions, since we anyway don't have MW for OM, dust,...
+
+          ugRemF = ugpmf - ugSIApm -ugSSaltF -ugDustF   ! will include OM, EC, PPM, Treat as OM 
+          call CheckStop( ugRemF < -1.0e-9, sub//"ugRemF NEG" )
+          ugRemF = max(ugRemF, 1.0e-9)  ! can have tiny negative
+
+          aero_fom(k)     = ugRemF/ugpmF
+          aero_fss(k)     = ugSSaltF/ugpmF
+          aero_fdust(k)   = ugDustF/ugpmF
+
+         ! GERBER equations for wet radius
 
           do iw = 1, AERO%NSAREA 
-           umRdry(iw) =  0.5e6*AERO%DpgN( AERO%Ddry(iw))
+
+           Ddry(iw) =  AERO%DpgN( AERO%Inddry(iw))   ! (m)
+
            if( AERO%Gb(iw) > 0 ) then
-              DpgNw(iw,k)  = 2 * 1.0e-6*umWetRad( umRdry(iw), rh(k), AERO%Gb(iw)) 
+              DpgNw(iw,k)  = 2*WetRad( 0.5*Ddry(iw), rh(k), AERO%Gb(iw) ) 
+
+           if( debug_flag .and. k==20 ) write(*,fmt) sub//"WRAD  ", iw, &
+               1.0*AERO%Gb(iw), rh(k), Ddry(iw), DpgNw(iw,k), &
+                DpgNw(iw,k)/Ddry(iw), WetRad( 0.5*Ddry(iw), rh(k), AERO%Gb(iw) )
+
            else ! index -1 indicates use dry (for dust)
-              DpgNw(iw,k)  = AERO%DpgN( AERO%Ddry(iw))
+              DpgNw(iw,k)  = Ddry(iw)
            end if
           end do
 
-           iw= AERO%NSD_F
-           S_m2m3(iw,k) = pmSurfArea(ugdryPM,Dp=2*umRdry(iw), Dpw=DpgNw(iw,k))
+           iw= AERO%SIA_F
+           S_m2m3(iw,k) = pmSurfArea(ugsiaPM,Dp=Ddry(iw), Dpw=DpgNw(iw,k))
+
+           iw= AERO%PM_F ! now use for fine PM
+           !TMP S_m2m3(iw,k) = pmSurfArea(ugnsdPM,Dp=Ddry(iw), Dpw=DpgNw(iw,k))
+           S_m2m3(iw,k) = pmSurfArea(ugpmf,Dp=Ddry(iw), Dpw=DpgNw(iw,k))
+           !if( debug_flag .and. k==20 ) print fmt, sub//"SRAD  ", iw, &
+           !    umRdry(iw), DpgNw(iw,k)/umRdry(iw), 1.0e6*S_m2m3(iw,k) 
 
            iw= AERO%SS_F
-           S_m2m3(iw,k) = pmSurfArea(ugSsaltF,Dp=2*umRdry(iw), Dpw=DpgNw(iw,k))
+           S_m2m3(iw,k) = pmSurfArea(ugSSaltF,Dp=Ddry(iw), Dpw=DpgNw(iw,k))
 
            iw= AERO%SS_C
-           S_m2m3(iw,k) = pmSurfArea(ugSsaltC,Dp=2*umRdry(iw), Dpw=DpgNw(iw,k))
+           S_m2m3(iw,k) = pmSurfArea(ugSSaltC,Dp=Ddry(iw), Dpw=DpgNw(iw,k))
 
           ! dust - just use dry radius
            iw= AERO%DU_F
-           S_m2m3(iw,k) = pmSurfArea(ugDustF,Dp=2*umRdry(iw), Dpw=2*umRdry(iw))
+           S_m2m3(iw,k) = pmSurfArea(ugDustF,Dp=Ddry(iw), Dpw=DpgNw(iw,k))
+
            iw= AERO%DU_C
-           S_m2m3(iw,k) = pmSurfArea(ugDustC,Dp=2*umRdry(iw), Dpw=2*umRdry(iw))
+           S_m2m3(iw,k) = pmSurfArea(ugDustC,Dp=Ddry(iw), Dpw=DpgNw(iw,k))
 
 !           call CheckStop (  S_m2m3(k) < 0.0 , "NEGS_m2m3" )
-!           if( debug_flag .and. k==20 )  print fmt, "GERB ugdry ", k, wradR*1.0e6, S_m2m3(k)*1.0e6
 
+!           print fmt,  sub//" SAREAugPM in  ", k,  rh(k), temp(k), ugpmf, ugSSaltC, ugDustC
            if( debug_flag .and. k==20 )  then
-            print fmt,  sub//" SAREAugPM in  ", k, ugdryPM, ugSSaltC, ugDustC
+            write(*,fmt)  sub//" SAREAugPM in  ", k,  rh(k), temp(k), ugsiaPM, ugpmf, ugSSaltC, ugDustC
             do iw = 1, AERO%NSAREA
-             print fmt, sub//"GERB ugDU  ", iw, umRdry(iw), S_m2m3(iw,k)
+             write(*,fmt) sub//"GERB ugDU (S um2/cm3)  ", iw, Ddry(iw), DpgNw(iw,k)/Ddry(iw), 1.0e6*S_m2m3(iw,k)
             end do
            end if
 
            S_m2m3(:,k) = min( S_m2m3(:,k), 6.0e-3)  !! Allow max 6000 um2/cm3
 
-           ! m2/m3 -> um2/cm3 = 1.0e6, for output to netcdf
+           ! For coarse, we simply sum. We ignore some non-SS or dust _C.
+           iw= AERO%PM_C
+           S_m2m3(iw,k) = S_m2m3(AERO%PM_F,k) + S_m2m3(AERO%SS_C,k) + S_m2m3(AERO%DU_C,k) 
+
+           ! m2/m3 -> um2/cm3 = 1.0e6, only for output to netcdf
            if( k == KMAX_MID ) then 
               do iw = 1, AERO%NSAREA
                 SurfArea_um2cm3(iw,i,j) = 1.0e6* S_m2m3(iw,k)
@@ -251,16 +299,17 @@ contains
 
 !         if( me==36 .and. i==5.and.j==31.and. Sarea_um2(kpm) > 1.0e5 ) then
 !             print "(a,4i4,g12.3,f7.2,es12.3)", "SURFAREA ",me,i,j,kpm,
-!             ugdryPM(kpm), rh(kpm), Sarea_um2(kpm)
+!             ugpmf(kpm), rh(kpm), Sarea_um2(kpm)
 !             !call StopAll('SSS')
 !         end if
 
          !! Mol. speeds for aerosol uptake
 
-          cn2o5 = cMolSpeed(temp,108.0)
-          chno3 = cMolSpeed(temp, 63.0)
-          cho2  = cMolSpeed(temp, 33.0)
-          co3   = cMolSpeed(temp, 48.0)
+!print *, "CN2O5", i,j,k,temp(k),tinv(k)
+!if( cn2o5(k) < 0.0 ) then
+!   print *, "NEG CN2O5 ", k, temp(k), tinv(k),  cn2o5
+!   call CheckStop('CN2O5')
+!end if
 
 ! if( debug_flag .and. k==20 ) then
 !    print fmt, "SSGAMMA ",k, rh(k), rct(71,k),cN2O5(k), DpgNWS(k),S_SSFM2M3(k),
@@ -287,6 +336,10 @@ contains
    tinv(:) = 1./temp(:)
 
 
+   cn2o5(:) = cMolSpeed(temp(:),108.0)
+   chno3(:) = cMolSpeed(temp(:), 63.0)
+   cho2(:)  = cMolSpeed(temp(:), 33.0)
+   co3(:)   = cMolSpeed(temp(:), 48.0)
 
   ! 5 ) Rates  (!!!!!!!!!! NEEDS TO BE AFTER RH, XN, etc. !!!!!!!!!!)
 
@@ -295,12 +348,36 @@ contains
 
    if ( first_call ) then
      call CheckStop( any(isnan(rct(:,:))), sub//"RCT NAN'd")
+     nd2d = 0
+     do itmp = 1, size(f_2d)
+           if ( f_2d(itmp)%subclass == 'rct' ) then
+             nd2d =  nd2d  + 1
+             call CheckStop( nd2d > size(id2rct), sub//"Need bigger id2rct array" )
+             d2index(nd2d)= itmp
+             id2rct(nd2d) = f_2d(itmp)%index  !index of rate constant, given in config
+             if(MasterProc) write(*,*) 'RCTFOUND', itmp, nd2d, id2rct(nd2d)
+           end if
+     end do
+
      first_call = .false.
-   end if
+   end if ! first_call
+
+!  if(me==4) write(*,*) 'PRERCTMP', me, nd2d, debug_flag
+   do itmp = 1, nd2d
+!if(me==4) write(*,*) "ITMPRCT",debug_flag, itmp, nd2d, id2rct(itmp), id2rct(nd2d)
+       d_2d(d2index(itmp),i,j,IOU_INST) =  rct(id2rct(itmp),KMAX_MID)
+if( debug_flag ) then
+       write(*,"(a,6i5,es12.3)") sub//"OUTRCT "//trim(f_2d(d2index(itmp))%name), me,&
+            i,j,itmp,d2index(itmp),id2rct(itmp),&
+          d_2d(d2index(itmp),i,j,IOU_INST)
+end if
+   end do
+
 
   if( debug_flag ) then
+      write(*,"(a,2i5)") sub//"RCT ", me, nd2d
       write(*,"(a,10es10.3)") sub//"RCT ", &
-            rct(3,KMAX_MID), rct(4,KMAX_MID)
+            rct(3,KMAX_MID), rct(4,KMAX_MID), rct(61,KMAX_MID), rct(62,KMAX_MID)
       write(*,"(a,10es10.3)") sub//"XN  ", &
         amk(KMAX_MID),  xn_2d(O3,KMAX_MID),  xn_2d(NO2,KMAX_MID)
       write(*,"(a,10es10.3)") sub//"1D-Riemer", xn_2d(SO4,KMAX_MID),&
@@ -314,7 +391,7 @@ contains
     subroutine setup_rcemis(i,j)
 
     !-------------------------------------------------------------------
-    !**    DESCRIPTION:
+    !    DESCRIPTION:
     !    Extracts emissions in column from gridrcemis, for input to chemistry
     !    routines. Results in "rcemis" array
     !-------------------------------------------------------------------
@@ -328,6 +405,7 @@ contains
 
     integer ::  i_help,j_help,i_l,j_l
     logical, save     :: first_call = .true. 
+    character(len=13) :: sub="setup_rcemis:"
 
     if ( first_call ) then
       inat_RDF = find_index( "DUST_ROAD_F", EMIS_BioNat(:) )
@@ -350,7 +428,7 @@ contains
         end do ! iqrc
      enddo
 
-     !*** Add volcanoe emissions
+     ! Add volcanoe emissions
 
      if ( Volcanoes_found  ) then ! for models that include volcanos
                       !QRCVOL=QRCSO2 for models with volcanos
@@ -382,7 +460,7 @@ contains
 !   EmergencyRate(i,j) returns an array of rcemis size.
     if(USE_EMERGENCY) rcemis(:,:)=rcemis(:,:)+EmergencyRate(i,j)
 
-    !*** lightning and aircraft ... Airial NOx emissions if required:
+    ! lightning and aircraft ... Airial NOx emissions if required:
 
      if ( USE_LIGHTNING_EMIS  ) then
 
@@ -394,9 +472,6 @@ contains
                               + 0.05 * airlig(k,i,j)
 
         enddo
-        if ( DEBUG%SETUP_1DCHEM .and. debug_proc .and.  &
-               i==debug_li .and. j==debug_lj ) write(*,"(a,10es10.3)") &
-                 " DEBUG_SETUP_AIRNOX ", airn(KMAX_MID,i,j),airlig(KMAX_MID,i,j)
 
      end if ! LIGHTNING_EMIS
      if ( USE_AIRCRAFT_EMIS  ) then
@@ -409,13 +484,14 @@ contains
                               + 0.05 * airn(k,i,j)
 
         enddo
-        if ( DEBUG%SETUP_1DCHEM .and. debug_proc .and.  &
-               i==debug_li .and. j==debug_lj ) write(*,"(a,10es10.3)") &
-                 " DEBUG_SETUP_AIRNOX ", airn(KMAX_MID,i,j),airlig(KMAX_MID,i,j)
 
      end if ! AIRCRAFT NOX
+     if ( DEBUG%SETUP_1DCHEM .and. debug_proc .and.  & 
+       i==debug_li .and. j==debug_lj ) write(*,"(a,2L2,10es10.3)") &
+          sub//"AIRNOX ", USE_LIGHTNING_EMIS, USE_AIRCRAFT_EMIS, &
+          airn(KMAX_MID,i,j),airlig(KMAX_MID,i,j)
 
-     !*** Add sea salt production
+     ! Add sea salt production
 
      if ( USE_ROADDUST .and. itot_RDF>0  ) then  ! Hard-code indices for now
 

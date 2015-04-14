@@ -1,37 +1,9 @@
-! <MosaicOutputs_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
-!          Chemical transport Model>
+! <MosaicOutputs_ml.f90 - A component of the EMEP MSC-W Chemical transport Model>
 !*****************************************************************************! 
-!* 
-!*  Copyright (C) 2007-2011 met.no
-!* 
-!*  Contact information:
-!*  Norwegian Meteorological Institute
-!*  Box 43 Blindern
-!*  0313 OSLO
-!*  NORWAY
-!*  email: emep.mscw@met.no
-!*  http://www.emep.int
-!*  
-!*    This program is free software: you can redistribute it and/or modify
-!*    it under the terms of the GNU General Public License as published by
-!*    the Free Software Foundation, either version 3 of the License, or
-!*    (at your option) any later version.
-!* 
-!*    This program is distributed in the hope that it will be useful,
-!*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-!*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!*    GNU General Public License for more details.
-!* 
-!*    You should have received a copy of the GNU General Public License
-!*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************! 
-
 module MosaicOutputs_ml
 use AOTx_ml,          only: Calc_AOTx, Calc_POD, O3cl, VEGO3_OUTPUTS
 use AOTx_ml,          only: Calc_SPOD
 use CheckStop_ml,     only: CheckStop
-!CRM use ChemChemicals_ml, only: species_adv
-!CRM use ChemSpecs_adv_ml, only: NSPEC_ADV
 use ChemSpecs,        only: NSPEC_ADV, species_adv
 use ChemGroups_ml,    only: chemgroups
 use DerivedFields_ml, only: f_2d, d_2d
@@ -107,6 +79,7 @@ subroutine Add_MosaicMetConcs(MOSAIC_METCONCS,MET_LCS,iotyp, nMET)
   integer, intent(out) :: nMET
   integer :: ilab, n, iLC
   character(len=TXTLEN_DERIV) :: name
+  character(len=17), save :: sub='AddMosaicMetConc:'
 
   !------------- Met data for d_2d -------------------------
   ! We find the various combinations of met and ecosystem,
@@ -127,7 +100,7 @@ subroutine Add_MosaicMetConcs(MOSAIC_METCONCS,MET_LCS,iotyp, nMET)
       name = trim ( MOSAIC_METCONCS(ilab) ) // "_"  // trim( MET_LCS(n) )
 
       nMosaic = nMosaic + 1
-      call CheckStop(NMosaic>=MAX_MOSAIC_OUTPUTS,"too many nMosaics, nMET")
+      call CheckStop(NMosaic>=MAX_MOSAIC_OUTPUTS,sub//"too many nMosaics, nMET")
       !Deriv(name, class,    subc,  txt,           unit
       !Deriv index, f2d, scale, avg? Inst Yr Mn Day
       MosaicOutput(nMosaic) = Deriv(  &
@@ -156,6 +129,7 @@ subroutine Add_MosaicMetConcs(MOSAIC_METCONCS,MET_LCS,iotyp, nMET)
   integer :: n, itot, iLC, iadv
   character(len=TXTLEN_DERIV) :: name
   character(len=TXTLEN_SHORT) :: typ, poll, lctxt
+  character(len=14), save :: sub='AddNewMosaics:'
 
   nMc = 0
   MC_LOOP: do n = 1, size( Mc(:)%txt1 )
@@ -175,10 +149,10 @@ subroutine Add_MosaicMetConcs(MOSAIC_METCONCS,MET_LCS,iotyp, nMET)
       if(MasterProc) write(*,*) "MOSSPEC not found ", iadv, trim(name)
       cycle MC_LOOP
     endif
-    call CheckStop(iadv<1 .or. iadv>NSPEC_ADV," ERR: Mc  _SPECS: Mc_SPECS")
+    call CheckStop(iadv<1 .or. iadv>NSPEC_ADV,sub//" ERR: Mc  _SPECS: Mc_SPECS")
 
     nMosaic = nMosaic + 1
-    call CheckStop(NMosaic>=MAX_MOSAIC_OUTPUTS,"too many nMosaics, nVg" )
+    call CheckStop(NMosaic>=MAX_MOSAIC_OUTPUTS,sub//"too many nMosaics, nVg" )
 
     !------------- Deposition velocities for d_2d -------------------------
     !Deriv(name, class,    subc,  txt,           unit
@@ -205,6 +179,7 @@ subroutine Add_MosaicVEGO3(iotype,nVEGO3)
   integer :: n, iLC
   character(len=TXTLEN_DERIV) :: name
   character(len=TXTLEN_SHORT) :: units
+  character(len=15), save :: sub='AddMosaicVEGO3:'
   real :: scale
   type(O3cl) :: veg
   logical :: dt_scale
@@ -230,7 +205,7 @@ subroutine Add_MosaicVEGO3(iotype,nVEGO3)
     dt_scale = .true.
     !TEST dt_scale = .false. ! TEST
   case default
-    call CheckStop(DEBUG%MOSAICS,"MosaicOuputs: vegclass errror"//veg%class )
+    call CheckStop(DEBUG%MOSAICS,sub//"vegclass errror"//veg%class )
   endselect
 
   !------------------- Check if LC present in this array ------!
@@ -242,7 +217,7 @@ subroutine Add_MosaicVEGO3(iotype,nVEGO3)
   name = veg%name
 
   nMosaic = nMosaic + 1
-  call CheckStop(NMosaic>=MAX_MOSAIC_OUTPUTS,"too many nMosaics, VEGO3")
+  call CheckStop(NMosaic>=MAX_MOSAIC_OUTPUTS,sub//"too many nMosaics, VEGO3")
   !Deriv(name, class,    subc,  txt,           unit
   !Deriv index, f2d,LC, scale dt_scale avg? Inst Yr Mn Day
   ! Use index for veg array. No need to set iadv for VEGO3. Always O3.
@@ -263,6 +238,7 @@ subroutine Add_MosaicDDEP(DDEP_ECOS,DDEP_WANTED,nDD)
   integer :: i, n, iadv,igrp
   character(len=TXTLEN_DERIV) :: name
   character(len=TXTLEN_SHORT) :: units
+  character(len=14), save :: sub='AddMosaicDDEP:'
   real :: unitscale
 !------------- Dry Depositions for d_2d -------------------------
 ! Add species and ecosystem depositions if wanted:
@@ -270,22 +246,22 @@ subroutine Add_MosaicDDEP(DDEP_ECOS,DDEP_WANTED,nDD)
 ! adding them to the derived-type array OutDDep (e.g. => D2_SO4_m2Conif)
   nDD = 0
   do i=1,size(DDEP_WANTED)
-    if (DDEP_WANTED(i)%txt1 == 'NOTSET') exit
+    if (DDEP_WANTED(i)%txt1 == '-') exit
     do n=1,size(DDEP_ECOS)
       if (DDEP_ECOS(n)%ind < 1) exit
       nDD = nDD + 1
       name  = DDEP_WANTED(i)%txt1
       nMosaic = nMosaic + 1
       call CheckStop(NMosaic>=MAX_MOSAIC_OUTPUTS,&
-        "too many nMosaics, DDEP "//trim(name))
+        sub//"too many nMosaics, DDEP "//trim(name))
       select case(DDEP_WANTED(i)%txt2)
       case("SPEC")    ! normal species, e.g. DDEP_SO2_m2CF
         iadv = find_index(name,species_adv(:)%name)         ! Index in ix_adv arrays
-        call CheckStop(iadv<1,"Unknown in DDEP_WANTED SPEC: "//trim(name))
+        call CheckStop(iadv<1,sub//"Unknown in DDEP_WANTED SPEC: "//trim(name))
         unitscale = Units_Scale(DDEP_WANTED(i)%txt3,iadv,units)
       case("GROUP")
         igrp = find_index("DDEP_"//name,chemgroups(:)%name) ! array of members: chemgroups%ptr
-        call CheckStop(igrp<1,"Unknown in DDEP_WANTED GROUP: "//trim(name))
+        call CheckStop(igrp<1,sub//"Unknown in DDEP_WANTED GROUP: "//trim(name))
         unitscale = Units_Scale(DDEP_WANTED(i)%txt3,-1,units)
                       ! Units_Scale(iadv=-1) returns 1.0
                       ! Add_MosaicOutput gets the unit conversion factor from Group_Scale
@@ -293,7 +269,7 @@ subroutine Add_MosaicDDEP(DDEP_ECOS,DDEP_WANTED,nDD)
         dryGroupUnits(nMosaic) = Group_Scale(igrp,DDEP_WANTED(i)%txt3,&
                                              debug=DEBUG%MOSAICS.and.MasterProc)
       case default
-        call CheckStop(DEBUG%MOSAICS,"MosaicOuputs: unknown MosaicDDEP type "//trim(DDEP_WANTED(i)%txt2))
+        call CheckStop(DEBUG%MOSAICS,sub//" unknown MosaicDDEP type "//trim(DDEP_WANTED(i)%txt2))
       endselect
       name = "DDEP_"//trim(name)//"_m2"//trim(DDEP_ECOS(n)%name)
 

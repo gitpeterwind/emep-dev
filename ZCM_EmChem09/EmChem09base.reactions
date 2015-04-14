@@ -187,9 +187,12 @@ KRO2NO                   ISONO3 + NO   = 1.1 NO2 + 0.8 HO2 + 0.85 ISNI + 0.1 MAC
 *FEB2012 *k=1.0/(5.51614*24.0*3600.0):
 *FEB2012 2.1e-6                Rn222 = Pb210 ;
 *FEB2012 2.1e-6                Rnwater = ; # TEST
-_func_RiemerN2O5()         N2O5 = 2. HNO3                  ;
+_func_HydrolysisN2O5()         N2O5 = 2 HNO3                  ;
+_func_HydrolysisN2O5('OrigRiemer')    Rnwater = ; for print out only! 2 HNO3                  ;
+*
 *FEB2012 1.0e-12*h2o                Pb210 = ; # FAKE FAKE TO GET RCMISC(9)
-_func_kaero()              HNO3 = NO3_c        ;
+*APR2015
+_func_kaero(rh)              HNO3 = NO3_c        ;
 TROE_NO_OP                 OP + NO  + {M}   = NO2     ; A97,J, jofmiss
 TROE_NO2_NO3               NO2 + NO3  = N2O5          ; A97,J
 TROE_N2O5                  N2O5       = NO2 + NO3     ; A97,J

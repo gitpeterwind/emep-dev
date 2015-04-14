@@ -68,6 +68,7 @@ type, public :: emep_useconfig
 
  ! If USES%EMISTACKS, need to set:
   character(len=4) :: PlumeMethod = "none" !MKPS:"ASME","NILU","PVDI"
+  character(len=20) :: n2o5HydrolysisMethod = "OrigRiemer" ! EmepRiemer=ACP2012 EMEP implementation
 end type emep_useconfig 
 type(emep_useconfig), public, save :: USES
 
@@ -105,9 +106,10 @@ type, public :: emep_debug
     ,STOFLUX         = .false. 
   ! integer debug options allow different levels of verbosity
    integer               :: &
-      PFT_MAPS  = 0            & !< Future option
-     ,LANDUSE   = 0            & !
-     ,DO3SE     = 0
+      PFT_MAPS  = 0         & !< Future option
+     ,LANDUSE   = 0         & !
+     ,DO3SE     = 0         & ! 
+     ,STOP_HH   = -1          ! If positive, code will quite when hh==STOP_HH
   !----------------------------------------------------------
    integer, dimension(2) ::   IJ = (/ -999, -999 /)
    character(len=20)     ::   SPEC = 'O3'  ! default. 
@@ -469,12 +471,14 @@ type, public :: aero_type
     ,Vs = 0.0   ! Settling velocity (m/s). Easiest to define here
   !
   ! For surface area we track the following (NSD=not seasalt or dust)
-   integer  :: NSD_F=1, SS_F=2, DU_F=3, NSD_C=4, SS_C=5, DU_C=6, NSAREA=6
+   integer  :: SIA_F=1, PM_F=2, SS_F=3, DU_F=4, PM_C=5, SS_C=6, DU_C=7, NSAREA=7
   ! Mappings to DpgV types above, and Gerber types (see AeroFunctions).
   ! For Gerber, -1 indicates to use dry radius
-   integer, dimension(6) ::&
-          Ddry = (/  1,      1,      1,       2,      3,      4 /), &
-          Gb   = (/  1,      2,     -1,       1,      2,     -1 /)
+   character(len=4), dimension(7) :: SLABELS = (/ &
+                   'SIAF',  'PMF ','SSF ', 'DUF ', 'PMC', 'SSC ', 'DUC ' /)
+   integer, dimension(7) ::&
+          Inddry = (/  1,        1,      1,      1,       2,      3,      4 /), &
+          Gb     = (/  1,        1,      2,     -1,       1,      2,     -1 /)
 end type aero_type
 type(aero_type), public, save :: AERO = aero_type()
 

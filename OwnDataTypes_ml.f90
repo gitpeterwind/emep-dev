@@ -81,18 +81,18 @@ private
   !==================
   !+ Derived output type
   type, public:: Deriv
-    character(len=TXTLEN_DERIV) :: name     ! e.g. DDEP_SO2_m2Conif
-    character(len=TXTLEN_SHORT) :: class    ! Type of data, e.g. ADV or Mosaic
-    character(len=TXTLEN_SHORT) :: subclass !  e.g. "VG", "Rns"
-    character(len=TXTLEN_SHORT) :: txt      ! text where needed, e.g. "Conif"
-    character(len=TXTLEN_SHORT) :: unit     ! writen in netCDF output
-    integer :: index          ! index in concentation array, or other
-    integer :: f2d            ! index in f_2d arrays
-    logical :: dt_scale       ! used only if we need a factor on dt_advec,
-    real    :: scale          !  e.g. use 100.0 to get cm/s
-    logical :: avg            ! True => average data (divide by nav at end),
+    character(len=TXTLEN_DERIV) :: name      = '-'  ! e.g. DDEP_SO2_m2Conif
+    character(len=TXTLEN_SHORT) :: class     = '-' ! Type of data, e.g. ADV or Mosaic
+    character(len=TXTLEN_SHORT) :: subclass  = '-'!  e.g. "VG", "Rns"
+    character(len=TXTLEN_SHORT) :: txt       = '-'! text where needed, e.g. "Conif"
+    character(len=TXTLEN_SHORT) :: unit      = '-'! writen in netCDF output
+    integer :: index         =UNDEF_I ! index in concentation array, or other
+    integer :: f2d           =UNDEF_I ! index in f_2d arrays
+    logical :: dt_scale      =.false. ! used only if we need a factor on dt_advec,
+    real    :: scale         =UNDEF_R !  e.g. use 100.0 to get cm/s
+    logical :: avg           =.true.  ! True => average data (divide by nav at end),
                               !  else accumulate over run period
-    integer :: iotype         ! sets output timing
+    integer :: iotype        =UNDEF_I ! sets output timing
   endtype
 
  ! Sentinel values (moved to NumberConstants)
@@ -102,8 +102,8 @@ private
   !==================
   !+ Hourly ASCII/NetCDF output type
   type, public:: Asc2D
-    character(len=TXTLEN_DERIV):: name = "NOTSET"   ! Name (no spaces!)
-    character(len=TXTLEN_SHORT):: type = "NOTSET"  ! "ADVppbv" or "ADVugm3" or "SHLmcm3"
+    character(len=TXTLEN_DERIV):: name = "-"   ! Name (no spaces!)
+    character(len=TXTLEN_SHORT):: type = "-"  ! "ADVppbv" or "ADVugm3" or "SHLmcm3"
 !   character(len=9) :: ofmt      ! Output format (e.g. es12.4)
     integer          :: spec = UNDEF_I   ! Species number in xn_adv or xn_shl array
                                   ! or other arrays
@@ -147,7 +147,12 @@ subroutine print_Deriv_type(w)
   write(*,"(a,a)")    "subclass :", trim(w%subclass)
   write(*,"(a,a)")      "txt    :", trim(w%txt)
   write(*,"(a,a)")      "units  :", trim(w%unit)
-  write(*,"(a,i3)")     "index  :", w%index
+  if( w%index == UNDEF_I) then 
+    write(*,"(a)")     "index  : UNDEF"
+  else
+    write(*,"(a,i5)")  "index  :", w%index
+    !print *,  "UNDEF? index  :", w%index
+  end if
   write(*,"(a,i3)")     "f2d    :", w%f2d
   write(*,"(a,a10)")    "txt    :", w%txt
   write(*,"(a,es10.3)") "scale  :", w%scale

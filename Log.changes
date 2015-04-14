@@ -153,14 +153,75 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-12 April 2015  Dave 2980-2982
+12-14 April 2015  Dave 2980-2982
 
+NEW - start of easier outputs for d_2d fields. The OutputMisc field system
+  lets the user add new variables directly in config_Outputs, although
+  of course Unimod needs to know how to deal with the "class" and names given.
+  class type now for these OutputMisc is 'USET' (user-set), will likely 
+  refine later.
 
-AeroFunctions - NEW!
+  I have added the example USTAR_d which should give exactly the same output
+  as the older USTAR_NWP from My_Derived, without the need for the code in
+  My_D.  (Code is still needed in Derived to know how to deal with this class
+   of output though.)
+
+  I also added a class rct where Setup_1d_ml sets d_2d values directly
+  from the rct values. (Used for comparing loss rates.)
+
+  This will hopefully enable us to get rid of My_Derived soon :-)
+
+New - AeroFunctions! (should have been in 2979. Updated now anyway)
 - functions to calculate wet-radius (Gerber method), surface area, etc.
+  now has kaero routine (which is chemistry-independent)
+
+Chem_ml
+- added cHNO3, aero_fom, etc. for aerosol calculations
+
+ChemFunctions_ml
+- HydrolysisN2O5 has  many more options for gamma factors, using functions
+  from AeroFunctions
+- kaero renamed xkaero, now not used.
+  (Logic is that "physics" functions are kept in AeroFunctions. These know
+   nothing about EMEP model chemical species or assumptions. Functions which
+   need access to chemical information are kept in ChemFunctions.)
+
+OwnDerivedTy, My_Derived, Derived
+- modified to allow new OutputMisc types, and better initialisation
+- plus SurfArea added in Derived - surface area of different aerosol types
+
+ModelConstants, Setup_1d_ml, Setup_1dfields_ml
+- changes to calculation of aerosol surface area
+- allows rate coefficients (class RCT) to use new OutputMisc system, here
+  setting d_2d directly
+
+ModelConstants
+- changes to calculation of aerosol surface area, in AERO%
+- allows rate coefficients (class RCT) to use new OutputMisc system, here
+- added USES%n2o5Hydrolysis
+- added DEBUG%STOP_HH to enable run-stop after e.g. 1 hour.
+
+MosaicOutputs
+- better use of sub='AddMosaicMetConc:' for debugging
+
+Unimod.f90
+- added DEBUG%STOP_HH to enable run-stop after e.g. 1 hour.
+
+ZCM_EmChem09/EmChem09.reactions
+- use kaero(rh) from AeroFunctions.
+- has fake reaction of Rnwater to allow debugging of Riemer and gamm
 
 ZD_ESX/refman.pdf deleted. Was starting to take space, and can anyway be
   generated from script.
+
+config_EMEPSTD, config_Outputs_EMEPSTD, config_BM-EECCA
+- added USES%n2o5Hydrolysis
+- added new SurfArea and 'USET'
+- added DEBUG%STOP_HH to enable run-stop after e.g. 1 hour.
+
+GenChem.pl
+- add call to AeroFunctions
+
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

@@ -348,6 +348,8 @@ program myeul
      ts2=make_timestamp(date(enddate(1),enddate(2),enddate(3),enddate(4),0))
      End_of_Run =  (nint(tdif_secs(ts1,ts2))<=0)
 
+     if( DEBUG%STOP_HH >= 0 .and. DEBUG%STOP_HH == current_date%hour ) End_of_Run = .true.
+
   enddo ! time-loop
 
   call Code_timer(tim_after0)

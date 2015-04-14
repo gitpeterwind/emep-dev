@@ -105,23 +105,27 @@ private
    integer, public, save :: nOutputFields = 0
    integer, public, save :: nOutputWdep   = 0
 
+  ! Direct setting of derived fields:
+   type(Deriv), public, save, dimension(MAX_NUM_DERIV2D) :: OutputMisc= Deriv()
+   integer, save, public :: nOutputMisc = 0
+
    type(typ_s5i), public, save, dimension(MAX_NUM_DERIV2D) :: OutputConcs = &
-          typ_s5i("NOTSET","-","-","-","-",-999)
+          typ_s5i("-","-","-","-","-",-999)
 
    ! Depositions
   type(typ_si), public, save, dimension(MAX_NUM_DDEP_ECOS) :: DDEP_ECOS = &
-     typ_si("NOTSET", -999 )  ! e.g. "Grid     ", D), 
+     typ_si("-", -999 )  ! e.g. "Grid     ", D), 
 
   type(typ_s3), public, save, dimension(MAX_NUM_DDEP_WANTED) :: &
-    DDEP_WANTED = typ_s3('NOTSET', '-', ' -' )
+    DDEP_WANTED = typ_s3('-', '-', ' -' )
 ! e.g.     typ_s3("SO2      ", SPEC, "mgS"), &
 
   type(typ_s3), public, save, dimension(MAX_NUM_WDEP_WANTED) :: &
-    WDEP_WANTED = typ_s3('NOTSET', '-', ' -' )
+    WDEP_WANTED = typ_s3('-', '-', ' -' )
 
 ! Tropospheric columns
 !   integer, public, save, dimension(MAX_COLUMNDAT_WANTED) :: &
-!      COLUMNDAT_WANTED = typ_ss( 'NOTSET', 'k20' )
+!      COLUMNDAT_WANTED = typ_ss( '-', 'k20' )
    !NMLinteger, public, parameter, dimension(1) :: COLUMN_MOLEC_CM2 = &
    !NML       (/ NO2 /) ! , CO, CH4, C2H6, HCHO, NO2 /)
    !NML character(len=3), public, save, dimension(MAX_COL_WANTED) :: &
@@ -312,8 +316,9 @@ private
                       ! - older (gcc 4.1?) gfortran's had bug
     character(len=TXTLEN_SHORT) :: outname, outunit, outdim, outtyp, outclass
     logical :: debug0   !  if(DEBUG%MY_DERIVED.and.MasterProc )
+    character(len=12), save :: sub='InitMyDeriv:'
 
-    NAMELIST /OutputConcs_config/OutputConcs
+    NAMELIST /OutputConcs_config/OutputMisc,OutputConcs
     NAMELIST /OutputDep_config/DDEP_ECOS, DDEP_WANTED, WDEP_WANTED
 
     debug0 = DEBUG%MY_DERIVED.and.MasterProc
@@ -325,23 +330,31 @@ private
    
 
     !! Find number of wanted OutoutConcs
-    nOutputConcs = find_index("NOTSET", OutputConcs(:)%txt1, &
-                       first_only=.true. ) -1
-    nOutputWdep  = find_index("NOTSET", WDEP_WANTED(:)%txt1, &
-                       first_only=.true. ) -1
-!    nOutputMisc  = find_index("NOTSET", COLUMNDATA_WANTED(:)%txt1, &
+    nOutputMisc  = find_index("-", OutputMisc(:)%txt, first_only=.true. ) -1
+    nOutputConcs = find_index("-", OutputConcs(:)%txt1, first_only=.true. ) -1
+    nOutputWdep  = find_index("-", WDEP_WANTED(:)%txt1, first_only=.true. ) -1
+!    nOutputMisc  = find_index("-", COLUMNDATA_WANTED(:)%txt1, &
 !                       first_only=.true. ) -1
        
+    do i = 1,nOutputMisc  
+       if(MasterProc) then 
+         write(*,"(a,i3)") "NMLOUT nOUTMISC ", nOutputMisc
+         write(*,"(3a,2i3)") "NMLOUT OUTMISC ", OutputMisc(i)%name, OutputMisc(i)%class, OutputMisc(i)%index
+       end if
+       tag_name(1) = trim(OutputMisc(i)%name)
+       call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
+    end do
     if(MasterProc) then
+      write(*,"(a,i3)") "NMLOUT nOUTCONC ", nOutputConcs
       do i = 1,nOutputConcs  
-        write(*,"(3a,2i3)") "NMLOUT ", OutputConcs(i)%txt1, OutputConcs(i)%txt4, OutputConcs(i)%ind
+        write(*,"(3a,2i3)") "NMLOUT CONC ", OutputConcs(i)%txt1, OutputConcs(i)%txt4, OutputConcs(i)%ind
       end do
       do i = 1,size(DDEP_ECOS)  
         if( DDEP_ECOS(i)%ind < 1 ) exit
-        write(*,"(2a,2i3)") "NMLOUT CONC ", DDEP_ECOS(i)%name, DDEP_ECOS(i)%ind
+        write(*,"(2a,2i3)") "NMLOUT DEP ", DDEP_ECOS(i)%name, DDEP_ECOS(i)%ind
       end do
       do i = 1,size(DDEP_WANTED)  
-        if( DDEP_WANTED(i)%txt1 == 'NOTSET' ) exit
+        if( DDEP_WANTED(i)%txt1 == '-' ) exit
         write(*,"(2a)") "NMLOUT DDEP ", DDEP_WANTED(i)%txt1
       end do
       do i = 1,nOutputWdep  
@@ -470,11 +483,11 @@ private
 
 !print *, "NMOSAIC PRE ", NMosaic, nVEGO3
      call CheckStop( NMosaic >= MAX_MOSAIC_OUTPUTS, &
-                       "too many nMosaics" )
+                       sub//"too many nMosaics" )
 !print *, "NMOSAIC END ", NMosaic, nVEGO3
      call AddArray( MosaicOutput(1:nMosaic)%name, &
                         wanted_deriv2d, NOT_SET_STRING, errmsg)
-     call CheckStop( errmsg, errmsg // "MosaicOutput too long" )
+     call CheckStop( errmsg, sub//errmsg // "MosaicOutput too long" )
 
      mynum_deriv2d  = LenArray( wanted_deriv2d, NOT_SET_STRING )
 
