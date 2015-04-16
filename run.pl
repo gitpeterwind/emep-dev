@@ -472,6 +472,7 @@ if ($STALLO && $TREND_RUNS ) {
 my $RESET        = 0 ;  # usually 0 (false) is ok, but set to 1 for full restart
 my $COMPILE_ONLY = 0 ;  # usually 0 (false) is ok, but set to 1 for compile-only
 my $DRY_RUN      = 0 ;  # Test script without running model (but compiling)
+$RESET=($MAKEMODE=~/MACC/) if($CWF);
 
 if (%BENCHMARK and $BENCHMARK{'debug'}){
   die "No debug flags for benchmarks!"
@@ -563,7 +564,7 @@ chdir "$ProgDir";
 #-- generate Makefile each time, to avoid forgetting changed "pat" file!
 
 
-if($RESET or ($MAKEMODE=~/MACC/)) { ########## Recompile everything!
+if($RESET) { ########## Recompile everything!
   # For now, we simply recompile everything!
   system(@MAKE, "clean");
   if ($MAKEMODE) {
@@ -639,10 +640,10 @@ foreach my $scenflag ( @runs ) {
     $MetDir=~s:$year:%Y:g;                      # Genereal case for Jan 1st
     for my $n (0,1..($CWFDAYS-1)) {
       my $metfile="$MetDir/meteo%Y%m%d_%%02d.nc";
-      if($CWFDAYS<=6){   # forecast with 00/12 UTC FC met.
-        $metfile=sprintf date2str($CWFBASE." $metday day ago",$metfile),$n+$metday;
-      }else{             # hindcast using day 0,..,3 FC met.
+      if($aCWF or $CWFDAYS>4){  # hindcast using day 0,..,4 FC met.
         $metfile=sprintf date2str($CWFBASE." $metday day ago $n day",$metfile),$metday;
+      }else{                    # forecast with 00/12 UTC FC met.
+        $metfile=sprintf date2str($CWFBASE." $metday day ago",$metfile),$n+$metday;
       }
       # Chech if meteo is in place
       die "Meteo file $metfile for $CWFBASE not available (yet). Try later...\n"
@@ -654,33 +655,32 @@ foreach my $scenflag ( @runs ) {
       $cwfbc=date2str($CWFDATE[0],$CWFBC) unless (-e $cwfbc);
     }
 # Forecast nest/dump files
-unless($MAKEMODE=~/EVA/){
-    $cwfic=date2str($CWFDATE[0],$CWFIC);  # yesterday's dump
-    if($aCWF){                              # CWF_AN run: if dump not found
-      $cwfic=~s/AN-/FC-/      unless(-e $cwfic); # try CWF_00FC dump
-      $cwfic=~s/FC-/-/        unless(-e $cwfic); # try CWF_00 dump
-      $cwfic=~s/CWF_.*-/CWF_/ unless(-e $cwfic); # try CWF dump
+    unless($MAKEMODE=~/EVA/){
+      my $dump=date2str($CWFDATE[0],$CWFIC);            # yesterday's dump
+      foreach my $k ("00AN","00FC","00","12AN","12FC","12") {
+        ($cwfic=$dump)=~s/_.*-/_$k-/ unless(-e $cwfic); # try CWF_$k-dump.nc
+      }
+      $cwfic=$dump unless(-e $cwfic);                   # try yesterday's dump
       die "$CWF restart file for $CWFBASE not available (yet):\n\t$CWFIC\n\t$cwfic\n"
-          ."Try later...\n" unless(-e $cwfic);
-    }else{                                  # CWF_FC run: always from Analysis
-      $cwfic=~s/FC-/AN-/;                   # use CWF_AN dump
+          ."Try later...\n" if($aCWF and ! -e $cwfic);
+      my $metfile="$MetDir/meteo${CWFDATE[0]}_00.nc";   # yesterday's met
+      if(-e $metfile and ! -e $cwfic) {
+        print "No dumpfile present:\n\t$cwfbc.\n\tTake extra spin-up day.\n";
+        # Update simulation: start-date ($CWFDATE[1]), "yesterday" ($CWFDATE[0])
+        $CWFDATE[1]=$CWFDATE[0];
+        $CWFDATE[0]=date2str($CWFDATE[0]." 1 day ago","%Y%m%d");
+        mylink("CWF Met:",$metfile,date2str($CWFDATE[1],$METformat));
+        # IFS-MOZ/C-IFS BC file
+        $cwfbc=date2str($CWFDATE[1],$CWFBC);
+        $cwfbc=date2str($CWFDATE[0],$CWFBC) unless (-e $cwfbc);
+        # see if we can link to a dump file ...
+        $dump=date2str($CWFDATE[0],$CWFIC);               # yesterday's dump
+        foreach my $k ("00AN","00FC","00","12AN","12FC","12") {
+          ($cwfic=$dump)=~s/_.*-/_$k-/ unless(-e $cwfic); # try CWF_$k-dump.nc
+        }
+        $cwfic=$dump unless(-e $cwfic);                   # try yesterday's dump
+      }
     }
-    my $metfile="$MetDir/meteo${CWFDATE[0]}_00.nc"; # yesterday's met
-    if (-e $metfile and ! -e $cwfic) {
-      print "No dumpfile present:\n\t$cwfbc.\n\tTake extra spin-up day.\n";
-      # Update simulation: start-date ($CWFDATE[1]), "yesterday" ($CWFDATE[0])
-      $CWFDATE[1]=$CWFDATE[0];
-      $CWFDATE[0]=date2str($CWFDATE[0]." 1 day ago","%Y%m%d");
-      mylink("CWF Met:",$metfile,date2str($CWFDATE[1],$METformat));
-      # IFS-MOZ/C-IFS BC file
-      $cwfbc=date2str($CWFDATE[1],$CWFBC);
-      $cwfbc=date2str($CWFDATE[0],$CWFBC) unless (-e $cwfbc);
-      # see if we can link to a dump file ...
-      $cwfic=date2str($CWFDATE[0],$CWFIC);  # yesterday's dump
-     #$cwfic=~s/AN-//        if($aCWF);     # use Forecast dump on AN runs
-      $cwfic=~s/FC-/AN-/ unless($aCWF);     # use Analyis dump on FC runs
-    }
-}
 # Update start and end months (used for linking some climatological files)
     $mm1=substr($CWFDATE[1],4,2);  # start date
     $mm2=substr($CWFDATE[2],4,2);  # end date
@@ -770,10 +770,10 @@ unless($MAKEMODE=~/EVA/){
     print "TESTING PM $poll $dir\n";
 
     if ($GRID eq "MACC14") { # For most cases only Emis_TNO7.nc is available
-    # $ifile{"$emisdir/EmisOutFrac.$poll"} = "emislist.$poll"
-    #   if(-e "$emisdir/EmisOutFrac.$poll");
-      $ifile{"$dir/grid$gridmap{$poll}"} = "emislist.$poll"
-        if(-e "$emisdir/grid$gridmap{$poll}");
+      $ifile{"$emisdir/EmisOutFrac.$poll"} = "emislist.$poll"
+        if(-e "$emisdir/EmisOutFrac.$poll");
+    # $ifile{"$dir/grid$gridmap{$poll}"} = "emislist.$poll"
+    #   if(-e "$emisdir/grid$gridmap{$poll}");
       $ifile{"$emisdir/Emis_TNO7_2751.nc"} = "EmisFracs.nc"
         if(-e "$emisdir/Emis_TNO7_2751.nc");
     }elsif( $GRID eq "RCA"){
@@ -1008,7 +1008,12 @@ unless($MAKEMODE=~/EVA/){
     $inml{'grass_time'}="$PollenDir/grass_time.nc";
     $inml{'grass_frac'}="$PollenDir/grass_frac.nc";
     if($CWF){
-      $inml{'poll_read'}=$cwfpl=date2str($CWFDATE[0],$CWFPL);
+      my $dump=date2str($CWFDATE[0],$CWFPL);            # yesterday's dump
+      foreach my $k ($CWFMETV."AN",$CWFMETV."FC",$CWFMETV."") {
+        ($cwfpl=$dump)=~s/_.*-/_$k-/ unless(-e $cwfpl); # try CWF_$k-dump.nc
+      }
+      $cwfpl=$dump unless(-e $cwfpl);                   # try yesterday's dump
+      $inml{'poll_read'}=$cwfpl;
       $inml{'poll_write'}=date2str($CWFBASE,$CWFPL);
     }
   }

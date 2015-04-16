@@ -218,30 +218,30 @@
 &ExternalBICs_bc
   description='MACC_EVA','EVA_EU_FC',26, ! name,version,size
   map_bc=! emep,external,frac,wanted,found,IXADV,
-    'O3'        ,'O3'     ,1.0,T,F,-1,
+        'O3'        ,'O3'     ,1.0,T,F,-1,
         'NO'        ,'NO'          ,1.0,T,F,-1, 
         'NO2'       ,'NO2'         ,1.0,T,F,-1, 
         'PAN'       ,'PAN'         ,1.0,T,F,-1, 
-    'HNO3'      ,'HNO3'   ,1.0,T,F,-1, ! test MARS
-    'CO'        ,'CO'     ,1.0,T,F,-1,
+        'HNO3'      ,'HNO3'   ,1.0,T,F,-1, ! test MARS
+        'CO'        ,'CO'     ,1.0,T,F,-1,
         'C2H6'      ,'C2H6'        ,1.0,T,F,-1, 
-    'HCHO'      ,'CH2O'   ,1.0,T,F,-1,
-    'CH4'       ,'CH4'    ,1.0,T,F,-1, 
+        'HCHO'      ,'CH2O'   ,1.0,T,F,-1,
+        'CH4'       ,'CH4'    ,1.0,T,F,-1, 
         'SO2'       ,'SO2'         ,1.0,T,F,-1, 
-    'C5H8'      ,'ISOP'   ,1.0,T,F,-1,
-    'OH'        ,'OH'     ,1.0,F,F,-1, ! do not use
-    'SEASALT_F' ,'aermr01',1.0,T,F,-1,
-    'SEASALT_F' ,'aermr02',1.0,F,F,-1, ! do not use
-    'SEASALT_C' ,'aermr02',1.0,T,F,-1,
-    'SEASALT_C' ,'aermr03',1.0,F,F,-1, ! do not use
-    'DUST_SAH_F','aermr04',1.0,T,F,-1,
-    'DUST_SAH_F','aermr05',1.0,T,F,-1,
-    'DUST_SAH_F','aermr06',.15,T,F,-1,
-    'DUST_SAH_C','aermr06',.35,T,F,-1,
-    'FFIRE_OM'  ,'aermr07',1.7,F,F,-1, ! do not use
-    'FFIRE_OM'  ,'aermr08',1.7,F,F,-1, ! do not use
-    'FFIRE_BC'  ,'aermr09',1.0,F,F,-1, ! do not use
-    'FFIRE_BC'  ,'aermr10',1.0,F,F,-1, ! do not use
-    'SO4'       ,'aermr11',1.0,T,F,-1, ! test MARS
-    'SO2'       ,'aermr12',1.0,F,F,-1, ! do not use
+        'C5H8'      ,'ISOP'   ,1.0,T,F,-1,
+        'OH'        ,'OH'     ,1.0,F,F,-1, ! do not use
+        'SEASALT_F' ,'aermr01',1.0,T,F,-1,
+        'SEASALT_F' ,'aermr02',1.0,F,F,-1, ! do not use
+        'SEASALT_C' ,'aermr02',1.0,T,F,-1,
+        'SEASALT_C' ,'aermr03',1.0,F,F,-1, ! do not use
+        'DUST_SAH_F','aermr04',1.0,T,F,-1,
+        'DUST_SAH_F','aermr05',1.0,T,F,-1,
+        'DUST_SAH_F','aermr06',.15,T,F,-1,
+        'DUST_SAH_C','aermr06',.35,T,F,-1,
+        'FFIRE_OM'  ,'aermr07',1.7,F,F,-1, ! do not use
+        'FFIRE_OM'  ,'aermr08',1.7,F,F,-1, ! do not use
+        'FFIRE_BC'  ,'aermr09',1.0,F,F,-1, ! do not use
+        'FFIRE_BC'  ,'aermr10',1.0,F,F,-1, ! do not use
+        'SO4'       ,'aermr11',1.0,T,F,-1, ! test MARS
+        'SO2'       ,'aermr12',1.0,F,F,-1, ! do not use
 &end

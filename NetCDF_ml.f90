@@ -4231,8 +4231,8 @@ subroutine   vertical_interpolate(filename,Rvar,KMAX_ext,Rvar_emep,debug)
     status=nf90_get_att(ncFileID,VarID,"units",word)
     if(status==nf90_noerr)then
       if(word(1:3)=='hPa')then
-         write(*,*)'Changing hyam from hPa to Pa'
-         hyam_ext=100*hyam_ext
+        if(MasterProc) write(*,*)'Changing hyam from hPa to Pa'
+        hyam_ext=100*hyam_ext
       endif
     endif
     call check(nf90_inq_varid(ncFileID,"hybm",varID))

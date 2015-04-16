@@ -44,9 +44,9 @@ use Functions_ml,           only: great_circle_distance
 use GridValues_ml,          only: A_mid,B_mid, glon,glat, i_fdom,j_fdom
 use Io_ml,                  only: open_file,IO_TMP,IO_NML,PrintLog
 use InterpolationRoutines_ml,  only : grid2grid_coeff
-use ModelConstants_ml,      only: Pref,PPB,PT,KMAX_MID, MasterProc, NPROC     &
-  , IOU_INST,IOU_HOUR,IOU_YEAR,IOU_MON,IOU_DAY, RUNDOMAIN  &
-  , FORECAST, DEBUG_NEST, DEBUG_ICBC=>DEBUG_NEST_ICBC
+use ModelConstants_ml,      only: Pref,PPB,PT,KMAX_MID, MasterProc, NPROC,  &
+    IOU_INST,IOU_HOUR,IOU_YEAR,IOU_MON,IOU_DAY, RUNDOMAIN,  &
+    FORECAST, DEBUG_NEST,DEBUG_ICBC=>DEBUG_NEST_ICBC
 use MetFields_ml,           only: roa
 use netcdf,                 only: nf90_open,nf90_close,nf90_inq_dimid,&
                                   nf90_inquire_dimension,nf90_inq_varid,&
@@ -57,6 +57,7 @@ use netcdf_ml,              only: GetCDF,Out_netCDF,Init_new_netCDF,&
 use OwnDataTypes_ml,        only: Deriv,TXTLEN_SHORT
 use Par_ml,                 only: MAXLIMAX,MAXLJMAX,GIMAX,GJMAX,IRUNBEG,JRUNBEG, &
                                   me, li0,li1,lj0,lj1,limax,ljmax
+use Pollen_const_ml,        only: pollen_check
 use TimeDate_ml,            only: date,current_date,nmdays
 use TimeDate_ExtraUtil_ml,  only: idate2nctime,nctime2idate,&
                                   date2string,date2file,compare_date
@@ -397,6 +398,18 @@ subroutine wrtxn(indate,WriteNow)
            "Can not be written to file:",trim(filename_write),""
         endif
       enddo
+    elseif(FORECAST)then
+      ! POLLEN group members are written to pollen restart/dump file
+      call pollen_check(igrp=i)
+      if(i>0)then
+        where(chemgroups(i)%ptr>NSPEC_SHL) &
+          adv_ic(chemgroups(i)%ptr-NSPEC_SHL)%wanted=.false.
+        if((DEBUG_NEST.or.DEBUG_ICBC).and.MasterProc)&
+          write(*,"(A,':',/2(2X,A,1X,'''',A,'''',1X,A,'.'))")&
+           "Warning (wrtxn)", &
+           "Group","POLLEN","is written to pollen restart/dump file", &
+           "Will not be written to file:",trim(filename_write),""
+      endif
     endif
     do n=1,NSPEC_ADV
       if(.not.adv_ic(n)%wanted)then
@@ -716,7 +729,7 @@ subroutine init_nest(ndays_indate,filename_read,native_grid,IIij,JJij,Weight,&
       else
         k_ext=1            ! for 1 .. KMAX_ext levels
       endif
-      if(k/=KMAX_ext.and.MasterProc)&
+      if(k/=KMAX_ext)&
         write(*,"(A,4(1X,A,I0))")'Nest BC warning:',&
              'kdim #lev=',KMAX_ext,'and hyam/hybm #lev=',k,&
              '. Using only levels ',k_ext,'..',k

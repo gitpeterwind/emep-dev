@@ -1,4 +1,3 @@
-
 module Pollen_ml
 !-----------------------------------------------------------------------!
 ! Birch pollen emission calculation based on
@@ -11,7 +10,8 @@ use Pollen_const_ml
 use PhysicalConstants_ml, only: AVOG
 use Biogenics_ml,         only: EMIS_BioNat, EmisNat 
 use CheckStop_ml,         only: CheckStop,CheckNC
-use ChemChemicals_ml,     only: species
+use ChemSpecs,            only: NSPEC_SHL, species
+use Chemfields_ml,        only: xn_adv    ! emep model concs.
 use Functions_ml,         only: heaviside
 use GridValues_ml ,       only: glon, glat, debug_proc, debug_li, debug_lj
 use Landuse_ml,           only: LandCover
@@ -61,7 +61,8 @@ character(len=*), parameter :: &
 
 integer, save :: &
   inat_BIRCH=-1,inat_OLIVE=-1,inat_GRASS=-1,&
-  itot_BIRCH=-1,itot_OLIVE=-1,itot_GRASS=-1
+  itot_BIRCH=-1,itot_OLIVE=-1,itot_GRASS=-1,&
+  iadv_BIRCH=-1,iadv_OLIVE=-1,iadv_GRASS=-1
 
 integer, parameter :: &
   max_string_length=200 ! large enough for paths to be set on Pollen_config namelist
@@ -190,8 +191,11 @@ subroutine pollen_flux(i,j,debug_flag)
     itot_BIRCH = find_index(BIRCH,species(:)%name)
     itot_OLIVE = find_index(OLIVE,species(:)%name)
     itot_GRASS = find_index(GRASS,species(:)%name)
+    iadv_BIRCH = itot_BIRCH-NSPEC_SHL
+    iadv_OLIVE = itot_OLIVE-NSPEC_SHL
+    iadv_GRASS = itot_GRASS-NSPEC_SHL
     if(MasterProc)write(*,"(A,3(' adv#',I3,'=',A))") "Pollen: ",&
-      itot_BIRCH,BIRCH,itot_OLIVE,OLIVE,itot_GRASS,GRASS
+      iadv_BIRCH,BIRCH,iadv_OLIVE,OLIVE,iadv_GRASS,GRASS
 
     allocate(Pollen_left(MAXLIMAX,MAXLJMAX,3),p_day(MAXLIMAX,MAXLJMAX))
     Pollen_left(:,:,:) = 1
@@ -490,6 +494,7 @@ subroutine pollen_read()
   real, dimension(366), save :: fdays=-1
   real :: ncday(0:1)
   character(len=len(template_read)) :: filename
+  real,allocatable, dimension(:,:,:) :: data ! Data arrays
 
   if(.not.checkdates(daynumber,"pollen")) return
   if(.not.first_call) return
@@ -528,14 +533,32 @@ subroutine pollen_read()
 
   if(MasterProc)&
     write(*,"(3(A,1X),I0)") "Read Pollen dump",trim(filename),"record",nstart
-
+!------------------------
+! pollen adv (not written by Nest_ml)
+!------------------------
+  allocate(data(MAXLIMAX,MAXLJMAX,KMAX_MID))
+  call GetCDF_modelgrid(BIRCH,filename,data,&
+        1,KMAX_MID,nstart,1,needed=.not.FORECAST,found=found)
+  if(found)xn_adv(iadv_BIRCH,:,:,:)=data(:,:,:)
+  call GetCDF_modelgrid(OLIVE,filename,data,&
+        1,KMAX_MID,nstart,1,needed=.not.FORECAST,found=found)
+  if(found)xn_adv(iadv_OLIVE,:,:,:)=data(:,:,:)
+  call GetCDF_modelgrid(GRASS,filename,data,&
+        1,KMAX_MID,nstart,1,needed=.not.FORECAST,found=found)
+  if(found)xn_adv(iadv_GRASS,:,:,:)=data(:,:,:)
+  deallocate(data)
+!------------------------
+! heatsum
+!------------------------
   call GetCDF_modelgrid(BIRCH//"_heatsum",filename,heatsum(:,:,1),&
         1,1,nstart,1,needed=.not.FORECAST,found=found)
   if(.not.found)heatsum(:,:,1)=0.0
   call GetCDF_modelgrid(OLIVE//"_heatsum",filename,heatsum(:,:,2),&
         1,1,nstart,1,needed=.not.FORECAST,found=found)
   if(.not.found)heatsum(:,:,2)=0.0
-
+!------------------------
+! pollen_rest
+!------------------------
   call GetCDF_modelgrid(BIRCH//"_rest",filename,Pollen_rest(:,:,1),&
         1,1,nstart,1,needed=.not.FORECAST,found=found)
   if(.not.found)Pollen_rest(:,:,1)=N_TOT_birch
@@ -554,9 +577,11 @@ endsubroutine pollen_read
 subroutine pollen_dump ()
 ! Write pollen for forecast restart file: heatsum and pollenrest fields
   character(len=len(template_write)) :: filename
-  integer     :: ncfileID
-  type(Deriv) :: def1
   character(len=*), parameter :: dfmt="('Write: ',A,' [',A,'].')"
+  logical     :: fexist,create_var
+  integer     :: ncfileID,i
+  type(Deriv) :: def1
+  real,allocatable, dimension(:,:,:) :: data ! Data arrays
 
   if(.not.checkdates(daynumber,"pollen")) return
   if(.not.compare_date(FORECAST_NDUMP,current_date,&
@@ -566,54 +591,86 @@ subroutine pollen_dump ()
   if(.not.(allocated(Pollen_rest).and.allocated(heatsum))) return
 
   filename = date2string(template_write,current_date)
+  inquire(file=filename,exist=fexist)
   if(MasterProc)&
     write(*,*) "Write Pollen dump ",trim(filename)
 
-  def1%class='pollen_out' !written
-  def1%avg=.false.        !not used
-  def1%index=0            !not used
-  def1%scale=1.0          !not used
+  def1%avg=.false.            ! not used
+  def1%index=0                ! not used
+  def1%scale=1.0              ! not used
+  def1%iotype=IOU_INST        ! not used
+
+  allocate(data(MAXLIMAX,MAXLJMAX,KMAX_MID))
   ncfileID=-1 ! must be <0 as initial value
+  do i=1,2                          ! do first one loop to define the fields,
+    create_var=(i==1)               ! without writing them (for performance purposes),
+    if(create_var.and.fexist)cycle  ! if the file does not exists already
+!------------------------
+! pollen adv (not written by Nest_ml)
+!------------------------ 
+    def1%class='Advected'       ! written
+    def1%unit='mix_ratio'       ! written
+
+    def1%name=BIRCH             ! written
+    if(.not.create_var)data=xn_adv(iadv_BIRCH,:,:,:)
+    call Out_netCDF(IOU_INST,def1,3,KMAX_MID,data,1.0,CDFtype=CDFtype,&
+          ist=istart,jst=jstart,ien=iend,jen=jend,create_var_only=create_var,&
+          fileName_given=trim(filename),ncFileID_given=ncFileID)
+
+    def1%name=OLIVE             ! written
+    if(.not.create_var)data=xn_adv(iadv_OLIVE,:,:,:)
+    call Out_netCDF(IOU_INST,def1,3,KMAX_MID,data,1.0,CDFtype=CDFtype,&
+          ist=istart,jst=jstart,ien=iend,jen=jend,create_var_only=create_var,&
+          fileName_given=trim(filename),ncFileID_given=ncFileID)
+
+    def1%name=GRASS             ! written
+    if(.not.create_var)data=xn_adv(iadv_GRASS,:,:,:)
+    call Out_netCDF(IOU_INST,def1,3,KMAX_MID,data,1.0,CDFtype=CDFtype,&
+          ist=istart,jst=jstart,ien=iend,jen=jend,create_var_only=create_var,&
+          fileName_given=trim(filename),ncFileID_given=ncFileID)
 !------------------------
 ! heatsum
 !------------------------
-  def1%unit="degreedays"      ! written
+    def1%class='pollen_out'     ! written
+    def1%unit="degreedays"      ! written
 
-  def1%name=BIRCH//"_heatsum" ! written
-  if(DEBUG.and.MasterProc) print dfmt,trim(def1%name),trim(def1%unit)
-  call Out_netCDF(IOU_INST,def1,2,1,heatsum(:,:,1),1.0,CDFtype=CDFtype,&
-        ist=istart,jst=jstart,ien=iend,jen=jend,&
-        fileName_given=trim(filename),ncFileID_given=ncFileID)
-  
-  def1%name=OLIVE//"_heatsum" ! written
-  if(DEBUG.and.MasterProc) print dfmt,trim(def1%name),trim(def1%unit)
-  call Out_netCDF(IOU_INST,def1,2,1,heatsum(:,:,2),1.0,CDFtype=CDFtype,&
-        ist=istart,jst=jstart,ien=iend,jen=jend,&
-        fileName_given=trim(filename),ncFileID_given=ncFileID)
+    def1%name=BIRCH//"_heatsum" ! written
+    if(DEBUG.and.MasterProc) print dfmt,trim(def1%name),trim(def1%unit)
+    call Out_netCDF(IOU_INST,def1,2,1,heatsum(:,:,1),1.0,CDFtype=CDFtype,&
+          ist=istart,jst=jstart,ien=iend,jen=jend,create_var_only=create_var,&
+          fileName_given=trim(filename),ncFileID_given=ncFileID)
+    
+    def1%name=OLIVE//"_heatsum" ! written
+    if(DEBUG.and.MasterProc) print dfmt,trim(def1%name),trim(def1%unit)
+    call Out_netCDF(IOU_INST,def1,2,1,heatsum(:,:,2),1.0,CDFtype=CDFtype,&
+          ist=istart,jst=jstart,ien=iend,jen=jend,create_var_only=create_var,&
+          fileName_given=trim(filename),ncFileID_given=ncFileID)
 !------------------------
 ! pollen_rest
 !------------------------
-  def1%unit="pollengrains"
+    def1%class='pollen_out'     ! written
+    def1%unit="pollengrains"    ! written
 
-  def1%name=BIRCH//"_rest"    ! written
-  if(DEBUG.and.MasterProc) print dfmt,trim(def1%name),trim(def1%unit)
-  call Out_netCDF(IOU_INST,def1,2,1,Pollen_rest(:,:,1),1.0,CDFtype=CDFtype,&
-        ist=istart,jst=jstart,ien=iend,jen=jend,&
-        fileName_given=trim(filename),ncFileID_given=ncFileID)
+    def1%name=BIRCH//"_rest"    ! written
+    if(DEBUG.and.MasterProc) print dfmt,trim(def1%name),trim(def1%unit)
+    call Out_netCDF(IOU_INST,def1,2,1,Pollen_rest(:,:,1),1.0,CDFtype=CDFtype,&
+          ist=istart,jst=jstart,ien=iend,jen=jend,create_var_only=create_var,&
+          fileName_given=trim(filename),ncFileID_given=ncFileID)
 
-  def1%name=OLIVE//"_rest"    ! written
-  if(DEBUG.and.MasterProc) print dfmt,trim(def1%name),trim(def1%unit)
-  call Out_netCDF(IOU_INST,def1,2,1,Pollen_rest(:,:,2),1.0,CDFtype=CDFtype,&
-        ist=istart,jst=jstart,ien=iend,jen=jend,&
-        fileName_given=trim(filename),ncFileID_given=ncFileID)
+    def1%name=OLIVE//"_rest"    ! written
+    if(DEBUG.and.MasterProc) print dfmt,trim(def1%name),trim(def1%unit)
+    call Out_netCDF(IOU_INST,def1,2,1,Pollen_rest(:,:,2),1.0,CDFtype=CDFtype,&
+          ist=istart,jst=jstart,ien=iend,jen=jend,create_var_only=create_var,&
+          fileName_given=trim(filename),ncFileID_given=ncFileID)
 
-  def1%name=GRASS//"_rest"    ! written
-  if(DEBUG.and.MasterProc) print dfmt,trim(def1%name),trim(def1%unit)
-  call Out_netCDF(IOU_INST,def1,2,1,Pollen_rest(:,:,3),1.0,CDFtype=CDFtype,&
-        ist=istart,jst=jstart,ien=iend,jen=jend,&
-        fileName_given=trim(filename),ncFileID_given=ncFileID)
-
+    def1%name=GRASS//"_rest"    ! written
+    if(DEBUG.and.MasterProc) print dfmt,trim(def1%name),trim(def1%unit)
+    call Out_netCDF(IOU_INST,def1,2,1,Pollen_rest(:,:,3),1.0,CDFtype=CDFtype,&
+          ist=istart,jst=jstart,ien=iend,jen=jend,create_var_only=create_var,&
+          fileName_given=trim(filename),ncFileID_given=ncFileID)
+  enddo
   if(MasterProc)call CheckNC(nf90_close(ncFileID),"close:"//trim(filename))
+  deallocate(data)
 endsubroutine pollen_dump   
 !-------------------------------------------------------------------------!
 function heatsum_calc(t2,T_cutoff) result(ff)
