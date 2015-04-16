@@ -47,7 +47,7 @@ use ChemSpecs,        only: NSPEC_SHL, species
 use GridValues_ml,    only: i_fdom, j_fdom,&   ! Gives emep coordinates
                             debug_proc, debug_li,debug_lj
 use Io_ml,            only: IO_HOURLY
-use ModelConstants_ml,only: KMAX_MID, MasterProc, &
+use ModelConstants_ml,only: KMAX_MID, MasterProc, MY_OUTPUTS,&
                             IOU_INST, IOU_HOUR, IOU_YEAR, IOU_YEAR_LASTHH, &
                             DEBUG => DEBUG_OUT_HOUR,runlabel1,HOURLYFILE_ending,&
                             FORECAST
@@ -121,6 +121,14 @@ implicit none
       write(*,*)"DEBUG Hourly_out: nothing to output!"
     first_call=.false.
     return
+  endif
+
+  ! only write at 12UTC for "TRENDS@12UTC", eg
+  ! if(MY_OUTPUTS=="TRENDS@12UTC".and.current_date%hour/=12)return
+  i=index(MY_OUTPUTS,"@")
+  if(i>0)then
+    read(MY_OUTPUTS(i+1:i+2),*)ih
+    if(current_date%hour/=ih)return
   endif
 
   if(first_call) then

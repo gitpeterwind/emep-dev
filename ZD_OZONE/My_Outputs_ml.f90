@@ -17,7 +17,7 @@ use ChemSpecs
 
 use ChemGroups_ml,     only: chemgroups
 use DerivedFields_ml,  only: f_2d               ! D2D houtly output type
-use ModelConstants_ml, only: PPBINV, PPTINV, MasterProc, &
+use ModelConstants_ml, only: PPBINV, PPTINV, MasterProc, KMAX_MID,&
                              MY_OUTPUTS, FORECAST, USE_EMERGENCY,DEBUG_EMERGENCY,&
                              USE_AOD, USE_POLLEN, DEBUG_POLLEN, SELECT_LEVELS_HOURLY
 use OwnDataTypes_ml,   only: Asc2D
@@ -311,6 +311,9 @@ subroutine set_output_defs
     nhourly_out=2
     if(USE_AOD     )nhourly_out=nhourly_out+1
     nlevels_hourly = 1  ! nb zero is *not* one of levels
+  case("TRENDS@12UTC")
+    nhourly_out=3
+    nlevels_hourly = KMAX_MID  ! nb zero is *not* one of levels
   case default
     nhourly_out=1
     nlevels_hourly = 1  ! nb zero is *not* one of levels
@@ -643,9 +646,9 @@ subroutine set_output_defs
     /)
   case("TRENDS")
     j=2;hr_out(1:j) = (/  &
-      Asc2D("o3_3m", "ADVppbv", IXADV_o3, &
-                   ix1,ix2,iy1,iy2,1, "ppbv",PPBINV,600.0), &
-      Asc2D("no2_col"   ,"COLUMN",IXADV_NO2  ,&
+      Asc2D("o3_3m"  ,"ADVppbv",IXADV_O3 ,&
+            ix1,ix2,iy1,iy2,1,"ppbv",PPBINV,600.0), &
+      Asc2D("no2_col","COLUMN" ,IXADV_NO2,&
             ix1,ix2,iy1,iy2,1,"molec/cm2",to_molec_cm2,-999.9) &
 !!          ix1,ix2,iy1,iy2,1,"ug",to_ug_ADV(IXADV_NO2),-999.9) &
     /)
@@ -654,6 +657,22 @@ subroutine set_output_defs
       Asc2D("AOD_550nm" ,"AOD",00,&
             ix1,ix2,iy1,iy2,1," ",1.0,-999.9)
     endif
+  case("TRENDS@12UTC")
+    levels_hourly = (/(i,i=1,nlevels_hourly)/)
+    j=3;hr_out(1:j) = (/  &
+!!    Asc2D("so2"    ,"BCVppbv",IXADV_SO2, &
+!!          ix1,ix2,iy1,iy2,nlevels_hourly,"ppbv",PPBINV,-999.9),&
+      Asc2D("so2"    ,"BCVugXX",IXADV_SO2  ,&
+            ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug/m3",to_ug_ADV(IXADV_SO2),-999.9),&
+      Asc2D("so2_3m" ,"ADVppbv",IXADV_SO2, &
+            ix1,ix2,iy1,iy2,1             ,"ppbv",PPBINV,-999.9),&
+      Asc2D("so2_col","COLUMN" ,IXADV_SO2, &
+            ix1,ix2,iy1,iy2,1,"molec/cm2",to_molec_cm2,-999.9) &
+!!          ix1,ix2,iy1,iy2,1,"ug",to_ug_ADV(IXADV_SO2),-999.9) &
+!!    Asc2D("ws_10m", "ws_10m", 00, &
+!!          ix1,ix2,iy1,iy2,1,"m/s",1.0,100.0) &
+    /)
+
   case default
     hr_out(:) = (/  &
       Asc2D("o3_3m", "ADVppbv", IXADV_O3, &

@@ -108,9 +108,9 @@
   DEBUG%LANDUSE         = 0,
 !  DEBUG%STOP_HH        = 1,   ! If >= 0,  stops code after STOP_HH hours
 ! Specify here the coords and species index (tot, see CM_ChemSpecs_tot)
-!  DEBUG%IJ              = 60, 50      ! Bremen
-!  DEBUG%IJ              = 189, 144     ! Bremen, global
-  DEBUG%IJ              =  3, 50       ! sea I hope...
+! DEBUG%IJ              =  60, 50,      ! Bremen
+! DEBUG%IJ              = 189,144,     ! Bremen, global
+  DEBUG%IJ              =   3, 50,       ! sea I hope...
   DEBUG%SPEC            = 'OH',
 &end
 &Nest_config
