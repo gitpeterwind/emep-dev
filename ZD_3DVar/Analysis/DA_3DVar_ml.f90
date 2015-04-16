@@ -4,9 +4,8 @@
 module DA_3DVar_ml
 use ModelConstants_ml,only: KMAX_MID,KCHEMTOP,RUNDOMAIN,PPB,PPBINV,ANALYSIS,&
                             MasterProc,NPROC
-use ChemSpecs_shl_ml, only: NSPEC_SHL        ! Maps indices
-use ChemChemicals_ml, only: species          ! Gives names
-use ChemGroups_ml,    only: chemgroups       ! group  names
+use ChemSpecs,        only: NSPEC_SHL, species  ! Maps indices, SPC names
+use ChemGroups_ml,    only: chemgroups          ! group names
 use Chemfields_ml,    only: xn_adv
 use GridValues_ml,    only: coord_in_domain
 use TimeDate_ml,      only: date,current_date
@@ -16,7 +15,7 @@ use My_Timing_ml,     only: Code_timer,Add_2timing,NTIMING_UNIMOD
 use Par_ml,           only: me,gi0,gi1,gj0,gj1,li0,li1,lj0,lj1,limax,ljmax
 use CheckStop_ml,     only: CheckStop
 use SmallUtils_ml,    only: find_index
-use Functions_ml,     only: norm
+use Util_ml,          only: norm
 use DA_ml,            only: debug=>DA_DEBUG,DAFMT_DEF=>DA_FMT_DEF,&
                             debug_3dv=>DA_DEBUG_3DV,debug_obs=>DA_DEBUG_OBS,&
                             danml=>da_namelist,dafmt=>da_fmt_msg,damsg=>da_msg,&

@@ -9,14 +9,12 @@ use Functions_ml,     only: great_circle_distance
 use GridValues_ml,    only: glon,glat,coord_in_domain
 use Par_ml,           only: me
 use Chemfields_ml,    only: xn_adv,cfac,PM25_water,PM25_water_rh50
-!se ChemSpecs_shl_ml, only: NSPEC_SHL        ! Maps indices
-use ChemSpecs_adv_ml, only: NSPEC_ADV
-use ChemChemicals_ml, only: species
+use ChemSpecs,        only: NSPEC_ADV, species
 use ChemGroups_ml,    only: chemgroups
 use Io_ml,            only: IO_TMP,PrintLog
 use ModelConstants_ml,only: KMAX_MID,IIFULLDOM,JJFULLDOM,MasterProc,runlabel1
 use SmallUtils_ml,    only: find_index
-use Functions_ml,     only: norm
+use Util_ml,          only: norm
 use TimeDate_ExtraUtil_ml, only: date2string
 use Units_ml,         only: Units_Scale,Group_Units
 use DA_ml,            only: debug=>DA_DEBUG,dafmt=>da_fmt_msg,damsg=>da_msg,&
