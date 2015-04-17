@@ -119,6 +119,9 @@ private
   type(typ_s3), public, save, dimension(MAX_NUM_DDEP_WANTED) :: &
     DDEP_WANTED = typ_s3('-', '-', ' -' )
 ! e.g.     typ_s3("SO2      ", SPEC, "mgS"), &
+! Stomatal depositin (for HTAP)
+  type(typ_s3), public, save, dimension(MAX_NUM_DDEP_WANTED) :: &
+    SDEP_WANTED = typ_s3('-', '-', ' -' )
 
   type(typ_s3), public, save, dimension(MAX_NUM_WDEP_WANTED) :: &
     WDEP_WANTED = typ_s3('-', '-', ' -' )
@@ -259,9 +262,12 @@ private
 
 ! For met-data and canopy concs/fluxes ...
 
-!TFMM    character(len=TXTLEN_DERIV), public, parameter, dimension(3) :: &
-    character(len=TXTLEN_DERIV), public, parameter, dimension(2) :: &
-      MOSAIC_METCONCS = (/ "USTAR", "LAI  " /) ! TFMM "VPD     "  &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(4) :: &
+      MOSAIC_METCONCS = (/ "USTAR   ",  "LAI     "  & ! /) 
+                          ,"CanopyO3" & !SKIP
+                          ,"FstO3   "  /)
+   ! character(len=TXTLEN_DERIV), public, parameter, dimension(2) :: &
+   !   MOSAIC_METCONCS = (/ "USTAR", "LAI  " /) ! TFMM "VPD     "  &
                          ! ,"CanopyO3" & !SKIP
          !,"VPD     ", "FstO3   " "EVAP    ", "Gsto    " &
                         !SKIP
@@ -319,7 +325,7 @@ private
     character(len=12), save :: sub='InitMyDeriv:'
 
     NAMELIST /OutputConcs_config/OutputMisc,OutputConcs
-    NAMELIST /OutputDep_config/DDEP_ECOS, DDEP_WANTED, WDEP_WANTED
+    NAMELIST /OutputDep_config/DDEP_ECOS, DDEP_WANTED, WDEP_WANTED, SDEP_WANTED
 
     debug0 = DEBUG%MY_DERIVED.and.MasterProc
 
@@ -330,7 +336,7 @@ private
    
 
     !! Find number of wanted OutoutConcs
-    nOutputMisc  = find_index("-", OutputMisc(:)%txt, first_only=.true. ) -1
+    nOutputMisc  = find_index("-", OutputMisc(:)%name, first_only=.true. ) -1
     nOutputConcs = find_index("-", OutputConcs(:)%txt1, first_only=.true. ) -1
     nOutputWdep  = find_index("-", WDEP_WANTED(:)%txt1, first_only=.true. ) -1
 !    nOutputMisc  = find_index("-", COLUMNDATA_WANTED(:)%txt1, &

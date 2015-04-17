@@ -95,6 +95,7 @@ type, public :: emep_debug
     ,MY_DERIVED      = .false. &
     ,pH              = .false. &
     ,PHYCHEM         = .false. &
+    ,RSUR            = .false. & ! Surface resistance 
     ,RUNCHEM         = .false. & ! DEBUG%RUNCHEM is SPECIAL
        ,MY_WETDEP    = .false. &
     ,SEASALT         = .false. &
@@ -412,7 +413,6 @@ logical, public, save ::  DebugCell  = .false.
     ,DEBUG_SOA          = .false. &
     ,DEBUG_SUBMET         = .false. &
     ,DEBUG_WETDEP       = .false. &
-  ,DEBUG_RSUR           = .false. &
   ,DEBUG_RB             = .false. &
   ,DEBUG_SOILWATER      = .false. &
   ,DEBUG_SOILNOX        = .false. &
@@ -462,7 +462,8 @@ integer, public, parameter ::  &
 !Number of aerosol sizes (1-fine, 2-coarse, 3-'giant' for sea salt )
 ! FINE_PM = 1, COAR_NO3 = 2, COAR_SS = 3, COAR DUST = 4,pollen = 5    
 
-type, public :: aero_type
+integer, parameter :: NSAREA_DEF = 8 ! needs to be consistent with type below
+type, public :: aero_t
   character(len=15) :: EQUILIB  = 'MARS ' !aerosol themodynamics
   logical          :: DYNAMICS = .false.
   integer          :: NSIZE    = 5
@@ -475,16 +476,17 @@ type, public :: aero_type
     ,Vs = 0.0   ! Settling velocity (m/s). Easiest to define here
   !
   ! For surface area we track the following (NSD=not seasalt or dust)
-   integer  :: SIA_F=1, PM_F=2, SS_F=3, DU_F=4, PM_C=5, SS_C=6, DU_C=7, NSAREA=7
+  ! Must make sizes match NSAREA_DEF above
+   integer  :: SIA_F=1, PM_F=2, SS_F=3, DU_F=4, PM_C=5, SS_C=6, DU_C=7, ORIG=8, NSAREA=NSAREA_DEF
   ! Mappings to DpgV types above, and Gerber types (see AeroFunctions).
-  ! For Gerber, -1 indicates to use dry radius
-   character(len=4), dimension(7) :: SLABELS = (/ &
-                   'SIAF',  'PMF ','SSF ', 'DUF ', 'PMC', 'SSC ', 'DUC ' /)
-   integer, dimension(7) ::&
-          Inddry = (/  1,        1,      1,      1,       2,      3,      4 /), &
-          Gb     = (/  1,        1,      2,     -1,       1,      2,     -1 /)
-end type aero_type
-type(aero_type), public, save :: AERO = aero_type()
+  ! For Gerber (Gb), -1 indicates to use dry radius
+   character(len=4), dimension(NSAREA_DEF) :: SLABELS = (/ &
+                   'SIAF',  'PMF ','SSF ', 'DUF ', 'PMC', 'SSC ', 'DUC ', 'ORIG' /)
+   integer, dimension(NSAREA_DEF) ::&
+          Inddry = (/  1,        1,      1,      1,       2,      3,      4,   3 /), &
+          Gb     = (/  1,        1,      2,     -1,       1,      2,     -1,  -1 /)
+end type aero_t
+type(aero_t), public, save :: AERO = aero_t()
 
 !> Namelist controlled: which veg do we want flux-outputs for
 !! We will put the filename, and params (SGS, EGS, etc) in

@@ -246,8 +246,10 @@ subroutine Add_MosaicDDEP(DDEP_ECOS,DDEP_WANTED,nDD)
 ! adding them to the derived-type array OutDDep (e.g. => D2_SO4_m2Conif)
   nDD = 0
   do i=1,size(DDEP_WANTED)
+    if(DEBUG%MOSAICS.and.MasterProc) write(*,*) sub//"DDEP_WANTED,a:"// trim(DDEP_WANTED(i)%txt1), i
     if (DDEP_WANTED(i)%txt1 == '-') exit
     do n=1,size(DDEP_ECOS)
+      if(DEBUG%MOSAICS.and.MasterProc) write(*,*) sub//"DDEP_WANTED,b:", n, DDEP_ECOS(n)%ind
       if (DDEP_ECOS(n)%ind < 1) exit
       nDD = nDD + 1
       name  = DDEP_WANTED(i)%txt1
@@ -379,7 +381,7 @@ endsubroutine Add_MosaicDDEP
             trim(MosaicOutput(imc)%name), ", " // trim(subclass)
 
     select case(subclass)
-    case("DDEP")
+    case("DDEP", "SDEP")
       ! Eco landcovers can include several land-cover classes, see EcoSystem_ml
       iEco = find_index(MosaicOutput(imc)%txt,DEF_ECOSYSTEMS) 
       select case(nadv)
@@ -469,20 +471,20 @@ endsubroutine Add_MosaicDDEP
           endif
         case("Gs" )
           output = Gs
-        case("Gns")
-          output = Gns
-        case("Rs" )
-          if(Gs < 1.0e-44)then
-            output = -999.0 
-          else
-            output = 1.0/Gs
-          endif
-        case("Rns")
-          if(Gns < 1.0e-44)then
-            output = -999.0
-          else
-            output = 1.0/Gns
-          endif
+        !case("Gns") ! Apr 2015. Not likely to need these?
+        !  output = Gns
+        !case("Rs" )
+        !  if(Gs < 1.0e-44)then
+        !    output = -999.0 
+        !  else
+        !    output = 1.0/Gs
+        !  endif
+        !case("Rns")
+        !  if(Gns < 1.0e-44)then
+        !    output = -999.0
+        !  else
+        !    output = 1.0/Gns
+        !  endif
         endselect ! subclass
 
         if(DEBUG%MOSAICS.and.debug_flag) &

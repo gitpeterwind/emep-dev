@@ -68,6 +68,7 @@ use ModelConstants_ml, only: &
   ,IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY, IOU_YEAR_LASTHH, IOU_HOUR, IOU_HOUR_MEAN
 
 use MosaicOutputs_ml,     only: nMosaic, MosaicOutput
+use NumberConstants,      only: UNDEF_R
 use OwnDataTypes_ml,      only: Deriv, print_Deriv_type, &
                                 TXTLEN_DERIV,TXTLEN_SHORT ! type & length of names
 use Par_ml,               only: MAXLIMAX,MAXLJMAX, &      ! => max. x, y dimensions
@@ -899,6 +900,10 @@ end do
             forall ( i=1:limax, j=1:ljmax )
               d_2d( n, i,j,IOU_INST) = SurfArea_um2cm3(AERO%DU_C,i,j)
           end forall
+          case ( "SurfAreaORIG_um2cm3" )
+            forall ( i=1:limax, j=1:ljmax )
+              d_2d( n, i,j,IOU_INST) = SurfArea_um2cm3(AERO%ORIG,i,j)
+          end forall
 !GERBER
           case ( "u_ref" )
             forall ( i=1:limax, j=1:ljmax )
@@ -1364,7 +1369,10 @@ end do
             af = dt_advec
         end if
 
-!print *, "D2Ding", me, n, trim(f_2d(n)%name)
+!print *, "D2Ding", me, n, trim(f_2d(n)%name), d_2d(n,5,5,IOU_DAY), af, d_2d(n,5,5,IOU_DAY)
+!if ( any(d_2d == UNDEF_R ) ) then
+!  print *, "D2Ding ERROR", me, n, trim(f_2d(n)%name), minval(d_2d)
+!end if
         d_2d(n,:,:,IOU_DAY )  = d_2d(n,:,:,IOU_DAY )  + af*d_2d(n,:,:,IOU_INST)
         if ( f_2d(n)%avg ) nav_2d(n,IOU_DAY) = nav_2d(n,IOU_DAY) + 1
 

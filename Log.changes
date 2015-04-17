@@ -153,6 +153,37 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+17 April 2015  Dave 2988
+
+Commit of tidy ups, made before a new attack on Derived outputs...
+
+FIX: ZCM_EmChem09/EmChem09.reactions
+- commented out _func_HydrolysisN2O5('OrigRiemer')    Rnwater  since
+  it only worked if isotopes used.
+
+DryDep_ml
+- Many debug clean-ups
+  (Added mysub string for these)
+  Gsto added
+  K2 => KMAX_MID to help condense code
+  Partial cleanup and re-format
+
+LocalVariables
+- Added StoFrac, Gsto
+
+ModelConstants_ml
+- DEBUG%RSUR replaces DEBUG_RSUR
+  AERO for surface area extended to 8 (will be cut down soon)
+
+MosaicOutputs
+- Added Gsto
+  Removed some unused Gns code
+
+Rsurface_ml
+- Added Gsto instead of Gns
+  debug tidy-up
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16 April 2015  Alvaro 2984--2987
 
 Nest_ml,ZD_Pollen/Pollen_ml:

@@ -91,11 +91,15 @@
 ! Only partially implemented. See ModelConstants_ml
   DEBUG%AOT             = F,
   DEBUG%BIO             = F,   ! BVOC emissions, etc.
+  DEBUG%DERIVED         = F,   ! BVOC emissions, etc.
+  DEBUG%DRYDEP          = F,   ! BVOC emissions, etc.
   DEBUG%FORESTFIRE      = F,
   DEBUG%GLOBBC          = F,
   DEBUG%GRIDVALUES      = F,
   DEBUG%HOURLY_OUTPUTS  = F,
+  DEBUG%MOSAICS         = F,
   DEBUG%PHYCHEM         = F,
+  DEBUG%RSUR            = F,
   DEBUG%RUNCHEM         = F,
     DEBUG%SEASALT         = F, ! depends on RUNCHEM
   DEBUG%SETUP_1DBIO     = F,
@@ -108,9 +112,9 @@
   DEBUG%LANDUSE         = 0,
 !  DEBUG%STOP_HH        = 1,   ! If >= 0,  stops code after STOP_HH hours
 ! Specify here the coords and species index (tot, see CM_ChemSpecs_tot)
-! DEBUG%IJ              =  60, 50,      ! Bremen
+  DEBUG%IJ              =  60, 50,      ! Bremen
 ! DEBUG%IJ              = 189,144,     ! Bremen, global
-  DEBUG%IJ              =   3, 50,       ! sea I hope...
+!  DEBUG%IJ              =   3, 50,       ! sea I hope...
   DEBUG%SPEC            = 'OH',
 &end
 &Nest_config

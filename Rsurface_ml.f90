@@ -4,12 +4,13 @@ use CheckStop_ml,      only : CheckStop
 use CoDep_ml,          only : CoDep_factors, humidity_fac, Rns_NH3, Rns_SO2
 use DO3SE_ml,          only : g_stomatal, do3se
 
+use Io_Progs_ml,       only: datewrite
 use LocalVariables_ml, only : iL, L, G => Grid
   ! L (local) provides  t2C, rh, LAI, SAI, hveg, ustar, 
   !      PARsun,PARshade,LAIsunfrac, RgsO, RgsS, is_water, is_forest
   ! G (Grid)  provides snow, sdepth so2nh3ratio, 
 
-use ModelConstants_ml, only: DEBUG_RSUR, NO_CROPNH3DEP
+use ModelConstants_ml, only: DEBUG, NO_CROPNH3DEP
 use Radiation_ml, only : CanopyPAR
 use TimeDate_ml,  only : current_date
 use Wesely_ml,    only : Wesely_tab2 &  ! Wesely Table 2 for 14 gases
@@ -24,14 +25,14 @@ INCLUDE 'mpif.h'
 INTEGER STATUS(MPI_STATUS_SIZE),INFO
 
 
-real, public, save :: Rinc, RigsO, GnsO, RgsS  !hf CoDep 
+real, public, save :: Rinc, RigsO, GnsO, RgsS
 
  
     
 contains
 ! =======================================================================
 
-  subroutine Rsurface(i,j,DRYDEP_CALC,Gns,Rsur,errmsg,debug_arg,fsnow) 
+  subroutine Rsurface(i,j,DRYDEP_CALC,Gsto,Rsur,errmsg,debug_arg,fsnow) 
 ! =======================================================================
 !
 !     Description
@@ -99,16 +100,17 @@ contains
 ! Output:
 
    real,dimension(:),intent(out) :: Rsur   
-   real,dimension(:),intent(out) :: Gns   
+   real,dimension(:),intent(out) :: Gsto
 
    character(len=*), intent(out) :: errmsg
 ! Optional
     logical, intent(in), optional :: debug_arg
-    logical :: debug_flag = .false.
+    logical :: debug_flag = .false., dbg
 
 
  ! external resistance for Ozone
   real, parameter :: RextO =  2500.0   ! gives Gext=0.2 cm/s for LAI=5
+  real,dimension(size(Rsur)) :: Gns   
 
 ! Here, "Gext=0.2cm/s" refers to the external conductance, G_ext, where 
 ! G_ext=LAI/R_ext. In many studies, it has been assumed 
@@ -121,6 +123,7 @@ contains
 ! deposition velocity V_g, V_g>=LAI/R_ext. The value of G_ext can therefore be
 ! interpreted as the minimum value for V_g.
 
+    character(len=6), parameter :: sub='Rsurf:'
 
 ! Working values:
    
@@ -142,6 +145,7 @@ contains
 
 
    if ( present(debug_arg) ) debug_flag = debug_arg
+   dbg = DEBUG%RSUR .and. debug_flag
 
 ! START OF PROGRAMME: 
     errmsg = "ok"
@@ -161,10 +165,8 @@ contains
                             !and not Ggs from table
    
 
-    if ( DEBUG_RSUR .and. debug_flag ) then
-        write(*,"(a,i4,6f8.4)") "IN RSUR snow_flag ", &
-           current_date%hour,  L%hveg, Sdmax, G%ice_nwp, G%sdepth, fsnow
-    end if
+    if ( dbg ) call datewrite(sub//"snow_flag ",-1, &
+           (/ L%hveg, Sdmax, G%ice_nwp, G%sdepth, fsnow /) )
 
 
     canopy       = ( L%SAI > SMALLSAI ) ! - can include grass
@@ -204,9 +206,9 @@ contains
   !    less than 1m above vegetation (1m chosen arbitrary)
 
    !g_sto 0 when snow covering canopy
-   if ( DEBUG_RSUR .and. debug_flag ) then
-       write(*,"(a,5i5,i3,2L2,2f10.4,9es12.4)") "IN RSUR testcan ", &
-              current_date, iL, canopy, leafy_canopy, G%Idirect, L%PARsun, G%sdepth
+   if ( dbg ) then
+      write(*,*) sub//"testcan ", iL, canopy, leafy_canopy
+      call datewrite(sub//"testcan ", iL, (/ G%Idirect, L%PARsun, G%sdepth /) )
    end if
    if( leafy_canopy  .and. G%Idirect > 0.001 .and. G%sdepth< (1.0 +Sdmax) ) then  ! Daytime 
 
@@ -215,10 +217,11 @@ contains
 
 
         call g_stomatal(iL, debug_flag )
-   if ( DEBUG_RSUR .and. debug_flag ) then
-       write(*,"(a,5i5,i3,L2,2f10.4,9es12.4)") "IN RSUR gstoA ", &
-              current_date, iL, leafy_canopy, G%Idirect+G%Idiffuse, L%PARsun,  L%g_sto, L%f_env
-   end if
+
+        if ( DEBUG%RSUR .and. debug_flag ) then
+           call datewrite(sub//"gstoA ", iL, &
+               (/ G%Idirect+G%Idiffuse, L%PARsun,  L%g_sto, L%f_env /) )
+        end if
 
    else
         L%g_sun = 0.0
@@ -229,10 +232,8 @@ contains
 
    end if ! leafy canopy and daytime
 
-   if ( DEBUG_RSUR .and. debug_flag ) then
-       write(*,"(a,5i5,i3,L2,3f10.4)") "IN RSUR gsto ", &
+   if ( dbg ) write(*,"(a,5i5,i3,L2,3f10.4)") "IN RSUR gsto ", &
               current_date, iL, leafy_canopy, G%Idirect,  L%g_sto, L%f_env
-   end if
 
 
   !*** Calculate Rinc, Gext   (ACPs8.6.1)
@@ -305,6 +306,8 @@ contains
         if ( iwes == WES_HNO3 ) then
             lowT= -L%t2C *2.0
             Rsur(icmp)  = max(10.0,lowT) !not so affected by snow_flag, e.g. Erisman 1994,table 6,
+            Gsto(icmp) = 0.0              !only for code consistency eleswhere
+            !Gns(icmp) = 1.0/Rsur(icmp)   !only for code consistency eleswhere
            ! - reimplement Vg limitation for HNO3. 10 cm/s max is enough anyway!
            ! Rsur(icmp)  = max(1.0,lowT) !Cadle,1985
 
@@ -347,6 +350,7 @@ contains
            end if
 
 
+           Gsto(icmp) = L%LAI*DRx(iwes) *L%g_sto
            Rsur(icmp) = 1.0/( L%LAI*DRx(iwes) *L%g_sto + Gns(icmp)  )
 
          ! Stop NH3 deposition for growing crops 
@@ -355,12 +359,13 @@ contains
            if ( NO_CROPNH3DEP .and. DRYDEP_CALC(icmp) == WES_NH3 ) then
 
               if ( L%is_crop .and.  L%LAI > 0.1 ) then
-                   if ( DEBUG_RSUR .and. debug_flag .and. L%is_crop ) then 
+                   if ( DEBUG%RSUR .and. debug_flag .and. L%is_crop ) then 
                       write(*,"(a,i4,2i4,L2,f8.2)")  "NO_CROPNH3DEP ", &
                        iL, DRYDEP_CALC(icmp), WES_NH3, L%is_crop, L%LAI
                    end if
 
                  Rsur(icmp) =  1.0e10  ! BIG number
+                 Gsto(icmp) =  0.0     ! just for code consistecny
 
               end if
            end if
@@ -377,24 +382,25 @@ contains
            end if
 
            Rsur(icmp) = 1.0/Gns(icmp)  
+           Gsto(icmp) =  0.0     ! just for code consistecny
 
       else   ! Non-Canopy modelling:
            Gns(icmp) = 1.0e-5*Hstar*GnsS + f0*GnsO
            Rgs = 1.0/Gns(icmp)  ! Eqn. (9) !hf was  f0/do3se(iL)%RgsO
            Rsur(icmp)   = Rgs
+           Gsto(icmp) =  0.0     ! just for code consistecny
 
       end if  ! end of canopy tests 
 
 
-      if(DEBUG_RSUR.and.debug_flag) write(*,"(a20,2i3,L2,3g12.3)")  &
+      if ( dbg ) write(*,"(a20,2i3,L2,3g12.3)")  &
              "RSURFACE Rsur(i): ", iL, icmp, L%is_crop,  Rsur(icmp)
 
 
   end do GASLOOP
 
 
-   if ( DEBUG_RSUR ) then
-       if ( debug_flag ) then 
+  if ( dbg ) then 
       write(*,"(a,2i4)")  "RSURFACE DRYDEP_CALC", &
             size(DRYDEP_CALC), DRYDEP_CALC(1)
       write(*,"(a,i3,2f7.3,5L2)")  "RSURFACE iL, LAI, SAI, LOGIS ", &
@@ -402,8 +408,7 @@ contains
               canopy, leafy_canopy
       write(*,"(a,i3,4g12.3)")  "RSURFACE xed Gs", iL, &
              do3se(iL)%RgsO,do3se(iL)%RgsS, lowTcorr, Rinc
-     end if
-   end if
+  end if
  end subroutine Rsurface
 
 !--------------------------------------------------------------------
