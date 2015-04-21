@@ -10,16 +10,17 @@
 !USES system started June 2013
 ! Only partially implemented. See below and ModelConstants_ml
   USES%testname         = 'EMEPSTD',
-  USES%FOREST_FIRES     = T, 
+  USES%FOREST_FIRES     = T,
   USES%EMISSTACKS       = F,         ! Reads PointSources file
   USES%DEGREEDAY_FACTORS = F,
   USES%GRIDDED_EMIS_MONTHLY_FACTOR = T, !
   USES%PlumeMethod      = 'PVDI',    ! default PVDI, possible: NILU, ASMI, PVDI
   USES%PFT_MAPS         = T,         ! PFT LAI tests
+  USES%n2o5HydrolysisMethod = 'SmixTen', !  "Gamma:0.002' ! 'OrigRiemer'! =ACP2012 EMEP implementation
 !------------------------------
   USE_SOILWATER         = T,          ! Uses SMI from meteo data
   USE_CONVECTION        = T,
-!  CONVECTION_FACTOR     = 0.33        ! Test reduced convection
+  CONVECTION_FACTOR     = 0.33        ! Test reduced convection
   USE_SEASALT           = T,
   USE_AIRCRAFT_EMIS     = T,          ! Needs global file, see manual
   USE_LIGHTNING_EMIS    = T,          ! 
@@ -27,6 +28,8 @@
   USE_EURO_SOILNOX      = F,          ! diff for global + Euro runs
   EURO_SOILNOX_DEPSCALE = 1.0,        ! Scale, default 1  (see ModelConstants_ml)
   USE_GLOBAL_SOILNOX    = T,          ! diff for global + Euro runs
+!------------------------------
+!SOON:  CONVECTION_FACTOR     = 0.33        ! Test reduced convection
 !------------------------------
   USE_POLLEN            = F,          ! EXPERIMENTAL. Only works if start Jan 1
   USE_ROADDUST          = F,          ! Only EECCA?
@@ -39,8 +42,8 @@
 !  AERO%EQUILIB          = 'MARS ',      ! MARS, MARS_2900, GEOSCHEM, EQSAM, or EMEP
 !  AERO%NSIZE etc... see ModelConstants
 !------------------------------
-  !EMIS_SOURCE           = 'CdfFractions', ! 'emislist' or 'CdfFractions'
-  EMIS_SOURCE           = 'emislist', ! 'emislist' or 'CdfFractions'
+  EMIS_SOURCE           = 'CdfFractions', ! 'emislist' or 'CdfFractions'
+  !EMIS_SOURCE           = 'emislist', ! 'emislist' or 'CdfFractions'
   EMIS_TEST             = 'None',     ! 'None' or 'CdfSnap' 
 !------------------------------
 ! IN TESTING:
@@ -101,6 +104,7 @@
   DEBUG%HOURLY_OUTPUTS  = F,
   DEBUG%PHYCHEM         = F,
   DEBUG%RUNCHEM         = F,
+    DEBUG%SEASALT         = F, ! depends on RUNCHEM
   DEBUG%SETUP_1DBIO     = F,
   DEBUG%SETUP_1DCHEM    = F,
   DEBUG%SEASALT         = F,
@@ -109,6 +113,7 @@
 ! Use integers to control debug level:
   DEBUG%PFT_MAPS        = 0,   ! in testing
   DEBUG%LANDUSE         = 0,
+!  DEBUG%STOP_HH        = 1,   ! If >= 0,  stops code after STOP_HH hours
 ! Specify here the coords and species index (tot, see CM_ChemSpecs_tot)
 !  DEBUG%IJ              = 60, 50      ! Bremen
 !  DEBUG%IJ              = 15, 15      ! sea

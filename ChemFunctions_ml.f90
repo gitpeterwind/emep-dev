@@ -36,6 +36,7 @@ module ChemFunctions_ml
   public ::  xkaero 
   public ::  kaero2    ! for testing
   public ::  RiemerN2O5
+  public ::  S_RiemerN2O5 !TES
   public ::  HydrolysisN2O5
   public ::  ec_ageing_rate
   public ::  kmt3      ! For 3-body reactions, from Robert OCt 2009
@@ -300,6 +301,38 @@ module ChemFunctions_ml
   end function RiemerN2O5
   !---------------------------------------------------------------------
 
+  ! crude, but rate = xxxx . S , dvs S = rate / xxxx
+  function S_RiemerN2O5(k) result(S) 
+     integer, intent(in) :: k
+     real :: S
+     real    :: c, rate, gam, rho
+     real    :: f   ! Was f_Riemer
+     real, parameter :: EPSIL = 1.0  ! One mol/cm3 to stop div by zero
+     real :: xNO3  ! As the partitioning between fine and coarse is so difficult
+                   ! we include both in the nitrate used here.
+
+          xNO3 = x(NO3_f,k) + x(NO3_c,k) 
+
+         !mean molec speed of N2O5 (MW 108), m/s
+         ! with density corrected for rh (moderate approx.)
+          c = sqrt(3.0 * RGAS_J * itemp(k) / 0.108) ! mol.speed (m/s)
+          rho= (2.5 - rh(k)*1.25)                   ! density, g/cm3
+
+          f = 96.0*x(SO4,k)/( 96.*x(SO4,k) + 62.0* xNO3  + EPSIL )
+
+
+          rate=  (0.9*f + 0.1) * c /(4.0*rho) *  &
+                !TEST   0.5 * & ! v. loosely based on Reimer 2009 
+             ( VOLFACSO4 * x(SO4,k) + VOLFACNO3 * xNO3  &
+              + VOLFACNH4 * x(NH4_f,k) )    !SIA aerosol surface
+          !rate = 1/4 . gamma. c . S
+          !rate in s-1
+          gam = ( 0.9*f + 0.1 )*0.02
+          S = 4.0 * rate/(gam * c ) ! will give S in m2
+
+  end function S_RiemerN2O5
+  !---------------------------------------------------------------------
+
   function HydrolysisN2O5(ormethod) result(rate) 
    character(len=*), intent(in) , optional:: ormethod ! overrides default method if wanted
    character(len=30) :: method
@@ -344,7 +377,7 @@ module ChemFunctions_ml
         endif
       end do ! k
   !---------------------------------------
-   case ( "Smix" )
+   case ( "Smix", "SmixTen" )
 
      do k = K1, K2
 
@@ -354,14 +387,12 @@ module ChemFunctions_ml
             f = 96*x(SO4,k)/( 96*x(SO4,k) + 62* xNO3  + EPSIL )
 
             S = S_m2m3(AERO%PM_F,k) !NOW all fine PM
-            !Rwet = 0.5*DpgNw(AERO%SIA_F,k)
             gam = GammaN2O5(temp(k),rh(k),&
-             f,aero_fom(k),aero_fss(k),aero_fdust(k))
-            !rate(k) = UptakeRate(c,gam,S,Rwet) !1=fine SIA ! +OM
+                   f,aero_fom(k),aero_fss(k),aero_fdust(k))
+
+            if( method == "SmixTen") gam = 0.1 * gam ! cf Brown et al, 2009!
+
             rate(k) = UptakeRate(cN2O5(k),gam,S) !1=fine SIA ! +OM
-               !if(k==K2.and. rate(k)> 0.01 ) print "(a,6f8.3,99es10.2)", &
-               !"RSmix",temp(k),rh(k),f,aero_fom(k),aero_fss(k),aero_fdust(k),&
-               ! gam,cN2O5(k),x(SO4,k),x(NO3_f,k),x(NO3_c,k),xNO3,rate(k), S*1.0e6
        else
             rate(k) = 0.0
        end if
@@ -427,6 +458,20 @@ module ChemFunctions_ml
          rate(k) = 0.0
       endif
     end do ! k
+    case ( "Gamma:0.002")  ! Inspired by Brown et al. 2009
+     do k = K1, K2
+
+       if ( rh(k)  > 0.4) then ! QUERY???
+
+          gam = 0.002
+          S = S_m2m3(AERO%PM_F,k) !fine SIA +OM + ...
+          rate(k) = UptakeRate(cN2O5(k),gam,S) 
+      else
+         rate(k) = 0.0
+       end if
+
+    end do ! k
+
      case default
        call StopAll("Unknown N2O5 hydrolysis"//method )
        

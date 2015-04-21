@@ -22,11 +22,12 @@
   USES%EMISSTACKS       = F,         ! Reads PointSources file
   USES%DEGREEDAY_FACTORS = T,
   USES%PlumeMethod      = 'PVDI',    ! default PVDI, possible: NILU, ASMI, PVDI
-!  USES%n2o5HydrolysisMethod = "Smix" ! "mixedPMF" ! "RiemerPMF" ! "RiemerSIAc3"  ! "RiemerSIAc3"  ! "OrigRiemer"
+  USES%n2o5HydrolysisMethod = "SmixTen" ! "Gamma:0.002"  ! "OrigRiemer"
   USES%PFT_MAPS         = T,         ! PFT LAI tests
 !------------------------------
   USE_SOILWATER         = T,          ! Uses SMI from meteo data
-  USE_CONVECTION        = F,
+  USE_CONVECTION        = F,          ! False for EECCA runs performs better
+  CONVECTION_FACTOR     = 0.33,
 !  USES%DEGREEDAY_FACTORS = T,
   USE_SEASALT           = T,
   USE_AIRCRAFT_EMIS     = T,          ! Needs global file, see manual
@@ -106,7 +107,8 @@ OutputMisc=
 ! 'AeroHNO3DU', 'USET', 'rct',   'rct', '/s', 73,   -1,       F,   1.0, T, 3,
 ! 'AeroHO2PM',  'USET', 'rct',   'rct', '/s', 74,   -1,       F,   1.0, T, 3,
 ! 'AeroO3DU',   'USET', 'rct',   'rct', '/s', 75,   -1,       F,   1.0, T, 3,
- 'USTAR_d',    'USTAR_NWP', '-', '-', 'm/s', -99,  -99,      F,   1.0, T, 3,
+ 'USTAR_NWP',  'USTAR_NWP', '-', '-', 'm/s', -99,  -99,      F,   1.0, T, 4,
+ 'Snow_m',    'SNOW', '-',      '-',   'm', -99,  -99,      F,   1.0, T, 4,
 !
 OutputConcs= 
       'HMIX'                ,'m'   ,'2d','HMIX'     ,'MISC' ,7, !! hourly tests
@@ -115,12 +117,10 @@ OutputConcs=
       'SurfAreaSSC_um2cm3' ,'um2/cm3' ,'2d','SurfAreaSSC_um2cm3'    ,'MISC' ,4, !!
       'SurfAreaDUF_um2cm3' ,'um2/cm3' ,'2d','SurfAreaDUF_um2cm3'    ,'MISC' ,4, !!
       'SurfAreaDUC_um2cm3' ,'um2/cm3' ,'2d','SurfAreaDUC_um2cm3'    ,'MISC' ,4, !!
-      'USTAR_NWP'           ,'m/s' ,'2d','USTAR_NWP','MISC' ,7, !! hourly tests
       'Kz_m2s'              ,'m2/s','2d','Kz_m2s'   ,'MISC' ,7, !! hourly tests
 !     'ws_10m'              ,'m'   ,'2d','ws_10m'   ,'MISC' ,7, !! hourly tests
       'rh2m'                ,'m'   ,'2d','rh2m'     ,'MISC' ,7, !! hourly tests
       'T2m'                 ,'degC','2d','T2m'      ,'MISC' ,4,
-      'Snow_m'              ,'m'   ,'2d','SNOW'     ,'MISC' ,4,
       'SURF_ppbC_VOC'       ,'ppb' ,'2d','VOC'      ,'MISC' ,4,
       'SMI_deep'            ,'-'   ,'2d','SMI_deep' ,'MISC' ,4,
       'SMI_uppr'            ,'-'   ,'2d','SMI_uppr' ,'MISC' ,4,

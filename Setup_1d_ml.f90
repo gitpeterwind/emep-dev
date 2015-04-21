@@ -11,6 +11,7 @@ use Biogenics_ml,        only: SoilNOx
 use Biogenics_ml,        only: EMIS_BioNat, EmisNat  
 use Chemfields_ml,       only: xn_adv,xn_bgn,xn_shl, &
                                NSPEC_COL, NSPEC_BGN, xn_2d_bgn
+use ChemFunctions_ml, only : S_RiemerN2O5
 use ChemGroups_ml,       only: PM10_GROUP, PMFINE_GROUP, SIA_GROUP, SS_GROUP, DUST_GROUP
 use CheckStop_ml,        only:  CheckStop
 use DerivedFields_ml,    only: d_2d, f_2d
@@ -290,6 +291,9 @@ contains
            iw= AERO%PM_C
            S_m2m3(iw,k) = S_m2m3(AERO%PM_F,k) + S_m2m3(AERO%SS_C,k) + S_m2m3(AERO%DU_C,k) 
 
+           iw= AERO%ORIG
+           S_m2m3(iw,k) = S_RiemerN2O5(k)
+
            ! m2/m3 -> um2/cm3 = 1.0e6, only for output to netcdf
            if( k == KMAX_MID ) then 
               do iw = 1, AERO%NSAREA
@@ -346,6 +350,8 @@ contains
 
    call set_rct_rates()
 
+
+
    if ( first_call ) then
      call CheckStop( any(isnan(rct(:,:))), sub//"RCT NAN'd")
      nd2d = 0
@@ -375,6 +381,7 @@ end if
 
 
   if( debug_flag ) then
+      write(*,*) sub//"OLD-S ", lbound(rh),  S_RiemerN2O5(20)
       write(*,"(a,2i5)") sub//"RCT ", me, nd2d
       write(*,"(a,10es10.3)") sub//"RCT ", &
             rct(3,KMAX_MID), rct(4,KMAX_MID), rct(61,KMAX_MID), rct(62,KMAX_MID)

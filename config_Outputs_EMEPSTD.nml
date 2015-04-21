@@ -19,15 +19,13 @@
 &OutputConcs_config
 OutputMisc=
  ! name        class    subclass txt   unit index f2d dt_scale scale avg period
- 'AeroOrig',   'USET', 'rct',   'rct', '/s', 62,   -1,       F,   1.0, T, 4,
- !'AeroDSmix',  'USET', 'rct',   'rct', '/s', 61,   -1,       F,   1.0, T, 4
- !'Aerok',      'USET', 'rct',   'rct', '/s', 63,   -1,       F,   1.0, T, 4
+ !'AeroOrig',   'USET', 'rct',   'rct', '/s', 62,   -1,       F,   1.0, T, 4,
  !'AeroHNO3SS', 'USET', 'rct',   'rct', '/s', 72,   -1,       F,   1.0, T, 4
  !'AeroHNO3DU', 'USET', 'rct',   'rct', '/s', 73,   -1,       F,   1.0, T, 4
  !'AeroHO2PM',  'USET', 'rct',   'rct', '/s', 74,   -1,       F,   1.0, T, 4
  !'AeroO3DU',   'USET', 'rct',   'rct', '/s', 75,   -1,       F,   1.0, T, 4
- 'USTAR_d',    'USTAR_NWP', '-', '-', 'm/s', -99,  -99,      F,   1.0, T, 4,
- 'Snow_md',    'SNOW', '-',      '-',   'm', -99,  -99,      F,   1.0, T, 4,
+ 'USTAR_NWP',  'USTAR_NWP', '-', '-', 'm/s', -99,  -99,      F,   1.0, T, 4,
+ 'Snow_m',    'SNOW', '-',      '-',   'm', -99,  -99,      F,   1.0, T, 4,
  'Psurf_d',    'PSURF', '-',     '-', 'hPa', -99,  -99,      F,   1.0, T, 4,
 !
 OutputConcs= 
@@ -38,12 +36,13 @@ OutputConcs=
       'SurfAreaDUF_um2cm3' ,'um2/cm3' ,'2d','SurfAreaDUF_um2cm3'    ,'MISC' ,4, !!
       'SurfAreaDUC_um2cm3' ,'um2/cm3' ,'2d','SurfAreaDUC_um2cm3'    ,'MISC' ,4, !!
       'NO2',          'molec/cm2' ,'k20','COLUMN'   ,'MISC' ,4, !! New Column system
-      'USTAR_NWP'           ,'m/s' ,'2d','USTAR_NWP','MISC' ,7, !! hourly tests
       'Kz_m2s'              ,'m2/s','2d','Kz_m2s'   ,'MISC' ,7, !! hourly tests
 !     'ws_10m'              ,'m'   ,'2d','ws_10m'   ,'MISC' ,7, !! hourly tests
       'rh2m'                ,'m'   ,'2d','rh2m'     ,'MISC' ,7, !! hourly tests
       'T2m'                 ,'degC','2d','T2m'      ,'MISC' ,4,
-      'Snow_m'              ,'m'   ,'2d','SNOW'     ,'MISC' ,4,
+!rv4.7 the following were removed from Derived_ml
+!rv4.7 REPLACED   'USTAR_NWP'           ,'m/s' ,'2d','USTAR_NWP','MISC' ,7, !! hourly tests
+!rv4.7 REPLACE      'Snow_m'              ,'m'   ,'2d','SNOW'     ,'MISC' ,4,
       'SURF_ppbC_VOC'       ,'ppb' ,'2d','VOC'      ,'MISC' ,4,
       'SMI_deep'            ,'-'   ,'2d','SMI_deep' ,'MISC' ,4,
       'SMI_uppr'            ,'-'   ,'2d','SMI_uppr' ,'MISC' ,4,
@@ -214,10 +213,8 @@ OutputConcs=
     'SOX      ', 'GROUP', 'mgS',
     'OXN      ', 'GROUP', 'mgN',
     'RDN      ', 'GROUP', 'mgN',
-    'O3      ', 'SPEC',  'mg',
-
-!  SDEP_WANTED =
-!    'O3      ', 'SPEC',  'mg',
+    'O3       ', 'SPEC',  'mg',
+    'STO_O3   ', 'SPEC',  'mg',
 
   WDEP_WANTED = 
     'PREC     ','PREC ','mm ',

@@ -570,15 +570,6 @@ module AeroFunctions
 
   end function GammaN2O5_om
   !---------------------------------------------------------------------
-  ! OM generally seems to reduce gamma, and is presumably needed partly
-  ! to explain Brown's low measurements. Here we make the crude assumption
-  ! that OM has the same gamma as EJ's BC. Much lower than GammaN2O5_om
-  ! above.
-  !elemental function GammaN2O5_ome() result(gam) 
-  !  real :: gam
-  !  gam = 0.005
-  !end function GammaN2O5_ome
-  !---------------------------------------------------------------------
   elemental function GammaN2O5_sia(t,frh) result(gam) 
     real, intent(in) :: t, frh   ! t(K), frh(0-1)
     real :: a, b, rh

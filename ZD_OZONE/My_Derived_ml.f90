@@ -342,18 +342,18 @@ private
 !    nOutputMisc  = find_index("-", COLUMNDATA_WANTED(:)%txt1, &
 !                       first_only=.true. ) -1
        
+    if(MasterProc) write(*,"(a,i3)") "NMLOUT nOUTMISC ", nOutputMisc
     do i = 1,nOutputMisc  
-       if(MasterProc) then 
-         write(*,"(a,i3)") "NMLOUT nOUTMISC ", nOutputMisc
-         write(*,"(3a,2i3)") "NMLOUT OUTMISC ", OutputMisc(i)%name, OutputMisc(i)%class, OutputMisc(i)%index
-       end if
+       if(MasterProc) write(*,"(3a,2i3)")"NMLOUT OUTMISC ",OutputMisc(i)%name,&
+              OutputMisc(i)%class, OutputMisc(i)%index
        tag_name(1) = trim(OutputMisc(i)%name)
        call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
     end do
     if(MasterProc) then
       write(*,"(a,i3)") "NMLOUT nOUTCONC ", nOutputConcs
       do i = 1,nOutputConcs  
-        write(*,"(3a,2i3)") "NMLOUT CONC ", OutputConcs(i)%txt1, OutputConcs(i)%txt4, OutputConcs(i)%ind
+        write(*,"(3a,2i3)") "NMLOUT CONC ", OutputConcs(i)%txt1, &
+             OutputConcs(i)%txt4, OutputConcs(i)%ind
       end do
       do i = 1,size(DDEP_ECOS)  
         if( DDEP_ECOS(i)%ind < 1 ) exit
@@ -488,8 +488,7 @@ private
       !------------- end LCC data for d_2d -------------------------
 
 !print *, "NMOSAIC PRE ", NMosaic, nVEGO3
-     call CheckStop( NMosaic >= MAX_MOSAIC_OUTPUTS, &
-                       sub//"too many nMosaics" )
+     call CheckStop( NMosaic >= MAX_MOSAIC_OUTPUTS, sub//"too many nMosaics" )
 !print *, "NMOSAIC END ", NMosaic, nVEGO3
      call AddArray( MosaicOutput(1:nMosaic)%name, &
                         wanted_deriv2d, NOT_SET_STRING, errmsg)

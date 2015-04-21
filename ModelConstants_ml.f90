@@ -68,7 +68,7 @@ type, public :: emep_useconfig
 
  ! If USES%EMISTACKS, need to set:
   character(len=4) :: PlumeMethod = "none" !MKPS:"ASME","NILU","PVDI"
-  character(len=20) :: n2o5HydrolysisMethod = "OrigRiemer" ! EmepRiemer=ACP2012 EMEP implementation
+  character(len=20) :: n2o5HydrolysisMethod = 'SmixTen' !'Gamma:0.002' ! 'OrigRiemer' ! EmepRiemer=ACP2012 EMEP implementation
 end type emep_useconfig 
 type(emep_useconfig), public, save :: USES
 

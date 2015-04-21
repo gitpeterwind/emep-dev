@@ -153,6 +153,80 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21 April 2015 Dave 2989
+==============
+rv4.7beta !!!!
+==============
+
+Main change: Aerosol reactions use Gerber-calculated surface area
+             + very low gamma values for N2O5
+
+For HTAP: can now output stomatal deposition
+
+
+RESULTS WILL CHANGE SIGNIFICANTLY WHEN USING NEW DEFAULTS!
+  Older  (let's say rv4.6) results can be restored if setting 
+  n2o5Hydrolis='OrigRiemer' and Aero=" " in mk.GenChem
+
+NEW: ZCM_EmChem09: Aero2015.reactions, Aero2015.species
+
+NOTE!:
+  These are now used by default by mk.GenChem - with Aero="Aero2015".
+  Set to " " to switch off. (Should make Aero same as Isotopes etc., but
+  lacked time....)  
+
+ChemFunctions_ml
+
+- Two new recommended functions for gamma(N2O5):
+  Gamma:0.002   (was bLow in April 2015 aero tests)
+   - provides simple gixed gamma of 0.002
+  SmixTen       (was bTen in April 2015 aero tests)
+   - provides gamma  which depends on chemical mixture, but reduced by a factor
+     of ten.
+
+Derived_ml
+- removed USTAR_NWP, Snow:
+
+ModelConstants_ml:
+- default n2o5Hydrolysis set to 'SmixTen' (=bTen in April 2015 tests)
+- default CONVECTION_FACTOR set to  0.33   (=cv33 in April 2015 tests) 
+
+MosaicOutputs_ml
+- enabled output of stomatal fluxes (needs STO_ prefix in DDEP_WANTED array)
+
+mk.GenChem
+- uses Aero2015 by default. SEE NOTE ABOVE
+
+GenChem.pl
+- access AERO from ModelConstants
+
+
+config_Outputs_EMEPSTD.nml, config_BM-EECCA.nml
+
+- moved USTAR_NWP, Snow to new OutputMisc fields 
+- n2o5Hydrolysis set to 'SmixTen' by default
+- USE_CONVECTION set F for BM runs
+
+config_Outputs_EMEPSTD.nml
+- added O3 and  STO_O3 to DDEP_WANTED
+
+config_EMEPGLOB.nml
+- n2o5Hydrolysis set to 'SmixTen' by default
+- CONVECTION_FACTOR     = 0.33 by default
+
+
+
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+20 April 2015  Dave 2988
+
+ChemFunctions_ml
+- Added Gamma:0.002 and Smix, SmixTen  methods for n2o5Hydrolyis - as used
+  in global testing of 2982 series
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 17 April 2015  Dave 2988
 
 Commit of tidy ups, made before a new attack on Derived outputs...

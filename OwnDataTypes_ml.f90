@@ -151,10 +151,14 @@ subroutine print_Deriv_type(w)
     write(*,"(a)")     "index  : UNDEF"
   else
     write(*,"(a,i5)")  "index  :", w%index
-    !print *,  "UNDEF? index  :", w%index
   end if
-  write(*,"(a,i3)")     "f2d    :", w%f2d
-  write(*,"(a,a10)")    "txt    :", w%txt
+  if( w%f2d == UNDEF_I) then 
+    write(*,"(a,i3)")     "f2d    :", w%f2d
+  else
+    write(*,"(a)")     "f2d  : UNDEF"
+  end if
+  !write(*,"(a,a10)")    "txt    :", w%txt
+  write(*,*)    "txt    :", trim(w%txt)
   write(*,"(a,es10.3)") "scale  :", w%scale
   write(*,*)          "dt_scale :", w%dt_scale
   write(*,*)               "avg :", w%avg

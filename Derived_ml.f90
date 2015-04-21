@@ -139,7 +139,8 @@ integer, private, dimension(NSPEC_ADV), save :: &
          voc_index, &     ! Index of VOC in xn_adv
          voc_carbon       ! Number of C atoms
 
-logical, private, save :: debug_flag, debugMaster, Is3D
+logical, private, save :: debug_flag, Is3D
+logical, private, save :: dbg0   ! = DEBUG%DERIVED .and. MasterProc
 character(len=100), private :: errmsg
 
 integer, private :: i,j,k,n, ivoc, index    ! Local loop variables
@@ -155,12 +156,13 @@ contains
   !=========================================================================
   subroutine Init_Derived()
     integer :: alloc_err
-    debugMaster = (DEBUG%DERIVED .and. MasterProc ) 
+
+    dbg0 = (DEBUG%DERIVED .and. MasterProc ) 
 
     allocate(D2_O3_DAY( MAXLIMAX, MAXLJMAX, NTDAY))
      D2_O3_DAY = 0.0
 
-    if(debugMaster ) write(*,*) "INIT My DERIVED STUFF"
+    if(dbg0 ) write(*,*) "INIT My DERIVED STUFF"
     call Init_My_Deriv()  !-> wanted_deriv2d, wanted_deriv3d
 
     ! get lengths of wanted arrays (excludes notset values)
@@ -170,8 +172,7 @@ contains
     call CheckStop(num_deriv2d<1,"num_deriv2d<1 !!")
 
     if(num_deriv2d > 0) then
-      if(debugMaster ) write(*,*) "Allocate arrays for 2d:",&
-                                              num_deriv2d
+      if(dbg0 ) write(*,*) "Allocate arrays for 2d:", num_deriv2d
       allocate(f_2d(num_deriv2d),stat=alloc_err)
       call CheckStop(alloc_err,"Allocation of f_2d")
       allocate(d_2d(num_deriv2d,MAXLIMAX,MAXLJMAX,LENOUT2D),stat=alloc_err)
@@ -182,8 +183,7 @@ contains
       nav_2d = 0
     endif
     if(num_deriv3d > 0) then
-      if(debugMaster ) write(*,*) "Allocate arrays for 3d: ",&
-                                              num_deriv3d
+      if(dbg0 ) write(*,*) "Allocate arrays for 3d: ", num_deriv3d
       allocate(f_3d(num_deriv3d),stat=alloc_err)
       call CheckStop(alloc_err,"Allocation of f_3d")
       allocate(d_3d(num_deriv3d,MAXLIMAX,MAXLJMAX,KMAX_MID,LENOUT3D),&
@@ -212,7 +212,7 @@ contains
     case(25);fracPM25=0.37
     case(30);fracPM25=0.27
     endselect
-    if(debugMaster) write(*,"(a,2g12.3,i4)") ' CFAC INIT PMFRACTION ', &
+    if(dbg0) write(*,"(a,2g12.3,i4)") ' CFAC INIT PMFRACTION ', &
         fracPM25, AERO%DpgV(2), nint(1.0e7*AERO%DpgV(2))
     call CheckStop( fracPM25 < 0.01, "NEED TO SET FRACPM25")
 
@@ -259,25 +259,25 @@ contains
        logical, intent(in), optional :: Is3D
        logical :: Is3D_local
 
-       debugMaster = (DEBUG%DERIVED .and. MasterProc ) 
+       dbg0 = (DEBUG%DERIVED .and. MasterProc ) 
        Is3D_local = .false.
        if ( present(Is3D) ) Is3D_local = Is3D
 
        if ( Is3D_local ) then
          Nadded3d = Nadded3d + 1
          N = Nadded3d
-         if ( debugMaster ) write(*,*) "Define 3d deriv ", N, trim(inderiv%name)
+         if ( dbg0 ) write(*,*) "Define 3d deriv ", N, trim(inderiv%name)
          call CheckStop(N>MAXDEF_DERIV3D,"Nadded3d too big!")
          def_3d(N) = inderiv
 
        else
          Nadded2d = Nadded2d + 1
          N = Nadded2d
-         if (  debugMaster ) then
+         if (  dbg0 ) then
             write(*,"(a,i6)") "DEBUG AddDeriv 2d ", N
             call print_Deriv_type(inderiv)
          end if
-         !if (  debugMaster  )  write(*,*) "DALL", inderiv
+         !if (  dbg0  )  write(*,*) "DALL", inderiv
          call CheckStop(N>MAXDEF_DERIV2D,"Nadded2d too big!")
          def_2d(N) = inderiv
 
@@ -310,8 +310,7 @@ contains
         integer, dimension(MAXDEF_DERIV3D) :: found_ind3d = 0
 
 
-    debugMaster = (DEBUG%DERIVED .and. MasterProc ) 
-    if(debugMaster ) write(6,*) " START DEFINE DERIVED "
+    if(dbg0 ) write(6,*) " START DEFINE DERIVED "
     !   same mol.wt assumed for PPM25 and PPMCOARSE
 
 
@@ -325,20 +324,6 @@ contains
 ! We process the various combinations of gas-species and ecosystem:
 ! stuff from My_Derived
 
-!-------------------------------------------------------------------------------
-  do n = 1, nMosaic
-    if ( debugMaster ) write(*,*) "DEBUG into AddDeriv ", n, MosaicOutput(n)
-    call AddDeriv( MosaicOutput(n) )
-  end do
-!-------------------------------------------------------------------------------
-! Areas of deposition-related ecosystems. Set externally
-  do n = 1, NDEF_ECOSYSTEMS
-     if(debugMaster) write(*,*) "ECODEF ",n, trim( DepEcoSystem(n)%name )
-
-     call AddDeriv( DepEcoSystem(n) )
-
-  end do
-!!-------------------------------------------------------------------------------
 
         !Deriv(name, class,    subc,  txt,           unit
         !Deriv index, f2d, dt_scale, scale, avg? rho Inst Yr Mn Day atw
@@ -373,12 +358,12 @@ call AddNewDeriv( "PSURF ","PSURF",  "SURF","-",   "hPa", &
                -99,  -99,  F,  1.0,  T,   IOU_DAY )
 
 
-call AddNewDeriv( "Snow_m","SNOW",  "-","-",   "m", &
-               -99,  -99,  F,  1.0,  T,  IOU_DAY )
-
-
-call AddNewDeriv( "USTAR_NWP","USTAR_NWP",  "-","-",   "m/s", &
-               -99,  -99, F, 1.0,  T,  IOU_DAY )
+!rv4.7 ustar and snow are now obtained more simply through the
+!rv4.7 config_Outputs system, in OutputMisc
+!rv4.7 call AddNewDeriv( "Snow_m","SNOW",  "-","-",   "m", &
+!rv4.7                -99,  -99,  F,  1.0,  T,  IOU_DAY )
+!rv4.7 call AddNewDeriv( "USTAR_NWP","USTAR_NWP",  "-","-",   "m/s", &
+!rv4.7                -99,  -99, F, 1.0,  T,  IOU_DAY )
 !Added for TFMM scale runs
 call AddNewDeriv( "Kz_m2s","Kz_m2s",  "-","-",   "m2/s", &
                -99,  -99, F, 1.0,  T,  IOU_DAY )
@@ -490,9 +475,9 @@ do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
       call CheckStop(find_index(dname,def_2d(:)%name)>0,&
         sub//"OutputFields already defined output "//trim(dname))
 
-      !FAILED if( debugMaster ) write(*,"(a,2i4,3(1x,a),2L3,i4,es10.2)") &
+      !FAILED if( dbg0 ) write(*,"(a,2i4,3(1x,a),2L3,i4,es10.2)") &
       !FAILED "ADD   ", ind, iout, trim(dname),";", trim(class), outmm, outdd, &
-      if( debugMaster ) write(*,"(a,2i4,3(1x,a),i4,es10.2)") &
+      if( dbg0 ) write(*,"(a,2i4,3(1x,a),i4,es10.2)") &
       "ADD   ", ind, iout, trim(dname),";", trim(class), & ! outmm, outdd, &
             OutputFields(ind)%ind,unitscale
 
@@ -529,6 +514,20 @@ do ind = 1, nOutputMisc
       call AddDeriv(OutputMisc(ind))
 end do
 
+!-------------------------------------------------------------------------------
+  do n = 1, nMosaic
+    if ( dbg0 ) write(*,*) "DEBUG into AddDeriv ", n, MosaicOutput(n)
+    call AddDeriv( MosaicOutput(n) )
+  end do
+!-------------------------------------------------------------------------------
+! Areas of deposition-related ecosystems. Set externally
+  do n = 1, NDEF_ECOSYSTEMS
+     if(dbg0) write(*,*) "ECODEF ",n, trim( DepEcoSystem(n)%name )
+
+     call AddDeriv( DepEcoSystem(n) )
+
+  end do
+!!-------------------------------------------------------------------------------
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 do ind = 1, size(WDEP_WANTED(1:nOutputWdep)%txt1)
@@ -658,20 +657,25 @@ end do
   ! Get indices of wanted fields in larger def_xx arrays:
   do i = 1, num_deriv2d
     ind = find_index( wanted_deriv2d(i), def_2d(:)%name )
+    print *, "D2IND check", me, ind, trim(wanted_deriv2d(i))
     if (ind>0) then
       f_2d(i) = def_2d(ind)
       if ( found_ind2d(ind) > 0 ) then
-          print *, "D2IND", me, trim( wanted_deriv2d(i) )
-          do n = 1, size(def_2d(:)%name)
-             print *, "D2IND def2d", n, trim( def_2d(n)%name )
-          end do
+          print "(a,3i4,a)", "D2IND", me, ind, size(def_2d(:)%name),  trim( wanted_deriv2d(i) )
+          !do n = 1, size(def_2d(:)%name)
+             !if( index(def_2d(n)%name,'USTAR') >0 ) print *, "D2IND def2d", n, trim( def_2d(n)%name )
+            !print *, "D2IND def2d",  me, n, trim( def_2d(n)%name )
+          !end do
+          !  print *, "D2IND def2d", me,  ind, trim( def_2d(ind)%name )
+          !call print_Deriv_type(def_2d(ind))
 
       call CheckStop ( found_ind2d(ind) > 0,  &
         sub//"REQUESTED 2D DERIVED ALREADY DEFINED: " // trim( def_2d(ind)%name) )
        end if
+      print "(a,3i4,a)", "D2INDSET", me, ind, size(def_2d(:)%name)
       found_ind2d(ind)  = 1
     else
-      print *,"OOOPS wanted_deriv2d not found: ", wanted_deriv2d(i)
+      print *,"D2IND OOOPS wanted_deriv2d not found: ", wanted_deriv2d(i)
       print *,"OOOPS N,N :", num_deriv2d, Nadded2d
       if (MasterProc) then
         print "(a,i4,a)",("Had def_2d: ",idebug,&
@@ -679,19 +683,19 @@ end do
         call CheckStop(sub//"OOPS STOPPED" // trim( wanted_deriv2d(i) ) )
       endif
     endif
-    if ( debugMaster ) print "(2(a,i4),3(1x,a))","Index f_2d ",i,  &
+    if ( dbg0 ) print "(2(a,i4),3(1x,a))","Index f_2d ",i,  &
       " = def ",ind,trim(def_2d(ind)%name),trim(def_2d(ind)%unit),trim(def_2d(ind)%class)
   enddo
 
   do i = 1, num_deriv3d
-    if (debugMaster) print *,"CHECK 3d", &
+    if (dbg0) print *,"CHECK 3d", &
       num_deriv3d, i, trim(wanted_deriv3d(i))
     ind = find_index( wanted_deriv3d(i), def_3d(:)%name )
     call CheckStop ( found_ind3d(ind) > 0,  &
       "REQUESTED 3D DERIVED ALREADY DEFINED: "// trim(def_3d(ind)%name)  )
     found_ind3d(ind)  = 1
     f_3d(i) = def_3d(ind)
-    if (debugMaster) print "(2(a,i4),3(1x,a))","Index f_3d ",i,  &
+    if (dbg0) print "(2(a,i4),3(1x,a))","Index f_3d ",i,  &
       " = def ",ind,trim(def_3d(ind)%name),trim(def_3d(ind)%unit),trim(def_3d(ind)%class)
   enddo
 
@@ -1321,7 +1325,7 @@ end do
               if(MasterProc) write(*,"(a,2i4,2a15)") "FOUND PM10 FRACTION ",&
                 n, ind_pm10, trim(chemgroups(igrp)%name), trim(f_2d(n)%name)
             endif
-            if(debugMaster) then
+            if(dbg0) then
               write(*,*) "CASEGRP ", n, igrp, ngrp, trim(typ)
               write(*,*) "CASENAM ", trim(f_2d(n)%name)
               write(*,*) "CASEGRP:", chemgroups(igrp)%ptr
@@ -1522,7 +1526,7 @@ end do
             call CheckStop(igrp>size(chemgroups(:)%name), &
                                   "Outside GRP "//trim(f_3d(n)%name))
             ngrp = size(chemgroups(igrp)%ptr)
-            if( debugMaster ) then
+            if( dbg0 ) then
                 write(*,*) "3DCASEGRP ", n, igrp, ngrp, trim(typ)
                 write(*,*) "3DCASENAM ", trim(f_3d(n)%name)
                 write(*,*) "3DCASEGRP:", chemgroups(igrp)%ptr

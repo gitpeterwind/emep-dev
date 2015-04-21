@@ -77,7 +77,7 @@ F90FLAGS += -cpp $(DFLAGS) $(addprefix -I,$(INCL)) \
 
 # Include the dependency-list created by makedepf90 below
 all:  $(PROG)
-$(PROG): .depend archive
+$(PROG): .depend #DS archive
 
 ifndef MAKECMDGOALS
   include .depend
@@ -181,10 +181,10 @@ eEMEP: GenChemOptions += -V 7bin,$(VENTS) -N $(NPPAS) -X $(NUCXS)
 	$(MAKE) -C ZD_3DVar/ $(if $(PASS_GOALS),$(@:$*-%=EXP=%) $(PASS_GOALS),$(@:$*-%=EXP_%))
 
 # Archive: create $(PROG).tar.bz2
-archive: $(PROG)_$(shell date +%Y%m%d).tar.bz2
-%.tar.bz2: $(SRCS) $(SRCS.$(EXP)) Makefile Makefile.SRCS .depend \
-           $(wildcard *.inc *.pl mk.* *.nml)
-	@echo "Creating archive $@"; tar --dereference -cjf $@ $+
+#DS archive: $(PROG)_$(shell date +%Y%m%d).tar.bz2
+#DS %.tar.bz2: $(SRCS) $(SRCS.$(EXP)) Makefile Makefile.SRCS .depend \
+#DS            $(wildcard *.inc *.pl mk.* *.nml)
+#DS 	@echo "Creating archive $@"; tar --dereference -cjf $@ $+
 
 # Always re-make this targets
 .PHONY: $(PHONY) all depend modules
