@@ -1,6 +1,6 @@
 #
 #
-export PROG ?= Unimod
+export PROG ?= $(if $(BINDIR),$(BINDIR)/)Unimod
 ###################################################
 
 include Makefile.SRCS
@@ -16,6 +16,7 @@ LDFLAGS =  $(F90FLAGS) $(LLIB) $(LIBS)
 
 export MACHINE ?= stallo
 export DEBUG ?= no
+export ARCHIVE ?= no
 ifeq ($(MACHINE),stallo)
   MODULES = intel/13.0 openmpi/1.6.2 netcdf/4.2.1.1
   LDFLAGS +=  $(shell nc-config --flibs)
@@ -77,7 +78,7 @@ F90FLAGS += -cpp $(DFLAGS) $(addprefix -I,$(INCL)) \
 
 # Include the dependency-list created by makedepf90 below
 all:  $(PROG)
-$(PROG): .depend #DS archive
+$(PROG): .depend $(if $(filter yes,$(ARCHIVE)),archive)
 
 ifndef MAKECMDGOALS
   include .depend
@@ -181,10 +182,10 @@ eEMEP: GenChemOptions += -V 7bin,$(VENTS) -N $(NPPAS) -X $(NUCXS)
 	$(MAKE) -C ZD_3DVar/ $(if $(PASS_GOALS),$(@:$*-%=EXP=%) $(PASS_GOALS),$(@:$*-%=EXP_%))
 
 # Archive: create $(PROG).tar.bz2
-#DS archive: $(PROG)_$(shell date +%Y%m%d).tar.bz2
-#DS %.tar.bz2: $(SRCS) $(SRCS.$(EXP)) Makefile Makefile.SRCS .depend \
-#DS            $(wildcard *.inc *.pl mk.* *.nml)
-#DS 	@echo "Creating archive $@"; tar --dereference -cjf $@ $+
+archive: $(PROG)_$(shell date +%Y%m%d).tar.bz2
+%.tar.bz2: $(SRCS) $(SRCS.$(EXP)) Makefile Makefile.SRCS .depend \
+           $(wildcard *.inc *.pl mk.* *.nml)
+	@echo "Creating archive $@"; tar --dereference -cjf $@ $+
 
 # Always re-make this targets
 .PHONY: $(PHONY) all depend modules

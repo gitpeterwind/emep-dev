@@ -285,9 +285,12 @@ subroutine set_output_defs
     nlevels_hourly=9
     if(any(species_adv(:)%name=="RN222"))nhourly_out=nhourly_out+1
     if(USE_AOD     )nhourly_out=nhourly_out+1
-    if(USE_POLLEN.or.DEBUG_POLLEN)call pollen_check(gpoll)
-    if(USE_POLLEN  )nhourly_out=nhourly_out+size(chemgroups(gpoll)%ptr)
-    if(DEBUG_POLLEN)nhourly_out=nhourly_out+size(chemgroups(gpoll)%ptr)*2
+    if(USE_POLLEN  )then
+      call pollen_check(gpoll)
+      nhourly_out=nhourly_out+size(chemgroups(gpoll)%ptr)
+      if(DEBUG_POLLEN)&
+      nhourly_out=nhourly_out+size(chemgroups(gpoll)%ptr)*2
+    endif
     if(DEBUG_PBL   )nhourly_out=nhourly_out+3
     if(DEBUG_PM10  )nhourly_out=nhourly_out+5
   case("MACC_EVA")
@@ -341,7 +344,7 @@ subroutine set_output_defs
              ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug/m3",1.0,-999.9),&
       Asc2D("pm_h2o_3km","PMwater",00         ,&
              ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug/m3",1.0,-999.9),&
-      Asc2D("AOD_550nm" ,"AOD"   ,00         ,&
+      Asc2D("AOD_550nm" ,"D2D_inst",find_index("AOD_550nm",f_2d(:)%name),&
              ix1,ix2,iy1,iy2,1," ",1.0    ,-9999.9),&
       Asc2D("z"         ,"Z_MID" ,00         ,&
              ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"km",1e-3,-9999.9)/)
@@ -455,7 +458,7 @@ subroutine set_output_defs
     endif
     if(USE_AOD)then
       j=j+1;hr_out(j) = &
-      Asc2D("AOD_550nm" ,"AOD"    ,00         ,&
+      Asc2D("AOD_550nm" ,"D2D_inst",find_index("AOD_550nm",f_2d(:)%name),&
             ix1,ix2,iy1,iy2,1," ",1.0                               ,-999.9)
     endif
     if(USE_POLLEN)then
@@ -465,18 +468,18 @@ subroutine set_output_defs
         Asc2D(trim(species_adv(idx)%name),"ADVugXX",idx, &
               ix1,ix2,iy1,iy2,1,"grains/m3",to_ug_ADV(idx)*ug2grains,-999.9)
       enddo
-    endif
-    if(DEBUG_POLLEN)then
-      do i=1,size(chemgroups(gpoll)%ptr)
-        idx=chemgroups(gpoll)%ptr(i)-NSPEC_SHL ! offset between xn_adv and species
-        j=j+2;hr_out(j-1:j) = (/&
-!       Asc2D(trim(species_adv(idx)%name)//"_heatsum","heatsum"     ,i,&
-!           ix1,ix2,iy1,iy2,1,"degree day" ,1.0,-999.9),&
-        Asc2D(trim(species_adv(idx)%name)//"_emiss"  ,"pollen_emiss",i,&
-            ix1,ix2,iy1,iy2,1,"grains/m2/h",1.0,-999.9),&
-        Asc2D(trim(species_adv(idx)%name)//"_left"   ,"pollen_left" ,i,&
-            ix1,ix2,iy1,iy2,1,"grains/m3"  ,1.0,-999.9)/)
-      enddo
+      if(DEBUG_POLLEN)then
+        do i=1,size(chemgroups(gpoll)%ptr)
+          idx=chemgroups(gpoll)%ptr(i)-NSPEC_SHL ! offset between xn_adv and species
+          j=j+2;hr_out(j-1:j) = (/&
+  !       Asc2D(trim(species_adv(idx)%name)//"_heatsum","heatsum"     ,i,&
+  !           ix1,ix2,iy1,iy2,1,"degree day" ,1.0,-999.9),&
+          Asc2D(trim(species_adv(idx)%name)//"_emiss"  ,"pollen_emiss",i,&
+              ix1,ix2,iy1,iy2,1,"grains/m2/h",1.0,-999.9),&
+          Asc2D(trim(species_adv(idx)%name)//"_left"   ,"pollen_left" ,i,&
+              ix1,ix2,iy1,iy2,1,"grains/m3"  ,1.0,-999.9)/)
+        enddo
+      endif
     endif
     if(DEBUG_PBL   )then
       j=j+3;hr_out(j-2:j) = (/&
@@ -654,7 +657,7 @@ subroutine set_output_defs
     /)
     if(USE_AOD)then
       j=j+1;hr_out(j) = &
-      Asc2D("AOD_550nm" ,"AOD",00,&
+      Asc2D("AOD_550nm","D2D_inst",find_index("AOD_550nm",f_2d(:)%name),&
             ix1,ix2,iy1,iy2,1," ",1.0,-999.9)
     endif
   case("TRENDS@12UTC")

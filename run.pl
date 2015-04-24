@@ -118,9 +118,8 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
-($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2988"   ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
+($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2993"   ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
 
-my $KEEP_LINKS=0; # do not cleanup links
 my %BENCHMARK;
 # OpenSource 2008
 #  %BENCHMARK = (grid=>"EMEP"  ,year=>2005,emis=>"Modrun07/OpenSourceEmis"           ,chem=>"EmChem03");
@@ -141,7 +140,6 @@ my %BENCHMARK;
 if (%BENCHMARK) {
   $BENCHMARK{'archive'} = 1;                        # save summary info in $DataDir
   $BENCHMARK{'debug'} = $BENCHMARK{'archive'}; # chech if all debug flags are .false.
-  $KEEP_LINKS=not $BENCHMARK{'archive'}; # keep @list_of_files after run 
 # Default setting, if not previously specified
   $BENCHMARK{'chem'}  = "EmChem09soa"
     unless $BENCHMARK{'chem'};  # chemical mecanism, e.g. OpenSource 2008
@@ -472,7 +470,9 @@ if ($STALLO && $TREND_RUNS ) {
 my $RESET        = 0 ;  # usually 0 (false) is ok, but set to 1 for full restart
 my $COMPILE_ONLY = 0 ;  # usually 0 (false) is ok, but set to 1 for compile-only
 my $DRY_RUN      = 0 ;  # Test script without running model (but compiling)
+my $KEEP_LINKS   = 0 ;  # Keep @list_of_files after run
 $RESET=($MAKEMODE=~/MACC/) if($CWF);
+$KEEP_LINKS=%BENCHMARK and not $BENCHMARK{'archive'};
 
 if (%BENCHMARK and $BENCHMARK{'debug'}){
   die "No debug flags for benchmarks!"

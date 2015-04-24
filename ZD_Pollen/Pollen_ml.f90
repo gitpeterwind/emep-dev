@@ -101,7 +101,7 @@ subroutine Config_Pollen()
 
   if(.not.first_call)return
   first_call = .false.
-  
+
   template_read =template_read_IC   ! by default read/write
   template_write=template_write_IC  ! to Next IC/restart file
   rewind(IO_NML)
@@ -111,6 +111,28 @@ subroutine Config_Pollen()
     write(*,*) "NAMELIST IS "
     write(*,NML=Pollen_config)
   endif
+
+  inat_BIRCH = find_index(BIRCH,EMIS_BioNat(:))
+  inat_OLIVE = find_index(OLIVE,EMIS_BioNat(:))
+  inat_GRASS = find_index(GRASS,EMIS_BioNat(:))
+  itot_BIRCH = find_index(BIRCH,species(:)%name)
+  itot_OLIVE = find_index(OLIVE,species(:)%name)
+  itot_GRASS = find_index(GRASS,species(:)%name)
+  iadv_BIRCH = itot_BIRCH-NSPEC_SHL
+  iadv_OLIVE = itot_OLIVE-NSPEC_SHL
+  iadv_GRASS = itot_GRASS-NSPEC_SHL
+  if(MasterProc)write(*,"(A,3(' adv#',I3,'=',A))") "Pollen: ",&
+    iadv_BIRCH,BIRCH,iadv_OLIVE,OLIVE,iadv_GRASS,GRASS
+
+  allocate(heatsum(MAXLIMAX,MAXLJMAX,2),&     ! Grass does not need heatsum
+           Pollen_rest(MAXLIMAX,MAXLJMAX,3),&
+           R(MAXLIMAX,MAXLJMAX,3))
+
+  heatsum(:,:,:) = 0.00 
+  Pollen_rest(:,:,1) = N_TOT_birch
+  Pollen_rest(:,:,2) = N_TOT_olive
+  Pollen_rest(:,:,3) = N_TOT_grass
+  R(:,:,:) = 0.0 
 endsubroutine Config_Pollen
 !-------------------------------------------------------------------------!
 function checkdates(nday,spc,update) result(ok)
@@ -184,39 +206,11 @@ subroutine pollen_flux(i,j,debug_flag)
   if(first_call) then 
     if(.not.checkdates(daynumber,"pollen"))return
     call Config_Pollen() 
-
-    inat_BIRCH = find_index(BIRCH,EMIS_BioNat(:))
-    inat_OLIVE = find_index(OLIVE,EMIS_BioNat(:))
-    inat_GRASS = find_index(GRASS,EMIS_BioNat(:))
-    itot_BIRCH = find_index(BIRCH,species(:)%name)
-    itot_OLIVE = find_index(OLIVE,species(:)%name)
-    itot_GRASS = find_index(GRASS,species(:)%name)
-    iadv_BIRCH = itot_BIRCH-NSPEC_SHL
-    iadv_OLIVE = itot_OLIVE-NSPEC_SHL
-    iadv_GRASS = itot_GRASS-NSPEC_SHL
-    if(MasterProc)write(*,"(A,3(' adv#',I3,'=',A))") "Pollen: ",&
-      iadv_BIRCH,BIRCH,iadv_OLIVE,OLIVE,iadv_GRASS,GRASS
+    if(FORECAST) call pollen_read()
 
     allocate(Pollen_left(MAXLIMAX,MAXLJMAX,3),p_day(MAXLIMAX,MAXLJMAX))
     Pollen_left(:,:,:) = 1
     p_day(:,:) =current_date%day
-
-    if(FORECAST) call pollen_read()
-    if(.not.allocated(heatsum))then
-      allocate(heatsum(MAXLIMAX,MAXLJMAX,2)) ! Grass does not need heatsum
-      if(MasterProc) write(*,*) "Heatsum allocated!"
-      heatsum(:,:,:) = 0.00 
-    endif
-    if(.not.allocated(Pollen_rest))then
-      allocate(Pollen_rest(MAXLIMAX,MAXLJMAX,3))
-      Pollen_rest(:,:,1) = N_TOT_birch
-      Pollen_rest(:,:,2) = N_TOT_olive
-      Pollen_rest(:,:,3) = N_TOT_grass
-    endif
-    if(.not.allocated(R))then
-      allocate(R(MAXLIMAX,MAXLJMAX,3))
-      R(:,:,:) = 0.0
-    endif
 
     allocate(AreaPOLL(MAXLIMAX,MAXLJMAX,3),h_day(MAXLIMAX,MAXLJMAX))
     AreaPOLL(:,:,:)=0.0
@@ -524,13 +518,6 @@ subroutine pollen_read()
       "no records for"//date2string(" YYYY-MM-DD hh:mm ",current_date)//&
       "found in "//trim(filename))
 
-  if(allocated(heatsum))    deallocate(heatsum)
-  if(allocated(Pollen_rest))deallocate(Pollen_rest)
-  if(allocated(R))          deallocate(R)
-  allocate(heatsum(MAXLIMAX,MAXLJMAX,2),&
-           Pollen_rest(MAXLIMAX,MAXLJMAX,3),&
-           R(MAXLIMAX,MAXLJMAX,3))
-
   if(MasterProc)&
     write(*,"(3(A,1X),I0)") "Read Pollen dump",trim(filename),"record",nstart
 !------------------------
@@ -539,12 +526,17 @@ subroutine pollen_read()
   allocate(data(MAXLIMAX,MAXLJMAX,KMAX_MID))
   call GetCDF_modelgrid(BIRCH,filename,data,&
         1,KMAX_MID,nstart,1,needed=.not.FORECAST,found=found)
+  if(MasterProc.and.debug)write(*,*)found,BIRCH
   if(found)xn_adv(iadv_BIRCH,:,:,:)=data(:,:,:)
+
   call GetCDF_modelgrid(OLIVE,filename,data,&
         1,KMAX_MID,nstart,1,needed=.not.FORECAST,found=found)
+  if(MasterProc.and.debug)write(*,*)found,OLIVE
   if(found)xn_adv(iadv_OLIVE,:,:,:)=data(:,:,:)
+
   call GetCDF_modelgrid(GRASS,filename,data,&
         1,KMAX_MID,nstart,1,needed=.not.FORECAST,found=found)
+  if(MasterProc.and.debug)write(*,*)found,GRASS
   if(found)xn_adv(iadv_GRASS,:,:,:)=data(:,:,:)
   deallocate(data)
 !------------------------
@@ -552,26 +544,28 @@ subroutine pollen_read()
 !------------------------
   call GetCDF_modelgrid(BIRCH//"_heatsum",filename,heatsum(:,:,1),&
         1,1,nstart,1,needed=.not.FORECAST,found=found)
-  if(.not.found)heatsum(:,:,1)=0.0
+  if(MasterProc.and.debug)write(*,*)found,BIRCH//"_heatsum"
+
   call GetCDF_modelgrid(OLIVE//"_heatsum",filename,heatsum(:,:,2),&
         1,1,nstart,1,needed=.not.FORECAST,found=found)
-  if(.not.found)heatsum(:,:,2)=0.0
+  if(MasterProc.and.debug)write(*,*)found,OLIVE//"_heatsum"
 !------------------------
 ! pollen_rest
 !------------------------
   call GetCDF_modelgrid(BIRCH//"_rest",filename,Pollen_rest(:,:,1),&
         1,1,nstart,1,needed=.not.FORECAST,found=found)
-  if(.not.found)Pollen_rest(:,:,1)=N_TOT_birch
+  if(MasterProc.and.debug)write(*,*)found,BIRCH//"_rest"
+  if(found)R(:,:,1)=N_TOT_birch-Pollen_rest(:,:,1)
+
   call GetCDF_modelgrid(OLIVE//"_rest",filename,Pollen_rest(:,:,2),&
         1,1,nstart,1,needed=.not.FORECAST,found=found)
-  if(.not.found)Pollen_rest(:,:,2)=N_TOT_olive
+  if(MasterProc.and.debug)write(*,*)found,OLIVE//"_rest"
+  if(found)R(:,:,2)=N_TOT_olive-Pollen_rest(:,:,2)
+
   call GetCDF_modelgrid(GRASS//"_rest",filename,Pollen_rest(:,:,3),&
         1,1,nstart,1,needed=.not.FORECAST,found=found)
-  if(.not.found)Pollen_rest(:,:,3)=N_TOT_grass
-
-  R(:,:,1)=N_TOT_birch-Pollen_rest(:,:,1)
-  R(:,:,2)=N_TOT_olive-Pollen_rest(:,:,2)
-  R(:,:,3)=N_TOT_grass-Pollen_rest(:,:,3)
+  if(MasterProc.and.debug)write(*,*)found,GRASS//"_rest"
+  if(found)R(:,:,3)=N_TOT_grass-Pollen_rest(:,:,3)
 endsubroutine pollen_read 
 !-------------------------------------------------------------------------!
 subroutine pollen_dump ()
@@ -591,10 +585,9 @@ subroutine pollen_dump ()
   if(.not.(allocated(Pollen_rest).and.allocated(heatsum))) return
 
   filename = date2string(template_write,current_date)
+  if(MasterProc) write(*,*) "Write Pollen dump ",trim(filename)
   inquire(file=filename,exist=fexist)
-  if(MasterProc)&
-    write(*,*) "Write Pollen dump ",trim(filename)
-
+  
   def1%avg=.false.            ! not used
   def1%index=0                ! not used
   def1%scale=1.0              ! not used
@@ -604,7 +597,8 @@ subroutine pollen_dump ()
   ncfileID=-1 ! must be <0 as initial value
   do i=1,2                          ! do first one loop to define the fields,
     create_var=(i==1)               ! without writing them (for performance purposes),
-    if(create_var.and.fexist)cycle  ! if the file does not exists already
+    if(create_var.and.fexist.and.&  ! if the file does not exists already
+      template_write/=template_write_IC)cycle ! and pollen has its own restart file
 !------------------------
 ! pollen adv (not written by Nest_ml)
 !------------------------ 
