@@ -167,8 +167,8 @@ OutputConcs=
     ! 'SS'                 ,' '  ,'550nm','AOD:GROUP','MISC',4,
     !!'PPM10'              ,' '  ,'550nm','AOD:GROUP','MISC',4,
     !!'PPM25_FIRE'         ,' '  ,'550nm','AOD:GROUP','MISC',4,
-      'EXT'                ,'1/m','350nm','EXT:GROUP','MISC',3,
-    !!'EXT'                ,'1/m','550nm','EXT:GROUP','MISC',3,
+    ! 'EXT'                ,'1/m','350nm','EXT:GROUP','MISC',3,
+      'EXT'                ,'1/m','550nm','EXT:GROUP','MISC',3,
 ! ============================================================
 !TFMM'SO2'                  ,'ugS' ,'2d','AIR_CONCS','SPEC' ,4,
 !TFMM'SO4'                  ,'ugS' ,'2d','AIR_CONCS','SPEC' ,4,
