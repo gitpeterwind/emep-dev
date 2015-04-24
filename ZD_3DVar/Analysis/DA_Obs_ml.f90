@@ -17,6 +17,7 @@ use SmallUtils_ml,    only: find_index
 use Util_ml,          only: norm
 use TimeDate_ExtraUtil_ml, only: date2string
 use Units_ml,         only: Units_Scale,Group_Units
+use AOD_PM_ml,        only: AOD_init,aod_grp,wavelength,SpecExtCross
 use DA_ml,            only: debug=>DA_DEBUG,dafmt=>da_fmt_msg,damsg=>da_msg,&
                             debug_obs=>DA_DEBUG_OBS
 use spectralcov,      only: nx,ny,nlev,nchem,nxex,nyex,nv1,FGSCALE,&
@@ -208,9 +209,15 @@ subroutine read_obs(domain,maxobs,flat,flon,falt,y,stddev,ipar)
         obsData(nd)%unitconv=Units_Scale(obsData(nd)%unit,&
           obsData(nd)%ispec,needroa=obsData(nd)%unitroa)
       else
-        obsData(nd)%ichem=find_index(obsData(nd)%name,chemgroups(:)%name)
-        obsData(nd)%unitconv=Units_Scale(obsData(nd)%unit,&
-          -1,needroa=obsData(nd)%unitroa)
+        select case(obsData(nd)%name)
+        case("BSC","EXT","AOD")
+          call AOD_init("DA_Obs:"//trim(obsData(nd)%name),wlen=obsData(nd)%unit)
+          obsData(nd)%ichem=find_index(obsData(nd)%unit,wavelength)
+        case default
+          obsData(nd)%ichem=find_index(obsData(nd)%name,chemgroups(:)%name)
+          obsData(nd)%unitconv=Units_Scale(obsData(nd)%unit,&
+            -1,needroa=obsData(nd)%unitroa)
+        endselect
       endif
       call CheckStop(obsData(nd)%deriv=='',&
         HERE("Inconsistent obsData%deriv"))
@@ -285,6 +292,14 @@ subroutine H_op(lat,lon,alt,n,yn,ipar)
         'Model',glon(i,j),glat(i,j),z_mid(i,j,ll)*1e-3
     call CheckStop(l<1,HERE("Out of bounds level"))
   endif
+  select case(obsData(ipar)%deriv)
+    case('mod-lev'  );pidx(n)%l0=l;pidx(n)%l1=l
+    case('surface'  );pidx(n)%l0=l;pidx(n)%l1=l
+    case('Trop.Col.');pidx(n)%l0=l;pidx(n)%l1=nlev
+    case default
+    call CheckStop(HERE("obsData not yet supported "//trim(obsData(ipar)%tag)))
+  endselect
+  if(.not.pidx(n)%in_mgrid)return
 !-----------------------------------------------------------------------
 ! analysis of direct observations: NO2, O3, SO2, etc
 !-----------------------------------------------------------------------
@@ -298,8 +313,6 @@ subroutine H_op(lat,lon,alt,n,yn,ipar)
 ! direct observations: model mid-levels
 !-----------------------------------------------------------------------
     case('mod-lev')
-      pidx(n)%l0=l;pidx(n)%l1=l
-      if(.not.pidx(n)%in_mgrid)return
       if(obsData(ipar)%unitroa)then   ! unit conversion        
         Hj=unitconv*roa(i,j,ll,1)
       else
@@ -312,8 +325,6 @@ subroutine H_op(lat,lon,alt,n,yn,ipar)
 ! direct observations: surface level
 !-----------------------------------------------------------------------
     case('surface')
-      pidx(n)%l0=l;pidx(n)%l1=l
-      if(.not.pidx(n)%in_mgrid)return
       if(obsData(ipar)%unitroa)then  ! unit conversion,50m->3m
         Hj=unitconv*cfac(ispec,i,j)*roa(i,j,ll,1)
       else
@@ -326,8 +337,6 @@ subroutine H_op(lat,lon,alt,n,yn,ipar)
 ! direct observations: COLUMN (eg NO2tc)
 !-----------------------------------------------------------------------
     case('Trop.Col.')
-      pidx(n)%l0=1;pidx(n)%l1=nlev
-      if(.not.pidx(n)%in_mgrid)return
       call CheckStop(.not.obsData(ipar)%unitroa,&
         "Unsupported obsData unit for: "//trim(obsData(ipar)%tag))     
       do ll=1,KMAX_MID
@@ -339,25 +348,11 @@ subroutine H_op(lat,lon,alt,n,yn,ipar)
         l=ll+nlev-KMAX_MID  ! B might have a reduced number of levels...
         if(l>0)H_jac(n,l,k)=Hj
       enddo
-!-----------------------------------------------------------------------
-!
-!-----------------------------------------------------------------------
-    case default
-      call CheckStop(HERE("obsData not yet supported "//trim(obsData(ipar)%tag)))
     endselect
 !-----------------------------------------------------------------------
-! analysis of indirect observations:
-!   PM* (eg PM10), BSC and EXT GROUPs (wavelength is in %unit)
+! analysis of indirect observations: PM* (eg PM10)
 !-----------------------------------------------------------------------
-  elseif(index(obsData(ipar)%name,'PM')>0.or.&
-         any(obsData(ipar)%name==['BSC','EXT','AOD']))then
-    call CheckStop(any(obsData(ipar)%name==['BSC','EXT','AOD']),&
-      HERE("obsData not yet supported "//trim(obsData(ipar)%tag)))
-!   call CheckStop(.not.obsData(ipar)%unitroa.or.&
-!     (index(obsData(ipar)%name,'PM')>0.and.obsData(ipar)%unit(1:2)/='ug'),&
-!     "Unsupported obsData unit for: "//trim(obsData(ipar)%tag))
-    call CheckStop((obsData(ipar)%name=='AOD').and.(obsData(ipar)%deriv/='Trop.Col.'),&
-      HERE("Unsupported obsData "//trim(obsData(ipar)%tag)))
+  elseif(index(obsData(ipar)%name,'PM')>0)then
     igrp=obsData(ipar)%ispec
 !!  print *,igrp,chemgroups(igrp)%name
     call Group_Units(igrp,obsData(ipar)%unit,gspec,gunit_conv,debug)
@@ -367,8 +362,6 @@ subroutine H_op(lat,lon,alt,n,yn,ipar)
 ! indirect observations: model mid-levels
 !-----------------------------------------------------------------------
     case('mod-lev')
-      pidx(n)%l0=l;pidx(n)%l1=l
-      if(.not.pidx(n)%in_mgrid)return
       if(obsData(ipar)%unitroa)&    ! unit conversion
         gunit_conv(:)=gunit_conv(:)*roa(i,j,ll,1)
       do g=1,size(gspec)
@@ -386,8 +379,6 @@ subroutine H_op(lat,lon,alt,n,yn,ipar)
 ! indirect observations: surface level
 !-----------------------------------------------------------------------
     case('surface')
-      pidx(n)%l0=l;pidx(n)%l1=l
-      if(.not.pidx(n)%in_mgrid)return
       if(obsData(ipar)%unitroa)&    ! unit conversion
         gunit_conv(:)=gunit_conv(:)*roa(i,j,ll,1)
       do g=1,size(gspec)
@@ -403,11 +394,9 @@ subroutine H_op(lat,lon,alt,n,yn,ipar)
       if(index(obsData(ipar)%name,'PM')>0)&
         yn=yn+PM25_water_rh50(i,j)*FGSCALE
 !-----------------------------------------------------------------------
-! direct observations: COLUMN (eg AOD)
+! indirect observations: COLUMN
 !-----------------------------------------------------------------------
     case('Trop.Col.')
-      pidx(n)%l0=l;pidx(n)%l1=nlev
-      if(.not.pidx(n)%in_mgrid)return
       do ll=1,KMAX_MID
         Hj=roa(i,j,ll,1)                 & ! interpolation,density
           *(z_bnd(i,j,ll)-z_bnd(i,j,ll+1)) ! level thickness
@@ -429,11 +418,60 @@ subroutine H_op(lat,lon,alt,n,yn,ipar)
         enddo
         yn=yn+xn*FGSCALE
       endif
+    endselect
 !-----------------------------------------------------------------------
-!
+! analysis of indirect observations:
+!   BSC and EXT GROUPs (wavelength in %unit and wlen index in %ichem)
 !-----------------------------------------------------------------------
-    case default
-      call CheckStop(HERE("obsData not yet supported "//trim(obsData(ipar)%tag)))
+! elseif(any(obsData(ipar)%name==['BSC','EXT','AOD'])then
+  elseif(any(obsData(ipar)%name==['EXT','AOD']))then
+    gspec=>aod_grp          ! AOD group
+    nn=obsData(ipar)%ichem  ! wavelength index
+    yn=0e0
+    select case(obsData(ipar)%deriv)
+!-----------------------------------------------------------------------
+! indirect observations: model mid-levels
+!-----------------------------------------------------------------------
+    case('mod-lev')
+      gunit_conv=>SpecExtCross(:,ll,i,j,nn)
+      do g=1,size(gspec)
+        Hj=gunit_conv(g)
+        xn=xn_adv(gspec(g),i,j,ll)*FGSCALE
+        yn=yn+Hj*xn
+        kk=varSpecInv(gspec(g))
+        k=0;if(kk>0.and.observedVar(kk))k=ichemInv(kk)
+        if(k>0)H_jac(n,l,k)=Hj
+      enddo
+!-----------------------------------------------------------------------
+! indirect observations: surface level
+!-----------------------------------------------------------------------
+    case('surface')
+      gunit_conv=>SpecExtCross(:,ll,i,j,nn)
+      do g=1,size(gspec)
+        Hj=gunit_conv(g)          & ! unit conversion
+          *cfac(gspec(g),i,j)       ! 50m->3m conversion
+        xn=xn_adv(gspec(g),i,j,ll)*FGSCALE
+        yn=yn+Hj*xn
+        kk=varSpecInv(gspec(g))
+        k=0;if(kk>0.and.observedVar(kk))k=ichemInv(kk)
+        if(k>0)H_jac(n,l,k)=Hj
+      enddo
+!-----------------------------------------------------------------------
+! indirect observations: COLUMN (eg AOD)
+!-----------------------------------------------------------------------
+    case('Trop.Col.')
+      do ll=1,KMAX_MID
+        Hj=(z_bnd(i,j,ll)-z_bnd(i,j,ll+1)) ! level thickness
+        l=ll+nlev-KMAX_MID  ! B might have a reduced number of levels...
+        gunit_conv=>SpecExtCross(:,ll,i,j,nn)
+        do g=1,size(gspec)
+          xn=xn_adv(gspec(g),i,j,ll)*gunit_conv(g)*FGSCALE
+          yn=yn+Hj*xn
+          kk=varSpecInv(gspec(g))
+          k=0;if(kk>0.and.observedVar(kk))k=ichemInv(kk)
+          if(k>0.and.l>0)H_jac(n,l,k)=Hj*gunit_conv(g)
+        enddo
+      enddo
     endselect
 !-----------------------------------------------------------------------
 !
@@ -441,7 +479,7 @@ subroutine H_op(lat,lon,alt,n,yn,ipar)
   else
     call CheckStop(HERE("obsData not yet supported "//trim(obsData(ipar)%tag)))
   endif
-end subroutine H_op
+endsubroutine H_op
 !-----------------------------------------------------------------------
 ! @description
 ! Compute CHI^2/nobs on an observation by observation

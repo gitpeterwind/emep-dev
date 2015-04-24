@@ -153,7 +153,7 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-24 April 2015 Alvaro 2993--2995
+24 April 2015 Alvaro 2993--2996
 
 AOD_PM_ml,Chemfields_ml(Chem_ml.f90),
 ZCM_EmChem09/Dust.species,ZCM_EmChem09soa/VBS_nonvolatile.species:
@@ -175,6 +175,9 @@ config_Outputs_EMEPSTD.nml,config_BM-EECCA.nml:
   config_Outputs_EMEPSTD.nml.
 - Benckmark output (config_BM-EECCA.nml) consists of daily AOD_550nm
   and monthly EXT_550nm.
+
+AOD_PM_ml,ZD_3DVar/Analysis/DA_Obs_ml:
+- Use SpecExtCross array for AOD/EXT observation operator.
 
 AOD_PM_ml
 - Remove Copyright notice as it will be added by mk.OpenSource.
@@ -204,6 +207,7 @@ Makefile:
 - Use variable BINDIR to compile the model into a different path than $ProgDir.
   make ... -C $ProgDir BINDIR=$RESDIR will link into $RESDIR/Unimod 
   instead of $ProgDir/Unimod.
+
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 24 April 2015 Dave 2989-2991

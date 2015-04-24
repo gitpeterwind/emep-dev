@@ -36,12 +36,12 @@ public :: Qm_grp ! mass extinction efficiency [m2/g] for any spc/group
 character(len=*), parameter :: EXT_MODE="WET" ! use wet|dry extinction
 
 
-! Wavelenghts for AOD/extinction calcualtions
+! wavelengths for AOD/extinction calcualtions
 integer, parameter, public :: &
   W340=1,W350=2,W380=3,W440=4,W500=5,W550=6,W675=7,W870=8,W1020=9
 
 character(len=*), parameter, public :: &
-  wavelenght(W340:W1020)=["340nm","350nm","380nm","440nm","500nm",&
+  wavelength(W340:W1020)=["340nm","350nm","380nm","440nm","500nm",&
                           "550nm","675nm","870nm","1020nm"]
 
 logical, public, save :: &
@@ -204,7 +204,7 @@ real,parameter,dimension(NUM_CEXT) :: &
 real,parameter,dimension(NUM_CEXT,W340:W1020) :: &
   Qm_Dext=Qm_ref(:,1,:) ! (dry) mass extinction efficiency [m2/g] at Wxxx nm
 
-real, allocatable,dimension(:,:,:,:), public,save :: SpecExtCross
+real, pointer,dimension(:,:,:,:,:),public,save :: SpecExtCross=>null()
 contains
 ! <---------------------------------------------------------->
 function Qm(mode,rh,wlen,debug) result(Qm_arr)
@@ -333,9 +333,9 @@ subroutine AOD_init(msg,wlen,out3d)
 ! Process optional arguments
 !-----------------------------------------------------------------------!
   if(present(wlen))then
-    n=find_index(wlen,wavelenght)! e.g. search "550nm" on array of wavelenghts
+    n=find_index(wlen,wavelength)! e.g. search "550nm" on array of wavelengths
     call CheckStop(n<1,&
-      trim(msg)//" Unknown AOD/EXT wavelenght "//trim(wlen))
+      trim(msg)//" Unknown AOD/EXT wavelength "//trim(wlen))
     wanted_wlen(n)=.true.
   endif
   if(present(out3d))then
@@ -356,7 +356,7 @@ subroutine AOD_init(msg,wlen,out3d)
 !-----------------------------------------------------------------------!
 ! Allocate AOD arrays
 !-----------------------------------------------------------------------!
-!!wanted_wlen(W550)=.true.  ! calculate 550nm for debug output
+  !!wanted_wlen(W550)=.true.  ! calculate 550nm for debug output
   if(any(wanted_wlen(:)).and..not.allocated(AOD))then
     allocate(AOD(NUM_EXT,MAXLIMAX,MAXLJMAX,W340:W1020))
     AOD=0.0
@@ -365,8 +365,9 @@ subroutine AOD_init(msg,wlen,out3d)
     allocate(Extin_coeff(NUM_EXT,MAXLIMAX,MAXLJMAX,KMAX_MID,W340:W1020))
     Extin_coeff=0.0
   endif 
-  if(ANALYSIS.and..not.allocated(SpecExtCross))then
-    allocate(SpecExtCross(NUM_EXT,MAXLIMAX,MAXLJMAX,KMAX_MID))
+  if(ANALYSIS.and..not.associated(SpecExtCross))then
+  !!wanted_wlen(W550)=.true.  ! calculate 550nm for AOD assimilation
+    allocate(SpecExtCross(NUM_EXT,KMAX_MID,MAXLIMAX,MAXLJMAX,W340:W1020))
     SpecExtCross=0.0
   endif
 endsubroutine AOD_init
@@ -411,14 +412,14 @@ subroutine AOD_Ext(i,j,debug)
       
       !.. SpecExtCross [m2/g]. EXT_MODE: use dry/wet extinction coeficients
       kext(:)=Qm(EXT_MODE,rh(k),w,debug.and.((k==KCHEMTOP+1).or.(k==KMAX_MID)))
-      if(allocated(SpecExtCross).and.w==W550)&
-        SpecExtCross(:,i,j,k)=kext(:)
+      if(associated(SpecExtCross))&
+        SpecExtCross(:,k,i,j,w)=kext(:)
 
       !.. Specific extinction coefficients
       kext(:)=kext(:) &                                             ! [m2/g]
         *xn_2d(ExtMap%itot,k)*species(ExtMap%itot)%molwt*1.0e6/AVOG ! [g/m3]
 
-      !.. Extinction coefficients at level:k and wavelenght:w
+      !.. Extinction coefficients at level:k and wavelength:w
       if(allocated(Extin_coeff))&
         Extin_coeff(:,i,j,k,w)=kext(:)
 

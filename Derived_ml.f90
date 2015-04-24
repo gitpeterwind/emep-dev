@@ -66,8 +66,8 @@ use ModelConstants_ml, only: &
   ,NTDAY        & ! Number of 2D O3 to be saved each day (for SOMO)
   ! output types corresponding to instantaneous,year,month,day
   ,IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY, IOU_YEAR_LASTHH, IOU_HOUR, IOU_HOUR_MEAN
-use AOD_PM_ml,            only: AOD_init,aod_grp,wavelenght,& ! group and 
-                                wanted_wlen,wanted_ext3d      ! wavelenghts
+use AOD_PM_ml,            only: AOD_init,aod_grp,wavelength,& ! group and 
+                                wanted_wlen,wanted_ext3d      ! wavelengths
 use MosaicOutputs_ml,     only: nMosaic, MosaicOutput
 use NumberConstants,      only: UNDEF_R
 use OwnDataTypes_ml,      only: Deriv, print_Deriv_type, &
@@ -1054,12 +1054,12 @@ subroutine Derived(dt,End_of_Day)
 
     case("AOD:GROUP","AOD:SPEC")  !/ Aerosol Optical Depth (new system)
       if(first_call)call AOD_init("Derived:"//trim(typ))
-      wlen=find_index(f_2d(n)%subclass,wavelenght)! e.g. search "550nm" on array of wavelenghts
+      wlen=find_index(f_2d(n)%subclass,wavelength)! e.g. search "550nm" on array of wavelengths
       if(first_call)then
         call CheckStop(wlen<1,&
-          "Unknown AOD wavelenght "//trim(f_2d(n)%subclass))
+          "Unknown AOD wavelength "//trim(f_2d(n)%subclass))
         call CheckStop(.not.wanted_wlen(wlen),&
-          "Unwanted AOD wavelenght "//trim(f_2d(n)%subclass))        
+          "Unwanted AOD wavelength "//trim(f_2d(n)%subclass))        
       endif
       
       ngrp = size(aod_grp)
@@ -1499,12 +1499,12 @@ subroutine Derived(dt,End_of_Day)
 
     case("EXT:GROUP","EXT:SPEC")  !/ Extinction coefficient (new system)
       if(first_call)call AOD_init("Derived:"//trim(typ))
-      wlen=find_index(f_3d(n)%subclass,wavelenght)! e.g. search "550nm" on array of wavelenghts
+      wlen=find_index(f_3d(n)%subclass,wavelength)! e.g. search "550nm" on array of wavelengths
       if(first_call)then
         call CheckStop(wlen<1,&
-          "Unknown EXT wavelenght "//trim(f_3d(n)%subclass))
+          "Unknown EXT wavelength "//trim(f_3d(n)%subclass))
         call CheckStop(.not.(wanted_wlen(wlen).and.wanted_ext3d),&
-          "Unwanted EXT wavelenght "//trim(f_3d(n)%subclass))        
+          "Unwanted EXT wavelength "//trim(f_3d(n)%subclass))        
       endif
 
       ngrp = size(aod_grp)
