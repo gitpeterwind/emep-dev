@@ -1,28 +1,27 @@
 !==============================================================================
 module My_Derived_ml
-
-  !---------------------------------------------------------------------------
-  ! DESCRIPTION
-  ! This module specifies the "derived" fields, such as accumulated
-  ! precipitation
-  ! or sulphate, daily, monthly or yearly averages, depositions. These fields
-  ! are all typically output as netCDF fields.
-  !
-  ! This module provides the user-defined setups which are used in Derived_ml.
-  ! Derived fields are identified by a "class", such as "ADV" of "VOC", and
-  ! the Derived_ml should perform any integrations for this.
-  !
-  ! Several often-used routines (e.g. for AOTs, acc. sulphate, are defined
-  ! in the Derived_ml.f90, but users can define their own here, since
-  ! we do not use "use only" in Derived_ml.
-  !
-  !   Only text strings used here to define wanted data
-  !   All data field characteristics should be defined in Derived_ml, e.g.
-  !   in f_2d arrays.
-  !   Derived fields such as d_2d only exist in Derived_ml, so are
-  !   accessed here through subroutine calls - using just the (i,j) part
-  !   of the bigger d_2d arrays
-  !---------------------------------------------------------------------------
+!---------------------------------------------------------------------------
+! DESCRIPTION
+! This module specifies the "derived" fields, such as accumulated
+! precipitation
+! or sulphate, daily, monthly or yearly averages, depositions. These fields
+! are all typically output as netCDF fields.
+!
+! This module provides the user-defined setups which are used in Derived_ml.
+! Derived fields are identified by a "class", such as "ADV" of "VOC", and
+! the Derived_ml should perform any integrations for this.
+!
+! Several often-used routines (e.g. for AOTs, acc. sulphate, are defined
+! in the Derived_ml.f90, but users can define their own here, since
+! we do not use "use only" in Derived_ml.
+!
+!   Only text strings used here to define wanted data
+!   All data field characteristics should be defined in Derived_ml, e.g.
+!   in f_2d arrays.
+!   Derived fields such as d_2d only exist in Derived_ml, so are
+!   accessed here through subroutine calls - using just the (i,j) part
+!   of the bigger d_2d arrays
+!---------------------------------------------------------------------------
 
 use AOTx_ml, only : O3cl, VEGO3_OUTPUTS, VEGO3_DEFS
 use CheckStop_ml,  only: CheckStop, StopAll
@@ -141,10 +140,6 @@ private
       ,"SOMO35        " &
       ,"PSURF         " &  ! Surface  pressure (for cross section):
   /)
-
-
-    character(len=TXTLEN_DERIV), public, parameter, dimension(1) :: &
-  COL_ADD = (/ "AOD" /)
 
 
   !============ Extra parameters for model evaluation: ===================!
@@ -321,7 +316,7 @@ private
           tag_name    ! Needed to concatanate some text in AddArray calls
                       ! - older (gcc 4.1?) gfortran's had bug
     character(len=TXTLEN_SHORT) :: outname, outunit, outdim, outtyp, outclass
-    logical :: debug0   !  if(DEBUG%MY_DERIVED.and.MasterProc )
+    logical :: Is3D,debug0   !  if(DEBUG%MY_DERIVED.and.MasterProc )
     character(len=12), save :: sub='InitMyDeriv:'
 
     NAMELIST /OutputConcs_config/OutputMisc,OutputConcs
@@ -381,10 +376,6 @@ private
      call CheckStop( errmsg, errmsg // "WDEP_WANTED too long" )
 !TEST     call AddArray( D2_SR,  wanted_deriv2d, NOT_SET_STRING, errmsg)
 !TEST     call CheckStop( errmsg, errmsg // "D2_SR too long" )
-     !if( USE_AOD ) then
-       call AddArray( COL_ADD,  wanted_deriv2d, NOT_SET_STRING, errmsg)
-       call CheckStop( errmsg, errmsg // "COL_ADD too long" )
-     !end if
 
   ! Emission sums - we always add these (good policy!)
    do  i = 1, size(EMIS_FILE)
@@ -504,21 +495,34 @@ private
    !   OutputConcs = (/  typ_s5i("SO2", "ugS", D2,"AIR_CONCS", SPEC, M),&
    !                     typ_s5i("SO4", "ugS", D2,"AIR_CONCS", SPEC, M),&
 
-      do n = 1, nOutputConcs ! size( OutputConcs(:)%txt1 )
-
+      do n = 1, nOutputConcs
         outname= trim(OutputConcs(n)%txt1)
         outunit= trim(OutputConcs(n)%txt2)
         outdim = trim(OutputConcs(n)%txt3)
         outtyp = trim(OutputConcs(n)%txt4)
         outclass=trim(OutputConcs(n)%txt5) ! MISC or SPEC or GROUP
-
+        Is3D    =.false.
         if(outclass=="MISC") then
-          tag_name(1)= trim(outname) ! Just use raw name here
-          if(outtyp=="COLUMN")&
-            tag_name(1)= "COLUMN_" // trim(outname) //"_"//trim(outdim)
-
-          call AddArray( tag_name(1:1) , wanted_deriv2d, &
-               NOT_SET_STRING, errmsg)
+          select case(outtyp)
+          case("COLUMN")
+            tag_name(1)= "COLUMN_"//trim(outname)//"_"//trim(outdim)
+          case('AOD','AOD:TOTAL','AOD:SPEC','AOD:SHL','AOD:GROUP',&
+               'EXT','EXT:TOTAL','EXT:SPEC','EXT:SHL','EXT:GROUP')
+            if(.not.USE_AOD)cycle
+            if(outname(1:3)/=outtyp(1:3))&
+              outname  = outtyp(1:3)//"_"//trim(outname)
+            tag_name(1)=            trim(outname)//"_"//trim(outdim)
+            Is3D       =(outtyp(1:3)=="EXT")
+          case default
+            tag_name(1)= trim(outname) ! Just use raw name here
+          endselect
+           
+          if(Is3D)then
+            call AddArray(tag_name(1:1),wanted_deriv3d,NOT_SET_STRING,errmsg)
+          else
+            call AddArray(tag_name(1:1),wanted_deriv2d,NOT_SET_STRING,errmsg)
+          endif
+          call CheckStop(errmsg,errmsg//trim(outname)//" too long")
           nOutputFields = nOutputFields + 1
           OutputFields(nOutputFields) = OutputConcs(n)
 

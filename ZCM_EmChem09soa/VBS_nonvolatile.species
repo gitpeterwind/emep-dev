@@ -8,10 +8,10 @@ POM_f_WOOD,1,CO,20.4,PMfS,PMf,0,0,0,xx,PCM;PPM25;PPM10;NVWOODOC25;NONVOLPCM;NVAB
 POM_f_FFUEL,1,CH3,xx,PMfS,PMf,0,0,0,xx,PCM;PPM25;PPM10;NVFFUELOC25;NVABSOM,,"!Primary fossil fuel burning fine OC emissions, OM/OC=1.25"
 POM_c_FFUEL,1,CH3,xx,PMc,PMc,0,0,0,xx,PMCO;PPM_c;PPM10;PM10;PM10anthr;NVFFUELOC_COARSE;OMCOARSE;NONVOLPCM,,"!Primary fossil fuel burning coarse OC emissions, OA/OC=1.25"
 *
-EC_f_WOOD_new,1,C,xx,PMfS,ECfn,ECn,0,0,xx,EC_f;PMFINE;PM10;PPM25;PPM10;PCM;WOODEC;ECFINE;NONVOLPCM,,"!Primary wood burning fine EC emissions"
+EC_f_WOOD_new,1,C,xx,PMfS,ECfn,ECn:dry,0,0,xx,EC_f;PMFINE;PM10;PPM25;PPM10;PCM;WOODEC;ECFINE;NONVOLPCM,,"!Primary wood burning fine EC emissions"
 EC_f_WOOD_age,1,C,xx,PMfS,PMf,ECa,0,0,xx,EC_f;PMFINE;PM10;PPM25;PPM10;PCM;WOODEC;ECFINE;NONVOLPCM,,"!Aged wood burning fine EC emissions"
 EC_c_WOOD,1,C,xx,PMc,PMc,0,0,0,xx,PMCO;PPM_c;PPM10;PM10;PM10anthr;WOODEC;ECCOARSE;NONVOLPCM,,"!Primary wood burning coarse EC emissions"
-EC_f_FFUEL_new,1,C,xx,PMfS,ECfn,ECn,0,0,xx,EC_f;PMFINE;PM10;PPM25;PPM10;PCM;FFUELEC;ECFINE;NONVOLPCM,,"!Primary fossil fuel burning fine EC emissions"
+EC_f_FFUEL_new,1,C,xx,PMfS,ECfn,ECn:dry,0,0,xx,EC_f;PMFINE;PM10;PPM25;PPM10;PCM;FFUELEC;ECFINE;NONVOLPCM,,"!Primary fossil fuel burning fine EC emissions"
 EC_f_FFUEL_age,1,C,xx,PMfS,PMf,ECa,0,0,xx,EC_f;PMFINE;PM10;PPM25;PPM10;PCM;FFUELEC;ECFINE;NONVOLPCM,,"!Aged fossil fuel burning fine EC emissions"
 EC_c_FFUEL,1,C,xx,PMc,PMc,0,0,0,xx,PMCO;PPM_c;PPM10;PM10;PM10anthr;FFUELEC;ECCOARSE;NONVOLPCM,,"!Primary fossil fuel burning coarse EC emissions"
 *

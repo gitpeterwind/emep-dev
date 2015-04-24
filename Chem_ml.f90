@@ -1,12 +1,8 @@
-! <Chem_ml.f90 - A component of the EMEP MSC-W Chemical transport Model>
-!*****************************************************************************! 
-
-                         module Chemfields_ml
-
+module Chemfields_ml
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 use AllocInits,           only: AllocInit
 use ChemSpecs,            only: NSPEC_ADV, NSPEC_SHL, NSPEC_TOT ! => No. species 
-use ModelConstants_ml,    only: KMAX_MID, KCHEMTOP, AERO     ! =>  z dimension
+use ModelConstants_ml,    only: KMAX_MID, KCHEMTOP, AERO        ! =>  z dimension
 use NumberConstants,      only: UNDEF_R
 use Par_ml,               only: MAXLIMAX,MAXLJMAX   ! => x, y dimensions
 use Setup_1dfields_ml
@@ -47,8 +43,7 @@ private
 
   real, public, save, allocatable:: Fgas3d (:,:,:,:)  ! for SOA
 
-  real, public, save, allocatable, dimension(:,:) :: AOD
-  real, public, save, allocatable, dimension(:,:,:) :: Extin_coeff
+  real, public, save, allocatable :: AOD(:,:,:,:),Extin_coeff(:,:,:,:,:)
 
   real, save, allocatable, public :: &
      cfac   (:,:,:)   
@@ -78,10 +73,10 @@ contains
     PM25_water=0.0
     allocate(PM25_water_rh50(MAXLIMAX,MAXLJMAX))
     PM25_water_rh50=0.0
-    allocate(AOD(MAXLIMAX,MAXLJMAX))
-    AOD=0.0
-    allocate(Extin_coeff(MAXLIMAX,MAXLJMAX,KMAX_MID))
-    Extin_coeff=0.0
+!   allocate(AOD(MAXLIMAX,MAXLJMAX))
+!   AOD=0.0
+!   allocate(Extin_coeff(MAXLIMAX,MAXLJMAX,KMAX_MID))
+!   Extin_coeff=0.0
     allocate(cfac(NSPEC_ADV,MAXLIMAX,MAXLJMAX))
     cfac=1.0
     allocate(so2nh3_24hr(MAXLIMAX,MAXLJMAX))
@@ -137,9 +132,5 @@ contains
 
 
 !_____________________________________________________________________________
+endmodule Chemfields_ml
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
-                     end module Chemfields_ml
-! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
-! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-!_____________________________________________________________________________

@@ -153,6 +153,59 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+24 April 2015 Alvaro 2993--2994
+
+AOD_PM_ml,Chemfields_ml(Chem_ml.f90),
+ZCM_EmChem09/Dust.species,ZCM_EmChem09soa/VBS_nonvolatile.species:
+- Extend AOD/Extin_coeff calculation for 9 different wavelenghts.
+  Original code calculated optical properties for 550nm.
+- Update some of the 550nm parameters.
+- Resolve inconsistences for dust (DDf, DDc) and elemental carbon
+  (EEa, EEn) optical types.
+
+AOD_PM_ml,Derived_ml,ZD_OZONE/My_Derived_ml
+config_Outputs_EMEPSTD.nml,config_BM-EECCA.nml:
+- AOD and Extin_coeff output setup taken from OutputConcs, which is read as
+  part of OutputConcs_config namelist.
+- AOD calculations for a given wavelenght are only performed
+  if such output is required. Extin_coeff calculations are skipped if no 3D
+  output is required.
+- All AOD/EXT calculations and output will be skipped if USE_AOD=F in ModelConstants_config.
+- Commented examples for AOD and Extin_coeff output can be found on
+  config_Outputs_EMEPSTD.nml.
+- Benckmark output (config_BM-EECCA.nml) consists of daily AOD_550nm
+  and montly EXT_550nm.
+
+AOD_PM_ml
+- Remove Copyright notice as it will be added by mk.OpenSource.
+
+Derived_ml:
+- Format and tidy up.
+
+Output_hourly,ZD_OZONE/My_Outputs_ml:
+- Deffer hourly AOD output to Derived (D2D) output.
+- Ignore DEBUG_POLLEN when .not.USE_POLLEN.
+
+Nest_ml, ZD_Pollen/Pollen_ml:
+- Bix bug introduced ca 2987:
+  FORECAST mode wrongly assumed USE_POLLEN.
+
+Nest_ml, ZD_Pollen/Pollen_ml:
+- Bix bug introduced ca 2987.
+  Advected pollen variables where read to xn_adv(-1,:,:,:).
+
+run.pl:
+- Move $KEEP_LINKS valriable definition nect to $RESET, $COMPILE_ONLY,$DRY_RUN
+  definitions.
+
+Makefile:
+- Variable ARCHIVE enhables/disables the archiving of source code.
+  ARCHIVE=no by default. make ... ARCHIVE=yes will create the *.tar.bz2 file.
+- Use variable BINDIR to compile the model into a different path than $ProgDir.
+  make ... -C $ProgDir BINDIR=$RESDIR will link into $RESDIR/Unimod 
+  instead of $ProgDir/Unimod.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 24 April 2015 Dave 2989-2991
 ==============
 rv4.7beta1 = 1st bug fix.

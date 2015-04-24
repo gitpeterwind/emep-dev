@@ -231,6 +231,9 @@ OutputConcs=
     ! 'NUCRACT'             ,'mBq' ,'2d','AIR_CONCS','GROUP',4,
     !!'XE131'               ,'mBq' ,'2d','AIR_CONCS','SPEC' ,4,
     !!'NUC'                 ,'mBq' ,'2d','AIR_CONCS','GROUP',4,
+!-- New AOD(2d)/EXT(3d) system
+      'AOD'                ,' '  ,'550nm','AOD:GROUP','MISC',4,
+      'EXT'                ,'1/m','550nm','EXT:GROUP','MISC',3,
 ! ============================================================
 !TFMM'SO2'                  ,'ugS' ,'2d','AIR_CONCS','SPEC' ,4,
 !TFMM'SO4'                  ,'ugS' ,'2d','AIR_CONCS','SPEC' ,4,
