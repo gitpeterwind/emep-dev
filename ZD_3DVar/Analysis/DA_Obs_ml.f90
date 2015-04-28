@@ -299,6 +299,10 @@ subroutine H_op(lat,lon,alt,n,yn,ipar)
     case default
     call CheckStop(HERE("obsData not yet supported "//trim(obsData(ipar)%tag)))
   endselect
+!-----------------------------------------------------------------------
+!
+!-----------------------------------------------------------------------
+  yn=0e0
   if(.not.pidx(n)%in_mgrid)return
 !-----------------------------------------------------------------------
 ! analysis of direct observations: NO2, O3, SO2, etc
@@ -307,7 +311,6 @@ subroutine H_op(lat,lon,alt,n,yn,ipar)
     unitconv=obsData(ipar)%unitconv
     ispec=obsData(ipar)%ispec
     k =obsData(ipar)%ichem
-    yn=0e0
     select case(obsData(ipar)%deriv)
 !-----------------------------------------------------------------------
 ! direct observations: model mid-levels
@@ -356,7 +359,6 @@ subroutine H_op(lat,lon,alt,n,yn,ipar)
     igrp=obsData(ipar)%ispec
 !!  print *,igrp,chemgroups(igrp)%name
     call Group_Units(igrp,obsData(ipar)%unit,gspec,gunit_conv,debug)
-    yn=0e0
     select case(obsData(ipar)%deriv)
 !-----------------------------------------------------------------------
 ! indirect observations: model mid-levels
@@ -427,7 +429,6 @@ subroutine H_op(lat,lon,alt,n,yn,ipar)
   elseif(any(obsData(ipar)%name==['EXT','AOD']))then
     gspec=>aod_grp          ! AOD group
     nn=obsData(ipar)%ichem  ! wavelength index
-    yn=0e0
     select case(obsData(ipar)%deriv)
 !-----------------------------------------------------------------------
 ! indirect observations: model mid-levels

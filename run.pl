@@ -118,7 +118,7 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
-($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2993"   ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
+($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("2997"   ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
 
 my %BENCHMARK;
 # OpenSource 2008
@@ -422,10 +422,10 @@ given($GRID){
   when("RCA")    {$emisdir="$ProjDataDir/Interpolations";} #EnsClim
   when("HIRHAM") {$emisdir="$EMIS_INP/emissions/$emisscen/$emisyear";}
   when("GEMS025"){$emisdir="$EMIS_INP/Emissions/2008-Trend2006-V9-Extended_PM_corrected-V3";}
-# when("MACC02") {$emisdir="$EMIS_INP/Emissions/2008_emis_EMEP_from_PS50";}
-# when("MACC02") {$emisdir="$EMIS_INP/Emissions/2008_emis_EMEP_MACC";}
-  when("MACC02") {$emisdir="$EMIS_INP/Emissions/2007_emis_MACC";}
-  when("MACC14") {$emisdir="$EMIS_INP/Emissions/2009_emis_MACCII";}
+  when(/MACC/){
+    $emisdir="$EMIS_INP/Emissions/TNO_MACCIII";           # available years:
+    $emisyear=($year<2000)?2000:($year>2011)?2011:$year;  #   2000..2011
+  }
 }
 #TMP and should be improved because it gives errors for other domains!
 #.. For using emissions of EC/OC instead of PMx
@@ -769,13 +769,11 @@ foreach my $scenflag ( @runs ) {
     $dir = $pm_emisdir if $poll =~ /forf/;   #
     print "TESTING PM $poll $dir\n";
 
-    if ($GRID eq "MACC14") { # For most cases only Emis_TNO7.nc is available
-      $ifile{"$emisdir/EmisOutFrac.$poll"} = "emislist.$poll"
-        if(-e "$emisdir/EmisOutFrac.$poll");
-    # $ifile{"$dir/grid$gridmap{$poll}"} = "emislist.$poll"
-    #   if(-e "$emisdir/grid$gridmap{$poll}");
-      $ifile{"$emisdir/Emis_TNO7_2751.nc"} = "EmisFracs.nc"
-        if(-e "$emisdir/Emis_TNO7_2751.nc");
+    if ($GRID=~/MACC/) { # For most cases only Emis_TNO7.nc is available
+      $ifile{"$emisdir/Emis_$GRID\_$emisyear.$poll"} = "emislist.$poll"
+        if(-e "$emisdir/Emis_$GRID\_$emisyear.$poll");
+      $ifile{"$emisdir/Emis_TNO7_$emisyear.nc"} = "EmisFracs.nc"
+        if(-e "$emisdir/Emis_TNO7_$emisyear.nc");
     }elsif( $GRID eq "RCA"){
       #EnsClim RCA #$ifile{"$dir/grid$gridmap{$poll}"} = "emislist.$poll";
       #$ifile{"$emisdir/EmisOut_2005.$poll"} = "emislist.$poll";
