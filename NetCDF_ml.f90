@@ -4259,13 +4259,24 @@ subroutine   vertical_interpolate(filename,Rvar,KMAX_ext,Rvar_emep,debug)
       call StopAll('levels not yet implemented')
     endif
   endif
-  status=nf90_inq_varid(ncFileID,"P0",varID)                 
-  if(status==nf90_noerr) then
-    call check(nf90_get_var(ncFileID,varID,P0))
-    if(debug)write(*,*)'Multiplying hyam with P0 ',P0
-    hyam_ext=hyam_ext*P0
-  else
-     if(debug)write(*,*)'did not find P0 ',status
+  call check(nf90_inq_varid(ncFileID,"lev",varID))                 
+  call check(nf90_get_att(ncFileID,VarID,"formula_terms",word))
+  if(word(1:2)/='ap')then
+     status=nf90_inq_varid(ncFileID,"P0",varID)                 
+     if(status==nf90_noerr) then
+        call check(nf90_get_var(ncFileID,varID,P0))
+        status=nf90_get_att(ncFileID,VarID,"units",word)
+        if(status==nf90_noerr)then
+           if(word(1:3)=='hPa')then
+              if(debug)write(*,*)'Changing P0 from hPa to Pa'
+              P0=100*P0
+           endif
+        endif
+        if(debug)write(*,*)'Multiplying hyam with P0 ',P0
+        hyam_ext=hyam_ext*P0
+     else
+        if(debug)write(*,*)'did not find P0 ',status
+     endif
   endif
 
   !find vertical interpolation coefficients
