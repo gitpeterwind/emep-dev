@@ -153,11 +153,12 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-29th April Peter 2998
+29th April Peter 2999
 
 Vertical interpolation of external netcdf files:
 The model did not interpret correctly the vertical coordinates when
 formula_terms = "ap: hyam b: hybm ps: PS p0: P0" (instead of "a: hyam ...)
+This was used for Dust BC introduce in  version 2962.
 
 Corrected vertical_interpolate in NetCDF_ml.f90
 
