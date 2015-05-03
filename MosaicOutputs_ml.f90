@@ -295,7 +295,7 @@ if( igrp < 1 ) print *, "OOPNOW", igrp, trim(xname) // trim(name)
       case default
         call CheckStop(DEBUG%MOSAICS,sub//" unknown MosaicDDEP type "//trim(DDEP_WANTED(i)%txt2))
       endselect
-print *, "OOP===========================POO"
+!print *, "OOP===========================POO"
 
       name = "DDEP_"//trim(xname)//"_m2"//trim(DDEP_ECOS(n)%name)
 

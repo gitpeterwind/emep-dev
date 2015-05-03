@@ -47,6 +47,7 @@ use GridValues_ml,    only: debug_li, debug_lj, debug_proc, A_mid, B_mid, &
                             xm2, GRIDWIDTH_M, GridArea_m2
 use Io_Progs_ml,      only: datewrite
 use MetFields_ml,     only: roa,pzpbl,Kz_m2s,th,zen, ustar_nwp, u_ref,&
+ met, derivmet,  & !TEST of targets
                             ws_10m, rh2m, z_bnd, z_mid, ps, t2_nwp, &
                             SoilWater_deep, SoilWater_uppr, Idirect, Idiffuse
 use ModelConstants_ml, only: &
@@ -618,7 +619,7 @@ Is3D = .true.
   ! Get indices of wanted fields in larger def_xx arrays:
   do i = 1, num_deriv2d
     ind = find_index( wanted_deriv2d(i), def_2d(:)%name )
-    print *, "D2IND check", me, ind, trim(wanted_deriv2d(i))
+    !print *, "D2IND check", me, ind, trim(wanted_deriv2d(i))
     if(ind>0)then
       f_2d(i) = def_2d(ind)
       if(found_ind2d(ind)>0) then
@@ -632,7 +633,7 @@ Is3D = .true.
         call CheckStop ( found_ind2d(ind) > 0,  &
           sub//"REQUESTED 2D DERIVED ALREADY DEFINED: "//trim(def_2d(ind)%name))
       endif
-      print "(a,3i4,a)", "D2INDSET", me, ind, size(def_2d(:)%name)
+      if(MasterProc) print "(a,3i4,a)", "D2INDSET", me, ind, size(def_2d(:)%name)
       found_ind2d(ind)  = 1
     else
       print *,"D2IND OOOPS wanted_deriv2d not found: ", wanted_deriv2d(i)
@@ -740,7 +741,9 @@ subroutine Derived(dt,End_of_Day)
   real, intent(in)    :: dt           !  time-step used in intergrations
   logical, intent(in) :: End_of_Day   !  e.g. 6am for EMEP sites
 
-  character(len=len(f_2d%class)) :: typ  !  See defs of f_2d
+  character(len=len(f_2d%name)) :: name  !  See defs of f_2d
+  character(len=len(f_2d%class)) :: class  !  See defs of f_2d
+  character(len=len(f_2d%subclass)) :: subclass  !  See defs of f_2d
   character(len=TXTLEN_SHORT)    :: txt2
   real :: thour                          ! Time of day (GMT)
   real :: timefrac                       ! dt as fraction of hour (3600/dt)
@@ -761,6 +764,8 @@ subroutine Derived(dt,End_of_Day)
   integer :: igrp, ngrp  ! group methods
   integer, save :: ind_pmfine = -999, ind_pmwater = -999, & !needed for PM25
                    ind_pm10 = -999
+  integer :: imet_tmp
+  real, pointer, dimension(:,:) :: met_p => null()
 
   logical, allocatable, dimension(:)   :: ingrp
   integer :: wlen,ispc
@@ -781,12 +786,14 @@ subroutine Derived(dt,End_of_Day)
   ipmc  = 0  ! pm-coarse
   do n = 1, num_deriv2d
 
-    typ = f_2d(n)%class
+    class = f_2d(n)%class
+    subclass = f_2d(n)%subclass
+    name  = f_2d(n)%name
+    index = f_2d(n)%index
 
     if( debug_flag .and. first_call ) &
-       write(*,"(a,i3,7a)") "Derive2d-typ",&
-        n, "T:", trim(typ), "N:", trim(f_2d(n)%name), "C:",&
-          trim(f_2d(n)%class), "END"
+       write(*,"(a,i3,7a)") "Derive2d-name-class",&
+        n, "C:", trim(class), "N:", trim(name), ":END"
 
 
 
@@ -795,30 +802,64 @@ subroutine Derived(dt,End_of_Day)
     !    Just comment out if not wanted, or (better!) don't define any
     !    f_2d as TADV or TVOC
 
-    if ( typ == "TADV" .or. typ == "TVOC" ) then
+    if ( class == "TADV" .or. class == "TVOC" ) then
       if(thour <= 8.0 .or. thour > 16.0 ) cycle  ! Start next species
     end if
 
     ! hmix average at 00 and 12:
-    if ( typ == "HMIX00" .or. typ == "XKSIG00" ) then
+    if ( class == "HMIX00" .or. class == "XKSIG00" ) then
       if(thour /= 0.0 ) cycle  ! Start next species
     end if
 
-    if ( typ == "HMIX12" .or. typ == "XKSIG12" ) then
+    if ( class == "HMIX12" .or. class == "XKSIG12" ) then
       if(thour /= 12.0 ) cycle  ! Start next species
     end if
 
-    index = f_2d(n)%index
     !if ( DEBUG .and. MasterProc .and. first_call ) then
     if(MasterProc.and.first_call)&
       write(*,"(a,i4,1x,a,i4,1x,a)") "1st call Derived 2d", n, &
-        trim(f_2d(n)%name), index, trim(typ)
+        trim(name), index, trim(class)
 
-    select case ( typ )
+    select case ( class )
+
+    case ( "MET2D", "MET3D" )
+
+     !DS May 2015
+     ! Meteo fields are available through their names and a pointer, either
+     ! from the read-in NWP fields (met%) or the derived met fields 
+     ! (metderiv%), see MetFields_ml. We thus use the required name and see
+     ! if we can find it in either met% or metderiv%
+
+      imet_tmp = find_index(subclass, met(:)%name ) ! subclass has meteo name from MetFields 
+      if( imet_tmp > 0 ) then
+        met_p => met(imet_tmp)%field(:,:,1,1)
+      else
+        imet_tmp = find_index(subclass, derivmet(:)%name )
+        if( imet_tmp > 0 ) met_p => derivmet(imet_tmp)%field(:,:,1,1)
+      end if
+
+      if( imet_tmp > 0 ) then
+        if( MasterProc.and.first_call) write(*,*) "MET2D"//trim(name), &
+             imet_tmp, met_p(2,2)
+        forall ( i=1:limax, j=1:ljmax )
+          d_2d( n, i,j,IOU_INST) = met_p(i,j)
+        end forall
+        met_p => null()
+
+      else ! Not found!
+        if( first_call)  then
+          if( MasterProc) write(*,*) "MET2D NOT FOUND"//trim(name)//":"//trim(subclass)
+            forall ( i=1:limax, j=1:ljmax )
+              d_2d( n, i,j,IOU_INST) = 0.0 ! UNDEF_R
+          end forall
+        end if
+      end if
+
+    ! The following can be deleted once testing of MET2D is finished...
     case ( "USTAR_NWP" )
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = ustar_nwp(i,j)
-    end forall
+      end forall
     case ( "Kz_m2s" )
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = Kz_m2s(i,j,KMAX_BND-1)
@@ -893,7 +934,7 @@ subroutine Derived(dt,End_of_Day)
         d_2d( n, i,j,IOU_INST) = Idiffuse(i,j)
     end forall
 
-    case ( "SNOW" )
+    case ( "XSNOW" ) ! Was not snow depth, but rather flag
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = Grid_snow(i,j)
       end forall
@@ -946,7 +987,7 @@ subroutine Derived(dt,End_of_Day)
 
     case ( "PM25" )      ! Need to add PMFINE + fraction NO3_c
       if(first_call)then
-        call CheckStop(f_2d(n)%unit(1:2)/="ug","Wrong unit for "//trim(typ))
+        call CheckStop(f_2d(n)%unit(1:2)/="ug","Wrong unit for "//trim(class))
          call CheckStop(iadv_NO3_C<1,"Unknown specie NO3_C")
      endif
 
@@ -961,7 +1002,7 @@ subroutine Derived(dt,End_of_Day)
 
     case ( "PM25_rh50" )      ! Need to add PMFINE + fraction NO3_c
       if(first_call)then
-         call CheckStop(f_2d(n)%unit(1:2)/="ug","Wrong unit for "//trim(typ))
+         call CheckStop(f_2d(n)%unit(1:2)/="ug","Wrong unit for "//trim(class))
         call CheckStop(iadv_NO3_C<1,"Unknown specie NO3_C")
       endif
 
@@ -976,7 +1017,7 @@ subroutine Derived(dt,End_of_Day)
 
     case ( "PM25X" )      ! Need to add PMFINE + fraction NO3_c
       if(first_call)then
-        call CheckStop(f_2d(n)%unit(1:2)/="ug","Wrong unit for "//trim(typ))
+        call CheckStop(f_2d(n)%unit(1:2)/="ug","Wrong unit for "//trim(class))
       endif
       if (iadv_NO3_C      < 1 .or. & 
           iadv_EC_C_WOOD  < 1 .or. & 
@@ -1001,7 +1042,7 @@ subroutine Derived(dt,End_of_Day)
 
     case ( "PM25X_rh50" )      ! Need to add PMFINE + fraction NO3_c + water
       if(first_call)then
-        call CheckStop(f_2d(n)%unit(1:2)/="ug","Wrong unit for "//trim(typ))
+        call CheckStop(f_2d(n)%unit(1:2)/="ug","Wrong unit for "//trim(class))
       endif
       if (iadv_NO3_C      < 1 .or. & 
           iadv_EC_C_WOOD  < 1 .or. & 
@@ -1033,7 +1074,7 @@ subroutine Derived(dt,End_of_Day)
 
       if(DEBUG%DERIVED .and. debug_proc )  then
         if(first_call)then
-          call CheckStop(f_2d(n)%unit(1:2)/="ug","Wrong unit for "//trim(typ))
+          call CheckStop(f_2d(n)%unit(1:2)/="ug","Wrong unit for "//trim(class))
           call CheckStop(iadv_NO3_C      <1,"Unknown specie NO3_C")
           call CheckStop(iadv_EC_C_WOOD  <1,"Unknown specie EC_C_WOOD")
           call CheckStop(iadv_EC_C_FFUEL <1,"Unknown specie EC_C_FFUEL")
@@ -1053,7 +1094,7 @@ subroutine Derived(dt,End_of_Day)
       endif
 
     case("AOD:GROUP","AOD:SPEC")  !/ Aerosol Optical Depth (new system)
-      if(first_call)call AOD_init("Derived:"//trim(typ))
+      if(first_call)call AOD_init("Derived:"//trim(class))
       wlen=find_index(f_2d(n)%subclass,wavelength)! e.g. search "550nm" on array of wavelengths
       if(first_call)then
         call CheckStop(wlen<1,&
@@ -1064,7 +1105,7 @@ subroutine Derived(dt,End_of_Day)
       
       ngrp = size(aod_grp)
       allocate(ingrp(ngrp))
-      select case(typ)
+      select case(class)
       case("AOD:GROUP")
         igrp = f_2d(n)%index
         do i=1,ngrp
@@ -1185,7 +1226,7 @@ subroutine Derived(dt,End_of_Day)
         !NB overwritten anyway D2_O3_DAY = 0.
       endif
     case ( "PREC", "WDEP", "DDEP", "VG" ,"Rs", "Rns", "Gns", "Mosaic", "POD", "SPOD", "AOT" )
-!            if ( debug_flag ) write(*,"(2a,i4,a,es12.3)")"PROCESS ",trim(typ),&
+!            if ( debug_flag ) write(*,"(2a,i4,a,es12.3)")"PROCESS ",trim(class),&
 !                   n, trim(f_2d(n)%name), d_2d(n,debug_li,debug_lj,IOU_INST)
 !            Nothing to do - all set in My_DryDep
 
@@ -1287,7 +1328,7 @@ subroutine Derived(dt,End_of_Day)
           n, ind_pm10, trim(chemgroups(igrp)%name), trim(f_2d(n)%name)
       endif
       if(dbg0) then
-        write(*,*) "CASEGRP ", n, igrp, ngrp, trim(typ)
+        write(*,*) "CASEGRP ", n, igrp, ngrp, trim(class)
         write(*,*) "CASENAM ", trim(f_2d(n)%name)
         write(*,*) "CASEGRP:", chemgroups(igrp)%ptr
         write(*,*) "CASEunit", trim(f_2d(n)%unit)
@@ -1311,7 +1352,7 @@ subroutine Derived(dt,End_of_Day)
       if ( debug_flag ) then
          if( debug_flag .and. i == debug_li .and. j == debug_lj ) &
            write(*,"(a,i3,4a)") "My_Deriv Defaults called n=",&
-              n, " Type ",trim(typ), " Name ", trim( f_2d(n)%name )
+              n, " Type ",trim(class), " Name ", trim( f_2d(n)%name )
 
            write(*,"(a,i3,i8,i4,a)") &
               "My_Deriv index?, nav? length?, class? ", index,&
@@ -1319,7 +1360,7 @@ subroutine Derived(dt,End_of_Day)
            write(*,*) "My_Deriv index?, avg ", f_2d(n)%avg
        end if
 
-       call My_DerivFunc( d_2d(n,:,:,IOU_INST), typ ) ! , density )
+       call My_DerivFunc( d_2d(n,:,:,IOU_INST), class ) ! , density )
 
     endselect
 
@@ -1370,7 +1411,7 @@ subroutine Derived(dt,End_of_Day)
   do n = 1, num_deriv3d
 
     index = f_3d(n)%index
-    typ   = f_3d(n)%class
+    class   = f_3d(n)%class
 
     if(f_3d(n)%unit=="ppb") then
       inv_air_density3D(:,:,:) = 1.0
@@ -1379,7 +1420,7 @@ subroutine Derived(dt,End_of_Day)
         inv_air_density3D(i,j,k) = 1.0/( roa(i,j,k,1) * to_molec_cm3 )
     endif
 
-    select case (typ)
+    select case (class)
     ! Simple advected species:
     case ( "ADV" )
       forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
@@ -1472,7 +1513,7 @@ subroutine Derived(dt,End_of_Day)
                             "Outside GRP "//trim(f_3d(n)%name))
       ngrp = size(chemgroups(igrp)%ptr)
       if(dbg0) then
-        write(*,*) "3DCASEGRP ", n, igrp, ngrp, trim(typ)
+        write(*,*) "3DCASEGRP ", n, igrp, ngrp, trim(class)
         write(*,*) "3DCASENAM ", trim(f_3d(n)%name)
         write(*,*) "3DCASEGRP:", chemgroups(igrp)%ptr
         write(*,*) "3DCASEunit", trim(f_3d(n)%unit)
@@ -1498,7 +1539,7 @@ subroutine Derived(dt,End_of_Day)
       end forall
 
     case("EXT:GROUP","EXT:SPEC")  !/ Extinction coefficient (new system)
-      if(first_call)call AOD_init("Derived:"//trim(typ))
+      if(first_call)call AOD_init("Derived:"//trim(class))
       wlen=find_index(f_3d(n)%subclass,wavelength)! e.g. search "550nm" on array of wavelengths
       if(first_call)then
         call CheckStop(wlen<1,&
@@ -1509,7 +1550,7 @@ subroutine Derived(dt,End_of_Day)
 
       ngrp = size(aod_grp)
       allocate(ingrp(ngrp))
-      select case(typ)
+      select case(class)
       case("EXT:GROUP")
         igrp = f_3d(n)%index
         do i=1,ngrp

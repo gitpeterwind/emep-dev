@@ -24,8 +24,29 @@ OutputMisc=
  !'AeroHNO3DU', 'USET', 'rct',   'rct', '/s', 73,   -1,       F,   1.0, T, 4
  !'AeroHO2PM',  'USET', 'rct',   'rct', '/s', 74,   -1,       F,   1.0, T, 4
  !'AeroO3DU',   'USET', 'rct',   'rct', '/s', 75,   -1,       F,   1.0, T, 4
- 'USTAR_NWP',  'USTAR_NWP', '-', '-', 'm/s', -99,  -99,      F,   1.0, T, 4,
- 'Snow_m',    'SNOW', '-',      '-',   'm', -99,  -99,      F,   1.0, T, 4,
+ !
+ ! For meteo MET2D, set subclass names from met% data in MetFields:
+ !
+ 'met2d_ustar_nwp',  'MET2D', 'ustar_nwp', '-', 'm/s', -99,  -99,      F,   1.0, T, 4,
+ 'met2d_uref',  'MET2D', 'u_ref', '-', 'm/s', -99,  -99,      F,   1.0, T, 4,
+ 'met2d_test',  'MET2D', 'u_xxx', '-', 'm/s', -99,  -99,      F,   1.0, T, 4,
+ 'met2d_snow_m',     'MET2D', 'snow_depth', '-',   'm', -99,  -99,      F,   1.0, T, 4,
+ 'met2d_t2m',        'MET2D', 'temperature_2m',             '-',  'degK', -99,  -99,      F,   1.0, T, 4,
+ 'met2d_rh2m',       'MET2D', 'relative_humidity_2m',  '-',  'frac', -99,  -99,      F,   1.0, T, 4,
+ 'met2d_u10',     'MET2D', 'u10',  '-',  'frac', -99,  -99,      F,   1.0, T, 4,
+! 'SHEAT_WRF',  'MET2D', 'HFX', '-',   'W/m2', -99,  -99,      F,   1.0, T, 4,
+ 'met2d_LH_Wm2',  'MET2D', 'surface_flux_latent_heat',   '-',  'W/m2', -99,  -99,      F,   1.0, T, 4,
+ 'met2d_SH_Wm2',  'MET2D', 'surface_flux_sensible_heat', '-',  'W/m2', -99,  -99,      F,   1.0, T, 4,
+ 'met2d_SMI_deep',      'MET2D', 'SMI3',      '-',   '-', -99,  -99,      F,   1.0, T, 4,
+ 'met2d_SMI_uppr',      'MET2D', 'SMI1',      '-',   '-', -99,  -99,      F,   1.0, T, 4,
+! avg false for precip
+! units are usually mm/hr. Need 1/3600 (2.78e-4) plus dt_scale to accumulate mm
+! 'met2d_LSPrec1',     'MET2D', 'large_scale_precipitations', '-',  'mm',  -99,  -99,      F,   1.0, F, 4,
+ 'met2d_PrecBuggy',     'MET2D', 'large_scale_precipitations', '-',  'mm',  -99,  -99,      T,   2.777778e-4, F, 4,
+!
+! 'ws10m',      'MET2D', 'u10',      '-',   'm/s', -99,  -99,      F,   1.0, T, 4,
+!nowMET2D 'USTAR_NWP',  'USTAR_NWP', '-', '-', 'm/s', -99,  -99,      F,   1.0, T, 4,
+ 'Snow_F',    'XSNOW', '-',      '-',   'frac', -99,  -99,      F,   1.0, T, 4,
  'Psurf_d',    'PSURF', '-',     '-', 'hPa', -99,  -99,      F,   1.0, T, 4,
 !
 OutputConcs= 
@@ -36,16 +57,16 @@ OutputConcs=
       'SurfAreaDUF_um2cm3' ,'um2/cm3' ,'2d','SurfAreaDUF_um2cm3'    ,'MISC' ,4, !!
       'SurfAreaDUC_um2cm3' ,'um2/cm3' ,'2d','SurfAreaDUC_um2cm3'    ,'MISC' ,4, !!
       'NO2',          'molec/cm2' ,'k20','COLUMN'   ,'MISC' ,4, !! New Column system
-      'Kz_m2s'              ,'m2/s','2d','Kz_m2s'   ,'MISC' ,7, !! hourly tests
-!     'ws_10m'              ,'m'   ,'2d','ws_10m'   ,'MISC' ,7, !! hourly tests
-      'rh2m'                ,'m'   ,'2d','rh2m'     ,'MISC' ,7, !! hourly tests
+!      'Kz_m2s'              ,'m2/s','2d','Kz_m2s'   ,'MISC' ,7, !! hourly tests
+!nowMET2D     'ws_10m'              ,'m'   ,'2d','ws_10m'   ,'MISC' ,7, !! hourly tests
+!nowMET2D      'rh2m'                ,'m'   ,'2d','rh2m'     ,'MISC' ,7, !! hourly tests
       'T2m'                 ,'degC','2d','T2m'      ,'MISC' ,4,
 !rv4.7 the following were removed from Derived_ml
 !rv4.7 REPLACED   'USTAR_NWP'           ,'m/s' ,'2d','USTAR_NWP','MISC' ,7, !! hourly tests
 !rv4.7 REPLACE      'Snow_m'              ,'m'   ,'2d','SNOW'     ,'MISC' ,4,
       'SURF_ppbC_VOC'       ,'ppb' ,'2d','VOC'      ,'MISC' ,4,
-      'SMI_deep'            ,'-'   ,'2d','SMI_deep' ,'MISC' ,4,
-      'SMI_uppr'            ,'-'   ,'2d','SMI_uppr' ,'MISC' ,4,
+!nowMET2D      'SMI_deep'            ,'-'   ,'2d','SMI_deep' ,'MISC' ,4,
+!nowMET2D      'SMI_uppr'            ,'-'   ,'2d','SMI_uppr' ,'MISC' ,4,
 ! ug/m3                                                    
       'SO2'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
       'NH3'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,

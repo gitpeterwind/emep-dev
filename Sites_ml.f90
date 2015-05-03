@@ -413,10 +413,12 @@ subroutine siteswrt_surf(xn_adv,cfac,xn_shl)
     ix = site_x(i)
     iy = site_y(i)
     iz = site_z(i)
+    if( iz == 0 ) iz = 20   ! If ZERO'd, skip surface correction
 
     i_Att=0
     do ispec = 1, NADV_SITE
-      if (iz == KMAX_MID ) then ! corrected to surface
+      !if (iz == KMAX_MID ) then ! corrected to surface
+      if (site_z(i) == KMAX_MID ) then ! corrected to surface
         out(ispec,i) = xn_adv( SITE_ADV(ispec) ,ix,iy,KMAX_MID ) * &
                        cfac( SITE_ADV(ispec),ix,iy) * PPBINV
       else                      ! Mountain sites not corrected to surface

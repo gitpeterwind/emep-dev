@@ -245,6 +245,7 @@ module MetFields_ml
 
   integer, public, parameter   :: NmetfieldsMax=100 !maxnumber of metfields
   type(metfield),  public :: met(NmetfieldsMax)  !To put the metfirelds that need systematic treatment
+  type(metfield),  public :: derivmet(20)  !DSA15 To put the metfields derived from NWP, eg for output
   logical, target :: metfieldfound(NmetfieldsMax)=.false. !default for met(ix)%found 
   integer, public, save   :: Nmetfields! number of fields defined in met
   integer, public, save   :: N3Dmetfields! number of 3D fields defined in met
@@ -771,6 +772,7 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%msize = NMET
   ix_ws_10m=ix
 
+
   ix=ix+1
   met(ix)%name             = 'large_scale_precipitations'
   met(ix)%dim              = 2
@@ -846,6 +848,7 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%msize = NMET
   ix_vn=ix
 
+
   Nmetfields=ix
   if(Nmetfields>NmetfieldsMax)then
      write(*,*)"Increase NmetfieldsMax! "
@@ -876,7 +879,11 @@ if(USE_WRF_MET_NAMES)then
 endif
 
 
+  ix=0
     allocate(u_ref(MAXLIMAX,MAXLJMAX))
+  ix=ix+1
+  derivmet(ix)%name    = 'u_ref'
+  derivmet(ix)%field(1:MAXLIMAX,1:MAXLJMAX,1:1,1:NMET)  => u_ref
     allocate(rho_surf(MAXLIMAX,MAXLJMAX))
     allocate(Tpot2m(MAXLIMAX,MAXLJMAX))
     allocate(invL_nwp(MAXLIMAX,MAXLJMAX))

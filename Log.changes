@@ -152,6 +152,48 @@ info on unused variables, etc.
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+3rd May  Dave  3000
+
+Introduced new MET2D system, to allow direct setting of meteorology outputs from
+config_Outputs. Tested and works perfect for ustar_nwp, rh2m, u_ref, etc.
+Some problems still for precipitation. Need to work out the right combination
+of scaling.
+
+The main benefit is to make it easier to set new output variables, without the
+hard-coding we have so far used in Derived_ml. If it is a meteorological field
+it should be possible to get it into d_2d from just the MetFields name.
+
+config_Outputs_EMEPSTD
+- added examples using new system, e.g.
+ 'met2d_t2m', 'MET2D', 'temperature_2m','-', 'degK', -99,  -99, F,1.0, T, 4,
+- removed older ws10,SMI_deep,SMI_uppr, etc.
+- BUG? Old Snow_m was found to be more like snow fraction than depth in m
+  (The new met2d_snow_m gives the true depth in m.)
+
+Derived_ml
+- modified to use the new MET2D system
+- some clean-up of debugging info
+- typ renamed to class, since it came from f_2d%class
+- SNOW renamed to XSNOW, since this was not giving the expected data
+
+MetFields_ml
+- added derivmet with type metfield, to store meteo not coming from NWP. Unlike met%
+  we only need name and the pointer settings.
+- added u_ref to derivmet as first example.
+
+MosaicOutputs_ml
+- some clean-up of debugging info
+
+My_Outputs_ml
+- added some of the new met2d variables to sites output
+
+Sites_ml
+- enabled setting of iz=0, to provide data from k=20 without surface correction
+  (useful for e.g. coastal sites with no nocturnal depletion, or boundary
+   conditions for e.g. ESX.)
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 29th April Peter 2999
 

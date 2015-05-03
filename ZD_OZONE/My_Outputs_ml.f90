@@ -10,11 +10,6 @@ module  My_Outputs_ml
 
 use CheckStop_ml,      only: CheckStop
 use ChemSpecs
-!CMR use ChemSpecs_tot_ml
-!CMR use ChemSpecs_adv_ml
-!CMR use ChemSpecs_shl_ml
-!CMR use ChemChemicals_ml,  only: species,species_adv
-
 use ChemGroups_ml,     only: chemgroups
 use DerivedFields_ml,  only: f_2d               ! D2D houtly output type
 use ModelConstants_ml, only: PPBINV, PPTINV, MasterProc, KMAX_MID,&
@@ -48,7 +43,7 @@ integer, public, parameter :: &
   ,NADV_SITE  = NSPEC_ADV  & ! No. advected species (1 up to NSPEC_ADV)
   ,NSHL_SITE  = NSPEC_SHL  & ! No. short-lived species
   ,NXTRA_SITE_MISC =    2     & ! No. Misc. met. params  ( e.g. T2, d_2d)
-  ,NXTRA_SITE_D2D  =    9       ! No. Misc. met. params  ( e.g. T2, d_2d)
+  ,NXTRA_SITE_D2D  =    9+8   ! No. Misc. met. params  ( e.g. T2, d_2d)
 
 integer, public, parameter, dimension(NADV_SITE) :: &
   SITE_ADV =  (/ (isite, isite=1,NADV_SITE) /)  ! Everything
@@ -71,6 +66,7 @@ character(len=18), public, parameter, dimension(NXTRA_SITE_MISC) :: &
 !These variables must have been set in My_Derived for them to be used.
 character(len=24), public, parameter, dimension(NXTRA_SITE_D2D) :: &
   SITE_XTRA_D2D= (/ &
+   character(len=24) :: &
     "HMIX                   ",&
     "PSURF                  ", &
     "ws_10m                 ", &
@@ -79,6 +75,13 @@ character(len=24), public, parameter, dimension(NXTRA_SITE_D2D) :: &
     "Emis_mgm2_BioNatAPINENE", &
     "Emis_mgm2_BioNatNO     ",&
     "Emis_mgm2_nox          ",&
+    'WDEP_PREC', &
+!    'Idirect', 'Idiffuse', 'SNratio', 'SMI_deep', &
+    'met2d_uref', & ! Idirect', 'Idiffuse', 'SNratio', 'SMI_deep', &
+    'met2d_u10', & ! Idirect', 'Idiffuse', 'SNratio', 'SMI_deep', &
+    'met2d_rh2m', & ! Idirect', 'Idiffuse', 'SNratio', 'SMI_deep', &
+    'SMI_deep', 'met2d_SMI_d', &
+    'SMI_uppr', 'met2d_SMI_s', &
 !   "SoilWater_deep ","EVAP_CF        ","EVAP_DF        ", &
 !   "EVAP_BF        ","EVAP_NF        ","WDEP_PREC      ", &
 !   "RH_GR          ","CanopyO3_GR    ","VPD_GR         ","FstO3_GR       ", &
