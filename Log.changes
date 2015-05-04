@@ -154,6 +154,33 @@ changes here (and when committing svn), and Dave will tag as required
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+4th May  Peter  3001
+
+Reorganization of the monthly emission setup.
+To use the monthly emissions Emis_GLOB_01deg_2010_month.nc
+(or Emis_GLOB_01deg_2008_month.nc) just set 
+$CDF_EMIS="Emis_GLOB_01deg_2010_month.nc"
+in run.pl.
+
+NB: Emis_GLOB_01deg_2010_month.nc and Emis_GLOB_01deg_2008_month.nc 
+do not have proper country codes (only HTAP regions).
+
+All the MONTHLY_GRIDEMIS from ModelConstants/config files are removed.
+The code find out itself whether the emissions are monthly or yearly by 
+checking that there are 12 records.
+
+The new naming convention for emissions are used (lower case).
+
+HTAP2 regions included in Country_ml.f90
+
+The old scheme for road dust is also removed (was not in use).
+
+The Emis_GLOB_01deg_YYYY_month.nc files were constructed from the data in
+/home/mifajej/Emissions/HTAP2/YYYY/HTAP_'//trim(pollut(ipollut))//'_YYYY_01degLonLat.',month
+
+Modified Country_ml, Emissions_ml, ModelConstants_ml, all config files (except outputs)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 3rd May  Dave  3000
 
 Introduced new MET2D system, to allow direct setting of meteorology outputs from

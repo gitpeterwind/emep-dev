@@ -245,8 +245,6 @@ character(len=20), save, public :: &
 Logical , save, public :: &
    EMIS_OUT    = .false.           ! output emissions in separate files (memory demanding)
 
-logical, save, public :: MONTHLY_GRIDEMIS = .false.   !! tmp
-
 integer, public :: KMAX_MID, &  ! Number of points (levels) in vertical
                    KMAX_BND     ! Number of level boundaries (=KMAX_MID+1)
 integer, public :: IIFULLDOM,JJFULLDOM!  & SET AUTOMATICALLY BY THE CODE
@@ -597,7 +595,6 @@ subroutine Config_ModelConstants(iolog)
      ,USE_EURO_SOILNOX, USE_GLOBAL_SOILNOX, EURO_SOILNOX_DEPSCALE &
      ,USE_SEASALT ,USE_POLLEN &
      ,INERIS_SNAP1, INERIS_SNAP2 &   ! Used for TFMM time-factors
-     ,MONTHLY_GRIDEMIS &     ! was set in Emissions_ml
      ,SELECT_LEVELS_HOURLY &  ! incl. FORECAST, 3DPROFILES
      ,FORECAST, USE_EMERGENCY, ANALYSIS , USE_AOD &
      ,SEAFIX_GEA_NEEDED & ! only if problems, see text above.

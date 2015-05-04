@@ -300,6 +300,28 @@ integer, public :: IC_EGYP  ! Egypt
  ! NH3Emis x=44-75, y=35-66
   integer,  public :: IC_NMR  ! EMEP NMR-NH3 temporal emissions
 
+! HTAP2 regions
+  integer,  public :: IC_HTNATL
+  integer,  public :: IC_HTUSCA
+  integer,  public :: IC_HTEUTU
+  integer,  public :: IC_HTSASI
+  integer,  public :: IC_HTEASI
+  integer,  public :: IC_HTSEAS
+  integer,  public :: IC_HTAUST
+  integer,  public :: IC_HTNAFR
+  integer,  public :: IC_HTRAFR
+  integer,  public :: IC_HTMIDE
+  integer,  public :: IC_HT1012
+  integer,  public :: IC_HT1013
+  integer,  public :: IC_HT1014
+  integer,  public :: IC_HT1015
+  integer,  public :: IC_HT1016
+  integer,  public :: IC_HT1017
+  integer,  public :: IC_HT1018
+  integer,  public :: IC_HT1019
+  integer,  public :: IC_HT1020
+  integer,  public :: IC_HT1000
+
   contains
   
   subroutine Country_Init()
@@ -875,6 +897,70 @@ Country(IC_EGYP) = cc( "EGYP", 237, F,237, -100, "Egypt")
 ix=ix+1 
 IC_INTSHIPS=ix
 Country(IC_INTSHIPS ) = cc(  "INTSHIPS" ,350 ,T, 350, -100  , "International ships, RCP6" )
+
+!!  HTAP2 regions
+ix=ix+1 
+IC_HT1000 = ix
+Country(IC_HT1000 ) = cc(  "HT1000" ,1000 ,T, -100, 2  , "HT 1000" )
+ix=ix+1 
+IC_HTNATL = ix
+Country(IC_HTNATL ) = cc(  "N_ATL" ,1002 ,T, 32, -100  , "Int. ships, N. Atl." )
+ix=ix+1 
+IC_HTUSCA = ix
+Country(IC_HTUSCA ) = cc(  "USCA" ,1003 ,T, 65, -100  , "USA and Canada" )
+ix=ix+1 
+IC_HTEUTU = ix
+Country(IC_HTEUTU ) = cc(  "EU_TU" ,1004 ,T, 64, 1  , "EU and Turkey" )
+ix=ix+1 
+IC_HTSASI = ix
+Country(IC_HTSASI ) = cc(  "S_ASIA_IP" ,1005 ,T, 212, -100  , "S. Asia India Pak." )
+ix=ix+1 
+IC_HTEASI = ix
+Country(IC_HTEASI ) = cc(  "CHCORJAP" ,1006 ,T, 210, -100  , "China Korea Japan" )
+ix=ix+1 
+IC_HTSEAS = ix
+Country(IC_HTSEAS ) = cc(  "TAINDOMA" ,1007 ,T, 210, -100  , "Thail. Indon. Malay" )
+ix=ix+1 
+IC_HTAUST = ix
+Country(IC_HTAUST ) = cc(  "AUSTR" ,1008 ,T, 203, -100  , "Austr N. Zeal. ++" )
+ix=ix+1 
+IC_HTNAFR = ix
+Country(IC_HTNAFR ) = cc(  "NAFRI" ,1009 ,T, 64, 1  , "N. Africa" )
+ix=ix+1 
+IC_HTRAFR = ix
+Country(IC_HTRAFR ) = cc(  "RAFRI" ,1010 ,T, 64, 1  , "Rest Africa" )
+ix=ix+1 
+IC_HTMIDE = ix
+Country(IC_HTMIDE ) = cc(  "MIDEAST" ,1011 ,T, 25, 2  , "Middle East" )
+ix=ix+1 
+IC_HT1012 = ix
+Country(IC_HT1012 ) = cc(  "HT1012" ,1012 ,T, -100, 2  , "HT 1012" )
+ix=ix+1 
+IC_HT1013 = ix
+Country(IC_HT1013 ) = cc(  "HT1013" ,1013 ,T, -100, 2  , "HT 1013" )
+ix=ix+1 
+IC_HT1014 = ix
+Country(IC_HT1014 ) = cc(  "HT1014" ,1014 ,T, -100, 2  , "HT 1014" )
+ix=ix+1 
+IC_HT1015 = ix
+Country(IC_HT1015 ) = cc(  "HT1015" ,1015 ,T, -100, 2  , "HT 1015" )
+ix=ix+1 
+IC_HT1016 = ix
+Country(IC_HT1016 ) = cc(  "HT1016" ,1016 ,T, -100, 2  , "HT 1016" )
+ix=ix+1 
+IC_HT1017 = ix
+Country(IC_HT1017 ) = cc(  "HT1017" ,1017 ,T, -100, 2  , "HT 1017" )
+ix=ix+1 
+IC_HT1018 = ix
+Country(IC_HT1018 ) = cc(  "HT1018" ,1018 ,T, -100, 2  , "HT 1018" )
+ix=ix+1 
+IC_HT1019 = ix
+Country(IC_HT1019 ) = cc(  "HT1019" ,1019 ,T, -100, 2  , "HT 1019" )
+ix=ix+1 
+IC_HT1020 = ix
+Country(IC_HT1020 ) = cc(  "HT1020" ,1020 ,T, -100, 2  , "HT 1020" )
+
+
 
 NLAND=ix !actual number of countries defined
 

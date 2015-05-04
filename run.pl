@@ -449,7 +449,10 @@ if (%BENCHMARK){
   $emisdir    = "$EMIS_INP/$BENCHMARK{'emis'}";
   $pm_emisdir = $emisdir;
 }
-my $CDF_EMIS=0; # 0=none, othereise set to "Emis_TNO7.nc" or "Emis_GLOB_05.nc"
+
+# $CDF_EMIS can be set to "Emis_TNO7.nc", "Emis_GLOB_05.nc", "Emis_GLOB_01deg_2010_month.nc" or
+#                                                            "Emis_GLOB_01deg_2008_month.nc" 
+my $CDF_EMIS=0; # 0=none
 die "Missing emisdir='$emisdir' for GRID='$GRID'\n"       unless (-d $emisdir or $CDF_EMIS);
 die "Missing pm_emisdir='$pm_emisdir' for GRID='$GRID'\n" unless (-d $pm_emisdir or $CDF_EMIS);
 
