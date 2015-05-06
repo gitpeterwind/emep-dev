@@ -507,7 +507,12 @@ subroutine Emissions(year)
        if(NTime_Read==12)then
           USE_MONTHLY_GRIDEMIS=.true.
           if(me==0)write(*,*)'Assuming monthly emissions in CdfFractions format'
-       else
+          if(USES%GRIDDED_EMIS_MONTHLY_FACTOR)then
+             write(*,*)"Uncompatible settings: you use monthly emissions and GRIDDED_EMIS_MONTHLY_FACTOR=T "
+             !If you really want this, you can uncomment the stop
+             call StopAll("monthly emissions and GRIDDED_EMIS_MONTHLY_FACTOR=T not allowed ")
+          endif
+        else
           
           !yearly grid independent netcdf fraction format emissions
       
@@ -525,7 +530,7 @@ subroutine Emissions(year)
              do j=1,ljmax
                 do i=1,limax                   
                    if(nlandcode(i,j)>NCMAX)then
-                      write(*,*)"To many emitter countries in one gridcell: ",&
+                      write(*,*)"Too many emitter countries in one gridcell: ",&
                            me,i,j,nlandcode(i,j)
                       call StopAll("To many countries in one gridcell ")
                    endif
