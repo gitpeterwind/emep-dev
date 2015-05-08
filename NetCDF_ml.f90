@@ -4065,6 +4065,7 @@ subroutine printCDF(name, array,unit)
 
 subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read)
   !Read times in file under CF convention and convert into days since 1900-01-01 00:00:00
+  !OR in years since 2000 if the times are defined in years!
   character(len=*) ,intent(in):: filename
   real,intent(out) :: TimesInDays(:)
   integer, intent(inout) :: NTime_Read ! in:records to read, out:records readed
@@ -4074,10 +4075,10 @@ subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read)
   integer :: varID,ncFileID,ndims
   integer :: xtype,dimids(NF90_MAX_VAR_DIMS),nAtts
   integer, parameter::wordarraysize=20
-  character(len=50) ::varname,period,since,name,timeunit,wordarray(wordarraysize),calendar
+  character(len=50) :: varname,period,since,name,timeunit,wordarray(wordarraysize),calendar
 
   integer :: yyyy,mo,dd,hh,mi,ss,julian,julian_1900,diff_1900,nwords,errcode
-  logical:: proleptic_gregorian
+  logical:: proleptic_gregorian,calendar_360_day
 
   call check(nf90_open(path=fileName, mode=nf90_nowrite, ncid=ncFileID),&
        errmsg="ReadTimeCDF, file not found: "//trim(fileName))
@@ -4120,7 +4121,7 @@ subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read)
     !    read(timeunit,fmt="(a,a,a,a)")period,since,date,time
     call wordsplit(trim(timeunit),wordarraysize,wordarray,nwords,errcode,separator='-')
     if(DEBUG_NETCDF.and.MasterProc)&
-      write(*,*)"time@unists:",(" ",trim(wordarray(i)),i=1,8)
+      write(*,*)"time@units:",(" ",trim(wordarray(i)),i=1,8)
     period=wordarray(1)
     since=wordarray(2)
     call CheckStop(since/='since',"since error "//trim(since))
@@ -4153,6 +4154,10 @@ subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read)
       diff_1900=julian-julian_1900
      !if(MasterProc)write(*,*)'julians ',diff_1900,julian,julian_1900
       select case(period)
+      case('years')
+         !NB: not completely "standard" and compatible with the "days" setup
+        forall(i=1:NTime_Read) &
+           TimesInDays(i)=times(i)-(2000-yyyy)
       case('days')
         forall(i=1:NTime_Read) &
            TimesInDays(i)=diff_1900+times(i)+ss/(3600.0*24.0)
