@@ -30,10 +30,17 @@ use EmisDef_ml,       only: &
      ,QROADDUST_FI  & ! fine road dust emissions (PM2.5) 
      ,QROADDUST_CO  & ! coarse road dust emis
      ,ROADDUST_FINE_FRAC  & ! fine (PM2.5) fraction of road dust emis
-     ,ROADDUST_CLIMATE_FILE ! TEMPORARY! file for road dust climate factors 
+     ,ROADDUST_CLIMATE_FILE &! TEMPORARY! file for road dust climate factors 
+     ,nGridEmisCodes,GridEmisCodes,GridEmis,cdfemis&
+     ,nlandcode,landcode,flat_nlandcode,flat_landcode&
+     ,road_nlandcode,road_landcode&
+     ,gridrcemis,gridrcemis0,gridrcroadd,gridrcroadd0&
+     ,KEMISTOP
 use EmisGet_ml,       only: &
      EmisGet, EmisSplit &
-    ,EmisGetCdf,GridEmis,nGridEmisCodes,GridEmisCodes,sumcdfemis  &  ! cdfemis
+    ,EmisGetCdf &  ! 
+    ,EmisGetCdfFrac &
+    ,EmisGetASCII &
     ,femis                       &  ! Gets scaling factors -> e_fact
     ,e_fact                      &  ! scaling factors
     ,EmisHeights                 &  ! Generates vertical distrib
@@ -57,6 +64,8 @@ use ModelConstants_ml,only: &
     EMIS_SOURCE,   &    ! emislist, CdfFractions
     EMIS_TEST,     &    ! CdfSnap or none
     emis_inputlist, &   !TESTC
+    EmisDir,      &    ! template for emission path
+    DataDir,      &    ! template for path
     EMIS_OUT,      &    ! output emissions in ASCII or not
 !    MONTHLY_GRIDEMIS, &  !NML
     NBVOC,         &    ! > 0 if forest voc wanted
@@ -68,7 +77,8 @@ use ModelConstants_ml,only: &
     USE_LIGHTNING_EMIS,USE_AIRCRAFT_EMIS,USE_ROADDUST, &
     USE_EURO_SOILNOX, USE_GLOBAL_SOILNOX, EURO_SOILNOX_DEPSCALE! one or the other
 use My_Derived_ml,    only: EmisSplit_OUT
-use NetCDF_ml,        only: ReadField_CDF,ReadTimeCDF
+use NetCDF_ml,        only: ReadField_CDF,ReadTimeCDF,IsCDFfractionFormat
+use netcdf
 use Par_ml,           only: MAXLIMAX,MAXLJMAX, GIMAX,GJMAX, IRUNBEG,JRUNBEG,&
                             me,limax,ljmax, MSG_READ1,MSG_READ7
 use PhysicalConstants_ml,only: GRAV, AVOG
@@ -104,18 +114,6 @@ private :: consistency_check       ! Safety-checks
 INCLUDE 'mpif.h'
 INTEGER STATUS(MPI_STATUS_SIZE),INFO
   
-! land-code information in each grid square - needed to know which country
-! is emitting.                        
-! nlandcode = No. countries in grid square
-! landcode  = Country codes for that grid square
-integer, private, save, allocatable, dimension(:,:)   :: nlandcode
-integer, private, save, allocatable, dimension(:,:,:) :: landcode
-! for flat emissions, i.e. no vertical extent:
-integer, private, save, allocatable, dimension(:,:)   :: flat_nlandcode
-integer, private, save, allocatable, dimension(:,:,:) :: flat_landcode
-! for road dust emission potentials:
-integer, private, save, allocatable, dimension(:,:)   :: road_nlandcode
-integer, private, save, allocatable, dimension(:,:,:) :: road_landcode
 
 !
 ! The output emission matrix for the 11-SNAP data is snapemis:
@@ -135,679 +133,780 @@ real, public, allocatable, dimension(:,:,:), save :: SumSnapEmis,SumSplitEmis
 
 logical, save, private  :: first_dms_read
 
-! Emissions for input to chemistry routines
-! KEMISTOP added to avoid hard-coded KMAX_MID-3:
-!integer, public, parameter :: KEMISTOP = KMAX_MID - NEMISLAYERS + 1
-integer, public, save :: KEMISTOP ! not defined yet= KMAX_MID - nemis_kprofile + 1
-real, public, allocatable, save, dimension(:,:,:,:) :: &
-  gridrcemis,     & ! varies every time-step (as ps changes)
-  gridrcemis0       ! varies every hour
-real, public, allocatable, save, dimension(:,:,:) :: &
-  gridrcroadd,    & ! Road dust emissions
-  gridrcroadd0      ! varies every hour
 
 ! and for budgets (not yet used - not changed dimension)
 real, public,  save, dimension(NSPEC_SHL+1:NSPEC_TOT) ::  totemadd
 integer, private, save :: iemCO  ! index of CO emissions, for debug
 
-logical :: USE_MONTHLY_GRIDEMIS=.false.!internal flag
+logical :: Cexist,USE_MONTHLY_GRIDEMIS=.false.!internal flag
 real ::TimesInDays(12)
-integer ::NTime_Read
+integer ::NTime_Read,ncFileID,VarID,found, cdfstatus
 
 contains
 !***********************************************************************
-subroutine Emissions(year)
-! Calls main emission reading routines
-!----------------------------------------------------------------------!
-! DESCRIPTION:
-!   0) Call set_molwts and set_emisconv_and_iq, followed by
-!      consistency check
-!   1) Call some setups:
-!         Country_Init
-!         timefactors: monthly and daily factors, + time zone
-!                            -> fac_emm, fac_edd arrays, timezone
-!   2) Read in emission correction file femis
-!   3) Call emis_split for speciations
-!   4) Read the annual emission totals in each grid-square, converts
-!      units and corrects using femis data. 
-!
-!   The output emission matrix for the 11-SNAP data is snapemis:
-!
-!   real    snapemis (NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS_FILES)
-!  
-!----------------------------------------------------------------------!
-  !--arguments
-  integer, intent(in)   :: year        ! Year ( 4-digit)
+  subroutine Emissions(year)
+    ! Calls main emission reading routines
+    !----------------------------------------------------------------------!
+    ! DESCRIPTION:
+    !   0) Call set_molwts and set_emisconv_and_iq, followed by
+    !      consistency check
+    !   1) Call some setups:
+    !         Country_Init
+    !         timefactors: monthly and daily factors, + time zone
+    !                            -> fac_emm, fac_edd arrays, timezone
+    !   2) Read in emission correction file femis
+    !   3) Call emis_split for speciations
+    !   4) Read the annual emission totals in each grid-square, converts
+    !      units and corrects using femis data. 
+    !
+    !   The output emission matrix for the 11-SNAP data is snapemis:
+    !
+    !   real    snapemis (NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS_FILES)
+    !  
+    !----------------------------------------------------------------------!
+    !--arguments
+    integer, intent(in)   :: year        ! Year ( 4-digit)
 
-  !-- local variables
-  real    :: conv              ! Conversion factor
-  integer :: i, j              ! Loop variables
-  real    :: tonne_to_kgm2s    ! Converts tonnes/grid to kg/m2/s
-  real    :: ccsum             ! Sum of emissions for one country
+    !-- local variables
+    real    :: conv              ! Conversion factor
+    integer :: i, j              ! Loop variables
+    real    :: tonne_to_kgm2s    ! Converts tonnes/grid to kg/m2/s
+    real    :: ccsum             ! Sum of emissions for one country
 
-  ! arrays for whole EMEP area:
-  ! additional arrays on host only for landcode, nlandcode
-  ! BIG arrays ... will be needed only on me=0. Make allocatable
-  ! to reduce static memory requirements.
-  real,    allocatable, dimension(:,:,:,:)  :: globemis 
-  integer, allocatable, dimension(:,:)      :: globnland 
-  integer, allocatable, dimension(:,:,:)    :: globland  
-  real,    allocatable, dimension(:,:,:)    :: globemis_flat
-  integer, allocatable, dimension(:,:)      :: flat_globnland 
-  integer, allocatable, dimension(:,:,:)    :: flat_globland 
-  real,    allocatable, dimension(:,:,:)    :: globroad_dust_pot ! Road dust emission potentials
-  integer, allocatable, dimension(:,:)      :: road_globnland 
-  integer, allocatable, dimension(:,:,:)    :: road_globland 
-  real,    allocatable, dimension(:,:)      :: RoadDustEmis_climate_factor ! Climatic factor for scaling road dust emissions (in TNO model based on yearly average soil water)
-  integer :: err1, err2, err3, err4, err5, err6, err7, err8, err9 ! Error messages
-  integer :: fic ,insec,inland,iemis 
-  integer :: iic,ic,n         ! country codes 
-  integer :: isec             ! loop variables: emission sectors
-  integer :: iem,iem2         ! loop variable over pollutants (1..NEMIS_FILE)
-  integer :: icc,ncc          ! loop variables over  sources
-  integer :: nin, nex         !  include, exclude numbers for emis_inputlist
-  character(len=40) :: fname  ! File name
-  character(len=300) :: inputline 
-  real    :: tmpclimfactor
+    ! arrays for whole EMEP area:
+    ! additional arrays on host only for landcode, nlandcode
+    ! BIG arrays ... will be needed only on me=0. Make allocatable
+    ! to reduce static memory requirements.
+    real,    allocatable, dimension(:,:,:,:)  :: globemis 
+    integer, allocatable, dimension(:,:)      :: globnland 
+    integer, allocatable, dimension(:,:,:)    :: globland  
+    real,    allocatable, dimension(:,:,:)    :: globemis_flat
+    integer, allocatable, dimension(:,:)      :: flat_globnland 
+    integer, allocatable, dimension(:,:,:)    :: flat_globland 
+    real,    allocatable, dimension(:,:,:)    :: globroad_dust_pot ! Road dust emission potentials
+    integer, allocatable, dimension(:,:)      :: road_globnland 
+    integer, allocatable, dimension(:,:,:)    :: road_globland 
+    real,    allocatable, dimension(:,:)      :: RoadDustEmis_climate_factor ! Climatic factor for scaling road dust emissions (in TNO model based on yearly average soil water)
+    integer :: err1, err2, err3, err4, err5, err6, err7, err8, err9 ! Error messages
+    integer :: fic ,insec,inland,iemis 
+    integer :: iic,ic,n         ! country codes 
+    integer :: isec             ! loop variables: emission sectors
+    integer :: iem,iem2         ! loop variable over pollutants (1..NEMIS_FILE)
+    integer :: icc,ncc          ! loop variables over  sources
+    integer :: nin, nex         !  include, exclude numbers for emis_inputlist
+    character(len=100) :: fname  ! File name
+    character(len=300) :: inputline 
+    real    :: tmpclimfactor
 
-  ! Emission sums (after e_fact adjustments):
-  real, dimension(NEMIS_FILE)       :: emsum ! Sum emis over all countries
-  real, dimension(NLAND,NEMIS_FILE) :: sumemis, sumemis_local ! Sum of emissions per country
-  real, dimension(NEMIS_FILE) :: sumEU ! Sum of emissions in EU
+    ! Emission sums (after e_fact adjustments):
+    real, dimension(NEMIS_FILE)       :: emsum ! Sum emis over all countries
+    real, dimension(NLAND,NEMIS_FILE) :: sumemis, sumemis_local ! Sum of emissions per country
+    real, dimension(NEMIS_FILE) :: sumEU ! Sum of emissions in EU
 
 
-  ! Road dust emission potential sums (just for testing the code, the actual emissions are weather dependent!)
-  real, dimension(NROAD_FILES)       :: roaddustsum    ! Sum emission potential over all countries
-  real, dimension(NLAND,NROAD_FILES) :: sumroaddust    ! Sum of emission potentials per country
-  real, dimension(NLAND,NROAD_FILES) :: sumroaddust_local    ! Sum of emission potentials per country in subdomain
-  real :: fractions(MAXLIMAX,MAXLJMAX,NCMAX),SMI(MAXLIMAX,MAXLJMAX),Reduc(NLAND),SMI_roadfactor
-  real :: emis_tot(MAXLIMAX,MAXLJMAX)
-  logical ::SMI_defined=.false.
-  logical :: my_first_call=.true.  ! Used for femis call
-  character(len=40) :: varname 
+    ! Road dust emission potential sums (just for testing the code, the actual emissions are weather dependent!)
+    real, dimension(NROAD_FILES)       :: roaddustsum    ! Sum emission potential over all countries
+    real, dimension(NLAND,NROAD_FILES) :: sumroaddust    ! Sum of emission potentials per country
+    real, dimension(NLAND,NROAD_FILES) :: sumroaddust_local    ! Sum of emission potentials per country in subdomain
+    real :: fractions(MAXLIMAX,MAXLJMAX,NCMAX),SMI(MAXLIMAX,MAXLJMAX),Reduc(NLAND),SMI_roadfactor
+    logical ::SMI_defined=.false.
+    logical :: my_first_call=.true.  ! Used for femis call
+    character(len=40) :: varname 
+    integer ::allocerr, i_gridemis
+    if (MasterProc) write(6,*) "Reading emissions for year",  year
 
-  if (MasterProc) write(6,*) "Reading emissions for year",  year
+    ! 0) set molwts, conversion factors (e.g. tonne NO2 -> tonne N), and
+    !    emission indices (IQSO2=.., )
 
-  ! 0) set molwts, conversion factors (e.g. tonne NO2 -> tonne N), and
-  !    emission indices (IQSO2=.., )
+    allocate(cdfemis(MAXLIMAX,MAXLJMAX))
+    allocate(nGridEmisCodes(MAXLIMAX,MAXLJMAX))
+    allocate(GridEmisCodes(MAXLIMAX,MAXLJMAX,NCMAX))
+    allocate(GridEmis(NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS_FILE),stat=allocerr)
+    call CheckStop(allocerr /= 0, &
+         "EmisGet:Allocation error for GridEmis")
+    GridEmisCodes = -1   
+    nGridEmisCodes = 0
+    GridEmis = 0.0
 
-  allocate(nlandcode(MAXLIMAX,MAXLJMAX),landcode(MAXLIMAX,MAXLJMAX,NCMAX))
-  nlandcode=0
-  landcode=0
-  allocate(flat_nlandcode(MAXLIMAX,MAXLJMAX),flat_landcode(MAXLIMAX,MAXLJMAX,FNCMAX))
-  flat_nlandcode=0
-  flat_landcode=0
-  allocate(road_nlandcode(MAXLIMAX,MAXLJMAX),road_landcode(MAXLIMAX,MAXLJMAX,NCMAX))
-  road_nlandcode=0
-  road_landcode=0
-  allocate(snapemis(NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS_FILE))
-  snapemis=0.0
-  allocate(snapemis_flat(MAXLIMAX,MAXLJMAX,FNCMAX,NEMIS_FILE))
-  snapemis_flat=0.0
-  allocate(roaddust_emis_pot(MAXLIMAX,MAXLJMAX,NCMAX,NROAD_FILES))
-  roaddust_emis_pot=0.0
-  allocate(SumSnapEmis(MAXLIMAX,MAXLJMAX,NEMIS_FILE))
-  SumSnapEmis=0.0
+    allocate(nlandcode(MAXLIMAX,MAXLJMAX),landcode(MAXLIMAX,MAXLJMAX,NCMAX))
+    nlandcode=0
+    landcode=0
+    allocate(flat_nlandcode(MAXLIMAX,MAXLJMAX),flat_landcode(MAXLIMAX,MAXLJMAX,FNCMAX))
+    flat_nlandcode=0
+    flat_landcode=0
+    allocate(road_nlandcode(MAXLIMAX,MAXLJMAX),road_landcode(MAXLIMAX,MAXLJMAX,NCMAX))
+    road_nlandcode=0
+    road_landcode=0
+    allocate(snapemis(NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS_FILE))
+    snapemis=0.0
+    allocate(snapemis_flat(MAXLIMAX,MAXLJMAX,FNCMAX,NEMIS_FILE))
+    snapemis_flat=0.0
+    allocate(roaddust_emis_pot(MAXLIMAX,MAXLJMAX,NCMAX,NROAD_FILES))
+    roaddust_emis_pot=0.0
+    allocate(SumSnapEmis(MAXLIMAX,MAXLJMAX,NEMIS_FILE))
+    SumSnapEmis=0.0
 
-  !=========================
-!  call Country_Init() ! In Country_ml, => NLAND, country codes and names, timezone
-
-  allocate(e_fact(NSECTORS,NLAND,NEMIS_FILE))!NLAND defined in Country_Init()
-  e_fact=0.0
-  allocate(sumcdfemis(NLAND,NEMIS_FILE))
-  if(.not.allocated(timefac))allocate(timefac(NLAND,NSECTORS,NEMIS_FILE))
-  if(.not.allocated(fac_emm))allocate(fac_emm(NLAND,12,NSECTORS,NEMIS_FILE))
-  if(.not.allocated(fac_min))allocate(fac_min(NLAND,NSECTORS,NEMIS_FILE))
-  if(.not.allocated(fac_edd))allocate(fac_edd(NLAND, 7,NSECTORS,NEMIS_FILE))
-
-  ! The GEA emission data, which is used for EUCAARI runs on the HIRHAM
-  ! domain have in several sea grid cells non-zero emissions in other sectors
-  ! than SNAP8 and there are also NH3 emission over sea areas. The former 
-  ! problem makes the code crash if the sea areas are defined  as 
-  ! sea (sea=T), so we treat them as land in the EUCAARI/HIRHAM runs 
-  ! (sea=F). This is a problem with GEA emission data only, not the 
-  ! HIRHAM domain! When e.g. interpolated EMEP emissions are used on
-  ! the HIRHAM domain, this is not a problem.
-  if(SEAFIX_GEA_NEEDED) then ! Special fix for HIRHAM/GEA
-    ! Could have hard-coded 30-34, but best to avoid:
-    do n=1,5
-      select case(n)
-        case(1);ic=find_index("BAS",Country(:)%code)!could also use directly ic=IC_BAS
-        case(2);ic=find_index("NOS",Country(:)%code)
-        case(3);ic=find_index("ATL",Country(:)%code)
-        case(4);ic=find_index("MED",Country(:)%code)
-        case(5);ic=find_index("BLS",Country(:)%code)
-      endselect
-      call CheckStop(ic<1,"Country_Init error in HIRHAM/GEA fix")
-      Country(ic)%is_sea = .false.
-    enddo
-  endif ! HIRHAM/GEA fix
-
-  !=========================
-  call consistency_check()               ! Below
-  !=========================
-  ios = 0
-
-  if(USES%DEGREEDAY_FACTORS) call DegreeDayFactors(0)! See if we have gridded SNAP-2
-
-  call EmisHeights()     ! vertical emissions profile
-  KEMISTOP = KMAX_MID - nemis_kprofile + 1
-
-  if( USES%EMISSTACKS ) call readstacks(IO_EMIS)
-
-  if(MasterProc) then   !::::::: ALL READ-INS DONE IN HOST PROCESSOR ::::
-    write(*,*) "Reading monthly and daily timefactors"
-    if(USES%GRIDDED_EMIS_MONTHLY_FACTOR)then
-       write(*,*)"Emissions using gridded monhtly timefactors "
-       write(IO_LOG,*)"Emissions using gridded monhtly timefactors "       
-    endif
     !=========================
-    call timefactors(year)               ! => fac_emm, fac_edd
+    !  call Country_Init() ! In Country_ml, => NLAND, country codes and names, timezone
+
+    allocate(e_fact(NSECTORS,NLAND,NEMIS_FILE))!NLAND defined in Country_Init()
+    e_fact=0.0
+    if(.not.allocated(timefac))allocate(timefac(NLAND,NSECTORS,NEMIS_FILE))
+    if(.not.allocated(fac_emm))allocate(fac_emm(NLAND,12,NSECTORS,NEMIS_FILE))
+    if(.not.allocated(fac_min))allocate(fac_min(NLAND,NSECTORS,NEMIS_FILE))
+    if(.not.allocated(fac_edd))allocate(fac_edd(NLAND, 7,NSECTORS,NEMIS_FILE))
+
+    ! The GEA emission data, which is used for EUCAARI runs on the HIRHAM
+    ! domain have in several sea grid cells non-zero emissions in other sectors
+    ! than SNAP8 and there are also NH3 emission over sea areas. The former 
+    ! problem makes the code crash if the sea areas are defined  as 
+    ! sea (sea=T), so we treat them as land in the EUCAARI/HIRHAM runs 
+    ! (sea=F). This is a problem with GEA emission data only, not the 
+    ! HIRHAM domain! When e.g. interpolated EMEP emissions are used on
+    ! the HIRHAM domain, this is not a problem.
+    if(SEAFIX_GEA_NEEDED) then ! Special fix for HIRHAM/GEA
+       ! Could have hard-coded 30-34, but best to avoid:
+       do n=1,5
+          select case(n)
+          case(1);ic=find_index("BAS",Country(:)%code)!could also use directly ic=IC_BAS
+          case(2);ic=find_index("NOS",Country(:)%code)
+          case(3);ic=find_index("ATL",Country(:)%code)
+          case(4);ic=find_index("MED",Country(:)%code)
+          case(5);ic=find_index("BLS",Country(:)%code)
+          endselect
+          call CheckStop(ic<1,"Country_Init error in HIRHAM/GEA fix")
+          Country(ic)%is_sea = .false.
+       enddo
+    endif ! HIRHAM/GEA fix
+
     !=========================
-  endif
-  !=========================
-  call EmisSplit()    ! In EmisGet_ml, => emisfrac
-  !=========================
-!Must first call EmisSplit, to get nrcemis defined
-  if(EmisSplit_OUT)then
-     allocate(SumSplitEmis(MAXLIMAX,MAXLJMAX,nrcemis))
-     SumSplitEmis=0.0
-  endif
-  !=========================
-  call CheckStop(ios, "ioserror: EmisSplit")
-
-  ! ####################################
-  ! Broadcast  monthly and Daily factors (and hourly factors if needed/wanted)
-  CALL MPI_BCAST(fac_emm,8*NLAND*12*NSECTORS*NEMIS_FILE,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
-  CALL MPI_BCAST(fac_edd,8*NLAND*7*NSECTORS*NEMIS_FILE,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
-  CALL MPI_BCAST(fac_ehh24x7,8*NSECTORS*24*7,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
-
-  !define fac_min for all processors
-  forall(iemis=1:NEMIS_FILE,insec=1:NSECTORS,inland=1:NLAND) &
-    fac_min(inland,insec,iemis) = minval(fac_emm(inland,:,insec,iemis))
-  if(INERIS_SNAP2) & !  INERIS do not use any base-line for SNAP2
-    fac_min(:,ISNAP_DOM,:) = 0.
-
-  !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  ! c4b) Set up DMS factors here - to be used in newmonth
-  !      Taken from IQ_DMS=35 for SO2 nature (sector 11)
-  !      first_dms_read is true until first call to newmonth finished.
-  first_dms_read = .true. 
-
-  ! 4) Read emission files 
-
-  ! allocate for me=0 only:
-  err1 = 0
-  if(MasterProc) then
-    if(MYDEBUG) write(*,*) "TTT me ", me , "pre-allocate" 
-    allocate(globnland(GIMAX,GJMAX),stat=err1)
-    allocate(globland(GIMAX,GJMAX,NCMAX),stat=err2)
-    allocate(globemis(NSECTORS,GIMAX,GJMAX,NCMAX),stat=err3)
-
-    allocate(flat_globnland(GIMAX,GJMAX),stat=err4)
-    allocate(flat_globland(GIMAX,GJMAX,FNCMAX),stat=err5)
-    allocate(globemis_flat(GIMAX,GJMAX,FNCMAX),stat=err6)
-
-    call CheckStop(err1, "Allocation error 1 - globland")
-    call CheckStop(err2, "Allocation error 2 - globland")
-    call CheckStop(err3, "Allocation error 3 - globland")
-    call CheckStop(err4, "Allocation error 4 - globland")
-    call CheckStop(err5, "Allocation error 5 - globland")
-    call CheckStop(err6, "Allocation error 6 - globland")
-
-    if(USE_ROADDUST)then
-      allocate(road_globnland(GIMAX,GJMAX),stat=err7)
-      allocate(road_globland(GIMAX,GJMAX,NCMAX),stat=err8)
-      allocate(globroad_dust_pot(GIMAX,GJMAX,NCMAX),stat=err9)
-      allocate(RoadDustEmis_climate_factor(GIMAX,GJMAX),stat=err1)
-
-      call CheckStop(err7, "Allocation error 7 - globroadland")
-      call CheckStop(err8, "Allocation error 8 - globroadland")
-      call CheckStop(err9, "Allocation error 9 - globroad_dust_pot")
-      call CheckStop(err1, "Allocation error 1 - RoadDustEmis_climate_factor")
-    endif ! road dust
-
-    ! Initialise with 0
-    globnland(:,:) = 0      
-    flat_globnland(:,:)=0  
-    globland(:,:,:) = 0    
-    globemis(:,:,:,:) = 0  
-    flat_globland(:,:,:)=0 
-    globemis_flat(:,:,:) =0
-
-    if(USE_ROADDUST)then
-      road_globnland(:,:)=0
-      road_globland(:,:,:)=0
-      globroad_dust_pot(:,:,:)=0.
-      RoadDustEmis_climate_factor(:,:)=1.0 ! default, no scaling
-    endif ! road dust
-  else
-    ! needed for DEBUG=yes compilation options
-    allocate(globnland(1,1),flat_globnland(1,1),&
-             globland(1,1,1),flat_globland(1,1,1),&
-             globemis(1,1,1,1),globemis_flat(1,1,1),stat=err6)
-    call CheckStop(err6, "Allocation error 6 - dummy globland")
-      if(USE_ROADDUST)then
-      allocate(road_globnland(1,1),road_globland(1,1,1),&
-               globroad_dust_pot(1,1,1),stat=err9)
-      call CheckStop(err9, "Allocation error 9 - dummy roadglob")
-    endif ! road dust
-  endif
-
-  ! Get emission scaling factors
-  !>============================
-  if(my_first_call) then
-    sumemis(:,:) =  0.0       ! initialize sums
+    call consistency_check()               ! Below
+    !=========================
     ios = 0
 
-    if(EMIS_TEST=="CdfSnap") then  ! Expand groups, e.g. EUMACC2
-      do iemis = 1, size( emis_inputlist(:)%name )
-        if ( emis_inputlist(iemis)%name == "NOTSET" ) then
-           emis_inputlist(iemis)%Nlist = iemis - 1
-           if(MasterProc)  write(*,*)"CdfSnap Nlist=", emis_inputlist(iemis)%Nlist
-           exit
-        end if
+    if(USES%DEGREEDAY_FACTORS) call DegreeDayFactors(0)! See if we have gridded SNAP-2
 
-        call expandcclist( emis_inputlist(iemis)%incl , n)
-        emis_inputlist(iemis)%Nincl = n
-        if(MasterProc) print *, "INPUTNLIST-INCL", iemis, n
+    call EmisHeights()     ! vertical emissions profile
+    KEMISTOP = KMAX_MID - nemis_kprofile + 1
 
-        call expandcclist( emis_inputlist(iemis)%excl , n)
-        emis_inputlist(iemis)%Nexcl = n
-        if(MasterProc) print *, "INPUTNLIST-EXCL", iemis, n
+    if( USES%EMISSTACKS ) call readstacks(IO_EMIS)
 
-      end do ! iemis
-    end if
+    if(MasterProc) then   !::::::: ALL READ-INS DONE IN HOST PROCESSOR ::::
+       write(*,*) "Reading monthly and daily timefactors"
+       if(USES%GRIDDED_EMIS_MONTHLY_FACTOR)then
+          write(*,*)"Emissions using gridded monhtly timefactors "
+          write(IO_LOG,*)"Emissions using gridded monhtly timefactors "       
+       endif
+       !=========================
+       call timefactors(year)               ! => fac_emm, fac_edd
+       !=========================
+    endif
+    !=========================
+    call EmisSplit()    ! In EmisGet_ml, => emisfrac
+    !=========================
+    !Must first call EmisSplit, to get nrcemis defined
+    if(EmisSplit_OUT)then
+       allocate(SumSplitEmis(MAXLIMAX,MAXLJMAX,nrcemis))
+       SumSplitEmis=0.0
+    endif
+    !=========================
+    call CheckStop(ios, "ioserror: EmisSplit")
 
-    call femis()              ! emission factors (femis.dat file)
-    if(ios/=0) return
-    my_first_call = .false.
-  endif
-  !>============================
+    ! ####################################
+    ! Broadcast  monthly and Daily factors (and hourly factors if needed/wanted)
+    CALL MPI_BCAST(fac_emm,8*NLAND*12*NSECTORS*NEMIS_FILE,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+    CALL MPI_BCAST(fac_edd,8*NLAND*7*NSECTORS*NEMIS_FILE,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+    CALL MPI_BCAST(fac_ehh24x7,8*NSECTORS*24*7,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
 
-  do iem = 1, NEMIS_FILE
-    !TESTING NEW SYSTEM, no effect on results so far !!! NB SLOW !!!
-    if(EMIS_TEST=="CdfSnap") then
+    !define fac_min for all processors
+    forall(iemis=1:NEMIS_FILE,insec=1:NSECTORS,inland=1:NLAND) &
+         fac_min(inland,insec,iemis) = minval(fac_emm(inland,:,insec,iemis))
+    if(INERIS_SNAP2) & !  INERIS do not use any base-line for SNAP2
+         fac_min(:,ISNAP_DOM,:) = 0.
 
-   do iemis = 1, size( emis_inputlist(:)%name )
-      fname=emis_inputlist(iemis)%name
-      if ( fname == "NOTSET" ) exit
-      n=index(fname,"POLL") -  1 
-      fname = fname(1:n) // trim(EMIS_FILE(iem)) // ".nc"
+    !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    ! c4b) Set up DMS factors here - to be used in newmonth
+    !      Taken from IQ_DMS=35 for SO2 nature (sector 11)
+    !      first_dms_read is true until first call to newmonth finished.
+    first_dms_read = .true. 
 
-      nin = emis_inputlist(iemis)%Nincl
-      nex = emis_inputlist(iemis)%Nexcl
+    ! 4) Read emission files 
 
-      if(MasterProc) write(*,"(a,2i3,a,2i3)") "INPUTLIST:", iem, iemis, trim(fname), nin, nex
-          
+    ! allocate for me=0 only:
+    err1 = 0
+    if(MasterProc) then
+       if(MYDEBUG) write(*,*) "TTT me ", me , "pre-allocate" 
+       allocate(globnland(GIMAX,GJMAX),stat=err1)
+       allocate(globland(GIMAX,GJMAX,NCMAX),stat=err2)
+       allocate(globemis(NSECTORS,GIMAX,GJMAX,NCMAX),stat=err3)
 
-      call CheckStop( nin>0 .and. nex > 0, "emis_inputlists cannot have inc and exc")
-      if ( nin > 0 ) then
-          call EmisGetCdf(iem,fname, incl=emis_inputlist(iemis)%incl(1:nin) )
-      else if (  nex > 0 ) then
-          call EmisGetCdf(iem,fname, excl=emis_inputlist(iemis)%excl(1:nex) ) 
-      else
-          call EmisGetCdf(iem,fname)
+       allocate(flat_globnland(GIMAX,GJMAX),stat=err4)
+       allocate(flat_globland(GIMAX,GJMAX,FNCMAX),stat=err5)
+       allocate(globemis_flat(GIMAX,GJMAX,FNCMAX),stat=err6)
+
+       call CheckStop(err1, "Allocation error 1 - globland")
+       call CheckStop(err2, "Allocation error 2 - globland")
+       call CheckStop(err3, "Allocation error 3 - globland")
+       call CheckStop(err4, "Allocation error 4 - globland")
+       call CheckStop(err5, "Allocation error 5 - globland")
+       call CheckStop(err6, "Allocation error 6 - globland")
+
+       if(USE_ROADDUST)then
+          allocate(road_globnland(GIMAX,GJMAX),stat=err7)
+          allocate(road_globland(GIMAX,GJMAX,NCMAX),stat=err8)
+          allocate(globroad_dust_pot(GIMAX,GJMAX,NCMAX),stat=err9)
+          allocate(RoadDustEmis_climate_factor(GIMAX,GJMAX),stat=err1)
+
+          call CheckStop(err7, "Allocation error 7 - globroadland")
+          call CheckStop(err8, "Allocation error 8 - globroadland")
+          call CheckStop(err9, "Allocation error 9 - globroad_dust_pot")
+          call CheckStop(err1, "Allocation error 1 - RoadDustEmis_climate_factor")
+       endif ! road dust
+
+       ! Initialise with 0
+       globnland(:,:) = 0      
+       flat_globnland(:,:)=0  
+       globland(:,:,:) = 0    
+       globemis(:,:,:,:) = 0  
+       flat_globland(:,:,:)=0 
+       globemis_flat(:,:,:) =0
+       sumemis_local(:,:)=0.0
+       emsum=0.0
+
+       if(USE_ROADDUST)then
+          road_globnland(:,:)=0
+          road_globland(:,:,:)=0
+          globroad_dust_pot(:,:,:)=0.
+          RoadDustEmis_climate_factor(:,:)=1.0 ! default, no scaling
+       endif ! road dust
+    else
+       ! needed for DEBUG=yes compilation options
+       allocate(globnland(1,1),flat_globnland(1,1),&
+            globland(1,1,1),flat_globland(1,1,1),&
+            globemis(1,1,1,1),globemis_flat(1,1,1),stat=err6)
+       call CheckStop(err6, "Allocation error 6 - dummy globland")
+       if(USE_ROADDUST)then
+          allocate(road_globnland(1,1),road_globland(1,1,1),&
+               globroad_dust_pot(1,1,1),stat=err9)
+          call CheckStop(err9, "Allocation error 9 - dummy roadglob")
+       endif ! road dust
+    endif
+
+    ! Get emission scaling factors
+    !>============================
+    if(my_first_call) then
+       sumemis(:,:) =  0.0       ! initialize sums
+       ios = 0
+
+       if(EMIS_TEST=="CdfSnap" .or. EMIS_SOURCE=="Mixed") then  ! Expand groups, e.g. EUMACC2
+          do iemis = 1, size( emis_inputlist(:)%name )
+             if ( emis_inputlist(iemis)%name == "NOTSET" ) then
+                emis_inputlist(iemis)%Nlist = iemis - 1
+                if(MasterProc)  write(*,*)"CdfSnap Nlist=", emis_inputlist(iemis)%Nlist
+                exit
+             end if
+
+             call expandcclist( emis_inputlist(iemis)%incl , n)
+             emis_inputlist(iemis)%Nincl = n
+             if(MasterProc) print *, "INPUTNLIST-INCL", iemis, n
+
+             call expandcclist( emis_inputlist(iemis)%excl , n)
+             emis_inputlist(iemis)%Nexcl = n
+             if(MasterProc) print *, "INPUTNLIST-EXCL", iemis, n
+
+             !replace keywords
+             ! DataDir has 7 characters, therefore the "n+7"
+             ! 7 is the length of the keyword, not its value!
+             n=index(EmisDir,'DataDir')
+             if(n>0)then
+                 EmisDir = &
+                     EmisDir(1:n-1) // trim(DataDir) // EmisDir(n+7:)
+                if(me==0)write(*,*)'EmisDir redefined with path ',trim(EmisDir)               
+             endif
+             
+             n=index(emis_inputlist(iemis)%name,'EmisDir')
+             if(n>0)then
+                emis_inputlist(iemis)%name = &
+                     emis_inputlist(iemis)%name(1:n-1) // trim(EmisDir) // emis_inputlist(iemis)%name(n+7:)
+                if(me==0)write(*,*)'filename redefined with path ',trim(emis_inputlist(iemis)%name)
+             endif
+
+          end do ! iemis
        end if
 
-   end do
+       call femis()              ! emission factors (femis.dat file)
+       if(ios/=0) return
+       my_first_call = .false.
+    endif
+    !>============================
 
-      ! *************************
- 
-      if(debug_proc) then
-        ncc =  nGridEmisCodes(debug_li, debug_lj)
-        do isec = 1, 11
-          write(*,"(a,2i4,4i3,2i4,9f12.4)")"CDF out  "// &
-            trim(EMIS_FILE(iem)), i_fdom(debug_li), j_fdom(debug_lj), &
-            (GridEmisCodes(debug_li, debug_lj,icc),icc=1,4), &
-            ncc, isec, (GridEmis(isec,debug_li, debug_lj,i,iem), i=1,4) 
-        enddo
-      endif ! debug
-     !end if ! iem
-    endif ! EMIS_TEST
-
-    ! now again test for me=0
     select case(EMIS_SOURCE)
-    case("emislist")
-      if(MasterProc) then                        
-        ! read in global emissions for one pollutant
-        ! *****************
-        call EmisGet(iem,EMIS_FILE(iem),IRUNBEG,JRUNBEG,GIMAX,GJMAX, &
-          globemis,globnland,globland,sumemis,&
-          globemis_flat,flat_globnland,flat_globland)
-        ! *****************
-        emsum(iem) = sum(globemis(:,:,:,:)) + sum(globemis_flat(:,:,:))    ! hf
-      endif  ! MasterProc
-      call CheckStop(ios, "ios error: EmisGet")
-          
-      ! Send data to processors 
-      ! as  e.g. snapemis (NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,iem)
-      ! send to nodes
-      call global2local(globemis,snapemis(1,1,1,1,iem),MSG_READ1,&
-           NSECTORS,GIMAX,GJMAX,NCMAX,1,1)
-      call global2local(globemis_flat,snapemis_flat(1,1,1,iem),MSG_READ1,&
-           1,GIMAX,GJMAX,FNCMAX,1,1)
+       !    if(EMIS_TEST=="CdfSnap") then
+    case("Mixed")
+       do iemis = 1, size( emis_inputlist(:)%name )
 
-!   real    snapemis (NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS_FILES)
-!           GridEmis (NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS_FILE)
-      if(EMIS_TEST=="CdfSnap".and.debug_proc) then
-        i=debug_li;j=debug_lj
-        do isec = 1, 11
-          if(snapemis(isec,i,j,1,iem)+GridEmis(isec,i,j,1,iem)>1.0e-10) &
-            write(*,"(a,i3,2es10.3)") "CDFCOMP", isec, &
-              snapemis(isec,i,j,1,iem) ,GridEmis(isec,i,j,1,iem)
-        enddo
-      endif
+          fname=emis_inputlist(iemis)%name
+          if ( fname == "NOTSET" ) exit
 
-    case("CdfFractions")
 
-       !check first if the file is a monthly file
-       call ReadTimeCDF('EmisFracs.nc',TimesInDays,NTime_Read)
-       
-       if(NTime_Read==12)then
-          USE_MONTHLY_GRIDEMIS=.true.
-          if(me==0)write(*,*)'Assuming monthly emissions in CdfFractions format'
-          if(USES%GRIDDED_EMIS_MONTHLY_FACTOR)then
-             write(*,*)"Uncompatible settings: you use monthly emissions and GRIDDED_EMIS_MONTHLY_FACTOR=T "
-             !If you really want this, you can uncomment the stop
-             call StopAll("monthly emissions and GRIDDED_EMIS_MONTHLY_FACTOR=T not allowed ")
+          sumemis=0.0
+          sumemis_local(:,:)=0.0
+
+          nin = emis_inputlist(iemis)%Nincl
+          nex = emis_inputlist(iemis)%Nexcl
+
+          !1) emissions in NetCDF Fractions format 
+          if(IsCDFfractionFormat(trim(fname)))then
+             !the file is in "fraction" format
+             !check first if the file is a monthly file
+             call ReadTimeCDF(trim(fname),TimesInDays,NTime_Read)
+
+             if(NTime_Read==12)then
+                USE_MONTHLY_GRIDEMIS=.true.
+                if(me==0)write(*,*)'Assuming monthly emissions in CdfFractions format'
+                call StopAll("monthly emissions not yet implemented in Mixed mode ")
+                if(USES%GRIDDED_EMIS_MONTHLY_FACTOR)then
+                   write(*,*)"Uncompatible settings: you use monthly emissions and GRIDDED_EMIS_MONTHLY_FACTOR=T "
+                   !If you really want this, you can uncomment the stop
+                   call StopAll("monthly emissions and GRIDDED_EMIS_MONTHLY_FACTOR=T not allowed ")
+                endif
+             else
+                !yearly grid independent netcdf fraction format emissions                                
+                do iem = 1, NEMIS_FILE
+                   do isec=1,NSECTORS                      
+                      write(varname,"(A,I2.2)")trim(EMIS_FILE(iem))//'_sec',isec
+                      call EmisGetCdfFrac(iem, isec, fname, varname, sumemis_local, &
+                           emis_inputlist(iemis)%incl, nin, emis_inputlist(iemis)%excl, nex)
+                   enddo!sectors
+                enddo!NEMIS_FILE
+
+                !add together totals from each processor (only me=0 get results)
+                sumemis=0.0
+                CALL MPI_REDUCE(sumemis_local,sumemis,&
+                     NLAND*NEMIS_FILE,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,INFO)        
+        
+             endif
+
+! Does not work because of "POLL"  else if(IsCDFSnapFormat(trim(emis_inputlist(iemis)%name)))then
+          else if(index(emis_inputlist(iemis)%name,".nc")>1)then 
+             !not in "fraction" format. Each land has own set of fields
+             !Each pollutant has own file. 
+             do iem = 1, NEMIS_FILE
+                n=index(emis_inputlist(iemis)%name,"POLL")
+                fname = emis_inputlist(iemis)%name(1:n-1) // trim(EMIS_FILE(iem)) // ".nc"
+
+                if(me==0)write(*,"(a,2i3,a,3i3)") "INPUTLIST:", iem, iemis, trim(fname), nin, nex,me
+
+                call CheckStop( nin>0 .and. nex > 0, "emis_inputlists cannot have inc and exc")
+                if ( nin > 0 ) then
+                   call EmisGetCdf(iem,fname, sumemis(1,iem), incl=emis_inputlist(iemis)%incl(1:nin) )
+                else if (  nex > 0 ) then
+                   call EmisGetCdf(iem,fname, sumemis(1,iem), excl=emis_inputlist(iemis)%excl(1:nex) ) 
+                else
+                   call EmisGetCdf(iem,fname, sumemis(1,iem))
+                end if
+
+             enddo
+          else if(index(emis_inputlist(iemis)%name,"grid")>1)then
+             !ASCII format
+             n=index(emis_inputlist(iemis)%name,"POLL")
+             do iem = 1, NEMIS_FILE
+                fname = emis_inputlist(iemis)%name(1:n-1) // trim(EMIS_FILE(iem)) 
+                if(me==0)write(*,*)'Reading ASCII format '//trim(fname)
+                call EmisGetASCII(iem, fname, trim(EMIS_FILE(iem)), sumemis_local, &
+                           emis_inputlist(iemis)%incl, nin, emis_inputlist(iemis)%excl, nex)
+             enddo
+
+             !add together totals from each processor (only me=0 get results)
+             sumemis=0.0
+             CALL MPI_REDUCE(sumemis_local,sumemis,&
+                  NLAND*NEMIS_FILE,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,INFO)        
+
+          else
+             if(me==0)write(*,*)'WARNING: did not recognize format of '//trim(emis_inputlist(iemis)%name)
+             call StopAll("Emisions file format not recognized ")
           endif
-        else
+
+
+          if(MasterProc) then
+             call PrintLog("Total emissions by countries for "//trim(emis_inputlist(iemis)%name))
+             write(*     ,"(2a4,3x,30(a12,:))")"  N "," CC ",EMIS_FILE(:)
+             write(IO_LOG,"(2a4,3x,30(a12,:))")"  N "," CC ",EMIS_FILE(:)                
+             sumEU(:) = 0.0
+             do ic = 1, NLAND
+                ccsum = sum( sumemis(ic,:) )
+                icc=Country(ic)%icode
+                if ( ccsum > 0.0 )then
+                   write(*,"(i4,1x,a4,3x,30(f12.2,:))")icc, Country(ic)%code, sumemis(ic,:)
+                   write(IO_LOG,"(i4,1x,a4,3x,30(f12.2,:))")icc, Country(ic)%code, sumemis(ic,:)
+                endif
+                if(find_index(Country(ic)%code,EU27(:))>0) sumEU = sumEU + sumemis(ic,:)
+             enddo
+             if ( sum(sumEU(:))>0.001)write(*     ,"(i4,1x,a4,3x,30(f12.2,:))") 0, "EU", sumEU(:)
+             if ( sum(sumEU(:))>0.001)write(IO_LOG,"(i4,1x,a4,3x,30(f12.2,:))") 0, "EU", sumEU(:)
+          endif
           
-          !yearly grid independent netcdf fraction format emissions
-      
-          sumemis_local(:,iem)=0.0
-          
-          do isec=1,NSECTORS
- 
-             write(varname,"(A,I2.2)")trim(EMIS_FILE(iem))//'_sec',isec
-             Reduc=e_fact(isec,:,iem)
-             call ReadField_CDF('EmisFracs.nc',varname,emis_tot(1,1),nstart=1,&
-                  interpol='mass_conservative',fractions_out=fractions,&
-                  CC_out=landcode,Ncc_out=nlandcode,Reduc=Reduc,needed=.true.,debug_flag=.false.,&
-                  Undef=0.0)
-             
-             do j=1,ljmax
-                do i=1,limax                   
-                   if(nlandcode(i,j)>NCMAX)then
-                      write(*,*)"Too many emitter countries in one gridcell: ",&
-                           me,i,j,nlandcode(i,j)
-                      call StopAll("To many countries in one gridcell ")
-                   endif
-                   do n=1,nlandcode(i,j)
-                      snapemis(isec,i,j,n,iem)=snapemis(isec,i,j,n,iem)&
-                           +fractions(i,j,n)*emis_tot(i,j)                      
-                      
-                      ic=find_index(landcode(i,j,n),Country(:)%icode)
-                      if(Country(ic)%icode/=landcode(i,j,n))then
-                         write(*,*)"COUNTRY CODE ERROR: ",landcode(i,j,n),ic,Country(ic)%icode
-                         call StopAll("COUNTRY CODE ERROR ")
+          !total of emissions from all countries and files into emsum
+          do iem = 1, NEMIS_FILE
+             emsum(iem)= emsum(iem)+sum(sumemis(:,iem))
+          enddo
+
+       enddo
+
+       if(MasterProc)then
+          write(*     ,"(a9,3x,30(f12.2,:))")' TOTAL : ',emsum(:)
+          write(IO_LOG,"(a9,3x,30(f12.2,:))")' TOTAL : ',emsum(:)
+       endif
+
+       !temporary: nlandcode,landcode,snapemis will be completely removed
+       nlandcode=nGridEmisCodes
+       landcode=GridEmisCodes
+       snapemis=GridEmis
+       !endif ! EMIS_TEST /Mixed
+
+    case("emislist")
+       do iem = 1, NEMIS_FILE
+          if(MasterProc) then                        
+             ! read in global emissions for one pollutant
+             ! *****************
+             call EmisGet(iem,EMIS_FILE(iem),IRUNBEG,JRUNBEG,GIMAX,GJMAX, &
+                  globemis,globnland,globland,sumemis,&
+                  globemis_flat,flat_globnland,flat_globland)
+             ! *****************
+             emsum(iem) = sum(globemis(:,:,:,:)) + sum(globemis_flat(:,:,:))    ! hf
+          endif  ! MasterProc
+          call CheckStop(ios, "ios error: EmisGet")
+
+          ! Send data to processors 
+          ! as  e.g. snapemis (NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,iem)
+          ! send to nodes
+          call global2local(globemis,snapemis(1,1,1,1,iem),MSG_READ1,&
+               NSECTORS,GIMAX,GJMAX,NCMAX,1,1)
+          call global2local(globemis_flat,snapemis_flat(1,1,1,iem),MSG_READ1,&
+               1,GIMAX,GJMAX,FNCMAX,1,1)
+
+          !   real    snapemis (NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS_FILES)
+          !           GridEmis (NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS_FILE)
+          if(EMIS_TEST=="CdfSnap".and.debug_proc) then
+             i=debug_li;j=debug_lj
+             do isec = 1, 11
+                if(snapemis(isec,i,j,1,iem)+GridEmis(isec,i,j,1,iem)>1.0e-10) &
+                     write(*,"(a,i3,2es10.3)") "CDFCOMP", isec, &
+                     snapemis(isec,i,j,1,iem) ,GridEmis(isec,i,j,1,iem)
+             enddo
+          endif
+       enddo
+    case("CdfFractions")
+       do iem = 1, NEMIS_FILE
+
+          !check first if the file is a monthly file
+          call ReadTimeCDF('EmisFracs.nc',TimesInDays,NTime_Read)
+
+          if(NTime_Read==12)then
+             USE_MONTHLY_GRIDEMIS=.true.
+             if(me==0)write(*,*)'Assuming monthly emissions in CdfFractions format'
+             if(USES%GRIDDED_EMIS_MONTHLY_FACTOR)then
+                write(*,*)"Uncompatible settings: you use monthly emissions and GRIDDED_EMIS_MONTHLY_FACTOR=T "
+                !If you really want this, you can uncomment the stop
+                call StopAll("monthly emissions and GRIDDED_EMIS_MONTHLY_FACTOR=T not allowed ")
+             endif
+          else
+
+             !yearly grid independent netcdf fraction format emissions
+
+             sumemis_local(:,iem)=0.0
+
+             do isec=1,NSECTORS
+
+                write(varname,"(A,I2.2)")trim(EMIS_FILE(iem))//'_sec',isec
+                Reduc=e_fact(isec,:,iem)
+                call ReadField_CDF('EmisFracs.nc',varname,cdfemis(1,1),nstart=1,&
+                     interpol='mass_conservative',fractions_out=fractions,&
+                     CC_out=landcode,Ncc_out=nlandcode,Reduc=Reduc,needed=.true.,debug_flag=.false.,&
+                     Undef=0.0)
+
+                do j=1,ljmax
+                   do i=1,limax                   
+                      if(nlandcode(i,j)>NCMAX)then
+                         write(*,*)"Too many emitter countries in one gridcell: ",&
+                              me,i,j,nlandcode(i,j)
+                         call StopAll("To many countries in one gridcell ")
                       endif
-                      if(ic>NLAND)then
-                         write(*,*)"COUNTRY CODE NOT RECOGNIZED OR UNDEFINED: ",landcode(i,j,n)
-                         call StopAll("COUNTRY CODE NOT RECOGNIZED ")
-                      endif
-                      sumemis_local(ic,iem)=sumemis_local(ic,iem)&
-                           +0.001*snapemis(isec,i,j,n,iem)!for diagnostics, mass balance
+                      do n=1,nlandcode(i,j)
+                         snapemis(isec,i,j,n,iem)=snapemis(isec,i,j,n,iem)&
+                              +fractions(i,j,n)*cdfemis(i,j)                      
+
+                         ic=find_index(landcode(i,j,n),Country(:)%icode)
+                         if(Country(ic)%icode/=landcode(i,j,n))then
+                            write(*,*)"COUNTRY CODE ERROR: ",landcode(i,j,n),ic,Country(ic)%icode
+                            call StopAll("COUNTRY CODE ERROR ")
+                         endif
+                         if(ic>NLAND)then
+                            write(*,*)"COUNTRY CODE NOT RECOGNIZED OR UNDEFINED: ",landcode(i,j,n)
+                            call StopAll("COUNTRY CODE NOT RECOGNIZED ")
+                         endif
+                         sumemis_local(ic,iem)=sumemis_local(ic,iem)&
+                              +0.001*fractions(i,j,n)*cdfemis(i,j)!for diagnostics, mass balance
+                      enddo
                    enddo
                 enddo
-             enddo
-          enddo!sectors
-          CALL MPI_REDUCE(sumemis_local(1,iem),sumemis(1,iem),NLAND,MPI_REAL8,&
-               MPI_SUM,0,MPI_COMM_WORLD,INFO) 
-          emsum(iem)= sum(sumemis(:,iem))
-          
-          if(EMIS_OUT)&
-               call EmisOut("Frac",iem,nlandcode,landcode,snapemis(:,:,:,:,iem)) !cdfemis
-       endif
-    case default
-      call CheckStop("EMIS_SOURCE not set"//trim(EMIS_SOURCE))
-    endselect
-  enddo ! iem = 1, NEMIS_FILE-loop
+             enddo!sectors
+             CALL MPI_REDUCE(sumemis_local(1,iem),sumemis(1,iem),NLAND,MPI_REAL8,&
+                  MPI_SUM,0,MPI_COMM_WORLD,INFO) 
+             emsum(iem)= sum(sumemis(:,iem))
 
-  if(USE_ROADDUST) then
-      !Use grid-independent Netcdf input files
-      call CheckStop(NROAD_FILES>2, "TOO MANY ROADFILES")
-      do iem = 1, NROAD_FILES
-        !Read data from NetCDF file
-        select case(iem)
+             if(EMIS_OUT)&
+                  call EmisOut("Frac",iem,nlandcode,landcode,snapemis(:,:,:,:,iem)) !cdfemis
+          endif
+       enddo
+    case default
+       call CheckStop("EMIS_SOURCE not set"//trim(EMIS_SOURCE))
+    endselect
+
+
+    if(USE_ROADDUST) then
+       !Use grid-independent Netcdf input files
+       call CheckStop(NROAD_FILES>2, "TOO MANY ROADFILES")
+       do iem = 1, NROAD_FILES
+          !Read data from NetCDF file
+          select case(iem)
           case(1);varname='HighwayRoadDustPM10_Jun-Feb'
           case(2);varname='nonHighwayRoadDustPM10_Jun-Feb'
-        endselect
-        roaddust_emis_pot(:,:,:,iem)=0.0
-        call ReadField_CDF('RoadMap.nc',varname,roaddust_emis_pot(1,1,1,iem),&
-          nstart=1,interpol='mass_conservative',fractions_out=fractions,&
-          CC_out=road_landcode,Ncc_out=road_nlandcode,needed=.true.,&
-          debug_flag=.false.,Undef=0.0)
-        if(.not.SMI_defined)then
-          varname='SMI1'
-          call ReadField_CDF('AVG_SMI_2005_2010.nc',varname,SMI,nstart=1,&
-               interpol='conservative',needed=.true.,debug_flag=.false.)
-          SMI_defined=.true.
-        endif
+          endselect
+          roaddust_emis_pot(:,:,:,iem)=0.0
+          call ReadField_CDF('RoadMap.nc',varname,roaddust_emis_pot(1,1,1,iem),&
+               nstart=1,interpol='mass_conservative',fractions_out=fractions,&
+               CC_out=road_landcode,Ncc_out=road_nlandcode,needed=.true.,&
+               debug_flag=.false.,Undef=0.0)
+          if(.not.SMI_defined)then
+             varname='SMI1'
+             call ReadField_CDF('AVG_SMI_2005_2010.nc',varname,SMI,nstart=1,&
+                  interpol='conservative',needed=.true.,debug_flag=.false.)
+             SMI_defined=.true.
+          endif
 
-        do i=1,LIMAX
-          do j=1,LJMAX
-            !Peter: Rough estimate to get something varying between 3.325 (SMI<0.5) and 1.0 (SMI>1)
-            SMI_roadfactor=3.325-(min(1.0,max(0.5,SMI(i,j)))-0.5)*2*(3.325-1.0)
-            !if(DEBUG_ROADDUST)&
-            !  WRITE(*,*)"i,j,RDECF:",i_fdom(i)-IRUNBEG+1,j_fdom(j)-JRUNBEG+1,SMI_roadfactor
-            do iic=road_nlandcode(i,j),1,-1
-              roaddust_emis_pot(i,j,iic,iem)=roaddust_emis_pot(i,j,1,iem) &
-                                            *fractions(i,j,iic)*SMI_roadfactor
-            enddo
-          enddo
-       enddo
-        sumroaddust_local(:,iem)=0.0
-        do i=1,LIMAX
-          do j=1,LJMAX
-             do iic=1,road_nlandcode(i,j)
-                if(road_landcode(i,j,iic)<=NLAND) &
-                     ic=find_index(road_landcode(i,j,iic),Country(:)%icode)
-                if(Country(ic)%icode/=road_landcode(i,j,iic))then
-                   write(*,*)"COUNTRY ROAD CODE ERROR: ",road_landcode(i,j,iic),ic,Country(ic)%icode
-                   call StopAll("COUNTRY CODE ERROR ")
-                endif
-                if(ic>NLAND)then
-                   write(*,*)"COUNTRY CODE NOT RECOGNIZED OR UNDEFINED: ",road_landcode(i,j,iic)
-                   call StopAll("COUNTRY CODE NOT RECOGNIZED ")
-                endif
-                sumroaddust_local(ic,iem)=sumroaddust_local(ic,iem)&
-                     +0.001*roaddust_emis_pot(i,j,iic,iem)
+          do i=1,LIMAX
+             do j=1,LJMAX
+                !Peter: Rough estimate to get something varying between 3.325 (SMI<0.5) and 1.0 (SMI>1)
+                SMI_roadfactor=3.325-(min(1.0,max(0.5,SMI(i,j)))-0.5)*2*(3.325-1.0)
+                !if(DEBUG_ROADDUST)&
+                !  WRITE(*,*)"i,j,RDECF:",i_fdom(i)-IRUNBEG+1,j_fdom(j)-JRUNBEG+1,SMI_roadfactor
+                do iic=road_nlandcode(i,j),1,-1
+                   roaddust_emis_pot(i,j,iic,iem)=roaddust_emis_pot(i,j,1,iem) &
+                        *fractions(i,j,iic)*SMI_roadfactor
+                enddo
              enddo
           enddo
+          sumroaddust_local(:,iem)=0.0
+          do i=1,LIMAX
+             do j=1,LJMAX
+                do iic=1,road_nlandcode(i,j)
+                   if(road_landcode(i,j,iic)<=NLAND) &
+                        ic=find_index(road_landcode(i,j,iic),Country(:)%icode)
+                   if(Country(ic)%icode/=road_landcode(i,j,iic))then
+                      write(*,*)"COUNTRY ROAD CODE ERROR: ",road_landcode(i,j,iic),ic,Country(ic)%icode
+                      call StopAll("COUNTRY CODE ERROR ")
+                   endif
+                   if(ic>NLAND)then
+                      write(*,*)"COUNTRY CODE NOT RECOGNIZED OR UNDEFINED: ",road_landcode(i,j,iic)
+                      call StopAll("COUNTRY CODE NOT RECOGNIZED ")
+                   endif
+                   sumroaddust_local(ic,iem)=sumroaddust_local(ic,iem)&
+                        +0.001*roaddust_emis_pot(i,j,iic,iem)
+                enddo
+             enddo
+          enddo
+       enddo ! iem = 1, NROAD_FILES-loop
+       sumroaddust=0.0
+       CALL MPI_REDUCE(sumroaddust_local,sumroaddust,NLAND*NROAD_FILES,MPI_REAL8,&
+            MPI_SUM,0,MPI_COMM_WORLD,INFO) 
+
+    endif !USE_ROADDUST
+
+    if(MasterProc) then
+       if(EMIS_SOURCE/='Mixed')then !"Mixed" case already printed out
+       call PrintLog("Total emissions by countries:")
+       write(*     ,"(2a4,3x,30(a12,:))")"  N "," CC ",EMIS_FILE(:)
+       write(IO_LOG,"(2a4,3x,30(a12,:))")"  N "," CC ",EMIS_FILE(:)
+
+       sumEU(:) = 0.0
+       do ic = 1, NLAND
+          ccsum = sum( sumemis(ic,:) )
+          icc=Country(ic)%icode
+          if(EMIS_TEST=="None") then
+             if ( ccsum > 0.0 )then
+                write(*,"(i4,1x,a4,3x,30(f12.2,:))")icc, Country(ic)%code, sumemis(ic,:)
+                write(IO_LOG,"(i4,1x,a4,3x,30(f12.2,:))")icc, Country(ic)%code, sumemis(ic,:)
+             endif
+          else
+             if(ccsum>0.0 .or. sum(sumemis(ic,:))>0.0) then
+                write(*,"(i4,1x,a4,3x,30(f12.2,:))")icc, Country(ic)%code, sumemis(ic,:)
+             endif
+          endif
+          if(find_index(Country(ic)%code,EU27(:))>0) sumEU = sumEU + sumemis(ic,:)
        enddo
-    enddo ! iem = 1, NROAD_FILES-loop
-    sumroaddust=0.0
-    CALL MPI_REDUCE(sumroaddust_local,sumroaddust,NLAND*NROAD_FILES,MPI_REAL8,&
-         MPI_SUM,0,MPI_COMM_WORLD,INFO) 
+       write(*     ,"(i4,1x,a4,3x,30(f12.2,:))") 0, "EU", sumEU(:)
+       write(IO_LOG,"(i4,1x,a4,3x,30(f12.2,:))") 0, "EU", sumEU(:)
+       endif
 
-endif !USE_ROADDUST
+       if(USE_ROADDUST)THEN
+          call PrintLog("Total road dust emission potentials by countries &
+               &(before precipitation and land corrections):")
+          write(*     ,"(2a4,11x,30(a12,:))")"  N "," CC ",ROAD_FILE(:)
+          write(IO_LOG,"(2a4,11x,30(a12,:))")"  N "," CC ",ROAD_FILE(:)
 
-  if(MasterProc) then
-    call PrintLog("Total emissions by countries:")
-    write(*     ,"(2a4,3x,30(a12,:))")"  N "," CC ",EMIS_FILE(:)
-    write(IO_LOG,"(2a4,3x,30(a12,:))")"  N "," CC ",EMIS_FILE(:)
+          do ic = 1, NLAND
+             ccsum = sum( sumroaddust(ic,:))
+             if(ccsum>0.0) then
+                icc=Country(ic)%icode
+                write(*     ,"(i4,1x,a4,3x,30(f12.2,:))")icc, Country(ic)%code, sumroaddust(ic,:)
+                write(IO_LOG,"(i4,1x,a4,3x,30(f12.2,:))")icc, Country(ic)%code, sumroaddust(ic,:)
+             endif
+          enddo
+       endif ! ROAD DUST
+    endif
 
-    sumEU(:) = 0.0
-    do ic = 1, NLAND
-      ccsum = sum( sumemis(ic,:) )
-      icc=Country(ic)%icode
-      if(EMIS_TEST=="None") then
-         if ( ccsum > 0.0 )then
-            write(*,"(i4,1x,a4,3x,30(f12.2,:))")icc, Country(ic)%code, sumemis(ic,:)
-            write(IO_LOG,"(i4,1x,a4,3x,30(f12.2,:))")icc, Country(ic)%code, sumemis(ic,:)
-         endif
-      else
-         if(ccsum>0.0 .or. sum(sumcdfemis(ic,:))>0.0) then
-            write(*,"(a,i4,1x,a4,3x,30(f12.2,:))")"ORIG:",icc, Country(ic)%code, sumemis(ic,:)
-            write(*,"(a,i4,1x,a4,3x,30(f12.2,:))")"CDFS:",icc, Country(ic)%code, sumcdfemis(ic,:)
-         endif
-      endif
-      if(find_index(Country(ic)%code,EU27(:))>0) sumEU = sumEU + sumemis(ic,:)
-    enddo
-    write(*     ,"(i4,1x,a4,3x,30(f12.2,:))") 0, "EU", sumEU(:)
-    write(IO_LOG,"(i4,1x,a4,3x,30(f12.2,:))") 0, "EU", sumEU(:)
-   
+    ! now all values are read, snapemis is distributed, globnland and 
+    ! globland are ready for distribution
+    ! print *, "calling glob2local_int for iem", iem, " me ", me
+    select case(EMIS_SOURCE)
+    case("emislist")
+       call global2local_int(globnland,nlandcode,326,GIMAX,GJMAX,1,1,1)
+       call global2local_int(globland ,landcode ,326,GIMAX,GJMAX,NCMAX,1,1)
 
-    if(USE_ROADDUST)THEN
-      call PrintLog("Total road dust emission potentials by countries &
-                     &(before precipitation and land corrections):")
-      write(*     ,"(2a4,11x,30(a12,:))")"  N "," CC ",ROAD_FILE(:)
-      write(IO_LOG,"(2a4,11x,30(a12,:))")"  N "," CC ",ROAD_FILE(:)
+       call global2local_int(flat_globnland,flat_nlandcode,326,&
+            GIMAX,GJMAX,1,1,1)  !extra array
+       call global2local_int(flat_globland,flat_landcode,326,&
+            GIMAX,GJMAX,FNCMAX,1,1)
+    case("CdfFractions")
+       ! emissions directly defined into nlandcode,landcode and snapemis
+    endselect
 
-      do ic = 1, NLAND
-        ccsum = sum( sumroaddust(ic,:))
-        if(ccsum>0.0) then
-         icc=Country(ic)%icode
-          write(*     ,"(i4,1x,a4,3x,30(f12.2,:))")icc, Country(ic)%code, sumroaddust(ic,:)
-          write(IO_LOG,"(i4,1x,a4,3x,30(f12.2,:))")icc, Country(ic)%code, sumroaddust(ic,:)
-        endif
-      enddo
-    endif ! ROAD DUST
-  endif
-   
-  ! now all values are read, snapemis is distributed, globnland and 
-  ! globland are ready for distribution
-  ! print *, "calling glob2local_int for iem", iem, " me ", me
-  select case(EMIS_SOURCE)
-  case("emislist")
-    call global2local_int(globnland,nlandcode,326,GIMAX,GJMAX,1,1,1)
-    call global2local_int(globland ,landcode ,326,GIMAX,GJMAX,NCMAX,1,1)
-
-    call global2local_int(flat_globnland,flat_nlandcode,326,&
-       GIMAX,GJMAX,1,1,1)  !extra array
-    call global2local_int(flat_globland,flat_landcode,326,&
-       GIMAX,GJMAX,FNCMAX,1,1)
-  case("CdfFractions")
-     ! emissions directly defined into nlandcode,landcode and snapemis
-  endselect
-
-! Create emislist-type files for both snap emissions and Cdf
-! Useful for export to other codes, including production of
-! new emislist for current NWP grid.
-  do iem = 1, NEMIS_FILE
-    if((EMIS_SOURCE=="emislist").and.EMIS_OUT) &
-      call EmisOut("Snap",iem,nlandcode,landcode,snapemis(:,:,:,:,iem))
-
-    if(EMIS_TEST=="CdfSnap")&
-      write(*,"(a,i3,2i4,2es12.3)") "CALLED CDF PRE "//&
-        trim(EMIS_FILE(iem)),me,maxval(nlandcode),maxval(nGridEmisCodes), &
-        maxval(snapemis(:,:,:,:,iem)),maxval(GridEmis(:,:,:,:,iem))
-        
-    if((EMIS_TEST=="CdfSnap").and.EMIS_OUT) &
-      call EmisOut("Cdf",iem,nGridEmisCodes,GridEmisCodes,GridEmis(:,:,:,:,iem))
-  enddo
-
-  !-------------------------------------------------------------------------
-  ! Broadcast volcanoe info derived in EmisGet 
-  CALL MPI_BCAST(nvolc,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
-  CALL MPI_BCAST(i_volc,4*nvolc,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
-  CALL MPI_BCAST(j_volc,4*nvolc,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
-  CALL MPI_BCAST(emis_volc,8*nvolc,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
- 
-
-  !**  Conversions:
-  ! The emission-data file are so far in units of 
-  ! tonnes per grid-square. The conversion factor from tonnes per 50*50km2
-  ! annual emission values to surface flux (kg/m2/s) is found by division
-  ! with (nydays*24*60*60)s and (h*h)m2 and multiply by 1.e+3.
-  ! The conversion factor then equals 1.27e-14
-  tonne_to_kgm2s  = 1.0e3 / (nydays * 24.0 * 3600.0 * GRIDWIDTH_M * GRIDWIDTH_M)
-  if(MYDEBUG.and.MasterProc) then
-    write(*,*) "CONV:me, nydays, gridwidth = ",me,nydays,GRIDWIDTH_M
-    write(*,*) "No. days in Emissions: ", nydays
-    write(*,*) "tonne_to_kgm2s in Emissions: ", tonne_to_kgm2s
-    write(*,*) "Emissions sums:"
+    ! Create emislist-type files for both snap emissions and Cdf
+    ! Useful for export to other codes, including production of
+    ! new emislist for current NWP grid.
     do iem = 1, NEMIS_FILE
-      write(*,"(a15,f12.2)") EMIS_FILE(iem),emsum(iem)
+       if((EMIS_SOURCE=="emislist").and.EMIS_OUT) &
+            call EmisOut("Snap",iem,nlandcode,landcode,snapemis(:,:,:,:,iem))
+
+       if(EMIS_TEST=="CdfSnap")&
+            write(*,"(a,i3,2i4,2es12.3)") "CALLED CDF PRE "//&
+            trim(EMIS_FILE(iem)),me,maxval(nlandcode),maxval(nGridEmisCodes), &
+            maxval(snapemis(:,:,:,:,iem)),maxval(GridEmis(:,:,:,:,iem))
+
+       if((EMIS_TEST=="CdfSnap").and.EMIS_OUT) &
+            call EmisOut("Cdf",iem,nGridEmisCodes,GridEmisCodes,GridEmis(:,:,:,:,iem))
     enddo
-  endif
 
-  iemCO=find_index("co",EMIS_FILE(:)) ! save this index
-    
-  if(MYDEBUG.and.debug_proc.and.iemCO>0) &
-    write(*,"(a,2es10.3)") "SnapPre:" // trim(EMIS_FILE(iemCO)), &
-      sum(snapemis   (:,debug_li,debug_lj,:,iemCO)), &
-      sum(snapemis_flat(debug_li,debug_lj,:,iemCO))
+    !-------------------------------------------------------------------------
+    ! Broadcast volcanoe info derived in EmisGet 
+    CALL MPI_BCAST(nvolc,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+    CALL MPI_BCAST(i_volc,4*nvolc,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+    CALL MPI_BCAST(j_volc,4*nvolc,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+    CALL MPI_BCAST(emis_volc,8*nvolc,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
 
-  forall (ic=1:NCMAX, j=1:ljmax, i=1:limax, isec=1:NSECTORS,iem=1:NEMIS_FILE)
-    snapemis (isec,i,j,ic,iem) = snapemis (isec,i,j,ic,iem) * tonne_to_kgm2s * xm2(i,j)
-  endforall
 
-  forall (fic=1:FNCMAX, j=1:ljmax, i=1:limax,iem=1:NEMIS_FILE)
-    snapemis_flat(i,j,fic,iem) = snapemis_flat(i,j,fic,iem) * tonne_to_kgm2s * xm2(i,j)
-  endforall
+    !**  Conversions:
+    ! The emission-data file are so far in units of 
+    ! tonnes per grid-square. The conversion factor from tonnes per 50*50km2
+    ! annual emission values to surface flux (kg/m2/s) is found by division
+    ! with (nydays*24*60*60)s and (h*h)m2 and multiply by 1.e+3.
+    ! The conversion factor then equals 1.27e-14
+    tonne_to_kgm2s  = 1.0e3 / (nydays * 24.0 * 3600.0 * GRIDWIDTH_M * GRIDWIDTH_M)
+    if(MYDEBUG.and.MasterProc) then
+       write(*,*) "CONV:me, nydays, gridwidth = ",me,nydays,GRIDWIDTH_M
+       write(*,*) "No. days in Emissions: ", nydays
+       write(*,*) "tonne_to_kgm2s in Emissions: ", tonne_to_kgm2s
+       write(*,*) "Emissions sums:"
+       do iem = 1, NEMIS_FILE
+          write(*,"(a15,f12.2)") EMIS_FILE(iem),emsum(iem)
+       enddo
+    endif
 
-  if(MYDEBUG.and.debug_proc.and.iemCO>0) &
-    write(*,"(a,2es10.3)") "SnapPos:" // trim(EMIS_FILE(iemCO)), &
-      sum(snapemis   (:,debug_li,debug_lj,:,iemCO)), &
-      sum(snapemis_flat(debug_li,debug_lj,:,iemCO))
+    iemCO=find_index("co",EMIS_FILE(:)) ! save this index
 
-  if(USE_ROADDUST)THEN
-    forall (ic=1:NCMAX, j=1:ljmax, i=1:limax, iem=1:NROAD_FILES)
-      roaddust_emis_pot(i,j,ic,iem) = &
-        roaddust_emis_pot(i,j,ic,iem) * tonne_to_kgm2s * xm2(i,j)
+    if(MYDEBUG.and.debug_proc.and.iemCO>0) &
+         write(*,"(a,2es10.3)") "SnapPre:" // trim(EMIS_FILE(iemCO)), &
+         sum(snapemis   (:,debug_li,debug_lj,:,iemCO)), &
+         sum(snapemis_flat(debug_li,debug_lj,:,iemCO))
+
+    forall (ic=1:NCMAX, j=1:ljmax, i=1:limax, isec=1:NSECTORS,iem=1:NEMIS_FILE)
+       snapemis (isec,i,j,ic,iem) = snapemis (isec,i,j,ic,iem) * tonne_to_kgm2s * xm2(i,j)
     endforall
-  endif !road dust
 
+    forall (fic=1:FNCMAX, j=1:ljmax, i=1:limax,iem=1:NEMIS_FILE)
+       snapemis_flat(i,j,fic,iem) = snapemis_flat(i,j,fic,iem) * tonne_to_kgm2s * xm2(i,j)
+    endforall
 
-!if ( VOLCANOES ) then
-  ! Read  Volcanos.dat or VolcanoesLL.dat to get volcano height 
-  ! and magnitude in the case of VolcanoesLL.dat
-  call VolcGet(height_volc)
-!endif ! VOLCANOES
+    if(MYDEBUG.and.debug_proc.and.iemCO>0) &
+         write(*,"(a,2es10.3)") "SnapPos:" // trim(EMIS_FILE(iemCO)), &
+         sum(snapemis   (:,debug_li,debug_lj,:,iemCO)), &
+         sum(snapemis_flat(debug_li,debug_lj,:,iemCO))
 
-  err1 = 0
-  if(MasterProc) then
-    deallocate(globnland     ,stat=err1)
-    deallocate(globland      ,stat=err2)
-    deallocate(globemis      ,stat=err3)
-    deallocate(flat_globnland,stat=err4)
-    deallocate(flat_globland ,stat=err5)
-    deallocate(globemis_flat ,stat=err6)
     if(USE_ROADDUST)THEN
-      deallocate(road_globnland   ,stat=err7)
-      deallocate(road_globland    ,stat=err8)
-      deallocate(globroad_dust_pot,stat=err9)
+       forall (ic=1:NCMAX, j=1:ljmax, i=1:limax, iem=1:NROAD_FILES)
+          roaddust_emis_pot(i,j,ic,iem) = &
+               roaddust_emis_pot(i,j,ic,iem) * tonne_to_kgm2s * xm2(i,j)
+       endforall
+    endif !road dust
+
+
+    !if ( VOLCANOES ) then
+    ! Read  Volcanos.dat or VolcanoesLL.dat to get volcano height 
+    ! and magnitude in the case of VolcanoesLL.dat
+    call VolcGet(height_volc)
+    !endif ! VOLCANOES
+
+    err1 = 0
+    if(MasterProc) then
+       deallocate(globnland     ,stat=err1)
+       deallocate(globland      ,stat=err2)
+       deallocate(globemis      ,stat=err3)
+       deallocate(flat_globnland,stat=err4)
+       deallocate(flat_globland ,stat=err5)
+       deallocate(globemis_flat ,stat=err6)
+       if(USE_ROADDUST)THEN
+          deallocate(road_globnland   ,stat=err7)
+          deallocate(road_globland    ,stat=err8)
+          deallocate(globroad_dust_pot,stat=err9)
+       endif
+
+       call CheckStop(err1, "De-Allocation error 1 - globland") 
+       call CheckStop(err2, "De-Allocation error 2 - globland")
+       call CheckStop(err3, "De-Allocation error 3 - globland")
+       call CheckStop(err4, "De-Allocation error 4 - globland")
+       call CheckStop(err5, "De-Allocation error 5 - globland")
+       call CheckStop(err6, "De-Allocation error 6 - globland")
+       if(USE_ROADDUST)THEN
+          call CheckStop(err7, "De-Allocation error 7 - roadglob")
+          call CheckStop(err8, "De-Allocation error 8 - roadglob")
+          call CheckStop(err9, "De-Allocation error 9 - roadglob")
+       endif
+    else
+       ! needed for DEBUG=yes compilation options
+       deallocate(globnland,flat_globnland,&
+            globland,flat_globland,&
+            globemis,globemis_flat ,stat=err6)
+       call CheckStop(err6, "De-Allocation error 6 - dummy globland")
+       if(USE_ROADDUST)THEN
+          deallocate(road_globnland,road_globland,globroad_dust_pot,stat=err9)
+          call CheckStop(err9, "De-Allocation error 9 - dummy roadglob")
+       endif
     endif
 
-    call CheckStop(err1, "De-Allocation error 1 - globland") 
-    call CheckStop(err2, "De-Allocation error 2 - globland")
-    call CheckStop(err3, "De-Allocation error 3 - globland")
-    call CheckStop(err4, "De-Allocation error 4 - globland")
-    call CheckStop(err5, "De-Allocation error 5 - globland")
-    call CheckStop(err6, "De-Allocation error 6 - globland")
+    ! now we have nrecmis and can allocate for gridrcemis:
+    ! print *, "ALLOCATING GRIDRC", me, NRCEMIS
+    allocate(gridrcemis(NRCEMIS,KEMISTOP:KMAX_MID,MAXLIMAX,MAXLJMAX),stat=err1)
+    allocate(gridrcemis0(NRCEMIS,KEMISTOP:KMAX_MID,MAXLIMAX,MAXLJMAX),stat=err2)
+    call CheckStop(err1, "Allocation error 1 - gridrcemis") 
+    call CheckStop(err2, "Allocation error 2 - gridrcemis0")
     if(USE_ROADDUST)THEN
-      call CheckStop(err7, "De-Allocation error 7 - roadglob")
-      call CheckStop(err8, "De-Allocation error 8 - roadglob")
-      call CheckStop(err9, "De-Allocation error 9 - roadglob")
+       allocate(gridrcroadd(NROADDUST,MAXLIMAX,MAXLJMAX),stat=err3)
+       allocate(gridrcroadd0(NROADDUST,MAXLIMAX,MAXLJMAX),stat=err4)
+       call CheckStop(err3, "Allocation error 3 - gridrcroadd")
+       call CheckStop(err4, "Allocation error 4 - gridrcroadd0")
     endif
-  else
-    ! needed for DEBUG=yes compilation options
-    deallocate(globnland,flat_globnland,&
-               globland,flat_globland,&
-               globemis,globemis_flat ,stat=err6)
-    call CheckStop(err6, "De-Allocation error 6 - dummy globland")
-    if(USE_ROADDUST)THEN
-      deallocate(road_globnland,road_globland,globroad_dust_pot,stat=err9)
-      call CheckStop(err9, "De-Allocation error 9 - dummy roadglob")
-    endif
-  endif
-
-  ! now we have nrecmis and can allocate for gridrcemis:
-  ! print *, "ALLOCATING GRIDRC", me, NRCEMIS
-  allocate(gridrcemis(NRCEMIS,KEMISTOP:KMAX_MID,MAXLIMAX,MAXLJMAX),stat=err1)
-  allocate(gridrcemis0(NRCEMIS,KEMISTOP:KMAX_MID,MAXLIMAX,MAXLJMAX),stat=err2)
-  call CheckStop(err1, "Allocation error 1 - gridrcemis") 
-  call CheckStop(err2, "Allocation error 2 - gridrcemis0")
-  if(USE_ROADDUST)THEN
-     allocate(gridrcroadd(NROADDUST,MAXLIMAX,MAXLJMAX),stat=err3)
-     allocate(gridrcroadd0(NROADDUST,MAXLIMAX,MAXLJMAX),stat=err4)
-     call CheckStop(err3, "Allocation error 3 - gridrcroadd")
-     call CheckStop(err4, "Allocation error 4 - gridrcroadd0")
-  endif
-endsubroutine Emissions
+  endsubroutine Emissions
 !----------------------------------------------------------------------!
 !>
 !! expandcclist converts e.g. EU27 to indivdual countries
@@ -1248,7 +1347,6 @@ subroutine newmonth
   integer :: kstart,kend,nstart,Nyears
   real :: buffer(MAXLIMAX,MAXLJMAX),SumSoilNOx,ccsum
   real :: fractions(MAXLIMAX,MAXLJMAX,NCMAX),Reduc(NLAND)
-  real :: emis_tot(MAXLIMAX,MAXLJMAX)
   real, dimension(NEMIS_FILE)       :: emsum ! Sum emis over all countries
   real, dimension(NLAND,NEMIS_FILE) :: sumemis, sumemis_local ! Sum of emissions per country
   character(len=40) :: varname 
@@ -1465,7 +1563,7 @@ subroutine newmonth
 !reset emissions (except flat emissions!)
       snapemis(:,:,:,:,:) = 0.
       fractions(:,:,:)    = 0.
-      emis_tot(:,:)       = 0.
+      cdfemis(:,:)       = 0.
       sumemis_local       = 0.
       emsum               = 0.
 
@@ -1498,7 +1596,7 @@ subroutine newmonth
             Reduc=e_fact(isec,:,iem)
 
             write(varname,"(A,I2.2)")trim(EMIS_FILE(iem))//'_sec',isec
-            call  ReadField_CDF('EmisFracs.nc',varname,emis_tot(1,1),nstart=current_date%month,&
+            call  ReadField_CDF('EmisFracs.nc',varname,cdfemis(1,1),nstart=current_date%month,&
                  interpol='mass_conservative',fractions_out=fractions,&
                  CC_out=landcode,Ncc_out=nlandcode,Reduc=Reduc,needed=.true., & 
                  Mask_fileName='sourceNC.nc',Mask_varname='source_code',Mask_Code=Mask_Code,&
@@ -1514,7 +1612,7 @@ subroutine newmonth
                   endif
                   do n=1,nlandcode(i,j)
                      snapemis(isec,i,j,n,iem)=snapemis(isec,i,j,n,iem)&
-                          +fractions(i,j,n)*emis_tot(i,j)*tonnemonth_to_kgm2s*xm2(i,j)                
+                          +fractions(i,j,n)*cdfemis(i,j)*tonnemonth_to_kgm2s*xm2(i,j)                
 
                      ic=find_index(landcode(i,j,n),Country(:)%icode)
                      if(Country(ic)%icode/=landcode(i,j,n))then

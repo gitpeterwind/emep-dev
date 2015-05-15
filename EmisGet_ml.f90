@@ -2,7 +2,7 @@ module EmisGet_ml
 
 use CheckStop_ml,     only: CheckStop, StopAll, check=>CheckNC
 use ChemSpecs,        only: NSPEC_ADV, NSPEC_TOT, species 
-use Country_ml,       only: NLAND, IC_NAT, IC_VUL, Country, &
+use Country_ml,       only: NLAND, IC_NAT, IC_VUL, IC_NOA, Country, &
                              ! NMR-NH3 specific variables (hb NH3Emis)
                              IC_NMR 
 use EmisDef_ml,       only: NSECTORS, ANTROP_SECTORS, NCMAX, FNCMAX, & 
@@ -10,17 +10,21 @@ use EmisDef_ml,       only: NSECTORS, ANTROP_SECTORS, NCMAX, FNCMAX, &
                             ISNAP_SHIP, ISNAP_NAT, VOLCANOES_LL, &
                           ! NMR-NH3 specific variables (for FUTURE )
                             NH3EMIS_VAR,dknh3_agr,ISNAP_AGR,ISNAP_TRAF, &
-                            NROADDUST
+                            NROADDUST, &
+                            cdfemis,sumcdfemis,nGridEmisCodes,GridEmisCodes,GridEmis&
+                            ,gridrcemis,gridrcemis0&
+                            ,landcode,nlandcode
 use GridAllocate_ml,  only: GridAllocate
-use GridValues_ml,    only: debug_proc,debug_li,debug_lj, i_fdom, j_fdom !cdfemis
+use GridValues_ml,    only: debug_proc,debug_li,debug_lj,i_fdom,j_fdom,i_local,j_local
 use GridValues_ml,    only: glon, glat, A_bnd, B_bnd
 use Io_ml,            only: open_file, NO_FILE, ios, IO_EMIS, &
                              Read_Headers, read_line, PrintLog
 use KeyValueTypes,    only: KeyVal
 use ModelConstants_ml,only: NPROC, TXTLEN_NAME, &
                              DEBUG,  KMAX_MID,KMAX_BND, Pref,&
-            SEAFIX_GEA_NEEDED, & ! only if emission problems over sea
-                             MasterProc,DEBUG_GETEMIS,DEBUG_ROADDUST,USE_ROADDUST
+                             SEAFIX_GEA_NEEDED, & ! only if emission problems over sea
+                             MasterProc,DEBUG_GETEMIS,DEBUG_ROADDUST,USE_ROADDUST&
+                             ,IIFULLDOM,JJFULLDOM
 use NetCDF_ml, only  : ReadField_CDF  !CDF_SNAP
 
 use Par_ml,            only: MAXLIMAX, MAXLJMAX, limax, ljmax, me
@@ -35,6 +39,8 @@ private
  ! subroutines:
 public  :: EmisGet           ! Collects emissions of each pollutant
 public  :: EmisGetCdf        ! cdfemis
+public  :: EmisGetCdfFrac    ! cdfemis in Fractions format
+public  :: EmisGetASCII      !new version of "EmisGet" which does not use fulldomain arrays
 public  :: EmisSplit         ! => emisfrac, speciation of voc, pm25, etc.
 public  :: EmisHeights       ! => nemis_kprofile, emis_kprofile
                              !     vertical emissions profile
@@ -80,20 +86,100 @@ character(len=80), private :: errmsg
 include 'CM_EmisSpecs.inc'
 logical, dimension(NEMIS_SPECS) :: EmisSpecFound = .false.
 
-!CDF cdfemis tests
-real, public, save,  allocatable,dimension(:,:) ::&
-  sumcdfemis ! Only used for MasterProc
-real, allocatable, private, save,  dimension(:,:) :: cdfemis
-integer, allocatable, public, save,  dimension(:,:) :: nGridEmisCodes
-integer, allocatable, public, save,  dimension(:,:,:):: GridEmisCodes
-real, allocatable, public, save,  dimension(:,:,:,:,:):: GridEmis
 
 contains
 
+  subroutine EmisGetCdfFrac(iem, isec, fname, varname, sumemis_local, incl, nin, excl, nex)
+
+    implicit none
+    integer, intent(in) ::iem, isec, nin, nex
+    character(len=*),intent(in) :: fname, varname, incl(*),excl(*)
+    real,intent(inout), dimension(NLAND,NEMIS_FILE) :: sumemis_local ! Sum of emissions per country
+
+
+    real :: fractions(MAXLIMAX,MAXLJMAX,NCMAX),Reduc(NLAND)
+    character(len=125) ::Mask_fileName,Mask_varname
+    real :: Mask_ReducFactor
+    integer :: NMask_Code,Mask_Code(NLAND)
+
+    integer ::i,j,k,n,ic,i_gridemis
+    logical :: Cexist,found
+
+    !yearly grid independent netcdf fraction format emissions                                
+    Reduc=e_fact(isec,:,iem)
+    call ReadField_CDF(trim(fname),varname,cdfemis(1,1),nstart=1,&
+         interpol='mass_conservative',fractions_out=fractions,&
+         CC_out=landcode,Ncc_out=nlandcode,Reduc=Reduc,needed=.true.,debug_flag=.false.,&
+         Undef=0.0)
+
+    do j=1,ljmax
+       do i=1,limax                   
+          if(nlandcode(i,j)>NCMAX)then
+             write(*,*)"GetCdfFrac: Too many emitter countries in one gridcell: ",&
+                  me,i,j,nlandcode(i,j)
+             call StopAll("To many countries in one gridcell ")
+          endif
+          do n=1,nlandcode(i,j)
+             ic=find_index(landcode(i,j,n),Country(:)%icode)
+
+             !exclude or include countries
+             !could easily be optimized, by defining a country mask
+             if(nin>0)then
+                !1) check that country is in include list
+                found=find_index(Country(ic)%code ,incl(1:nin),first_only=.true.)
+                if(found==0)cycle!do not include
+             endif
+             if(nex>0)then
+                !1) check that country is not in exclude list
+                found=find_index(Country(ic)%code ,excl(1:nex),first_only=.true.)
+                if(found>0)cycle!exclude
+             endif
+
+             if(Country(ic)%icode/=landcode(i,j,n))then
+                write(*,*)"COUNTRY CODE ERROR: ",landcode(i,j,n),ic,Country(ic)%icode
+                call StopAll("COUNTRY CODE ERROR ")
+             endif
+             if(ic>NLAND)then
+                write(*,*)"COUNTRY CODE NOT RECOGNIZED OR UNDEFINED: ",landcode(i,j,n)
+                call StopAll("COUNTRY CODE NOT RECOGNIZED ")
+             endif
+
+             !merge into existing emissions           
+             Cexist=.false.
+             do i_gridemis=1,nGridEmisCodes(i,j)
+                if(GridEmisCodes(i,j,i_gridemis)==landcode(i,j,n))then
+
+                   GridEmis(isec,i,j,i_gridemis,iem)=GridEmis(isec,i,j,i_gridemis,iem)&
+                        +fractions(i,j,n)*cdfemis(i,j)                      
+
+                   Cexist=.true.
+                   exit
+                endif
+             enddo
+             if(.not.Cexist)then
+                !country not included yet. define it now:
+                nGridEmisCodes(i,j)=nGridEmisCodes(i,j)+1
+                if(nGridEmisCodes(i,j)>NCMAX)then
+                   write(*,*)"Too many emitter countries in one gridemiscell: ",&
+                        me,i,j,nGridEmisCodes(i,j)
+                   call StopAll("To many countries in one gridemiscell ")
+                endif
+                i_gridemis=nGridEmisCodes(i,j)
+                GridEmisCodes(i,j,i_gridemis)=landcode(i,j,n)
+                GridEmis(isec,i,j,i_gridemis,iem)=fractions(i,j,n)*cdfemis(i,j)
+             endif
+             sumemis_local(ic,iem)=sumemis_local(ic,iem)&
+                  +0.001*fractions(i,j,n)*cdfemis(i,j)!for diagnostics, mass balance
+          enddo
+       enddo
+    enddo
+
+  end subroutine EmisGetCdfFrac
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-  subroutine EmisGetCdf(iem, fname,incl,excl)
+  subroutine EmisGetCdf(iem, fname, sumemis, incl,excl)
    integer, intent(in) :: iem ! index in EMIS_FILE array and GridEmis output
    character(len=*), intent(in)    :: fname
+   real, intent(inout) ::sumemis(*)
    character(len=*),dimension(:), optional :: &
        incl, excl ! Arrays of cc to inc/exclude
    integer :: i,j, ic, isec, allocerr(6), icode, status
@@ -105,32 +191,33 @@ contains
    integer :: ncFileID, nDimensions,nVariables,nAttributes,timeDimID,varid,&
            xtype,ndims  !TESTE testing
    character(len=10) :: ewords(7), code ! Test Emis:UK:snap:7
-   integer :: nwords, err
+   integer :: nwords, err, i_gridemis
    logical, save :: my_first_call = .true.
+   logical :: Cexist
 
 !
-   if(MasterProc)  print *, "ME INTO EMISGETCDF ", me, trim(fname)&
+   if(MasterProc.and.DEBUG_GETEMIS)  print *, "ME INTO EMISGETCDF ", me, trim(fname)&
         ,present(incl), present(excl)  ! optionals
    if( present(incl) ) then
-      if(MasterProc) write(*,"(a,i4,99a4)") trim(fname)//":INCL=", size(incl), incl
+      if(MasterProc.and.DEBUG_GETEMIS) write(*,"(a,i4,99a4)") trim(fname)//":INCL=", size(incl), incl
    end if
    if( present(excl) ) then
-      if(MasterProc) write(*,"(a,i4,99a4)") trim(fname)//":EXCL=", size(excl), excl
+      if(MasterProc.and.DEBUG_GETEMIS) write(*,"(a,i4,99a4)") trim(fname)//":EXCL=", size(excl), excl
    end if
 
    if( my_first_call  )  then
         allocerr = 0
-        allocate(cdfemis(MAXLIMAX,MAXLJMAX),stat=allocerr(1))
-        allocate(nGridEmisCodes(MAXLIMAX,MAXLJMAX),stat=allocerr(2))
-        allocate(GridEmisCodes(MAXLIMAX,MAXLJMAX,NCMAX),stat=allocerr(3))
-        allocate(GridEmis(NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS_FILE),&
-            stat=allocerr(4))
-        call CheckStop(any ( allocerr(:) /= 0), &
-              "EmisGet:Allocation error for cdfemis")
-        GridEmisCodes = -1   
-        nGridEmisCodes = 0
-        GridEmis = 0.0
-        sumcdfemis = 0.0
+        !allocate(cdfemis(MAXLIMAX,MAXLJMAX),stat=allocerr(1))
+        !allocate(nGridEmisCodes(MAXLIMAX,MAXLJMAX),stat=allocerr(2))
+        !allocate(GridEmisCodes(MAXLIMAX,MAXLJMAX,NCMAX),stat=allocerr(3))
+        !allocate(GridEmis(NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS_FILE),&
+        !    stat=allocerr(4))
+        !call CheckStop(any ( allocerr(:) /= 0), &
+        !      "EmisGet:Allocation error for cdfemis")
+        !GridEmisCodes = -1   
+        !nGridEmisCodes = 0
+        !GridEmis = 0.0
+        !sumcdfemis = 0.0
 
         my_first_call = .false.
 
@@ -138,13 +225,12 @@ contains
 
     ! Initialise sums for this pollutant and processor
     sumcdfemis_loc = 0.0
-    sumcdfemis_iem = 0.0
 
 !---------------------------------------------------------------
 ! find emis file and  main properties
 
  status=nf90_open(path = trim(fName), mode = nf90_nowrite, ncid = ncFileID)
-if( index(fname, "Ship")>0 ) print *, me, " CDFHUNTTOP ", trim(fname)
+
  if( status /= nf90_noerr ) then
   if( MasterProc ) print *, "EmisGetCdf - couldn't open "//trim(fName)
    return
@@ -211,12 +297,10 @@ if( index(fname, "Ship")>0 ) print *, me, " CDFHUNTTOP ", trim(fname)
 
 
      cdfemis = 0.0 ! safety, shouldn't be needed though
-!if( index(fname, "Ship")>0 ) print *, me, " CDFHUNTIN ", trim(fname), trim(varname)
+
      call ReadField_CDF(fname,varname,cdfemis,1,&
-!??              known_projection='longitude latitude', &
                interpol='mass_conservative',&
                 needed=.false.,UnDef=0.0,debug_flag=.false.,ncFileID_given=ncFileID)
-!if( index(fname, "Ship")>0 ) print *, me, " CDFHUNTUT ", trim(fname), trim(varname), sum(cdfemis)
 
      if( maxval(cdfemis ) < 1.0e-10 ) cycle ! Likely no emiss in domain
 
@@ -231,44 +315,51 @@ if( index(fname, "Ship")>0 ) print *, me, " CDFHUNTTOP ", trim(fname)
                 cdfemis(debug_li, debug_lj), maxval(cdfemis)
       end if
 
-!call MPI_BARRIER(MPI_COMM_WORLD, INFO)
 
       sumcdfemis_loc(ic) = sumcdfemis_loc(ic) + &
           0.001 *  e_fact(isec,ic,iem) * sum( cdfemis(:,:) )
-!print "(a,4i4,3es12.3)", "CDFSUMing ", me, isec, ic, iem, e_fact(isec,ic,iem), sumcdfemis_loc(ic), sum( cdfemis(:,:) )
 
         do j = 1, ljmax
             do i = 1, limax
               if( cdfemis(i,j) > 1.0e-10 ) then
- !if( i_fdom(i) < 33 .and. j_fdom(j) < 15 .and. ic == 60 ) then
- ! Some bit of Germany found in Africa in MACC2 data. Correct to 
- if( glat(i,j) < 35 .and. j_fdom(j) < 15 .and. ic == 60 ) then
- !if( i_fdom(i) < 33 .and. j_fdom(j) < 15 ) then
-        write(*,"(3a,3i4,2f8.3,i3,9f12.4)")"AFRICA:",&
-           trim(fname)//":", &
-           trim(Country(ic)%name)//":"//trim(EMIS_FILE(iem)), ic, &
-            i_fdom(i),j_fdom(j),&
-             glon(i,j), glat(i,j), & 
-             isec, e_fact(isec,ic,iem), &
-                cdfemis(i, j), maxval(cdfemis)
-         ic = 224 ! Change to North Africa from IIASA system
- end if !========== AFRICA
-                call GridAllocate("GridCode"// trim ( EMIS_FILE(iem) ),&
-                  i,j,Country(ic)%icode,NCMAX, icode, ncmaxfound,GridEmisCodes,nGridEmisCodes,&
-                  debug_flag=.false.)
-                 GridEmis(isec,i,j,icode,iem) = &
-                   GridEmis(isec,i,j,icode,iem) + cdfemis(i,j) * e_fact(isec,ic,iem)
-                !if ( debug_proc .and. i == debug_li .and. j == debug_lj ) then
+                 ! Some bit of Germany found in Africa in MACC2 data. Correct to 
+                 if( glat(i,j) < 35 .and. j_fdom(j) < 15 .and. ic == 60 ) then
+                    !if( i_fdom(i) < 33 .and. j_fdom(j) < 15 ) then
+                    write(*,"(3a,3i4,2f8.3,i3,9f12.4)")"AFRICA:",&
+                         trim(fname)//":", &
+                         trim(Country(ic)%name)//":"//trim(EMIS_FILE(iem)), ic, &
+                         i_fdom(i),j_fdom(j),&
+                         glon(i,j), glat(i,j), & 
+                         isec, e_fact(isec,ic,iem), &
+                         cdfemis(i, j), maxval(cdfemis)
+                    ic = IC_NOA ! Change to North Africa from IIASA system
+                 end if !========== AFRICA
 
-                 ncc = nGridEmisCodes(i,j)
-                if ( DEBUG_GETEMIS .and. &
-                !if ( &
-                        debug_proc .and. i==debug_li .and. j==debug_lj ) then
-                    write(*,"(a,7i4,2es12.3,3x,99i3)")"CDF emis-alloc ",&
-                     i_fdom(i),j_fdom(j), isec, ic, icode, ncc, ncmaxfound, &
-                     cdfemis(i,j), GridEmis(isec,i,j,icode,iem), &
-                     (GridEmisCodes(i,j,icc),icc=1,ncc)
-                end if
+                 !merge into existing emissions           
+                 Cexist=.false.
+                 do i_gridemis=1,nGridEmisCodes(i,j)
+                    if(GridEmisCodes(i,j,i_gridemis)==Country(ic)%icode)then
+                       
+                       GridEmis(isec,i,j,i_gridemis,iem)=GridEmis(isec,i,j,i_gridemis,iem)&
+                            +cdfemis(i,j) * e_fact(isec,ic,iem)                      
+                       
+                       Cexist=.true.
+                       exit
+                    endif
+                 enddo
+                 if(.not.Cexist)then
+                    !country not included yet. define it now:
+                    nGridEmisCodes(i,j)=nGridEmisCodes(i,j)+1
+                    if(nGridEmisCodes(i,j)>NCMAX)then
+                       write(*,*)"Too many emitter countries in one gridemiscell: ",&
+                            me,i,j,nGridEmisCodes(i,j)
+                       call StopAll("To many countries in one gridemiscell ")
+                    endif
+                    i_gridemis=nGridEmisCodes(i,j)
+                    GridEmisCodes(i,j,i_gridemis)=Country(ic)%icode
+                    GridEmis(isec,i,j,i_gridemis,iem)=cdfemis(i,j) * e_fact(isec,ic,iem)
+                 endif
+                 
               end if
             end do !i
         end do !j
@@ -276,21 +367,106 @@ if( index(fname, "Ship")>0 ) print *, me, " CDFHUNTTOP ", trim(fname)
 
      call check(nf90_close(ncFileID))
 
-     CALL MPI_REDUCE(sumcdfemis_loc(:),sumcdfemis_iem(:),NLAND,&
+     CALL MPI_REDUCE(sumcdfemis_loc(1:NLAND),sumemis(1:NLAND),NLAND,&
                           MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,INFO)
 
-    if( debug_proc ) write(*,*) "FINISHED CDF "//trim(fname), me, sum(sumcdfemis_loc)
-    write(*,*) "FINISHED CDFLOC "//trim(fname), me, sum(sumcdfemis_loc)
-    if( MasterProc ) then
-       write(*,*) "FINISHED CDFM0 "//trim(fname), me, iem, sum(sumcdfemis_loc)
-       sumcdfemis(:,iem) = sumcdfemis(:,iem) + sumcdfemis_iem(:)
-       do ic = 1, NLAND
-         if ( sumcdfemis(ic,iem) > 1.0e-10 ) & 
-            write(*,"(a,i5,f12.3)") "CDFSUM "//trim(fname), ic, sumcdfemis(ic,iem)
-       end do
-    end if
-
   end subroutine EmisGetCdf
+
+
+
+
+  subroutine EmisGetASCII(iem, fname, emisname, sumemis_local, incl, nin, excl, nex)
+    implicit none
+    integer, intent(in) ::iem, nin, nex
+    character(len=*),intent(in) :: fname, emisname, incl(*),excl(*)
+    real,intent(inout), dimension(NLAND,NEMIS_FILE) :: sumemis_local ! Sum of emissions per country
+    integer ::i,j,k,n,ic,CC,isec,i_gridemis
+    logical :: Cexist,found
+    real :: tmpsec(NSECTORS),duml,dumh
+
+      call open_file(IO_EMIS,"r",fname,needed=.true.)
+      call CheckStop(ios,"EmisGetASCII: ios error in emission file")
+
+READEMIS: do   ! ************* Loop over emislist files *******************
+
+            read(unit=IO_EMIS,fmt=*,iostat=ios) CC,i,j, duml,dumh,  &
+                                    (tmpsec(isec),isec=1,NSECTORS)
+            if ( ios <  0 ) exit READEMIS            ! End of file
+            call CheckStop(ios > 0,"EmisGetASCII: ios error in emission file")
+
+            do ic=1,NLAND
+               if((Country(ic)%icode==CC))&
+                    goto 543
+            enddo 
+            write(unit=errmsg,fmt=*) &
+                   "COUNTRY CODE NOT RECOGNIZED OR UNDEFINED ", CC
+            call CheckStop(errmsg)
+            ic=0
+543         continue
+            
+            if ( i  <=  0 .or. i  > IIFULLDOM  .or.   & 
+                 j  <=  0 .or. j  > JJFULLDOM) cycle READEMIS
+            
+            i = i_local(i)     ! for SUB domain
+            j = j_local(j)     ! for SUB domain
+
+            if ( i  <=  0 .or. i  >  LIMAX .or.   & 
+                 j  <=  0 .or. j  >  LJMAX .or.   &
+                 ic <=  0 .or. ic >  NLAND .or.   &
+                 ic == IC_NAT              .or.   &  ! Excludes DMS
+                 (ic == IC_VUL .and. VOLCANOES_LL) )&! Excludes Volcanoes 
+                                                     ! from gridSOx. Read from
+                                                     ! VolcanoesLL.dat instead
+             cycle READEMIS
+
+             if ( trim ( emisname ) == "voc" ) tmpsec(11:11) = 0.0
+
+             !exclude or include countries
+             !could easily be optimized, by defining a country mask
+             if(nin>0)then
+                !1) check that country is in include list
+                found=find_index(Country(ic)%code ,incl(1:nin),first_only=.true.)
+                if(found==0)cycle READEMIS!do not include
+             endif
+             if(nex>0)then
+                !1) check that country is not in exclude list
+                found=find_index(Country(ic)%code ,excl(1:nex),first_only=.true.)
+                if(found>0)cycle READEMIS!exclude
+             endif
+
+             !merge into existing emissions           
+             Cexist=.false.
+             do i_gridemis=1,nGridEmisCodes(i,j)
+                if(GridEmisCodes(i,j,i_gridemis)==CC)then
+
+                   GridEmis(:,i,j,i_gridemis,iem)=GridEmis(:,i,j,i_gridemis,iem)&
+                        +e_fact(:,ic,iem) *  tmpsec(:)                  
+
+                   Cexist=.true.
+                   exit
+                endif
+             enddo
+             if(.not.Cexist)then
+                !country not included yet. define it now:
+                nGridEmisCodes(i,j)=nGridEmisCodes(i,j)+1
+                if(nGridEmisCodes(i,j)>NCMAX)then
+                   write(*,*)"EmisGetASCII: Too many emitter countries in one gridemiscell: ",&
+                        me,i,j,CC,(GridEmisCodes(i,j,i_gridemis),i_gridemis=1,NCMAX)
+                   call StopAll("To many countries in one gridemiscell ")
+                endif
+                i_gridemis=nGridEmisCodes(i,j)
+                GridEmisCodes(i,j,i_gridemis)=CC
+                GridEmis(:,i,j,i_gridemis,iem)=e_fact(:,ic,iem) *  tmpsec(:)
+             endif
+             sumemis_local(ic,iem)=sumemis_local(ic,iem)&
+                  +0.001*sum(e_fact(:,ic,iem)*tmpsec(:))!for diagnostics, mass balance
+
+        end do READEMIS 
+        
+        close(IO_EMIS)
+        ios = 0
+  end subroutine EmisGetASCII
+
 !-----------------------------------------------------------------------------
   subroutine EmisGet(iemis,emisname,IRUNBEG,JRUNBEG,GIMAX,GJMAX, &
                      globemis,globnland,globland,sumemis,        &

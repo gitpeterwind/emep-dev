@@ -15,8 +15,9 @@ use ChemFunctions_ml, only : S_RiemerN2O5
 use ChemGroups_ml,       only: PM10_GROUP, PMFINE_GROUP, SIA_GROUP, SS_GROUP, DUST_GROUP
 use CheckStop_ml,        only:  CheckStop
 use DerivedFields_ml,    only: d_2d, f_2d
+use EmisDef_ml,          only:  gridrcemis, gridrcroadd, KEMISTOP
 use EmisGet_ml,          only:  nrcemis, iqrc2itot  !DSRC added nrcemis
-use Emissions_ml,        only:  gridrcemis, gridrcroadd, SumSplitEmis, KEMISTOP
+use Emissions_ml,        only:  SumSplitEmis
 use ForestFire_ml,       only: Fire_rcemis, burning
 use Functions_ml,        only:  Tpot_2_T
 use ChemFields_ml,       only: SurfArea_um2cm3

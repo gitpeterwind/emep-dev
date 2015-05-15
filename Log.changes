@@ -153,6 +153,34 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+15th May  Peter  3005
+
+Start of reorganization of Emission setup.
+The new setup will use EMIS_SOURCE= 'Mixed' in config file.
+Then one can define ASCII, NetCDF/fractions and NetCDF/SnapEmis formats and mix 
+and add those. Use of exclude/include possible for each one.
+The ASCII gridXXX files must still be in the native grid (no interpolation).
+
+New reading of gridXXX that does not use "global" arrays.
+Avoids using "flat emissions".
+
+Does not work for monthly emissions yet. Also roaddust should be included in the scheme.
+
+Started also to define explicit path in the config file.
+The idea would be to remove all linking in the run.pl, so that the program "knows" 
+exactely what is used (for log/reruns).
+
+Wil need more cleanup etc.
+
+Also included changes in readfield_cdf used in EDIII.
+
+Should not modify results. The "old" scheme is still the default.
+
+Modified:
+EmisDef_ml.f90 Setup_1d_ml.f90 Solver.f90 ModelConstants_ml.f90 NetCDF_ml.f90 
+EmisGet_ml.f90 Emissions_ml.f90 config_EMEPSTD.nml
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 8th May  Peter  3004
 
 NetCDF_ml , ReadTimeCDF: can read units "years since...". 

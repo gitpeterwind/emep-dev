@@ -128,6 +128,9 @@ type(emep_debug), public, save :: DEBUG
   endtype emis_in
   type(emis_in), public, dimension(5) :: emis_inputlist = emis_in()
 
+  character (len=100), public :: EmisDir = '.'
+  character (len=100), public :: DataDir = '.'
+
 !-----------------------------------------------------------
 ! Convection factor - reduces convective fluxes (which can be
 ! too high in some NWPs)
@@ -601,6 +604,7 @@ subroutine Config_ModelConstants(iolog)
      ,BGND_CH4  & ! Can reset background CH4 values 
      ,EMIS_SOURCE, EMIS_TEST, EMIS_OUT & 
      ,emis_inputlist &
+     ,DataDir,EmisDir &
      ,FLUX_VEGS  & ! Allows user to add veg categories for eg IAM ouput
      ,VEG_2dGS & ! Allows 2d maps of growing seasons
      ,VEG_2dGS_Params & ! Allows 2d maps of growing seasons
@@ -633,6 +637,7 @@ subroutine Config_ModelConstants(iolog)
         end do
        
     end if
+
 
     if ( MasterProc )  then
      write(*, * ) "NAMELIST IS "

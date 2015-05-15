@@ -38,11 +38,15 @@
 !  AERO%EQUILIB          = 'MARS ',      ! MARS, MARS_2900, GEOSCHEM, EQSAM, or EMEP
 !  AERO%NSIZE etc... see ModelConstants
 !------------------------------
-  EMIS_SOURCE           = 'emislist', ! 'emislist' or 'CdfFractions'
+  EMIS_SOURCE           = 'emislist', ! 'emislist' or 'CdfFractions'or 'Mixed'
   EMIS_TEST             = 'None',     ! 'None' or 'CdfSnap' 
 !------------------------------
 ! IN TESTING:
-! If EMiS_TEST set, then the emis_inputlists will be used.
+! If EMIS_SOURCE= 'Mixed', then the emis_inputlists will be used.
+  DataDir = '/global/work/mifapw/emep',
+  EmisDir = 'DataDir/Data',
+!  emis_inputlist(1)%name     = 'EmisDir/Emis_GLOB_05.nc', !example of Fractions type
+!  emis_inputlist(1)%name     = 'EmisDir/temp/gridPOLL', !example of ASCII type (POLL values must be with lower case letters)
 ! Below, one can either include or exclude, not both
 ! Only recognised group now is EUMACC2
 ! (1) From MACC2 7km:
