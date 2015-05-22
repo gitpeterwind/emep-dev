@@ -153,7 +153,7 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-22nd May  Peter  3006-7
+22nd May  Peter  3006-8
 
 Emissions_ml: Added posibility to have monthly emissions ain the "Mixed" EMIS_SOURCE.
 Combining monthly and other emissions not tested.
@@ -163,7 +163,8 @@ GridValues_ml: lb2ij added a case when longitude >360.
 NetCDF_ml: interpolate from all longitudes when only a part of the Globe is in the input grid
 ModelConstants_ml, Met_ml: increased the size of some strings to allow for long pathes.
 
-Removed an ekstra space in ZCM_EmChem09ecom/EMISSPLIT/emissplit.defaults.omco
+Removed an exstra space in ZCM_EmChem09ecom/EMISSPLIT/emissplit.defaults.omco
+and renamed rempm25 -> remppm25, rempmco -> remppmco
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15th May  Peter  3005
