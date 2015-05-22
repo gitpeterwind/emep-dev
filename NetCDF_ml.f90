@@ -3038,6 +3038,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
      Rlat=Rlat*scalefactors(1)+scalefactors(2)
   endif
 
+!Should define longitude in the range [-180, 180]?
 
   if ( debug ) write(*,*) 'ReadCDF lon bounds',minval(Rlon),maxval(Rlon)
   if ( debug ) write(*,*) 'ReadCDF lat bounds',minval(Rlat),maxval(Rlat)
@@ -3109,7 +3110,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
            call ReadField_CDF('SurfacePressure.nc','surface_pressure',&
                 Psurf_ref,current_date%month,needed=.true.,interpol='zero_order',debug_flag=debug_flag)
         else
-           call CheckStop(trim(name)/='k'.and.trim(name)/='N'.and.trim(name)/='lev',"vertical coordinate (k, lev or N) not found")
+           call CheckStop(trim(name)/='k'.and.trim(name)/='N'.and.trim(name)/='lev'.and.trim(name)/='height',"vertical coordinate (k, lev, N or height) not found")
         endif
      endif
 
@@ -3140,7 +3141,12 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
              maxlon, minlon, maxlat, minlat
      end if
 
-     if(dloni>0)then
+     if(mod(nint(100.*(Rlon(dims(1))+(Rlon(2)-Rlon(1))-Rlon(1))),36000)/=0)then
+        !the grid does not cover 360 degrees
+        if(MasterProc.and.debug)write(*,*)'Grid does not cover 360 degrees ', Rlon(1),Rlon(dims(1))
+        imin=1!cover everything available
+        imax=dims(1)!cover everything available
+     else if(dloni>0)then
         !floor((minlon-Rlon(1))*dloni)<=number of gridcells between minlon and Rlon(1)
         !mod(floor((minlon-Rlon(1))*dloni)+dims(1),dims(1))+1 = get a number in [1,dims(1)]
         imin=mod( floor((minlon-Rlon(1))*dloni)+dims(1),dims(1))+1!NB lon  -90 = +270
@@ -3164,7 +3170,6 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
         jmin=max(1,min(dims(2),floor((maxlat-Rlat(1))*dlati)))!maxlat is closest to Rlat(1)
         jmax=max(1,min(dims(2),ceiling((minlat-Rlat(1))*dlati)+1))
      endif
-
 
      if(maxlat>85.0.or.minlat<-85.0)then
         !close to poles
@@ -3522,7 +3527,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
                             i,j,k,me,minlon,maxlon,minlat,maxlat,glon(i,j),glat(i,j), &
                             Ivalues(ijk),Ndiv
                        call CheckStop("Interpolation error")
-                    else
+                    else                       
                        Rvar(ijk)=UnDef
                     endif
                  else

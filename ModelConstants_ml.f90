@@ -121,7 +121,7 @@ type(emep_debug), public, save :: DEBUG
 
   !/ Emissions file treatment. Dims more than used.
   type, public :: emis_in
-    character(len=50) :: name = "NOTSET" ! e.g. POD1_IAM_DF
+    character(len=150) :: name = "NOTSET" ! e.g. POD1_IAM_DF
     integer :: Nlist=0, Nincl=0, Nexcl=0
     character(len=10), dimension(90) ::  incl = "-"
     character(len=10), dimension(90) ::  excl = "-"

@@ -1399,7 +1399,11 @@ subroutine GridRead(meteo,cyclicgrid)
 
     else  if(projection=='lon lat')then! lon-lat grid
 
-       xr2=(gl2-glon_fdom(1,1))/(glon_fdom(2,1)-glon_fdom(1,1))+1
+       if(gl2-glon_fdom(1,1) <360.0)then
+          xr2=(gl2-glon_fdom(1,1))/(glon_fdom(2,1)-glon_fdom(1,1))+1
+       else          
+           xr2=(gl2-360.0-glon_fdom(1,1))/(glon_fdom(2,1)-glon_fdom(1,1))+1
+      endif
        if(xr2<0.5)xr2=xr2+360.0/(glon_fdom(2,1)-glon_fdom(1,1))
        yr2=(gb2-glat_fdom(1,1))/(glat_fdom(1,2)-glat_fdom(1,1))+1
 

@@ -1241,9 +1241,9 @@ contains
             if(MasterProc)write(6,*)'Sand and clay fractions from ',fname
             
             call ReadField_CDF(fname,'clay',clay_frac,1,  &
-             interpol='conservative',needed=.true.,debug_flag=.true.)
+             interpol='conservative',needed=.true.,debug_flag=.false.)
             call ReadField_CDF(fname,'sand',sand_frac,1,  &
-                 interpol='conservative',needed=.true.,debug_flag=.true.)
+                 interpol='conservative',needed=.true.,debug_flag=.false.)
 
          else
             !use grid specific data
@@ -2772,7 +2772,7 @@ subroutine Check_Meteo_Date
         call check(nf90_get_var(ncFileID,timeVarID,nseconds,start=(/ihh/),count=(/n1/)))
         call nctime2idate(ndate,nseconds(1))
       endif
-      write(*,*)ihh,METSTEP,nhour_first,ndate(4)
+      if(DEBUG_MET)write(*,*)'ihh,METSTEP,nhour_first,ndate(4) ',ihh,METSTEP,nhour_first,ndate(4)
       call CheckStop(mod((ihh-1)*METSTEP+nhour_first,24),ndate(4),&
                      date2string("Met_ml: wrong hour YYYY-MM-DD hh",ndate))
     enddo
