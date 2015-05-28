@@ -504,7 +504,7 @@ private
         Is3D    =.false.
         if(outclass=="MISC") then
           select case(outtyp)
-          case("COLUMN")
+          case('COLUMN','COLUMN:SPEC','COLUMN:GROUP')
             tag_name(1)= "COLUMN_"//trim(outname)//"_"//trim(outdim)
           case('AOD','AOD:TOTAL','AOD:SPEC','AOD:SHL','AOD:GROUP',&
                'EXT','EXT:TOTAL','EXT:SPEC','EXT:SHL','EXT:GROUP')

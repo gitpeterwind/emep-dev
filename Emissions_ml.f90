@@ -96,7 +96,6 @@ use Timefactors_ml,   only: &
     ,fac_ehh24x7 ,fac_emm, fac_edd, timefac & ! time-factors
     ,Read_monthly_emis_grid_fac &
     ,GridTfac !array with monthly gridded time factors
-use Volcanos_ml
 
 implicit none
 private
@@ -812,14 +811,6 @@ contains
             call EmisOut("Cdf",iem,nGridEmisCodes,GridEmisCodes,GridEmis(:,:,:,:,iem))
     enddo
 
-    !-------------------------------------------------------------------------
-    ! Broadcast volcanoe info derived in EmisGet 
-    CALL MPI_BCAST(nvolc,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
-    CALL MPI_BCAST(i_volc,4*nvolc,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
-    CALL MPI_BCAST(j_volc,4*nvolc,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
-    CALL MPI_BCAST(emis_volc,8*nvolc,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
-
-
     !**  Conversions:
     ! The emission-data file are so far in units of 
     ! tonnes per grid-square. The conversion factor from tonnes per 50*50km2
@@ -863,13 +854,6 @@ contains
                roaddust_emis_pot(i,j,ic,iem) * tonne_to_kgm2s * xm2(i,j)
        endforall
     endif !road dust
-
-
-    !if ( VOLCANOES ) then
-    ! Read  Volcanos.dat or VolcanoesLL.dat to get volcano height 
-    ! and magnitude in the case of VolcanoesLL.dat
-    call VolcGet(height_volc)
-    !endif ! VOLCANOES
 
     err1 = 0
     if(MasterProc) then
@@ -1293,8 +1277,6 @@ endsubroutine consistency_check
       if(MYDEBUG.and.debug_proc) &    ! emis sum kg/m2/s
         call datewrite("SnapSum, kg/m2/s:"//trim(EMIS_FILE(iemCO)), &
               (/ SumSnapEmis(debug_li,debug_lj,iemCO)  /) )
-
-      call Set_Volc !set hourly volcano emission(rcemis_volc0)
   endif ! hourchange 
 
   ! We now scale gridrcemis to get emissions in molecules/cm3/s
@@ -1325,9 +1307,6 @@ endsubroutine consistency_check
     if(DEBUG_ROADDUST.and.debug_proc) &
       write(*,*)"After the unit scaling",gridrcroadd(1:2,DEBUG_li,DEBUG_lj)
   endif
-
- ! Scale volc emissions to get emissions in molecules/cm3/s (rcemis_volc)
-  call Scale_Volc
 endsubroutine EmisSet
 !***********************************************************************
 subroutine newmonth

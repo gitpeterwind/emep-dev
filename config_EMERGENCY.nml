@@ -6,18 +6,20 @@
 &ModelConstants_config
   EXP_NAME              = 'EMERGENCY',
   MY_OUTPUTS            = 'EMERGENCY',
+! MY_OUTPUTS            = 'INVERSION',
 !------------------------------
 !USES system started June 2013
   USES%testname         = 'EMERGENCY',
   USES%FOREST_FIRES     = F,
   USES%EMISSTACKS       = F,         ! Reads PointSources file
+  USES%DEGREEDAY_FACTORS = F,
+  USES%GRIDDED_EMIS_MONTHLY_FACTOR = T, !
   USES%PlumeMethod      = 'PVDI',    ! default PVDI, possible: NILU, ASMI, PVDI
-  DEBUG%GLOBBC          = F,
-  DEBUG%HOURLY_OUTPUTS  = F,
+  USES%PFT_MAPS         = T,         ! PFT LAI tests
+  USES%n2o5HydrolysisMethod = 'SmixTen', !  "Gamma:0.002' ! 'OrigRiemer'! =ACP2012 EMEP implementation
 !------------------------------
   USE_SOILWATER         = F,          ! Uses SMI from meteo data
   USE_CONVECTION        = F,
-  USES%DEGREEDAY_FACTORS = F,
   USE_SEASALT           = T,
   USE_AIRCRAFT_EMIS     = F,          ! Needs global file, see manual
   USE_LIGHTNING_EMIS    = F,          ! 
@@ -40,14 +42,13 @@
 !------------------------------
   SELECT_LEVELS_HOURLY  = T,          ! hourly output flag Also for FORECAST, 3DPROFILES
   FORECAST              = T,
-  USE_EMERGENCY         = T,          ! Used for FORECASTs usually, EMEP2010
+  USE_ASH               = T,          ! Used for FORECASTs and Status 2010
   ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
   USE_AOD               = T,          ! Used for FORECASTs usually
-!-------- Sub domain (x0,x1,y0,y1)
-!!RUNDOMAIN =   1, 201,  1, 161,      ! EMEP-CWF, GEMS 0.25 domain
-!!RUNDOMAIN =   1, 301, 26, 221,      ! EMEP-CWF, GEMS 0.25 extended domain
-!!RUNDOMAIN =   1, 321,  1, 221,      ! EMEP-CWF, MACC 0.20 domain
-!!RUNDOMAIN =   1, 301,  1, 369,      ! EMEP-CWF, MACC 14km domain
+!------------------------------
+  DEBUG%GLOBBC          = F,
+  DEBUG%HOURLY_OUTPUTS  = F,
+  DEBUG%DERIVED         = F,
 &end
 &Nest_config
 !-------- Nesting MODEs
@@ -67,9 +68,10 @@
   outdate          = $outdate,                ! 1st,2nd CWF dump dates
 &end
 &Fire_config
-  GFED_PATTERN="$GFED",
-  FINN_PATTERN="$FINN",
-  GFAS_PATTERN="$GFAS",
+  GFED_PATTERN="$GFED",#GFED
+  FINN_PATTERN="$FINN",#FINN
+  GFAS_PATTERN="$GFAS",#GFAS
+  need_poll = F,        ! Avoids problems with missing ISOP in later FINN data
 &end
 &ExternalBICs_config
   USE_EXTERNAL_BIC  = F,              ! .false. to deactivate

@@ -61,7 +61,7 @@ use ModelConstants_ml, only: &
   ,MasterProc &
   ,SOURCE_RECEPTOR &
   ,AERO         & ! for DpgV (was diam) -  aerosol MMD (um)
-  ,USE_AOD,USE_EMERGENCY,DEBUG_EMERGENCY &
+  ,USE_AOD,DEBUG_COLSRC &
   ,PT           &
   ,FORECAST     & ! only dayly (and hourly) output on FORECAST mode
   ,NTDAY        & ! Number of 2D O3 to be saved each day (for SOMO)
@@ -375,12 +375,21 @@ subroutine Define_Derived()
                   ! group_calc gets the unit conversion factor from Group_Units
         unitscale = Units_Scale(outunit, iadv, unittxt)
         if(MasterProc) write(*,*)"FRACTION UNITSCALE ", unitscale
-      case('COLUMN')
+      case('COLUMN','COLUMN:SPEC')
      !COL  'NO2',          'molec/cm2' ,'k20','COLUMN'   ,'MISC' ,4,
-        iout = find_index(outname, species_adv(:)%name )
-        call CheckStop(iout<0,sub//"OutputFields COLUMN not found "//trim(outname))
+        iout=find_index(outname, species_adv(:)%name )
+        call CheckStop(iout<0,sub//"OutputFields "//trim(outtyp)//&
+                              " not found "//trim(outname))
         unitscale = Units_Scale(outunit, iout, unittxt)
-        outtyp = "COLUMN"
+        outtyp = "COLUMN:SPEC"
+        subclass = outdim   ! k20, k16...
+        outname = "COLUMN_" // trim(outname) // "_" // trim(subclass)
+      case('COLUMN:GROUP')
+        iout=find_index(outname,chemgroups(:)%name)
+        call CheckStop(iout<0,sub//"OutputFields "//trim(outtyp)//&
+                              " not found "//trim(outname))
+        unitscale = Units_Scale(outunit, -1, unittxt)
+        outtyp = "COLUMN:GROUP"
         subclass = outdim   ! k20, k16...
         outname = "COLUMN_" // trim(outname) // "_" // trim(subclass)
       case('AOD','AOD:TOTAL','AOD:SPEC','AOD:SHL','AOD:GROUP',&
@@ -424,6 +433,12 @@ subroutine Define_Derived()
       select case(outtyp)
       case("SPEC")  ! Simple species
         iadv = find_index(outname, species_adv(:)%name )
+  !-- Volcanic Emission: Skipp if not found
+        if(outname(1:3)=="ASH")then
+          if(MasterProc.and.DEBUG_COLSRC)&
+            write(*,"(A,1X,I0,':',A)")'ColumSource: spec ',iadv,trim(outname)
+          if(iadv<1)cycle
+        endif
         call CheckStop(iadv<0,sub//"OutputFields Species not found "//trim(outname))
         iout = iadv
         unitscale = Units_Scale(outunit, iadv, unittxt, volunit)
@@ -438,10 +453,10 @@ subroutine Define_Derived()
         volunit = .true.
       case("GROUP") ! groups of species
         igrp = find_index(outname, chemgroups(:)%name )
-  !-- Emergency: Volcanic Eruption. Skipp groups if not found
+  !-- Volcanic Emission: Skipp if not found
         if(outname(1:3)=="ASH")then
-          if(MasterProc.and.USE_EMERGENCY.and.DEBUG_EMERGENCY)&
-            write(*,"(A,1X,I0,':',A)")'EMERGENCY: group ',igrp,trim(outname)
+          if(MasterProc.and.DEBUG_COLSRC)&
+            write(*,"(A,1X,I0,':',A)")'ColumSource: group ',igrp,trim(outname)
           if(igrp<1)cycle
         endif
         call CheckStop(igrp<0,sub//"OutputFields Group not found "//trim(outname))
@@ -547,6 +562,7 @@ subroutine Define_Derived()
     !    index,f2d, dt_scale,scale, avg,iotype,Is3D)
 
   do  ind = 1, NEMIS_BioNat
+    if(EMIS_BioNat(ind)(1:5)=="ASH_L")cycle   ! skip ASH_LxxByy for AshInversion
     dname = "Emis_mgm2_BioNat" // trim(EMIS_BioNat(ind) )
     call AddNewDeriv( dname, "NatEmis", "-", "-", "mg/m2", &
                  ind , -99, T ,    1.0e6,     F, IOU_DAY )
@@ -1230,9 +1246,8 @@ subroutine Derived(dt,End_of_Day)
 !                   n, trim(f_2d(n)%name), d_2d(n,debug_li,debug_lj,IOU_INST)
 !            Nothing to do - all set in My_DryDep
 
-    case ( "COLUMN" ) ! unit conversion factor stored in f_2d(n)%scale
-      read(unit=f_2d(n)%subclass,fmt="(a1,i2)") txt2, klow ! Connvert e.g. k20 to klow=20
-!if(MasterProc) print *, "COLUMN TEST subclass ", f_2d(n)%subclass, f_2d(n)%index, klow
+    case ("COLUMN","COLUMN:SPEC") ! unit conversion factor stored in f_2d(n)%scale
+      read(f_2d(n)%subclass,"(a1,i2)") txt2, klow ! Connvert e.g. k20 to klow=20
       do j = 1, ljmax
         do i = 1, limax
           k = 1
@@ -1254,7 +1269,9 @@ subroutine Derived(dt,End_of_Day)
         enddo !i
       enddo !j
       if(debug_flag) write(*,"(a18,es12.3)") &
-        "COLUMN d2_2d",d_2d(n,debug_li,debug_lj,IOU_INST)*f_2d(n)%scale
+        "COLUMN:SPEC d2_2d",d_2d(n,debug_li,debug_lj,IOU_INST)*f_2d(n)%scale
+    case("COLUMN:GROUP")
+      call CheckStop("COLUMN:GROUP not yet supported")
 
     case ( "EcoFrac" ) ! ODD TO HAVE FRAC AND AREA BELOW:"ECOAREA" )
 
@@ -1626,7 +1643,7 @@ subroutine Derived(dt,End_of_Day)
 
   enddo
   first_call = .false.
-endsubroutine Derived
+end subroutine Derived
 !=========================================================================
 
     subroutine DerivedProds(text,dt)
@@ -1846,4 +1863,4 @@ endsubroutine group_calc
     end subroutine write_debug
 
  !=========================================================================
-endmodule Derived_ml
+end module Derived_ml

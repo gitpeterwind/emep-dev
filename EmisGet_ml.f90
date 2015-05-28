@@ -29,7 +29,6 @@ use NetCDF_ml, only  : ReadField_CDF  !CDF_SNAP
 
 use Par_ml,            only: MAXLIMAX, MAXLJMAX, limax, ljmax, me
 use SmallUtils_ml,     only: wordsplit, find_index
-use Volcanos_ml
 use netcdf,            only: NF90_OPEN,NF90_NOERR,NF90_NOWRITE,&
                              NF90_INQUIRE,NF90_INQUIRE_VARIABLE,NF90_CLOSE
 
@@ -468,16 +467,14 @@ READEMIS: do   ! ************* Loop over emislist files *******************
   end subroutine EmisGetASCII
 
 !-----------------------------------------------------------------------------
-  subroutine EmisGet(iemis,emisname,IRUNBEG,JRUNBEG,GIMAX,GJMAX, &
-                     globemis,globnland,globland,sumemis,        &
-                     globemis_flat,flat_globnland,flat_globland)
-
+subroutine EmisGet(iemis,emisname,IRUNBEG,JRUNBEG,GIMAX,GJMAX, &
+                   globemis,globnland,globland,sumemis,        &
+                   globemis_flat,flat_globnland,flat_globland)
 !.......................................................................
 !  DESCRIPTION:
 !  Reads in emissions from one file, specified by iemis. 
 !  The arrays read in here are the global arrays (allocatable)
 !.......................................................................
-
   !--arguments
   integer, intent(in)                     :: iemis     ! emis index 
   character(len=*), intent(in)            :: emisname  ! emission name
@@ -503,181 +500,140 @@ READEMIS: do   ! ************* Loop over emislist files *******************
   integer, save :: ncmaxfound = 0          ! Max no. countries found in grid
   integer, save :: flat_ncmaxfound = 0     ! Max no. countries found in grid
                                            ! including flat emissions
-      globemis   (:,:,:,:) = 0.0
-      globemis_flat(:,:,:) = 0.0
+  globemis   (:,:,:,:) = 0.0
+  globemis_flat(:,:,:) = 0.0
 
-      !if (DEBUG_GETEMIS) write(unit=6,fmt=*) "Called EmisGet with index, name", &
-      !     iemis, trim(emisname)
-      write( *,*) "Called EmisGet with index, name", &
-           iemis, trim(emisname)
-      fname = "emislist." // emisname
-      call open_file(IO_EMIS,"r",fname,needed=.true.)
-      call CheckStop(ios,"EmisGet: ios error in emission file")
+  !if (DEBUG_GETEMIS) write(unit=6,fmt=*) "Called EmisGet with index, name", &
+  !     iemis, trim(emisname)
+  write( *,*) "Called EmisGet with index, name", &
+       iemis, trim(emisname)
+  fname = "emislist." // emisname
+  call open_file(IO_EMIS,"r",fname,needed=.true.)
+  call CheckStop(ios,"EmisGet: ios error in emission file")
 
-      if (trim ( emisname ) == "nh3" ) dknh3_agr=0.0 ! NH3Emis experimental
+  if(emisname=="nh3") dknh3_agr=0.0 ! NH3Emis experimental
  
 
 READEMIS: do   ! ************* Loop over emislist files *******************
+    read(unit=IO_EMIS,fmt=*,iostat=ios) iic,i,j, duml,dumh,  &
+                            (tmpsec(isec),isec=1,NSECTORS)
 
-            read(unit=IO_EMIS,fmt=*,iostat=ios) iic,i,j, duml,dumh,  &
-                                    (tmpsec(isec),isec=1,NSECTORS)
+    if( DEBUG_GETEMIS .and. i==DEBUG%IJ(1) .and. j==DEBUG%IJ(2) ) write(*,*) &
+        "DEBUG GetEmis "//trim(emisname) // ":" , iic, duml,dumh
+    !if( j== DEBUG%IJ(2) ) write(*,*) &
+    !    "DEBUG GetEmis "//trim(emisname) // ":" , iic, duml,dumh
+    if ( ios <  0 ) exit READEMIS            ! End of file
+    call CheckStop(ios > 0,"EmisGet: ios error in emission file")
 
-            if( DEBUG_GETEMIS .and. i==DEBUG%IJ(1) .and. j==DEBUG%IJ(2) ) write(*,*) &
-                "DEBUG GetEmis "//trim(emisname) // ":" , iic, duml,dumh
-            !if( j== DEBUG%IJ(2) ) write(*,*) &
-            !    "DEBUG GetEmis "//trim(emisname) // ":" , iic, duml,dumh
-            if ( ios <  0 ) exit READEMIS            ! End of file
-            call CheckStop(ios > 0,"EmisGet: ios error in emission file")
+    ! Check if country code in emisfile (iic) is in the country list
+    ! from Countries_ml, i.e. corresponds to numbering index ic
 
-            ! Check if country code in emisfile (iic) is in the country list
-            ! from Countries_ml, i.e. corresponds to numbering index ic
+    do ic=1,NLAND
+      if((Country(ic)%icode==iic))goto 543
+    enddo 
+    write(errmsg,*)"COUNTRY CODE NOT RECOGNIZED OR UNDEFINED ",iic
+    call CheckStop(errmsg)
+    ic=0
+543 continue
 
-            do ic=1,NLAND
-               if((Country(ic)%icode==iic))&
-                    goto 543
-            enddo 
-            write(unit=errmsg,fmt=*) &
-                   "COUNTRY CODE NOT RECOGNIZED OR UNDEFINED ", iic
-            call CheckStop(errmsg)
-            ic=0
-543         continue
+    i = i-IRUNBEG+1                   ! for RESTRICTED domain
+    j = j-JRUNBEG+1                   ! for RESTRICTED domain
+    if(i <1 .or. i >GIMAX .or.      & 
+       j <1 .or. j >GJMAX .or.      &
+       ic<1 .or. ic>NLAND .or.      &
+       ic==IC_NAT         .or.      & ! Excludes DMS
+      (ic==IC_VUL.and.VOLCANOES_LL))& ! Excludes Volcanoes from gridSOx. 
+                                      ! Read from columnsource_*.csv instead
+      cycle READEMIS
 
-            i = i-IRUNBEG+1     ! for RESTRICTED domain
-            j = j-JRUNBEG+1     ! for RESTRICTED domain
-
-            if ( i  <=  0 .or. i  >  GIMAX .or.   & 
-                 j  <=  0 .or. j  >  GJMAX .or.   &
-                 ic <=  0 .or. ic >  NLAND .or.   &
-                 ic == IC_NAT              .or.   &  ! Excludes DMS
-                 (ic == IC_VUL .and. VOLCANOES_LL) )&! Excludes Volcanoes 
-                                                     ! from gridSOx. Read from
-                                                     ! VolcanoesLL.dat instead
-             cycle READEMIS
-
-             ! Ship emissions
-
-             if ( Country(ic)%is_sea ) then    ! ship emissions
-
-              ! ..........................................................
-              ! Generate new land allocation in 50 km grid for FLAT 
-              ! EMISSIONS (ships). First, we check if country "ic"
-              ! has already  been found within that grid. If not, then ic is
-              ! added to flat_landcode and flat_nlandcode increased by one.
+    ! Ship emissions
+    if(Country(ic)%is_sea)then       ! ship emissions
+      ! ..........................................................
+      ! Generate new land allocation in 50 km grid for FLAT 
+      ! EMISSIONS (ships). First, we check if country "ic"
+      ! has already  been found within that grid. If not, then ic is
+      ! added to flat_landcode and flat_nlandcode increased by one.
    
-              ! Test that ship emissions are only in sector ISNAP_SHIP
-               do isec=1,(ISNAP_SHIP-1) 
-                  if ( MasterProc.and.tmpsec(isec) /= 0) &
-                     write(*,"(a,3i4,i3,f12.4)")"SEA"//trim(emisname), &
-                        iic,i,j,isec,tmpsec(isec)
+      ! Test that ship emissions are only in sector ISNAP_SHIP
+      do isec=1,(ISNAP_SHIP-1) 
+        if(MasterProc.and.tmpsec(isec)/=0) &
+           write(*,"(a,3i4,i3,f12.4)")"SEA"//trim(emisname), &
+              iic,i,j,isec,tmpsec(isec)
 
-                  call CheckStop(tmpsec(isec) /= 0,  &
-                   "EmisGet: NOT FLAT EMISSIONS - check SEAFIX_GEA_NEEDED comments in ModelConstants_ml")
-               enddo
-               do isec=ISNAP_SHIP+1,NSECTORS
-                  if ( MasterProc.and.tmpsec(isec) /= 0) &
-                     write(*,"(a,3i4,i3,f12.4)")"SEA"//trim(emisname), &
-                        iic,i,j,isec,tmpsec(isec)
-                  !call CheckStop(tmpsec(isec) /= 0,  &
-                  !      "EmisGet: NOT FLAT EMISSIONS")
-               enddo
-              ! end test
+        call CheckStop(tmpsec(isec)/=0,"EmisGet: NOT FLAT EMISSIONS -&
+          & check SEAFIX_GEA_NEEDED comments in ModelConstants_ml")
+      enddo
+      do isec=ISNAP_SHIP+1,NSECTORS
+        if(MasterProc.and.tmpsec(isec)/=0) &
+           write(*,"(a,3i4,i3,f12.4)")"SEA"//trim(emisname), &
+              iic,i,j,isec,tmpsec(isec)
+        !call CheckStop(tmpsec(isec)/=0,"EmisGet: NOT FLAT EMISSIONS")
+      enddo
+      ! end test
 
-               call GridAllocate("FLat",i,j,Country(ic)%icode,FNCMAX, flat_iland, &
-                   flat_ncmaxfound,flat_globland,flat_globnland)
-              ! ...................................................
-              ! Assign e_fact corrected emissions to global FLAT 
-              ! emission matrices.
-              ! ...................................................
+      call GridAllocate("FLat",i,j,Country(ic)%icode,FNCMAX, flat_iland, &
+           flat_ncmaxfound,flat_globland,flat_globnland)
+      ! ...................................................
+      ! Assign e_fact corrected emissions to global FLAT 
+      ! emission matrices.
+      ! ...................................................
 
-               globemis_flat(i,j,flat_iland) = globemis_flat(i,j,flat_iland) &
-                     + e_fact(ISNAP_SHIP,ic,iemis) * tmpsec(ISNAP_SHIP)
+      globemis_flat(i,j,flat_iland) = globemis_flat(i,j,flat_iland) &
+             + e_fact(ISNAP_SHIP,ic,iemis) * tmpsec(ISNAP_SHIP)
 
-              !......................................................
-              !        Sum over all sectors, store as Ktonne:
-              !......................................................
+      !......................................................
+      !        Sum over all sectors, store as Ktonne:
+      !......................................................
+      sumemis(ic,iemis) = sumemis(ic,iemis)   &
+           + 0.001 *  e_fact(ISNAP_SHIP,ic,iemis) * tmpsec(ISNAP_SHIP)
 
-                 sumemis(ic,iemis) = sumemis(ic,iemis)   &
-                      + 0.001 *  e_fact(ISNAP_SHIP,ic,iemis) * tmpsec(ISNAP_SHIP)
-
-                cycle READEMIS
-             endif !ship emissions            
+      cycle READEMIS
+    endif !ship emissions            
 
 
-              !.......................................................
-              !  Volcanos
-              !.......................................................
+    !.......................................................
+    !  Volcanos
+    !.......................................................
+    if(emisname=="sox".and.ic==IC_VUL)&
+      call CheckStop("Volcanic sox emissions from emislist.sox &
+        &are no longer supported. Read them from columnsource_*.csv instead")
 
-              if ( trim ( emisname ) == "sox" ) then
-                if (ic == IC_VUL) then
-                  volc_no=volc_no+1
-                  if (DEBUG_GETEMIS) write(*,*)'Volcano no. ',volc_no
-                  i_volc(volc_no)=i
-                  j_volc(volc_no)=j
+    ! For VOC natural and agricultur emissions (managed forests) 
+    ! set to  zero
 
-                  emis_volc(volc_no) = tmpsec(ISNAP_NAT) *   &
-                                       e_fact(ISNAP_NAT,IC_VUL,iemis)
-                  nvolc=volc_no
-
-                  call CheckStop(nvolc>NMAX_VOLC,"EMISGET, nvolc>NMAX_VULC")
-
-                  write(*,*)'Found ',nvolc,' volcanoes on sox file'
-
-                  sumemis(IC_VUL,iemis) = sumemis(IC_VUL,iemis)        &
-                                          + 0.001 * emis_volc(volc_no)
-                   cycle READEMIS ! do not want to count volcano "landcode"
-                endif ! ic
-             endif ! so2
-
-             !..............................................................
-             ! end Volcanoes
-             !..............................................................
-
-
-             !  For VOC natural and agricultur emissions (managed forests) 
-             !  set to  zero
-
-             if ( trim ( emisname ) == "voc" ) tmpsec(11:11) = 0.0
+    if(emisname=="voc") tmpsec(11:11) = 0.0
   
-            ! NH3emis (FUTURE/EXPERIMENTAL for NMR-NH3 project)
-            ! For NH3 activity data, set 'static emissions' to zero
-            ! For northwestern Europe, read in Sector_NH3Emis.txt in run.pl
-            ! Traffic emis are zero in the Danish emissions
-             if (NH3EMIS_VAR .and.  trim ( emisname ) == "nh3" .and.&
-                 ic == IC_NMR) then
-                dknh3_agr=dknh3_agr+ tmpsec(ISNAP_AGR)+tmpsec(ISNAP_TRAF)
-                tmpsec(ISNAP_AGR:ISNAP_AGR) = 0.0
-                tmpsec(ISNAP_TRAF:ISNAP_TRAF) = 0.0
-             endif
+    ! NH3emis (FUTURE/EXPERIMENTAL for NMR-NH3 project)
+    ! For NH3 activity data, set 'static emissions' to zero
+    ! For northwestern Europe, read in Sector_NH3Emis.txt in run.pl
+    ! Traffic emis are zero in the Danish emissions
+    if(NH3EMIS_VAR.and.emisname== "nh3".and.ic==IC_NMR) then
+      dknh3_agr=dknh3_agr+ tmpsec(ISNAP_AGR)+tmpsec(ISNAP_TRAF)
+      tmpsec(ISNAP_AGR:ISNAP_AGR) = 0.0
+      tmpsec(ISNAP_TRAF:ISNAP_TRAF) = 0.0
+    endif
 
 
-             ! ..........................................................
-             ! generate new land allocation in 50 km grid. First, we check if
-             ! country "ic" has already  been found within that grid. If not,
-             ! then ic is added to landcode and nlandcode increased by one.
+    ! ..........................................................
+    ! generate new land allocation in 50 km grid. First, we check if
+    ! country "ic" has already  been found within that grid. If not,
+    ! then ic is added to landcode and nlandcode increased by one.
+    call GridAllocate("SNAP"//trim(emisname),i,j,Country(ic)%icode,NCMAX, &
+                         iland,ncmaxfound,globland,globnland)
 
-              call GridAllocate("SNAP"// trim ( emisname ),i,j,Country(ic)%icode,NCMAX, &
-                                 iland,ncmaxfound,globland,globnland)
+    globemis(:,i,j,iland)=globemis(:,i,j,iland)+e_fact(:,ic,iemis)*tmpsec(:)
 
-              globemis(:,i,j,iland) = globemis(:,i,j,iland) &
-                        + e_fact(:,ic,iemis) *  tmpsec(:)
-
-
-             ! Sum over all sectors, store as Ktonne:
-
-              sumemis(ic,iemis) = sumemis(ic,iemis)   &
-                                  + 0.001 * sum (e_fact(:,ic,iemis)*tmpsec(:))
+    ! Sum over all sectors, store as Ktonne:
+    sumemis(ic,iemis)=sumemis(ic,iemis)+0.001*sum(e_fact(:,ic,iemis)*tmpsec(:))
 
 !rb: Old version (below) does not work if same grid point occurs several times in emis-file
 !    Probably the same problem for ship emissions etc. Not changed now!
 !     + 0.001 * sum (globemis (:,i,j,iland))
-              
-        end do READEMIS 
+  enddo READEMIS 
         
-        close(IO_EMIS)
-        ios = 0
-  end subroutine EmisGet
-
-
+  close(IO_EMIS)
+  ios = 0
+endsubroutine EmisGet
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
   subroutine femis()

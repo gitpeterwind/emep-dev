@@ -1,4 +1,4 @@
-#TYPE/NPP,VARIABLE,BASE[km],H[km above vent],D[h],dM/dt[kBq/s],EffectFrac[-],START[code/date],END[code/date],DESCRIPTION
+#TYPE/NPP,VARIABLE,BASE[km],H[km above SURF],D[h],dM/dt[kBq/s],EffectFrac[-],START[code/date],END[code/date],DESCRIPTION
 10kt,NUC_1, 2.000, 5.000,1dt,2e17,0.1429,SR,SR+D,10kt: 2e20 Bq over
 10kt,NUC_2, 2.000, 5.000,1dt,2e17,0.1429,SR,SR+D,10kt: one advection step
 10kt,NUC_3, 2.000, 5.000,1dt,2e17,0.1429,SR,SR+D,10kt: distrubuted

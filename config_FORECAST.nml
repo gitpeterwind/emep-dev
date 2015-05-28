@@ -7,17 +7,14 @@
   EXP_NAME              = 'FORECAST',
   MY_OUTPUTS            = 'MACC_ENS',
 !------------------------------
-!USES/DEBUG system started June 2013
   USES%testname         = 'FORECAST',
   USES%FOREST_FIRES     = T,
   USES%EMISSTACKS       = F,         ! Reads PointSources file
+  USES%DEGREEDAY_FACTORS= F,
   USES%PlumeMethod      = 'PVDI',    ! default PVDI, possible: NILU, ASMI, PVDI
-  DEBUG%GLOBBC          = F,
-  DEBUG%HOURLY_OUTPUTS  = F,
 !------------------------------
   USE_SOILWATER         = F,          ! Uses SMI from meteo data
   USE_CONVECTION        = F,
-  USES%DEGREEDAY_FACTORS = F,
   USE_SEASALT           = T,
   USE_AIRCRAFT_EMIS     = T,          ! Needs global file, see manual
   USE_LIGHTNING_EMIS    = T,          ! 
@@ -40,7 +37,7 @@
 !------------------------------
   SELECT_LEVELS_HOURLY  = T,          ! hourly output flag Also for FORECAST, 3DPROFILES
   FORECAST              = T,
-  USE_EMERGENCY         = F,          ! Used for FORECASTs usually, EMEP2010
+  USE_ASH               = T,          ! Used for FORECASTs and Status 2010
   ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
   USE_AOD               = T,          ! Used for FORECASTs usually
   BGND_CH4              = -1,         ! Reset CH4 (use ppb). (Use -1 for defaults)
@@ -48,11 +45,6 @@
   FLUX_VEGS = 'IAM_CR','IAM_DF','IAM_MF', ! do not need all array elements
             ! 'CCE_SPRUCE','CCE_BEECH','ACE_PINE','ACE_OAK','ACE_BEECH',
             ! 'NEUR_SPRUCE','NEUR_BIRCH','MED_OAK','MED_PINE','MED_BEECH'
-!-------- Sub domain (x0,x1,y0,y1)
-!!RUNDOMAIN =   1, 201,  1, 161,      ! EMEP-CWF, GEMS 0.25 domain
-!!RUNDOMAIN =   1, 301, 26, 221,      ! EMEP-CWF, GEMS 0.25 extended domain
-!!RUNDOMAIN =   1, 321,  1, 221,      ! EMEP-CWF, MACC 0.20 domain
-!!RUNDOMAIN =   1, 301,  1, 369,      ! EMEP-CWF, MACC 14km domain
 &end
 &Fire_config
   need_file=F,need_date=F,need_poll=F,! continue if don't find file,time record,pollutant
@@ -218,15 +210,15 @@
   description='MACC_EVA','EVA_EU_FC',26, ! name,version,size
   map_bc=! emep,external,frac,wanted,found,IXADV,
         'O3'        ,'O3'     ,1.0,T,F,-1,
-        'NO'        ,'NO'          ,1.0,T,F,-1, 
-        'NO2'       ,'NO2'         ,1.0,T,F,-1, 
-        'PAN'       ,'PAN'         ,1.0,T,F,-1, 
+        'NO'        ,'NO'     ,1.0,T,F,-1, 
+        'NO2'       ,'NO2'    ,1.0,T,F,-1, 
+        'PAN'       ,'PAN'    ,1.0,T,F,-1, 
         'HNO3'      ,'HNO3'   ,1.0,T,F,-1, ! test MARS
         'CO'        ,'CO'     ,1.0,T,F,-1,
-        'C2H6'      ,'C2H6'        ,1.0,T,F,-1, 
+        'C2H6'      ,'C2H6'   ,1.0,T,F,-1, 
         'HCHO'      ,'CH2O'   ,1.0,T,F,-1,
         'CH4'       ,'CH4'    ,1.0,T,F,-1, 
-        'SO2'       ,'SO2'         ,1.0,T,F,-1, 
+        'SO2'       ,'SO2'    ,1.0,T,F,-1, 
         'C5H8'      ,'ISOP'   ,1.0,T,F,-1,
         'OH'        ,'OH'     ,1.0,F,F,-1, ! do not use
         'SEASALT_F' ,'aermr01',1.0,T,F,-1,

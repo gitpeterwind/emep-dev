@@ -43,10 +43,10 @@ use ModelConstants_ml,   only:  &
   ,PT                           & ! Pressure at top
   ,USES                         & ! Forest fires so far
   ,USE_SEASALT                  &
-  ,USE_LIGHTNING_EMIS, USE_AIRCRAFT_EMIS      & !
-  ,USE_GLOBAL_SOILNOX, USE_DUST, USE_ROADDUST & !
-  ,USE_EMERGENCY,DEBUG_EMERGENCY   & ! Emergency: Volcanic Eruption
-  ,KMAX_MID ,KMAX_BND, KCHEMTOP      ! Start and upper k for 1d fields
+  ,USE_LIGHTNING_EMIS, USE_AIRCRAFT_EMIS      &
+  ,USE_GLOBAL_SOILNOX, USE_DUST, USE_ROADDUST &
+  ,VOLCANO_SR                   & ! Reduce Volcanic Emissions
+  ,KMAX_MID ,KMAX_BND, KCHEMTOP   ! Start and upper k for 1d fields
 use My_Derived_ml,       only: EmisSplit_OUT
 use Landuse_ml,          only: water_fraction, ice_landcover
 use Par_ml,              only: me,MAXLIMAX,MAXLJMAX, & 
@@ -64,8 +64,7 @@ use Setup_1dfields_ml,   only: &
 use SmallUtils_ml,       only: find_index
 use Tabulations_ml,      only: tab_esat_Pa
 use TimeDate_ml,         only: current_date, date
-use Volcanos_ml
-use Emergency_ml,        only: EmergencyRate
+use ColumnSource_ml,     only: ColumnRate
 use Units_ml,            only: to_number_cm3 ! converts roa [kg/m3] to M [molec/cm3]
 
 implicit none
@@ -391,195 +390,130 @@ end if
       write(*,"(a,10es10.3)") sub//"1D-Riemer", xn_2d(SO4,KMAX_MID),&
         xn_2d(NO3_F,KMAX_MID)
   end if
-
-
-
    end subroutine setup_1d
-    !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    subroutine setup_rcemis(i,j)
+!>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+subroutine setup_rcemis(i,j)
+!-------------------------------------------------------------------
+!    DESCRIPTION:
+!    Extracts emissions in column from gridrcemis, for input to chemistry
+!    routines. Results in "rcemis" array
+!-------------------------------------------------------------------
+  !-- arguments
+  integer, intent(in) ::  i,j     ! coordinates of column
 
-    !-------------------------------------------------------------------
-    !    DESCRIPTION:
-    !    Extracts emissions in column from gridrcemis, for input to chemistry
-    !    routines. Results in "rcemis" array
-    !-------------------------------------------------------------------
+  !  local
+  integer ::  iqrc,k, itot
+  real    :: eland   ! for Pb210  - emissions from land
 
-   !-- arguments
-     integer, intent(in) ::  i,j     ! coordinates of column
+  integer ::  i_help,j_help,i_l,j_l
+  logical, save     :: first_call = .true. 
+  character(len=13) :: sub="setup_rcemis:"
 
-   !  local
-     integer ::  iqrc,k, itot
-     real    :: eland   ! for Pb210  - emissions from land
-
-    integer ::  i_help,j_help,i_l,j_l
-    logical, save     :: first_call = .true. 
-    character(len=13) :: sub="setup_rcemis:"
-
-    if ( first_call ) then
-      inat_RDF = find_index( "DUST_ROAD_F", EMIS_BioNat(:) )
-      inat_RDC = find_index( "DUST_ROAD_C", EMIS_BioNat(:) )
-      itot_RDF = find_index( "DUST_ROAD_F", species(:)%name    )
-      itot_RDC = find_index( "DUST_ROAD_C", species(:)%name    )
-      itot_Rn222= find_index( "RN222", species(:)%name    )
-      first_call = .false.
-    end if 
+  if(first_call)then
+    inat_RDF = find_index( "DUST_ROAD_F", EMIS_BioNat(:) )
+    inat_RDC = find_index( "DUST_ROAD_C", EMIS_BioNat(:) )
+    itot_RDF = find_index( "DUST_ROAD_F", species(:)%name    )
+    itot_RDC = find_index( "DUST_ROAD_C", species(:)%name    )
+    itot_Rn222=find_index( "RN222", species(:)%name    )
+    first_call = .false.
+  endif 
 
 ! initilize ! initilize ! initilize ! initilize
-    rcemis(:,:)=0.
+  rcemis(:,:)=0.
 ! initilize ! initilize ! initilize ! initilize
 
-     do k=KEMISTOP,KMAX_MID
+  forall(k=KEMISTOP:KMAX_MID,iqrc=1:NRCEMIS) &
+    rcemis(iqrc2itot(iqrc),k) = gridrcemis(iqrc,k,i,j)
 
-        do iqrc = 1, NRCEMIS
-          itot = iqrc2itot( iqrc )
-          rcemis(itot,k) = gridrcemis( iqrc ,k,i,j)
-        end do ! iqrc
-     enddo
+  ! Volcanic emissions (SO2 and ASH),
+  ! and Contribution from Emergeny scenarios
+  if(VOLCANO_SR)then
+    rcemis(:,:)=rcemis(:,:)+ColumnRate(i,j,REDUCE_VOLCANO=0.85)
+  else
+    rcemis(:,:)=rcemis(:,:)+ColumnRate(i,j)
+  endif
 
-     ! Add volcanoe emissions
+  ! lightning and aircraft ... Airial NOx emissions if required:
+  if(USE_LIGHTNING_EMIS)then
+    do k=KCHEMTOP, KMAX_MID
+      rcemis(NO ,k) = rcemis(NO ,k) + 0.95 * airlig(k,i,j)
+      rcemis(NO2,k) = rcemis(NO2,k) + 0.05 * airlig(k,i,j)
+    enddo
+  endif
+  if(USE_AIRCRAFT_EMIS) then
+    do k=KCHEMTOP, KMAX_MID
+      rcemis(NO ,k) = rcemis(NO ,k) + 0.95 * airn(k,i,j)
+      rcemis(NO2,k) = rcemis(NO2,k) + 0.05 * airn(k,i,j)
+    enddo
+  end if ! AIRCRAFT NOX
+  if(DEBUG%SETUP_1DCHEM.and.debug_proc.and.i==debug_li.and.j==debug_lj)&
+    write(*,"(a,2L2,10es10.3)") &
+      sub//"AIRNOX ", USE_LIGHTNING_EMIS, USE_AIRCRAFT_EMIS, &
+      airn(KMAX_MID,i,j),airlig(KMAX_MID,i,j)
 
-     if ( Volcanoes_found  ) then ! for models that include volcanos
-                      !QRCVOL=QRCSO2 for models with volcanos
-                      !For non-volc models it is set to dummy value 1
-                      !to avoid problems with undefined QRCVOL
-     do volc_no=1,nvolc
-        i_help=i_volc(volc_no) !Global coordinates
-        j_help=j_volc(volc_no) !Global coordinates
-        if ((i_help >= gi0).and.(i_help<=gi1).and.(j_help>= gj0)&
-             .and.(j_help<= gj1))then !on the correct processor
-           i_l=i_help - gi0  +1
-           j_l=j_help - gj0  +1
-           if((i_l==i).and.(j_l==j))then !i,j have a volcano
-              k=height_volc(volc_no)
-              rcemis(SO2,k)=rcemis(SO2,k)+rcemis_volc(volc_no)
-              !write(*,*)'Adding volc. emissions ' &
-              !          ,rcemis_volc(volc_no),volc_no,&
-              !          'to height=',k,'i,j',i_help,j_help
-              !write(*,*)'TOT rcemis=',rcemis(QRCVOL,:)
-           endif
-        endif
-     enddo
+  ! Add sea salt production
+  if(USE_ROADDUST.and.itot_RDF>0) then  ! Hard-code indices for now
+    rcemis(itot_RDF,KMAX_MID) = gridrcroadd(1,i,j)
+    rcemis(itot_RDC,KMAX_MID) = gridrcroadd(2,i,j)
+   endif
 
-     endif ! VOLCANOES
+  if(USES%FOREST_FIRES) then
+    if(burning(i,j))call Fire_rcemis(i,j)
+  endif
 
-! Contribution from Emergeny scenarios:
-!   Volcanic eruption scenarios set SO2 and ASH tracers emission rates.
-!   NPP accident scenarios set redoactive tracers emission rates.
-!   EmergencyRate(i,j) returns an array of rcemis size.
-    if(USE_EMERGENCY) rcemis(:,:)=rcemis(:,:)+EmergencyRate(i,j)
+  !Soil NOx
+  if(USE_GLOBAL_SOILNOX)then !NEEDS CHECKING NOV2011
+    rcemis(NO,KMAX_MID)=rcemis(NO,KMAX_MID)+SoilNOx(i,j)
+  endif
 
-    ! lightning and aircraft ... Airial NOx emissions if required:
-
-     if ( USE_LIGHTNING_EMIS  ) then
-
-        do k=KCHEMTOP, KMAX_MID
-
-          rcemis(NO,k)  = rcemis(NO,k) &
-                              + 0.95 * airlig(k,i,j)
-          rcemis(NO2,k) = rcemis(NO2,k) &
-                              + 0.05 * airlig(k,i,j)
-
-        enddo
-
-     end if ! LIGHTNING_EMIS
-     if ( USE_AIRCRAFT_EMIS  ) then
-
-        do k=KCHEMTOP, KMAX_MID
-
-          rcemis(NO,k)  = rcemis(NO,k) &
-                              + 0.95 * airn(k,i,j)
-          rcemis(NO2,k) = rcemis(NO2,k) &
-                              + 0.05 * airn(k,i,j)
-
-        enddo
-
-     end if ! AIRCRAFT NOX
-     if ( DEBUG%SETUP_1DCHEM .and. debug_proc .and.  & 
-       i==debug_li .and. j==debug_lj ) write(*,"(a,2L2,10es10.3)") &
-          sub//"AIRNOX ", USE_LIGHTNING_EMIS, USE_AIRCRAFT_EMIS, &
-          airn(KMAX_MID,i,j),airlig(KMAX_MID,i,j)
-
-     ! Add sea salt production
-
-     if ( USE_ROADDUST .and. itot_RDF>0  ) then  ! Hard-code indices for now
-
-        rcemis(itot_RDF,KMAX_MID) = gridrcroadd(1,i,j)
-        rcemis(itot_RDC,KMAX_MID) = gridrcroadd(2,i,j)
-     endif
-
-
-     if ( USES%FOREST_FIRES   ) then
-     if ( burning(i,j)  ) then
-
-       call Fire_rcemis(i,j)
-
-     endif 
-     endif  !ForestFires
-
-   !Soil NOx
-     if( USE_GLOBAL_SOILNOX)then !NEEDS CHECKING NOV2011
-        rcemis(NO,KMAX_MID)=rcemis(NO,KMAX_MID)+SoilNOx(i,j)
-     endif
-
-    if(EmisSplit_OUT)then
-!put all added emissions in EmisSplit_OUT, also natural emissions
-       SumSplitEmis(i,j,:)=0.0
-      do k=KCHEMTOP, KMAX_MID
-         do iqrc=1,nrcemis
-            !give unit mg/m2/s dt_advec multiplied in Derived_ml 
-            SumSplitEmis(i,j,iqrc) = SumSplitEmis(i,j,iqrc)+&
-                 rcemis(iqrc2itot(iqrc),k)*species(iqrc2itot(iqrc))%molwt*&
-                 (dA(k)+dB(k)*ps(i,j,1))/(GRAV*amk(k)*ATWAIR)
-         enddo
+  if(EmisSplit_OUT)then
+    !put all added emissions in EmisSplit_OUT, also natural emissions
+    SumSplitEmis(i,j,:)=0.0
+    do k=KCHEMTOP, KMAX_MID
+      do iqrc=1,nrcemis
+        !give unit mg/m2/s dt_advec multiplied in Derived_ml 
+        itot=iqrc2itot(iqrc)
+        SumSplitEmis(i,j,iqrc) = SumSplitEmis(i,j,iqrc)&
+          +rcemis(itot,k)*species(itot)%molwt &
+          *(dA(k)+dB(k)*ps(i,j,1))/(GRAV*amk(k)*ATWAIR)
       enddo
-    endif
+    enddo
+  endif
 
 
   ! Soil Rn222 emissions from non-ice covered land, + water
   ! at rate of 1 atom/cm2/s
+   eland = 1.0 - water_fraction(i,j) - ice_landcover(i,j)
 
-     eland = 1.0 - water_fraction(i,j) - ice_landcover(i,j)
-
-! z_bnd is in m, not cm, so need to divide by 100.
-
-    if ( itot_Rn222 > 0 ) rcemis( itot_Rn222,KMAX_MID )  = & 
-            ( 0.00182 * water_fraction(i,j)  + eland ) / &
-            ((z_bnd(i,j,KMAX_BND-1) - z_bnd(i,j,KMAX_BND))*100.)
+  ! z_bnd is in m, not cm, so need to divide by 100.
+  if(itot_Rn222>0) &
+    rcemis(itot_Rn222,KMAX_MID) = (0.00182*water_fraction(i,j)+eland)&
+      /((z_bnd(i,j,KMAX_BND-1)-z_bnd(i,j,KMAX_BND))*100.)
 
 !ESX     rc_Rnwater(KMAX_MID) = water_fraction(i,j)  / &
 !ESX            ((z_bnd(i,j,KMAX_BND-1) - z_bnd(i,j,KMAX_BND))*100.)
 
-  end subroutine setup_rcemis
+endsubroutine setup_rcemis
+!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+subroutine reset_3d(i,j)
+  integer, intent(in) :: i,j
+  integer :: k, n, ispec    ! loop variables
 
-  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+  do k = KCHEMTOP, KMAX_MID
+    ! 1)/ Short-lived species - no need to scale with M
+    do n = 1, NSPEC_SHL
+      xn_shl(n,i,j,k) = xn_2d(n,k)
+    enddo ! ispec
 
-  subroutine reset_3d(i,j)
-
-    integer, intent(in) :: i,j
-    integer :: k, n, ispec    ! loop variables
-
-
-         do k = KCHEMTOP, KMAX_MID
-
-           ! 1)/ Short-lived species - no need to scale with M
-
-            do n = 1, NSPEC_SHL
-               xn_shl(n,i,j,k) = xn_2d(n,k)
-            end do ! ispec
-
-           ! 2)/ Advected species
-
-           do n = 1, NSPEC_ADV
-              ispec = NSPEC_SHL + n
-              xn_adv(n,i,j,k) = xn_2d(ispec,k)/amk(k)
-           end do ! ispec
-
-         end do ! k
-
-   end subroutine reset_3d
-   !---------------------------------------------------------------------------
-
-end module Setup_1d_ml
+    ! 2)/ Advected species
+    do n = 1, NSPEC_ADV
+      ispec = NSPEC_SHL + n
+      xn_adv(n,i,j,k) = xn_2d(ispec,k)/amk(k)
+    enddo ! ispec
+  enddo ! k
+endsubroutine reset_3d
+!---------------------------------------------------------------------------
+endmodule Setup_1d_ml
 !_____________________________________________________________________________!
 
 

@@ -1,0 +1,5 @@
+*
+* <----------- Volcanic ash/natural emissions (all active vents) ----------------------------->
+*
+rcbio:ASH_f                      = ASH_f    ;
+rcbio:ASH_c                      = ASH_c    ;

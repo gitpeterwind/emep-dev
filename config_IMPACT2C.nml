@@ -28,7 +28,7 @@
 !------------------------------
   SELECT_LEVELS_HOURLY  = T,          ! hourly output flag Also for FORECAST, *IMPACT2C*
   FORECAST              = F,
-  USE_EMERGENCY         = F,          ! Used for FORECASTs usually, EMEP2010
+  USE_ASH               = F,          ! Used for FORECASTs and Status 2010
   ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
   USE_AOD               = F,          ! Used for FORECASTs usually
 !--- "fake" vegetation for ozone POD calculations

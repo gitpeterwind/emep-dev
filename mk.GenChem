@@ -15,11 +15,11 @@
 # ==========================================
 # functions
 function cp_if_diff() {
-	diff $1 $2 > /dev/null 2>&1
-	if [ $? -ne 0 ]; then
-		echo "cp $1 $2"
-		cp $1 $2
-	fi
+  diff $1 $2 > /dev/null 2>&1
+  if [ $? -ne 0 ]; then
+    echo "cp $1 $2"
+    cp $1 $2
+  fi
 }
 
 # ==========================================
@@ -54,16 +54,12 @@ VERB='off';[[ "$*" = *-q* ]] && VERB='quiet';[[ "$*" = *-v* ]] && VERB='on'
 [[ "$VERB" = 'on' ]] && echo -e "$ERGO verbose mode: $VERB"
 # Print ussage & exits
 HELP(){
-  local EE=`echo ${extras[*]#*ZCM_}|tr ' ' ','` \
-        VV=`echo ${volcan[*]#*ZCM_}|tr ' ' ','` \
-        PP=`echo ${nucppa[*]#*ZCM_}|tr ' ' ','` \
-        XX=`echo ${nucexp[*]#*ZCM_}|tr ' ' ','`
+  local EE=`tr ' ' ',' <<< "${extras[*]#*ZCM_}"`
   cat << _EOF
 '$ERGO' prepare Chemestry files (CM_.f90) for Unimod
 
 Usage:
   $ERGO [-h] [-v] [-q] [-f fire] [-r run] [-e extra1[,extra2[...]]]
-        [-V volc1,[,volc2[...]]] [-N npp1,[,npp2[...]]] [-X nuc1,[,nuc2[...]]]
 
 Examples:
 # EMEP GenChmem standard setup assumed in \`make EMEP\`
@@ -71,7 +67,8 @@ Examples:
 # MACC GenChmem standard setup assumed in \`make MACC\`
   mk.GenChmem -r EmChem09soa -e SeaSalt,Dust,Isotopes -f GFED
 # eEMEP GenChmem standard setup assumed in \`make eEMEP\`
-  mk.GenChem -r Emergency -f FINNv1 -e none -V 7bin,Vesuvius,Etna,Kr.suv.­k,Katla,Askja
+  ZCM_Emergency/mk.Emergency  -V 7bin,Vesuvius,Etna,Kr.suv.­k,Katla,Askja
+  mk.GenChem -r Emergency -f FINNv1 -e none
 # Testing CRI_v2_R5, no extras
   mk.GenChmem -r CRI_v2_R5 -e none
 
@@ -82,27 +79,14 @@ Options:
   -f ffire  Sets \$ffires variable (currently: $ffires)
   -r run    Sets \$run variable    (currently: $run)
   -e extras Sets \$extras variable (currently: ${EE:-'none'})
-  -V volc   Sets \$volcan variable (currently: ${VV:-'none'})
-  -N npp    Sets \$nucppa variable (currently: ${PP:-'none'})
-  -X nuc    Sets \$nucexp variable (currently: ${XX:-'none'})
 _EOF
   (( $# )) && echo -e "\nCurrent call:\n\t$ERGO $*"
   exit 1
 }
 # Processes command line options. Option -h for help
 GETOPTS(){
-  local rdir=$PWD/ZCM_$run N=0 EE=()
-# Volcano variables
-  local vdir=$PWD/ZCM_Emergency
-  local VolcCSV=$vdir/Mastin_et_al_2009a_table3.csv \
-        ErupCSV=$vdir/Mastin_et_al_2009b_table3.csv \
-        NppCSV=$vdir/NPP_Location.csv       NacCSV=$vdir/NPP_Accident.csv \
-        NucCSV=$vdir/NUC_Location.csv       NexCSV=$vdir/NUC_Explosion.csv \
-        LocCSV=$vdir/emergency_location.csv EmiCSV=$vdir/emergency_emission.csv \
-        COL='1,5-6,8-9,11-14,16' vbin=7bin tracer='1234-67=|PP34L678'
-# 1:NUMBER,5:NAME,6:LOCATION,8:LATITUDE,9:NS,11:LONGITUDE,12:EW,13:ELEV,14:TYPE,16:ERUPTION TYPE
-  [[ "$*" = *-[VNX]* ]] && rm -f $LocCSV $EmiCSV
-  while getopts ":f:r:e:V:N:X:qvh" OPT; do
+  local rdir=$PWD/ZCM_$run N=0
+  while getopts ":f:r:e:qvh" OPT; do
     [[ "$VERB" = 'on' ]] && echo -e "Processing option:\n\t-$OPT '$OPTARG'"
     case "$OPT" in
     f)ffires=$OPTARG;;
@@ -118,149 +102,83 @@ GETOPTS(){
         [[ -s ${extras[$N]}.species ]] ||
           HELP $* "\nUnknown extras option:\n\t-$OPT ${EE[$N]}"
       done;;
-    V)volcan=( );EE=( )
-      [[ "$OPTARG" = \-* ]] || [[ "$OPTARG" = none ]] || EE=( ${OPTARG//,/ } )
-      for N in ${!EE[*]};do
-        [[ "${EE[$N]}" = *bin ]] && vbin="${EE[$N]}" && unset EE[$N]
-      done
-      case $vbin in
-      2bin|7bin)echo "Volcano $vbin configuration";;
-              *)HELP $* "\nUnknown volcano option:\n\t-$OPT $vbin";;
-      esac
-      # cut     selects columns from $VolcCSV
-      # sed     replaces '-' & '=' in Volcano NUMBER and remove blanks
-      grep '^# '      "$VolcCSV"|tee -a $LocCSV                  # Source info
-      grep '^#NUMBER' "$VolcCSV"|cut -d',' -f$COL|tee -a $LocCSV # Headers
-      cat "$ErupCSV" >> $EmiCSV
-      for N in ${!EE[*]};do
-        tracer=`grep -iE ${EE[$N]/./'.{1,2}'} "$VolcCSV"|cut -d',' -f$COL|
-        sed 's/^\(....\)-/\1A/g;s/^\(....\)=/\1B/g;s/^\(.......\)-/\1A/g;s/^\(.......\)=/\1B/g;s/^/V/g;s/, */,/g;'` # Volcano description
-        [[ -n "$tracer" ]] ||
-          HELP $* "\nUnknown volcano option:\n\t-$OPT ${EE[$N]}"
-        echo "$tracer"|tee -a $LocCSV
-        tracer="${tracer%%,*}"                                  # Tracer name
-        volcan[$N]=$rdir/ASH$tracer
-        sed "s/_ASH_/$tracer/g;" $vdir/ASH_$vbin.species   > ${volcan[$N]}.species
-        sed "s/_ASH_/$tracer/g;" $vdir/ASH_$vbin.reactions > ${volcan[$N]}.reactions
-        [[ -s $vdir/${tracer}_$vbin.eruptions ]] && cat $vdir/${tracer}_$vbin.eruptions >> $EmiCSV
-      done;;
-    N)nucppa=( );EE=( )
-      [[ "$OPTARG" = \-* ]] || [[ "$OPTARG" = none ]] || EE=( ${OPTARG//,/ } )
-      # cut     selects columns from $NppCSV
-      # sed     replaces '-' & '=' in NPP NUMBER and remove blanks
-      grep '^# '      "$NppCSV"|tee -a $LocCSV                   # Source info
-      grep '^#NUMBER' "$NppCSV"|cut -d',' -f1-10|tee -a $LocCSV  # Headers
-      cat "$NacCSV" >> $EmiCSV
-      for N in ${!EE[*]};do
-        tracer=`grep -iE ${EE[$N]/./'.{1,2}'} "$NppCSV"|cut -d',' -f1-10|
-        sed 's/^\(....\)-/\1A/g;s/^\(....\)=/\1B/g;s/^\(.......\)-/\1A/g;s/^\(.......\)=/\1B/g;s/^/N/g;s/, */,/g;'` # NPP description
-        [[ -n "$tracer" ]] ||
-          HELP $* "\nUnknown npp option:\n\t-$OPT ${EE[$N]}"
-        echo "$tracer"|tee -a $LocCSV
-        tracer="${tracer%%,*}"                                  # Tracer name
-        nucppa[$N]=$rdir/NPP$tracer
-        sed "s/_NPP_/$tracer/g;" $vdir/NPP.species   > ${nucppa[$N]}.species
-        sed "s/_NPP_/$tracer/g;" $vdir/NPP.reactions > ${nucppa[$N]}.reactions
-        [[ -s $vdir/$tracer.accident ]] && cat $vdir/$tracer.accident >> $EmiCSV
-      done;;
-    X)nucexp=( );EE=( )
-      [[ "$OPTARG" = \-* ]] || [[ "$OPTARG" = none ]] || EE=( ${OPTARG//,/ } )
-      # cut     selects columns from $NppCSV
-      # sed     replaces '-' & '=' in NPP NUMBER and remove blanks
-      grep '^# '      "$NucCSV"|tee -a $LocCSV                   # Source info
-      grep '^#NUMBER' "$NucCSV"|cut -d',' -f1-10|tee -a $LocCSV  # Headers
-      cat "$NexCSV" >> $EmiCSV
-      for N in ${!EE[*]};do
-        tracer=`grep -iE ${EE[$N]/./'.{1,2}'} "$NucCSV"|cut -d',' -f1-10|
-        sed 's/^\(....\)-/\1A/g;s/^\(....\)=/\1B/g;s/^\(.......\)-/\1A/g;s/^\(.......\)=/\1B/g;s/^/X/g;s/, */,/g;'` # NPP description
-        [[ -n "$tracer" ]] ||
-          HELP $* "\nUnknown npp option:\n\t-$OPT ${EE[$N]}"
-        echo "$tracer"|tee -a $LocCSV
-        tracer="${tracer%%,*}"                                  # Tracer name
-        nucexp[$N]=$rdir/NUC$tracer
-        sed "s/_NUC_/$tracer/g;" $vdir/NUC.species   > ${nucexp[$N]}.species
-        sed "s/_NUC_/$tracer/g;" $vdir/NUC.reactions > ${nucexp[$N]}.reactions
-        [[ -s $vdir/$tracer.explosion ]] && cat $vdir/$tracer.explosion >> $EmiCSV
-      done;;
   q|v);;
     h)HELP $*;;
     *)HELP $* "\nUnknown $ERGO option:\n\t-$OPT $OPTARG" ;;
     esac
   done
-  emergency=( ${volcan[@]} ${nucppa[@]} ${nucexp[@]} )
 };GETOPTS $* #-vh
 
-if [ $run == EmChem09 ]; then
-  echo "RUN EmChem09 chosen"
-  spcs=( EmChem09base $Aero PMmass ${emergency[@]} )
-  rcns=( EmChem09base $Aero PMmass ${emergency[@]} )
+case $run in
+EmChem09)
+  echo "RUN $run chosen"
+  spcs=( EmChem09base $Aero PMmass Ash)
+  rcns=( EmChem09base $Aero PMmass Ash)
   bics=( EmChem09base )
-
-elif [ $run == EmChem09soa ]; then
-  echo "RUN EmChem09soa chosen. Remember to cp ZD_VBS/My_SOA_ml.f90!!"
-  spcs=( $xdir/EmChem09base ${emergency[@]} \
-         $xdir/$Aero \
+;;
+EmChem09soa)
+  echo "RUN $run chosen. Remember to cp ZD_VBS/My_SOA_ml.f90!!"
+  spcs=( $xdir/EmChem09base $xdir/$Aero $xdir/Ash \
          ../ZCM_vbs_tests/VBS_help    \
           ./VBS_nonvolatile ../ZCM_vbs_tests/VBS_partitioning )  #  VBS NPNA
-  rcns=( $xdir/EmChem09base ${emergency[@]} \
-         $xdir/$Aero \
+  rcns=( $xdir/EmChem09base $xdir/$Aero $xdir/Ash \
          ../ZCM_vbs_tests/VBS_SOAformation ../ZCM_vbs_tests/VBS_SOAageing \
           ./VBS_emissions_nonvolatilePOA_FromPM25  ) # VBS NPNA
   bics=( $xdir/EmChem09base )  # No special SOA BICs (yet)
-
-elif [ $run == EmChem09ecom ]; then
-  echo "RUN EmChem09ecom chosen. Remember to cp ZD_VBS/My_SOA_ml.f90!!"
+;;
+EmChem09ecom)
+  echo "RUN $run chosen. Remember to cp ZD_VBS/My_SOA_ml.f90!!"
   sdir=$PWD/ZCM_EmChem09soa
   echo "SOA DIR ", $sdir
-  spcs=( $xdir/EmChem09base ${emergency[@]} \
+  spcs=( $xdir/EmChem09base \
          $xdir/$Aero \
          ../ZCM_vbs_tests/VBS_help    \
           $sdir/VBS_nonvolatile ../ZCM_vbs_tests/VBS_partitioning )  #  VBS NPNA
-  rcns=( $xdir/EmChem09base ${emergency[@]} \
+  rcns=( $xdir/EmChem09base \
          $xdir/$Aero \
          ../ZCM_vbs_tests/VBS_SOAformation ../ZCM_vbs_tests/VBS_SOAageing \
           ./EC_OM  )
   bics=( $xdir/EmChem09base )  # No special SOA BICs (yet)
-
-elif [ $run == CRI_v2_R5 ]; then
-  echo "RUN CRI_v2_R5 chosen"
-  spcs=( CRI_v2_R5base $xdir/$Aero $xdir/PMmass )
-  rcns=( CRI_v2_R5base $xdir/$Aero $xdir/PMmass )
-  bics=( CRI_v2_R5base )
-
-elif [ $run == CRI_v2_0  ]; then
-  echo "RUN CRI_v2_0  chosen"
-  spcs=( CRI_v2_0base $xdir/PMmass )
-  rcns=( CRI_v2_0base $xdir/PMmass )
-  bics=( CRI_v2_0base )
-
-elif [ $run == CB05 ]; then
-  echo "RUN CB05 chosen"
-  spcs=( CB05base $xdir/PMmass )
-  rcns=( CB05base $xdir/PMmass )
-  bics=( CB05base )
-
-elif [ $run == CB04 ]; then
-  echo "RUN CB04 chosen"
-  spcs=( CB04base $xdir/PMmass )
-  rcns=( CB04base $xdir/PMmass )
-
-elif [ $run == OSRM ]; then
-  echo "RUN OSRM chosen"
-  spcs=( OSRMbase $xdir/PMmass )
-  rcns=( OSRMbase $xdir/PMmass )
-
-elif [ $run == Emergency ]; then
-  echo "RUN Emergency chosen"
-  spcs=( $xdir/EmChem09base $xdir/PMmass ${emergency[@]})
-  rcns=( $xdir/EmChem09base $xdir/PMmass ${emergency[@]})
+;;
+CRI_v2_R5)
+  echo "RUN $run chosen"
+  spcs=( ${run}base $xdir/$Aero $xdir/PMmass )
+  rcns=( ${run}base $xdir/$Aero $xdir/PMmass )
+  bics=( ${run}base )
+;;
+CRI_v2_0)
+  echo "RUN $run  chosen"
+  spcs=( ${run}base $xdir/PMmass )
+  rcns=( ${run}base $xdir/PMmass )
+  bics=( ${run}base )
+;;
+CB05)
+  echo "RUN $run chosen"
+  spcs=( ${run}base $xdir/PMmass )
+  rcns=( ${run}base $xdir/PMmass )
+  bics=( ${run}base )
+;;
+CB04)
+  echo "RUN $run chosen"
+  spcs=( ${run}base $xdir/PMmass )
+  rcns=( ${run}base $xdir/PMmass )
+;;
+OSRM)
+  echo "RUN $run chosen"
+  spcs=( ${run}base $xdir/PMmass )
+  rcns=( ${run}base $xdir/PMmass )
+;;
+Emergency)
+  echo "RUN $run chosen"
+  spcs=( $xdir/EmChem09base $xdir/PMmass $run)
+  rcns=( $xdir/EmChem09base $xdir/PMmass $run)
   bics=( $xdir/EmChem09base )
- #extras=()
-
-else
+;;
+*)
   echo "SELECTION of run $run failed!! "
   exit
-fi
+;;
+esac
 
 # Add the usual common stuff
 spcs=("${spcs[@]}" "${extras[@]}")

@@ -13,7 +13,7 @@ use ChemSpecs
 use ChemGroups_ml,     only: chemgroups
 use DerivedFields_ml,  only: f_2d               ! D2D houtly output type
 use ModelConstants_ml, only: PPBINV, PPTINV, MasterProc, KMAX_MID,&
-                             MY_OUTPUTS, FORECAST, USE_EMERGENCY,DEBUG_EMERGENCY,&
+                             MY_OUTPUTS, FORECAST, DEBUG_COLSRC,&
                              USE_AOD, USE_POLLEN, DEBUG_POLLEN, SELECT_LEVELS_HOURLY
 use OwnDataTypes_ml,   only: Asc2D
 use Par_ml,            only: GIMAX,GJMAX,IRUNBEG,JRUNBEG,me
@@ -186,7 +186,7 @@ subroutine set_output_defs
   character(len=144) :: errmsg   ! Local error message
   integer            :: i,j,ash,nuc_conc,nuc_wdep,nuc_ddep,& ! Loop & group indexes
                         rn222,pm25,pm10,nmvoc,gpoll,igrp,idx
-  character(len=256)   :: name     ! Volcano (vent) name
+  character(len=256) :: name     ! Volcano (vent) name
 
   real, parameter :: atwC=12.0
   real, parameter :: m_s = 100.0 ! From cm/s to m/s
@@ -247,7 +247,7 @@ subroutine set_output_defs
         if(species(chemgroups(ash)%ptr(i))%name(1:9)==name)cycle
         name=species(chemgroups(ash)%ptr(i))%name(1:9)
         nhourly_out=nhourly_out+2
-        if(MasterProc.and.DEBUG_EMERGENCY)&
+        if(MasterProc.and.DEBUG_COLSRC)&
           write(*,*)'EMERGENCY: Volcanic Ash, Vent=',name
       enddo
     endif
@@ -256,7 +256,7 @@ subroutine set_output_defs
       do i=1,size(chemgroups(nuc_conc)%ptr)
         name=species(chemgroups(nuc_conc)%ptr(i))%name
         nhourly_out=nhourly_out+1
-        if(MasterProc.and.DEBUG_EMERGENCY)&
+        if(MasterProc.and.DEBUG_COLSRC)&
           write(*,*)'EMERGENCY: Nuclear accident/explosion, NPP/NUC=',name
       enddo
     endif
@@ -266,7 +266,7 @@ subroutine set_output_defs
       do i=1,size(chemgroups(nuc_ddep)%ptr)
         name="DDEP_"//species(chemgroups(nuc_ddep)%ptr(i))%name
         nhourly_out=nhourly_out+1
-        if(MasterProc.and.DEBUG_EMERGENCY)&
+        if(MasterProc.and.DEBUG_COLSRC)&
           write(*,*)'EMERGENCY: Nuclear accident/explosion, NPP/NUC=',name
       enddo
     endif
@@ -275,11 +275,14 @@ subroutine set_output_defs
       do i=1,size(chemgroups(nuc_wdep)%ptr)
         name="WDEP_"//species(chemgroups(nuc_wdep)%ptr(i))%name
         nhourly_out=nhourly_out+1
-        if(MasterProc.and.DEBUG_EMERGENCY)&
+        if(MasterProc.and.DEBUG_COLSRC)&
           write(*,*)'EMERGENCY: Nuclear accident/explosion, NPP/NUC=',name
       enddo
     endif
     endif
+  case("INVERSION")
+    nhourly_out=19
+    nlevels_hourly = 1
   case("MACC_NMC")
     nhourly_out=0
     return
@@ -410,6 +413,16 @@ subroutine set_output_defs
       enddo
     endif
     endif ! if false
+  case("INVERSION")
+    levels_hourly = [0]
+    do j=1,19
+      write(name,"(A,I2.2)")"ASH_L",j
+      igrp=find_index(trim(name),chemgroups(:)%name)
+      call CheckStop(igrp<1,"set_output_defs: Unknown ASH group '"//name//"'")
+      if(MasterProc)write(*,*) "AshInv: ",trim(name),igrp
+      hr_out(j)=Asc2D(trim(name)//"_col","COLUMNgroup" ,igrp,&
+           ix1,ix2,iy1,iy2,1,"ug/m2",1e0/3600.,-999.9)  ! 1kg/s --> 1kg/h
+    enddo
   case("MACC_ENS","FORECAST")
     levels_hourly = [0,1,2,3,4,6,9,10,12]
     pm25 =find_index("PMFINE"  ,chemgroups(:)%name) !NB There is no "PM25" group

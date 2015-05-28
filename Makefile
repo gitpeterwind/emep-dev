@@ -107,20 +107,20 @@ touchdepend:
 # Model/Config specific targets
 ###
 # My_* files pre-requisites
-EMEP EMEP2010 EMEP2011 MACC MACC-EVA MACC-EVA2010 MACC-EVA2011 eEMEP2010: \
+EMEP MACC MACC-EVA: \
 	  ./ZD_OZONE/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
 	  ./ZD_VBS/My_SOA_ml.f90 \
 	  ./ZD_3DVar/My_3DVar_ml.f90 ./ZD_Pollen/My_Pollen_ml.f90 \
 	  ./ZD_EXTRA/My_ESX_ml.f90
 # no SOA:
-EmChem09 EmChem09-ESX CRI_v2_R5 eEMEP eEMEP2013: \
+EmChem09 EmChem09-ESX CRI_v2_R5 eEMEP: \
 	  ./ZD_OZONE/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
 	  ./ZD_OZONE/My_SOA_ml.f90 \
 	  ./ZD_3DVar/My_3DVar_ml.f90 ./ZD_Pollen/My_Pollen_ml.f90 \
 	  ./ZD_EXTRA/My_ESX_ml.f90
 
 # For SR we use the small My_Derived
-SR-EMEP SR-EMEP2010 SR-EMEP2011 SR-MACC: \
+SR-EMEP SR-MACC: \
 	  ./ZD_SR/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
 	  ./ZD_VBS/My_SOA_ml.f90 \
 	  ./ZD_3DVar/My_3DVar_ml.f90 ./ZD_Pollen/My_Pollen_ml.f90 \
@@ -138,24 +138,22 @@ EmChem09-ESX: SRCS := $(filter-out My_ESX_ml.f90,$(SRCS)) $(ESX_SRCS)
 EmChem09-ESX: $(ESX_SRCS) | depend
 
 # Link My_* files and MAKE target
-EMEP EMEP2010 EMEP2011 SR-EMEP SR-EMEP2010 SR-EMEP2011 EmChem09 EmChem09-ESX CRI_v2_R5 \
-MACC MACC-EVA MACC-EVA2010 MACC-EVA2011 SR-MACC eEMEP eEMEP2010 eEMEP2013:
+EMEP SR-EMEP EmChem09 EmChem09-ESX CRI_v2_R5 MACC MACC-EVA SR-MACC eEMEP:
 	ln -sf $(filter %.f90 %.inc,$+) . && $(MAKE)
 
 # GenChem config
 .SECONDEXPANSION:
-EMEP EMEP2010 EMEP2011:             GenChem-EMEP-EmChem09soa
-SR-EMEP SR-EMEP2010 SR-EMEP2011:    GenChem-SR-EMEP-EmChem09soa
-EmChem09 CRI_v2_R5:                 GenChem-EMEP-$$@
-EmChem09-ESX:                       GenChem-EMEP-EmChem09
-MACC SR-MACC:                       GenChem-$$@-EmChem09soa
-eEMEP:                              GenChem-$$@-EmChem09     # GenChem-Emergency not yet ready
-MACC-EVA MACC-EVA2010 MACC-EVA2011: GenChem-MACCEVA-EmChem09soa
-eEMEP2010:                          GenChem-EMEP-EmChem09soa
-eEMEP2013:                          GenChem-SR-MACC-EmChem09soa
+EMEP:               GenChem-EMEP-EmChem09soa
+SR-EMEP:            GenChem-SR-EMEP-EmChem09soa
+EmChem09 CRI_v2_R5: GenChem-EMEP-$$@
+EmChem09-ESX:       GenChem-EMEP-EmChem09
+MACC SR-MACC:       GenChem-$$@-EmChem09soa
+MACC-EVA:           GenChem-MACCEVA-EmChem09soa
+eEMEP:              GenChem-$$@-Emergency
+eEMEP ?= Emergency  # Emergency | AshInversion
 
 GenChem%:
-	mk.GenChem $(GenChemOptions) -q #-h
+	mk.GenChem $(GenChemOptions) -q
 GenChem-%:          GenChemOptions += -r $(lastword $(subst -, ,$*))
 GenChem-EMEP-%:     GenChemOptions += -f FINNv1 -e SeaSalt,Dust,Isotopes
 GenChem-SR-EMEP-%:  GenChemOptions += -f FINNv1 -e none
@@ -163,18 +161,19 @@ GenChem-MACC-%:     GenChemOptions += -f GFASv1 -e SeaSalt,Dust,Pollen
 GenChem-SR-MACC-%:  GenChemOptions += -f GFASv1 -e none
 GenChem-MACCEVA-%:  GenChemOptions += -f GFASv1 -e SeaSalt,Dust
 GenChem-eEMEP-%:    GenChemOptions += -f GFASv1 -e SeaSalt,Dust
+GenChem-eEMEP-%:    $$(eEMEP)
 
-# Emergency options
-EMEP2010 SR-EMEP2010 MACC-EVA2010:  GenChemOptions += -V 2bin,Eyjafjoll
-EMEP2011 SR-EMEP2011 MACC-EVA2011:  GenChemOptions += -V 2bin,Grimsvotn
-eEMEP2010:                          GenChemOptions += -V 2bin,Eyjafjoll
-eEMEP2013:                          GenChemOptions += -N NorthKorea
+# eEMP Default Scenarios: Vents, NPPs & NUCs
+Emergency: VENTS ?= Vesuvius,Etna,Kr.suv.k,Katla,Askja
+Emergency: NPPAS ?= Olkiluoto,Loviisa,Kola,Leningrad,Ringhals,Forsmark,Oskarshamn,Torness,Sellafield
+Emergency: NUCXS ?= NorthKorea,Tehran
+Emergency:
+	ZCM_Emergency/mk.Emergency -V 7bin,$(VENTS) -N $(NPPAS) -X $(NUCXS)
 
-# eEMP Default Vents, NPPs & NUCs
-eEMEP: VENTS ?= Vesuvius,Etna,Kr.suv.k,Katla,Askja
-eEMEP: NPPAS ?= Olkiluoto,Loviisa,Kola,Leningrad,Ringhals,Forsmark,Oskarshamn,Torness,Sellafield
-eEMEP: NUCXS ?= NorthKorea,Tehran
-eEMEP: GenChemOptions += -V 7bin,$(VENTS) -N $(NPPAS) -X $(NUCXS)
+# eEMP Default AshInversion: Vents
+AshInversion: VENTS ?= Eyjafjoll
+AshInversion:
+	ZCM_Emergency/mk.Emergency -V 19lev,9bin,$(VENTS)
 
 # Data assimilation: Bnmc / 3DVar
 %-Bnmc %-3DVar: PASS_GOALS=$(filter clean modules,$(MAKECMDGOALS))

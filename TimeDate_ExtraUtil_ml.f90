@@ -72,7 +72,7 @@ private ::  &
   ts_to_days1900,cd_to_days1900,int_to_days1900,& ! * --> days since 1900-01-01 00:00 UTC (real)
   secs1970_to_ts,secs1970_to_cd,secs1970_to_int,& ! *_to_secs1970 inverse
   days1900_to_ts,days1900_to_cd,days1900_to_int,& ! *_to_days1900 inverse
-  int2ts,int2date,ts2int,date2int,& ! auxiliary dateformat transformation tools
+  int2ts,int2date,ts2int,date2int,str2ts,str2int,& ! auxiliary dateformat transformation tools
   init_ts             ! init 1900 & 1970 timestamps
 
 interface key2str
@@ -80,15 +80,15 @@ interface key2str
 end interface key2str
 
 interface to_stamp
-  module procedure date2ts,int2ts
+  module procedure date2ts,int2ts,str2ts
 end interface to_stamp
 
 interface to_date
-  module procedure ts2date,int2date
+  module procedure ts2date,int2date,string2date
 end interface to_date
 
 interface to_idate
-  module procedure ts2int,date2int
+  module procedure ts2int,date2int,str2int
 end interface to_idate
 
 real, private, parameter        :: spd=86400.0,sph=3600.0,spm=60.0
@@ -145,7 +145,6 @@ subroutine init_ts()
 endsubroutine init_ts
 
 function str2key(str,fmt,key) result(val)
-  implicit none
   character(len=*), intent(in) :: str,fmt,key
   integer :: val
   integer :: ind=0
@@ -155,7 +154,6 @@ function str2key(str,fmt,key) result(val)
 endfunction str2key
 
 function ikey2str(iname,key,val) result(fname)
-  implicit none
   character(len=*), intent(in) :: iname,key
   character(len=len(iname))    :: fname
   integer, intent(in)          :: val
@@ -174,7 +172,6 @@ function ikey2str(iname,key,val) result(fname)
 endfunction ikey2str
 
 function rkey2str(iname,key,val) result(fname)
-  implicit none
   character(len=*), intent(in) :: iname,key
   character(len=len(iname))    :: fname
   real, intent(in)             :: val
@@ -196,7 +193,6 @@ endfunction rkey2str
 
 subroutine str2detail(str,fmt,year,month,day,hour,seconds,minute,second,days,&
                      fstep,ntme,nlev,nlat,nlon,debug)
-  implicit none
   character(len=*), intent(in) :: str,fmt
   integer,intent(out),optional :: year,month,day,hour,seconds,&
                                   minute,second,days,&
@@ -227,7 +223,6 @@ subroutine str2detail(str,fmt,year,month,day,hour,seconds,minute,second,days,&
 endsubroutine str2detail
 
 function string2date(str,fmt,debug) result(cd)
-  implicit none
   character(len=*), intent(in)   :: str,fmt
   logical, intent(in),  optional :: debug
   type(date)                     :: cd
@@ -235,9 +230,23 @@ function string2date(str,fmt,debug) result(cd)
                   hour=cd%hour,seconds=cd%seconds,debug=debug)
 endfunction string2date
 
+function str2ts(str,fmt,debug) result(ts)
+  character(len=*), intent(in)   :: str,fmt
+  logical, intent(in),  optional :: debug
+  type(timestamp)                :: ts
+  ts=date2ts(string2date(str,fmt,debug=debug))
+endfunction str2ts
+
+function str2int(str,fmt,n,debug) result(id)
+  character(len=*), intent(in)   :: str,fmt
+  integer, intent(in)               :: n
+  logical, intent(in),  optional :: debug
+  integer, dimension(n)          :: id
+  id=date2int(string2date(str,fmt,debug=debug),n)
+endfunction str2int
+
 function detail2str(iname,year,month,day,hour,seconds,minute,second,days,&
                         fstep,ntme,nlev,nlat,nlon,nproc,debug) result(fname)
-  implicit none
   character(len=*), intent(in) :: iname
   character(len=len(iname))    :: fname
   integer, intent(in),optional :: year,month,day,hour,seconds,&
@@ -268,7 +277,6 @@ function detail2str(iname,year,month,day,hour,seconds,minute,second,days,&
 endfunction detail2str
 
 function cd2str(iname,cd,debug) result(fname)
-  implicit none
   character(len=*), intent(in)   :: iname
   character(len=len(iname))      :: fname
   type(date),intent(in)          :: cd
@@ -282,7 +290,6 @@ function cd2str(iname,cd,debug) result(fname)
 endfunction cd2str
 
 function int2str(iname,id,debug) result(fname)
-  implicit none
   character(len=*), intent(in)      :: iname
   character(len=len(iname))         :: fname
   integer, intent(in), dimension(:) :: id
@@ -290,17 +297,7 @@ function int2str(iname,id,debug) result(fname)
   fname=cd2str(iname,to_date(id),debug=debug)
 endfunction int2str
 
-! function ts2str(iname,ts,debug) result(fname)
-!   implicit none
-!   character(len=*), intent(in)      :: iname
-!   character(len=len(iname))         :: fname
-!   type(timestamp), intent(in)       :: ts
-!   logical, intent(in),  optional    :: debug
-!   fname=cd2str(iname,to_date(ts),debug=debug)
-! endfunction ts2str
-
 function ts2str(iname,ts,addsecs,debug) result(fname)
-  implicit none
   character(len=*), intent(in)      :: iname
   character(len=len(iname))         :: fname
   type(timestamp), intent(in)       :: ts
@@ -322,7 +319,6 @@ function cd2str_add(iname,cd,addsecs,debug) result(fname)
 endfunction cd2str_add
 
 function int2str_add(iname,id,addsecs,debug) result(fname)
-  implicit none
   character(len=*), intent(in)      :: iname
   character(len=len(iname))         :: fname
   integer, intent(in), dimension(:) :: id
@@ -482,7 +478,6 @@ subroutine days1900_to_int(id,ndays,msg)
 endsubroutine days1900_to_int
 
 function secs2str(iname,nsecs,debug) result(fname)
-  implicit none
   character(len=*), intent(in)            :: iname
   character(len=len(iname))               :: fname
   integer, intent(in)                     :: nsecs
@@ -493,7 +488,6 @@ function secs2str(iname,nsecs,debug) result(fname)
 endfunction secs2str
 
 function days2str(iname,ndays,debug) result(fname)
-  implicit none
   character(len=*), intent(in)            :: iname
   character(len=len(iname))               :: fname
   real(kind=8), intent(in)                :: ndays
@@ -533,7 +527,6 @@ subroutine assign_NTERM(NTERM)
 endsubroutine assign_NTERM
 
 function compare_date(n,dateA,dateB,wildcard) result(equal)
-  implicit none
   integer,   intent(in)           :: n
   type(date),intent(in)           :: dateA,dateB(n)
   integer,   intent(in), optional :: wildcard

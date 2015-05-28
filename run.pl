@@ -118,7 +118,7 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
-($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3000"   ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
+($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3009"   ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
 
 my %BENCHMARK;
 # OpenSource 2008
@@ -138,7 +138,7 @@ my %BENCHMARK;
 #  %BENCHMARK = (grid=>"TNO28" ,year=>2008,emis=>"emis_TNO28"         );
 #  %BENCHMARK = (grid=>"MACC02",year=>2008,emis=>"2008_emis_EMEP_MACC") ;
 if (%BENCHMARK) {
-  $BENCHMARK{'archive'} = 1;                        # save summary info in $DataDir
+  $BENCHMARK{'archive'} = 1;                   # save summary info in $DataDir
   $BENCHMARK{'debug'} = $BENCHMARK{'archive'}; # chech if all debug flags are .false.
 # Default setting, if not previously specified
   $BENCHMARK{'chem'}  = "EmChem09soa"
@@ -156,16 +156,28 @@ my $SR= 0;     # Set to 1 if source-receptor calculation
 
 my $CWF=0;     # Set to N for 'N'-day forecast mode (0 otherwise)
    $CWF=0 if %BENCHMARK;
-my ($CWFBASE, $CWFDAYS, $CWFMETV, @CWFDATE, @CWFDUMP, $eCWF, $aCWF, $CWFTAG) if $CWF;
-if ($CWF) {
-  $CWFBASE=$ENV{"DATE"}?$ENV{"DATE"}:"today"; # Forecast base date     (default today)
-  $CWFDAYS=$ENV{"NDAY"}?$ENV{"NDAY"}:$CWF;    # Forecast lenght indays (default $CWF)
-  $CWFMETV=$ENV{"UTC"}?$ENV{"UTC"}:"12";      # Met.UTC version        (default 12UTC)
+my ($CWFBASE,$CWFDAYS,$CWFMETV,@CWFDATE,@CWFDUMP,$eCWF,$eSTART,$aCWF,$CWFTAG) if($CWF);
+if($CWF){
+  $CWFBASE=defined($ENV{"DATE"})?$ENV{"DATE"}:"today"; # Forecast base date     (default today)
+  $CWFDAYS=defined($ENV{"NDAY"})?$ENV{"NDAY"}:$CWF;    # Forecast lenght indays (default $CWF)
+  $CWFMETV=defined($ENV{"UTC"})?$ENV{"UTC"}:"12";      # Met.UTC version        (default 12UTC)
   $CWFBASE=shift if @ARGV;              # Forecast base date, lenght
   $CWFDAYS=shift if @ARGV;              #  & MetUTC version can be passed
   $CWFMETV=shift if @ARGV;              #  as argument to script
-  $CWFBASE="tomorrow" if($CWFBASE eq "today")and($CWFMETV =~ /12/);  # default date for 12UTC version 
+# $CWFBASE="tomorrow" if($CWFBASE eq "today")and($CWFMETV =~ /12/);  # default date for 12UTC version 
   $CWFBASE=date2str($CWFBASE,"%Y%m%d");
+# eCWF: 0[none]|Emergency[Forecast]|AshInversion[Hindcast]
+# eSTART: emission start [in hours since $CWFBASE]
+  $eCWF=$ENV{"eEMEP"}?$ENV{"eEMEP"}:0;
+  $eSTART=$ENV{'START_ASH'}?$ENV{'START_ASH'}:                
+          $ENV{'PBS_ARRAY_INDEX'}?$ENV{'PBS_ARRAY_INDEX'}*3-3:
+          $ENV{'PBS_ARRAYID'}?$ENV{'PBS_ARRAYID'}*3-3:
+          $ENV{'TASK_ID'}?$ENV{'TASK_ID'}*3-3:0 if($eCWF=~/AshInversion/);
+  $eSTART=sprintf("%02d",$eSTART) if defined($eSTART);
+# Analysis:
+  $aCWF=($CWFMETV=~/AN/);              
+  $CWF=($eCWF?"eemep-":"CWF_").($CWFMETV?"$CWFMETV-$CWFBASE":"$CWFBASE").
+       ($eSTART?"+$eSTART":"");
 # $CWFMETV:
 # Forecast/Analysis ($CWFDAYS<=6): meteo${CWFBASE}_{00,01,..}d.nc
 #   AN00|AN Analysis w/ 00UTC met
@@ -173,9 +185,6 @@ if ($CWF) {
 # Hindcast ($CWFDAYS>6): meteo{DAY1,DAY2,..}_??d.nc
 #   *00|24|48|72 run w/ 00UTC met 00d|01d|02d|03d
 #   *12|36|60|84 run w/ 12UTC met 01d|02d|03d|04d
-  $eCWF=0;                              # Emergency forecast
-  $aCWF=($CWFMETV =~ /AN/ );            # Analysis
-  $CWF=($eCWF?"eemep-":"CWF_").($CWFMETV?"$CWFMETV-$CWFBASE":"$CWFBASE");
   $CWFMETV =~s/[^\d.]//g;                           # extract number part
   $CWFDATE[0]=date2str($CWFBASE." 1 day ago"  ,"%Y%m%d");     # yesterday
   $CWFDATE[1]=$CWFBASE;                                       # start date
@@ -185,28 +194,20 @@ if ($CWF) {
   $CWFDUMP[0]=date2str($CWFBASE." 1 day"          ,"%Y%m%d"); # 1st dump/nest
   $CWFDUMP[1]=date2str($CWFBASE." 2 day"          ,"%Y%m%d"); # 2nd dump/nest
   given($ENV{"PBS_JOBNAME"}){
-  when(/nmc/){
-    $MAKEMODE="MACC-NMC";} # standard NMC run
-  when(/eva/){
-    given(substr($CWFBASE,0,4)){  # YEAR
-      when([2010]){$MAKEMODE="MACC-EVA2010";} # 2010 EVA
-      when([2011]){$MAKEMODE="MACC-EVA2011";} # 2011 EVA
-      default     {$MAKEMODE="MACC-EVA";}}} # standard EVA run
-  default{
-    given(substr($CWFBASE,0,4)){  # YEAR
-      when([2010]){$MAKEMODE=($eCWF)?"eEMEP2010":"MACC";}
-      when([2011]){$MAKEMODE=($eCWF)?"eEMEP2011":"MACC";}
-      when([2013]){$MAKEMODE=($eCWF)?"eEMEP2013":"MACC";}
-      default     {$MAKEMODE=($eCWF)?"eEMEP"    :"MACC";}}} # Standard Forecast model setup
+    when(/nmc/){$MAKEMODE="MACC-NMC";}            # NMC run
+    when(/eva/){$MAKEMODE="MACC-EVA";}            # EVA run
+    default    {$MAKEMODE=($eCWF)?"eEMEP":"MACC";}# eEMEP|ENS run
   }
-  $MAKEMODE=$ENV{"MAKEMODE"} if($ENV{"MAKEMODE"}); # override by env variable
-  $MAKEMODE .="-3DVar" if($aCWF);
+  $MAKEMODE =$ENV{"MAKEMODE"} if($ENV{"MAKEMODE"});# override by env variable
+  $MAKEMODE.="-3DVar" if($aCWF);
   $exp_name = ($eCWF)?"EMERGENCY":($aCWF?"ANALYSIS":"FORECAST");
   $exp_name.= "_REVA" if($MAKEMODE=~/EVA/);
   $exp_name.= "_NMC"  if($MAKEMODE=~/NMC/);
-  $exp_name.= "-dbg"  if($ENV{"DEBUG"} eq "yes");
+  $exp_name.= "-dbg"  if($ENV{"DEBUG"} and ($ENV{"DEBUG"} eq "yes"));
+  $outputs  = "EMERGENCY" if($eCWF);
   $testv.= ($eCWF)?".eCWF":".CWF";
-  $GRID = ($eCWF)?"GLOBAL":"MACC14";
+  $Chem  = ($ENV{"CHEM"})?$ENV{"CHEM"}:($eCWF)?"Emergency":"EmChem09soa";
+  $GRID  = ($ENV{"GRID"})?$ENV{"GRID"}:($eCWF)?"GLOBAL":"MACC14";
   $CWFTAG.= ".REVA" if($MAKEMODE=~/EVA/);
   $CWFTAG.= ".NMC"  if($MAKEMODE=~/NMC/);
   $CWFTAG.= "_".$ENV{'TAG'}  if($ENV{'TAG'});
@@ -463,38 +464,37 @@ my $SNAP_CDF = "/global/work/mifapw/temp";  # Use for CdfFractions
 
 #Dave, reset to Emission_Trends for Chem project, Oct 18th
 my $TREND_RUNS = 0;
-if ($STALLO && $TREND_RUNS ) {
+if($STALLO && $TREND_RUNS){
   $EMIS_INP = "/global/work/$AGNES/Emission_Trends";
   die "Year not in trend run series!! " unless -f $EMIS_INP/$year;
   $emisdir = "$EMIS_INP/$year";
   $pm_emisdir = $emisdir;
 }
 
-my $RESET        = 0 ;  # usually 0 (false) is ok, but set to 1 for full restart
-my $COMPILE_ONLY = 0 ;  # usually 0 (false) is ok, but set to 1 for compile-only
-my $DRY_RUN      = 0 ;  # Test script without running model (but compiling)
-my $KEEP_LINKS   = 0 ;  # Keep @list_of_files after run
+my $RESET        = 0; # usually 0 (false) is ok, but set to 1 for full restart
+my $COMPILE_ONLY = 0; # usually 0 (false) is ok, but set to 1 for compile-only
+my $DRY_RUN      = 0; # Test script without running model (but compiling)
+my $KEEP_LINKS   = 0; # Keep @list_of_files after run
 $RESET=($MAKEMODE=~/MACC/) if($CWF);
-$KEEP_LINKS=%BENCHMARK and not $BENCHMARK{'archive'};
+$KEEP_LINKS=not $BENCHMARK{'archive'} if(%BENCHMARK);
 
-if (%BENCHMARK and $BENCHMARK{'debug'}){
+if(%BENCHMARK and $BENCHMARK{'debug'}){
   die "No debug flags for benchmarks!"
-  if (system ("grep -Hnie 'logical.*DEBUG.*=\ *.TRUE.' $ProgDir/*.f90") == 0) or
-     (system ("grep -Hnie 'DEBUG.*=\ *.TRUE.' $ProgDir/ModelConstants_ml.f90") == 0);
+  if(system("grep -Hnie 'logical.*DEBUG.*=\ *.TRUE.' $ProgDir/*.f90")==0) or
+    (system("grep -Hnie 'DEBUG.*=\ *.TRUE.' $ProgDir/ModelConstants_ml.f90")==0);
 }
 
-if ( $ENV{PBS_NODEFILE} ) {
-   $_ =  `wc -l $ENV{PBS_NODEFILE}`;
-   my $RUN_NPROC;
-   ( $RUN_NPROC, undef ) = split;
-   print "Qsub required: $RUN_NPROC processors\n";
-
-} else {
-   print "skip nodefile check on interactive runs\n";
+if($ENV{PBS_NODEFILE}){
+  $_ =  `wc -l $ENV{PBS_NODEFILE}`;
+  my $RUN_NPROC;
+  ($RUN_NPROC,undef) = split;
+  print "Qsub required: $RUN_NPROC processors\n";
+}else{
+  print "skip nodefile check on interactive runs\n";
 }
 
 
-my @month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,31);
+my @month_days=(0,31,28,31,30,31,30,31,31,30,31,30,31);
 $month_days[2] += leap_year($year);
 
 #Only 360 days in HIRHAM metdata. We ignore leaps
@@ -835,7 +835,7 @@ foreach my $scenflag ( @runs ) {
     # INERIS special! nox and pm. Take from 2010 IIASA
     #if ( $INERIS_FACS && -e "$timeseries/emissplit.specials.$poll.2010" ) {
 
-    if ( $Chem eq "EmChem09" ) { # e.g. when PM25 is not split, e.g. RCA, make EMCHEM09
+    if (($Chem eq "EmChem09")or($Chem eq "Emergency")) { # e.g. when PM25 is not split, e.g. RCA, make EMCHEM09
       $ifile{"$SplitDir/emissplit.specials.$poll"} = "emissplit.specials.$poll"
       if( -e "$SplitDir/emissplit.specials.$poll" );
     } elsif ( $Chem eq "CRI_v2_R5" ) { # e.g. TSAP
@@ -970,35 +970,47 @@ foreach my $scenflag ( @runs ) {
   }
 
  #EnsClim RCA, and should be default:
-  if ($GRID eq "RCA") {
-    $ifile{"$DataDir/VolcanoesLL_2010.dat"} = "VolcanoesLL.dat";
-  } else {
-    $ifile{"$DataDir/VolcanoesLL.dat"} = "VolcanoesLL.dat";
-  }
-
-# Emergency senarios (eEMEP)
-  if(($MAKEMODE =~ /(2010|2011)/) or ($MAKEMODE =~ /eEMEP/)){
-    my $dir="$ProgDir/ZCM_Emergency";
-    cp ("$dir/emergency_emission.csv","emergency_emission.csv");
-    $ifile{"$dir/emergency_location.csv"} = "emergency_location.csv";
-    print "$dir/emergency_location.csv\n";
-    open(IN,"<$dir/emergency_location.csv");
-    while(my $line = <IN>){
-      unless ($line =~ /#.*/) {             # Skip comment lines
-        my $vname = (split(",",$line))[0];  # Emergency tracer name
-        my $efile = "$EmergencyData/${vname}_7bin.eruptions";  # Volcanic eruption
-        $efile = "$EmergencyData/${vname}_2bin_${MAKEMODE}.eruptions" if($MAKEMODE =~ /(2010|2011)/);
-      # $efile = "$EmergencyData/${vname}_2bin_${MAKEMODE}_SR-SOx.eruptions" if($MAKEMODE =~ /(2010|2011)/);
-      # $efile = "$EmergencyData/${vname}_2bin_${MAKEMODE}_SR-PMx.eruptions" if($MAKEMODE =~ /(2010|2011)/);
-        $efile =~ s|bin_SR-|bin_| if($SR); # remove the SR- from $MAKEMODE
-        system("cat $efile >> emergency_emission.csv") if (-e $efile);
-        $efile = "$EmergencyData/${vname}.accident";           # NPP accident
-        system("cat $efile >> emergency_emission.csv") if (-e $efile);
-        $efile = "$EmergencyData/${vname}.explosion";          # NUC explosion
-        system("cat $efile >> emergency_emission.csv") if (-e $efile);
+# if ($GRID eq "RCA") {
+#   $ifile{"$DataDir/VolcanoesLL_2010.dat"} = "VolcanoesLL.dat";
+# } else {
+#   $ifile{"$DataDir/VolcanoesLL.dat"} = "VolcanoesLL.dat";
+# }
+  if($eCWF){
+    my ($emis,$loct,$f,$vname);
+    given($eCWF){
+    when("AshInversion"){
+      $loct=EMEP::Sr::slurp("$EmergencyData/AshInv_9bin19lev.location");
+      $emis=EMEP::Sr::slurp("$EmergencyData/AshInv_9bin19lev.eruption");
+      $vname=(split(",",(split(/\n/,$loct))[-1]))[0];   # Vent name
+#     $emis=~s:AshInv:$vname:g;
+      $emis=~s:SR\+H..:SR\+H$eSTART:g;
+   }when("Emergency"){
+      $loct=EMEP::Sr::slurp("$ProgDir/ZCM_Emergency/emergency_location.csv");
+      $emis=EMEP::Sr::slurp("$ProgDir/ZCM_Emergency/emergency_emission.csv");
+      foreach my $line (split(/\n/,$loct)){ # Split lines
+        unless ($line =~ /#.*/) {           # Skip comment lines
+          $vname=(split(",",$line))[0];     # Emergency tracer name
+          $f="$EmergencyData/${vname}_7bin.eruptions";# Volcanic eruption
+          $emis.=EMEP::Sr::slurp($f)if(-e $f);
+          $f="$EmergencyData/${vname}.accident";      # NPP accident
+          $emis.=EMEP::Sr::slurp($f)if(-e $f);
+          $f="$EmergencyData/${vname}.explosion";     # NUC explosion
+          $emis.=EMEP::Sr::slurp($f)if(-e $f);
+        }
       }
-    }
-    close(IN);
+    }default{
+      die "Unsiported eEMEP mode $eCWF";
+    }}
+    open(TMP,">columnsource_location.csv");
+    print TMP "$loct";
+    close(TMP);
+    open(TMP,">columnsource_emission.csv");
+    print TMP "$emis";
+    close(TMP);
+  }else{
+    die "Need to provide your own volcanic emissions for $GRID" if($GRID eq "RCA");
+    $ifile{"$DataDir/volcano_location.csv"} = "columnsource_location.csv";
+    $ifile{"$DataDir/volcano_emission.csv"} = "columnsource_emission.csv";
   }
 
 # For Pollen

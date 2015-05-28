@@ -36,15 +36,6 @@ public :: Config_ModelConstants
 CHARACTER(LEN=30), public, save :: EXP_NAME="EMEPSTD"
 CHARACTER(LEN=30), public, save :: MY_OUTPUTS="EMEPSTD"
 
-! FORECAST mode run:
-! * Nested IC/BC def in Nest_ml & IFSMOZ_ExternalBICs_ml
-! * Special hourly output def in My_Outputs_ml
-! * Only dayly and hourly output are required,
-!   all other output types to false in Derived_ml.
-!NML These will be reset by forecast namelist
-!NML logical, public, parameter :: FORECAST=&
-!NML (EXP_NAME=="FORECAST").or.(EXP_NAME=="EVA2010").or.(EXP_NAME=="EMERGENCY")
-
 ! Namelist controlled:
 ! Some flags for model setup
 !------------ NAMELIST VARIABLES - can be reset by emep_namelist.nml file
@@ -137,28 +128,28 @@ type(emep_debug), public, save :: DEBUG
 real, public, save :: CONVECTION_FACTOR = 1.0
 !-----------------------------------------------------------
 logical, public, save ::             &
-  FORECAST              = .false.    &! reset in namelist
- ,USE_SOILWATER         = .false.    &!
- ,USE_SEASALT           = .true.     & !
+  FORECAST              = .false.    & ! reset in namelist
+ ,USE_SOILWATER         = .false.    &
+ ,USE_SEASALT           = .true.     &
  ,USE_CONVECTION        = .false.    & ! false works best for Euro runs,
 !
 ! Might sometimes change for scenario runs (e.g. EnsClim):
  ,USE_AIRCRAFT_EMIS  = .true.        & ! Needs global file, see manual
- ,USE_LIGHTNING_EMIS = .true.        & ! 
+ ,USE_LIGHTNING_EMIS = .true.        & 
 !
 ! More experimental:
- ,USE_ROADDUST          = .false.    & ! TNO Road Dust routine. So far with simplified "climate-correction" factor
- ,USE_DUST              = .false.    &! Experimental
- ,TEGEN_DATA            = .true.     &! Interpolate global data to make dust if  USE_DUST=.true.
+ ,USE_ROADDUST       = .false.       & ! TNO Road Dust routine. So far with simplified "climate-correction" factor
+ ,USE_DUST           = .false.       & ! Experimental
+ ,TEGEN_DATA         = .true.        & ! Interpolate global data to make dust if  USE_DUST=.true.
  ,INERIS_SNAP1       = .false.       & !(EXP_NAME=="TFMM"), & ! Switches off decadal trend
  ,INERIS_SNAP2       = .false.       & !(EXP_NAME=="TFMM"), & ! Allows near-zero summer values
- ,USE_EMERGENCY      = .false.       & ! Emergency: Volcanic Eruption & Nuclear Accident. Under development.
+ ,USE_ASH            = .false.       & ! Ash from Volcanic Eruption
  ,USE_AOD            = .false.       &
- ,USE_POLLEN         = .false.       &  ! EXPERIMENTAL. Only works if start Jan 1
-! ,USE_GRAVSET        = .false.       &  ! Gravitationsl settlign, very hardcoded, just testing
- ,USE_AMINEAQ        = .false.       &  ! MKPS
- ,ANALYSIS           = .false.       &  ! EXPERIMENTAL: 3DVar data assimilation
- ,USE_FASTJ          = .false.       & !use FastJ_ml for computing rcphot
+ ,USE_POLLEN         = .false.       & ! EXPERIMENTAL. Only works if start Jan 1
+!,USE_GRAVSET        = .false.       & ! Gravitationsl settlign, very hardcoded, just testing
+ ,USE_AMINEAQ        = .false.       & ! MKPS
+ ,ANALYSIS           = .false.       & ! EXPERIMENTAL: 3DVar data assimilation
+ ,USE_FASTJ          = .false.       & ! use FastJ_ml for computing rcphot
 !
 ! Output flags
  ,SELECT_LEVELS_HOURLY  = .false.    & ! for FORECAST, 3DPROFILES
@@ -250,7 +241,7 @@ Logical , save, public :: &
 
 integer, public :: KMAX_MID, &  ! Number of points (levels) in vertical
                    KMAX_BND     ! Number of level boundaries (=KMAX_MID+1)
-integer, public :: IIFULLDOM,JJFULLDOM!  & SET AUTOMATICALLY BY THE CODE
+integer, public :: IIFULLDOM,JJFULLDOM  ! SET AUTOMATICALLY BY THE CODE
 ! IIFULLDOM = 182, JJFULLDOM = 197 ! x,y-Dimensions of full HIRHAM domain
 ! IIFULLDOM = 170, JJFULLDOM = 133 ! x,y-Dimensions of full EMEP domain
 ! IIFULLDOM = 132, JJFULLDOM = 159 ! x,y-Dimensions of full EECA domain
@@ -334,7 +325,7 @@ logical, public, save ::  DebugCell  = .false.
 !Apr 2014  ALL MOVED TO CONFIG SYSTEM DEBUG%IJ
 ! The coordinates given here only apply for the standard EMEP domain
 !integer, private, parameter :: &
-!  DEBUG_ii= -99, DEBUG_jj= -99 ! none
+! DEBUG_ii=-99, DEBUG_jj=-99 ! none
 ! DEBUG_ii= 79, DEBUG_jj= 56 ! Eskdalemuir
 ! DEBUG_ii= 73, DEBUG_jj= 48 ! Mace Head
 ! DEBUG_ii= 88, DEBUG_jj= 53 ! Sibton
@@ -357,10 +348,10 @@ logical, public, save ::  DebugCell  = .false.
 ! DEBUG_ii= 90, DEBUG_jj= 104 !  Wetland, Tundra
 ! DEBUG_ii= 72-OFFSET_i, DEBUG_jj= 37-OFFSET_j ! biomass burnung, Aug 2003
 ! DEBUG_ii= 90-OFFSET_i, DEBUG_jj= 27-OFFSET_j ! biomass burnung, Jul 2009
-!DEBUG_ii= 58-OFFSET_i, DEBUG_jj= 72-OFFSET_j ! 99% water, SMI problems
-!DUST DEBUG_ii= 94-OFFSET_i, DEBUG_jj= 24-OFFSET_j ! 99% water, dust problems
+! DEBUG_ii= 58-OFFSET_i, DEBUG_jj= 72-OFFSET_j ! 99% water, SMI problems
+! DUST DEBUG_ii= 94-OFFSET_i, DEBUG_jj= 24-OFFSET_j ! 99% water, dust problems
 ! DEBUG_ii= 85, DEBUG_jj= 35 ! Sea, Bay of Biscay
-!DEBUG_ii= 76, DEBUG_jj= 65 ! Sea,  North sea
+! DEBUG_ii= 76, DEBUG_jj= 65 ! Sea,  North sea
 ! DEBUG_ii= 66, DEBUG_jj= 50 ! Sea,  west UK
 ! DEBUG_ii= 80, DEBUG_jj= 52 ! Irish sea
 ! DEBUG_ii= 91, DEBUG_jj= 67 ! Tange
@@ -371,8 +362,8 @@ logical, public, save ::  DebugCell  = .false.
 ! DEBUG_i= 62, DEBUG_j= 45  ! SEA
 ! DEBUG_i= 10, DEBUG_j= 140 !NEGSPOD
 ! DEBUG_i= 70, DEBUG_j= 40 ! Lichtenstein, to test ncc
-!  DEBUG_i= DEBUG_II+OFFSET_i, DEBUG_j= DEBUG_JJ+OFFSET_j    ! EMEP/EECCA
-!  DEBUG_i= 60, DEBUG_j=  50  ! Bremen
+! DEBUG_i= DEBUG_II+OFFSET_i, DEBUG_j= DEBUG_JJ+OFFSET_j    ! EMEP/EECCA
+! DEBUG_i= 60, DEBUG_j= 50 ! Bremen
 ! DEBUG_i= 59, DEBUG_j= 79  ! JCOAST
 ! DEBUG_i= 48, DEBUG_j= 15  !  BB aug 2006
 ! DEBUG_i= 9, DEBUG_j= 201                                  ! MACC02
@@ -407,7 +398,7 @@ logical, public, save ::  DebugCell  = .false.
   ,DEBUG_NH3            = .false. & ! NH3Emis experimental
   ,DEBUG_OUTPUTCHEM     = .false. & ! Output of netcdf results
   ,DEBUG_OUT_HOUR       = .false. & ! Debug Output_hourly.f90
-  ,DEBUG_POLLEN         = .false.  &
+  ,DEBUG_POLLEN         = .true.  &
 !MV  ,DEBUG_RUNCHEM        = .false. & ! DEBUG_RUNCHEM is SPECIAL
     ,DEBUG_DUST           = .false. & ! Skips fast chemistry to save some CPU
     ,DEBUG_ROADDUST     = .false. &
@@ -417,15 +408,14 @@ logical, public, save ::  DebugCell  = .false.
   ,DEBUG_RB             = .false. &
   ,DEBUG_SOILWATER      = .false. &
   ,DEBUG_SOILNOX        = .false. &
-  ,DEBUG_VOLC           = .false. & ! Volcanoes
-  ,DEBUG_EMERGENCY      = .false.    ! Emergency: Volcanic Eruption & Nuclear Accident. Under development.
+  ,DEBUG_COLSRC         = .true.    ! Volcanic emissions and Emergency scenarios
 
 !=============================================================================
 ! 3)  Source-receptor runs?
 ! We don't (generally) want daily outputs for SR runs, so in
 ! Derived_ml, we set all IOU_DAY false if SOURCE_RECPTOR = .true..
 
-logical, public, parameter :: SOURCE_RECEPTOR = .false.
+logical, public, save :: SOURCE_RECEPTOR = .false., VOLCANO_SR=.false.
 
 ! Compress NetCDF output? (nc4 feature, use -1 for netcdf3 output)
 integer, public, save :: NETCDF_DEFLATE_LEVEL=4
@@ -579,76 +569,65 @@ character(len=*), public, parameter :: model="EMEP_MSC-W "
 !----------------------------------------------------------------------------
 contains
 subroutine Config_ModelConstants(iolog)
-    character(len=120)  :: txt
-    integer, intent(in) :: iolog ! for Log file
-    integer :: i, ispec
-    logical :: first_call = .true.
+  character(len=120)  :: txt
+  integer, intent(in) :: iolog ! for Log file
+  integer :: i, ispec
+  logical :: first_call = .true.
 
-    NAMELIST /ModelConstants_config/ &
-      EXP_NAME &  ! e.g. EMEPSTD, FORECAST, TFMM, TodayTest, ....
-     ,USES   & ! just testname so far
-     ,AERO   & ! Aerosol settings
-     ,DEBUG  & !
-     ,MY_OUTPUTS  &  ! e.g. EMEPSTD, FORECAST, TFMM 
-     ,USE_SOILWATER &
-     ,USE_CONVECTION &
-     ,CONVECTION_FACTOR &
-     ,USE_AIRCRAFT_EMIS,USE_LIGHTNING_EMIS  &  
-     ,USE_ROADDUST, USE_DUST &
-     ,USE_EURO_SOILNOX, USE_GLOBAL_SOILNOX, EURO_SOILNOX_DEPSCALE &
-     ,USE_SEASALT ,USE_POLLEN &
-     ,INERIS_SNAP1, INERIS_SNAP2 &   ! Used for TFMM time-factors
-     ,SELECT_LEVELS_HOURLY &  ! incl. FORECAST, 3DPROFILES
-     ,FORECAST, USE_EMERGENCY, ANALYSIS , USE_AOD &
-     ,SEAFIX_GEA_NEEDED & ! only if problems, see text above.
-     ,BGND_CH4  & ! Can reset background CH4 values 
-     ,EMIS_SOURCE, EMIS_TEST, EMIS_OUT & 
-     ,emis_inputlist &
-     ,DataDir,EmisDir &
-     ,FLUX_VEGS  & ! Allows user to add veg categories for eg IAM ouput
-     ,VEG_2dGS & ! Allows 2d maps of growing seasons
-     ,VEG_2dGS_Params & ! Allows 2d maps of growing seasons
-     ,PFT_MAPPINGS &  ! Allows use of external LAI maps
-     ,NETCDF_DEFLATE_LEVEL,  RUNDOMAIN, DOMAIN_DECOM_MODE &
-     ,JUMPOVER29FEB, HOURLYFILE_ending
+  NAMELIST /ModelConstants_config/ &
+    EXP_NAME &  ! e.g. EMEPSTD, FORECAST, TFMM, TodayTest, ....
+   ,USES   & ! just testname so far
+   ,AERO   & ! Aerosol settings
+   ,DEBUG  & !
+   ,MY_OUTPUTS  &  ! e.g. EMEPSTD, FORECAST, TFMM 
+   ,USE_SOILWATER, USE_CONVECTION, CONVECTION_FACTOR &
+   ,USE_AIRCRAFT_EMIS, USE_LIGHTNING_EMIS, USE_ROADDUST, USE_DUST &
+   ,USE_EURO_SOILNOX, USE_GLOBAL_SOILNOX, EURO_SOILNOX_DEPSCALE &
+   ,USE_SEASALT, USE_POLLEN, USE_ASH, USE_AOD &
+   ,INERIS_SNAP1, INERIS_SNAP2 &   ! Used for TFMM time-factors
+   ,SELECT_LEVELS_HOURLY  & ! incl. FORECAST, 3DPROFILES
+   ,FORECAST, ANALYSIS, SOURCE_RECEPTOR, VOLCANO_SR &
+   ,SEAFIX_GEA_NEEDED     & ! only if problems, see text above.
+   ,BGND_CH4              & ! Can reset background CH4 values 
+   ,EMIS_SOURCE, EMIS_TEST, EMIS_OUT, emis_inputlist,DataDir, EmisDir &
+   ,FLUX_VEGS             & ! Allows user to add veg categories for eg IAM ouput
+   ,VEG_2dGS              & ! Allows 2d maps of growing seasons
+   ,VEG_2dGS_Params       & ! Allows 2d maps of growing seasons
+   ,PFT_MAPPINGS          &  ! Allows use of external LAI maps
+   ,NETCDF_DEFLATE_LEVEL,  RUNDOMAIN, DOMAIN_DECOM_MODE &
+   ,JUMPOVER29FEB, HOURLYFILE_ending
 
-    txt = "ok"
-    !Can't call check_file due to circularity
-    !call check_file('emep_settings.nml', file_exists, needed=.true., errmsg=txt)
-    open(IO_NML,file='config_emep.nml',delim='APOSTROPHE')
-    read(IO_NML,NML=ModelConstants_config)
-    !close(IO_NML)
+  txt = "ok"
+  !Can't call check_file due to circularity
+  !call check_file('emep_settings.nml', file_exists, needed=.true., errmsg=txt)
+  open(IO_NML,file='config_emep.nml',delim='APOSTROPHE')
+  read(IO_NML,NML=ModelConstants_config)
+  !close(IO_NML)
 
-    USE_SOILNOX = USE_EURO_SOILNOX .or. USE_GLOBAL_SOILNOx
+  USE_SOILNOX = USE_EURO_SOILNOX .or. USE_GLOBAL_SOILNOx
 
-    ! Convert DEBUG%SPEC to index
+  ! Convert DEBUG%SPEC to index
+  if(first_call) then
+    ispec = find_index( DEBUG%SPEC, species(:)%name )
+    !print *, "debug%spec testing", ispec, trim(DEBUG%SPEC)
+    call CheckStop(ispec<1,"debug%spec not found"//trim(DEBUG%SPEC))
+    DEBUG%ISPEC = ispec
+    first_call = .false.
 
-    if( first_call ) then
-        ispec = find_index( DEBUG%SPEC, species(:)%name )
-        !print *, "debug%spec testing", ispec, trim(DEBUG%SPEC)
-        call CheckStop( ispec < 1, &
-              "debug%spec not found"//trim(DEBUG%SPEC))
-        DEBUG%ISPEC = ispec
-        first_call = .false.
+    !GERBER work
+    do i = 1, size(AERO%DpgN(:))
+      AERO%DpgN(i) = DpgV2DpgN(AERO%DpgV(i),AERO%sigma(i))
+    enddo     
+  endif
 
-       !GERBER work
-        do i = 1, size(AERO%DpgN(:))
-           AERO%DpgN(i) = DpgV2DpgN( AERO%DpgV(i), AERO%sigma(i) )
-        end do
-       
-    end if
+  if(MasterProc)then
+    write(*, * ) "NAMELIST IS "
+    write(*, NML=ModelConstants_config)
+    write(*,* ) "NAMELIST IOLOG IS ", iolog
+    write(iolog,*) "NAMELIST IS "
+    write(iolog, NML=ModelConstants_config)
+  endif
 
-
-    if ( MasterProc )  then
-     write(*, * ) "NAMELIST IS "
-     write(*, NML=ModelConstants_config)
-     write(*,* ) "NAMELIST IOLOG IS ", iolog
-     write(iolog,*) "NAMELIST IS "
-     write(iolog, NML=ModelConstants_config)
-    end if
-
-  
-end subroutine Config_ModelConstants
-
-end module ModelConstants_ml
+endsubroutine Config_ModelConstants
+endmodule ModelConstants_ml
 !_____________________________________________________________________________
