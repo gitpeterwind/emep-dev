@@ -153,28 +153,27 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-28th May 2015 Alvaro 3009
-
-Note that for periodic events, eg eruption the 15th of each month,
-it is better to run full months in order to ensure the vent is picked up.
+28th May 2015 Alvaro 3009-10
 
 Volcanos_ml,Emergency_ml,ColumnSource_ml,Makefile.SRCS:
 - Implement volcanic passive degassing of SO2 (previously in Volcanos_ml)
   into Emergency_ml.
 - Rename Emergency_ml (with SO2 from volcanoes) to ColumnSource_ml.
-- Remove deprecasted modules: Volcanos_ml and Emergency_ml.
+- Remove deprecated modules: Volcanos_ml and Emergency_ml.
 - Set USE_ASH=T (F by default) in ModelConstants_config namelist
   to read historical ASH emissions from Eyjafjallajökull's 2010 and Grimsvotn's 2011 eruptions into the ASH group.
 - The ASH group is only available on EmChem09, EmChem09soa and Emergency schemes.
   ColumnSource_ml will write a warning into RunLog when USE_ASH=T but
   the ASH group is not found.
+- Note that for periodic events, eg eruption the 15th of each month,
+  it is better to run full months in order to ensure the vent is picked up.
 
 ModelConstants_ml,Derived_ml,ZD_OZONE/My_Outputs_ml,
 config_EMEPSTD.nml,config_BM-EECCA.nml,
 config_FORECAST.nml,config_EMERGENCY.nml,
 config_EMEPGLOB.nml,config_IMPACT2C.nml:
-- Renane USE_EMERGENCY to USE_ASH.
-- Renane/merge DEBUG_VOLC and DEBUG_EMERGENCY to  DEBUG_COLSRC.
+- Rename USE_EMERGENCY to USE_ASH.
+- Rename/merge DEBUG_VOLC and DEBUG_EMERGENCY to  DEBUG_COLSRC.
 - Change SOURCE_RECEPTOR from a parameter,
   to a user variable to be read in ModelConstants_config.
 - Add VOLCANO_SR user variable read in ModelConstants_config,
@@ -186,10 +185,10 @@ run.pl,Makefile:
   Default files, $DataDir/volcano_location.csv and $DataDir/volcano_emission.csv,
   contains SO2 passive deggasing from Etna and Stromboli,
   ASH Eyjafjallajökull's 2010 eruption, and ASH and SO2 from Grimsvotn's 2011 eruption.
-- 2 EMERGENCY modes: Emergency and AshInversion set from enverioment variable
+- 2 EMERGENCY modes: Emergency and AshInversion set from environment variable
   eEMEP. Emergency mode (default) for multy-scenario eEMEP forecasts,
   can be run by `qsub -v eEMEP=Emergency,UTC=12,NDAY=4,DATE=... run.pl`.
-  AshInversion mode for unit-emission ensamble hindcast
+  AshInversion mode for unit-emission ensemble hindcast
   can be run by `qsub -v eEMEP=AshInversion,UTC=12,NDAY=2,DATE=... -J 1-8 run.pl`.
 
 Setup_1d_ml:
@@ -207,7 +206,7 @@ Derived_ml,ZD_OZONE/My_Derived_ml:
   tracers for eEMEP=AshInversion, as they total 171 species and the output is not needed.
 
 ZD_OZONE/My_Outputs_ml,config_Outputs_EMERGENCY.nml:
-- MY_OUTPUTS="INVERSION" for eEMEP=AshInversion unit-emission ensamble hourly output
+- MY_OUTPUTS="INVERSION" for eEMEP=AshInversion unit-emission ensemble hourly output
 - config_Outputs_EMERGENCY.nml for reduced derived output on eEMEP runs.
 
 TimeDate_ExtraUtil_ml:
