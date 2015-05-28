@@ -1006,7 +1006,7 @@ endsubroutine consistency_check
   integer :: daytime_longitude, daytime_iland, hour_longitude, hour_iland
  
 ! Initialize
-  ehlpcom0 = GRAV* 0.001*AVOG!/(sigma_bnd(k+1)-sigma_bnd(k))
+  ehlpcom0 = GRAV* 0.001*AVOG!0.001 = kg_to_g / m3_to_cm3
 
 ! Scaling for totemadd:
   dtgrid = dt_advec * GRIDWIDTH_M * GRIDWIDTH_M 

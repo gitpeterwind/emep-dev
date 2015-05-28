@@ -104,7 +104,7 @@ use GridValues_ml,        only : xmd, i_fdom, j_fdom, i_local,j_local&
        ,grid_north_pole_latitude,grid_north_pole_longitude &
        ,GlobalPosition,DefGrid,gl_stagg,gb_stagg,A_mid,B_mid &
        ,Eta_bnd,Eta_mid,dA,dB,A_mid,B_mid,A_bnd,B_bnd &
-       ,KMAX_MET,External_Levels_Def,k1_met,k2_met,x_k1_met
+       ,KMAX_MET,External_Levels_Def,k1_met,k2_met,x_k1_met,rot_angle
 
 use Io_ml ,               only: ios, IO_ROUGH, datewrite,PrintLog, &
                                 IO_CLAY, IO_SAND, open_file, IO_LOG
@@ -122,7 +122,7 @@ use ModelConstants_ml,    only : PASCAL, PT, Pref, METSTEP  &
      ,USE_DUST, TEGEN_DATA, USE_SOILWATER & 
      ,nstep,USE_CONVECTION,USE_EtaCOORDINATES,USE_FASTJ & 
      ,CONVECTION_FACTOR & 
-     ,LANDIFY_MET  & 
+     ,LANDIFY_MET,MANUAL_GRID  & 
      ,CW_THRESHOLD,RH_THRESHOLD, CW2CC,IOU_INST,JUMPOVER29FEB
 use Par_ml           ,    only : MAXLIMAX,MAXLJMAX,GIMAX,GJMAX, me  &
      ,limax,ljmax  &
@@ -136,7 +136,7 @@ use TimeDate_ml,          only : current_date, date,nmdays, &
      add_secs,timestamp,&
      make_timestamp, make_current_date, nydays, startdate, enddate
 use ReadField_ml,         only : ReadField ! reads ascii fields
-use NetCDF_ml,         only : printCDF,ReadField_CDF,Out_netCDF,GetCDF_modelgrid ! testoutputs
+use NetCDF_ml,         only : printCDF,ReadField_CDF,vertical_interpolate,Out_netCDF,GetCDF_modelgrid ! testoutputs
 use netcdf
 use TimeDate_ExtraUtil_ml,only: nctime2idate,date2string
 
@@ -223,7 +223,7 @@ contains
     real,   dimension(MAXLJMAX,KMAX_MID) :: urcv   ! rcv in x
     real,   dimension(MAXLIMAX,KMAX_MID) :: vrcv   ! and in y direction
 
-    real   p1, p2
+    real   p1, p2, x, y
     real   prhelp_sum,divk(KMAX_MID),sumdiv,dB_sum
     real   divt, inv_METSTEP
 
@@ -260,14 +260,14 @@ contains
        endif
        allocate(var_local(MAXLIMAX,MAXLJMAX,KMAX))
 
-       !On first call, check that date from meteo file correspond to dates requested. Also defines nhour_first.
+       !On first call, check that date from meteo file correspond to dates requested. 
+       !Also defines nhour_first and Nhh.
        call Check_Meteo_Date !note that all procs read this
  
        call Exner_tab()!init table
 
        debug_iloc = debug_li
        debug_jloc = debug_lj
-
     else
        nsec=METSTEP*3600.0 !from hr to sec
        ts_now = make_timestamp(current_date)
@@ -333,8 +333,86 @@ contains
     enddo
 
     !==============  now correct and complete the metfields as needed!  ==========================
+    if(MANUAL_GRID)then
+       !rotate the wind fields
+       !non-staggered grid here
+        do k=1,KMAX_MID
+           do j=1,ljmax
+              do i=1,limax
+                 x=u_xmj(i,j,k,nr)
+                 y=v_xmi(i,j,k,nr)
+                 u_xmj(i,j,k,nr) = x*cos(rot_angle(i,j))-y*sin(rot_angle(i,j))
+                 v_xmi(i,j,k,nr) = x*sin(rot_angle(i,j))+y*cos(rot_angle(i,j))
+              enddo
+           enddo
+        enddo
+        
+        !Now must stagger the wind fields
+        !must first fetch values from neighbors
+        if (neighbor(WEST) .ne. NOPROC) then
+           if(neighbor(WEST) .ne. me)then
+              buf_uw(:,:) = u_xmj(1,:,:,nr)
+              CALL MPI_ISEND(buf_uw, 8*MAXLJMAX*KMAX_MID, MPI_BYTE, &
+                   neighbor(WEST), MSG_EAST2, MPI_COMM_WORLD, request_w, INFO)
+           else
+              ! cyclic grid: own neighbor
+              ue(:,:,nr) = u_xmj(1,:,:,nr)
+           endif
+        endif
+        if (neighbor(SOUTH) .ne. NOPROC) then
+           buf_vs(:,:) = v_xmi(:,1,:,nr)
+           CALL MPI_ISEND(buf_vs, 8*MAXLIMAX*KMAX_MID, MPI_BYTE, &
+                neighbor(SOUTH), MSG_NORTH2, MPI_COMM_WORLD, request_s, INFO)
+        endif
 
-    !     Horizontal velocity divided by map-factor.
+        if (neighbor(EAST) .ne. NOPROC .and. neighbor(EAST) .ne. me) then
+           CALL MPI_RECV(ue(1,1,nr), 8*MAXLJMAX*KMAX_MID, MPI_BYTE, &
+                neighbor(EAST), MSG_EAST2, MPI_COMM_WORLD, MPISTATUS, INFO)
+        endif
+        if (neighbor(NORTH) .ne. NOPROC) then
+           CALL MPI_RECV(vn(1,1,nr), 8*MAXLIMAX*KMAX_MID, MPI_BYTE, &
+                neighbor(NORTH), MSG_NORTH2, MPI_COMM_WORLD, MPISTATUS, INFO)
+        endif
+        
+        if (neighbor(WEST) .ne. NOPROC .and. neighbor(WEST) .ne. me) then
+           CALL MPI_WAIT(request_w, MPISTATUS, INFO)
+        endif
+        if (neighbor(SOUTH) .ne. NOPROC) then
+           CALL MPI_WAIT(request_s, MPISTATUS, INFO)
+        endif
+
+        do k=1,KMAX_MID
+           do j=1,ljmax
+             do i=1,limax-1
+                u_xmj(i,j,k,nr) = 0.5*(u_xmj(i,j,k,nr)+u_xmj(i+1,j,k,nr))
+             enddo
+          enddo
+       enddo
+       do k=1,KMAX_MID
+          do j=1,ljmax
+             do i=limax,limax
+                u_xmj(i,j,k,nr) = 0.5*(u_xmj(i,j,k,nr)+ue(j,k,nr))
+             enddo
+          enddo
+       enddo
+
+       do k=1,KMAX_MID
+          do j=1,ljmax-1
+             do i=1,limax
+                v_xmi(i,j,k,nr) = 0.5*(v_xmi(i,j,k,nr)+v_xmi(i,j+1,k,nr))
+             enddo
+          enddo
+       enddo
+       do k=1,KMAX_MID
+          do j=ljmax,ljmax
+             do i=1,limax
+                v_xmi(i,j,k,nr) = 0.5*(v_xmi(i,j,k,nr)+vn(i,k,nr))
+             enddo
+          enddo
+       enddo
+
+    endif
+
     !extend the i or j index to 0
     if (neighbor(EAST) .ne. NOPROC) then
        usnd(:,:) = u_xmj(limax,:,:,nr)
@@ -369,6 +447,7 @@ contains
     endif
     if(neighbor(EAST) .ne. NOPROC) CALL MPI_WAIT(request_e, MPISTATUS, INFO)
     if(neighbor(NORTH) .ne. NOPROC)CALL MPI_WAIT(request_n, MPISTATUS, INFO)
+
     !divide by the scaling in the perpendicular direction to get effective 
     !u_xmj and v_xmi
     !(for conformal projections like Polar Stereo, xm_i and xm_j are equal)
@@ -392,7 +471,7 @@ contains
 
 !correct surface pressure here, because we will need it before we get to the 2D block
     !     conversion of pressure from hPa to Pascal.
-    if(.not.WRF_MET_CORRECTIONS)ps(:,:,nr) = ps(:,:,nr)*PASCAL 
+    if(.not.WRF_MET_CORRECTIONS)ps(1:limax,1:ljmax,nr) = ps(1:limax,1:ljmax,nr)*PASCAL 
 
     if(foundcc3d)then
        if(WRF_MET_CORRECTIONS)then
@@ -477,7 +556,7 @@ contains
                    wp=q(i,j,k,nr)*(A_mid(k) + B_mid(k)*ps(i,j,nr))/0.622!Ps in Pa here
                    relh2=wp/swp
                    !convert from potential temperature into absolute temperature
-                   !Factor 100 for Pa, Ps still in hPa here
+                   !Ps  in Pa here
                    temperature = th(i,j,k,1)* &   
                         exp(KAPPA*log((A_mid(k) + B_mid(k)*ps(i,j,1))*1.e-5))!Ps in Pa here
                    !saturation water pressure
@@ -940,6 +1019,18 @@ contains
           enddo
        enddo
 
+       if(MANUAL_GRID)then
+          !around the north pole the interpolation of wind fields is not accurate, 
+          !and we cannot rely on continuity to derive the vertical winds.
+          !Brutal: set Etadot to 0!
+          do k=1,KMAX_MID,1
+             do j = 1,ljmax
+                do i = 1,limax
+                   if(glat(i,j)>88.0)Etadot(i,j,k,nr)=0.0
+                enddo
+             enddo
+          enddo
+       endif
 
     endif
     if(met(ix_Etadot)%found)then
@@ -1042,7 +1133,8 @@ contains
     endif
     if (neighbor(SOUTH) .ne. NOPROC) then
       CALL MPI_WAIT(request_s, MPISTATUS, INFO)
-    endif
+   endif
+
 
     if(USE_FASTJ)then
        !compute photolysis rates from FastJ    
@@ -1631,8 +1723,10 @@ contains
     !***************************************************
     if ( .not. (NWP_Kz .and. foundKz_met) ) then  ! convert to Sigma units
 
-      call Kz_m2s_toSigmaKz (Kz_m2s,roa(:,:,:,nr),ps(:,:,nr),SigmaKz(:,:,:,nr))
-      call Kz_m2s_toEtaKz (Kz_m2s,roa(:,:,:,nr),ps(:,:,nr),EtaKz(:,:,:,nr),Eta_mid,A_mid,B_mid)
+      call Kz_m2s_toSigmaKz (Kz_m2s,roa(1:limax,1:ljmax,:,nr),&
+           ps(1:limax,1:ljmax,nr),SigmaKz(1:limax,1:ljmax,:,nr))
+      call Kz_m2s_toEtaKz (Kz_m2s,roa(1:limax,1:ljmax,:,nr),&
+           ps(1:limax,1:ljmax,nr),EtaKz(1:limax,1:ljmax,:,nr),Eta_mid,A_mid,B_mid)
 
     end if
     !***************************************************
@@ -2517,16 +2611,56 @@ contains
     !    integer*2, allocatable ::var_global(:,:,:)   ! faster if defined with
     ! fixed dimensions for all
     ! nodes?
-    real :: scalefactors(2)
-    integer :: KMAX,ijk,i,k,j,nfetch,k1,k2,istart,jstart
+    real :: scalefactors(2),x,y
+    integer :: KMAX,ijk,i,k,j,nfetch,k1,k2,istart,jstart,Nlevel
     logical :: reverse_k
+    real, allocatable,save ::meteo_3D(:,:,:)
+
 
     validity=''
     call_msg = "GetMeteofield" // trim(namefield)
 
     if(ndim==3)KMAX=KMAX_MET
     if(ndim==2)KMAX=1
-    if(MET_SHORT)then
+
+       if(MANUAL_GRID)then
+       Nlevel=37
+!             call ReadField_CDF(meteoname,namefield,field, &
+!                  Nlevel,interpol='conservative',needed=.true.,debug_flag=.false.)
+       if(.not.allocated(meteo_3D))allocate(meteo_3D(Nlevel,MAXLIMAX,MAXLJMAX))
+       meteo_3D=0.0
+       if(ndim==3)then
+          if(trim(namefield)=='u_wind')then
+!             call  ReadField_CDF(meteoname,namefield,meteo_3D,nstart=nrec,kstart=1,kend=Nlevel,interpol='zero_order', &
+             call  ReadField_CDF(meteoname,namefield,meteo_3D,nstart=nrec,kstart=1,kend=Nlevel,interpol='conservative', &
+!                  use_lat_name='lat_u', use_lon_name='lon_u', &
+                  stagg='stagg_u',&
+                  needed=needed,found=found,unit=unit,debug_flag=.false.)
+          else if(trim(namefield)=='v_wind') then
+!             call  ReadField_CDF(meteoname,namefield,meteo_3D,nstart=nrec,kstart=1,kend=Nlevel,interpol='zero_order', &
+             call  ReadField_CDF(meteoname,namefield,meteo_3D,nstart=nrec,kstart=1,kend=Nlevel,interpol='conservative', &
+!                  use_lat_name='lat_v', use_lon_name='lon_v', &
+                  stagg='stagg_v',&
+                  needed=needed,found=found,unit=unit,debug_flag=.false.)
+          else
+             call  ReadField_CDF(meteoname,namefield,meteo_3D,nstart=nrec,kstart=1,kend=Nlevel,interpol='zero_order', &
+                  needed=needed,found=found,unit=unit,debug_flag=.false.)
+          endif
+          validity='not set'
+          !     CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
+          !interpolate vertically
+          
+          call vertical_interpolate(meteoname,meteo_3D,Nlevel,field,.false.)
+          
+       elseif(ndim==2)then
+          call  ReadField_CDF(meteoname,namefield,field(1),nstart=nrec,interpol='zero_order', &
+               needed=needed,found=found,unit=unit,debug_flag=.false.)
+          !write(*,*)'METVAL ',trim(namefield),me,field(40),nrec
+          !NB: need to fix validity
+          validity='not set'
+          
+       endif
+    elseif(MET_SHORT)then
        if(MasterProc)then
           !       allocate(var_global(GIMAX,GJMAX,KMAX))
           nfetch=1
@@ -2780,6 +2914,7 @@ subroutine Check_Meteo_Date
    call check(nf90_close(ncFileID))
   endif
   CALL MPI_BCAST(nhour_first,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+  CALL MPI_BCAST(Nhh,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
 endsubroutine Check_Meteo_Date
 
 endmodule met_ml

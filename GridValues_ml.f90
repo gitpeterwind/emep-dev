@@ -22,7 +22,7 @@ use ModelConstants_ml,      only: &
   KMAX_BND, KMAX_MID, & ! vertical extent
   DEBUG,              & ! DEBUG%GRIDVALUES
   MasterProc,NPROC,IIFULLDOM,JJFULLDOM,RUNDOMAIN,&
-  PT,Pref,NMET,METSTEP,USE_EtaCOORDINATES
+  PT,Pref,NMET,METSTEP,USE_EtaCOORDINATES,MANUAL_GRID
 use Par_ml, only : &
   MAXLIMAX,MAXLJMAX,  & ! max. possible i, j in this domain
   limax,ljmax,        & ! actual max.   i, j in this domain
@@ -105,7 +105,8 @@ real, public, save,allocatable,  dimension(:,:) :: &
       !NB: gl_stagg, gb_stagg are here defined as the average of the four
       !    surrounding gl gb.
       !    These differ slightly from the staggered points in the (i,j) grid. 
-  glat_fdom,glon_fdom   ! latitude,longitude of gridcell centers
+  glat_fdom,glon_fdom  & ! latitude,longitude of gridcell centers
+  ,rot_angle
 
 real, public, save :: gbacmax,gbacmin,glacmax,glacmin
 
@@ -154,10 +155,13 @@ subroutine GridRead(meteo,cyclicgrid)
 
   character(len=*),intent(in):: meteo   ! template for meteofile
   integer,  intent(out)      :: cyclicgrid
-  integer                    :: nyear,nmonth,nday,nhour,k,ios
+  integer                    :: nyear,nmonth,nday,nhour,i,j,ii,jj,k,kk,ios
   integer                    :: KMAX,MIN_GRIDS
   character(len=len(meteo))  :: filename !name of the input file
   logical :: Use_Grid_Def=.false.!Experimental for now
+  real :: lonstart,latstart,ddeg_lon,ddeg_lat,P0,x1,x2,x3,x4
+  integer ::i0,im,j0,jm,North_pole,South_pole
+  real ::x,y,xr,xr2,yr,yr2,lon,lat,lon2,lat2
 
   nyear=startdate(1)
   nmonth=startdate(2)
@@ -167,6 +171,327 @@ subroutine GridRead(meteo,cyclicgrid)
   call Init_nmdays( current_date )
 
   !*********initialize grid parameters*********
+  if(MANUAL_GRID)then
+     !define the grid parameter manually (explicitely)
+     if(me==0)write(*,*)'DEFINING GRID MANUALLY!'
+
+     lonstart=-80
+     latstart=-40
+     ddeg_lon=0.72
+     ddeg_lat=0.72
+     dx_rot=0.72
+     dx_roti=1.0/dx_rot
+     x1_rot=lonstart
+     y1_rot=latstart
+     grid_north_pole_latitude = 30 
+     grid_north_pole_longitude = -180.0
+
+     IIFULLDOM=223
+     JJFULLDOM=154
+
+     KMAX_MET=37
+     projection='Rotated_Spherical'
+
+     Pole_Singular=0
+     
+     KMAX_MID=0!initialize
+     filename_vert='Vertical_levels.txt'
+     if(me==0)then !onlyme=0 read the file
+        open(IO_TMP,file=filename_vert,action="read",iostat=ios)
+        if(ios==0)then
+           !define own vertical coordinates
+           write(*,*)'Define vertical levels from ',trim(filename_vert)
+           read(IO_TMP,*)KMAX_MID
+           write(*,*)KMAX_MID, 'vertical levels '
+        else
+           KMAX_MID=-1!tag to show the file was not found
+           call StopAll("Vertical_levels.txt not found")
+        endif
+     endif
+     CALL MPI_BCAST(KMAX_MID ,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+
+     if(KMAX_MID>0)then
+        External_Levels_Def=.true.
+        !Must use eta coordinates
+        if(.not.USE_EtaCOORDINATES)write(*,*)'WARNING: using hybrid levels even if not asked to! '
+        USE_EtaCOORDINATES=.true.   
+     else
+        External_Levels_Def=.false.
+        close(IO_TMP)
+        KMAX_MID=KMAX_MET
+     endif
+
+     KMAX_BND=KMAX_MID+1
+
+     allocate(A_bnd(KMAX_BND),B_bnd(KMAX_BND))
+     allocate(A_mid(KMAX_MID),B_mid(KMAX_MID))
+     allocate(dA(KMAX_MID),dB(KMAX_MID))
+     allocate(sigma_bnd(KMAX_BND),sigma_mid(KMAX_MID),carea(KMAX_MID))
+     allocate(Eta_bnd(KMAX_BND),Eta_mid(KMAX_MID))
+     allocate(i_local(IIFULLDOM))
+     allocate(j_local(JJFULLDOM))
+     allocate(glat_fdom(IIFULLDOM,JJFULLDOM))
+     allocate(glon_fdom(IIFULLDOM,JJFULLDOM))
+
+     P0=Pref
+     if(me==0)then !onlyme=0 read the file
+        do k=1,KMAX_MID+1
+           read(IO_TMP,*)kk,A_bnd(k),B_bnd(k)
+           if(kk/=k)write(*,*)'WARNING: unexpected format for vertical levels ',k,kk
+        enddo
+        do k=1,KMAX_MID
+           A_mid(k)=0.5*(A_bnd(k)+A_bnd(k+1))
+           B_mid(k)=0.5*(B_bnd(k)+B_bnd(k+1))
+        enddo
+        sigma_mid =B_mid!for Hybrid coordinates sigma_mid=B if A*P0=PT-sigma_mid*PT
+     endif
+     CALL MPI_BCAST(sigma_mid,8*KMAX_MID,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+     CALL MPI_BCAST(A_bnd,8*(KMAX_MID+1),MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+     CALL MPI_BCAST(B_bnd,8*(KMAX_MID+1),MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+     CALL MPI_BCAST(A_mid,8*KMAX_MID,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+     CALL MPI_BCAST(B_mid,8*KMAX_MID,MPI_BYTE,0,MPI_COMM_WORLD,INFO)       
+  
+     do k = 1,KMAX_MID
+       dA(k)=A_bnd(k+1)-A_bnd(k)
+       dB(k)=B_bnd(k+1)-B_bnd(k)
+       Eta_bnd(k)=A_bnd(k)/Pref+B_bnd(k)
+       Eta_mid(k)=A_mid(k)/Pref+B_mid(k)
+       sigma_bnd(k)=B_bnd(k)
+    enddo
+    Eta_bnd(KMAX_MID+1)=A_bnd(KMAX_MID+1)/Pref+B_bnd(KMAX_MID+1)
+    sigma_bnd(KMAX_MID+1)=B_bnd(KMAX_MID+1)
+
+    if(me==0)write(*,*)'External_Levels ',External_Levels_Def
+!    if(External_Levels_Def)call make_vertical_levels_interpolation_coeff
+
+
+  !set RUNDOMAIN default values where not defined
+  if(RUNDOMAIN(1)<1)RUNDOMAIN(1)=1
+  if(RUNDOMAIN(2)<1)RUNDOMAIN(2)=IIFULLDOM
+  if(RUNDOMAIN(3)<1)RUNDOMAIN(3)=1
+  if(RUNDOMAIN(4)<1)RUNDOMAIN(4)=JJFULLDOM
+  if(MasterProc)then
+    write(*,55)     'FULLDOMAIN has sizes ',IIFULLDOM,' X ',JJFULLDOM
+    write(IO_LOG,55)'FULLDOMAIN has sizes ',IIFULLDOM,' X ',JJFULLDOM
+    write(*,55)     'RUNDOMAIN  x coordinates from ',RUNDOMAIN(1),' to ',RUNDOMAIN(2)
+    write(IO_LOG,55)'RUNDOMAIN  x coordinates from ',RUNDOMAIN(1),' to ',RUNDOMAIN(2)
+    write(*,55)     'RUNDOMAIN  y coordinates from ',RUNDOMAIN(3),' to ',RUNDOMAIN(4)
+    write(IO_LOG,55)'RUNDOMAIN  y coordinates from ',RUNDOMAIN(3),' to ',RUNDOMAIN(4)
+  endif
+
+
+  MIN_GRIDS=5
+  call parinit(MIN_GRIDS,Pole_Singular)     !subdomains sizes and position
+
+  call Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
+
+  call Alloc_GridFields(GIMAX,GJMAX,MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND)
+
+
+  GRIDWIDTH_M=EARTH_RADIUS*ddeg_lat*PI/180.0
+  if(me==0)write(*,*)'grid resolution ',GRIDWIDTH_M
+
+  ref_latitude=60.!not used
+  xp=0.0!not used
+  yp=GJMAX!not used
+  fi=0.0!not used
+
+
+  xm_j=1.0
+  do j=0,MAXLJMAX+1
+     !  do i=0,MAXLIMAX+1
+!pw     xm_i(:,j)=1.0/cos((latstart+(gj0+j+JRUNBEG-2-1+0.5)*ddeg_lat)*PI/180.)
+     xm_i(:,j) = ddeg_lat/ddeg_lon/cos((latstart+(gj0+j+JRUNBEG-2-1+0.5)*ddeg_lat)*PI/180.)
+     !  enddo
+  enddo
+
+    do j=1,JJFULLDOM
+    do i=1,IIFULLDOM
+!rotated coordinates
+       lon=lonstart+(i-1)*ddeg_lon
+       lat=latstart+(j-1)*ddeg_lat
+       call lb_rot2lb(glon_fdom(i,j),glat_fdom(i,j),lon,lat,grid_north_pole_longitude,grid_north_pole_latitude)
+    enddo
+    enddo
+
+
+    do j=1,JJFULLDOM
+    do i=1,IIFULLDOM
+       if(glon_fdom(i,j)>180.0)glon_fdom(i,j)=glon_fdom(i,j)-360.0
+       if(glon_fdom(i,j)<-180.0)glon_fdom(i,j)=glon_fdom(i,j)+360.0
+    enddo
+    enddo
+     do j=1,MAXLJMAX
+       do i=1,MAXLIMAX
+          glon(i,j)=glon_fdom(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)
+          glat(i,j)=glat_fdom(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)
+       enddo
+    enddo
+    i0=0
+    im=MAXLIMAX
+    j0=0
+    jm=MAXLJMAX
+    if(gi0+MAXLIMAX+1+IRUNBEG-2>IIFULLDOM)im=MAXLIMAX-1!outside fulldomain
+    if(gi0+0+IRUNBEG-2<1)i0=1!outside fulldomain
+    if(gj0+MAXLJMAX+1+JRUNBEG-2>JJFULLDOM)jm=MAXLJMAX-1!outside fulldomain
+    if(gj0+0+JRUNBEG-2<1)j0=1!outside fulldomain
+
+    do j=j0,jm
+       do i=i0,im
+          x1=glon_fdom(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)
+          x2=glon_fdom(gi0+i+1+IRUNBEG-2,gj0+j+JRUNBEG-2)
+          x3=glon_fdom(gi0+i+IRUNBEG-2,gj0+j+1+JRUNBEG-2)
+          x4=glon_fdom(gi0+i+1+IRUNBEG-2,gj0+j+1+JRUNBEG-2)
+
+          !8100=90*90; could use any number much larger than zero and much smaller than 180*180  
+          if(x1*x2<-8100.0 .or. x1*x3<-8100.0 .or. x1*x4<-8100.0)then
+             !Points are on both sides of the longitude -180=180              
+             if(x1<0)x1=x1+360.0
+             if(x2<0)x2=x2+360.0
+             if(x3<0)x3=x3+360.0
+             if(x4<0)x4=x4+360.0
+          endif
+          gl_stagg(i,j)=0.25*(x1+x2+x3+x4)
+
+          gb_stagg(i,j)=0.25*(glat_fdom(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)+&
+               glat_fdom(gi0+i+1+IRUNBEG-2,gj0+j+JRUNBEG-2)+&
+               glat_fdom(gi0+i+IRUNBEG-2,gj0+j+1+JRUNBEG-2)+&
+               glat_fdom(gi0+i+1+IRUNBEG-2,gj0+j+1+JRUNBEG-2))
+       enddo
+    enddo
+    do j=0,j0
+       do i=i0,im
+          x1=gl_stagg(i,j+1)
+          x2=gl_stagg(i,j+2)
+          if(x1*x2<-8100.0 )then
+             if(x1<0)x1=x1+360.0
+             if(x2<0)x2=x2+360.0
+          endif
+          gl_stagg(i,j)=2*x1-x2
+          gb_stagg(i,j)=2*gb_stagg(i,j+1)-gb_stagg(i,j+2)
+       enddo
+    enddo
+    do j=jm,MAXLJMAX
+       do i=i0,im
+          x1=gl_stagg(i,j-1)
+          x2=gl_stagg(i,j-2)
+          if(x1*x2<-8100.0 )then
+             if(x1<0)x1=x1+360.0
+             if(x2<0)x2=x2+360.0
+          endif
+          gl_stagg(i,j)=2*x1-x2
+          gb_stagg(i,j)=2*gb_stagg(i,j-1)-gb_stagg(i,j-2)
+       enddo
+    enddo
+    do j=0,MAXLJMAX
+       do i=0,i0
+          x1=gl_stagg(i+1,j)
+          x2=gl_stagg(i+2,j)
+          if(x1*x2<-8100.0 )then
+             if(x1<0)x1=x1+360.0
+             if(x2<0)x2=x2+360.0
+          endif
+          gl_stagg(i,j)=2*x1-x2
+          gb_stagg(i,j)=2*gb_stagg(i+1,j)-gb_stagg(i+2,j)
+       enddo
+    enddo
+    do j=0,MAXLJMAX
+       do i=im,MAXLIMAX
+          x1=gl_stagg(i-1,j)
+          x2=gl_stagg(i-2,j)
+          if(x1*x2<-8100.0 )then
+             if(x1<0)x1=x1+360.0
+             if(x2<0)x2=x2+360.0
+          endif
+          gl_stagg(i,j)=2*x1-x2
+          gb_stagg(i,j)=2*gb_stagg(i-1,j)-gb_stagg(i-2,j)
+       enddo
+    enddo
+    !ensure that values are within [-180,+180]]
+    do j=0,MAXLJMAX
+       do i=0,MAXLIMAX
+          if(gl_stagg(i,j)>180.0)gl_stagg(i,j)=gl_stagg(i,j)-360.0
+          if(gl_stagg(i,j)<-180.0)gl_stagg(i,j)=gl_stagg(i,j)+360.0
+       enddo
+    enddo
+
+    !test if the grid is cyclicgrid:
+    !The last cell + 1 cell = first cell
+    Cyclicgrid=1 !Cyclicgrid
+    do j=1,JJFULLDOM
+       if(mod(nint(glon_fdom(GIMAX,j)+360+360.0/GIMAX),360)/=&
+            mod(nint(glon_fdom(IRUNBEG,j)+360.0),360))then
+          Cyclicgrid=0  !not cyclicgrid
+       endif
+    enddo
+
+    if(MasterProc .and. DEBUG%GRIDVALUES)write(*,*)'CYCLICGRID:',Cyclicgrid
+
+    !keep only part of xm relevant to the local domain
+    !note that xm has dimensions larger than local domain
+
+    call CheckStop( MAXLIMAX+1 > limax+2, "Error in Met_ml X size definition" )
+    call CheckStop( MAXLJMAX+1 > ljmax+2, "Error in Met_ml J size definition" )
+
+    do j=0,MAXLJMAX+1
+       do i=0,MAXLIMAX+1
+           !Note that xm is inverse length: interpolate 1/xm rather than xm
+          xm2(i,j) =  ddeg_lat/ddeg_lon/cos((latstart+(gj0+j+JRUNBEG-2-1)*ddeg_lat)*PI/180.)
+       enddo
+    enddo
+
+
+    !Look for poles
+    !If the northernmost or southernmost lines are poles, they are not
+    !considered as outer boundaries and will not be treated 
+    !by "BoundaryConditions_ml".
+    !If the projection is not lat lon (i.e. the poles are not lines, but points), the poles are 
+    !not a problem and Pole=0, even if the grid actually include a pole.
+    !Note that "Poles" is defined in subdomains
+
+    North_pole=1
+    do i=1,limax
+       if(nint(glat(i,ljmax))<=88)then
+          North_pole=0  !not north pole
+       endif
+    enddo
+
+    South_pole=1
+    do i=1,limax
+       if(nint(glat(i,1))>=-88)then
+          South_pole=0  !not south pole
+       endif
+    enddo
+
+    Poles=0
+    if(North_pole==1)then
+       Poles(1)=1
+       write(*,*)me,'Found North Pole'
+    endif
+
+    if(South_pole==1)then
+       Poles(2)=1
+       write(*,*)me,'Found South Pole'
+    endif
+
+!need to make rotation angles between grids
+    if(.not.allocated(rot_angle))allocate(rot_angle(MAXLIMAX,MAXLJMAX))
+    do j=1,ljmax
+       do i=1,limax
+!choose 2 points parallel in the lon direction. Works only because the raw metdata is in lon lat coordinates
+          ii=gi0+i+IRUNBEG-2!in full domain coordinates
+          jj=gj0+j+JRUNBEG-2
+          call lb2ij(glon_fdom(ii,jj)-0.01,glat_fdom(ii,jj),xr,yr)
+          call lb2ij(glon_fdom(ii,jj)+0.01,glat_fdom(ii,jj),xr2,yr2)
+          rot_angle(i,j)=atan2(yr2-yr,xr2-xr)
+       enddo
+    enddo
+
+else
+
+
+!NOT MANUAL GRID
+
 
 !check first if grid is defined in a separate file:
   filename='Grid_Def.nc'
@@ -259,6 +584,7 @@ subroutine GridRead(meteo,cyclicgrid)
        write(*,*)'longitude rotation of grid, fi:',fi
        write(*,*)'true distances latitude, ref_latitude:',ref_latitude
     endif
+ endif
 
     call DefGrid()!defines: i_fdom,j_fdom,i_local, j_local,xmd,xm2ji,xmdji,
     !         sigma_bnd,carea,gbacmax,gbacmin,glacmax,glacmin
@@ -1140,9 +1466,9 @@ subroutine GridRead(meteo,cyclicgrid)
     CALL MPI_ALLREDUCE(MPI_IN_PLACE, glacmin  , 1, &
          MPI_DOUBLE_PRECISION, MPI_MIN, MPI_COMM_WORLD, INFO) 
 
-    if(MasterProc) write(unit=6,fmt="(a,4f9.2)") &
+    if(MasterProc) write(unit=6,fmt="(a,40f9.2)") &
          " GridValues: max/min for lat,lon ", &
-         gbacmax,gbacmin,glacmax,glacmin
+         gbacmax,gbacmin,glacmax,glacmin,minval(glon(:,:))
 
     if(DEBUG%GRIDVALUES) then
        do j = 1, MAXLJMAX
@@ -1439,9 +1765,7 @@ subroutine GridRead(meteo,cyclicgrid)
          xrot=xrot*dri
          yrot=yrot*dri
          if(xrot<x1_rot)xrot=xrot+360.0
-         dx=0.05
-         x1=-13.65
-         y1=-1.027
+         if(xrot-x1_rot>360.0-dx_rot*0.499999999)xrot=xrot-360.0
          xr2=(xrot-x1_rot)*dx_roti+1
          yr2=(yrot-y1_rot)*dx_roti+1
 
@@ -1860,6 +2184,59 @@ endfunction coord_in_gridbox
     CALL MPI_BCAST(x_k1_met,8*KMAX_MID,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
 
   end subroutine make_vertical_levels_interpolation_coeff
+
+  subroutine lb_rot2lb(xsph,ysph,xrot,yrot,grid_north_pole_longitude,grid_north_pole_latitude)
+!
+!  compute spherical coordinates as function of
+!  spherical rotated coordinates
+!
+!  conversion between spherical (xsph,ysph) and spherical rotated
+!  (xrot,yrot) coordinates. (xcen,ycen) is the position of the
+!  rotated equator/greenwich in terms of (longitude,latitude).
+!  all input and output values are given in degrees.
+!
+! grid_north_pole_longitude: geographical (non-rotated) coordinates of the "north pole" from the rotated grid (No polar bears there).
+! (typically out of the grid, since it is singular).
+!
+! xcen: geographical (non-rotated) coordinates of the (lon=0 lat=0) point where lonlat are in the rotated grid
+! (typically in the middle of the grid, since it is "flat")
+!
+    implicit none
+    integer :: j
+    real*8 :: xsph, ysph, xrot, yrot,xcen,ycen,zsycen,zcycen
+    real*8 :: zsxrot,zcxrot,zsyrot,zcyrot,zsysph,zcysph,zcxmxc,zsxmxc,zxmxc
+    real*8 :: grid_north_pole_longitude,grid_north_pole_latitude
+    real*8 :: rad2deg,deg2rad
+!
+    deg2rad=3.14159265358979323/180.
+    rad2deg=1.0/deg2rad
+    
+    xcen=(180.+grid_north_pole_longitude)*deg2rad
+    ycen=(90.-grid_north_pole_latitude)*deg2rad
+    
+    zsycen = sin(ycen)
+    zcycen = cos(ycen)
+    
+       zsxrot = sin(xrot*deg2rad)
+       zcxrot = cos(xrot*deg2rad)
+       zsyrot = sin(yrot*deg2rad)
+       zcyrot = cos(yrot*deg2rad)
+       zsysph = zcycen*zsyrot + zsycen*zcyrot*zcxrot
+       zsysph = amax1(zsysph,-1.0)
+       zsysph = amin1(zsysph,+1.0)
+       ysph = asin(zsysph)
+       zcysph = cos(ysph)
+       zcxmxc = (zcycen*zcyrot*zcxrot -&
+            zsycen*zsyrot)/zcysph
+       zcxmxc = amax1(zcxmxc,-1.0)
+       zcxmxc = amin1(zcxmxc,+1.0)
+       zsxmxc = zcyrot*zsxrot/zcysph
+       zxmxc  = acos(zcxmxc)
+       if (zsxmxc.lt.0.0) zxmxc = -zxmxc
+       xsph = (zxmxc + xcen)*rad2deg
+       ysph = ysph*rad2deg
+
+  end subroutine lb_rot2lb
 
 end module GridValues_ml
 !==============================================================================

@@ -1156,6 +1156,12 @@ character (len=*), parameter :: vert_coord='atmosphere_hybrid_sigma_pressure_coo
     call check(nf90_put_att(ncFileID, VarID, "grid_mapping_name", "rotated_latitude_longitude"))
     call check(nf90_put_att(ncFileID, VarID, "grid_north_pole_latitude", grid_north_pole_latitude))
     call check(nf90_put_att(ncFileID, VarID, "grid_north_pole_longitude", grid_north_pole_longitude))
+!for NCL
+    call check(nf90_def_var(ncid = ncFileID, name = "rotated_pole", xtype = nf90_char, varID=varID ) )
+    call check(nf90_put_att(ncFileID, VarID, "grid_mapping_name", "rotated_latitude_longitude"))
+    call check(nf90_put_att(ncFileID, VarID, "grid_north_pole_latitude", grid_north_pole_latitude))
+    call check(nf90_put_att(ncFileID, VarID, "grid_north_pole_longitude", grid_north_pole_longitude))
+
   else
     call check(nf90_def_var(ncid = ncFileID, name = Default_projection_name, xtype = nf90_int, varID=varID ) )
     call check(nf90_put_att(ncFileID, VarID, "grid_mapping_name", trim(UsedProjection)))
@@ -2606,7 +2612,8 @@ end subroutine Read_Inter_CDF
 
 
 recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
-     known_projection,  use_lat_name, use_lon_name,&! can be provided by user, eg. for MEGAN.
+     known_projection,  &! can be provided by user, eg. for MEGAN.
+     use_lat_name, use_lon_name,stagg, & !for telling the routine that the field is defined in a staggered grid
      fractions_out,CC_out,Ncc_out,Reduc,&! additional output for emissions given with country-codes
      Mask_fileName,Mask_varname,Mask_Code,NMask_Code,Mask_ReducFactor,&
      needed,found,unit,validity,debug_flag,UnDef,ncFileID_given)
@@ -2692,6 +2699,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   character(len = *), optional,intent(in) :: interpol
   character(len = *), optional,intent(in) :: known_projection
   character(len = *), optional,intent(in) :: use_lat_name, use_lon_name
+  character(len = *), optional,intent(in) :: stagg
   logical, optional, intent(in) :: needed
   logical, optional, intent(out) :: found
   character(len=*), optional,intent(out) ::unit,validity
@@ -2969,7 +2977,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
      if(trim(data_projection(1:7))=="lon lat")data_projection="lon lat"!remove invisible char(0)!!
      if ( debug ) write(*,*) 'data projection from file ',trim(data_projection)
   end if
-  if(MasterProc)write(*,*)'Interpolating ',trim(varname),' from ',trim(filename),' to present grid'
+!  if(MasterProc)write(*,*)'Interpolating ',trim(varname),' from ',trim(filename),' to present grid'
 
   if(trim(data_projection)=="lon lat")then 
      ! here we have simple 1-D lat, lon
@@ -2996,9 +3004,8 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
         status=nf90_inq_varid(ncid = ncFileID, name = 'longitude', varID = lonVarID)
         call CheckStop(status /= nf90_noerr,'did not find longitude variable')
      endif
-  else
-     call check(nf90_Inquire_Variable(ncid = ncFileID,  varID = lonVarID,xtype=xtype_lon))
   endif
+  call check(nf90_Inquire_Variable(ncid = ncFileID,  varID = lonVarID,xtype=xtype_lon))
 
   status=nf90_inq_varid(ncid = ncFileID, name=trim(used_lat_name), varID = latVarID)
   if(status /= nf90_noerr) then
@@ -3007,9 +3014,9 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
         status=nf90_inq_varid(ncid = ncFileID, name = 'latitude', varID = latVarID)
         call CheckStop(status /= nf90_noerr,'did not find latitude variable')
      endif
-  else
-     call check(nf90_Inquire_Variable(ncid = ncFileID, varID = latVarID,xtype=xtype_lat))
   endif
+  call check(nf90_Inquire_Variable(ncid = ncFileID, varID = latVarID,xtype=xtype_lat))
+
   if(trim(data_projection)=="lon lat")then
      call check(nf90_get_var(ncFileID, lonVarID, Rlon), 'Getting Rlon')
      call check(nf90_get_var(ncFileID, latVarID, Rlat), 'Getting Rlat')
@@ -3037,7 +3044,52 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
      if(status == nf90_noerr) scalefactors(2) = offset
      Rlat=Rlat*scalefactors(1)+scalefactors(2)
   endif
-
+  if(present(stagg))then
+     !use staggered grid
+     if(stagg=='stagg_u')then
+        if(trim(data_projection)=="lon lat")then
+           do i=1,dims(1)-1
+              Rlon(i)=(Rlon(i)+Rlon(i+1))*0.5
+           enddo
+           Rlon(dims(1))=Rlon(dims(1))+(Rlon(dims(1))-Rlon(dims(1)-1))*0.5
+        else
+!not tested
+           do j=1,dims(2)
+           do i=1,dims(1)-1
+              ij=i+(j-1)*dims(1)
+              Rlon(ij)=(Rlon(ij)+Rlon(ij+1))*0.5
+              Rlat(ij)=(Rlat(ij)+Rlat(ij+1))*0.5
+           enddo
+              ij=dims(1)+(j-1)*dims(1)
+           Rlon(ij)=Rlon(ij)+(Rlon(ij)-Rlon(ij-1))*0.5
+           Rlat(ij)=Rlat(ij)+(Rlat(ij)-Rlat(ij-1))*0.5
+           enddo
+        endif
+     elseif(stagg=='stagg_v')then
+        if(trim(data_projection)=="lon lat")then
+           do j=1,dims(2)-1
+              Rlat(j)=(Rlat(j)+Rlat(j+1))*0.5
+           enddo
+           Rlat(dims(2))=Rlat(dims(2))+(Rlat(dims(2))-Rlat(dims(2)-1))*0.5
+        else
+!not tested
+           do j=1,dims(2)-1
+           do i=1,dims(1)
+              ij=i+(j-1)*dims(1)
+              Rlon(ij)=(Rlon(ij)+Rlon(ij+dims(1)))*0.5
+              Rlat(ij)=(Rlat(ij)+Rlat(ij+dims(1)))*0.5
+           enddo
+           enddo
+           do i=1,dims(1)
+              ij=i+(dims(2)-1)*dims(1)
+              Rlon(ij)=Rlon(ij)+(Rlon(ij)-Rlon(ij-dims(1)))*0.5
+              Rlat(ij)=Rlat(ij)+(Rlat(ij)-Rlat(ij-dims(1)))*0.5
+           enddo
+        endif
+     else
+        call StopAll("ReadField_CDF: stagg not recognized")
+     endif
+  endif
 !Should define longitude in the range [-180, 180]?
 
   if ( debug ) write(*,*) 'ReadCDF lon bounds',minval(Rlon),maxval(Rlon)
@@ -3402,8 +3454,10 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
                  do idiv=1,Ndiv
                     lon=Rlon(startvec(1)-1+ig)-0.5/dloni+(idiv-0.5)/(dloni*Ndiv)
                     call lb2ij(lon,lat,ir,jr)
+
                     i=nint(ir)-gi0-IRUNBEG+2
                     j=nint(jr)-gj0-JRUNBEG+2
+
                     if(i>=1.and.i<=limax.and.j>=1.and.j<=ljmax)then
                        ij=i+(j-1)*MAXLIMAX
                        k2=1
@@ -3521,11 +3575,11 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
                       Ivalues(ijk), Nvalues(ijk), me, i,j,k
                  if(Ivalues(ijk)<=0.)then
                     if( .not.present(UnDef))then
-                       write(*,"(a,a,4i4,6g10.3,2i6)") &
+                       write(*,"(a,a,4i4,6f10.3,2i6,6f10.3)") &
                             'ERROR, NetCDF_ml no values found!', &
                             trim(fileName) // ":" // trim(varname), &
                             i,j,k,me,minlon,maxlon,minlat,maxlat,glon(i,j),glat(i,j), &
-                            Ivalues(ijk),Ndiv
+                            Ivalues(ijk),Ndiv,Rlon(startvec(1)),Rlon(startvec(1)+dims(1)-1),Rlat(startvec(2)),Rlat(startvec(2)-1+dims(2))
                        call CheckStop("Interpolation error")
                     else                       
                        Rvar(ijk)=UnDef
@@ -3742,7 +3796,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
                  if(Ivalues(ijk)<=0.)then
                     if( .not.present(UnDef))then
                        write(*,"(a,a,4i4,6g10.3,i6)") &
-                            'ERROR, NetCDF_ml no values found!', &
+                            'ERROR, NetCDF_ml no values found! B', &
                             trim(fileName) // ":" // trim(varname), &
                             i,j,k,me,maxlon,minlon,maxlat,minlat,glon(i,j),glat(i,j), &
                             Ivalues(ijk)
@@ -3974,7 +4028,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
               if(Ivalues(ijk)<=0.)then
                  if( .not.present(UnDef))then
                     write(*,"(a,a,4i4,6g10.3,2i6)") &
-                         'ERROR, NetCDF_ml no values found!', &
+                         'ERROR, NetCDF_ml no values found! C', &
                          trim(fileName) // ":" // trim(varname), &
                          i,j,k,me,minlon,maxlon,minlat,maxlat,glon(i,j),glat(i,j), &
                          Ivalues(ijk),Ndiv
@@ -4385,8 +4439,8 @@ subroutine   vertical_interpolate(filename,Rvar,KMAX_ext,Rvar_emep,debug)
 
   allocate(k1_ext(KMAX_MID),k2_ext(KMAX_MID),weight_k1(KMAX_MID))
  !Read pressure for vertical levels
-  if(MasterProc)write(*,*)'vertical_interpolate: reading vertical levels'
-  if(MasterProc)write(*,*)'filename ',trim(filename)
+!  if(MasterProc)write(*,*)'vertical_interpolate: reading vertical levels'
+!  if(MasterProc)write(*,*)'filename ',trim(filename)
   allocate(P_ext(KMAX_ext),hyam_ext(KMAX_ext+1),hybm_ext(KMAX_ext+1))
   call check(nf90_open(fileName,nf90_nowrite,ncFileID),&
        errmsg="ReadTimeCDF, file not found: "//trim(fileName))

@@ -398,7 +398,7 @@ logical, public, save ::  DebugCell  = .false.
   ,DEBUG_NH3            = .false. & ! NH3Emis experimental
   ,DEBUG_OUTPUTCHEM     = .false. & ! Output of netcdf results
   ,DEBUG_OUT_HOUR       = .false. & ! Debug Output_hourly.f90
-  ,DEBUG_POLLEN         = .true.  &
+  ,DEBUG_POLLEN         = .false.  &
 !MV  ,DEBUG_RUNCHEM        = .false. & ! DEBUG_RUNCHEM is SPECIAL
     ,DEBUG_DUST           = .false. & ! Skips fast chemistry to save some CPU
     ,DEBUG_ROADDUST     = .false. &
@@ -408,7 +408,7 @@ logical, public, save ::  DebugCell  = .false.
   ,DEBUG_RB             = .false. &
   ,DEBUG_SOILWATER      = .false. &
   ,DEBUG_SOILNOX        = .false. &
-  ,DEBUG_COLSRC         = .true.    ! Volcanic emissions and Emergency scenarios
+  ,DEBUG_COLSRC         = .false.    ! Volcanic emissions and Emergency scenarios
 
 !=============================================================================
 ! 3)  Source-receptor runs?
@@ -565,6 +565,8 @@ integer, public, parameter ::  &
   ,IOU_MAX_MAX=7                                  ! Max values for of IOU (for array declarations)
 
 character(len=*), public, parameter :: model="EMEP_MSC-W "
+
+logical, public, parameter:: MANUAL_GRID=.false.!under developement.
 
 !----------------------------------------------------------------------------
 contains

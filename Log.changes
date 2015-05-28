@@ -153,6 +153,22 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+28th May 2015 Peter 3011
+
+NetCDF_ml:
+New parameter "rotated_pole" to conform to NCL and CF convention(?), in case of 
+rotated lat lon projection.
+ReadField_CDF: "stagg" for staggered interpolation of wind fields.
+
+ModelConstants_ml, Met_ml, GridValues_ml:
+Possibility to define new grid projection manually without explicit metdata.
+Under development, but used for CARBONORD project already.
+
+OutputChem_ml: write out also in test run with one iteration.
+
+Emissions_ml, run.pl: small comments changed
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 28th May 2015 Alvaro 3009-10
 
 Volcanos_ml,Emergency_ml,ColumnSource_ml,Makefile.SRCS:
@@ -232,7 +248,7 @@ ZCM_Emergency/Mastin_et_al_2009b_table3.csv,NUC_Explosion.csv,NPP_Accident.csv:
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 22nd May  Peter  3006-8
 
-Emissions_ml: Added posibility to have monthly emissions ain the "Mixed" EMIS_SOURCE.
+Emissions_ml: Added posibility to have monthly emissions in the "Mixed" EMIS_SOURCE.
 Combining monthly and other emissions not tested.
 
 GridValues_ml: lb2ij added a case when longitude >360.

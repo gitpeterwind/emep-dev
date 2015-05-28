@@ -60,7 +60,6 @@ subroutine Wrtchem()
 
 !---------------------------------------------------------------------
 
-  if(current_date%seconds /= 0 .or. (mod(current_date%hour,METSTEP)/=0) )return
 
   nyear  = current_date%year
   nmonth = current_date%month
@@ -77,6 +76,8 @@ subroutine Wrtchem()
   ts2=make_timestamp(date(enddate(1),enddate(2),enddate(3),enddate(4),0))
   End_of_Run =  (nint(tdif_secs(ts1,ts2))<=0)
 
+  if((current_date%seconds /= 0 .or. (mod(current_date%hour,METSTEP)/=0)).and. &
+       .not. End_of_Run)return
   if(MasterProc .and. DEBUG) write(6,"(a12,i5,5i4)") "DAILY DD_OUT ",   &
        nmonth, mm_out, nday, dd_out, nhour
 
