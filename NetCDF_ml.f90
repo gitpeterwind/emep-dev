@@ -96,6 +96,7 @@ public :: GetCDF_modelgrid
 public :: WriteCDF !for testing purposes
 public :: Read_Inter_CDF
 public :: ReadField_CDF
+public :: ReadField_CDF_FL
 public :: ReadTimeCDF
 public :: vertical_interpolate
 public :: Out_CDF_sondes
@@ -2611,7 +2612,7 @@ deallocate(Rvalues)
 end subroutine Read_Inter_CDF
 
 
-recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
+subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      known_projection,  &! can be provided by user, eg. for MEGAN.
      use_lat_name, use_lon_name,stagg, & !for telling the routine that the field is defined in a staggered grid
      fractions_out,CC_out,Ncc_out,Reduc,&! additional output for emissions given with country-codes
@@ -2646,7 +2647,8 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   !very CPU efficient in the present version
   !(except conservative inerpolation, where only nearest neighbor is implemented).
   !Vertical interpolation is not implemented, except from "Fligh Levels", but
-  !"Flight Levels" are so specific that we will probably move them in an own routine
+
+  !"Flight Levels" are so specific that they are move in an own routine ReadField_CDF_FL
 
   !interpolation:
   !'zero_order' gives value at closest gridcell. Probably good enough for most applications.
@@ -2738,15 +2740,11 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   character(len = 50) :: interpol_used, data_projection=""
   real :: ir,jr,Grid_resolution
   type(Deriv) :: def1 ! definition of fields
-  integer, parameter ::NFL=23,NFLmax=50 !number of flight level (could be read from file)
-  real :: P_FL(0:NFLmax),P_FL0,Psurf_ref(MAXLIMAX, MAXLJMAX),P_EMEP,dp!
   logical ::  OnlyDefinedValues
 
   real, pointer :: Weight(:,:,:)=>null(), ww(:)=>null()
   integer, allocatable :: IIij(:,:,:),JJij(:,:,:)
   real :: FillValue=0,Pcounted
-  logical :: Flight_Levels
-  integer :: k_FL,k_FL2
   real    :: sumWeights
   integer, dimension(4) :: ijn
   integer :: ii, jj,i_ext,j_ext,ic
@@ -3095,8 +3093,6 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   if ( debug ) write(*,*) 'ReadCDF lon bounds',minval(Rlon),maxval(Rlon)
   if ( debug ) write(*,*) 'ReadCDF lat bounds',minval(Rlat),maxval(Rlat)
 
-  Flight_Levels=.false.
-
   call CheckStop(fractions.and.trim(data_projection)/="lon lat", &
        "ReadField_CDF: only implemented lon lat projection for fractions")     
 
@@ -3145,27 +3141,8 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
 
      if(data3D)then
         call check(nf90_inquire_dimension(ncid = ncFileID, dimID = dimids(3), name=name ))
-        if(trim(name)=='FL')then
-           !special vertical levels for Aircrafts
-           !make table for conversion Flight Level -> Pressure
-           !Hard coded because non-standard anyway. 610 meters layers
-           do k=0,NFLmax
-              P_FL(k)=1000*StandardAtmos_km_2_kPa(k*0.610)
-           enddo
-           P_FL0=P_FL(0)
-           Flight_Levels=.true.
-           call CheckStop(interpol_used/='mass_conservative',&
-                "only mass_conservative interpolation implemented for Flight Levels")
-
-           !need average surface pressure for the current month
-           !montly average is needed, not instantaneous pressure
-           call ReadField_CDF('SurfacePressure.nc','surface_pressure',&
-                Psurf_ref,current_date%month,needed=.true.,interpol='zero_order',debug_flag=debug_flag)
-        else
-           call CheckStop(trim(name)/='k'.and.trim(name)/='N'.and.trim(name)/='lev'.and.trim(name)/='height',"vertical coordinate (k, lev, N or height) not found")
-        endif
+        call CheckStop(trim(name)/='k'.and.trim(name)/='N'.and.trim(name)/='lev'.and.trim(name)/='height',"vertical coordinate (k, lev, N or height) not found")
      endif
-
 
      !NB: we assume regular grid
      !inverse of resolution
@@ -3173,18 +3150,12 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
      dlati=1.0/(Rlat(2)-Rlat(1))
 
      Grid_resolution = EARTH_RADIUS*abs(Rlat(2)-Rlat(1))*PI/180.0
-     if(abs(Grid_resolution - EARTH_RADIUS*360.0/dims(1)*PI/180.0)>1.0)then
-!        if(me==0)write(*,*)'Not global data? 18 feb 2015',Grid_resolution , EARTH_RADIUS*360.0/dims(1)*PI/180.0
-     endif
-     !18 feb 2015 Grid_resolution = EARTH_RADIUS*360.0/dims(1)*PI/180.0
-     
 
      !the method chosen depends on the relative resolutions
      if(.not.present(interpol).and.Grid_resolution/GRIDWIDTH_M>4)then
         interpol_used='zero_order'!usually good enough, and keeps gradients
      endif
      if ( debug ) write(*,*) 'interpol_used: ',interpol_used
-
 
      if(debug) then
         write(*,*) "SET Grid resolution:" // trim(fileName), Grid_resolution
@@ -3263,8 +3234,6 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
         endif
         startvec(3)=kstart_loc
         dims(3)=kend_loc-kstart_loc+1
-        if(Flight_Levels)dims(3)=NFL
-        if(Flight_Levels)startvec(3)=1
         if(ndims>3)startvec(ndims)=nstart
      endif
 
@@ -3462,98 +3431,66 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
                        ij=i+(j-1)*MAXLIMAX
                        k2=1
                        if(data3D)k2=kend_loc-kstart_loc+1
-                       if(.not. Flight_Levels)then
-                          do k=1,k2
-                             ijk=k+(ij-1)*k2
-                             Ivalues(ijk)=Ivalues(ijk)+1
-                             Nvalues(ijk)=Nvalues(ijk)+1
-                             igjgk=igjg+(k-1)*dims(1)*dims(2)
-
-                             if(fractions)then
-                                do Ng=1,Ncc(igjgk)!number of fields at igjg as read
-                                   do N_out=1,Ncc_out(ijk) !number of fields at ij already saved in the model grid
-                                      if(CC(igjgk,Ng)==CC_out(ijk,N_out))goto 731
-                                   enddo
-                                   !the country is not yet used for this gridcell. Define it now
-                                   Ncc_out(ijk)=Ncc_out(ijk)+1
-                                   N_out=Ncc_out(ijk)
-                                   CC_out(ijk, N_out)=CC(igjgk,Ng)
-                                   fractions_out(ijk,N_out)=0.0
-731                                continue
-                                   factor=1.0!default reduction factor
-                                   !if(present(Reduc).and.CC(igjgk,Ng)>0.and.CC(igjgk,Ng)<=NLAND)factor=Reduc(CC(igjgk,Ng))                               
-                                   if(present(Reduc).and.CC(igjgk,Ng)>0)then
-                                      ic=find_index(CC(igjgk,Ng),Country(:)%icode)
-                                      if(ic>NLAND.or.ic<1)then
-                                         write(*,*)"ReadField_cdf: COUNTRY CODE NOT RECOGNIZED OR UNDEFINED: ",&
-                                              CC(igjgk,Ng)
-                                         call StopAll("COUNTRY CODE NOT RECOGNIZED ")
-                                      endif
-                                      factor=Reduc(ic)
-                                   endif
-                                   !update fractions
-                                   total=Rvar(ijk)+Rvalues(igjgk)*fraction_in(igjgk,Ng)*factor
-                                   if(debug.and.fraction_in(igjgk,Ng)>1.001)then
-                                      write(*,*)'fractions_in TOO LARGE ',Ng,ig,jg,k,fraction_in(igjgk,Ng)
-                                      stop
-                                   endif
-                                   if(abs(total)>1.0E-30)then
-                                      do N=1,Ncc_out(ijk)
-                                         !reduce previously defined fractions
-                                         fractions_out(ijk,N)=fractions_out(ijk,N)*Rvar(ijk)/total
-                                      enddo
-                                      !increase fraction of this country (yes, after having reduced it!)
-                                      fractions_out(ijk,N_out)=fractions_out(ijk,N_out)+Rvalues(igjgk)*fraction_in(igjgk,Ng)/total*factor
-                                   else
-                                      !should try to keep proportions right in case cancellation of positive an negative; not finished!
-                                      do N=1,Ncc_out(ijk)
-                                         !reduce existing fractions
-                                         fractions_out(ijk,N)=fractions_out(ijk,N)/Ncc_out(ijk)
-                                      enddo
-                                      !increase fraction of this country (yes, after having reduced it!)
-                                      fractions_out(ijk,N_out)=fractions_out(ijk,N_out)+Rvalues(igjgk)*fraction_in(igjgk,Ng)/Ncc_out(ijk)*factor
-                                   endif
-                                   Rvar(ijk)=total
+                       do k=1,k2
+                          ijk=k+(ij-1)*k2
+                          Ivalues(ijk)=Ivalues(ijk)+1
+                          Nvalues(ijk)=Nvalues(ijk)+1
+                          igjgk=igjg+(k-1)*dims(1)*dims(2)
+                          
+                          if(fractions)then
+                             do Ng=1,Ncc(igjgk)!number of fields at igjg as read
+                                do N_out=1,Ncc_out(ijk) !number of fields at ij already saved in the model grid
+                                   if(CC(igjgk,Ng)==CC_out(ijk,N_out))goto 731
                                 enddo
-                             elseif(OnlyDefinedValues.or.Rvalues(igjgk)/=FillValue)then
-                                Rvar(ijk)=Rvar(ijk)+Rvalues(igjgk)
-                             else
-                                !Not defined: don't include this Rvalue
-                                Ivalues(ijk)=Ivalues(ijk)-1
-
-                             endif
-                          enddo
-                       else
-                          !Flight_Levels
-                          !start filling levels from surface and upwards
-                          !add emissions at every emep OR FL level boundary
-                          k_FL=1
-                          k_FL2=0!last index of entirely included FL layer
-                          P_FL(0)=max(A_bnd(KMAX_MID+1)+B_bnd(KMAX_MID+1)*Psurf_ref(i,j), P_FL(0))
-                          Pcounted=P_FL(0)!Lowest Pressure accounted for
-                          do k=KMAX_MID,KMAX_MID-k2+1,-1
-                             ijk=k-(KMAX_MID-k2)+(ij-1)*k2
-                             P_EMEP=A_bnd(k)+B_bnd(k)*Psurf_ref(i,j)
-                             do while(P_FL(k_FL)>P_EMEP.and.k_FL<NFL)
-                                dp=Pcounted-P_FL(k_FL)
-                                igjgk=igjg+(k_FL-1)*dims(1)*dims(2)
-                                Rvar(ijk)=Rvar(ijk)+Rvalues(igjgk)*dp/(P_FL(k_FL2)-P_FL(k_FL))
-                                k_FL2=k_FL
-                                k_FL=k_FL+1
-                                Pcounted=P_FL(k_FL2)
+                                !the country is not yet used for this gridcell. Define it now
+                                Ncc_out(ijk)=Ncc_out(ijk)+1
+                                N_out=Ncc_out(ijk)
+                                CC_out(ijk, N_out)=CC(igjgk,Ng)
+                                fractions_out(ijk,N_out)=0.0
+731                             continue
+                                factor=1.0!default reduction factor
+                                !if(present(Reduc).and.CC(igjgk,Ng)>0.and.CC(igjgk,Ng)<=NLAND)factor=Reduc(CC(igjgk,Ng))                               
+                                if(present(Reduc).and.CC(igjgk,Ng)>0)then
+                                   ic=find_index(CC(igjgk,Ng),Country(:)%icode)
+                                   if(ic>NLAND.or.ic<1)then
+                                      write(*,*)"ReadField_cdf: COUNTRY CODE NOT RECOGNIZED OR UNDEFINED: ",&
+                                           CC(igjgk,Ng)
+                                      call StopAll("COUNTRY CODE NOT RECOGNIZED ")
+                                   endif
+                                   factor=Reduc(ic)
+                                endif
+                                !update fractions
+                                total=Rvar(ijk)+Rvalues(igjgk)*fraction_in(igjgk,Ng)*factor
+                                if(debug.and.fraction_in(igjgk,Ng)>1.001)then
+                                   write(*,*)'fractions_in TOO LARGE ',Ng,ig,jg,k,fraction_in(igjgk,Ng)
+                                   stop
+                                endif
+                                if(abs(total)>1.0E-30)then
+                                   do N=1,Ncc_out(ijk)
+                                      !reduce previously defined fractions
+                                      fractions_out(ijk,N)=fractions_out(ijk,N)*Rvar(ijk)/total
+                                   enddo
+                                   !increase fraction of this country (yes, after having reduced it!)
+                                   fractions_out(ijk,N_out)=fractions_out(ijk,N_out)+Rvalues(igjgk)*fraction_in(igjgk,Ng)/total*factor
+                                else
+                                   !should try to keep proportions right in case cancellation of positive an negative; not finished!
+                                   do N=1,Ncc_out(ijk)
+                                      !reduce existing fractions
+                                      fractions_out(ijk,N)=fractions_out(ijk,N)/Ncc_out(ijk)
+                                   enddo
+                                   !increase fraction of this country (yes, after having reduced it!)
+                                   fractions_out(ijk,N_out)=fractions_out(ijk,N_out)+Rvalues(igjgk)*fraction_in(igjgk,Ng)/Ncc_out(ijk)*factor
+                                endif
+                                Rvar(ijk)=total
                              enddo
-                             Ivalues(ijk)=Ivalues(ijk)+1
-                             Nvalues(ijk)=Nvalues(ijk)+1
-                             if(k_FL<=NFL)then
-                                dp=Pcounted-P_EMEP
-                                igjgk=igjg+(k_FL-1)*dims(1)*dims(2)
-                                Rvar(ijk)=Rvar(ijk)+Rvalues(igjgk)*dp/(P_FL(k_FL2)-P_FL(k_FL))
-                                Pcounted=P_EMEP
-                             endif
-                          enddo
-
-                          P_FL(0)=P_FL0!may have changed above
-                       endif !Flight levels
+                          elseif(OnlyDefinedValues.or.Rvalues(igjgk)/=FillValue)then
+                             Rvar(ijk)=Rvar(ijk)+Rvalues(igjgk)
+                          else
+                             !Not defined: don't include this Rvalue
+                             Ivalues(ijk)=Ivalues(ijk)-1
+                             
+                          endif
+                       enddo
 
                     endif
                  enddo
@@ -4212,25 +4149,6 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
 
      call Out_netCDF(IOU_INST,def1,n,k2, &
           Rvar,1.0,CDFtype=Real4,fileName_given='ReadField3D.nc')
-     !output Flight levels (reverse order of indices)
-     !     do k=1,2
-     !       do j=1,ljmax
-     !           do i=1,limax
-     !              temp(i,j,k)=0.0
-     !           enddo
-     !        enddo
-     !     enddo
-     !     do k=KMAX_MID,KMAX_MID-k2+1,-1
-     !        write(*,*)k,k+(KMAX_MID-k2),kend_loc,kstart_loc
-     !       do j=1,ljmax
-     !           do i=1,limax
-     !              ijk=k-(KMAX_MID-k2)+(i+(j-1)*MAXLIMAX-1)*k2
-     !              temp(i,j,k)=Rvar(ijk)
-     !           enddo
-     !        enddo
-     !     enddo
-     !     call Out_netCDF(IOU_INST,def1,n, KMAX_MID,&
-     !          temp,1.0,CDFtype=Real4,fileName_given='ReadField3D.nc')
 
      CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
      CALL MPI_FINALIZE(INFO)
@@ -4252,6 +4170,339 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   return
 
 end subroutine ReadField_CDF
+
+!The "flight levels" are so specific, that we prefer to have an ad-hoc routine rather
+!than to pollute otehr routine with special cases.
+ subroutine ReadField_CDF_FL(fileName,varname,Rvar,nstart,kstart,kend,interpol,needed,debug_flag)
+
+  use netcdf
+
+  implicit none
+  character(len = *),intent(in) ::fileName,varname
+  real,intent(out) :: Rvar(*)
+  integer,intent(in) :: nstart
+  integer, intent(in) :: kstart!smallest k (vertical level) to read. Default: assume 2D field
+  integer, intent(in) :: kend!largest k to read. Default: assume 2D field
+  character(len = *), optional,intent(in) :: interpol
+  logical, optional, intent(in) :: needed
+  logical, optional, intent(in) :: debug_flag
+
+  integer :: ncFileID,VarID,lonVarID,latVarID,status,ndims,dimids(NF90_MAX_VAR_DIMS),xtype,nAtts
+  integer :: dims(NF90_MAX_VAR_DIMS),NCdims(NF90_MAX_VAR_DIMS),totsize,i,j,k
+  integer :: startvec(NF90_MAX_VAR_DIMS),Nstartvec(NF90_MAX_VAR_DIMS)
+  integer ::alloc_err
+  real :: dloni,dlati,dlon,dlat
+  integer ::ij,jdiv,idiv,Ndiv,Ndiv2,igjgk,ig,jg,ijk,n,im,jm,ijm,iw
+  integer ::imin,imax,jmin,jjmin,jmax,igjg,k2
+  integer, allocatable:: Ivalues(:)  ! I counts all data
+  integer, allocatable:: Nvalues(:)  !ds counts all values
+  real, allocatable:: Rvalues(:),Rlon(:),Rlat(:)
+  integer, allocatable:: Mask_values(:)
+  real ::lat,lon,maxlon,minlon,maxlat,minlat
+  logical ::fileneeded, debug,data3D
+  character(len = 50) :: interpol_used, data_projection="",name
+  real :: ir,jr,Grid_resolution
+  type(Deriv) :: def1 ! definition of fields
+  integer, parameter ::NFL=23,NFLmax=50 !number of flight level (could be read from file)
+  real :: P_FL(0:NFLmax),P_FL0,Psurf_ref(MAXLIMAX, MAXLJMAX),P_EMEP,dp!
+
+  real :: FillValue=0,Pcounted
+  logical :: Flight_Levels
+  integer :: k_FL,k_FL2
+
+  !_______________________________________________________________________________
+  !
+  !1)           General checks and init
+  !_______________________________________________________________________________
+
+  fileneeded=.true.!default
+
+  debug = .false.
+  if(present(debug_flag))then
+     debug = debug_flag .and. MasterProc
+     if ( debug ) write(*,*) 'ReadCDF start: ',trim(filename),':', trim(varname)
+  end if
+  if(present(needed))   fileneeded=needed
+
+  !open an existing netcdf dataset
+  status=nf90_open(path = trim(fileName), mode = nf90_nowrite, ncid = ncFileID)
+  
+  if(status == nf90_noerr) then
+     if ( debug ) write(*,*) 'ReadCDF reading ',trim(filename), ' nstart ', nstart
+  else
+     if(fileneeded)then
+        print *, 'file does not exist: ',trim(fileName),nf90_strerror(status)
+        call CheckStop(fileneeded, "ReadField_CDF : file needed but not found")
+     else
+        if(MasterProc) write(*,*)'file does not exist (but not needed): ',&
+             trim(fileName),nf90_strerror(status)
+          Rvar(1:MAXLIMAX*MAXLJMAX*(KMAX_MID-2))=0.0
+         return
+     endif
+  endif
+
+  interpol_used='mass_conservative'!default for FL
+  if(present(interpol))then
+     interpol_used=interpol
+  endif
+  call CheckStop(interpol_used/='mass_conservative',&
+       'interpolation method for FL not recognized')
+
+  !test if the variable is defined and get varID:
+  status = nf90_inq_varid(ncid = ncFileID, name = trim(varname), varID = VarID)
+  if(status == nf90_noerr) then
+    if(debug) write(*,*) 'ReadCDF variable exists: ',trim(varname)
+  else
+    if(fileneeded)then
+      print *, 'variable does not exist: ',trim(varname),nf90_strerror(status)
+      call CheckStop(fileneeded, "ReadField_CDF : variable needed but not found")
+
+    else
+        if(MasterProc)write(*,*) 'variable does not exist (but not needed): ',&
+             trim(varname),nf90_strerror(status)
+          call check(nf90_close(ncFileID))
+          Rvar(1:MAXLIMAX*MAXLJMAX*(KMAX_MID-2))=0.0
+        return
+    endif
+  endif
+
+  data3D=.true.
+
+  !Check first that variable has data covering the relevant part of the grid:
+
+  !Find chunk of data required (local)
+  maxlon=max(maxval(gl_stagg),maxval(glon))
+  minlon=min(minval(gl_stagg),minval(glon))
+  maxlat=max(maxval(gb_stagg),maxval(glat))
+  minlat=min(minval(gb_stagg),minval(glat))
+
+
+  !get dimensions id
+  call check(nf90_Inquire_Variable(ncFileID,VarID,name,&
+       xtype,ndims,dimids,nAtts),"GetDimsId")
+
+  !get dimensions
+  startvec=1
+  dims=0
+  do i=1,ndims
+     call check(nf90_inquire_dimension(ncid=ncFileID, dimID=dimids(i), &
+          len=dims(i)),"GetDims")
+     if ( debug ) write(*,*) 'ReadCDF size variable ',i,dims(i)
+  enddo
+
+  data_projection = "lon lat"
+
+     allocate(Rlon(dims(1)), stat=alloc_err)
+     allocate(Rlat(dims(2)), stat=alloc_err)
+
+
+  call check(nf90_inq_varid(ncid = ncFileID, name='lon', varID = lonVarID))
+  call check(nf90_get_var(ncFileID, lonVarID, Rlon), 'Getting Rlon')
+
+  call check(nf90_inq_varid(ncid = ncFileID, name='lat', varID = latVarID))
+  call check(nf90_get_var(ncFileID, latVarID, Rlat), 'Getting Rlat')
+
+  !_______________________________________________________________________________
+  !
+  !2)        Coordinates conversion and interpolation
+  !_______________________________________________________________________________
+
+
+  if(trim(data_projection)=="lon lat")then
+     call check(nf90_inquire_dimension(ncid = ncFileID, dimID = dimids(3), name=name ))
+     call CheckStop(trim(name)/='FL','expected Flight Levels')
+        !special vertical levels for Aircrafts
+        !make table for conversion Flight Level -> Pressure
+        !Hard coded because non-standard anyway. 610 meters layers
+        do k=0,NFLmax
+           P_FL(k)=1000*StandardAtmos_km_2_kPa(k*0.610)
+        enddo
+        P_FL0=P_FL(0)
+        Flight_Levels=.true.
+        call CheckStop(interpol_used/='mass_conservative',&
+             "only mass_conservative interpolation implemented for Flight Levels")
+        
+        !need average surface pressure for the current month
+        !montly average is needed, not instantaneous pressure
+        call ReadField_CDF('SurfacePressure.nc','surface_pressure',&
+             Psurf_ref,current_date%month,needed=.true.,interpol='zero_order',debug_flag=debug_flag)
+  endif
+
+
+     !NB: we assume regular grid
+     !inverse of resolution
+     dloni=1.0/(Rlon(2)-Rlon(1))
+     dlati=1.0/(Rlat(2)-Rlat(1))
+
+     Grid_resolution = EARTH_RADIUS*abs(Rlat(2)-Rlat(1))*PI/180.0
+
+     imin=mod( floor((minlon-Rlon(1))*dloni)+dims(1),dims(1))+1!NB lon  -90 = +270
+     imax=mod(ceiling((maxlon-Rlon(1))*dloni)+dims(1),dims(1))+1!NB lon  -90 = +270
+     if(imax==1)imax=dims(1)!covered entire circle
+     if(minlon-Rlon(1)<0.0)then
+        imin=1!cover entire circle
+        imax=dims(1)!cover entire circle
+     endif
+
+     jmin=max(1,min(dims(2),floor((minlat-Rlat(1))*dlati)))
+     jmax=max(1,min(dims(2),ceiling((maxlat-Rlat(1))*dlati)+1))
+     
+     if(maxlat>85.0.or.minlat<-85.0)then
+        !close to poles
+        imin=1
+        imax=dims(1)
+     endif
+
+     if(imax<imin)then
+        !crossing longitude border !
+        !   write(*,*)'WARNING: crossing end of map'
+        !take everything...could be memory expensive
+        imin=1
+        imax=dims(1)
+     endif
+
+     if ( debug ) write(*,"(a,4f8.2,6i8)") 'ReadCDF minmax values ',&
+          minlon,maxlon,minlat,maxlat,imin,imax,jmin,jmax
+
+     startvec(1)=imin
+     startvec(2)=jmin
+     dims=1
+     dims(1)=imax-imin+1
+     dims(2)=jmax-jmin+1
+
+
+     startvec(3)=1
+     dims(3)=NFL
+
+     startvec(ndims)=nstart!time dimension
+
+     totsize=1
+     do i=1,ndims
+        totsize=totsize*dims(i)
+     enddo
+
+     allocate(Rvalues(totsize), stat=alloc_err)
+     if ( debug ) then
+        do i=1, ndims ! NF90_MAX_VAR_DIMS would be 1024
+           write(*,"(a,6i8)") 'ReadCDF reading chunk ',i ,startvec(i), dims(i)
+        end do
+     end if
+     call check(nf90_get_var(ncFileID, VarID, Rvalues,start=startvec,count=dims),&
+          errmsg="RRvalues")
+
+     if(interpol_used=='conservative'.or.interpol_used=='mass_conservative')then
+        !conserves integral (almost, does not take into account local differences in mapping factor)
+        !takes weighted average over gridcells covered by model gridcell
+
+        !divide the coarse grid into pieces significantly smaller than the fine grid
+        !Divide each global gridcell into Ndiv x Ndiv pieces
+        Ndiv=5*nint(Grid_resolution/GRIDWIDTH_M)
+        Ndiv=max(1,Ndiv)
+        Ndiv2=Ndiv*Ndiv
+        !
+
+        k2=kend-kstart+1
+        allocate(Ivalues(MAXLIMAX*MAXLJMAX*k2))
+        allocate(Nvalues(MAXLIMAX*MAXLJMAX*k2))
+        do ij=1,MAXLIMAX*MAXLJMAX*k2
+           Ivalues(ij)=0
+           NValues(ij) = 0
+           Rvar(ij)=0.0
+        enddo
+
+        do jg=1,dims(2)
+           do jdiv=1,Ndiv
+              lat=Rlat(startvec(2)-1+jg)-0.5/dlati+(jdiv-0.5)/(dlati*Ndiv)
+              do ig=1,dims(1)
+                 igjg=ig+(jg-1)*dims(1)
+                 do idiv=1,Ndiv
+                    lon=Rlon(startvec(1)-1+ig)-0.5/dloni+(idiv-0.5)/(dloni*Ndiv)
+                    call lb2ij(lon,lat,ir,jr)
+
+                    i=nint(ir)-gi0-IRUNBEG+2
+                    j=nint(jr)-gj0-JRUNBEG+2
+
+                    if(i>=1.and.i<=limax.and.j>=1.and.j<=ljmax)then
+                       ij=i+(j-1)*MAXLIMAX
+                       k2=kend-kstart+1
+                       if(Flight_Levels)then
+                          !Flight_Levels
+                          !start filling levels from surface and upwards
+                          !add emissions at every emep OR FL level boundary
+                          k_FL=1
+                          k_FL2=0!last index of entirely included FL layer
+                          P_FL(0)=max(A_bnd(KMAX_MID+1)+B_bnd(KMAX_MID+1)*Psurf_ref(i,j), P_FL(0))
+                          Pcounted=P_FL(0)!Lowest Pressure accounted for
+                          do k=KMAX_MID,KMAX_MID-k2+1,-1
+                             ijk=k-(KMAX_MID-k2)+(ij-1)*k2
+                             P_EMEP=A_bnd(k)+B_bnd(k)*Psurf_ref(i,j)
+                             do while(P_FL(k_FL)>P_EMEP.and.k_FL<NFL)
+                                dp=Pcounted-P_FL(k_FL)
+                                igjgk=igjg+(k_FL-1)*dims(1)*dims(2)
+                                Rvar(ijk)=Rvar(ijk)+Rvalues(igjgk)*dp/(P_FL(k_FL2)-P_FL(k_FL))
+                                k_FL2=k_FL
+                                k_FL=k_FL+1
+                                Pcounted=P_FL(k_FL2)
+                             enddo
+                             Ivalues(ijk)=Ivalues(ijk)+1
+                             Nvalues(ijk)=Nvalues(ijk)+1
+                             if(k_FL<=NFL)then
+                                dp=Pcounted-P_EMEP
+                                igjgk=igjg+(k_FL-1)*dims(1)*dims(2)
+                                Rvar(ijk)=Rvar(ijk)+Rvalues(igjgk)*dp/(P_FL(k_FL2)-P_FL(k_FL))
+                                Pcounted=P_EMEP
+                             endif
+                          enddo
+
+                          P_FL(0)=P_FL0!may have changed above
+                       endif !Flight levels
+
+                    endif
+                 enddo
+              enddo
+           enddo
+        enddo
+
+        k2=kend-kstart+1
+        do k=1,k2
+           do i=1,limax
+              do j=1,ljmax
+                 ij=i+(j-1)*MAXLIMAX
+                 ijk=k+(ij-1)*k2
+
+
+                 if(Ivalues(ijk)<=0.)then
+                       write(*,"(a,a,4i4,6f10.3,2i6,6f10.3)") &
+                            'ERROR, NetCDF_ml no values found!', &
+                            trim(fileName) // ":" // trim(varname), &
+                            i,j,k,me,minlon,maxlon,minlat,maxlat,glon(i,j),glat(i,j), &
+                            Ivalues(ijk),Ndiv,Rlon(startvec(1)),Rlon(startvec(1)+dims(1)-1),Rlat(startvec(2)),Rlat(startvec(2)-1+dims(2))
+                       call CheckStop("Interpolation error")
+
+                 else
+                    if(interpol_used=='mass_conservative')then
+                       !used for example for emissions in kg (or kg/s)
+                       Rvar(ijk)=Rvar(ijk)/Ndiv2! Total sum of values from all cells is constant
+                    else
+                       call CheckStop("interpol choice not supported")
+                    endif
+                 endif
+              enddo
+           enddo
+        enddo
+
+        deallocate(Ivalues)
+        deallocate(Nvalues)
+
+     endif! projection
+
+  deallocate(Rvalues)
+  deallocate(Rlon)
+  deallocate(Rlat)
+
+  call check(nf90_close(ncFileID))
+
+end subroutine ReadField_CDF_FL
 
 subroutine printCDF(name, array,unit)
     ! Minimal print out to cdf, for real numbers, 2-d arrays

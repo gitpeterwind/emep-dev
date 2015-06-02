@@ -77,7 +77,7 @@ use ModelConstants_ml,only: &
     USE_LIGHTNING_EMIS,USE_AIRCRAFT_EMIS,USE_ROADDUST, &
     USE_EURO_SOILNOX, USE_GLOBAL_SOILNOX, EURO_SOILNOX_DEPSCALE! one or the other
 use My_Derived_ml,    only: EmisSplit_OUT
-use NetCDF_ml,        only: ReadField_CDF,ReadTimeCDF,IsCDFfractionFormat
+use NetCDF_ml,        only: ReadField_CDF,ReadField_CDF_FL,ReadTimeCDF,IsCDFfractionFormat
 use netcdf
 use Par_ml,           only: MAXLIMAX,MAXLJMAX, GIMAX,GJMAX, IRUNBEG,JRUNBEG,&
                             me,limax,ljmax, MSG_READ1,MSG_READ7
@@ -1361,8 +1361,8 @@ subroutine newmonth
     kstart=KCHEMTOP
     kend=KMAX_MID
 
-    call ReadField_CDF('AircraftEmis_FL.nc','NOx',airn,&
-      nstart=current_date%month,kstart=kstart,kend=kend,&
+    call ReadField_CDF_FL('AircraftEmis_FL.nc','NOx',airn,&
+      current_date%month,kstart,kend,&
       interpol='mass_conservative', needed=.true.,debug_flag=.false.)
 
 ! convert from kg(NO2)/month into molecules/cm3/s

@@ -11,7 +11,7 @@ F90 = mpif90
 DEBUG_FLAGS = -check all -check noarg_temp_created -debug-parameters all \
               -traceback -ftrapuv -g -fpe0 -O0
 OPT_FLAGS = -O3 -ftz
-F90FLAGS = -shared-intel -r8 -recursive -convert big_endian -IPF_fp_relaxed
+F90FLAGS = -shared-intel -r8 -convert big_endian -IPF_fp_relaxed
 LDFLAGS =  $(F90FLAGS) $(LLIB) $(LIBS)
 
 export MACHINE ?= stallo
