@@ -85,7 +85,7 @@ contains
               lpj,month,interpol='zero_order',needed=.true.,debug_flag=.false.)
 
            pft_lai(:,:,pft ) = lpj(:,:)
-           if( DEBUG%PFT_MAPS .and. debug_proc ) then
+           if( DEBUG%PFT_MAPS.gt.0 .and. debug_proc ) then
              write(*,"(a20,2i3,3f8.3)") "PFT_DEBUG "//trim(varname), &
                  month, pft, &
                  glon(debug_li, debug_lj), glat(debug_li, debug_lj), &

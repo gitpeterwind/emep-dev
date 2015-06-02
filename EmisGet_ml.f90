@@ -101,8 +101,8 @@ contains
     real :: Mask_ReducFactor
     integer :: NMask_Code,Mask_Code(NLAND)
 
-    integer ::i,j,k,n,ic,i_gridemis
-    logical :: Cexist,found
+    integer ::i,j,k,n,ic,i_gridemis,found
+    logical :: Cexist
 
     !yearly grid independent netcdf fraction format emissions                                
     Reduc=e_fact(isec,:,iem)
@@ -379,8 +379,8 @@ contains
     integer, intent(in) ::iem, nin, nex
     character(len=*),intent(in) :: fname, emisname, incl(*),excl(*)
     real,intent(inout), dimension(NLAND,NEMIS_FILE) :: sumemis_local ! Sum of emissions per country
-    integer ::i,j,k,n,ic,CC,isec,i_gridemis
-    logical :: Cexist,found
+    integer ::i,j,k,n,ic,CC,isec,i_gridemis,found
+    logical :: Cexist
     real :: tmpsec(NSECTORS),duml,dumh
 
       call open_file(IO_EMIS,"r",fname,needed=.true.)

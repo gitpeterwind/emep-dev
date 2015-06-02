@@ -61,7 +61,7 @@ private
                          ! (not currently used)
 
 
-   !/** Depositions are stored in separate arrays for now - to keep size of
+   !    Depositions are stored in separate arrays for now - to keep size of
    !    derived arrays smaller and to allow possible move to a Deposition
    !    module at a later stage.
    !  Factor 1.0e6 converts from kg/m2/a to mg/m2/a

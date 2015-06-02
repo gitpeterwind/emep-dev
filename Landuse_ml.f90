@@ -710,7 +710,7 @@ contains
 
 
             if ( USES%PFT_MAPS ) then
-                if ( DEBUG%PFT_MAPS .and. debug_flag ) then
+                if ( DEBUG%PFT_MAPS.gt.0 .and. debug_flag ) then
                      if ( pft > 0 ) then
                        write(*,"(2a,i4,i6,2f8.3)") "LANDUSE PFTS COMP? ", &
                           LandDefs(lu)%name, daynumber, pft,&

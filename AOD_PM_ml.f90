@@ -41,8 +41,8 @@ integer, parameter, public :: &
   W340=1,W350=2,W380=3,W440=4,W500=5,W550=6,W675=7,W870=8,W1020=9
 
 character(len=*), parameter, public :: &
-  wavelength(W340:W1020)=["340nm","350nm","380nm","440nm","500nm",&
-                          "550nm","675nm","870nm","1020nm"]
+  wavelength(W340:W1020)=["340nm ","350nm ","380nm ","440nm ","500nm ",&
+                          "550nm ","675nm ","870nm ","1020nm"]
 
 logical, public, save :: &
   wanted_wlen(W340:W1020)=.false., & ! calculate AOD/EXT if output requires it
@@ -93,9 +93,9 @@ real, parameter, dimension(NUM_CEXT,NumRH) :: &
             [NUM_CEXT,NumRH],order=[2,1])
 
 real, parameter, dimension(NUM_CEXT,NumRH,W340:W1020) :: &
-  Qm_ref=(/&
-  reshape(& !(wet) mass extinction efficiency [m2/g] at 340 nm
-       [2.4900*RH_CNT,                                    & ! 1:DDf (constant)
+  Qm_ref=reshape(&
+       [ &!(wet) mass extinction efficiency [m2/g] at 340 nm
+        2.4900*RH_CNT,                                    & ! 1:DDf (constant)
         2.1350*RH_CNT,                                    & ! 2:DDc (constant)
         2.5250,2.3980,2.3460,2.3060,2.2690,2.2420,2.1640, & ! 3:SSf
         2.1080,2.0760,2.0810,2.0890,2.0620,2.0550,2.0440, & ! 4:SSc
@@ -103,10 +103,9 @@ real, parameter, dimension(NUM_CEXT,NumRH,W340:W1020) :: &
         0.9230,0.9238,0.9012,0.8142,0.7405,0.7216,0.7413, & ! 6:ECa (EC:wet)
         1.2670,1.3510,1.4050,1.4580,1.5720,1.7120,2.0420, & ! 7:OC 
         2.4510,2.7020,2.7720,2.8150,2.8890,2.9690,3.1000, & ! 8:SO4 (H2SO4)
-        2.1080,2.0760,2.0810,2.0890,2.0620,2.0550,2.0440],& ! 9:NO3c (SSc)
-        [NUM_CEXT,NumRH],order=[2,1]),&
-  reshape(& !(wet) mass extinction efficiency [m2/g] at 350 nm for EARLINET
-       [2.5030*RH_CNT,                                    & ! 1:DDf (constant)
+        2.1080,2.0760,2.0810,2.0890,2.0620,2.0550,2.0440, & ! 9:NO3c (SSc)
+        !(wet) mass extinction efficiency [m2/g] at 350 nm for EARLINET
+        2.5030*RH_CNT,                                    & ! 1:DDf (constant)
         2.0940*RH_CNT,                                    & ! 2:DDc (constant)
         2.5390,2.4100,2.3600,2.3080,2.2770,2.2510,2.1650, & ! 3:SSf
         2.1030,2.0750,2.0800,2.0930,2.0630,2.0550,2.0450, & ! 4:SSc
@@ -114,10 +113,9 @@ real, parameter, dimension(NUM_CEXT,NumRH,W340:W1020) :: &
         8.8900,8.8970,8.6780,7.8250,7.0900,6.8930,7.0530, & ! 6:ECa (EC:wet)
         1.2180,1.3030,1.3570,1.4100,1.5240,1.6650,2.0010, & ! 7:OC 
         2.3790,2.6690,2.7550,2.8060,2.8930,2.9860,3.1480, & ! 8:SO4 (H2SO4)
-        2.1030,2.0750,2.0800,2.0930,2.0630,2.0550,2.0450],& ! 9:NO3c (SSc)
-        [NUM_CEXT,NumRH],order=[2,1]),&
-  reshape(& !(wet) mass extinction efficiency [m2/g] at 380 nm
-       [2.5480*RH_CNT,                                    & ! 1:DDf (constant)
+        2.1030,2.0750,2.0800,2.0930,2.0630,2.0550,2.0450, & ! 9:NO3c (SSc)
+        !(wet) mass extinction efficiency [m2/g] at 380 nm
+        2.5480*RH_CNT,                                    & ! 1:DDf (constant)
         2.1460*RH_CNT,                                    & ! 2:DDc (constant)
         2.5650,2.4270,2.3710,2.3480,2.3080,2.2590,2.1680, & ! 3:SSf
         2.1140,2.0880,2.0810,2.0800,2.0720,2.0620,2.0460, & ! 4:SSc
@@ -125,10 +123,9 @@ real, parameter, dimension(NUM_CEXT,NumRH,W340:W1020) :: &
         0.8070,0.8077,0.7875,0.7074,0.6363,0.6158,0.6251, & ! 6:ECa (EC:wet)
         1.0900,1.1790,1.2340,1.2860,1.3960,1.5340,1.8700, & ! 7:OC 
         2.1380,2.5000,2.6240,2.7000,2.8140,2.9360,3.1650, & ! 8:SO4 (H2SO4)
-        2.1140,2.0880,2.0810,2.0800,2.0720,2.0620,2.0460],& ! 9:NO3c (SSc)
-        [NUM_CEXT,NumRH],order=[2,1]),&
-  reshape(& !(wet) mass extinction efficiency [m2/g] at 440 nm
-       [2.6100*RH_CNT,                                    & ! 1:DDf (constant)
+        2.1140,2.0880,2.0810,2.0800,2.0720,2.0620,2.0460, & ! 9:NO3c (SSc)
+        !(wet) mass extinction efficiency [m2/g] at 440 nm
+        2.6100*RH_CNT,                                    & ! 1:DDf (constant)
         2.1610*RH_CNT,                                    & ! 2:DDc (constant)
         2.6230,2.4930,2.4190,2.4090,2.3370,2.2930,2.1900, & ! 3:SSf
         2.1230,2.0940,2.0840,2.0900,2.0830,2.0690,2.0490, & ! 4:SSc
@@ -136,10 +133,9 @@ real, parameter, dimension(NUM_CEXT,NumRH,W340:W1020) :: &
         0.6657,0.6665,0.6493,0.5791,0.5135,0.4922,0.4908, & ! 6:ECa (EC:wet)
         0.8612,0.9563,1.0110,1.0590,1.1600,1.2870,1.6070, & ! 7:OC 
         1.6870,2.1380,2.3170,2.4280,2.5840,2.7430,3.0650, & ! 8:SO4 (H2SO4)
-        2.1230,2.0940,2.0840,2.0900,2.0830,2.0690,2.0490],& ! 9:NO3c (SSc)
-        [NUM_CEXT,NumRH],order=[2,1]),&
-  reshape(& !(wet) mass extinction efficiency [m2/g] at 500 nm
-       [2.6820*RH_CNT,                                    & ! 1:DDf (constant)
+        2.1230,2.0940,2.0840,2.0900,2.0830,2.0690,2.0490, & ! 9:NO3c (SSc)
+        !(wet) mass extinction efficiency [m2/g] at 500 nm
+        2.6820*RH_CNT,                                    & ! 1:DDf (constant)
         2.1780*RH_CNT,                                    & ! 2:DDc (constant)
         2.6960,2.5080,2.5180,2.4680,2.3890,2.3130,2.1990, & ! 3:SSf
         2.1430,2.1030,2.1060,2.1110,2.0840,2.0700,2.0640, & ! 4:SSc
@@ -147,10 +143,9 @@ real, parameter, dimension(NUM_CEXT,NumRH,W340:W1020) :: &
         0.5574,0.5583,0.5435,0.4822,0.4226,0.4017,0.3941, & ! 6:ECa (EC:wet)
         0.6797,0.7744,0.8271,0.8709,0.9615,1.0750,1.3650, & ! 7:OC 
         1.3430,1.7980,1.9990,2.1190,2.2910,2.4640,2.8200, & ! 8:SO4 (H2SO4)
-        2.1430,2.1030,2.1060,2.1110,2.0840,2.0700,2.0640],& ! 9:NO3c (SSc)
-        [NUM_CEXT,NumRH],order=[2,1]),&
-  reshape(& !(wet) mass extinction efficiency [m2/g] at 550 nm
-       [2.7060*RH_CNT,                                    & ! 1:DDf (constant)
+        2.1430,2.1030,2.1060,2.1110,2.0840,2.0700,2.0640, & ! 9:NO3c (SSc)
+        !(wet) mass extinction efficiency [m2/g] at 550 nm
+        2.7060*RH_CNT,                                    & ! 1:DDf (constant)
         2.1890*RH_CNT,                                    & ! 2:DDc (constant)
         2.6990,2.5470,2.5440,2.5080,2.4440,2.3620,2.2210, & ! 3:SSf
         2.1430,2.1030,2.0900,2.1060,2.0840,2.0700,2.0640, & ! 4:SSc
@@ -158,10 +153,9 @@ real, parameter, dimension(NUM_CEXT,NumRH,W340:W1020) :: &
         0.4830,0.4840,0.4710,0.4170,0.3630,0.3430,0.3320, & ! 6:ECa (EC:wet)
         0.5600,0.6520,0.7010,0.7410,0.8210,0.9210,1.1810, & ! 7:OC 
         1.1140,1.5450,1.7420,1.8620,2.0360,2.2060,2.5580, & ! 8:SO4 (H2SO4)
-        2.1430,2.1030,2.0900,2.1060,2.0840,2.0700,2.0640],& ! 9:NO3c (SSc)
-        [NUM_CEXT,NumRH],order=[2,1]),&
-  reshape(& !(wet) mass extinction efficiency [m2/g] at 675 nm
-       [2.7720*RH_CNT,                                    & ! 1:DDf (constant)
+        2.1430,2.1030,2.0900,2.1060,2.0840,2.0700,2.0640, & ! 9:NO3c (SSc)
+        !(wet) mass extinction efficiency [m2/g] at 675 nm
+        2.7720*RH_CNT,                                    & ! 1:DDf (constant)
         2.2100*RH_CNT,                                    & ! 2:DDc (constant)
         2.7450,2.6250,2.6200,2.5970,2.5270,2.4280,2.2730, & ! 3:SSf
         2.1790,2.1330,2.1180,2.1200,2.1140,2.0960,2.0640, & ! 4:SSc
@@ -169,10 +163,9 @@ real, parameter, dimension(NUM_CEXT,NumRH,W340:W1020) :: &
         0.3618,0.3629,0.3530,0.3100,0.2645,0.2463,0.2305, & ! 6:ECa (EC:wet)
         0.3551,0.4327,0.4723,0.5028,0.5623,0.6359,0.8295, & ! 7:OC 
         0.7095,1.0630,1.2350,1.3400,1.4900,1.6350,1.9400, & ! 8:SO4 (H2SO4)
-        2.1790,2.1330,2.1180,2.1200,2.1140,2.0960,2.0640],& ! 9:NO3c (SSc)
-        [NUM_CEXT,NumRH],order=[2,1]),&
-  reshape(& !(wet) mass extinction efficiency [m2/g] at 870 nm
-       [2.7750*RH_CNT,                                    & ! 1:DDf (constant)
+        2.1790,2.1330,2.1180,2.1200,2.1140,2.0960,2.0640, & ! 9:NO3c (SSc)
+        !(wet) mass extinction efficiency [m2/g] at 870 nm
+        2.7750*RH_CNT,                                    & ! 1:DDf (constant)
         2.2660*RH_CNT,                                    & ! 2:DDc (constant)
         2.6990,2.6680,2.6690,2.6590,2.6110,2.5350,2.3440, & ! 3:SSf
         2.2310,2.1630,2.1630,2.1470,2.1180,2.1100,2.0740, & ! 4:SSc
@@ -180,10 +173,9 @@ real, parameter, dimension(NUM_CEXT,NumRH,W340:W1020) :: &
         0.2570,0.2581,0.2510,0.2185,0.1820,0.1659,0.1471, & ! 6:ECa (EC:wet)
         0.1848,0.2388,0.2660,0.2858,0.3232,0.3688,0.4900, & ! 7:OC 
         0.3668,0.6075,0.7312,0.8078,0.9153,1.0180,1.2350, & ! 8:SO4 (H2SO4)
-        2.2310,2.1630,2.1630,2.1470,2.1180,2.1100,2.0740],& ! 9:NO3c (SSc)
-        [NUM_CEXT,NumRH],order=[2,1]),&
-  reshape(& !(wet) mass extinction efficiency [m2/g] at 1020 nm
-       [2.7280*RH_CNT,                                    & ! 1:DDf (constant)
+        2.2310,2.1630,2.1630,2.1470,2.1180,2.1100,2.0740, & ! 9:NO3c (SSc)
+        !(wet) mass extinction efficiency [m2/g] at 1020 nm
+        2.7280*RH_CNT,                                    & ! 1:DDf (constant)
         2.2820*RH_CNT,                                    & ! 2:DDc (constant)
         2.5810,2.6120,2.6500,2.6580,2.6450,2.5780,2.3990, & ! 3:SSf
         2.2610,2.1850,2.1780,2.1620,2.1360,2.1230,2.0850, & ! 4:SSc
@@ -192,7 +184,7 @@ real, parameter, dimension(NUM_CEXT,NumRH,W340:W1020) :: &
         0.1336,0.1744,0.1954,0.2103,0.2380,0.2718,0.3626, & ! 7:OC 
         0.2539,0.4393,0.5375,0.5985,0.6836,0.7644,0.9356, & ! 8:SO4 (H2SO4)
         2.2610,2.1850,2.1780,2.1620,2.1360,2.1230,2.0850],& ! 9:NO3c (SSc)
-        [NUM_CEXT,NumRH],order=[2,1])/)
+        [NUM_CEXT,NumRH,W1020],order=[2,1,3])
 
 real,parameter,dimension(NUM_CEXT) :: &
   Qm_Dabs= & ! (dry) mass absorption efficiency [m?/g] at 550 nm

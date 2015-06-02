@@ -2095,7 +2095,7 @@ real  AHSO4 ! Aerosol phase in bisulfate in MICROGRAMS/M**3
 
               ! to get here, BB .lt. 0.0, CC .gt. 0.0 always
               DD  = SQRT( DISC )
-              XXQ = -0.5d0 * ( BB + SIGN ( 1.0d0, BB ) * DD )
+              XXQ = -0.5d0 * ( BB + SIGN ( 1.0, BB ) * DD )
 
 
               ! Since both roots are positive, select smaller root.
@@ -2159,7 +2159,7 @@ real  AHSO4 ! Aerosol phase in bisulfate in MICROGRAMS/M**3
            ! Deal with degenerate case (yoj)
            IF ( AA .NE. 0.0d0 ) THEN
               DD  = SQRT( DISC )
-              XXQ = -0.5d0 * ( BB + SIGN( 1.0d0, BB ) * DD )
+              XXQ = -0.5d0 * ( BB + SIGN( 1.0, BB ) * DD )
               RR1 = XXQ / AA
               RR2 = CC / XXQ
 
@@ -2630,8 +2630,8 @@ real  AHSO4 ! Aerosol phase in bisulfate in MICROGRAMS/M**3
 
             ! interpolate using crystalization curve
             IF ( AW .GE. AWC ) THEN 
-               MFS1  = POLY4( C1,  0.40d0 )
-               MFS15 = POLY4( C15, 0.40d0 )
+               MFS1  = POLY4( C1,  0.40 )
+               MFS15 = POLY4( C15, 0.40 )
                Y140  = ( 1.0d0 - MFS1  ) / MFS1
                Y1540 = ( 1.0d0 - MFS15 ) / MFS15
                Y40   = 2.0d0 * ( Y140  * ( 1.5d0 - X ) + &

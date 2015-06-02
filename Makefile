@@ -61,12 +61,12 @@ else ifeq ($(MACHINE),abel)
   LLIB += -L$(NETCDF)/lib -L$(INTEL)/lib/intel64
   MAKEDEPF90=/usit/$(MACHINE)/u1/mifapw/bin/makedepf90
 else ifeq ($(MACHINE),precise)  #ubuntu 12.04
-  F90FLAGS = -fdefault-real-8 -ffixed-line-length-none -ffree-line-length-none -fimplicit-none
-  LDFLAGS += $(shell nc-config --flibs)
-  F90FLAGS+= $(shell nc-config --cflags)
+  F90FLAGS = -fdefault-real-8 -ffixed-line-length-none -ffree-line-length-none -fno-range-check
+  LDFLAGS += $(shell nf-config --flibs)
+  F90FLAGS+= $(shell nf-config --cflags)
   MAKEDEPF90 = $(EMEPLOCAL)/bin/makedepf90
   LD = gfortran
-  DEBUG_FLAGS = -Wall -fbacktrace -fbounds-check -pedantic 
+  DEBUG_FLAGS = -Wall -fbacktrace -fbounds-check -fimplicit-none -pedantic 
   OPT_FLAGS = -O3  
 endif
 F90FLAGS += -cpp $(DFLAGS) $(addprefix -I,$(INCL)) \

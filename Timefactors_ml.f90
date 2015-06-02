@@ -673,7 +673,7 @@ contains
               call ReadField_CDF('ECLIPSEv5_monthly_patterns.nc',&
                    name,GridTfac(:,:,isec,iemis),month,interpol='zero_order',&
                    known_projection='lon lat',needed=.true.,debug_flag=.false.,&
-                   Undef=dble(nmdays(month))/nydays )!default, multiplied by inverse later!!
+                   Undef=real(nmdays(month))/nydays )!default, multiplied by inverse later!!
 
            endif
         enddo

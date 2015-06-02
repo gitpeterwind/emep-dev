@@ -606,9 +606,9 @@ subroutine init_nest(ndays_indate,filename_read,native_grid,IIij,JJij,Weight,&
            trim(filename_read)//', assuming '//trim(projection)
     endif
     !get dimensions id/name/len: include more dimension names, if necessary
-    GIMAX_ext=get_dimLen(["i","lon","longitude"],name=iDName)
-    GJMAX_ext=get_dimLen(["j","lat","latitude" ],name=jDName)
-    KMAX_ext =get_dimLen(["k","mlev","lev","level"])
+    GIMAX_ext=get_dimLen(["i        ","lon      ","longitude"],name=iDName)
+    GJMAX_ext=get_dimLen(["j       ","lat     ","latitude" ],name=jDName)
+    KMAX_ext =get_dimLen(["k    ","mlev ","lev  ","level"])
 
     select case(projection)
     case('Stereographic')

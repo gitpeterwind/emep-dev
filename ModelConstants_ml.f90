@@ -472,7 +472,7 @@ type, public :: aero_t
   ! Mappings to DpgV types above, and Gerber types (see AeroFunctions).
   ! For Gerber (Gb), -1 indicates to use dry radius
    character(len=4), dimension(NSAREA_DEF) :: SLABELS = (/ &
-                   'SIAF',  'PMF ','SSF ', 'DUF ', 'PMC', 'SSC ', 'DUC ', 'ORIG' /)
+                   'SIAF',  'PMF ','SSF ', 'DUF ', 'PMC ', 'SSC ', 'DUC ', 'ORIG' /)
    integer, dimension(NSAREA_DEF) ::&
           Inddry = (/  1,        1,      1,      1,       2,      3,      4,   3 /), &
           Gb     = (/  1,        1,      2,     -1,       1,      2,     -1,  -1 /)
