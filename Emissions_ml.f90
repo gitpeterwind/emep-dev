@@ -12,7 +12,7 @@ use ChemSpecs,        only: NSPEC_SHL, NSPEC_TOT,NO2, species
 !CMR use ChemSpecs_tot_ml, only: NSPEC_TOT,NO2
 !CMR use ChemChemicals_ml, only: species
 use Country_ml,       only: MAXNLAND,NLAND,Country,IC_NAT,IC_FI,IC_NO,IC_SE
-use Country_ml,       only: EU27, EUMACC2 !CdfSnap
+use Country_ml,       only: EU28,EUMACC2 !CdfSnap
 use EmisDef_ml,       only: &
       NSECTORS      & ! No. sectors
      ,NEMIS_FILE    & ! No. emission files
@@ -107,7 +107,7 @@ public :: EmisSet           ! Sets emission rates every hour/time-step
 public :: EmisOut           ! Outputs emissions in ascii
 
 ! The main code does not need to know about the following 
-private :: expandcclist            !  expands e.g. EU27, EUMACC2
+private :: expandcclist            !  expands e.g. EU28, EUMACC2
 private :: consistency_check       ! Safety-checks
 
 INCLUDE 'mpif.h'
@@ -553,7 +553,7 @@ contains
                    write(*,"(i4,1x,a4,3x,30(f12.2,:))")icc, Country(ic)%code, sumemis(ic,:)
                    write(IO_LOG,"(i4,1x,a4,3x,30(f12.2,:))")icc, Country(ic)%code, sumemis(ic,:)
                 endif
-                if(find_index(Country(ic)%code,EU27(:))>0) sumEU = sumEU + sumemis(ic,:)
+                if(find_index(Country(ic)%code,EU28(:))>0) sumEU = sumEU + sumemis(ic,:)
              enddo
              if ( sum(sumEU(:))>0.001)write(*     ,"(i4,1x,a4,3x,30(f12.2,:))") 0, "EU", sumEU(:)
              if ( sum(sumEU(:))>0.001)write(IO_LOG,"(i4,1x,a4,3x,30(f12.2,:))") 0, "EU", sumEU(:)
@@ -756,7 +756,7 @@ contains
                 write(*,"(i4,1x,a4,3x,30(f12.2,:))")icc, Country(ic)%code, sumemis(ic,:)
              endif
           endif
-          if(find_index(Country(ic)%code,EU27(:))>0) sumEU = sumEU + sumemis(ic,:)
+          if(find_index(Country(ic)%code,EU28(:))>0) sumEU = sumEU + sumemis(ic,:)
        enddo
        write(*     ,"(i4,1x,a4,3x,30(f12.2,:))") 0, "EU", sumEU(:)
        write(IO_LOG,"(i4,1x,a4,3x,30(f12.2,:))") 0, "EU", sumEU(:)
@@ -907,7 +907,7 @@ contains
   endsubroutine Emissions
 !----------------------------------------------------------------------!
 !>
-!! expandcclist converts e.g. EU27 to indivdual countries
+!! expandcclist converts e.g. EU28 to indivdual countries
 ! Only coded for EUMACC2 so far. Should probably use pointers from
 ! group names.
 !----------------------------------------------------------------------!

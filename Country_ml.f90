@@ -64,11 +64,12 @@ module Country_ml
                "NL", "PT", "ES", "SE",  "GB", "LU" /),&
      EU27(27) = (/ EU15,"HU", "PL", "CY", "CZ", "EE", "LT", "LV", "MT", &
                         "SK", "SI", "BG", "RO" /),&
-     EEA(30)  = (/ EU27, "NO", "IS", "LI" /)  ,&
+     EU28(28) = (/ EU27, "HR" /),&
+     EEA(31)  = (/ EU28, "NO", "IS", "LI" /)  ,&
   ! Countries fully inside MACC2 emission area, excluding EEA.
   !                     1     2     3    4     5     6     7     8     9   10
      XMACC2(10) = (/ "CH", "MC", "TR", "MD", "GE", "AM", "AZ", "BA", "UA", "BY" /),&  ! all?
-     EUMACC2(40)  = (/ EEA, XMACC2 /)
+     EUMACC2(41)  = (/ EEA, XMACC2 /)
 
 
   !/ to be set in Country_Init:
