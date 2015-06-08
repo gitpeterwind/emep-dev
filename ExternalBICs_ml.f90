@@ -18,7 +18,8 @@ private
 public :: set_extbic
 
 interface set_extbic
-  module procedure :: set_extbic_id,set_extbic_cd
+  module procedure set_extbic_id
+  module procedure set_extbic_cd
 end interface set_extbic
 
 logical, public, save :: &

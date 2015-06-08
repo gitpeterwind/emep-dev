@@ -1723,9 +1723,9 @@ contains
     !***************************************************
     if ( .not. (NWP_Kz .and. foundKz_met) ) then  ! convert to Sigma units
 
-      call Kz_m2s_toSigmaKz (Kz_m2s,roa(1:limax,1:ljmax,:,nr),&
+      call Kz_m2s_toSigmaKz (Kz_m2s(1:limax,1:ljmax,:),roa(1:limax,1:ljmax,:,nr),&
            ps(1:limax,1:ljmax,nr),SigmaKz(1:limax,1:ljmax,:,nr))
-      call Kz_m2s_toEtaKz (Kz_m2s,roa(1:limax,1:ljmax,:,nr),&
+      call Kz_m2s_toEtaKz (Kz_m2s(1:limax,1:ljmax,:),roa(1:limax,1:ljmax,:,nr),&
            ps(1:limax,1:ljmax,nr),EtaKz(1:limax,1:ljmax,:,nr),Eta_mid,A_mid,B_mid)
 
     end if

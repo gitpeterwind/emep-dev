@@ -27,33 +27,51 @@ public :: &
   to_idate            ! create int array from timestap or date
 
 interface date2string
-  module procedure :: detail2str,cd2str,int2str,ts2str,cd2str_add,int2str_add
+  module procedure  detail2str
+  module procedure  cd2str
+  module procedure  int2str
+  module procedure  ts2str
+  module procedure  cd2str_add
+  module procedure  int2str_add
 end interface date2string
 
 interface date2file
-  module procedure :: cd2file,int2file,ts2file
+  module procedure cd2file
+  module procedure int2file
+  module procedure ts2file
 end interface date2file
 
 interface idate2nctime
-  module procedure :: int_to_secs1970,int_to_days1900
+  module procedure int_to_secs1970
+  module procedure int_to_days1900
 end interface idate2nctime
 
 interface nctime2idate
-  module procedure :: secs1970_to_int,days1900_to_int
+  module procedure secs1970_to_int
+  module procedure days1900_to_int
 end interface nctime2idate
 
 interface date2nctime
-  module procedure :: ts_to_secs1970,cd_to_secs1970,int_to_secs1970,&
-                      ts_to_days1900,cd_to_days1900,int_to_days1900
+  module procedure ts_to_secs1970
+  module procedure cd_to_secs1970
+  module procedure int_to_secs1970
+  module procedure ts_to_days1900
+  module procedure cd_to_days1900
+  module procedure int_to_days1900
 end interface date2nctime
 
 interface nctime2date
-  module procedure :: secs1970_to_ts,secs1970_to_cd,secs1970_to_int,&
-                      days1900_to_ts,days1900_to_cd,days1900_to_int
+  module procedure secs1970_to_ts
+  module procedure secs1970_to_cd
+  module procedure secs1970_to_int
+  module procedure days1900_to_ts
+  module procedure days1900_to_cd
+  module procedure days1900_to_int
 end interface nctime2date
 
 interface nctime2string
-  module procedure :: secs2str,days2str
+  module procedure secs2str
+  module procedure days2str
 end interface nctime2string
 
 character(len=*), public, parameter :: &  ! Keywords for ncdate2string

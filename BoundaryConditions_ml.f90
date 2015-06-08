@@ -47,7 +47,7 @@ use MetFields_ml,      only: roa
 use ModelConstants_ml, only: KMAX_MID  &  ! Number of levels in vertical
                             ,iyr_trend &  ! Used for e.g. future scenarios
                             ,BGND_CH4  &  ! If positive, replaces defaults
-                            ,USE_SEASALT & 
+                            ,USE_SEASALT,USE_DUST & 
                             ,USES,DEBUG  & ! %BCs
                             ,MasterProc, PPB, Pref
 use NetCDF_ml,         only:ReadField_CDF,vertical_interpolate
@@ -1285,7 +1285,8 @@ real :: trend_o3=1.0, trend_co, trend_voc
     endforall
 
     case (IBC_DUST_C,IBC_DUST_F)
-      if(me==0)write(*,*)'DUST BIC read from climatological file'
+       if(USE_DUST)then
+          if(me==0)write(*,*)'DUST BIC read from climatological file'
 !         bc_data(:,:,:) = 0.0
 
 !dust are read from the results of a Global run
@@ -1318,7 +1319,9 @@ real :: trend_o3=1.0, trend_co, trend_voc
                enddo
             enddo
          enddo
-         
+         else
+            bc_data=0.0
+         endif
 
     case  default
       print *,"Error with specified BCs:", ibc
