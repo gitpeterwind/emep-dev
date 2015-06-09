@@ -153,6 +153,26 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+9th June 2015 Peter, Dave, Svetlana 3018
+
+New set of emissions for FINN: "v15".
+Requires new BiomassBurningMapping.inc 
+ZCM_EmChem09soa/BiomassBurning_FINNv1.5_to_EmChem09soa.inc
+ZCM_EmChem09/BiomassBurning_FINNv1.5_to_EmChem09.inc
+
+Makefile and run.pl modified to use the new ones
+
+modified mk.GenChem and ForestFire_ml.f90 also
+
+Notes on FINN ForestFire for 2012:
+ForestFire_Emis_2012.nc is omewhat special: it is build from 
+GLOBAL_2012_GESOCHEM_04222014.txt (=FINNv1_2012_GESOCHEM_04222014.tgz) which
+has still the v1 tag, but it has the same components as the v15 version.
+i.e. ForestFire_Emis_2012.nc differs from ForestFire_Emis_v15_2012.nc but has 
+same components!
+ForestFire_Emis_2012.nc was used for 2012 model runs up to now.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 8th June 2015 Peter 3016-17
 
 Some corrections for making the code run on abel and also with "DEBUG=yes".

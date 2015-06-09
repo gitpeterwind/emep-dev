@@ -24,7 +24,8 @@ function cp_if_diff() {
 
 # ==========================================
 # Must specify source of biomass-burning
-ffires=FINNv1  # Can be FINNv1, the other option (GFED) may not be working properly!
+ffires=FINNv1.5  # Can be FINNv1, the other option (GFED) may not be working properly!
+#ffires=FINNv1  # Can be FINNv1, the other option (GFED) may not be working properly!
 # Construct GenIn.species and GenIn.reactions from wanted sub-sets:
 
 #Specify chemical setup. Needs to have associated ZCM_ file, but can use specs
@@ -304,6 +305,7 @@ for i in $odir/CM*; do
 done
 #FEB2012 cp $odir/SAFE.CM_BoundaryConditions.inc $cdir/CM_BoundaryConditions.inc  # Special
 # FINNv1 or GFED:
+echo ${ffires};
 cp_if_diff $odir/BiomassBurning_${ffires}_to_$run.inc $cdir/BiomassBurningMapping.inc  # Special
 cd $cdir
 

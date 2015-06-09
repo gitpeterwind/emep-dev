@@ -103,7 +103,7 @@ integer, parameter :: &
   max_string_length=200 ! large enough for paths to be set on Fire_config namelist
 character(len=max_string_length), save :: &
   GFED_PATTERN = 'GFED_ForestFireEmis.nc',&
-  FINN_PATTERN = 'FINN_ForestFireEmis_YYYY.nc',&
+  FINN_PATTERN = 'FINN_ForestFireEmis_v15_YYYY.nc',&
   GFAS_PATTERN = 'GFAS_ForestFireEmis_YYYY.nc'
 
 integer, save ::    &
