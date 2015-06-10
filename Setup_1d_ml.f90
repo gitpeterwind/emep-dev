@@ -104,7 +104,7 @@ contains
     logical, save :: first_call = .true.
    ! for surface area calcs: 
     real :: ugtmp, ugsiaPM, ugDustF, ugSSaltF, ugDustC, ugSSaltC
-    real :: ugSO4, ugNO3f, ugNO3c, ugRemF, ugRemC, ugpmF, ugpmC
+    real :: ugSO4, ugNO3f, ugNO3c, ugRemF, ugRemC, ugpmF, ugpmC, rho
     logical :: is_finepm, is_ssalt, is_dust
     real, dimension(size(AERO%Inddry))  :: Ddry ! Dry diameter
     integer :: iw, ipm ! for wet rad
@@ -254,26 +254,38 @@ contains
           end do
 
            iw= AERO%SIA_F
-           S_m2m3(iw,k) = pmSurfArea(ugsiaPM,Dp=Ddry(iw), Dpw=DpgNw(iw,k))
+           rho=AERO%PMdens(AERO%Inddry(iw))
+           S_m2m3(iw,k) = pmSurfArea(ugsiaPM,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
+                                     rho_kgm3=rho )
 
            iw= AERO%PM_F ! now use for fine PM
+           rho=AERO%PMdens(AERO%Inddry(iw))
            !TMP S_m2m3(iw,k) = pmSurfArea(ugnsdPM,Dp=Ddry(iw), Dpw=DpgNw(iw,k))
-           S_m2m3(iw,k) = pmSurfArea(ugpmf,Dp=Ddry(iw), Dpw=DpgNw(iw,k))
+           S_m2m3(iw,k) = pmSurfArea(ugpmf,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
+                                     rho_kgm3=rho )
            !if( debug_flag .and. k==20 ) print fmt, sub//"SRAD  ", iw, &
            !    umRdry(iw), DpgNw(iw,k)/umRdry(iw), 1.0e6*S_m2m3(iw,k) 
 
            iw= AERO%SS_F
-           S_m2m3(iw,k) = pmSurfArea(ugSSaltF,Dp=Ddry(iw), Dpw=DpgNw(iw,k))
+           rho=AERO%PMdens(AERO%Inddry(iw))
+           S_m2m3(iw,k) = pmSurfArea(ugSSaltF,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
+                                     rho_kgm3=rho )
 
            iw= AERO%SS_C
-           S_m2m3(iw,k) = pmSurfArea(ugSSaltC,Dp=Ddry(iw), Dpw=DpgNw(iw,k))
+           rho=AERO%PMdens(AERO%Inddry(iw))
+           S_m2m3(iw,k) = pmSurfArea(ugSSaltC,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
+                                     rho_kgm3=rho )
 
-          ! dust - just use dry radius
+          ! dust - just used dry radius
            iw= AERO%DU_F
-           S_m2m3(iw,k) = pmSurfArea(ugDustF,Dp=Ddry(iw), Dpw=DpgNw(iw,k))
+           rho=AERO%PMdens(AERO%Inddry(iw))
+           S_m2m3(iw,k) = pmSurfArea(ugDustF,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
+                                     rho_kgm3=rho )
 
            iw= AERO%DU_C
-           S_m2m3(iw,k) = pmSurfArea(ugDustC,Dp=Ddry(iw), Dpw=DpgNw(iw,k))
+           rho=AERO%PMdens(AERO%Inddry(iw))
+           S_m2m3(iw,k) = pmSurfArea(ugDustC,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
+                                     rho_kgm3=rho )
 
 !           call CheckStop (  S_m2m3(k) < 0.0 , "NEGS_m2m3" )
 

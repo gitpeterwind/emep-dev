@@ -173,6 +173,16 @@ same components!
 ForestFire_Emis_2012.nc was used for 2012 model runs up to now.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+10th June 2015 Svetlana 3019
+
+Setup_1d_ml.f90 - corrected call for pmSurfArea (now includes PMdens) 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+9th June 2015 Dave, Peter 3018
+
+New mapping for FINN ForestFire emissions - BiomassBurning.inc
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 8th June 2015 Peter 3016-17
 
 Some corrections for making the code run on abel and also with "DEBUG=yes".
