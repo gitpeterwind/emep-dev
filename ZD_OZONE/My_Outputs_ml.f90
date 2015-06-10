@@ -15,6 +15,7 @@ use DerivedFields_ml,  only: f_2d               ! D2D houtly output type
 use ModelConstants_ml, only: PPBINV, PPTINV, MasterProc, KMAX_MID,&
                              MY_OUTPUTS, FORECAST, DEBUG_COLSRC,&
                              USE_AOD, USE_POLLEN, DEBUG_POLLEN, SELECT_LEVELS_HOURLY
+use PhysicalConstants_ml, only: ATWAIR
 use OwnDataTypes_ml,   only: Asc2D
 use Par_ml,            only: GIMAX,GJMAX,IRUNBEG,JRUNBEG,me
 use Pollen_const_ml,   only: ug2grains,pollen_check
@@ -377,7 +378,9 @@ subroutine set_output_defs
         j=j+1;
         idx= chemgroups(nuc_conc)%ptr(i) - NSPEC_SHL ! offset between xn_adv and species
         hr_out(j)= Asc2D(trim(name),"BCVugXX",idx,&
-                ix1,ix2,iy1,iy2,1,"uBqh/m3",1.0,-999.9)
+                ix1,ix2,iy1,iy2,1,"uBq h/m3",&
+                PPBINV/ATWAIR*species(chemgroups(nuc_conc)%ptr(i))%molwt,&
+                -999.9)
       enddo
     endif
     if (.false.) then

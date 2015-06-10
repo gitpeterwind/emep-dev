@@ -39,8 +39,8 @@ else ifeq ($(MACHINE),gstallo)
   FC=mpif90
   LD=mpif90
 else ifeq ($(MACHINE),vilje)
-  MODULES = intelcomp/13.0.1 mpt/2.06 netcdf/4.3.0
-# MODULES = intelcomp/14.0.1 mpt/2.09 netcdf/4.3.1
+#  MODULES = intelcomp/13.0.1 mpt/2.06 netcdf/4.3.0
+  MODULES = intelcomp/14.0.1 mpt/2.09 netcdf/4.3.1
   LDFLAGS += $(shell nc-config --flibs)
   F90FLAGS+= $(shell nc-config --cflags)
   MAKEDEPF90=/home/metno/mifapw/bin/makedepf90
@@ -52,6 +52,16 @@ else ifeq ($(MACHINE),byvind)
   LLIB += /software/apps/netcdf/4.1.2/i1210/lib
 # MAKEDEPF90=????
   LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
+else ifeq ($(MACHINE),frost)
+  MODULES = buildenv-intel/2015-1 hdf5/1.8.14-i1501 netcdf/4.3.2-i1501-hdf5-1.8.14 
+  LIBS += -lnetcdf -lnetcdff
+  INCL += /software/apps/netcdf/4.3.2/i1501-hdf5-1.8.14/include/
+  LLIB += /software/apps/netcdf/4.3.2/i1501-hdf5-1.8.14/lib/
+  MAKEDEPF90=/home/metno_op/bin/makedepf90
+  LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
+  LD := mpif90
+  LDFLAGS += -Nmpi
+  F90FLAGS += -Nmpi
 else ifeq ($(MACHINE),abel)
   MODULES = intel/2011.10 openmpi.intel/1.6.1 netcdf.intel/4.2.1.1
   INTEL  = /cluster/software/VERSIONS/$(subst /,-,$(filter intel%,$(MODULES)))
