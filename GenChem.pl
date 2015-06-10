@@ -1184,20 +1184,22 @@ sub print_rates {
   if ( $nrc > 0 ) {
         print F "  contains\n  !------------------------------------\n";
         print F "  subroutine set_${rctype}_rates() \n";
+        print F  "     logical,save::first_call=.true.\n";
+         
 	#A08 print F "  subroutine set_${rctype}_rates($params{$rctype}) \n";
 	#A08 print F "  $arguments{$rctype}\n";
 	#ESX if ( $rctype =~ /misc/ && $nrctroe > 0 ) {
 	if ( $nrctroe > 0 ) {
 		print F  "     real, dimension(KCHEMTOP:KMAX_MID) :: log300divt, logtdiv300\n";
-		print F  "     logical,save::first_call=.true.\n";
-		print F  "     if(first_call)then\n";
-		print F  "       allocate($defrc($Nrctype,$Krange))\n";
-		print F  "       $defrc=0.0\n";
-		print F  "     endif\n";
 		print F  "       log300divt(:) = log(300.0*tinv(:))\n";
 		print F  "       logtdiv300(:) = log(temp(:)/300.0)\n";
 
 	}
+        print F  "     if(first_call)then\n";
+        print F  "       allocate($defrc($Nrctype,$Krange))\n";
+        print F  "       $defrc=0.0\n";
+        print F  "     endif\n";
+                                      
 
         foreach ( @rctext ) {
 		if($_){

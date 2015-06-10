@@ -170,7 +170,7 @@ GenChem-SR-EMEP-%:  GenChemOptions += -f FINNv1.5 -e none
 GenChem-MACC-%:     GenChemOptions += -f GFASv1.5 -e SeaSalt,Dust,Pollen
 GenChem-SR-MACC-%:  GenChemOptions += -f GFASv1.5 -e none
 GenChem-MACCEVA-%:  GenChemOptions += -f GFASv1.5 -e SeaSalt,Dust
-GenChem-eEMEP-%:    GenChemOptions += -f GFASv1.5 -e SeaSalt,Dust
+GenChem-eEMEP-%:    GenChemOptions += -f GFASv1 -e SeaSalt,Dust
 GenChem-eEMEP-%:    $$(eEMEP)
 
 # eEMP Default Scenarios: Vents, NPPs & NUCs

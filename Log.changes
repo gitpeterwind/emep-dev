@@ -153,7 +153,9 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-10th June 2015 Heiko 3020
+10th June 2015 Heiko 3020,3021
+
+Enable reduced chemistry in Emergency (taken/modified from ESX_r12)
 
 Fix unitscale for radioactive particles
 Add frost (HPC,Sweden) to Makefile
