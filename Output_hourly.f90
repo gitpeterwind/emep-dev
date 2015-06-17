@@ -96,7 +96,7 @@ implicit none
   integer, save :: prev_month = -99   ! Initialise with non-possible month
   type(Deriv) :: def1           ! for NetCDF
   real :: scale                 ! for NetCDF
-  integer ::CDFtype,nk,klevel   ! for NetCDF
+  integer ::CDFtype,nk,klevel,ncfileID   ! for NetCDF
   character(len=TXTLEN_SHORT)    :: hr_out_type=""      ! hr_out%type
   integer                        :: hr_out_nk=0         ! hr_out%nk
   integer, pointer, dimension(:) :: gspec=>null()       ! group array of indexes
@@ -159,6 +159,8 @@ implicit none
   !! filename will be overwritten
     call Init_new_netCDF(trim(filename),IOU_HOUR)
 
+    ncfileID=-1 ! must be <0 as initial value
+
   !! Create variables first, without writing them (for performance purposes)   
     do ih=1,NHOURLY_OUT
       def1%name=hr_out(ih)%name
@@ -175,10 +177,10 @@ implicit none
       select case(nk)
       case(1)       ! write as 2D
         call Out_netCDF(IOU_HOUR,def1,2,1,hourly,scale,CDFtype,ist,jst,ien,jen,&
-          create_var_only=.true.)
+          create_var_only=.true.,ncFileID_given=ncFileID)
       case(2:)      ! write as 3D
         call Out_netCDF(IOU_HOUR,def1,3,1,hourly,scale,CDFtype,ist,jst,ien,jen,1,&
-          create_var_only=.true.,chunksizes=(/ien-ist+1,jen-jst+1,1,1/))
+          create_var_only=.true.,chunksizes=(/ien-ist+1,jen-jst+1,1,1/),ncFileID_given=ncFileID)
       endselect
     enddo
   endif
@@ -619,12 +621,12 @@ implicit none
 
       select case(nk)
       case(1)       ! write as 2D
-        call Out_netCDF(IOU_HOUR,def1,2,1,hourly,scale,CDFtype,ist,jst,ien,jen)
+        call Out_netCDF(IOU_HOUR,def1,2,1,hourly,scale,CDFtype,ist,jst,ien,jen,ncFileID_given=ncFileID)
       case(2:)      ! write as 3D
         klevel=ik
         if(nk<KMAX_MID)  klevel=KMAX_MID-ik+1 !count from ground and up
         if(SELECT_LEVELS_HOURLY) klevel=k     !order is defined in LEVELS_HOURLY
-        call Out_netCDF(IOU_HOUR,def1,3,1,hourly,scale,CDFtype,ist,jst,ien,jen,klevel)
+        call Out_netCDF(IOU_HOUR,def1,3,1,hourly,scale,CDFtype,ist,jst,ien,jen,klevel,ncFileID_given=ncFileID)
       !case default   ! no output
       endselect
     enddo KVLOOP    
@@ -636,7 +638,7 @@ implicit none
     def1%class='Surface pressure'
     CDFtype=Real4 ! can be choosen as Int1,Int2,Int4,Real4 or Real8
     scale=1.
-    call Out_netCDF(IOU_HOUR,def1,2,1,ps(:,:,1)*0.01,scale,CDFtype,ist,jst,ien,jen)     
+    call Out_netCDF(IOU_HOUR,def1,2,1,ps(:,:,1)*0.01,scale,CDFtype,ist,jst,ien,jen,ncFileID_given=ncFileID)     
   endif
 
 !Not closing seems to give a segmentation fault when opening the daily file

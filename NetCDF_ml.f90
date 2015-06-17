@@ -1522,6 +1522,9 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
   case default
     return
   endselect
+
+  if(present(ncFileID_given))ncFileID_given=ncFileID!use rather stored ncFileID_XXX
+
   if(DEBUG_NETCDF.and.MasterProc) &
     write(*,*)'Out_NetCDF, filename ', trim(fileName), iotyp,ncFileID
 

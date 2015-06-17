@@ -154,6 +154,13 @@ changes here (and when committing svn), and Dave will tag as required
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+17th June 2015 Peter 3023
+
+Use ncFileID_given for Hourly output.
+In case very many hourly outputs fields where chosen, the model might otherwise 
+crash due to bug in netcdf/hdf5 library.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15th June 2015 Heiko 3022
 
 Rename ZCM_Emergency/ESX_r12.[reactions/species] to Eemep.[reactions/species]
