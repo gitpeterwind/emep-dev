@@ -145,8 +145,10 @@ real, parameter, dimension(NUM_CEXT,NumRH,W340:W1020) :: &
         1.3430,1.7980,1.9990,2.1190,2.2910,2.4640,2.8200, & ! 8:SO4 (H2SO4)
         2.1430,2.1030,2.1060,2.1110,2.0840,2.0700,2.0640, & ! 9:NO3c (SSc)
         !(wet) mass extinction efficiency [m2/g] at 550 nm
-        2.7060*RH_CNT,                                    & ! 1:DDf (constant)
-        2.1890*RH_CNT,                                    & ! 2:DDc (constant)
+!rep15        2.7060*RH_CNT,                                    & ! 1:DDf (constant)
+!rep15        2.1890*RH_CNT,                                    & ! 2:DDc (constant)
+        2.6060*RH_CNT,                                    & ! 1:DDf (constant)
+        2.1260*RH_CNT,                                    & ! 2:DDc (constant)
         2.6990,2.5470,2.5440,2.5080,2.4440,2.3620,2.2210, & ! 3:SSf
         2.1430,2.1030,2.0900,2.1060,2.0840,2.0700,2.0640, & ! 4:SSc
         0.4830*RH_CNT,                                    & ! 5:ECn (EC:dry)

@@ -367,11 +367,12 @@
   if (lu == LU_DESERT)       then      ! ---------  desert -----
         soil_type = 'Saharan desert'
         z0 = 0.5e-4        !TEST
-        dust_lim = 0.5     ! 1.0
+        dust_lim = 0.3 ! rep15   ! 0.5 !- with my versions
         alfa = 2.0e-5 
  !//  European deserts: lat(gb), long (gl)
-     if ( (glat(i,j) > 36.0 .and. glon(i,j) < 0.0) .or.   &  
-          (glat(i,j) > 37.0 .and. glon(i,j) < 45.0) )    then 
+     if ( (glat(i,j) > 36.0 .and. glon(i,j) < 0.0) .or.   & 
+          (glat(i,j) > 34.0 .and. glon(i,j) < 45.0) )    then 
+!rep15          (glat(i,j) > 37.0 .and. glon(i,j) < 45.0) )    then 
         soil_type = 'European Arid'
         z0 = 0.5e-4        !TEST
         dust_lim = 0.05
