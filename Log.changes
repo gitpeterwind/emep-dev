@@ -153,6 +153,16 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+23rd June 2015 Peter 3025
+
+Vertical interpolation for NetCDF input:
+When extrapolating for altitude higher than the input data, use a ribust scheme,
+i.e. something which is bounded by the values in the two highest availbale 
+levels. (Not explicitely tested for these high altitudes though).
+Should be useful when including stratosphere in the runs, 
+but O3 is not important for instance (eemep/volcanoes).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 22th June 2015 Svetlana 3024
 
 Minor changes in DustProd_ml.f90 (small reduction) and 

@@ -4771,20 +4771,26 @@ subroutine   vertical_interpolate(filename,Rvar,KMAX_ext,Rvar_emep,debug)
     do k=1,KMAX_MID
       P_emep=A_mid(k)+B_mid(k)*Pref !Pa
       if(debug) write(*,fmt="(A,I3,F10.2)")'vert_inter: P_emep',k,P_emep
-      !largest available P smaller than P_emep (if possible)
-      k1_ext(k)=1 !start at surface, and go up until P_emep
-      do k_ext=1,KMAX_EXT
-        if(P_ext(k_ext)<P_emep)exit
-        k1_ext(k)=k_ext
-      enddo
-      !smallest available P larger than P_emep (if possible)
-      k2_ext(k)=KMAX_EXT !start at top, and go down until P_emep
-      if(k2_ext(k)==k1_ext(k))k2_ext(k)=KMAX_EXT-1 !avoid k2=k1
-      do k_ext=KMAX_EXT,1,-1
-        if(P_ext(k_ext)>P_emep)exit
-        if(k_ext/=k1_ext(k))k2_ext(k)=k_ext
-      enddo
-      weight_k1(k)=(P_emep-P_ext(k2_ext(k)))/(P_ext(k1_ext(k))-P_ext(k2_ext(k)))
+      if(P_emep<P_ext(KMAX_EXT))then
+         !we need levels above the highest level available. 
+         !we do not want to extrapolate. take a safer solution
+         weight_k1(k)=1.0-(P_ext(KMAX_EXT)-P_emep)/(P_ext(KMAX_EXT)-P_emep+P_ext(KMAX_EXT-1)-P_emep)
+      else
+         !largest available P smaller than P_emep (if possible)
+         k1_ext(k)=1 !start at surface, and go up until P_emep
+         do k_ext=1,KMAX_EXT
+            if(P_ext(k_ext)<P_emep)exit
+            k1_ext(k)=k_ext
+         enddo
+         !smallest available P larger than P_emep (if possible)
+         k2_ext(k)=KMAX_EXT !start at top, and go down until P_emep
+         if(k2_ext(k)==k1_ext(k))k2_ext(k)=KMAX_EXT-1 !avoid k2=k1
+         do k_ext=KMAX_EXT,1,-1
+            if(P_ext(k_ext)>P_emep)exit
+            if(k_ext/=k1_ext(k))k2_ext(k)=k_ext
+         enddo
+         weight_k1(k)=(P_emep-P_ext(k2_ext(k)))/(P_ext(k1_ext(k))-P_ext(k2_ext(k)))
+      endif
       if(debug)&
         write(*,fmt="(A,I4,2(A,I4,A,F5.2))")'vert_inter: level',k,&
           ' is the sum of level ',k1_ext(k),' weight ',weight_k1(k),&
@@ -4794,20 +4800,26 @@ subroutine   vertical_interpolate(filename,Rvar,KMAX_ext,Rvar_emep,debug)
     do k=1,KMAX_MID
       P_emep=A_mid(k)+B_mid(k)*Pref !Pa
       if(debug) write(*,fmt="(A,I3,F10.2)")'vert_inter: P_emep',k,P_emep
-      !largest available P smaller than P_emep (if possible)
-      k1_ext(k)=KMAX_EXT !start at surface, and go up until P_emep
-      do k_ext=KMAX_EXT,1,-1
-        if(P_ext(k_ext)<P_emep)exit
-        k1_ext(k)=k_ext
-      enddo
-      !smallest available P larger than P_emep (if possible)
-      k2_ext(k)=1 !start at top, and go down until P_emep
-      if(k2_ext(k)==k1_ext(k))k2_ext(k)=2 !avoid k2=k1
-      do k_ext=1,KMAX_EXT
-        if(P_ext(k_ext)>P_emep)exit
-        if(k_ext/=k1_ext(k))k2_ext(k)=k_ext
-      enddo
-      weight_k1(k)=(P_emep-P_ext(k2_ext(k)))/(P_ext(k1_ext(k))-P_ext(k2_ext(k)))
+      if(P_emep<P_ext(1))then
+         !we need levels above the highest level available. 
+         !we do not want to extrapolate. take a safer solution
+         weight_k1(k)=1.0-(P_ext(1)-P_emep)/(P_ext(1)-P_emep+P_ext(2)-P_emep)
+      else
+         !largest available P smaller than P_emep (if possible)
+         k1_ext(k)=KMAX_EXT !start at surface, and go up until P_emep
+         do k_ext=KMAX_EXT,1,-1
+            if(P_ext(k_ext)<P_emep)exit
+            k1_ext(k)=k_ext
+         enddo
+         !smallest available P larger than P_emep (if possible)
+         k2_ext(k)=1 !start at top, and go down until P_emep
+         if(k2_ext(k)==k1_ext(k))k2_ext(k)=2 !avoid k2=k1
+         do k_ext=1,KMAX_EXT
+            if(P_ext(k_ext)>P_emep)exit
+            if(k_ext/=k1_ext(k))k2_ext(k)=k_ext
+         enddo
+         weight_k1(k)=(P_emep-P_ext(k2_ext(k)))/(P_ext(k1_ext(k))-P_ext(k2_ext(k)))
+      endif
       if(debug) &
         write(*,fmt="(A,I4,2(A,I4,A,F5.2))")'vertical_interpolate: level',k,&
           ' is the sum of level ', k1_ext(k),' weight ',weight_k1(k),&
