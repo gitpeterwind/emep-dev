@@ -43,6 +43,8 @@
 !------------------------------
 ! IN TESTING:
 ! If EMIS_SOURCE= 'Mixed', then the emis_inputlists will be used.
+! IMPORTANT: Specify POLL rather than sox, nox, etc. and the code
+! will check against emissions names in use (CM_EmisFiles)
   DataDir = '/global/work/mifapw/emep',
   EmisDir = 'DataDir/Data',
 !  emis_inputlist(1)%name     = 'EmisDir/Emis_GLOB_05.nc', !example of Fractions type

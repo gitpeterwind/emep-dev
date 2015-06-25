@@ -8,9 +8,6 @@ module Emissions_ml
 use Biogenics_ml,     only: SoilNOx, AnnualNdep
 use CheckStop_ml,     only: CheckStop,StopAll
 use ChemSpecs,        only: NSPEC_SHL, NSPEC_TOT,NO2, species
-!CMR use ChemSpecs_shl_ml, only: NSPEC_SHL
-!CMR use ChemSpecs_tot_ml, only: NSPEC_TOT,NO2
-!CMR use ChemChemicals_ml, only: species
 use Country_ml,       only: MAXNLAND,NLAND,Country,IC_NAT,IC_FI,IC_NO,IC_SE
 use Country_ml,       only: EU28,EUMACC2 !CdfSnap
 use EmisDef_ml,       only: &
@@ -196,8 +193,8 @@ contains
     integer :: iem,iem2         ! loop variable over pollutants (1..NEMIS_FILE)
     integer :: icc,ncc          ! loop variables over  sources
     integer :: nin, nex         !  include, exclude numbers for emis_inputlist
-    character(len=200) :: fname  ! File name
-    character(len=300) :: inputline 
+    character(len=*), parameter :: sub='Emissions:'
+    character(len=300) :: inputline, fname ! txt, File name
     real    :: tmpclimfactor
 
     ! Emission sums (after e_fact adjustments):
@@ -213,7 +210,7 @@ contains
     real :: fractions(MAXLIMAX,MAXLJMAX,NCMAX),SMI(MAXLIMAX,MAXLJMAX),Reduc(NLAND),SMI_roadfactor
     logical ::SMI_defined=.false.
     logical :: my_first_call=.true.  ! Used for femis call
-    character(len=40) :: varname 
+    character(len=40) :: varname, fmt
     integer ::allocerr, i_gridemis
     if (MasterProc) write(6,*) "Reading emissions for year",  year
 
@@ -402,19 +399,21 @@ contains
 
        if(EMIS_TEST=="CdfSnap" .or. EMIS_SOURCE=="Mixed") then  ! Expand groups, e.g. EUMACC2
           do iemis = 1, size( emis_inputlist(:)%name )
-             if ( emis_inputlist(iemis)%name == "NOTSET" ) then
+             fname = emis_inputlist(iemis)%name
+             if ( fname == "NOTSET" ) then
                 emis_inputlist(iemis)%Nlist = iemis - 1
-                if(MasterProc)  write(*,*)"CdfSnap Nlist=", emis_inputlist(iemis)%Nlist
+                if(MasterProc)  write(*,*)sub//trim(fname)//" Nlist=",&
+                       emis_inputlist(iemis)%Nlist
                 exit
              end if
 
              call expandcclist( emis_inputlist(iemis)%incl , n)
              emis_inputlist(iemis)%Nincl = n
-             if(MasterProc) print *, "INPUTLIST-INCL", iemis, n
+             if(MasterProc) write(*,*) sub//trim(fname)//" INPUTLIST-INCL", n
 
              call expandcclist( emis_inputlist(iemis)%excl , n)
              emis_inputlist(iemis)%Nexcl = n
-             if(MasterProc) print *, "INPUTLIST-EXCL", iemis, n
+             if(MasterProc) write(*,*) sub//"trim(fname)// INPUTLIST-EXCL", n
 
              !replace keywords
              ! DataDir has 7 characters, therefore the "n+7"
@@ -426,11 +425,14 @@ contains
                 if(me==0)write(*,*)'EmisDir redefined with path ',trim(EmisDir)               
              endif
              
-             n=index(emis_inputlist(iemis)%name,'EmisDir')
+             n=index(fname,'EmisDir')
              if(n>0)then
                 emis_inputlist(iemis)%name = &
-                     emis_inputlist(iemis)%name(1:n-1) // trim(EmisDir) // emis_inputlist(iemis)%name(n+7:)
-                if(me==0)write(*,*)'filename redefined with path ',trim(emis_inputlist(iemis)%name)
+                   fname(1:n-1) // trim(EmisDir) // fname(n+7:)
+
+                     !emis_inputlist(iemis)%name(1:n-1) // trim(EmisDir) // emis_inputlist(iemis)%name(n+7:)
+                if(MasterProc)write(*,*)'filename redefined with path ',&
+                     trim(emis_inputlist(iemis)%name)
              endif
 
              nin_monthly = 0
@@ -504,20 +506,27 @@ contains
           else if(index(emis_inputlist(iemis)%name,".nc")>1)then 
              !not in "fraction" format. Each land has own set of fields
              !Each pollutant has own file. 
+             if(MasterProc)  write(*,*)sub//trim(fname)//" Processing"
              do iem = 1, NEMIS_FILE
                 n=index(emis_inputlist(iemis)%name,"POLL")
                 fname = emis_inputlist(iemis)%name(1:n-1) // trim(EMIS_FILE(iem)) // ".nc"
+                if(MasterProc) then
+                     write(*,*)sub//trim(fname)//" iemProcess",iem,n,trim(fname)
+                     write(*,"(a,2i3,a,3i3)") "INPUTLIST:", iem, iemis, trim(fname), nin, nex,me
+                end if
 
-                if(me==0)write(*,"(a,2i3,a,3i3)") "INPUTLIST:", iem, iemis, trim(fname), nin, nex,me
-
-                call CheckStop( nin>0 .and. nex > 0, "emis_inputlists cannot have inc and exc")
+                call CheckStop( nin>0 .and. nex > 0, &
+                    "emis_inputlists cannot have inc and exc")
                 if ( nin > 0 ) then
-                   call EmisGetCdf(iem,fname, sumemis(1,iem), incl=emis_inputlist(iemis)%incl(1:nin) )
+                   call EmisGetCdf(iem,fname, sumemis(1,iem), &
+                                   incl=emis_inputlist(iemis)%incl(1:nin) )
                 else if (  nex > 0 ) then
-                   call EmisGetCdf(iem,fname, sumemis(1,iem), excl=emis_inputlist(iemis)%excl(1:nex) ) 
+                   call EmisGetCdf(iem,fname, sumemis(1,iem), &
+                                   excl=emis_inputlist(iemis)%excl(1:nex) ) 
                 else
                    call EmisGetCdf(iem,fname, sumemis(1,iem))
                 end if
+if(MasterProc) print *, "PARTEMIS ", iem, trim(fname), sumemis(27,iem) 
 
              enddo
           else if(index(emis_inputlist(iemis)%name,"grid")>1)then
@@ -527,7 +536,7 @@ contains
                 fname = emis_inputlist(iemis)%name(1:n-1) // trim(EMIS_FILE(iem)) 
                 if(me==0)write(*,*)'Reading ASCII format '//trim(fname)
                 call EmisGetASCII(iem, fname, trim(EMIS_FILE(iem)), sumemis_local, &
-                           emis_inputlist(iemis)%incl, nin, emis_inputlist(iemis)%excl, nex)
+                    emis_inputlist(iemis)%incl, nin, emis_inputlist(iemis)%excl, nex)
              enddo
 
              !add together totals from each processor (only me=0 get results)
@@ -546,17 +555,20 @@ contains
              write(*     ,"(2a4,3x,30(a12,:))")"  N "," CC ",EMIS_FILE(:)
              write(IO_LOG,"(2a4,3x,30(a12,:))")"  N "," CC ",EMIS_FILE(:)                
              sumEU(:) = 0.0
+             fmt="(i4,1x,a4,3x,30(f12.2,:))"
              do ic = 1, NLAND
                 ccsum = sum( sumemis(ic,:) )
                 icc=Country(ic)%icode
                 if ( ccsum > 0.0 )then
-                   write(*,"(i4,1x,a4,3x,30(f12.2,:))")icc, Country(ic)%code, sumemis(ic,:)
-                   write(IO_LOG,"(i4,1x,a4,3x,30(f12.2,:))")icc, Country(ic)%code, sumemis(ic,:)
+                   write(*,     fmt) icc, Country(ic)%code, sumemis(ic,:)
+                   write(IO_LOG,fmt) icc, Country(ic)%code, sumemis(ic,:)
                 endif
                 if(find_index(Country(ic)%code,EU28(:))>0) sumEU = sumEU + sumemis(ic,:)
              enddo
-             if ( sum(sumEU(:))>0.001)write(*     ,"(i4,1x,a4,3x,30(f12.2,:))") 0, "EU", sumEU(:)
-             if ( sum(sumEU(:))>0.001)write(IO_LOG,"(i4,1x,a4,3x,30(f12.2,:))") 0, "EU", sumEU(:)
+             if ( sum(sumEU(:))>0.001) then
+               write(*     ,fmt) 0, "EU", sumEU(:)
+               write(IO_LOG,fmt) 0, "EU", sumEU(:)
+             end if
           endif
           
           !total of emissions from all countries and files into emsum

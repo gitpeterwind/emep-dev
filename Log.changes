@@ -153,6 +153,19 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+25th June 2015 Dave  3027
+
+
+EmisGet_ml
+Emissions_ml
+
+  Tidy up, while checking (succesful) use of Mixed netcdf inputs 
+  (clearer debug, lines shortened < 78 chars, etc., old comments removed)
+
+config_EMEPSTD.nml
+  Extra comments to remind that Mixed soures need POLL, not explicit sox, etc
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 24th June 2015 Heiko 3026
 
 Increase number of emissions in columnsource. Fukushima hourly, 3 heights
