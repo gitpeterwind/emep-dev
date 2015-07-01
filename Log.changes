@@ -153,6 +153,16 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+1st July 2015 Peter  3028
+
+EmisGet_ml: emission height. Bug when defined as P levels (not default)
+(loop over nemis_kprofile instead of nemis_hprofile)
+
+GridValues_ml: deallocate xm_global (should be removed completely one day!)
+
+NetCDF: vertical interpolate. Completed change from 3025.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 25th June 2015 Dave  3027
 
 

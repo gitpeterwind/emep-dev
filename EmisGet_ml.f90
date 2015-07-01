@@ -925,6 +925,7 @@ end if
       emis_kprofile=0.0
 
       !convert height (given as pressure) distribution into model level distribution
+      !ext meaning using levels from file (EmisHeights.txt)
       k1_ext(KMAX_BND)=0
       do isec=1,NSECTORS! could put inside but easier for debugging to put here now
          if(DEBUG_GETEMIS.and.MasterProc) write(*,*)'Sector ',isec
@@ -938,7 +939,7 @@ end if
             !largest available P_ext smaller than P_emep (if possible)
             !k1_ext(k) is the external layer just below P_emep(k)
             k1_ext(k)= 0 !start at surface, and go up until P_emep
-            do k_ext=1,nemis_kprofile
+            do k_ext=1,nemis_hprofile
                if(emis_P_level(k_ext)<P_emep)exit
                k1_ext(k)=k_ext
             enddo
@@ -969,8 +970,8 @@ end if
                if(DEBUG_GETEMIS.and.MasterProc) write(*,fmt="(A,I5,6F10.2)")'adding entire level',k_ext,emis_hprofile(k_ext,isec),emis_P_level(k_ext)
             enddo
 
-            !add level just below P_emep(k), if not already counted, above k1_ext(k)  below P_emep
-            if(emis_P_level(k1_ext(k+1)+1)>P_emep)then
+            !add level just below P_emep(k), if not already counted, above k1_ext(k)  below P_emep; and must exist
+            if(emis_P_level(k1_ext(k+1)+1)>P_emep.and. k1_ext(k)<nemis_hprofile )then
                frac=(emis_P_level(k1_ext(k))-P_emep)/(emis_P_level(k1_ext(k))-emis_P_level(k1_ext(k)+1))
                emis_kprofile(KMAX_BND-k,isec)=emis_kprofile(KMAX_BND-k,isec)+frac*emis_hprofile(k1_ext(k)+1,isec)
                if(DEBUG_GETEMIS.and.MasterProc) write(*,fmt="(A,I5,6F10.2)")'adding last fraction of level',k1_ext(k)+1,&

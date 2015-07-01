@@ -4775,6 +4775,8 @@ subroutine   vertical_interpolate(filename,Rvar,KMAX_ext,Rvar_emep,debug)
          !we need levels above the highest level available. 
          !we do not want to extrapolate. take a safer solution
          weight_k1(k)=1.0-(P_ext(KMAX_EXT)-P_emep)/(P_ext(KMAX_EXT)-P_emep+P_ext(KMAX_EXT-1)-P_emep)
+         k1_ext(k)=KMAX_EXT
+         k2_ext(k)=KMAX_EXT-1
       else
          !largest available P smaller than P_emep (if possible)
          k1_ext(k)=1 !start at surface, and go up until P_emep
@@ -4804,6 +4806,8 @@ subroutine   vertical_interpolate(filename,Rvar,KMAX_ext,Rvar_emep,debug)
          !we need levels above the highest level available. 
          !we do not want to extrapolate. take a safer solution
          weight_k1(k)=1.0-(P_ext(1)-P_emep)/(P_ext(1)-P_emep+P_ext(2)-P_emep)
+         k1_ext(k)=1
+         k2_ext(k)=2
       else
          !largest available P smaller than P_emep (if possible)
          k1_ext(k)=KMAX_EXT !start at surface, and go up until P_emep

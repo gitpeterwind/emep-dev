@@ -1258,6 +1258,7 @@ else
        write(*,*)me,'Found South Pole'
     endif
 
+    deallocate(xm_global,xm_global_i,xm_global_j)
 
   end subroutine Getgridparams
 
