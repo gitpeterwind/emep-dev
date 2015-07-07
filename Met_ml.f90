@@ -198,11 +198,12 @@ contains
     integer :: i, j, ix, k, kk, ii,jj,ii2,jj2, nrix, isw, KMAX
     logical :: fexist,found
     logical,save :: first_call = .true.
+    logical,save :: newrain = .true.
 
     ! Soil water has many names. Some we can deal with:
     ! (and all need to end up as SMI)
     character(len=*), dimension(4), parameter :: possible_soilwater_uppr = (/&
-         "SMI1                " &
+          "SMI1                " &
          ,"SMI                 " &
          ,"soil_water_content  " &
          ,"soil_wetness_surface" &
@@ -268,6 +269,7 @@ contains
 
        debug_iloc = debug_li
        debug_jloc = debug_lj
+
     else
        nsec=METSTEP*3600.0 !from hr to sec
        ts_now = make_timestamp(current_date)
@@ -291,6 +293,7 @@ contains
          ,next_inptime%hour,nmdays(2)
 
     !Read rec=1 both for h=0 and h=3:00 in case 00:00 in 1st meteofile
+
     nrec=nrec+1
 
     if(nrec>Nhh.or.nrec==1) then              ! start reading a new meteo input file
@@ -322,9 +325,11 @@ contains
           namefield=met(ix)%name
           ndim=met(ix)%dim
           nrix=min(met(ix)%msize,nr)
+
           call Getmeteofield(meteoname,namefield,nrec,ndim,unit,met(ix)%validity,&
                met(ix)%field(1:MAXLIMAX,1:MAXLJMAX,:,nrix),needed=met(ix)%needed,&
                found=met(ix)%found)
+
           if(write_now)then
              if(met(ix)%found)write(*,*)'found ',trim(namefield),' in ',trim(meteoname)
              if(.not.met(ix)%found)write(*,*)'did not find ',trim(namefield),' in ',trim(meteoname)
@@ -503,20 +508,30 @@ contains
        if(write_now)write(*,*)'WARNING: deriving 3D precipitations from 2D precipitations '
        if(write_now)write(*,*)'2D precipitations sum of large_scale and convective precipitations'
 
-       namefield='large_scale_precipitations'
-       call Getmeteofield(meteoname,namefield,nrec,2,unit,validity,&
-            surface_precip(:,:),needed=.true.)
-       namefield='convective_precipitations'
-       call Getmeteofield(meteoname,namefield,nrec,2,unit,validity,&
-            buff(:,:),needed=.true.)
-       surface_precip=surface_precip+buff
+       ix = ix_surface_precip
+       call Getmeteofield(meteoname,trim(met(ix)%name),nrec,met(ix)%dim,unit,met(ix)%validity,&
+            met(ix)%field,needed=met(ix)%needed,found=met(ix)%found)
+       
+       ix = ix_convective_precip
+       call Getmeteofield(meteoname,met(ix)%name,nrec,met(ix)%dim,unit,met(ix)%validity,&
+            met(ix)%field,needed=met(ix)%needed,found=met(ix)%found)
+       
+       surface_precip = surface_precip + convective_precip
+       write(*,*)'prcip ',nrec,Nhh,surface_precip(5,5),convective_precip(5,5),surface_precip_old(5,5)
+        if(WRF_MET_CORRECTIONS) then 
+           buff=surface_precip !save to save in old below
+           surface_precip = max(0.0,(surface_precip - surface_precip_old))*0.001/(METSTEP*3600)! get only the variation. mm ->m/s
+           surface_precip_old = buff ! Accumulated rain in WRF
+        endif
 
        !if available, will use cloudwater to determine the height of release
        !NB: array cw_met only used here
-       namefield='cloudwater'
        if(nr==2)cw_met(:,:,:,1)=cw_met(:,:,:,2)!save previous value
-       call Getmeteofield(meteoname,namefield,nrec,3,unit,validity,&
-            cw_met(:,:,:,nr),found=foundcloudwater)
+
+       ix = ix_cw_met
+       call Getmeteofield(meteoname,met(ix)%name,nrec,met(ix)%dim,unit,met(ix)%validity,&
+            met(ix)%field,needed=met(ix)%needed,found=met(ix)%found)
+       
        if(foundcloudwater)then
           if(write_now)write(*,*)'release height for 3D precipitations derived from cloudwater'
           if(MasterProc.and.first_call)write(unit=IO_LOG,fmt="(a)")&
@@ -584,6 +599,7 @@ contains
     !NB: surface_precip is different than the one read directly from the 
     !metfile  (which has different units, and is the sum of the 2D 
     !large_scale_precipitations+convective_precipitations)
+
     surface_precip(:,:) = pr(:,:,KMAX_MID) * inv_METSTEP 
 
     if(USE_CONVECTION)then
@@ -627,6 +643,9 @@ contains
        !flux defined with opposite signs
        fh(:,:,nr)=-fh(:,:,nr)
        fl(:,:,nr)=-fl(:,:,nr)
+       sst=max(273.0,sst)!WRF set land sst to zero
+       SoilWater_uppr(:,:,nr)=(SoilWater_uppr(:,:,nr)-0.1)*5!rough conversion wrf->SMI . Can be improved!
+       SoilWater_deep(:,:,nr)=(SoilWater_deep(:,:,nr)-0.1)*5!rough conversion wrf->SMI . Can be improved!
     endif
 
     if(LANDIFY_MET)then
@@ -811,7 +830,12 @@ contains
     if(foundws10_met)then
        namefield='v10' !second component of ws_10m
        call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,& 
-            buff(:,:),found=foundws10_met)
+            buff(:,:),needed=.false.,found=foundws10_met)
+       if(.not.foundws10_met)then
+          namefield='V10' !second component of ws_10m
+          call Getmeteofield(meteoname,namefield,nrec,ndim,unit,validity,& 
+               buff(:,:),found=foundws10_met)
+       endif
        if(foundws10_met)then
           if(write_now)write(*,*)' found v component of 10m wind '
           ws_10m(:,:,nr)=sqrt(ws_10m(:,:,nr)**2+buff(:,:)**2)
@@ -1133,8 +1157,7 @@ contains
     endif
     if (neighbor(SOUTH) .ne. NOPROC) then
       CALL MPI_WAIT(request_s, MPISTATUS, INFO)
-   endif
-
+    endif
 
     if(USE_FASTJ)then
        !compute photolysis rates from FastJ    
@@ -2607,12 +2630,12 @@ contains
     integer,intent(in)           :: nrec,ndim
     logical,intent(in) ,optional :: needed
     logical,intent(out),optional :: found
-
+    character(len=len(namefield)) :: namefield_met
     !    integer*2, allocatable ::var_global(:,:,:)   ! faster if defined with
     ! fixed dimensions for all
     ! nodes?
     real :: scalefactors(2),x,y
-    integer :: KMAX,ijk,i,k,j,nfetch,k1,k2,istart,jstart,Nlevel
+    integer :: KMAX,ijk,i,k,j,nfetch,k1,k2,istart,jstart,Nlevel,kstart,kend
     logical :: reverse_k
     real, allocatable,save ::meteo_3D(:,:,:)
 
@@ -2722,22 +2745,82 @@ contains
        endif
     else
        !data are read as real
-!could also use ReadField to interpolate into a different grid!
-       !if(MasterProc)write(*,*)'reading ',trim(namefield)
-       write(*,*)me,'reading ',trim(namefield)
+       !could also use ReadField to interpolate into a different grid!
+
        nfetch=1
        istart=1
        jstart=1
-       if(namefield==met(ix_u_xmj)%name .and. MET_C_GRID)istart=0!set origin at (2,1) for u-wind
-       if(namefield==met(ix_v_xmi)%name .and. MET_C_GRID)jstart=0!set origin at (1,2) for v-wind
+
+       if(namefield==met(ix_u_xmj)%name .and. MET_C_GRID)istart=2!set origin at (2,1) for u-wind
+       if(namefield==met(ix_v_xmi)%name .and. MET_C_GRID)jstart=2!set origin at (1,2) for v-wind  
        reverse_k=.false.
+
        if(MET_REVERSE_K)reverse_k=.true.
-       call GetCDF_modelgrid(namefield,meteoname,field,1,KMAX,nrec,nfetch,i_start=istart,&
+
+       if(.not.allocated(meteo_3D))then
+          allocate(meteo_3D(MAXLIMAX,MAXLJMAX,KMAX_MET))
+          meteo_3D=0.0
+       endif
+       kstart=1
+       kend=KMAX
+       namefield_met=namefield
+       if(namefield=='SMI1' .and. WRF_MET_CORRECTIONS)then
+          !has to fetch level 1
+          kstart=1
+          kend=1
+          namefield_met='SMOIS'     
+       endif
+       if(namefield=='SMI3' .and. WRF_MET_CORRECTIONS)then
+          !has to fetch level 3
+          kstart=3
+          kend=3
+          namefield_met='SMOIS'
+       endif
+       
+       
+       call GetCDF_modelgrid(namefield_met,meteoname,meteo_3D,kstart,kend,nrec,nfetch,i_start=istart,&
             j_start=jstart,reverse_k=reverse_k,needed=needed,found=found)
+
+       if(KMAX==1)then       
+          ijk=0
+          k=1
+          do j=1,MAXLJMAX
+             do i=1,MAXLIMAX
+                ijk=ijk+1
+                field(ijk)=meteo_3D(i,j,k)
+             enddo
+          enddo
+       else
+          if(External_Levels_Def)then
+             !interpolate vertically if the levels are not identical
+             ijk=0
+             do k=1,KMAX_MID
+                k1=k1_met(k)
+                k2=k2_met(k)
+                do j=1,MAXLJMAX
+                   do i=1,MAXLIMAX
+                      ijk=ijk+1
+                      field(ijk)=x_k1_met(k)*meteo_3D(i,j,k1)+(1.0-x_k1_met(k))*meteo_3D(i,j,k2)
+                   enddo
+                enddo
+             enddo
+          else
+             !use same vertical coordinates as meteo
+             ijk=0
+             do k=1,KMAX_MID
+                do j=1,MAXLJMAX
+                   do i=1,MAXLIMAX
+                      ijk=ijk+1
+                      field(ijk)=meteo_3D(i,j,k)
+                   enddo
+                enddo
+             enddo
+             
+          endif
+       endif
+       
     endif
   end subroutine Getmeteofield
-
-
 
   subroutine GetCDF_short(varname,fileName,var,GIMAX,IRUNBEG,GJMAX,JRUNBEG &
        ,KMAX,nstart,nfetch,scalefactors,unit,validity,needed)
@@ -2870,11 +2953,21 @@ subroutine Check_Meteo_Date
     
     status=nf90_inq_dimid(ncid=ncFileID,name="time",dimID=timedimID)
     if(status/=nf90_noerr)then
-       !could possibly use "Times"?
-       if(MasterProc)write(*,*)'time variable not found'
-       nhour_first=0 !hour of the first record
-       if(MasterProc)write(*,*)'Did not check times, and assume nhour_first =',nhour_first
-       goto 777
+       status=nf90_inq_dimid(ncid=ncFileID,name="Time",dimID=timedimID)! WRF
+       if(status/=nf90_noerr)then
+          if(MasterProc)write(*,*)'time variable not found'
+          nhour_first=0 !hour of the first record
+          Nhh=8
+          if(MasterProc)write(*,*)'Did not check times, and assume nhour_first =',nhour_first
+          if(MasterProc)write(*,*)'Assume  Nhh =',Nhh
+          goto 777
+       else
+          call check(nf90_inquire_dimension(ncid=ncFileID,dimID=timedimID,len=Nhh))
+          nhour_first=0 !hour of the first record
+          if(MasterProc)write(*,*)'Did not check times, and assume nhour_first =',nhour_first            
+          if(MasterProc)write(*,*)'  Nhh =',Nhh
+          goto 777
+       endif
     endif
     call check(nf90_inq_varid(ncid=ncFileID,name="time",varID=timeVarID))
     call check(nf90_inquire_dimension(ncid=ncFileID,dimID=timedimID,len=Nhh))

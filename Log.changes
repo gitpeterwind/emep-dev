@@ -153,7 +153,7 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-7th July 2015 Peter, Massimo  3029
+7th July 2015 Peter, Massimo  3029-30
 
 Chem_ml: S_m2m3=0.0 (to avoid debug false errors when ":" is used)
 Derived_ml: output lowest level when 3D metfield is asked for (real 3D not 
