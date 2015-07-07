@@ -606,7 +606,8 @@ else
     character (len = *), intent(out) ::projection
 
     integer :: status,ncFileID,idimID,jdimID, kdimID,timeDimID,varid,timeVarID
-    integer :: GIMAX_file,GJMAX_file,KMAX_file
+    integer :: GIMAX_file,GJMAX_file,KMAX_file,wrf_proj_code
+    real :: wrf_POLE_LAT
     real,allocatable :: latitudes(:)
 
 
@@ -624,7 +625,25 @@ else
        status = nf90_get_att(ncFileID,nf90_global,"projection",projection)
        if(status /= nf90_noerr) then
 !WRF projection format
-          call check(nf90_get_att(ncFileID,nf90_global,"MAP_PROJ_CHAR",projection))
+          call check(nf90_get_att(ncFileID,nf90_global,"MAP_PROJ",wrf_proj_code))
+          if(wrf_proj_code==6)then
+             status = nf90_get_att(ncFileID,nf90_global,"POLE_LAT",wrf_POLE_LAT)
+             if(status == nf90_noerr) then
+                write(*,*)"POLE_LAT", wrf_POLE_LAT
+                if(abs(wrf_POLE_LAT-90.0)<0.001)then
+                    projection='lon lat'
+                else
+                   projection='Rotated_Spherical'                                
+                endif
+             else
+                 write(*,*)"POLE_LAT not found"
+                 projection='lon lat'
+             endif
+          else if(wrf_proj_code==2)then
+             projection='Stereographic'     
+          else
+             call StopAll("Projection not recognized")  
+          endif
        endif
 
 !put into emep standard
@@ -654,8 +673,16 @@ else
           call check(nf90_inq_dimid(ncid = ncFileID, name = "lat", dimID = jdimID))
        else
           !     write(*,*)'GENERAL PROJECTION ',trim(projection)
-          call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
-          call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
+          status=nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID)
+          if(status /= nf90_noerr) then
+             !WRF  format
+             call check(nf90_inq_dimid(ncid = ncFileID, name = "west_east", dimID = idimID))
+          endif
+          status=nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID)
+          if(status /= nf90_noerr) then
+             !WRF  format
+             call check(nf90_inq_dimid(ncid = ncFileID, name = "south_north", dimID = jdimID))
+          endif
        endif
 
        status=nf90_inq_dimid(ncid = ncFileID, name = "k", dimID = kdimID)
@@ -734,10 +761,10 @@ else
     !    realdimension(-1:GIMAX+2,-1:GJMAX+2) ::xm_global,xm_global_j,xm_global_i
     real,allocatable,dimension(:,:) ::xm_global,xm_global_j,xm_global_i
     integer :: status,iglobal,jglobal,info,South_pole,North_pole,Ibuff(2)
-    real :: ndays(1),x1,x2,x3,x4,P0
+    real :: ndays(1),x1,x2,x3,x4,P0,x,y
     character (len = 50) :: timeunit
-    logical::found_hybrid=.false.
-    real :: CEN_LAT, CEN_LON
+    logical::found_hybrid=.false.,lonlatready=.false.
+    real :: CEN_LAT, CEN_LON,P_TOP_MET
 
     allocate(xm_global(-1:GIMAX+2,-1:GJMAX+2))
     allocate(xm_global_j(-1:GIMAX+2,-1:GJMAX+2))
@@ -750,7 +777,7 @@ else
 !       call CheckStop(nhour/=0 .and. nhour /=3,&
 !            "ReadGrid: must start at nhour=0 or 3")
 
-      print *,'Defining grid properties from ',trim(filename)
+      print *,'Defining grid parameters from ',trim(filename)
        !open an existing netcdf dataset
        status = nf90_open(path=trim(filename),mode=nf90_nowrite,ncid=ncFileID)
        if(status /= nf90_noerr) then
@@ -775,9 +802,17 @@ else
           call check(nf90_inq_dimid(ncid = ncFileID, name = "lat", dimID = jdimID))
        else
           !     write(*,*)'GENERAL PROJECTION ',trim(projection)
-          call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
-          call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
-       endif
+          status=nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID)
+          if(status /= nf90_noerr) then
+             !WRF  format
+             call check(nf90_inq_dimid(ncid = ncFileID, name = "west_east", dimID = idimID))
+          endif
+          status=nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID)
+          if(status /= nf90_noerr) then
+             !WRF  format
+             call check(nf90_inq_dimid(ncid = ncFileID, name = "south_north", dimID = jdimID))
+          endif
+        endif
 
        !get global attributes
        status = nf90_get_att(ncFileID,nf90_global,"Grid_resolution",GRIDWIDTH_M)
@@ -843,25 +878,69 @@ else
           yp=GJMAX
           fi =0.0
           if(trim(projection)=='Rotated_Spherical')then
-             call check(nf90_get_att(ncFileID,nf90_global,"grid_north_pole_latitude",grid_north_pole_latitude))
+             status=nf90_get_att(ncFileID,nf90_global,"grid_north_pole_latitude",grid_north_pole_latitude)
+             if(status /= nf90_noerr) then
+                !WRF  format
+                call check(nf90_get_att(ncFileID,nf90_global,"POLE_LAT",grid_north_pole_latitude))
+             endif
              write(*,*)"grid_north_pole_latitude",grid_north_pole_latitude
-             call check(nf90_get_att(ncFileID,nf90_global,"grid_north_pole_longitude",grid_north_pole_longitude))
+             status=nf90_get_att(ncFileID,nf90_global,"grid_north_pole_longitude",grid_north_pole_longitude)
+             if(status /= nf90_noerr) then
+                !WRF  format
+                call check(nf90_get_att(ncFileID,nf90_global,"POLE_LON",grid_north_pole_longitude))
+                !find resolution in degrees from resolution in km. WRF uses Erath Radius 6370 km(?)
+                dx_rot=360./(6370000.*2*PI/GRIDWIDTH_M)
+                !round to 6 digits
+                dx_rot=0.000001*nint(1000000*dx_rot)
+             endif
              write(*,*)"grid_north_pole_longitude",grid_north_pole_longitude
-             call check(nf90_inq_varid(ncid = ncFileID, name = "i", varID = varID))
-             call check(nf90_get_var(ncFileID, varID, glon_fdom(1:2,1)))!note that i is one dimensional
-             x1_rot=glon_fdom(1,1)
-             dx_rot=glon_fdom(2,1)-glon_fdom(1,1)
-             call check(nf90_inq_varid(ncid = ncFileID, name = "j", varID = varID))
-             call check(nf90_get_var(ncFileID, varID, glon_fdom(1,1)))!note that j is one dimensional
-             y1_rot=glon_fdom(1,1)
+             status=nf90_inq_varid(ncid = ncFileID, name = "i", varID = varID)
+             if(status == nf90_noerr) then
+                call check(nf90_get_var(ncFileID, varID, glon_fdom(1:2,1)))!note that i is one dimensional
+                x1_rot=glon_fdom(1,1)
+                dx_rot=glon_fdom(2,1)-glon_fdom(1,1)
+                call check(nf90_inq_varid(ncid = ncFileID, name = "j", varID = varID))
+                call check(nf90_get_var(ncFileID, varID, glon_fdom(1,1)))!note that j is one dimensional
+                y1_rot=glon_fdom(1,1)
+             else
+                !WRF  format
+                call check(nf90_inq_varid(ncid = ncFileID, name = "XLONG", varID = varID))
+                call check(nf90_get_var(ncFileID, varID, glon_fdom(1:IIFULLDOM,1:JJFULLDOM) ))
+                call check(nf90_inq_varid(ncid = ncFileID, name = "XLAT", varID = varID))
+                call check(nf90_get_var(ncFileID, varID, glat_fdom(1:IIFULLDOM,1:JJFULLDOM) ))
+                x1_rot=0.
+                y1_rot=0.
+                dx_roti=1.0/dx_rot
+                call lb2ij(glon_fdom(1,1),glat_fdom(1,1),x,y)
+                x1_rot=(x-1)*dx_rot
+                y1_rot=(y-1)*dx_rot
+                do i=1,10
+                   if(x1_rot>180.0)then
+                      x1_rot=x1_rot-360.0
+                   else if(x1_rot<-180.0)then
+                      x1_rot=x1_rot+360.0
+                   else
+                      exit
+                   endif
+                enddo
+!                call lb2ij(glon_fdom(1,1),glat_fdom(1,1),x,y)
+!                write(*,*)'after ',glon_fdom(1,1),glat_fdom(1,1),x,y
+!                call lb_rot2lb(x,y,x1_rot,y1_rot,grid_north_pole_longitude,grid_north_pole_latitude)
+!                write(*,*)"spherical lon lat of (i,j)=(1,1)",x,y,glon_fdom(1,1),glat_fdom(1,1)
+             endif
              write(*,*)"rotated lon lat of (i,j)=(1,1)",x1_rot,y1_rot
              write(*,*)"resolution",dx_rot
+             lonlatready=.true.
           endif
-          call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
-          call check(nf90_get_var(ncFileID, varID, glon_fdom(1:IIFULLDOM,1:JJFULLDOM) ))
 
-          call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
-          call check(nf90_get_var(ncFileID, varID, glat_fdom(1:IIFULLDOM,1:JJFULLDOM) ))
+          if(.not.lonlatready)then
+             call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
+             call check(nf90_get_var(ncFileID, varID, glon_fdom(1:IIFULLDOM,1:JJFULLDOM) ))
+             
+             call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
+             call check(nf90_get_var(ncFileID, varID, glat_fdom(1:IIFULLDOM,1:JJFULLDOM) ))
+          endif
+
           do j=1,JJFULLDOM
              do i=1,IIFULLDOM
                 if(glon_fdom(i,j)>180.0)glon_fdom(i,j)=glon_fdom(i,j)-360.0
@@ -898,23 +977,28 @@ else
           enddo
 
        else
-
           !map factor are already staggered
           status=nf90_inq_varid(ncid=ncFileID, name="map_factor_i", varID=varID)
           if(status /= nf90_noerr)then
              !WRF  format
              call check(nf90_inq_varid(ncid=ncFileID, name="MAPFAC_VX", varID=varID))             
+             call check(nf90_get_var(ncFileID, varID, xm_global_i(1:GIMAX,1:GJMAX) &
+                  ,start=(/ IRUNBEG,JRUNBEG+1 /),count=(/ GIMAX,GJMAX /)))
+          else
+             call check(nf90_get_var(ncFileID, varID, xm_global_i(1:GIMAX,1:GJMAX) &
+                  ,start=(/ IRUNBEG,JRUNBEG /),count=(/ GIMAX,GJMAX /)))
           endif
-          call check(nf90_get_var(ncFileID, varID, xm_global_i(1:GIMAX,1:GJMAX) &
-               ,start=(/ IRUNBEG,JRUNBEG /),count=(/ GIMAX,GJMAX /)))
 
           status=nf90_inq_varid(ncid=ncFileID, name="map_factor_j", varID=varID)
           if(status /= nf90_noerr)then
              !WRF  format
              call check(nf90_inq_varid(ncid=ncFileID, name="MAPFAC_UY", varID=varID))
+             call check(nf90_get_var(ncFileID, varID, xm_global_j(1:GIMAX,1:GJMAX) &
+                  ,start=(/ IRUNBEG+1,JRUNBEG /),count=(/ GIMAX,GJMAX /)))
+          else
+             call check(nf90_get_var(ncFileID, varID, xm_global_j(1:GIMAX,1:GJMAX) &
+                  ,start=(/ IRUNBEG,JRUNBEG /),count=(/ GIMAX,GJMAX /)))
           endif
-          call check(nf90_get_var(ncFileID, varID, xm_global_j(1:GIMAX,1:GJMAX) &
-               ,start=(/ IRUNBEG,JRUNBEG /),count=(/ GIMAX,GJMAX /)))
        endif
 
        status=nf90_inq_varid(ncid = ncFileID, name = "k", varID = varID)
@@ -930,23 +1014,53 @@ else
 !          A_mid=P0*A_mid!different definition in modell and grid_Def
 !          call check(nf90_inq_varid(ncid = ncFileID, name = "hybm", varID = varID))                 
 !          call check(nf90_get_var(ncFileID, varID,B_mid))
-             status=nf90_inq_varid(ncid = ncFileID, name = "P0", varID = varID) 
+          status=nf90_inq_varid(ncid = ncFileID, name = "P0", varID = varID) 
+          if(status /= nf90_noerr)then
+             status=nf90_inq_varid(ncid = ncFileID, name = "P00", varID = varID) !WRF case
              if(status /= nf90_noerr)then
                 if(External_Levels_Def)then
                    write(*,*)'WARNING: did not find P0. Assuming vertical levels from ',trim(filename_vert)
                 else
                    write(*,*)'Do not know how to define vertical levels '
                    call StopAll('Define levels in Vertical_levels.txt')
-               endif
+                endif
              else
+                !WRF
+                !asuming sigma levels ZNW=(P-P_TOP_MET)/(PS-P_TOP_MET)
+                !P = A+B*PS = P_TOP_MET*(1-ZNW) + ZNW*PS  
+                !B = ZNW
+                !A = P_TOP_MET*(1-ZNW)
                 call check(nf90_get_var(ncFileID, varID, P0 ))
                 if(.not.allocated(A_bnd_met))allocate(A_bnd_met(KMAX_MET+1),B_bnd_met(KMAX_MET+1))
-                call check(nf90_inq_varid(ncid = ncFileID, name = "hyai", varID = varID))                 
-                call check(nf90_get_var(ncFileID, varID, A_bnd_met ))
-                A_bnd_met=P0*A_bnd_met!different definition in model and grid_Def
-                call check(nf90_inq_varid(ncid = ncFileID, name = "hybi", varID = varID))                 
-                call check(nf90_get_var(ncFileID, varID, B_bnd_met ))          
+                call check(nf90_inq_varid(ncid = ncFileID, name = "P_TOP", varID = varID))                 
+                call check(nf90_get_var(ncFileID, varID, P_TOP_MET ))
+                call check(nf90_inq_varid(ncid = ncFileID, name = "ZNW", varID = varID))       
+                call check(nf90_get_var(ncFileID, varID, B_bnd_met ))
+                if(MET_REVERSE_K)then
+                   A_bnd_met=B_bnd_met!use A_bnd_met as temporary buffer
+                   do k=1,KMAX_MET+1
+                      B_bnd_met(k)=A_bnd_met(KMAX_MET+2-k)
+                   enddo
+                endif
+                A_bnd_met=P_TOP_MET*(1.-B_bnd_met)
              endif
+             if(MET_REVERSE_K)then
+                write(*,*)"Reversed vertical levels from met, P at levels boundaries:"
+             else
+                write(*,*)"Vertical levels from met, P at levels boundaries:"
+             endif
+             do k=1,KMAX_MET+1
+                write(*,44)k, A_bnd_met(k)+P0*B_bnd_met(k)
+             enddo
+          else
+             call check(nf90_get_var(ncFileID, varID, P0 ))
+             if(.not.allocated(A_bnd_met))allocate(A_bnd_met(KMAX_MET+1),B_bnd_met(KMAX_MET+1))
+             call check(nf90_inq_varid(ncid = ncFileID, name = "hyai", varID = varID))                 
+             call check(nf90_get_var(ncFileID, varID, A_bnd_met ))
+             A_bnd_met=P0*A_bnd_met!different definition in model and grid_Def
+             call check(nf90_inq_varid(ncid = ncFileID, name = "hybi", varID = varID))                 
+             call check(nf90_get_var(ncFileID, varID, B_bnd_met ))          
+          endif
           if(External_Levels_Def)then
              !model levels defined from external text file
              write(*,*)'reading external hybrid levels from ',trim(filename_vert)
@@ -1223,7 +1337,6 @@ else
                xm_global_j(iglobal,jglobal)     )
        enddo
     enddo
-
 
     !Look for poles
     !If the northernmost or southernmost lines are poles, they are not
@@ -1769,7 +1882,6 @@ else
          if(xrot-x1_rot>360.0-dx_rot*0.499999999)xrot=xrot-360.0
          xr2=(xrot-x1_rot)*dx_roti+1
          yr2=(yrot-y1_rot)*dx_roti+1
-
     else!general projection, Use only info from glon_fdom and glat_fdom
        !first find closest by testing all gridcells. 
 

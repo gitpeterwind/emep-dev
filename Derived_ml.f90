@@ -781,10 +781,10 @@ subroutine Derived(dt,End_of_Day)
   integer, save :: ind_pmfine = -999, ind_pmwater = -999, & !needed for PM25
                    ind_pm10 = -999
   integer :: imet_tmp
-  real, pointer, dimension(:,:) :: met_p => null()
+  real, pointer, dimension(:,:,:) :: met_p => null()
 
   logical, allocatable, dimension(:)   :: ingrp
-  integer :: wlen,ispc
+  integer :: wlen,ispc,kmax
 
   timefrac = dt/3600.0
   thour = current_date%hour+current_date%seconds/3600.0
@@ -848,19 +848,23 @@ subroutine Derived(dt,End_of_Day)
 
       imet_tmp = find_index(subclass, met(:)%name ) ! subclass has meteo name from MetFields 
       if( imet_tmp > 0 ) then
-        met_p => met(imet_tmp)%field(:,:,1,1)
+        met_p => met(imet_tmp)%field(:,:,:,1)
       else
         imet_tmp = find_index(subclass, derivmet(:)%name )
-        if( imet_tmp > 0 ) met_p => derivmet(imet_tmp)%field(:,:,1,1)
+        if( imet_tmp > 0 ) met_p => derivmet(imet_tmp)%field(:,:,:,1)
       end if
 
       if( imet_tmp > 0 ) then
-        if( MasterProc.and.first_call) write(*,*) "MET2D"//trim(name), &
-             imet_tmp, met_p(2,2)
-        forall ( i=1:limax, j=1:ljmax )
-          d_2d( n, i,j,IOU_INST) = met_p(i,j)
-        end forall
-        met_p => null()
+         if( MasterProc.and.first_call) write(*,*) "MET2D"//trim(name), &
+              imet_tmp, met_p(2,2,1)
+         kmax=1
+         if(met(imet_tmp)%dim==3)kmax=KMAX_MID!take lowest level
+
+         forall ( i=1:limax, j=1:ljmax )
+            d_2d( n, i,j,IOU_INST) = met_p(i,j,kmax)
+         end forall
+         
+         met_p => null()
 
       else ! Not found!
         if( first_call)  then

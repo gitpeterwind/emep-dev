@@ -160,6 +160,7 @@ module MetFields_ml
      u_ref             & ! wind speed m/s at 45m (real, not projected)
     ,rho_surf          & ! Surface density
     ,surface_precip    & ! Surface precip mm/hr
+    ,convective_precip & ! Convective precip mm/hr
     ,Tpot2m            & ! Potential temp at 2m
     ,ustar_nwp         & ! friction velocity m/s ustar^2 = tau/roa
     ,invL_nwp          & ! friction velocity m/s ustar^2 = tau/roa
@@ -180,6 +181,8 @@ module MetFields_ml
   real,target,public, save,allocatable, dimension(:,:) :: &   !st-dust
        clay_frac  &  ! clay fraction (%) in the soil
       ,sand_frac     ! sand fraction (%) in the soil
+  real,target,public, save,allocatable, dimension(:,:) :: &
+       surface_precip_old !rain from previous step for making differences (wrf)
 
   ! Different NWP outputs for soil water are possible. We can currently
   ! cope with two:
@@ -225,7 +228,7 @@ module MetFields_ml
        ix_cnvdf, ix_Kz_met, ix_roa, ix_SigmaKz, ix_EtaKz, ix_Etadot, ix_cc3dmax, ix_lwc, ix_Kz_m2s, &
        ix_u_mid, ix_v_mid, ix_ps, ix_t2_nwp, ix_rh2m, ix_fh, ix_fl, ix_tau, ix_ustar_nwp, ix_sst, &
        ix_SoilWater_uppr, ix_SoilWater_deep, ix_sdepth, ix_ice_nwp, ix_ws_10m, ix_surface_precip, &
-       ix_uw, ix_ue, ix_vs, ix_vn  
+       ix_uw, ix_ue, ix_vs, ix_vn, ix_convective_precip  
 
   type,  public :: metfield
      character(len = 100) :: name = 'empty' !name as defined in external meteo file
@@ -772,7 +775,6 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%msize = NMET
   ix_ws_10m=ix
 
-
   ix=ix+1
   met(ix)%name             = 'large_scale_precipitations'
   met(ix)%dim              = 2
@@ -787,6 +789,21 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%zsize = 1
   met(ix)%msize = 1
   ix_surface_precip=ix
+
+  ix=ix+1
+  met(ix)%name             = 'convective_precipitations'
+  met(ix)%dim              = 2
+  met(ix)%frequency        = 3
+  met(ix)%time_interpolate = .false.
+  met(ix)%read_meteo       = .false.
+  met(ix)%needed           = .true.
+  met(ix)%found            = .false.
+  allocate(convective_precip(MAXLIMAX,MAXLJMAX))
+  convective_precip=0.0
+  met(ix)%field(1:MAXLIMAX,1:MAXLJMAX,1:1,1:1)  => convective_precip
+  met(ix)%zsize = 1
+  met(ix)%msize = 1
+  ix_convective_precip=ix
 
   ix=ix+1
   met(ix)%name             = 'neigbors_wind-uw'
@@ -848,7 +865,6 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%msize = NMET
   ix_vn=ix
 
-
   Nmetfields=ix
   if(Nmetfields>NmetfieldsMax)then
      write(*,*)"Increase NmetfieldsMax! "
@@ -862,28 +878,29 @@ if(USE_WRF_MET_NAMES)then
    MET_REVERSE_K = .true.!reverse k coordinates when reading
 !names used in WRF metfiles
 !3D
-   met(ix_u_xmj)%name             = 'U'
+   met(ix_u_xmj)%name             = 'U' 
    met(ix_v_xmi)%name             = 'V'
    met(ix_q)%name                 = 'QVAPOR'
    met(ix_th)%name                = 'T'
-   met(ix_pr)%name                = 'QRAIN'
-   met(ix_cc3d)%name             = 'CLDFRA'
+   met(ix_cc3d)%name              = 'CLDFRA'
+   met(ix_cw_met)%name            = 'QCLOUD'
 !2D
+   met(ix_surface_precip)%name    = 'RAINNC'
+   met(ix_convective_precip)%name = 'RAINC'
    met(ix_ps)%name                = 'PSFC'
    met(ix_t2_nwp)%name            = 'T2'
    met(ix_fh)%name                = 'HFX'
    met(ix_fl)%name                = 'LH'
    met(ix_ustar_nwp)%name         = 'UST'
    met(ix_sst)%name               = 'SST'
+   met(ix_ws_10m)%name            = 'U10'
+   met(ix_SoilWater_uppr)%name    = 'SMI1'!take first level. Do not change name! (name set in Getmeteofield)
+   met(ix_SoilWater_deep)%name    = 'SMI3'!take third level. Do not change name! (name set in Getmeteofield)
 !... addmore
 endif
 
 
-  ix=0
     allocate(u_ref(MAXLIMAX,MAXLJMAX))
-  ix=ix+1
-  derivmet(ix)%name    = 'u_ref'
-  derivmet(ix)%field(1:MAXLIMAX,1:MAXLJMAX,1:1,1:NMET)  => u_ref
     allocate(rho_surf(MAXLIMAX,MAXLJMAX))
     allocate(Tpot2m(MAXLIMAX,MAXLJMAX))
     allocate(invL_nwp(MAXLIMAX,MAXLJMAX))
@@ -900,7 +917,8 @@ endif
     allocate(Idirect(MAXLIMAX, MAXLJMAX))
     allocate(clay_frac(MAXLIMAX, MAXLJMAX))
     allocate(sand_frac(MAXLIMAX, MAXLJMAX))
-
+    allocate(surface_precip_old(MAXLIMAX,MAXLJMAX))
+    surface_precip_old=0.0
 
   end subroutine Alloc_MetFields
 

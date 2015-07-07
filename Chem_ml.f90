@@ -111,6 +111,7 @@ contains
     allocate(DpgNw(AERO%NSAREA, KCHEMTOP:KMAX_MID))
 
     allocate(S_m2m3(AERO%NSAREA, KCHEMTOP:KMAX_MID)) ! GERBER
+    S_m2m3=0.0
 
     ! Mol speeds
     allocate(cn2o5(KCHEMTOP:KMAX_MID),chno3(KCHEMTOP:KMAX_MID),&

@@ -2078,7 +2078,7 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,&
 ! for instance k_start=KMAX_MID,k_end=KMAX_MID gives only surface
 ! for instance k_start1,k_end=KMAX_MID gives all levels
 ! if reverse_k=.true. , the k dimension in the file is reversed
-! i_start,j_start can give a new origin instead of (1,1)
+! i_start,j_start can give a new origin instead of (1,1); i_start=2, menas that only i>=2 is read.
 ! the dimensions of Rvar are assumed:
 ! Rvar(MAXLIMAX,MAXLJMAX,k_end-k_start+1,nfetch)
 
@@ -2108,7 +2108,7 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,&
   reverse_k_loc=.false.
   if(present(reverse_k))reverse_k_loc=reverse_k  
   
-  i0=0;j0=0
+  i0=0;j0=0!origin, i.e. (i=0,j=0) coordinate
   if(present(i_start))i0=i_start-1
   if(present(j_start))j0=j_start-1
   call CheckStop(i0>limax, "NetCDF_ml i: subdomain not compatible. cannot handle this")
@@ -2144,7 +2144,7 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,&
     if(present(found))found=.true.
   else
     if(MasterProc) &
-      write(*,*)'variable does not exist: ',trim(varname),nf90_strerror(status)
+      write(*,*)'variable does not exist: ',trim(varname),trim(nf90_strerror(status))
     call CheckStop(fileneeded, "NetCDF_ml : variable needed but not found")
     call check(nf90_close(ncFileID))
     return
@@ -2179,8 +2179,8 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,&
   endif
 
   startvec(:)=1
-  startvec(1)=max(1,i_fdom(1)-i0)
-  startvec(2)=max(1,j_fdom(1)-j0)
+  startvec(1)=max(1,i_fdom(1)+i0)
+  startvec(2)=max(1,j_fdom(1)+j0)
   startvec(3)=k_start
   startvec(ndims)=nstart
   if(startvec(1)+limax-1<dims(1))then
@@ -2193,8 +2193,8 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,&
   else
     dims(2)=dims(2)-startvec(2)+1
   endif
-  if(i_fdom(1)==1)dims(1)=min(dims(1),dims(1)-i0)
-  if(j_fdom(1)==1)dims(2)=min(dims(2),dims(2)-j0)
+  if(i_fdom(1)==1)dims(1)=min(dims(1),dims(1)+i0)
+  if(j_fdom(1)==1)dims(2)=min(dims(2),dims(2)+j0)
 
   dims(3)=k_end-k_start+1
   if(dims(3)<=0)then
@@ -2225,8 +2225,8 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,&
     status = nf90_get_att(ncFileID, VarID, "add_offset",  offset )
     if(status==nf90_noerr) scalefactors(2) = offset
     it=0
-    do i=i1,dims(1)+i1-1
-      do j=j1,dims(2)+j1-1
+    do i=1,dims(1)
+      do j=1,dims(2)
         do k=1,dims(3)
           do n=1,dims(4)
             it=it+1
@@ -2242,9 +2242,9 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,&
       call check(nf90_get_var(ncFileID, VarID, Rvalues,start=startvec,count=dims))
       ijkn=0
       do n=1,nfetch
-        do k=1,k_end-k_start+1,-1
-          do j=j1,dims(2)+j1-1
-            do i=i1,dims(1)+i1-1
+        do k=k_end-k_start+1,1,-1
+          do j=1,dims(2)
+            do i=1,dims(1)
               ijkn=ijkn+1
               Rvar(i,j,k,n)=Rvalues(ijkn)
             enddo
@@ -2259,7 +2259,7 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,&
         write(*,83)me,'writing to ',i1,j1,1,&
           ' to ',dims(1)+i1-1,dims(2)+j1-1,k_end-k_start+1,nfetch
       call check(nf90_get_var(ncFileID, VarID, &
-         Rvar(i1:dims(1)+i1-1,j1:dims(2)+j1-1,1:k_end-k_start+1,1:nfetch),&
+         Rvar(1:dims(1),1:dims(2),1:k_end-k_start+1,1:nfetch),&
          start=startvec,count=dims))
 !     call check(nf90_get_var(ncFileID, VarID, Rvar,start=startvec,count=dims))
     endif

@@ -153,6 +153,22 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+7th July 2015 Peter, Massimo  3029
+
+Chem_ml: S_m2m3=0.0 (to avoid debug false errors when ":" is used)
+Derived_ml: output lowest level when 3D metfield is asked for (real 3D not 
+yet functionning)
+
+Lots of changes to allow the model to use directly WRF output as metdata.
+tested for rotated spherical projection (climatrans).
+Met_ml
+MetFields_ml
+GridValues_ml
+NetCDF_ml
+
+No change in results.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 1st July 2015 Peter  3028
 
 EmisGet_ml: emission height. Bug when defined as P levels (not default)
