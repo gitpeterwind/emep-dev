@@ -152,6 +152,30 @@ info on unused variables, etc.
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+8th July 2015 Dave, 3031
+
+XNCOL system introduced to add column totals of short (or long)-lived species
+to d_2d system.
+
+Setup_1d_ml
+- XNCOL system added into reset_3d routine, since this is afer chemical processing.
+  Column total from dot_product(xn_2d(ispec,:),deltaZcm(:))
+
+Setup_1dfields_ml, Chem_mk
+ - added deltaZcm - thickness of layers in cm.
+
+config_Outputs_EMEPSTD
+ - examples added, with caveat/warnign test:
+     ! Column data. Note that these data are compiled just after the chemistry step,
+     ! and are probably best used for short-lived species. REMEMBER that boundary
+     ! cells are not calculated, hence expect zeros on edges.
+
+    OH - very useful and reason for this change
+    NO2 - for comparison to NO2 from COLUMN system. The latter uses concentrations from
+           after the advection step, and also produces values at domain edge.
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 7th July 2015 Peter, Massimo  3029-30
 

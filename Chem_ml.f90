@@ -93,6 +93,7 @@ contains
     Fgas  = 1.0! Fraction as gas-phase
     Fpart = 0.0
     allocate(rcemis(NSPEC_SHL+1:NSPEC_TOT,KCHEMTOP:KMAX_MID))
+    allocate(deltaZcm(KCHEMTOP:KMAX_MID))
     rcemis = 0.0
     allocate(rh(KCHEMTOP:KMAX_MID),amk(KCHEMTOP:KMAX_MID),o2(KCHEMTOP:KMAX_MID))
     allocate(n2(KCHEMTOP:KMAX_MID),h2o(KCHEMTOP:KMAX_MID),temp(KCHEMTOP:KMAX_MID))

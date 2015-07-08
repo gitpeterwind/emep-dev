@@ -55,7 +55,7 @@ use PhysicalConstants_ml,only: ATWAIR, AVOG, PI, GRAV
 use Radiation_ml,        only: PARfrac, Wm2_uE
 use Setup_1dfields_ml,   only: &
    xn_2d                &  ! concentration terms
-  ,rcemis               &  ! emission terms
+  ,rcemis, deltaZcm     &  ! emission terms and layer thickness
   ,rh, temp, tinv, itemp,pp      &  !
   ,amk, o2, n2, h2o     &  ! Air concentrations
   ,cN2O5, cHO2, cO3, cHNO3 &  ! mol speeds, m/s
@@ -66,6 +66,8 @@ use Tabulations_ml,      only: tab_esat_Pa
 use TimeDate_ml,         only: current_date, date
 use ColumnSource_ml,     only: ColumnRate
 use Units_ml,            only: to_number_cm3 ! converts roa [kg/m3] to M [molec/cm3]
+!!  to_number_cm3=0.001*AVOG/ATWAIR,& ! from density (roa, kg/m3) to molecules/cm3
+ 
 
 implicit none
 private
@@ -73,7 +75,8 @@ private
 
 public :: setup_1d   ! Extracts results for i,j column from 3-D fields
 public :: setup_rcemis ! Emissions  (formerly "poll")
-public :: reset_3d     ! Exports results for i,j column to 3-D fields
+public :: reset_3d     ! Exports final results for i,j column to 3-D fields
+                       ! (and XNCOL outputs if asked for)
 
 ! Indices for the species defined in this routine. Only set if found
 ! Hard-coded for 2 specs just now. Could extend and allocate.
@@ -478,6 +481,20 @@ subroutine setup_rcemis(i,j)
     rcemis(NO,KMAX_MID)=rcemis(NO,KMAX_MID)+SoilNOx(i,j)
   endif
 
+  do k=KCHEMTOP, KMAX_MID
+
+     deltaZcm(k) = 100*( z_bnd(i,j,k)-z_bnd(i,j,k+1) )
+
+    if(DEBUG%SETUP_1DCHEM.and.debug_proc.and.i==debug_li.and.j==debug_lj) then
+       write(*,"(a,i3,9es12.4)") "1DCHEM DZ",  k, deltaZcm(k), &
+        100*(dA(k)+dB(k)*ps(i,j,1))/(GRAV*roa(i,j,k,1))! , &
+!        100*(dA(k)+dB(k)*ps(i,j,1))/(GRAV*amk(k)*ATWAIR)!, &
+!        amk(k)*ATWAIR/roa(i,j,k,1)
+!       amk(k) = roa(i,j,k,1) * to_number_cm3  ! molecules air/cm3
+    end if
+  end do
+
+
   if(EmisSplit_OUT)then
     !put all added emissions in EmisSplit_OUT, also natural emissions
     SumSplitEmis(i,j,:)=0.0
@@ -497,10 +514,12 @@ subroutine setup_rcemis(i,j)
   ! at rate of 1 atom/cm2/s
    eland = 1.0 - water_fraction(i,j) - ice_landcover(i,j)
 
+
   ! z_bnd is in m, not cm, so need to divide by 100.
   if(itot_Rn222>0) &
     rcemis(itot_Rn222,KMAX_MID) = (0.00182*water_fraction(i,j)+eland)&
-      /((z_bnd(i,j,KMAX_BND-1)-z_bnd(i,j,KMAX_BND))*100.)
+      /deltaZcm(KMAX_MID) 
+   !!   /((z_bnd(i,j,KMAX_BND-1)-z_bnd(i,j,KMAX_BND))*100.)
 
 !ESX     rc_Rnwater(KMAX_MID) = water_fraction(i,j)  / &
 !ESX            ((z_bnd(i,j,KMAX_BND-1) - z_bnd(i,j,KMAX_BND))*100.)
@@ -509,7 +528,16 @@ endsubroutine setup_rcemis
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 subroutine reset_3d(i,j)
   integer, intent(in) :: i,j
-  integer :: k, n, ispec    ! loop variables
+  integer :: k, n, ispec, id    ! loop variables
+! ! XNCOL testing -- sets d_2d for column data from molec/cm3 concs.
+ ! if variables are wanted for d_2d output (via USET), we use these indices:
+  character(len=*),parameter :: sub='reset3dxncol:'
+  character(len=10) :: specname
+  integer, dimension(10), save :: d2index, id2col
+  logical, save :: first_call = .true.
+  integer, save :: nd2d
+!XNCOL  end testing
+
 
   do k = KCHEMTOP, KMAX_MID
     ! 1)/ Short-lived species - no need to scale with M
@@ -523,6 +551,45 @@ subroutine reset_3d(i,j)
       xn_adv(n,i,j,k) = xn_2d(ispec,k)/amk(k)
     enddo ! ispec
   enddo ! k
+
+!XNCOL !======================================================================
+!! If column totals are wanted, we can do those here also since xn_2d are
+!! in molec/cm3, and we want molec/cm2:
+
+   if ( first_call ) then
+
+     nd2d = 0
+     do id = 1, size(f_2d)
+           !if(MasterProc) write(*,*) 'USET XNCOL SRCH', id, f_2d(id)%subclass
+           if ( f_2d(id)%subclass == 'xncol' ) then
+             nd2d =  nd2d  + 1
+             call CheckStop( nd2d > size(id2col), &
+                 sub//"Need bigger id2col array" )
+             specname = f_2d(id)%name(7:)  ! Strip XNCOL_
+             ispec = find_index( specname, species(:)%name )
+             call CheckStop(ispec < 1, sub//"XNCOL not found"//specname )
+             d2index(nd2d)= id
+             id2col(nd2d) = ispec
+             if(MasterProc) write(*,*) 'USET XNCOL FOUND', id, ispec, &
+                 trim(specname),nd2d, id2col(nd2d)
+           end if
+     end do
+     first_call = .false.
+   end if
+
+   do id = 1, nd2d
+        ispec = id2col(id)
+        d_2d(d2index(id),i,j,IOU_INST) = dot_product(xn_2d(ispec,:),deltaZcm(:))
+    if(DEBUG%SETUP_1DCHEM.and.debug_proc.and.i==debug_li.and.j==debug_lj) then
+!    !if( debug_flag ) then
+       write(*,"(a,6i5,a,9es12.3)") sub//"OUTXNCOL "//trim(f_2d(d2index(id))%name), me,&
+            i,j,id,d2index(id),ispec, trim(species(ispec)%name) &
+         ,xn_2d(ispec,20), deltaZcm(20), d_2d(d2index(id),i,j,IOU_INST)
+end if
+    end do
+!!XNCOL
+
+
 endsubroutine reset_3d
 !---------------------------------------------------------------------------
 endmodule Setup_1d_ml

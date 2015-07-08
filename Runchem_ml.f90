@@ -11,7 +11,6 @@ module RunChem_ml
                              ,Aero_water, Aero_water_MARS   !DUST -> USE_DUST
   use My_Timing_ml,     only: Code_timer, Add_2timing,  &
                               tim_before, tim_after
-  !DEC2014use Ammonium_ml,      only: Ammonium
   use AOD_PM_ml,        only: AOD_Ext
   use Aqueous_ml,       only: Setup_Clouds, prclouds_present, WetDeposition
   use Biogenics_ml,     only: setup_bio
@@ -28,6 +27,7 @@ module RunChem_ml
   use Io_Progs_ml,      only: datewrite
   use MassBudget_ml,    only: emis_massbudget_1d
   use ModelConstants_ml,only: USE_DUST, USE_SEASALT, USE_AOD, USE_POLLEN, & 
+                              MasterProc, & 
                               KMAX_MID, nprint, END_OF_EMEPDAY, nstep,  &
                               AERO,  USES, & ! need USES%EMISSTACKS 
                               USE_FASTJ, &
@@ -60,12 +60,12 @@ subroutine runchem()
   integer :: errcode
   integer :: nmonth, nday, nhour     
   logical ::  Jan_1st, End_of_Run
-! logical :: ambient
   logical ::  debug_flag    ! =>   Set true for selected i,j
 ! =============================
   nmonth = current_date%month
   nday   = current_date%day
   nhour  = current_date%hour
+
 
   Jan_1st    = ( nmonth == 1 .and. nday == 1 )
 
@@ -208,8 +208,11 @@ subroutine runchem()
 !     ambient = .true.  !  For real conditions (3D) 
 !     call Aero_water(i,j, ambient, debug_flag)
                    
-      if(i>=li0.and.i<=li1.and.j>=lj0.and.j<=lj1) &
+      if(i>=li0.and.i<=li1.and.j>=lj0.and.j<=lj1) then
+
         call reset_3d(i,j)  ! DO NOT UPDATE BC. BC are frozen
+
+      end if 
 
       call Add_2timing(33,tim_after,tim_before,"Runchem:post stuff")
       first_call = .false.   ! end of first call 

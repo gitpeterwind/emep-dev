@@ -56,6 +56,7 @@
          ,cO3                 & ! mol speed, O3   
         ,aero_fom, aero_fss, aero_fdust & ! fractions
 !         ,ugdryPM             & ! for wet radius from Gerber, etc.
+         ,deltaZcm             & ! layer thickness, cm
          ,pp                     !pressure
 
    integer, public, allocatable, dimension(:), save :: &

@@ -18,12 +18,16 @@
 !   If class==USET, then d_2d will be set somewhere in the code by the user.
 &OutputConcs_config
 OutputMisc=
- ! name        class    subclass txt   unit index f2d dt_scale scale avg period
- !'AeroOrig',   'USET', 'rct',   'rct', '/s', 62,   -1,       F,   1.0, T, 4,
- !'AeroHNO3SS', 'USET', 'rct',   'rct', '/s', 72,   -1,       F,   1.0, T, 4
- !'AeroHNO3DU', 'USET', 'rct',   'rct', '/s', 73,   -1,       F,   1.0, T, 4
- !'AeroHO2PM',  'USET', 'rct',   'rct', '/s', 74,   -1,       F,   1.0, T, 4
- !'AeroO3DU',   'USET', 'rct',   'rct', '/s', 75,   -1,       F,   1.0, T, 4
+ ! name        class    subclass txt   unit          index f2d dt_scale scale avg period
+ !'AeroOrig',   'USET', 'rct',   'rct', '/s',          62, -1,       F,   1.0, T, 4,
+ !'AeroHNO3SS', 'USET', 'rct',   'rct', '/s',          72, -1,       F,   1.0, T, 4
+ !'AeroHNO3DU', 'USET', 'rct',   'rct', '/s',          73, -1,       F,   1.0, T, 4
+ !'AeroHO2PM',  'USET', 'rct',   'rct', '/s',          74, -1,       F,   1.0, T, 4
+ !'AeroO3DU',   'USET', 'rct',   'rct', '/s',          75, -1,       F,   1.0, T, 4
+ 'XNCOL_OH',    'USET', 'xncol', 'xncol', 'molec/cm2' , -99, -1,       F,   1.0, T, 4   !! New Column system
+ 'XNCOL_CO',    'USET', 'xncol', 'xncol', 'molec/cm2' , -99, -1,       F,   1.0, T, 4   !! 
+ 'XNCOL_NO2',   'USET', 'xncol', 'xncol', 'molec/cm2' , -99, -1,       F,   1.0, T, 4   !! 
+ 'XNCOL_CH4',   'USET', 'xncol', 'xncol', 'molec/cm2' , -99, -1,       F,   1.0, T, 4   !! 
  !
  ! For meteo MET2D, set subclass names from met% data in MetFields:
  !
@@ -56,7 +60,11 @@ OutputConcs=
       'SurfAreaSSC_um2cm3' ,'um2/cm3' ,'2d','SurfAreaSSC_um2cm3'    ,'MISC' ,4, !!
       'SurfAreaDUF_um2cm3' ,'um2/cm3' ,'2d','SurfAreaDUF_um2cm3'    ,'MISC' ,4, !!
       'SurfAreaDUC_um2cm3' ,'um2/cm3' ,'2d','SurfAreaDUC_um2cm3'    ,'MISC' ,4, !!
+     ! Column data. Note that these data are compiled just after the chemistry step,
+     ! and are probably best used for short-lived species. REMEMBER that boundary
+     ! cells are not calculated, hence expect zeros on edges.
       'NO2',          'molec/cm2' ,'k20','COLUMN'   ,'MISC' ,4, !! New Column system
+      'OH',           'molec/cm2' ,'k20','COLUMN'   ,'MISC' ,4, !! New Column system
 !      'Kz_m2s'              ,'m2/s','2d','Kz_m2s'   ,'MISC' ,7, !! hourly tests
 !nowMET2D     'ws_10m'              ,'m'   ,'2d','ws_10m'   ,'MISC' ,7, !! hourly tests
 !nowMET2D      'rh2m'                ,'m'   ,'2d','rh2m'     ,'MISC' ,7, !! hourly tests
