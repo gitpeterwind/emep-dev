@@ -13,7 +13,7 @@ module DO3SE_ml
   use ModelConstants_ml, only : NLANDUSEMAX, DEBUG, MasterProc, &
       USE_SOILWATER
   use SmallUtils_ml,     only : find_index
-  use TimeDate_ml,       only : current_date, daynumber
+  use TimeDate_ml,       only : current_date, daynumber, print_date
 
   implicit none
   private
@@ -162,6 +162,7 @@ contains
 
      integer, intent(in) :: iLC
      logical, intent(in) :: debug_flag
+     character(len=20) :: txtdate
 
 ! Outputs:
 !    L%g_sto, L%g_sun       ! stomatal conductance for canopy and sun-leaves
@@ -256,8 +257,11 @@ contains
 
 
    if ( DEBUG%DO3SE>0 .and. debug_flag ) then ! EXTRA
-       write(*,"(a,5i5,i3,L2,99f10.4)") "IN RSUR gstomatal ", &
-              current_date, iLC, USE_SOILWATER, L%PARsun, L%PARshade,&
+      txtdate =  print_date(current_date)
+      !txtdate =  print_date()
+      !print *, "TXT PD CD2", trim(txtdate)
+      if(iLC>=20)  write(*,"(2a,i5,L2,99g10.3)") "IN RSUR gstomatal ", &
+              print_date(), iLC, USE_SOILWATER, L%PARsun, L%PARshade,&
               do3se(iLC)%g_max, L%g_sto, L%f_env,  L%f_phen, L%f_vpd,&
               L%fSW, L%g_sto * L%f_sun/L%f_light, L%g_sun 
    end if

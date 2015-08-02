@@ -210,6 +210,7 @@ contains
     real :: fractions(MAXLIMAX,MAXLJMAX,NCMAX),SMI(MAXLIMAX,MAXLJMAX),Reduc(NLAND),SMI_roadfactor
     logical ::SMI_defined=.false.
     logical :: my_first_call=.true.  ! Used for femis call
+    logical :: fileExists            ! to test emission files
     character(len=40) :: varname, fmt
     integer ::allocerr, i_gridemis
     if (MasterProc) write(6,*) "Reading emissions for year",  year
@@ -398,8 +399,11 @@ contains
        ios = 0
 
        if(EMIS_TEST=="CdfSnap" .or. EMIS_SOURCE=="Mixed") then  ! Expand groups, e.g. EUMACC2
+
+          if(MasterProc)  write(*,*)sub//" START "
           do iemis = 1, size( emis_inputlist(:)%name )
              fname = emis_inputlist(iemis)%name
+             if(MasterProc)  write(*,*)sub//trim(fname)//" LOOP ", iemis
              if ( fname == "NOTSET" ) then
                 emis_inputlist(iemis)%Nlist = iemis - 1
                 if(MasterProc)  write(*,*)sub//trim(fname)//" Nlist=",&
@@ -453,6 +457,7 @@ contains
        do iemis = 1, size( emis_inputlist(:)%name )
 
           fname=emis_inputlist(iemis)%name
+          if(MasterProc)write(*,*)sub//' Mixed ',iemis,trim(fname)
           if ( fname == "NOTSET" ) exit
 
 
@@ -509,10 +514,14 @@ contains
              if(MasterProc)  write(*,*)sub//trim(fname)//" Processing"
              do iem = 1, NEMIS_FILE
                 n=index(emis_inputlist(iemis)%name,"POLL")
-                fname = emis_inputlist(iemis)%name(1:n-1) // trim(EMIS_FILE(iem)) // ".nc"
+                !DS fname = emis_inputlist(iemis)%name(1:n-1) // trim(EMIS_FILE(iem)) // ".nc"
+                fname = emis_inputlist(iemis)%name(1:n-1) // trim(EMIS_FILE(iem)) // emis_inputlist(iemis)%name(n+4:)
                 if(MasterProc) then
                      write(*,*)sub//trim(fname)//" iemProcess",iem,n,trim(fname)
                      write(*,"(a,2i3,a,3i3)") "INPUTLIST:", iem, iemis, trim(fname), nin, nex,me
+                     inquire(file=fname,exist=fileExists)
+                     if (.not.fileExists ) write(*,"(a)") 'WARNING '//&
+                      'EMISFile missing!'//trim(fname)
                 end if
 
                 call CheckStop( nin>0 .and. nex > 0, &
@@ -526,7 +535,7 @@ contains
                 else
                    call EmisGetCdf(iem,fname, sumemis(1,iem))
                 end if
-if(MasterProc) print *, "PARTEMIS ", iem, trim(fname), sumemis(27,iem) 
+if(MasterProc) write(*,*) "PARTEMIS ", iem, trim(fname), sumemis(27,iem) 
 
              enddo
           else if(index(emis_inputlist(iemis)%name,"grid")>1)then

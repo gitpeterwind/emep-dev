@@ -202,8 +202,8 @@ private
 ! VEGO3 outputs for PODY and AOTX - see AOTnPOD_ml for definitions,
 ! Any string used here must have been defined in AOTnPOD_ml.
 !
-    character(len=TXTLEN_DERIV), public, parameter, dimension(26) :: &
-     VEGO3_WANTED  =  (/ &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(26+10) :: &
+     VEGO3_WANTED  =  (/ character(len=TXTLEN_DERIV) ::  &
          "POD1_IAM_DF     ",&
          "POD1_IAM_MF     ",&
          "POD1_DF         ",&
@@ -216,6 +216,17 @@ private
 !         "SPOD10_spruce   ",&
 !         "SPOD15_crops    ",&
 !         "SPOD25_crops    ",&
+        !CEH JULY2015
+         "POD0_Wheat_Irrigated",&
+         "POD0_Wheat_NonIrrig",&
+         "POD1_Wheat_Irrigated",&
+         "POD1_Wheat_NonIrrig",&
+         "POD2_Wheat_Irrigated",&
+         "POD2_Wheat_NonIrrig",&
+         "POD3_Wheat_Irrigated",&
+         "POD3_Wheat_NonIrrig",&
+         "POD6_Wheat_Irrigated",&
+         "POD6_Wheat_NonIrrig",&
         !CEH ECLGLOB
          "POD1_WinterWheat",&
          "POD3_WinterWheat",&
@@ -447,7 +458,8 @@ private
        if( debug0 )  write(*,*) "VEGO3 NUMS ", n, n1, trim( VEGO3_WANTED(n) )
       end do
       if(MasterProc)call WriteArray(VEGO3_OUTPUTS(:)%name,size(VEGO3_WANTED)," VEGO3 OUTPUTS:")
-      call Add_MosaicVEGO3(M, nVEGO3)  ! M=monthly
+      !GMO3 call Add_MosaicVEGO3(M, nVEGO3)  ! M=monthly
+      call Add_MosaicVEGO3(D, nVEGO3)  ! M=monthly
       nOutVEGO3 = nVEGO3
 
       !----- some "luxury outputs" -------------------------------------------

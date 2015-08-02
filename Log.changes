@@ -154,6 +154,86 @@ changes here (and when committing svn), and Dave will tag as required
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+2nd August 2015 Dave, 3032, rv4.7.1 
+
+(I think rv4.8 can with full implementation of SHIPNOX, if results are as
+  promising as first tests.)
+
+
+** SHIPNOX introduced into chemistry, but not yet implemented into EMISSPLITS
+   (see model updates chapter in EMEP Report R2015)
+
+   Use of SHIPNOx will give large changes in O3 in global modelling at least. If used,
+   use Smix (not SmixTen!) for the N2O5 hydrolysis - the shipping and N2O5 rates both affect and
+   depend on oceanic NOx. 
+
+
+** BUG FIX version of Setup_ml. Results  may change a little
+
+1) SHIPNOx
+
+ZCM_EmChem09/
+    EmChem09.species - added SHIPNOX, similar to NO2
+    EmChem09.reactions - added:
+
+      TROE_NO2_OH  SHIPNOX + OH + {M}  = HNO3   ; A97,J
+      3.2e-5       SHIPNOX             = HNO3   ; 
+      - latter gives half-life of  6h, loosely based on dark experiments of Vinken et al, ACP,2009
+
+    EmChem09/EMISSPLIT/emissplit.xxx.nox  
+    - added SHIPNOX as possible fraction, and with 47% NO, 3% NO2 and 50% SHIPNOX for INTISHIPS (cc350)
+
+
+    NOTE - SHIPNOX not yet used for EmChem09soa chemistry. This is partly for safety while others
+    have the chance to test and comment, and partly as the run.pl SplitDir system needs a good
+    clean up.
+
+2) BUG FIX 
+Setup_ml 
+  - use of pevious ugRemF = max(ugRemF, 1.0e-9) could cause aero_fom > 1 for very
+    small ug/m3 levels. This could cause negative Sarea and negative rate uptake rates!
+  - now fixed
+  - added extra check on 1st call for any rct < 0
+
+
+3) Other
+
+For global crops assessments:
+
+ AOTnPOD_ml, 
+  - Added IrrigatedWheat and NonIrrig wheat for work with ICP-Veg global modelling
+ ZD_OZONE/My_Derived
+  - Added IrrigatedWheat and NonIrrig wheat for work with ICP-Veg global modelling
+  - now as daily output, to allow post-processing over different growing seasons
+ run.pl, /global/work/mifapw/emep/Data/LandInputs_Jul2015/
+  - now uses /global/work/mifapw/emep/Data/LandInputs_Jul2015/ data to get specs
+    for irrigated and non-irrigated wheat.
+ SubMet_ml
+  - now sets fSW for landcovers with Irrigated in name. Very crude - should do this
+    via input files!
+
+DO3SE_ml 
+  - small debug changes
+
+Emissions_ml
+  - Added more flexible naming system, to allow POLL in middle of string to be used.
+
+LandDefs_ml
+  - small debug changes
+
+Landuse_ml
+  - some minor changes to prepare for Paleo and other external files
+
+RunChem_ml
+  - check_negs routine added for extra checks, when e.g. negative concs found somehere
+    (triggered by DEBUG%RUNCHEM)
+
+TimeDate_ml
+  - can now call print_date without argument. Defaults to current_date
+  - removed GNU info.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 8th July 2015 Dave, 3031
 
 XNCOL system introduced to add column totals of short (or long)-lived species

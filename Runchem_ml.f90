@@ -15,7 +15,7 @@ module RunChem_ml
   use Aqueous_ml,       only: Setup_Clouds, prclouds_present, WetDeposition
   use Biogenics_ml,     only: setup_bio
   use CellMet_ml,       only: Get_CellMet
-  use CheckStop_ml,     only: CheckStop
+  use CheckStop_ml,     only: CheckStop, StopAll
   use Chemfields_ml,    only: xn_adv    ! For DEBUG 
   use Chemsolver_ml,    only: chemistry
   use ChemSpecs                         ! DEBUG ONLY
@@ -23,7 +23,7 @@ module RunChem_ml
   use DryDep_ml,        only: drydep
   use DustProd_ml,      only: WindDust
   use FastJ_ml,         only: setup_phot_fastj,phot_fastj_interpolate
-  use GridValues_ml,    only: debug_proc, debug_li, debug_lj
+  use GridValues_ml,    only: debug_proc, debug_li, debug_lj, i_fdom, j_fdom
   use Io_Progs_ml,      only: datewrite
   use MassBudget_ml,    only: emis_massbudget_1d
   use ModelConstants_ml,only: USE_DUST, USE_SEASALT, USE_AOD, USE_POLLEN, & 
@@ -51,16 +51,21 @@ module RunChem_ml
   private
 
   public :: runchem
+  private :: check_negs
+
 contains
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 subroutine runchem()
 
 !  local
-  integer :: i, j
+  integer :: i, j, n
   integer :: errcode
   integer :: nmonth, nday, nhour     
   logical ::  Jan_1st, End_of_Run
   logical ::  debug_flag    ! =>   Set true for selected i,j
+  logical :: dbg
+  character(len=*), parameter :: sub='RunChem:'
+  character(len=10) :: dbgtxt
 ! =============================
   nmonth = current_date%month
   nday   = current_date%day
@@ -68,6 +73,7 @@ subroutine runchem()
 
 
   Jan_1st    = ( nmonth == 1 .and. nday == 1 )
+
 
   if(ORGANIC_AEROSOLS.and.first_call) &
     call CheckStop(SOA_MODULE_FLAG == "NotUsed", & ! Just safety
@@ -137,10 +143,13 @@ subroutine runchem()
 
       if(DEBUG%RUNCHEM.and.debug_flag) &
         call datewrite("Runchem Pre-Chem", (/ rcemis(NO,20), &
+          rcemis(SHIPNOX,KMAX_MID), &
           rcemis(C5H8,KMAX_MID), xn_2d(NO,20),xn_2d(C5H8,20) /) )
+      if(DEBUG%RUNCHEM) call check_negs(i,j,'A')
 
       if(ORGANIC_AEROSOLS) &
         call OrganicAerosol(i,j,debug_flag)
+      if(DEBUG%RUNCHEM) call check_negs(i,j,'B')
 
       call Add_2timing(30,tim_after,tim_before,"Runchem:2nd setups")
       call Add_2timing(27,tim_after,tim_before,"Runchem:setup_1d+rcemis")
@@ -151,6 +160,7 @@ subroutine runchem()
 !     !-------------------------------------------------
 !     !-------------------------------------------------
       call chemistry(i,j,DEBUG%RUNCHEM.and.debug_flag)
+      if(DEBUG%RUNCHEM) call check_negs(i,j,'C')
 !     !-------------------------------------------------
 !     !-------------------------------------------------
 !     !-------------------------------------------------
@@ -164,13 +174,17 @@ subroutine runchem()
       !  Check that one and only one eq is chosen
       if(mod(nstep,2)/=0) then 
         call AerosolEquilib(debug_flag)
+        if(DEBUG%RUNCHEM) call check_negs(i,j,'D')
         !if(AERO%EQUILIB=='EMEP' ) call ammonium() 
         !if(AERO%EQUILIB=='MARS' ) call My_MARS(debug_flag)
         !if(AERO%EQUILIB=='EQSAM') call My_EQSAM(debug_flag) 
         call DryDep(i,j)
+        if(DEBUG%RUNCHEM) call check_negs(i,j,'E')
       else !do drydep first, then eq
         call DryDep(i,j)
+        if(DEBUG%RUNCHEM) call check_negs(i,j,'F')
         call AerosolEquilib(debug_flag)
+        if(DEBUG%RUNCHEM) call check_negs(i,j,'G')
         !if(AERO%EQUILIB=='EMEP' ) call ammonium() 
         !if(AERO%EQUILIB=='MARS' ) call My_MARS(debug_flag)
         !if(AERO%EQUILIB=='EQSAM') call My_EQSAM(debug_flag) 
@@ -179,19 +193,10 @@ subroutine runchem()
 
       call Add_2timing(32,tim_after,tim_before,"Runchem:ammonium+Drydep")
 
-!     if ( DEBUG%RUNCHEM .and. debug_flag  ) then
-!       write(6,"(a,10es12.3)") "DEBUG_RUNCHEM me RIEMER, aero", &
-!         xn_2d(SO4,20), xn_2d(aNO3,20), xn_2d(aNH4,20),tmpOut1, tmpOut2
-!      !write(6,*) "DEBUG_RUNCHEM me pre WetDep", me, prclouds_present
-!       write(6,"(a20,2i3,i5,3es12.3)") "DEBUG_RUNCHEM me OH", &
-!             current_date%day, current_date%hour,&
-!             current_date%seconds, &
-!             xn_2d(OH,20), xn_2d(O3,20), xn_2d(HNO3,20)
-!
-!     endif
-
-      if(prclouds_present)  &
+      if(prclouds_present) then
         call WetDeposition(i,j,debug_flag)
+        call check_negs(i,j,'H')
+      end if
 
       !// Calculate Aerosol Optical Depth
       if(USE_AOD)  &
@@ -208,6 +213,7 @@ subroutine runchem()
 !     ambient = .true.  !  For real conditions (3D) 
 !     call Aero_water(i,j, ambient, debug_flag)
                    
+      call check_negs(i,j,'END')
       if(i>=li0.and.i<=li1.and.j>=lj0.and.j<=lj1) then
 
         call reset_3d(i,j)  ! DO NOT UPDATE BC. BC are frozen
@@ -221,4 +227,16 @@ subroutine runchem()
 
 endsubroutine runchem
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+subroutine check_negs(i,j,txt)
+  integer, intent(in) :: i,j
+  character(len=*), intent(in) :: txt
+  integer :: n
+  if ( any( xn_2d(:,KMAX_MID) < 0.0 ) ) then
+         print *, txt, me,i_fdom(i),j_fdom(j)
+         do n = 1, NSPEC_TOT
+           if( xn_2d(n,KMAX_MID) < 0.0 ) print *, txt, xn_2d(n,KMAX_MID) 
+         end do
+         call StopAll( txt // 'STOPPED by check_negs in RunChem_ml')
+  end if
+end subroutine check_negs
 endmodule RunChem_ml

@@ -13,7 +13,7 @@ use Chemfields_ml,       only: xn_adv,xn_bgn,xn_shl, &
                                NSPEC_COL, NSPEC_BGN, xn_2d_bgn
 use ChemFunctions_ml, only : S_RiemerN2O5
 use ChemGroups_ml,       only: PM10_GROUP, PMFINE_GROUP, SIA_GROUP, SS_GROUP, DUST_GROUP
-use CheckStop_ml,        only:  CheckStop
+use CheckStop_ml,        only:  CheckStop, StopAll
 use DerivedFields_ml,    only: d_2d, f_2d
 use EmisDef_ml,          only:  gridrcemis, gridrcroadd, KEMISTOP
 use EmisGet_ml,          only:  nrcemis, iqrc2itot  !DSRC added nrcemis
@@ -232,11 +232,22 @@ contains
 
           ugRemF = ugpmf - ugSIApm -ugSSaltF -ugDustF   ! will include OM, EC, PPM, Treat as OM 
           call CheckStop( ugRemF < -1.0e-9, sub//"ugRemF NEG" )
-          ugRemF = max(ugRemF, 1.0e-9)  ! can have tiny negative
+          !DS ugRemF = max(ugRemF, 1.0e-9)  ! can have tiny negative
 
-          aero_fom(k)     = ugRemF/ugpmF
           aero_fss(k)     = ugSSaltF/ugpmF
           aero_fdust(k)   = ugDustF/ugpmF
+          aero_fom(k)     = max(0.0, ugRemF)/ugpmF
+
+          !DS aero_fom(k)     = ugRemF/ugpmF
+
+if( aero_fom(k) > 1.0 ) then
+   print "(a,i4,99es12.3)", "POSFOM ", k, aero_fom(k), ugRemF,ugpmF, ugSIApm, ugSSaltF, ugDustF
+   call StopAll('POSFOM')
+end if
+!if( ugSSaltF < 0.0 .or. ugDustF < 0.0 ) then
+!   print "(a,i4,99es12.3)", "NEGFOM ", k, aero_fom(k), ugRemF,ugpmF, ugSIApm, ugSSaltF, ugDustF
+!   call StopAll('NEGUGPM')
+!end if
 
          ! GERBER equations for wet radius
 
@@ -369,6 +380,7 @@ contains
 
    if ( first_call ) then
      call CheckStop( any(isnan(rct(:,:))), sub//"RCT NAN'd")
+     call CheckStop( any(rct(:,:) < 0.0 ), sub//"RCT NEG'd") !dsJUL2015
      nd2d = 0
      do itmp = 1, size(f_2d)
            if ( f_2d(itmp)%subclass == 'rct' ) then

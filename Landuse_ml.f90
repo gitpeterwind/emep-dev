@@ -18,6 +18,7 @@ use LandDefs_ml,    only: Init_LandDefs, LandType, LandDefs, &
                           NLANDUSE_EMEP
 use LandPFT_ml,       only: MapPFT_LAI, pft_lai
 use ModelConstants_ml,only: DEBUG, NLANDUSEMAX, &
+                            ! PALEO_TEST, & 
                             SEA_LIMIT, & 
                             USES, emep_debug, &
                             FLUX_VEGS,  nFluxVegs, & 
@@ -27,6 +28,7 @@ use ModelConstants_ml,only: DEBUG, NLANDUSEMAX, &
 use NetCDF_ml,      only: ReadField_CDF,printcdf
 use Par_ml,         only: MAXLIMAX, MAXLJMAX, &
                           limax, ljmax, me
+!use Paleo_ml,       only: SetPaleo
 use SmallUtils_ml,  only: wordsplit, find_index, NOT_FOUND, WriteArray, trims
 use TimeDate_ml,    only: effectivdaynumber, nydays, current_date
 
@@ -55,7 +57,7 @@ private
 ! codes for landuse. Each code must be present in the subsequent
 ! data files for phenology and DO3SE.
 
- character(len=15), dimension(NLANDUSEMAX), &
+ character(len=20), dimension(NLANDUSEMAX), &
            public, save :: Land_codes = " " ! As used
 
  !=============================================
@@ -591,11 +593,13 @@ contains
     integer, save :: old_month = -1
     integer, save :: old_daynumber = -1
     logical, save :: my_first_call = .true.
+    logical, save :: init_needed=.true. ! since my_first_call had some confusions..
     logical :: debug_flag = .false., debug_sgs
     real :: hveg, lat_factor
     real :: xSAIadd
     integer :: pft
     logical, save :: debugProc = .false.
+    character (len=*), parameter :: sub='SetLandUse:'
 
 ! Treatment of growing seasons in the southern hemisphere:
 !   all the static definitions (SGS,EGS...) refer to northern hemisphere, 
@@ -624,6 +628,7 @@ contains
    !======================================================================
 
     if ( daynumber == old_daynumber ) then
+        my_first_call = .false. ! PW
         return
     end if
     old_daynumber = daynumber
@@ -643,6 +648,13 @@ contains
          end if
      end if
     
+!PALEO LANDUSE
+!    if( PALEO_TEST ) then
+!     call SetPaleo(daynumber, month)
+!    end if
+
+
+
      do i = 1, limax
        do j = 1, ljmax
 
@@ -666,9 +678,9 @@ contains
              lu      = LandCover(i,j)%codes(ilu)
              pft     = LandType(lu)%pft
 
-          if ( debug_flag ) then
-             print *, "debug_flag lu pft", lu, pft, LandDefs(lu)%name, LandType(lu)%is_bulk  
-          end if
+             if ( debug_flag ) print *, sub//"debug_flag lu pft", lu, pft,&
+                  LandDefs(lu)%name, LandType(lu)%is_bulk  
+
              if ( LandType(lu)%is_bulk ) then
                 LandCover(i,j)%LAI(ilu) = 0.0
                 LandCover(i,j)%SAI(ilu) = 0.0
@@ -682,9 +694,11 @@ contains
                    100, 166, & ! Hard-code from Mapping Manual
                      LandDefs(lu)%LAImin, LandDefs(lu)%LAImax )
                 if ( debug_flag ) then
-                   write(*,"(a,3i4,3f8.3)") "MED_TREE "//trim(LandDefs(lu)%name), effectivdaynumber,&
-                   LandCover(i,j)%SGS(ilu), LandCover(i,j)%EGS(ilu),  &
-                     LandDefs(lu)%LAImin, LandDefs(lu)%LAImax, LandCover(i,j)%LAI(ilu)
+                   write(*,"(a,3i4,3f8.3)") "MED_TREE "//&
+                     trim(LandDefs(lu)%name), effectivdaynumber,&
+                     LandCover(i,j)%SGS(ilu), LandCover(i,j)%EGS(ilu),  &
+                     LandDefs(lu)%LAImin, LandDefs(lu)%LAImax, &
+                     LandCover(i,j)%LAI(ilu)
                 end if
 
              else
@@ -799,6 +813,8 @@ end if ! debug_sgs
          end do ! lu
        end do ! j
     end do ! i
+
+    my_first_call   = .false.
 
 ! --- print out for debug cell
     if ( DEBUG%LANDUSE>0.and.debug_proc ) then

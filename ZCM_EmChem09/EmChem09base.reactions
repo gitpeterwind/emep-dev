@@ -205,6 +205,11 @@ TROE_PAN                   MPAN = MACO3 + NO2   ; MCM
 * HONO chemistry to be added (also need photolysis of HONO!)
 TROE_OH_NO                 OH + NO = HONO          ; IUPAC 2002
 *
+*<----- SHIP NOx  ------- -------------------------------------------->
+* 2.0e-4    SHIPNOX = HNO3 + 10 O3 ;  GEOS-CHEM inspired, gives half-life of < 1h
+TROE_NO2_OH          SHIPNOX + OH + {M}  = HNO3   ; A97,J
+3.2e-5               SHIPNOX             = HNO3   ; gives half-life of  6h, loosely based on dark experiments of Vinken et al, ACP,2009
+
 *<----- EC ageing ------- -------------------------------------------->
 * ;
 *USEPPM _func_ec_ageing_rate()               EC_f_new = EC_f_age ;
@@ -285,6 +290,7 @@ emisfiles:sox,nox,co,voc,nh3
 *
 rcemis:NO                           = NO    ;
 rcemis:NO2                          = NO2    ;
+rcemis:SHIPNOX                      = SHIPNOX ;   ! ships with GEOS-Chem will go to HNO3
 rcemis:SO2                          = SO2    ;
 rcemis:SO4                          = SO4    ;
 rcemis:CO                           = CO    ;

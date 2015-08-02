@@ -57,7 +57,7 @@ module AOTx_ml
     type(O3cl), public, allocatable, dimension(:) :: &
      VEGO3_OUTPUTS
 
-    type(O3cl), public, parameter, dimension(46) :: &
+    type(O3cl), public, parameter, dimension(46+10) :: &
      VEGO3_DEFS    =  (/ &
          ! name               class X/Y   defn   txtLC relSGS Sacc Eacc
    O3cl( "POD1_IAM_DF   ",   "POD", 1.0,  "- ", "IAM_DF",F,0,999 ), & 
@@ -67,6 +67,17 @@ module AOTx_ml
    O3cl( "POD1_DF       ",   "POD", 1.0,  "- ", "DF    ",F,0,999 ), &
    O3cl( "POD1_CF       ",   "POD", 1.0,  "- ", "CF    ",F,0,999 ), &
    O3cl( "POD3_TC       ",   "POD", 3.0,  "- ", "TC    ",F,0,999 ), & !=7
+!CEH JULY2015 ECLGLOB
+   O3cl( "POD0_Wheat_Irrigated",   "POD", 0.0,  "- ", "Wheat_Irrigated",F,0,999 ), & !=7
+   O3cl( "POD1_Wheat_Irrigated",   "POD", 1.0,  "- ", "Wheat_Irrigated",F,0,999 ), & !=7
+   O3cl( "POD2_Wheat_Irrigated",   "POD", 2.0,  "- ", "Wheat_Irrigated",F,0,999 ), & !=7
+   O3cl( "POD3_Wheat_Irrigated",   "POD", 3.0,  "- ", "Wheat_Irrigated",F,0,999 ), & !=7
+   O3cl( "POD6_Wheat_Irrigated",   "POD", 6.0,  "- ", "Wheat_Irrigated",F,0,999 ), & !=7
+   O3cl( "POD0_Wheat_NonIrrig",   "POD", 0.0,  "- ", "Wheat_NonIrrig",F,0,999 ), & !=7
+   O3cl( "POD1_Wheat_NonIrrig",   "POD", 1.0,  "- ", "Wheat_NonIrrig",F,0,999 ), & !=7
+   O3cl( "POD2_Wheat_NonIrrig",   "POD", 2.0,  "- ", "Wheat_NonIrrig",F,0,999 ), & !=7
+   O3cl( "POD3_Wheat_NonIrrig",   "POD", 3.0,  "- ", "Wheat_NonIrrig",F,0,999 ), & !=7
+   O3cl( "POD6_Wheat_NonIrrig",   "POD", 6.0,  "- ", "Wheat_NonIrrig",F,0,999 ), & !=7
 !CEH ECLGLOB
    O3cl( "POD1_WinterWheat",   "POD", 1.0,  "- ", "WinterWheat",F,0,999 ), & !=7
    O3cl( "POD3_WinterWheat",   "POD", 3.0,  "- ", "WinterWheat",F,0,999 ), & !=7
@@ -324,6 +335,7 @@ contains
          trim(vego3_outputs(iO3cl)%defn), iLC, &
            (/ real(Grid%izen), Y,  o3, L%FstO3, pod /) )
     end if
+if(debug_flag) write(*,"(2a,4i5,2g12.3)") "GMO3 ", trim(VEGO3_OUTPUTS(iO3cl)%name), iO3cl, jday, spod, epod, L%FstO3,L%cano3_ppb
 
   end subroutine Calc_POD 
 

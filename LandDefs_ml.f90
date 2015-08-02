@@ -2,7 +2,7 @@
 !*****************************************************************************! 
 
 module LandDefs_ml
- use CheckStop_ml, only : CheckStop
+ use CheckStop_ml, only : CheckStop, StopAll
  use Io_ml, only : IO_TMP, open_file, ios, Read_Headers, read_line
  use KeyValueTypes, only :  KeyVal
  use LandPFT_ml,  only : PFT_CODES
@@ -50,8 +50,8 @@ end interface Check_LandCoverPresent
 !******   Data to be read from Phenology_inputs.dat:
 
   type, public :: land_input
-     character(len=15) :: name
-     character(len=15) :: code
+     character(len=20) :: name
+     character(len=20) :: code
      character(len=3) :: type   ! Ecocystem type, see headers
      character(len=5) :: LPJtype   ! Simplified LPJ assignment
      real    ::  hveg_max
@@ -134,8 +134,11 @@ contains
       character(len=200) :: txtinput  ! Big enough to contain one input record
       type(KeyVal), dimension(2) :: KeyValues ! Info on units, coords, etc.
       character(len=50) :: errmsg, fname
+      character(len=*), parameter :: sub='IniLandDefs'
       integer :: n, nn, NHeaders, NKeys
+      logical :: dbg
 
+      dbg = ( DEBUG%LANDDEFS .and. MasterProc ) 
 
       ! Quick safety check (see Landuse_ml for explanation)
        call CheckStop(&
@@ -147,17 +150,17 @@ contains
 
       fname = "Inputs_LandDefs.csv"
       if ( MasterProc ) then
-         write(*,*) "INIT_LANDDEFS for Ncodes= ", ncodes
+         write(*,*) sub//" for Ncodes= ", ncodes
          do n = 1, ncodes
-            write(*,*) "LANDDEFS INLC  wants ",n, trim(wanted_codes(n))
+            write(*,*) sub//"LC  wants ",n, trim(wanted_codes(n))
          end do
          call open_file(IO_TMP,"r",fname,needed=.true.)
-         call CheckStop(ios,"open_file error on " // fname )
+         call CheckStop(ios,sub//"open_file error on " // fname )
       end if
 
       call Read_Headers(IO_TMP,errmsg,NHeaders,NKeys,Headers,Keyvalues)
 
-      call CheckStop( errmsg , "Read LandDefs Headers" )
+      call CheckStop( errmsg , sub//"Read Headers" )
  
 
       !------ Read in file. Lines beginning with "!" are taken as
@@ -169,24 +172,29 @@ contains
             if ( ios /= 0 ) then
                  exit   ! likely end of file
             end if
+            if ( dbg ) write(*,*) sub//' READLINE: ------ '// trim(txtinput)
             if ( txtinput(1:1) == "#" ) then
                  cycle
+            end if
+            if ( txtinput(1:2) == '"#' ) then!Common problem after saving .csv!
+                 call StopAll(trim(fname)//&
+                 ': Quotation mark at start of "# line:'//trim(txtinput) )
             end if
             read(unit=txtinput,fmt=*,iostat=ios) LandInput
             call CheckStop ( ios, fname // " txt error:" // trim(txtinput) )
             n = find_index( LandInput%code, wanted_codes )!index in map data?
             if ( n < 1 ) then
-                if ( MasterProc ) write(*,*) "LandDefs skipping ", &
-                    trim(LandInput%code)
+                if ( MasterProc ) write(*,*) sub//" skipping nn,n ",&
+                   nn,n, trim(LandInput%code)
                 cycle
             end if
            !############################
             LandDefs(n) = LandInput
             nn = nn + 1
            !############################
-            if ( DEBUG%LANDDEFS .and. MasterProc ) then
-                 write(unit=*,fmt="(a,2i3,a,a,f7.3,f10.3)") "LANDDEFS N ", &
-                  n,nn, trim(LandInput%name), trim(LandInput%code),&
+            if ( dbg ) then
+                 write(unit=*,fmt="(a,3i3,a,a,f7.3,f10.3)") "LANDDEFS N ", &
+                  n,nn, ncodes, trim(LandInput%name), trim(LandInput%code),&
                     LandDefs(n)%LAImax, LandDefs(n)%Emtp
             end if
 
@@ -196,13 +204,13 @@ contains
            LandDefs(n)%LAImax   = max( LandDefs(n)%LAImax,   0.0)
 
 
-            if ( DEBUG%LANDDEFS .and. MasterProc ) then
+            if ( dbg ) then
                  write(*,"(a)") trim(txtinput)
-                 write(unit=*,fmt="(a,i3,3a,2i4)") "LANDPHEN match? ", n, &
+                 write(unit=*,fmt="(a,i3,3a,2i4)") sub//"PHEN match? ", n, &
                    trim(LandInput%name)//" ",  trim(LandInput%code)//" ", &
                    trim(wanted_codes(n))//" "
             end if
-            call CheckStop(  LandInput%code, wanted_codes(n), "MATCHING CODES in LandDefs")
+            call CheckStop(  LandInput%code, wanted_codes(n), sub//"MATCHING CODES")
 
             LandType(n)%is_water  =  LandInput%code == "W" 
             LandType(n)%is_ice    =  LandInput%code == "ICE" 
@@ -211,7 +219,7 @@ contains
             LandType(n)%flux_wanted = LandType(n)%is_iam  ! default
            !Also:
            if( find_index( LandInput%code, FLUX_VEGS(:) ) > 0 ) then
-             if(MasterProc) write(*,*) "FLUX_VEG LandDef'd", trim(LandInput%code)
+             if(MasterProc) write(*,*) sub//"FLUX_VEG SET:", trim(LandInput%code)
              LandType(n)%flux_wanted = .true.
            end if
 
@@ -223,7 +231,8 @@ contains
             LandType(n)%has_lpj   =  &
                 ( LandInput%type /= "NOLPJ" )
             LandType(n)%pft = find_index( LandDefs(n)%LPJtype, PFT_CODES)
-            if ( DEBUG%LANDDEFS .and. MasterProc ) then
+
+            if ( dbg ) then
                  write(unit=*,fmt=*) "LANDPFT  match? ", n, &
                    LandInput%name, LandInput%code, wanted_codes(n), LandType(n)%pft
             end if
@@ -241,8 +250,11 @@ contains
        if ( MasterProc ) then 
              close(unit=IO_TMP)
        end if
-       if( MasterProc ) write(*,*) "END INIT_LANDDEFS", n, nn, ncodes
-       call CheckStop( nn /= ncodes, "Init_LandDefs didn't find all codes")
+       if( MasterProc ) write(*,*) sub//"END ", n, nn, ncodes
+       !if ( nn /= ncodes ) then
+       !   print *, "Init_LandDefs didn't find all codes"
+       !   do n = 
+       call CheckStop( nn /= ncodes, sub//" didn't find all codes")
 
   end subroutine Init_LandDefs
  !=========================================================================

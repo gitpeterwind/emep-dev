@@ -1,33 +1,7 @@
-!>TimeDate_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
-!!         Chemical transport Model>
+!>TimeDate_ml.f90 - A component of the EMEP MSC-W Chemical transport Model>
 !! MODULE to calculate date-related items, such as day-of-week, Julian
 !! date, etc.
 !*****************************************************************************! 
-!* 
-!*  Copyright (C) 2007-2011 met.no
-!* 
-!*  Contact information:
-!*  Norwegian Meteorological Institute
-!*  Box 43 Blindern
-!*  0313 OSLO
-!*  NORWAY
-!*  email: emep.mscw@met.no
-!*  http://www.emep.int
-!*  
-!*    This program is free software: you can redistribute it and/or modify
-!*    it under the terms of the GNU General Public License as published by
-!*    the Free Software Foundation, either version 3 of the License, or
-!*    (at your option) any later version.
-!* 
-!*    This program is distributed in the hope that it will be useful,
-!*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-!*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!*    GNU General Public License for more details.
-!* 
-!*    You should have received a copy of the GNU General Public License
-!*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************! 
-!_____________________________________________________________________________
 MODULE TimeDate_ml
 
 ! Originally timedate.f90 from Paul Curtis, found on web, 31/8/04: 
@@ -117,14 +91,23 @@ CONTAINS
 !> FUNCTION print_date: produces  YYYY-MM-DD-HH-SSSS
 
 function print_date(cd) result(str)
-  type(date) :: cd
+  type(date), optional :: cd
+  type(date) :: pd
   character(len=18) :: str
+  if( present(cd) ) then
+     pd = cd
+  else
+     pd = current_date
+  end if
+!print *, "PD IN ", pd
+
   write(str,"(i4,3(a,i2.2),a,i4.4)") &
-    cd%year, "-",  &
-    cd%month, "-",  &
-    cd%day, "-",  &
-    cd%hour, "-",  &
-    cd%seconds
+    pd%year, "-",  &
+    pd%month, "-",  &
+    pd%day, "-",  &
+    pd%hour, "-",  &
+    pd%seconds
+!print *, "PD OUT ", pd
 end function print_date
    
 !> FUNCTION same_date

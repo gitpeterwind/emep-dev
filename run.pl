@@ -928,11 +928,8 @@ foreach my $scenflag ( @runs ) {
   $ifile{"$DataDir/Landuse/Landuse_PS_5km_LC.nc"} ="Landuse_PS_5km_LC.nc";
 #  $ifile{"$DataDir/Landuse/Landuse_PS_1km_LC.nc"} ="Landuse_PS_5km_LC.nc";
 
-  $ifile{"$DataDir/LandInputs_Mar2013/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
-  $ifile{"$DataDir/LandInputs_Mar2013/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
-  #CEH GLOBAL
-  #CEH $ifile{"$MyDataDir/LandInputs_Dec2014/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
-  #CEH $ifile{"$MyDataDir/LandInputs_Dec2014/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
+  $ifile{"$DataDir/LandInputs_Jul2015/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
+  $ifile{"$DataDir/LandInputs_Jul2015/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
 
 #For dust: clay and sand fractions
   $ifile{"$DataDir/Soil_Tegen.nc"} ="Soil_Tegen.nc";
