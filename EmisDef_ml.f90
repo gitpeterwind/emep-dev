@@ -143,6 +143,12 @@ real, public, allocatable, save, dimension(:,:,:,:) :: &
 real, public, allocatable, save, dimension(:,:,:) :: &
   gridrcroadd,    & ! Road dust emissions
   gridrcroadd0      ! varies every hour
+
+!used for EEMEP 
+real, allocatable, save, dimension(:,:,:,:)       ::  Emis_4D !(i,j,k,pollutant)
+integer, save ::N_Emis_4D=0 !number of pollutants to read
+integer, public, save :: Found_Emis_4D = 0 
+
 integer, public, save :: KEMISTOP ! not defined yet= KMAX_MID - nemis_kprofile + 1
 
 

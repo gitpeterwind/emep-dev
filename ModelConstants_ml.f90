@@ -116,6 +116,8 @@ type(emep_debug), public, save :: DEBUG
     integer :: Nlist=0, Nincl=0, Nexcl=0
     character(len=10), dimension(90) ::  incl = "-"
     character(len=10), dimension(90) ::  excl = "-"
+    character(len=40), dimension(20) ::  pollName = "NOTSET"
+    character(len=40), dimension(20) ::  pollemepName = "NOTSET"
   endtype emis_in
   type(emis_in), public, dimension(5) :: emis_inputlist = emis_in()
 

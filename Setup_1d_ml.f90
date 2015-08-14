@@ -15,7 +15,7 @@ use ChemFunctions_ml, only : S_RiemerN2O5
 use ChemGroups_ml,       only: PM10_GROUP, PMFINE_GROUP, SIA_GROUP, SS_GROUP, DUST_GROUP
 use CheckStop_ml,        only:  CheckStop, StopAll
 use DerivedFields_ml,    only: d_2d, f_2d
-use EmisDef_ml,          only:  gridrcemis, gridrcroadd, KEMISTOP
+use EmisDef_ml,          only:  gridrcemis, gridrcroadd, KEMISTOP,Emis_4D,N_Emis_4D,Found_Emis_4D
 use EmisGet_ml,          only:  nrcemis, iqrc2itot  !DSRC added nrcemis
 use Emissions_ml,        only:  SumSplitEmis
 use ForestFire_ml,       only: Fire_rcemis, burning
@@ -40,12 +40,13 @@ use ModelConstants_ml,   only:  &
   ,dt_advec                     & ! time-step
   ,IOU_INST                     & ! for OUTMISC
   ,MasterProc                   &
-  ,PT                           & ! Pressure at top
+  ,PPB, PT                      & ! Pressure at top
   ,USES                         & ! Forest fires so far
   ,USE_SEASALT                  &
   ,USE_LIGHTNING_EMIS, USE_AIRCRAFT_EMIS      &
   ,USE_GLOBAL_SOILNOX, USE_DUST, USE_ROADDUST &
   ,VOLCANO_SR                   & ! Reduce Volcanic Emissions
+  ,emis_inputlist               & ! Used in EEMEP
   ,KMAX_MID ,KMAX_BND, KCHEMTOP   ! Start and upper k for 1d fields
 use My_Derived_ml,       only: EmisSplit_OUT
 use Landuse_ml,          only: water_fraction, ice_landcover
@@ -118,7 +119,7 @@ contains
 
    ! local
 
-    integer           :: k, n, ispec    ! loop variables
+    integer           :: k, n, ispec   ! loop variables
     real              :: qsat ! saturation water content
 
     debug_flag =  ( DEBUG%SETUP_1DCHEM .and. debug_proc .and.  &
@@ -407,16 +408,6 @@ end if
    end do
 
 
-  if( debug_flag ) then
-      write(*,*) sub//"OLD-S ", lbound(rh),  S_RiemerN2O5(20)
-      write(*,"(a,2i5)") sub//"RCT ", me, nd2d
-      write(*,"(a,10es10.3)") sub//"RCT ", &
-            rct(3,KMAX_MID), rct(4,KMAX_MID), rct(61,KMAX_MID), rct(62,KMAX_MID)
-      write(*,"(a,10es10.3)") sub//"XN  ", &
-        amk(KMAX_MID),  xn_2d(O3,KMAX_MID),  xn_2d(NO2,KMAX_MID)
-      write(*,"(a,10es10.3)") sub//"1D-Riemer", xn_2d(SO4,KMAX_MID),&
-        xn_2d(NO3_F,KMAX_MID)
-  end if
    end subroutine setup_1d
 !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 subroutine setup_rcemis(i,j)
@@ -430,9 +421,9 @@ subroutine setup_rcemis(i,j)
 
   !  local
   integer ::  iqrc,k, itot
-  real    :: eland   ! for Pb210  - emissions from land
+  real    :: fac, eland   ! for Pb210  - emissions from land
 
-  integer ::  i_help,j_help,i_l,j_l
+  integer ::  i_help,j_help,i_l,j_l, i_Emis_4D,n
   logical, save     :: first_call = .true. 
   character(len=13) :: sub="setup_rcemis:"
 
@@ -492,6 +483,20 @@ subroutine setup_rcemis(i,j)
   if(USE_GLOBAL_SOILNOX)then !NEEDS CHECKING NOV2011
     rcemis(NO,KMAX_MID)=rcemis(NO,KMAX_MID)+SoilNOx(i,j)
   endif
+
+  if(Found_Emis_4D>0)then
+     do i_Emis_4D=1,N_Emis_4D
+        if(emis_inputlist(Found_Emis_4D)%pollemepName(i_Emis_4D)=='NOTSET')exit
+        n=find_index(emis_inputlist(Found_Emis_4D)%pollemepName(i_Emis_4D),species(:)%name)
+        if(n>0)then
+           fac=1.0/1000000.0/3600.0 !convert from Bq/m3/hour into Bq/cm3/s
+           do k=KCHEMTOP, KMAX_MID
+              rcemis(n,k)=rcemis(n,k)+Emis_4D(i,j,k,i_Emis_4D)*fac
+           enddo
+        endif
+     enddo
+  endif
+
 
   do k=KCHEMTOP, KMAX_MID
 
