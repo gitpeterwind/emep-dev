@@ -56,7 +56,7 @@ type, public :: emep_useconfig
     ,DEGREEDAY_FACTORS = .false.    &!
     ,EMISSTACKS       = F       &!
     ,PFT_MAPS         = .false.  ! Future option
-
+ 
  ! If USES%EMISTACKS, need to set:
   character(len=4) :: PlumeMethod = "none" !MKPS:"ASME","NILU","PVDI"
   character(len=20) :: n2o5HydrolysisMethod = 'SmixTen' !'Gamma:0.002' ! 'OrigRiemer' ! EmepRiemer=ACP2012 EMEP implementation
@@ -179,6 +179,8 @@ logical, public, save ::             &
 
 ! Methane background. 
   real, public, save :: BGND_CH4 = -1  ! -1 gives defaults in BoundaryConditions_ml, 
+!
+  logical, public, save :: USE_WRF_MET_NAMES = .false. !to read directly WRF metdata
 !
 !------------ END OF NAMELIST VARIABLES ------------------------------------!
 
@@ -443,13 +445,14 @@ logical, public, parameter :: NH3_U10 = .false.
 integer, public, parameter ::  &
 !TREEX  NLANDUSEMAX  = 19   &   ! Number of land use types in Inputs.Landuse file
   NLANDUSEMAX  = 30    &    ! Max num land use types in Inputs.Landuse file
-, METSTEP      = 3     &    ! time-step of met. (h)
 , KTOP         = 1     &    ! K-value at top of domain
 , KWINDTOP     = 5     &    ! Define extent needed for wind-speed array
 , NMET         = 2     &    ! No. met fields in memory
 , KCHEMTOP     = 2     &    ! chemistry not done for k=1
 , KCLOUDTOP    = 8     &    ! limit of clouds (for MADE dj ??)
 , KUPPER       = 6          ! limit of clouds (for wet dep.)
+
+integer, public :: METSTEP = 3  ! time-step of met. (h). 3 hours default, but WRF may set to other values.
 
 !Namelist controlled: aerosols
 !Number of aerosol sizes (1-fine, 2-coarse, 3-'giant' for sea salt )
@@ -599,7 +602,8 @@ subroutine Config_ModelConstants(iolog)
    ,VEG_2dGS_Params       & ! Allows 2d maps of growing seasons
    ,PFT_MAPPINGS          &  ! Allows use of external LAI maps
    ,NETCDF_DEFLATE_LEVEL,  RUNDOMAIN, DOMAIN_DECOM_MODE &
-   ,JUMPOVER29FEB, HOURLYFILE_ending
+   ,JUMPOVER29FEB, HOURLYFILE_ending &
+   ,USE_WRF_MET_NAMES
 
   txt = "ok"
   !Can't call check_file due to circularity

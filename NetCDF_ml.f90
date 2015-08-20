@@ -204,7 +204,7 @@ subroutine Create_CDF_sondes(fileName,NSpec,NSpec_Att,SpecDef,&
   real :: kcoord(KMAXcdf+1)
   real :: Acdf(KMAXcdf),Bcdf(KMAXcdf),Aicdf(KMAXcdf+1),Bicdf(KMAXcdf+1)
   integer,parameter :: MAX_String_length=36
-  character(len=100) :: auxL(3)
+  character(len=100) :: auxL(4)
   character(len=MAX_String_length) :: metaName,metaType,auxC(NStations)
   integer :: auxI(NStations),ierr
   real :: auxR(NStations)
@@ -2023,7 +2023,7 @@ subroutine GetCDF(varname,fileName,Rvar,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,
   endif
 
   if(ndims>3.and.dims(3)>varKMAX)then
-     write(*,*)'Warning: not reading all levels ',dims(3),varKMAX
+     if(me==0)write(*,*)'Warning: not reading all levels ',dims(3),varKMAX,trim(varname)
 !     Call StopAll('GetCDF not reading all levels')
   endif
 
@@ -2169,7 +2169,7 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,&
   endif
 
   if(ndims>3.and.dims(3)>k_end)then
-     write(*,*)'Warning: not reading all levels ',dims(3),k_end
+     if(me==0)write(*,*)'Warning: not reading all levels ',dims(3),k_end,trim(varname)
 !    Call StopAll('GetCDF not reading all levels')
   endif
 
@@ -4773,10 +4773,16 @@ subroutine   vertical_interpolate(filename,Rvar,KMAX_ext,Rvar_emep,debug)
       if(debug) write(*,fmt="(A,I3,F10.2)")'vert_inter: P_emep',k,P_emep
       if(P_emep<P_ext(KMAX_EXT))then
          !we need levels above the highest level available. 
-         !we do not want to extrapolate. take a safer solution
-         weight_k1(k)=1.0-(P_ext(KMAX_EXT)-P_emep)/(P_ext(KMAX_EXT)-P_emep+P_ext(KMAX_EXT-1)-P_emep)
+         !we do not want to extrapolate. take the top level value
+         weight_k1(k)=1.0
          k1_ext(k)=KMAX_EXT
-         k2_ext(k)=KMAX_EXT-1
+         k2_ext(k)=KMAX_EXT
+      else if(P_emep>P_ext(1))then
+         !we need levels below the lowest level available. 
+         !we do not want to extrapolate. take the lowest level value
+         weight_k1(k)=1.0
+         k1_ext(k)=1
+         k2_ext(k)=1
       else
          !largest available P smaller than P_emep (if possible)
          k1_ext(k)=1 !start at surface, and go up until P_emep
@@ -4804,10 +4810,16 @@ subroutine   vertical_interpolate(filename,Rvar,KMAX_ext,Rvar_emep,debug)
       if(debug) write(*,fmt="(A,I3,F10.2)")'vert_inter: P_emep',k,P_emep
       if(P_emep<P_ext(1))then
          !we need levels above the highest level available. 
-         !we do not want to extrapolate. take a safer solution
-         weight_k1(k)=1.0-(P_ext(1)-P_emep)/(P_ext(1)-P_emep+P_ext(2)-P_emep)
+         !we do not want to extrapolate. take the top level value
+         weight_k1(k)=1.0
          k1_ext(k)=1
-         k2_ext(k)=2
+         k2_ext(k)=1
+      else if(P_emep>P_ext(KMAX_EXT))then
+         !we need levels below the lowest level available. 
+         !we do not want to extrapolate. take the lowest level value
+         weight_k1(k)=1.0
+         k1_ext(k)=KMAX_EXT
+         k2_ext(k)=KMAX_EXT
       else
          !largest available P smaller than P_emep (if possible)
          k1_ext(k)=KMAX_EXT !start at surface, and go up until P_emep

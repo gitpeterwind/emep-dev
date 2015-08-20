@@ -262,7 +262,7 @@ contains
        allocate(var_local(MAXLIMAX,MAXLJMAX,KMAX))
 
        !On first call, check that date from meteo file correspond to dates requested. 
-       !Also defines nhour_first and Nhh.
+       !Also defines nhour_first and Nhh (and METSTEP in case of WRF metdata).
        call Check_Meteo_Date !note that all procs read this
  
        call Exner_tab()!init table
@@ -331,7 +331,7 @@ contains
                found=met(ix)%found)
 
           if(write_now)then
-             if(met(ix)%found)write(*,*)'found ',trim(namefield),' in ',trim(meteoname)
+             if(met(ix)%found)write(*,*)'found ',trim(namefield),' in ',trim(meteoname),met(ix)%field(5,5,1,nrix)
              if(.not.met(ix)%found)write(*,*)'did not find ',trim(namefield),' in ',trim(meteoname)
           endif
        endif
@@ -517,12 +517,18 @@ contains
             met(ix)%field,needed=met(ix)%needed,found=met(ix)%found)
        
        surface_precip = surface_precip + convective_precip
-       write(*,*)'prcip ',nrec,Nhh,surface_precip(5,5),convective_precip(5,5),surface_precip_old(5,5)
-        if(WRF_MET_CORRECTIONS) then 
-           buff=surface_precip !save to save in old below
-           surface_precip = max(0.0,(surface_precip - surface_precip_old))*0.001/(METSTEP*3600)! get only the variation. mm ->m/s
-           surface_precip_old = buff ! Accumulated rain in WRF
-        endif
+       !write(*,*)'precip ',nrec,Nhh,surface_precip(5,5),convective_precip(5,5),surface_precip_old(5,5)
+       if(WRF_MET_CORRECTIONS) then 
+          buff=surface_precip !save to save in old below
+          surface_precip = max(0.0,(surface_precip - surface_precip_old))*0.001/(METSTEP*3600)! get only the variation. mm ->m/s
+          surface_precip_old = buff ! Accumulated rain in WRF         
+          sdepth=sdepth*0.001 !mm->m
+          ice_nwp = ice_nwp*100!flag->%
+          !smooth qrain, because it is instantaneous but rain may move
+          do k=1,kmax_mid
+             call smoosp(rain(1,1,k,nr),0.0,1.0E10)
+          enddo
+       endif
 
        !if available, will use cloudwater to determine the height of release
        !NB: array cw_met only used here
@@ -532,7 +538,58 @@ contains
        call Getmeteofield(meteoname,met(ix)%name,nrec,met(ix)%dim,unit,met(ix)%validity,&
             met(ix)%field,needed=met(ix)%needed,found=met(ix)%found)
        
-       if(foundcloudwater)then
+       if(foundrain)then
+          if(write_now)write(*,*)'release profile for 3D precipitations derived from QRAIN'
+          do j=1,ljmax
+             do i=1,limax
+                !note that there is much noise in surface precipitations, because it is the difference of two large  number (1E5)
+                !values smaller than 0.01 mm are meaningless
+                if(surface_precip(i,j)>1.0E-9 .and. rain(i,j,kmax_mid,1)+rain(i,j,kmax_mid,nr)>1.E-12)then
+                   do k=1,kmax_mid
+                      pr(i,j,k)=min(surface_precip(i,j),surface_precip(i,j)*(rain(i,j,k,1)+rain(i,j,k,nr))/(rain(i,j,kmax_mid,1)+rain(i,j,kmax_mid,nr)))
+                      pr(i,j,k)=pr(i,j,k)*METSTEP*3600.0*1000.0! and m/s->mm/METSTEP
+                   enddo
+                else if(surface_precip(i,j)>1.0E-8 )then
+                   !write(*,*)'surface precip, but no qrain: ',i_fdom(i),j_fdom(j),rain(i,j,kmax_mid,1)+rain(i,j,kmax_mid,nr),surface_precip(i,j)
+                   !surface precipitation but no QRAIN found. Should not occur too often. use humidity method.
+                   pr(i,j,KMAX_MID)= surface_precip(i,j)*METSTEP*3600.0*1000.0!guarantees precip at surface
+                   do k=1,KMAX_MID-1
+                      !convert from potential temperature into absolute temperature
+                      temperature = th(i,j,k,nr)*exp(KAPPA*log((A_mid(k) + B_mid(k)*ps(i,j,nr))*1.e-5))!Pa, Ps in Pa here
+                      !saturation water pressure
+                      swp=611.2*exp(17.67*(temperature-273.15)/(temperature-29.65))
+                      !water pressure
+                      wp=q(i,j,k,nr)*(A_mid(k) + B_mid(k)*ps(i,j,nr))/0.622!Ps in Pa here
+                      relh2=wp/swp
+                      !convert from potential temperature into absolute temperature
+                      !Ps  in Pa here
+                      temperature = th(i,j,k,1)* &   
+                           exp(KAPPA*log((A_mid(k) + B_mid(k)*ps(i,j,1))*1.e-5))!Ps in Pa here
+                      !saturation water pressure
+                      swp=611.2*exp(17.67*(temperature-273.15)/(temperature-29.65))
+                      !water pressure
+                      wp=q(i,j,k,1)*(A_mid(k) + B_mid(k)*ps(i,j,1))/0.622!Ps in Pa here
+                      relh1=wp/swp
+                      if(relh1>RH_THRESHOLD.or.relh2>RH_THRESHOLD)then
+                         !fill the column up to this level with constant precip
+                         do kk=k,KMAX_MID-1
+                            pr(i,j,kk)= surface_precip(i,j)*METSTEP*3600.0*1000.0!m/s->mm/METSTEP         
+                         enddo
+                         exit
+                      else
+                         pr(i,j,k)=0.0               
+                      endif
+                   enddo
+                else
+                   if(i_fdom(i)==79.and.j_fdom(j)==24)write(*,*)'C',rain(i,j,k,1)+rain(i,j,k,nr),surface_precip(i,j)
+                   do k=1,kmax
+                      pr(i,j,k)=0.0
+                   enddo
+                endif
+             enddo
+          enddo
+        else if(foundcloudwater)then
+
           if(write_now)write(*,*)'release height for 3D precipitations derived from cloudwater'
           if(MasterProc.and.first_call)write(unit=IO_LOG,fmt="(a)")&
                "3D precipitations: derived from 2D and cloudwater"
@@ -1774,7 +1831,7 @@ contains
     !c----------------------------------------------------------------------
     !c
     !c    This routine applies the shapiro filter with s=0.5 and s=-0.5
-    !c    to the field f usinh h as a work space also the boundaries
+    !c    to the field f using h as a work space also the boundaries
     !c    are smoothed. f contains the smoothed field upon return.
     !c
 
@@ -2932,13 +2989,14 @@ subroutine check(status)
 endsubroutine check
 
 subroutine Check_Meteo_Date
-  !On first call, check that dates from meteo file correspond to dates requested. Also defines nhour_first.
+  !On first call, check that dates from meteo file correspond to dates requested. 
+  !Also defines nhour_first and Nhh (and METSTEP in case of WRF metdata)
   character(len=len(meteo)) :: meteoname
   integer :: nyear,nmonth,nday,nhour
   integer :: status,ncFileID,timeDimID,varid,timeVarID
   character (len = 50) :: timeunit
   integer ::ihh,ndate(4),n1,nseconds(1)
-  real :: ndays(1)
+  real :: ndays(1),Xminutes(24)
   logical :: date_in_days
   nyear=startdate(1)
   nmonth=startdate(2)
@@ -2966,6 +3024,14 @@ subroutine Check_Meteo_Date
           nhour_first=0 !hour of the first record
           if(MasterProc)write(*,*)'Did not check times, and assume nhour_first =',nhour_first            
           if(MasterProc)write(*,*)'  Nhh =',Nhh
+          status=nf90_inq_varid(ncid=ncFileID,name="XTIME",varID=timeVarID)
+          if(status==nf90_noerr)then
+             call check(nf90_get_var(ncFileID,timeVarID,Xminutes,count=(/2/)))
+             call CheckStop(60*(nint(Xminutes(2)-Xminutes(1))/60)/=nint(Xminutes(2)-Xminutes(1)),&
+                  "Met_ml: METSTEP in hours must be an integer")
+             METSTEP=nint(Xminutes(2)-Xminutes(1))/60
+             if(MasterProc)write(*,*)'METSTEP set to', METSTEP,' hours'      
+          endif
           goto 777
        endif
     endif
@@ -3008,6 +3074,7 @@ subroutine Check_Meteo_Date
   endif
   CALL MPI_BCAST(nhour_first,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
   CALL MPI_BCAST(Nhh,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+  CALL MPI_BCAST(METSTEP,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
 endsubroutine Check_Meteo_Date
 
 endmodule met_ml

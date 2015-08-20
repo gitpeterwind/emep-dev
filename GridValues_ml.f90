@@ -1099,15 +1099,24 @@ else
              write(*,*)'Pressure at op must be higher (lower altitude) than top defined in meteo '
              call StopAll('Top level too high! Change values in Vertical_levels.txt')
           endif
+
 !test if the levels can cope with highest mountains (400 hPa)
           do k=1,KMAX_MID
              if(A_bnd(k+1)+40000*B_bnd(k+1)-(A_bnd(k)+40000*B_bnd(k))<0.0)then
                 write(*,*)'WARNING: hybrid vertical level definition may cause negative level thickness when pressure below 400 hPa '
                 write(*,*)'Pressure at level ',k,' is ',A_bnd(k)+40000*B_bnd(k)
                 write(*,*)'Pressure at level ',k+1,' is ',A_bnd(k+1)+40000*B_bnd(k+1),' (should be higher)'
-                call StopAll('GridValues_ml: possible negative level thickness ')
+                if(External_Levels_Def)call StopAll('GridValues_ml: possible negative level thickness ')
              endif
           enddo
+
+!test if the lowest levels is thick enough (twice height of highest vegetation?) about 550 Pa = about 46m 
+!Deposition scheme is not designes for very thin lowest levels
+          if(A_bnd(KMAX_MID+1)+P0*B_bnd(KMAX_MID+1)-(A_bnd(KMAX_MID)+P0*B_bnd(KMAX_MID))<550.0)then
+             write(*,*)'WARNING: lowest level very shallow; ',A_bnd(KMAX_MID+1)+P0*B_bnd(KMAX_MID+1) -&
+                  (A_bnd(KMAX_MID)+P0*B_bnd(KMAX_MID)),'Pa'
+             call StopAll('Lowest level too thin! Change vertical levels definition in Vertical_levels.txt ')
+          endif
 
           found_hybrid=.true.
        else

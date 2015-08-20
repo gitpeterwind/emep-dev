@@ -712,8 +712,8 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
   integer :: ii,nn
 
   integer, parameter :: NattributesMAX=10
-  character(len=100),allocatable  :: SpecName(:),SpecDef(:,:),MetaData(:,:)
-  character(len=100)              :: fileName
+  character(len=200),allocatable  :: SpecName(:),SpecDef(:,:),MetaData(:,:)
+  character(len=200)              :: fileName
   real,allocatable  :: CoordValues(:,:)
   integer  :: Nlevels,ispec,NSPEC,NStations,NMetaData
   real ::Values(KMAX_MID)

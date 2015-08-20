@@ -481,7 +481,7 @@ subroutine init_icbc(idate,cdate,ndays,nsecs)
   if(.not.first_call)return
   first_call=.false.
 
-! One of the date fromats needs to be provided
+! One of the date formats needs to be provided
   call CheckStop(count([present(idate),present(cdate),present(ndays),&
                         present(nsecs)]),1,"init_icbc: wrong date option")
 
@@ -491,6 +491,9 @@ subroutine init_icbc(idate,cdate,ndays,nsecs)
   if(present(ndays)) call nctime2idate(dat,ndays)
   if(present(nsecs)) call nctime2idate(dat,nsecs)
   call set_extbic(dat)  ! set mapping, EXTERNAL_BC, TOP_BC
+
+  if(.not.EXTERNAL_BIC_SET .and. MODE==0)return !No nesting
+
   filename_read_3D=date2string(template_read_3D,dat,debug=mydebug)
   filename_read_BC=date2file  (template_read_BC,dat,BC_DAYS,"days",debug=mydebug)  
   filename_write  =date2string(template_write  ,dat,debug=mydebug)

@@ -122,14 +122,16 @@ subroutine wordsplit(text,nword_max,wordarray,nwords,errcode,separator,&
       wordarray(iw) = ""
       wasinword = keep_empty
       is = 0
+      if(iw>nword_max ) then
+         errcode = 2
+         print *, "ERROR in WORDSPLIT : Problem at ", text
+         print *,"Too many words"
+         iw=iw-1
+         exit
+      endif
     endif
   enddo
   nwords = iw
-  if (  nwords > nword_max ) then
-    errcode = 2
-    print *, "ERROR in WORDSPLIT : Problem at ", text
-    print *,"Too many words"
-  endif
 
 ! Remove leading spaces
   if(keep_empty.or.present(strict_separator))then

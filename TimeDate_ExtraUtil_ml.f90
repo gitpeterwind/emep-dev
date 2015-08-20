@@ -520,7 +520,7 @@ subroutine assign_NTERM(NTERM)
 ! on the basis of start and enddate
   integer,intent(out) :: NTERM
   type(timestamp)     :: ts1, ts2
-  real, parameter     :: spMETSTEP=sph*METSTEP  ! seconds in period of metadat
+!  real     :: spMETSTEP=sph*METSTEP  ! seconds in period of metadat
 
   ! ensure that a valid day of the month,
   ! e.g. Feb 31=>Feb 28/29 depending the year
@@ -533,7 +533,7 @@ subroutine assign_NTERM(NTERM)
   ts1=to_stamp(startdate)
   ts2=to_stamp(enddate)
 
-  NTERM=1+ceiling(tdif_secs(ts1,ts2)/spMETSTEP) !NTERM=1+#time-step
+  NTERM=1+ceiling(tdif_secs(ts1,ts2)/(sph*METSTEP)) !NTERM=1+#time-step
   if(NTERM<=1)then
     if(MasterProc)then
       write(*,*)'WARNING: enddate before startdate, running only one metstep'

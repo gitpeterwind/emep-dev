@@ -1,6 +1,6 @@
 module MetFields_ml
 
-  use ModelConstants_ml,    only : USE_CONVECTION,USE_SOILWATER
+  use ModelConstants_ml,    only : USE_CONVECTION,USE_SOILWATER,USE_WRF_MET_NAMES
 
   implicit none
   private
@@ -113,6 +113,8 @@ module MetFields_ml
        ,sdot     &! vertical velocity, sigma coords, 1/s
        ,Kz_met    ! vertical diffusivity in sigma coordinates from meteorology
 
+  real,target,public, save,allocatable, dimension(:,:,:,:) :: rain! used only by wrf met
+
 
   ! since pr,cc3d,cc3dmax,cnvuf,cnvdf used only for 1 time layer - define without NMET
   real,target,public, save,allocatable, dimension(:,:,:) :: &
@@ -182,7 +184,7 @@ module MetFields_ml
        clay_frac  &  ! clay fraction (%) in the soil
       ,sand_frac     ! sand fraction (%) in the soil
   real,target,public, save,allocatable, dimension(:,:) :: &
-       surface_precip_old !rain from previous step for making differences (wrf)
+       surface_precip_old !precip from previous step for making differences (wrf)
 
   ! Different NWP outputs for soil water are possible. We can currently
   ! cope with two:
@@ -221,14 +223,15 @@ module MetFields_ml
     ,foundprecip= .false.    & ! false if no precipitationfrom meteorology
     ,foundcloudwater= .false.& !false if no cloudwater found
     ,foundSMI1= .true.& ! false if no Soil Moisture Index level 1 (shallow)
-    ,foundSMI3= .true. ! false if no Soil Moisture Index level 3 (deep)
+    ,foundSMI3= .true.& ! false if no Soil Moisture Index level 3 (deep)
+    ,foundrain= .false. ! false if no rain found or used
 
 ! specific indices of met
   integer, public, save   :: ix_u_xmj,ix_v_xmi, ix_q, ix_th, ix_sdot, ix_cc3d, ix_pr, ix_cw_met, ix_cnvuf, &
        ix_cnvdf, ix_Kz_met, ix_roa, ix_SigmaKz, ix_EtaKz, ix_Etadot, ix_cc3dmax, ix_lwc, ix_Kz_m2s, &
        ix_u_mid, ix_v_mid, ix_ps, ix_t2_nwp, ix_rh2m, ix_fh, ix_fl, ix_tau, ix_ustar_nwp, ix_sst, &
        ix_SoilWater_uppr, ix_SoilWater_deep, ix_sdepth, ix_ice_nwp, ix_ws_10m, ix_surface_precip, &
-       ix_uw, ix_ue, ix_vs, ix_vn, ix_convective_precip  
+       ix_uw, ix_ue, ix_vs, ix_vn, ix_convective_precip, ix_rain
 
   type,  public :: metfield
      character(len = 100) :: name = 'empty' !name as defined in external meteo file
@@ -255,7 +258,6 @@ module MetFields_ml
   real,target, public,save,allocatable, dimension(:,:,:) :: uw,ue
   real,target, public,save,allocatable, dimension(:,:,:) :: vs,vn
 
-  logical, public :: USE_WRF_MET_NAMES = .false.
   logical, public :: WRF_MET_CORRECTIONS = .false.
   logical, public :: MET_SHORT = .true.!metfields are stored as "short" (integer*2 and scaling)
   logical, public :: MET_C_GRID = .false.!true if u and v wind fields are in a C-staggered, larger grid.
@@ -865,11 +867,6 @@ subroutine Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%msize = NMET
   ix_vn=ix
 
-  Nmetfields=ix
-  if(Nmetfields>NmetfieldsMax)then
-     write(*,*)"Increase NmetfieldsMax! "
-     stop
-  endif
 
 if(USE_WRF_MET_NAMES)then
    WRF_MET_CORRECTIONS = .true.
@@ -884,6 +881,23 @@ if(USE_WRF_MET_NAMES)then
    met(ix_th)%name                = 'T'
    met(ix_cc3d)%name              = 'CLDFRA'
    met(ix_cw_met)%name            = 'QCLOUD'
+
+!Use QRAIN to make 3D precip profiles from 2D. NB not accumulated, so cannot be used directly
+  ix=ix+1
+  met(ix)%name             = 'QRAIN'
+  met(ix)%dim              = 3
+  met(ix)%frequency        = 3
+  met(ix)%time_interpolate = .true.!to get new and old value stored
+  met(ix)%read_meteo       = .true.
+  met(ix)%needed           = .false.
+  met(ix)%found            => foundrain
+  allocate(rain(MAXLIMAX,MAXLJMAX,KMAX_MID,NMET))
+  rain=0.0
+  met(ix)%field(1:MAXLIMAX,1:MAXLJMAX,1:KMAX_MID,1:NMET)  => rain
+  met(ix)%zsize = KMAX_MID
+  met(ix)%msize = 1
+  ix_rain=ix
+
 !2D
    met(ix_surface_precip)%name    = 'RAINNC'
    met(ix_convective_precip)%name = 'RAINC'
@@ -896,9 +910,16 @@ if(USE_WRF_MET_NAMES)then
    met(ix_ws_10m)%name            = 'U10'
    met(ix_SoilWater_uppr)%name    = 'SMI1'!take first level. Do not change name! (name set in Getmeteofield)
    met(ix_SoilWater_deep)%name    = 'SMI3'!take third level. Do not change name! (name set in Getmeteofield)
+   met(ix_sdepth)%name            = 'SNOWNC'!snow and ice in mm
+   met(ix_ice_nwp)%name           = 'SEAICE'!flag 0 or 1
 !... addmore
 endif
 
+  Nmetfields=ix
+  if(Nmetfields>NmetfieldsMax)then
+     write(*,*)"Increase NmetfieldsMax! "
+     stop
+  endif
 
     allocate(u_ref(MAXLIMAX,MAXLJMAX))
     allocate(rho_surf(MAXLIMAX,MAXLJMAX))

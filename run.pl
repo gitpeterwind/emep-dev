@@ -118,7 +118,7 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
-($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3011"   ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
+($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3034"   ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
 
 my %BENCHMARK;
 # OpenSource 2008
@@ -532,7 +532,7 @@ if (%BENCHMARK){
 
 #--- Verify data directories
 mkdir_p($WORKDIR);
-foreach my $d (  $WORKDIR, $DATA_LOCAL, $DataDir,  $ProgDir) {
+foreach my $d (  $WORKDIR, $DataDir,  $ProgDir) {
     unless ( -d "$d" &&  -x _ && -r _ ) {
         die "*** ERROR *** directory $d not accessible. Exiting.\n";
     }
@@ -689,6 +689,7 @@ foreach my $scenflag ( @runs ) {
     $mm2=substr($CWFDATE[2],4,2);  # end date
   }
 
+  my ($old, $new);
 #Experimental: Grid definitions in a separate file 
   #my $old = "$DATA_LOCAL/Grid_Def.nc";
   #my $new = "Grid_Def.nc";
@@ -696,8 +697,8 @@ foreach my $scenflag ( @runs ) {
 
   # can choose predefined 20, 30 or 34 levels, or define own file with levels
   #NB: link/define "EmisHeights_P.txt" if you are using different 6 lowest levels (for instance 34 levels);
-  my  $old = "$DataDir/Vertical_levels20.txt";
-  my  $new = "Vertical_levels.txt";
+  $old = "$DataDir/Vertical_levels20.txt";
+  $new = "Vertical_levels.txt";
   mylink( "Linking:", $old, $new) unless($CWF and ($GRID eq "MACC14"));
 
 #To use FastJ some data files are required. Could be moved elsewhere 

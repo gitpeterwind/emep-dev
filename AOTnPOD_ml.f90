@@ -335,7 +335,7 @@ contains
          trim(vego3_outputs(iO3cl)%defn), iLC, &
            (/ real(Grid%izen), Y,  o3, L%FstO3, pod /) )
     end if
-if(debug_flag) write(*,"(2a,4i5,2g12.3)") "GMO3 ", trim(VEGO3_OUTPUTS(iO3cl)%name), iO3cl, jday, spod, epod, L%FstO3,L%cano3_ppb
+!if(debug_flag) write(*,"(2a,4i5,2g12.3)") "GMO3 ", trim(VEGO3_OUTPUTS(iO3cl)%name), iO3cl, jday, spod, epod, L%FstO3,L%cano3_ppb
 
   end subroutine Calc_POD 
 
