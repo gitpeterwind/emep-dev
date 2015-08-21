@@ -154,6 +154,56 @@ changes here (and when committing svn), and Dave will tag as required
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+20th August 2015 Peter 3034-3025
+
+Adaptation of the code to handle WRF metdata directly. (and cleanups)
+
+Met_ml, MetFields_ml: many new WRF names defined. 
+3D Precipitations done by:
+1) make surface precip by adding RAINNC and RAINC
+2) fetch QRAIN which is 3D but instantaneous. Smooth horizontally with smoosp, 
+   smooth in time by adding values at begin and end of met period.
+3) scale surface precip vertically according to QRAIN
+4) if QRAIN=0 but still have surcafe precip, use humidity instead
+
+METSTEP set to WRF value automatically.
+
+TimeDate_ExtraUtil_ml
+
+NetCDF_ml: change of extrapolation method for below lowest or above highest level 
+(no extrapolation but take lowest/highest value)
+
+AirEmis_ml: above max height (19000m?) set emissions to zero (was "out of bounds bug")
+
+GridValues_ml: check for lowest level thick enough
+
+ModelConstants_ml: METSTEP variable instead of parameter. USE_WRF_MET_NAMES in namelist
+
+SmallUtils_ml: do not stop if to many words , but take the first ones. Needed because wrf metdata has 
+"00:00:00" which can be interpreted as three words when ":" is used as delimiter.
+
+Nest_ml: do not output lots info if MODE=0
+AOTnPOD_ml: commented out some output
+Site_ml: more characters in strings
+run.pl: removed $DATA_LOCAL from list of necessary directories (now nothing is required!).
+
+
+To use wrf met you must 
+in run.pl:
+$METformat="$MetDir/wrfout_d01_YYYY-MM-DD_00:00:00";
+(and define emissions, for instance $CDF_EMIS="Emis_GLOB_05.nc";)
+unset degreedays setup.
+You can but do not need use "Vertical_levels.txt"; WRF levels can be used, but 
+be careful then with definition of emis heights.
+
+in config_EMPSTD.nml:
+USE_WRF_MET_NAMES = .true.
+USES%DEGREEDAY_FACTORS = F
+(and possibly forest fire ...)
+
+no change of results if you use standard setups.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 14th August 2015 Peter, Heiko 3033
 
 New emission input possibility, "Emis_4D.nc".
