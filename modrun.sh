@@ -27,6 +27,5 @@ EOF
 mpirun $inputdir/code/Unimod
 
 # Clean the links to the input data and remove INPUT.PARA
-ls $inputdir/met  |xargs rm
-ls $inputdir/input|xargs rm
+find . -type l -print0 | xargs -0 rm 
 rm INPUT.PARA
