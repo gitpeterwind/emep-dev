@@ -154,7 +154,29 @@ changes here (and when committing svn), and Dave will tag as required
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-20th August 2015 Peter 3034-3025
+2nd September 2015 Peter 3036
+
+New method for reducing emissions by coordinates.
+Included in our "femis.dat" as lines starting by the keyword lonlat.
+Example of valid femis.dat file:
+Name  7         sox       nox        co       voc       nh3      pm25      pmco
+ 8    0        0.0       0.0       0.0       0.0       0.0       0.0       0.0
+ lonlat 1.0 3.0 46.5 50.0    0   0.0       0.0       1.0       1.0       1.0       1.0       1.0
+ lonlat 11.0 13.0 58.0 62.0  0   1.0       0.0       1.0       1.0       1.0       1.0       1.0
+
+The lonlat lines have the format:
+lonlat minlon maxlon minlat max lat sector reduction1 reduction2 ....
+
+lonlat and "normal" lines can be mixed, and it is always the product of all reductions which is used.
+(It is however not allowed to cross the longitude=180 degrees line, i.e have minlon on one side and maxlon on the other)
+Should work for all gridded emissions (tested for ASCII, "Mixed" ASCII, "Mixed" fractions)
+
+Output femis.dat into RunLog, as it is important to keep track of reductions
+
+Removed OH from config_Output.nml, as it was crashing the code
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+20th August 2015 Peter 3034-3035
 
 Adaptation of the code to handle WRF metdata directly. (and cleanups)
 

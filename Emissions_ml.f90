@@ -33,7 +33,8 @@ use EmisDef_ml,       only: &
      ,road_nlandcode,road_landcode&
      ,gridrcemis,gridrcemis0,gridrcroadd,gridrcroadd0&
      ,Emis_4D,N_Emis_4D,Found_Emis_4D & !used for EEMEP 
-     ,KEMISTOP
+     ,KEMISTOP&
+     ,MAXFEMISLONLAT,N_femis_lonlat
 use EmisGet_ml,       only: &
      EmisGet, EmisSplit &
     ,EmisGetCdf &  ! 
@@ -41,6 +42,7 @@ use EmisGet_ml,       only: &
     ,EmisGetASCII &
     ,femis                       &  ! Gets scaling factors -> e_fact
     ,e_fact                      &  ! scaling factors
+    ,e_fact_lonlat               &  ! scaling factors
     ,EmisHeights                 &  ! Generates vertical distrib
     ,nrcemis, nrcsplit, emisfrac &  ! speciation routines and array
     ,nemis_kprofile, emis_kprofile &! Vertical emissions profile
@@ -48,11 +50,12 @@ use EmisGet_ml,       only: &
     ,emis_masscorr               &  ! 1/molwt for most species
     ,emis_nsplit                 &  ! No. species per emis file
     ,RoadDustGet                 &  
-    ,roaddust_masscorr              ! 1/200. Hard coded at the moment, needs proper setting in EmisGet_ml...   
+    ,roaddust_masscorr           &   ! 1/200. Hard coded at the moment, needs proper setting in EmisGet_ml...   
+    ,femis_latmin,femis_latmax,femis_lonmin,femis_lonmax
 use GridValues_ml,    only: GRIDWIDTH_M    & ! size of grid (m)
                            ,xm2            & ! map factor squared
                            ,debug_proc,debug_li,debug_lj & 
-                           ,xmd,dA,dB,i_fdom,j_fdom,glon
+                           ,xmd,dA,dB,i_fdom,j_fdom,glon,glon,glat
 use Io_Nums_ml,       only: IO_LOG, IO_DMS, IO_EMIS, IO_TMP
 use Io_Progs_ml,      only: ios, open_file, datewrite, PrintLog
 use MetFields_ml,     only: roa, ps, z_bnd, surface_precip ! ps in Pa, roa in kg/m3
@@ -214,7 +217,8 @@ contains
     logical :: my_first_call=.true.  ! Used for femis call
     logical :: fileExists            ! to test emission files
     character(len=40) :: varname, fmt
-    integer ::allocerr, i_gridemis, i_Emis_4D
+    integer ::allocerr, i_gridemis, i_Emis_4D, i_femis_lonlat
+    real :: lonlat_fac
     if (MasterProc) write(6,*) "Reading emissions for year",  year
 
     ! 0) set molwts, conversion factors (e.g. tonne NO2 -> tonne N), and
@@ -252,7 +256,9 @@ contains
     !  call Country_Init() ! In Country_ml, => NLAND, country codes and names, timezone
 
     allocate(e_fact(NSECTORS,NLAND,NEMIS_FILE))!NLAND defined in Country_Init()
-    e_fact=0.0
+    e_fact=1.0
+    allocate(e_fact_lonlat(NSECTORS,MAXFEMISLONLAT,NEMIS_FILE))
+    e_fact_lonlat=1.0
     if(.not.allocated(timefac))allocate(timefac(NLAND,NSECTORS,NEMIS_FILE))
     if(.not.allocated(fac_emm))allocate(fac_emm(NLAND,12,NSECTORS,NEMIS_FILE))
     if(.not.allocated(fac_min))allocate(fac_min(NLAND,NSECTORS,NEMIS_FILE))
@@ -687,9 +693,20 @@ contains
                               me,i,j,nlandcode(i,j)
                          call StopAll("To many countries in one gridcell ")
                       endif
+                      lonlat_fac=1.0
+                      if(N_femis_lonlat>0)then
+                         do i_femis_lonlat=1,N_femis_lonlat
+                            if(glat(i,j)>femis_latmin(i_femis_lonlat).and.&
+                               glat(i,j)<femis_latmax(i_femis_lonlat).and.&
+                               glon(i,j)>femis_lonmin(i_femis_lonlat).and.&
+                               glon(i,j)<femis_lonmax(i_femis_lonlat)     )then
+                               lonlat_fac=lonlat_fac*e_fact_lonlat(isec,i_femis_lonlat,iem) 
+                            endif
+                         enddo
+                      endif
                       do n=1,nlandcode(i,j)
                          snapemis(isec,i,j,n,iem)=snapemis(isec,i,j,n,iem)&
-                              +fractions(i,j,n)*cdfemis(i,j)                      
+                              +fractions(i,j,n)*cdfemis(i,j)*lonlat_fac                  
 
                          ic=find_index(landcode(i,j,n),Country(:)%icode)
                          if(Country(ic)%icode/=landcode(i,j,n))then
@@ -701,7 +718,7 @@ contains
                             call StopAll("COUNTRY CODE NOT RECOGNIZED ")
                          endif
                          sumemis_local(ic,iem)=sumemis_local(ic,iem)&
-                              +0.001*fractions(i,j,n)*cdfemis(i,j)!for diagnostics, mass balance
+                              +0.001*fractions(i,j,n)*cdfemis(i,j)*lonlat_fac!for diagnostics, mass balance
                       enddo
                    enddo
                 enddo
@@ -1424,7 +1441,8 @@ subroutine newmonth
   character(len=40) :: varname 
   character(len=125) ::fileName,Mask_fileName,Mask_varname
   real :: Mask_ReducFactor
-  integer :: NMask_Code,Mask_Code(NLAND)
+  integer :: NMask_Code,Mask_Code(NLAND), i_femis_lonlat
+  real :: lonlat_fac
       
   if(.not.allocated(airn).and.(USE_LIGHTNING_EMIS.or.USE_AIRCRAFT_EMIS))&
     allocate(airn(KCHEMTOP:KMAX_MID,MAXLIMAX,MAXLJMAX))
@@ -1684,7 +1702,18 @@ subroutine newmonth
                           me,i,j,nlandcode(i,j)
                      call StopAll("To many countries in one gridcell ")
                   endif
-                  do n=1,nlandcode(i,j)
+                  lonlat_fac=1.0
+                  if(N_femis_lonlat>0)then
+                     do i_femis_lonlat=1,N_femis_lonlat
+                        if(glat(i,j)>femis_latmin(i_femis_lonlat).and.&
+                             glat(i,j)<femis_latmax(i_femis_lonlat).and.&
+                             glon(i,j)>femis_lonmin(i_femis_lonlat).and.&
+                             glon(i,j)<femis_lonmax(i_femis_lonlat)     )then
+                           lonlat_fac=lonlat_fac*e_fact_lonlat(isec,i_femis_lonlat,iem) 
+                        endif
+                     enddo
+                  endif
+                   do n=1,nlandcode(i,j)
                      ic=find_index(landcode(i,j,n),Country(:)%icode)                     
                      !exclude or include countries
                      !could easily be optimized, by defining a country mask
@@ -1699,7 +1728,7 @@ subroutine newmonth
                         if(found>0)cycle!exclude
                      endif
                      snapemis(isec,i,j,n,iem)=snapemis(isec,i,j,n,iem)&
-                          +fractions(i,j,n)*cdfemis(i,j)*tonnemonth_to_kgm2s*xm2(i,j)                
+                          +fractions(i,j,n)*cdfemis(i,j)*lonlat_fac*tonnemonth_to_kgm2s*xm2(i,j)                
 
                      if(Country(ic)%icode/=landcode(i,j,n))then
                         write(*,*)"COUNTRY CODE ERROR: ",landcode(i,j,n),ic,Country(ic)%icode
@@ -1711,7 +1740,7 @@ subroutine newmonth
                      endif
 
                      sumemis_local(ic,iem)=sumemis_local(ic,iem)&
-                          +0.001*snapemis(isec,i,j,n,iem)/(tonnemonth_to_kgm2s*xm2(i,j))!for diagnostics, mass balance
+                          +0.001*snapemis(isec,i,j,n,iem)*lonlat_fac/(tonnemonth_to_kgm2s*xm2(i,j))!for diagnostics, mass balance
                   enddo
                enddo
             enddo

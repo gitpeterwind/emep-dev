@@ -64,7 +64,7 @@ OutputConcs=
      ! and are probably best used for short-lived species. REMEMBER that boundary
      ! cells are not calculated, hence expect zeros on edges.
       'NO2',          'molec/cm2' ,'k20','COLUMN'   ,'MISC' ,4, !! New Column system
-      'OH',           'molec/cm2' ,'k20','COLUMN'   ,'MISC' ,4, !! New Column system
+!      'OH',           'molec/cm2' ,'k20','COLUMN'   ,'MISC' ,4, !! New Column system
 !      'Kz_m2s'              ,'m2/s','2d','Kz_m2s'   ,'MISC' ,7, !! hourly tests
 !nowMET2D     'ws_10m'              ,'m'   ,'2d','ws_10m'   ,'MISC' ,7, !! hourly tests
 !nowMET2D      'rh2m'                ,'m'   ,'2d','rh2m'     ,'MISC' ,7, !! hourly tests

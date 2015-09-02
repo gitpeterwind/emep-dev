@@ -172,7 +172,8 @@ integer, public, save :: KEMISTOP ! not defined yet= KMAX_MID - nemis_kprofile +
     real, public, save  :: dknh3_agr ! reported nh3emis (IC_NMR) 
                                      ! read from gridXXfile
 
- 
+  integer, parameter, public :: MAXFEMISLONLAT = 10!max number of lines with lonlat reductions
+  integer,   public          :: N_femis_lonlat    !number of femis lonlat lines defined
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 ! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
                      end module EmisDef_ml
