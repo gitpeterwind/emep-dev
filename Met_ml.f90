@@ -700,8 +700,8 @@ contains
        fh(:,:,nr)=-fh(:,:,nr)
        fl(:,:,nr)=-fl(:,:,nr)
        sst=max(273.0,sst)!WRF set land sst to zero
-       SoilWater_uppr(:,:,nr)=(SoilWater_uppr(:,:,nr)-0.1)*5!rough conversion wrf->SMI . Can be improved!
-       SoilWater_deep(:,:,nr)=(SoilWater_deep(:,:,nr)-0.1)*5!rough conversion wrf->SMI . Can be improved!
+       SoilWater_uppr(:,:,nr)=(SoilWater_uppr(:,:,nr)-0.05)*3!rough conversion wrf->SMI . Can be improved!
+       SoilWater_deep(:,:,nr)=(SoilWater_deep(:,:,nr)-0.05)*3!rough conversion wrf->SMI . Can be improved!
     endif
 
     if(LANDIFY_MET)then
