@@ -232,7 +232,7 @@ contains
     real ::Ps_extended(0:MAXLIMAX+1,0:MAXLJMAX+1),Pmid,Pu1,Pu2,Pv1,Pv2
 
     real :: tmpsw, landfrac, sumland  ! for soil water averaging
-    real :: tmpmax ! debug 
+    real :: minprecip, tmpmax ! debug 
 
     real buf_uw(MAXLJMAX,KMAX_MID)
     real buf_ue(MAXLJMAX,KMAX_MID)
@@ -520,7 +520,16 @@ contains
        !write(*,*)'precip ',nrec,Nhh,surface_precip(5,5),convective_precip(5,5),surface_precip_old(5,5)
        if(WRF_MET_CORRECTIONS) then 
           buff=surface_precip !save to save in old below
-          surface_precip = max(0.0,(surface_precip - surface_precip_old))*0.001/(METSTEP*3600)! get only the variation. mm ->m/s
+          !must first check that precipitation is increasing. At some dates WRF maybe restarted!
+          minprecip=minval(surface_precip(1:limax,1:ljmax) - surface_precip_old(1:limax,1:ljmax))
+          CALL MPI_ALLREDUCE(MPI_IN_PLACE, minprecip, 1,MPI_DOUBLE_PRECISION, &
+               MPI_MIN, MPI_COMM_WORLD, INFO) 
+          if(minprecip<-10)then
+             if(me==0)write(*,*)'WARNING: found negative precipitations. set precipitations to zero!',minprecip
+             surface_precip = 0.0
+          else
+             surface_precip = max(0.0,(surface_precip - surface_precip_old))*0.001/(METSTEP*3600)! get only the variation. mm ->m/s
+          endif
           surface_precip_old = buff ! Accumulated rain in WRF         
           sdepth=sdepth*0.001 !mm->m
           ice_nwp = ice_nwp*100!flag->%
