@@ -154,10 +154,12 @@ changes here (and when committing svn), and Dave will tag as required
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-2nd September 2015 Peter 3037
+2nd September 2015 Peter 3037-8
 
 Safer clean up for modrun.sh:
 remove all links
+
+Met_ml kmax->kmax_mid (wrf met)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 2nd September 2015 Peter 3036

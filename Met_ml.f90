@@ -581,8 +581,7 @@ contains
                       endif
                    enddo
                 else
-                   if(i_fdom(i)==79.and.j_fdom(j)==24)write(*,*)'C',rain(i,j,k,1)+rain(i,j,k,nr),surface_precip(i,j)
-                   do k=1,kmax
+                   do k=1,kmax_mid
                       pr(i,j,k)=0.0
                    enddo
                 endif
