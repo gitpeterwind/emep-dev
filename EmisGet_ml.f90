@@ -146,7 +146,7 @@ contains
              if(nin>0)then
                 !1) check that country is in include list
                 found=find_index(Country(ic)%code ,incl(1:nin),first_only=.true.)
-                if(found==0)cycle!do not include
+                if(found<=0)cycle!do not include
              endif
              if(nex>0)then
                 !1) check that country is not in exclude list
@@ -448,7 +448,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
              if(nin>0)then
                 !1) check that country is in include list
                 found=find_index(Country(ic)%code ,incl(1:nin),first_only=.true.)
-                if(found==0)cycle READEMIS!do not include
+                if(found<=0)cycle READEMIS!do not include
              endif
              if(nex>0)then
                 !1) check that country is not in exclude list

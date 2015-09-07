@@ -238,7 +238,7 @@ character(len=*), parameter, public :: &
 !  and new cdf emission system in testing. Reset in config_ files
 ! EMIS_TEST can be merged with EMIS_SOURCE after tests
 character(len=20), save, public :: &
-   EMIS_SOURCE = "emislist"     &! "emislist" or CdfFractions
+   EMIS_SOURCE = "Mixed"     &! "Mixed" or old formats: "emislist" or "CdfFractions"
   ,EMIS_TEST   = "None"          ! "None" or "CdfSnap" 
 Logical , save, public :: &
    EMIS_OUT    = .false.           ! output emissions in separate files (memory demanding)

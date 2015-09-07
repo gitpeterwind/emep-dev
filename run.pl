@@ -118,7 +118,7 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
-($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3034"   ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
+($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3041"   ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
 
 my %BENCHMARK;
 # OpenSource 2008
@@ -794,8 +794,8 @@ foreach my $scenflag ( @runs ) {
       $ifile{"$dir/grid$gridmap{$poll}"} = "emislist.$poll";
     }
 
-#gridded monthly emission factors
-    $ifile{"$DataDir/ECLIPSEv5_monthly_patterns.nc"} = "ECLIPSEv5_monthly_patterns.nc";
+#new format for ASCII emissions (should be default in future)    
+    $ifile{"emislist.$poll"} = "grid$poll";  
 
     if($SNAP_CDF) { # in testing:
       print "SNAP CDF TESTS $poll\n";
@@ -852,6 +852,9 @@ foreach my $scenflag ( @runs ) {
              "emissplit.specials.$poll";
     }
   }
+
+#gridded monthly emission factors
+    $ifile{"$DataDir/ECLIPSEv5_monthly_patterns.nc"} = "ECLIPSEv5_monthly_patterns.nc";
 
   foreach my $mmm ($mm1,($mm1+1)..($mm2-1),$mm2) {
     my $mm = sprintf "%2.2d", $mmm;

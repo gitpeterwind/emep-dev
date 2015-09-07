@@ -408,9 +408,9 @@ contains
 
        if(EMIS_TEST=="CdfSnap" .or. EMIS_SOURCE=="Mixed") then  ! Expand groups, e.g. EUMACC2
 
-          if(MasterProc)  write(*,*)sub//" START "
+          if(MasterProc)  write(*,*)sub//" Mixed format"
           do iemis = 1, size( emis_inputlist(:)%name )
-             fname = emis_inputlist(iemis)%name
+            fname = emis_inputlist(iemis)%name
              if(MasterProc)  write(*,*)sub//trim(fname)//" LOOP ", iemis
              if ( fname == "NOTSET" ) then
                 emis_inputlist(iemis)%Nlist = iemis - 1
@@ -466,8 +466,8 @@ contains
        do iemis = 1, size( emis_inputlist(:)%name )
 
           fname=emis_inputlist(iemis)%name
-          if(MasterProc)write(*,*)sub//' Mixed ',iemis,trim(fname)
           if ( fname == "NOTSET" ) exit
+          if(MasterProc)write(*,*)sub//' Mixed format ',iemis,trim(fname)
 
           sumemis=0.0
           sumemis_local(:,:)=0.0
@@ -516,7 +516,7 @@ contains
 
              endif
 
-          else if(index(emis_inputlist(iemis)%name,"Emis_4D.nc")>1)then 
+          else if(index(emis_inputlist(iemis)%name,"Emis_4D.nc")>0)then 
              !under development
              Found_Emis_4D=iemis
              N_Emis_4D = 0
@@ -533,7 +533,7 @@ contains
                 endif
            
              enddo
-             ! Does not work because of "POLL":  else if(IsCDFSnapFormat(trim(emis_inputlist(iemis)%name)))then
+             !   else if(IsCDFSnapFormat(trim(emis_inputlist(iemis)%name)))then !This Does not work because of "POLL"
           else if(index(emis_inputlist(iemis)%name,".nc")>1)then 
              !not in "fraction" format. Each land has own set of fields
              !Each pollutant has own file. 
@@ -564,7 +564,7 @@ contains
                 if(MasterProc) write(*,*) "PARTEMIS ", iem, trim(fname), sumemis(27,iem) 
 
              enddo
-          else if(index(emis_inputlist(iemis)%name,"grid")>1)then
+          else if(index(emis_inputlist(iemis)%name,"grid")>0)then
              !ASCII format
              n=index(emis_inputlist(iemis)%name,"POLL")
              do iem = 1, NEMIS_FILE
@@ -1720,7 +1720,7 @@ subroutine newmonth
                      if(nin_monthly>0)then
                         !1) check that country is in include list
                         found=find_index(Country(ic)%code ,incl_monthly(1:nin_monthly),first_only=.true.)
-                        if(found==0)cycle!do not include
+                        if(found<=0)cycle!do not include
                      endif
                      if(nex_monthly>0)then
                         !1) check that country is not in exclude list

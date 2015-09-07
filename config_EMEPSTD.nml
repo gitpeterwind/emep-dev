@@ -38,31 +38,37 @@
 !  AERO%EQUILIB          = 'MARS ',      ! MARS, MARS_2900, GEOSCHEM, EQSAM, or EMEP
 !  AERO%NSIZE etc... see ModelConstants
 !------------------------------
-  EMIS_SOURCE           = 'emislist', ! 'emislist' or 'CdfFractions'or 'Mixed'
-  EMIS_TEST             = 'None',     ! 'None' or 'CdfSnap' 
-!------------------------------
-! IN TESTING:
-! If EMIS_SOURCE= 'Mixed', then the emis_inputlists will be used.
-! IMPORTANT: Specify POLL rather than sox, nox, etc. and the code
-! will check against emissions names in use (CM_EmisFiles)
-  DataDir = '/global/work/mifapw/emep',
-  EmisDir = 'DataDir/Data',
-!  emis_inputlist(1)%name     = 'EmisDir/Emis_GLOB_05.nc', !example of Fractions type
-!  emis_inputlist(1)%name     = 'EmisDir/temp/gridPOLL', !example of ASCII type (POLL values must be with lower case letters)
-! Below, one can either include or exclude, not both
-! Only recognised group now is EUMACC2
+!
+! If EMIS_SOURCE= 'Mixed' (default), then the emis_inputlists will be used.
+  DataDir = '/global/work/mifapw/emep',  !only keywords "DataDir" or "EmisDir" are recognized
+  EmisDir = 'DataDir/Data',              !only keywords "DataDir" or "EmisDir" are recognized
+!
+  emis_inputlist(1)%name     = 'gridPOLL', !example of ASCII type
+!
+!  one can either include or exclude, not both
+!  emis_inputlist(1)%name     = 'EmisDir/Emis_TNO7.nc', !example of Fractions type
+!  emis_inputlist(1)%incl(1:) = 'EUMACC2', !example take only countries from the 'EUMACC2' list
+!  emis_inputlist(2)%name     = 'EmisDir/Emis_GLOB_05.nc', !example of Fractions type
+!  emis_inputlist(2)%excl(1:) = 'EUMACC2' !example exclude all countries from the 'EUMACC2' list
+! IMPORTANT: Specify the keyword "POLL" rather than sox, nox, etc. and the code
+! will check against emissions names listed in CM_EmisFiles.inc
+! NB: CM_EmisFiles uses lowercase. Renames or link if they are in capital letters.
+!
+! emis_inputlist(1)%name     = 'EmisDir/Emis_GLOB_01deg_2010_month.nc'!example of monthly Fractions type
+!
+! Only recognised country group now is EUMACC2 (more can be defined in Emissions_ml.f90)
 ! (1) From MACC2 7km:
-  emis_inputlist(1)%name     = 'GriddedSnapEmis_POLL.nc', !
-  emis_inputlist(1)%excl(1:) = 'US','INTSHIP',   ! US lat/long limits wrong
+!  emis_inputlist(1)%name     = 'GriddedSnapEmis_POLL.nc', !
+!  emis_inputlist(1)%excl(1:) = 'US','INTSHIP',   ! US lat/long limits wrong
 ! (2) Global:
-  emis_inputlist(2)%name     = 'GlobalSnapEmis_POLL.nc', !
-  emis_inputlist(2)%excl(1:) = 'EUMACC2','INTSHIPS','MEXI','ARGE','BRAZ','CHIL',
-    'OLAM','AUTR','NZEL','BANG','INDI','PAKI','BHUT','BRUN','CAMB','CHIN','TAIW',
-    'VIET','THAI','INDO','JAPA','LAOS','MALA','MONG','MYAN','NEPA','KORN','PHIL',
-    'SING','KORS','SAFR', 
+!  emis_inputlist(2)%name     = 'GlobalSnapEmis_POLL.nc', !
+!  emis_inputlist(2)%excl(1:) = 'EUMACC2','INTSHIPS','MEXI','ARGE','BRAZ','CHIL',
+!    'OLAM','AUTR','NZEL','BANG','INDI','PAKI','BHUT','BRUN','CAMB','CHIN','TAIW',
+!    'VIET','THAI','INDO','JAPA','LAOS','MALA','MONG','MYAN','NEPA','KORN','PHIL',
+!    'SING','KORS','SAFR', 
 ! (3) Shipping:
-  emis_inputlist(3)%name     = 'GlobalShipEmis_POLL.nc', !
-  emis_inputlist(3)%incl(1:) = 'INTSHIPS', 
+!  emis_inputlist(3)%name     = 'GlobalShipEmis_POLL.nc', !
+!  emis_inputlist(3)%incl(1:) = 'INTSHIPS', 
 !
   EMIS_OUT              = F,          ! Output emissions in separate files (memory demanding)
 !------------------------------

@@ -154,6 +154,28 @@ changes here (and when committing svn), and Dave will tag as required
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+7th September 2015 Peter 3041
+
+"Mixed" format for emission put as default in ModelConstants_ml.f90 and removed 
+from config_EMEPSTD.nml.
+See example of use in config_EMEPSTD.nml or ask Peter or Semeena
+Mixed format can combine several emission sources files, netcdf or ASCII.
+Can exclude some countries, or exclude some countries for each emission file 
+Can NOT interpolate the ASCII emissions.
+
+for ASCII emissions, pollutants names must be expressed with the keyword "POLL",
+and will be replaced with the names defined in CM_EmisFiles.inc. These are in 
+lowercases. The link is now provided in the run.pl, but new emissions
+should preferably be defined directly with lowercases (gridsox...)
+
+In the longer term pathes should be defined in config file, and not run.pl
+so that we can remove completely run.pl at some stage. This will make it easier
+to backtrace pathes of files used by the model.
+
+Indices of emis_inputlist must start at 1 and increase by 1 at a time 
+(no undefined inputs in between defined inputs)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 3rd September 2015 Peter 3037-3040
 
 Safer clean up for modrun.sh:
