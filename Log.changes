@@ -154,13 +154,13 @@ changes here (and when committing svn), and Dave will tag as required
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-7th September 2015 Peter 3041
+7th September 2015 Peter 3041-2
 
-"Mixed" format for emission put as default in ModelConstants_ml.f90 and removed 
+"Mixed" format for emissions put as default in ModelConstants_ml.f90 and removed 
 from config_EMEPSTD.nml.
 See example of use in config_EMEPSTD.nml or ask Peter or Semeena
 Mixed format can combine several emission sources files, netcdf or ASCII.
-Can exclude some countries, or exclude some countries for each emission file 
+Can include some countries, or exclude some countries for each emission file 
 Can NOT interpolate the ASCII emissions.
 
 for ASCII emissions, pollutants names must be expressed with the keyword "POLL",
