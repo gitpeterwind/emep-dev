@@ -154,10 +154,11 @@ changes here (and when committing svn), and Dave will tag as required
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-7th September 2015 Peter 3041-2
+7-8th September 2015 Peter 3041-4
 
 "Mixed" format for emissions put as default in ModelConstants_ml.f90 and removed 
 from config_EMEPSTD.nml.
+Old bug in the "inclusive countries": all countries were always taken.
 See example of use in config_EMEPSTD.nml or ask Peter or Semeena
 Mixed format can combine several emission sources files, netcdf or ASCII.
 Can include some countries, or exclude some countries for each emission file 
@@ -174,6 +175,10 @@ to backtrace pathes of files used by the model.
 
 Indices of emis_inputlist must start at 1 and increase by 1 at a time 
 (no undefined inputs in between defined inputs)
+
+Emis4D: reverse k order
+
+Some clean ups
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 3rd September 2015 Peter 3037-3040

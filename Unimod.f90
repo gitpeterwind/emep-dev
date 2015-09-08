@@ -43,7 +43,7 @@ program myeul
        METSTEP,    &   ! Hours between met input
        runlabel1,  &   ! explanatory text
        runlabel2,  &   ! explanatory text
-       nprint,nterm,iyr_trend,    nmax,nstep ,                  &
+       nterm,iyr_trend,    nmax,nstep ,                  &
        IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY, &
        USES, USE_LIGHTNING_EMIS, &
        FORECAST       ! FORECAST mode
@@ -158,12 +158,6 @@ program myeul
 
   ! daynumber needed  for BCs, so call here to get initial
   daynumber=day_of_year(yyyy,mm,dd)
-
-  !     Decide the frequency of print-out
-  !
-  nprint = nterm
-
-  if (MasterProc) print *,'nterm, nprint:',nterm, nprint
 
   !-------------------------------------------------------------------
   !

@@ -639,7 +639,7 @@ Is3D = .true.
     if(ind>0)then
       f_2d(i) = def_2d(ind)
       if(found_ind2d(ind)>0) then
-        print "(a,3i4,a)", "D2IND", me, ind, size(def_2d(:)%name),  trim( wanted_deriv2d(i) )
+       ! print "(a,3i4,a)", "D2IND", me, ind, size(def_2d(:)%name),  trim( wanted_deriv2d(i) )
        !do n = 1, size(def_2d(:)%name)
        !   if( index(def_2d(n)%name,'USTAR') >0 ) print *, "D2IND def2d", n, trim( def_2d(n)%name )
        !   print *, "D2IND def2d",  me, n, trim( def_2d(n)%name )

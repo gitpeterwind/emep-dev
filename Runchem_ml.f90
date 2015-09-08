@@ -28,7 +28,7 @@ module RunChem_ml
   use MassBudget_ml,    only: emis_massbudget_1d
   use ModelConstants_ml,only: USE_DUST, USE_SEASALT, USE_AOD, USE_POLLEN, & 
                               MasterProc, & 
-                              KMAX_MID, nprint, END_OF_EMEPDAY, nstep,  &
+                              KMAX_MID, END_OF_EMEPDAY, nstep,  &
                               AERO,  USES, & ! need USES%EMISSTACKS 
                               USE_FASTJ, &
                               DEBUG_EMISSTACKS, & ! MKPS
@@ -141,9 +141,10 @@ subroutine runchem()
       ! Called every adv step, only updated every third hour
 !FUTURE call setup_nh3(i,j)    ! NH3emis, experimental (NMR-NH3)
 
+
       if(DEBUG%RUNCHEM.and.debug_flag) &
         call datewrite("Runchem Pre-Chem", (/ rcemis(NO,20), &
-          rcemis(SHIPNOX,KMAX_MID), &
+!          rcemis(SHIPNOX,KMAX_MID), &!hardcoded chemical indice are not defined for all chem schemes, and should be avoided
           rcemis(C5H8,KMAX_MID), xn_2d(NO,20),xn_2d(C5H8,20) /) )
       if(DEBUG%RUNCHEM) call check_negs(i,j,'A')
 

@@ -9,7 +9,7 @@ use GridValues_ml,     only: debug_proc ,debug_li, debug_lj
 use My_Outputs_ml,     only: NBDATES, wanted_dates_inst,            &
                              Ascii3D_WANTED
 use Io_ml,             only: IO_WRTCHEM, datewrite
-use ModelConstants_ml, only: nprint, END_OF_EMEPDAY, KMAX_MID, MasterProc&
+use ModelConstants_ml, only: END_OF_EMEPDAY, KMAX_MID, MasterProc&
                             ,DEBUG => DEBUG_OUTPUTCHEM, METSTEP &
                             ,IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY, IOU_MAX_MAX
 use NetCDF_ml,         only: CloseNetCDF, Out_netCDF
@@ -69,7 +69,6 @@ subroutine Wrtchem()
   dd_out = nday
   mm_out = nmonth
   Jan_1st    = all((/nyear,nmonth,nday/)==startdate(1:3))
-!  End_of_Run = ( mod(numt,nprint) == 0       )
 
 !this is a bit complicated because it must account for the fact that for instance 3feb24:00 = 4feb00:00 
   ts1=make_timestamp(current_date)

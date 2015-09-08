@@ -528,10 +528,9 @@ real, public, parameter :: &
 !
 !  additional parameters
 !
-integer, public, save   :: nterm, nmax, nstep, nprint, nass, nbound &
+integer, public, save   :: nterm, nmax, nstep &
                          , iyr_trend ! Year specified for say BC changes
 
-integer, public, save , dimension(20)   :: identi   !! ????
 integer, public, parameter :: TXTLEN_NAME = 50
 character(len=120), public, save :: runlabel1&!SHORT Allows explanatory text
                                   , runlabel2 !LONG  Read in from grun.pl
@@ -603,8 +602,8 @@ subroutine Config_ModelConstants(iolog)
    ,PFT_MAPPINGS          &  ! Allows use of external LAI maps
    ,NETCDF_DEFLATE_LEVEL,  RUNDOMAIN, DOMAIN_DECOM_MODE &
    ,JUMPOVER29FEB, HOURLYFILE_ending &
-   ,USE_WRF_MET_NAMES
-
+   ,USE_WRF_MET_NAMES &
+   ,NETCDF_DEFLATE_LEVEL, HOURLYFILE_ending
   txt = "ok"
   !Can't call check_file due to circularity
   !call check_file('emep_settings.nml', file_exists, needed=.true., errmsg=txt)

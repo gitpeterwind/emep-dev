@@ -115,7 +115,7 @@ use MicroMet_ml, only : PsiH  ! Only if USE_MIN_KZ
 use ModelConstants_ml,    only : PASCAL, PT, Pref, METSTEP  &
      ,KMAX_BND,KMAX_MID,NMET,KCHEMTOP &
      ,IIFULLDOM, JJFULLDOM, RUNDOMAIN,NPROC  &
-     ,MasterProc, DEBUG_MET, identi, V_RAIN, nmax  &
+     ,MasterProc, DEBUG_MET, V_RAIN, nmax  &
      ,DEBUG_BLM, DEBUG_Kz, DEBUG_SOILWATER,DEBUG_LANDIFY & 
      ,NH3_U10   & !FUTURE
      ,DomainName & !HIRHAM,EMEP,EECCA etc.

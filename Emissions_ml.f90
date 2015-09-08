@@ -1121,7 +1121,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
               if(emis_inputlist(Found_Emis_4D)%pollName(i_Emis_4D)=='NOTSET')exit
               varname=emis_inputlist(Found_Emis_4D)%pollName(i_Emis_4D)
               !if(me==0)write(*,*)'Fetching ',trim(varname)
-              call GetCDF_modelgrid(varname,emis_inputlist(Found_Emis_4D)%Name,Emis_4D(1,1,1,i_Emis_4D),1,kmax_mid,nstart,1)
+              call GetCDF_modelgrid(varname,emis_inputlist(Found_Emis_4D)%Name,Emis_4D(1,1,1,i_Emis_4D),1,kmax_mid,nstart,1,reverse_k=.true.)
            enddo
         endif
      endif
