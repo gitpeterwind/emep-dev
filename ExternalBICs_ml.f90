@@ -4,8 +4,6 @@ module ExternalBICs_ml
 ! Nothing in this file will be used if
 !  EXTERNAL_BIC_SET = .false. in ExternalBICs_config namelist
 use CheckStop_ml,           only: CheckStop
-!CMR use ChemChemicals_ml,       only: species_adv
-!CMR use ChemSpecs_adv_ml,       only: NSPEC_ADV
 use ChemSpecs,              only: NSPEC_ADV, species_adv
 use Io_ml,                  only: PrintLog,IO_NML
 use ModelConstants_ml,      only: MasterProc, DEBUG=>DEBUG_NEST_ICBC

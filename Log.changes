@@ -154,6 +154,12 @@ changes here (and when committing svn), and Dave will tag as required
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+9th September 2015 Dave 3045
+
+Small clean-ups - removed older !CMR comments and copyright text and 'Unified'
+from Nest_ml, ExternalBICs_ml, Dust_ml, Output_hourly.f90 and My_SOA_ml.f90 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 7-8th September 2015 Peter 3041-4
 
 "Mixed" format for emissions put as default in ModelConstants_ml.f90 and removed 

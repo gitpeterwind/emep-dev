@@ -37,9 +37,6 @@ use ExternalBICs_ml,     only: set_extbic, icbc, ICBC_FMT,&
 use CheckStop_ml,           only: CheckStop,check=>CheckNC
 use Chemfields_ml,          only: xn_adv    ! emep model concs.
 use ChemSpecs,              only: NSPEC_ADV, NSPEC_SHL, species_adv
-!CMR use ChemChemicals_ml,       only: species_adv
-!CMR use ChemSpecs_adv_ml,       only: NSPEC_ADV
-!CMR use ChemSpecs_shl_ml,       only: NSPEC_SHL
 use Functions_ml,           only: great_circle_distance
 use GridValues_ml,          only: A_mid,B_mid, glon,glat, i_fdom,j_fdom
 use Io_ml,                  only: open_file,IO_TMP,IO_NML,PrintLog
