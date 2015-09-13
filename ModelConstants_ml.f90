@@ -59,7 +59,14 @@ type, public :: emep_useconfig
  
  ! If USES%EMISTACKS, need to set:
   character(len=4) :: PlumeMethod = "none" !MKPS:"ASME","NILU","PVDI"
-  character(len=20) :: n2o5HydrolysisMethod = 'SmixTen' !'Gamma:0.002' ! 'OrigRiemer' ! EmepRiemer=ACP2012 EMEP implementation
+
+ ! N2O5 hydrolysis
+ ! During 2015 the aersol surface area calculation was much improved, and this 
+ ! leads to the need for new n2o5 hydrolysis  methods. DO NOT USE EmepReimer,
+ ! but one of :; 'SmixTen' , 'Smix', 'Gamma:0.002'
+
+  character(len=20) :: n2o5HydrolysisMethod = 'SmixTen'
+
 end type emep_useconfig 
 type(emep_useconfig), public, save :: USES
 

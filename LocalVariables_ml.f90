@@ -58,8 +58,8 @@ type, public :: GridDat
   real    :: Ra_2m        !
   real    :: Ra_3m        !
   real    :: so2nh3ratio  !  for CEH deposition scheme
-  real    :: surf_o3_ppb  !  for  EU AOTs
-  real    :: O3factor     !  ratio of O3out/O3in for DryDep module
+  real    :: surf_o3_ppb  !  for  EU AOTs, 3m O3
+  real    :: surf_o3_ppb1 !   .... after deploss
 ! CoDep
   real    :: so2nh3ratio24hr  !  for CEH SO2 deposition scheme
   real    ::              & ! some on this set might not be need

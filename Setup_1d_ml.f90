@@ -35,7 +35,6 @@ use MetFields_ml,        only: roa, th, q, t2_nwp, cc3dmax, &
                                zen, Idirect, Idiffuse,z_bnd
 use ModelConstants_ml,   only:  &
    DEBUG,DEBUG_MASS             &
-!EXCL    ,USES, MINCONC                & ! conc.limit if USES%MINCONC
   ,AERO                         & ! for wet radii and surf area.
   ,dt_advec                     & ! time-step
   ,IOU_INST                     & ! for OUTMISC
@@ -163,10 +162,6 @@ contains
         do n = 1, NSPEC_ADV
               ispec = NSPEC_SHL + n
               xn_2d(ispec,k) = max(0.0,xn_adv(n,i,j,k)*amk(k))
-!EXp.             ! Avoids tiny numbers that complicate comparisons in DEBUG mode
-!EXp.              if( USES%MINCONC ) then
-!EXp.                if( xn_2d(ispec,k) < MINCONC ) xn_2d(ispec,k) = 0.0
-!EXp.              end if
         end do ! ispec
 
         ! 3)/ Background species ( * CTM2 with units in mix. ratio)
@@ -226,29 +221,23 @@ contains
                      find_index( ispec, SIA_GROUP ), ugtmp, ugpmF, ugpmC
            end do
 
-           !if( debug_flag .and. k==20 )  print fmt, "GERB ugDU "// trim(species(ispec)%name),ispec, ugDUSTF
-
          ! FRACTIONS used for N2O5 hydrolysis
          ! We use mass fractions, since we anyway don't have MW for OM, dust,...
+         !  ugRemF will include OM, EC, PPM, Treat as OM 
 
-          ugRemF = ugpmf - ugSIApm -ugSSaltF -ugDustF   ! will include OM, EC, PPM, Treat as OM 
-          call CheckStop( ugRemF < -1.0e-9, sub//"ugRemF NEG" )
-          !DS ugRemF = max(ugRemF, 1.0e-9)  ! can have tiny negative
+          ugRemF = ugpmf - ugSIApm -ugSSaltF -ugDustF 
 
           aero_fss(k)     = ugSSaltF/ugpmF
           aero_fdust(k)   = ugDustF/ugpmF
           aero_fom(k)     = max(0.0, ugRemF)/ugpmF
 
-          !DS aero_fom(k)     = ugRemF/ugpmF
-
-if( aero_fom(k) > 1.0 ) then
-   print "(a,i4,99es12.3)", "POSFOM ", k, aero_fom(k), ugRemF,ugpmF, ugSIApm, ugSSaltF, ugDustF
-   call StopAll('POSFOM')
-end if
-!if( ugSSaltF < 0.0 .or. ugDustF < 0.0 ) then
-!   print "(a,i4,99es12.3)", "NEGFOM ", k, aero_fom(k), ugRemF,ugpmF, ugSIApm, ugSSaltF, ugDustF
-!   call StopAll('NEGUGPM')
-!end if
+          if( DEBUG%SETUP_1DCHEM ) then ! extra checks 
+             if( aero_fom(k) > 1.0 .or. ugRemF < -1.0e-9 ) then
+                print "(a,i4,99es12.3)", sub//"AERO-F ", k, &
+                  aero_fom(k), ugRemF,ugpmF, ugSIApm, ugSSaltF, ugDustF
+                call CheckStop(sub//"AERO-F problem " )
+              end if
+          end if
 
          ! GERBER equations for wet radius
 
@@ -278,8 +267,6 @@ end if
            !TMP S_m2m3(iw,k) = pmSurfArea(ugnsdPM,Dp=Ddry(iw), Dpw=DpgNw(iw,k))
            S_m2m3(iw,k) = pmSurfArea(ugpmf,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
                                      rho_kgm3=rho )
-           !if( debug_flag .and. k==20 ) print fmt, sub//"SRAD  ", iw, &
-           !    umRdry(iw), DpgNw(iw,k)/umRdry(iw), 1.0e6*S_m2m3(iw,k) 
 
            iw= AERO%SS_F
            rho=AERO%PMdens(AERO%Inddry(iw))
@@ -304,7 +291,6 @@ end if
 
 !           call CheckStop (  S_m2m3(k) < 0.0 , "NEGS_m2m3" )
 
-!           print fmt,  sub//" SAREAugPM in  ", k,  rh(k), temp(k), ugpmf, ugSSaltC, ugDustC
            if( debug_flag .and. k==20 )  then
             write(*,fmt)  sub//" SAREAugPM in  ", k,  rh(k), temp(k), ugsiaPM, ugpmf, ugSSaltC, ugDustC
             do iw = 1, AERO%NSAREA
@@ -386,9 +372,9 @@ end if
      do itmp = 1, size(f_2d)
            if ( f_2d(itmp)%subclass == 'rct' ) then
              nd2d =  nd2d  + 1
-             call CheckStop( nd2d > size(id2rct), sub//"Need bigger id2rct array" )
+             call CheckStop(nd2d>size(id2rct),sub//"Need bigger id2rct array")
              d2index(nd2d)= itmp
-             id2rct(nd2d) = f_2d(itmp)%index  !index of rate constant, given in config
+             id2rct(nd2d) = f_2d(itmp)%index  !index of rate constant (config)
              if(MasterProc) write(*,*) 'RCTFOUND', itmp, nd2d, id2rct(nd2d)
            end if
      end do
@@ -396,15 +382,13 @@ end if
      first_call = .false.
    end if ! first_call
 
-!  if(me==4) write(*,*) 'PRERCTMP', me, nd2d, debug_flag
    do itmp = 1, nd2d
-!if(me==4) write(*,*) "ITMPRCT",debug_flag, itmp, nd2d, id2rct(itmp), id2rct(nd2d)
        d_2d(d2index(itmp),i,j,IOU_INST) =  rct(id2rct(itmp),KMAX_MID)
-if( debug_flag ) then
-       write(*,"(a,6i5,es12.3)") sub//"OUTRCT "//trim(f_2d(d2index(itmp))%name), me,&
-            i,j,itmp,d2index(itmp),id2rct(itmp),&
-          d_2d(d2index(itmp),i,j,IOU_INST)
-end if
+       if( debug_flag ) then
+          write(*,"(a,6i5,es12.3)") sub//"OUTRCT "//&
+           trim(f_2d(d2index(itmp))%name), me,i,j,itmp,&
+           d2index(itmp),id2rct(itmp), d_2d(d2index(itmp),i,j,IOU_INST)
+       end if
    end do
 
 
@@ -611,53 +595,3 @@ endsubroutine reset_3d
 !---------------------------------------------------------------------------
 endmodule Setup_1d_ml
 !_____________________________________________________________________________!
-
-
-
-!Experimental code. Will re-instate in future
-  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
-   !FUTURE  subroutine setup_nh3(i,j)  ! EXPERIMENTAL
-   !FUTURE  !
-   !FUTURE  !---- assign nh3 rates  ------------------------------------------------
-   !FUTURE  !
-   !FUTURE  !
-   !FUTURE  !  use NH3 emission potential for each activity sector, T2 and wind
-   !FUTURE  !
-   !FUTURE  !  Output : rcnh3 - nh3 emissions for 1d column
-   !FUTURE  !
-   !FUTURE  !  Called from Setup_1d_ml, every advection timestep
-   !FUTURE  !----------------------------------------------------------------------------
-   !FUTURE    !  input
-   !FUTURE    use calc_emis_potential_ml, only :emnh3
-   !FUTURE    integer, intent(in) ::  i,j
-   !FUTURE    real ::scaling,scaling_k
-   !FUTURE    real :: snh3
-   !FUTURE    integer :: k
-   !FUTURE
-   !FUTURE    !  local
-   !FUTURE
-   !FUTURE    rcnh3(:)=0.0
-   !FUTURE    snh3=sum(emnh3(:,i,j))
-   !FUTURE
-   !FUTURE    if (NH3EMIS_VAR  )then
-   !FUTURE
-   !FUTURE       rcnh3(KMAX_MID) = snh3
-   !FUTURE       scaling = dt_advec * xmd(i,j)* gridwidth_m*gridwidth_m / GRAV
-   !FUTURE
-   !FUTURE       do k = KCHEMTOP,KMAX_MID
-   !FUTURE         scaling_k = scaling * (dA(k) + dB(k)*ps(i,j,1))/amk(k)
-   !FUTURE
-   !FUTURE          totem( IXADV_NH3 ) = totem( IXADV_NH3 ) + &
-   !FUTURE               rcnh3(k) * scaling_k
-   !FUTURE       enddo
-   !FUTURE
-   !FUTURE       if ( DEBUG_NH3 .and. i_fdom(i)==DEBUG_i .and. j_fdom(j)==DEBUG_j)then
-   !FUTURE         write(6,*)'Tange coordinates, proc, i,j, ',me,i,j
-   !FUTURE         write(6,*)'rcnh3',rcnh3(KMAX_MID)
-   !FUTURE         write(6,*)'sum emnh3',sum(emnh3(:,i,j)),snh3
-   !FUTURE         write(6,*)'emnh3 1',emnh3(1,i,j)
-   !FUTURE       endif
-   !FUTURE    else
-   !FUTURE       rcnh3(KMAX_MID) =0.0
-   !FUTURE    endif

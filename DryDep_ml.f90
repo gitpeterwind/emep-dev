@@ -1,12 +1,21 @@
 module DryDep_ml
 ! Dry deposition scheme uses a mosaic approach.
+
+! Latest documentation and ACP eqn references in code below from
+!  Simpson, D., Benedictow, A., Berge, H., Bergstr\"om, R., Emberson, L. D.,
+!  Fagerli, H., Flechard, C. R.,  Hayman, G. D., Gauss, M., Jonson, J. E., 
+!  Jenkin, M. E., Ny\'{\i}ri, A., Richter, C., Semeena, V. S., Tsyro, S.,
+!  Tuovinen, J.-P., Valdebenito, \'{A}., and Wind, P.: 
+!  The EMEP MSC-W chemical transport model -- technical description, 
+!  Atmos. Chem. Phys., 12, 7825--7865, 2012.
+!
 ! History
 ! Module started from the drag-coefficient based approach of BJ98:
 ! Berge, E. and  Jakobsen, H.A., A regional scale multi-layer model
 ! for the calculation of long-term transport and deposition of air
 ! pollution in Europe, Tellus B (1998), 50, 105-223.
 
-! ** but ** has been extensively re-written since. See ....
+! ** but ** extensively re-written since. See ....
 ! Emberson, L.,Simpson, D.,Tuovinen, J.-P.,Ashmore, M.R., Cambridge, H.M.",
 !  2000, Towards a model of ozone deposition and stomatal uptake over 
 !  Europe, EMEP MSC-W Note 6/2000,
@@ -19,15 +28,7 @@ module DryDep_ml
 !   and improving the EMEP ozone deposition module", Atmos.Env.,38,2373-2385
 !
 ! Also, handling of dry/wet and co-dep procedure changed following discussions
-! with CEH:
-
-! Latest documentation and ACP eqn references in code below from
-!  Simpson, D., Benedictow, A., Berge, H., Bergstr\"om, R., Emberson, L. D.,
-!  Fagerli, H., Flechard, C. R.,  Hayman, G. D., Gauss, M., Jonson, J. E., 
-!  Jenkin, M. E., Ny\'{\i}ri, A., Richter, C., Semeena, V. S., Tsyro, S.,
-!  Tuovinen, J.-P., Valdebenito, \'{A}., and Wind, P.: 
-!  The EMEP MSC-W chemical transport model -- technical description, 
-!  Atmos. Chem. Phys., 12, 7825--7865, 2012.
+! with CEH.
   
 use Aero_Vds_ml,      only: SettlingVelocity, GPF_Vds300, Wesely300
 use CheckStop_ml,     only: CheckStop, StopAll
@@ -402,10 +403,6 @@ contains
                        AERO%sigma(nae), AERO%DpgV(nae), AERO%PMdens(nae) )
     end do
 
-  ! Restrict settling velocity to 2cm/s. Seems
-  ! very high otherwise,  e.g. see Fig. 4, Petroff et al., 2008 (Part I), where
-  ! observed Vg for forests is usually < 2cm/s.
-
     if ( dbghh ) call datewrite(mysub//"DRYDEP VS",AERO%NSIZE,&
                                   (/ Grid%t2, Grid%rho_ref, AERO%Vs /) )
 
@@ -423,12 +420,12 @@ contains
           iL_fluxes (nFlux) = iL    ! for eco dep
         end if
 
-        Sub(iL)%f_phen = LandCover(i,j)%fphen(iiL) !FEB2013
-        Sub(iL)%f_sun  = 0.0 !FEB2013 for SPOD_OUT
-        Sub(iL)%g_sun  = 0.0 !FEB2013 for SPOD_OUT
-        Sub(iL)%g_sto  = 0.0 !FEB2013 for SPOD_OUT
-        Sub(iL)%f_temp = 0.0 !FEB2013 for SPOD_OUT. Can 
-        Sub(iL)%f_vpd  = 0.0 !FEB2013 for SPOD_OUT
+        Sub(iL)%f_phen = LandCover(i,j)%fphen(iiL) ! for SPOD_OUT
+        Sub(iL)%f_sun  = 0.0 ! for SPOD_OUT
+        Sub(iL)%g_sun  = 0.0 ! for SPOD_OUT
+        Sub(iL)%g_sto  = 0.0 ! for SPOD_OUT
+        Sub(iL)%f_temp = 0.0 ! for SPOD_OUT. Can 
+        Sub(iL)%f_vpd  = 0.0 ! for SPOD_OUT
 
         Sub(iL)%SGS = LandCover(i,j)%SGS(iiL)   !used for AOT CHECK?
         Sub(iL)%EGS = LandCover(i,j)%EGS(iiL)
@@ -513,16 +510,6 @@ contains
 
             ! Use non-electrical-analogy version of Venkatram+Pleim (AE,1999)
             ! ACP70
-
-            !if( AERO%Vs(nae) < 1.0e-8 .or. Vds < 1.0e-8 ) then
-            !   print "(a,3i3,9g11.3)", "AEROVSNA", n, nae, iL, AERO%Vs(nae), no3nh4ratio, &
-            !       xn_2d(pNO3,K2),  xn_2d(pNH4,K2), tmpv0, Vds
-            !  tmpv1     =  1.0 - exp( -( L%Ra_ref + 1.0/Vds)* AERO%Vs(nae) )
-            !  tmpv2     =  1.0 - exp( -( L%Ra_3m  + 1.0/Vds)* AERO%Vs(nae) )
-            !   print "(a,2i4,9g11.3)", "AEROVSNB", n, nae, AERO%sigma(nae), AERO%DpgV(nae),&
-            !         AERO%PMdens(nae), AERO%Vs(nae), Vds, tmpv1, tmpv2
-            !   call StopAll("AEROVSN")
-            ! end if
 
               Vg_ref(n) =  AERO%Vs(nae)/ ( 1.0 - exp( -( L%Ra_ref + 1.0/Vds)* AERO%Vs(nae)))
               Vg_3m (n) =  AERO%Vs(nae)/ ( 1.0 - exp( -( L%Ra_3m  + 1.0/Vds)* AERO%Vs(nae)))
@@ -621,6 +608,9 @@ contains
 
        !=======================
 
+         c_hveg   = -999. ! Just for printout when flux_wanted false
+         c_hveg3m = -999.
+
          if (  LandType(iL)%flux_wanted ) then
 
             n = CDDEP_O3
@@ -700,7 +690,7 @@ contains
 
     GASLOOP2 :  do n = 1, NDRYDEP_ADV 
          nadv    = DDepMap(n)%ind
-         ntot  = NSPEC_SHL + DDepMap(n)%ind
+         ntot    = NSPEC_SHL + DDepMap(n)%ind
          ncalc   = DDepMap(n)%calc
 
 
@@ -729,27 +719,30 @@ contains
          end if
 
          if ( DepLoss(nadv) < 0.0 .or. DepLoss(nadv)>xn_2d(ntot,K2) ) then
-             print "(a,2i4,a,es12.4,2f8.4,9es11.4)", "NEGXN ", ntot, ncalc, &
-                 trim(species(ntot)%name), xn_2d(ntot,K2), &
-                 Fgas(ntot,K2), Fpart(ntot,K2), &
-                  DepLoss(nadv), vg_fac(ncalc)
-             call CheckStop("NEGXN DEPLOSS" )
+            print "(a,2i4,a,es12.4,2f8.4,9es11.4)", "NEGXN ", ntot, ncalc, &
+              trim(species(ntot)%name), xn_2d(ntot,K2), &
+                 Fgas(ntot,K2), Fpart(ntot,K2), DepLoss(nadv), vg_fac(ncalc)
+            call CheckStop("NEGXN DEPLOSS" )
          end if
 
 
          if ( ntot == O3 ) then 
 
            o3_45m = xn_2d(O3,K2)*surf_ppb !store for consistency of SPOD outputs
-           Grid%surf_o3_ppb = xn_2d(O3,K2)*gradient_fac( ncalc )*surf_ppb
+           Grid%surf_o3_ppb  = o3_45m * gradient_fac( ncalc )
+           Grid%surf_o3_ppb1 = ( xn_2d(O3,K2) - Deploss(nadv)) * & ! after loss
+                gradient_fac( ncalc )*surf_ppb
 
-           Grid%O3factor = vg_fac(ncalc)
+           if( dbghh ) then
+              lossfrac = ( 1 - DepLoss(nadv)/xn_2d( ntot,K2))
+              call datewrite("O3_ppb_ratios ", n, (/ o3_45m, &
+                 Grid%surf_o3_ppb, Grid%surf_o3_ppb1, &
+                 lossfrac, gradient_fac(ncalc), L%StoFrac(ntot) /) )
+           end if
 
-           if ( dbghh ) call datewrite("O3_ppb_ratios ", n, (/ &
-                 Grid%surf_o3_ppb, Grid%O3factor, L%StoFrac(ntot) /) )
          end if
 
         xn_2d( ntot,K2) = xn_2d( ntot,K2) - DepLoss(nadv)
-
 
 
         if ( ntot == FLUX_TOT ) then
@@ -781,7 +774,6 @@ contains
             if ( vg_set(n) )  then
                fluxfrac_adv(nadv,iL) = Sub(iL)%coverage  ! Since all vg_set equal
             else
-               !Vg_scale = Mosaic_VgRef(ncalc,iL)/ Mosaic_VgRef(ncalc,0)
                Vg_scale = Sub(iL)%Vg_Ref(ncalc)/ Sub(0)%Vg_Ref(ncalc)
                fluxfrac_adv(nadv,iL) = Sub(iL)%coverage*Vg_scale
             end if
@@ -822,7 +814,7 @@ contains
 !         totddep( nadv ) = totddep (nadv) + Deploss(nadv) * convfac
 
 
-          if ( dbghh) then
+        if ( dbghh) then
           if ( vg_set(n) ) then
               write(*, "(a,2i4,f8.3)") "DEBUG DryDep SET ", &
                    n,nadv, DDepMap(n)%vg
@@ -834,20 +826,19 @@ contains
           end if
         end if
 
-          if ( DEBUG%AOT .and. debug_flag .and. ntot == FLUX_TOT  ) then
+        if ( DEBUG%AOT .and. debug_flag .and. ntot == FLUX_TOT  ) then
               write(*, "(a,3i3,i5,i3,2f9.4,f7.3)") &
                "AOTCHXN ", imm, idd, ihh, current_date%seconds, &
                    iL, xn_2d(FLUX_TOT,K2)*surf_ppb, &
                     (xn_2d( FLUX_TOT,K2) + DepLoss(nadv) )*surf_ppb, &
                      gradient_fac( ncalc)
-          end if
+        end if
        end do GASLOOP2 ! n
 
 
       convfac =  convfac/amk(K2)
 
-    !  DryDep Budget terms
-    !do not include values on outer frame
+    !  DryDep Budget terms  (do not include values on outer frame)
       if(.not.(i<li0.or.i>li1.or.j<lj0.or.j>lj1))then
          
          do n = 1, NDRYDEP_ADV
@@ -891,7 +882,6 @@ contains
             write(P,"(5a7)",advance="no") &
                   "fphen", "f_L","f_T","f_D", "fenv" 
             write(P,"(a7,2a10)",advance="no")  "fsun", "gsto", "gsun"
-            !write(P,"(a)",advance="yes") ";"
             write(P,*)
            !end if
             first_spod = .false.
