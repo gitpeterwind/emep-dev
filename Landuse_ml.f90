@@ -109,6 +109,7 @@ contains
     real,dimension(:,:,:),allocatable :: map2dGrowingSeasons
     character(len=len(VEG_2dGS_Params(1))) :: fname
     character(len=20) :: varname
+    character(len=*), parameter :: sub='InitLanduse:'
     !=====================================
 
     !ALLOCATE ARRAYS
@@ -123,18 +124,18 @@ contains
         if(len_trim(FLUX_VEGS(ilu))>0) nFluxVegs=nFluxVegs+1
     end do
 
-    if(MasterProc) write(*,*) "Landuse nFluxVegs= ",nFluxVegs
-
-        
+    if(MasterProc) write(*,*) sub//" nFluxVegs= ",nFluxVegs
 
     !ReadLandUse_CDF to be used as default when glc2000 data is improved?
-
 
     filefound=.false.
     call ReadLandUse(filefound) !=> Land_codes, Percentage cover per grid
 
     !ReadLandUse_CDF use Max Posch 5km landuse over emep area and glc200 where this dat is not defined.
-    if(.not.filefound)call ReadLandUse_CDF(filefound) !=> Land_codes, Percentage cover per grid
+    if(.not.filefound) then
+        if(MasterProc) write(*,*) sub//" Into CDF "
+        call ReadLandUse_CDF(filefound) !=> Land_codes, Percentage cover per grid
+    end if
 
 
     ! Quick safety check
@@ -146,6 +147,11 @@ contains
 
     call CheckStop(.not.filefound,"InitLanduse failed!")
 
+    if(MasterProc) write(*,*) sub//" Into Init_LandDefs "
+    if(MasterProc) then
+        print *,  sub//" Into Init_LandDefs ", NLand_codes
+        print *,  sub//" Codes: ", Land_codes
+    end if
     call Init_LandDefs(NLand_codes, Land_codes)   ! => LandType, LandDefs
 
     !------ 2D maps of growing season, if set in config ----------------------- 
@@ -415,6 +421,7 @@ contains
     integer :: ncFileID, nDimensions,nVariables,nAttributes,timeDimID,varid
     integer :: nwords, err, xtype,ndims  ,status
     character(len=10) :: ewords(7), code ! LC:CF:EMEP
+    character(len=*), parameter :: sub='RdLanduseCDF:'
     logical :: fexist=.false.!file exist flag
   
     ! temporary arrays used.  Will re-write one day....
@@ -426,12 +433,12 @@ contains
     logical, save :: debug_Master=.false.
 
     if(  DEBUG%LANDUSE>0 .and. MasterProc )  then
-       write(*,*) "LANDUSE: Starting ReadLandUse CDF"
+       write(*,*) sub//" Starting"
        debug_Master = .true.
     end if
 
 
-    if (MasterProc ) write(*,*) "LANDUSE_CDF:"
+    if (MasterProc ) write(*,*) sub//"LANDUSE_CDF:"
     !    filefound=.false.
     !    return
 
@@ -449,9 +456,9 @@ contains
     !note that every processor open and read the same file
     status=nf90_open(path = trim(fName1), mode = nf90_nowrite, ncid = ncFileID)
     inquire(file=trim(fName2),exist=fexist)
-    if ( debug_Master .and. fexist)write(*,*) "LANDUSE: found "//trim(fName2)
+    if ( debug_Master .and. fexist)write(*,*) sub//"LANDUSE: found "//trim(fName2)
     if(status==nf90_noerr)then
-       if ( debug_Master )write(*,*) "LANDUSE: found "//trim(fName1)
+       if ( debug_Master )write(*,*) sub//"LANDUSE: found "//trim(fName1)
        !get list of variables
        call check(nf90_Inquire(ncFileID,nDimensions,nVariables,nAttributes,timeDimID))
        ! All the inquire functions are inexpensive to use and require no I/O, since the information
@@ -463,7 +470,7 @@ contains
           if ( DEBUG%LANDUSE>0 )  CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
 
           call check(nf90_Inquire_Variable(ncFileID,varid,varname,xtype,ndims))
-          if ( debug_Master )write(*,*) "checking "//trim(varname), index( varname, "LC:") 
+          if ( debug_Master )write(*,*) sub//"checking "//trim(varname), index( varname, "LC:") 
 
           ! landcover terms look like, e.g. LC:CF:EMEP
           if( index( varname, "LC:") < 1 ) cycle ! ONLY LC: (LandCode) wanted
@@ -478,7 +485,7 @@ contains
           if ( debug_Master )&
                write(*,*) "defining new LC "//ewords(2)//"  ilu= " , ilu
           call CheckStop( ilu>NLANDUSEMAX , &
-               "NLANDUSEMAX smaller than number of landuses defined in file "//trim(fname1) )
+               sub//"NLANDUSEMAX smaller than number of landuses defined in file "//trim(fname1) )
 
           Land_codes(ilu) = ewords(2)    ! Landuse code found on file
 
@@ -538,6 +545,10 @@ contains
        enddo
        call check(nf90_close(ncFileID))!fname1
        NLand_codes=ilu
+       if(MasterProc) then
+            write( *,*) "NLAND ", NLand_codes
+            write( *,*) "LAND_CODES ", Land_codes(1:NLand_codes)
+       end if
 
     else
        !the landusefile with softcoded lancodes has not been found. Use "old" method 

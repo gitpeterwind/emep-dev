@@ -212,6 +212,7 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
   character(len=30) :: comment ! comment on site location
   character(len=40) :: infile, errmsg
   real              :: lat,lon,x,y
+  character(len=*),parameter :: sub='SitesInit:'
 
   character(len=20), dimension(4) :: Headers
   type(KeyVal), dimension(20)     :: KeyValues ! Info on units, coords, etc.
@@ -235,8 +236,7 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
   call MPI_BCAST( ios, 1, MPI_INTEGER, 0, MPI_COMM_WORLD,INFO)
   if(ios/=0)return
 
-  call CheckStop(NMAX,size(s_name), &
-     "Error in Sites_ml/Init_sites: sitesdefNMAX problem")
+  call CheckStop(NMAX,size(s_name), sub//"Error : sitesdefNMAX problem")
 
   call Read_Headers(io_num,errmsg,NHeaders,NKeys,Headers,Keyvalues)
 
@@ -262,7 +262,7 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
     endif
 
     if (ioerr < 0) then
-      write(6,*) "sitesdef : end of file after ", nin-1, infile
+      write(6,*) sub//" end of file after ", nin-1, infile
       exit SITELOOP
     endif ! ioerr
 
@@ -293,7 +293,7 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
       endif
 
       s_name(n)  = s !!! remove comments// comment
-      if (DEBUG%SITES.and.MasterProc) write(6,"(a,i4,a)") "sitesdef s_name : ",&
+      if (DEBUG%SITES.and.MasterProc) write(6,"(a,i4,a)") sub//" s_name : ",&
             n, trim(s_name(n))
     endif
 
@@ -303,8 +303,7 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
 
   ! NSITES/SONDES_MAX must be _greater_ than the number used, for safety
 
-  call CheckStop(n >= NMAX, &
-      "Error in Sites_ml/Init_sites: increase NGLOBAL_SITES_MAX!")
+  call CheckStop(n >= NMAX, sub//"Error : increase NGLOBAL_SITES_MAX!")
 
   if(MasterProc) close(unit=io_num)
 
@@ -325,10 +324,10 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
       s_n(nlocal) = n
 
       if (DEBUG%SITES) &
-        write(6,"(a,i3,a,2i3,3i4,a,3i4)") "sitesdef Site on me : ", me, &
+        write(6,"(a,i3,a,2i3,3i4,a,3i4)") sub//" Site on me : ", me, &
          " Nos. ", n, nlocal, s_gx(n), s_gy(n) , s_gz(n), " =>  ", &
           s_x(nlocal), s_y(nlocal), s_z(nlocal)
-        write(6,"(a,i3,a,2i3,4a)") "SPODsite : "// trim(fname), me, &
+        write(6,"(a,i3,a,2i3,4a)") Sub// trim(fname), me, &
          " Nos. ", n, nlocal, " ", trim(s_name(n)), " => ", trim(s_name(nlocal))
 
      endif
@@ -336,7 +335,7 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
   enddo ! nglobal
 
   ! inform me=0 of local array indices:
-  if(DEBUG%SITES) write(6,*) "sitesdef ", fname, " before gc NLOCAL_SITES", &
+  if(DEBUG%SITES) write(6,*) sub//trim(fname), " before gc NLOCAL_SITES", &
                            me, nlocal
 
   if ( .not.MasterProc ) then
@@ -344,7 +343,7 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
     if(nlocal>0) call MPI_SEND(s_n, 4*nlocal, MPI_BYTE, 0, 334, &
                                MPI_COMM_WORLD, INFO)
   else
-    if(DEBUG%SITES) write(6,*) "sitesdef for me =0 LOCAL_SITES", me, nlocal
+    if(DEBUG%SITES) write(6,*) sub//" for me =0 LOCAL_SITES", me, nlocal
     do n = 1, nlocal
       s_gindex(me,n) = s_n(n)
     enddo
@@ -352,17 +351,17 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
       call MPI_RECV(nloc, 4*1, MPI_BYTE, d, 333, MPI_COMM_WORLD,STATUS, INFO)
       if(nloc>0) call MPI_RECV(s_n_recv, 4*nloc, MPI_BYTE, d, 334, &
                                MPI_COMM_WORLD,STATUS, INFO)
-      if(DEBUG%SITES) write(6,*) "sitesdef: recv d ", fname, d,  &
+      if(DEBUG%SITES) write(6,*) sub//" recv d ", fname, d,  &
                   " zzzz nloc : ", nloc, " zzzz me0 nlocal", nlocal
       do n = 1, nloc
         s_gindex(d,n) = s_n_recv(n)
-        if(DEBUG%SITES) write(6,*) "sitesdef: for d =", fname, d, &
+        if(DEBUG%SITES) write(6,*) sub//" for d =", fname, d, &
           " nloc = ", nloc, " n: ",  n,  " gives nglob ", s_gindex(d,n)
       enddo ! n
     enddo ! d
   endif ! MasterProc
 
-  if ( DEBUG%SITES ) write(6,*) 'sitesdef on me', me, ' = ', nlocal
+  if ( DEBUG%SITES ) write(6,*) sub//' on me', me, ' = ', nlocal
 
 end subroutine Init_sites
 !==================================================================== >
