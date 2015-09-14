@@ -19,10 +19,7 @@ use My_Outputs_ml,     only : NHOURLY_OUT, &      ! No. outputs
                               NLEVELS_HOURLY
 use Chemfields_ml,     only : xn_shl,xn_adv
 use CheckStop_ml,      only : CheckStop,StopAll,check=>CheckNC
-use ChemSpecs_shl_ml,  only : NSPEC_SHL
-use ChemSpecs_adv_ml,  only : NSPEC_ADV
-use ChemSpecs_tot_ml,  only : NSPEC_TOT
-use ChemChemicals_ml,  only : species
+use ChemSpecs,         only : species, NSPEC_TOT, NSPEC_ADV, NSPEC_SHL
 use Country_ml,        only : NLAND, Country
 use GridValues_ml,     only : GRIDWIDTH_M,fi,xp,yp,xp_EMEP_official&
                              ,debug_proc, debug_li, debug_lj &

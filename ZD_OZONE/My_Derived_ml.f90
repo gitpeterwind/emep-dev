@@ -21,9 +21,12 @@ module My_Derived_ml
 !   Derived fields such as d_2d only exist in Derived_ml, so are
 !   accessed here through subroutine calls - using just the (i,j) part
 !   of the bigger d_2d arrays
+!
+! NOTE (14/9/2015) - this routine will likely be deleted in future, as we are
+!  moving most definitions to the config namelist system.
 !---------------------------------------------------------------------------
 
-use AOTx_ml, only : O3cl, VEGO3_OUTPUTS, VEGO3_DEFS
+use AOTx_ml, only : VEGO3_OUTPUTS, nOutputVegO3,OutputVegO3
 use CheckStop_ml,  only: CheckStop, StopAll
 use Chemfields_ml, only : xn_adv, xn_shl, cfac
 use ChemSpecs      ! Use IXADV_ indices...
@@ -60,11 +63,10 @@ private
  public  :: My_DerivFunc ! Miscelleaneous functions of xn_adv for output
                          ! (not currently used)
 
-
-   !    Depositions are stored in separate arrays for now - to keep size of
-   !    derived arrays smaller and to allow possible move to a Deposition
-   !    module at a later stage.
-   !  Factor 1.0e6 converts from kg/m2/a to mg/m2/a
+  !    Depositions are stored in separate arrays for now - to keep size of
+  !    derived arrays smaller and to allow possible move to a Deposition
+  !    module at a later stage.
+  !    Factor 1.0e6 converts from kg/m2/a to mg/m2/a
 
   !        We normally distinguish source-receptor (SR) stuff from model
   !        evaluation.  The SR runs should use as few as possible outputs
@@ -125,14 +127,6 @@ private
   type(typ_s3), public, save, dimension(MAX_NUM_WDEP_WANTED) :: &
     WDEP_WANTED = typ_s3('-', '-', ' -' )
 
-! Tropospheric columns
-!   integer, public, save, dimension(MAX_COLUMNDAT_WANTED) :: &
-!      COLUMNDAT_WANTED = typ_ss( '-', 'k20' )
-   !NMLinteger, public, parameter, dimension(1) :: COLUMN_MOLEC_CM2 = &
-   !NML       (/ NO2 /) ! , CO, CH4, C2H6, HCHO, NO2 /)
-   !NML character(len=3), public, save, dimension(MAX_COL_WANTED) :: &
-   !NML    COLUMN_LEVELS = (  'k20' ) ! , "k16", "k12", "k08" /)
-
    character(len=TXTLEN_DERIV), public, parameter, dimension(4) :: &
   D2_SR = (/ &
        "SURF_MAXO3    " &
@@ -174,96 +168,7 @@ private
    ! dep. velocities for in netcdf files. Set in My_DryDep_ml.
 
     type(typ_s5i), public, parameter, dimension(1) :: &
-         NewMosaic = (/ &
-             typ_s5i( "Mosaic", "VG", "O3       ", "Grid","cms",D ) &
-         /)
-
-!TFMM            ,typ_s5i( "Mosaic", "VG", "O3       ", "CF  ","cms",D ) &
-!TFMM            ,typ_s5i( "Mosaic", "VG", "O3       ", "SNL ","cms",D ) &
-!           ,typ_s5i( "Mosaic", "VG", "HNO3     ", "Grid","cms",D ) &
-!           ,typ_s5i( "Mosaic", "VG", "NO2      ", "Grid","cms",D ) &
-!           ,typ_s5i( "Mosaic", "VG", "NO3_F    ", "Grid","cms",D ) &
-!           ,typ_s5i( "Mosaic", "VG", "NO3_C    ", "Grid","cms",D ) &
-!           ,typ_s5i( "Mosaic", "VG", "PAN      ", "Grid","cms",D ) &
-!TFMM            ,typ_s5i( "Mosaic", "VG", "HNO3     ", "W   ","cms",D ) &
-!TFMM            ,typ_s5i( "Mosaic", "VG", "HNO3     ", "CF  ","cms",D ) &
-!TFMM            ,typ_s5i( "Mosaic", "VG", "HNO3     ", "SNL ","cms",D ) &
-!TFMM            ,typ_s5i( "Mosaic", "VG", "NO3_F    ", "SNL ","cms",D ) &
-!TFMM            ,typ_s5i( "Mosaic", "VG", "NO3_C    ", "SNL ","cms",D ) &
-!TFMM            ,typ_s5i( "Mosaic", "VG", "NO3_F    ", "Grid","cms",D ) &
-!TFMM            ,typ_s5i( "Mosaic", "VG", "NO3_C    ", "Grid","cms",D ) &
-!TFMM            ,typ_s5i( "Mosaic", "VG", "SEASALT_F", "W   ","cms",D ) &
-!TFMM            ,typ_s5i( "Mosaic", "VG", "SEASALT_C", "W   ","cms",D ) &
-!TFMM            ,typ_s5i( "Mosaic", "VG", "SEASALT_F", "Grid","cms",D ) &
-!TFMM            ,typ_s5i( "Mosaic", "VG", "SEASALT_C", "Grid","cms",D ) &
-!TFMM            ,typ_s5i( "Mosaic", "Rs", "SO2      ", "Grid","sm",D ) &
-!TFMM            ,typ_s5i( "Mosaic", "Rs", "NH3      ", "Grid","sm",D ) &
-
-! VEGO3 outputs for PODY and AOTX - see AOTnPOD_ml for definitions,
-! Any string used here must have been defined in AOTnPOD_ml.
-!
-    character(len=TXTLEN_DERIV), public, parameter, dimension(26+10) :: &
-     VEGO3_WANTED  =  (/ character(len=TXTLEN_DERIV) ::  &
-         "POD1_IAM_DF     ",&
-         "POD1_IAM_MF     ",&
-         "POD1_DF         ",&
-         "POD1_CF         ",&
-         "POD3_TC         ",&
-         "POD6_TC         ",&
-!         "SPOD15_birch    ",&
-!         "SPOD10_birch    ",&
-!         "SPOD15_spruce   ",&
-!         "SPOD10_spruce   ",&
-!         "SPOD15_crops    ",&
-!         "SPOD25_crops    ",&
-        !CEH JULY2015
-         "POD0_Wheat_Irrigated",&
-         "POD0_Wheat_NonIrrig",&
-         "POD1_Wheat_Irrigated",&
-         "POD1_Wheat_NonIrrig",&
-         "POD2_Wheat_Irrigated",&
-         "POD2_Wheat_NonIrrig",&
-         "POD3_Wheat_Irrigated",&
-         "POD3_Wheat_NonIrrig",&
-         "POD6_Wheat_Irrigated",&
-         "POD6_Wheat_NonIrrig",&
-        !CEH ECLGLOB
-         "POD1_WinterWheat",&
-         "POD3_WinterWheat",&
-         "POD6_WinterWheat",&
-         "POD1_SpringWheat",&
-         "POD3_SpringWheat",&
-         "POD6_SpringWheat",&
-        !WIMMAX:
-        ! "POD1_NEUR_SPRUCE",&
-        ! "POD1_NEUR_BIRCH ",&
-        ! "POD1_ACE_PINE   ",&
-        ! "POD1_ACE_OAK    ",&
-        ! "POD1_ACE_BEECH  ",&
-        ! "POD1_CCE_SPRUCE ",&
-         "POD1_CCE_BEECH  ",&
-         "POD1_MED_OAK    ",&
-         "POD1_MED_PINE   ",&
-         "POD1_MED_BEECH  ",&
-        ! "POD3_TC30d     ",&
-        ! "POD3_TC55d     ",&
-         "POD1_IAM_CR     ",&
-         "POD3_IAM_CR     ",&
-         "POD6_IAM_CR     ",&
-        ! "POD3_IAM_CR30d ",&
-        ! "POD3_IAM_CR55d ",&
-        ! "POD6_IAM_CR    ",& ! Not recommended - not robust
-        ! "POD6_IAM_CR30d ",&  ! Not recommended - not robust
-        ! "POD6_IAM_CR55d ",& ! Not recommended - not robust
-         "MMAOT40_TC      ",&
-         "MMAOT40_IAM_DF  ",&
-         "MMAOT40_IAM_MF  ",&
-         "MMAOT40_IAM_CR  ",&
-         "EUAOT40_Crops   ", &
-         "EUAOT40_Forests ", &
-         "MMAOT40_IAM_WH  " &
-    /) !NB -last not found. Could just be skipped, but kept
-       !to show behaviour
+      NewMosaic = (/typ_s5i( "Mosaic", "VG", "O3       ", "Grid","cms",D ) /)
 
 
 ! For met-data and canopy concs/fluxes ...
@@ -330,20 +235,20 @@ private
     logical :: Is3D,debug0   !  if(DEBUG%MY_DERIVED.and.MasterProc )
     character(len=12), save :: sub='InitMyDeriv:'
 
-    NAMELIST /OutputConcs_config/OutputMisc,OutputConcs
+    NAMELIST /OutputConcs_config/OutputMisc,OutputConcs,OutputVegO3
     NAMELIST /OutputDep_config/DDEP_ECOS, DDEP_WANTED, WDEP_WANTED, SDEP_WANTED
 
     debug0 = DEBUG%MY_DERIVED.and.MasterProc
 
-!NML   typ_s5i("HMIX      ", "m",   D2,"HMIX     ","MISC", D)&
-   rewind(IO_NML)
-   read(IO_NML,NML=OutputConcs_config)
-   read(IO_NML,NML=OutputDep_config)
+    rewind(IO_NML)
+    read(IO_NML,NML=OutputConcs_config)
+    read(IO_NML,NML=OutputDep_config)
    
 
     !! Find number of wanted OutoutConcs
     nOutputMisc  = find_index("-", OutputMisc(:)%name, first_only=.true. ) -1
     nOutputConcs = find_index("-", OutputConcs(:)%txt1, first_only=.true. ) -1
+    nOutputVegO3 = find_index("-", OutputVegO3(:)%name, first_only=.true. ) -1
     nOutputWdep  = find_index("-", WDEP_WANTED(:)%txt1, first_only=.true. ) -1
 !    nOutputMisc  = find_index("-", COLUMNDATA_WANTED(:)%txt1, &
 !                       first_only=.true. ) -1
@@ -354,6 +259,12 @@ private
               OutputMisc(i)%class, OutputMisc(i)%index
        tag_name(1) = trim(OutputMisc(i)%name)
        call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
+    end do
+   ! OutputVegO3 will be added to derived fields from within the Mosaics_ml
+   ! after adding 
+    do i = 1,nOutputVegO3  
+       if(MasterProc) write(*,"(3a,f7.1)")"NMLOUT OUTVegO3 ",OutputVegO3(i)%name,&
+              OutputVegO3(i)%class, OutputVegO3(i)%Threshold
     end do
     if(MasterProc) then
       write(*,"(a,i3)") "NMLOUT nOUTCONC ", nOutputConcs
@@ -420,23 +331,6 @@ private
      end if
 
 
-     ! Column data:
-!     n = 0
-!     do n1 = 1, size(COLUMN_MOLEC_CM2)
-!     do n2 = 1, size(COLUMN_LEVELS)
-!       n = n + 1
-!       tmpname(n) = "COLUMN_" // trim( species(COLUMN_MOLEC_CM2(n1))%name ) &
-!          // "_" // COLUMN_LEVELS(n2)
-!     end do
-!     end do
-!     call AddArray(tmpname, wanted_deriv2d, NOT_SET_STRING, errmsg)
-!     call CheckStop( errmsg, errmsg // "COLUMN too long" )
-
-     ! Didn't work:
-     !call AddArray( "COLUMN_" // trim( species(COLUMN_MOLEC_CM2(:))%name ), &
-     !  wanted_deriv2d, NOT_SET_STRING)
-
-
       !------------- Depositions to ecosystems --------------------------------
 
       call Add_MosaicDDEP(DDEP_ECOS,DDEP_WANTED,nDD)
@@ -446,21 +340,17 @@ private
       ! For fluxes or AOTs we start with a formatted name, eg. POD_3.0_CF and
       !untangle it to get threshold Y (=3.0) and landcover type
 
-      allocate(VEGO3_OUTPUTS( size(VEGO3_WANTED) ), stat=istat)
+      allocate(VEGO3_OUTPUTS( nOutputVegO3 ), stat=istat)
       if(DEBUG%MY_DERIVED.and.istat/=0) &
          write(*,*) "My_Derived ISTAT ERR VEGO3"
 
-      do n = 1, size(VEGO3_WANTED)
-         n1 = find_index(VEGO3_WANTED(n),VEGO3_DEFS(:)%name)
-         call CheckStop(  n1>size(VEGO3_DEFS(:)%name) .or. n1<1 , &
-                   "VEGO3 not found"//trim(VEGO3_WANTED(n)) )
-         VEGO3_OUTPUTS(n) = VEGO3_DEFS(n1)
-       if( debug0 )  write(*,*) "VEGO3 NUMS ", n, n1, trim( VEGO3_WANTED(n) )
+      do n = 1, nOutputVegO3
+          VEGO3_OUTPUTS(n) = OutputVegO3(n)
+          if( debug0 )  write(*,*) "VEGO3 NUMS ", n, n1, &
+           trim(OutputVegO3(n)%name) 
       end do
-      if(MasterProc)call WriteArray(VEGO3_OUTPUTS(:)%name,size(VEGO3_WANTED)," VEGO3 OUTPUTS:")
-      !GMO3 call Add_MosaicVEGO3(M, nVEGO3)  ! M=monthly
-      call Add_MosaicVEGO3(D, nVEGO3)  ! M=monthly
-      nOutVEGO3 = nVEGO3
+      if(MasterProc)call WriteArray(VEGO3_OUTPUTS(:)%name,nOutputVegO3," VEGO3 OUTPUTS:")
+      call Add_MosaicVEGO3(nOutVEGO3) ! nVEGO3 is output, excluding missing LC types
 
       !----- some "luxury outputs" -------------------------------------------
 
@@ -468,7 +358,6 @@ private
 
       !------------- Deposition velocities -----------------------------------
 
-!print *, "NMOSAIC MC  ", NMosaic, nVEGO3
       call Add_NewMosaics(NewMosaic, nMc)
 
       if( debug0 ) then
@@ -482,7 +371,6 @@ private
       ! adding them to the derived-type array LCC_Met (e.g. => Met_CF)
       !FEB2011  Daiyl output asked for just now. Change larer
 
-!print *, "NMOSAIC VEG ", NMosaic, nVEGO3
       call Add_MosaicMetConcs(MOSAIC_METCONCS,MET_LCS, D, nMET)
       nOutMET = nMET !not needed?
   end if ! SOURCE_RECEPTOR
@@ -490,9 +378,7 @@ private
 
       !------------- end LCC data for d_2d -------------------------
 
-!print *, "NMOSAIC PRE ", NMosaic, nVEGO3
      call CheckStop( NMosaic >= MAX_MOSAIC_OUTPUTS, sub//"too many nMosaics" )
-!print *, "NMOSAIC END ", NMosaic, nVEGO3
      call AddArray( MosaicOutput(1:nMosaic)%name, &
                         wanted_deriv2d, NOT_SET_STRING, errmsg)
      call CheckStop( errmsg, sub//errmsg // "MosaicOutput too long" )

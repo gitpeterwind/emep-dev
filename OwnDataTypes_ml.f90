@@ -123,6 +123,9 @@ private
    !real        :: Tref     ! Assumed 300
     real        :: DeltaH   ! kJ/mole
   endtype VBST
+  !==================
+
+
 
 contains
 !=========================================================================

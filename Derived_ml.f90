@@ -22,7 +22,7 @@ use My_Derived_ml, only : &
 use My_Derived_ml,  only : &
       OutputFields,  &
       nOutputFields,  &
-      nOutputMisc, OutputMisc,    &
+      nOutputMisc, OutputMisc, &
       nOutputWdep,  &
       WDEP_WANTED, &
       D3_OTHER
@@ -141,8 +141,9 @@ integer, private, dimension(NSPEC_ADV), save :: &
          voc_index, &     ! Index of VOC in xn_adv
          voc_carbon       ! Number of C atoms
 
-logical, private, save :: debug_flag, Is3D
+logical, private, save :: Is3D
 logical, private, save :: dbg0   ! = DEBUG%DERIVED .and. MasterProc
+logical, private, save :: dbgP   ! = DEBUG%DERIVED .and. debug_proc
 character(len=100), private :: errmsg
 
 integer, private :: i,j,k,n, ivoc, index    ! Local loop variables
@@ -508,16 +509,14 @@ subroutine Define_Derived()
 
 !-------------------------------------------------------------------------------
   do n = 1, nMosaic
-    if ( dbg0 ) write(*,*) "DEBUG into AddDeriv ", n, MosaicOutput(n)
+    if ( dbg0 ) write(*,*) "DEBUG MOSAIC AddDeriv ", n, MosaicOutput(n)
     call AddDeriv( MosaicOutput(n) )
   end do
 !-------------------------------------------------------------------------------
 ! Areas of deposition-related ecosystems. Set externally
   do n = 1, NDEF_ECOSYSTEMS
      if(dbg0) write(*,*) "ECODEF ",n, trim( DepEcoSystem(n)%name )
-
      call AddDeriv( DepEcoSystem(n) )
-
   end do
 !!-------------------------------------------------------------------------------
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -649,7 +648,8 @@ Is3D = .true.
         call CheckStop ( found_ind2d(ind) > 0,  &
           sub//"REQUESTED 2D DERIVED ALREADY DEFINED: "//trim(def_2d(ind)%name))
       endif
-      if(MasterProc) print "(a,3i4,a)", "D2INDSET", me, ind, size(def_2d(:)%name)
+      if(dbg0) write(*,"(a,3i4,a)") "D2INDSET", me, ind, &
+           size(def_2d(:)%name), trim(def_2d(ind)%name)
       found_ind2d(ind)  = 1
     else
       print *,"D2IND OOOPS wanted_deriv2d not found: ", wanted_deriv2d(i)
@@ -680,7 +680,7 @@ Is3D = .true.
   if (num_deriv2d > 0) d_2d(:,:,:,:) = 0.0
   if (num_deriv3d > 0) d_3d(:,:,:,:,:) = 0.0
 
-  debug_flag = ( DEBUG%DERIVED  .and. debug_proc )
+  dbgP = ( DEBUG%DERIVED  .and. debug_proc )
 
   ! Determine actual output time ranges for Wanted output
   iou_min=+999
@@ -707,7 +707,8 @@ Is3D = .true.
     endselect
   endif
 
-  if(MasterProc) print "(a,2i4)","IOU_MAX ",  iou_max, iou_min
+  !SEP10 if(MasterProc) print "(a,2i4)","IOU_MAX ",  iou_max, iou_min
+  if(MasterProc) print *, "IOU_MAX ",  iou_max, iou_min
 endsubroutine Define_Derived
 !=========================================================================
 subroutine Setups()
@@ -807,7 +808,7 @@ subroutine Derived(dt,End_of_Day)
     name  = f_2d(n)%name
     index = f_2d(n)%index
 
-    if( debug_flag .and. first_call ) &
+    if( dbgP .and. first_call ) &
        write(*,"(a,i3,7a)") "Derive2d-name-class",&
         n, "C:", trim(class), "N:", trim(name), ":END"
 
@@ -897,12 +898,12 @@ subroutine Derived(dt,End_of_Day)
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = SurfArea_um2cm3(AERO%PM_F,i,j)
       end forall
-      if ( debug_flag ) call write_debug(n,index, "SurfArea_NSDF")
+      if ( dbgP ) call write_debug(n,index, "SurfArea_NSDF")
     case ( "SurfAreaSSF_um2cm3" )
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = SurfArea_um2cm3(AERO%SS_F,i,j)
       end forall
-      if ( debug_flag ) call write_debug(n,index, "SurfArea_SSF")
+      if ( dbgP ) call write_debug(n,index, "SurfArea_SSF")
     case ( "SurfAreaSSC_um2cm3" )
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = SurfArea_um2cm3(AERO%SS_C,i,j)
@@ -930,16 +931,16 @@ subroutine Derived(dt,End_of_Day)
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = SoilWater_deep(i,j,1)
     end forall
-    if ( debug_flag ) call write_debug(n,index, "SoilWater_DEEP")
-    !if(debug_flag) print *, "SOILW_DEEP ", n, SoilWater_deep(2,2,1)
+    if ( dbgP ) call write_debug(n,index, "SoilWater_DEEP")
+    !if(dbgP) print *, "SOILW_DEEP ", n, SoilWater_deep(2,2,1)
 
     !case ( "SoilWater_uppr" ) ! Not used so far. (=shallow)
     case ( "SMI_uppr" )
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = SoilWater_uppr(i,j,1)
     end forall
-    if ( debug_flag ) call write_debug(n,index, "SoilWater_uppr")
-    !if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
+    if ( dbgP ) call write_debug(n,index, "SoilWater_uppr")
+    !if(dbgP) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
 
     case ( "T2m" )
       forall ( i=1:limax, j=1:ljmax )
@@ -977,7 +978,7 @@ subroutine Derived(dt,End_of_Day)
         d_2d( n, i,j,IOU_INST) = pzpbl(i,j)
       end forall
 
-      if ( debug_flag ) then
+      if ( dbgP ) then
        write(*,fmt="(a12,i4,f12.3)") "HMIX" , n , &
                d_2d(n,debug_li,debug_lj,IOU_INST)
       end if
@@ -987,7 +988,7 @@ subroutine Derived(dt,End_of_Day)
         d_2d( n, i,j,IOU_INST) = xn_adv(index,i,j,KMAX_MID) &
                                * cfac(index,i,j)
       end forall
-      if ( debug_flag ) call write_debugadv(n,index, 1.0, "PPB OUTS")
+      if ( dbgP ) call write_debugadv(n,index, 1.0, "PPB OUTS")
 
     case ( "SURF_MASS_SPEC" )  ! Here we need density
 
@@ -995,7 +996,7 @@ subroutine Derived(dt,End_of_Day)
         d_2d( n, i,j,IOU_INST) = xn_adv(index,i,j,KMAX_MID) &
                                * cfac(index,i,j) * density(i,j)
       end forall
-      if ( debug_flag ) call write_debugadv(n,index, &
+      if ( dbgP ) call write_debugadv(n,index, &
                                density(debug_li,debug_lj), "SURF_MASS")
 
     case ( "PM25water" )      !water
@@ -1096,9 +1097,9 @@ subroutine Derived(dt,End_of_Day)
         if(first_call)then
           call CheckStop(f_2d(n)%unit(1:2)/="ug","Wrong unit for "//trim(class))
           call CheckStop(iadv_NO3_C      <1,"Unknown specie NO3_C")
-          call CheckStop(iadv_EC_C_WOOD  <1,"Unknown specie EC_C_WOOD")
-          call CheckStop(iadv_EC_C_FFUEL <1,"Unknown specie EC_C_FFUEL")
-          call CheckStop(iadv_POM_C_FFUEL<1,"Unknown specie POM_C_FFUEL")
+!SEP11          call CheckStop(iadv_EC_C_WOOD  <1,"Unknown specie EC_C_WOOD")
+!SEP11          call CheckStop(iadv_EC_C_FFUEL <1,"Unknown specie EC_C_FFUEL")
+!SEP11          call CheckStop(iadv_POM_C_FFUEL<1,"Unknown specie POM_C_FFUEL")
         endif
         write(*,*) "FRACTION PM25", n, ind_pmfine, ind_pmwater
         i= debug_li; j=debug_lj
@@ -1108,9 +1109,9 @@ subroutine Derived(dt,End_of_Day)
             d_2d(ind_pmfine ,i,j,IOU_INST), d_2d( n, i,j,IOU_INST), &
             ug_NO3_C * xn_adv(iadv_NO3_C,i,j,KMAX_MID) &
                      * cfac(iadv_NO3_C,i,j) * density(i,j)
-        write(*,"(a,i4,f5.2,4es12.3)") "CFAC PM25FRACTIONS:", n, fracPM25,  &
-                cfac(iadv_NO3_C    ,i,j), cfac(iadv_POM_C_FFUEL,i,j), &
-                cfac(iadv_EC_C_WOOD,i,j), cfac(iadv_EC_C_FFUEL ,i,j)
+!SEP11        write(*,"(a,i4,f5.2,4es12.3)") "CFAC PM25FRACTIONS:", n, fracPM25,  &
+!SEP11                cfac(iadv_NO3_C    ,i,j), cfac(iadv_POM_C_FFUEL,i,j), &
+!SEP11                cfac(iadv_EC_C_WOOD,i,j), cfac(iadv_EC_C_FFUEL ,i,j)
       endif
 
     case("AOD:GROUP","AOD:SPEC")  !/ Aerosol Optical Depth (new system)
@@ -1155,7 +1156,7 @@ subroutine Derived(dt,End_of_Day)
          txt2 = "MAXADV ug for " // trim( f_2d(n)%name)
        end if
 
-      if ( debug_flag ) call write_debugadv(n,index, &
+      if ( dbgP ) call write_debugadv(n,index, &
                                density(debug_li,debug_lj), txt2 )
 
       !Monthly and yearly ARE averaged over days
@@ -1183,7 +1184,7 @@ subroutine Derived(dt,End_of_Day)
       end if
 
 
-      if ( debug_flag ) then
+      if ( dbgP ) then
          write(*, *) "SHL:MAX.,to_molec_cm3 ", n, index  , to_molec_cm3
          write(*,fmt="(a12,2i4,4es12.3)") "SHL MAX. ", n, index  &
                 , d_2d(n,debug_li,debug_lj,IOU_DAY) &
@@ -1212,8 +1213,7 @@ subroutine Derived(dt,End_of_Day)
       if(first_call)&
         call CheckStop(iadv_o3<1,"Unknown specie O3")
 
-      d_2d(n, 1:limax, 1:ljmax, IOU_INST) = &
-           Calc_GridAOTx( f_2d(n)%index, debug_proc,"DERIVAOT")
+      d_2d(n, 1:limax, 1:ljmax, IOU_INST) = Calc_GridAOTx( f_2d(n)%index )
 
       if( DEBUG%AOT .and. debug_proc ) then
         call datewrite("AOTDEBUG" // trim(f_2d(n)%name), n, &
@@ -1246,7 +1246,7 @@ subroutine Derived(dt,End_of_Day)
         !NB overwritten anyway D2_O3_DAY = 0.
       endif
     case ( "PREC", "WDEP", "DDEP", "VG" ,"Rs", "Rns", "Gns", "Mosaic", "POD", "SPOD", "AOT" )
-!            if ( debug_flag ) write(*,"(2a,i4,a,es12.3)")"PROCESS ",trim(class),&
+!            if ( dbgP ) write(*,"(2a,i4,a,es12.3)")"PROCESS ",trim(class),&
 !                   n, trim(f_2d(n)%name), d_2d(n,debug_li,debug_lj,IOU_INST)
 !            Nothing to do - all set in My_DryDep
 
@@ -1261,7 +1261,7 @@ subroutine Derived(dt,End_of_Day)
             tmpwork(i,j) = tmpwork(i,j) + &
               xn_adv(index,i,j,k)*roa(i,j,k,1)*(z_bnd(i,j,k)-z_bnd(i,j,k+1))
 
-            if(DEBUG%COLUMN.and.debug_flag.and.&
+            if(DEBUG%COLUMN.and.dbgP.and.&
               i==debug_li.and.j==debug_lj) &
               write(*,"(a,3i4,a4,f8.3,f8.1,2es12.3)") &
                 trim(f_2d(n)%name), n, index, k, " => ", &
@@ -1272,7 +1272,7 @@ subroutine Derived(dt,End_of_Day)
                    ! is completed elsewere by *f_2d(n)%scale
         enddo !i
       enddo !j
-      if(debug_flag) write(*,"(a18,es12.3)") &
+      if(dbgP) write(*,"(a18,es12.3)") &
         "COLUMN:SPEC d2_2d",d_2d(n,debug_li,debug_lj,IOU_INST)*f_2d(n)%scale
     case("COLUMN:GROUP")
       call CheckStop("COLUMN:GROUP not yet supported")
@@ -1291,7 +1291,7 @@ subroutine Derived(dt,End_of_Day)
             d_2d(n,i,j,IOU_YEAR) =  EcoSystemFrac( f_2d(n)%Index ,i,j)
         end forall
       end if
-      if( debug_flag ) &
+      if( dbgP ) &
         write(*,"(a18,a,i4,a,2es12.3)") "ECOD2D ", &
            " f2d:", f_2d(n)%Index, &
            " Frac", EcoSystemFrac( f_2d(n)%Index, debug_li,debug_lj), &
@@ -1304,8 +1304,8 @@ subroutine Derived(dt,End_of_Day)
           d_2d(n,i,j,IOU_INST) =  EmisNat( f_2d(n)%Index,i,j )
       end forall
       !Not done, keep mg/m2  * GridArea_m2(i,j)
-      if ( debug_flag ) call write_debug(n,f_2d(n)%Index, "NatEmis")
-      if( debug_flag ) &
+      if ( dbgP ) call write_debug(n,f_2d(n)%Index, "NatEmis")
+      if( dbgP ) &
         call datewrite("NatEmis-in-Derived, still kg/m2/s", &
           f_2d(n)%Index, (/ EmisNat( f_2d(n)%Index, debug_li,debug_lj) /) )
 
@@ -1315,7 +1315,7 @@ subroutine Derived(dt,End_of_Day)
           d_2d(n,i,j,IOU_INST) =  SumSnapEmis( i,j, f_2d(n)%Index)
       end forall
       !not done, to keep mg/m2 * GridArea_m2(i,j)
-      if( debug_flag .and. f_2d(n)%Index == 3  ) & ! CO:
+      if( dbgP .and. f_2d(n)%Index == 3  ) & ! CO:
         call datewrite("SnapEmis-in-Derived, still kg/m2/s", n, & !f_2d(n)%Index,&
               (/   SumSnapEmis( debug_li,debug_lj, f_2d(n)%Index ) /) )
 
@@ -1328,7 +1328,7 @@ subroutine Derived(dt,End_of_Day)
 
     ! Externally set for IOU_INST (in other routines); so no new work
     ! needed except decision to accumalate to yearly or not.
-      if ( debug_flag ) write(*,"(a18,i4,a12,a4,es12.3)")"EXT d_2d",&
+      if ( dbgP ) write(*,"(a18,i4,a12,a4,es12.3)")"EXT d_2d",&
              n, f_2d(n)%name, " is ", d_2d(n,debug_li,debug_lj,IOU_INST)
 
     case ( "SURF_MASS_GROUP","SURF_PPB_GROUP" ) !
@@ -1365,13 +1365,13 @@ subroutine Derived(dt,End_of_Day)
       end if
 
     case  ( "USET" )
-      if ( debug_flag ) write(*,"(a18,i4,a12,a4,es12.3)")"USET d_2d",&
+      if ( dbgP ) write(*,"(a18,i4,a12,a4,es12.3)")"USET d_2d",&
              n, f_2d(n)%name, " is ", d_2d(n,debug_li,debug_lj,IOU_INST)
 
     case  default
 
-      if ( debug_flag ) then
-         if( debug_flag .and. i == debug_li .and. j == debug_lj ) &
+      if ( dbgP ) then
+         if( i == debug_li .and. j == debug_lj ) &
            write(*,"(a,i3,4a)") "My_Deriv Defaults called n=",&
               n, " Type ",trim(class), " Name ", trim( f_2d(n)%name )
 
@@ -1408,7 +1408,7 @@ subroutine Derived(dt,End_of_Day)
     d_2d(n,:,:,IOU_YEAR ) = d_2d(n,:,:,IOU_YEAR ) + af*d_2d(n,:,:,IOU_INST)
     if ( f_2d(n)%avg ) nav_2d(n,IOU_YEAR) = nav_2d(n,IOU_YEAR) + 1
 
-    !if( debug_flag .and. n == 27  ) then ! C5H8 BvocEmis:
+    !if( dbgP .and. n == 27  ) then ! C5H8 BvocEmis:
     !if(  n == 27  ) then ! C5H8 BvocEmis:
     !   print *, " TESTING NatEmis ", n, af, f_2d(n)%Index, f_2d(n)
     !      call datewrite("NatEmis-end-Derived", n, (/ af, &
@@ -1424,7 +1424,7 @@ subroutine Derived(dt,End_of_Day)
 
   !****** 3-D fields **************************
 
-  if(debug_flag)& ! RUN through indices etc.
+  if(dbgP)& ! RUN through indices etc.
     write(*, "(a12,2i4,f12.3)") "3D3D TIME ",  me, num_deriv3d, &
             (current_date%hour+current_date%seconds/3600.0)
 
@@ -1487,7 +1487,7 @@ subroutine Derived(dt,End_of_Day)
         end forall
       end if
 
-      if(debug_flag) write(*,"(a13,i4,f8.3,3es12.3)") "3D3D MAX3DSHL", n, thour, &
+      if(dbgP) write(*,"(a13,i4,f8.3,3es12.3)") "3D3D MAX3DSHL", n, thour, &
           xn_shl(index,debug_li,debug_lj,KMAX_MID), &
           1.0/inv_air_density3D(debug_li,debug_lj,KMAX_MID), &
           d_3d(n,debug_li,debug_lj,KMAX_MID,IOU_INST)
@@ -1498,7 +1498,7 @@ subroutine Derived(dt,End_of_Day)
                                            xn_adv(index,i,j,k) )
       end forall
 
-      if(debug_flag) write(*,"(a12,i4,f8.3,4es12.3)") "SET MAX3DADV", n, thour, &
+      if(dbgP) write(*,"(a12,i4,f8.3,4es12.3)") "SET MAX3DADV", n, thour, &
                   xn_adv(index,debug_li,debug_lj,KMAX_MID), &
                   d_3d(n,debug_li,debug_lj,KMAX_MID,IOU_INST)
 
@@ -1514,7 +1514,7 @@ subroutine Derived(dt,End_of_Day)
       forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
         d_3d( n, i,j,k,IOU_INST) = xn_adv(index,i,j,k)
       end forall
-      if ( debug_flag ) call write_debugadv(n,index, 1.0, "3D PPB OUTS")
+      if ( dbgP ) call write_debugadv(n,index, 1.0, "3D PPB OUTS")
 
     case ( "3D_PPB_SHL" )
       forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
@@ -1525,7 +1525,7 @@ subroutine Derived(dt,End_of_Day)
       forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
         d_3d( n, i,j,k,IOU_INST) = xn_adv(index,i,j,k) * roa(i,j,k,1)
       end forall
-      if ( debug_flag ) call write_debugadv(n,index, 1.0, "3D UG OUTS")
+      if ( dbgP ) call write_debugadv(n,index, 1.0, "3D UG OUTS")
 
     case ( "3D_MASS_GROUP" ) !
       igrp = f_3d(n)%index
@@ -1612,7 +1612,7 @@ subroutine Derived(dt,End_of_Day)
                                + d_3d(n,:,:,:,IOU_INST)
         if ( f_3d(n)%avg )  nav_3d(n,:) = nav_3d(n,:) + 1 !only collected for end_of_day
     
-        if( debug_flag ) then
+        if( dbgP ) then
           write(*,fmt="(a20,a9,i4,f8.3,2es12.3)") "END_OF_DAY MAX3D", &
             f_3d(n)%class, n, thour,  &
             d_3d(n,debug_li,debug_lj,KMAX_MID,IOU_MON ),&

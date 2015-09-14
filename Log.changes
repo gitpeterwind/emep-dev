@@ -154,6 +154,46 @@ changes here (and when committing svn), and Dave will tag as required
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+14th September 2015 Dave 3046
+
+Most AOT and POD type definitions moved to config  system - enables simpler
+changes in the settings, and varying output frequency through iotype.
+NOTE - changes done for EMEPSTD so far. Needs to be done for SR, other...
+
+AOTnPOD_ml 
+- All O3cl settings removed - moved to config_Outputs_EMEPSTD.nml
+- O3cl_t (was O3cl) now has iotype
+- is_EU, is_MM, is_XX logicals added to help clear up confusions and
+  chase down a possible bug in AOT (to be continued)
+- debug stuff cleaned and extended,
+
+config_Outputs_EMEPSTD:
+- added new section for PODs and AOTs
+
+Mosaics_ml 
+- modified for O3cl_t
+- and iotype usage
+
+My_Derived_ml
+- All POD/AOT defintions removed
+- older commented-out code for COLUMN removed
+
+SMALL TIDY-UPS (as 3046):
+
+Derived_ml
+- small debug changes
+- tmp comment-out of iadv_EC_C_WOOD type checks. Killed EmChem09 runs!
+
+DerivedFields_ml
+- removed copyright
+
+Landuse_ml
+- small debug changes
+
+Sites_ml
+- small debug changes
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 13th September 2015 Dave 3045
 
 More clean-ups -

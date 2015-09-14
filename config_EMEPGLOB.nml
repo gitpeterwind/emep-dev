@@ -16,7 +16,7 @@
   USES%GRIDDED_EMIS_MONTHLY_FACTOR = T, !
   USES%PlumeMethod      = 'PVDI',    ! default PVDI, possible: NILU, ASMI, PVDI
   USES%PFT_MAPS         = T,         ! PFT LAI tests
-  USES%n2o5HydrolysisMethod = 'SmixTen', !  "Gamma:0.002' ! 'OrigRiemer'! =ACP2012 EMEP implementation
+  USES%n2o5HydrolysisMethod = 'Smix', !  "Gamma:0.002' ! 'OrigRiemer'! =ACP2012 EMEP implementation
 !------------------------------
   USE_SOILWATER         = T,          ! Uses SMI from meteo data
   USE_CONVECTION        = T,
@@ -42,26 +42,43 @@
 !  AERO%EQUILIB          = 'MARS ',      ! MARS, MARS_2900, GEOSCHEM, EQSAM, or EMEP
 !  AERO%NSIZE etc... see ModelConstants
 !------------------------------
-  EMIS_SOURCE           = 'CdfFractions', ! 'emislist' or 'CdfFractions'
-  !EMIS_SOURCE           = 'emislist', ! 'emislist' or 'CdfFractions'
+  !DS EMIS_SOURCE           = 'emislist', ! 'emislist' or 'CdfFractions'or 'Mixed'
+  EMIS_SOURCE           = 'Mixed', ! 'emislist' or 'CdfFractions'or 'Mixed'
   EMIS_TEST             = 'None',     ! 'None' or 'CdfSnap' 
 !------------------------------
 ! IN TESTING:
-! If EMiS_TEST set, then the emis_inputlists will be used.
+! If EMIS_SOURCE= 'Mixed', then the emis_inputlists will be used.
+  !DataDir = '/global/work/mifapw/emep',
+  !EmisDir = 'DataDir/Data',
+  !stallo: DataDir = '/global/work/mifads/cdf_emis',
+  !vilje:
+ DataDir = '/work/mifads/emep/Data/cdf_emis',
+  !EmisDir = 'DataDir/TNO_work2015/MACC2_Nov2013/2009', ! AVOC
+  !EmisDir = 'DataDir/TNO_work2015/',
+  EmisDir = 'DataDir/',
+!  emis_inputlist(1)%name     = 'EmisDir/Emis_GLOB_05.nc', !example of Fractions type
+!  emis_inputlist(1)%name     = 'EmisDir/temp/gridPOLL', !example of ASCII type (POLL values must be with lower case letters)
 ! Below, one can either include or exclude, not both
 ! Only recognised group now is EUMACC2
 ! (1) From MACC2 7km:
-  emis_inputlist(1)%name     = 'GriddedSnapEmis_POLL.nc', !
-  emis_inputlist(1)%excl(1:) = 'US','INTSHIP',   ! US lat/long limits wrong
+  !emis_inputlist(1)%name     = 'CdfGlobal/GriddedSnapEmis_POLL.nc', !
+!  emis_inputlist(1)%name     = 'EmisDir/MACC2_Mar2013/2010/Emis_POLL.nc', 
+!  emis_inputlist(1)%incl(1:) = 'EUMACC2',
 ! (2) Global:
-  emis_inputlist(2)%name     = 'GlobalSnapEmis_POLL.nc', !
-  emis_inputlist(2)%excl(1:) = 'EUMACC2','INTSHIPS','MEXI','ARGE','BRAZ','CHIL',
-    'OLAM','AUTR','NZEL','BANG','INDI','PAKI','BHUT','BRUN','CAMB','CHIN','TAIW',
-    'VIET','THAI','INDO','JAPA','LAOS','MALA','MONG','MYAN','NEPA','KORN','PHIL',
-    'SING','KORS','SAFR', 
+  !emis_inputlist(2)%name     = 'GlobalSnapEmis_POLL.nc', !
+  !emis_inputlist(1)%excl(1:) = 'EUMACC2','INTSHIPS',
+  emis_inputlist(1)%name     = 'EmisDir/CdfGlobal/2010/Emis_POLL.nc', ! from IIASA, 0.5 deg
+  emis_inputlist(1)%excl(1:) = 'INTSHIPS',
+  !'MEXI','ARGE','BRAZ','CHIL',
+  !  'OLAM','AUTR','NZEL','BANG','INDI','PAKI','BHUT','BRUN','CAMB','CHIN','TAIW',
+  !  'VIET','THAI','INDO','JAPA','LAOS','MALA','MONG','MYAN','NEPA','KORN','PHIL',
+  !  'SING','KORS','SAFR', 
 ! (3) Shipping:
-  emis_inputlist(3)%name     = 'GlobalShipEmis_POLL.nc', !
-  emis_inputlist(3)%incl(1:) = 'INTSHIPS', 
+  !emis_inputlist(3)%name     = 'EmisDir/CdfGlobal_Jan2014/RCP60_emep/EmisIPCC_POLL_ships_2005.nc',
+  !emis_inputlist(3)%name     = 'EmisDir/CdfGlobal/RCP60_emep/EmisIPCC_POLL_ships_2010.nc',
+ !BUG FIX 26th JULY 2015 (+ dropped MACC):
+  emis_inputlist(2)%name     = 'EmisDir/CdfGlobal_Jul2015/RCP60_emep/EmisIPCC_POLL_ships_2010.nc',
+  emis_inputlist(2)%incl(1:) = 'INTSHIPS', 
 !
   EMIS_OUT              = F,          ! Output emissions in separate files (memory demanding)
 !------------------------------
@@ -73,6 +90,7 @@
   BGND_CH4              = -1,    ! Reset CH4 (use ppb). (Use -1 for defaults)
 !--- 'fake' vegetation for ozone POD calculations
   FLUX_VEGS = 'IAM_CR','IAM_DF','IAM_MF', ! do not need all array elements
+              'Wheat_Irrigated', 'Wheat_NonIrrig',
             ! 'CCE_SPRUCE','CCE_BEECH','ACE_PINE','ACE_OAK','ACE_BEECH',
             ! 'NEUR_SPRUCE','NEUR_BIRCH','MED_OAK','MED_PINE','MED_BEECH'
 !-------- Sub domain (x0,x1,y0,y1)
@@ -82,6 +100,9 @@
 ! RUNDOMAIN = 240, 720, 48, 736,      ! TNO07 reduced (15W-45E;30N-73N)
 ! RUNDOMAIN = 120, 360, 24, 368,      ! TNO14 reduced (15W-45E;30N-73N)
 ! RUNDOMAIN =  60, 180, 12, 184,      ! TNO28 reduced (15W-45E;30N-73N)
+! RUNDOMAIN =  60, 120, 80, 130,      ! GLOBALC. America
+! RUNDOMAIN =  160, 210, 130, 155,     ! GLOBAL EUR      eg 189, 144 = Bremen, global
+! RUNDOMAIN =  160, 340, 130, 155,     ! GLOBAL EUR      eg 189, 144 = Bremen, global
 ! RUNDOMAIN =  30,  90,  6,  92,      ! TNO56 reduced (15W-45E;30N-73N)
 ! RUNDOMAIN =  60, 180, 12, 184,      ! TNO07 test
 ! RUNDOMAIN =  70, 110, 72, 110,      ! TNO28 test
@@ -96,29 +117,44 @@
   DEBUG%AEROSOL         = F,
   DEBUG%AOT             = F,
   DEBUG%BIO             = F,   ! BVOC emissions, etc.
-  DEBUG%DERIVED         = F,   ! BVOC emissions, etc.
+  DEBUG%DERIVED         = F,   ! 
+  DEBUG%DO3SE           = 0,   !  gstomatal etc.
+  DEBUG%DRYDEP          = F,   !
   DEBUG%FORESTFIRE      = F,
   DEBUG%GLOBBC          = F,
   DEBUG%GRIDVALUES      = F,
   DEBUG%HOURLY_OUTPUTS  = F,
+  DEBUG%LANDDEFS        = F,
+  DEBUG%LANDUSE         = 0,
+  DEBUG%MOSAICS         = F,
+  DEBUG%PFT_MAPS        = 0,   ! in testing
   DEBUG%PHYCHEM         = F,
+  DEBUG%RSUR            = F,
   DEBUG%RUNCHEM         = F,
     DEBUG%SEASALT         = F, ! depends on RUNCHEM
   DEBUG%SETUP_1DBIO     = F,
   DEBUG%SETUP_1DCHEM    = F,
-  DEBUG%SEASALT         = F,
+  DEBUG%SITES           = F,
   DEBUG%SOA             = F,
   DEBUG%STOFLUX         = F,
 ! Use integers to control debug level:
   DEBUG%PFT_MAPS        = 0,   ! in testing
-  DEBUG%LANDUSE         = 0,
-!  DEBUG%STOP_HH        = 1,   ! If >= 0,  stops code after STOP_HH hours
+!   DEBUG%STOP_HH        = 8,   ! If >= 0,  stops code after STOP_HH hours
 ! Specify here the coords and species index (tot, see CM_ChemSpecs_tot)
 !  DEBUG%IJ              = 60, 50      ! Bremen
 !  DEBUG%IJ              = 15, 15      ! sea
 !  DEBUG%IJ              = 186, 113      ! Sahara
   DEBUG%IJ              = 189, 144     ! Bremen, global
+!  DEBUG%IJ              = 175, 131     !  c. Spain, global
+!   DEBUG%IJ = 95, 125 ! CEH C.Ame.
+!   DEBUG%IJ = 49, 133 ! N. Pacific
   DEBUG%SPEC            = 'OH',
+&end
+&Fire_config
+  need_poll = F,        ! Avoids problems with missing ISOP in later FINN data
+  GFED_PATTERN="$GFED",#GFED
+  FINN_PATTERN="$FINN",#FINN
+  GFAS_PATTERN="$GFAS",#GFAS
 &end
 &Nest_config
 !-------- Nesting MODEs

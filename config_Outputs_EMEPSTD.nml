@@ -52,7 +52,7 @@ OutputMisc=
 !nowMET2D 'USTAR_NWP',  'USTAR_NWP', '-', '-', 'm/s', -99,  -99,      F,   1.0, T, 4,
  'Snow_F',    'XSNOW', '-',      '-',   'frac', -99,  -99,      F,   1.0, T, 4,
  'Psurf_d',    'PSURF', '-',     '-', 'hPa', -99,  -99,      F,   1.0, T, 4,
-!
+!====================================================================================
 OutputConcs= 
       'HMIX'                ,'m'   ,'2d','HMIX'     ,'MISC' ,7, !! hourly tests
       'SurfAreaPMF_um2cm3' ,'um2/cm3' ,'2d','SurfAreaPMF_um2cm3'    ,'MISC' ,4, !
@@ -238,6 +238,101 @@ OutputConcs=
     ! 'PART_XO_OFFLOA25_O'  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,3, !! NEVER as ugC
     ! 'PART_XO_OWDOA25_O'   ,'ug'  ,'2d','AIR_CONCS','SPEC' ,3, !! NEVER as ugC
     ! 'PART_XO_OFFIOA25_O'  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,3, !! NEVER as ugC
+!
+! o3 metrics --------------- SEP 2015 added here -----------------------------
+!
+! MM (Mapping Manual) means use daylight O3, EU uses 7:00 -- 18:59 UTC
+! iotyp is output frequency, 4 is daily, 3 is monthly
+!
+OutputVegO3= 
+! Name                 class  Threshhold  defn  txtLC    RelSGS, SAccPeriod, EAccPeriod, iotyp 
+  'POD05_IAM_CR',      'POD', 0.5,        '- ', 'IAM_CR',  F,       0,          999 ,     4, !TEST
+!
+! 'qPOD1_IAM_DF',     'VEGO3', 'POD',      'IAM_DF',   'mmole/m2', 1,  -99,      F,   1.0, T, 4,
+!====================================================================================
+    'POD1_IAM_DF   ',   'POD', 1.0,  'MM', 'IAM_DF',F,0,999 , 3  , 
+    'POD0_IAM_DF   ',   'POD', 0.0,  'MM', 'IAM_DF',F,0,999 , 3  ,
+    'POD1_IAM_MF   ',   'POD', 1.0,  'MM', 'IAM_MF',F,0,999 , 3  ,
+    'POD0_IAM_MF   ',   'POD', 0.0,  'MM', 'IAM_DF',F,0,999 , 3  ,
+    'POD1_DF       ',   'POD', 1.0,  'MM', 'DF    ',F,0,999 , 3  ,
+    'POD1_CF       ',   'POD', 1.0,  'MM', 'CF    ',F,0,999 , 3  ,
+    'POD3_TC       ',   'POD', 3.0,  'MM', 'TC    ',F,0,999 , 3  , 
+!CEH JULY2015 ECLGLOB
+!    'POD0_Wheat_Irrigated',   'POD', 0.0,  'MM', 'Wheat_Irrigated',F,0,999 , 4  , 
+!    'POD1_Wheat_Irrigated',   'POD', 1.0,  'MM', 'Wheat_Irrigated',F,0,999 , 4  ,
+!    'POD2_Wheat_Irrigated',   'POD', 2.0,  'MM', 'Wheat_Irrigated',F,0,999 , 4  ,
+!    'POD3_Wheat_Irrigated',   'POD', 3.0,  'MM', 'Wheat_Irrigated',F,0,999 , 4  , 
+!    'POD3c_Wheat_Irrigated',   'POD', 3.0,  'MM:C', 'Wheat_Irrigated',F,0,999 , 4  , 
+!    'POD3p5_Wheat_Irrigated',   'POD', 3.0,  'MM:Plus5', 'Wheat_Irrigated',F,0,999 , 4  , 
+!    'POD3m5_Wheat_Irrigated',   'POD', 3.0,  'MM:Minus5', 'Wheat_Irrigated',F,0,999 , 4  , 
+!    'POD3p5_Wheat_NonIrrig',   'POD', 3.0,  'MM:Plus5', 'Wheat_Irrigated',F,0,999 , 4  , 
+!    'POD3m5_Wheat_NonIrrig',   'POD', 3.0,  'MM:Minus5', 'Wheat_Irrigated',F,0,999 , 4  , 
+!    'POD4_Wheat_Irrigated',   'POD', 4.0,  'MM', 'Wheat_Irrigated',F,0,999 , 4  ,
+!    'POD6_Wheat_Irrigated',   'POD', 6.0,  'MM', 'Wheat_Irrigated',F,0,999 , 4  ,
+!    'POD6p5_Wheat_Irrigated',   'POD', 6.0,  'MM:Plus5', 'Wheat_Irrigated',F,0,999 , 4  ,
+!    'POD6m5_Wheat_Irrigated',   'POD', 6.0,  'MM:Minus5', 'Wheat_Irrigated',F,0,999 , 4  ,
+!    'POD0_Wheat_NonIrrig',   'POD', 0.0,  'MM', 'Wheat_NonIrrig',F,0,999 , 4  ,
+!    'POD1_Wheat_NonIrrig',   'POD', 1.0,  'MM', 'Wheat_NonIrrig',F,0,999 , 4  ,
+!    'POD2_Wheat_NonIrrig',   'POD', 2.0,  'MM', 'Wheat_NonIrrig',F,0,999 , 4  ,
+!    'POD3_Wheat_NonIrrig',   'POD', 3.0,  'MM', 'Wheat_NonIrrig',F,0,999 , 4  ,
+!    'POD4_Wheat_NonIrrig',   'POD', 3.0,  'MM', 'Wheat_NonIrrig',F,0,999 , 4  ,
+!    'POD6_Wheat_NonIrrig',   'POD', 6.0,  'MM', 'Wheat_NonIrrig',F,0,999 , 4  ,
+!CEH ECLGLOB
+!    'POD1_WinterWheat',   'POD', 1.0,  'MM', 'WinterWheat',F,0,999 ), 4  , !=7
+!    'POD3_WinterWheat',   'POD', 3.0,  'MM', 'WinterWheat',F,0,999 ), 4  , !=7
+!    'POD6_WinterWheat',   'POD', 6.0,  'MM', 'WinterWheat',F,0,999 ), 4  , !=7
+!    'POD1_SpringWheat',   'POD', 1.0,  'MM', 'SpringWheat',F,0,999 ), 4  , !=7
+!    'POD3_SpringWheat',   'POD', 3.0,  'MM', 'SpringWheat',F,0,999 ), 4  , !=7
+!    'POD6_SpringWheat',   'POD', 6.0,  'MM', 'SpringWheat',F,0,999 ), 4  , !=7
+!!
+!!TREE TESTS:
+!    'POD1_NEUR_SPRUCE', 'POD', 1.0,  'MM', 'NEUR_SPRUCE  ',F,0,999 ), &
+!    'POD1_NEUR_BIRCH ', 'POD', 1.0,  'MM', 'NEUR_BIRCH   ',F,0,999 ), &
+!    'POD1_ACE_PINE ',   'POD', 1.0,  'MM', 'ACE_PINE   ',F,0,999 ), & !
+!    'POD1_ACE_OAK  ',   'POD', 1.0,  'MM', 'ACE_OAK    ',F,0,999 ), &
+!    'POD1_ACE_BEECH',   'POD', 1.0,  'MM', 'ACE_BEECH  ',F,0,999 ), &
+!    'POD1_CCE_SPRUCE', 'POD', 1.0,  'MM', 'CCE_SPRUCE  ',F,0,999 ), &
+!    'POD1_CCE_BEECH', 'POD', 1.0,  'MM', 'CCE_BEECH  ',F,0,999 ), &
+!    'POD1_MED_OAK', 'POD', 1.0,  'MM', 'MED_OAK  ',F,0,999 ), &
+!    'POD1_MED_PINE', 'POD', 1.0,  'MM', 'MED_PINE  ',F,0,999 ), &
+!    'POD1_MED_BEECH', 'POD', 1.0,  'MM', 'MED_BEECH  ',F,0,999 ), & !10 =>26
+!! 30days, 15 before mid, 15 after
+!    'POD3_TC30d    ',   'POD', 3.0,  'MM', 'TC    ',T,30,60 ), & 
+! 55days, 15 before mid, 40 after
+!    'POD3_TC55d    ',   'POD', 3.0,  'MM', 'TC    ',T,30,85 ), & 
+!    'POD6_TC55d    ',   'POD', 3.0,  'MM', 'TC    ',T,30,85 ), & ! 55d
+!    'POD3_IAM_CR30d',   'POD', 3.0,  'MM', 'IAM_CR',T,30,60 ), &
+!    'POD3_IAM_CR55d',   'POD', 3.0,  'MM', 'IAM_CR',T,30,85 ), &
+! WARNING - POD6 is not recommended for European-scale IAM modelling
+! Way too uncertain!
+    'POD6_TC       ',   'POD', 3.0,  'MM', 'TC    ',F,0,999, 3,   
+    'POD6_IAM_CR   ',   'POD', 6.0,  'MM', 'IAM_CR',F,0,999, 3,   ! WARN!
+!    'POD6_IAM_CR30d',   'POD', 6.0,  'MM', 'IAM_CR',T,30,60, 4,   ! WARN!
+!    'POD6_IAM_CR55d',   'POD', 6.0,  'MM', 'IAM_CR',T,30,85, 4,   ! WARN!
+    'POD1_IAM_CR   ',   'POD', 1.0,  'MM', 'IAM_CR',F,0,999, 3,   ! 
+    'POD0_IAM_CR   ',   'POD', 0.0,  'MM', 'IAM_CR',F,0,999, 3,   
+    'POD3_IAM_CR   ',   'POD', 3.0,  'MM', 'IAM_CR',F,0,999 , 3,  
+! has 90 day GS
+    'XMMAOT40_TC    ','AOT', 40.0, 'XMM', 'TC    ',F,0,999, 3,   
+    'XMMAOT40_IAM_DF','AOT', 40.0, 'XMM', 'IAM_DF',F,0,999, 3,   
+    'XMMAOT40_IAM_MF','AOT', 40.0, 'XMM', 'IAM_MF',F,0,999, 3,   
+    'XMMAOT40_IAM_CR','AOT', 40.0, 'XMM', 'IAM_CR',F,0,999, 3,   
+!
+    'MMAOT40_TC    ','AOT', 40.0, 'MM', 'TC    ',F,0,999, 3,   
+    'MMAOT40_IAM_DF','AOT', 40.0, 'MM', 'IAM_DF',F,0,999, 3,   
+    'MMAOT40_IAM_MF','AOT', 40.0, 'MM', 'IAM_MF',F,0,999, 3,   
+    'MMAOT40_IAM_CR','AOT', 40.0, 'MM', 'IAM_CR',F,0,999, 3,   
+!    'MMAOT40p5_IAM_DF','AOT', 40.0, 'MM:Plus5', 'IAM_DF',F,0,999, 3,   
+!    'MMAOT40m5_IAM_DF','AOT', 40.0, 'MM:Minus5', 'IAM_DF',F,0,999, 3,   
+! IAM_CR, we use 3m O3
+    'EUAOT40_Crops ', 'AOT', 40.0, 'EU', 'IAM_CR',F,0,999, 3,   
+    'XEUAOT40_Crops ', 'AOT', 40.0, 'XEU', 'IAM_CR',F,0,999, 3,   
+! IAM_DF, we use 3m O3
+    'EUAOT40_Forests', 'AOT', 40.0, 'EU', 'IAM_DF',F,0,999, 3,   
+    'XEUAOT40_Forests', 'AOT', 40.0, 'XEU', 'IAM_DF',F,0,999, 3,   
+    'MMAOT40_IAM_WH ','AOT', 40.0, 'MM', 'IAM_WH',F,0,999, 3,
+!    /) !NB -last not found. Could just be skipped, but kept
+! -------------------------- SEP 2015 added here -----------------------------
 &end
 
 ! nb freq =  IOU_YEAR=2,IOU_MON=3, IOU_DAY=4,IOU_HOUR=6, IOU_HOUR_MEAN=7
