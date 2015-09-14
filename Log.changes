@@ -154,7 +154,7 @@ changes here (and when committing svn), and Dave will tag as required
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-14th September 2015 Dave 3046
+14th September 2015 Dave 3046-3047
 
 Most AOT and POD type definitions moved to config  system - enables simpler
 changes in the settings, and varying output frequency through iotype.
