@@ -312,11 +312,6 @@ OutputVegO3=
     'POD1_IAM_CR   ',   'POD', 1.0,  'MM', 'IAM_CR',F,0,999, 3,   ! 
     'POD0_IAM_CR   ',   'POD', 0.0,  'MM', 'IAM_CR',F,0,999, 3,   
     'POD3_IAM_CR   ',   'POD', 3.0,  'MM', 'IAM_CR',F,0,999 , 3,  
-! has 90 day GS
-    'XMMAOT40_TC    ','AOT', 40.0, 'XMM', 'TC    ',F,0,999, 3,   
-    'XMMAOT40_IAM_DF','AOT', 40.0, 'XMM', 'IAM_DF',F,0,999, 3,   
-    'XMMAOT40_IAM_MF','AOT', 40.0, 'XMM', 'IAM_MF',F,0,999, 3,   
-    'XMMAOT40_IAM_CR','AOT', 40.0, 'XMM', 'IAM_CR',F,0,999, 3,   
 !
     'MMAOT40_TC    ','AOT', 40.0, 'MM', 'TC    ',F,0,999, 3,   
     'MMAOT40_IAM_DF','AOT', 40.0, 'MM', 'IAM_DF',F,0,999, 3,   
@@ -326,10 +321,8 @@ OutputVegO3=
 !    'MMAOT40m5_IAM_DF','AOT', 40.0, 'MM:Minus5', 'IAM_DF',F,0,999, 3,   
 ! IAM_CR, we use 3m O3
     'EUAOT40_Crops ', 'AOT', 40.0, 'EU', 'IAM_CR',F,0,999, 3,   
-    'XEUAOT40_Crops ', 'AOT', 40.0, 'XEU', 'IAM_CR',F,0,999, 3,   
 ! IAM_DF, we use 3m O3
     'EUAOT40_Forests', 'AOT', 40.0, 'EU', 'IAM_DF',F,0,999, 3,   
-    'XEUAOT40_Forests', 'AOT', 40.0, 'XEU', 'IAM_DF',F,0,999, 3,   
     'MMAOT40_IAM_WH ','AOT', 40.0, 'MM', 'IAM_WH',F,0,999, 3,
 !    /) !NB -last not found. Could just be skipped, but kept
 ! -------------------------- SEP 2015 added here -----------------------------

@@ -264,7 +264,6 @@ contains
 
            iw= AERO%PM_F ! now use for fine PM
            rho=AERO%PMdens(AERO%Inddry(iw))
-           !TMP S_m2m3(iw,k) = pmSurfArea(ugnsdPM,Dp=Ddry(iw), Dpw=DpgNw(iw,k))
            S_m2m3(iw,k) = pmSurfArea(ugpmf,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
                                      rho_kgm3=rho )
 
@@ -292,9 +291,11 @@ contains
 !           call CheckStop (  S_m2m3(k) < 0.0 , "NEGS_m2m3" )
 
            if( debug_flag .and. k==20 )  then
-            write(*,fmt)  sub//" SAREAugPM in  ", k,  rh(k), temp(k), ugsiaPM, ugpmf, ugSSaltC, ugDustC
+            write(*,fmt)  sub//" SAREAugPM in  ", k,  rh(k), temp(k), &
+              ugsiaPM, ugpmf, ugSSaltC, ugDustC
             do iw = 1, AERO%NSAREA
-             write(*,fmt) sub//"GERB ugDU (S um2/cm3)  ", iw, Ddry(iw), DpgNw(iw,k)/Ddry(iw), 1.0e6*S_m2m3(iw,k)
+             write(*,fmt) sub//"GERB ugDU (S um2/cm3)  ", iw, Ddry(iw), &
+              DpgNw(iw,k)/Ddry(iw), 1.0e6*S_m2m3(iw,k)
             end do
            end if
 
@@ -314,27 +315,7 @@ contains
               end do
            end if
 
-!         if( me==36 .and. i==5.and.j==31.and. Sarea_um2(kpm) > 1.0e5 ) then
-!             print "(a,4i4,g12.3,f7.2,es12.3)", "SURFAREA ",me,i,j,kpm,
-!             ugpmf(kpm), rh(kpm), Sarea_um2(kpm)
-!             !call StopAll('SSS')
-!         end if
-
-         !! Mol. speeds for aerosol uptake
-
-!print *, "CN2O5", i,j,k,temp(k),tinv(k)
-!if( cn2o5(k) < 0.0 ) then
-!   print *, "NEG CN2O5 ", k, temp(k), tinv(k),  cn2o5
-!   call CheckStop('CN2O5')
-!end if
-
-! if( debug_flag .and. k==20 ) then
-!    print fmt, "SSGAMMA ",k, rh(k), rct(71,k),cN2O5(k), DpgNWS(k),S_SSFM2M3(k),
-!    UPTAKERATE(0.5*DPGNWS(k),CN2O5(k),gam=GammaN2O5_EJSS(rh(k)),S=S_SSFM2M3(k))
-!end if
-
-         end if ! GERBER
-
+          end if ! GERBER
 
       ! End Surf Area
     

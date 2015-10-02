@@ -85,7 +85,7 @@ subroutine Add_MosaicMetConcs(MOSAIC_METCONCS,MET_LCS,iotyp, nMET)
   integer, intent(out) :: nMET
   integer :: ilab, n, iLC
   character(len=TXTLEN_DERIV) :: name
-  character(len=17), save :: stxt='AddMosaicMetConc:'
+  character(len=17), save :: dtxt='AddMosaicMetConc:'
 
   !------------- Met data for d_2d -------------------------
   ! We find the various combinations of met and ecosystem,
@@ -106,7 +106,7 @@ subroutine Add_MosaicMetConcs(MOSAIC_METCONCS,MET_LCS,iotyp, nMET)
       name = trim ( MOSAIC_METCONCS(ilab) ) // "_"  // trim( MET_LCS(n) )
 
       nMosaic = nMosaic + 1
-      call CheckStop(NMosaic>=MAX_MOSAIC_OUTPUTS,stxt//"too many nMosaics, nMET")
+      call CheckStop(NMosaic>=MAX_MOSAIC_OUTPUTS,dtxt//"too many nMosaics, nMET")
       !Deriv(name, class,    sub,   txt,           unit
       !Deriv index, f2d, scale, avg? Inst Yr Mn Day
       MosaicOutput(nMosaic) = Deriv(  &
@@ -135,7 +135,7 @@ subroutine Add_MosaicMetConcs(MOSAIC_METCONCS,MET_LCS,iotyp, nMET)
   integer :: n, itot, iLC, iadv
   character(len=TXTLEN_DERIV) :: name
   character(len=TXTLEN_SHORT) :: typ, poll, lctxt
-  character(len=14), save :: stxt='AddNewMosaics:'
+  character(len=14), save :: dtxt='AddNewMosaics:'
 
   nMc = 0
   MC_LOOP: do n = 1, size( Mc(:)%txt1 )
@@ -155,10 +155,10 @@ subroutine Add_MosaicMetConcs(MOSAIC_METCONCS,MET_LCS,iotyp, nMET)
       if(MasterProc) write(*,*) "MOSSPEC not found ", iadv, trim(name)
       cycle MC_LOOP
     endif
-    call CheckStop(iadv<1 .or. iadv>NSPEC_ADV,stxt//" ERR: Mc  _SPECS: Mc_SPECS")
+    call CheckStop(iadv<1 .or. iadv>NSPEC_ADV,dtxt//" ERR: Mc  _SPECS: Mc_SPECS")
 
     nMosaic = nMosaic + 1
-    call CheckStop(NMosaic>=MAX_MOSAIC_OUTPUTS,stxt//"too many nMosaics, nVg" )
+    call CheckStop(NMosaic>=MAX_MOSAIC_OUTPUTS,dtxt//"too many nMosaics, nVg" )
 
     !------------- Deposition velocities for d_2d -------------------------
     !Deriv(name, class,    subc,  txt,           unit
@@ -184,7 +184,7 @@ subroutine Add_MosaicVegO3(nVEGO3)
   integer :: n, iLC
   character(len=TXTLEN_DERIV) :: name
   character(len=TXTLEN_SHORT) :: units
-  character(len=*), parameter :: stxt='AddMosaicVEGO3:'
+  character(len=*), parameter :: dtxt='AddMosaicVEGO3:'
   real :: scale
   type(O3cl_t) :: veg
   logical :: dt_scale
@@ -209,7 +209,7 @@ subroutine Add_MosaicVegO3(nVEGO3)
        scale = 1.0/3600.0 ! AOT in ppb.hour
        dt_scale = .true.
      case default
-       call CheckStop(DEBUG%MOSAICS,stxt//"vegclass errror"//veg%class )
+       call CheckStop(DEBUG%MOSAICS,dtxt//"vegclass errror"//veg%class )
      endselect
    
      !------------------- Check if LC present in this array ------!
@@ -221,7 +221,7 @@ subroutine Add_MosaicVegO3(nVEGO3)
      name = veg%name
    
      nMosaic = nMosaic + 1
-     call CheckStop(NMosaic>=MAX_MOSAIC_OUTPUTS,stxt//"too many nMos..EGO3")
+     call CheckStop(NMosaic>=MAX_MOSAIC_OUTPUTS,dtxt//"too many nMos..EGO3")
       if(dbg0) then
         write(*,*) "Moscaics", nMosaic, trim(name)// "->" //trim(veg%TXTLC)
       end if
@@ -241,7 +241,7 @@ subroutine Add_MosaicDDEP(DDEP_ECOS,DDEP_WANTED,nDD)
   integer :: i, n, iadv,igrp
   character(len=TXTLEN_DERIV) :: name='-', xname, xtyp, xxname
   character(len=TXTLEN_SHORT) :: units
-  character(len=14), save :: stxt='AddMosaicDDEP:'
+  character(len=14), save :: dtxt='AddMosaicDDEP:' ! for debug output
   real :: unitscale
 !------------- Dry Depositions for d_2d -------------------------
 ! Add species and ecosystem depositions if wanted:
@@ -253,18 +253,18 @@ subroutine Add_MosaicDDEP(DDEP_ECOS,DDEP_WANTED,nDD)
     xname  = DDEP_WANTED(i)%txt1
     xtyp   = DDEP_WANTED(i)%txt2
     if ( xname == '-') exit
-    if(dbg0) write(*,*) stxt//"DDEP_WANTED,a:"//trim(xname), i, xtyp
+    if(dbg0) write(*,*) dtxt//"DDEP_WANTED,a:"//trim(xname), i, xtyp
 
     do n=1,size(DDEP_ECOS)
 
-      if(dbg0) write(*,"(a,2i4,2a12)") stxt//"DDEP_WANTED,b:", n, DDEP_ECOS(n)%ind, &
+      if(dbg0) write(*,"(a,2i4,2a12)") dtxt//"DDEP_WANTED,b:", n, DDEP_ECOS(n)%ind, &
          trim(DDEP_ECOS(n)%name), trim(xtyp)
       if (DDEP_ECOS(n)%ind < 1) exit
       nDD = nDD + 1
       nMosaic = nMosaic + 1
 
       call CheckStop(NMosaic>=MAX_MOSAIC_OUTPUTS,&
-        stxt//"too many nMosaics, DDEP "//trim(xname))
+        dtxt//"too many nMosaics, DDEP "//trim(xname))
 
       select case(xtyp)
       case("SPEC")    ! normal species, e.g. DDEP_SO2_m2CF
@@ -276,14 +276,14 @@ if( xname(1:4) == "STO_" ) then
 end if
         iadv = find_index(xxname,species_adv(:)%name)         ! Index in ix_adv arrays
 if( iadv < 1 ) print *, "OOPADVNOW", iadv, trim(xname) // trim(name)
-        call CheckStop(iadv<1,stxt//"Unknown in DDEP_WANTED SPEC: "//trim(xname))
+        call CheckStop(iadv<1,dtxt//"Unknown in DDEP_WANTED SPEC: "//trim(xname))
         unitscale = Units_Scale(DDEP_WANTED(i)%txt3,iadv,units)
         if(dbg0) print *, "ADVNO ",n,iadv,trim(xname), unitscale
 
       case("GROUP")
         igrp = find_index(xname,chemgroups(:)%name) ! array of members: chemgroups%ptr
 if( igrp < 1 ) print *, "OOPNOW", igrp, trim(xname) // trim(name)
-        call CheckStop(igrp<1,stxt//"Unknown in DDEP_WANTED GROUP: "//trim(xname))
+        call CheckStop(igrp<1,dtxt//"Unknown in DDEP_WANTED GROUP: "//trim(xname))
         unitscale = Units_Scale(DDEP_WANTED(i)%txt3,-1,units)
                       ! Units_Scale(iadv=-1) returns 1.0
                       ! Add_MosaicOutput gets the unit conversion factor from Group_Scale
@@ -291,7 +291,7 @@ if( igrp < 1 ) print *, "OOPNOW", igrp, trim(xname) // trim(name)
         dryGroupUnits(nMosaic) = Group_Scale(igrp,DDEP_WANTED(i)%txt3,&
                                              debug=dbg0)
       case default
-        call CheckStop(DEBUG%MOSAICS,stxt//" unknown MosaicDDEP type "//trim(DDEP_WANTED(i)%txt2))
+        call CheckStop(DEBUG%MOSAICS,dtxt//" unknown MosaicDDEP type "//trim(DDEP_WANTED(i)%txt2))
       endselect
 !print *, "OOP===========================POO"
 
@@ -322,7 +322,7 @@ end subroutine Add_MosaicDDEP
   real, dimension(:,:), intent(in) :: fluxfrac  ! dim (NADV, NLANDUSE)
   real, dimension(:), intent(in) :: Deploss
 
-  character(len=*), parameter :: stxt='AddMosc:'
+  character(len=*), parameter :: dtxt='AddMosc:'
   type(group_umap), pointer :: gmap=>null()  ! group unit mapping  
   integer :: n, nadv, iLC, iEco
   integer :: imc, f2d, cdep
@@ -360,17 +360,17 @@ end subroutine Add_MosaicDDEP
   if(first_call) then  ! need to find indices
     do imc = 1, nMosaic
      MosaicOutput(imc)%f2d  = find_index(MosaicOutput(imc)%name ,f_2d(:)%name)
-     if(DEBUG%MOSAICS .and. MasterProc) write(*,*) stxt//" f2D", imc, &
+     if(DEBUG%MOSAICS .and. MasterProc) write(*,*) dtxt//" f2D", imc, &
          trim(MosaicOutput(imc)%name),  MosaicOutput(imc)%f2d
     enddo
 
     if( dbg ) then
-      write(*,*)  stxt//"ECOAREAS ", i,j
+      write(*,*)  dtxt//"ECOAREAS ", i,j
       do n=1,NDEF_ECOSYSTEMS
-        write(*,"(a,i3,a,f14.4,g12.3)")  stxt//"ECOCHECK ", n, &
+        write(*,"(a,i3,a,f14.4,g12.3)")  dtxt//"ECOCHECK ", n, &
           DEF_ECOSYSTEMS(n), EcoFrac(n), invEcoFrac(n)
       enddo
-      write(*,*) stxt//"Done ECOCHECK ========================"
+      write(*,*) dtxt//"Done ECOCHECK ========================"
     endif       
   endif
   first_call = .false.
@@ -407,7 +407,7 @@ end subroutine Add_MosaicDDEP
     !    call CheckStop(f2d<1, "f2d ERROR:  "//MosaicOutput(imc)%name)
     !end if
     !TMP if( dbg ) write(*,"(a,a)",advance='no') "Add_Mosaic: "// &
-    if( dbg ) write(*,"(a,a)") stxt//"Add_Mosaic: "// &
+    if( dbg ) write(*,"(a,a)") dtxt//"Add_Mosaic: "// &
             trim(MosaicOutput(imc)%name), ", " // trim(subclass)
 
     select case(subclass)
@@ -423,7 +423,7 @@ end subroutine Add_MosaicDDEP
  !HACK
           Fflux = Fflux * Sub(0)%Gsto(CDDEP_O3)/Sub(0)%Gsur(CDDEP_O3)
           if( dbghh ) then
-            print "(a,2i4,3es12.3)", stxt//"NOWSDEP ", nadv, current_date%hour,  Sub(0)%Gsur(2), Sub(0)%Gsto(2), Fflux
+            print "(a,2i4,3es12.3)", dtxt//"NOWSDEP ", nadv, current_date%hour,  Sub(0)%Gsur(2), Sub(0)%Gsto(2), Fflux
          end if
       end if
  !HACK
@@ -436,13 +436,13 @@ end subroutine Add_MosaicDDEP
                          *sum(fluxfrac(nadv,:),Is_EcoSystem(iEco,:))
         enddo ! n
       case default
-        call CheckStop(stxt//" unknown DDEP Specie/Group")
+        call CheckStop(dtxt//" unknown DDEP Specie/Group")
       endselect
 
       if(DEBUG%MOSAICS.and.Fflux<0.0) then
-        write(*,"(a,3i4,a)") stxt//"DDEP Fflux CATASTR ", imc, f2d, iEco, &
+        write(*,"(a,3i4,a)") dtxt//"DDEP Fflux CATASTR ", imc, f2d, iEco, &
               trim(MosaicOutput(imc)%name)
-        call CheckStop(stxt//"CATASTROPHE: "//MosaicOutput(imc)%name)
+        call CheckStop(dtxt//"CATASTROPHE: "//MosaicOutput(imc)%name)
       endif
 
       ! - invEcoFracCF divides the flux per grid by the landarea of each
@@ -464,24 +464,20 @@ end subroutine Add_MosaicDDEP
         if(n==MMC_LAI    ) output = Sub(iLC)%LAI
 
         if(dbg.and.n==MMC_CANO3.and.iLC==2) & !DF
-           write(*,"(2a,g12.4)") stxt//"MYDDEP CANO3 ", &
+           write(*,"(2a,g12.4)") dtxt//"MYDDEP CANO3 ", &
             trim(txtdate), output
 
       case("POD")         ! Fluxes, PODY (was AFstY)
         n =  MosaicOutput(imc)%Index !Index in VEGO3_OUPUTS
         call Calc_POD( n, iLC, output, debug_flag) 
-        if(dbg) write(*,"(2a,g12.4)") stxt//"MYPOD ", &
+        if(dbg) write(*,"(2a,g12.4)") dtxt//"MYPOD ", &
             trim(txtdate), output
-
-      !case("SPOD")         ! Fluxes, PODY (was AFstY)
-      !  n =  MosaicOutput(imc)%Index !Index in VEGO3_OUPUTS
-      !  call Calc_SPOD( n, iLC, output, debug_flag) 
 
 
       case("AOT")         ! AOTX
         n =  MosaicOutput(imc)%Index !Index in VEGO3_OUPUTS
         if(dbg.and. Sub(iLC)%cano3_ppb> 40.0) &
-             write(*,*) stxt//" preAOT", n,iLC, Sub(iLC)%cano3_ppb
+             write(*,*) dtxt//" preAOT", n,iLC, Sub(iLC)%cano3_ppb
         call Calc_AOTx( n, iLC, output ) 
 
       case ( "VG", "Rs ", "Rns", "Gns" ) ! could we use RG_LABELS? 
@@ -497,7 +493,7 @@ end subroutine Add_MosaicDDEP
           do n = 1, size( DepAdv2Calc)
             write(*,*) "DEPADVLIST ", n, DepAdv2Calc(n)
           enddo
-          call CheckStop(cdep<1, stxt//"ERROR: Negative cdep")
+          call CheckStop(cdep<1, dtxt//"ERROR: Negative cdep")
         endif
 
         select case(subclass)
@@ -537,7 +533,7 @@ end subroutine Add_MosaicDDEP
         endif
       endselect
 
-      if(dbg) write(*,"(a,es12.3)") stxt//"ADDED output: "// &
+      if(dbg) write(*,"(a,es12.3)") dtxt//"ADDED output: "// &
          trim(MosaicOutput(imc)%name),  output
       d_2d( f2d,i,j,IOU_INST) = output
     enddo ! Mosaic

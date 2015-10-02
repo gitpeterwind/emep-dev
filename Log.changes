@@ -152,7 +152,30 @@ info on unused variables, etc.
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+2nd Ocober  2015 Dave 3049
 
+CLEAN-up prior to open-source
+BUG fix on AOT (some metrics)
+
+AOTnPOD
+ - buggy code removed, and cleaner system for EU, MM etc used.
+ - prelim XMM, XEU from 3048 deleted
+ - SPOD calculations deleted
+
+config_Outputs
+ - prelim XMM, XEU from 3048 deleted
+
+DryDep_ml
+ - cleaned (a bit)
+
+Setup_ml
+ - cleaned
+
+Sites_ml
+ - small debug modifications (use of dtxt== 'siteswrt:')
+ - changed iz=20 to iz=KMAX_MID for "If ZERO'd, skip surface correction" case
+   in siteswrt_srf
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 14th September 2015 Dave 3046-3047
 

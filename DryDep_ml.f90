@@ -229,7 +229,7 @@ contains
          ,Vg_ratio     & ! Ratio Vg_ref/Vg_3m = ratio C(3m)/C(ref), over land
          ,sea_ratio     ! Ratio Vg_ref/Vg_3m = ratio C(3m)/C(ref), over sea
 
-    character(len=7), parameter :: mysub='DryDep:'
+    character(len=*), parameter :: dtxt='DryDep:' ! debug label
     logical, save      :: dbg, dbghh
     integer n, iiL, nlu, ncalc, nadv, nFlux  ! help indexes
     integer :: imm, idd, ihh, iss     ! date
@@ -329,7 +329,7 @@ contains
       dtz      = dt_advec/Grid%DeltaZ
 
       if ( dbghh ) then
-        call datewrite(mysub//"DMET ", daynumber, (/ &
+        call datewrite(dtxt//"DMET ", daynumber, (/ &
            Grid%zen, Grid%wetarea, 1.0e-5*Grid%psurf, &
            Grid%Idiffuse, Grid%Idirect, Grid%Hd, Grid%LE, Grid%invL,&
            Grid%ustar /) )
@@ -403,7 +403,7 @@ contains
                        AERO%sigma(nae), AERO%DpgV(nae), AERO%PMdens(nae) )
     end do
 
-    if ( dbghh ) call datewrite(mysub//"DRYDEP VS",AERO%NSIZE,&
+    if ( dbghh ) call datewrite(dtxt//"DRYDEP VS",AERO%NSIZE,&
                                   (/ Grid%t2, Grid%rho_ref, AERO%Vs /) )
 
     !/ And start the sub-grid stuff over different landuse (iL)
@@ -449,7 +449,7 @@ contains
 
          call Rsurface(i,j,DRYDEP_GASES ,Gsto,Rsur,errmsg,debug_flag,snow_iL)
 
-         if(dbghh) call datewrite(mysub//"STOFRAC "//LandDefs(iL)%name, &
+         if(dbghh) call datewrite(dtxt//"STOFRAC "//LandDefs(iL)%name, &
                  iL, (/ Gsto(2), Rsur(2), Gsto(2)*Rsur(2)  /) ) ! 2 is for WES_O3
 
            !Sub(iL)%g_sto = L%g_sto   ! needed elsewhere
@@ -594,7 +594,7 @@ contains
          end if
 
          if ( dbghh ) then
-            call CheckStop(  Sumland > 1.011, mysub// "SUMLAND>1")
+            call CheckStop(  Sumland > 1.011, dtxt// "SUMLAND>1")
             do n = CDDEP_O3 , CDDEP_O3 !!! 1,NDRYDEP_GASES 
                call datewrite("DEPO3 ", iL, &
                    (/ Vg_ref(n), Sub(iL)%Vg_ref(n) /) )
@@ -631,7 +631,7 @@ contains
 
            if ( DEBUG%AOT .and. debug_flag .and. iL==1 ) then
               !preO3 = xn_2d(FLUX_TOT,K2)*surf_ppb
-              call datewrite(mysub//"CHVEG ", iL, &
+              call datewrite(dtxt//"CHVEG ", iL, &
                 (/  xn_2d(FLUX_TOT,K2)*surf_ppb, c_hveg*surf_ppb,&
                     c_hveg3m * surf_ppb, 100*Vg_ref(n), 100*Vg_3m(n), &
                     L%Ra_ref, (L%Ra_ref-L%Ra_3m), Ra_diff, Rb(n),Rsur(n) /) )
@@ -752,13 +752,13 @@ contains
                lossfrac = ( 1 - DepLoss(nadv)/(DepLoss(nadv)+xn_2d( ntot,K2)))
               end if
               if ( DEBUG%DRYDEP .and. lossfrac < 0.1 ) then
-                print *, mysub//"LOSSFRACING ", nadv, (/ 1.0*iL, &
+                print *, dtxt//"LOSSFRACING ", nadv, (/ 1.0*iL, &
                   Sub(0)%Vg_Ref(n), DepLoss(nadv), vg_fac(ncalc), lossfrac /)
                 call CheckStop( lossfrac < 0.1, "ERROR: LOSSFRAC " )
               end if
 
               if ( DEBUG%AOT .and. debug_flag ) then !FEB2013 testing
-                call datewrite(mysub//"CHVEGX ", me, &
+                call datewrite(dtxt//"CHVEGX ", me, &
                   (/ xn_2d(FLUX_TOT,K2)*surf_ppb, c_hveg*surf_ppb,&
                    c_hveg3m * surf_ppb, 100*Vg_ref(n), 100*Vg_3m(n) /) )
               end if
@@ -828,7 +828,7 @@ contains
 
         if ( DEBUG%AOT .and. debug_flag .and. ntot == FLUX_TOT  ) then
               write(*, "(a,3i3,i5,i3,2f9.4,f7.3)") &
-               "AOTCHXN ", imm, idd, ihh, current_date%seconds, &
+               dtxt//"AOTCHXN ", imm, idd, ihh, current_date%seconds, &
                    iL, xn_2d(FLUX_TOT,K2)*surf_ppb, &
                     (xn_2d( FLUX_TOT,K2) + DepLoss(nadv) )*surf_ppb, &
                      gradient_fac( ncalc)

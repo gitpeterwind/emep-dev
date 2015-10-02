@@ -383,6 +383,7 @@ subroutine siteswrt_surf(xn_adv,cfac,xn_shl)
   logical, save :: my_first_call = .true.      ! for debugging
   integer                           :: d2index ! index for d_2d field access
   character(len=len(SITE_XTRA_D2D)) :: d2code  ! parameter code -- # --
+  character(len=*),parameter :: dtxt = 'siteswrt:'
 
   real,dimension(NOUT_SITE,NSITES_MAX) :: out  ! for output, local node
 
@@ -412,7 +413,8 @@ subroutine siteswrt_surf(xn_adv,cfac,xn_shl)
     ix = site_x(i)
     iy = site_y(i)
     iz = site_z(i)
-    if( iz == 0 ) iz = 20   ! If ZERO'd, skip surface correction
+    !if( iz == 0 ) iz = 20   ! If ZERO'd, skip surface correction
+    if( iz == 0 ) iz = KMAX_MID  ! If ZERO'd, skip surface correction
 
     i_Att=0
     do ispec = 1, NADV_SITE
@@ -477,8 +479,8 @@ subroutine siteswrt_surf(xn_adv,cfac,xn_shl)
         end if
 
         if( DEBUG%SITES ) &
-          write(6,"(a,3i3,a,i4,es10.3)") "DEBUG ", me, nn, i,&
-            trim(d2code), d2index, out(nn,i)
+          write(6,"(a,3i4,a15,i4,es10.3)") dtxt//"DEBUG ", me, nn, i,&
+            " "//trim(d2code), d2index, out(nn,i)
         call CheckStop( abs(out(nn,i))>1.0e99, &
           "ABS(SITES OUT: '"//trim(SITE_XTRA_D2D(ispec))//"') TOO BIG" )
       enddo
