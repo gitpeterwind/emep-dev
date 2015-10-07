@@ -1,4 +1,4 @@
-vers=rv4.6g;year=2014                  # Input version/year flags
+vers=rv4.8jvm;year=2015               # Input version/year flags
 tdir=$HOME/Unify                      # top directory - change $HOME as required
 idir=$tdir/Unimod.$vers               # Input dir
 

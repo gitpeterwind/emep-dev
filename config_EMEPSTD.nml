@@ -14,8 +14,8 @@
   USES%EMISSTACKS       = F,         ! Reads PointSources file
   USES%DEGREEDAY_FACTORS = T,
   USES%PlumeMethod      = 'PVDI',    ! default PVDI, possible: NILU, ASMI, PVDI
+  USES%n2o5HydrolysisMethod = "SmixTen" ! "Gamma:0.002"  ! "OrigRiemer"
   USES%PFT_MAPS         = F,         ! PFT LAI tests
- USES%n2o5HydrolysisMethod = "Gamma:0.002" ! EmepRiemer=ACP2012 EMEP implementation
 !------------------------------
   USE_SOILWATER         = T,          ! Uses SMI from meteo data
   USE_CONVECTION        = F,

@@ -18,7 +18,7 @@
 ##PBS -lnodes=64 -lpmem=1000MB
 ##PBS -lnodes=16 -lpmem=1000MB
 ##PBS -lnodes=80
-#PBS -lnodes=4:ppn=20
+#PBS -lnodes=1:ppn=20
 # Wall time limit of run
 #PBS -lwalltime=00:20:00
 # Make results readable for others:
@@ -119,7 +119,7 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
 ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"   ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
-($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3049"   ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
+($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3050"   ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
 
 my %BENCHMARK;
 # OpenSource 2008
