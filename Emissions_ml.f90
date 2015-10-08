@@ -411,11 +411,10 @@ contains
           if(MasterProc)  write(*,*)sub//" Mixed format"
           do iemis = 1, size( emis_inputlist(:)%name )
             fname = emis_inputlist(iemis)%name
-             if(MasterProc)  write(*,*)sub//trim(fname)//" LOOP ", iemis
+             if(MasterProc)  write(*,*)"Emission source number ", iemis,"from ",sub//trim(fname)
              if ( fname == "NOTSET" ) then
                 emis_inputlist(iemis)%Nlist = iemis - 1
-                if(MasterProc)  write(*,*)sub//trim(fname)//" Nlist=",&
-                     emis_inputlist(iemis)%Nlist
+                if(MasterProc)  write(*,*)emis_inputlist(iemis)%Nlist, ' emission sources used'
                 exit
              end if
 

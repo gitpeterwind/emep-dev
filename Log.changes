@@ -153,7 +153,14 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-7th Ocober  2015 Dave 3049
+8th October  2015 Peter 3051
+
+output cleanup 
+ ModelConstants_ml.f90 Landuse_ml.f90 Emissions_ml.f90 Met_ml.f90 NetCDF_ml.f90 Derived_ml.f90 BoundaryConditions_ml.f90 EmisGet_ml.f90
+modrun.sh: removed all INPUT.PARA parts (they are in config file now)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+7th October  2015 Dave 3049
 
 CLEAN-up prior to open-source
 

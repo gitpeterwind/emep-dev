@@ -1367,7 +1367,7 @@ end if
   ! chemical scheme:
 
   do ie = 1, NEMIS_SPECS
-    if ( MasterProc .and. ( EmisSpecFound(ie) .eqv. .false.) ) then
+    if ( DEBUG_GETEMIS .and. MasterProc .and. ( EmisSpecFound(ie) .eqv. .false.) ) then
        call PrintLog("WARNING: EmisSpec not found in snapemis. Ok if bio, nat, or fire!! " // trim(EMIS_SPECS(ie)) )
        write(*,*) "WARNING: EmisSpec - emissions of this compound were specified",&
 &               " in the CM_reactions files, but not found in the ",&

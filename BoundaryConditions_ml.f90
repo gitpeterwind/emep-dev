@@ -1286,7 +1286,6 @@ real :: trend_o3=1.0, trend_co, trend_voc
 
     case (IBC_DUST_C,IBC_DUST_F)
        if(USE_DUST)then
-          if(me==0)write(*,*)'DUST BIC read from climatological file'
 !         bc_data(:,:,:) = 0.0
 
 !dust are read from the results of a Global run
@@ -1299,8 +1298,10 @@ real :: trend_o3=1.0, trend_co, trend_voc
          filename='Dust.nc'
          if(ibc==IBC_DUST_C)then
             varname='D3_ug_DUST_WB_C'
+          if(me==0)write(*,*)'coarse DUST BIC read from climatological file'
          else if(ibc==IBC_DUST_F)then
             varname='D3_ug_DUST_WB_F'
+            if(me==0)write(*,*)'fine DUST BIC read from climatological file'
          else
             call CheckStop('IBC dust case error')
          endif

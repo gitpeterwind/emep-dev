@@ -331,7 +331,8 @@ contains
                found=met(ix)%found)
 
           if(write_now)then
-             if(met(ix)%found)write(*,*)'found ',trim(namefield),' in ',trim(meteoname),met(ix)%field(5,5,1,nrix)
+             if(met(ix)%found)write(*,*)'found ',trim(namefield),' in ',trim(meteoname)
+             if(met(ix)%found)write(*,*)'random value = ',met(ix)%field(5,5,1,nrix)
              if(.not.met(ix)%found)write(*,*)'did not find ',trim(namefield),' in ',trim(meteoname)
           endif
        endif
@@ -3064,6 +3065,7 @@ subroutine Check_Meteo_Date
     call CheckStop(ndate(2),nmonth,"Met_ml: wrong month")
     call CheckStop(ndate(3),nday  ,"Met_ml: wrong day"  )
     
+    if(MasterProc)write(*,*)'first meteo dates read:'     
     do ihh=1,Nhh
       if(date_in_days)then
         call check(nf90_get_var(ncFileID,timeVarID,ndays,start=(/ihh/),count=(/n1/)))

@@ -2013,7 +2013,7 @@ subroutine GetCDF(varname,fileName,Rvar,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,
       !write(*,*)'size variable ',i,dims(i)
   enddo
 
-  write(*,*)'dimensions ',(dims(i),i=1,ndims)
+  if(MasterProc.and.DEBUG_NETCDF)write(*,*)'dimensions ',(dims(i),i=1,ndims)
   if(dims(1)>varGIMAX.or.dims(2)>varGJMAX)then
      write(*,*)'buffer too small',dims(1),varGIMAX,dims(2),varGJMAX
      Call StopAll('GetCDF buffer too small')
@@ -2033,7 +2033,8 @@ subroutine GetCDF(varname,fileName,Rvar,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,
   startvec=1
   startvec(ndims)=nstart
   totsize=totsize/dims(ndims)
-  if(nfetch<dims(ndims))write(*,*)'fetching only',totsize*nfetch,'of ', totsize*dims(ndims),'elements'
+  if(nfetch<dims(ndims).and.DEBUG_NETCDF)write(*,*)'fetching only',totsize*nfetch,'of ',&
+	 totsize*dims(ndims),'elements'
   dims(ndims)=nfetch
   totsize=totsize*dims(ndims)
 

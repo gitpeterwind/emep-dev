@@ -237,7 +237,8 @@ subroutine AddNewDeriv( name,class,subclass,txt,unit,index,f2d,&
   logical, intent(in), optional :: Is3D
   type(Deriv) :: inderiv
 
-  if(trim(name)=="HMIX".and.MasterProc)write(*,*) "ADDNEWDERIVE", iotype
+  if(trim(name)=="HMIX".and.DEBUG%DERIVED .and. MasterProc)&
+	write(*,*) "ADDNEWDERIVE", iotype
 
   inderiv=Deriv(trim(name),trim(class),trim(subclass),&
                 trim(txt),trim(unit),index,f2d,dt_scale, scale,&
@@ -423,8 +424,8 @@ subroutine Define_Derived()
         unittxt=trim(outunit)
       endselect
 
-      if(MasterProc)write(*,"(i3,a,i4,a)") &
-        me,"Deriv:MISC "//trim(outname),outind,trim(class)
+      if(MasterProc)write(*,"(a,i4,a)") &
+        "Deriv:MISC "//trim(outname),outind,trim(class)
 
       call AddNewDeriv(outname,class,subclass,"-",trim(unittxt),&
                        iout,-99,F,unitscale,T,outind,Is3D=Is3D)
@@ -708,7 +709,7 @@ Is3D = .true.
   endif
 
   !SEP10 if(MasterProc) print "(a,2i4)","IOU_MAX ",  iou_max, iou_min
-  if(MasterProc) print *, "IOU_MAX ",  iou_max, iou_min
+  !if(MasterProc) print *, "IOU_MAX ",  iou_max, iou_min
 endsubroutine Define_Derived
 !=========================================================================
 subroutine Setups()

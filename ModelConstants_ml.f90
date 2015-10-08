@@ -635,9 +635,9 @@ subroutine Config_ModelConstants(iolog)
   endif
 
   if(MasterProc)then
-    write(*, * ) "NAMELIST IS "
-    write(*, NML=ModelConstants_config)
-    write(*,* ) "NAMELIST IOLOG IS ", iolog
+    !write(*, * ) "NAMELIST IS "
+    !write(*, NML=ModelConstants_config)
+    !write(*,* ) "NAMELIST IOLOG IS ", iolog
     write(iolog,*) "NAMELIST IS "
     write(iolog, NML=ModelConstants_config)
   endif

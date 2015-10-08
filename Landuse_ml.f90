@@ -147,7 +147,6 @@ contains
 
     call CheckStop(.not.filefound,"InitLanduse failed!")
 
-    if(MasterProc) write(*,*) sub//" Into Init_LandDefs "
     if(MasterProc) then
         print *,  sub//" Into Init_LandDefs ", NLand_codes
         print *,  sub//" Codes: ", Land_codes
@@ -546,8 +545,8 @@ contains
        call check(nf90_close(ncFileID))!fname1
        NLand_codes=ilu
        if(MasterProc) then
-            write( *,*) "NLAND ", NLand_codes
-            write( *,*) "LAND_CODES ", Land_codes(1:NLand_codes)
+            write( *,*) "Number of landuse codes ", NLand_codes
+            write( *,*) "LAND_CODES: ", Land_codes(1:NLand_codes)
        end if
 
     else
