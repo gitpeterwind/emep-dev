@@ -41,24 +41,7 @@ This is an example of a minimum modrun.sh script to run the model.
 
 # Link the input data
 inputdir=.
-ln -s $inputdir/met/*   .   # Driving meteorology
 ln -s $inputdir/input/* .   # Other input files
-
-# Define some run parameters
-trendyear=2010              # emission year
-runlabel1=Base              # short label
-runlabel2=Opensource_setup  # long label
-startdate="2010 01 01"      # start date (metdata)
-  enddate="2010 01 01"      # end date (metdata)
-
-# Put the run parameters in a temporary file
-cat > INPUT.PARA << EOF
-$trendyear
-$runlabel1
-$runlabel2
-$startdate
-$enddate
-EOF
 
 # Run the model
 mpirun $inputdir/code/Unimod
@@ -66,30 +49,79 @@ mpirun $inputdir/code/Unimod
 # Clean the links to the input data and remove INPUT.PARA
 ls $inputdir/met  |xargs rm
 ls $inputdir/input|xargs rm
-rm INPUT.PARA
 
 \end{verbatim}
 \end{quote}
+
 This bash shell script is designed so that users can easily 
 adapt it to fit their needs. It contain the minimum information 
 required to run the EMEP/MSC-W model. 
-The script should be self-explanatory. It assumes two directories for input data. 
-One with all the metdata for 2010, and for January 1$^{st}$ 2011 (365 +1 files), 
-and one input directory for all the other input files. You need to set the right paths 
+The script should be self-explanatory. It assumes one directory for input data other than meteorology data. 
+The metdata for the year, and for January 1$^{st}$ the following year (365 +1 files) is linked directly in the
+'config\_emep.nml' file. 
+You need to set the right paths 
 for the input directories.  
 All the input files in the input directories are linked to the directory you are working from. 
-  
 
-The next part of the script sets the different parameters for the model run. 
+\subsection{Config\_emep.nml}
+
+The model has a namelist system.  It is possible to set different constants and 
+flags for running the model.  The constants and flags itself
+is defined in 'ModelConstants\_ml.f90', while they are set in the namelist file under
+'ModelConstants\_config' parameter. 
+Some of these are briefly explained in Chapter \ref{ch:InputFiles}. 
+ Model gets information about running for special cases from this 
+file.  The datasets provided are for the EMEP grid EECCA. 
+
+The different parameters for the model run are set in the 'config\_emep.nml' file.  In the very beginning 
+of this, the section 'INPUT\_PARA' has all these variables including the link to the meteorology data. 
 The trendyear can be set to change the boundary emissions for 
 earlier and future years, see the modules {\bf BoundaryConditions\_ml.f90 } 
 and {\bf GlobalBCs\_ml.f90 } to understand better what the trendyear 
-setting does. The default setting is the meteorological year you are running for, 
-in this case 2010. 
+setting does. The default setting is the meteorological year you are running for, in this case 2012. 
 The runlabel1 option sets the name of the different output netCDF 
 files , see Table \ref{ch:output}. 
 The startdate and enddate parameters are set for the timeperiod you want the model 
 to run (YYYY MM DD), and you need meteorology data for the period.
+
+The following is an example of 'INPUT\_PARA' in namelist:
+
+\begin{quote}
+\begin{verbatim}
+
+&INPUT_PARA
+  iyr_trend = 2012,
+  runlabel1 = 'Base',
+  runlabel2 = 'Opensource_Setup_2014',
+  startdate = 2012,01,01,000000,
+  enddate   = 2012,01,10,000000,
+  meteo     = 'met/meteoYYYYMMDD.nc',
+&end
+
+\end{verbatim}
+\end{quote}
+ 
+ This means, that the model is run for the period 1 January to 10 Januray 2012 and the trend year 
+ used is 2012.  Output files will be stored with the name 'Base' and the meteorological files are stored
+ under the directory 'met' and are linked to the working directory. 
+
+It is possible to run the model on a smaller domain than the full
+regional model domain, as defined by  x coordinates ranging
+from 1 to 132 and y coordinates ranging from 1 to 159. 
+
+To set a smaller domain, one needs only to specify the
+coordinates of the new domain in {\bf RUNDOMAIN} in the namelist file,  
+ ``config\_emep.nml''. For example:
+
+\begin{quote}
+\begin{verbatim}
+! --------Sub domain x0   x1  y0   y1
+        RUNDOMAIN =  36, 100, 50, 150   ! smaller EECCA domain
+\end{verbatim}
+\end{quote}
+
+tells the model to run in the domain with x coordinates ranging from
+36 to 100 and y coordinates from 50 to 150.\\ 
 
 To run the model, the correct path to the EMEP/MSC-W model code 
 has to be set (mpirun path\_to\_the\_modelcode/Unimod).  
@@ -125,59 +157,14 @@ are not removed.
 
 The script can also be submitted interactively, and either have the output 
 written to the screen or to named error and output log files. 
- 
 % \newpage
 
-\subsection{Model constants}
-
-In the module {\bf ModelConstants\_ml.f90 } there is a possibility to set 
-different constants and flags when running the model. 
-Some of these are briefly explained in Chapter \ref{ch:InputFiles}. 
-An example of one of these settings is shown below:
-
-\begin{small}
-\begin{quote}
-  \begin{verbatim}
-logical, public, parameter :: USE_CONVECTION = .false. 
-  \end{verbatim}
-\end{quote}
-\end{small}
-
-Since convection has a smaller influence on transport on higher latitudes, 
-this flag is turned off by default when running the EECCA domain. It is 
-however important when running the model globally. A global version 
-of the EMEP/MSC-W model will be released later. 
-
-% The module {\bf ModelConstants\_ml.f90 } also sets the number of processors used in each direction with 
-% {\bf PROCX } and {\bf NPROCY }. As described above, it is important that the product of these match the number set 
-% when submitting the job. 
-
-\subsection{config\_emep.nml}
-
-The model has a namelist system.  Different constants and flags are added in 
-this file.  Model gets information about running for special cases from this 
-file.   For example, this namelist sets which domain you want to run the model 
-on, other than the default domain. 
-The datasets provided are for the EMEP grid EECCA. 
-It is possible to run the model on a smaller domain than the full
-regional model domain, as defined by  x coordinates ranging
-from 1 to 132 and y coordinates ranging from 1 to 159. 
-
-To set a smaller domain, one needs only to specify the
-coordinates of the new domain in {\bf RUNDOMAIN} in the namelist file,  
- ``config\_emep.nml''. For example:
-
-\begin{quote}
-\begin{verbatim}
-   !                    x0   x1  y0   y1
-        RUNDOMAIN = (/  36, 100, 50, 150 /)  ! smaller EECCA domain
-\end{verbatim}
-\end{quote}
-
-tells the model to run in the domain with x coordinates ranging from
-36 to 100 and y coordinates from 50 to 150.\\ 
-
 % \newpage
+
+The variables wanted in the output are specified in the 'OutputConcs\_config', 
+OutputDep\_config and in the 'OutputMisc\_config' parameters respectively for 
+surface concentrations, depositions and some miscellaneous outputs.  
+
 
 \section{Nesting}
 \label{sec:nesting}
@@ -306,14 +293,15 @@ vct       =
 
 In this file, the first 21 values in 'vct' column represent 'hyai' and the rest 21 represent 'hybi' values in hPa.  
 
-\&ExternalBICs\_bc
+The variables to be used from the external boundary condition data are given in the 'ExternalBICS\_bc' parameter in the 'config\_emep.nml' file.  An example to use only O3 and NO from a file is given below. 
+
+{\bf \&ExternalBICs\_bc}
 \begin{quote}
 \begin{verbatim}
-description='MyBICScenario','Version name',3,  ! name,version,size 
+description='MyBICScenario','Version name',2,  ! name,version,size 
 map_bc=! emep,external,frac,wanted,found,IXADV, 
-  	   'O3'    ,'O3'    ,1.0,T,F,-1, 
-	      	'PAN'   ,'PAN'   ,1.0,T,F,-1, 
-	      	'CO'    ,'CO'    ,1.0,T,F,-1, 
+!        'O3'    ,'O3_VMR_inst'    ,1.0,T,F,-1,
+!        'NO'    ,'NO_VMR_inst'    ,1.0,T,F,-1,
 \&end 
 \end{verbatim}
 \end{quote}
@@ -349,7 +337,7 @@ Egs., \bf {NHOURSAVE = 3},  means the data will be written out at 3 hour interva
 
 One can choose the frequency in which the BC out files has to be created (template\_write in config file), and also the domain for which the data has to be written out (sub domain part in config file).  The default setup of the model creates BC data for the whole run domain. 
  
-Egs.,  {\bf config\_NEST.nml:}
+Egs.,  {\bf Nest\_config}
 
 \begin{verbatim}
 MODE = 1.
@@ -369,8 +357,6 @@ jend   =  58,
 This will produce a `EMEP\_OUT' file for the domain `i=60,107 and j=11,58'.  
 
 Please note that MODE=12 and MODE=13 will always write out fulldomain.   
-
-
 
 
 \section {Source Receptor (SR) Runs}

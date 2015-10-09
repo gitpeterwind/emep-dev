@@ -3,22 +3,22 @@
 
 This chapter provides an overview on the necessary input files to run the 
 EMEP/MSC-W model. A complete set of input files is provided in the EMEP/MSC-W 
-Open Source web page to allow model runs for the year 2010. 
+Open Source web page to allow model runs for the meteorological year 2012. 
 
 The input files are zipped in 13 different files. There are 12 zipped files 
-for the meteorology, one for each month, called meteo2010MM.tar.bz2 (where MM 
+for the meteorology, one for each month, called meteo2012MM.tar.bz2 (where MM 
 is the month). 
-The last file for December also include a met file for January 1$^{st}$ 2011. 
+The last file for December also include a met file for January 1$^{st}$ 2013. 
 The last zipped input file (called other\_input\_files.tar.bz2) contains all 
-other input files needed for running the EMEP/MSC-W model, except 
-AircraftEmis\_FL.nc.
+other input files needed for running the EMEP/MSC-W model, except the aircraft emissions,
+AircraftEmis\_FL.nc, and the forest fire emissions, FINN\_ForestFireEmis\_2012.nc. See sections 2.1.8 and 2.1.10 for details about these emissions data.
 
 After unzipping all the meteo-tar files, the meteorology are placed under a
-catalogue called {\bf EMEP\_Unified\_model.OpenSource2012/}. The met/
-catalogue should be moved over to current version of model, for rv3\_4:
-{\bf EMEP\_MSC-W\_model.rv3\_4.OpenSource}. 
+catalogue called {\bf EMEP\_Unified\_model.OpenSource2014/}. The met/
+catalogue should be moved over to current version of model, for rv4\_5:
+{\bf EMEP\_MSC-W\_model.rv4\_5.OpenSource}. 
 So now there will be two directories under 
-{\bf EMEP\_MSC-W\_model.rv3\_4.OpenSource}. 
+{\bf EMEP\_MSC-W\_model.rv4\_5.OpenSource}. 
 All meteorology are placed under /met, and the rest of the input files under 
 /input. 
 All files, both meteorological and the other input files, are described in 
@@ -46,6 +46,8 @@ Meteorology  &  meteoYYYYMMDD.nc \quad (365+1 files) & netCDF\\
 & & \\
 {\bf Other Input files} & input/ &\\
 Global Ozone & GLOBAL\_O3.nc & netCDF\\
+New Global Ozone & Logan\_P.nc & netCDF $^*$$^*$\\
+Vertical level distribution & Vertical\_levels.txt & ASCII\\
 BVOC emissions & EMEP\_EuroBVOC.nc & netCDF\\
 Landuse & LanduseGLC.nc and Landuse\_PS\_5km\_LC.nc  & netCDF\\
 Degree-day factor & DegreeDayFactors.nc &  netCDF\\
@@ -60,7 +62,7 @@ Forest Fire & FINN\_ForestFireEmis\_YYYY.nc & netCDF$\dagger$ \\
 Natural SO$_2$ & natso2MM.dat  \quad (12 files) & ASCII\\
 Volcanoes & VolcanoesLL.dat & ASCII$^*$\\
 	  & eruptions.csv volcanoes.csv& ASCII \\ 
-Emissions & emislist.POLL  \quad (7 files) & ASCII\\
+Emissions & gridPOLL  \quad (7 files) & ASCII\\
 Time factors for monthly emissions& MonthlyFac.POLL  \quad (7 files) & ASCII\\
 Time factors for daily emissions &  DailyFac.POLL  \quad (7 files) & ASCII\\
 Time factors for hourly emissions & HOURLY-FACS  & ASCII$^*$\\
@@ -73,8 +75,7 @@ Emissions speciation & emissplit.defaults.POLL & ASCII$^*$\\
 Photo-dissociation rates & jclearSS.dat \quad (4 files) & ASCII\\
  & jcl1kmSS.dat \quad (4 files) + jcl1.jun & ASCII\\
  & jcl3kmSS.dat \quad (4 files) + jcl3.jun & ASCII\\
-Dust files & sand\_frac.dat clay\_frac.dat & ASCII$\dagger$\\
- & DUST\_f.MM DUST\_c.MM & ASCII$\dagger$\\
+Dust files  &Soil\_Tegen.nc  & netCDF$\dagger$\\
  & SoilTypes\_IFS.nc & netCDF$\dagger$\\
 Sites locations for surface output & sites.dat & ASCII$^*$\\
 Sondes locations for vertical output & sondes.dat & ASCII$^*$\\
@@ -83,12 +84,15 @@ Emission factors for scenario runs & femis.dat & ASCII\\
 \end{tabular}\\
 Notes: $\dagger$ - optional (in most cases); 
 $^*$ means ASCII files with header.
+$^*$$^*$ New O3 boundary condition data in 30 levels.  Can be used with 'NewLogan=.true.' in 'BoundaryConditions\_ml.f90'.
 \end{small}
 \end{center}
 
 \end{table}
 
 \newpage
+
+
 \section{NetCDF files}
 
 
@@ -103,18 +107,24 @@ Weather Forecasts (ECMWF).
 The IFS forecasts has been run by MSC-W as
 independent experiments on the HPCs at ECMWF with special requests on
 some output parameters. The meteorological fields are retrieved on a
-0.2$^{\circ}\times$0.2$^{\circ}$ rotated spherical grid and interpolated to
+0.1$^{\circ}\times$0.1$^{\circ}$ longitude latitude coordinates and interpolated to
 50$\times$50 km$^2$ polar-stereographic grid projection. Vertically, the fields
-on 60 eta levels from the IFS model are interpolated onto the 20 EMEP sigma
-levels. The version of the IFS model used for preparing these fields,
-Cycle 36r1, is documented in \url{http://www.ecmwf.int/research/ifsdocs/index.html}.
+on 60 eta levels from the IFS model are interpolated onto the 37 EMEP sigma
+levels.  The meteorology is prepared into 37 sigma levels since the model is 
+under test for a finer vertical resolution.  But the Opensource code is released
+with 20 sigma levels and to make the model read the meteorology properly, 
+a description of the 20 vertical sigma levels is needed.  This is provided in 
+an ascii file called 'Vertical\_levels.txt' together with the other\_input data. 
+The version of the IFS model used for preparing these fields,
+Cycle 38r2, is documented in \url{http://www.ecmwf.int/research/ifsdocs/index.html}. Previous years are based on Cycle 36r1 with a resolution of 0.2$^{\circ}\times$0.2$^{\circ}$ on a spherical grid. 
 Meteorological fields currently used for EMEP/MSC-W Model runs are given in
 Table~\ref{Tab:metinput}. Some verification and description of these
-meteorological fields are given in Chapter 7 of the EMEP Status Report
-1/2010.
+meteorological fields are given in Chapter 2 of the EMEP Status Report
+1/2014.
 
 {\bf Acknowledgement:} ECMWF, met.no
 
+\newpage
 \begin{table}[h!]
 \caption{Input meteorological data used in the EMEP/MSC-W Model
    \label{Tab:metinput}}
@@ -123,7 +133,7 @@ meteorological fields are given in Chapter 7 of the EMEP Status Report
 \hline
 Parameter      & Unit & Description          \\
 \hline
-\multicolumn{3}{l}{3D fields - for 20 $\sigma$ levels} \\
+\multicolumn{3}{l}{3D fields - for 37 $\sigma$ levels} \\
 $u,v$  &  m/s     & Horizontal wind velocity components   \\
 $q$    &  $\nicefrac{kg}{kg}$   & Specific humidity           \\
 %$\dot{\sigma}$ & s$^{-1}$ & Vertical wind in $\sigma$ coordinates \\
@@ -157,13 +167,75 @@ u10/v10        & m/s  & wind at 10 m height \\
 \end{center}
 \end{table}
 
+
+\subsection{New Emission System}
+
+The model is now more flexible to use different type of emission data such as 'ascii' and 'netcdf' format.  The emission data is now linked via the 'config\_emep.nml' file.  There are two types of 'netcdf' data tested.  
+
+First one is:  All data are stored in a single netCDF file, i.e., the country code and emission data of all components for all sectors are given in one file with the fraction of data covered by each grid cell at the boundaries. Thus the data set contains 80 2-dimensional variables - 7 components in 11 sectors, which are represented as poll\_secNN where 'NN' is the sector number, number of countries shared by each grid cell 'Ncodes', which will be more than one at the country borders wich maximum of 5 countries sharing a border, and map factors for i and j - and 78 3-dimensional variables which are the country codes 'Codes' and the fraction of data covered by each grid cell in each country 'fractions\_poll\_secNN'.  Similar to ascii data, the ship emission data is distributed in grids together with the country code.  The description of the variables in the datset is given in the Table~\ref{Tab:Emisdata}: 
+
+The second netCDF data type contains data for Global domain.  This data set contains one data file for each component similar to ascii data, i.e., 7 data sets in netCDF format, i.e., 'Emis\_poll.nc'.  But the data is stored in each file as 'country per sector for component', i.e., 'Emis:CC:snap:NN' where 'CC' is the country code and 'NN' is the snap sector number .  Thus data having only positive emissions of sectors are included in each data file and hence the number for components in different files can vary.  Ship emissions are not included in this data set.  So we can link the ship emissions to the model using 'config\_emep.nml' when using this data.  
+
+The flexibility in using any type of emission data is made possible in 'config\_emep.nml'.  Compared to previous model version which used the emission flag in both 'ModelConstants\_ml.f90' and 'config\_emep.nml' - 'EMIS\_SOURCE=emislist' - the new setup uses 'EMIS\_SOURCE=Mixed' in both the module and namelist file.  The link to input data should be specified in namelist using the flag 'EmisDir' or 'DataDir', no other names are recognised by the model.  Also we can choose to include or exclude the emissions from a specific country or region is also possible. The regions given in the 'config\_emep.nml' are specified in the 'Country\_ml.f90' file.  Similarly you can define a new region of your choice in 'Country\_ml.f90' and call it from the namelist.   A piece of 'config\_emep.nml' is given below and the explanation of this follows thereafter.  
+
+
+\begin{center}
+\begin{table}
+\caption[fracemi]{Variable description of netCDF Emission data including Fractions
+\label{Tab:Emisdata}}
+%\begin{center}
+%\begin{small}
+% \hspace{-1cm}
+\begin{tabular}{lll}
+\hline
+
+
+{\bf Variable name } & {\bf Description}\\
+
+Ncodes & No of countries shared by each grid cell\\
+poll\_secNN & Component at each sector \\
+Codes & Country code number \\
+fractions\_poll\_secNN & Fraction of data covered by grid cell\\
+
+\hline
+\end{tabular}
+%\end{small}
+%\end{center}
+\end{table}
+\end{center}
+
+
+
+\begin{quote}
+\begin{verbatim}
+
+   EMIS\_SOURCE                = 'Mixed',
+   EMIS\_TEST                  = 'None', 
+   EmisDir                     = 'input',     !
+   emis\_inputlist(1)\%name    = 'EmisDir/emislist', !example of ASCII type
+
+!  emis\_inputlist(1)\%name    = 'EmisDir/Emis\_TNO7.nc', ! Fractions type
+!  emis\_inputlist(1)\%name    = 'EmisDir/Emis\_POLL.nc', ! netCDF data 
+                                                          ! per component
+!  emis_inputlist(1)\%incl(1:) = 'EUMACC2',               ! include countries  
+                                                          ! only from 'EUMACC2' list
+!  emis_inputlist(1)\%excl(1:) = 'INTSHIPS',              ! exclude ship emissions 
+                                                          ! when sea areas are 
+							  						      ! not divided
+! 
+\end{verbatim}
+\end{quote}
+
+The above piece of code from 'config\_emep.nml' shows that the emissions source flag used is now 'Mixed'.  Emission data is stored under 'EmisDir'.  The following lines with 'emis\_inpulist(1)\%name' links to the emission data that is to be used.'emis\_inputlist(1)\%incl(1:)' in the above example shows that we are using the emissions only from 'EUMACC2' region which is defined in 'Country\_ml.f90' that includes 41 countries including EU28, EEA, Switzerland, GUAM and some FarEast European countries.  'emis\_inputlist(1)\%excl(1:)' shows that the internal ship emissions are exluded.  In this set up of choosing emissions data one can use either 'include' or 'exclude' flag at the moment, using both at the same time is not implemented yet.  
+
+
 \subsection{Global Ozone}
 Initial concentration of ozone are required in order to
 initialize the model runs. Boundary conditions along the sides of the model
 domain and at the top of the domain are then required as the model is
 running.
 
-The GLOBAL\_O3.nc file contains monthly averaged fields in netCDF format. 
+The Logan\_P.nc file contains monthly averaged fields in netCDF format. 
 The initial and background
 concentrations are based on the Logan (1998) climatology. The Logan
 climatology is scaled by Unimod according to the Mace Head measurements as
@@ -236,8 +308,8 @@ AVG\_SMI\_2005-2010.nc are global.
 
 \subsection{Aircraft emissions}
 In the EMEP/MSC-W model aircraft emissions are 'OFF' by default. 
-They can be switched 'ON' by setting USE\_AIRCRAFT\_EMIS = .true. in { \bf ModelConstants\_ml.f90.} 
-The model will then use data provided by the EU-Framework Programme 6 Integrated 
+They can be switched 'ON' by setting USE\_AIRCRAFT\_EMIS = .true. in ``config\_emep.nml'' and download the data from \url{http://www.pa.op.dlr.de/quantify}.  
+The EMEP model uses data provided by the EU-Framework Programme 6 Integrated 
 Project QUANTIFY (\url{http://www.pa.op.dlr.de/quantify}). However, before using 
 these data a protocol has to be signed, which is why the data file can not be provided 
 directly on the EMEP/MSC-W Open Source website. If you want to use aircraft emissions go to 
@@ -250,7 +322,7 @@ emission data file and place it in the input folder.
 
 \subsection{Surface Pressure}
 
-If USE\_AIRCRAFT\_EMIS = .true. in { \bf ModelConstants\_ml.f90,} then in addition to the Aircraft 
+If USE\_AIRCRAFT\_EMIS = .true. in { \bf config\_emep.nml,} then in addition to the Aircraft 
 Emission file, there will be need for a SurfacePressure.nc file, which is already in the /input folder. 
 The netCDF file consists of surface pressure fields for each of the months in 2008 called surface\_pressure, 
 and one field for the whole year called surface\_pressure\_year. All fields are given in Pa. 
@@ -259,8 +331,35 @@ and one field for the whole year called surface\_pressure\_year. All fields are 
 As of model version rv3.9 (November 2011), daily emissions from forest and vegetation fires are taken from the “Fire INventory from NCAR version 1.0” (FINNv1,
 Wiedinmyer et al. 2011). Data are available from 2005, with daily resolution, on a fine 1 km×1 km grid. We store these data on a slightly coarser grid (0.2$^\circ$×0.2$^\circ$) globally for access by the EMEP/MSC-W model. To include forest fire emissions set 
 USE\_FOREST\_FIRES = .true. in ``config\_emep.nml'' and download the 
-2010 GEOS-chem daily data \url{http://bai.acd.ucar.edu/Data/fire/}. The data needs to be stored with units mole/day in a netCDF file called FINN\_ForestFireEmis\_2010.nc 
+2012 GEOS-chem daily data \url{http://bai.acd.ucar.edu/Data/fire/}. The data needs to be stored with units mole/day in a netCDF file called FINN\_ForestFireEmis\_2012.nc 
 compatible with the { \bf ForestFire\_ml.f90 } module. 
+
+\subsection{Dust files}???????
+
+The annual ascii data for sand and clay frations as well as the monthly data for boundary and initial conditions for dust from Sahara are replaced with a single netCDF file 'Soil\_Tegen.nc' since 2013.   This covers data for a global domain in 0.5X0.5 degree resolution.  
+
+The variables 'sand' and 'clay' gives the fraction (in \%)  
+of sand an clay in the soil for each grid cell over land. (((The files are provided by 
+Maxilian Posch, Netherlands Environmental Assessment Agency, CCE, personal communication????? .)) 
+
+
+The files are used by the module {\bf DustProd\_ml.f90 }, which calculates windblown dust 
+emissions from soil erosion. Note that the parametrization is still in the development and 
+testing phase, and is by default 'turned off'. To include it in the model calculations, set 
+USE\_DUST = .true. in ``config\_emep.nml''.
+The user is recommended to read carefully documentation and
+comments in the module {\bf DustProd\_ml.f90}.
+
+There is also a possibility to include boundary and initial conditions for dust from Sahara. 
+The input file gives monthly dust mixing 
+ratios (MM - month, e.g. 01, 02, 03,...) for fine and coarse dust from Sahara. The files are based on calculations 
+from a global CTM at the University of Oslo for 2000. 
+To include Saharan dust, set USE\_SAHARA = .true. in ``config\_emep.nml''.
+
+Another source for dust is an arid surface. This is accountet for by soilmosture calculations in {\bf DustProd\_ml.f90 }. 
+Together with Soil Water Index from the meteorology files and permanent wilting point (pwp) from SoilTypes\_IFS.nc. 
+This file is global and netcdf. See Simpson et al. (2012) section 6.10.
+
 
 
 \section{ASCII files}
@@ -298,12 +397,6 @@ and height of volcanoes into the model.
 The input file ``VolcanoesLL.dat'' in {\bf ASCII} format contains the input data for the two active volcanoes
  Enta and Stromboli. The two first columns gives their latitudes and longitudes, their height as sigma level
  in column 3 and their emission in ktons per year in column 4. 
-
-To include the 2010 volcanic eruptions of Eyjafjallaj\"{o}kull on Iceland additional files are included. 
-Since volcano only had eruptions on some days, two files are included. The first ``volcanoes.cvs`` gives 
-the name of the volcanoe, and ''eruption.cvs`` gives date and amount of ash and $SO_2$ emissions. 
-This is further described in Mastin {\sl et al.}, 2009a and Mastin {\sl et al.}, 2009b.
-
 
 \subsection{Gridded Emissions}
 The emission input for the EMEP/MSC-W model consists of gridded
@@ -483,30 +576,6 @@ angle and then the
 next 17 are the values for the model levels with the unit: $1/s$. 
 For more details about these rates, please read Chapter 7.2 of the EMEP
 Status Report 1/2003 Part I (Simpson {\sl et al.}, 2003).
-
-\subsection{Dust files}
-
-The gridded input files ``sand\_frac.dat'' and ``clay\_frac.dat'' gives the fraction (in \%)  
-of sand an clay in the soil for each grid cell over land. The files are provided by 
-Maxilian Posch, Netherlands Environmental Assessment Agency, CCE, personal communication.
-
-The files are used by the module {\bf DustProd\_ml.f90 }, which calculates windblown dust 
-emissions from soil erosion. Note that the parametrization is still in the development and 
-testing phase, and is by default 'turned off'. To include it in the model calculations, set 
-USE\_DUST = .true. in ``config\_emep.nml''.
-The user is recommended to read carefully documentation and
-comments in the module {\bf DustProd\_ml.f90}.
-
-There is also a possibility to include boundary and initial conditions for dust from Sahara. 
-The gridded input files ``DUST\_f.MM'' and ``DUST\_c.MM'' gives monthly dust mixing 
-ratios (MM - month, e.g. 01, 02, 03,...) for fine and coarse dust from Sahara. The files are based on calculations 
-from a global CTM at the University of Oslo for 2000. 
-To include Saharan dust, set USE\_SAHARA = .true. in ``config\_emep.nml''.
-
-Another source for dust is an arid surface. This is accountet for by soilmosture calculations in {\bf DustProd\_ml.f90 }. 
-Together with Soil Water Index from the meteorology files and permanent wilting point (pwp) from SoilTypes\_IFS.nc. 
-This file is global and netcdf. See Simpson et al. (2012) section 6.10.
-
 
 
 \subsection{Site and Sonde locations for output}\label{sec:sitessondes_input}
