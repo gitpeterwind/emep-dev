@@ -3772,8 +3772,8 @@ use netcdf
      write(*,*)'  k=',kmax_bnd-L
      write(*,22)'PARAMETERS ',         SZA,x,GMTAU,XGRD/PI180,YGRD/PI180!3 O3        PHOTON    O2        O(total)                1.000 /
      write(*,22)'AO3 ',         rcphot(IDAO3,kmax_bnd-L) , ZPJ(L,3), SZA,x,x**2/0.00073,x**4/0.00073/0.00073/0.00073!3 O3        PHOTON    O2        O(total)                1.000 /O3    /
-     write(*,22)'BO3 ',          rcphot(IDBO3,kmax_bnd-L) , ZPJ(L,4), SZA,x*90*0.00073,x**2*90,x**4*213017751,x**6*491579426490669!4 O3        PHOTON    O2        O(1D)                   1.000 /O3(1D)/
-     write(*,22) 'NO2 ',         rcphot(IDNO2,kmax_bnd-L) , ZPJ(L,9),SZA,x*0.00073*27692,x**2*27692,x**4*63905325443!9 NO2       PHOTON    N2        O                       1.000 /NO2   /  
+     write(*,22)'BO3 ',          rcphot(IDBO3,kmax_bnd-L) , ZPJ(L,4), SZA,x*90*0.00073,x**2*90,x**4*213017751,x**6*491579426490669.0!4 O3        PHOTON    O2        O(1D)                   1.000 /O3(1D)/
+     write(*,22) 'NO2 ',         rcphot(IDNO2,kmax_bnd-L) , ZPJ(L,9),SZA,x*0.00073*27692,x**2*27692,x**4*63905325443.0!9 NO2       PHOTON    N2        O                       1.000 /NO2   /  
      write(*,22) 'H2O2 ',         rcphot(IDH2O2,kmax_bnd-L) , ZPJ(L,7),SZA,x*0.00073*22.38,x**2*22.38,x**4*51656804!7 H2O2      PHOTON    OH        OH                      1.000 /H2O2  /
      write(*,22) 'HNO3 ',         rcphot(IDHNO3,kmax_bnd-L) , ZPJ(L,15),SZA,x*0.00073*1.846,x**2*1.846,x**4*4260355!15 HNO3      PHOTON    NO2       OH                      1.000 /HNO3  /
      write(*,22) 'ACH2O ',         rcphot(IDACH2O,kmax_bnd-L) , ZPJ(L,5),SZA,x*0.00073*103.8461,x**2*103.8461,x**4*239644970!5 H2CO      PHOTON    HCO       H                       1.000 /H2COa /
@@ -3782,10 +3782,10 @@ use netcdf
      write(*,22) 'CH3COX ',         rcphot(IDCH3COX,kmax_bnd-L) , ZPJ(L,61)+ZPJ(L,62),SZA,x*0.00073*13.84,x**2*13.84,x**4*31952662!61 CH3COC2H5 PHOTON    C2H5      CH3CO                   0.850 /MEKeto/
      !62 CH3COC2H5 PHOTON    CH3       C2H5CO                  0.150 /MEKeto/  ?
      write(*,22) 'HCOHCO ',         rcphot(IDHCOHCO,kmax_bnd-L) , ZPJ(L,66),SZA,x*0.00073*50.7692,x**2*50.7692,x**4*117159763, ZPJ(L,67),ZPJ(L,65)
-     write(*,22) 'RCOHCO ',         rcphot(IDRCOHCO,kmax_bnd-L) , ZPJ(L,64),SZA,x*0.00073*576.92,x**2*576.92,x**4*1331360946!64 CH3COCHO  PHOTON    CH3CO     CO                      1.000 /MGlyxl/
+     write(*,22) 'RCOHCO ',         rcphot(IDRCOHCO,kmax_bnd-L) , ZPJ(L,64),SZA,x*0.00073*576.92,x**2*576.92,x**4*1331360946.0!64 CH3COCHO  PHOTON    CH3CO     CO                      1.000 /MGlyxl/
 
      !should add 11 and 12 or only 12? 11 NO3       PHOTON    NO        O2                      0.114 /NO3   /
-     write(*,22) 'IDNO3 ',         rcphot(IDNO3,kmax_bnd-L) , ZPJ(L,11)+ZPJ(L,12),SZA,x*0.00073*623076,x**2*623076,x**4*1437869822485!12 NO3       PHOTON    NO2       O                       0.886 /NO3   /
+     write(*,22) 'IDNO3 ',         rcphot(IDNO3,kmax_bnd-L) , ZPJ(L,11)+ZPJ(L,12),SZA,x*0.00073*623076,x**2*623076,x**4*1437869822485.0!12 NO3       PHOTON    NO2       O                       0.886 /NO3   /
 
      write(*,22) 'IDCH3O2H ',         rcphot(IDCH3O2H,kmax_bnd-L) , ZPJ(L,8),SZA,x*0.00073*16.6,x**2*16.6,x**4*38343195!8 CH3OOH    PHOTON    CH3O      OH                      1.000 /CH3OOH/
   endif

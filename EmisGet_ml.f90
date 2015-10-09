@@ -794,7 +794,7 @@ end if
        call CheckStop( ios > 0 , "EmisGet: read error in femis" )
        call wordsplit(txt,NCOLS_MAX,txtinwords,nwords,ios)
        if ( nwords<3 ) cycle READFILE                   ! End of file
-       55format(A)
+       55 format(A)
        if(me==0)write(IO_LOG,55)trim(txt)
        if(txtinwords(1)=='lonlat')then
 !reductions defined with coordinates
@@ -805,7 +805,7 @@ end if
 !latmin,latmax,lonmin,lonmax
           N_femis_lonlat=N_femis_lonlat+1
           call CheckStop( N_femis_lonlat>MAXFEMISLONLAT, "EmisGet: increase MAXFEMISLONLAT" )
-         77 format(A,4F,I,20F)
+!         77 format(A,4F,I,20F)
           read(txt,*)txtinwords(1)&
           ,femis_lonmin(N_femis_lonlat),femis_lonmax(N_femis_lonlat),femis_latmin(N_femis_lonlat),femis_latmax(N_femis_lonlat)&
           ,isec,(e_f_lonlat(ic),ic=1,ncols)

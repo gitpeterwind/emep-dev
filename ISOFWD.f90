@@ -442,7 +442,7 @@
     SUBROUTINE ISRP4F (WI, RHI, TEMPI)
     INCLUDE 'isrpia.inc'
     DIMENSION WI(NCOMP)
-    DOUBLE PRECISION :: NAFRI, NO3FRI
+    real :: NAFRI, NO3FRI
 
 ! *** ADJUST FOR TOO LITTLE AMMONIUM AND CHLORIDE ***********************
 
@@ -818,7 +818,7 @@
     DO 10 I=1,NDIV
         X2 = MAX(X1-DX, OMELO)
         Y2 = FUNCA2 (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -834,7 +834,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCA2 (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -867,9 +867,9 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION  FUNCTION FUNCA2 (OMEGI)
+    real  FUNCTION FUNCA2 (OMEGI)
     INCLUDE 'isrpia.inc'
-    DOUBLE PRECISION :: LAMDA
+    real :: LAMDA
 
 ! *** SETUP PARAMETERS ************************************************
 
@@ -1111,7 +1111,7 @@
     DO 10 I=1,NDIV
         Z2 = Z1+DZ
         Y2 = FUNCB3A (Z2, TLC, TNH42S4)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         Z1 = Z2
         Y1 = Y2
     10 END DO
@@ -1145,7 +1145,7 @@
     20 DO 30 I=1,MAXIT
         Z3 = 0.5*(Z1+Z2)
         Y3 = FUNCB3A (Z3, TLC, TNH42S4)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             Z2    = Z3
         ELSE
@@ -1179,9 +1179,9 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCB3A (ZK, Y, X)
+    real FUNCTION FUNCB3A (ZK, Y, X)
     INCLUDE 'isrpia.inc'
-    DOUBLE PRECISION :: KK
+    real :: KK
 
 ! *** SOLVE EQUATIONS ; WITH ITERATIONS FOR ACTIVITY COEF. ************
 
@@ -1244,7 +1244,7 @@
 
     SUBROUTINE CALCB3B (Y, X)
     INCLUDE 'isrpia.inc'
-    DOUBLE PRECISION :: KK
+    real :: KK
 
     CALAOU = .FALSE.        ! Outer loop activity calculation flag
     FRST   = .FALSE. 
@@ -1487,7 +1487,7 @@
     DO 10 I=1,NDIV
         X2 = X1-DX
         Y2 = FUNCB2B (X2,TNH4HS4,TLC)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -1521,7 +1521,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCB2B (X3,TNH4HS4,TLC)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -1555,7 +1555,7 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCB2B (X,TNH4HS4,TLC)
+    real FUNCTION FUNCB2B (X,TNH4HS4,TLC)
     INCLUDE 'isrpia.inc'
 
 ! *** SOLVE EQUATIONS **************************************************
@@ -1787,7 +1787,7 @@
 
     SUBROUTINE CALCC2
     INCLUDE 'isrpia.inc'
-    DOUBLE PRECISION :: LAMDA, KAPA
+    real :: LAMDA, KAPA
 
     CALAOU = .TRUE.         ! Outer loop activity calculation flag
     FRST   = .TRUE. 
@@ -1846,7 +1846,7 @@
 
     SUBROUTINE CALCC1
     INCLUDE 'isrpia.inc'
-    DOUBLE PRECISION :: KLO, KHI
+    real :: KLO, KHI
 
     CALAOU = .TRUE.    ! Outer loop activity calculation flag
     KLO    = TINY
@@ -1865,7 +1865,7 @@
     DO 10 I=1,NDIV
         X2 = X1+DX
         Y2 = FUNCC1 (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20 ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20 ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -1897,7 +1897,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCC1 (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -1936,9 +1936,9 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCC1 (KAPA)
+    real FUNCTION FUNCC1 (KAPA)
     INCLUDE 'isrpia.inc'
-    DOUBLE PRECISION :: KAPA, LAMDA
+    real :: KAPA, LAMDA
 
 ! *** SOLVE EQUATIONS **************************************************
 
@@ -2048,7 +2048,7 @@
     DO 10 I=1,NDIV
         X2 = X1+DX
         Y2 = FUNCD3 (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -2095,7 +2095,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCD3 (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -2138,7 +2138,7 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCD3 (P4)
+    real FUNCTION FUNCD3 (P4)
     INCLUDE 'isrpia.inc'
 
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
@@ -2275,7 +2275,7 @@
     DO 10 I=1,NDIV
         X2 = X1+DX
         Y2 = FUNCD2 (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) THEN
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) THEN
         
         ! This is done, in case if Y(PSI4LO)>0, but Y(PSI4LO+DX) < 0 (i.e.undersat)
         
@@ -2327,7 +2327,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCD2 (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -2370,7 +2370,7 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCD2 (P4)
+    real FUNCTION FUNCD2 (P4)
     INCLUDE 'isrpia.inc'
 
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
@@ -2571,7 +2571,7 @@
     SUBROUTINE CALCG5
     INCLUDE 'isrpia.inc'
 
-    DOUBLE PRECISION :: LAMDA
+    real :: LAMDA
     COMMON /CASEG/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, LAMDA, &
     PSI1, PSI2, PSI3, PSI4, PSI5, PSI6, PSI7, &
     A1,   A2,   A3,   A4,   A5,   A6,   A7
@@ -2607,7 +2607,7 @@
     DO 10 I=1,NDIV
         X2 = X1+DX
         Y2 = FUNCG5A (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -2622,7 +2622,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCG5A (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -2675,10 +2675,10 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCG5A (X)
+    real FUNCTION FUNCG5A (X)
     INCLUDE 'isrpia.inc'
 
-    DOUBLE PRECISION :: LAMDA
+    real :: LAMDA
     COMMON /CASEG/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, LAMDA, &
     PSI1, PSI2, PSI3, PSI4, PSI5, PSI6, PSI7, &
     A1,   A2,   A3,   A4,   A5,   A6,   A7
@@ -2710,7 +2710,7 @@
     
     ! C      IF(CHI4.GT.TINY) THEN
         IF(W(2) > TINY) THEN       ! Accounts for NH3 evaporation
-            BB   =-(CHI4 + PSI6 + PSI5 + 1.d0/A4)
+            BB   =-(CHI4 + PSI6 + PSI5 + 1.0/A4)
             CC   = CHI4*(PSI5+PSI6) - 2.d0*PSI2/A4
             DD   = MAX(BB*BB-4.d0*CC,ZERO)           ! Patch proposed by Uma Shankar, 19/11/01
             PSI4 =0.5d0*(-BB - SQRT(DD))
@@ -2782,7 +2782,7 @@
     SUBROUTINE CALCG4
     INCLUDE 'isrpia.inc'
 
-    DOUBLE PRECISION :: LAMDA
+    real :: LAMDA
     COMMON /CASEG/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, LAMDA, &
     PSI1, PSI2, PSI3, PSI4, PSI5, PSI6, PSI7, &
     A1,   A2,   A3,   A4,   A5,   A6,   A7
@@ -2817,7 +2817,7 @@
     DO 10 I=1,NDIV
         X2  = X1+DX
         Y2  = FUNCG4A (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1  = X2
         Y1  = Y2
     10 END DO
@@ -2832,7 +2832,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCG4A (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -2885,10 +2885,10 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCG4A (X)
+    real FUNCTION FUNCG4A (X)
     INCLUDE 'isrpia.inc'
 
-    DOUBLE PRECISION :: LAMDA, NAI, NH4I, NO3I
+    real :: LAMDA, NAI, NH4I, NO3I
     COMMON /CASEG/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, LAMDA, &
     PSI1, PSI2, PSI3, PSI4, PSI5, PSI6, PSI7, &
     A1,   A2,   A3,   A4,   A5,   A6,   A7
@@ -2920,7 +2920,7 @@
     
     ! C      IF(CHI4.GT.TINY) THEN
         IF(W(2) > TINY) THEN       ! Accounts for NH3 evaporation
-            BB   =-(CHI4 + PSI6 + PSI5 + 1.d0/A4)
+            BB   =-(CHI4 + PSI6 + PSI5 + 1.0/A4)
             CC   = CHI4*(PSI5+PSI6) - 2.d0*PSI2/A4
             DD   = MAX(BB*BB-4.d0*CC,ZERO) ! Patch proposed by Uma shankar, 19/11/2001
             PSI4 =0.5d0*(-BB - SQRT(DD))
@@ -3074,7 +3074,7 @@
     SUBROUTINE CALCG3A
     INCLUDE 'isrpia.inc'
 
-    DOUBLE PRECISION :: LAMDA
+    real :: LAMDA
     COMMON /CASEG/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, LAMDA, &
     PSI1, PSI2, PSI3, PSI4, PSI5, PSI6, PSI7, &
     A1,   A2,   A3,   A4,   A5,   A6,   A7
@@ -3109,7 +3109,7 @@
         X2  = X1+DX
         Y2  = FUNCG3A (X2)
     
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1  = X2
         Y1  = Y2
     10 END DO
@@ -3124,7 +3124,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCG3A (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -3196,10 +3196,10 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCG3A (X)
+    real FUNCTION FUNCG3A (X)
     INCLUDE 'isrpia.inc'
 
-    DOUBLE PRECISION :: LAMDA
+    real :: LAMDA
     COMMON /CASEG/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, LAMDA, &
     PSI1, PSI2, PSI3, PSI4, PSI5, PSI6, PSI7, &
     A1,   A2,   A3,   A4,   A5,   A6,   A7
@@ -3231,7 +3231,7 @@
     
     ! C      IF(CHI4.GT.TINY) THEN
         IF(W(2) > TINY) THEN       ! Accounts for NH3 evaporation
-            BB   =-(CHI4 + PSI6 + PSI5 + 1.d0/A4)
+            BB   =-(CHI4 + PSI6 + PSI5 + 1.0/A4)
             CC   = CHI4*(PSI5+PSI6) - 2.d0*PSI2/A4
             DD   = MAX(BB*BB-4.d0*CC,ZERO)  ! Patch proposed by Uma Shankar, 19/11/01
             PSI4 =0.5d0*(-BB - SQRT(DD))
@@ -3380,7 +3380,7 @@
     SUBROUTINE CALCG2A
     INCLUDE 'isrpia.inc'
 
-    DOUBLE PRECISION :: LAMDA
+    real :: LAMDA
     COMMON /CASEG/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, LAMDA, &
     PSI1, PSI2, PSI3, PSI4, PSI5, PSI6, PSI7, &
     A1,   A2,   A3,   A4,   A5,   A6,   A7
@@ -3414,7 +3414,7 @@
     DO 10 I=1,NDIV
         X2 = X1+DX
         Y2 = FUNCG2A (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -3429,7 +3429,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCG2A (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -3505,10 +3505,10 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCG2A (X)
+    real FUNCTION FUNCG2A (X)
     INCLUDE 'isrpia.inc'
 
-    DOUBLE PRECISION :: LAMDA
+    real :: LAMDA
     COMMON /CASEG/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, LAMDA, &
     PSI1, PSI2, PSI3, PSI4, PSI5, PSI6, PSI7, &
     A1,   A2,   A3,   A4,   A5,   A6,   A7
@@ -3688,7 +3688,7 @@
 
     SUBROUTINE CALCG1A
     INCLUDE 'isrpia.inc'
-    DOUBLE PRECISION :: LAMDA, LAMDA1, LAMDA2, KAPA, KAPA1, KAPA2
+    real :: LAMDA, LAMDA1, LAMDA2, KAPA, KAPA1, KAPA2
 
 ! *** CALCULATE NON VOLATILE SOLIDS ***********************************
 
@@ -3864,7 +3864,7 @@
     DO 10 I=1,NDIV
         X2 = X1+DX
         Y2 = FUNCH6A (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -3879,7 +3879,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCH6A (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -3932,7 +3932,7 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCH6A (X)
+    real FUNCTION FUNCH6A (X)
     INCLUDE 'isrpia.inc'
 
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
@@ -3972,7 +3972,7 @@
         PSI5 = MAX(PSI5, TINY)
     
         IF (W(3) > TINY .AND. WATER > TINY) THEN  ! First try 3rd order soln
-            BB   =-(CHI4 + PSI6 + PSI5 + 1.d0/A4)
+            BB   =-(CHI4 + PSI6 + PSI5 + 1.0/A4)
             CC   = CHI4*(PSI5+PSI6)
             DD   = BB*BB-4.d0*CC
             PSI4 =0.5d0*(-BB - SQRT(DD))
@@ -4090,7 +4090,7 @@
     DO 10 I=1,NDIV
         X2 = X1+DX
         Y2 = FUNCH5A (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -4105,7 +4105,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCH5A (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -4158,7 +4158,7 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCH5A (X)
+    real FUNCTION FUNCH5A (X)
     INCLUDE 'isrpia.inc'
 
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
@@ -4198,7 +4198,7 @@
         PSI5 = MAX(PSI5, TINY)
     
         IF (W(3) > TINY .AND. WATER > TINY) THEN  ! First try 3rd order soln
-            BB   =-(CHI4 + PSI6 + PSI5 + 1.d0/A4)
+            BB   =-(CHI4 + PSI6 + PSI5 + 1.0/A4)
             CC   = CHI4*(PSI5+PSI6)
             DD   = BB*BB-4.d0*CC
             PSI4 =0.5d0*(-BB - SQRT(DD))
@@ -4328,7 +4328,7 @@
     DO 10 I=1,NDIV
         X2 = X1+DX
         Y2 = FUNCH4A (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -4343,7 +4343,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCH4A (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -4396,7 +4396,7 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCH4A (X)
+    real FUNCTION FUNCH4A (X)
     INCLUDE 'isrpia.inc'
 
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
@@ -4436,7 +4436,7 @@
         PSI5 = MAX(PSI5, TINY)
     
         IF (W(3) > TINY .AND. WATER > TINY) THEN  ! First try 3rd order soln
-            BB   =-(CHI4 + PSI6 + PSI5 + 1.d0/A4)
+            BB   =-(CHI4 + PSI6 + PSI5 + 1.0/A4)
             CC   = CHI4*(PSI5+PSI6)
             DD   = BB*BB-4.d0*CC
             PSI4 =0.5d0*(-BB - SQRT(DD))
@@ -4591,7 +4591,7 @@
     DO 10 I=1,NDIV
         X2 = X1+DX
         Y2 = FUNCH3A (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -4606,7 +4606,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCH3A (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -4659,7 +4659,7 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCH3A (X)
+    real FUNCTION FUNCH3A (X)
     INCLUDE 'isrpia.inc'
 
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
@@ -4699,7 +4699,7 @@
         PSI5 = MAX(PSI5, TINY)
     
         IF (W(3) > TINY .AND. WATER > TINY) THEN  ! First try 3rd order soln
-            BB   =-(CHI4 + PSI6 + PSI5 + 1.d0/A4)
+            BB   =-(CHI4 + PSI6 + PSI5 + 1.0/A4)
             CC   = CHI4*(PSI5+PSI6)
             DD   = BB*BB-4.d0*CC
             PSI4 =0.5d0*(-BB - SQRT(DD))
@@ -4911,7 +4911,7 @@
     DO 10 I=1,NDIV
         X2 = X1+DX
         Y2 = FUNCH2A (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -4926,7 +4926,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCH2A (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -4979,7 +4979,7 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCH2A (X)
+    real FUNCTION FUNCH2A (X)
     INCLUDE 'isrpia.inc'
 
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
@@ -5021,7 +5021,7 @@
         PSI5 = MAX(PSI5, TINY)
     
         IF (W(3) > TINY .AND. WATER > TINY) THEN  ! First try 3rd order soln
-            BB   =-(CHI4 + PSI6 + PSI5 + 1.d0/A4)
+            BB   =-(CHI4 + PSI6 + PSI5 + 1.0/A4)
             CC   = CHI4*(PSI5+PSI6)
             DD   = BB*BB-4.d0*CC
             PSI4 =0.5d0*(-BB - SQRT(DD))
@@ -5187,7 +5187,7 @@
 
     SUBROUTINE CALCH1A
     INCLUDE 'isrpia.inc'
-    DOUBLE PRECISION :: LAMDA, LAMDA1, LAMDA2, KAPA, KAPA1, KAPA2, NAFR, &
+    real :: LAMDA, LAMDA1, LAMDA2, KAPA, KAPA1, KAPA2, NAFR, &
     NO3FR
 
 ! *** CALCULATE NON VOLATILE SOLIDS ***********************************
@@ -5475,7 +5475,7 @@
     DO 10 I=1,NDIV
         X2 = X1-DX
         Y2 = FUNCI5A (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -5498,7 +5498,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCI5A (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -5541,7 +5541,7 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCI5A (P4)
+    real FUNCTION FUNCI5A (P4)
     INCLUDE 'isrpia.inc'
 
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
@@ -5677,7 +5677,7 @@
     DO 10 I=1,NDIV
         X2 = X1-DX
         Y2 = FUNCI4A (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -5700,7 +5700,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCI4A (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -5743,7 +5743,7 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCI4A (P4)
+    real FUNCTION FUNCI4A (P4)
     INCLUDE 'isrpia.inc'
 
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
@@ -5942,7 +5942,7 @@
     DO 10 I=1,NDIV
         X2 = MAX(X1-DX, PSI2LO)
         Y2 = FUNCI3A (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -5957,7 +5957,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCI3A (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -5997,7 +5997,7 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCI3A (P2)
+    real FUNCTION FUNCI3A (P2)
     INCLUDE 'isrpia.inc'
 
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
@@ -6037,7 +6037,7 @@
     DO 10 I=1,NDIV
         X2 = MAX(X1-DX, PSI4LO)
         Y2 = FUNCI3B (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -6052,7 +6052,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCI3B (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -6095,7 +6095,7 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCI3B (P4)
+    real FUNCTION FUNCI3B (P4)
     INCLUDE 'isrpia.inc'
 
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
@@ -6296,7 +6296,7 @@
     DO 10 I=1,NDIV
         X2 = MAX(X1-DX, PSI2LO)
         Y2 = FUNCI2A (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -6311,7 +6311,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCI2A (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -6354,7 +6354,7 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCI2A (P2)
+    real FUNCTION FUNCI2A (P2)
     INCLUDE 'isrpia.inc'
 
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
@@ -6580,7 +6580,7 @@
     SUBROUTINE CALCJ3
     INCLUDE 'isrpia.inc'
 
-    DOUBLE PRECISION :: LAMDA, KAPA
+    real :: LAMDA, KAPA
 
 ! *** SETUP PARAMETERS ************************************************
 
@@ -6657,7 +6657,7 @@
     SUBROUTINE CALCJ2
     INCLUDE 'isrpia.inc'
 
-    DOUBLE PRECISION :: LAMDA, KAPA
+    real :: LAMDA, KAPA
     COMMON /CASEJ/ CHI1, CHI2, CHI3, LAMDA, KAPA, PSI1, PSI2, PSI3, &
     A1,   A2,   A3
 
@@ -6685,7 +6685,7 @@
     DO 10 I=1,NDIV
         X2 = X1-DX
         Y2 = FUNCJ2 (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -6708,7 +6708,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCJ2 (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -6751,10 +6751,10 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCJ2 (P1)
+    real FUNCTION FUNCJ2 (P1)
     INCLUDE 'isrpia.inc'
 
-    DOUBLE PRECISION :: LAMDA, KAPA
+    real :: LAMDA, KAPA
     COMMON /CASEJ/ CHI1, CHI2, CHI3, LAMDA, KAPA, PSI1, PSI2, PSI3, &
     A1,   A2,   A3
 
@@ -6834,7 +6834,7 @@
     SUBROUTINE CALCJ1
     INCLUDE 'isrpia.inc'
 
-    DOUBLE PRECISION :: LAMDA, KAPA
+    real :: LAMDA, KAPA
     COMMON /CASEJ/ CHI1, CHI2, CHI3, LAMDA, KAPA, PSI1, PSI2, PSI3, &
     A1,   A2,   A3
 
@@ -6863,7 +6863,7 @@
     DO 10 I=1,NDIV
         X2 = X1-DX
         Y2 = FUNCJ1 (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -6886,7 +6886,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCJ1 (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -6929,9 +6929,9 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCJ1 (P1)
+    real FUNCTION FUNCJ1 (P1)
     INCLUDE 'isrpia.inc'
-    DOUBLE PRECISION :: LAMDA, KAPA
+    real :: LAMDA, KAPA
     COMMON /CASEJ/ CHI1, CHI2, CHI3, LAMDA, KAPA, PSI1, PSI2, PSI3, &
     A1,   A2,   A3
 
@@ -7011,7 +7011,7 @@
     SUBROUTINE CALCO7
     INCLUDE 'isrpia.inc'
 
-    DOUBLE PRECISION :: LAMDA
+    real :: LAMDA
     COMMON /CASEO/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
     CHI9, LAMDA, PSI1, PSI2, PSI3, PSI4, PSI5, &
     PSI6, PSI7, PSI8, PSI9,  A1,  A2,  A3,  A4, &
@@ -7066,7 +7066,7 @@
     DO 10 I=1,NDIV
         X2 = X1+DX
         Y2 = FUNCO7 (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -7081,7 +7081,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCO7 (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -7130,10 +7130,10 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCO7 (X)
+    real FUNCTION FUNCO7 (X)
     INCLUDE 'isrpia.inc'
 
-    DOUBLE PRECISION :: LAMDA
+    real :: LAMDA
     COMMON /CASEO/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
     CHI9, LAMDA, PSI1, PSI2, PSI3, PSI4, PSI5, &
     PSI6, PSI7, PSI8, PSI9,  A1,  A2,  A3,  A4, &
@@ -7163,7 +7163,7 @@
     
     ! C      IF(CHI4.GT.TINY) THEN
         IF(W(2) > TINY) THEN       ! Accounts for NH3 evaporation
-            BB   =-(CHI4 + PSI6 + PSI5 + 1.d0/A4)
+            BB   =-(CHI4 + PSI6 + PSI5 + 1.0/A4)
             CC   = CHI4*(PSI5+PSI6) - 2.d0*PSI2/A4
             DD   = MAX(BB*BB-4.d0*CC,ZERO)           ! Patch proposed by Uma Shankar, 19/11/01
             PSI4 =0.5d0*(-BB - SQRT(DD))
@@ -7250,7 +7250,7 @@
     SUBROUTINE CALCO6
     INCLUDE 'isrpia.inc'
 
-    DOUBLE PRECISION :: LAMDA
+    real :: LAMDA
     COMMON /CASEO/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
     CHI9, LAMDA, PSI1, PSI2, PSI3, PSI4, PSI5, &
     PSI6, PSI7, PSI8, PSI9,  A1,  A2,  A3,  A4, &
@@ -7303,7 +7303,7 @@
     DO 10 I=1,NDIV
         X2 = X1+DX
         Y2 = FUNCO6 (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -7318,7 +7318,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCO6 (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -7367,10 +7367,10 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCO6 (X)
+    real FUNCTION FUNCO6 (X)
     INCLUDE 'isrpia.inc'
 
-    DOUBLE PRECISION :: LAMDA
+    real :: LAMDA
     COMMON /CASEO/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
     CHI9, LAMDA, PSI1, PSI2, PSI3, PSI4, PSI5, &
     PSI6, PSI7, PSI8, PSI9,  A1,  A2,  A3,  A4, &
@@ -7401,7 +7401,7 @@
     
     ! C      IF(CHI4.GT.TINY) THEN
         IF(W(2) > TINY) THEN       ! Accounts for NH3 evaporation
-            BB   =-(CHI4 + PSI6 + PSI5 + 1.d0/A4)
+            BB   =-(CHI4 + PSI6 + PSI5 + 1.0/A4)
             CC   = CHI4*(PSI5+PSI6) - 2.d0*PSI2/A4
             DD   = MAX(BB*BB-4.d0*CC,ZERO)           ! Patch proposed by Uma Shankar, 19/11/01
             PSI4 =0.5d0*(-BB - SQRT(DD))
@@ -7503,7 +7503,7 @@
     SUBROUTINE CALCO5
     INCLUDE 'isrpia.inc'
 
-    DOUBLE PRECISION :: LAMDA
+    real :: LAMDA
     COMMON /CASEO/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
     CHI9, LAMDA, PSI1, PSI2, PSI3, PSI4, PSI5, &
     PSI6, PSI7, PSI8, PSI9,  A1,  A2,  A3,  A4, &
@@ -7555,7 +7555,7 @@
     DO 10 I=1,NDIV
         X2 = X1+DX
         Y2 = FUNCO5 (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -7570,7 +7570,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCO5 (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -7619,10 +7619,10 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCO5 (X)
+    real FUNCTION FUNCO5 (X)
     INCLUDE 'isrpia.inc'
 
-    DOUBLE PRECISION :: LAMDA
+    real :: LAMDA
     COMMON /CASEO/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
     CHI9, LAMDA, PSI1, PSI2, PSI3, PSI4, PSI5, &
     PSI6, PSI7, PSI8, PSI9,  A1,  A2,  A3,  A4, &
@@ -7654,7 +7654,7 @@
     
     ! C      IF(CHI4.GT.TINY) THEN
         IF(W(2) > TINY) THEN       ! Accounts for NH3 evaporation
-            BB   =-(CHI4 + PSI6 + PSI5 + 1.d0/A4)
+            BB   =-(CHI4 + PSI6 + PSI5 + 1.0/A4)
             CC   = CHI4*(PSI5+PSI6) - 2.d0*PSI2/A4
             DD   = MAX(BB*BB-4.d0*CC,ZERO)           ! Patch proposed by Uma Shankar, 19/11/01
             PSI4 =0.5d0*(-BB - SQRT(DD))
@@ -7664,8 +7664,8 @@
         ENDIF
     
         IF (CHI7 > TINY .AND. WATER > TINY) THEN        ! PSI7
-            CALL POLY3 ((PSI2+PSI8)/(SQRT(A1/A7)+1.D0), ZERO, &
-            -A7/4.D0/(SQRT(A1/A7)+1.D0), PSI7, ISLV)
+            CALL POLY3 ((PSI2+PSI8)/(SQRT(A1/A7)+1.0), ZERO, &
+            -A7/4.D0/(SQRT(A1/A7)+1.0), PSI7, ISLV)
             IF (ISLV == 0) THEN
                 PSI7 = MAX (MIN (PSI7, CHI7), ZERO)
             ELSE
@@ -7764,7 +7764,7 @@
     SUBROUTINE CALCO4
     INCLUDE 'isrpia.inc'
 
-    DOUBLE PRECISION :: LAMDA
+    real :: LAMDA
     COMMON /CASEO/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
     CHI9, LAMDA, PSI1, PSI2, PSI3, PSI4, PSI5, &
     PSI6, PSI7, PSI8, PSI9,  A1,  A2,  A3,  A4, &
@@ -7815,7 +7815,7 @@
     DO 10 I=1,NDIV
         X2 = X1+DX
         Y2 = FUNCO4 (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -7830,7 +7830,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCO4 (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -7900,10 +7900,10 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCO4 (X)
+    real FUNCTION FUNCO4 (X)
     INCLUDE 'isrpia.inc'
 
-    DOUBLE PRECISION :: LAMDA
+    real :: LAMDA
     COMMON /CASEO/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
     CHI9, LAMDA, PSI1, PSI2, PSI3, PSI4, PSI5, &
     PSI6, PSI7, PSI8, PSI9,  A1,  A2,  A3,  A4, &
@@ -7938,7 +7938,7 @@
     
     ! C      IF(CHI4.GT.TINY) THEN
         IF(W(2) > TINY) THEN       ! Accounts for NH3 evaporation
-            BB   =-(CHI4 + PSI6 + PSI5 + 1.d0/A4)
+            BB   =-(CHI4 + PSI6 + PSI5 + 1.0/A4)
             CC   = CHI4*(PSI5+PSI6) - 2.d0*PSI2/A4
             DD   = MAX(BB*BB-4.d0*CC,ZERO)           ! Patch proposed by Uma Shankar, 19/11/01
             PSI4 =0.5d0*(-BB - SQRT(DD))
@@ -8091,7 +8091,7 @@
     SUBROUTINE CALCO3A
     INCLUDE 'isrpia.inc'
 
-    DOUBLE PRECISION :: LAMDA
+    real :: LAMDA
     COMMON /CASEO/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
     CHI9, LAMDA, PSI1, PSI2, PSI3, PSI4, PSI5, &
     PSI6, PSI7, PSI8, PSI9, A1,  A2,  A3,  A4, &
@@ -8138,7 +8138,7 @@
     DO 10 I=1,NDIV
         X2 = X1+DX
         Y2 = FUNCO3A (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -8153,7 +8153,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCO3A (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -8222,10 +8222,10 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCO3A (X)
+    real FUNCTION FUNCO3A (X)
     INCLUDE 'isrpia.inc'
 
-    DOUBLE PRECISION :: LAMDA
+    real :: LAMDA
     COMMON /CASEO/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
     CHI9, LAMDA, PSI1, PSI2, PSI3, PSI4, PSI5, &
     PSI6, PSI7, PSI8, PSI9,  A1,  A2,  A3,  A4, &
@@ -8262,7 +8262,7 @@
     
     ! C      IF(CHI4.GT.TINY) THEN                             ! PSI4
         IF(W(2) > TINY) THEN       ! Accounts for NH3 evaporation
-            BB   =-(CHI4 + PSI6 + PSI5 + 1.d0/A4)
+            BB   =-(CHI4 + PSI6 + PSI5 + 1.0/A4)
             CC   = CHI4*(PSI5+PSI6) - 2.d0*PSI2/A4
             DD   = MAX(BB*BB-4.d0*CC,ZERO)  ! Patch proposed by Uma Shankar, 19/11/01
             PSI4 =0.5d0*(-BB - SQRT(DD))
@@ -8440,7 +8440,7 @@
     SUBROUTINE CALCO2A
     INCLUDE 'isrpia.inc'
 
-    DOUBLE PRECISION :: LAMDA
+    real :: LAMDA
     COMMON /CASEO/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
     CHI9, LAMDA, PSI1, PSI2, PSI3, PSI4, PSI5, &
     PSI6, PSI7, PSI8, PSI9,  A1,  A2,  A3,  A4, &
@@ -8487,7 +8487,7 @@
     DO 10 I=1,NDIV
         X2 = X1+DX
         Y2 = FUNCO2A (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -8502,7 +8502,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCO2A (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -8574,10 +8574,10 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCO2A (X)
+    real FUNCTION FUNCO2A (X)
     INCLUDE 'isrpia.inc'
 
-    DOUBLE PRECISION :: LAMDA
+    real :: LAMDA
     COMMON /CASEO/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
     CHI9, LAMDA, PSI1, PSI2, PSI3, PSI4, PSI5, &
     PSI6, PSI7, PSI8, PSI9,  A1,  A2,  A3,  A4, &
@@ -8788,7 +8788,7 @@
 
     SUBROUTINE CALCO1A
     INCLUDE 'isrpia.inc'
-    DOUBLE PRECISION :: LAMDA, LAMDA1, LAMDA2, KAPA, KAPA1, KAPA2
+    real :: LAMDA, LAMDA1, LAMDA2, KAPA, KAPA1, KAPA2
 
 ! *** CALCULATE NON VOLATILE SOLIDS ***********************************
 
@@ -8984,7 +8984,7 @@
     DO 10 I=1,NDIV
         X2 = X1+DX
         Y2 = FUNCM8 (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -8999,7 +8999,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCM8 (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -9051,7 +9051,7 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCM8 (X)
+    real FUNCTION FUNCM8 (X)
     INCLUDE 'isrpia.inc'
 
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
@@ -9094,7 +9094,7 @@
         PSI5 = MIN(MAX(PSI5, TINY),CHI5)
     
         IF (W(3) > TINY .AND. WATER > TINY) THEN  ! First try 3rd order soln
-            BB   =-(CHI4 + PSI6 + PSI5 + 1.d0/A4)
+            BB   =-(CHI4 + PSI6 + PSI5 + 1.0/A4)
             CC   = CHI4*(PSI5+PSI6)
             DD   = MAX(BB*BB-4.d0*CC,ZERO)
             PSI4 =0.5d0*(-BB - SQRT(DD))
@@ -9220,7 +9220,7 @@
     DO 10 I=1,NDIV
         X2 = X1+DX
         Y2 = FUNCM7 (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -9235,7 +9235,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCM7 (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -9285,7 +9285,7 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCM7 (X)
+    real FUNCTION FUNCM7 (X)
     INCLUDE 'isrpia.inc'
 
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
@@ -9329,7 +9329,7 @@
         PSI5 = MIN(MAX(PSI5, TINY),CHI5)
     
         IF (W(3) > TINY .AND. WATER > TINY) THEN  ! First try 3rd order soln
-            BB   =-(CHI4 + PSI6 + PSI5 + 1.d0/A4)
+            BB   =-(CHI4 + PSI6 + PSI5 + 1.0/A4)
             CC   = CHI4*(PSI5+PSI6)
             DD   = MAX(BB*BB-4.d0*CC,ZERO)
             PSI4 =0.5d0*(-BB - SQRT(DD))
@@ -9462,7 +9462,7 @@
     DO 10 I=1,NDIV
         X2 = X1+DX
         Y2 = FUNCM6 (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -9477,7 +9477,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCM6 (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -9526,7 +9526,7 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCM6 (X)
+    real FUNCTION FUNCM6 (X)
     INCLUDE 'isrpia.inc'
 
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
@@ -9570,7 +9570,7 @@
         PSI5 = MIN(MAX(PSI5, TINY),CHI5)
     
         IF (W(3) > TINY .AND. WATER > TINY) THEN  ! First try 3rd order soln
-            BB   =-(CHI4 + PSI6 + PSI5 + 1.d0/A4)
+            BB   =-(CHI4 + PSI6 + PSI5 + 1.0/A4)
             CC   = CHI4*(PSI5+PSI6)
             DD   = MAX(BB*BB-4.d0*CC,ZERO)
             PSI4 =0.5d0*(-BB - SQRT(DD))
@@ -9581,12 +9581,12 @@
     
         IF (CHI1 > TINY .AND. WATER > TINY) THEN   !NA2SO4
             RIZ = SQRT(A9/A1)
-            AA  = (0.5D0*RIZ*(PSI7+PSI8)+PSI10+(1.D0+RIZ)*(PSI7+PSI8)) &
-            /(1.D0+RIZ)
+            AA  = (0.5D0*RIZ*(PSI7+PSI8)+PSI10+(1.0+RIZ)*(PSI7+PSI8)) &
+            /(1.0+RIZ)
             BB  = ((PSI7+PSI8)*(0.5D0*RIZ*(PSI7+PSI8)+PSI10)+0.25D0* &
-            (PSI7+PSI8)**2.0*(1.D0+RIZ))/(1.D0+RIZ)
+            (PSI7+PSI8)**2.0*(1.0+RIZ))/(1.0+RIZ)
             CC  = (0.25D0*(PSI7+PSI8)**2.0*(0.5D0*RIZ*(PSI7+PSI8)+PSI10) &
-            -A1/4.D0)/(1.D0+RIZ)
+            -A1/4.D0)/(1.0+RIZ)
         !      AA  = PSI7+PSI8+PSI9+PSI10
         !      BB  = (PSI7+PSI8)*(PSI9+PSI10)+0.25D0*(PSI7+PSI8)**2.
         !      CC  = ((PSI7+PSI8)**2.*(PSI9+PSI10)-A1)/4.0D0
@@ -9731,7 +9731,7 @@
     DO 10 I=1,NDIV
         X2 = X1+DX
         Y2 = FUNCM5 (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -9746,7 +9746,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCM5 (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -9795,7 +9795,7 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCM5 (X)
+    real FUNCTION FUNCM5 (X)
     INCLUDE 'isrpia.inc'
 
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
@@ -9839,7 +9839,7 @@
         PSI5 = MIN(MAX(PSI5, TINY),CHI5)
     
         IF (W(3) > TINY .AND. WATER > TINY) THEN  ! First try 3rd order soln
-            BB   =-(CHI4 + PSI6 + PSI5 + 1.d0/A4)
+            BB   =-(CHI4 + PSI6 + PSI5 + 1.0/A4)
             CC   = CHI4*(PSI5+PSI6)
             DD   = MAX(BB*BB-4.d0*CC,ZERO)
             PSI4 =0.5d0*(-BB - SQRT(DD))
@@ -9850,12 +9850,12 @@
     
         IF (CHI1 > TINY .AND. WATER > TINY) THEN   !NA2SO4
             RIZ = SQRT(A9/A1)
-            AA  = (0.5D0*RIZ*(PSI7+PSI8)+PSI10+(1.D0+RIZ)*(PSI7+PSI8)) &
-            /(1.D0+RIZ)
+            AA  = (0.5D0*RIZ*(PSI7+PSI8)+PSI10+(1.0+RIZ)*(PSI7+PSI8)) &
+            /(1.0+RIZ)
             BB  = ((PSI7+PSI8)*(0.5D0*RIZ*(PSI7+PSI8)+PSI10)+0.25D0* &
-            (PSI7+PSI8)**2.0*(1.D0+RIZ))/(1.D0+RIZ)
+            (PSI7+PSI8)**2.0*(1.0+RIZ))/(1.0+RIZ)
             CC  = (0.25D0*(PSI7+PSI8)**2.0*(0.5D0*RIZ*(PSI7+PSI8)+PSI10) &
-            -A1/4.D0)/(1.D0+RIZ)
+            -A1/4.D0)/(1.0+RIZ)
         !      AA  = PSI7+PSI8+PSI9+PSI10
         !      BB  = (PSI7+PSI8)*(PSI9+PSI10)+0.25D0*(PSI7+PSI8)**2.
         !      CC  = ((PSI7+PSI8)**2.*(PSI9+PSI10)-A1)/4.0D0
@@ -10009,7 +10009,7 @@
     DO 10 I=1,NDIV
         X2 = X1+DX
         Y2 = FUNCM4 (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -10024,7 +10024,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCM4 (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -10073,7 +10073,7 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCM4 (X)
+    real FUNCTION FUNCM4 (X)
     INCLUDE 'isrpia.inc'
 
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
@@ -10118,7 +10118,7 @@
         PSI5 = MIN(MAX(PSI5, TINY),CHI5)
     
         IF (W(3) > TINY .AND. WATER > TINY) THEN  ! First try 3rd order soln
-            BB   =-(CHI4 + PSI6 + PSI5 + 1.d0/A4)
+            BB   =-(CHI4 + PSI6 + PSI5 + 1.0/A4)
             CC   = CHI4*(PSI5+PSI6)
             DD   = MAX(BB*BB-4.d0*CC,ZERO)
             PSI4 =0.5d0*(-BB - SQRT(DD))
@@ -10129,12 +10129,12 @@
     
         IF (CHI1 > TINY .AND. WATER > TINY) THEN   !NA2SO4
             RIZ = SQRT(A9/A1)
-            AA  = (0.5D0*RIZ*(PSI7+PSI8)+PSI10+(1.D0+RIZ)*(PSI7+PSI8)) &
-            /(1.D0+RIZ)
+            AA  = (0.5D0*RIZ*(PSI7+PSI8)+PSI10+(1.0+RIZ)*(PSI7+PSI8)) &
+            /(1.0+RIZ)
             BB  = ((PSI7+PSI8)*(0.5D0*RIZ*(PSI7+PSI8)+PSI10)+0.25D0* &
-            (PSI7+PSI8)**2.0*(1.D0+RIZ))/(1.D0+RIZ)
+            (PSI7+PSI8)**2.0*(1.0+RIZ))/(1.0+RIZ)
             CC  = (0.25D0*(PSI7+PSI8)**2.0*(0.5D0*RIZ*(PSI7+PSI8)+PSI10) &
-            -A1/4.D0)/(1.D0+RIZ)
+            -A1/4.D0)/(1.0+RIZ)
         !      AA  = PSI7+PSI8+PSI9+PSI10
         !      BB  = (PSI7+PSI8)*(PSI9+PSI10)+0.25D0*(PSI7+PSI8)**2.
         !      CC  = ((PSI7+PSI8)**2.*(PSI9+PSI10)-A1)/4.0D0
@@ -10316,7 +10316,7 @@
     DO 10 I=1,NDIV
         X2 = X1+DX
         Y2 = FUNCM3 (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -10331,7 +10331,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCM3 (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -10380,7 +10380,7 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCM3 (X)
+    real FUNCTION FUNCM3 (X)
     INCLUDE 'isrpia.inc'
 
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
@@ -10426,7 +10426,7 @@
         PSI5 = MIN(MAX(PSI5, TINY),CHI5)
     
         IF (W(3) > TINY .AND. WATER > TINY) THEN  ! First try 3rd order soln
-            BB   =-(CHI4 + PSI6 + PSI5 + 1.d0/A4)
+            BB   =-(CHI4 + PSI6 + PSI5 + 1.0/A4)
             CC   = CHI4*(PSI5+PSI6)
             DD   = MAX(BB*BB-4.d0*CC,ZERO)
             PSI4 =0.5d0*(-BB - SQRT(DD))
@@ -10452,12 +10452,12 @@
     
         IF (CHI1 > TINY .AND. WATER > TINY) THEN   !NA2SO4
             RIZ = SQRT(A9/A1)
-            AA  = (0.5D0*RIZ*(PSI7+PSI8)+PSI10+(1.D0+RIZ)*(PSI7+PSI8)) &
-            /(1.D0+RIZ)
+            AA  = (0.5D0*RIZ*(PSI7+PSI8)+PSI10+(1.0+RIZ)*(PSI7+PSI8)) &
+            /(1.0+RIZ)
             BB  = ((PSI7+PSI8)*(0.5D0*RIZ*(PSI7+PSI8)+PSI10)+0.25D0* &
-            (PSI7+PSI8)**2.0*(1.D0+RIZ))/(1.D0+RIZ)
+            (PSI7+PSI8)**2.0*(1.0+RIZ))/(1.0+RIZ)
             CC  = (0.25D0*(PSI7+PSI8)**2.0*(0.5D0*RIZ*(PSI7+PSI8)+PSI10) &
-            -A1/4.D0)/(1.D0+RIZ)
+            -A1/4.D0)/(1.0+RIZ)
         !      AA  = PSI7+PSI8+PSI9+PSI10
         !      BB  = (PSI7+PSI8)*(PSI9+PSI10)+0.25D0*(PSI7+PSI8)**2.
         !      CC  = ((PSI7+PSI8)**2.*(PSI9+PSI10)-A1)/4.0D0
@@ -10689,7 +10689,7 @@
     DO 10 I=1,NDIV
         X2 = X1+DX
         Y2 = FUNCM2A (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -10704,7 +10704,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCM2A (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -10753,7 +10753,7 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCM2A (X)
+    real FUNCTION FUNCM2A (X)
     INCLUDE 'isrpia.inc'
 
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
@@ -10800,7 +10800,7 @@
         PSI5 = MIN(MAX(PSI5, TINY),CHI5)
     
         IF (W(3) > TINY .AND. WATER > TINY) THEN  ! First try 3rd order soln
-            BB   =-(CHI4 + PSI6 + PSI5 + 1.d0/A4)
+            BB   =-(CHI4 + PSI6 + PSI5 + 1.0/A4)
             CC   = CHI4*(PSI5+PSI6)
             DD   = MAX(BB*BB-4.d0*CC,ZERO)
             PSI4 =0.5d0*(-BB - SQRT(DD))
@@ -10839,12 +10839,12 @@
     
         IF (CHI1 > TINY .AND. WATER > TINY) THEN   !NA2SO4
             RIZ = SQRT(A9/A1)
-            AA  = (0.5D0*RIZ*(PSI7+PSI8)+PSI10+(1.D0+RIZ)*(PSI7+PSI8)) &
-            /(1.D0+RIZ)
+            AA  = (0.5D0*RIZ*(PSI7+PSI8)+PSI10+(1.0+RIZ)*(PSI7+PSI8)) &
+            /(1.0+RIZ)
             BB  = ((PSI7+PSI8)*(0.5D0*RIZ*(PSI7+PSI8)+PSI10)+0.25D0* &
-            (PSI7+PSI8)**2.0*(1.D0+RIZ))/(1.D0+RIZ)
+            (PSI7+PSI8)**2.0*(1.0+RIZ))/(1.0+RIZ)
             CC  = (0.25D0*(PSI7+PSI8)**2.0*(0.5D0*RIZ*(PSI7+PSI8)+PSI10) &
-            -A1/4.D0)/(1.D0+RIZ)
+            -A1/4.D0)/(1.0+RIZ)
         
         !      AA  = PSI7+PSI8+PSI9+PSI10
         !      BB  = (PSI7+PSI8)*(PSI9+PSI10)+0.25D0*(PSI7+PSI8)**2.
@@ -11016,7 +11016,7 @@
 
     SUBROUTINE CALCM1A
     INCLUDE 'isrpia.inc'
-    DOUBLE PRECISION :: LAMDA, LAMDA1, LAMDA2, KAPA, KAPA1, KAPA2, NAFR, &
+    real :: LAMDA, LAMDA1, LAMDA2, KAPA, KAPA1, KAPA2, NAFR, &
     NO3FR
 
 ! *** CALCULATE NON VOLATILE SOLIDS ***********************************
@@ -11236,7 +11236,7 @@
     DO 10 I=1,NDIV
         X2 = X1+DX
         Y2 = FUNCP13 (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -11251,7 +11251,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCP13 (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -11303,7 +11303,7 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCP13 (X)
+    real FUNCTION FUNCP13 (X)
     INCLUDE 'isrpia.inc'
 
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
@@ -11351,7 +11351,7 @@
         PSI5 = MIN(MAX(PSI5, TINY),CHI5)
     
         IF (W(3) > TINY .AND. WATER > TINY) THEN  ! First try 3rd order soln
-            BB   =-(CHI4 + PSI6 + PSI5 + 1.d0/A4)
+            BB   =-(CHI4 + PSI6 + PSI5 + 1.0/A4)
             CC   = CHI4*(PSI5+PSI6)
             DD   = MAX(BB*BB-4.d0*CC,ZERO)
             PSI4 =0.5d0*(-BB - SQRT(DD))
@@ -11530,7 +11530,7 @@
     DO 10 I=1,NDIV
         X2 = X1+DX
         Y2 = FUNCP12 (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -11545,7 +11545,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCP12 (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -11597,7 +11597,7 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCP12 (X)
+    real FUNCTION FUNCP12 (X)
     INCLUDE 'isrpia.inc'
 
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
@@ -11646,7 +11646,7 @@
         PSI5 = MIN(MAX(PSI5, TINY),CHI5)
     
         IF (W(3) > TINY .AND. WATER > TINY) THEN  ! First try 3rd order soln
-            BB   =-(CHI4 + PSI6 + PSI5 + 1.d0/A4)
+            BB   =-(CHI4 + PSI6 + PSI5 + 1.0/A4)
             CC   = CHI4*(PSI5+PSI6)
             DD   = MAX(BB*BB-4.d0*CC,ZERO)
             PSI4 =0.5d0*(-BB - SQRT(DD))
@@ -11839,7 +11839,7 @@
     DO 10 I=1,NDIV
         X2 = X1+DX
         Y2 = FUNCP11 (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -11854,7 +11854,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCP11 (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -11906,7 +11906,7 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCP11 (X)
+    real FUNCTION FUNCP11 (X)
     INCLUDE 'isrpia.inc'
 
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
@@ -11955,7 +11955,7 @@
         PSI5 = MIN (MAX (PSI5, TINY) , CHI5)
     
         IF (W(3) > TINY .AND. WATER > TINY) THEN  ! First try 3rd order soln
-            BB   =-(CHI4 + PSI6 + PSI5 + 1.d0/A4)
+            BB   =-(CHI4 + PSI6 + PSI5 + 1.0/A4)
             CC   = CHI4*(PSI5+PSI6)
             DD   = MAX(BB*BB-4.d0*CC,ZERO)
             PSI4 =0.5d0*(-BB - SQRT(DD))
@@ -12156,7 +12156,7 @@
     DO 10 I=1,NDIV
         X2 = X1+DX
         Y2 = FUNCP10 (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -12171,7 +12171,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCP10 (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -12223,7 +12223,7 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCP10 (X)
+    real FUNCTION FUNCP10 (X)
     INCLUDE 'isrpia.inc'
 
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
@@ -12272,7 +12272,7 @@
         PSI5 = MIN (MAX (PSI5, TINY) , CHI5)
     
         IF (W(3) > TINY .AND. WATER > TINY) THEN  ! First try 3rd order soln
-            BB   =-(CHI4 + PSI6 + PSI5 + 1.d0/A4)
+            BB   =-(CHI4 + PSI6 + PSI5 + 1.0/A4)
             CC   = CHI4*(PSI5+PSI6)
             DD   = MAX(BB*BB-4.d0*CC,ZERO)
             PSI4 =0.5d0*(-BB - SQRT(DD))
@@ -12473,7 +12473,7 @@
     DO 10 I=1,NDIV
         X2 = X1+DX
         Y2 = FUNCP9 (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -12488,7 +12488,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCP9 (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -12540,7 +12540,7 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCP9 (X)
+    real FUNCTION FUNCP9 (X)
     INCLUDE 'isrpia.inc'
 
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
@@ -12590,7 +12590,7 @@
         PSI5 = MIN (MAX (PSI5, TINY) , CHI5)
     
         IF (W(3) > TINY .AND. WATER > TINY) THEN  ! First try 3rd order soln
-            BB   =-(CHI4 + PSI6 + PSI5 + 1.d0/A4)
+            BB   =-(CHI4 + PSI6 + PSI5 + 1.0/A4)
             CC   = CHI4*(PSI5+PSI6)
             DD   = MAX(BB*BB-4.d0*CC,ZERO)
             PSI4 =0.5d0*(-BB - SQRT(DD))
@@ -12796,7 +12796,7 @@
     DO 10 I=1,NDIV
         X2 = X1+DX
         Y2 = FUNCP8 (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -12811,7 +12811,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCP8 (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -12863,7 +12863,7 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCP8 (X)
+    real FUNCTION FUNCP8 (X)
     INCLUDE 'isrpia.inc'
 
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
@@ -12913,7 +12913,7 @@
         PSI5 = MIN (MAX (PSI5, TINY) , CHI5)
     
         IF (W(3) > TINY .AND. WATER > TINY) THEN  ! First try 3rd order soln
-            BB   =-(CHI4 + PSI6 + PSI5 + 1.d0/A4)
+            BB   =-(CHI4 + PSI6 + PSI5 + 1.0/A4)
             CC   = CHI4*(PSI5+PSI6)
             DD   = MAX(BB*BB-4.d0*CC,ZERO)
             PSI4 =0.5d0*(-BB - SQRT(DD))
@@ -13147,7 +13147,7 @@
     DO 10 I=1,NDIV
         X2 = X1+DX
         Y2 = FUNCP7 (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -13162,7 +13162,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCP7 (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -13214,7 +13214,7 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCP7 (X)
+    real FUNCTION FUNCP7 (X)
     INCLUDE 'isrpia.inc'
 
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
@@ -13265,7 +13265,7 @@
         PSI5 = MIN (MAX (PSI5, TINY) , CHI5)
     
         IF (W(3) > TINY .AND. WATER > TINY) THEN  ! First try 3rd order soln
-            BB   =-(CHI4 + PSI6 + PSI5 + 1.d0/A4)
+            BB   =-(CHI4 + PSI6 + PSI5 + 1.0/A4)
             CC   = CHI4*(PSI5+PSI6)
             DD   = MAX(BB*BB-4.d0*CC,ZERO)
             PSI4 =0.5d0*(-BB - SQRT(DD))
@@ -13507,7 +13507,7 @@
     DO 10 I=1,NDIV
         X2 = X1+DX
         Y2 = FUNCP6 (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -13522,7 +13522,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCP6 (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -13574,7 +13574,7 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCP6 (X)
+    real FUNCTION FUNCP6 (X)
     INCLUDE 'isrpia.inc'
 
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
@@ -13626,7 +13626,7 @@
         PSI5 = MIN (MAX (PSI5, TINY) , CHI5)
     
         IF (W(3) > TINY .AND. WATER > TINY) THEN  ! First try 3rd order soln
-            BB   =-(CHI4 + PSI6 + PSI5 + 1.d0/A4)
+            BB   =-(CHI4 + PSI6 + PSI5 + 1.0/A4)
             CC   = CHI4*(PSI5+PSI6)
             DD   = MAX(BB*BB-4.d0*CC,ZERO)
             PSI4 =0.5d0*(-BB - SQRT(DD))
@@ -13936,7 +13936,7 @@
     DO 10 I=1,NDIV
         X2 = X1+DX
         Y2 = FUNCP5 (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -13951,7 +13951,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCP5 (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -14003,7 +14003,7 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCP5 (X)
+    real FUNCTION FUNCP5 (X)
     INCLUDE 'isrpia.inc'
 
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
@@ -14055,7 +14055,7 @@
         PSI5 = MIN (MAX (PSI5, TINY) , CHI5)
     
         IF (W(3) > TINY .AND. WATER > TINY) THEN  ! First try 3rd order soln
-            BB   =-(CHI4 + PSI6 + PSI5 + 1.d0/A4)
+            BB   =-(CHI4 + PSI6 + PSI5 + 1.0/A4)
             CC   = CHI4*(PSI5+PSI6)
             DD   = MAX(BB*BB-4.d0*CC,ZERO)
             PSI4 =0.5d0*(-BB - SQRT(DD))
@@ -14392,7 +14392,7 @@
     DO 10 I=1,NDIV
         X2 = X1+DX
         Y2 = FUNCP4 (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -14407,7 +14407,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCP4 (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -14458,7 +14458,7 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCP4 (X)
+    real FUNCTION FUNCP4 (X)
     INCLUDE 'isrpia.inc'
 
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
@@ -14510,7 +14510,7 @@
         PSI5 = MIN (MAX (PSI5, TINY) , CHI5)
     
         IF (W(3) > TINY .AND. WATER > TINY) THEN  ! First try 3rd order soln
-            BB   =-(CHI4 + PSI6 + PSI5 + 1.d0/A4)
+            BB   =-(CHI4 + PSI6 + PSI5 + 1.0/A4)
             CC   = CHI4*(PSI5+PSI6)
             DD   = MAX(BB*BB-4.d0*CC,ZERO)
             PSI4 =0.5d0*(-BB - SQRT(DD))
@@ -14848,7 +14848,7 @@
     DO 10 I=1,NDIV
         X2 = X1+DX
         Y2 = FUNCP3 (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -14863,7 +14863,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCP3 (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -14915,7 +14915,7 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCP3 (X)
+    real FUNCTION FUNCP3 (X)
     INCLUDE 'isrpia.inc'
 
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
@@ -14967,7 +14967,7 @@
         PSI5 = MIN (MAX (PSI5, TINY) , CHI5)
     
         IF (W(3) > TINY .AND. WATER > TINY) THEN  ! First try 3rd order soln
-            BB   =-(CHI4 + PSI6 + PSI5 + 1.d0/A4)
+            BB   =-(CHI4 + PSI6 + PSI5 + 1.0/A4)
             CC   = CHI4*(PSI5+PSI6)
             DD   = MAX(BB*BB-4.d0*CC,ZERO)
             PSI4 =0.5d0*(-BB - SQRT(DD))
@@ -15339,7 +15339,7 @@
     DO 10 I=1,NDIV
         X2 = X1+DX
         Y2 = FUNCP2A (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -15354,7 +15354,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCP2A (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -15406,7 +15406,7 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCP2A (X)
+    real FUNCTION FUNCP2A (X)
     INCLUDE 'isrpia.inc'
 
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
@@ -15458,7 +15458,7 @@
         PSI5 = MIN (MAX (PSI5, TINY) , CHI5)
     
         IF (W(3) > TINY .AND. WATER > TINY) THEN  ! First try 3rd order soln
-            BB   =-(CHI4 + PSI6 + PSI5 + 1.d0/A4)
+            BB   =-(CHI4 + PSI6 + PSI5 + 1.0/A4)
             CC   = CHI4*(PSI5+PSI6)
             DD   = MAX(BB*BB-4.d0*CC,ZERO)
             PSI4 =0.5d0*(-BB - SQRT(DD))
@@ -15717,7 +15717,7 @@
 
     SUBROUTINE CALCP1A
     INCLUDE 'isrpia.inc'
-    DOUBLE PRECISION :: LAMDA, LAMDA1, LAMDA2, KAPA, KAPA1, KAPA2, NAFR, &
+    real :: LAMDA, LAMDA1, LAMDA2, KAPA, KAPA1, KAPA2, NAFR, &
     NO3FR
 
 ! *** CALCULATE NON VOLATILE SOLIDS ***********************************
@@ -15886,7 +15886,7 @@
 
     SUBROUTINE CALCL9
     INCLUDE 'isrpia.inc'
-    DOUBLE PRECISION :: LAMDA
+    real :: LAMDA
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
     CHI9, CHI10, CHI11, CHI12, CHI13, CHI14, CHI15, &
     CHI16, CHI17, PSI1, PSI2, PSI3, PSI4, PSI5, PSI6, &
@@ -15992,7 +15992,7 @@
 
     SUBROUTINE CALCL8
     INCLUDE 'isrpia.inc'
-    DOUBLE PRECISION :: LAMDA
+    real :: LAMDA
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
     CHI9, CHI10, CHI11, CHI12, CHI13, CHI14, CHI15, &
     CHI16, CHI17, PSI1, PSI2, PSI3, PSI4, PSI5, PSI6, &
@@ -16049,7 +16049,7 @@
     DO 10 I=1,NDIV
         X2 = X1-DX
         Y2 = FUNCL8 (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -16071,7 +16071,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCL8 (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -16112,9 +16112,9 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCL8 (P6)
+    real FUNCTION FUNCL8 (P6)
     INCLUDE 'isrpia.inc'
-    DOUBLE PRECISION :: LAMDA
+    real :: LAMDA
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
     CHI9, CHI10, CHI11, CHI12, CHI13, CHI14, CHI15, &
     CHI16, CHI17, PSI1, PSI2, PSI3, PSI4, PSI5, PSI6, &
@@ -16204,7 +16204,7 @@
 
     SUBROUTINE CALCL7
     INCLUDE 'isrpia.inc'
-    DOUBLE PRECISION :: LAMDA
+    real :: LAMDA
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
     CHI9, CHI10, CHI11, CHI12, CHI13, CHI14, CHI15, &
     CHI16, CHI17, PSI1, PSI2, PSI3, PSI4, PSI5, PSI6, &
@@ -16261,7 +16261,7 @@
     DO 10 I=1,NDIV
         X2 = X1-DX
         Y2 = FUNCL7 (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -16283,7 +16283,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCL7 (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -16324,9 +16324,9 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCL7 (P4)
+    real FUNCTION FUNCL7 (P4)
     INCLUDE 'isrpia.inc'
-    DOUBLE PRECISION :: LAMDA
+    real :: LAMDA
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
     CHI9, CHI10, CHI11, CHI12, CHI13, CHI14, CHI15, &
     CHI16, CHI17, PSI1, PSI2, PSI3, PSI4, PSI5, PSI6, &
@@ -16435,7 +16435,7 @@
 
     SUBROUTINE CALCL6
     INCLUDE 'isrpia.inc'
-    DOUBLE PRECISION :: LAMDA
+    real :: LAMDA
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
     CHI9, CHI10, CHI11, CHI12, CHI13, CHI14, CHI15, &
     CHI16, CHI17, PSI1, PSI2, PSI3, PSI4, PSI5, PSI6, &
@@ -16492,7 +16492,7 @@
     DO 10 I=1,NDIV
         X2 = X1-DX
         Y2 = FUNCL6 (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -16515,7 +16515,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCL6 (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -16555,9 +16555,9 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCL6 (P4)
+    real FUNCTION FUNCL6 (P4)
     INCLUDE 'isrpia.inc'
-    DOUBLE PRECISION :: LAMDA
+    real :: LAMDA
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
     CHI9, CHI10, CHI11, CHI12, CHI13, CHI14, CHI15, &
     CHI16, CHI17, PSI1, PSI2, PSI3, PSI4, PSI5, PSI6, &
@@ -16666,7 +16666,7 @@
 
     SUBROUTINE CALCL5
     INCLUDE 'isrpia.inc'
-    DOUBLE PRECISION :: LAMDA
+    real :: LAMDA
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
     CHI9, CHI10, CHI11, CHI12, CHI13, CHI14, CHI15, &
     CHI16, CHI17, PSI1, PSI2, PSI3, PSI4, PSI5, PSI6, &
@@ -16725,7 +16725,7 @@
     DO 10 I=1,NDIV
         X2 = MAX(X1-DX, PSI4LO)
         Y2 = FUNCL5 (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -16748,7 +16748,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCL5 (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -16789,9 +16789,9 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCL5 (P4)
+    real FUNCTION FUNCL5 (P4)
     INCLUDE 'isrpia.inc'
-    DOUBLE PRECISION :: LAMDA
+    real :: LAMDA
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
     CHI9, CHI10, CHI11, CHI12, CHI13, CHI14, CHI15, &
     CHI16, CHI17, PSI1, PSI2, PSI3, PSI4, PSI5, PSI6, &
@@ -16910,7 +16910,7 @@
 
     SUBROUTINE CALCL4
     INCLUDE 'isrpia.inc'
-    DOUBLE PRECISION :: LAMDA
+    real :: LAMDA
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
     CHI9, CHI10, CHI11, CHI12, CHI13, CHI14, CHI15, &
     CHI16, CHI17, PSI1, PSI2, PSI3, PSI4, PSI5, PSI6, &
@@ -16967,7 +16967,7 @@
     DO 10 I=1,NDIV
         X2 = X1-DX
         Y2 = FUNCL4 (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -16990,7 +16990,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCL4 (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -17031,9 +17031,9 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCL4 (P4)
+    real FUNCTION FUNCL4 (P4)
     INCLUDE 'isrpia.inc'
-    DOUBLE PRECISION :: LAMDA
+    real :: LAMDA
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
     CHI9, CHI10, CHI11, CHI12, CHI13, CHI14, CHI15, &
     CHI16, CHI17, PSI1, PSI2, PSI3, PSI4, PSI5, PSI6, &
@@ -17216,7 +17216,7 @@
 
     SUBROUTINE CALCL3A
     INCLUDE 'isrpia.inc'
-    DOUBLE PRECISION :: LAMDA
+    real :: LAMDA
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
     CHI9, CHI10, CHI11, CHI12, CHI13, CHI14, CHI15, &
     CHI16, CHI17, PSI1, PSI2, PSI3, PSI4, PSI5, PSI6, &
@@ -17268,7 +17268,7 @@
     DO 10 I=1,NDIV
         X2 = MAX(X1-DX, PSI2LO)
         Y2 = FUNCL3A (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -17283,7 +17283,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCL3A (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -17323,9 +17323,9 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCL3A (P2)
+    real FUNCTION FUNCL3A (P2)
     INCLUDE 'isrpia.inc'
-    DOUBLE PRECISION :: LAMDA
+    real :: LAMDA
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
     CHI9, CHI10, CHI11, CHI12, CHI13, CHI14, CHI15, &
     CHI16, CHI17, PSI1, PSI2, PSI3, PSI4, PSI5, PSI6, &
@@ -17364,7 +17364,7 @@
     DO 10 I=1,NDIV
         X2 = MAX(X1-DX, PSI4LO)
         Y2 = FUNCL3B (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -17379,7 +17379,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCL3B (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -17424,9 +17424,9 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCL3B (P4)
+    real FUNCTION FUNCL3B (P4)
     INCLUDE 'isrpia.inc'
-    DOUBLE PRECISION :: LAMDA
+    real :: LAMDA
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
     CHI9, CHI10, CHI11, CHI12, CHI13, CHI14, CHI15, &
     CHI16, CHI17, PSI1, PSI2, PSI3, PSI4, PSI5, PSI6, &
@@ -17608,7 +17608,7 @@
 
     SUBROUTINE CALCL2A
     INCLUDE 'isrpia.inc'
-    DOUBLE PRECISION :: LAMDA
+    real :: LAMDA
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
     CHI9, CHI10, CHI11, CHI12, CHI13, CHI14, CHI15, &
     CHI16, CHI17, PSI1, PSI2, PSI3, PSI4, PSI5, PSI6, &
@@ -17657,7 +17657,7 @@
     DO 10 I=1,NDIV
         X2 = MAX(X1-DX, PSI2LO)
         Y2 = FUNCL2A (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -17672,7 +17672,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCL2A (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -17712,9 +17712,9 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCL2A (P2)
+    real FUNCTION FUNCL2A (P2)
     INCLUDE 'isrpia.inc'
-    DOUBLE PRECISION :: LAMDA
+    real :: LAMDA
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
     CHI9, CHI10, CHI11, CHI12, CHI13, CHI14, CHI15, &
     CHI16, CHI17, PSI1, PSI2, PSI3, PSI4, PSI5, PSI6, &
@@ -17756,7 +17756,7 @@
     DO 10 I=1,NDIV
         X2 = MAX(X1-DX, PSI4LO)
         Y2 = FUNCL2B (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -17771,7 +17771,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCL2B (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -17815,9 +17815,9 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCL2B (P4)
+    real FUNCTION FUNCL2B (P4)
     INCLUDE 'isrpia.inc'
-    DOUBLE PRECISION :: LAMDA
+    real :: LAMDA
     COMMON /SOLUT/ CHI1, CHI2, CHI3, CHI4, CHI5, CHI6, CHI7, CHI8, &
     CHI9, CHI10, CHI11, CHI12, CHI13, CHI14, CHI15, &
     CHI16, CHI17, PSI1, PSI2, PSI3, PSI4, PSI5, PSI6, &
@@ -18090,7 +18090,7 @@
     SUBROUTINE CALCK4
     INCLUDE 'isrpia.inc'
 
-    DOUBLE PRECISION :: LAMDA, KAPA
+    real :: LAMDA, KAPA
     COMMON /CASEK/ CHI1,CHI2,CHI3,CHI4,LAMDA,KAPA,PSI1,PSI2,PSI3, &
     A1,   A2,   A3,   A4
 
@@ -18175,7 +18175,7 @@
     SUBROUTINE CALCK3
     INCLUDE 'isrpia.inc'
 
-    DOUBLE PRECISION :: LAMDA, KAPA
+    real :: LAMDA, KAPA
     COMMON /CASEK/ CHI1,CHI2,CHI3,CHI4,LAMDA,KAPA,PSI1,PSI2,PSI3, &
     A1,   A2,   A3,   A4
 
@@ -18206,7 +18206,7 @@
     DO 10 I=1,NDIV
         X2 = X1-DX
         Y2 = FUNCK3 (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -18229,7 +18229,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCK3 (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -18268,9 +18268,9 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCK3 (P1)
+    real FUNCTION FUNCK3 (P1)
     INCLUDE 'isrpia.inc'
-    DOUBLE PRECISION :: LAMDA, KAPA
+    real :: LAMDA, KAPA
     COMMON /CASEK/ CHI1,CHI2,CHI3,CHI4,LAMDA,KAPA,PSI1,PSI2,PSI3, &
     A1,   A2,   A3,   A4
 
@@ -18357,7 +18357,7 @@
     SUBROUTINE CALCK2
     INCLUDE 'isrpia.inc'
 
-    DOUBLE PRECISION :: LAMDA, KAPA
+    real :: LAMDA, KAPA
     COMMON /CASEK/ CHI1,CHI2,CHI3,CHI4,LAMDA,KAPA,PSI1,PSI2,PSI3, &
     A1,   A2,   A3,   A4
 
@@ -18388,7 +18388,7 @@
     DO 10 I=1,NDIV
         X2 = X1-DX
         Y2 = FUNCK2 (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -18411,7 +18411,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCK2 (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -18450,9 +18450,9 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCK2 (P1)
+    real FUNCTION FUNCK2 (P1)
     INCLUDE 'isrpia.inc'
-    DOUBLE PRECISION :: LAMDA, KAPA
+    real :: LAMDA, KAPA
     COMMON /CASEK/ CHI1,CHI2,CHI3,CHI4,LAMDA,KAPA,PSI1,PSI2,PSI3, &
     A1,   A2,   A3,   A4
 
@@ -18540,7 +18540,7 @@
     SUBROUTINE CALCK1
     INCLUDE 'isrpia.inc'
 
-    DOUBLE PRECISION :: LAMDA, KAPA
+    real :: LAMDA, KAPA
     COMMON /CASEK/ CHI1,CHI2,CHI3,CHI4,LAMDA,KAPA,PSI1,PSI2,PSI3, &
     A1,   A2,   A3,   A4
 
@@ -18572,7 +18572,7 @@
     DO 10 I=1,NDIV
         X2 = X1-DX
         Y2 = FUNCK1 (X2)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y2) < ZERO) GOTO 20  ! (Y1*Y2 < ZERO)
         X1 = X2
         Y1 = Y2
     10 END DO
@@ -18595,7 +18595,7 @@
     20 DO 30 I=1,MAXIT
         X3 = 0.5*(X1+X2)
         Y3 = FUNCK1 (X3)
-        IF (SIGN(1.d0,Y1)*SIGN(1.d0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
+        IF (SIGN(1.0,Y1)*SIGN(1.0,Y3) <= ZERO) THEN  ! (Y1*Y3 <= ZERO)
             Y2    = Y3
             X2    = X3
         ELSE
@@ -18634,9 +18634,9 @@
 
 !=======================================================================
 
-    DOUBLE PRECISION FUNCTION FUNCK1 (P1)
+    real FUNCTION FUNCK1 (P1)
     INCLUDE 'isrpia.inc'
-    DOUBLE PRECISION :: LAMDA, KAPA
+    real :: LAMDA, KAPA
     COMMON /CASEK/ CHI1,CHI2,CHI3,CHI4,LAMDA,KAPA,PSI1,PSI2,PSI3, &
     A1,   A2,   A3,   A4
 
