@@ -167,21 +167,43 @@ u10/v10        & m/s  & wind at 10 m height \\
 \end{center}
 \end{table}
 
+\subsection{Gridded Emissions}
 
-\subsection{New Emission System}
+Since 2015 different formats of gridded emissions can be used and mixed (with some restrictions) under one common framework. The different formats that are presently supported are:
+\begin{enumerate}
+\item ``old style'' ASCII emissions format. Total yearly emissions.
 
-The model is now more flexible to use different type of emission data such as 'ascii' and 'netcdf' format.  The emission data is now linked via the 'config\_emep.nml' file.  There are two types of 'netcdf' data tested.  
+The gridded emission files contain 16 columns where the first column 
+represents the country code
+(\url{http://www.emep.int/grid/country_numbers.txt}), 
+the second and the third columns are the `i' and `j' indices of the
+EMEP grid, the fourth and fifth columns are the total emissions from
+low and high sources, and the last 11 columns contain emissions from 
+10 anthropogenic SNAP sectors.
 
-First one is:  All data are stored in a single netCDF file, i.e., the country code and emission data of all components for all sectors are given in one file with the fraction of data covered by each grid cell at the boundaries. Thus the data set contains 80 2-dimensional variables - 7 components in 11 sectors, which are represented as poll\_secNN where 'NN' is the sector number, number of countries shared by each grid cell 'Ncodes', which will be more than one at the country borders wich maximum of 5 countries sharing a border, and map factors for i and j - and 78 3-dimensional variables which are the country codes 'Codes' and the fraction of data covered by each grid cell in each country 'fractions\_poll\_secNN'.  Similar to ascii data, the ship emission data is distributed in grids together with the country code.  The description of the variables in the datset is given in the Table~\ref{Tab:Emisdata}: 
+The advantage of the ASCII emissions format, is that they are easy to modify, and the interpretation of the numbers is straightforward.
+The main disadvantage of the ASCII emissions format, is that they are only valid for one specific grid projection. Visualization of these emissions, needs also some more efforts.
 
-The second netCDF data type contains data for Global domain.  This data set contains one data file for each component similar to ascii data, i.e., 7 data sets in netCDF format, i.e., 'Emis\_poll.nc'.  But the data is stored in each file as 'country per sector for component', i.e., 'Emis:CC:snap:NN' where 'CC' is the country code and 'NN' is the snap sector number .  Thus data having only positive emissions of sectors are included in each data file and hence the number for components in different files can vary.  Ship emissions are not included in this data set.  So we can link the ship emissions to the model using 'config\_emep.nml' when using this data.  
+\item Countrywise NetCDF emissions. Yearly totals.
 
-The flexibility in using any type of emission data is made possible in 'config\_emep.nml'.  Compared to previous model version which used the emission flag in both 'ModelConstants\_ml.f90' and 'config\_emep.nml' - 'EMIS\_SOURCE=emislist' - the new setup uses 'EMIS\_SOURCE=Mixed' in both the module and namelist file.  The link to input data should be specified in namelist using the flag 'EmisDir' or 'DataDir', no other names are recognised by the model.  Also we can choose to include or exclude the emissions from a specific country or region is also possible. The regions given in the 'config\_emep.nml' are specified in the 'Country\_ml.f90' file.  Similarly you can define a new region of your choice in 'Country\_ml.f90' and call it from the namelist.   A piece of 'config\_emep.nml' is given below and the explanation of this follows thereafter.  
+Each country and sector has its own NetCDF field.
+
+The main advantage of NetCDF emissions is that all the information about the data (projection, units) is given in the same file. This allows the code to reproject the emissions to any grid projection on the fly. It is easy to visualize the emission of one country with simple tools, like ncview. The data is simple to interpret and it is possible to add new countries to an existing file (with appropriate tools).
+
+The disadvantage of countrywise NetCDF emissions, is that there are quite a large number of fields, with most of the data being zero. NetCDF will compress the data, but it will still take some time for the model to read all the data.
+ 
+\item ``fraction type'' NetCDF emissions. Yearly totals.
+
+The total emissions are stored in one gridded map, and in addition information about which country the emission belongs to.
+
+The main advantage of ``fraction type'' NetCDF emissions, is that they will keep the grid flexibility, have a more compact form and be faster to read in.
+
+The disadvantage is that the interpretation of the content of the fields is more difficult and it is hard to for instance add a new country to the file. Total emissions and coverage of countries can easily be visualized, but not emissions from one single country.
 
 
 \begin{center}
 \begin{table}
-\caption[fracemi]{Variable description of netCDF Emission data including Fractions
+\caption[fracemi]{Description of main fields for ``fraction type'' NetCDF Emissions
 \label{Tab:Emisdata}}
 %\begin{center}
 %\begin{small}
@@ -192,10 +214,10 @@ The flexibility in using any type of emission data is made possible in 'config\_
 
 {\bf Variable name } & {\bf Description}\\
 
-Ncodes & No of countries shared by each grid cell\\
-poll\_secNN & Component at each sector \\
+Ncodes & Number of countries sharing the same grid cell\\
+poll\_secNN & Pollutant from each sector \\
 Codes & Country code number \\
-fractions\_poll\_secNN & Fraction of data covered by grid cell\\
+fractions\_poll\_secNN & Fraction of emissions to assign to one country\\
 
 \hline
 \end{tabular}
@@ -206,28 +228,41 @@ fractions\_poll\_secNN & Fraction of data covered by grid cell\\
 
 
 
-\begin{quote}
-\begin{verbatim}
 
-   EMIS\_SOURCE                = 'Mixed',
-   EMIS\_TEST                  = 'None', 
-   EmisDir                     = 'input',     !
-   emis\_inputlist(1)\%name    = 'EmisDir/emislist', !example of ASCII type
+\item Monthly ``fraction type'' NetCDF emissions.
 
-!  emis\_inputlist(1)\%name    = 'EmisDir/Emis\_TNO7.nc', ! Fractions type
-!  emis\_inputlist(1)\%name    = 'EmisDir/Emis\_POLL.nc', ! netCDF data 
-                                                          ! per component
-!  emis_inputlist(1)\%incl(1:) = 'EUMACC2',               ! include countries  
-                                                          ! only from 'EUMACC2' list
-!  emis_inputlist(1)\%excl(1:) = 'INTSHIPS',              ! exclude ship emissions 
-                                                          ! when sea areas are 
-							  						      ! not divided
-! 
-\end{verbatim}
-\end{quote}
+This is similar to the yearly ``fraction type'' NetCDF emissions, but there are 12 monthly values for each field. This format cannot be combined with other formats.
 
-The above piece of code from 'config\_emep.nml' shows that the emissions source flag used is now 'Mixed'.  Emission data is stored under 'EmisDir'.  The following lines with 'emis\_inpulist(1)\%name' links to the emission data that is to be used.'emis\_inputlist(1)\%incl(1:)' in the above example shows that we are using the emissions only from 'EUMACC2' region which is defined in 'Country\_ml.f90' that includes 41 countries including EU28, EEA, Switzerland, GUAM and some FarEast European countries.  'emis\_inputlist(1)\%excl(1:)' shows that the internal ship emissions are exluded.  In this set up of choosing emissions data one can use either 'include' or 'exclude' flag at the moment, using both at the same time is not implemented yet.  
+\end{enumerate}
 
+\subsubsection{Using and combining gridded Emissions}
+
+These gridded emission files are controlled via the 'config\_emep.nml' file.
+Each file is assigned as one set of values for emis\_inputlist.
+An ASCII emission file can be included for instance with the line:
+
+\begin{quote} \begin{verbatim}
+emis\_inputlist(1)\%name     = '/My/Path/To/Emissions/gridPOLL',
+\end{verbatim} \end{quote} 
+
+``POLL'' is a keyword, which will be replaced by the model by all the emitted pollutants (according to the 
+names defined in ``CM\_EmisFiles.inc'').
+
+An additional NetCDF emission file can be included for instance with the line:
+\begin{quote} \begin{verbatim}
+emis\_inputlist(2)\%name     = '/My/Path/To/Emissions/Emis\_GLOB\_05.nc',
+\end{verbatim} \end{quote} 
+
+Now all emissions from both ASCII file and NetCDF file will be used. In practice some countries might be counted twice. Therefore some new data can be included in the ``emis\_inputlist'', to specify which countries to keep or to avoid. Example:
+
+\begin{quote} \begin{verbatim}
+emis\_inputlist(1)\%incl(1:)     = 'NO','SE','FI',
+emis\_inputlist(2)\%excl(1:)     = 'NO','SE','FI',
+\end{verbatim} \end{quote} 
+
+Will include only 'NO','SE' and 'FI' from the first file (ASCII), and take all countries except 'NO','SE' and 'FI' from the second file (NetCDF).
+
+Sets of countries can in principle be defined; for now only the set 'EUMACC2' is defined.
 
 \subsection{Global Ozone}
 Initial concentration of ozone are required in order to
