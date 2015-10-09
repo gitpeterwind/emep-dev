@@ -2,9 +2,11 @@
 \usepackage[dvips]{color}
 \usepackage{lscape}
 \usepackage{color}
+\usepackage{times}
 \usepackage{url}
 \usepackage{rotating}
 \usepackage[pdfborder={0 0 0}]{hyperref}
+\usepackage{breakurl}  %DS added Oct9. Needs to be after hyperref
 \usepackage{parskip}
 \usepackage[margin=2cm]{geometry}
 \usepackage[margin=2cm]{caption}
@@ -76,7 +78,7 @@
 \newcommand{\Par}{{\bf Par\_ml}}
 \newcommand{\MyOutputs}{{\bf My\_Outputs\_ml}}
 
-\begin{document}
+\begin{document}% \sloppy
 %\begin{landscape}
 
 \title{The EMEP/MSC-W Model - User's Guide}
