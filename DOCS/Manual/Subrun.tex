@@ -80,7 +80,7 @@ earlier and future years, see the modules {\bf BoundaryConditions\_ml.f90 }
 and {\bf GlobalBCs\_ml.f90 } to understand better what the trendyear 
 setting does. The default setting is the meteorological year you are running for, in this case 2012. 
 The runlabel1 option sets the name of the different output netCDF 
-files , see Table \ref{ch:output}. 
+files, see Table \ref{ch:output}. 
 The startdate and enddate parameters are set for the timeperiod you want the model 
 to run (YYYY MM DD), and you need meteorology data for the period.
 
@@ -124,7 +124,7 @@ tells the model to run in the domain with x coordinates ranging from
 36 to 100 and y coordinates from 50 to 150.\\ 
 
 To run the model, the correct path to the EMEP/MSC-W model code 
-has to be set (mpirun path\_to\_the\_modelcode/Unimod).  
+has to be set (mpirun path\_to\_the\_\-modelcode/Unimod).  
 
 It is recommended to submit the script as a batch job. Please check the 
 submission routine on the computer system you are running on. 
@@ -215,9 +215,9 @@ For egs.,
 {\bf \&Nest\_config}
 \begin{quote}
 \begin{verbatim}
-MODE		     = 2			           !for reading external BC 
-template_read_BC = 'MyBC.nc'   		       !(The name of your BC data file)
-template_write   = 'EMEP_OUT_YYYYMMDD.nc'  !(ONLY for MODE=1, 3, 10 and 12)
+MODE		 = 2       !for reading external BC 
+template_read_BC = 'MyBC.nc'   !(The name of your BC data file)
+template_write   = 'EMEP_OUT_YYYYMMDD.nc'!(ONLY for MODE=1,3,10 and 12)
 \end{verbatim}
 \end{quote}
 

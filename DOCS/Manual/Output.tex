@@ -66,7 +66,7 @@ Timing.out & Timing log file& ASCII \\
 \section{Output parameters netcdf files}\label{sec:OutputParam}
 
 Parameters to be written out Base\_day.nc, Base\_month.nc and Base\_year.nc are defined in
-My\_Derived\_ml.f90 and Derived\_ml.f90. In My\_Derived\_ml.f90, the
+My\_Derived\-\_ml.f90 and Derived\_ml.f90. In My\_Derived\_ml.f90, the
 use can specify the output species (air concentrations, depositions,
 column values), units and temporal resolution of the outputs (daily,
 monthly, yearly).
@@ -81,10 +81,10 @@ SURF\_UNITS\_COMPONENT. Here, UNITS can e.g. be ug (\ug), ugS (\ugS),
 ugN (\ugN), or ppb. The user can change units in My\_Derived\_ml.f90
 (in array OutputConcs). Note that the components are classified either
 as SPEC (species) or GROUP. The content of complex GROUP components
-can be found in CM\_ChemGroups\_ml.f90.
+can be found in CM\_ChemGroups\-\_ml.f90.
 
 For dry depositions, given per 1m$^{2}$ of specified landuse, the
-names look like \\ DDEP\_COMPONENT\_m2LANDUSE, where LANDUSE can be
+names look like  DDEP\_COMPONENT\-\_m2\-LAND\-USE, where LANDUSE can be
 either a specific landuse type or a cell average. The units are \mgSm
 or \mgNm. For wet depositions, the names are DDEP\_COMPONENT, and the
 units are \mgSl or \mgNl.

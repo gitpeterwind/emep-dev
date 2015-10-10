@@ -13,7 +13,7 @@ The last zipped input file (called other\_input\_files.tar.bz2) contains all
 other input files needed for running the EMEP/MSC-W model, except the aircraft emissions,
 AircraftEmis\_FL.nc, and the forest fire emissions, FINN\_ForestFireEmis\_2013.nc. See sections~\ref{emisair} and \ref{emisff} for details about these emissions data.
 
-After unzipping all the meteo-tar files, the meteorology are placed under a
+After unzipping all the meteo tar files, the meteorology are placed under a
 catalogue called {\bf EMEP\_MSC-W\_model.OpenSource2015/}. The met/
 catalogue should be moved over to current version of model, for rv4.8:
 {\bf EMEP\_MSC-W\_model.rv4.8.OpenSource}. 
@@ -62,7 +62,7 @@ Forest Fire & FINN\_ForestFireEmis\_YYYY.nc & netCDF$\dagger$ \\
 Natural SO$_2$ & natso2MM.dat  \quad (12 files) & ASCII\\
 Volcanoes & columnsource\_emission.csv & ASCII$^*$\\
 	  & columnsource\_location.csv& ASCII$^*$ \\ 
-Emissions & gridPOLL  \quad (7 files) & ASCII\\
+Emissions & emislist.POLL  \quad (7 files) & ASCII\\
 Time factors for monthly emissions& MonthlyFac.POLL  \quad (7 files) & ASCII\\
 Time factors for daily emissions &  DailyFac.POLL  \quad (7 files) & ASCII\\
 Time factors for hourly emissions & HOURLY-FACS  & ASCII$^*$\\
@@ -82,6 +82,8 @@ Sondes locations for vertical output & sondes.dat & ASCII$^*$\\
 Emission factors for scenario runs & femis.dat & ASCII\\
 \hline
 \end{tabular}\\
+
+\vspace{0.5cm}
 Notes: $\dagger$ - optional (in most cases); 
 $^*$ means ASCII files with header.
 $^*$$^*$ New O3 boundary condition data in 30 levels.  Can be used with 'NewLogan=.true.' in 'BoundaryConditions\_ml.f90'.
@@ -167,9 +169,12 @@ u10/v10        & m/s  & wind at 10 m height \\
 \end{center}
 \end{table}
 
-\subsection{Gridded Emissions}
+\subsection{Gridded emissions}
+\label{emisnew}
 
-Since 2015 different formats of gridded emissions can be used and mixed (with some restrictions) under one common framework. The different formats that are presently supported are:
+Since 2015 different formats of gridded emissions can be used and
+mixed (with some restrictions) under one common framework. The
+different formats that are presently supported are: 
 \begin{enumerate}
 \item ``Old style'' ASCII emissions format. Total yearly emissions.
 
@@ -181,7 +186,8 @@ EMEP grid, the fourth and fifth columns are the total emissions from
 low and high sources, and the last 11 columns contain emissions from 
 10 anthropogenic SNAP sectors.
 
-The advantage of the ASCII emissions format, is that they are easy to modify, and the interpretation of the numbers is straightforward.
+The advantage of the ASCII emissions format, is that they are easy to
+modify, and the interpretation of the numbers is straightforward. 
 The main disadvantage of the ASCII emissions format, is that they are
 only valid for one specific grid projection. Visualization of these
 emissions, needs also some more efforts. 
@@ -256,12 +262,12 @@ combined with other formats.
 
 \subsubsection{Using and combining gridded Emissions}
 
-These gridded emission files are controlled via the 'config\_emep.nml' file.
+These gridded emission files are controlled via the ``config\_emep.nml'' file.
 Each file is assigned as one set of values for emis\_inputlist.
 An ASCII emission file can be included for instance with the line:
 
 \begin{quote} \begin{verbatim}
-emis_inputlist(1)\%name     = '/My/Path/To/Emissions/gridPOLL',
+emis_inputlist(1)\%name = '/MyPathToEmissions/emislist.POLL',
 \end{verbatim} \end{quote} 
 
 ``POLL'' is a keyword, which will be replaced by the model by all the emitted pollutants (according to the 
@@ -269,14 +275,14 @@ names defined in ``CM\_EmisFiles.inc'').
 
 An additional NetCDF emission file can be included for instance with the line:
 \begin{quote} \begin{verbatim}
-emis_inputlist(2)\%name     = '/My/Path/To/Emissions/Emis\_GLOB\_05.nc',
+emis_inputlist(2)\%name = '/MyPathToEmissions/Emis\_GLOB\_05.nc',
 \end{verbatim} \end{quote} 
 
 Now all emissions from both ASCII file and NetCDF file will be used. In practice some countries might be counted twice. Therefore some new data can be included in the ``emis\_inputlist'', to specify which countries to keep or to avoid. Example:
 
 \begin{quote} \begin{verbatim}
-emis_inputlist(1)\%incl(1:)     = 'NO','SE','FI',
-emis_inputlist(2)\%excl(1:)     = 'NO','SE','FI',
+emis_inputlist(1)\%incl(1:) = 'NO','SE','FI',
+emis_inputlist(2)\%excl(1:) = 'NO','SE','FI',
 \end{verbatim} \end{quote} 
 
 Will include only 'NO','SE' and 'FI' from the first file (ASCII), and take all countries except 'NO','SE' and 'FI' from the second file (NetCDF).
@@ -394,7 +400,7 @@ compatible with the { \bf ForestFire\_ml.f90 } module.
 
 \subsection{Dust files}
 
-The annual ascii data for sand and clay frations as well as the monthly data for boundary and initial conditions for dust from Sahara are replaced with a single netCDF file 'Soil\_Tegen.nc' since 2013.   This covers data for a global domain in 0.5X0.5 degree resolution.  
+The annual ascii data for sand and clay frations as well as the monthly data for boundary and initial conditions for dust from Sahara are replaced with a single netCDF file 'Soil\_Tegen.nc' since 2013.   This covers data for a global domain in 0.5$\times$0.5 degree resolution.  
 
 The variables 'sand' and 'clay' gives the fraction (in \%)  
 of sand an clay in the soil for each grid cell over land. 
@@ -403,7 +409,7 @@ of sand an clay in the soil for each grid cell over land.
 %Maxilian Posch, Netherlands Environmental Assessment Agency, CCE, pers%onal communication????? .)) 
 
 
-The files are used by the module {\bf DustProd\_ml.f90 }, which calculates windblown dust 
+The files are used by the module {\bf DustProd\_ml.f90}, which calculates windblown dust 
 emissions from soil erosion. Note that the parametrization is still in the development and 
 testing phase, and is by default 'turned off'. To include it in the model calculations, set 
 USE\_DUST = .true. in ``config\_emep.nml''.
@@ -449,16 +455,32 @@ The values are given at the surface in $\mu$g/m$^2$ for each grid cell in the do
 
 \subsection{Volcanoes}
 
-Emissions from volcanoes are included for Italy, based upon the
+Emissions from volcanic passive degassing of $SO_2$ are included for
+the active Italian volcanoes, Etna and Stromboli, based upon the
 officially submitted data.
-To consider the volcanic emissions, we need to feed the location
-and height of volcanoes into the model. 
+To consider these volcanic emissions, we need to feed the locations
+and heights of volcanoes into the model. The input file
+"columnsource\_location.csv" contains the geographical coordinates
+(latitudes and longitudes) and 
+the heights (in meters) of the
+included volcanoes, while "columnsource\_emission.csv" contains the
+emission parameters.
 
-The input file ``VolcanoesLL.dat'' in {\bf ASCII} format contains the input data for the two active volcanoes
- Enta and Stromboli. The two first columns gives their latitudes and longitudes, their height as sigma level
- in column 3 and their emission in ktons per year in column 4. 
+Since 2010 the EMEP model has also been used to model the transport of
+ash and $SO_2$ from volcanic eruptions. In addition to data for
+passive degassing of $SO_2$, the above two input files also contain
+locations and emission parameters for two recent eruptions of Icelandic
+ volcanoes (Eyjafjallaj\"okull in 2010 and Grimsv\"otn in 2011). In
+order to include emissions from these eruptions one needs to set
+'USE\_ASH=T' (F by default) in ``config\_emep.nml''.
 
-\subsection{Gridded Emissions}
+
+%% The input file ``VolcanoesLL.dat'' in {\bf ASCII} format contains the input data for the two active volcanoes
+%%  Enta and Stromboli. The two first columns gives their latitudes and longitudes, their height as sigma level
+%%  in column 3 and their emission in ktons per year in column 4. 
+
+\subsection{Gridded emissions}
+
 The official emission input for the EMEP/MSC-W model consists of
 gridded 
 annual national emissions based on emission data reported every year
@@ -469,11 +491,20 @@ More details about the emission input with references can be
 found in Chapter 4 of the EMEP Status Report 1/2003 Part I 
 (Simpson et al., 2003).
 
-The 7 gridded emission input files ``emislist.poll'' are available in 
+Since 2015 different formats of gridded emissions can be used and
+mixed (with some restrictions) in the EMEP model under one common
+framework. The new emission system is described in
+section~\ref{emisnew}. Here we focus only on the "old style" ASCCI
+emission format.  
+
+Seven gridded emission input files (``emislist.poll'') are available
+in  
 {\bf ASCII} format for the following compounds: CO, NH$_{3}$,
 NO$_{x}$, PM$_{2.5}$, PM$_{co}$, SO$_{x}$ and VOC.
 
-The gridded emission files contain 16 columns where the first column 
+
+The gridded ASCII emission files
+contain 16 columns where the first column  
 represents the country code
 (\url{http://www.emep.int/grid/country_numbers.txt}), 
 the second and the third columns are the `i' and `j' indices of the
@@ -559,7 +590,7 @@ of forest fires in this file.
 
 \subsection{Lightning emissions}
 Emissions of NO$_{x}$ from lightning are included in the model
-as monthly averages on a T21 (5.65$^{\circ}\times$5.65$^{\circ}$) resolution (K{\o}hler {\sl et al.}, 1995). 
+as monthly averages on T21 (5.65$^{\circ}\times$5.65$^{\circ}$) resolution (K{\o}hler {\sl et al.}, 1995). 
 The lightning emissions are defined on a 64$\times$32 grid with 17 vertical
 levels, with global coverage, and are provided as 12 {\bf ASCII} files
 ``lightningMM.dat''.
