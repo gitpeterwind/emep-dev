@@ -14,7 +14,7 @@ other input files needed for running the EMEP/MSC-W model, except the aircraft e
 AircraftEmis\_FL.nc, and the forest fire emissions, FINN\_ForestFireEmis\_2013.nc. See sections~\ref{emisair} and \ref{emisff} for details about these emissions data.
 
 After unzipping all the meteo tar files, the meteorology are placed under a
-catalogue called {\bf EMEP\_MSC-W\_model.OpenSource2015/}. The met/
+catalogue called {\bf EMEP\-\_MSC-W\_model.OpenSource2015/}. The met/
 catalogue should be moved over to current version of model, for rv4.8:
 {\bf EMEP\_MSC-W\_model.rv4.8.OpenSource}. 
 So now there will be two directories under 
@@ -47,7 +47,6 @@ Meteorology  &  meteoYYYYMMDD.nc \quad (365+1 files) & netCDF\\
 {\bf Other Input files} & input/ &\\
 Global Ozone & GLOBAL\_O3.nc & netCDF\\
 New Global Ozone & Logan\_P.nc & netCDF $^*$$^*$\\
-Vertical level distribution & Vertical\_levels.txt & ASCII\\
 BVOC emissions & EMEP\_EuroBVOC.nc & netCDF\\
 Landuse & LanduseGLC.nc and Landuse\_PS\_5km\_LC.nc  & netCDF\\
 Degree-day factor & DegreeDayFactors.nc &  netCDF\\
@@ -57,29 +56,32 @@ Aircraft emissions & AircraftEmis\_FL.nc & netCDF$\dagger$ \\
 Surface Pressure & SurfacePressure.nc & netCDF$\dagger$ \\
 Forest Fire & FINN\_ForestFireEmis\_YYYY.nc & netCDF$\dagger$ \\
 & & \\
+Dust files  &Soil\_Tegen.nc  & netCDF$\dagger$\\
+ & SoilTypes\_IFS.nc & netCDF$\dagger$\\
 % Landuse & Inputs.Landuse & ASCII$^*$\\
 % Land/Sea mask & landsea\_mask.dat & ASCII\\
-Natural SO$_2$ & natso2MM.dat  \quad (12 files) & ASCII\\
-Volcanoes & columnsource\_emission.csv & ASCII$^*$\\
-	  & columnsource\_location.csv& ASCII$^*$ \\ 
-Emissions & emislist.POLL  \quad (7 files) & ASCII\\
+Emissions & emislist.POLL  \quad ({\footnotesize 7 files, EMEP 50km PS grid}) & ASCII\\
+ & Emis\_TNO7.nc \quad ({\footnotesize regional, 0.125$\times$0.0625 lon-lat})& netCDF$\dagger$\\
+ & Emis\_GLOB\_05.nc \quad ({\footnotesize global, 0.5$\times$0.5 lon-lat})& netCDF$\dagger$\\
+Vertical level distribution & Vertical\_levels.txt & ASCII\\
 Time factors for monthly emissions& MonthlyFac.POLL  \quad (7 files) & ASCII\\
 Time factors for daily emissions &  DailyFac.POLL  \quad (7 files) & ASCII\\
 Time factors for hourly emissions & HOURLY-FACS  & ASCII$^*$\\
 Emission heights & EmisHeights.txt & ASCII$^*$\\
-Landuse definitions & Inputs\_LandDefs.csv & ASCII$^*$\\
-Stomatal conductance & Inputs\_DO3SE.csv & ASCII$^*$\\
+Natural SO$_2$ & natso2MM.dat  \quad (12 files) & ASCII\\
+Volcanoes & columnsource\_emission.csv & ASCII$^*$\\
+	  & columnsource\_location.csv& ASCII$^*$ \\ 
 Lightning emissions & lightningMM.dat  \quad (12 files) & ASCII$^*$\\
 Emissions speciation & emissplit.defaults.POLL & ASCII$^*$\\
                      & emissplit.specials.POLL & ASCII$^{*,\dagger}$\\
+Emission factors for scenario runs & femis.dat & ASCII\\
 Photo-dissociation rates & jclearSS.dat \quad (4 files) & ASCII\\
  & jcl1kmSS.dat \quad (4 files) + jcl1.jun & ASCII\\
  & jcl3kmSS.dat \quad (4 files) + jcl3.jun & ASCII\\
-Dust files  &Soil\_Tegen.nc  & netCDF$\dagger$\\
- & SoilTypes\_IFS.nc & netCDF$\dagger$\\
+Landuse definitions & Inputs\_LandDefs.csv & ASCII$^*$\\
+Stomatal conductance & Inputs\_DO3SE.csv & ASCII$^*$\\
 Sites locations for surface output & sites.dat & ASCII$^*$\\
 Sondes locations for vertical output & sondes.dat & ASCII$^*$\\
-Emission factors for scenario runs & femis.dat & ASCII\\
 \hline
 \end{tabular}\\
 
