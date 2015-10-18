@@ -47,12 +47,6 @@ module AeroFunctions
   public :: self_test_fracs
 
 
-! weighting factor for N2O5 hydrolysis
-! Mass of sulfate relative to sulfate+nitrate
-! according to  Riemer N, Vogel H, Vogel B, 
-! Schell B, Ackermann I, Kessler C, Hass H
-! JGR 108 (D4): FEB 27 2003 
-
 
   !========================================
   contains
@@ -544,7 +538,6 @@ module AeroFunctions
    ! fraction of organic matter, sea-salt, dust in aerosol
     real, intent(in) :: fno3sia, fom, fss, fdust
     real :: fsia
-    real :: a, b, rh
     real :: gam
     fsia = 1 - ( fom + fss + fdust )
 
@@ -569,6 +562,15 @@ module AeroFunctions
     end if
 
   end function GammaN2O5_om
+  !---------------------------------------------------------------------
+  ! OM generally seems to reduce gamma, and is presumably needed partly
+  ! to explain Brown's low measurements. Here we make the crude assumption
+  ! that OM has the same gamma as EJ's BC. Much lower than GammaN2O5_om
+  ! above.
+  !elemental function GammaN2O5_ome() result(gam) 
+  !  real :: gam
+  !  gam = 0.005
+  !end function GammaN2O5_ome
   !---------------------------------------------------------------------
   elemental function GammaN2O5_sia(t,frh) result(gam) 
     real, intent(in) :: t, frh   ! t(K), frh(0-1)
@@ -613,7 +615,7 @@ module AeroFunctions
    real, parameter :: nm=1.0e9,  um=1.0e6, um2 = m2m3toum2cm3 ! shorthands
    real :: cn2o5, Smono, Spm, Sdry, Swet, rdry, rwet, kd, kw1,kw2,kw3
    real :: DpgN, DpgV, frh, t
-   integer :: ind, iRH, io1,io2,i
+   integer :: ind, iRH, iTK, io1,io2,i
    real, dimension(10) :: ugPM, S_m2m3, Kn2o5
 
    cn2o5 = cMolSpeed( 298.0, 108.0)
@@ -716,6 +718,11 @@ if(iRH == 100 ) print *, frh, rwet/rdry, S_m2m3(:)*um2
       GammaN2O5(t,frh,fno3sia=0.3,fom=0.33,fss=0.1,fdust=0.01) ,GammaN2O5(t,frh,fno3sia=0.3,fom=0.0,fss=0.0,fdust=0.0)
    end do
    
+   do iTK = 270, 290
+      t=iTK
+      print "(a,i5,3es12.3)", "GTK ", iTK, &
+        GammaN2O5_sia(t,0.3), GammaN2O5_sia(t,0.8), GammaN2O5_sia(t,0.99)
+   end do
 
   end subroutine self_test
 
