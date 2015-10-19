@@ -22,7 +22,7 @@ use ModelConstants_ml,      only: &
   KMAX_BND, KMAX_MID, & ! vertical extent
   DEBUG,              & ! DEBUG%GRIDVALUES
   MasterProc,NPROC,IIFULLDOM,JJFULLDOM,RUNDOMAIN,&
-  PT,Pref,NMET,METSTEP,USE_EtaCOORDINATES,MANUAL_GRID
+  PT,Pref,NMET,METSTEP,USE_EtaCOORDINATES,MANUAL_GRID,USE_WRF_MET_NAMES
 use Par_ml, only : &
   MAXLIMAX,MAXLJMAX,  & ! max. possible i, j in this domain
   limax,ljmax,        & ! actual max.   i, j in this domain
@@ -626,6 +626,8 @@ else
        if(status /= nf90_noerr) then
 !WRF projection format
           call check(nf90_get_att(ncFileID,nf90_global,"MAP_PROJ",wrf_proj_code))
+          if(.not.USE_WRF_MET_NAMES .and. me==0)write(*,*)'Assuming WRF metdata'
+          USE_WRF_MET_NAMES = .true.
           if(wrf_proj_code==6)then
              status = nf90_get_att(ncFileID,nf90_global,"POLE_LAT",wrf_POLE_LAT)
              if(status == nf90_noerr) then

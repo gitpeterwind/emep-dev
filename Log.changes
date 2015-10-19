@@ -153,6 +153,14 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+19th October 2015 Peter  3066
+
+GridValues_ml.f90
+USE_WRF_MET_NAMES automatically set as true, if wrf metdata is found.
+(no need to set it in config anymore)
+Not really tested.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 18th October 2015 Dave  3065
 
 AeroFunctions - clean up and harmonised with ESX 
