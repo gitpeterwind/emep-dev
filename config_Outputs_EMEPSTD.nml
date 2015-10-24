@@ -19,6 +19,17 @@
 &OutputConcs_config
 OutputMisc=
  ! name        class    subclass txt   unit          index f2d dt_scale scale avg period
+ !------------------------------------------------------------------------------------
+ !! CAREFUL !!  Rate constant numbers will change with chemical scheme! Adjust as needed!
+ 'rcAeroN2O5',   'USET', 'rct',   'rct', '/s',          61, -1,       F,   1.0, T, 3,
+ !'rcAeroHNO3SS', 'USET', 'rct',   'rct', '/s',          71, -1,       F,   1.0, T, 3
+ !'rcAeroHNO3DU', 'USET', 'rct',   'rct', '/s',          72, -1,       F,   1.0, T, 3
+ !'rcAeroHO2PM',  'USET', 'rct',   'rct', '/s',          73, -1,       F,   1.0, T, 3
+ !'rcAeroO3DU',   'USET', 'rct',   'rct', '/s',          74, -1,       F,   1.0, T, 3
+ !'rcGammaN2O5',   'USET', 'rct',   'rct', '/s',         75, -1,       F,   1.0, T, 3
+ ! For EmChem09soa, rc75 is GammaN2O5, but we hide the name to make the user check:
+ 'rc75',          'USET', 'rct',   'rct', '/s',         75, -1,       F,   1.0, T, 3
+ !------------------------------------------------------------------------------------
  !
  'XNCOL_OH',    'USET', 'xncol', 'xncol', 'molec/cm2' , -99, -1,       F,   1.0, T, 4   !! New Column system
  'XNCOL_CO',    'USET', 'xncol', 'xncol', 'molec/cm2' , -99, -1,       F,   1.0, T, 4   !! 
@@ -27,37 +38,43 @@ OutputMisc=
  !
  ! For meteo MET2D straight from NWP, we can set subclass names from met% data in MetFields:
  !
- 'met2d_ustar_nwp',  'MET2D', 'ustar_nwp', '-', 'm/s', -99,  -99,      F,   1.0, T, 4,
- 'met2d_uref',  'MET2D', 'u_ref', '-', 'm/s', -99,  -99,      F,   1.0, T, 4,
- 'met2d_test',  'MET2D', 'u_xxx', '-', 'm/s', -99,  -99,      F,   1.0, T, 4,
- 'met2d_snow_m',     'MET2D', 'snow_depth', '-',   'm', -99,  -99,      F,   1.0, T, 4,
- 'met2d_t2m',        'MET2D', 'temperature_2m',             '-',  'degK', -99,  -99,      F,   1.0, T, 4,
- 'met2d_rh2m',       'MET2D', 'relative_humidity_2m',  '-',  'frac', -99,  -99,      F,   1.0, T, 4,
- 'met2d_u10',     'MET2D', 'u10',  '-',  'frac', -99,  -99,      F,   1.0, T, 4,
-! 'SHEAT_WRF',  'MET2D', 'HFX', '-',   'W/m2', -99,  -99,      F,   1.0, T, 4,
- 'met2d_LH_Wm2',  'MET2D', 'surface_flux_latent_heat',   '-',  'W/m2', -99,  -99,      F,   1.0, T, 4,
- 'met2d_SH_Wm2',  'MET2D', 'surface_flux_sensible_heat', '-',  'W/m2', -99,  -99,      F,   1.0, T, 4,
- 'met2d_SMI_deep',      'MET2D', 'SMI3',      '-',   '-', -99,  -99,      F,   1.0, T, 4,
- 'met2d_SMI_uppr',      'MET2D', 'SMI1',      '-',   '-', -99,  -99,      F,   1.0, T, 4,
+ 'met2d_ustar_nwp',  'MET2D', 'ustar_nwp', '-', 'm/s', -99,  -99,      F,   1.0, T, 3,
+ 'met2d_uref',  'MET2D', 'u_ref', '-', 'm/s', -99,  -99,      F,   1.0, T, 3,
+ 'met2d_test',  'MET2D', 'u_xxx', '-', 'm/s', -99,  -99,      F,   1.0, T, 3,
+ 'met2d_snow_m',     'MET2D', 'snow_depth', '-',   'm', -99,  -99,      F,   1.0, T, 3,
+ 'met2d_t2m',        'MET2D', 'temperature_2m',             '-',  'degK', -99,  -99,      F,   1.0, T, 3,
+ 'met2d_rh2m',       'MET2D', 'relative_humidity_2m',  '-',  'frac', -99,  -99,      F,   1.0, T, 3,
+ 'met2d_u10',     'MET2D', 'u10',  '-',  'frac', -99,  -99,      F,   1.0, T, 3,
+! 'SHEAT_WRF',  'MET2D', 'HFX', '-',   'W/m2', -99,  -99,      F,   1.0, T, 3,
+! 'met2d_LH_Wm2',  'MET2D', 'surface_flux_latent_heat',   '-',  'W/m2', -99,  -99,      F,   1.0, T, 4,
+! 'met2d_SH_Wm2',  'MET2D', 'surface_flux_sensible_heat', '-',  'W/m2', -99,  -99,      F,   1.0, T, 4,
+ 'met2d_SMI_deep',      'MET2D', 'SMI3',      '-',   '-', -99,  -99,      F,   1.0, T, 3,
+ 'met2d_SMI_uppr',      'MET2D', 'SMI1',      '-',   '-', -99,  -99,      F,   1.0, T, 3,
 ! careful with precip.
 ! units are usually mm/hr. Need 1/3600 (2.78e-4) plus dt_scale to accumulate mm
 ! 'met2d_LSPrec1',     'MET2D', 'large_scale_precipitations', '-',  'mm',  -99,  -99,      F,   1.0, F, 4,
 !
 ! 'ws10m',      'MET2D', 'u10',      '-',   'm/s', -99,  -99,      F,   1.0, T, 4,
- 'Snow_F',    'XSNOW', '-',      '-',   'frac', -99,  -99,      F,   1.0, T, 4,
+ 'Snow_F',    'XSNOW', '-',      '-',   'frac', -99,  -99,      F,   1.0, T, 3,
  'Psurf_d',    'PSURF', '-',     '-', 'hPa', -99,  -99,      F,   1.0, T, 4,
 !====================================================================================
 OutputConcs= 
       'HMIX'                ,'m'   ,'2d','HMIX'     ,'MISC' ,7, !! hourly tests
-      'SurfAreaPMF_um2cm3' ,'um2/cm3' ,'2d','SurfAreaPMF_um2cm3'    ,'MISC' ,4, !
-      'SurfAreaSSF_um2cm3' ,'um2/cm3' ,'2d','SurfAreaSSF_um2cm3'    ,'MISC' ,4, !!
-      'SurfAreaSSC_um2cm3' ,'um2/cm3' ,'2d','SurfAreaSSC_um2cm3'    ,'MISC' ,4, !!
-      'SurfAreaDUF_um2cm3' ,'um2/cm3' ,'2d','SurfAreaDUF_um2cm3'    ,'MISC' ,4, !!
-      'SurfAreaDUC_um2cm3' ,'um2/cm3' ,'2d','SurfAreaDUC_um2cm3'    ,'MISC' ,4, !!
+      'SurfAreaPMF_um2cm3' ,'um2/cm3' ,'2d','SurfAreaPMF_um2cm3'    ,'MISC' ,3, !
+      'SurfAreaPM_um2cm3'  ,'um2/cm3' ,'2d','SurfAreaPM_um2cm3'     ,'MISC' ,3, !
+      'SurfAreaSSF_um2cm3' ,'um2/cm3' ,'2d','SurfAreaSSF_um2cm3'    ,'MISC' ,3, !!
+      'SurfAreaSSC_um2cm3' ,'um2/cm3' ,'2d','SurfAreaSSC_um2cm3'    ,'MISC' ,3, !!
+      'SurfAreaDUF_um2cm3' ,'um2/cm3' ,'2d','SurfAreaDUF_um2cm3'    ,'MISC' ,3, !!
+      'SurfAreaDUC_um2cm3' ,'um2/cm3' ,'2d','SurfAreaDUC_um2cm3'    ,'MISC' ,3, !!
      ! Column data. Note that these data are compiled just after the chemistry step,
      ! and are probably best used for short-lived species. REMEMBER that boundary
      ! cells are not calculated, hence expect zeros on edges.
+     ! NOTE SURE  how this compares with COLUMNDAT below
       'NO2',          'molec/cm2' ,'k20','COLUMN'   ,'MISC' ,4, !! New Column system
+      'CH4',          'molec/cm2' ,'k20','COLUMN'   ,'MISC' ,4, !! New Column system
+      'CO',           'molec/cm2' ,'k20','COLUMN'   ,'MISC' ,4, !! New Column system
+     !----------------------------------------------------------------
+!      'Kz_m2s'              ,'m2/s','2d','Kz_m2s'   ,'MISC' ,7, !! hourly tests
       'T2m'                 ,'degC','2d','T2m'      ,'MISC' ,4,
       'SURF_ppbC_VOC'       ,'ppb' ,'2d','VOC'      ,'MISC' ,4,
 ! ug/m3                                                    
@@ -83,9 +100,14 @@ OutputConcs=
       'O3'                  ,'ppb' ,'2d','AIR_CONCS','SPEC' ,4, !! test 3d
       'NO'                  ,'ppb' ,'2d','AIR_CONCS','SPEC' ,4, !! also have ugN
       'NO2'                 ,'ppb' ,'2d','AIR_CONCS','SPEC' ,4, !! also have ugN
+      'NO3'                 ,'ppb' ,'2d','AIR_CONCS','SPEC' ,4, !! also have ugN
+      'N2O5'                 ,'ppb' ,'2d','AIR_CONCS','SPEC' ,4, !! also have ugN
       'NH3'                 ,'ppb' ,'2d','AIR_CONCS','SPEC' ,4, !! also have ugN
       'HNO3'                ,'ppb' ,'2d','AIR_CONCS','SPEC' ,4, !! also have ugN
+      'OXN'                 ,'ppb' ,'2d','AIR_CONCS','GROUP' ,4, !! TEST
       'SO2'                 ,'ppb' ,'2d','AIR_CONCS','SPEC' ,4, !! also have ugN
+      'PAN'                  ,'ppb' ,'2d','AIR_CONCS','SPEC' ,4,
+      'MPAN'                  ,'ppb' ,'2d','AIR_CONCS','SPEC' ,4,
       'CO'                  ,'ppb' ,'2d','AIR_CONCS','SPEC' ,4,
       'HCHO'                ,'ppb' ,'2d','AIR_CONCS','SPEC' ,4,
       'C5H8'                ,'ppb' ,'2d','AIR_CONCS','SPEC' ,4,
@@ -292,4 +314,6 @@ OutputVegO3=
 &OutputMisc_config
   COLUMNDAT_WANTED = 
      'NO2     ', 'k20'
+     'CH4     ', 'k20'
+     'CO     ', 'k20'
 &end

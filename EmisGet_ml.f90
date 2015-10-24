@@ -1297,6 +1297,8 @@ end if
 
            !/... some checks:
            sumtmp = sum( tmp(1:nsplit) )
+          !GEOS-CHEM HAD 10 mols O3 + 1 molec HNO3, so >> 100
+          ! if( iland_icode ==350 ) sumtmp = 100.0
            if ( ( sumtmp  >    100.01 .or. sumtmp   <   99.99   )  .or.  &
                 ( defaults .and. iland /= 0                     )  .or.  &
                 ( defaults .and. isec  /= n                     )        &

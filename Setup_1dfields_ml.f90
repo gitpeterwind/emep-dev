@@ -53,8 +53,11 @@
          ,cN2O5               & ! mol speed, N2O5
          ,cHNO3               & ! mol speed, HNO3 
          ,cHO2                & ! mol speed, HO2  
+         ,cNO2                & ! mol speed, NO2    ! kHet tests
+         ,cNO3                & ! mol speed, NO2    ! kHet tests
          ,cO3                 & ! mol speed, O3   
-        ,aero_fom, aero_fss, aero_fdust & ! fractions
+         ,gamN2O5             & ! jAero gamma values for output
+        ,aero_fom, aero_fss, aero_fdust, aero_fbc & ! fractions
 !         ,ugdryPM             & ! for wet radius from Gerber, etc.
          ,deltaZcm             & ! layer thickness, cm
          ,pp                     !pressure

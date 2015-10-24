@@ -102,7 +102,7 @@ contains
     CHEMSIZE = KMAX_MID-KCHEMTOP+1
 
    ! Surface area and water
-!if( USES%SURF_AREA) then
+
     allocate(surfarea_um2cm3(AERO%NSAREA,MAXLIMAX,MAXLJMAX))
     SurfArea_um2cm3=0.0
     allocate(Gerber_water(MAXLIMAX,MAXLJMAX,KMAX_MID))
@@ -122,13 +122,15 @@ contains
     cho2= UNDEF_R
     co3=  UNDEF_R
     allocate(aero_fom(KCHEMTOP:KMAX_MID),aero_fdust(KCHEMTOP:KMAX_MID),&
-              aero_fss(KCHEMTOP:KMAX_MID))
+              aero_fbc(KCHEMTOP:KMAX_MID), aero_fss(KCHEMTOP:KMAX_MID))
     aero_fom    = UNDEF_R
+    aero_fbc    = UNDEF_R
     aero_fss    = UNDEF_R
     aero_fdust  = UNDEF_R
-  
-!end if
 
+    allocate(gamN2O5(KCHEMTOP:KMAX_MID)) ! kHet  for output
+    allocate(cNO2(KCHEMTOP:KMAX_MID),cNO3(KCHEMTOP:KMAX_MID)) ! kHet test
+  
 
   end subroutine alloc_ChemFields
 

@@ -88,6 +88,7 @@
   ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
   USE_AOD               = F,          ! Used for FORECASTs usually
   BGND_CH4              = -1,    ! Reset CH4 (use ppb). (Use -1 for defaults)
+  SKIP_RCT              = -1,    ! Reset CH4 (use ppb). (Use -1 for defaults)
 !--- 'fake' vegetation for ozone POD calculations
   FLUX_VEGS = 'IAM_CR','IAM_DF','IAM_MF', ! do not need all array elements
               'Wheat_Irrigated', 'Wheat_NonIrrig',

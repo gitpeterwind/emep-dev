@@ -50,6 +50,7 @@ module Biogenics_ml
                            DEBUG_SOILNOX, USE_SOILNH3
   use NetCDF_ml,        only : ReadField_CDF, printCDF
   use OwnDataTypes_ml,  only : Deriv, TXTLEN_SHORT
+!  use Paleo_ml, only : PALEO_mlai, PALEO_miso, PALEO_mmon
   use Par_ml   , only :  MAXLIMAX,MAXLJMAX,MSG_READ1,me, limax, ljmax
   use Par_ml,            only : limax, ljmax, MAXLIMAX, MAXLJMAX, me
   use PhysicalConstants_ml,  only :  AVOG, GRAV
@@ -433,6 +434,8 @@ module Biogenics_ml
                    LandCover(i,j)%fraction(iiL), &
                    LandCover(i,j)%LAI(iiL), LandDefs(iL)%LAImax, b,&
                      ( day_embvoc(i, j, ibvoc), ibvoc = 1, size(BVOC_USED) ) 
+     !PALEO write(*,'(a,i3,3g12.3)') "NPALEObvoc ", me, &
+     !   PALEO_mlai(i,j), PALEO_miso(i,j),PALEO_mmon(i,j)
                   
               end if
               ! When debugging it helps with an LAI map

@@ -186,6 +186,8 @@ logical, public, save ::             &
 
 ! Methane background. 
   real, public, save :: BGND_CH4 = -1  ! -1 gives defaults in BoundaryConditions_ml, 
+! To skip rct value   (jAero work)
+  integer, public, save :: SKIP_RCT  = -1  ! -1 gives defaults
 !
   logical, public, save :: USE_WRF_MET_NAMES = .false. !to read directly WRF metdata
 !
@@ -386,6 +388,7 @@ logical, public, save ::  DebugCell  = .false.
 ! Debug flag DEBUG_XXX  applied in subroutine XXX
  logical, public, parameter ::    &
    DEBUG_ADV            = .false. &
+,PALEO_TEST = .false. &
   ,DEBUG_BLM            = .false. & ! Produces matrix of differnt Kz and Hmix
   ,DEBUG_DERIVED        = .false. &
     ,DEBUG_COLUMN       = .false. & ! Extra option in Derived
@@ -480,11 +483,12 @@ type, public :: aero_t
   !
   ! For surface area we track the following (NSD=not seasalt or dust)
   ! Must make sizes match NSAREA_DEF above
-   integer  :: SIA_F=1, PM_F=2, SS_F=3, DU_F=4, PM_C=5, SS_C=6, DU_C=7, ORIG=8, NSAREA=NSAREA_DEF
+  ! NB PM is sum of PMf and PMC
+   integer  :: SIA_F=1, PM_F=2, SS_F=3, DU_F=4, PM=5, SS_C=6, DU_C=7, ORIG=8, NSAREA=NSAREA_DEF
   ! Mappings to DpgV types above, and Gerber types (see AeroFunctions).
   ! For Gerber (Gb), -1 indicates to use dry radius
    character(len=4), dimension(NSAREA_DEF) :: SLABELS = (/ &
-                   'SIAF',  'PMF ','SSF ', 'DUF ', 'PMC ', 'SSC ', 'DUC ', 'ORIG' /)
+      character(len=4) :: 'SIAF',  'PMF','SSF', 'DUF', 'PM', 'SSC', 'DUC', 'ORIG' /)
    integer, dimension(NSAREA_DEF) ::&
           Inddry = (/  1,        1,      1,      1,       2,      3,      4,   3 /), &
           Gb     = (/  1,        1,      2,     -1,       1,      2,     -1,  -1 /)
@@ -602,6 +606,7 @@ subroutine Config_ModelConstants(iolog)
    ,FORECAST, ANALYSIS, SOURCE_RECEPTOR, VOLCANO_SR &
    ,SEAFIX_GEA_NEEDED     & ! only if problems, see text above.
    ,BGND_CH4              & ! Can reset background CH4 values 
+   ,SKIP_RCT              & ! Can  skip some rct 
    ,EMIS_SOURCE, EMIS_TEST, EMIS_OUT, emis_inputlist,DataDir, EmisDir &
    ,FLUX_VEGS             & ! Allows user to add veg categories for eg IAM ouput
    ,VEG_2dGS              & ! Allows 2d maps of growing seasons

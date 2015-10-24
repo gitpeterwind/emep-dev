@@ -16,11 +16,15 @@ _func_UptakeRate(cHNO3(:),gam=0.02,S=S_m2m3(AERO%DU_C,:))      HNO3 = NO3_c ;
 *
 * HO2
 * gamma = 0.2, Jacob. Both fine and coarse?
-*_func_UptakeRate(0.5*DpgNw(AERO%PM_C,:),cHO2,gam=0.2,S=S_m2m3(AERO%PM_C,:))           HO2 = 0.5 H2O2 ;
-_func_UptakeRate(cHO2,gam=0.2,S=S_m2m3(AERO%PM_C,:))           HO2 = 0.5 H2O2 ;
+*_func_UptakeRate(0.5*DpgNw(AERO%PM,:),cHO2,gam=0.2,S=S_m2m3(AERO%PM,:))           HO2 = 0.5 H2O2 ;
+_func_UptakeRate(cHO2,gam=0.2,S=S_m2m3(AERO%PM,:))           HO2 = 0.5 H2O2 ;
 *
 * O3
 * Take rate loosely based upon Nicolas et al., 2009
 * who suggested between 0.2 - 3.2e-6
 *_func_UptakeRate(0.5*DpgNw(AERO%DU_C,:),cO3,gam=0.2,S=S_m2m3(AERO%DU_C,:))           HO2 = 0.5 H2O2 ;
 _func_UptakeRate(cO3,gam=1.0e-6,S=S_m2m3(AERO%DU_C,:))           O3 = HO2 ;
+
+* FAKE to get GammaN2O5 as rate coefficient
+gamN2O5(:)   DUMMY =  ;
+

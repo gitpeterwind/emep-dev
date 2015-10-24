@@ -12,8 +12,9 @@ use Biogenics_ml,        only: EMIS_BioNat, EmisNat
 use Chemfields_ml,       only: xn_adv,xn_bgn,xn_shl, &
                                NSPEC_COL, NSPEC_BGN, xn_2d_bgn
 use ChemFunctions_ml, only : S_RiemerN2O5
-use ChemGroups_ml,       only: PM10_GROUP, PMFINE_GROUP, SIA_GROUP, SS_GROUP, DUST_GROUP
+use ChemGroups_ml,       only: PM10_GROUP, PMFINE_GROUP, SIA_GROUP, SS_GROUP, DUST_GROUP, chemgroups
 use CheckStop_ml,        only:  CheckStop, StopAll
+use ColumnSource_ml,     only: ColumnRate
 use DerivedFields_ml,    only: d_2d, f_2d
 use EmisDef_ml,          only:  gridrcemis, gridrcroadd, KEMISTOP,Emis_4D,N_Emis_4D,Found_Emis_4D
 use EmisGet_ml,          only:  nrcemis, iqrc2itot  !DSRC added nrcemis
@@ -36,6 +37,7 @@ use MetFields_ml,        only: roa, th, q, t2_nwp, cc3dmax, &
 use ModelConstants_ml,   only:  &
    DEBUG,DEBUG_MASS             &
   ,AERO                         & ! for wet radii and surf area.
+  ,SKIP_RCT                     & ! kHet tests
   ,dt_advec                     & ! time-step
   ,IOU_INST                     & ! for OUTMISC
   ,MasterProc                   &
@@ -59,12 +61,13 @@ use Setup_1dfields_ml,   only: &
   ,rh, temp, tinv, itemp,pp      &  !
   ,amk, o2, n2, h2o     &  ! Air concentrations
   ,cN2O5, cHO2, cO3, cHNO3 &  ! mol speeds, m/s
+  ,cNO2, cNO3              &  ! mol speeds, m/s, kHet tests
+  ,gamN2O5  & !kHet for printout
   ,DpgNw,S_m2m3   &  ! for wet diameter and surf area
-  ,aero_fom, aero_fss, aero_fdust
+  ,aero_fom, aero_fbc, aero_fss, aero_fdust
 use SmallUtils_ml,       only: find_index
 use Tabulations_ml,      only: tab_esat_Pa
 use TimeDate_ml,         only: current_date, date
-use ColumnSource_ml,     only: ColumnRate
 use Units_ml,            only: to_number_cm3 ! converts roa [kg/m3] to M [molec/cm3]
 !!  to_number_cm3=0.001*AVOG/ATWAIR,& ! from density (roa, kg/m3) to molecules/cm3
  
@@ -101,19 +104,21 @@ contains
  !
 
     integer, intent(in) :: i,j    ! coordinates of column
-    character(len=9)  :: sub='setup_1d:'
+    character(len=9)  :: dtxt='setup_1d:'
     character(len=30)  :: fmt="(a,i3,99g13.4)"  ! default format
     logical :: debug_flag
     logical, save :: first_call = .true.
    ! for surface area calcs: 
-    real :: ugtmp, ugsiaPM, ugDustF, ugSSaltF, ugDustC, ugSSaltC
+    real :: ugtmp, ugSIApm, ugDustF, ugSSaltF, ugDustC, ugSSaltC
+    real, save ::  ugBCf=0.0, ugBCc=0.0 !not always present
     real :: ugSO4, ugNO3f, ugNO3c, ugRemF, ugRemC, ugpmF, ugpmC, rho
-    logical :: is_finepm, is_ssalt, is_dust
+    logical :: is_finepm, is_ssalt, is_dust ,have_BC
+    logical, dimension(size(PM10_GROUP)), save  :: is_BC 
     real, dimension(size(AERO%Inddry))  :: Ddry ! Dry diameter
     integer :: iw, ipm ! for wet rad
    ! if rates are wanted for d_2d output, we use these indices:
     integer, dimension(10), save :: d2index, id2rct 
-    integer, save :: nd2d
+    integer, save :: nd2d, iBCf, iBCc
     integer :: itmp
 
    ! local
@@ -123,9 +128,34 @@ contains
 
     debug_flag =  ( DEBUG%SETUP_1DCHEM .and. debug_proc .and.  &
       i==debug_li .and. j==debug_lj .and. current_date%seconds == 0 )
-    if( first_call.and.debug_proc ) debug_flag = .true.  ! make sure we see 1st i,j combo
 
-    if( debug_flag ) write(*,*) sub//"=DBG=======  ", first_call, me
+    if( first_call ) then
+
+       if( debug_proc ) debug_flag = .true.  ! make sure we see 1st i,j combo
+
+       is_BC(:) = .false.
+
+       if ( index( USES%n2o5HydrolysisMethod, 'S16mix') > 0 ) then ! we use BC too
+
+         iBCf = find_index('ECFINE',chemgroups(:)%name)
+         if( MasterProc ) write(*,*) dtxt//"is_BCf check ", iBCf, trim(USES%n2o5HydrolysisMethod)
+         if ( iBCf > 0 ) then
+            iBCc = find_index('ECCOARSE',chemgroups(:)%name)
+            if( MasterProc ) write(*,*) dtxt//"is_BCc check ", iBCc
+            do ipm = 1, size( PM10_GROUP )
+              ispec = PM10_GROUP(ipm)
+              is_BC(ipm)  = ( find_index( ispec, chemgroups(iBCf)%ptr ) >0 )
+              if( iBCc > 0 ) then ! have coarse BC too
+                 if( find_index( ispec, chemgroups(iBCc)%ptr ) >0) &
+                    is_BC(ipm)  = .true.
+              end if
+              if( MasterProc) write(*,*) dtxt//"is_BC ",species(ispec)%name, is_BC(ipm)
+            end do
+          end if
+        end if
+    end if
+
+    if( debug_flag ) write(*,*) dtxt//"=DBG=======  ", first_call, me
 
 
     do k = KCHEMTOP, KMAX_MID
@@ -181,8 +211,9 @@ contains
            ugpmC       = 0.0
            ugNO3f      = 0.0 !  0.27*xn_2d(ispec,k)*species(ispec)%molwt*1.0e12/AVOG
            ugNO3c      = 0.0 !  0.27*xn_2d(ispec,k)*species(ispec)%molwt*1.0e12/AVOG
-           ugsiaPM     = 0.0 
-
+           ugSIApm     = 0.0 
+           ugBCf       = 0.0
+           ugBCc       = 0.0
 
            ugDustF  = 0.0
            ugSSaltF = 0.0
@@ -201,11 +232,13 @@ contains
                if(is_ssalt) ugSSaltF = ugSSaltF  +  ugtmp
                if(is_dust ) ugDustF  = ugDustF   +  ugtmp
                if( find_index( ispec, SIA_GROUP )>0 ) &
-                    ugsiaPM  = ugsiaPM + ugtmp
+                    ugSIApm  = ugSIApm + ugtmp
+               if(is_BC(ipm)) ugBCf = ugBCf  +  ugtmp
              else
                 ugpmC  = ugpmC   + ugtmp
                if(is_ssalt) ugSSaltC = ugSSaltC  +  ugtmp
                if(is_dust ) ugDustC  = ugDustC   +  ugtmp
+               if(is_BC(ipm)) ugBCc = ugBCc  +  ugtmp
              end if
 
              if (  species(ispec)%name == 'SO4' ) then
@@ -216,26 +249,31 @@ contains
                ugNO3c= ugNO3c +  ugtmp
              end if
 
-             if( debug_flag .and. k==20 ) write(*, *) &
-                  sub//"UGSIA:"//trim(species(ispec)%name), &
-                     find_index( ispec, SIA_GROUP ), ugtmp, ugpmF, ugpmC
+             if( debug_flag .and. k==20 ) write(*, fmt) &
+                  dtxt//"UGSIA:"//trim(species(ispec)%name), &
+                     k, ugtmp, ugpmF, ugpmC,&
+                     !find_index( ispec, SIA_GROUP ), ugtmp, ugpmF, ugpmC,&
+                     ugSO4,ugNO3f,ugNO3c,ugBCf,ugBCc
            end do
 
          ! FRACTIONS used for N2O5 hydrolysis
          ! We use mass fractions, since we anyway don't have MW for OM, dust,...
          !  ugRemF will include OM, EC, PPM, Treat as OM 
 
-          ugRemF = ugpmf - ugSIApm -ugSSaltF -ugDustF 
+          ugRemF = ugpmf - ugSIApm -ugSSaltF -ugDustF
+
+          ugRemF = ugRemF  -ugBCf  ! kHet BC added 24/10/2015
 
           aero_fss(k)     = ugSSaltF/ugpmF
           aero_fdust(k)   = ugDustF/ugpmF
+          aero_fbc(k)     = ugBCf/ugpmF
           aero_fom(k)     = max(0.0, ugRemF)/ugpmF
 
           if( DEBUG%SETUP_1DCHEM ) then ! extra checks 
              if( aero_fom(k) > 1.0 .or. ugRemF < -1.0e-9 ) then
-                print "(a,i4,99es12.3)", sub//"AERO-F ", k, &
-                  aero_fom(k), ugRemF,ugpmF, ugSIApm, ugSSaltF, ugDustF
-                call CheckStop(sub//"AERO-F problem " )
+                print "(a,i4,99es12.3)", dtxt//"AERO-F ", k, &
+                  aero_fom(k), ugRemF,ugpmF, ugSIApm, ugSSaltF, ugDustF, ugBCf
+                call CheckStop(dtxt//"AERO-F problem " )
               end if
           end if
 
@@ -248,18 +286,16 @@ contains
            if( AERO%Gb(iw) > 0 ) then
               DpgNw(iw,k)  = 2*WetRad( 0.5*Ddry(iw), rh(k), AERO%Gb(iw) ) 
 
-           if( debug_flag .and. k==20 ) write(*,fmt) sub//"WRAD  ", iw, &
-               1.0*AERO%Gb(iw), rh(k), Ddry(iw), DpgNw(iw,k), &
-                DpgNw(iw,k)/Ddry(iw), WetRad( 0.5*Ddry(iw), rh(k), AERO%Gb(iw) )
-
            else ! index -1 indicates use dry (for dust)
               DpgNw(iw,k)  = Ddry(iw)
            end if
+           if( debug_flag .and. k==20 ) write(*,fmt) dtxt//"WRAD  ", iw, &
+             1.0*AERO%Gb(iw),rh(k),Ddry(iw),DpgNw(iw,k), DpgNw(iw,k)/Ddry(iw)
           end do
 
            iw= AERO%SIA_F
            rho=AERO%PMdens(AERO%Inddry(iw))
-           S_m2m3(iw,k) = pmSurfArea(ugsiaPM,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
+           S_m2m3(iw,k) = pmSurfArea(ugSIApm,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
                                      rho_kgm3=rho )
 
            iw= AERO%PM_F ! now use for fine PM
@@ -291,18 +327,18 @@ contains
 !           call CheckStop (  S_m2m3(k) < 0.0 , "NEGS_m2m3" )
 
            if( debug_flag .and. k==20 )  then
-            write(*,fmt)  sub//" SAREAugPM in  ", k,  rh(k), temp(k), &
-              ugsiaPM, ugpmf, ugSSaltC, ugDustC
+            write(*,fmt)  dtxt//" SAREAugPM in  ", k,  rh(k), temp(k), &
+              ugSIApm, ugpmf, ugSSaltC, ugDustC
             do iw = 1, AERO%NSAREA
-             write(*,fmt) sub//"GERB ugDU (S um2/cm3)  ", iw, Ddry(iw), &
+             write(*,fmt) dtxt//"GERB ugDU (S um2/cm3)  ", iw, Ddry(iw), &
               DpgNw(iw,k)/Ddry(iw), 1.0e6*S_m2m3(iw,k)
             end do
            end if
 
            S_m2m3(:,k) = min( S_m2m3(:,k), 6.0e-3)  !! Allow max 6000 um2/cm3
 
-           ! For coarse, we simply sum. We ignore some non-SS or dust _C.
-           iw= AERO%PM_C
+           ! For total area, we simply sum. We ignore some non-SS or dust _C.
+           iw= AERO%PM
            S_m2m3(iw,k) = S_m2m3(AERO%PM_F,k) + S_m2m3(AERO%SS_C,k) + S_m2m3(AERO%DU_C,k) 
 
            iw= AERO%ORIG
@@ -344,16 +380,20 @@ contains
 
    call set_rct_rates()
 
+   if ( SKIP_RCT > 0 ) then
+     rct(SKIP_RCT,:) = 0.0
+   end if
+
 
 
    if ( first_call ) then
-     call CheckStop( any(isnan(rct(:,:))), sub//"RCT NAN'd")
-     call CheckStop( any(rct(:,:) < 0.0 ), sub//"RCT NEG'd") !dsJUL2015
+     call CheckStop( any(isnan(rct(:,:))), dtxt//"RCT NAN'd")
+     call CheckStop( any(rct(:,:) < 0.0 ), dtxt//"RCT NEG'd") !dsJUL2015
      nd2d = 0
      do itmp = 1, size(f_2d)
            if ( f_2d(itmp)%subclass == 'rct' ) then
              nd2d =  nd2d  + 1
-             call CheckStop(nd2d>size(id2rct),sub//"Need bigger id2rct array")
+             call CheckStop(nd2d>size(id2rct),dtxt//"Need bigger id2rct array")
              d2index(nd2d)= itmp
              id2rct(nd2d) = f_2d(itmp)%index  !index of rate constant (config)
              if(MasterProc) write(*,*) 'RCTFOUND', itmp, nd2d, id2rct(nd2d)
@@ -366,7 +406,7 @@ contains
    do itmp = 1, nd2d
        d_2d(d2index(itmp),i,j,IOU_INST) =  rct(id2rct(itmp),KMAX_MID)
        if( debug_flag ) then
-          write(*,"(a,6i5,es12.3)") sub//"OUTRCT "//&
+          write(*,"(a,6i5,es12.3)") dtxt//"OUTRCT "//&
            trim(f_2d(d2index(itmp))%name), me,i,j,itmp,&
            d2index(itmp),id2rct(itmp), d_2d(d2index(itmp),i,j,IOU_INST)
        end if
@@ -390,7 +430,7 @@ subroutine setup_rcemis(i,j)
 
   integer ::  i_help,j_help,i_l,j_l, i_Emis_4D,n
   logical, save     :: first_call = .true. 
-  character(len=13) :: sub="setup_rcemis:"
+  character(len=13) :: dtxt="setup_rcemis:"
 
   if(first_call)then
     inat_RDF = find_index( "DUST_ROAD_F", EMIS_BioNat(:) )
@@ -431,7 +471,7 @@ subroutine setup_rcemis(i,j)
   end if ! AIRCRAFT NOX
   if(DEBUG%SETUP_1DCHEM.and.debug_proc.and.i==debug_li.and.j==debug_lj)&
     write(*,"(a,2L2,10es10.3)") &
-      sub//"AIRNOX ", USE_LIGHTNING_EMIS, USE_AIRCRAFT_EMIS, &
+      dtxt//"AIRNOX ", USE_LIGHTNING_EMIS, USE_AIRCRAFT_EMIS, &
       airn(KMAX_MID,i,j),airlig(KMAX_MID,i,j)
 
   ! Add sea salt production
@@ -513,7 +553,7 @@ subroutine reset_3d(i,j)
   integer :: k, n, ispec, id    ! loop variables
 ! ! XNCOL testing -- sets d_2d for column data from molec/cm3 concs.
  ! if variables are wanted for d_2d output (via USET), we use these indices:
-  character(len=*),parameter :: sub='reset3dxncol:'
+  character(len=*),parameter :: dtxt='reset3dxncol:'
   character(len=10) :: specname
   integer, dimension(10), save :: d2index, id2col
   logical, save :: first_call = .true.
@@ -546,10 +586,10 @@ subroutine reset_3d(i,j)
            if ( f_2d(id)%subclass == 'xncol' ) then
              nd2d =  nd2d  + 1
              call CheckStop( nd2d > size(id2col), &
-                 sub//"Need bigger id2col array" )
+                 dtxt//"Need bigger id2col array" )
              specname = f_2d(id)%name(7:)  ! Strip XNCOL_
              ispec = find_index( specname, species(:)%name )
-             call CheckStop(ispec < 1, sub//"XNCOL not found"//specname )
+             call CheckStop(ispec < 1, dtxt//"XNCOL not found"//specname )
              d2index(nd2d)= id
              id2col(nd2d) = ispec
              if(MasterProc) write(*,*) 'USET XNCOL FOUND', id, ispec, &
@@ -564,7 +604,7 @@ subroutine reset_3d(i,j)
         d_2d(d2index(id),i,j,IOU_INST) = dot_product(xn_2d(ispec,:),deltaZcm(:))
     if(DEBUG%SETUP_1DCHEM.and.debug_proc.and.i==debug_li.and.j==debug_lj) then
 !    !if( debug_flag ) then
-       write(*,"(a,6i5,a,9es12.3)") sub//"OUTXNCOL "//trim(f_2d(d2index(id))%name), me,&
+       write(*,"(a,6i5,a,9es12.3)") dtxt//"OUTXNCOL "//trim(f_2d(d2index(id))%name), me,&
             i,j,id,d2index(id),ispec, trim(species(ispec)%name) &
          ,xn_2d(ispec,20), deltaZcm(20), d_2d(d2index(id),i,j,IOU_INST)
 end if

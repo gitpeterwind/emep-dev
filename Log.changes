@@ -153,6 +153,53 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+24th October 2015 Dave   3067
+
+Assorted changes to simplify and enable more aerosol reactions, plus
+prepare for bug correction (missing BC in Smix, new scheme will be denoted S16mix for
+2016 usage)
+
+
+AeroFunctions_ml
+  - Added usage of faero_bc. Currently set to zero, but future versions will
+    activate this.
+
+Biogenics_ml
+  - Added commented out Paleo lines, preperation for future changes
+
+Chem_ml
+  - Added faero_bc, cNO2, cNO3
+
+ChemFunctions_ml
+  - Added faero_bc, cNO2, cNO3
+  - provisional allowance of S16mix as do-nothing placemaker (same as Smix)
+
+
+Derived_ml
+  - Added MasterProc test to limit number of warnings  for not all PM25X species present
+
+EmisGet - added a commented out section to explain GEOS-CHem needs. Not used. 
+
+ModelConstants_ml
+  Added SKIP_RCT to  allow one reaction to be zero'd out (will extend to array later)
+  Added PALEO_TEST for future use
+
+Setup_1dfields_ml
+  - Added cNO2, cNO3, aero_fbc, gamN2O5
+  - Added is_BC and usage
+  - Added SKIP_RCT and usage
+  - dtxt replaces 'sub' (will do throughout cod, easier to grep)
+
+Setup_1d_ml
+  - Added BC to faero usage, will fix BUG in next svn
+  - use of SKIP_RCT where wanted
+
+ZCM_EmChem09/
+  EmChem09.species - added DUMMY, to allow access to gamN2O5 in rct arrays
+  EmChem09.reactions - added gamN2O5 as rate for DUMMY 
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 19th October 2015 Peter  3066
 
 GridValues_ml.f90

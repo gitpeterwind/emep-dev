@@ -78,8 +78,10 @@
   ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
   USE_AOD               = F,          ! Used for FORECASTs usually
   BGND_CH4              = -1,    ! Reset CH4 (use ppb). (Use -1 for defaults)
+  SKIP_RCT              = -1,    ! Will zero-out some rct, for tests. (Use -1 for defaults)
 !--- 'fake' vegetation for ozone POD calculations
   FLUX_VEGS = 'IAM_CR','IAM_DF','IAM_MF', ! do not need all array elements
+              'Wheat_Irrigated', 'Wheat_NonIrrig',
             ! 'CCE_SPRUCE','CCE_BEECH','ACE_PINE','ACE_OAK','ACE_BEECH',
             ! 'NEUR_SPRUCE','NEUR_BIRCH','MED_OAK','MED_PINE','MED_BEECH'
 !-------- Sub domain (x0,x1,y0,y1)
@@ -100,6 +102,8 @@
 !
 !DEBUG system started June 2013 -------------------
 ! Only partially implemented. See ModelConstants_ml
+! Use  T/F or  integers to control debug level:
+  DEBUG%AEROSOL         = F,
   DEBUG%AOT             = F,
   DEBUG%BIO             = F,   ! BVOC emissions, etc.
   DEBUG%DERIVED         = F,   ! BVOC emissions, etc.
@@ -108,7 +112,10 @@
   DEBUG%GLOBBC          = F,
   DEBUG%GRIDVALUES      = F,
   DEBUG%HOURLY_OUTPUTS  = F,
+  DEBUG%LANDDEFS        = F,
+  DEBUG%LANDUSE         = 0,
   DEBUG%MOSAICS         = F,
+  DEBUG%PFT_MAPS        = 0,   ! in testing
   DEBUG%PHYCHEM         = F,
   DEBUG%RSUR            = F,
   DEBUG%RUNCHEM         = F,
@@ -118,9 +125,6 @@
   DEBUG%SITES           = F,
   DEBUG%SOA             = F,
   DEBUG%STOFLUX         = F,
-! Use integers to control debug level:
-  DEBUG%PFT_MAPS        = 0,   ! in testing
-  DEBUG%LANDUSE         = 0,
 !  DEBUG%STOP_HH        = 1,   ! If >= 0,  stops code after STOP_HH hours
 ! Specify here the coords and species index (tot, see CM_ChemSpecs_tot)
   DEBUG%IJ              =  60, 50,      ! Bremen

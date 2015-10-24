@@ -533,19 +533,20 @@ module AeroFunctions
   !---------------------------------------------------------------------
   ! Gamma functions as mixture of SIA, OM, and other 
 
-  elemental function GammaN2O5(t,frh,fno3sia,fom,fss,fdust) result(gam) 
+  elemental function GammaN2O5(t,frh,fno3sia,fom,fss,fdust,fbc) result(gam) 
     real, intent(in) :: t, frh   ! t(K), frh(0-1)
    ! fraction of organic matter, sea-salt, dust in aerosol
-    real, intent(in) :: fno3sia, fom, fss, fdust
+    real, intent(in) :: fno3sia, fom, fss, fdust,fbc
     real :: fsia
     real :: gam
-    fsia = 1 - ( fom + fss + fdust )
+    fsia = 1 - ( fom + fss + fdust + fbc )
 
     gam =  fsia * (1-fno3sia) *  GammaN2O5_sia(t,frh) +&
                      fno3sia * GammaN2O5_DavisAN(frh)
     if( fom   > 1.0e-6 ) gam = gam + fom   * GammaN2O5_om(frh) ! S5c0.005 ! GammaN2O5_ome
     if( fss   > 1.0e-6 ) gam = gam + fss   * GammaN2O5_EJSS(frh)
     if( fdust > 1.0e-6 ) gam = gam + fdust * 0.01 ! EJ 2005
+    if( fbc   > 1.0e-6 ) gam = gam + fbc   * 0.005! EJ 2005,kHet
 
     ! gam =  fom * GammaN2O5_om(frh) too high!
   end function GammaN2O5
@@ -609,6 +610,7 @@ module AeroFunctions
   end function UptakeRate 
 
   !---------------------------------------------------------------------
+  ! This routine is just for offline testing.
 
   subroutine self_test
    real, parameter :: cm2cm3toum2cm3 = 1.0e8, m2m3toum2cm3 = 1.0e12*1.0e-6
@@ -715,7 +717,7 @@ if(iRH == 100 ) print *, frh, rwet/rdry, S_m2m3(:)*um2
      frh = 0.01 * iRH
      print "(a,i4,9f12.3)", "Davis ", iRH, GammaN2O5_DavisAN(frh), &
       GammaN2O5_EJSS(frh), GammaN2O5_sia(t,frh), GammaN2O5_sia(t+10,frh), &
-      GammaN2O5(t,frh,fno3sia=0.3,fom=0.33,fss=0.1,fdust=0.01) ,GammaN2O5(t,frh,fno3sia=0.3,fom=0.0,fss=0.0,fdust=0.0)
+      GammaN2O5(t,frh,fno3sia=0.3,fom=0.33,fss=0.1,fdust=0.01,fbc=0.0) ,GammaN2O5(t,frh,fno3sia=0.3,fom=0.0,fss=0.0,fdust=0.0,fbc=0.0)
    end do
    
    do iTK = 270, 290

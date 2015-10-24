@@ -900,6 +900,11 @@ subroutine Derived(dt,End_of_Day)
         d_2d( n, i,j,IOU_INST) = SurfArea_um2cm3(AERO%PM_F,i,j)
       end forall
       if ( dbgP ) call write_debug(n,index, "SurfArea_NSDF")
+    case ( "SurfAreaPM_um2cm3" )
+      forall ( i=1:limax, j=1:ljmax )
+        d_2d( n, i,j,IOU_INST) = SurfArea_um2cm3(AERO%PM,i,j)
+      end forall
+      if ( dbgP ) call write_debug(n,index, "SurfArea_NSDF")
     case ( "SurfAreaSSF_um2cm3" )
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = SurfArea_um2cm3(AERO%SS_F,i,j)
@@ -1045,7 +1050,7 @@ subroutine Derived(dt,End_of_Day)
           iadv_EC_C_WOOD  < 1 .or. & 
           iadv_EC_C_FFUEL < 1 .or. & 
           iadv_POM_C_FFUEL< 1 ) then
-          if ( first_call ) write(*,*) &
+          if ( first_call .and. MasterProc  ) write(*,*) &
                "WARNING: Derived - not all PM25X species present. Skipping"
           cycle   !! Skip this case
       end if

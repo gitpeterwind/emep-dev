@@ -22,7 +22,8 @@ module ChemFunctions_ml
  use ModelConstants_ml,     only : K1  => KCHEMTOP, K2 => KMAX_MID, USES, AERO
  use PhysicalConstants_ml,  only : AVOG, RGAS_J, DAY_ZEN
  use Setup_1dfields_ml,     only : itemp, tinv, rh, x=> xn_2d, amk, &
-     aero_fom,aero_fss,aero_fdust, &
+     aero_fom,aero_fss,aero_fdust, aero_fbc,  &
+     gamN2O5, & ! jAero for output
      cN2O5, temp, DpgNw, S_m2m3 ! for surface area
  use ChemSpecs,             only : SO4, NO3_f, NH4_f, NO3_c
   implicit none
@@ -377,7 +378,7 @@ module ChemFunctions_ml
         endif
       end do ! k
   !---------------------------------------
-   case ( "Smix", "SmixTen" )
+   case ( "Smix", "SmixTen", "S16mix" )
 
      do k = K1, K2
 
@@ -388,14 +389,16 @@ module ChemFunctions_ml
 
             S = S_m2m3(AERO%PM_F,k) !NOW all fine PM
             gam = GammaN2O5(temp(k),rh(k),&
-                   f,aero_fom(k),aero_fss(k),aero_fdust(k))
+                   f,aero_fom(k),aero_fss(k),aero_fdust(k),aero_fbc(k))
 
             if( method == "SmixTen") gam = 0.1 * gam ! cf Brown et al, 2009!
 
             rate(k) = UptakeRate(cN2O5(k),gam,S) !1=fine SIA ! +OM
        else
+            gam = 0.0 ! just for export
             rate(k) = 0.0
        end if
+       gamN2O5(k) = gam ! just for export
     end do
 
       
@@ -471,6 +474,7 @@ module ChemFunctions_ml
        end if
 
     end do ! k
+    gamN2O5 = 0.002 ! just for export
 
      case default
        call StopAll("Unknown N2O5 hydrolysis"//method )
