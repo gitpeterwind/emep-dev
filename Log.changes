@@ -78,7 +78,7 @@ export MACHINE=vilje                  # select stallo/vilje machine
 case $MACHINE in                   # modules needed to compile Unimod
  stallo)EMEPMODULES="intel/13.0 openmpi/1.6.2 hdf5/1.8.9 netcdf/4.2.1.1";;
 gstallo)EMEPMODULES="gcc/4.7.2  openmpi/1.6.2 hdf5/1.8.9 netcdf/4.2.1.1";;
-  vilje)EMEPMODULES="intelcomp/13.0.1 mpt/2.06 netcdf/4.3.0";;
+  vilje)EMEPMODULES="intelcomp/14.0.1 mpt/2.09 netcdf/4.3.1";;
 esac
 [[ -z "$MODULESHOME" && -s /etc/profile.d/modules.sh ]] &&
   . /etc/profile.d/modules.sh      # load modulecmd wraper, fi needed
@@ -151,6 +151,32 @@ info on unused variables, etc.
 
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+26th October 2015 Alvaro 3068
+
+AOD_PM_ml:
+- Fix bug on DRY mode AOD calculations:
+  - On DRY mode, AOD calculations missed the cross-section to surface trasnformation.
+  - NOc calculation was inconsistent between DRY and WET modes.
+  - This bugs were introduced in 2665 (November 2013), but did not become active
+    until 2994 (April 2015), when the description of dust types (DDf & DDc) on
+    Dust.species and VBS_nonvolatile.species was explicetely set to DRY mode
+    (DDf:dry and DDc:dry).
+- Use a constant grow factor of 1.0 for non hygroscopic components.
+- Consistently set ECn as non hygroscopic.
+- Add consustency checks for Qm_ref array.
+
+AOD_PM_ml,GenChem.pl,
+ZCM_EmChem09/Dust.species,ZCM_EmChem09soa/VBS_nonvolatile.species:
+- Do not allow different DRY or WET mode calculations for different AOD components.
+  All AOD componets will be treated the same, all WET or all DRY.
+
+PhyChem_ml:
+- On FORECAST, update derived before hoyrly output for zero hour.
+
+config_EMEPSTD.nml:
+- Remove garbage at the end of the file.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 24th October 2015 Dave   3067
@@ -238,7 +264,6 @@ module load gcc/4.7.2
 module load netcdf
 
 then put export MACHINE ?= gstallo
-
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 9th October  2015 Peter, Semeena 3053-4
@@ -435,7 +460,6 @@ AOTnPOD_ml: commented out some output
 Site_ml: more characters in strings
 run.pl: removed $DATA_LOCAL from list of necessary directories (now nothing is required!).
 
-
 To use wrf met you must 
 in run.pl:
 $METformat="$MetDir/wrfout_d01_YYYY-MM-DD_00:00:00";
@@ -604,7 +628,6 @@ NetCDF: vertical interpolate. Completed change from 3025.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 25th June 2015 Dave  3027
 
-
 EmisGet_ml
 Emissions_ml
 
@@ -647,6 +670,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15th June 2015 Heiko 3022
 
 Rename ZCM_Emergency/ESX_r12.[reactions/species] to Eemep.[reactions/species]
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 10th June 2015 Heiko 3020,3021
 

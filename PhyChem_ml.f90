@@ -101,7 +101,10 @@ contains
        call main_3dvar()   ! 3D-VAR Analysis for "Zero hour"
        call Add_2timing(T_3DVAR,tim_after,tim_before)
     endif
-    if(FORECAST.and.first_call)call hourly_out()!Zero hour output
+    if(FORECAST.and.first_call)then     ! Zero hour output
+      call Derived(dt_advec,End_of_Day) ! update D2D outputs, to avoid
+      call hourly_out()                 ! eg PM10:=0.0 on first output
+    endif
     call Add_2timing(35,tim_after,tim_before,"phyche:outs")
 
 

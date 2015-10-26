@@ -1287,10 +1287,8 @@ sub printmap_ext {
   my $outline="";
   printall( "ENTERING CEXT print $nkey \n");
   foreach my $k (sort keys %extinc) {
-    my ($cext,$mode)=split(/[:;\-\/|]/,$extinc{$k});
-        $mode="Wet" unless $mode;               # WET_MODE by default
     $outline.=($outline?",":"")."&\n"
-            .sprintf "  ExtEffMap(%-16s,CEXT_%-4s,%3s_MODE)",$k,$cext,uc($mode);
+            .sprintf "  ExtEffMap(%-16s,CEXT_%-4s)",$k,$extinc{$k};
   }
   open(CEXT,">GenOut_AerExt.inc") or die "FAIL AerExt\n";
   print CEXT 

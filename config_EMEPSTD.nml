@@ -164,7 +164,3 @@
   USE_EXTERNAL_BIC  = F,              ! .false. to deactivate
   EXTERNAL_BIC_NAME = 'DUMMY',        ! No IC/BC will be read
 &end
-s_config
-  USE_EXTERNAL_BIC  = F,              ! .false. to deactivate
-  EXTERNAL_BIC_NAME = 'DUMMY',        ! No IC/BC will be read
-&end
