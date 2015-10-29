@@ -556,7 +556,6 @@ module Biogenics_ml
      ! And we scale EmisNat to get units kg/m2 consistent with
      ! Emissions_ml (snapemis).  ug/m2/h -> kg/m2/s needs 1.0-9/3600.0. 
 
-      E_ISOP = day_embvoc(i,j,BIO_ISOP)*canopy_ecf(BIO_ISOP,it2m) * cL 
 
       rcemis(itot_C5H8,KG)   = rcemis(itot_C5H8,KG) + E_ISOP * biofac_ISOP/Grid%DeltaZ
       EmisNat(ispec_C5H8,i,j)= E_ISOP * 1.0e-9/3600.0
