@@ -94,15 +94,15 @@ use FastJ_ml,             only : setup_phot_fastj,rcphot_3D
 use Functions_ml,         only : Exner_tab, Exner_nd
 use Functions_ml,         only : T_2_Tpot  !OS_TESTS
 use GridValues_ml,        only : xmd, i_fdom, j_fdom, i_local,j_local&
-       ,glon,glat,gl_stagg,gb_stagg,glat_fdom,glon_fdom&
+       ,glon,glat,gl_stagg,gb_stagg&
        ,xm_i,xm_j ,xm2,xmd,xm2ji,xmdji,GridArea_m2&
        , projection &
-       ,glon,glat, glat_fdom, glon_fdom, MIN_ADVGRIDS   &
+       ,glon,glat, MIN_ADVGRIDS   &
        ,Poles, xm_i, xm_j, xm2, sigma_bnd,sigma_mid &
        ,xp, yp, fi, GRIDWIDTH_M,ref_latitude     &
        ,debug_proc, debug_li, debug_lj &
        ,grid_north_pole_latitude,grid_north_pole_longitude &
-       ,GlobalPosition,DefGrid,gl_stagg,gb_stagg,A_mid,B_mid &
+       ,gl_stagg,gb_stagg,A_mid,B_mid &
        ,Eta_bnd,Eta_mid,dA,dB,A_mid,B_mid,A_bnd,B_bnd &
        ,KMAX_MET,External_Levels_Def,k1_met,k2_met,x_k1_met,rot_angle
 
@@ -1963,7 +1963,7 @@ contains
     !     - returns extended array array, reading neighbour procs as needed
     !c----------------------------------------------------------------------
 
-    real, intent(in) :: f(:,:)
+    real, intent(in) :: f(MAXLIMAX,MAXLJMAX)
     real, intent(inout) :: h(:,:)
     logical, intent(in), optional :: debug_flag
     logical :: mydebug = .false.

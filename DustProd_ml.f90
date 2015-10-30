@@ -24,7 +24,7 @@
  use CheckStop_ml,         only : CheckStop
  use Functions_ml,         only : ERFfunc
  use ChemSpecs,            only : species
- use GridValues_ml,        only : glat, glon, glat_fdom, glon_fdom, i_fdom, j_fdom 
+ use GridValues_ml,        only : glat, glon, i_fdom, j_fdom 
  use GridValues_ml,        only : debug_proc, debug_li, debug_lj
  use Io_ml,                only : PrintLog, datewrite
  use Landuse_ml,           only : LandCover, NLUMAX 
@@ -471,8 +471,7 @@
     if (DEBUG_DUST .and. debug_flag) then
       write(6,*)' '
       write(6,'(a35,es12.3)')  ' Horizontal Flux => ',   flx_hrz_slt
-      write(6,'(/a25,4f8.2)') soil_type,glat(i,j),glon(i,j),&
-           glat_fdom(i,j),glon_fdom(i,j)
+      write(6,'(/a25,4f8.2)') soil_type,glat(i,j),glon(i,j)
       write(6,'(a25,3f10.3,es10.2)') '>>  U*/U*t/Klim,alfa  >>',  &
             ustar,ustar_th, dust_lim, alfa
       write(6,'(a15,f10.3,2es12.3)') 'FLUXES:',uratio, flx_hrz_slt*1000.0,  &

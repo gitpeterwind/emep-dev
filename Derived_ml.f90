@@ -44,7 +44,7 @@ use EmisDef_ml,       only: EMIS_FILE
 use EmisGet_ml,       only: nrcemis,iqrc2itot
 use Emissions_ml,     only: SumSnapEmis, SumSplitEmis
 use GridValues_ml,    only: debug_li, debug_lj, debug_proc, A_mid, B_mid, &
-                            xm2, GRIDWIDTH_M, GridArea_m2
+                            xm2, GRIDWIDTH_M, GridArea_m2,xm_i,xm_j,glon,glat
 use Io_Progs_ml,      only: datewrite
 use MetFields_ml,     only: roa,pzpbl,Kz_m2s,th,zen, ustar_nwp, u_ref,&
  met, derivmet,  & !TEST of targets
@@ -419,9 +419,10 @@ subroutine Define_Derived()
         Is3D      = (class(1:3)=="EXT")       
         call AOD_init("Derived:"//trim(class),wlen=trim(subclass),out3d=Is3D)
       case default
-        unitscale = 1.0
-        if(outunit=="ppb") unitscale = PPBINV
-        unittxt=trim(outunit)
+         if(outdim=='3d')Is3D=.true.
+         unitscale = 1.0
+         if(outunit=="ppb") unitscale = PPBINV
+         unittxt=trim(outunit)
       endselect
 
       if(MasterProc)write(*,"(a,i4,a)") &
@@ -878,6 +879,22 @@ subroutine Derived(dt,End_of_Day)
       end if
 
     ! The following can be deleted once testing of MET2D is finished...
+    case ( "xm_i" )
+      forall ( i=1:limax, j=1:ljmax )
+        d_2d( n, i,j,IOU_INST) = xm_i(i,j)
+      end forall
+    case ( "lon" )
+      forall ( i=1:limax, j=1:ljmax )
+        d_2d( n, i,j,IOU_INST) = glon(i,j)
+      end forall
+    case ( "xm_j" )
+      forall ( i=1:limax, j=1:ljmax )
+        d_2d( n, i,j,IOU_INST) = xm_j(i,j)
+      end forall
+    case ( "lat" )
+      forall ( i=1:limax, j=1:ljmax )
+        d_2d( n, i,j,IOU_INST) = glat(i,j)
+      end forall
     case ( "USTAR_NWP" )
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = ustar_nwp(i,j)

@@ -6,7 +6,7 @@ module Landuse_ml
 use CheckStop_ml,   only: CheckStop,StopAll
 use DO3SE_ml,       only: fPhenology, Init_DO3SE
 use GridAllocate_ml,only: GridAllocate
-use GridValues_ml,  only: glat_fdom, glat , glon   & ! latitude,
+use GridValues_ml,  only:  glat , glon   & ! latitude,
                           , i_fdom, j_fdom   & ! coordinates
                           , i_local, j_local &
                           , debug_proc, debug_li, debug_lj

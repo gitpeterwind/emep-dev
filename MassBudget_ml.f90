@@ -6,8 +6,7 @@ module   MassBudget_ml
 use CheckStop_ml,       only: CheckStop
 use ChemSpecs,          only: NSPEC_ADV, NSPEC_SHL, species_adv
 use Chemfields_ml,      only: xn_adv        ! advected species
-use GridValues_ml,      only: carea,xmd, &  ! cell area, 1/xm2 where xm2 is
-                                  ! the area factor in the middle of the cell
+use GridValues_ml,      only: xmd, &  
                               gridwidth_m,dA,dB,debug_proc,debug_li,debug_lj
 use Io_ml,              only: IO_LOG, PrintLog, datewrite
 use MetFields_ml,       only: ps            ! surface pressure
@@ -65,12 +64,13 @@ subroutine Init_massbudget()
   integer i, j, k, n, info    ! lon,lat,lev indexes
                               ! n - No. of species
                               ! info - printing info
-  real rwork
+  real rwork,fac
 
+  fac = GRIDWIDTH_M*GRIDWIDTH_M/GRAV
   do k=2,KMAX_MID
     do j=lj0,lj1
       do i=li0,li1
-        rwork = carea(k)* xmd(i,j)*(ps(i,j,1) - PT)
+        rwork = fac*(dA(k)+dB(k)*ps(i,j,1))* xmd(i,j)
         sumint(:) = sumint(:) + xn_adv(:,i,j,k)*rwork  ! sumint in kg
       enddo
     enddo
@@ -152,9 +152,11 @@ subroutine massbudget()
     gtotox,             & ! oxidation of SO2
     natoms                ! number of S, N or C atoms
 
-  real :: totdiv,helsum
+  real :: totdiv,helsum,fac
 
   allocate(sumk(NSPEC_ADV,KMAX_MID))
+
+  fac=GRIDWIDTH_M*GRIDWIDTH_M/GRAV
 
   sum_mass(:)   = 0.0
   frac_mass(:)  = 0.0
@@ -172,13 +174,14 @@ subroutine massbudget()
   do k = 1,KMAX_MID
     do j = lj0,lj1
       do i = li0,li1
-        helsum  = carea(k)*xmd(i,j) * (ps(i,j,1) - PT)
+        helsum  = fac*(dA(k)+dB(k)*ps(i,j,1))* xmd(i,j)
         xmax(:) = amax1(xmax(:),xn_adv(:,i,j,k))
         xmin(:) = amin1(xmin(:),xn_adv(:,i,j,k))
         sumk(:,k) = sumk(:,k) + xn_adv(:,i,j,k)*helsum
 
         if(all((/DEBUG_MASS,debug_proc,i==debug_li,j==debug_lj/)))&
-          call datewrite("MASSBUD",k,(/carea(k),ps(i,j,1),PT,xmd(i,j)/))
+          call datewrite("MASSBUD",k,(/(dA(k)*dB(k)*ps(i,j,1))*xmd(i,j)/&
+          GRAV*GRIDWIDTH_M*GRIDWIDTH_M,ps(i,j,1),PT,xmd(i,j)/))
       enddo
     enddo
   enddo

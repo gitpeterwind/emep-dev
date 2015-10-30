@@ -412,7 +412,8 @@ private
             tag_name(1)=            trim(outname)//"_"//trim(outdim)
             Is3D       =(outtyp(1:3)=="EXT")
           case default
-            tag_name(1)= trim(outname) ! Just use raw name here
+             if(outdim=='3d')Is3D=.true.
+             tag_name(1)= trim(outname) ! Just use raw name here
           endselect
            
           if(Is3D)then

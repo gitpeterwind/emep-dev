@@ -36,7 +36,7 @@ use EmisDef_ml,       only: &
      ,KEMISTOP&
      ,MAXFEMISLONLAT,N_femis_lonlat
 use EmisGet_ml,       only: &
-     EmisGet, EmisSplit &
+     EmisSplit &
     ,EmisGetCdf &  ! 
     ,EmisGetCdfFrac &
     ,EmisGetASCII &
@@ -76,12 +76,14 @@ use ModelConstants_ml,only: &
     USES,  &  ! Gives USES%EMISSTACKS, DEGREEDAY_FACTORS,GRIDDED_EMIS_MONTHLY_FACTOR
     SEAFIX_GEA_NEEDED, & ! see below
     USE_LIGHTNING_EMIS,USE_AIRCRAFT_EMIS,USE_ROADDUST, &
-    USE_EURO_SOILNOX, USE_GLOBAL_SOILNOX, EURO_SOILNOX_DEPSCALE! one or the other
+    USE_EURO_SOILNOX, USE_GLOBAL_SOILNOX, EURO_SOILNOX_DEPSCALE,&! one or the other
+    NPROC
 use My_Derived_ml,    only: EmisSplit_OUT
 use NetCDF_ml,        only: ReadField_CDF,ReadField_CDF_FL,ReadTimeCDF,IsCDFfractionFormat,GetCDF_modelgrid
 use netcdf
 use Par_ml,           only: MAXLIMAX,MAXLJMAX, GIMAX,GJMAX, IRUNBEG,JRUNBEG,&
-                            me,limax,ljmax, MSG_READ1,MSG_READ7
+                            me,limax,ljmax, MSG_READ1,MSG_READ7&
+                           ,gi0,gj0
 use PhysicalConstants_ml,only: GRAV, AVOG
 use PointSource_ml,      only: readstacks !MKPS
 use Setup_1dfields_ml,only: rcemis   ! ESX
@@ -181,12 +183,6 @@ contains
     ! additional arrays on host only for landcode, nlandcode
     ! BIG arrays ... will be needed only on me=0. Make allocatable
     ! to reduce static memory requirements.
-    real,    allocatable, dimension(:,:,:,:)  :: globemis 
-    integer, allocatable, dimension(:,:)      :: globnland 
-    integer, allocatable, dimension(:,:,:)    :: globland  
-    real,    allocatable, dimension(:,:,:)    :: globemis_flat
-    integer, allocatable, dimension(:,:)      :: flat_globnland 
-    integer, allocatable, dimension(:,:,:)    :: flat_globland 
     real,    allocatable, dimension(:,:,:)    :: globroad_dust_pot ! Road dust emission potentials
     integer, allocatable, dimension(:,:)      :: road_globnland 
     integer, allocatable, dimension(:,:,:)    :: road_globland 
@@ -343,21 +339,6 @@ contains
     ! allocate for me=0 only:
     err1 = 0
     if(MasterProc) then
-       if(MYDEBUG) write(*,*) "TTT me ", me , "pre-allocate" 
-       allocate(globnland(GIMAX,GJMAX),stat=err1)
-       allocate(globland(GIMAX,GJMAX,NCMAX),stat=err2)
-       allocate(globemis(NSECTORS,GIMAX,GJMAX,NCMAX),stat=err3)
-
-       allocate(flat_globnland(GIMAX,GJMAX),stat=err4)
-       allocate(flat_globland(GIMAX,GJMAX,FNCMAX),stat=err5)
-       allocate(globemis_flat(GIMAX,GJMAX,FNCMAX),stat=err6)
-
-       call CheckStop(err1, "Allocation error 1 - globland")
-       call CheckStop(err2, "Allocation error 2 - globland")
-       call CheckStop(err3, "Allocation error 3 - globland")
-       call CheckStop(err4, "Allocation error 4 - globland")
-       call CheckStop(err5, "Allocation error 5 - globland")
-       call CheckStop(err6, "Allocation error 6 - globland")
 
        if(USE_ROADDUST)then
           allocate(road_globnland(GIMAX,GJMAX),stat=err7)
@@ -372,12 +353,6 @@ contains
        endif ! road dust
 
        ! Initialise with 0
-       globnland(:,:) = 0      
-       flat_globnland(:,:)=0  
-       globland(:,:,:) = 0    
-       globemis(:,:,:,:) = 0  
-       flat_globland(:,:,:)=0 
-       globemis_flat(:,:,:) =0
        sumemis_local(:,:)=0.0
        emsum=0.0
 
@@ -389,10 +364,6 @@ contains
        endif ! road dust
     else
        ! needed for DEBUG=yes compilation options
-       allocate(globnland(1,1),flat_globnland(1,1),&
-            globland(1,1,1),flat_globland(1,1,1),&
-            globemis(1,1,1,1),globemis_flat(1,1,1),stat=err6)
-       call CheckStop(err6, "Allocation error 6 - dummy globland")
        if(USE_ROADDUST)then
           allocate(road_globnland(1,1),road_globland(1,1,1),&
                globroad_dust_pot(1,1,1),stat=err9)
@@ -602,7 +573,7 @@ contains
              if ( sum(sumEU(:))>0.001) then
                 write(*     ,fmt) 0, "EU", sumEU(:)
                 write(IO_LOG,fmt) 0, "EU", sumEU(:)
-             end if
+              end if
           endif
 
           !total of emissions from all countries and files into emsum
@@ -624,37 +595,8 @@ contains
        !endif ! EMIS_TEST /Mixed
 
     case("emislist")
-       do iem = 1, NEMIS_FILE
-          if(MasterProc) then                        
-             ! read in global emissions for one pollutant
-             ! *****************
-             call EmisGet(iem,EMIS_FILE(iem),IRUNBEG,JRUNBEG,GIMAX,GJMAX, &
-                  globemis,globnland,globland,sumemis,&
-                  globemis_flat,flat_globnland,flat_globland)
-             ! *****************
-             emsum(iem) = sum(globemis(:,:,:,:)) + sum(globemis_flat(:,:,:))    ! hf
-          endif  ! MasterProc
-          call CheckStop(ios, "ios error: EmisGet")
-
-          ! Send data to processors 
-          ! as  e.g. snapemis (NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,iem)
-          ! send to nodes
-          call global2local(globemis,snapemis(1,1,1,1,iem),MSG_READ1,&
-               NSECTORS,GIMAX,GJMAX,NCMAX,1,1)
-          call global2local(globemis_flat,snapemis_flat(1,1,1,iem),MSG_READ1,&
-               1,GIMAX,GJMAX,FNCMAX,1,1)
-
-          !   real    snapemis (NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS_FILES)
-          !           GridEmis (NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS_FILE)
-          if(EMIS_TEST=="CdfSnap".and.debug_proc) then
-             i=debug_li;j=debug_lj
-             do isec = 1, 11
-                if(snapemis(isec,i,j,1,iem)+GridEmis(isec,i,j,1,iem)>1.0e-10) &
-                     write(*,"(a,i3,2es10.3)") "CDFCOMP", isec, &
-                     snapemis(isec,i,j,1,iem) ,GridEmis(isec,i,j,1,iem)
-             enddo
-          endif
-       enddo
+       call StopAll("The emislist option is not available anymore! &
+       Use Mixed instead")
     case("CdfFractions")
        do iem = 1, NEMIS_FILE
 
@@ -842,13 +784,8 @@ contains
     ! print *, "calling glob2local_int for iem", iem, " me ", me
     select case(EMIS_SOURCE)
     case("emislist")
-       call global2local_int(globnland,nlandcode,326,GIMAX,GJMAX,1,1,1)
-       call global2local_int(globland ,landcode ,326,GIMAX,GJMAX,NCMAX,1,1)
-
-       call global2local_int(flat_globnland,flat_nlandcode,326,&
-            GIMAX,GJMAX,1,1,1)  !extra array
-       call global2local_int(flat_globland,flat_landcode,326,&
-            GIMAX,GJMAX,FNCMAX,1,1)
+       call StopAll("The emislist option is not available anymore! &
+       Use Mixed instead")
     case("CdfFractions")
        ! emissions directly defined into nlandcode,landcode and snapemis
     endselect
@@ -857,7 +794,7 @@ contains
     ! Useful for export to other codes, including production of
     ! new emislist for current NWP grid.
     do iem = 1, NEMIS_FILE
-       if((EMIS_SOURCE=="emislist").and.EMIS_OUT) &
+       if((EMIS_SOURCE=="Mixed").and.EMIS_OUT) &
             call EmisOut("Snap",iem,nlandcode,landcode,snapemis(:,:,:,:,iem))
 
        if(EMIS_TEST=="CdfSnap")&
@@ -915,35 +852,16 @@ contains
 
     err1 = 0
     if(MasterProc) then
-       deallocate(globnland     ,stat=err1)
-       deallocate(globland      ,stat=err2)
-       deallocate(globemis      ,stat=err3)
-       deallocate(flat_globnland,stat=err4)
-       deallocate(flat_globland ,stat=err5)
-       deallocate(globemis_flat ,stat=err6)
        if(USE_ROADDUST)THEN
           deallocate(road_globnland   ,stat=err7)
           deallocate(road_globland    ,stat=err8)
           deallocate(globroad_dust_pot,stat=err9)
-       endif
-
-       call CheckStop(err1, "De-Allocation error 1 - globland") 
-       call CheckStop(err2, "De-Allocation error 2 - globland")
-       call CheckStop(err3, "De-Allocation error 3 - globland")
-       call CheckStop(err4, "De-Allocation error 4 - globland")
-       call CheckStop(err5, "De-Allocation error 5 - globland")
-       call CheckStop(err6, "De-Allocation error 6 - globland")
-       if(USE_ROADDUST)THEN
           call CheckStop(err7, "De-Allocation error 7 - roadglob")
           call CheckStop(err8, "De-Allocation error 8 - roadglob")
           call CheckStop(err9, "De-Allocation error 9 - roadglob")
        endif
     else
        ! needed for DEBUG=yes compilation options
-       deallocate(globnland,flat_globnland,&
-            globland,flat_globland,&
-            globemis,globemis_flat ,stat=err6)
-       call CheckStop(err6, "De-Allocation error 6 - dummy globland")
        if(USE_ROADDUST)THEN
           deallocate(road_globnland,road_globland,globroad_dust_pot,stat=err9)
           call CheckStop(err9, "De-Allocation error 9 - dummy roadglob")
@@ -1425,7 +1343,6 @@ subroutine newmonth
   real ktonne_to_kgm2s, tonnemonth_to_kgm2s  ! Units conversion
   integer :: IQSO2                   ! Index of sox in  EMIS_FILE
   integer errcode,iland
-  real,    allocatable, dimension(:,:,:,:)  :: globemis 
   integer :: month,iem,ic,iic,isec, err3,icc,i_gridemis
   real :: duml,dumh,tmpsec(NSECTORS),conv
   logical , save :: first_call=.true.
@@ -1813,90 +1730,74 @@ subroutine EmisOut(label, iem,nsources,sources,emis)
   real,intent(in), dimension(:,:,:,:):: emis      ! Emission values
   integer, dimension(:,:), intent(in) :: nsources      ! Emission values
   integer, dimension(:,:,:), intent(in) :: sources      ! Emission values
-  real, allocatable, dimension(:,:):: lemis,gemis    ! 2-D emission fields
-  real, allocatable, dimension(:,:,:):: locemis      ! Emission values
-  real, allocatable, dimension(:,:,:):: globemis      ! Emission values
   character(len=100) :: txt
   real :: low, high
-  integer :: msg(4), i,j, ii, jj, isec, icc, ncc, iland
-
+  integer :: msg(4), i,j, ii, jj, isec, icc, ncc, iland, iproc
+  real ::locemis(MAXLIMAX, MAXLJMAX,NSECTORS)
+  real ::lemis(MAXLIMAX, MAXLJMAX)
   txt = trim(label)//"."//trim(EMIS_FILE(iem))
   msg(:) = 0
 
   if(MYDEBUG) write(*,*)"CALLED "//trim(txt),me,&
     maxval(emis),maxval(nsources),maxval(sources)
 
-  if(MasterProc) then
-    allocate(globemis(GIMAX, GJMAX,NSECTORS), stat=msg(1) )
-    open(IO_TMP,file="EmisOut"//trim(txt))
-  endif
 
-  allocate(locemis(MAXLIMAX, MAXLJMAX,NSECTORS), stat=msg(2) )
-  allocate(lemis(MAXLIMAX, MAXLJMAX), stat=msg(3) )
-  allocate(gemis(GIMAX, GJMAX), stat=msg(4) )
+!  allocate(locemis(MAXLIMAX, MAXLJMAX,NSECTORS), stat=msg(1) )
+!  allocate(lemis(MAXLIMAX, MAXLJMAX), stat=msg(2) )
 
   call CheckStop( any(msg(:) /= 0),"EmisOut alloc error:"//trim(label))
 
-  ! TEST LOCAL2GLOBAL. Found that the local array is changed
-  !lemis = 100 + me
-  !print *, "LEMIS-IN ", me, lemis(2,2)
-  !call local2global( lemis(:,:), gemis(:,:), msg )
-  !if( MasterProc ) then
-  ! do j = 1, GJMAX, 3
-  !   print *, "LEMIS-UT ", j, lemis(2,j), gemis(2,j)
-  ! end do
-  !end if
-
-  EMLAND: do iland = 1, NLAND
-    locemis = 0.0
-!    print *,  trim(txt)//" iland ", me, iland, maxval(emis(:,:,:,:))
-
-    !/ Collect emissions locally by country code iland
-    do j = 1, ljmax
-      do i = 1, limax
-        ncc = nsources(i,j)
-        do icc = 1, ncc
-          if(sources(i,j,icc)==iland) then
-            locemis(i,j,: ) = emis(:, i,j,icc)
-            if(MYDEBUG) call CheckStop(any(locemis(i,j,:)< 0.0),"NEG LOCEMIS")
-          endif
-        enddo
-      enddo
-    enddo ! j
-
-    ! Should never happen, but...
-    !call CheckStop( any( lemis < 0.0 ) , "NEG LEMIS")
+  if(MasterProc)write(*,*)' WARNING - i,j coordinates are not consecutive - dependent on number of prosessors'
+!Each subdomain output its data, one at a time. The others MUST wait.
+  do iproc=1,NPROC
+     if(me==iproc-1)then
+        open(IO_TMP,file="EmisOut"//trim(txt))
+        EMLAND: do iland = 1, NLAND
+           locemis = 0.0
+           !    print *,  trim(txt)//" iland ", me, iland, maxval(emis(:,:,:,:))
+           
+           !/ Collect emissions locally by country code iland
+           ncc=-999
+           do j = 1, ljmax
+              do i = 1, limax
+                 ncc = nsources(i,j)
+                 do icc = 1, ncc
+                    if(sources(i,j,icc)==iland) then
+                       locemis(i,j,: ) = emis(:, i,j,icc)
+                       if(MYDEBUG) call CheckStop(any(locemis(i,j,:)< 0.0),"NEG LOCEMIS")
+                    endif
+                 enddo
+              enddo
+           enddo ! j
+           if(ncc==-999)cycle!ncountry not in this subdomain
+           ! Should never happen, but...
+           !call CheckStop( any( lemis < 0.0 ) , "NEG LEMIS")
+           
+           do i = 1,limax
+              do j = 1,ljmax
+                 ii=gi0+i+IRUNBEG-2
+                 jj=gj0+j+JRUNBEG-2
+                 if(sum(locemis(i,j,:))>1.0e-10)then
+                    high = locemis(i,j,1)
+                    low =  sum(locemis(i,j,2:NSECTORS))
+                    write(IO_TMP,"(i3,2i4,2x,13es10.3)") iland, ii,jj, &
+                         low, high, (locemis(i,j,isec),isec=1,NSECTORS)
+                 endif
+              enddo
+           enddo
+        enddo EMLAND
+        
+        do isec = 1, NSECTORS
+           lemis = locemis(:,:,isec)
+           if(MYDEBUG.and.debug_proc) write(*,*) trim(txt)//" lemis ",me,iland,isec,maxval(lemis(:,:))
+        enddo ! isec
+        
+     endif
+     close(IO_TMP)
+     CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)!wait: one should write at a time
+  enddo
   
+!  deallocate(locemis,lemis)
 
-    !/ Transmit to MasterProc
-    !/ (Need to be careful, local2global changes local arrays. Hence lemis)
-    do isec = 1, NSECTORS
-      lemis = locemis(:,:,isec)
-      if(MYDEBUG.and.debug_proc) write(*,*) trim(txt)//" lemis ",me,iland,isec,maxval(lemis(:,:))
-      call local2global(lemis,gemis,msg)
-      if(MasterProc) globemis(:,:,isec) = gemis(:,:) !! for output
-    enddo ! isec
-          
-    if(MasterProc) then ! output emislist-type file
-      do i = 1,GIMAX
-       do j = 1,GJMAX
-          ii=i+IRUNBEG-1
-          jj=j+JRUNBEG-1
-          if(sum(globemis(i,j,:))>1.0e-10)then
-            high = globemis(i,j,1)
-            low =  sum(globemis(i,j,2:NSECTORS))
-            write(IO_TMP,"(i3,2i4,2x,13es10.3)") iland, ii,jj, &
-              low, high, (globemis(i,j,isec),isec=1,NSECTORS)
-          endif
-        enddo
-      enddo
-    endif ! masterProc
-  enddo EMLAND
- 
-  deallocate(locemis,gemis,lemis)
-  if(MasterProc) then
-    close(IO_TMP)
-    deallocate(globemis)
-  endif
 endsubroutine EmisOut
 endmodule Emissions_ml

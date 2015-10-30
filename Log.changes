@@ -100,9 +100,11 @@ fi
 
  Looking for DegreeDayFac: /global/work/mifapw/emep/Data/inputs_emepdefaults_May2012/HDD18-TNO28-2008.nc
 
-      you may need to generate this file. Use:
+     if you are using a regional European domain, you may need to generate this file. Use:
 
       *  meteoPreProc from utils sub-directory, use e.g. mk.meteoPreProc script.
+
+       Otherwise you should set USES%DEGREEDAY_FACTORS = F in config file
 
 
 SOIL NOx ISSUES - Mainly think about (1) for policy
@@ -153,10 +155,40 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+30th October 2015 Peter 3070
+
+Refactoring parts of the codes concerned with horizontal coordinates.
+sigma coordinates no more available.
+
+Modified:
+EmisGet_ml.f90 Emissions_ml.f90 MassBudget_ml.f90 DustProd_ml.f90 Advection_ml.f90 Landuse_ml.f90 
+Derived_ml.f90 NetCDF_ml.f90 Met_ml.f90 GridValues_ml.f90 ZD_OZONE/My_Derived_ml.f90
+
+EmisGet_ml, Emissions_ml: removed the "emislist" option. Removed arrays that run over the fulldomain 
+(glat_fdom, glon_fdom, globemis, globland, globnland, flat_globnland, flat_globland, globemis_flat).
+carea removed (it was still based on sigma coordinates) (Massbudget_ml)
+Advecdiff and Advecdiff_poles removed
+Removed routines GlobalPosition DefGrid and Position.
+
+Had to rewrite Init_new_netCDF and CreatenetCDFfile to avoid using glat_fdom and glon_fdom.
+CreatenetCDFfile_Eta removed (replaced by the new CreatenetCDFfile).
+Out_netCDF is still using fulldomain arrays, but this will be corrected another time.
+
+Derived_ml and My_Derived_ml; put a line
+         if(outdim=='3d')Is3D=.true.
+for the "MISC" case. (not sure about this, but I can't see that it can harm)
+
+Did a lot of testing (PS, lon-lat,wrf and GLOBAL grids), but there may still be 
+bugs (many possibilities for special cases)
+Results should almost not be affected: <1E-4 relative max error, due to slightly 
+different extrapolation at domain boundaries. For PS projection the definition
+of gridareas (xm2 and xmd) is slightly different (<1E-5).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 27th October 2015 Dave   3069
 
 Biogenics_ml
-  Removed duplicate line for E_ISOP (no effect on results, bur confusing).
+  Removed duplicate line for E_ISOP (no effect on results, but confusing).
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26th October 2015 Alvaro 3068

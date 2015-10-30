@@ -17,7 +17,7 @@ use EmisDef_ml,       only: NSECTORS, ANTROP_SECTORS, NCMAX, FNCMAX, &
   
 use GridAllocate_ml,  only: GridAllocate
 use GridValues_ml,    only: debug_proc,debug_li,debug_lj,i_fdom,j_fdom,i_local,j_local
-use GridValues_ml,    only: glon, glat, glon_fdom, glat_fdom, A_bnd, B_bnd
+use GridValues_ml,    only: glon, glat, A_bnd, B_bnd
 use Io_ml,            only: open_file,IO_LOG, NO_FILE, ios, IO_EMIS, &
                              Read_Headers, read_line, PrintLog
 use KeyValueTypes,    only: KeyVal
@@ -37,7 +37,6 @@ implicit none
 private
 
  ! subroutines:
-public  :: EmisGet           ! Collects emissions of each pollutant
 public  :: EmisGetCdf        ! cdfemis
 public  :: EmisGetCdfFrac    ! cdfemis in Fractions format
 public  :: EmisGetASCII      !new version of "EmisGet" which does not use fulldomain arrays
@@ -506,188 +505,6 @@ READEMIS: do   ! ************* Loop over emislist files *******************
   end subroutine EmisGetASCII
 
 !-----------------------------------------------------------------------------
-subroutine EmisGet(iemis,emisname,IRUNBEG,JRUNBEG,GIMAX,GJMAX, &
-                   globemis,globnland,globland,sumemis,        &
-                   globemis_flat,flat_globnland,flat_globland)
-!.......................................................................
-!  DESCRIPTION:
-!  Reads in emissions from one file, specified by iemis. 
-!  The arrays read in here are the global arrays (allocatable)
-!.......................................................................
-  !--arguments
-  integer, intent(in)                     :: iemis     ! emis index 
-  character(len=*), intent(in)            :: emisname  ! emission name
-  integer, intent(in) :: IRUNBEG,JRUNBEG,GIMAX,GJMAX   ! domain limits
-  real,    intent(out), dimension(:,:,:,:):: globemis      ! Emission values
-  real,    intent(out), dimension(:,:,:)  :: globemis_flat ! Flat emissions
-                                                           ! (e.g. shipping)
-  integer, intent(inout), dimension(:,:,:)::   &
-                                 globland,     & ! Codes of countries-emitters
-                                 flat_globland   ! Flat emis.codes (shipping)
-  integer, intent(inout), dimension(:,:)  ::   &
-                                 globnland,    & ! No. emitions in grid
-                                 flat_globnland  ! No. flat emitions in grid
-  real,    intent(inout), dimension(:,:)  :: sumemis ! Emission sums per 
-                                                     ! country(after e_fact) 
-
-  !--local
-  integer :: flat_iland, ifdom,jfdom,    &
-             i, j, isec, iland,         &  ! loop variables
-             iic,ic                        ! country code (read from file)
-  real    :: duml,dumh                     ! dummy variables, low/high emis.
-  real, dimension(NSECTORS)  :: tmpsec     ! array for reading emission files
-  real, dimension(NSECTORS)  ::lonlat_fac  ! array with femis lonlat reductions
-  integer, save :: ncmaxfound = 0          ! Max no. countries found in grid
-  integer, save :: flat_ncmaxfound = 0     ! Max no. countries found in grid
-                                           ! including flat emissions
-  globemis   (:,:,:,:) = 0.0
-  globemis_flat(:,:,:) = 0.0
-
-  !if (DEBUG_GETEMIS) write(unit=6,fmt=*) "Called EmisGet with index, name", &
-  !     iemis, trim(emisname)
-  write( *,*) "Called EmisGet with index, name", &
-       iemis, trim(emisname)
-  fname = "emislist." // emisname
-  call open_file(IO_EMIS,"r",fname,needed=.true.)
-  call CheckStop(ios,"EmisGet: ios error in emission file")
-
-  if(emisname=="nh3") dknh3_agr=0.0 ! NH3Emis experimental
- 
-
-READEMIS: do   ! ************* Loop over emislist files *******************
-    read(unit=IO_EMIS,fmt=*,iostat=ios) iic,i,j, duml,dumh,  &
-                            (tmpsec(isec),isec=1,NSECTORS)
-
-    if( DEBUG_GETEMIS .and. i==DEBUG%IJ(1) .and. j==DEBUG%IJ(2) ) write(*,*) &
-        "DEBUG GetEmis "//trim(emisname) // ":" , iic, duml,dumh
-    !if( j== DEBUG%IJ(2) ) write(*,*) &
-    !    "DEBUG GetEmis "//trim(emisname) // ":" , iic, duml,dumh
-    if ( ios <  0 ) exit READEMIS            ! End of file
-    call CheckStop(ios > 0,"EmisGet: ios error in emission file")
-
-    ! Check if country code in emisfile (iic) is in the country list
-    ! from Countries_ml, i.e. corresponds to numbering index ic
-
-    do ic=1,NLAND
-      if((Country(ic)%icode==iic))goto 543
-    enddo 
-    write(errmsg,*)"COUNTRY CODE NOT RECOGNIZED OR UNDEFINED ",iic
-    call CheckStop(errmsg)
-    ic=0
-543 continue
-    ifdom=i
-    jfdom=j
-    i = i-IRUNBEG+1                   ! for RESTRICTED domain
-    j = j-JRUNBEG+1                   ! for RESTRICTED domain
-    if(i <1 .or. i >GIMAX .or.      & 
-       j <1 .or. j >GJMAX .or.      &
-       ic<1 .or. ic>NLAND .or.      &
-       ic==IC_NAT         .or.      & ! Excludes DMS
-      (ic==IC_VUL.and.VOLCANOES_LL))& ! Excludes Volcanoes from gridSOx. 
-                                      ! Read from columnsource_*.csv instead
-      cycle READEMIS
-    lonlat_fac=1.0
-    if(N_femis_lonlat>0)then
-       do i_femis_lonlat=1,N_femis_lonlat
-          if(glat_fdom(ifdom,jfdom)>femis_latmin(i_femis_lonlat).and.&
-               glat_fdom(ifdom,jfdom)<femis_latmax(i_femis_lonlat).and.&
-               glon_fdom(ifdom,jfdom)>femis_lonmin(i_femis_lonlat).and.&
-               glon_fdom(ifdom,jfdom)<femis_lonmax(i_femis_lonlat)     )then
-             lonlat_fac(:)=lonlat_fac(:)*e_fact_lonlat(:,i_femis_lonlat,iemis) 
-!             if(lonlat_fac(1)<0.5)write(*,*)'REDUCING! ',me,i,j,lonlat_fac(1),glat(i,j),glon(i,j)
-          endif
-       enddo
-    endif
-
-    ! Ship emissions
-    if(Country(ic)%is_sea)then       ! ship emissions
-      ! ..........................................................
-      ! Generate new land allocation in 50 km grid for FLAT 
-      ! EMISSIONS (ships). First, we check if country "ic"
-      ! has already  been found within that grid. If not, then ic is
-      ! added to flat_landcode and flat_nlandcode increased by one.
-   
-      ! Test that ship emissions are only in sector ISNAP_SHIP
-      do isec=1,(ISNAP_SHIP-1) 
-        if(MasterProc.and.tmpsec(isec)/=0) &
-           write(*,"(a,3i4,i3,f12.4)")"SEA"//trim(emisname), &
-              iic,i,j,isec,tmpsec(isec)
-
-        call CheckStop(tmpsec(isec)/=0,"EmisGet: NOT FLAT EMISSIONS -&
-          & check SEAFIX_GEA_NEEDED comments in ModelConstants_ml")
-      enddo
-      do isec=ISNAP_SHIP+1,NSECTORS
-        if(MasterProc.and.tmpsec(isec)/=0) &
-           write(*,"(a,3i4,i3,f12.4)")"SEA"//trim(emisname), &
-              iic,i,j,isec,tmpsec(isec)
-        !call CheckStop(tmpsec(isec)/=0,"EmisGet: NOT FLAT EMISSIONS")
-      enddo
-      ! end test
-
-      call GridAllocate("FLat",i,j,Country(ic)%icode,FNCMAX, flat_iland, &
-           flat_ncmaxfound,flat_globland,flat_globnland)
-      ! ...................................................
-      ! Assign e_fact corrected emissions to global FLAT 
-      ! emission matrices.
-      ! ...................................................
-
-      globemis_flat(i,j,flat_iland) = globemis_flat(i,j,flat_iland) &
-             + e_fact(ISNAP_SHIP,ic,iemis) * tmpsec(ISNAP_SHIP)*lonlat_fac(ISNAP_SHIP)
-
-      !......................................................
-      !        Sum over all sectors, store as Ktonne:
-      !......................................................
-      sumemis(ic,iemis) = sumemis(ic,iemis)   &
-           + 0.001 *  e_fact(ISNAP_SHIP,ic,iemis) * tmpsec(ISNAP_SHIP)*lonlat_fac(ISNAP_SHIP)
-
-      cycle READEMIS
-    endif !ship emissions            
-
-
-    !.......................................................
-    !  Volcanos
-    !.......................................................
-    if(emisname=="sox".and.ic==IC_VUL)&
-      call CheckStop("Volcanic sox emissions from emislist.sox &
-        &are no longer supported. Read them from columnsource_*.csv instead")
-
-    ! For VOC natural and agricultur emissions (managed forests) 
-    ! set to  zero
-
-    if(emisname=="voc") tmpsec(11:11) = 0.0
-  
-    ! NH3emis (FUTURE/EXPERIMENTAL for NMR-NH3 project)
-    ! For NH3 activity data, set 'static emissions' to zero
-    ! For northwestern Europe, read in Sector_NH3Emis.txt in run.pl
-    ! Traffic emis are zero in the Danish emissions
-    if(NH3EMIS_VAR.and.emisname== "nh3".and.ic==IC_NMR) then
-      dknh3_agr=dknh3_agr+ tmpsec(ISNAP_AGR)+tmpsec(ISNAP_TRAF)
-      tmpsec(ISNAP_AGR:ISNAP_AGR) = 0.0
-      tmpsec(ISNAP_TRAF:ISNAP_TRAF) = 0.0
-    endif
-
-
-    ! ..........................................................
-    ! generate new land allocation in 50 km grid. First, we check if
-    ! country "ic" has already  been found within that grid. If not,
-    ! then ic is added to landcode and nlandcode increased by one.
-    call GridAllocate("SNAP"//trim(emisname),i,j,Country(ic)%icode,NCMAX, &
-                         iland,ncmaxfound,globland,globnland)
-
-    globemis(:,i,j,iland)=globemis(:,i,j,iland)+e_fact(:,ic,iemis)*tmpsec(:)*lonlat_fac(:)
-
-    ! Sum over all sectors, store as Ktonne:
-    sumemis(ic,iemis)=sumemis(ic,iemis)+0.001*sum(e_fact(:,ic,iemis)*tmpsec(:)*lonlat_fac(:))
-
-!rb: Old version (below) does not work if same grid point occurs several times in emis-file
-!    Probably the same problem for ship emissions etc. Not changed now!
-!     + 0.001 * sum (globemis (:,i,j,iland))
-  enddo READEMIS 
-        
-  close(IO_EMIS)
-  ios = 0
-endsubroutine EmisGet
-! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
   subroutine femis()
 !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
