@@ -1,3 +1,11 @@
+! config_esx.nml file
+! -------------------
+
+! This config file is written so that it can be converted to restructured text
+! with the simple removal of the "! " bits. Use spaces between stuff which needs
+! to be separate though, and after lines, etc. Below we have both explanations 
+! and values.
+
 &esxDriver_config
 !------------------
 
@@ -67,7 +75,7 @@
 ! An explicit example::
 
  !esx%zbnd = 0.5, 1.5, 2.5, 3.5, 4., 4.5, 5.0, 5.5, 6., 6.5, 7.0, 7.5, 8., 9. 10.
- esx%zbnd = 2., 4., 6., 8., 10., 12., 14., 16., 20., 30., 40., 50., 70., 100., 150., 200., 250., 300., 350., 400., 500., 600., 700., 800., 1000.
+ !esx%zbnd = 2., 4., 6., 8., 10., 12., 14., 16., 20., 30., 40., 50., 70., 100., 150., 200., 250., 300., 350., 400., 500., 600., 700., 800., 1000.
  !esx%zbnd = 2., 4., 6., 8., 10.,  15., 20., 32., 64., 100.,200.,300.
 
 ! the following are only used if zmethod set to linear::
@@ -103,10 +111,11 @@
 ! Fluxes are trickier.  If chem units are molec/cm2/s or esx%units=ppb, we need
 ! fluxes in molec/m2/s. If esx%units="-" (unitless), give unitless fluxes in
 ! amount #/m2/s (NOTE - m2 not cm2! The Kz terms are in m-s units)
-! NOTE - Fb is downward flux. Use -ve for emissions! Ft is upward ::
+! NOTE - Fb is downward flux. Use -ve for emissions! Ft is upward.
 !
 ! CHANGE!!! Nov 2013. Better to set emissions in BOC section below, rather
 ! than as Fbottom.
+! ::
 
     esx%DiffSpecs = 
    !species  ind  Vd     Ve     Fbottom  Ftop
@@ -131,11 +140,11 @@
    !'SO2',      0, 0.0, 0.0,  0.0,     0.0
    !'CO',       0, 0.0, 0.0,  0.0,     0.0
    !'SO4',      0, 0.0, 0.0,  0.0,     0.0
-!   'C3H6',     0, 0.0, 0.0,  0.0,     0.0
-!   'HCHO',     0, 0.0, 0.0,  0.0,     0.0
-!   'OXYL',     0, 0.0, 0.0,  0.0,     0.0
-!   'C2H5OH',   0, 0.0, 0.0,  0.0,     0.0
-!   'NC4H10',   0, 0.0, 0.0,  0.0,     0.0
+   !'C3H6',     0, 0.0, 0.0,  0.0,     0.0
+   !'HCHO',     0, 0.0, 0.0,  0.0,     0.0
+   !'OXYL',     0, 0.0, 0.0,  0.0,     0.0
+   !'C2H5OH',   0, 0.0, 0.0,  0.0,     0.0
+   !'NC4H10',   0, 0.0, 0.0,  0.0,     0.0
 
 
 ! (An emission of NH3 of ca. 50 ng/m2/s would be ca 1.8e15 molec/m2/s)
@@ -153,12 +162,13 @@
    esx%dt_Zdiff    = 10.0   !  Faster ;-)
    esx%dt_Zdiff    = 0.01  ! Usually okay to let code calculate
    esx%dt_Zdiff    = 1.0   ! Compromise?
+
 !
 ! Top boundary
 ! ------------
 !
 ! We need to choose whether the top boundary has fixed concentrations or free
-! (boundary and initial condition concentrations are set below, in the BIC section)
+! (boundary and initial condition concentrations are set below, in the BIC section)::
 
    esx%fixedBC = F
 
@@ -173,15 +183,14 @@
    esx%Kz_method = "power"
    esx%Kz_kwargs   = "za", 1.0, "Ka", 0.5, "n",  0.5 
 
-
    esx%Kz_method = "constant"
-   esx%Kz_kwargs = "const", 300.
+   esx%Kz_kwargs = "const", 0.5
 
-  esx%Kz_method = "Leuning"         ! No kwargs
+   esx%Kz_method = "Leuning"         ! No kwargs
 
 ! So far we have coded for methods:  constant, power or Leuning
 ! Note: With fortran's namelist system the last set of Kz_method, Kz_kwargs is
-! chosen, so here we would get the constant Kz method with value 0.5.
+! chosen, so here we would get the Leuning method.
 !
 !-----------------------------------------------------------------------------
 !
@@ -247,13 +256,14 @@
 ! Options so far: zmax
 
 ! to send this plot to a  file we add the -o option::
+! (with -q if we just want to produce plot files, without screen plots)
 
 !   !esx%plot_cmds = "D_Plotting/plotZarray.py --tfmt t=%5.1f --zmax 20 -c O3 -o TestO3.png"
 
 ! Here we plot O3, up to 100m::
 ! The esx_tester routine will add filename and component::
 
-   esx%plot_cmds = "D_Plotting/plotZarray.py --tfmt t=%5.1f --zmax 200 --xlow 0"
+   esx%plot_cmds = "D_Plotting/plotZarray.py --tfmt t=%5.1f --zmax 200 --xlow 0   -q "
 
 !
 !-----------------------------------------------------------------------------
@@ -409,15 +419,15 @@
    'emis', 'NC4H10','molec/cm3/s', 1.0e6, 1, 999   ! 2% VOC
    'emis', 'NH3',  'molec/cm3/s', 1.1e6, 1, 999
    !! 
-!   'emis', 'TRACER',  'molec/cm2/s', 1.0e11, 1, 1
-!   'emis', 'NO',  'molec/cm2/s', 1.1e11, 1, 1
-!   'emis', 'SO2', 'molec/cm2/s', 2.2e10, 1, 1
-!   'emis', 'CO',  'molec/cm2/s', 2.4e11, 1, 1
-!   'emis', 'HCHO','molec/cm2/s', 6.0e9, 1, 1   ! 2% VOC
-!   'emis', 'OXYL','molec/cm2/s', 1.0e11, 1, 1   ! 2% VOC
-!   'emis', 'C2H5OH','molec/cm2/s', 1.0e11, 1, 1   ! 2% VOC
-!   'emis', 'NC4H10','molec/cm2/s', 1.0e11, 1, 1   ! 2% VOC
-!   'emis', 'NH3',  'molec/cm2/s', 1.1e11, 1, 1
+   !'emis', 'TRACER',  'molec/cm2/s', 1.0e11, 1, 1
+   !'emis', 'NO',  'molec/cm2/s', 1.1e11, 1, 1
+   !'emis', 'SO2', 'molec/cm2/s', 2.2e10, 1, 1
+   !'emis', 'CO',  'molec/cm2/s', 2.4e11, 1, 1
+   !'emis', 'HCHO','molec/cm2/s', 6.0e9, 1, 1   ! 2% VOC
+   !'emis', 'OXYL','molec/cm2/s', 1.0e11, 1, 1   ! 2% VOC
+   !'emis', 'C2H5OH','molec/cm2/s', 1.0e11, 1, 1   ! 2% VOC
+   !'emis', 'NC4H10','molec/cm2/s', 1.0e11, 1, 1   ! 2% VOC
+   !'emis', 'NH3',  'molec/cm2/s', 1.1e11, 1, 1
    /
 
 !-----------------------------------------------------------------------------
@@ -476,9 +486,3 @@
 
 /
 
-! This file
-! ---------
-
-! This config file is written so that it can be converted to restructured text
-! with the simple removal of the "! " bits. Use spaces between stuff which needs
-! to be separate though, and after lines, etc.

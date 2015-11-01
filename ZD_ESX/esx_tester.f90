@@ -24,7 +24,9 @@ program tester
 
   implicit none
 
-  !!!!!!!!!character(len=100) :: filename, sname
+  !!!!!!!!!
+  character(len=100) :: filename, sname
+  character(len=300) :: plotmsg
   character(len=50) :: txt
   real    :: units, pcm3_to_pm3, pm3_to_pcm3
   integer :: i,idspec, icspec, nprint, io_hour1, io_hour2, old_hour=-999

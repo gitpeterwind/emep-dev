@@ -326,6 +326,7 @@ contains
     species(NO3_f       ) = Chemical("NO3_f       ",  62.0000,  0,  0,   1,  0,  0.0000,    0.0 )
     species(NO3_c       ) = Chemical("NO3_c       ",  62.0000,  0,  0,   1,  0,  0.0000,    0.0 )
     species(NH4_f       ) = Chemical("NH4_f       ",  18.0000,  0,  0,   1,  0,  0.0000,    0.0 )
+    species(CO          ) = Chemical("CO          ",  28.0000,  0,  1,   0,  0,  0.0000,    0.0 ) 
   end subroutine define_chemicals
 
 end module ChemSpecs

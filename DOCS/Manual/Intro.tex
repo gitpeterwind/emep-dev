@@ -34,15 +34,17 @@ The EMEP code is provided under the GNU General Public License version 3
 (\url{http://fsf.org} and/or
 \url{http://www.gnu.org/copyleft/gpl.html}).
 
-Each code module is prefaced with something like:
+Each code module is prefaced with something like:\\
+\bigskip
+
 \begin{quote}
-\begin{small}
+\begin{footnotesize}
 \begin{verbatim}
 ! <EXAMPLE_CODE.f90 - A component of the EMEP MSC-W  Eulerian
 !          Chemical transport Model>
-!*****************************************************************************!
+!*******************************************************************!
 !*
-!*  Copyright (C) 2007-2012 met.no
+!*  Copyright (C) 2007-2015 met.no
 !*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -63,10 +65,11 @@ Each code module is prefaced with something like:
 !*
 !*    You should have received a copy of the GNU General Public License
 !*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************!
+!*******************************************************************!
 \end{verbatim}
-\end{small}
+\end{footnotesize}
 \end{quote}
+
 And a copy of the license file, {\bf gpl.txt}, is provided with the
 model code source files.
 
@@ -233,7 +236,8 @@ grid, the new grid is called EECCA in this text and in the config\_emep.nml.
 
 \begin{figure}[ht]
  \centering
-\includegraphics[scale=0.7]{EECCA}
+%DS \includegraphics[scale=0.7]{EECCA}
+\includegraphics[scale=1.1]{EECCA}
 \caption{The extended EMEP grid covering EECCA area with
 132$\times$159 gridpoints on 50$\times$50 km$^2$ resolution defined on
 a polar stereographic
