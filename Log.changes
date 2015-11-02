@@ -154,6 +154,14 @@ info on unused variables, etc.
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+2nd  November 2015 Peter  3072
+
+New "Machine_config". The code tries the different "Datapath" until it finds one 
+that exists. The key word "DataDir" is then replaced by that path. 
+Same config file can be used for Vilje and Stallo.
+
+Modified: ModelConstants_ml, config_EMEPSTD.nml, config_EMEPGLOB.nml
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 1st  November 2015 Dave  3071

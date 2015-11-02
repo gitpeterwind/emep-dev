@@ -190,6 +190,9 @@ logical, public, save ::             &
   integer, public, save :: SKIP_RCT  = -1  ! -1 gives defaults
 !
   logical, public, save :: USE_WRF_MET_NAMES = .false. !to read directly WRF metdata
+
+!Machine_config variables
+ character (len=100), public :: DataPath(20) = 'NOTSET'
 !
 !------------ END OF NAMELIST VARIABLES ------------------------------------!
 
@@ -588,8 +591,9 @@ contains
 subroutine Config_ModelConstants(iolog)
   character(len=120)  :: txt
   integer, intent(in) :: iolog ! for Log file
-  integer :: i, ispec
-  logical :: first_call = .true.
+  integer :: i, j, ispec
+  logical,save :: first_call = .true.
+  logical :: exist
 
   NAMELIST /ModelConstants_config/ &
     EXP_NAME &  ! e.g. EMEPSTD, FORECAST, TFMM, TodayTest, ....
@@ -607,7 +611,7 @@ subroutine Config_ModelConstants(iolog)
    ,SEAFIX_GEA_NEEDED     & ! only if problems, see text above.
    ,BGND_CH4              & ! Can reset background CH4 values 
    ,SKIP_RCT              & ! Can  skip some rct 
-   ,EMIS_SOURCE, EMIS_TEST, EMIS_OUT, emis_inputlist,DataDir, EmisDir &
+   ,EMIS_SOURCE, EMIS_TEST, EMIS_OUT, emis_inputlist, EmisDir &
    ,FLUX_VEGS             & ! Allows user to add veg categories for eg IAM ouput
    ,VEG_2dGS              & ! Allows 2d maps of growing seasons
    ,VEG_2dGS_Params       & ! Allows 2d maps of growing seasons
@@ -616,6 +620,9 @@ subroutine Config_ModelConstants(iolog)
    ,JUMPOVER29FEB, HOURLYFILE_ending &
    ,USE_WRF_MET_NAMES &
    ,NETCDF_DEFLATE_LEVEL, HOURLYFILE_ending
+
+  NAMELIST /Machine_config/ DataPath
+
   txt = "ok"
   !Can't call check_file due to circularity
   !call check_file('emep_settings.nml', file_exists, needed=.true., errmsg=txt)
@@ -646,6 +653,28 @@ subroutine Config_ModelConstants(iolog)
     write(iolog,*) "NAMELIST IS "
     write(iolog, NML=ModelConstants_config)
   endif
+
+  DataPath(1) = '.'!default
+  rewind(IO_NML)
+  read(IO_NML,NML=Machine_config)
+  do i=1,size(DataPath)
+     if(DataPath(i)=="NOTSET")then
+        if(MasterProc)then
+           write(*,*)'WARNING: Could not find valid DataDir. Tried:'
+           do j=1,i-1
+              write(*,*)trim(DataPath(i))
+           enddo
+        endif
+        !stop
+        exit
+     endif
+     INQUIRE (directory=trim(DataPath(i)), exist=exist)
+     if(exist)then
+        DataDir=trim(DataPath(i))
+        if(MasterProc)write(*,*)'DataDir set to',trim(DataDir)
+        exit
+     endif
+  enddo
 
 endsubroutine Config_ModelConstants
 endmodule ModelConstants_ml
