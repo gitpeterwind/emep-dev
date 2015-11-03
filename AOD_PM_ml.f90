@@ -21,7 +21,7 @@ use CheckStop_ml,         only: CheckStop
 use GridValues_ml,        only: i_fdom, j_fdom
 use MetFields_ml,         only: z_bnd
 use ModelConstants_ml,    only: KMAX_MID, KCHEMTOP, ANALYSIS, USE_AOD
-use Par_ml,               only: MAXLIMAX,MAXLJMAX   ! => x, y dimensions
+use Par_ml,               only: LIMAX,LJMAX   ! => x, y dimensions
 use PhysicalConstants_ml, only: AVOG
 use Setup_1dfields_ml,    only: xn_2d, rh
 use SmallUtils_ml,        only: find_index
@@ -366,16 +366,16 @@ subroutine AOD_init(msg,wlen,out3d)
 !-----------------------------------------------------------------------!
   !!wanted_wlen(W550)=.true.  ! calculate 550nm for debug output
   if(any(wanted_wlen(:)).and..not.allocated(AOD))then
-    allocate(AOD(NUM_EXT,MAXLIMAX,MAXLJMAX,W340:W1020))
+    allocate(AOD(NUM_EXT,LIMAX,LJMAX,W340:W1020))
     AOD=0.0
   endif
   if(wanted_ext3d.and..not.allocated(Extin_coeff))then
-    allocate(Extin_coeff(NUM_EXT,MAXLIMAX,MAXLJMAX,KMAX_MID,W340:W1020))
+    allocate(Extin_coeff(NUM_EXT,LIMAX,LJMAX,KMAX_MID,W340:W1020))
     Extin_coeff=0.0
   endif 
   if(ANALYSIS.and..not.associated(SpecExtCross))then
   !!wanted_wlen(W550)=.true.  ! calculate 550nm for AOD assimilation
-    allocate(SpecExtCross(NUM_EXT,KMAX_MID,MAXLIMAX,MAXLJMAX,W340:W1020))
+    allocate(SpecExtCross(NUM_EXT,KMAX_MID,LIMAX,LJMAX,W340:W1020))
     SpecExtCross=0.0
   endif
 endsubroutine AOD_init

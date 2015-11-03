@@ -65,7 +65,7 @@
   use ModelConstants_ml, only : iyr_trend ,USES  ! for GRIDDED_EMIS_MONTHLY_FACTOR 
   use ModelConstants_ml, only : INERIS_SNAP1, INERIS_SNAP2
   use NetCDF_ml,    only : GetCDF , ReadField_CDF
-  use Par_ml,       only : MAXLIMAX,MAXLJMAX, me, li0, lj0, li1, lj1
+  use Par_ml,       only : MAXLIMAX,MAXLJMAX, limax,ljmax, me, li0, lj0, li1, lj1
   use Par_ml,       only : IRUNBEG, JRUNBEG, MSG_READ8
   use PhysicalConstants_ml, only : PI
   use SmallUtils_ml,    only: find_index
@@ -117,7 +117,7 @@
   ! Heating-degree day factor for SNAP-2. Independent of country:
   logical, public, save :: Gridded_SNAP2_Factors = .false.
   real, public, allocatable,dimension (:,:), save :: gridfac_HDD
-  !real, private, dimension (MAXLIMAX,MAXLJMAX), save :: tmpt2
+  !real, private, dimension (LIMAX,LJMAX), save :: tmpt2
 
   ! Used for general file calls and mpi routines below
 
@@ -651,7 +651,7 @@ contains
      sector_map(7,:)='tra'
 
      if(.not.allocated(GridTfac))then
-        allocate(GridTfac(MAXLIMAX,MAXLJMAX,NSECTORS,NEMIS_FILE))
+        allocate(GridTfac(LIMAX,LJMAX,NSECTORS,NEMIS_FILE))
         GridTfac=dble(nmdays(month))/nydays !default, multiplied by inverse later!!
      endif
 

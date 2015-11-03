@@ -51,7 +51,7 @@ use MosaicOutputs_ml, only : nMosaic, MAX_MOSAIC_OUTPUTS, MosaicOutput, & !
 
 use OwnDataTypes_ml, only : Deriv, print_deriv_type, TXTLEN_DERIV, &
            TXTLEN_SHORT, typ_ss, typ_s3, typ_s4, typ_s5i, typ_si
-use Par_ml,    only: me, MAXLIMAX,MAXLJMAX, &   ! => max. x, y dimensions
+use Par_ml,    only: me, LIMAX,LJMAX, &   ! => max. x, y dimensions
                      limax, ljmax           ! => used x, y area
 use SmallUtils_ml,  only : AddArray, LenArray, NOT_SET_STRING, WriteArray, &
                             find_index
@@ -510,7 +510,7 @@ private
   character(len=*), intent(in)    :: class       ! Class of data
   integer, save :: num_warnings = 0  ! crude counter for now
 
-  ! real, intent(in), dimension(MAXLIMAX,MAXLJMAX)  :: density
+  ! real, intent(in), dimension(LIMAX,LJMAX)  :: density
   ! density = 1 ( or = roa when unit ug)
 
   select case ( class )

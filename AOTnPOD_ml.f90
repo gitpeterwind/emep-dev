@@ -15,7 +15,7 @@ module AOTx_ml
      ,PPBINV ! 1.0e9, for conversion from mixing ratio to ppb
   use NumberConstants, only : UNDEF_R, UNDEF_I
   use OwnDataTypes_ml, only : TXTLEN_DERIV, TXTLEN_SHORT
-  use Par_ml, only : MAXLIMAX, MAXLJMAX, limax, ljmax, me
+  use Par_ml, only : LIMAX, LJMAX, limax, ljmax, me
   use TimeDate_ml, only : current_date, print_date, jday => effectivdaynumber
   implicit none
   private

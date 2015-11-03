@@ -58,7 +58,7 @@ use MetFields_ml,     only: t2_nwp,th, roa, surface_precip, ws_10m ,rh2m,&
 use NetCDF_ml,        only: Out_netCDF, CloseNetCDF, Init_new_netCDF, fileName_hour, &
                             Int1, Int2, Int4, Real4, Real8  !Output data type to choose
 use OwnDataTypes_ml,  only: TXTLEN_DERIV,TXTLEN_SHORT
-use Par_ml,           only: MAXLIMAX, MAXLJMAX, GIMAX,GJMAX,        &
+use Par_ml,           only: LIMAX, LJMAX, GIMAX,GJMAX,        &
                             me, IRUNBEG, JRUNBEG, limax, ljmax
 use Pollen_ml,        only: heatsum, pollen_left, AreaPOLL
 use TimeDate_ml,      only: current_date
@@ -82,7 +82,7 @@ implicit none
 
 ! local variables
   logical, save     :: first_call = .true. ! Set false after file opened
-  real hourly(MAXLIMAX,MAXLJMAX)      ! Local hourly value  (e.g. ppb)
+  real hourly(LIMAX,LJMAX)      ! Local hourly value  (e.g. ppb)
   real ghourly(GIMAX,GJMAX)           ! Global hourly value (e.g. ppb)
   real :: arrmax                      ! Maximum value from array
   real :: unit_conv                   ! Unit conversion (ppb ug etc.)
@@ -186,12 +186,12 @@ implicit none
   endif
 !......... Uses concentration/met arrays from Chem_ml or Met_ml ..................
 !
-!        real xn_adv(NSPEC_ADV,MAXLIMAX,MAXLJMAX,KMAX_MID)
-!        real cfac(NSPEC_ADV,MAXLIMAX,MAXLJMAX)
+!        real xn_adv(NSPEC_ADV,LIMAX,LJMAX,KMAX_MID)
+!        real cfac(NSPEC_ADV,LIMAX,LJMAX)
 ! or...
-!        real xn_shl(NSPEC_ADV,MAXLIMAX,MAXLJMAX,KMAX_MID)
+!        real xn_shl(NSPEC_ADV,LIMAX,LJMAX,KMAX_MID)
 ! or...
-!        real temp2m(MAXLIMAX,MAXLJMAX)
+!        real temp2m(LIMAX,LJMAX)
 !
 !..........................................................................
 
@@ -585,8 +585,8 @@ implicit none
            me,ih,ispec, hourly(debug_li,debug_lj), hr_out(ih)%unitconv
 
       !/ Get maximum value of hourly array
-      hourly(limax+1:MAXLIMAX,:) = 0.0
-      hourly(1:limax,ljmax+1:MAXLJMAX) = 0.0
+      hourly(limax+1:LIMAX,:) = 0.0
+      hourly(1:limax,ljmax+1:LJMAX) = 0.0
       arrmax = maxval(hourly)
 
       if((hr_out(ih)%max>0.0).and.(arrmax>hr_out(ih)%max)) then
@@ -594,8 +594,8 @@ implicit none
         write(*,*) "Species : ", trim(name)," : ",  " ispec ", ispec
         write(*,*) "max allowed is : ",  hr_out(ih)%max
         write(*,*) "unitconv was   : ", hr_out(ih)%unitconv
-        write(*,*) " me, limax, ljmax, MAXLIMAX,MAXLJMAX : ",  me, &
-                          limax, ljmax ,MAXLIMAX,MAXLJMAX
+        write(*,*) " me, limax, ljmax, LIMAX,LJMAX : ",  me, &
+                          limax, ljmax ,LIMAX,LJMAX
         maxpos = maxloc(hourly)
         write(*,*) "Location is i=", maxpos(1), " j=", maxpos(2)
         write(*,*) "EMEP coords ix=", i_fdom(maxpos(1)), " iy=", j_fdom(maxpos(2))

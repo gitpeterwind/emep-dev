@@ -25,7 +25,7 @@ SRCS ?=	\
 	SubMet_ml.f90 Tabulations_ml.f90 TimeDate_ml.f90 TimeDate_ExtraUtil_ml.f90 Timefactors_ml.f90 Timing_ml.f90 \
 	Trajectory_ml.f90 Units_ml.f90 Unimod.f90 Wesely_ml.f90 \
         isocom.f90 ISOFWD.f90 isorev.f90 \
-	global2local.f90 local2global.f90 PhyChem_ml.f90 My_3DVar_ml.f90 My_Pollen_ml.f90 My_ESX_ml.f90
+	global2local.f90 PhyChem_ml.f90 My_3DVar_ml.f90 My_Pollen_ml.f90 My_ESX_ml.f90
 
 ESX_SRCS = ZD_ESX/AllocInit.f90 \
 		   ZD_ESX/CheckStops.f90 \

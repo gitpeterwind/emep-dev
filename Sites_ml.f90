@@ -38,7 +38,7 @@ use NetCDF_ml,         only : Create_CDF_sondes,Out_CDF_sondes,&
                               NF90_FILL_INT,NF90_FILL_DOUBLE
 use Par_ml,            only : li0,lj0,li1,lj1 &
                               ,GIMAX,GJMAX,IRUNBEG,JRUNBEG&
-                              ,GI0,GI1,GJ0,GJ1,me,MAXLIMAX,MAXLJMAX
+                              ,GI0,GI1,GJ0,GJ1,me,LIMAX,LJMAX
 use SmallUtils_ml,     only : find_index
 use Tabulations_ml,    only : tab_esat_Pa
 use TimeDate_ml,       only : current_date
@@ -373,9 +373,9 @@ subroutine siteswrt_surf(xn_adv,cfac,xn_shl)
   ! -------------------------------------------------------------------
 
   ! arguments
-  real, dimension(NSPEC_ADV,MAXLIMAX,MAXLJMAX,KMAX_MID), intent(in) :: xn_adv
-  real, dimension(NSPEC_ADV,MAXLIMAX,MAXLJMAX), intent(in)          :: cfac
-  real, dimension(NSPEC_SHL,MAXLIMAX,MAXLJMAX,KMAX_MID), intent(in) :: xn_shl
+  real, dimension(NSPEC_ADV,LIMAX,LJMAX,KMAX_MID), intent(in) :: xn_adv
+  real, dimension(NSPEC_ADV,LIMAX,LJMAX), intent(in)          :: cfac
+  real, dimension(NSPEC_SHL,LIMAX,LJMAX,KMAX_MID), intent(in) :: xn_shl
 
   ! Local
   integer :: ix, iy,iz, ispec                  ! Site indices

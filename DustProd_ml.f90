@@ -42,7 +42,7 @@
  use ModelConstants_ml,    only : KMAX_MID, KMAX_BND, dt_advec, METSTEP, &
                                   NPROC, MasterProc, USE_DUST, DEBUG_DUST
  use MicroMet_ml,          only : Wind_at_h
- use Par_ml,               only : me,MAXLIMAX,MAXLJMAX
+ use Par_ml,               only : me,LIMAX,LJMAX
  use Par_ml,               only : limax, ljmax ! Debugging 
  use PhysicalConstants_ml, only : GRAV,  AVOG, PI, KARMAN, RGAS_KG, CP
                                   !! ECO_CROP, ECO_SEMINAT, Desert=13, Urban=17
@@ -609,7 +609,7 @@
   endif
 
 
-  allocate(dry_period(MAXLIMAX, MAXLJMAX))
+  allocate(dry_period(LIMAX, LJMAX))
   dry_period = 72
 
 

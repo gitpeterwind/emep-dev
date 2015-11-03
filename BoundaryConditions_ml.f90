@@ -52,7 +52,7 @@ use ModelConstants_ml, only: KMAX_MID  &  ! Number of levels in vertical
                             ,MasterProc, PPB, Pref
 use NetCDF_ml,         only:ReadField_CDF,vertical_interpolate
 use Par_ml,          only: &
-   MAXLIMAX, MAXLJMAX, limax, ljmax, me &
+   LIMAX, LJMAX, limax, ljmax, me &
   ,neighbor, NORTH, SOUTH, EAST, WEST   &  ! domain neighbours
   ,NOPROC&
   ,IRUNBEG,JRUNBEG,li1,li0,lj0,lj1
@@ -206,7 +206,7 @@ contains
             "BCs: num_bgn_changed: ", num_bgn_changed,  &
             "BCs: num     changed: ", num_changed
 
-       allocate(bc_data(MAXLIMAX,MAXLJMAX,KMAX_MID),stat=alloc_err)!could use an existing buffer?
+       allocate(bc_data(LIMAX,LJMAX,KMAX_MID),stat=alloc_err)!could use an existing buffer?
        call CheckStop(alloc_err, "alloc1 failed in BoundaryConditions_ml")
        bc_data=0.0
 
@@ -881,7 +881,7 @@ real :: trend_o3=1.0, trend_co, trend_voc
   integer,             intent(in) :: month
   integer,             intent(in) :: ibc        ! Index of BC
   integer,             intent(in) :: used       ! set to 1 if species wanted
-  real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID), &
+  real, dimension(LIMAX,LJMAX,KMAX_MID), &
                       intent(out) :: bc_data   ! BC Data defined here
   integer,          intent(inout) :: errcode   ! i/o number
 
@@ -1097,7 +1097,7 @@ real :: trend_o3=1.0, trend_co, trend_voc
   if ( first_call ) then
     ! Set up arrays to contain Logan's grid as lat/long
     !/ COnversions derived from emeplat2Logan etc.:
-     allocate(lat5(MAXLIMAX,MAXLJMAX))
+     allocate(lat5(LIMAX,LJMAX))
      allocate(p_kPa(KMAX_MID), h_km(KMAX_MID))
     twopi_yr = 2.0 * PI / 365.25
 
@@ -1200,8 +1200,8 @@ real :: trend_o3=1.0, trend_co, trend_voc
   select case (ibc)
   case (IBC_O3)
      Nlevel_logan=30
-     if(.not.allocated(O3_logan))allocate(O3_logan(Nlevel_logan,MAXLIMAX,MAXLJMAX))
-     if(.not.allocated(O3_logan_emep))allocate(O3_logan_emep(MAXLIMAX,MAXLJMAX,KMAX_MID))
+     if(.not.allocated(O3_logan))allocate(O3_logan(Nlevel_logan,LIMAX,LJMAX))
+     if(.not.allocated(O3_logan_emep))allocate(O3_logan_emep(LIMAX,LJMAX,KMAX_MID))
      O3_logan=0.0
      O3_logan_emep=0.0
  
@@ -1290,8 +1290,8 @@ real :: trend_o3=1.0, trend_co, trend_voc
 
 !dust are read from the results of a Global run
          Nlevel_Dust=20
-         if(.not.allocated(Dust_3D))allocate(Dust_3D(Nlevel_Dust,MAXLIMAX,MAXLJMAX))
-         if(.not.allocated(Dust_3D_emep))allocate(Dust_3D_emep(MAXLIMAX,MAXLJMAX,KMAX_MID))
+         if(.not.allocated(Dust_3D))allocate(Dust_3D(Nlevel_Dust,LIMAX,LJMAX))
+         if(.not.allocated(Dust_3D_emep))allocate(Dust_3D_emep(LIMAX,LJMAX,KMAX_MID))
          Dust_3D=0.0
          Dust_3D_emep=0.0
  

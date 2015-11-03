@@ -34,7 +34,7 @@ use MetFields_ml,     only: ps,roa,z_bnd,z_mid,cc3dmax, &
 use My_Outputs_ml ,   only: NHOURLY_OUT, FREQ_SITE, FREQ_SONDE, FREQ_HOURLY
 use My_Timing_ml,     only: Code_timer, Add_2timing, tim_before, tim_after
 use Nest_ml,          only: readxn, wrtxn
-use Par_ml,           only: me, MAXLIMAX, MAXLJMAX
+use Par_ml,           only: me, LIMAX, LJMAX
 use Pollen_ml,        only: pollen_dump,pollen_read
 use SoilWater_ml,     only: Set_SoilWater
 use TimeDate_ml,      only: date,daynumber,day_of_year, add_secs, &

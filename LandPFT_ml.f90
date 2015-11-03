@@ -10,7 +10,7 @@ use CheckStop_ml,   only: CheckStop, StopAll
 use GridValues_ml,  only: debug_proc, debug_li, debug_lj, glon, glat
 use ModelConstants_ml,  only : DEBUG, MasterProc, BVOC_USED, PFT_MAPPINGS
 use NetCDF_ml, only: ReadField_CDF
-use Par_ml,         only: MAXLIMAX, MAXLJMAX, me
+use Par_ml,         only: LIMAX, LJMAX, me
 use SmallUtils_ml,  only: find_index, NOT_FOUND, WriteArray, trims
 
 implicit none
@@ -62,14 +62,14 @@ contains
 
     integer, intent(in) :: month
 
-    real    :: lpj(MAXLIMAX,MAXLJMAX)  ! Emissions read from file
+    real    :: lpj(LIMAX,LJMAX)  ! Emissions read from file
     logical :: my_first_call = .true.
     integer :: pft
     character(len=20) :: varname
 
 !PFT return ! JAN31TEST. This code needs to be  completed still *****
      if ( my_first_call ) then
-         allocate ( pft_lai(MAXLIMAX,MAXLJMAX,N_PFTS) )
+         allocate ( pft_lai(LIMAX,LJMAX,N_PFTS) )
          my_first_call = .false.
 !call Test_LocalBVOC()
 !call GetMEGAN_BVOC()
@@ -111,7 +111,7 @@ contains
 
     integer, intent(in) :: month
 
-    real    :: lpj(MAXLIMAX,MAXLJMAX)  ! Emissions read from file
+    real    :: lpj(LIMAX,LJMAX)  ! Emissions read from file
     logical :: my_first_call = .true.
     integer ::  pft, ivar
     character(len=20) :: varname
@@ -120,7 +120,7 @@ contains
     
 return ! JAN31TEST
      if ( my_first_call ) then
-         allocate ( pft_bvoc(MAXLIMAX,MAXLJMAX,N_PFTS,size(BVOC_USED)) )
+         allocate ( pft_bvoc(LIMAX,LJMAX,N_PFTS,size(BVOC_USED)) )
          my_first_call = .false.
      end if
          
@@ -158,7 +158,7 @@ return ! JAN31TEST
 !
 !
 !
-!    real    :: loc(MAXLIMAX,MAXLJMAX)  ! Emissions read from file
+!    real    :: loc(LIMAX,LJMAX)  ! Emissions read from file
 !    logical :: my_first_call = .true.
 !    integer ::  n, pft, ivar, iVeg, iEmis
 !    character(len=1000) :: varname

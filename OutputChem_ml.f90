@@ -14,7 +14,7 @@ use ModelConstants_ml, only: END_OF_EMEPDAY, KMAX_MID, MasterProc&
                             ,IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY, IOU_MAX_MAX
 use NetCDF_ml,         only: CloseNetCDF, Out_netCDF
 use OwnDataTypes_ml,   only: Deriv, print_deriv_type
-use Par_ml,            only: MAXLIMAX,MAXLJMAX,GIMAX,GJMAX,     &
+use Par_ml,            only: LIMAX,LJMAX,GIMAX,GJMAX,     &
                               IRUNBEG,JRUNBEG,me
 use TimeDate_ml,       only: tdif_secs,date,timestamp,make_timestamp,current_date,startdate, max_day, enddate  ! days in month
 use TimeDate_ExtraUtil_ml,only: date2string
@@ -48,8 +48,6 @@ subroutine Wrtchem()
 !   as soon as a full day of data is available).
 !----------------------------------------------------------------------
 
-  real, dimension(MAXLIMAX, MAXLJMAX) :: local_2d  !local 2D array
-  real, dimension(GIMAX, GJMAX)       :: glob_2d   !array for whole domain
   integer :: i,j,n,k,msnr1
   integer :: nyear,nmonth,nday,nhour,nmonpr
   integer :: mm_out, dd_out
@@ -134,36 +132,6 @@ subroutine Wrtchem()
     !== Monthly output ====
     call Output_fields(IOU_MON)
 
-    !== ASCII output of 3D fields (if wanted)
-    if(Ascii3D_WANTED.and.num_deriv3d > 0) then
-      msnr1 = 2000
-
-      do n = 1, num_deriv3d
-        if( MasterProc ) then
-          outfilename=date2string(trim(f_3d(n)%name)//".out.MM",month=nmonpr)
-          open (IO_WRTCHEM,file=outfilename)
-          write(IO_WRTCHEM,fmt="(4i4)") &
-            IRUNBEG, GIMAX+IRUNBEG-1, JRUNBEG, GJMAX+JRUNBEG-1 ! domain
-        endif
-
-        if (nav_3d(n,IOU_MON) == 0 ) then
-          write(IO_WRTCHEM,*) "ERROR in 3D ASCII output: nav=0"
-        else
-          do k = 1, KMAX_MID
-            local_2d(:,:) = d_3d(n,:,:,k,IOU_MON)/nav_3d(n,IOU_MON)
-            call local2global(local_2d,glob_2d,msnr1)
-
-            if( MasterProc ) &
-              write(IO_WRTCHEM,"(es10.3)") ((glob_2d(i,j),i=1,GIMAX),j=1,GJMAX)
-
-          enddo ! k
-        endif   ! nav == 0
-
-        if( MasterProc ) close(IO_WRTCHEM)
-
-      enddo     ! 3D-variables loop num_deriv3d
-    endif       ! Ascii3D_WANTED
-
     call ResetDerived(IOU_MON)
   endif              ! End of NEW MONTH
 
@@ -213,7 +181,7 @@ subroutine Output_f2d (iotyp, dim, nav, def, dat, Init_Only)
   integer,                         intent(in) :: dim ! No. fields
   integer, dimension(dim,LENOUT2D),intent(in) :: nav ! No. items averaged
   type(Deriv), dimension(dim),     intent(in) :: def ! Definition of fields
-  real, dimension(dim,MAXLIMAX,MAXLJMAX,LENOUT2D), intent(in) :: dat
+  real, dimension(dim,LIMAX,LJMAX,LENOUT2D), intent(in) :: dat
   logical,                         intent(in) :: Init_Only! only define fields
 
   integer :: icmp       ! component index
@@ -253,7 +221,7 @@ subroutine  Output_f3d (iotyp, dim, nav, def, dat, Init_Only)
   integer,                         intent(in) :: dim ! No. fields
   integer, dimension(dim,LENOUT3D),intent(in) :: nav ! No. items averaged
   type(Deriv), dimension(dim),     intent(in) :: def ! definition of fields
-  real, dimension(dim,MAXLIMAX,MAXLJMAX,KMAX_MID,LENOUT3D), intent(in):: dat
+  real, dimension(dim,LIMAX,LJMAX,KMAX_MID,LENOUT3D), intent(in):: dat
   logical,                         intent(in) :: Init_Only! only define fields
 
   integer :: icmp       ! component index

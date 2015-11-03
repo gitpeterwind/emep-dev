@@ -26,7 +26,7 @@ use ModelConstants_ml,only: DEBUG, NLANDUSEMAX, &
                             NPROC, IIFULLDOM, JJFULLDOM, &
                             DomainName, MasterProc
 use NetCDF_ml,      only: ReadField_CDF,printcdf
-use Par_ml,         only: MAXLIMAX, MAXLJMAX, &
+use Par_ml,         only: LIMAX, LJMAX, &
                           limax, ljmax, me
 !use Paleo_ml,       only: SetPaleo
 use SmallUtils_ml,  only: wordsplit, find_index, NOT_FOUND, WriteArray, trims
@@ -113,10 +113,10 @@ contains
     !=====================================
 
     !ALLOCATE ARRAYS
-    allocate(LandCover(MAXLIMAX,MAXLJMAX))
-    allocate(likely_coastal(MAXLIMAX,MAXLJMAX) )
-    allocate(mainly_sea(MAXLIMAX,MAXLJMAX) )
-    allocate(water_fraction(MAXLIMAX,MAXLJMAX), ice_landcover(MAXLIMAX,MAXLJMAX))
+    allocate(LandCover(LIMAX,LJMAX))
+    allocate(likely_coastal(LIMAX,LJMAX) )
+    allocate(mainly_sea(LIMAX,LJMAX) )
+    allocate(water_fraction(LIMAX,LJMAX), ice_landcover(LIMAX,LJMAX))
 
     ! First, check the number of "extra" (fake) vegetation 
     nFluxVegs = 0
@@ -161,7 +161,7 @@ contains
 
        n2dGSpars = count( VEG_2dGS_Params(:) /= "" ) - 1 ! First is fname
 
-       allocate(map2dGrowingSeasons(MAXLIMAX,MAXLJMAX,n2dGS*n2dGSpars))
+       allocate(map2dGrowingSeasons(LIMAX,LJMAX,n2dGS*n2dGSpars))
 
        fname = VEG_2dGS_Params(1)
        if(MasterProc) write(*,*) "CRU GS MAP ", trim(fname), n2dGS, n2dGSpars
@@ -296,10 +296,10 @@ contains
            keyval("Coords","ModelCoords") /)
 
  ! temporary arrays used.  Will re-write one day....
-   real, dimension(MAXLIMAX,MAXLJMAX,NLANDUSEMAX):: landuse_in ! tmp, with all data
-   real, dimension(MAXLIMAX,MAXLJMAX,NLUMAX):: landuse_data ! tmp, with all data
-   integer, dimension(MAXLIMAX,MAXLJMAX):: landuse_ncodes ! tmp, with all data
-   integer, dimension(MAXLIMAX,MAXLJMAX,NLUMAX):: landuse_codes ! tmp, with all data
+   real, dimension(LIMAX,LJMAX,NLANDUSEMAX):: landuse_in ! tmp, with all data
+   real, dimension(LIMAX,LJMAX,NLUMAX):: landuse_data ! tmp, with all data
+   integer, dimension(LIMAX,LJMAX):: landuse_ncodes ! tmp, with all data
+   integer, dimension(LIMAX,LJMAX,NLUMAX):: landuse_codes ! tmp, with all data
 
    if ( DEBUG%LANDUSE>0 .and. MasterProc ) &
         write(*,*) "LANDUSE: Starting ReadLandUse "
@@ -424,11 +424,11 @@ contains
     logical :: fexist=.false.!file exist flag
   
     ! temporary arrays used.  Will re-write one day....
-    real, dimension(MAXLIMAX,MAXLJMAX,NLANDUSEMAX):: landuse_in ! tmp, with all data
-    real, dimension(MAXLIMAX,MAXLJMAX):: landuse_tmp ! tmp, with all data
-    real, dimension(MAXLIMAX,MAXLJMAX,NLUMAX):: landuse_data ! tmp, with all data
-    integer, dimension(MAXLIMAX,MAXLJMAX):: landuse_ncodes ! tmp, with all data
-    integer, dimension(MAXLIMAX,MAXLJMAX,NLUMAX):: landuse_codes ! tmp, with all data
+    real, dimension(LIMAX,LJMAX,NLANDUSEMAX):: landuse_in ! tmp, with all data
+    real, dimension(LIMAX,LJMAX):: landuse_tmp ! tmp, with all data
+    real, dimension(LIMAX,LJMAX,NLUMAX):: landuse_data ! tmp, with all data
+    integer, dimension(LIMAX,LJMAX):: landuse_ncodes ! tmp, with all data
+    integer, dimension(LIMAX,LJMAX,NLUMAX):: landuse_codes ! tmp, with all data
     logical, save :: debug_Master=.false.
 
     if(  DEBUG%LANDUSE>0 .and. MasterProc )  then

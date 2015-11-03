@@ -28,7 +28,7 @@ use Nest_ml,              only: outdate,FORECAST_NDUMP,istart,jstart,iend,jend,&
 use NetCDF_ml,            only: ReadField_CDF,Out_netCDF,GetCDF_modelgrid,&
                                 ReadTimeCDF,CDFtype=>Real4
 use netcdf,               only: nf90_close
-use Par_ml,               only: limax, ljmax, MAXLIMAX, MAXLJMAX, me
+use Par_ml,               only: limax, ljmax, LIMAX, LJMAX, me
 use PhysicalConstants_ml, only: PI
 use OwnDataTypes_ml,      only: Deriv
 use Setup_1dfields_ml,    only: rcemis 
@@ -124,9 +124,9 @@ subroutine Config_Pollen()
   if(MasterProc)write(*,"(A,3(' adv#',I3,'=',A))") "Pollen: ",&
     iadv_BIRCH,BIRCH,iadv_OLIVE,OLIVE,iadv_GRASS,GRASS
 
-  allocate(heatsum(MAXLIMAX,MAXLJMAX,2),&     ! Grass does not need heatsum
-           Pollen_rest(MAXLIMAX,MAXLJMAX,3),&
-           R(MAXLIMAX,MAXLJMAX,3))
+  allocate(heatsum(LIMAX,LJMAX,2),&     ! Grass does not need heatsum
+           Pollen_rest(LIMAX,LJMAX,3),&
+           R(LIMAX,LJMAX,3))
 
   heatsum(:,:,:) = 0.00 
   Pollen_rest(:,:,1) = N_TOT_birch
@@ -208,19 +208,19 @@ subroutine pollen_flux(i,j,debug_flag)
     call Config_Pollen() 
     if(FORECAST) call pollen_read()
 
-    allocate(Pollen_left(MAXLIMAX,MAXLJMAX,3),p_day(MAXLIMAX,MAXLJMAX))
+    allocate(Pollen_left(LIMAX,LJMAX,3),p_day(LIMAX,LJMAX))
     Pollen_left(:,:,:) = 1
     p_day(:,:) =current_date%day
 
-    allocate(AreaPOLL(MAXLIMAX,MAXLJMAX,3),h_day(MAXLIMAX,MAXLJMAX))
+    allocate(AreaPOLL(LIMAX,LJMAX,3),h_day(LIMAX,LJMAX))
     AreaPOLL(:,:,:)=0.0
     h_day(:,:)=0.0
       
-    allocate(birch_frac(MAXLIMAX,MAXLJMAX),birch_h_c(MAXLIMAX,MAXLJMAX),&
-             corr(MAXLIMAX,MAXLJMAX))
-    allocate(olive_frac(MAXLIMAX,MAXLJMAX),olive_h_c(MAXLIMAX,MAXLJMAX))
-    allocate(grass_frac(MAXLIMAX,MAXLJMAX),grass_start(MAXLIMAX,MAXLJMAX),&
-             grass_len(MAXLIMAX,MAXLJMAX))
+    allocate(birch_frac(LIMAX,LJMAX),birch_h_c(LIMAX,LJMAX),&
+             corr(LIMAX,LJMAX))
+    allocate(olive_frac(LIMAX,LJMAX),olive_h_c(LIMAX,LJMAX))
+    allocate(grass_frac(LIMAX,LJMAX),grass_start(LIMAX,LJMAX),&
+             grass_len(LIMAX,LJMAX))
     call ReadField_CDF(birch_frac_nc,'birch_frac',birch_frac,2, &
        interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
     call ReadField_CDF(birch_data_nc,'h_c',birch_h_c,2, &
@@ -523,7 +523,7 @@ subroutine pollen_read()
 !------------------------
 ! pollen adv (not written by Nest_ml)
 !------------------------
-  allocate(data(MAXLIMAX,MAXLJMAX,KMAX_MID))
+  allocate(data(LIMAX,LJMAX,KMAX_MID))
   call GetCDF_modelgrid(BIRCH,filename,data,&
         1,KMAX_MID,nstart,1,needed=.not.FORECAST,found=found)
   if(MasterProc.and.debug)write(*,*)found,BIRCH
@@ -593,7 +593,7 @@ subroutine pollen_dump ()
   def1%scale=1.0              ! not used
   def1%iotype=IOU_INST        ! not used
 
-  allocate(data(MAXLIMAX,MAXLJMAX,KMAX_MID))
+  allocate(data(LIMAX,LJMAX,KMAX_MID))
   ncfileID=-1 ! must be <0 as initial value
   do i=1,2                          ! do first one loop to define the fields,
     create_var=(i==1)               ! without writing them (for performance purposes),

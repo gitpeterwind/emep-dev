@@ -58,7 +58,7 @@ use CheckStop_ml, only : StopAll  ! CHECKXN
    use ModelConstants_ml,    only : CHEMTMIN, CHEMTMAX, &
                                     MasterProc, DEBUG => DEBUG_SOA, &
                                     K2 => KMAX_MID, K1 => KCHEMTOP
-   use Par_ml,               only : LIDIM => MAXLIMAX, LJDIM => MAXLJMAX, me
+   use Par_ml,               only : LIDIM => LIMAX, LJDIM => LJMAX, me
    use PhysicalConstants_ml, only : AVOG, RGAS_J 
    use Setup_1dfields_ml,    only : itemp, xn => xn_2d, Fgas, Fpart
    use TimeDate_ml,       only: current_date

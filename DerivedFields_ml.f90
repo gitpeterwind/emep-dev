@@ -24,8 +24,8 @@ module DerivedFields_ml
   ! Fields for storing derived-style outputs. Will be allocated
   ! in Derived_ml.
 
-  ! e.g. d_2d( num_deriv2d,MAXLIMAX, MAXLJMAX, LENOUT2D)
-  ! &    d_3d( num_deriv3d,MAXLIMAX, MAXLJMAX, KMAX_MID, LENOUT3D )
+  ! e.g. d_2d( num_deriv2d,LIMAX, LJMAX, LENOUT2D)
+  ! &    d_3d( num_deriv3d,LIMAX, LJMAX, KMAX_MID, LENOUT3D )
    real, save, public, allocatable, dimension(:,:,:,:) :: d_2d
    real, save, public, allocatable, dimension(:,:,:,:,:) :: d_3d
 

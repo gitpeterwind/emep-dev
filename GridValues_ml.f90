@@ -24,7 +24,7 @@ Module GridValues_ml
        MasterProc,NPROC,IIFULLDOM,JJFULLDOM,RUNDOMAIN,&
        PT,Pref,NMET,METSTEP,USE_EtaCOORDINATES,MANUAL_GRID,USE_WRF_MET_NAMES
   use Par_ml, only : &
-       MAXLIMAX,MAXLJMAX,  & ! max. possible i, j in this domain
+       LIMAX,LJMAX,  & ! max. possible i, j in this domain
        limax,ljmax,        & ! actual max.   i, j in this domain
        li0,li1,lj0,lj1,    & ! for debugging TAB
        GIMAX,GJMAX,        & ! Size of rundomain
@@ -240,9 +240,9 @@ contains
        MIN_GRIDS=5
        call parinit(MIN_GRIDS,Pole_Singular)     !subdomains sizes and position
 
-       call Alloc_MetFields(MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND,NMET)
+       call Alloc_MetFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND,NMET)
 
-       call Alloc_GridFields(GIMAX,GJMAX,MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND)
+       call Alloc_GridFields(GIMAX,GJMAX,LIMAX,LJMAX,KMAX_MID,KMAX_BND)
 
        call Getgridparams(filename,cyclicgrid)
        !defines i_fdom,j_fdom,i_local,j_local,Cyclicgrid,North_pole,Poles
@@ -451,8 +451,8 @@ contains
     real :: dr,om,om2,rb,rl,rp,dx,dy,dy2,glmax,glmin,v2(2),glon_fdom1,glat_fdom1
     integer :: iloc_start, iloc_end,jloc_start, jloc_end
 
-    real, dimension(-1:MAXLIMAX+2,-1:MAXLJMAX+2)::xm,xm_i_ext,xm_j_ext
-    real, dimension(0:MAXLIMAX+1,0:MAXLJMAX+1)::lon_ext,lat_ext
+    real, dimension(-1:LIMAX+2,-1:LJMAX+2)::xm,xm_i_ext,xm_j_ext
+    real, dimension(0:LIMAX+1,0:LJMAX+1)::lon_ext,lat_ext
 
     !define longitudes in interval [-180,180]
     glmin = -180.0 
@@ -466,8 +466,8 @@ contains
     !  coordinates for running the model, IRUNBEG, JRUNBEG
     !       i_fdom(i)  = i + gi0 + IRUNBEG - 2
     !       j_fdom(j)  = j + gj0 + JRUNBEG - 2
-    i_fdom = (/ (n + gi0 + IRUNBEG - 2, n=0,MAXLIMAX+1) /) 
-    j_fdom = (/ (n + gj0 + JRUNBEG - 2, n=0,MAXLJMAX+1) /) 
+    i_fdom = (/ (n + gi0 + IRUNBEG - 2, n=0,LIMAX+1) /) 
+    j_fdom = (/ (n + gj0 + JRUNBEG - 2, n=0,LJMAX+1) /) 
 
     ! And the reverse, noting that we even define for area
     ! outside local domain
@@ -558,10 +558,10 @@ contains
 
        AN = 6.370e6*(1.0+sin( ref_latitude*PI/180.))/GRIDWIDTH_M ! = 237.7316364 for GRIDWIDTH_M=50 km and ref_latitude=60
 
-       do j = 0, MAXLJMAX+1
+       do j = 0, LJMAX+1
           dy  = yp - j_fdom(j)
           dy2 = dy*dy
-          do i = 0, MAXLIMAX+1
+          do i = 0, LIMAX+1
              dx = i_fdom(i) - xp    
              rp = sqrt(dx*dx+dy2)           ! => distance to pole
              rb = 90.0 - 180.0/PI*2* atan(rp/AN)  ! => latitude
@@ -580,20 +580,20 @@ contains
        call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
 
        call check(nf90_get_var(ncFileID, varID, lon_ext(1:limax,1),start=(/gi0+IRUNBEG-1/),count=(/limax/) ))
-       if(MAXLIMAX>limax)lon_ext(MAXLIMAX,1)=lon_ext(limax,1)+(lon_ext(limax,1)-lon_ext(limax-1,1))
+       if(LIMAX>limax)lon_ext(LIMAX,1)=lon_ext(limax,1)+(lon_ext(limax,1)-lon_ext(limax-1,1))
        lon_ext(0,1)=2*lon_ext(1,1)-lon_ext(2,1)
-       lon_ext(MAXLIMAX+1,1)=2*lon_ext(MAXLIMAX,1)-lon_ext(MAXLIMAX-1,1)
-       do j=0,MAXLJMAX+1
+       lon_ext(LIMAX+1,1)=2*lon_ext(LIMAX,1)-lon_ext(LIMAX-1,1)
+       do j=0,LJMAX+1
           lon_ext(:,j)=lon_ext(:,1)
        enddo
 
        call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
        call check(nf90_get_var(ncFileID, varID, lat_ext(1,1:ljmax),start=(/gj0+JRUNBEG-1/),count=(/ljmax/) ))
-       if(MAXLJMAX>ljmax)lat_ext(1,MAXLJMAX)=lat_ext(1,ljmax)+(lat_ext(1,ljmax)-lat_ext(1,ljmax-1))
-       lat_ext(1,MAXLJMAX)=min(90.0,lat_ext(1,MAXLJMAX))!should never be used anyway
+       if(LJMAX>ljmax)lat_ext(1,LJMAX)=lat_ext(1,ljmax)+(lat_ext(1,ljmax)-lat_ext(1,ljmax-1))
+       lat_ext(1,LJMAX)=min(90.0,lat_ext(1,LJMAX))!should never be used anyway
        lat_ext(1,0)=2*lat_ext(1,1)-lat_ext(1,2)
-       lat_ext(1,MAXLJMAX+1)=2*lat_ext(1,MAXLJMAX)-lat_ext(1,MAXLJMAX-1)
-       do i=0,MAXLIMAX+1
+       lat_ext(1,LJMAX+1)=2*lat_ext(1,LJMAX)-lat_ext(1,LJMAX-1)
+       do i=0,LIMAX+1
           lat_ext(i,:)=lat_ext(1,:)
        enddo
     else if(trim(projection)=='Rotated_Spherical')then
@@ -622,20 +622,20 @@ contains
           call check(nf90_get_var(ncFileID, varID, v2(1)))!note that j is one dimensional
           y1_rot=v2(1)
           call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
-          call nf90_get_var_extended(ncFileID,varID,lon_ext,0,MAXLIMAX+1,0,MAXLJMAX+1)
+          call nf90_get_var_extended(ncFileID,varID,lon_ext,0,LIMAX+1,0,LJMAX+1)
           call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
-          call nf90_get_var_extended(ncFileID,varID,lat_ext,0,MAXLIMAX+1,0,MAXLJMAX+1)
+          call nf90_get_var_extended(ncFileID,varID,lat_ext,0,LIMAX+1,0,LJMAX+1)
        else
           !WRF  format
           call check(nf90_inq_varid(ncid = ncFileID, name = "XLONG", varID = varID))
-          call nf90_get_var_extended(ncFileID,varID,lon_ext,0,MAXLIMAX+1,0,MAXLJMAX+1)
+          call nf90_get_var_extended(ncFileID,varID,lon_ext,0,LIMAX+1,0,LJMAX+1)
           call check(nf90_get_var(ncFileID, varID, v2,start=(/1,1/),count=(/1,1/)  ))
           glon_fdom1=v2(1)
-          !glon=0.0!to get some value for outside subdomain too (when limax<MAXLIMAX for instance)
+          !glon=0.0!to get some value for outside subdomain too (when limax<LIMAX for instance)
           !call check(nf90_get_var(ncFileID, varID, glon(1:limax,1:ljmax),&
           !     start=(/gi0+IRUNBEG-1,gj0+JRUNBEG-1/),count=(/limax,ljmax/)  ))
           call check(nf90_inq_varid(ncid = ncFileID, name = "XLAT", varID = varID))
-          call nf90_get_var_extended(ncFileID,varID,lat_ext,0,MAXLIMAX+1,0,MAXLJMAX+1)
+          call nf90_get_var_extended(ncFileID,varID,lat_ext,0,LIMAX+1,0,LJMAX+1)
           call check(nf90_get_var(ncFileID, varID, v2,start=(/1,1/),count=(/1,1/)  ))
           glat_fdom1=v2(1)
 
@@ -666,15 +666,15 @@ contains
     else
        !other projection?
        call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
-       call nf90_get_var_extended(ncFileID,varID,lon_ext,0,MAXLIMAX+1,0,MAXLJMAX+1)
+       call nf90_get_var_extended(ncFileID,varID,lon_ext,0,LIMAX+1,0,LJMAX+1)
        call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
-       call nf90_get_var_extended(ncFileID,varID,lat_ext,0,MAXLIMAX+1,0,MAXLJMAX+1)
+       call nf90_get_var_extended(ncFileID,varID,lat_ext,0,LIMAX+1,0,LJMAX+1)
     endif
 
-    glon(1:MAXLIMAX,1:MAXLJMAX)=lon_ext(1:MAXLIMAX,1:MAXLJMAX)             ! longitude
-    glat(1:MAXLIMAX,1:MAXLJMAX)=lat_ext(1:MAXLIMAX,1:MAXLJMAX)             ! latitude
-    do j=1,MAXLJMAX
-       do i=1,MAXLIMAX
+    glon(1:LIMAX,1:LJMAX)=lon_ext(1:LIMAX,1:LJMAX)             ! longitude
+    glat(1:LIMAX,1:LJMAX)=lat_ext(1:LIMAX,1:LJMAX)             ! latitude
+    do j=1,LJMAX
+       do i=1,LIMAX
           if(glon(i,j)>glmax)glon(i,j)=glon(i,j)-360.0
           if(glon(i,j)<glmin)glon(i,j)=glon(i,j)+360.0
        enddo
@@ -686,11 +686,11 @@ contains
     if(status == nf90_noerr)then
        !mapping factor at center of cells is defined
 
-       call nf90_get_var_extended(ncFileID,varID,xm,-1,MAXLIMAX+2,-1,MAXLJMAX+2)
+       call nf90_get_var_extended(ncFileID,varID,xm,-1,LIMAX+2,-1,LJMAX+2)
 
        !make "staggered" map factors and other derived map factors
-       do j=0,MAXLJMAX+1
-          do i=0,MAXLIMAX+1
+       do j=0,LJMAX+1
+          do i=0,LIMAX+1
              xm_i(i,j)=0.5*(xm(i,j)+xm(i,j+1))
              xm_j(i,j)=0.5*(xm(i,j)+xm(i+1,j))
              xm2(i,j)=xm(i,j)*xm(i,j)
@@ -705,34 +705,34 @@ contains
        status=nf90_inq_varid(ncid=ncFileID, name="map_factor_i", varID=varID)
        iloc_start=-1
        if(iloc_start+IRUNBEG+gi0-2<1)iloc_start=1!first cell (in i direction)
-       iloc_end=MAXLIMAX+2
+       iloc_end=LIMAX+2
        if(iloc_end+IRUNBEG+gi0-2>IIFULLDOM)iloc_end=IIFULLDOM+2-gi0-IRUNBEG!last cell
        jloc_start=-1
        if(jloc_start+JRUNBEG+gj0-2<1)jloc_start=1!first cell (in j direction)
-       jloc_end=MAXLJMAX+2
+       jloc_end=LJMAX+2
        if(jloc_end+JRUNBEG+gj0-2>JJFULLDOM)jloc_end=JJFULLDOM+2-gj0-JRUNBEG!last cell
 
        if(status == nf90_noerr)then
-          call nf90_get_var_extended(ncFileID,varID,xm_i_ext,-1,MAXLIMAX+2,-1,MAXLJMAX+2)
+          call nf90_get_var_extended(ncFileID,varID,xm_i_ext,-1,LIMAX+2,-1,LJMAX+2)
        else
           !WRF  format
           call check(nf90_inq_varid(ncid=ncFileID, name="MAPFAC_VX", varID=varID))             
-          call nf90_get_var_extended(ncFileID,varID,xm_i_ext,-1,MAXLIMAX+2,-1,MAXLJMAX+2,jshift_in=1)!NB:shift j by 1 since wrf start at bottom face
+          call nf90_get_var_extended(ncFileID,varID,xm_i_ext,-1,LIMAX+2,-1,LJMAX+2,jshift_in=1)!NB:shift j by 1 since wrf start at bottom face
        endif
 
        status=nf90_inq_varid(ncid=ncFileID, name="map_factor_j", varID=varID)
        if(status == nf90_noerr)then
-          call nf90_get_var_extended(ncFileID,varID,xm_j_ext,-1,MAXLIMAX+2,-1,MAXLJMAX+2)
+          call nf90_get_var_extended(ncFileID,varID,xm_j_ext,-1,LIMAX+2,-1,LJMAX+2)
        else
           !WRF  format
           call check(nf90_inq_varid(ncid=ncFileID, name="MAPFAC_UY", varID=varID))
-          call nf90_get_var_extended(ncFileID,varID,xm_j_ext,-1,MAXLIMAX+2,-1,MAXLJMAX+2,ishift_in=1)!NB:shift i by 1 since wrf start at left face
+          call nf90_get_var_extended(ncFileID,varID,xm_j_ext,-1,LIMAX+2,-1,LJMAX+2,ishift_in=1)!NB:shift i by 1 since wrf start at left face
        endif
 
        !define xm2, xm_i and xm_j now
        !Note that xm is inverse length: interpolate 1/xm rather than xm
-       do j=0,MAXLJMAX+1
-          do i=0,MAXLIMAX+1
+       do j=0,LJMAX+1
+          do i=0,LIMAX+1
              xm_i(i,j)=xm_i_ext(i,j)
              xm_j(i,j)=xm_j_ext(i,j)
              xm2(i,j) = 4.0*( (xm_i_ext(i,j-1)*xm_i_ext(i,j))/&
@@ -900,8 +900,8 @@ contains
     if(me==0)write(*,*)'External_Levels ',External_Levels_Def
     if(External_Levels_Def)call make_vertical_levels_interpolation_coeff
 
-    do j=0,MAXLJMAX
-       do i=0,MAXLIMAX
+    do j=0,LJMAX
+       do i=0,LIMAX
           x1=lon_ext(i,j)
           x2=lon_ext(i+1,j)
           x3=lon_ext(i,j+1)
@@ -925,8 +925,8 @@ contains
     enddo
 
     !ensure that lon values are within [-180,+180]]
-    do j=0,MAXLJMAX
-       do i=0,MAXLIMAX
+    do j=0,LJMAX
+       do i=0,LIMAX
           if(gl_stagg(i,j)>180.0)gl_stagg(i,j)=gl_stagg(i,j)-360.0
           if(gl_stagg(i,j)<-180.0)gl_stagg(i,j)=gl_stagg(i,j)+360.0
        enddo
@@ -975,8 +975,8 @@ contains
        Poles(2)=1
        write(*,*)me,'Found South Pole'
     endif
-    do j=1,MAXLJMAX
-       do i=1,MAXLIMAX
+    do j=1,LJMAX
+       do i=1,LIMAX
           GridArea_m2(i,j) = GRIDWIDTH_M*GRIDWIDTH_M*xmd(i,j)
        enddo
     enddo
@@ -1595,25 +1595,25 @@ contains
     in=coord_in_domain("gridbox",lon,lat,iloc,jloc,iglob,jglob)
   endfunction coord_in_gridbox
 
-  subroutine Alloc_GridFields(GIMAX,GJMAX,MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND)
+  subroutine Alloc_GridFields(GIMAX,GJMAX,LIMAX,LJMAX,KMAX_MID,KMAX_BND)
 
-    integer, intent(in)::GIMAX,GJMAX,MAXLIMAX,MAXLJMAX,KMAX_MID,KMAX_BND
+    integer, intent(in)::GIMAX,GJMAX,LIMAX,LJMAX,KMAX_MID,KMAX_BND
 
-    allocate(i_fdom(0:MAXLIMAX+1))
-    allocate(j_fdom(0:MAXLJMAX+1))
-    allocate(glon(MAXLIMAX,MAXLJMAX))
-    allocate(glat(MAXLIMAX,MAXLJMAX))
-    allocate(gl_stagg(0:MAXLIMAX,0:MAXLJMAX))
-    allocate(gb_stagg(0:MAXLIMAX,0:MAXLJMAX))
-    allocate(xm_i(0:MAXLIMAX+1,0:MAXLJMAX+1))
-    allocate(xm_j(0:MAXLIMAX+1,0:MAXLJMAX+1))
-    allocate(xm2(0:MAXLIMAX+1,0:MAXLJMAX+1))
-    allocate(xmd(0:MAXLIMAX+1,0:MAXLJMAX+1))
-    allocate(xm2ji(0:MAXLJMAX+1,0:MAXLIMAX+1))
-    allocate(xmdji(0:MAXLJMAX+1,0:MAXLIMAX+1))
-    allocate(GridArea_m2(MAXLIMAX,MAXLJMAX))
-    allocate(z_bnd(MAXLIMAX,MAXLJMAX,KMAX_BND))
-    allocate(z_mid(MAXLIMAX,MAXLJMAX,KMAX_MID))
+    allocate(i_fdom(0:LIMAX+1))
+    allocate(j_fdom(0:LJMAX+1))
+    allocate(glon(LIMAX,LJMAX))
+    allocate(glat(LIMAX,LJMAX))
+    allocate(gl_stagg(0:LIMAX,0:LJMAX))
+    allocate(gb_stagg(0:LIMAX,0:LJMAX))
+    allocate(xm_i(0:LIMAX+1,0:LJMAX+1))
+    allocate(xm_j(0:LIMAX+1,0:LJMAX+1))
+    allocate(xm2(0:LIMAX+1,0:LJMAX+1))
+    allocate(xmd(0:LIMAX+1,0:LJMAX+1))
+    allocate(xm2ji(0:LJMAX+1,0:LIMAX+1))
+    allocate(xmdji(0:LJMAX+1,0:LIMAX+1))
+    allocate(GridArea_m2(LIMAX,LJMAX))
+    allocate(z_bnd(LIMAX,LJMAX,KMAX_BND))
+    allocate(z_mid(LIMAX,LJMAX,KMAX_MID))
 
   end subroutine Alloc_GridFields
 

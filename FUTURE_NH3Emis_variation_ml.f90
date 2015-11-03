@@ -9,7 +9,7 @@ use calc_emis_potential_ml, only : lddagtemp,lNH3emis_pot, lEmis50_nh3, emnh3
 use TimeDate_ml,            only : nydays, current_date
 use MetFields_ml,           only : t2_nwp,u_ref, &
                                    foundv10_met,ps, roa,foundws10_met,ws_10m
-use Par_ml,                 only : MAXLIMAX,MAXLJMAX,me,limax,ljmax
+use Par_ml,                 only : LIMAX,LJMAX,me,limax,ljmax
 use GridValues_ml ,         only : i_fdom, j_fdom, sigma_bnd, xm2  
 use ModelConstants_ml,      only : DEBUG_i, DEBUG_j, PT, DEBUG_NH3, &
                                    KMAX_MID, MasterProc
@@ -22,7 +22,7 @@ use PhysicalConstants_ml,   only : GRAV,  AVOG
 implicit none
 private
 
-real, public, save, dimension(NNH3,MAXLIMAX,MAXLJMAX) :: tnh3_fac !timefactors.
+real, public, save, dimension(NNH3,LIMAX,LJMAX) :: tnh3_fac !timefactors.
                    !Need to be reset every 3 hour (metstep)
                    !(or really:the same timestep as used in NH3emis_potential)
 public :: NH3emis_variation

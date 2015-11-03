@@ -13,7 +13,7 @@ use GridValues_ml,        only: A_mid,B_mid,A_bnd,B_bnd
 use MetFields_ml,         only: roa,th,ps
 use ModelConstants_ml,    only: KMAX_MID,KMAX_BND,dt_advec
 !use OwnDataTypes_ml,      only: depmap
-use Par_ml,               only: MAXLIMAX,MAXLJMAX,limax,ljmax,me,li0,li1,lj0,lj1
+use Par_ml,               only: LIMAX,LJMAX,limax,ljmax,me,li0,li1,lj0,lj1
 use PhysicalConstants_ml, only: GRAV
 use SmallUtils_ml,        only: find_index
 use NetCDF_ml,            only: printCDF
@@ -79,7 +79,7 @@ if (first_call) then
          end if
       enddo
    
-      allocate(num_sed(bins,MAXLIMAX,MAXLJMAX,KMAX_MID))
+      allocate(num_sed(bins,LIMAX,LJMAX,KMAX_MID))
       num_sed(:,:,:,:)=0.0
       !write(*,*) "volcanoes: ",volc
       name="none"

@@ -167,7 +167,7 @@ contains
     !
     !   The output emission matrix for the 11-SNAP data is snapemis:
     !
-    !   real    snapemis (NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS_FILES)
+    !   real    snapemis (NSECTORS,LIMAX,LJMAX,NCMAX,NEMIS_FILES)
     !  
     !----------------------------------------------------------------------!
     !--arguments
@@ -208,7 +208,7 @@ contains
     real, dimension(NROAD_FILES)       :: roaddustsum    ! Sum emission potential over all countries
     real, dimension(NLAND,NROAD_FILES) :: sumroaddust    ! Sum of emission potentials per country
     real, dimension(NLAND,NROAD_FILES) :: sumroaddust_local    ! Sum of emission potentials per country in subdomain
-    real :: fractions(MAXLIMAX,MAXLJMAX,NCMAX),SMI(MAXLIMAX,MAXLJMAX),Reduc(NLAND),SMI_roadfactor
+    real :: fractions(LIMAX,LJMAX,NCMAX),SMI(LIMAX,LJMAX),Reduc(NLAND),SMI_roadfactor
     logical ::SMI_defined=.false.
     logical :: my_first_call=.true.  ! Used for femis call
     logical :: fileExists            ! to test emission files
@@ -220,32 +220,32 @@ contains
     ! 0) set molwts, conversion factors (e.g. tonne NO2 -> tonne N), and
     !    emission indices (IQSO2=.., )
 
-    allocate(cdfemis(MAXLIMAX,MAXLJMAX))
-    allocate(nGridEmisCodes(MAXLIMAX,MAXLJMAX))
-    allocate(GridEmisCodes(MAXLIMAX,MAXLJMAX,NCMAX))
-    allocate(GridEmis(NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS_FILE),stat=allocerr)
+    allocate(cdfemis(LIMAX,LJMAX))
+    allocate(nGridEmisCodes(LIMAX,LJMAX))
+    allocate(GridEmisCodes(LIMAX,LJMAX,NCMAX))
+    allocate(GridEmis(NSECTORS,LIMAX,LJMAX,NCMAX,NEMIS_FILE),stat=allocerr)
     call CheckStop(allocerr /= 0, &
          "EmisGet:Allocation error for GridEmis")
     GridEmisCodes = -1   
     nGridEmisCodes = 0
     GridEmis = 0.0
 
-    allocate(nlandcode(MAXLIMAX,MAXLJMAX),landcode(MAXLIMAX,MAXLJMAX,NCMAX))
+    allocate(nlandcode(LIMAX,LJMAX),landcode(LIMAX,LJMAX,NCMAX))
     nlandcode=0
     landcode=0
-    allocate(flat_nlandcode(MAXLIMAX,MAXLJMAX),flat_landcode(MAXLIMAX,MAXLJMAX,FNCMAX))
+    allocate(flat_nlandcode(LIMAX,LJMAX),flat_landcode(LIMAX,LJMAX,FNCMAX))
     flat_nlandcode=0
     flat_landcode=0
-    allocate(road_nlandcode(MAXLIMAX,MAXLJMAX),road_landcode(MAXLIMAX,MAXLJMAX,NCMAX))
+    allocate(road_nlandcode(LIMAX,LJMAX),road_landcode(LIMAX,LJMAX,NCMAX))
     road_nlandcode=0
     road_landcode=0
-    allocate(snapemis(NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS_FILE))
+    allocate(snapemis(NSECTORS,LIMAX,LJMAX,NCMAX,NEMIS_FILE))
     snapemis=0.0
-    allocate(snapemis_flat(MAXLIMAX,MAXLJMAX,FNCMAX,NEMIS_FILE))
+    allocate(snapemis_flat(LIMAX,LJMAX,FNCMAX,NEMIS_FILE))
     snapemis_flat=0.0
-    allocate(roaddust_emis_pot(MAXLIMAX,MAXLJMAX,NCMAX,NROAD_FILES))
+    allocate(roaddust_emis_pot(LIMAX,LJMAX,NCMAX,NROAD_FILES))
     roaddust_emis_pot=0.0
-    allocate(SumSnapEmis(MAXLIMAX,MAXLJMAX,NEMIS_FILE))
+    allocate(SumSnapEmis(LIMAX,LJMAX,NEMIS_FILE))
     SumSnapEmis=0.0
 
     !=========================
@@ -310,7 +310,7 @@ contains
     !=========================
     !Must first call EmisSplit, to get nrcemis defined
     if(EmisSplit_OUT)then
-       allocate(SumSplitEmis(MAXLIMAX,MAXLJMAX,nrcemis))
+       allocate(SumSplitEmis(LIMAX,LJMAX,nrcemis))
        SumSplitEmis=0.0
     endif
     !=========================
@@ -870,13 +870,13 @@ contains
 
     ! now we have nrecmis and can allocate for gridrcemis:
     ! print *, "ALLOCATING GRIDRC", me, NRCEMIS
-    allocate(gridrcemis(NRCEMIS,KEMISTOP:KMAX_MID,MAXLIMAX,MAXLJMAX),stat=err1)
-    allocate(gridrcemis0(NRCEMIS,KEMISTOP:KMAX_MID,MAXLIMAX,MAXLJMAX),stat=err2)
+    allocate(gridrcemis(NRCEMIS,KEMISTOP:KMAX_MID,LIMAX,LJMAX),stat=err1)
+    allocate(gridrcemis0(NRCEMIS,KEMISTOP:KMAX_MID,LIMAX,LJMAX),stat=err2)
     call CheckStop(err1, "Allocation error 1 - gridrcemis") 
     call CheckStop(err2, "Allocation error 2 - gridrcemis0")
     if(USE_ROADDUST)THEN
-       allocate(gridrcroadd(NROADDUST,MAXLIMAX,MAXLJMAX),stat=err3)
-       allocate(gridrcroadd0(NROADDUST,MAXLIMAX,MAXLJMAX),stat=err4)
+       allocate(gridrcroadd(NROADDUST,LIMAX,LJMAX),stat=err3)
+       allocate(gridrcroadd0(NROADDUST,LIMAX,LJMAX),stat=err4)
        call CheckStop(err3, "Allocation error 3 - gridrcroadd")
        call CheckStop(err4, "Allocation error 4 - gridrcroadd0")
     endif
@@ -935,15 +935,15 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
   !   gridrcemis0 calculated every time-step to allow for ps changes.
   !   inputs from Emissions in EMISSIONS_ML:
   !   country and snap-specific array : 
-  !          snapemis (NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS_FILES) 
+  !          snapemis (NSECTORS,LIMAX,LJMAX,NCMAX,NEMIS_FILES) 
   !  
   !   Units:
   !   snapemis has units of kg/m2/s, SO2 as S, NO2 as N, NH3 as N. 
   !   Map factor (xm2) already accounted for. 
   !  
   !   Data on how many countries contribute per grid square is stored in
-  !   nlandcode(MAXLIMAX,MAXLJMAX) , with the country-codes given by
-  !   landcode(MAXLIMAX,MAXLJMAX,NCMAX).
+  !   nlandcode(LIMAX,LJMAX) , with the country-codes given by
+  !   landcode(LIMAX,LJMAX,NCMAX).
   !     
   !   Monthly and weekday factors are pre-multiplied and stored in:
   !       real timefac(NLAND,NSECTORS,NEMIS_FILES)
@@ -1010,7 +1010,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
      endif
 
      if(Found_Emis_4D>0)then
-        if(.not.allocated(Emis_4D))allocate(Emis_4D(MAXLIMAX,MAXLJMAX,KMAX_MID,N_Emis_4D))
+        if(.not.allocated(Emis_4D))allocate(Emis_4D(LIMAX,LJMAX,KMAX_MID,N_Emis_4D))
         Emis_4D = 0.0 !default value, must be set to zero when no values are found
         NTime_Read=-1 !read all times    
         call ReadTimeCDF(emis_inputlist(Found_Emis_4D)%Name,TimesInDays,NTime_Read)
@@ -1350,8 +1350,8 @@ subroutine newmonth
 
   ! For now, only the global runs use the Monthly files
   integer :: kstart,kend,nstart,Nyears
-  real :: buffer(MAXLIMAX,MAXLJMAX),SumSoilNOx,ccsum
-  real :: fractions(MAXLIMAX,MAXLJMAX,NCMAX),Reduc(NLAND)
+  real :: buffer(LIMAX,LJMAX),SumSoilNOx,ccsum
+  real :: fractions(LIMAX,LJMAX,NCMAX),Reduc(NLAND)
   real, dimension(NEMIS_FILE)       :: emsum ! Sum emis over all countries
   real, dimension(NLAND,NEMIS_FILE) :: sumemis, sumemis_local ! Sum of emissions per country
   character(len=40) :: varname 
@@ -1361,7 +1361,7 @@ subroutine newmonth
   real :: lonlat_fac
       
   if(.not.allocated(airn).and.(USE_LIGHTNING_EMIS.or.USE_AIRCRAFT_EMIS))&
-    allocate(airn(KCHEMTOP:KMAX_MID,MAXLIMAX,MAXLJMAX))
+    allocate(airn(KCHEMTOP:KMAX_MID,LIMAX,LJMAX))
         
 
   if(USES%GRIDDED_EMIS_MONTHLY_FACTOR)then
@@ -1724,7 +1724,7 @@ subroutine EmisOut(label, iem,nsources,sources,emis)
 ! To print out emissions, we need to get fields for each country
 ! in turn, needing info from GridCodes
 ! e.g. 11-SNAP data is snapemis:
-!  real    snapemis (NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS_FILES)
+!  real    snapemis (NSECTORS,LIMAX,LJMAX,NCMAX,NEMIS_FILES)
   character(len=*) :: label
   integer, intent(in) :: iem
   real,intent(in), dimension(:,:,:,:):: emis      ! Emission values
@@ -1733,8 +1733,8 @@ subroutine EmisOut(label, iem,nsources,sources,emis)
   character(len=100) :: txt
   real :: low, high
   integer :: msg(4), i,j, ii, jj, isec, icc, ncc, iland, iproc
-  real ::locemis(MAXLIMAX, MAXLJMAX,NSECTORS)
-  real ::lemis(MAXLIMAX, MAXLJMAX)
+  real ::locemis(LIMAX, LJMAX,NSECTORS)
+  real ::lemis(LIMAX, LJMAX)
   txt = trim(label)//"."//trim(EMIS_FILE(iem))
   msg(:) = 0
 
@@ -1742,8 +1742,8 @@ subroutine EmisOut(label, iem,nsources,sources,emis)
     maxval(emis),maxval(nsources),maxval(sources)
 
 
-!  allocate(locemis(MAXLIMAX, MAXLJMAX,NSECTORS), stat=msg(1) )
-!  allocate(lemis(MAXLIMAX, MAXLJMAX), stat=msg(2) )
+!  allocate(locemis(LIMAX, LJMAX,NSECTORS), stat=msg(1) )
+!  allocate(lemis(LIMAX, LJMAX), stat=msg(2) )
 
   call CheckStop( any(msg(:) /= 0),"EmisOut alloc error:"//trim(label))
 

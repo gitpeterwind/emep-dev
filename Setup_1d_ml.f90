@@ -51,7 +51,7 @@ use ModelConstants_ml,   only:  &
   ,KMAX_MID ,KMAX_BND, KCHEMTOP   ! Start and upper k for 1d fields
 use My_Derived_ml,       only: EmisSplit_OUT
 use Landuse_ml,          only: water_fraction, ice_landcover
-use Par_ml,              only: me,MAXLIMAX,MAXLJMAX, & 
+use Par_ml,              only: me, & 
                                gi0,gi1,gj0,gj1,IRUNBEG,JRUNBEG
 use PhysicalConstants_ml,only: ATWAIR, AVOG, PI, GRAV
 use Radiation_ml,        only: PARfrac, Wm2_uE

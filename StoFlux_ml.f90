@@ -8,7 +8,7 @@ module StoFlux_ml
   use LocalVariables_ml, only : L, Grid
   use MicroMet_ml, only : AerRes, Wind_at_h
   use ModelConstants_ml, only : NLANDUSEMAX, dt_advec, DEBUG
-  use Par_ml, only : MAXLIMAX, MAXLJMAX
+  use Par_ml, only : LIMAX, LJMAX
   use PhysicalConstants_ml, only : AVOG, KARMAN
   use SmallUtils_ml, only : find_index
   use SubMet_ml, only : Sub
@@ -46,8 +46,8 @@ contains
     integer ::  istat, iL
 
      if ( my_first_call ) then
-       allocate(SumVPD(MAXLIMAX,MAXLJMAX,nSumVPD),stat=istat)
-       allocate(old_gsun(MAXLIMAX,MAXLJMAX,nSumVPD),stat=istat)
+       allocate(SumVPD(LIMAX,LJMAX,nSumVPD),stat=istat)
+       allocate(old_gsun(LIMAX,LJMAX,nSumVPD),stat=istat)
        do iL = 1, NLANDUSEMAX
          if ( do3se(iL)%VPDcrit > 0.0  ) then
            mapSumVPD(iL) = find_index( iL, SumVPD_LC )

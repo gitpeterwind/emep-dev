@@ -1437,7 +1437,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
   type(Deriv), intent(in) :: def1 ! definition of fields
   integer,     intent(in) :: iotyp
   real,        intent(in) :: scale
-  real, dimension(MAXLIMAX,MAXLJMAX,KMAX), intent(in) :: dat ! Data arrays
+  real, dimension(LIMAX,LJMAX,KMAX), intent(in) :: dat ! Data arrays
 ! Optional arguments:
   integer, optional, intent(in) :: &
     ist,jst,ien,jen,ik, & ! start and end of saved area. Only level ik is written if defined
@@ -2161,7 +2161,7 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,&
 ! if reverse_k=.true. , the k dimension in the file is reversed
 ! i_start,j_start can give a new origin instead of (1,1); i_start=2, menas that only i>=2 is read.
 ! the dimensions of Rvar are assumed:
-! Rvar(MAXLIMAX,MAXLJMAX,k_end-k_start+1,nfetch)
+! Rvar(LIMAX,LJMAX,k_end-k_start+1,nfetch)
 
   use netcdf
   implicit none
@@ -2169,7 +2169,7 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,&
 
   character (len = *),intent(in) ::varname
   integer, intent(in) :: nstart,nfetch,k_start,k_end
-  real, intent(out) :: Rvar(MAXLIMAX,MAXLJMAX,k_end-k_start+1,nfetch)
+  real, intent(out) :: Rvar(LIMAX,LJMAX,k_end-k_start+1,nfetch)
   integer, optional, intent(in) ::  i_start,j_start
   logical, optional,intent(in) :: reverse_k
   logical, optional,intent(in) :: needed
@@ -2365,7 +2365,7 @@ subroutine WriteCDF(varname,vardate,filename_given,newfile)
  character (len=*),optional, intent(in):: fileName_given!filename to which the data must be written
  logical,optional, intent(in) :: newfile
 
- real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: dat ! Data arrays
+ real, dimension(LIMAX,LJMAX,KMAX_MID) :: dat ! Data arrays
  character (len=100):: fileName
  real ::scale
  integer :: n,iotyp,ndim,kmax,icmp,nseconds
@@ -2470,7 +2470,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   !under development!
   !
   !dimensions and indices:
-  !Rvar is assumed to have declared dimensions MAXLIMAX,MAXLJMAX in 2D.
+  !Rvar is assumed to have declared dimensions LIMAX,LJMAX in 2D.
   !If 3D, k coordinate in Rvar assumed as first coordinate. Could consider to change this.
   !If kstart<0, then all vertical levels are read in
   !nstart (optional) is the index of last dimension in the netcdf file, generally time dimension.
@@ -2556,8 +2556,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   integer, optional,intent(in) :: kend!largest k to read. Default: assume 2D field
   logical, optional, intent(in) :: debug_flag
   real, optional, intent(in) :: UnDef ! Value put into the undefined gridcells
-  real , optional, intent(out) ::fractions_out(MAXLIMAX*MAXLJMAX,*) !fraction assigned to each country 
-  integer, optional, intent(out)  ::Ncc_out(*), CC_out(MAXLIMAX*MAXLJMAX,*) !Number of country-codes and Country codes
+  real , optional, intent(out) ::fractions_out(LIMAX*LJMAX,*) !fraction assigned to each country 
+  integer, optional, intent(out)  ::Ncc_out(*), CC_out(LIMAX*LJMAX,*) !Number of country-codes and Country codes
   real, optional, intent(in) :: Reduc(NLAND)
   character(len = *), optional,intent(in) :: Mask_filename,Mask_varname
   integer , optional, intent(in) :: Mask_Code(*),NMask_Code! reduce only where mask take this value. If not defined, multiply by mask
@@ -2596,7 +2596,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   integer, dimension(4) :: ijn
   integer :: ii, jj,i_ext,j_ext,ic
   real::an_ext,xp_ext,yp_ext,fi_ext,ref_lat_ext,xp_ext_div,yp_ext_div,Grid_resolution_div,an_ext_div
-  real ::buffer1(MAXLIMAX, MAXLJMAX),buffer2(MAXLIMAX, MAXLJMAX)
+  real ::buffer1(LIMAX, LJMAX),buffer2(LIMAX, LJMAX)
   real, allocatable ::fraction_in(:,:)
   integer, allocatable ::CC(:,:),Ncc(:)
   real ::total,UnDef_local
@@ -2664,7 +2664,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
       call CheckStop(fileneeded, "ReadField_CDF : variable needed but not found")
 !     if(MasterProc)&
 !       write(*,*)'variable does not exist: ',trim(varname),' set to ',UnDef_local
-!     Rvar(1:MAXLIMAX*MAXLJMAX)=UnDef_local
+!     Rvar(1:LIMAX*LJMAX)=UnDef_local
 !     return
     else
         if(MasterProc)write(*,*) 'variable does not exist (but not needed): ',&
@@ -2727,7 +2727,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
           "ReadField_CDF: minlat not implemented for vertical interpolation")     
      k2=1
      if(data3D)k2=kend_loc-kstart_loc+1
-     ijk=MAXLIMAX*MAXLJMAX*k2
+     ijk=LIMAX*LJMAX*k2
      if(minlat_var>maxlat)then
         !the data is outside range. put zero or Undef.
         Rvar(1:ijk)=UnDef_local
@@ -3075,7 +3075,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
            kstart_loc=1
            kend_loc=dims(3)
 !NB: size of Rvar is not computable (by ifort)
-!           call CheckStop(size(Rvar)<MAXLIMAX*MAXLJMAX*(kend_loc-kstart_loc+1), &
+!           call CheckStop(size(Rvar)<LIMAX*LJMAX*(kend_loc-kstart_loc+1), &
 !          "ReadField_CDF: size of Rvar is too small")
            interpolate_vertical=.true.
         endif
@@ -3209,10 +3209,10 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
            !           enddo
         endif
 
-        Ncc_out(1:MAXLIMAX*MAXLJMAX)=0
-        CC_out(1:MAXLIMAX*MAXLJMAX,1:Nmax)=0
-        fractions_out(1:MAXLIMAX*MAXLJMAX,1)=0.0
-        fractions_out(1:MAXLIMAX*MAXLJMAX,2:Nmax)=0.0
+        Ncc_out(1:LIMAX*LJMAX)=0
+        CC_out(1:LIMAX*LJMAX,1:Nmax)=0
+        fractions_out(1:LIMAX*LJMAX,1)=0.0
+        fractions_out(1:LIMAX*LJMAX,2:Nmax)=0.0
      endif
 
 
@@ -3254,9 +3254,9 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
         endif
         k2=1
         if(data3D)k2=kend_loc-kstart_loc+1
-        allocate(Ivalues(MAXLIMAX*MAXLJMAX*k2))
-        allocate(Nvalues(MAXLIMAX*MAXLJMAX*k2))
-        do ij=1,MAXLIMAX*MAXLJMAX*k2
+        allocate(Ivalues(LIMAX*LJMAX*k2))
+        allocate(Nvalues(LIMAX*LJMAX*k2))
+        do ij=1,LIMAX*LJMAX*k2
            Ivalues(ij)=0
            NValues(ij) = 0
            Rvar(ij)=0.0
@@ -3275,7 +3275,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                     j=nint(jr)-gj0-JRUNBEG+2
 
                     if(i>=1.and.i<=limax.and.j>=1.and.j<=ljmax)then
-                       ij=i+(j-1)*MAXLIMAX
+                       ij=i+(j-1)*LIMAX
                        k2=1
                        if(data3D)k2=kend_loc-kstart_loc+1
                        do k=1,k2
@@ -3350,7 +3350,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
         do k=1,k2
            do i=1,limax
               do j=1,ljmax
-                 ij=i+(j-1)*MAXLIMAX
+                 ij=i+(j-1)*LIMAX
                  ijk=k+(ij-1)*k2
 
                  debug_ij = ( DEBUG_NETCDF_RF .and. debug_proc .and. &
@@ -3400,7 +3400,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
         do k=1,k2
            do j=1,ljmax
               do i=1,limax
-                 ij=i+(j-1)*MAXLIMAX
+                 ij=i+(j-1)*LIMAX
                  ijk=k+(ij-1)*k2
                  ig=nint((glon(i,j)-Rlon(startvec(1)))*dloni)+1
                  ig=max(1,min(dims(1),ig))
@@ -3513,9 +3513,9 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
         endif
         k2=1
         if(data3D)k2=kend_loc-kstart_loc+1
-        allocate(Ivalues(MAXLIMAX*MAXLJMAX*k2))
-        allocate(Nvalues(MAXLIMAX*MAXLJMAX*k2))
-        do ij=1,MAXLIMAX*MAXLJMAX*k2
+        allocate(Ivalues(LIMAX*LJMAX*k2))
+        allocate(Nvalues(LIMAX*LJMAX*k2))
+        do ij=1,LIMAX*LJMAX*k2
            Ivalues(ij)=0
            NValues(ij) = 0
            !           if(present(UnDef))then
@@ -3543,7 +3543,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                     !if ( debug .and.me==0) write(*,83)i,j,ir,jr,lon,lat,fi_ext,an_ext_div,xp_ext_div,yp_ext_div,fi,xp,yp,Rvalues(igjg)
 
                     if(i>=1.and.i<=limax.and.j>=1.and.j<=ljmax)then
-                       ij=i+(j-1)*MAXLIMAX
+                       ij=i+(j-1)*LIMAX
                        k2=1
                        if(data3D)k2=kend_loc-kstart_loc+1
                        do k=1,k2
@@ -3570,7 +3570,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
         do k=1,k2
            do i=1,limax
               do j=1,ljmax
-                 ij=i+(j-1)*MAXLIMAX
+                 ij=i+(j-1)*LIMAX
                  ijk=k+(ij-1)*k2
 
                  debug_ij = ( DEBUG_NETCDF_RF .and. debug_proc .and. &
@@ -3628,7 +3628,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
         endif
 
 
-        call lb2ijm(maxlimax,maxljmax,glon,glat,buffer1,buffer2,fi_ext,an_ext_div,xp_ext_div,yp_ext_div)
+        call lb2ijm(LIMAX,LJMAX,glon,glat,buffer1,buffer2,fi_ext,an_ext_div,xp_ext_div,yp_ext_div)
         i_ext=nint(buffer1(1,1))
         j_ext=nint(buffer2(1,1))
         call ij2lb(i_ext,j_ext,lon,lat,fi_ext,an_ext_div,xp_ext_div,yp_ext_div)
@@ -3636,7 +3636,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
         if(data3D)k2=kend_loc-kstart_loc+1
         do j=1,ljmax
            do i=1,limax
-              ij=i+(j-1)*MAXLIMAX
+              ij=i+(j-1)*LIMAX
               i_ext=nint(buffer1(i,j))
               j_ext=nint(buffer2(i,j))
               if(i_ext>=1.and.i_ext<=dims(1).and.j_ext>=1.and.j_ext<=dims(2))then
@@ -3710,8 +3710,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
            endif
         endif
 
-        allocate(Ivalues(MAXLIMAX*MAXLJMAX*k2))
-        do ij=1,MAXLIMAX*MAXLJMAX*k2
+        allocate(Ivalues(LIMAX*LJMAX*k2))
+        do ij=1,LIMAX*LJMAX*k2
            Ivalues(ij)=0
            Rvar(ij)=0.0
         enddo
@@ -3784,7 +3784,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                     i=nint(ir)-gi0-IRUNBEG+2
                     j=nint(jr)-gj0-JRUNBEG+2
                     if(i>=1.and.i<=limax.and.j>=1.and.j<=ljmax)then
-                       ij=i+(j-1)*MAXLIMAX
+                       ij=i+(j-1)*LIMAX
                        do k=1,k2
                           ijk=k+(ij-1)*k2
                           Ivalues(ijk)=Ivalues(ijk)+1
@@ -3806,7 +3806,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
         do k=1,k2
         do i=1,limax
            do j=1,ljmax
-              ij=i+(j-1)*MAXLIMAX
+              ij=i+(j-1)*LIMAX
               ijk=k+(ij-1)*k2
 
               if(Ivalues(ijk)<=0.)then
@@ -3843,16 +3843,16 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 !      call CheckStop(data3D, "ReadField_CDF : 3D not yet implemented for general projection")
       call CheckStop(present(UnDef), "Default values filling not implemented")
 
-      allocate(Weight(4,MAXLIMAX,MAXLJMAX),&
-                 IIij(4,MAXLIMAX,MAXLJMAX),&
-                 JJij(4,MAXLIMAX,MAXLJMAX))
+      allocate(Weight(4,LIMAX,LJMAX),&
+                 IIij(4,LIMAX,LJMAX),&
+                 JJij(4,LIMAX,LJMAX))
 
       !Make interpolation coefficients.
       !Coefficients could be saved and reused if called several times.
       if(DEBUG_NETCDF_RF.and.debug_proc.and.i==debug_li.and.j==debug_lj)&
          write(*,"(a)") "DEBUG_RF G2G ", me, debug_proc
       call grid2grid_coeff(glon,glat,IIij,JJij,Weight,&
-           Rlon,Rlat,dims(1),dims(2), MAXLIMAX, MAXLJMAX, limax, ljmax,&
+           Rlon,Rlat,dims(1),dims(2), LIMAX, LJMAX, limax, ljmax,&
            (DEBUG_NETCDF_RF.and.debug_proc), debug_li, debug_lj )
 
       startvec(1)=minval(IIij(:,:limax,:ljmax))
@@ -3919,8 +3919,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
           do k=1,k2
 
-!          ijk=i+(j-1)*MAXLIMAX
-              ij=i+(j-1)*MAXLIMAX
+!          ijk=i+(j-1)*LIMAX
+              ij=i+(j-1)*LIMAX
               ijk=k+(ij-1)*k2
               Rvar(ijk)    = 0.0
               sumWeights   = 0.0
@@ -4051,7 +4051,7 @@ end subroutine ReadField_CDF
   real :: ir,jr,Grid_resolution
   type(Deriv) :: def1 ! definition of fields
   integer, parameter ::NFL=23,NFLmax=50 !number of flight level (could be read from file)
-  real :: P_FL(0:NFLmax),P_FL0,Psurf_ref(MAXLIMAX, MAXLJMAX),P_EMEP,dp!
+  real :: P_FL(0:NFLmax),P_FL0,Psurf_ref(LIMAX, LJMAX),P_EMEP,dp!
 
   real :: FillValue=0,Pcounted
   logical :: Flight_Levels
@@ -4083,7 +4083,7 @@ end subroutine ReadField_CDF
      else
         if(MasterProc) write(*,*)'file does not exist (but not needed): ',&
              trim(fileName),nf90_strerror(status)
-          Rvar(1:MAXLIMAX*MAXLJMAX*(KMAX_MID-2))=0.0
+          Rvar(1:LIMAX*LJMAX*(KMAX_MID-2))=0.0
          return
      endif
   endif
@@ -4108,7 +4108,7 @@ end subroutine ReadField_CDF
         if(MasterProc)write(*,*) 'variable does not exist (but not needed): ',&
              trim(varname),nf90_strerror(status)
           call check(nf90_close(ncFileID))
-          Rvar(1:MAXLIMAX*MAXLJMAX*(KMAX_MID-2))=0.0
+          Rvar(1:LIMAX*LJMAX*(KMAX_MID-2))=0.0
         return
     endif
   endif
@@ -4249,9 +4249,9 @@ end subroutine ReadField_CDF
         !
 
         k2=kend-kstart+1
-        allocate(Ivalues(MAXLIMAX*MAXLJMAX*k2))
-        allocate(Nvalues(MAXLIMAX*MAXLJMAX*k2))
-        do ij=1,MAXLIMAX*MAXLJMAX*k2
+        allocate(Ivalues(LIMAX*LJMAX*k2))
+        allocate(Nvalues(LIMAX*LJMAX*k2))
+        do ij=1,LIMAX*LJMAX*k2
            Ivalues(ij)=0
            NValues(ij) = 0
            Rvar(ij)=0.0
@@ -4270,7 +4270,7 @@ end subroutine ReadField_CDF
                     j=nint(jr)-gj0-JRUNBEG+2
 
                     if(i>=1.and.i<=limax.and.j>=1.and.j<=ljmax)then
-                       ij=i+(j-1)*MAXLIMAX
+                       ij=i+(j-1)*LIMAX
                        k2=kend-kstart+1
                        if(Flight_Levels)then
                           !Flight_Levels
@@ -4314,7 +4314,7 @@ end subroutine ReadField_CDF
         do k=1,k2
            do i=1,limax
               do j=1,ljmax
-                 ij=i+(j-1)*MAXLIMAX
+                 ij=i+(j-1)*LIMAX
                  ijk=k+(ij-1)*k2
 
 
@@ -4525,8 +4525,8 @@ endsubroutine ReadTimeCDF
 subroutine   vertical_interpolate(filename,Rvar,KMAX_ext,Rvar_emep,debug)
   character(len = *),intent(in) ::fileName
   integer, intent(in)::KMAX_ext
-  real,intent(in) :: Rvar(KMAX_ext,MAXLIMAX,MAXLJMAX)
-  real,intent(out):: Rvar_emep(MAXLIMAX,MAXLJMAX,KMAX_MID)
+  real,intent(in) :: Rvar(KMAX_ext,LIMAX,LJMAX)
+  real,intent(out):: Rvar_emep(LIMAX,LJMAX,KMAX_MID)
   logical, optional, intent(in) :: debug!output only masterproc
   real, allocatable,dimension(:)::hyam_ext,hybm_ext,P_ext,weight_k1
   integer, allocatable,dimension(:)::k1_ext,k2_ext

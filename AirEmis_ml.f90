@@ -34,7 +34,7 @@ module AirEmis_ml
   ! Variable listing is given below
   
     
-   use Par_ml               , only : MAXLIMAX, MAXLJMAX, limax,ljmax, me
+   use Par_ml               , only : LIMAX, LJMAX, limax,ljmax, me
    use ModelConstants_ml    , only : KCHEMTOP, KMAX_MID, KMAX_BND, NPROC, &
                                      USE_LIGHTNING_EMIS
    use Io_ml                , only : IO_AIRN, IO_LIGHT, ios, open_file
@@ -114,7 +114,7 @@ module AirEmis_ml
 
       
       if(.not.allocated(airlig))then
-         allocate(airlig(KCHEMTOP:KMAX_MID,MAXLIMAX,MAXLJMAX))
+         allocate(airlig(KCHEMTOP:KMAX_MID,LIMAX,LJMAX))
          airlig=0.0
       endif
 
@@ -174,7 +174,7 @@ module AirEmis_ml
 
       real, intent(inout) ::   flux(ILON,GGL,-1:ILEV)
 
-      real, dimension(KCHEMTOP:KMAX_MID,MAXLIMAX,MAXLJMAX), intent(out) :: airem
+      real, dimension(KCHEMTOP:KMAX_MID,LIMAX,LJMAX), intent(out) :: airem
       real, intent(out)   :: ygrida(GGL)
       real, intent(out)   :: rlon(ILON+1)
 
@@ -187,7 +187,7 @@ module AirEmis_ml
               vol            !  volume of model grid boxes
       real    frac, above, below, glij
       real sum,sumnox,volcm,sum2
-      integer, dimension(MAXLIMAX,MAXLJMAX) :: ixn  & !  mapping of emission 
+      integer, dimension(LIMAX,LJMAX) :: ixn  & !  mapping of emission 
                                               ,jxn    !  grid to model grid
       integer, dimension(KMAX_MID)          :: ilevel
       real    fraca(KMAX_MID), fracb(KMAX_MID)

@@ -27,7 +27,6 @@
  use ModelConstants_ml,    only : KMAX_MID, KMAX_BND, &
                                   MasterProc, & 
                                   DEBUG   ! -> SEASALT
- use Par_ml,               only : MAXLIMAX,MAXLJMAX   ! => x, y dimensions
  use PhysicalConstants_ml, only : CHARNOCK, AVOG ,PI
  use Setup_1dfields_ml,    only : rcemis 
  use SmallUtils_ml,        only : find_index

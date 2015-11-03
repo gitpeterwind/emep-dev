@@ -73,7 +73,7 @@ use MosaicOutputs_ml,     only: nMosaic, MosaicOutput
 use NumberConstants,      only: UNDEF_R
 use OwnDataTypes_ml,      only: Deriv, print_Deriv_type, &
                                 TXTLEN_DERIV,TXTLEN_SHORT ! type & length of names
-use Par_ml,               only: MAXLIMAX,MAXLJMAX, &      ! => max. x, y dimensions
+use Par_ml,               only: LIMAX,LJMAX, &      ! => max. x, y dimensions
                                 me,                &      ! for print outs
                                 gi0,gj0,IRUNBEG,JRUNBEG,& ! for i_fdom, j_fdom
                                 li0,lj0,limax, ljmax      ! => used x, y area
@@ -116,8 +116,8 @@ integer, public, parameter ::  LENOUT2D = IOU_YEAR_LASTHH  ! Allows INST..DAY,H.
 integer, public, parameter ::  LENOUT3D = IOU_DAY            ! Allows INST..DAY for 3d fields
 
 !will be used for:
-!e.g. d_2d( num_deriv2d,MAXLIMAX, MAXLJMAX, LENOUT2D)
-! &   d_3d( num_deriv3d,MAXLIMAX, MAXLJMAX, KMAX_MID, LENOUT3D )
+!e.g. d_2d( num_deriv2d,LIMAX, LJMAX, LENOUT2D)
+! &   d_3d( num_deriv3d,LIMAX, LJMAX, KMAX_MID, LENOUT3D )
 
 
 ! save O3 every hour during one day to find running max
@@ -161,7 +161,7 @@ subroutine Init_Derived()
   integer :: alloc_err
   dbg0 = (DEBUG%DERIVED .and. MasterProc ) 
 
-  allocate(D2_O3_DAY( MAXLIMAX, MAXLJMAX, NTDAY))
+  allocate(D2_O3_DAY( LIMAX, LJMAX, NTDAY))
   D2_O3_DAY = 0.0
 
   if(dbg0) write(*,*) "INIT My DERIVED STUFF"
@@ -177,7 +177,7 @@ subroutine Init_Derived()
     if(dbg0) write(*,*) "Allocate arrays for 2d:", num_deriv2d
     allocate(f_2d(num_deriv2d),stat=alloc_err)
     call CheckStop(alloc_err,"Allocation of f_2d")
-    allocate(d_2d(num_deriv2d,MAXLIMAX,MAXLJMAX,LENOUT2D),stat=alloc_err)
+    allocate(d_2d(num_deriv2d,LIMAX,LJMAX,LENOUT2D),stat=alloc_err)
     call CheckStop(alloc_err,"Allocation of d_2d")
     call CheckStop(alloc_err,"Allocation of d_3d")
     allocate(nav_2d(num_deriv2d,LENOUT2D),stat=alloc_err)
@@ -188,7 +188,7 @@ subroutine Init_Derived()
     if(dbg0) write(*,*) "Allocate arrays for 3d: ", num_deriv3d
     allocate(f_3d(num_deriv3d),stat=alloc_err)
     call CheckStop(alloc_err,"Allocation of f_3d")
-    allocate(d_3d(num_deriv3d,MAXLIMAX,MAXLJMAX,KMAX_MID,LENOUT3D),&
+    allocate(d_3d(num_deriv3d,LIMAX,LJMAX,KMAX_MID,LENOUT3D),&
             stat=alloc_err)
     allocate(nav_3d(num_deriv3d,LENOUT3D),stat=alloc_err)
     call CheckStop(alloc_err,"Allocation of nav_3d")
@@ -771,11 +771,11 @@ subroutine Derived(dt,End_of_Day)
   real, save :: km2_grid
   integer :: ntime                       ! 1...NTDAYS
   integer :: klow                        !  lowest extent of column data
-  real, dimension(MAXLIMAX,MAXLJMAX) :: density !  roa (kgair m-3 when
+  real, dimension(LIMAX,LJMAX) :: density !  roa (kgair m-3 when
                                                 ! scale in ug,  else 1
-  real, dimension(MAXLIMAX,MAXLJMAX) :: tmpwork
+  real, dimension(LIMAX,LJMAX) :: tmpwork
 
-  real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: inv_air_density3D
+  real, dimension(LIMAX,LJMAX,KMAX_MID) :: inv_air_density3D
             ! Inverse of No. air mols/cm3 = 1/M
             ! where M =  roa (kgair m-3) * to_molec_cm3  when ! scale in ug,  else 1
   logical, save :: first_call = .true.
@@ -1788,7 +1788,7 @@ subroutine group_calc( g2d, density, unit, ik, igrp)
   !/--  calulates also PM10  = SIA + PPM2.5 + PPMCOARSE
 
   real, dimension(:,:), intent(out) :: g2d  ! i,j section of d_2d arrays
-  real, intent(in), dimension(MAXLIMAX,MAXLJMAX)  :: density
+  real, intent(in), dimension(LIMAX,LJMAX)  :: density
   character(len=*), intent(in) :: unit
   integer, intent(in) :: ik,igrp
 

@@ -28,7 +28,7 @@ use ModelConstants_ml,only: NPROC, TXTLEN_NAME, &
                              ,IIFULLDOM,JJFULLDOM
 use NetCDF_ml, only  : ReadField_CDF  !CDF_SNAP
 
-use Par_ml,            only: MAXLIMAX, MAXLJMAX, limax, ljmax, me
+use Par_ml,            only: LIMAX, LJMAX, limax, ljmax, me
 use SmallUtils_ml,     only: wordsplit, find_index
 use netcdf,            only: NF90_OPEN,NF90_NOERR,NF90_NOWRITE,&
                              NF90_INQUIRE,NF90_INQUIRE_VARIABLE,NF90_CLOSE
@@ -104,7 +104,7 @@ contains
     real,intent(inout), dimension(NLAND,NEMIS_FILE) :: sumemis_local 
 
 
-    real :: fractions(MAXLIMAX,MAXLJMAX,NCMAX),Reduc(NLAND)
+    real :: fractions(LIMAX,LJMAX,NCMAX),Reduc(NLAND)
     character(len=125) ::Mask_fileName,Mask_varname
     real :: Mask_ReducFactor,lonlat_fac
     integer :: NMask_Code,Mask_Code(NLAND)

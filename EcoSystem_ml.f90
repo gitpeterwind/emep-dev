@@ -7,7 +7,7 @@ module EcoSystem_ml
                                 , NLANDUSEMAX, IOU_YEAR
  use OwnDataTypes_ml,    only : Deriv, print_deriv_type &
                                 ,TXTLEN_DERIV, TXTLEN_SHORT
- use Par_ml,             only : li0, lj0, li1, lj1, MAXLIMAX, MAXLJMAX
+ use Par_ml,             only : li0, lj0, li1, lj1, LIMAX, LJMAX
  implicit none
  private
 
@@ -57,7 +57,7 @@ contains
     integer :: iEco
     logical, parameter :: T = .true., F = .false. ! shorthands only
 
-    allocate(EcoSystemFrac(NDEF_ECOSYSTEMS,MAXLIMAX,MAXLJMAX))
+    allocate(EcoSystemFrac(NDEF_ECOSYSTEMS,LIMAX,LJMAX))
 
       if( MasterProc ) &
            write(*,*) "Defining ecosystems: ",(trim(DEF_ECOSYSTEMS(iEco))," ",iEco = 1, NDEF_ECOSYSTEMS)

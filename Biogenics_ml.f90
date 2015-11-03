@@ -51,8 +51,8 @@ module Biogenics_ml
   use NetCDF_ml,        only : ReadField_CDF, printCDF
   use OwnDataTypes_ml,  only : Deriv, TXTLEN_SHORT
 !  use Paleo_ml, only : PALEO_mlai, PALEO_miso, PALEO_mmon
-  use Par_ml   , only :  MAXLIMAX,MAXLJMAX,MSG_READ1,me, limax, ljmax
-  use Par_ml,            only : limax, ljmax, MAXLIMAX, MAXLJMAX, me
+  use Par_ml   , only :  LIMAX,LJMAX,MSG_READ1,me, limax, ljmax
+  use Par_ml,            only : limax, ljmax, LIMAX, LJMAX, me
   use PhysicalConstants_ml,  only :  AVOG, GRAV
   use Radiation_ml,          only : PARfrac, Wm2_uE
   use Setup_1dfields_ml,     only : rcemis  
@@ -97,7 +97,7 @@ module Biogenics_ml
  ! (Currently for 1st four LCC, CF, DF, BF, NF)
   logical, private, dimension(NLANDUSEMAX), save :: HaveLocalEF 
 
-! real, public, save, dimension(MAXLIMAX,MAXLJMAX,size(BVOC_USED)+NSOIL_EMIS) :: &
+! real, public, save, dimension(LIMAX,LJMAX,size(BVOC_USED)+NSOIL_EMIS) :: &
 
   ! EmisNat is used for BVOC; soil-NO, also in futur for sea-salt etc.
   ! Main criteria is not provided in gridded data-bases, often land-use
@@ -145,14 +145,14 @@ module Biogenics_ml
 
     integer :: alloc_err
     
-    allocate(AnnualNdep(MAXLIMAX,MAXLJMAX), &
-                SoilNOx(MAXLIMAX,MAXLJMAX), &
-                SoilNH3(MAXLIMAX,MAXLJMAX))
-    allocate(EmisNat(NEMIS_BioNat,MAXLIMAX,MAXLJMAX))
+    allocate(AnnualNdep(LIMAX,LJMAX), &
+                SoilNOx(LIMAX,LJMAX), &
+                SoilNH3(LIMAX,LJMAX))
+    allocate(EmisNat(NEMIS_BioNat,LIMAX,LJMAX))
     EmisNat=0.0
-    allocate(day_embvoc(MAXLIMAX,MAXLJMAX,size(BVOC_USED)))
+    allocate(day_embvoc(LIMAX,LJMAX,size(BVOC_USED)))
     day_embvoc = 0.0
-    allocate(EuroMask(MAXLIMAX,MAXLJMAX))
+    allocate(EuroMask(LIMAX,LJMAX))
     EuroMask=.false.
 
       if ( size(BVOC_USED) == 0 ) then
@@ -186,7 +186,7 @@ module Biogenics_ml
 
     call Get_LCinfo() ! Gets landcover info, last_bvoc_LC
 
-    allocate(  bvocEF(MAXLIMAX,MAXLJMAX,last_bvoc_LC,size(BVOC_USED)),&
+    allocate(  bvocEF(LIMAX,LJMAX,last_bvoc_LC,size(BVOC_USED)),&
         stat=alloc_err )
     call CheckStop( alloc_err , "bvocEF alloc failed"  )
 
@@ -312,8 +312,8 @@ module Biogenics_ml
 
       if( MasterProc .and. DEBUG%BIO ) write(*,*) "Into MergedBVOC"
 
-      do i = 1, limax !PPP MAXLIMAX
-      do j = 1, ljmax !PPP MAXLJMAX
+      do i = 1, limax !PPP LIMAX
+      do j = 1, ljmax !PPP LJMAX
 
         nlu = LandCover(i,j)%ncodes
 
@@ -387,13 +387,13 @@ module Biogenics_ml
       last_daynumber = daynumber
 
       if ( DEBUG%BIO .and.  my_first_call  ) then
-           allocate(  workarray(MAXLIMAX,MAXLJMAX), stat=alloc_err )
+           allocate(  workarray(LIMAX,LJMAX), stat=alloc_err )
            call CheckStop( alloc_err , "workarray alloc failed"  )
            workarray = 0.0
       end if
 
-      do i = 1, limax !PPP MAXLIMAX
-      do j = 1, ljmax !PPP MAXLJMAX
+      do i = 1, limax !PPP LIMAX
+      do j = 1, ljmax !PPP LJMAX
 
         nlu = LandCover(i,j)%ncodes
 

@@ -4,7 +4,7 @@ use AllocInits,           only: AllocInit
 use ChemSpecs,            only: NSPEC_ADV, NSPEC_SHL, NSPEC_TOT ! => No. species 
 use ModelConstants_ml,    only: KMAX_MID, KCHEMTOP, AERO        ! =>  z dimension
 use NumberConstants,      only: UNDEF_R
-use Par_ml,               only: MAXLIMAX,MAXLJMAX   ! => x, y dimensions
+use Par_ml,               only: LIMAX,LJMAX   ! => x, y dimensions
 use Setup_1dfields_ml
 implicit none
 private
@@ -63,25 +63,25 @@ contains
     implicit none
     integer :: nk
 
-    allocate(xn_adv(NSPEC_ADV,MAXLIMAX,MAXLJMAX,KMAX_MID))
+    allocate(xn_adv(NSPEC_ADV,LIMAX,LJMAX,KMAX_MID))
     xn_adv=0.0
-    allocate(xn_shl(NSPEC_SHL,MAXLIMAX,MAXLJMAX,KMAX_MID))
+    allocate(xn_shl(NSPEC_SHL,LIMAX,LJMAX,KMAX_MID))
     xn_shl=0.0
-    allocate(xn_bgn(NSPEC_BGN,MAXLIMAX,MAXLJMAX,KMAX_MID))
+    allocate(xn_bgn(NSPEC_BGN,LIMAX,LJMAX,KMAX_MID))
     xn_bgn=0.0
-    allocate(PM25_water(MAXLIMAX,MAXLJMAX,KMAX_MID))
+    allocate(PM25_water(LIMAX,LJMAX,KMAX_MID))
     PM25_water=0.0
-    allocate(PM25_water_rh50(MAXLIMAX,MAXLJMAX))
+    allocate(PM25_water_rh50(LIMAX,LJMAX))
     PM25_water_rh50=0.0
-!   allocate(AOD(MAXLIMAX,MAXLJMAX))
+!   allocate(AOD(LIMAX,LJMAX))
 !   AOD=0.0
-!   allocate(Extin_coeff(MAXLIMAX,MAXLJMAX,KMAX_MID))
+!   allocate(Extin_coeff(LIMAX,LJMAX,KMAX_MID))
 !   Extin_coeff=0.0
-    allocate(cfac(NSPEC_ADV,MAXLIMAX,MAXLJMAX))
+    allocate(cfac(NSPEC_ADV,LIMAX,LJMAX))
     cfac=1.0
-    allocate(so2nh3_24hr(MAXLIMAX,MAXLJMAX))
+    allocate(so2nh3_24hr(LIMAX,LJMAX))
     so2nh3_24hr=0.0
-    allocate(Grid_snow(MAXLIMAX,MAXLJMAX))
+    allocate(Grid_snow(LIMAX,LJMAX))
     Grid_snow=0.0
     allocate(xn_2d_bgn(1,KCHEMTOP:KMAX_MID))
 
@@ -103,9 +103,9 @@ contains
 
    ! Surface area and water
 
-    allocate(surfarea_um2cm3(AERO%NSAREA,MAXLIMAX,MAXLJMAX))
+    allocate(surfarea_um2cm3(AERO%NSAREA,LIMAX,LJMAX))
     SurfArea_um2cm3=0.0
-    allocate(Gerber_water(MAXLIMAX,MAXLJMAX,KMAX_MID))
+    allocate(Gerber_water(LIMAX,LJMAX,KMAX_MID))
     Gerber_water=0.0
 
    ! wet DpgN and defaults from dry values

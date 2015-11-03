@@ -8,8 +8,8 @@ module calc_emis_potential_ml
   use MetFields_ml,     only: foundu10_met,foundv10_met
   use ModelConstants_ml,only: MasterProc, DEBUG_NH3,DEBUG_i, DEBUG_j,&
                               METSTEP, NMET, KMAX_MID
-  use Par_ml,           only: GIMAX,GJMAX,me,IRUNBEG,JRUNBEG, MAXLIMAX,&
-                              MAXLJMAX,MSG_READ2,MSG_READ3,MSG_READ5, &
+  use Par_ml,           only: GIMAX,GJMAX,me,IRUNBEG,JRUNBEG, LIMAX,&
+                              LJMAX,MSG_READ2,MSG_READ3,MSG_READ5, &
                               limax,ljmax !hb new meteoread
   use TimeDate_ml,      only: nydays, &
                               current_date, date,Init_nmdays,nmdays, &
@@ -32,15 +32,15 @@ module calc_emis_potential_ml
   private
   
   real, public,  dimension(NNH3,GIMAX,GJMAX)             :: NH3emis_pot
-  real, public, save, dimension(NNH3,MAXLIMAX,MAXLJMAX)  :: lNH3emis_pot
+  real, public, save, dimension(NNH3,LIMAX,LJMAX)  :: lNH3emis_pot
   
   Real,  public, save, dimension(NNH3,GIMAX,GJMAX)       :: gEmis50_nh3 ! on actual model domain
-  Real,  public, save, dimension(NNH3,MAXLIMAX,MAXLJMAX) :: lEmis50_nh3 ! kg/m2/s on local(processor) domain
-  Real,  public, save, dimension(NNH3,MAXLIMAX,MAXLJMAX) :: emnh3 ! after scaling with density etc
+  Real,  public, save, dimension(NNH3,LIMAX,LJMAX) :: lEmis50_nh3 ! kg/m2/s on local(processor) domain
+  Real,  public, save, dimension(NNH3,LIMAX,LJMAX) :: emnh3 ! after scaling with density etc
   
 
   real, save, dimension(8,GIMAX,GJMAX)               :: ddagtemp
-  real, public, save, dimension(8,MAXLIMAX,MAXLJMAX) :: lddagtemp  
+  real, public, save, dimension(8,LIMAX,LJMAX) :: lddagtemp  
   public :: readNH3emis
   public :: NH3emis_potential !Sum emissions. Only needed once
   public :: daydagt ! Determines start (day) of growth seasons
@@ -77,10 +77,10 @@ character (len = 100) :: meteoname !name of the meteofile
 !real, dimension(132,111) :: &
 !     t2_cels & !temp at 2m
 !     ,u_ref     !
-!real, dimension(MAXLIMAX,MAXLJMAX,NMET) :: &
+!real, dimension(LIMAX,LJMAX,NMET) :: &
 real, dimension(GIMAX,GJMAX,NMET) :: &
 ! do not use NMET
-!real, dimension(MAXLIMAX,MAXLJMAX) :: &
+!real, dimension(LIMAX,LJMAX) :: &
       t2_cels   &  ! Temp 2 m   deg. K
       ,u_10      &
       ,v_10         ! 10m wind in u and v direction  
@@ -92,7 +92,7 @@ real, dimension(GIMAX,GJMAX,KMAX_MID) :: &
 real, dimension(MAXTIMESTEPS) :: &
       T2 &!temp at 2m
       ,V10! windspeed m/s, now midpoint, should be changed
-!real, dimension(MAXLIMAX,MAXLJMAX,MAXTIMESTEPS) :: &
+!real, dimension(LIMAX,LJMAX,MAXTIMESTEPS) :: &
 real, dimension(GIMAX,GJMAX,MAXTIMESTEPS) :: &
       T2_C & !temp at 2m
       ,T2_tmp&
@@ -682,7 +682,7 @@ subroutine Get_tmpmeteofield(meteoname,namefield,nrec,&
 
     implicit none
 
-    real, dimension(*),intent(out)  :: field ! dimensions: (MAXLIMAX,MAXLJMAX)
+    real, dimension(*),intent(out)  :: field ! dimensions: (LIMAX,LJMAX)
     character (len = *),intent(in)  ::meteoname,namefield
     character (len = *),intent(out) ::validity
     integer,intent(in)              :: nrec,ndim

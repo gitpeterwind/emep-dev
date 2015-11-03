@@ -3293,7 +3293,7 @@
         use MetFields_ml, only : ps ,foundcloudwater,q,th,lwc,cc3dmax
         use ModelConstants_ml,    only : KMAX_BND,KMAX_MID,KCHEMTOP, METSTEP 
         use NetCDF_ml, only :ReadField_CDF
-        use Par_ml,           only: me,MAXLIMAX, MAXLJMAX
+        use Par_ml,           only: me,LIMAX, LJMAX
         use PhysicalConstants_ml, only :KAPPA, RGAS_KG, GRAV  
         use Radiation_ml, only : ZenithAngleS,ZenithAngle
         use TimeDate_ml, only : daynumber,current_date
@@ -3506,11 +3506,11 @@ use netcdf
      if(me==0)write(*,*)'Clim number of levels ',Nlevel_CLIM
  
      allocate(etaa_CLIM(Nlevel_CLIM+1),etab_CLIM(Nlevel_CLIM+1))
-     allocate(temperature_clim(Nlevel_CLIM,MAXLIMAX,MAXLJMAX))
-     allocate(cloudliquidwater_clim(Nlevel_CLIM,MAXLIMAX,MAXLJMAX))
-     allocate(humidity_clim(Nlevel_CLIM,MAXLIMAX,MAXLJMAX))
-     allocate(o3_clim(Nlevel_CLIM,MAXLIMAX,MAXLJMAX))
-     allocate(rcphot_3D(NRCPHOT,KCHEMTOP:KMAX_MID,MAXLIMAX,MAXLJMAX,2))
+     allocate(temperature_clim(Nlevel_CLIM,LIMAX,LJMAX))
+     allocate(cloudliquidwater_clim(Nlevel_CLIM,LIMAX,LJMAX))
+     allocate(humidity_clim(Nlevel_CLIM,LIMAX,LJMAX))
+     allocate(o3_clim(Nlevel_CLIM,LIMAX,LJMAX))
+     allocate(rcphot_3D(NRCPHOT,KCHEMTOP:KMAX_MID,LIMAX,LJMAX,2))
       
      call check(nf90_inq_varid(ncid = ncFileID, name = "P0", varID = varID))                 
      call check(nf90_get_var(ncFileID, varID, P0 ))

@@ -52,7 +52,7 @@ use netcdf,                 only: nf90_open,nf90_close,nf90_inq_dimid,&
 use netcdf_ml,              only: GetCDF,Out_netCDF,Init_new_netCDF,&
                                   CDFtype=>Real4,ReadTimeCDF,max_filename_length
 use OwnDataTypes_ml,        only: Deriv,TXTLEN_SHORT
-use Par_ml,                 only: MAXLIMAX,MAXLJMAX,GIMAX,GJMAX,IRUNBEG,JRUNBEG, &
+use Par_ml,                 only: LIMAX,LJMAX,GIMAX,GJMAX,IRUNBEG,JRUNBEG, &
                                   me, li0,li1,lj0,lj1,limax,ljmax
 use Pollen_const_ml,        only: pollen_check
 use TimeDate_ml,            only: date,current_date,nmdays
@@ -430,7 +430,7 @@ subroutine wrtxn(indate,WriteNow)
     enddo
   endif
 
-  allocate(data(MAXLIMAX,MAXLJMAX,KMAX_MID))
+  allocate(data(LIMAX,LJMAX,KMAX_MID))
   !do first one loop to define the fields, without writing them (for performance purposes)
   ncfileID=-1 ! must be <0 as initial value
   if(.not.fexist)then
@@ -568,8 +568,8 @@ subroutine init_nest(ndays_indate,filename_read,native_grid,IIij,JJij,Weight,&
   logical, parameter :: USE_LAST_HYBRID_LEVELS=.true.
   character(len=*),intent(in) :: filename_read
   logical,intent(in) :: native_grid
-  real ,intent(out):: Weight(4,MAXLIMAX,MAXLJMAX)
-  integer ,intent(out)::IIij(4,MAXLIMAX,MAXLJMAX),JJij(4,MAXLIMAX,MAXLJMAX)
+  real ,intent(out):: Weight(4,LIMAX,LJMAX)
+  integer ,intent(out)::IIij(4,LIMAX,LJMAX),JJij(4,LIMAX,LJMAX)
   integer, intent(out), dimension(*) :: k1_ext,k2_ext
   real, intent(out), dimension(*) :: weight_k1,weight_k2
   integer ,intent(out)::N_ext,KMAX_ext,GIMAX_ext,GJMAX_ext
@@ -839,7 +839,7 @@ subroutine init_nest(ndays_indate,filename_read,native_grid,IIij,JJij,Weight,&
     endforall
   else                  ! find the four closest points
     call grid2grid_coeff(glon,glat,IIij,JJij,Weight,lon_ext,lat_ext,&
-      GIMAX_ext,GJMAX_ext,MAXLIMAX,MAXLJMAX,limax,ljmax,mydebug,1,1)
+      GIMAX_ext,GJMAX_ext,LIMAX,LJMAX,limax,ljmax,mydebug,1,1)
   endif
 ! if(MasterProc)print "(A,4(X,I0,X,I0,X,F6.3,','))",'Nest interpol_const',&
 !    (IIij(n,1,1),JJij(n,1,1),Weight(n,1,1),n=1,4)
@@ -968,8 +968,8 @@ subroutine read_newdata_LATERAL(ndays_indate)
   if(mydebug)write(*,*)'Nest: read_newdata_LATERAL, first?', first_call
   if(first_call)then
     if(mydebug)write(*,*)'Nest: initializations 2D'
-    allocate(IIij(4,MAXLIMAX,MAXLJMAX),JJij(4,MAXLIMAX,MAXLJMAX))
-    allocate(Weight(4,MAXLIMAX,MAXLJMAX))
+    allocate(IIij(4,LIMAX,LJMAX),JJij(4,LIMAX,LJMAX))
+    allocate(Weight(4,LIMAX,LJMAX))
     allocate(k1_ext(KMAX_MID),k2_ext(KMAX_MID))
     allocate(weight_k1(KMAX_MID),weight_k2(KMAX_MID))
 
@@ -996,15 +996,15 @@ subroutine read_newdata_LATERAL(ndays_indate)
     endif
 
     if(iw>=1    .and..not.allocated(xn_adv_bndw)) &
-      allocate(xn_adv_bndw(NSPEC_ADV,MAXLJMAX,KMAX_MID,2)) ! West
+      allocate(xn_adv_bndw(NSPEC_ADV,LJMAX,KMAX_MID,2)) ! West
     if(ie<=limax.and..not.allocated(xn_adv_bnde)) &
-      allocate(xn_adv_bnde(NSPEC_ADV,MAXLJMAX,KMAX_MID,2)) ! East
+      allocate(xn_adv_bnde(NSPEC_ADV,LJMAX,KMAX_MID,2)) ! East
     if(js>=1    .and..not.allocated(xn_adv_bnds)) &
-      allocate(xn_adv_bnds(NSPEC_ADV,MAXLIMAX,KMAX_MID,2)) ! South
+      allocate(xn_adv_bnds(NSPEC_ADV,LIMAX,KMAX_MID,2)) ! South
     if(jn<=ljmax.and..not.allocated(xn_adv_bndn)) &
-      allocate(xn_adv_bndn(NSPEC_ADV,MAXLIMAX,KMAX_MID,2)) ! North
+      allocate(xn_adv_bndn(NSPEC_ADV,LIMAX,KMAX_MID,2)) ! North
     if(kt>=1    .and..not.allocated(xn_adv_bndt)) &
-      allocate(xn_adv_bndt(NSPEC_ADV,MAXLIMAX,MAXLJMAX,2)) ! Top
+      allocate(xn_adv_bndt(NSPEC_ADV,LIMAX,LJMAX,2)) ! Top
     if(DEBUG_ICBC)then
       CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
       if(MasterProc) write(*, "(A)") "Nest: DEBUG_ICBC Boundaries:"
@@ -1237,8 +1237,8 @@ subroutine reset_3D(ndays_indate)
  
   if(first_call)then
     if(mydebug) write(*,*)'Nest: initializations 3D'
-    allocate(IIij(4,MAXLIMAX,MAXLJMAX),JJij(4,MAXLIMAX,MAXLJMAX))
-    allocate(Weight(4,MAXLIMAX,MAXLJMAX))
+    allocate(IIij(4,LIMAX,LJMAX),JJij(4,LIMAX,LJMAX))
+    allocate(Weight(4,LIMAX,LJMAX))
     allocate(k1_ext(KMAX_MID),k2_ext(KMAX_MID))
     allocate(weight_k1(KMAX_MID),weight_k2(KMAX_MID))
     first_call=.false.

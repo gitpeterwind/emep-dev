@@ -40,7 +40,7 @@ use netcdf,               only: nf90_open, nf90_nowrite, nf90_close
 use NetCDF_ml,            only: ReadTimeCDF,ReadField_CDF,Out_netCDF,Real4,&
                                 closedID
 use OwnDataTypes_ml,      only: Deriv, TXTLEN_SHORT
-use Par_ml,               only: MAXLIMAX, MAXLJMAX, me,limax,ljmax
+use Par_ml,               only: LIMAX, LJMAX, me,limax,ljmax
 use PhysicalConstants_ml, only: AVOG
 use Setup_1dfields_ml,    only: rcemis
 use SmallUtils_ml,        only: find_index
@@ -152,8 +152,8 @@ subroutine Config_Fire()
   debug_level(3)=DEBUG%FORESTFIRE
   debug_level(4:)=.true.
 
-  allocate(BiomassBurningEmis(NEMEPSPECS,MAXLIMAX,MAXLJMAX),&
-           burning(MAXLIMAX,MAXLJMAX),stat=ios)
+  allocate(BiomassBurningEmis(NEMEPSPECS,LIMAX,LJMAX),&
+           burning(LIMAX,LJMAX),stat=ios)
   call CheckStop(ios,"ForestFire BiomassBurningEmis alloc problem")
   ne = 0     ! number-index of emep species
 
@@ -230,7 +230,7 @@ subroutine Fire_Emis(daynumber)
     call CheckStop("Unknown ForestFire MODE="//trim(MODE))
   endselect
   if(dn1<dn2)then
-    allocate(xrdemis(MAXLIMAX,MAXLJMAX),stat=alloc_err)
+    allocate(xrdemis(LIMAX,LJMAX),stat=alloc_err)
     nstart=daynumber    ! for debug info
   else
     ! newFFrecord: has pollutant|fname|record changed since last call?
@@ -243,7 +243,7 @@ subroutine Fire_Emis(daynumber)
       date2string(" YYYY-MM-DD",[yyyy,mm,dd]),first_call
 
   BiomassBurningEmis(:,:,:) = 0.0
-  allocate(rdemis(MAXLIMAX,MAXLJMAX),stat=alloc_err)
+  allocate(rdemis(LIMAX,LJMAX),stat=alloc_err)
   call CheckStop(alloc_err,"ForestFire rdemis alloc problem")
   
   ! We need to look for forest-fire emissions which are equivalent

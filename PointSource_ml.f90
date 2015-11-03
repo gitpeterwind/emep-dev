@@ -36,7 +36,7 @@ module PointSource_ml
   use ModelConstants_ml, only : KMAX_MID, PT, Pref, MasterProc, &
                                 USES, & ! for PlumeMethod
                                 DEBUG => DEBUG_EMISSTACKS
-  use Par_ml,            only : me, MAXLIMAX, MAXLJMAX, limax, ljmax, &
+  use Par_ml,            only : me, LIMAX, LJMAX, limax, ljmax, &
                                 IRUNBEG,JRUNBEG, & ! TMP for debug
                                 gi0, gi1, gj0, gj1
   use PlumeRise_ml,      only : Plume_PreggerFriedrich, Plume_ASME, Plume_NILU
@@ -123,7 +123,7 @@ subroutine readstacks(io)
    he_max = 0.0
    ns  = 0 ! number of stack-data entry, this processor
 
-   allocate( pointsources(MAXLIMAX, MAXLJMAX))
+   allocate( pointsources(LIMAX, LJMAX))
    pointsources(:,:) = .false.
 
    if ( MasterProc ) then
