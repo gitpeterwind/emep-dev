@@ -1706,15 +1706,16 @@ subroutine newmonth
 
       enddo!emis
 
-      do ic = 1, NLAND
-         ccsum = sum( sumemis(ic,:) )
-         !if ( ccsum > 0.0 ) then
-         if(ccsum>0.0 .and. MasterProc ) then
-            write(*,"(i5,1x,a10,3x,30(f12.2,:))")ic, Country(ic)%code, sumemis(ic,:)
-            write(IO_LOG,"(i5,1x,a10,3x,30(f12.2,:))")ic, Country(ic)%code, sumemis(ic,:)
-         endif
-      enddo
-
+      if(MasterProc)then
+         do ic = 1, NLAND
+            ccsum = sum( sumemis(ic,:) )
+            !if ( ccsum > 0.0 ) then
+            if(ccsum>0.0 .and. MasterProc ) then
+               write(*,"(i5,1x,a10,3x,30(f12.2,:))")ic, Country(ic)%code, sumemis(ic,:)
+               write(IO_LOG,"(i5,1x,a10,3x,30(f12.2,:))")ic, Country(ic)%code, sumemis(ic,:)
+            endif
+         enddo
+      endif
   endif
 endsubroutine newmonth
 !***********************************************************************

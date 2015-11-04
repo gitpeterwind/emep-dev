@@ -20,6 +20,7 @@ use Par_ml,             only: &
   lj0,lj1   ! First/Last local index in latitude  when outer boundary is excluded
 use PhysicalConstants_ml,only: GRAV,ATWAIR! Mol. weight of air(Jones,1992)
 use Setup_1dfields_ml,  only: amk, rcemis ! Air concentrations , emissions
+use SmallUtils_ml,       only: find_index
 !use mpi,                only: MPI_COMM_WORLD, MPI_IN_PLACE,&
 !                              MPI_DOUBLE_PRECISION, MPI_SUM, MPI_MIN, MPI_MAX
 ! openMPI has no explicit interface for MPI_ALLREDUCE
@@ -38,6 +39,8 @@ real, public, save, dimension(NSPEC_ADV) ::   &
   sumint   = 0.0,  & !  initial mass
   fluxin   = 0.0,  & !  mass in  across lateral boundaries
   fluxout  = 0.0,  & !  mass out across lateral boundaries
+  fluxin_top  = 0.0,  & !  mass in  across top
+  fluxout_top = 0.0,  & !  mass out across top
   totddep  = 0.0,  & !  total dry dep
   totwdep  = 0.0,  & !  total wet dep
   totem    = 0.0,  & !  total emissions
@@ -123,8 +126,8 @@ subroutine massbudget()
                                     ! n - No. of species
                                     ! nn - Total no. of short lived and advected species
                                     ! info - printing info
-  integer :: ifam                                 ! family index
-  real, allocatable, dimension(:,:) ::  sumk   ! total mass in each layer
+  integer :: ix_o3, ifam            ! family index
+  real,  dimension(NSPEC_ADV,KMAX_MID) ::  sumk   ! total mass in each layer
   integer, parameter :: NFAMILIES = 3             ! No. of families
   character(len=*), dimension(NFAMILIES), parameter :: &
     family_name = (/ "Sulphur ", "Nitrogen", "Carbon  " /)
@@ -152,9 +155,8 @@ subroutine massbudget()
     gtotox,             & ! oxidation of SO2
     natoms                ! number of S, N or C atoms
 
-  real :: totdiv,helsum,fac
+  real :: totdiv,helsum,fac,o3_fac,wgt_fac
 
-  allocate(sumk(NSPEC_ADV,KMAX_MID))
 
   fac=GRIDWIDTH_M*GRIDWIDTH_M/GRAV
 
@@ -162,8 +164,8 @@ subroutine massbudget()
   frac_mass(:)  = 0.0
   xmax(:)       =-2.0
   xmin (:)      = 2.0
-  gfluxin(:)    = fluxin(:)
-  gfluxout(:)   = fluxout(:)
+  gfluxin(:)    = fluxin(:)+fluxin_top(:)
+  gfluxout(:)   = fluxout(:)+fluxout_top(:)
   gtotem(:)     = totem(:)
   gtotddep(:)   = totddep(:)
   gtotwdep(:)   = totwdep(:)
@@ -194,6 +196,14 @@ subroutine massbudget()
     MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
   CALL MPI_ALLREDUCE(MPI_IN_PLACE, gfluxout , NSPEC_ADV, &
     MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
+  CALL MPI_ALLREDUCE(MPI_IN_PLACE, fluxin_top , NSPEC_ADV, &
+    MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
+  CALL MPI_ALLREDUCE(MPI_IN_PLACE, fluxout_top , NSPEC_ADV, &
+    MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
+  CALL MPI_ALLREDUCE(MPI_IN_PLACE, fluxin , NSPEC_ADV, &
+    MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
+  CALL MPI_ALLREDUCE(MPI_IN_PLACE, fluxout , NSPEC_ADV, &
+    MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
   CALL MPI_ALLREDUCE(MPI_IN_PLACE, gtotem , NSPEC_ADV, &
     MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
   CALL MPI_ALLREDUCE(MPI_IN_PLACE, gtotddep , NSPEC_ADV, &
@@ -217,6 +227,33 @@ subroutine massbudget()
   do k = 2,KMAX_MID
     sum_mass(:) = sum_mass(:)+sumk(:,k)
   enddo
+
+
+!O3 flux are also printed out
+  if(MasterProc)then
+     ix_o3=find_index( 'O3', species_adv(:)%name )
+     if(ix_o3>0)then
+        o3_fac=species_adv(ix_o3)%molwt/ATWAIR
+        fluxin_top(ix_o3)=fluxin_top(ix_o3)*o3_fac
+        fluxout_top(ix_o3)=fluxout_top(ix_o3)*o3_fac
+        fluxin(ix_o3)=fluxin(ix_o3)*o3_fac
+        fluxout(ix_o3)=fluxout(ix_o3)*o3_fac
+        33 FORMAT(5(A,es10.3))
+        write(*,*)'Ozone fluxes (kg):'   
+        write(*,33)'Net from top = ', fluxin_top(ix_o3)-fluxout_top(ix_o3),&
+                  '  in from top = ',fluxin_top(ix_o3),' out of top = ',fluxout_top(ix_o3)
+        write(*,33)'Net lateral faces = ', fluxin(ix_o3)-fluxout(ix_o3),&
+             '  in lateral faces = '  ,fluxin(ix_o3), &
+             ' out lateral faces = ',  fluxout (ix_o3)
+        write(*,33)'O3 in atmosphere at start of run = ', sumint(ix_o3)*o3_fac,&
+             ' at end of run = ', sum_mass(ix_o3)*o3_fac
+        write(*,33)'O3 dry deposited = ',&
+             gtotddep(ix_o3)*species_adv(ix_o3)%molwt
+     else
+        write(*,*)'O3 index not found'
+     endif
+  endif
+
 
   do n = 1,NSPEC_ADV
     totdiv = sumint(n) + gtotem(n) + gfluxin(n)
@@ -253,12 +290,23 @@ subroutine massbudget()
       family_input(ifam) = family_init(ifam)    &
                          + family_inflow(ifam)  &
                          + family_em(ifam)
+!convert into kg
+       select case(ifam)
+        case(1);wgt_fac=32/ATWAIR!sulphurs
+        case(2);wgt_fac=14/ATWAIR!nitrogens
+        case(3);wgt_fac=12/ATWAIR!carbons
+      endselect
+     family_mass(ifam)=family_mass(ifam)*wgt_fac
+     family_outflow(ifam)=family_outflow(ifam)*wgt_fac
+     family_input(ifam)=family_input(ifam)*wgt_fac
+     family_ddep(ifam)=family_ddep(ifam)*wgt_fac*ATWAIR
+     family_wdep(ifam)=family_wdep(ifam)*wgt_fac*ATWAIR
 
       if(family_input(ifam)>0.0) &
         family_fracmass(ifam) = (family_mass(ifam)         &
                               +  family_outflow(ifam)      &
-                              +  family_ddep(ifam)*ATWAIR  &
-                              +  family_wdep(ifam)*ATWAIR) &
+                              +  family_ddep(ifam)  &
+                              +  family_wdep(ifam)) &
                               / family_input(ifam)
 
 
@@ -274,7 +322,7 @@ subroutine massbudget()
       write(logtxt,"(a9,3a14)")"ifam","totddep","totwdep","totem"
       call PrintLog(logtxt)
       write(logtxt,"(i9,3es14.3)") ifam, &
-        family_ddep(ifam)*ATWAIR, family_wdep(ifam)*ATWAIR, family_em(ifam)
+        family_ddep(ifam), family_wdep(ifam), family_em(ifam)
       call PrintLog(logtxt)
       call PrintLog('++++++++++++++++++++++++++++++++++++++++++++++++')
     enddo  ! ifam = 1,3
