@@ -79,7 +79,7 @@
                   USE_CONVECTION,DEBUG_ADV
   use MetFields_ml,      only : ps,sdot,Etadot,SigmaKz,EtaKz,u_xmj,v_xmi,cnvuf,cnvdf&
                                 ,uw,ue,vs,vn
-  use MassBudget_ml,     only : fluxin,fluxout
+  use MassBudget_ml,     only : fluxin_top,fluxout_top,fluxin,fluxout
   use My_Timing_ml,      only : Code_timer, Add_2timing, tim_before,tim_after
   use Par_ml,            only : LIMAX,LJMAX,GJMAX,GIMAX,me,mex,mey,&
             li0,li1,lj0,lj1 ,limax,ljmax, gi0, IRUNBEG,gj0, JRUNBEG &
@@ -818,10 +818,10 @@
        do i = li0,li1
           do j = lj0,lj1
              where(xn_adv(:,i,j,1) .gt. xntop(:,i,j))
-                fluxout(:) = fluxout(:) + &
+                fluxout_top(:) = fluxout_top(:) + &
                      (xn_adv(:,i,j,1)-xntop(:,i,j))*(dA(1)+dB(1)*ps(i,j,1))*xxdg*xmd(i,j)
              elsewhere
-                fluxin(:) = fluxin(:) + &
+                fluxin_top(:) = fluxin_top(:) + &
                      (xntop(:,i,j)-xn_adv(:,i,j,1))*(dA(1)+dB(1)*ps(i,j,1))*xxdg*xmd(i,j)
              end where
           enddo
