@@ -1316,73 +1316,72 @@ subroutine CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,&
         enddo
         call check(nf90_put_var(ncFileID, iVarID, xcoord(1:GIMAXcdf)) )
         call check(nf90_put_var(ncFileID, jVarID, ycoord(1:GJMAXcdf)) )
-!        write(*,*)'coord written'
+        !        write(*,*)'coord written'
+     endif! projections
 
-
-        !Define vertical levels
-        if(present(KLEVcdf))then     !order is defined in KLEVcdf
-           do k=1,KMAXcdf
-              if(KLEVcdf(k)==0)then
-                 !0-->surface
-                 !definition of level ambiguous, since no thickness
-                 Acdf(k)=A_bnd(KMAX_BND)
-                 Bcdf(k)=B_bnd(KMAX_BND)
-                 Aicdf(k)=A_bnd(KMAX_BND)
-                 Bicdf(k)=B_bnd(KMAX_BND)
-              else
-                 !1-->20;2-->19;...;20-->1
-                 Acdf(k)=A_mid(KMAX_MID-KLEVcdf(k)+1)
-                 Bcdf(k)=B_mid(KMAX_MID-KLEVcdf(k)+1)
-                 Aicdf(k)=A_bnd(KMAX_BND-KLEVcdf(k)+1)
-                 Bicdf(k)=B_bnd(KMAX_BND-KLEVcdf(k)+1)
-                 if(k==KMAXcdf)then
-                    Aicdf(k+1)=A_bnd(KMAX_BND-KLEVcdf(k))
-                    Bicdf(k+1)=B_bnd(KMAX_BND-KLEVcdf(k))
-                 endif
+     !Define vertical levels
+     if(present(KLEVcdf))then     !order is defined in KLEVcdf
+        do k=1,KMAXcdf
+           if(KLEVcdf(k)==0)then
+              !0-->surface
+              !definition of level ambiguous, since no thickness
+              Acdf(k)=A_bnd(KMAX_BND)
+              Bcdf(k)=B_bnd(KMAX_BND)
+              Aicdf(k)=A_bnd(KMAX_BND)
+              Bicdf(k)=B_bnd(KMAX_BND)
+           else
+              !1-->20;2-->19;...;20-->1
+              Acdf(k)=A_mid(KMAX_MID-KLEVcdf(k)+1)
+              Bcdf(k)=B_mid(KMAX_MID-KLEVcdf(k)+1)
+              Aicdf(k)=A_bnd(KMAX_BND-KLEVcdf(k)+1)
+              Bicdf(k)=B_bnd(KMAX_BND-KLEVcdf(k)+1)
+              if(k==KMAXcdf)then
+                 Aicdf(k+1)=A_bnd(KMAX_BND-KLEVcdf(k))
+                 Bicdf(k+1)=B_bnd(KMAX_BND-KLEVcdf(k))
               endif
-              if(DEBUG_NETCDF) write(*,*) "TESTHH netcdf KLEVcdf ", k, KLEVCDF(k),Acdf(k) 
-           enddo
-        elseif(KMAXcdf==KMAX_MID)then
-           do k=1,KMAX_MID
-              Acdf(k)=A_mid(k)
-              Bcdf(k)=B_mid(k)
-              Aicdf(k)=A_bnd(k)
-              Bicdf(k)=B_bnd(k)
-              if(DEBUG_NETCDF) write(*,*) "TESTHH netcdf  no KLEVcdf ", k, Acdf(k)
-           enddo
-           k=KMAX_MID+1
+           endif
+           if(DEBUG_NETCDF) write(*,*) "TESTHH netcdf KLEVcdf ", k, KLEVCDF(k),Acdf(k) 
+        enddo
+     elseif(KMAXcdf==KMAX_MID)then
+        do k=1,KMAX_MID
+           Acdf(k)=A_mid(k)
+           Bcdf(k)=B_mid(k)
            Aicdf(k)=A_bnd(k)
            Bicdf(k)=B_bnd(k)
-
-        else
-           do k=1,KMAXcdf
-              !REVERSE order of k !
-              Acdf(k)=A_mid(KMAX_MID-k+1)
-              Bcdf(k)=B_mid(KMAX_MID-k+1)
-              Aicdf(k)=A_bnd(KMAX_BND-k+1)
-              Bicdf(k)=B_bnd(KMAX_BND-k+1)
-              if(k==KMAXcdf)then
-                 Aicdf(k+1)=A_bnd(KMAX_BND-k)
-                 Bicdf(k+1)=B_bnd(KMAX_BND-k)
-              endif
-              !      write(*,*) "TESTHH netcdf  KMAXcdf ", k, kcoord(k)
-           enddo
-        endif
-        call check(nf90_put_var(ncFileID, hyamVarID, Acdf(1:KMAXcdf)/100.0) )
-        call check(nf90_put_var(ncFileID, hybmVarID, Bcdf(1:KMAXcdf)) )
-        call check(nf90_put_var(ncFileID, hyaiVarID, Aicdf(1:KMAXcdf+1)/100.0) )
-        call check(nf90_put_var(ncFileID, hybiVarID, Bicdf(1:KMAXcdf+1)) )
-
-        do i=1,KMAXcdf
-           kcoord(i)=Acdf(i)/Pref+Bcdf(i)
+           if(DEBUG_NETCDF) write(*,*) "TESTHH netcdf  no KLEVcdf ", k, Acdf(k)
         enddo
-        call check(nf90_put_var(ncFileID, levVarID, kcoord(1:KMAXcdf)) )
-        do i=1,KMAXcdf+1
-           kcoord(i)=Aicdf(i)/Pref+Bicdf(i)
-        enddo
-        call check(nf90_put_var(ncFileID, ilevVarID, kcoord(1:KMAXcdf+1)) )
+        k=KMAX_MID+1
+        Aicdf(k)=A_bnd(k)
+        Bicdf(k)=B_bnd(k)
 
-     endif! projections
+     else
+        do k=1,KMAXcdf
+           !REVERSE order of k !
+           Acdf(k)=A_mid(KMAX_MID-k+1)
+           Bcdf(k)=B_mid(KMAX_MID-k+1)
+           Aicdf(k)=A_bnd(KMAX_BND-k+1)
+           Bicdf(k)=B_bnd(KMAX_BND-k+1)
+           if(k==KMAXcdf)then
+              Aicdf(k+1)=A_bnd(KMAX_BND-k)
+              Bicdf(k+1)=B_bnd(KMAX_BND-k)
+           endif
+           !      write(*,*) "TESTHH netcdf  KMAXcdf ", k, kcoord(k)
+        enddo
+     endif
+     call check(nf90_put_var(ncFileID, hyamVarID, Acdf(1:KMAXcdf)/100.0) )
+     call check(nf90_put_var(ncFileID, hybmVarID, Bcdf(1:KMAXcdf)) )
+     call check(nf90_put_var(ncFileID, hyaiVarID, Aicdf(1:KMAXcdf+1)/100.0) )
+     call check(nf90_put_var(ncFileID, hybiVarID, Bicdf(1:KMAXcdf+1)) )
+ 
+     do i=1,KMAXcdf
+        kcoord(i)=Acdf(i)/Pref+Bcdf(i)
+     enddo
+     call check(nf90_put_var(ncFileID, levVarID, kcoord(1:KMAXcdf)) )
+     do i=1,KMAXcdf+1
+        kcoord(i)=Aicdf(i)/Pref+Bicdf(i)
+     enddo
+     call check(nf90_put_var(ncFileID, ilevVarID, kcoord(1:KMAXcdf+1)) )
+
      if(DEBUG_NETCDF) write(*,*) "end serial part "
   endif! MasterProc
 
@@ -1401,7 +1400,7 @@ subroutine CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,&
                    iproc, MPI_COMM_WORLD, MPISTATUS, INFO)            
            endif
 
-          !insert the subdomain inside the fulldomain file
+           !insert the subdomain inside the fulldomain file
            call check(nf90_put_var(ncFileID, longVarID, &
                 Buff2D(1:tlimax(iproc),1:tljmax(iproc),1),&
                 start=(/ISMBEGcdf+tgi0(iproc)-1,JSMBEGcdf+tgj0(iproc)-1/),&
