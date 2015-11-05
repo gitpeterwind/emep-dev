@@ -36,8 +36,10 @@ OutputMisc=
  'XNCOL_NO2',   'USET', 'xncol', 'xncol', 'molec/cm2' , -99, -1,       F,   1.0, T, 4   !! 
  'XNCOL_CH4',   'USET', 'xncol', 'xncol', 'molec/cm2' , -99, -1,       F,   1.0, T, 4   !! 
  !
- ! For meteo MET2D straight from NWP, we can set subclass names from met% data in MetFields:
- !
+ ! For meteo fields defined in "met%". Set subclass as met%name defined in MetFields_ml:
+ !3D use MET3D
+ 'rho_airdensity',  'MET3D', 'air_density', '-', 'kg/m3', -99,  -99,      F,   1.0, T, 3,
+ !2D use MET2D. Can output also lowest level values of 3D fields. 
  'met2d_ustar_nwp',  'MET2D', 'ustar_nwp', '-', 'm/s', -99,  -99,      F,   1.0, T, 3,
  'met2d_uref',  'MET2D', 'u_ref', '-', 'm/s', -99,  -99,      F,   1.0, T, 3,
  'met2d_test',  'MET2D', 'u_xxx', '-', 'm/s', -99,  -99,      F,   1.0, T, 3,

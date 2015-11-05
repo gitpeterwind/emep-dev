@@ -506,7 +506,11 @@ subroutine Define_Derived()
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
   do ind = 1, nOutputMisc
     if( MasterProc ) print *, "ADDMISC ", OutputMisc(ind)%name
-    call AddDeriv(OutputMisc(ind))
+    if(OutputMisc(ind)%class=="MET3D")then
+       call AddDeriv(OutputMisc(ind),Is3D=.true.)
+    else
+       call AddDeriv(OutputMisc(ind))
+    endif
   enddo
 
 !-------------------------------------------------------------------------------
@@ -667,8 +671,7 @@ Is3D = .true.
   enddo
 
   do i = 1, num_deriv3d
-    if(dbg0) print *,"CHECK 3d", &
-      num_deriv3d, i, trim(wanted_deriv3d(i))
+    if(dbg0) print *,"CHECK 3d", num_deriv3d, i, trim(wanted_deriv3d(i))
     ind = find_index( wanted_deriv3d(i), def_3d(:)%name )
     call CheckStop ( found_ind3d(ind) > 0,  &
       "REQUESTED 3D DERIVED ALREADY DEFINED: "// trim(def_3d(ind)%name)  )
@@ -841,7 +844,7 @@ subroutine Derived(dt,End_of_Day)
 
     select case ( class )
 
-    case ( "MET2D", "MET3D" )
+    case ( "MET2D")
 
      !DS May 2015
      ! Meteo fields are available through their names and a pointer, either
@@ -858,11 +861,10 @@ subroutine Derived(dt,End_of_Day)
       end if
 
       if( imet_tmp > 0 ) then
-         if( MasterProc.and.first_call) write(*,*) "MET2D"//trim(name), &
-              imet_tmp, met_p(2,2,1)
          kmax=1
          if(met(imet_tmp)%dim==3)kmax=KMAX_MID!take lowest level
-
+         if( MasterProc.and.first_call) write(*,*) "MET2D"//trim(name), &
+              imet_tmp, met_p(2,2,kmax)
          forall ( i=1:limax, j=1:ljmax )
             d_2d( n, i,j,IOU_INST) = met_p(i,j,kmax)
          end forall
@@ -1465,6 +1467,29 @@ subroutine Derived(dt,End_of_Day)
     endif
 
     select case (class)
+
+    case ( "MET3D" )
+
+      imet_tmp = find_index(f_3d(n)%subclass, met(:)%name ) ! subclass has meteo name from MetFields 
+      if( imet_tmp > 0 ) then
+         if(met(imet_tmp)%dim==3)then
+            if( MasterProc.and.first_call) write(*,*) "MET3D"//trim(f_3d(n)%name), &
+                 imet_tmp, met(imet_tmp)%field(2,2,KMAX_MID,1)
+            forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
+               d_3d( n, i,j,k,IOU_INST) = met(imet_tmp)%field(i,j,k,1)
+            end forall
+         else
+            if( MasterProc.and.first_call) write(*,*) "Warning: requested 2D field with MET3D: ",trim(f_3d(n)%name)
+         endif
+      else
+          if( first_call)  then
+             if( MasterProc) write(*,*) "MET3D NOT FOUND"//trim(f_3d(n)%name)//":"//trim(f_3d(n)%subclass)
+             forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
+                d_3d( n, i,j,k,IOU_INST) = 0.0
+             end forall
+          endif
+       endif
+
     ! Simple advected species:
     case ( "ADV" )
       forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )

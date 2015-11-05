@@ -155,13 +155,17 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-5th  November 2015 Peter, Svetlana   3076-7
+5th  November 2015 Peter, Svetlana   3076-8
 
 Bug in the defintion of vertical levels in netcdf output files, introduced in 
 version 3070.
 Only the values/defintion of the vertical levels written are wrong, the data is correct.
 
 "Extended" Massbudget now also with consistent units.
+
+3D met output enabled for fields defined in "met%".
+In config_Outputs.nml, set for instance
+'rho_airdensity',  'MET3D', 'air_density', '-', 'kg/m3', -99,  -99,      F,   1.0, T, 3,
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 4th  November 2015 Peter, Dave, Jan Eiof, Matthieu   3075

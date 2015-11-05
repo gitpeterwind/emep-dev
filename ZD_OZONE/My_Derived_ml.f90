@@ -59,6 +59,9 @@ use TimeDate_ml,   only : current_date
 implicit none
 private
 
+INCLUDE 'mpif.h'
+INTEGER STATUS(MPI_STATUS_SIZE),INFO
+
  public  :: Init_My_Deriv
  public  :: My_DerivFunc ! Miscelleaneous functions of xn_adv for output
                          ! (not currently used)
@@ -258,7 +261,11 @@ private
        if(MasterProc) write(*,"(3a,2i3)")"NMLOUT OUTMISC ",OutputMisc(i)%name,&
               OutputMisc(i)%class, OutputMisc(i)%index
        tag_name(1) = trim(OutputMisc(i)%name)
-       call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
+      if(OutputMisc(i)%class=="MET3D")then
+         call AddArray( tag_name(1:1), wanted_deriv3d, NOT_SET_STRING, errmsg)
+       else
+          call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
+       endif
     end do
    ! OutputVegO3 will be added to derived fields from within the Mosaics_ml
    ! after adding 
