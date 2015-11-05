@@ -44,8 +44,7 @@ real, public, save, dimension(NSPEC_ADV) ::   &
   totddep  = 0.0,  & !  total dry dep
   totwdep  = 0.0,  & !  total wet dep
   totem    = 0.0,  & !  total emissions
-  totox    = 0.0,  & !  total oxidation
-  totldep  = 0.0     !  local deposition (not in use - Lagrangian)
+  totox    = 0.0     !  total oxidation
 
 real, public, save, dimension(NSPEC_ADV) ::  &
   amax = -2.0,  &  ! maximum concentration in field -2
@@ -67,7 +66,7 @@ subroutine Init_massbudget()
   integer i, j, k, n, info    ! lon,lat,lev indexes
                               ! n - No. of species
                               ! info - printing info
-  real rwork,fac
+  real rwork,fac,wgt_fac
 
   fac = GRIDWIDTH_M*GRIDWIDTH_M/GRAV
   do k=2,KMAX_MID
@@ -85,8 +84,9 @@ subroutine Init_massbudget()
   if(MasterProc.and.EXTENDEDMASSBUDGET)then
     do n = 1,NSPEC_ADV
       if(sumint(n)<=0.) cycle
-      write(IO_LOG,"(a15,i4,4x,e10.3)") "Initial mass",n,sumint(n)
-      write(*,"(a15,i4,4x,e10.3)") "Initial mass",n,sumint(n)
+      wgt_fac=species_adv(n)%molwt/ATWAIR
+      write(IO_LOG,"(a15,i4,4x,e10.3)") "Initial mass",n,sumint(n)*wgt_fac
+      write(*,"(a15,i4,4x,e10.3)") "Initial mass",n,sumint(n)*wgt_fac
     enddo
   endif
 
@@ -151,7 +151,6 @@ subroutine massbudget()
     gfluxin,gfluxout,   & ! flux in  and out
     gtotem,             & ! total emission
     gtotddep, gtotwdep, & ! total dry and wet deposition
-    gtotldep,           & ! local dry deposition
     gtotox,             & ! oxidation of SO2
     natoms                ! number of S, N or C atoms
 
@@ -169,7 +168,6 @@ subroutine massbudget()
   gtotem(:)     = totem(:)
   gtotddep(:)   = totddep(:)
   gtotwdep(:)   = totwdep(:)
-  gtotldep(:)   = totldep(:)
   gtotox(:)     = totox(:)
   sumk(:,:)     = 0.0
 
@@ -209,8 +207,6 @@ subroutine massbudget()
   CALL MPI_ALLREDUCE(MPI_IN_PLACE, gtotddep , NSPEC_ADV, &
     MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
   CALL MPI_ALLREDUCE(MPI_IN_PLACE, gtotwdep , NSPEC_ADV, &
-    MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
-  CALL MPI_ALLREDUCE(MPI_IN_PLACE, gtotldep , NSPEC_ADV, &
     MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
   CALL MPI_ALLREDUCE(MPI_IN_PLACE, gtotox , NSPEC_ADV, &
     MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
@@ -265,7 +261,8 @@ subroutine massbudget()
   if(MasterProc) then   ! printout from node 0
     if(EXTENDEDMASSBUDGET)then
       do n=1,NSPEC_ADV
-        if(gtotem(n)>0.0) write(*,*)'tot. emission of species ',n,gtotem(n)
+         wgt_fac=species_adv(n)%molwt/ATWAIR
+        if(gtotem(n)>0.0) write(*,*)'tot. emission of '//trim(species_adv(n)%name)//' ',gtotem(n)*wgt_fac
       enddo
     endif
 
@@ -287,20 +284,23 @@ subroutine massbudget()
       family_wdep(ifam)   = dot_product(gtotwdep(:),natoms(:))
       family_em(ifam)     = dot_product(gtotem(:)  ,natoms(:))
 
-      family_input(ifam) = family_init(ifam)    &
-                         + family_inflow(ifam)  &
-                         + family_em(ifam)
 !convert into kg
-       select case(ifam)
+      select case(ifam)
         case(1);wgt_fac=32/ATWAIR!sulphurs
         case(2);wgt_fac=14/ATWAIR!nitrogens
         case(3);wgt_fac=12/ATWAIR!carbons
       endselect
-     family_mass(ifam)=family_mass(ifam)*wgt_fac
-     family_outflow(ifam)=family_outflow(ifam)*wgt_fac
-     family_input(ifam)=family_input(ifam)*wgt_fac
-     family_ddep(ifam)=family_ddep(ifam)*wgt_fac*ATWAIR
-     family_wdep(ifam)=family_wdep(ifam)*wgt_fac*ATWAIR
+      family_init(ifam)=family_init(ifam)*wgt_fac
+      family_inflow(ifam)=family_inflow(ifam)*wgt_fac
+      family_em(ifam)=family_em(ifam)*wgt_fac
+      family_mass(ifam)=family_mass(ifam)*wgt_fac
+      family_outflow(ifam)=family_outflow(ifam)*wgt_fac
+      family_ddep(ifam)=family_ddep(ifam)*wgt_fac*ATWAIR
+      family_wdep(ifam)=family_wdep(ifam)*wgt_fac*ATWAIR
+
+      family_input(ifam) = family_init(ifam)    &
+                         + family_inflow(ifam)  &
+                         + family_em(ifam)
 
       if(family_input(ifam)>0.0) &
         family_fracmass(ifam) = (family_mass(ifam)         &
@@ -331,28 +331,31 @@ subroutine massbudget()
   if(MasterProc.and.EXTENDEDMASSBUDGET) then     ! printout from node 0
     !/.. now use species array which is set in My_MassBudget_ml
     do n=1,NSPEC_ADV
+      wgt_fac=species_adv(n)%molwt/ATWAIR
       write(IO_LOG,*)
       write(*,*)
       do k=1,KMAX_MID
         write(IO_LOG,"(' Spec ',i3,2x,a12,5x,'k= ',i2,5x,es12.5)")&
-          n,species_adv(n)%name, k,sumk(n,k)
+          n,species_adv(n)%name, k,sumk(n,k)*wgt_fac
         write(*     ,"(' Spec ',i3,2x,a12,5x,'k= ',i2,5x,es12.5)")&
-          n,species_adv(n)%name, k,sumk(n,k)
+          n,species_adv(n)%name, k,sumk(n,k)*wgt_fac
       enddo
     enddo
     do n=1,NSPEC_ADV
+      wgt_fac=species_adv(n)%molwt/ATWAIR
       write(*,*)
       write(*,*)'++++++++++++++++++++++++++++++++++++++++++++++++'
       write(*,*)
       write(*,"(a3,6a12)")" n ", "Spec", &
         "sumint", "summas", "fluxout", "fluxin", "fracmass"
       write(*,"(i3,1x,a11,5es12.4)") n,species_adv(n)%name, &
-        sumint(n), sum_mass(n), gfluxout(n), gfluxin(n), frac_mass(n)
+        sumint(n)*wgt_fac, sum_mass(n)*wgt_fac, gfluxout(n)*wgt_fac, gfluxin(n)*wgt_fac, frac_mass(n)
       write(*,*)
       write(*,"(a3,6a12)")  " n ", "species", &
-        "totox", "totddep", "totwdep", "totem", "totldep"
-      write(*,"(i3,1x,a11,5es12.4)") n, species_adv(n)%name, &
-        gtotox(n), gtotddep(n), gtotwdep(n), gtotem(n), gtotldep(n)
+        "totox", "totddep", "totwdep", "totem"
+      write(*,"(i3,1x,a11,5es12.4)") n, species_adv(n)%name, gtotox(n)*wgt_fac,&
+         gtotddep(n)*wgt_fac*ATWAIR, gtotwdep(n)*wgt_fac*ATWAIR, &
+         gtotem(n)*wgt_fac
       write(*,*)
       write(*,*)'++++++++++++++++++++++++++++++++++++++++++++++++'
     enddo

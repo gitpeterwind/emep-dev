@@ -155,12 +155,13 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-5th  November 2015 Peter, Svetlana   3076
+5th  November 2015 Peter, Svetlana   3076-7
 
 Bug in the defintion of vertical levels in netcdf output files, introduced in 
 version 3070.
 Only the values/defintion of the vertical levels written are wrong, the data is correct.
 
+"Extended" Massbudget now also with consistent units.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 4th  November 2015 Peter, Dave, Jan Eiof, Matthieu   3075
