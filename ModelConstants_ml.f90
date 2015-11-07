@@ -187,7 +187,7 @@ logical, public, save ::             &
 ! Methane background. 
   real, public, save :: BGND_CH4 = -1  ! -1 gives defaults in BoundaryConditions_ml, 
 ! To skip rct value   (jAero work)
-  integer, public, save :: SKIP_RCT  = -1  ! -1 gives defaults
+  integer, public, save, dimension(10) :: SKIP_RCT  = -1  ! -1 gives defaults
 !
   logical, public, save :: USE_WRF_MET_NAMES = .false. !to read directly WRF metdata
 

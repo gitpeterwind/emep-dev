@@ -117,7 +117,7 @@ contains
     real, dimension(size(AERO%Inddry))  :: Ddry ! Dry diameter
     integer :: iw, ipm ! for wet rad
    ! if rates are wanted for d_2d output, we use these indices:
-    integer, dimension(10), save :: d2index, id2rct 
+    integer, dimension(20), save :: d2index, id2rct 
     integer, save :: nd2d, iBCf, iBCc
     integer :: itmp
 
@@ -125,6 +125,7 @@ contains
 
     integer           :: k, n, ispec   ! loop variables
     real              :: qsat ! saturation water content
+    integer, save :: nSKIP_RCT = 0
 
     debug_flag =  ( DEBUG%SETUP_1DCHEM .and. debug_proc .and.  &
       i==debug_li .and. j==debug_lj .and. current_date%seconds == 0 )
@@ -133,16 +134,20 @@ contains
 
        if( debug_proc ) debug_flag = .true.  ! make sure we see 1st i,j combo
 
+       do n = 1, size(SKIP_RCT)
+          if ( SKIP_RCT(n) > 0 ) nSKIP_RCT = nSKIP_RCT  + 1
+       end do
+       if( MasterProc ) write(*,"(a,10i4)") dtxt//"SKIP_RCT:", SKIP_RCT(1:nSKIP_RCT)
+
        is_BC(:) = .false.
 
-       if ( index( USES%n2o5HydrolysisMethod, 'S16mix') > 0 ) then ! we use BC too
 
-         iBCf = find_index('ECFINE',chemgroups(:)%name)
-         if( MasterProc ) write(*,*) dtxt//"is_BCf check ", iBCf, trim(USES%n2o5HydrolysisMethod)
-         if ( iBCf > 0 ) then
-            iBCc = find_index('ECCOARSE',chemgroups(:)%name)
-            if( MasterProc ) write(*,*) dtxt//"is_BCc check ", iBCc
-            do ipm = 1, size( PM10_GROUP )
+       iBCf = find_index('ECFINE',chemgroups(:)%name)
+       if( MasterProc ) write(*,*) dtxt//"is_BCf check ", iBCf, trim(USES%n2o5HydrolysisMethod)
+       if ( iBCf > 0 ) then
+          iBCc = find_index('ECCOARSE',chemgroups(:)%name)
+          if( MasterProc ) write(*,*) dtxt//"is_BCc check ", iBCc
+          do ipm = 1, size( PM10_GROUP )
               ispec = PM10_GROUP(ipm)
               is_BC(ipm)  = ( find_index( ispec, chemgroups(iBCf)%ptr ) >0 )
               if( iBCc > 0 ) then ! have coarse BC too
@@ -150,10 +155,9 @@ contains
                     is_BC(ipm)  = .true.
               end if
               if( MasterProc) write(*,*) dtxt//"is_BC ",species(ispec)%name, is_BC(ipm)
-            end do
-          end if
-        end if
-    end if
+          end do
+       end if
+    end if ! first_call
 
     if( debug_flag ) write(*,*) dtxt//"=DBG=======  ", first_call, me
 
@@ -370,20 +374,30 @@ contains
    tinv(:) = 1./temp(:)
 
 
-   cn2o5(:) = cMolSpeed(temp(:),108.0)
-   chno3(:) = cMolSpeed(temp(:), 63.0)
-   cho2(:)  = cMolSpeed(temp(:), 33.0)
-   co3(:)   = cMolSpeed(temp(:), 48.0)
+   cN2O5(:) = cMolSpeed(temp(:),108.0)
+   cHNO3(:) = cMolSpeed(temp(:), 63.0)
+   cHO2(:)  = cMolSpeed(temp(:), 33.0)
+   cO3(:)   = cMolSpeed(temp(:), 48.0)
+   !cNO3(:)  = cMolSpeed(temp(:), 62.0)
+   !cNO2(:)  = cMolSpeed(temp(:), 46.0)
 
   ! 5 ) Rates  (!!!!!!!!!! NEEDS TO BE AFTER RH, XN, etc. !!!!!!!!!!)
 
 
    call set_rct_rates()
 
-   if ( SKIP_RCT > 0 ) then
-     rct(SKIP_RCT,:) = 0.0
-   end if
-
+  ! For sensitivity tests
+   do  n = 1, nSKIP_RCT ! can be zero
+     !if( SKIP_RCT(n) == 720 ) then
+     !   rct(72:75,:) = 0.0    ! HNO3 + SS, DU
+     !else if ( SKIP_RCT(n) == 770 ) then
+     !   rct(77:78,:) = 0.0    ! DU_f+DU_c, O3
+     !else 
+     !   if ( first_call ) call CheckStop( SKIP_RCT(n) > 100,&
+     !                                     dtxt//"SKIP_RCT too big")
+        rct(SKIP_RCT(n),:) = 0.0
+     !end if
+   end do
 
 
    if ( first_call ) then

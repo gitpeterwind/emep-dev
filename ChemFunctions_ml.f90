@@ -342,6 +342,7 @@ module ChemFunctions_ml
    real    :: f   ! Was f_Riemer
    real    :: gam, S, Rwet  ! for newer methods
    real, save :: g1 = 0.02, g2=0.002 ! gammas for 100% SO4, 100% NO3, default
+   real, save :: gFix  ! for Gamma:xxxx values
    real, parameter :: EPSIL = 1.0  ! One mol/cm3 to stop div by zero
    integer :: k
    real :: xNO3  ! As the partitioning between fine and coarse is so difficult
@@ -352,6 +353,11 @@ module ChemFunctions_ml
    method = USES%n2o5HydrolysisMethod
    if ( present(ormethod) )then
      method = ormethod
+   end if
+   if( first_call .and. method(1:6)=="Gamma:"  ) then
+       gFix = 0.002
+       if( method == "Gamma:0.05" ) gFix = 0.05
+       if( method == "Gamma:0.005" ) gFix = 0.005
    end if
 
    select case ( method )
@@ -378,7 +384,7 @@ module ChemFunctions_ml
         endif
       end do ! k
   !---------------------------------------
-   case ( "Smix", "SmixTen", "S16mix" )
+   case ( "Smix", "SmixTen" )
 
      do k = K1, K2
 
@@ -461,20 +467,22 @@ module ChemFunctions_ml
          rate(k) = 0.0
       endif
     end do ! k
-    case ( "Gamma:0.002")  ! Inspired by Brown et al. 2009
+    case ( "Gamma:0.002", "Gamma:0.05", "Gamma:0.005")  ! Inspired by Brown et al. 2009
      do k = K1, K2
 
        if ( rh(k)  > 0.4) then ! QUERY???
 
-          gam = 0.002
+          gam = gFix ! Found above
+ 
           S = S_m2m3(AERO%PM_F,k) !fine SIA +OM + ...
           rate(k) = UptakeRate(cN2O5(k),gam,S) 
       else
          rate(k) = 0.0
-       end if
+         gam     = 0.0 ! just for export
+      end if
+      gamN2O5(k) = gam ! just for export
 
     end do ! k
-    gamN2O5 = 0.002 ! just for export
 
      case default
        call StopAll("Unknown N2O5 hydrolysis"//method )

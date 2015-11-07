@@ -90,7 +90,7 @@
             ! 'CCE_SPRUCE','CCE_BEECH','ACE_PINE','ACE_OAK','ACE_BEECH',
             ! 'NEUR_SPRUCE','NEUR_BIRCH','MED_OAK','MED_PINE','MED_BEECH'
 !-------- Sub domain (x0,x1,y0,y1)
-!!RUNDOMAIN =   1, 100,  1, 100,      ! Orig EMEP domain in EECCA (for benchmarks)
+!!RUNDOMAIN =   1, 100,  1, 100,      ! (EECCA benchmarks)
 ! RUNDOMAIN =  40, 210, 12, 184,      ! SR TNO28 area
 ! RUNDOMAIN =  20,  70, 40, 90,       ! LPS tests
 ! RUNDOMAIN = 240, 720, 48, 736,      ! TNO07 reduced (15W-45E;30N-73N)

@@ -37,7 +37,7 @@ module AeroFunctions
   public :: UptakeRate
 
   public :: GammaN2O5
-  public :: GammaN2O5_sia
+  public :: GammaN2O5_so4
   public :: GammaN2O5_om  
   !public :: GammaN2O5_ome ! emep invented (ds), v. low value for OM
   public :: GammaN2O5_EJSS
@@ -533,16 +533,22 @@ module AeroFunctions
   !---------------------------------------------------------------------
   ! Gamma functions as mixture of SIA, OM, and other 
 
-  elemental function GammaN2O5(t,frh,fno3sia,fom,fss,fdust,fbc) result(gam) 
+  !elemental function GammaN2O5(t,frh,fno3sia,fom,fss,fdust,fbc) result(gam) 
+  elemental function GammaN2O5(t,frh,fso4sia,fom,fss,fdust,fbc) result(gam) 
     real, intent(in) :: t, frh   ! t(K), frh(0-1)
    ! fraction of organic matter, sea-salt, dust in aerosol
-    real, intent(in) :: fno3sia, fom, fss, fdust,fbc
+    real, intent(in) :: fso4sia, fom, fss, fdust,fbc
     real :: fsia
     real :: gam
     fsia = 1 - ( fom + fss + fdust + fbc )
 
-    gam =  fsia * (1-fno3sia) *  GammaN2O5_sia(t,frh) +&
-                     fno3sia * GammaN2O5_DavisAN(frh)
+    !BUG gam =  fsia * (1-fno3sia) *  GammaN2O5_so4(t,frh) +&
+    !BUG                  fno3sia * GammaN2O5_DavisAN(frh)
+    !BUG2 gam =  fsia *  fso4sia *  GammaN2O5_so4(t,frh) +&
+    !BUG2              (1- fso4sia) * GammaN2O5_DavisAN(frh)
+
+     gam =  fsia *  (  fso4sia *  GammaN2O5_so4(t,frh) +&
+                      (1- fso4sia) * GammaN2O5_DavisAN(frh) )
     if( fom   > 1.0e-6 ) gam = gam + fom   * GammaN2O5_om(frh) ! S5c0.005 ! GammaN2O5_ome
     if( fss   > 1.0e-6 ) gam = gam + fss   * GammaN2O5_EJSS(frh)
     if( fdust > 1.0e-6 ) gam = gam + fdust * 0.01 ! EJ 2005
@@ -573,7 +579,8 @@ module AeroFunctions
   !  gam = 0.005
   !end function GammaN2O5_ome
   !---------------------------------------------------------------------
-  elemental function GammaN2O5_sia(t,frh) result(gam) 
+  ! Gamma for sulphate from Evans & Jacob 2005
+  elemental function GammaN2O5_so4(t,frh) result(gam) 
     real, intent(in) :: t, frh   ! t(K), frh(0-1)
     real :: a, b, rh
     real :: gam
@@ -590,7 +597,7 @@ module AeroFunctions
     !TYPO IN PAPER: gam = a * 10.0**b, should be MINUS b
     gam = a * 10.0**(-b)
 
-  end function GammaN2O5_sia
+  end function GammaN2O5_so4
   !---------------------------------------------------------------------
   elemental function UptakeRate(molSpeed,gam,S,rad) result (k)
    real, intent(in) :: molSpeed             !< mean molec. vel, m/s
@@ -716,14 +723,15 @@ if(iRH == 100 ) print *, frh, rwet/rdry, S_m2m3(:)*um2
    do iRH = 20, 100, 20
      frh = 0.01 * iRH
      print "(a,i4,9f12.3)", "Davis ", iRH, GammaN2O5_DavisAN(frh), &
-      GammaN2O5_EJSS(frh), GammaN2O5_sia(t,frh), GammaN2O5_sia(t+10,frh), &
-      GammaN2O5(t,frh,fno3sia=0.3,fom=0.33,fss=0.1,fdust=0.01,fbc=0.0) ,GammaN2O5(t,frh,fno3sia=0.3,fom=0.0,fss=0.0,fdust=0.0,fbc=0.0)
+      GammaN2O5_EJSS(frh), GammaN2O5_so4(t,frh), GammaN2O5_so4(t+10,frh), &
+      GammaN2O5(t,frh,fso4sia=0.3,fom=0.33,fss=0.1,fdust=0.01,fbc=0.0),&
+      GammaN2O5(t,frh,fso4sia=0.3,fom=0.0,fss=0.0,fdust=0.0,fbc=0.0)
    end do
    
    do iTK = 270, 290
       t=iTK
       print "(a,i5,3es12.3)", "GTK ", iTK, &
-        GammaN2O5_sia(t,0.3), GammaN2O5_sia(t,0.8), GammaN2O5_sia(t,0.99)
+        GammaN2O5_so4(t,0.3), GammaN2O5_so4(t,0.8), GammaN2O5_so4(t,0.99)
    end do
 
   end subroutine self_test
