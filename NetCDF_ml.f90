@@ -1029,8 +1029,10 @@ subroutine CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,&
 
   if(me==0)then
      if(NETCDF_DEFLATE_LEVEL >= 0)then
+        if(MasterProc.and.DEBUG_NETCDF)write(*,*)'nf90_create'
         call check(nf90_create(path = trim(fileName), &
              cmode = nf90_hdf5, ncid = ncFileID),"create:"//trim(fileName))
+        if(MasterProc.and.DEBUG_NETCDF)write(*,*)'nf90_created'
      else
         call check(nf90_create(path = trim(fileName), &
              cmode = nf90_clobber, ncid = ncFileID),"create:"//trim(fileName))
@@ -1136,8 +1138,9 @@ subroutine CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,&
         call check(nf90_put_att(ncFileID, longVarID, "units", "degrees_east"))
         call check(nf90_put_att(ncFileID, longVarID, "standard_name", "longitude"))
      endif
-
-     !  call check(nf90_def_dim(ncid = ncFileID, name = "k", len = KMAXcdf, dimid = kDimID))
+     
+     if(MasterProc.and.DEBUG_NETCDF)write(*,*)'lon lat dims defined'
+    !  call check(nf90_def_dim(ncid = ncFileID, name = "k", len = KMAXcdf, dimid = kDimID))
      call check(nf90_def_dim(ncid = ncFileID, name = "lev", len = KMAXcdf, dimid = levDimID))
      call check(nf90_def_dim(ncid = ncFileID, name = "ilev", len = KMAXcdf+1, dimid = ilevDimID))
      call check(nf90_put_att(ncFileID, nf90_global, "vert_coord", vert_coord))
@@ -1422,6 +1425,7 @@ subroutine CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,&
      call check(nf90_close(ncFileID))
      if(DEBUG_NETCDF)write(*,*)'NetCDF: file created, end of CreatenetCDFfile ',ncFileID
   endif
+
 end subroutine CreatenetCDFfile
 
 
@@ -1469,7 +1473,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
   integer :: GIMAX_old,GJMAX_old,KMAX_old
   integer :: GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf
   real(kind=8) :: rdays,rdays_time(1)
-  logical :: overwrite_local
+  logical :: overwrite_local,createfile=.false.
   integer, parameter :: IOU_GIVEN=-IOU_INST
 
   i1=1;i2=GIMAX;j1=1;j2=GJMAX  !start and end of saved area
@@ -1515,60 +1519,64 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
       else
         status=nf90_open(trim(fileName_given),nf90_write,ncFileID)
       endif
-              
-      if(DEBUG_NETCDF) write(*,*)'Out_NetCDF: fileName_given ' ,&
+     if(DEBUG_NETCDF) write(*,*)'Out_NetCDF: fileName_given ' ,&
         trim(fileName_given),overwrite_local,status==nf90_noerr,ncfileID,&
         trim(nf90_strerror(status))
-      ISMBEGcdf=IRUNBEG+i1-1
-      JSMBEGcdf=JRUNBEG+j1-1
-      GIMAXcdf=i2-i1+1
-      GJMAXcdf=j2-j1+1
-      if(status/=nf90_noerr .or. overwrite_local) then !the file does not exist yet or is overwritten
-        write(6,*) 'creating file: ',trim(fileName_given)
-        period_type = 'unknown'
-        call CreatenetCDFfile(trim(fileName_given),GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAX)
-        ncFileID=closedID
-      else!if(.not.create_var_only_local)then
-       !test if the defined dimensions are compatible
-        if(DEBUG_NETCDF)&
-          write(6,*) 'check dims file: ',trim(fileName_given)
-        select case(projection)
-        case('lon lat')
-          call check(nf90_inq_dimid(ncFileID,"lon",idimID),"dim:lon")
-          call check(nf90_inq_dimid(ncFileID,"lat",jdimID),"dim:lat")
-        case default
-          call check(nf90_inq_dimid(ncFileID,"i"  ,idimID),"dim:i")
-          call check(nf90_inq_dimid(ncFileID,"j"  ,jdimID),"dim:j")
-        endselect
-        if(USE_EtaCOORDINATES)then
-          call check(nf90_inq_dimid(ncFileID,"lev",kdimID),"dim:lev")
-        else
-          call check(nf90_inq_dimid(ncFileID,"k"  ,kdimID),"dim:k")
-        endif
-        ! only i,j coords can be handled for PS so far.
-        ! Posisble x,y would give wrong dimID. 
-        ! Check if all dims are found:
-        call CheckStop(any([idimID,jdimID,kdimID]<0),&
-          "ReadField_CDF: no dimID found for"//trim(fileName_given))
+      if(status/=nf90_noerr .or. overwrite_local)createfile=.true.
+   endif
+   CALL MPI_BCAST(createfile ,1,MPI_LOGICAL,0,MPI_COMM_WORLD,INFO)
+   
+   ISMBEGcdf=IRUNBEG+i1-1
+   JSMBEGcdf=JRUNBEG+j1-1
+   GIMAXcdf=i2-i1+1
+   GJMAXcdf=j2-j1+1
 
-        call check(nf90_inquire_dimension(ncFileID,idimID,len=GIMAX_old),"len:i")
-        call check(nf90_inquire_dimension(ncFileID,jdimID,len=GJMAX_old),"len:j")
-        call check(nf90_inquire_dimension(ncFileID,kdimID,len=KMAX_old) ,"len:k")
-
-        if(any([GIMAX_old,GJMAX_old,KMAX_old]<[GIMAXcdf,GJMAXcdf,KMAX]))then
-          write(6,*)'existing file ', trim(fileName_given),' has wrong dimensions'
-          write(6,*)GIMAX_old,GIMAXcdf,GJMAX_old,GJMAXcdf,KMAX_old,KMAX
-          write(6,*)'WARNING! OLD ', trim(fileName_given),' IS DELETED'
-          write(6,*)'creating new file: ',trim(fileName_given)
-          period_type = 'unknown'
-          call CreatenetCDFfile(trim(fileName_given),GIMAXcdf,GJMAXcdf,&
-            ISMBEGcdf,JSMBEGcdf,KMAX)
-          ncFileID=closedID
-        endif
+   if(createfile) then !the file does not exist yet or is overwritten
+      write(6,*) 'creating file: ',trim(fileName_given)
+      period_type = 'unknown'
+      call CreatenetCDFfile(trim(fileName_given),GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAX)
+      ncFileID=closedID
+   elseif(MasterProc)then
+      !test if the defined dimensions are compatible
+      if(DEBUG_NETCDF)&
+           write(6,*) 'check dims file: ',trim(fileName_given)
+      select case(projection)
+      case('lon lat')
+         call check(nf90_inq_dimid(ncFileID,"lon",idimID),"dim:lon")
+         call check(nf90_inq_dimid(ncFileID,"lat",jdimID),"dim:lat")
+      case default
+         call check(nf90_inq_dimid(ncFileID,"i"  ,idimID),"dim:i")
+         call check(nf90_inq_dimid(ncFileID,"j"  ,jdimID),"dim:j")
+      endselect
+      if(USE_EtaCOORDINATES)then
+         call check(nf90_inq_dimid(ncFileID,"lev",kdimID),"dim:lev")
+      else
+         call check(nf90_inq_dimid(ncFileID,"k"  ,kdimID),"dim:k")
       endif
-    endif
-    iotyp_new=IOU_GIVEN
-    ncFileID_new=ncFileID
+      ! only i,j coords can be handled for PS so far.
+      ! Posisble x,y would give wrong dimID. 
+      ! Check if all dims are found:
+      call CheckStop(any([idimID,jdimID,kdimID]<0),&
+           "ReadField_CDF: no dimID found for"//trim(fileName_given))
+      
+      call check(nf90_inquire_dimension(ncFileID,idimID,len=GIMAX_old),"len:i")
+      call check(nf90_inquire_dimension(ncFileID,jdimID,len=GJMAX_old),"len:j")
+      call check(nf90_inquire_dimension(ncFileID,kdimID,len=KMAX_old) ,"len:k")
+      
+      if(any([GIMAX_old,GJMAX_old,KMAX_old]<[GIMAXcdf,GJMAXcdf,KMAX]))then
+         write(6,*)'existing file ', trim(fileName_given),' has wrong dimensions'
+         write(6,*)GIMAX_old,GIMAXcdf,GJMAX_old,GJMAXcdf,KMAX_old,KMAX
+         write(6,*)'WARNING! OLD ', trim(fileName_given),' IS DELETED'
+         write(6,*)'creating new file: ',trim(fileName_given)
+         period_type = 'unknown'
+         call CreatenetCDFfile(trim(fileName_given),GIMAXcdf,GJMAXcdf,&
+              ISMBEGcdf,JSMBEGcdf,KMAX)
+         ncFileID=closedID
+      endif
+   endif
+   
+   iotyp_new=IOU_GIVEN
+   ncFileID_new=ncFileID
   endif
 
   if(DEBUG_NETCDF.and.MasterProc)then
@@ -2934,7 +2942,10 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
         call StopAll("ReadField_CDF: stagg not recognized")
      endif
   endif
-!Should define longitude in the range [-180, 180]?
+!Should define longitude in the range [-180, 180]
+  do ij=1,size(Rlon)
+     if(Rlon(ij)>180)Rlon(ij)=Rlon(ij)-360.0
+  enddo
 
   if ( debug ) write(*,*) 'ReadCDF lon bounds',minval(Rlon),maxval(Rlon)
   if ( debug ) write(*,*) 'ReadCDF lat bounds',minval(Rlat),maxval(Rlat)
@@ -3402,6 +3413,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                  ij=i+(j-1)*LIMAX
                  ijk=k+(ij-1)*k2
                  ig=nint((glon(i,j)-Rlon(startvec(1)))*dloni)+1
+                 if(ig<0.5)ig=ig+dims(1)
+                 if(ig>dims(1))ig=ig-dims(1)
                  ig=max(1,min(dims(1),ig))
                  jg=max(1,min(dims(2),nint((glat(i,j)-Rlat(startvec(2)))*dlati)+1))
                  igjgk=ig+(jg-1)*dims(1)+(k-1)*dims(1)*dims(2)
@@ -4369,7 +4382,7 @@ subroutine printCDF(name, array,unit)
     fname = "PRINTCDF_" // trim(name) // ".nc"
 
     !Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,fileName_given)
-
+    write(*,*)me ,' printcdf'
     if(MasterProc) write(*,*) "OUTPUTS printCDF :"//trim(fname),  maxval(array)
     call Out_netCDF(IOU_INST,def1,2,1, array,1.0,&
            CDFtype=Real4,fileName_given=fname,overwrite=.true.)
