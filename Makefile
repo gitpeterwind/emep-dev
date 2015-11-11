@@ -136,8 +136,8 @@ SR-EMEP SR-MACC: \
 	  ./ZD_3DVar/My_3DVar_ml.f90 ./ZD_Pollen/My_Pollen_ml.f90 \
 	  ./ZD_EXTRA/My_ESX_ml.f90
 
-# NMC is an EVA run, with different nest/dump output
-MACC-NMC: MACC-EVA
+MACC-NMC:   MACC-EVA        # EVA run, with different nest/dump output
+MACC-EVAan: MACC-EVA-3DVar  # 3DVar run, with EVA nest/dump output
 
 # Pollen for MACC FC runs
 MACC: export SRCS := Pollen_ml.f90 Pollen_const_ml.f90 $(filter-out My_Pollen_ml.f90,$(SRCS))

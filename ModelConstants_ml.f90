@@ -164,7 +164,10 @@ logical, public, save ::             &
  ,SELECT_LEVELS_HOURLY  = .false.    & ! for FORECAST, 3DPROFILES
  ,JUMPOVER29FEB      = .false.         ! When current date is 29th February, jump to next date. 
                                        !NB: this is not identical to assuming not a leap year,
-                                       !for instance the assumed number of days in the year will still be 366
+                                       !for instance the assumed number of days in the year  will still be 366
+                                       
+integer, public, save :: &
+  FREQ_HOURLY = 1  ! hourly netcdf output frequency
 
 ! Soil NOx. Choose EURO for better spatial and temp res, but for 
 ! global runs need global monthly. Variable USE_SOILNOX set from
@@ -606,7 +609,7 @@ subroutine Config_ModelConstants(iolog)
    ,USE_EURO_SOILNOX, USE_GLOBAL_SOILNOX, EURO_SOILNOX_DEPSCALE &
    ,USE_SEASALT, USE_POLLEN, USE_ASH, USE_AOD &
    ,INERIS_SNAP1, INERIS_SNAP2 &   ! Used for TFMM time-factors
-   ,SELECT_LEVELS_HOURLY  & ! incl. FORECAST, 3DPROFILES
+   ,SELECT_LEVELS_HOURLY, FREQ_HOURLY  & ! incl. FORECAST, 3DPROFILES
    ,FORECAST, ANALYSIS, SOURCE_RECEPTOR, VOLCANO_SR &
    ,SEAFIX_GEA_NEEDED     & ! only if problems, see text above.
    ,BGND_CH4              & ! Can reset background CH4 values 
@@ -617,9 +620,7 @@ subroutine Config_ModelConstants(iolog)
    ,VEG_2dGS_Params       & ! Allows 2d maps of growing seasons
    ,PFT_MAPPINGS          &  ! Allows use of external LAI maps
    ,NETCDF_DEFLATE_LEVEL,  RUNDOMAIN, DOMAIN_DECOM_MODE &
-   ,JUMPOVER29FEB, HOURLYFILE_ending &
-   ,USE_WRF_MET_NAMES &
-   ,NETCDF_DEFLATE_LEVEL, HOURLYFILE_ending
+   ,JUMPOVER29FEB, HOURLYFILE_ending, USE_WRF_MET_NAMES
 
   NAMELIST /Machine_config/ DataPath
 

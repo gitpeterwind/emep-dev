@@ -28,30 +28,30 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
 ! - BCVugXX: instantaneous grid-centre concentrations in ug (ug/m3, ugC/m3, ugS/m3, ugN/m3).
 !   For ug/m3     output, set hr_out%unitconv=to_ug_ADV(ixadv).
 !   For ugX/m3    output, set hr_out%unitconv=to_ug_X(ixadv).
+! - D3D_mean: hourly means comparable to daily output defined on My_Derived_ml.
+! - D3D_inst: instantaneous value used in daily output defined on My_Derived_ml.
+! - D3D_accum: accumulated   alue used in daily output defined on My_Derived_ml.
+! - D3D: D3D_mean/D3D_accum according to the corresponding My_Derived_ml definition.
+!
 !*************************************************************************
 use My_Outputs_ml,    only: NHOURLY_OUT,    & ! No. outputs
                             NLEVELS_HOURLY, & ! No. output levels
                             hr_out,         & ! Required outputs
                             LEVELS_HOURLY ! Output selected model levels
-          !NML SELECT_LEVELS_HOURLY, LEVELS_HOURLY ! Output selected model levels
-
 use CheckStop_ml,     only: CheckStop
 use Chemfields_ml,    only: xn_adv,xn_shl,cfac,PM25_water,PM25_water_rh50
 use ChemGroups_ml,    only: chemgroups
-use Derived_ml,       only: num_deriv2d,nav_2d        ! D2D houtly output type
-use DerivedFields_ml, only: f_2d,d_2d          ! D2D houtly output type
+use Derived_ml,       only: num_deriv2d,nav_2d,num_deriv3d,nav_3d ! D2D/D3D
+use DerivedFields_ml, only: f_2d,d_2d,f_3d,d_3d       ! houtly output types
 use OwnDataTypes_ml,  only: Asc2D, Deriv
 use ChemSpecs,        only: NSPEC_SHL, species
-!CMR  use ChemSpecs_shl_ml ,only: NSPEC_SHL          ! Maps indices
-!CMR  use ChemChemicals_ml ,only: species            ! Gives names
 use GridValues_ml,    only: i_fdom, j_fdom,&   ! Gives emep coordinates
                             debug_proc, debug_li,debug_lj
 use Io_ml,            only: IO_HOURLY
 use ModelConstants_ml,only: KMAX_MID, MasterProc, MY_OUTPUTS,&
                             IOU_INST, IOU_HOUR, IOU_YEAR, IOU_YEAR_LASTHH, &
                             DEBUG => DEBUG_OUT_HOUR,runlabel1,HOURLYFILE_ending,&
-                            FORECAST
-use ModelConstants_ml,only: SELECT_LEVELS_HOURLY !NML
+                            FORECAST, SELECT_LEVELS_HOURLY !NML
 use MetFields_ml,     only: t2_nwp,th, roa, surface_precip, ws_10m ,rh2m,&
                             pzpbl, ustar_nwp, Kz_m2s, &
                             Idirect, Idiffuse, z_bnd, z_mid,ps
@@ -212,26 +212,36 @@ implicit none
 
       select case (hr_out_type)
       case("COLUMN","COLUMNgroup")
-        ik=KMAX_MID-hr_out(ih)%nk+1  ! top of the column
-        if(ik>=KMAX_MID)ik=1         ! 1-level column does not make sense
+        ik=KMAX_MID-hr_out(ih)%nk+1   ! top of the column
+        if(ik>=KMAX_MID)ik=1          ! 1-level column does not make sense
       case("D2D")
-        ik=KMAX_MID                  ! surface/lowermost level
-        if(f_2d(ispec)%avg)then ! averaged variables        
-!         hr_out_type="D2D_inst"   ! output instantaneous values
-          hr_out_type="D2D_mean"   ! output mean values
-        else                    ! accumulated variables
+        ik=KMAX_MID                   ! surface/lowermost level
+        if(f_2d(ispec)%avg)then       ! averaged variables        
+!         hr_out_type="D2D_inst"      !   output instantaneous values
+          hr_out_type="D2D_mean"      !   output mean values
+        else                          ! accumulated variables
           hr_out_type="D2D_accum"
+        endif
+      case("D3D")
+        call CheckStop(SELECT_LEVELS_HOURLY,&
+          "D3D hourly output does not support SELECT_LEVELS_HOURLY")
+        ik=KMAX_MID-k+1               ! count levels from model bottom
+        if(f_3d(ispec)%avg)then       ! averaged variables        
+!         hr_out_type="D3D_inst"      !   output instantaneous values
+          hr_out_type="D3D_mean"      !   output mean values
+        else                          ! accumulated variables
+          hr_out_type="D3D_accum"
         endif
       case("ADVppbv","ADVugXX","ADVugXXgroup","PMwaterSRF",&
            "D2D_inst","D2D_mean","D2D_accum")
-        ik=KMAX_MID                  ! surface/lowermost level
+        ik=KMAX_MID                   ! surface/lowermost level
       case default
-        ik=KMAX_MID-k+1              ! all levels from model bottom are outputed,
+        ik=KMAX_MID-k+1               ! all levels from model bottom are outputed,
         if(debug_flag) write(*,*)"SELECT LEVELS? ", ik, SELECT_LEVELS_HOURLY
-        if(SELECT_LEVELS_HOURLY)then ! or the output levels are taken
-          ik=LEVELS_HOURLY(k)        ! from LEVELS_HOURLY array (default)
+        if(SELECT_LEVELS_HOURLY)then  ! or the output levels are taken
+          ik=LEVELS_HOURLY(k)         ! from LEVELS_HOURLY array (default)
           if(debug_flag) write(*,*)"DEBUG SELECT LEVELS", ik, hr_out_type
-          surf_corrected = (ik==0)   ! Will implement cfac
+          surf_corrected = (ik==0)    ! Will implement cfac
           if(debug_flag.and.surf_corrected) &
             write(*,*)"DEBUG HOURLY Surf_correction", ik, k
 !TESTHH QUERY: see below
@@ -507,9 +517,9 @@ implicit none
         if(debug_flag) then
           i=debug_li
           j=debug_lj
-          write(*,"(2a,2i4,a,3g12.3)") "OUTHOUR "//trim(hr_out_type),&
+          write(*,"(2a,2i4,a,4g12.3)") "OUTHOUR "//trim(hr_out_type),&
             trim(hr_out(ih)%name), ih, ispec,trim(f_2d(ispec)%name),&
-            d_2d(ispec,i,j,IOU_YEAR), d_2d(ispec,i,j,IOU_YEAR_LASTHH),&
+            d_2d(ispec,i,j,[IOU_INST,IOU_YEAR,IOU_YEAR_LASTHH]),&
             unit_conv
         endif
         forall(i=1:limax,j=1:ljmax)
@@ -517,6 +527,28 @@ implicit none
         endforall
         if(debug_flag) &
           write(*,'(a,2i3,2es12.3)')"HHH DEBUG D2D", ispec, ih, &
+            hr_out(ih)%unitconv, hourly(debug_li,debug_lj)
+
+      case("D3D_inst")
+       ! Here ispec is the index in the f_3d arrays
+        call CheckStop(ispec<1.or.ispec>num_deriv3d,&
+          "ERROR-DEF! Hourly_out: "//trim(hr_out(ih)%name)//", wrong D3D id!")
+        if(hr_out(ih)%unit=="") hr_out(ih)%unit = f_3d(ispec)%unit
+        unit_conv = hr_out(ih)%unitconv*f_3d(ispec)%scale
+
+        if(debug_flag) then
+          i=debug_li
+          j=debug_lj
+          write(*,"(2a,2i4,a,4g12.3)") "OUTHOUR "//trim(hr_out_type),&
+            trim(hr_out(ih)%name), ih, ispec,trim(f_3d(ispec)%name),&
+            d_3d(ispec,i,j,ik,[IOU_INST,IOU_YEAR,IOU_YEAR_LASTHH]),&
+            unit_conv
+        endif
+        forall(i=1:limax,j=1:ljmax)
+          hourly(i,j) = d_3d(ispec,i,j,ik,IOU_INST) * unit_conv
+        endforall
+        if(debug_flag) &
+          write(*,'(a,2i3,2es12.3)')"HHH DEBUG D3D", ispec, ih, &
             hr_out(ih)%unitconv, hourly(debug_li,debug_lj)
 
       case("D2D_accum")
@@ -529,9 +561,9 @@ implicit none
         if(debug_flag) then
           i=debug_li
           j=debug_lj
-          write(*,"(2a,2i4,a,3g12.3)") "OUTHOUR "//trim(hr_out_type),&
+          write(*,"(2a,2i4,a,4g12.3)") "OUTHOUR "//trim(hr_out_type),&
             trim(hr_out(ih)%name), ih, ispec,trim(f_2d(ispec)%name),&
-            d_2d(ispec,i,j,IOU_YEAR), d_2d(ispec,i,j,IOU_YEAR_LASTHH),&
+            d_2d(ispec,i,j,[IOU_INST,IOU_YEAR,IOU_YEAR_LASTHH]),&
             unit_conv
         endif
         forall(i=1:limax,j=1:ljmax)
@@ -541,6 +573,30 @@ implicit none
         endforall
         if(debug_flag) &
           write(*,'(a,2i3,2es12.3)')"HHH DEBUG D2D", ispec, ih, &
+            hr_out(ih)%unitconv, hourly(debug_li,debug_lj)
+
+      case("D3D_accum")
+       ! Here ispec is the index in the f_3d arrays
+        call CheckStop(ispec<1.or.ispec>num_deriv3d,&
+          "ERROR-DEF! Hourly_out: "//trim(hr_out(ih)%name)//", wrong D3D id!")
+        if(hr_out(ih)%unit=="") hr_out(ih)%unit = f_3d(ispec)%unit
+        unit_conv = hr_out(ih)%unitconv*f_3d(ispec)%scale
+  
+        if(debug_flag) then
+          i=debug_li
+          j=debug_lj
+          write(*,"(2a,2i4,a,4g12.3)") "OUTHOUR "//trim(hr_out_type),&
+            trim(hr_out(ih)%name), ih, ispec,trim(f_3d(ispec)%name),&
+            d_3d(ispec,i,j,ik,[IOU_INST,IOU_YEAR,IOU_YEAR_LASTHH]),&
+            unit_conv
+        endif
+        forall(i=1:limax,j=1:ljmax)
+          hourly(i,j) = (d_3d(ispec,i,j,ik,IOU_YEAR)&
+                        -d_3d(ispec,i,j,ik,IOU_YEAR_LASTHH)) * unit_conv
+          d_3d(ispec,i,j,ik,IOU_YEAR_LASTHH)=d_3d(ispec,i,j,ik,IOU_YEAR)
+        endforall
+        if(debug_flag) &
+          write(*,'(a,2i3,2es12.3)')"HHH DEBUG D3D", ispec, ih, &
             hr_out(ih)%unitconv, hourly(debug_li,debug_lj)
 
       case("D2D_mean")
@@ -560,9 +616,9 @@ implicit none
           endif
           i=debug_li
           j=debug_lj
-          write(*,"(a,2i4,a,3g12.3)"),&
+          write(*,"(a,2i4,a,4g12.3)"),&
             trim(hr_out(ih)%name), ih, ispec,trim(f_2d(ispec)%name),&
-            d_2d(ispec,i,j,IOU_YEAR), d_2d(ispec,i,j,IOU_YEAR_LASTHH),&
+            d_2d(ispec,i,j,[IOU_INST,IOU_YEAR,IOU_YEAR_LASTHH]),&
             unit_conv
         endif
         forall(i=1:limax,j=1:ljmax)
@@ -572,6 +628,37 @@ implicit none
         endforall
         if(debug_flag) &
           write(*,'(a,2i3,2es12.3)')"HHH DEBUG D2D", ispec, ih, &
+            hr_out(ih)%unitconv, hourly(debug_li,debug_lj)
+
+      case("D3D_mean")
+       ! Here ispec is the index in the f_3d arrays
+        call CheckStop(ispec<1.or.ispec>num_deriv3d,&
+          "ERROR-DEF! Hourly_out: "//trim(hr_out(ih)%name)//", wrong D3D id!")
+        if(hr_out(ih)%unit=="") hr_out(ih)%unit = f_3d(ispec)%unit
+        unit_conv = hr_out(ih)%unitconv*f_3d(ispec)%scale &
+                   /MAX(nav_3d(ispec,IOU_YEAR)-navg(ih),1)
+        navg(ih)=nav_3d(ispec,IOU_YEAR)
+        
+        if(debug_flag) then
+          if(f_3d(ispec)%avg)then           ! averaged variables        
+            write(*,"(a,1x,$)") "OUTHOUR D3D_mean avg"
+          else                              ! accumulated variables --> mean
+            write(*,"(a,1x,$)") "OUTHOUR D3D_mean acc"
+          endif
+          i=debug_li
+          j=debug_lj
+          write(*,"(a,2i4,a,4g12.3)"),&
+            trim(hr_out(ih)%name), ih, ispec,trim(f_3d(ispec)%name),&
+            d_3d(ispec,i,j,ik,[IOU_INST,IOU_YEAR,IOU_YEAR_LASTHH]),&
+            unit_conv
+        endif
+        forall(i=1:limax,j=1:ljmax)
+          hourly(i,j) = (d_3d(ispec,i,j,ik,IOU_YEAR)&
+                        -d_3d(ispec,i,j,ik,IOU_YEAR_LASTHH)) * unit_conv
+          d_3d(ispec,i,j,ik,IOU_YEAR_LASTHH)=d_3d(ispec,i,j,ik,IOU_YEAR)
+        endforall
+        if(debug_flag) &
+          write(*,'(a,2i3,2es12.3)')"HHH DEBUG D3D", ispec, ih, &
             hr_out(ih)%unitconv, hourly(debug_li,debug_lj)
 
       case DEFAULT

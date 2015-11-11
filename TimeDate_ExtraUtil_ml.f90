@@ -1,8 +1,8 @@
 MODULE TimeDate_ExtraUtil_ml
 
 use Par_ml,           only: me
-use ModelConstants_ml,only: METSTEP, MasterProc, IOU_MON,IOU_DAY,IOU_HOUR_MEAN
-use My_Outputs_ml,    only: FREQ_HOURLY
+use ModelConstants_ml,only: METSTEP, MasterProc, &
+                            IOU_MON,IOU_DAY,IOU_HOUR_MEAN,FREQ_HOURLY
 use TimeDate_ml,      only: max_day,tdif_secs,tdif_days,add_secs,add_days,&
                             ts2date=>make_current_date,date2ts=>make_timestamp,&
                             timestamp,day_of_year,date,startdate,enddate

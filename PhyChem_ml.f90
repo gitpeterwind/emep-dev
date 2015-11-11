@@ -6,7 +6,7 @@ module PhyChem_ml
 !     Output of hourly data
 !
 !-----------------------------------------------------------------------------
-use Advection_ml,     only:  advecdiff_poles,advecdiff_Eta!,adv_int
+use Advection_ml,     only: advecdiff_poles,advecdiff_Eta!,adv_int
 use Biogenics_ml,     only: Set_SoilNOx
 use Chemfields_ml,    only: xn_adv,cfac,xn_shl
 use ChemSpecs,        only: IXADV_SO2, IXADV_NH3, IXADV_O3, NSPEC_SHL, species
@@ -23,15 +23,16 @@ use ModelConstants_ml,only: KMAX_MID, nmax, nstep &
                            ,dt_advec       & ! time-step for phyche/advection
                            ,DEBUG, PPBINV, PPTINV  & 
                            ,END_OF_EMEPDAY & ! (usually 6am)
-                           ,IOU_INST       & !
-                           ,FORECAST       & !use advecdiff_poles on FORECAST mode
+                           ,IOU_INST       &
+                           ,FORECAST       & ! use advecdiff_poles on FORECAST mode
                            ,ANALYSIS       & ! 3D-VAR Analysis
                            ,SOURCE_RECEPTOR&
 !                           ,USE_GRAVSET&
+                           ,FREQ_HOURLY    & ! hourly netcdf output frequency
                            ,USE_POLLEN, USE_EtaCOORDINATES,JUMPOVER29FEB
 use MetFields_ml,     only: ps,roa,z_bnd,z_mid,cc3dmax, &
                             zen,coszen,Idirect,Idiffuse
-use My_Outputs_ml ,   only: NHOURLY_OUT, FREQ_SITE, FREQ_SONDE, FREQ_HOURLY
+use My_Outputs_ml ,   only: NHOURLY_OUT, FREQ_SITE, FREQ_SONDE
 use My_Timing_ml,     only: Code_timer, Add_2timing, tim_before, tim_after
 use Nest_ml,          only: readxn, wrtxn
 use Par_ml,           only: me, LIMAX, LJMAX

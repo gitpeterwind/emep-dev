@@ -11,10 +11,11 @@ module  My_Outputs_ml
 use CheckStop_ml,      only: CheckStop
 use ChemSpecs
 use ChemGroups_ml,     only: chemgroups
-use DerivedFields_ml,  only: f_2d               ! D2D houtly output type
+use DerivedFields_ml,  only: f_2d,f_3d          ! D2D/D3D houtly output type
 use ModelConstants_ml, only: PPBINV, PPTINV, MasterProc, KMAX_MID,&
                              MY_OUTPUTS, FORECAST, DEBUG_COLSRC,&
-                             USE_AOD, USE_POLLEN, DEBUG_POLLEN, SELECT_LEVELS_HOURLY
+                             USE_AOD, USE_POLLEN, DEBUG_POLLEN, &
+                             SELECT_LEVELS_HOURLY!, FREQ_HOURLY
 use PhysicalConstants_ml, only: ATWAIR
 use OwnDataTypes_ml,   only: Asc2D
 use Par_ml,            only: GIMAX,GJMAX,IRUNBEG,JRUNBEG,me
@@ -149,23 +150,16 @@ character(len=10), public, parameter, dimension(NXTRA_SONDE) :: &
 !  Or BCVppbv to get grid-centre concentrations (relevant for all layers)
 !----------------------------------------------------------------
 
-!TESTHH integer, public            :: NHOURLY_OUT =  9 ! No. outputs
-!TESTHH integer, public, parameter :: NLEVELS_HOURLY = 4 ! No. outputs
-integer, public, save      :: nhourly_out=0    ! No. outputs
-integer, public, save      :: nlevels_hourly=0 ! No. outputs
-integer, public, parameter :: FREQ_HOURLY = 1  ! 1 hours between outputs
+integer, public, save :: &
+  nhourly_out=0,&   ! No. output variables
+  nlevels_hourly=0  ! No. output levels
 
 ! Output selected model levels
-!NML logical, public, parameter ::  &
-!NML   SELECT_LEVELS_HOURLY = .false..or.FORECAST.or.(MY_OUTPUTS=="3DPROFILES")
-! Decide which levels to print out
-! 20<==>uppermost model level (m01)
-! 01<==>lowermost model level (m20)
-! 00<==>surface approx. from lowermost model level
-! 00 and 01 can be both printed out,
-! but it might create loads of missing values...
-!TESTHH integer, public, parameter, dimension(NLEVELS_HOURLY) :: &
-!TESTHH   LEVELS_HOURLY = (/0,4,6,10/)
+! If SELECT_LEVELS_HOURLY (ModelConstants_config NML)
+! levels_hourly contains which levels to print out
+!   20<==>uppermost model level (m01)
+!   01<==>lowermost model level (m20)
+!   00<==>surface approx. from lowermost model level
 integer, public, dimension(:), allocatable :: levels_hourly  ! Set below
 
 type(Asc2D), public, dimension(:), allocatable :: hr_out  ! Set below
@@ -285,8 +279,9 @@ subroutine set_output_defs
     nhourly_out=19
     nlevels_hourly = 1
   case("MACC_NMC")
-    nhourly_out=0
-    return
+    nhourly_out=4
+    nlevels_hourly=KMAX_MID     ! nb zero is *not* one of levels
+    call CheckStop(.not.USE_AOD,"MACC_NMC hourly output needs USE_AOD")
   case("MACC_ENS","FORECAST")
     nhourly_out=15
     nlevels_hourly=9
@@ -426,6 +421,17 @@ subroutine set_output_defs
       hr_out(j)=Asc2D(trim(name)//"_col","COLUMNgroup" ,igrp,&
            ix1,ix2,iy1,iy2,1,"ug/m2",1e0/3600.,-999.9)  ! 1kg/s --> 1kg/h
     enddo
+  case("MACC_NMC")
+    SELECT_LEVELS_HOURLY=.false.  ! do not select levels, get them all
+    hr_out(:)= (/ &
+      Asc2D("AOD_550nm" ,"D2D_inst",find_index("AOD_550nm",f_2d(:)%name),&
+           ix1,ix2,iy1,iy2,1             ,"",1.0,-9999.9),&
+      Asc2D("EXT_550nm" ,"D3D_inst",find_index("EXT_550nm",f_3d(:)%name),&
+           ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"",1.0,-9999.9),&
+      Asc2D("PMFINE","BCVugXXgroup",find_index("PMFINE",chemgroups(:)%name),&
+           ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug/m3",1.0,-9999.9),&
+      Asc2D("PM10" ,"BCVugXXgroup",find_index("PM10"   ,chemgroups(:)%name),&
+           ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug/m3",1.0,-9999.9)/)
   case("MACC_ENS","FORECAST")
     levels_hourly = [0,1,2,3,4,6,9,10,12]
     pm25 =find_index("PMFINE"  ,chemgroups(:)%name) !NB There is no "PM25" group
