@@ -49,7 +49,7 @@ use GridValues_ml,    only: i_fdom, j_fdom,&   ! Gives emep coordinates
                             debug_proc, debug_li,debug_lj
 use Io_ml,            only: IO_HOURLY
 use ModelConstants_ml,only: KMAX_MID, MasterProc, MY_OUTPUTS,&
-                            IOU_INST, IOU_HOUR, IOU_YEAR, IOU_YEAR_LASTHH, &
+                            IOU_INST, IOU_3DHOUR, IOU_YEAR, IOU_YEAR_LASTHH, &
                             DEBUG => DEBUG_OUT_HOUR,runlabel1,HOURLYFILE_ending,&
                             FORECAST, SELECT_LEVELS_HOURLY !NML
 use MetFields_ml,     only: t2_nwp,th, roa, surface_precip, ws_10m ,rh2m,&
@@ -157,7 +157,7 @@ implicit none
     if(debug_flag)&
       write(*,*) "DEBUG ",trim(HOURLYFILE_ending),"-Hourlyfile ",trim(filename)
   !! filename will be overwritten
-    call Init_new_netCDF(trim(filename),IOU_HOUR)
+    call Init_new_netCDF(trim(filename),IOU_3DHOUR)
 
     ncfileID=-1 ! must be <0 as initial value
 
@@ -176,10 +176,10 @@ implicit none
       if(any(hr_out(ih)%type==SRF_TYPE))nk=1
       select case(nk)
       case(1)       ! write as 2D
-        call Out_netCDF(IOU_HOUR,def1,2,1,hourly,scale,CDFtype,ist,jst,ien,jen,&
+        call Out_netCDF(IOU_3DHOUR,def1,2,1,hourly,scale,CDFtype,ist,jst,ien,jen,&
           create_var_only=.true.,ncFileID_given=ncFileID)
       case(2:)      ! write as 3D
-        call Out_netCDF(IOU_HOUR,def1,3,1,hourly,scale,CDFtype,ist,jst,ien,jen,1,&
+        call Out_netCDF(IOU_3DHOUR,def1,3,1,hourly,scale,CDFtype,ist,jst,ien,jen,1,&
           create_var_only=.true.,chunksizes=(/ien-ist+1,jen-jst+1,1,1/),ncFileID_given=ncFileID)
       endselect
     enddo
@@ -708,12 +708,12 @@ implicit none
 
       select case(nk)
       case(1)       ! write as 2D
-        call Out_netCDF(IOU_HOUR,def1,2,1,hourly,scale,CDFtype,ist,jst,ien,jen,ncFileID_given=ncFileID)
+        call Out_netCDF(IOU_3DHOUR,def1,2,1,hourly,scale,CDFtype,ist,jst,ien,jen,ncFileID_given=ncFileID)
       case(2:)      ! write as 3D
         klevel=ik
         if(nk<KMAX_MID)  klevel=KMAX_MID-ik+1 !count from ground and up
         if(SELECT_LEVELS_HOURLY) klevel=k     !order is defined in LEVELS_HOURLY
-        call Out_netCDF(IOU_HOUR,def1,3,1,hourly,scale,CDFtype,ist,jst,ien,jen,klevel,ncFileID_given=ncFileID)
+        call Out_netCDF(IOU_3DHOUR,def1,3,1,hourly,scale,CDFtype,ist,jst,ien,jen,klevel,ncFileID_given=ncFileID)
       !case default   ! no output
       endselect
     enddo KVLOOP    
@@ -725,7 +725,7 @@ implicit none
     def1%class='Surface pressure'
     CDFtype=Real4 ! can be choosen as Int1,Int2,Int4,Real4 or Real8
     scale=1.
-    call Out_netCDF(IOU_HOUR,def1,2,1,ps(:,:,1)*0.01,scale,CDFtype,ist,jst,ien,jen,ncFileID_given=ncFileID)     
+    call Out_netCDF(IOU_3DHOUR,def1,2,1,ps(:,:,1)*0.01,scale,CDFtype,ist,jst,ien,jen,ncFileID_given=ncFileID)     
   endif
 
 !Not closing seems to give a segmentation fault when opening the daily file

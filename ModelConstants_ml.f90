@@ -167,7 +167,7 @@ logical, public, save ::             &
                                        !for instance the assumed number of days in the year  will still be 366
                                        
 integer, public, save :: &
-  FREQ_HOURLY = 1  ! hourly netcdf output frequency
+  FREQ_3DHOURLY = 1  ! 3Dhourly netcdf special output frequency
 
 ! Soil NOx. Choose EURO for better spatial and temp res, but for 
 ! global runs need global monthly. Variable USE_SOILNOX set from
@@ -444,11 +444,11 @@ integer, public, save :: NETCDF_DEFLATE_LEVEL=4
 !NB: will not work well by default on Stallo per 14th Feb 2012 because of library bugs!
 !Until this is fixed, you must compile with netcdf/4.1.3 and link and run with compiler 12.1.2
 character(len=30), public, save :: &! ending depeding on date:
-! HOURLYFILE_ending="_hour_YYYYMM.nc"   ! MM  -> month (01 .. 12)
-! HOURLYFILE_ending="_hour_YYYYMMDD.nc" ! DD  -> day of the month (00 .. 31)
-! HOURLYFILE_ending="_hour_YYYYJJJ.nc"  ! JJJ -> the day of the year (001 .. 366)
+! HOURLYFILE_ending="_3Dhhour_YYYYMM.nc"   ! MM  -> month (01 .. 12)
+! HOURLYFILE_ending="_3Dhhour_YYYYMMDD.nc" ! DD  -> day of the month (00 .. 31)
+! HOURLYFILE_ending="_3Dhhour_YYYYJJJ.nc"  ! JJJ -> the day of the year (001 .. 366)
 ! HOURLYFILE_ending="+FFF.nc"           ! a new file each forecast hour
-  HOURLYFILE_ending="_hour.nc"          ! keep the same for the whole run
+  HOURLYFILE_ending="_3Dhour.nc"          ! keep the same for the whole run
 
 ! NH3 module as set up originally with U10 from met: kept for safety only.
 ! Will be replaced by sub.grid calculation of wind in future.
@@ -580,10 +580,10 @@ real, public, parameter :: &
 !                         refer to output variables defined in My_Outputs_ml.
 !   IOU_YEAR_LASTHH: Auxiliary field for hourly accumulated Derived output
 integer, public, parameter ::  &
-  IOU_INST=1, IOU_YEAR=2, IOU_MON=3, IOU_DAY=4, & ! Derived output
-  IOU_YEAR_LASTHH=5,                          & ! Aux. field
-  IOU_HOUR=6, IOU_HOUR_MEAN=7                   & ! Hourly  output
-  ,IOU_MAX_MAX=7                                  ! Max values for of IOU (for array declarations)
+  IOU_INST=1, IOU_YEAR=2, IOU_MON=3, IOU_DAY=4, IOU_HOUR=5, & ! Derived output
+  IOU_YEAR_LASTHH=6,                              & ! Aux. field
+  IOU_3DHOUR=7, IOU_3DHOUR_MEAN=8                 & ! Hourly  3D special output
+  ,IOU_MAX_MAX=8                                  ! Max values for of IOU (for array declarations)
 
 character(len=*), public, parameter :: model="EMEP_MSC-W "
 
@@ -609,7 +609,7 @@ subroutine Config_ModelConstants(iolog)
    ,USE_EURO_SOILNOX, USE_GLOBAL_SOILNOX, EURO_SOILNOX_DEPSCALE &
    ,USE_SEASALT, USE_POLLEN, USE_ASH, USE_AOD &
    ,INERIS_SNAP1, INERIS_SNAP2 &   ! Used for TFMM time-factors
-   ,SELECT_LEVELS_HOURLY, FREQ_HOURLY  & ! incl. FORECAST, 3DPROFILES
+   ,SELECT_LEVELS_HOURLY, FREQ_3DHOURLY  & ! incl. FORECAST, 3DPROFILES
    ,FORECAST, ANALYSIS, SOURCE_RECEPTOR, VOLCANO_SR &
    ,SEAFIX_GEA_NEEDED     & ! only if problems, see text above.
    ,BGND_CH4              & ! Can reset background CH4 values 

@@ -2,7 +2,7 @@ MODULE TimeDate_ExtraUtil_ml
 
 use Par_ml,           only: me
 use ModelConstants_ml,only: METSTEP, MasterProc, &
-                            IOU_MON,IOU_DAY,IOU_HOUR_MEAN,FREQ_HOURLY
+                            IOU_MON,IOU_DAY,IOU_3DHOUR_MEAN,FREQ_3DHOURLY
 use TimeDate_ml,      only: max_day,tdif_secs,tdif_days,add_secs,add_days,&
                             ts2date=>make_current_date,date2ts=>make_timestamp,&
                             timestamp,day_of_year,date,startdate,enddate
@@ -361,7 +361,7 @@ subroutine ts_to_secs1970(ts,nsecs,iotyp)
       case (IOU_MON      ); cd=to_date(ts)
                             nsecs=nsecs-spd/2*max_day(cd%month,cd%year) !#days(jan)=#days(dec)
       case (IOU_DAY      ); nsecs=nsecs-spd/2
-      case (IOU_HOUR_MEAN); nsecs=nsecs-sph/2*FREQ_HOURLY
+      case (IOU_3DHOUR_MEAN); nsecs=nsecs-sph/2*FREQ_3DHOURLY
     endselect
   endif
 endsubroutine ts_to_secs1970
@@ -400,7 +400,7 @@ subroutine ts_to_days1900(ts,ndays,iotyp)
       case (IOU_MON      ); cd=to_date(ts)
                             ndays=ndays-0.5*max_day(cd%month,cd%year) !#days(jan)=#days(dec)
       case (IOU_DAY      ); ndays=ndays-0.5
-      case (IOU_HOUR_MEAN); ndays=ndays-FREQ_HOURLY/48.0  !1.0/48.0=half hour
+      case (IOU_3DHOUR_MEAN); ndays=ndays-FREQ_3DHOURLY/48.0  !1.0/48.0=half hour
     endselect
   endif
 endsubroutine ts_to_days1900

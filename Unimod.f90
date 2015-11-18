@@ -217,8 +217,8 @@ program myeul
        call Init_new_netCDF(trim(runlabel1)//'_fullrun.nc',IOU_YEAR)
   if (wanted_iou(IOU_INST)) &
        call Init_new_netCDF(trim(runlabel1)//'_inst.nc',IOU_INST)
-  ! if (wanted_iou(IOU_HOUR).or.NHOURLY_OUT>0) &
-  !   call Init_new_netCDF(trim(runlabel1)//'_hour.nc',IOU_HOUR)
+  if (wanted_iou(IOU_HOUR)) &
+     call Init_new_netCDF(trim(runlabel1)//'_hour.nc',IOU_HOUR)
   if (wanted_iou(IOU_DAY)) &
        call Init_new_netCDF(trim(runlabel1)//'_day.nc',IOU_DAY)
   if (wanted_iou(IOU_MON)) &

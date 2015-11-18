@@ -40,8 +40,8 @@ use ModelConstants_ml, only : KMAX_MID,KMAX_BND, runlabel1, runlabel2 &
                              ,MasterProc, FORECAST, NETCDF_DEFLATE_LEVEL &
                              ,DEBUG_NETCDF, DEBUG_NETCDF_RF &
                              ,NPROC, IIFULLDOM,JJFULLDOM &
-                             ,IOU_INST,IOU_HOUR,IOU_HOUR_MEAN, IOU_YEAR &
-                             ,IOU_MON, IOU_DAY ,PT,Pref,NLANDUSEMAX, model&
+                             ,IOU_INST,IOU_3DHOUR,IOU_3DHOUR_MEAN, IOU_YEAR &
+                             ,IOU_MON, IOU_DAY ,IOU_HOUR ,PT,Pref,NLANDUSEMAX, model&
                              ,USE_EtaCOORDINATES
 use ModelConstants_ml, only : SELECT_LEVELS_HOURLY  !NML
 use netcdf
@@ -60,11 +60,12 @@ INCLUDE 'mpif.h'
 INTEGER MPISTATUS(MPI_STATUS_SIZE),INFO
 
 integer, public, parameter :: &
-  max_filename_length=200 ! large enough to inclide paths, eg Nest_config namelist
+  max_filename_length=200 ! large enough to include paths, eg Nest_config namelist
 
 character(len=max_filename_length), save :: &
   fileName      = 'NotSet',&
   fileName_inst = 'out_inst.nc',&
+  fileName_3Dhour = 'out_3Dhour.nc',&
   fileName_hour = 'out_hour.nc',&
   fileName_day  = 'out_day.nc',&
   fileName_month= 'out_month.nc',&
@@ -77,6 +78,7 @@ integer      :: ncFileID_new=closedID  !don't save because should always be
                 !with different filename_given)
 integer,save :: ncFileID_inst=closedID
 integer,save :: ncFileID_hour=closedID
+integer,save :: ncFileID_3Dhour=closedID
 integer,save :: ncFileID_day=closedID
 integer,save :: ncFileID_month=closedID
 integer,save :: ncFileID_year=closedID
@@ -505,6 +507,11 @@ case(IOU_DAY)
   call CreatenetCDFfile(fileName,GIMAX,GJMAX,IRUNBEG,JRUNBEG,KMAX_MID)
 case(IOU_HOUR)
   fileName_hour = trim(fileName)
+  period_type = 'houry'
+  if(MasterProc.and.DEBUG_NETCDF ) write(*,*) "Creating ", trim(fileName),trim(period_type)
+  call CreatenetCDFfile(fileName,GIMAX,GJMAX,IRUNBEG,JRUNBEG,KMAX_MID)
+case(IOU_3DHOUR)
+  fileName_3Dhour = trim(fileName)
   period_type = 'hourly'
   if(MasterProc.and.DEBUG_NETCDF ) write(*,*) "Creating ", trim(fileName),trim(period_type)
   ISMBEGcdf=GIMAX+IRUNBEG-1; JSMBEGcdf=GJMAX+JRUNBEG-1  !initialisations
@@ -1603,6 +1610,9 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
   case(IOU_HOUR)
     fileName = trim(fileName_hour)
     ncFileID = ncFileID_hour
+  case(IOU_3DHOUR)
+    fileName = trim(fileName_3Dhour)
+    ncFileID = ncFileID_3Dhour
   case(IOU_INST)
     fileName = trim(fileName_inst)
     ncFileID = ncFileID_inst
@@ -1639,6 +1649,8 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
         ncFileID_day  = ncFileID
       case(IOU_HOUR)
         ncFileID_hour = ncFileID
+      case(IOU_3DHOUR)
+        ncFileID_3Dhour = ncFileID
       case(IOU_INST)
         ncFileID_inst = ncFileID
       endselect
@@ -2016,6 +2028,7 @@ subroutine CloseNetCDF
     call CloseNC(ncFileID_month)
     call CloseNC(ncFileID_day)
     call CloseNC(ncFileID_hour)
+    call CloseNC(ncFileID_3Dhour)
     call CloseNC(ncFileID_inst)
   endif
 contains

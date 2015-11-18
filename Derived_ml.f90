@@ -66,7 +66,7 @@ use ModelConstants_ml, only: &
   ,FORECAST     & ! only dayly (and hourly) output on FORECAST mode
   ,NTDAY        & ! Number of 2D O3 to be saved each day (for SOMO)
   ! output types corresponding to instantaneous,year,month,day
-  ,IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY, IOU_YEAR_LASTHH, IOU_HOUR, IOU_HOUR_MEAN
+  ,IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY, IOU_HOUR, IOU_YEAR_LASTHH
 use AOD_PM_ml,            only: AOD_init,aod_grp,wavelength,& ! group and 
                                 wanted_wlen,wanted_ext3d      ! wavelengths
 use MosaicOutputs_ml,     only: nMosaic, MosaicOutput
@@ -105,7 +105,7 @@ private :: group_calc     ! Calculates sum of groups, e.g. pm25 from group array
 logical, private, parameter :: T = .true., F = .false. ! shorthands only
 integer, public, save :: num_deriv2d, num_deriv3d
 integer, private, save :: Nadded2d = 0, Nadded3d=0 ! No. defined derived
-integer, public, save :: iou_min=IOU_INST, iou_max=IOU_HOUR_MEAN
+integer, public, save :: iou_min=IOU_INST, iou_max=IOU_HOUR
 
 ! The 2-d and 3-d fields use the above as a time-dimension. We define
 ! LENOUTxD according to how fine resolution we want on output. For 2d
@@ -113,7 +113,7 @@ integer, public, save :: iou_min=IOU_INST, iou_max=IOU_HOUR_MEAN
 ! is sufficient.
 
 integer, public, parameter ::  LENOUT2D = IOU_YEAR_LASTHH  ! Allows INST..DAY,H.PREV. for 2d fields
-integer, public, parameter ::  LENOUT3D = IOU_DAY            ! Allows INST..DAY for 3d fields
+integer, public, parameter ::  LENOUT3D = IOU_HOUR            ! Allows INST..DAY for 3d fields
 
 !will be used for:
 !e.g. d_2d( num_deriv2d,LIMAX, LJMAX, LENOUT2D)
@@ -1415,7 +1415,7 @@ subroutine Derived(dt,End_of_Day)
     !  since the INST values are zero it doesn't harm, and the code is
     !  shorter. These d_2d ( MAXADV, MAXSHL, SOMO) are set elsewhere
 
-    af = 1.0 ! accumlation factor
+    af = 1.0 ! accumulation factor
     if( f_2d(n)%dt_scale ) then !need to scale with dt_advec
       af = dt_advec
     endif
@@ -1424,6 +1424,10 @@ subroutine Derived(dt,End_of_Day)
 !if ( any(d_2d == UNDEF_R ) ) then
 !  print *, "D2Ding ERROR", me, n, trim(f_2d(n)%name), minval(d_2d)
 !end if
+
+    d_2d(n,:,:,IOU_HOUR )  = d_2d(n,:,:,IOU_HOUR )  + af*d_2d(n,:,:,IOU_INST)
+    if ( f_2d(n)%avg ) nav_2d(n,IOU_HOUR) = nav_2d(n,IOU_HOUR) + 1
+
     d_2d(n,:,:,IOU_DAY )  = d_2d(n,:,:,IOU_DAY )  + af*d_2d(n,:,:,IOU_INST)
     if ( f_2d(n)%avg ) nav_2d(n,IOU_DAY) = nav_2d(n,IOU_DAY) + 1
 
@@ -1673,6 +1677,8 @@ subroutine Derived(dt,End_of_Day)
     
       endif ! End_of_Day
     else
+      d_3d(n,:,:,:,IOU_HOUR ) = d_3d(n,:,:,:,IOU_HOUR ) &
+           + d_3d(n,:,:,:,IOU_INST)
       d_3d(n,:,:,:,IOU_DAY ) = d_3d(n,:,:,:,IOU_DAY ) &
            + d_3d(n,:,:,:,IOU_INST)
       d_3d(n,:,:,:,IOU_MON ) = d_3d(n,:,:,:,IOU_MON ) &

@@ -28,7 +28,7 @@ use ModelConstants_ml,only: KMAX_MID, nmax, nstep &
                            ,ANALYSIS       & ! 3D-VAR Analysis
                            ,SOURCE_RECEPTOR&
 !                           ,USE_GRAVSET&
-                           ,FREQ_HOURLY    & ! hourly netcdf output frequency
+                           ,FREQ_3DHOURLY    & ! hourly netcdf output frequency
                            ,USE_POLLEN, USE_EtaCOORDINATES,JUMPOVER29FEB
 use MetFields_ml,     only: ps,roa,z_bnd,z_mid,cc3dmax, &
                             zen,coszen,Idirect,Idiffuse
@@ -271,7 +271,7 @@ contains
             call siteswrt_sondes(xn_adv,xn_shl)
 
        if ((.not.SOURCE_RECEPTOR.or.FORECAST).and.NHOURLY_OUT > 0 .and. &
-            modulo(current_date%hour, FREQ_HOURLY) == 0 ) &
+            modulo(current_date%hour, FREQ_3DHOURLY) == 0 ) &
             call hourly_out()
 
     end if

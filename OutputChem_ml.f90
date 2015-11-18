@@ -11,7 +11,7 @@ use My_Outputs_ml,     only: NBDATES, wanted_dates_inst,            &
 use Io_ml,             only: IO_WRTCHEM, datewrite
 use ModelConstants_ml, only: END_OF_EMEPDAY, KMAX_MID, MasterProc&
                             ,DEBUG => DEBUG_OUTPUTCHEM, METSTEP &
-                            ,IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY, IOU_MAX_MAX
+                            ,IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY,IOU_HOUR, IOU_MAX_MAX
 use NetCDF_ml,         only: CloseNetCDF, Out_netCDF
 use OwnDataTypes_ml,   only: Deriv, print_deriv_type
 use Par_ml,            only: LIMAX,LJMAX,GIMAX,GJMAX,     &
@@ -73,8 +73,7 @@ subroutine Wrtchem()
   ts2=make_timestamp(date(enddate(1),enddate(2),enddate(3),enddate(4),0))
   End_of_Run =  (nint(tdif_secs(ts1,ts2))<=0)
 
-  if((current_date%seconds /= 0 .or. (mod(current_date%hour,METSTEP)/=0)).and. &
-       .not. End_of_Run)return
+  if((current_date%seconds /= 0 ).and. .not. End_of_Run)return
   if(MasterProc .and. DEBUG) write(6,"(a12,i5,5i4)") "DAILY DD_OUT ",   &
        nmonth, mm_out, nday, dd_out, nhour
 
@@ -108,6 +107,12 @@ subroutine Wrtchem()
       call Output_fields(IOU_INST)
     endif
   enddo
+
+  !== Hourly output ====
+  if (current_date%seconds == 0) then !always true at this point
+     call Output_fields(IOU_HOUR)
+     call ResetDerived(IOU_HOUR) 
+  endif
 
 
   !== Daily output ====
@@ -156,6 +161,7 @@ subroutine Output_fields(iotyp)
   IF(DEBUG.and.MasterProc)write(*,*)'2d and 3D OUTPUT WRITING',iotyp
   !*** 2D fields, e.g. surface SO2, SO4, NO2, NO3 etc.; AOT, fluxes
   !--------------------
+
   if(num_deriv2d > 0) call Output_f2d(iotyp,num_deriv2d,nav_2d,f_2d,d_2d,Init_Only)
 
   !*** 3D concentration fields, e.g. O3

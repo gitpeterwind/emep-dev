@@ -185,13 +185,11 @@ contains
     real    :: bc_fac      ! Set to 1.0, except sea-salt over land = 0.01
     logical :: bc_seaspec  ! if sea-salt species
 
-    !/ data arrays for boundary data (BCs) - quite large, so NOT saved
-    real, save, allocatable,dimension(:,:,:)   :: bc_data   ! for one bc species
-
     integer  :: errcode, Nlevel_logan
     integer, save :: idebug=0, itest=1, i_test=0, j_test=0
     character(len = 100) ::fileName,varname
     logical :: NewLogan=.true.! under testing
+    real :: bc_data(LIMAX,LJMAX,KMAX_MID)
 
     if (first_call) then
        if (DEBUG%BCS) write(*,"(a,I3,1X,a,i5)") &
@@ -206,8 +204,6 @@ contains
             "BCs: num_bgn_changed: ", num_bgn_changed,  &
             "BCs: num     changed: ", num_changed
 
-       allocate(bc_data(LIMAX,LJMAX,KMAX_MID),stat=alloc_err)!could use an existing buffer?
-       call CheckStop(alloc_err, "alloc1 failed in BoundaryConditions_ml")
        bc_data=0.0
 
     endif ! first call
