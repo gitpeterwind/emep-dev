@@ -155,7 +155,7 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-18th  November 2015 Peter   3083
+18th  November 2015 Peter   3084
 
 Hourly outputs now possible with same interface as daily, monthly, yearly.
 Choose "5" for period.
@@ -166,6 +166,8 @@ The "old format" hourly files setup are now sent to XXX_3Dhour.nc
 This should be used for special uses: restricted area or vertical levels, CAMS, 
 nesting(?).
 replaced some "hourly" by "3Dhourly" for the "old format" hourly.
+
+repaired config_BM-EECCA.nml
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 11th  November 2015 Peter   3082

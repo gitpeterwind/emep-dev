@@ -1,3 +1,9 @@
+!put here only machine specific data. 
+&Machine_config
+!DataDir will attempted replaced by (in this order):
+  DataPath(1) = '/global/work/mifapw/emep',  !Stallo
+  DataPath(2) = '/home/metno/mifapw/work',  !Vilje
+&end
 &INPUT_PARA
   iyr_trend = $year,
   runlabel1 = '$runlabel1',
@@ -48,9 +54,7 @@
 !  AERO%EQUILIB          = 'MARS ',      ! MARS, MARS_2900, GEOSCHEM, EQSAM, or EMEP
 !  AERO%NSIZE etc... see ModelConstants
 !------------------------------
-  EMIS_SOURCE           = 'emislist', ! 'emislist' or 'CdfFractions'
-  EMIS_TEST             = 'None',     ! 'None' or 'CdfSnap' 
-  EMIS_OUT              = F,          ! Output emissions in separate files (memory demanding)
+  emis_inputlist(1)%name     = 'gridPOLL', !example of ASCII type
 !------------------------------
   SELECT_LEVELS_HOURLY  = F,          ! hourly output flag Also for FORECAST, 3DPROFILES
   FORECAST              = F,
