@@ -42,7 +42,8 @@ use ModelConstants_ml, only : KMAX_MID,KMAX_BND, runlabel1, runlabel2 &
                              ,NPROC, IIFULLDOM,JJFULLDOM &
                              ,IOU_INST,IOU_3DHOUR,IOU_3DHOUR_MEAN, IOU_YEAR &
                              ,IOU_MON, IOU_DAY ,IOU_HOUR ,PT,Pref,NLANDUSEMAX, model&
-                             ,USE_EtaCOORDINATES
+                             ,USE_EtaCOORDINATES&
+                             ,fullrun_DOMAIN,month_DOMAIN,day_DOMAIN,hour_DOMAIN
 use ModelConstants_ml, only : SELECT_LEVELS_HOURLY  !NML
 use netcdf
 use OwnDataTypes_ml,   only : Deriv
@@ -481,7 +482,7 @@ integer,  intent(in) :: iotyp
 character(len=*),  intent(in)  :: fileName
 
 integer :: GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf
-integer :: ih
+integer :: ih,i1,i2,j1,j2
 
 call CloseNetCDF !must be called by all procs, to syncronize outCDFtag
 
@@ -489,34 +490,46 @@ call CloseNetCDF !must be called by all procs, to syncronize outCDFtag
 if(.true.)then
 if(MasterProc.and.DEBUG_NETCDF ) write(*,*)'Init_new_netCDF ',trim(fileName),iotyp
 
+ISMBEGcdf=GIMAX+IRUNBEG-1; JSMBEGcdf=GJMAX+JRUNBEG-1  !initialisations
+GIMAXcdf=0; GJMAXcdf=0                                !initialisations
+KMAXcdf=1
 select case (iotyp)
 case (IOU_YEAR)
   fileName_year = trim(fileName)
   period_type = 'fullrun'
   if(MasterProc.and.DEBUG_NETCDF ) write(*,*) "Creating ", trim(fileName),trim(period_type)
-  call CreatenetCDFfile(fileName,GIMAX,GJMAX,IRUNBEG,JRUNBEG,KMAX_MID)
+  i1=fullrun_DOMAIN(1);i2=fullrun_DOMAIN(2);j1=fullrun_DOMAIN(3);j2=fullrun_DOMAIN(4)
+  ISMBEGcdf=min(ISMBEGcdf,i1); JSMBEGcdf=min(JSMBEGcdf,j1)
+  GIMAXcdf=max(GIMAXcdf,i2-i1+1); GJMAXcdf=max(GJMAXcdf,j2-j1+1)
+  call CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf, KMAX_MID)
 case(IOU_MON)
   fileName_month = trim(fileName)
   period_type = 'monthly'
   if(MasterProc.and.DEBUG_NETCDF ) write(*,*) "Creating ", trim(fileName),trim(period_type)
-  call CreatenetCDFfile(fileName,GIMAX,GJMAX,IRUNBEG,JRUNBEG,KMAX_MID)
+  i1=month_DOMAIN(1);i2=month_DOMAIN(2);j1=month_DOMAIN(3);j2=month_DOMAIN(4)
+  ISMBEGcdf=min(ISMBEGcdf,i1); JSMBEGcdf=min(JSMBEGcdf,j1)
+  GIMAXcdf=max(GIMAXcdf,i2-i1+1); GJMAXcdf=max(GJMAXcdf,j2-j1+1)
+  call CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf, KMAX_MID)
 case(IOU_DAY)
   fileName_day = trim(fileName)
   period_type = 'daily'
   if(MasterProc.and.DEBUG_NETCDF ) write(*,*) "Creating ", trim(fileName),trim(period_type)
-  call CreatenetCDFfile(fileName,GIMAX,GJMAX,IRUNBEG,JRUNBEG,KMAX_MID)
+  i1=day_DOMAIN(1);i2=day_DOMAIN(2);j1=day_DOMAIN(3);j2=day_DOMAIN(4)
+  ISMBEGcdf=min(ISMBEGcdf,i1); JSMBEGcdf=min(JSMBEGcdf,j1)
+  GIMAXcdf=max(GIMAXcdf,i2-i1+1); GJMAXcdf=max(GJMAXcdf,j2-j1+1)
+  call CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf, KMAX_MID)
 case(IOU_HOUR)
   fileName_hour = trim(fileName)
   period_type = 'houry'
   if(MasterProc.and.DEBUG_NETCDF ) write(*,*) "Creating ", trim(fileName),trim(period_type)
-  call CreatenetCDFfile(fileName,GIMAX,GJMAX,IRUNBEG,JRUNBEG,KMAX_MID)
+  i1=hour_DOMAIN(1);i2=hour_DOMAIN(2);j1=hour_DOMAIN(3);j2=hour_DOMAIN(4)
+  ISMBEGcdf=min(ISMBEGcdf,i1); JSMBEGcdf=min(JSMBEGcdf,j1)
+  GIMAXcdf=max(GIMAXcdf,i2-i1+1); GJMAXcdf=max(GJMAXcdf,j2-j1+1)
+  call CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf, KMAX_MID)
 case(IOU_3DHOUR)
   fileName_3Dhour = trim(fileName)
   period_type = 'hourly'
   if(MasterProc.and.DEBUG_NETCDF ) write(*,*) "Creating ", trim(fileName),trim(period_type)
-  ISMBEGcdf=GIMAX+IRUNBEG-1; JSMBEGcdf=GJMAX+JRUNBEG-1  !initialisations
-  GIMAXcdf=0; GJMAXcdf=0                                !initialisations
-  KMAXcdf=1
   do ih=1,NHOURLY_OUT
     ISMBEGcdf=min(ISMBEGcdf,hr_out(ih)%ix1)
     JSMBEGcdf=min(JSMBEGcdf,hr_out(ih)%iy1)
@@ -1484,6 +1497,19 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
   integer, parameter :: IOU_GIVEN=-IOU_INST
 
   i1=1;i2=GIMAX;j1=1;j2=GJMAX  !start and end of saved area
+  !fullrun, Monthly, Daily and hourly domains may be predefined
+  select case(iotyp)
+  case(IOU_YEAR)
+     i1=fullrun_DOMAIN(1);i2=fullrun_DOMAIN(2);j1=fullrun_DOMAIN(3);j2=fullrun_DOMAIN(4)
+  case(IOU_MON)
+     i1=month_DOMAIN(1);i2=month_DOMAIN(2);j1=month_DOMAIN(3);j2=month_DOMAIN(4)
+  case(IOU_DAY)
+     i1=day_DOMAIN(1);i2=day_DOMAIN(2);j1=day_DOMAIN(3);j2=day_DOMAIN(4)
+  case(IOU_HOUR)
+     i1=hour_DOMAIN(1);i2=hour_DOMAIN(2);j1=hour_DOMAIN(3);j2=hour_DOMAIN(4)
+  endselect
+
+
   if(present(ist))i1=max(ist-IRUNBEG+1,i1)
   if(present(ien))i2=min(ien-IRUNBEG+1,i2)
   if(present(jst))j1=max(jst-JRUNBEG+1,j1)

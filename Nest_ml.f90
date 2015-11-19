@@ -361,6 +361,10 @@ subroutine wrtxn(indate,WriteNow)
   if(MasterProc)then
     inquire(file=fileName_write,exist=fexist)
     write(*,*)'Nest:write data ',trim(fileName_write),fexist
+    !If you know what you are doing you can uncomment the stop, and the new data will be appended to the file
+    call CheckStop(fexist.and.first_call,&
+             "Refuse to overwrite. Remove this file: "//trim(fileName_write))
+   
   endif
   CALL MPI_BCAST(fexist,1,MPI_LOGICAL,0,MPI_COMM_WORLD,INFO)
 

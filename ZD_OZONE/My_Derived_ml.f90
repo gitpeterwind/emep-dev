@@ -34,7 +34,7 @@ use ChemGroups_ml  ! Allow all groups to ease compilation
                    !  eg. OXN_GROUP, DDEP_OXNGROUP, BVOC_GROUP
 use EmisDef_ml,     only : EMIS_FILE
 use EmisGet_ml,      only: nrcemis, iqrc2itot
-use GridValues_ml,  only : debug_li, debug_lj, debug_proc
+use GridValues_ml,  only : debug_li, debug_lj, debug_proc, RestrictDomain
 use Io_Nums_ml,      only: IO_NML
 use Io_Progs_ml,     only: PrintLog
 use LandDefs_ml,    only : LandDefs, LandType, Check_LandCoverPresent ! e.g. "CF"
@@ -43,7 +43,9 @@ use ModelConstants_ml, only : MasterProc, SOURCE_RECEPTOR  &
                         , USE_AOD &
                         , USE_SOILNOX, DEBUG & !! => DEBUG_MY_DERIVED &
                         , Y=>IOU_YEAR, M=>IOU_MON, D=>IOU_DAY, H=>IOU_HOUR &
-                        , KMAX_MID   ! =>  z dimension
+                        , KMAX_MID &  ! =>  z dimension
+                        ,IIFULLDOM,JJFULLDOM&
+                        ,fullrun_DOMAIN,month_DOMAIN,day_DOMAIN,hour_DOMAIN
 use MosaicOutputs_ml, only : nMosaic, MAX_MOSAIC_OUTPUTS, MosaicOutput, & !
   Init_MosaicMMC,  Add_MosaicMetConcs, &
   Add_NewMosaics, Add_MosaicVEGO3, Add_MosaicDDEP!, &
@@ -238,15 +240,28 @@ INTEGER STATUS(MPI_STATUS_SIZE),INFO
     logical :: Is3D,debug0   !  if(DEBUG%MY_DERIVED.and.MasterProc )
     character(len=12), save :: sub='InitMyDeriv:'
 
+!default output sizes
+    fullrun_DOMAIN = (/1,IIFULLDOM,1,JJFULLDOM/)
+    month_DOMAIN =   (/1,IIFULLDOM,1,JJFULLDOM/)
+    day_DOMAIN =     (/1,IIFULLDOM,1,JJFULLDOM/)
+    hour_DOMAIN =    (/1,IIFULLDOM,1,JJFULLDOM/)
+
     NAMELIST /OutputConcs_config/OutputMisc,OutputConcs,OutputVegO3
     NAMELIST /OutputDep_config/DDEP_ECOS, DDEP_WANTED, WDEP_WANTED, SDEP_WANTED
+    NAMELIST /OutputSize_config/fullrun_DOMAIN,month_DOMAIN,day_DOMAIN,hour_DOMAIN
 
     debug0 = DEBUG%MY_DERIVED.and.MasterProc
 
     rewind(IO_NML)
     read(IO_NML,NML=OutputConcs_config)
     read(IO_NML,NML=OutputDep_config)
+    read(IO_NML,NML=OutputSize_config)
    
+    !shift output domain according to rundomain
+    call RestrictDomain(fullrun_DOMAIN)
+    call RestrictDomain(month_DOMAIN)
+    call RestrictDomain(day_DOMAIN)
+    call RestrictDomain(hour_DOMAIN)
 
     !! Find number of wanted OutoutConcs
     nOutputMisc  = find_index("-", OutputMisc(:)%name, first_only=.true. ) -1

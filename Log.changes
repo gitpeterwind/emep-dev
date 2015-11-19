@@ -161,6 +161,18 @@ Bug in nesting for restricted domain introduced in 3070.
 Also some inconsistency with netcdfID for non-master corrected. 
 Restricted Nest domain output now possible for MODE 10 also
 
+The model will stop if the Nest will find an existing "EMEP.OUT" when writing.
+
+Restricted domain output:
+choose size of domain in the output files in config_Outputs.nml Example
+&OutputSize_config
+    fullrun_DOMAIN = 1,100,1,100 ,
+    month_DOMAIN =   100,300,1,100 ,
+    day_DOMAIN =     1,100,90,100 ,
+    hour_DOMAIN =    50,100,50,100
+&end
+
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 18th  November 2015 Peter   3084
 

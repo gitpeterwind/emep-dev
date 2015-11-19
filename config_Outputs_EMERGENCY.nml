@@ -83,3 +83,10 @@ OutputConcs=
     'SO2      ','SPEC ','mgS',
     'HNO3     ','SPEC ','mgN',
 &end
+&OutputSize_config
+!restrict size of output files. (Sizes defined with respect to fulldomain)
+!    fullrun_DOMAIN = 1,100,1,100 ,
+!    month_DOMAIN =   100,300,1,100 ,
+!    day_DOMAIN =     1,100,90,100 ,
+!    hour_DOMAIN =    50,100,50,100
+&end

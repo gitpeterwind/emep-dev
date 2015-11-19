@@ -243,6 +243,7 @@ OutputVegO3=
     'MMAOT40_IAM_WH ','AOT', 40.0, 'MM', 'IAM_WH',F,0,999, 3,
 !    /) !NB -last not found. Could just be skipped, but kept
 ! -------------------------- SEP 2015 added here -----------------------------
+!
 &end
 
 ! nb freq =  IOU_YEAR=2,IOU_MON=3, IOU_DAY=4,IOU_HOUR=6, IOU_HOUR_MEAN=7
@@ -318,4 +319,11 @@ OutputVegO3=
      'NO2     ', 'k20'
      'CH4     ', 'k20'
      'CO     ', 'k20'
+&end
+&OutputSize_config
+!restrict size of output files. (Sizes defined with respect to fulldomain)
+!    fullrun_DOMAIN = 1,100,1,100 ,
+!    month_DOMAIN =   100,300,1,100 ,
+!    day_DOMAIN =     1,100,90,100 ,
+!    hour_DOMAIN =    50,100,50,100
 &end

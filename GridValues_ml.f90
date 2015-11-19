@@ -56,10 +56,11 @@ Module GridValues_ml
        coord_in_processor,&  ! Are coord (lon/lat) inside local domain?
        coord_in_domain       ! Are coord (lon/lat) inside "domain"?
 
+  public :: RestrictDomain !mask from full domain to rundomain
+
   public :: GridRead!,Getgridparams
   private :: Alloc_GridFields
   private :: GetFullDomainSize
-
   !** 1) Public (saved) Variables from module:
   INCLUDE 'mpif.h'
   INTEGER STATUS(MPI_STATUS_SIZE),INFO
@@ -1769,5 +1770,15 @@ contains
     enddo
 
   end subroutine nf90_get_var_extended
+
+  subroutine RestrictDomain(DOMAIN)
+
+    integer, dimension(4), intent(inout)::  DOMAIN
+    DOMAIN(1)=max(DOMAIN(1)-IRUNBEG+1,1)
+    DOMAIN(2)=min(DOMAIN(2)-IRUNBEG+1,GIMAX)
+    DOMAIN(3)=max(DOMAIN(3)-JRUNBEG+1,1)
+    DOMAIN(4)=min(DOMAIN(4)-JRUNBEG+1,GJMAX)
+    
+  end subroutine RestrictDomain
 end module GridValues_ml
 !==============================================================================

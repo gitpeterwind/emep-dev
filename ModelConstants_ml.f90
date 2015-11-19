@@ -278,6 +278,9 @@ integer, public, parameter :: &
 ! OFFSET_i=  0, OFFSET_j=  0    ! EMEP or default
   OFFSET_i=-35, OFFSET_j=-11    ! EECCA
 
+!domains for output
+integer, public, save, dimension(4) :: fullrun_DOMAIN,month_DOMAIN,day_DOMAIN,hour_DOMAIN
+
 integer, public, save, dimension(4) ::   &
 !                 x0   x1  y0   y1
   RUNDOMAIN =(/-999,-999,-999,-999/)     ! Set values later
