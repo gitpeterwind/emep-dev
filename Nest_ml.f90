@@ -153,7 +153,7 @@ subroutine Config_Nest()
 ! write/read frequency: Hours between consecutive saves(wrtxn)/reads(readxn)
   NHOURSAVE=3   ! Between wrtxn calls.  Should be fraction of 24
   NHOURREAD=1   ! Between readxn calls. Should be fraction of 24
-! Default domain for write modes 1,3. Modes 10,12 write full RUNDOMAIN regardles
+! Default domain for write modes 
   istart=RUNDOMAIN(1)+1;iend=RUNDOMAIN(2)-1
   jstart=RUNDOMAIN(3)+1;jend=RUNDOMAIN(4)-1
   rewind(IO_NML)
@@ -323,10 +323,10 @@ subroutine wrtxn(indate,WriteNow)
   select case(MODE)
   case(10,12)
     if(.not.WriteNow)return
-    istart=RUNDOMAIN(1)
-    jstart=RUNDOMAIN(3)
-    iend=RUNDOMAIN(2)
-    jend=RUNDOMAIN(4)
+!    istart=RUNDOMAIN(1)
+!    jstart=RUNDOMAIN(3)
+!    iend=RUNDOMAIN(2)
+!    jend=RUNDOMAIN(4)
   case default
     if(FORECAST)then
       outdate(:)%seconds=0   ! output only at full hours

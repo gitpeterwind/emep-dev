@@ -1300,7 +1300,7 @@ subroutine CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,&
 
      elseif(UsedProjection=='lon lat') then
         do i=1,GIMAXcdf
-           xcoord(i)= glon(1,1)+(i_local(i)-1)*(glon(2,1)-glon(1,1))
+           xcoord(i)= glon(1,1)+(i_local(i+ISMBEGcdf-1)-1)*(glon(2,1)-glon(1,1))
            !force monotone values:
            if(i>1)then
               !must first check that i>1 before testing xcoord(i-1) (to avoid debug errors)
@@ -1308,7 +1308,7 @@ subroutine CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,&
            endif
         enddo
         do j=1,GJMAXcdf
-           ycoord(j)= glat(1,1)+(j_local(j)-1)*(glat(1,2)-glat(1,1))
+           ycoord(j)= glat(1,1)+(j_local(j+JSMBEGcdf-1)-1)*(glat(1,2)-glat(1,1))
         enddo
         call check(nf90_put_var(ncFileID, iVarID, xcoord(1:GIMAXcdf)) )
         call check(nf90_put_var(ncFileID, jVarID, ycoord(1:GJMAXcdf)) )
@@ -1491,7 +1491,11 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
   create_var_only_local=.false.
   if(present(create_var_only))create_var_only_local=create_var_only
   !Check that that the area is larger than 0
-  if((i2-i1)<0.or.(j2-j1)<0.or.kmax<=0)return
+  if((i2-i1)<0.or.(j2-j1)<0.or.kmax<=0)then
+     if(MasterProc) write(*,*)'WARNING: requested boundaries inconsistent '
+     if(MasterProc) write(*,*) i1,i2,j1,j2,kmax
+     return
+  endif
 
  !make variable name
   write(varname,fmt='(A)')trim(def1%name)
@@ -1505,85 +1509,95 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
   !if(ndim==3)return
 
   iotyp_new=iotyp
+  createfile=.false.
   if(present(fileName_given))then
-    !NB if the file already exist (also from earlier runs) it will be appended
-    overwrite_local=.false.
-    if(present(overwrite))overwrite_local=overwrite
-    if(MasterProc)then
-      !try to open the file
-      if(present(ncFileID_given))then
-        if(DEBUG_NETCDF) write(*,*)'Out_NetCDF: ncFileID_given ' , ncFileID_given
-        if(ncFileID_given<0)then
-          status=nf90_open(trim(fileName_given),nf90_share+nf90_write,ncFileID)
-          ncFileID_given=ncFileID         
-          if(DEBUG_NETCDF) write(*,*)'Out_NetCDF: opened a file ' , ncFileID_given
-       else
-          !the file must already be open
-          ncFileID=ncFileID_given
-          status=nf90_noerr
-          if(DEBUG_NETCDF) write(*,*)'Out_NetCDF: assuming file already open ', trim(fileName_given)
-       endif
-      else
-        status=nf90_open(trim(fileName_given),nf90_write,ncFileID)
-      endif
-     if(DEBUG_NETCDF) write(*,*)'Out_NetCDF: fileName_given ' ,&
-        trim(fileName_given),overwrite_local,status==nf90_noerr,ncfileID,&
-        trim(nf90_strerror(status))
-      if(status/=nf90_noerr .or. overwrite_local)createfile=.true.
-   endif
-   CALL MPI_BCAST(createfile ,1,MPI_LOGICAL,0,MPI_COMM_WORLD,INFO)
-   
-   ISMBEGcdf=IRUNBEG+i1-1
-   JSMBEGcdf=JRUNBEG+j1-1
-   GIMAXcdf=i2-i1+1
-   GJMAXcdf=j2-j1+1
+     !NB if the file already exist (also from earlier runs) it will be appended
+     overwrite_local=.false.
+     if(present(overwrite))overwrite_local=overwrite
+     if(MasterProc)then
+        !try to open the file
+        if(present(ncFileID_given))then
+           if(DEBUG_NETCDF) write(*,*)'Out_NetCDF: ncFileID_given ' , ncFileID_given
+           if(ncFileID_given<0)then
+              status=nf90_open(trim(fileName_given),nf90_share+nf90_write,ncFileID)
+              ncFileID_given=ncFileID         
+              if(DEBUG_NETCDF) write(*,*)'Out_NetCDF: opened a file ' , ncFileID_given
+           else
+              !the file must already be open
+              ncFileID=ncFileID_given
+              status=nf90_noerr
+              if(DEBUG_NETCDF) write(*,*)'Out_NetCDF: assuming file already open ', trim(fileName_given)
+           endif
+        else
+           status=nf90_open(trim(fileName_given),nf90_write,ncFileID)
+        endif
+        if(DEBUG_NETCDF) write(*,*)'Out_NetCDF: fileName_given ' ,&
+             trim(fileName_given),overwrite_local,status==nf90_noerr,ncfileID,&
+             trim(nf90_strerror(status))
+        if(status/=nf90_noerr .or. overwrite_local)createfile=.true.
+     endif
+     CALL MPI_BCAST(createfile ,1,MPI_LOGICAL,0,MPI_COMM_WORLD,INFO)
+     
+     ISMBEGcdf=IRUNBEG+i1-1
+     JSMBEGcdf=JRUNBEG+j1-1
+     GIMAXcdf=i2-i1+1
+     GJMAXcdf=j2-j1+1
 
-   if(createfile) then !the file does not exist yet or is overwritten
-      write(6,*) 'creating file: ',trim(fileName_given)
-      period_type = 'unknown'
-      call CreatenetCDFfile(trim(fileName_given),GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAX)
-      ncFileID=closedID
-   elseif(MasterProc)then
-      !test if the defined dimensions are compatible
-      if(DEBUG_NETCDF)&
-           write(6,*) 'check dims file: ',trim(fileName_given)
-      select case(projection)
-      case('lon lat')
-         call check(nf90_inq_dimid(ncFileID,"lon",idimID),"dim:lon")
-         call check(nf90_inq_dimid(ncFileID,"lat",jdimID),"dim:lat")
-      case default
-         call check(nf90_inq_dimid(ncFileID,"i"  ,idimID),"dim:i")
-         call check(nf90_inq_dimid(ncFileID,"j"  ,jdimID),"dim:j")
-      endselect
-      if(USE_EtaCOORDINATES)then
-         call check(nf90_inq_dimid(ncFileID,"lev",kdimID),"dim:lev")
-      else
-         call check(nf90_inq_dimid(ncFileID,"k"  ,kdimID),"dim:k")
-      endif
-      ! only i,j coords can be handled for PS so far.
-      ! Posisble x,y would give wrong dimID. 
-      ! Check if all dims are found:
-      call CheckStop(any([idimID,jdimID,kdimID]<0),&
-           "ReadField_CDF: no dimID found for"//trim(fileName_given))
-      
-      call check(nf90_inquire_dimension(ncFileID,idimID,len=GIMAX_old),"len:i")
-      call check(nf90_inquire_dimension(ncFileID,jdimID,len=GJMAX_old),"len:j")
-      call check(nf90_inquire_dimension(ncFileID,kdimID,len=KMAX_old) ,"len:k")
-      
-      if(any([GIMAX_old,GJMAX_old,KMAX_old]<[GIMAXcdf,GJMAXcdf,KMAX]))then
-         write(6,*)'existing file ', trim(fileName_given),' has wrong dimensions'
-         write(6,*)GIMAX_old,GIMAXcdf,GJMAX_old,GJMAXcdf,KMAX_old,KMAX
-         write(6,*)'WARNING! OLD ', trim(fileName_given),' IS DELETED'
-         write(6,*)'creating new file: ',trim(fileName_given)
-         period_type = 'unknown'
-         call CreatenetCDFfile(trim(fileName_given),GIMAXcdf,GJMAXcdf,&
-              ISMBEGcdf,JSMBEGcdf,KMAX)
-         ncFileID=closedID
-      endif
-   endif
+     if(createfile) then !the file does not exist yet or is overwritten
+        if(MasterProc)write(6,*) 'creating file: ',trim(fileName_given)
+        period_type = 'unknown'
+        call CreatenetCDFfile(trim(fileName_given),GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAX)
+        if(present(ncFileID_given))then
+           !the file should be opened
+           CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)!wait until the file creation is finished     
+           call check(nf90_open(trim(fileName_given),nf90_share+nf90_write,ncFileID))
+           ncFileID_given=ncFileID 
+        else
+           ncFileID=closedID
+        endif
+     elseif(MasterProc)then
+        !test if the defined dimensions are compatible
+        if(DEBUG_NETCDF)&
+             write(6,*) 'check dims file: ',trim(fileName_given)
+        select case(projection)
+        case('lon lat')
+           call check(nf90_inq_dimid(ncFileID,"lon",idimID),"dim:lon")
+           call check(nf90_inq_dimid(ncFileID,"lat",jdimID),"dim:lat")
+        case default
+           call check(nf90_inq_dimid(ncFileID,"i"  ,idimID),"dim:i")
+           call check(nf90_inq_dimid(ncFileID,"j"  ,jdimID),"dim:j")
+        endselect
+        if(USE_EtaCOORDINATES)then
+           call check(nf90_inq_dimid(ncFileID,"lev",kdimID),"dim:lev")
+        else
+           call check(nf90_inq_dimid(ncFileID,"k"  ,kdimID),"dim:k")
+        endif
+        ! only i,j coords can be handled for PS so far.
+        ! Posisble x,y would give wrong dimID. 
+        ! Check if all dims are found:
+        call CheckStop(any([idimID,jdimID,kdimID]<0),&
+             "ReadField_CDF: no dimID found for"//trim(fileName_given))
+        
+        call check(nf90_inquire_dimension(ncFileID,idimID,len=GIMAX_old),"len:i")
+        call check(nf90_inquire_dimension(ncFileID,jdimID,len=GJMAX_old),"len:j")
+        call check(nf90_inquire_dimension(ncFileID,kdimID,len=KMAX_old) ,"len:k")
+        
+        if(any([GIMAX_old,GJMAX_old,KMAX_old]<[GIMAXcdf,GJMAXcdf,KMAX]))then
+           write(6,*)'existing file ', trim(fileName_given),' has wrong dimensions'
+           write(6,*)GIMAX_old,GIMAXcdf,GJMAX_old,GJMAXcdf,KMAX_old,KMAX
+           write(6,*)'WARNING! OLD ', trim(fileName_given),' MUST BE DELETED'
+           Call StopAll('outCDF, inconsistent file size ')
+           !write(6,*)'creating new file: ',trim(fileName_given)
+           !period_type = 'unknown'
+           !NB: this cannot be used directly, because it must be called by all processors
+           !call CreatenetCDFfile(trim(fileName_given),GIMAXcdf,GJMAXcdf,&
+           !     ISMBEGcdf,JSMBEGcdf,KMAX)
+           !ncFileID=closedID
+        endif
+     endif
    
-   iotyp_new=IOU_GIVEN
-   ncFileID_new=ncFileID
+     iotyp_new=IOU_GIVEN
+     ncFileID_new=ncFileID
   endif
 
   if(DEBUG_NETCDF.and.MasterProc)then
