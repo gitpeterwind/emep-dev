@@ -155,7 +155,7 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-19th  November 2015 Peter, Alvaro   3085
+19th  November 2015 Peter, Alvaro   3085-7
 
 Bug in nesting for restricted domain introduced in 3070.
 Also some inconsistency with netcdfID for non-master corrected. 
@@ -172,6 +172,8 @@ choose size of domain in the output files in config_Outputs.nml Example
     hour_DOMAIN =    50,100,50,100
 &end
 
+3087: corrected bug in NetCDF, when using nesting. (all processors in stead of only masterproc
+where opening the file, and not closing)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 18th  November 2015 Peter   3084

@@ -497,7 +497,7 @@ select case (iotyp)
 case (IOU_YEAR)
   fileName_year = trim(fileName)
   period_type = 'fullrun'
-  if(MasterProc.and.DEBUG_NETCDF ) write(*,*) "Creating ", trim(fileName),trim(period_type)
+  if(MasterProc.and.DEBUG_NETCDF ) write(*,*) "Creating ", trim(fileName),' ',trim(period_type)
   i1=fullrun_DOMAIN(1);i2=fullrun_DOMAIN(2);j1=fullrun_DOMAIN(3);j2=fullrun_DOMAIN(4)
   ISMBEGcdf=min(ISMBEGcdf,i1); JSMBEGcdf=min(JSMBEGcdf,j1)
   GIMAXcdf=max(GIMAXcdf,i2-i1+1); GJMAXcdf=max(GJMAXcdf,j2-j1+1)
@@ -505,7 +505,7 @@ case (IOU_YEAR)
 case(IOU_MON)
   fileName_month = trim(fileName)
   period_type = 'monthly'
-  if(MasterProc.and.DEBUG_NETCDF ) write(*,*) "Creating ", trim(fileName),trim(period_type)
+  if(MasterProc.and.DEBUG_NETCDF ) write(*,*) "Creating ", trim(fileName),' ',trim(period_type)
   i1=month_DOMAIN(1);i2=month_DOMAIN(2);j1=month_DOMAIN(3);j2=month_DOMAIN(4)
   ISMBEGcdf=min(ISMBEGcdf,i1); JSMBEGcdf=min(JSMBEGcdf,j1)
   GIMAXcdf=max(GIMAXcdf,i2-i1+1); GJMAXcdf=max(GJMAXcdf,j2-j1+1)
@@ -513,15 +513,15 @@ case(IOU_MON)
 case(IOU_DAY)
   fileName_day = trim(fileName)
   period_type = 'daily'
-  if(MasterProc.and.DEBUG_NETCDF ) write(*,*) "Creating ", trim(fileName),trim(period_type)
+  if(MasterProc.and.DEBUG_NETCDF ) write(*,*) "Creating ", trim(fileName),' ',trim(period_type)
   i1=day_DOMAIN(1);i2=day_DOMAIN(2);j1=day_DOMAIN(3);j2=day_DOMAIN(4)
   ISMBEGcdf=min(ISMBEGcdf,i1); JSMBEGcdf=min(JSMBEGcdf,j1)
   GIMAXcdf=max(GIMAXcdf,i2-i1+1); GJMAXcdf=max(GJMAXcdf,j2-j1+1)
   call CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf, KMAX_MID)
 case(IOU_HOUR)
   fileName_hour = trim(fileName)
-  period_type = 'houry'
-  if(MasterProc.and.DEBUG_NETCDF ) write(*,*) "Creating ", trim(fileName),trim(period_type)
+  period_type = 'hourly'
+  if(MasterProc.and.DEBUG_NETCDF ) write(*,*) "Creating ", trim(fileName),' ',trim(period_type)
   i1=hour_DOMAIN(1);i2=hour_DOMAIN(2);j1=hour_DOMAIN(3);j2=hour_DOMAIN(4)
   ISMBEGcdf=min(ISMBEGcdf,i1); JSMBEGcdf=min(JSMBEGcdf,j1)
   GIMAXcdf=max(GIMAXcdf,i2-i1+1); GJMAXcdf=max(GJMAXcdf,j2-j1+1)
@@ -1574,10 +1574,13 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
         period_type = 'unknown'
         call CreatenetCDFfile(trim(fileName_given),GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAX)
         if(present(ncFileID_given))then
-           !the file should be opened
+           !the file should be opened, but by MasterProc only
            CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)!wait until the file creation is finished     
-           call check(nf90_open(trim(fileName_given),nf90_share+nf90_write,ncFileID))
-           ncFileID_given=ncFileID 
+           if(MasterProc)then
+              call check(nf90_open(trim(fileName_given),nf90_share+nf90_write,ncFileID))
+           else
+              ncFileID=closedID
+           endif
         else
            ncFileID=closedID
         endif
