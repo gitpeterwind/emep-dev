@@ -841,7 +841,7 @@ subroutine CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,&
            xcoord(i)=xcoord(i-1)+GRIDWIDTH_M/1000.
         enddo
         call check(nf90_put_var(ncFileID, iVarID, xcoord(1:GIMAXcdf)) )
-        write(*,*)'JBEGcdf,yp ',JBEGcdf,yp
+
         ycoord(1)=(JBEGcdf-yp)*GRIDWIDTH_M/1000.
         do j=2,GJMAXcdf
            ycoord(j)=ycoord(j-1)+GRIDWIDTH_M/1000.

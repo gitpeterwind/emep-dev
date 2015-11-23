@@ -371,6 +371,7 @@ subroutine wrtxn(indate,WriteNow)
   filename_write=date2string(template_write,indate,debug=mydebug)
   if(MasterProc)then
     inquire(file=fileName_write,exist=fexist)   
+    write(*,*)'Nest:write data ',trim(fileName_write)
   endif
   CALL MPI_BCAST(fexist,1,MPI_LOGICAL,0,MPI_COMM_WORLD,INFO)
 

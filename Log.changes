@@ -155,7 +155,7 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-19th  November 2015 Peter, Alvaro   3085-9
+19-23th  November 2015 Peter, Alvaro   3085-91
 
 Bug in nesting for restricted domain introduced in 3070.
 Also some inconsistency with netcdfID for non-master corrected. 
