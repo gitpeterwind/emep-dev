@@ -107,8 +107,9 @@ logical,private, save ::  &               ! if IC/BC are in the same model/run
   omit_zero_write= .false.                ! skip const=0.0 variables
 
 ! Limit output, e.g. for NMC statistics (3DVar)
-character(len=TXTLEN_SHORT), private, save, dimension(10) :: &
-  WRITE_SPC = "", &   ! If these varables remain ""
+character(len=TXTLEN_SHORT), private, save, dimension(NSPEC_ADV) :: &
+  WRITE_SPC = ""   ! If these varables remain ""
+character(len=TXTLEN_SHORT), private, save, dimension(size(chemgroups)) :: &
   WRITE_GRP = ""      ! all advected species will be written out.
 
 real(kind=8), parameter :: halfsecond=0.5/(24.0*3600.0)!used to avoid rounding errors
