@@ -155,7 +155,7 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-19th  November 2015 Peter, Alvaro   3085-7
+19th  November 2015 Peter, Alvaro   3085-9
 
 Bug in nesting for restricted domain introduced in 3070.
 Also some inconsistency with netcdfID for non-master corrected. 
@@ -176,6 +176,9 @@ choose size of domain in the output files in config_Outputs.nml Example
 where opening the file, and not closing)
 
 3088: more bugs corrected for restricted domain and stereographic projections
+3089: increased size of WRITE_SPC and WRITE_GRP in Nest_ml
+3090: Stop Nest_ml *at start of run*, when the write file exists.
+      Defined the time for "hourly", as middle of period. Hourly is averaged over the hour.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 18th  November 2015 Peter   3084

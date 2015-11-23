@@ -321,6 +321,16 @@ subroutine wrtxn(indate,WriteNow)
   call Config_Nest()
   if(.not.any(MODE==[1,3,10,12]).and..not.FORECAST)return
 
+!check if the file exist already at start of run. Do not wait until first write to stop!
+  filename_write=date2string(template_write,indate,debug=mydebug)
+  if(MasterProc.and.first_call)then
+    inquire(file=fileName_write,exist=fexist)
+    write(*,*)'Nest:write data ',trim(fileName_write),fexist
+    !If you know what you are doing you can uncomment the stop, and the new data will be appended to the file
+    call CheckStop(fexist.and.first_call,&
+             "Refuse to overwrite. Remove this file: "//trim(fileName_write))   
+  endif
+
   select case(MODE)
   case(10,12)
     if(.not.WriteNow)return
@@ -360,12 +370,7 @@ subroutine wrtxn(indate,WriteNow)
 ! e.g. set template_write="EMEP_BC_MMYYYY.nc" on namelist for different names each month
   filename_write=date2string(template_write,indate,debug=mydebug)
   if(MasterProc)then
-    inquire(file=fileName_write,exist=fexist)
-    write(*,*)'Nest:write data ',trim(fileName_write),fexist
-    !If you know what you are doing you can uncomment the stop, and the new data will be appended to the file
-    call CheckStop(fexist.and.first_call,&
-             "Refuse to overwrite. Remove this file: "//trim(fileName_write))
-   
+    inquire(file=fileName_write,exist=fexist)   
   endif
   CALL MPI_BCAST(fexist,1,MPI_LOGICAL,0,MPI_COMM_WORLD,INFO)
 
