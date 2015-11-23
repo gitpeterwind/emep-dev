@@ -2,17 +2,19 @@ Module GridValues_ml
 
   !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
   !
-  !  Define parameters and variables associated with 3-D grid and its
-  !  geography.
+  !  Define parameters, variables and transformnations associated with grid and
+  !  projection.
   !
-  ! History: 
-  ! March - changed folllwing Steffen's optimisation/correction of sigma_mid.
-  ! January 2001 : Created by ds from old defconstants, made enough changes
-  ! to get this into F90, and to make x,y inputs to the position subroutine,
-  ! but the basic equations are untouched.
-  ! October 2001 hf added call to ReadField (which now does global2local)
-  ! Nov. 2001 - tidied up a bit (ds). Use statements moved to top of module
+  ! Nomenclature:
+  ! fulldomain is the largest grid, usually where metdata is defined.
+  ! rundomain is a grid where the run is performed, smaller than fulldomain.
+  ! restricted domain is a grid smaller than rundomain, where data is outputed;
+  !  (the restricted domains are for instance, fullrun_DOMAIN,month_DOMAIN,
+  !  day_DOMAIN,hour_DOMAIN).
+  ! subdomain: the domain covered by one MPI process or processor.
+  !
   !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+
 
   use CheckStop_ml,           only: CheckStop,StopAll,check=>CheckNC
   use Functions_ml,           only: great_circle_distance
@@ -1774,10 +1776,10 @@ contains
   subroutine RestrictDomain(DOMAIN)
 
     integer, dimension(4), intent(inout)::  DOMAIN
-    DOMAIN(1)=max(DOMAIN(1)-IRUNBEG+1,1)
-    DOMAIN(2)=min(DOMAIN(2)-IRUNBEG+1,GIMAX)
-    DOMAIN(3)=max(DOMAIN(3)-JRUNBEG+1,1)
-    DOMAIN(4)=min(DOMAIN(4)-JRUNBEG+1,GJMAX)
+    DOMAIN(1)=max(RUNDOMAIN(1),DOMAIN(1))
+    DOMAIN(2)=min(RUNDOMAIN(2),DOMAIN(2))
+    DOMAIN(3)=max(RUNDOMAIN(3),DOMAIN(3))
+    DOMAIN(4)=min(RUNDOMAIN(4),DOMAIN(4))
     
   end subroutine RestrictDomain
 end module GridValues_ml

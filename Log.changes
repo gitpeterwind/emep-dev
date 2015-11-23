@@ -175,6 +175,8 @@ choose size of domain in the output files in config_Outputs.nml Example
 3087: corrected bug in NetCDF, when using nesting. (all processors in stead of only masterproc
 where opening the file, and not closing)
 
+3088: more bugs corrected for restricted domain and stereographic projections
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 18th  November 2015 Peter   3084
 

@@ -40,7 +40,7 @@ use ModelConstants_ml, only : MasterProc, SOURCE_RECEPTOR  &
                         , USE_AOD &
                         , USE_SOILNOX, DEBUG & !! => DEBUG_MY_DERIVED &
                         , Y=>IOU_YEAR, M=>IOU_MON, D=>IOU_DAY, H=>IOU_HOUR &
-                        ,IIFULLDOM,JJFULLDOM&
+                        ,IIFULLDOM,JJFULLDOM,RUNDOMAIN&
                         , KMAX_MID   ! =>  z dimension
 use MosaicOutputs_ml, only : nMosaic, MAX_MOSAIC_OUTPUTS, MosaicOutput, & !
   Init_MosaicMMC,  Add_MosaicMetConcs, &
@@ -249,10 +249,10 @@ private
     logical :: debug0   !  if(DEBUG%MY_DERIVED.and.MasterProc )
 
 !default output sizes
-    fullrun_DOMAIN = (/1,IIFULLDOM,1,JJFULLDOM/)
-    month_DOMAIN =   (/1,IIFULLDOM,1,JJFULLDOM/)
-    day_DOMAIN =     (/1,IIFULLDOM,1,JJFULLDOM/)
-    hour_DOMAIN =    (/1,IIFULLDOM,1,JJFULLDOM/)
+    fullrun_DOMAIN = RUNDOMAIN
+    month_DOMAIN =   RUNDOMAIN
+    day_DOMAIN =     RUNDOMAIN
+    hour_DOMAIN =    RUNDOMAIN
 
     NAMELIST /OutputConcs_config/OutputConcs
     NAMELIST /OutputDep_config/DDEP_ECOS, DDEP_WANTED, WDEP_WANTED

@@ -15,14 +15,12 @@ module Par_ml
 !RESTRI
 !  we try to run on a smaller domain with the same input
 !  for this reason we now define additional parameters:
-!  numbers of points in the 'larger' array iilardom,jjlardom
-!  and coordinates of the origin of the smaller domain with
-!  respect to the larger domain ismbeg,jsmbeg
+!  numbers of points in the larger (=fulldomain) array iilardom,jjlardom
+!  and coordinates of the origin of the smaller domain (=rundomain) with
+!  respect to the larger domain irunbeg,jrunbeg
 !  one can run the large domain by setting  
 !  gimax, gjmax to iilardom,jjlardom
-!  and  ismbeg,jsmbeg   to 1
-!  also we have now to distinguish mfsize for input and output: 
-!  mfsizeinp,mfsizeout!!!
+!  and  irunbeg,jrunbeg   to 1
 
 use CheckStop_ml,      only : CheckStop
 use Io_Nums_ml,        only:  IO_LOG
