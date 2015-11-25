@@ -321,7 +321,7 @@ real, dimension(:,:,:), pointer :: an_bgd=>null(),an_inc=>null()
 #ifdef BIAS_CORRECTION
     allocate(chi(nv2np),stat=ierr)
 #else
-    if(nvLoc>0)then
+    if(nvLoc>0)then               ! defined local y-slab
       allocate(chi(nvLoc),stat=ierr)
     else
       allocate(chi(1),stat=ierr)  ! dummy
@@ -773,7 +773,9 @@ subroutine costFunction(ind,nvLoc,chi,Jcost,gradJcost)
 !-----------------------------------------------------------------------
 ! Jb = 0.5 * \chi^{\dagger}*\chi
 !-----------------------------------------------------------------------
-  jb=0.5*norm(chi_hc,l2wC,squared=.true.,reduce=.false.)
+  jb=0.0
+  if(nvLoc>0)&    ! defined local y-slab
+    jb=0.5*norm(chi_hc,l2wC,squared=.true.,reduce=.false.)
 !-----------------------------------------------------------------------
 ! conversion from model to observation space
 !-----------------------------------------------------------------------

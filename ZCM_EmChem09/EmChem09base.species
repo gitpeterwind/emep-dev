@@ -33,7 +33,7 @@ TERPPeroxy,0,terpperoxy,xx,xx,xx,0,0,0,xx,RO2,,"!From terpene degradation"
 O3,1,O3,xx,O3,xx,0,0,0,xx,OX;daObs,,!
 NO,1,NO,xx,xx,xx,0,0,0,xx,NOX;OXN,,!
 NO2,1,NO2,xx,NO2,xx,0,0,0,xx,NOX;OX;OXN;daObs,,!
-SHIPNOX,1,NO2,xx,NO2,xx,0,0,0,xx,NOX;OX;OXN;daObs,,!
+SHIPNOX,1,NO2,xx,NO2,xx,0,0,0,xx,NOX;OX;OXN,,!
 PAN,1,CH3COO2NO2,xx,PAN,xx,0,0,0,xx,OXN,,!
 MPAN,1,CH2CH(CH3)C(=0)O2NO2,xx,PAN,xx,0,0,0,xx,OXN,,"!( from macr degredation)"
 NO3,1,NO3,xx,xx,xx,0,0,0,xx,OXN,,!

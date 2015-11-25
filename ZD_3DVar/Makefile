@@ -22,13 +22,16 @@ ifdef EXP
       LLIB += -L$(FFTW_ROOT)/lib -Wl,-rpath,$(FFTW_ROOT)/lib
     endif
   else ifeq ($(MACHINE),vilje)
-    MODULES += fftw/3.3.3
-    ifneq (,$(call modulefind,fftw/3.3.3))
+    ifneq (,$(call modulefind,intelcomp/13.0.1))
+      MODULES += fftw/3.3.3
       FFTW_ROOT = /sw/sdev/Modules/fftw/fftw-3.3.3
-      LIBS += -lfftw3_mpi -lfftw3
-      INCL += $(FFTW_ROOT)/include
-      LLIB += -L$(FFTW_ROOT)/lib -Wl,-rpath,$(FFTW_ROOT)/lib
+    else ifneq (,$(call modulefind,intelcomp/14.0.1))
+      MODULES += fftw/3.3.4
+      FFTW_ROOT = /sw/sdev/Modules/fftw/fftw-3.3.4
     endif
+    LIBS += -lfftw3_mpi -lfftw3
+    INCL += $(FFTW_ROOT)/include
+    LLIB += -L$(FFTW_ROOT)/lib -Wl,-rpath,$(FFTW_ROOT)/lib
   endif
   ifneq (,$(findstring OLD_SPL,$(DFLAGS)))
     SRCS.$(EXP) += ./B_NMC/fitpack.F

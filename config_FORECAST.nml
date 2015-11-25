@@ -31,7 +31,7 @@
   INERIS_SNAP1          = F,          ! Used for TFMM runs
   INERIS_SNAP2          = F,          ! Used for TFMM runs
 !------------------------------
-  EMIS_SOURCE           = 'emislist', ! 'emislist' or 'CdfFractions'
+  EMIS_SOURCE           = 'CdfFractions', ! 'emislist' or 'CdfFractions'
   EMIS_TEST             = 'None',     ! 'None' or 'CdfSnap' 
 !!EMIS_SOURCE='CdfFractions',EMIS_OUT=T,! Output gridded emissions
 !------------------------------
@@ -48,9 +48,9 @@
 &end
 &Fire_config
   need_file=F,need_date=F,need_poll=F,! continue if don't find file,time record,pollutant
-  GFED_PATTERN="$GFED",#GFED
-  FINN_PATTERN="$FINN",#FINN
-  GFAS_PATTERN="$GFAS",#GFAS
+  GFED_PATTERN='$GFED',#GFED
+  FINN_PATTERN='$FINN',#FINN
+  GFAS_PATTERN='$GFAS',#GFAS
 &end
 &Pollen_config
   birch_frac_nc  = '$birch_frac',#birch_frac
@@ -77,19 +77,19 @@
 !-------- CWF dump/restart
 ! WRITE_SPC = 'NO2','O3','SO2','REMPPM25','REMPPM_C', ! reduce output for
 ! WRITE_GRP = 'DAOBS','DAUNOBS','PM10','AOD',         ! NMC statistics (3DVar)
-! omit_zero_write  = T,                               ! further reduce output
-  FORECAST_NDUMP   = 1,                       ! Nr. CWF dump dates
-  outdate          = $outdate,                ! 1st,2nd CWF dump dates
-! outdate(1:4)     = -1,-1,-1,00,0000,        ! everyday at 00:00
-!                    -1,-1,-1,12,0000,        ! everyday at 12:00
-!                    -1,-1,-1,06,0000,        ! everyday at 06:00
-!                    -1,-1,-1,18,0000,        ! everyday at 18:00
-! outdate(1:2)     = -1,-1,01,00,0000,        !  1st of every month at 00:00
-!                    -1,-1,16,00,0000,        ! 16th of every month at 00:00
-! outdate(1:4)     = -1,01,01,00,0000,        ! Jan 1st at 00:00
-!                    -1,04,01,00,0000,        ! Apr 1st at 00:00
-!                    -1,07,01,00,0000,        ! Jul 1st at 00:00
-!                    -1,10,01,00,0000,        ! Oct 1st at 00:00
+! omit_zero_write= T,                               ! further reduce output
+  FORECAST_NDUMP = 1,                       ! Nr. CWF dump dates
+  outdate        = $outdate,                ! 1st,2nd CWF dump dates
+! outdate(1:4)   = -1,-1,-1,00,0000,        ! everyday at 00:00
+!                  -1,-1,-1,12,0000,        ! everyday at 12:00
+!                  -1,-1,-1,06,0000,        ! everyday at 06:00
+!                  -1,-1,-1,18,0000,        ! everyday at 18:00
+! outdate(1:2)   = -1,-1,01,00,0000,        !  1st of every month at 00:00
+!                  -1,-1,16,00,0000,        ! 16th of every month at 00:00
+! outdate(1:4)   = -1,01,01,00,0000,        ! Jan 1st at 00:00
+!                  -1,04,01,00,0000,        ! Apr 1st at 00:00
+!                  -1,07,01,00,0000,        ! Jul 1st at 00:00
+!                  -1,10,01,00,0000,        ! Oct 1st at 00:00
 &end
 &ExternalBICs_config
   USE_EXTERNAL_BIC     = T,                   ! .false. to deactivate
