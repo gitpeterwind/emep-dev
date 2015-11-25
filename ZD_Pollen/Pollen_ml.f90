@@ -22,7 +22,7 @@ use MicroMet_ml,          only: Wind_at_h
 use ModelConstants_ml,    only: KMAX_MID, nstep, FORECAST, &
                                 METSTEP, MasterProc, IOU_INST, RUNDOMAIN, &
                                 dt=>dt_advec, DEBUG=>DEBUG_POLLEN
-use Nest_ml,              only: outdate,FORECAST_NDUMP,istart,jstart,iend,jend,&
+use Nest_ml,              only: outdate,FORECAST_NDUMP,out_DOMAIN,&
                                 template_read_IC=>template_read_3D,&
                                 template_write_IC=>template_write
 use NetCDF_ml,            only: ReadField_CDF,Out_netCDF,GetCDF_modelgrid,&
@@ -608,19 +608,19 @@ subroutine pollen_dump ()
     def1%name=BIRCH             ! written
     if(.not.create_var)data=xn_adv(iadv_BIRCH,:,:,:)
     call Out_netCDF(IOU_INST,def1,3,KMAX_MID,data,1.0,CDFtype=CDFtype,&
-          ist=istart,jst=jstart,ien=iend,jen=jend,create_var_only=create_var,&
+          out_DOMAIN=out_DOMAIN,create_var_only=create_var,&
           fileName_given=trim(filename),ncFileID_given=ncFileID)
 
     def1%name=OLIVE             ! written
     if(.not.create_var)data=xn_adv(iadv_OLIVE,:,:,:)
     call Out_netCDF(IOU_INST,def1,3,KMAX_MID,data,1.0,CDFtype=CDFtype,&
-          ist=istart,jst=jstart,ien=iend,jen=jend,create_var_only=create_var,&
+          out_DOMAIN=out_DOMAIN,create_var_only=create_var,&
           fileName_given=trim(filename),ncFileID_given=ncFileID)
 
     def1%name=GRASS             ! written
     if(.not.create_var)data=xn_adv(iadv_GRASS,:,:,:)
     call Out_netCDF(IOU_INST,def1,3,KMAX_MID,data,1.0,CDFtype=CDFtype,&
-          ist=istart,jst=jstart,ien=iend,jen=jend,create_var_only=create_var,&
+          out_DOMAIN=out_DOMAIN,create_var_only=create_var,&
           fileName_given=trim(filename),ncFileID_given=ncFileID)
 !------------------------
 ! heatsum
@@ -631,13 +631,13 @@ subroutine pollen_dump ()
     def1%name=BIRCH//"_heatsum" ! written
     if(DEBUG.and.MasterProc) print dfmt,trim(def1%name),trim(def1%unit)
     call Out_netCDF(IOU_INST,def1,2,1,heatsum(:,:,1),1.0,CDFtype=CDFtype,&
-          ist=istart,jst=jstart,ien=iend,jen=jend,create_var_only=create_var,&
+          out_DOMAIN=out_DOMAIN,create_var_only=create_var,&
           fileName_given=trim(filename),ncFileID_given=ncFileID)
     
     def1%name=OLIVE//"_heatsum" ! written
     if(DEBUG.and.MasterProc) print dfmt,trim(def1%name),trim(def1%unit)
     call Out_netCDF(IOU_INST,def1,2,1,heatsum(:,:,2),1.0,CDFtype=CDFtype,&
-          ist=istart,jst=jstart,ien=iend,jen=jend,create_var_only=create_var,&
+          out_DOMAIN=out_DOMAIN,create_var_only=create_var,&
           fileName_given=trim(filename),ncFileID_given=ncFileID)
 !------------------------
 ! pollen_rest
@@ -648,19 +648,19 @@ subroutine pollen_dump ()
     def1%name=BIRCH//"_rest"    ! written
     if(DEBUG.and.MasterProc) print dfmt,trim(def1%name),trim(def1%unit)
     call Out_netCDF(IOU_INST,def1,2,1,Pollen_rest(:,:,1),1.0,CDFtype=CDFtype,&
-          ist=istart,jst=jstart,ien=iend,jen=jend,create_var_only=create_var,&
+          out_DOMAIN=out_DOMAIN,create_var_only=create_var,&
           fileName_given=trim(filename),ncFileID_given=ncFileID)
 
     def1%name=OLIVE//"_rest"    ! written
     if(DEBUG.and.MasterProc) print dfmt,trim(def1%name),trim(def1%unit)
     call Out_netCDF(IOU_INST,def1,2,1,Pollen_rest(:,:,2),1.0,CDFtype=CDFtype,&
-          ist=istart,jst=jstart,ien=iend,jen=jend,create_var_only=create_var,&
+          out_DOMAIN=out_DOMAIN,create_var_only=create_var,&
           fileName_given=trim(filename),ncFileID_given=ncFileID)
 
     def1%name=GRASS//"_rest"    ! written
     if(DEBUG.and.MasterProc) print dfmt,trim(def1%name),trim(def1%unit)
     call Out_netCDF(IOU_INST,def1,2,1,Pollen_rest(:,:,3),1.0,CDFtype=CDFtype,&
-          ist=istart,jst=jstart,ien=iend,jen=jend,create_var_only=create_var,&
+          out_DOMAIN=out_DOMAIN,create_var_only=create_var,&
           fileName_given=trim(filename),ncFileID_given=ncFileID)
   enddo
   if(MasterProc)call CheckNC(nf90_close(ncFileID),"close:"//trim(filename))

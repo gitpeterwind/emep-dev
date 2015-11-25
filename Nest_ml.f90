@@ -10,7 +10,7 @@ module Nest_ml
 ! 2) copy or link filename_write to filename_read_BC (for example "ln -s EMEP_OUT.nc EMEP_IN.nc")
 ! 3) run (in a smaller domain) with MODE=2
 !
-! Set MODE (in Nest_config nml) and istart,jstart,iend,jend (same namelist)
+! Set MODE (in Nest_config nml) and out_DOMAIN (same namelist)
 ! Choose NHOURSAVE and NHOURREAD
 ! Also filename_read_BC and filename_read_3D should point to appropriate files
 ! Be careful to remove old BC files before making new ones.
@@ -38,7 +38,7 @@ use CheckStop_ml,           only: CheckStop,check=>CheckNC
 use Chemfields_ml,          only: xn_adv    ! emep model concs.
 use ChemSpecs,              only: NSPEC_ADV, NSPEC_SHL, species_adv
 use Functions_ml,           only: great_circle_distance
-use GridValues_ml,          only: A_mid,B_mid, glon,glat, i_fdom,j_fdom
+use GridValues_ml,          only: A_mid,B_mid, glon,glat, i_fdom,j_fdom, RestrictDomain
 use Io_ml,                  only: open_file,IO_TMP,IO_NML,PrintLog
 use InterpolationRoutines_ml,  only : grid2grid_coeff
 use ModelConstants_ml,      only: Pref,PPB,PT,KMAX_MID, MasterProc, NPROC,  &
@@ -80,7 +80,7 @@ integer, public, save     :: FORECAST_NDUMP     = 1  ! Read by Unimod.f90
 type(date), public :: outdate(FORECAST_NDUMP_MAX)=date(-1,-1,-1,-1,-1)
 
 !coordinates of subdomain to write, relative to FULL domain (only used in write mode)
-integer, public ::istart,jstart,iend,jend ! Set on Nest_config namelist
+integer, public :: out_DOMAIN(4) ! =[istart,iend,jstart,jend]
 
 !/-- subroutines
 
@@ -144,7 +144,7 @@ subroutine Config_Nest()
   logical, save :: first_call=.true.
   NAMELIST /Nest_config/ MODE,NHOURSAVE,NHOURREAD, &
     template_read_3D,template_read_BC,template_write,&
-    native_grid_3D,native_grid_BC,omit_zero_write,istart,jstart,iend,jend,&
+    native_grid_3D,native_grid_BC,omit_zero_write,out_DOMAIN,&
     WRITE_SPC,WRITE_GRP,FORECAST_NDUMP,outdate
 
   if(.not.first_call)return
@@ -155,8 +155,11 @@ subroutine Config_Nest()
   NHOURSAVE=3   ! Between wrtxn calls.  Should be fraction of 24
   NHOURREAD=1   ! Between readxn calls. Should be fraction of 24
 ! Default domain for write modes 
-  istart=RUNDOMAIN(1)+1;iend=RUNDOMAIN(2)-1
-  jstart=RUNDOMAIN(3)+1;jend=RUNDOMAIN(4)-1
+  if(.not.FORECAST)then
+    out_DOMAIN=RUNDOMAIN+[1,-1,1,-1]
+  else
+    out_DOMAIN=RUNDOMAIN
+  endif
   rewind(IO_NML)
   read(IO_NML,NML=Nest_config,iostat=ios)
   call CheckStop(ios,"NML=Nest_config")  
@@ -172,8 +175,7 @@ subroutine Config_Nest()
 ! Update filenames according to date following templates defined on Nest_config
   call init_icbc(cdate=current_date)
 ! Ensure sub-domain is not larger than run-domain
-  istart=max(istart,RUNDOMAIN(1));iend=min(iend,RUNDOMAIN(2))
-  jstart=max(jstart,RUNDOMAIN(3));jend=min(jend,RUNDOMAIN(4))
+  call RestrictDomain(out_DOMAIN)
 ! Ensure that only FORECAST_NDUMP are taking into account
   if(FORECAST.and.(FORECAST_NDUMP<FORECAST_NDUMP_MAX))&
     outdate(FORECAST_NDUMP+1:FORECAST_NDUMP_MAX)%day=0
@@ -334,10 +336,7 @@ subroutine wrtxn(indate,WriteNow)
   select case(MODE)
   case(10,12)
     if(.not.WriteNow)return
-!    istart=RUNDOMAIN(1)
-!    jstart=RUNDOMAIN(3)
-!    iend=RUNDOMAIN(2)
-!    jend=RUNDOMAIN(4)
+!   out_DOMAIN=RUNDOMAIN
   case default
     if(FORECAST)then
       outdate(:)%seconds=0   ! output only at full hours
@@ -345,10 +344,7 @@ subroutine wrtxn(indate,WriteNow)
                            wildcard=-1))return
       if(MasterProc) write(*,*)&
         date2string(" Forecast nest/dump at YYYY-MM-DD hh:mm:ss",indate)
-      istart=RUNDOMAIN(1)
-      jstart=RUNDOMAIN(3)
-      iend=RUNDOMAIN(2)
-      jend=RUNDOMAIN(4)
+!    out_DOMAIN=RUNDOMAIN
     else
       if(mod(indate%hour,NHOURSAVE)/=0.or.indate%seconds/=0)return
     endif
@@ -450,7 +446,7 @@ subroutine wrtxn(indate,WriteNow)
       def1%name=species_adv(n)%name   ! written
 !!    data=xn_adv(n,:,:,:)
       call Out_netCDF(iotyp,def1,ndim,kmax,data,scale,CDFtype=CDFtype,&
-            ist=istart,jst=jstart,ien=iend,jen=jend,create_var_only=.true.,&
+            out_DOMAIN=out_DOMAIN,create_var_only=.true.,&
             fileName_given=trim(fileName_write),ncFileID_given=ncFileID)
     enddo
   endif
@@ -460,7 +456,7 @@ subroutine wrtxn(indate,WriteNow)
     def1%name=species_adv(n)%name     ! written
     data=xn_adv(n,:,:,:)
     call Out_netCDF(iotyp,def1,ndim,kmax,data,scale,CDFtype=CDFtype,&
-          ist=istart,jst=jstart,ien=iend,jen=jend,create_var_only=.false.,&
+          out_DOMAIN=out_DOMAIN,create_var_only=.false.,&
           fileName_given=trim(fileName_write),ncFileID_given=ncFileID)
   enddo
   if(MasterProc)call check(nf90_close(ncFileID))

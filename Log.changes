@@ -155,12 +155,44 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-24th     November 2015 Alvaro   3092
+24th     November 2015 Alvaro   3092-3
 
-Small changes/updates from MACC (now CAMS50) FORECAST/ANALYSIS set-up
+Homogenize the definitions of output sub domains across the model
+
+NetCDF_ml:
+- Use hour_DOMAIN for IOU_3DHOUR type (subroutine Init_new_netCDF).
+- replace optional input variables ist,jst,ien,jen by out_DOMAIN
+  (subroutines Out_netCDF and WriteCDF).
+
+Nest_ml,ZD_Pollen/Pollen_ml,
+config_EMEPSTD.nml,config_IMPACT2C.nml,config_EMEPGLOB.nml,config_FORECAST.nml:
+- replace user variables istart,jstart,iend,jend read in Nest_config
+  by out_DOMAIN (subroutines Config_Nest, wrtxn and pollen_dump)
+
+Output_hourly,ZD_OZONE/My_Outputs_ml,OwnDataTypes_ml:
+- Use hour_DOMAIN for hourly netcdf output and
+  remove ix1,ix2,iy1,iy2 from Asc2D type
+  (subroutine hourly_out, set_output_defs and print_Asc2D).
+
+Output_hourly:
+- add specific humidity hourly output type ("sh").
+
+config_BM-EECCA.nml
+- remove garbage after OutputDep_config namelist.
+
+GridValues_ml:
+- Extend RestrictDomain so it accepts wildcards, 
+  eg [10,20,-1,-1] implies [10,20,RUNDOMAIN(3),RUNDOMAIN(4)].
+- Add consistency check for RestrictDomain
+
+Changes/updates from MACC (now CAMS50) FORECAST/ANALYSIS set-up
+
+Nest_ml:
+- FORECAST mode accepts out_DOMAIN. Use RUNDOMAIN as default.
 
 config_FORECAST.nml:
 - Use 'CdfFractions' instead of 'emislist' (deprecated).
+- Add Machine_config namelist
 
 ZCM_EmChem09/EmChem09base.species:
 - remove SHIPNOX from DAOBS group.

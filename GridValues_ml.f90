@@ -1773,14 +1773,23 @@ contains
 
   end subroutine nf90_get_var_extended
 
-  subroutine RestrictDomain(DOMAIN)
+subroutine RestrictDomain(DOMAIN)
+  integer, dimension(4), intent(inout)::  DOMAIN
+  ! allow for wildcards,
+  ! eg [10,20,-1,-1] => [10,20,RUNDOMAIN(3),RUNDOMAIN(4)]
+  where(DOMAIN<0) DOMAIN=RUNDOMAIN
 
-    integer, dimension(4), intent(inout)::  DOMAIN
-    DOMAIN(1)=max(RUNDOMAIN(1),DOMAIN(1))
-    DOMAIN(2)=min(RUNDOMAIN(2),DOMAIN(2))
-    DOMAIN(3)=max(RUNDOMAIN(3),DOMAIN(3))
-    DOMAIN(4)=min(RUNDOMAIN(4),DOMAIN(4))
-    
-  end subroutine RestrictDomain
-end module GridValues_ml
+  ! Ensure DOMAIN is contained by RUNDOMAIN
+  DOMAIN(1)=max(RUNDOMAIN(1),DOMAIN(1))
+  DOMAIN(2)=min(RUNDOMAIN(2),DOMAIN(2))
+  DOMAIN(3)=max(RUNDOMAIN(3),DOMAIN(3))
+  DOMAIN(4)=min(RUNDOMAIN(4),DOMAIN(4))
+
+  ! consistency check
+  if(any([DOMAIN==0,DOMAIN(1)>DOMAIN(2),DOMAIN(3)>DOMAIN(4)]))then
+    write(*,"(A,'=[',I0,3(',',I0),']')")'Inconsistent DOMAIN',DOMAIN
+    call CheckStop('Inconsistent DOMAIN')
+  endif
+endsubroutine RestrictDomain
+endmodule GridValues_ml
 !==============================================================================

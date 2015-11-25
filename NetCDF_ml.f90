@@ -492,13 +492,14 @@ if(MasterProc.and.DEBUG_NETCDF ) write(*,*)'Init_new_netCDF ',trim(fileName),iot
 
 !NB IBEGcdf and JBEGcdf are here defined relative to fulldomain
 IBEGcdf=GIMAX+IRUNBEG-1; JBEGcdf=GJMAX+JRUNBEG-1  !initialisations
-GIMAXcdf=0; GJMAXcdf=0                                !initialisations
+GIMAXcdf=0; GJMAXcdf=0                            !initialisations
 KMAXcdf=1
 select case (iotyp)
 case (IOU_YEAR)
   fileName_year = trim(fileName)
   period_type = 'fullrun'
-  if(MasterProc.and.DEBUG_NETCDF ) write(*,*) "Creating ", trim(fileName),' ',trim(period_type)
+  if(MasterProc.and.DEBUG_NETCDF)&
+    write(*,*) "Creating ", trim(fileName),' ',trim(period_type)
   i1=fullrun_DOMAIN(1);i2=fullrun_DOMAIN(2);j1=fullrun_DOMAIN(3);j2=fullrun_DOMAIN(4)
   IBEGcdf=min(IBEGcdf,i1); JBEGcdf=min(JBEGcdf,j1)
   GIMAXcdf=max(GIMAXcdf,i2-i1+1); GJMAXcdf=max(GJMAXcdf,j2-j1+1)
@@ -506,7 +507,8 @@ case (IOU_YEAR)
 case(IOU_MON)
   fileName_month = trim(fileName)
   period_type = 'monthly'
-  if(MasterProc.and.DEBUG_NETCDF ) write(*,*) "Creating ", trim(fileName),' ',trim(period_type)
+  if(MasterProc.and.DEBUG_NETCDF)&
+    write(*,*) "Creating ", trim(fileName),' ',trim(period_type)
   i1=month_DOMAIN(1);i2=month_DOMAIN(2);j1=month_DOMAIN(3);j2=month_DOMAIN(4)
   IBEGcdf=min(IBEGcdf,i1); JBEGcdf=min(JBEGcdf,j1)
   GIMAXcdf=max(GIMAXcdf,i2-i1+1); GJMAXcdf=max(GJMAXcdf,j2-j1+1)
@@ -514,7 +516,8 @@ case(IOU_MON)
 case(IOU_DAY)
   fileName_day = trim(fileName)
   period_type = 'daily'
-  if(MasterProc.and.DEBUG_NETCDF ) write(*,*) "Creating ", trim(fileName),' ',trim(period_type)
+  if(MasterProc.and.DEBUG_NETCDF)&
+    write(*,*) "Creating ", trim(fileName),' ',trim(period_type)
   i1=day_DOMAIN(1);i2=day_DOMAIN(2);j1=day_DOMAIN(3);j2=day_DOMAIN(4)
   IBEGcdf=min(IBEGcdf,i1); JBEGcdf=min(JBEGcdf,j1)
   GIMAXcdf=max(GIMAXcdf,i2-i1+1); GJMAXcdf=max(GJMAXcdf,j2-j1+1)
@@ -522,7 +525,8 @@ case(IOU_DAY)
 case(IOU_HOUR)
   fileName_hour = trim(fileName)
   period_type = 'hourlyMean'
-  if(MasterProc.and.DEBUG_NETCDF ) write(*,*) "Creating ", trim(fileName),' ',trim(period_type)
+  if(MasterProc.and.DEBUG_NETCDF)&
+    write(*,*) "Creating ", trim(fileName),' ',trim(period_type)
   i1=hour_DOMAIN(1);i2=hour_DOMAIN(2);j1=hour_DOMAIN(3);j2=hour_DOMAIN(4)
   IBEGcdf=min(IBEGcdf,i1); JBEGcdf=min(JBEGcdf,j1)
   GIMAXcdf=max(GIMAXcdf,i2-i1+1); GJMAXcdf=max(GJMAXcdf,j2-j1+1)
@@ -530,41 +534,34 @@ case(IOU_HOUR)
 case(IOU_3DHOUR)
   fileName_3Dhour = trim(fileName)
   period_type = 'hourly'
-  if(MasterProc.and.DEBUG_NETCDF ) write(*,*) "Creating ", trim(fileName),trim(period_type)
-  do ih=1,NHOURLY_OUT
-    IBEGcdf=min(IBEGcdf,hr_out(ih)%ix1)
-    JBEGcdf=min(JBEGcdf,hr_out(ih)%iy1)
-    GIMAXcdf=max(GIMAXcdf,hr_out(ih)%ix2-hr_out(ih)%ix1+1)
-    GJMAXcdf=max(GJMAXcdf,hr_out(ih)%iy2-hr_out(ih)%iy1+1)
-    KMAXcdf =max(KMAXcdf,hr_out(ih)%nk)
-  enddo
-  GIMAXcdf=min(GIMAXcdf,GIMAX)
-  GJMAXcdf=min(GJMAXcdf,GJMAX)
-  KMAXcdf =min(KMAXcdf ,NLEVELS_HOURLY)
-
-! Output selected model levels
+  if(MasterProc.and.DEBUG_NETCDF)&
+    write(*,*) "Creating ", trim(fileName),' ',trim(period_type)
+  i1=hour_DOMAIN(1);i2=hour_DOMAIN(2);j1=hour_DOMAIN(3);j2=hour_DOMAIN(4)
+  IBEGcdf=min(IBEGcdf,i1); JBEGcdf=min(JBEGcdf,j1)
+  GIMAXcdf=max(GIMAXcdf,i2-i1+1); GJMAXcdf=max(GJMAXcdf,j2-j1+1)
+  KMAXcdf =min(maxval(hr_out(1:NHOURLY_OUT)%nk),NLEVELS_HOURLY)
+  ! Output selected model levels
   if(SELECT_LEVELS_HOURLY)then     
-    call CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,&
-                          KMAXcdf,KLEVcdf=LEVELS_HOURLY)
+    call CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,KMAXcdf,&
+                          KLEVcdf=LEVELS_HOURLY)
   else
-  if(MasterProc.and.DEBUG_NETCDF ) write(*,*) "Creating ", trim(fileName),trim(period_type)
-    call CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,&
-                          KMAXcdf)
+    call CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,KMAXcdf)
   endif
-
 case(IOU_INST)
   fileName_inst = trim(fileName)
   period_type = 'instant'
-  if(MasterProc.and.DEBUG_NETCDF ) write(*,*) "Creating ", trim(fileName),trim(period_type)
+  if(MasterProc.and.DEBUG_NETCDF)&
+    write(*,*) "Creating ", trim(fileName),' ',trim(period_type)
   call CreatenetCDFfile(fileName,GIMAX,GJMAX,IRUNBEG,JRUNBEG,KMAX_MID)
 case default
   period_type = 'unknown'
-  if(MasterProc.and.DEBUG_NETCDF ) write(*,*) "Creating ", trim(fileName),trim(period_type)
+  if(MasterProc.and.DEBUG_NETCDF)&
+    write(*,*) "Creating ", trim(fileName),' ',trim(period_type)
   call CreatenetCDFfile(fileName,GIMAX,GJMAX,IRUNBEG,JRUNBEG,KMAX_MID)
-end select
+endselect
 
-if(MasterProc.and.DEBUG_NETCDF ) write(*,*) "Finished Init_new_netCDF", trim(fileName),&
-                  trim(period_type)
+if(MasterProc.and.DEBUG_NETCDF)&
+  write(*,*) "Finished Init_new_netCDF", trim(fileName),' ',trim(period_type)
 endif
 
 end subroutine Init_new_netCDF
@@ -1060,7 +1057,7 @@ end subroutine CreatenetCDFfile
 
 !_______________________________________________________________________
 
-subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,&
+subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,out_DOMAIN,ik,&
                       fileName_given,overwrite,create_var_only,chunksizes,ncfileID_given)
 !The use of fileName_given is probably slower than the implicit filename used by defining iotyp.
 
@@ -1072,19 +1069,19 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
   real, dimension(LIMAX,LJMAX,KMAX), intent(in) :: dat ! Data arrays
 ! Optional arguments:
   integer, optional, intent(in) :: &
-    ist,jst,ien,jen,ik, & ! start and end of saved area. Only level ik is written if defined
-    CDFtype               != OUTtype. (Integer*1, Integer*2,Integer*4, real*8 or real*4)
+    out_DOMAIN(4),ik,& ! Output subdomain. Only level ik is written if defined
+    CDFtype            != OUTtype. (Integer*1, Integer*2,Integer*4, real*8 or real*4)
   character (len=*),optional, intent(in) :: &
     fileName_given ! filename to which the data must be written
                    !NB if the file fileName_given exist (also from earlier runs) it will be appended
   logical, optional, intent(in) :: &
-    overwrite,      &     ! overwrite if file already exists (in case fileName_given)
-    create_var_only       ! only create the variable, without writing the data content
+    overwrite,      &   ! overwrite if file already exists (in case fileName_given)
+    create_var_only     ! only create the variable, without writing the data content
   integer, dimension(ndim), intent(in), optional :: &
-    chunksizes            ! nc4zip outpur writen in slizes, see NETCDF_DEFLATE_LEVEL
-  integer, optional, intent(inout) ::  ncFileID_given  !if present, do not close the file at return
-                                                       !if >=0 at input, the file is already open 
-                                                       !       and  ncFileID=ncFileID_given
+    chunksizes          ! nc4zip outpur writen in slizes, see NETCDF_DEFLATE_LEVEL
+  integer, optional, intent(inout) :: ncFileID_given !if present, do not close the file at return
+                                                     !if >=0 at input, the file is already open 
+                                                     !       and  ncFileID=ncFileID_given
   logical:: create_var_only_local !only create the variable, without writing the data content
 
   character(len=len(def1%name)) :: varname
@@ -1110,25 +1107,21 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
 !fullrun, Monthly, Daily and hourly domains may be predefined
   select case(iotyp)
   case(IOU_YEAR)
-     domain = fullrun_DOMAIN
+    domain = fullrun_DOMAIN
   case(IOU_MON)
-     domain = month_DOMAIN
+    domain = month_DOMAIN
   case(IOU_DAY)
-     domain = day_DOMAIN
-  case(IOU_HOUR)
-     domain = hour_DOMAIN
+    domain = day_DOMAIN
+  case(IOU_HOUR,IOU_3DHOUR)
+    domain = hour_DOMAIN
   endselect
+  if(present(out_DOMAIN)) domain = out_DOMAIN
   !convert into rundomain coordinates
   i1=domain(1)-IRUNBEG+1
   i2=domain(2)-IRUNBEG+1
   j1=domain(3)-JRUNBEG+1
   j2=domain(4)-JRUNBEG+1
 
-
-  if(present(ist))i1=max(ist-IRUNBEG+1,i1)
-  if(present(ien))i2=min(ien-IRUNBEG+1,i2)
-  if(present(jst))j1=max(jst-JRUNBEG+1,j1)
-  if(present(jen))j2=min(jen-JRUNBEG+1,j2)
   create_var_only_local=.false.
   if(present(create_var_only))create_var_only_local=create_var_only
   !Check that that the area is larger than 0
@@ -2046,7 +2039,7 @@ subroutine WriteCDF(varname,vardate,filename_given,newfile)
  real, dimension(LIMAX,LJMAX,KMAX_MID) :: dat ! Data arrays
  character (len=100):: fileName
  real ::scale
- integer :: n,iotyp,ndim,kmax,icmp,nseconds
+ integer :: n,iotyp,ndim,kmax,nseconds
  type(Deriv) :: def1 ! definition of fields
 
  call date2nctime(vardate,nseconds)
@@ -2103,7 +2096,6 @@ subroutine WriteCDF(varname,vardate,filename_given,newfile)
 ! do n=1, NSPEC_SHL
 ! def1%name= species(n)%name       !written
 ! dat=xn_shl(n,:,:,:)
-! icmp=n
 ! call Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype=Real8,fileName_given=fileName)
 ! enddo
 
@@ -2111,7 +2103,9 @@ subroutine WriteCDF(varname,vardate,filename_given,newfile)
  do n= 1, NSPEC_ADV
  def1%name= species(NSPEC_SHL+n)%name       !written
  dat=xn_adv(n,:,:,:)
- call Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype=Real4,ist=60,jst=11,ien=107,jen=58,fileName_given=fileName)
+ call Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype=Real4,&
+                 out_DOMAIN=[60,107,11,58],fileName_given=fileName)
+                !out_DOMAIN=[ist,ien,jst,jen]
  enddo
 
   elseif(trim(varname)=='LIST')then
@@ -2124,8 +2118,9 @@ subroutine WriteCDF(varname,vardate,filename_given,newfile)
         def1%name= species(NSPEC_SHL+n)%name       !written
         if(trim(def1%name)=='O3'.or.trim(def1%name)=='NO2')then
            dat=xn_adv(n,:,:,:)
-           icmp=NSPEC_SHL+n
-           call Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype=Real4,ist=10,jst=10,ien=20,jen=20,fileName_given=fileName)
+           call Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype=Real4,&
+                           out_DOMAIN=[10,20,10,20],fileName_given=fileName)
+                          !out_DOMAIN=[ist,ien,jst,jen]
         endif
      enddo
 

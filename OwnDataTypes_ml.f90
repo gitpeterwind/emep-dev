@@ -107,8 +107,6 @@ private
 !   character(len=9) :: ofmt      ! Output format (e.g. es12.4)
     integer          :: spec = UNDEF_I   ! Species number in xn_adv or xn_shl array
                                   ! or other arrays
-    integer          :: ix1 = UNDEF_I,ix2 = UNDEF_I   ! bottom-left,upper-right x
-    integer          :: iy1 = UNDEF_I,iy2 = UNDEF_I   ! bottom-left,upper-right y
     integer          :: nk = UNDEF_I     ! number of vertical levels
     character(len=TXTLEN_SHORT) :: unit   ! Unit used
     real             :: unitconv = UNDEF_R  !  conv. factor
@@ -135,7 +133,6 @@ subroutine print_Asc2D(w)
   write(*,"(a,a)")      "Name   :", trim(w%name)
   write(*,"(a,a)")      "type  :", trim(w%type)
   write(*,"(a,i4)")     "spec  :", w%spec
-  write(*,"(a,4i5)")    "ix1,ix2,iy1,iy2  :", w%ix1, w%ix2, w%iy1,w%iy2
   write(*,"(a,a)")      "unit  :", trim(w%unit)
   write(*,"(a,i4)")     "nk  :", w%nk
   write(*,"(a,es10.3)") "unitconv  :", w%unitconv

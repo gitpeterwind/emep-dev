@@ -178,10 +178,7 @@
 ! template_read_BC = 'EMEP_IN_BC_YYYYMMDD.nc',! will be replaced with numbers
 ! template_write   = 'EMEP_OUT_YYYYMMDD.nc',  ! in Nest_ml
 !-------- Sub domain for write modes 1,3. Modes 10,12 write full RUNDOMAIN
-! istart =  60,   ! default RUNDOMAIN(1)+1
-! jstart =  11,   ! default RUNDOMAIN(3)+1
-! iend   = 107,   ! default RUNDOMAIN(2)-1
-! jend   =  58,   ! default RUNDOMAIN(4)-1
+! out_DOMAIN=60,107,11,58, !=[istart,iend,jstart,jend], default RUNDOMAIN+[1,-1,1,-1]
 &end
 &Fire_config
   GFED_PATTERN="$GFED",#GFED

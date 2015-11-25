@@ -48,11 +48,11 @@ use ChemSpecs,        only: NSPEC_SHL, species
 use GridValues_ml,    only: i_fdom, j_fdom,&   ! Gives emep coordinates
                             debug_proc, debug_li,debug_lj
 use Io_ml,            only: IO_HOURLY
-use ModelConstants_ml,only: KMAX_MID, MasterProc, MY_OUTPUTS,&
+use ModelConstants_ml,only: KMAX_MID, MasterProc, MY_OUTPUTS, &
                             IOU_INST, IOU_3DHOUR, IOU_YEAR, IOU_YEAR_LASTHH, &
                             DEBUG => DEBUG_OUT_HOUR,runlabel1,HOURLYFILE_ending,&
-                            FORECAST, SELECT_LEVELS_HOURLY !NML
-use MetFields_ml,     only: t2_nwp,th, roa, surface_precip, ws_10m ,rh2m,&
+                            FORECAST, hour_DOMAIN, SELECT_LEVELS_HOURLY !NML
+use MetFields_ml,     only: t2_nwp,th, q, roa, surface_precip, ws_10m ,rh2m,&
                             pzpbl, ustar_nwp, Kz_m2s, &
                             Idirect, Idiffuse, z_bnd, z_mid,ps
 use NetCDF_ml,        only: Out_netCDF, CloseNetCDF, Init_new_netCDF, fileName_hour, &
@@ -90,7 +90,7 @@ implicit none
   integer, dimension(2) :: maxpos     ! Location of max value
   integer i,j,ih,ispec,itot,iadv      ! indices
   integer :: k,ik,iik                 ! Index for vertical level
-  integer ist,ien,jst,jen             ! start and end coords
+  integer :: ni,nj                    ! number of points in i/j-output
   character(len=TXTLEN_DERIV) :: name ! For output file, species names
   character(len=4)  :: suffix         ! For date "mmyy"
   integer, save :: prev_month = -99   ! Initialise with non-possible month
@@ -133,19 +133,7 @@ implicit none
 
   if(first_call) then
     first_call = .false.
-
     debug_flag=(debug_proc.and.DEBUG)
-  !/ Ensure that domain limits specified in My_Outputs lie within
-  !  model domain. In emep coordinates we have:
-    do ih = 1, NHOURLY_OUT
-      hr_out(ih)%ix1 = max(IRUNBEG,hr_out(ih)%ix1)
-      hr_out(ih)%iy1 = max(JRUNBEG,hr_out(ih)%iy1)
-      hr_out(ih)%ix2 = min(GIMAX+IRUNBEG-1,hr_out(ih)%ix2)
-      hr_out(ih)%iy2 = min(GJMAX+JRUNBEG-1,hr_out(ih)%iy2)
-!     hr_out(ih)%nk  = min(KMAX_MID,hr_out(ih)%nk)
-      if(debug_flag) write(*,*) "DEBUG Hourly nk ", ih, hr_out(ih)%nk
-    enddo ! ih
-
     allocate(navg(NHOURLY_OUT)) ! allocate and initialize
     navg(:)=0.0                 ! D2D average counter
   endif  ! first_call
@@ -166,21 +154,19 @@ implicit none
       def1%name=hr_out(ih)%name
       def1%unit=hr_out(ih)%unit
       def1%class=hr_out(ih)%type
-      ist = hr_out(ih)%ix1
-      jst = hr_out(ih)%iy1
-      ien = hr_out(ih)%ix2
-      jen = hr_out(ih)%iy2
       nk  = hr_out(ih)%nk
       CDFtype=Real4 ! can be choosen as Int1,Int2,Int4,Real4 or Real8
       scale=1.
       if(any(hr_out(ih)%type==SRF_TYPE))nk=1
       select case(nk)
       case(1)       ! write as 2D
-        call Out_netCDF(IOU_3DHOUR,def1,2,1,hourly,scale,CDFtype,ist,jst,ien,jen,&
+        call Out_netCDF(IOU_3DHOUR,def1,2,1,hourly,scale,CDFtype,&
           create_var_only=.true.,ncFileID_given=ncFileID)
       case(2:)      ! write as 3D
-        call Out_netCDF(IOU_3DHOUR,def1,3,1,hourly,scale,CDFtype,ist,jst,ien,jen,1,&
-          create_var_only=.true.,chunksizes=(/ien-ist+1,jen-jst+1,1,1/),ncFileID_given=ncFileID)
+        ni=hour_DOMAIN(2)-hour_DOMAIN(1)+1
+        nj=hour_DOMAIN(4)-hour_DOMAIN(3)+1
+        call Out_netCDF(IOU_3DHOUR,def1,3,1,hourly,scale,CDFtype,ik=1,&
+          create_var_only=.true.,ncFileID_given=ncFileID,chunksizes=[ni,nj,1,1])
       endselect
     enddo
   endif
@@ -498,6 +484,9 @@ implicit none
       case("theta")       ! No cfac for surf.variable; Skip Units conv.
         forall(i=1:limax,j=1:ljmax) hourly(i,j) = th(i,j,KMAX_MID,1)
 
+      case("sh")         ! No cfac for surf.variable; Skip Units conv.
+        forall(i=1:limax,j=1:ljmax) hourly(i,j) = q(i,j,KMAX_MID,1)
+
       case("PRECIP")      ! No cfac for surf.variable; Skip Units conv.
         forall(i=1:limax,j=1:ljmax) hourly(i,j) = surface_precip(i,j)
 
@@ -698,22 +687,20 @@ implicit none
       def1%name=hr_out(ih)%name
       def1%unit=hr_out(ih)%unit
       def1%class=hr_out(ih)%type
-      ist = max(IRUNBEG,hr_out(ih)%ix1)
-      jst = max(JRUNBEG,hr_out(ih)%iy1)
-      ien = min(GIMAX+IRUNBEG-1,hr_out(ih)%ix2)
-      jen = min(GJMAX+JRUNBEG-1,hr_out(ih)%iy2)
       nk  = min(KMAX_MID,hr_out_nk)
       CDFtype=Real4 ! can be choosen as Int1,Int2,Int4,Real4 or Real8
       scale=1.
 
       select case(nk)
       case(1)       ! write as 2D
-        call Out_netCDF(IOU_3DHOUR,def1,2,1,hourly,scale,CDFtype,ist,jst,ien,jen,ncFileID_given=ncFileID)
+        call Out_netCDF(IOU_3DHOUR,def1,2,1,hourly,scale,CDFtype,&
+                        ncFileID_given=ncFileID)
       case(2:)      ! write as 3D
         klevel=ik
         if(nk<KMAX_MID)  klevel=KMAX_MID-ik+1 !count from ground and up
         if(SELECT_LEVELS_HOURLY) klevel=k     !order is defined in LEVELS_HOURLY
-        call Out_netCDF(IOU_3DHOUR,def1,3,1,hourly,scale,CDFtype,ist,jst,ien,jen,klevel,ncFileID_given=ncFileID)
+        call Out_netCDF(IOU_3DHOUR,def1,3,1,hourly,scale,CDFtype,ik=klevel,&
+                        ncFileID_given=ncFileID)
       !case default   ! no output
       endselect
     enddo KVLOOP    
@@ -725,7 +712,8 @@ implicit none
     def1%class='Surface pressure'
     CDFtype=Real4 ! can be choosen as Int1,Int2,Int4,Real4 or Real8
     scale=1.
-    call Out_netCDF(IOU_3DHOUR,def1,2,1,ps(:,:,1)*0.01,scale,CDFtype,ist,jst,ien,jen,ncFileID_given=ncFileID)     
+    call Out_netCDF(IOU_3DHOUR,def1,2,1,ps(:,:,1)*0.01,scale,CDFtype,&
+                    ncFileID_given=ncFileID)     
   endif
 
 !Not closing seems to give a segmentation fault when opening the daily file
