@@ -513,6 +513,7 @@ subroutine siteswrt_sondes(xn_adv,xn_shl)
   real, dimension(KMAX_MID)              :: pp, temp, qsat, rh, sum_PM, sum_NOy
   real, dimension(NOUT_SONDE,NSONDES_MAX):: out
 
+  out=0.0
   ! Consistency check
   KTOP_SONDE = KMAX_MID - NLEVELS_SONDE + 1
   do ispec=1,NXTRA_SONDE
@@ -571,7 +572,8 @@ subroutine siteswrt_sondes(xn_adv,xn_shl)
                                   to_ug_ADV(PMCO_GROUP-NSPEC_SHL)) &
                         ) * roa(ix,iy,k,1)
           enddo !k
-          out(nn+1:nn+KMAX_MID,i) = sum_PM(KMAX_MID:1:-1)
+!bug?          out(nn+1:nn+KMAX_MID,i) = sum_PM(KMAX_MID:1:-1)
+          out(nn+1:nn+NLEVELS_SONDE,i) = sum_PM(KMAX_MID:KTOP_SONDE:-1)
           i_Att=i_Att+1
           Spec_Att(i_Att,1)='units:C:ug/m3'
 
@@ -582,7 +584,8 @@ subroutine siteswrt_sondes(xn_adv,xn_shl)
                                   to_ug_ADV(PMCO_GROUP-NSPEC_SHL)) &
                       * roa(ix,iy,k,1)
           enddo !k
-          out(nn+1:nn+KMAX_MID,i) = sum_PM(KMAX_MID:1:-1)
+!bug?          out(nn+1:nn+KMAX_MID,i) = sum_PM(KMAX_MID:1:-1)
+          out(nn+1:nn+NLEVELS_SONDE,i) = sum_PM(KMAX_MID:KTOP_SONDE:-1)
           i_Att=i_Att+1
           Spec_Att(i_Att,1)='units:C:ug/m3'
 
@@ -591,7 +594,8 @@ subroutine siteswrt_sondes(xn_adv,xn_shl)
           do k = 1, KMAX_MID
             sum_NOy(k) = sum(xn_adv(OXN_GROUP-NSPEC_SHL,ix,iy,k))
           enddo
-          out(nn+1:nn+KMAX_MID,i) = PPBINV * sum_NOy(KMAX_MID:1:-1)
+!bug?          out(nn+1:nn+KMAX_MID,i) = PPBINV * sum_NOy(KMAX_MID:1:-1)
+          out(nn+1:nn+NLEVELS_SONDE,i) = PPBINV * sum_NOy(KMAX_MID:KTOP_SONDE:-1)
           i_Att=i_Att+1
           Spec_Att(i_Att,1)='units:C:mix_ratio'
 
@@ -672,7 +676,6 @@ subroutine siteswrt_sondes(xn_adv,xn_shl)
     
     ps_sonde(i)=ps(ix,iy,1)!surface pressure always needed to define the vertical levels
   enddo ! i (nlocal_sondes)
-
 
   ! collect data into gout on me=0 t
 

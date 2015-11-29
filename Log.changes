@@ -155,6 +155,16 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+29th november 2015 Peter 3094
+
+Bugs in Sites_ml.f90. 
+Appears for 160 CPU on a ASIA run, but not when run on 40 procs.
+The netcdf finds non-allowed values to output, and the values outputted seem wrong (infinite, 0, etc)
+Corrected some array indices, but that was not enough.
+Initialized out=0.0, and the code did not crash; but there is probably still a bug somewhere.
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 24th     November 2015 Alvaro   3092-3
 
 Homogenize the definitions of output sub domains across the model
