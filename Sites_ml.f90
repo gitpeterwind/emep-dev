@@ -879,7 +879,7 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
     call MPI_SEND(nlocal, 4*1, MPI_BYTE, 0, 346, MPI_COMM_WORLD, INFO)
     call MPI_SEND(out, 8*nout*nlocal, MPI_BYTE, 0, 347, MPI_COMM_WORLD, INFO)
     if(trim(fname)=="sondes")&
-        call MPI_SEND(ps_sonde, 8*nlocal, MPI_BYTE, 0, 347, MPI_COMM_WORLD, INFO)
+        call MPI_SEND(ps_sonde, 8*nlocal, MPI_BYTE, 0, 348, MPI_COMM_WORLD, INFO)
   else ! MasterProc
     ! first, assign me=0 local data to g_out
     if ( DEBUG%SITES ) print *, "ASSIGNS ME=0 NLOCAL_SITES", me, nlocal
@@ -895,7 +895,7 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
       call MPI_RECV(out, 8*nout*nloc, MPI_BYTE, d, 347, MPI_COMM_WORLD, &
            STATUS, INFO)
       if(trim(fname)=="sondes")call MPI_RECV(ps_sonde, 8*nloc, MPI_BYTE, d, &
-           347, MPI_COMM_WORLD, STATUS, INFO)
+           348, MPI_COMM_WORLD, STATUS, INFO)
       do n = 1, nloc
          nglob = s_gindex(d,n)
          g_out(:,nglob) = out(:,n)
