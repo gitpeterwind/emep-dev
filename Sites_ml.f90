@@ -251,8 +251,8 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
       if ( ios /= 0 ) exit  ! End of file
       read(unit=txtinput,fmt=*) s, lat, lon, lev
       call lb2ij(lon,lat,x,y)
-      ix=nint(x)
-      iy=nint(y)
+      ix=nint(x+1.0E-7)!stations can easily be defined exactely at  gridcell boundaries
+      iy=nint(y+1.0E-7)!1.0E-7 is to ensure same rounding for all CPUs
     else
       call read_line(io_num,txtinput,ios)
       lon=-999.0

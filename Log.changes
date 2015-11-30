@@ -155,7 +155,7 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-29th november 2015 Peter 3094-5
+29-30th november 2015 Peter 3094-6
 
 Bugs in Sites_ml.f90. 
 Appears for 160 CPU on a ASIA run, but not when run on 40 procs.
@@ -164,8 +164,13 @@ Corrected some array indices.
 Initialized out=0.0 for sondes.
 Two MPI tags had the same values (tag=347); this could cause the code to mix up sends, 
 when many CPU where waiting.
-Still the code can crash, therfore there is still a bug
-
+Added a +1.0E-7 in:
+ix=nint(x+1.0E-7)
+In special cases when 
+1) the station is exactely at a boundary between two gridcells
+2) the station is exactely at a boundary between two subdomains
+3) the last bit in the rounding is different between MasterProc and owner CPU
+then the number of stations in the CPU and MasterProc are no more in sync!
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 24th     November 2015 Alvaro   3092-3
