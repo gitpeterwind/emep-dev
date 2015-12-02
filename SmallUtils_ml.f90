@@ -169,7 +169,8 @@ subroutine AddArray(new,old,notset,errmsg)
   do i = 1,  size(new)
     N = N + 1
     if ( N > size(old) ) then
-      errmsg = "ERROR: Array Exceeded! "
+       55 format(A,I0,A)
+       write(errmsg, 55)"ERROR: Max Array size (",size(old),") exceeded!"
       return
     endif
     old(N) = new(i)

@@ -1,3 +1,7 @@
+#### IMPORTANT ####  Please check the 'emis_inputlist' for the emission data to be used
+!***  The default data is linked here.  Change the links according to 
+!***  Each user's need.   
+!-----------------------------------------------------------------------------------------
 !put here only machine specific data. 
 &Machine_config
 !DataDir will attempted replaced by (in this order):
@@ -17,62 +21,66 @@
 ! Only partially implemented. See below and ModelConstants_ml
   USES%testname         = 'EMEPSTD',
   USES%FOREST_FIRES     = T,
-  USES%EMISSTACKS       = F,         ! Reads PointSources file
+  USES%EMISSTACKS       = F,            ! Reads PointSources file
   USES%DEGREEDAY_FACTORS = T,
-  USES%PlumeMethod      = 'PVDI',    ! default PVDI, possible: NILU, ASMI, PVDI
+  USES%PlumeMethod      = 'PVDI',       ! default PVDI, possible: NILU, ASMI, PVDI
   USES%n2o5HydrolysisMethod = "SmixTen" ! "Gamma:0.002"  ! "OrigRiemer"
-  USES%PFT_MAPS         = F,         ! PFT LAI tests
+  USES%PFT_MAPS         = F,            ! PFT LAI tests
 !------------------------------
-  USE_SOILWATER         = T,          ! Uses SMI from meteo data
+  USE_SOILWATER         = T,            ! Uses SMI from meteo data
   USE_CONVECTION        = F,
   USE_SEASALT           = T,
-  USE_AIRCRAFT_EMIS     = T,          ! Needs global file, see manual
-  USE_LIGHTNING_EMIS    = T,          ! 
+  USE_AIRCRAFT_EMIS     = T,            ! Needs global file, see manual
+  USE_LIGHTNING_EMIS    = T,            ! 
+!------------------------------ 
+  USE_EURO_SOILNOX      = T,            ! diff for global + Euro runs
+  EURO_SOILNOX_DEPSCALE = 1.0,          ! Scale, default 1  (see ModelConstants_ml)
+  USE_GLOBAL_SOILNOX    = F,            ! diff for global + Euro runs
 !------------------------------
-  USE_EURO_SOILNOX      = T,          ! diff for global + Euro runs
-  EURO_SOILNOX_DEPSCALE = 1.0,        ! Scale, default 1  (see ModelConstants_ml)
-  USE_GLOBAL_SOILNOX    = F,          ! diff for global + Euro runs
-!------------------------------
-  USE_POLLEN            = F,          ! EXPERIMENTAL. Only works if start Jan 1
-  USE_ROADDUST          = T,          ! Only EECCA?
-  USE_DUST              = T,          ! Only EECCA?
-  NETCDF_DEFLATE_LEVEL  = 4,          ! 1-9 GZIP compress, 0 no compress, -1 netcdf3
+  USE_POLLEN            = F,            ! EXPERIMENTAL. Only works if start Jan 1
+  USE_ROADDUST          = T,            ! Only EECCA?
+  USE_DUST              = T,            ! Only EECCA?
+  NETCDF_DEFLATE_LEVEL  = 4,            ! 1-9 GZIP compress, 0 no compress, -1 netcdf3
 !-------- Can switch on INERIS-type degreeday stuff
-  INERIS_SNAP1          = F,          ! Used for TFMM runs
-  INERIS_SNAP2          = F,          ! Used for TFMM runs
+  INERIS_SNAP1          = F,            ! Used for TFMM runs
+  INERIS_SNAP2          = F,            ! Used for TFMM runs
 !------------------------------
-!  AERO%EQUILIB          = 'MARS ',      ! MARS, MARS_2900, GEOSCHEM, EQSAM, or EMEP
+!  AERO%EQUILIB          = 'MARS ',     ! MARS, MARS_2900, GEOSCHEM, EQSAM, or EMEP
 !  AERO%NSIZE etc... see ModelConstants
 !------------------------------
+!----------------------------------------------------------------------
+!*** The default emission set up for Regional runs ******
+!----------------------------------------------------------------------
 !
-! If EMIS_SOURCE= 'Mixed' (default), then the emis_inputlists will be used.
-  EmisDir = 'DataDir/Data',              !only keywords "DataDir" or "EmisDir" are recognized
-!
-  emis_inputlist(1)%name     = 'gridPOLL', !example of ASCII type
-!
-!  one can either include or exclude, not both
-!  emis_inputlist(1)%name     = 'EmisDir/Emis_TNO7.nc', !example of Fractions type
-!  emis_inputlist(1)%incl(1:) = 'EUMACC2', !example take only countries from the 'EUMACC2' list
-!  emis_inputlist(2)%name     = 'EmisDir/Emis_GLOB_05.nc', !example of Fractions type
-!  emis_inputlist(2)%excl(1:) = 'EUMACC2' !example exclude all countries from the 'EUMACC2' list
-! IMPORTANT: Specify the keyword "POLL" rather than sox, nox, etc. and the code
+  EmisDir                 = 'DataDir/Data',        !only keywords "DataDir" or "EmisDir" are recognized
+
+  emis_inputlist(1)%name  = 'gridPOLL',    ! example of ASCII type (POLL values must be with lower case,  
+                                           ! i.e., the emission files must be 'gridsox', 'gridnox' etc..)
+                                           ! must be copied or linked to the working directory
+
+!***** IMPORTANT: Specify the keyword "POLL" rather than sox, nox, etc. and the code
 ! will check against emissions names listed in CM_EmisFiles.inc
-! NB: CM_EmisFiles uses lowercase. Renames or link if they are in capital letters.
+! NB: CM_EmisFiles uses lowercase. Renames or link if they are in capital letters. *******
 !
-! emis_inputlist(1)%name     = 'EmisDir/Emis_GLOB_01deg_2010_month.nc'!example of monthly Fractions type
+!------ NetCDF emissions in TNO7 grid----------
+!  emis_inputlist(1)%name     = 'EmisDir/Emis_TNO7.nc', !example of Fractions type
+
+!**#######################################################
+!*** Special Cases ***
+!**#######################################################
 !
-! Only recognised country group now is EUMACC2 (more can be defined in Emissions_ml.f90)
+!******one can either include or exclude, not both
+!
+!*** Only recognised country group now is EUMACC2 (more can be defined in Emissions_ml.f90)
+!
+!  emis_inputlist(1)%incl(1:) = 'EUMACC2',      !example take only countries from the 'EUMACC2' list
+!  emis_inputlist(2)%excl(1:) = 'EUMACC2'       !example exclude all countries from the 'EUMACC2' list
+!
 ! (1) From MACC2 7km:
 !  emis_inputlist(1)%name     = 'GriddedSnapEmis_POLL.nc', !
-!  emis_inputlist(1)%excl(1:) = 'US','INTSHIP',   ! US lat/long limits wrong
-! (2) Global:
-!  emis_inputlist(2)%name     = 'GlobalSnapEmis_POLL.nc', !
-!  emis_inputlist(2)%excl(1:) = 'EUMACC2','INTSHIPS','MEXI','ARGE','BRAZ','CHIL',
-!    'OLAM','AUTR','NZEL','BANG','INDI','PAKI','BHUT','BRUN','CAMB','CHIN','TAIW',
-!    'VIET','THAI','INDO','JAPA','LAOS','MALA','MONG','MYAN','NEPA','KORN','PHIL',
-!    'SING','KORS','SAFR', 
-! (3) Shipping:
-!  emis_inputlist(3)%name     = 'GlobalShipEmis_POLL.nc', !
+!  emis_inputlist(1)%excl(1:) = 'US','INTSHIP',            ! US lat/long limits wrong
+! (2) Shipping:
+!  emis_inputlist(3)%name     = 'GlobalShipEmis_POLL.nc',  !
 !  emis_inputlist(3)%incl(1:) = 'INTSHIPS', 
 !
   EMIS_OUT              = F,          ! Output emissions in separate files (memory demanding)
@@ -82,8 +90,8 @@
   USE_ASH               = F,          ! Used for FORECASTs and Status 2010
   ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
   USE_AOD               = F,          ! Used for FORECASTs usually
-  BGND_CH4              = -1,    ! Reset CH4 (use ppb). (Use -1 for defaults)
-  SKIP_RCT              = -1,    ! Will zero-out some rct, for tests. (Use -1 for defaults)
+  BGND_CH4              = -1,         ! Reset CH4 (use ppb). (Use -1 for defaults)
+  SKIP_RCT              = -1,         ! Will zero-out some rct, for tests. (Use -1 for defaults)
 !--- 'fake' vegetation for ozone POD calculations
   FLUX_VEGS = 'IAM_CR','IAM_DF','IAM_MF', ! do not need all array elements
               'Wheat_Irrigated', 'Wheat_NonIrrig',
@@ -132,16 +140,17 @@
   DEBUG%STOFLUX         = F,
 !  DEBUG%STOP_HH        = 1,   ! If >= 0,  stops code after STOP_HH hours
 ! Specify here the coords and species index (tot, see CM_ChemSpecs_tot)
-  DEBUG%IJ              =  60, 50,      ! Bremen
-! DEBUG%IJ              = 189,144,     ! Bremen, global
+  DEBUG%IJ              =  -60, -50,     ! Default: no debugij output
+! DEBUG%IJ              =  60, 50,       ! Bremen
+! DEBUG%IJ              = 189,144,       ! Bremen, global
 ! DEBUG%IJ              =   3, 50,       ! sea I hope...
   DEBUG%SPEC            = 'OH',
 &end
 &Fire_config
-  need_poll = F,        ! Avoids problems with missing ISOP in later FINN data
-  GFED_PATTERN="$GFED",#GFED
-  FINN_PATTERN="$FINN",#FINN
-  GFAS_PATTERN="$GFAS",#GFAS
+  need_poll = F,               ! Avoids problems with missing ISOP in later FINN data
+  GFED_PATTERN="$GFED",#GFED   ! Forestfire data is selected in mk.GenChem.  
+  FINN_PATTERN="$FINN",#FINN   ! Check in mk.GenChem to find out which data is linked.
+  GFAS_PATTERN="$GFAS",#GFAS   ! Default EMEP setup is using 'FINN'
 &end
 &Nest_config
 !-------- Nesting MODEs
@@ -160,7 +169,10 @@
 ! template_read_BC = 'EMEP_IN_BC_YYYYMMDD.nc',! will be replaced with numbers
 ! template_write   = 'EMEP_OUT_YYYYMMDD.nc',  ! in Nest_ml
 !-------- Sub domain for write modes 
-! out_DOMAIN=60,107,11,58, !=[istart,iend,jstart,jend], default RUNDOMAIN+[1,-1,1,-1]
+! istart =  60,   ! default RUNDOMAIN(1)+1
+! jstart =  11,   ! default RUNDOMAIN(3)+1
+! iend   = 107,   ! default RUNDOMAIN(2)-1
+! jend   =  58,   ! default RUNDOMAIN(4)-1
 &end
 &ExternalBICs_config
   USE_EXTERNAL_BIC  = F,              ! .false. to deactivate

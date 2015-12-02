@@ -380,13 +380,14 @@ contains
        if(EMIS_TEST=="CdfSnap" .or. EMIS_SOURCE=="Mixed") then  ! Expand groups, e.g. EUMACC2
 
           if(MasterProc)  write(*,*)sub//" Mixed format"
+          emis_inputlist(iemis)%Nlist = 0
           do iemis = 1, size( emis_inputlist(:)%name )
-            fname = emis_inputlist(iemis)%name
+             fname = emis_inputlist(iemis)%name
              if(MasterProc)  write(*,*)"Emission source number ", iemis,"from ",sub//trim(fname)
              if ( fname == "NOTSET" ) then
-                emis_inputlist(iemis)%Nlist = iemis - 1
-                if(MasterProc)  write(*,*)emis_inputlist(iemis)%Nlist, ' emission sources used'
-                exit
+                cycle
+             else
+                emis_inputlist(iemis)%Nlist = emis_inputlist(iemis)%Nlist+1
              end if
 
              call expandcclist( emis_inputlist(iemis)%incl , n)
@@ -430,14 +431,13 @@ contains
     !>============================
 
     select case(EMIS_SOURCE)
-       !    if(EMIS_TEST=="CdfSnap") then
     case("Mixed")
        Found_Emis_4D=0
        do iemis = 1, size( emis_inputlist(:)%name )
 
           fname=emis_inputlist(iemis)%name
-          if ( fname == "NOTSET" ) exit
-          if(MasterProc)write(*,*)sub//' Mixed format ',iemis,trim(fname)
+          if ( fname == "NOTSET" ) cycle
+          if(MasterProc)write(*,*)sub//' reading emis_inputlist ',iemis,trim(fname)
 
           sumemis=0.0
           sumemis_local(:,:)=0.0
@@ -555,7 +555,7 @@ contains
           endif
 
 
-          if(MasterProc) then
+          if(MasterProc.and. .not. USE_MONTHLY_GRIDEMIS) then
              call PrintLog("Total emissions by countries for "//trim(emis_inputlist(iemis)%name))
              write(*     ,"(2a4,3x,30(a12,:))")"  N "," CC ",EMIS_FILE(:)
              write(IO_LOG,"(2a4,3x,30(a12,:))")"  N "," CC ",EMIS_FILE(:)                
