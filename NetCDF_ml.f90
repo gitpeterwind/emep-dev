@@ -1163,7 +1163,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,out_DOMAIN,ik,&
               if(DEBUG_NETCDF) write(*,*)'Out_NetCDF: assuming file already open ', trim(fileName_given)
            endif
         else
-           status=nf90_open(trim(fileName_given),nf90_write,ncFileID)
+           if(.not.overwrite_local)status=nf90_open(trim(fileName_given),nf90_write,ncFileID)
         endif
         if(DEBUG_NETCDF) write(*,*)'Out_NetCDF: fileName_given ' ,&
              trim(fileName_given),overwrite_local,status==nf90_noerr,ncfileID,&

@@ -155,11 +155,12 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-2nd December 2015 Peter, Semeena 3097
+2nd December 2015 Peter, Semeena 3097-8
 
 Cleaned up config_EMEPSTD.nml and config_EMEPGLOB.nml
 Cleaned up "yearly" emis output when monthly emis
 Clearer error message when Array size exceeded
+Corrected old bug that caused PrintCDF to crash if the file existed already :)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 29-30th november 2015 Peter 3094-6
