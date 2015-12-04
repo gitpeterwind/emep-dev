@@ -155,7 +155,12 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-4rd December 2015 Alvaro, Svetlana 3099-3100
+4rd December 2015 Alvaro, Svetlana 3099-3101
+
+Nest_ml:
+On subroutine wrtxn
+- Remove printout for each time filename_write is not found.
+- Parameter APPEND can be used to append new time steps to filename_write.
 
 Makefile:
 - Add HTAP compilation target. Like EMEP, but with GFED forest fires.

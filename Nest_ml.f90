@@ -313,6 +313,7 @@ subroutine wrtxn(indate,WriteNow)
   type(date), intent(in) :: indate
   logical, intent(in) :: WriteNow !Do not check indate value
   real,allocatable, dimension(:,:,:) :: data ! Data arrays
+  logical, parameter :: APPEND=.false.
 
   type(Deriv) :: def1 ! definition of fields
   integer :: n,iotyp,ndim,kmax,i,ncfileID
@@ -323,14 +324,14 @@ subroutine wrtxn(indate,WriteNow)
   call Config_Nest()
   if(.not.any(MODE==[1,3,10,12]).and..not.FORECAST)return
 
-!check if the file exist already at start of run. Do not wait until first write to stop!
-  filename_write=date2string(template_write,indate,debug=mydebug)
-  if(MasterProc.and.first_call)then
+! Check if the file exist already at start of run. Do not wait until first write to stop!
+! If you know what you are doing you can set paramter APPEND=.true.,
+! and the new data will be appended to the file
+  if(.not.APPEND.and.first_call.and.MasterProc)then
+    filename_write=date2string(template_write,indate,debug=mydebug)
     inquire(file=fileName_write,exist=fexist)
-    write(*,*)'Nest:write data ',trim(fileName_write),fexist
-    !If you know what you are doing you can uncomment the stop, and the new data will be appended to the file
     call CheckStop(fexist.and.first_call,&
-             "Refuse to overwrite. Remove this file: "//trim(fileName_write))   
+           "Nest: Refuse to overwrite. Remove this file: "//trim(fileName_write))   
   endif
 
   select case(MODE)
