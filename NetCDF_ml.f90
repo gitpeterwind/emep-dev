@@ -1689,7 +1689,7 @@ subroutine CloseNC(ncID)
 
   if(ncID==closedID)return
   ncFileID=ncID
-  call check(nf90_close(ncFileID))
+        call check(nf90_close(ncFileID))
   ncID=closedID
 endsubroutine CloseNC
 endsubroutine CloseNetCDF
@@ -2258,7 +2258,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   real ::lat,lon,maxlon,minlon,maxlat,minlat,maxlon_var,minlon_var,maxlat_var,minlat_var
   logical ::fileneeded, debug,data3D
   character(len = 50) :: interpol_used, data_projection=""
-  real :: ir,jr,Grid_resolution
+  real :: Grid_resolution
   type(Deriv) :: def1 ! definition of fields
   logical ::  OnlyDefinedValues
 
@@ -2945,10 +2945,9 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                  igjg=ig+(jg-1)*dims(1)
                  do idiv=1,Ndiv
                     lon=Rlon(startvec(1)-1+ig)-0.5/dloni+(idiv-0.5)/(dloni*Ndiv)
-                    call lb2ij(lon,lat,ir,jr)
-
-                    i=nint(ir)-gi0-IRUNBEG+2
-                    j=nint(jr)-gj0-JRUNBEG+2
+                    call lb2ij(lon,lat,i,j)
+                    i=i-gi0-IRUNBEG+2
+                    j=j-gj0-JRUNBEG+2
 
                     if(i>=1.and.i<=limax.and.j>=1.and.j<=ljmax)then
                        ij=i+(j-1)*LIMAX
@@ -3211,14 +3210,14 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                  do idiv=1,Ndiv
                     i_ext=(ig-1)*Ndiv+idiv
                     call ij2lb(i_ext,j_ext,lon,lat,fi_ext,an_ext_div,xp_ext_div,yp_ext_div)
-                    call lb2ij(lon,lat,ir,jr)!back to model (fulldomain) coordinates
+                    call lb2ij(lon,lat,i,j)!back to model (fulldomain) coordinates
                     !convert from fulldomain to local domain
-                    !ir,jr may be any integer, therefore should not use i_local array
-                    i=nint(ir)-gi0-IRUNBEG+2
-                    j=nint(jr)-gj0-JRUNBEG+2
+                    !i,j may be any integer, therefore should not use i_local array
+                    i=i-gi0-IRUNBEG+2
+                    j=j-gj0-JRUNBEG+2
 
-83                  format(2I4,33F9.2)
-                    !if ( debug .and.me==0) write(*,83)i,j,ir,jr,lon,lat,fi_ext,an_ext_div,xp_ext_div,yp_ext_div,fi,xp,yp,Rvalues(igjg)
+83                  format(2I4,31F9.2)
+                    !if ( debug .and.me==0) write(*,83)i,j,lon,lat,fi_ext,an_ext_div,xp_ext_div,yp_ext_div,fi,xp,yp,Rvalues(igjg)
 
                     if(i>=1.and.i<=limax.and.j>=1.and.j<=ljmax)then
                        ij=i+(j-1)*LIMAX
@@ -3458,9 +3457,9 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                        lon=Rlon(igjg)
                        lat=Rlat(igjg)
                     endif
-                    call lb2ij(lon,lat,ir,jr)!back to model (fulldomain) coordinates
-                    i=nint(ir)-gi0-IRUNBEG+2
-                    j=nint(jr)-gj0-JRUNBEG+2
+                    call lb2ij(lon,lat,i,j)!back to model (fulldomain) coordinates
+                    i=i-gi0-IRUNBEG+2
+                    j=j-gj0-JRUNBEG+2
                     if(i>=1.and.i<=limax.and.j>=1.and.j<=ljmax)then
                        ij=i+(j-1)*LIMAX
                        do k=1,k2
@@ -3726,7 +3725,7 @@ end subroutine ReadField_CDF
   real ::lat,lon,maxlon,minlon,maxlat,minlat
   logical ::fileneeded, debug,data3D
   character(len = 50) :: interpol_used, data_projection="",name
-  real :: ir,jr,Grid_resolution
+  real :: Grid_resolution
   type(Deriv) :: def1 ! definition of fields
   integer, parameter ::NFL=23,NFLmax=50 !number of flight level (could be read from file)
   real :: P_FL(0:NFLmax),P_FL0,Psurf_ref(LIMAX, LJMAX),P_EMEP,dp!
@@ -3942,10 +3941,9 @@ end subroutine ReadField_CDF
                  igjg=ig+(jg-1)*dims(1)
                  do idiv=1,Ndiv
                     lon=Rlon(startvec(1)-1+ig)-0.5/dloni+(idiv-0.5)/(dloni*Ndiv)
-                    call lb2ij(lon,lat,ir,jr)
-
-                    i=nint(ir)-gi0-IRUNBEG+2
-                    j=nint(jr)-gj0-JRUNBEG+2
+                    call lb2ij(lon,lat,i,j)
+                    i=i-gi0-IRUNBEG+2
+                    j=j-gj0-JRUNBEG+2
 
                     if(i>=1.and.i<=limax.and.j>=1.and.j<=ljmax)then
                        ij=i+(j-1)*LIMAX

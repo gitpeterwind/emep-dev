@@ -182,13 +182,9 @@ subroutine readstacks(io)
 
 
      ! longitude latitude to (i,j) in any grid projection
-      call lb2ij ( long, lat, x, y )
-
-      i = nint(x)
-      j = nint(y)
-
-      iloc             = i_local( nint(x) )
-      jloc             = j_local( nint(y) )
+      call lb2ij ( long, lat, i, j )
+      iloc = i_local( i )
+      jloc = j_local( j )
       if ((iloc>=1).and.(iloc<=limax).and.&
           (jloc>=1).and.(jloc<=ljmax)) then !on the correct processor
 

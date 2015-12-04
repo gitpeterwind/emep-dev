@@ -1,146 +1,151 @@
 Module GridValues_ml
+!CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+!
+!  Define parameters, variables and transformnations associated with grid and
+!  projection.
+!
+! Nomenclature:
+! fulldomain is the largest grid, usually where metdata is defined.
+! rundomain is a grid where the run is performed, smaller than fulldomain.
+! restricted domain is a grid smaller than rundomain, where data is outputed;
+!  (the restricted domains are for instance, fullrun_DOMAIN,month_DOMAIN,
+!  day_DOMAIN,hour_DOMAIN).
+! subdomain: the domain covered by one MPI process or processor.
+!
+!CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 
-  !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
-  !
-  !  Define parameters, variables and transformnations associated with grid and
-  !  projection.
-  !
-  ! Nomenclature:
-  ! fulldomain is the largest grid, usually where metdata is defined.
-  ! rundomain is a grid where the run is performed, smaller than fulldomain.
-  ! restricted domain is a grid smaller than rundomain, where data is outputed;
-  !  (the restricted domains are for instance, fullrun_DOMAIN,month_DOMAIN,
-  !  day_DOMAIN,hour_DOMAIN).
-  ! subdomain: the domain covered by one MPI process or processor.
-  !
-  !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+use CheckStop_ml,           only: CheckStop,StopAll,check=>CheckNC
+use Functions_ml,           only: great_circle_distance
+use Io_Nums_ml,             only: IO_LOG,IO_TMP
+use MetFields_ml 
+use ModelConstants_ml,      only: &
+     KMAX_BND, KMAX_MID, & ! vertical extent
+     DEBUG,              & ! DEBUG%GRIDVALUES
+     MasterProc,NPROC,IIFULLDOM,JJFULLDOM,RUNDOMAIN,&
+     PT,Pref,NMET,METSTEP,USE_EtaCOORDINATES,MANUAL_GRID,USE_WRF_MET_NAMES
+use Par_ml, only : &
+     LIMAX,LJMAX,  & ! max. possible i, j in this domain
+     limax,ljmax,        & ! actual max.   i, j in this domain
+     li0,li1,lj0,lj1,    & ! for debugging TAB
+     GIMAX,GJMAX,        & ! Size of rundomain
+     IRUNBEG,JRUNBEG,    & ! start of user-specified domain
+     gi0,gj0,            & ! full-dom coordinates of domain lower l.h. corner
+     gi1,gj1,            & ! full-dom coordinates of domain uppet r.h. corner
+     me,                 & ! local processor
+     parinit
+use PhysicalConstants_ml,     only: GRAV, PI, EARTH_RADIUS ! gravity, pi
+use TimeDate_ml,              only: current_date,date,Init_nmdays,nmdays,startdate
+use TimeDate_ExtraUtil_ml,    only: nctime2idate,date2string
+use InterpolationRoutines_ml, only: inside_1234
+use netcdf,                   only: &
+  NF90_OPEN,NF90_NOWRITE,NF90_NOERR,NF90_CLOSE,&
+  NF90_GET_ATT,NF90_GLOBAL,NF90_INQ_DIMID,NF90_INQUIRE_DIMENSION,&
+  NF90_INQ_VARID,NF90_GET_VAR
 
+implicit none
+private
 
-  use CheckStop_ml,           only: CheckStop,StopAll,check=>CheckNC
-  use Functions_ml,           only: great_circle_distance
-  use Io_Nums_ml,             only: IO_LOG,IO_TMP
-  use MetFields_ml 
-  use ModelConstants_ml,      only: &
-       KMAX_BND, KMAX_MID, & ! vertical extent
-       DEBUG,              & ! DEBUG%GRIDVALUES
-       MasterProc,NPROC,IIFULLDOM,JJFULLDOM,RUNDOMAIN,&
-       PT,Pref,NMET,METSTEP,USE_EtaCOORDINATES,MANUAL_GRID,USE_WRF_MET_NAMES
-  use Par_ml, only : &
-       LIMAX,LJMAX,  & ! max. possible i, j in this domain
-       limax,ljmax,        & ! actual max.   i, j in this domain
-       li0,li1,lj0,lj1,    & ! for debugging TAB
-       GIMAX,GJMAX,        & ! Size of rundomain
-       IRUNBEG,JRUNBEG,    & ! start of user-specified domain
-       gi0,gj0,            & ! full-dom coordinates of domain lower l.h. corner
-       gi1,gj1,            & ! full-dom coordinates of domain uppet r.h. corner
-       me,                 & ! local processor
-       parinit
-  use PhysicalConstants_ml,     only: GRAV, PI, EARTH_RADIUS ! gravity, pi
-  use TimeDate_ml,              only: current_date,date,Init_nmdays,nmdays,startdate
-  use TimeDate_ExtraUtil_ml,    only: nctime2idate,date2string
-  use InterpolationRoutines_ml, only: inside_1234
-  use netcdf,                   only: NF90_OPEN,NF90_NOWRITE,NF90_NOERR,NF90_CLOSE,&
-       NF90_GET_ATT,NF90_GLOBAL,NF90_INQ_DIMID,NF90_INQUIRE_DIMENSION,&
-       NF90_INQ_VARID,NF90_GET_VAR
+!-- contains subroutine:
+public :: DefDebugProc ! =>  sets debug_proc, debug_li, debug_lj
+public :: ij2lbm  ! polar stereo grid to longitude latitude
+public :: lb2ijm  ! longitude latitude to grid in polar stereo
+public :: ij2ijm  ! polar grid1 to polar grid2
+public :: lb2ij   ! longitude latitude to (i,j) in any grid projection
+public :: ij2lb   ! polar stereo grid to longitude latitude
 
-  implicit none
-  private
+interface lb2ij
+  module procedure lb2ij_real,lb2ij_int
+end interface 
+private :: lb2ij_real,lb2ij_int
 
-  !-- contains subroutine:
-  public :: DefDebugProc ! =>  sets debug_proc, debug_li, debug_lj
-  public :: ij2lbm  ! polar stereo grid to longitude latitude
-  public :: lb2ijm  ! longitude latitude to grid in polar stereo
-  public :: ij2ijm  ! polar grid1 to polar grid2
-  public :: lb2ij   ! longitude latitude to (i,j) in any grid projection
-  public :: ij2lb   ! polar stereo grid to longitude latitude
+public :: &
+  coord_in_gridbox,  &  ! Are coord (lon/lat) inside gridbox(i,j)?
+  coord_in_processor,&  ! Are coord (lon/lat) inside local domain?
+  coord_in_domain       ! Are coord (lon/lat) inside "domain"?
 
-  public :: coord_in_gridbox,  &  ! Are coord (lon/lat) inside gridbox(i,j)?
-       coord_in_processor,&  ! Are coord (lon/lat) inside local domain?
-       coord_in_domain       ! Are coord (lon/lat) inside "domain"?
+public :: RestrictDomain !mask from full domain to rundomain
 
-  public :: RestrictDomain !mask from full domain to rundomain
+public :: GridRead!,Getgridparams
+private :: Alloc_GridFields
+private :: GetFullDomainSize
+!** 1) Public (saved) Variables from module:
+INCLUDE 'mpif.h'
+INTEGER STATUS(MPI_STATUS_SIZE),INFO
 
-  public :: GridRead!,Getgridparams
-  private :: Alloc_GridFields
-  private :: GetFullDomainSize
-  !** 1) Public (saved) Variables from module:
-  INCLUDE 'mpif.h'
-  INTEGER STATUS(MPI_STATUS_SIZE),INFO
+real, public, save :: &
+     xp=0.0, yp=1.0,     & ! Coordinates of North pole (from infield)
+     fi=0.0,         & ! projections rotation angle around y axis (from infield)
+     AN=1.0,         & ! Distance on the map from pole to equator (No. of cells)
+     GRIDWIDTH_M=1.0,& ! width of grid at 60N, in meters (old "h")(from infield)
+     ref_latitude =60. ! latitude at which projection is true (degrees)
 
-  real, public, save :: &
-       xp=0.0, yp=1.0,     & ! Coordinates of North pole (from infield)
-       fi=0.0,         & ! projections rotation angle around y axis (from infield)
-       AN=1.0,         & ! Distance on the map from pole to equator (No. of cells)
-       GRIDWIDTH_M=1.0,& ! width of grid at 60N, in meters (old "h")(from infield)
-       ref_latitude =60. ! latitude at which projection is true (degrees)
+!Rotated_Spherical grid prarameters
+real, public, save :: grid_north_pole_latitude,grid_north_pole_longitude,&
+     dx_rot,dx_roti,x1_rot,y1_rot
 
-  !Rotated_Spherical grid prarameters
-  real, public, save :: grid_north_pole_latitude,grid_north_pole_longitude,&
-       dx_rot,dx_roti,x1_rot,y1_rot
+!/ Variables to define full-domain (fdom) coordinates of local i,j values,
+!  and reciprocal variables.
+integer, public, allocatable, save, dimension(:) :: &
+     i_fdom,j_fdom,&       ! fdom coordinates of local i,j
+     i_local,j_local       ! local coordinates of full-domain i,j
 
-  !/ Variables to define full-domain (fdom) coordinates of local i,j values,
-  !  and reciprocal variables.
-  integer, public, allocatable, save, dimension(:) :: &
-       i_fdom,j_fdom,&       ! fdom coordinates of local i,j
-       i_local,j_local       ! local coordinates of full-domain i,j
+!Parameters for Vertical Hybrid coordinates:
+real, public, save,allocatable,  dimension(:) ::  &
+     A_bnd,B_bnd,&         ! first [Pa],second [1] constants at layer boundary
+                              ! (i.e. half levels in EC nomenclature)
+     A_bnd_met,B_bnd_met,&         ! first [Pa],second [1] constants at layer boundary
+                              ! (i.e. half levels in EC nomenclature)
+     A_mid,B_mid,&         ! first [Pa],second [1] constants at middle of layer
+                              ! (i.e. full levels in EC nomenclature)
+     dA,dB,&               ! A_bnd(k+1)-A_bnd(k) [Pa],B_bnd(k+1)-B_bnd(k) [1]
+                              ! P = A + B*PS; eta = A/Pref + B
+     Eta_bnd,Eta_mid,&     ! boundary,midpoint of eta layer 
+     sigma_bnd,sigma_mid   ! boundary,midpoint of sigma layer
 
-  !Parameters for Vertical Hybrid coordinates:
-  real, public, save,allocatable,  dimension(:) ::  &
-       A_bnd,B_bnd,&         ! first [Pa],second [1] constants at layer boundary
-                                ! (i.e. half levels in EC nomenclature)
-       A_bnd_met,B_bnd_met,&         ! first [Pa],second [1] constants at layer boundary
-                                ! (i.e. half levels in EC nomenclature)
-       A_mid,B_mid,&         ! first [Pa],second [1] constants at middle of layer
-                                ! (i.e. full levels in EC nomenclature)
-       dA,dB,&               ! A_bnd(k+1)-A_bnd(k) [Pa],B_bnd(k+1)-B_bnd(k) [1]
-                                ! P = A + B*PS; eta = A/Pref + B
-       Eta_bnd,Eta_mid,&     ! boundary,midpoint of eta layer 
-       sigma_bnd,sigma_mid   ! boundary,midpoint of sigma layer
+real, public, save,allocatable,  dimension(:,:) :: &
+     glon     ,glat    ,&  ! longitude,latitude of gridcell centers
+     gl_stagg ,gb_stagg,&  ! longitude,latitude of gridcell corners 
+                              !NB: gl_stagg, gb_stagg are here defined as the average of the four
+                              !    surrounding gl gb.
+                              !    These differ slightly from the staggered points in the (i,j) grid. 
+     rot_angle
 
-  real, public, save,allocatable,  dimension(:,:) :: &
-       glon     ,glat    ,&  ! longitude,latitude of gridcell centers
-       gl_stagg ,gb_stagg,&  ! longitude,latitude of gridcell corners 
-                                !NB: gl_stagg, gb_stagg are here defined as the average of the four
-                                !    surrounding gl gb.
-                                !    These differ slightly from the staggered points in the (i,j) grid. 
-       rot_angle
+real, public, save :: gbacmax,gbacmin,glacmax,glacmin
 
-  real, public, save :: gbacmax,gbacmin,glacmax,glacmin
+! EMEP grid definitions (old and official)
+real, public, parameter :: &
+     xp_EMEP_official=8.,yp_EMEP_official=110.0,fi_EMEP=-32.0,&
+     ref_latitude_EMEP=60.0,GRIDWIDTH_M_EMEP=50000.0,&
+     an_EMEP=237.7316364, &! = 6.370e6*(1.0+0.5*sqrt(3.0))/50000.
+     xp_EMEP_old=43.0,yp_EMEP_old=121.0
 
-  ! EMEP grid definitions (old and official)
-  real, public, parameter :: &
-       xp_EMEP_official=8.,yp_EMEP_official=110.0,fi_EMEP=-32.0,&
-       ref_latitude_EMEP=60.0,GRIDWIDTH_M_EMEP=50000.0,&
-       an_EMEP=237.7316364, &! = 6.370e6*(1.0+0.5*sqrt(3.0))/50000.
-       xp_EMEP_old=43.0,yp_EMEP_old=121.0
+!*** Map factor stuff:
+real, public, save,allocatable, dimension(:,:) ::  &
+     xm_i,     & ! map-factor in i direction, between cell j and j+1
+     xm_j,     & ! map-factor in j direction, between cell i and i+1
+     xm2,      & ! xm*xm: area factor in the middle of a cell (i,j)
+     xmd,      & ! 1/xm2  
+     xm2ji,xmdji
 
-  !*** Map factor stuff:
-  real, public, save,allocatable, dimension(:,:) ::  &
-       xm_i,     & ! map-factor in i direction, between cell j and j+1
-       xm_j,     & ! map-factor in j direction, between cell i and i+1
-       xm2,      & ! xm*xm: area factor in the middle of a cell (i,j)
-       xmd,      & ! 1/xm2  
-       xm2ji,xmdji
+!*** Grid Area
+real, public, save,allocatable, dimension(:,:) :: GridArea_m2
 
-  !*** Grid Area
-  real, public, save,allocatable, dimension(:,:) :: GridArea_m2
+integer, public, save :: &
+     debug_li=-99, debug_lj=-99         ! Local Coordinates of debug-site
+logical, public, save :: debug_proc  ! Processor with debug-site
 
-  integer, public, save :: &
-       debug_li=-99, debug_lj=-99         ! Local Coordinates of debug-site
-  logical, public, save :: debug_proc  ! Processor with debug-site
+character(len=100),public  :: projection
+integer, public, parameter :: MIN_ADVGRIDS = 5 !minimum size of a subdomain
+integer, public :: Poles(2)       ! Poles(1)=1 if North pole is found, Poles(2)=1:SP
+integer, public :: Pole_Singular  ! Pole_included=1 or 2 if the grid include
+! at least one pole and has lat lon projection
+logical, public :: Grid_Def_exist
 
-  character(len=100),public  :: projection
-  integer, public, parameter :: MIN_ADVGRIDS = 5 !minimum size of a subdomain
-  integer, public :: Poles(2)       ! Poles(1)=1 if North pole is found, Poles(2)=1:SP
-  integer, public :: Pole_Singular  ! Pole_included=1 or 2 if the grid include
-  ! at least one pole and has lat lon projection
-  logical, public :: Grid_Def_exist
-
-  character(len=230), public  :: filename_vert
-  integer, allocatable, public :: k1_met(:),k2_met(:)
-  real, allocatable, public :: x_k1_met(:)
-  logical, public, save ::  External_Levels_Def=.false.
-  integer, public, save :: KMAX_MET !number of vertical levels from the meteo files
+character(len=230), public  :: filename_vert
+integer, allocatable, public :: k1_met(:),k2_met(:)
+real, allocatable, public :: x_k1_met(:)
+logical, public, save ::  External_Levels_Def=.false.
+integer, public, save :: KMAX_MET !number of vertical levels from the meteo files
 
 contains
 
@@ -1157,154 +1162,160 @@ contains
     endif
   end subroutine lb2ijm
 
-  subroutine lb2ij(gl2,gb2,xr2,yr2,fi2,an2,xp2,yp2)
+subroutine lb2ij_real(gl2,gb2,xr2,yr2,fi2,an2,xp2,yp2)
+!Note: this routine is not yet CPU optimized
+!-------------------------------------------------------------------! 
+!      calculates coordinates xr2, yr2 (real values) from gl(lat),gb(long) 
+!
+!      input:  xp2,yp2:   coord. of the polar point in grid2
+!              an2:   number of grid-distances from pole to equator in grid2.
+!              fi2:      rotational angle for the grid2 (at i2=0).
+!              i1max,j1max: number of points (grid1) in  x- og y- direction
+!
+!
+!      output: xr2(i1,j1): i coordinates in grid2 
+!              yr2(i1,j1): j coordinates in grid2 
+!-------------------------------------------------------------------! 
+  real, intent(in)    :: gl2,gb2 
+  real, intent(out)   :: xr2,yr2
+  real, intent(in), optional    :: fi2,an2,xp2,yp2
 
-    !Note: this routine is not yet CPU optimized
-    !-------------------------------------------------------------------! 
-    !      calculates coordinates xr2, yr2 (real values) from gl(lat),gb(long) 
-    !
-    !      input:  xp2,yp2:   coord. of the polar point in grid2
-    !              an2:   number of grid-distances from pole to equator in grid2.
-    !              fi2:      rotational angle for the grid2 (at i2=0).
-    !              i1max,j1max: number of points (grid1) in  x- og y- direction
-    !
-    !
-    !      output: xr2(i1,j1): i coordinates in grid2 
-    !              yr2(i1,j1): j coordinates in grid2 
-    !-------------------------------------------------------------------! 
+  real  :: fi_loc,an_loc,xp_loc,yp_loc
+  real, parameter :: PI=3.14159265358979323,dr=PI/180.0,dri= 180.0/PI
+  real    :: PId4,dr2,dist,dist2,dist3
+  integer ::i,j,ip1,jp1, ir2, jr2
+  real ::xscen ,yscen,zsycen,zcycen ,zxmxc,zsxmxc,zcxmxc,zsysph,zsyrot,yrot,zsxrot,zcysph,zcyrot,zcxrot,xrot,dx,x1,y1
 
-    real, intent(in)    :: gl2,gb2 
-    real, intent(out)   :: xr2,yr2
-    real, intent(in), optional    :: fi2,an2,xp2,yp2
+  select case (projection)
+  case('Stereographic')
+    PId4  =PI/4.      
+    dr2   =dr*0.5   ! degrees to radians /2
+    fi_loc=fi
+    an_loc=an
+    xp_loc=xp
+    yp_loc=yp
 
-    real  :: fi_loc,an_loc,xp_loc,yp_loc
-    real, parameter :: PI=3.14159265358979323,dr=PI/180.0,dri= 180.0/PI
-    real    :: PId4,dr2,dist,dist2,dist3
-    integer ::i,j,ip1,jp1, ir2, jr2
-    real ::xscen ,yscen,zsycen,zcycen ,zxmxc,zsxmxc,zcxmxc,zsysph,zsyrot,yrot,zsxrot,zcysph,zcyrot,zcxrot,xrot,dx,x1,y1
+    if(present(fi2))fi_loc=fi2
+    if(present(an2))an_loc=an2
+    if(present(xp2))xp_loc=xp2
+    if(present(yp2))yp_loc=yp2
 
-    if(projection=='Stereographic')then
-       PId4  =PI/4.      
-       dr2   =dr*0.5   ! degrees to radians /2
-       fi_loc=fi
-       an_loc=an
-       xp_loc=xp
-       yp_loc=yp
+    xr2=xp_loc+an_loc*tan(PId4-gb2*dr2)*sin(dr*(gl2-fi_loc))
+    yr2=yp_loc-an_loc*tan(PId4-gb2*dr2)*cos(dr*(gl2-fi_loc))
 
-       if(present(fi2))fi_loc=fi2
-       if(present(an2))an_loc=an2
-       if(present(xp2))xp_loc=xp2
-       if(present(yp2))yp_loc=yp2
-
-       xr2=xp_loc+an_loc*tan(PId4-gb2*dr2)*sin(dr*(gl2-fi_loc))
-       yr2=yp_loc-an_loc*tan(PId4-gb2*dr2)*cos(dr*(gl2-fi_loc))
-
-    else  if(projection=='lon lat')then! lon-lat grid
-       
-       if((gl2-glon(1,1))+i_fdom(1)*(glon(2,1)-glon(1,1))<360.0)then
-          xr2=(gl2-glon(1,1))/(glon(2,1)-glon(1,1))+i_fdom(1)
-       else          
-          xr2=(gl2-360.0-glon(1,1))/(glon(2,1)-glon(1,1))+i_fdom(1)
-       endif
-       if(xr2<0.5)xr2=xr2+360.0/(glon(2,1)-glon(1,1))
-       yr2=(gb2-glat(1,1))/(glat(1,2)-glat(1,1))+j_fdom(1)
-
-    else  if(projection=='Rotated_Spherical')then! rotated lon-lat grid
-       !       dx_roti=20.0
-       !       grid_north_pole_longitude = -170.0
-       !       grid_north_pole_latitude = 40.0
-       xscen = grid_north_pole_longitude-180.0
-       if(xscen<-180.0)xscen = xscen+360.0
-       yscen = 90.0-grid_north_pole_latitude
-       !       xscen=grid_north_pole_longitude-180.0
-       !       yscen=90.0-grid_north_pole_latitude
-       zsycen = sin(dr*yscen)
-       zcycen = cos(dr*yscen)
-       !
-       zxmxc  = dr*(gl2 - xscen)
-       zsxmxc = sin(zxmxc)
-       zcxmxc = cos(zxmxc)
-       zsysph = sin(dr*gb2)
-       zcysph = cos(dr*gb2)
-       zsyrot = zcycen*zsysph - zsycen*zcysph*zcxmxc
-       zsyrot = amax1(zsyrot,-1.0)
-       zsyrot = amin1(zsyrot,+1.0)
-       yrot = asin(zsyrot)
-       zcyrot = cos(yrot)
-       zcxrot = (zcycen*zcysph*zcxmxc +&
-            zsycen*zsysph)/zcyrot
-       zcxrot = amax1(zcxrot,-1.0)
-       zcxrot = amin1(zcxrot,+1.0)
-       zsxrot = zcysph*zsxmxc/zcyrot
-       xrot = acos(zcxrot)
-       if (zsxrot.lt.0.0) xrot = -xrot
-       xrot=xrot*dri
-       yrot=yrot*dri
-       if(xrot<x1_rot)xrot=xrot+360.0
-       if(xrot-x1_rot>360.0-dx_rot*0.499999999)xrot=xrot-360.0
-       xr2=(xrot-x1_rot)*dx_roti+1
-       yr2=(yrot-y1_rot)*dx_roti+1
-
-    else!general projection, Use only info from glon_fdom and glat_fdom
-       !first find closest by testing all gridcells. 
-       call StopAll('lb2ij: conversion broken 27 Oct 2015, Peter')
-       !glon_fdom is no more defined. Could easily rewrite if necessary
-       dist2=0.0
-       dist3=0.0
-       dist=10.0!max distance is PI
-       do j=1,JJFULLDOM
-          do i=1,IIFULLDOM
-!             if(dist>great_circle_distance(gl2,gb2,glon_fdom(i,j) &
-!                  ,glat_fdom(i,j)))then
-!                dist=great_circle_distance(gl2,gb2,glon_fdom(i,j) &
-!                     ,glat_fdom(i,j))
-!                xr2=i
-!                yr2=j
-!             endif
-          enddo
-       enddo
-
-       !find the real part of i and j by comparing distances to neighbouring cells
-       !
-       !     C
-       !    /|\
-       !   / | \
-       !  /  |  \
-       ! A---D---B
-       !
-       !A=(i,j) ,B=(i+1,j), C=(gl2,gb2)
-       !dist=AC, dist2=BC, dist3=AB
-       !AD=(dist*dist+dist3*dist3-dist2*dist2)/(2*dist3)
-       !
-       ir2 = nint(xr2)
-       jr2 = nint(yr2)
-       ip1=ir2+1
-       if(ip1>IIFULLDOM)ip1=ip1-2
-!       dist2=great_circle_distance(gl2,gb2,glon_fdom(ip1,jr2),glat_fdom(ip1,jr2))
-!       dist3=great_circle_distance( glon_fdom(ir2,jr2), &
-!            glat_fdom(ir2,jr2), &
-!            glon_fdom(ip1,jr2), &
-!            glat_fdom(ip1,jr2))
-
-       xr2=xr2+(dist*dist+dist3*dist3-dist2*dist2)/(2*dist3*dist3)
-
-
-       jp1=jr2+1
-       if(jp1>JJFULLDOM)jp1=jp1-2
-
-!       dist2=great_circle_distance(gl2,gb2,glon_fdom(ir2,jp1),glat_fdom(ir2,jp1))
-       !GFORTRAN CHANGE
-!       dist3=great_circle_distance( glon_fdom(ir2,jr2), &
-!            glat_fdom(ir2,jr2), &
-!            glon_fdom(ir2,jp1), & 
-!            glat_fdom(ir2,jp1) )
-
-       yr2=yr2+(dist*dist+dist3*dist3-dist2*dist2)/(2*dist3*dist3)
-
+  case('lon lat')           ! lon-lat grid    
+    if((gl2-glon(1,1))+i_fdom(1)*(glon(2,1)-glon(1,1))<360.0)then
+       xr2=(gl2-glon(1,1))/(glon(2,1)-glon(1,1))+i_fdom(1)
+    else          
+       xr2=(gl2-360.0-glon(1,1))/(glon(2,1)-glon(1,1))+i_fdom(1)
     endif
+    if(xr2<0.5)xr2=xr2+360.0/(glon(2,1)-glon(1,1))
+    yr2=(gb2-glat(1,1))/(glat(1,2)-glat(1,1))+j_fdom(1)
 
-    return
-  end subroutine lb2ij
+  case('Rotated_Spherical') ! rotated lon-lat grid
+    !       dx_roti=20.0
+    !       grid_north_pole_longitude = -170.0
+    !       grid_north_pole_latitude = 40.0
+    xscen = grid_north_pole_longitude-180.0
+    if(xscen<-180.0)xscen = xscen+360.0
+    yscen = 90.0-grid_north_pole_latitude
+    !       xscen=grid_north_pole_longitude-180.0
+    !       yscen=90.0-grid_north_pole_latitude
+    zsycen = sin(dr*yscen)
+    zcycen = cos(dr*yscen)
+    !
+    zxmxc  = dr*(gl2 - xscen)
+    zsxmxc = sin(zxmxc)
+    zcxmxc = cos(zxmxc)
+    zsysph = sin(dr*gb2)
+    zcysph = cos(dr*gb2)
+    zsyrot = zcycen*zsysph - zsycen*zcysph*zcxmxc
+    zsyrot = amax1(zsyrot,-1.0)
+    zsyrot = amin1(zsyrot,+1.0)
+    yrot = asin(zsyrot)
+    zcyrot = cos(yrot)
+    zcxrot = (zcycen*zcysph*zcxmxc +&
+         zsycen*zsysph)/zcyrot
+    zcxrot = amax1(zcxrot,-1.0)
+    zcxrot = amin1(zcxrot,+1.0)
+    zsxrot = zcysph*zsxmxc/zcyrot
+    xrot = acos(zcxrot)
+    if (zsxrot.lt.0.0) xrot = -xrot
+    xrot=xrot*dri
+    yrot=yrot*dri
+    if(xrot<x1_rot)xrot=xrot+360.0
+    if(xrot-x1_rot>360.0-dx_rot*0.499999999)xrot=xrot-360.0
+    xr2=(xrot-x1_rot)*dx_roti+1
+    yr2=(yrot-y1_rot)*dx_roti+1
+
+  case default ! general projection, Use only info from glon_fdom and glat_fdom
+    !first find closest by testing all gridcells. 
+    call StopAll('lb2ij: conversion broken 27 Oct 2015, Peter')
+    !glon_fdom is no more defined. Could easily rewrite if necessary
+    dist2=0.0
+    dist3=0.0
+    dist=10.0!max distance is PI
+    do j=1,JJFULLDOM
+      do i=1,IIFULLDOM
+!       if(dist>great_circle_distance(gl2,gb2,glon_fdom(i,j) &
+!           ,glat_fdom(i,j)))then
+!         dist=great_circle_distance(gl2,gb2,glon_fdom(i,j) &
+!              ,glat_fdom(i,j))
+!         xr2=i
+!         yr2=j
+!       endif
+      enddo
+    enddo
+
+    !find the real part of i and j by comparing distances to neighbouring cells
+    !
+    !     C
+    !    /|\
+    !   / | \
+    !  /  |  \
+    ! A---D---B
+    !
+    !A=(i,j) ,B=(i+1,j), C=(gl2,gb2)
+    !dist=AC, dist2=BC, dist3=AB
+    !AD=(dist*dist+dist3*dist3-dist2*dist2)/(2*dist3)
+    !
+    ir2 = nint(xr2)
+    jr2 = nint(yr2)
+    ip1=ir2+1
+    if(ip1>IIFULLDOM)ip1=ip1-2
+!      dist2=great_circle_distance(gl2,gb2,glon_fdom(ip1,jr2),glat_fdom(ip1,jr2))
+!      dist3=great_circle_distance( glon_fdom(ir2,jr2), &
+!           glat_fdom(ir2,jr2), &
+!           glon_fdom(ip1,jr2), &
+!           glat_fdom(ip1,jr2))
+
+    xr2=xr2+(dist*dist+dist3*dist3-dist2*dist2)/(2*dist3*dist3)
+
+
+    jp1=jr2+1
+    if(jp1>JJFULLDOM)jp1=jp1-2
+
+!      dist2=great_circle_distance(gl2,gb2,glon_fdom(ir2,jp1),glat_fdom(ir2,jp1))
+    !GFORTRAN CHANGE
+!      dist3=great_circle_distance( glon_fdom(ir2,jr2), &
+!           glat_fdom(ir2,jr2), &
+!           glon_fdom(ir2,jp1), & 
+!           glat_fdom(ir2,jp1) )
+
+    yr2=yr2+(dist*dist+dist3*dist3-dist2*dist2)/(2*dist3*dist3)
+
+  endselect
+endsubroutine lb2ij_real
+subroutine lb2ij_int(gl2,gb2,ix,iy)
+  real, intent(in)    :: gl2,gb2
+  integer, intent(out):: ix,iy
+  real ::x,y
+! stations can easily be defined exactly at gridcell boundaries
+! 1.0E-7 is to ensure same rounding for all CPUs
+  call lb2ij_real(gl2,gb2,x,y)
+  ix=nint(x+1.0E-7)
+  iy=nint(y+1.0E-7)
+endsubroutine lb2ij_int 
 
   subroutine ij2lbm(imax,jmax,glon,glat,fi,an,xp,yp)
     !-------------------------------------------------------------------! 
@@ -1553,10 +1564,8 @@ contains
     integer, intent(out)  ,optional :: iglob,jglob
     logical :: in
     integer :: i,j
-    real    :: xr,yr
     call coord_check("coord_in_"//trim(domain),lon,lat,fix=.true.)
-    call lb2ij(lon,lat,xr,yr)
-    i=nint(xr);j=nint(yr)
+    call lb2ij(lon,lat,i,j)
     if(present(iglob))iglob=i
     if(present(jglob))jglob=j
     in=(i>=1).and.(i<=IIFULLDOM).and.(j>=1).and.(j<=JJFULLDOM)

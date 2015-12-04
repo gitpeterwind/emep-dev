@@ -155,6 +155,13 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+4rd December 2015 Alvaro 3099
+
+GridValues_ml,NetCDF_ml,Sites_ml,PointSource_ml:
+- Integer interfdace for lb2ij, offering a consistent rounding for coordinates
+  on nthe boundary between grid-cells/processor-subdomains.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 2nd December 2015 Peter, Semeena 3097-8
 
 Cleaned up config_EMEPSTD.nml and config_EMEPGLOB.nml

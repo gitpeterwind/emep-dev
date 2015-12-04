@@ -211,7 +211,7 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
   character(len=20) :: s       ! Name of site read in
   character(len=30) :: comment ! comment on site location
   character(len=40) :: infile, errmsg
-  real              :: lat,lon,x,y
+  real              :: lat,lon
   character(len=*),parameter :: sub='SitesInit:'
 
   character(len=20), dimension(4) :: Headers
@@ -250,9 +250,7 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
       call read_line(io_num,txtinput,ios)
       if ( ios /= 0 ) exit  ! End of file
       read(unit=txtinput,fmt=*) s, lat, lon, lev
-      call lb2ij(lon,lat,x,y)
-      ix=nint(x+1.0E-7)!stations can easily be defined exactely at  gridcell boundaries
-      iy=nint(y+1.0E-7)!1.0E-7 is to ensure same rounding for all CPUs
+      call lb2ij(lon,lat,ix,iy)
     else
       call read_line(io_num,txtinput,ios)
       lon=-999.0
