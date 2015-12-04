@@ -66,7 +66,7 @@ use ModelConstants_ml, only: &
   ,FORECAST     & ! only dayly (and hourly) output on FORECAST mode
   ,NTDAY        & ! Number of 2D O3 to be saved each day (for SOMO)
   ! output types corresponding to instantaneous,year,month,day
-  ,IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY, IOU_HOUR, IOU_YEAR_LASTHH
+  ,IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY, IOU_HOUR
 use AOD_PM_ml,            only: AOD_init,aod_grp,wavelength,& ! group and 
                                 wanted_wlen,wanted_ext3d      ! wavelengths
 use MosaicOutputs_ml,     only: nMosaic, MosaicOutput
@@ -112,8 +112,9 @@ integer, public, save :: iou_min=IOU_INST, iou_max=IOU_HOUR
 ! fields we use daily outputs. For the big 3d fields, monthly output
 ! is sufficient.
 
-integer, public, parameter ::  LENOUT2D = IOU_YEAR_LASTHH  ! Allows INST..DAY,H.PREV. for 2d fields
-integer, public, parameter ::  LENOUT3D = IOU_HOUR            ! Allows INST..DAY for 3d fields
+integer, public, parameter :: &
+  LENOUT2D = IOU_HOUR,& ! Allows INST..DAY for 2d fields
+  LENOUT3D = IOU_HOUR   ! Allows INST..DAY for 3d fields
 
 !will be used for:
 !e.g. d_2d( num_deriv2d,LIMAX, LJMAX, LENOUT2D)
@@ -325,21 +326,9 @@ subroutine Define_Derived()
   call AddNewDeriv( "PSURF ","PSURF",  "SURF","-",   "hPa", &
                -99,  -99,  F,  1.0,  T,   IOU_DAY )
 
-
-!rv4.7 ustar and snow are now obtained more simply through the
-!rv4.7 config_Outputs system, in OutputMisc
-!rv4.7 call AddNewDeriv( "Snow_m","SNOW",  "-","-",   "m", &
-!rv4.7                -99,  -99,  F,  1.0,  T,  IOU_DAY )
-!rv4.7 call AddNewDeriv( "USTAR_NWP","USTAR_NWP",  "-","-",   "m/s", &
-!rv4.7                -99,  -99, F, 1.0,  T,  IOU_DAY )
   !Added for TFMM scale runs
   call AddNewDeriv( "Kz_m2s","Kz_m2s",  "-","-",   "m2/s", &
                -99,  -99, F, 1.0,  T,  IOU_DAY )
-
-!Most met params are now better specified in My_Derived.
-!MOVED call AddNewDeriv( "ws_10m","ws_10m",  "-","-",   "m/s", &
-!MOVED call AddNewDeriv( "HMIX  ","HMIX",  "-","-",   "m", &
-! "HMIX00","HMIX12", ....
 
   call AddNewDeriv( "u_ref","u_ref",  "-","-",   "m/s", &
                -99,  -99, F, 1.0,  T,  IOU_DAY )
@@ -506,11 +495,7 @@ subroutine Define_Derived()
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
   do ind = 1, nOutputMisc
     if( MasterProc ) print *, "ADDMISC ", OutputMisc(ind)%name
-    if(OutputMisc(ind)%class=="MET3D")then
-       call AddDeriv(OutputMisc(ind),Is3D=.true.)
-    else
-       call AddDeriv(OutputMisc(ind))
-    endif
+    call AddDeriv(OutputMisc(ind),Is3D=(OutputMisc(ind)%class=="MET3D"))
   enddo
 
 !-------------------------------------------------------------------------------
@@ -897,10 +882,11 @@ subroutine Derived(dt,End_of_Day)
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = glat(i,j)
       end forall
-    case ( "USTAR_NWP" )
-      forall ( i=1:limax, j=1:ljmax )
-        d_2d( n, i,j,IOU_INST) = ustar_nwp(i,j)
-      end forall
+! deprecated ~3094
+!   case ( "USTAR_NWP" )
+!     forall ( i=1:limax, j=1:ljmax )
+!       d_2d( n, i,j,IOU_INST) = ustar_nwp(i,j)
+!     end forall
     case ( "Kz_m2s" )
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = Kz_m2s(i,j,KMAX_BND-1)
@@ -1416,26 +1402,24 @@ subroutine Derived(dt,End_of_Day)
     !  shorter. These d_2d ( MAXADV, MAXSHL, SOMO) are set elsewhere
 
     af = 1.0 ! accumulation factor
-    if( f_2d(n)%dt_scale ) then !need to scale with dt_advec
-      af = dt_advec
-    endif
+    if(f_2d(n)%dt_scale) af=dt_advec !need to scale with dt_advec
 
 !print *, "D2Ding", me, n, trim(f_2d(n)%name), d_2d(n,5,5,IOU_DAY), af, d_2d(n,5,5,IOU_DAY)
 !if ( any(d_2d == UNDEF_R ) ) then
 !  print *, "D2Ding ERROR", me, n, trim(f_2d(n)%name), minval(d_2d)
 !end if
 
-    d_2d(n,:,:,IOU_HOUR )  = d_2d(n,:,:,IOU_HOUR )  + af*d_2d(n,:,:,IOU_INST)
-    if ( f_2d(n)%avg ) nav_2d(n,IOU_HOUR) = nav_2d(n,IOU_HOUR) + 1
+    d_2d(n,:,:,IOU_HOUR) = d_2d(n,:,:,IOU_HOUR) + af*d_2d(n,:,:,IOU_INST)
+    if(f_2d(n)%avg) nav_2d(n,IOU_HOUR) = nav_2d(n,IOU_HOUR) + 1
 
-    d_2d(n,:,:,IOU_DAY )  = d_2d(n,:,:,IOU_DAY )  + af*d_2d(n,:,:,IOU_INST)
-    if ( f_2d(n)%avg ) nav_2d(n,IOU_DAY) = nav_2d(n,IOU_DAY) + 1
+    d_2d(n,:,:,IOU_DAY ) = d_2d(n,:,:,IOU_DAY ) + af*d_2d(n,:,:,IOU_INST)
+    if(f_2d(n)%avg) nav_2d(n,IOU_DAY ) = nav_2d(n,IOU_DAY ) + 1
 
-    d_2d(n,:,:,IOU_MON )  = d_2d(n,:,:,IOU_MON )  + af*d_2d(n,:,:,IOU_INST)
-    if ( f_2d(n)%avg ) nav_2d(n,IOU_MON) = nav_2d(n,IOU_MON) + 1
+    d_2d(n,:,:,IOU_MON ) = d_2d(n,:,:,IOU_MON ) + af*d_2d(n,:,:,IOU_INST)
+    if(f_2d(n)%avg) nav_2d(n,IOU_MON ) = nav_2d(n,IOU_MON ) + 1
 
-    d_2d(n,:,:,IOU_YEAR ) = d_2d(n,:,:,IOU_YEAR ) + af*d_2d(n,:,:,IOU_INST)
-    if ( f_2d(n)%avg ) nav_2d(n,IOU_YEAR) = nav_2d(n,IOU_YEAR) + 1
+    d_2d(n,:,:,IOU_YEAR) = d_2d(n,:,:,IOU_YEAR) + af*d_2d(n,:,:,IOU_INST)
+    if(f_2d(n)%avg) nav_2d(n,IOU_YEAR) = nav_2d(n,IOU_YEAR) + 1
 
     !if( dbgP .and. n == 27  ) then ! C5H8 BvocEmis:
     !if(  n == 27  ) then ! C5H8 BvocEmis:

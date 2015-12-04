@@ -10,8 +10,7 @@
 !  items:
 !         name      Unit   dim  typ   class  freq
 !
-! where freq =  IOU_YEAR=2,IOU_MON=3, IOU_DAY=4,IOU_HOUR=6, IOU_HOUR_MEAN=7
-!         *NOTE* only the day, month, year flags work so far.
+! where freq = IOU_YEAR=2, IOU_MON=3, IOU_DAY=4, IOU_HOUR=5, IOU_HOUR_INST=6
 !
 &OutputConcs_config
 OutputConcs= 
@@ -63,8 +62,7 @@ OutputConcs=
 !---------------------------------------------
 &end
 
-! nb freq =  IOU_YEAR=2,IOU_MON=3, IOU_DAY=4,IOU_HOUR=6, IOU_HOUR_MEAN=7
-!         *NOTE* only the day, month, year flags work so far.
+! nb freq = IOU_YEAR=2, IOU_MON=3, IOU_DAY=4, IOU_HOUR=5, IOU_HOUR_INST=6
 
 &OutputDep_config
   DDEP_ECOS =

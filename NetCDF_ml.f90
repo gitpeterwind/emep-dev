@@ -40,8 +40,9 @@ use ModelConstants_ml, only : KMAX_MID,KMAX_BND, runlabel1, runlabel2 &
                              ,MasterProc, FORECAST, NETCDF_DEFLATE_LEVEL &
                              ,DEBUG_NETCDF, DEBUG_NETCDF_RF &
                              ,NPROC, IIFULLDOM,JJFULLDOM &
-                             ,IOU_INST,IOU_3DHOUR,IOU_3DHOUR_MEAN, IOU_YEAR &
-                             ,IOU_MON, IOU_DAY ,IOU_HOUR ,PT,Pref,NLANDUSEMAX, model&
+                             ,IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY &
+                             ,IOU_HOUR,IOU_HOUR_INST,IOU_3DHOUR &
+                             ,PT,Pref,NLANDUSEMAX, model&
                              ,USE_EtaCOORDINATES,RUNDOMAIN&
                              ,fullrun_DOMAIN,month_DOMAIN,day_DOMAIN,hour_DOMAIN
 use ModelConstants_ml, only : SELECT_LEVELS_HOURLY  !NML
@@ -65,24 +66,16 @@ integer, public, parameter :: &
 
 character(len=max_filename_length), save :: &
   fileName      = 'NotSet',&
-  fileName_inst = 'out_inst.nc',&
-  fileName_3Dhour = 'out_3Dhour.nc',&
-  fileName_hour = 'out_hour.nc',&
-  fileName_day  = 'out_day.nc',&
-  fileName_month= 'out_month.nc',&
-  fileName_year = 'out_year.nc'
+  fileName_iou(IOU_INST:IOU_3DHOUR)=&
+    ['out_inst.nc','out_year.nc','out_month.nc','out_day.nc',&
+     'out_hour.nc','out_hourInst.nc','out_3Dhour.nc']
 character(len=125) :: period_type !TESTHH
 
 integer,parameter ::closedID=-999     !flag for showing that a file is closed
 integer      :: ncFileID_new=closedID  !don't save because should always be
                 !redefined (in case several routines are using ncFileID_new
                 !with different filename_given)
-integer,save :: ncFileID_inst=closedID
-integer,save :: ncFileID_hour=closedID
-integer,save :: ncFileID_3Dhour=closedID
-integer,save :: ncFileID_day=closedID
-integer,save :: ncFileID_month=closedID
-integer,save :: ncFileID_year=closedID
+integer,save :: ncFileID_iou(IOU_INST:IOU_3DHOUR)=closedID
 integer,save :: outCDFtag=0
 !CDF types for output:
 integer, public, parameter  :: Int1=1,Int2=2,Int4=3,Real4=4,Real8=5
@@ -496,7 +489,7 @@ GIMAXcdf=0; GJMAXcdf=0                            !initialisations
 KMAXcdf=1
 select case (iotyp)
 case (IOU_YEAR)
-  fileName_year = trim(fileName)
+  fileName_iou(iotyp) = trim(fileName)
   period_type = 'fullrun'
   if(MasterProc.and.DEBUG_NETCDF)&
     write(*,*) "Creating ", trim(fileName),' ',trim(period_type)
@@ -505,7 +498,7 @@ case (IOU_YEAR)
   GIMAXcdf=max(GIMAXcdf,i2-i1+1); GJMAXcdf=max(GJMAXcdf,j2-j1+1)
   call CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf, KMAX_MID)
 case(IOU_MON)
-  fileName_month = trim(fileName)
+  fileName_iou(iotyp) = trim(fileName)
   period_type = 'monthly'
   if(MasterProc.and.DEBUG_NETCDF)&
     write(*,*) "Creating ", trim(fileName),' ',trim(period_type)
@@ -514,7 +507,7 @@ case(IOU_MON)
   GIMAXcdf=max(GIMAXcdf,i2-i1+1); GJMAXcdf=max(GJMAXcdf,j2-j1+1)
   call CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf, KMAX_MID)
 case(IOU_DAY)
-  fileName_day = trim(fileName)
+  fileName_iou(iotyp) = trim(fileName)
   period_type = 'daily'
   if(MasterProc.and.DEBUG_NETCDF)&
     write(*,*) "Creating ", trim(fileName),' ',trim(period_type)
@@ -523,7 +516,7 @@ case(IOU_DAY)
   GIMAXcdf=max(GIMAXcdf,i2-i1+1); GJMAXcdf=max(GJMAXcdf,j2-j1+1)
   call CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf, KMAX_MID)
 case(IOU_HOUR)
-  fileName_hour = trim(fileName)
+  fileName_iou(iotyp) = trim(fileName)
   period_type = 'hourlyMean'
   if(MasterProc.and.DEBUG_NETCDF)&
     write(*,*) "Creating ", trim(fileName),' ',trim(period_type)
@@ -531,8 +524,17 @@ case(IOU_HOUR)
   IBEGcdf=min(IBEGcdf,i1); JBEGcdf=min(JBEGcdf,j1)
   GIMAXcdf=max(GIMAXcdf,i2-i1+1); GJMAXcdf=max(GJMAXcdf,j2-j1+1)
   call CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf, KMAX_MID)
+case(IOU_HOUR_INST)
+  fileName_iou(iotyp) = trim(fileName)
+  period_type = 'hourly'
+  if(MasterProc.and.DEBUG_NETCDF)&
+    write(*,*) "Creating ", trim(fileName),' ',trim(period_type)
+  i1=hour_DOMAIN(1);i2=hour_DOMAIN(2);j1=hour_DOMAIN(3);j2=hour_DOMAIN(4)
+  IBEGcdf=min(IBEGcdf,i1); JBEGcdf=min(JBEGcdf,j1)
+  GIMAXcdf=max(GIMAXcdf,i2-i1+1); GJMAXcdf=max(GJMAXcdf,j2-j1+1)
+  call CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf, KMAX_MID)
 case(IOU_3DHOUR)
-  fileName_3Dhour = trim(fileName)
+  fileName_iou(iotyp) = trim(fileName)
   period_type = 'hourly'
   if(MasterProc.and.DEBUG_NETCDF)&
     write(*,*) "Creating ", trim(fileName),' ',trim(period_type)
@@ -548,7 +550,7 @@ case(IOU_3DHOUR)
     call CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,KMAXcdf)
   endif
 case(IOU_INST)
-  fileName_inst = trim(fileName)
+  fileName_iou(iotyp) = trim(fileName)
   period_type = 'instant'
   if(MasterProc.and.DEBUG_NETCDF)&
     write(*,*) "Creating ", trim(fileName),' ',trim(period_type)
@@ -1112,7 +1114,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,out_DOMAIN,ik,&
     domain = month_DOMAIN
   case(IOU_DAY)
     domain = day_DOMAIN
-  case(IOU_HOUR,IOU_3DHOUR)
+  case(IOU_HOUR:IOU_3DHOUR)
     domain = hour_DOMAIN
   endselect
   if(present(out_DOMAIN)) domain = out_DOMAIN
@@ -1249,24 +1251,9 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,out_DOMAIN,ik,&
   case(IOU_GIVEN)
     fileName = trim(fileName_given)
     ncFileID = ncFileID_new
-  case(IOU_YEAR)
-    fileName = trim(fileName_year)
-    ncFileID = ncFileID_year
-  case(IOU_MON)
-    fileName = trim(fileName_month)
-    ncFileID = ncFileID_month
-  case(IOU_DAY)
-    fileName = trim(fileName_day)
-    ncFileID = ncFileID_day
-  case(IOU_HOUR)
-    fileName = trim(fileName_hour)
-    ncFileID = ncFileID_hour
-  case(IOU_3DHOUR)
-    fileName = trim(fileName_3Dhour)
-    ncFileID = ncFileID_3Dhour
-  case(IOU_INST)
-    fileName = trim(fileName_inst)
-    ncFileID = ncFileID_inst
+  case(IOU_INST:IOU_3DHOUR)
+    fileName = trim(fileName_iou(iotyp_new))
+    ncFileID = ncFileID_iou(iotyp_new)
   case default
     return
   endselect
@@ -1292,18 +1279,8 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,out_DOMAIN,ik,&
       select case(iotyp_new)      ! needed in case iotyp is defined
       case(IOU_GIVEN)
         ncFileID_new  = ncFileID  ! not really needed
-      case(IOU_YEAR)
-        ncFileID_year = ncFileID
-      case(IOU_MON)
-        ncFileID_month= ncFileID
-      case(IOU_DAY)
-        ncFileID_day  = ncFileID
-      case(IOU_HOUR)
-        ncFileID_hour = ncFileID
-      case(IOU_3DHOUR)
-        ncFileID_3Dhour = ncFileID
-      case(IOU_INST)
-        ncFileID_inst = ncFileID
+      case(IOU_INST:IOU_3DHOUR)
+        ncFileID_iou(iotyp_new)=ncFileID
       endselect
     endif
 
@@ -1673,25 +1650,17 @@ subroutine CloseNetCDF
 !NB the data in a NetCDF file is not "safe" before the file is closed.
 !The files are NOT automatically properly closed after end of program,
 ! and data may be lost if the files are not closed explicitely.
+  integer :: i,ncFileID
 
   if(MasterProc)then
-    call CloseNC(ncFileID_year)
-    call CloseNC(ncFileID_month)
-    call CloseNC(ncFileID_day)
-    call CloseNC(ncFileID_hour)
-    call CloseNC(ncFileID_3Dhour)
-    call CloseNC(ncFileID_inst)
-  endif
-contains
-subroutine CloseNC(ncID)
-  integer, intent(inout) :: ncID
-  integer :: ncFileID
-
-  if(ncID==closedID)return
-  ncFileID=ncID
+    do i=IOU_INST,IOU_3DHOUR
+      ncFileID=ncFileID_iou(i)
+      if(ncFileID/=closedID)then
         call check(nf90_close(ncFileID))
-  ncID=closedID
-endsubroutine CloseNC
+        ncFileID_iou(i)=closedID
+      endif
+    enddo
+  endif
 endsubroutine CloseNetCDF
 
 subroutine GetCDF(varname,fileName,Rvar,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,needed)

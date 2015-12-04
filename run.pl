@@ -212,6 +212,7 @@ if($CWF){
   $CWFTAG.= ".REVA" if($MAKEMODE=~/EVA/);
   $CWFTAG.= ".NMC"  if($MAKEMODE=~/NMC/);
   $CWFTAG.= "_".$ENV{'TAG'}  if($ENV{'TAG'});
+  $outputs="CAMS50"
 }
  $MAKEMODE="SR-$MAKEMODE" if($MAKEMODE and $SR);
 
@@ -477,7 +478,7 @@ my $COMPILE_ONLY = 0; # usually 0 (false) is ok, but set to 1 for compile-only
 my $DRY_RUN      = 0; # Test script without running model (but compiling)
 my $KEEP_LINKS   = 0; # Keep @list_of_files after run
 $RESET=($MAKEMODE=~/MACC/) if($CWF);
-$KEEP_LINKS=not $BENCHMARK{'archive'} if(%BENCHMARK);
+#$KEEP_LINKS=not $BENCHMARK{'archive'} if(%BENCHMARK);
 
 if(%BENCHMARK and $BENCHMARK{'debug'}){
   die "No debug flags for benchmarks!"
@@ -898,7 +899,7 @@ foreach my $scenflag ( @runs ) {
   $ifile{"$DataDir/GLOBAL_O3.nc"} = "GLOBAL_O3.nc";
   $ifile{"$DataDir/amilt42-nox.dat"} = "ancatmil.dat";#RENAME TO AIRCARAFT?!
   $inml{'GFED'}="$DataDir/GLOBAL_ForestFireEmis.nc";                    # GFED emissions
-  $inml{'FINN'}="$DataDir/ForestFire/FINN/ForestFire_Emis_v15_YYYY.nc";     # FINN emissions
+  $inml{'FINN'}="$DataDir/ForestFire/FINN/ForestFire_Emis_v15_YYYY.nc"; # FINN emissions
   $inml{'GFAS'}="$DataDir/ForestFire/GFAS/GFAS_ForestFireEmis_YYYY.nc"; # GFAS emissions
   $ifile{"$DataDir/nox_emission_1996-2005.nc"} = "nox_emission_1996-2005.nc";
   $ifile{"$DataDir/AircraftEmis_FL.nc"} = "AircraftEmis_FL.nc";
@@ -1073,12 +1074,16 @@ foreach my $scenflag ( @runs ) {
 #------------      Run model ------------------------------------------
   print "\n";
 
-# Link executable also, since gridur is funny about these
-# things....
-
+# compile/copy executable to $RESDIR/
   my $LPROG = "Unimod";
- #mylink( "PROGRAM!!  ", $PROGRAM,$LPROG) ;
-  cp ($PROGRAM, $LPROG) or die "cannot copy $PROGRAM to $LPROG\n";
+  if($MAKEMODE){  # compile/link program into $RESDIR/
+    $LPROG = "$version";
+    system(@MAKE,"$MAKEMODE","-C$ProgDir/",
+           "ARCHIVE=yes","BINDIR=$RESDIR/") == 0
+      or die "@MAKE $MAKEMODE -C$ProgDir/ failed"; 
+  }else{          # copy program to $RESDIR/
+    cp ($PROGRAM, $LPROG) or die "cannot copy $PROGRAM to $LPROG\n";
+  }
   push(@list_of_files , $LPROG);    # For later deletion
 
 # Write out list of linked files to a shell-script, useful in case the program

@@ -583,8 +583,8 @@ real, public, parameter :: &
 !                         refer to output variables defined in My_Outputs_ml.
 !   IOU_YEAR_LASTHH: Auxiliary field for hourly accumulated Derived output
 integer, public, parameter ::  &
-  IOU_INST=1, IOU_YEAR=2, IOU_MON=3, IOU_DAY=4, IOU_HOUR=5, & ! Derived output
-  IOU_YEAR_LASTHH=6,                              & ! Aux. field
+  IOU_INST=1, IOU_YEAR=2, IOU_MON=3, IOU_DAY=4, IOU_HOUR=5, IOU_HOUR_INST=6, & ! Derived output
+  IOU_YEAR_LASTHH=6,                              & ! Aux. field, deprecated
   IOU_3DHOUR=7, IOU_3DHOUR_MEAN=8                 & ! Hourly  3D special output
   ,IOU_MAX_MAX=8                                  ! Max values for of IOU (for array declarations)
 

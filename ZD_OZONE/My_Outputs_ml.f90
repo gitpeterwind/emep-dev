@@ -30,7 +30,6 @@ implicit none
 
 logical, public, parameter :: out_binary = .false.
 logical, public, parameter :: Ascii3D_WANTED = .false.
-logical, private,parameter :: DEBUG_PBL = .false., DEBUG_PM10 = .false.
 
 ! Site outputs   (used in Sites_ml)
 !==============================================================
@@ -258,13 +257,9 @@ subroutine set_output_defs
       enddo
     endif
     endif
-  case("INVERSION")
+  case("INVERSION") ! use hourly Derived output in the near future
     nhourly_out=19
     nlevels_hourly = 1
-  case("MACC_NMC")
-    nhourly_out=4
-    nlevels_hourly=KMAX_MID     ! nb zero is *not* one of levels
-    call CheckStop(.not.USE_AOD,"MACC_NMC hourly output needs USE_AOD")
   case("MACC_ENS","FORECAST")
     nhourly_out=15
     nlevels_hourly=9
@@ -276,12 +271,17 @@ subroutine set_output_defs
       if(DEBUG_POLLEN)&
       nhourly_out=nhourly_out+size(chemgroups(gpoll)%ptr)*2
     endif
-    if(DEBUG_PBL   )nhourly_out=nhourly_out+3
-    if(DEBUG_PM10  )nhourly_out=nhourly_out+5
-  case("MACC_EVA")
-    nhourly_out=4
-    nlevels_hourly = 1
-    if(DEBUG_PM10  )nhourly_out=nhourly_out+6
+! case("MACC_EVA")
+!   nhourly_out=4
+!   nlevels_hourly=1
+! case("MACC_NMC")
+!   nhourly_out=4
+!   nlevels_hourly=KMAX_MID     ! nb zero is *not* one of levels
+!   call CheckStop(.not.USE_AOD,"MACC_NMC hourly output needs USE_AOD")
+  case("MACC_EVA","MACC_NMC")  ! use hourly Derived output
+    nhourly_out=0
+    nlevels_hourly=0
+    return
   case("3DPROFILES")
     nhourly_out=2
     nlevels_hourly = 2  ! nb zero is one of levels in this system
@@ -302,7 +302,7 @@ subroutine set_output_defs
   case("TRENDS@12UTC")
     nhourly_out=3
     nlevels_hourly = KMAX_MID  ! nb zero is *not* one of levels
-  case default
+  case default  ! use hourly Derived output in the near future
     nhourly_out=1
     nlevels_hourly = 1  ! nb zero is *not* one of levels
   endselect
@@ -396,23 +396,12 @@ subroutine set_output_defs
       hr_out(j)=Asc2D(trim(name)//"_col","COLUMNgroup" ,igrp,&
            1,"ug/m2",1e0/3600.,-999.9)  ! 1kg/s --> 1kg/h
     enddo
-  case("MACC_NMC")
-    SELECT_LEVELS_HOURLY=.false.  ! do not select levels, get them all
-    hr_out(:)= (/ &
-      Asc2D("AOD_550nm" ,"D2D_inst",find_index("AOD_550nm",f_2d(:)%name),&
-           1             ,"",1.0,-9999.9),&
-      Asc2D("EXT_550nm" ,"D3D_inst",find_index("EXT_550nm",f_3d(:)%name),&
-           NLEVELS_HOURLY,"",1.0,-9999.9),&
-      Asc2D("PMFINE","BCVugXXgroup",find_index("PMFINE",chemgroups(:)%name),&
-           NLEVELS_HOURLY,"ug/m3",1.0,-9999.9),&
-      Asc2D("PM10" ,"BCVugXXgroup",find_index("PM10"   ,chemgroups(:)%name),&
-           NLEVELS_HOURLY,"ug/m3",1.0,-9999.9)/)
   case("MACC_ENS","FORECAST")
     levels_hourly = [0,1,2,3,4,6,9,10,12]
     pm25 =find_index("PMFINE"  ,chemgroups(:)%name) !NB There is no "PM25" group
     pm10 =find_index("PM10"    ,chemgroups(:)%name)
     nmvoc=find_index("NMVOC"   ,chemgroups(:)%name)
-    rn222=find_index("RN222"   ,species_adv(:)%name)
+    rn222=find_index("RN222"  ,species_adv(:)%name)
 !**               name     type     ofmt
 !**               ispec    ix1 ix2 iy1 iy2 nk sellev? unit conv  max
     j=15;hr_out(1:j) = (/&
@@ -481,56 +470,32 @@ subroutine set_output_defs
         enddo
       endif
     endif
-    if(DEBUG_PBL   )then
-      j=j+3;hr_out(j-2:j) = (/&
-      Asc2D("HMIX"     ,"D2D_inst",find_index("HMIX",f_2d(:)%name), &
-            1, "m",1.0,10000.0), &
-      Asc2D("USTAR_NWP","D2D_inst",find_index("USTAR_NWP",f_2d(:)%name), &
-            1, "m/s",1.0,-999.9), &
-      Asc2D("Kz_m2s"   ,"D2D_inst",find_index("Kz_m2s",f_2d(:)%name), &
-            1, "m2/s",1.0,-999.9)/)
-    endif
-    if(DEBUG_PM10  )then
-      j=j+5;hr_out(j-4:j) = (/&
-      Asc2D("sia_5km" ,"BCVugXXgroup",find_index("SIA"  ,chemgroups(:)%name),&
-            NLEVELS_HOURLY,"ug",1.0,-999.9),&
-      Asc2D("dust_5km" ,"BCVugXXgroup",find_index("DUST",chemgroups(:)%name),&
-            NLEVELS_HOURLY,"ug",1.0,-999.9),&
-      Asc2D("salt_5km","BCVugXXgroup",find_index("SS"   ,chemgroups(:)%name),&
-            NLEVELS_HOURLY,"ug",1.0,-999.9),&
-      Asc2D("ppm_5km" ,"BCVugXXgroup",find_index("PPM10",chemgroups(:)%name),&
-            NLEVELS_HOURLY,"ug",1.0,-999.9),&
-      Asc2D("fire_5km","BCVugXXgroup",find_index("PPM25_FIRE",chemgroups(:)%name),&
-            NLEVELS_HOURLY,"ug",1.0,-999.9)/)
-    endif
   case("MACC_EVA")
+    call CheckStop("set_output_defs: Use hourly Derived instead of "//trim(MY_OUTPUTS))
     levels_hourly = [0]
 !**         name     type     ofmt    ispec    
 !**         ix1 ix2 iy1 iy2 nk sellev? unit conv  max
     hr_out(:) = (/&
-      Asc2D("O3"  ,"D2D_inst",find_index("SURF_ug_O3"        ,f_2d(:)%name),&
+      Asc2D("O3"  ,"D2D_inst",find_index("SURF_ug_O3"       ,f_2d(:)%name),&
             1,"ug",1.0,-999.9),&
-      Asc2D("NO2" ,"D2D_inst",find_index("SURF_ug_NO2"       ,f_2d(:)%name),&
+      Asc2D("NO2" ,"D2D_inst",find_index("SURF_ug_NO2"      ,f_2d(:)%name),&
             1,"ug",1.0,-999.9),&
-      Asc2D("PM25","D2D_inst",find_index("SURF_ug_PM25X_rh50",f_2d(:)%name),&
+      Asc2D("PM25","D2D_inst",find_index("SURF_ug_PM25_rh50",f_2d(:)%name),&
             1,"ug",1.0,-999.9),&
-      Asc2D("PM10","D2D_inst",find_index("SURF_ug_PM10_rh50" ,f_2d(:)%name),&
+      Asc2D("PM10","D2D_inst",find_index("SURF_ug_PM10_rh50",f_2d(:)%name),&
             1,"ug",1.0,-999.9)/)
-    if(DEBUG_PM10  )then
-      j=j+6;hr_out(j-5:j) = (/&
-      Asc2D("PPM25","D2D_inst",find_index("SURF_ug_PPM25"    ,f_2d(:)%name),&
-            1,"ug",1.0,-999.9),&
-      Asc2D("PPM_C","D2D_inst",find_index("SURF_ug_PPM_C"    ,f_2d(:)%name),&
-            1,"ug",1.0,-999.9),&
-      Asc2D("SIA" ,"D2D_inst",find_index("SURF_ug_SIA"       ,f_2d(:)%name),&
-            1,"ug",1.0,-999.9),&
-      Asc2D("DUST","D2D_inst",find_index("SURF_ug_DUST"      ,f_2d(:)%name),&
-            1,"ug",1.0,-999.9),&
-      Asc2D("SALT","D2D_inst",find_index("SURF_ug_SS"        ,f_2d(:)%name),&
-            1,"ug",1.0,-999.9),&
-      Asc2D("FIRE","D2D_inst",find_index("SURF_ug_PPM25_FIRE",f_2d(:)%name),&
-            1,"ug",1.0,-999.9)/)
-    endif
+  case("MACC_NMC")
+    call CheckStop("set_output_defs: Use hourly Derived instead of "//trim(MY_OUTPUTS))
+    SELECT_LEVELS_HOURLY=.false.  ! do not select levels, get them all
+    hr_out(:)= (/ &
+      Asc2D("AOD_550nm" ,"D2D_inst",find_index("AOD_550nm",f_2d(:)%name),&
+           1             ,"",1.0,-9999.9),&
+      Asc2D("EXT_550nm" ,"D3D_inst",find_index("EXT_550nm",f_3d(:)%name),&
+           NLEVELS_HOURLY,"",1.0,-9999.9),&
+      Asc2D("PMFINE","BCVugXXgroup",find_index("PMFINE",chemgroups(:)%name),&
+           NLEVELS_HOURLY,"ug/m3",1.0,-9999.9),&
+      Asc2D("PM10" ,"BCVugXXgroup",find_index("PM10"   ,chemgroups(:)%name),&
+           NLEVELS_HOURLY,"ug/m3",1.0,-9999.9)/)
   case("IMPACT2C") ! Dave's starting set. Uses Out3D to get 3m and 45m concs.
     levels_hourly = (/ (i, i= 0,nlevels_hourly-1) /)  ! -1 will give surfac
     hr_out(:)= (/ &

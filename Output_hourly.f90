@@ -41,7 +41,8 @@ use My_Outputs_ml,    only: NHOURLY_OUT,    & ! No. outputs
 use CheckStop_ml,     only: CheckStop
 use Chemfields_ml,    only: xn_adv,xn_shl,cfac,PM25_water,PM25_water_rh50
 use ChemGroups_ml,    only: chemgroups
-use Derived_ml,       only: num_deriv2d,nav_2d,num_deriv3d,nav_3d ! D2D/D3D
+use Derived_ml,       only: num_deriv2d,nav_2d,LENOUT2D,& ! D2D
+                            num_deriv3d,nav_3d,LENOUT3D ! D3D
 use DerivedFields_ml, only: f_2d,d_2d,f_3d,d_3d       ! houtly output types
 use OwnDataTypes_ml,  only: Asc2D, Deriv
 use ChemSpecs,        only: NSPEC_SHL, species
@@ -55,7 +56,8 @@ use ModelConstants_ml,only: KMAX_MID, MasterProc, MY_OUTPUTS, &
 use MetFields_ml,     only: t2_nwp,th, q, roa, surface_precip, ws_10m ,rh2m,&
                             pzpbl, ustar_nwp, Kz_m2s, &
                             Idirect, Idiffuse, z_bnd, z_mid,ps
-use NetCDF_ml,        only: Out_netCDF, CloseNetCDF, Init_new_netCDF, fileName_hour, &
+use NetCDF_ml,        only: Out_netCDF, CloseNetCDF, Init_new_netCDF, &
+                            max_filename_length, fileName_iou, &
                             Int1, Int2, Int4, Real4, Real8  !Output data type to choose
 use OwnDataTypes_ml,  only: TXTLEN_DERIV,TXTLEN_SHORT
 use Par_ml,           only: LIMAX, LJMAX, GIMAX,GJMAX,        &
@@ -104,11 +106,11 @@ implicit none
 
   integer, allocatable, dimension(:), save :: navg ! D2D average counter
 
-  character(len=len(fileName_hour))      :: filename
-  character(len=len(fileName_hour)),save :: filename_old="no file"
+  character(len=max_filename_length) :: filename
   logical, save :: debug_flag      ! = ( MasterProc .and. DEBUG )
   logical       :: surf_corrected=.true.  ! to get 3m values
 
+  logical, parameter :: DxD_DEPRECATED=.true.
   character(len=*), parameter :: &
     SRF_TYPE(9)=(/"ADVppbv     ","ADVugXX     ","ADVugXXgroup",&
                   "COLUMN      ","COLUMNgroup ","D2D         ",&
@@ -139,9 +141,7 @@ implicit none
   endif  ! first_call
 
   filename=trim(runlabel1)//date2string(trim(HOURLYFILE_ending),current_date)
-  if(filename/=filename_old)then
-    filename_old=filename
-
+  if(filename/=filename_iou(IOU_3DHOUR))then
     if(debug_flag)&
       write(*,*) "DEBUG ",trim(HOURLYFILE_ending),"-Hourlyfile ",trim(filename)
   !! filename will be overwritten
@@ -482,10 +482,10 @@ implicit none
         endif
 
       case("theta")       ! No cfac for surf.variable; Skip Units conv.
-        forall(i=1:limax,j=1:ljmax) hourly(i,j) = th(i,j,KMAX_MID,1)
+        forall(i=1:limax,j=1:ljmax) hourly(i,j) = th(i,j,ik,1)
 
       case("sh")         ! No cfac for surf.variable; Skip Units conv.
-        forall(i=1:limax,j=1:ljmax) hourly(i,j) = q(i,j,KMAX_MID,1)
+        forall(i=1:limax,j=1:ljmax) hourly(i,j) = q(i,j,ik,1)
 
       case("PRECIP")      ! No cfac for surf.variable; Skip Units conv.
         forall(i=1:limax,j=1:ljmax) hourly(i,j) = surface_precip(i,j)
@@ -497,6 +497,8 @@ implicit none
         forall(i=1:limax,j=1:ljmax) hourly(i,j) = Idiffuse(i,j)
 
       case("D2D_inst")
+        call CheckStop(DxD_DEPRECATED,&
+          'Hourly_out: deprecated hourly type '//trim(hr_out(ih)%type))
        ! Here ispec is the index in the f_2d arrays
         call CheckStop(ispec<1.or.ispec>num_deriv2d,&
           "ERROR-DEF! Hourly_out: "//trim(hr_out(ih)%name)//", wrong D2D id!")
@@ -506,10 +508,9 @@ implicit none
         if(debug_flag) then
           i=debug_li
           j=debug_lj
-          write(*,"(2a,2i4,a,4g12.3)") "OUTHOUR "//trim(hr_out_type),&
+          write(*,"(2a,2i4,a,3g12.3)") "OUTHOUR "//trim(hr_out_type),&
             trim(hr_out(ih)%name), ih, ispec,trim(f_2d(ispec)%name),&
-            d_2d(ispec,i,j,[IOU_INST,IOU_YEAR,IOU_YEAR_LASTHH]),&
-            unit_conv
+            d_2d(ispec,i,j,[IOU_INST,IOU_YEAR]),unit_conv
         endif
         forall(i=1:limax,j=1:ljmax)
           hourly(i,j) = d_2d(ispec,i,j,IOU_INST) * unit_conv
@@ -519,6 +520,8 @@ implicit none
             hr_out(ih)%unitconv, hourly(debug_li,debug_lj)
 
       case("D3D_inst")
+        call CheckStop(DxD_DEPRECATED,&
+          'Hourly_out: deprecated hourly type '//trim(hr_out(ih)%type))
        ! Here ispec is the index in the f_3d arrays
         call CheckStop(ispec<1.or.ispec>num_deriv3d,&
           "ERROR-DEF! Hourly_out: "//trim(hr_out(ih)%name)//", wrong D3D id!")
@@ -528,10 +531,9 @@ implicit none
         if(debug_flag) then
           i=debug_li
           j=debug_lj
-          write(*,"(2a,2i4,a,4g12.3)") "OUTHOUR "//trim(hr_out_type),&
+          write(*,"(2a,2i4,a,3g12.3)") "OUTHOUR "//trim(hr_out_type),&
             trim(hr_out(ih)%name), ih, ispec,trim(f_3d(ispec)%name),&
-            d_3d(ispec,i,j,ik,[IOU_INST,IOU_YEAR,IOU_YEAR_LASTHH]),&
-            unit_conv
+            d_3d(ispec,i,j,ik,[IOU_INST,IOU_YEAR]),unit_conv
         endif
         forall(i=1:limax,j=1:ljmax)
           hourly(i,j) = d_3d(ispec,i,j,ik,IOU_INST) * unit_conv
@@ -541,6 +543,10 @@ implicit none
             hr_out(ih)%unitconv, hourly(debug_li,debug_lj)
 
       case("D2D_accum")
+        call CheckStop(DxD_DEPRECATED,&
+          'Hourly_out: deprecated hourly type '//trim(hr_out(ih)%type))
+        call CheckStop(LENOUT2D<IOU_YEAR_LASTHH,&
+          'Hourly_out: unsupported hourly type '//trim(hr_out(ih)%type))
        ! Here ispec is the index in the f_2d arrays
         call CheckStop(ispec<1.or.ispec>num_deriv2d,&
           "ERROR-DEF! Hourly_out: "//trim(hr_out(ih)%name)//", wrong D2D id!")
@@ -550,10 +556,9 @@ implicit none
         if(debug_flag) then
           i=debug_li
           j=debug_lj
-          write(*,"(2a,2i4,a,4g12.3)") "OUTHOUR "//trim(hr_out_type),&
+          write(*,"(2a,2i4,a,3g12.3)") "OUTHOUR "//trim(hr_out_type),&
             trim(hr_out(ih)%name), ih, ispec,trim(f_2d(ispec)%name),&
-            d_2d(ispec,i,j,[IOU_INST,IOU_YEAR,IOU_YEAR_LASTHH]),&
-            unit_conv
+            d_2d(ispec,i,j,[IOU_YEAR,IOU_YEAR_LASTHH]),unit_conv
         endif
         forall(i=1:limax,j=1:ljmax)
           hourly(i,j) = (d_2d(ispec,i,j,IOU_YEAR)&
@@ -565,6 +570,10 @@ implicit none
             hr_out(ih)%unitconv, hourly(debug_li,debug_lj)
 
       case("D3D_accum")
+        call CheckStop(DxD_DEPRECATED,&
+          'Hourly_out: deprecated hourly type '//trim(hr_out(ih)%type))
+        call CheckStop(LENOUT3D<IOU_YEAR_LASTHH,&
+          'Hourly_out: unsupported hourly type '//trim(hr_out(ih)%type))
        ! Here ispec is the index in the f_3d arrays
         call CheckStop(ispec<1.or.ispec>num_deriv3d,&
           "ERROR-DEF! Hourly_out: "//trim(hr_out(ih)%name)//", wrong D3D id!")
@@ -574,10 +583,9 @@ implicit none
         if(debug_flag) then
           i=debug_li
           j=debug_lj
-          write(*,"(2a,2i4,a,4g12.3)") "OUTHOUR "//trim(hr_out_type),&
+          write(*,"(2a,2i4,a,3g12.3)") "OUTHOUR "//trim(hr_out_type),&
             trim(hr_out(ih)%name), ih, ispec,trim(f_3d(ispec)%name),&
-            d_3d(ispec,i,j,ik,[IOU_INST,IOU_YEAR,IOU_YEAR_LASTHH]),&
-            unit_conv
+            d_3d(ispec,i,j,ik,[IOU_YEAR,IOU_YEAR_LASTHH]),unit_conv
         endif
         forall(i=1:limax,j=1:ljmax)
           hourly(i,j) = (d_3d(ispec,i,j,ik,IOU_YEAR)&
@@ -589,6 +597,10 @@ implicit none
             hr_out(ih)%unitconv, hourly(debug_li,debug_lj)
 
       case("D2D_mean")
+        call CheckStop(DxD_DEPRECATED,&
+          'Hourly_out: deprecated hourly type '//trim(hr_out(ih)%type))
+        call CheckStop(LENOUT2D<IOU_YEAR_LASTHH,&
+          'Hourly_out: unsupported hourly type '//trim(hr_out(ih)%type))
        ! Here ispec is the index in the f_2d arrays
         call CheckStop(ispec<1.or.ispec>num_deriv2d,&
           "ERROR-DEF! Hourly_out: "//trim(hr_out(ih)%name)//", wrong D2D id!")
@@ -605,10 +617,9 @@ implicit none
           endif
           i=debug_li
           j=debug_lj
-          write(*,"(a,2i4,a,4g12.3)"),&
+          write(*,"(a,2i4,a,3g12.3)"),&
             trim(hr_out(ih)%name), ih, ispec,trim(f_2d(ispec)%name),&
-            d_2d(ispec,i,j,[IOU_INST,IOU_YEAR,IOU_YEAR_LASTHH]),&
-            unit_conv
+            d_2d(ispec,i,j,[IOU_YEAR,IOU_YEAR_LASTHH]),unit_conv
         endif
         forall(i=1:limax,j=1:ljmax)
           hourly(i,j) = (d_2d(ispec,i,j,IOU_YEAR)&
@@ -620,6 +631,10 @@ implicit none
             hr_out(ih)%unitconv, hourly(debug_li,debug_lj)
 
       case("D3D_mean")
+        call CheckStop(DxD_DEPRECATED,&
+          'Hourly_out: deprecated hourly type '//trim(hr_out(ih)%type))
+        call CheckStop(LENOUT3D<IOU_YEAR_LASTHH,&
+          'Hourly_out: unsupported hourly type '//trim(hr_out(ih)%type))
        ! Here ispec is the index in the f_3d arrays
         call CheckStop(ispec<1.or.ispec>num_deriv3d,&
           "ERROR-DEF! Hourly_out: "//trim(hr_out(ih)%name)//", wrong D3D id!")
@@ -636,10 +651,9 @@ implicit none
           endif
           i=debug_li
           j=debug_lj
-          write(*,"(a,2i4,a,4g12.3)"),&
+          write(*,"(a,2i4,a,3g12.3)"),&
             trim(hr_out(ih)%name), ih, ispec,trim(f_3d(ispec)%name),&
-            d_3d(ispec,i,j,ik,[IOU_INST,IOU_YEAR,IOU_YEAR_LASTHH]),&
-            unit_conv
+            d_3d(ispec,i,j,ik,[IOU_YEAR,IOU_YEAR_LASTHH]),unit_conv
         endif
         forall(i=1:limax,j=1:ljmax)
           hourly(i,j) = (d_3d(ispec,i,j,ik,IOU_YEAR)&

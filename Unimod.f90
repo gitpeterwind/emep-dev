@@ -44,7 +44,7 @@ program myeul
        runlabel1,  &   ! explanatory text
        runlabel2,  &   ! explanatory text
        nterm,iyr_trend,    nmax,nstep ,                  &
-       IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY, &
+       IOU_INST,IOU_HOUR,IOU_HOUR_INST, IOU_YEAR,IOU_MON, IOU_DAY, &
        USES, USE_LIGHTNING_EMIS, &
        FORECAST       ! FORECAST mode
   use ModelConstants_ml,only: Config_ModelConstants,DEBUG
@@ -217,6 +217,8 @@ program myeul
        call Init_new_netCDF(trim(runlabel1)//'_fullrun.nc',IOU_YEAR)
   if (wanted_iou(IOU_INST)) &
        call Init_new_netCDF(trim(runlabel1)//'_inst.nc',IOU_INST)
+  if (wanted_iou(IOU_HOUR_INST)) &
+     call Init_new_netCDF(trim(runlabel1)//'_hourInst.nc',IOU_HOUR_INST)
   if (wanted_iou(IOU_HOUR)) &
      call Init_new_netCDF(trim(runlabel1)//'_hour.nc',IOU_HOUR)
   if (wanted_iou(IOU_DAY)) &
