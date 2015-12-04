@@ -4,7 +4,7 @@
 !     Included by  ForestFire_ml 
 !-------------------------------------------------------------------------!
   character(len=*), public, parameter :: &
-     BiomassBurningMapping = "GFEDtoEmChem09"
+     BiomassBurningMapping = "GFEDtoEmChem09soa"
   integer, private, parameter :: &
     NBB_DEFS  = 15 & ! No mapping lines below
    ,NEMEPSPECS  = 13 !& ! No EMEP chemical mech specs used

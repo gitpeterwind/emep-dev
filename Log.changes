@@ -155,7 +155,16 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-4rd December 2015 Alvaro 3099
+4rd December 2015 Alvaro, Svetlana 3099-3100
+
+Makefile:
+- Add HTAP compilation target. Like EMEP, but with GFED forest fires.
+- Fix GFAS forest fire version. Set MACC targets tu use GFASv1.
+  On 3018 MACC targets were wrongly set to GFASv1.5.
+
+ZCM_EmChem09soa/BiomassBurning_*_to_EmChem09soa.inc,
+ZCM_EmChem09ecom/BiomassBurning_*_to_EmChem09ecom.inc:
+- Correct BiomassBurningMapping parameter to inlcude soa/ecom.
 
 GridValues_ml,NetCDF_ml,Sites_ml,PointSource_ml:
 - Integer interfdace for lb2ij, offering a consistent rounding for coordinates

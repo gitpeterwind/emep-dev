@@ -117,7 +117,7 @@ touchdepend:
 # Model/Config specific targets
 ###
 # My_* files pre-requisites
-EMEP MACC MACC-EVA: \
+EMEP HTAP MACC MACC-EVA: \
 	  ./ZD_OZONE/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
 	  ./ZD_VBS/My_SOA_ml.f90 \
 	  ./ZD_3DVar/My_3DVar_ml.f90 ./ZD_Pollen/My_Pollen_ml.f90 \
@@ -148,7 +148,7 @@ EmChem09-ESX: SRCS := $(filter-out My_ESX_ml.f90,$(SRCS)) $(ESX_SRCS)
 EmChem09-ESX: $(ESX_SRCS) | depend
 
 # Link My_* files and MAKE target
-EMEP SR-EMEP EmChem09 EmChem09-ESX CRI_v2_R5 MACC MACC-EVA SR-MACC eEMEP:
+EMEP SR-EMEP HTAP EmChem09 EmChem09-ESX CRI_v2_R5 MACC MACC-EVA SR-MACC eEMEP:
 	ln -sf $(filter %.f90 %.inc,$+) . && $(MAKE)
 
 # GenChem config
@@ -157,7 +157,7 @@ EMEP:               GenChem-EMEP-EmChem09soa
 SR-EMEP:            GenChem-SR-EMEP-EmChem09soa
 EmChem09 CRI_v2_R5: GenChem-EMEP-$$@
 EmChem09-ESX:       GenChem-EMEP-EmChem09
-MACC SR-MACC:       GenChem-$$@-EmChem09soa
+HTAP MACC SR-MACC:  GenChem-$$@-EmChem09soa
 MACC-EVA:           GenChem-MACCEVA-EmChem09soa
 eEMEP:              GenChem-$$@-Emergency
 eEMEP ?= Emergency  # Emergency | AshInversion
@@ -167,10 +167,11 @@ GenChem%:
 GenChem-%:          GenChemOptions += -r $(lastword $(subst -, ,$*))
 GenChem-EMEP-%:     GenChemOptions += -f FINNv1.5 -e SeaSalt,Dust,Isotopes
 GenChem-SR-EMEP-%:  GenChemOptions += -f FINNv1.5 -e none
-GenChem-MACC-%:     GenChemOptions += -f GFASv1.5 -e SeaSalt,Dust,Pollen
-GenChem-SR-MACC-%:  GenChemOptions += -f GFASv1.5 -e none
-GenChem-MACCEVA-%:  GenChemOptions += -f GFASv1.5 -e SeaSalt,Dust
-GenChem-eEMEP-%:    GenChemOptions += -f GFASv1 -e SeaSalt,Dust
+GenChem-HTAP-%:     GenChemOptions += -f GFED     -e SeaSalt,Dust,Isotopes
+GenChem-MACC-%:     GenChemOptions += -f GFASv1   -e SeaSalt,Dust,Pollen
+GenChem-SR-MACC-%:  GenChemOptions += -f GFASv1   -e none
+GenChem-MACCEVA-%:  GenChemOptions += -f GFASv1   -e SeaSalt,Dust
+GenChem-eEMEP-%:    GenChemOptions += -f GFASv1   -e SeaSalt,Dust
 GenChem-eEMEP-%:    $$(eEMEP)
 
 # eEMP Default Scenarios: Vents, NPPs & NUCs

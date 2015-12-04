@@ -4,7 +4,7 @@
 !-------------------------------------------------------------------------!
 
   character(len=*), public, parameter :: &
-      BiomassBurningMapping = "FINNv1toEmChem09"
+      BiomassBurningMapping = "FINNv1toEmChem09ecom"
   integer, private, parameter :: &
     NBB_DEFS  = 19 & ! No mapping lines below
    ,NEMEPSPECS  = 15   ! No EMEP chemical mech specs used

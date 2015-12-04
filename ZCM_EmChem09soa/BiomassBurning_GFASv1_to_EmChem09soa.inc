@@ -4,7 +4,7 @@
 !-------------------------------------------------------------------------!
 
   character(len=*), public, parameter :: &
-    BiomassBurningMapping = "GFASv1toEmChem09"
+    BiomassBurningMapping = "GFASv1toEmChem09soa"
   integer, private, parameter :: &
     NBB_DEFS   = 25-2, & ! No mapping lines below
     NEMEPSPECS = 20-1    ! No EMEP chemical mech specs used
