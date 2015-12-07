@@ -4074,30 +4074,35 @@ subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read)
       TimesInDays(i)=diff_1900+hh/24.0
       if(DEBUG_NETCDF)write(*,*)'time ',yyyy,mo,dd,hh
     enddo
+  else if (trim(timeunit)=='month')then
+     !used for files with only 12 monthly values, without year
+     forall(i=1:NTime_Read) &
+     TimesInDays(i) = 30*(times(i)-1)+15
   else
-    !must be of the form " xxxx since yyyy-mm-dd hh:mm:ss"
+     !must be of the form " xxxx since yyyy-mm-dd hh:mm:ss"
+     
+     !    read(timeunit,fmt="(a,a,a,a)")period,since,date,time
+     call wordsplit(trim(timeunit),wordarraysize,wordarray,nwords,errcode,separator='-')
+     if(DEBUG_NETCDF.and.MasterProc)&
+          write(*,*)"time@units:",(" ",trim(wordarray(i)),i=1,8)
+     period=wordarray(1)
+     since=wordarray(2)
+     call CheckStop(since/='since',"since error "//trim(since))
+     
+     read(wordarray(3),*)yyyy
+     read(wordarray(4),*)mo
+     read(wordarray(5),*)dd
+     read(wordarray(6),*)hh
+     !read(wordarray(7),*)mi
+     !read(wordarray(8),*)ss  !did not work ???
+     mi=0
+     ss=0
+     
+     calendar='unknown'
 
-    !    read(timeunit,fmt="(a,a,a,a)")period,since,date,time
-    call wordsplit(trim(timeunit),wordarraysize,wordarray,nwords,errcode,separator='-')
-    if(DEBUG_NETCDF.and.MasterProc)&
-      write(*,*)"time@units:",(" ",trim(wordarray(i)),i=1,8)
-    period=wordarray(1)
-    since=wordarray(2)
-    call CheckStop(since/='since',"since error "//trim(since))
-
-    read(wordarray(3),*)yyyy
-    read(wordarray(4),*)mo
-    read(wordarray(5),*)dd
-    read(wordarray(6),*)hh
-   !read(wordarray(7),*)mi
-   !read(wordarray(8),*)ss  !did not work ???
-    mi=0
-    ss=0
-
-    calendar='unknown'
-    status=nf90_get_att(ncFileID, VarID, "calendar", calendar )
-    proleptic_gregorian=(status==nf90_noerr).and.(calendar=='proleptic_gregorian')
-    if(proleptic_gregorian.and.DEBUG_NETCDF.and.MasterProc)&
+     status=nf90_get_att(ncFileID, VarID, "calendar", calendar )
+     proleptic_gregorian=(status==nf90_noerr).and.(calendar=='proleptic_gregorian')
+     if(proleptic_gregorian.and.DEBUG_NETCDF.and.MasterProc)&
       write(*,*)'found proleptic_gregorian calendar'
 
     if(yyyy/=0.or.proleptic_gregorian)then
@@ -4127,6 +4132,7 @@ subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read)
         forall(i=1:NTime_Read) &
           TimesInDays(i)=diff_1900+(times(i)+ss)/(3600.0*24.0)
       case('month')!used for files with only 12 monthly values, without year
+        forall(i=1:NTime_Read) &
            TimesInDays(i) = 30*(times(i)-1)+15
       case default
         call StopAll("ReadTimeCDF, time unit not recognized: "//trim(period))

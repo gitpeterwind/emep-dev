@@ -7,7 +7,7 @@ module Emissions_ml
 
 use Biogenics_ml,     only: SoilNOx, AnnualNdep
 use CheckStop_ml,     only: CheckStop,StopAll
-use ChemSpecs,        only: NSPEC_SHL, NSPEC_TOT,NO2, species
+use ChemSpecs,        only: NSPEC_SHL, NSPEC_TOT,NO2, SO2,species
 use Country_ml,       only: MAXNLAND,NLAND,Country,IC_NAT,IC_FI,IC_NO,IC_SE
 use Country_ml,       only: EU28,EUMACC2 !CdfSnap
 use EmisDef_ml,       only: &
@@ -266,9 +266,6 @@ contains
     if(.not.allocated(fac_min))allocate(fac_min(NLAND,NSECTORS,NEMIS_FILE))
     if(.not.allocated(fac_edd))allocate(fac_edd(NLAND, 7,NSECTORS,NEMIS_FILE))
 
-    IX_SO2=find_index("sox",EMIS_FILE(:))
-   
-
     ! The GEA emission data, which is used for EUCAARI runs on the HIRHAM
     ! domain have in several sea grid cells non-zero emissions in other sectors
     ! than SNAP8 and there are also NH3 emission over sea areas. The former 
@@ -336,6 +333,11 @@ contains
          fac_min(inland,insec,iemis) = minval(fac_emm(inland,:,insec,iemis))
     if(INERIS_SNAP2) & !  INERIS do not use any base-line for SNAP2
          fac_min(:,ISNAP_DOM,:) = 0.
+
+
+
+    IX_SO2=find_index("sox",EMIS_FILE(:))
+    IX_SO2=iqrc2itot(IX_SO2)
 
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     ! c4b) Set up DMS factors here - to be used in newmonth
@@ -1482,6 +1484,7 @@ subroutine newmonth
      if(MasterProc)write(*,*) 'Reading DMS emissions from ',trim(fname)
      needed_found=.false.
      call ReadField(IO_DMS,fname,rdemis,needed_found)
+
      if(needed_found)then
         errcode = 0
         dms_sum=0.0
@@ -1687,7 +1690,6 @@ subroutine newmonth
              nstart=current_date%month,interpol='conservative',known_projection="lon lat",&
              needed=.true.,debug_flag=.false.,UnDef=0.0)
  
-
         !diagnostics:
         !call printcdf('OceanNH3',OceanNH3,'kg/m2/s')
         !convert from kg/m2/s into kg/month/subdomain
@@ -1704,7 +1706,7 @@ subroutine newmonth
         sumNH3_OCEAN_month=sumNH3_OCEAN_month*1e-6 !kg->Gg
 
         USE_OCEAN_NH3=.true.
-        if(me==0)write(*,*)'Total monthly NH3 from Oceans (in Gg) ',sumNH3_OCEAN_month*1e-6
+        if(me==0)write(*,*)'Total monthly NH3 from Oceans (in Gg) ',sumNH3_OCEAN_month
         sumNH3_OCEAN_year = sumNH3_OCEAN_year + sumNH3_OCEAN_month!total for all month
 
      else if(emis_inputlist(iemislist)%type == 'DMS')then
@@ -1712,6 +1714,7 @@ subroutine newmonth
         call ReadField_CDF(emis_inputlist(iemislist)%name,'DMS_sea',DMS,&
              nstart=current_date%month,interpol='conservative',known_projection="lon lat",&
              needed=.true.,debug_flag=.false.,UnDef=0.0)
+
         !diagnostics:
         !call printcdf('DMS',DMS,'nanomol/liter')
         !convert from nanomol/liter into kg/month/gridrute. Molar mass of dms is 62.1340 g/mol
