@@ -16,7 +16,9 @@ use ChemGroups_ml,       only: PM10_GROUP, PMFINE_GROUP, SIA_GROUP, SS_GROUP, DU
 use CheckStop_ml,        only:  CheckStop, StopAll
 use ColumnSource_ml,     only: ColumnRate
 use DerivedFields_ml,    only: d_2d, f_2d
-use EmisDef_ml,          only:  gridrcemis, gridrcroadd, KEMISTOP,Emis_4D,N_Emis_4D,Found_Emis_4D
+use EmisDef_ml,          only:  gridrcemis, gridrcroadd, KEMISTOP,Emis_4D,N_Emis_4D,Found_Emis_4D&
+                                ,OceanNH3,DMS,sumSO2_OCEAN_month,sumSO2_OCEAN_year&
+                                ,sumNH3_OCEAN_month,sumNH3_OCEAN_year,IX_SO2
 use EmisGet_ml,          only:  nrcemis, iqrc2itot  !DSRC added nrcemis
 use Emissions_ml,        only:  SumSplitEmis
 use ForestFire_ml,       only: Fire_rcemis, burning
@@ -31,9 +33,9 @@ use GridValues_ml,       only:  xmd, GridArea_m2, &
 use Io_Progs_ml,         only: datewrite !MASS
 use LocalVariables_ml,   only: Grid
 use MassBudget_ml,       only: totem    ! sum of emissions
-use MetFields_ml,        only: ps
+use MetFields_ml,        only: ps,sst
 use MetFields_ml,        only: roa, th, q, t2_nwp, cc3dmax, &
-                               zen, Idirect, Idiffuse,z_bnd
+                               zen, Idirect, Idiffuse,z_bnd,ws_10m
 use ModelConstants_ml,   only:  &
    DEBUG,DEBUG_MASS             &
   ,AERO                         & ! for wet radii and surf area.
@@ -46,6 +48,7 @@ use ModelConstants_ml,   only:  &
   ,USE_SEASALT                  &
   ,USE_LIGHTNING_EMIS, USE_AIRCRAFT_EMIS      &
   ,USE_GLOBAL_SOILNOX, USE_DUST, USE_ROADDUST &
+  ,USE_OCEAN_NH3,USE_OCEAN_DMS,FOUND_OCEAN_DMS&
   ,VOLCANO_SR                   & ! Reduce Volcanic Emissions
   ,emis_inputlist               & ! Used in EEMEP
   ,KMAX_MID ,KMAX_BND, KCHEMTOP   ! Start and upper k for 1d fields
@@ -53,7 +56,7 @@ use My_Derived_ml,       only: EmisSplit_OUT
 use Landuse_ml,          only: water_fraction, ice_landcover
 use Par_ml,              only: me, & 
                                gi0,gi1,gj0,gj1,IRUNBEG,JRUNBEG
-use PhysicalConstants_ml,only: ATWAIR, AVOG, PI, GRAV
+use PhysicalConstants_ml,only: ATWAIR, AVOG, PI, GRAV, T0
 use Radiation_ml,        only: PARfrac, Wm2_uE
 use Setup_1dfields_ml,   only: &
    xn_2d                &  ! concentration terms
@@ -434,17 +437,19 @@ subroutine setup_rcemis(i,j)
 !    DESCRIPTION:
 !    Extracts emissions in column from gridrcemis, for input to chemistry
 !    routines. Results in "rcemis" array
+!    units of rcemis are molecule/cm3/s
 !-------------------------------------------------------------------
   !-- arguments
   integer, intent(in) ::  i,j     ! coordinates of column
 
   !  local
   integer ::  iqrc,k, itot
-  real    :: fac, eland   ! for Pb210  - emissions from land
+  real    :: Kw,fac, eland   ! for Pb210  - emissions from land
 
   integer ::  i_help,j_help,i_l,j_l, i_Emis_4D,n
   logical, save     :: first_call = .true. 
   character(len=13) :: dtxt="setup_rcemis:"
+  real :: SC_DMS,SC_DMS_m23,SC_DMS_msqrt,SST_C
 
   if(first_call)then
     inat_RDF = find_index( "DUST_ROAD_F", EMIS_BioNat(:) )
@@ -503,6 +508,48 @@ subroutine setup_rcemis(i,j)
     rcemis(NO,KMAX_MID)=rcemis(NO,KMAX_MID)+SoilNOx(i,j)
   endif
 
+
+  if(USE_OCEAN_NH3)then
+     !keep separated from snapemis/rcemis in order to be able to include more advanced processes
+     k=KMAX_MID
+     !convert from kg/m2/s into molecules/cm3/s . 
+     !kg->g=1000 , /m3->/cm3=1e-6 , 1000*1e-6=0.001
+     
+     rcemis(NH3,k)=rcemis(NH3,k)+OceanNH3(i,j)*0.001*AVOG/species(NH3)%molwt*(GRAV*roa(i,j,k,1))/(dA(k)+dB(k)*ps(i,j,1))
+  endif
+
+  if(FOUND_OCEAN_DMS)then!temporarily always compute budgets if file found
+     !keep separated from snapemis/rcemis in order to be able to include more advanced processes
+     k=KMAX_MID
+     !convert from mol/cm3 into molecules/cm3/s . 
+     !Kw in cm/hour after Leonor Tarrason (1995), after Liss and Merlivat (1986)
+     !assumes 20 degrees C
+!NB: misprint in gbc1385.pdf!
+     SST_C=(SST(i,j,1)-T0) !the formula uses degrees C
+     SC_DMS=2674 -147.12*SST_C + 3.726*SST_C*SST_C - 0.038 * SST_C*SST_C*SST_C
+     SC_DMS=SC_DMS/600.0
+     SC_DMS_m23=SC_DMS**(2.0/3.0)
+     SC_DMS_msqrt=sqrt(1./SC_DMS)
+     if(ws_10m(i,j,1)<=3.6)then
+        Kw=0.17*ws_10m(i,j,1)*SC_DMS_m23
+     elseif(ws_10m(i,j,1)<=13.0)then
+        Kw=0.17*ws_10m(i,j,1)*SC_DMS_m23+2.68*(ws_10m(i,j,1)-3.6)*SC_DMS_msqrt
+     else
+        Kw=0.17*ws_10m(i,j,1)*SC_DMS_m23+2.68*(ws_10m(i,j,1)-3.6)*SC_DMS_msqrt+3.05*(ws_10m(i,j,1)-13)*SC_DMS_msqrt
+     endif
+     Kw=Kw/3600!cm/hour -> cm/s
+!66% of DMS turns into SO2, Leonor Tarrason (1995)
+     if(IX_SO2>0.and.USE_OCEAN_DMS)then
+      rcemis(IX_SO2,k)=rcemis(IX_SO2,k)+0.66*DMS(i,j)*Kw*0.01*GRAV*roa(i,j,k,1)/(dA(k)+dB(k)*ps(i,j,1)) *AVOG 
+     endif
+     !in g . Multiply by dz(in cm)  * dx*dx (in cm2) * molwgt(SO2) /AVOG  . (dz/AVOG just removed from above) 
+     !g->Gg = 1.0E-9
+     sumSO2_OCEAN_month=sumSO2_OCEAN_month+0.66*DMS(i,j)*Kw *1.e4*xmd(i,j)*gridwidth_m*gridwidth_m*dt_advec *64.0*1.0E-9
+
+  endif
+
+
+
   if(Found_Emis_4D>0)then
      do i_Emis_4D=1,N_Emis_4D
         if(emis_inputlist(Found_Emis_4D)%pollemepName(i_Emis_4D)=='NOTSET')exit
@@ -529,6 +576,8 @@ subroutine setup_rcemis(i,j)
 !       amk(k) = roa(i,j,k,1) * to_number_cm3  ! molecules air/cm3
     end if
   end do
+
+
 
 
   if(EmisSplit_OUT)then

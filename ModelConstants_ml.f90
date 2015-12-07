@@ -120,11 +120,13 @@ type(emep_debug), public, save :: DEBUG
   !/ Emissions file treatment. Dims more than used.
   type, public :: emis_in
     character(len=150) :: name = "NOTSET" ! e.g. POD1_IAM_DF
-    integer :: Nlist=0, Nincl=0, Nexcl=0
+    integer :: Nincl=0, Nexcl=0
     character(len=10), dimension(90) ::  incl = "-"
     character(len=10), dimension(90) ::  excl = "-"
     character(len=40), dimension(20) ::  pollName = "NOTSET"
     character(len=40), dimension(20) ::  pollemepName = "NOTSET"
+    character(len=40) ::  periodicity = "once" !How often new data should be read in
+    character(len=40) ::  type = "sectors" !steers special treatments
   endtype emis_in
   type(emis_in), public, dimension(5) :: emis_inputlist = emis_in()
 
@@ -186,6 +188,10 @@ integer, public, save :: &
    ,USE_GLOBAL_SOILNOX    = .false.    & ! Need to design better switch
    ,USE_SOILNOX           = .true.       ! DO NOT ALTER: Set after config
   real, public, save :: EURO_SOILNOX_DEPSCALE = 1.0 ! 
+
+  logical, public, save ::  USE_OCEAN_DMS = .false. !YOU must set this true to use the new scheme instead of old
+  logical, public, save ::  FOUND_OCEAN_DMS = .false. !set automatically true if found
+  logical, public, save ::  USE_OCEAN_NH3 = .false. !set automatically true if found
 
 ! Methane background. 
   real, public, save :: BGND_CH4 = -1  ! -1 gives defaults in BoundaryConditions_ml, 

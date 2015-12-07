@@ -4126,6 +4126,8 @@ subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read)
       case('seconds')
         forall(i=1:NTime_Read) &
           TimesInDays(i)=diff_1900+(times(i)+ss)/(3600.0*24.0)
+      case('month')!used for files with only 12 monthly values, without year
+           TimesInDays(i) = 30*(times(i)-1)+15
       case default
         call StopAll("ReadTimeCDF, time unit not recognized: "//trim(period))
       endselect

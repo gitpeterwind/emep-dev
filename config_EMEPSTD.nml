@@ -69,6 +69,13 @@
 !*** Special Cases ***
 !**#######################################################
 !
+!Ocean emissions testing
+!  emis_inputlist(2)%name  = 'EmisDir/geia_emissions_nh3_ocean_0.5x0.5.nc',    ! Ocean NH3
+!  emis_inputlist(2)%type  = 'OceanNH3',    ! Needs ad-hoc treatment
+!  emis_inputlist(3)%name  = 'EmisDir/DMS.nc',    !Global DMS in Oceans
+!  emis_inputlist(3)%type  = 'DMS',    ! Needs ad-hoc treatment
+
+!
 !******one can either include or exclude, not both
 !
 !*** Only recognised country group now is EUMACC2 (more can be defined in Emissions_ml.f90)
