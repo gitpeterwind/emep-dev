@@ -198,7 +198,7 @@ contains
        endif
        if(MasterProc)write(*,*)'reading domain sizes from ',trim(filename)
 
-       call GetFullDomainSize(filename,IIFULLDOM,JJFULLDOM,KMAX_MET,Pole_Singular,projection)
+       call GetFullDomainSize(filename,IIFULLDOM,JJFULLDOM,KMAX_MET,METSTEP,Pole_Singular,projection)
 
        KMAX_MID=0!initialize
        filename_vert='Vertical_levels.txt'
@@ -278,7 +278,7 @@ contains
 
 
 
-  subroutine GetFullDomainSize(filename,IIFULLDOM,JJFULLDOM,KMAX,Pole_Singular,projection)
+  subroutine GetFullDomainSize(filename,IIFULLDOM,JJFULLDOM,KMAX,METSTEP,Pole_Singular,projection)
 
     !
     ! Get input grid sizes 
@@ -287,7 +287,7 @@ contains
     implicit none
 
     character (len = *), intent(in) ::filename
-    integer, intent(out):: IIFULLDOM,JJFULLDOM,KMAX,Pole_Singular
+    integer, intent(out):: IIFULLDOM,JJFULLDOM,KMAX,Pole_Singular,METSTEP
     character (len = *), intent(out) ::projection
 
     integer :: status,ncFileID,idimID,jdimID, kdimID,timeDimID,varid,timeVarID
@@ -417,8 +417,24 @@ contains
           endif
           deallocate(latitudes)
        endif
+
+       !find METSTEP (checked also in first meteo read)
+       status=nf90_inq_dimid(ncid=ncFileID,name="time",dimID=timedimID)
+       if(status/=nf90_noerr)then
+          status=nf90_inq_dimid(ncid=ncFileID,name="Time",dimID=timedimID)! WRF
+          if(status/=nf90_noerr)then
+             write(*,*)'time variable not found assuming 8 records'
+             Nhh=8
+          else
+             call check(nf90_inquire_dimension(ncid=ncFileID,dimID=timedimID,len=Nhh))
+          endif
+       endif
+       METSTEP=24/Nhh
+       write(*,*)'METSTEP set to ',METSTEP,' hours'
        call check(nf90_close(ncFileID))       
     endif
+
+    CALL MPI_BCAST(METSTEP ,4,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
     CALL MPI_BCAST(USE_WRF_MET_NAMES ,1,MPI_LOGICAL,0,MPI_COMM_WORLD,INFO)
     CALL MPI_BCAST(IIFULLDOM ,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
     CALL MPI_BCAST(JJFULLDOM ,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)

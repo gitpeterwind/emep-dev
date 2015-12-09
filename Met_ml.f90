@@ -3018,14 +3018,14 @@ subroutine Check_Meteo_Date
              call CheckStop(60*(nint(Xminutes(2)-Xminutes(1))/60)/=nint(Xminutes(2)-Xminutes(1)),&
                   "Met_ml: METSTEP in hours must be an integer")
              METSTEP=nint(Xminutes(2)-Xminutes(1))/60
-             if(MasterProc)write(*,*)'METSTEP set to', METSTEP,' hours'      
+             if(MasterProc)write(*,*)'METSTEP reset to', METSTEP,' hours'      
           endif
           goto 777
        endif
     endif
     call check(nf90_inq_varid(ncid=ncFileID,name="time",varID=timeVarID))
     call check(nf90_inquire_dimension(ncid=ncFileID,dimID=timedimID,len=Nhh))
-    call CheckStop(24/Nhh,METSTEP,"Met_ml: METSTEP != meteostep")
+    call CheckStop(24/Nhh,METSTEP,"Met_ml: METSTEP inconsistent with number of records")
     call check(nf90_get_att(ncFileID,timeVarID,"units",timeunit))
     date_in_days=(trim(timeunit(1:19))==trim("days since 1900-1-1"))
 
