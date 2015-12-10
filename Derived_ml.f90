@@ -572,13 +572,13 @@ subroutine Define_Derived()
   if(USE_OCEAN_DMS)then
     dname = "Emis_mgm2_DMS"
     call AddNewDeriv( dname, "Emis_mgm2_DMS", "-", "-", "mg/m2", &
-                       ind , -99, T,  1.0e6,  F,  IOU_DAY )
+                       ind , -99, T,  1.0,  T,  IOU_DAY )
   endif
 !Splitted total emissions (inclusive Natural)
   do ind=1,nrcemis
     dname = "EmisSplit_mgm2_"//trim(species(iqrc2itot(ind))%name)
     call AddNewDeriv(dname, "EmisSplit_mgm2", "-", "-", "mg/m2", &
-                        ind , -99, T, 1.0,   F,  IOU_DAY )
+                        ind , -99, T, 1.0e6,   F,  IOU_DAY )
   enddo
 
   call AddNewDeriv("SURF_PM25water", "PM25water", "-", "-", "-", &
