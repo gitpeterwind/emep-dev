@@ -136,7 +136,7 @@ real, private, allocatable, dimension(:,:,:,:), save :: &
 
 ! We store the emissions for output to d_2d files and netcdf in kg/m2/s
 real, public, allocatable, dimension(:,:,:), save :: SumSnapEmis,SumSplitEmis
-real, public, save  ::    sumDMS = 0.0, sumDMS_month = 0.0 
+real, public, save  ::   sumDMS_month = 0.0 
 
 logical, save, private  :: first_dms_read
 
@@ -1726,13 +1726,11 @@ subroutine newmonth
         ! USE_OCEAN_DMS=.true.
         FOUND_OCEAN_DMS=.true.
 
-
-        if(me==0)write(*,*)'Total monthly DMS (in kg in 1 mm layer) ',62.1340*sumDMS_month*1e-9*1e-3
+        if(me==0)write(*,*)'Total monthly DMS in water (in kg in 1 mm layer) ',62.1340*sumDMS_month*1e-9*1e-3
         
         !from nanomol/l -> mol/cm3
         DMS=DMS*1.0e-12
 
-        sumDMS=sumDMS + sumDMS_month!total for all month
      else !
         call StopAll("Monthly emission type not implemented "//trim(emis_inputlist(iemislist)%type))
      endif
