@@ -6,8 +6,7 @@ module   MassBudget_ml
 use CheckStop_ml,       only: CheckStop
 use ChemSpecs,          only: NSPEC_ADV, NSPEC_SHL, species_adv
 use Chemfields_ml,      only: xn_adv        ! advected species
-use EmisDef_ml,       only: DMS_emis_month, DMS_emis_year &
-                            ,DMS_natso2_month, DMS_natso2_year,sumSO2_OCEAN_month&
+use EmisDef_ml,       only: DMS_natso2_month, DMS_natso2_year,sumSO2_OCEAN_month&
                             ,sumSO2_OCEAN_year,sumNH3_OCEAN_month,sumNH3_OCEAN_year
 use GridValues_ml,      only: xmd, &  
                               gridwidth_m,dA,dB,debug_proc,debug_li,debug_lj
@@ -368,8 +367,6 @@ subroutine massbudget()
   if(FOUND_OCEAN_DMS)then
      !DMS emissions
      ! update dms budgets
-     CALL MPI_ALLREDUCE(MPI_IN_PLACE, DMS_emis_month, 1,&
-          MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
      CALL MPI_ALLREDUCE(MPI_IN_PLACE, sumSO2_OCEAN_month, 1,&
           MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
      !natso2 already allreduced
@@ -377,8 +374,6 @@ subroutine massbudget()
      if(MasterProc)then
         write(*,59)'SO2 from ocean DMS cdf file last month ',sumSO2_OCEAN_month
         write(*,59)'SO2 from natso2.dat last month',DMS_natso2_month
-        DMS_emis_year=DMS_emis_year+DMS_emis_month
-        DMS_emis_month=0.0
         
         DMS_natso2_year=DMS_natso2_year+DMS_natso2_month
         DMS_natso2_month=0.0
@@ -387,7 +382,6 @@ subroutine massbudget()
         
 59      format(A,6F14.5)
         write(*,*)'DMS OCEAN emissions '
-        write(*,59)'DMS from ocean cdf file (not really meaningfull unit) ',DMS_emis_year,sumSO2_OCEAN_year/DMS_emis_year
         write(*,59)'SO2 from ocean DMS cdf file ',sumSO2_OCEAN_year
         write(*,59)'SO2 from natso2.dat ',DMS_natso2_year
         write(*,59)'fraction new/old method',sumSO2_OCEAN_year/DMS_natso2_year

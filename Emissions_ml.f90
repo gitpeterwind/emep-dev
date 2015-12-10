@@ -32,8 +32,8 @@ use EmisDef_ml,       only: &
      ,nlandcode,landcode,flat_nlandcode,flat_landcode&
      ,road_nlandcode,road_landcode&
      ,gridrcemis,gridrcemis0,gridrcroadd,gridrcroadd0&
-     ,OceanNH3,DMS,DMS_emis_month, DMS_emis_year,sumSO2_OCEAN_month,sumSO2_OCEAN_year &
-     ,DMS_natso2_month, DMS_natso2_year,sumNH3_OCEAN_month,sumNH3_OCEAN_year&
+     ,OceanNH3,DMS,sumSO2_OCEAN_month,sumSO2_OCEAN_year &
+     ,DMS_natso2_month, DMS_natso2_year,sumNH3_OCEAN_month,sumNH3_OCEAN_year,DMS_map&
      ,Emis_4D,N_Emis_4D,Found_Emis_4D & !used for EEMEP 
      ,KEMISTOP&
      ,MAXFEMISLONLAT,N_femis_lonlat,IX_SO2
@@ -580,7 +580,9 @@ contains
              if(NTime_Read==12)then
                 emis_inputlist(iemislist)%periodicity = "monthly"
                 allocate(DMS(LIMAX,LJMAX))
-              if(me==0)write(*,*)' found DMS monthly'    
+                allocate(DMS_map(LIMAX,LJMAX))
+                DMS_map=0.0
+                if(me==0)write(*,*)' found DMS monthly'    
             else
                 call StopAll("Yearly DMS not implemented")
              endif
@@ -1454,30 +1456,21 @@ subroutine newmonth
      ! We have so2 emission so need DMS also
      if(.not.first_call)then
         !write some diagnostic for the past month emissions
-        CALL MPI_ALLREDUCE(MPI_IN_PLACE, DMS_emis_month, 1,&
-             MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
         CALL MPI_ALLREDUCE(MPI_IN_PLACE, sumSO2_OCEAN_month, 1,&
              MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
         if(MasterProc)then
 59      format(A,6F14.5)
         write(*,*)'DMS OCEAN emissions '
-        write(*,59)'DMS from ocean cdf file (not really meaningfull unit) ',DMS_emis_month,sumSO2_OCEAN_month/DMS_emis_month
         write(*,59)'SO2 from ocean DMS cdf file ',sumSO2_OCEAN_month
         write(*,59)'SO2 from natso2.dat ',DMS_natso2_month
         write(*,59)'fraction new/old method',sumSO2_OCEAN_month/DMS_natso2_month
         endif
-        DMS_emis_year=DMS_emis_year+DMS_emis_month
-        DMS_emis_month=0.0
         sumSO2_OCEAN_year=sumSO2_OCEAN_year+sumSO2_OCEAN_month
         sumSO2_OCEAN_month=0.0
 
         !natso2 already allreduced
         DMS_natso2_year=DMS_natso2_year+DMS_natso2_month
         DMS_natso2_month=0.0
-        if(MasterProc) then
-           write(*,*)'DMS Budget so far ',DMS_natso2_year,DMS_emis_year,DMS_emis_year/DMS_natso2_year
-           
-        endif
      endif
 
      write(fname,'(''natso2'',i2.2,''.dat'')')current_date%month

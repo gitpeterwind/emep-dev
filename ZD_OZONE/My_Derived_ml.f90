@@ -41,7 +41,7 @@ use LandDefs_ml,    only : LandDefs, LandType, Check_LandCoverPresent ! e.g. "CF
 use MetFields_ml,        only : z_bnd, roa
 use ModelConstants_ml, only : MasterProc, SOURCE_RECEPTOR  &
                         , USE_AOD &
-                        , USE_SOILNOX, DEBUG & !! => DEBUG_MY_DERIVED &
+                        , USE_SOILNOX, USE_OCEAN_DMS, DEBUG & !! => DEBUG_MY_DERIVED &
                         , Y=>IOU_YEAR, M=>IOU_MON, D=>IOU_DAY, H=>IOU_HOUR &
                         , KMAX_MID &  ! =>  z dimension
                         ,IIFULLDOM,JJFULLDOM,RUNDOMAIN&
@@ -335,7 +335,10 @@ INTEGER STATUS(MPI_STATUS_SIZE),INFO
      tag_name(1) = "Emis_mgm2_BioNatNO"
      call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
    end if
-
+   if(USE_OCEAN_DMS)then
+     tag_name(1) = "Emis_mgm2_DMS"
+     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
+   end if
    if(EmisSplit_OUT)then
       do i=1,max(18,nrcemis)
          tag_name(1) = "EmisSplit_mgm2_"//trim(species(iqrc2itot(i))%name)

@@ -144,8 +144,7 @@ real, public, allocatable, save, dimension(:,:,:) :: &
   gridrcroadd,    & ! Road dust emissions
   gridrcroadd0      ! varies every hour
 
-real, public, save,  allocatable,dimension(:,:) :: OceanNH3, DMS 
-real, public, save :: DMS_emis_month=0.0, DMS_emis_year=0.0
+real, public, save,  allocatable,dimension(:,:) :: OceanNH3, DMS, DMS_map
 real, public, save :: DMS_natso2_month=0.0, DMS_natso2_year=0.0
 real, public, save :: sumSO2_OCEAN_month=0.0,sumSO2_OCEAN_year=0.0
 real, public, save :: sumNH3_OCEAN_month=0.0,sumNH3_OCEAN_year=0.0

@@ -40,7 +40,7 @@ use DerivedFields_ml, only: MAXDEF_DERIV2D, MAXDEF_DERIV3D, &
                             def_2d, def_3d, f_2d, f_3d, d_2d, d_3d
 use EcoSystem_ml,     only: DepEcoSystem, NDEF_ECOSYSTEMS, &
                             EcoSystemFrac,FULL_ECOGRID
-use EmisDef_ml,       only: EMIS_FILE
+use EmisDef_ml,       only: EMIS_FILE,DMS_map
 use EmisGet_ml,       only: nrcemis,iqrc2itot
 use Emissions_ml,     only: SumSnapEmis, SumSplitEmis
 use GridValues_ml,    only: debug_li, debug_lj, debug_proc, A_mid, B_mid, &
@@ -66,7 +66,8 @@ use ModelConstants_ml, only: &
   ,FORECAST     & ! only dayly (and hourly) output on FORECAST mode
   ,NTDAY        & ! Number of 2D O3 to be saved each day (for SOMO)
   ! output types corresponding to instantaneous,year,month,day
-  ,IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY, IOU_HOUR
+  ,IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY, IOU_HOUR&
+  ,USE_OCEAN_DMS
 use AOD_PM_ml,            only: AOD_init,aod_grp,wavelength,& ! group and 
                                 wanted_wlen,wanted_ext3d      ! wavelengths
 use MosaicOutputs_ml,     only: nMosaic, MosaicOutput
@@ -568,7 +569,11 @@ subroutine Define_Derived()
     call AddNewDeriv( dname, "SnapEmis", "-", "-", "mg/m2", &
                        ind , -99, T,  1.0e6,  F,  IOU_DAY )
   enddo ! ind
-
+  if(USE_OCEAN_DMS)then
+    dname = "Emis_mgm2_DMS"
+    call AddNewDeriv( dname, "Emis_mgm2_DMS", "-", "-", "mg/m2", &
+                       ind , -99, T,  1.0e6,  F,  IOU_DAY )
+  endif
 !Splitted total emissions (inclusive Natural)
   do ind=1,nrcemis
     dname = "EmisSplit_mgm2_"//trim(species(iqrc2itot(ind))%name)
@@ -1329,6 +1334,11 @@ subroutine Derived(dt,End_of_Day)
       if( dbgP .and. f_2d(n)%Index == 3  ) & ! CO:
         call datewrite("SnapEmis-in-Derived, still kg/m2/s", n, & !f_2d(n)%Index,&
               (/   SumSnapEmis( debug_li,debug_lj, f_2d(n)%Index ) /) )
+
+    case ( "Emis_mgm2_DMS" )      ! Splitted total emissions (Inclusive natural)
+      forall ( i=1:limax, j=1:ljmax )
+        d_2d( n, i,j,IOU_INST) = DMS_map(i,j)
+      end forall
 
     case ( "EmisSplit_mgm2" )      ! Splitted total emissions (Inclusive natural)
       forall ( i=1:limax, j=1:ljmax )
