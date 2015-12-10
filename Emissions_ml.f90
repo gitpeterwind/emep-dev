@@ -1714,7 +1714,6 @@ subroutine newmonth
         sumDMS_month=0.0
         do j=1,ljmax
            do i=1,limax
-              DMS(i,j)=DMS(i,j)!
 !sumDMS_month
               sumDMS_month=sumDMS_month+DMS(i,j)*gridwidth_m**2*xmd(i,j)
            enddo
@@ -1729,9 +1728,6 @@ subroutine newmonth
 
 
         if(me==0)write(*,*)'Total monthly DMS (in kg in 1 mm layer) ',62.1340*sumDMS_month*1e-9*1e-3
-        
-        !scale to a reasonable value:
-        !DMS=DMS*1.e-20
         
         !from nanomol/l -> mol/cm3
         DMS=DMS*1.0e-12
