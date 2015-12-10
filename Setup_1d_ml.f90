@@ -18,7 +18,7 @@ use ColumnSource_ml,     only: ColumnRate
 use DerivedFields_ml,    only: d_2d, f_2d
 use EmisDef_ml,          only:  gridrcemis, gridrcroadd, KEMISTOP,Emis_4D,N_Emis_4D,Found_Emis_4D&
                                 ,OceanNH3,DMS,sumSO2_OCEAN_month,sumSO2_OCEAN_year&
-                                ,sumNH3_OCEAN_month,sumNH3_OCEAN_year,IX_SO2
+                                ,sumNH3_OCEAN_month,sumNH3_OCEAN_year,IX_SO2,DMS_map
 use EmisGet_ml,          only:  nrcemis, iqrc2itot  !DSRC added nrcemis
 use Emissions_ml,        only:  SumSplitEmis
 use ForestFire_ml,       only: Fire_rcemis, burning
@@ -545,6 +545,9 @@ subroutine setup_rcemis(i,j)
      !in g . Multiply by dz(in cm)  * dx*dx (in cm2) * molwgt(SO2) /AVOG  . (dz/AVOG just removed from above) 
      !g->Gg = 1.0E-9
      sumSO2_OCEAN_month=sumSO2_OCEAN_month+0.66*DMS(i,j)*Kw *1.e4*xmd(i,j)*gridwidth_m*gridwidth_m*dt_advec *64.0*1.0E-9
+!make map in mg/m2
+
+     DMS_map(i,j)=DMS(i,j)*Kw *1.e4*62.13*1.0E3!g->mg = 1.0E3  ; /cm2 -> /m2 =1e4
 
   endif
 
