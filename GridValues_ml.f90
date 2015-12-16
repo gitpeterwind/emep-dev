@@ -428,7 +428,10 @@ contains
           else
              call check(nf90_inquire_dimension(ncid=ncFileID,dimID=timedimID,len=Nhh))
           endif
+       else
+          call check(nf90_inquire_dimension(ncid=ncFileID,dimID=timedimID,len=Nhh))
        endif
+
        METSTEP=24/Nhh
        write(*,*)'METSTEP set to ',METSTEP,' hours'
        call check(nf90_close(ncFileID))       
