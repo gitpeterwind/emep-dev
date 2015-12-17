@@ -1787,6 +1787,7 @@ subroutine EmisOut(label, iem,nsources,sources,emis)
            open(IO_TMP,file="EmisOut"//trim(txt))!new file
         else
            open(IO_TMP,file="EmisOut"//trim(txt),access='append')!append
+        endif
         EMLAND: do iland = 1, NLAND
            locemis = 0.0
            !    print *,  trim(txt)//" iland ", me, iland, maxval(emis(:,:,:,:))

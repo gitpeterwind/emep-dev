@@ -422,12 +422,10 @@ contains
        status=nf90_inq_dimid(ncid=ncFileID,name="time",dimID=timedimID)
        if(status/=nf90_noerr)then
           status=nf90_inq_dimid(ncid=ncFileID,name="Time",dimID=timedimID)! WRF
-          if(status/=nf90_noerr)then
-             write(*,*)'time variable not found assuming 8 records'
-             Nhh=8
-          else
-             call check(nf90_inquire_dimension(ncid=ncFileID,dimID=timedimID,len=Nhh))
-          endif
+       endif
+       if(status/=nf90_noerr)then
+          write(*,*)'time variable not found assuming 8 records'
+          Nhh=8
        else
           call check(nf90_inquire_dimension(ncid=ncFileID,dimID=timedimID,len=Nhh))
        endif
