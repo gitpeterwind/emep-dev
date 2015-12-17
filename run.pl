@@ -797,7 +797,7 @@ foreach my $scenflag ( @runs ) {
     }
 
 #new format for ASCII emissions (should be default in future)    
-    $ifile{"emislist.$poll"} = "grid$poll";  
+    $ifile{"emislist.$poll"} = "grid$poll" unless ($CDF_EMIS);  
 
     if($SNAP_CDF) { # in testing:
       print "SNAP CDF TESTS $poll\n";

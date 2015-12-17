@@ -1636,7 +1636,7 @@ subroutine newmonth
            CALL MPI_REDUCE(sumemis_local(1,iem),sumemis(1,iem),NLAND,MPI_REAL8,&
                 MPI_SUM,0,MPI_COMM_WORLD,INFO) 
            emsum(iem)= sum(sumemis(:,iem))
-           if(MasterProc)write(*,"(a,f12.2)")trim(EMIS_FILE(iem))//'monthly TOTAL (tonnes):',emsum(iem)
+           if(MasterProc)write(*,"(a,f12.2)")trim(EMIS_FILE(iem))//' monthly TOTAL (tonnes):',emsum(iem)
 
            if(EMIS_SOURCE=="Mixed".and.emis_inputlist(2)%name /= "NOTSET")then
               !merge with other emissions
@@ -1779,11 +1779,14 @@ subroutine EmisOut(label, iem,nsources,sources,emis)
 
   call CheckStop( any(msg(:) /= 0),"EmisOut alloc error:"//trim(label))
 
-  if(MasterProc)write(*,*)' WARNING - i,j coordinates are not consecutive - dependent on number of prosessors'
+  if(MasterProc)write(*,*)' WARNING - i,j coordinates are not consecutive - dependent on number of processors'
 !Each subdomain output its data, one at a time. The others MUST wait.
   do iproc=1,NPROC
      if(me==iproc-1)then
-        open(IO_TMP,file="EmisOut"//trim(txt))
+        if(me==0)then
+           open(IO_TMP,file="EmisOut"//trim(txt))!new file
+        else
+           open(IO_TMP,file="EmisOut"//trim(txt),access='append')!append
         EMLAND: do iland = 1, NLAND
            locemis = 0.0
            !    print *,  trim(txt)//" iland ", me, iland, maxval(emis(:,:,:,:))
