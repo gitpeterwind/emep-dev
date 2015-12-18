@@ -16,9 +16,8 @@ use ChemGroups_ml,       only: PM10_GROUP, PMFINE_GROUP, SIA_GROUP, SS_GROUP, DU
 use CheckStop_ml,        only:  CheckStop, StopAll
 use ColumnSource_ml,     only: ColumnRate
 use DerivedFields_ml,    only: d_2d, f_2d
-use EmisDef_ml,          only:  gridrcemis, gridrcroadd, KEMISTOP,Emis_4D,N_Emis_4D,Found_Emis_4D&
-                                ,OceanNH3,DMS,sumSO2_OCEAN_month,sumSO2_OCEAN_year&
-                                ,sumNH3_OCEAN_month,sumNH3_OCEAN_year,IX_SO2,DMS_map
+use EmisDef_ml,          only: gridrcemis, gridrcroadd, KEMISTOP,Emis_4D,N_Emis_4D,Found_Emis_4D&
+                                , O_NH3, O_DMS
 use EmisGet_ml,          only:  nrcemis, iqrc2itot  !DSRC added nrcemis
 use Emissions_ml,        only:  SumSplitEmis
 use ForestFire_ml,       only: Fire_rcemis, burning
@@ -450,6 +449,7 @@ subroutine setup_rcemis(i,j)
   logical, save     :: first_call = .true. 
   character(len=13) :: dtxt="setup_rcemis:"
   real :: SC_DMS,SC_DMS_m23,SC_DMS_msqrt,SST_C
+  integer,save ::IC_NH3
 
   if(first_call)then
     inat_RDF = find_index( "DUST_ROAD_F", EMIS_BioNat(:) )
@@ -457,6 +457,7 @@ subroutine setup_rcemis(i,j)
     itot_RDF = find_index( "DUST_ROAD_F", species(:)%name    )
     itot_RDC = find_index( "DUST_ROAD_C", species(:)%name    )
     itot_Rn222=find_index( "RN222", species(:)%name    )
+    IC_NH3=find_index( "NH3", species(:)%name    )
     first_call = .false.
   endif 
 
@@ -515,7 +516,9 @@ subroutine setup_rcemis(i,j)
      !convert from kg/m2/s into molecules/cm3/s . 
      !kg->g=1000 , /m3->/cm3=1e-6 , 1000*1e-6=0.001
      
-     rcemis(NH3,k)=rcemis(NH3,k)+OceanNH3(i,j)*0.001*AVOG/species(NH3)%molwt*(GRAV*roa(i,j,k,1))/(dA(k)+dB(k)*ps(i,j,1))
+     rcemis(O_NH3%index,k)=rcemis(O_NH3%index,k)+O_NH3%emis(i,j)*0.001*AVOG/species(IC_NH3)%molwt&
+          *(GRAV*roa(i,j,k,1))/(dA(k)+dB(k)*ps(i,j,1))
+
   endif
 
   if(FOUND_OCEAN_DMS)then!temporarily always compute budgets if file found
@@ -539,15 +542,16 @@ subroutine setup_rcemis(i,j)
      endif
      Kw=Kw/3600!cm/hour -> cm/s
 !66% of DMS turns into SO2, Leonor Tarrason (1995)
-     if(IX_SO2>0.and.USE_OCEAN_DMS)then
-      rcemis(IX_SO2,k)=rcemis(IX_SO2,k)+0.66*DMS(i,j)*Kw*0.01*GRAV*roa(i,j,k,1)/(dA(k)+dB(k)*ps(i,j,1)) *AVOG 
+     if(USE_OCEAN_DMS)then
+      rcemis(O_DMS%index,k)=rcemis(O_DMS%index,k)+0.66*O_DMS%emis(i,j)*Kw*0.01*GRAV*roa(i,j,k,1)/(dA(k)+dB(k)*ps(i,j,1)) *AVOG 
      endif
      !in g . Multiply by dz(in cm)  * dx*dx (in cm2) * molwgt(SO2) /AVOG  . (dz/AVOG just removed from above) 
      !g->Gg = 1.0E-9
-     sumSO2_OCEAN_month=sumSO2_OCEAN_month+0.66*DMS(i,j)*Kw *1.e4*xmd(i,j)*gridwidth_m*gridwidth_m*dt_advec *64.0*1.0E-9
-!make map in mg/m2
+     O_DMS%sum_month = O_DMS%sum_month+0.66*O_DMS%emis(i,j)*Kw *1.e4*xmd(i,j)*&
+          gridwidth_m*gridwidth_m*dt_advec *64.0*1.0E-9
 
-     DMS_map(i,j)=DMS(i,j)*Kw *1.e4*62.13*1.0E3!g->mg = 1.0E3  ; /cm2 -> /m2 =1e4
+!make map in mg/m2
+     O_DMS%map(i,j)=O_DMS%emis(i,j)*Kw *1.e4*62.13*1.0E3!g->mg = 1.0E3  ; /cm2 -> /m2 =1e4
 
   endif
 

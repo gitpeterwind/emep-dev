@@ -32,11 +32,10 @@ use EmisDef_ml,       only: &
      ,nlandcode,landcode,flat_nlandcode,flat_landcode&
      ,road_nlandcode,road_landcode&
      ,gridrcemis,gridrcemis0,gridrcroadd,gridrcroadd0&
-     ,OceanNH3,DMS,sumSO2_OCEAN_month,sumSO2_OCEAN_year &
-     ,DMS_natso2_month, DMS_natso2_year,sumNH3_OCEAN_month,sumNH3_OCEAN_year,DMS_map&
+     ,DMS_natso2_month, DMS_natso2_year,O_NH3, O_DMS&
      ,Emis_4D,N_Emis_4D,Found_Emis_4D & !used for EEMEP 
      ,KEMISTOP&
-     ,MAXFEMISLONLAT,N_femis_lonlat,IX_SO2
+     ,MAXFEMISLONLAT,N_femis_lonlat
 use EmisGet_ml,       only: &
      EmisSplit &
     ,EmisGetCdf &  ! 
@@ -136,7 +135,6 @@ real, private, allocatable, dimension(:,:,:,:), save :: &
 
 ! We store the emissions for output to d_2d files and netcdf in kg/m2/s
 real, public, allocatable, dimension(:,:,:), save :: SumSnapEmis,SumSplitEmis
-real, public, save  ::   sumDMS_month = 0.0 
 
 logical, save, private  :: first_dms_read
 
@@ -333,11 +331,6 @@ contains
          fac_min(inland,insec,iemis) = minval(fac_emm(inland,:,insec,iemis))
     if(INERIS_SNAP2) & !  INERIS do not use any base-line for SNAP2
          fac_min(:,ISNAP_DOM,:) = 0.
-
-
-
-    IX_SO2=find_index("sox",EMIS_FILE(:))
-    IX_SO2=iqrc2itot(IX_SO2)
 
     !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     ! c4b) Set up DMS factors here - to be used in newmonth
@@ -563,25 +556,37 @@ contains
                   NLAND*NEMIS_FILE,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,INFO)        
 
           else if (emis_inputlist(iemislist)%type == "OceanNH3")then
-             if(me==0)write(*,*)' found  OceanNH3'    
+             if(me==0)write(*,*)' using  OceanNH3'    
+             O_NH3%index=find_index("NH3",species(:)%name)
+             call CheckStop(O_NH3%index<0,'Index for NH3 not found')
              NTime_Read=-1
              call ReadTimeCDF(trim(fname),TimesInDays,NTime_Read)
              if(NTime_Read==12)then
                 emis_inputlist(iemislist)%periodicity = "monthly"
-                allocate(OceanNH3(LIMAX,LJMAX))
+                allocate(O_NH3%emis(LIMAX,LJMAX))
+                allocate(O_NH3%map(LIMAX,LJMAX))
+                O_NH3%emis=0.0
+                O_NH3%map=0.0
+                O_NH3%sum_month=0.0
+                O_NH3%sum_year=0.0
               if(me==0)write(*,*)' found  OceanNH3 monthly'    
             else
                 call StopAll("Yearly OceanNH3 not implemented")
              endif
           else if (emis_inputlist(iemislist)%type == "DMS")then
-             if(me==0)write(*,*)' found DMS'    
+             if(me==0)write(*,*)'using DMS'    
+             O_DMS%index=find_index("SO2",species(:)%name)
+             call CheckStop(O_DMS%index<0,'Index for SO2 not found')
              NTime_Read=-1
              call ReadTimeCDF(trim(fname),TimesInDays,NTime_Read)
              if(NTime_Read==12)then
                 emis_inputlist(iemislist)%periodicity = "monthly"
-                allocate(DMS(LIMAX,LJMAX))
-                allocate(DMS_map(LIMAX,LJMAX))
-                DMS_map=0.0
+                allocate(O_DMS%emis(LIMAX,LJMAX))
+                allocate(O_DMS%map(LIMAX,LJMAX))
+                O_DMS%emis=0.0
+                O_DMS%map=0.0
+                O_DMS%sum_month=0.0
+                O_DMS%sum_year=0.0
                 if(me==0)write(*,*)' found DMS monthly'    
             else
                 call StopAll("Yearly DMS not implemented")
@@ -1456,18 +1461,17 @@ subroutine newmonth
      ! We have so2 emission so need DMS also
      if(.not.first_call)then
         !write some diagnostic for the past month emissions
-        CALL MPI_ALLREDUCE(MPI_IN_PLACE, sumSO2_OCEAN_month, 1,&
+        CALL MPI_ALLREDUCE(MPI_IN_PLACE, O_DMS%sum_month, 1,&
              MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
         if(MasterProc)then
 59      format(A,6F14.5)
         write(*,*)'DMS OCEAN emissions '
-        write(*,59)'SO2 from ocean DMS cdf file ',sumSO2_OCEAN_month
+        write(*,59)'SO2 from ocean DMS cdf file ',O_DMS%sum_month
         write(*,59)'SO2 from natso2.dat ',DMS_natso2_month
-        write(*,59)'fraction new/old method',sumSO2_OCEAN_month/DMS_natso2_month
+        write(*,59)'fraction new/old method',O_DMS%sum_month/DMS_natso2_month
         endif
-        sumSO2_OCEAN_year=sumSO2_OCEAN_year+sumSO2_OCEAN_month
-        sumSO2_OCEAN_month=0.0
-
+        O_DMS%sum_year=O_DMS%sum_year+O_DMS%sum_month
+        O_DMS%sum_month=0.0
         !natso2 already allreduced
         DMS_natso2_year=DMS_natso2_year+DMS_natso2_month
         DMS_natso2_month=0.0
@@ -1679,57 +1683,58 @@ subroutine newmonth
 
      else if(emis_inputlist(iemislist)%type == 'OceanNH3')then
         if(me==0)write(*,*)'reading OceanNH3'
-        call ReadField_CDF(emis_inputlist(iemislist)%name,'emiss_ocn',OceanNH3,&
+        call ReadField_CDF(emis_inputlist(iemislist)%name,'emiss_ocn',O_NH3%emis,&
              nstart=current_date%month,interpol='conservative',known_projection="lon lat",&
              needed=.true.,debug_flag=.false.,UnDef=0.0)
  
         !diagnostics:
         !call printcdf('OceanNH3',OceanNH3,'kg/m2/s')
         !convert from kg/m2/s into kg/month/subdomain
-        sumNH3_OCEAN_month=0.0
+        O_NH3%sum_month=0.0
         do j=1,ljmax
-           do i=1,limax
-              sumNH3_OCEAN_month=sumNH3_OCEAN_month+OceanNH3(i,j)*gridwidth_m**2*xmd(i,j)*3600*24*nmdays(current_date%month)             
+           do i=1,limax            
+              O_NH3%sum_month=O_NH3%sum_month+O_NH3%emis(i,j)&
+                   *gridwidth_m**2*xmd(i,j)*3600*24*nmdays(current_date%month)             
            enddo
         enddo
         !sum all subdomains
-        CALL MPI_ALLREDUCE(MPI_IN_PLACE, sumNH3_OCEAN_month, 1,&
+        CALL MPI_ALLREDUCE(MPI_IN_PLACE, O_NH3%sum_month, 1,&
              MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
 
-        sumNH3_OCEAN_month=sumNH3_OCEAN_month*1e-6 !kg->Gg
+        O_NH3%sum_month=O_NH3%sum_month*1e-6 !kg->Gg
 
         USE_OCEAN_NH3=.true.
-        if(me==0)write(*,*)'Total monthly NH3 from Oceans (in Gg) ',sumNH3_OCEAN_month
-        sumNH3_OCEAN_year = sumNH3_OCEAN_year + sumNH3_OCEAN_month!total for all month
+        if(me==0)write(*,*)'Total monthly NH3 from Oceans (in Gg) ',O_NH3%sum_month
+        O_NH3%sum_year=O_NH3%sum_year+O_NH3%sum_month!total for all month
 
      else if(emis_inputlist(iemislist)%type == 'DMS')then
         if(me==0)write(*,*)'reading DMS'
-        call ReadField_CDF(emis_inputlist(iemislist)%name,'DMS_sea',DMS,&
+        call ReadField_CDF(emis_inputlist(iemislist)%name,'DMS_sea',O_DMS%emis,&
              nstart=current_date%month,interpol='conservative',known_projection="lon lat",&
              needed=.true.,debug_flag=.false.,UnDef=0.0)
 
         !diagnostics:
         !call printcdf('DMS',DMS,'nanomol/liter')
         !convert from nanomol/liter into kg/month/gridrute. Molar mass of dms is 62.1340 g/mol
-        sumDMS_month=0.0
+        O_DMS%sum_month=0.0
         do j=1,ljmax
            do i=1,limax
-!sumDMS_month
-              sumDMS_month=sumDMS_month+DMS(i,j)*gridwidth_m**2*xmd(i,j)
+              !sum DMS_month locally
+              O_DMS%sum_month=O_DMS%sum_month+O_DMS%emis(i,j)*gridwidth_m**2*xmd(i,j)
            enddo
         enddo
         !sum all subdomains
-        CALL MPI_ALLREDUCE(MPI_IN_PLACE, sumDMS_month, 1,&
+        CALL MPI_ALLREDUCE(MPI_IN_PLACE, O_DMS%sum_month, 1,&
              MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
 
 !NB: Temporary uncommented!!    
         ! USE_OCEAN_DMS=.true.
         FOUND_OCEAN_DMS=.true.
 
-        if(me==0)write(*,*)'Total monthly DMS in water (in kg in 1 mm layer) ',62.1340*sumDMS_month*1e-9*1e-3
+        if(me==0)write(*,*)'Total monthly DMS in water (in kg in 1 mm layer) ',62.1340*O_DMS%sum_month*1e-9*1e-3
         
         !from nanomol/l -> mol/cm3
-        DMS=DMS*1.0e-12
+        O_DMS%emis=O_DMS%emis*1.0e-12
 
      else !
         call StopAll("Monthly emission type not implemented "//trim(emis_inputlist(iemislist)%type))

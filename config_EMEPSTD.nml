@@ -90,7 +90,7 @@
 !  emis_inputlist(3)%name     = 'GlobalShipEmis_POLL.nc',  !
 !  emis_inputlist(3)%incl(1:) = 'INTSHIPS', 
 !
-  EMIS_OUT              = F,          ! Output emissions in separate files (memory demanding)
+  EMIS_OUT              = F,          ! Output emissions in separate files
 !------------------------------
   SELECT_LEVELS_HOURLY  = F,          ! hourly output flag Also for FORECAST, 3DPROFILES
   FORECAST              = F,

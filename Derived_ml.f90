@@ -40,7 +40,7 @@ use DerivedFields_ml, only: MAXDEF_DERIV2D, MAXDEF_DERIV3D, &
                             def_2d, def_3d, f_2d, f_3d, d_2d, d_3d
 use EcoSystem_ml,     only: DepEcoSystem, NDEF_ECOSYSTEMS, &
                             EcoSystemFrac,FULL_ECOGRID
-use EmisDef_ml,       only: EMIS_FILE,DMS_map
+use EmisDef_ml,       only: EMIS_FILE,O_DMS
 use EmisGet_ml,       only: nrcemis,iqrc2itot
 use Emissions_ml,     only: SumSnapEmis, SumSplitEmis
 use GridValues_ml,    only: debug_li, debug_lj, debug_proc, A_mid, B_mid, &
@@ -1337,7 +1337,7 @@ subroutine Derived(dt,End_of_Day)
 
     case ( "Emis_mgm2_DMS" )      ! Splitted total emissions (Inclusive natural)
       forall ( i=1:limax, j=1:ljmax )
-        d_2d( n, i,j,IOU_INST) = DMS_map(i,j)
+        d_2d( n, i,j,IOU_INST) = O_DMS%map(i,j)
       end forall
 
     case ( "EmisSplit_mgm2" )      ! Splitted total emissions (Inclusive natural)
