@@ -155,6 +155,18 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21st December 2015 Anna via Alvaro 3117
+
+Nest_ml:
+- Fix FORECAST mode bug.
+  Forecast crashed when BC file was missing.
+  Bug was introduced on 2972 (Mar 2015).
+  
+Log.changes:
+- Recover descriptions for 2972--2975,
+  which were accidentally removed on 2979 (Apr 2015).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 18th December 2015 Peter, Jesper 3116
 
 Integrated OcenVariables from Jesper into the code.
@@ -1418,7 +1430,6 @@ Makefile:
   make ... -C $ProgDir BINDIR=$RESDIR will link into $RESDIR/Unimod 
   instead of $ProgDir/Unimod.
 
-
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 24 April 2015 Dave 2989-2991
 ==============
@@ -1497,10 +1508,6 @@ config_Outputs_EMEPSTD.nml
 config_EMEPGLOB.nml
 - n2o5Hydrolysis set to 'SmixTen' by default
 - CONVECTION_FACTOR     = 0.33 by default
-
-
-
-
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 20 April 2015  Dave 2988
@@ -1650,8 +1657,6 @@ config_EMEPSTD, config_Outputs_EMEPSTD, config_BM-EECCA
 GenChem.pl
 - add call to AeroFunctions
 
-
-
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 4th April 2015  Dave 2979
 - introduction of surface area calculations. So far not used, but intended
@@ -1710,6 +1715,96 @@ GenChem.pl
 - removed unused Branching statements
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+31th March 2015 Alvaro, Arjo 2974,2975
+
+run.pl:
+- Use $CDF_EMIS as the file to be used for "CdfFractions",
+  instead of relying on commented/uncommented sections of the script.
+- Link "CdfFractions" file for MACC14 emissions.
+- Small clean-up - suggest deletion of emis_, but much more needed.
+
+Functions_ml:
+- optional arguments to norm_* functions available trough norm interface:
+  w: integer array of weights of the same dimension as the variable.
+  reduce: logical input to calculate the norm of a variable stored on 
+    local/partial arrays on each PROC (call MPI_ALLREDUCE).
+
+ZD_3DVar/DA_ml,Analysis//DA_3DVar_ml,DA_Obs_ml:
+- Specific debug variables/options for 3Dvar and Obs modules.
+
+ZD_3DVar/Makefile,Makefile.SRCS
+- MPI version of optimization utility (m1qn3-mpi.f)
+- Remove non-MKL blas library options
+
+ZD_3DVar/Analysis/DA_3DVar_ml,chitox_ml,ufftw3_ml
+- Avoid half<-->full complex transformations, by only using half-complex arrays
+  and calculating the norm as a weighed L2 norm.
+- Distinguish between eVal/eVec on the local/global (nvLoc/nvTot) spectral grid.
+- Rename/move subroutine update_unobserved (DA_3DVar_ml) to chitou (chitox_ml).
+
+ZD_3DVar/Analysis/DA_3DVar_ml,DA_Obs_ml
+- Remove 4-point interpolation options.
+  Only use the grid-cell that contains the observation.
+- Update bias correction routines for MPI calculations (untested)
+- Increase memory on optimization calls (nupdates from 4 to 20)
+
+ZD_3DVar/B_NMC/covmat_ml:
+- write correlation matrix.
+
+ZD_3DVar/B_NMC/spectralcov_ml,stddev_ml,spectral_filter:
+- Make KTRUNC a parameter in spectralcov module.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+27th March 2015 Alvaro, Birthe 2972-2973
+
+PhyChem_ml:
+- comment call to gravset (included on 2968)
+- uncomment ANALYSIS calls (commented on 2967)
+
+GridValues_ml:
+- Fix minor bug in Alloc_GridFields. Wrong exit condition on vertical level
+  interpolation.
+
+CheckStop_ml:
+- Add integer range check (rangeI) to CheckStop interface
+- Rename real range check (rangeR) on CheckStop interface
+
+TimeDate_ExtraUtil_ml:
+- Declare function interfaces for swapping between different date formats as public.
+  to_stamp, to_date and to_idate take a date on any supported format:
+  timestamp (type), date (type) or idate (int array). 
+- Add interface date2file. Like date2string transforms a date (various formats)
+  into a string, with additional options for looking for over previous dates
+  if the file for the specific date is not found.
+
+Derived_ml:
+- On FORECAST mode select output depending on length of run (number fo days)
+
+Unimod.f90:
+- Replace hard--coded 39 length of lastptim on MPI_SEND/RECV calls,
+  so additional timing IDs used for 3DVar are also sent/received.
+
+ForestFire_ml:
+- Adapt "single opening of file" feature (introduced on 2942) to work
+  on FORECAST mode. New files are opened inside newFFrecord function.
+- Use date2file instead of nctime2string for persistence.
+
+ForestFire_ml, Nest_ml, :
+- Use CheckNC (CheckStop_ml) instead of check (NetCDF_ml).
+- Explicitly declare variables and functions used from netcdf module.
+- Clean up calls to necdf procedures.
+
+ExternalBICs_ml, config_FORECAST.nml:
+- Year dependant mappings versions for MACC_EVA:
+  Rename IFS_MACC_EVA mapping version to EVA_EU_AN (up to 2012),
+  and add EVA_EU_FC (from 2013).
+- Accept explicit mappings for MACC_ENS and MACC_EVA versions.
+- Remove EnsClimRCA BICs mapping from config_FORECAST.nml, as it is never used
+  on FORCAST/ANALYSIS runs.
+
+ExternalBICs_ml, Nest_ml:
+- When the BC file for a given date, look for a file from a previous date up
+  to BC_DAYS old. This is used for re-runs with MACC_ENS BCs,which contain 5 days each. 
   The previous implementation switched BC file after reading all records in it.
 
 Nest_ml, config_FORECAST.nml

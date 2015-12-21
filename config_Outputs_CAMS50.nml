@@ -36,8 +36,8 @@ OutputConcs=
 !--MY_OUTPUTS=="MACC_NMC": 6 hourly full D3D output
 ! 'EXT'           ,'1/m','550nm','EXT:GROUP','MISC',6,
 !--DEBUG_PBL: hourly D2D houtput
-! 'HMIX'          ,'m'   ,'2d' ,'HMIX'     ,'MISC' ,5,
-! 'Kz_m2s'        ,'m2/s','2d' ,'Kz_m2s'   ,'MISC' ,5,
+! 'HMIX'          ,'m'   ,'2d' ,'HMIX'     ,'MISC' ,6,
+! 'Kz_m2s'        ,'m2/s','2d' ,'Kz_m2s'   ,'MISC' ,6,
 !--DEBUG_PM10: hourly D2D houtput
 ! 'SIA'           ,'ug'  ,'2d' ,'AIR_CONCS','GROUP',5,
 ! 'DUST'          ,'ug'  ,'2d' ,'AIR_CONCS','GROUP',5,
@@ -46,6 +46,7 @@ OutputConcs=
 ! 'PPM25_FIRE'    ,'ug'  ,'2d' ,'AIR_CONCS','GROUP',5,
 &end
 &OutputDep_config
+! freq = IOU_YEAR=2, IOU_MON=3, IOU_DAY=4, IOU_HOUR=5, IOU_HOUR_INST=6
   DDEP_ECOS =
    'Grid'     , 4,
   DDEP_WANTED =

@@ -251,7 +251,7 @@ subroutine readxn(indate)
     endif
 
 ! the first hour only these values are used, no real interpolation between two records
-    if(fexist_3D)then
+    if(fexist_BC)then
       if(mydebug) write(*,*)'Nest: READING FIRST BC DATA from ',&
             trim(filename_read_BC), ndays_indate
       call read_newdata_LATERAL(ndays_indate)
