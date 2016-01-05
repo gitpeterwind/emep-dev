@@ -141,6 +141,7 @@ OutputConcs=
 ! ============================================================
 ! SOA additions (26 entries)
       'PART_OM_F'           ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
+      'OM_BGND'             ,'ug'  ,'2d','AIR_CONCS','SPEC',4, !! NEVER as ugC
       'OMCOARSE'            ,'ug'  ,'2d','AIR_CONCS','GROUP',4, !! NEVER as ugC
       'ECFINE'              ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
       'ECCOARSE'            ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
@@ -161,12 +162,26 @@ OutputConcs=
     ! 'EC_C_FFUEL'          ,'ug'  ,'2d','AIR_CONCS','SPEC' ,3,
     ! 'NONVOL_BGNDOC'       ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
     ! 'NONV_FFUELOC_COARSE' ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-      'PART_ASOA_OM'        ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
-      'PART_BSOA_OM'        ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
+    !XSOA  'PART_ASOA_OM'        ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
+    !XSOA  'PART_BSOA_OM'        ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
+    !FSOA new system:
+    !ugPM will trigger use of Fgas and Fpart for semivolatile compounds
+    !** Needed if semivolatile components 
+      'PMFINE'              ,'ugPM'  ,'2d','AIR_CONCS','GROUP' ,4, ! FSOA tests
+      'OM25'              ,'ugPM'  ,'2d','AIR_CONCS','GROUP' ,4, ! FSOA tests
+      'OM25_BGND'          ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, ! FSOA tests
+      'OM25_BGND'          ,'ugPM'  ,'2d','AIR_CONCS','SPEC' ,4, ! FSOA tests
+      'ASOA'                ,'ugPM'  ,'2d','AIR_CONCS','GROUP' ,4, ! FSOA tests
+      'BSOA'                ,'ugPM'  ,'2d','AIR_CONCS','GROUP' ,4, ! FSOA tests
+      'NONVOLPCM'           ,'ugPM'  ,'2d','AIR_CONCS','GROUP' ,4, ! FSOA tests
+      'FFUELOA25'           ,'ugPM'  ,'2d','AIR_CONCS','SPEC' ,4, ! FSOA tests
+      'POM_F_FFUEL'         ,'ugPM'  ,'2d','AIR_CONCS','SPEC' ,4, ! FSOA tests
+      'POM_F_FFUEL'         ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, ! FSOA tests
+      'FFUEL_NG10'          ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, ! FSOA tests
 ! zero for NONVOL:
-    ! 'PART_FFUELOA25_OM'   ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
-    ! 'PART_WOODOA25_OM'    ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
-    ! 'PART_FFIREOA25_OM'   ,'ug'  ,'2d','AIR_CONCS','SPEC' ,3, !! NEVER as ugC
+     'PART_FFUELOA25_OM'   ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
+     'PART_WOODOA25_OM'    ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
+     'PART_FFIREOA25_OM'   ,'ug'  ,'2d','AIR_CONCS','SPEC' ,3, !! NEVER as ugC
 ! Sep16 tests
       'FFIRE_BC'            ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
       'FFIRE_REMPPM25'      ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC

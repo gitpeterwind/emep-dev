@@ -1,7 +1,8 @@
 module Chemfields_ml
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-use AllocInits,           only: AllocInit
-use ChemSpecs,            only: NSPEC_ADV, NSPEC_SHL, NSPEC_TOT ! => No. species 
+use AllocInits,   only: AllocInit
+use ChemSpecs,    only: NSPEC_ADV, NSPEC_SHL, NSPEC_TOT, & ! => No. species 
+                    FIRST_SEMIVOL, LAST_SEMIVOL ! both -999 unless SOA used
 use ModelConstants_ml,    only: KMAX_MID, KCHEMTOP, AERO        ! =>  z dimension
 use NumberConstants,      only: UNDEF_R
 use Par_ml,               only: LIMAX,LJMAX   ! => x, y dimensions
@@ -92,6 +93,14 @@ contains
     allocate(Fgas(NSPEC_TOT,KCHEMTOP:KMAX_MID),Fpart(NSPEC_TOT,KCHEMTOP:KMAX_MID))
     Fgas  = 1.0! Fraction as gas-phase
     Fpart = 0.0
+
+  ! Fgas3D is only defined for the semivolatile VOC/SOA stuff
+  ! We need to assume something on 1st time-step though:
+
+    if( FIRST_SEMIVOL > 0  ) & !FSOA
+    allocate( Fgas3d(FIRST_SEMIVOL:LAST_SEMIVOL,LIMAX,LJMAX,KCHEMTOP:KMAX_MID) )
+    Fgas3d = 1.0
+
     allocate(rcemis(NSPEC_SHL+1:NSPEC_TOT,KCHEMTOP:KMAX_MID))
     allocate(deltaZcm(KCHEMTOP:KMAX_MID))
     rcemis = 0.0

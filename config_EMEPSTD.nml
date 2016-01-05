@@ -126,7 +126,7 @@
   DEBUG%AEROSOL         = F,
   DEBUG%AOT             = F,
   DEBUG%BIO             = F,   ! BVOC emissions, etc.
-  DEBUG%DERIVED         = F,   ! BVOC emissions, etc.
+  DEBUG%DERIVED         = T,   ! BVOC emissions, etc.
   DEBUG%DRYDEP          = F,   ! BVOC emissions, etc.
   DEBUG%FORESTFIRE      = F,
   DEBUG%GLOBBC          = F,

@@ -32,10 +32,11 @@ use Biogenics_ml,     only: EmisNat, NEMIS_BioNat, EMIS_BioNat
 use CheckStop_ml,     only: CheckStop
 use Chemfields_ml,    only: xn_adv, xn_shl, cfac,xn_bgn, AOD,  &
                             SurfArea_um2cm3, &
+                            Fgas3d, & ! FSOA
                             Extin_coeff, PM25_water, PM25_water_rh50
+use Chemfields_ml ,   only: so2nh3_24hr,Grid_snow
 use ChemGroups_ml     ! SIA_GROUP, PMCO_GROUP -- use tot indices
 use ChemSpecs         ! Use NSPEC_ADV amd any of IXADV_ indices
-use Chemfields_ml ,   only: so2nh3_24hr,Grid_snow
 use DerivedFields_ml, only: MAXDEF_DERIV2D, MAXDEF_DERIV3D, &
                             def_2d, def_3d, f_2d, f_3d, d_2d, d_3d
 use EcoSystem_ml,     only: DepEcoSystem, NDEF_ECOSYSTEMS, &
@@ -79,11 +80,13 @@ use Par_ml,               only: LIMAX,LJMAX, &      ! => max. x, y dimensions
                                 gi0,gj0,IRUNBEG,JRUNBEG,& ! for i_fdom, j_fdom
                                 li0,lj0,limax, ljmax      ! => used x, y area
 use PhysicalConstants_ml, only: PI,KAPPA
-use SmallUtils_ml,        only: find_index, LenArray, NOT_SET_STRING
+use Setup_1dfields_ml,    only: Fpart ! for FSOA work
+use SmallUtils_ml,        only: find_index, LenArray, NOT_SET_STRING, trims
 use TimeDate_ml,          only: day_of_year,daynumber,current_date,&
                                 tdif_days,startdate,enddate
 use TimeDate_ExtraUtil_ml,only: to_stamp
 use Units_ml,             only: Units_Scale,Group_Units,&
+                                do_Units_Scale, & 
                                 to_molec_cm3 ! converts roa [kg/m3] to M [molec/cm3]
 implicit none
 private
@@ -204,6 +207,8 @@ subroutine Init_Derived()
   iadv_EC_C_FFUEL =find_index('EC_C_FFUEL' ,species_adv(:)%name )
   iadv_POM_C_FFUEL=find_index('POM_C_FFUEL',species_adv(:)%name )
 
+  ! units scaling
+  ! e.g. ug_NO3_C = 1.0+e9 * MW(NO3)/MW(air)
   if(iadv_NO3_C      >0)ug_NO3_C      =Units_Scale('ug', iadv_NO3_C      )
   if(iadv_EC_C_WOOD  >0)ug_EC_C_WOOD  =Units_Scale('ug', iadv_EC_C_WOOD  )
   if(iadv_EC_C_FFUEL >0)ug_EC_C_FFUEL =Units_Scale('ug', iadv_EC_C_FFUEL )
@@ -240,7 +245,7 @@ subroutine AddNewDeriv( name,class,subclass,txt,unit,index,f2d,&
   type(Deriv) :: inderiv
 
   if(trim(name)=="HMIX".and.DEBUG%DERIVED .and. MasterProc)&
-	write(*,*) "ADDNEWDERIVE", iotype
+     write(*,*) "ADDNEWDERIVE", iotype
 
   inderiv=Deriv(trim(name),trim(class),trim(subclass),&
                 trim(txt),trim(unit),index,f2d,dt_scale, scale,&
@@ -434,7 +439,8 @@ subroutine Define_Derived()
         endif
         call CheckStop(iadv<0,sub//"OutputFields Species not found "//trim(outname))
         iout = iadv
-        unitscale = Units_Scale(outunit, iadv, unittxt, volunit)
+        !FSOA unitscale = Units_Scale(outunit, iadv, unittxt, volunit)
+        call do_Units_Scale(outunit, iadv,unitscale, unittxt, volunit)
       case("SHL")
         ishl = find_index(outname,species_shl(:)%name)
         call CheckStop(ishl<0,sub//"OutputFields Short lived Species not found "//trim(outname))
@@ -454,7 +460,14 @@ subroutine Define_Derived()
         endif
         call CheckStop(igrp<0,sub//"OutputFields Group not found "//trim(outname))
         iout = igrp
-        unitscale = Units_Scale(outunit, -1, unittxt, volunit)
+        !FSOA unitscale = Units_Scale(outunit, -1, unittxt, volunit)
+       !if(MasterProc.and.DEBUG%DERIVED) write(*,*) 'FSOA GRPOM', f_2d(n)%unit
+       if( outunit == 'ugPM' ) subclass = 'FSOA'    
+       if(debug_proc.and.DEBUG%DERIVED) write(*,"(2a)") 'FSOA GRPOM:', &
+          trims( outname // ':' // outunit // ':' // subclass )
+ 
+ !FSOA
+        call do_Units_Scale(outunit, -1,unitscale, unittxt, volunit)
         ! Units_Scale(iadv=-1) returns 1.0
         ! group_calc gets the unit conversion factor from Group_Units
       case default
@@ -488,7 +501,9 @@ subroutine Define_Derived()
         call CheckStop(sub//" Unsupported OutputFields%outdim "//&
           trim(outtyp)//":"//trim(outname)//":"//trim(outdim))
       endselect
-      call AddNewDeriv(dname,class,"-","-",trim(unittxt),&
+      !FSOAcall AddNewDeriv(dname,class,"-","-",trim(unittxt),&
+      !FSOA call AddNewDeriv(dname,class,"-","-",trim(unittxt),&
+      call AddNewDeriv(dname,class,subclass,"-",trim(unittxt),&
                        iout,-99,F,unitscale,T,outind,Is3D=Is3D)
     endif
   enddo ! OutputFields
@@ -1370,12 +1385,16 @@ subroutine Derived(dt,End_of_Day)
           n, ind_pm10, trim(chemgroups(igrp)%name), trim(f_2d(n)%name)
       endif
       if(dbg0) then
-        write(*,*) "CASEGRP ", n, igrp, ngrp, trim(class)
-        write(*,*) "CASENAM ", trim(f_2d(n)%name)
-        write(*,*) "CASEGRP:", chemgroups(igrp)%ptr
-        write(*,*) "CASEunit", trim(f_2d(n)%unit)
+        write(*,"(a,3i5,2(1x,a))")"CASEGRP:"//trim(f_2d(n)%name), n, igrp,&
+             ngrp, trim(class), trim(subclass) ! FSOA igrp=109, ngrp=10
+        write(*,"(a,88i4)") "CASEGRP:", chemgroups(igrp)%ptr
+        write(*,*) "CASEGRPunit ", trim(f_2d(n)%unit)
       endif
-      call group_calc(d_2d(n,:,:,IOU_INST),density,f_2d(n)%unit,0,igrp)
+      if( f_2d(n)%subclass == 'FSOA' ) then !Will trigger use of Fgas/Fpart
+        call group_calc(d_2d(n,:,:,IOU_INST),density,f_2d(n)%unit,0,igrp,semivol=.true.)
+      else
+        call group_calc(d_2d(n,:,:,IOU_INST),density,f_2d(n)%unit,0,igrp)
+      end if
 
       if(DEBUG%DERIVED.and.debug_proc)then
           i= debug_li; j=debug_lj
@@ -1383,6 +1402,7 @@ subroutine Derived(dt,End_of_Day)
           "PMFINE FRACTION:",n,d_2d(n,i,j,IOU_INST)
         if(n==ind_pm10  )write(*,"(a,i4,es12.3)") &
           "PM10 FRACTION:"  ,n,d_2d(n,i,j,IOU_INST)
+        write(*,*) "CASErho     ", density(i,j)
       end if
 
     case  ( "USET" )
@@ -1806,7 +1826,7 @@ end subroutine Derived
 
    end subroutine voc_3dcalc
  !=========================================================================
-subroutine group_calc( g2d, density, unit, ik, igrp)
+subroutine group_calc( g2d, density, unit, ik, igrp,semivol)
 
   !/--  calulates e.g. SIA = SO4 + pNO3_f + pNO3_c + aNH4
   ! (only SIA converted to new group system so far, rv3_5_6 )
@@ -1816,24 +1836,77 @@ subroutine group_calc( g2d, density, unit, ik, igrp)
   real, intent(in), dimension(LIMAX,LJMAX)  :: density
   character(len=*), intent(in) :: unit
   integer, intent(in) :: ik,igrp
+  logical, intent(in), optional :: semivol
 
   integer, pointer, dimension(:) :: gspec=>null()       ! group array of indexes
   real,    pointer, dimension(:) :: gunit_conv=>null()  ! & unit conv. factors
   logical :: needroa
+  integer :: kk, iadv, itot, nspec ! FSOA
+  real :: fac          ! FSOA
+  logical ::  semivol_found=.false., first_call = .true. ! FSOA
   
   if(DEBUG%DERIVED .and.debug_proc) &
-    write(*,"(a,L1,2i4)") "DEBUG GROUP-PM-N",debug_proc,me,ik
+    write(*,"(a,L1,2i4,2a16)") "DEBUG GROUP-PM-N",debug_proc,me,ik, &
+      trim(chemgroups(igrp)%name), trim(unit)
   call Group_Units(igrp,unit,gspec,gunit_conv,&
     debug=DEBUG%DERIVED.and.debug_proc,needroa=needroa)
 
-  if(ik==0)then
-    forall(i=1:limax,j=1:ljmax) &
-      g2d(i,j) = dot_product(xn_adv(gspec(:),i,j,KMAX_MID),&
-                             cfac(gspec(:),i,j)*gunit_conv(:))
-  else
-    forall(i=1:limax,j=1:ljmax) &
-      g2d(i,j) = dot_product(xn_adv(gspec(:),i,j,ik),gunit_conv(:))
-  endif
+!FSOA changes
+  kk = ik
+  if ( ik == 0 ) kk = KMAX_MID
+
+  if( present(semivol) .and. debug_proc ) then
+    write(*,"(a,L1,2i4,2a16)") "DEBUG GROUP-FSOA",debug_proc,me,ik, &
+      trim(chemgroups(igrp)%name)
+    write(*,"(a,2i4)") "DEBUG GROUP-FSOA", size(gspec), size(gunit_conv)
+    write(*,*) "DEBUG GROUP-FSOA-GSPEC", gspec
+    write(*,*) "DEBUG GROUP-FSOA-GUNIT", gunit_conv
+  end if
+
+  do j=1,ljmax
+    do i = 1, limax
+      g2d(i,j) = 0.0
+      do nspec = 1, size(gspec)
+        iadv  = gspec(nspec) 
+        itot  = iadv + NSPEC_SHL
+        fac = 1.0
+
+        ! With SOA modelling some compounds are semivolatile and others 
+        ! non-volatile. If in a group XXX which asks for ugPM the latter's
+        ! mass is correct. If semivolatile, we need to calculate the PM
+        ! fraction and just add this.
+
+         if( first_call .and. debug_proc ) write(*,"(a,3i4,2(1x,a),2i4)") &
+            "FSOA check ", nspec, itot, igrp, trim(chemgroups(igrp)%name),&
+             trim(species(itot)%name), FIRST_SEMIVOL, LAST_SEMIVOL
+
+        if( itot >= FIRST_SEMIVOL .and. itot <= LAST_SEMIVOL ) then
+           semivol_found = .true.
+           fac = 1 - Fgas3d(itot,i,j,kk)
+        end if
+        if ( ik == 0 )  fac = fac * cfac(iadv,i,j)
+        if( chemgroups(igrp)%name == 'BSOA' .and.  &
+              debug_proc  ) write(*,"(a,2i4,1x, es12.3, f12.5, 2x, a)") &
+                 "FSOA fac ", nspec, itot, fac, &
+                 xn_adv(iadv,i,j,kk)  * gunit_conv(nspec) * fac,  &
+                 trim(species(itot)%name)
+
+        g2d(i,j) = g2d(i,j) + xn_adv(iadv,i,j,kk)  * gunit_conv(nspec) * fac
+      end do ! nspec
+      if( first_call .and. semivol_found) first_call = .false.
+    end do ! i
+  end do ! j
+       
+
+!FSOA skip:
+!  if(ik==0)then
+!    forall(i=1:limax,j=1:ljmax) &
+!      g2d(i,j) = dot_product(xn_adv(gspec(:),i,j,KMAX_MID),&
+!                             cfac(gspec(:),i,j)*gunit_conv(:))
+!  else
+!    forall(i=1:limax,j=1:ljmax) &
+!      g2d(i,j) = dot_product(xn_adv(gspec(:),i,j,ik),gunit_conv(:))
+!  endif
   if(needroa)&
     forall(i=1:limax,j=1:ljmax) &
       g2d(i,j) = g2d(i,j) * density(i,j)

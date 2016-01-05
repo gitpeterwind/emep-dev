@@ -4,14 +4,14 @@
 "*Spec,adv,forumula,MW,DRY,WET,Extinc,Cstar,DeltaH,Empty,Groups,,!Comments"
 * Aiken et al., EST2008, gives values about 1.56-1.72 for P-BBOA and similar for ambient BBOA
 * Not sure if POC_f_WOOD should be in NVABSOM group here (but needed in "nonvolatile" runs!)
-POC_f_WOOD,1,CO,20.4,PMfS,PMf,0,0,0,xx,PMFINE;PM10;PCM;NVWOODOC25;NONVOLPCM;NVABSOM,,"!Primary wood burning OC emissions, OA/OC=1.7"
+POC_f_WOOD,1,CO,20.4,PMfS,PMf,0,0,0,xx,PMFSOA;PMFINE;PM10;PCM;NVWOODOC25;NONVOLPCM;NVABSOM,,"!Primary wood burning OC emissions, OA/OC=1.7"
 * Not sure if POC_f_FFUEL should be in NVABSOM group here (but needed in "nonvolatile" runs!)
 *
-POC_f_FFUEL,1,CH3,xx,PMfS,PMf,0,0,0,xx,PMFINE;PM10;PCM;NVFFUELOC25;NVFFUELOC10;NVABSOM,,"!Primary fossil fuel burning fine OC emissions, OA/OC=1.25"
+POC_f_FFUEL,1,CH3,xx,PMfS,PMf,0,0,0,xx,PMFSOA;PMFINE;PM10;PCM;NVFFUELOC25;NVFFUELOC10;NVABSOM,,"!Primary fossil fuel burning fine OC emissions, OA/OC=1.25"
 * Added PART_OM_C group, for consistency with PART_OM_F. The latter isn't a simple species though. 
 POC_c_FFUEL,1,CH3,xx,PMc,PMc,0,0,0,xx,PMCO;PM10;PM10anthr;PART_OM_C;NVFFUELOC10;NONVOLPCM,,"!Primary fossil fuel burning coarse OC emissions, OA/OC=1.25"
-EC_f_WOOD,1,C,xx,PMfS,ECfn,EC,0,0,xx,EC_f;PMFINE;PM10;PCM;WOODEC;ECFINE;NONVOLPCM,,"!Primary wood burning fine EC emissions"
-* not used? EC_f_WOOD_age,1,C,xx,PMfS,PMf,0,0,0,xx,EC_f;PMFINE;PM10;PCM;WOODEC;ECFINE;NONVOLPCM,,"!Aged wood burning fine EC emissions"
+EC_f_WOOD,1,C,xx,PMfS,ECfn,EC,0,0,xx,EC_f;PMFSOA;PMFINE;PM10;PCM;WOODEC;ECFINE;NONVOLPCM,,"!Primary wood burning fine EC emissions"
+* not used? EC_f_WOOD_age,1,C,xx,PMfS,PMf,0,0,0,xx,EC_f;PMFSOA;PMFINE;PM10;PCM;WOODEC;ECFINE;NONVOLPCM,,"!Aged wood burning fine EC emissions"
 EC_c_WOOD,1,C,xx,PMc,PMc,0,0,0,xx,PMCO;PM10;PM10anthr;WOODEC;NONVOLPCM,,"!Primary wood burning coarse EC emissions"
 EC_f_FFUEL,1,C,xx,PMfS,ECfn,EC,0,0,xx,EC_f;PMFINE;PM10;PCM;FFUELEC;ECFINE;NONVOLPCM,,"!Primary fossil fuel burning fine EC emissions"
 * not used? EC_f_FFUEL_age,1,C,xx,PMfS,PMf,0,0,0,xx,EC_f;PMFINE;PM10;PCM;FFUELEC;ECFINE;NONVOLPCM,,"!Aged fossil fuel burning fine EC emissions"
@@ -21,12 +21,12 @@ EC_c_FFUEL,1,C,xx,PMc,PMc,0,0,0,xx,PMCO;PM10;PM10anthr;FFUELEC;NONVOLPCM,,"!Prim
 * extra CPU if only OC, EC inventories are used, but makes for easy consistency with PMxx inventories
 *DS removed Aug2011
 *
-REMPPM25,1,xx,12,PMfS,PMf,DDf,0,0,xx,PM10;PMFINE,,"!Primary; fine <2.5um"
+REMPPM25,1,xx,12,PMfS,PMf,DDf,0,0,xx,PM10;PMFSOA;PMFINE,,"!Primary; fine <2.5um"
 *
 REMPPM_c,1,xx,12,PMc,PMc,DDc,0,0,xx,PMCO;PM10,,"!Primary; coarse 2.5um<PM<10"
 *Not sure if FFIRE_OM should be in NVABSOM group here (but needed in "nonvolatile" runs!)
 * Use molwt OM = 1.7 x 12 = 20.4
-FFIRE_OM,1,CO,20.4,PMfS,PMf,OC,0,0,xx,PMFINE;PM10;PCM;NVFFIREOC25;NONVOLPCM;NVABSOM,,"!Wildfire OC emissions, OA/OC assumed to be =1.7 (loosely based on Aiken et al. 2008)"
-FFIRE_BC,1,C,xx,PMfS,PMf,EC,0,0,xx,EC_f;PMFINE;PM10;PCM;FFIREBC;NONVOLPCM,,"!Wildfire BC emissions"
-PPM25_FIRE,1,xx,12,PMfS,PMf,DDf,0,0,xx,PM10;PMFINE,,!fires...(for consistency with EmChem09 only)
+FFIRE_OM,1,CO,20.4,PMfS,PMf,OC,0,0,xx,PMFSOA;PMFINE;PM10;PCM;NVFFIREOC25;NONVOLPCM;NVABSOM,,"!Wildfire OC emissions, OA/OC assumed to be =1.7 (loosely based on Aiken et al. 2008)"
+FFIRE_BC,1,C,xx,PMfS,PMf,EC,0,0,xx,EC_f;PMFSOA;PMFINE;PM10;PCM;FFIREBC;NONVOLPCM,,"!Wildfire BC emissions"
+PPM25_FIRE,1,xx,12,PMfS,PMf,DDf,0,0,xx,PM10;PMFSOA;PMFINE,,!fires...(for consistency with EmChem09 only)
 

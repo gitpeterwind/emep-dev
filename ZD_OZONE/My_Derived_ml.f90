@@ -84,7 +84,7 @@ INTEGER STATUS(MPI_STATUS_SIZE),INFO
 
   !============ parameters for concentration + dep outputs ==================!
 
-    integer, public, parameter :: MAX_NUM_DERIV2D = 200
+    integer, public, parameter :: MAX_NUM_DERIV2D = 250
     integer, public, parameter :: MAX_NUM_DERIV3D =   5 
     integer, public, parameter :: MAX_NUM_DDEP_ECOS = 6 ! Grid, Conif, etc.
     integer, public, parameter :: MAX_NUM_DDEP_WANTED = NSPEC_ADV  !plenty big

@@ -35,6 +35,7 @@ module RunChem_ml
                               DebugCell, DEBUG    ! RUNCHEM
   use OrganicAerosol_ml,only: ORGANIC_AEROSOLS, OrganicAerosol, &
                               Init_OrganicAerosol, & !FEB2012
+                              Reset_OrganicAerosol, & !FSOA
                               SOA_MODULE_FLAG   ! ="VBS" or "NotUsed"
   use Pollen_ml,        only: Pollen_flux
   use Par_ml,           only: lj0,lj1,li0,li1, limax, ljmax,  &
@@ -198,6 +199,11 @@ subroutine runchem()
         call WetDeposition(i,j,debug_flag)
         call check_negs(i,j,'H')
       end if
+
+     !Should be no further concentration changes due to emissions or deposition
+     !FSOA - resets BGND_OM and  ... if needed
+      if(ORGANIC_AEROSOLS) call Reset_OrganicAerosol(i,j,debug_flag) ! FSOA
+
 
       !// Calculate Aerosol Optical Depth
       if(USE_AOD)  &

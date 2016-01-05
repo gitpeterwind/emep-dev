@@ -118,17 +118,17 @@ EmChem09)
   bics=( EmChem09base )
 ;;
 EmChem09soa)
-  echo "RUN $run chosen. Remember to cp ZD_VBS/My_SOA_ml.f90!!"
+  echo "RUN $run chosen."
   spcs=( $xdir/EmChem09base $xdir/$Aero $xdir/Ash \
-         ../ZCM_vbs_tests/VBS_help    \
           ./VBS_nonvolatile ../ZCM_vbs_tests/VBS_partitioning )  #  VBS NPNA
+#XSOA         ../ZCM_vbs_tests/VBS_help    \
   rcns=( $xdir/EmChem09base $xdir/$Aero $xdir/Ash \
          ../ZCM_vbs_tests/VBS_SOAformation ../ZCM_vbs_tests/VBS_SOAageing \
           ./VBS_emissions_nonvolatilePOA_FromPM25  ) # VBS NPNA
   bics=( $xdir/EmChem09base )  # No special SOA BICs (yet)
 ;;
 EmChem09ecom)
-  echo "RUN $run chosen. Remember to cp ZD_VBS/My_SOA_ml.f90!!"
+  echo "RUN $run chosen."
   sdir=$PWD/ZCM_EmChem09soa
   echo "SOA DIR ", $sdir
   spcs=( $xdir/EmChem09base \
@@ -194,7 +194,6 @@ echo "NEW REACTIONS ", ${rcns[@]}
 
 #VBS
 #run=vbs_tests   # VBS based Organic Aerosol Model, different versions use different spcs and rcns, choose one set below
-#ALSO YOU NEED TO MODIFY ZD_VBS/My_SOA_ml.f90 to work with the research versions of the VBS code (except the NPNA version that probably works with an unmodified version of ZD_VBS/My_SOA_ml.f90
 
 #VBS NPAS (Nonvolatile POA, VBS for SOA formation and aging of SOA) Try using the "standard" EmChem09soa instead!!
 #  spcs=( ../ZCM_EmChem09/EmChem09base ../ZCM_EmChem09/SeaSalt \
