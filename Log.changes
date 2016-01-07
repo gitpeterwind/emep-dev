@@ -155,7 +155,7 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-5th January   2016 Dave  3118
+5-7th January   2016 Dave  3119
 
 INTERIM, needs further checks!!!
 (and for changes to be passed to more complex SOA, as well as SR versions, etc)
@@ -170,6 +170,8 @@ Main changes:
 
 2) ugPM units handling added to Derived_ml and Units_ml, to handle species or
 groups which involve semivolatile species (ie SOA!).
+
+3) ZD_VBS directory deleted. Empty after My_SOA_ml removed
 
 Chem_ml.f90 - made allocation of Fgas3d depend on FIRST_SEMIVOL>0
 
