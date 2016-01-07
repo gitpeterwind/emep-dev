@@ -118,21 +118,18 @@ touchdepend:
 ###
 # My_* files pre-requisites
 EMEP HTAP MACC MACC-EVA: \
-	  ./ZD_OZONE/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
-	  ./ZD_VBS/My_SOA_ml.f90 \
+	  ./ZD_OZONE/My_Outputs_ml.f90 \
 	  ./ZD_3DVar/My_3DVar_ml.f90 ./ZD_Pollen/My_Pollen_ml.f90 \
 	  ./ZD_EXTRA/My_ESX_ml.f90
 # no SOA:
 EmChem09 EmChem09-ESX CRI_v2_R5 eEMEP: \
-	  ./ZD_OZONE/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
-	  ./ZD_OZONE/My_SOA_ml.f90 \
+	  ./ZD_OZONE/My_Outputs_ml.f90 \
 	  ./ZD_3DVar/My_3DVar_ml.f90 ./ZD_Pollen/My_Pollen_ml.f90 \
 	  ./ZD_EXTRA/My_ESX_ml.f90
 
 # For SR we use the small My_Derived
 SR-EMEP SR-MACC: \
-	  ./ZD_SR/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
-	  ./ZD_VBS/My_SOA_ml.f90 \
+	  ./ZD_OZONE/My_Outputs_ml.f90 \
 	  ./ZD_3DVar/My_3DVar_ml.f90 ./ZD_Pollen/My_Pollen_ml.f90 \
 	  ./ZD_EXTRA/My_ESX_ml.f90
 
