@@ -277,14 +277,14 @@ end if
         iadv = find_index(xxname,species_adv(:)%name)         ! Index in ix_adv arrays
 if( iadv < 1 ) print *, "OOPADVNOW", iadv, trim(xname) // trim(name)
         call CheckStop(iadv<1,dtxt//"Unknown in DDEP_WANTED SPEC: "//trim(xname))
-        unitscale = Units_Scale(DDEP_WANTED(i)%txt3,iadv,units)
+        call Units_Scale(DDEP_WANTED(i)%txt3,iadv,unitscale,units)
         if(dbg0) print *, "ADVNO ",n,iadv,trim(xname), unitscale
 
       case("GROUP")
         igrp = find_index(xname,chemgroups(:)%name) ! array of members: chemgroups%ptr
 if( igrp < 1 ) print *, "OOPNOW", igrp, trim(xname) // trim(name)
         call CheckStop(igrp<1,dtxt//"Unknown in DDEP_WANTED GROUP: "//trim(xname))
-        unitscale = Units_Scale(DDEP_WANTED(i)%txt3,-1,units)
+        call Units_Scale(DDEP_WANTED(i)%txt3,-1,unitscale,units)
                       ! Units_Scale(iadv=-1) returns 1.0
                       ! Add_MosaicOutput gets the unit conversion factor from Group_Scale
         iadv = -igrp  ! use negative values for groups (e.g. DDEP_SOX)

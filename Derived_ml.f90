@@ -86,7 +86,6 @@ use TimeDate_ml,          only: day_of_year,daynumber,current_date,&
                                 tdif_days,startdate,enddate
 use TimeDate_ExtraUtil_ml,only: to_stamp
 use Units_ml,             only: Units_Scale,Group_Units,&
-                                do_Units_Scale, & 
                                 to_molec_cm3 ! converts roa [kg/m3] to M [molec/cm3]
 implicit none
 private
@@ -209,10 +208,10 @@ subroutine Init_Derived()
 
   ! units scaling
   ! e.g. ug_NO3_C = 1.0+e9 * MW(NO3)/MW(air)
-  if(iadv_NO3_C      >0)ug_NO3_C      =Units_Scale('ug', iadv_NO3_C      )
-  if(iadv_EC_C_WOOD  >0)ug_EC_C_WOOD  =Units_Scale('ug', iadv_EC_C_WOOD  )
-  if(iadv_EC_C_FFUEL >0)ug_EC_C_FFUEL =Units_Scale('ug', iadv_EC_C_FFUEL )
-  if(iadv_POM_C_FFUEL>0)ug_POM_C_FFUEL=Units_Scale('ug', iadv_POM_C_FFUEL)
+  if(iadv_NO3_C      >0)call Units_Scale('ug',iadv_NO3_C      ,ug_NO3_C      )
+  if(iadv_EC_C_WOOD  >0)call Units_Scale('ug',iadv_EC_C_WOOD  ,ug_EC_C_WOOD  )
+  if(iadv_EC_C_FFUEL >0)call Units_Scale('ug',iadv_EC_C_FFUEL ,ug_EC_C_FFUEL )
+  if(iadv_POM_C_FFUEL>0)call Units_Scale('ug',iadv_POM_C_FFUEL,ug_POM_C_FFUEL)
 
   call Define_Derived()
   call Setups()  ! just for VOC now
@@ -370,14 +369,14 @@ subroutine Define_Derived()
       case("PM25","PM25X","PM25_rh50","PM25X_rh50","PM10_rh50")
         iadv = -1 ! Units_Scale(iadv=-1) returns 1.0
                   ! group_calc gets the unit conversion factor from Group_Units
-        unitscale = Units_Scale(outunit, iadv, unittxt)
+        call Units_Scale(outunit,iadv,unitscale,unittxt)
         if(MasterProc) write(*,*)"FRACTION UNITSCALE ", unitscale
       case('COLUMN','COLUMN:SPEC')
      !COL  'NO2',          'molec/cm2' ,'k20','COLUMN'   ,'MISC' ,4,
         iout=find_index(outname, species_adv(:)%name )
         call CheckStop(iout<0,sub//"OutputFields "//trim(outtyp)//&
                               " not found "//trim(outname))
-        unitscale = Units_Scale(outunit, iout, unittxt)
+        call Units_Scale(outunit,iout,unitscale,unittxt)
         outtyp = "COLUMN:SPEC"
         subclass = outdim   ! k20, k16...
         outname = "COLUMN_" // trim(outname) // "_" // trim(subclass)
@@ -385,7 +384,7 @@ subroutine Define_Derived()
         iout=find_index(outname,chemgroups(:)%name)
         call CheckStop(iout<0,sub//"OutputFields "//trim(outtyp)//&
                               " not found "//trim(outname))
-        unitscale = Units_Scale(outunit, -1, unittxt)
+        call Units_Scale(outunit,-1,unitscale,unittxt)
         outtyp = "COLUMN:GROUP"
         subclass = outdim   ! k20, k16...
         outname = "COLUMN_" // trim(outname) // "_" // trim(subclass)
@@ -439,8 +438,7 @@ subroutine Define_Derived()
         endif
         call CheckStop(iadv<0,sub//"OutputFields Species not found "//trim(outname))
         iout = iadv
-        !FSOA unitscale = Units_Scale(outunit, iadv, unittxt, volunit)
-        call do_Units_Scale(outunit, iadv,unitscale, unittxt, volunit)
+        call Units_Scale(outunit,iadv,unitscale,unittxt,volunit)
       case("SHL")
         ishl = find_index(outname,species_shl(:)%name)
         call CheckStop(ishl<0,sub//"OutputFields Short lived Species not found "//trim(outname))
@@ -460,14 +458,10 @@ subroutine Define_Derived()
         endif
         call CheckStop(igrp<0,sub//"OutputFields Group not found "//trim(outname))
         iout = igrp
-        !FSOA unitscale = Units_Scale(outunit, -1, unittxt, volunit)
-       !if(MasterProc.and.DEBUG%DERIVED) write(*,*) 'FSOA GRPOM', f_2d(n)%unit
-       if( outunit == 'ugPM' ) subclass = 'FSOA'    
-       if(debug_proc.and.DEBUG%DERIVED) write(*,"(2a)") 'FSOA GRPOM:', &
+        if( outunit == 'ugPM' ) subclass = 'FSOA'    
+        if(debug_proc.and.DEBUG%DERIVED) write(*,"(2a)") 'FSOA GRPOM:', &
           trims( outname // ':' // outunit // ':' // subclass )
- 
- !FSOA
-        call do_Units_Scale(outunit, -1,unitscale, unittxt, volunit)
+        call Units_Scale(outunit,-1,unitscale,unittxt,volunit)
         ! Units_Scale(iadv=-1) returns 1.0
         ! group_calc gets the unit conversion factor from Group_Units
       case default
@@ -501,8 +495,7 @@ subroutine Define_Derived()
         call CheckStop(sub//" Unsupported OutputFields%outdim "//&
           trim(outtyp)//":"//trim(outname)//":"//trim(outdim))
       endselect
-      !FSOAcall AddNewDeriv(dname,class,"-","-",trim(unittxt),&
-      !FSOA call AddNewDeriv(dname,class,"-","-",trim(unittxt),&
+!FSOA call AddNewDeriv(dname,class,"-","-",trim(unittxt),&
       call AddNewDeriv(dname,class,subclass,"-",trim(unittxt),&
                        iout,-99,F,unitscale,T,outind,Is3D=Is3D)
     endif
@@ -538,7 +531,7 @@ subroutine Define_Derived()
       iadv = find_index(WDEP_WANTED(ind)%txt1, species_adv(:)%name)
       call CheckStop(iadv<1, "WDEP_WANTED Species not found " // trim(dname) )
 
-      unitscale = Units_Scale(WDEP_WANTED(ind)%txt3, iadv, unittxt)
+      call Units_Scale(WDEP_WANTED(ind)%txt3,iadv,unitscale,unittxt)
       call AddNewDeriv( dname, "WDEP", "-", "-", unittxt , &
               iadv, -99,   F, unitscale,     F,  IOU_DAY)
     case("GROUP")
@@ -547,7 +540,7 @@ subroutine Define_Derived()
 
       ! Just get units text here.
       ! Init_WetDep gets the unit conversion factors from Group_Scale.
-      unitscale = Units_Scale(WDEP_WANTED(ind)%txt3, -1, unittxt)
+      call Units_Scale(WDEP_WANTED(ind)%txt3,-1,unitscale,unittxt)
       call AddNewDeriv( dname,  "WDEP ","-","-", unittxt ,  &
               igrp, -99,   F,      1.0,   F,    IOU_DAY)
     case default

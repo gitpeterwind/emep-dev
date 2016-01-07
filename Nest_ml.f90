@@ -1122,8 +1122,9 @@ subroutine read_newdata_LATERAL(ndays_indate)
       if(status==nf90_noerr) then
         if(DEBUG_NEST.or.DEBUG_ICBC) write(*,*)&
           'Nest: variable '//trim(adv_bc(bc)%varname)//' has unit '//trim(units)
-        unitscale=adv_bc(bc)%frac/Units_Scale(units,n,needroa=divbyroa,&
-                                              debug_msg="read_newdata_LATERAL")
+        call Units_Scale(units,n,unitscale,needroa=divbyroa,&
+                         debug_msg="read_newdata_LATERAL")
+        unitscale=adv_bc(bc)%frac/unitscale
       else
         if(DEBUG_NEST.or.DEBUG_ICBC) write(*,*)&
           'Nest: variable '//trim(adv_bc(bc)%varname//' has no unit attribute')
@@ -1306,8 +1307,9 @@ subroutine reset_3D(ndays_indate)
       if(status==nf90_noerr) then
         if(DEBUG_NEST) write(*,*)&
           'Nest: variable '//trim(adv_ic(n)%varname)//' has unit '//trim(units)
-        unitscale=adv_ic(n)%frac/Units_Scale(units,n,needroa=divbyroa,&
-                                             debug_msg="reset_3D")
+        call Units_Scale(units,n,unitscale,needroa=divbyroa,&
+                         debug_msg="reset_3D")
+        unitscale=adv_ic(n)%frac/unitscale
       else
         if(DEBUG_NEST) write(*,*)&
           'Nest: variable '//trim(adv_ic(n)%varname//' has no unit attribute')

@@ -117,18 +117,7 @@ touchdepend:
 # Model/Config specific targets
 ###
 # My_* files pre-requisites
-EMEP HTAP MACC MACC-EVA: \
-	  ./ZD_OZONE/My_Outputs_ml.f90 \
-	  ./ZD_3DVar/My_3DVar_ml.f90 ./ZD_Pollen/My_Pollen_ml.f90 \
-	  ./ZD_EXTRA/My_ESX_ml.f90
-# no SOA:
-EmChem09 EmChem09-ESX CRI_v2_R5 eEMEP: \
-	  ./ZD_OZONE/My_Outputs_ml.f90 \
-	  ./ZD_3DVar/My_3DVar_ml.f90 ./ZD_Pollen/My_Pollen_ml.f90 \
-	  ./ZD_EXTRA/My_ESX_ml.f90
-
-# For SR we use the small My_Derived
-SR-EMEP SR-MACC: \
+EMEP HTAP MACC MACC-EVA EmChem09 EmChem09-ESX CRI_v2_R5 eEMEP SR-EMEP SR-MACC: \
 	  ./ZD_OZONE/My_Outputs_ml.f90 \
 	  ./ZD_3DVar/My_3DVar_ml.f90 ./ZD_Pollen/My_Pollen_ml.f90 \
 	  ./ZD_EXTRA/My_ESX_ml.f90
@@ -145,7 +134,7 @@ EmChem09-ESX: SRCS := $(filter-out My_ESX_ml.f90,$(SRCS)) $(ESX_SRCS)
 EmChem09-ESX: $(ESX_SRCS) | depend
 
 # Link My_* files and MAKE target
-EMEP SR-EMEP HTAP EmChem09 EmChem09-ESX CRI_v2_R5 MACC MACC-EVA SR-MACC eEMEP:
+EMEP HTAP MACC MACC-EVA EmChem09 EmChem09-ESX CRI_v2_R5 eEMEP SR-EMEP SR-MACC:
 	ln -sf $(filter %.f90 %.inc,$+) . && $(MAKE)
 
 # GenChem config

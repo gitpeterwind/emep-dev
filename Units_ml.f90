@@ -17,11 +17,6 @@ public ::                   &
   Group_Units,              & ! unit factors for a GROUP
   Group_Scale                 ! function version of Group_Units
 
-! Subroutines, interim -- while functions  which affected arguments are converted to 
-! subroutines
-
-public :: do_Units_Scale      ! unit factor for single SPC
-
 interface Group_Units
   module procedure Group_Units_Asc2D,Group_Units_detail
 end interface Group_Units
@@ -108,7 +103,6 @@ type(umap), public, save :: unit_map(23)=(/&
   umap("ugm2"   ,"ug/m2"        ,F,T,ugXm3),&  ! ug* units need to be further multiplied
   umap("mcm2"   ,"molec/cm2"    ,F,T,to_molec_cm2),&
   umap("e15mcm2","1e15molec/cm2",F,T,to_molec_cm2*1e-15)/)
-
 
 logical, private, save :: Initialize_Units = .true.
 
@@ -211,64 +205,9 @@ function Group_Scale(igrp,unit,debug,volunit,needroa) result(gmap)
   hr_out%type="Group_Scale"
   call Group_Units_Asc2D(hr_out,gmap%iadv,gmap%uconv,debug,&
                          name=gmap%name,volunit=volunit,needroa=needroa)
-end function Group_Scale
+endfunction Group_Scale
 
-function Units_Scale(txtin,iadv,unitstxt,volunit,needroa,debug_msg) result(unitscale)
-  character(len=*), intent(in) :: txtin
-  integer, intent(in) :: iadv  ! species_adv index, used if > 0
-  character(len=*), intent(out), optional :: unitstxt
-  logical,          intent(out), optional :: volunit,needroa
-  character(len=*), intent(in), optional :: debug_msg
-  character(len=len(txtin)) :: txt
-  real :: unitscale
-  integer :: i
-
-  if(Initialize_Units) call Init_Units
-  txt=ADJUSTL(txtin)                    ! Remove leading spaces
-  do i=1,len(txt)                       ! Remove invisible character
-    if(ichar(txt(i:i))==0)txt(i:i)=' '  ! char(0)
-  enddo
-  select case (txt)
-  case("ugSS","ugSS/m3","ugP","ugP/m3",&
-       "ugPM",  "ugPM/m3", & 
-       "mgSS","mgSS/m2","mgP","mgP/m2")
-    txt=txt(1:2)
-  case("micro g/m3")
-    txt="ug"
-  case("mol/mol","mole mole-1","mixratio","vmr")
-    txt="mix_ratio"
-  case("kg/kg","kg kg-1","kg kg**-1","massratio","mmr")
-    txt="mass_ratio"
-  case("ppbv","ppbV")
-    txt="ppb"
-  endselect
-  i=find_index(txt,unit_map(:)%utxt)
-  if(i<1)i=find_index(txt,unit_map(:)%units)
-  call CheckStop(i<1,"Units_Scale Error: Unknown unit "// trim(txtin) )
-
-  if(present(unitstxt))unitstxt = trim(unit_map(i)%units)
-  if(present(volunit )) volunit = unit_map(i)%volunit
-  if(present(needroa )) needroa = unit_map(i)%needroa
-  select case (iadv)
-  case (-1)
-! groups (called iadv==-1) do not get a scaling factor at this stage.
-! A second call with a valid iadv will provide the full conversion factor.
-    unitscale = 1.0
-  case (0)
-! return the conversion factor without the specie specific part (eg %molwt)
-    unitscale = unit_map(i)%uconv(iadv)
-  case (1:NSPEC_ADV)
-    unitscale = unit_map(i)%uconv(iadv)
-    if(present(debug_msg)) &
-      call CheckStop(unitscale==0.0,"Units_Scale Error: 0.0 conversion for "//&
-      trim(species_adv(iadv)%name)//" in "//trim(unitstxt)//" at "//trim(debug_msg))
-  case default
-    call CheckStop(iadv,"Units_Scale Error: Unknown iadv.")
-  endselect
-
-end function Units_Scale
-
-subroutine do_Units_Scale(txtin,iadv,unitscale,unitstxt,volunit,needroa,debug_msg)
+subroutine Units_Scale(txtin,iadv,unitscale,unitstxt,volunit,needroa,debug_msg)
   character(len=*), intent(in) :: txtin
   integer, intent(in) :: iadv  ! species_adv index, used if > 0
   real, intent(out) :: unitscale
@@ -321,6 +260,6 @@ subroutine do_Units_Scale(txtin,iadv,unitscale,unitstxt,volunit,needroa,debug_ms
     call CheckStop(iadv,"Units_Scale Error: Unknown iadv.")
   endselect
 
-end subroutine  do_Units_Scale
+endsubroutine Units_Scale
 
 endmodule Units_ml
