@@ -207,13 +207,13 @@ function Group_Scale(igrp,unit,debug,volunit,needroa) result(gmap)
                          name=gmap%name,volunit=volunit,needroa=needroa)
 endfunction Group_Scale
 
-subroutine Units_Scale(txtin,iadv,unitscale,unitstxt,volunit,needroa,debug_msg)
+subroutine Units_Scale(txtin,iadv,unitscale,unitstxt,volunit,needroa,semivol,debug_msg)
   character(len=*), intent(in) :: txtin
   integer, intent(in) :: iadv  ! species_adv index, used if > 0
   real, intent(out) :: unitscale
-  character(len=*), intent(out), optional :: unitstxt
-  logical,          intent(out), optional :: volunit,needroa
-  character(len=*), intent(in), optional :: debug_msg
+  character(len=*),intent(out),optional :: unitstxt
+  logical,         intent(out),optional :: volunit,needroa,semivol
+  character(len=*),intent(in) ,optional :: debug_msg
   character(len=len(txtin)) :: txt
   integer :: i
 
@@ -223,12 +223,14 @@ subroutine Units_Scale(txtin,iadv,unitscale,unitstxt,volunit,needroa,debug_msg)
     if(ichar(txt(i:i))==0)txt(i:i)=' '  ! char(0)
   enddo
   select case (txt)
-  case("ugSS","ugSS/m3","ugP","ugP/m3",&
-       "ugPM",  "ugPM/m3", & 
+  case("ugSS","ugSS/m3","ugP","ugP/m3",& 
        "mgSS","mgSS/m2","mgP","mgP/m2")
     txt=txt(1:2)
   case("micro g/m3")
     txt="ug"
+  case("ug:PM","ug:PM/m3","ugC:PM","ugC:PM/m3",&
+     "ugN:PM","ugN:PM/m3","ugS:PM","ugS:PM/m3")
+    txt=txt(1:index(txt,':')-1)
   case("mol/mol","mole mole-1","mixratio","vmr")
     txt="mix_ratio"
   case("kg/kg","kg kg-1","kg kg**-1","massratio","mmr")
@@ -243,6 +245,7 @@ subroutine Units_Scale(txtin,iadv,unitscale,unitstxt,volunit,needroa,debug_msg)
   if(present(unitstxt))unitstxt = trim(unit_map(i)%units)
   if(present(volunit )) volunit = unit_map(i)%volunit
   if(present(needroa )) needroa = unit_map(i)%needroa
+  if(present(semivol))  semivol = (txtin=='ugPM').or.(index(txtin,':PM')>0)
   select case (iadv)
   case (-1)
 ! groups (called iadv==-1) do not get a scaling factor at this stage.

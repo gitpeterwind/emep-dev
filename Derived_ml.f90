@@ -288,7 +288,7 @@ subroutine Define_Derived()
 ! And, Initialise the fields to zero.
 
   real    :: unitscale
-  logical :: volunit   ! set true for volume units, e.g. ppb
+  logical :: volunit,semivol  ! set true for volume units (e.g. ppb),group with semivol
   !FAILED logical :: outmm, outdd  ! sets time-intervals
 
   character(len=30) :: dname, class
@@ -458,12 +458,12 @@ subroutine Define_Derived()
         endif
         call CheckStop(igrp<0,sub//"OutputFields Group not found "//trim(outname))
         iout = igrp
-        if( outunit == 'ugPM' ) subclass = 'FSOA'    
-        if(debug_proc.and.DEBUG%DERIVED) write(*,"(2a)") 'FSOA GRPOM:', &
-          trims( outname // ':' // outunit // ':' // subclass )
-        call Units_Scale(outunit,-1,unitscale,unittxt,volunit)
+        call Units_Scale(outunit,-1,unitscale,unittxt,volunit,semivol=semivol)
         ! Units_Scale(iadv=-1) returns 1.0
         ! group_calc gets the unit conversion factor from Group_Units
+        if( semivol ) subclass = 'FSOA'    
+        if(debug_proc.and.DEBUG%DERIVED) write(*,"(2a)") 'FSOA GRPOM:', &
+          trims( outname // ':' // outunit // ':' // subclass )
       case default
         call CheckStop(sub//" Unsupported OutputFields%outtyp "//&
           trim(outtyp)//":"//trim(outname)//":"//trim(outdim))
