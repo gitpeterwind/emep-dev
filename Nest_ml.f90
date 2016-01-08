@@ -4,6 +4,8 @@ module Nest_ml
 ! The Nesting modes (MODE in Nest_config nml) are:
 ! 0=donothing , 1=write , 2=read , 3=read and write
 ! 10=write at end of run, 11=read at start , 12=read at start and write at end (BIC)
+! 20=write at end of run and read every NHOURREAD
+! 100=read monthly (not fully tested)
 !
 ! To make a nested run:
 ! 1) run with MODE=1 (MODE in Nest_config nml) to write out 3d BC (name in filename_write defined below)
@@ -200,7 +202,7 @@ subroutine readxn(indate)
 
   call Config_Nest()
   if(mydebug) write(*,*)'Nest:Read BC, MODE=',MODE
-  if(.not.any(MODE==[2,3,11,12]).and..not.FORECAST)return
+  if(.not.any(MODE==[2,3,11,12,20]).and..not.FORECAST)return
 
   KMAX_BC=KMAX_MID
   ndate(1:4)=[indate%year,indate%month,indate%day,indate%hour]
@@ -322,7 +324,7 @@ subroutine wrtxn(indate,WriteNow)
   logical, save :: first_call=.true.
 
   call Config_Nest()
-  if(.not.any(MODE==[1,3,10,12]).and..not.FORECAST)return
+  if(.not.any(MODE==[1,3,10,12,20]).and..not.FORECAST)return
 
 ! Check if the file exist already at start of run. Do not wait until first write to stop!
 ! If you know what you are doing you can set paramter APPEND=.true.,
@@ -335,7 +337,7 @@ subroutine wrtxn(indate,WriteNow)
   endif
 
   select case(MODE)
-  case(10,12)
+  case(10,12,20)
     if(.not.WriteNow)return
 !   out_DOMAIN=RUNDOMAIN
   case default
