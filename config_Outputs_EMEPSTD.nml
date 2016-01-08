@@ -169,10 +169,11 @@ OutputConcs=
     !** Needed if semivolatile components 
       'PMFINE'              ,'ugPM'  ,'2d','AIR_CONCS','GROUP' ,4, ! FSOA tests
       'OM25'              ,'ugPM'  ,'2d','AIR_CONCS','GROUP' ,4, ! FSOA tests
-      'OM25_BGND'          ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, ! FSOA tests
-      'OM25_BGND'          ,'ugPM'  ,'2d','AIR_CONCS','SPEC' ,4, ! FSOA tests
+      'OM25_BGND'          ,'ug'  ,'2d','AIR_CONCS','SPEC' ,3, ! FSOA tests
+      'OM25_BGND'          ,'ugPM'  ,'2d','AIR_CONCS','SPEC' ,3, ! FSOA tests
       'ASOA'                ,'ugPM'  ,'2d','AIR_CONCS','GROUP' ,4, ! FSOA tests
       'BSOA'                ,'ugPM'  ,'2d','AIR_CONCS','GROUP' ,4, ! FSOA tests
+      'BSOA'                ,'ug'  ,'2d','AIR_CONCS','GROUP' ,4, ! FSOA tests
       'NONVOLPCM'           ,'ugPM'  ,'2d','AIR_CONCS','GROUP' ,4, ! FSOA tests
       'FFUELOA25'           ,'ugPM'  ,'2d','AIR_CONCS','SPEC' ,4, ! FSOA tests
       'POM_F_FFUEL'         ,'ugPM'  ,'2d','AIR_CONCS','SPEC' ,4, ! FSOA tests

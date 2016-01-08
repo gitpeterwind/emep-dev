@@ -1835,20 +1835,28 @@ subroutine group_calc( g2d, density, unit, ik, igrp,semivol)
   real,    pointer, dimension(:) :: gunit_conv=>null()  ! & unit conv. factors
   logical :: needroa
   integer :: kk, iadv, itot, nspec ! FSOA
-  real :: fac          ! FSOA
-  logical ::  semivol_found=.false., first_call = .true. ! FSOA
-  
-  if(DEBUG%DERIVED .and.debug_proc) &
-    write(*,"(a,L1,2i4,2a16)") "DEBUG GROUP-PM-N",debug_proc,me,ik, &
-      trim(chemgroups(igrp)%name), trim(unit)
-  call Group_Units(igrp,unit,gspec,gunit_conv,&
-    debug=DEBUG%DERIVED.and.debug_proc,needroa=needroa)
+  real :: fac                      ! FSOA
+  logical ::  semivol_wanted       ! FSOA
+  logical ::  first_call    = .true.  ! FSOA
+  logical ::  first_semivol = .true.  ! FSOA
 
 !FSOA changes
   kk = ik
   if ( ik == 0 ) kk = KMAX_MID
 
-  if( present(semivol) .and. debug_proc ) then
+  semivol_wanted=.false.
+  if ( present(semivol) ) then
+     semivol_wanted = semivol
+  end if
+  
+  if(DEBUG%DERIVED .and.debug_proc) &
+    write(*,"(a,L1,3i4,2a16,L2)") "DEBUG GROUP-PM-N",debug_proc,me,ik, kk, &
+      trim(chemgroups(igrp)%name), trim(unit), semivol_wanted
+
+  call Group_Units(igrp,unit,gspec,gunit_conv,&
+    debug=DEBUG%DERIVED.and.debug_proc,needroa=needroa)
+
+  if( semivol_wanted .and. debug_proc ) then
     write(*,"(a,L1,2i4,2a16)") "DEBUG GROUP-FSOA",debug_proc,me,ik, &
       trim(chemgroups(igrp)%name)
     write(*,"(a,2i4)") "DEBUG GROUP-FSOA", size(gspec), size(gunit_conv)
@@ -1873,11 +1881,13 @@ subroutine group_calc( g2d, density, unit, ik, igrp,semivol)
             "FSOA check ", nspec, itot, igrp, trim(chemgroups(igrp)%name),&
              trim(species(itot)%name), FIRST_SEMIVOL, LAST_SEMIVOL
 
-        if( itot >= FIRST_SEMIVOL .and. itot <= LAST_SEMIVOL ) then
-           semivol_found = .true.
+        if( semivol_wanted .and. itot >= FIRST_SEMIVOL .and.  &
+             itot <= LAST_SEMIVOL ) then
            fac = 1 - Fgas3d(itot,i,j,kk)
         end if
+
         if ( ik == 0 )  fac = fac * cfac(iadv,i,j)
+
         if( chemgroups(igrp)%name == 'BSOA' .and.  &
               debug_proc  ) write(*,"(a,2i4,1x, es12.3, f12.5, 2x, a)") &
                  "FSOA fac ", nspec, itot, fac, &
@@ -1886,20 +1896,12 @@ subroutine group_calc( g2d, density, unit, ik, igrp,semivol)
 
         g2d(i,j) = g2d(i,j) + xn_adv(iadv,i,j,kk)  * gunit_conv(nspec) * fac
       end do ! nspec
-      if( first_call .and. semivol_found) first_call = .false.
+      if( first_semivol .and. semivol_wanted) first_semivol = .false.
+      first_call = .false.
     end do ! i
   end do ! j
        
 
-!FSOA skip:
-!  if(ik==0)then
-!    forall(i=1:limax,j=1:ljmax) &
-!      g2d(i,j) = dot_product(xn_adv(gspec(:),i,j,KMAX_MID),&
-!                             cfac(gspec(:),i,j)*gunit_conv(:))
-!  else
-!    forall(i=1:limax,j=1:ljmax) &
-!      g2d(i,j) = dot_product(xn_adv(gspec(:),i,j,ik),gunit_conv(:))
-!  endif
   if(needroa)&
     forall(i=1:limax,j=1:ljmax) &
       g2d(i,j) = g2d(i,j) * density(i,j)
