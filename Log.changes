@@ -154,9 +154,9 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-15th January   2016 Peter 3127
+15th January   2016 Peter 3127-8
 
-Ocean DMS: bug fix (typo: gave 2-5 times too much DMS) and cleanup of diagnostic budget.
+Ocean DMS: bug fix (typo: gave about 2(?) times too much DMS) and cleanup of diagnostic budget.
 
 USE_OCEAN_DMS automatically set T when file is found.
 

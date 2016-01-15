@@ -189,7 +189,8 @@ integer, public, save :: &
    ,USE_SOILNOX           = .true.       ! DO NOT ALTER: Set after config
   real, public, save :: EURO_SOILNOX_DEPSCALE = 1.0 ! 
 
-  logical, public, save ::  USE_OCEAN_DMS = .false. !YOU must set this true to use the new scheme instead of old
+!NB: *OCEAN*  are internal variables. Cannot be set manually.
+  logical, public, save ::  USE_OCEAN_DMS = .false. !set automatically true if found.
   logical, public, save ::  FOUND_OCEAN_DMS = .false. !set automatically true if found
   logical, public, save ::  USE_OCEAN_NH3 = .false. !set automatically true if found
 
