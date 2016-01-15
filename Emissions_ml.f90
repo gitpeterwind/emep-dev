@@ -588,7 +588,7 @@ contains
                 O_DMS%sum_month=0.0
                 O_DMS%sum_year=0.0
                 if(me==0)write(*,*)' found DMS monthly'    
-            else
+             else
                 call StopAll("Yearly DMS not implemented")
              endif
           else
@@ -1713,25 +1713,8 @@ subroutine newmonth
              nstart=current_date%month,interpol='conservative',known_projection="lon lat",&
              needed=.true.,debug_flag=.false.,UnDef=0.0)
 
-        !diagnostics:
-        !call printcdf('DMS',DMS,'nanomol/liter')
-        !convert from nanomol/liter into kg/month/gridrute. Molar mass of dms is 62.1340 g/mol
-        O_DMS%sum_month=0.0
-        do j=1,ljmax
-           do i=1,limax
-              !sum DMS_month locally
-              O_DMS%sum_month=O_DMS%sum_month+O_DMS%emis(i,j)*gridwidth_m**2*xmd(i,j)
-           enddo
-        enddo
-        !sum all subdomains
-        CALL MPI_ALLREDUCE(MPI_IN_PLACE, O_DMS%sum_month, 1,&
-             MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
-
-!NB: Temporary uncommented!!    
-        ! USE_OCEAN_DMS=.true.
+        USE_OCEAN_DMS=.true.
         FOUND_OCEAN_DMS=.true.
-
-        if(me==0)write(*,*)'Total monthly DMS in water (in kg in 1 mm layer) ',62.1340*O_DMS%sum_month*1e-9*1e-3
         
         !from nanomol/l -> mol/cm3
         O_DMS%emis=O_DMS%emis*1.0e-12

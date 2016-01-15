@@ -1838,7 +1838,7 @@ subroutine group_calc( g2d, density, unit, ik, igrp,semivol)
   real :: fac                      ! FSOA
   logical ::  semivol_wanted       ! FSOA
   logical ::  first_call    = .true.  ! FSOA
-  logical ::  first_semivol = .true.  ! FSOA
+  logical ::  first_semivol_call = .true.  ! FSOA
 
 !FSOA changes
   kk = ik
@@ -1896,7 +1896,7 @@ subroutine group_calc( g2d, density, unit, ik, igrp,semivol)
 
         g2d(i,j) = g2d(i,j) + xn_adv(iadv,i,j,kk)  * gunit_conv(nspec) * fac
       end do ! nspec
-      if( first_semivol .and. semivol_wanted) first_semivol = .false.
+      if( first_semivol_call .and. semivol_wanted) first_semivol_call = .false.
       first_call = .false.
     end do ! i
   end do ! j

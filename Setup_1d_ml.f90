@@ -528,10 +528,11 @@ subroutine setup_rcemis(i,j)
      !Kw in cm/hour after Leonor Tarrason (1995), after Liss and Merlivat (1986)
      !assumes 20 degrees C
 !NB: misprint in gbc1385.pdf!
-     SST_C=(SST(i,j,1)-T0) !the formula uses degrees C
+     SST_C=max(0.0,min(30.0,(SST(i,j,1)-T0))) !the formula uses degrees C
      SC_DMS=2674 -147.12*SST_C + 3.726*SST_C*SST_C - 0.038 * SST_C*SST_C*SST_C
      SC_DMS=SC_DMS/600.0
-     SC_DMS_m23=SC_DMS**(2.0/3.0)
+     SC_DMS_m23=SC_DMS**(-2.0/3.0)
+
      SC_DMS_msqrt=sqrt(1./SC_DMS)
      if(ws_10m(i,j,1)<=3.6)then
         Kw=0.17*ws_10m(i,j,1)*SC_DMS_m23

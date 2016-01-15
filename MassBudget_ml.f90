@@ -386,7 +386,7 @@ subroutine massbudget()
         write(*,*)'DMS OCEAN emissions '
         write(*,59)'SO2 from ocean DMS cdf file ',O_DMS%sum_year
         write(*,59)'SO2 from natso2.dat ',DMS_natso2_year
-        write(*,59)'fraction new/old method',O_DMS%sum_year/DMS_natso2_year
+!        write(*,59)'fraction new/old method',O_DMS%sum_year/DMS_natso2_year
      endif
   endif
   if(MasterProc)then
