@@ -1888,7 +1888,7 @@ subroutine group_calc( g2d, density, unit, ik, igrp,semivol)
 
         if ( ik == 0 )  fac = fac * cfac(iadv,i,j)
 
-        if( chemgroups(igrp)%name == 'BSOA' .and.  &
+        if( first_semivol_call .and. chemgroups(igrp)%name == 'BSOA' .and.  &
               debug_proc  ) write(*,"(a,2i4,1x, es12.3, f12.5, 2x, a)") &
                  "FSOA fac ", nspec, itot, fac, &
                  xn_adv(iadv,i,j,kk)  * gunit_conv(nspec) * fac,  &
