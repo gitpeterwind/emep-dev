@@ -124,6 +124,7 @@ use ModelConstants_ml,    only : PASCAL, PT, Pref, METSTEP  &
      ,CONVECTION_FACTOR & 
      ,LANDIFY_MET,MANUAL_GRID  & 
      ,CW_THRESHOLD,RH_THRESHOLD, CW2CC,IOU_INST,JUMPOVER29FEB
+use MPI_Groups_ml
 use Par_ml           ,    only : MAXLIMAX,MAXLJMAX,GIMAX,GJMAX, me  &
      ,limax,ljmax  &
      ,neighbor,WEST,EAST,SOUTH,NORTH,NOPROC  &
@@ -141,10 +142,6 @@ use TimeDate_ExtraUtil_ml,only: nctime2idate,date2string
 
 implicit none
 private
-
-
-INCLUDE 'mpif.h'
-INTEGER MPISTATUS(MPI_STATUS_SIZE),INFO
 
 ! logical, private, save      :: debug_procloc = .false.
 integer, private, save      :: debug_iloc, debug_jloc  ! local coords
@@ -227,7 +224,6 @@ contains
     real   prhelp_sum,divk(KMAX_MID),sumdiv,dB_sum
     real   divt, inv_METSTEP
 
-    integer request_s,request_n,request_e,request_w
     real ::Ps_extended(0:LIMAX+1,0:LJMAX+1),Pmid,Pu1,Pu2,Pv1,Pv2
 
     real :: tmpsw, landfrac, sumland  ! for soil water averaging
@@ -237,7 +233,7 @@ contains
     real buf_ue(LJMAX,KMAX_MID)
     real buf_vn(LIMAX,KMAX_MID)
     real buf_vs(LIMAX,KMAX_MID)
-
+    integer ::   INFO
 
     if(current_date%seconds /= 0 .or. (mod(current_date%hour,METSTEP)/=0) )return
 
@@ -358,7 +354,7 @@ contains
            if(neighbor(WEST) .ne. me)then
               buf_uw(:,:) = u_xmj(1,:,:,nr)
               CALL MPI_ISEND(buf_uw, 8*LJMAX*KMAX_MID, MPI_BYTE, &
-                   neighbor(WEST), MSG_EAST2, MPI_COMM_WORLD, request_w, INFO)
+                   neighbor(WEST), MSG_EAST2, MPI_COMM_CALC, request_w, IERROR)
            else
               ! cyclic grid: own neighbor
               ue(:,:,nr) = u_xmj(1,:,:,nr)
@@ -367,23 +363,23 @@ contains
         if (neighbor(SOUTH) .ne. NOPROC) then
            buf_vs(:,:) = v_xmi(:,1,:,nr)
            CALL MPI_ISEND(buf_vs, 8*LIMAX*KMAX_MID, MPI_BYTE, &
-                neighbor(SOUTH), MSG_NORTH2, MPI_COMM_WORLD, request_s, INFO)
+                neighbor(SOUTH), MSG_NORTH2, MPI_COMM_CALC, request_s, IERROR)
         endif
 
         if (neighbor(EAST) .ne. NOPROC .and. neighbor(EAST) .ne. me) then
            CALL MPI_RECV(ue(1,1,nr), 8*LJMAX*KMAX_MID, MPI_BYTE, &
-                neighbor(EAST), MSG_EAST2, MPI_COMM_WORLD, MPISTATUS, INFO)
+                neighbor(EAST), MSG_EAST2, MPI_COMM_CALC, MPISTATUS, IERROR)
         endif
         if (neighbor(NORTH) .ne. NOPROC) then
            CALL MPI_RECV(vn(1,1,nr), 8*LIMAX*KMAX_MID, MPI_BYTE, &
-                neighbor(NORTH), MSG_NORTH2, MPI_COMM_WORLD, MPISTATUS, INFO)
+                neighbor(NORTH), MSG_NORTH2, MPI_COMM_CALC, MPISTATUS, IERROR)
         endif
         
         if (neighbor(WEST) .ne. NOPROC .and. neighbor(WEST) .ne. me) then
-           CALL MPI_WAIT(request_w, MPISTATUS, INFO)
+           CALL MPI_WAIT(request_w, MPISTATUS, IERROR)
         endif
         if (neighbor(SOUTH) .ne. NOPROC) then
-           CALL MPI_WAIT(request_s, MPISTATUS, INFO)
+           CALL MPI_WAIT(request_s, MPISTATUS, IERROR)
         endif
 
         do k=1,KMAX_MID
@@ -422,22 +418,22 @@ contains
     if (neighbor(EAST) .ne. NOPROC) then
        usnd(:,:) = u_xmj(limax,:,:,nr)
        CALL MPI_ISEND( usnd, 8*LJMAX*KMAX_MID, MPI_BYTE,  &
-            neighbor(EAST), MSG_WEST2, MPI_COMM_WORLD, request_e, INFO)
+            neighbor(EAST), MSG_WEST2, MPI_COMM_CALC, request_e, IERROR)
     endif
     if (neighbor(NORTH) .ne. NOPROC) then
        vsnd(:,:) = v_xmi(:,ljmax,:,nr)
        CALL MPI_ISEND( vsnd , 8*LIMAX*KMAX_MID, MPI_BYTE,  &
-            neighbor(NORTH), MSG_SOUTH2, MPI_COMM_WORLD, request_n, INFO)
+            neighbor(NORTH), MSG_SOUTH2, MPI_COMM_CALC, request_n, IERROR)
     endif
     if (neighbor(WEST) .ne. NOPROC) then
        CALL MPI_RECV( u_xmj(0,:,:,nr), 8*LJMAX*KMAX_MID, MPI_BYTE, &
-            neighbor(WEST), MSG_WEST2, MPI_COMM_WORLD, MPISTATUS, INFO)
+            neighbor(WEST), MSG_WEST2, MPI_COMM_CALC, MPISTATUS, IERROR)
     else
        u_xmj(0,:,:,nr) = u_xmj(1,:,:,nr)
     endif
     if (neighbor(SOUTH) .ne. NOPROC) then
        CALL MPI_RECV( v_xmi(:,0,:,nr) , 8*LIMAX*KMAX_MID, MPI_BYTE,  &
-            neighbor(SOUTH), MSG_SOUTH2, MPI_COMM_WORLD, MPISTATUS, INFO)
+            neighbor(SOUTH), MSG_SOUTH2, MPI_COMM_CALC, MPISTATUS, IERROR)
     else
        if(Poles(2)/=1)  then
           v_xmi(:,0,:,nr) = v_xmi(:,1,:,nr)
@@ -450,8 +446,8 @@ contains
        !"close" the North pole
        v_xmi(:,ljmax,:,nr) = 0.0
     endif
-    if(neighbor(EAST) .ne. NOPROC) CALL MPI_WAIT(request_e, MPISTATUS, INFO)
-    if(neighbor(NORTH) .ne. NOPROC)CALL MPI_WAIT(request_n, MPISTATUS, INFO)
+    if(neighbor(EAST) .ne. NOPROC) CALL MPI_WAIT(request_e, MPISTATUS, IERROR)
+    if(neighbor(NORTH) .ne. NOPROC)CALL MPI_WAIT(request_n, MPISTATUS, IERROR)
 
     !divide by the scaling in the perpendicular direction to get effective 
     !u_xmj and v_xmi
@@ -523,7 +519,7 @@ contains
           !must first check that precipitation is increasing. At some dates WRF maybe restarted!
           minprecip=minval(surface_precip(1:limax,1:ljmax) - surface_precip_old(1:limax,1:ljmax))
           CALL MPI_ALLREDUCE(MPI_IN_PLACE, minprecip, 1,MPI_DOUBLE_PRECISION, &
-               MPI_MIN, MPI_COMM_WORLD, INFO) 
+               MPI_MIN, MPI_COMM_CALC, IERROR) 
           if(minprecip<-10)then
              if(me==0)write(*,*)'WARNING: found negative precipitations. set precipitations to zero!',minprecip
              surface_precip = 0.0
@@ -981,17 +977,17 @@ contains
        if (neighbor(EAST) .ne. NOPROC) then
           usnd(:,1) = ps(limax,:,nr)
           CALL MPI_ISEND( usnd, 8*LJMAX, MPI_BYTE,  &
-               neighbor(EAST), MSG_WEST2, MPI_COMM_WORLD, request_e, INFO)
+               neighbor(EAST), MSG_WEST2, MPI_COMM_CALC, request_e, IERROR)
        endif
        if (neighbor(NORTH) .ne. NOPROC) then
           vsnd(:,1) = ps(:,ljmax,nr)
           CALL MPI_ISEND( vsnd , 8*LIMAX, MPI_BYTE,  &
-               neighbor(NORTH), MSG_SOUTH2, MPI_COMM_WORLD, request_n, INFO)
+               neighbor(NORTH), MSG_SOUTH2, MPI_COMM_CALC, request_n, IERROR)
        endif
        !     receive from WEST neighbor if any
        if (neighbor(WEST) .ne. NOPROC) then
           CALL MPI_RECV( urcv, 8*LJMAX, MPI_BYTE, &
-               neighbor(WEST), MSG_WEST2, MPI_COMM_WORLD, MPISTATUS, INFO)
+               neighbor(WEST), MSG_WEST2, MPI_COMM_CALC, MPISTATUS, IERROR)
           Ps_extended(0,1:ljmax) = urcv(1:ljmax,1)
        else
           Ps_extended(0,1:ljmax) = Ps_extended(1,1:ljmax)
@@ -999,7 +995,7 @@ contains
        !     receive from SOUTH neighbor if any
        if (neighbor(SOUTH) .ne. NOPROC) then
           CALL MPI_RECV( vrcv, 8*LIMAX, MPI_BYTE,  &
-               neighbor(SOUTH), MSG_SOUTH2, MPI_COMM_WORLD, MPISTATUS, INFO)
+               neighbor(SOUTH), MSG_SOUTH2, MPI_COMM_CALC, MPISTATUS, IERROR)
           Ps_extended(1:limax,0) = vrcv(1:limax,1)
        else
           Ps_extended(1:limax,0) = Ps_extended(1:limax,1)
@@ -1007,18 +1003,18 @@ contains
        if (neighbor(WEST) .ne. NOPROC) then
           usnd(:,2) = ps(1,:,nr)
           CALL MPI_ISEND( usnd(1,2), 8*LJMAX, MPI_BYTE,  &
-               neighbor(WEST), MSG_WEST2, MPI_COMM_WORLD, request_w, INFO)
+               neighbor(WEST), MSG_WEST2, MPI_COMM_CALC, request_w, IERROR)
        endif
        if (neighbor(SOUTH) .ne. NOPROC) then
           vsnd(:,2) = ps(:,1,nr)
           CALL MPI_ISEND( vsnd(1,2) , 8*LIMAX, MPI_BYTE,  &
-               neighbor(SOUTH), MSG_SOUTH2, MPI_COMM_WORLD, request_s, INFO)
+               neighbor(SOUTH), MSG_SOUTH2, MPI_COMM_CALC, request_s, IERROR)
        endif
 
        !     receive from EAST neighbor if any
        if (neighbor(EAST) .ne. NOPROC) then
           CALL MPI_RECV( urcv, 8*LJMAX, MPI_BYTE, &
-               neighbor(EAST), MSG_WEST2, MPI_COMM_WORLD, MPISTATUS, INFO)
+               neighbor(EAST), MSG_WEST2, MPI_COMM_CALC, MPISTATUS, IERROR)
           Ps_extended(limax+1,1:ljmax) = urcv(1:ljmax,1)
        else
           Ps_extended(limax+1,1:ljmax) = Ps_extended(limax,1:ljmax)
@@ -1026,25 +1022,25 @@ contains
        !     receive from NORTH neighbor if any
        if (neighbor(NORTH) .ne. NOPROC) then
           CALL MPI_RECV( vrcv, 8*LIMAX, MPI_BYTE,  &
-               neighbor(NORTH), MSG_SOUTH2, MPI_COMM_WORLD, MPISTATUS, INFO)
+               neighbor(NORTH), MSG_SOUTH2, MPI_COMM_CALC, MPISTATUS, IERROR)
           Ps_extended(1:limax,ljmax+1) = vrcv(1:limax,1)
        else
           Ps_extended(1:limax,ljmax+1) = Ps_extended(1:limax,ljmax)
        endif
 
        if (neighbor(EAST) .ne. NOPROC) then
-          CALL MPI_WAIT(request_e, MPISTATUS, INFO)
+          CALL MPI_WAIT(request_e, MPISTATUS, IERROR)
        endif
 
        if (neighbor(NORTH) .ne. NOPROC) then
-          CALL MPI_WAIT(request_n, MPISTATUS, INFO)
+          CALL MPI_WAIT(request_n, MPISTATUS, IERROR)
        endif
        if (neighbor(WEST) .ne. NOPROC) then
-          CALL MPI_WAIT(request_w, MPISTATUS, INFO)
+          CALL MPI_WAIT(request_w, MPISTATUS, IERROR)
        endif
 
        if (neighbor(SOUTH) .ne. NOPROC) then
-          CALL MPI_WAIT(request_s, MPISTATUS, INFO)
+          CALL MPI_WAIT(request_s, MPISTATUS, IERROR)
        endif
 
        do j = 1,ljmax
@@ -1153,7 +1149,7 @@ contains
        if(neighbor(WEST) .ne. me)then
           buf_uw(:,:) = u_xmj(1,:,:,nr)
           CALL MPI_ISEND(buf_uw, 8*LJMAX*KMAX_MID, MPI_BYTE, &
-               neighbor(WEST), MSG_EAST2, MPI_COMM_WORLD, request_w, INFO)
+               neighbor(WEST), MSG_EAST2, MPI_COMM_CALC, request_w, IERROR)
        else
         ! cyclic grid: own neighbor
           ue(:,:,nr) = u_xmj(1,:,:,nr)
@@ -1165,7 +1161,7 @@ contains
       if (neighbor(EAST) .ne. me) then
          buf_ue(:,:) = u_xmj(limax-1,:,:,nr)
          CALL MPI_ISEND(buf_ue, 8*LJMAX*KMAX_MID, MPI_BYTE, &
-              neighbor(EAST), MSG_WEST2, MPI_COMM_WORLD, request_e, INFO)
+              neighbor(EAST), MSG_WEST2, MPI_COMM_CALC, request_e, IERROR)
       else
         ! cyclic grid: own neighbor
          uw(:,:,nr) = u_xmj(limax-1,:,:,nr)
@@ -1176,52 +1172,52 @@ contains
     if (neighbor(SOUTH) .ne. NOPROC) then
        buf_vs(:,:) = v_xmi(:,1,:,nr)
       CALL MPI_ISEND(buf_vs, 8*LIMAX*KMAX_MID, MPI_BYTE, &
-            neighbor(SOUTH), MSG_NORTH2, MPI_COMM_WORLD, request_s, INFO)
+            neighbor(SOUTH), MSG_NORTH2, MPI_COMM_CALC, request_s, IERROR)
     endif
 
 !     send to NORTH neighbor if any
     if (neighbor(NORTH) .ne. NOPROC) then
        buf_vn(:,:) = v_xmi(:,ljmax-1,:,nr)
       CALL MPI_ISEND(buf_vn, 8*LIMAX*KMAX_MID, MPI_BYTE, &
-            neighbor(NORTH), MSG_SOUTH2, MPI_COMM_WORLD, request_n, INFO)
+            neighbor(NORTH), MSG_SOUTH2, MPI_COMM_CALC, request_n, IERROR)
     endif
 
 !     receive from EAST neighbor if any
     if (neighbor(EAST) .ne. NOPROC .and. neighbor(EAST) .ne. me) then
       CALL MPI_RECV(ue(1,1,nr), 8*LJMAX*KMAX_MID, MPI_BYTE, &
-          neighbor(EAST), MSG_EAST2, MPI_COMM_WORLD, MPISTATUS, INFO)
+          neighbor(EAST), MSG_EAST2, MPI_COMM_CALC, MPISTATUS, IERROR)
     endif
 
 !     receive from WEST neighbor if any
     if (neighbor(WEST) .ne. NOPROC .and. neighbor(WEST) .ne. me) then
       CALL MPI_RECV(uw(1,1,nr), 8*LJMAX*KMAX_MID, MPI_BYTE, &
-           neighbor(WEST), MSG_WEST2, MPI_COMM_WORLD, MPISTATUS, INFO)
+           neighbor(WEST), MSG_WEST2, MPI_COMM_CALC, MPISTATUS, IERROR)
     endif
 
 !     receive from NORTH neighbor if any
 
     if (neighbor(NORTH) .ne. NOPROC) then
       CALL MPI_RECV(vn(1,1,nr), 8*LIMAX*KMAX_MID, MPI_BYTE, &
-           neighbor(NORTH), MSG_NORTH2, MPI_COMM_WORLD, MPISTATUS, INFO)
+           neighbor(NORTH), MSG_NORTH2, MPI_COMM_CALC, MPISTATUS, IERROR)
     endif
 
 !     receive from SOUTH neighbor if any
     if (neighbor(SOUTH) .ne. NOPROC) then
       CALL MPI_RECV(vs(1,1,nr), 8*LIMAX*KMAX_MID, MPI_BYTE, &
-          neighbor(SOUTH), MSG_SOUTH2, MPI_COMM_WORLD, MPISTATUS, INFO)
+          neighbor(SOUTH), MSG_SOUTH2, MPI_COMM_CALC, MPISTATUS, IERROR)
      endif
 
     if (neighbor(EAST) .ne. NOPROC .and. neighbor(EAST) .ne. me) then
-      CALL MPI_WAIT(request_e, MPISTATUS, INFO)
+      CALL MPI_WAIT(request_e, MPISTATUS, IERROR)
     endif
     if (neighbor(WEST) .ne. NOPROC .and. neighbor(WEST) .ne. me) then
-      CALL MPI_WAIT(request_w, MPISTATUS, INFO)
+      CALL MPI_WAIT(request_w, MPISTATUS, IERROR)
     endif
     if (neighbor(NORTH) .ne. NOPROC) then
-      CALL MPI_WAIT(request_n, MPISTATUS, INFO)
+      CALL MPI_WAIT(request_n, MPISTATUS, IERROR)
     endif
     if (neighbor(SOUTH) .ne. NOPROC) then
-      CALL MPI_WAIT(request_s, MPISTATUS, INFO)
+      CALL MPI_WAIT(request_s, MPISTATUS, IERROR)
     endif
 
     if(USE_FASTJ)then
@@ -2164,7 +2160,7 @@ contains
     real, dimension(LIMAX,thick) ::data_south_snd,data_north_snd
     real, dimension(LJMAX+2*thick,thick) ::data_west_snd,data_east_snd
 
-    integer :: msgnr,info,request_s,request_n,request_e,request_w
+    integer :: msgnr,info
     integer :: j,tj,jj,jt
 
     !check that limax and ljmax are large enough
@@ -2178,16 +2174,16 @@ contains
     data_north_snd(:,:)=data(:,ljmax-thick+1:ljmax)
     if(neighbor(SOUTH) >= 0 )then
        CALL MPI_ISEND( data_south_snd , 8*LIMAX*thick, MPI_BYTE,&
-            neighbor(SOUTH), msgnr, MPI_COMM_WORLD, request_s,INFO)
+            neighbor(SOUTH), msgnr, MPI_COMM_CALC, request_s,IERROR)
     endif
     if(neighbor(NORTH) >= 0 )then
        CALL MPI_ISEND( data_north_snd , 8*LIMAX*thick, MPI_BYTE,&
-            neighbor(NORTH), msgnr+9, MPI_COMM_WORLD, request_n,INFO)
+            neighbor(NORTH), msgnr+9, MPI_COMM_CALC, request_n,IERROR)
     endif
 
     if(neighbor(SOUTH) >= 0 )then
        CALL MPI_RECV( data_south, 8*LIMAX*thick, MPI_BYTE,&
-            neighbor(SOUTH), msgnr+9, MPI_COMM_WORLD, MPISTATUS, INFO)
+            neighbor(SOUTH), msgnr+9, MPI_COMM_CALC, MPISTATUS, IERROR)
     else
        do tj=1,thick
           data_south(:,tj)=data(:,1)
@@ -2195,7 +2191,7 @@ contains
     endif
     if(neighbor(NORTH) >= 0 )then
        CALL MPI_RECV( data_north, 8*LIMAX*thick, MPI_BYTE,&
-            neighbor(NORTH), msgnr, MPI_COMM_WORLD, MPISTATUS, INFO)
+            neighbor(NORTH), msgnr, MPI_COMM_CALC, MPISTATUS, IERROR)
     else
        do tj=1,thick
           data_north(:,tj)=data(:,ljmax)
@@ -2221,18 +2217,18 @@ contains
 
     if(neighbor(WEST) >= 0 )then
        CALL MPI_ISEND( data_west_snd , 8*(LJMAX+2*thick)*thick, MPI_BYTE,&
-            neighbor(WEST), msgnr+3, MPI_COMM_WORLD, request_w,INFO)
+            neighbor(WEST), msgnr+3, MPI_COMM_CALC, request_w,IERROR)
     endif
     if(neighbor(EAST) >= 0 )then
        CALL MPI_ISEND( data_east_snd , 8*(LJMAX+2*thick)*thick, MPI_BYTE,&
-            neighbor(EAST), msgnr+7, MPI_COMM_WORLD, request_e,INFO)
+            neighbor(EAST), msgnr+7, MPI_COMM_CALC, request_e,IERROR)
     endif
 
 
 
     if(neighbor(WEST) >= 0 )then
        CALL MPI_RECV( data_west, 8*(LJMAX+2*thick)*thick, MPI_BYTE,&
-            neighbor(WEST), msgnr+7, MPI_COMM_WORLD, MPISTATUS, INFO)
+            neighbor(WEST), msgnr+7, MPI_COMM_CALC, MPISTATUS, IERROR)
     else
        jj=0
        do jt=1,thick
@@ -2250,7 +2246,7 @@ contains
     endif
     if(neighbor(EAST) >= 0 )then
        CALL MPI_RECV( data_east, 8*(LJMAX+2*thick)*thick, MPI_BYTE, &
-            neighbor(EAST), msgnr+3, MPI_COMM_WORLD, MPISTATUS, INFO)
+            neighbor(EAST), msgnr+3, MPI_COMM_CALC, MPISTATUS, IERROR)
     else
        jj=0
        do jt=1,thick
@@ -2268,16 +2264,16 @@ contains
     endif
 
     if(neighbor(SOUTH) >= 0 )then
-       CALL MPI_WAIT(request_s, MPISTATUS,INFO)
+       CALL MPI_WAIT(request_s, MPISTATUS,IERROR)
     endif
     if(neighbor(NORTH) >= 0 )then
-       CALL MPI_WAIT(request_n, MPISTATUS,INFO)
+       CALL MPI_WAIT(request_n, MPISTATUS,IERROR)
     endif
     if(neighbor(WEST) >= 0 )then
-       CALL MPI_WAIT(request_w, MPISTATUS, INFO)
+       CALL MPI_WAIT(request_w, MPISTATUS, IERROR)
     endif
     if(neighbor(EAST) >= 0 )then
-       CALL MPI_WAIT(request_e, MPISTATUS,INFO)
+       CALL MPI_WAIT(request_e, MPISTATUS,IERROR)
     endif
 
  end subroutine readneighbors
@@ -2715,7 +2711,7 @@ contains
                   needed=needed,found=found,unit=unit,debug_flag=.false.)
           endif
           validity='not set'
-          !     CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
+          !     CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)
           !interpolate vertically
           
           call vertical_interpolate(meteoname,meteo_3D,Nlevel,field,.false.)
@@ -2742,9 +2738,9 @@ contains
        call global2local_short(var_global,var_local,MSG_READ4,GIMAX,GJMAX,&
             KMAX,1,1)
 
-       CALL MPI_BCAST(scalefactors,8*2,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-       CALL MPI_BCAST(validity,50,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-       CALL MPI_BCAST(unit,50,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+       CALL MPI_BCAST(scalefactors,8*2,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
+       CALL MPI_BCAST(validity,50,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
+       CALL MPI_BCAST(unit,50,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
        !scalefactors=1.0
        !validity=' '
        !unit=' '
@@ -3061,9 +3057,9 @@ subroutine Check_Meteo_Date
  777 continue
    call check(nf90_close(ncFileID))
   endif
-  CALL MPI_BCAST(nhour_first,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-  CALL MPI_BCAST(Nhh,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-  CALL MPI_BCAST(METSTEP,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+  CALL MPI_BCAST(nhour_first,4*1,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
+  CALL MPI_BCAST(Nhh,4*1,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
+  CALL MPI_BCAST(METSTEP,4*1,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
 endsubroutine Check_Meteo_Date
 
 endmodule met_ml

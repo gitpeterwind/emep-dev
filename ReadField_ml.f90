@@ -43,6 +43,7 @@
 !------------------------------------------------------------
   use CheckStop_ml,  only : CheckStop
   use ModelConstants_ml, only : NPROC, IIFULLDOM, JJFULLDOM
+  use MPI_Groups_ml
   use Par_ml,        only : IRUNBEG,JRUNBEG              &
                             ,MAXLIMAX,MAXLJMAX           &
                             ,MSG_READ7,MSG_READ5         &
@@ -50,7 +51,6 @@
   use Io_ml,         only : ios, open_file
   implicit none
 
-  INCLUDE 'mpif.h' !MPI needed
   integer,private  :: i, j, n,  INFO       ! Local variables
 
   interface ReadField 
@@ -121,7 +121,7 @@ contains
        endif
     endif !me==0
 
-    call MPI_BCAST( ios, 1, MPI_INTEGER, 0, MPI_COMM_WORLD,INFO)
+    call MPI_BCAST( ios, 1, MPI_INTEGER, 0, MPI_COMM_CALC,IERROR)
 
     if(ios/=0)then
        if(present(needed_found))needed_found=.false.
@@ -187,7 +187,7 @@ contains
 
     endif !me==0
 
-    call MPI_BCAST( ios, 1, MPI_INTEGER, 0, MPI_COMM_WORLD,INFO)
+    call MPI_BCAST( ios, 1, MPI_INTEGER, 0, MPI_COMM_CALC,IERROR)
 
     if(ios/=0)then
        if(present(needed_found))needed_found=.false.

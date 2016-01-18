@@ -23,6 +23,7 @@ use ModelConstants_ml,      only: &
      DEBUG,              & ! DEBUG%GRIDVALUES
      MasterProc,NPROC,IIFULLDOM,JJFULLDOM,RUNDOMAIN,&
      PT,Pref,NMET,METSTEP,USE_EtaCOORDINATES,MANUAL_GRID,USE_WRF_MET_NAMES
+use MPI_Groups_ml
 use Par_ml, only : &
      LIMAX,LJMAX,  & ! max. possible i, j in this domain
      limax,ljmax,        & ! actual max.   i, j in this domain
@@ -69,8 +70,6 @@ public :: GridRead!,Getgridparams
 private :: Alloc_GridFields
 private :: GetFullDomainSize
 !** 1) Public (saved) Variables from module:
-INCLUDE 'mpif.h'
-INTEGER STATUS(MPI_STATUS_SIZE),INFO
 
 real, public, save :: &
      xp=0.0, yp=1.0,     & ! Coordinates of North pole (from infield)
@@ -435,13 +434,13 @@ contains
        call check(nf90_close(ncFileID))       
     endif
 
-    CALL MPI_BCAST(METSTEP ,4,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-    CALL MPI_BCAST(USE_WRF_MET_NAMES ,1,MPI_LOGICAL,0,MPI_COMM_WORLD,INFO)
-    CALL MPI_BCAST(IIFULLDOM ,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-    CALL MPI_BCAST(JJFULLDOM ,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-    CALL MPI_BCAST(KMAX ,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-    CALL MPI_BCAST(Pole_Singular ,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-    CALL MPI_BCAST(projection ,len(projection),MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+    CALL MPI_BCAST(METSTEP ,4,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
+    CALL MPI_BCAST(USE_WRF_MET_NAMES ,1,MPI_LOGICAL,0,MPI_COMM_CALC,IERROR)
+    CALL MPI_BCAST(IIFULLDOM ,4*1,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
+    CALL MPI_BCAST(JJFULLDOM ,4*1,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
+    CALL MPI_BCAST(KMAX ,4*1,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
+    CALL MPI_BCAST(Pole_Singular ,4*1,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
+    CALL MPI_BCAST(projection ,len(projection),MPI_BYTE,0,MPI_COMM_CALC,IERROR)
 
   end subroutine GetFullDomainSize
 
@@ -1011,13 +1010,13 @@ contains
     glacmax = maxval(glon(:,:))
     glacmin = minval(glon(:,:))
     CALL MPI_ALLREDUCE(MPI_IN_PLACE, gbacmax, 1,MPI_DOUBLE_PRECISION, &
-         MPI_MAX, MPI_COMM_WORLD, INFO) 
+         MPI_MAX, MPI_COMM_CALC, IERROR) 
     CALL MPI_ALLREDUCE(MPI_IN_PLACE, gbacmin  , 1, &
-         MPI_DOUBLE_PRECISION, MPI_MIN, MPI_COMM_WORLD, INFO) 
+         MPI_DOUBLE_PRECISION, MPI_MIN, MPI_COMM_CALC, IERROR) 
     CALL MPI_ALLREDUCE(MPI_IN_PLACE, glacmax, 1,MPI_DOUBLE_PRECISION, &
-         MPI_MAX, MPI_COMM_WORLD, INFO) 
+         MPI_MAX, MPI_COMM_CALC, IERROR) 
     CALL MPI_ALLREDUCE(MPI_IN_PLACE, glacmin  , 1, &
-         MPI_DOUBLE_PRECISION, MPI_MIN, MPI_COMM_WORLD, INFO) 
+         MPI_DOUBLE_PRECISION, MPI_MIN, MPI_COMM_CALC, IERROR) 
     if(MasterProc) write(unit=6,fmt="(a,40f9.2)") &
          " GridValues: max/min for lat,lon ", &
          gbacmax,gbacmin,glacmax,glacmin
@@ -1463,7 +1462,7 @@ endsubroutine lb2ij_int
     allocate(glat(imaxout,jmaxout), stat=alloc_err)
     allocate(glon(imaxout,jmaxout), stat=alloc_err)
     if ( alloc_err /= 0 ) WRITE(*,*) 'MPI_ABORT: ', "ij2ij alloc failed" 
-    if ( alloc_err /= 0 ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+    if ( alloc_err /= 0 ) call  MPI_ABORT(MPI_COMM_CALC,9,IERROR) 
 
     ! find longitude, latitude of wanted area
     call ij2lbm(imaxout,jmaxout,glon,glat,fiout,anout,xpout,ypout)
@@ -1494,7 +1493,7 @@ endsubroutine lb2ij_int
        write(*,*)x(imaxout,jmaxout),y(imaxout,jmaxout)
        write(*,*)'max values found: ',imaxin ,jmaxin
        write(*,*) 'MPI_ABORT: ', "ij2ij: area to small" 
-       call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+       call  MPI_ABORT(MPI_COMM_CALC,9,IERROR) 
     endif
 
 
@@ -1533,7 +1532,7 @@ endsubroutine lb2ij_int
     deallocate(glat,stat=alloc_err)
     deallocate(glon,stat=alloc_err)
     if ( alloc_err /= 0 )   WRITE(*,*) 'MPI_ABORT: ', "ij2ijde-alloc_err" 
-    if ( alloc_err /= 0 ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+    if ( alloc_err /= 0 ) call  MPI_ABORT(MPI_COMM_CALC,9,IERROR) 
 
   end subroutine ij2ijm
 
@@ -1684,9 +1683,9 @@ endsubroutine lb2ij_int
        enddo
     endif
 
-    CALL MPI_BCAST(k1_met,4*KMAX_MID,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-    CALL MPI_BCAST(k2_met,4*KMAX_MID,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-    CALL MPI_BCAST(x_k1_met,8*KMAX_MID,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+    CALL MPI_BCAST(k1_met,4*KMAX_MID,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
+    CALL MPI_BCAST(k2_met,4*KMAX_MID,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
+    CALL MPI_BCAST(x_k1_met,8*KMAX_MID,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
 
   end subroutine make_vertical_levels_interpolation_coeff
 

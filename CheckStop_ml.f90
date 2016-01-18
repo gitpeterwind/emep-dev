@@ -13,8 +13,9 @@ module CheckStop_ml
 !   (g)  rangeI   int  outside [range(0)..range(1)]
 
 use netcdf, only: NF90_NOERR,NF90_STRERROR
+use MPI_Groups_ml
+
 implicit none
-INCLUDE 'mpif.h'
 
 public  :: StopAll, CheckStop, CheckNC
 private :: CheckStop_ok, CheckStop_okinfo, CheckStop_int1, CheckStop_int2, &
@@ -36,13 +37,13 @@ subroutine StopAll(errmsg)
   character(len=*), intent(in) :: errmsg
   INTEGER :: INFO
   ! Stops all processors.
-  ! MPI_COMM_WORLD indicates all processors, in other programs you could have
+  ! MPI_COMM_CALC indicates all processors, in other programs you could have
   ! different groups of processes.
   ! INFO is the error message from MPI
 
   if(errmsg/="ok") then
     write(*,*) "STOP-ALL ERROR: ", trim(errmsg)
-    call MPI_ABORT(MPI_COMM_WORLD,9,INFO)
+    call MPI_ABORT(MPI_COMM_CALC,9,INFO)
   endif
 endsubroutine StopAll
 

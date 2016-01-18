@@ -20,14 +20,13 @@
    use Io_ml,           only : IO_DJ, open_file, ios
    use MetFields_ml           , only : cc3d,cc3dmax,z_bnd
    use ModelConstants_ml,    only: KMAX_MID, KCHEMTOP, NPROC
+   use MPI_Groups_ml
    use Par_ml      ,    only : me,LIMAX,LJMAX
    use LocalVariables_ml, only : Grid  ! => izen
    implicit none
    private
 
-  INCLUDE 'mpif.h'
-  INTEGER STATUS(MPI_STATUS_SIZE),INFO
-  integer, public, parameter :: &
+   integer, public, parameter :: &
              NRCPHOT      = 17   ! Number of photolytic reactions
    
    real, allocatable,save,public, dimension(:,:) &
@@ -126,7 +125,7 @@
           close(IO_DJ)
         endif  ! me = 0
 
-        CALL MPI_BCAST(dj  ,8*NPHODIS*(KMAX_MID-KCHEMTOP+1)*HORIZON*NLAT,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+        CALL MPI_BCAST(dj  ,8*NPHODIS*(KMAX_MID-KCHEMTOP+1)*HORIZON*NLAT,MPI_BYTE,0,MPI_COMM_CALC,IERROR) 
 
 
 
@@ -168,7 +167,7 @@
           close(IO_DJ)
         endif   ! me = 0
 
-        CALL MPI_BCAST(djcl1  ,8*NPHODIS*(KMAX_MID-KCHEMTOP+1)*HORIZON,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+        CALL MPI_BCAST(djcl1  ,8*NPHODIS*(KMAX_MID-KCHEMTOP+1)*HORIZON,MPI_BYTE,0,MPI_COMM_CALC,IERROR) 
 
 
 
@@ -209,7 +208,7 @@
           end do   ! izn
        endif      !  me = 0
 
-        CALL MPI_BCAST(djcl3  ,8*NPHODIS*(KMAX_MID-KCHEMTOP+1)*HORIZON,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+        CALL MPI_BCAST(djcl3  ,8*NPHODIS*(KMAX_MID-KCHEMTOP+1)*HORIZON,MPI_BYTE,0,MPI_COMM_CALC,IERROR) 
 
 
 !       if(me == 0) then

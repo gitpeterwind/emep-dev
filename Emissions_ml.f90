@@ -80,6 +80,7 @@ use ModelConstants_ml,only: &
     USE_EURO_SOILNOX, USE_GLOBAL_SOILNOX, EURO_SOILNOX_DEPSCALE,&! one or the other
     USE_OCEAN_NH3,USE_OCEAN_DMS,FOUND_OCEAN_DMS,&
     NPROC
+use MPI_Groups_ml
 use My_Derived_ml,    only: EmisSplit_OUT
 use NetCDF_ml,        only: ReadField_CDF,ReadField_CDF_FL,ReadTimeCDF,IsCDFfractionFormat,GetCDF_modelgrid,PrintCDF
 use netcdf
@@ -115,10 +116,6 @@ public :: EmisOut           ! Outputs emissions in ascii
 ! The main code does not need to know about the following 
 private :: expandcclist            !  expands e.g. EU28, EUMACC2
 private :: consistency_check       ! Safety-checks
-
-INCLUDE 'mpif.h'
-INTEGER STATUS(MPI_STATUS_SIZE),INFO
-  
 
 !
 ! The output emission matrix for the 11-SNAP data is snapemis:
@@ -322,9 +319,9 @@ contains
 
     ! ####################################
     ! Broadcast  monthly and Daily factors (and hourly factors if needed/wanted)
-    CALL MPI_BCAST(fac_emm,8*NLAND*12*NSECTORS*NEMIS_FILE,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
-    CALL MPI_BCAST(fac_edd,8*NLAND*7*NSECTORS*NEMIS_FILE,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
-    CALL MPI_BCAST(fac_ehh24x7,8*NSECTORS*24*7,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+    CALL MPI_BCAST(fac_emm,8*NLAND*12*NSECTORS*NEMIS_FILE,MPI_BYTE,0,MPI_COMM_CALC,IERROR) 
+    CALL MPI_BCAST(fac_edd,8*NLAND*7*NSECTORS*NEMIS_FILE,MPI_BYTE,0,MPI_COMM_CALC,IERROR) 
+    CALL MPI_BCAST(fac_ehh24x7,8*NSECTORS*24*7,MPI_BYTE,0,MPI_COMM_CALC,IERROR) 
 
     !define fac_min for all processors
     forall(iemis=1:NEMIS_FILE,insec=1:NSECTORS,inland=1:NLAND) &
@@ -488,7 +485,7 @@ contains
                 !add together totals from each processor (only me=0 get results)
                 sumemis=0.0
                 CALL MPI_REDUCE(sumemis_local,sumemis,&
-                     NLAND*NEMIS_FILE,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,INFO)        
+                     NLAND*NEMIS_FILE,MPI_REAL8,MPI_SUM,0,MPI_COMM_CALC,IERROR)        
 
              endif
 
@@ -553,7 +550,7 @@ contains
              !add together totals from each processor (only me=0 get results)
              sumemis=0.0
              CALL MPI_REDUCE(sumemis_local,sumemis,&
-                  NLAND*NEMIS_FILE,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,INFO)        
+                  NLAND*NEMIS_FILE,MPI_REAL8,MPI_SUM,0,MPI_COMM_CALC,IERROR)        
 
           else if (emis_inputlist(iemislist)%type == "OceanNH3")then
              if(me==0)write(*,*)' using  OceanNH3'    
@@ -696,7 +693,7 @@ contains
        enddo ! iem = 1, NROAD_FILES-loop
        sumroaddust=0.0
        CALL MPI_REDUCE(sumroaddust_local,sumroaddust,NLAND*NROAD_FILES,MPI_REAL8,&
-            MPI_SUM,0,MPI_COMM_WORLD,INFO) 
+            MPI_SUM,0,MPI_COMM_CALC,IERROR) 
 
     endif !USE_ROADDUST
 
@@ -1410,7 +1407,7 @@ subroutine newmonth
         enddo
      enddo
      CALL MPI_ALLREDUCE(MPI_IN_PLACE,SumSoilNOx,1,MPI_DOUBLE_PRECISION, &
-          MPI_SUM,MPI_COMM_WORLD,INFO) 
+          MPI_SUM,MPI_COMM_CALC,IERROR) 
      if(MasterProc)&
           write(*,*)'GLOBAL SOILNOX emissions this month within domain',&
           SumSoilNOx,' kg per day'
@@ -1462,7 +1459,7 @@ subroutine newmonth
      if(.not.first_call)then
         !write some diagnostic for the past month emissions
         CALL MPI_ALLREDUCE(MPI_IN_PLACE, O_DMS%sum_month, 1,&
-             MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
+             MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_CALC, IERROR)
         if(MasterProc)then
 59      format(A,6F14.5)
         write(*,*)'DMS OCEAN emissions '
@@ -1511,7 +1508,7 @@ subroutine newmonth
            enddo ! i
         enddo   ! j
         CALL MPI_ALLREDUCE(MPI_IN_PLACE, dms_sum, 1,&
-             MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
+             MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_CALC, IERROR)
 
         DMS_natso2_month=dms_sum*nmdays(current_date%month)/nydays
 
@@ -1638,7 +1635,7 @@ subroutine newmonth
            enddo!sectors
 
            CALL MPI_REDUCE(sumemis_local(1,iem),sumemis(1,iem),NLAND,MPI_REAL8,&
-                MPI_SUM,0,MPI_COMM_WORLD,INFO) 
+                MPI_SUM,0,MPI_COMM_CALC,IERROR) 
            emsum(iem)= sum(sumemis(:,iem))
            if(MasterProc)write(*,"(a,f12.2)")trim(EMIS_FILE(iem))//' monthly TOTAL (tonnes):',emsum(iem)
 
@@ -1699,7 +1696,7 @@ subroutine newmonth
         enddo
         !sum all subdomains
         CALL MPI_ALLREDUCE(MPI_IN_PLACE, O_NH3%sum_month, 1,&
-             MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
+             MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_CALC, IERROR)
 
         O_NH3%sum_month=O_NH3%sum_month*1e-6 !kg->Gg
 
@@ -1818,7 +1815,7 @@ subroutine EmisOut(label, iem,nsources,sources,emis)
         
      endif
      close(IO_TMP)
-     CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)!wait: one should write at a time
+     CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)!wait: one should write at a time
   enddo
   
 !  deallocate(locemis,lemis)

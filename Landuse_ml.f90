@@ -25,6 +25,7 @@ use ModelConstants_ml,only: DEBUG, NLANDUSEMAX, &
                             VEG_2dGS, VEG_2dGS_Params, & 
                             NPROC, IIFULLDOM, JJFULLDOM, &
                             DomainName, MasterProc
+use MPI_Groups_ml
 use NetCDF_ml,      only: ReadField_CDF,printcdf
 use Par_ml,         only: LIMAX, LJMAX, &
                           limax, ljmax, me
@@ -46,8 +47,6 @@ private
   public :: SetLanduse
   private :: Polygon         ! Used for LAI
   private :: MedLAI          ! Used for LAI, Medit.
- INCLUDE 'mpif.h'
- INTEGER STATUS(MPI_STATUS_SIZE),INFO
 
  integer, public, parameter :: NLUMAX = 30 ! max no. landuse per grid
  integer, private, save :: NLand_codes = 0 ! no. landuse in input files
@@ -319,7 +318,7 @@ contains
       if ( MasterProc ) then
          call open_file(IO_TMP,"r",fname,needed=.false.)
       end if
-      call MPI_BCAST( ios, 1, MPI_INTEGER, 0, MPI_COMM_WORLD,INFO)
+      call MPI_BCAST( ios, 1, MPI_INTEGER, 0, MPI_COMM_CALC,IERROR)
       if(ios==0)then
          if ( DEBUG%LANDUSE>0 .and. MasterProc ) write(*,*)'found '//trim(fname) 
          filefound=.true.
@@ -466,7 +465,7 @@ contains
        !loop over all variables in file
        ilu=0
        do varid=1,nVariables
-          if ( DEBUG%LANDUSE>0 )  CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
+          if ( DEBUG%LANDUSE>0 )  CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)
 
           call check(nf90_Inquire_Variable(ncFileID,varid,varname,xtype,ndims))
           if ( debug_Master )write(*,*) sub//"checking "//trim(varname), index( varname, "LC:") 

@@ -15,17 +15,17 @@ use EmisDef_ml,           only: VOLCANOES_LL
 use GridValues_ml,        only: xm2,sigma_bnd,GridArea_m2,&
                                 coord_in_processor,coord_in_gridbox
 use Io_ml,                only: open_file,read_line,IO_TMP,PrintLog
-use SmallUtils_ml,        only: wordsplit,find_index
+use MetFields_ml,         only: roa, z_bnd
 use ModelConstants_ml,    only: KCHEMTOP,KMAX_MID,MasterProc, &
                                 USE_ASH,DEBUG=>DEBUG_COLSRC,&
                                 TXTLEN_NAME,dt_advec,dt_advec_inv
-use MetFields_ml,         only: roa, z_bnd
+use MPI_Groups_ml
 use Par_ml,               only: me
 use PhysicalConstants_ml, only: AVOG
+use SmallUtils_ml,        only: wordsplit,find_index
 use TimeDate_ml,          only: nydays,&           ! No. days per year
                                 startdate,enddate,current_date,tdif_secs
 use TimeDate_ExtraUtil_ml,only: date2string,string2date,to_stamp
-use mpi,                  only: MPI_COMM_WORLD,MPI_BARRIER
 
 implicit none
 private
@@ -230,7 +230,7 @@ subroutine setRate()
 !----------------------------!
 ! Read Vent CVS
 !----------------------------!
-  if(DEBUG) CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
+  if(DEBUG) CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)
   if(MasterProc)then
     call open_file(IO_TMP,"r",flocdef,needed=.true.,iostat=stat)
     call CheckStop(stat,ERR_LOC_CSV//' not found')
@@ -264,7 +264,7 @@ subroutine setRate()
 !----------------------------!
 ! Read Eruption CVS
 !----------------------------!
-  if(DEBUG) CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
+  if(DEBUG) CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)
   if(MasterProc)then
     call open_file(IO_TMP,"r",femsdef,needed=.true.,iostat=stat)
     call CheckStop(stat,ERR_EMS_CSV//' not found')
@@ -312,7 +312,7 @@ subroutine setRate()
 !----------------------------!
 ! Expand Eruption Defaults
 !----------------------------!
-  if(DEBUG) CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
+  if(DEBUG) CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)
   if(nems(0)<1)then
    !if(DEBUG) write(*,MSG_FMT)'Erup.Default',me,'not found'
     return

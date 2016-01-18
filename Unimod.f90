@@ -48,6 +48,7 @@ program myeul
        USES, USE_LIGHTNING_EMIS, &
        FORECAST       ! FORECAST mode
   use ModelConstants_ml,only: Config_ModelConstants,DEBUG
+  use MPI_Groups_ml
   use NetCDF_ml,        only: Init_new_netCDF
   use OutputChem_ml,    only: WrtChem, wanted_iou
   use Par_ml,           only: me, GIMAX, GJMAX, Topology, parinit
@@ -86,9 +87,6 @@ program myeul
   !
   implicit none
 
-  INCLUDE 'mpif.h'
-  INTEGER STATUS(MPI_STATUS_SIZE),INFO
-
   integer :: i, oldseason, newseason
   integer :: mm_old   ! month and old-month
   integer :: nproc_mpi,cyclicgrid
@@ -104,16 +102,12 @@ program myeul
     !
     !     initialize the parallel topology
     !
-  nproc_mpi = NPROC
-  CALL MPI_INIT(INFO)
-  CALL MPI_COMM_RANK(MPI_COMM_WORLD, ME, INFO)
+    
+  call MPI_world_init(NPROC,ME)
+
   ! Set a logical from ModelConstants, which can be used for
   !   specifying the master processor for print-outs and such
   MasterProc = ( me == 0 )
-  CALL MPI_COMM_SIZE(MPI_COMM_WORLD, nproc_mpi, INFO)
-  NPROC=nproc_mpi 
-55 format(A,I5,A)
-  if(MasterProc)write(*,55)' Found ',NPROC,' MPI processes available'
 
   call CheckStop(digits(1.0)<50, &
        "COMPILED WRONGLY: Need double precision, e.g. f90 -r8")
@@ -362,13 +356,13 @@ program myeul
      print *,'programme is finished'
      ! Gather timing info:
      if(NPROC-1> 0)then
-        CALL MPI_RECV(lastptim,NTIMING*8,MPI_BYTE,NPROC-1,765,MPI_COMM_WORLD,STATUS,INFO)
+        CALL MPI_RECV(lastptim,NTIMING*8,MPI_BYTE,NPROC-1,765,MPI_COMM_CALC,MPISTATUS,IERROR)
      else
         lastptim(:) = mytimm(:)
      endif
      call Output_timing(IO_MYTIM,me,NPROC,nterm,GIMAX,GJMAX)
   elseif(me==NPROC-1) then
-     CALL MPI_SEND(mytimm,NTIMING*8,MPI_BYTE,0,765,MPI_COMM_WORLD,INFO)
+     CALL MPI_SEND(mytimm,NTIMING*8,MPI_BYTE,0,765,MPI_COMM_CALC,IERROR)
   endif
 
   ! write 'modelrun.finished' file to flag the end of the FORECAST
@@ -377,8 +371,8 @@ program myeul
      close(1)
   endif
 
-  CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
-  CALL MPI_FINALIZE(INFO)
+  CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)
+  CALL MPI_FINALIZE(IERROR)
 
 end associate   ! yyyy, mm, dd
 end program

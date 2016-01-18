@@ -26,6 +26,7 @@ use ModelConstants_ml,only: NPROC, TXTLEN_NAME, &
                              SEAFIX_GEA_NEEDED, & ! only if emission problems over sea
                              MasterProc,DEBUG_GETEMIS,DEBUG_ROADDUST,USE_ROADDUST&
                              ,IIFULLDOM,JJFULLDOM
+use MPI_Groups_ml
 use NetCDF_ml, only  : ReadField_CDF  !CDF_SNAP
 
 use Par_ml,            only: LIMAX, LJMAX, limax, ljmax, me
@@ -47,8 +48,7 @@ public  :: RoadDustGet       ! Collects road dust emission potentials
 public  :: femis             ! Sets emissions control factors 
 private :: CountEmisSpecs    !
 
-INCLUDE 'mpif.h'
-INTEGER :: INFO
+
 !logical, private, save :: my_first_call = .true.
 logical, private, save :: my_first_road = .true.
 
@@ -384,7 +384,7 @@ contains
      call check(nf90_close(ncFileID))
 
      CALL MPI_REDUCE(sumcdfemis_loc(1:NLAND),sumemis(1:NLAND),NLAND,&
-                          MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,INFO)
+                          MPI_REAL8,MPI_SUM,0,MPI_COMM_CALC,IERROR)
      i=max( 1, len_trim(fname) - 20 ) ! Just to get last bit of filename
      if(MasterProc) write(*,'(a,2x,a,i4,a,f12.3)') sub//'...'//trim(fname(i:)), &
            trim(EMIS_FILE(iem)), iem, ' DONE, UK now:', sumemis(27)
@@ -902,7 +902,7 @@ end if
          enddo
       enddo
       
-      CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)!so that output from different CPU does not get mixed up
+      CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)!so that output from different CPU does not get mixed up
       
       if(MasterProc)then
          write(*,*)'Distribution of emission into levels:'

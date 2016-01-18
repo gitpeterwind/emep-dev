@@ -154,6 +154,22 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+18th January   2016 Peter  3130
+
+Starting reorganization of MPI setup. So far only moving all MPI stuff into
+MPI_Groups_ml and renaming MPI_COMM_WORLD to MPI_COMM_CALC.
+This will allow me to develop and test, without having to modify all the files 
+each time a new versions comes up.
+
+Many files modified:
+
+Unimod.f90 CheckStop_ml.f90 GridValues_ml.f90 Io_Progs_ml.f90 MassBudget_ml.f90 
+Advection_ml.f90 AirEmis_ml.f90 NetCDF_ml.f90 Landuse_ml.f90 EmisGet_ml.f90 
+BoundaryConditions_ml.f90 DefPhotolysis_ml.f90 Met_ml.f90 ColumnSource_ml.f90 
+ReadField_ml.f90 Emissions_ml.f90 Sites_ml.f90 Nest_ml.f90 Trajectory_ml.f90 
+global2local.f90 Makefile.SRCS MPI_Groups_ml.f90 Log.changes
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16th January   2016 Dave  3129
 
 Derived_ml: small modification in use of first_semivol_call (affects debug

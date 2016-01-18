@@ -16,14 +16,13 @@ use GridValues_ml,          only: i_local, j_local
 use Io_Nums_ml,             only: IO_TMP, IO_LOG
 use ModelConstants_ml,      only: DEBUG, DEBUG, DomainName, &
                                   MasterProc, IIFULLDOM, JJFULLDOM
+use MPI_Groups_ml
 use KeyValueTypes,            only: KeyVal, KeyValue, LENKEYVAL
 use Par_ml,                 only: me, limax,ljmax
 use SmallUtils_ml,          only: wordsplit, WriteArray
 use TimeDate_ml,            only: date,current_date
 use TimeDate_ExtraUtil_ml,  only: date2string
 implicit none
-
-INCLUDE 'mpif.h' !MPI needed
 
 ! -- subroutines in this module:
 
@@ -117,13 +116,13 @@ subroutine read_line(io_in,txt,status,label,printif)
     endif
   endif
    
-  call MPI_BCAST( txt, len(txt), MPI_CHARACTER, 0, MPI_COMM_WORLD,INFO)
-  call MPI_BCAST( status, 1, MPI_INTEGER, 0, MPI_COMM_WORLD,INFO)
+  call MPI_BCAST( txt, len(txt), MPI_CHARACTER, 0, MPI_COMM_CALC,IERROR)
+  call MPI_BCAST( status, 1, MPI_INTEGER, 0, MPI_COMM_CALC,IERROR)
   if ( DEBUG%IOPROG .and. me==1 ) then
     write(unit=errmsg,fmt=*) "proc(me) ", me, " BCAST_LINE:" // trim(txt)
     write(unit=*,fmt=*) trim(errmsg)
   endif
-  CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
+  CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)
 
 end subroutine read_line
 !-------------------------------------------------------------------------

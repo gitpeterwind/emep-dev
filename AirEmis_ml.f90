@@ -34,13 +34,14 @@ module AirEmis_ml
   ! Variable listing is given below
   
     
-   use Par_ml               , only : LIMAX, LJMAX, limax,ljmax, me
-   use ModelConstants_ml    , only : KCHEMTOP, KMAX_MID, KMAX_BND, NPROC, &
-                                     USE_LIGHTNING_EMIS
    use Io_ml                , only : IO_AIRN, IO_LIGHT, ios, open_file
    use GridValues_ml        , only : glon,glat, GRIDWIDTH_M
-   use PhysicalConstants_ml , only : AVOG
    use MetFields_ml         , only : z_bnd  
+   use ModelConstants_ml    , only : KCHEMTOP, KMAX_MID, KMAX_BND, NPROC, &
+                                     USE_LIGHTNING_EMIS
+   use MPI_Groups_ml
+   use Par_ml               , only : LIMAX, LJMAX, limax,ljmax, me
+   use PhysicalConstants_ml , only : AVOG
    use TimeDate_ml,           only : current_date
 
    implicit none
@@ -54,9 +55,6 @@ module AirEmis_ml
 
    private :: air_inter !interpolate the data into required grid
  
-   include 'mpif.h'
-   
-   integer STATUS(MPI_STATUS_SIZE),INFO
    integer,private ,parameter :: ILEV=18
    logical, parameter :: MY_DEBUG = .false.
 
@@ -129,7 +127,7 @@ module AirEmis_ml
   
          call open_file(IO_LIGHT,"r",fname,needed=.true.,skip=1)
              if (ios /= 0 )   WRITE(*,*) 'MPI_ABORT: ', "ioserror: lightning" 
-                if (ios /= 0 ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+                if (ios /= 0 ) call  MPI_ABORT(MPI_COMM_CALC,9,IERROR) 
              end if
 
       if(me == 0)then
@@ -235,7 +233,7 @@ module AirEmis_ml
 
 
       CALL MPI_BCAST(flux(1,1,iktop), 8*GGL*ILON*(ILEV+1-iktop), MPI_BYTE, 0,&
-          MPI_COMM_WORLD, INFO)
+          MPI_COMM_CALC, IERROR)
 
       ! -- N/S
       ygrida(1) = 90.
@@ -360,7 +358,7 @@ module AirEmis_ml
       end do
 
         CALL MPI_ALLREDUCE(MPI_IN_PLACE,sum2, 1, &
-        MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
+        MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_CALC, IERROR) 
       if(me == 0.and.MY_DEBUG) write(6,*) 'ancat on limited area:',sum,sum2
 
   end subroutine air_inter

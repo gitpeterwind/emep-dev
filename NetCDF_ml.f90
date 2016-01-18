@@ -46,6 +46,7 @@ use ModelConstants_ml, only : KMAX_MID,KMAX_BND, runlabel1, runlabel2 &
                              ,USE_EtaCOORDINATES,RUNDOMAIN&
                              ,fullrun_DOMAIN,month_DOMAIN,day_DOMAIN,hour_DOMAIN
 use ModelConstants_ml, only : SELECT_LEVELS_HOURLY  !NML
+use MPI_Groups_ml
 use netcdf
 use OwnDataTypes_ml,   only : Deriv
 use Par_ml,            only : me,GIMAX,GJMAX,MAXLIMAX, MAXLJMAX, &
@@ -58,8 +59,6 @@ use Functions_ml,       only: StandardAtmos_km_2_kPa
 use SmallUtils_ml,      only: wordsplit, find_index
 
 implicit none
-INCLUDE 'mpif.h'
-INTEGER MPISTATUS(MPI_STATUS_SIZE),INFO
 
 integer, public, parameter :: &
   max_filename_length=200 ! large enough to include paths, eg Nest_config namelist
@@ -993,7 +992,7 @@ subroutine CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,&
         do iproc=0,NPROC-1
            if(iproc>0)then
               CALL MPI_RECV(Buff2D,2*8*MAXLIMAX*MAXLJMAX, MPI_BYTE, iproc, &
-                   iproc, MPI_COMM_WORLD, MPISTATUS, INFO)            
+                   iproc, MPI_COMM_CALC, MPISTATUS, IERROR)            
            endif
 
 !NB IBEGcdf, IRUNBEG, etc. relative to fulldomain
@@ -1044,7 +1043,7 @@ subroutine CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,&
         if(DEBUG_NETCDF) write(*,*) "NetCDF: lon lat written"
      else
         CALL MPI_SEND( Buff2D, 2*8*MAXLIMAX*MAXLJMAX, MPI_BYTE, 0, &
-             me, MPI_COMM_WORLD, INFO)
+             me, MPI_COMM_CALC, IERROR)
      endif
   endif
 
@@ -1172,7 +1171,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,out_DOMAIN,ik,&
              trim(nf90_strerror(status))
         if(status/=nf90_noerr .or. overwrite_local)createfile=.true.
      endif
-     CALL MPI_BCAST(createfile ,1,MPI_LOGICAL,0,MPI_COMM_WORLD,INFO)
+     CALL MPI_BCAST(createfile ,1,MPI_LOGICAL,0,MPI_COMM_CALC,IERROR)
      
      IBEGcdf=IRUNBEG+i1-1
      JBEGcdf=JRUNBEG+j1-1
@@ -1185,7 +1184,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,out_DOMAIN,ik,&
         call CreatenetCDFfile(trim(fileName_given),GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,KMAX)
         if(present(ncFileID_given))then
            !the file should be opened, but by MasterProc only
-           CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)!wait until the file creation is finished     
+           CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)!wait until the file creation is finished     
            if(MasterProc)then
               call check(nf90_open(trim(fileName_given),nf90_share+nf90_write,ncFileID))
            else
@@ -1380,7 +1379,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,out_DOMAIN,ik,&
 
     do d = 1, NPROC-1
       CALL MPI_RECV(buff, 8*tlimax(d)*tljmax(d)*kmax, MPI_BYTE, d, &
-             outCDFtag, MPI_COMM_WORLD, MPISTATUS, INFO)
+             outCDFtag, MPI_COMM_CALC, MPISTATUS, IERROR)
 
      ! copy data to global buffer
       select case(OUTtype)
@@ -1418,7 +1417,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,out_DOMAIN,ik,&
     enddo
   else
     CALL MPI_SEND( buff, 8*tlimax(me)*tljmax(me)*kmax, MPI_BYTE, 0, &
-          outCDFtag, MPI_COMM_WORLD, INFO)
+          outCDFtag, MPI_COMM_CALC, IERROR)
   endif
   !return
 
@@ -3613,14 +3612,14 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   if(.not. present(ncFileID_given))call check(nf90_close(ncFileID))
 
 
-  !  CALL MPI_FINALIZE(INFO)
-  !  CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
+  !  CALL MPI_FINALIZE(IERROR)
+  !  CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)
 
   return
 
   !code below only used for testing purposes
 
-  CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
+  CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)
   if(debug)write(*,*)'writing results in file. Variable: ',trim(varname)
 
   !only for tests:
@@ -3643,8 +3642,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      call Out_netCDF(IOU_INST,def1,n,k2, &
           Rvar,1.0,CDFtype=Real4,fileName_given='ReadField3D.nc')
 
-     CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
-     CALL MPI_FINALIZE(INFO)
+     CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)
+     CALL MPI_FINALIZE(IERROR)
      stop
   else
      if(trim(varname)=='nonHighwayRoadDustPM10_Jun-Feb')then
@@ -3654,8 +3653,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
         call Out_netCDF(IOU_INST,def1,n,k2, &
              rvar,1.0,CDFtype=Real4,fileName_given='ReadField2D.nc',overwrite=.false.)
-        CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
-        !    CALL MPI_FINALIZE(INFO)
+        CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)
+        !    CALL MPI_FINALIZE(IERROR)
         !     stop
      endif
   endif

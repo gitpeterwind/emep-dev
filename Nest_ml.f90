@@ -43,10 +43,11 @@ use Functions_ml,           only: great_circle_distance
 use GridValues_ml,          only: A_mid,B_mid, glon,glat, i_fdom,j_fdom, RestrictDomain
 use Io_ml,                  only: open_file,IO_TMP,IO_NML,PrintLog
 use InterpolationRoutines_ml,  only : grid2grid_coeff
+use MetFields_ml,           only: roa
 use ModelConstants_ml,      only: Pref,PPB,PT,KMAX_MID, MasterProc, NPROC,  &
     IOU_INST,IOU_3DHOUR,IOU_YEAR,IOU_MON,IOU_DAY, RUNDOMAIN,  &
     FORECAST,USE_POLLEN, DEBUG_NEST,DEBUG_ICBC=>DEBUG_NEST_ICBC
-use MetFields_ml,           only: roa
+use MPI_Groups_ml
 use netcdf,                 only: nf90_open,nf90_close,nf90_inq_dimid,&
                                   nf90_inquire_dimension,nf90_inq_varid,&
                                   nf90_inquire_variable,nf90_get_var,nf90_get_att,&
@@ -64,9 +65,6 @@ use Units_ml,               only: Units_Scale
 use SmallUtils_ml,          only: find_index
 use ChemGroups_ml,          only: chemgroups
 implicit none
-
-INCLUDE 'mpif.h'
-INTEGER :: INFO
 
 ! Nesting modes:
 ! produces netcdf dump of concentrations if wanted, or initialises mode runs
@@ -372,7 +370,7 @@ subroutine wrtxn(indate,WriteNow)
     inquire(file=fileName_write,exist=fexist)   
     write(*,*)'Nest:write data ',trim(fileName_write)
   endif
-  CALL MPI_BCAST(fexist,1,MPI_LOGICAL,0,MPI_COMM_WORLD,INFO)
+  CALL MPI_BCAST(fexist,1,MPI_LOGICAL,0,MPI_COMM_CALC,IERROR)
 
 ! Limit output, e.g. for NMC statistics (3DVar)
   if(first_call)then
@@ -428,7 +426,7 @@ subroutine wrtxn(indate,WriteNow)
       elseif(omit_zero_write)then !  further reduce output
         wanted=any(xn_adv(n,:,:,:)/=0.0)
         CALL MPI_ALLREDUCE(MPI_IN_PLACE,wanted,1,MPI_LOGICAL,MPI_LOR,&
-                           MPI_COMM_WORLD,INFO)
+                           MPI_COMM_CALC,IERROR)
         adv_ic(n)%wanted=wanted
         if(.not.adv_ic(n)%wanted.and.&
           (DEBUG_NEST.or.DEBUG_ICBC).and.MasterProc)&
@@ -568,7 +566,7 @@ function find_icbc(filename_read,varname) result(found)
       call check(nf90_close(ncFileID))
     endif
   endif
-  CALL MPI_BCAST(found,size(found),MPI_LOGICAL,0,MPI_COMM_WORLD,INFO)
+  CALL MPI_BCAST(found,size(found),MPI_LOGICAL,0,MPI_COMM_CALC,IERROR)
 endfunction find_icbc
 endsubroutine init_icbc
 
@@ -666,10 +664,10 @@ subroutine init_nest(ndays_indate,filename_read,native_grid,IIij,JJij,Weight,&
     endif
 
   endif
-  CALL MPI_BCAST(GIMAX_ext,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-  CALL MPI_BCAST(GJMAX_ext,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-  CALL MPI_BCAST(KMAX_ext,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-  !CALL MPI_BCAST(N_ext,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO) !not needed by others than MasterProc
+  CALL MPI_BCAST(GIMAX_ext,4*1,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
+  CALL MPI_BCAST(GJMAX_ext,4*1,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
+  CALL MPI_BCAST(KMAX_ext,4*1,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
+  !CALL MPI_BCAST(N_ext,4*1,MPI_BYTE,0,MPI_COMM_CALC,IERROR) !not needed by others than MasterProc
 
   allocate(lon_ext(GIMAX_ext,GJMAX_ext),lat_ext(GIMAX_ext,GJMAX_ext))
   allocate(hyam(KMAX_ext+1),hybm(KMAX_ext+1),P_ext(KMAX_ext))
@@ -834,10 +832,10 @@ subroutine init_nest(ndays_indate,filename_read,native_grid,IIij,JJij,Weight,&
     call check(nf90_close(ncFileID))
   endif !end MasterProc
 
-  CALL MPI_BCAST(lon_ext,8*GIMAX_ext*GJMAX_ext,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-  CALL MPI_BCAST(lat_ext,8*GIMAX_ext*GJMAX_ext,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-  CALL MPI_BCAST(hyam,8*KMAX_ext,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-  CALL MPI_BCAST(hybm,8*KMAX_ext,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+  CALL MPI_BCAST(lon_ext,8*GIMAX_ext*GJMAX_ext,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
+  CALL MPI_BCAST(lat_ext,8*GIMAX_ext*GJMAX_ext,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
+  CALL MPI_BCAST(hyam,8*KMAX_ext,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
+  CALL MPI_BCAST(hybm,8*KMAX_ext,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
 
   ! find horizontal interpolation constants
   ! note that i,j are local and but IIij,JJij refer to the full nest-file
@@ -1016,14 +1014,14 @@ subroutine read_newdata_LATERAL(ndays_indate)
     if(kt>=1    .and..not.allocated(xn_adv_bndt)) &
       allocate(xn_adv_bndt(NSPEC_ADV,LIMAX,LJMAX,2)) ! Top
     if(DEBUG_ICBC)then
-      CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
+      CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)
       if(MasterProc) write(*, "(A)") "Nest: DEBUG_ICBC Boundaries:"
       write(*,"(1X,'me=',i3,5(1X,A,I0,'=',L1))")&
         me,'W:i',iw,allocated(xn_adv_bndw),'E:i',ie,allocated(xn_adv_bnde),&
            'S:j',js,allocated(xn_adv_bnds),'N:j',jn,allocated(xn_adv_bndn),&
            'T:k',kt,allocated(xn_adv_bndt)
       if(MasterProc)flush(6)
-      CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
+      CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)
     endif
     rtime_saved(2)=-99.0!just to put a value
     if(mydebug)write(*,*)'Nest: end initializations 2D'
@@ -1092,7 +1090,7 @@ subroutine read_newdata_LATERAL(ndays_indate)
 
   endif
 
-  CALL MPI_BCAST(rtime_saved,8*2,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+  CALL MPI_BCAST(rtime_saved,8*2,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
 
   if(.not.first_call) call store_old_bc() !store the old values in 1
   if(allocated(xn_adv_bndw)) xn_adv_bndw(:,:,:,2)=0.0
@@ -1134,8 +1132,8 @@ subroutine read_newdata_LATERAL(ndays_indate)
       endif
       if(unitscale/=1.0) data=data*unitscale
     endif
-    CALL MPI_BCAST(data,8*GIMAX_ext*GJMAX_ext*KMAX_ext_BC,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-    CALL MPI_BCAST(divbyroa,1,MPI_LOGICAL,0,MPI_COMM_WORLD,INFO)
+    CALL MPI_BCAST(data,8*GIMAX_ext*GJMAX_ext*KMAX_ext_BC,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
+    CALL MPI_BCAST(divbyroa,1,MPI_LOGICAL,0,MPI_COMM_CALC,IERROR)
 
    !overwrite Global Boundaries (lateral faces)
     if(divbyroa)then
@@ -1319,8 +1317,8 @@ subroutine reset_3D(ndays_indate)
       endif
       if(unitscale/=1.0) data=data*unitscale
     endif
-    CALL MPI_BCAST(data,8*GIMAX_ext*GJMAX_ext*KMAX_ext,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-    CALL MPI_BCAST(divbyroa,1,MPI_LOGICAL,0,MPI_COMM_WORLD,INFO)
+    CALL MPI_BCAST(data,8*GIMAX_ext*GJMAX_ext*KMAX_ext,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
+    CALL MPI_BCAST(divbyroa,1,MPI_LOGICAL,0,MPI_COMM_CALC,IERROR)
 
      !overwrite everything 3D (init)
     if(divbyroa)then

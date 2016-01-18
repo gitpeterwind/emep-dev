@@ -18,18 +18,18 @@ use ModelConstants_ml,  only: KMAX_MID,KCHEMTOP,& ! Start and upper k for 1d fie
                               PT,               & ! Pressure at top
                               USE_OCEAN_NH3,USE_OCEAN_DMS,FOUND_OCEAN_DMS,&
                               DEBUG_MASS,EXTENDEDMASSBUDGET
+use MPI_Groups_ml
 use Par_ml,             only: &
   li0,li1,& ! First/Last local index in longitude when outer boundary is excluded
   lj0,lj1   ! First/Last local index in latitude  when outer boundary is excluded
 use PhysicalConstants_ml,only: GRAV,ATWAIR! Mol. weight of air(Jones,1992)
 use Setup_1dfields_ml,  only: amk, rcemis ! Air concentrations , emissions
 use SmallUtils_ml,       only: find_index
-!use mpi,                only: MPI_COMM_WORLD, MPI_IN_PLACE,&
+!use mpi,                only: MPI_COMM_CALC, MPI_IN_PLACE,&
 !                              MPI_DOUBLE_PRECISION, MPI_SUM, MPI_MIN, MPI_MAX
 ! openMPI has no explicit interface for MPI_ALLREDUCE
 implicit none
 private
-INCLUDE 'mpif.h'
 
 ! Some work arrays used in Aqueous_ml and (in future) DryDry:
 ! Use ADV index, as Dry/WetDep makes no seance for SHL.
@@ -82,7 +82,7 @@ subroutine Init_massbudget()
   enddo
 
   CALL MPI_ALLREDUCE(MPI_IN_PLACE, sumint , NSPEC_ADV, &
-    MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
+    MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_CALC, IERROR)
 
   if(MasterProc.and.EXTENDEDMASSBUDGET)then
     do n = 1,NSPEC_ADV
@@ -190,32 +190,32 @@ subroutine massbudget()
   enddo
 
   CALL MPI_ALLREDUCE(MPI_IN_PLACE, xmax, NSPEC_ADV,&
-    MPI_DOUBLE_PRECISION, MPI_MAX, MPI_COMM_WORLD, INFO)
+    MPI_DOUBLE_PRECISION, MPI_MAX, MPI_COMM_CALC, IERROR)
   CALL MPI_ALLREDUCE(MPI_IN_PLACE, xmin   , NSPEC_ADV, &
-    MPI_DOUBLE_PRECISION, MPI_MIN, MPI_COMM_WORLD, INFO)
+    MPI_DOUBLE_PRECISION, MPI_MIN, MPI_COMM_CALC, IERROR)
   CALL MPI_ALLREDUCE(MPI_IN_PLACE, gfluxin , NSPEC_ADV, &
-    MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
+    MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_CALC, IERROR)
   CALL MPI_ALLREDUCE(MPI_IN_PLACE, gfluxout , NSPEC_ADV, &
-    MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
+    MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_CALC, IERROR)
   CALL MPI_ALLREDUCE(MPI_IN_PLACE, fluxin_top , NSPEC_ADV, &
-    MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
+    MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_CALC, IERROR)
   CALL MPI_ALLREDUCE(MPI_IN_PLACE, fluxout_top , NSPEC_ADV, &
-    MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
+    MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_CALC, IERROR)
   CALL MPI_ALLREDUCE(MPI_IN_PLACE, fluxin , NSPEC_ADV, &
-    MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
+    MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_CALC, IERROR)
   CALL MPI_ALLREDUCE(MPI_IN_PLACE, fluxout , NSPEC_ADV, &
-    MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
+    MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_CALC, IERROR)
   CALL MPI_ALLREDUCE(MPI_IN_PLACE, gtotem , NSPEC_ADV, &
-    MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
+    MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_CALC, IERROR)
   CALL MPI_ALLREDUCE(MPI_IN_PLACE, gtotddep , NSPEC_ADV, &
-    MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
+    MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_CALC, IERROR)
   CALL MPI_ALLREDUCE(MPI_IN_PLACE, gtotwdep , NSPEC_ADV, &
-    MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
+    MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_CALC, IERROR)
   CALL MPI_ALLREDUCE(MPI_IN_PLACE, gtotox , NSPEC_ADV, &
-    MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
+    MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_CALC, IERROR)
 
   CALL MPI_ALLREDUCE(MPI_IN_PLACE, sumk , NSPEC_ADV*KMAX_MID, &
-    MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
+    MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_CALC, IERROR)
 
 !     make some temporary variables used to hold the sum over all
 !     domains. Remember that sumint already holds the sum over all
@@ -368,9 +368,9 @@ subroutine massbudget()
      !DMS emissions
      ! update dms budgets
      CALL MPI_ALLREDUCE(MPI_IN_PLACE, O_DMS%sum_month, 1,&
-          MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
+          MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_CALC, IERROR)
      CALL MPI_ALLREDUCE(MPI_IN_PLACE, O_NH3%sum_month, 1,&
-          MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO)
+          MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_CALC, IERROR)
      !natso2 already allreduced
      
      if(MasterProc)then

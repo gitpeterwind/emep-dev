@@ -33,6 +33,7 @@ use MetFields_ml,      only : u_xmj, v_xmi, ps
 use ModelConstants_ml, only : NMET,PPBINV,PPTINV, KMAX_MID, MasterProc &
                               ,KMAX_BND,PT, NPROC, DEBUG & ! => DEBUG%SITES &
                               ,DomainName, RUNDOMAIN, IOU_INST, SOURCE_RECEPTOR
+use MPI_Groups_ml
 use PhysicalConstants_ml,only: ATWAIR
 use NetCDF_ml,         only : Create_CDF_sondes,Out_CDF_sondes,&
                               NF90_FILL_INT,NF90_FILL_DOUBLE
@@ -61,8 +62,6 @@ private :: siteswrt_out     ! Collects output from all nodes and prints
 
 ! some variables used in following subroutines
 
-INCLUDE 'mpif.h'
-INTEGER :: STATUS(MPI_STATUS_SIZE),INFO
 integer, public, save :: nglobal_sites, nlocal_sites
 integer,private, save :: nglobal_sondes, nlocal_sondes
 
@@ -233,7 +232,7 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
     endif
   endif
 
-  call MPI_BCAST( ios, 1, MPI_INTEGER, 0, MPI_COMM_WORLD,INFO)
+  call MPI_BCAST( ios, 1, MPI_INTEGER, 0, MPI_COMM_CALC,IERROR)
   if(ios/=0)return
 
   call CheckStop(NMAX,size(s_name), sub//"Error : sitesdefNMAX problem")
@@ -337,18 +336,18 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
                            me, nlocal
 
   if ( .not.MasterProc ) then
-    call MPI_SEND(nlocal, 4*1, MPI_BYTE, 0, 333, MPI_COMM_WORLD, INFO)
+    call MPI_SEND(nlocal, 4*1, MPI_BYTE, 0, 333, MPI_COMM_CALC, IERROR)
     if(nlocal>0) call MPI_SEND(s_n, 4*nlocal, MPI_BYTE, 0, 334, &
-                               MPI_COMM_WORLD, INFO)
+                               MPI_COMM_CALC, IERROR)
   else
     if(DEBUG%SITES) write(6,*) sub//" for me =0 LOCAL_SITES", me, nlocal
     do n = 1, nlocal
       s_gindex(me,n) = s_n(n)
     enddo
     do d = 1, NPROC-1
-      call MPI_RECV(nloc, 4*1, MPI_BYTE, d, 333, MPI_COMM_WORLD,STATUS, INFO)
+      call MPI_RECV(nloc, 4*1, MPI_BYTE, d, 333, MPI_COMM_CALC,MPISTATUS, IERROR)
       if(nloc>0) call MPI_RECV(s_n_recv, 4*nloc, MPI_BYTE, d, 334, &
-                               MPI_COMM_WORLD,STATUS, INFO)
+                               MPI_COMM_CALC,MPISTATUS, IERROR)
       if(DEBUG%SITES) write(6,*) sub//" recv d ", fname, d,  &
                   " zzzz nloc : ", nloc, " zzzz me0 nlocal", nlocal
       do n = 1, nloc
@@ -828,13 +827,13 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
         write(*,*)'MISSING species attribute? ',i_Att,NSPEC
       endif
       do d = 1, NPROC-1
-        call MPI_RECV(i_Att_MPI, 4*1, MPI_BYTE, d, 746, MPI_COMM_WORLD,STATUS, INFO)
+        call MPI_RECV(i_Att_MPI, 4*1, MPI_BYTE, d, 746, MPI_COMM_CALC,MPISTATUS, IERROR)
         if(i_Att_MPI>0)then
           if(i_Att_MPI/=NSPEC)then
              write(*,*)'MISSING species attribute? ',i_Att_MPI,NSPEC
           endif
           call MPI_RECV(Spec_Att,Spec_Att_Size*N_Spec_Att_MAX*NSPECMAX, &
-               MPI_BYTE, d, 747, MPI_COMM_WORLD,STATUS, INFO)
+               MPI_BYTE, d, 747, MPI_COMM_CALC,MPISTATUS, IERROR)
         endif
       enddo
 
@@ -865,19 +864,19 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
     else
       !not MasterProc
       i_Att_MPI=i_Att
-      call MPI_SEND(i_Att_MPI, 4*1, MPI_BYTE, 0, 746, MPI_COMM_WORLD, INFO)
+      call MPI_SEND(i_Att_MPI, 4*1, MPI_BYTE, 0, 746, MPI_COMM_CALC, IERROR)
       if(i_Att>0)then
-        call MPI_SEND(Spec_Att, Spec_Att_Size*N_Spec_Att_MAX*NSPECMAX, MPI_BYTE, 0, 747, MPI_COMM_WORLD, INFO)
+        call MPI_SEND(Spec_Att, Spec_Att_Size*N_Spec_Att_MAX*NSPECMAX, MPI_BYTE, 0, 747, MPI_COMM_CALC, IERROR)
       endif
       prev_year(type) = current_date%year
     endif ! MasterProc 
   endif ! current_date%year /= prev_year(type)
 
   if(.not.MasterProc) then   ! send data to me=0 (MasterProc)
-    call MPI_SEND(nlocal, 4*1, MPI_BYTE, 0, 346, MPI_COMM_WORLD, INFO)
-    call MPI_SEND(out, 8*nout*nlocal, MPI_BYTE, 0, 347, MPI_COMM_WORLD, INFO)
+    call MPI_SEND(nlocal, 4*1, MPI_BYTE, 0, 346, MPI_COMM_CALC, IERROR)
+    call MPI_SEND(out, 8*nout*nlocal, MPI_BYTE, 0, 347, MPI_COMM_CALC, IERROR)
     if(trim(fname)=="sondes")&
-        call MPI_SEND(ps_sonde, 8*nlocal, MPI_BYTE, 0, 348, MPI_COMM_WORLD, INFO)
+        call MPI_SEND(ps_sonde, 8*nlocal, MPI_BYTE, 0, 348, MPI_COMM_CALC, IERROR)
   else ! MasterProc
     ! first, assign me=0 local data to g_out
     if ( DEBUG%SITES ) print *, "ASSIGNS ME=0 NLOCAL_SITES", me, nlocal
@@ -889,11 +888,11 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
     enddo ! n
 
     do d = 1, NPROC-1
-      call MPI_RECV(nloc, 4*1, MPI_BYTE, d, 346, MPI_COMM_WORLD,STATUS, INFO)
-      call MPI_RECV(out, 8*nout*nloc, MPI_BYTE, d, 347, MPI_COMM_WORLD, &
-           STATUS, INFO)
+      call MPI_RECV(nloc, 4*1, MPI_BYTE, d, 346, MPI_COMM_CALC,MPISTATUS, IERROR)
+      call MPI_RECV(out, 8*nout*nloc, MPI_BYTE, d, 347, MPI_COMM_CALC, &
+           MPISTATUS, IERROR)
       if(trim(fname)=="sondes")call MPI_RECV(ps_sonde, 8*nloc, MPI_BYTE, d, &
-           348, MPI_COMM_WORLD, STATUS, INFO)
+           348, MPI_COMM_CALC, MPISTATUS, IERROR)
       do n = 1, nloc
          nglob = s_gindex(d,n)
          g_out(:,nglob) = out(:,n)
