@@ -154,10 +154,11 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-25th January   2016 Peter  3131-2
+25th January   2016 Peter  3131-3
 
 Bug in MPI_Groups_ml, make the model crash immediately.
 Typo in Emissions for monthly emis (crash).
+Emissions_ml recognize type="ASCII"
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 18th January   2016 Peter  3130

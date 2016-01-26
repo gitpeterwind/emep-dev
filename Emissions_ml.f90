@@ -537,7 +537,8 @@ contains
                 if(MasterProc) write(*,*) "PARTEMIS ", iem, trim(fname), sumemis(27,iem) 
 
              enddo
-          else if(index(emis_inputlist(iemislist)%name,"grid")>0)then
+          else if(index(emis_inputlist(iemislist)%name,"grid")>0 .or.  &
+                        emis_inputlist(iemislist)%type=='ASCII'  )then
              !ASCII format
              n=index(emis_inputlist(iemislist)%name,"POLL")
              do iem = 1, NEMIS_FILE
