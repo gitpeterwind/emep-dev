@@ -66,8 +66,9 @@ integer, public, parameter :: &
 character(len=max_filename_length), save :: &
   fileName      = 'NotSet',&
   fileName_iou(IOU_INST:IOU_3DHOUR)=&
-    ['out_inst.nc','out_year.nc','out_month.nc','out_day.nc',&
-     'out_hour.nc','out_hourInst.nc','out_3Dhour.nc']
+    ['out_inst.nc    ','out_year.nc    ','out_month.nc   ','out_day.nc     ',&
+     'out_hour.nc    ','out_hourInst.nc','out_3Dhour.nc  ']
+
 character(len=125) :: period_type !TESTHH
 
 integer,parameter ::closedID=-999     !flag for showing that a file is closed

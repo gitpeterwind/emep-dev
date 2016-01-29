@@ -239,17 +239,17 @@ INTEGER STATUS(MPI_STATUS_SIZE),INFO
     character(len=TXTLEN_SHORT) :: outname, outunit, outdim, outtyp, outclass
     logical :: Is3D,debug0   !  if(DEBUG%MY_DERIVED.and.MasterProc )
     character(len=12), save :: sub='InitMyDeriv:'
+   
+    NAMELIST /OutputConcs_config/OutputMisc,OutputConcs,OutputVegO3
+    NAMELIST /OutputDep_config/DDEP_ECOS, DDEP_WANTED, WDEP_WANTED, SDEP_WANTED
+    NAMELIST /OutputSize_config/fullrun_DOMAIN,month_DOMAIN,day_DOMAIN,hour_DOMAIN
 
 !default output sizes
     fullrun_DOMAIN = RUNDOMAIN
     month_DOMAIN =   RUNDOMAIN
     day_DOMAIN =     RUNDOMAIN
     hour_DOMAIN =    RUNDOMAIN
-    
-    NAMELIST /OutputConcs_config/OutputMisc,OutputConcs,OutputVegO3
-    NAMELIST /OutputDep_config/DDEP_ECOS, DDEP_WANTED, WDEP_WANTED, SDEP_WANTED
-    NAMELIST /OutputSize_config/fullrun_DOMAIN,month_DOMAIN,day_DOMAIN,hour_DOMAIN
-
+ 
     debug0 = DEBUG%MY_DERIVED.and.MasterProc
 
     rewind(IO_NML)
