@@ -97,6 +97,10 @@ OutputConcs=
       'DUST_WB_C'           ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
       'DUST_SAH_F'          ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
       'DUST_SAH_C'          ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
+! SHL TEST - ONLY molec/cm3 for 2d at least. Denote as molec
+! DO NOT USE ppb!!!
+       'OH'                 ,'molec' ,'2d','AIR_CONCS','SHL' ,4, !! test SHL
+       'ISRO2'              ,'molec' ,'2d','AIR_CONCS','SHL' ,4, !! test SHL
 ! ppb                                                      
       'O3'                  ,'ppb' ,'2d','AIR_CONCS','SPEC' ,4, !! test 3d
       'NO'                  ,'ppb' ,'2d','AIR_CONCS','SPEC' ,4, !! also have ugN

@@ -154,6 +154,20 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+29th January   2016 Dave  3135
+
+Added 2D output of SHL species (following tip from Peter), with:
+
+config_Output, e.g.
+      'OH'    ,'molec' ,'2d','AIR_CONCS','SHL' ,4, !! test SHL
+
+Derived_ml: 
+  SHL enabled
+  
+  BUT name-changed needed in future. The SURF_PPB_ class is very confusing, since
+  it doesn't really mean ppb. Consider VOL
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 25th January   2016 Peter  3131-3
 
 Bug in MPI_Groups_ml, make the model crash immediately.

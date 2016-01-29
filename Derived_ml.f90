@@ -446,7 +446,7 @@ subroutine Define_Derived()
           write(*,*)"OutputFields Short lived Species found: "//trim(outname)
         iout = ishl
         unitscale = 1.0
-        unittxt = "molecules/cm3"
+        unittxt = "molec/cm3" ! No PPB possibility here !!!
         volunit = .true.
       case("GROUP") ! groups of species
         igrp = find_index(outname, chemgroups(:)%name )
@@ -469,7 +469,7 @@ subroutine Define_Derived()
           trim(outtyp)//":"//trim(outname)//":"//trim(outdim))
       endselect
 
-      class="MASS";if(volunit)class="PPB"
+      class="MASS";if(volunit)class="PPB"   ! CHANGE PPB to VOL
       select case(outdim)
       case("2d","2D","SURF")
         Is3D = .false.
@@ -812,8 +812,8 @@ subroutine Derived(dt,End_of_Day)
     index = f_2d(n)%index
 
     if( dbgP .and. first_call ) &
-       write(*,"(a,i3,7a)") "Derive2d-name-class",&
-        n, "C:", trim(class), "N:", trim(name), ":END"
+       write(*,"(a,i3,9a)") "Derive2d-name-class", n, " C:", trim(class), &
+            " U:", trim(f_2d(n)%unit), " N:", trim(name), ":END"
 
 
 
@@ -1020,8 +1020,34 @@ subroutine Derived(dt,End_of_Day)
         d_2d( n, i,j,IOU_INST) = xn_adv(index,i,j,KMAX_MID) &
                                * cfac(index,i,j) * density(i,j)
       end forall
+
       if ( dbgP ) call write_debugadv(n,index, &
                                density(debug_li,debug_lj), "SURF_MASS")
+   ! case ( "SURF_molec_SHL" )        ! short-lived. Follows pattern of MAXSHL below
+!
+!         forall ( i=1:limax, j=1:ljmax )
+!           d_2d( n, i,j,IOU_INST) = xn_shl(index,i,j,KMAX_MID)
+!         end forall
+!      if ( dbgP ) write(*,'(a,f8.2,3es12.3)') &
+!          'SHLSHLmcc'//trim( species(index)%name), thour, &
+!           xn_shl(index,debug_li,debug_lj,KMAX_MID), density(debug_li,debug_lj), to_molec_cm3
+!
+   ! WARNING CLASS PPB just means volume based..
+    case ( "SURF_PPB_SHL" )        ! short-lived. Follows pattern of MAXSHL below
+      if (  f_2d(n)%unit == "ppb"  ) then  !  NOT ENABLED SO FAR !
+         forall ( i=1:limax, j=1:ljmax )
+           d_2d( n, i,j,IOU_INST) = &
+               xn_shl(index,i,j,KMAX_MID)  / (density(i,j)*to_molec_cm3)
+         end forall
+      else
+         forall ( i=1:limax, j=1:ljmax )
+           d_2d( n, i,j,IOU_INST) = xn_shl(index,i,j,KMAX_MID) 
+         end forall
+      end if
+
+      if ( dbgP ) write(*,'(a,f8.2,3es12.3)') &
+          'SHLSHLppb'//trim( species(index)%name), thour, &
+           xn_shl(index,debug_li,debug_lj,KMAX_MID), density(debug_li,debug_lj), to_molec_cm3
 
     case ( "PM25water" )      !water
 
@@ -1193,6 +1219,7 @@ subroutine Derived(dt,End_of_Day)
         nav_2d(n,IOU_YEAR) = nav_2d(n,IOU_YEAR) + 1
         endif
       endif
+
 
     case ( "MAXSHL" )        ! Daily maxima - short-lived
       if (  f_2d(n)%unit /= "ppb"  ) then  ! Mix ratio so far
