@@ -23,7 +23,7 @@ use DA_ml,            only: debug=>DA_DEBUG,dafmt=>da_fmt_msg,damsg=>da_msg,&
 use spectralcov,      only: nx,ny,nlev,nchem,nxex,nyex,nv1,FGSCALE,&
                             nChemObs,nChemNoObs,iChemInv,iChemObs,iChemNoObs
 use chitox_ml,        only: matched_domain,iyf,chitox_adj
-use mpi,              only: MPI_COMM_WORLD,MPI_ALLREDUCE,MPI_SUM,&
+use MPI_Groups_ml,    only: MPI_COMM_WORLD,MPI_ALLREDUCE,MPI_SUM,&
                             MPI_IN_PLACE,MPI_INTEGER
 implicit none
 integer, save :: nobs!,matidx
@@ -206,8 +206,8 @@ subroutine read_obs(domain,maxobs,flat,flon,falt,y,stddev,ipar)
         obsData(nd)%ichem=no                    ! index observed
         obsData(nd)%ichemObs=ichemobs(no)       ! index observed/unobserved
         obsData(nd)%ispec=varSpec(ichemobs(no)) ! index species
-        obsData(nd)%unitconv=Units_Scale(obsData(nd)%unit,&
-          obsData(nd)%ispec,needroa=obsData(nd)%unitroa)
+        call Units_Scale(obsData(nd)%unit,obsData(nd)%ispec,obsData(nd)%unitconv,&
+                         needroa=obsData(nd)%unitroa)
       else
         select case(obsData(nd)%name)
         case("BSC","EXT","AOD")
@@ -215,8 +215,8 @@ subroutine read_obs(domain,maxobs,flat,flon,falt,y,stddev,ipar)
           obsData(nd)%ichem=find_index(obsData(nd)%unit,wavelength)
         case default
           obsData(nd)%ichem=find_index(obsData(nd)%name,chemgroups(:)%name)
-          obsData(nd)%unitconv=Units_Scale(obsData(nd)%unit,&
-            -1,needroa=obsData(nd)%unitroa)
+          call Units_Scale(obsData(nd)%unit,-1,obsData(nd)%unitconv,&
+                           needroa=obsData(nd)%unitroa)
         endselect
       endif
       call CheckStop(obsData(nd)%deriv=='',&

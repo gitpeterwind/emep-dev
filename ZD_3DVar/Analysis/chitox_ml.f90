@@ -9,13 +9,14 @@ use spectralcov, only: nx,ny,stddev,nxex,nyex,nlev,nchem,&
                        nchemobs,ichemobs,nchemNoObs,ichemNoObs,&
                        nv1,ucovmat,sqrt_lambda,vt,sqrt_gamma,nkstar,ikstar
 use DA_ml,            only: debug=>DA_DEBUG,dafmt=>da_fmt_msg
-use UFFTW3_ml,   only: UFFTW3_T2d
-use mpi,         only: MPI_COMM_WORLD,MPI_BARRIER,MPI_BCAST,MPI_ALLREDUCE,MPI_LAND,MPI_SUM,&
+use UFFTW3_ml,        only: UFFTW3_T
+use MPI_Groups_ml,    only: MPI_COMM_WORLD,MPI_BARRIER,MPI_BCAST,&
+                       MPI_ALLREDUCE,MPI_LAND,MPI_SUM,&
                        MPI_IN_PLACE,MPI_LOGICAL,MPI_INTEGER,MPI_DOUBLE_COMPLEX
 implicit none
 private 
 public :: ChiToX, ChiToU, ChiToX_adj, chi_Init, chi_Done, chi_vec2hc, chi_hc2vec
-type(UFFTW3_T2d) :: ufft
+type(UFFTW3_T) :: ufft
 logical, public  :: matched_domain
 integer, public  :: nhcrTot,nhcrLoc
 integer, allocatable, public :: iyf(:,:),l2wR(:),l2wC(:,:,:)
@@ -469,5 +470,3 @@ subroutine ChiToX_adj(chi_hc,x)
 endsubroutine ChiToX_adj
 !-----------------------------------------------------------------------
 endmodule ChiToX_ml
-
-

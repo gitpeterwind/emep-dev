@@ -10,10 +10,7 @@ export CLEANCPP ?= 1
 
 #stop: info-varaiable-EXP info-varaiable-PROG
 ifdef EXP
-  override DFLAGS += -DOLD_SPL #-DBIAS_CORRECTION
-  $(PROG): fftpack5/libfftpack_r8.a
-  LIBS += -lfftpack_r8
-  LLIB += -L./fftpack5/
+# override DFLAGS += -DBIAS_CORRECTION
   ifeq ($(MACHINE),stallo)
     MODULES += fftw/3.3.3.mpi
     ifneq (,$(call modulefind,fftw/3.3.3.mpi))
@@ -33,6 +30,10 @@ ifdef EXP
     INCL += $(FFTW_ROOT)/include
     LLIB += -L$(FFTW_ROOT)/lib -Wl,-rpath,$(FFTW_ROOT)/lib
   endif
+  override DFLAGS += -DOLD_SPL
+  $(PROG): fftpack5/libfftpack_r8.a
+  LIBS += -lfftpack_r8
+  LLIB += -L./fftpack5/
   ifneq (,$(findstring OLD_SPL,$(DFLAGS)))
     SRCS.$(EXP) += ./B_NMC/fitpack.F
   else

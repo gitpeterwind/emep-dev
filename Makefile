@@ -39,8 +39,8 @@ else ifeq ($(MACHINE),gstallo)
   FC=mpif90
   LD=mpif90
 else ifeq ($(MACHINE),vilje)
-# MODULES = intelcomp/13.0.1 mpt/2.06 netcdf/4.3.0
-  MODULES = intelcomp/14.0.1 mpt/2.09 netcdf/4.3.1
+  MODULES = intelcomp/13.0.1 mpt/2.06 netcdf/4.3.0
+# MODULES = intelcomp/14.0.1 mpt/2.09 netcdf/4.3.1
   LDFLAGS += $(shell nc-config --flibs)
   F90FLAGS+= $(shell nc-config --cflags)
   MAKEDEPF90=/home/metno/mifapw/bin/makedepf90

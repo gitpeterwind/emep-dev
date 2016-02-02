@@ -20,11 +20,11 @@ use DA_ml,            only: debug=>DA_DEBUG,DAFMT_DEF=>DA_FMT_DEF,&
                             debug_3dv=>DA_DEBUG_3DV,debug_obs=>DA_DEBUG_OBS,&
                             danml=>da_namelist,dafmt=>da_fmt_msg,damsg=>da_msg,&
                             tim_before=>datim_before,tim_after=>datim_after
-use DA_Obs_ml,       only:  varName,obsVarName,observedVar,varSpec,varSpecInv,&
+use DA_Obs_ml,        only: varName,obsVarName,observedVar,varSpec,varSpecInv,&
                             OBSERVATIONS,nobs,nobsData,obsData,&
                             innov,obsstddev,H_jac,pidx,H_op,chisq_over_nobs2,&
                             allocate_obs,read_obs,deallocate_obs
-#if BIAS_CORRECTION
+#ifdef BIAS_CORRECTION
 use DA_Bias_ml
 #endif
 use covmat_ml,        only: set_chemobs_idx,read_speccov
@@ -33,7 +33,7 @@ use spectralcov,      only: nx,ny,nlev,nchem,nxex,nyex,nex,iChemInv,&
 use chitox_ml,        only: matched_domain, iyf, nhcrTot, nhcrLoc, &
                             chitox, chitou, chitox_adj, chi_Init, chi_Done, &
                             chi_vec2hc, chi_hc2vec, l2wR, l2wC
-use mpi,              only: MPI_COMM_WORLD,MPI_BARRIER,MPI_SUM,MPI_LAND,&
+use MPI_Groups_ml,    only: MPI_COMM_WORLD,MPI_BARRIER,MPI_SUM,MPI_LAND,&
                             MPI_IN_PLACE,MPI_LOGICAL,MPI_INTEGER,MPI_DOUBLE_PRECISION
 !                           MPI_ALLREDUCE
 implicit none
@@ -647,7 +647,7 @@ subroutine costFunction(ind,nvLoc,chi,Jcost,gradJcost)
 !-----------------------------------------------------------------------
 ! Local variables
 !-----------------------------------------------------------------------
-  complex(kind=8), pointer, dimension(:,:,:) :: chi_hc=>null()
+  complex(kind=8),pointer, dimension(:,:,:) :: chi_hc=>null()
   integer lenwork,i,ik,j,j0,j1,k,kk,l,l0,l1,m,n,m1,n1,mneg,nneg
   integer :: p, INFO, iyf0, iyf1
   real, pointer, dimension(:,:,:,:) :: dx_loc=>null(),du_loc=>null()

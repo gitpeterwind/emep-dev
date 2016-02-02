@@ -3,7 +3,7 @@
 #define HERE(MSG) MSG//" ("//__FILE__//":"//STRING(__LINE__)//")."
 module Util_ml
 use netcdf
-use mpi,                  only: MPI_COMM_WORLD,MPI_SUM,MPI_IN_PLACE,&
+use MPI_Groups_ml,        only: MPI_COMM_WORLD,MPI_SUM,MPI_IN_PLACE,&
                                 MPI_DOUBLE_PRECISION!,MPI_ALLREDUCE
 use ModelConstants_ml,    only: MasterProc,USE_EtaCOORDINATES
 use TimeDate_ml,          only: date
