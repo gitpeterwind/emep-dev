@@ -61,6 +61,7 @@
 &Pollen_config
   birch_frac_nc  = '$birch_frac',#birch_frac
   birch_data_nc  = '$birch_data',#birch_data
+  birch_corr_nc  = '$birch_corr',#birch_corr
   olive_data_nc  = '$olive_data',#olive_data
   grass_field_nc = '$grass_frac',#grass_frac
   grass_time_nc  = '$grass_time',#grass_time
@@ -166,6 +167,8 @@
     'CH4'       ,'ch4'         ,1.0,T,F,-1, ! Methane
     'C5H8'      ,'c5h8'        ,1.0,T,F,-1, ! Isoprene
     'C2H6'      ,'c2h6'        ,1.0,T,F,-1, ! Ethane
+!   'C3H8'      ,'c3h8'        ,1.0,T,F,-1, ! Propane, not in EmChem09soa: do not use
+!   'OH'        ,'oh'          ,1.0,F,F,-1, ! short lived: do not use
     'SEASALT_F' ,'aermr01'     ,1.0,T,F,-1, ! ss_f: 0.03 - 0.5  um
     'SEASALT_F' ,'aermr02'     ,1.0,F,F,-1, ! ss_c: 0.5  - 5.0  um
     'SEASALT_C' ,'aermr02'     ,1.0,T,F,-1, ! ss_c: 0.5  - 5.0  um

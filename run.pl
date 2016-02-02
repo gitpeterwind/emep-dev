@@ -118,8 +118,8 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
-($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3123"   ,"EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
-#($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3074"   ,"EmChem09soa","EMEPGLOB","EMEPSTD","GLOBAL",0);
+ ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3137","EmChem09soa","EMEPSTD" ,"EMEPSTD","EECCA" ,0);
+#($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3074","EmChem09soa","EMEPGLOB","EMEPSTD","GLOBAL",0);
 
 my %BENCHMARK;
 # OpenSource 2008
@@ -1020,6 +1020,7 @@ foreach my $scenflag ( @runs ) {
   if($PollenDir) {
     $inml{'birch_frac'}="$PollenDir/birch_frac.nc";
     $inml{'birch_data'}="$PollenDir/pollen_data.nc";
+    $inml{'birch_corr'}="$PollenDir/birch_factor_YYYY.nc";
     $inml{'olive_data'}="$PollenDir/oliven_data.nc";
     $inml{'grass_time'}="$PollenDir/grass_time.nc";
     $inml{'grass_frac'}="$PollenDir/grass_frac.nc";

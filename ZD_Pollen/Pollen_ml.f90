@@ -67,8 +67,9 @@ integer, save :: &
 integer, parameter :: &
   max_string_length=200 ! large enough for paths to be set on Pollen_config namelist
 character(len=max_string_length), save ::  &  
-  birch_frac_nc ="birch_frac",&
+  birch_frac_nc ="birch_frac.nc",&
   birch_data_nc ="pollen_data.nc",&
+  birch_corr_nc ="birch_factor_YYYY.nc",&
   olive_data_nc ="maccoliven_data.nc",&
   grass_field_nc="grass_frac.nc",&
   grass_time_nc ="grass_time.nc",&
@@ -96,7 +97,8 @@ subroutine Config_Pollen()
   integer :: ios
   logical, save :: first_call = .true.
   NAMELIST /Pollen_config/&
-    birch_frac_nc,birch_data_nc,olive_data_nc,grass_field_nc,grass_time_nc,&
+    birch_frac_nc,birch_data_nc,birch_corr_nc,&
+    olive_data_nc,grass_field_nc,grass_time_nc,&
     template_read,template_write
 
   if(.not.first_call)return
@@ -225,8 +227,13 @@ subroutine pollen_flux(i,j,debug_flag)
        interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
     call ReadField_CDF(birch_data_nc,'h_c',birch_h_c,2, &
        interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
+! birch: cross_corr default
     call ReadField_CDF(birch_data_nc,'cross',corr,2, &
        interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
+! birch: cross_corr for specific year
+    birch_corr_nc=date2string(birch_corr_nc,current_date,debug=DEBUG_NC)
+    call ReadField_CDF(birch_corr_nc,'scale_factor',corr,2, &
+       interpol='conservative',needed=.false.,debug_flag=DEBUG_NC,UnDef=UnDef)
     call ReadField_CDF(olive_data_nc,'olive_frac',olive_frac,2, &
        interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
     call ReadField_CDF(olive_data_nc,'olive_th',olive_h_c,2, &

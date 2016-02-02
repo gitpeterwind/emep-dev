@@ -154,12 +154,15 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-3rd February   2016 Alvaro  3136
+3rd February   2016 Alvaro, Birthe  3136,3137
 
 Makefile
 - Revert netcdf library on vilje to netcdf/4.3.0, in order to use DEBUG=yes.
   3020 upgraded netcdf/4.3.1 (intelcomp/14.0.1) from netcdf/4.3.0 (intelcomp/13.0.1).
   Unfortunatelly the model crashes with netcdf/4.3.1 and DEBUG=yes.
+
+run.pl,ZD_Pollen/Pollen_ml,config_FORECAST.nml
+- Birch pollen frac/correction for 2016.
 
 ZD_3DVar/B_NMC/Util_ml,
 ZD_3DVar/Analysis/DA_3DVar_ml,DA_Obs_ml,ufftw3_ml,chitox_ml:
@@ -173,7 +176,7 @@ ZD_3DVar/Analysis/DA_Obs_ml.f90
 
 ZD_3DVar/Makefile,Analysis/ufftw3_ml,chitox_ml:
 - clean-up
-- remove unusued 3D fft module.
+- remove unused 3D fft module.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 29th January   2016 Dave  3135
