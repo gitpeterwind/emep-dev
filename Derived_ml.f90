@@ -217,8 +217,8 @@ subroutine Init_Derived()
   call Setups()  ! just for VOC now
 
   select case(nint(AERO%DpgV(2)*1e7))
-  case(25);fracPM25=0.37
-  case(30);fracPM25=0.27
+    case(25);fracPM25=0.37
+    case(30);fracPM25=0.27
   endselect
   if(dbg0) write(*,"(a,2g12.3,i4)") ' CFAC INIT PMFRACTION ', &
       fracPM25, AERO%DpgV(2), nint(1.0e7*AERO%DpgV(2))
@@ -780,7 +780,6 @@ subroutine Derived(dt,End_of_Day)
             ! Inverse of No. air mols/cm3 = 1/M
             ! where M =  roa (kgair m-3) * to_molec_cm3  when ! scale in ug,  else 1
   logical, save :: first_call = .true.
-  integer :: ipm25, ipmc ! will save some calcs for pm10
   integer :: igrp, ngrp  ! group methods
   integer, save :: ind_pmfine = -999, ind_pmwater = -999, & !needed for PM25
                    ind_pm10 = -999
@@ -802,8 +801,6 @@ subroutine Derived(dt,End_of_Day)
 
   !****** 2-D fields **************************
 
-  ipm25 = 0  ! Reset once pm25 calculated
-  ipmc  = 0  ! pm-coarse
   do n = 1, num_deriv2d
 
     class = f_2d(n)%class
@@ -1023,7 +1020,7 @@ subroutine Derived(dt,End_of_Day)
 
       if ( dbgP ) call write_debugadv(n,index, &
                                density(debug_li,debug_lj), "SURF_MASS")
-   ! case ( "SURF_molec_SHL" )        ! short-lived. Follows pattern of MAXSHL below
+!   case ( "SURF_molec_SHL" )        ! short-lived. Follows pattern of MAXSHL below
 !
 !         forall ( i=1:limax, j=1:ljmax )
 !           d_2d( n, i,j,IOU_INST) = xn_shl(index,i,j,KMAX_MID)
@@ -1059,7 +1056,8 @@ subroutine Derived(dt,End_of_Day)
     case ( "PM25" )      ! Need to add PMFINE + fraction NO3_c
       if(first_call)then
         call CheckStop(f_2d(n)%unit(1:2)/="ug","Wrong unit for "//trim(class))
-         call CheckStop(iadv_NO3_C<1,"Unknown specie NO3_C")
+        call CheckStop(ind_pmfine <1,"Missing PMFINE output for "//trim(class))
+        call CheckStop(iadv_NO3_C <1,"Unknown specie NO3_C")
      endif
 
       !scale = 62.0
@@ -1073,31 +1071,31 @@ subroutine Derived(dt,End_of_Day)
 
     case ( "PM25_rh50" )      ! Need to add PMFINE + fraction NO3_c
       if(first_call)then
-         call CheckStop(f_2d(n)%unit(1:2)/="ug","Wrong unit for "//trim(class))
-        call CheckStop(iadv_NO3_C<1,"Unknown specie NO3_C")
+        call CheckStop(f_2d(n)%unit(1:2)/="ug","Wrong unit for "//trim(class))
+        call CheckStop(ind_pmfine <1,"Missing PMFINE output for "//trim(class))
+        call CheckStop(ind_pmwater<1,"Missing PM25water output for "//trim(class))
+        call CheckStop(iadv_NO3_C <1,"Unknown specie NO3_C")
       endif
 
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = d_2d(ind_pmfine ,i,j,IOU_INST) &
-!                                + PM25_water_rh50(i,j)*ATWAIR/PPBINV  &
+!                              + PM25_water_rh50(i,j)*ATWAIR/PPBINV  &
                                + d_2d(ind_pmwater,i,j,IOU_INST) &
                                + fracPM25 * &
             ( xn_adv(iadv_NO3_C,i,j,KMAX_MID) * ug_NO3_C &
             ) * cfac(iadv_NO3_C,i,j) * density(i,j)
       end forall
 
-    case ( "PM25X" )      ! Need to add PMFINE + fraction NO3_c
+    case("PM25X")      ! Need to add PMFINE + fraction NO3_c
       if(first_call)then
         call CheckStop(f_2d(n)%unit(1:2)/="ug","Wrong unit for "//trim(class))
+        call CheckStop(ind_pmfine <1,"Missing PMFINE output for "//trim(class))
       endif
-      if (iadv_NO3_C      < 1 .or. & 
-          iadv_EC_C_WOOD  < 1 .or. & 
-          iadv_EC_C_FFUEL < 1 .or. & 
-          iadv_POM_C_FFUEL< 1 ) then
-          if ( first_call .and. MasterProc  ) write(*,*) &
-               "WARNING: Derived - not all PM25X species present. Skipping"
-          cycle   !! Skip this case
-      end if
+      if(any([iadv_NO3_C,iadv_EC_C_WOOD,iadv_EC_C_FFUEL,iadv_POM_C_FFUEL]<1))then
+        if(first_call.and.MasterProc) write(*,*) &
+          "WARNING: Derived - not all "//trim(class)//" species present. Skipping"
+        cycle   !! Skip this case
+      endif
 
       !scale = 62.0
       ! All this size class has the same cfac.
@@ -1111,22 +1109,21 @@ subroutine Derived(dt,End_of_Day)
             ) * cfac(iadv_NO3_C,i,j) * density(i,j)
       end forall
 
-    case ( "PM25X_rh50" )      ! Need to add PMFINE + fraction NO3_c + water
+    case("PM25X_rh50")      ! Need to add PMFINE + fraction NO3_c + water
       if(first_call)then
         call CheckStop(f_2d(n)%unit(1:2)/="ug","Wrong unit for "//trim(class))
+        call CheckStop(ind_pmfine <1,"Missing PMFINE output for "//trim(class))
+        call CheckStop(ind_pmwater<1,"Missing PM25water output for "//trim(class))
       endif
-      if (iadv_NO3_C      < 1 .or. & 
-          iadv_EC_C_WOOD  < 1 .or. & 
-          iadv_EC_C_FFUEL < 1 .or. & 
-          iadv_POM_C_FFUEL< 1 ) then
-          if ( first_call ) write(*,*) &
-               "WARNING: Derived - not all PM25X_rh50 species present. Skipping"
-          cycle   !! Skip this case
-      end if
+      if(any([iadv_NO3_C,iadv_EC_C_WOOD,iadv_EC_C_FFUEL,iadv_POM_C_FFUEL]<1))then
+        if(first_call.and.MasterProc) write(*,*) &
+          "WARNING: Derived - not all "//trim(class)//" species present. Skipping"
+        cycle   !! Skip this case
+      endif
 
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = d_2d(ind_pmfine ,i,j,IOU_INST) &
-!                                + PM25_water_rh50(i,j)*ATWAIR/PPBINV &
+!                              + PM25_water_rh50(i,j)*ATWAIR/PPBINV &
                                + d_2d(ind_pmwater,i,j,IOU_INST) &
                                + fracPM25 * &
             ( xn_adv(iadv_NO3_C      ,i,j,KMAX_MID) * ug_NO3_C       &
@@ -1136,10 +1133,15 @@ subroutine Derived(dt,End_of_Day)
             ) * cfac(iadv_NO3_C,i,j) * density(i,j)
       end forall
 
-    case ( "PM10_rh50" )      ! Need to add PMFINE + fraction NO3_c
+    case("PM10_rh50")      ! Need to add PMFINE + fraction NO3_c
+      if(first_call)then
+        call CheckStop(ind_pm10   <1,"Missing PM10 output for "//trim(class))
+        call CheckStop(ind_pmwater<1,"Missing PM25water output for "//trim(class))
+      endif
+
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = d_2d(ind_pm10   ,i,j,IOU_INST) &
-!                                + PM25_water_rh50(i,j)*ATWAIR/PPBINV &
+!                              + PM25_water_rh50(i,j)*ATWAIR/PPBINV &
                                + d_2d(ind_pmwater,i,j,IOU_INST)
       end forall
 
@@ -1147,9 +1149,6 @@ subroutine Derived(dt,End_of_Day)
         if(first_call)then
           call CheckStop(f_2d(n)%unit(1:2)/="ug","Wrong unit for "//trim(class))
           call CheckStop(iadv_NO3_C      <1,"Unknown specie NO3_C")
-!SEP11          call CheckStop(iadv_EC_C_WOOD  <1,"Unknown specie EC_C_WOOD")
-!SEP11          call CheckStop(iadv_EC_C_FFUEL <1,"Unknown specie EC_C_FFUEL")
-!SEP11          call CheckStop(iadv_POM_C_FFUEL<1,"Unknown specie POM_C_FFUEL")
         endif
         write(*,*) "FRACTION PM25", n, ind_pmfine, ind_pmwater
         i= debug_li; j=debug_lj
@@ -1159,9 +1158,6 @@ subroutine Derived(dt,End_of_Day)
             d_2d(ind_pmfine ,i,j,IOU_INST), d_2d( n, i,j,IOU_INST), &
             ug_NO3_C * xn_adv(iadv_NO3_C,i,j,KMAX_MID) &
                      * cfac(iadv_NO3_C,i,j) * density(i,j)
-!SEP11        write(*,"(a,i4,f5.2,4es12.3)") "CFAC PM25FRACTIONS:", n, fracPM25,  &
-!SEP11                cfac(iadv_NO3_C    ,i,j), cfac(iadv_POM_C_FFUEL,i,j), &
-!SEP11                cfac(iadv_EC_C_WOOD,i,j), cfac(iadv_EC_C_FFUEL ,i,j)
       endif
 
     case("AOD:GROUP","AOD:SPEC")  !/ Aerosol Optical Depth (new system)
@@ -1418,10 +1414,12 @@ subroutine Derived(dt,End_of_Day)
 
       if(DEBUG%DERIVED.and.debug_proc)then
           i= debug_li; j=debug_lj
-        if(n==ind_pmfine)write(*,"(a,i4,es12.3)")&
-          "PMFINE FRACTION:",n,d_2d(n,i,j,IOU_INST)
-        if(n==ind_pm10  )write(*,"(a,i4,es12.3)") &
-          "PM10 FRACTION:"  ,n,d_2d(n,i,j,IOU_INST)
+        if(n==ind_pmfine ) &
+          write(*,"(a,i4,es12.3)") "PMFINE FRACTION:"   ,n,d_2d(n,i,j,IOU_INST)
+        if(n==ind_pm10   ) &
+          write(*,"(a,i4,es12.3)") "PM10 FRACTION:"     ,n,d_2d(n,i,j,IOU_INST)
+        if(n==ind_pmwater) &
+          write(*,"(a,i4,es12.3)") "PM25water FRACTION:",n,d_2d(n,i,j,IOU_INST)
         write(*,*) "CASErho     ", density(i,j)
       end if
 

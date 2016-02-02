@@ -154,7 +154,10 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-3rd February   2016 Alvaro, Birthe  3136-3138
+3rd February   2016 Alvaro, Birthe  3136-3139
+
+Derived_ml
+- Check PM* prerequisites (ind_pmfine,ind_pm10,ind_pmwater)
 
 Makefile
 - Revert netcdf library on vilje to netcdf/4.3.0, in order to use DEBUG=yes.
@@ -163,6 +166,7 @@ Makefile
 
 ZD_OZONE/My_Outputs_ml,config_Outputs_CAMS50.nml:
 - Move extra FORECAST output (MACC_ENS) to Derived/Hourly.
+- Add PMxx_rh50 prerequisites to CAMS50 output
 
 config_FORECAST.nml
 - Use EmisDir/emis_inputlist instead of linking files.

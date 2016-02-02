@@ -231,7 +231,7 @@ subroutine pollen_flux(i,j,debug_flag)
     call ReadField_CDF(birch_data_nc,'cross',corr,2, &
        interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
 ! birch: cross_corr for specific year
-    birch_corr_nc=date2string(birch_corr_nc,current_date,debug=DEBUG_NC)
+    birch_corr_nc=date2string(birch_corr_nc,current_date,debug=DEBUG_NC.and.MasterProc)
     call ReadField_CDF(birch_corr_nc,'scale_factor',corr,2, &
        interpol='conservative',needed=.false.,debug_flag=DEBUG_NC,UnDef=UnDef)
     call ReadField_CDF(olive_data_nc,'olive_frac',olive_frac,2, &
