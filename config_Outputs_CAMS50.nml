@@ -7,7 +7,9 @@ OutputConcs=
 !--MY_OUTPUTS=="MACC_EVA": hourly D2D houtput
   'O3'            ,'ug'  ,'2d' ,'AIR_CONCS','SPEC' ,6,
   'NO2'           ,'ug'  ,'2d' ,'AIR_CONCS','SPEC' ,6,
-  'PM25'          ,'ug'  ,'2d' ,'PM25'     ,'MISC' ,1,! needed by *_rh50
+  'PMFINE'        ,'ug'  ,'2d' ,'AIR_CONCS','GROUP',0,! needed by *_rh50
+  'PM10'          ,'ug'  ,'2d' ,'AIR_CONCS','GROUP',0,! needed by *_rh50
+  'PMwater'       ,'ug'  ,'2d' ,'PM25water','MISC' ,0,! needed by *_rh50
   'SURF_ug_PM25_rh50','ug','2d','PM25_rh50','MISC' ,6,
   'SURF_ug_PM10_rh50','ug','2d','PM10_rh50','MISC' ,6,
 !--MY_OUTPUTS=="MACC_ENS": hourly sellected D3D houtput
@@ -39,11 +41,11 @@ OutputConcs=
 ! 'HMIX'          ,'m'   ,'2d' ,'HMIX'     ,'MISC' ,6,
 ! 'Kz_m2s'        ,'m2/s','2d' ,'Kz_m2s'   ,'MISC' ,6,
 !--DEBUG_PM10: hourly D2D houtput
-! 'SIA'           ,'ug'  ,'2d' ,'AIR_CONCS','GROUP',5,
-! 'DUST'          ,'ug'  ,'2d' ,'AIR_CONCS','GROUP',5,
-! 'SS'            ,'ug'  ,'2d' ,'AIR_CONCS','GROUP',5,
-! 'PPM10'         ,'ug'  ,'2d' ,'AIR_CONCS','GROUP',5,
-! 'PPM25_FIRE'    ,'ug'  ,'2d' ,'AIR_CONCS','GROUP',5,
+  'SIA'           ,'ug'  ,'2d' ,'AIR_CONCS','GROUP',5,
+  'DUST'          ,'ug'  ,'2d' ,'AIR_CONCS','GROUP',5,
+  'SS'            ,'ug'  ,'2d' ,'AIR_CONCS','GROUP',5,
+  'PPM10'         ,'ug'  ,'2d' ,'AIR_CONCS','GROUP',5,
+  'PPM25_FIRE'    ,'ug'  ,'2d' ,'AIR_CONCS','GROUP',5,
 &end
 &OutputDep_config
 ! freq = IOU_YEAR=2, IOU_MON=3, IOU_DAY=4, IOU_HOUR=5, IOU_HOUR_INST=6
