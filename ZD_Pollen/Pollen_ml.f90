@@ -54,11 +54,6 @@ real, public,save , allocatable, dimension(:,:,:)::&
   Pollen_rest,  & ! what is available pollen pr m2, fr forecast
   Pollen_left     ! amount of pollen left in catkins, relative amount... 0:sr 1:end 
 
-character(len=*), parameter :: &
-  BIRCH = "POLLEN_BIRCH",&
-  OLIVE = "POLLEN_OLIVE",&
-  GRASS = "POLLEN_GRASS"
-
 integer, save :: &
   inat_BIRCH=-1,inat_OLIVE=-1,inat_GRASS=-1,&
   itot_BIRCH=-1,itot_OLIVE=-1,itot_GRASS=-1,&
@@ -488,12 +483,14 @@ endsubroutine pollen_flux
 !-------------------------------------------------------------------------! 
 subroutine pollen_read()
 ! Read pollen for forecast restart file: heatsum and pollenrest fields
+  character(len=*), parameter :: dfmt="('Read: ',A20,' [',L1,'].')"
+  character(len=20) :: spc
   logical, save :: first_call = .true.
   logical :: fexist,found
-  integer :: nread,nstart
+  integer :: nread,nstart,g,iadv
   real(kind=8), parameter :: sec2day=1e0/(24.0*3600.0)
   real, dimension(366), save :: fdays=-1
-  real :: ncday(0:1)
+  real :: ncday(0:1),n_tot
   character(len=len(template_read)) :: filename
   real,allocatable, dimension(:,:,:) :: data ! Data arrays
 
@@ -527,60 +524,51 @@ subroutine pollen_read()
 
   if(MasterProc)&
     write(*,"(3(A,1X),I0)") "Read Pollen dump",trim(filename),"record",nstart
+
+  allocate(data(LIMAX,LJMAX,KMAX_MID))
+  do g=1,size(POLLEN_GROUP)
+    spc=trim(POLLEN_GROUP(g))
+    select case(spc)
+      case(BIRCH);iadv=iadv_BIRCH;n_tot=N_TOT_birch
+      case(OLIVE);iadv=iadv_OLIVE;n_tot=N_TOT_olive
+      case(GRASS);iadv=iadv_GRASS;n_tot=N_TOT_grass
+      case default;call CheckStop("Unknown pollen type: "//trim(spc))
+    endselect
 !------------------------
 ! pollen adv (not written by Nest_ml)
 !------------------------
-  allocate(data(LIMAX,LJMAX,KMAX_MID))
-  call GetCDF_modelgrid(BIRCH,filename,data,&
-        1,KMAX_MID,nstart,1,needed=.not.FORECAST,found=found)
-  if(MasterProc.and.debug)write(*,*)found,BIRCH
-  if(found)xn_adv(iadv_BIRCH,:,:,:)=data(:,:,:)
-
-  call GetCDF_modelgrid(OLIVE,filename,data,&
-        1,KMAX_MID,nstart,1,needed=.not.FORECAST,found=found)
-  if(MasterProc.and.debug)write(*,*)found,OLIVE
-  if(found)xn_adv(iadv_OLIVE,:,:,:)=data(:,:,:)
-
-  call GetCDF_modelgrid(GRASS,filename,data,&
-        1,KMAX_MID,nstart,1,needed=.not.FORECAST,found=found)
-  if(MasterProc.and.debug)write(*,*)found,GRASS
-  if(found)xn_adv(iadv_GRASS,:,:,:)=data(:,:,:)
-  deallocate(data)
-!------------------------
-! heatsum
-!------------------------
-  call GetCDF_modelgrid(BIRCH//"_heatsum",filename,heatsum(:,:,1),&
-        1,1,nstart,1,needed=.not.FORECAST,found=found)
-  if(MasterProc.and.debug)write(*,*)found,BIRCH//"_heatsum"
-
-  call GetCDF_modelgrid(OLIVE//"_heatsum",filename,heatsum(:,:,2),&
-        1,1,nstart,1,needed=.not.FORECAST,found=found)
-  if(MasterProc.and.debug)write(*,*)found,OLIVE//"_heatsum"
+    call GetCDF_modelgrid(trim(spc),filename,data,&
+          1,KMAX_MID,nstart,1,needed=.not.FORECAST,found=found)
+    if(DEBUG.and.MasterProc) write(*,dfmt)spc,found
+    if(found)xn_adv(iadv,:,:,:)=data(:,:,:)
 !------------------------
 ! pollen_rest
 !------------------------
-  call GetCDF_modelgrid(BIRCH//"_rest",filename,Pollen_rest(:,:,1),&
+    spc=trim(POLLEN_GROUP(g))//"_rest"
+    call GetCDF_modelgrid(trim(spc),filename,Pollen_rest(:,:,g),&
         1,1,nstart,1,needed=.not.FORECAST,found=found)
-  if(MasterProc.and.debug)write(*,*)found,BIRCH//"_rest"
-  if(found)R(:,:,1)=N_TOT_birch-Pollen_rest(:,:,1)
-
-  call GetCDF_modelgrid(OLIVE//"_rest",filename,Pollen_rest(:,:,2),&
+    if(DEBUG.and.MasterProc) write(*,dfmt)spc,found
+    if(found)R(:,:,g)=n_tot-Pollen_rest(:,:,g)
+!------------------------
+! heatsum
+!------------------------
+    if(g>size(heatsum,DIM=3))cycle
+    spc=trim(POLLEN_GROUP(g))//"_heatsum"
+    call GetCDF_modelgrid(trim(spc),filename,heatsum(:,:,g),&
         1,1,nstart,1,needed=.not.FORECAST,found=found)
-  if(MasterProc.and.debug)write(*,*)found,OLIVE//"_rest"
-  if(found)R(:,:,2)=N_TOT_olive-Pollen_rest(:,:,2)
-
-  call GetCDF_modelgrid(GRASS//"_rest",filename,Pollen_rest(:,:,3),&
-        1,1,nstart,1,needed=.not.FORECAST,found=found)
-  if(MasterProc.and.debug)write(*,*)found,GRASS//"_rest"
-  if(found)R(:,:,3)=N_TOT_grass-Pollen_rest(:,:,3)
+    if(DEBUG.and.MasterProc) write(*,dfmt)spc,found
+  enddo
+  deallocate(data)
 endsubroutine pollen_read 
 !-------------------------------------------------------------------------!
-subroutine pollen_dump ()
+subroutine pollen_dump()
 ! Write pollen for forecast restart file: heatsum and pollenrest fields
   character(len=len(template_write)) :: filename
-  character(len=*), parameter :: dfmt="('Write: ',A,' [',A,'].')"
+  character(len=*), parameter :: dfmt="('Write: ',A20,' [',A,'].')"
+  character(len=20) :: spc
   logical     :: fexist,create_var
-  integer     :: ncfileID,i
+  logical,save:: overwrite=.true. ! append to existing files if false
+  integer     :: ncfileID,i,g,iadv
   type(Deriv) :: def1
   real,allocatable, dimension(:,:,:) :: data ! Data arrays
 
@@ -595,80 +583,61 @@ subroutine pollen_dump ()
   if(MasterProc) write(*,*) "Write Pollen dump ",trim(filename)
   inquire(file=filename,exist=fexist)
   
-  def1%avg=.false.            ! not used
-  def1%index=0                ! not used
-  def1%scale=1.0              ! not used
-  def1%iotype=IOU_INST        ! not used
-
+  def1%avg=.false.                    ! not used
+  def1%index=0                        ! not used
+  def1%scale=1.0                      ! not used
+  def1%iotype=IOU_INST                ! not used
+  
   allocate(data(LIMAX,LJMAX,KMAX_MID))
   ncfileID=-1 ! must be <0 as initial value
   do i=1,2                          ! do first one loop to define the fields,
     create_var=(i==1)               ! without writing them (for performance purposes),
-    if(create_var.and.fexist.and.&  ! if the file does not exists already
-      template_write/=template_write_IC)cycle ! and pollen has its own restart file
+    if(all([create_var,fexist,.not.overwrite,&  ! if the file does not exists already
+       template_write/=template_write_IC]))cycle! and pollen has its own restart file
+    overwrite=overwrite.and.create_var
+    
+    do g=1,size(POLLEN_GROUP)
+      spc=trim(POLLEN_GROUP(g))
+      select case(spc)
+        case(BIRCH);iadv=iadv_BIRCH
+        case(OLIVE);iadv=iadv_OLIVE
+        case(GRASS);iadv=iadv_GRASS
+        case default;call CheckStop("Unknown pollen type: "//trim(spc))
+      endselect
 !------------------------
 ! pollen adv (not written by Nest_ml)
-!------------------------ 
-    def1%class='Advected'       ! written
-    def1%unit='mix_ratio'       ! written
-
-    def1%name=BIRCH             ! written
-    if(.not.create_var)data=xn_adv(iadv_BIRCH,:,:,:)
-    call Out_netCDF(IOU_INST,def1,3,KMAX_MID,data,1.0,CDFtype=CDFtype,&
-          out_DOMAIN=out_DOMAIN,create_var_only=create_var,&
+!------------------------
+      def1%class='Advected'           ! written
+      def1%unit='mix_ratio'           ! written
+      def1%name=trim(spc)             ! written
+      if(DEBUG.and.MasterProc) write(*,dfmt)def1%name,trim(def1%unit)
+      if(.not.create_var)data=xn_adv(iadv,:,:,:)
+      call Out_netCDF(IOU_INST,def1,3,KMAX_MID,data,1.0,CDFtype=CDFtype,&
+          out_DOMAIN=out_DOMAIN,create_var_only=create_var,overwrite=overwrite,&
           fileName_given=trim(filename),ncFileID_given=ncFileID)
-
-    def1%name=OLIVE             ! written
-    if(.not.create_var)data=xn_adv(iadv_OLIVE,:,:,:)
-    call Out_netCDF(IOU_INST,def1,3,KMAX_MID,data,1.0,CDFtype=CDFtype,&
-          out_DOMAIN=out_DOMAIN,create_var_only=create_var,&
-          fileName_given=trim(filename),ncFileID_given=ncFileID)
-
-    def1%name=GRASS             ! written
-    if(.not.create_var)data=xn_adv(iadv_GRASS,:,:,:)
-    call Out_netCDF(IOU_INST,def1,3,KMAX_MID,data,1.0,CDFtype=CDFtype,&
+      overwrite=.false.
+!------------------------
+! pollen_rest
+!------------------------
+      def1%class='pollen_out'         ! written
+      def1%unit="pollengrains"        ! written
+      def1%name=trim(spc)//"_rest"    ! written
+      if(DEBUG.and.MasterProc) write(*,dfmt)def1%name,trim(def1%unit)
+      call Out_netCDF(IOU_INST,def1,2,1,Pollen_rest(:,:,g),1.0,CDFtype=CDFtype,&
           out_DOMAIN=out_DOMAIN,create_var_only=create_var,&
           fileName_given=trim(filename),ncFileID_given=ncFileID)
 !------------------------
 ! heatsum
 !------------------------
-    def1%class='pollen_out'     ! written
-    def1%unit="degreedays"      ! written
-
-    def1%name=BIRCH//"_heatsum" ! written
-    if(DEBUG.and.MasterProc) print dfmt,trim(def1%name),trim(def1%unit)
-    call Out_netCDF(IOU_INST,def1,2,1,heatsum(:,:,1),1.0,CDFtype=CDFtype,&
+      if(g>size(heatsum,DIM=3))cycle
+      def1%class='pollen_out'         ! written
+      def1%unit="degreedays"          ! written
+      def1%name=trim(spc)//"_heatsum" ! written
+      if(DEBUG.and.MasterProc) write(*,dfmt)def1%name,trim(def1%unit)
+      call Out_netCDF(IOU_INST,def1,2,1,heatsum(:,:,g),1.0,CDFtype=CDFtype,&
           out_DOMAIN=out_DOMAIN,create_var_only=create_var,&
           fileName_given=trim(filename),ncFileID_given=ncFileID)
-    
-    def1%name=OLIVE//"_heatsum" ! written
-    if(DEBUG.and.MasterProc) print dfmt,trim(def1%name),trim(def1%unit)
-    call Out_netCDF(IOU_INST,def1,2,1,heatsum(:,:,2),1.0,CDFtype=CDFtype,&
-          out_DOMAIN=out_DOMAIN,create_var_only=create_var,&
-          fileName_given=trim(filename),ncFileID_given=ncFileID)
-!------------------------
-! pollen_rest
-!------------------------
-    def1%class='pollen_out'     ! written
-    def1%unit="pollengrains"    ! written
-
-    def1%name=BIRCH//"_rest"    ! written
-    if(DEBUG.and.MasterProc) print dfmt,trim(def1%name),trim(def1%unit)
-    call Out_netCDF(IOU_INST,def1,2,1,Pollen_rest(:,:,1),1.0,CDFtype=CDFtype,&
-          out_DOMAIN=out_DOMAIN,create_var_only=create_var,&
-          fileName_given=trim(filename),ncFileID_given=ncFileID)
-
-    def1%name=OLIVE//"_rest"    ! written
-    if(DEBUG.and.MasterProc) print dfmt,trim(def1%name),trim(def1%unit)
-    call Out_netCDF(IOU_INST,def1,2,1,Pollen_rest(:,:,2),1.0,CDFtype=CDFtype,&
-          out_DOMAIN=out_DOMAIN,create_var_only=create_var,&
-          fileName_given=trim(filename),ncFileID_given=ncFileID)
-
-    def1%name=GRASS//"_rest"    ! written
-    if(DEBUG.and.MasterProc) print dfmt,trim(def1%name),trim(def1%unit)
-    call Out_netCDF(IOU_INST,def1,2,1,Pollen_rest(:,:,3),1.0,CDFtype=CDFtype,&
-          out_DOMAIN=out_DOMAIN,create_var_only=create_var,&
-          fileName_given=trim(filename),ncFileID_given=ncFileID)
+    enddo
   enddo
   if(MasterProc)call CheckNC(nf90_close(ncFileID),"close:"//trim(filename))
   deallocate(data)

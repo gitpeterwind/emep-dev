@@ -1151,26 +1151,33 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,out_DOMAIN,ik,&
      overwrite_local=.false.
      if(present(overwrite))overwrite_local=overwrite
      if(MasterProc)then
-        !try to open the file
-        if(present(ncFileID_given))then
-           if(DEBUG_NETCDF) write(*,*)'Out_NetCDF: ncFileID_given ' , ncFileID_given
-           if(ncFileID_given<0)then
-              status=nf90_open(trim(fileName_given),nf90_share+nf90_write,ncFileID)
-              ncFileID_given=ncFileID         
-              if(DEBUG_NETCDF) write(*,*)'Out_NetCDF: opened a file ' , ncFileID_given
-           else
-              !the file must already be open
-              ncFileID=ncFileID_given
-              status=nf90_noerr
-              if(DEBUG_NETCDF) write(*,*)'Out_NetCDF: assuming file already open ', trim(fileName_given)
-           endif
+        if(overwrite_local)then
+          if(DEBUG_NETCDF) &
+            write(*,*)'Out_NetCDF: overwrite file (if exists) ',trim(fileName_given)
+          ! do not try to open the file
+          status=nf90_noerr
+        elseif(present(ncFileID_given))then
+          if(DEBUG_NETCDF) &
+            write(*,*)'Out_NetCDF: ncFileID_given ',ncFileID_given
+          if(ncFileID_given<0)then
+            status=nf90_open(trim(fileName_given),nf90_share+nf90_write,ncFileID)
+            ncFileID_given=ncFileID         
+            if(DEBUG_NETCDF) &
+              write(*,*)'Out_NetCDF: opened a file ',ncFileID_given
+          else
+            !the file must already be open
+            ncFileID=ncFileID_given
+            status=nf90_noerr
+            if(DEBUG_NETCDF) &
+              write(*,*)'Out_NetCDF: assuming file already open ',trim(fileName_given)
+          endif
         else
-           if(.not.overwrite_local)status=nf90_open(trim(fileName_given),nf90_write,ncFileID)
+          status=nf90_open(trim(fileName_given),nf90_write,ncFileID)
         endif
         if(DEBUG_NETCDF) write(*,*)'Out_NetCDF: fileName_given ' ,&
              trim(fileName_given),overwrite_local,status==nf90_noerr,ncfileID,&
              trim(nf90_strerror(status))
-        if(status/=nf90_noerr .or. overwrite_local)createfile=.true.
+        createfile=overwrite_local.or.(status/=nf90_noerr)
      endif
      CALL MPI_BCAST(createfile ,1,MPI_LOGICAL,0,MPI_COMM_CALC,IERROR)
      

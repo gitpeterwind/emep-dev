@@ -9,7 +9,7 @@ OutputConcs=
   'NO2'           ,'ug'  ,'2d' ,'AIR_CONCS','SPEC' ,6,
   'PMFINE'        ,'ug'  ,'2d' ,'AIR_CONCS','GROUP',0,! needed by *_rh50
   'PM10'          ,'ug'  ,'2d' ,'AIR_CONCS','GROUP',0,! needed by *_rh50
-  'PMwater'       ,'ug'  ,'2d' ,'PM25water','MISC' ,0,! needed by *_rh50
+! 'SURF_PM25water','ug'  ,'2d' ,'PM25water','MISC' ,0,! needed by *_rh50, daily by default
   'SURF_ug_PM25_rh50','ug','2d','PM25_rh50','MISC' ,6,
   'SURF_ug_PM10_rh50','ug','2d','PM10_rh50','MISC' ,6,
 !--MY_OUTPUTS=="MACC_ENS": hourly sellected D3D houtput

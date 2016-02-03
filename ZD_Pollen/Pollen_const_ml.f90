@@ -9,7 +9,7 @@ module Pollen_const_ml
 use PhysicalConstants_ml, only: PI
 use ModelConstants_ml,    only: USE_POLLEN,DEBUG=>DEBUG_POLLEN
 use CheckStop_ml,         only: CheckStop
-use ChemChemicals_ml,     only: species_adv
+use ChemChemicals_ml,     only: species
 use ChemGroups_ml,        only: chemgroups
 use SmallUtils_ml,        only: find_index
 implicit none
@@ -43,6 +43,12 @@ real, parameter  :: &
   grain_wt = POLL_DENS*PI*(D_POLL*1e-6)**3/6.0, &! 1 grain weight [g]
   ug2grains= 1e-6/grain_wt
 
+character(len=*), parameter :: &
+  BIRCH = "POLLEN_BIRCH",&
+  OLIVE = "POLLEN_OLIVE",&
+  GRASS = "POLLEN_GRASS",&
+  POLLEN_GROUP(3)=[BIRCH,OLIVE,GRASS]
+
 contains
 subroutine pollen_check(igrp)
   integer, intent(inout), optional :: igrp
@@ -56,5 +62,9 @@ subroutine pollen_check(igrp)
     "USE_POLLEN on model compiled without pollen")
   call CheckStop(DEBUG.and..not.USE_POLLEN,&
     "DEBUG_POLLEN on run without USE_POLLEN")
+  call CheckStop(size(chemgroups(poll)%ptr),size(POLLEN_GROUP),&
+    "pollen_check: Inconsistent POLLEN group size")
+  call CheckStop(any(species(chemgroups(poll)%ptr)%name/=POLLEN_GROUP),&
+    "pollen_check: Inconsistent POLLEN group species")
 endsubroutine pollen_check
 endmodule Pollen_const_ml

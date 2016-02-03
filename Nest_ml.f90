@@ -318,7 +318,7 @@ subroutine wrtxn(indate,WriteNow)
   type(Deriv) :: def1 ! definition of fields
   integer :: n,iotyp,ndim,kmax,i,ncfileID
   real :: scale
-  logical :: fexist, wanted
+  logical :: fexist, wanted, overwrite
   logical, save :: first_call=.true.
 
   call Config_Nest()
@@ -327,10 +327,11 @@ subroutine wrtxn(indate,WriteNow)
 ! Check if the file exist already at start of run. Do not wait until first write to stop!
 ! If you know what you are doing you can set paramter APPEND=.true.,
 ! and the new data will be appended to the file
-  if(.not.APPEND.and.first_call.and.MasterProc)then
+  overwrite=first_call.and..not.APPEND
+  if(overwrite.and.MasterProc)then
     filename_write=date2string(template_write,indate,debug=mydebug)
-    inquire(file=fileName_write,exist=fexist)
-    call CheckStop(fexist.and.first_call,&
+    inquire(file=fileName_write,exist=overwrite)
+    call CheckStop(overwrite.and..not.FORECAST,&
            "Nest: Refuse to overwrite. Remove this file: "//trim(fileName_write))   
   endif
 
@@ -371,6 +372,7 @@ subroutine wrtxn(indate,WriteNow)
     write(*,*)'Nest:write data ',trim(fileName_write)
   endif
   CALL MPI_BCAST(fexist,1,MPI_LOGICAL,0,MPI_COMM_CALC,IERROR)
+  overwrite=fexist.and.first_call.and..not.APPEND
 
 ! Limit output, e.g. for NMC statistics (3DVar)
   if(first_call)then
@@ -441,14 +443,15 @@ subroutine wrtxn(indate,WriteNow)
   allocate(data(LIMAX,LJMAX,KMAX_MID))
   !do first one loop to define the fields, without writing them (for performance purposes)
   ncfileID=-1 ! must be <0 as initial value
-  if(.not.fexist)then
+  if(.not.fexist.or.overwrite)then
     do n=1,NSPEC_ADV
       if(.not.adv_ic(n)%wanted)cycle
       def1%name=species_adv(n)%name   ! written
 !!    data=xn_adv(n,:,:,:)
       call Out_netCDF(iotyp,def1,ndim,kmax,data,scale,CDFtype=CDFtype,&
-            out_DOMAIN=out_DOMAIN,create_var_only=.true.,&
+            out_DOMAIN=out_DOMAIN,create_var_only=.true.,overwrite=overwrite,&
             fileName_given=trim(fileName_write),ncFileID_given=ncFileID)
+      overwrite=.false.
     enddo
   endif
 
