@@ -118,7 +118,7 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
- ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3137","EmChem09soa","EMEPSTD" ,"EMEPSTD","EECCA" ,0);
+ ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3142","EmChem09soa","EMEPSTD" ,"EMEPSTD","EECCA" ,0);
 #($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3074","EmChem09soa","EMEPGLOB","EMEPSTD","GLOBAL",0);
 
 my %BENCHMARK;
@@ -157,7 +157,8 @@ my $SR= 0;     # Set to 1 if source-receptor calculation
 
 my $CWF=0;     # Set to N for 'N'-day forecast mode (0 otherwise)
    $CWF=0 if %BENCHMARK;
-my ($CWFBASE,$CWFDAYS,$CWFMETV,@CWFDATE,@CWFDUMP,$eCWF,$eSTART,$aCWF,$CWFTAG) if($CWF);
+my ($CWFBASE,$CWFDAYS,$CWFMETV,$CWF_DIR,$CWF_WRK,
+    @CWFDATE,@CWFDUMP,$eCWF,$eSTART,$aCWF,$CWFTAG) if($CWF);
 if($CWF){
   $CWFBASE=defined($ENV{"DATE"})?$ENV{"DATE"}:"today"; # Forecast base date     (default today)
   $CWFDAYS=defined($ENV{"NDAY"})?$ENV{"NDAY"}:$CWF;    # Forecast lenght indays (default $CWF)
@@ -165,6 +166,8 @@ if($CWF){
   $CWFBASE=shift if @ARGV;              # Forecast base date, lenght
   $CWFDAYS=shift if @ARGV;              #  & MetUTC version can be passed
   $CWFMETV=shift if @ARGV;              #  as argument to script
+  $CWF_DIR=shift if @ARGV;              # SMS script variable: $CWFEMEPDIR
+  $CWF_WRK=shift if @ARGV;              # SMS script variable: $WRKDIR
 # $CWFBASE="tomorrow" if($CWFBASE eq "today")and($CWFMETV =~ /12/);  # default date for 12UTC version 
   $CWFBASE=date2str($CWFBASE,"%Y%m%d");
 # eCWF: 0[none]|Emergency[Forecast]|AshInversion[Hindcast]
@@ -205,14 +208,13 @@ if($CWF){
   $exp_name.= "_REVA" if($MAKEMODE=~/EVA/);
   $exp_name.= "_NMC"  if($MAKEMODE=~/NMC/);
   $exp_name.= "-dbg"  if($ENV{"DEBUG"} and ($ENV{"DEBUG"} eq "yes"));
-  $outputs  = "EMERGENCY" if($eCWF);
+  $outputs  = ($eCWF)?"EMERGENCY":"CAMS50";
   $testv.= ($eCWF)?".eCWF":".CWF";
   $Chem  = ($ENV{"CHEM"})?$ENV{"CHEM"}:($eCWF)?"Emergency":"EmChem09soa";
   $GRID  = ($ENV{"GRID"})?$ENV{"GRID"}:($eCWF)?"GLOBAL":"MACC14";
   $CWFTAG.= ".REVA" if($MAKEMODE=~/EVA/);
   $CWFTAG.= ".NMC"  if($MAKEMODE=~/NMC/);
   $CWFTAG.= "_".$ENV{'TAG'}  if($ENV{'TAG'});
-  $outputs="CAMS50"
 }
  $MAKEMODE="SR-$MAKEMODE" if($MAKEMODE and $SR);
 
@@ -281,9 +283,11 @@ if ($STALLO) {
   $HOMEROOT = "/home/metno";
   $WORKROOT = "$HOMEROOT/$USER/work";
   $DataDir  = "$HOMEROOT/mifapw/work/Data";
+  $DataDir  = "$CWF_DIR/Data" if $CWF and -d $CWF_DIR;
   $MetDir   = "$DataDir/$GRID/metdata_EC/$year";
   $MetDir   = "$DataDir/$GRID/metdata_CWF/$year" if $CWF;
   $MetDir   = "/prod/forecast/work/emep/ec/prepmet" if $eCWF and ($USER eq $FORCAST);
+  $MetDir   = "$CWF_WRK/".sprintf("prepmet_%02d",($CWFMETV%24)) if $CWF and -d $CWF_WRK;
 }
 #$MetDir   = "/hard/code/path/to/$GRID/metdata/$year/if/necessary";
 die "Missing MetDir='$MetDir'\n" unless -d $MetDir;
@@ -292,6 +296,7 @@ die "Missing MetDir='$MetDir'\n" unless -d $MetDir;
 my $DATA_LOCAL = "$DataDir/$GRID";   # Grid specific data , EMEP, EECCA, GLOBAL
 # Pollen data
 my $PollenDir = "$HOMEROOT/$BIRTHE/Unify/MyData";
+   $PollenDir = "$DataDir/Pollen" if $CWF and ($USER eq $FORCAST);
    $PollenDir = 0 unless -d $PollenDir;
 # Eruption (eEMEP)
 my $EmergencyData = "$HOMEROOT/$ALVARO/Unify/MyData";
@@ -309,6 +314,7 @@ my $VBS   = 0;
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
    $ProgDir  = "/prod/forecast/emep/eemep/src/Unimod.$testv" if $eCWF and ($USER eq $FORCAST);
+   $ProgDir  = "$CWF_DIR/src/Unimod.$testv" if $CWF and -d $CWF_DIR;
 my $ChemDir  = "$ProgDir/ZCM_$Chem";
 my $Specials = "specials";  # default
 #$Specials = "TSAP_Jul2012";  # used for TSAP runs in July 2012
@@ -338,6 +344,7 @@ my $WORKDIR = "$WORKROOT/$USER/$testv.$year";  # working and result directory
    $WORKDIR = "$WORKROOT/$testv.$year" if($WORKROOT =~ /$USER/);
    $WORKDIR =~ s|$testv.$year|Benchmark/$GRID.$year|g if (%BENCHMARK);
    $WORKDIR = "/prod/forecast/run/eemep" if $eCWF and ($USER eq $FORCAST);
+   $WORKDIR = "$CWF_WRK" if $CWF and -d $CWF_WRK;
 my $MyDataDir   = "$HOMEROOT/$USER/Unify/MyData";           # for each user's private input
 my $SoilDir     = "$DATA_LOCAL/dust_input";               # Saharan BIC
    $SoilDir = 0 unless -d "$SoilDir/BC_DUST/2000";
@@ -356,8 +363,11 @@ if ($CWF) {
  ($CWFIC = "$WORKDIR/$CWFIC") =~ s|$testv.$year|$testv.dump|;
   $CWFIC =~ s|run/eemep|work/emep/restart| if $eCWF and ($USER eq $FORCAST);
   $CWFBC  = "$DataDir/$GRID/Boundary_conditions/"; # IFS-MOZ/C-IFS
-  if($MAKEMODE=~/(EVA|NMC)/){
-##  $CWFBC .= "YYYY_EVA/hYYYYMMDD00_raqbc.nc":     # IFS-MOZ ReAnalysis
+  if(-d $CWF_WRK){
+    $CWFIC =~ s[$CWF_WRK][$CWF_WRK/input];
+    $CWFBC = "$CWF_WRK/input/cwf-cifs_hYYYYMMDD00_raqbc.nc";
+  }elsif($MAKEMODE=~/(EVA|NMC)/){
+##  $CWFBC .= "hYYYYMMDD00_raqbc.nc":      # IFS-MOZ ReAnalysis
     $CWFBC .= ($CWFBASE <= 20121231)?
       "YYYY_EVA/EVA_YYYYMMDD_EU_AQ.nc":    # EVA 2008..2012
       "YYYY_EVA/EVA_YYYYMMDD_EU_EVA.nc";   # EVA 2013
@@ -587,9 +597,10 @@ system "ls -lht --time-style=long-iso -I\*{~,.o,.mod} | head -6 ";
 #to be sure that we don't use an old version (recommended while developing)
 #unlink($PROGRAM);
 
-if ($SR or defined($ENV{'PBS_ARRAY_INDEX'}) or 
-           defined($ENV{'PBS_ARRAYID'}) or 
-           defined($ENV{'TASK_ID'})){
+if ($SR or ($USER eq $FORCAST) or
+    defined($ENV{'PBS_ARRAY_INDEX'}) or 
+    defined($ENV{'PBS_ARRAYID'}) or 
+    defined($ENV{'TASK_ID'})){
   #No recompile SR or ARRAY jobs
 } elsif ($MAKEMODE) {
   system(@MAKE, "$MAKEMODE") == 0 or die "@MAKE $MAKEMODE failed";
@@ -1169,6 +1180,10 @@ foreach my $scenflag ( @runs ) {
     if ($DRY_RUN) {
       print "DRY_RUN: not running '| mpirun ./$LPROG'\n";
       system("ls -lht --time-style=long-iso *")
+    } elsif ($USER eq $FORCAST) {
+    # FORCAST/forecast user use special mpiexec_mpt!
+      open (PROG, "| mpiexec_mpt ./$LPROG") || die "Unable to execute $LPROG. Exiting.\\n" ;
+      close(PROG);
     } else {
       open (PROG, "| mpiexec ./$LPROG") || die "Unable to execute $LPROG. Exiting.\\n" ;
       close(PROG);

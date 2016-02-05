@@ -154,7 +154,7 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-4th February   2016 Alvaro  3141
+4-5th February   2016 Alvaro  3141-3142
 
 NetCDF_ml
 - Fix small bug on subroutine Out_netCDF:
@@ -168,6 +168,9 @@ ZD_Pollen/Pollen_ml,Pollen_const_ml
 - Existing file will be overwritten.
 - Reorganize pollen_read/pollen_dump subroutines.
   Loop over POLLEN group instead of read/write calls for each pollen species.
+
+run.pl
+- Integrate FORCAST runs by forecast user into SMS scripts.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 3rd February   2016 Alvaro, Birthe  3136-3140
