@@ -118,7 +118,7 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
- ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3142","EmChem09soa","EMEPSTD" ,"EMEPSTD","EECCA" ,0);
+ ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3144","EmChem09soa","EMEPSTD" ,"EMEPSTD","EECCA" ,0);
 #($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3074","EmChem09soa","EMEPGLOB","EMEPSTD","GLOBAL",0);
 
 my %BENCHMARK;
@@ -132,8 +132,8 @@ my %BENCHMARK;
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2007,emis=>"Modrun09/2009-Trend2007-CEIP") ;
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun10/2010-Trend2008_CEIP");
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2009,emis=>"Modrun11/2011-Trend2009-CEIP");
-#  %BENCHMARK = (grid=>"EECCA" ,year=>2010,emis=>"Modrun12/2012-Trend2010-CEIP",chem=>"EmChem09soa",make=>"EMEP2010");
-#  %BENCHMARK = (grid=>"EECCA" ,year=>2011,emis=>"Modrun13/2013-Trend2011-CEIP",chem=>"EmChem09soa",make=>"EMEP2011");
+#  %BENCHMARK = (grid=>"EECCA" ,year=>2010,emis=>"Modrun12/2012-Trend2010-CEIP",chem=>"EmChem09soa",make=>"EMEP");
+#  %BENCHMARK = (grid=>"EECCA" ,year=>2011,emis=>"Modrun13/2013-Trend2011-CEIP",chem=>"EmChem09soa",make=>"EMEP");
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2012,emis=>"Modrun14/2014-Trend2012-CEIP",chem=>"EmChem09soa",make=>"EMEP");
 # Alternative domains:
 #  %BENCHMARK = (grid=>"TNO28" ,year=>2008,emis=>"emis_TNO28"         );
@@ -1026,6 +1026,9 @@ foreach my $scenflag ( @runs ) {
     $ifile{"$DataDir/volcano_location.csv"} = "columnsource_location.csv";
     $ifile{"$DataDir/volcano_emission.csv"} = "columnsource_emission.csv";
   }
+  # Topography file for volcano_elevation-surface_height correction
+  my $topo="$DataDir/$GRID/topography.nc";
+  $ifile{$topo} = "topography.nc" if(-e $topo);
 
 # For Pollen
   if($PollenDir) {

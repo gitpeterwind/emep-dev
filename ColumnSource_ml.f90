@@ -19,8 +19,9 @@ use MetFields_ml,         only: roa, z_bnd
 use ModelConstants_ml,    only: KCHEMTOP,KMAX_MID,MasterProc, &
                                 USE_ASH,DEBUG=>DEBUG_COLSRC,&
                                 TXTLEN_NAME,dt_advec,dt_advec_inv
+use NetCDF_ml,            only: GetCDF_modelgrid
 use MPI_Groups_ml
-use Par_ml,               only: me
+use Par_ml,               only: LIMAX, LJMAX, me
 use PhysicalConstants_ml, only: AVOG
 use SmallUtils_ml,        only: wordsplit,find_index
 use TimeDate_ml,          only: nydays,&           ! No. days per year
@@ -34,10 +35,11 @@ private
 public :: ColumnRate      ! Emission rate
 
 logical, save ::      &
-  source_found=.true.     ! Are sources found on this processor/subdomain?
+  source_found=.true.,&   ! Are sources found on this processor/subdomain?
+  topo_found=.false.      ! topo_nc file found? (vent elevation-model surface height)
 
 integer, parameter :: &
-  NMAX_LOC = 24, & ! Max number of locations on processor/subdomain
+  NMAX_LOC = 24, &  ! Max number of locations on processor/subdomain
   NMAX_EMS =10000   ! Max number of events def per location 
 
 integer, save ::   &        ! No. of ... found on processor/subdomain
@@ -59,23 +61,29 @@ type(loc), save, dimension(NMAX_LOC):: &
 
 type :: ems
   character(len=9)    :: id  =''      ! e.g. V1702A02B
-  character(len=SLEN) :: name=''      ! e.g. SO2
+  character(len=SLEN) :: name='',&    ! e.g. SO2
+                         htype=''     ! Height reference/type for base/top:
+                                      !   'VENT'=height from vent
+                                      !   'SURF'=height from model surface
+                                      !   'MLEV'=explicit model level
   real :: base=-1.0,top=-1.0,&        ! Column Base & Height [m asl]
           rate=-1.0                   ! Source strenght: Total release for period [kg/s]
-  character(len=SLEN)       :: sbeg=SDATE_FMT,send=SDATE_FMT
+  character(len=SLEN) :: &
+    sbeg=SDATE_FMT,send=SDATE_FMT     ! event begin,end
   integer :: loc=-1,spc=-1,grp=-1     ! Which loc,(adv)spc,(ash)goup
   logical :: edef=.true.,&            ! default setings?
-             dsec=.false.,&           ! correct rate by 1/secs(send-sbeg)
-             fvent=.false.            ! emmit from vent (add vent hight to default emiss)
+             dsec=.false.             ! correct rate by 1/secs(send-sbeg)
 endtype ems
 type(ems), save,  allocatable ,dimension(:,:):: emsdef
 
 character(len=*),parameter :: &
   mname = "ColumnSource",&
+  topo_nc="topography.nc",&
   flocdef="columnsource_location.csv",   &  ! see locdef
   femsdef="columnsource_emission.csv",   &  ! see emsdef
   ERR_LOC_CSV=mname//" LOC def.file "//flocdef,          &
   ERR_EMS_CSV=mname//" EMS def.file "//femsdef,          &
+  ERR_TOPO_NC=mname//" EMS def.file "//topo_nc,          &
   ERR_LOC_MAX=mname//" NMAX_LOC exceeded in "//flocdef,  &
   ERR_EMS_MAX=mname//" NMAX_EMS exceeded in "//femsdef,  &
   MSG_FMT="('"//mname//":',:,1X,A,5(:,1X,I0,':',A),3(:,1X,ES10.3,':',A))"
@@ -84,7 +92,7 @@ character(len=3), parameter :: &  ! Expand variable name for multy sceario runs
 ! EXPAND_SCENARIO_NAME(4)=["ASH","NUC","###","***"] ! e.g. ASH_F --> V1702A02B_F
   EXPAND_SCENARIO_NAME(1)=""                        ! do not expand
 
-INTEGER::INFO
+real,save,allocatable,dimension(:,:) :: surf_height ! [m], read from topo_nc
 
 contains
 !-----------------------------------------------------------------------!
@@ -113,7 +121,12 @@ function ColumnRate(i,j,REDUCE_VOLCANO) result(emiss)
 !
 !----------------------------!
   if(first_call)then
+    allocate(surf_height(LIMAX,LJMAX))
+    call GetCDF_modelgrid("topography",topo_nc,surf_height,&
+                          1,1,1,1,needed=.false.,found=topo_found)
+    if(.not.topo_found)surf_height=0.0
     call setRate()
+    deallocate(surf_height)
     first_call=.false.
     itot=find_index("SO2",species(:)%name)
     if(itot<1)then
@@ -145,8 +158,13 @@ function ColumnRate(i,j,REDUCE_VOLCANO) result(emiss)
       if(snow<sbeg.or.send<=snow)& ! Outside time window
         cycle doEMS
       itot=emsdef(v,e)%spc
-      k0=getModLev(i,j,emsdef(v,e)%base)
-      k1=getModLev(i,j,emsdef(v,e)%top)
+      if(emsdef(v,e)%htype=="MLEV")then
+        k0=emsdef(v,e)%base
+        k1=emsdef(v,e)%top
+      else
+        k0=getModLev(i,j,emsdef(v,e)%base)
+        k1=getModLev(i,j,emsdef(v,e)%top)
+      endif
       uconv=1e-3                                          ! Kg/s --> ton/s=1e6 g/s
       if(emsdef(v,e)%dsec)uconv=1e6/max(dt_advec,&        ! Tg   --> ton/s=1e6 g/s
         tdif_secs(to_stamp(sbeg,SDATE_FMT),to_stamp(send,SDATE_FMT)))
@@ -224,8 +242,8 @@ subroutine setRate()
   first_call=.false.
   if(.not.allocated(emsdef)) then
      allocate(emsdef(0:NMAX_LOC,NMAX_EMS))
-     emsdef(:,:)=ems('UNDEF','UNKNOWN',-999.0,-999.0,-999.0,&
-                     '??','??',-1,-1,-1,.true.,.false.,.false.)
+     emsdef(:,:)=ems('UNDEF','UNKNOWN','??',-999.0,-999.0,-999.0,&
+                     '??','??',-1,-1,-1,.true.,.false.)
   endif
 !----------------------------!
 ! Read Vent CVS
@@ -246,6 +264,8 @@ subroutine setRate()
     if(coord_in_processor(dloc%lon,dloc%lat,iloc=dloc%iloc,jloc=dloc%jloc))then
       nloc=nloc+1
       call CheckStop(nloc>NMAX_LOC,ERR_LOC_MAX//" read")
+      ! remove model surface height from vent elevation
+      dloc%elev=dloc%elev-surf_height(dloc%iloc,dloc%jloc)
       locdef(nloc)=dloc
       if(DEBUG) &
         write(*,MSG_FMT)'Vent',me,'in',nloc,trim(dloc%id),&
@@ -327,7 +347,8 @@ subroutine setRate()
         write(*,MSG_FMT)'Erup.Default',me,'Expand',&
           v,trim(locdef(v)%id),e,trim(emsdef(0,e)%id)
       dems=emsdef(0,e)
-      if(dems%fvent)then
+      if(dems%htype=='VENT')then
+!!      call CheckStop(.not.topo_found,ERR_TOPO_NC//' not found')     
         dems%base=dems%base+locdef(v)%elev
         dems%top =dems%top +locdef(v)%elev
         if(DEBUG)&
@@ -404,7 +425,7 @@ function getVent(line) result(def)
   case default
     call CheckStop("EMERGENCY: Unknown degE/W "//trim(words(7)))
   endselect
-  read(words(8),*)elev
+  read(words(8),*)elev            ! [m]
   igrp=find_index(words(1),chemgroups(:)%name)
   def=loc(trim(words(1)),trim(words(2)),lat,lon,elev,trim(words(10)),igrp)
 endfunction getVent
@@ -416,8 +437,7 @@ function getErup(line) result(def)
   type(ems)           :: def
   character(len=SLEN) :: words(10)=''   ! Array of paramaters
   logical :: edef=.true.,&              ! default setings?
-             dsec=.false.,&             ! correct rate by 1/secs(send-sbeg)
-             fvent=.false.              ! emmit from vent
+             dsec=.false.               ! correct rate by 1/secs(send-sbeg)
   integer :: stat,nwords,iloc,ispc=0,igrp=0
   real    :: base,top,rate,frac,dhh
   call wordsplit(line,size(words),words,nwords,stat,strict_separator=",",empty_words=.true.)
@@ -427,27 +447,40 @@ function getErup(line) result(def)
 !S0       ,     ,  , 11.000,   3.00, 4e6, 0.40,SR                 ,SR+D,Silicic standard
 !V1702A02B,SO2  , 0,  8.000,  24.00,  15,     ,2010-04-14 00:00:00,SE+D,Eyja 20100414 SO2
 !V1702A02B,ASH_F, 0,  2.000,  24.00,   0,     ,2010-05-23 00:00:00,SE+D,Eyja 20100523 PM fine
-  iloc=find_index(words(1),locdef(:nloc)%id)             ! Vent Specific
-  edef=(iloc<1).and.any(locdef(:nloc)%etype==words(1))   ! Vent Default
-  if(iloc>0.and.any(words(2)(1:3)==EXPAND_SCENARIO_NAME))&         ! Expand variable name
+  iloc=find_index(words(1),locdef(:nloc)%id)                ! Vent Specific
+  edef=(iloc<1).and.any(locdef(:nloc)%etype==words(1))      ! Vent Default
+  if(iloc>0.and.any(words(2)(1:3)==EXPAND_SCENARIO_NAME))&  ! Expand variable name
     words(2)=trim(words(1))//trim(words(2)(4:)) ! e.g. ASH_F --> V1702A02B_F
   ispc=find_index(words(2),species(:)%name)     ! Specie (total)
   igrp=find_index(words(2),chemgroups(:)%name)  ! Group  (total)
-  read(words(4),*)top           ! [km]
-  top=top*1e3                   ! [m]
   select case (words(3))        ! base
+  case("MLEV","model")          ! Explicit model level
+    words(3)="MLEV"
+    read(words(4),*)top         ! [model level]
+    base=top
   case("VENT"," ")              ! From the vent
-    fvent=.true.
+    words(3)="VENT"
+! vent specific: base/top from vent%elev
+! emiss default: vent%elev is added on expansion (doLOCe: in setRate)
     base=0.0
-    if(iloc>0)base=locdef(iloc)%elev ! [m]
+    if(iloc>0)then
+!!    call CheckStop(.not.topo_found,ERR_TOPO_NC//' not found')     
+      base=locdef(iloc)%elev    ! [m]
+    endif
+    read(words(4),*)top         ! [km]
+    top=top*1e3                 ! [m]
     top=top+base                ! [m]
   case("SURF","0")              ! From the model surface
-    fvent=.false.
+    words(3)="SURF"
     base=0.0
+    read(words(4),*)top         ! [km]
+    top=top*1e3                 ! [m]
   case default
-    fvent=.false.
+    words(3)="SURF"
     read(words(3),*)base        ! [km]
     base=base*1e3               ! [m]
+    read(words(4),*)top         ! [km]
+    top=top*1e3                 ! [m]
   endselect
   read(words(6),*)rate
   select case (words(7))        ! m63 or effect.fraction
@@ -468,8 +501,8 @@ function getErup(line) result(def)
   endselect   
   words(8)=getDate(words(8),words(8),words(9),dhh,debug=DEBUG) ! Start [date/code]
   words(9)=getDate(words(9),words(8),words(9),dhh,debug=DEBUG) ! End   [date/code]
-  def=ems(trim(words(1)),trim(words(2)),base,top,rate*frac,&
-    trim(words(8)),trim(words(9)),max(iloc,0),max(ispc,0),max(igrp,0),edef,dsec,fvent)
+  def=ems(trim(words(1)),trim(words(2)),trim(words(3)),base,top,rate*frac,&
+    trim(words(8)),trim(words(9)),max(iloc,0),max(ispc,0),max(igrp,0),edef,dsec)
 endfunction getErup
 !----------------------------!
 ! Time/Date CODE--> YYYY-MM-DD hh:mm:ss
