@@ -25,8 +25,7 @@ use ModelConstants_ml,only: DEBUG, NLANDUSEMAX, &
                             VEG_2dGS, VEG_2dGS_Params, & 
                             NPROC, IIFULLDOM, JJFULLDOM, &
                             DomainName, MasterProc
-use MPI_Groups_ml
-use NetCDF_ml,      only: ReadField_CDF,printcdf
+use MPI_Groups_ml, only : MPI_INTEGER,MPI_COMM_CALC, IERROR
 use Par_ml,         only: LIMAX, LJMAX, &
                           limax, ljmax, me
 !use Paleo_ml,       only: SetPaleo
@@ -34,7 +33,7 @@ use SmallUtils_ml,  only: wordsplit, find_index, NOT_FOUND, WriteArray, trims
 use TimeDate_ml,    only: effectivdaynumber, nydays, current_date
 
 use netcdf
-use NetCDF_ml, only  : ReadField_CDF,check
+use NetCDF_ml, only  : ReadField_CDF,check,printcdf
 
 implicit none
 private
@@ -93,7 +92,7 @@ private
 
  character(len=80), private :: errmsg
 
-
+! integer ::ierror,mpi_comm_calc, mpi_integer
 contains
 
  !==========================================================================

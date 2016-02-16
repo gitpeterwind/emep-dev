@@ -16,8 +16,8 @@ use GridValues_ml,          only: i_local, j_local
 use Io_Nums_ml,             only: IO_TMP, IO_LOG
 use ModelConstants_ml,      only: DEBUG, DEBUG, DomainName, &
                                   MasterProc, IIFULLDOM, JJFULLDOM
-use MPI_Groups_ml
-use KeyValueTypes,            only: KeyVal, KeyValue, LENKEYVAL
+use MPI_Groups_ml        , only : MPI_INTEGER, MPI_CHARACTER, MPI_COMM_CALC, IERROR, ME_MPI
+use KeyValueTypes,          only: KeyVal, KeyValue, LENKEYVAL
 use Par_ml,                 only: me, limax,ljmax
 use SmallUtils_ml,          only: wordsplit, WriteArray
 use TimeDate_ml,            only: date,current_date

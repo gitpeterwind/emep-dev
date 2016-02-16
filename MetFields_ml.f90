@@ -1,6 +1,9 @@
 module MetFields_ml
 
-  use ModelConstants_ml,    only : USE_CONVECTION,USE_SOILWATER,USE_WRF_MET_NAMES
+  use ModelConstants_ml,  only : USE_CONVECTION,USE_SOILWATER,USE_WRF_MET_NAMES,NPROC
+  use MPI_Groups_ml     , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER, MPI_LOGICAL, &
+                                 MPI_COMM_CALC, MPI_COMM_WORLD, MPI_COMM_SUB, MPISTATUS, &
+                                 IERROR, ME_MPI, NPROC_MPI, largeLIMAX,largeLJMAX, share, share_logical
 
   implicit none
   private
@@ -247,7 +250,11 @@ module MetFields_ml
      real, pointer :: field(:,:,:,:) => null() !actual values for the fields; must be pointed to
      integer :: zsize = 1 ! field, size of third index
      integer :: msize = 1 ! field, size of fourth index
+     real, pointer, dimension(:,:,:)::field_shared
+     logical, pointer :: ready ! The field must be present in the external meteo file
+     logical, pointer :: copied ! The field must be present in the external meteo file
   endtype metfield
+  logical, public,save, target::ready=.false.,copied=.false.
 
   integer, public, parameter   :: NmetfieldsMax=100 !maxnumber of metfields
   type(metfield),  public :: met(NmetfieldsMax)  !To put the metfirelds that need systematic treatment
@@ -262,6 +269,10 @@ module MetFields_ml
   logical, public :: MET_SHORT = .true.!metfields are stored as "short" (integer*2 and scaling)
   logical, public :: MET_C_GRID = .false.!true if u and v wind fields are in a C-staggered, larger grid.
   logical, public :: MET_REVERSE_K = .false.!set true if met fields are stored with lowest k at surface
+
+  integer, public :: Nshared_2d
+  integer, public :: Nshared_3d
+
   public :: Alloc_MetFields !allocate arrays
 
 contains
@@ -271,10 +282,12 @@ subroutine Alloc_MetFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND,NMET)
   implicit none
   
   integer, intent(in) ::LIMAX,LJMAX,KMAX_MID,KMAX_BND,NMET
-  integer ::ix
+  integer ::ix,i,j,data_shape(3),xsize
 
   do ix=1,NmetfieldsMax
      met(ix)%found => metfieldfound(ix)!default target
+     if(.not. associated(met(ix)%ready))met(ix)%ready=>ready
+     if(.not. associated(met(ix)%copied))met(ix)%copied=>copied
   enddo
 
   ix=1
@@ -941,6 +954,36 @@ endif
     allocate(surface_precip_old(LIMAX,LJMAX))
     surface_precip_old=0.0
 
+    if(NPROC/=NPROC_MPI)then
+!allocate shared memory within large subdomains
+
+    CALL MPI_BARRIER(MPI_COMM_SUB, IERROR)
+
+    i=1
+    j=1    
+    do ix = 1, Nmetfields
+       data_shape=(/1,1,1/)
+       xsize=1
+!       write(*,*)me_mpi,'share ',met(ix)%name
+       call share_logical(met(ix)%ready,data_shape,xsize,MPI_COMM_SUB)
+       call share_logical(met(ix)%copied,data_shape,xsize,MPI_COMM_SUB)
+       if(met(ix)%dim==2)then
+          data_shape=(/largeLIMAX,largeLJMAX,1/)
+          xsize=largeLIMAX*largeLJMAX
+          i=i+1
+          call share(met(ix)%field_shared,data_shape,xsize,MPI_COMM_SUB)
+       endif
+       if(met(ix)%dim==3)then
+          j=j+1
+          data_shape=(/largeLIMAX,largeLJMAX,KMAX_MID/)
+          xsize=largeLIMAX*largeLJMAX*KMAX_MID
+          call share(met(ix)%field_shared,data_shape,xsize,MPI_COMM_SUB)
+       endif
+       CALL MPI_BARRIER(MPI_COMM_SUB, IERROR)
+    enddo
+    Nshared_2d=i
+    Nshared_3d=j
+    endif
   end subroutine Alloc_MetFields
 
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

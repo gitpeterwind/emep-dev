@@ -61,9 +61,6 @@ use TimeDate_ml,   only : current_date
 implicit none
 private
 
-INCLUDE 'mpif.h'
-INTEGER STATUS(MPI_STATUS_SIZE),INFO
-
  public  :: Init_My_Deriv
  public  :: My_DerivFunc ! Miscelleaneous functions of xn_adv for output
                          ! (not currently used)

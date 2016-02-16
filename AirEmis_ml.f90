@@ -39,7 +39,9 @@ module AirEmis_ml
    use MetFields_ml         , only : z_bnd  
    use ModelConstants_ml    , only : KCHEMTOP, KMAX_MID, KMAX_BND, NPROC, &
                                      USE_LIGHTNING_EMIS
-   use MPI_Groups_ml
+   use MPI_Groups_ml, only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER, MPI_LOGICAL, &
+                             MPI_MIN, MPI_MAX, MPI_SUM, &
+                             MPI_COMM_CALC, MPI_COMM_WORLD, MPISTATUS, IERROR, ME_MPI, NPROC_MPI
    use Par_ml               , only : LIMAX, LJMAX, limax,ljmax, me
    use PhysicalConstants_ml , only : AVOG
    use TimeDate_ml,           only : current_date
@@ -184,7 +186,7 @@ module AirEmis_ml
               atwno2,     &  !  atomic weight of NO2
               vol            !  volume of model grid boxes
       real    frac, above, below, glij
-      real sum,sumnox,volcm,sum2
+      real sum,sumnox,volcm,sum2,sum2_out
       integer, dimension(LIMAX,LJMAX) :: ixn  & !  mapping of emission 
                                               ,jxn    !  grid to model grid
       integer, dimension(KMAX_MID)          :: ilevel
@@ -357,9 +359,9 @@ module AirEmis_ml
          end do
       end do
 
-        CALL MPI_ALLREDUCE(MPI_IN_PLACE,sum2, 1, &
+        CALL MPI_ALLREDUCE(sum2, sum2_out,1, &
         MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_CALC, IERROR) 
-      if(me == 0.and.MY_DEBUG) write(6,*) 'ancat on limited area:',sum,sum2
+      if(me == 0.and.MY_DEBUG) write(6,*) 'ancat on limited area:',sum,sum2_out
 
   end subroutine air_inter
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>

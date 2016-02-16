@@ -18,7 +18,9 @@ use ModelConstants_ml,  only: KMAX_MID,KCHEMTOP,& ! Start and upper k for 1d fie
                               PT,               & ! Pressure at top
                               USE_OCEAN_NH3,USE_OCEAN_DMS,FOUND_OCEAN_DMS,&
                               DEBUG_MASS,EXTENDEDMASSBUDGET
-use MPI_Groups_ml
+use MPI_Groups_ml   , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER, MPI_LOGICAL, &
+                              MPI_MIN, MPI_MAX, MPI_SUM, MPI_IN_PLACE, &
+                              MPI_COMM_CALC, MPI_COMM_WORLD, MPISTATUS, IERROR, ME_MPI, NPROC_MPI
 use Par_ml,             only: &
   li0,li1,& ! First/Last local index in longitude when outer boundary is excluded
   lj0,lj1   ! First/Last local index in latitude  when outer boundary is excluded

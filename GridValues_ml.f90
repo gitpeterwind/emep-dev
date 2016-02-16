@@ -23,7 +23,10 @@ use ModelConstants_ml,      only: &
      DEBUG,              & ! DEBUG%GRIDVALUES
      MasterProc,NPROC,IIFULLDOM,JJFULLDOM,RUNDOMAIN,&
      PT,Pref,NMET,METSTEP,USE_EtaCOORDINATES,MANUAL_GRID,USE_WRF_MET_NAMES
-use MPI_Groups_ml
+use MPI_Groups_ml    , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER, MPI_LOGICAL, &
+                              MPI_MIN, MPI_MAX, MPI_SUM, &
+                              MPI_COMM_CALC, MPI_COMM_WORLD, MPISTATUS, IERROR, ME_MPI, NPROC_MPI,&
+                              ME_CALC, largeLIMAX,largeLJMAX 
 use Par_ml, only : &
      LIMAX,LJMAX,  & ! max. possible i, j in this domain
      limax,ljmax,        & ! actual max.   i, j in this domain
@@ -33,7 +36,7 @@ use Par_ml, only : &
      gi0,gj0,            & ! full-dom coordinates of domain lower l.h. corner
      gi1,gj1,            & ! full-dom coordinates of domain uppet r.h. corner
      me,                 & ! local processor
-     parinit
+     parinit,parinit_groups
 use PhysicalConstants_ml,     only: GRAV, PI, EARTH_RADIUS ! gravity, pi
 use TimeDate_ml,              only: current_date,date,Init_nmdays,nmdays,startdate
 use TimeDate_ExtraUtil_ml,    only: nctime2idate,date2string
@@ -141,8 +144,8 @@ integer, public :: Pole_Singular  ! Pole_included=1 or 2 if the grid include
 logical, public :: Grid_Def_exist
 
 character(len=230), public  :: filename_vert
-integer, allocatable, public :: k1_met(:),k2_met(:)
-real, allocatable, public :: x_k1_met(:)
+integer, allocatable, save, public :: k1_met(:),k2_met(:)
+real, allocatable, save, public :: x_k1_met(:)
 logical, public, save ::  External_Levels_Def=.false.
 integer, public, save :: KMAX_MET !number of vertical levels from the meteo files
 
@@ -245,19 +248,33 @@ contains
 
 
        MIN_GRIDS=5
-       call parinit(MIN_GRIDS,Pole_Singular)     !subdomains sizes and position
+       if(NPROC==NPROC_MPI)then
+          !partition into subdomains
+          call parinit(MIN_GRIDS,Pole_Singular)     !subdomains sizes and position
+       else
+          !partition into largesubdomains and subdomains
+          call parinit_groups(MIN_GRIDS,Pole_Singular)     !subdomains sizes and position
+       endif
 
        call Alloc_MetFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND,NMET)
+       
+       if(ME_CALC>=0)then
+          call Alloc_GridFields(GIMAX,GJMAX,LIMAX,LJMAX,KMAX_MID,KMAX_BND)
+       else
+          call Alloc_GridFields(GIMAX,GJMAX,largeLIMAX,largeLJMAX,KMAX_MID,KMAX_BND)
+       endif
 
-       call Alloc_GridFields(GIMAX,GJMAX,LIMAX,LJMAX,KMAX_MID,KMAX_BND)
-
-       call Getgridparams(filename,cyclicgrid)
-       !defines i_fdom,j_fdom,i_local,j_local,Cyclicgrid,North_pole,Poles
-       !GRIDWIDTH_M, glon, glat, xm_i,xm_j,xm2,xmd,xmdji,xm2ji,gl_stagg,gb_stagg
-       !for Stereographic projection: ref_latitude,fi,xp,yp,AN
-       !for lon lat projection: no additional parameters
-       !for Rotated_Spherical projection: grid_north_pole_latitude,grid_north_pole_longitude,x1_rot,y1_rot,dx_rot,dx_roti
-       !P0,A_bnd_met,B_bnd_met,A_bnd,B_bnd,A_mid,B_mid,sigma_mid,sigma_bnd
+       if(ME_CALC>=0)then
+          call Getgridparams(LIMAX,LJMAX,filename,cyclicgrid)
+          !defines i_fdom,j_fdom,i_local,j_local,Cyclicgrid,North_pole,Poles
+          !GRIDWIDTH_M, glon, glat, xm_i,xm_j,xm2,xmd,xmdji,xm2ji,gl_stagg,gb_stagg
+          !for Stereographic projection: ref_latitude,fi,xp,yp,AN
+          !for lon lat projection: no additional parameters
+          !for Rotated_Spherical projection: grid_north_pole_latitude,grid_north_pole_longitude,x1_rot,y1_rot,dx_rot,dx_roti
+          !P0,A_bnd_met,B_bnd_met,A_bnd,B_bnd,A_mid,B_mid,sigma_mid,sigma_bnd
+      else
+          call Getgridparams(largeLIMAX,largeLJMAX,filename,cyclicgrid)
+     endif
 
 
        if(ios==0)close(IO_TMP)
@@ -270,6 +287,7 @@ contains
           write(*,*)'longitude rotation of grid, fi:',fi
           write(*,*)'true distances latitude, ref_latitude:',ref_latitude
        endif
+
     endif
 
 !
@@ -295,7 +313,7 @@ contains
     real,allocatable :: latitudes(:)
 
 
-    if(MasterProc)then
+    if(ME_MPI==0)then
        print *,'Defining grid properties from ',trim(filename)
        !open an existing netcdf dataset
        status = nf90_open(path=trim(filename),mode=nf90_nowrite,ncid=ncFileID)
@@ -434,17 +452,17 @@ contains
        call check(nf90_close(ncFileID))       
     endif
 
-    CALL MPI_BCAST(METSTEP ,4,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
-    CALL MPI_BCAST(USE_WRF_MET_NAMES ,1,MPI_LOGICAL,0,MPI_COMM_CALC,IERROR)
-    CALL MPI_BCAST(IIFULLDOM ,4*1,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
-    CALL MPI_BCAST(JJFULLDOM ,4*1,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
-    CALL MPI_BCAST(KMAX ,4*1,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
-    CALL MPI_BCAST(Pole_Singular ,4*1,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
-    CALL MPI_BCAST(projection ,len(projection),MPI_BYTE,0,MPI_COMM_CALC,IERROR)
+    CALL MPI_BCAST(METSTEP ,4,MPI_BYTE,0,MPI_COMM_WORLD,IERROR)
+    CALL MPI_BCAST(USE_WRF_MET_NAMES ,1,MPI_LOGICAL,0,MPI_COMM_WORLD,IERROR)
+    CALL MPI_BCAST(IIFULLDOM ,4*1,MPI_BYTE,0,MPI_COMM_WORLD,IERROR)
+    CALL MPI_BCAST(JJFULLDOM ,4*1,MPI_BYTE,0,MPI_COMM_WORLD,IERROR)
+    CALL MPI_BCAST(KMAX ,4*1,MPI_BYTE,0,MPI_COMM_WORLD,IERROR)
+    CALL MPI_BCAST(Pole_Singular ,4*1,MPI_BYTE,0,MPI_COMM_WORLD,IERROR)
+    CALL MPI_BCAST(projection ,len(projection),MPI_BYTE,0,MPI_COMM_WORLD,IERROR)
 
   end subroutine GetFullDomainSize
 
-  subroutine Getgridparams(filename,cyclicgrid)
+  subroutine Getgridparams(LIMAX,LJMAX,filename,cyclicgrid)
     !
     ! Get grid and time parameters as defined in the meteo or Grid_Def file
     ! Do some checks on sizes and dates
@@ -461,6 +479,7 @@ contains
 
     implicit none
 
+    integer, intent(in):: LIMAX,LJMAX
     character (len = *), intent(in) ::filename
     integer, intent(out):: cyclicgrid
 
@@ -468,7 +487,7 @@ contains
     integer :: ncFileID,idimID,jdimID, kdimID,timeDimID,varid,timeVarID
     integer :: GIMAX_file,GJMAX_file,KMAX_file,ihh,ndate(4)
     integer :: status,iglobal,jglobal,info,South_pole,North_pole,Ibuff(2)
-    real :: ndays(1),x1,x2,x3,x4,P0,x,y
+    real :: ndays(1),x1,x2,x3,x4,P0,x,y,mpi_out
     character (len = 50) :: timeunit
     logical::found_hybrid=.false.,lonlatready=.false.
     real :: CEN_LAT, CEN_LON,P_TOP_MET
@@ -1004,19 +1023,31 @@ contains
           GridArea_m2(i,j) = GRIDWIDTH_M*GRIDWIDTH_M*xmd(i,j)
        enddo
     enddo
+    
+    if(me_calc>=0)then
+       gbacmax = maxval(glat(:,:))
+       gbacmin = minval(glat(:,:))
+       glacmax = maxval(glon(:,:))
+       glacmin = minval(glon(:,:))
+    else
+       gbacmax = -999.9
+       gbacmin =  999.9
+       glacmax = -999.9
+       glacmin =  999.9
+    endif
 
-    gbacmax = maxval(glat(:,:))
-    gbacmin = minval(glat(:,:))
-    glacmax = maxval(glon(:,:))
-    glacmin = minval(glon(:,:))
-    CALL MPI_ALLREDUCE(MPI_IN_PLACE, gbacmax, 1,MPI_DOUBLE_PRECISION, &
-         MPI_MAX, MPI_COMM_CALC, IERROR) 
-    CALL MPI_ALLREDUCE(MPI_IN_PLACE, gbacmin  , 1, &
-         MPI_DOUBLE_PRECISION, MPI_MIN, MPI_COMM_CALC, IERROR) 
-    CALL MPI_ALLREDUCE(MPI_IN_PLACE, glacmax, 1,MPI_DOUBLE_PRECISION, &
-         MPI_MAX, MPI_COMM_CALC, IERROR) 
-    CALL MPI_ALLREDUCE(MPI_IN_PLACE, glacmin  , 1, &
-         MPI_DOUBLE_PRECISION, MPI_MIN, MPI_COMM_CALC, IERROR) 
+    CALL MPI_ALLREDUCE(gbacmax, mpi_out, 1,MPI_DOUBLE_PRECISION, &
+         MPI_MAX, MPI_COMM_WORLD, IERROR) 
+    gbacmax=mpi_out
+    CALL MPI_ALLREDUCE(gbacmin, mpi_out, 1, &
+         MPI_DOUBLE_PRECISION, MPI_MIN, MPI_COMM_WORLD, IERROR) 
+    gbacmin=mpi_out
+    CALL MPI_ALLREDUCE(glacmax, mpi_out, 1,MPI_DOUBLE_PRECISION, &
+         MPI_MAX, MPI_COMM_WORLD, IERROR) 
+    glacmax=mpi_out
+    CALL MPI_ALLREDUCE(glacmin, mpi_out, 1, &
+         MPI_DOUBLE_PRECISION, MPI_MIN, MPI_COMM_WORLD, IERROR) 
+    glacmin=mpi_out
     if(MasterProc) write(unit=6,fmt="(a,40f9.2)") &
          " GridValues: max/min for lat,lon ", &
          gbacmax,gbacmin,glacmax,glacmin
@@ -1657,7 +1688,7 @@ endsubroutine lb2ij_int
        B_bnd_met=B_bnd
     endif
 
-    if(me==0)then
+    if(me_mpi==0)then
 
        !only me=0 has the values for A_bnd_met and B_bnd_met
        do k=1,KMAX_MID
@@ -1677,15 +1708,19 @@ endsubroutine lb2ij_int
           p1=0.5*(A_bnd_met(k_met+1)+A_bnd_met(k_met))+Pref*0.5*(B_bnd_met(k_met+1)+B_bnd_met(k_met))
           k_met=k2_met(k)
           p2=0.5*(A_bnd_met(k_met+1)+A_bnd_met(k_met))+Pref*0.5*(B_bnd_met(k_met+1)+B_bnd_met(k_met))
-          x_k1_met(k)=(p_mod-p2)/(p1-p2)
+          x_k1_met(k)=(p_mod-p2)/(p1-p2)          
           write(*,77)k, ' interpolated from levels ', k1_met(k),' and ',k2_met(k),P_mod,p1,p2,x_k1_met(k)
 77        format(I4,A,I3,A,I3,13f11.3)
+          if(x_k1_met(k)<-0.00001 .or. (1.0-x_k1_met(k))<-0.00001)then
+             write(*,*)'WARNING: Extrapolation of data. This is NOT recommended for several metfields'
+          endif
+
        enddo
     endif
 
-    CALL MPI_BCAST(k1_met,4*KMAX_MID,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
-    CALL MPI_BCAST(k2_met,4*KMAX_MID,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
-    CALL MPI_BCAST(x_k1_met,8*KMAX_MID,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
+    CALL MPI_BCAST(k1_met,4*KMAX_MID,MPI_BYTE,0,MPI_COMM_WORLD,IERROR)
+    CALL MPI_BCAST(k2_met,4*KMAX_MID,MPI_BYTE,0,MPI_COMM_WORLD,IERROR)
+    CALL MPI_BCAST(x_k1_met,8*KMAX_MID,MPI_BYTE,0,MPI_COMM_WORLD,IERROR)
 
   end subroutine make_vertical_levels_interpolation_coeff
 

@@ -26,7 +26,8 @@ use ModelConstants_ml,only: NPROC, TXTLEN_NAME, &
                              SEAFIX_GEA_NEEDED, & ! only if emission problems over sea
                              MasterProc,DEBUG_GETEMIS,DEBUG_ROADDUST,USE_ROADDUST&
                              ,IIFULLDOM,JJFULLDOM
-use MPI_Groups_ml
+use MPI_Groups_ml   , only : MPI_BYTE, MPI_REAL8, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_INTEGER&
+                                     ,MPI_COMM_CALC, IERROR
 use NetCDF_ml, only  : ReadField_CDF  !CDF_SNAP
 
 use Par_ml,            only: LIMAX, LJMAX, limax, ljmax, me

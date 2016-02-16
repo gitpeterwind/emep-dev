@@ -79,9 +79,9 @@ use ModelConstants_ml,only: &
     USE_LIGHTNING_EMIS,USE_AIRCRAFT_EMIS,USE_ROADDUST, &
     USE_EURO_SOILNOX, USE_GLOBAL_SOILNOX, EURO_SOILNOX_DEPSCALE,&! one or the other
     USE_OCEAN_NH3,USE_OCEAN_DMS,FOUND_OCEAN_DMS,&
-    NPROC
-use MPI_Groups_ml
-use My_Derived_ml,    only: EmisSplit_OUT
+    NPROC, EmisSplit_OUT
+use MPI_Groups_ml  , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER&
+                            ,MPI_SUM,MPI_COMM_CALC, IERROR
 use NetCDF_ml,        only: ReadField_CDF,ReadField_CDF_FL,ReadTimeCDF,IsCDFfractionFormat,GetCDF_modelgrid,PrintCDF
 use netcdf
 use Par_ml,           only: MAXLIMAX,MAXLJMAX, GIMAX,GJMAX, IRUNBEG,JRUNBEG,&
@@ -141,7 +141,7 @@ real, public,  save, dimension(NSPEC_SHL+1:NSPEC_TOT) ::  totemadd
 integer, private, save :: iemCO  ! index of CO emissions, for debug
 
 logical :: Cexist,USE_MONTHLY_GRIDEMIS=.false.!internal flag
-real ::TimesInDays(120)
+real ::TimesInDays(120),mpi_out
 integer ::NTime_Read=-1,ncFileID,VarID,found, cdfstatus
 character(len=125) ::fileName_monthly='NOT_SET'!must be initialized with 'NOT_SET'
 character(len=10), private,save ::  incl_monthly(size(emis_inputlist(1)%incl)),excl_monthly(size(emis_inputlist(1)%excl))
@@ -537,8 +537,7 @@ contains
                 if(MasterProc) write(*,*) "PARTEMIS ", iem, trim(fname), sumemis(27,iem) 
 
              enddo
-          else if(index(emis_inputlist(iemislist)%name,"grid")>0 .or.  &
-                        emis_inputlist(iemislist)%type=='ASCII'  )then
+          else if(index(emis_inputlist(iemislist)%name,"grid")>0)then
              !ASCII format
              n=index(emis_inputlist(iemislist)%name,"POLL")
              do iem = 1, NEMIS_FILE
@@ -1407,8 +1406,9 @@ subroutine newmonth
            SumSoilNOx=SumSoilNOx+0.001*SoilNOx(i,j)*gridwidth_m**2*xmd(i,j)      
         enddo
      enddo
-     CALL MPI_ALLREDUCE(MPI_IN_PLACE,SumSoilNOx,1,MPI_DOUBLE_PRECISION, &
+     CALL MPI_ALLREDUCE(SumSoilNOx,mpi_out,1,MPI_DOUBLE_PRECISION, &
           MPI_SUM,MPI_COMM_CALC,IERROR) 
+     SumSoilNOx = mpi_out
      if(MasterProc)&
           write(*,*)'GLOBAL SOILNOX emissions this month within domain',&
           SumSoilNOx,' kg per day'
@@ -1459,8 +1459,9 @@ subroutine newmonth
      ! We have so2 emission so need DMS also
      if(.not.first_call)then
         !write some diagnostic for the past month emissions
-        CALL MPI_ALLREDUCE(MPI_IN_PLACE, O_DMS%sum_month, 1,&
+        CALL MPI_ALLREDUCE(O_DMS%sum_month, mpi_out, 1,&
              MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_CALC, IERROR)
+        O_DMS%sum_month = mpi_out
         if(MasterProc)then
 59      format(A,6F14.5)
         write(*,*)'DMS OCEAN emissions '
@@ -1508,8 +1509,9 @@ subroutine newmonth
               dms_sum=dms_sum+rdemis(i,j)
            enddo ! i
         enddo   ! j
-        CALL MPI_ALLREDUCE(MPI_IN_PLACE, dms_sum, 1,&
+        CALL MPI_ALLREDUCE(dms_sum, mpi_out, 1,&
              MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_CALC, IERROR)
+        dms_sum=mpi_out
 
         DMS_natso2_month=dms_sum*nmdays(current_date%month)/nydays
 
@@ -1536,7 +1538,7 @@ subroutine newmonth
      if(emis_inputlist(iemislist)%periodicity /= "monthly")cycle
      if(me==0)write(*,*)'reading monthly emissions for ',trim(emis_inputlist(iemislist)%name) 
      
-     if(emis_inputlist(iemislist)%type == "sectors")then !sectors is default
+     if(emis_inputlist(iemislist)%periodicity == "sectors")then !sectors is default
         !Read monthly emission snap sector files
 
         !reset emissions (except flat emissions!)
@@ -1696,9 +1698,9 @@ subroutine newmonth
            enddo
         enddo
         !sum all subdomains
-        CALL MPI_ALLREDUCE(MPI_IN_PLACE, O_NH3%sum_month, 1,&
+        CALL MPI_ALLREDUCE(O_NH3%sum_month, mpi_out, 1,&
              MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_CALC, IERROR)
-
+        O_NH3%sum_month = mpi_out
         O_NH3%sum_month=O_NH3%sum_month*1e-6 !kg->Gg
 
         USE_OCEAN_NH3=.true.

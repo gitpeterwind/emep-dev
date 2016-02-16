@@ -47,7 +47,9 @@ use MetFields_ml,           only: roa
 use ModelConstants_ml,      only: Pref,PPB,PT,KMAX_MID, MasterProc, NPROC,  &
     IOU_INST,IOU_3DHOUR,IOU_YEAR,IOU_MON,IOU_DAY, RUNDOMAIN,  &
     FORECAST,USE_POLLEN, DEBUG_NEST,DEBUG_ICBC=>DEBUG_NEST_ICBC
-use MPI_Groups_ml
+use MPI_Groups_ml      , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER, MPI_LOGICAL, &
+                                MPI_LOR,MPI_MIN, MPI_MAX, MPI_SUM, &
+                                MPI_COMM_CALC, MPI_COMM_WORLD, MPISTATUS, IERROR, ME_MPI, NPROC_MPI
 use netcdf,                 only: nf90_open,nf90_close,nf90_inq_dimid,&
                                   nf90_inquire_dimension,nf90_inq_varid,&
                                   nf90_inquire_variable,nf90_get_var,nf90_get_att,&
@@ -318,7 +320,7 @@ subroutine wrtxn(indate,WriteNow)
   type(Deriv) :: def1 ! definition of fields
   integer :: n,iotyp,ndim,kmax,i,ncfileID
   real :: scale
-  logical :: fexist, wanted, overwrite
+  logical :: fexist, wanted, wanted_out, overwrite
   logical, save :: first_call=.true.
 
   call Config_Nest()
@@ -427,9 +429,9 @@ subroutine wrtxn(indate,WriteNow)
             "Will not be written to file:",trim(filename_write),""
       elseif(omit_zero_write)then !  further reduce output
         wanted=any(xn_adv(n,:,:,:)/=0.0)
-        CALL MPI_ALLREDUCE(MPI_IN_PLACE,wanted,1,MPI_LOGICAL,MPI_LOR,&
+        CALL MPI_ALLREDUCE(wanted,wanted_out,1,MPI_LOGICAL,MPI_LOR,&
                            MPI_COMM_CALC,IERROR)
-        adv_ic(n)%wanted=wanted
+        adv_ic(n)%wanted=wanted_out
         if(.not.adv_ic(n)%wanted.and.&
           (DEBUG_NEST.or.DEBUG_ICBC).and.MasterProc)&
           write(*,"(A,':',/2(2X,A,1X,'''',A,'''',1X,A,'.'))")&

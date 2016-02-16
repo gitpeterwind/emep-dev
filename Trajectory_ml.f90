@@ -42,9 +42,11 @@ module Trajectory_ml
   use Chemfields_ml  ,    only : xn_adv
   use GridValues_ml ,     only : glon, glat
   use Io_ml,              only : IO_AIRCR
-  use MetFields_ml,             only : z_bnd,z_mid
+  use MetFields_ml,       only : z_bnd,z_mid
   use ModelConstants_ml , only : dt_advec,PPBINV,KMAX_BND,NPROC, METSTEP
-  use MPI_Groups_ml
+  use MPI_Groups_ml , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER, MPI_LOGICAL, &
+                             MPI_MIN, MPI_MAX, MPI_SUM, &
+                             MPI_COMM_CALC, MPI_COMM_WORLD, MPISTATUS, IERROR, ME_MPI, NPROC_MPI
   use Par_ml   ,          only : gi0,gi1,gj0,gj1,IRUNBEG,JRUNBEG,me
   use TimeDate_ml,        only : current_date
   implicit none

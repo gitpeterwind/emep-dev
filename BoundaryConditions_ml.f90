@@ -50,8 +50,9 @@ use ModelConstants_ml, only: KMAX_MID  &  ! Number of levels in vertical
                             ,USE_SEASALT,USE_DUST & 
                             ,USES,DEBUG  & ! %BCs
                             ,MasterProc, PPB, Pref
-use MPI_Groups_ml
-use NetCDF_ml,         only:ReadField_CDF,vertical_interpolate
+use MPI_Groups_ml,     only: MPI_DOUBLE_PRECISION, MPI_SUM,MPI_INTEGER, &
+                             MPI_COMM_CALC, IERROR
+use NetCDF_ml,         only: ReadField_CDF,vertical_interpolate
 use Par_ml,          only: &
    LIMAX, LJMAX, limax, ljmax, me &
   ,neighbor, NORTH, SOUTH, EAST, WEST   &  ! domain neighbours
@@ -1231,10 +1232,11 @@ real :: trend_o3=1.0, trend_co, trend_voc
        enddo
        mpi_snd(1)=O3fix_loc
        mpi_snd(2)=count_loc
-       call MPI_ALLREDUCE(mpi_snd,mpi_rcv, 2, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_CALC, IERROR)
+       call MPI_ALLREDUCE(mpi_snd, mpi_rcv, 2, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_CALC, IERROR)
        O3fix=0.0
        if(mpi_rcv(2)>0.5)O3fix=mpi_rcv(1)/mpi_rcv(2) - macehead_O3(month)*PPB
-       if (me==0)write(*,"(a,4f8.3)")'Mace Head correction for O3, trend and Mace Head value',-O3fix/PPB,trend_o3,macehead_O3(month)
+       if (me==0)write(*,"(a,4f8.3)")'Mace Head correction for O3, trend and Mace Head value',&
+            -O3fix/PPB,trend_o3,macehead_O3(month)
        bc_data = max(15.0*PPB,bc_data-O3fix)
     endif
   case ( IBC_H2O2 )

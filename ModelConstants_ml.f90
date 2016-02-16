@@ -596,6 +596,8 @@ integer, public, parameter ::  &
 
 character(len=*), public, parameter :: model="EMEP_MSC-W "
 
+logical, parameter, public :: EmisSplit_OUT = .false.
+
 logical, public, parameter:: MANUAL_GRID=.false.!under developement.
 
 !----------------------------------------------------------------------------
@@ -678,7 +680,8 @@ subroutine Config_ModelConstants(iolog)
         !stop
         exit
      endif
-     INQUIRE (directory=trim(DataPath(i)), exist=exist)
+     INQUIRE(directory=trim(DataPath(i)), exist=exist)!intel
+!     INQUIRE(file=trim(DataPath(i)), exist=exist)!gfortran
      if(exist)then
         DataDir=trim(DataPath(i))
         if(MasterProc)write(*,*)'DataDir set to',trim(DataDir)

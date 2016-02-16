@@ -154,6 +154,20 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16th  February   2016 Peter  3145
+
+More adaptation to a future "shared memory" model. Mostly variables as "use only".
+(Some problems during compilation with MPI_IN_PLACE with gfortran and mpi_f08)
+No changes in results for normal runs.
+
+Unimod.f90 CheckStop_ml.f90 GridValues_ml.f90 Io_Progs_ml.f90 MassBudget_ml.f90 
+Advection_ml.f90 AirEmis_ml.f90 NetCDF_ml.f90 Landuse_ml.f90 EmisGet_ml.f90 
+BoundaryConditions_ml.f90 DefPhotolysis_ml.f90 Met_ml.f90 MetFields_ml.f90 ColumnSource_ml.f90 
+ReadField_ml.f90 Emissions_ml.f90 Sites_ml.f90 Nest_ml.f90 Trajectory_ml.f90 
+global2local.f90 My_Derived_ml.f90 MPI_Groups_ml.f90 ModelConstants_ml.f90 Par_ml.f90 Log.changes
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 11th  February   2016 Alvaro  3144
 
 Fix error on the file describes the SO2 passive degassing from volcanoes (volcano_emission.csv).
@@ -253,6 +267,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Bug in MPI_Groups_ml, make the model crash immediately.
 Typo in Emissions for monthly emis (crash).
 Emissions_ml recognize type="ASCII"
+My_Derived_ml, NetCDF_ml small changes for gfortran compatibility
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 18th January   2016 Peter  3130

@@ -48,10 +48,11 @@ program myeul
        USES, USE_LIGHTNING_EMIS, &
        FORECAST       ! FORECAST mode
   use ModelConstants_ml,only: Config_ModelConstants,DEBUG
-  use MPI_Groups_ml
+  use MPI_Groups_ml,    only: MPI_BYTE, ME_CALC, ME_MPI, MPISTATUS, MPI_COMM_CALC,MPI_COMM_WORLD, &
+                              IERROR, MPI_world_init, MPI_groups_split
   use NetCDF_ml,        only: Init_new_netCDF
   use OutputChem_ml,    only: WrtChem, wanted_iou
-  use Par_ml,           only: me, GIMAX, GJMAX, Topology, parinit
+  use Par_ml,           only: me, GIMAX, GJMAX, Topology_io, Topology, parinit
   use PhyChem_ml,       only: phyche    ! Calls phys/chem routines each dt_advec
   use Sites_ml,         only: sitesdef  ! to get output sites
   use Tabulations_ml,   only: tabulate

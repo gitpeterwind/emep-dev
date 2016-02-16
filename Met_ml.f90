@@ -124,13 +124,17 @@ use ModelConstants_ml,    only : PASCAL, PT, Pref, METSTEP  &
      ,CONVECTION_FACTOR & 
      ,LANDIFY_MET,MANUAL_GRID  & 
      ,CW_THRESHOLD,RH_THRESHOLD, CW2CC,IOU_INST,JUMPOVER29FEB
-use MPI_Groups_ml
+use MPI_Groups_ml,     only: MPI_DOUBLE_PRECISION, MPI_SUM,MPI_INTEGER, MPI_BYTE,&
+                             MPI_COMM_IO, MPI_COMM_CALC, IERROR, ME_IO, ME_CALC,&
+                             request_e,request_n,request_s,request_w,LargeSub_Ix,&
+                             largeLIMAX,largeLJMAX, MPISTATUS, MPI_MIN
 use Par_ml           ,    only : MAXLIMAX,MAXLJMAX,GIMAX,GJMAX, me  &
      ,limax,ljmax  &
      ,neighbor,WEST,EAST,SOUTH,NORTH,NOPROC  &
      ,MSG_NORTH2,MSG_EAST2,MSG_SOUTH2,MSG_WEST2  &
      ,IRUNBEG,JRUNBEG, tgi0, tgj0,gi0,gj0  &
-     ,MSG_INIT3,MSG_READ4, tlimax, tljmax
+     ,MSG_INIT3,MSG_READ4, tlimax, tljmax &
+     ,tlargegi0,tlargegj0
 use PhysicalConstants_ml, only : KARMAN, KAPPA, RGAS_KG, CP, GRAV    &
      ,ROWATER, PI
 use TimeDate_ml,          only : current_date, date,nmdays, &
@@ -160,7 +164,7 @@ character (len = 100), private, save :: call_msg=" Not set"
 
 character (len = 100), public, save  ::  meteo   ! template for meteofile
 
-public :: MeteoRead
+public :: MeteoRead, MeteoRead_io
 public :: MetModel_LandUse
 public :: metfieldint
 public :: BLPhysics
@@ -170,7 +174,136 @@ public :: Getmeteofield
 public :: landify     ! replaces met variables from mixed sea/land with land
 
 contains
+  subroutine MeteoRead_io()
 
+    character (len = 100), save  ::  meteoname   ! name of the meteofile
+    character (len = 100)        ::  namefield  ! name of the requested field
+    integer :: ix, KMAX, istart,jstart,ijk,i,j,k,k1,k2
+    integer :: nr
+    integer ::   ndim,nyear,nmonth,nday,nhour
+    real ::meteo_3D(largeLIMAX,largeLJMAX,KMAX_MET)
+    logical,save :: first_call = .true.
+    type(date)      ::  next_inptime             ! hfTD,addhours_to_input
+    type(timestamp) ::  ts_now                   ! time in timestamp format
+    real :: nsec                                 ! step in seconds
+    logical :: fexist,found
+
+    if(current_date%seconds /= 0 .or. (mod(current_date%hour,METSTEP)/=0) )return
+
+    nr=2 !set to one only when the first time meteo is read
+    call_msg = "Meteoread"
+    if(me_IO>=0)then
+       if(first_call)then !first time meteo is read
+          nr = 1
+          nrec = 0
+          next_inptime = current_date
+
+          !On first call, check that date from meteo file correspond to dates requested. 
+          !Also defines nhour_first and Nhh (and METSTEP in case of WRF metdata).
+          call Check_Meteo_Date !note that all procs read this
+       else
+          nsec=METSTEP*3600.0 !from hr to sec
+          ts_now = make_timestamp(current_date)
+          call add_secs(ts_now,nsec)
+          if(JUMPOVER29FEB.and.current_date%month==2.and.current_date%day==29)then
+             if(MasterProc)write(*,*)'Jumping over one day for meteo_date!'
+             call add_secs(ts_now,24*3600.)
+          endif
+          next_inptime=make_current_date(ts_now)
+       endif
+       nyear=next_inptime%year
+       nmonth=next_inptime%month
+       nday=next_inptime%day
+       nhour=next_inptime%hour
+       nrec=nrec+1
+
+       if(nrec>Nhh.or.nrec==1) then              ! start reading a new meteo input file
+          meteoname = date2string(meteo,next_inptime)
+          nrec = 1
+          if(nday==1.and.nmonth==1)then
+             !hour 00:00 from 1st January may be missing;checking first:
+             inquire(file=meteoname,exist=fexist)
+             if(.not.fexist)then
+                if(MasterProc)write(*,*)trim(meteoname),&
+                     ' does not exist; using data from previous day'
+                meteoname=date2string(meteo,next_inptime,-24*3600.0) 
+                nrec=Nhh
+             endif
+          endif
+          if(ME_IO==0)write(*,*)'io procs reading ',trim(meteoname)
+       endif
+
+       do ix=1,Nmetfields
+          if(met(ix)%read_meteo)then
+             namefield=met(ix)%name
+             ndim=met(ix)%dim
+
+             if(ndim==3)KMAX=KMAX_MET
+             if(ndim==2)KMAX=1
+
+             istart=gi0
+             jstart=gj0
+             call GetCDF_modelgrid(namefield,meteoname,meteo_3D,1,KMAX,nrec,1,&
+                  imax_in=largeLIMAX,jmax_in=largeLJMAX,needed=met(ix)%needed,found=met(ix)%found)
+             if(met(ix)%found)then
+                if(KMAX==1)then       
+                   ijk=0
+                   k=1
+                   do j=1,largeLJMAX
+                      do i=1,largeLIMAX
+                         ijk=ijk+1
+                         met(ix)%field_shared(i,j,k)=meteo_3D(i,j,k)
+                      enddo
+                   enddo
+                else
+                   if(External_Levels_Def)then
+                      !interpolate vertically if the levels are not identical
+                      ijk=0
+                      do k=1,KMAX_MID
+                         k1=k1_met(k)
+                         k2=k2_met(k)
+                         do j=1,largeLJMAX
+                            do i=1,largeLIMAX
+                               ijk=ijk+1
+                               met(ix)%field_shared(i,j,k)=x_k1_met(k)*meteo_3D(i,j,k1)+(1.0-x_k1_met(k))*meteo_3D(i,j,k2)
+                            enddo
+                         enddo
+                      enddo
+                   else
+                      !use same vertical coordinates as meteo
+                      ijk=0
+                      do k=1,KMAX_MID
+                         do j=1,largeLJMAX
+                            do i=1,largeLIMAX
+                               ijk=ijk+1
+                               met(ix)%field_shared(i,j,k)=meteo_3D(i,j,k)
+                            enddo
+                         enddo
+                      enddo
+
+                   endif
+                endif
+                met(ix)%ready=.true.
+                met(ix)%copied=.false.
+             else
+                met(ix)%ready=.false.
+                met(ix)%copied=.false.
+             endif
+
+             if(me_io==0)then
+                if(met(ix)%found)write(*,*)'found ',trim(namefield),' in ',trim(meteoname)
+                if(met(ix)%found.and.ndim==2)write(*,*)'random value 2D = ',trim(namefield),me_io,met(ix)%field_shared(5,5,1)
+                if(met(ix)%found.and.ndim==3)write(*,*)'random value 3D = ',trim(namefield),me_io,met(ix)%field_shared(5,5,KMAX_MID)
+                if(.not.met(ix)%found)write(*,*)'did not find ',trim(namefield),' in ',trim(meteoname)
+             endif
+          endif
+       enddo
+       first_call = .false.
+    else
+     
+    endif
+
+  end subroutine MeteoRead_io
 !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
   subroutine MeteoRead()
     !    the subroutine reads meteorological fields and parameters (every
@@ -211,7 +344,7 @@ contains
          /)
     logical :: write_now
 
-    real :: relh1,relh2,temperature,swp,wp
+    real :: relh1,relh2,temperature,swp,wp, x_out
     real,   dimension(KMAX_MID)          ::  prhelp, exf2
     real,   dimension(KMAX_BND)          ::  exf1
 
@@ -233,7 +366,7 @@ contains
     real buf_ue(LJMAX,KMAX_MID)
     real buf_vn(LIMAX,KMAX_MID)
     real buf_vs(LIMAX,KMAX_MID)
-    integer ::   INFO
+    integer ::   INFO,i_large,j_large
 
     if(current_date%seconds /= 0 .or. (mod(current_date%hour,METSTEP)/=0) )return
 
@@ -321,14 +454,46 @@ contains
           ndim=met(ix)%dim
           nrix=min(met(ix)%msize,nr)
 
-          call Getmeteofield(meteoname,namefield,nrec,ndim,unit,met(ix)%validity,&
-               met(ix)%field(1:LIMAX,1:LJMAX,:,nrix),needed=met(ix)%needed,&
-               found=met(ix)%found)
-
+!          if(met(ix)%ready .eqv. .true.)then
+          if(.false.)then
+                if(ndim==2)then
+                   do j=1,ljmax
+                      j_large=j+gj0-tlargegj0(LargeSub_Ix)
+                   do i=1,limax
+                      i_large=i+gi0-tlargegi0(LargeSub_Ix)
+                      met(ix)%field(i,j,1,nrix)=met(ix)%field_shared(i_large,j_large,1)
+                   enddo
+                   enddo
+                else if(ndim==3)then
+                   do k=1,KMAX_MID
+                   do j=1,ljmax
+                      j_large=j+gj0-tlargegj0(LargeSub_Ix)
+                   do i=1,limax
+                      i_large=i+gi0-tlargegi0(LargeSub_Ix)
+                      met(ix)%field(i,j,k,nrix)=met(ix)%field_shared(i_large,j_large,k)
+                   enddo
+                   enddo
+                   enddo
+                endif
+                met(ix)%found=.true.
+                met(ix_fh)%validity='averaged'!should be softified
+                met(ix_fl)%validity='averaged'!should be softified
+             else
+                call Getmeteofield(meteoname,namefield,nrec,ndim,unit,met(ix)%validity,&
+                     met(ix)%field(1:LIMAX,1:LJMAX,:,nrix),needed=met(ix)%needed,&
+                     found=met(ix)%found)
+             endif
           if(write_now)then
              if(met(ix)%found)write(*,*)'found ',trim(namefield),' in ',trim(meteoname)
              if(met(ix)%found)write(*,*)'random value = ',met(ix)%field(5,5,1,nrix)
              if(.not.met(ix)%found)write(*,*)'did not find ',trim(namefield),' in ',trim(meteoname)
+             if(me_calc<0)then
+                if(ndim==2)then
+                write(*,*)'met compare 2D ',me,met(ix)%field(5,5,1,nrix),met(ix)%field_shared(i_large,j_large,1)
+                else
+                write(*,*)'met compare 3D ',me,met(ix)%field(5,5,KMAX_MID,nrix),met(ix)%field_shared(i_large,j_large,KMAX_MID)
+                endif
+             endif
           endif
        endif
     enddo
@@ -518,8 +683,9 @@ contains
           buff=surface_precip !save to save in old below
           !must first check that precipitation is increasing. At some dates WRF maybe restarted!
           minprecip=minval(surface_precip(1:limax,1:ljmax) - surface_precip_old(1:limax,1:ljmax))
-          CALL MPI_ALLREDUCE(MPI_IN_PLACE, minprecip, 1,MPI_DOUBLE_PRECISION, &
+          CALL MPI_ALLREDUCE(minprecip, x_out, 1,MPI_DOUBLE_PRECISION, &
                MPI_MIN, MPI_COMM_CALC, IERROR) 
+          minprecip=x_out
           if(minprecip<-10)then
              if(me==0)write(*,*)'WARNING: found negative precipitations. set precipitations to zero!',minprecip
              surface_precip = 0.0
@@ -2981,7 +3147,7 @@ subroutine Check_Meteo_Date
   character (len = 50) :: timeunit
   integer ::ihh,ndate(4),n1,nseconds(1)
   real :: ndays(1),Xminutes(24)
-  logical :: date_in_days
+  logical :: date_in_days,MasterProc_local
   nyear=startdate(1)
   nmonth=startdate(2)
   nday=startdate(3)
@@ -2989,7 +3155,8 @@ subroutine Check_Meteo_Date
 !56 FORMAT(a5,i4.4,i2.2,i2.2,a3)
 !   write(meteoname,56)'meteo',nyear,nmonth,nday,'.nc'
   meteoname=date2string(meteo,startdate) 
-  if(MasterProc)then
+  MasterProc_local = MasterProc.or.(ME_IO==0)
+  if(MasterProc_local)then
     status=nf90_open(path=trim(meteoname),mode=nf90_nowrite,ncid=ncFileID)
     call CheckStop(status,nf90_noerr,'meteo file not found: '//trim(meteoname))
     
@@ -3000,21 +3167,21 @@ subroutine Check_Meteo_Date
           if(MasterProc)write(*,*)'time variable not found'
           nhour_first=0 !hour of the first record
           Nhh=8
-          if(MasterProc)write(*,*)'Did not check times, and assume nhour_first =',nhour_first
-          if(MasterProc)write(*,*)'Assume  Nhh =',Nhh
+          if(MasterProc_local)write(*,*)'Did not check times, and assume nhour_first =',nhour_first
+          if(MasterProc_local)write(*,*)'Assume  Nhh =',Nhh
           goto 777
        else
           call check(nf90_inquire_dimension(ncid=ncFileID,dimID=timedimID,len=Nhh))
           nhour_first=0 !hour of the first record
-          if(MasterProc)write(*,*)'Did not check times, and assume nhour_first =',nhour_first            
-          if(MasterProc)write(*,*)'  Nhh =',Nhh
+          if(MasterProc_local)write(*,*)'Did not check times, and assume nhour_first =',nhour_first            
+          if(MasterProc_local)write(*,*)'  Nhh =',Nhh
           status=nf90_inq_varid(ncid=ncFileID,name="XTIME",varID=timeVarID)
           if(status==nf90_noerr)then
              call check(nf90_get_var(ncFileID,timeVarID,Xminutes,count=(/2/)))
              call CheckStop(60*(nint(Xminutes(2)-Xminutes(1))/60)/=nint(Xminutes(2)-Xminutes(1)),&
                   "Met_ml: METSTEP in hours must be an integer")
              METSTEP=nint(Xminutes(2)-Xminutes(1))/60
-             if(MasterProc)write(*,*)'METSTEP reset to', METSTEP,' hours'      
+             if(MasterProc_local)write(*,*)'METSTEP reset to', METSTEP,' hours'      
           endif
           goto 777
        endif
@@ -3028,7 +3195,7 @@ subroutine Check_Meteo_Date
     ihh=1
     n1=1
     if(date_in_days)then
-      if(MasterProc)write(*,*)'Date in days since 1900-1-1 0:0:0'
+      if(MasterProc_local)write(*,*)'Date in days since 1900-1-1 0:0:0'
       call check(nf90_get_var(ncFileID,timeVarID,ndays,start=(/ihh/),count=(/n1/)))
       call nctime2idate(ndate,ndays(1))    ! for printout: msg="meteo hour YYYY-MM-DD hh"
     else
@@ -3040,12 +3207,12 @@ subroutine Check_Meteo_Date
     call CheckStop(ndate(2),nmonth,"Met_ml: wrong month")
     call CheckStop(ndate(3),nday  ,"Met_ml: wrong day"  )
     
-    if(MasterProc)write(*,*)'first meteo dates read:'     
+    if(MasterProc_local)write(*,*)'first meteo dates read:'     
     do ihh=1,Nhh
       if(date_in_days)then
         call check(nf90_get_var(ncFileID,timeVarID,ndays,start=(/ihh/),count=(/n1/)))
         call nctime2idate(ndate,ndays(1))
-        if(MasterProc)write(*,*)'ndays ',ndays(1),ndate(3),ndate(4)
+        if(MasterProc_local)write(*,*)'ndays ',ndays(1),ndate(3),ndate(4)
       else
         call check(nf90_get_var(ncFileID,timeVarID,nseconds,start=(/ihh/),count=(/n1/)))
         call nctime2idate(ndate,nseconds(1))
@@ -3057,9 +3224,15 @@ subroutine Check_Meteo_Date
  777 continue
    call check(nf90_close(ncFileID))
   endif
-  CALL MPI_BCAST(nhour_first,4*1,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
-  CALL MPI_BCAST(Nhh,4*1,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
-  CALL MPI_BCAST(METSTEP,4*1,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
+  if(me_calc>=0)then
+     CALL MPI_BCAST(nhour_first,4*1,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
+     CALL MPI_BCAST(Nhh,4*1,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
+     CALL MPI_BCAST(METSTEP,4*1,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
+  else
+     CALL MPI_BCAST(nhour_first,4*1,MPI_BYTE,0,MPI_COMM_IO,IERROR)
+     CALL MPI_BCAST(Nhh,4*1,MPI_BYTE,0,MPI_COMM_IO,IERROR)
+     CALL MPI_BCAST(METSTEP,4*1,MPI_BYTE,0,MPI_COMM_IO,IERROR)
+  endif
 endsubroutine Check_Meteo_Date
 
 endmodule met_ml

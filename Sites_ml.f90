@@ -33,7 +33,9 @@ use MetFields_ml,      only : u_xmj, v_xmi, ps
 use ModelConstants_ml, only : NMET,PPBINV,PPTINV, KMAX_MID, MasterProc &
                               ,KMAX_BND,PT, NPROC, DEBUG & ! => DEBUG%SITES &
                               ,DomainName, RUNDOMAIN, IOU_INST, SOURCE_RECEPTOR
-use MPI_Groups_ml
+use MPI_Groups_ml   , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER, MPI_LOGICAL, &
+                             MPI_MIN, MPI_MAX, MPI_SUM, &
+                             MPI_COMM_CALC, MPI_COMM_WORLD, MPISTATUS, IERROR, ME_MPI, NPROC_MPI
 use PhysicalConstants_ml,only: ATWAIR
 use NetCDF_ml,         only : Create_CDF_sondes,Out_CDF_sondes,&
                               NF90_FILL_INT,NF90_FILL_DOUBLE

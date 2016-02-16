@@ -43,7 +43,9 @@
 !------------------------------------------------------------
   use CheckStop_ml,  only : CheckStop
   use ModelConstants_ml, only : NPROC, IIFULLDOM, JJFULLDOM
-  use MPI_Groups_ml
+  use MPI_Groups_ml  , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER, MPI_LOGICAL, &
+                              MPI_MIN, MPI_MAX, MPI_SUM, &
+                              MPI_COMM_CALC, MPI_COMM_WORLD, MPISTATUS, IERROR, ME_MPI, NPROC_MPI
   use Par_ml,        only : IRUNBEG,JRUNBEG              &
                             ,MAXLIMAX,MAXLJMAX           &
                             ,MSG_READ7,MSG_READ5         &
