@@ -1538,7 +1538,7 @@ subroutine newmonth
      if(emis_inputlist(iemislist)%periodicity /= "monthly")cycle
      if(me==0)write(*,*)'reading monthly emissions for ',trim(emis_inputlist(iemislist)%name) 
      
-     if(emis_inputlist(iemislist)%periodicity == "sectors")then !sectors is default
+     if(emis_inputlist(iemislist)%type == "sectors")then !sectors is default
         !Read monthly emission snap sector files
 
         !reset emissions (except flat emissions!)
