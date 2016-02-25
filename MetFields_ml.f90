@@ -117,6 +117,8 @@ module MetFields_ml
        ,Kz_met    ! vertical diffusivity in sigma coordinates from meteorology
 
   real,target,public, save,allocatable, dimension(:,:,:,:) :: rain! used only by wrf met
+  real,target,public, save,allocatable, dimension(:,:) :: irainc! used only by wrf met
+  real,target,public, save,allocatable, dimension(:,:) :: irainnc! used only by wrf met
 
 
   ! since pr,cc3d,cc3dmax,cnvuf,cnvdf used only for 1 time layer - define without NMET
@@ -227,14 +229,16 @@ module MetFields_ml
     ,foundcloudwater= .false.& !false if no cloudwater found
     ,foundSMI1= .true.& ! false if no Soil Moisture Index level 1 (shallow)
     ,foundSMI3= .true.& ! false if no Soil Moisture Index level 3 (deep)
-    ,foundrain= .false. ! false if no rain found or used
+    ,foundrain= .false.& ! false if no rain found or used
+    ,foundirainnc= .false. &! false if no irainnc found or used
+    ,foundirainc= .false. ! false if no irainc found or used
 
 ! specific indices of met
   integer, public, save   :: ix_u_xmj,ix_v_xmi, ix_q, ix_th, ix_sdot, ix_cc3d, ix_pr, ix_cw_met, ix_cnvuf, &
        ix_cnvdf, ix_Kz_met, ix_roa, ix_SigmaKz, ix_EtaKz, ix_Etadot, ix_cc3dmax, ix_lwc, ix_Kz_m2s, &
        ix_u_mid, ix_v_mid, ix_ps, ix_t2_nwp, ix_rh2m, ix_fh, ix_fl, ix_tau, ix_ustar_nwp, ix_sst, &
        ix_SoilWater_uppr, ix_SoilWater_deep, ix_sdepth, ix_ice_nwp, ix_ws_10m, ix_surface_precip, &
-       ix_uw, ix_ue, ix_vs, ix_vn, ix_convective_precip, ix_rain
+       ix_uw, ix_ue, ix_vs, ix_vn, ix_convective_precip, ix_rain,ix_irainc,ix_irainnc
 
   type,  public :: metfield
      character(len = 100) :: name = 'empty' !name as defined in external meteo file
@@ -269,6 +273,9 @@ module MetFields_ml
   logical, public :: MET_SHORT = .true.!metfields are stored as "short" (integer*2 and scaling)
   logical, public :: MET_C_GRID = .false.!true if u and v wind fields are in a C-staggered, larger grid.
   logical, public :: MET_REVERSE_K = .false.!set true if met fields are stored with lowest k at surface
+  logical, public :: found_wrf_bucket = .false.
+  real, public    :: wrf_bucket = 0.0 !constant used to define precipitation
+
 
   integer, public :: Nshared_2d
   integer, public :: Nshared_3d
@@ -912,6 +919,38 @@ if(USE_WRF_MET_NAMES)then
   ix_rain=ix
 
 !2D
+!Use I_RAINNC and I_RAINC to make 2D precip 
+  ix=ix+1
+  met(ix)%name             = 'I_RAINNC'
+  met(ix)%dim              = 2
+  met(ix)%frequency        = 3
+  met(ix)%time_interpolate = .false.!to get new and old value stored
+  met(ix)%read_meteo       = .false.
+  met(ix)%needed           = .false.
+  met(ix)%found            => foundirainnc
+  allocate(irainnc(LIMAX,LJMAX))
+  irainnc=0.0
+  met(ix)%field(1:LIMAX,1:LJMAX,1:1,1:1)  => irainnc
+  met(ix)%zsize = 1
+  met(ix)%msize = 1
+  ix_irainnc=ix
+
+  ix=ix+1
+  met(ix)%name             = 'I_RAINC'
+  met(ix)%dim              = 2
+  met(ix)%frequency        = 3
+  met(ix)%time_interpolate = .false.
+  met(ix)%read_meteo       = .false.
+  met(ix)%needed           = .false.
+  met(ix)%found            => foundirainc
+  allocate(irainc(LIMAX,LJMAX))
+  irainc=0.0
+  met(ix)%field(1:LIMAX,1:LJMAX,1:1,1:1)  => irainc
+  met(ix)%zsize = 1
+  met(ix)%msize = 1
+  ix_irainc=ix
+
+!2D redefine names for wrf
    met(ix_surface_precip)%name    = 'RAINNC'
    met(ix_convective_precip)%name = 'RAINC'
    met(ix_ps)%name                = 'PSFC'

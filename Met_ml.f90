@@ -124,7 +124,7 @@ use ModelConstants_ml,    only : PASCAL, PT, Pref, METSTEP  &
      ,CONVECTION_FACTOR & 
      ,LANDIFY_MET,MANUAL_GRID  & 
      ,CW_THRESHOLD,RH_THRESHOLD, CW2CC,IOU_INST,JUMPOVER29FEB
-use MPI_Groups_ml,     only: MPI_DOUBLE_PRECISION, MPI_SUM,MPI_INTEGER, MPI_BYTE,&
+use MPI_Groups_ml,     only: MPI_DOUBLE_PRECISION, MPI_SUM,MPI_INTEGER, MPI_BYTE,MPI_LOGICAL,&
                              MPI_COMM_IO, MPI_COMM_CALC, IERROR, ME_IO, ME_CALC,&
                              request_e,request_n,request_s,request_w,LargeSub_Ix,&
                              largeLIMAX,largeLJMAX, MPISTATUS, MPI_MIN
@@ -390,7 +390,7 @@ contains
        allocate(var_local(MAXLIMAX,MAXLJMAX,KMAX))
 
        !On first call, check that date from meteo file correspond to dates requested. 
-       !Also defines nhour_first and Nhh (and METSTEP in case of WRF metdata).
+       !Also defines nhour_first and Nhh (and METSTEP and bucket in case of WRF metdata).
        call Check_Meteo_Date !note that all procs read this
  
        call Exner_tab()!init table
@@ -485,7 +485,8 @@ contains
              endif
           if(write_now)then
              if(met(ix)%found)write(*,*)'found ',trim(namefield),' in ',trim(meteoname)
-             if(met(ix)%found)write(*,*)'random value = ',met(ix)%field(5,5,1,nrix)
+             if(met(ix)%found.and.ndim==2)write(*,*)'random value = ',met(ix)%field(5,5,1,nrix),maxval(met(ix)%field(:,:,1,nrix))
+             if(met(ix)%found.and.ndim==3)write(*,*)'random value = ',met(ix)%field(5,5,kmax_mid,nrix),maxval(met(ix)%field(:,:,kmax_mid,nrix))
              if(.not.met(ix)%found)write(*,*)'did not find ',trim(namefield),' in ',trim(meteoname)
              if(me_calc<0)then
                 if(ndim==2)then
@@ -680,9 +681,16 @@ contains
        surface_precip = surface_precip + convective_precip
        !write(*,*)'precip ',nrec,Nhh,surface_precip(5,5),convective_precip(5,5),surface_precip_old(5,5)
        if(WRF_MET_CORRECTIONS) then 
+          if(found_wrf_bucket)then
+             !wrf "bucket" definition for surface precipitation:
+             !surface_precip = I_RAINNC*bucket + RAINNC + I_RAINC*bucket + RAINC
+             surface_precip=surface_precip+irainnc*wrf_bucket+irainc*wrf_bucket
+          endif
           buff=surface_precip !save to save in old below
+
           !must first check that precipitation is increasing. At some dates WRF maybe restarted!
           minprecip=minval(surface_precip(1:limax,1:ljmax) - surface_precip_old(1:limax,1:ljmax))
+
           CALL MPI_ALLREDUCE(minprecip, x_out, 1,MPI_DOUBLE_PRECISION, &
                MPI_MIN, MPI_COMM_CALC, IERROR) 
           minprecip=x_out
@@ -699,7 +707,7 @@ contains
           do k=1,kmax_mid
              call smoosp(rain(1,1,k,nr),0.0,1.0E10)
           enddo
-       endif
+      endif
 
        !if available, will use cloudwater to determine the height of release
        !NB: array cw_met only used here
@@ -758,6 +766,8 @@ contains
                 endif
              enddo
           enddo
+          write(*,*)me,' MAX 2D QRAIN ',maxval(pr(:,:,kmax_mid))
+    
         else if(foundcloudwater)then
 
           if(write_now)write(*,*)'release height for 3D precipitations derived from cloudwater'
@@ -2853,7 +2863,7 @@ contains
     if(ndim==3)KMAX=KMAX_MET
     if(ndim==2)KMAX=1
 
-       if(MANUAL_GRID)then
+    if(MANUAL_GRID)then
        Nlevel=37
 !             call ReadField_CDF(meteoname,namefield,field, &
 !                  Nlevel,interpol='conservative',needed=.true.,debug_flag=.false.)
@@ -3222,16 +3232,34 @@ subroutine Check_Meteo_Date
                      date2string("Met_ml: wrong hour YYYY-MM-DD hh",ndate))
     enddo
  777 continue
+    if(WRF_MET_CORRECTIONS)then
+       !check if the "bucket" method is used
+       status = nf90_get_att(ncFileID,nf90_global,"BUCKET_MM",wrf_bucket)
+       if(status == nf90_noerr)then
+          found_wrf_bucket = .true.
+          write(*,*)'assuming constant bucket size: ',wrf_bucket
+       endif
+    endif
    call check(nf90_close(ncFileID))
   endif
   if(me_calc>=0)then
      CALL MPI_BCAST(nhour_first,4*1,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
      CALL MPI_BCAST(Nhh,4*1,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
      CALL MPI_BCAST(METSTEP,4*1,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
+     CALL MPI_BCAST(found_wrf_bucket,1,MPI_LOGICAL,0,MPI_COMM_CALC,IERROR)
   else
      CALL MPI_BCAST(nhour_first,4*1,MPI_BYTE,0,MPI_COMM_IO,IERROR)
      CALL MPI_BCAST(Nhh,4*1,MPI_BYTE,0,MPI_COMM_IO,IERROR)
      CALL MPI_BCAST(METSTEP,4*1,MPI_BYTE,0,MPI_COMM_IO,IERROR)
+     CALL MPI_BCAST(found_wrf_bucket,1,MPI_LOGICAL,0,MPI_COMM_IO,IERROR)
+  endif
+  if(found_wrf_bucket)then
+     if(me_calc>=0)CALL MPI_BCAST(wrf_bucket,8,MPI_BYTE,0,MPI_COMM_CALC,IERROR)     
+     if(me_calc<0)CALL MPI_BCAST(wrf_bucket,8,MPI_BYTE,0,MPI_COMM_IO,IERROR)     
+     met(ix_irainc)%read_meteo  = found_wrf_bucket
+     met(ix_irainc)%needed      = found_wrf_bucket
+     met(ix_irainnc)%read_meteo = found_wrf_bucket
+     met(ix_irainnc)%needed     = found_wrf_bucket
   endif
 endsubroutine Check_Meteo_Date
 
