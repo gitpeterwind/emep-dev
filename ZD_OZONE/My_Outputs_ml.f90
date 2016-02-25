@@ -151,7 +151,8 @@ character(len=10), public, parameter, dimension(NXTRA_SONDE) :: &
 
 integer, public, save :: &
   nhourly_out=0,&   ! No. output variables
-  nlevels_hourly=0  ! No. output levels
+  nlevels_hourly=0,&  ! No. output levels
+  nmax6_hourly = 0    ! No of 6 hourly max outputs
 
 ! Output selected model levels
 ! If SELECT_LEVELS_HOURLY (ModelConstants_config NML)
@@ -212,18 +213,19 @@ subroutine set_output_defs
   select case(MY_OUTPUTS)
   case("EMERGENCY")
     nlevels_hourly = 1+18
-    nhourly_out=5    !PM*,AOD & Z
+    nhourly_out=4    !PM*,AOD & Z
     ash=find_index("ASH",chemgroups(:)%name)
-    nuc_conc=find_index("NUCRACT",chemgroups(:)%name)
-    nuc_wdep=find_index("DDEP_NUCRACT",chemgroups(:)%name)
-    nuc_ddep=find_index("WDEP_NUCRACT",chemgroups(:)%name)
+    nuc_conc=0!find_index("NUCRACT",chemgroups(:)%name)
+    nuc_wdep=0!find_index("DDEP_NUCRACT",chemgroups(:)%name)
+    nuc_ddep=0!find_index("WDEP_NUCRACT",chemgroups(:)%name)
     call CheckStop((ash+nuc_conc+nuc_ddep+nuc_wdep)<1,"set_output_defs: Unknown group 'ASH'/'NUC'")
     if(ash>0)then
       name="none"
       do i=1,size(chemgroups(ash)%ptr)
         if(species(chemgroups(ash)%ptr(i))%name(1:9)==name)cycle
         name=species(chemgroups(ash)%ptr(i))%name(1:9)
-        nhourly_out=nhourly_out+2
+        nhourly_out=nhourly_out+2+1  ! 
+        nmax6_hourly=nmax6_hourly+1  ! 
         if(MasterProc.and.DEBUG_COLSRC)&
           write(*,*)'EMERGENCY: Volcanic Ash, Vent=',name
       enddo
@@ -321,12 +323,12 @@ subroutine set_output_defs
     pm10=find_index("PM10"  ,chemgroups(:)%name)
 !**               name     type     ofmt
 !**               ispec    nk sellev? unit conv  max
-    j=5;hr_out(1:j) = (/&
+    j=4;hr_out(1:j) = (/&
       Asc2D("pm25_3km"  ,"BCVugXXgroup",pm25,NLEVELS_HOURLY,"ug/m3",1.0,-999.9),&
       Asc2D("pm10_3km"  ,"BCVugXXgroup",pm10,NLEVELS_HOURLY,"ug/m3",1.0,-999.9),&
       Asc2D("pm_h2o_3km","PMwater"     ,00  ,NLEVELS_HOURLY,"ug/m3",1.0,-999.9),&
-      Asc2D("AOD_550nm" ,"D2D_inst",find_index("AOD_550nm",f_2d(:)%name),&
-             1," ",1.0    ,-9999.9),&
+!      Asc2D("AOD_550nm" ,"D2D",find_index("AOD_550nm",f_2d(:)%name),&
+!             1," ",1.0    ,-9999.9),&
       Asc2D("z"         ,"Z_MID" ,00,NLEVELS_HOURLY,"km",1e-3,-9999.9)/)
     if(ash>0)then
       name="none"
@@ -335,11 +337,13 @@ subroutine set_output_defs
         name=species(chemgroups(ash)%ptr(i))%name(1:9)
         igrp=find_index(name,chemgroups(:)%name)
         call CheckStop(igrp<1,"set_output_defs: Unknown group '"//name//"'")
-        j=j+2;hr_out(j-1:j)=(/&
+        j=j+3;hr_out(j-2:j)=(/&
           Asc2D(trim(name)       ,"BCVugXXgroup",igrp,&
                 NLEVELS_HOURLY,"ug/m3",1.0,-999.9),&
           Asc2D(trim(name)//"_col","COLUMNgroup" ,igrp,&
-                1,"ug/m2",1.0,-999.9)/)
+                1,"ug/m2",1.0,-999.9),&
+          Asc2D(trim(name)//"_6hour_max","MAX6Hgroup" ,igrp,&
+                4,"ug/m3",1.0,-999.9)/)
       enddo
     endif
     if(nuc_conc>0)then

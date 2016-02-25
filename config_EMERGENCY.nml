@@ -1,4 +1,10 @@
-!-------- Experiment Description
+!!put here only machine specific data. 
+&Machine_config
+!DataDir will attempted replaced by (in this order):
+  DataPath(1) = '/global/work/mifapw/emep',  !Stallo
+  DataPath(2) = '/home/metno/mifapw/work',  !Vilje
+&end
+!------- Experiment Description
 !  EXP_NAME     one word description, e.g. EMEPSTD,EMEP2010,TFMM
 !  MY_OUTPUTS   hourly outputs, e.g. EMEPSTD,TFMM,EMERGENCY
 !  IC/BC        see namelists Nest_config,ExternalBICs_config,ExternalBICs_bc
@@ -36,7 +42,7 @@
   INERIS_SNAP1          = F,          ! Used for TFMM runs
   INERIS_SNAP2          = F,          ! Used for TFMM runs
 !------------------------------
-  EMIS_SOURCE           = 'emislist', ! 'emislist' or 'CdfFractions'
+  EMIS_SOURCE           = 'Mixed', ! 'emislist' or 'CdfFractions'
   EMIS_TEST             = 'None',     ! 'None' or 'CdfSnap' 
   EMIS_OUT              = F,          ! Output emissions in separate files (memory demanding)
 !------------------------------

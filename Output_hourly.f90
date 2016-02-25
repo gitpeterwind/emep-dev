@@ -37,14 +37,15 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
 use My_Outputs_ml,    only: NHOURLY_OUT,    & ! No. outputs
                             NLEVELS_HOURLY, & ! No. output levels
                             hr_out,         & ! Required outputs
-                            LEVELS_HOURLY ! Output selected model levels
+                            LEVELS_HOURLY,  & ! Output selected model levels
+                            nmax6_hourly      ! 6 hourly maximum
 use CheckStop_ml,     only: CheckStop
 use Chemfields_ml,    only: xn_adv,xn_shl,cfac,PM25_water,PM25_water_rh50
 use ChemGroups_ml,    only: chemgroups
 use Derived_ml,       only: num_deriv2d,nav_2d,LENOUT2D,& ! D2D
                             num_deriv3d,nav_3d,LENOUT3D ! D3D
 use DerivedFields_ml, only: f_2d,d_2d,f_3d,d_3d       ! houtly output types
-use OwnDataTypes_ml,  only: Asc2D, Deriv
+use OwnDataTypes_ml,  only: Asc2D, Deriv,typ_si
 use ChemSpecs,        only: NSPEC_SHL, species
 use GridValues_ml,    only: i_fdom, j_fdom,&   ! Gives emep coordinates
                             debug_proc, debug_li,debug_lj
@@ -63,6 +64,7 @@ use OwnDataTypes_ml,  only: TXTLEN_DERIV,TXTLEN_SHORT
 use Par_ml,           only: LIMAX, LJMAX, GIMAX,GJMAX,        &
                             me, IRUNBEG, JRUNBEG, limax, ljmax
 use Pollen_ml,        only: heatsum, pollen_left, AreaPOLL
+use SmallUtils_ml,    only: find_index
 use TimeDate_ml,      only: current_date
 use TimeDate_ExtraUtil_ml,only : date2string
 use Units_ml,         only: Group_Units,&
@@ -88,11 +90,13 @@ implicit none
   real ghourly(GIMAX,GJMAX)           ! Global hourly value (e.g. ppb)
   real :: arrmax                      ! Maximum value from array
   real :: unit_conv                   ! Unit conversion (ppb ug etc.)
-  real :: g                           ! tmp - saves value of ghourly(i,j)
+  real :: g, temp                     ! tmp - saves value of ghourly(i,j)
   integer, dimension(2) :: maxpos     ! Location of max value
   integer i,j,ih,ispec,itot,iadv      ! indices
-  integer :: k,ik,iik                 ! Index for vertical level
+  integer :: k,ik,iik, k_flight        ! Index for vertical level
   integer :: ni,nj                    ! number of points in i/j-output
+  integer :: flight_start,flight_end  ! Flight-level intervals
+  real :: flight_max ! Flight level maximum
   character(len=TXTLEN_DERIV) :: name ! For output file, species names
   character(len=4)  :: suffix         ! For date "mmyy"
   integer, save :: prev_month = -99   ! Initialise with non-possible month
@@ -103,6 +107,11 @@ implicit none
   integer                        :: hr_out_nk=0         ! hr_out%nk
   integer, pointer, dimension(:) :: gspec=>null()       ! group array of indexes
   real,    pointer, dimension(:) :: gunit_conv=>null()  ! & unit conv. factors
+
+  real, save, allocatable , dimension(:,:,:,:):: max6_hourly ! save values for 6 hours
+  type(typ_si), save, allocatable ,dimension(:)  :: imax6_hourly 
+  integer :: intmax,n
+
 
   integer, allocatable, dimension(:), save :: navg ! D2D average counter
 
@@ -123,6 +132,15 @@ implicit none
       write(*,*)"DEBUG Hourly_out: nothing to output!"
     first_call=.false.
     return
+  endif
+
+  ! write(*,*) " START: nmax6_hourly ",nmax6_hourly,allocated(max6_hourly)
+  if (nmax6_hourly > 0  .and. .not.allocated(max6_hourly)) then
+     allocate(max6_hourly(nmax6_hourly,LIMAX,LJMAX,KMAX_MID))
+     allocate(imax6_hourly(nmax6_hourly))
+     max6_hourly(:,:,:,:) = 0.
+     imax6_hourly(:) =typ_si("none",-99) 
+     write(*,*) "allocate: ",  imax6_hourly,KMAX_MID
   endif
 
   ! only write at 12UTC for "TRENDS@12UTC", eg
@@ -495,6 +513,94 @@ implicit none
 
       case("Idiffus")     ! Diffuse radiation (W/m2); Skip Units conv.
         forall(i=1:limax,j=1:ljmax) hourly(i,j) = Idiffuse(i,j)
+
+     case("MAX6Hgroup") !max6_hourly
+      !  write(*,*) "ik: ",ik
+           call Group_Units(hr_out(ih),gspec,gunit_conv,debug_flag,name)            
+           intmax = find_index(name,imax6_hourly(:)%name)
+           if (intmax .lt. 0) then
+              do n = 1,nmax6_hourly
+                 if (imax6_hourly(n)%name == "none") then
+                    imax6_hourly(n)%name = name
+                    imax6_hourly(n)%ind = ih
+                    intmax = n
+                    exit
+                 endif
+              enddo
+           endif
+           if(allocated(max6_hourly))then
+             
+              do  i=1,limax
+                 do j=1,ljmax
+                    flight_max = 0.
+                    if (ik .eq. KMAX_MID) then
+                       do k_flight = KMAX_MID,1,-1
+                          !  if (me == 23 .and. i == 3 .and. j == 10) write(*,*) "k_flight: ",k_flight,z_mid(i,j,k_flight) 
+                          if (z_mid(i,j,k_flight) .gt. 6096.0) exit !0 - 20 000 feet
+                       enddo
+                       flight_start = KMAX_MID
+                       flight_end   = k_flight+1
+     !                  if (me == 23 .and. i == 3 .and. j == 10)write(*,*) "ik: 20 ",flight_start,flight_end,z_mid(i,j,flight_start),z_mid(i,j,flight_end)
+   
+                    elseif (ik .eq. KMAX_MID-1) then
+                       flight_end =  KMAX_MID
+                       do k_flight = KMAX_MID,1,-1
+                          if (z_mid(i,j,k_flight) .gt. 6096.0 .and.&
+                               z_mid(i,j,flight_end).eq. z_mid(i,j,KMAX_MID)) then
+                             flight_start = k_flight
+                             flight_end   = k_flight
+                          endif
+                          if (z_mid(i,j,k_flight) .gt. 6096.0 &
+                               .and.  z_mid(i,j,k_flight) .lt. 10668.0) flight_end = k_flight
+                          if (z_mid(i,j,k_flight) .gt. 10668.0) exit
+  
+                       enddo
+    
+                    elseif (ik .eq. KMAX_MID-2) then
+
+                     
+                       flight_end =  KMAX_MID
+                       if (z_mid(i,j,1) .lt. 10668.0) then 
+                          flight_end = 1
+                          flight_start = 1
+                       else
+                          do k_flight = KMAX_MID,1,-1
+                             if (z_mid(i,j,k_flight) .gt. 10668.0 .and.&
+                                  z_mid(i,j,flight_end).eq. z_mid(i,j,KMAX_MID)) then
+                                flight_start = k_flight
+                                flight_end   = k_flight
+                                
+                             endif
+                             if (z_mid(i,j,k_flight) .gt. 10668.0 &
+                                  .and.  z_mid(i,j,k_flight) .lt. 15240.0) flight_end = k_flight
+                             if (z_mid(i,j,k_flight) .gt. 15240.0) exit
+                          enddo
+                       endif
+                    
+                    endif
+                    do k_flight = flight_end,flight_start
+                       
+                       temp = dot_product(xn_adv(gspec,i,j,k_flight),  gunit_conv(:))  * roa(i,j,k_flight,1)
+                       
+                       if (flight_max .lt. temp) flight_max = temp
+                    enddo
+                                   
+                 
+                    max6_hourly(intmax,i,j,ik)= max(max6_hourly(intmax,i,j,ik),&
+                         flight_max)              
+                 enddo
+              enddo
+
+          forall(i=1:limax,j=1:ljmax) hourly(i,j) = max6_hourly(intmax,i,j,ik)
+              !endif
+              
+           else
+              hourly(:,:) = 0.0
+           endif
+           if (current_date%hour == 0 .or. current_date%hour == 6 .or.  &
+                current_date%hour == 12 .or. current_date%hour == 18) max6_hourly(:,:,:,ik) = 0.0
+
+
 
       case("D2D_inst")
         call CheckStop(DxD_DEPRECATED,&

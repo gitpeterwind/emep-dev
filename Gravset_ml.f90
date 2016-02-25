@@ -68,14 +68,14 @@ if (first_call) then
       do i=1,size(chemgroups(ash)%ptr)
          if(species(chemgroups(ash)%ptr(i))%name(1:9)==name)cycle
          name=species(chemgroups(ash)%ptr(i))%name(1:9)
-         !write(*,*) "name",name
+         !write(*,*) "name",trim(name),i,size(chemgroups(ash)%ptr)
          volc_group=find_index(name,chemgroups(:)%name)
-        ! write(*,*) "volc_group ",volc_group
+         !write(*,*) "volc_group ",volc_group,size(chemgroups(volc_group)%ptr)
          
          if (volc_group .gt. 0) then
             volc = volc+1
-       !     write(*,*) "inn her? ",volc
-            bins = 9
+        !   write(*,*) "inn her? ",volc
+            bins = size(chemgroups(volc_group)%ptr)
          end if
       enddo
    
@@ -84,6 +84,25 @@ if (first_call) then
       !write(*,*) "volcanoes: ",volc
       name="none"
       allocate(grav_sed(volc,bins))
+      v = 0
+      if (bins == 7 ) then 
+         do i=1,size(chemgroups(ash)%ptr)
+            if(species(chemgroups(ash)%ptr(i))%name(1:9)==name)cycle
+            name=species(chemgroups(ash)%ptr(i))%name(1:9)
+            volc_group=find_index(name,chemgroups(:)%name)
+            v = v+1
+         !   write(*,*) "inn her? ",volc,v,i,trim(name),volc_group
+            grav_sed(v,1) = sediment(chemgroups(volc_group)%ptr(1)-NSPEC_SHL,1.00E-07)
+            grav_sed(v,2) = sediment(chemgroups(volc_group)%ptr(2)-NSPEC_SHL,3.00E-07)
+            grav_sed(v,3) = sediment(chemgroups(volc_group)%ptr(3)-NSPEC_SHL,1.00E-06)
+            grav_sed(v,4) = sediment(chemgroups(volc_group)%ptr(4)-NSPEC_SHL,3.00E-06)
+            grav_sed(v,5) = sediment(chemgroups(volc_group)%ptr(5)-NSPEC_SHL,10.00E-06)
+            grav_sed(v,6) = sediment(chemgroups(volc_group)%ptr(6)-NSPEC_SHL,30.00E-06)
+            grav_sed(v,7) = sediment(chemgroups(volc_group)%ptr(7)-NSPEC_SHL,100.00E-06)
+        !    write(*,*) "specie: ",grav_sed(volc,:)%spec
+        !    write(*,*) "diameter",grav_sed(volc,:)%diameter
+         end do
+      end if
       if (bins == 9 ) then 
          do i=1,size(chemgroups(ash)%ptr)
             if(species(chemgroups(ash)%ptr(i))%name(1:9)==name)cycle
@@ -155,8 +174,9 @@ do j = lj0,lj1
       do  v =1,volc ! loop trough all the ash sedimentation particles
          do b = 1,bins
             do k = 1,KMAX_MID-1
-        
+           !    write(*,*)v,b,grav_sed(v,b)%diameter
                knut = 2*zlair(k)/grav_sed(v,b)%diameter
+            !   write(*,*)"zvis(k): ",k,zvis(k)
                ztemp = 2.*((grav_sed(v,b)%diameter/2)**2)*(density-roa(i,j,k,1))*GRAV/ &! roa [kg m-3]
                     (9.*zvis(k))![m/s]
        ! with Cunningham slip-flow correction
