@@ -766,7 +766,6 @@ contains
                 endif
              enddo
           enddo
-          write(*,*)me,' MAX 2D QRAIN ',maxval(pr(:,:,kmax_mid))
     
         else if(foundcloudwater)then
 
