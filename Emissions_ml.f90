@@ -1862,7 +1862,7 @@ subroutine uemep_emis(indate)
   integer ::icc_uemep,Nuemep_iter,it
   integer, save :: wday , wday_loc ! wday = day of the week 1-7
   integer ::ix,iix
-  real::dt_uemep,xtot
+  real::dt_uemep, xtot, emis_uemep
   logical,save :: first_call=.true.  
 
   if(first_call)then
@@ -1871,6 +1871,12 @@ subroutine uemep_emis(indate)
      uEMEP%ix(1)=63!POM_F_FFUEL
      uEMEP%sector=7
      uEMEP%emis="pm25"
+
+     uEMEP%Nix=2
+     uEMEP%ix(1)=2!NO
+     uEMEP%ix(2)=3!NO2
+     uEMEP%sector=0!all
+     uEMEP%emis="nox "
   endif
 
     dt_uemep=dt_advec
@@ -1896,6 +1902,7 @@ subroutine uemep_emis(indate)
            !*************************************************
            tmpemis(:)=0.
            icc_uemep=0
+           emis_uemep=0.0
            do icc = 1, ncc
               !          iland = landcode(i,j,icc)     ! 1=Albania, etc.
               iland=find_index(landcode(i,j,icc),Country(:)%icode) !array index
@@ -1944,31 +1951,29 @@ subroutine uemep_emis(indate)
                     enddo ! f
 !  ,  IXADV_POM_F_FFUEL =  63   &
                        !advection should be used only once per gridcell! does not work if several countries contribute here
-                       if(icc_uemep/=0)cycle
+                       if(icc_uemep/=0.and.icc_uemep/=icc)cycle
 !                          write(*,*)"Warning, uEMEP: more than one country contribute to the gridcell", i_fdom(i),j_fdom(j),Country(iland)%name
 
                        icc_uemep=icc
 
 88 format(i3,A,20F10.4)
-
-                       !Emissions. Only in lowest level for now
-                       k=kmax_mid
-                       !IXADV_NO2 = 3
-                       !IXADV_NO = 2
-                       !units kg/m2
-                       !total pollutant
-                       xtot=0.0
-                       do iix=1,uEMEP%Nix
-                          ix=uEMEP%ix(iix)
-                          xtot=xtot+(xn_adv(ix,i,j,k)*species_adv(ix)%molwt)*(dA(k)+dB(k)*ps(i,j,1))/ATWAIR/GRAV
-                       enddo
-                       loc_frac(i,j,k)=(s*dt_uemep+loc_frac(i,j,k)*xtot)/(s*dt_uemep+xtot+1.e-20)
+                       emis_uemep=emis_uemep+s*dt_uemep
 
                  enddo ! iem
 
               enddo  ! isec
               !      ==================================================
            enddo ! icc  
+           
+           k=kmax_mid! Emissions only in lowest level for now
+           !units kg/m2
+           !total pollutant
+           xtot=0.0
+           do iix=1,uEMEP%Nix
+              ix=uEMEP%ix(iix)
+              xtot=xtot+(xn_adv(ix,i,j,k)*species_adv(ix)%molwt)*(dA(k)+dB(k)*ps(i,j,1))/ATWAIR/GRAV
+           enddo
+           loc_frac(i,j,k)=(emis_uemep+loc_frac(i,j,k)*xtot)/(emis_uemep+xtot+1.e-20)
         enddo ! i
      enddo ! j
 
