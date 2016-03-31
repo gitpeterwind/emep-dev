@@ -7,7 +7,8 @@ module Emissions_ml
 
 use Biogenics_ml,     only: SoilNOx, AnnualNdep
 use CheckStop_ml,     only: CheckStop,StopAll
-use ChemSpecs,        only: NSPEC_SHL, NSPEC_TOT,NO2, SO2,species
+use ChemSpecs,        only: NSPEC_SHL, NSPEC_TOT,NO2, SO2,species,species_adv
+use Chemfields_ml,     only : xn_adv
 use Country_ml,       only: MAXNLAND,NLAND,Country,IC_NAT,IC_FI,IC_NO,IC_SE
 use Country_ml,       only: EU28,EUMACC2 !CdfSnap
 use EmisDef_ml,       only: &
@@ -59,7 +60,7 @@ use GridValues_ml,    only: GRIDWIDTH_M    & ! size of grid (m)
                            ,xmd,dA,dB,i_fdom,j_fdom,glon,glon,glat
 use Io_Nums_ml,       only: IO_LOG, IO_DMS, IO_EMIS, IO_TMP
 use Io_Progs_ml,      only: ios, open_file, datewrite, PrintLog
-use MetFields_ml,     only: roa, ps, z_bnd, surface_precip ! ps in Pa, roa in kg/m3
+use MetFields_ml,     only: u_xmj, v_xmi, roa, ps, z_bnd, surface_precip,EtaKz ! ps in Pa, roa in kg/m3
 use MetFields_ml,     only: t2_nwp   ! DS_TEST SOILNO - was zero!
 use ModelConstants_ml,only: &
     KMAX_MID, KMAX_BND, PT ,dt_advec, &
@@ -79,15 +80,15 @@ use ModelConstants_ml,only: &
     USE_LIGHTNING_EMIS,USE_AIRCRAFT_EMIS,USE_ROADDUST, &
     USE_EURO_SOILNOX, USE_GLOBAL_SOILNOX, EURO_SOILNOX_DEPSCALE,&! one or the other
     USE_OCEAN_NH3,USE_OCEAN_DMS,FOUND_OCEAN_DMS,&
-    NPROC, EmisSplit_OUT
+    NPROC, EmisSplit_OUT,USE_uEMEP,uEMEP
 use MPI_Groups_ml  , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER&
                             ,MPI_SUM,MPI_COMM_CALC, IERROR
 use NetCDF_ml,        only: ReadField_CDF,ReadField_CDF_FL,ReadTimeCDF,IsCDFfractionFormat,GetCDF_modelgrid,PrintCDF
 use netcdf
 use Par_ml,           only: MAXLIMAX,MAXLJMAX, GIMAX,GJMAX, IRUNBEG,JRUNBEG,&
                             me,limax,ljmax, MSG_READ1,MSG_READ7&
-                           ,gi0,gj0
-use PhysicalConstants_ml,only: GRAV, AVOG
+                           ,gi0,gj0,li0,li1,lj0,lj1
+use PhysicalConstants_ml,only: GRAV, AVOG, ATWAIR
 use PointSource_ml,      only: readstacks !MKPS
 use Setup_1dfields_ml,only: rcemis   ! ESX
 use SmallUtils_ml,    only: find_index
@@ -112,6 +113,7 @@ public :: Emissions         ! Main emissions module
 public :: newmonth
 public :: EmisSet           ! Sets emission rates every hour/time-step
 public :: EmisOut           ! Outputs emissions in ascii
+public :: uemep_emis
 
 ! The main code does not need to know about the following 
 private :: expandcclist            !  expands e.g. EU28, EUMACC2
@@ -146,6 +148,8 @@ integer ::NTime_Read=-1,ncFileID,VarID,found, cdfstatus
 character(len=125) ::fileName_monthly='NOT_SET'!must be initialized with 'NOT_SET'
 character(len=10), private,save ::  incl_monthly(size(emis_inputlist(1)%incl)),excl_monthly(size(emis_inputlist(1)%excl))
 integer, private,save :: nin_monthly, nex_monthly, index_monthly
+real, public, allocatable, dimension(:,:,:), save :: &
+  loc_frac     ! Fraction of pollutants that are produced locally in the gridcell
 
 contains
 !***********************************************************************
@@ -209,7 +213,7 @@ contains
     real, dimension(NLAND,NROAD_FILES) :: sumroaddust_local    ! Sum of emission potentials per country in subdomain
     real :: fractions(LIMAX,LJMAX,NCMAX),SMI(LIMAX,LJMAX),Reduc(NLAND),SMI_roadfactor
     logical ::SMI_defined=.false.
-    logical :: my_first_call=.true.  ! Used for femis call
+    logical,save :: my_first_call=.true.  ! Used for femis call
     logical :: fileExists            ! to test emission files
     character(len=40) :: varname, fmt
     integer ::allocerr, i_gridemis, i_Emis_4D, i_femis_lonlat
@@ -248,7 +252,10 @@ contains
     roaddust_emis_pot=0.0
     allocate(SumSnapEmis(LIMAX,LJMAX,NEMIS_FILE))
     SumSnapEmis=0.0
-
+    if(USE_uEMEP)then
+       allocate(loc_frac(LIMAX,LJMAX,KMAX_MID))
+       loc_frac=0.0
+    endif
     !=========================
     !  call Country_Init() ! In Country_ml, => NLAND, country codes and names, timezone
 
@@ -920,6 +927,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
   integer :: i_Emis_4D,n
   character(len=125) ::varname 
   TYPE(timestamp)   :: ts1,ts2
+  logical, save::firstcall=.true.
 
   ! Initialize
   ehlpcom0 = GRAV* 0.001*AVOG!0.001 = kg_to_g / m3_to_cm3
@@ -931,6 +939,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
   ! time-factor calculation needs to know if a local-time causes a shift 
   ! from day to night.  In addition, we reset an overall day's time-factors
   ! at midnight every day. 
+
 
   hourchange = (indate%hour/=oldhour).or.(indate%day/=oldday)
   if(hourchange) then
@@ -1083,8 +1092,10 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                     endif ! =============== HDD 
 
                     s = tfac * snapemis(isec,i,j,icc,iem)
+
                     ! prelim emis sum kg/m2/s
                     SumSnapEmis(i,j,iem) = SumSnapEmis(i,j,iem) + s
+
                     do f = 1,emis_nsplit(iem)
                        iqrc = iqrc + 1
                        itot = iqrc2itot(iqrc)
@@ -1227,6 +1238,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
      if(MYDEBUG.and.debug_proc) &    ! emis sum kg/m2/s
           call datewrite("SnapSum, kg/m2/s:"//trim(EMIS_FILE(iemCO)), &
           (/ SumSnapEmis(debug_li,debug_lj,iemCO)  /) )
+
   endif ! hourchange 
 
   ! We now scale gridrcemis to get emissions in molecules/cm3/s
@@ -1824,4 +1836,144 @@ subroutine EmisOut(label, iem,nsources,sources,emis)
 !  deallocate(locemis,lemis)
 
 endsubroutine EmisOut
+
+subroutine uemep_emis(indate)
+
+  implicit none
+  type(date), intent(in) :: indate  ! Gives year..seconds
+  integer :: i, j, k, f       ! cooridnates, loop variables
+  integer :: icc, ncc         ! No. of countries in grid.
+  integer :: ficc,fncc        ! No. of countries with
+  integer :: iqrc             ! emis indices 
+  integer :: isec             ! loop variables: emission sectors
+  integer :: iem              ! loop variable over 1..NEMIS_FILE
+  integer :: itot             ! index in xn()
+
+  ! Save daytime value between calls, initialise to zero
+  integer, save, dimension(MAXNLAND) ::  daytime = 0  !  0=night, 1=day
+  integer, save, dimension(MAXNLAND) ::  localhour = 1  ! 1-24 local hour in the different countries, ? How to handle Russia, with multiple timezones???
+  integer                         ::  hourloc      !  local hour 
+  logical                         ::  hourchange   !             
+  real, dimension(NRCEMIS)        ::  tmpemis      !  local array for emissions
+  real ::  tfac, dtgrid    ! time-factor (tmp variable); dt*h*h for scaling
+  real ::  s               ! source term (emis) before splitting
+  integer :: iland, iland_timefac  ! country codes, and codes for timefac 
+  integer :: daytime_longitude, daytime_iland, hour_longitude, hour_iland,nstart
+  integer ::icc_uemep,Nuemep_iter,it
+  integer, save :: wday , wday_loc ! wday = day of the week 1-7
+  integer ::ix,iix
+  real::dt_uemep,xtot
+  logical,save :: first_call=.true.  
+
+  if(first_call)then
+     !init uemep
+     uEMEP%Nix=1
+     uEMEP%ix(1)=63!POM_F_FFUEL
+     uEMEP%sector=7
+     uEMEP%emis="pm25"
+  endif
+
+    dt_uemep=dt_advec
+
+    wday=day_of_week(indate%year,indate%month,indate%day)
+    if(wday==0)wday=7 ! Sunday -> 7
+    do iland = 1, NLAND
+       daytime(iland) = 0
+       hourloc        = indate%hour + Country(iland)%timezone
+       localhour(iland) = hourloc  ! here from 0 to 23
+       if(hourloc>=7 .and. hourloc<=18) daytime(iland)=1
+    enddo ! iland
+    
+     do j = lj0,lj1
+        do i = li0,li1
+           ncc = nlandcode(i,j)            ! No. of countries in grid
+           hourloc= mod(nint(indate%hour+24*(1+glon(i,j)/360.0)),24)
+           hour_longitude=hourloc
+           daytime_longitude=0
+           if(hourloc>=7 .and. hourloc<= 18) daytime_longitude=1            
+           !*************************************************
+           ! First loop over non-flat (one sector) emissions
+           !*************************************************
+           tmpemis(:)=0.
+           icc_uemep=0
+           do icc = 1, ncc
+              !          iland = landcode(i,j,icc)     ! 1=Albania, etc.
+              iland=find_index(landcode(i,j,icc),Country(:)%icode) !array index
+
+              !array index of country that should be used as reference for timefactor
+              iland_timefac = find_index(Country(iland)%timefac_index,Country(:)%timefac_index)
+
+              if(Country(iland)%timezone==-100)then
+                 daytime_iland=daytime_longitude
+                 hour_iland=hour_longitude + 1   ! add 1 to get 1..24 
+              else
+                 daytime_iland=daytime(iland)
+                 hour_iland=localhour(iland) + 1
+              endif
+              !if( hour_iland > 24 ) hour_iland = 1 !DSA12
+              wday_loc=wday 
+              if(hour_iland>24) then
+                 hour_iland = hour_iland - 24
+                 wday_loc=wday + 1
+                 if(wday_loc==0)wday_loc=7 ! Sunday -> 7
+                 if(wday_loc>7 )wday_loc=1 
+              endif
+
+              do isec = 1, NSECTORS       ! Loop over snap codes
+                 if(isec/=uEMEP%sector .and. uEMEP%sector/=0)cycle
+                 ! Calculate emission rates from snapemis, time-factors, 
+                 ! and if appropriate any speciation fraction (NEMIS_FRAC)
+                 iqrc = 0   ! index over emisfrac
+                 do iem = 1, NEMIS_FILE 
+                    if(trim(EMIS_File(iem))/=trim(uEMEP%emis))cycle
+                    tfac = timefac(iland_timefac,isec,iem) &
+                         * fac_ehh24x7(isec,hour_iland,wday_loc)
+
+                    !it is best to multiply only if USES%GRIDDED_EMIS_MONTHLY_FACTOR
+                    !in order not to access the array and waste cache if not necessary
+                    !if(USES%GRIDDED_EMIS_MONTHLY_FACTOR)tfac=tfac* GridTfac(i,j,isec,iem)
+
+                    s = tfac * snapemis(isec,i,j,icc,iem)
+
+                    ! prelim emis sum kg/m2/s
+
+                    do f = 1,emis_nsplit(iem)
+                       iqrc = iqrc + 1
+                       itot = iqrc2itot(iqrc)
+                       tmpemis(iqrc) = s * emisfrac(iqrc,isec,iland)
+                    enddo ! f
+!  ,  IXADV_POM_F_FFUEL =  63   &
+                       !advection should be used only once per gridcell! does not work if several countries contribute here
+                       if(icc_uemep/=0)cycle
+!                          write(*,*)"Warning, uEMEP: more than one country contribute to the gridcell", i_fdom(i),j_fdom(j),Country(iland)%name
+
+                       icc_uemep=icc
+
+88 format(i3,A,20F10.4)
+
+                       !Emissions. Only in lowest level for now
+                       k=kmax_mid
+                       !IXADV_NO2 = 3
+                       !IXADV_NO = 2
+                       !units kg/m2
+                       !total pollutant
+                       xtot=0.0
+                       do iix=1,uEMEP%Nix
+                          ix=uEMEP%ix(iix)
+                          xtot=xtot+(xn_adv(ix,i,j,k)*species_adv(ix)%molwt)*(dA(k)+dB(k)*ps(i,j,1))/ATWAIR/GRAV
+                       enddo
+                       loc_frac(i,j,k)=(s*dt_uemep+loc_frac(i,j,k)*xtot)/(s*dt_uemep+xtot+1.e-20)
+
+                 enddo ! iem
+
+              enddo  ! isec
+              !      ==================================================
+           enddo ! icc  
+        enddo ! i
+     enddo ! j
+
+     first_call=.false. 
+
+end subroutine uemep_emis
+
 endmodule Emissions_ml

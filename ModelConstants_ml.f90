@@ -10,7 +10,7 @@ use Aerofunctions,        only: DpgV2DpgN
 use CheckStop_ml,         only: CheckStop
 use ChemSpecs,            only: species
 use Io_Nums_ml,           only: IO_NML, IO_LOG
-use OwnDataTypes_ml,      only: typ_ss
+use OwnDataTypes_ml,      only: typ_ss, uEMEP_type
 use Precision_ml,         only: dp
 use SmallUtils_ml,        only: find_index
 
@@ -167,7 +167,10 @@ logical, public, save ::             &
  ,JUMPOVER29FEB      = .false.         ! When current date is 29th February, jump to next date. 
                                        !NB: this is not identical to assuming not a leap year,
                                        !for instance the assumed number of days in the year  will still be 366
-                                       
+logical, public, save :: USE_uEMEP = .false.  ! make local fraction of pollutants
+type(uEMEP_type), public, save :: uEMEP
+
+                                      
 integer, public, save :: &
   FREQ_3DHOURLY = 1  ! 3Dhourly netcdf special output frequency
 

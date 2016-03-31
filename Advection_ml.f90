@@ -66,37 +66,38 @@
 !
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
   use Chemfields_ml,     only : xn_adv
-  use ChemSpecs,         only : NSPEC_ADV
+  use ChemSpecs,         only : NSPEC_ADV,species,species_adv
 !CRM  use ChemSpecs_adv_ml , only : NSPEC_ADV
   use CheckStop_ml,      only : CheckStop,StopAll
   use Convection_ml,     only : convection_pstar,convection_Eta
+  use Emissions_ml,      only : loc_frac
   use GridValues_ml,     only : GRIDWIDTH_M,xm2,xmd,xm2ji,xmdji, &
-                                xm_i, Pole_Singular,dA,dB
+                                xm_i, Pole_Singular,dA,dB,i_fdom,j_fdom,i_local,j_local,Eta_bnd
   use Io_ml,             only : datewrite
   use ModelConstants_ml, only : KMAX_BND,KMAX_MID,NMET, nstep, nmax, &
                   dt_advec, dt_advec_inv,  PT,Pref, KCHEMTOP, NPROCX,NPROCY,NPROC, &
                   FORECAST,& 
-                  USE_CONVECTION,DEBUG_ADV
+                  USE_CONVECTION,DEBUG_ADV,USE_uEMEP,uEMEP
   use MetFields_ml,      only : ps,sdot,Etadot,SigmaKz,EtaKz,u_xmj,v_xmi,cnvuf,cnvdf&
                                 ,uw,ue,vs,vn
   use MassBudget_ml,     only : fluxin_top,fluxout_top,fluxin,fluxout
   use My_Timing_ml,      only : Code_timer, Add_2timing, tim_before,tim_after
   use MPI_Groups_ml,      only :MPI_DOUBLE_PRECISION, MPI_MAX, MPI_SUM,MPI_INTEGER, MPI_BYTE, IERROR,&
                             MPISTATUS, MPI_COMM_IO, MPI_COMM_CALC, ME_IO, ME_CALC, ME_MPI,MPI_IN_PLACE,&
-                            request_ps_n,request_ps_s,request_xn_n,request_xn_s,request_ps_n,&
-                            request_ps_s, request_ps_e,request_ps_w, request_xn_w, request_xn_e
+                            request_n,request_s,request_xn_n,request_xn_s,&
+                            request_e,request_w, request_xn_w, request_xn_e
   use Par_ml,            only : LIMAX,LJMAX,GJMAX,GIMAX,me,mex,mey,&
             li0,li1,lj0,lj1 ,limax,ljmax, gi0, IRUNBEG,gj0, JRUNBEG &
            ,neighbor,WEST,EAST,SOUTH,NORTH,NOPROC            &
            ,MSG_NORTH2,MSG_EAST2,MSG_SOUTH2,MSG_WEST2
-  use PhysicalConstants_ml, only : GRAV ! gravity
+  use PhysicalConstants_ml, only : GRAV,ATWAIR ! gravity
 
   implicit none
   private
 
   integer, private, parameter :: NADVS      =  3
 
-  real, private, save, allocatable,dimension(:)  ::  dhs1, dhs1i, dhs2i
+  real, public, save, allocatable,dimension(:)  ::  dhs1, dhs1i, dhs2i
 
 !  for vertical advection (nonequidistant spacing)
   real, private, save, allocatable, dimension(:,:,:)  ::  alfnew
@@ -117,6 +118,7 @@
   public :: advecdiff
   public :: advecdiff_poles
   public :: advecdiff_Eta
+  public :: vertdiff_1d
 !  public :: adv_var
 !  public :: adv_int
 
@@ -283,6 +285,8 @@
     integer,parameter :: NITERXMAX=10
 
     xxdg=GRIDWIDTH_M*GRIDWIDTH_M/GRAV !constant used in loops
+
+    if(USE_uEMEP)call uemep_advec
 
     call Code_timer(tim_before)
 
@@ -674,7 +678,6 @@
     enddo
 
 
-
     if(USE_CONVECTION)then
 
        call CheckStop(ADVEC_TYPE/=1, "ADVEC_TYPE no longer supported")
@@ -765,6 +768,8 @@
        ds4(k) = dt_advec*dhs1i(k+1)*dhs2i(k)
     enddo
 
+    if(USE_uEMEP)call uemep_diff
+
     ! sum is conserved under vertical diffusion
     !   sum = 0.
     !   do k=1,KMAX_MID
@@ -776,6 +781,7 @@
           call vertdiffn(xn_adv(1,i,j,1),EtaKz(i,j,1,1),ds3,ds4,ndiff)
        enddo
     enddo
+
     !   sum = 0.
     !   do k=1,KMAX_MID
     !      sum = sum + xn_adv(1,4,4,k)/dhs1i(k+1)
@@ -1332,6 +1338,56 @@
     enddo
 
   end subroutine vertdiff
+! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+  subroutine vertdiff_1d(xn_adv,SigmaKz,ds3,ds4)
+
+!     executes vertical diffusion
+
+    use ModelConstants_ml  , only : KCHEMTOP, EPSIL
+
+    implicit none
+
+!    input
+    real,intent(in)::  SigmaKz(0:LIMAX*LJMAX*KMAX_BND-1)
+    real,intent(in)::  ds3(KMAX_MID-1),ds4(KMAX_MID-1)
+
+!    output
+    real ,intent(inout):: xn_adv(KMAX_MID)
+
+!    local
+
+    integer  k
+    real, dimension(KMAX_MID) :: adif,bdif,cdif,e1
+
+    do k = 1,KMAX_MID-1
+      adif(k) = SigmaKz(k*LIMAX*LJMAX)*ds3(k)
+      bdif(k+1) = SigmaKz(k*LIMAX*LJMAX)*ds4(k)
+    enddo
+
+    cdif(KMAX_MID) = 1./(1. + bdif(KMAX_MID))
+    e1(KMAX_MID) = bdif(KMAX_MID)*cdif(KMAX_MID)
+    xn_adv(KMAX_MID) = &
+      xn_adv(KMAX_MID)*cdif(KMAX_MID)
+
+    do k = KMAX_MID-1,2,-1
+      cdif(k) = 1./(1. + bdif(k) + adif(k) - adif(k)*e1(k+1))
+      e1(k) = bdif(k)*cdif(k)
+      xn_adv(k) =                 &
+          (xn_adv(k)              &
+         +adif(k)*xn_adv(k+1)*cdif(k))
+    enddo
+
+    cdif(1) = 1./(1. + adif(1) - adif(1)*e1(2))
+    xn_adv(1) = (xn_adv(1) + adif(1)*xn_adv(2))*cdif(1)
+
+    do k = 2,KMAX_MID
+      xn_adv(k) =                &
+          e1(k)*xn_adv(k-1)        &
+         +xn_adv(k)
+    enddo
+
+  end subroutine vertdiff_1d
 
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -2636,7 +2692,7 @@
       CALL MPI_ISEND( buf_xn_w, 8*3*LJMAX*NSPEC_ADV, MPI_BYTE, &
           neighbor(WEST), msgnr    , MPI_COMM_CALC, request_xn_w, IERROR)
       CALL MPI_ISEND( buf_ps_w, 8*3*LJMAX          ,MPI_BYTE, &
-          neighbor(WEST), msgnr+100, MPI_COMM_CALC, request_ps_w, IERROR)
+          neighbor(WEST), msgnr+100, MPI_COMM_CALC, request_w, IERROR)
     endif
 
     if (neighbor(EAST).ge.0) then
@@ -2653,7 +2709,7 @@
       CALL MPI_ISEND( buf_xn_e, 8*3*LJMAX*NSPEC_ADV, MPI_BYTE, &
           neighbor(EAST), msgnr+200, MPI_COMM_CALC, request_xn_e, IERROR)
       CALL MPI_ISEND( buf_ps_e, 8*3*LJMAX          , MPI_BYTE, &
-          neighbor(EAST), msgnr+300, MPI_COMM_CALC, request_ps_e, IERROR)
+          neighbor(EAST), msgnr+300, MPI_COMM_CALC, request_e, IERROR)
     endif
 
 
@@ -2718,11 +2774,11 @@
     !  synchronizing sent buffers (must be done for all ISENDs!!!)
     if (neighbor(WEST) .ge. 0) then
       CALL MPI_WAIT(request_xn_w, MPISTATUS, IERROR)
-      CALL MPI_WAIT(request_ps_w, MPISTATUS, IERROR)
+      CALL MPI_WAIT(request_w, MPISTATUS, IERROR)
     endif
     if (neighbor(EAST) .ge. 0) then
       CALL MPI_WAIT(request_xn_e, MPISTATUS, IERROR)
-      CALL MPI_WAIT(request_ps_e, MPISTATUS, IERROR)
+      CALL MPI_WAIT(request_e, MPISTATUS, IERROR)
     endif
   end subroutine preadvx
 
@@ -2773,7 +2829,7 @@
       CALL MPI_ISEND( buf_xn_w, 8*3*NSPEC_ADV, MPI_BYTE,&
           neighbor(WEST), msgnr    , MPI_COMM_CALC, request_xn_w, IERROR)
       CALL MPI_ISEND( buf_ps_w, 8*3          , MPI_BYTE,&
-          neighbor(WEST), msgnr+100, MPI_COMM_CALC, request_ps_w, IERROR)
+          neighbor(WEST), msgnr+100, MPI_COMM_CALC, request_w, IERROR)
     endif
 
     if (neighbor(EAST).ge.0) then
@@ -2790,7 +2846,7 @@
       CALL MPI_ISEND( buf_xn_e, 8*3*NSPEC_ADV, MPI_BYTE,&
           neighbor(EAST), msgnr+200, MPI_COMM_CALC, request_xn_e, IERROR)
       CALL MPI_ISEND( buf_ps_e, 8*3          , MPI_BYTE,&
-          neighbor(EAST), msgnr+300, MPI_COMM_CALC, request_ps_e, IERROR)
+          neighbor(EAST), msgnr+300, MPI_COMM_CALC, request_e, IERROR)
     endif
 
 
@@ -2855,11 +2911,11 @@
     !  synchronizing sent buffers (must be done for all ISENDs!!!)
     if (neighbor(WEST) .ge. 0) then
       CALL MPI_WAIT(request_xn_w, MPISTATUS, IERROR)
-      CALL MPI_WAIT(request_ps_w, MPISTATUS, IERROR)
+      CALL MPI_WAIT(request_w, MPISTATUS, IERROR)
     endif
     if (neighbor(EAST) .ge. 0) then
       CALL MPI_WAIT(request_xn_e, MPISTATUS, IERROR)
-      CALL MPI_WAIT(request_ps_e, MPISTATUS, IERROR)
+      CALL MPI_WAIT(request_e, MPISTATUS, IERROR)
     endif
   end subroutine preadvx2
 
@@ -2908,7 +2964,7 @@
       CALL MPI_ISEND( buf_xn_s, 8*3*LIMAX*NSPEC_ADV, MPI_BYTE,&
             neighbor(SOUTH), msgnr    , MPI_COMM_CALC, request_xn_s, IERROR)
       CALL MPI_ISEND( buf_ps_s, 8*3*LIMAX          , MPI_BYTE,&
-            neighbor(SOUTH), msgnr+100, MPI_COMM_CALC, request_ps_s, IERROR)
+            neighbor(SOUTH), msgnr+100, MPI_COMM_CALC, request_s, IERROR)
     endif
 
     if (neighbor(NORTH) .ge. 0) then
@@ -2925,7 +2981,7 @@
       CALL MPI_ISEND( buf_xn_n, 8*3*LIMAX*NSPEC_ADV, MPI_BYTE,&
             neighbor(NORTH), msgnr    , MPI_COMM_CALC, request_xn_n, IERROR)
       CALL MPI_ISEND( buf_ps_n, 8*3*LIMAX          , MPI_BYTE, &
-            neighbor(NORTH), msgnr+100, MPI_COMM_CALC, request_ps_n, IERROR)
+            neighbor(NORTH), msgnr+100, MPI_COMM_CALC, request_n, IERROR)
     endif
 
 !     receive from SOUTH neighbor if any
@@ -2997,11 +3053,11 @@
 !  synchronizing sent buffers (must be done for all ISENDs!!!)
     if (neighbor(SOUTH) .ge. 0) then
       CALL MPI_WAIT(request_xn_s, MPISTATUS, IERROR)
-      CALL MPI_WAIT(request_ps_s, MPISTATUS, IERROR)
+      CALL MPI_WAIT(request_s, MPISTATUS, IERROR)
     endif
     if (neighbor(NORTH) .ge. 0) then
       CALL MPI_WAIT(request_xn_n, MPISTATUS, IERROR)
-      CALL MPI_WAIT(request_ps_n, MPISTATUS, IERROR)
+      CALL MPI_WAIT(request_n, MPISTATUS, IERROR)
     endif
 
   end subroutine preadvy
@@ -3052,7 +3108,7 @@
       CALL MPI_ISEND( buf_xn_s, 8*3*NSPEC_ADV, MPI_BYTE,&
             neighbor(SOUTH), msgnr    , MPI_COMM_CALC, request_xn_s, IERROR)
       CALL MPI_ISEND( buf_ps_s, 8*3          , MPI_BYTE,&
-            neighbor(SOUTH), msgnr+100, MPI_COMM_CALC, request_ps_s, IERROR)
+            neighbor(SOUTH), msgnr+100, MPI_COMM_CALC, request_s, IERROR)
     endif
 
     if (neighbor(NORTH) .ge. 0) then
@@ -3069,7 +3125,7 @@
       CALL MPI_ISEND( buf_xn_n, 8*3*NSPEC_ADV, MPI_BYTE,&
             neighbor(NORTH), msgnr    , MPI_COMM_CALC, request_xn_n, IERROR)
       CALL MPI_ISEND( buf_ps_n, 8*3          , MPI_BYTE,&
-            neighbor(NORTH), msgnr+100, MPI_COMM_CALC, request_ps_n, IERROR)
+            neighbor(NORTH), msgnr+100, MPI_COMM_CALC, request_n, IERROR)
     endif
 
 !     receive from SOUTH neighbor if any
@@ -3139,11 +3195,11 @@
 !  synchronizing sent buffers (must be done for all ISENDs!!!)
     if (neighbor(SOUTH) .ge. 0) then
       CALL MPI_WAIT(request_xn_s, MPISTATUS, IERROR)
-      CALL MPI_WAIT(request_ps_s, MPISTATUS, IERROR)
+      CALL MPI_WAIT(request_s, MPISTATUS, IERROR)
     endif
     if (neighbor(NORTH) .ge. 0) then
       CALL MPI_WAIT(request_xn_n, MPISTATUS, IERROR)
-      CALL MPI_WAIT(request_ps_n, MPISTATUS, IERROR)
+      CALL MPI_WAIT(request_n, MPISTATUS, IERROR)
     endif
 
   end subroutine preadvy2
@@ -3633,5 +3689,170 @@
     endif
 
   end subroutine adv_vert_fourth
+
+  subroutine uemep_advec
+    integer ::i,j,k,ix,iix
+    real::dt_uemep, f_in,xtot,C1,C2,C3,C4,C5,C6
+    real::xn(0:limax+1,0:ljmax+1,KMAX_MID)
+    real::esnd(ljmax,KMAX_MID),wsnd(ljmax,KMAX_MID),ssnd(limax,KMAX_MID),nsnd(limax,KMAX_MID)
+
+    dt_uemep=dt_advec
+
+    do k=1,kmax_mid
+       do j = 1,ljmax
+          do i = 1,limax
+             xn(i,j,k)=0.0
+             do iix=1,uEMEP%Nix
+                ix=uEMEP%ix(iix)
+                xn(i,j,k)=xn(i,j,k)+xn_adv(ix,i,j,k)!assumes mixing ratios units
+             enddo
+          enddo
+       enddo
+    enddo
+    !extend the i or j index to 0 and lmax + 1
+    !Note: the 4 diagonal cells (0,lmax+1) are not set (but not used either)
+    if (neighbor(EAST) .ne. NOPROC) then
+       esnd(1:ljmax,:) = xn(limax,1:ljmax,:)
+       CALL MPI_ISEND( esnd, 8*LJMAX*KMAX_MID, MPI_BYTE,  &
+            neighbor(EAST), MSG_WEST2, MPI_COMM_CALC, request_e, IERROR)
+    endif
+    if (neighbor(WEST) .ne. NOPROC) then
+       wsnd(1:ljmax,:) = xn(1,1:ljmax,:)
+       CALL MPI_ISEND( wsnd, 8*LJMAX*KMAX_MID, MPI_BYTE,  &
+            neighbor(WEST), MSG_EAST2, MPI_COMM_CALC, request_w, IERROR)
+    endif
+    if (neighbor(NORTH) .ne. NOPROC) then
+       nsnd(1:limax,:) =xn(1:limax,ljmax,:)
+       CALL MPI_ISEND( nsnd , 8*LIMAX*KMAX_MID, MPI_BYTE,  &
+            neighbor(NORTH), MSG_SOUTH2, MPI_COMM_CALC, request_n, IERROR)
+    endif
+    if (neighbor(SOUTH) .ne. NOPROC) then
+       ssnd(1:limax,:) =xn(1:limax,1,:)
+       CALL MPI_ISEND( ssnd , 8*LIMAX*KMAX_MID, MPI_BYTE,  &
+            neighbor(SOUTH), MSG_NORTH2, MPI_COMM_CALC, request_s, IERROR)
+    endif
+
+
+    if (neighbor(WEST) .ne. NOPROC) then
+       CALL MPI_RECV( xn(0,1:ljmax,:), 8*LJMAX*KMAX_MID, MPI_BYTE, &
+            neighbor(WEST), MSG_WEST2, MPI_COMM_CALC, MPISTATUS, IERROR)
+    else
+       xn(0,:,:) = xn(1,:,:)
+    endif
+    if (neighbor(EAST) .ne. NOPROC) then
+       CALL MPI_RECV( xn(limax+1,1:ljmax,:), 8*LJMAX*KMAX_MID, MPI_BYTE, &
+            neighbor(EAST), MSG_EAST2, MPI_COMM_CALC, MPISTATUS, IERROR)
+    else
+       xn(limax+1,:,:) = xn(limax,:,:)
+    endif
+
+    if (neighbor(SOUTH) .ne. NOPROC) then
+       CALL MPI_RECV(xn(1:limax,0,:)  , 8*LIMAX*KMAX_MID, MPI_BYTE,  &
+            neighbor(SOUTH), MSG_SOUTH2, MPI_COMM_CALC, MPISTATUS, IERROR)
+    else
+       xn(:,0,:)=xn(:,1,:)
+    endif
+    if (neighbor(NORTH) .ne. NOPROC) then
+       CALL MPI_RECV(xn(1:limax,ljmax+1,:)  , 8*LIMAX*KMAX_MID, MPI_BYTE,  &
+            neighbor(NORTH), MSG_NORTH2, MPI_COMM_CALC, MPISTATUS, IERROR)
+    else
+       xn(:,ljmax+1,:)=xn(:,ljmax,:)
+    endif
+ 
+    if(neighbor(EAST) .ne. NOPROC) CALL MPI_WAIT(request_e, MPISTATUS, IERROR)
+    if(neighbor(WEST) .ne. NOPROC) CALL MPI_WAIT(request_w, MPISTATUS, IERROR)
+    if(neighbor(NORTH) .ne. NOPROC)CALL MPI_WAIT(request_n, MPISTATUS, IERROR)
+    if(neighbor(SOUTH) .ne. NOPROC)CALL MPI_WAIT(request_s, MPISTATUS, IERROR)
+
+     do j = 1,ljmax
+        do i = 1,limax
+           do k=2,kmax_mid
+              
+              !horizontal advection
+              !the flux out of the cell does not change loc_frac, but it does change xtot
+              f_in=0.0!flux into the gridcell
+              !Courant numbers
+              C1=0.0
+              C2=0.0
+              C3=0.0
+              C4=0.0
+              C5=0.0
+              C6=0.0
+              if(u_xmj(i-1,j,k,1)>0.0)then
+                 C1=u_xmj(i-1,j,k,1)/gridwidth_m*xm2(i,j)*dt_uemep
+                 C1=min(C1,1.0)
+                 f_in=C1*xn(i-1,j,k)
+                 xtot=(1.0-C1)*xn(i,j,k)
+                 loc_frac(i,j,k)=(loc_frac(i,j,k)*xtot)/(xtot+f_in+1.e-20)
+              endif
+              if(u_xmj(i,j,k,1)<0.0)then
+                 C2=-u_xmj(i,j,k,1)/gridwidth_m*xm2(i,j)*dt_uemep
+                 C2=min(C2,1.0)
+                 f_in=C2*xn(i+1,j,k)
+                 xtot=(1.0-C2)*xn(i,j,k)
+                 loc_frac(i,j,k)=(loc_frac(i,j,k)*xtot)/(xtot+f_in+1.e-20)
+              endif
+              if(v_xmi(i,j-1,k,1)>0.0)then
+                 C3=v_xmi(i,j-1,k,1)/gridwidth_m*xm2(i,j)*dt_uemep
+                 C3=min(C3,1.0)
+                 f_in=C3*xn(i,j-1,k)
+                 xtot=(1.0-C3)*xn(i,j,k)
+                 loc_frac(i,j,k)=(loc_frac(i,j,k)*xtot)/(xtot+f_in+1.e-20)
+              endif
+              if(v_xmi(i,j,k,1)<0.0)then
+                 C4=-v_xmi(i,j,k,1)/gridwidth_m*xm2(i,j)*dt_uemep
+                 C4=min(C4,1.0)
+                 f_in=C4*xn(i,j+1,k)
+                 xtot=(1.0-C4)*xn(i,j,k)
+                 loc_frac(i,j,k)=(loc_frac(i,j,k)*xtot)/(xtot+f_in+1.e-20)
+              endif
+
+!vertical advection of loc_frac negligible
+
+           enddo!k
+
+        enddo ! i
+     enddo ! j
+
+
+  end subroutine uemep_advec
+
+  subroutine uemep_diff
+    integer ::i,j,k,ix,iix
+    real::dt_uemep,xn_k_loc(kmax_mid),xn_k(kmax_mid)
+    real ds3(2:KMAX_MID),ds4(2:KMAX_MID)
+    logical, save::firstcall=.true.
+    ix=63
+    dt_uemep=dt_advec
+    ds3=0.0
+    ds4=0.0
+
+    do k = 2,KMAX_MID
+       ds3(k) = dt_uemep*dhs1i(k)*dhs2i(k)
+       ds4(k) = dt_uemep*dhs1i(k+1)*dhs2i(k)
+    enddo
+    
+    do j = 1,ljmax
+       do i = 1,limax
+          !save vertical column
+          do k=1,KMAX_MID
+             xn_k(k)=0.0
+             xn_k_loc(k)=0.0
+             do iix=1,uEMEP%Nix
+                ix=uEMEP%ix(iix)
+                xn_k(k)=xn_k(k)+xn_adv(ix,i,j,k)*species_adv(ix)%molwt
+                xn_k_loc(k)=xn_k_loc(k)+(xn_adv(ix,i,j,k)*species_adv(ix)%molwt)*loc_frac(i,j,k)
+             enddo
+          enddo
+          call vertdiff_1d(xn_k,EtaKz(i,j,1,1),ds3,ds4)
+          call vertdiff_1d(xn_k_loc,EtaKz(i,j,1,1),ds3,ds4)
+          
+          do k=2,KMAX_MID
+             loc_frac(i,j,k)=xn_k_loc(k)/(xn_k(k)+1.E-20)
+          enddo
+       enddo
+    enddo
+    
+  end subroutine uemep_diff
 
 end module Advection_ml

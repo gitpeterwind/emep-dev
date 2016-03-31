@@ -123,6 +123,14 @@ private
   endtype VBST
   !==================
 
+  !==================
+  ! uEMEP parameters
+  type, public :: uEMEP_type
+    integer     :: Nix      ! Number of components to take
+    integer, dimension(5)  :: ix    ! Index of components to take
+    integer     :: sector    ! if only one sector is to be taken
+    character(len=4):: emis    ! one of EMIS_File: "sox ", "nox ", "co  ", "voc ", "nh3 ", "pm25", "pmco"
+  endtype uEMEP_type
 
 
 contains

@@ -45,7 +45,7 @@ use ModelConstants_ml, only : MasterProc, SOURCE_RECEPTOR  &
                         , Y=>IOU_YEAR, M=>IOU_MON, D=>IOU_DAY, H=>IOU_HOUR &
                         , KMAX_MID &  ! =>  z dimension
                         ,IIFULLDOM,JJFULLDOM,RUNDOMAIN&
-                        ,fullrun_DOMAIN,month_DOMAIN,day_DOMAIN,hour_DOMAIN
+                        ,fullrun_DOMAIN,month_DOMAIN,day_DOMAIN,hour_DOMAIN,USE_uEMEP
 use MosaicOutputs_ml, only : nMosaic, MAX_MOSAIC_OUTPUTS, MosaicOutput, & !
   Init_MosaicMMC,  Add_MosaicMetConcs, &
   Add_NewMosaics, Add_MosaicVEGO3, Add_MosaicDDEP!, &
@@ -334,6 +334,10 @@ private
    end if
    if(USE_OCEAN_DMS)then
      tag_name(1) = "Emis_mgm2_DMS"
+     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
+   end if
+   if(USE_uEMEP)then
+     tag_name(1) = "Local_Fraction"
      call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
    end if
    if(EmisSplit_OUT)then

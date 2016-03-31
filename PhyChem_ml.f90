@@ -15,10 +15,10 @@ use DA_3DVar_ml,      only: main_3dvar, T_3DVAR ! 3D-VAR Analysis
 use Derived_ml,       only: DerivedProds, Derived, num_deriv2d
 use DerivedFields_ml, only: d_2d, f_2d
 use DryDep_ml,        only: init_drydep
-use Emissions_ml,     only: EmisSet
+use Emissions_ml,     only: EmisSet,uemep_emis,loc_frac
 !use Gravset_ml,       only: gravset
 use GridValues_ml,    only: debug_proc,debug_li,debug_lj,&
-                            glon,glat,projection
+                            glon,glat,projection,i_local,j_local,i_fdom,j_fdom
 use ModelConstants_ml,only: KMAX_MID, nmax, nstep &
                            ,dt_advec       & ! time-step for phyche/advection
                            ,DEBUG, PPBINV, PPTINV  & 
@@ -29,7 +29,8 @@ use ModelConstants_ml,only: KMAX_MID, nmax, nstep &
                            ,SOURCE_RECEPTOR&
 !                           ,USE_GRAVSET&
                            ,FREQ_3DHOURLY    & ! hourly netcdf output frequency
-                           ,USE_POLLEN, USE_EtaCOORDINATES,JUMPOVER29FEB
+                           ,USE_POLLEN, USE_EtaCOORDINATES,JUMPOVER29FEB&
+                           ,USE_uEMEP
 use MetFields_ml,     only: ps,roa,z_bnd,z_mid,cc3dmax, &
                             zen,coszen,Idirect,Idiffuse
 use OutputChem_ml,    only: WrtChem
@@ -179,6 +180,8 @@ subroutine phyche()
   call debug_concs("PhyChe pre-chem ")
 
   !************ NOW THE HEAVY BIT **************************!
+
+  if(USE_uEMEP)call uemep_emis(current_date)
 
   call runchem()   !  calls setup subs and runs chemistry
 
