@@ -41,9 +41,9 @@ use DerivedFields_ml, only: MAXDEF_DERIV2D, MAXDEF_DERIV3D, &
                             def_2d, def_3d, f_2d, f_3d, d_2d, d_3d
 use EcoSystem_ml,     only: DepEcoSystem, NDEF_ECOSYSTEMS, &
                             EcoSystemFrac,FULL_ECOGRID
-use EmisDef_ml,       only: EMIS_FILE,O_DMS
+use EmisDef_ml,       only: EMIS_FILE, O_DMS, loc_frac
 use EmisGet_ml,       only: nrcemis,iqrc2itot
-use Emissions_ml,     only: SumSnapEmis, SumSplitEmis, loc_frac
+use Emissions_ml,     only: SumSnapEmis, SumSplitEmis
 use GridValues_ml,    only: debug_li, debug_lj, debug_proc, A_mid, B_mid, &
                             xm2, GRIDWIDTH_M, GridArea_m2,xm_i,xm_j,glon,glat
 use Io_Progs_ml,      only: datewrite

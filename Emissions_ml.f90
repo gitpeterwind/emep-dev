@@ -8,6 +8,7 @@ module Emissions_ml
 use Biogenics_ml,     only: SoilNOx, AnnualNdep
 use CheckStop_ml,     only: CheckStop,StopAll
 use ChemSpecs,        only: NSPEC_SHL, NSPEC_TOT,NO2, SO2,species,species_adv
+use ChemGroups_ml,    only: PPM25_GROUP
 use Chemfields_ml,     only : xn_adv
 use Country_ml,       only: MAXNLAND,NLAND,Country,IC_NAT,IC_FI,IC_NO,IC_SE
 use Country_ml,       only: EU28,EUMACC2 !CdfSnap
@@ -36,7 +37,7 @@ use EmisDef_ml,       only: &
      ,DMS_natso2_month, DMS_natso2_year,O_NH3, O_DMS&
      ,Emis_4D,N_Emis_4D,Found_Emis_4D & !used for EEMEP 
      ,KEMISTOP&
-     ,MAXFEMISLONLAT,N_femis_lonlat
+     ,MAXFEMISLONLAT,N_femis_lonlat,loc_frac
 use EmisGet_ml,       only: &
      EmisSplit &
     ,EmisGetCdf &  ! 
@@ -148,8 +149,6 @@ integer ::NTime_Read=-1,ncFileID,VarID,found, cdfstatus
 character(len=125) ::fileName_monthly='NOT_SET'!must be initialized with 'NOT_SET'
 character(len=10), private,save ::  incl_monthly(size(emis_inputlist(1)%incl)),excl_monthly(size(emis_inputlist(1)%excl))
 integer, private,save :: nin_monthly, nex_monthly, index_monthly
-real, public, allocatable, dimension(:,:,:), save :: &
-  loc_frac     ! Fraction of pollutants that are produced locally in the gridcell
 
 contains
 !***********************************************************************
@@ -1867,16 +1866,22 @@ subroutine uemep_emis(indate)
 
   if(first_call)then
      !init uemep
-     uEMEP%Nix=1
-     uEMEP%ix(1)=63!POM_F_FFUEL
-     uEMEP%sector=7
-     uEMEP%emis="pm25"
 
-     uEMEP%Nix=2
-     uEMEP%ix(1)=2!NO
-     uEMEP%ix(2)=3!NO2
+     uEMEP%Nix=size(PPM25_GROUP)
      uEMEP%sector=0!all
-     uEMEP%emis="nox "
+     uEMEP%emis="pm25"
+     uEMEP%ix(1:uEMEP%Nix)=PPM25_GROUP-NSPEC_SHL
+
+!     uEMEP%Nix=2
+!     uEMEP%ix(1)=2!NO
+!     uEMEP%ix(2)=3!NO2
+!     uEMEP%sector=0!all
+!     uEMEP%sector=7
+!     uEMEP%emis="nox "
+     if(me==0)write(*,*)'uEMEP sector: ',uEMEP%sector
+     if(me==0)write(*,*)'uEMEP emission file: ',uEMEP%emis
+     if(me==0)write(*,*)'uEMEP number of species in group: ',uEMEP%Nix
+     if(me==0)write(*,*)'including: ',species_adv(uEMEP%ix(1:uEMEP%Nix))%name
   endif
 
     dt_uemep=dt_advec
@@ -1949,9 +1954,8 @@ subroutine uemep_emis(indate)
                        itot = iqrc2itot(iqrc)
                        tmpemis(iqrc) = s * emisfrac(iqrc,isec,iland)
                     enddo ! f
-!  ,  IXADV_POM_F_FFUEL =  63   &
                        !advection should be used only once per gridcell! does not work if several countries contribute here
-                       if(icc_uemep/=0.and.icc_uemep/=icc)cycle
+!                       if(icc_uemep/=0.and.icc_uemep/=icc)cycle
 !                          write(*,*)"Warning, uEMEP: more than one country contribute to the gridcell", i_fdom(i),j_fdom(j),Country(iland)%name
 
                        icc_uemep=icc

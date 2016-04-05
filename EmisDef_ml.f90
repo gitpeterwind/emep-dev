@@ -144,6 +144,9 @@ real, public, allocatable, save, dimension(:,:,:) :: &
   gridrcroadd,    & ! Road dust emissions
   gridrcroadd0      ! varies every hour
 
+real, public, allocatable, dimension(:,:,:), save :: &
+  loc_frac     ! Fraction of pollutants that are produced locally in the gridcell
+
 !Ocean variables
 type, public :: Ocean
   real,  allocatable, dimension(:,:) :: emis

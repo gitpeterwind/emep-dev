@@ -72,6 +72,8 @@ public :: RestrictDomain !mask from full domain to rundomain
 public :: GridRead!,Getgridparams
 private :: Alloc_GridFields
 private :: GetFullDomainSize
+private :: find_poles
+
 !** 1) Public (saved) Variables from module:
 
 real, public, save :: &
@@ -200,7 +202,7 @@ contains
        endif
        if(MasterProc)write(*,*)'reading domain sizes from ',trim(filename)
 
-       call GetFullDomainSize(filename,IIFULLDOM,JJFULLDOM,KMAX_MET,METSTEP,Pole_Singular,projection)
+       call GetFullDomainSize(filename,IIFULLDOM,JJFULLDOM,KMAX_MET,METSTEP,projection)
 
        KMAX_MID=0!initialize
        filename_vert='Vertical_levels.txt'
@@ -233,9 +235,9 @@ contains
 
        !set RUNDOMAIN default values where not defined
        if(RUNDOMAIN(1)<1)RUNDOMAIN(1)=1
-       if(RUNDOMAIN(2)<1)RUNDOMAIN(2)=IIFULLDOM
+       if(RUNDOMAIN(2)<1 .or. RUNDOMAIN(2)>IIFULLDOM) RUNDOMAIN(2)=IIFULLDOM
        if(RUNDOMAIN(3)<1)RUNDOMAIN(3)=1
-       if(RUNDOMAIN(4)<1)RUNDOMAIN(4)=JJFULLDOM
+       if(RUNDOMAIN(4)<1 .or. RUNDOMAIN(4)>JJFULLDOM) RUNDOMAIN(4)=JJFULLDOM
        if(MasterProc)then
 55        format(A,I5,A,I5)
           write(*,55)     'FULLDOMAIN has sizes ',IIFULLDOM,' X ',JJFULLDOM
@@ -246,6 +248,7 @@ contains
           write(IO_LOG,55)'RUNDOMAIN  y coordinates from ',RUNDOMAIN(3),' to ',RUNDOMAIN(4)
        endif
 
+       call find_poles(filename,Pole_Singular)
 
        MIN_GRIDS=5
        if(NPROC==NPROC_MPI)then
@@ -295,7 +298,7 @@ contains
 
 
 
-  subroutine GetFullDomainSize(filename,IIFULLDOM,JJFULLDOM,KMAX,METSTEP,Pole_Singular,projection)
+  subroutine GetFullDomainSize(filename,IIFULLDOM,JJFULLDOM,KMAX,METSTEP,projection)
 
     !
     ! Get input grid sizes 
@@ -304,13 +307,12 @@ contains
     implicit none
 
     character (len = *), intent(in) ::filename
-    integer, intent(out):: IIFULLDOM,JJFULLDOM,KMAX,Pole_Singular,METSTEP
+    integer, intent(out):: IIFULLDOM,JJFULLDOM,KMAX,METSTEP
     character (len = *), intent(out) ::projection
 
     integer :: status,ncFileID,idimID,jdimID, kdimID,timeDimID,varid,timeVarID
     integer :: GIMAX_file,GJMAX_file,KMAX_file,wrf_proj_code
     real :: wrf_POLE_LAT
-    real,allocatable :: latitudes(:)
 
 
     if(ME_MPI==0)then
@@ -409,31 +411,6 @@ contains
        JJFULLDOM=GJMAX_file
        KMAX     =KMAX_file
 
-       Pole_Singular=0
-       if(trim(projection)==trim('lon lat')) then
-          !find wether poles are included (or almost included) in grid
-          !
-          !If some cells are to narrow (Poles in lat lon coordinates),
-          !this will give too small time steps in the Advection,
-          !because of the constraint that the Courant number should be <1.
-          !
-          !If Poles are found and lon-lat coordinates are used the Advection scheme
-          !will be modified to be able to cope with the singularity
-          !the advection routine will not work efficiently with NPROCY>2 in this case
-
-          allocate(latitudes(JJFULLDOM))
-          call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
-          call check(nf90_get_var(ncFileID, varID,latitudes  ))
-          if(latitudes(JJFULLDOM)>88.0)then
-             write(*,*)'The grid is singular at North Pole'
-             Pole_Singular=Pole_Singular+1
-          endif
-          if(latitudes(1)<-88.0)then
-             write(*,*)'The grid is singular at South Pole'
-             Pole_Singular=Pole_Singular+1
-          endif
-          deallocate(latitudes)
-       endif
 
        !find METSTEP (checked also in first meteo read)
        status=nf90_inq_dimid(ncid=ncFileID,name="time",dimID=timedimID)
@@ -457,10 +434,58 @@ contains
     CALL MPI_BCAST(IIFULLDOM ,4*1,MPI_BYTE,0,MPI_COMM_WORLD,IERROR)
     CALL MPI_BCAST(JJFULLDOM ,4*1,MPI_BYTE,0,MPI_COMM_WORLD,IERROR)
     CALL MPI_BCAST(KMAX ,4*1,MPI_BYTE,0,MPI_COMM_WORLD,IERROR)
-    CALL MPI_BCAST(Pole_Singular ,4*1,MPI_BYTE,0,MPI_COMM_WORLD,IERROR)
     CALL MPI_BCAST(projection ,len(projection),MPI_BYTE,0,MPI_COMM_WORLD,IERROR)
 
   end subroutine GetFullDomainSize
+
+  subroutine find_poles(filename,Pole_Singular)
+    !defines if there is a singularity at poles
+
+    implicit none
+    character (len = *), intent(in) ::filename
+    integer, intent(out):: Pole_Singular
+    integer :: status,ncFileID,varid
+    real,allocatable :: latitudes(:)
+
+    Pole_Singular=0
+    if(trim(projection)==trim('lon lat')) then
+       if(ME_MPI==0)then
+          !find wether poles are included (or almost included) in grid
+          !
+          !If some cells are to narrow (Poles in lat lon coordinates),
+          !this will give too small time steps in the Advection,
+          !because of the constraint that the Courant number should be <1.
+          !
+          !If Poles are found and lon-lat coordinates are used the Advection scheme
+          !will be modified to be able to cope with the singularity
+          !the advection routine will not work efficiently with NPROCY>2 in this case
+          
+          !open an existing netcdf dataset
+          status = nf90_open(path=trim(filename),mode=nf90_nowrite,ncid=ncFileID)
+          if(status /= nf90_noerr) then
+             print *,'not found',trim(filename)
+             call StopAll("GridValues: File not found")
+          endif
+          
+          allocate(latitudes(JJFULLDOM))
+          call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
+          call check(nf90_get_var(ncFileID, varID,latitudes  ))
+          if(latitudes(RUNDOMAIN(4))>88.0)then
+             write(*,*)'The grid is singular at North Pole'
+             Pole_Singular=Pole_Singular+1
+          endif
+          if(latitudes(RUNDOMAIN(3))<-88.0)then
+             write(*,*)'The grid is singular at South Pole'
+             Pole_Singular=Pole_Singular+1
+          endif
+          deallocate(latitudes)
+          call check(nf90_close(ncFileID))       
+       endif
+    endif
+
+    CALL MPI_BCAST(Pole_Singular ,4*1,MPI_BYTE,0,MPI_COMM_WORLD,IERROR)
+
+  end subroutine find_poles
 
   subroutine Getgridparams(LIMAX,LJMAX,filename,cyclicgrid)
     !

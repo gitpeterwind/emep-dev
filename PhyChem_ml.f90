@@ -15,7 +15,8 @@ use DA_3DVar_ml,      only: main_3dvar, T_3DVAR ! 3D-VAR Analysis
 use Derived_ml,       only: DerivedProds, Derived, num_deriv2d
 use DerivedFields_ml, only: d_2d, f_2d
 use DryDep_ml,        only: init_drydep
-use Emissions_ml,     only: EmisSet,uemep_emis,loc_frac
+use EmisDef_ml,       only: loc_frac
+use Emissions_ml,     only: EmisSet,uemep_emis
 !use Gravset_ml,       only: gravset
 use GridValues_ml,    only: debug_proc,debug_li,debug_lj,&
                             glon,glat,projection,i_local,j_local,i_fdom,j_fdom

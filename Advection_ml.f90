@@ -70,7 +70,7 @@
 !CRM  use ChemSpecs_adv_ml , only : NSPEC_ADV
   use CheckStop_ml,      only : CheckStop,StopAll
   use Convection_ml,     only : convection_pstar,convection_Eta
-  use Emissions_ml,      only : loc_frac
+  use EmisDef_ml,        only : loc_frac
   use GridValues_ml,     only : GRIDWIDTH_M,xm2,xmd,xm2ji,xmdji, &
                                 xm_i, Pole_Singular,dA,dB,i_fdom,j_fdom,i_local,j_local,Eta_bnd
   use Io_ml,             only : datewrite
