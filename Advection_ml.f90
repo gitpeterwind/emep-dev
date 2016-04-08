@@ -70,7 +70,7 @@
 !CRM  use ChemSpecs_adv_ml , only : NSPEC_ADV
   use CheckStop_ml,      only : CheckStop,StopAll
   use Convection_ml,     only : convection_pstar,convection_Eta
-  use EmisDef_ml,        only : loc_frac
+  use Emissions_ml,      only : loc_frac
   use GridValues_ml,     only : GRIDWIDTH_M,xm2,xmd,xm2ji,xmdji, &
                                 xm_i, Pole_Singular,dA,dB,i_fdom,j_fdom,i_local,j_local,Eta_bnd
   use Io_ml,             only : datewrite
@@ -1357,34 +1357,46 @@
 
 !    local
 
-    integer  k
+    integer  k,ndiff,n
     real, dimension(KMAX_MID) :: adif,bdif,cdif,e1
+    real ndiffi
+
+    ndiff=1
+    ndiffi=1./ndiff
 
     do k = 1,KMAX_MID-1
-      adif(k) = SigmaKz(k*LIMAX*LJMAX)*ds3(k)
-      bdif(k+1) = SigmaKz(k*LIMAX*LJMAX)*ds4(k)
+      adif(k) = SigmaKz(k*LIMAX*LJMAX)*ds3(k)*ndiffi
+      bdif(k+1) = SigmaKz(k*LIMAX*LJMAX)*ds4(k)*ndiffi
     enddo
 
     cdif(KMAX_MID) = 1./(1. + bdif(KMAX_MID))
     e1(KMAX_MID) = bdif(KMAX_MID)*cdif(KMAX_MID)
-    xn_adv(KMAX_MID) = &
-      xn_adv(KMAX_MID)*cdif(KMAX_MID)
 
     do k = KMAX_MID-1,2,-1
       cdif(k) = 1./(1. + bdif(k) + adif(k) - adif(k)*e1(k+1))
       e1(k) = bdif(k)*cdif(k)
+    enddo
+
+    cdif(1) = 1./(1. + adif(1) - adif(1)*e1(2))
+
+    do n=1,ndiff
+
+    xn_adv(KMAX_MID) = &
+      xn_adv(KMAX_MID)*cdif(KMAX_MID)
+
+    do k = KMAX_MID-1,2,-1
       xn_adv(k) =                 &
           (xn_adv(k)              &
          +adif(k)*xn_adv(k+1)*cdif(k))
     enddo
 
-    cdif(1) = 1./(1. + adif(1) - adif(1)*e1(2))
     xn_adv(1) = (xn_adv(1) + adif(1)*xn_adv(2))*cdif(1)
 
     do k = 2,KMAX_MID
       xn_adv(k) =                &
           e1(k)*xn_adv(k-1)        &
          +xn_adv(k)
+    enddo
     enddo
 
   end subroutine vertdiff_1d
@@ -3778,6 +3790,7 @@
               C4=0.0
               C5=0.0
               C6=0.0
+
               if(u_xmj(i-1,j,k,1)>0.0)then
                  C1=u_xmj(i-1,j,k,1)/gridwidth_m*xm2(i,j)*dt_uemep
                  C1=min(C1,1.0)
@@ -3822,7 +3835,7 @@
     real::dt_uemep,xn_k_loc(kmax_mid),xn_k(kmax_mid)
     real ds3(2:KMAX_MID),ds4(2:KMAX_MID)
     logical, save::firstcall=.true.
-    ix=63
+ 
     dt_uemep=dt_advec
     ds3=0.0
     ds4=0.0
@@ -3840,15 +3853,15 @@
              xn_k_loc(k)=0.0
              do iix=1,uEMEP%Nix
                 ix=uEMEP%ix(iix)
-                xn_k(k)=xn_k(k)+xn_adv(ix,i,j,k)*species_adv(ix)%molwt
-                xn_k_loc(k)=xn_k_loc(k)+(xn_adv(ix,i,j,k)*species_adv(ix)%molwt)*loc_frac(i,j,k)
+                xn_k(k)=xn_k(k)+xn_adv(ix,i,j,k)!assumes mixing ratios units
              enddo
+             xn_k_loc(k)=xn_k(k)*loc_frac(i,j,k)
           enddo
           call vertdiff_1d(xn_k,EtaKz(i,j,1,1),ds3,ds4)
           call vertdiff_1d(xn_k_loc,EtaKz(i,j,1,1),ds3,ds4)
           
           do k=2,KMAX_MID
-             loc_frac(i,j,k)=xn_k_loc(k)/(xn_k(k)+1.E-20)
+             loc_frac(i,j,k)=xn_k_loc(k)/(xn_k(k)+1.E-30)
           enddo
        enddo
     enddo

@@ -37,7 +37,7 @@ use EmisDef_ml,       only: &
      ,DMS_natso2_month, DMS_natso2_year,O_NH3, O_DMS&
      ,Emis_4D,N_Emis_4D,Found_Emis_4D & !used for EEMEP 
      ,KEMISTOP&
-     ,MAXFEMISLONLAT,N_femis_lonlat,loc_frac
+     ,MAXFEMISLONLAT,N_femis_lonlat
 use EmisGet_ml,       only: &
      EmisSplit &
     ,EmisGetCdf &  ! 
@@ -149,6 +149,8 @@ integer ::NTime_Read=-1,ncFileID,VarID,found, cdfstatus
 character(len=125) ::fileName_monthly='NOT_SET'!must be initialized with 'NOT_SET'
 character(len=10), private,save ::  incl_monthly(size(emis_inputlist(1)%incl)),excl_monthly(size(emis_inputlist(1)%excl))
 integer, private,save :: nin_monthly, nex_monthly, index_monthly
+real, public, allocatable, dimension(:,:,:), save :: &
+  loc_frac     ! Fraction of pollutants that are produced locally in the gridcell
 
 contains
 !***********************************************************************
@@ -1861,7 +1863,7 @@ subroutine uemep_emis(indate)
   integer ::icc_uemep,Nuemep_iter,it
   integer, save :: wday , wday_loc ! wday = day of the week 1-7
   integer ::ix,iix
-  real::dt_uemep, xtot, emis_uemep
+  real::dt_uemep, xtot, emis_uemep(KMAX_MID)
   logical,save :: first_call=.true.  
 
   if(first_call)then
@@ -1872,12 +1874,12 @@ subroutine uemep_emis(indate)
      uEMEP%emis="pm25"
      uEMEP%ix(1:uEMEP%Nix)=PPM25_GROUP-NSPEC_SHL
 
-!     uEMEP%Nix=2
-!     uEMEP%ix(1)=2!NO
-!     uEMEP%ix(2)=3!NO2
-!     uEMEP%sector=0!all
-!     uEMEP%sector=7
-!     uEMEP%emis="nox "
+     uEMEP%Nix=2
+     uEMEP%ix(1)=2!NO
+     uEMEP%ix(2)=3!NO2
+     uEMEP%sector=0!all
+     uEMEP%sector=7
+     uEMEP%emis="nox "
      if(me==0)write(*,*)'uEMEP sector: ',uEMEP%sector
      if(me==0)write(*,*)'uEMEP emission file: ',uEMEP%emis
      if(me==0)write(*,*)'uEMEP number of species in group: ',uEMEP%Nix
@@ -1898,6 +1900,7 @@ subroutine uemep_emis(indate)
      do j = lj0,lj1
         do i = li0,li1
            ncc = nlandcode(i,j)            ! No. of countries in grid
+           fncc = flat_nlandcode(i,j) ! No. of countries with flat emissions in grid
            hourloc= mod(nint(indate%hour+24*(1+glon(i,j)/360.0)),24)
            hour_longitude=hourloc
            daytime_longitude=0
@@ -1908,10 +1911,14 @@ subroutine uemep_emis(indate)
            tmpemis(:)=0.
            icc_uemep=0
            emis_uemep=0.0
-           do icc = 1, ncc
+           do icc = 1, ncc+fncc
+              ficc=icc-ncc
               !          iland = landcode(i,j,icc)     ! 1=Albania, etc.
-              iland=find_index(landcode(i,j,icc),Country(:)%icode) !array index
-
+              if(icc<=ncc)then
+                 iland=find_index(landcode(i,j,icc),Country(:)%icode) !array index
+              else
+                 iland=find_index(flat_landcode(i,j,ficc),Country(:)%icode) 
+              endif
               !array index of country that should be used as reference for timefactor
               iland_timefac = find_index(Country(iland)%timefac_index,Country(:)%timefac_index)
 
@@ -1938,30 +1945,22 @@ subroutine uemep_emis(indate)
                  iqrc = 0   ! index over emisfrac
                  do iem = 1, NEMIS_FILE 
                     if(trim(EMIS_File(iem))/=trim(uEMEP%emis))cycle
-                    tfac = timefac(iland_timefac,isec,iem) &
-                         * fac_ehh24x7(isec,hour_iland,wday_loc)
+                    ! kg/m2/s
 
-                    !it is best to multiply only if USES%GRIDDED_EMIS_MONTHLY_FACTOR
-                    !in order not to access the array and waste cache if not necessary
-                    !if(USES%GRIDDED_EMIS_MONTHLY_FACTOR)tfac=tfac* GridTfac(i,j,isec,iem)
+                    if(icc<=ncc)then
+                       tfac = timefac(iland_timefac,isec,iem) &
+                            * fac_ehh24x7(isec,hour_iland,wday_loc)
+                       s = tfac * snapemis(isec,i,j,icc,iem)
+                    else
+                       s = snapemis_flat(i,j,ficc,iem)                        
+                    endif
 
-                    s = tfac * snapemis(isec,i,j,icc,iem)
+                    icc_uemep=icc
 
-                    ! prelim emis sum kg/m2/s
-
-                    do f = 1,emis_nsplit(iem)
-                       iqrc = iqrc + 1
-                       itot = iqrc2itot(iqrc)
-                       tmpemis(iqrc) = s * emisfrac(iqrc,isec,iland)
-                    enddo ! f
-                       !advection should be used only once per gridcell! does not work if several countries contribute here
-!                       if(icc_uemep/=0.and.icc_uemep/=icc)cycle
-!                          write(*,*)"Warning, uEMEP: more than one country contribute to the gridcell", i_fdom(i),j_fdom(j),Country(iland)%name
-
-                       icc_uemep=icc
-
-88 format(i3,A,20F10.4)
-                       emis_uemep=emis_uemep+s*dt_uemep
+88                  format(i3,A,20F10.4)
+                    do k=KEMISTOP,KMAX_MID
+                       emis_uemep(k)=emis_uemep(k)+s*emis_kprofile(KMAX_BND-k,isec)*dt_uemep
+                    enddo
 
                  enddo ! iem
 
@@ -1969,15 +1968,18 @@ subroutine uemep_emis(indate)
               !      ==================================================
            enddo ! icc  
            
-           k=kmax_mid! Emissions only in lowest level for now
-           !units kg/m2
-           !total pollutant
-           xtot=0.0
-           do iix=1,uEMEP%Nix
-              ix=uEMEP%ix(iix)
-              xtot=xtot+(xn_adv(ix,i,j,k)*species_adv(ix)%molwt)*(dA(k)+dB(k)*ps(i,j,1))/ATWAIR/GRAV
+           do k=KEMISTOP,KMAX_MID
+              if(emis_uemep(k)<1.E-20)cycle
+              !units kg/m2
+              !total pollutant
+              xtot=0.0
+              do iix=1,uEMEP%Nix
+                 ix=uEMEP%ix(iix)
+                 xtot=xtot+(xn_adv(ix,i,j,k)*species_adv(ix)%molwt)*(dA(k)+dB(k)*ps(i,j,1))/ATWAIR/GRAV
+              enddo
+              loc_frac(i,j,k)=(emis_uemep(k)+loc_frac(i,j,k)*xtot)/(emis_uemep(k)+xtot+1.e-20)
            enddo
-           loc_frac(i,j,k)=(emis_uemep+loc_frac(i,j,k)*xtot)/(emis_uemep+xtot+1.e-20)
+
         enddo ! i
      enddo ! j
 

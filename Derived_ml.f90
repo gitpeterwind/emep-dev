@@ -41,11 +41,11 @@ use DerivedFields_ml, only: MAXDEF_DERIV2D, MAXDEF_DERIV3D, &
                             def_2d, def_3d, f_2d, f_3d, d_2d, d_3d
 use EcoSystem_ml,     only: DepEcoSystem, NDEF_ECOSYSTEMS, &
                             EcoSystemFrac,FULL_ECOGRID
-use EmisDef_ml,       only: EMIS_FILE, O_DMS, loc_frac
+use EmisDef_ml,       only: EMIS_FILE, O_DMS
 use EmisGet_ml,       only: nrcemis,iqrc2itot
-use Emissions_ml,     only: SumSnapEmis, SumSplitEmis
+use Emissions_ml,     only: SumSnapEmis, SumSplitEmis, loc_frac
 use GridValues_ml,    only: debug_li, debug_lj, debug_proc, A_mid, B_mid, &
-                            xm2, GRIDWIDTH_M, GridArea_m2,xm_i,xm_j,glon,glat
+                            dA,dB,xm2, GRIDWIDTH_M, GridArea_m2,xm_i,xm_j,glon,glat
 use Io_Progs_ml,      only: datewrite
 use MetFields_ml,     only: roa,pzpbl,Kz_m2s,th,zen, ustar_nwp, u_ref,&
  met, derivmet,  & !TEST of targets
@@ -68,7 +68,7 @@ use ModelConstants_ml, only: &
   ,NTDAY        & ! Number of 2D O3 to be saved each day (for SOMO)
   ! output types corresponding to instantaneous,year,month,day
   ,IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY, IOU_HOUR&
-  ,USE_OCEAN_DMS,USE_uEMEP
+  ,USE_OCEAN_DMS, USE_uEMEP, uEMEP
 use AOD_PM_ml,            only: AOD_init,aod_grp,wavelength,& ! group and 
                                 wanted_wlen,wanted_ext3d      ! wavelengths
 use MosaicOutputs_ml,     only: nMosaic, MosaicOutput
@@ -79,7 +79,7 @@ use Par_ml,               only: LIMAX,LJMAX, &      ! => max. x, y dimensions
                                 me,                &      ! for print outs
                                 gi0,gj0,IRUNBEG,JRUNBEG,& ! for i_fdom, j_fdom
                                 li0,lj0,limax, ljmax      ! => used x, y area
-use PhysicalConstants_ml, only: PI,KAPPA
+use PhysicalConstants_ml, only: PI,KAPPA,ATWAIR,GRAV
 use Setup_1dfields_ml,    only: Fpart ! for FSOA work
 use SmallUtils_ml,        only: find_index, LenArray, NOT_SET_STRING, trims
 use TimeDate_ml,          only: day_of_year,daynumber,current_date,&
@@ -583,9 +583,15 @@ subroutine Define_Derived()
                        ind , -99, T,  1.0,  F,  IOU_DAY )
   endif
   if(USE_uEMEP)then
-    dname = "Local_Fraction"
+    dname = "Local_Pollutant"
+    call AddNewDeriv( dname, "Local_Pollutant", "-", "-", "", &
+                       -99 , -99, F,  1.0,  T,  IOU_HOUR )
+    dname = "Total_Pollutant"
+    call AddNewDeriv( dname, "Total_Pollutant", "-", "-", "", &
+                       -99 , -99, F,  1.0,  T,  IOU_HOUR )
+    dname = "Local_Fraction"!NB must be AFTER "Local_Pollutant" and "Total_Pollutant"
     call AddNewDeriv( dname, "Local_Fraction", "-", "-", "", &
-                       ind , -99, F,  1.0,  T,  IOU_HOUR )
+                       -99 , -99, F,  1.0,  F,  IOU_HOUR )
   endif
 !Splitted total emissions (inclusive Natural)
   do ind=1,nrcemis
@@ -773,7 +779,7 @@ subroutine Derived(dt,End_of_Day)
   real :: thour                          ! Time of day (GMT)
   real :: timefrac                       ! dt as fraction of hour (3600/dt)
   real :: dayfrac              ! fraction of day elapsed (in middle of dt)
-  real :: af
+  real :: af, xtot
   real, save :: km2_grid
   integer :: ntime                       ! 1...NTDAYS
   integer :: klow                        !  lowest extent of column data
@@ -788,11 +794,12 @@ subroutine Derived(dt,End_of_Day)
   integer :: igrp, ngrp  ! group methods
   integer, save :: ind_pmfine = -999, ind_pmwater = -999, & !needed for PM25
                    ind_pm10 = -999
-  integer :: imet_tmp
+  integer :: imet_tmp, iix,ix
   real, pointer, dimension(:,:,:) :: met_p => null()
 
   logical, allocatable, dimension(:)   :: ingrp
   integer :: wlen,ispc,kmax
+  integer,save :: n_Local_Pollutant, n_Total_Pollutant
 
   timefrac = dt/3600.0
   thour = current_date%hour+current_date%seconds/3600.0
@@ -1371,17 +1378,50 @@ subroutine Derived(dt,End_of_Day)
         call datewrite("SnapEmis-in-Derived, still kg/m2/s", n, & !f_2d(n)%Index,&
               (/   SumSnapEmis( debug_li,debug_lj, f_2d(n)%Index ) /) )
 
-    case ( "Emis_mgm2_DMS" )      ! Splitted total emissions (Inclusive natural)
+    case ( "Emis_mgm2_DMS" )      ! DMS
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = O_DMS%map(i,j)
       end forall
 
-    case ( "Local_Fraction" )      ! Splitted total emissions (Inclusive natural)
+    case ( "Local_Pollutant" )      ! for uEMEP
+       do j=1,ljmax 
+          do i=1,limax
+             xtot=0.0
+             do iix=1,uEMEP%Nix
+                ix=uEMEP%ix(iix)
+                xtot=xtot+(xn_adv(ix,i,j,kmax_mid)*species_adv(ix)%molwt)&
+                     *(dA(kmax_mid)+dB(kmax_mid)*ps(i,j,1))/ATWAIR/GRAV
+             enddo
+             d_2d( n, i,j,IOU_INST) = loc_frac(i,j,kmax_mid)*xtot
+          enddo
+       enddo
+       n_Local_Pollutant=n
+
+    case ( "Total_Pollutant" )      ! for uEMEP
+       do j=1,ljmax 
+          do i=1,limax
+             xtot=0.0
+             do iix=1,uEMEP%Nix
+                ix=uEMEP%ix(iix)
+                xtot=xtot+(xn_adv(ix,i,j,kmax_mid)*species_adv(ix)%molwt)&
+                     *(dA(kmax_mid)+dB(kmax_mid)*ps(i,j,1))/ATWAIR/GRAV
+             enddo
+             d_2d( n, i,j,IOU_INST) = xtot
+          enddo
+       enddo
+       n_Total_Pollutant=n
+
+    case ( "Local_Fraction" )      ! for uEMEP
       forall ( i=1:limax, j=1:ljmax )
-        d_2d( n, i,j,IOU_INST) = loc_frac(i,j,kmax_mid)
+         !not very elegant...
+        d_2d( n, i,j,IOU_INST) = 0.0
+        d_2d( n, i,j,IOU_HOUR) = d_2d( n_Local_Pollutant, i,j,IOU_HOUR)/(d_2d( n_Total_Pollutant, i,j,IOU_HOUR)+1.E-30)
+        d_2d( n, i,j,IOU_DAY) =  d_2d( n_Local_Pollutant, i,j,IOU_DAY)/(d_2d( n_Total_Pollutant, i,j,IOU_DAY)+1.E-30)
+        d_2d( n, i,j,IOU_MON) =  d_2d( n_Local_Pollutant, i,j,IOU_MON)/(d_2d( n_Total_Pollutant, i,j,IOU_MON)+1.E-30)
+        d_2d( n, i,j,IOU_YEAR) =  d_2d( n_Local_Pollutant, i,j,IOU_YEAR)/(d_2d( n_Total_Pollutant, i,j,IOU_YEAR)+1.E-30)
       end forall
 
-    case ( "EmisSplit_mgm2" )      ! Splitted total emissions (Inclusive natural)
+     case ( "EmisSplit_mgm2" )      ! Splitted total emissions (Inclusive natural)
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = SumSplitEmis(i,j,f_2d(n)%Index)
       end forall

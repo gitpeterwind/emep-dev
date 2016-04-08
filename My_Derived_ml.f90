@@ -339,6 +339,10 @@ private
    if(USE_uEMEP)then
      tag_name(1) = "Local_Fraction"
      call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
+     tag_name(1) = "Local_Pollutant"
+     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
+     tag_name(1) = "Total_Pollutant"
+     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
    end if
    if(EmisSplit_OUT)then
       do i=1,max(18,nrcemis)
