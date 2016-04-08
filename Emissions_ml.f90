@@ -1863,7 +1863,7 @@ subroutine uemep_emis(indate)
   integer ::icc_uemep,Nuemep_iter,it
   integer, save :: wday , wday_loc ! wday = day of the week 1-7
   integer ::ix,iix
-  real::dt_uemep, xtot, emis_uemep(KMAX_MID)
+  real::dt_uemep, xtot, emis_uemep(KMAX_MID),emis_tot(KMAX_MID)
   logical,save :: first_call=.true.  
 
   if(first_call)then
@@ -1878,8 +1878,8 @@ subroutine uemep_emis(indate)
      uEMEP%ix(1)=2!NO
      uEMEP%ix(2)=3!NO2
      uEMEP%sector=0!all
-     uEMEP%sector=7
-     uEMEP%emis="nox "
+!     uEMEP%sector=7
+     uEMEP%emis="pm25"
      if(me==0)write(*,*)'uEMEP sector: ',uEMEP%sector
      if(me==0)write(*,*)'uEMEP emission file: ',uEMEP%emis
      if(me==0)write(*,*)'uEMEP number of species in group: ',uEMEP%Nix
@@ -1911,6 +1911,7 @@ subroutine uemep_emis(indate)
            tmpemis(:)=0.
            icc_uemep=0
            emis_uemep=0.0
+           emis_tot=0.0
            do icc = 1, ncc+fncc
               ficc=icc-ncc
               !          iland = landcode(i,j,icc)     ! 1=Albania, etc.
@@ -1938,15 +1939,14 @@ subroutine uemep_emis(indate)
                  if(wday_loc>7 )wday_loc=1 
               endif
 
-              do isec = 1, NSECTORS       ! Loop over snap codes
-                 if(isec/=uEMEP%sector .and. uEMEP%sector/=0)cycle
-                 ! Calculate emission rates from snapemis, time-factors, 
-                 ! and if appropriate any speciation fraction (NEMIS_FRAC)
-                 iqrc = 0   ! index over emisfrac
-                 do iem = 1, NEMIS_FILE 
-                    if(trim(EMIS_File(iem))/=trim(uEMEP%emis))cycle
+              do iem = 1, NEMIS_FILE 
+                 if(trim(EMIS_File(iem))/=trim(uEMEP%emis))cycle
+                 do isec = 1, NSECTORS       ! Loop over snap codes
+                    ! Calculate emission rates from snapemis, time-factors, 
+                    ! and if appropriate any speciation fraction (NEMIS_FRAC)
+                    iqrc = 0   ! index over emisfrac
                     ! kg/m2/s
-
+                    
                     if(icc<=ncc)then
                        tfac = timefac(iland_timefac,isec,iem) &
                             * fac_ehh24x7(isec,hour_iland,wday_loc)
@@ -1955,12 +1955,16 @@ subroutine uemep_emis(indate)
                        s = snapemis_flat(i,j,ficc,iem)                        
                     endif
 
-                    icc_uemep=icc
-
 88                  format(i3,A,20F10.4)
                     do k=KEMISTOP,KMAX_MID
-                       emis_uemep(k)=emis_uemep(k)+s*emis_kprofile(KMAX_BND-k,isec)*dt_uemep
+                       emis_tot(k)=emis_tot(k)+s*emis_kprofile(KMAX_BND-k,isec)*dt_uemep
                     enddo
+
+                    if(isec==uEMEP%sector .or. uEMEP%sector==0)then
+                       do k=KEMISTOP,KMAX_MID
+                          emis_uemep(k)=emis_uemep(k)+s*emis_kprofile(KMAX_BND-k,isec)*dt_uemep
+                       enddo
+                    endif
 
                  enddo ! iem
 
@@ -1969,7 +1973,7 @@ subroutine uemep_emis(indate)
            enddo ! icc  
            
            do k=KEMISTOP,KMAX_MID
-              if(emis_uemep(k)<1.E-20)cycle
+              if(emis_tot(k)<1.E-20)cycle
               !units kg/m2
               !total pollutant
               xtot=0.0
@@ -1977,7 +1981,7 @@ subroutine uemep_emis(indate)
                  ix=uEMEP%ix(iix)
                  xtot=xtot+(xn_adv(ix,i,j,k)*species_adv(ix)%molwt)*(dA(k)+dB(k)*ps(i,j,1))/ATWAIR/GRAV
               enddo
-              loc_frac(i,j,k)=(emis_uemep(k)+loc_frac(i,j,k)*xtot)/(emis_uemep(k)+xtot+1.e-20)
+              loc_frac(i,j,k)=(emis_uemep(k)+loc_frac(i,j,k)*xtot)/(emis_tot(k)+xtot+1.e-20)
            enddo
 
         enddo ! i
