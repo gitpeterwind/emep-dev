@@ -154,6 +154,15 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+12th April, Alvaro 3155
+
+ZD_OZONE/My_Outputs_ml,config_Outputs_CAMS71.nml:
+- Add CAMS50 and CAMS71 hourly output datasets
+
+run.pl,config_FORECAST_CitySR.nml:
+- CitySR setup (forecast SR) for CAMS71 runs.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 31st March, Peter 3150-4
 
 uEMEP routines and setup.

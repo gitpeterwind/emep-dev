@@ -4,7 +4,7 @@
 ! 'ustar_nwp','MET2D','ustar_nwp','-','m/s',-99,-99,F,1.0,T,5,
 OutputConcs=
 ! freq = IOU_YEAR=2, IOU_MON=3, IOU_DAY=4, IOU_HOUR=5, IOU_HOUR_INST=6
-!--MY_OUTPUTS=="MACC_EVA": hourly D2D houtput
+!--MY_OUTPUTS=="MACC_EVA": hourly D2D output
   'O3'            ,'ug'  ,'2d' ,'AIR_CONCS','SPEC' ,6,
   'NO2'           ,'ug'  ,'2d' ,'AIR_CONCS','SPEC' ,6,
   'PMFINE'        ,'ug'  ,'2d' ,'AIR_CONCS','GROUP',0,! needed by *_rh50

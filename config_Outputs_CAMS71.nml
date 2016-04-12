@@ -1,0 +1,30 @@
+&OutputConcs_config
+! freq = IOU_YEAR=2, IOU_MON=3, IOU_DAY=4, IOU_HOUR=5, IOU_HOUR_INST=6
+!--MY_OUTPUTS=="MACC_POL": hourly D2D output
+OutputConcs= 
+  'O3'            ,'ug'  ,'2d' ,'AIR_CONCS','SPEC' ,6,
+! 'NO'            ,'ug'  ,'2d' ,'AIR_CONCS','SPEC' ,6,
+! 'NO2'           ,'ug'  ,'2d' ,'AIR_CONCS','SPEC' ,6,
+  'PMFINE'        ,'ug'  ,'2d' ,'AIR_CONCS','GROUP',0,! needed by *_rh50
+  'PM10'          ,'ug'  ,'2d' ,'AIR_CONCS','GROUP',0,! needed by *_rh50
+! 'SURF_PM25water','ug'  ,'2d' ,'PM25water','MISC' ,0,! needed by *_rh50, daily by default
+  'SURF_ug_PM25_rh50','ug','2d','PM25_rh50','MISC' ,6,
+  'SURF_ug_PM10_rh50','ug','2d','PM10_rh50','MISC' ,6,
+&end
+&OutputDep_config
+! freq = IOU_YEAR=2, IOU_MON=3, IOU_DAY=4, IOU_HOUR=5, IOU_HOUR_INST=6
+  DDEP_ECOS =
+    'Grid     ', 4,
+  DDEP_WANTED =
+    'SOX      ', 'GROUP', 'mgS',
+    'OXN      ', 'GROUP', 'mgN',
+    'RDN      ', 'GROUP', 'mgN',
+  WDEP_WANTED = 
+    'PREC'     ,'PREC' , 'mm',
+    'SOX      ','GROUP','mgS',
+    'OXN      ','GROUP','mgN',
+    'RDN      ','GROUP','mgN',
+&end
+&OutputSize_config
+! hour_DOMAIN=60,107,11,58, !=[istart,iend,jstart,jend], default RUNDOMAIN+[1,-1,1,-1]
+&end

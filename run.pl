@@ -204,11 +204,17 @@ if($CWF){
   }
   $MAKEMODE =$ENV{"MAKEMODE"} if($ENV{"MAKEMODE"});# override by env variable
   $MAKEMODE.="-3DVar" if($aCWF);
-  $exp_name = ($eCWF)?"EMERGENCY":($aCWF?"ANALYSIS":"FORECAST");
-  $exp_name.= "_REVA" if($MAKEMODE=~/EVA/);
-  $exp_name.= "_NMC"  if($MAKEMODE=~/NMC/);
-  $exp_name.= "-dbg"  if($ENV{"DEBUG"} and ($ENV{"DEBUG"} eq "yes"));
-  $outputs  = ($eCWF)?"EMERGENCY":"CAMS50";
+  if(defined($ENV{'CitySR'})){
+    $exp_name = "FORECAST_CitySR";
+    $outputs  = "CAMS71";
+    $SR       = 1;
+  }else{
+    $exp_name = ($eCWF)?"EMERGENCY":($aCWF?"ANALYSIS":"FORECAST");
+    $exp_name.= "_REVA" if($MAKEMODE=~/EVA/);
+    $exp_name.= "_NMC"  if($MAKEMODE=~/NMC/);
+    $exp_name.= "-dbg"  if($ENV{"DEBUG"} and ($ENV{"DEBUG"} eq "yes"));
+    $outputs  = ($eCWF)?"EMERGENCY":"CAMS50";
+  }
   $testv.= ($eCWF)?".eCWF":".CWF";
   $Chem  = ($ENV{"CHEM"})?$ENV{"CHEM"}:($eCWF)?"Emergency":"EmChem09soa";
   $GRID  = ($ENV{"GRID"})?$ENV{"GRID"}:($eCWF)?"GLOBAL":"MACC14";
@@ -290,7 +296,7 @@ if ($STALLO) {
   $MetDir   = "$CWF_WRK/".sprintf("prepmet_%02d",($CWFMETV%24)) if $CWF and -d $CWF_WRK;
 }
 #$MetDir   = "/hard/code/path/to/$GRID/metdata/$year/if/necessary";
-die "Missing MetDir='$MetDir'\n" unless -d $MetDir;
+die "Missing MetDir='$MetDir'\n" unless -d date2str($year."0101",$MetDir);
 
 # DataDir    = Main general Data directory
 my $DATA_LOCAL = "$DataDir/$GRID";   # Grid specific data , EMEP, EECCA, GLOBAL
@@ -637,6 +643,10 @@ foreach my $scenflag ( @runs ) {
      $RESDIR = "$WORKDIR/$scenario.$iyr_trend" if ($GRID eq "RCA");
      $RESDIR.= $CWFTAG if($CWF and $CWFTAG);
   mkdir_p($RESDIR);
+  if($CWF and -e "$RESDIR/modelrun.finished"){
+    print "$CWF already fiished!\n";
+    next;
+  }
 
   chdir $RESDIR;   ############ ------ Change to RESDIR
   print "Working in directory: $RESDIR\n";
@@ -650,8 +660,8 @@ foreach my $scenflag ( @runs ) {
     if($CWFMETV) { # UTC version and DAY offset for MET.UTC version
       $metday = int($CWFMETV/24+0.99);             # DAY offset
       $MetDir.= sprintf("_%02dUTC",($CWFMETV%24)) # 00/12 UTC versions
-                unless ($USER eq $FORCAST);
-      die "Missing MetDir='$MetDir'\n" unless -d $MetDir;
+                unless ($USER eq $FORCAST) or $MetDir=~/UTC/;
+      die "Missing MetDir='$MetDir'\n" unless -d date2str($year."0101",$MetDir);
     }
     $MetDir=~s:$year:%Y:g;                      # Genereal case for Jan 1st
     for my $n (0,1..($CWFDAYS-1)) {
@@ -787,8 +797,8 @@ foreach my $scenflag ( @runs ) {
     print "TESTING PM $poll $dir\n";
 
     if ($GRID=~/MACC/) { # For most cases only Emis_TNO7.nc is available
-      $ifile{"$emisdir/Emis_$GRID\_$emisyear.$poll"} = "emislist.$poll"
-        if(-e "$emisdir/Emis_$GRID\_$emisyear.$poll");
+      $ifile{"$emisdir/Emis_${GRID}_$emisyear.$poll"} = "emislist.$poll"
+        if(-e "$emisdir/Emis_${GRID}_$emisyear.$poll");
       $ifile{"$emisdir/Emis_TNO7_$emisyear.nc"} = "EmisFracs.nc"
         if(-e "$emisdir/Emis_TNO7_$emisyear.nc");
     }elsif( $GRID eq "RCA"){
@@ -1268,22 +1278,13 @@ EOT
     system("tar cvzf $runlabel1.sondes.tgz sondes.*");
   }
 
-  if ($CWF) {
+  if ($CWF and not $DRY_RUN) {
     die "$CWF did not fiished as expected!\n" unless -e "modelrun.finished";
     my $old="EMEP_OUT.nc";
        $old=date2str($CWFBASE." 1 day","EMEP_OUT_%Y%m%d.nc") unless (-e "$old"); # 1st dump/nest
        $old=date2str($CWFBASE." 2 day","EMEP_OUT_%Y%m%d.nc") unless (-e "$old"); # 2nd dump/nest
     my $new=date2str($CWFBASE,$CWFIC);      # today's dump
     system("mkdir -p `dirname $new`; mv $old $new") if (-e "$old");
-    if ($SR) {
-      system("rm $cwfic") if (-e $cwfic);   # yesterday's dump
-      $old="modelrun.finished";
-      foreach my $task ('PBS_ARRAY_INDEX', 'PBS_ARRAYID', 'TASK_ID') {
-        $new="../CWF_$CWFBASE/runsr_$ENV{$task}.finished" if $ENV{$task};
-        system("mkdir -p `dirname $new`;echo $scenario >> $new")
-          if (-e $old) && ($ENV{$task});
-      }
-    }
   }
 
 ################################## END OF RUNS ######################
@@ -1378,7 +1379,7 @@ sub mkdir_p {
 ##############################################################
 package EMEP::Sr;
 
-my (%country_nums, @eu15, @euNew04, @eu25, @euNew06, @eu27, @sea, @noneu, @emep, @eecca, @eccomb);
+my (%country_nums, %city_lonlat, @eu15, @euNew04, @eu25, @euNew06, @eu27, @sea, @noneu, @emep, @eecca, @eccomb);
 our ($base, $Split, $NOxSplit, $rednflag, $redn, @countries, @polls);
 
 INIT {
@@ -1438,6 +1439,40 @@ $redn        = "0.85"; # 15% reduction
 foreach my $task ('PBS_ARRAY_INDEX','PBS_ARRAYID','TASK_ID') {
   @countries=($countries[$ENV{$task}-1]) if $ENV{$task};
 }
+
+if(defined($ENV{'CitySR'})){
+# read City_Domain.dat file into %city
+  my %city = ();
+  my $fcity=slurp($ENV{'CitySR'});
+  foreach my $line (split(/\n/,$fcity)){ # Split lines
+    my ($cc,$ln1,$ln2,$lt1,$lt2)=split(" ",$line);
+     $city{"$cc"}="$ln1 $ln2 $lt1 $lt2";
+  }
+# city pairs for femis.dat
+  %city_lonlat = (
+    ParBer=>["lonlat $city{Paris}",
+             "lonlat $city{Berlin}"],
+    LonPoV=>["lonlat $city{London}",
+             "lonlat $city{PoValley}"],
+    OslRuh=>["lonlat $city{Oslo}",
+             "lonlat $city{Ruhrgebiet}"]
+  );
+  @countries=("ALL",(keys %city_lonlat));
+  @polls    =("BASE","ALL");
+# $rednflag ="CitySR";
+
+# multiple tasks for paralel SR runs: one task per ciry pair
+# Queue system:    POSIX             PBS           SLURM
+  foreach my $key ('PBS_ARRAY_INDEX','PBS_ARRAYID','TASK_ID') {
+    next unless defined $ENV{$key};
+    if($ENV{$key} eq 0){
+      @countries=($countries[0]);
+      @polls    =("BASE");
+    }else{
+      @countries=($countries[$ENV{$key}-1]);
+      @polls    =("ALL");
+   }
+}
 ################################
 #### end of SR parameters   ####
 ################################
@@ -1459,7 +1494,7 @@ sub getScenario {
   my ($scenflag) = @_;
   my $cc = $scenflag->[0];
   my $pollut = $scenflag->[1];
-  $base = "CWF_$CWFBASE" if $CWF ;
+  $base = $CWF if $CWF ;
   my $scenario = "${base}_${cc}_${pollut}_${rednflag}";
   $scenario = "${base}" if $pollut eq "BASE" ;
   return $scenario;
@@ -1480,17 +1515,20 @@ sub generate_updated_femis {
     when("SNP" ){ $sox = $nox = $pm25 = $pmco =  $redn };
     when("AN"  ){ $nh3 = $nox = $redn };
     when("SNAV"){ $sox = $nox = $nh3 = $voc = $redn };
+    when("ALL" ){ $sox=$nox=$voc=$nh3=$testp=$co=$pm25=$pmco=$redn };
    #when("BASE") then no change!
   }
 
   my $femisdat = slurp("$DataDir/femis.dat");
-  die "ERROR!! No country Num for $cc!\n" unless defined(my $ccnum = $country_nums{$cc});
+  die "ERROR!! No country Num for $cc!\n"
+    unless defined(my $ccnum = $country_nums{$cc}) or defined($city_lonlat{$cc});
 
   # using 0 here as long as emissions are guaranteed to contain either
   # only anthropogenic or only natural emissions perl 'country'
   my $ss = 0; # 100 = antropogenic sectors (1..10)
               # 0 = all sectors
-  $femisdat .= "$ccnum $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\n";
+  $femisdat .= "$ccnum $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\n"
+    if defined($ccnum);
   my @cx_add=();
   given($cc){ # Add split countries
     when("DE" ){ push(@cx_add,( 9, 10)); }
@@ -1508,7 +1546,9 @@ sub generate_updated_femis {
     when("ATL"){ push(@cx_add,(322..329)); }
     when("MED"){ push(@cx_add,(332..339)); }
     when("BLS"){ push(@cx_add,(342..349)); }
-  }
+  }           # Add citySR pairs
+  @cx_add=(@{$city_lonlat{$cc}}) if defined($city_lonlat{$cc});
+  
   foreach my $cx (@cx_add) {
     $femisdat .= "$cx $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\n";
   }

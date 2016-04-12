@@ -262,7 +262,7 @@ subroutine set_output_defs
   case("INVERSION") ! use hourly Derived output in the near future
     nhourly_out=19
     nlevels_hourly = 1
-  case("MACC_ENS","FORECAST")
+  case("MACC_ENS","CAMS50_ENS","FORECAST")
     nhourly_out=15-4 !- *_col moved to Hourly/Derived
     nlevels_hourly=9
     if(any(species_adv(:)%name=="RN222"))nhourly_out=nhourly_out+1
@@ -274,14 +274,17 @@ subroutine set_output_defs
       if(DEBUG_POLLEN)&
       nhourly_out=nhourly_out+size(chemgroups(gpoll)%ptr)*2
     endif
-! case("MACC_EVA")
+! case("MACC_EVA","CAMS50_EVA","CAMS50_IRA")
 !   nhourly_out=4
+!   nlevels_hourly=1
+! case("MACC_POL","CAMS71_SR","CITYSR")
+!   nhourly_out=2
 !   nlevels_hourly=1
 ! case("MACC_NMC")
 !   nhourly_out=4
 !   nlevels_hourly=KMAX_MID     ! nb zero is *not* one of levels
 !   call CheckStop(.not.USE_AOD,"MACC_NMC hourly output needs USE_AOD")
-  case("MACC_EVA","MACC_NMC")  ! use hourly Derived output
+  case("MACC_EVA","CAMS50_EVA","CAMS50_IRA","MACC_POL","CAMS71_SR","CITYSR","MACC_NMC")  ! use hourly Derived output
     nhourly_out=0
     nlevels_hourly=0
     return
@@ -401,7 +404,7 @@ subroutine set_output_defs
       hr_out(j)=Asc2D(trim(name)//"_col","COLUMNgroup" ,igrp,&
            1,"ug/m2",1e0/3600.,-999.9)  ! 1kg/s --> 1kg/h
     enddo
-  case("MACC_ENS","FORECAST")
+  case("MACC_ENS","CAMS50_ENS","FORECAST")
     levels_hourly = [0,1,2,3,4,6,9,10,12]
     pm25 =find_index("PMFINE"  ,chemgroups(:)%name) !NB There is no "PM25" group
     pm10 =find_index("PM10"    ,chemgroups(:)%name)
@@ -477,7 +480,7 @@ subroutine set_output_defs
         enddo
       endif
     endif
-  case("MACC_EVA")
+  case("MACC_EVA","CAMS50_EVA","CAMS50_IRA")
     call CheckStop("set_output_defs: Use hourly Derived instead of "//trim(MY_OUTPUTS))
     levels_hourly = [0]
 !**         name     type     ofmt    ispec    
@@ -491,6 +494,11 @@ subroutine set_output_defs
             1,"ug",1.0,-999.9),&
       Asc2D("PM10","D2D_inst",find_index("SURF_ug_PM10_rh50",f_2d(:)%name),&
             1,"ug",1.0,-999.9)/)
+  case("MACC_POL","CAMS71_SR","CITYSR")
+    levels_hourly = [0]
+    j=2;hr_out(1:j) = (/&
+      Asc2D("O3"  ,"D2D_inst",find_index("SURF_ug_O3"       ,f_2d(:)%name),1,"ug",1.0,-999.9),&
+      Asc2D("PM10","D2D_inst",find_index("SURF_ug_PM10_rh50",f_2d(:)%name),1,"ug",1.0,-999.9)/)
   case("MACC_NMC")
     call CheckStop("set_output_defs: Use hourly Derived instead of "//trim(MY_OUTPUTS))
     SELECT_LEVELS_HOURLY=.false.  ! do not select levels, get them all
