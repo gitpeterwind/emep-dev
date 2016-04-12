@@ -92,7 +92,7 @@ use Par_ml,           only: MAXLIMAX,MAXLJMAX, GIMAX,GJMAX, IRUNBEG,JRUNBEG,&
 use PhysicalConstants_ml,only: GRAV, AVOG, ATWAIR
 use PointSource_ml,      only: readstacks !MKPS
 use Setup_1dfields_ml,only: rcemis   ! ESX
-use SmallUtils_ml,    only: find_index
+use SmallUtils_ml,    only: find_index,  num2str, str_replace
 use ReadField_ml,     only: ReadField    ! Reads ascii fields
 use TimeDate_ml,      only: nydays, nmdays, date, current_date, &! No. days per 
                             tdif_secs,timestamp,make_timestamp,daynumber,day_of_week ! year, date-type, weekday 
@@ -409,22 +409,32 @@ contains
              !replace keywords
              ! DataDir has 7 characters, therefore the "n+7"
              ! 7 is the length of the keyword, not its value!
-             n=index(EmisDir,'DataDir')
-             if(n>0)then
-                EmisDir = &
-                     EmisDir(1:n-1) // trim(DataDir) // EmisDir(n+7:)
-                if(me==0)write(*,*)'EmisDir redefined with path ',trim(EmisDir)               
-             endif
+             !DSA16  April 2016
+             !DSA16 Now use str-replace to allow replacement of YYYY as well
+             !       as POLL
+             !DSA16 n=index(EmisDir,'DataDir')
+             !DSA16 if(n>0)then
+             !DSA16    EmisDir = &
+             !DSA16         EmisDir(1:n-1) // trim(DataDir) // EmisDir(n+7:)
+             !DSA16    if(me==0)write(*,*)'EmisDir redefined with path ',trim(EmisDir)               
+             !DSA16 endif
+             if(me==0)write(*,*)'EmisDir REPLACE? ',trim(EmisDir)
+             EmisDir = str_replace('DataDir',DataDir,EmisDir)
+             EmisDir = str_replace('YYYY',num2str(year),EmisDir)
+             if(MasterProc)write(*,*)'EmisDir redefined as ',&
+               trim(EmisDir),'XX'//num2str(year)
 
-             n=index(fname,'EmisDir')
-             if(n>0)then
-                emis_inputlist(iemislist)%name = &
-                     fname(1:n-1) // trim(EmisDir) // fname(n+7:)
-
+             !DSA16 n=index(fname,'EmisDir')
+             !DSA16 if(n>0)then
+             !DSA16   emis_inputlist(iemislist)%name = &
+             !DSA16        fname(1:n-1) // trim(EmisDir) // fname(n+7:)
                 !emis_inputlist(iemislist)%name(1:n-1) // trim(EmisDir) // emis_inputlist(iemislist)%name(n+7:)
+             if(MasterProc)write(*,*)'fname REPLACE? ',trim(fname)
+             emis_inputlist(iemislist)%name = str_replace('EmisDir',EmisDir,fname)
+ 
                 if(MasterProc)write(*,*)'filename redefined with path ',&
                      trim(emis_inputlist(iemislist)%name)
-             endif
+             !DSA16 endif
 
              nin_monthly = 0
              nex_monthly = 0
@@ -522,13 +532,19 @@ contains
              do iem = 1, NEMIS_FILE
                 n=index(emis_inputlist(iemislist)%name,"POLL")
                 !DS fname = emis_inputlist(iemislist)%name(1:n-1) // trim(EMIS_FILE(iem)) // ".nc"
-                fname = emis_inputlist(iemislist)%name(1:n-1) // trim(EMIS_FILE(iem)) // emis_inputlist(iemislist)%name(n+4:)
+                !DSA16 fname = emis_inputlist(iemislist)%name(1:n-1) // trim(EMIS_FILE(iem)) // emis_inputlist(iemislist)%name(n+4:)
+
+                n= -99 ! DSA16 tmp
+                fname = str_replace('POLL',EMIS_FILE(iem), emis_inputlist(iemislist)%name )
+
                 if(MasterProc) then
                    write(*,*)sub//trim(fname)//" iemProcess",iem,n,trim(fname)
                    write(*,"(a,2i3,a,3i3)") "INPUTLIST:", iem, iemislist, trim(fname), nin, nex,me
                    inquire(file=fname,exist=fileExists)
                    if (.not.fileExists ) write(*,"(a)") 'WARNING '//&
                         'EMISFile missing!'//trim(fname)
+                   write(*,*)sub//trim(fname)//" REPLACE ",iem,n,trim(fname),&
+                     str_replace('POLL',EMIS_FILE(iem), emis_inputlist(iemislist)%name )
                 end if
 
                 call CheckStop( nin>0 .and. nex > 0, &
@@ -547,9 +563,11 @@ contains
              enddo
           else if(index(emis_inputlist(iemislist)%name,"grid")>0)then
              !ASCII format
-             n=index(emis_inputlist(iemislist)%name,"POLL")
+             !DSA16 n=index(emis_inputlist(iemislist)%name,"POLL")
              do iem = 1, NEMIS_FILE
-                fname = emis_inputlist(iemislist)%name(1:n-1) // trim(EMIS_FILE(iem)) 
+                !DSA16 fname = emis_inputlist(iemislist)%name(1:n-1) // trim(EMIS_FILE(iem)) 
+                fname = str_replace('POLL',EMIS_FILE(iem),&   ! e.g. POLL -> sox
+                             emis_inputlist(iemislist)%name )
                 if(me==0)write(*,*)'Reading ASCII format '//trim(fname)
                 call EmisGetASCII(iem, fname, trim(EMIS_FILE(iem)), sumemis_local, &
                      emis_inputlist(iemislist)%incl, nin, emis_inputlist(iemislist)%excl, nex)

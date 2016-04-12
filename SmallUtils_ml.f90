@@ -1,30 +1,5 @@
-!> SmallUtils_ml.f90 - MODULE - provides small utility routines to process
-!! test strings and key-valaue pairs
-!! <A component of the EMEP MSC-W Unified Eulerian Chemical transport Model>
-!*****************************************************************************! 
-!* 
-!*  Copyright (C) 2007-2013 met.no
-!* 
-!*  Contact information:
-!*  Norwegian Meteorological Institute
-!*  Box 43 Blindern
-!*  0313 OSLO
-!*  NORWAY
-!*  email: emep.mscw@met.no
-!*  http://www.emep.int
-!*  
-!*    This program is free software: you can redistribute it and/or modify
-!*    it under the terms of the GNU General Public License as published by
-!*    the Free Software Foundation, either version 3 of the License, or
-!*    (at your option) any later version.
-!* 
-!*    This program is distributed in the hope that it will be useful,
-!*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-!*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!*    GNU General Public License for more details.
-!* 
-!*    You should have received a copy of the GNU General Public License
-!*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+!> SmallUtils_ml.f90 - a component of the EMEP MSC-W Chemical transport Model>
+!! - provides small utility routines to process test strings and key-valaue pairs
 !*****************************************************************************! 
 module SmallUtils_ml
 
@@ -49,6 +24,7 @@ module SmallUtils_ml
   public :: num2str      !> converts  numbers to string
   private :: num2str_i  
   private :: num2str_r 
+  public :: str_replace  !>  replaces sub-string in string
   public :: to_upper     !> Converts string to upper case
   public :: Self_Test    !< For testing
 
@@ -329,6 +305,7 @@ end function find_indices
      end if
   else
      write(str, * ) x
+     str=adjustl(str)  ! remove leading spaces 
   end if
  end function num2str_r
 !============================================================================
@@ -346,6 +323,7 @@ end function find_indices
      end if
   else
      write(str, * ) n
+     str=adjustl(str)  ! remove leading spaces 
   end if
  end function num2str_i
 !============================================================================
@@ -376,6 +354,18 @@ Pure Function to_upper (str) Result (string)
     end do
 
 End Function to_upper
+!============================================================================
+pure Function str_replace(old,new,str) result(s)
+  character(len=*), intent(in) :: old, new, str
+  character(len=len(str)) :: s
+  integer :: n
+  n = index(str,old)
+  if ( n > 0 ) then
+    s=str(1:n-1) // trim(new) // str(n+len(old):)
+  else
+    s=str  ! keep old
+  end if
+End Function str_replace
 !============================================================================
 subroutine Self_test()
 
@@ -430,6 +420,13 @@ subroutine Self_test()
   
   print "(/,a)", "4) Self-test - to_upper  ================================="
   print *, "Upper case of AbCd efG is ", trim(to_Upper("AbCd efG"))
+
+
+  print "(/,a)", "5) Self-test - str_replace ==============================="
+  print *,  str_replace('YYYY','2005','EmisYYYY.txt') ! ok with spaces
+  print *,  str_replace('YYYY','2005   ','EmisYYYY.txt') ! ok with spaces
+  print *,  str_replace('YYYY','99   ','EmisYYYY.txt')
+  print *,  str_replace('XXY','7777777777777777777777   ','EmisYYYY.txt')
 
 end subroutine Self_test
 

@@ -52,7 +52,10 @@
 !*** The default emission set up for Regional runs ******
 !----------------------------------------------------------------------
 !
-  EmisDir                 = 'DataDir/Data',        !only keywords "DataDir" or "EmisDir" are recognized
+ !DSA16  EmisDir           = 'DataDir/Data',        !only keywords "DataDir" or "EmisDir" are recognized
+ !DS  only pattern YYYY for year can be exchanged for year as given in run.pl
+ !Good EECCA default:
+  EmisDir                 = 'DataDir/Data/EECCA/Modrun15/2015_EMEP_trends/model_input_YYYY',
 
   emis_inputlist(1)%name  = 'gridPOLL',    ! example of ASCII type (POLL values must be with lower case,  
                                            ! i.e., the emission files must be 'gridsox', 'gridnox' etc..)
