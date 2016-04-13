@@ -24,6 +24,10 @@ module SmallUtils_ml
   public :: num2str      !> converts  numbers to string
   private :: num2str_i  
   private :: num2str_r 
+  public :: key2str      ! replace keyword occurence(s) on a string by given value
+  private :: skey2str    !
+  private :: ikey2str
+  private :: rkey2str
   public :: str_replace  !>  replaces sub-string in string
   public :: to_upper     !> Converts string to upper case
   public :: Self_Test    !< For testing
@@ -42,6 +46,13 @@ module SmallUtils_ml
     module procedure num2str_r   ! For real
     module procedure num2str_i   ! For integer
   end interface num2str
+
+  interface key2str   ! replace keyword occurence(s) on a string by string/integer/real value
+    module procedure skey2str   ! string values
+    module procedure ikey2str   ! integer values
+    module procedure rkey2str   ! real values
+  end interface key2str
+
 
 contains
 
@@ -367,6 +378,87 @@ pure Function str_replace(old,new,str) result(s)
   end if
 End Function str_replace
 !============================================================================
+! key2str 
+!  replace occurence(s) of keyword key on string iname by value val
+! module procedures
+!  skey2str replace string  values (main implementation)
+!  ikey2str replace integer values (uses skey2str)
+!  rkey2str replace real    values (uses skey2str)
+pure function skey2str(iname,key,val,xfmt) result(fname)
+  character(len=*), intent(in):: iname,key
+  character(len=*), intent(in):: val
+  character(len=*), intent(in), optional :: xfmt
+  character(len=len(iname))   :: fname
+  character(len=20)           :: ifmt!="(A??)"
+  integer :: ind,n
+  fname=iname
+  ind=index(fname,trim(key))
+  if(ind==0)return
+  if(present(xfmt))then     ! keyword lenght as provided by xfmt
+    write(ifmt,xfmt)trim(val)
+    n=len_trim(ifmt)
+    do while (ind>0)
+      fname=fname(1:ind-1)//trim(ifmt)//fname(ind+n:len_trim(fname))
+      ind=index(fname,trim(key))
+    enddo
+  else                      ! keyword lenght same as key
+    n=len_trim(key)
+    write(ifmt,"('(A',I0,')')")n
+    do while (ind>0)
+      write(fname(ind:ind+n-1),ifmt)trim(val)
+      ind=index(fname,trim(key))
+    enddo
+  endif
+endfunction skey2str
+pure function ikey2str(iname,key,val,xfmt) result(fname)
+  character(len=*), intent(in):: iname,key
+  integer, intent(in)         :: val
+  character(len=*), intent(in), optional :: xfmt
+  character(len=len(iname))   :: fname
+  character(len=20)           :: sval
+  character(len=9)            :: ifmt!="(I??.??)"
+  integer :: n
+  if(present(xfmt))then     ! user supplied format
+    write(sval,xfmt)val
+    if(index(sval,'*')>0)&    ! problem with user format,
+      write(sval,"(I0)")val   !  reformat value
+  else                      ! guess format from keyword (Ix.x)
+    if(val<0)then             ! negative numbers would be printed as ****
+      fname=iname             ! keep as it is
+      return
+    endif
+    n=len_trim(key)
+    write(ifmt,"('(I',I0,'.',I0,')')")n,n
+    write(sval,ifmt)val
+  endif
+  fname=trim(skey2str(iname,key,sval))
+endfunction ikey2str
+pure function rkey2str(iname,key,val,xfmt) result(fname)
+  character(len=*), intent(in):: iname,key
+  real, intent(in)            :: val
+  character(len=*), intent(in), optional :: xfmt
+  character(len=len(iname))   :: fname
+  character(len=20)           :: sval
+  character(len=9)            :: ifmt!="(F??.??)"
+  integer :: n,n1
+  if(present(xfmt))then     ! user supplied format
+    write(sval,xfmt)val
+    if(index(sval,'*')>0)&      ! problem with user format,
+      write(sval,"(ES15.3)")val !   reformat value
+  else                      ! guess format from keyword (Fx.x)
+    if(val<0)then             ! negative numbers would be printed as ****
+      fname=iname             ! keep as it is
+      return
+    endif
+    n=len_trim(key)
+    n1=index(key,".")
+    if(n1==0)n1=n
+    write(ifmt,"('(F',I0,'.',I0,')')")n1-1,n-n1
+    write(sval,ifmt)val
+  endif
+  fname=trim(skey2str(iname,key,sval))
+endfunction rkey2str
+!============================================================================
 subroutine Self_test()
 
   character(len=100) :: text = "Here is a line,split by spaces: note, commas don't work"
@@ -374,7 +466,7 @@ subroutine Self_test()
   character(len=5), dimension(3) :: wanted1 = (/ "yy", "x1", "zz" /)
   character(len=6), dimension(2) :: wanted2 = (/ " yy", "x1 " /)
   character(len=6), dimension(2) :: wanted3 = (/ "zz  ", "yy  " /)
-  character(len=16), dimension(6) :: wantedx  = NOT_SET_STRING
+  character(len=16),dimension(6) :: wantedx  = NOT_SET_STRING
   character(len=100) :: errmsg
   integer, parameter :: NWORD_MAX = 99
   character(len=20), dimension(NWORD_MAX) :: words
@@ -411,7 +503,6 @@ subroutine Self_test()
   call AddArray(wanted1,wantedx,NOT_SET_STRING,errmsg)
   call WriteArray(wantedx,size(wantedx),"Testing AddArray")
 
-
   print "(/,a)", "4) Self-test - num2str   ================================="
   print *, "1.23 Without fmt ", trim( num2str( 1.23 ))
   print *, "1.23e19 Without fmt ", trim( num2str( 1.23e19 ))
@@ -421,13 +512,21 @@ subroutine Self_test()
   print "(/,a)", "4) Self-test - to_upper  ================================="
   print *, "Upper case of AbCd efG is ", trim(to_Upper("AbCd efG"))
 
-
   print "(/,a)", "5) Self-test - str_replace ==============================="
-  print *,  str_replace('YYYY','2005','EmisYYYY.txt') ! ok with spaces
-  print *,  str_replace('YYYY','2005   ','EmisYYYY.txt') ! ok with spaces
-  print *,  str_replace('YYYY','99   ','EmisYYYY.txt')
-  print *,  str_replace('XXY','7777777777777777777777   ','EmisYYYY.txt')
+  print *, str_replace('YYYY','2005','EmisYYYY.txt') ! ok with spaces
+  print *, str_replace('YYYY','2005   ','EmisYYYY.txt') ! ok with spaces
+  print *, str_replace('YYYY','99   ','EmisYYYY.txt')
+  print *, str_replace('XXY','7777777777777777777777   ','EmisYYYY.txt')
 
+  print "(/,a)", "6) Self-test - key2str ==============================="
+  print *, key2str('replace string:  "EmisYYYY.txt"','YYYY','2005')
+  print *, key2str('replace integer: "EmisYYYY.txt"','YYYY',2005)
+  print *, key2str('replace real:    "EmisYYYY.txt"','YYYY',2005.0)
+  print *, key2str('string w/spaces::"EmisYYYY.txt"','YYYY','99   ','(A)')
+  print *, key2str('1.23 w/2 decimals: "F.FF"' ,'F.FF' ,1.23)
+  print *, key2str('1.23 w/3 decimals: "F.FFF"','F.FFF',1.23)
+  print *, key2str('1.23 w/es15.3 fmt: "FFF"','FFF',1.23,'(es15.3)')
+  print *, key2str('1.23 w/f10.2  fmt: "FFF"','FFF',1.23,'(f10.2)')
 end subroutine Self_test
 
 end module SmallUtils_ml

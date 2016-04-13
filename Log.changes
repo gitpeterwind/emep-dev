@@ -154,6 +154,22 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+13th April, Alvaro 3160
+
+SmallUtils_ml,TimeDate_ExtraUtil_ml:
+- Move key2str interface and module procedures from
+  TimeDate_ExtraUtil_ml to SmallUtils_ml and make it public.
+- Add string version to key2str interface (skey2str),
+  to provide the same functionality than str_replace.
+- Expand integer/real versions of key2str (ikey2str/rkey2str)
+  to provide the same functionality than str_replace and num2str combination.
+
+config_FORECAST.nml,config_FORECAST_CitySR.nml
+- use replace keyswords on emission files
+  EmisDir               ='DataDir/MACC14/Emissions/TNO_MACCIII',
+  emis_inputlist(1)%name='EmisDir/Emis_TNO7_YYYY.nc',
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 13th April, Dave 3158-59
 
 utils/Rdf_csvsites.f90

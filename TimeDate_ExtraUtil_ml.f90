@@ -3,10 +3,11 @@ MODULE TimeDate_ExtraUtil_ml
 use Par_ml,           only: me
 use ModelConstants_ml,only: METSTEP, MasterProc, &
                             IOU_MON,IOU_DAY,IOU_HOUR,IOU_3DHOUR_MEAN,FREQ_3DHOURLY
+use SmallUtils_ml,    only: key2str
+use CheckStop_ml,     only: CheckStop
 use TimeDate_ml,      only: max_day,tdif_secs,tdif_days,add_secs,add_days,&
                             ts2date=>make_current_date,date2ts=>make_timestamp,&
                             timestamp,day_of_year,date,startdate,enddate
-use CheckStop_ml,     only: CheckStop
 
 IMPLICIT NONE
 PRIVATE
@@ -24,7 +25,8 @@ public :: &
   compare_date,     & ! compare dates, accepts wildcards
   to_stamp,         & ! extended interface for make_timestamp (TimeDate_ml)
   to_date,          & ! extended interface for make_current_date (TimeDate_ml)
-  to_idate            ! create int array from timestap or date
+  to_idate,         & ! create int array from timestap or date
+  key2str             ! basic keyword substitution
 
 interface date2string
   module procedure  detail2str
@@ -75,13 +77,12 @@ interface nctime2string
 end interface nctime2string
 
 character(len=*), public, parameter :: &  ! Keywords for ncdate2string
-! secs1970_key="secs  19.70"           ,&
-! days1900_key="days  19.00"           ,&
-  nctime_key  ="12345678.12"
+! secs1970_key="secs  19.70",&
+! days1900_key="days  19.00",&
+! nctime_key  ="12345678.12"
+  nctime_key  ='#NCTIMEKEY#',nctime_fmt='(F11.2)'
 
 private ::  &
-  key2str,str2key,  & ! basic keyword substitution
-  ikey2str,rkey2str,& ! auxiliary keyword substitution tools
   detail2str,str2detail, & ! detailed date input<--> formatted string
   cd2str,int2str,ts2str, & ! date/idate (int array)/timestamp --> formatted string
   cd2str_add,int2str_add,& ! optional addsecs parameter
@@ -92,10 +93,6 @@ private ::  &
   days1900_to_ts,days1900_to_cd,days1900_to_int,& ! *_to_days1900 inverse
   int2ts,int2date,ts2int,date2int,str2ts,str2int,& ! auxiliary dateformat transformation tools
   init_ts             ! init 1900 & 1970 timestamps
-
-interface key2str
-  module procedure ikey2str,rkey2str
-end interface key2str
 
 interface to_stamp
   module procedure date2ts,int2ts,str2ts
@@ -162,53 +159,6 @@ subroutine init_ts()
   ts1900=to_stamp(date(1900,1,1,0,0))
 endsubroutine init_ts
 
-function str2key(str,fmt,key) result(val)
-  character(len=*), intent(in) :: str,fmt,key
-  integer :: val
-  integer :: ind=0
-  val=0
-  ind=index(fmt,trim(key))
-  if(ind>0)read(str(ind:ind+len_trim(key)-1),*)val
-endfunction str2key
-
-function ikey2str(iname,key,val) result(fname)
-  character(len=*), intent(in) :: iname,key
-  character(len=len(iname))    :: fname
-  integer, intent(in)          :: val
-  character(len=9)             :: ifmt="(I??.??)"
-  integer :: ind=0,n=0
-  fname=iname
-  if(val<0)return   ! fmt=Ix.x --> negative numbers are printed as ****
-  ind=index(fname,trim(key))
-  if(ind==0)return
-  n=len_trim(key)
-  write(ifmt,"('(I',I0,'.',I0,')')")n,n
-  do while (ind>0)
-    write(fname(ind:ind+n-1),ifmt)val
-    ind=index(fname,trim(key))
-  enddo
-endfunction ikey2str
-
-function rkey2str(iname,key,val) result(fname)
-  character(len=*), intent(in) :: iname,key
-  character(len=len(iname))    :: fname
-  real, intent(in)             :: val
-  character(len=9)             :: ifmt="(F??.??)"
-  integer :: ind=0,n=0,n1=0
-  fname=iname
-  if(val<0.0)return  ! fmt=Fx.x --> negative numbers are printed as ****
-  ind=index(fname,trim(key))
-  if(ind==0)return
-  n=len_trim(key)
-  n1=index(key,".")
-  if(n1==0)n1=n
-  write(ifmt,"('(F',I0,'.',I0,')')")n1-1,n-n1
-  do while (ind>0)
-    write(fname(ind:ind+n-1),ifmt)val
-    ind=index(fname,trim(key))
-  enddo
-endfunction rkey2str
-
 subroutine str2detail(str,fmt,year,month,day,hour,seconds,minute,second,days,&
                      fstep,ntme,nlev,nlat,nlon,debug)
   character(len=*), intent(in) :: str,fmt
@@ -238,6 +188,15 @@ subroutine str2detail(str,fmt,year,month,day,hour,seconds,minute,second,days,&
   if(present(debug))then
     if(debug) write(*,*)'string2date: ',trim(str),'/',trim(fmt)
   endif
+contains
+function str2key(str,xfmt,key) result(val)
+  character(len=*), intent(in) :: str,xfmt,key
+  integer :: val
+  integer :: ind=0
+  val=0
+  ind=index(xfmt,trim(key))
+  if(ind>0)read(str(ind:ind+len_trim(key)-1),*)val
+endfunction str2key
 endsubroutine str2detail
 
 function string2date(str,fmt,debug) result(cd)
@@ -504,7 +463,7 @@ function secs2str(iname,nsecs,debug) result(fname)
   integer, dimension(5)                   :: idate
   logical, intent(in), optional           :: debug
   call nctime2idate(idate,nsecs)
-  fname=date2string(key2str(iname,nctime_key,nsecs),idate,debug=debug)
+  fname=date2string(key2str(iname,nctime_key,nsecs,nctime_fmt),idate,debug=debug)
 endfunction secs2str
 
 function days2str(iname,ndays,debug) result(fname)
@@ -514,7 +473,7 @@ function days2str(iname,ndays,debug) result(fname)
   integer, dimension(5)                   :: idate
   logical, intent(in),  optional          :: debug
   call nctime2idate(idate,ndays)
-  fname=date2string(key2str(iname,nctime_key,ndays),idate,debug=debug)
+  fname=date2string(key2str(iname,nctime_key,ndays,nctime_fmt),idate,debug=debug)
 endfunction days2str
 
 subroutine assign_NTERM(NTERM)
