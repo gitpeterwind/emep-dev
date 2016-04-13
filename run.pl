@@ -9,7 +9,7 @@
 # Vilje: (take out one # and put one # before the Stallo). 
 #   select= number of nodes, ncpus=number of threads per node to reserve, 
 #   mpiprocs=number of MPI threads per node. For 64 processors:
-##PBS -l select=2:ncpus=32:mpiprocs=32 -v MPI_MSGS_MAX=2097152,MPI_BUFS_PER_PROC=2048
+##PBS -l select=4:ncpus=32:mpiprocs=32 -v MPI_MSGS_MAX=2097152,MPI_BUFS_PER_PROC=2048
 # Stallo:
 #   Some nodes on Stallo have 16, most have 20 cpus
 #   use ib for infiniband (fast interconnect).
@@ -118,7 +118,7 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
- ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3144","EmChem09soa","EMEPSTD" ,"EMEPSTD","EECCA" ,0);
+ ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3157","EmChem09soa","EMEPSTD" ,"EMEPSTD","EECCA" ,0);
 #($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3074","EmChem09soa","EMEPGLOB","EMEPSTD","GLOBAL",0);
 
 my %BENCHMARK;
@@ -1471,7 +1471,8 @@ if(defined($ENV{'CitySR'})){
     }else{
       @countries=($countries[$ENV{$key}-1]);
       @polls    =("ALL");
-   }
+    }
+  }
 }
 ################################
 #### end of SR parameters   ####
