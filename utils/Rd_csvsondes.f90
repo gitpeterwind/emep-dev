@@ -13,21 +13,22 @@ real, parameter :: UNDEF_R = -huge(0.0)
 character(len=100) :: infile   ! for GetArg
 integer, parameter :: IO_5=5, IO_IN = 10,  &
    IO_SNAM=12, IO_DMAX=14, IO_MMEAN=15, IO_VALS=16, IO_DATES= 17, &
-   NK = 20, &   ! Number of vertical levels to be printed
+   IO_KVALS=18, NK = 20, &   ! Number of vertical levels to be printed
    MAX_SITES= 100, MAX_SPEC = 200
 character(len=35000) :: longline
 character(len=20), dimension(MAX_SITES) :: sitename
 character(len=20), dimension(MAX_SPEC) :: specname
 real             , dimension(NK,MAX_SPEC) :: xin = UNDEF_R
-real             , dimension(366,0:23,NK) :: data = -UNDEF_R
+real             , dimension(366,0:23,NK) :: data = UNDEF_R
 integer          , dimension(366) :: cmonth, cday
 real :: maxx = UNDEF_R    ! Max xin value found in 1:NK range 
 character(len=40) :: prefix
-character(len=20) :: wpoll, wsite, date, txt1, txt2, fmt
+character(len=20) :: wpoll, wsite, date, txt1, txt2, fmt , klevel 
 integer :: comma, comma2
 integer :: yy, mm, dd, hh, freq, last_day, jd, old_dd
 integer :: i, k, n, nspec, nsites, isite  !csv, ispec
-integer :: wanted_site, wanted_spec
+integer :: wanted_site, wanted_spec, wanted_k = 0, wanted_year
+logical :: first = .true.
 logical :: DEBUG = .false.
 integer :: old_mm, nmm(12)
 real :: mmean(12)
@@ -36,13 +37,18 @@ real :: mmean(12)
      call getarg(1,infile)
      call getarg(2,wsite)
      call getarg(3,wpoll)
+     call getarg(4,klevel)
      print *, "Input argument: ", infile
      if ( len_trim(wsite)>0 ) print *, "Site wanted ", wsite
      if ( len_trim(wpoll)>0 ) print *, "Poll wanted ", wpoll
+     if ( len_trim(klevel)>0 ) then
+        read(klevel,*) wanted_k
+        print *, "klevel wanted ", klevel, wanted_k
+     end if
 
    end if
    if ( infile == "-h" .or. iargc() == 0 ) then
-     print *, "Usage: Rd_csvsondes sondes.mmyy  [site_name] [poll_name]"
+     print *, "Usage: Rd_csvsondes sondes.mmyy  [site_name] [poll_name] [k-level]"
      print *, " => "
      print *, "     SONDES.dmax      - daily-max values for NK (e.g. 15) levels"
      print *, "     SONDES.mmean     - monthly-mean values for NK (e.g. 15) levels"
@@ -63,6 +69,7 @@ real :: mmean(12)
    open(IO_DMAX,file=trim(prefix)//"_dmax.txt")
    open(IO_MMEAN,file=trim(prefix)//"_mmean.txt")
    open(IO_DATES,file=trim(prefix)//"_dates.txt")
+   if ( wanted_k > 0 ) open(IO_KVALS,file=trim(prefix)//"_k" // trim(klevel) // "vals.txt")
 
    read(IO_IN,*)  nsites
    read(IO_IN,*)  freq
@@ -131,6 +138,8 @@ real :: mmean(12)
      do isite = 1, nsites
      ! ----- new csv -----------------------------
       read(io_in,"(a)",end=100) longline ! wsite, txt1, txt2 !, v1
+      if (isite == wanted_site ) then ! NEW
+      if ( DEBUG ) print *, longline(1:100) ! DBG
 
        comma=index(longline, ",")
        wsite=longline(1:comma-1)      ! site name
@@ -143,22 +152,28 @@ real :: mmean(12)
        read(unit=date(7:10),fmt="(i4)")  yy
        read(unit=date(12:13),fmt="(i2)")  hh
        if ( dd /= old_dd ) then
+          if ( first ) then
+             wanted_year = yy
+             first = .false.
+          end if
+          if ( yy > wanted_year ) EXIT
           jd = jd + 1
           cmonth(jd) = mm
           cday(jd) = dd
           old_dd = dd
        end if
        longline=longline(comma2+1:)
-      !print *, "longline ", longline(1:40)
+!      print *, "longline: ", longline(1:40)
        read(longline,*) ( xin(1:NK,n), n=1, nspec )
 
-!      if( DEBUG ) print *, yy, mm, dd, hh
+      if( DEBUG ) print *, yy, mm, dd, hh
 !stop "HERE"
 
-        if (isite == wanted_site ) then
+       !OLD if (isite == wanted_site ) then
            last_day = jd
            data(jd,hh,:) = xin(:,wanted_spec)
            maxx = max( maxval(xin(1:NK,wanted_spec)), maxx )
+           if ( dd== 15 .and. hh == 12 ) print *, yy, mm, dd, hh
            if(DEBUG) then
              print "(a,a,6i5,3f12.3)", "SET:" , trim(date), &
               jd, last_day, dd, mm, yy, hh, &
@@ -182,7 +197,12 @@ real :: mmean(12)
 
       if ( data(jd,0,1) == UNDEF_R ) data(jd,0,:) = data(jd,1,:) ! Fill in 1st hh=0
       do hh = 0, 23, freq
+        if ( data(jd,hh,1) == UNDEF_R ) exit  ! End of file maybe?
         write(IO_VALS,fmt=fmt) jd, cmonth(jd), cday(jd),hh, (data(jd,hh,k), k= 1, NK )
+        if (wanted_k > 0) then
+          k = 21 - wanted_k 
+          write(IO_KVALS,fmt=fmt) jd, cmonth(jd), cday(jd),hh, data(jd,hh,k)
+        end if
       end do
 
       write(IO_DMAX,"(3i4,30es10.3)") jd, cmonth(jd), cday(jd), (maxval(data(jd,:,k)), k=1,NK)
@@ -192,8 +212,8 @@ real :: mmean(12)
     do k = NK, 1, -1
       old_mm = -1
       mmean(:) = 0.0
-      nmm(mm) = 0
       do jd = 1, last_day
+        !print *, "MMTEST ", jd, cmonth(jd)
         mm = cmonth(jd)
         if( jd > 300 .and. mm == 1 ) exit !hit start of next year
         if( mm /= old_mm ) then

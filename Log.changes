@@ -154,6 +154,14 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+13th April, Dave 3158
+
+utils/Rdf_csvsites.f90
+utils/Rdf_csvsondes.f90
+
+Some bug-fixes (stopped array overrun) and speed-ups
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 13th April, Alvaro 3157
 
 run.pl:

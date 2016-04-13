@@ -12,12 +12,12 @@ character(len=20), dimension(MAXDIM) :: specname
 real             , dimension(MAXDIM) :: xin
 real             , dimension(366,0:23) :: data
 integer          , dimension(366) :: cmonth, cday
-character(len=20) :: insite, wpoll, wsite, date, txt1, txt2
+character(len=20) :: wpoll, wsite, date, txt1, txt2
 integer :: i, yy, mm, dd, hh, isite, nsites, n, ispec, nspec, freq
-integer :: wanted_site, wanted_spec, last_day, jd, old_dd
-integer :: io_in, io_dmax, io_dmean, io_vals, io_hrly, io_snam, io_dates
+integer :: wanted_site, wanted_spec, last_day, jd, old_dd, wanted_year
+integer :: io_in, io_dmax, io_dmean, io_vals, io_hrly, io_dates
 integer :: comma, comma2
-
+logical :: first=.true.
 
    if ( iargc() > 0 ) then
      call getarg(1,infile)
@@ -40,7 +40,6 @@ integer :: comma, comma2
 
    io_in = 10
    open(io_in,file=infile)
-
 
    read(unit=io_in,fmt=*)  nsites
    read(unit=io_in,fmt=*)  freq
@@ -102,7 +101,6 @@ print *, "NSITES ", nsites, "FREQ ", freq, "WANTED_SITEXX ", wanted_site, trim(w
 !Data bits start with e.g.:
 ! AT02_Illmitz, 01/01/2009 01:00, 3.020E+01, 6.452E-03,....
 
-
    data(:,:) = 0.0
    jd = 0
    old_dd = 0
@@ -110,6 +108,8 @@ print *, "NSITES ", nsites, "FREQ ", freq, "WANTED_SITEXX ", wanted_site, trim(w
      do isite = 1, nsites
 
        read(io_in,"(a)",end=100) longline 
+
+      if (isite == wanted_site ) then !NEW HERE
 
       ! We process by splitting on commas
        comma=index(longline, ",")
@@ -122,6 +122,11 @@ print *, "NSITES ", nsites, "FREQ ", freq, "WANTED_SITEXX ", wanted_site, trim(w
        read(unit=date(8:11),fmt="(i4)")  yy
        read(unit=date(13:14),fmt="(i2)")  hh
        if ( dd /= old_dd ) then
+          if ( first ) then
+             wanted_year = yy
+             first = .false.
+          end if
+          if ( yy > wanted_year ) EXIT
           jd = jd + 1
           cmonth(jd) = mm
           cday(jd) = dd
@@ -131,7 +136,7 @@ print *, "NSITES ", nsites, "FREQ ", freq, "WANTED_SITEXX ", wanted_site, trim(w
        read(longline,*) xin(1:nspec)
 
      ! ----------------------------------
-      if (isite == wanted_site ) then
+     !OLD  if (isite == wanted_site ) then
          last_day = jd
          if ( dd==15 .and. hh==12) write(*,*) "date ", date, "HH ", mm, dd, hh, " jd ", jd, last_day
          data(jd,hh) = xin(wanted_spec)
