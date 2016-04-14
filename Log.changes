@@ -154,7 +154,7 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-13-14th April, Alvaro 3160-61
+13-14th April, Alvaro 3160-62
 
 SmallUtils_ml,TimeDate_ExtraUtil_ml:
 - Move key2str interface and module procedures from
@@ -166,7 +166,7 @@ SmallUtils_ml,TimeDate_ExtraUtil_ml:
 
 run.pl,config_FORECAST.nml,config_FORECAST_CitySR.nml
 - use replace keywords on emission files
-  EmisDir               ='DataDir/Emis_TNO7_MACCIII',
+  EmisDir               ='DataDir/Data/Emis_TNO7_MACCIII',
   emis_inputlist(1)%name='EmisDir/Emis_TNO7_MACCIII_$emisyear.nc',
 
 TimeDate_ExtraUtil_ml,Met_ml,Nest_ml,NetCDF_ml,GridValues_ml:
