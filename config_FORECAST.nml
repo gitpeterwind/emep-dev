@@ -37,8 +37,8 @@
   INERIS_SNAP1          = F,          ! Used for TFMM runs
   INERIS_SNAP2          = F,          ! Used for TFMM runs
 !------------------------------
-  EmisDir               ='DataDir/MACC14/Emissions/TNO_MACCIII',
-  emis_inputlist(1)%name='EmisDir/Emis_TNO7_YYYY.nc',
+  EmisDir               ='DataDir/Emis_TNO7_MACCIII',
+  emis_inputlist(1)%name='EmisDir/Emis_TNO7_MACCIII_$emisyear.nc',
 !------------------------------
   SELECT_LEVELS_HOURLY  = T,          ! hourly output flag Also for FORECAST, 3DPROFILES
   FORECAST              = T,

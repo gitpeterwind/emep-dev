@@ -154,7 +154,7 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-13th April, Alvaro 3160
+13-14th April, Alvaro 3160-61
 
 SmallUtils_ml,TimeDate_ExtraUtil_ml:
 - Move key2str interface and module procedures from
@@ -164,10 +164,19 @@ SmallUtils_ml,TimeDate_ExtraUtil_ml:
 - Expand integer/real versions of key2str (ikey2str/rkey2str)
   to provide the same functionality than str_replace and num2str combination.
 
-config_FORECAST.nml,config_FORECAST_CitySR.nml
-- use replace keyswords on emission files
-  EmisDir               ='DataDir/MACC14/Emissions/TNO_MACCIII',
-  emis_inputlist(1)%name='EmisDir/Emis_TNO7_YYYY.nc',
+run.pl,config_FORECAST.nml,config_FORECAST_CitySR.nml
+- use replace keywords on emission files
+  EmisDir               ='DataDir/Emis_TNO7_MACCIII',
+  emis_inputlist(1)%name='EmisDir/Emis_TNO7_MACCIII_$emisyear.nc',
+
+TimeDate_ExtraUtil_ml,Met_ml,Nest_ml,NetCDF_ml,GridValues_ml:
+- Remove nctime2idate/idate2nctime interfaces,
+  as they are superseded by nctime2date/date2nctime.
+- Replace nctime2idate/idate2nctime calls by nctime2date/date2nctime calls
+- Remove unused use..nctime2idate
+
+TimeDate_ExtraUtil_ml
+- Add self_test subroutine with example usages.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 13th April, Dave 3158-59

@@ -379,36 +379,31 @@ pure Function str_replace(old,new,str) result(s)
 End Function str_replace
 !============================================================================
 ! key2str 
-!  replace occurence(s) of keyword key on string iname by value val
+!   replace occurence(s) of keyword key on string iname by value val
 ! module procedures
-!  skey2str replace string  values (main implementation)
-!  ikey2str replace integer values (uses skey2str)
-!  rkey2str replace real    values (uses skey2str)
+!   skey2str replace string  values (main implementation)
+!   ikey2str replace integer values (uses skey2str)
+!   rkey2str replace real    values (uses skey2str)
 pure function skey2str(iname,key,val,xfmt) result(fname)
   character(len=*), intent(in):: iname,key
   character(len=*), intent(in):: val
   character(len=*), intent(in), optional :: xfmt
   character(len=len(iname))   :: fname
-  character(len=20)           :: ifmt!="(A??)"
+  character(len=len(val))     :: aux
   integer :: ind,n
   fname=iname
   ind=index(fname,trim(key))
   if(ind==0)return
-  if(present(xfmt))then     ! keyword lenght as provided by xfmt
-    write(ifmt,xfmt)trim(val)
-    n=len_trim(ifmt)
-    do while (ind>0)
-      fname=fname(1:ind-1)//trim(ifmt)//fname(ind+n:len_trim(fname))
-      ind=index(fname,trim(key))
-    enddo
+  if(present(xfmt))then     ! user provided formated
+    write(aux,xfmt)trim(val)
   else                      ! keyword lenght same as key
-    n=len_trim(key)
-    write(ifmt,"('(A',I0,')')")n
-    do while (ind>0)
-      write(fname(ind:ind+n-1),ifmt)trim(val)
-      ind=index(fname,trim(key))
-    enddo
+    aux=trim(val)
   endif
+  n=len_trim(key)
+  do while (ind>0)
+    fname=fname(1:ind-1)//trim(aux)//fname(ind+n:len_trim(fname))
+    ind=index(fname,trim(key))
+  enddo
 endfunction skey2str
 pure function ikey2str(iname,key,val,xfmt) result(fname)
   character(len=*), intent(in):: iname,key
@@ -422,7 +417,7 @@ pure function ikey2str(iname,key,val,xfmt) result(fname)
     write(sval,xfmt)val
     if(index(sval,'*')>0)&    ! problem with user format,
       write(sval,"(I0)")val   !  reformat value
-  else                      ! guess format from keyword (Ix.x)
+  else                      ! guess format from keyword (same lenght as key)
     if(val<0)then             ! negative numbers would be printed as ****
       fname=iname             ! keep as it is
       return
@@ -445,7 +440,7 @@ pure function rkey2str(iname,key,val,xfmt) result(fname)
     write(sval,xfmt)val
     if(index(sval,'*')>0)&      ! problem with user format,
       write(sval,"(ES15.3)")val !   reformat value
-  else                      ! guess format from keyword (Fx.x)
+  else                      ! guess format from keyword (same lenght as key)
     if(val<0)then             ! negative numbers would be printed as ****
       fname=iname             ! keep as it is
       return
@@ -509,16 +504,16 @@ subroutine Self_test()
   print *, "1.23e19 With fmt es15.3 ", trim( num2str( 1.23e19, '(es15.3)' ))
   print *, "1.23e19 With fmt f10.2 ", trim( num2str( 1.23e19, '(f10.2)' ))
   
-  print "(/,a)", "4) Self-test - to_upper  ================================="
+  print "(/,a)", "5) Self-test - to_upper  ================================="
   print *, "Upper case of AbCd efG is ", trim(to_Upper("AbCd efG"))
 
-  print "(/,a)", "5) Self-test - str_replace ==============================="
+  print "(/,a)", "6) Self-test - str_replace ==============================="
   print *, str_replace('YYYY','2005','EmisYYYY.txt') ! ok with spaces
   print *, str_replace('YYYY','2005   ','EmisYYYY.txt') ! ok with spaces
   print *, str_replace('YYYY','99   ','EmisYYYY.txt')
   print *, str_replace('XXY','7777777777777777777777   ','EmisYYYY.txt')
 
-  print "(/,a)", "6) Self-test - key2str ==============================="
+  print "(/,a)", "7) Self-test - key2str ==============================="
   print *, key2str('replace string:  "EmisYYYY.txt"','YYYY','2005')
   print *, key2str('replace integer: "EmisYYYY.txt"','YYYY',2005)
   print *, key2str('replace real:    "EmisYYYY.txt"','YYYY',2005.0)

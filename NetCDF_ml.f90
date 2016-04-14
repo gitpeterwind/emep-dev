@@ -55,7 +55,7 @@ use Par_ml,            only : me,GIMAX,GJMAX,MAXLIMAX, MAXLJMAX, &
                               gi0,gj0,tgi0,tgi1,tgj0,tgj1,tlimax,tljmax
 use PhysicalConstants_ml,  only : PI, EARTH_RADIUS
 use TimeDate_ml,       only: nmdays,leapyear ,current_date, date,julian_date
-use TimeDate_ExtraUtil_ml,only: idate2nctime,date2nctime
+use TimeDate_ExtraUtil_ml,only: date2nctime
 use Functions_ml,       only: StandardAtmos_km_2_kPa
 use SmallUtils_ml,      only: wordsplit, find_index
 

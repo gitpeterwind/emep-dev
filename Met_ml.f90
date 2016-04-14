@@ -142,7 +142,7 @@ use TimeDate_ml,          only : current_date, date,nmdays, &
      make_timestamp, make_current_date, nydays, startdate, enddate
 use NetCDF_ml,         only : printCDF,ReadField_CDF,vertical_interpolate,Out_netCDF,GetCDF_modelgrid ! testoutputs
 use netcdf
-use TimeDate_ExtraUtil_ml,only: nctime2idate,date2string
+use TimeDate_ExtraUtil_ml,only: nctime2date,date2string
 
 implicit none
 private
@@ -3206,10 +3206,10 @@ subroutine Check_Meteo_Date
     if(date_in_days)then
       if(MasterProc_local)write(*,*)'Date in days since 1900-1-1 0:0:0'
       call check(nf90_get_var(ncFileID,timeVarID,ndays,start=(/ihh/),count=(/n1/)))
-      call nctime2idate(ndate,ndays(1))    ! for printout: msg="meteo hour YYYY-MM-DD hh"
+      call nctime2date(ndate,ndays(1))    ! for printout: msg="meteo hour YYYY-MM-DD hh"
     else
       call check(nf90_get_var(ncFileID,timeVarID,nseconds,start=(/ihh/),count=(/n1/)))
-      call nctime2idate(ndate,nseconds(1)) ! default
+      call nctime2date(ndate,nseconds(1)) ! default
     endif
     nhour_first=ndate(4)  
     call CheckStop(ndate(1),nyear ,"Met_ml: wrong year" )
@@ -3220,11 +3220,11 @@ subroutine Check_Meteo_Date
     do ihh=1,Nhh
       if(date_in_days)then
         call check(nf90_get_var(ncFileID,timeVarID,ndays,start=(/ihh/),count=(/n1/)))
-        call nctime2idate(ndate,ndays(1))
+        call nctime2date(ndate,ndays(1))
         if(MasterProc_local)write(*,*)'ndays ',ndays(1),ndate(3),ndate(4)
       else
         call check(nf90_get_var(ncFileID,timeVarID,nseconds,start=(/ihh/),count=(/n1/)))
-        call nctime2idate(ndate,nseconds(1))
+        call nctime2date(ndate,nseconds(1))
       endif
       if(DEBUG_MET)write(*,*)'ihh,METSTEP,nhour_first,ndate(4) ',ihh,METSTEP,nhour_first,ndate(4)
       call CheckStop(mod((ihh-1)*METSTEP+nhour_first,24),ndate(4),&

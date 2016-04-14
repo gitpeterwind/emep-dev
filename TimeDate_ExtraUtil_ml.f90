@@ -17,8 +17,6 @@ public :: &
   date2string,      & ! date (various formats) --> formatted string
   date2file,        & ! date (various formats) --> file name w/option for old file version
   string2date,      & ! formatted string & format (pattern) --> date (CD format)
-  idate2nctime,     & ! idate (int array)--> secs since(int)/days since(real)
-  nctime2idate,     & ! idate2nctime inverse
   date2nctime,      & ! date (various formats)--> secs since(int)/days since(real)
   nctime2date,      & ! date2nctime inverse
   nctime2string,    & ! as date2string, but from  secs/days since...
@@ -26,7 +24,7 @@ public :: &
   to_stamp,         & ! extended interface for make_timestamp (TimeDate_ml)
   to_date,          & ! extended interface for make_current_date (TimeDate_ml)
   to_idate,         & ! create int array from timestap or date
-  key2str             ! basic keyword substitution
+  self_test           ! test/example ussages for different interface/module procedures
 
 interface date2string
   module procedure  detail2str
@@ -42,16 +40,6 @@ interface date2file
   module procedure int2file
   module procedure ts2file
 end interface date2file
-
-interface idate2nctime
-  module procedure int_to_secs1970
-  module procedure int_to_days1900
-end interface idate2nctime
-
-interface nctime2idate
-  module procedure secs1970_to_int
-  module procedure days1900_to_int
-end interface nctime2idate
 
 interface date2nctime
   module procedure ts_to_secs1970
@@ -116,6 +104,8 @@ function int2date (id) result (cd)
   type(date)                        :: cd
   integer, intent(in), dimension(:) :: id
   select case (size(id))
+    case (1);! ad-hoc convention
+    cd=date(id(1)/1000000,mod(id(1)/10000,100),mod(id(1)/100,100),mod(id(1),100),0)
     case (3);     cd=date(id(1),id(2),id(3),0,0)
     case (4);     cd=date(id(1),id(2),id(3),id(4),0)
     case (5);     cd=date(id(1),id(2),id(3),id(4),id(5))
@@ -131,9 +121,9 @@ function date2int (cd,n) result (id)
   integer, dimension(n)             :: id
   select case (n)
     case (1);     id=cd%year*1000000+cd%month*10000+cd%day*100+cd%hour ! ad-hoc convention
-    case (3);     id=(/cd%year,cd%month,cd%day/)
-    case (4);     id=(/cd%year,cd%month,cd%day,cd%hour/)
-    case (5);     id=(/cd%year,cd%month,cd%day,cd%hour,cd%seconds/)
+    case (3);     id=[cd%year,cd%month,cd%day]
+    case (4);     id=[cd%year,cd%month,cd%day,cd%hour]
+    case (5);     id=[cd%year,cd%month,cd%day,cd%hour,cd%seconds]
     case default; id(:)=-1
     call CheckStop("ERROR in date2int: undetermined date")
   endselect
@@ -462,7 +452,7 @@ function secs2str(iname,nsecs,debug) result(fname)
   integer, intent(in)                     :: nsecs
   integer, dimension(5)                   :: idate
   logical, intent(in), optional           :: debug
-  call nctime2idate(idate,nsecs)
+  call nctime2date(idate,nsecs)
   fname=date2string(key2str(iname,nctime_key,nsecs,nctime_fmt),idate,debug=debug)
 endfunction secs2str
 
@@ -472,7 +462,7 @@ function days2str(iname,ndays,debug) result(fname)
   real(kind=8), intent(in)                :: ndays
   integer, dimension(5)                   :: idate
   logical, intent(in),  optional          :: debug
-  call nctime2idate(idate,ndays)
+  call nctime2date(idate,ndays)
   fname=date2string(key2str(iname,nctime_key,ndays,nctime_fmt),idate,debug=debug)
 endfunction days2str
 
@@ -567,4 +557,84 @@ function int2file(iname,id,max_age,age_unit,debug) result(fname)
   logical, intent(in), optional     :: debug
   fname=ts2file(iname,to_stamp(id),max_age,age_unit,debug=debug)
 endfunction int2file
+
+subroutine self_test()
+  character(len=*),parameter :: &
+    hfmt="(/I0,') Self-test - ',A,32('='))",& ! header format
+    tfmt="(A,/2X,A,1X,A)",                  & ! test format
+    dfmt="YYYY-MM-DD hh:mm:ss",             & ! date format
+    test_file="YYYYMMDD.test"
+  integer, parameter :: &
+    IO_TMP=27
+  integer :: secs,intdate(1)
+  real    :: days
+
+  call init_ts()
+  print hfmt,1,"date2string"
+  print tfmt,'time stamp input',&
+    date2string(dfmt,ts1900),&    ! timestamps calculated by init_ts
+    date2string(dfmt,ts1970)
+  print tfmt,'date structure input',&
+    date2string(dfmt,date(1900,1,1,0,0)),&
+    date2string(dfmt,date(1970,1,1,0,0))
+  print tfmt,'int array (3..5 elements) input',&
+    date2string(dfmt,[1900,1,1,0,0]),&
+    date2string(dfmt,[1970,1,1,0,0])
+  print tfmt,'integer (YYYYMMDDhh) input',&
+    date2string(dfmt,1900010100),&
+    date2string(dfmt,1970010100)
+  print tfmt,'add 10 days',&
+    date2string(dfmt,ts1900)//&       ! spd=86400.0 (seconds per day)
+      key2str("FFFFFFFF seconds","FFFFFFFF",spd*10,"(SP,F8.1)"),&
+    date2string(dfmt,ts1900,spd*10)   ! +10 days in seconds
+  print tfmt,'subtract 12 hour',&
+    date2string(dfmt,ts1970)//&       ! sph=3600.0 (seconds per hour)
+      key2str("FFFFFFFF seconds","FFFFFFFF",sph*-12,"(SP,F8.1)"),&
+    date2string(dfmt,ts1970,sph*-12)  ! -12 hours in seconds
+
+  print hfmt,2,"date2file"
+  ! create test_file, 2 days before date
+  open(IO_TMP,file=date2string(test_file,ts1970,spd*-2),status='replace')
+  print tfmt,'serch for '//test_file//' up to 3 before date',&
+    date2string(dfmt,ts1970),&
+    date2file(test_file,ts1970,3,"days")  ! found file from 2 days before date
+  ! delete test file
+  close(IO_TMP,status='delete') 
+  print tfmt,'serch for again',&
+    date2string(dfmt,ts1970),&
+    date2file(test_file,ts1970,3,"days")  ! no file found, return 3 days before date
+
+  print hfmt,3,"nctime2string"
+  days=1.25     ! real ==> days since 1900
+  secs=days*spd ! int  ==> secs since 1970
+  print tfmt,'days since 1900 (real input)',&
+    key2str("F.FFFF days since ","F.FFFF",days)//date2string(dfmt,ts1900),&
+    nctime2string(dfmt,days)              
+  print tfmt,'secs since 1970 (integer input)',&
+    key2str("HHHHHH secs since ","HHHHHH",secs)//date2string(dfmt,ts1970),&
+    nctime2string(dfmt,secs)     
+
+  print hfmt,4,"nctime2date/date2nctime"
+  call nctime2date(intdate,days)
+  print tfmt,'nctime2date',&
+    key2str("F.FFFF days since ","F.FFFF",days)//date2string(dfmt,ts1900),&
+    date2string(dfmt,intdate)              
+  call date2nctime(intdate,days)
+  print tfmt,'date2nctime',&
+    key2str("F.FFFF days since ","F.FFFF",days)//date2string(dfmt,ts1900),&
+    date2string(dfmt,intdate)              
+  call nctime2date(intdate,secs)
+  print tfmt,'nctime2date',&
+    key2str("HHHHHH secs since ","HHHHHH",secs)//date2string(dfmt,ts1970),&
+    date2string(dfmt,intdate)              
+  call date2nctime(intdate,secs)
+  print tfmt,'date2nctime',&
+    key2str("HHHHHH secs since ","HHHHHH",secs)//date2string(dfmt,ts1970),&
+    date2string(dfmt,intdate)              
+endsubroutine self_test
 ENDMODULE TimeDate_ExtraUtil_ml
+
+!DSX program tester
+!DSX   use TimeDate_ExtraUtil_ml, only : self_test
+!DSX   call self_test()
+!DSX end program tester

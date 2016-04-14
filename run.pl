@@ -118,7 +118,7 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
- ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3157","EmChem09soa","EMEPSTD" ,"EMEPSTD","EECCA" ,0);
+ ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3161","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
 #($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3074","EmChem09soa","EMEPGLOB","EMEPSTD","GLOBAL",0);
 
 my %BENCHMARK;
@@ -1152,7 +1152,7 @@ foreach my $scenflag ( @runs ) {
       $nml.=EMEP::Sr::slurp("$ProgDir/$f");
     }
     # fill in variables on the template file with corresponding $hash{key}
-    %h=(%h,'year'=>$year,'utc'=>$CWFMETV,
+    %h=(%h,'year'=>$year,'emisyear'=>$emisyear,'utc'=>$CWFMETV,
            'INIC'=>$CWFIC,'INBC'=>$CWFBC,'DUMP'=>$CWFIC,
            'inic'=>$cwfic,'inbc'=>$cwfbc,'dump'=>date2str($CWFBASE,$CWFIC),
            'outdate'=>date2str($CWFDUMP[0],"%Y,%m,%d,000000,")

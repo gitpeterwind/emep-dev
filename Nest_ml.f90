@@ -61,7 +61,7 @@ use Par_ml,                 only: LIMAX,LJMAX,GIMAX,GJMAX,IRUNBEG,JRUNBEG, &
                                   me, li0,li1,lj0,lj1,limax,ljmax
 use Pollen_const_ml,        only: pollen_check
 use TimeDate_ml,            only: date,current_date,nmdays
-use TimeDate_ExtraUtil_ml,  only: idate2nctime,nctime2idate,&
+use TimeDate_ExtraUtil_ml,  only: date2nctime,nctime2date,&
                                   date2string,date2file,compare_date
 use Units_ml,               only: Units_Scale
 use SmallUtils_ml,          only: find_index
@@ -206,7 +206,7 @@ subroutine readxn(indate)
 
   KMAX_BC=KMAX_MID
   ndate(1:4)=[indate%year,indate%month,indate%day,indate%hour]
-  call idate2nctime(ndate,ndays_indate)
+  call date2nctime(ndate,ndays_indate)
   if(first_call)date_nextfile=ndate
 
   select case(MODE)
@@ -498,8 +498,8 @@ subroutine init_icbc(idate,cdate,ndays,nsecs)
 ! Update filenames according to date following templates defined on Nest_config nml
   if(present(idate)) dat=idate 
   if(present(cdate)) dat=[cdate%year,cdate%month,cdate%day,cdate%hour]
-  if(present(ndays)) call nctime2idate(dat,ndays)
-  if(present(nsecs)) call nctime2idate(dat,nsecs)
+  if(present(ndays)) call nctime2date(dat,ndays)
+  if(present(nsecs)) call nctime2date(dat,nsecs)
   call set_extbic(dat)  ! set mapping, EXTERNAL_BC, TOP_BC
 
   if(.not.EXTERNAL_BIC_SET .and. MODE==0)return !No nesting
@@ -713,9 +713,9 @@ subroutine init_nest(ndays_indate,filename_read,native_grid,IIij,JJij,Weight,&
         ndays_ext(n)=ndays_ext(n-1)+nmdays(n-1)
       enddo
     elseif(ndays_ext(1)-ndays_indate>halfsecond)then
-      call nctime2idate(ndate,ndays_indate,&
+      call nctime2date(ndate,ndays_indate,&
           'WARNING: Nest did not find BIC for date YYYY-MM-DD hh:mm:ss')
-      call nctime2idate(ndate,ndays_ext(1),&
+      call nctime2date(ndate,ndays_ext(1),&
           'Nest first date found YYYY-MM-DD hh:mm:ss')
     endif
 
@@ -1059,7 +1059,7 @@ subroutine read_newdata_LATERAL(ndays_indate)
 
     if(MODE==100)then
       !only care of the month
-      call nctime2idate(ndate,ndays_indate,'Nest: BC reading record MM')
+      call nctime2date(ndate,ndays_indate,'Nest: BC reading record MM')
       n=ndate(2)
     else
       if(time_exists)then
@@ -1073,11 +1073,11 @@ subroutine read_newdata_LATERAL(ndays_indate)
       else
         !cannot read time on file. assume it is corresponds to date_nextfile
         n=1
-        call idate2nctime(date_nextfile,ndays_ext(n))
+        call date2nctime(date_nextfile,ndays_ext(n))
       endif
     endif
 
-    call nctime2idate(ndate,ndays_ext(n),'Nest: Reading date YYYY-MM-DD hh:mm:ss')
+    call nctime2date(ndate,ndays_ext(n),'Nest: Reading date YYYY-MM-DD hh:mm:ss')
     if(mydebug) write(*,*)'Nest: Record ',n,' of ',N_ext_BC
     itime=n
     rtime_saved(2)=ndays_ext(n)
@@ -1085,11 +1085,11 @@ subroutine read_newdata_LATERAL(ndays_indate)
       !next data to be read should be from another file
       if(mydebug)then
         write(*,*)'Nest: Last record reached ',n,N_ext_BC
-        call nctime2idate(date_nextfile,ndays_ext(n)+NHOURS_Stride_BC/24.0,&
+        call nctime2date(date_nextfile,ndays_ext(n)+NHOURS_Stride_BC/24.0,&
               'next BC date to read:  YYYY-MM-DD hh:mm:ss')
         write(*,*)'Nest: date_nextfile ',date_nextfile
       else
-        call nctime2idate(date_nextfile,ndays_ext(n)+NHOURS_Stride_BC/24.0)
+        call nctime2date(date_nextfile,ndays_ext(n)+NHOURS_Stride_BC/24.0)
       endif
     endif
 
@@ -1275,7 +1275,7 @@ subroutine reset_3D(ndays_indate)
       if(N_ext==1)then
         n=1
       else
-        call nctime2idate(ndate,ndays_indate,'Using record MM')
+        call nctime2date(ndate,ndays_indate,'Using record MM')
         n=ndate(2)
       endif
     else
@@ -1285,7 +1285,7 @@ subroutine reset_3D(ndays_indate)
       n=N_ext
       write(*,*)'Nest: WARNING: did not find correct date'
 876   continue
-      call nctime2idate(ndate,ndays_ext(n),'Using date YYYY-MM-DD hh:mm:ss')
+      call nctime2date(ndate,ndays_ext(n),'Using date YYYY-MM-DD hh:mm:ss')
     endif
     itime=n
   endif

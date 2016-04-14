@@ -39,7 +39,7 @@ use Par_ml, only : &
      parinit,parinit_groups
 use PhysicalConstants_ml,     only: GRAV, PI, EARTH_RADIUS ! gravity, pi
 use TimeDate_ml,              only: current_date,date,Init_nmdays,nmdays,startdate
-use TimeDate_ExtraUtil_ml,    only: nctime2idate,date2string
+use TimeDate_ExtraUtil_ml,    only: date2string
 use InterpolationRoutines_ml, only: inside_1234
 use netcdf,                   only: &
   NF90_OPEN,NF90_NOWRITE,NF90_NOERR,NF90_CLOSE,&
