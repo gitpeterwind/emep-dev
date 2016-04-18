@@ -416,7 +416,7 @@ implicit none
         name = "dZ_BND"
         unit_conv =  hr_out(ih)%unitconv
         forall(i=1:limax,j=1:ljmax) &
-          hourly(i,j)=(z_bnd(i,i,ik)-z_bnd(i,i,ik+1))*unit_conv
+          hourly(i,j)=(z_bnd(i,j,ik)-z_bnd(i,j,ik+1))*unit_conv
 
       case("COLUMN")    ! Column output in ug/m2, ugX/m2, molec/cm2
         itot = NSPEC_SHL + ispec

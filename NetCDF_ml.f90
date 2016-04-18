@@ -1812,25 +1812,21 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,&
 
   use netcdf
   implicit none
-  character (len=*),intent(in) :: fileName
-
-  character (len = *),intent(in) ::varname
+  character(len=*),intent(in) :: fileName,varname
   integer, intent(in) :: nstart,nfetch,k_start,k_end
-!  real, intent(out) :: Rvar(LIMAX,LJMAX,k_end-k_start+1,nfetch)
+! real, intent(out) :: Rvar(LIMAX,LJMAX,k_end-k_start+1,nfetch)
   real, intent(out) :: Rvar(*)
-  integer, optional, intent(in) ::  i_start,j_start
-  integer, optional, intent(in) ::  imax_in,jmax_in
-  logical, optional,intent(in) :: reverse_k
-  logical, optional,intent(in) :: needed
-  logical, optional,intent(out) :: found
+  integer, optional, intent(in) :: i_start,j_start,imax_in,jmax_in
+  logical, optional, intent(in) :: reverse_k,needed
+  logical, optional, intent(out):: found
 
   logical :: fileneeded
   integer :: status,ndims,alloc_err
   integer :: totsize,xtype,dimids(NF90_MAX_VAR_DIMS),nAtts,imax,jmax
   integer :: dims(NF90_MAX_VAR_DIMS),startvec(NF90_MAX_VAR_DIMS)
   integer :: ncFileID,VarID,i,j,k,n,it,i1,j1,i0,j0,ijkn,ij,ijk,ijknR,jkn
-  character*100::name
-  real :: scale,offset,scalefactors(2)
+  character(len=100)::name
+  real :: scale,offset
   integer, allocatable:: Ivalues(:)
   real, allocatable:: Rvalues(:)
   logical :: reverse_k_loc
@@ -1864,12 +1860,6 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,&
       return
     endif
   endif
-
-  !get global attributes
-  !example:
-!  call check(nf90_get_att(ncFileID, nf90_global, "lastmodified_hour", attribute ))
-!  call check(nf90_get_att(ncFileID, nf90_global, "lastmodified_date", attribute2 ))
-!  print *,'file last modified (yyyymmdd hhmmss.sss) ',attribute2,' ',attribute
 
   !test if the variable is defined and get varID:
   status=nf90_inq_varid(ncFileID,varname,VarID)
@@ -1945,74 +1935,60 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,&
   i1=1;j1=1
   if(i_fdom(1)==1)i1=i0+1
   if(j_fdom(1)==1)j1=j0+1
-!  Rvar=0.0
+! Rvar=0.0
   totsize=dims(1)*dims(2)*(k_end-k_start+1)*dims(ndims)
   
   select case(xtype)
   case(NF90_SHORT,NF90_INT,NF90_BYTE)
-    allocate(Ivalues(totsize), stat=alloc_err)
+    ! read scale/offset if present, otherwise assign default value
+    if(nf90_get_att(ncFileID,VarID,"scale_factor",scale )/=nf90_noerr)scale=1.0
+    if(nf90_get_att(ncFileID,VarID,"add_offset"  ,offset)/=nf90_noerr)offset=0.0
+
+    allocate(Ivalues(totsize),Rvalues(totsize),stat=alloc_err)
     call check(nf90_get_var(ncFileID, VarID, Ivalues,start=startvec,count=dims))
-
-    scalefactors(1) = 1.0 !default
-    scalefactors(2) = 0.  !default
-    status = nf90_get_att(ncFileID, VarID, "scale_factor", scale  )
-    if(status==nf90_noerr) scalefactors(1) = scale
-    status = nf90_get_att(ncFileID, VarID, "add_offset",  offset )
-    if(status==nf90_noerr) scalefactors(2) = offset
-    it=0
-    do n=1,max(1,dims(4))
-       do k=1,dims(3)
-          do j=1,dims(2)
-             jkn=IMAX*(j-1)+imax*jmax*(k-1)+imax*jmax*(k_end-k_start+1)*(n-1)
-             do i=1,dims(1)
-                it=it+1
-!                ijknR=ijk+imax*jmax*(k_end-k_start+1)*(n-1)
-                ijknR=i+jkn
-                Rvar(ijknR)=Ivalues(it)*scalefactors(1)+scalefactors(2)
-             enddo
-        enddo
-      enddo
-    enddo
-
-deallocate(Ivalues)
+    Rvalues(:)=Ivalues(:)*scale+offset
+    deallocate(Ivalues)
   case(NF90_FLOAT,NF90_DOUBLE)
-    if(reverse_k_loc)then
-      allocate(Rvalues(totsize), stat=alloc_err)
-      call check(nf90_get_var(ncFileID, VarID, Rvalues,start=startvec,count=dims))
-      ijkn=0
-      do n=1,nfetch
-        do k=k_end-k_start+1,1,-1
-          do j=1,dims(2)
-             jkn=IMAX*(j-1)+imax*jmax*(k-1)+imax*jmax*(k_end-k_start+1)*(n-1)
-            do i=1,dims(1)
-              ijkn=ijkn+1
-              ijknR=i+jkn
-              Rvar(ijknR)=Rvalues(ijkn)
-            enddo
+    allocate(Rvalues(totsize), stat=alloc_err)
+    call check(nf90_get_var(ncFileID, VarID, Rvalues,start=startvec,count=dims))
+!   if(DEBUG_NETCDF) &
+!     write(*,*)'datatype real, read', me, maxval(Rvalues), minval(Rvalues)
+  case default
+    write(*,*)'datatype not yet supported'!Char
+    Call CheckStop('GetCDF_modelgrid datatype not yet supported')
+  endselect
+
+  if(reverse_k_loc)then
+    ijkn=0
+    do n=1,nfetch
+      do k=k_end-k_start+1,1,-1
+        do j=1,dims(2)
+          jkn=IMAX*(j-1)+imax*jmax*(k-1)+imax*jmax*(k_end-k_start+1)*(n-1)
+          do i=1,dims(1)
+            ijkn=ijkn+1
+            ijknR=i+jkn
+            Rvar(ijknR)=Rvalues(ijkn)
           enddo
         enddo
       enddo
-      deallocate(Rvalues)
-    else
-     Call StopAll('GetCDF_modelgrid datatype not yet supported')
-      
-      i1=max(1,i1)
-      j1=max(1,j1)
-      if(DEBUG_NETCDF)&
-        write(*,83)me,'writing to ',i1,j1,1,&
-          ' to ',dims(1)+i1-1,dims(2)+j1-1,k_end-k_start+1,nfetch
-!      call check(nf90_get_var(ncFileID, VarID, &
-!         Rvar(1:dims(1),1:dims(2),1:k_end-k_start+1,1:nfetch),&
-!         start=startvec,count=dims))
-!     call check(nf90_get_var(ncFileID, VarID, Rvar,start=startvec,count=dims))
-    endif
-!    if(DEBUG_NETCDF) &
-!      write(*,*)'datatype real, read', me, maxval(Rvar), minval(Rvar)
-  case default
-    write(*,*)'datatype not yet supported'!Char
-    Call StopAll('GetCDF  datatype not yet supported')
-  endselect
-
+    enddo
+  else
+    it=0
+    do n=1,max(1,dims(4))
+      do k=1,dims(3)
+        do j=1,dims(2)
+          jkn=IMAX*(j-1)+imax*jmax*(k-1)+imax*jmax*(k_end-k_start+1)*(n-1)
+          do i=1,dims(1)
+            it=it+1
+!           ijknR=ijk+imax*jmax*(k_end-k_start+1)*(n-1)
+            ijknR=i+jkn
+            Rvar(ijknR)=Rvalues(it)
+          enddo
+        enddo
+      enddo
+    enddo
+  endif
+  deallocate(Rvalues)
   call check(nf90_close(ncFileID))
   if(DEBUG_NETCDF)write(*,*)'finished GetCDF_modelgrid', me
 endsubroutine GetCDF_modelgrid

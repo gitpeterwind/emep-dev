@@ -154,6 +154,19 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+18th April, Alvaro 3163
+
+NetCDF_ml:
+- Re-enhable float/double fields on GetCDF_modelgrid.
+  This feature disabled on 3145 (Feb 2016).
+- Re-write xtype/reverse_k_loc logic so they are no longer nested.
+  This way it is easy to ensure consistency over the xtype/reverse_k_loc combinations.
+  
+Output_hourly:
+- Correct bug on dZ/dZ_BND hourly output type.
+  Bug was introduced with dZ/dZ_BND on SVN 2973 (Mar 2015).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 13-14th April, Alvaro 3160-62
 
 SmallUtils_ml,TimeDate_ExtraUtil_ml:
