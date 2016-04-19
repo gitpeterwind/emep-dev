@@ -302,41 +302,41 @@ end function find_indices
 
  end function trims
 !=======================================================================
- function num2str_r(x,xfmt)  result(str)
+function num2str_r(x,xfmt)  result(str)
   real, intent(in) :: x
   character(len=*), intent(in), optional :: xfmt
-  character(len=19) :: str
+  character(len=32) :: str
 
-  if( present( xfmt ) ) then
-     write(str, xfmt ) x
-     if ( index(str,'*') > 0  ) then
-      print *, "Problem with format", trim(str)
-      write(str, "(es15.3)" ) x
-      print *, "Re-format to ", trim(str)
-     end if
+  if(present(xfmt)) then
+    write(str,xfmt) x
+    if(index(str,'*')>0) then
+!     print *, "Problem with format", trim(str)
+      write(str,"(es15.3)") x
+!     print *, "Re-format to ", trim(str)
+    endif
   else
-     write(str, * ) x
-     str=adjustl(str)  ! remove leading spaces 
-  end if
- end function num2str_r
+    write(str,*) x
+    str=adjustl(str)  ! remove leading spaces 
+  endif
+endfunction num2str_r
 !============================================================================
- function num2str_i(n,xfmt)  result(str)
+function num2str_i(n,xfmt)  result(str)
   integer, intent(in):: n
   character(len=*), intent(in), optional :: xfmt
-  character(len=19) :: str
+  character(len=32) :: str
 
-  if( present( xfmt ) ) then
-     write(str, xfmt ) n
-     if ( index(str,'*') > 0  ) then
-      print *, "Problem with format", trim(str)
-      write(str, * ) n
-      print *, "Re-format to ", trim(str)
-     end if
+  if(present(xfmt)) then
+    write(str,xfmt) n
+    if(index(str,'*')>0) then
+!     print *, "Problem with format", trim(str)
+      write(str,*) n
+!     print *, "Re-format to ", trim(str)
+    endif
   else
-     write(str, * ) n
-     str=adjustl(str)  ! remove leading spaces 
-  end if
- end function num2str_i
+    write(str,*) n
+    str=adjustl(str)  ! remove leading spaces 
+  endif
+endfunction num2str_i
 !============================================================================
 !> Function posted by SethMMorton at: 
 !! http://stackoverflow.com/questions/10759375/how-can-i-write-a-to-upper-or-to-lower-function-in-f90
@@ -383,7 +383,7 @@ End Function str_replace
 ! module procedures
 !   skey2str replace string  values (main implementation)
 !   ikey2str replace integer values (uses skey2str)
-!   rkey2str replace real    values (uses skey2str)
+!   rkey2str replace real    values (uses skey2str/ikey2str)
 pure function skey2str(iname,key,val,xfmt) result(fname)
   character(len=*), intent(in):: iname,key
   character(len=*), intent(in):: val
@@ -447,11 +447,14 @@ pure function rkey2str(iname,key,val,xfmt) result(fname)
     endif
     n=len_trim(key)
     n1=index(key,".")
-    if(n1==0)n1=n
-    write(ifmt,"('(F',I0,'.',I0,')')")n1-1,n-n1
-    write(sval,ifmt)val
+    if(n1>0)then
+      write(ifmt,"('(F',I0,'.',I0,')')")n,n-n1
+      write(sval,ifmt)val
+      fname=trim(skey2str(iname,key,sval))
+    else
+      fname=trim(ikey2str(iname,key,int(val)))
+    endif
   endif
-  fname=trim(skey2str(iname,key,sval))
 endfunction rkey2str
 !============================================================================
 subroutine Self_test()
@@ -502,7 +505,7 @@ subroutine Self_test()
   print *, "1.23 Without fmt ", trim( num2str( 1.23 ))
   print *, "1.23e19 Without fmt ", trim( num2str( 1.23e19 ))
   print *, "1.23e19 With fmt es15.3 ", trim( num2str( 1.23e19, '(es15.3)' ))
-  print *, "1.23e19 With fmt f10.2 ", trim( num2str( 1.23e19, '(f10.2)' ))
+  print *, "1.23e19 With fmt f24.2 ", trim( num2str( 1.23e19, '(f24.2)' ))
   
   print "(/,a)", "5) Self-test - to_upper  ================================="
   print *, "Upper case of AbCd efG is ", trim(to_Upper("AbCd efG"))

@@ -133,6 +133,11 @@ MACC: ./ZD_Pollen/Pollen_ml.f90 ./ZD_Pollen/Pollen_const_ml.f90
 EmChem09-ESX: SRCS := $(filter-out My_ESX_ml.f90,$(SRCS)) $(ESX_SRCS)
 EmChem09-ESX: $(ESX_SRCS) | depend
 
+# Test
+TEST:
+	$(MAKE) PROG=ModuleTester DEBUG=yes -j4 \
+	  SRCS="$(filter-out Unimod.f90,$(SRCS)) ModuleTester.f90"
+
 # Link My_* files and MAKE target
 EMEP HTAP MACC MACC-EVA EmChem09 EmChem09-ESX CRI_v2_R5 eEMEP SR-EMEP SR-MACC:
 	ln -sf $(filter %.f90 %.inc,$+) . && $(MAKE)
