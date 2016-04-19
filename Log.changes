@@ -154,6 +154,38 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+19th April, Dave  3167
+
+testing system:
+
+NEW: mk.testX and utils/fmkmf
+
+Usage: e.g.  mk.testX  SmallUtils.f90
+
+This will create a small test program testX_SmallUtils, and a Makefile
+testX_Makefile_SmallUtils. The code will be compiled and run.
+
+Requirement: to run this, some code at the end of the module has make
+a proper program, but be commented out this !DSX (sorry for the DS, this
+was TSTESX in ESX and I ran out of imagination for Unimod..)
+
+Example:
+
+   module SmallUtils_ml
+   ....
+   end module SmallUtils_ml
+   
+   !DSX program tester
+   !DSX   use SmallUtils_ml, only : Self_test
+   !DSX   call Self_test()
+   !DSX end program tester
+
+(where here we also have put a self_test routine in the module. This
+ isn't essential, but often very useful.)
+
+NOTE: fmkmf has copyright from University of Edinburgh, so NOT emep gnu
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 19th April, Peter 3164
 
 More user friendly version of uEMEP: the component indices are set automatically.
