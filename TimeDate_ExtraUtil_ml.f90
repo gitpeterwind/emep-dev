@@ -560,9 +560,9 @@ endfunction int2file
 
 subroutine self_test()
   character(len=*),parameter :: &
-    hfmt="(/I0,') Self-test - ',A,32('='))",& ! header format
-    tfmt="(A,/2X,A,1X,A)",                  & ! test format
-    dfmt="YYYY-MM-DD hh:mm:ss",             & ! date format
+    hfmt="(/I0,') Self-test - ',A,/32('='))", & ! header format
+    tfmt="(A,/2X,A,', ',A,'.')",              & ! test format
+    dfmt="YYYY-MM-DD hh:mm:ss",               & ! date format
     test_file="YYYYMMDD.test"
   integer, parameter :: &
     IO_TMP=27
@@ -580,24 +580,24 @@ subroutine self_test()
   print tfmt,'int array (3..5 elements) input',&
     date2string(dfmt,[1900,1,1,0,0]),&
     date2string(dfmt,[1970,1,1,0,0])
-  print tfmt,'integer (YYYYMMDDhh) input',&
-    date2string(dfmt,1900010100),&
-    date2string(dfmt,1970010100)
+  print tfmt,'integer ([YYYYMMDDhh]) input',&
+    date2string(dfmt,[1900010100]),&
+    date2string(dfmt,[1970010100])
   print tfmt,'add 10 days',&
     date2string(dfmt,ts1900)//&       ! spd=86400.0 (seconds per day)
-      key2str("FFFFFFFF seconds","FFFFFFFF",spd*10,"(SP,F8.1)"),&
+      key2str("FFFFFFFFFF seconds","FFFFFFFFFF",spd*10,"(SP,F10.1)"),&
     date2string(dfmt,ts1900,spd*10)   ! +10 days in seconds
   print tfmt,'subtract 12 hour',&
     date2string(dfmt,ts1970)//&       ! sph=3600.0 (seconds per hour)
-      key2str("FFFFFFFF seconds","FFFFFFFF",sph*-12,"(SP,F8.1)"),&
+      key2str("FFFFFFFFFF seconds","FFFFFFFFFF",sph*-12,"(SP,F10.1)"),&
     date2string(dfmt,ts1970,sph*-12)  ! -12 hours in seconds
 
   print hfmt,2,"date2file"
-  ! create test_file, 2 days before date
-  open(IO_TMP,file=date2string(test_file,ts1970,spd*-2),status='replace')
+  ! create test_file, 1 day before date
+  open(IO_TMP,file=date2string(test_file,ts1970,-spd),status='replace')
   print tfmt,'serch for '//test_file//' up to 3 before date',&
     date2string(dfmt,ts1970),&
-    date2file(test_file,ts1970,3,"days")  ! found file from 2 days before date
+    date2file(test_file,ts1970,3,"days")  ! found file from 1 days before date
   ! delete test file
   close(IO_TMP,status='delete') 
   print tfmt,'serch for again',&
@@ -609,7 +609,7 @@ subroutine self_test()
   secs=days*spd ! int  ==> secs since 1970
   print tfmt,'days since 1900 (real input)',&
     key2str("F.FFFF days since ","F.FFFF",days)//date2string(dfmt,ts1900),&
-    nctime2string(dfmt,days)              
+    nctime2string(dfmt,days)
   print tfmt,'secs since 1970 (integer input)',&
     key2str("HHHHHH secs since ","HHHHHH",secs)//date2string(dfmt,ts1970),&
     nctime2string(dfmt,secs)     

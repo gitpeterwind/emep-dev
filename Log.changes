@@ -154,17 +154,22 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-19th April, Alvaro 3168
+19th April, Alvaro 3168,3169
 
-ModuleTester.f90:
+ModuleTester.f90, Makefile:
 - New tester program for modules with self_test routines
 - Example: make TEST && ModuleTester SmallUtils_ml
 
 SmallUtils_ml
-- Extend num2str output to 32 characteres to avoid write overflow errors
+- Extend num2str/key2str output to 32 characteres to avoid write overflow errors
 - Comment print messages on num2str to avoid recursive io errors
 - Extend self_test format for 1.23e19 to f24.2 to avoid formatting errors
 - Fix bug on real version of key2str.
+- key2str returns unchanged input when keyword is not found.
+- Improve key2str self_test comments
+
+TimeDate_ExtraUtil_ml
+- Debug/fix self_test
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 19th April, Dave  3167

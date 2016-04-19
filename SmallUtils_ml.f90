@@ -410,9 +410,13 @@ pure function ikey2str(iname,key,val,xfmt) result(fname)
   integer, intent(in)         :: val
   character(len=*), intent(in), optional :: xfmt
   character(len=len(iname))   :: fname
-  character(len=20)           :: sval
+  character(len=32)           :: sval
   character(len=9)            :: ifmt!="(I??.??)"
   integer :: n
+  if(index(iname,trim(key))==0)then
+    fname=iname
+    return
+  endif
   if(present(xfmt))then     ! user supplied format
     write(sval,xfmt)val
     if(index(sval,'*')>0)&    ! problem with user format,
@@ -433,9 +437,13 @@ pure function rkey2str(iname,key,val,xfmt) result(fname)
   real, intent(in)            :: val
   character(len=*), intent(in), optional :: xfmt
   character(len=len(iname))   :: fname
-  character(len=20)           :: sval
+  character(len=32)           :: sval
   character(len=9)            :: ifmt!="(F??.??)"
   integer :: n,n1
+  if(index(iname,trim(key))==0)then
+    fname=iname
+    return
+  endif
   if(present(xfmt))then     ! user supplied format
     write(sval,xfmt)val
     if(index(sval,'*')>0)&      ! problem with user format,
@@ -450,11 +458,11 @@ pure function rkey2str(iname,key,val,xfmt) result(fname)
     if(n1>0)then
       write(ifmt,"('(F',I0,'.',I0,')')")n,n-n1
       write(sval,ifmt)val
-      fname=trim(skey2str(iname,key,sval))
     else
-      fname=trim(ikey2str(iname,key,int(val)))
+      write(sval,"(I0)")int(val)
     endif
   endif
+  fname=trim(skey2str(iname,key,sval))
 endfunction rkey2str
 !============================================================================
 subroutine Self_test()
@@ -517,14 +525,15 @@ subroutine Self_test()
   print *, str_replace('XXY','7777777777777777777777   ','EmisYYYY.txt')
 
   print "(/,a)", "7) Self-test - key2str ==============================="
-  print *, key2str('replace string:  "EmisYYYY.txt"','YYYY','2005')
-  print *, key2str('replace integer: "EmisYYYY.txt"','YYYY',2005)
-  print *, key2str('replace real:    "EmisYYYY.txt"','YYYY',2005.0)
-  print *, key2str('string w/spaces::"EmisYYYY.txt"','YYYY','99   ','(A)')
-  print *, key2str('1.23 w/2 decimals: "F.FF"' ,'F.FF' ,1.23)
-  print *, key2str('1.23 w/3 decimals: "F.FFF"','F.FFF',1.23)
-  print *, key2str('1.23 w/es15.3 fmt: "FFF"','FFF',1.23,'(es15.3)')
-  print *, key2str('1.23 w/f10.2  fmt: "FFF"','FFF',1.23,'(f10.2)')
+  print *, key2str('replace string:  "EmisYYYY.txt".','YYYY','2005')
+  print *, key2str('replace integer: "EmisYYYY.txt".','YYYY',2005)
+  print *, key2str('replace real:    "EmisYYYY.txt".','YYYY',2005.0)
+  print *, key2str('string w/spaces::"EmisYYYY.txt".','YYYY','99   ','(A)')
+  print *, key2str('1.23 w/2 decimals: "F.FF".' ,'F.FF' ,1.23)
+  print *, key2str('1.23 w/3 decimals: "F.FFF".','F.FFF',1.23)
+! note that the sting needs to be long enough to hold the formated value
+  print *, key2str('1.23 w/es10.3 fmt: "FFF".        ','FFF',1.23,'(es10.3)')
+  print *, key2str('1.23 w/f10.2  fmt: "FFF".        ','FFF',1.23,'(f10.2)')
 end subroutine Self_test
 
 end module SmallUtils_ml

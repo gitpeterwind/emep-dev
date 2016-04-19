@@ -135,7 +135,7 @@ EmChem09-ESX: $(ESX_SRCS) | depend
 
 # Test
 TEST:
-	$(MAKE) PROG=ModuleTester DEBUG=yes -j4 \
+	$(MAKE) -j4 PROG=ModuleTester DEBUG=yes \
 	  SRCS="$(filter-out Unimod.f90,$(SRCS)) ModuleTester.f90"
 
 # Link My_* files and MAKE target
