@@ -1887,21 +1887,26 @@ subroutine uemep_emis(indate)
   if(first_call)then
      !init uemep
 
-     uEMEP%Nix=size(PPM25_GROUP)
-     uEMEP%sector=0!all
-     uEMEP%emis="pm25"
-     uEMEP%ix(1:uEMEP%Nix)=PPM25_GROUP-NSPEC_SHL
+!     uEMEP%emis="pm25"!one of the emission: pm25, sox, nox, voc, pmco, nh3 or co.
+!     uEMEP%sector=0!0 = all sectors, or choose one ector
+    
+     iem=find_index(uEMEP%emis ,EMIS_FILE(1:NEMIS_FILE))
+     call CheckStop( iem<1, "uEMEP did not find corresponding emission file: "//trim(uEMEP%emis) )
+     
+     uEMEP%Nix=emis_nsplit(iem)
+     call CheckStop( uEMEP%Nix>size(uEMEP%ix), "uEMEP: increase size of uEMEP%ix()!" )
 
-     uEMEP%Nix=2
-     uEMEP%ix(1)=2!NO
-     uEMEP%ix(2)=3!NO2
-     uEMEP%sector=0!all
-!     uEMEP%sector=7
-     uEMEP%emis="pm25"
+     do i=1,uEMEP%Nix
+        iqrc=sum(emis_nsplit(1:iem-1)) + i
+        itot=iqrc2itot(iqrc)
+        uEMEP%ix(i)=itot-NSPEC_SHL
+     enddo
      if(me==0)write(*,*)'uEMEP sector: ',uEMEP%sector
      if(me==0)write(*,*)'uEMEP emission file: ',uEMEP%emis
      if(me==0)write(*,*)'uEMEP number of species in group: ',uEMEP%Nix
-     if(me==0)write(*,*)'including: ',species_adv(uEMEP%ix(1:uEMEP%Nix))%name
+55 format(30A)
+     if(me==0)write(*,55)'including: ',(trim(species_adv(uEMEP%ix(i))%name),' ', i=1,uEMEP%Nix)
+
   endif
 
     dt_uemep=dt_advec

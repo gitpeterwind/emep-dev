@@ -168,7 +168,7 @@ logical, public, save ::             &
                                        !NB: this is not identical to assuming not a leap year,
                                        !for instance the assumed number of days in the year  will still be 366
 logical, public, save :: USE_uEMEP = .false.  ! make local fraction of pollutants
-type(uEMEP_type), public, save :: uEMEP
+type(uEMEP_type), public, save :: uEMEP ! could be moved to own file when uEMEP is more mature
 
                                       
 integer, public, save :: &
@@ -622,6 +622,7 @@ subroutine Config_ModelConstants(iolog)
    ,USE_AIRCRAFT_EMIS, USE_LIGHTNING_EMIS, USE_ROADDUST, USE_DUST &
    ,USE_EURO_SOILNOX, USE_GLOBAL_SOILNOX, EURO_SOILNOX_DEPSCALE &
    ,USE_SEASALT, USE_POLLEN, USE_ASH, USE_AOD &
+   ,USE_uEMEP, uEMEP &
    ,INERIS_SNAP1, INERIS_SNAP2 &   ! Used for TFMM time-factors
    ,SELECT_LEVELS_HOURLY, FREQ_3DHOURLY  & ! incl. FORECAST, 3DPROFILES
    ,FORECAST, ANALYSIS, SOURCE_RECEPTOR, VOLCANO_SR &
