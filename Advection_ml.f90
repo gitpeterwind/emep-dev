@@ -1387,7 +1387,7 @@
     do k = KMAX_MID-1,2,-1
       xn_adv(k) =                 &
           (xn_adv(k)              &
-         +adif(k)*xn_adv(k+1)*cdif(k))
+         +adif(k)*xn_adv(k+1))*cdif(k)
     enddo
 
     xn_adv(1) = (xn_adv(1) + adif(1)*xn_adv(2))*cdif(1)
