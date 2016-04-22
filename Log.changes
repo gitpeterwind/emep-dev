@@ -154,7 +154,9 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-21th April, Peter 3170
+22th April, Peter 3170-1
+
+Nest_ml: MODE=30, Read at start of run and write every NHOURREAD
 
 Small bug corrected for uEMEP (diffusion).
 (adds a few % to local fraction)

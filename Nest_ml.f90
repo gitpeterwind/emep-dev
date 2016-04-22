@@ -5,6 +5,7 @@ module Nest_ml
 ! 0=donothing , 1=write , 2=read , 3=read and write
 ! 10=write at end of run, 11=read at start , 12=read at start and write at end (BIC)
 ! 20=write at end of run and read every NHOURREAD
+! 30=Read at start of run and write every NHOURREAD
 ! 100=read monthly (not fully tested)
 !
 ! To make a nested run:
@@ -49,7 +50,7 @@ use ModelConstants_ml,      only: Pref,PPB,PT,KMAX_MID, MasterProc, NPROC,  &
     FORECAST,USE_POLLEN, DEBUG_NEST,DEBUG_ICBC=>DEBUG_NEST_ICBC
 use MPI_Groups_ml      , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER, MPI_LOGICAL, &
                                 MPI_LOR,MPI_MIN, MPI_MAX, MPI_SUM, &
-                                MPI_COMM_CALC, MPI_COMM_WORLD, MPISTATUS, IERROR, ME_MPI, NPROC_MPI
+                                MPI_COMM_CALC, MPI_COMM_WORLD,IERROR
 use netcdf,                 only: nf90_open,nf90_close,nf90_inq_dimid,&
                                   nf90_inquire_dimension,nf90_inq_varid,&
                                   nf90_inquire_variable,nf90_get_var,nf90_get_att,&
@@ -202,7 +203,7 @@ subroutine readxn(indate)
 
   call Config_Nest()
   if(mydebug) write(*,*)'Nest:Read BC, MODE=',MODE
-  if(.not.any(MODE==[2,3,11,12,20]).and..not.FORECAST)return
+  if(.not.any(MODE==[2,3,11,12,20,30]).and..not.FORECAST)return
 
   KMAX_BC=KMAX_MID
   ndate(1:4)=[indate%year,indate%month,indate%day,indate%hour]
@@ -215,7 +216,7 @@ subroutine readxn(indate)
     if(MasterProc.and.oldmonth==0) write(*,*)'Nest: Initialzing IC'
     oldmonth=indate%month
     if(MasterProc) write(*,*)'Nest: New month, reset BC'
-  case(11,12)
+  case(11,12,30)
     if(.not.first_call)return
     first_call=.false.
     filename_read_3D=date2string(template_read_3D,ndate,debug=mydebug)
@@ -324,7 +325,7 @@ subroutine wrtxn(indate,WriteNow)
   logical, save :: first_call=.true.
 
   call Config_Nest()
-  if(.not.any(MODE==[1,3,10,12,20]).and..not.FORECAST)return
+  if(.not.any(MODE==[1,3,10,12,20,30]).and..not.FORECAST)return
 
 ! Check if the file exist already at start of run. Do not wait until first write to stop!
 ! If you know what you are doing you can set paramter APPEND=.true.,
