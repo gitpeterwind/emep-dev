@@ -67,7 +67,6 @@ character(len=18), public, parameter, dimension(NXTRA_SITE_MISC) :: &
 !These variables must have been set in My_Derived for them to be used.
 character(len=24), public, parameter, dimension(NXTRA_SITE_D2D) :: &
   SITE_XTRA_D2D= (/ &
-   character(len=24) :: &
     "HMIX                   ",&
     "PSURF                  ", &
     "ws_10m                 ", &
