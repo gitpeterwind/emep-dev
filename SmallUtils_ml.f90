@@ -21,14 +21,10 @@ module SmallUtils_ml
   public :: find_index   !! Finds index of item in list 
   public :: find_indices !< Finds indices of arrays of items in list 
   public :: trims        !> removes all blanks from string
-  public :: num2str      !> converts  numbers to string
-  private :: num2str_i  
-  private :: num2str_r 
   public :: key2str      ! replace keyword occurence(s) on a string by given value
   private :: skey2str    !
   private :: ikey2str
   private :: rkey2str
-  public :: str_replace  !>  replaces sub-string in string
   public :: to_upper     !> Converts string to upper case
   public :: Self_Test    !< For testing
 
@@ -42,17 +38,11 @@ module SmallUtils_ml
     module procedure find_index_i   ! For integer arrays
   end interface find_index
 
-  interface num2str
-    module procedure num2str_r   ! For real
-    module procedure num2str_i   ! For integer
-  end interface num2str
-
   interface key2str   ! replace keyword occurence(s) on a string by string/integer/real value
     module procedure skey2str   ! string values
     module procedure ikey2str   ! integer values
     module procedure rkey2str   ! real values
   end interface key2str
-
 
 contains
 
@@ -301,42 +291,6 @@ end function find_indices
   end do
 
  end function trims
-!=======================================================================
-function num2str_r(x,xfmt)  result(str)
-  real, intent(in) :: x
-  character(len=*), intent(in), optional :: xfmt
-  character(len=32) :: str
-
-  if(present(xfmt)) then
-    write(str,xfmt) x
-    if(index(str,'*')>0) then
-!     print *, "Problem with format", trim(str)
-      write(str,"(es15.3)") x
-!     print *, "Re-format to ", trim(str)
-    endif
-  else
-    write(str,*) x
-    str=adjustl(str)  ! remove leading spaces 
-  endif
-endfunction num2str_r
-!============================================================================
-function num2str_i(n,xfmt)  result(str)
-  integer, intent(in):: n
-  character(len=*), intent(in), optional :: xfmt
-  character(len=32) :: str
-
-  if(present(xfmt)) then
-    write(str,xfmt) n
-    if(index(str,'*')>0) then
-!     print *, "Problem with format", trim(str)
-      write(str,*) n
-!     print *, "Re-format to ", trim(str)
-    endif
-  else
-    write(str,*) n
-    str=adjustl(str)  ! remove leading spaces 
-  endif
-endfunction num2str_i
 !============================================================================
 !> Function posted by SethMMorton at: 
 !! http://stackoverflow.com/questions/10759375/how-can-i-write-a-to-upper-or-to-lower-function-in-f90
@@ -365,18 +319,6 @@ Pure Function to_upper (str) Result (string)
     end do
 
 End Function to_upper
-!============================================================================
-pure Function str_replace(old,new,str) result(s)
-  character(len=*), intent(in) :: old, new, str
-  character(len=len(str)) :: s
-  integer :: n
-  n = index(str,old)
-  if ( n > 0 ) then
-    s=str(1:n-1) // trim(new) // str(n+len(old):)
-  else
-    s=str  ! keep old
-  end if
-End Function str_replace
 !============================================================================
 ! key2str 
 !   replace occurence(s) of keyword key on string iname by value val
@@ -509,22 +451,10 @@ subroutine Self_test()
   call AddArray(wanted1,wantedx,NOT_SET_STRING,errmsg)
   call WriteArray(wantedx,size(wantedx),"Testing AddArray")
 
-  print "(/,a)", "4) Self-test - num2str   ================================="
-  print *, "1.23 Without fmt ", trim( num2str( 1.23 ))
-  print *, "1.23e19 Without fmt ", trim( num2str( 1.23e19 ))
-  print *, "1.23e19 With fmt es15.3 ", trim( num2str( 1.23e19, '(es15.3)' ))
-  print *, "1.23e19 With fmt f24.2 ", trim( num2str( 1.23e19, '(f24.2)' ))
-  
-  print "(/,a)", "5) Self-test - to_upper  ================================="
+  print "(/,a)", "4) Self-test - to_upper  ================================="
   print *, "Upper case of AbCd efG is ", trim(to_Upper("AbCd efG"))
 
-  print "(/,a)", "6) Self-test - str_replace ==============================="
-  print *, str_replace('YYYY','2005','EmisYYYY.txt') ! ok with spaces
-  print *, str_replace('YYYY','2005   ','EmisYYYY.txt') ! ok with spaces
-  print *, str_replace('YYYY','99   ','EmisYYYY.txt')
-  print *, str_replace('XXY','7777777777777777777777   ','EmisYYYY.txt')
-
-  print "(/,a)", "7) Self-test - key2str ==============================="
+  print "(/,a)", "5) Self-test - key2str ==============================="
   print *, key2str('replace string:  "EmisYYYY.txt".','YYYY','2005')
   print *, key2str('replace integer: "EmisYYYY.txt".','YYYY',2005)
   print *, key2str('replace real:    "EmisYYYY.txt".','YYYY',2005.0)
