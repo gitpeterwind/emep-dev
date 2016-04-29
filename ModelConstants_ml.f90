@@ -9,7 +9,7 @@ module ModelConstants_ml
 use Aerofunctions,        only: DpgV2DpgN
 use CheckStop_ml,         only: CheckStop
 use ChemSpecs,            only: species
-use Io_Nums_ml,           only: IO_NML, IO_LOG
+use Io_Nums_ml,           only: IO_NML, IO_LOG, IO_TMP
 use OwnDataTypes_ml,      only: typ_ss, uEMEP_type
 use Precision_ml,         only: dp
 use SmallUtils_ml,        only: find_index
@@ -608,7 +608,7 @@ contains
 subroutine Config_ModelConstants(iolog)
   character(len=120)  :: txt
   integer, intent(in) :: iolog ! for Log file
-  integer :: i, j, ispec
+  integer :: i, j, ispec, iostat
   logical,save :: first_call = .true.
   logical :: exist
 
@@ -673,22 +673,25 @@ subroutine Config_ModelConstants(iolog)
   DataPath(1) = '.'!default
   rewind(IO_NML)
   read(IO_NML,NML=Machine_config)
+
   do i=1,size(DataPath)
      if(DataPath(i)=="NOTSET")then
         if(MasterProc)then
            write(*,*)'WARNING: Could not find valid DataDir. Tried:'
            do j=1,i-1
-              write(*,*)trim(DataPath(i))
+              write(*,*)trim(DataPath(j))
            enddo
+        stop
         endif
-        !stop
         exit
      endif
-     INQUIRE(directory=trim(DataPath(i)), exist=exist)!intel
-!     INQUIRE(file=trim(DataPath(i)), exist=exist)!gfortran
-     if(exist)then
+!     INQUIRE(directory=trim(DataPath(i)), exist=exist)!intel. does not work for gfortran
+!     INQUIRE(file=trim(DataPath(i)), exist=exist, action = 'read')!gfortran. does not work for intel
+     open(IO_TMP,file=trim(DataPath(i)), iostat=iostat, action='read')!does not work without action='read'
+     if(iostat==0)then
         DataDir=trim(DataPath(i))
         if(MasterProc)write(*,*)'DataDir set to',trim(DataDir)
+        close(IO_TMP)
         exit
      endif
   enddo

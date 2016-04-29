@@ -154,6 +154,24 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+29th April, Peter 3174
+
+INQUIRE(directory=trim(DataPath(i)) in ModelConstants_ml, replaced 
+by an "open".
+The INQUIRE(directory form did not fit both intel and gfortran:
+
+does not work for gfortran:
+!     INQUIRE(directory=trim(DataPath(i)), exist=exist)!intel. 
+
+does not work for intel:
+!     INQUIRE(file=trim(DataPath(i)), exist=exist, action = 'read')!gfortran. 
+
+does not work without action='read':
+     open(IO_TMP,file=trim(DataPath(i)), iostat=iostat, action='read')!
+ 
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26-27th April, Alvaro 3172-3173
 
 Emissions_ml: 
