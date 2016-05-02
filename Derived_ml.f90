@@ -1404,7 +1404,7 @@ subroutine Derived(dt,End_of_Day)
              do iix=1,uEMEP%Nix
                 ix=uEMEP%ix(iix)
                 xtot=xtot+(xn_adv(ix,i,j,kmax_mid)*species_adv(ix)%molwt)&
-                 *(dA(kmax_mid)+dB(kmax_mid)*ps(i,j,1))/ATWAIR/GRAV*1.0E6
+                 *(dA(kmax_mid)+dB(kmax_mid)*ps(i,j,1))/ATWAIR/GRAV
              enddo
              d_2d( n, i,j,IOU_INST) = loc_frac(i,j,kmax_mid,1)*xtot
           enddo
