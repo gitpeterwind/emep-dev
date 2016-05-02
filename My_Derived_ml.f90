@@ -343,6 +343,12 @@ private
      call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
      tag_name(1) = "Total_Pollutant"
      call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
+     tag_name(1) = "Local_Fraction3D"
+!     call AddArray( tag_name(1:1), wanted_deriv3d, NOT_SET_STRING, errmsg)
+     tag_name(1) = "Local_Pollutant3D"
+!     call AddArray( tag_name(1:1), wanted_deriv3d, NOT_SET_STRING, errmsg)
+     tag_name(1) = "Total_Pollutant3D"
+!     call AddArray( tag_name(1:1), wanted_deriv3d, NOT_SET_STRING, errmsg)
    end if
    if(EmisSplit_OUT)then
       do i=1,max(18,nrcemis)

@@ -3703,12 +3703,13 @@
   end subroutine adv_vert_fourth
 
   subroutine uemep_advec
-    integer ::i,j,k,ix,iix
+    integer ::i,j,k,ix,iix,ip
     real::dt_uemep, f_in,xtot,C1,C2,C3,C4,C5,C6
     real::xn(0:limax+1,0:ljmax+1,KMAX_MID)
     real::esnd(ljmax,KMAX_MID),wsnd(ljmax,KMAX_MID),ssnd(limax,KMAX_MID),nsnd(limax,KMAX_MID)
 
     dt_uemep=dt_advec
+    ip=1
 
     do k=1,kmax_mid
        do j = 1,ljmax
@@ -3783,44 +3784,46 @@
               !horizontal advection
               !the flux out of the cell does not change loc_frac, but it does change xtot
               f_in=0.0!flux into the gridcell
-              !Courant numbers
-              C1=0.0
-              C2=0.0
-              C3=0.0
-              C4=0.0
-              C5=0.0
-              C6=0.0
+              !Courant numbers. Positive means entering the gridcell
+              C1=u_xmj(i-1,j,k,1)/gridwidth_m*xm2(i,j)*dt_uemep
+              C2=-u_xmj(i,j,k,1)/gridwidth_m*xm2(i,j)*dt_uemep
+              C3=v_xmi(i,j-1,k,1)/gridwidth_m*xm2(i,j)*dt_uemep
+              C4=-v_xmi(i,j,k,1)/gridwidth_m*xm2(i,j)*dt_uemep
+              C5=Etadot(i,j,k,1)/(dA(k)/Pref+dB(k))*dt_uemep
+              C6=-Etadot(i,j,k+1,1)/(dA(k)/Pref+dB(k))*dt_uemep
 
-              if(u_xmj(i-1,j,k,1)>0.0)then
-                 C1=u_xmj(i-1,j,k,1)/gridwidth_m*xm2(i,j)*dt_uemep
-                 C1=min(C1,1.0)
+              if(C1>0.0)then
                  f_in=C1*xn(i-1,j,k)
-                 xtot=(1.0-C1)*xn(i,j,k)
-                 loc_frac(i,j,k)=(loc_frac(i,j,k)*xtot)/(xtot+f_in+1.e-20)
+                 xtot=(1.0-min(1.0,C1))*xn(i,j,k)
+                 loc_frac(i,j,k,ip)=(loc_frac(i,j,k,ip)*xtot)/(xtot+f_in+1.e-20)
               endif
-              if(u_xmj(i,j,k,1)<0.0)then
-                 C2=-u_xmj(i,j,k,1)/gridwidth_m*xm2(i,j)*dt_uemep
-                 C2=min(C2,1.0)
+              if(C2>0.0)then
                  f_in=C2*xn(i+1,j,k)
-                 xtot=(1.0-C2)*xn(i,j,k)
-                 loc_frac(i,j,k)=(loc_frac(i,j,k)*xtot)/(xtot+f_in+1.e-20)
+                 xtot=(1.0-min(1.0,C2))*xn(i,j,k)
+                 loc_frac(i,j,k,ip)=(loc_frac(i,j,k,ip)*xtot)/(xtot+f_in+1.e-20)
               endif
-              if(v_xmi(i,j-1,k,1)>0.0)then
-                 C3=v_xmi(i,j-1,k,1)/gridwidth_m*xm2(i,j)*dt_uemep
-                 C3=min(C3,1.0)
+              if(C3>0.0)then
                  f_in=C3*xn(i,j-1,k)
-                 xtot=(1.0-C3)*xn(i,j,k)
-                 loc_frac(i,j,k)=(loc_frac(i,j,k)*xtot)/(xtot+f_in+1.e-20)
+                 xtot=(1.0-min(1.0,C3))*xn(i,j,k)
+                 loc_frac(i,j,k,ip)=(loc_frac(i,j,k,ip)*xtot)/(xtot+f_in+1.e-20)
               endif
-              if(v_xmi(i,j,k,1)<0.0)then
-                 C4=-v_xmi(i,j,k,1)/gridwidth_m*xm2(i,j)*dt_uemep
-                 C4=min(C4,1.0)
+              if(C4>0.0)then
                  f_in=C4*xn(i,j+1,k)
-                 xtot=(1.0-C4)*xn(i,j,k)
-                 loc_frac(i,j,k)=(loc_frac(i,j,k)*xtot)/(xtot+f_in+1.e-20)
+                 xtot=(1.0-min(1.0,C4))*xn(i,j,k)
+                 loc_frac(i,j,k,ip)=(loc_frac(i,j,k,ip)*xtot)/(xtot+f_in+1.e-20)
               endif
-
-!vertical advection of loc_frac negligible
+              if(C5>0.0)then
+                 !entering from above
+                 f_in=C5*xn(i,j,k-1)*(dA(k)/Pref+dB(k))/(dA(k-1)/Pref+dB(k-1))*(dA(k-1)+dB(k-1)*ps(i,j,1))/(dA(k)+dB(k)*ps(i,j,1))
+                 xtot=(1.0-min(1.0,C5))*xn(i,j,k)
+                 loc_frac(i,j,k,ip)=(loc_frac(i,j,k,ip)*xtot)/(xtot+f_in+1.e-20)
+              endif
+              if(C6>0.0.and.k<KMAX_MID)then
+                 !entering from below
+                 f_in=C6*xn(i,j,k+1)*(dA(k)/Pref+dB(k))/(dA(k+1)/Pref+dB(k+1))*(dA(k+1)+dB(k+1)*ps(i,j,1))/(dA(k)+dB(k)*ps(i,j,1))
+                 xtot=(1.0-min(1.0,C6))*xn(i,j,k)
+                 loc_frac(i,j,k,ip)=(loc_frac(i,j,k,ip)*xtot)/(xtot+f_in+1.e-20)
+              endif
 
            enddo!k
 
@@ -3831,11 +3834,12 @@
   end subroutine uemep_advec
 
   subroutine uemep_diff
-    integer ::i,j,k,ix,iix
+    integer ::i,j,k,ix,iix,ip
     real::dt_uemep,xn_k_loc(kmax_mid),xn_k(kmax_mid)
     real ds3(2:KMAX_MID),ds4(2:KMAX_MID)
     logical, save::firstcall=.true.
  
+    ip=1
     dt_uemep=dt_advec
     ds3=0.0
     ds4=0.0
@@ -3855,13 +3859,13 @@
                 ix=uEMEP%ix(iix)
                 xn_k(k)=xn_k(k)+xn_adv(ix,i,j,k)!assumes mixing ratios units
              enddo
-             xn_k_loc(k)=xn_k(k)*loc_frac(i,j,k)
+             xn_k_loc(k)=xn_k(k)*loc_frac(i,j,k,ip)
           enddo
           call vertdiff_1d(xn_k,EtaKz(i,j,1,1),ds3,ds4)
           call vertdiff_1d(xn_k_loc,EtaKz(i,j,1,1),ds3,ds4)
           
           do k=2,KMAX_MID
-             loc_frac(i,j,k)=xn_k_loc(k)/(xn_k(k)+1.E-30)
+             loc_frac(i,j,k,ip)=xn_k_loc(k)/(xn_k(k)+1.E-30)
           enddo
        enddo
     enddo

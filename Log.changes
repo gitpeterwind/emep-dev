@@ -186,12 +186,16 @@ ZD_OZONE/My_Outputs_ml:
 - Remove extra/unnecesary "character(len=24)" added on SVN 3000 (May 2015).
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-22th April, Peter 3170-1
+22th April -2nd May, Peter 3170-2
 
 Nest_ml: MODE=30, Read at start of run and write every NHOURREAD
 
 Small bug corrected for uEMEP (diffusion).
 (adds a few % to local fraction)
+
+Included vertical advection in uemep (is non-negligible for single gridcell budgets).
+Added a new dimension to local_fraction array, so that it can compute results
+for several sectors/components in one run. (not implemented yet)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 19th April, Alvaro 3168,3169

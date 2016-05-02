@@ -147,10 +147,11 @@ logical :: Cexist,USE_MONTHLY_GRIDEMIS=.false.!internal flag
 real ::TimesInDays(120),mpi_out
 integer ::NTime_Read=-1,ncFileID,VarID,found, cdfstatus
 character(len=125) ::fileName_monthly='NOT_SET'!must be initialized with 'NOT_SET'
-character(len=10), private,save ::  incl_monthly(size(emis_inputlist(1)%incl)),excl_monthly(size(emis_inputlist(1)%excl))
+character(len=10), private,save ::  incl_monthly(size(emis_inputlist(1)%incl)),&
+     excl_monthly(size(emis_inputlist(1)%excl))
 integer, private,save :: nin_monthly, nex_monthly, index_monthly
-real, public, allocatable, dimension(:,:,:), save :: &
-  loc_frac     ! Fraction of pollutants that are produced locally in the gridcell
+!Fraction of pollutants that are produced locally in the gridcell. 
+real, public, allocatable, dimension(:,:,:,:), save ::  loc_frac
 
 contains
 !***********************************************************************
@@ -253,7 +254,7 @@ subroutine Emissions(year)
   allocate(SumSnapEmis(LIMAX,LJMAX,NEMIS_FILE))
   SumSnapEmis=0.0
   if(USE_uEMEP)then
-    allocate(loc_frac(LIMAX,LJMAX,KMAX_MID))
+    allocate(loc_frac(LIMAX,LJMAX,KMAX_MID,1))
     loc_frac=0.0
   endif
   !=========================
@@ -1970,7 +1971,7 @@ subroutine uemep_emis(indate)
           ix=uEMEP%ix(iix)
           xtot=xtot+(xn_adv(ix,i,j,k)*species_adv(ix)%molwt)*(dA(k)+dB(k)*ps(i,j,1))/ATWAIR/GRAV
         enddo
-        loc_frac(i,j,k)=(emis_uemep(k)+loc_frac(i,j,k)*xtot)/(emis_tot(k)+xtot+1.e-20)
+        loc_frac(i,j,k,1)=(loc_frac(i,j,k,1)*xtot+emis_uemep(k))/(xtot+emis_tot(k)+1.e-20)
       enddo
 
     enddo ! i

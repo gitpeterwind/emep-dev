@@ -49,7 +49,7 @@ use GridValues_ml,    only: debug_li, debug_lj, debug_proc, A_mid, B_mid, &
 use Io_Progs_ml,      only: datewrite
 use MetFields_ml,     only: roa,pzpbl,Kz_m2s,th,zen, ustar_nwp, u_ref,&
  met, derivmet,  & !TEST of targets
-                            ws_10m, rh2m, z_bnd, z_mid, ps, t2_nwp, &
+                            ws_10m, rh2m, z_bnd, z_mid, u_mid,v_mid,ps, t2_nwp, &
                             SoilWater_deep, SoilWater_uppr, Idirect, Idiffuse
 use ModelConstants_ml, only: &
    KMAX_MID     & ! =>  z dimension (layer number)
@@ -585,14 +585,23 @@ subroutine Define_Derived()
   if(USE_uEMEP)then
     dname = "Local_Pollutant"
     call AddNewDeriv( dname, "Local_Pollutant", "-", "-", "", &
-                       -99 , -99, F,  1.0,  T,  IOU_HOUR )
+                       -99 , -99, F,  1.0,  T,  IOU_DAY )
     dname = "Total_Pollutant"
     call AddNewDeriv( dname, "Total_Pollutant", "-", "-", "", &
-                       -99 , -99, F,  1.0,  T,  IOU_HOUR )
+                       -99 , -99, F,  1.0,  T,  IOU_DAY )
     dname = "Local_Fraction"!NB must be AFTER "Local_Pollutant" and "Total_Pollutant"
     call AddNewDeriv( dname, "Local_Fraction", "-", "-", "", &
-                       -99 , -99, F,  1.0,  F,  IOU_HOUR )
-  endif
+                       -99 , -99, F,  1.0,  F,  IOU_DAY )
+    dname = "Local_Pollutant3D"
+    call AddNewDeriv( dname, "Local_Pollutant3D", "-", "-", "", &
+                       -99 , -99, F,  1.0,  T,  IOU_MON , .true.)
+    dname = "Total_Pollutant3D"
+    call AddNewDeriv( dname, "Total_Pollutant3D", "-", "-", "", &
+                       -99 , -99, F,  1.0,  T,  IOU_MON , .true.)
+    dname = "Local_Fraction3D"!NB must be AFTER "Local_Pollutant" and "Total_Pollutant"
+    call AddNewDeriv( dname, "Local_Fraction3D", "-", "-", "", &
+                       -99 , -99, F,  1.0,  F,  IOU_MON, .true.)
+   endif
 !Splitted total emissions (inclusive Natural)
   do ind=1,nrcemis
     dname = "EmisSplit_mgm2_"//trim(species(iqrc2itot(ind))%name)
@@ -642,7 +651,11 @@ Is3D = .true.
 
      case ("D3_Zlev")
       call AddNewDeriv("D3_Zlev", "Zbnd_3d", "-", "-", "m", &
-                      -99 , -99, F, 1.0,   T, IOU_DAY,    Is3D  )
+           -99 , -99, F, 1.0,   T, IOU_DAY,    Is3D  )
+      
+     case ("wind_speed_3D")
+      call AddNewDeriv("wind_speed_3D", "wind_speed_3D", "-", "-", "m", &
+                      -99 , -99, F, 1.0,   T, IOU_MON,    Is3D  )
     endselect
   enddo
 
@@ -799,7 +812,8 @@ subroutine Derived(dt,End_of_Day)
 
   logical, allocatable, dimension(:)   :: ingrp
   integer :: wlen,ispc,kmax
-  integer,save :: n_Local_Pollutant, n_Total_Pollutant
+  integer,save :: n_Local_Pollutant, n_Total_Pollutant,&
+       n_Local_Pollutant3D, n_Total_Pollutant3D
 
   timefrac = dt/3600.0
   thour = current_date%hour+current_date%seconds/3600.0
@@ -1390,9 +1404,9 @@ subroutine Derived(dt,End_of_Day)
              do iix=1,uEMEP%Nix
                 ix=uEMEP%ix(iix)
                 xtot=xtot+(xn_adv(ix,i,j,kmax_mid)*species_adv(ix)%molwt)&
-                     *(dA(kmax_mid)+dB(kmax_mid)*ps(i,j,1))/ATWAIR/GRAV
+                 *(dA(kmax_mid)+dB(kmax_mid)*ps(i,j,1))/ATWAIR/GRAV*1.0E6
              enddo
-             d_2d( n, i,j,IOU_INST) = loc_frac(i,j,kmax_mid)*xtot
+             d_2d( n, i,j,IOU_INST) = loc_frac(i,j,kmax_mid,1)*xtot
           enddo
        enddo
        n_Local_Pollutant=n
@@ -1420,6 +1434,7 @@ subroutine Derived(dt,End_of_Day)
         d_2d( n, i,j,IOU_MON) =  d_2d( n_Local_Pollutant, i,j,IOU_MON)/(d_2d( n_Total_Pollutant, i,j,IOU_MON)+1.E-30)
         d_2d( n, i,j,IOU_YEAR) =  d_2d( n_Local_Pollutant, i,j,IOU_YEAR)/(d_2d( n_Total_Pollutant, i,j,IOU_YEAR)+1.E-30)
       end forall
+
 
      case ( "EmisSplit_mgm2" )      ! Splitted total emissions (Inclusive natural)
       forall ( i=1:limax, j=1:ljmax )
@@ -1693,6 +1708,11 @@ subroutine Derived(dt,End_of_Day)
         d_3d( n, i,j,k,IOU_INST) = z_bnd(i,j,k)
       end forall
 
+    case ( "wind_speed_3D" )    ! Mid-layer heigh
+      forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
+        d_3d( n, i,j,k,IOU_INST) = sqrt(u_mid(i,j,k)**2+v_mid(i,j,k)**2)
+      end forall
+
     case("EXT:GROUP","EXT:SPEC")  !/ Extinction coefficient (new system)
       if(first_call)call AOD_init("Derived:"//trim(class))
       wlen=find_index(f_3d(n)%subclass,wavelength)! e.g. search "550nm" on array of wavelengths
@@ -1718,6 +1738,53 @@ subroutine Derived(dt,End_of_Day)
       forall(i=1:limax,j=1:ljmax,k=1:KMAX_MID)&
         d_3d( n, i,j,k,IOU_INST)= SUM(Extin_coeff(:,i,j,k,wlen),MASK=ingrp)
       deallocate(ingrp)
+
+    case ( "Local_Pollutant3D" )      ! for uEMEP
+       do k=1,kmax_mid
+       do j=1,ljmax 
+          do i=1,limax             
+             xtot=0.0
+             do iix=1,uEMEP%Nix
+                ix=uEMEP%ix(iix)
+                xtot=xtot+(xn_adv(ix,i,j,k)*species_adv(ix)%molwt)&
+                 *(dA(k)+dB(k)*ps(i,j,1))/ATWAIR/GRAV*1.0E6
+             enddo
+             d_3d( n, i,j,k,IOU_INST) = loc_frac(i,j,k,1)*xtot
+          enddo
+       enddo
+       enddo
+       n_Local_Pollutant3D=n
+       !write(*,*)loc_frac(5,5,kmax_mid,1),loc_frac(5,5,kmax_mid-1,1)
+
+    case ( "Total_Pollutant3D" )      ! for uEMEP
+       do k=1,kmax_mid
+       do j=1,ljmax 
+          do i=1,limax
+             xtot=0.0
+             do iix=1,uEMEP%Nix
+                ix=uEMEP%ix(iix)
+                xtot=xtot+(xn_adv(ix,i,j,k)*species_adv(ix)%molwt)&
+                     *(dA(k)+dB(k)*ps(i,j,1))/ATWAIR/GRAV*1.0E6
+             enddo
+             d_3d( n, i,j,k,IOU_INST) = xtot
+          enddo
+       enddo
+       enddo
+       n_Total_Pollutant3D=n
+
+    case ( "Local_Fraction3D" )      ! for uEMEP
+      forall ( i=1:limax, j=1:ljmax , k=1:KMAX_MID)
+         !not very elegant...
+        d_3d( n, i,j,k,IOU_INST) = 0.0
+        d_3d( n, i,j,k,IOU_HOUR) = d_3d( n_Local_Pollutant3D, i,j,k,IOU_HOUR)/&
+             (d_3d( n_Total_Pollutant3D, i,j,k,IOU_HOUR)+1.E-30)
+        d_3d( n, i,j,k,IOU_DAY) =  d_3d( n_Local_Pollutant3D, i,j,k,IOU_DAY)/&
+             (d_3d( n_Total_Pollutant3D, i,j,k,IOU_DAY)+1.E-30)
+        d_3d( n, i,j,k,IOU_MON) =  d_3d( n_Local_Pollutant3D, i,j,k,IOU_MON)/&
+             (d_3d( n_Total_Pollutant3D, i,j,k,IOU_MON)+1.E-30)
+        d_3d( n, i,j,k,IOU_YEAR) =  d_3d( n_Local_Pollutant3D, i,j,k,IOU_YEAR)/&
+             (d_3d( n_Total_Pollutant3D, i,j,k,IOU_YEAR)+1.E-30)
+      end forall
 
     case default
       write(*,"(a,2i3,3a)") "*** NOT FOUND",n,index, trim(f_3d(n)%name),&
@@ -1932,11 +1999,11 @@ subroutine group_calc( g2d, density, unit, ik, igrp,semivol)
     debug=DEBUG%DERIVED.and.debug_proc,needroa=needroa)
 
   if( semivol_wanted .and. debug_proc ) then
-    write(*,"(a,L1,2i4,2a16)") "DEBUG GROUP-FSOA",debug_proc,me,ik, &
-      trim(chemgroups(igrp)%name)
-    write(*,"(a,2i4)") "DEBUG GROUP-FSOA", size(gspec), size(gunit_conv)
-    write(*,*) "DEBUG GROUP-FSOA-GSPEC", gspec
-    write(*,*) "DEBUG GROUP-FSOA-GUNIT", gunit_conv
+!    write(*,"(a,L1,2i4,2a16)") "DEBUG GROUP-FSOA",debug_proc,me,ik, &
+!      trim(chemgroups(igrp)%name)
+!    write(*,"(a,2i4)") "DEBUG GROUP-FSOA", size(gspec), size(gunit_conv)
+!    write(*,*) "DEBUG GROUP-FSOA-GSPEC", gspec
+!    write(*,*) "DEBUG GROUP-FSOA-GUNIT", gunit_conv
   end if
 
   do j=1,ljmax
