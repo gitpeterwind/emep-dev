@@ -154,7 +154,7 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-3rd May, Alvaro 3179-3181
+3rd May, Alvaro 3179-3182
 
 Output_hourly,ZD_OZONE/My_Outputs_ml
 - The following hourly types produce output available from Derived:
@@ -186,6 +186,7 @@ Derived_ml,My_Derived_ml:
   - New dZ_BND, same as in Output_hourly, output level thickness.
 - New COLUMN:GROUP MISC output. Same as COLUMN output, but for groups.
 - All new MISC types are can be read from OutputConcs_config namelist.
+- Increase MAX_NUM_DERIV3D to 16.
 - Reimplement character(len=..) trick from SVN 3000 (May 2015), removed in 3173.
 - Clean-up, reformat &c.
 
@@ -196,7 +197,7 @@ Derived_ml,OutputChem_ml:
   are updated by default. Optional argument ONLY_IOU, makes possible to
   update only IOU_INST and IOU_HOUR (call Derived(..,ONLY_IOU=IOU_HOUR)).
 - Wrtchem optional argument ONLY_HOUR makes possible to write and reset only 
-  IOU_HOUR and IOU_HOUR_INST outputs (call Wrtchem(ONLY_HOUR=.true.).
+  IOU_HOUR and IOU_HOUR_INST outputs (call Wrtchem(ONLY_HOUR=IOU_HOUR).
 - This options will be used on FORECAST mode, to produce "zero hour" output.
 - FORECAST mode Output_fields shows that finished writing to filename_iou(iotyp),
   by adding a line into the corresponding *.msg file.
@@ -204,6 +205,9 @@ Derived_ml,OutputChem_ml:
 ZD_OZONE/My_Outputs_ml,config_Outputs_EMEPSTD.nml
 - Default hourly output is no longer o3_3m in *_hourExtra.nc.
 - The new hourly output is SURF_ppb_O3 in *_hourInst.nc
+
+ZD_OZONE/My_Outputs_ml,config_Outputs_CAMS50.nml
+- Move all MACC_EVA/MACC_ENS hourly output to OutputConcs_config.
 
 NetCDF_ml:
 - Adapt Init_new_netCDF and partial rewrite CreatenetCDFfile
@@ -240,10 +244,13 @@ MPI_Groups_ml,Unimod:
 - Define MasterProc=(me==MasterPE) (Unimod).
 
 PhyChem_ml,ZD_3DVar/My_3DVar_ml:
-- replace (me==0) by (MasterProc).
+- Replace (me==0) by (MasterProc).
 - On FORECAST mode, call Derived(..,ONLY_IOU=IOU_HOUR) and
-  call WrtChem(ONLY_HOUR=.true.) to produce "zero hour" output.
-- On ANALYSIS mode, DEBUG_DA_1STEP (DA_ml) will return after call main_3dvar().
+  call WrtChem(ONLY_HOUR=IOU_HOUR) to produce "zero hour" output.
+- On ANALYSIS mode:
+  - DEBUG_DA_1STEP will return after call main_3dvar().
+  - DEBUG_DA_OUTPUT will produce an extra IOU_HOUR_INST record 
+    before  call main_3dvar().
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 03 May 2016, Agnes 3177-3178

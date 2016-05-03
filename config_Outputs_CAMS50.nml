@@ -4,55 +4,56 @@
 ! 'ustar_nwp','MET2D','ustar_nwp','-','m/s',-99,-99,F,1.0,T,5,
 OutputConcs=
 ! freq = IOU_YEAR=2, IOU_MON=3, IOU_DAY=4, IOU_HOUR=5, IOU_HOUR_INST=6
-!--MY_OUTPUTS=="MACC_EVA": hourly D2D/D3D output
+!--MY_OUTPUTS=="MACC_EVA": hourly 2D output
   'O3'            ,'ug'  ,'2d' ,'AIR_CONCS','SPEC' ,6,
-  'O3'            ,'ug'  ,'3d' ,'AIR_CONCS','SPEC' ,6,
   'NO2'           ,'ug'  ,'2d' ,'AIR_CONCS','SPEC' ,6,
-  'NO2'           ,'ug'  ,'3d' ,'AIR_CONCS','SPEC' ,6,
   'PMFINE'        ,'ug'  ,'2d' ,'AIR_CONCS','GROUP',0,! needed by PM25_rh50
-  'PMFINE'        ,'ug'  ,'3d' ,'AIR_CONCS','GROUP',0,! needed by PM25_wet
   'PM10'          ,'ug'  ,'2d' ,'AIR_CONCS','GROUP',0,! needed by PM10_rh50
-  'PM10'          ,'ug'  ,'3d' ,'AIR_CONCS','GROUP',0,! needed by PM10_wet
   'SURF_PM25water','ug'  ,'2d' ,'PM25water','MISC' ,0,! needed by    *_rh50
-    'D3_PM25water','ug'  ,'3d' ,'PM25water','MISC' ,0,! needed by    *_wet
   'SURF_ug_PM25_rh50','ug','2d','PM25_rh50','MISC' ,6,
-    'D3_ug_PM25_wet' ,'ug','3d','PM25_wet' ,'MISC' ,6,
   'SURF_ug_PM10_rh50','ug','2d','PM10_rh50','MISC' ,6,
-    'D3_ug_PM10_wet' ,'ug','3d','PM10_wet','MISC' ,6,
-!--MY_OUTPUTS=="MACC_ENS": hourly sellected D3D houtput
+!--MY_OUTPUTS=="MACC_ENS": hourly 2D output
   'NO'            ,'ug'  ,'2d' ,'AIR_CONCS','SPEC' ,6,
-!+'NO'            ,'ug'  ,'3d' ,'AIR_CONCS','SPEC' ,6,
   'SO2'           ,'ug'  ,'2d' ,'AIR_CONCS','SPEC' ,6,
-!+'SO2'           ,'ug'  ,'3d' ,'AIR_CONCS','SPEC' ,6,
-  'CO'            ,'ug'  ,'2d' ,'AIR_CONCS','SPEC' ,6,
-!+'CO'            ,'ug'  ,'3d' ,'AIR_CONCS','SPEC' ,6,
-  'NH3'           ,'ug'  ,'2d' ,'AIR_CONCS','SPEC' ,6,
-!+'NH3'           ,'ug'  ,'3d' ,'AIR_CONCS','SPEC' ,6,
-  'PAN'           ,'ug'  ,'2d' ,'AIR_CONCS','SPEC' ,6,
-!+'PAN'           ,'ug'  ,'3d' ,'AIR_CONCS','SPEC' ,6,
-! 'VOC_ppbC'      ,'ppbC','2d' ,'VOC'      ,'MISC' ,6,
-  'NMVOC'         ,'ug'  ,'2d' ,'AIR_CONCS','GROUP',6,
-  'POLLEN_BIRCH','grains','2d' ,'AIR_CONCS','SPEC' ,6,
-  'POLLEN_OLIVE','grains','2d' ,'AIR_CONCS','SPEC' ,6,
-  'POLLEN_GRASS','grains','2d' ,'AIR_CONCS','SPEC' ,6,
-  'POLLEN_RWEED','grains','2d' ,'AIR_CONCS','SPEC' ,6,
+  'CO'            ,'ug'  ,'2d' ,'AIR_CONCS','SPEC' ,5,
+  'NH3'           ,'ug'  ,'2d' ,'AIR_CONCS','SPEC' ,5,
+  'PAN'           ,'ug'  ,'2d' ,'AIR_CONCS','SPEC' ,5,
+  'NMVOC'         ,'ug'  ,'2d' ,'AIR_CONCS','GROUP',5,
+  'POLLEN_BIRCH','grains','2d' ,'AIR_CONCS','SPEC' ,5,
+  'POLLEN_OLIVE','grains','2d' ,'AIR_CONCS','SPEC' ,5,
+  'POLLEN_GRASS','grains','2d' ,'AIR_CONCS','SPEC' ,5,
+  'POLLEN_RWEED','grains','2d' ,'AIR_CONCS','SPEC' ,5,
+!--MY_OUTPUTS=="MACC_ENS": hourly 3D output
+  'O3'            ,'ug'  ,'3d' ,'AIR_CONCS','SPEC' ,5,
+  'NO2'           ,'ug'  ,'3d' ,'AIR_CONCS','SPEC' ,5,
+  'PMFINE'        ,'ug'  ,'3d' ,'AIR_CONCS','GROUP',0,! needed by PM25_wet
+  'PM10'          ,'ug'  ,'3d' ,'AIR_CONCS','GROUP',0,! needed by PM10_wet
+  'D3_PM25water'  ,'ug'  ,'3d' ,'PM25water','MISC' ,0,! needed by    *_wet
+  'D3_ug_PM25_wet','ug'  ,'3d' ,'PM25_wet' ,'MISC' ,5,
+  'D3_ug_PM10_wet','ug'  ,'3d' ,'PM10_wet' ,'MISC' ,5,
+  'NO'            ,'ug'  ,'3d' ,'AIR_CONCS','SPEC' ,5,
+  'SO2'           ,'ug'  ,'3d' ,'AIR_CONCS','SPEC' ,5,
+  'CO'            ,'ug'  ,'3d' ,'AIR_CONCS','SPEC' ,5,
+  'NH3'           ,'ug'  ,'3d' ,'AIR_CONCS','SPEC' ,5,
+  'PAN'           ,'ug'  ,'3d' ,'AIR_CONCS','SPEC' ,5,
+  'NMVOC'         ,'ug'  ,'3d' ,'AIR_CONCS','GROUP',5,
 !--MY_OUTPUTS=="MACC_ENS": additional output
-  'RN222'         ,'ugm2','2d' ,'AIR_CONCS','SPEC' ,6,
+  'RN222'         ,'ugm2','2d' ,'AIR_CONCS','SPEC' ,5,
 ! 'NO2'           ,'mcm2','k20','COLUMN'   ,'MISC' ,6,
 ! 'O3'            ,'mcm2','k20','COLUMN'   ,'MISC' ,6,
-! 'CO'            ,'mcm2','k20','COLUMN'   ,'MISC' ,6,
-! 'HCHO'          ,'mcm2','k20','COLUMN'   ,'MISC' ,6,
+! 'CO'            ,'mcm2','k20','COLUMN'   ,'MISC' ,5,
+! 'HCHO'          ,'mcm2','k20','COLUMN'   ,'MISC' ,5,
   'NO2'           ,'ugm2','k20','COLUMN'   ,'MISC' ,6,
   'O3'            ,'ugm2','k20','COLUMN'   ,'MISC' ,6,
-  'CO'            ,'ugm2','k20','COLUMN'   ,'MISC' ,6,
-  'HCHO'          ,'ugm2','k20','COLUMN'   ,'MISC' ,6,
+  'CO'            ,'ugm2','k20','COLUMN'   ,'MISC' ,5,
+  'HCHO'          ,'ugm2','k20','COLUMN'   ,'MISC' ,5,
   'AOD'           ,' ' ,'550nm','AOD:GROUP','MISC' ,6,
-!--MY_OUTPUTS=="MACC_NMC": 6 hourly full D3D output
+!--MY_OUTPUTS=="MACC_NMC": 6 hourly D3 output (set lev3d to all levels)
 ! 'EXT'           ,'1/m','550nm','EXT:GROUP','MISC',6,
-!--DEBUG_PBL: hourly D2D houtput
+!--DEBUG_PBL: hourly D2 output
 ! 'HMIX'          ,'m'   ,'2d' ,'HMIX'     ,'MISC' ,5,
 ! 'Kz_m2s'        ,'m2/s','2d' ,'Kz_m2s'   ,'MISC' ,5,
-!--DEBUG_PM10: hourly D2D houtput
+!--DEBUG_PM10: hourly D2 output
 ! 'SIA'           ,'ug'  ,'2d' ,'AIR_CONCS','GROUP',5,
 ! 'DUST'          ,'ug'  ,'2d' ,'AIR_CONCS','GROUP',5,
 ! 'SS'            ,'ug'  ,'2d' ,'AIR_CONCS','GROUP',5,

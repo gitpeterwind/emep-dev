@@ -78,7 +78,7 @@ public  :: My_DerivFunc ! Miscelleaneous functions of xn_adv for output
 !============ parameters for concentration + dep outputs ==================!
 integer, public, parameter ::       &
   MAX_NUM_DERIV2D = 250,            &
-  MAX_NUM_DERIV3D =  12,            &
+  MAX_NUM_DERIV3D =  16,            &
   MAX_NUM_DDEP_ECOS = 6,            & ! Grid, Conif, etc.
   MAX_NUM_DDEP_WANTED = NSPEC_ADV,  & !plenty big
   MAX_NUM_WDEP_WANTED = NSPEC_ADV     !plenty big

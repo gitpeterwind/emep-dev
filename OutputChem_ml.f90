@@ -47,7 +47,8 @@ subroutine Wrtchem(ONLY_HOUR)
 !   occur at 6am of the 1st day, but this should be over-written
 !   as soon as a full day of data is available).
 !----------------------------------------------------------------------
-  logical, intent(in), optional :: ONLY_HOUR  ! output hourly fields
+  integer, intent(in), optional :: ONLY_HOUR  ! output hourly fields
+
   integer :: i,j,n,k,msnr1
   integer :: nyear,nmonth,nday,nhour,nmonpr
   integer :: mm_out, dd_out
@@ -108,11 +109,14 @@ subroutine Wrtchem(ONLY_HOUR)
   !== Hourly output ====
   if(modulo(current_date%hour,FREQ_HOURLY)==0) then
     call Output_fields(IOU_HOUR_INST)
+    if(present(ONLY_HOUR))then
+      if(ONLY_HOUR==IOU_HOUR_INST)return
+    endif
     call Output_fields(IOU_HOUR)
     call ResetDerived(IOU_HOUR) 
-  endif
-  if(present(ONLY_HOUR))then
-    if(ONLY_HOUR)return
+    if(present(ONLY_HOUR))then
+      if(ONLY_HOUR==IOU_HOUR)return
+    endif
   endif
 
   !== Daily output ====
@@ -170,7 +174,7 @@ subroutine Output_fields(iotyp)
   call CloseNetCDF
 
   ! Write text file to mark output is finished
-  if(.not.(FORECAST.and.MasterProc))return
+  if(.not.all([FORECAST,MasterProc,wanted_iou(iotyp)]))return
   i=index(filename_iou(iotyp),'.nc')-1
   if(i<1)i=len_trim(filename_iou(iotyp))
   open(IO_TMP,file=filename_iou(iotyp)(1:i)//'.msg',position='append')
