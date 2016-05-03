@@ -170,6 +170,28 @@ does not work without action='read':
      open(IO_TMP,file=trim(DataPath(i)), iostat=iostat, action='read')!
  
 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+03 May 2016, Agnes 3177-3178
+
+Country_ml:
+- New country codes added for Latin America and Vietnemese sub-regions (needed
+for using the recent ECLIPSE v5a global emissions)
+- New codes are:
+HANO  238 Hanoi
+NVIE  239 North Vietnam
+RVEI  240 Rest of Vietnam
+
+BOLV  241         Bolivia
+CARB  242         Caribbean
+CEAM  243         Central America
+COLO  244         Colombia
+ECUA  245         Ecuador
+PARA  246         Paraguay
+PERU  247         Peru
+URUG  248         Uruguay
+VENE  249         Venezuela
+
+241-249 were included in 'OLAM  227 Other_Latin_America' before
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26-27th April, Alvaro 3172-3173
