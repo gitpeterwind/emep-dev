@@ -18,13 +18,12 @@ use Util_ml,          only: norm
 use TimeDate_ExtraUtil_ml, only: date2string
 use Units_ml,         only: Units_Scale,Group_Units
 use AOD_PM_ml,        only: AOD_init,aod_grp,wavelength,SpecExtCross
-use DA_ml,            only: debug=>DA_DEBUG,dafmt=>da_fmt_msg,damsg=>da_msg,&
-                            debug_obs=>DA_DEBUG_OBS
+use DA_ml,            only: debug=>DEBUG_DA,dafmt=>da_fmt_msg,damsg=>da_msg,&
+                            debug_obs=>DEBUG_DA_OBS
 use spectralcov,      only: nx,ny,nlev,nchem,nxex,nyex,nv1,FGSCALE,&
                             nChemObs,nChemNoObs,iChemInv,iChemObs,iChemNoObs
 use chitox_ml,        only: matched_domain,iyf,chitox_adj
-use MPI_Groups_ml,    only: MPI_COMM_WORLD,MPI_ALLREDUCE,MPI_SUM,&
-                            MPI_IN_PLACE,MPI_INTEGER
+use MPI_Groups_ml,    only: MPI_COMM_WORLD,MPI_SUM,MPI_IN_PLACE,MPI_INTEGER
 implicit none
 integer, save :: nobs!,matidx
 real, dimension(:), allocatable, save :: innov,obsstddev

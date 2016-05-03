@@ -4,7 +4,7 @@
 module covmat_ml
 use ModelConstants_ml,only: MasterProc
 use Par_ml,           only: me
-use DA_ml,            only: debug=>DA_DEBUG,dafmt=>da_fmt_msg,damsg=>da_msg
+use DA_ml,            only: debug=>DEBUG_DA,dafmt=>da_fmt_msg,damsg=>da_msg
 use CheckStop_ml,     only: CheckStop
 use spectralcov,      only: covmat,ucovmat,ncorr,&
                             nx,ny,nlev,nchem,nex,nxex,nyex,&

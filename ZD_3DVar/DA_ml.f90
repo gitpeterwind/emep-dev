@@ -1,8 +1,11 @@
 module DA_ml
 implicit none
-logical, parameter            :: DA_DEBUG=.false., &
-                                 DA_DEBUG_3DV=.false., &
-                                 DA_DEBUG_OBS=.false.
+logical, parameter ::     &
+  DEBUG_DA=.false.,       &   ! general purpose debug messages
+  DEBUG_DA_OBS=.false.,   &   ! observation info
+  DEBUG_DA_3DV=.false.,   &   ! 3DVar module
+  DEBUG_DA_1STEP=.false., &   ! run only 1 DA step (no adv/chem)
+  DEBUG_DA_OUTPUT=.true.     ! hourly output before/after DA step
 character(len=*), parameter   ::                &
   DA_NAMELIST="namelist.nml",                   &
   DA_FMT_DEF ="('3DVar@PPP YYYY-MM-DD hh: ',A,'.')",&

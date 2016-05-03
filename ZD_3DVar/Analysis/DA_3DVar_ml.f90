@@ -16,8 +16,8 @@ use Par_ml,           only: me,gi0,gi1,gj0,gj1,li0,li1,lj0,lj1,limax,ljmax
 use CheckStop_ml,     only: CheckStop
 use SmallUtils_ml,    only: find_index
 use Util_ml,          only: norm
-use DA_ml,            only: debug=>DA_DEBUG,DAFMT_DEF=>DA_FMT_DEF,&
-                            debug_3dv=>DA_DEBUG_3DV,debug_obs=>DA_DEBUG_OBS,&
+use DA_ml,            only: debug=>DEBUG_DA,DAFMT_DEF=>DA_FMT_DEF,&
+                            debug_3dv=>DEBUG_DA_3DV,debug_obs=>DEBUG_DA_OBS,&
                             danml=>da_namelist,dafmt=>da_fmt_msg,damsg=>da_msg,&
                             tim_before=>datim_before,tim_after=>datim_after
 use DA_Obs_ml,        only: varName,obsVarName,observedVar,varSpec,varSpecInv,&
@@ -33,9 +33,8 @@ use spectralcov,      only: nx,ny,nlev,nchem,nxex,nyex,nex,iChemInv,&
 use chitox_ml,        only: matched_domain, iyf, nhcrTot, nhcrLoc, &
                             chitox, chitou, chitox_adj, chi_Init, chi_Done, &
                             chi_vec2hc, chi_hc2vec, l2wR, l2wC
-use MPI_Groups_ml,    only: MPI_COMM_WORLD,MPI_BARRIER,MPI_SUM,MPI_LAND,&
-                            MPI_IN_PLACE,MPI_LOGICAL,MPI_INTEGER,MPI_DOUBLE_PRECISION
-!                           MPI_ALLREDUCE
+use MPI_Groups_ml,    only: MPI_COMM_WORLD,MPI_SUM,MPI_LAND,MPI_IN_PLACE,&
+                            MPI_LOGICAL,MPI_INTEGER,MPI_DOUBLE_PRECISION
 implicit none
 private
 public :: NTIMING_3DVAR,T_3DVAR,main_3dvar

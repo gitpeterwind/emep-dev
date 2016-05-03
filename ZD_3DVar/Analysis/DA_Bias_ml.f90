@@ -8,7 +8,7 @@ use SmallUtils_ml,    only: find_index
 use TimeDate_ml,      only: date,current_date
 use TimeDate_ExtraUtil_ml, only: date2string
 use Units_ml,         only: Units_Scale,Group_Units
-use DA_ml,            only: debug=>DA_DEBUG,dafmt=>da_fmt_msg,damsg=>da_msg
+use DA_ml,            only: debug=>DEBUG_DA,dafmt=>da_fmt_msg,damsg=>da_msg
 use DA_Obs_ml,        only: nobsData,nobsDataMax,obsData
 !-----------------------------------------------------------------------
 implicit none

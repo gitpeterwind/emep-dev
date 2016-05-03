@@ -118,7 +118,7 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
- ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3161","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
+ ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3183","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
 #($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3074","EmChem09soa","EMEPGLOB","EMEPSTD","GLOBAL",0);
 
 my %BENCHMARK;
@@ -284,14 +284,16 @@ if ($STALLO) {
   $MetDir   = "$DataDir/$GRID/metdata_H20/$year" unless -d $MetDir;
   $MetDir   = "$DataDir/$GRID/metdata/$year"     unless -d $MetDir;
   $MetDir   = "$WORKROOT/$PETER/ClimData/$year"  if ($GRID eq "RCA" );
-  $MetDir   = "$DataDir/$GRID/metdata_CWF/$year" if $CWF;
+  $MetDir   = "$DataDir/$GRID/metdata_CWF/YYYY"
+              .sprintf("_%02dUTC",($CWFMETV%24)) if $CWF; # 00/12 UTC versions
 } else { #Ve or Vilje
   $HOMEROOT = "/home/metno";
   $WORKROOT = "$HOMEROOT/$USER/work";
   $DataDir  = "$HOMEROOT/mifapw/work/Data";
   $DataDir  = "$CWF_DIR/Data" if $CWF and -d $CWF_DIR;
   $MetDir   = "$DataDir/$GRID/metdata_EC/$year";
-  $MetDir   = "$DataDir/$GRID/metdata_CWF/$year" if $CWF;
+  $MetDir   = "$DataDir/$GRID/metdata_CWF/$year"
+              .sprintf("_%02dUTC",($CWFMETV%24)) if $CWF; # 00/12 UTC versions
   $MetDir   = "/prod/forecast/work/emep/ec/prepmet" if $eCWF and ($USER eq $FORCAST);
   $MetDir   = "$CWF_WRK/".sprintf("prepmet_%02d",($CWFMETV%24)) if $CWF and -d $CWF_WRK;
 }
@@ -442,7 +444,7 @@ given($GRID){
   when("HIRHAM") {$emisdir="$EMIS_INP/emissions/$emisscen/$emisyear";}
   when("GEMS025"){$emisdir="$EMIS_INP/Emissions/2008-Trend2006-V9-Extended_PM_corrected-V3";}
   when(/MACC/){
-    $emisdir="$EMIS_INP/Emissions/TNO_MACCIII";           # available years:
+    $emisdir="$DataDir/Emis_TNO7_MACCIII";                # available years:
     $emisyear=($year<2000)?2000:($year>2011)?2011:$year;  #   2000..2011
   }
 }
@@ -472,6 +474,7 @@ if (%BENCHMARK){
 # $CDF_EMIS can be set to "Emis_TNO7.nc", "Emis_GLOB_05.nc", "Emis_GLOB_01deg_2010_month.nc" or
 #                                                            "Emis_GLOB_01deg_2008_month.nc" 
 my $CDF_EMIS=0; # 0=none
+   $CDF_EMIS="Emis_TNO7_MACCIII_$emisyear.nc" if ($GRID=~/MACC/);
 die "Missing emisdir='$emisdir' for GRID='$GRID'\n"       unless (-d $emisdir or $CDF_EMIS);
 die "Missing pm_emisdir='$pm_emisdir' for GRID='$GRID'\n" unless (-d $pm_emisdir or $CDF_EMIS);
 
@@ -584,7 +587,6 @@ chdir "$ProgDir";
 
 #-- generate Makefile each time, to avoid forgetting changed "pat" file!
 
-
 if($RESET) { ########## Recompile everything!
   # For now, we simply recompile everything!
   system(@MAKE, "clean");
@@ -659,11 +661,8 @@ foreach my $scenflag ( @runs ) {
     my $metday = 0;
     if($CWFMETV) { # UTC version and DAY offset for MET.UTC version
       $metday = int($CWFMETV/24+0.99);             # DAY offset
-      $MetDir.= sprintf("_%02dUTC",($CWFMETV%24)) # 00/12 UTC versions
-                unless ($USER eq $FORCAST) or $MetDir=~/UTC/;
       die "Missing MetDir='$MetDir'\n" unless -d date2str($year."0101",$MetDir);
     }
-    $MetDir=~s:$year:%Y:g;                      # Genereal case for Jan 1st
     for my $n (0,1..($CWFDAYS-1)) {
       my $metfile="$MetDir/meteo%Y%m%d_%%02d.nc";
       if($aCWF or $CWFDAYS>4){  # hindcast using day 0,..,4 FC met.
@@ -796,12 +795,7 @@ foreach my $scenflag ( @runs ) {
     $dir = $pm_emisdir if $poll =~ /forf/;   #
     print "TESTING PM $poll $dir\n";
 
-    if ($GRID=~/MACC/) { # For most cases only Emis_TNO7.nc is available
-      $ifile{"$emisdir/Emis_${GRID}_$emisyear.$poll"} = "emislist.$poll"
-        if(-e "$emisdir/Emis_${GRID}_$emisyear.$poll");
-      $ifile{"$emisdir/Emis_TNO7_$emisyear.nc"} = "EmisFracs.nc"
-        if(-e "$emisdir/Emis_TNO7_$emisyear.nc");
-    }elsif( $GRID eq "RCA"){
+    if( $GRID eq "RCA"){
       #EnsClim RCA #$ifile{"$dir/grid$gridmap{$poll}"} = "emislist.$poll";
       #$ifile{"$emisdir/EmisOut_2005.$poll"} = "emislist.$poll";
       #$ifile{"$emisdir/EmisOut_$iyr_trend.$poll"} = "emislist.$poll";
@@ -1102,7 +1096,7 @@ foreach my $scenflag ( @runs ) {
 # compile/copy executable to $RESDIR/
   my $LPROG = "Unimod";
   if($MAKEMODE){  # compile/link program into $RESDIR/
-    $LPROG = "$version";
+    $LPROG = "Unimod_3DVar" if($aCWF);
     system(@MAKE,"$MAKEMODE","-C$ProgDir/",
            "ARCHIVE=yes","BINDIR=$RESDIR/") == 0
       or die "@MAKE $MAKEMODE -C$ProgDir/ failed"; 

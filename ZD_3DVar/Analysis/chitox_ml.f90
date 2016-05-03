@@ -8,10 +8,10 @@ use CheckStop_ml,only: CheckStop
 use spectralcov, only: nx,ny,stddev,nxex,nyex,nlev,nchem,&
                        nchemobs,ichemobs,nchemNoObs,ichemNoObs,&
                        nv1,ucovmat,sqrt_lambda,vt,sqrt_gamma,nkstar,ikstar
-use DA_ml,            only: debug=>DA_DEBUG,dafmt=>da_fmt_msg
+use DA_ml,            only: debug=>DEBUG_DA,dafmt=>da_fmt_msg
 use UFFTW3_ml,        only: UFFTW3_T
-use MPI_Groups_ml,    only: MPI_COMM_WORLD,MPI_BARRIER,MPI_BCAST,&
-                       MPI_ALLREDUCE,MPI_LAND,MPI_SUM,&
+use MPI_Groups_ml,    only: MPI_COMM_WORLD,&
+                       MPI_LAND,MPI_SUM,&
                        MPI_IN_PLACE,MPI_LOGICAL,MPI_INTEGER,MPI_DOUBLE_COMPLEX
 implicit none
 private 

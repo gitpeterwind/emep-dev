@@ -3,7 +3,7 @@
 #define HERE(MSG) MSG//" ("//__FILE__//":"//STRING(__LINE__)//")."
 PROGRAM unimod_B_nmc
   use ModelConstants_ml,    only: USE_EtaCOORDINATES
-  use DA_ml,                only: debug=>DA_DEBUG,DAFMT_DEF=>NMC_FMT_DEF,&
+  use DA_ml,                only: debug=>DEBUG_DA,DAFMT_DEF=>NMC_FMT_DEF,&
                                   dafmt=>da_fmt_msg,damsg=>da_msg
   use ChemChemicals_ml,     only: define_chemicals,species    ! specie names
   use ChemGroups_ml,        only: Init_ChemGroups,chemgroups  ! group  names
