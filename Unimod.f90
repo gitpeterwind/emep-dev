@@ -25,7 +25,7 @@ program myeul
   use ChemGroups_ml,    only: Init_ChemGroups
   use Country_ml,       only: Country_Init
   use DefPhotolysis_ml, only: readdiss
-  use Derived_ml,       only: Init_Derived, iou_min, iou_max
+  use Derived_ml,       only: Init_Derived, iou_min, iou_max, wanted_iou
   use DerivedFields_ml, only: f_2d, f_3d
   use EcoSystem_ml,     only: Init_EcoSystems
   use Emissions_ml,     only: Emissions, newmonth
@@ -37,7 +37,7 @@ program myeul
   use Landuse_ml,       only: InitLandUse, SetLanduse, Land_codes
   use MassBudget_ml,    only: Init_massbudget, massbudget
   use Met_ml,           only: metfieldint, MetModel_LandUse, Meteoread, meteo
-  use ModelConstants_ml,only: MasterProc, &   ! set true for host processor, me==0
+  use ModelConstants_ml,only: MasterProc, &   ! set true for host processor, me==MasterPE
        RUNDOMAIN,  &   ! Model domain
        NPROC,      &   ! No. processors
        METSTEP,    &   ! Hours between met input
@@ -49,7 +49,7 @@ program myeul
        FORECAST       ! FORECAST mode
   use ModelConstants_ml,only: Config_ModelConstants,DEBUG
   use MPI_Groups_ml,    only: MPI_BYTE, ME_CALC, ME_MPI, MPISTATUS, MPI_COMM_CALC,MPI_COMM_WORLD, &
-                              IERROR, MPI_world_init, MPI_groups_split
+                              MasterPE,IERROR, MPI_world_init, MPI_groups_split
   use NetCDF_ml,        only: Init_new_netCDF
   use OutputChem_ml,    only: WrtChem, wanted_iou
   use Par_ml,           only: me, GIMAX, GJMAX, Topology_io, Topology, parinit
@@ -108,7 +108,7 @@ program myeul
 
   ! Set a logical from ModelConstants, which can be used for
   !   specifying the master processor for print-outs and such
-  MasterProc = ( me == 0 )
+  MasterProc = ( me == MasterPE )
 
   call CheckStop(digits(1.0)<50, &
        "COMPILED WRONGLY: Need double precision, e.g. f90 -r8")
@@ -363,7 +363,7 @@ program myeul
      endif
      call Output_timing(IO_MYTIM,me,NPROC,nterm,GIMAX,GJMAX)
   elseif(me==NPROC-1) then
-     CALL MPI_SEND(mytimm,NTIMING*8,MPI_BYTE,0,765,MPI_COMM_CALC,IERROR)
+     CALL MPI_SEND(mytimm,NTIMING*8,MPI_BYTE,MasterPE,765,MPI_COMM_CALC,IERROR)
   endif
 
   ! write 'modelrun.finished' file to flag the end of the FORECAST

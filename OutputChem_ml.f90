@@ -9,7 +9,8 @@ use GridValues_ml,     only: debug_proc ,debug_li, debug_lj
 use My_Outputs_ml,     only: NBDATES, wanted_dates_inst,            &
                              Ascii3D_WANTED
 use Io_ml,             only: IO_WRTCHEM, IO_TMP, datewrite
-use ModelConstants_ml, only: END_OF_EMEPDAY, num_lev3d, MasterProc, FORECAST, &
+use ModelConstants_ml, only: END_OF_EMEPDAY, num_lev3d, MasterProc, &
+                             FREQ_HOURLY, FORECAST, &
                              DEBUG => DEBUG_OUTPUTCHEM, METSTEP, &
                              IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY,&
                              IOU_HOUR,IOU_HOUR_INST, IOU_MAX_MAX
@@ -105,7 +106,7 @@ subroutine Wrtchem(ONLY_HOUR)
   enddo
 
   !== Hourly output ====
-  if (current_date%seconds == 0) then !always true at this point
+  if(modulo(current_date%hour,FREQ_HOURLY)==0) then
     call Output_fields(IOU_HOUR_INST)
     call Output_fields(IOU_HOUR)
     call ResetDerived(IOU_HOUR) 

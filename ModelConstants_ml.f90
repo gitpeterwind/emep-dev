@@ -172,7 +172,7 @@ type(uEMEP_type), public, save :: uEMEP ! could be moved to own file when uEMEP 
 
                                       
 integer, public, save :: &
-  FREQ_3DHOURLY = 1  ! 3Dhourly netcdf special output frequency
+  FREQ_HOURLY = 1  ! 3Dhourly netcdf special output frequency
 
 ! Soil NOx. Choose EURO for better spatial and temp res, but for 
 ! global runs need global monthly. Variable USE_SOILNOX set from
@@ -628,7 +628,7 @@ subroutine Config_ModelConstants(iolog)
    ,USE_SEASALT, USE_POLLEN, USE_ASH, USE_AOD &
    ,USE_uEMEP, uEMEP &
    ,INERIS_SNAP1, INERIS_SNAP2 &   ! Used for TFMM time-factors
-   ,SELECT_LEVELS_HOURLY, FREQ_3DHOURLY  & ! incl. FORECAST, 3DPROFILES
+   ,SELECT_LEVELS_HOURLY, FREQ_HOURLY  & ! incl. FORECAST, 3DPROFILES
    ,FORECAST, ANALYSIS, SOURCE_RECEPTOR, VOLCANO_SR &
    ,SEAFIX_GEA_NEEDED     & ! only if problems, see text above.
    ,BGND_CH4              & ! Can reset background CH4 values 

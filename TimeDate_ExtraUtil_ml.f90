@@ -2,7 +2,7 @@ MODULE TimeDate_ExtraUtil_ml
 
 use Par_ml,           only: me
 use ModelConstants_ml,only: METSTEP, MasterProc, &
-                            IOU_MON,IOU_DAY,IOU_HOUR,IOU_HOUR_EXTRA_MEAN,FREQ_3DHOURLY
+                            IOU_MON,IOU_DAY,IOU_HOUR,IOU_HOUR_EXTRA_MEAN,FREQ_HOURLY
 use SmallUtils_ml,    only: key2str
 use CheckStop_ml,     only: CheckStop
 use TimeDate_ml,      only: max_day,tdif_secs,tdif_days,add_secs,add_days,&
@@ -307,11 +307,13 @@ subroutine ts_to_secs1970(ts,nsecs,iotyp)
 
   if(present(iotyp))then
     select case (iotyp)  !middle of period: NB WORKS ONLY FOR COMPLETE PERIODS
-      case (IOU_MON      ); cd=to_date(ts)
-                            nsecs=nsecs-spd/2*max_day(cd%month,cd%year) !#days(jan)=#days(dec)
-      case (IOU_DAY      ); nsecs=nsecs-spd/2
-      case (IOU_HOUR     ); nsecs=nsecs-1800 !1800=half hour
-      case (IOU_HOUR_EXTRA_MEAN); nsecs=nsecs-sph/2*FREQ_3DHOURLY
+    case(IOU_MON)
+      cd=to_date(ts)
+      nsecs=nsecs-spd/2*max_day(cd%month,cd%year) !#days(jan)=#days(dec)
+    case(IOU_DAY)
+      nsecs=nsecs-spd/2
+    case(IOU_HOUR,IOU_HOUR_EXTRA_MEAN)
+      nsecs=nsecs-sph/2*FREQ_HOURLY
     endselect
   endif
 endsubroutine ts_to_secs1970
@@ -347,11 +349,13 @@ subroutine ts_to_days1900(ts,ndays,iotyp)
 
   if(present(iotyp))then
     select case (iotyp)  !middle of period: NB WORKS ONLY FOR COMPLETE PERIODS
-      case (IOU_MON      ); cd=to_date(ts)
-                            ndays=ndays-0.5*max_day(cd%month,cd%year) !#days(jan)=#days(dec)
-      case (IOU_DAY      ); ndays=ndays-0.5
-      case (IOU_HOUR     ); ndays=ndays-1.0/48 !1.0/48.0=half hour
-      case (IOU_HOUR_EXTRA_MEAN); ndays=ndays-FREQ_3DHOURLY/48.0  !1.0/48.0=half hour
+    case(IOU_MON)
+      cd=to_date(ts)
+      ndays=ndays-0.5*max_day(cd%month,cd%year) !#days(jan)=#days(dec)
+    case(IOU_DAY)
+      ndays=ndays-0.5
+    case(IOU_HOUR,IOU_HOUR_EXTRA_MEAN)
+      ndays=ndays-FREQ_HOURLY/48.0  !1.0/48.0=half hour
     endselect
   endif
 endsubroutine ts_to_days1900

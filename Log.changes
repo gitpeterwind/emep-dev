@@ -154,7 +154,7 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-3rd May, Alvaro 3179
+3rd May, Alvaro 3179,3180
 
 Output_hourly,ZD_OZONE/My_Outputs_ml
 - The following hourly types produce output available from Derived:
@@ -230,6 +230,14 @@ Makefile:
 
 Log.changes:
 - Sort entries for 3175-3178 in chronological order.
+
+ModelConstants_ml,PhyChem_ml,OutputChem_ml,TimeDate_ExtraUtil_ml:
+- Rename FREQ_3DHOURLY to FREQ_HOURLY.
+- Apply FREQ_HOURLY to all hourly types.
+
+MPI_Groups_ml,Unimod
+- New paramenter MasterPE=0 (MPI_Groups_ml).
+- Define MasterProc=(me==MasterPE) (Unimod).
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 03 May 2016, Agnes 3177-3178
