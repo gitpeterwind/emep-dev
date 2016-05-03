@@ -184,6 +184,18 @@ integer, public :: IC_TAIW  ! Taiwan
 integer, public :: IC_THAI  ! Thailand
 integer, public :: IC_VIET  ! Vietnam
 integer, public :: IC_EGYP  ! Egypt
+integer, public :: IC_HANO  ! Hanoi
+integer, public :: IC_NVIE  ! North Vietnam
+integer, public :: IC_RVIE  ! Rest of Vietnam
+integer, public :: IC_BOLV  ! Bolivia
+integer, public :: IC_CARB  ! Caribbean
+integer, public :: IC_CEAM  ! Central America
+integer, public :: IC_COLO  ! Colombia
+integer, public :: IC_ECUA  ! Ecuador
+integer, public :: IC_PARA  ! Paraguay
+integer, public :: IC_PERU  ! Peru
+integer, public :: IC_URUG  ! Uruguay
+integer, public :: IC_VENE  ! Venezuela
 
   ! extra subdivisions of ship emissions into shipping categories:
   ! Baltic Sea  (30)
@@ -871,6 +883,42 @@ Country(IC_VIET) = cc( "VIET", 236, F,236, -100, "Vietnam")
 ix=ix+1 
 IC_EGYP=ix
 Country(IC_EGYP) = cc( "EGYP", 237, F,237, -100, "Egypt")
+ix=ix+1
+IC_HANO=ix
+Country(IC_HANO) = cc( "Hanoi", 238, F, 238, -100, "Hanoi")
+ix=ix+1
+IC_NVIE=ix
+Country(IC_NVIE) = cc( "NVIET", 239, F, 239, -100, "North Vietnam")
+ix=ix+1
+IC_RVIE=ix
+Country(IC_RVIE) = cc( "RVIET", 240, F, 240, -100, "Rest of Vietnam")
+ix=ix+1
+IC_BOLV=ix
+Country(IC_BOLV) = cc( "BOLV", 241, F, 241, -100, "Bolivia")
+ix=ix+1
+IC_CARB=ix
+Country(IC_CARB) = cc( "CARB", 242, F, 242, -100, "Caribbean")
+ix=ix+1
+IC_CEAM=ix
+Country(IC_CEAM) = cc( "CEAM", 243, F, 243, -100, "Central America")
+ix=ix+1
+IC_COLO=ix
+Country(IC_COLO) = cc( "COLO", 244, F, 244, -100, "Colombia")
+ix=ix+1
+IC_ECUA=ix
+Country(IC_ECUA) = cc( "ECUA", 245, F, 245, -100, "Ecuador")
+ix=ix+1
+IC_PARA=ix
+Country(IC_PARA) = cc( "PARA", 246, F, 246, -100, "Paraguay")
+ix=ix+1
+IC_PERU=ix
+Country(IC_PERU) = cc( "PERU", 247, F, 247, -100, "Peru")
+ix=ix+1
+IC_URUG=ix
+Country(IC_URUG) = cc( "URUG", 248, F, 248, -100, "Uruguay")
+ix=ix+1
+IC_VENE=ix
+Country(IC_VENE) = cc( "VENE", 249, F, 249, -100, " Venezuela")
 ix=ix+1 
 IC_INTSHIPS=ix
 Country(IC_INTSHIPS ) = cc(  "INTSHIPS" ,350 ,T, 350, -100  , "International ships, RCP6" )
