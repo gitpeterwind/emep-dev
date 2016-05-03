@@ -11,7 +11,8 @@ use Biogenics_ml,     only: Set_SoilNOx
 use Chemfields_ml,    only: xn_adv,cfac,xn_shl
 use ChemSpecs,        only: IXADV_SO2, IXADV_NH3, IXADV_O3, NSPEC_SHL, species
 use CoDep_ml,         only: make_so2nh3_24hr
-use DA_3DVar_ml,      only: main_3dvar, T_3DVAR ! 3D-VAR Analysis
+use DA_ml,            only: DEBUG_DA_1STEP
+use DA_3DVar_ml,      only: main_3dvar, T_3DVAR
 use Derived_ml,       only: DerivedProds, Derived, num_deriv2d
 use DerivedFields_ml, only: d_2d, f_2d
 use DryDep_ml,        only: init_drydep
@@ -20,7 +21,7 @@ use Emissions_ml,     only: EmisSet,uemep_emis
 !use Gravset_ml,       only: gravset
 use GridValues_ml,    only: debug_proc,debug_li,debug_lj,&
                             glon,glat,projection,i_local,j_local,i_fdom,j_fdom
-use ModelConstants_ml,only: KMAX_MID, nmax, nstep &
+use ModelConstants_ml,only: MasterProc, KMAX_MID, nmax, nstep &
                            ,dt_advec       & ! time-step for phyche/advection
                            ,DEBUG, PPBINV, PPTINV  & 
                            ,END_OF_EMEPDAY & ! (usually 6am)
@@ -31,7 +32,7 @@ use ModelConstants_ml,only: KMAX_MID, nmax, nstep &
 !                           ,USE_GRAVSET&
                            ,FREQ_HOURLY    & ! hourly netcdf output frequency
                            ,USE_POLLEN, USE_EtaCOORDINATES,JUMPOVER29FEB&
-                           ,USE_uEMEP
+                           ,USE_uEMEP, IOU_HOUR
 use MetFields_ml,     only: ps,roa,z_bnd,z_mid,cc3dmax, &
                             zen,coszen,Idirect,Idiffuse
 use OutputChem_ml,    only: WrtChem
@@ -89,23 +90,27 @@ subroutine phyche()
     endif
   endif
 
-!    if (me == 0) write(6,"(a15,i6,f8.3)") 'timestep nr.',nstep,thour
+! if(MasterProc) write(6,"(a15,i6,f8.3)") 'timestep nr.',nstep,thour
 
   call Code_timer(tim_before)
   call readxn(current_date) !Read xn_adv from earlier runs
   if(FORECAST.and.USE_POLLEN) call pollen_read ()
   call Add_2timing(19,tim_after,tim_before,"nest: Read")
   if(ANALYSIS.and.first_call)then
-     call main_3dvar()   ! 3D-VAR Analysis for "Zero hour"
-     call Add_2timing(T_3DVAR,tim_after,tim_before)
+    call main_3dvar()   ! 3D-VAR Analysis for "Zero hour"
+    call Add_2timing(T_3DVAR,tim_after,tim_before)
+    if(DEBUG_DA_1STEP)then
+      if(MasterProc)&
+        write(*,*) 'ANALYSIS DEBUG_DA_1STEP: only 1st assimilation step'
+      call Derived(dt_advec,End_of_Day)
+      return
+    endif
   endif
   if(FORECAST.and.first_call)then     ! Zero hour output
-    call Derived(dt_advec,End_of_Day) ! update D2D outputs, to avoid
-    call hourly_out()                 ! eg PM10:=0.0 on first output,
-    call WrtChem()                    ! and output hourly Derived
+    call Derived(dt_advec,End_of_Day,ONLY_IOU=IOU_HOUR) ! update D2D outputs, to avoid
+    call WrtChem(ONLY_HOUR=.true.)    ! eg PM10:=0.0 on first output
+    call Add_2timing(35,tim_after,tim_before,"phyche:outs")
   endif
-  call Add_2timing(35,tim_after,tim_before,"phyche:outs")
-
 
   call EmisSet(current_date)
   call Add_2timing(15,tim_after,tim_before,"phyche:EmisSet")
@@ -223,12 +228,12 @@ subroutine phyche()
   current_date = make_current_date(ts_now)
 
   if(JUMPOVER29FEB.and.current_date%month==2.and.current_date%day==29)then
-    if(me==0)write(*,*)'Jumping over one day for current_date!'
-    if(me==0)print "(2(1X,A))",'current date and time before jump:',&
+    if(MasterProc)write(*,*)'Jumping over one day for current_date!'
+    if(MasterProc)print "(2(1X,A))",'current date and time before jump:',&
           date2string("YYYY-MM-DD hh:mm:ss",current_date)
     call add_secs(ts_now,24*3600.)
     current_date = make_current_date(ts_now)       
-    if(me==0)print "(2(1X,A))",'current date and time after jump:',&
+    if(MasterProc)print "(2(1X,A))",'current date and time after jump:',&
         date2string("YYYY-MM-DD hh:mm:ss",current_date)
   endif
 
@@ -245,7 +250,7 @@ subroutine phyche()
   End_of_Day = (current_date%seconds == 0 .and. &
        current_date%hour    == END_OF_EMEPDAY)
 
-  if( End_of_Day .and. me == 0 ) then
+  if( End_of_Day .and. MasterProc ) then
      print "(a,i2.2,a,i2.2,a,i2.2,a)",' End of EMEP-day (',&
           current_date%hour, ':',current_date%seconds/60,&
                          ':',mod(current_date%seconds,60),')'

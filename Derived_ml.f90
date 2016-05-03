@@ -1654,9 +1654,9 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
         call CheckStop(ind3d_pmwater<1,"Missing PM25water output for "//trim(class))
       endif
 
-      forall (i=1:limax,j=1:ljmax)&
-        d_3d(n,i,j,:,IOU_INST) = d_3d(ind3d_pm10   ,i,j,:,IOU_INST) &
-                               + d_3d(ind3d_pmwater,i,j,:,IOU_INST)
+      forall (i=1:limax,j=1:ljmax,k=1:num_lev3d) &
+        d_3d(n,i,j,k,IOU_INST) = d_3d(ind3d_pm10   ,i,j,k,IOU_INST) &
+                               + d_3d(ind3d_pmwater,i,j,k,IOU_INST)
 
     case ("XKSIG00", "XKSIG12" ) !hf hmix Kz_m2s
       forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
@@ -1875,8 +1875,8 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
           if(present(ONLY_IOU))then
             if(ONLY_IOU/=iou)cycle
           endif
-          forall(i=1:limax,j=1:ljmax) &
-            d_3d(n,i,j,:,iou) = d_3d(n,i,j,:,iou) + d_3d(n,i,j,:,IOU_INST)
+          forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
+            d_3d(n,i,j,k,iou) = d_3d(n,i,j,k,iou) + d_3d(n,i,j,k,IOU_INST)
           if(f_3d(n)%avg) nav_3d(n,iou) = nav_3d(n,iou) + 1
         enddo
 
@@ -1903,8 +1903,8 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
         if(present(ONLY_IOU))then
           if(ONLY_IOU/=iou)cycle
         endif
-        forall(i=1:limax,j=1:ljmax) &
-          d_3d(n,i,j,:,iou) = d_3d(n,i,j,:,iou) + d_3d(n,i,j,:,IOU_INST)*af
+        forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
+          d_3d(n,i,j,k,iou) = d_3d(n,i,j,k,iou) + d_3d(n,i,j,k,IOU_INST)*af
         if(f_3d(n)%avg) nav_3d(n,iou) = nav_3d(n,iou) + 1
       enddo
 

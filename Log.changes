@@ -154,7 +154,7 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-3rd May, Alvaro 3179,3180
+3rd May, Alvaro 3179-3181
 
 Output_hourly,ZD_OZONE/My_Outputs_ml
 - The following hourly types produce output available from Derived:
@@ -235,9 +235,15 @@ ModelConstants_ml,PhyChem_ml,OutputChem_ml,TimeDate_ExtraUtil_ml:
 - Rename FREQ_3DHOURLY to FREQ_HOURLY.
 - Apply FREQ_HOURLY to all hourly types.
 
-MPI_Groups_ml,Unimod
+MPI_Groups_ml,Unimod:
 - New paramenter MasterPE=0 (MPI_Groups_ml).
 - Define MasterProc=(me==MasterPE) (Unimod).
+
+PhyChem_ml,ZD_3DVar/My_3DVar_ml:
+- replace (me==0) by (MasterProc).
+- On FORECAST mode, call Derived(..,ONLY_IOU=IOU_HOUR) and
+  call WrtChem(ONLY_HOUR=.true.) to produce "zero hour" output.
+- On ANALYSIS mode, DEBUG_DA_1STEP (DA_ml) will return after call main_3dvar().
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 03 May 2016, Agnes 3177-3178
