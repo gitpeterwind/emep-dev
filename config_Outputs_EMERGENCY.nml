@@ -89,4 +89,11 @@ OutputConcs=
 !    month_DOMAIN =   100,300,1,100 ,
 !    day_DOMAIN =     1,100,90,100 ,
 !    hour_DOMAIN =    50,100,50,100
+!restrict the levels on 3D output:
+!  num_lev3d           number of levels on 3D output  (default:KMAX_MID)
+!  lev3d_from_surface  coult levels from surface      (default:.false.)
+!  lev3d               list of levels in output order (default:KMAX_MID..1)
+! num_lev3d=3,lev3d_from_surface=T, ! 3 levels from surface: 20,19,18
+! num_lev3d=3,lev3d_from_surface=F, ! 3 levels from model top: 1,2,3
+! num_lev3d=8,lev3d_from_surface=T,lev3d=1,2,3,4,6,9,10,12, ! CAMS50 levels
 &end

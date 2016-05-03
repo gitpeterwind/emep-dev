@@ -3,20 +3,19 @@ module OutputChem_ml
 use CheckStop_ml,      only: CheckStop
 use Derived_ml,        only: LENOUT2D, nav_2d, num_deriv2d  &
                             ,LENOUT3D, nav_3d, num_deriv3d  &
-                            ,iou_min, iou_max, ResetDerived
+                            ,wanted_iou, ResetDerived
 use DerivedFields_ml,  only: f_2d, d_2d, f_3d, d_3d
 use GridValues_ml,     only: debug_proc ,debug_li, debug_lj
 use My_Outputs_ml,     only: NBDATES, wanted_dates_inst,            &
                              Ascii3D_WANTED
-use Io_ml,             only: IO_WRTCHEM, datewrite
-use ModelConstants_ml, only: END_OF_EMEPDAY, KMAX_MID, MasterProc&
-                            ,DEBUG => DEBUG_OUTPUTCHEM, METSTEP &
-                            ,IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY,&
+use Io_ml,             only: IO_WRTCHEM, IO_TMP, datewrite
+use ModelConstants_ml, only: END_OF_EMEPDAY, num_lev3d, MasterProc, FORECAST, &
+                             DEBUG => DEBUG_OUTPUTCHEM, METSTEP, &
+                             IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY,&
                              IOU_HOUR,IOU_HOUR_INST, IOU_MAX_MAX
-use NetCDF_ml,         only: CloseNetCDF, Out_netCDF
+use NetCDF_ml,         only: CloseNetCDF, Out_netCDF, filename_iou
 use OwnDataTypes_ml,   only: Deriv, print_deriv_type
-use Par_ml,            only: LIMAX,LJMAX,GIMAX,GJMAX,     &
-                              IRUNBEG,JRUNBEG,me
+use Par_ml,            only: LIMAX,LJMAX
 use TimeDate_ml,       only: tdif_secs,date,timestamp,make_timestamp,current_date,startdate, max_day, enddate  ! days in month
 use TimeDate_ExtraUtil_ml,only: date2string
 
@@ -26,13 +25,12 @@ implicit none
 !** subroutines:
 public :: Wrtchem
 public :: Output_fields   ! (iotyp)
-public :: wanted_iou      ! (iotyp, def%iotyp)
 public :: Output_f2d      ! (iotyp, dim, nav, def, dat)
 public :: Output_f3d      ! (iotyp, dim, nav, def, dat)
 
 contains
 
-subroutine Wrtchem()
+subroutine Wrtchem(ONLY_HOUR)
 !---------------------------------------------------------------------
 ! DESCRIPTION:
 !   Writes out data fields as NetCDF
@@ -48,6 +46,7 @@ subroutine Wrtchem()
 !   occur at 6am of the 1st day, but this should be over-written
 !   as soon as a full day of data is available).
 !----------------------------------------------------------------------
+  logical, intent(in), optional :: ONLY_HOUR  ! output hourly fields
   integer :: i,j,n,k,msnr1
   integer :: nyear,nmonth,nday,nhour,nmonpr
   integer :: mm_out, dd_out
@@ -111,7 +110,9 @@ subroutine Wrtchem()
     call Output_fields(IOU_HOUR)
     call ResetDerived(IOU_HOUR) 
   endif
-
+  if(present(ONLY_HOUR))then
+    if(ONLY_HOUR)return
+  endif
 
   !== Daily output ====
   if (nhour ==  END_OF_EMEPDAY ) then
@@ -144,7 +145,8 @@ endsubroutine Wrtchem
 subroutine Output_fields(iotyp)
   integer, intent(in) :: iotyp
   logical, dimension(IOU_MAX_MAX),save       :: myfirstcall = .true.
-  logical             :: Init_Only
+  logical :: Init_Only
+  integer :: i
   if(myfirstcall(iotyp))then
      !only predefine the fields. For increased performance 
      Init_Only = .true.
@@ -165,15 +167,15 @@ subroutine Output_fields(iotyp)
   if(num_deriv3d > 0) call Output_f3d(iotyp,num_deriv3d,nav_3d,f_3d,d_3d,Init_Only)
 
   call CloseNetCDF
-endsubroutine Output_fields
 
-function wanted_iou(iou,iotype) result(wanted)
-  integer, intent(in)           :: iou
-  integer, intent(in), optional :: iotype
-  logical                       :: wanted
-  wanted=(iou>=iou_min).and.(iou<=iou_max)
-  if(present(iotype))wanted=wanted.and.(iou<=iotype)
-endfunction wanted_iou
+  ! Write text file to mark output is finished
+  if(.not.(FORECAST.and.MasterProc))return
+  i=index(filename_iou(iotyp),'.nc')-1
+  if(i<1)i=len_trim(filename_iou(iotyp))
+  open(IO_TMP,file=filename_iou(iotyp)(1:i)//'.msg',position='append')
+  write(IO_TMP,*)date2string('FFFF: YYYY-MM-DD hh',current_date)
+  close(IO_TMP)
+endsubroutine Output_fields
 
 subroutine Output_f2d (iotyp, dim, nav, def, dat, Init_Only)
 !---------------------------------------------------------------------
@@ -226,7 +228,7 @@ subroutine Output_f3d (iotyp, dim, nav, def, dat, Init_Only)
   integer,                         intent(in) :: dim ! No. fields
   integer, dimension(dim,LENOUT3D),intent(in) :: nav ! No. items averaged
   type(Deriv), dimension(dim),     intent(in) :: def ! definition of fields
-  real, dimension(dim,LIMAX,LJMAX,KMAX_MID,LENOUT3D), intent(in):: dat
+  real, dimension(dim,LIMAX,LJMAX,num_lev3d,LENOUT3D), intent(in):: dat
   logical,                         intent(in) :: Init_Only! only define fields
 
   integer :: my_iotyp,icmp ! output type,component index
@@ -240,7 +242,7 @@ subroutine Output_f3d (iotyp, dim, nav, def, dat, Init_Only)
       scale = def(icmp)%scale
       if(my_iotyp/=IOU_INST) scale = scale / max(1,nav(icmp,my_iotyp))
 
-      call Out_netCDF(iotyp,def(icmp),3,KMAX_MID,dat(icmp,:,:,:,my_iotyp),scale,&
+      call Out_netCDF(iotyp,def(icmp),3,num_lev3d,dat(icmp,:,:,:,my_iotyp),scale,&
                       create_var_only=Init_Only)
     endif     ! wanted
   enddo       ! component loop

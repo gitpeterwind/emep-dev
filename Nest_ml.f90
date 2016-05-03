@@ -46,7 +46,7 @@ use Io_ml,                  only: open_file,IO_TMP,IO_NML,PrintLog
 use InterpolationRoutines_ml,  only : grid2grid_coeff
 use MetFields_ml,           only: roa
 use ModelConstants_ml,      only: Pref,PPB,PT,KMAX_MID, MasterProc, NPROC,  &
-    IOU_INST,IOU_3DHOUR,IOU_YEAR,IOU_MON,IOU_DAY, RUNDOMAIN,  &
+    IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY, RUNDOMAIN,  &
     FORECAST,USE_POLLEN, DEBUG_NEST,DEBUG_ICBC=>DEBUG_NEST_ICBC
 use MPI_Groups_ml      , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER, MPI_LOGICAL, &
                                 MPI_LOR,MPI_MIN, MPI_MAX, MPI_SUM, &

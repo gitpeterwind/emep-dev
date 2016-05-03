@@ -52,7 +52,7 @@ module AOTx_ml
        integer :: SAccPeriod = UNDEF_I  ! Start of accumulation period, either
                                     ! rel to SGS or day number, days
        integer :: EAccPeriod = UNDEF_I  ! End ...., days
-       integer :: iotype = UNDEF_I  ! .. 3=>IOU_MON, 4=>IOU_DAY, 5-7=>IOU_3DHOUR
+       integer :: iotype = UNDEF_I  ! .. 3=>IOU_MON, 4=>IOU_DAY, 5-7=>IOU_HOUR*
     end type 
 
    integer, parameter, private :: MAXNVO3  = 60

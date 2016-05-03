@@ -49,9 +49,9 @@ use OwnDataTypes_ml,  only: Asc2D, Deriv,typ_si
 use ChemSpecs,        only: NSPEC_SHL, species
 use GridValues_ml,    only: i_fdom, j_fdom,&   ! Gives emep coordinates
                             debug_proc, debug_li,debug_lj
-use Io_ml,            only: IO_HOURLY
+use Io_ml,            only: IO_TMP
 use ModelConstants_ml,only: KMAX_MID, MasterProc, MY_OUTPUTS, &
-                            IOU_INST, IOU_3DHOUR, IOU_YEAR, IOU_YEAR_LASTHH, &
+                            IOU_INST, IOU_YEAR, IOU_HOUR_EXTRA, IOU_MAX_MAX, &
                             DEBUG => DEBUG_OUT_HOUR,runlabel1,HOURLYFILE_ending,&
                             FORECAST, hour_DOMAIN, SELECT_LEVELS_HOURLY !NML
 use MetFields_ml,     only: t2_nwp,th, q, roa, surface_precip, ws_10m ,rh2m,&
@@ -72,13 +72,19 @@ use Units_ml,         only: Group_Units,&
 
 implicit none
 
+  ! use Derived hourly (5:mean,6:inst) whenever possible, instead of this subroutine
+  logical, parameter :: ENFORCE_HOURLY_DERIVED=.true.
+  integer, parameter :: IOU_YEAR_LASTHH=IOU_MAX_MAX+1 ! D2D aux. field, deprecated
+  character(len=TXTLEN_SHORT), parameter :: &
+    SRF_TYPE(9)=[character(len=TXTLEN_SHORT)::&       ! surface output types
+      ! all array members will have len=TXTLEN_SHORT
+      "ADVppbv","ADVugXX","ADVugXXgroup","COLUMN","COLUMNgroup",&
+      "D2D","D2D_mean","D2D_inst","D2D_accum"]
+
 !*.. Components of  hr_out
 !* character(len=TXTLEN_DERIV):: name   ! netCDF variable name
 !* character(len=TXTLEN_SHORT):: type   ! "ADVppbv" or "ADVugm3" or "SHLmcm3"
-!* character(len=9) :: ofmt     ! Output format (e.g. es12.4)
 !* integer          :: spec     ! Species number in xn_adv or xn_shl array or other arrays
-!* integer          :: ix1,ix2  ! bottom-left & upper-right x
-!* integer          :: iy1,iy2  ! bottom-left & upper-right y
 !* integer          :: nk       ! number of vertical levels
 !* character(len=TXTLEN_SHORT) :: unit   ! netCDF unit attribute
 !* real             :: unitconv !  conv. factor
@@ -86,20 +92,17 @@ implicit none
 
 ! local variables
   logical, save     :: first_call = .true. ! Set false after file opened
-  real hourly(LIMAX,LJMAX)      ! Local hourly value  (e.g. ppb)
-  real ghourly(GIMAX,GJMAX)           ! Global hourly value (e.g. ppb)
+  real :: hourly(LIMAX,LJMAX)         ! Local hourly value  (e.g. ppb)
   real :: arrmax                      ! Maximum value from array
   real :: unit_conv                   ! Unit conversion (ppb ug etc.)
-  real :: g, temp                     ! tmp - saves value of ghourly(i,j)
+  real :: temp                        ! tmp - saves value of ghourly(i,j)
   integer, dimension(2) :: maxpos     ! Location of max value
-  integer i,j,ih,ispec,itot,iadv      ! indices
-  integer :: k,ik,iik, k_flight        ! Index for vertical level
+  integer :: i,j,ih,ispec,itot,iadv   ! indices
+  integer :: k,ik,iik, k_flight       ! Index for vertical level
   integer :: ni,nj                    ! number of points in i/j-output
   integer :: flight_start,flight_end  ! Flight-level intervals
   real :: flight_max ! Flight level maximum
   character(len=TXTLEN_DERIV) :: name ! For output file, species names
-  character(len=4)  :: suffix         ! For date "mmyy"
-  integer, save :: prev_month = -99   ! Initialise with non-possible month
   type(Deriv) :: def1           ! for NetCDF
   real :: scale                 ! for NetCDF
   integer ::CDFtype,nk,klevel,ncfileID   ! for NetCDF
@@ -119,12 +122,6 @@ implicit none
   logical, save :: debug_flag      ! = ( MasterProc .and. DEBUG )
   logical       :: surf_corrected=.true.  ! to get 3m values
 
-  logical, parameter :: DxD_DEPRECATED=.true.
-  character(len=*), parameter :: &
-    SRF_TYPE(9)=(/"ADVppbv     ","ADVugXX     ","ADVugXXgroup",&
-                  "COLUMN      ","COLUMNgroup ","D2D         ",&
-                  "D2D_mean    ","D2D_inst    ","D2D_accum   "/)
-
   character(len=52) :: errmsg = "ok"
 
   if(NHOURLY_OUT<=0)then
@@ -136,11 +133,11 @@ implicit none
 
   ! write(*,*) " START: nmax6_hourly ",nmax6_hourly,allocated(max6_hourly)
   if (nmax6_hourly > 0  .and. .not.allocated(max6_hourly)) then
-     allocate(max6_hourly(nmax6_hourly,LIMAX,LJMAX,KMAX_MID))
-     allocate(imax6_hourly(nmax6_hourly))
-     max6_hourly(:,:,:,:) = 0.
-     imax6_hourly(:) =typ_si("none",-99) 
-     write(*,*) "allocate: ",  imax6_hourly,KMAX_MID
+    allocate(max6_hourly(nmax6_hourly,LIMAX,LJMAX,KMAX_MID))
+    allocate(imax6_hourly(nmax6_hourly))
+    max6_hourly(:,:,:,:) = 0.
+    imax6_hourly(:) =typ_si("none",-99) 
+    write(*,*) "allocate: ",  imax6_hourly,KMAX_MID
   endif
 
   ! only write at 12UTC for "TRENDS@12UTC", eg
@@ -159,11 +156,11 @@ implicit none
   endif  ! first_call
 
   filename=trim(runlabel1)//date2string(trim(HOURLYFILE_ending),current_date)
-  if(filename/=filename_iou(IOU_3DHOUR))then
+  if(filename/=filename_iou(IOU_HOUR_EXTRA))then
     if(debug_flag)&
       write(*,*) "DEBUG ",trim(HOURLYFILE_ending),"-Hourlyfile ",trim(filename)
   !! filename will be overwritten
-    call Init_new_netCDF(trim(filename),IOU_3DHOUR)
+    call Init_new_netCDF(trim(filename),IOU_HOUR_EXTRA)
 
     ncfileID=-1 ! must be <0 as initial value
 
@@ -172,18 +169,18 @@ implicit none
       def1%name=hr_out(ih)%name
       def1%unit=hr_out(ih)%unit
       def1%class=hr_out(ih)%type
-      nk  = hr_out(ih)%nk
       CDFtype=Real4 ! can be choosen as Int1,Int2,Int4,Real4 or Real8
       scale=1.
+      nk=hr_out(ih)%nk
       if(any(hr_out(ih)%type==SRF_TYPE))nk=1
       select case(nk)
       case(1)       ! write as 2D
-        call Out_netCDF(IOU_3DHOUR,def1,2,1,hourly,scale,CDFtype,&
+        call Out_netCDF(IOU_HOUR_EXTRA,def1,2,1,hourly,scale,CDFtype,&
           create_var_only=.true.,ncFileID_given=ncFileID)
       case(2:)      ! write as 3D
         ni=hour_DOMAIN(2)-hour_DOMAIN(1)+1
         nj=hour_DOMAIN(4)-hour_DOMAIN(3)+1
-        call Out_netCDF(IOU_3DHOUR,def1,3,1,hourly,scale,CDFtype,ik=1,&
+        call Out_netCDF(IOU_HOUR_EXTRA,def1,3,1,hourly,scale,CDFtype,ik=1,&
           create_var_only=.true.,ncFileID_given=ncFileID,chunksizes=[ni,nj,1,1])
       endselect
     enddo
@@ -271,6 +268,8 @@ implicit none
       OPTIONS: select case(hr_out_type)
 
       case("ADVppbv")
+        call CheckStop(ENFORCE_HOURLY_DERIVED.and.MasterProc,&
+          'Hourly_out: deprecated hourly type '//trim(hr_out(ih)%type))
         itot = NSPEC_SHL + ispec
         name = species(itot)%name
         unit_conv =  hr_out(ih)%unitconv
@@ -338,6 +337,8 @@ implicit none
         endif
 
       case("BCVppbv")
+        call CheckStop(ENFORCE_HOURLY_DERIVED.and.MasterProc,&
+          'Hourly_out: deprecated hourly type '//trim(hr_out(ih)%type))
         itot = NSPEC_SHL + ispec
         name = species(itot)%name
         unit_conv =  hr_out(ih)%unitconv
@@ -349,6 +350,8 @@ implicit none
           write(*,'(A,I0,1X,L2)')"K-level", ik, trim(name), itot, surf_corrected
 
       case("ADVugXX")  !ug/m3, ugX/m3 output at the surface
+        call CheckStop(ENFORCE_HOURLY_DERIVED.and.MasterProc,&
+          'Hourly_out: deprecated hourly type '//trim(hr_out(ih)%type))
         itot = NSPEC_SHL + ispec
         name = species(itot)%name
         unit_conv =  hr_out(ih)%unitconv
@@ -360,6 +363,8 @@ implicit none
         endforall
 
       case("BCVugXX")  ! ug/m3, ugX/m3 output at model mid-levels
+        call CheckStop(ENFORCE_HOURLY_DERIVED.and.MasterProc,&
+          'Hourly_out: deprecated hourly type '//trim(hr_out(ih)%type))
         itot = NSPEC_SHL + ispec
         name = species(itot)%name
         unit_conv =  hr_out(ih)%unitconv
@@ -373,6 +378,8 @@ implicit none
           write(*,'(a,i5,a10,i5)')"K-level", ik, trim(name), itot
 
       case("ADVugXXgroup")  ! GROUP output in ug/m3, ugX/m3 at the surface
+        call CheckStop(ENFORCE_HOURLY_DERIVED.and.MasterProc,&
+          'Hourly_out: deprecated hourly type '//trim(hr_out(ih)%type))
         call Group_Units(hr_out(ih),gspec,gunit_conv,debug_flag,name)
         forall ( i=1:limax, j=1:ljmax)
           hourly(i,j) = dot_product(xn_adv(gspec,i,j,KMAX_MID),&
@@ -385,6 +392,8 @@ implicit none
         deallocate(gspec,gunit_conv)
 
       case("BCVugXXgroup")  ! GROUP output in ug/m3, ugX/m3 at model mid-levels
+        call CheckStop(ENFORCE_HOURLY_DERIVED.and.MasterProc,&
+          'Hourly_out: deprecated hourly type '//trim(hr_out(ih)%type))
         call Group_Units(hr_out(ih),gspec,gunit_conv,debug_flag,name)
         forall ( i=1:limax, j=1:ljmax)
           hourly(i,j) = dot_product(xn_adv(gspec,i,j,ik), &
@@ -396,14 +405,20 @@ implicit none
         deallocate(gspec,gunit_conv)
 
       case("PMwater")    ! PM water content in ug/m3 at model mid-levels
+        call CheckStop(ENFORCE_HOURLY_DERIVED.and.MasterProc,&
+          'Hourly_out: deprecated hourly type '//trim(hr_out(ih)%type))
         if(hr_out(ih)%unit/="ug/m3")hr_out(ih)%unit="ug"
         forall(i=1:limax,j=1:ljmax) hourly(i,j) = PM25_water(i,j,ik)
 
       case("PMwaterSRF")  ! PM water content in ug/m3 at surface level
+        call CheckStop(ENFORCE_HOURLY_DERIVED.and.MasterProc,&
+          'Hourly_out: deprecated hourly type '//trim(hr_out(ih)%type))
         if(hr_out(ih)%unit/="ug/m3")hr_out(ih)%unit="ug"
         forall(i=1:limax,j=1:ljmax) hourly(i,j) = PM25_water_rh50(i,j)
 
       case("Z","Z_MID")
+        call CheckStop(ENFORCE_HOURLY_DERIVED.and.MasterProc,&
+          'Hourly_out: deprecated hourly type '//trim(hr_out(ih)%type))
         name = "Z_MID"
         unit_conv =  hr_out(ih)%unitconv
         if(surf_corrected)then
@@ -413,12 +428,16 @@ implicit none
         endif
 
       case("dZ","dZ_BND")  ! level thickness
+        call CheckStop(ENFORCE_HOURLY_DERIVED.and.MasterProc,&
+          'Hourly_out: deprecated hourly type '//trim(hr_out(ih)%type))
         name = "dZ_BND"
         unit_conv =  hr_out(ih)%unitconv
         forall(i=1:limax,j=1:ljmax) &
           hourly(i,j)=(z_bnd(i,j,ik)-z_bnd(i,j,ik+1))*unit_conv
 
       case("COLUMN")    ! Column output in ug/m2, ugX/m2, molec/cm2
+        call CheckStop(ENFORCE_HOURLY_DERIVED.and.MasterProc,&
+          'Hourly_out: deprecated hourly type '//trim(hr_out(ih)%type))
         itot = NSPEC_SHL + ispec
         name = species(itot)%name
         unit_conv =  hr_out(ih)%unitconv
@@ -434,6 +453,8 @@ implicit none
         enddo
 
       case("COLUMNgroup")! GROUP Column output in ug/m2, ugX/m2, molec/cm2
+        call CheckStop(ENFORCE_HOURLY_DERIVED.and.MasterProc,&
+          'Hourly_out: deprecated hourly type '//trim(hr_out(ih)%type))
         call Group_Units(hr_out(ih),gspec,gunit_conv,debug_flag,name)
         if(ih>1) hourly(:,:) = 0.0
         do iik=ik,KMAX_MID
@@ -514,96 +535,79 @@ implicit none
       case("Idiffus")     ! Diffuse radiation (W/m2); Skip Units conv.
         forall(i=1:limax,j=1:ljmax) hourly(i,j) = Idiffuse(i,j)
 
-     case("MAX6Hgroup") !max6_hourly
-      !  write(*,*) "ik: ",ik
-           call Group_Units(hr_out(ih),gspec,gunit_conv,debug_flag,name)            
-           intmax = find_index(name,imax6_hourly(:)%name)
-           if (intmax .lt. 0) then
-              do n = 1,nmax6_hourly
-                 if (imax6_hourly(n)%name == "none") then
-                    imax6_hourly(n)%name = name
-                    imax6_hourly(n)%ind = ih
-                    intmax = n
-                    exit
-                 endif
-              enddo
-           endif
-           if(allocated(max6_hourly))then
-             
-              do  i=1,limax
-                 do j=1,ljmax
-                    flight_max = 0.
-                    if (ik .eq. KMAX_MID) then
-                       do k_flight = KMAX_MID,1,-1
-                          !  if (me == 23 .and. i == 3 .and. j == 10) write(*,*) "k_flight: ",k_flight,z_mid(i,j,k_flight) 
-                          if (z_mid(i,j,k_flight) .gt. 6096.0) exit !0 - 20 000 feet
-                       enddo
-                       flight_start = KMAX_MID
-                       flight_end   = k_flight+1
-     !                  if (me == 23 .and. i == 3 .and. j == 10)write(*,*) "ik: 20 ",flight_start,flight_end,z_mid(i,j,flight_start),z_mid(i,j,flight_end)
-   
-                    elseif (ik .eq. KMAX_MID-1) then
-                       flight_end =  KMAX_MID
-                       do k_flight = KMAX_MID,1,-1
-                          if (z_mid(i,j,k_flight) .gt. 6096.0 .and.&
-                               z_mid(i,j,flight_end).eq. z_mid(i,j,KMAX_MID)) then
-                             flight_start = k_flight
-                             flight_end   = k_flight
-                          endif
-                          if (z_mid(i,j,k_flight) .gt. 6096.0 &
-                               .and.  z_mid(i,j,k_flight) .lt. 10668.0) flight_end = k_flight
-                          if (z_mid(i,j,k_flight) .gt. 10668.0) exit
-  
-                       enddo
-    
-                    elseif (ik .eq. KMAX_MID-2) then
-
-                     
-                       flight_end =  KMAX_MID
-                       if (z_mid(i,j,1) .lt. 10668.0) then 
-                          flight_end = 1
-                          flight_start = 1
-                       else
-                          do k_flight = KMAX_MID,1,-1
-                             if (z_mid(i,j,k_flight) .gt. 10668.0 .and.&
-                                  z_mid(i,j,flight_end).eq. z_mid(i,j,KMAX_MID)) then
-                                flight_start = k_flight
-                                flight_end   = k_flight
-                                
-                             endif
-                             if (z_mid(i,j,k_flight) .gt. 10668.0 &
-                                  .and.  z_mid(i,j,k_flight) .lt. 15240.0) flight_end = k_flight
-                             if (z_mid(i,j,k_flight) .gt. 15240.0) exit
-                          enddo
-                       endif
-                    
+      case("MAX6Hgroup") !max6_hourly
+      ! write(*,*) "ik: ",ik
+        call Group_Units(hr_out(ih),gspec,gunit_conv,debug_flag,name)            
+        intmax = find_index(name,imax6_hourly(:)%name)
+        if(intmax .lt. 0) then
+          do n = 1,nmax6_hourly
+            if(imax6_hourly(n)%name=="none") then
+              imax6_hourly(n)%name = name
+              imax6_hourly(n)%ind = ih
+              intmax = n
+              exit
+            endif
+          enddo
+        endif
+        if(allocated(max6_hourly))then
+          do i=1,limax
+            do j=1,ljmax
+              flight_max = 0.
+              if (ik .eq. KMAX_MID) then
+                do k_flight = KMAX_MID,1,-1
+!if(me==23.and.i==3.and.j==10)write(*,*) "k_flight: ",k_flight,z_mid(i,j,k_flight) 
+                  if (z_mid(i,j,k_flight) .gt. 6096.0) exit !0 - 20 000 feet
+                enddo
+                flight_start = KMAX_MID
+                flight_end   = k_flight+1
+!if(me==23.and.i==3.and.j==10)write(*,*) "ik: 20 ",flight_start,flight_end,z_mid(i,j,flight_start),z_mid(i,j,flight_end)
+              elseif (ik .eq. KMAX_MID-1) then
+                flight_end =  KMAX_MID
+                do k_flight = KMAX_MID,1,-1
+                  if(z_mid(i,j,k_flight) .gt. 6096.0 .and.&
+                     z_mid(i,j,flight_end).eq. z_mid(i,j,KMAX_MID)) then
+                    flight_start = k_flight
+                    flight_end   = k_flight
+                  endif
+                  if(z_mid(i,j,k_flight) .gt. 6096.0 .and. &
+                     z_mid(i,j,k_flight) .lt. 10668.0) flight_end = k_flight
+                  if(z_mid(i,j,k_flight) .gt. 10668.0) exit
+                enddo
+              elseif (ik .eq. KMAX_MID-2) then
+                flight_end =  KMAX_MID
+                if (z_mid(i,j,1) .lt. 10668.0) then 
+                  flight_end = 1
+                  flight_start = 1
+                else
+                  do k_flight = KMAX_MID,1,-1
+                    if(z_mid(i,j,k_flight) .gt. 10668.0 .and.&
+                       z_mid(i,j,flight_end).eq. z_mid(i,j,KMAX_MID)) then
+                      flight_start = k_flight
+                      flight_end   = k_flight 
                     endif
-                    do k_flight = flight_end,flight_start
-                       
-                       temp = dot_product(xn_adv(gspec,i,j,k_flight),  gunit_conv(:))  * roa(i,j,k_flight,1)
-                       
-                       if (flight_max .lt. temp) flight_max = temp
-                    enddo
-                                   
-                 
-                    max6_hourly(intmax,i,j,ik)= max(max6_hourly(intmax,i,j,ik),&
-                         flight_max)              
-                 enddo
+                    if(z_mid(i,j,k_flight) .gt. 10668.0 .and.  &
+                       z_mid(i,j,k_flight) .lt. 15240.0) flight_end = k_flight
+                    if(z_mid(i,j,k_flight) .gt. 15240.0) exit
+                  enddo
+                endif
+              endif
+              do k_flight = flight_end,flight_start
+                 temp = dot_product(xn_adv(gspec,i,j,k_flight),gunit_conv(:))&
+                      * roa(i,j,k_flight,1)
+                 if(flight_max .lt. temp) flight_max = temp
               enddo
+              max6_hourly(intmax,i,j,ik)=max(max6_hourly(intmax,i,j,ik),flight_max)              
+            enddo
+          enddo
 
           forall(i=1:limax,j=1:ljmax) hourly(i,j) = max6_hourly(intmax,i,j,ik)
-              !endif
-              
-           else
-              hourly(:,:) = 0.0
-           endif
-           if (current_date%hour == 0 .or. current_date%hour == 6 .or.  &
-                current_date%hour == 12 .or. current_date%hour == 18) max6_hourly(:,:,:,ik) = 0.0
-
-
+        else
+           hourly(:,:) = 0.0
+        endif
+        if(mod(current_date%hour,6)==0) max6_hourly(:,:,:,ik) = 0.0
 
       case("D2D_inst")
-        call CheckStop(DxD_DEPRECATED,&
+        call CheckStop(ENFORCE_HOURLY_DERIVED.and.MasterProc,&
           'Hourly_out: deprecated hourly type '//trim(hr_out(ih)%type))
        ! Here ispec is the index in the f_2d arrays
         call CheckStop(ispec<1.or.ispec>num_deriv2d,&
@@ -626,7 +630,7 @@ implicit none
             hr_out(ih)%unitconv, hourly(debug_li,debug_lj)
 
       case("D3D_inst")
-        call CheckStop(DxD_DEPRECATED,&
+        call CheckStop(ENFORCE_HOURLY_DERIVED.and.MasterProc,&
           'Hourly_out: deprecated hourly type '//trim(hr_out(ih)%type))
        ! Here ispec is the index in the f_3d arrays
         call CheckStop(ispec<1.or.ispec>num_deriv3d,&
@@ -649,7 +653,7 @@ implicit none
             hr_out(ih)%unitconv, hourly(debug_li,debug_lj)
 
       case("D2D_accum")
-        call CheckStop(DxD_DEPRECATED,&
+        call CheckStop(ENFORCE_HOURLY_DERIVED.and.MasterProc,&
           'Hourly_out: deprecated hourly type '//trim(hr_out(ih)%type))
         call CheckStop(LENOUT2D<IOU_YEAR_LASTHH,&
           'Hourly_out: unsupported hourly type '//trim(hr_out(ih)%type))
@@ -676,7 +680,7 @@ implicit none
             hr_out(ih)%unitconv, hourly(debug_li,debug_lj)
 
       case("D3D_accum")
-        call CheckStop(DxD_DEPRECATED,&
+        call CheckStop(ENFORCE_HOURLY_DERIVED.and.MasterProc,&
           'Hourly_out: deprecated hourly type '//trim(hr_out(ih)%type))
         call CheckStop(LENOUT3D<IOU_YEAR_LASTHH,&
           'Hourly_out: unsupported hourly type '//trim(hr_out(ih)%type))
@@ -703,7 +707,7 @@ implicit none
             hr_out(ih)%unitconv, hourly(debug_li,debug_lj)
 
       case("D2D_mean")
-        call CheckStop(DxD_DEPRECATED,&
+        call CheckStop(ENFORCE_HOURLY_DERIVED.and.MasterProc,&
           'Hourly_out: deprecated hourly type '//trim(hr_out(ih)%type))
         call CheckStop(LENOUT2D<IOU_YEAR_LASTHH,&
           'Hourly_out: unsupported hourly type '//trim(hr_out(ih)%type))
@@ -737,7 +741,7 @@ implicit none
             hr_out(ih)%unitconv, hourly(debug_li,debug_lj)
 
       case("D3D_mean")
-        call CheckStop(DxD_DEPRECATED,&
+        call CheckStop(ENFORCE_HOURLY_DERIVED.and.MasterProc,&
           'Hourly_out: deprecated hourly type '//trim(hr_out(ih)%type))
         call CheckStop(LENOUT3D<IOU_YEAR_LASTHH,&
           'Hourly_out: unsupported hourly type '//trim(hr_out(ih)%type))
@@ -813,26 +817,26 @@ implicit none
 
       select case(nk)
       case(1)       ! write as 2D
-        call Out_netCDF(IOU_3DHOUR,def1,2,1,hourly,scale,CDFtype,&
+        call Out_netCDF(IOU_HOUR_EXTRA,def1,2,1,hourly,scale,CDFtype,&
                         ncFileID_given=ncFileID)
       case(2:)      ! write as 3D
         klevel=ik
         if(nk<KMAX_MID)  klevel=KMAX_MID-ik+1 !count from ground and up
         if(SELECT_LEVELS_HOURLY) klevel=k     !order is defined in LEVELS_HOURLY
-        call Out_netCDF(IOU_3DHOUR,def1,3,1,hourly,scale,CDFtype,ik=klevel,&
+        call Out_netCDF(IOU_HOUR_EXTRA,def1,3,1,hourly,scale,CDFtype,ik=klevel,&
                         ncFileID_given=ncFileID)
       !case default   ! no output
       endselect
     enddo KVLOOP    
   enddo HLOOP
   ! CF convention: surface pressure to define vertical coordinates.
-  if(NHOURLY_OUT>0.and.NLEVELS_HOURLY>0.and.all(hr_out(:)%name/="PS"))then
+  if(Nhourly_out>0.and.NLEVELS_HOURLY>0.and.all(hr_out(:)%name/="PS"))then
     def1%name='PS'
     def1%unit='hPa'
     def1%class='Surface pressure'
     CDFtype=Real4 ! can be choosen as Int1,Int2,Int4,Real4 or Real8
     scale=1.
-    call Out_netCDF(IOU_3DHOUR,def1,2,1,ps(:,:,1)*0.01,scale,CDFtype,&
+    call Out_netCDF(IOU_HOUR_EXTRA,def1,2,1,ps(:,:,1)*0.01,scale,CDFtype,&
                     ncFileID_given=ncFileID)     
   endif
 
@@ -841,10 +845,11 @@ implicit none
   call CloseNetCDF
   call CheckStop(errmsg)
 
-! Write text file wich contents
+  ! Write text file to mark hourly output is done
   if(.not.(FORECAST.and.MasterProc))return
-  i=index(filename,'.nc')-1;if(i<1)i=len_trim(filename)
-  open(IO_HOURLY,file=filename(1:i)//'.msg',position='append')
-  write(IO_HOURLY,*)date2string('FFFF: YYYY-MM-DD hh',current_date)
-  close(IO_HOURLY)
+  i=index(filename,'.nc')-1
+  if(i<1)i=len_trim(filename)
+  open(IO_TMP,file=filename(1:i)//'.msg',position='append')
+  write(IO_TMP,*)date2string('FFFF: YYYY-MM-DD hh',current_date)
+  close(IO_TMP)
 endsubroutine hourly_out

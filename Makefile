@@ -72,8 +72,8 @@ else ifeq ($(MACHINE),abel)
   MAKEDEPF90=/usit/$(MACHINE)/u1/mifapw/bin/makedepf90
 else ifeq ($(MACHINE),precise)  #ubuntu 12.04
   F90FLAGS = -fdefault-real-8 -ffixed-line-length-none -ffree-line-length-none -fno-range-check
-  LDFLAGS += $(shell nf-config --flibs)
-  F90FLAGS+= $(shell nf-config --cflags)
+  LDFLAGS += $(shell nc-config --flibs)
+  F90FLAGS+= $(shell nc-config --cflags)
   MAKEDEPF90 = $(EMEPLOCAL)/bin/makedepf90
   LD = gfortran
   DEBUG_FLAGS = -Wall -fbacktrace -fbounds-check -fimplicit-none -pedantic 

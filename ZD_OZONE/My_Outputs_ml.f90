@@ -47,10 +47,10 @@ integer, public, parameter :: &
   ,NXTRA_SITE_D2D  =    9+8   ! No. Misc. met. params  ( e.g. T2, d_2d)
 
 integer, public, parameter, dimension(NADV_SITE) :: &
-  SITE_ADV =  (/ (isite, isite=1,NADV_SITE) /)  ! Everything
+  SITE_ADV = [(isite, isite=1,NADV_SITE)]  ! Everything
 
 integer, public, parameter, dimension(NSHL_SITE) :: &
-  SITE_SHL =  (/ (isite, isite=1,NSHL_SITE) /)  ! All short-lived species
+  SITE_SHL = [(isite, isite=1,NSHL_SITE)]  ! All short-lived species
 
 ! Extra parameters - need to be coded in Sites_ml also. So far
 ! we can choose from hmix, T2, or th (pot. temp.) or d_2d fields.
@@ -62,32 +62,24 @@ integer, public, parameter, dimension(NSHL_SITE) :: &
 !** fields in SITE_XTRA and their names in SITE_XTRA_CODE
 
 character(len=18), public, parameter, dimension(NXTRA_SITE_MISC) :: &
-  SITE_XTRA_MISC=(/"th   ","T2   "/)
+  SITE_XTRA_MISC=[character(len=18):: "th","T2"]
 
 !These variables must have been set in My_Derived for them to be used.
 character(len=24), public, parameter, dimension(NXTRA_SITE_D2D) :: &
-  SITE_XTRA_D2D= (/ &
-    "HMIX                   ",&
-    "PSURF                  ", &
-    "ws_10m                 ", &
-    "rh2m                   ", &
-    "Emis_mgm2_BioNatC5H8   ", &
-    "Emis_mgm2_BioNatAPINENE", &
-    "Emis_mgm2_BioNatNO     ",&
-    "Emis_mgm2_nox          ",&
-    'WDEP_PREC', &
-!    'Idirect', 'Idiffuse', 'SNratio', 'SMI_deep', &
-    'met2d_uref', & ! Idirect', 'Idiffuse', 'SNratio', 'SMI_deep', &
-    'met2d_u10', & ! Idirect', 'Idiffuse', 'SNratio', 'SMI_deep', &
-    'met2d_rh2m', & ! Idirect', 'Idiffuse', 'SNratio', 'SMI_deep', &
-    'SMI_deep', 'met2d_SMI_d', &
-    'SMI_uppr', 'met2d_SMI_s', &
-!   "SoilWater_deep ","EVAP_CF        ","EVAP_DF        ", &
-!   "EVAP_BF        ","EVAP_NF        ","WDEP_PREC      ", &
-!   "RH_GR          ","CanopyO3_GR    ","VPD_GR         ","FstO3_GR       ", &
-!   "RH_IAM_DF      ","CanopyO3_IAM_DF","VPD_IAM_DF     ","FstO3_IAM_DF   ", &
-!   "COLUMN_CO_k20  ","COLUMN_C2H6_k20","COLUMN_HCHO_k20","COLUMN_CH4_k20 ",
-    "COLUMN_NO2_k20         " /)
+  SITE_XTRA_D2D=[character(len=24):: & 
+    ! all array members will have len=24
+    "HMIX","PSURF","ws_10m","rh2m",&
+    "Emis_mgm2_BioNatC5H8","Emis_mgm2_BioNatAPINENE",&
+    "Emis_mgm2_BioNatNO","Emis_mgm2_nox",&
+    'WDEP_PREC',&!'Idirect','Idiffuse','SNratio','SMI_deep',&
+    'met2d_uref','met2d_u10','met2d_rh2m', &
+    'SMI_deep','met2d_SMI_d','SMI_uppr','met2d_SMI_s',&
+!   "SoilWater_deep","EVAP_CF","EVAP_DF",&
+!   "EVAP_BF","EVAP_NF","WDEP_PREC",&
+!   "RH_GR","CanopyO3_GR","VPD_GR","FstO3_GR",&
+!   "RH_IAM_DF","CanopyO3_IAM_DF","VPD_IAM_DF","FstO3_IAM_DF",&
+!   "COLUMN_CO_k20","COLUMN_C2H6_k20","COLUMN_HCHO_k20","COLUMN_CH4_k20",
+    "COLUMN_NO2_k20"]
 
 !**** Aircraft outputs   (used in Polinat_ml)
 !==============================================================
@@ -119,13 +111,15 @@ integer, public, parameter :: &
   ,NXTRA_SONDE =    4             ! No. Misc. met. params
 
 integer, public, parameter, dimension(NADV_SONDE) :: &
-   SONDE_ADV =  (/ IXADV_O3, IXADV_NO2, IXADV_NO, IXADV_PAN,  &
-                IXADV_NO3_c, IXADV_NO3_f, IXADV_SO4, IXADV_NH4_f, IXADV_NH3/)
+  SONDE_ADV = [ IXADV_O3, IXADV_NO2, IXADV_NO, IXADV_PAN,  &
+                IXADV_NO3_c, IXADV_NO3_f, IXADV_SO4, IXADV_NH4_f, IXADV_NH3 ]
 
 integer, public, parameter, dimension(NSHL_SONDE) :: &
-  SONDE_SHL =  (/ IXSHL_OH, IXSHL_OD, IXSHL_OP /)
+  SONDE_SHL = [ IXSHL_OH, IXSHL_OD, IXSHL_OP ]
 character(len=10), public, parameter, dimension(NXTRA_SONDE) :: &
-  SONDE_XTRA=  (/ "NOy   ", "z_mid ", "p_mid ", "th    " /) !, "Kz_m2s" /)
+  SONDE_XTRA= [character(len=10):: &
+   ! all array members will have len=10
+   "NOy","z_mid","p_mid","th"]!,"Kz_m2s"]
 
 
 !   can access d_3d fields through index here, by
@@ -262,31 +256,29 @@ subroutine set_output_defs
     nhourly_out=19
     nlevels_hourly = 1
   case("MACC_ENS","CAMS50_ENS","FORECAST")
-    nhourly_out=15-4 !- *_col moved to Hourly/Derived
+    nhourly_out=0
     nlevels_hourly=9
-    if(any(species_adv(:)%name=="RN222"))nhourly_out=nhourly_out+1
 !- moved to Hourly/Derived
+!-  nhourly_out=nhourly_out+15
+!-  if(any(species_adv(:)%name=="RN222"))nhourly_out=nhourly_out+1
 !-  if(USE_AOD     )nhourly_out=nhourly_out+1
     if(USE_POLLEN  )then
-      call pollen_check(gpoll)
-      nhourly_out=nhourly_out+size(chemgroups(gpoll)%ptr)
+!-    call pollen_check(gpoll)
+!-    nhourly_out=nhourly_out+size(chemgroups(gpoll)%ptr)
       if(DEBUG_POLLEN)&
       nhourly_out=nhourly_out+size(chemgroups(gpoll)%ptr)*2
     endif
-! case("MACC_EVA","CAMS50_EVA","CAMS50_IRA")
-!   nhourly_out=4
-!   nlevels_hourly=1
-! case("MACC_POL","CAMS71_SR","CITYSR")
-!   nhourly_out=2
-!   nlevels_hourly=1
-! case("MACC_NMC")
-!   nhourly_out=4
-!   nlevels_hourly=KMAX_MID     ! nb zero is *not* one of levels
-!   call CheckStop(.not.USE_AOD,"MACC_NMC hourly output needs USE_AOD")
-  case("MACC_EVA","CAMS50_EVA","CAMS50_IRA","MACC_POL","CAMS71_SR","CITYSR","MACC_NMC")  ! use hourly Derived output
-    nhourly_out=0
-    nlevels_hourly=0
-    return
+!- moved to Hourly/Derived
+!-case("MACC_EVA","CAMS50_EVA","CAMS50_IRA")
+!-  nhourly_out=4
+!-  nlevels_hourly=1
+!-case("MACC_POL","CAMS71_SR","CITYSR")
+!-  nhourly_out=2
+!-  nlevels_hourly=1
+!-case("MACC_NMC")
+!-  nhourly_out=4
+!-  nlevels_hourly=KMAX_MID     ! nb zero is *not* one of levels
+!-  call CheckStop(.not.USE_AOD,"MACC_NMC hourly output needs USE_AOD")
   case("3DPROFILES")
     nhourly_out=2
     nlevels_hourly = 2  ! nb zero is one of levels in this system
@@ -307,11 +299,18 @@ subroutine set_output_defs
   case("TRENDS@12UTC")
     nhourly_out=3
     nlevels_hourly = KMAX_MID  ! nb zero is *not* one of levels
-  case default  ! use hourly Derived output in the near future
-    nhourly_out=1
-    nlevels_hourly = 1  ! nb zero is *not* one of levels
+!- moved to Hourly/Derived
+!-case default
+!-  nhourly_out=1
+!-  nlevels_hourly = 1  ! nb zero is *not* one of levels
+  case default
+    nhourly_out=0
   endselect
 
+  if(nhourly_out==0)then
+    nlevels_hourly=0
+    return
+  endif
   if(allocated(hr_out))       deallocate(hr_out)
   if(allocated(levels_hourly))deallocate(levels_hourly)
   allocate(hr_out(nhourly_out),levels_hourly(nlevels_hourly))
@@ -409,31 +408,32 @@ subroutine set_output_defs
     pm10 =find_index("PM10"    ,chemgroups(:)%name)
     nmvoc=find_index("NMVOC"   ,chemgroups(:)%name)
     rn222=find_index("RN222"  ,species_adv(:)%name)
-!**               name     type     ofmt
-!**               ispec    ix1 ix2 iy1 iy2 nk sellev? unit conv  max
-    j=15-4;hr_out(1:j) = (/& !- *_col moved to Hourly/Derived
-      Asc2D("o3_5km"    ,"BCVugXX",IXADV_O3   ,&
-            NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_O3) ,600.0*2.0),&
-      Asc2D("no_5km"    ,"BCVugXX",IXADV_NO   ,&
-            NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_NO) ,-999.9),&
-      Asc2D("no2_5km"   ,"BCVugXX",IXADV_NO2  ,&
-            NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_NO2),600.0*1.91),&
-      Asc2D("so2_5km"   ,"BCVugXX",IXADV_SO2  ,&
-            NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_SO2),-999.9),&
-      Asc2D("co_5km"    ,"BCVugXX",IXADV_CO   ,&
-            NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_CO) ,-999.9),&
-      Asc2D("nh3_5km"   ,"BCVugXX",IXADV_NH3  ,&
-            NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_NH3),-999.9),&
-      Asc2D("pan_5km"   ,"BCVugXX",IXADV_PAN  ,&
-            NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_PAN),-999.9),&
-      Asc2D("nmvoc_5km" ,"BCVugXXgroup",nmvoc,&
-            NLEVELS_HOURLY,"ugC",1.0                ,-999.9),&
-      Asc2D("pm25_5km"  ,"BCVugXXgroup",pm25,&
-            NLEVELS_HOURLY,"ug",1.0                 ,-999.9),&
-      Asc2D("pm10_5km"  ,"BCVugXXgroup",pm10,&
-            NLEVELS_HOURLY,"ug",1.0                 ,-999.9),&
-      Asc2D("pm_h2o_5km","PMwater",00         ,&
-            NLEVELS_HOURLY,"ug",1.0                 ,-999.9)/)
+!**               name     type     ispec
+!**               nk unit unit_conv  max
+!- moved to Hourly/Derived
+!-  j=15;hr_out(1:j) = (/&
+!-    Asc2D("o3_5km"    ,"BCVugXX",IXADV_O3   ,&
+!-          NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_O3) ,600.0*2.0),&
+!-    Asc2D("no_5km"    ,"BCVugXX",IXADV_NO   ,&
+!-          NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_NO) ,-999.9),&
+!-    Asc2D("no2_5km"   ,"BCVugXX",IXADV_NO2  ,&
+!-          NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_NO2),600.0*1.91),&
+!-    Asc2D("so2_5km"   ,"BCVugXX",IXADV_SO2  ,&
+!-          NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_SO2),-999.9),&
+!-    Asc2D("co_5km"    ,"BCVugXX",IXADV_CO   ,&
+!-          NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_CO) ,-999.9),&
+!-    Asc2D("nh3_5km"   ,"BCVugXX",IXADV_NH3  ,&
+!-          NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_NH3),-999.9),&
+!-    Asc2D("pan_5km"   ,"BCVugXX",IXADV_PAN  ,&
+!-          NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_PAN),-999.9),&
+!-    Asc2D("nmvoc_5km" ,"BCVugXXgroup",nmvoc,&
+!-          NLEVELS_HOURLY,"ugC",1.0                ,-999.9),&
+!-    Asc2D("pm25_5km"  ,"BCVugXXgroup",pm25,&
+!-          NLEVELS_HOURLY,"ug",1.0                 ,-999.9),&
+!-    Asc2D("pm10_5km"  ,"BCVugXXgroup",pm10,&
+!-          NLEVELS_HOURLY,"ug",1.0                 ,-999.9),&
+!-    Asc2D("pm_h2o_5km","PMwater",00         ,&
+!-          NLEVELS_HOURLY,"ug",1.0                 ,-999.9)/)
 !! Partial/Full COLUMN/COLUMgroup calculations:kk$
 !!   hr_out%nk indecate the number of levels in the column,
 !!     1<%nk<KMAX_MID  ==>  Partial column: %nk lowermost levels
@@ -448,24 +448,25 @@ subroutine set_output_defs
 !-     Asc2D("hcho_col"  ,"COLUMN",IXADV_HCHO ,&
 !-           1,"ug",to_ug_ADV(IXADV_HCHO)            ,-999.9)/)
 !!          1,"1e15molec/cm2",to_molec_cm2*1e-15    ,-999.9)/)
-    if(rn222>0)then
-      j=j+1;hr_out(j) = &
-      Asc2D("Rn222_3km" ,"BCVugXX",rn222,&
-            NLEVELS_HOURLY,"ug",to_ug_ADV(rn222)    ,-999.9)
-    endif
 !- moved to Hourly/Derived
+!-  if(rn222>0)then
+!-    j=j+1;hr_out(j) = &
+!-    Asc2D("Rn222_3km" ,"BCVugXX",rn222,&
+!-          NLEVELS_HOURLY,"ug",to_ug_ADV(rn222)    ,-999.9)
+!-  endif
 !-  if(USE_AOD)then
 !-    j=j+1;hr_out(j) = &
 !-    Asc2D("AOD_550nm" ,"D2D_inst",find_index("AOD_550nm",f_2d(:)%name),&
 !-          1," ",1.0                               ,-999.9)
 !-  endif
     if(USE_POLLEN)then
-      do i=1,size(chemgroups(gpoll)%ptr)
-        idx=chemgroups(gpoll)%ptr(i)-NSPEC_SHL ! offset between xn_adv and species
-        j=j+1;hr_out(j) = &
-        Asc2D(trim(species_adv(idx)%name),"ADVugXX",idx, &
-              1,"grains/m3",to_ug_ADV(idx)*ug2grains,-999.9)
-      enddo
+!- moved to Hourly/Derived
+!-    do i=1,size(chemgroups(gpoll)%ptr)
+!-      idx=chemgroups(gpoll)%ptr(i)-NSPEC_SHL ! offset between xn_adv and species
+!-      j=j+1;hr_out(j) = &
+!-      Asc2D(trim(species_adv(idx)%name),"ADVugXX",idx, &
+!-            1,"grains/m3",to_ug_ADV(idx)*ug2grains,-999.9)
+!-    enddo
       if(DEBUG_POLLEN)then
         do i=1,size(chemgroups(gpoll)%ptr)
           idx=chemgroups(gpoll)%ptr(i)-NSPEC_SHL ! offset between xn_adv and species

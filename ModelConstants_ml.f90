@@ -335,6 +335,12 @@ integer, public, save, dimension(4) ::   &!NB in fulldomain coordinates
 ! RUNDOMAIN = (/ 80+OFFSET_i, 106+OFFSET_i, 13+OFFSET_j,  35+OFFSET_j /) ! Southern domain
 ! RUNDOMAIN = (/ 75+OFFSET_i,110+OFFSET_i, 25+OFFSET_j,  60+OFFSET_j /) ! (gets Esk)
 
+
+! 3D Output: all modell levels will be outputed by default
+! see Init_My_Deriv and OutputSize_config for details
+integer, public, save ::  &
+  num_lev3d=0,lev3d(60)=0 ! numbers of levels,list of levels
+
 integer, public, save ::  & ! Actual number of processors in longitude, latitude
   NPROCX, NPROCY, NPROC     ! and total. NPROCY must be 2 for GLOBAL runs.
   
@@ -455,12 +461,12 @@ integer, public, save :: NETCDF_DEFLATE_LEVEL=4
 !Hourly output in single file or monthly/daily files:
 !NB: will not work well by default on Stallo per 14th Feb 2012 because of library bugs!
 !Until this is fixed, you must compile with netcdf/4.1.3 and link and run with compiler 12.1.2
-character(len=30), public, save :: &! ending depeding on date:
-! HOURLYFILE_ending="_3Dhhour_YYYYMM.nc"   ! MM  -> month (01 .. 12)
-! HOURLYFILE_ending="_3Dhhour_YYYYMMDD.nc" ! DD  -> day of the month (00 .. 31)
-! HOURLYFILE_ending="_3Dhhour_YYYYJJJ.nc"  ! JJJ -> the day of the year (001 .. 366)
+character(len=30), public, save :: &    ! ending depeding on date:
+! HOURLYFILE_ending="_hourYYYYMM.nc"    ! MM  -> month (01 .. 12)
+! HOURLYFILE_ending="_hourYYYYMMDD.nc"  ! DD  -> day of the month (00 .. 31)
+! HOURLYFILE_ending="_hourYYYYJJJ.nc"   ! JJJ -> the day of the year (001 .. 366)
 ! HOURLYFILE_ending="+FFF.nc"           ! a new file each forecast hour
-  HOURLYFILE_ending="_3Dhour.nc"          ! keep the same for the whole run
+  HOURLYFILE_ending="_hourExtra.nc"     ! keep the same for the whole run
 
 ! NH3 module as set up originally with U10 from met: kept for safety only.
 ! Will be replaced by sub.grid calculation of wind in future.
@@ -586,16 +592,14 @@ real, public, parameter :: &
                               ! different roundings on different machines.
 
 ! Define output types.
-!   Derived output types: First 4 types (instantaneous,year,month,day),
+!   Derived output types: types 1..6 (instantaneous,year,month,day,hour,hour_inst),
 !                         refer to output variables defined in Derived_ml.
-!   Hourly  output types: Last 2 types (hourly inst.,hourly mean),
+!   Hourly  output types: types 7..8 (hourly_out inst.,hourly_out_mean),
 !                         refer to output variables defined in My_Outputs_ml.
-!   IOU_YEAR_LASTHH: Auxiliary field for hourly accumulated Derived output
 integer, public, parameter ::  &
-  IOU_INST=1, IOU_YEAR=2, IOU_MON=3, IOU_DAY=4, IOU_HOUR=5, IOU_HOUR_INST=6, & ! Derived output
-  IOU_YEAR_LASTHH=6,                              & ! Aux. field, deprecated
-  IOU_3DHOUR=7, IOU_3DHOUR_MEAN=8                 & ! Hourly  3D special output
-  ,IOU_MAX_MAX=8                                  ! Max values for of IOU (for array declarations)
+  IOU_INST=1,IOU_YEAR=2,IOU_MON=3,IOU_DAY=4,IOU_HOUR=5,IOU_HOUR_INST=6, & ! Derived output
+  IOU_HOUR_EXTRA=7,IOU_HOUR_EXTRA_MEAN=8, & ! additional hourly output
+  IOU_MAX_MAX=8                             ! Max values for of IOU (for array declarations)
 
 character(len=*), public, parameter :: model="EMEP_MSC-W "
 
