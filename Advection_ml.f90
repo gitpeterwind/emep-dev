@@ -251,7 +251,7 @@
 
     !    local
 
-    integer i,j,k,n,info
+    integer i,j,k,n,ix,iix,ip,info
     real dth
     real xntop(NSPEC_ADV,LIMAX,LJMAX)
     real xnw(3*NSPEC_ADV),xne(3*NSPEC_ADV)
@@ -275,6 +275,7 @@
     integer ::isum,isumtot,iproc
     real :: xn_advjktot(NSPEC_ADV),xn_advjk(NSPEC_ADV),rfac
     real :: dpdeta0,mindpdeta,xxdg,fac1
+    real ::xnold,xn_k_old,xn_k(kmax_mid),x
 
     !NITERXMAX=max value of iterations accepted for fourth order Bott scheme.
     !If the calculated number of iterations (determined from Courant number)
@@ -768,8 +769,6 @@
        ds4(k) = dt_advec*dhs1i(k+1)*dhs2i(k)
     enddo
 
-    if(USE_uEMEP)call uemep_diff
-
     ! sum is conserved under vertical diffusion
     !   sum = 0.
     !   do k=1,KMAX_MID
@@ -778,7 +777,41 @@
     !   write(*,*)'sum before diffusion ',me,sum
     do j = lj0,lj1
        do i = li0,li1
+          if(USE_uEMEP)then
+
+             ip=1
+             xn_k_old=0.0
+             
+             do k = 1,KMAX_MID
+                xn_k(k)=0.0
+                do iix=1,uEMEP%Nix
+                   ix=uEMEP%ix(iix)
+                   !assumes mixing ratios units, but weight by mass
+                   xn_k(k)=xn_k(k)+xn_adv(ix,i,j,k)*species_adv(ix)%molwt
+                enddo
+                if(k==KMAX_MID)xn_k_old=xn_k(k)!save for udiff
+                xn_k(k)=xn_k(k)*loc_frac(i,j,k,ip)
+             enddo
+             
+             call vertdiff_1d(xn_k,EtaKz(i,j,1,1),ds3,ds4,ndiff)!does the same as vertdiffn, but for one component
+          endif
+
           call vertdiffn(xn_adv(1,i,j,1),EtaKz(i,j,1,1),ds3,ds4,ndiff)
+
+
+          if(USE_uEMEP)then
+             do k = 2,KMAX_MID
+                x=0.0
+                do iix=1,uEMEP%Nix
+                   ix=uEMEP%ix(iix)
+                   !conversion from mixing ratio to mg/m2
+                   x=x+xn_adv(ix,i,j,k)*species_adv(ix)%molwt
+                enddo
+                loc_frac(i,j,k,ip)=xn_k(k)/(x+1.E-30)
+!                if(k==KMAX_MID)udiff(i,j)=(x-xn_k_old)*(dA(kmax_mid)+dB(kmax_mid)*ps(i,j,1))/ATWAIR/GRAV*1.0E6
+             enddo
+          endif
+
        enddo
     enddo
 
@@ -1340,7 +1373,7 @@
   end subroutine vertdiff
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-  subroutine vertdiff_1d(xn_adv,SigmaKz,ds3,ds4)
+  subroutine vertdiff_1d(xn_adv,SigmaKz,ds3,ds4,ndiff)
 
 !     executes vertical diffusion
 
@@ -1356,12 +1389,12 @@
     real ,intent(inout):: xn_adv(KMAX_MID)
 
 !    local
-
-    integer  k,ndiff,n
+    integer, intent(in)::ndiff
+    integer  k,n
     real, dimension(KMAX_MID) :: adif,bdif,cdif,e1
     real ndiffi
 
-    ndiff=1
+!    ndiff=1
     ndiffi=1./ndiff
 
     do k = 1,KMAX_MID-1
@@ -3832,44 +3865,5 @@
 
 
   end subroutine uemep_advec
-
-  subroutine uemep_diff
-    integer ::i,j,k,ix,iix,ip
-    real::dt_uemep,xn_k_loc(kmax_mid),xn_k(kmax_mid)
-    real ds3(2:KMAX_MID),ds4(2:KMAX_MID)
-    logical, save::firstcall=.true.
- 
-    ip=1
-    dt_uemep=dt_advec
-    ds3=0.0
-    ds4=0.0
-
-    do k = 2,KMAX_MID
-       ds3(k) = dt_uemep*dhs1i(k)*dhs2i(k)
-       ds4(k) = dt_uemep*dhs1i(k+1)*dhs2i(k)
-    enddo
-    
-    do j = 1,ljmax
-       do i = 1,limax
-          !save vertical column
-          do k=1,KMAX_MID
-             xn_k(k)=0.0
-             xn_k_loc(k)=0.0
-             do iix=1,uEMEP%Nix
-                ix=uEMEP%ix(iix)
-                xn_k(k)=xn_k(k)+xn_adv(ix,i,j,k)!assumes mixing ratios units
-             enddo
-             xn_k_loc(k)=xn_k(k)*loc_frac(i,j,k,ip)
-          enddo
-          call vertdiff_1d(xn_k,EtaKz(i,j,1,1),ds3,ds4)
-          call vertdiff_1d(xn_k_loc,EtaKz(i,j,1,1),ds3,ds4)
-          
-          do k=2,KMAX_MID
-             loc_frac(i,j,k,ip)=xn_k_loc(k)/(xn_k(k)+1.E-30)
-          enddo
-       enddo
-    enddo
-    
-  end subroutine uemep_diff
 
 end module Advection_ml

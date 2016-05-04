@@ -1940,6 +1940,17 @@ subroutine uemep_emis(indate)
             if(icc<=ncc)then
               tfac = timefac(iland_timefac,isec,iem) &
                    * fac_ehh24x7(isec,hour_iland,wday_loc)
+
+              !Degree days - only SNAP-2 
+              if(USES%DEGREEDAY_FACTORS .and. &
+                   isec==ISNAP_DOM .and. Gridded_SNAP2_Factors) then
+                 ! If INERIS_SNAP2  set, the fac_min will be zero, otherwise
+                 ! we make use of a baseload even for SNAP2
+                 tfac = ( fac_min(iland,isec,iem) & ! constant baseload
+                      + ( 1.0-fac_min(iland,isec,iem) )* gridfac_HDD(i,j) ) &
+                      * fac_ehh24x7(isec,hour_iland,wday_loc)
+              endif ! =============== HDD 
+              
               s = tfac * snapemis(isec,i,j,icc,iem)
             else
               s = snapemis_flat(i,j,ficc,iem)                        
