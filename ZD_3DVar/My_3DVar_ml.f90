@@ -11,20 +11,41 @@ module DA_3DVar_ml
 use CheckStop_ml,     only: CheckStop
 use ModelConstants_ml,only: ANALYSIS
 implicit none
+character(len=*), parameter  ::  &
+  mname = 'DA_3DVar_ml', &
+  errmsg= 'No 3DVar available. Need to recompile, e.g. make MACC-3DVar'
 integer, parameter :: NTIMING_3DVAR=0, T_3DVAR=0
 contains
-subroutine main_3dvar()
 !-----------------------------------------------------------------------
-! Empty call to 3dvar, for "standrd" model compilation
+! Empty calls, for "standrd" model compilation
 !-----------------------------------------------------------------------
-implicit none
-logical, save :: first_call=.true.
+subroutine DA_3DVar_Init(status)
+! --- in/out ----------------------------
+integer, intent(out)         ::  status
+! --- const -----------------------------
+character(len=*), parameter  ::  rname = mname//'/DA_3DVar_Init'
+! --- begin -----------------------------
+  write(*,"(A,': ',A)")rname,errmsg
+  status = 1
+endsubroutine DA_3DVar_Init
 !-----------------------------------------------------------------------
-!
+subroutine DA_3DVar_Done(status)
+! --- in/out ----------------------------
+integer, intent(out)         ::  status
+! --- const -----------------------------
+character(len=*), parameter  ::  rname = mname//'/DA_3DVar_Done'
+! --- begin -----------------------------
+  write(*,"(A,': ',A)")rname,errmsg
+  status = 1
+endsubroutine DA_3DVar_Done
 !-----------------------------------------------------------------------
-  if(.not.first_call)return
-  call CheckStop(ANALYSIS,&
-    "No 3DVar available. Need to recompile, e.g. make MACC-3DVar")
-  first_call=.false.
+subroutine main_3dvar(status)
+! --- in/out ----------------------------
+integer, intent(out)         ::  status
+! --- const -----------------------------
+character(len=*), parameter  ::  rname = mname//'/main_3dvar'
+! --- begin -----------------------------
+  write(*,"(A,': ',A)")rname,errmsg
+  status = 1
 endsubroutine main_3dvar
 endmodule DA_3DVar_ml

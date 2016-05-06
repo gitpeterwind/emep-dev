@@ -46,7 +46,7 @@ program myeul
        nterm,iyr_trend,    nmax,nstep ,                  &
        IOU_INST,IOU_HOUR,IOU_HOUR_INST, IOU_YEAR,IOU_MON, IOU_DAY, &
        USES, USE_LIGHTNING_EMIS, &
-       FORECAST       ! FORECAST mode
+       FORECAST,ANALYSIS	! FORECAST/ANALYSIS mode
   use ModelConstants_ml,only: Config_ModelConstants,DEBUG
   use MPI_Groups_ml,    only: MPI_BYTE, ME_CALC, ME_MPI, MPISTATUS, MPI_COMM_CALC,MPI_COMM_WORLD, &
                               MasterPE,IERROR, MPI_world_init, MPI_groups_split
@@ -61,7 +61,7 @@ program myeul
   use TimeDate_ExtraUtil_ml,only : date2string, assign_NTERM
   use Trajectory_ml,    only: trajectory_init,trajectory_in
   use Nest_ml,          only: wrtxn     ! write nested output (IC/BC)
-  use DA_3DVar_ml,      only: NTIMING_3DVAR
+  use DA_3DVar_ml,      only: NTIMING_3DVAR,DA_3DVar_Init, DA_3DVar_Done
   !--------------------------------------------------------------------
   !
   !  Variables. There are too many to list here. Still, here are a
@@ -88,7 +88,7 @@ program myeul
   !
   implicit none
 
-  integer :: i, oldseason, newseason
+  integer :: i, oldseason, newseason, status
   integer :: mm_old   ! month and old-month
   integer :: nproc_mpi,cyclicgrid
   character (len=230) :: errmsg,txt
@@ -117,6 +117,11 @@ program myeul
 !TEST
   call define_chemicals()    ! sets up species details
   call Config_ModelConstants(IO_LOG)
+
+  if(ANALYSIS)then 	            ! init 3D-var module
+    call DA_3DVar_Init(status)  ! pass settings
+    call CheckStop(status,"DA_3DVar_Init in Unimod")
+  endif
 
   rewind(IO_NML)
   read(IO_NML,NML=INPUT_PARA)
@@ -370,6 +375,11 @@ program myeul
   if (MasterProc.and.FORECAST) then
      open(1,file='modelrun.finished')
      close(1)
+  endif
+
+  if(ANALYSIS)then              ! assimilation enabled
+    call DA_3DVar_Done(status)  ! done with 3D-var module:
+    call CheckStop(status,"DA_3DVar_Done in Unimod")
   endif
 
   CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)

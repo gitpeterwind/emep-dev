@@ -8,6 +8,7 @@ module PhyChem_ml
 !-----------------------------------------------------------------------------
 use Advection_ml,     only: advecdiff_poles,advecdiff_Eta!,adv_int
 use Biogenics_ml,     only: Set_SoilNOx
+use CheckStop_ml,     only: CheckStop
 use Chemfields_ml,    only: xn_adv,cfac,xn_shl
 use ChemSpecs,        only: IXADV_SO2, IXADV_NH3, IXADV_O3, NSPEC_SHL, species
 use CoDep_ml,         only: make_so2nh3_24hr
@@ -66,7 +67,7 @@ contains
 subroutine phyche()
 
   logical, save :: End_of_Day = .false.
-  integer :: ndays
+  integer :: ndays,status
   real :: thour
   type(timestamp) :: ts_now !date in timestamp format
   logical,save :: first_call = .true.
@@ -102,7 +103,8 @@ subroutine phyche()
       call WrtChem(ONLY_HOUR=IOU_HOUR_INST)    ! eg PM10:=0.0 on first output
       call Add_2timing(35,tim_after,tim_before,"phyche:outs")
     endif
-    call main_3dvar()   ! 3D-VAR Analysis for "Zero hour"
+    call main_3dvar(status)   ! 3D-VAR Analysis for "Zero hour"
+    call CheckStop(status,"main_3dvar in PhyChem_ml/PhyChe")
     call Add_2timing(T_3DVAR,tim_after,tim_before)
     if(DEBUG_DA_1STEP)then
       if(MasterProc)&
@@ -250,7 +252,8 @@ subroutine phyche()
       call WrtChem(ONLY_HOUR=IOU_HOUR_INST)    ! eg PM10:=0.0 on first output
       call Add_2timing(35,tim_after,tim_before,"phyche:outs")
     endif
-    call main_3dvar()   ! 3D-VAR Analysis for "non-Zero hours"
+    call main_3dvar(status)   ! 3D-VAR Analysis for "non-Zero hours"
+    call CheckStop(status,"main_3dvar in PhyChem_ml/PhyChe")
     call Add_2timing(T_3DVAR,tim_after,tim_before)
   endif
   call wrtxn(current_date,.false.) !Write xn_adv for future nesting

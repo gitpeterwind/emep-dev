@@ -37,7 +37,7 @@ use MPI_Groups_ml,    only: MPI_COMM_WORLD,MPI_SUM,MPI_LAND,MPI_IN_PLACE,&
                             MPI_LOGICAL,MPI_INTEGER,MPI_DOUBLE_PRECISION
 implicit none
 private
-public :: NTIMING_3DVAR,T_3DVAR,main_3dvar
+public :: NTIMING_3DVAR,T_3DVAR,DA_3DVar_Init,DA_3DVar_Done,main_3dvar
 integer, parameter :: ANALYSIS_NDATE = 4 ! Number of analysis to perform
 real,    parameter :: ANALYSIS_RELINC_MAX=5.0 ! Limit dx,du to 500%
 logical :: use_chisq=.true.,use_unobserved=.true.
@@ -64,33 +64,51 @@ integer, parameter ::       &
   T_CHISQ=NTIMING_UNIMOD+11,& ! 50: CHI^2 evaluation
   T_3DVAR=NTIMING_UNIMOD+12,& ! 51: Total
   NTIMING_3DVAR=12
-character(len=*), parameter, dimension(NTIMING_3DVAR) ::    &
-  TIMING_3DVAR=['3DVar: Domain extension',                 &
-                '3DVar: Get innovations from observations',&
-                '3DVar:   MPI',                            &
-                '3DVar: Optimization',                     &
-                '3DVar: costFunction',                     &
-                '3DVar:   MPI',                            &
-                '3DVar: FFT trasformations',               &
-                '3DVar:   MPI',                            &
-                '3DVar: Update observed species',          &
-                '3DVar: Update unobserved species',        &
-                '3DVar: CHI^2 evaluation',                 &
-                '3DVar: Total']
+character(len=*), parameter, dimension(NTIMING_3DVAR) ::   &
+  TIMING_3DVAR=[character(len=30)::&
+  ! 00000000001111111111222222222233333333334
+  ! 01234567890123456789012345678901234567890
+    '3DVar: Domain extension',                 &
+    '3DVar: Get innovations from observations',&
+    '3DVar:   MPI',                            &
+    '3DVar: Optimization',                     &
+    '3DVar: costFunction',                     &
+    '3DVar:   MPI',                            &
+    '3DVar: FFT trasformations',               &
+    '3DVar:   MPI',                            &
+    '3DVar: Update observed species',          &
+    '3DVar: Update unobserved species',        &
+    '3DVar: CHI^2 evaluation',                 &
+    '3DVar: Total']
 contains
 !-----------------------------------------------------------------------
-subroutine main_3dvar()
+! Empty init/done calls for compatibility with new 3DVar modules
+!-----------------------------------------------------------------------
+subroutine DA_3DVar_Init(status)
+! --- in/out ----------------------------
+integer, intent(out)         ::  status
+! --- begin -----------------------------
+  status = 0
+endsubroutine DA_3DVar_Init
+!-----------------------------------------------------------------------
+subroutine DA_3DVar_Done(status)
+! --- in/out ----------------------------
+integer, intent(out)         ::  status
+! --- begin -----------------------------
+  status = 0
+endsubroutine DA_3DVar_Done
+!-----------------------------------------------------------------------
+subroutine main_3dvar(status)
 !-----------------------------------------------------------------------
 ! @description
 ! Main module for starting 3dvar program.
 ! @author M.Kahnert & AMVB
-!-----------------------------------------------------------------------
-implicit none
+! --- in/out ----------------------------
+integer, intent(out)         ::  status
+! --- local -----------------------------
 logical, save :: first_call=.true.
 integer :: ierr
-!-----------------------------------------------------------------------
-!
-!-----------------------------------------------------------------------
+! --- begin -----------------------------
   if(.not.ANALYSIS)return
   dafmt=date2string(DAFMT_DEF,current_date)
   if(first_call) then
@@ -109,6 +127,8 @@ integer :: ierr
   call chi_Init()
   call generic3dvar(ierr)
   call chi_Done()
+!-----------------------------------------------------------------------
+  status = 0
 endsubroutine main_3dvar
 subroutine init_3dvar()
 !-----------------------------------------------------------------------

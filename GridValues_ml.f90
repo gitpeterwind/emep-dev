@@ -62,6 +62,8 @@ interface lb2ij
 end interface 
 private :: lb2ij_real,lb2ij_int
 
+public :: coord_check   ! normalize longitudes
+
 public :: &
   coord_in_gridbox,  &  ! Are coord (lon/lat) inside gridbox(i,j)?
   coord_in_processor,&  ! Are coord (lon/lat) inside local domain?

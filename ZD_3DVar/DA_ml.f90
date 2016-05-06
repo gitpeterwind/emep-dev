@@ -5,7 +5,7 @@ logical, parameter ::     &
   DEBUG_DA_OBS=.false.,   &   ! observation info
   DEBUG_DA_3DV=.false.,   &   ! 3DVar module
   DEBUG_DA_1STEP=.false., &   ! run only 1 DA step (no adv/chem)
-  DEBUG_DA_OUTPUT=.true.     ! hourly output before/after DA step
+  DEBUG_DA_OUTPUT=.false.     ! hourly output before/after DA step
 character(len=*), parameter   ::                &
   DA_NAMELIST="namelist.nml",                   &
   DA_FMT_DEF ="('3DVar@PPP YYYY-MM-DD hh: ',A,'.')",&
