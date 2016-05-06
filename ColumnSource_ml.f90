@@ -476,7 +476,6 @@ function getErup(line) result(def)
     read(words(4),*)top         ! [km]
     top=top*1e3                 ! [m]
   case default
-    words(3)="SURF"
     read(words(3),*)base        ! [km]
     base=base*1e3               ! [m]
     read(words(4),*)top         ! [km]

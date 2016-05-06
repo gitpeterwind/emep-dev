@@ -97,9 +97,10 @@ contains
   ! Fgas3D is only defined for the semivolatile VOC/SOA stuff
   ! We need to assume something on 1st time-step though:
 
-    if( FIRST_SEMIVOL > 0  ) & !FSOA
-    allocate( Fgas3d(FIRST_SEMIVOL:LAST_SEMIVOL,LIMAX,LJMAX,KCHEMTOP:KMAX_MID) )
-    Fgas3d = 1.0
+    if(FIRST_SEMIVOL>0)then !FSOA
+      allocate(Fgas3d(FIRST_SEMIVOL:LAST_SEMIVOL,LIMAX,LJMAX,KCHEMTOP:KMAX_MID))
+      Fgas3d = 1.0
+    endif
 
     allocate(rcemis(NSPEC_SHL+1:NSPEC_TOT,KCHEMTOP:KMAX_MID))
     allocate(deltaZcm(KCHEMTOP:KMAX_MID))
@@ -131,7 +132,7 @@ contains
     cho2= UNDEF_R
     co3=  UNDEF_R
     allocate(aero_fom(KCHEMTOP:KMAX_MID),aero_fdust(KCHEMTOP:KMAX_MID),&
-              aero_fbc(KCHEMTOP:KMAX_MID), aero_fss(KCHEMTOP:KMAX_MID))
+             aero_fbc(KCHEMTOP:KMAX_MID),aero_fss  (KCHEMTOP:KMAX_MID))
     aero_fom    = UNDEF_R
     aero_fbc    = UNDEF_R
     aero_fss    = UNDEF_R
