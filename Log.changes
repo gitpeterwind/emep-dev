@@ -154,7 +154,7 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-6th May, Alvaro 3187-3191
+6th May, Alvaro 3187-3192
 
 Derived_ml,My_Derived_ml,Output_hourly,config_Outputs_EMERGENCY.nml:
 - New MISC Derived output type for Volcanic ASH (eEMEP) runs
@@ -173,7 +173,6 @@ GridValues_ml:
 Chem_ml,ColumnSource_ml,NetCDF_ml:
 - fix small errors from `make eEMEP DEBUG=yes`
 
-
 Unimod,PhyChem_ml,
 ZD_3DVar/My_3DVar_ml,Analysis/DA_3DVar_ml:
 - Compatibility with new 3DVar modules (ZD_3DVar16)
@@ -181,7 +180,7 @@ ZD_3DVar/My_3DVar_ml,Analysis/DA_3DVar_ml:
   - Add status output variable to main_3dvar.
 
 Makefile,ZD_3DVar16/*
-- New 3DVar modules, most of of this modules will be removed
+- New 3DVar modules. Some of this modules will be removed
   as functionality is implemented using standard Unimod modules.
 
 config_Outputs_CAMS50.nml:
