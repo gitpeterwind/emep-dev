@@ -181,7 +181,7 @@ ZD_3DVar/My_3DVar_ml,Analysis/DA_3DVar_ml:
   - Add status output variable to main_3dvar.
 
 Makefile,ZD_3DVar16/*
-- New 3DVar modules, most of new modules will be removed
+- New 3DVar modules, most of of this modules will be removed
   as functionality is implemented using standard Unimod modules.
 
 config_Outputs_CAMS50.nml:
