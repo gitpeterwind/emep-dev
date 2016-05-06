@@ -371,6 +371,32 @@ subroutine Define_Derived()
         call Units_Scale(outunit,iadv,unitscale,unittxt)
         Is3D=(outdim=='3d')
       ! if(MasterProc) write(*,*)"FRACTION UNITSCALE ", unitscale
+      case('FLYmax6h','FLYmax6h:SPEC')   ! Fly Level, 6 hourly maximum
+        iout=find_index(outname, species_adv(:)%name )
+  !-- Volcanic Emission: Skipp if not found
+        if(outname(1:3)=="ASH")then
+          if(MasterProc.and.DEBUG_COLSRC)&
+            write(*,"(A,':',A,1X,I0,':',A)")'ColumSource',trim(outtyp),iadv,trim(outname)
+          if(iout<1)cycle
+        endif
+        call CheckStop(iout<0,sub//"OutputFields "//trim(outtyp)//&
+                              " not found "//trim(outname))
+        outtyp = "FLYmax6h:SPEC"
+        subclass = outdim   ! flxx-yy: xx to yy 1000 feet
+        outname = "MAX6h_"//trim(outname)//"_"//trim(subclass)
+      case('FLYmax6h:GROUP')          ! Fly Level, 6 hourly maximum
+        iout=find_index(outname,chemgroups(:)%name)
+  !-- Volcanic Emission: Skipp if not found
+        if(outname(1:3)=="ASH")then
+          if(MasterProc.and.DEBUG_COLSRC)&
+            write(*,"(A,':',A,1X,I0,':',A)")'ColumSource',trim(class),igrp,trim(outname)
+          if(iout<1)cycle
+        endif
+        call CheckStop(iout<0,sub//"OutputFields "//trim(outtyp)//&
+                              " not found "//trim(outname))
+        outtyp = "FLYmax6h:GROUP"
+        subclass = outdim   ! flxx-yy: xx to yy 1000 feet
+        outname = "MAX6h_"//trim(outname)//"_"//trim(subclass)
       case('COLUMN','COLUMN:SPEC')
      !COL  'NO2',          'molec/cm2' ,'k20','COLUMN'   ,'MISC' ,4,
         iout=find_index(outname, species_adv(:)%name )
@@ -433,7 +459,7 @@ subroutine Define_Derived()
   !-- Volcanic Emission: Skipp if not found
         if(outname(1:3)=="ASH")then
           if(MasterProc.and.DEBUG_COLSRC)&
-            write(*,"(A,1X,I0,':',A)")'ColumSource: spec ',iadv,trim(outname)
+            write(*,"(A,':',A,1X,I0,':',A)")'ColumSource',trim(outtyp),iadv,trim(outname)
           if(iadv<1)cycle
         endif
         call CheckStop(iadv<0,sub//"OutputFields Species not found "//trim(outname))
@@ -453,7 +479,7 @@ subroutine Define_Derived()
   !-- Volcanic Emission: Skipp if not found
         if(outname(1:3)=="ASH")then
           if(MasterProc.and.DEBUG_COLSRC)&
-            write(*,"(A,1X,I0,':',A)")'ColumSource: group ',igrp,trim(outname)
+            write(*,"(A,':',A,1X,I0,':',A)")'ColumSource',trim(outtyp),iadv,trim(outname)
           if(igrp<1)cycle
         endif
         call CheckStop(igrp<0,sub//"OutputFields Group not found "//trim(outname))
@@ -806,19 +832,19 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
   real :: thour                          ! Time of day (GMT)
   real :: timefrac                       ! dt as fraction of hour (3600/dt)
   real :: dayfrac              ! fraction of day elapsed (in middle of dt)
-  real :: af, xtot
+  real :: af, xtot, fl0, fl1
   real, save :: km2_grid
-  integer :: ntime                       ! 1...NTDAYS
-  integer :: klow                        !  lowest extent of column data
-  real, dimension(LIMAX,LJMAX) :: density !  roa (kgair m-3 when
-                                                ! scale in ug,  else 1
+  integer :: ntime                        ! 1...NTDAYS
+  integer :: klow                         ! lowest extent of column data
+  real, dimension(LIMAX,LJMAX) :: density ! roa[kgair m-3] when scale in ug, else 1
   real, dimension(LIMAX,LJMAX) :: tmpwork
-
+  logical, dimension(LIMAX,LJMAX) :: mask2d
   real, dimension(LIMAX,LJMAX,KMAX_MID) :: inv_air_density3D
             ! Inverse of No. air mols/cm3 = 1/M
             ! where M =  roa (kgair m-3) * to_molec_cm3  when ! scale in ug,  else 1
   logical, save :: first_call = .true.
   integer :: igrp, ngrp   ! group methods
+  logical :: needroa
   integer, save :: &      ! needed for PM25*,PM10*
     ind2d_pmfine=-999 ,ind3d_pmfine=-999,   &
     ind2d_pmwater=-999,ind3d_pmwater=-999,  &
@@ -1326,6 +1352,35 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 !                   n, trim(f_2d(n)%name), d_2d(n,debug_li,debug_lj,IOU_INST)
 !            Nothing to do - all set in My_DryDep
 
+    case('FLYmax6h','FLYmax6h:SPEC')    ! Fly Level, 6 hourly maximum
+      ! fl00-20: 0 to 20 kfeet, fl20-35: 20 to 35 kfeet, fl35-50: 35 to 50 kfeet
+      read(subclass,"(a2,i2,a1,i2)") txt2, k, txt2, l
+      fl0=k*304.8 ! 1e3 [feet] to [m]
+      fl1=l*304.8 ! 1e3 [feet] to [m]
+      call Units_Scale(f_2d(n)%unit,index,af,needroa=needroa) ! only want needroa
+      if(needroa)then
+        tmpwork=maxval(xn_adv(index,:,:,:)*roa(:,:,:,1),dim=3,&
+                       mask=z_mid>=fl0.and.z_mid<=fl1)
+      else
+        tmpwork=maxval(xn_adv(index,:,:,:),dim=3,&
+                       mask=z_mid>=fl0.and.z_mid<=fl1)
+      endif
+      forall(i=1:limax,j=1:ljmax)&  ! use IOU_YEAR as a buffer
+        d_2d(n,i,j,IOU_YEAR)=max(d_2d(n,i,j,IOU_YEAR),tmpwork(i,j))
+    case('FLYmax6h:GROUP')           ! Fly Level, 6 hourly maximum
+      ! fl00-02: 0 to 2 kfeet, fl02-35: 2 to 35 kfeet, fl35-50: 35 to 50 kfeet
+      read(subclass,"(a2,i2,a1,i2)") txt2, k, txt2, l
+      fl0=k*304.8 ! 1e3 [feet] to [m]
+      fl1=l*304.8 ! 1e3 [feet] to [m]
+      if(dbgP)print *,trim(subclass),fl0,fl1
+      do k=1,KMAX_MID
+        mask2d(:,:)=(z_mid(:,:,k)>=fl0.and.z_mid(:,:,k)<=fl1)
+        if(.not.(any(mask2d)))cycle
+        if(dbgP)print *,trim(subclass),k,count(mask2d)
+        call group_calc(tmpwork(:,:),roa(:,:,k,1),f_2d(n)%unit,k,index)
+        forall(i=1:limax,j=1:ljmax,mask2d(i,j))&  ! use IOU_YEAR as a buffer
+          d_2d(n,i,j,IOU_YEAR)=max(d_2d(n,i,j,IOU_YEAR),tmpwork(i,j))
+      enddo
     case ("COLUMN","COLUMN:SPEC") ! unit conversion factor stored in f_2d(n)%scale
       read(f_2d(n)%subclass,"(a1,i2)") txt2, klow ! Connvert e.g. k20 to klow=20
       do j = 1, ljmax
@@ -1522,40 +1577,30 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
     endselect
 
     !*** add to daily, monthly and yearly average, and increment counters
-    !  Note that the MAXADV and MAXSHL and SOMO needn't be summed here, but
-    !  since the INST values are zero it doesn't harm, and the code is
-    !  shorter. These d_2d ( MAXADV, MAXSHL, SOMO) are set elsewhere
+    select case(f_2d(n)%class)
+    case('FLYmax6h','FLYmax6h:SPEC','FLYmax6h:GROUP')
+    ! Fly Level, 6 hourly maximum:  only need IOU_HOUR,IOU_HOUR_INST
+      d_2d(n,:,:,IOU_INST) = d_2d(n,:,:,IOU_YEAR) ! use IOU_YEAR as a buffer
+      d_2d(n,:,:,IOU_HOUR) = d_2d(n,:,:,IOU_YEAR)
+      if(mod(current_date%hour,6)==0)&  ! reset buffer
+        d_2d(n,:,:,IOU_YEAR)=0.0        
+    case("MAXADV","MAXSHL","SOMO")
+    !  MAXADV and MAXSHL and SOMO needn't be summed here.
+    !  These d_2d ( MAXADV, MAXSHL, SOMO) are set elsewhere
+    case default
+      af = 1.0 ! accumulation factor
+      if(f_2d(n)%dt_scale) af=dt_advec !need to scale with dt_advec
 
-    af = 1.0 ! accumulation factor
-    if(f_2d(n)%dt_scale) af=dt_advec !need to scale with dt_advec
-
-!print *, "D2Ding", me, n, trim(f_2d(n)%name), d_2d(n,5,5,IOU_DAY), af, d_2d(n,5,5,IOU_DAY)
-!if ( any(d_2d == UNDEF_R ) ) then
-!  print *, "D2Ding ERROR", me, n, trim(f_2d(n)%name), minval(d_2d)
-!end if
-
-    ! only accumulate outputs if they are wanted (will be written out)
-    do iou=1,LENOUT2D
-      if(iou==IOU_INST.or..not.wanted_iou(iou,f_2d(n)%iotype))cycle
-      if(present(ONLY_IOU))then
-        if(ONLY_IOU/=iou)cycle
-      endif
-      forall(i=1:limax,j=1:ljmax) &
-        d_2d(n,i,j,iou) = d_2d(n,i,j,iou) + d_2d(n,i,j,IOU_INST)*af
-      if(f_2d(n)%avg) nav_2d(n,iou) = nav_2d(n,iou) + 1
-    enddo
-
-    !if( dbgP .and. n == 27  ) then ! C5H8 BvocEmis:
-    !if(  n == 27  ) then ! C5H8 BvocEmis:
-    !   print *, " TESTING NatEmis ", n, af, f_2d(n)%Index, f_2d(n)
-    !      call datewrite("NatEmis-end-Derived", n, (/ af, &
-    !         SumSnapEmis( debug_li,debug_lj, f_2d(n)%Index), &
-    !         d_2d(n,debug_li,debug_lj,IOU_INST), &
-    !         d_2d(n,debug_li,debug_lj,IOU_DAY), &
-    !         d_2d(n,debug_li,debug_lj,IOU_MON), &
-    !         d_2d(n,debug_li,debug_lj,IOU_YEAR) &
-    !       /) )
-    !end if
+      ! only accumulate outputs if they are wanted (will be written out)
+      do iou=1,LENOUT2D
+        if(iou==IOU_INST.or..not.wanted_iou(iou,f_2d(n)%iotype))cycle
+        if(present(ONLY_IOU))then
+          if(ONLY_IOU/=iou)cycle
+        endif
+        d_2d(n,:,:,iou) = d_2d(n,:,:,iou) + d_2d(n,:,:,IOU_INST)*af
+        if(f_2d(n)%avg) nav_2d(n,iou) = nav_2d(n,iou) + 1
+      enddo
+    endselect
 
   enddo   ! num_deriv2d
 
@@ -1594,7 +1639,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
         endif
       elseif(first_call)then
         if(MasterProc) write(*,*) "MET3D NOT FOUND"//trim(f_3d(n)%name)//":"//trim(f_3d(n)%subclass)
-        d_3d(n,1:limax,1:ljmax,1:num_lev3d,IOU_INST)=0.0
+        d_3d(n,:,:,:,IOU_INST)=0.0
       endif
 
     ! Simple advected species:
@@ -1857,16 +1902,13 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
     endselect
 
     !*** add to monthly and yearly average, and increment counters
-    !    ( no daily averaging done for 3-D fields so far).
-
+    select case(f_3d(n)%class)
+    case("MAX3DSHL","MAX3DADV")
     ! For the MAX3D possibilities, we store maximum value of the
     !   current day in the IOU_INST variables.
     !   These are then added into IOU_MON **only** at the end of each day.
     ! (NB there is an error made on 1st day used, since only 1st 6 hours
     !  are checked. Still, not much happens on 1st Jan.... ;-)
-
-    select case(f_3d(n)%class)
-    case("MAX3DSHL","MAX3DADV")
       if(End_of_Day)then
 
         ! only accumulate outputs if they are wanted (will be written out)
@@ -1875,8 +1917,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
           if(present(ONLY_IOU))then
             if(ONLY_IOU/=iou)cycle
           endif
-          forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
-            d_3d(n,i,j,k,iou) = d_3d(n,i,j,k,iou) + d_3d(n,i,j,k,IOU_INST)
+          d_3d(n,:,:,:,iou) = d_3d(n,:,:,:,iou) + d_3d(n,:,:,:,IOU_INST)
           if(f_3d(n)%avg) nav_3d(n,iou) = nav_3d(n,iou) + 1
         enddo
 
@@ -1903,24 +1944,11 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
         if(present(ONLY_IOU))then
           if(ONLY_IOU/=iou)cycle
         endif
-        forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
-          d_3d(n,i,j,k,iou) = d_3d(n,i,j,k,iou) + d_3d(n,i,j,k,IOU_INST)*af
+        d_3d(n,:,:,:,iou) = d_3d(n,:,:,:,iou) + d_3d(n,:,:,:,IOU_INST)*af
         if(f_3d(n)%avg) nav_3d(n,iou) = nav_3d(n,iou) + 1
       enddo
 
     endselect
-
-
-!    !*** add to monthly and yearly average, and increment counters
-!    !    ( no daily averaging done for 3-D fields so far).
-!
-!     d_3d(n,:,:,:,IOU_MON ) = d_3d(n,:,:,:,IOU_MON ) &
-!                            + d_3d(n,:,:,:,IOU_INST)
-!     d_3d(n,:,:,:,IOU_YEAR) = d_3d(n,:,:,:,IOU_YEAR) &
-!                            + d_3d(n,:,:,:,IOU_INST)
-!
-!     if ( f_3d(n)%avg )  nav_3d(n,:) = nav_3d(n,:) + 1
-
   enddo
   first_call = .false.
 end subroutine Derived

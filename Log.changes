@@ -154,7 +154,18 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-6th May, Alvaro 3187
+6th May, Alvaro 3187,3188
+
+Derived_ml,My_Derived_ml,Output_hourly,config_Outputs_EMERGENCY.nml:
+- New MISC Derived output type for Volcanic ASH (eEMEP) runs
+  output the 6h maximum of a model species (FLYmax6h:SPEC)
+  or group of species (FLYmax6h:GROUP) over a range flyght levels.
+- FLYmax6h:GROUP MISC Derived type (set in OutputSize_config namelist)
+  replaces Output_hourly MAX6Hgroup output type
+  (set in MY_OUTPUTS="EMERGENCY" in My_Outputs_ml).
+
+Emissions_ml:
+- Remove unused "use ChemGroups_ml,only: PPM25_GROUP"
 
 Chem_ml,ColumnSource_ml,NetCDF_ml:
 - fix small errors from `make eEMEP DEBUG=yes`

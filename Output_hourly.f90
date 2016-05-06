@@ -536,6 +536,8 @@ implicit none
         forall(i=1:limax,j=1:ljmax) hourly(i,j) = Idiffuse(i,j)
 
       case("MAX6Hgroup") !max6_hourly
+        call CheckStop(ENFORCE_HOURLY_DERIVED.and.MasterProc,&
+          'Hourly_out: deprecated hourly type '//trim(hr_out(ih)%type))
       ! write(*,*) "ik: ",ik
         call Group_Units(hr_out(ih),gspec,gunit_conv,debug_flag,name)            
         intmax = find_index(name,imax6_hourly(:)%name)
