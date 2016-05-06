@@ -407,17 +407,14 @@ subroutine Emissions(year)
         endif
 
         !replace keywords
-        ! DataDir has 7 characters, therefore the "n+7"
-        ! 7 is the length of the keyword, not its value!
-        if(MasterProc)write(*,*)'EmisDir REPLACE? ',trim(EmisDir)
-        EmisDir = key2str(EmisDir,'DataDir',DataDir)
-        if(MasterProc)write(*,*)'EmisDir redefined as ',trim(EmisDir)
-        
-        if(MasterProc)write(*,*)'fname REPLACE? ',trim(fname)
+22      format(5A)
+
+        if(MasterProc)write(*,22)'original emission name ',trim(fname)
         fname = key2str(fname,'EmisDir',EmisDir)
+        fname = key2str(fname,'DataDir',DataDir)
         fname = key2str(fname,'YYYY',year)
         emis_inputlist(iemislist)%name=trim(fname)
-        if(MasterProc)write(*,*)'filename redefined with path & year ',&
+        if(MasterProc)write(*,22)'filename redefined as: ',&
           trim(emis_inputlist(iemislist)%name)
 
         nin_monthly = 0

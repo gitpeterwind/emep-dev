@@ -5,8 +5,8 @@
 !put here only machine specific data. 
 &Machine_config
 !DataDir will attempted replaced by (in this order):
-  DataPath(1) = '/global/work/mifapw/emep',  !Stallo
-  DataPath(2) = '/home/metno/mifapw/work',  !Vilje
+  DataPath(1) = '/global/work/mifapw/emep/Data',  !Stallo
+  DataPath(2) = '/home/metno/mifapw/work/Data',  !Vilje
 &end
 !-------- Experiment Description
 !  EXP_NAME     one word description, e.g. EMEPSTD,EMEP2010,TFMM
@@ -57,8 +57,8 @@
 !*** The default emission set up for Global runs ******
 !----------------------------------------------------------------------
   EmisDir                 = 'DataDir',
-  emis_inputlist(1)%name  = 'EmisDir/Data/Emis_GLOB_05.nc',    ! example of Fractions type annual emission
-!  emis_inputlist(1)%name  = 'EmisDir/Data/Emis_GLOB_01deg_2008_month.nc', ! example of Fractions type monthly emission
+  emis_inputlist(1)%name  = 'DataDir/Emis_GLOB_05.nc',    ! example of Fractions type annual emission
+!  emis_inputlist(1)%name  = 'DataDir/Emis_GLOB_01deg_2008_month.nc', ! example of Fractions type monthly emission
 
 !###################################################
 ! SPECIAL EMISSIONS FOLLOW................................

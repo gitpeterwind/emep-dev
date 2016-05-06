@@ -31,7 +31,7 @@ use MPI_Groups_ml   , only : MPI_BYTE, MPI_REAL8, MPI_DOUBLE_PRECISION, MPI_SUM,
 use NetCDF_ml, only  : ReadField_CDF  !CDF_SNAP
 
 use Par_ml,            only: LIMAX, LJMAX, limax, ljmax, me
-use SmallUtils_ml,     only: wordsplit, find_index
+use SmallUtils_ml,     only: wordsplit, find_index, key2str
 use netcdf,            only: NF90_OPEN,NF90_NOERR,NF90_NOWRITE,&
                              NF90_INQUIRE,NF90_INQUIRE_VARIABLE,NF90_CLOSE
 
@@ -406,9 +406,26 @@ contains
     logical :: Cexist
     real :: tmpsec(NSECTORS),duml,dumh
     real ::lonlat_fac(NSECTORS)
-      call open_file(IO_EMIS,"r",fname,needed=.true.)
-      call CheckStop(ios,"EmisGetASCII: ios error in emission file")
+    character(len=len(fname)+10) :: newfname !need some extra characters if the new name gets longer
 
+      call open_file(IO_EMIS, "r", fname, needed=.false., iostat=ios)
+
+      if(ios/=0)then
+         22 format(5A)
+         if(MasterProc)write(*,22)'did not find ',trim(fname)
+         !try to write pollutant with capital letters
+         newfname=trim(fname)
+         newfname=key2str(newfname,'gridsox','gridSOx')
+         newfname=key2str(newfname,'gridnox','gridNOx')
+         newfname=key2str(newfname,'gridco','gridCO')
+         newfname=key2str(newfname,'gridvoc','gridNMVOC')
+         newfname=key2str(newfname,'gridnh3','gridNH3')
+         newfname=key2str(newfname,'gridpm25','gridPM25')
+         newfname=key2str(newfname,'gridpmco','gridPMco')
+         newfname=key2str(newfname,'gridpm10','gridPM10')
+         if(MasterProc)write(*,22)'trying: ',trim(newfname)
+         call open_file(IO_EMIS,"r",newfname,needed=.true.)
+      endif
 READEMIS: do   ! ************* Loop over emislist files *******************
 
             read(unit=IO_EMIS,fmt=*,iostat=ios) CC,i,j, duml,dumh,  &
@@ -1036,7 +1053,8 @@ end if
              write(unit=6,fmt=*) "Will try to split ", nsplit , " times"
              write(unit=6,fmt=*) "Emis_MolWt  = ", Emis_MolWt(ie)
           end if
-          write(unit=6,fmt=*) "Splitting ", trim(EMIS_FILE(ie)), &
+22      format(25A)
+          write(unit=6,fmt=22) "Splitting ", trim(EMIS_FILE(ie)), &
              " emissions into ",&
                (trim(Headers(i+2)),' ',i=1,nsplit),'using ',trim(fname)
         end if

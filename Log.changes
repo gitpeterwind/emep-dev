@@ -154,6 +154,15 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6th May, Peter, Dave 3186
+
+Clean up of some emission linking. 
+Emissions and pathes must be set in config file. The linking by run.pl
+for emissions will not necessarily work unless you know what you are doing.
+
+ASCII emissions (gridsox...) will now also accept the "capital format" (gridSOx...).
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 4th May, Peter 3185
 
 uEMEP: 

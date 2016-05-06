@@ -118,7 +118,7 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
- ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3183","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
+ ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3185","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
 #($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3074","EmChem09soa","EMEPGLOB","EMEPSTD","GLOBAL",0);
 
 my %BENCHMARK;
@@ -422,10 +422,7 @@ my ($EMIS_INP,$emisdir,$pm_emisdir)=("$DATA_LOCAL","none","none");
 
 given($GRID){
   when("EECCA"){given($year){
-    when([2000..2009]){$emisdir="$EMIS_INP/Modrun12/EMEP_trend_2000-2009/$year";}
-    when([2010])      {$emisdir="$EMIS_INP/Modrun12/2012-Trend$year-CEIP";}
-    when([2011])      {$emisdir="$EMIS_INP/Modrun13/2013-Trend$year-CEIP";}
-    when([2012])      {$emisdir="$EMIS_INP/Modrun14/2014-Trend$year-CEIP";}
+      #defined in config file
   }}
   when("EMEP"){given($year){
     when([1990..1999]){$emisdir="/global/work/$AGNES/Emission_Trends/$year";}
@@ -437,8 +434,7 @@ given($GRID){
     $emisdir="$HOMEROOT/$AGNES/emission/SD_emis/INERIS_direct/$GRID" if($VILJE);
   }
   when("GLOBAL"){
-    $emisdir=($eCWF)?"$EMIS_INP/Emissions_June2012":"$EMIS_INP/MonthlyEmis";
-    $emisdir="$EMIS_INP/ECLAIRE_1deg_Feb2013/$iyr_trend" if($exp_name=~/ECLAIRE/);
+      #defined in config file
   }
   when("RCA")    {$emisdir="$ProjDataDir/Interpolations";} #EnsClim
   when("HIRHAM") {$emisdir="$EMIS_INP/emissions/$emisscen/$emisyear";}
@@ -470,18 +466,11 @@ if (%BENCHMARK){
   $emisdir    = "$EMIS_INP/$BENCHMARK{'emis'}";
   $pm_emisdir = $emisdir;
 }
+print "EMISDIR $emisdir \n";
 
-# $CDF_EMIS can be set to "Emis_TNO7.nc", "Emis_GLOB_05.nc", "Emis_GLOB_01deg_2010_month.nc" or
-#                                                            "Emis_GLOB_01deg_2008_month.nc" 
-my $CDF_EMIS=0; # 0=none
-   $CDF_EMIS="Emis_TNO7_MACCIII_$emisyear.nc" if ($GRID=~/MACC/);
-die "Missing emisdir='$emisdir' for GRID='$GRID'\n"       unless (-d $emisdir or $CDF_EMIS);
-die "Missing pm_emisdir='$pm_emisdir' for GRID='$GRID'\n" unless (-d $pm_emisdir or $CDF_EMIS);
+die "Missing emisdir='$emisdir' for GRID='$GRID'\n"       unless (-d $emisdir or $emisdir="none");
+die "Missing pm_emisdir='$pm_emisdir' for GRID='$GRID'\n" unless (-d $pm_emisdir or $pm_emisdir="none");
 
-#FEB 2013 TEST of netcdf emissions
-my $SNAP_CDF = "/global/work/mifapw/temp";  # Use for CdfFractions
-   $SNAP_CDF = "/global/work/mifads/cdf_emis";  # Use for CdfSnap
-   $SNAP_CDF = 0 unless $STALLO;
 
 #Dave, reset to Emission_Trends for Chem project, Oct 18th
 my $TREND_RUNS = 0;
@@ -804,32 +793,12 @@ foreach my $scenflag ( @runs ) {
     }elsif(($NH3EMIS_VAR)&&($poll eq "nh3")){
       $dir = "$HOMEROOT/$AGNES/emis_NMR";
       $ifile{"$dir/gridNH3_NMR_$year"} = "emislist.$poll";
-    }elsif($CDF_EMIS){
-      $dir=(-e "$emisdir/$CDF_EMIS")?$emisdir:$DataDir;
-      $ifile{"$dir/$CDF_EMIS"} = "EmisFracs.nc";
     }else{
-      $ifile{"$dir/grid$gridmap{$poll}"} = "emislist.$poll";
+      $ifile{"$dir/grid$gridmap{$poll}"} = "emislist.$poll" unless ($emisdir="none");
     }
 
 #new format for ASCII emissions (should be default in future)    
-    $ifile{"emislist.$poll"} = "grid$poll" unless ($CDF_EMIS);  
-
-    if($SNAP_CDF) { # in testing:
-      print "SNAP CDF TESTS $poll\n";
-      #$ifile{"$SNAP_CDF/Emis_$gridmap{$poll}.nc"}
-      #2005:
-      $ifile{"$SNAP_CDF/MACC2_Mar2013/2005/Emis_$gridmap{$poll}.nc"}
-                        = "GriddedSnapEmis_$poll.nc" if $SNAP_CDF ;
-
-      #2005 $ifile{"$SNAP_CDF/CdfGlobal/$iyr_trend/Emis_$gridmap{$poll}.nc"}  #2474erca had RCAmap?
-      $ifile{"$SNAP_CDF/CdfGlobal/2005/Emis_$gridmap{$poll}.nc"}  #2474erca had RCAmap?
-         = "GlobalSnapEmis_$poll.nc" if $SNAP_CDF ;
-
-      my $ship = "$SNAP_CDF/CdfGlobal/IPCC_v1_20_04_2009_emep/EmisIPCC_$gridmap{$poll}_ships_$iyr_trend.nc";
-      $ship = "$SNAP_CDF/CdfGlobal/IPCC_v1_20_04_2009_emep/EmisIPCC_$gridmap{$poll}_ships_2000.nc"; #TESTING with 2000
-      $ifile{$ship} = "GlobalShipEmis_$poll.nc" if -e $ship ;
-      #die "SNAP TEST WILL NOT WORK FOR $ship THIS YEAR$iyr_trend  \n" unless -f $ship; #Only 1990, 1990, steps of 10 so far
-    }
+    $ifile{"emislist.$poll"} = "grid$poll" unless ($emisdir="none");  
 
     # copy pm25 if needed, avoid having 20 different PM25 time-series
 
@@ -883,13 +852,6 @@ foreach my $scenflag ( @runs ) {
         $ifile{"$SoilDir/BC_DUST/2000/$bc.$mm"} =  "$bc.$mm";
       }
     } # dust
-    if($GRID eq "GLOBAL" && $MONTHLY_EMIS) {
-      $mm = sprintf "%2.2d", $mmm;
-      foreach my $t ( qw (nox voc co nh3 pm25 pmco) ) {
-        $ifile{"$emisdir/grid$gridmap{$t}.$mm"} =  "grid$t.$mm";
-      }
-      $ifile{"$emisdir/gridSO2.$mm"} =  "gridsox.$mm";
-    }
   }
 
 # Emissions setup:

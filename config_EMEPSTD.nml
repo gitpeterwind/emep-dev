@@ -5,8 +5,8 @@
 !put here only machine specific data. 
 &Machine_config
 !DataDir will attempted replaced by (in this order):
-  DataPath(1) = '/global/work/mifapw/emep',  !Stallo
-  DataPath(2) = '/home/metno/mifapw/work',  !Vilje
+  DataPath(1) = '/global/work/mifapw/emep/Data',  !Stallo
+  DataPath(2) = '/home/metno/mifapw/work/Data',  !Vilje
 &end
 !-------- Experiment Description
 !  EXP_NAME     one word description, e.g. EMEPSTD,EMEP2010,TFMM
@@ -55,21 +55,18 @@
 !*** The default emission set up for Regional runs ******
 !----------------------------------------------------------------------
 !
- !DSA16  EmisDir           = 'DataDir/Data',        !only keywords "DataDir" or "EmisDir" are recognized
- !DS  only pattern YYYY for year can be exchanged for year as given in run.pl
+!only keywords "DataDir, "EmisDir", "YYYY" and "POLL" are recognized
+!  "POLL" will be replaced by emissions names listed in CM_EmisFiles.inc
+
  !Good EECCA default:
-  EmisDir                 = 'DataDir/Data/EECCA/Modrun15/2015_EMEP_trends/model_input_YYYY',
+  EmisDir                 = 'DataDir/EECCA/Modrun15/2015_EMEP_trends/model_input_YYYY',
 
-  emis_inputlist(1)%name  = 'gridPOLL',    ! example of ASCII type (POLL values must be with lower case,  
-                                           ! i.e., the emission files must be 'gridsox', 'gridnox' etc..)
-                                           ! must be copied or linked to the working directory
+  emis_inputlist(1)%name  = 'EmisDir/gridPOLL',    ! example of ASCII type.
 
-!***** IMPORTANT: Specify the keyword "POLL" rather than sox, nox, etc. and the code
-! will check against emissions names listed in CM_EmisFiles.inc
-! NB: CM_EmisFiles uses lowercase. Renames or link if they are in capital letters. *******
+
 !
 !------ NetCDF emissions in TNO7 grid----------
-!  emis_inputlist(1)%name     = 'EmisDir/Emis_TNO7.nc', !example of Fractions type
+!  emis_inputlist(1)%name     = 'DataDir/Emis_TNO7.nc', !example of Fractions type
 
 !**#######################################################
 !*** Special Cases ***
