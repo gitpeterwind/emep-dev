@@ -181,6 +181,8 @@ AshInversion:
 %-Bnmc %-3DVar: PASS_GOALS=$(filter clean modules,$(MAKECMDGOALS))
 %-Bnmc %-3DVar: GenChem-MACCEVA-EmChem09soa
 	$(MAKE) -C ZD_3DVar/ $(if $(PASS_GOALS),$(@:$*-%=EXP=%) $(PASS_GOALS),$(@:$*-%=EXP_%))
+%-3DVar16: GenChem-MACCEVA-EmChem09soa
+	$(MAKE) -C ZD_3DVar16/ PROG=Unimod_3DVar Unimod_3DVar
 
 # Archive: create $(PROG).tar.bz2
 archive: $(PROG)_$(shell date +%Y%m%d).tar.bz2
