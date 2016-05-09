@@ -55,9 +55,7 @@ module DA_ml
 
   integer                           ::  nchem
   integer                           ::  nchemobs
-  integer                           ::  nchemnoobs
   integer, allocatable              ::  ichemObs(:)
-  integer, allocatable              ::  ichemNoObs(:)
   integer, allocatable              ::  ichemInv(:)
 
   ! storage for time stamps:

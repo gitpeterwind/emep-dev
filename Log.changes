@@ -154,12 +154,19 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-9th May, Alvaro 3194
+9th May, Alvaro 3194,3195
 
 ZD_3DVar16/Makefile*,ZD_3DVar16/Analysis/DA_3DVar_ml
+- Updates the new data assimilation modules Makefile.
+- Remove NO_UPDATE_UNOBSERVED compilation option
+
 ZCM_EmChem09/EmChem09base.species
-- Updates to the new data assimilation modules
-- Add SO2 to the DAOBS grup, used for Data Assimilation
+- Add SO2 to the DAOBS grup, used for data assimilation.
+
+ZD_3DVar16/Analysis/DA_3DVar_ml
+- Encapsulate timing options for code development.
+- Remove unused/obsolete use_chisq,use_unobserved,nchemnoobs,ichemNoObs,du_loc...
+  variables and related code (update_unobserved)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 9th May, Peter 3193

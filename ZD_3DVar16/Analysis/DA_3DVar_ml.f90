@@ -51,12 +51,6 @@ module DA_3DVar_ml
 
   ! --- local ----------------------------------------
   
-  ! Evaluate Chi2 statistics ? Enabled through namelist setting
-  ! read from input file created by 'das-preprocess.sh' ;
-  ! value is defined by environment variable 'CHISQ' when script is called:
-  logical      ::  use_chisq
-  logical      ::  use_unobserved
-  
   !! Number of analysis to perform
   !integer, parameter     ::  ANALYSIS_NDATE = 4
   !! When to perform the analysis
@@ -104,7 +98,6 @@ module DA_3DVar_ml
   integer               ::  itim_read_obs, itim_innov, itim_swap
   integer               ::  itim_loop, itim_optimizer, itim_costfunc
   integer               ::  itim_chi2x, itim_innov_adj, itim_gradient, itim_x2chi
-  integer               ::  itim_post, itim_unobs, itim_chi2
 #endif
   
   ! info on assim with single covar:
@@ -210,12 +203,7 @@ contains
     ! extra settings:
     call Init( rcF, rcfile, status )
     IF_NOT_OK_RETURN(status=1)
-    
-    ! (now from namelist)
-    !! interpolation type:
-    !call ReadRc( rcF, 'emo.3dvar.H_op.interp', H_op_interp, status )
-    !IF_NOT_OK_RETURN(status=1)
-    
+     
     ! init counter for number of times that optimzation loop is performed:
     m1qn3_number = 0
     
@@ -307,20 +295,7 @@ contains
     IF_NOT_OK_RETURN(status=1)
     call GO_Timer_Def( itim_gradient , 'gradient'         , status )
     IF_NOT_OK_RETURN(status=1)
-    call GO_Timer_Def( itim_post     , 'post'             , status )
-    IF_NOT_OK_RETURN(status=1)
-    call GO_Timer_Def( itim_unobs    , 'unobserved'       , status )
-    IF_NOT_OK_RETURN(status=1)
-    call GO_Timer_Def( itim_chi2     , 'chi2'             , status )
-    IF_NOT_OK_RETURN(status=1)
 #endif
-
-    !! covariance file:
-    !call ReadRc( rcF, 'emo.3dvar.B.filename', BCovarSqrt_filename, status )
-    !IF_NOT_OK_RETURN(status=1)
-    !! adhoc factor:
-    !call ReadRc( rcF, 'emo.3dvar.B.sigma_factor', BCovarSqrt_sigma_factor, status )
-    !IF_NOT_OK_RETURN(status=1)
     
     ! time step between analyses:
     call ReadRc( rcF, 'emo.3dvar.analysis.dhour', analysis_dhour, status )
@@ -546,8 +521,8 @@ contains
     use DA_Obs_ml            , only : obsVarName, observedVar
     use DA_Obs_ml            , only : OBSERVATIONS
     use DA_ml                , only : nlev
-    use DA_ml                , only : nchem, nchemObs, nChemNoObs
-    use DA_ml                , only : iChemObs, iChemNoObs, iChemInv
+    use DA_ml                , only : nchem, nchemObs
+    use DA_ml                , only : iChemObs, iChemInv
     use DA_ml                , only : FGSCALE, FGSCALE_INV
 
     ! --- in/out ----------------------------------
@@ -589,7 +564,7 @@ contains
 
     namelist /DA_CONFIG/ analysis_date, nChem, nChemObs,&
                          varName, obsVarName, observedVar,&
-                         use_chisq, use_unobserved, maxiter, maxsim
+                         maxiter, maxsim
 
     ! --- begin ------------------------------
     
@@ -611,14 +586,9 @@ contains
     end if
     
     !+------------------------------------------------------------------
-    ! (un)observed species
+    ! observed species
     !+------------------------------------------------------------------
 
-    ! nChemObs=0;observedVar(:)=.false.
-    ! call define_chemicals()
-    ! call Init_ChemGroups()
-    ! dafmt=DAFMT_DEF
-    
     ! find index of 'DAOBS' in 'chemgroups' array:
     k = find_index("DAOBS",chemgroups(:)%name)
     call CheckStop(k<1,'DA group not found: "DAOBS".')
@@ -754,17 +724,13 @@ contains
     ! (Original implementation in "covmat_ml/set_chemobs_idx")
     ! Count:
     nChemObs   = count(observedVar)
-    nChemNoObs = nChem - nchemObs
     ! storage:
     allocate( ichemObs(nchem), stat=status )
     IF_NOT_OK_RETURN(status=1)
     allocate( ichemInv(nchem), stat=status )
     IF_NOT_OK_RETURN(status=1)
-    allocate( ichemNoObs(nchemNoObs), stat=status )
-    IF_NOT_OK_RETURN(status=1)
     ! init indices:
     iobs   = 0
-    inoobs = 0
     ! loop over DA variables:
     do ivar = 1, nChem
       ! observed ?
@@ -775,11 +741,7 @@ contains
         iChemObs(iobs) = ivar
         iChemInv(ivar) = iobs
       else
-        ! increase counter:
-        inoobs = inoobs + 1
-        ! store mapping:
-        iChemNoObs(inoobs) = ivar
-        iChemInv  (ivar  ) = inoobs
+        call CheckStop(rname//", unobserved variables are no longer supported")
       end if
     end do  ! DA variables
     
@@ -977,11 +939,6 @@ contains
       write (gol,'(a,":   ",i2," ; ivar : ",i0)') &
               rname, ivar, iChemObs(ivar); call goPr
     end do
-    write (gol,'(a,": DA NoObs variables: ",i0)') rname, nChemNoObs; call goPr
-    do ivar = 1, nChemNoObs
-      write (gol,'(a,":   ",i2," ; ivar : ",i0)') &
-              rname, ivar, iChemNoObs(ivar); call goPr
-    end do
     
     !-----------------------------------------------------------------------
     ! mapping from 3D-var variables to model species
@@ -1117,7 +1074,6 @@ contains
     use DA_ml                , only : nlev
     use DA_ml                , only : nChem
     use DA_ml                , only : nchemObs  , ichemObs
-    use DA_ml                , only : nChemNoObs, ichemNoObs
     use DA_ml                , only : FGSCALE, FGSCALE_INV
 
     !-----------------------------------------------------------------------
@@ -1161,7 +1117,6 @@ contains
     real, allocatable     ::  xn_an (:,:,:,:)     ! (limax,ljmax,nlev,nChem         )
     real, allocatable     ::  xn_loc(:,:,:,:)     ! (lnx  ,lny  ,nlev,nChem         )
     real, allocatable     ::  dx_loc(:,:,:,:)     ! (lnx  ,lny  ,nlev,nChemObs      )
-    real, allocatable     ::  du_loc(:,:,:,:)     ! (lnx  ,lny  ,nlev,nChem-nChemObs)
     
     integer               ::  iB
     real, allocatable     ::  dx_loc_B(:,:,:,:)     ! (lnx  ,lny  ,nlev,ntracer)
@@ -1360,23 +1315,17 @@ contains
         IF_NOT_OK_RETURN(status=1)
         allocate( dx_loc(lnx,lny,nlev,nChemObs  ), stat=status )
         IF_NOT_OK_RETURN(status=1)
-        allocate( du_loc(lnx,lny,nlev,nChemNoObs), stat=status )
-        IF_NOT_OK_RETURN(status=1)
       else
         ! dummy:
         allocate( xn_loc(1,1,1,1), stat=status )
         IF_NOT_OK_RETURN(status=1)
         allocate( dx_loc(1,1,1,1), stat=status )
         IF_NOT_OK_RETURN(status=1)
-        allocate( du_loc(1,1,1,1), stat=status )
-        IF_NOT_OK_RETURN(status=1)
       end if
 
       ! dumy values:
       xn_loc = 0.0
       dx_loc = 0.0
-      du_loc = 0.0
-
 
       !-----------------------------------------------------------------------
       ! perform variational analysis
@@ -1426,7 +1375,7 @@ contains
           ! perform analysis, all processes involved for operations with H;
           ! only the tracer values assigned to this B matrix are changed:
           call var3d( cdate, Hops_f_B, Bmat(iB)%Bcovarsqrt, &
-                        dx_loc_B, du_loc, status )
+                        dx_loc_B, status )
           IF_NOT_OK_RETURN(status=1)
 
           ! restore:
@@ -1482,18 +1431,6 @@ contains
             ichem = iChemObs(nvar)
             ! add, truncate between factors [0,fac] :
             xn_loc(:,:,:,ichem) = min( max( 0.0, xn_loc(:,:,:,ichem) + dx_loc(:,:,:,nvar) ), &
-                                         xn_loc(:,:,:,ichem) * ANALYSIS_RELINC_MAX )
-          end do  ! tracers
-        end if
-
-        ! any non-observed ?
-        if ( nChemNoObs > 0 ) then
-          ! loop over tracers:
-          do nvar = 1, nChemNoObs
-            ! index:
-            ichem = iChemNoObs(nvar)
-            ! add, truncate between factors [0,fac] :
-            xn_loc(:,:,:,ichem) = min( max( 0.0, xn_loc(:,:,:,ichem) + du_loc(:,:,:,nvar) ), &
                                          xn_loc(:,:,:,ichem) * ANALYSIS_RELINC_MAX )
           end do  ! tracers
         end if
@@ -1559,8 +1496,6 @@ contains
       IF_NOT_OK_RETURN(status=1)
       deallocate( dx_loc, stat=status )
       IF_NOT_OK_RETURN(status=1)
-      deallocate( du_loc, stat=status )
-      IF_NOT_OK_RETURN(status=1)
       
     end if  ! observations present
 
@@ -1601,7 +1536,7 @@ contains
 
   
   !-----------------------------------------------------------------------
-  subroutine var3d( cdate, Hops, Bsqrt, dx_loc, du_loc, status )
+  subroutine var3d( cdate, Hops, Bsqrt, dx_loc, status )
   !-----------------------------------------------------------------------
   ! @description
   ! 3-D variational analysis
@@ -1623,7 +1558,7 @@ contains
     use DA_ml                , only : tim_before => datim_before, tim_after => datim_after
     use DA_Obs_ml            , only : T_ObsOpers
     use DA_ml                , only : nlev
-    use DA_ml                , only : nChemObs, nChemNoObs
+    use DA_ml                , only : nChemObs
     
     !-----------------------------------------------------------------------
     ! Formal parameters
@@ -1633,7 +1568,6 @@ contains
     type(T_ObsOpers), intent(inout)   ::  Hops
     type(T_BCovarSqrt), intent(inout) ::  Bsqrt
     real, intent(out)                 ::  dx_loc(:,:,:,:)  ! (limax,ljmax,nlev,nChemObs)
-    real, intent(out)                 ::  du_loc(:,:,:,:)  ! (limax,ljmax,nlev,nChemNoObs)
     integer, intent(out)              ::  status
 
     !-----------------------------------------------------------------------
@@ -1847,7 +1781,7 @@ contains
       ! for operations with H this involves all processes :
       call costFunction( itime, nv_hcr, chi_hcr, Hops, Bsqrt, &
                            Jcost, Jcost_b, Jcost_obs, gradJcost_hcr, l2w_hcr, &
-                           dx_loc, du_loc, .false., status )
+                           dx_loc, .false., status )
       IF_NOT_OK_RETURN(status=1)
 
       !! info ...
@@ -2049,7 +1983,7 @@ contains
     ! computes final dx and evaluates du :
     call costFunction( itime, nv_hcr, chi_hcr, Hops, Bsqrt, &
                         Jcost, Jcost_b, Jcost_obs, gradJcost_hcr, l2w_hcr, &
-                        dx_loc, du_loc, .true., status )
+                        dx_loc, .true., status )
     IF_NOT_OK_RETURN(status=1)
 
     ! info ...
@@ -2312,7 +2246,7 @@ contains
   subroutine costFunction( itime, nv_hcr, chi_hcr, &
                             Hops, Bsqrt, &
                             Jcost, Jb, Jobs, gradJcost_hcr, l2w_hcr, &
-                            dx_loc, du_loc, post, status )
+                            dx_loc, post, status )
   !-----------------------------------------------------------------------
   ! @description
   ! Compute the costfunction and its gradient
@@ -2352,7 +2286,6 @@ contains
     real, intent(out)                 ::  gradJcost_hcr(nv_hcr)
     integer, intent(out)              ::  l2w_hcr(nv_hcr)
     real, intent(out)                 ::  dx_loc(:,:,:,:)  ! (lnx,lny,nlev,ntracer)
-    real, intent(out)                 ::  du_loc(:,:,:,:)  ! (lnx,lny,nlev,nChem-nChemObs)
     logical, intent(in)               ::  post             ! post processing call ?
     integer, intent(out)              ::  status
     
@@ -2394,7 +2327,6 @@ contains
     
     ! init to avoid errors on undefined output:
     dx_loc = 0.0
-    du_loc = 0.0
 
     ! add contribution to timing:
     call Add_2timing(42,tim_after,tim_before,'3DVar: Optimization.')
@@ -2501,43 +2433,12 @@ contains
       ! info ..
       write (gol,'(a,": posteriori evaluation")') rname; call goPr
 
-#ifdef with_ajs
-      ! start timing:
-      call GO_Timer_Start( itim_unobs, status )
-      IF_NOT_OK_RETURN(status=1)
-#endif
+      ! clear:
+      call my_deallocate( MasterProc, "Postprocessing call to costFunction; no Chi2 need, so leave now." )
+      ! ok
+      status=0; return
 
-      ! add contribution to timing:
-      call Add_2timing(44,tim_after,tim_before,'3DVar: Update observed species.')
-
-#ifndef NO_UPDATE_UNOBSERVED
-      ! info ...
-      if(debug.and.MasterProc) print dafmt,"Update unobserved species"
-      ! update:
-      call update_unobserved( chi_arr, du_loc, status )
-      IF_NOT_OK_RETURN(status=1)
-      ! add contribution to timing:
-      call Add_2timing(45,tim_after,tim_before,'3DVar: Update unobserved species.')
-#endif
-
-#ifdef with_ajs
-      ! end timing:
-      call GO_Timer_End( itim_unobs, status )
-      IF_NOT_OK_RETURN(status=1)
-#endif
-
-      ! return now ?
-      if ( .not. use_chisq ) then
-        ! clear:
-        call my_deallocate( MasterProc, "Postprocessing call to costFunction; no Chi2 need, so leave now." )
-        ! ok
-        status=0; return
-      end if
-      
-      ! return after chi^2 eval
-
-    end if ! update unobserved
-    
+    endif ! post
 
     !-----------------------------------------------------------------------
     ! projection from model to observation space
@@ -2580,36 +2481,6 @@ contains
       end do
 
     end if  ! nobs > 0
-
-    !-----------------------------------------------------------------------
-    ! chi^2 eval and return:
-    !----------------------------------------------------------------------- 
-
-    ! postprocessing call ?
-    if ( post ) then
-#ifdef with_ajs
-      ! start timing:
-      call GO_Timer_Start( itim_chi2, status )
-      IF_NOT_OK_RETURN(status=1)
-#endif
-      ! compute Chhi2 statistics ?
-      if ( use_chisq ) then
-        write (gol,'("Chi2 not implemented for new B yet")'); call goErr
-        TRACEBACK; status=1; return
-      end if
-      ! add contribution to timing:
-      call Add_2timing(46,tim_after,tim_before,'3DVar: CHI^2 evaluation.')
-#ifdef with_ajs
-      ! end timing:
-      call GO_Timer_Start( itim_chi2, status )
-      IF_NOT_OK_RETURN(status=1)
-#endif
-      ! clear:
-      call my_deallocate( MasterProc, "Postprocessing call to costFunction; computed Chi2 stats, leave" )
-      ! ok:
-      status=0; return
-    endif
-
 
     !-----------------------------------------------------------------------
     ! adjoint forcing:  H_jac^{T} * O^{-1} * [ H(xb)+H_jac*dx-y ]
@@ -2891,125 +2762,4 @@ contains
     end subroutine my_deallocate
 
   end subroutine costFunction
-
-
-  ! ***
-
-
-  !-----------------------------------------------------------------------
-  subroutine update_unobserved( chi, du_loc, status )
-  !-----------------------------------------------------------------------
-  ! @description
-  ! Update unobserved species once the variational analysis has converged
-  ! @author M.Kahnert
-  !-----------------------------------------------------------------------
-!    use DA_ml                , only : dafmt => da_fmt_msg
-!    use spectralcov          , only : nx, ny
-!    use spectralcov          , only : nxex, nyex
-!    use spectralcov          , only : nlev
-!    use spectralcov          , only : nchem, nchemObs, nchemNoObs, ichemNoObs
-!    use spectralcov          , only : nv1
-!    use spectralcov          , only : nkstar, ikstar
-!    use spectralcov          , only : vt
-!    use spectralcov          , only : ucovmat, sqrt_lambda, sqrt_gamma
-!    use spectralcov          , only : stddev
-!    use spectralcov          , only : lensav, wsave
-
-    !-----------------------------------------------------------------------
-
-    complex, intent(in)   ::  chi(:,:,:)  ! (nv1,nxex,nyex)
-    complex, intent(in)   ::  du_loc(:,:,:,:)  ! (limax,ljmax,nlev,nChem-nChemObs)
-    integer, intent(out)  ::  status
-    
-    ! --- const ----------------------------
-
-    character(len=*), parameter  ::  rname = mname//'/update_unobserved'
-
-    ! --- local -----------------------------
-
-!    !-----------------------------------------------------------------------
-!    !real   ::  du(nxex,nyex,nlev,nchem-nchemobs)
-!    integer   :: i,j,k,kk,l,ik,m,n,lenwork,ierr,ibox,jbox,ndim
-!    real  ::  work(2*nxex*nyex)
-!    complex :: c(nxex,nyex)
-!    complex, allocatable :: temp1(:), temp2(:), temp3(:,:,:)
-!    !-----------------------------------------------------------------------
-
-    ! not yet ...
-    write (gol,'(a,": no unobserved variables yet ...")') rname; call goPr
-    TRACEBACK; status=1; return
-
-!    if(nchem==nchemObs)then
-!      print dafmt,'WARNING no unobserved to update'
-!      return
-!    endif
-!    lenwork=2*nxex*nyex
-!    nchemNoObs=nchem-nchemObs
-!    ndim=nchemObs*nlev
-!    du=0e0
-!    !-----------------------------------------------------------------------
-!    ! Compute c = X * \Lambda^{-1/2} * \chi, where \Lambda is the
-!    ! diagonal matrix containing the reduced set of eigenvalues of the
-!    ! spectral covariance matrix, and X is the matrix containing the
-!    ! corresponding eigenvectors:
-!    !-----------------------------------------------------------------------
-!    allocate(temp1(nv1),temp2(ndim),temp3(ndim,nxex,nyex))
-!    do n=1,nyex
-!      do m=1,nxex
-!        ik=ikstar(m,n)
-!        if(ik<=nkstar)then
-!          temp1(:)=chi(:,m,n)/sqrt_lambda(:,ik)
-!          temp2(:)=matmul(vt(:,:,ik),temp1)
-!          temp3(:,m,n)=temp2(:)/sqrt_gamma(:,ik)
-!        endif
-!      enddo
-!    enddo
-!    do k=1,nchemnoobs
-!      kk=ichemnoobs(k)
-!      do l=1,nlev
-!        ibox=(k-1)*nlev+l
-!        ! nested double loop over 2D spectral space coordinates:
-!        !-----------------------------------------------------------------------
-!        ! Multiply from the left with L, where L is a diagonal matrix
-!        ! with elements 1/sqrt(\gamma_i) along the diagonal, where \gamma_i
-!        ! denotes the bi-Fourier spectral density of the variance for
-!        ! level/component ibox:
-!        !-----------------------------------------------------------------------
-!        c=cmplx(0e0,0e0)
-!        forall(n=1:nyex,m=1:nxex,ikstar(m,n)<=nkstar) &
-!          c(m,n)=sum(ucovmat(ibox,:,ikstar(m,n))*temp3(:,m,n))
-!        !-----------------------------------------------------------------------
-!        ! Perform inverse 2d-FFT:
-!        !-----------------------------------------------------------------------
-!        call cfft2b(nxex,nxex,nyex,c,wsave,lensav,work,lenwork,ierr)
-!        ! nested double loop over horizontal physical space coordinates:
-!        !-----------------------------------------------------------------------
-!        ! Only update whithin the non-extended zone (since there are no
-!        ! observations in that zone => zero increment):
-!        !-----------------------------------------------------------------------
-!        ! Multiply from the left with S, where S is a diagonal matrix
-!        ! containing the standard deviations sqrt(sigma).
-!        !-----------------------------------------------------------------------
-!        forall(i=1:nx,j=1:ny) du(i,j,l,k)=real(c(i,j))*stddev(i,j,l,kk)
-!      end do ! level l
-!    end do   ! component k
-!    call my_deallocate(.false.,"NoMessage")
-    
-    ! ok
-    status = 0
-    
-!  !-----------------------------------------------------------------------
-!  contains
-!  !-----------------------------------------------------------------------
-!    subroutine my_deallocate(verb,msg)
-!      logical, intent(in) :: verb
-!      character(len=*), intent(in) :: msg
-!      if(verb) print dafmt,msg
-!      if(allocated(temp1))  deallocate(temp1)
-!      if(allocated(temp2))  deallocate(temp2)
-!      if(allocated(temp3))  deallocate(temp3)
-!    end subroutine my_deallocate 
-
-  end subroutine update_unobserved
-
 end module DA_3DVar_ml
