@@ -58,7 +58,7 @@ module DA_Obs_ml
   
   public    ::  varName, varSpec, varSpecInv
   public    ::  obsVarName, observedVar
-  public    ::  OBSERVATIONS, nobsData, obsData, interpolation_method
+  public    ::  OBSERVATIONS, nobsData, obsData
   public    ::  nchemobs, ichemObs
   
 
@@ -114,10 +114,10 @@ module DA_Obs_ml
     ! innovation:
     real                        ::  innov    ! obs - forecast
     ! Jacobian dH/dx :
-    real, allocatable           ::  H_jac(:,:,:)  ! (4,nlev,nChemObs)
+    real, allocatable           ::  H_jac(:,:)  ! (nlev,nChemObs)
     ! involved cells:
-    integer                     ::  i(4) 
-    integer                     ::  j(4)
+    integer                     ::  i
+    integer                     ::  j
     integer                     ::  l(0:1)
     ! id for testing:
     integer                     ::  id
@@ -162,9 +162,8 @@ module DA_Obs_ml
   integer            :: nobsData=0
   integer, parameter :: nobsDataMax=50
   type(obs_data)     :: obsData(nobsDataMax)
-  character(len=032) :: interpolation_method = 'distance-weighted'
 
-  namelist /OBSERVATIONS/nobsData,obsData,interpolation_method
+  namelist /OBSERVATIONS/nobsData,obsData
 
   !-----------------------------------------------------------------------
 
@@ -198,7 +197,7 @@ contains
     ! --- begin -----------------------------
     
     ! storage:
-    allocate( self%H_jac(4,nlev,nchm), stat=status )
+    allocate( self%H_jac(nlev,nchm), stat=status )
     IF_NOT_OK_RETURN(status=1)
     ! dummy values:
     self%H_jac     = -999.9
@@ -303,7 +302,7 @@ contains
       ! defined?
       if ( itracer > 0 ) then
         ! copy:
-        self%H_jac(:,:,itracer) = src%H_jac(:,:,ichemobs)
+        self%H_jac(:,itracer) = src%H_jac(:,ichemobs)
       end if
     end do ! original tracers
 
@@ -318,7 +317,7 @@ contains
 
   subroutine ObsOper_Fill( self, xn_adv_b, xn_b, &
                             ipar, stnid, lat,lon, alt, &
-                            yn, rho0, status )
+                            yn, status )
   !-----------------------------------------------------------------------
   ! @description
   ! H operator mapping from model to observation space;
@@ -355,12 +354,12 @@ contains
   ! @author AMVB
   !-----------------------------------------------------------------------
 
-    use GridValues_ml, only : glon, glat
-    use MetFields_ml , only : z_bnd
-    use MetFields_ml , only : roa
-    use ChemFields_ml, only : cfac
-    use ChemFields_ml, only : PM25_water
-    use ChemFields_ml, only : pm25_water_rh50
+    use GridValues_ml, only: glon,glat,coord_in_domain
+    use MetFields_ml , only: z_bnd
+    use MetFields_ml , only: roa
+    use ChemFields_ml, only: cfac
+    use ChemFields_ml, only: PM25_water
+    use ChemFields_ml, only: pm25_water_rh50
 
     ! --- in/out ----------------------------
     
@@ -369,9 +368,9 @@ contains
     real, intent(in)              :: xn_b(:,:,:,:)      ! (lnx,lny,nlev,nchem)
     integer, intent(in)           :: ipar         ! index in 'obsData' array
     integer, intent(in)           :: stnid        ! station id (1-based record number in file)
-    real, intent(in)              :: lat,lon,alt  ! location
+    real, intent(inout)           :: lat,lon      ! location
+    real, intent(in)              :: alt          ! location
     real, intent(out)             :: yn           ! simulation
-    real, intent(out)             :: rho0         ! air density (for conversions)
     integer, intent(out)          :: status
 
     ! --- const ----------------------------
@@ -380,13 +379,14 @@ contains
 
     ! --- local -----------------------------
 
-    integer :: i(4),j(4),p,l,ll,k,kk,igrp,g,ispec
-    real    :: xn,Hj,H_int(4),T1,QML1,PS1
+    integer :: i,j,l,ll,k,kk,igrp,g,ispec
+    real    :: xn,Hj,T1,QML1,PS1
     real    :: Hchem(nchem)
     real    :: unitconv
     integer, pointer, dimension(:) :: gspec=>null()      ! group array of indexes
     real,    pointer, dimension(:) :: gunit_conv=>null() ! group array of unit conv. factors
     real                           :: z_middle
+    logical :: local_model_grid
 
     ! --- begin -----------------------------
     
@@ -398,53 +398,17 @@ contains
     self%stncode = ''
     ! store index in 'obsData' array:
     self%iObsData = ipar
-
-    !-----------------------------------------------------------------------
-    ! operator for horizontal four-point interpolation between nearest
-    ! neighbouring grid points ;
-    ! local grid indices only !
-    !-----------------------------------------------------------------------
-    call get_interpol_const( glon, glat, lon,lat, i,j, H_int )
-
-    ! switch ...
-    select case ( trim(interpolation_method) )
-      !
-      !! not yet, this requires communication over domains (or y-slabs in 3D-var)
-      !case ( 'distance-weighted' )
-      !  ! keep existing H_int
-      !  !! info ..
-      !  !if ( n == 1 ) then
-      !  !  write (gol,'(a,": H_op with bilinear interpolation")') rname; call goPr
-      !  !end if
-      !
-      ! 
-      case ( 'nearest-neighbor' )
-        ! first is grid cell with location, use only this:
-        H_int = (/ 1.0, 0.0, 0.0, 0.0 /)
-        ! reset indices, these elements are used but have weight zero:
-        i(2:4) = i(1)
-        j(2:4) = j(1)
-        !! info ..
-        !if ( n == 1 ) then
-        !  write (gol,'(a,": H_op with element selection")') rname; call goPr
-        !end if
-      !
-      case default
-        write (gol,'("unsupported interpolation method `",a,"`")') trim(interpolation_method); call goErr
-        TRACEBACK; status=1; return
-    end select
-
+    ! get local grid indices
+    local_model_grid=coord_in_domain("processor",lon,lat,iloc=i,jloc=j)
     !! testing ...
-    !write (gol,'(a,": H_op ",2i6,2f8.2,2i6)') rname, ipar, self%id, lon, lat, i(1), j(1); call goPr
-
+    !!write (gol,'(a,": H_op ",2i6,2f8.2,2i6)') rname, ipar, self%id, lon, lat, i, j; call goPr
 
     ! check, expecting currently local indices only!
-    if ( any(i < 1) .or. any(i > size(xn_adv_b,2)) .or. &
-         any(j < 1) .or. any(j > size(xn_adv_b,3)) ) then
+    if(.not.local_model_grid) then
       write (gol,'("found interpolation indices outside local domain:")'); call goErr
       write (gol,'("  local grid shape : ",2i4)') size(xn_adv_b,2), size(xn_adv_b,3); call goErr
-      write (gol,'("  i indices : ",4i4)') i; call goErr
-      write (gol,'("  j indices : ",4i4)') j; call goErr
+      write (gol,'("  i index : ",i4)') i; call goErr
+      write (gol,'("  j index : ",i4)') j; call goErr
       TRACEBACK; status=1; return
     end if
 
@@ -452,7 +416,7 @@ contains
     ! z grid coordinate of observations:
     !-----------------------------------------------------------------------
     ll=KMAX_MID
-    do while(alt>z_bnd(i(1),j(1),ll).and.ll>=1)
+    do while(alt>z_bnd(i,j,ll).and.ll>=1)
       ll=ll-1
     enddo
     l=ll+nlev-KMAX_MID  ! B might have a reduced number of levels...
@@ -466,21 +430,15 @@ contains
     !-----------------------------------------------------------------------
     if ( debug ) then
       ! first of 4 points (cell with observation location):
-      p = 1
       ! adhoc, original 'z_mid' is not swapped ...
       !z_middle = z_mid(i(p),j(p),ll)
-      z_middle = 0.5*( z_bnd(i(p),j(p),ll) + z_bnd(i(p),j(p),ll+1) )
+      z_middle = 0.5*( z_bnd(i,j,ll) + z_bnd(i,j,ll+1) )
       ! info ...
       write (gol,dafmt) 'Observation/Model Location:Weight[%],lon[deg],lat[deg],alt[km]'; call goPr
-      write (gol,"(5(1X,A3,':',F0.1,3(',',F0.2)))") &
-         'Observation',100.0,lon,lat,alt,&
-         ('Model',H_int(p)*100,glon(i(p),j(p)),glat(i(p),j(p)),z_middle*1e-3,p=1,4); call goPr
+      write (gol,"(5(1X,A3,':',F0.2,',',F0.2,',',F0.2))") &
+        'Observation',lon,lat,alt,&
+        'Model',glon(i,j),glat(i,j),z_middle*1e-3; call goPr
     end if
-
-    !-----------------------------------------------------------------------
-    ! interpolated air density:
-    !-----------------------------------------------------------------------
-    rho0 = dot_product( H_int(:), (/(roa(i(p),j(p),ll,1),p=1,4)/) )
 
     !-----------------------------------------------------------------------
     ! setup obsData element
@@ -528,49 +486,41 @@ contains
     !-----------------------------------------------------------------------
     if(obsData(ipar)%found.and.obsData(ipar)%deriv=='mod-lev')then
       unitconv=obsData(ipar)%unitconv
-      if(obsData(ipar)%unitroa)&
-        H_int(:)=H_int(:)*(/(roa(i(p),j(p),ll,1),p=1,4)/)
+      if(obsData(ipar)%unitroa) unitconv=unitconv*roa(i,j,ll,1)
       k =obsData(ipar)%ichem
-      kk=obsData(ipar)%ichemObs!ichemobs(k)
+      kk=obsData(ipar)%ichemObs
       yn=0e0
-      self%i(:)=i(:)
-      self%j(:)=j(:)
-      self%l(:)=l
-      do p=1,4
-        self%H_jac(p,l,k) = H_int(p)                     & ! interpolation
-                             * unitconv                   ! unit conversion
-        xn = xn_b(i(p),j(p),l,kk)
-        yn = yn + self%H_jac(p,l,k)*xn
-        !! testing ...
-        !write (gol,'(a,":   lev H_jac(",3i4,") * xn(",4i4,") = ",2es12.4," = ",es12.4)') &
-        !        rname, p,l,k, i(p),j(p),l,kk, self%H_jac(p,l,k), xn, self%H_jac(p,l,k)*xn; call goPr
-        !write (gol,'(a,":     yn = ",es12.4)') rname, yn; call goPr
-      enddo
+      self%i=i
+      self%j=j
+      self%l=l
+      self%H_jac(l,k) = unitconv                   ! unit conversion
+      xn = xn_b(i,j,l,kk)
+      yn = yn + self%H_jac(l,k)*xn
+      !! testing ...
+      !write (gol,'(a,":   lev H_jac(",3i4,") * xn(",4i4,") = ",2es12.4," = ",es12.4)') &
+      !        rname, p,l,k, i(p),j(p),l,kk, self%H_jac(p,l,k), xn, self%H_jac(p,l,k)*xn; call goPr
+      !write (gol,'(a,":     yn = ",es12.4)') rname, yn; call goPr
     !-----------------------------------------------------------------------
     ! analysis of direct observations: surface level
     !-----------------------------------------------------------------------
     elseif(obsData(ipar)%found.and.obsData(ipar)%deriv=='surface')then
       unitconv=obsData(ipar)%unitconv
-      if(obsData(ipar)%unitroa)&
-        H_int(:)=H_int(:)*(/(roa(i(p),j(p),ll,1),p=1,4)/)
+      if(obsData(ipar)%unitroa) unitconv=unitconv*roa(i,j,ll,1)
       ispec=obsData(ipar)%ispec
       k =obsData(ipar)%ichem
       kk=obsData(ipar)%ichemObs  !ichemobs(k)
       yn=0e0
-      self%i(:)=i(:)
-      self%j(:)=j(:)
-      self%l(:)=l
-      do p=1,4
-        self%H_jac(p,l,k)=H_int(p)                       & ! interpolation
-            * unitconv                                  & ! unit conversion
-            * cfac(ispec,i(p),j(p))                       ! 50m->3m conversion
-        xn = xn_b(i(p),j(p),l,kk)
-        yn=yn+self%H_jac(p,l,k)*xn
-        !! testing ...
-        !write (gol,'(a,":   sfc H_jac(",3i4,") * xn(",4i4,") = ",2es12.4," = ",es12.4)') &
-        !        rname, p,l,k, i(p),j(p),l,kk, self%H_jac(p,l,k), xn, self%H_jac(p,l,k)*xn; call goPr
-        !write (gol,'(a,":     yn = ",es12.4)') rname, yn; call goPr
-      enddo
+      self%i=i
+      self%j=j
+      self%l=l
+      self%H_jac(l,k)=unitconv  &                 ! unit conversion
+          * cfac(ispec,i,j)                       ! 50m->3m conversion
+      xn = xn_b(i,j,l,kk)
+      yn=yn+self%H_jac(l,k)*xn
+      !! testing ...
+      !write (gol,'(a,":   sfc H_jac(",3i4,") * xn(",4i4,") = ",2es12.4," = ",es12.4)') &
+      !        rname, p,l,k, i(p),j(p),l,kk, self%H_jac(p,l,k), xn, self%H_jac(p,l,k)*xn; call goPr
+      !write (gol,'(a,":     yn = ",es12.4)') rname, yn; call goPr
     !-----------------------------------------------------------------------
     ! analysis of indirect observations: COLUMN (eg NO2tc)
     !-----------------------------------------------------------------------
@@ -580,29 +530,23 @@ contains
       k=obsData(ipar)%ichem
       kk=ichemobs(k)
       yn=0e0
-      self%i(:)=i(:)
-      self%j(:)=j(:)
-      self%l(:)=(/1,nlev/)
+      self%i=i
+      self%j=j
+      self%l=[1,nlev]
       do ll=1,KMAX_MID-nlev   ! B might have a reduced number of levels...
-        do p=1,4
-          Hj=H_int(p)                                   & ! interpolation
-            * unitconv                                  & ! unit conversion
-            * roa(i(p),j(p),ll,1)                       & ! density.
-            * (z_bnd(i(p),j(p),ll)-z_bnd(i(p),j(p),ll+1)) ! level thickness
-          xn=xn_adv_b(ispec,i(p),j(p),ll)*FGSCALE
-          yn=yn+Hj*xn
-        enddo
+        Hj= unitconv                      & ! unit conversion
+          * roa(i,j,ll,1)                 & ! density
+          * (z_bnd(i,j,ll)-z_bnd(i,j,ll+1)) ! level thickness
+        xn=xn_adv_b(ispec,i,j,ll)*FGSCALE
+        yn=yn+Hj*xn
       enddo
       do l=1,nlev
         ll=KMAX_MID-nlev+l
-        do p=1,4
-          self%H_jac(p,l,k)=H_int(p)                       & ! interpolation
-              * unitconv                                  & ! unit conversion
-              * roa(i(p),j(p),ll,1)                       & ! density.
-              * (z_bnd(i(p),j(p),ll)-z_bnd(i(p),j(p),ll+1)) ! level thickness
-          xn=xn_b(i(p),j(p),l,kk)
-          yn=yn+self%H_jac(p,l,k)*xn
-        enddo
+        self%H_jac(l,k)= unitconv         & ! unit conversion
+          * roa(i,j,ll,1)                 & ! density
+          * (z_bnd(i,j,ll)-z_bnd(i,j,ll+1)) ! level thickness
+        xn=xn_b(i,j,l,kk)
+        yn=yn+self%H_jac(l,k)*xn
       enddo
     !-----------------------------------------------------------------------
     ! analysis of indirect observations: model mid-levels
@@ -621,34 +565,26 @@ contains
       endif
       call Group_Units(igrp,obsData(ipar)%unit,gspec,gunit_conv,debug)
       yn=0e0
-      self%i(:)=i(:)
-      self%j(:)=j(:)
-      self%l(:)=l
+      self%i=i
+      self%j=j
+      self%l=l
       do g=1,size(gspec)
         kk=varSpecInv(gspec(g))
         if(kk>0.and.observedVar(kk))then
           k=ichemInv(kk)
-          do p=1,4
-            self%H_jac(p,l,k)=H_int(p)                       & ! interpolation
-                * gunit_conv(g)                             & ! unit conversion
-                * roa(i(p),j(p),ll,1)                         ! density.
-            xn=xn_b(i(p),j(p),l,kk)
-            yn=yn+self%H_jac(p,l,k)*xn
-          enddo
+          self%H_jac(l,k)=gunit_conv(g)   & ! unit conversion
+              * roa(i,j,ll,1)               ! density
+          xn=xn_b(i,j,l,kk)
+          yn=yn+self%H_jac(l,k)*xn
         else
-          do p=1,4
-            Hj=H_int(p)                                   & ! interpolation
-              * gunit_conv(g)                             & ! unit conversion
-              * roa(i(p),j(p),ll,1)                         ! density.
-            xn=xn_adv_b(gspec(g),i(p),j(p),ll)*FGSCALE
-            yn=yn+Hj*xn
-          enddo
+          Hj=gunit_conv(g)                & ! unit conversion
+            * roa(i,j,ll,1)                 ! density.
+          xn=xn_adv_b(gspec(g),i,j,ll)*FGSCALE
+          yn=yn+Hj*xn
         endif
       enddo
       if(index(obsData(ipar)%name,'PM')>0)then
-        do p=1,4
-          yn=yn+pm25_water(i(p),j(p),ll)*FGSCALE ! PM water content in ug/m3 at model mid-levels
-        enddo
+        yn=yn+pm25_water(i,j,ll)*FGSCALE ! PM water content in ug/m3 at model mid-levels
       endif
     !-----------------------------------------------------------------------
     ! analysis of indirect observations: model mid-levels
@@ -668,36 +604,28 @@ contains
       print *,igrp,chemgroups(igrp)%name
       call Group_Units(igrp,obsData(ipar)%unit,gspec,gunit_conv,debug)
       yn=0e0
-      self%i(:)=i(:)
-      self%j(:)=j(:)
-      self%l(:)=l
+      self%i=i
+      self%j=j
+      self%l=l
       do g=1,size(gspec)
         kk=varSpecInv(gspec(g))
         if(kk>0.and.observedVar(kk))then
           k=ichemInv(kk)
-          do p=1,4
-            self%H_jac(p,l,k)=H_int(p)                       & ! interpolation
-                * gunit_conv(g)                             & ! unit conversion
-                * roa(i(p),j(p),ll,1)                       & ! density.
-                * cfac(gspec(g),i(p),j(p))                    ! 50m->3m conversion
-            xn=xn_b(i(p),j(p),l,kk)
-            yn=yn+self%H_jac(p,l,k)*xn
-          enddo
+          self%H_jac(l,k)=gunit_conv(g)   & ! unit conversion
+            * roa(i,j,ll,1)               & ! density.
+            * cfac(gspec(g),i,j)            ! 50m->3m conversion
+          xn=xn_b(i,j,l,kk)
+          yn=yn+self%H_jac(l,k)*xn
         else
-          do p=1,4
-            Hj=H_int(p)                                   & ! interpolation
-              * gunit_conv(g)                             & ! unit conversion
-              * roa(i(p),j(p),ll,1)                       & ! density.
-              * cfac(gspec(g),i(p),j(p))                    ! 50m->3m conversion
-            xn=xn_adv_b(gspec(g),i(p),j(p),ll)*FGSCALE
-            yn=yn+Hj*xn
-          enddo
+          Hj=gunit_conv(g)                & ! unit conversion
+            * roa(i,j,ll,1)               & ! density.
+            * cfac(gspec(g),i,j)            ! 50m->3m conversion
+          xn=xn_adv_b(gspec(g),i,j,ll)*FGSCALE
+          yn=yn+Hj*xn
         endif
       enddo
       if(index(obsData(ipar)%name,'PM')>0)then
-        do p=1,4
-          yn=yn+pm25_water_rh50(i(p),j(p))*FGSCALE ! PM water content in ug/m3 at surface level
-        enddo
+        yn=yn+pm25_water_rh50(i,j)*FGSCALE ! PM water content in ug/m3 at surface level
       endif
     !-----------------------------------------------------------------------
     ! analysis of indirect observations: column
@@ -712,45 +640,35 @@ contains
       endif
       call Group_Units(igrp,obsData(ipar)%unit,gspec,gunit_conv,debug)
       yn=0e0
-      self%i(:)=i(:)
-      self%j(:)=j(:)
-      self%l(:)=l
-      self%l(:)=(/1,nlev/)
+      self%i=i
+      self%j=j
+      self%l=[1,nlev]
       do g=1,size(gspec)
         kk=varSpecInv(gspec(g))
         if(kk>0.and.observedVar(kk))then
           k=ichemInv(kk)
           do ll=1,KMAX_MID-nlev
-            do p=1,4
-              Hj=H_int(p)                                   & ! interpolation
-                * gunit_conv(g)                             & ! unit conversion
-                * roa(i(p),j(p),ll,1)                       & ! density.
-                * (z_bnd(i(p),j(p),ll)-z_bnd(i(p),j(p),ll+1)) ! level thickness
-              xn=xn_adv_b(gspec(g),i(p),j(p),ll)*FGSCALE
-              yn=yn+Hj*xn
-            enddo
+            Hj=gunit_conv(g)              & ! unit conversion
+             * roa(i,j,ll,1)              & ! density
+             * (z_bnd(i,j,ll)-z_bnd(i,j,ll+1)) ! level thickness
+            xn=xn_adv_b(gspec(g),i,j,ll)*FGSCALE
+            yn=yn+Hj*xn
           enddo
           do l=1,nlev
             ll=KMAX_MID-nlev+l
-            do p=1,4
-              self%H_jac(p,l,k)=H_int(p)                       & ! interpolation
-                  * gunit_conv(g)                             & ! unit conversion
-                  * roa(i(p),j(p),ll,1)                       & ! density.
-                  * (z_bnd(i(p),j(p),ll)-z_bnd(i(p),j(p),ll+1)) ! level thickness
-              xn=xn_b(i(p),j(p),l,kk)
-              yn=yn+self%H_jac(p,l,k)*xn
-            enddo
+            self%H_jac(l,k)=gunit_conv(g) & ! unit conversion
+              * roa(i,j,ll,1)             & ! density
+              * (z_bnd(i,j,ll)-z_bnd(i,j,ll+1)) ! level thickness
+            xn=xn_b(i,j,l,kk)
+            yn=yn+self%H_jac(l,k)*xn
           enddo
         else
           do ll=1,KMAX_MID
-            do p=1,4
-              Hj=H_int(p)                                   & ! interpolation
-                * gunit_conv(g)                             & ! unit conversion
-                * roa(i(p),j(p),ll,1)                       & ! density.
-                * (z_bnd(i(p),j(p),ll)-z_bnd(i(p),j(p),ll+1)) ! level thickness
-              xn=xn_adv_b(gspec(g),i(p),j(p),ll)*FGSCALE
-              yn=yn+Hj*xn
-            enddo
+            Hj=gunit_conv(g)              & ! unit conversion
+              * roa(i,j,ll,1)             & ! density.
+              * (z_bnd(i,j,ll)-z_bnd(i,j,ll+1)) ! level thickness
+            xn=xn_adv_b(gspec(g),i,j,ll)*FGSCALE
+            yn=yn+Hj*xn
           enddo
         endif
       enddo
@@ -798,15 +716,15 @@ contains
     ! loop over points involved in horizontal interpolation:
     do p = 1, 4
       ! involved grid cell:
-      i = self%i(p)
-      j = self%j(p)
+      i = self%i
+      j = self%j
       ! level range:
       l0 = self%l(0)
       l1 = self%l(1)
       ! observed tracer index:
       ichem = self%ichemObs
       ! add contribution for this cell, sum over layers:
-      yn = yn + sum( self%H_jac(p,l0:l1,ichem) * xn_b(i,j,l0:l1,ichem) )
+      yn = yn + sum(self%H_jac(l0:l1,ichem) * xn_b(i,j,l0:l1,ichem))
     end do ! p
 
     ! store:
@@ -1102,13 +1020,9 @@ contains
     integer                         ::  iobs, iobs_in
     integer                         ::  iproc, iproc_in
     integer                         ::  ind(4)
-    integer                         ::  nrr, sHj(3), nii
-    real, allocatable               ::  srt_rr(:,:)
-    real, allocatable               ::  srt_Hj(:,:,:,:)
-    real, allocatable               ::  srt_ii(:,:)
-    real, allocatable               ::  new_rr(:,:)
-    real, allocatable               ::  new_Hj(:,:,:,:)
-    real, allocatable               ::  new_ii(:,:)
+    integer                         ::  nrr, sHj(2), nii
+    real, allocatable               ::  srt_rr(:,:),srt_Hj(:,:,:),srt_ii(:,:)
+    real, allocatable               ::  new_rr(:,:),new_Hj(:,:,:),new_ii(:,:)
     integer, allocatable            ::  sendcounts(:)  ! (0:nproc-1)
     integer, allocatable            ::  sdispls(:)     ! (0:nproc-1)
     integer, allocatable            ::  recvcounts(:)  ! (0:nproc-1)
@@ -1141,10 +1055,10 @@ contains
     nrr = 2
     allocate( srt_rr(nrr,self%nobs), stat=status )
     IF_NOT_OK_RETURN(status=1)
-    sHj = (/ 4, nlev, nchemobs /)
-    allocate( srt_Hj(sHj(1),sHj(2),sHj(3),self%nobs), stat=status )
+    sHj = [ nlev, nchemobs ]
+    allocate( srt_Hj(sHj(1),sHj(2),self%nobs), stat=status )
     IF_NOT_OK_RETURN(status=1)
-    nii = 12
+    nii = 6
     allocate( srt_ii(nii,self%nobs), stat=status )
     IF_NOT_OK_RETURN(status=1)
     
@@ -1158,9 +1072,9 @@ contains
       ! loop over input observations:
       do iobs_in = 1, self%nobs
         ! global index of first grid cell involved:
-        ind = (/ doms%off(1,me) + self%obs(iobs_in)%i(1), &
-                 doms%off(2,me) + self%obs(iobs_in)%j(1), &
-                 1, 1 /)
+        ind = [doms%off(1,me) + self%obs(iobs_in)%i, &
+               doms%off(2,me) + self%obs(iobs_in)%j, &
+               1, 1 ]
         ! target proc:
         call doms_new%Find( ind, iproc_in, status )
         IF_NOT_OK_RETURN(status=1)
@@ -1170,14 +1084,14 @@ contains
           iobs = iobs + 1
           sendcounts(iproc) = sendcounts(iproc) + 1
           ! copy values, fill with global horizontal indices:
-          srt_rr(1,iobs)     = self%obs(iobs_in)%innov
-          srt_rr(2,iobs)     = self%obs(iobs_in)%obsstddev
-          srt_Hj(:,:,:,iobs) = self%obs(iobs_in)%H_jac
-          srt_ii(1:4 ,iobs)  = doms%off(1,me) + self%obs(iobs_in)%i
-          srt_ii(5:8 ,iobs)  = doms%off(2,me) + self%obs(iobs_in)%j
-          srt_ii(9:10,iobs)  = self%obs(iobs_in)%l
-          srt_ii(11  ,iobs)  = self%obs(iobs_in)%id
-          srt_ii(12  ,iobs)  = self%obs(iobs_in)%iChemObs
+          srt_rr(1,iobs)   = self%obs(iobs_in)%innov
+          srt_rr(2,iobs)   = self%obs(iobs_in)%obsstddev
+          srt_Hj(:,:,iobs) = self%obs(iobs_in)%H_jac
+          srt_ii(1  ,iobs) = doms%off(1,me) + self%obs(iobs_in)%i
+          srt_ii(2  ,iobs) = doms%off(2,me) + self%obs(iobs_in)%j
+          srt_ii(3:4,iobs) = self%obs(iobs_in)%l
+          srt_ii(5  ,iobs) = self%obs(iobs_in)%id
+          srt_ii(6  ,iobs) = self%obs(iobs_in)%iChemObs
         end if
       end do  ! input obs
     end do  ! target procs
@@ -1211,7 +1125,7 @@ contains
     nval = max( 1, nobs_new )
     allocate( new_rr(nrr,nval), stat=status )
     IF_NOT_OK_RETURN(status=1)
-    allocate( new_Hj(sHj(1),sHj(2),sHj(3),nval), stat=status )
+    allocate( new_Hj(sHj(1),sHj(2),nval), stat=status )
     IF_NOT_OK_RETURN(status=1)
     allocate( new_ii(nii,nval), stat=status )
     IF_NOT_OK_RETURN(status=1)
@@ -1243,12 +1157,12 @@ contains
       ! copy values, convert from global to local horizontal indices:
       Hops_new%obs(iobs)%innov     = new_rr(1,iobs)    
       Hops_new%obs(iobs)%obsstddev = new_rr(2,iobs)    
-      Hops_new%obs(iobs)%H_jac     = new_Hj(:,:,:,iobs)
-      Hops_new%obs(iobs)%i         = new_ii(1:4 ,iobs) - doms_new%off(1,me)
-      Hops_new%obs(iobs)%j         = new_ii(5:8 ,iobs) - doms_new%off(2,me)
-      Hops_new%obs(iobs)%l         = new_ii(9:10,iobs)
-      Hops_new%obs(iobs)%id        = new_ii(11  ,iobs)
-      Hops_new%obs(iobs)%iChemObs  = new_ii(12  ,iobs)
+      Hops_new%obs(iobs)%H_jac     = new_Hj(:,:,iobs)
+      Hops_new%obs(iobs)%i         = new_ii(1  ,iobs) - doms_new%off(1,me)
+      Hops_new%obs(iobs)%j         = new_ii(2  ,iobs) - doms_new%off(2,me)
+      Hops_new%obs(iobs)%l         = new_ii(3:4,iobs)
+      Hops_new%obs(iobs)%id        = new_ii(5  ,iobs)
+      Hops_new%obs(iobs)%iChemObs  = new_ii(6  ,iobs)
     end do
     
     !! info ...
@@ -2365,65 +2279,4 @@ contains
     status = 0
 
   end subroutine read_obs
-
-
-! function great_circle_distance(fi1,lambda1,fi2,lambda2) result(dist)
-!   !compute the great circle distance between to points given in
-!   !spherical coordinates. Sphere has radius 1.
-!   real, intent(in) ::fi1,lambda1,fi2,lambda2 !NB: in DEGREES here
-!   real :: dist
-!   dist=2*asin(sqrt(sind(0.5*(lambda1-lambda2+360.0))**2+&
-!         cosd(lambda1+360.0)*cosd(lambda2+360.0)*sind(0.5*(fi1-fi2+360.0))**2))
-! end function great_circle_distance
-
-
-subroutine get_interpol_const( glons, glats, lon,lat, IIij,JJij, Weight )
-  !find interpolation constants
-  !note that i,j are local
-  !find the four closest points
-  real,    intent(in)    :: lon,lat
-  real,    intent(in)    :: glons(:,:), glats(:,:)   ! local decomposition
-  integer, intent(inout) :: IIij(4),JJij(4)
-  real,    intent(out)   :: Weight(4)
-  integer :: i,j
-  real :: dist(0:4)
-  ! init distance to large value:
-  dist=1.0E40
-  ! loop over grid cells:
-  do j = 1, size(glons,2)
-    do i = 1, size(glons,1)
-      !distance between (lon(i,j),lat(i,j) and (lon,lat)
-      ! ~ use 'glon' and 'glat' from 'GridValues_ml' defined on model decomposition:
-      !dist(0) = great_circle_distance( lon, lat, glon(i,j), glat(i,j) )
-      ! ~ now from arguments:
-      dist(0) = great_circle_distance( lon, lat, glons(i,j), glats(i,j) )
-      ! compare:
-      if(dist(0)<dist(1))then
-        dist(4)=dist(3);dist(3)=dist(2);dist(2)=dist(1);dist(1)=dist(0)
-        IIij(4)=IIij(3);IIij(3)=IIij(2);IIij(2)=IIij(1);IIij(1)=i
-        JJij(4)=JJij(3);JJij(3)=JJij(2);JJij(2)=JJij(1);JJij(1)=j
-      elseif(dist(0)<dist(2))then
-        dist(4)=dist(3);dist(3)=dist(2);dist(2)=dist(0)
-        IIij(4)=IIij(3);IIij(3)=IIij(2);IIij(2)=i
-        JJij(4)=JJij(3);JJij(3)=JJij(2);JJij(2)=j
-      elseif(dist(0)<dist(3))then
-        dist(4)=dist(3);dist(3)=dist(0)
-        IIij(4)=IIij(3);IIij(3)=i
-        JJij(4)=JJij(3);JJij(3)=j
-      elseif(dist(0)<dist(4))then
-        dist(4)=dist(0)
-        IIij(4)=i
-        JJij(4)=j
-      endif
-    enddo
-  enddo
-  dist(0)=(dist(1)+dist(2)+dist(3)+dist(4))
-  Weight(1)=1.0-3.0*dist(1)/dist(0)
-  dist(0)=(dist(2)+dist(3)+dist(4))
-  Weight(2)=(1.0-Weight(1))*(1.0-2.0*dist(2)/dist(0))
-  dist(0)=(dist(3)+dist(4))
-  Weight(3)=(1.0-Weight(1)-Weight(2))*(1.0-dist(3)/dist(0))
-  Weight(4)=1.0-Weight(1)-Weight(2)-Weight(3)
-end subroutine get_interpol_const
-
 end module DA_Obs_ml

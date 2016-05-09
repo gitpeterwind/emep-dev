@@ -700,7 +700,6 @@ contains
     !
     !   nobsData                ! number of datasets
     !   obsData(1:nobsData)%..  ! types with dataset properties
-    !   interpolation_method    ! 'nearest-neighbor'
     !
     read (unit=inNml,nml=OBSERVATIONS,iostat=status)
     if ( status /= 0 ) then
@@ -1638,7 +1637,7 @@ contains
     real(kind=4)              ::  rzs(1) = 0.0
     real(kind=8)              ::  dzs(1) = 0.0
 
-    integer                   ::  n,p,l,k
+    integer                   ::  n,l,k
     
     !-----------------------------------------------------------------------
     ! storage
@@ -2136,8 +2135,7 @@ contains
     integer      ::  i,j,l,k,n,ilev,err,ierr
     integer      ::  ipar
     real         ::  yn
-    !real         ::  alt(nx,ny,nlev)
-    real         ::  rho0
+   !real         ::  alt(nx,ny,nlev)
 
     ! --- begin -----------------------------
     
@@ -2174,7 +2172,7 @@ contains
         !  simulation 'yn' is therefore including this factor too:
         call Hops%obs(n)%Fill( xn_adv_b, xn_b, &
                                iObsData(n), stnid(n), flat(n),flon(n),falt(n), &
-                               yn, rho0, status )
+                               yn, status )
         IF_NOT_OK_RETURN(status=1)
 
         !if(obsData(ipar(n))%error_rel>0)&
@@ -2306,7 +2304,6 @@ contains
 
     integer                         ::  i, j, k
     integer                         ::  n
-    integer                         ::  p
     integer                         ::  l0, l1
     real, allocatable               ::  yn(:), dep(:), OinvDep(:)
     real, allocatable               ::  HT_OinvDep_loc(:,:,:,:)  ! (limax,ljmax,nlev,ntracer)
@@ -2448,8 +2445,9 @@ contains
     if ( Hops%nobs > 0 ) then
 
       ! check ..
-      if ( size(Hops%obs(1)%H_jac,3) /= Bsqrt%ntracer ) then
-        write (gol,'("covariance for ",i0," tracers, but H_jac for ",i0)') Bsqrt%ntracer, size(Hops%obs(1)%H_jac,3); call goErr
+      if ( size(Hops%obs(1)%H_jac,2) /= Bsqrt%ntracer ) then
+        write (gol,'("covariance for ",i0," tracers, but H_jac for ",i0)') &
+          Bsqrt%ntracer, size(Hops%obs(1)%H_jac,2); call goErr
         TRACEBACK; status=1; return
       end if
     
@@ -2470,14 +2468,11 @@ contains
         ! level range:
         l0 = Hops%obs(n)%l(0)
         l1 = Hops%obs(n)%l(1)
-        ! loop over points involved in horizontal interpolation:
-        do p = 1, 4
-          ! involved grid cell:
-          i = Hops%obs(n)%i(p)
-          j = Hops%obs(n)%j(p)
-          ! add contribution for this cell, sum over layers:
-          yn(n) = yn(n) + sum( Hops%obs(n)%H_jac(p,l0:l1,itracer) * dx_loc(i,j,l0:l1,itracer) )
-        end do
+        ! involved grid cell:
+        i = Hops%obs(n)%i
+        j = Hops%obs(n)%j
+        ! add contribution for this cell, sum over layers:
+        yn(n) = yn(n) + sum(Hops%obs(n)%H_jac(l0:l1,itracer) * dx_loc(i,j,l0:l1,itracer))
       end do
 
     end if  ! nobs > 0
@@ -2538,22 +2533,20 @@ contains
     ! loop over observations ;
     ! result remains zero if locally no observations present:
     do n = 1, Hops%nobs
-      ! loop over involved grid cells:
-      do p = 1, 4
-        ! grid cell indices:
-        i = Hops%obs(n)%i(p)
-        j = Hops%obs(n)%j(p)
-        ! level range:
-        l0 = Hops%obs(n)%l(0)
-        l1 = Hops%obs(n)%l(1)
-        ! covariance tracer index:
-        itracer = Hops%obs(n)%itracer
-        ! first on local array only:
-        HT_OinvDep_loc(i,j,l0:l1,itracer) = HT_OinvDep_loc(i,j,l0:l1,itracer) + Hops%obs(n)%H_jac(p,l0:l1,itracer) * OinvDep(n)
-        !! testing ...
-        !write (gol,'("HT_OinvDep_loc n=",i0," p=",i0," l0:l1=",i0,":",i0," ichem=",i0," H_jac=",es12.4," OinvDep=",es12.4)') &
-        !         n, p, l0, l1, ichem, Hops%obs(n)%H_jac(p,l0:l1,ichem), OinvDep(n); call goPr
-      end do
+      ! grid cell indices:
+      i = Hops%obs(n)%i
+      j = Hops%obs(n)%j
+      ! level range:
+      l0 = Hops%obs(n)%l(0)
+      l1 = Hops%obs(n)%l(1)
+      ! covariance tracer index:
+      itracer = Hops%obs(n)%itracer
+      ! first on local array only:
+      HT_OinvDep_loc(i,j,l0:l1,itracer) = HT_OinvDep_loc(i,j,l0:l1,itracer) &
+        + Hops%obs(n)%H_jac(l0:l1,itracer) * OinvDep(n)
+      !! testing ...
+      !write (gol,'("HT_OinvDep_loc n=",i0," p=",i0," l0:l1=",i0,":",i0," ichem=",i0," H_jac=",es12.4," OinvDep=",es12.4)') &
+      !         n, p, l0, l1, ichem, Hops%obs(n)%H_jac(p,l0:l1,ichem), OinvDep(n); call goPr
     end do
     
 #ifdef with_ajs

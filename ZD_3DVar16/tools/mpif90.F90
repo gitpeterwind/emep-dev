@@ -161,11 +161,11 @@ module MPIF90
   
   interface MPIF90_AllToAllV
     module procedure MPIF90_AllToAllV_i4_2d
-    module procedure MPIF90_AllToAllV_i4_4d
+    module procedure MPIF90_AllToAllV_i4_3d
     module procedure MPIF90_AllToAllV_r4_2d
-    module procedure MPIF90_AllToAllV_r4_4d
+    module procedure MPIF90_AllToAllV_r4_3d
     module procedure MPIF90_AllToAllV_r8_2d
-    module procedure MPIF90_AllToAllV_r8_4d
+    module procedure MPIF90_AllToAllV_r8_3d
   end interface MPIF90_AllToAllV
   
   interface MPIF90_AllReduce
@@ -819,19 +819,19 @@ contains
   
   ! ***
 
-  subroutine MPIF90_AllToAllV_i4_4d( sendbuf, sendcounts, sdispls, &
+  subroutine MPIF90_AllToAllV_i4_3d( sendbuf, sendcounts, sdispls, &
                                     recvbuf, recvcounts, rdispls, &
                                     comm, status )
     ! external:
     use MPI, only : MPI_INTEGER
     use MPI, only : MPI_AllToAllV
     ! arguments:
-    integer(4), intent(in)        ::  sendbuf(:,:,:,:)
-    integer, intent(in)           ::  sendcounts(4)
-    integer, intent(in)           ::  sdispls(4)
-    integer(4), intent(out)       ::  recvbuf(:,:,:,:)
-    integer, intent(in)           ::  recvcounts(4)
-    integer, intent(in)           ::  rdispls(4)
+    integer(4), intent(in)        ::  sendbuf(:,:,:)
+    integer, intent(in)           ::  sendcounts(3)
+    integer, intent(in)           ::  sdispls(3)
+    integer(4), intent(out)       ::  recvbuf(:,:,:)
+    integer, intent(in)           ::  recvcounts(3)
+    integer, intent(in)           ::  rdispls(3)
     integer, intent(in)           ::  comm
     integer, intent(out)          ::  status
     ! specific call:
@@ -841,23 +841,23 @@ contains
     IF_MPI_NOT_OK_RETURN(status=1)
     ! ok
     status = 0
-  end subroutine MPIF90_AllToAllV_i4_4d
+  end subroutine MPIF90_AllToAllV_i4_3d
   
   ! *
 
-  subroutine MPIF90_AllToAllV_r4_4d( sendbuf, sendcounts, sdispls, &
+  subroutine MPIF90_AllToAllV_r4_3d( sendbuf, sendcounts, sdispls, &
                                     recvbuf, recvcounts, rdispls, &
                                     comm, status )
     ! external:
     use MPI, only : MPI_REAL
     use MPI, only : MPI_AllToAllV
     ! arguments:
-    real(4), intent(in)           ::  sendbuf(:,:,:,:)
-    integer, intent(in)           ::  sendcounts(4)
-    integer, intent(in)           ::  sdispls(4)
-    real(4), intent(out)          ::  recvbuf(:,:,:,:)
-    integer, intent(in)           ::  recvcounts(4)
-    integer, intent(in)           ::  rdispls(4)
+    real(4), intent(in)           ::  sendbuf(:,:,:)
+    integer, intent(in)           ::  sendcounts(3)
+    integer, intent(in)           ::  sdispls(3)
+    real(4), intent(out)          ::  recvbuf(:,:,:)
+    integer, intent(in)           ::  recvcounts(3)
+    integer, intent(in)           ::  rdispls(3)
     integer, intent(in)           ::  comm
     integer, intent(out)          ::  status
     ! specific call:
@@ -867,23 +867,23 @@ contains
     IF_MPI_NOT_OK_RETURN(status=1)
     ! ok
     status = 0
-  end subroutine MPIF90_AllToAllV_r4_4d
+  end subroutine MPIF90_AllToAllV_r4_3d
   
   ! *
 
-  subroutine MPIF90_AllToAllV_r8_4d( sendbuf, sendcounts, sdispls, &
+  subroutine MPIF90_AllToAllV_r8_3d( sendbuf, sendcounts, sdispls, &
                                     recvbuf, recvcounts, rdispls, &
                                     comm, status )
     ! external:
     use MPI, only : MPI_DOUBLE_PRECISION
     use MPI, only : MPI_AllToAllV
     ! arguments:
-    real(8), intent(in)           ::  sendbuf(:,:,:,:)
-    integer, intent(in)           ::  sendcounts(4)
-    integer, intent(in)           ::  sdispls(4)
-    real(8), intent(out)          ::  recvbuf(:,:,:,:)
-    integer, intent(in)           ::  recvcounts(4)
-    integer, intent(in)           ::  rdispls(4)
+    real(8), intent(in)           ::  sendbuf(:,:,:)
+    integer, intent(in)           ::  sendcounts(3)
+    integer, intent(in)           ::  sdispls(3)
+    real(8), intent(out)          ::  recvbuf(:,:,:)
+    integer, intent(in)           ::  recvcounts(3)
+    integer, intent(in)           ::  rdispls(3)
     integer, intent(in)           ::  comm
     integer, intent(out)          ::  status
     ! specific call:
@@ -893,7 +893,7 @@ contains
     IF_MPI_NOT_OK_RETURN(status=1)
     ! ok
     status = 0
-  end subroutine MPIF90_AllToAllV_r8_4d
+  end subroutine MPIF90_AllToAllV_r8_3d
   
 
   ! ********************************************************************
