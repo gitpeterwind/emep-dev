@@ -99,11 +99,13 @@ module DA_3DVar_ml
   integer               ::  m1qn3_maxiter
   integer               ::  m1qn3_maxsim
   
+#ifdef with_ajs
   ! timers:
   integer               ::  itim_read_obs, itim_innov, itim_swap
   integer               ::  itim_loop, itim_optimizer, itim_costfunc
   integer               ::  itim_chi2x, itim_innov_adj, itim_gradient, itim_x2chi
   integer               ::  itim_post, itim_unobs, itim_chi2
+#endif
   
   ! info on assim with single covar:
   type T_BInfo
@@ -152,10 +154,11 @@ contains
 #else
     use GO               , only : GO_Init
     use GO               , only : GO_Par_Setup
+    use GO               , only : GO_Print_Set
+    use GO               , only : GO_Timer_Def
 #endif
     use GO               , only : TrcFile, Init, Done, ReadRc
     use GO               , only : goGetFU, goStdErr
-    use GO               , only : GO_Timer_Def
     use GO               , only : me
     use ModelConstants_ml, only : masterProc
     use MPI_Groups_ml    , only : MPI_COMM_CALC
@@ -194,6 +197,10 @@ contains
       stop
     end if
     ! from now on, the gol/goPr/goPr logging could be used ...
+
+    ! log from root only:
+    call GO_Print_Set( status, apply=MasterProc )
+    IF_NOT_OK_RETURN(status=1)
   
     ! setup parallel tools in GO modules:
     call GO_Par_Setup( MPI_COMM_CALC, status )
@@ -278,6 +285,7 @@ contains
     call ReadRc( rcF, 'emo.3dvar.m1qn3.nupdates', m1qn3_nupdates, status )
     IF_NOT_OK_RETURN(status=1)
 
+#ifdef with_ajs
     ! define timers:
     call GO_Timer_Def( itim_read_obs , 'read observations', status )
     IF_NOT_OK_RETURN(status=1)
@@ -305,6 +313,7 @@ contains
     IF_NOT_OK_RETURN(status=1)
     call GO_Timer_Def( itim_chi2     , 'chi2'             , status )
     IF_NOT_OK_RETURN(status=1)
+#endif
 
     !! covariance file:
     !call ReadRc( rcF, 'emo.3dvar.B.filename', BCovarSqrt_filename, status )
@@ -489,7 +498,9 @@ contains
     !if(debug.and.MasterProc)print dafmt,'Test analysis'
     
     ! leave if no analysis time:
-    if(.not.compare_date(ANALYSIS_NDATE,current_date,analysis_date,wildcard=-1)) return
+    if(.not.compare_date(ANALYSIS_NDATE,current_date,analysis_date,wildcard=-1))then
+      status=0; return
+    endif
     
     ! info ...
     if(debug.and.MasterProc) print dafmt,'Start analysis'
@@ -1145,6 +1156,7 @@ contains
     type(T_ObsOpers)      ::  Hops_m
     type(T_ObsOpers)      ::  Hops_f
     type(T_ObsOpers)      ::  Hops_f_B
+    integer               ::  nobs_B
 
     real, allocatable     ::  xn_an (:,:,:,:)     ! (limax,ljmax,nlev,nChem         )
     real, allocatable     ::  xn_loc(:,:,:,:)     ! (lnx  ,lny  ,nlev,nChem         )
@@ -1181,9 +1193,11 @@ contains
     ! read observations
     !-----------------------------------------------------------------------
     
+#ifdef with_ajs
     ! start timing:
     call GO_Timer_Start( itim_read_obs, status )
     IF_NOT_OK_RETURN(status=1)
+#endif
 
     ! obs regridded to model resolution ?
     !maxobs = nx*ny
@@ -1227,9 +1241,11 @@ contains
     ! info ...
     write (gol,'(a,": total number of observations read : ",i6)') rname, nobs_tot; call goPr
 
+#ifdef with_ajs
     ! end timing:
     call GO_Timer_End( itim_read_obs, status )
     IF_NOT_OK_RETURN(status=1)
+#endif
     
     ! no observations at all ?
     if ( nobs_tot == 0 ) then
@@ -1285,9 +1301,11 @@ contains
       ! info ..
       write (gol,'(a,": compute innovations ...")') rname; call goPr
 
+#ifdef with_ajs
       ! start timing:
       call GO_Timer_Start( itim_innov, status )
       IF_NOT_OK_RETURN(status=1)
+#endif
 
       ! start timing:
       call Code_timer(tim_before)
@@ -1325,10 +1343,11 @@ contains
       ! update timer:
       call Add_2timing(41,tim_after,tim_before,'3DVar: Get innovations from observations.')
 
+#ifdef with_ajs
       ! end timing:
       call GO_Timer_End( itim_innov, status )
       IF_NOT_OK_RETURN(status=1)
-
+#endif
 
       !-----------------------------------------------------------------------
       ! allocate work arrrays
@@ -1379,41 +1398,52 @@ contains
         call Hops_f_B%SelectTracers( Hops_f, Bmat(iB)%itracer, status )
         IF_NOT_OK_RETURN(status=1)
         
-        ! only tracers associated with this covar:
-        if ( lny > 0 ) then
-          ! storage for local concentration increments, new decomposition:
-          allocate( dx_loc_B(lnx,lny,nlev,Bmat(iB)%ntracer), stat=status )
-          IF_NOT_OK_RETURN(status=1)
-          ! copy:
-          do itracer = 1, Bmat(iB)%ntracer
-            ichm = Bmat(iB)%iChemObs(itracer)
-            dx_loc_B(:,:,:,itracer) = dx_loc(:,:,:,ichm)
-          end do
-        else
-          ! dummy:
-          allocate( dx_loc_B(1,1,1,1), stat=status )
-          IF_NOT_OK_RETURN(status=1)
-        end if
-        
-        ! perform analysis, all processes involved for operations with H;
-        ! only the tracer values assigned to this B matrix are changed:
-        call var3d( cdate, Hops_f_B, Bmat(iB)%Bcovarsqrt, &
-                      dx_loc_B, du_loc, status )
+        ! total number of observations over all domains:
+        call MPIF90_AllReduce( Hops_f_B%nobs, nobs_B, MPI_SUM, MPI_COMM_CALC, status )
         IF_NOT_OK_RETURN(status=1)
+        ! info ...
+        write (gol,'(a,":     number of observations : ",i6)') rname, nobs_B; call goPr
+
+        ! any?
+        if ( nobs_B > 0 ) then
         
-        ! restore:
-        if ( lny > 0 ) then
-          ! copy:
-          do itracer = 1, Bmat(iB)%ntracer
-            ichm = Bmat(iB)%iChemObs(itracer)
-            dx_loc(:,:,:,ichm) = dx_loc_B(:,:,:,itracer)
-          end do
-        end if
-        
-        ! clear:
-        deallocate( dx_loc_B, stat=status )
-        IF_NOT_OK_RETURN(status=1)
-        
+          ! only tracers associated with this covar:
+          if ( lny > 0 ) then
+            ! storage for local concentration increments, new decomposition:
+            allocate( dx_loc_B(lnx,lny,nlev,Bmat(iB)%ntracer), stat=status )
+            IF_NOT_OK_RETURN(status=1)
+            ! copy:
+            do itracer = 1, Bmat(iB)%ntracer
+              ichm = Bmat(iB)%iChemObs(itracer)
+              dx_loc_B(:,:,:,itracer) = dx_loc(:,:,:,ichm)
+            end do
+          else
+            ! dummy:
+            allocate( dx_loc_B(1,1,1,1), stat=status )
+            IF_NOT_OK_RETURN(status=1)
+          end if
+
+          ! perform analysis, all processes involved for operations with H;
+          ! only the tracer values assigned to this B matrix are changed:
+          call var3d( cdate, Hops_f_B, Bmat(iB)%Bcovarsqrt, &
+                        dx_loc_B, du_loc, status )
+          IF_NOT_OK_RETURN(status=1)
+
+          ! restore:
+          if ( lny > 0 ) then
+            ! copy:
+            do itracer = 1, Bmat(iB)%ntracer
+              ichm = Bmat(iB)%iChemObs(itracer)
+              dx_loc(:,:,:,ichm) = dx_loc_B(:,:,:,itracer)
+            end do
+          end if
+
+          ! clear:
+          deallocate( dx_loc_B, stat=status )
+          IF_NOT_OK_RETURN(status=1)
+          
+        end if  ! nobs_B > 0
+
         ! done:
         call Hops_f_B%Done( status )
         IF_NOT_OK_RETURN(status=1)
@@ -1783,9 +1813,11 @@ contains
       print dafmt,'Calling m1qn3 '//trim(damsg)
     endif
 
+#ifdef with_ajs
     ! start timing:
     call GO_Timer_Start( itim_loop, status )
     IF_NOT_OK_RETURN(status=1)
+#endif
 
     ! start timing:
     call Code_timer(tim_before)
@@ -1803,9 +1835,11 @@ contains
       !! info ...
       !write (gol,'(a,": solver step ",i4," ...")') rname, istep; call goPr
     
+#ifdef with_ajs
       ! start timing:
       call GO_Timer_Start( itim_costfunc, status )
       IF_NOT_OK_RETURN(status=1)
+#endif
 
       !! info ...
       !write (gol,'(a,":   evaluate cost function and gradient ...")') rname; call goPr
@@ -1833,9 +1867,11 @@ contains
       !write (gol,'(a,":       state size : ",i0," (local ",i0,")")') rname, nv_hcr_all, nv_hcr; call goPr
       !write (gol,'(a,":       work  size : ",i0," (local ",i0,")")') rname, ndz_all, ndz; call goPr
 
+#ifdef with_ajs
       ! switch timing:
       call GO_Timer_Switch( itim_costfunc, itim_optimizer, status )
       IF_NOT_OK_RETURN(status=1)
+#endif
 
       ! first step ?
       if ( istep == 1 ) then
@@ -1915,9 +1951,11 @@ contains
                   reverse, indic, &
                   l2w_hcr, rzs, dzs )
 
+#ifdef with_ajs
       ! end timing:
       call GO_Timer_End( itim_optimizer, status )
       IF_NOT_OK_RETURN(status=1)
+#endif
 
       !! info ...
       !write (gol,'(a,":     returned reverse : ",i4)') rname, reverse; call goPr
@@ -1991,17 +2029,21 @@ contains
     ! finish timing:
     call Add_2timing(42,tim_after,tim_before,'3DVar: Optimization.')
     
+#ifdef with_ajs
     ! end timing:
     call GO_Timer_End( itim_loop, status )
     IF_NOT_OK_RETURN(status=1)
+#endif
 
     !-----------------------------------------------------------------------
     ! Make a final call to costFunction for converting \chi to \delta x.
     !-----------------------------------------------------------------------
     
+#ifdef with_ajs
     ! start timing:
     call GO_Timer_Start( itim_post, status )
     IF_NOT_OK_RETURN(status=1)
+#endif
 
     ! postprocessing evaluation,
     ! computes final dx and evaluates du :
@@ -2016,9 +2058,11 @@ contains
       print dafmt,'Cost function '//trim(ADJUSTL(damsg))//'% Reduction'
     end if
     
+#ifdef with_ajs
     ! end timing:
     call GO_Timer_End( itim_post, status )
     IF_NOT_OK_RETURN(status=1)
+#endif
 
     !-----------------------------------------------------------------------
     ! done
@@ -2360,9 +2404,11 @@ contains
     ! taking into account the relation chi_arr(i,m,n)=conjg(chi_arr(i,-m,-n))
     !-----------------------------------------------------------------------
 
+#ifdef with_ajs
     ! start timing:
     call GO_Timer_Start( itim_chi2x, status )
     IF_NOT_OK_RETURN(status=1)
+#endif
 
     !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! complex state array
@@ -2439,10 +2485,11 @@ contains
     ! end
     !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+#ifdef with_ajs
     ! end timing:
     call GO_Timer_End( itim_chi2x, status )
     IF_NOT_OK_RETURN(status=1)
-
+#endif
 
     !-----------------------------------------------------------------------
     ! update unobserved species:
@@ -2454,9 +2501,11 @@ contains
       ! info ..
       write (gol,'(a,": posteriori evaluation")') rname; call goPr
 
+#ifdef with_ajs
       ! start timing:
       call GO_Timer_Start( itim_unobs, status )
       IF_NOT_OK_RETURN(status=1)
+#endif
 
       ! add contribution to timing:
       call Add_2timing(44,tim_after,tim_before,'3DVar: Update observed species.')
@@ -2471,9 +2520,11 @@ contains
       call Add_2timing(45,tim_after,tim_before,'3DVar: Update unobserved species.')
 #endif
 
+#ifdef with_ajs
       ! end timing:
       call GO_Timer_End( itim_unobs, status )
       IF_NOT_OK_RETURN(status=1)
+#endif
 
       ! return now ?
       if ( .not. use_chisq ) then
@@ -2536,9 +2587,11 @@ contains
 
     ! postprocessing call ?
     if ( post ) then
+#ifdef with_ajs
       ! start timing:
       call GO_Timer_Start( itim_chi2, status )
       IF_NOT_OK_RETURN(status=1)
+#endif
       ! compute Chhi2 statistics ?
       if ( use_chisq ) then
         write (gol,'("Chi2 not implemented for new B yet")'); call goErr
@@ -2546,9 +2599,11 @@ contains
       end if
       ! add contribution to timing:
       call Add_2timing(46,tim_after,tim_before,'3DVar: CHI^2 evaluation.')
+#ifdef with_ajs
       ! end timing:
       call GO_Timer_Start( itim_chi2, status )
       IF_NOT_OK_RETURN(status=1)
+#endif
       ! clear:
       call my_deallocate( MasterProc, "Postprocessing call to costFunction; computed Chi2 stats, leave" )
       ! ok:
@@ -2589,9 +2644,11 @@ contains
     ! info ..
     write (gol,'(a,":   compute forcing ...")') rname; call goPr
 
+#ifdef with_ajs
     ! start timing:
     call GO_Timer_Start( itim_innov_adj, status )
     IF_NOT_OK_RETURN(status=1)
+#endif
     
     ! local y-slab defined ?
     if ( lnyg > 0 ) then
@@ -2628,10 +2685,11 @@ contains
       end do
     end do
     
+#ifdef with_ajs
     ! end timing:
     call GO_Timer_End( itim_innov_adj, status )
     IF_NOT_OK_RETURN(status=1)
-
+#endif
 
     !-----------------------------------------------------------------------
     ! grad J = grad Jb + grad Jobs
@@ -2639,9 +2697,11 @@ contains
     !   grad Jobs = U^{-+}*H_jac^{T} * O^{-1} * [ H(xb)+H_jac*dx-y ],
     !-----------------------------------------------------------------------
 
+#ifdef with_ajs
     ! start timing:
     call GO_Timer_Start( itim_gradient, status )
     IF_NOT_OK_RETURN(status=1)
+#endif
     
     !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! grad Jb
@@ -2663,9 +2723,11 @@ contains
     ! info ...
     write (gol,'(a,":   evaluate w = B^{H/2} (H^T R^{-1} dy) ...")') rname; call goPr
     
+#ifdef with_ajs
     ! start timing:
     call GO_Timer_Start( itim_x2chi, status )
     IF_NOT_OK_RETURN(status=1)
+#endif
     
     ! transform ...
     call Bsqrt%Forward( itime, HT_OinvDep_loc, chi_hc, status )
@@ -2674,9 +2736,11 @@ contains
     !! info ..
     !write (gol,'(a,":   chi_hc         : ",2es12.4)') rname, minval(abs(chi_hc)), maxval(abs(chi_hc)); call goPr
 
+#ifdef with_ajs
     ! end timing:
     call GO_Timer_End( itim_x2chi, status )
     IF_NOT_OK_RETURN(status=1)
+#endif
     
     ! any local elements?
     if ( nw_local > 0 ) then
@@ -2731,10 +2795,11 @@ contains
     ! end
     !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+#ifdef with_ajs
     ! end timing:
     call GO_Timer_End( itim_gradient, status )
     IF_NOT_OK_RETURN(status=1)
-    
+#endif    
   
     !-----------------------------------------------------------------------
     ! J = Jb + Jobs

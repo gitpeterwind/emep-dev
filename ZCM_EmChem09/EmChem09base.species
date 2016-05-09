@@ -82,7 +82,7 @@ ACETOL,1,CH3COCH2OH,xx,ALD,xx,0,0,0,xx,xx,,"!hydroxy acetone"
 H2,1,H2,xx,xx,xx,0,0,0,xx,xx,,!
 CO,1,CO,xx,xx,xx,0,0,0,xx,xx,,!
 CH4,1,CH4,xx,xx,xx,0,0,0,xx,xx,,!
-SO2,1,SO2,xx,SO2,SO2,0,0,0,xx,SOX,,"!Move to slow?"
+SO2,1,SO2,xx,SO2,SO2,0,0,0,xx,SOX;daObs,,"!Move to slow?"
 *,,,,,,,,,xx,,,
 "* Here we also have particles among the compounds. Specify AOD in groups if this",,,,,,,,,xx,,,
 "* is wanted (or always","it doesn't matter). Same with VBS params for SOA stuff",,,,,,,,xx,,,
