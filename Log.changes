@@ -154,6 +154,21 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+9th May, Peter 3193
+
+uEMEP: integrated the advection uemep part into the regular advection routine.
+Gives idebtical advection treatment instead of approximate as before.
+
+Moved loc_frac to EmisDef
+
+some small loop optimization in advection routine.
+
+Bug in write_klev NetCDF (Ai defined with kmax instead of kmax+1)
+
+modified: Advection_ml.f90 Emissions_ml.f90 EmisDef_ml.f90 Derived_ml.f90 
+My_Derived_ml.f90 NetCDF_ml.f90 GridValues_ml.f90 Log.changes 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 6th May, Alvaro 3187-3192
 
 Derived_ml,My_Derived_ml,Output_hourly,config_Outputs_EMERGENCY.nml:

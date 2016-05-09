@@ -36,7 +36,7 @@ use EmisDef_ml,       only: &
      ,DMS_natso2_month, DMS_natso2_year,O_NH3, O_DMS&
      ,Emis_4D,N_Emis_4D,Found_Emis_4D & !used for EEMEP 
      ,KEMISTOP&
-     ,MAXFEMISLONLAT,N_femis_lonlat
+     ,MAXFEMISLONLAT,N_femis_lonlat,loc_frac
 use EmisGet_ml,       only: &
      EmisSplit &
     ,EmisGetCdf &  ! 
@@ -149,8 +149,6 @@ character(len=125) ::fileName_monthly='NOT_SET'!must be initialized with 'NOT_SE
 character(len=10), private,save ::  incl_monthly(size(emis_inputlist(1)%incl)),&
      excl_monthly(size(emis_inputlist(1)%excl))
 integer, private,save :: nin_monthly, nex_monthly, index_monthly
-!Fraction of pollutants that are produced locally in the gridcell. 
-real, public, allocatable, dimension(:,:,:,:), save ::  loc_frac
 
 contains
 !***********************************************************************

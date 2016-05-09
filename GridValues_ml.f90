@@ -105,6 +105,7 @@ real, public, save,allocatable,  dimension(:) ::  &
                               ! (i.e. full levels in EC nomenclature)
      dA,dB,&               ! A_bnd(k+1)-A_bnd(k) [Pa],B_bnd(k+1)-B_bnd(k) [1]
                               ! P = A + B*PS; eta = A/Pref + B
+     dEta_i,&              !1/deta = 1/(dA/Pref + dB)
      Eta_bnd,Eta_mid,&     ! boundary,midpoint of eta layer 
      sigma_bnd,sigma_mid   ! boundary,midpoint of sigma layer
 
@@ -228,7 +229,7 @@ contains
 
        allocate(A_bnd(KMAX_BND),B_bnd(KMAX_BND))
        allocate(A_mid(KMAX_MID),B_mid(KMAX_MID))
-       allocate(dA(KMAX_MID),dB(KMAX_MID))
+       allocate(dA(KMAX_MID),dB(KMAX_MID),dEta_i(KMAX_MID))
        allocate(sigma_bnd(KMAX_BND),sigma_mid(KMAX_MID))
        allocate(Eta_bnd(KMAX_BND),Eta_mid(KMAX_MID))
 
@@ -965,6 +966,7 @@ contains
        dB(k)=B_bnd(k+1)-B_bnd(k)
        Eta_bnd(k)=A_bnd(k)/Pref+B_bnd(k)
        Eta_mid(k)=A_mid(k)/Pref+B_mid(k)
+       dEta_i(k)=1.0/(dA(k)/Pref+dB(k))
     enddo
     Eta_bnd(KMAX_MID+1)=A_bnd(KMAX_MID+1)/Pref+B_bnd(KMAX_MID+1)
     if(me==0)write(*,*)'External_Levels ',External_Levels_Def

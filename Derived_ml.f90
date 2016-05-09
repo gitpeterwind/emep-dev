@@ -37,9 +37,9 @@ use DerivedFields_ml, only: MAXDEF_DERIV2D, MAXDEF_DERIV3D, &
                             def_2d, def_3d, f_2d, f_3d, d_2d, d_3d
 use EcoSystem_ml,     only: DepEcoSystem, NDEF_ECOSYSTEMS, &
                             EcoSystemFrac,FULL_ECOGRID
-use EmisDef_ml,       only: EMIS_FILE, O_DMS
+use EmisDef_ml,       only: EMIS_FILE, O_DMS, loc_frac
 use EmisGet_ml,       only: nrcemis,iqrc2itot
-use Emissions_ml,     only: SumSnapEmis, SumSplitEmis, loc_frac
+use Emissions_ml,     only: SumSnapEmis, SumSplitEmis
 use GridValues_ml,    only: debug_li, debug_lj, debug_proc, A_mid, B_mid, &
                             dA,dB,xm2, GRIDWIDTH_M, GridArea_m2,xm_i,xm_j,glon,glat
 use Io_Progs_ml,      only: datewrite
@@ -1501,10 +1501,14 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       forall ( i=1:limax, j=1:ljmax )
          !not very elegant...
         d_2d( n, i,j,IOU_INST) = 0.0
-        d_2d( n, i,j,IOU_HOUR) = d_2d( n_Local_Pollutant, i,j,IOU_HOUR)/(d_2d( n_Total_Pollutant, i,j,IOU_HOUR)+1.E-30)
-        d_2d( n, i,j,IOU_DAY) =  d_2d( n_Local_Pollutant, i,j,IOU_DAY)/(d_2d( n_Total_Pollutant, i,j,IOU_DAY)+1.E-30)
-        d_2d( n, i,j,IOU_MON) =  d_2d( n_Local_Pollutant, i,j,IOU_MON)/(d_2d( n_Total_Pollutant, i,j,IOU_MON)+1.E-30)
-        d_2d( n, i,j,IOU_YEAR) =  d_2d( n_Local_Pollutant, i,j,IOU_YEAR)/(d_2d( n_Total_Pollutant, i,j,IOU_YEAR)+1.E-30)
+        d_2d( n, i,j,IOU_HOUR) = &
+        d_2d( n_Local_Pollutant, i,j,IOU_HOUR)/(d_2d( n_Total_Pollutant, i,j,IOU_HOUR)+1.E-30)
+        d_2d( n, i,j,IOU_DAY) =  &
+        d_2d( n_Local_Pollutant, i,j,IOU_DAY)/(d_2d( n_Total_Pollutant, i,j,IOU_DAY)+1.E-30)
+        d_2d( n, i,j,IOU_MON) =  &
+        d_2d( n_Local_Pollutant, i,j,IOU_MON)/(d_2d( n_Total_Pollutant, i,j,IOU_MON)+1.E-30)
+        d_2d( n, i,j,IOU_YEAR) =  &
+        d_2d( n_Local_Pollutant, i,j,IOU_YEAR)/(d_2d( n_Total_Pollutant, i,j,IOU_YEAR)+1.E-30)
       end forall
 
 

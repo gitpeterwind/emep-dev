@@ -305,11 +305,11 @@ subroutine Init_My_Deriv()
     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
   endif
   if(USE_uEMEP)then
-    tag_name(1) = "Local_Fraction"
-    call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
     tag_name(1) = "Local_Pollutant"
     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
     tag_name(1) = "Total_Pollutant"
+    call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
+    tag_name(1) = "Local_Fraction"!NB must be AFTER "Local_Pollutant" and "Total_Pollutant"
     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
     tag_name(1) = "Local_Fraction3D"
 !   call AddArray( tag_name(1:1), wanted_deriv3d, NOT_SET_STRING, errmsg)

@@ -990,7 +990,8 @@ endfunction define_var
 subroutine write_klev(kmax,klev,from_top)
   integer, intent(in) :: kmax,klev(kmax)
   logical, intent(in) :: from_top
-  real :: Am(kmax),Bm(kmax),Ai(kmax+1),Bi(kmax+1)
+  real :: Am(kmax),Bm(kmax)
+  real :: Ai(kmax+1),Bi(kmax+1)
   integer :: k,varID
   if(from_top)then            ! from model top to surface (as model levels)
     do k=1,kmax

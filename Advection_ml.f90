@@ -70,9 +70,9 @@
 !CRM  use ChemSpecs_adv_ml , only : NSPEC_ADV
   use CheckStop_ml,      only : CheckStop,StopAll
   use Convection_ml,     only : convection_pstar,convection_Eta
-  use Emissions_ml,      only : loc_frac
-  use GridValues_ml,     only : GRIDWIDTH_M,xm2,xmd,xm2ji,xmdji, &
-                                xm_i, Pole_Singular,dA,dB,i_fdom,j_fdom,i_local,j_local,Eta_bnd
+  use EmisDef_ml,        only : loc_frac
+  use GridValues_ml,     only : GRIDWIDTH_M,xm2,xmd,xm2ji,xmdji,xm_i, Pole_Singular, &
+                                dA,dB,i_fdom,j_fdom,i_local,j_local,Eta_bnd,dEta_i
   use Io_ml,             only : datewrite
   use ModelConstants_ml, only : KMAX_BND,KMAX_MID,NMET, nstep, nmax, &
                   dt_advec, dt_advec_inv,  PT,Pref, KCHEMTOP, NPROCX,NPROCY,NPROC, &
@@ -256,26 +256,27 @@
     real xntop(NSPEC_ADV,LIMAX,LJMAX)
     real xnw(3*NSPEC_ADV),xne(3*NSPEC_ADV)
     real xnn(3*NSPEC_ADV),xns(3*NSPEC_ADV)
-!    real ps3d(LIMAX,LJMAX,KMAX_MID)
     real dpdeta(LIMAX,LJMAX,KMAX_MID),psi
     real psw(3),pse(3)
     real psn(3),pss(3)
     real ds3(2:KMAX_MID),ds4(2:KMAX_MID)
-
     real xcmax(KMAX_MID,GJMAX),ycmax(KMAX_MID,GIMAX),scmax,sdcmax
     real dt_smax,dt_s,div
     real dt_x(LJMAX,KMAX_MID),dt_y(LIMAX,KMAX_MID)
     real dt_xmax(LJMAX,KMAX_MID),dt_ymax(LIMAX,KMAX_MID)
     integer niterx(LJMAX,KMAX_MID),nitery(LIMAX,KMAX_MID)
-
     integer niterxys,niters,nxy,ndiff
     integer iterxys,iters,iterx,itery,nxx,nxxmin,nyy
-    logical,save :: firstcall = .true.
-
     integer ::isum,isumtot,iproc
     real :: xn_advjktot(NSPEC_ADV),xn_advjk(NSPEC_ADV),rfac
     real :: dpdeta0,mindpdeta,xxdg,fac1
-    real ::xnold,xn_k_old,xn_k(kmax_mid),x
+    real :: xnold,xn_k_old,xn_k(kmax_mid),xn,x,xx
+    real :: fluxx(NSPEC_ADV,-1:LIMAX+1)
+    real :: fluxy(NSPEC_ADV,-1:LJMAX+1)
+    real :: fluxk(NSPEC_ADV,KMAX_MID)
+    real :: uEMEPfac(KMAX_MID),f_in,f_out
+    logical,save :: firstcall = .true.
+
 
     !NITERXMAX=max value of iterations accepted for fourth order Bott scheme.
     !If the calculated number of iterations (determined from Courant number)
@@ -284,10 +285,16 @@
     !This case can arises where there is a singularity close to the
     !poles in long-lat coordinates.
     integer,parameter :: NITERXMAX=10
+    integer,parameter :: KMIN_uemep=2
 
     xxdg=GRIDWIDTH_M*GRIDWIDTH_M/GRAV !constant used in loops
 
-    if(USE_uEMEP)call uemep_advec
+    if(USE_uEMEP)then
+       ip=1
+       do k = 1,KMAX_MID
+          uEMEPfac(k)=(dA(k)/Pref+dB(k))/ATWAIR/GRAV*1.0E6
+       enddo
+    endif
 
     call Code_timer(tim_before)
 
@@ -311,7 +318,7 @@
     do k = 1,KMAX_MID
        do j = 1,ljmax
           do i = 1,limax
-             dpdeta(i,j,k) = (dA(k)+dB(k)*ps(i,j,1))/(dA(k)/Pref+dB(k))
+             dpdeta(i,j,k) = (dA(k)+dB(k)*ps(i,j,1))*dEta_i(k)
              xn_adv(:,i,j,k) = xn_adv(:,i,j,k)*dpdeta(i,j,k)
           end do
        end do
@@ -476,20 +483,37 @@
                            ,xn_adv(1,1,j,k),xnw,xne               &
                            ,dpdeta(1,j,k),psw,pse                   &
                            ,xm2(0,j),xmd(0,j)                     &
-                           ,dth,fac1)!carea(k))
+                           ,dth,fac1,fluxx)
+
                       do i = li0,li1
-                         dpdeta0=(dA(k)+dB(k)*ps(i,j,1))/(dA(k)/Pref+dB(k))
+                         if(USE_uEMEP)then
+                            xn=0.0
+                            x=0.0
+                            xx=0.0
+                            do iix=1,uEMEP%Nix
+                               ix=uEMEP%ix(iix)
+                               xn=xn+xn_adv(ix,i,j,k)*species_adv(ix)%molwt
+                               x=x-xm2(i,j)*fluxx(ix,i)*species_adv(ix)%molwt
+                               xx=xx+xm2(i,j)*fluxx(ix,i-1)*species_adv(ix)%molwt
+                            enddo
+                            xn=xn!*uEMEPfac(k)
+                            x=x!*uEMEPfac(k)
+                            xx=xx!*uEMEPfac(k)
+                            xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. outgoing flux 
+                            f_in=max(0.0,x)+max(0.0,xx)!positive part. incoming flux
+                            loc_frac(i,j,k,ip)=(loc_frac(i,j,k,ip)*xn)/(xn+f_in+1.e-20)
+                         endif
+
+                         dpdeta0=(dA(k)+dB(k)*ps(i,j,1))*dEta_i(k)
                          psi = dpdeta0/max(dpdeta(i,j,k),1.0)
                          xn_adv(:,i,j,k) = xn_adv(:,i,j,k)*psi
                          dpdeta(i,j,k) = dpdeta0
                       enddo
-
                    enddo !iter
 
                 endif
              enddo !j
              !          enddo !k horizontal (x) advection
-
 
              call Add_2timing(21,tim_after,tim_before,"advecdiff:advx")
 
@@ -510,60 +534,90 @@
                         ,xn_adv(1,i,1,k),xns,xnn                   &
                         ,dpdeta(i,1,k),pss,psn                       &
                         ,xm2ji(0,i),xmdji(0,i)                     &
-                        ,dth,fac1)!carea(k))
+                        ,dth,fac1,fluxy)
+
                    do j = lj0,lj1
-                      dpdeta0=(dA(k)+dB(k)*ps(i,j,1))/(dA(k)/Pref+dB(k))
+                      if(USE_uEMEP)then
+                         xn=0.0
+                         x=0.0
+                         xx=0.0
+                         do iix=1,uEMEP%Nix
+                            ix=uEMEP%ix(iix)
+                            xn=xn+xn_adv(ix,i,j,k)*species_adv(ix)%molwt
+                            x=x-xm2(i,j)*fluxy(ix,j)*species_adv(ix)%molwt
+                            xx=xx+xm2(i,j)*fluxy(ix,j-1)*species_adv(ix)%molwt
+                         enddo
+                         xn=xn!*uEMEPfac(k)
+                         x=x!*uEMEPfac(k)
+                         xx=xx!*uEMEPfac(k)
+                         xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. outgoing flux 
+                         f_in=max(0.0,x)+max(0.0,xx)!positive part. incoming flux
+                         loc_frac(i,j,k,ip)=(loc_frac(i,j,k,ip)*xn)/(xn+f_in+1.e-20)
+                      endif
+
+                      dpdeta0=(dA(k)+dB(k)*ps(i,j,1))*dEta_i(k)
                       psi = dpdeta0/max(dpdeta(i,j,k),1.0)
                       xn_adv(:,i,j,k) = xn_adv(:,i,j,k)*psi
                       dpdeta(i,j,k) = dpdeta0
                    enddo
-
                 enddo !iter
+
              enddo !i
           enddo !k horizontal (y) advection
 
-
           call Add_2timing(23,tim_after,tim_before,"advecdiff:advy")
-
-
 
           do iters=1,niters
 
-             ! perform only vertical advection
+             ! perform vertical advection
              do j = lj0,lj1
                 do i = li0,li1
-!                   call adv_vert_zero(xn_adv(1,i,j,1),dpdeta(i,j,1),Etadot(i,j,1,1),dt_s)
-!                   call adv_vert_fourth(xn_adv(1,i,j,1),dpdeta(i,j,1),Etadot(i,j,1,1),dt_s)
-                   call advvk(xn_adv(1,i,j,1),dpdeta(i,j,1),Etadot(i,j,1,1),dt_s)
+                   !                   call adv_vert_zero(xn_adv(1,i,j,1),dpdeta(i,j,1),Etadot(i,j,1,1),dt_s)
+                   !                   call adv_vert_fourth(xn_adv(1,i,j,1),dpdeta(i,j,1),Etadot(i,j,1,1),dt_s)
+                   call advvk(xn_adv(1,i,j,1),dpdeta(i,j,1),Etadot(i,j,1,1),dt_s,fluxk)
 
-                enddo
-             enddo
-             if(iters<niters .or. iterxys < niterxys)then
-                do k=1,KMAX_MID
-                   do j = lj0,lj1
-                      do i = li0,li1
-                         dpdeta0=(dA(k)+dB(k)*ps(i,j,1))/(dA(k)/Pref+dB(k))
+                   if(USE_uEMEP)then
+                      do k=KMIN_uemep,KMAX_MID
+                         xn=0.0
+                         x=0.0
+                         xx=0.0
+                         do iix=1,uEMEP%Nix
+                            ix=uEMEP%ix(iix)
+                            xn=xn+xn_adv(ix,i,j,k)*species_adv(ix)%molwt
+                            if(k<KMAX_MID)x=x-dhs1i(k+1)*fluxk(ix,k+1)*species_adv(ix)%molwt
+                            xx=xx+dhs1i(k+1)*fluxk(ix,k)*species_adv(ix)%molwt
+                         enddo
+                         xn=xn!*uEMEPfac(k)
+                         x=x!*uEMEPfac(k)
+                         xx=xx!*uEMEPfac(k)
+                         xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. outgoing flux 
+                         f_in=max(0.0,x)+max(0.0,xx)!positive part. incoming flux
+                         loc_frac(i,j,k,ip)=(loc_frac(i,j,k,ip)*xn)/(xn+f_in+1.e-20)
+                      enddo
+                   endif
+
+                   if(iters<niters .or. iterxys < niterxys)then
+                      do k=1,KMAX_MID
+                         dpdeta0=(dA(k)+dB(k)*ps(i,j,1))*dEta_i(k)
                          psi = dpdeta0/max(dpdeta(i,j,k),1.0)
                          xn_adv(:,i,j,k) = xn_adv(:,i,j,k)*psi
                          dpdeta(i,j,k) = dpdeta0
                       enddo
-                   enddo
-                enddo
-             else
-                !advection finished
-                do k=1,KMAX_MID
-                   do j = lj0,lj1
-                      do i = li0,li1
+                   else
+                      !advection finished for this i,j
+                      do k=1,KMAX_MID
                          psi =1.0/max(dpdeta(i,j,k),1.0)
                          xn_adv(:,i,j,k) = xn_adv(:,i,j,k)*psi
                       enddo
-                   enddo
+                   endif
                 enddo
-             endif
+             enddo
+
           enddo ! vertical (s) advection
 
 
           call Add_2timing(24,tim_after,tim_before,"advecdiff:advvk")
+
 
        else  !start a yxs sequence
 
@@ -586,20 +640,35 @@
                         ,xn_adv(1,i,1,k),xns,xnn                  &
                         ,dpdeta(i,1,k),pss,psn                      &
                         ,xm2ji(0,i),xmdji(0,i)                    &
-                        ,dth,fac1)!carea(k))
+                        ,dth,fac1,fluxy)
 
                    do j = lj0,lj1
-                      dpdeta0=(dA(k)+dB(k)*ps(i,j,1))/(dA(k)/Pref+dB(k))
+                      if(USE_uEMEP)then
+                         xn=0.0
+                         x=0.0
+                         xx=0.0
+                         do iix=1,uEMEP%Nix
+                            ix=uEMEP%ix(iix)
+                            xn=xn+xn_adv(ix,i,j,k)*species_adv(ix)%molwt
+                            x=x-xm2(i,j)*fluxy(ix,j)*species_adv(ix)%molwt
+                            xx=xx+xm2(i,j)*fluxy(ix,j-1)*species_adv(ix)%molwt
+                         enddo
+                         xn=xn!*uEMEPfac(k)
+                         x=x!*uEMEPfac(k)
+                         xx=xx!*uEMEPfac(k)
+                         xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. outgoing flux 
+                         f_in=max(0.0,x)+max(0.0,xx)!positive part. incoming flux
+                         loc_frac(i,j,k,ip)=(loc_frac(i,j,k,ip)*xn)/(xn+f_in+1.e-20)
+                      endif
+
+                      dpdeta0=(dA(k)+dB(k)*ps(i,j,1))*dEta_i(k)
                       psi = dpdeta0/max(dpdeta(i,j,k),1.0)
                       xn_adv(:,i,j,k) = xn_adv(:,i,j,k)*psi
                       dpdeta(i,j,k) = dpdeta0
                    enddo
-
                 enddo !iter
              enddo !i
              !         enddo !k horizontal (y) advection
-
- 
 
              call Add_2timing(23,tim_after,tim_before,"advecdiff:preadvy,advy")
 
@@ -621,57 +690,86 @@
                            ,xn_adv(1,1,j,k),xnw,xne               &
                            ,dpdeta(1,j,k),psw,pse                   &
                            ,xm2(0,j),xmd(0,j)                     &
-                           ,dth,fac1)!carea(k))
+                           ,dth,fac1,fluxx)
 
                       do i = li0,li1
-                         dpdeta0=(dA(k)+dB(k)*ps(i,j,1))/(dA(k)/Pref+dB(k))
+                         if(USE_uEMEP)then
+                            xn=0.0
+                            x=0.0
+                            xx=0.0
+                            do iix=1,uEMEP%Nix
+                               ix=uEMEP%ix(iix)
+                               xn=xn+xn_adv(ix,i,j,k)*species_adv(ix)%molwt
+                               x=x-xm2(i,j)*fluxx(ix,i)*species_adv(ix)%molwt
+                               xx=xx+xm2(i,j)*fluxx(ix,i-1)*species_adv(ix)%molwt
+                            enddo
+                            xn=xn!*uEMEPfac(k)
+                            x=x!*uEMEPfac(k)
+                            xx=xx!*uEMEPfac(k)
+                            xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. outgoing flux 
+                            f_in=max(0.0,x)+max(0.0,xx)!positive part. incoming flux
+                            loc_frac(i,j,k,ip)=(loc_frac(i,j,k,ip)*xn)/(xn+f_in+1.e-20)
+                         endif
+
+                         dpdeta0=(dA(k)+dB(k)*ps(i,j,1))*dEta_i(k)
                          psi = dpdeta0/max(dpdeta(i,j,k),1.0)
                          xn_adv(:,i,j,k) = xn_adv(:,i,j,k)*psi
                          dpdeta(i,j,k) = dpdeta0
                       enddo
-
                    enddo !iter
                 endif
+
              enddo !j
           enddo !k horizontal (x) advection
 
           call Add_2timing(21,tim_after,tim_before,"advecdiff:preadvx,advx") 
 
-
           do iters=1,niters
 
-             ! perform only vertical advection
+             ! perform vertical advection
              do j = lj0,lj1
                 do i = li0,li1
-!                   call adv_vert_zero(xn_adv(1,i,j,1),dpdeta(i,j,1),Etadot(i,j,1,1),dt_s)
-!                   call adv_vert_fourth(xn_adv(1,i,j,1),dpdeta(i,j,1),Etadot(i,j,1,1),dt_s)
-                   call advvk(xn_adv(1,i,j,1),dpdeta(i,j,1),Etadot(i,j,1,1),dt_s)
-                enddo
-             enddo
-             if(iters<niters .or. iterxys < niterxys)then
-                do k=1,KMAX_MID
-                   do j = lj0,lj1
-                      do i = li0,li1
-                         dpdeta0=(dA(k)+dB(k)*ps(i,j,1))/(dA(k)/Pref+dB(k))
+                   !                   call adv_vert_zero(xn_adv(1,i,j,1),dpdeta(i,j,1),Etadot(i,j,1,1),dt_s)
+                   !                   call adv_vert_fourth(xn_adv(1,i,j,1),dpdeta(i,j,1),Etadot(i,j,1,1),dt_s)
+                   call advvk(xn_adv(1,i,j,1),dpdeta(i,j,1),Etadot(i,j,1,1),dt_s,fluxk)
+
+                   if(USE_uEMEP)then
+                      do k=KMIN_uemep,KMAX_MID
+                         xn=0.0
+                         x=0.0
+                         xx=0.0
+                         do iix=1,uEMEP%Nix
+                            ix=uEMEP%ix(iix)
+                            xn=xn+xn_adv(ix,i,j,k)*species_adv(ix)%molwt
+                            if(k<KMAX_MID)x=x-dhs1i(k+1)*fluxk(ix,k+1)*species_adv(ix)%molwt
+                            xx=xx+dhs1i(k+1)*fluxk(ix,k)*species_adv(ix)%molwt
+                         enddo
+                         xn=xn!*uEMEPfac(k)
+                         x=x!*uEMEPfac(k)
+                         xx=xx!*uEMEPfac(k)
+                         xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. outgoing flux 
+                         f_in=max(0.0,x)+max(0.0,xx)!positive part. incoming flux
+                         loc_frac(i,j,k,ip)=(loc_frac(i,j,k,ip)*xn)/(xn+f_in+1.e-20)
+                      enddo
+                   endif
+
+                   if(iters<niters .or. iterxys < niterxys)then
+                      do k=1,KMAX_MID
+                         dpdeta0=(dA(k)+dB(k)*ps(i,j,1))*dEta_i(k)
                          psi = dpdeta0/max(dpdeta(i,j,k),1.0)
                          xn_adv(:,i,j,k) = xn_adv(:,i,j,k)*psi
                          dpdeta(i,j,k) = dpdeta0
                       enddo
-                   enddo
-                enddo
-             else
-                !advection finished
-                do k=1,KMAX_MID
-                   do j = lj0,lj1
-                      do i = li0,li1
+                   else
+                      !advection finished for this i,j
+                      do k=1,KMAX_MID
                          psi =1.0/max(dpdeta(i,j,k),1.0)
                          xn_adv(:,i,j,k) = xn_adv(:,i,j,k)*psi
                       enddo
-                   enddo
+                   endif
                 enddo
-             endif
+             enddo
           enddo ! vertical (s) advection
-
 
           call Add_2timing(24,tim_after,tim_before,"advecdiff:advvk")
 
@@ -686,7 +784,7 @@
        do k=1,KMAX_MID
           do j = lj0,lj1
              do i = li0,li1
-                dpdeta(i,j,k) = (dA(k)+dB(k)*ps(i,j,1))/(dA(k)/Pref+dB(k))
+                dpdeta(i,j,k) = (dA(k)+dB(k)*ps(i,j,1))*dEta_i(k)
                 xn_adv(:,i,j,k) = xn_adv(:,i,j,k)*dpdeta(i,j,k)
              enddo
           enddo
@@ -775,13 +873,12 @@
     !      sum = sum + xn_adv(1,4,4,k)/dhs1i(k+1)
     !   enddo
     !   write(*,*)'sum before diffusion ',me,sum
+
     do j = lj0,lj1
        do i = li0,li1
-          if(USE_uEMEP)then
 
-             ip=1
+          if(USE_uEMEP)then
              xn_k_old=0.0
-             
              do k = 1,KMAX_MID
                 xn_k(k)=0.0
                 do iix=1,uEMEP%Nix
@@ -789,15 +886,15 @@
                    !assumes mixing ratios units, but weight by mass
                    xn_k(k)=xn_k(k)+xn_adv(ix,i,j,k)*species_adv(ix)%molwt
                 enddo
-                if(k==KMAX_MID)xn_k_old=xn_k(k)!save for udiff
                 xn_k(k)=xn_k(k)*loc_frac(i,j,k,ip)
              enddo
-             
+             xn_k_old=xn_k(KMAX_MID)!save for udiff
              call vertdiff_1d(xn_k,EtaKz(i,j,1,1),ds3,ds4,ndiff)!does the same as vertdiffn, but for one component
           endif
 
+!________ vertical diffusion ______
           call vertdiffn(xn_adv(1,i,j,1),EtaKz(i,j,1,1),ds3,ds4,ndiff)
-
+!________
 
           if(USE_uEMEP)then
              do k = 2,KMAX_MID
@@ -808,7 +905,7 @@
                    x=x+xn_adv(ix,i,j,k)*species_adv(ix)%molwt
                 enddo
                 loc_frac(i,j,k,ip)=xn_k(k)/(x+1.E-30)
-!                if(k==KMAX_MID)udiff(i,j)=(x-xn_k_old)*(dA(kmax_mid)+dB(kmax_mid)*ps(i,j,1))/ATWAIR/GRAV*1.0E6
+                !if(k==KMAX_MID)udiff(i,j)=(x-xn_k_old)*(dA(kmax_mid)+dB(kmax_mid)*ps(i,j,1))/ATWAIR/GRAV*1.0E6
              enddo
           endif
 
@@ -822,40 +919,39 @@
     !   write(*,*)'sum after diffusion ',me,sum
     call Add_2timing(22,tim_after,tim_before,"advecdiff:diffusion")
 
-
     if(lj0.ne.1)then
        do k=KCHEMTOP,KMAX_MID
           do i = 1,limax
-             xn_adv(:,i,1,k) = xn_adv(:,i,1,k)/((dA(k)+dB(k)*ps(i,1,1))/(dA(k)/Pref+dB(k)))
+             xn_adv(:,i,1,k) = xn_adv(:,i,1,k)/((dA(k)+dB(k)*ps(i,1,1))*dEta_i(k))
           enddo
        enddo
     endif
     if(li0.ne.1)then
        do k=KCHEMTOP,KMAX_MID
           do j=lj0,lj1
-             xn_adv(:,1,j,k) = xn_adv(:,1,j,k)/((dA(k)+dB(k)*ps(1,j,1))/(dA(k)/Pref+dB(k)))
+             xn_adv(:,1,j,k) = xn_adv(:,1,j,k)/((dA(k)+dB(k)*ps(1,j,1))*dEta_i(k))
           enddo
        enddo
     endif
     if(li1.ne.limax)then
        do k=KCHEMTOP,KMAX_MID
           do j=lj0,lj1
-             xn_adv(:,limax,j,k) = xn_adv(:,limax,j,k)/((dA(k)+dB(k)*ps(limax,j,1))/(dA(k)/Pref+dB(k)))
+             xn_adv(:,limax,j,k) = xn_adv(:,limax,j,k)/((dA(k)+dB(k)*ps(limax,j,1))*dEta_i(k))
           enddo
        enddo
     endif
     if(lj1.ne.ljmax)then
        do k=KCHEMTOP,KMAX_MID
           do i = 1,limax
-             xn_adv(:,i,ljmax,k) = xn_adv(:,i,ljmax,k)/((dA(k)+dB(k)*ps(i,ljmax,1))/(dA(k)/Pref+dB(k)))
+             xn_adv(:,i,ljmax,k) = xn_adv(:,i,ljmax,k)/((dA(k)+dB(k)*ps(i,ljmax,1))*dEta_i(k))
           enddo
        enddo
     endif
 
     if(KCHEMTOP==2)then
 
-       !pw since the xn_adv are changed it corresponds to a flux in or
-       !   out of the system:
+       ! since the xn_adv are changed it corresponds to a flux in or
+       !  out of the system:
        do i = li0,li1
           do j = lj0,lj1
              where(xn_adv(:,i,j,1) .gt. xntop(:,i,j))
@@ -1139,7 +1235,7 @@
 
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-  subroutine advvk(xn_adv,ps3d,sdot,dt_s)
+  subroutine advvk(xn_adv,ps3d,sdot,dt_s,fluxk)
 
 !     executes advection with a. bott's integreated flux-form
 !     using 2'nd order polynomial in the vertical.
@@ -1154,9 +1250,10 @@
 !    input+output
     real ,intent(inout):: xn_adv(NSPEC_ADV,0:LIMAX*LJMAX*KMAX_MID-1)
     real ,intent(inout):: ps3d(0:LIMAX*LJMAX*KMAX_MID-1)
+    real ,intent(inout)::fluxk(NSPEC_ADV,KMAX_MID)
 
 !    local
-    real fluxk(NSPEC_ADV,KMAX_MID),fluxps(KMAX_MID),fc(KMAX_MID)
+    real fluxps(KMAX_MID),fc(KMAX_MID)
 
 !    local
     integer  k, n1k,k1
@@ -1577,7 +1674,7 @@
       ,xn_adv,xnbeg,xnend                  &
       ,ps3d,psbeg,psend                    &
       ,xm2loc,xmdloc                       &
-      ,dth,fac1)
+      ,dth,fac1,flux)
 
 !     executes advection with a.bott's integrated flux method using
 !     4'th order polynomials in the y-direction.
@@ -1602,6 +1699,7 @@
 !    input+output
     real ,intent(inout)::xn_adv(NSPEC_ADV,LIMAX)
     real ,intent(inout)::ps3d(LIMAX)
+    real,intent(out) :: flux(NSPEC_ADV,-1:LIMAX+1)
 
 !      output fluxin,fluxout
 
@@ -1615,7 +1713,6 @@
     real y0,y1,y2,y3
     real zzfc(5,-1:LIMAX+1)
     real fc(-1:LIMAX+1)
-    real flux(NSPEC_ADV,-1:LIMAX+1)
     real fluxps(-1:LIMAX+1)
     real hel1(NSPEC_ADV),hel2(NSPEC_ADV)
     real hel1ps,hel2ps
@@ -2124,7 +2221,7 @@
       ,xn_adv,xnbeg,xnend                      &
       ,ps3d,psbeg,psend                        &
       ,xm2loc,xmdloc                           &
-      ,dth,fac1)
+      ,dth,fac1,flux)
 
 !     executes advection with a.bott's integrated flux method using
 !     4'th order polynomials in the y-direction.
@@ -2150,6 +2247,7 @@
 !    input+output
     real ,intent(inout)::xn_adv(NSPEC_ADV,LIMAX:LIMAX*LJMAX)
     real ,intent(inout)::ps3d(LIMAX:LIMAX*LJMAX)
+    real,intent(out):: flux(NSPEC_ADV,-1:LJMAX+1)
 
 !      output fluxin,fluxout
 
@@ -2163,7 +2261,6 @@
     real y0,y1,y2,y3
     real zzfc(5,-1:LJMAX+1)
     real fc(-1:LJMAX+1)
-    real flux(NSPEC_ADV,-1:LJMAX+1)
     real fluxps(-1:LJMAX+1)
     real hel1(NSPEC_ADV),hel2(NSPEC_ADV)
     real hel1ps,hel2ps
@@ -3734,136 +3831,5 @@
     endif
 
   end subroutine adv_vert_fourth
-
-  subroutine uemep_advec
-    integer ::i,j,k,ix,iix,ip
-    real::dt_uemep, f_in,xtot,C1,C2,C3,C4,C5,C6
-    real::xn(0:limax+1,0:ljmax+1,KMAX_MID)
-    real::esnd(ljmax,KMAX_MID),wsnd(ljmax,KMAX_MID),ssnd(limax,KMAX_MID),nsnd(limax,KMAX_MID)
-
-    dt_uemep=dt_advec
-    ip=1
-
-    do k=1,kmax_mid
-       do j = 1,ljmax
-          do i = 1,limax
-             xn(i,j,k)=0.0
-             do iix=1,uEMEP%Nix
-                ix=uEMEP%ix(iix)
-                xn(i,j,k)=xn(i,j,k)+xn_adv(ix,i,j,k)!assumes mixing ratios units
-             enddo
-          enddo
-       enddo
-    enddo
-    !extend the i or j index to 0 and lmax + 1
-    !Note: the 4 diagonal cells (0,lmax+1) are not set (but not used either)
-    if (neighbor(EAST) .ne. NOPROC) then
-       esnd(1:ljmax,:) = xn(limax,1:ljmax,:)
-       CALL MPI_ISEND( esnd, 8*LJMAX*KMAX_MID, MPI_BYTE,  &
-            neighbor(EAST), MSG_WEST2, MPI_COMM_CALC, request_e, IERROR)
-    endif
-    if (neighbor(WEST) .ne. NOPROC) then
-       wsnd(1:ljmax,:) = xn(1,1:ljmax,:)
-       CALL MPI_ISEND( wsnd, 8*LJMAX*KMAX_MID, MPI_BYTE,  &
-            neighbor(WEST), MSG_EAST2, MPI_COMM_CALC, request_w, IERROR)
-    endif
-    if (neighbor(NORTH) .ne. NOPROC) then
-       nsnd(1:limax,:) =xn(1:limax,ljmax,:)
-       CALL MPI_ISEND( nsnd , 8*LIMAX*KMAX_MID, MPI_BYTE,  &
-            neighbor(NORTH), MSG_SOUTH2, MPI_COMM_CALC, request_n, IERROR)
-    endif
-    if (neighbor(SOUTH) .ne. NOPROC) then
-       ssnd(1:limax,:) =xn(1:limax,1,:)
-       CALL MPI_ISEND( ssnd , 8*LIMAX*KMAX_MID, MPI_BYTE,  &
-            neighbor(SOUTH), MSG_NORTH2, MPI_COMM_CALC, request_s, IERROR)
-    endif
-
-
-    if (neighbor(WEST) .ne. NOPROC) then
-       CALL MPI_RECV( xn(0,1:ljmax,:), 8*LJMAX*KMAX_MID, MPI_BYTE, &
-            neighbor(WEST), MSG_WEST2, MPI_COMM_CALC, MPISTATUS, IERROR)
-    else
-       xn(0,:,:) = xn(1,:,:)
-    endif
-    if (neighbor(EAST) .ne. NOPROC) then
-       CALL MPI_RECV( xn(limax+1,1:ljmax,:), 8*LJMAX*KMAX_MID, MPI_BYTE, &
-            neighbor(EAST), MSG_EAST2, MPI_COMM_CALC, MPISTATUS, IERROR)
-    else
-       xn(limax+1,:,:) = xn(limax,:,:)
-    endif
-
-    if (neighbor(SOUTH) .ne. NOPROC) then
-       CALL MPI_RECV(xn(1:limax,0,:)  , 8*LIMAX*KMAX_MID, MPI_BYTE,  &
-            neighbor(SOUTH), MSG_SOUTH2, MPI_COMM_CALC, MPISTATUS, IERROR)
-    else
-       xn(:,0,:)=xn(:,1,:)
-    endif
-    if (neighbor(NORTH) .ne. NOPROC) then
-       CALL MPI_RECV(xn(1:limax,ljmax+1,:)  , 8*LIMAX*KMAX_MID, MPI_BYTE,  &
-            neighbor(NORTH), MSG_NORTH2, MPI_COMM_CALC, MPISTATUS, IERROR)
-    else
-       xn(:,ljmax+1,:)=xn(:,ljmax,:)
-    endif
- 
-    if(neighbor(EAST) .ne. NOPROC) CALL MPI_WAIT(request_e, MPISTATUS, IERROR)
-    if(neighbor(WEST) .ne. NOPROC) CALL MPI_WAIT(request_w, MPISTATUS, IERROR)
-    if(neighbor(NORTH) .ne. NOPROC)CALL MPI_WAIT(request_n, MPISTATUS, IERROR)
-    if(neighbor(SOUTH) .ne. NOPROC)CALL MPI_WAIT(request_s, MPISTATUS, IERROR)
-
-     do j = 1,ljmax
-        do i = 1,limax
-           do k=2,kmax_mid
-              
-              !horizontal advection
-              !the flux out of the cell does not change loc_frac, but it does change xtot
-              f_in=0.0!flux into the gridcell
-              !Courant numbers. Positive means entering the gridcell
-              C1=u_xmj(i-1,j,k,1)/gridwidth_m*xm2(i,j)*dt_uemep
-              C2=-u_xmj(i,j,k,1)/gridwidth_m*xm2(i,j)*dt_uemep
-              C3=v_xmi(i,j-1,k,1)/gridwidth_m*xm2(i,j)*dt_uemep
-              C4=-v_xmi(i,j,k,1)/gridwidth_m*xm2(i,j)*dt_uemep
-              C5=Etadot(i,j,k,1)/(dA(k)/Pref+dB(k))*dt_uemep
-              C6=-Etadot(i,j,k+1,1)/(dA(k)/Pref+dB(k))*dt_uemep
-
-              if(C1>0.0)then
-                 f_in=C1*xn(i-1,j,k)
-                 xtot=(1.0-min(1.0,C1))*xn(i,j,k)
-                 loc_frac(i,j,k,ip)=(loc_frac(i,j,k,ip)*xtot)/(xtot+f_in+1.e-20)
-              endif
-              if(C2>0.0)then
-                 f_in=C2*xn(i+1,j,k)
-                 xtot=(1.0-min(1.0,C2))*xn(i,j,k)
-                 loc_frac(i,j,k,ip)=(loc_frac(i,j,k,ip)*xtot)/(xtot+f_in+1.e-20)
-              endif
-              if(C3>0.0)then
-                 f_in=C3*xn(i,j-1,k)
-                 xtot=(1.0-min(1.0,C3))*xn(i,j,k)
-                 loc_frac(i,j,k,ip)=(loc_frac(i,j,k,ip)*xtot)/(xtot+f_in+1.e-20)
-              endif
-              if(C4>0.0)then
-                 f_in=C4*xn(i,j+1,k)
-                 xtot=(1.0-min(1.0,C4))*xn(i,j,k)
-                 loc_frac(i,j,k,ip)=(loc_frac(i,j,k,ip)*xtot)/(xtot+f_in+1.e-20)
-              endif
-              if(C5>0.0)then
-                 !entering from above
-                 f_in=C5*xn(i,j,k-1)*(dA(k)/Pref+dB(k))/(dA(k-1)/Pref+dB(k-1))*(dA(k-1)+dB(k-1)*ps(i,j,1))/(dA(k)+dB(k)*ps(i,j,1))
-                 xtot=(1.0-min(1.0,C5))*xn(i,j,k)
-                 loc_frac(i,j,k,ip)=(loc_frac(i,j,k,ip)*xtot)/(xtot+f_in+1.e-20)
-              endif
-              if(C6>0.0.and.k<KMAX_MID)then
-                 !entering from below
-                 f_in=C6*xn(i,j,k+1)*(dA(k)/Pref+dB(k))/(dA(k+1)/Pref+dB(k+1))*(dA(k+1)+dB(k+1)*ps(i,j,1))/(dA(k)+dB(k)*ps(i,j,1))
-                 xtot=(1.0-min(1.0,C6))*xn(i,j,k)
-                 loc_frac(i,j,k,ip)=(loc_frac(i,j,k,ip)*xtot)/(xtot+f_in+1.e-20)
-              endif
-
-           enddo!k
-
-        enddo ! i
-     enddo ! j
-
-
-  end subroutine uemep_advec
 
 end module Advection_ml
