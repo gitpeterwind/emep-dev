@@ -118,7 +118,7 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
- ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3197","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
+ ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3198","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
 #($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3074","EmChem09soa","EMEPGLOB","EMEPSTD","GLOBAL",0);
 
 my %BENCHMARK;
@@ -451,7 +451,7 @@ given($GRID){
 #$emisdir = $TNOemisDir if $EUCAARI;
 
 given($GRID){
-  when("GEMS025","MACC02","MACC14"){ $pm_emisdir = $emisdir; }
+  when(["GEMS025","MACC02","MACC14"]){ $pm_emisdir = $emisdir; }
   when(/TNO/)    { $pm_emisdir = $emisdir; }
   when("GLOBAL") { $pm_emisdir = $emisdir; }
   default {
@@ -468,8 +468,8 @@ if (%BENCHMARK){
 }
 print "EMISDIR $emisdir \n";
 
-die "Missing emisdir='$emisdir' for GRID='$GRID'\n"       unless (-d $emisdir or $emisdir="none");
-die "Missing pm_emisdir='$pm_emisdir' for GRID='$GRID'\n" unless (-d $pm_emisdir or $pm_emisdir="none");
+die "Missing emisdir='$emisdir' for GRID='$GRID'\n"       unless (-d $emisdir or $emisdir eq "none");
+die "Missing pm_emisdir='$pm_emisdir' for GRID='$GRID'\n" unless (-d $pm_emisdir or $pm_emisdir eq "none");
 
 
 #Dave, reset to Emission_Trends for Chem project, Oct 18th
