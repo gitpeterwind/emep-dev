@@ -118,7 +118,7 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
- ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3185","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
+ ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3197","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
 #($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3074","EmChem09soa","EMEPGLOB","EMEPSTD","GLOBAL",0);
 
 my %BENCHMARK;
@@ -794,11 +794,11 @@ foreach my $scenflag ( @runs ) {
       $dir = "$HOMEROOT/$AGNES/emis_NMR";
       $ifile{"$dir/gridNH3_NMR_$year"} = "emislist.$poll";
     }else{
-      $ifile{"$dir/grid$gridmap{$poll}"} = "emislist.$poll" unless ($emisdir="none");
+      $ifile{"$dir/grid$gridmap{$poll}"} = "emislist.$poll" unless ($emisdir eq "none");
     }
 
 #new format for ASCII emissions (should be default in future)    
-    $ifile{"emislist.$poll"} = "grid$poll" unless ($emisdir="none");  
+    $ifile{"emislist.$poll"} = "grid$poll" unless ($emisdir eq "none");  
 
     # copy pm25 if needed, avoid having 20 different PM25 time-series
 
