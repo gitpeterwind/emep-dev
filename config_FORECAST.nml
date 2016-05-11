@@ -62,8 +62,12 @@
   birch_data_nc  = '$birch_data',#birch_data
   birch_corr_nc  = '$birch_corr',#birch_corr
   olive_data_nc  = '$olive_data',#olive_data
-  grass_field_nc = '$grass_frac',#grass_frac
-  grass_time_nc  = '$grass_time',#grass_time
+! grass_field_nc = '$grass_frac',#grass_frac
+! grass_time_nc  = '$grass_time',#grass_time
+! grass_mode = 'linear',
+  grass_field_nc = '$grass_data',#grass_data
+  grass_time_nc  = '$grass_data',#grass_data
+  grass_mode = 'gamma',
   template_read  = '$poll_read',#poll_read
   template_write = '$poll_write',#poll_write
 &end

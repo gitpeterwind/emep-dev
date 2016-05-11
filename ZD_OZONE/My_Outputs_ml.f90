@@ -475,7 +475,7 @@ subroutine set_output_defs
   !           1,"degree day" ,1.0,-999.9),&
           Asc2D(trim(species_adv(idx)%name)//"_emiss"  ,"pollen_emiss",i,&
               1,"grains/m2/h",1.0,-999.9),&
-          Asc2D(trim(species_adv(idx)%name)//"_left"   ,"pollen_left" ,i,&
+          Asc2D(trim(species_adv(idx)%name)//"_rest"   ,"pollen_rest" ,i,&
               1,"grains/m3"  ,1.0,-999.9)/)
         enddo
       endif

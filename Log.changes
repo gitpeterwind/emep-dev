@@ -154,11 +154,29 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+11th May, Alvaro 3199
+
+run.pl,config_FORECAST.nml:
+- Update $PollenDir/$EmergencyDir paths for development and production.
+- New grass pollen input files.
+
+Output_hourly,ZD_OZONE/My_Outputs_ml,ZD_Pollen/My_Pollen_ml:
+- Pollen debug: output pollen_rest instead of pollen_left.
+
+ZD_Pollen/Pollen_ml,Pollen_const_ml:
+- New grass pollen code. grass_mode='linear' for old grass calculation
+  and grass_mode='gamma' is the new one.
+- Remove Pollen_left and R variables, use Pollen_left instead.
+- Use grass_end instead of grass_start+grass_len.
+- Reorganize parts of the module to improve readability.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 11th May, Dave,Alvaro 3197,3198
 
 run.pl:
 - changed = to eq on lines 471, 472, 797, 801
 - fix warning on line 456
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 9th May, Alvaro 3194-3196
 

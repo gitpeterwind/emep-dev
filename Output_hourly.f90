@@ -63,7 +63,7 @@ use NetCDF_ml,        only: Out_netCDF, CloseNetCDF, Init_new_netCDF, &
 use OwnDataTypes_ml,  only: TXTLEN_DERIV,TXTLEN_SHORT
 use Par_ml,           only: LIMAX, LJMAX, GIMAX,GJMAX,        &
                             me, IRUNBEG, JRUNBEG, limax, ljmax
-use Pollen_ml,        only: heatsum, pollen_left, AreaPOLL
+use Pollen_ml,        only: heatsum, pollen_rest, AreaPOLL
 use SmallUtils_ml,    only: find_index
 use TimeDate_ml,      only: current_date
 use TimeDate_ExtraUtil_ml,only : date2string
@@ -498,13 +498,13 @@ implicit none
           hourly(:,:) = 0.0
         endif
 
-      case("pollen_left")
+      case("pollen_rest")
        !hr_out(ih)%unit='grains/m3'
         ik = hr_out(ih)%spec
-        if(allocated(pollen_left))then
-          call CheckStop(ik,[1,size(pollen_left,DIM=3)],"Hourly_out: '"//&
+        if(allocated(pollen_rest))then
+          call CheckStop(ik,[1,size(pollen_rest,DIM=3)],"Hourly_out: '"//&
             trim(hr_out(ih)%type)//"' out of bounds!")
-          forall(i=1:limax,j=1:ljmax) hourly(i,j) = pollen_left(i,j,ik)
+          forall(i=1:limax,j=1:ljmax) hourly(i,j) = pollen_rest(i,j,ik)
         else
           hourly(:,:) = 0.0
         endif

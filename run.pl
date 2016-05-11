@@ -118,7 +118,7 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
- ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3198","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
+ ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3199","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
 #($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3074","EmChem09soa","EMEPGLOB","EMEPSTD","GLOBAL",0);
 
 my %BENCHMARK;
@@ -302,17 +302,10 @@ die "Missing MetDir='$MetDir'\n" unless -d date2str($year."0101",$MetDir);
 
 # DataDir    = Main general Data directory
 my $DATA_LOCAL = "$DataDir/$GRID";   # Grid specific data , EMEP, EECCA, GLOBAL
-# Pollen data
-my $PollenDir = "$HOMEROOT/$BIRTHE/Unify/MyData";
-   $PollenDir = "$DataDir/Pollen" if $CWF and ($USER eq $FORCAST);
-   $PollenDir = 0 unless -d $PollenDir;
-# Eruption (eEMEP)
-my $EmergencyData = "$HOMEROOT/$ALVARO/Unify/MyData";
-   $EmergencyData = 0 unless -d $EmergencyData;
+
 # Project-specific data:
 my $ProjDataDir = "";          # Change for specific project data
 #  $ProjDataDir = "$WORKROOT/mifads/Data/inputs_projects/eclaire_Jun2013"; #e.g.
-
 
 # Boundary conditions: set source direcories here:
 # BCs can come from Logan, Fortuin, UiO (CTM2) or EMEP model runs:
@@ -353,9 +346,23 @@ my $WORKDIR = "$WORKROOT/$USER/$testv.$year";  # working and result directory
    $WORKDIR =~ s|$testv.$year|Benchmark/$GRID.$year|g if (%BENCHMARK);
    $WORKDIR = "/prod/forecast/run/eemep" if $eCWF and ($USER eq $FORCAST);
    $WORKDIR = "$CWF_WRK" if $CWF and -d $CWF_WRK;
-my $MyDataDir   = "$HOMEROOT/$USER/Unify/MyData";           # for each user's private input
-my $SoilDir     = "$DATA_LOCAL/dust_input";               # Saharan BIC
+my $MyDataDir="$HOMEROOT/$USER/Unify/MyData"; # for each user's private input
+my $SoilDir = "$DATA_LOCAL/dust_input";       # Saharan BIC
    $SoilDir = 0 unless -d "$SoilDir/BC_DUST/2000";
+
+# Pollen data (CAMS50)
+my $PollenDir;#="$HOMEROOT/$BIRTHE/Unify/MyData";
+foreach my $dir ("$MyDataDir/Pollen","$DataDir/Pollen",
+                 "/prod/forecast/emep/cwfemep/Data/Pollen") {
+  $PollenDir=$dir unless -d $PollenDir;
+}
+
+# Emergency (eEMEP), e.g. volcanic ash
+my $EmergencyDir;#="$HOMEROOT/$ALVARO/Unify/MyData";
+foreach my $dir ("$MyDataDir/Emergency","$DataDir/Emergency",
+                 "/prod/forecast/emep/eemep/Data/Emergency") {
+  $EmergencyDir=$dir unless -d $EmergencyDir;
+}
 
 # TEST! Road dust NOTE! The road dust code may not be working properly yet! Not tested enough!
 my $RoadDir = "$HOMEROOT/$ROBERT/Unify/MyData/TNO_traffic" ;
@@ -440,8 +447,7 @@ given($GRID){
   when("HIRHAM") {$emisdir="$EMIS_INP/emissions/$emisscen/$emisyear";}
   when("GEMS025"){$emisdir="$EMIS_INP/Emissions/2008-Trend2006-V9-Extended_PM_corrected-V3";}
   when(/MACC/){
-    $emisdir="$DataDir/Emis_TNO7_MACCIII";                # available years:
-    $emisyear=($year<2000)?2000:($year>2011)?2011:$year;  #   2000..2011
+      #defined in config file
   }
 }
 #TMP and should be improved because it gives errors for other domains!
@@ -959,8 +965,8 @@ foreach my $scenflag ( @runs ) {
     my ($emis,$loct,$f,$vname);
     given($eCWF){
     when("AshInversion"){
-      $loct=EMEP::Sr::slurp("$EmergencyData/AshInv_9bin19lev.location");
-      $emis=EMEP::Sr::slurp("$EmergencyData/AshInv_9bin19lev.eruption");
+      $loct=EMEP::Sr::slurp("$EmergencyDir/AshInv_9bin19lev.location");
+      $emis=EMEP::Sr::slurp("$EmergencyDir/AshInv_9bin19lev.eruption");
       $vname=(split(",",(split(/\n/,$loct))[-1]))[0];   # Vent name
 #     $emis=~s:AshInv:$vname:g;
       $emis=~s:SR\+H..:SR\+H$eSTART:g;
@@ -970,11 +976,11 @@ foreach my $scenflag ( @runs ) {
       foreach my $line (split(/\n/,$loct)){ # Split lines
         unless ($line =~ /#.*/) {           # Skip comment lines
           $vname=(split(",",$line))[0];     # Emergency tracer name
-          $f="$EmergencyData/${vname}_7bin.eruptions";# Volcanic eruption
+          $f="$EmergencyDir/${vname}_7bin.eruptions";# Volcanic eruption
           $emis.=EMEP::Sr::slurp($f)if(-e $f);
-          $f="$EmergencyData/${vname}.accident";      # NPP accident
+          $f="$EmergencyDir/${vname}.accident";      # NPP accident
           $emis.=EMEP::Sr::slurp($f)if(-e $f);
-          $f="$EmergencyData/${vname}.explosion";     # NUC explosion
+          $f="$EmergencyDir/${vname}.explosion";     # NUC explosion
           $emis.=EMEP::Sr::slurp($f)if(-e $f);
         }
       }
@@ -1004,6 +1010,7 @@ foreach my $scenflag ( @runs ) {
     $inml{'olive_data'}="$PollenDir/oliven_data.nc";
     $inml{'grass_time'}="$PollenDir/grass_time.nc";
     $inml{'grass_frac'}="$PollenDir/grass_frac.nc";
+    $inml{'grass_data'}="$PollenDir/grass_data.nc";
     if($CWF){
       my $dump=date2str($CWFDATE[0],$CWFPL);            # yesterday's dump
       foreach my $k ($CWFMETV."AN",$CWFMETV."FC",$CWFMETV."") {

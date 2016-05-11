@@ -36,6 +36,7 @@ real, parameter  :: &
                                 ! (could be assumed to be larger than PROB_IN)
   uncert_grass_day = 7,       &
   uncert_tot_grass_poll = 0.2,& ! end uncertainty for linear releases
+! uncert_tot_grass_poll = 0.6,& ! end uncertainty for linear releases (new value)
   D_POLL   = 22.0,            & ! Pollen grain diameter [um]
   POLL_DENS= 800e3              ! Pollen density [g/m3]
 

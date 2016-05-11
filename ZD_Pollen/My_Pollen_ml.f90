@@ -45,14 +45,14 @@ endmodule Pollen_const_ml
 ! Pollen particles are assumed of 22 um diameter and 800 kg/m3 density. 
 !-----------------------------------------------------------------------!
 module Pollen_ml
-  use Pollen_const_ml
-  implicit none
-  public:: pollen_flux,pollen_dump,pollen_read,pollen_check
+use Pollen_const_ml
+implicit none
+public:: pollen_flux,pollen_dump,pollen_read,pollen_check
 
-  real,public,save, allocatable,dimension(:,:,:) :: &
-    AreaPOLL,     & ! emission of pollen 
-    heatsum,      & ! heatsum, needs to be remembered for forecast
-    pollen_left     ! amount of pollen left in catkins, relative amount... 0:sr 1:end 
+real,public,save, allocatable,dimension(:,:,:) :: &
+  AreaPOLL,     & ! emission of pollen 
+  heatsum,      & ! heatsum, needs to be remembered for forecast
+  pollen_rest     ! pollen grains left after release [grains/m2]
 
 contains
 
