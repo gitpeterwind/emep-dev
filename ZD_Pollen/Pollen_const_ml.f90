@@ -44,11 +44,16 @@ real, parameter  :: &
   grain_wt = POLL_DENS*PI*(D_POLL*1e-6)**3/6.0, &! 1 grain weight [g]
   ug2grains= 1e-6/grain_wt
 
+! pollen arrays indexing, order must match with POLLEN_GROUP: birch,olive,grass
+real, parameter  :: &
+  N_TOT(3)=[N_TOT_birch,N_TOT_olive,N_TOT_grass]
 character(len=*), parameter :: &
   BIRCH = "POLLEN_BIRCH",&
   OLIVE = "POLLEN_OLIVE",&
   GRASS = "POLLEN_GRASS",&
   POLLEN_GROUP(3)=[BIRCH,OLIVE,GRASS]
+
+private :: N_TOT_birch,N_TOT_olive,N_TOT_grass
 
 contains
 subroutine pollen_check(igrp)

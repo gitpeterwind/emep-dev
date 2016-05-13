@@ -23,6 +23,9 @@ real, parameter :: &
   grain_wt = POLL_DENS*PI*D_POLL**3/6.0, &  ! 1 grain weight [g]
   ug2grains= 1e-6/grain_wt                  ! # grains in 1 ug
 
+real, parameter  :: &
+  N_TOT(3)=1.0  ! avoid div0
+
 contains
 
 subroutine pollen_check(igrp)
@@ -50,9 +53,9 @@ implicit none
 public:: pollen_flux,pollen_dump,pollen_read,pollen_check
 
 real,public,save, allocatable,dimension(:,:,:) :: &
-  AreaPOLL,     & ! emission of pollen 
   heatsum,      & ! heatsum, needs to be remembered for forecast
-  pollen_rest     ! pollen grains left after release [grains/m2]
+  AreaPOLL,     & ! emission of pollen 
+  R               ! pollen released so far
 
 contains
 
