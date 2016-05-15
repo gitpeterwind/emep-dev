@@ -123,7 +123,7 @@ use ModelConstants_ml,    only : PASCAL, PT, Pref, METSTEP  &
      ,nstep,USE_CONVECTION,USE_EtaCOORDINATES,USE_FASTJ & 
      ,CONVECTION_FACTOR & 
      ,LANDIFY_MET,MANUAL_GRID  & 
-     ,CW_THRESHOLD,RH_THRESHOLD, CW2CC,IOU_INST,JUMPOVER29FEB
+     ,CW_THRESHOLD,RH_THRESHOLD, CW2CC,IOU_INST,JUMPOVER29FEB, meteo, startdate, enddate
 use MPI_Groups_ml,     only: MPI_DOUBLE_PRECISION, MPI_SUM,MPI_INTEGER, MPI_BYTE,MPI_LOGICAL,&
                              MPI_COMM_IO, MPI_COMM_CALC, IERROR, ME_IO, ME_CALC,&
                              request_e,request_n,request_s,request_w,LargeSub_Ix,&
@@ -139,7 +139,7 @@ use PhysicalConstants_ml, only : KARMAN, KAPPA, RGAS_KG, CP, GRAV    &
      ,ROWATER, PI
 use TimeDate_ml,          only : current_date, date,nmdays, &
      add_secs,timestamp,&
-     make_timestamp, make_current_date, nydays, startdate, enddate
+     make_timestamp, make_current_date, nydays
 use NetCDF_ml,         only : printCDF,ReadField_CDF,vertical_interpolate,Out_netCDF,GetCDF_modelgrid ! testoutputs
 use netcdf
 use TimeDate_ExtraUtil_ml,only: nctime2date,date2string
@@ -161,8 +161,6 @@ integer(kind=2),allocatable :: var_local(:,:,:)
 
 ! Aid for debugging check routine
 character (len = 100), private, save :: call_msg=" Not set"
-
-character (len = 100), public, save  ::  meteo   ! template for meteofile
 
 public :: MeteoRead, MeteoRead_io
 public :: MetModel_LandUse
@@ -292,8 +290,8 @@ contains
 
              if(me_io==0)then
                 if(met(ix)%found)write(*,*)'found ',trim(namefield),' in ',trim(meteoname)
-                if(met(ix)%found.and.ndim==2)write(*,*)'random value 2D = ',trim(namefield),me_io,met(ix)%field_shared(5,5,1)
-                if(met(ix)%found.and.ndim==3)write(*,*)'random value 3D = ',trim(namefield),me_io,met(ix)%field_shared(5,5,KMAX_MID)
+                if(met(ix)%found.and.ndim==2)write(*,*)'typical value 2D = ',trim(namefield),me_io,met(ix)%field_shared(5,5,1)
+                if(met(ix)%found.and.ndim==3)write(*,*)'typical value 3D = ',trim(namefield),me_io,met(ix)%field_shared(5,5,KMAX_MID)
                 if(.not.met(ix)%found)write(*,*)'did not find ',trim(namefield),' in ',trim(meteoname)
              endif
           endif
@@ -485,8 +483,10 @@ contains
              endif
           if(write_now)then
              if(met(ix)%found)write(*,*)'found ',trim(namefield),' in ',trim(meteoname)
-             if(met(ix)%found.and.ndim==2)write(*,*)'random value = ',met(ix)%field(5,5,1,nrix),maxval(met(ix)%field(:,:,1,nrix))
-             if(met(ix)%found.and.ndim==3)write(*,*)'random value = ',met(ix)%field(5,5,kmax_mid,nrix),maxval(met(ix)%field(:,:,kmax_mid,nrix))
+             if(met(ix)%found.and.ndim==2)write(*,*)'typical value = ',&
+                  met(ix)%field(5,5,1,nrix),maxval(met(ix)%field(:,:,1,nrix))
+             if(met(ix)%found.and.ndim==3)write(*,*)'typical value = ',&
+                  met(ix)%field(5,5,kmax_mid,nrix),maxval(met(ix)%field(:,:,kmax_mid,nrix))
              if(.not.met(ix)%found)write(*,*)'did not find ',trim(namefield),' in ',trim(meteoname)
              if(me_calc<0)then
                 if(ndim==2)then

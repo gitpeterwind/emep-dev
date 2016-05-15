@@ -12,7 +12,7 @@ use ChemSpecs,            only: species
 use Io_Nums_ml,           only: IO_NML, IO_LOG, IO_TMP
 use OwnDataTypes_ml,      only: typ_ss, uEMEP_type
 use Precision_ml,         only: dp
-use SmallUtils_ml,        only: find_index
+use SmallUtils_ml,        only: find_index, key2str
 
 implicit none
 private
@@ -130,8 +130,16 @@ type(emep_debug), public, save :: DEBUG
   endtype emis_in
   type(emis_in), public, dimension(5) :: emis_inputlist = emis_in()
 
-  character (len=100), public :: EmisDir = '.'
-  character (len=100), public :: DataDir = '.'
+  character (len=200), public, save :: EmisDir = '.'
+  character (len=200), public, save :: DataDir = '.'
+  character (len=200), public, save :: GRID = 'EECCA' !default grid
+  character (len=200), public, save :: meteo = &
+       'DataDir/GRID/metdata_EC/YYYY/meteoYYYYMMDD.nc'  ! template for meteofile
+  character (len=200), public, save :: DegreeDayFactorsFile = &
+       'MetDir/HDD18-GRID-YYYY.nc'  ! template for DegreeDayFactors.nc
+  character (len=200), public, save :: MetDir = '.'
+
+integer, public, save ::  startdate(4),enddate(4)!start and end of the run
 
 !-----------------------------------------------------------
 ! Convection factor - reduces convective fluxes (which can be
@@ -617,7 +625,8 @@ subroutine Config_ModelConstants(iolog)
   logical :: exist
 
   NAMELIST /ModelConstants_config/ &
-    EXP_NAME &  ! e.g. EMEPSTD, FORECAST, TFMM, TodayTest, ....
+    DegreeDayFactorsFile, meteo & !meteo template with full path
+   ,EXP_NAME &  ! e.g. EMEPSTD, FORECAST, TFMM, TodayTest, ....
    ,USES   & ! just testname so far
    ,AERO   & ! Aerosol settings
    ,DEBUG  & !
@@ -643,9 +652,14 @@ subroutine Config_ModelConstants(iolog)
 
   NAMELIST /Machine_config/ DataPath
 
+  namelist /INPUT_PARA/GRID,iyr_trend,runlabel1,runlabel2,&
+       startdate,enddate!,meteo
+
   txt = "ok"
   !Can't call check_file due to circularity
   !call check_file('emep_settings.nml', file_exists, needed=.true., errmsg=txt)
+
+
   open(IO_NML,file='config_emep.nml',delim='APOSTROPHE')
   read(IO_NML,NML=ModelConstants_config)
   !close(IO_NML)
@@ -699,6 +713,27 @@ subroutine Config_ModelConstants(iolog)
         exit
      endif
   enddo
+
+
+
+  rewind(IO_NML)
+  read(IO_NML,NML=INPUT_PARA)
+  startdate(4)=0                ! meteo hour to start/end the run 
+  enddate  (4)=0                ! are set in assign_NTERM
+
+  meteo = key2str(meteo,'DataDir',DataDir)
+  meteo = key2str(meteo,'GRID',GRID)
+
+  MetDir = key2str(meteo,'meteoYYYYMMDD.nc','')
+
+  DegreeDayFactorsFile=key2str(DegreeDayFactorsFile,'MetDir',MetDir)
+  DegreeDayFactorsFile=key2str(DegreeDayFactorsFile,'GRID',GRID)
+  DegreeDayFactorsFile=key2str(DegreeDayFactorsFile,'YYYY',startdate(1))
+
+  if(MasterProc)then
+     write(*,*)'Defined DegreeDayFactorsFile as:'
+     write(*,*)trim(DegreeDayFactorsFile)
+  endif
 
 endsubroutine Config_ModelConstants
 endmodule ModelConstants_ml

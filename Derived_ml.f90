@@ -62,7 +62,7 @@ use ModelConstants_ml, only: &
   ! output types corresponding to instantaneous,year,month,day
   ,IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY, IOU_HOUR &
   ,MasterProc,SOURCE_RECEPTOR,DEBUG_COLSRC  &
-  ,USE_AOD, USE_OCEAN_DMS, USE_uEMEP, uEMEP
+  ,USE_AOD, USE_OCEAN_DMS, USE_uEMEP, uEMEP,startdate,enddate
 
 use AOD_PM_ml,            only: AOD_init,aod_grp,wavelength,& ! group and 
                                 wanted_wlen,wanted_ext3d      ! wavelengths
@@ -76,7 +76,7 @@ use PhysicalConstants_ml, only: PI,KAPPA,ATWAIR,GRAV
 use Setup_1dfields_ml,    only: Fpart ! for FSOA work
 use SmallUtils_ml,        only: find_index, LenArray, NOT_SET_STRING, trims
 use TimeDate_ml,          only: day_of_year,daynumber,current_date,&
-                                tdif_days,startdate,enddate
+                                tdif_days
 use TimeDate_ExtraUtil_ml,only: to_stamp
 use Units_ml,             only: Units_Scale,Group_Units,&
                                 to_molec_cm3 ! converts roa [kg/m3] to M [molec/cm3]

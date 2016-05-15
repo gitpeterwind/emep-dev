@@ -118,7 +118,7 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
- ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3199","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
+ ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3200","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
 #($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3074","EmChem09soa","EMEPGLOB","EMEPSTD","GLOBAL",0);
 
 my %BENCHMARK;
@@ -268,8 +268,6 @@ print "USER = $USER\n";
 
 # hb NH3Emis
 my $NH3EMIS_VAR = 0; # set to 1 if new temp NH3.
-
-my $METformat="cdf"; # felt or cdf
 
 my $MONTHLY_EMIS = ($GRID eq "GLOBAL"); #Switch off if only annual used
    $MONTHLY_EMIS = 0 if ($exp_name =~ /ECLAIRE/);
@@ -648,11 +646,7 @@ foreach my $scenflag ( @runs ) {
   chdir $RESDIR;   ############ ------ Change to RESDIR
   print "Working in directory: $RESDIR\n";
 
-  # Meteorology name in felt/cdf format
-  $METformat=($METformat eq "felt")?"$MetDir/fhh.YYYYMMDD":      # felt
-                                    "$MetDir/meteoYYYYMMDD.nc";  # cdf
   if($CWF) { # Forecast Meteorology in NetCDF
-    $METformat="./meteoYYYYMMDD.nc";            # link file to work path
     my $metday = 0;
     if($CWFMETV) { # UTC version and DAY offset for MET.UTC version
       $metday = int($CWFMETV/24+0.99);             # DAY offset
@@ -669,7 +663,7 @@ foreach my $scenflag ( @runs ) {
       die "Meteo file $metfile for $CWFBASE not available (yet). Try later...\n"
         unless (-e $metfile);
       $CWFDATE[3]=date2str($CWFBASE." $n day","%Y%m%d");
-      mylink("CWF Met:",$metfile,date2str($CWFDATE[3],$METformat)) ;
+      mylink("CWF Met:",$metfile,date2str($CWFDATE[3])) ;
       # IFS-MOZ/C-IFS BC file
       $cwfbc=date2str($CWFDATE[3],$CWFBC);
       $cwfbc=date2str($CWFDATE[0],$CWFBC) unless (-e $cwfbc);
@@ -689,7 +683,7 @@ foreach my $scenflag ( @runs ) {
         # Update simulation: start-date ($CWFDATE[1]), "yesterday" ($CWFDATE[0])
         $CWFDATE[1]=$CWFDATE[0];
         $CWFDATE[0]=date2str($CWFDATE[0]." 1 day ago","%Y%m%d");
-        mylink("CWF Met:",$metfile,date2str($CWFDATE[1],$METformat));
+        mylink("CWF Met:",$metfile,date2str($CWFDATE[1]));
         # IFS-MOZ/C-IFS BC file
         $cwfbc=date2str($CWFDATE[1],$CWFBC);
         $cwfbc=date2str($CWFDATE[0],$CWFBC) unless (-e $cwfbc);
@@ -759,8 +753,7 @@ foreach my $scenflag ( @runs ) {
 # etc.
 
   my $timeseries  = "$DataDir/inputs_emepdefaults_Jun2012";
-  my $Tbase = 18 ;  # Base-temperature for Degree-day (HDD) files
-  ($timeseries,$Tbase)=("$DataDir/inputs_eurodelta_Jun2012",20) if($INERIS_FACS);
+  ($timeseries)=("$DataDir/inputs_eurodelta_Jun2012") if($INERIS_FACS);
 
   #$ifile{"$timeseries/HourlyFacs.EMEP2003"} = "HOURLY-FACS";
   #$ifile{"$timeseries/HourlyFacs.TNO2005"} = "HOURLY-FACS";
@@ -851,7 +844,8 @@ foreach my $scenflag ( @runs ) {
   foreach my $mmm ($mm1,($mm1+1)..($mm2-1),$mm2) {
     my $mm = sprintf "%2.2d", $mmm;
     $ifile{"$DATA_LOCAL/natso2$mm.dat"} =  "natso2$mm.dat" unless ($GRID eq "MACC14");
-    $ifile{"$DataDir/lt21-nox.dat$mm"} =  "lightning$mm.dat";
+ print "natso2 $mm  \n";
+   $ifile{"$DataDir/lt21-nox.dat$mm"} =  "lightning$mm.dat";
 # BIC for Saharan dust
     if ( $SoilDir ) { # Not yet for EMEP domain
       foreach my $bc ( qw ( DUST_c_ext DUST_f_ext )) { #
@@ -931,16 +925,6 @@ foreach my $scenflag ( @runs ) {
   #LPS: point sources can  be added if needed.
   #$ifile{"$MyDataDir/PointSources.txt"} = "PointSources.txt" 
   # if(-e "$MyDataDir/PointSources.txt");
-
-# DEGREE DAYS (Tbase set above, either 18 or 20):
-  unless ($CWF or ($GRID eq "MACC14") or ($GRID eq "RCA") or ($GRID eq "GLOBAL")) {
-    my $HDD = "$MetDir/HDD$Tbase-$GRID-$year.nc";
-    print "Looking for DegreeDayFac: $HDD \n";
-    system("ls -lh --time-style=long-iso $HDD");
-    die "NO HDD files " unless -f $HDD;   # Can comment out if USE_DEGREEDAYS
-                                          # set false in ModelConstants_ml
-    $ifile{"$HDD"} = "DegreeDayFactors.nc" if -f $HDD ;
-  }
 
   $ifile{"$DataDir/GLOBAL_LAInBVOC.nc"} = "GLOBAL_LAInBVOC.nc"; 
   #New EURO BVOC
@@ -1088,10 +1072,10 @@ foreach my $scenflag ( @runs ) {
   $startdate=date2str("$startdate","%Y%m%d");
   $enddate  =date2str("$enddate"  ,"%Y%m%d");
 # check if met-files exist
-  for (my $d="$startdate";$d<=$enddate;$d=date2str($d." 1 day","%Y%m%d")) {
-    my $f=date2str($d,$METformat);
-    die "METFILE not found:\n\t$f\n" unless -e $f;
-  }
+#  for (my $d="$startdate";$d<=$enddate;$d=date2str($d." 1 day","%Y%m%d")) {
+#    my $f=date2str($d,$METformat);
+#    die "METFILE not found:\n\t$f\n" unless -e $f;
+#  }
 
 # namelist with input parameters (to be read by Unimod.f90 and other modules)
   my $nml="";
@@ -1100,15 +1084,16 @@ foreach my $scenflag ( @runs ) {
     # read nml template file
     $nml=EMEP::Sr::slurp("$ProgDir/config_BM-$GRID.nml");
     # fill in variables on the template file with corresponding $hash{key}
-    %h=(%h,'runlabel1'=>"$runlabel1",'runlabel2'=>"$runlabel2",'METformat'=>"$METformat");
+    %h=(%h,'runlabel1'=>"$runlabel1",'runlabel2'=>"$runlabel2");
   } else {
     $nml="&INPUT_PARA\n"
+        ."  GRID      = '$GRID',\n"
         ."  iyr_trend = $iyr_trend,\n"
         ."  runlabel1 = '$runlabel1',\n"
         ."  runlabel2 = '$runlabel2',\n"
         ."  startdate = ".date2str($startdate ,"%Y,%m,%d,000000,\n")
         ."  enddate   = ".date2str($enddate   ,"%Y,%m,%d,000000,\n")
-        ."  meteo     = '$METformat',\n"
+#        ."  meteo     = '$METformat',\n" #moved to config
         ."&end\n";
     # NML namelist options.
     foreach my $f ("config_$exp_name.nml","config_Outputs_$outputs.nml") {

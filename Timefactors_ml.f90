@@ -63,7 +63,7 @@
   use ModelConstants_ml, only : MasterProc, DEBUG => DEBUG_EMISTIMEFACS
   use ModelConstants_ml, only : IIFULLDOM, JJFULLDOM
   use ModelConstants_ml, only : iyr_trend ,USES  ! for GRIDDED_EMIS_MONTHLY_FACTOR 
-  use ModelConstants_ml, only : INERIS_SNAP1, INERIS_SNAP2
+  use ModelConstants_ml, only : INERIS_SNAP1, INERIS_SNAP2, DegreeDayFactorsFile
   use NetCDF_ml,    only : GetCDF , ReadField_CDF
   use Par_ml,       only : MAXLIMAX,MAXLJMAX, limax,ljmax, me, li0, lj0, li1, lj1
   use Par_ml,       only : IRUNBEG, JRUNBEG, MSG_READ8
@@ -572,12 +572,12 @@ contains
 
    !/ See if we have a file to work with....
     if ( daynumber == 0 ) then
-      call check_file("DegreeDayFactors.nc", Gridded_SNAP2_Factors,&
+      call check_file(trim(DegreeDayFactorsFile), Gridded_SNAP2_Factors,&
         needed=.true., errmsg=errmsg )
       if ( Gridded_SNAP2_Factors ) then
-         call PrintLog("Found DegreeDayFactors.nc", MasterProc)
+         call PrintLog("Found "//trim(DegreeDayFactorsFile), MasterProc)
       else
-         call PrintLog("Not-found: DegreeDayFactors.nc"//trim(errmsg), MasterProc)
+         call PrintLog("Not-found: "//trim(DegreeDayFactorsFile)//' '//trim(errmsg), MasterProc)
       end if
       return
     end if
@@ -594,7 +594,7 @@ contains
 !     write(*,*) "HDD inputs", me, " Day ", daynumber
 
    ! DegreeDays have the same domain/grid as the met data, so we can use:
-    if(MasterProc) call GetCDF('HDD_Facs','DegreeDayFactors.nc', &
+    if(MasterProc) call GetCDF('HDD_Facs',trim(DegreeDayFactorsFile), &
           var2d_global,IIFULLDOM,JJFULLDOM,1,daynumber,nfetch)
 
     if(.not.allocated(gridfac_HDD))then

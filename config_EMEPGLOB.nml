@@ -14,6 +14,7 @@
 !  IC/BC        see namelists Nest_config,ExternalBICs_config,ExternalBICs_bc
 !------------------------------
 &ModelConstants_config
+  meteo     = 'DataDir/GRID/metdata_EC/YYYY/meteoYYYYMMDD.nc',!GRID defined in run.pl
   EXP_NAME              = 'EMEPGLOB',
   MY_OUTPUTS            = 'EMEPSTD',
 !------------------------------

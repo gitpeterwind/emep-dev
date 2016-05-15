@@ -1,13 +1,13 @@
 MODULE TimeDate_ExtraUtil_ml
 
 use Par_ml,           only: me
-use ModelConstants_ml,only: METSTEP, MasterProc, &
+use ModelConstants_ml,only: METSTEP, MasterProc, startdate,enddate , &
                             IOU_MON,IOU_DAY,IOU_HOUR,IOU_HOUR_EXTRA_MEAN,FREQ_HOURLY
 use SmallUtils_ml,    only: key2str
 use CheckStop_ml,     only: CheckStop
 use TimeDate_ml,      only: max_day,tdif_secs,tdif_days,add_secs,add_days,&
                             ts2date=>make_current_date,date2ts=>make_timestamp,&
-                            timestamp,day_of_year,date,startdate,enddate
+                            timestamp,day_of_year,date
 
 IMPLICIT NONE
 PRIVATE

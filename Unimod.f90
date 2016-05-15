@@ -36,18 +36,18 @@ program myeul
   use Io_Progs_ml,      only: read_line, PrintLog
   use Landuse_ml,       only: InitLandUse, SetLanduse, Land_codes
   use MassBudget_ml,    only: Init_massbudget, massbudget
-  use Met_ml,           only: metfieldint, MetModel_LandUse, Meteoread, meteo
+  use Met_ml,           only: metfieldint, MetModel_LandUse, Meteoread
   use ModelConstants_ml,only: MasterProc, &   ! set true for host processor, me==MasterPE
        RUNDOMAIN,  &   ! Model domain
        NPROC,      &   ! No. processors
        METSTEP,    &   ! Hours between met input
        runlabel1,  &   ! explanatory text
        runlabel2,  &   ! explanatory text
-       nterm,iyr_trend,    nmax,nstep ,                  &
+       nterm,iyr_trend, nmax,nstep , meteo,     &
        IOU_INST,IOU_HOUR,IOU_HOUR_INST, IOU_YEAR,IOU_MON, IOU_DAY, &
        USES, USE_LIGHTNING_EMIS, &
        FORECAST,ANALYSIS	! FORECAST/ANALYSIS mode
-  use ModelConstants_ml,only: Config_ModelConstants,DEBUG
+  use ModelConstants_ml,only: Config_ModelConstants,DEBUG, startdate,enddate
   use MPI_Groups_ml,    only: MPI_BYTE, ME_CALC, ME_MPI, MPISTATUS, MPI_COMM_CALC,MPI_COMM_WORLD, &
                               MasterPE,IERROR, MPI_world_init, MPI_groups_split
   use NetCDF_ml,        only: Init_new_netCDF
@@ -57,7 +57,7 @@ program myeul
   use Sites_ml,         only: sitesdef  ! to get output sites
   use Tabulations_ml,   only: tabulate
   use TimeDate_ml,      only: date, current_date, day_of_year, daynumber,&
-       tdif_secs,date,timestamp,make_timestamp,startdate, enddate,Init_nmdays
+       tdif_secs,date,timestamp,make_timestamp,Init_nmdays
   use TimeDate_ExtraUtil_ml,only : date2string, assign_NTERM
   use Trajectory_ml,    only: trajectory_init,trajectory_in
   use Nest_ml,          only: wrtxn     ! write nested output (IC/BC)
@@ -95,8 +95,6 @@ program myeul
   TYPE(timestamp)   :: ts1,ts2
   logical :: End_of_Run=.false.
 
-  namelist /INPUT_PARA/iyr_trend,runlabel1,runlabel2,&
-       startdate,enddate,meteo
 
   associate ( yyyy => current_date%year, mm => current_date%month, &
        dd => current_date%day,  hh => current_date%hour)
@@ -118,16 +116,6 @@ program myeul
   call define_chemicals()    ! sets up species details
   call Config_ModelConstants(IO_LOG)
 
-  if(ANALYSIS)then 	            ! init 3D-var module
-    call DA_3DVar_Init(status)  ! pass settings
-    call CheckStop(status,"DA_3DVar_Init in Unimod")
-  endif
-
-  rewind(IO_NML)
-  read(IO_NML,NML=INPUT_PARA)
-  startdate(4)=0                ! meteo hour to start/end the run 
-  enddate  (4)=0                ! are set in assign_NTERM
-
   if(MasterProc)then
      call PrintLog(trim(runlabel1))
      call PrintLog(trim(runlabel2))
@@ -135,6 +123,12 @@ program myeul
      call PrintLog(date2string("enddate   = YYYYMMDD",enddate  (1:3)))
      ! write(txt,"(a,i4)") "iyr_trend= ", iyr_trend
      ! call PrintLog(trim(txt))
+  endif
+
+
+  if(ANALYSIS)then 	            ! init 3D-var module
+    call DA_3DVar_Init(status)  ! pass settings
+    call CheckStop(status,"DA_3DVar_Init in Unimod")
   endif
 
   !*** Timing ********

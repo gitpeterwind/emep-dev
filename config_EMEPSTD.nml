@@ -14,6 +14,9 @@
 !  IC/BC        see namelists Nest_config,ExternalBICs_config,ExternalBICs_bc
 !------------------------------
 &ModelConstants_config
+!NB: set the path with the exact version (metdata_VERSION) if you want to be 
+!sure to run with a constant version of the meteo!
+  meteo     = 'DataDir/GRID/metdata_EC/YYYY/meteoYYYYMMDD.nc',!GRID defined in run.pl
   EXP_NAME              = 'EMEPSTD',
   MY_OUTPUTS            = 'EMEPSTD',
 !------------------------------

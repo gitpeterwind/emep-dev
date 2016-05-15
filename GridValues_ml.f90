@@ -22,7 +22,7 @@ use ModelConstants_ml,      only: &
      KMAX_BND, KMAX_MID, & ! vertical extent
      DEBUG,              & ! DEBUG%GRIDVALUES
      MasterProc,NPROC,IIFULLDOM,JJFULLDOM,RUNDOMAIN,&
-     PT,Pref,NMET,METSTEP,USE_EtaCOORDINATES,MANUAL_GRID,USE_WRF_MET_NAMES
+     PT,Pref,NMET,METSTEP,USE_EtaCOORDINATES,MANUAL_GRID,USE_WRF_MET_NAMES,startdate
 use MPI_Groups_ml    , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER, MPI_LOGICAL, &
                               MPI_MIN, MPI_MAX, MPI_SUM, &
                               MPI_COMM_CALC, MPI_COMM_WORLD, MPISTATUS, IERROR, ME_MPI, NPROC_MPI,&
@@ -38,7 +38,7 @@ use Par_ml, only : &
      me,                 & ! local processor
      parinit,parinit_groups
 use PhysicalConstants_ml,     only: GRAV, PI, EARTH_RADIUS ! gravity, pi
-use TimeDate_ml,              only: current_date,date,Init_nmdays,nmdays,startdate
+use TimeDate_ml,              only: current_date,date,Init_nmdays,nmdays
 use TimeDate_ExtraUtil_ml,    only: date2string
 use InterpolationRoutines_ml, only: inside_1234
 use netcdf,                   only: &

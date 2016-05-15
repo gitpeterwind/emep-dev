@@ -18,14 +18,15 @@ use Io_ml,                only: open_file,read_line,IO_TMP,PrintLog
 use MetFields_ml,         only: roa, z_bnd
 use ModelConstants_ml,    only: KCHEMTOP,KMAX_MID,MasterProc, &
                                 USE_ASH,DEBUG=>DEBUG_COLSRC,&
-                                TXTLEN_NAME,dt_advec,dt_advec_inv
+                                TXTLEN_NAME,dt_advec,dt_advec_inv,&
+                                startdate,enddate
 use NetCDF_ml,            only: GetCDF_modelgrid
 use MPI_Groups_ml
 use Par_ml,               only: LIMAX, LJMAX, me
 use PhysicalConstants_ml, only: AVOG
 use SmallUtils_ml,        only: wordsplit,find_index
 use TimeDate_ml,          only: nydays,&           ! No. days per year
-                                startdate,enddate,current_date,tdif_secs
+                                current_date,tdif_secs
 use TimeDate_ExtraUtil_ml,only: date2string,string2date,to_stamp
 
 implicit none
