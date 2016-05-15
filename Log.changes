@@ -153,6 +153,28 @@ info on unused variables, etc.
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+15th May, Peter 3201-2
+
+Moved the definition of meteorological path into config file.
+set the path with the exact version (metdata_VERSION) if you want to be 
+sure to run with a constant version of the meteo!
+
+Also DegreeDays is now set automatically (or can be defined manually in config
+use "DegreeDayFactorsFile=/MY/PATH/HDDMYNAME.nc").
+keyword "GRID" defined in run.pl (and put by run.pl into config); this is to 
+avoid situations where definitions in the config and run.pl are defined differently.
+(that is also the reason that I couldn't move entirely &INPUT_PARA into the code)
+
+startdate and enddate variables moved to ModelConstants (was in TimeDate).
+
+Lot of files modified:
+Sites_ml.f90 ColumnSource_ml.f90 Derived_ml.f90 GridValues_ml.f90 OutputChem_ml.f90 
+TimeDate_ExtraUtil_ml.f90 Unimod.f90 Timefactors_ml.f90 ModelConstants_ml.f90 
+BoundaryConditions_ml.f90 Met_ml.f90 run.pl Log.changes config_EMEPSTD.nml 
+config_EMEPGLOB.nml
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 11th,13th May, Alvaro 3199,3200
 
