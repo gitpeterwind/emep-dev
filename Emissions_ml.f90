@@ -434,7 +434,8 @@ subroutine Emissions(year)
 
       fname=emis_inputlist(iemislist)%name
       if ( fname == "NOTSET" ) cycle
-      if(MasterProc)write(*,*)sub//' reading emis_inputlist ',iemislist,trim(fname)
+      38 FORMAT(A,I4,A)
+      if(MasterProc)write(*,38)sub//' reading emis_inputlist ',iemislist,trim(fname)
 
       sumemis=0.0
       sumemis_local(:,:)=0.0
@@ -537,7 +538,7 @@ subroutine Emissions(year)
         !ASCII format
         do iem = 1, NEMIS_FILE
           fname=key2str(emis_inputlist(iemislist)%name,'POLL',EMIS_FILE(iem)) ! e.g. POLL -> sox
-          if(MasterProc)write(*,*)'Reading ASCII format '//trim(fname)
+          if(MasterProc)write(*,fmt='(A)')'Reading ASCII format '//trim(fname)
           call EmisGetASCII(iem, fname, trim(EMIS_FILE(iem)), sumemis_local, &
                emis_inputlist(iemislist)%incl, nin, emis_inputlist(iemislist)%excl, nex)
         enddo

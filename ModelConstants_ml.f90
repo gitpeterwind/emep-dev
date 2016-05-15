@@ -137,7 +137,7 @@ type(emep_debug), public, save :: DEBUG
        'DataDir/GRID/metdata_EC/YYYY/meteoYYYYMMDD.nc'  ! template for meteofile
   character (len=200), public, save :: DegreeDayFactorsFile = &
        'MetDir/HDD18-GRID-YYYY.nc'  ! template for DegreeDayFactors.nc
-  character (len=200), public, save :: MetDir = '.'
+  character (len=200), public, save :: MetDir = './'
 
 integer, public, save ::  startdate(4),enddate(4)!start and end of the run
 
@@ -724,7 +724,7 @@ subroutine Config_ModelConstants(iolog)
   meteo = key2str(meteo,'DataDir',DataDir)
   meteo = key2str(meteo,'GRID',GRID)
 
-  MetDir = key2str(meteo,'meteoYYYYMMDD.nc','')
+  MetDir = key2str(meteo,'meteoYYYYMMDD.nc','./')
 
   DegreeDayFactorsFile=key2str(DegreeDayFactorsFile,'MetDir',MetDir)
   DegreeDayFactorsFile=key2str(DegreeDayFactorsFile,'GRID',GRID)

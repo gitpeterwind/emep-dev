@@ -64,8 +64,8 @@ subroutine PrintLog(txt,OutputProc,ioOption)
   if ( ok2print) then
     io = IO_LOG
     if ( present(ioOption) ) io = ioOption
-    write(*,*)  trim(txt)
-    write(io,*)  trim(txt)
+    write(*,fmt='(A)')  trim(txt)
+    write(io,fmt='(A)')  trim(txt)
   end if
 end subroutine PrintLog
 !-------------------------------------------------------------------------
@@ -139,16 +139,16 @@ subroutine check_file(fname,fexist,needed,errmsg)
   errmsg = "ok"
   inquire(file=fname,exist=fexist)
 
-  if(DEBUG%IOPROG)write(unit=6,fmt=*) "check_file::: ", fname
+  if(DEBUG%IOPROG)write(unit=6,fmt='(A)') "check_file::: ", fname
   if ( .not. fexist .and. .not. needed ) then
-    write(unit=6,fmt=*) "not needed, skipping....." // trim(fname)
+    write(unit=6,fmt='(A)') "not needed, skipping....." // trim(fname)
     ios = 0
   elseif ( .not. fexist .and. needed ) then
     ios = -1
     if(MasterProc) print *, "ERROR: Missing!!! in check-file:" // trim(fname)
     call CheckStop("Missing!!! in check-file:" // trim(fname))
   else
-    if(MasterProc) write(unit=6,fmt=*) "IO check_file: Reading ",trim(fname)
+    if(MasterProc) write(unit=6,fmt='(A)') "IO check_file: Reading ",trim(fname)
   end if
 end subroutine check_file
 !-------------------------------------------------------------------------

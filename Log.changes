@@ -155,7 +155,7 @@ changes here (and when committing svn), and Dave will tag as required
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-15th May, Peter 3201-2
+15th May, Peter 3201-3
 
 Moved the definition of meteorological path into config file.
 set the path with the exact version (metdata_VERSION) if you want to be 
