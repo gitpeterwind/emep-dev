@@ -1,3 +1,9 @@
+!put here only machine specific data. 
+&Machine_config
+!DataDir will attempted replaced by (in this order):
+  DataPath(1) = '/global/work/mifapw/emep/Data',  !Stallo
+  DataPath(2) = '/home/metno/mifapw/work/Data',  !Vilje
+&end
 !-------- Experiment Description
 !  EXP_NAME     one word description, e.g. EMEPSTD,EMEP2010,TFMM
 !  MY_OUTPUTS   hourly outputs, e.g. EMEPSTD,TFMM,EMERGENCY
@@ -32,7 +38,7 @@
   INERIS_SNAP1          = F,          ! Used for TFMM runs
   INERIS_SNAP2          = F,          ! Used for TFMM runs
 !------------------------------
-  EmisDir               ='DataDir/Data/Emis_TNO7_MACCIII',
+  EmisDir               ='DataDir/Emis_TNO7_MACCIII',
   emis_inputlist(1)%name='EmisDir/Emis_TNO7_MACCIII_$emisyear.nc',
 !------------------------------
   SELECT_LEVELS_HOURLY  = T,          ! hourly output flag Also for FORECAST, 3DPROFILES
