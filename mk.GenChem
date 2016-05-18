@@ -171,12 +171,13 @@ OSRM)
 ;;
 Emergency)
   echo "RUN $run chosen"
-#  spcs=( $xdir/EmChem09base $xdir/PMmass $run)
-#  rcns=( $xdir/EmChem09base $xdir/PMmass $run)
-#  bics=( $xdir/EmChem09base )
   spcs=( Eemep $run)
   rcns=( Eemep $run)
-#  bics=( ZD_ESX/ZCM_ESX_r12 )
+;;
+Pollen)
+  echo "RUN $run chosen"
+  spcs=( ../ZCM_Emergency/Eemep $run)
+  rcns=( ../ZCM_Emergency/Eemep $run)
 ;;
 *)
   echo "SELECTION of run $run failed!! "
