@@ -154,7 +154,7 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-18th May, Alvaro 3205,3206
+18th May, Alvaro 3205-3207
 
 run.pl,config_BM-EECCA.nml,
 config_FORECAST.nml,config_FORECAST_CitySR.nml,config_ANALYSIS.nml:
@@ -165,7 +165,6 @@ Makefile,mk.GenChem,ZCM_Pollen/Pollen.*,ZCM_Pollen/*
 - Move Pollen.species and Pollen.reactions to his own ZCM_Pollen
 - make Pollen target will compile a minimum chemistry set (Eemep) for pollen
   tracers experiments.
-
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 18th May, Peter 3204

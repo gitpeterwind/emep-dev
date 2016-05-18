@@ -118,7 +118,7 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
- ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3205","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
+ ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3207","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
 #($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3074","EmChem09soa","EMEPGLOB","EMEPSTD","GLOBAL",0);
 
 my %BENCHMARK;
@@ -663,7 +663,7 @@ foreach my $scenflag ( @runs ) {
       die "Meteo file $metfile for $CWFBASE not available (yet). Try later...\n"
         unless (-e $metfile);
       $CWFDATE[3]=date2str($CWFBASE." $n day","%Y%m%d");
-      mylink("CWF Met:",$metfile,date2str($CWFDATE[3])) ;
+      mylink("CWF Met:",$metfile,date2str($CWFDATE[3],"meteoYYYYMMDD.nc"));
       # IFS-MOZ/C-IFS BC file
       $cwfbc=date2str($CWFDATE[3],$CWFBC);
       $cwfbc=date2str($CWFDATE[0],$CWFBC) unless (-e $cwfbc);
@@ -683,7 +683,7 @@ foreach my $scenflag ( @runs ) {
         # Update simulation: start-date ($CWFDATE[1]), "yesterday" ($CWFDATE[0])
         $CWFDATE[1]=$CWFDATE[0];
         $CWFDATE[0]=date2str($CWFDATE[0]." 1 day ago","%Y%m%d");
-        mylink("CWF Met:",$metfile,date2str($CWFDATE[1]));
+        mylink("CWF Met:",$metfile,date2str($CWFDATE[1],"meteoYYYYMMDD.nc"));
         # IFS-MOZ/C-IFS BC file
         $cwfbc=date2str($CWFDATE[1],$CWFBC);
         $cwfbc=date2str($CWFDATE[0],$CWFBC) unless (-e $cwfbc);
