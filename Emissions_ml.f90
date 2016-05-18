@@ -12,15 +12,12 @@ use Chemfields_ml,    only: xn_adv
 use Country_ml,       only: MAXNLAND,NLAND,Country,IC_NAT,IC_FI,IC_NO,IC_SE
 use Country_ml,       only: EU28,EUMACC2 !CdfSnap
 use EmisDef_ml,       only: &
-      NSECTORS      & ! No. sectors
-     ,NEMIS_FILE    & ! No. emission files
+      NEMIS_FILE    & ! No. emission files
      ,EMIS_FILE     & ! Names of species ("sox  ",...)
      ,NCMAX         & ! Max. No. countries per grid
      ,FNCMAX        & ! Max. No. countries (with flat emissions) per grid
      ,ISNAP_DOM     & ! snap index for domestic/resid emis
      ,ISNAP_TRAF    & ! snap index for road-traffic (SNAP7)
-     ,ISNAP_SHIP    & ! snap index for ship emissions
-     ,ISNAP_NAT     & ! snap index for nat. (dms) emissions
      ,IQ_DMS        & ! code for DMS emissions
      ,NROAD_FILES   & ! No. road dust emis potential files
      ,ROAD_FILE     & ! Names of road dust emission files
@@ -36,7 +33,11 @@ use EmisDef_ml,       only: &
      ,DMS_natso2_month, DMS_natso2_year,O_NH3, O_DMS&
      ,Emis_4D,N_Emis_4D,Found_Emis_4D & !used for EEMEP 
      ,KEMISTOP&
-     ,MAXFEMISLONLAT,N_femis_lonlat,loc_frac
+     ,MAXFEMISLONLAT,N_femis_lonlat,loc_frac &
+     ,NSECTORS, N_HFAC, N_TFAC, N_SPLIT     & ! No. emis sectors, height, time and split classes
+     ,sec2tfac_map, sec2hfac_map, sec2split_map& !generic mapping of indices
+     ,NSECTORS_SNAP, SNAP_sec2tfac_map, SNAP_sec2hfac_map, SNAP_sec2split_map!SNAP specific mapping
+
 use EmisGet_ml,       only: &
      EmisSplit &
     ,EmisGetCdf &  ! 
@@ -80,7 +81,7 @@ use ModelConstants_ml,only: &
     USE_LIGHTNING_EMIS,USE_AIRCRAFT_EMIS,USE_ROADDUST, &
     USE_EURO_SOILNOX, USE_GLOBAL_SOILNOX, EURO_SOILNOX_DEPSCALE,&! one or the other
     USE_OCEAN_NH3,USE_OCEAN_DMS,FOUND_OCEAN_DMS,&
-    NPROC, EmisSplit_OUT,USE_uEMEP,uEMEP
+    NPROC, EmisSplit_OUT,USE_uEMEP,uEMEP,USE_SNAP
 use MPI_Groups_ml  , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER&
                             ,MPI_SUM,MPI_COMM_CALC, IERROR
 use NetCDF_ml,        only: ReadField_CDF,ReadField_CDF_FL,ReadTimeCDF,IsCDFfractionFormat,GetCDF_modelgrid,PrintCDF
@@ -223,6 +224,18 @@ subroutine Emissions(year)
   ! 0) set molwts, conversion factors (e.g. tonne NO2 -> tonne N), and
   !    emission indices (IQSO2=.., )
 
+  ! init_sectors
+  if(USE_SNAP)then
+     !11 sectors defined in emissions
+     NSECTORS = NSECTORS_SNAP
+     !map timefactors onto SNAP map
+     sec2tfac_map => SNAP_sec2tfac_map
+     sec2hfac_map => SNAP_sec2hfac_map
+     sec2split_map => SNAP_sec2split_map
+  else
+     call StopAll("Sectors not defined")
+  endif
+
   allocate(cdfemis(LIMAX,LJMAX))
   allocate(nGridEmisCodes(LIMAX,LJMAX))
   allocate(GridEmisCodes(LIMAX,LJMAX,NCMAX))
@@ -261,10 +274,11 @@ subroutine Emissions(year)
   e_fact=1.0
   allocate(e_fact_lonlat(NSECTORS,MAXFEMISLONLAT,NEMIS_FILE))
   e_fact_lonlat=1.0
-  if(.not.allocated(timefac))allocate(timefac(NLAND,NSECTORS,NEMIS_FILE))
-  if(.not.allocated(fac_emm))allocate(fac_emm(NLAND,12,NSECTORS,NEMIS_FILE))
-  if(.not.allocated(fac_min))allocate(fac_min(NLAND,NSECTORS,NEMIS_FILE))
-  if(.not.allocated(fac_edd))allocate(fac_edd(NLAND, 7,NSECTORS,NEMIS_FILE))
+  if(.not.allocated(timefac))allocate(timefac(NLAND,N_TFAC,NEMIS_FILE))
+  if(.not.allocated(fac_ehh24x7))allocate(fac_ehh24x7(N_TFAC,24,7))
+  if(.not.allocated(fac_emm))allocate(fac_emm(NLAND,12,N_TFAC,NEMIS_FILE))
+  if(.not.allocated(fac_min))allocate(fac_min(NLAND,N_TFAC,NEMIS_FILE))
+  if(.not.allocated(fac_edd))allocate(fac_edd(NLAND, 7,N_TFAC,NEMIS_FILE))
 
   ! The GEA emission data, which is used for EUCAARI runs on the HIRHAM
   ! domain have in several sea grid cells non-zero emissions in other sectors
@@ -324,12 +338,12 @@ subroutine Emissions(year)
 
   ! ####################################
   ! Broadcast  monthly and Daily factors (and hourly factors if needed/wanted)
-  CALL MPI_BCAST(fac_emm,8*NLAND*12*NSECTORS*NEMIS_FILE,MPI_BYTE,0,MPI_COMM_CALC,IERROR) 
-  CALL MPI_BCAST(fac_edd,8*NLAND*7*NSECTORS*NEMIS_FILE,MPI_BYTE,0,MPI_COMM_CALC,IERROR) 
-  CALL MPI_BCAST(fac_ehh24x7,8*NSECTORS*24*7,MPI_BYTE,0,MPI_COMM_CALC,IERROR) 
+  CALL MPI_BCAST(fac_emm,8*NLAND*12*N_TFAC*NEMIS_FILE,MPI_BYTE,0,MPI_COMM_CALC,IERROR) 
+  CALL MPI_BCAST(fac_edd,8*NLAND*7*N_TFAC*NEMIS_FILE,MPI_BYTE,0,MPI_COMM_CALC,IERROR) 
+  CALL MPI_BCAST(fac_ehh24x7,8*N_TFAC*24*7,MPI_BYTE,0,MPI_COMM_CALC,IERROR) 
 
   !define fac_min for all processors
-  forall(iemis=1:NEMIS_FILE,insec=1:NSECTORS,inland=1:NLAND) &
+  forall(iemis=1:NEMIS_FILE,insec=1:N_TFAC,inland=1:NLAND) &
        fac_min(inland,insec,iemis) = minval(fac_emm(inland,:,insec,iemis))
   if(INERIS_SNAP2) & !  INERIS do not use any base-line for SNAP2
        fac_min(:,ISNAP_DOM,:) = 0.
@@ -1049,32 +1063,32 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
             ! and if appropriate any speciation fraction (NEMIS_FRAC)
             iqrc = 0   ! index over emisfrac
             do iem = 1, NEMIS_FILE 
-              tfac = timefac(iland_timefac,isec,iem) &
-                   * fac_ehh24x7(isec,hour_iland,wday_loc)
+              tfac = timefac(iland_timefac,sec2tfac_map(isec),iem) &
+                   * fac_ehh24x7(sec2tfac_map(isec),hour_iland,wday_loc)
 
 
               if(debug_tfac.and.iem==1) &
-                write(*,"(a,2i4,f8.3)")"EmisSet DAY TFAC:",isec,hour_iland,tfac
+                write(*,"(a,3i4,f8.3)")"EmisSet DAY TFAC:",isec,sec2tfac_map(isec),hour_iland,tfac
 
               !it is best to multiply only if USES%GRIDDED_EMIS_MONTHLY_FACTOR
               !in order not to access the array and waste cache if not necessary
-              if(USES%GRIDDED_EMIS_MONTHLY_FACTOR)tfac=tfac* GridTfac(i,j,isec,iem)
+              if(USES%GRIDDED_EMIS_MONTHLY_FACTOR)tfac=tfac* GridTfac(i,j,sec2tfac_map(isec),iem)
 
               !Degree days - only SNAP-2 
               if(USES%DEGREEDAY_FACTORS .and. &
-                isec==ISNAP_DOM .and. Gridded_SNAP2_Factors) then
+                sec2tfac_map(isec)==ISNAP_DOM .and. Gridded_SNAP2_Factors) then
                 oldtfac = tfac
                 ! If INERIS_SNAP2  set, the fac_min will be zero, otherwise
                 ! we make use of a baseload even for SNAP2
-                tfac = ( fac_min(iland,isec,iem) & ! constant baseload
-                     + ( 1.0-fac_min(iland,isec,iem) )* gridfac_HDD(i,j) ) &
-                     * fac_ehh24x7(isec,hour_iland,wday_loc)
+                tfac = ( fac_min(iland,sec2tfac_map(isec),iem) & ! constant baseload
+                     + ( 1.0-fac_min(iland,sec2tfac_map(isec),iem) )* gridfac_HDD(i,j) ) &
+                     * fac_ehh24x7(sec2tfac_map(isec),hour_iland,wday_loc)
 
                 if(debug_tfac .and. indate%hour==12 .and. iem==1) &
-                  write(*,"(a,2i3,2i4,7f8.3)") "SNAPHDD tfac ",  &
-                    isec, iland, daynumber, indate%hour, &
-                    timefac(iland_timefac,isec,iem), t2_nwp(i,j,2)-273.15, &
-                    fac_min(iland,isec,iem),  gridfac_HDD(i,j), tfac
+                  write(*,"(a,3i3,2i4,7f8.3)") "SNAPHDD tfac ",  &
+                    isec, sec2tfac_map(isec),iland, daynumber, indate%hour, &
+                    timefac(iland_timefac,sec2tfac_map(isec),iem), t2_nwp(i,j,2)-273.15, &
+                    fac_min(iland,sec2tfac_map(isec),iem),  gridfac_HDD(i,j), tfac
               endif ! =============== HDD 
 
               s = tfac * snapemis(isec,i,j,icc,iem)
@@ -1085,7 +1099,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
               do f = 1,emis_nsplit(iem)
                 iqrc = iqrc + 1
                 itot = iqrc2itot(iqrc)
-                tmpemis(iqrc) = s * emisfrac(iqrc,isec,iland)
+                tmpemis(iqrc) = s * emisfrac(iqrc,sec2split_map(isec),iland)
                 ! Add up emissions in ktonne 
                 totemadd(itot) = totemadd(itot) &
                      + tmpemis(iqrc) * dtgrid * xmd(i,j)
@@ -1097,14 +1111,13 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
               do iqrc =1, nrcemis
                 gridrcemis0(iqrc,k,i,j) = gridrcemis0(iqrc,k,i,j)   &
                      + tmpemis(iqrc)*ehlpcom0    &
-                     *emis_kprofile(KMAX_BND-k,isec) &
-                         !*ehlpcom0(k)*VERTFAC(KMAX_BND-k,isec) &
+                     *emis_kprofile(KMAX_BND-k,sec2hfac_map(isec)) &
                      *emis_masscorr(iqrc)
                 !if( debug_tfac.and. iqrc==1 ) then 
                 !  write(*,"(a,2i3,2f8.3)") "KPROF ", &
                 !    isec, KMAX_BND-k, &
-                !    VERTFAC(KMAX_BND-k,isec),  &
-                !    emis_kprofile(KMAX_BND-k,isec)
+                !    VERTFAC(KMAX_BND-k,sec2hfac_map(isec)),  &
+                !    emis_kprofile(KMAX_BND-k,sec2hfac_map(isec))
                 !end if
               enddo ! iem
             enddo   ! k
@@ -1119,11 +1132,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
         do ficc = 1, fncc
           !flat_iland = flat_landcode(i,j,ficc) ! 30=BAS etc.
           flat_iland = find_index(flat_landcode(i,j,ficc),Country(:)%icode) !array index
-          if(Country(flat_iland)%is_sea) then  ! saves if statements below
-            isec = ISNAP_SHIP 
-          else
-            isec = ISNAP_NAT
-          endif
+
           !  As each emission sector has a different diurnal profile
           !  and possibly speciation, we loop over each sector, adding
           !  the found emission rates to gridrcemis as we go.
@@ -1138,7 +1147,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
             do f = 1,emis_nsplit(iem)
               iqrc = iqrc + 1
               itot = iqrc2itot(iqrc)
-              tmpemis(iqrc) = sf * emisfrac(iqrc,isec,flat_iland)
+              tmpemis(iqrc) = sf * emisfrac(iqrc,sec2split_map(isec),flat_iland)
               ! Add flat emissions in ktonne 
               totemadd(itot) = totemadd(itot) &
                    + tmpemis(iqrc) * dtgrid * xmd(i,j)
@@ -1933,17 +1942,17 @@ subroutine uemep_emis(indate)
             ! kg/m2/s
             
             if(icc<=ncc)then
-              tfac = timefac(iland_timefac,isec,iem) &
-                   * fac_ehh24x7(isec,hour_iland,wday_loc)
+              tfac = timefac(iland_timefac,sec2tfac_map(isec),iem) &
+                   * fac_ehh24x7(sec2tfac_map(isec),hour_iland,wday_loc)
 
               !Degree days - only SNAP-2 
               if(USES%DEGREEDAY_FACTORS .and. &
-                   isec==ISNAP_DOM .and. Gridded_SNAP2_Factors) then
+                   sec2tfac_map(isec)==ISNAP_DOM .and. Gridded_SNAP2_Factors) then
                  ! If INERIS_SNAP2  set, the fac_min will be zero, otherwise
                  ! we make use of a baseload even for SNAP2
-                 tfac = ( fac_min(iland,isec,iem) & ! constant baseload
-                      + ( 1.0-fac_min(iland,isec,iem) )* gridfac_HDD(i,j) ) &
-                      * fac_ehh24x7(isec,hour_iland,wday_loc)
+                 tfac = ( fac_min(iland,sec2tfac_map(isec),iem) & ! constant baseload
+                      + ( 1.0-fac_min(iland,sec2tfac_map(isec),iem) )* gridfac_HDD(i,j) ) &
+                      * fac_ehh24x7(sec2tfac_map(isec),hour_iland,wday_loc)
               endif ! =============== HDD 
               
               s = tfac * snapemis(isec,i,j,icc,iem)
@@ -1953,12 +1962,12 @@ subroutine uemep_emis(indate)
 
 88          format(i3,A,20F10.4)
             do k=KEMISTOP,KMAX_MID
-              emis_tot(k)=emis_tot(k)+s*emis_kprofile(KMAX_BND-k,isec)*dt_uemep
+              emis_tot(k)=emis_tot(k)+s*emis_kprofile(KMAX_BND-k,sec2hfac_map(isec))*dt_uemep
             enddo
 
             if(isec==uEMEP%sector .or. uEMEP%sector==0)then
               do k=KEMISTOP,KMAX_MID
-                emis_uemep(k)=emis_uemep(k)+s*emis_kprofile(KMAX_BND-k,isec)*dt_uemep
+                emis_uemep(k)=emis_uemep(k)+s*emis_kprofile(KMAX_BND-k,sec2hfac_map(isec))*dt_uemep
               enddo
             endif
 
@@ -1985,6 +1994,6 @@ subroutine uemep_emis(indate)
 
   first_call=.false. 
 
-endsubroutine uemep_emis
+end subroutine uemep_emis
 
 endmodule Emissions_ml

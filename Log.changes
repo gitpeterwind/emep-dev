@@ -154,6 +154,41 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+18th May, Peter 3204
+
+More flexible definitions of sectors.
+Now we can define new sectors grouping (like GNFR).
+
+NB: it is easy to get confused, about what is mapped and what is not!
+
+Definitions:
+NSECTORS: number of sectors defined in emission file
+N_TFAC: Number of timefactor classes defined
+N_HFAC: Number of height distribution classes defined
+N_SPLIT: Number of speciation classes defined
+In principle these could all be different.
+
+The mapping arrays give the value of the index for each of the sector emissions:
+sec2tfac_map
+sec2hfac_map
+sec2split_map
+
+The values are set (they are actually pointers) by the maps defined.
+For example if "USE_SNAP=T", the emissions are mapped to the indices using:
+SNAP_sec2tfac_map
+SNAP_sec2hfac_map
+SNAP_sec2split_map
+For now they simply return the same value: SNAP_sec2tfac_map(i)=i
+
+Adding new sectors can be done by defining these 3 maps for the new sectors.
+
+Not fully tested yet!
+
+modified: Timefactors_ml.f90 ModelConstants_ml.f90 EmisDef_ml.f90 EmisGet_ml.f90 
+Emissions_ml.f90 Log.changes
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15th May, Peter 3201-3
 

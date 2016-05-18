@@ -6,8 +6,8 @@ use Country_ml,       only: NLAND, IC_NAT, IC_VUL, IC_NOA, Country, &
                              ! NMR-NH3 specific variables (hb NH3Emis)
                              IC_NMR 
 use EmisDef_ml,       only: NSECTORS, ANTROP_SECTORS, NCMAX, FNCMAX, & 
-                            NEMIS_FILE, EMIS_FILE, & 
-                            ISNAP_SHIP, ISNAP_NAT, VOLCANOES_LL, &
+                            N_HFAC,N_SPLIT, NEMIS_FILE, EMIS_FILE, & 
+                            VOLCANOES_LL, &
                           ! NMR-NH3 specific variables (for FUTURE )
                             NH3EMIS_VAR,dknh3_agr,ISNAP_AGR,ISNAP_TRAF, &
                             NROADDUST, &
@@ -705,6 +705,9 @@ end if
           isec1 = 1
           isec2 = NSECTORS
        elseif (isec==100) then    ! Anthropogenic scenario
+          !if you need this option, then just uncomment and check that
+          !ANTROP_SECTORS is set according to your categories (10 for SNAP)
+          call StopAll("Anthropogenic not compatible with non-SNAP")
           isec1 = 1
           isec2 = ANTROP_SECTORS
        else                       ! one sector: isec
@@ -740,7 +743,7 @@ end if
     ! Extra checks
      write(unit=6,fmt=*) "DEBUG_EMISGET: UK femis gives: "
      write(unit=6,fmt="(6x, 30a10)") (EMIS_FILE(ie), ie=1,NEMIS_FILE)
-     do isec = 1, 11
+     do isec = 1, NSECTORS
       write(unit=6,fmt="(i6, 30f10.4)") isec, &
           (e_fact(isec,27,ie),ie=1,NEMIS_FILE)
      end do
@@ -786,7 +789,7 @@ end if
       else if( index(txtinput,"Nklevels")>0 ) then !  Number levels
          read(txtinput,fmt=*,iostat=ios)  txt1, nemis_hprofile
          call PrintLog(trim(txtinput),MasterProc)
-         allocate(emis_hprofile(nemis_hprofile+1,NSECTORS),stat=allocerr)
+         allocate(emis_hprofile(nemis_hprofile+1,N_HFAC),stat=allocerr)
          allocate(emis_P_level(0:nemis_hprofile),stat=allocerr)
          emis_P_level=0.0
          call CheckStop(allocerr, "Allocation error for emis_P_level")
@@ -839,7 +842,7 @@ end if
          emis_P_level(KMAX_BND-k)=A_bnd(k)+B_bnd(k)*Pref !not used
       enddo
       nemis_kprofile=nemis_hprofile
-      allocate(emis_kprofile(nemis_kprofile,NSECTORS),stat=allocerr)
+      allocate(emis_kprofile(nemis_kprofile,N_HFAC),stat=allocerr)
       emis_kprofile(1:nemis_kprofile,:)=emis_hprofile(1:nemis_hprofile,:)
 
    else
@@ -859,13 +862,13 @@ end if
       enddo
       if(MasterProc) write(*,*)'Emissions distributed among ',nemis_kprofile,' lowest levels'
 
-      allocate(emis_kprofile(nemis_kprofile,NSECTORS),stat=allocerr)
+      allocate(emis_kprofile(nemis_kprofile,N_HFAC),stat=allocerr)
       emis_kprofile=0.0
 
       !convert height (given as pressure) distribution into model level distribution
       !ext meaning using levels from file (EmisHeights.txt)
       k1_ext(KMAX_BND)=0
-      do isec=1,NSECTORS! could put inside but easier for debugging to put here now
+      do isec=1,N_HFAC! could put inside but easier for debugging to put here now
          if(DEBUG_GETEMIS.and.MasterProc) write(*,*)'Sector ',isec
          do k=KMAX_BND-1,max(1,KMAX_BND-nemis_kprofile),-1
 
@@ -924,7 +927,7 @@ end if
       
       if(MasterProc)then
          write(*,*)'Distribution of emission into levels:'
-         do isec=1,NSECTORS! could put inside but easier for debugging to put here now
+         do isec=1,N_HFAC! could put inside but easier for debugging to put here now
             write(*,fmt="(A,I5,A,20F6.3)")'sector: ',isec,' fractions: ',(emis_kprofile(k,isec),k=1,nemis_kprofile)
          enddo
       endif
@@ -932,7 +935,7 @@ end if
    endif
 
 !check normalization of distributions:
-   do isec=1,NSECTORS
+   do isec=1,N_HFAC
       sum=0.0
       do k=1,nemis_kprofile
          sum=sum+emis_kprofile(k,isec)
@@ -963,7 +966,7 @@ end if
 !        where xxx can be voc or pm or whatever has NEMISFRAC > 1
 !
 ! Output: (module public variable)
-!    real emisfrac(NRCSPLIT,NSECTORS,NLAND)
+!    real emisfrac(NRCSPLIT,N_SPLIT,NLAND)
 !
 !------------------------------------------------------------------------- 
 
@@ -984,7 +987,7 @@ end if
 ! zero to just use species()%molwt.:
   type(KeyVal), dimension(1)  :: MassValue ! set for e.f. NOx as NO2, SOx as SO2
   integer :: NKeys
-  real, dimension(NSPEC_ADV,NSECTORS,NLAND) :: tmp_emisfrac
+  real, dimension(NSPEC_ADV,N_SPLIT,NLAND) :: tmp_emisfrac
   real, dimension(NSPEC_ADV) :: tmp_emis_masscorr
   integer, dimension(NSPEC_ADV) :: tmp_iqrc2itot !maps from iqrc 
   real, dimension(NMAX ) :: tmp 
@@ -1192,8 +1195,8 @@ end if
        enddo READ_DATA 
        close(IO_EMIS)
 
-       call CheckStop(  defaults .and. n  /=  NSECTORS, &
-                        "ERROR: EmisGet: defaults .and. n  /=  NSECTORS" )
+       call CheckStop(  defaults .and. n  /=  N_SPLIT, &
+                        "ERROR: EmisGet: defaults .and. n  /=  N_SPLIT" )
 
        if (debugm ) write(*,*) "Read ", n, " records from ",fname
 
@@ -1221,7 +1224,7 @@ end if
   ! Now, we know how many split species we have, nrcsplit, so we allocate
   !  and fill emisfrac:
   nrcemis = sum( emis_nsplit(:) )
-  allocate(emisfrac(nrcemis,NSECTORS,NLAND),stat=allocerr)
+  allocate(emisfrac(nrcemis,N_SPLIT,NLAND),stat=allocerr)
   call CheckStop(allocerr, "Allocation error for emisfrac")
   allocate(iqrc2itot(nrcemis),stat=allocerr)
   call CheckStop(allocerr, "Allocation error for iqrc2itot")

@@ -148,6 +148,7 @@ real, public, save :: CONVECTION_FACTOR = 1.0
 !-----------------------------------------------------------
 logical, public, save ::             &
   FORECAST              = .false.    & ! reset in namelist
+ ,USE_SNAP              = .true.     & ! categories defined in emission file
  ,USE_SOILWATER         = .false.    &
  ,USE_SEASALT           = .true.     &
  ,USE_CONVECTION        = .false.    & ! false works best for Euro runs,
