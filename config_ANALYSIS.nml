@@ -10,6 +10,7 @@
 !  IC/BC        see namelists Nest_config,ExternalBICs_config,ExternalBICs_bc
 !------------------------------
 &ModelConstants_config
+  meteo                 = './meteoYYYYMMDD.nc',
   EXP_NAME              = 'ANALYSIS',
   MY_OUTPUTS            = 'MACC_ENS',
 !------------------------------

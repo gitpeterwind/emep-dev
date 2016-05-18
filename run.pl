@@ -118,7 +118,7 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
- ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3200","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
+ ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3205","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
 #($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3074","EmChem09soa","EMEPGLOB","EMEPSTD","GLOBAL",0);
 
 my %BENCHMARK;
@@ -1079,7 +1079,7 @@ foreach my $scenflag ( @runs ) {
 
 # namelist with input parameters (to be read by Unimod.f90 and other modules)
   my $nml="";
-  my %h=(%inml,%BENCHMARK);
+  my %h=(%inml,%BENCHMARK,MetDir=>"$MetDir");
   if(%BENCHMARK){
     # read nml template file
     $nml=EMEP::Sr::slurp("$ProgDir/config_BM-$GRID.nml");
@@ -1093,7 +1093,7 @@ foreach my $scenflag ( @runs ) {
         ."  runlabel2 = '$runlabel2',\n"
         ."  startdate = ".date2str($startdate ,"%Y,%m,%d,000000,\n")
         ."  enddate   = ".date2str($enddate   ,"%Y,%m,%d,000000,\n")
-#        ."  meteo     = '$METformat',\n" #moved to config
+#       ."  meteo     = '$METformat',\n" #moved to config
         ."&end\n";
     # NML namelist options.
     foreach my $f ("config_$exp_name.nml","config_Outputs_$outputs.nml") {

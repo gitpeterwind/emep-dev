@@ -153,7 +153,13 @@ info on unused variables, etc.
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+18th May, Alvaro 3205
 
+run.pl,config_BM-EECCA.nml,
+config_FORECAST.nml,config_FORECAST_CitySR.nml,config_ANALYSIS.nml:
+- Update meteo definition consistent with 3201-3 (May 15th).
+  Move meteo variable from INPUT_PARA namelist to ModelConstants_config namelist.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 18th May, Peter 3204

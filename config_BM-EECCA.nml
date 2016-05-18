@@ -5,13 +5,13 @@
   DataPath(2) = '/home/metno/mifapw/work',  !Vilje
 &end
 &INPUT_PARA
+  GRID      = '$grid'
   iyr_trend = $year,
   runlabel1 = '$runlabel1',
   runlabel2 = '$runlabel2',
   startdate = $year,01,01,000000,
   enddate   = $year,12,31,000000,
 ! enddate   = $year,01,08,000000, ! 1 week "Debug-Benchmark"
-  meteo     = '$METformat',
 &end
 !-------- Experiment Description
 !  EXP_NAME     one word description, e.g. EMEPSTD,EMEP2010,TFMM
@@ -19,6 +19,7 @@
 !  IC/BC        see namelists Nest_config,ExternalBICs_config,ExternalBICs_bc
 !------------------------------
 &ModelConstants_config
+  meteo                 = '$MetDir/meteoYYYYMMDD.nc',
   EXP_NAME              = 'BM-EECCA',
   MY_OUTPUTS            = 'EMEPSTD',
 !------------------------------
