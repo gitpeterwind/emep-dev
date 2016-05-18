@@ -154,7 +154,7 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-18th May, Alvaro 3205-3208
+18th May, Alvaro 3205-3209
 
 run.pl,config_BM-EECCA.nml,config_EMERGENCY.nml,
 config_FORECAST.nml,config_FORECAST_CitySR.nml,config_ANALYSIS.nml:
