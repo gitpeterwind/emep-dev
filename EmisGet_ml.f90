@@ -25,7 +25,7 @@ use ModelConstants_ml,only: NPROC, TXTLEN_NAME, &
                              DEBUG,  KMAX_MID,KMAX_BND, Pref,&
                              SEAFIX_GEA_NEEDED, & ! only if emission problems over sea
                              MasterProc,DEBUG_GETEMIS,DEBUG_ROADDUST,USE_ROADDUST&
-                             ,IIFULLDOM,JJFULLDOM
+                             ,IIFULLDOM,JJFULLDOM, SECTORS_NAME
 use MPI_Groups_ml   , only : MPI_BYTE, MPI_REAL8, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_INTEGER&
                                      ,MPI_COMM_CALC, IERROR
 use NetCDF_ml, only  : ReadField_CDF  !CDF_SNAP
@@ -707,7 +707,7 @@ end if
        elseif (isec==100) then    ! Anthropogenic scenario
           !if you need this option, then just uncomment and check that
           !ANTROP_SECTORS is set according to your categories (10 for SNAP)
-          call StopAll("Anthropogenic not compatible with non-SNAP")
+          call CheckStop(SECTORS_NAME/='SNAP',"Anthropogenic not compatible with non-SNAP")
           isec1 = 1
           isec2 = ANTROP_SECTORS
        else                       ! one sector: isec
@@ -805,6 +805,10 @@ end if
          cycle
       else
          read(txtinput,fmt=*,iostat=ios) snap, (tmp(k),k=1, nemis_hprofile)
+         if(snap > N_HFAC)then
+            if(me==0)write(*,*)N_HFAC,' sector classes defined, but found ',snap
+            call CheckStop(snap > N_HFAC,"EmisGet: sector class out of bounds")
+         endif
          if( DEBUG_GETEMIS.and.MasterProc ) write(*,*) "VER=> ",snap, tmp(1), tmp(3)
          emis_hprofile(1:nemis_hprofile,snap) = tmp(1:nemis_hprofile)
       end if

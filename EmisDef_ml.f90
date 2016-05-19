@@ -111,6 +111,17 @@ implicit none
    integer, save, target, dimension(NSECTORS_GNFR) :: & ! mapping of sector to height distribution class
         GNFR_sec2split_map = (/1,3,2,4,4,6,7,8,8,8,9,9,9,10,10,10,5,11,11,11,11/) !values must be <= N_SPECIATION
 
+!TEST  specific definitions
+   integer, public, parameter :: &
+          NSECTORS_TEST  = 11    ! Number of sectors defined in SNAP emissions. Do not modify
+   integer, save, target, dimension(NSECTORS_TEST) :: & ! mapping of sector to time factor class
+        TEST_sec2tfac_map = (/1,2,3,4,5,6,7,8,9,10,11/) !values must be <= N_TFAC
+   integer, save, target, dimension(NSECTORS_TEST) :: & ! mapping of sector to height distribution class
+        TEST_sec2hfac_map = (/1,2,3,4,5,6,7,8,9,10,11/) !values must be <= N_HFAC
+   integer, save, target, dimension(NSECTORS_TEST) :: & ! mapping of sector to height distribution class
+        TEST_sec2split_map = (/1,2,3,4,5,6,7,8,9,10,11/) !values must be <= N_SPECIATION
+
+
 !The sectors defined here are always SNAP sectors. Should NOT be changed if other
 !categories (for instance GNFR) are used!
    integer, public, parameter :: &
@@ -118,6 +129,12 @@ implicit none
           ISNAP_DOM  =  2,   &   ! Domestic/residential, for degree-day Timefactors
           ISNAP_AGR  = 10,   &   ! Note that flat emissions do NOT necessarily
           ISNAP_TRAF = 7         ! belong to the same SNAP sector
+
+!The sectors defined here are should be changed if other
+!categories (for instance GNFR) are used!
+   integer, public, parameter :: &
+          ISEC_NAT  = 11, &   ! index for natural (and flat?) emissions
+          ISEC_SHIP = 8       ! index for flat emissions, e.g ship
 
 
    !Dust

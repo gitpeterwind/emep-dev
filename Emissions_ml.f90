@@ -18,6 +18,8 @@ use EmisDef_ml,       only: &
      ,FNCMAX        & ! Max. No. countries (with flat emissions) per grid
      ,ISNAP_DOM     & ! snap index for domestic/resid emis
      ,ISNAP_TRAF    & ! snap index for road-traffic (SNAP7)
+     ,ISEC_NAT      & ! index for natural (and flat?) emissions
+     ,ISEC_SHIP     & ! index for flat emissions, e.g ship
      ,IQ_DMS        & ! code for DMS emissions
      ,NROAD_FILES   & ! No. road dust emis potential files
      ,ROAD_FILE     & ! Names of road dust emission files
@@ -36,7 +38,9 @@ use EmisDef_ml,       only: &
      ,MAXFEMISLONLAT,N_femis_lonlat,loc_frac &
      ,NSECTORS, N_HFAC, N_TFAC, N_SPLIT     & ! No. emis sectors, height, time and split classes
      ,sec2tfac_map, sec2hfac_map, sec2split_map& !generic mapping of indices
-     ,NSECTORS_SNAP, SNAP_sec2tfac_map, SNAP_sec2hfac_map, SNAP_sec2split_map!SNAP specific mapping
+     ,NSECTORS_SNAP, SNAP_sec2tfac_map, SNAP_sec2hfac_map, SNAP_sec2split_map&!SNAP specific mapping
+     ,NSECTORS_GNFR, GNFR_sec2tfac_map, GNFR_sec2hfac_map, GNFR_sec2split_map&!GNFR specific mapping
+     ,NSECTORS_TEST, TEST_sec2tfac_map, TEST_sec2hfac_map, TEST_sec2split_map!TEST specific mapping
 
 use EmisGet_ml,       only: &
      EmisSplit &
@@ -81,7 +85,7 @@ use ModelConstants_ml,only: &
     USE_LIGHTNING_EMIS,USE_AIRCRAFT_EMIS,USE_ROADDUST, &
     USE_EURO_SOILNOX, USE_GLOBAL_SOILNOX, EURO_SOILNOX_DEPSCALE,&! one or the other
     USE_OCEAN_NH3,USE_OCEAN_DMS,FOUND_OCEAN_DMS,&
-    NPROC, EmisSplit_OUT,USE_uEMEP,uEMEP,USE_SNAP
+    NPROC, EmisSplit_OUT,USE_uEMEP,uEMEP,SECTORS_NAME
 use MPI_Groups_ml  , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER&
                             ,MPI_SUM,MPI_COMM_CALC, IERROR
 use NetCDF_ml,        only: ReadField_CDF,ReadField_CDF_FL,ReadTimeCDF,IsCDFfractionFormat,GetCDF_modelgrid,PrintCDF
@@ -225,13 +229,27 @@ subroutine Emissions(year)
   !    emission indices (IQSO2=.., )
 
   ! init_sectors
-  if(USE_SNAP)then
+  if(SECTORS_NAME=='SNAP')then
      !11 sectors defined in emissions
      NSECTORS = NSECTORS_SNAP
      !map timefactors onto SNAP map
      sec2tfac_map => SNAP_sec2tfac_map
      sec2hfac_map => SNAP_sec2hfac_map
      sec2split_map => SNAP_sec2split_map
+  else  if(SECTORS_NAME=='GNFR')then
+     !11 sectors defined in emissions
+     NSECTORS = NSECTORS_GNFR
+     !map timefactors onto GNFR map
+     sec2tfac_map => GNFR_sec2tfac_map
+     sec2hfac_map => GNFR_sec2hfac_map
+     sec2split_map => GNFR_sec2split_map
+  else  if(SECTORS_NAME=='TEST')then
+     !11 sectors defined in emissions
+     NSECTORS = NSECTORS_TEST
+     !map timefactors onto TEST map
+     sec2tfac_map => TEST_sec2tfac_map
+     sec2hfac_map => TEST_sec2hfac_map
+     sec2split_map => TEST_sec2split_map
   else
      call StopAll("Sectors not defined")
   endif
@@ -1132,6 +1150,11 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
         do ficc = 1, fncc
           !flat_iland = flat_landcode(i,j,ficc) ! 30=BAS etc.
           flat_iland = find_index(flat_landcode(i,j,ficc),Country(:)%icode) !array index
+          if(Country(flat_iland)%is_sea) then  ! saves if statements below
+            isec = ISEC_SHIP 
+          else
+            isec = ISEC_NAT
+          endif
 
           !  As each emission sector has a different diurnal profile
           !  and possibly speciation, we loop over each sector, adding

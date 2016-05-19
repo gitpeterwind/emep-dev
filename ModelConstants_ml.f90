@@ -130,6 +130,8 @@ type(emep_debug), public, save :: DEBUG
   endtype emis_in
   type(emis_in), public, dimension(5) :: emis_inputlist = emis_in()
 
+  character(len=40), public, save   :: SECTORS_NAME='SNAP'
+
   character (len=200), public, save :: EmisDir = '.'
   character (len=200), public, save :: DataDir = '.'
   character (len=200), public, save :: GRID = 'EECCA' !default grid
@@ -148,7 +150,6 @@ real, public, save :: CONVECTION_FACTOR = 1.0
 !-----------------------------------------------------------
 logical, public, save ::             &
   FORECAST              = .false.    & ! reset in namelist
- ,USE_SNAP              = .true.     & ! categories defined in emission file
  ,USE_SOILWATER         = .false.    &
  ,USE_SEASALT           = .true.     &
  ,USE_CONVECTION        = .false.    & ! false works best for Euro runs,
@@ -422,7 +423,7 @@ logical, public, save ::  DebugCell  = .false.
 ! Debug flag DEBUG_XXX  applied in subroutine XXX
  logical, public, parameter ::    &
    DEBUG_ADV            = .false. &
-,PALEO_TEST = .false. &
+  ,PALEO_TEST = .false. &
   ,DEBUG_BLM            = .false. & ! Produces matrix of differnt Kz and Hmix
   ,DEBUG_DERIVED        = .false. &
     ,DEBUG_COLUMN       = .false. & ! Extra option in Derived

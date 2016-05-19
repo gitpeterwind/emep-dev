@@ -157,7 +157,6 @@ contains
   character(len=100) :: errmsg
   character(len=200) :: inputline
   real :: fracchange
-  real, dimension(NLAND,NEMIS_FILE):: sumfacc !factor to normalize monthly changes                                                         
   real :: Start, Endval, Average, x, buff(12)
 
   if (DEBUG) write(unit=6,fmt=*) "into timefactors "
@@ -231,17 +230,15 @@ contains
        close(IO_TIMEFACS)
 
       ! Apply change in monthly factors for SNAP 1
-       sumfacc(:,:)=0.0
        do ic = 1, NLAND
+          sumfac=0.0
           do mm=1,12
                fac_emm(ic,mm,1,iemis)=fac_emm(ic,mm,1,iemis)*fac_cemm(mm)
-               sumfacc(ic,iemis)=sumfacc(ic,iemis)+fac_emm(ic,mm,1,iemis)
+               sumfac=sumfac+fac_emm(ic,mm,1,iemis)
           enddo
-       enddo
-      ! normalize
-       do ic = 1, NLAND
+          ! normalize
           do mm=1,12
-             fac_emm(ic,mm,1,iemis)=fac_emm(ic,mm,1,iemis)*12./sumfacc(ic,iemis)
+             fac_emm(ic,mm,1,iemis)=fac_emm(ic,mm,1,iemis)*12./sumfac
           enddo
        enddo
        if (DEBUG) write(unit=6,fmt=*) "Read ", n, " records from ", fname2 
