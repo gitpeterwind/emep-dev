@@ -154,12 +154,13 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-19th May, Peter 3210
+19th May, Peter 3210-1
 
 Tested sector grouping (defined new categories for timefactors, height, split 
 and used them instaed of sector 1 )
 Put back the ISEC_NAT and ISEC_SHIP, which should not have been removed.
 Defined SECTORS_NAME='SNAP' to steer sector grouping.
+SECTORS_NAME='GNFR' ready to use when we get emissions.
 Small changes in runtime checks.
 
 Small optimization of a factor in Timefactors_ml.f90

@@ -103,13 +103,13 @@ implicit none
 
 !GNFR  specific definitions
    integer, public, parameter :: &
-          NSECTORS_GNFR  = 21    ! Number of sectors defined in GNFR emissions
+          NSECTORS_GNFR  = 13    ! Number of sectors defined in GNFR emissions
    integer, save, target, dimension(NSECTORS_GNFR) :: & ! mapping of sector to time factor class
-        GNFR_sec2tfac_map = (/1,3,2,4,4,6,7,8,8,8,9,9,9,10,10,10,5,11,11,11,11/) !values must be <= N_TFAC
+        GNFR_sec2tfac_map = (/1,3,2,4,4,6,7,8,8,8,9,9,9/) !values must be <= N_TFAC
    integer, save, target, dimension(NSECTORS_GNFR) :: & ! mapping of sector to height distribution class
-        GNFR_sec2hfac_map = (/1,3,2,4,4,6,7,8,8,8,9,9,9,10,10,10,5,11,11,11,11/) !values must be <= N_HFAC
+        GNFR_sec2hfac_map = (/1,3,2,4,4,6,7,8,8,8,9,9,9/) !values must be <= N_HFAC
    integer, save, target, dimension(NSECTORS_GNFR) :: & ! mapping of sector to height distribution class
-        GNFR_sec2split_map = (/1,3,2,4,4,6,7,8,8,8,9,9,9,10,10,10,5,11,11,11,11/) !values must be <= N_SPECIATION
+        GNFR_sec2split_map = (/1,3,2,4,4,6,7,8,8,8,9,9,9/) !values must be <= N_SPECIATION
 
 !TEST  specific definitions
    integer, public, parameter :: &
