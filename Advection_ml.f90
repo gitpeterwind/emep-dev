@@ -886,8 +886,8 @@
                    !assumes mixing ratios units, but weight by mass
                    xn_k(k)=xn_k(k)+xn_adv(ix,i,j,k)*species_adv(ix)%molwt
                 enddo
-                xn_k(k)=xn_k(k)*loc_frac(i,j,k,ip)
                 if(k==kmax_mid)xn_k_old=xn_k(KMAX_MID)!save for udiff
+                xn_k(k)=xn_k(k)*loc_frac(i,j,k,ip)
              enddo
              call vertdiff_1d(xn_k,EtaKz(i,j,1,1),ds3,ds4,ndiff)!does the same as vertdiffn, but for one component
           endif
