@@ -244,8 +244,9 @@ contains
  status=nf90_open(path = trim(fName), mode = nf90_nowrite, ncid = ncFileID)
 
  if( status /= nf90_noerr ) then
-  if( MasterProc ) write(*,*) "EmisGetCdf - couldn't open "//trim(fName)
-   return
+  if( MasterProc )write(*,*) "ERROR: EmisGetCdf - couldn't open "//trim(fName)
+  CALL MPI_FINALIZE(IERROR)
+  stop
  end if
 
  call check(nf90_Inquire(ncFileID,nDimensions,nVariables,nAttributes,timeDimID))

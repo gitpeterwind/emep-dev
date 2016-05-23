@@ -154,6 +154,17 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+23rd May, Peter 3214-5
+
+Possibility to choose zero order horizontal advection.
+set hor_adv0th=.true. in Advection_ml
+
+Can be used for testing "Bott" effects. 
+(For dominant point sources, Bott can give strange patterns in the neighbor cells)
+
+Program stops if the emission file is not found.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 19th May, Alvaro 3213
 
 run.pl:
