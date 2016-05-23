@@ -162,7 +162,7 @@ set hor_adv0th=.true. in Advection_ml
 Can be used for testing "Bott" effects. 
 (For dominant point sources, Bott can give strange patterns in the neighbor cells)
 
-Program stops if the emission file is not found.
+Program stops if the emission file is not found
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 19th May, Alvaro 3213
