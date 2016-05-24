@@ -1,5 +1,5 @@
 
-# script to generate and run a testing file from a "DSX"-enabled module
+# script to generate and run a testing file from a "TSTEMX"-enabled module
 # and to create and run the appropriate Makefile
 # In Unimod, works for SmallUtils so far.
 
@@ -11,14 +11,18 @@ tstfile=testX_$1
 runfile=testX_$b
 
 # Create new test-prog from commented out !TSTESX lines of module:
-grep "\!DSX" $1  > $tstfile
-sed -i "s/\!DSX//" $tstfile
+grep "\!TSTEMX" $1  > $tstfile
+sed -i "s/\!TSTEMX//" $tstfile
 
 make clean
 
 utils/fmkmf \
-  -f90  "gfortran  -pedantic -Wall -fbounds-check -fdefault-real-8 -finit-real=nan -ffree-line-length-none"\
+  -f90  "ifort -r8 -check all -check noarg_temp_created -debug-parameters all -traceback -ftrapuv -g -fpe0 -O0"\
     -tag "(f95|F95|f90|F90)" $tstfile > $tstMakeFile 
+  #-f90  "gfortran  -pedantic -Wall -fbounds-check -fdefault-real-8 -finit-real=nan -ffree-line-length-none"\
+  #  -tag "(f95|F95|f90|F90)" $tstfile > $tstMakeFile 
+
+make clean -f $tstMakeFile
 
 make -f $tstMakeFile
 ./$runfile

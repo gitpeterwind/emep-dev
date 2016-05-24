@@ -468,7 +468,7 @@ end subroutine Self_test
 
 end module SmallUtils_ml
 
-!DSX program tester
-!DSX   use SmallUtils_ml, only : Self_test
-!DSX   call Self_test()
-!DSX end program tester
+!TSTEMX program tester
+!TSTEMX   use SmallUtils_ml, only : Self_test
+!TSTEMX   call Self_test()
+!TSTEMX end program tester

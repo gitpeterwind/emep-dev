@@ -8,7 +8,7 @@
 module AeroFunctions
 !____________________________________________________________________
 !
- use CheckStop_ml,         only : CheckStop
+! use CheckStop_ml,         only : CheckStop
  use PhysicalConstants_ml, only : AVOG, RGAS_J, PI
   implicit none
   private
@@ -326,7 +326,7 @@ module AeroFunctions
      end if
 
      if ( present(Dpw) )  then !  we have water
-        call CheckStop( Dpw < Dp, "Dpw<Dp1")
+        !call CheckStop( Dpw < Dp, "Dpw<Dp1")
         rwet = 0.5*Dpw
         fwetvol = (rwet/rdry)**3  ! Ratio of wet to dry vols
     ! Moist density =  [ (fwetvol - 1) * 1000.0 + 1600.0 ] / fwetvol
@@ -708,10 +708,14 @@ module AeroFunctions
      rwet = wetrad( rdry, 0.01*iRH )
      S_m2m3  = pmSurfArea(ugPM,Dp=2*rdry,Dpw=2*rwet)
      Kn2o5 = UptakeRate(cn2o5,gam=0.01,S=S_m2m3,rad=rwet)    ! Using wet radius, wet S 
-     write(io1,"(f5.2,f7.3,20f7.1)") frh, rwet/rdry, S_m2m3(:)*um2
-if(iRH == 100 ) print *, frh, rwet/rdry, S_m2m3(:)*um2
-     write(io2,"(f5.2,f7.3,20es10.2)") frh, rwet/rdry, Kn2o5(:)
+! print *, 'High RH', frh, rwet/rdry, S_m2m3(:)*um2
+!if(iRH > 97 ) print *, 'High RH', frh, rwet/rdry, S_m2m3(:)*um2
+     write(io1,"(f5.2,f9.3,20g11.2)") frh, rwet/rdry, S_m2m3(:)*um2
+     write(io2,"(f5.2,f9.3,20es11.2)") frh, rwet/rdry, Kn2o5(:)
+     write(*,"(a,f5.2,f9.3,20g11.2)") 'RH-S:', frh, rwet/rdry, S_m2m3(:)*um2
+     write(*,"(a,f5.2,f9.3,20es11.2)")'RH-K:', frh, rwet/rdry, Kn2o5(:)
    end do
+   print *, "*** See AeroSurf.txt, AeroRate.txt *** "
 
    rdry = 0.05853 ! um
    frh  = 0.8943
@@ -754,9 +758,9 @@ if(iRH == 100 ) print *, frh, rwet/rdry, S_m2m3(:)*um2
 
   end subroutine self_test_fracs
 end module AeroFunctions
-!TSTESX program tstr
-!TSTESX use AeroFunctions, only : self_test, self_test_fracs
-!TSTESX implicit none
-!TSTESX call self_test()
-!TSTESX !call self_test_fracs()
-!TSTESX end program tstr
+!TSTEMX program tstr
+!TSTEMX use AeroFunctions, only : self_test, self_test_fracs
+!TSTEMX implicit none
+!TSTEMX call self_test()
+!TSTEMX !call self_test_fracs()
+!TSTEMX end program tstr

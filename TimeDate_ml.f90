@@ -367,7 +367,7 @@ SUBROUTINE Init_nmdays (indate)
 END SUBROUTINE Init_nmdays
 
 END MODULE TimeDate_ml
-!TSTESX program testr
-!TSTESX use TimeDate_ml, only : date, print_date
-!TSTESX print *, "DATE is ", print_date( date( 1999, 3, 2,21, 0 ))
-!TSTESX end program testr
+!TSTEMX program testr
+!TSTEMX use TimeDate_ml, only : date, print_date
+!TSTEMX print *, "DATE is ", print_date( date( 1999, 3, 2,21, 0 ))
+!TSTEMX end program testr
