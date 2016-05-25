@@ -13,7 +13,7 @@
 ! Programmed by Svetlana Tsyro
 !-----------------------------------------------------------------------------
 
- use AeroFunctions,        only : WetRad, umWetRad, GbSeaSalt
+ use AeroFunctions,        only : WetRad, cmWetRad, GbSeaSalt
  use Biogenics_ml,         only : EMIS_BioNat, EmisNat  
  use ChemSpecs,            only : species
  use GridValues_ml,        only : glat, glon, i_fdom, j_fdom 
@@ -367,9 +367,12 @@
         !Gb          log10(0.8))+RLIM(i)**3) ** third
 
         !ds now use Gerber functions
-        radSS(i) = umWetRad(rdry(i), 0.8, GbSeaSalt)
-        lim1     = umWetRad(rlim(i+1), 0.8, GbSeaSalt)
-        lim2     = umWetRad(rlim(i), 0.8, GbSeaSalt)
+!STbug        radSS(i) = umWetRad(rdry(i), 0.8, GbSeaSalt)
+!STbug        lim1     = umWetRad(rlim(i+1), 0.8, GbSeaSalt)
+!STbug        lim2     = umWetRad(rlim(i), 0.8, GbSeaSalt)
+        radSS(i) = cmWetRad(rdry(i), 0.8, GbSeaSalt)
+        lim1     = cmWetRad(rlim(i+1), 0.8, GbSeaSalt)
+        lim2     = cmWetRad(rlim(i), 0.8, GbSeaSalt)
         Rrange(i) = lim1 - lim2       ! bin size intervals 
 
        if( DEBUG%SEASALT ) then

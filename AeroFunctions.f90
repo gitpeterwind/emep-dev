@@ -30,6 +30,7 @@ module AeroFunctions
   public :: pmH2O_gerber
   public :: WetRad
   public :: umWetRad
+  public :: cmWetRad
   public :: WetRadS
 
   integer, public, parameter :: GbRural=1, GbSeaSalt=2, GbUrban=3, GbAmmSO4=4
@@ -178,6 +179,33 @@ module AeroFunctions
    !QUERY - to stop huge wet particles...
    rwet = min( rwet, 10*rdry)
   end function umWetRad 
+ !---------------------------------------------------------------------
+
+  elemental function cmWetRad(rdry,fRH,pmtype) result (rwet)
+   real, intent(in) :: rdry                 !< m !NOTE UNITS DO MATTER!
+   real, intent(in) :: fRH                  !< humidity, 0< fRH < 1
+   integer, intent(in), optional :: pmtype  !< Type of aerosol
+   real             :: rwet                 !< m
+
+   ! Zhang, 2001,  Table 1, constants for Gerber, Gong typr calc
+   real, parameter, dimension(4,4) :: K = reshape(  &
+      (/  0.2789,3.115,5.415e-11,-1.399   &  ! rural, default
+        , 0.7674,3.079,2.573e-11,-1.424   &  ! sea-salt
+        , 0.3926,3.101,4.190e-11,-1.404   &  ! urban
+        , 0.4809,3.082,3.110e-11,-1.428 /)&  ! (NH4)2SO4
+        ,(/4,4/) )
+   real, parameter :: THIRD = 1.0/3.0, um2cm = 1.0e-4, cm2um = 1.0e4
+   real :: rd, mrh
+   integer :: ind  
+
+   ind = 1 ! default = rural
+   if ( present(pmtype) ) ind = pmtype
+
+   mrh = max(0.01,fRH)
+   rd = rdry * um2cm ! um -> cm
+   rwet = cm2um * ( K(1,ind)*rd**K(2,ind) / &
+     (K(3,ind) *rd**K(4,ind) - log10(mrh))+rd**3) ** THIRD
+  end function cmWetRad 
   !---------------------------------------------------------------------
 
 ! N2O5 -> nitrate calculation

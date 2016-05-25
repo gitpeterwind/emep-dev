@@ -166,7 +166,12 @@ TimeDate_ml      modified with !TSTEMX
 
 
 (Reminder, usage is e.g. mk.testX AeroFunctions_ml.)
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+25th May  Svetlana 3218
 
+SeaSalt_ml - bug fixed: radius in [cm] should be instread [um]
+             Uses updated cmWetRad from AeroFunctions_ml
+AeroFunctions_ml - cmWetRad is included
  
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 24th May Peter, Svetlana 3216
