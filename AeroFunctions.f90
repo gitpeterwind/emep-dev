@@ -140,7 +140,8 @@ module AeroFunctions
         , 0.3926,3.101,4.190e-11,-1.404   &  ! urban
         , 0.4809,3.082,3.110e-11,-1.428 /)&  ! (NH4)2SO4
         ,(/4,4/) )
-   real, parameter :: THIRD = 1.0/3.0, um2m = 1.0e-6
+   real, parameter :: THIRD = 1.0/3.0, um2m = 1.0e-6,
+                      cm2m = 1.0e-2  !ST
    real :: rd, mrh
    integer :: ind  
 
@@ -148,8 +149,10 @@ module AeroFunctions
    if ( present(pmtype) ) ind = pmtype
 
    mrh = max(0.01,fRH)
-   rd = rdry * 1.0e6  ! m -> um
-   rwet = um2m * ( K(1,ind)*rd**K(2,ind) / &
+!ST   rd = rdry * 1.0e6  ! m -> um
+   rd = rdry * 1.0e2  ! m -> cm
+!ST   rwet = um2m * ( K(1,ind)*rd**K(2,ind) / &
+   rwet = cm2m * ( K(1,ind)*rd**K(2,ind) / &
      (K(3,ind) *rd**K(4,ind) - log10(mrh))+rd**3) ** THIRD
   end function WetRad 
   !---------------------------------------------------------------------
