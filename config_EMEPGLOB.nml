@@ -61,8 +61,14 @@
   emis_inputlist(1)%name  = 'DataDir/Emis_GLOB_05.nc',    ! example of Fractions type annual emission
 !  emis_inputlist(1)%name  = 'DataDir/Emis_GLOB_01deg_2008_month.nc', ! example of Fractions type monthly emission
 
-!###################################################
-! SPECIAL EMISSIONS FOLLOW................................
+!**#######################################################
+!*** Special Cases ***
+!**#######################################################
+!
+!Ocean emissions
+  emis_inputlist(2)%name  = 'DataDir/DMS.nc',    !Global DMS in Oceans
+  emis_inputlist(2)%type  = 'DMS',    ! Needs ad-hoc treatment
+!
 !###################################################
   !stallo: 
   !EmisDir = '/global/work/mifads/cdf_emis/TNO_work2015/',

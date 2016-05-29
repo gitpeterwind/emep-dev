@@ -140,7 +140,7 @@ module AeroFunctions
         , 0.3926,3.101,4.190e-11,-1.404   &  ! urban
         , 0.4809,3.082,3.110e-11,-1.428 /)&  ! (NH4)2SO4
         ,(/4,4/) )
-   real, parameter :: THIRD = 1.0/3.0, um2m = 1.0e-6,
+   real, parameter :: THIRD = 1.0/3.0, um2m = 1.0e-6, &
                       cm2m = 1.0e-2  !ST
    real :: rd, mrh
    integer :: ind  

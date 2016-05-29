@@ -60,7 +60,7 @@ OutputMisc=
  'Psurf_d',    'PSURF', '-',     '-', 'hPa', -99,  -99,      F,   1.0, T, 4,
 !====================================================================================
 OutputConcs= 
-      'HMIX'                ,'m'   ,'2d','HMIX'     ,'MISC' ,7, !! hourly tests
+      'HMIX'                ,'m'   ,'2d','HMIX'     ,'MISC' ,3, !! hourly tests
       'SurfAreaPMF_um2cm3' ,'um2/cm3' ,'2d','SurfAreaPMF_um2cm3'    ,'MISC' ,3, !
       'SurfAreaPM_um2cm3'  ,'um2/cm3' ,'2d','SurfAreaPM_um2cm3'     ,'MISC' ,3, !
       'SurfAreaSSF_um2cm3' ,'um2/cm3' ,'2d','SurfAreaSSF_um2cm3'    ,'MISC' ,3, !!

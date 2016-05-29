@@ -154,6 +154,26 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+29th May Dave, 3220
+
+AeroFunctions  - added & to allow compilation
+Log.changes    - re-order text in Log.changes to be in order
+config_Outputs_EMEPSTD - reset HMIX to monthly, not hourly
+config_EMEPGLOB.nml - added DMS.nc usage
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+27th May Svetlana,Anna 3219
+AeroFunctions_ml - WetRad m -> cm conversion
+BoundaryConditions_ml.f90 - 2014 Mace Head corrections update
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+25th May  Svetlana 3218
+
+SeaSalt_ml - bug fixed: radius in [cm] should be instread [um]
+             Uses updated cmWetRad from AeroFunctions_ml
+AeroFunctions_ml - cmWetRad is included
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 
 24th May Dave, 3217
 
 mk.testX modified to use ifort, not gfortran (stallo's gfortran is too old), 
@@ -166,18 +186,6 @@ TimeDate_ml      modified with !TSTEMX
 
 
 (Reminder, usage is e.g. mk.testX AeroFunctions_ml.)
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-27th May Svetlana,Anna 3219
-AeroFunctions_ml - WetRad m -> cm conversion
-BoundaryConditions_ml.f90 - 2014 Mace Head corrections update
-
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-25th May  Svetlana 3218
-
-SeaSalt_ml - bug fixed: radius in [cm] should be instread [um]
-             Uses updated cmWetRad from AeroFunctions_ml
-AeroFunctions_ml - cmWetRad is included
- 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 24th May Peter, Svetlana 3216
 
