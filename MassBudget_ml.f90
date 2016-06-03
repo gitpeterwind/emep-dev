@@ -41,15 +41,14 @@ wdeploss=0.0, ddeploss=0.0
 ! The following parameters are used to check the global mass budget:
 ! Initialise here also.
 real, public, save, dimension(NSPEC_ADV) ::   &
-  sumint   = 0.0,  & !  initial mass
+  sumini   = 0.0,  & !  initial mass
   fluxin   = 0.0,  & !  mass in  across lateral boundaries
   fluxout  = 0.0,  & !  mass out across lateral boundaries
   fluxin_top  = 0.0,  & !  mass in  across top
   fluxout_top = 0.0,  & !  mass out across top
   totddep  = 0.0,  & !  total dry dep
   totwdep  = 0.0,  & !  total wet dep
-  totem    = 0.0,  & !  total emissions
-  totox    = 0.0     !  total oxidation
+  totem    = 0.0     !  total emissions
 
 real, public, save, dimension(NSPEC_ADV) ::  &
   amax = -2.0,  &  ! maximum concentration in field -2
@@ -78,20 +77,20 @@ subroutine Init_massbudget()
     do j=lj0,lj1
       do i=li0,li1
         rwork = fac*(dA(k)+dB(k)*ps(i,j,1))* xmd(i,j)
-        sumint(:) = sumint(:) + xn_adv(:,i,j,k)*rwork  ! sumint in kg
+        sumini(:) = sumini(:) + xn_adv(:,i,j,k)*rwork  ! sumini in kg
       enddo
     enddo
   enddo
 
-  CALL MPI_ALLREDUCE(MPI_IN_PLACE, sumint , NSPEC_ADV, &
+  CALL MPI_ALLREDUCE(MPI_IN_PLACE, sumini , NSPEC_ADV, &
     MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_CALC, IERROR)
 
   if(MasterProc.and.EXTENDEDMASSBUDGET)then
     do n = 1,NSPEC_ADV
-      if(sumint(n)<=0.) cycle
+      if(sumini(n)<=0.) cycle
       wgt_fac=species_adv(n)%molwt/ATWAIR
-      write(IO_LOG,"(a15,i4,4x,e10.3)") "Initial mass",n,sumint(n)*wgt_fac
-      write(*,"(a15,i4,4x,e10.3)") "Initial mass",n,sumint(n)*wgt_fac
+      write(IO_LOG,"(a15,i4,4x,e10.3)") "Initial mass",n,sumini(n)*wgt_fac
+      write(*,"(a15,i4,4x,e10.3)") "Initial mass",n,sumini(n)*wgt_fac
     enddo
   endif
 
@@ -132,6 +131,7 @@ subroutine massbudget()
                                     ! nn - Total no. of short lived and advected species
                                     ! info - printing info
   integer :: ix_o3, ifam            ! family index
+  integer :: iomb                   ! for MassBugetSummary.txt Table
   real,  dimension(NSPEC_ADV,KMAX_MID) ::  sumk   ! total mass in each layer
   integer, parameter :: NFAMILIES = 3             ! No. of families
   character(len=*), dimension(NFAMILIES), parameter :: &
@@ -156,7 +156,6 @@ subroutine massbudget()
     gfluxin,gfluxout,   & ! flux in  and out
     gtotem,             & ! total emission
     gtotddep, gtotwdep, & ! total dry and wet deposition
-    gtotox,             & ! oxidation of SO2
     natoms                ! number of S, N or C atoms
 
   real :: totdiv,helsum,fac,o3_fac,wgt_fac
@@ -173,7 +172,6 @@ subroutine massbudget()
   gtotem(:)     = totem(:)
   gtotddep(:)   = totddep(:)
   gtotwdep(:)   = totwdep(:)
-  gtotox(:)     = totox(:)
   sumk(:,:)     = 0.0
 
   do k = 1,KMAX_MID
@@ -213,14 +211,12 @@ subroutine massbudget()
     MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_CALC, IERROR)
   CALL MPI_ALLREDUCE(MPI_IN_PLACE, gtotwdep , NSPEC_ADV, &
     MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_CALC, IERROR)
-  CALL MPI_ALLREDUCE(MPI_IN_PLACE, gtotox , NSPEC_ADV, &
-    MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_CALC, IERROR)
 
   CALL MPI_ALLREDUCE(MPI_IN_PLACE, sumk , NSPEC_ADV*KMAX_MID, &
     MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_CALC, IERROR)
 
 !     make some temporary variables used to hold the sum over all
-!     domains. Remember that sumint already holds the sum over all
+!     domains. Remember that sumini already holds the sum over all
 !     domains, see inass
 !
   amax(:) = max( amax(:), xmax(:) )
@@ -246,7 +242,7 @@ subroutine massbudget()
         write(*,33)'Net lateral faces = ', fluxin(ix_o3)-fluxout(ix_o3),&
              '  in lateral faces = '  ,fluxin(ix_o3), &
              ' out lateral faces = ',  fluxout (ix_o3)
-        write(*,33)'O3 in atmosphere at start of run = ', sumint(ix_o3)*o3_fac,&
+        write(*,33)'O3 in atmosphere at start of run = ', sumini(ix_o3)*o3_fac,&
              ' at end of run = ', sum_mass(ix_o3)*o3_fac
         write(*,33)'O3 dry deposited = ',&
              gtotddep(ix_o3)*species_adv(ix_o3)%molwt
@@ -257,7 +253,7 @@ subroutine massbudget()
 
 
   do n = 1,NSPEC_ADV
-    totdiv = sumint(n) + gtotem(n) + gfluxin(n)
+    totdiv = sumini(n) + gtotem(n) + gfluxin(n)
     frac_mass(n) = sum_mass(n) + (gtotddep(n)+gtotwdep(n))*ATWAIR + gfluxout(n)
     if(totdiv>0.0) frac_mass(n) = frac_mass(n)/totdiv
   enddo
@@ -281,7 +277,7 @@ subroutine massbudget()
         case(3);natoms = real(species_adv(:)%carbons)
       endselect
 
-      family_init(ifam)   = dot_product(sumint(:)  ,natoms(:))
+      family_init(ifam)   = dot_product(sumini(:)  ,natoms(:))
       family_mass(ifam)   = dot_product(sum_mass(:),natoms(:))
       family_inflow(ifam) = dot_product(gfluxin(:) ,natoms(:))
       family_outflow(ifam)= dot_product(gfluxout(:),natoms(:))
@@ -316,7 +312,7 @@ subroutine massbudget()
 
 
       call PrintLog('++++++++++++++++++++++++++++++++++++++++++++++++')
-      write(logtxt,"(a9,5a12)")" ","sumint","summas","fluxout","fluxin","fracmass"
+      write(logtxt,"(a9,5a12)")" ","sumini","summas","fluxout","fluxin","fracmass"
       call PrintLog(logtxt)
 
       write(logtxt,"(a9,5es12.4)") family_name(ifam), &
@@ -333,37 +329,59 @@ subroutine massbudget()
     enddo  ! ifam = 1,3
   endif
 
-  if(MasterProc.and.EXTENDEDMASSBUDGET) then     ! printout from node 0
-    !/.. now use species array which is set in My_MassBudget_ml
-    do n=1,NSPEC_ADV
-      wgt_fac=species_adv(n)%molwt/ATWAIR
-      write(IO_LOG,*)
-      write(*,*)
-      do k=1,KMAX_MID
-        write(IO_LOG,"(' Spec ',i3,2x,a12,5x,'k= ',i2,5x,es12.5)")&
-          n,species_adv(n)%name, k,sumk(n,k)*wgt_fac
-        write(*     ,"(' Spec ',i3,2x,a12,5x,'k= ',i2,5x,es12.5)")&
-          n,species_adv(n)%name, k,sumk(n,k)*wgt_fac
+  if(MasterProc) then     ! printout from node 0
+
+    if( EXTENDEDMASSBUDGET) then     ! printout from node 0
+      !/.. now use species array which is set in My_MassBudget_ml
+      do n=1,NSPEC_ADV
+        wgt_fac=species_adv(n)%molwt/ATWAIR
+        write(IO_LOG,*)
+        write(*,*)
+        do k=1,KMAX_MID
+          write(IO_LOG,"(' Spec ',i3,2x,a12,5x,'k= ',i2,5x,es12.5)")&
+            n,species_adv(n)%name, k,sumk(n,k)*wgt_fac
+          write(*     ,"(' Spec ',i3,2x,a12,5x,'k= ',i2,5x,es12.5)")&
+            n,species_adv(n)%name, k,sumk(n,k)*wgt_fac
+        enddo
       enddo
-    enddo
-    do n=1,NSPEC_ADV
-      wgt_fac=species_adv(n)%molwt/ATWAIR
-      write(*,*)
-      write(*,*)'++++++++++++++++++++++++++++++++++++++++++++++++'
-      write(*,*)
-      write(*,"(a3,6a12)")" n ", "Spec", &
-        "sumint", "summas", "fluxout", "fluxin", "fracmass"
-      write(*,"(i3,1x,a11,5es12.4)") n,species_adv(n)%name, &
-        sumint(n)*wgt_fac, sum_mass(n)*wgt_fac, gfluxout(n)*wgt_fac, gfluxin(n)*wgt_fac, frac_mass(n)
-      write(*,*)
-      write(*,"(a3,6a12)")  " n ", "species", &
-        "totox", "totddep", "totwdep", "totem"
-      write(*,"(i3,1x,a11,5es12.4)") n, species_adv(n)%name, gtotox(n)*wgt_fac,&
-         gtotddep(n)*wgt_fac*ATWAIR, gtotwdep(n)*wgt_fac*ATWAIR, &
-         gtotem(n)*wgt_fac
-      write(*,*)
-      write(*,*)'++++++++++++++++++++++++++++++++++++++++++++++++'
-    enddo
+     end if ! EXTENDED
+
+    !2016 NEW: SUMMARY TABLE:
+     open(newunit=iomb,file="MassBudgetSummary.txt")
+     write(iomb,'(a)') ' # Mass Budget. Units are kg with MW used here. ADJUST! if needed' 
+     write(iomb,'(a3,1x,a14,a7,99a12)') '#n', 'Spec       ', &
+       'usedMW', 'emis', 'ddep', 'wdep', 'init', 'sum_mass', &
+       'fluxout', 'fluxin', 'frac_mass'
+
+     do n=1,NSPEC_ADV
+        wgt_fac=species_adv(n)%molwt/ATWAIR
+        if( EXTENDEDMASSBUDGET) then     ! printout from node 0
+           !/.. now use species array which is set in My_MassBudget_ml
+             write(*,*)
+             write(*,*)'++++++++++++++++++++++++++++++++++++++++++++++++'
+             write(*,*)
+    
+             write(*,"(a3,6a12)")" n ", "Spec", &
+               "sumini", "summas", "fluxout", "fluxin", "fracmass"
+             write(*,"(i3,1x,a11,5es12.4)") n,species_adv(n)%name, &
+               sumini(n)*wgt_fac, sum_mass(n)*wgt_fac, gfluxout(n)*wgt_fac, gfluxin(n)*wgt_fac, frac_mass(n)
+             write(*,*)
+             write(*,"(a3,6a12)") "n ", "species", "totddep", "totwdep", "totem"
+             write(*,"(i3,1x,a11,5es12.4)") n, species_adv(n)%name, &
+                gtotddep(n)*wgt_fac*ATWAIR, gtotwdep(n)*wgt_fac*ATWAIR, &
+                gtotem(n)*wgt_fac
+             write(*,*)
+        end if ! EXTENDED
+        write(*,*)'++++++++++++++++++++++++++++++++++++++++++++++++'
+
+        write(iomb,'(i3,1x,a14,f7.1,99es12.4)') n,adjustl(species_adv(n)%name), &
+          species_adv(n)%molwt, &  ! REMEMBER. Sometimes a dummy value, e.g. 1.0
+          gtotem(n)*wgt_fac, gtotddep(n)*wgt_fac*ATWAIR, &
+          gtotwdep(n)*wgt_fac*ATWAIR, sumini(n)*wgt_fac, sum_mass(n)*wgt_fac,&
+          gfluxout(n)*wgt_fac, gfluxin(n)*wgt_fac, frac_mass(n)
+
+     enddo
+     close(iomb)
   endif  ! MasterProc
 
   if(FOUND_OCEAN_DMS)then
