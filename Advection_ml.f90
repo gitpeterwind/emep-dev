@@ -139,6 +139,7 @@
 
     integer, private, save :: nWarnings = 0
     integer, private, parameter :: MAX_WARNINGS = 100
+    logical, parameter :: hor_adv0th=.false.
 
   contains
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -1715,13 +1716,55 @@
     real fc(-1:LIMAX+1)
     real fluxps(-1:LIMAX+1)
     real hel1(NSPEC_ADV),hel2(NSPEC_ADV)
-    real hel1ps,hel2ps
+    real hel1ps,hel2ps,C1
     integer ijpasses
     integer ijb1(LIMAX),ije1(LIMAX)
     integer ijb2(LIMAX),ije2(LIMAX),ijb3(LIMAX)
     logical ijdoend
 
 !-----------------------------------------------------------------------
+if(hor_adv0th)then
+!use zero order advection
+!    dth = dt/GRIDWIDTH_M
+   do ij=1,limax-1
+      C1=vel(ij)*dth!*xm2(i,j)
+      if(C1>0.0)then
+!         f_in=C1*xn(i,j,k)
+         flux(:,ij)=C1*xn_adv(:,ij)
+         fluxps(ij)=C1*ps3d(ij)
+      else
+         flux(:,ij)=C1*xn_adv(:,ij+1)         
+         fluxps(ij)=C1*ps3d(ij+1)
+      endif
+   enddo
+   ij=0
+   C1=vel(ij)*dth!*xm2(i,j)
+   if(C1>0.0)then
+      flux(:,ij)=C1*xnbeg(:,3)
+      fluxps(ij)=C1*psbeg(3)
+   else
+      flux(:,ij)=C1*xn_adv(:,ij+1)         
+      fluxps(ij)=C1*ps3d(ij+1)
+   endif
+   ij=limax
+   C1=vel(ij)*dth!*xm2(i,j)
+   if(C1>0.0)then
+      flux(:,ij)=C1*xn_adv(:,ij)
+      fluxps(ij)=C1*ps3d(ij)
+   else
+      flux(:,ij)=C1*xnend(:,1)         
+      fluxps(ij)=C1*psend(1)
+   endif
+
+!apply fluxes
+   do ij=li0,li1
+      xn_adv(:,ij) = max(0.0,xn_adv(:,ij)                            &
+           -xm2loc(ij)*(flux(:,ij)-flux(:,ij-1)))
+      ps3d(ij)     = max(0.0,ps3d(ij)                                &
+           -xm2loc(ij)*(fluxps(ij)-fluxps(ij-1)))      
+   enddo
+
+else
 
     limtlow = li0-1
     if (li0.eq.1) then
@@ -2195,6 +2238,8 @@
       endif
     endif
 
+endif
+
 !     accumulation of the boundary fluxes
 
     if (li0.eq.2) then
@@ -2263,13 +2308,59 @@
     real fc(-1:LJMAX+1)
     real fluxps(-1:LJMAX+1)
     real hel1(NSPEC_ADV),hel2(NSPEC_ADV)
-    real hel1ps,hel2ps
+    real hel1ps,hel2ps,C1
     integer ijpasses
     integer ijb1(LJMAX),ije1(LJMAX)
     integer ijb2(LJMAX),ije2(LJMAX),ijb3(LJMAX)
     logical ijdoend
 
 !-----------------------------------------------------------------------
+
+if(hor_adv0th)then
+!use zero order advection
+!    dth = dt/GRIDWIDTH_M
+   do ij=1,ljmax-1
+      C1=vel(ij*LIMAX)*dth!*xm2(i,j)
+      if(C1>0.0)then
+!         f_in=C1*xn(i,j,k)
+         flux(:,ij)=C1*xn_adv(:,ij*LIMAX)
+         fluxps(ij)=C1*ps3d(ij*LIMAX)
+      else
+         flux(:,ij)=C1*xn_adv(:,(ij+1)*LIMAX)         
+         fluxps(ij)=C1*ps3d((ij+1)*LIMAX)
+      endif
+   enddo
+   ij=0
+   C1=vel(ij*LIMAX)*dth!*xm2(i,j)
+   if(C1>0.0)then
+      flux(:,ij)=C1*xnbeg(:,3)
+      fluxps(ij)=C1*psbeg(3)
+   else
+      flux(:,ij)=C1*xn_adv(:,(ij+1)*LIMAX)         
+      fluxps(ij)=C1*ps3d((ij+1)*LIMAX)
+   endif
+   ij=ljmax
+   C1=vel(ij*LIMAX)*dth!*xm2(i,j)
+   if(C1>0.0)then
+      flux(:,ij)=C1*xn_adv(:,ij*LIMAX)
+      fluxps(ij)=C1*ps3d(ij*LIMAX)
+   else
+      flux(:,ij)=C1*xnend(:,1)         
+      fluxps(ij)=C1*psend(1)
+   endif
+
+!apply fluxes
+   do ij=lj0,lj1
+
+        xn_adv(:,ij*LIMAX) =                                         &
+                    max(0.0,xn_adv(:,ij*LIMAX)                        &
+                          -xm2loc(ij)*(flux(:,ij)-flux(:,ij-1)))
+        ps3d(ij*LIMAX) =                                             &
+                    max(0.0,ps3d(ij*LIMAX)                            &
+                          -xm2loc(ij)*(fluxps(ij)-fluxps(ij-1)))
+   enddo
+
+else
 
     limtlow = lj0-1
     if (lj0.eq.1) then
@@ -2768,6 +2859,8 @@
         endif
       endif
     endif
+
+endif
 
 !     accumulation of the boundary fluxes
 

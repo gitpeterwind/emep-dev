@@ -88,7 +88,8 @@ use ModelConstants_ml,only: &
     NPROC, EmisSplit_OUT,USE_uEMEP,uEMEP,SECTORS_NAME
 use MPI_Groups_ml  , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER&
                             ,MPI_SUM,MPI_COMM_CALC, IERROR
-use NetCDF_ml,        only: ReadField_CDF,ReadField_CDF_FL,ReadTimeCDF,IsCDFfractionFormat,GetCDF_modelgrid,PrintCDF
+use NetCDF_ml,        only: ReadField_CDF,ReadField_CDF_FL,ReadTimeCDF,IsCDFfractionFormat,&
+                            GetCDF_modelgrid,PrintCDF,ReadSectorName
 use netcdf
 use Par_ml,           only: MAXLIMAX,MAXLJMAX, GIMAX,GJMAX, IRUNBEG,JRUNBEG,&
                             me,limax,ljmax, MSG_READ1,MSG_READ7&
@@ -219,11 +220,71 @@ subroutine Emissions(year)
   logical ::SMI_defined=.false.
   logical,save :: my_first_call=.true.  ! Used for femis call
   logical :: fileExists            ! to test emission files
-  character(len=40) :: varname, fmt
+  character(len=40) :: varname, fmt,cdf_sector_name
   integer ::allocerr, i_gridemis, i_Emis_4D, i_femis_lonlat
   real :: lonlat_fac
 
   if (MasterProc) write(6,*) "Reading emissions for year",  year
+
+
+
+  ! Get emission input definitions and other initializations
+  !>==============================
+  if(my_first_call) then
+    sumemis(:,:) =  0.0       ! initialize sums
+    ios = 0
+
+    if(EMIS_TEST=="CdfSnap" .or. EMIS_SOURCE=="Mixed") then  
+
+      if(MasterProc)  write(*,*)sub//" Mixed format"
+      do iemislist = 1, size( emis_inputlist(:)%name )
+        fname = emis_inputlist(iemislist)%name
+        if(fname=="NOTSET") cycle
+        if(MasterProc)&
+          write(*,*)"Emission source number ", iemislist,"from ",sub//trim(fname)
+
+        if(emis_inputlist(iemislist)%type == "sectors".or.&
+           emis_inputlist(iemislist)%type == "GNFRsectors")then ! Expand groups, e.g. EUMACC2
+
+          call expandcclist( emis_inputlist(iemislist)%incl , n)
+          emis_inputlist(iemislist)%Nincl = n
+          if(MasterProc) write(*,*) sub//trim(fname)//" INPUTLIST-INCL", n
+
+          call expandcclist( emis_inputlist(iemislist)%excl , n)
+          emis_inputlist(iemislist)%Nexcl = n
+          if(MasterProc) write(*,*) sub//trim(fname)//" INPUTLIST-EXCL", n
+
+        endif
+
+        !replace keywords
+22      format(5A)
+
+        if(MasterProc)write(*,22)'original emission name ',trim(fname)
+        fname = key2str(fname,'EmisDir',EmisDir)
+        fname = key2str(fname,'DataDir',DataDir)
+        fname = key2str(fname,'YYYY',year)
+        emis_inputlist(iemislist)%name=trim(fname)
+        if(MasterProc)write(*,22)'filename redefined as: ',&
+          trim(emis_inputlist(iemislist)%name)
+
+        nin_monthly = 0
+        nex_monthly = 0
+        cdf_sector_name='NOTSET'
+        call ReadSectorname(fname,cdf_sector_name)
+        if(trim(cdf_sector_name)/='NOTSET')then
+           SECTORS_NAME=trim(cdf_sector_name)
+           if(Masterproc)write(*,*)"Switching sector categories to ",trim(SECTORS_NAME)
+           if(Masterproc)write(IO_LOG,*)"Switching sector categories to ",trim(SECTORS_NAME)
+        endif
+      enddo ! iemislist
+    endif
+
+    call femis()              ! emission factors (femis.dat file)
+    if(ios/=0) return
+    my_first_call = .false.
+  endif
+  !>============================
+
 
   ! 0) set molwts, conversion factors (e.g. tonne NO2 -> tonne N), and
   !    emission indices (IQSO2=.., )
@@ -408,55 +469,6 @@ subroutine Emissions(year)
     endif ! road dust
   endif
 
-  ! Get emission scaling factors
-  !>============================
-  if(my_first_call) then
-    sumemis(:,:) =  0.0       ! initialize sums
-    ios = 0
-
-    if(EMIS_TEST=="CdfSnap" .or. EMIS_SOURCE=="Mixed") then  
-
-      if(MasterProc)  write(*,*)sub//" Mixed format"
-      do iemislist = 1, size( emis_inputlist(:)%name )
-        fname = emis_inputlist(iemislist)%name
-        if(fname=="NOTSET") cycle
-        if(MasterProc)&
-          write(*,*)"Emission source number ", iemislist,"from ",sub//trim(fname)
-
-        if(emis_inputlist(iemislist)%type == "sectors")then ! Expand groups, e.g. EUMACC2
-
-          call expandcclist( emis_inputlist(iemislist)%incl , n)
-          emis_inputlist(iemislist)%Nincl = n
-          if(MasterProc) write(*,*) sub//trim(fname)//" INPUTLIST-INCL", n
-
-          call expandcclist( emis_inputlist(iemislist)%excl , n)
-          emis_inputlist(iemislist)%Nexcl = n
-          if(MasterProc) write(*,*) sub//trim(fname)//" INPUTLIST-EXCL", n
-
-        endif
-
-        !replace keywords
-22      format(5A)
-
-        if(MasterProc)write(*,22)'original emission name ',trim(fname)
-        fname = key2str(fname,'EmisDir',EmisDir)
-        fname = key2str(fname,'DataDir',DataDir)
-        fname = key2str(fname,'YYYY',year)
-        emis_inputlist(iemislist)%name=trim(fname)
-        if(MasterProc)write(*,22)'filename redefined as: ',&
-          trim(emis_inputlist(iemislist)%name)
-
-        nin_monthly = 0
-        nex_monthly = 0
-
-      enddo ! iemislist
-    endif
-
-    call femis()              ! emission factors (femis.dat file)
-    if(ios/=0) return
-    my_first_call = .false.
-  endif
-  !>============================
 
   select case(EMIS_SOURCE)
   case("Mixed") !default, and only one in use
@@ -508,6 +520,7 @@ subroutine Emissions(year)
               write(varname,"(A,I2.2)")trim(EMIS_FILE(iem))//'_sec',isec
               call EmisGetCdfFrac(iem, isec, fname, varname, sumemis_local, &
                    emis_inputlist(iemislist)%incl, nin, emis_inputlist(iemislist)%excl, nex)
+
             enddo!sectors
           enddo!NEMIS_FILE
 

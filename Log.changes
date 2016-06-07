@@ -154,6 +154,20 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+7th  June  Peter, 3222
+
+Read emissions in GNFR sectors. Updated the "GNFR mappings" in EmisDef_ml.f90
+To use GNFR, simply use the GNFR emission file in config.
+For now only 1 version exist:
+emis_inputlist(1)%name  = 'DataDir/GNFREmis_EMEP01.nc',
+
+Corrected a bug for zero order advection (used only by me probably).
+Removed a print out of x lines with +++++++++ in massbudget
+
+modified: Emissions_ml.f90 EmisDef_ml.f90 Advection_ml.f90 MassBudget_ml.f90 
+NetCDF_ml.f90 Log.changes
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 3  June  Dave, 3221
 
 MassBudget_ml - added creation of MassBudgetSummary.txt for all runs, with

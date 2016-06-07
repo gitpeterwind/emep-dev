@@ -96,6 +96,7 @@ public :: Out_CDF_sondes
 public :: Create_CDF_sondes
 public :: check
 public :: IsCDFfractionFormat
+public :: ReadSectorName
 
 private :: CreatenetCDFfile
 private :: createnewvariable
@@ -4341,4 +4342,19 @@ endsubroutine vertical_interpolate
 
  end function IsCDFfractionFormat
 
+ subroutine ReadSectorName(filename,cdf_sector_name)
+
+   character (len=*), intent(in):: filename
+   character (len=*), intent(inout):: cdf_sector_name
+   integer :: cdfstatus,ncFileID
+   character (len=len(cdf_sector_name)):: sector_name
+
+   cdfstatus=nf90_open(path = trim(filename), mode = nf90_nowrite, ncid = ncFileID)
+   if(cdfstatus == nf90_noerr)then
+      cdfstatus=nf90_get_att(ncFileID,nf90_global,'SECTORS_NAME',sector_name)
+      call check(nf90_close(ncFileID))
+      if(cdfstatus == nf90_noerr)cdf_sector_name=trim(sector_name)
+   endif
+
+ end subroutine ReadSectorName
 endmodule NetCDF_ml

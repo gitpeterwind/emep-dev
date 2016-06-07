@@ -371,8 +371,8 @@ subroutine massbudget()
                 gtotddep(n)*wgt_fac*ATWAIR, gtotwdep(n)*wgt_fac*ATWAIR, &
                 gtotem(n)*wgt_fac
              write(*,*)
+             write(*,*)'++++++++++++++++++++++++++++++++++++++++++++++++'
         end if ! EXTENDED
-        write(*,*)'++++++++++++++++++++++++++++++++++++++++++++++++'
 
         write(iomb,'(i3,1x,a14,f7.1,99es12.4)') n,adjustl(species_adv(n)%name), &
           species_adv(n)%molwt, &  ! REMEMBER. Sometimes a dummy value, e.g. 1.0
