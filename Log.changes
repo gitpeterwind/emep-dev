@@ -142,7 +142,7 @@ run GenChem!!!
 
 Run mk.GenChem  or e.g. make EMEP, see above!!!!
 
-Also - GenChem makes femis.defaults in the ZCM_... directory
+Also - GenChem makes femis.defaults in the ZCM_... directory 
 
 !----------------------------------------------------------
 CLEAN-UP: all code should be checked to remove old comments before
@@ -152,6 +152,19 @@ info on unused variables, etc.
 
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16  June  Dave, 3223
+
+ZCM_EmChem09soa/EMISSPLITS uodated:
+
+    emissplit.defaults.nox - added SHIPNOx column
+    emissplit.specials.nox - for SHIPNOx, using codes 350 and (HTAP) 1002 for ships
+
+    emissplit.specials.pm25 -  based upon IIASA/ECLIPSE updates of Jun 2016
+    emissplit.specials.pmco -  based upon IIASA/ECLIPSE updates of Jun 2016
+
+run.pl - added EmChem09soa to list of chems that result in use of EMISSPLIT files.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 7th  June  Peter, 3222
