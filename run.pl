@@ -987,8 +987,8 @@ foreach my $scenflag ( @runs ) {
 #  New data file for volcano emissions from June 2016
 #  Passive degassing from three volcanoes: Stromboli, Etna, Vulcano
 #  We use emission as reported by CEIP in the new files
-    $ifile{"$DataDir/volcano_location.csv_2160610"} = "columnsource_location.csv"; #J16
-    $ifile{"$DataDir/volcano_emission.csv_2160610"} = "columnsource_emission.csv"; #J16
+    $ifile{"$DataDir/volcano_location.csv_20160610"} = "columnsource_location.csv"; #J16
+    $ifile{"$DataDir/volcano_emission.csv_20160610"} = "columnsource_emission.csv"; #J16
   }
   # Topography file for volcano_elevation-surface_height correction
   my $topo="$DataDir/$GRID/topography.nc";
