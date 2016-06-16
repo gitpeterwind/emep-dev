@@ -154,7 +154,7 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-16  June  Alvaro, 3226
+16  June  Alvaro, 3226-3228
 
 Reintruduce SOA contribution to PM groups.
 The PM part of SOA (PART_OM_F) was unintentinally removed from PMFINE and PM10
