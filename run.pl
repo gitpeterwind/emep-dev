@@ -982,8 +982,13 @@ foreach my $scenflag ( @runs ) {
     close(TMP);
   }else{
     die "Need to provide your own volcanic emissions for $GRID" if($GRID eq "RCA");
-    $ifile{"$DataDir/volcano_location.csv"} = "columnsource_location.csv";
-    $ifile{"$DataDir/volcano_emission.csv"} = "columnsource_emission.csv";
+#    $ifile{"$DataDir/volcano_location.csv"} = "columnsource_location.csv";
+#    $ifile{"$DataDir/volcano_emission.csv"} = "columnsource_emission.csv";
+#  New data file for volcano emissions from June 2016
+#  Passive degassing from three volcanoes: Stromboli, Etna, Vulcano
+#  We use emission as reported by CEIP in the new files
+    $ifile{"$DataDir/volcano_location.csv_2160610"} = "columnsource_location.csv"; #J16
+    $ifile{"$DataDir/volcano_emission.csv_2160610"} = "columnsource_emission.csv"; #J16
   }
   # Topography file for volcano_elevation-surface_height correction
   my $topo="$DataDir/$GRID/topography.nc";
