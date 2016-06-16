@@ -25,9 +25,7 @@ REMPPM_c,1,xx,12,PMc,PMc,DDc,0,0,xx,PMCO;PPM_c;PPM10;PM10,,"!Primary; coarse 2.5
 FFIRE_OM,1,CO,20.4,PMfS,PMf,OC,0,0,xx,OM25;PCM;PPM25_FIRE;NVFFIREOC25;NONVOLPCM;NVABSOM,,"!Wildfire OC emissions, OM/OC assumed to be =1.7 (loosely based on Aiken et al. 2008)"
 FFIRE_BC,1,C,xx,PMfS,PMf,EC,0,0,xx,EC_f;PMFINE;PPM25_FIRE;PM10;PCM;FFIREBC;NONVOLPCM,,"!Wildfire BC emissions"
 FFIRE_REMPPM25,1,xx,12,PMfS,PMf,DDf,0,0,xx,PM10;PPM25_FIRE;PMFINE,,"!Primary; fine <2.5um"
-* OM25_SUM will include 
+* OM25_p will include 
 OM25_BGND,1,C,24,xx,xx,0,0,0,xx,OM25;NONVOLPCM;NVABSOM,,"!Assumed background; fine <2.5um"
-OM25_SUM,1,xx,1,xx,xx,0,0,0,xx,FAKE,,"!Assumed background; fine <2.5um"
-* We do not use total PPM25 from fires
-* PPM25_FIRE,1,xx,12,PMfS,PMf,DDf,0,0,xx,PM10;PMFINE,,!fires...(for consistency with EmChem09 only)
+OM25_p,1,xx,1,xx,xx,OC,0,0,xx,PM10;PMFINE,,"!Assumed background; fine <2.5um"
 

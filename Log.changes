@@ -154,6 +154,26 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16  June  Alvaro, 3226
+
+Reintruduce SOA contribution to PM groups.
+The PM part of SOA (PART_OM_F) was unintentinally removed from PMFINE and PM10
+groups in 3118 (Jan 2016).
+
+SOA_ml,ZD_OZONE/My_Outputs_ml,
+ZCM_EmChem09soa/VBS_nonvolatile.species
+ZCM_vbs_tests/VBS_help.species:
+- Rename PART_OM_F to OM25_P
+- Rename OM25_SUM to OM25_P
+- Give OM25_P OC Extinc characteristics (for AOD calculation),
+  as was the case for PART_OM_F. This will inlcude OM25_P in AOD_GROUP.
+- Add OM25_P to PM10 and PMFINE groups.
+
+config_Outputs_EMEPSTD.nml,config_Outputs_EMEPSR.nml,config_BM-EECCA.nml:
+- Rename PART_OM_F to OM25_P
+- Replace PART_OC10 and PART_OC25 outputby OM25 OMCOARSE (ugC:PM) output
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16 June 2016 Agnes, 3224-3225
 
 run.pl - changed links to volcano emissions and locations. 
@@ -162,8 +182,7 @@ run.pl - changed links to volcano emissions and locations.
          use emissions as reported by CEIP in the new files, not our
          defaults. This will lead to a significant decrease of SOx from VOL for
          recent years, while there will be an increase for the 1990s and early
-         2000s. 
-  
+         2000s.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16  June  Dave, 3223

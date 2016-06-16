@@ -144,13 +144,11 @@ OutputConcs=
       'PPM25_FIRE'          ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
 ! ============================================================
 ! SOA additions (26 entries)
-      'PART_OM_F'           ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
-      'OM_BGND'             ,'ug'  ,'2d','AIR_CONCS','SPEC',4, !! NEVER as ugC
-      'OMCOARSE'            ,'ug'  ,'2d','AIR_CONCS','GROUP',4, !! NEVER as ugC
+!     'OM25_P'              ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
+      'OM_BGND'             ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
+      'OMCOARSE'            ,'ug'  ,'2d','AIR_CONCS','GROUP',4, !! ugC:PM if needed
       'ECFINE'              ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
       'ECCOARSE'            ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
-      'PART_OC10'           ,'ug'  ,'2d','AIR_CONCS','SPEC' ,3, !! NEVER as ugC
-      'PART_OC25'           ,'ug'  ,'2d','AIR_CONCS','SPEC' ,3, !! NEVER as ugC AND..
 !! note that for nonvolatile type VBS runs (NPNA etc) this lacks the FFUELOC component
     !  'EC_F'               ,'ug'  ,'2d','AIR_CONCS','GROUP',4
 ! SOA, PCM_F etc. are special and need appropriate units. Do not confuse! 
@@ -171,14 +169,16 @@ OutputConcs=
     !FSOA new system:
     !ug:PM will trigger use of Fgas and Fpart for semivolatile compounds
     !** Needed if semivolatile components 
-      'PMFINE'              ,'ug:PM','2d','AIR_CONCS','GROUP' ,4, ! FSOA tests
-      'OM25'                ,'ug:PM','2d','AIR_CONCS','GROUP' ,4, ! FSOA tests
+      'PMFINE'              ,'ug:PM','2d','AIR_CONCS','GROUP',4, ! FSOA tests
+      'OM25'                ,'ug:PM','2d','AIR_CONCS','GROUP',4, ! FSOA tests
       'OM25_BGND'           ,'ug'   ,'2d','AIR_CONCS','SPEC' ,3, ! FSOA tests
       'OM25_BGND'           ,'ug:PM','2d','AIR_CONCS','SPEC' ,3, ! FSOA tests
-      'ASOA'                ,'ug:PM','2d','AIR_CONCS','GROUP' ,4, ! FSOA tests
-      'BSOA'                ,'ug:PM','2d','AIR_CONCS','GROUP' ,4, ! FSOA tests
-      'BSOA'                ,'ug'   ,'2d','AIR_CONCS','GROUP' ,4, ! FSOA tests
-      'NONVOLPCM'           ,'ug:PM','2d','AIR_CONCS','GROUP' ,4, ! FSOA tests
+      'OM25'               ,'ugC:PM','2d','AIR_CONCS','GROUP',4, ! FSOA tests
+      'OMCOARSE'           ,'ugC:PM','2d','AIR_CONCS','GROUP',4, ! FSOA tests
+      'ASOA'                ,'ug:PM','2d','AIR_CONCS','GROUP',4, ! FSOA tests
+      'BSOA'                ,'ug:PM','2d','AIR_CONCS','GROUP',4, ! FSOA tests
+      'BSOA'                ,'ug'   ,'2d','AIR_CONCS','GROUP',4, ! FSOA tests
+      'NONVOLPCM'           ,'ug:PM','2d','AIR_CONCS','GROUP',4, ! FSOA tests
       'FFUELOA25'           ,'ug:PM','2d','AIR_CONCS','SPEC' ,4, ! FSOA tests
       'POM_F_FFUEL'         ,'ug:PM','2d','AIR_CONCS','SPEC' ,4, ! FSOA tests
       'POM_F_FFUEL'         ,'ug'   ,'2d','AIR_CONCS','SPEC' ,4, ! FSOA tests

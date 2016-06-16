@@ -511,7 +511,7 @@ module OrganicAerosol_ml
 
    if( first_call ) then
      itot_bgnd = find_index( 'OM25_BGND', species(:)%name ) 
-     itot_om25 = find_index( 'OM25_SUM',  species(:)%name ) 
+     itot_om25 = find_index( 'OM25_P',  species(:)%name ) 
      igrp_om25 = find_index( 'OM25',  chemgroups(:)%name ) 
      if( debug_flag ) print *, "itot_bgnd, om25sum = ", itot_bgnd, itot_om25, igrp_om25
    end if

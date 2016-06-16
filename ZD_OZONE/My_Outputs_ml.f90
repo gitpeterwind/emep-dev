@@ -560,7 +560,7 @@ subroutine set_output_defs
      ,Asc2D("so4_f"  ,"ADVugXX",IXADV_SO4   ,&
             1,"ug/m3",to_ug_ADV(IXADV_SO4)  ,-999.9) &
    ! Organics
-     ,Asc2D("OM25_3m" ,"D2D_inst",find_index("SURF_ug_PART_OM_F",f_2d(:)%name), &
+     ,Asc2D("OM25_3m" ,"D2D_inst",find_index("SURF_ug_OM25_P",f_2d(:)%name), &
             1, "ug/m3",1.0,-999.9) &
      ,Asc2D("EC25_3m" ,"D2D_inst",find_index("SURF_ug_ECFINE",f_2d(:)%name), &
             1, "ug/m3",1.0,-999.9) &
