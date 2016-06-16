@@ -49,17 +49,18 @@ OutputConcs=
       'PPM25_FIRE'          ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
 ! ============================================================
 ! SOA additions (26 entries)
-      'OM25_P'              ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
-!     'OM_BGND'             ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
-      'OMCOARSE'            ,'ug'  ,'2d','AIR_CONCS','GROUP',4, !! ugC:PM if needed
-      'ECFINE'              ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
-      'ECCOARSE'            ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
-      'OM25'              ,'ugC:PM','2d','AIR_CONCS','GROUP',4, ! FSOA tests
-      'OMCOARSE'          ,'ugC:PM','2d','AIR_CONCS','GROUP',4, ! FSOA tests
+     'ECFINE'           ,'ug'    ,'2d','AIR_CONCS','GROUP',4,
+     'ECCOARSE'         ,'ug'    ,'2d','AIR_CONCS','GROUP',4,
+!    'OM25_P'           ,'ug'    ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
+!    'OM_BGND'          ,'ug'    ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
+     'OM25'             ,'ug:PM' ,'2d','AIR_CONCS','GROUP',4, ! FSOA tests
+     'OM25'             ,'ugC:PM','2d','AIR_CONCS','GROUP',4, ! FSOA tests
+     'OMCOARSE'         ,'ug:PM' ,'2d','AIR_CONCS','GROUP',4, !! ugC:PM if needed
+     'OMCOARSE'         ,'ugC:PM','2d','AIR_CONCS','GROUP',4, ! FSOA tests
 !SPECIAL PM25 will be sum of fine + fraction coarse
-      'SURF_ug_PM25'        ,'ug'  ,'2d','PM25'      ,'MISC',4,
-      'SURF_ug_PM25_rh50'   ,'ug'  ,'2d','PM25_rh50' ,'MISC',4,
-      'SURF_ug_PM10_rh50'   ,'ug'  ,'2d','PM10_rh50' ,'MISC',4,
+     'SURF_ug_PM25'        ,'ug'  ,'2d','PM25'      ,'MISC',4,
+     'SURF_ug_PM25_rh50'   ,'ug'  ,'2d','PM25_rh50' ,'MISC',4,
+     'SURF_ug_PM10_rh50'   ,'ug'  ,'2d','PM10_rh50' ,'MISC',4,
 !---------------------------------------------
 &end
 

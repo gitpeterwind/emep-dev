@@ -182,13 +182,13 @@ OutputConcs=
       'PPM25_FIRE'          ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
 ! ============================================================
 ! SOA additions (26 entries)
-!     'OM25_P'              ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
-!     'OM_BGND'             ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
-      'OMCOARSE'            ,'ug'  ,'2d','AIR_CONCS','GROUP',4, !! ugC:PM if needed
       'ECFINE'              ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
       'ECCOARSE'            ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
 !! note that for nonvolatile type VBS runs (NPNA etc) this lacks the FFUELOC component
     !  'EC_F'               ,'ug'  ,'2d','AIR_CONCS','GROUP',4
+    ! 'EC_F_FFUEL_NEW'      ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
+    ! 'EC_F_FFUEL_AGE'      ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
+    ! 'EC_C_FFUEL'          ,'ug'  ,'2d','AIR_CONCS','SPEC' ,3,
 ! SOA, PCM_F etc. are special and need appropriate units. Do not confuse! 
 ! Only PCM has proper ug units, the others are carbon-eqiuvalents
 ! (PCM is particulate carbonaceous matter = sum of all EC and OM components.)
@@ -197,9 +197,6 @@ OutputConcs=
     ! 'PART_FFUELOA25_OC'   ,'ugC' ,'2d','AIR_CONCS','SPEC' ,3,
     ! 'PART_WOODOA25_OC'    ,'ugC' ,'2d','AIR_CONCS','SPEC' ,3,
     ! 'PART_FFIREOA25_OC'   ,'ugC' ,'2d','AIR_CONCS','SPEC' ,3,
-    ! 'EC_F_FFUEL_NEW'      ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-    ! 'EC_F_FFUEL_AGE'      ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-    ! 'EC_C_FFUEL'          ,'ug'  ,'2d','AIR_CONCS','SPEC' ,3,
     ! 'NONVOL_BGNDOC'       ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
     ! 'NONV_FFUELOC_COARSE' ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
 !XSOA 'PART_ASOA_OM'        ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
@@ -207,24 +204,26 @@ OutputConcs=
     !FSOA new system:
     !ug:PM will trigger use of Fgas and Fpart for semivolatile compounds
     !** Needed if semivolatile components 
-      'PMFINE'              ,'ug:PM','2d','AIR_CONCS','GROUP',4, ! FSOA tests
-      'OM25'                ,'ug:PM','2d','AIR_CONCS','GROUP',4, ! FSOA tests
-!     'OM25_BGND'           ,'ug'   ,'2d','AIR_CONCS','SPEC' ,3, ! FSOA tests
-!     'OM25_BGND'           ,'ug:PM','2d','AIR_CONCS','SPEC' ,3, ! FSOA tests
-!     'OM25'               ,'ugC:PM','2d','AIR_CONCS','GROUP',4, ! FSOA tests
-!     'OMCOARSE'           ,'ugC:PM','2d','AIR_CONCS','GROUP',4, ! FSOA tests
-      'ASOA'                ,'ug:PM','2d','AIR_CONCS','GROUP',4, ! FSOA tests
-      'BSOA'                ,'ug:PM','2d','AIR_CONCS','GROUP',4, ! FSOA tests
-!     'BSOA'                ,'ug'   ,'2d','AIR_CONCS','GROUP',4, ! FSOA tests
-!     'NONVOLPCM'           ,'ug:PM','2d','AIR_CONCS','GROUP',4, ! FSOA tests
-!     'FFUELOA25'           ,'ug:PM','2d','AIR_CONCS','SPEC' ,4, ! FSOA tests
-!     'POM_F_FFUEL'         ,'ug:PM','2d','AIR_CONCS','SPEC' ,4, ! FSOA tests
-!     'POM_F_FFUEL'         ,'ug'   ,'2d','AIR_CONCS','SPEC' ,4, ! FSOA tests
-!     'FFUEL_NG10'          ,'ug'   ,'2d','AIR_CONCS','SPEC' ,4, ! FSOA tests
+      'PMFINE'           ,'ug:PM' ,'2d','AIR_CONCS','GROUP',4, ! FSOA tests
+!     'OM25_P'           ,'ug'    ,'2d','AIR_CONCS','SPEC' ,4, ! NEVER as ugC
+!     'OM25_BGND'        ,'ug'    ,'2d','AIR_CONCS','SPEC' ,3, ! FSOA tests
+!     'OM25_BGND'        ,'ug:PM' ,'2d','AIR_CONCS','SPEC' ,3, ! FSOA tests
+      'OM25'             ,'ug:PM' ,'2d','AIR_CONCS','GROUP',4, ! FSOA tests
+!     'OM25'             ,'ugC:PM','2d','AIR_CONCS','GROUP',4, ! FSOA tests
+      'OMCOARSE'         ,'ug:PM' ,'2d','AIR_CONCS','GROUP',4, ! ugC:PM if needed
+!     'OMCOARSE'         ,'ugC:PM','2d','AIR_CONCS','GROUP',4, ! FSOA tests
+      'ASOA'             ,'ug:PM' ,'2d','AIR_CONCS','GROUP',4, ! FSOA tests
+      'BSOA'             ,'ug:PM' ,'2d','AIR_CONCS','GROUP',4, ! FSOA tests
+!     'BSOA'             ,'ug'    ,'2d','AIR_CONCS','GROUP',4, ! FSOA tests
+!     'NONVOLPCM'        ,'ug:PM' ,'2d','AIR_CONCS','GROUP',4, ! FSOA tests
+!     'FFUELOA25'        ,'ug:PM' ,'2d','AIR_CONCS','SPEC' ,4, ! FSOA tests
+!     'POM_F_FFUEL'      ,'ug:PM' ,'2d','AIR_CONCS','SPEC' ,4, ! FSOA tests
+!     'POM_F_FFUEL'      ,'ug'    ,'2d','AIR_CONCS','SPEC' ,4, ! FSOA tests
+!     'FFUEL_NG10'       ,'ug'    ,'2d','AIR_CONCS','SPEC' ,4, ! FSOA tests
 ! zero for NONVOL:
-    ! 'PART_FFUELOA25_OM'   ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
-    ! 'PART_WOODOA25_OM'    ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
-    ! 'PART_FFIREOA25_OM'   ,'ug'  ,'2d','AIR_CONCS','SPEC' ,3, !! NEVER as ugC
+!     'PART_FFUELOA25_OM','ug'    ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
+!     'PART_WOODOA25_OM' ,'ug'    ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
+!     'PART_FFIREOA25_OM','ug'    ,'2d','AIR_CONCS','SPEC' ,3, !! NEVER as ugC
 ! Sep16 tests
       'FFIRE_BC'            ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
       'FFIRE_REMPPM25'      ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
