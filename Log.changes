@@ -154,6 +154,17 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+17 June 2016 Peter, Dave 3230
+
+Emissions_ml:
+moved allocations before call femis and inside "first_call".
+
+EmisGet_ml, EmisSplit: stop if country not found.
+Country_ml: redefined some indices
+NetCDF: Ndiv=nint(5*...) otherwise may get too small for fine to coarse grids.
+(this last change can slightly change results (noise only) compared to early versions!)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 17 June 2016 Agnes, 3229
 
 Country_ml - Added 'new' countries to Country_ml (KZT, TMT, UZT), which have

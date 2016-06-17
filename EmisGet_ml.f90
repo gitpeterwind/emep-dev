@@ -1003,6 +1003,7 @@ end if
   integer  :: iland1, iland2    ! loop variables over countries
   logical  :: defaults          ! Set to true for defaults, false for specials
   logical  :: debugm            ! debug flag on master proc 
+  character(len=*), parameter :: dtxt = 'EmisGet:'
 !-----------------------------------------------
 
   iqrc = 0               ! Starting index in emisfrac array
@@ -1131,7 +1132,16 @@ end if
               iland=0!special meaning
            else
               iland=find_index(iland_icode,Country(:)%icode)!find country array index from code. 
-           endif
+              if( iland < 1) then
+                 if(MasterProc) then
+                    print "(a,2i6,a,1x,a)", dtxt//" ILAND NOT DEF ", iland, &
+                     iland_icode, trim(txtinput), trim(EMIS_FILE(ie))
+                 end if
+                 call StopAll ( dtxt//' UNDEFINED iland in '//&
+                 trim(EMIS_FILE(ie))//':'//trim(txtinput) )
+                 cycle READ_DATA
+              end if
+          endif
 
            n = n + 1
            if (debugm ) then

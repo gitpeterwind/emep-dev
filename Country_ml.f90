@@ -625,16 +625,16 @@ ix=ix+1
 IC_NAX=ix
 Country( IC_NAX ) = cc(  "NAX" , 91 ,F, 91, -100   ,"EMEP-external part of North Africa " )
 ix=ix+1 
-IC_KZE=ix
+IC_KZT=ix
 Country( IC_KZT ) = cc(  "KZT" , 92 ,F, 92, -100  , "Kazakhstan (all)" )
 ix=ix+1 
 IC_RUE=ix
 Country( IC_RUE ) = cc(  "RUE" , 93 ,F,  93, -100 , "Russian Federeation (all)" )   
 ix=ix+1 
-IC_UZ=ix
+IC_UZT=ix
 Country( IC_UZT ) = cc(  "UZT" , 94 ,F, 94, -100  , "Uzbekistan (all)" )
 ix=ix+1 
-IC_TM=ix
+IC_TMT=ix
 Country( IC_TMT ) = cc(  "TMT" , 95 ,F, 95, -100  , "Turkmenistan  (all)" )
 
 ! Biomass burning

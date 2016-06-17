@@ -2867,7 +2867,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
         !divide the coarse grid into pieces significantly smaller than the fine grid
         !Divide each global gridcell into Ndiv x Ndiv pieces
-        Ndiv=5*nint(Grid_resolution/GRIDWIDTH_M)
+        Ndiv=nint(5*Grid_resolution/GRIDWIDTH_M)
         Ndiv=max(1,Ndiv)
         Ndiv2=Ndiv*Ndiv
         !
@@ -3123,7 +3123,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
         !divide the external grid into pieces significantly smaller than the fine grid
         !Divide each global gridcell into Ndiv x Ndiv pieces
-        Ndiv=2*nint(Grid_resolution/GRIDWIDTH_M)
+        Ndiv=nint(2*Grid_resolution/GRIDWIDTH_M)
         Ndiv=max(1,Ndiv)
         Ndiv2=Ndiv*Ndiv
         Grid_resolution_div=Grid_resolution/Ndiv

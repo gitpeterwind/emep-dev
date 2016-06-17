@@ -279,85 +279,87 @@ subroutine Emissions(year)
       enddo ! iemislist
     endif
 
+    !>============================
+    
+
+    ! 0) set molwts, conversion factors (e.g. tonne NO2 -> tonne N), and
+    !    emission indices (IQSO2=.., )
+    
+    ! init_sectors
+    if(SECTORS_NAME=='SNAP')then
+       !11 sectors defined in emissions
+       NSECTORS = NSECTORS_SNAP
+       !map timefactors onto SNAP map
+       sec2tfac_map => SNAP_sec2tfac_map
+       sec2hfac_map => SNAP_sec2hfac_map
+       sec2split_map => SNAP_sec2split_map
+    else  if(SECTORS_NAME=='GNFR')then
+       !13 sectors defined in emissions
+       NSECTORS = NSECTORS_GNFR
+       !map timefactors onto GNFR map
+       sec2tfac_map => GNFR_sec2tfac_map
+       sec2hfac_map => GNFR_sec2hfac_map
+       sec2split_map => GNFR_sec2split_map
+    else  if(SECTORS_NAME=='TEST')then
+       !11 sectors defined in emissions
+       NSECTORS = NSECTORS_TEST
+       !map timefactors onto TEST map
+       sec2tfac_map => TEST_sec2tfac_map
+       sec2hfac_map => TEST_sec2hfac_map
+       sec2split_map => TEST_sec2split_map
+    else
+       call StopAll("Sectors not defined")
+    endif
+    
+    allocate(cdfemis(LIMAX,LJMAX))
+    allocate(nGridEmisCodes(LIMAX,LJMAX))
+    allocate(GridEmisCodes(LIMAX,LJMAX,NCMAX))
+    allocate(GridEmis(NSECTORS,LIMAX,LJMAX,NCMAX,NEMIS_FILE),stat=allocerr)
+    call CheckStop(allocerr /= 0, &
+         "EmisGet:Allocation error for GridEmis")
+    GridEmisCodes = -1   
+    nGridEmisCodes = 0
+    GridEmis = 0.0
+    
+    allocate(nlandcode(LIMAX,LJMAX),landcode(LIMAX,LJMAX,NCMAX))
+    nlandcode=0
+    landcode=0
+    allocate(flat_nlandcode(LIMAX,LJMAX),flat_landcode(LIMAX,LJMAX,FNCMAX))
+    flat_nlandcode=0
+    flat_landcode=0
+    allocate(road_nlandcode(LIMAX,LJMAX),road_landcode(LIMAX,LJMAX,NCMAX))
+    road_nlandcode=0
+    road_landcode=0
+    allocate(snapemis(NSECTORS,LIMAX,LJMAX,NCMAX,NEMIS_FILE))
+    snapemis=0.0
+    allocate(snapemis_flat(LIMAX,LJMAX,FNCMAX,NEMIS_FILE))
+    snapemis_flat=0.0
+    allocate(roaddust_emis_pot(LIMAX,LJMAX,NCMAX,NROAD_FILES))
+    roaddust_emis_pot=0.0
+    allocate(SumSnapEmis(LIMAX,LJMAX,NEMIS_FILE))
+    SumSnapEmis=0.0
+    if(USE_uEMEP)then
+       allocate(loc_frac(LIMAX,LJMAX,KMAX_MID,1))
+       loc_frac=0.0
+    endif
+    !=========================
+    !  call Country_Init() ! In Country_ml, => NLAND, country codes and names, timezone
+    
+    allocate(e_fact(NSECTORS,NLAND,NEMIS_FILE))!NLAND defined in Country_Init()
+    e_fact=1.0
+    allocate(e_fact_lonlat(NSECTORS,MAXFEMISLONLAT,NEMIS_FILE))
+    e_fact_lonlat=1.0
+    if(.not.allocated(timefac))allocate(timefac(NLAND,N_TFAC,NEMIS_FILE))
+    if(.not.allocated(fac_ehh24x7))allocate(fac_ehh24x7(N_TFAC,24,7))
+    if(.not.allocated(fac_emm))allocate(fac_emm(NLAND,12,N_TFAC,NEMIS_FILE))
+    if(.not.allocated(fac_min))allocate(fac_min(NLAND,N_TFAC,NEMIS_FILE))
+    if(.not.allocated(fac_edd))allocate(fac_edd(NLAND, 7,N_TFAC,NEMIS_FILE))
+        
     call femis()              ! emission factors (femis.dat file)
     if(ios/=0) return
     my_first_call = .false.
   endif
-  !>============================
 
-
-  ! 0) set molwts, conversion factors (e.g. tonne NO2 -> tonne N), and
-  !    emission indices (IQSO2=.., )
-
-  ! init_sectors
-  if(SECTORS_NAME=='SNAP')then
-     !11 sectors defined in emissions
-     NSECTORS = NSECTORS_SNAP
-     !map timefactors onto SNAP map
-     sec2tfac_map => SNAP_sec2tfac_map
-     sec2hfac_map => SNAP_sec2hfac_map
-     sec2split_map => SNAP_sec2split_map
-  else  if(SECTORS_NAME=='GNFR')then
-     !11 sectors defined in emissions
-     NSECTORS = NSECTORS_GNFR
-     !map timefactors onto GNFR map
-     sec2tfac_map => GNFR_sec2tfac_map
-     sec2hfac_map => GNFR_sec2hfac_map
-     sec2split_map => GNFR_sec2split_map
-  else  if(SECTORS_NAME=='TEST')then
-     !11 sectors defined in emissions
-     NSECTORS = NSECTORS_TEST
-     !map timefactors onto TEST map
-     sec2tfac_map => TEST_sec2tfac_map
-     sec2hfac_map => TEST_sec2hfac_map
-     sec2split_map => TEST_sec2split_map
-  else
-     call StopAll("Sectors not defined")
-  endif
-
-  allocate(cdfemis(LIMAX,LJMAX))
-  allocate(nGridEmisCodes(LIMAX,LJMAX))
-  allocate(GridEmisCodes(LIMAX,LJMAX,NCMAX))
-  allocate(GridEmis(NSECTORS,LIMAX,LJMAX,NCMAX,NEMIS_FILE),stat=allocerr)
-  call CheckStop(allocerr /= 0, &
-       "EmisGet:Allocation error for GridEmis")
-  GridEmisCodes = -1   
-  nGridEmisCodes = 0
-  GridEmis = 0.0
-
-  allocate(nlandcode(LIMAX,LJMAX),landcode(LIMAX,LJMAX,NCMAX))
-  nlandcode=0
-  landcode=0
-  allocate(flat_nlandcode(LIMAX,LJMAX),flat_landcode(LIMAX,LJMAX,FNCMAX))
-  flat_nlandcode=0
-  flat_landcode=0
-  allocate(road_nlandcode(LIMAX,LJMAX),road_landcode(LIMAX,LJMAX,NCMAX))
-  road_nlandcode=0
-  road_landcode=0
-  allocate(snapemis(NSECTORS,LIMAX,LJMAX,NCMAX,NEMIS_FILE))
-  snapemis=0.0
-  allocate(snapemis_flat(LIMAX,LJMAX,FNCMAX,NEMIS_FILE))
-  snapemis_flat=0.0
-  allocate(roaddust_emis_pot(LIMAX,LJMAX,NCMAX,NROAD_FILES))
-  roaddust_emis_pot=0.0
-  allocate(SumSnapEmis(LIMAX,LJMAX,NEMIS_FILE))
-  SumSnapEmis=0.0
-  if(USE_uEMEP)then
-    allocate(loc_frac(LIMAX,LJMAX,KMAX_MID,1))
-    loc_frac=0.0
-  endif
-  !=========================
-  !  call Country_Init() ! In Country_ml, => NLAND, country codes and names, timezone
-
-  allocate(e_fact(NSECTORS,NLAND,NEMIS_FILE))!NLAND defined in Country_Init()
-  e_fact=1.0
-  allocate(e_fact_lonlat(NSECTORS,MAXFEMISLONLAT,NEMIS_FILE))
-  e_fact_lonlat=1.0
-  if(.not.allocated(timefac))allocate(timefac(NLAND,N_TFAC,NEMIS_FILE))
-  if(.not.allocated(fac_ehh24x7))allocate(fac_ehh24x7(N_TFAC,24,7))
-  if(.not.allocated(fac_emm))allocate(fac_emm(NLAND,12,N_TFAC,NEMIS_FILE))
-  if(.not.allocated(fac_min))allocate(fac_min(NLAND,N_TFAC,NEMIS_FILE))
-  if(.not.allocated(fac_edd))allocate(fac_edd(NLAND, 7,N_TFAC,NEMIS_FILE))
 
   ! The GEA emission data, which is used for EUCAARI runs on the HIRHAM
   ! domain have in several sea grid cells non-zero emissions in other sectors
