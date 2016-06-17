@@ -135,7 +135,6 @@ module Country_ml
   integer, public :: IC_RUX   ! RU outside old EMEP domain
   integer, public :: IC_RS    ! Serbia
   integer, public :: IC_ME    ! Montenegro
-  integer, public :: IC_RUE   ! Russian Federation in the extended EMEP domain (RU+RFE+RUX)
 
 !Extra cc for rest CityZen
   integer,  public :: IC_RAA    ! Rest of Africa and Asia
@@ -281,6 +280,12 @@ integer, public :: IC_VENE  ! Venezuela
   integer,  public :: IC_ASX ! Extended EMEP-ext. part of Asia
   integer,  public :: IC_PAX ! Extended EMEP-ext. part of Pacific Ocean
   integer,  public :: IC_AOX ! Extended EMEP-ext. part of Arctic Ocean
+
+! Divided countries put together
+  integer, public :: IC_RUE   ! Russian Federation in the extended EMEP domain (RU+RFE+RUX, 36, 37, 38, 42, 71, 74)
+  integer, public :: IC_KZT   ! Kazakhstan (KZ+KZE, 53, 75)
+  integer, public :: IC_UZT   ! Uzbekistan (UZ+UZE, 76,78)
+  integer, public :: IC_TMT   ! Turkmenistan (TM+TME, 77,79)
 
  !b) Domain x = -16-132 y = -11-0
   integer,  public :: IC_NAX  ! EMEP-external part of North Africa
@@ -569,28 +574,28 @@ IC_KZE=ix
 Country( IC_KZE ) = cc(  "KZE" , 75 ,F, 75, -100  , "Rest of Kazakhstan (in the extended EMEP domain)                 " )
 ix=ix+1 
 IC_UZ=ix
-Country( IC_UZ  ) = cc(  "UZ"  , 76 ,F, 76, 5  , "Uzbekistan (in the original EMEP domain)                         " )
+Country( IC_UZ  ) = cc(  "UZ"  , 76 ,F, 76, -100  , "Uzbekistan (in the original EMEP domain)                         " )
 ix=ix+1 
 IC_TM=ix
-Country( IC_TM  ) = cc(  "TM"  , 77 ,F, 77, 5  , "Turkmenistan (in the original EMEP domain)                       " )
+Country( IC_TM  ) = cc(  "TM"  , 77 ,F, 77, -100  , "Turkmenistan (in the original EMEP domain)                       " )
 ix=ix+1 
 IC_UZE=ix
-Country( IC_UZE ) = cc(  "UZE" , 78 ,F, 78, 5  , "Rest of  Uzbekistan (in the extended EMEP domain)                " )
+Country( IC_UZE ) = cc(  "UZE" , 78 ,F, 78, -100  , "Rest of  Uzbekistan (in the extended EMEP domain)                " )
 ix=ix+1 
 IC_TME=ix
-Country( IC_TME ) = cc(  "TME" , 79 ,F, 79, 5  , "Rest of Turkmenistan (in the extended EMEP domain)               " )
+Country( IC_TME ) = cc(  "TME" , 79 ,F, 79, -100  , "Rest of Turkmenistan (in the extended EMEP domain)               " )
 ix=ix+1 
 IC_CAS=ix
-Country( IC_CAS ) = cc(  "CAS" , 80 ,F, 80, 4  , "Caspian Sea (in the original EMEP domain)                        " )
+Country( IC_CAS ) = cc(  "CAS" , 80 ,F, 80, -100  , "Caspian Sea (in the original EMEP domain)                        " )
 ix=ix+1 
 IC_TJ=ix
-Country( IC_TJ  ) = cc(  "TJ"  , 81 ,F, 81, 5   ,"Tajikistan (in the extended EMEP domain)                         " )
+Country( IC_TJ  ) = cc(  "TJ"  , 81 ,F, 81, -100   ,"Tajikistan (in the extended EMEP domain)                         " )
 ix=ix+1 
 IC_ARL=ix
-Country( IC_ARL ) = cc(  "ARL" , 82 ,F, 82, 5  , "Aral Lake (in the original EMEP domain)                          " )
+Country( IC_ARL ) = cc(  "ARL" , 82 ,F, 82, -100  , "Aral Lake (in the original EMEP domain)                          " )
 ix=ix+1 
 IC_ARE=ix
-Country( IC_ARE ) = cc(  "ARE" , 83 ,F, 83, 5  , "Rest of Aral Lake (in the extended EMEP domain)                  " )
+Country( IC_ARE ) = cc(  "ARE" , 83 ,F, 83, -100  , "Rest of Aral Lake (in the extended EMEP domain)                  " )
 ix=ix+1 
 IC_ASM=ix
 Country( IC_ASM ) = cc(  "ASM" , 84 ,F, 84, -100  , "Modified remaining Asian areas (in the original EMEP domain)     " )
@@ -599,7 +604,7 @@ IC_ASE=ix
 Country( IC_ASE ) = cc(  "ASE" , 85 ,F, 85, -100  , "Remaining extended Asian areas (in the extended EMEP domain)     " )
 ix=ix+1 
 IC_AOE=ix
-Country( IC_AOE ) = cc(  "AOE" , 86 ,F, 86, 9  , "Arctic Ocean (in the extended EMEP domain)                       " )
+Country( IC_AOE ) = cc(  "AOE" , 86 ,F, 86, -100  , "Arctic Ocean (in the extended EMEP domain)                       " )
 
 ! New external areas (outside the 132x159 grid), these are normally not used
 ! a) Domains: x = 160-170 y = 1-132 and x =  -16-0  y = 123-170
@@ -608,20 +613,29 @@ IC_RFX=ix
 Country( IC_RFX ) = cc(  "RFX" , 87 ,F,  87, -100  ,"Extended EMEP-external part of Russian Federation" )
 ix=ix+1 
 IC_ASX=ix
-Country( IC_ASX ) = cc(  "ASX" , 88 ,F,  88, -100   ,"Extended EMEP-external part of Asia              " )
+Country( IC_ASX ) = cc(  "ASX" , 88 ,F,  88, -100   ,"Extended EMEP-external part of Asia " )
 ix=ix+1 
 IC_PAX=ix
-Country( IC_PAX ) = cc(  "PAX" , 89 ,F,  89, -100  ,"Extended EMEP-external part of Pacific Ocean     " )
+Country( IC_PAX ) = cc(  "PAX" , 89 ,F,  89, -100  ,"Extended EMEP-external part of Pacific Ocean " )
 ix=ix+1 
 IC_AOX=ix
-Country( IC_AOX ) = cc(  "AOX" , 90 ,F,  90, 9  ,"Extended EMEP-external part of Arctic Ocean      " )
-! b) Domain x = -16-132 y = -11-0
+Country( IC_AOX ) = cc(  "AOX" , 90 ,F,  90, 9  ,"Extended EMEP-external part of Arctic Ocean " )
+! b) Domain x = -16-132 y = -11-0 (never used)
 ix=ix+1 
 IC_NAX=ix
-Country( IC_NAX ) = cc(  "NAX" , 91 ,F,  91, -100   ,"EMEP-external part of North Africa               " )
+Country( IC_NAX ) = cc(  "NAX" , 91 ,F, 91, -100   ,"EMEP-external part of North Africa " )
+ix=ix+1 
+IC_KZE=ix
+Country( IC_KZT ) = cc(  "KZT" , 92 ,F, 92, -100  , "Kazakhstan (all)" )
 ix=ix+1 
 IC_RUE=ix
-Country( IC_RUE) = cc(  "RUE" , 93 ,F,  93, -100 , "Russian Federeation (all)   " )   
+Country( IC_RUE ) = cc(  "RUE" , 93 ,F,  93, -100 , "Russian Federeation (all)" )   
+ix=ix+1 
+IC_UZ=ix
+Country( IC_UZT ) = cc(  "UZT" , 94 ,F, 94, -100  , "Uzbekistan (all)" )
+ix=ix+1 
+IC_TM=ix
+Country( IC_TMT ) = cc(  "TMT" , 95 ,F, 95, -100  , "Turkmenistan  (all)" )
 
 ! Biomass burning
 ix=ix+1 
