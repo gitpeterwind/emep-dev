@@ -228,9 +228,9 @@ subroutine Units_Scale(txtin,iadv,unitscale,unitstxt,volunit,needroa,semivol,deb
     txt=txt(1:2)
   case("micro g/m3")
     txt="ug"
-  case("ug:PM","ug:PM/m3","ugC:PM","ugC:PM/m3",&
-     "ugN:PM","ugN:PM/m3","ugS:PM","ugS:PM/m3")
-    txt=txt(1:index(txt,':')-1)
+  case("ug_PM","ug_PM/m3","ugC_PM","ugC_PM/m3",&
+     "ugN_PM","ugN_PM/m3","ugS_PM","ugS_PM/m3")
+    txt=txt(1:index(txt,'_')-1)
   case("mol/mol","mole mole-1","mixratio","vmr")
     txt="mix_ratio"
   case("kg/kg","kg kg-1","kg kg**-1","massratio","mmr")
@@ -245,7 +245,7 @@ subroutine Units_Scale(txtin,iadv,unitscale,unitstxt,volunit,needroa,semivol,deb
   if(present(unitstxt))unitstxt = trim(unit_map(i)%units)
   if(present(volunit )) volunit = unit_map(i)%volunit
   if(present(needroa )) needroa = unit_map(i)%needroa
-  if(present(semivol))  semivol = (txtin=='ugPM').or.(index(txtin,':PM')>0)
+  if(present(semivol))  semivol = (txtin=='ugPM').or.(index(txtin,'_PM')>0)
   select case (iadv)
   case (-1)
 ! groups (called iadv==-1) do not get a scaling factor at this stage.

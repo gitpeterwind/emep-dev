@@ -53,10 +53,10 @@ OutputConcs=
      'ECCOARSE'         ,'ug'    ,'2d','AIR_CONCS','GROUP',4,
 !    'OM25_P'           ,'ug'    ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
 !    'OM_BGND'          ,'ug'    ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
-     'OM25'             ,'ug:PM' ,'2d','AIR_CONCS','GROUP',4, ! FSOA tests
-     'OM25'             ,'ugC:PM','2d','AIR_CONCS','GROUP',4, ! FSOA tests
-     'OMCOARSE'         ,'ug:PM' ,'2d','AIR_CONCS','GROUP',4, !! ugC:PM if needed
-     'OMCOARSE'         ,'ugC:PM','2d','AIR_CONCS','GROUP',4, ! FSOA tests
+     'OM25'             ,'ug_PM' ,'2d','AIR_CONCS','GROUP',4, ! FSOA tests
+     'OM25'             ,'ugC_PM','2d','AIR_CONCS','GROUP',4, ! FSOA tests
+     'OMCOARSE'         ,'ug_PM' ,'2d','AIR_CONCS','GROUP',4, !! ugC_PM if needed
+     'OMCOARSE'         ,'ugC_PM','2d','AIR_CONCS','GROUP',4, ! FSOA tests
 !SPECIAL PM25 will be sum of fine + fraction coarse
      'SURF_ug_PM25'        ,'ug'  ,'2d','PM25'      ,'MISC',4,
      'SURF_ug_PM25_rh50'   ,'ug'  ,'2d','PM25_rh50' ,'MISC',4,
