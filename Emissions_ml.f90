@@ -615,6 +615,7 @@ subroutine Emissions(year)
         endif
       elseif (emis_inputlist(iemislist)%type == "DMS")then
         if(MasterProc)write(*,*)'using DMS'    
+        USE_OCEAN_DMS=.true.
         O_DMS%index=find_index("SO2",species(:)%name)
         call CheckStop(O_DMS%index<0,'Index for SO2 not found')
         NTime_Read=-1

@@ -154,6 +154,14 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+22 June 2016 Peter 3234
+
+Moved "USE_OCEAN_DMS=.true." higher "up". DMS was not set early enough 
+and the emission maps did not come out in output (Emis_mgm2_DMS).
+Possibly this also change DMS the first month, since both old and new would 
+have been included?
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 21 June 2016 Alvaro 3231,3233
 
 Units_ml,
