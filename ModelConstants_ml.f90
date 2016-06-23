@@ -67,6 +67,9 @@ type, public :: emep_useconfig
 
   character(len=20) :: n2o5HydrolysisMethod = 'SmixTen'
 
+! Selection of method for Whitecap calculation for Seasalt
+  character(len=15) :: WHITECAPS  = 'Callaghan'
+
 end type emep_useconfig 
 type(emep_useconfig), public, save :: USES
 
