@@ -154,6 +154,10 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+23 June 2016 Svetlana 3238
+Nothing new, just corrected some bugs occured under the previous commitment 
+in config_Output and Modrun-link
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23 June 2016 Svetlana 3235
 
 SeaSalt_ml.f90, ModelConstants_ml.f90, config_*.nml: 

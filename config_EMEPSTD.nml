@@ -63,7 +63,7 @@
 !  "POLL" will be replaced by emissions names listed in CM_EmisFiles.inc
 
  !Good EECCA default:
-  EmisDir                 = 'DataDir/EECCA/ModrunP15/2015_EMEP_trends/model_input_YYYY',
+  EmisDir                 = 'DataDir/EECCA/Modrun15/2015_EMEP_trends/model_input_YYYY',
 
   emis_inputlist(1)%name  = 'EmisDir/gridPOLL',    ! example of ASCII type.
 
