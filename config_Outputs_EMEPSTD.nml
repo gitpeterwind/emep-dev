@@ -164,22 +164,22 @@ OutputConcs=
     !XSOA  'PART_ASOA_OM'        ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
     !XSOA  'PART_BSOA_OM'        ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
     !FSOA new system:
-    !ug_PM will trigger use of Fgas and Fpart for semivolatile compounds
+    !ug:PM will trigger use of Fgas and Fpart for semivolatile compounds
     !** Needed if semivolatile components 
-      'PMFINE'           ,'ug_PM' ,'2d','AIR_CONCS','GROUP',4, ! FSOA tests
+      'PMFINE'           ,'ug:PM' ,'2d','AIR_CONCS','GROUP',4, ! FSOA tests
 !     'OM25_P'           ,'ug'    ,'2d','AIR_CONCS','SPEC' ,4, ! NEVER as ugC
       'OM25_BGND'        ,'ug'    ,'2d','AIR_CONCS','SPEC' ,3, ! FSOA tests
-      'OM25_BGND'        ,'ug_PM' ,'2d','AIR_CONCS','SPEC' ,3, ! FSOA tests
-      'OM25'             ,'ug_PM' ,'2d','AIR_CONCS','GROUP',4, ! FSOA tests
-      'OM25'             ,'ugC_PM','2d','AIR_CONCS','GROUP',4, ! FSOA tests
-      'OMCOARSE'         ,'ug_PM' ,'2d','AIR_CONCS','GROUP',4, ! ugC_PM if needed
-      'OMCOARSE'         ,'ugC_PM','2d','AIR_CONCS','GROUP',4, ! FSOA tests
-      'ASOA'             ,'ug_PM' ,'2d','AIR_CONCS','GROUP',4, ! FSOA tests
-      'BSOA'             ,'ug_PM' ,'2d','AIR_CONCS','GROUP',4, ! FSOA tests
+      'OM25_BGND'        ,'ug:PM' ,'2d','AIR_CONCS','SPEC' ,3, ! FSOA tests
+      'OM25'             ,'ug:PM' ,'2d','AIR_CONCS','GROUP',4, ! FSOA tests
+      'OM25'             ,'ugC:PM','2d','AIR_CONCS','GROUP',4, ! FSOA tests
+      'OMCOARSE'         ,'ug:PM' ,'2d','AIR_CONCS','GROUP',4, ! ugC:PM if needed
+      'OMCOARSE'         ,'ugC:PM','2d','AIR_CONCS','GROUP',4, ! FSOA tests
+      'ASOA'             ,'ug:PM' ,'2d','AIR_CONCS','GROUP',4, ! FSOA tests
+      'BSOA'             ,'ug:PM' ,'2d','AIR_CONCS','GROUP',4, ! FSOA tests
       'BSOA'             ,'ug'    ,'2d','AIR_CONCS','GROUP',4, ! FSOA tests
-      'NONVOLPCM'        ,'ug_PM' ,'2d','AIR_CONCS','GROUP',4, ! FSOA tests
-      'FFUELOA25'        ,'ug_PM' ,'2d','AIR_CONCS','SPEC' ,4, ! FSOA tests
-      'POM_F_FFUEL'      ,'ug_PM' ,'2d','AIR_CONCS','SPEC' ,4, ! FSOA tests
+      'NONVOLPCM'        ,'ug:PM' ,'2d','AIR_CONCS','GROUP',4, ! FSOA tests
+      'FFUELOA25'        ,'ug:PM' ,'2d','AIR_CONCS','SPEC' ,4, ! FSOA tests
+      'POM_F_FFUEL'      ,'ug:PM' ,'2d','AIR_CONCS','SPEC' ,4, ! FSOA tests
       'POM_F_FFUEL'      ,'ug'    ,'2d','AIR_CONCS','SPEC' ,4, ! FSOA tests
       'FFUEL_NG10'       ,'ug'    ,'2d','AIR_CONCS','SPEC' ,4, ! FSOA tests
 ! zero for NONVOL:

@@ -28,6 +28,7 @@
   USES%PlumeMethod      = 'PVDI',        ! default PVDI, possible: NILU, ASMI, PVDI
   USES%PFT_MAPS         = T,             ! PFT LAI tests
   USES%n2o5HydrolysisMethod = 'Smix',    !  "Gamma:0.002' ! 'OrigRiemer'! =ACP2012 EMEP implementation
+  USES%WHITECAPS =       "Callaghan"    ! Norris , Monahan
 !------------------------------
   USE_SOILWATER         = T,             ! Uses SMI from meteo data
   USE_CONVECTION        = T,
