@@ -214,7 +214,7 @@ type(group_umap), private, allocatable, dimension(:), target, save :: wetGroupUn
 
 type(WScav), public, dimension(NWETDEP_CALC), save  :: WetDep
 
-integer, public, save  :: WDEP_PREC   ! Used in Aqueous_ml
+integer, public, save  :: WDEP_PREC=-1   ! Used in Aqueous_ml
 contains
 
 subroutine Init_WetDep()
@@ -772,7 +772,7 @@ subroutine WetDeposition(i,j,debug_flag)
 
   enddo ! icalc loop
 
-  d_2d(WDEP_PREC,i,j,IOU_INST) = pr(i,j,KMAX_MID) * dt ! Same for all models
+  if(WDEP_PREC>0)d_2d(WDEP_PREC,i,j,IOU_INST) = pr(i,j,KMAX_MID) * dt ! Same for all models
 
 ! add other losses into twetdep and wdep arrays:
   call WetDep_Budget(i,j,invgridarea,debug_flag)

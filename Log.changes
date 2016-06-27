@@ -154,6 +154,14 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+27 June 2016 Peter, Anna 3239
+
+Bug when wdep_prec was not included in output: it gets undefined causing the 
+code to write in the wrong place in memory.
+
+Aqueous_n_WetDep_ml.f90 Log.changes
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23 June 2016 Svetlana 3238
 Nothing new, just corrected some bugs occured under the previous commitment 
 in config_Output and Modrun-link
