@@ -154,6 +154,14 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+27 June 2016 Agnes, Dave  3240
+
+ZCM_EmChem09soa/
+  emissplit.specials.pm25
+  emissplit.specials.pmco - NEW!
+
+  -  Added 9,10 German codes:
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 27 June 2016 Peter, Anna 3239
 
 Bug when wdep_prec was not included in output: it gets undefined causing the 
