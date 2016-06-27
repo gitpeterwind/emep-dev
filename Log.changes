@@ -154,6 +154,11 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+27 June 2016 Alvaro
+
+Reintrocude Log.chage entries to 3231-3234, lost in 3235.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 27 June 2016 Agnes, Dave  3240
 
 ZCM_EmChem09soa/
@@ -171,8 +176,10 @@ Aqueous_n_WetDep_ml.f90 Log.changes
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23 June 2016 Svetlana 3238
+
 Nothing new, just corrected some bugs occured under the previous commitment 
 in config_Output and Modrun-link
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23 June 2016 Svetlana 3235
 
@@ -180,6 +187,23 @@ SeaSalt_ml.f90, ModelConstants_ml.f90, config_*.nml:
 Several alternatives for whitecap fraction calculations: Callaghan etal. 2008;
 Monahan etal.1986; Norris eta. 2013
 Selects from USES%WHITECAPS : "Callaghan" - default
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+22 June 2016 Peter 3234
+
+Moved "USE_OCEAN_DMS=.true." higher "up". DMS was not set early enough 
+and the emission maps did not come out in output (Emis_mgm2_DMS).
+Possibly this also change DMS the first month, since both old and new would 
+have been included?
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21 June 2016 Alvaro 3231,3233
+
+Units_ml,
+config_Outputs_EMEPSTD.nml,config_Outputs_EMEPSR.nml,config_BM-EECCA.nml:
+- rename ug:PM, ugC:PM, ugN:PM and ugS:PM units (Units_Scale)
+      to ug_PM, ugC_PM, ugN_PM and ugS_PM,
+  so Derived variable names follow the CF-convention.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 17 June 2016 Peter, Dave 3230
