@@ -154,10 +154,15 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+28 June 2016 Alvaro, 3244
+
+Makefile:
+- make SR-EMEP is now equivalent to make EMEP
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 28 June 2016 Dave, 3243
 
 BUG FIX! Hopefully....
-
 
 SOA_ml -
   (i)  now add BGND_OA into xn(OM25_BGND, ) before first loop, and
@@ -238,7 +243,7 @@ Country_ml - Added 'new' countries to Country_ml (KZT, TMT, UZT), which have
 been divided into sub-areas before. 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-16  June  Alvaro, 3226-3228
+16 June 2016 Alvaro, 3226-3228
 
 Reintruduce SOA contribution to PM groups.
 The PM part of SOA (PART_OM_F) was unintentinally removed from PMFINE and PM10

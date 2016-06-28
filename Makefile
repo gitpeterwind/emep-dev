@@ -117,11 +117,12 @@ touchdepend:
 # Model/Config specific targets
 ###
 # My_* files pre-requisites
-EMEP HTAP MACC MACC-EVA Polen EmChem09 EmChem09-ESX CRI_v2_R5 eEMEP SR-EMEP SR-MACC: \
+EMEP HTAP MACC MACC-EVA Polen EmChem09 EmChem09-ESX CRI_v2_R5 eEMEP SR-MACC: \
 	  ./ZD_OZONE/My_Outputs_ml.f90 \
 	  ./ZD_3DVar/My_3DVar_ml.f90 ./ZD_Pollen/My_Pollen_ml.f90 \
 	  ./ZD_EXTRA/My_ESX_ml.f90
 
+SR-EMEP:    EMEP            # SR is only a different config_emep.nml
 MACC-NMC:   MACC-EVA        # EVA run, with different nest/dump output
 MACC-EVAan: MACC-EVA-3DVar  # 3DVar run, with EVA nest/dump output
 Pollen:     MACC-Pollen
@@ -140,13 +141,12 @@ TEST:
 	  SRCS="$(filter-out Unimod.f90,$(SRCS)) ModuleTester.f90"
 
 # Link My_* files and MAKE target
-EMEP HTAP MACC MACC-EVA MACC-Pollen EmChem09 EmChem09-ESX CRI_v2_R5 eEMEP SR-EMEP SR-MACC:
+EMEP HTAP MACC MACC-EVA MACC-Pollen EmChem09 EmChem09-ESX CRI_v2_R5 eEMEP SR-MACC:
 	ln -sf $(filter %.f90 %.inc,$+) . && $(MAKE)
 
 # GenChem config
 .SECONDEXPANSION:
 EMEP:               GenChem-EMEP-EmChem09soa
-SR-EMEP:            GenChem-SR-EMEP-EmChem09soa
 EmChem09 CRI_v2_R5: GenChem-EMEP-$$@
 EmChem09-ESX:       GenChem-EMEP-EmChem09
 HTAP MACC SR-MACC:  GenChem-$$@-EmChem09soa
@@ -159,7 +159,6 @@ GenChem%:
 	mk.GenChem $(GenChemOptions) -q
 GenChem-%:          GenChemOptions += -r $(lastword $(subst -, ,$*))
 GenChem-EMEP-%:     GenChemOptions += -f FINNv1.5 -e SeaSalt,Dust,Isotopes
-GenChem-SR-EMEP-%:  GenChemOptions += -f FINNv1.5 -e none
 GenChem-HTAP-%:     GenChemOptions += -f GFED     -e SeaSalt,Dust,Isotopes
 GenChem-MACC-%:     GenChemOptions += -f GFASv1   -e SeaSalt,Dust,ZCM_Pollen/Pollen
 GenChem-SR-MACC-%:  GenChemOptions += -f GFASv1   -e none
