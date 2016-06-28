@@ -31,25 +31,11 @@ module OrganicAerosol_ml
   ! Functions + GridValues + PT only for BGNDOC
    use CheckStop_ml, only : StopAll, CheckStop
    use ChemFields_ml,      only : Fgas3d   !  stores 3-d  between time-steps
+   use ChemFields_ml,      only : xn_adv   ! J16 for OM25_BGND
    use ChemChemicals_ml,      only : species   ! for molwts
    use ChemSpecs_tot_ml,  S1 => FIRST_SEMIVOL , S2 => LAST_SEMIVOL
 
    use ChemGroups_ml  !XSOA , only :    &
-  !XSOA     NONVOLPCM_GROUP & !QUERY needed?
-  !XSOA     ,NVABSOM_GROUP  ! nonvolatile absorbing species for OA partitioning
-!XSOA    ,ASOA => ASOA_GROUP &
-!XSOA    ,BSOA => BSOA_GROUP &
-!XSOA    ,ECFINE => ECFINE_GROUP &                    
-!XSOA    ,SVFFUELOA25  => SVFFUELOA25_GROUP & ! semi-volatile FFUELOA25 
-!XSOA      ,SVWOODOA25  => SVWOODOA25_GROUP &    ! for VBS semivolatile WOOD BURNING OA (primary + aged!)
-!XSOA      ,SVFFIREOA25  => SVFFIREOA25_GROUP &    ! for VBS semivolatile Wildfire OA (primary + aged!)
-!XSOA  ,FFUELEC     => FFUELEC_GROUP &
-!XSOA  ,NVFFUELOC25 => NVFFUELOC25_GROUP & ! non-vol. FFUELOC emis. (in PM2.5)
-!XSOA  ,NVFFUELOCCO => NVFFUELOC_COARSE_GROUP & ! non-vol. " " , (PM2.5-10 frac.)
-!XSOA  ,NVWOODOC25  => NVWOODOC25_GROUP & ! non-vol. WOODOC emissions 
-                                     !  (zero in VBS-PAX type runs)
-!XSOA  ,NVFFIREOC25 => NVFFIREOC25_GROUP  ! only non-vol. FFIREOC emissions
-                                     ! (zero in VBS-PAX type runs)
 
    !FSOA use DerivedFields, only: d_2d, f_2d
    use Functions_ml, only: StandardAtmos_kPa_2_km !ds for use in Hz scaling
@@ -62,6 +48,7 @@ module OrganicAerosol_ml
    use Par_ml,               only : LIDIM => LIMAX, LJDIM => LJMAX, me
    use PhysicalConstants_ml, only : AVOG, RGAS_J 
    use Setup_1dfields_ml,    only : itemp, xn => xn_2d, Fgas, Fpart
+   use Setup_1dfields_ml,    only : amk   ! J16 for OM25_BGND
    use SmallUtils_ml,        only : find_index
    use TimeDate_ml,          only: current_date
    implicit none
@@ -94,6 +81,10 @@ module OrganicAerosol_ml
        ,BGND_OC       & ! FAKE FOR NOW, 0.50 ugC/m3 at surface
        ,BGND_OA         ! Assumed OA/OC=2, -> 1 ug/m3
 
+  !J16 - moved here
+   integer, private, save :: itot_bgnd = -999
+   integer, private, save :: itot_om25 = -999
+   integer, private, save :: igrp_om25 = -999
 
   !VBS real, private, dimension(S1:S2,K1:K2), save :: &
   ! TMP - we assign Fpart for all species for now, since
@@ -157,7 +148,6 @@ module OrganicAerosol_ml
    real,allocatable, dimension(:), save :: p_kPa, h_km ! for standard atmosphere 
    character(len=*), parameter :: dtxt = 'InitOrgAero'
 
-   integer, save :: itot_bgnd = -999
    logical, save :: first_call = .true.
 
    if( .not. ORGANIC_AEROSOLS ) then
@@ -166,6 +156,13 @@ module OrganicAerosol_ml
    end if
 
    if( first_call ) then
+     !J16 moved here:
+     itot_bgnd = find_index( 'OM25_BGND', species(:)%name ) 
+     itot_om25 = find_index( 'OM25_P',  species(:)%name ) 
+     igrp_om25 = find_index( 'OM25',  chemgroups(:)%name ) 
+     if( MasterProc ) write(*,*) dtxt//"itot_bgnd, om25sum = ", &
+       itot_bgnd, itot_om25, igrp_om25
+     !J16 -----------
       nonvolpcm = find_index( 'NONVOLPCM', chemgroups(:)%name ) 
       nvabsom   = find_index( 'NVABSOM',   chemgroups(:)%name ) 
       if( nonvolpcm > 0 ) NUM_NONVOLPCM = size(chemgroups(nonvolpcm)%ptr)
@@ -201,6 +198,7 @@ module OrganicAerosol_ml
        do k = K1, K2
           Grid_COA(:,:,k) = BGND_OA(k)  ! Use OA, not OC here
        end do
+
 
     !=========================================================================
     ! Set up Tables for Fcond 
@@ -265,20 +263,16 @@ module OrganicAerosol_ml
   end subroutine Init_OrganicAerosol
 
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-   subroutine OrganicAerosol(i_pos,j_pos,debug_flag)
+   subroutine OrganicAerosol(i_pos,j_pos,first_tstep,debug_flag)
 
    integer, intent(in) :: i_pos, j_pos
+   logical, intent(in) :: first_tstep 
    logical, intent(in) :: debug_flag 
    character(len=*), parameter :: dtxt = 'RunOrgAero'
 
    integer :: i,  k, iter, ispec   ! loop variables 
    real :: Ksoa
    integer :: nmonth, nday, nhour, seconds
-
-  ! Outputs:
-!   real :: surfOC25, surfASOA, surfBSOA, surfFFUELOC25, surfWOODOC25, surfBGNDOC, surfOFFUELOA25_OC, surfFFUELOA25_OC, surfOWOODOA25, surfWOODOA25, surfOFFIREOA25, surfFFIREOA25
-!XSOA   real :: surfOC25, surfASOA, surfBSOA, surfBGNDOC, surfFFUELOA25_OC, surfWOODOA25_OC, surfFFIREOA25_OC
-
 
    nmonth = current_date%month
    nday   = current_date%day
@@ -302,6 +296,14 @@ module OrganicAerosol_ml
 
   COA(:)          =  Grid_COA(i_pos,j_pos,:)
 
+ !J16 BUGFIX: Put OM25_BGND into xn
+ ! 2)/ Advected species
+
+    if ( first_tstep ) then
+      xn(itot_bgnd,:) = COA(:)/(molcc2ugm3*species(itot_bgnd)%molwt)  
+    end if
+ !J16 END BUGFIX
+
 
  ! ============ Non-volatile species first ============================
  ! NVABSOM - Only include fine OM! That is no EC and no coarse OM!
@@ -310,6 +312,11 @@ module OrganicAerosol_ml
     ispec = chemgroups(nvabsom)%ptr(i)
 
     ug_nonvol(i,:) = molcc2ugm3 * xn(ispec,:)*species(ispec)%molwt
+
+    if( DEBUG%SOA .and. debug_flag) write(unit=*,fmt="(2a,f7.1,20es12.3)") &
+      "NVABSOM SOA",&
+      species(ispec)%name, species(ispec)%molwt,COA(20), &
+        xn(ispec,20)*molcc2ugm3*species(ispec)%molwt, ug_nonvol(i,20)
 
   end do
 
@@ -338,7 +345,9 @@ module OrganicAerosol_ml
 
        do k = K1,K2
 
-         COA(k) = sum( ug_semivol(:,k) ) + sum( ug_nonvol(:,k) ) + BGND_OA(k)
+ !J16 BUGFIX: now BGND_OA is in xn(itot_bgnd)
+         !J16 COA(k) = sum( ug_semivol(:,k) ) + sum( ug_nonvol(:,k) ) + BGND_OA(k)
+         COA(k) = sum( ug_semivol(:,k) ) + sum( ug_nonvol(:,k) ) !J16 BUG: + BGND_OA(k)
 
          !VBS Nmoles = ( sum( Fpart(VOL,k) * xn(VOL,k) ) + sum( xn(NONVOLOC,k) ) &
          !VBS             + BGND_OC_ng(k)*ngm32molcc/250.0 ) &  ! Assumed MW
@@ -421,75 +430,6 @@ module OrganicAerosol_ml
   !    Also perhaps the names of these species should reflect 
   !    that they are in units of C?   
 
-!XSOA   do k = K1, K2
-!XSOA     xn(PART_ASOA_OC,k)  = sum ( Fpart(ASOA,k) *xn(ASOA,k)  *species(ASOA)%carbons )
-!XSOA     xn(GAS_ASOA_OC,k)  = sum ( Fgas(ASOA,k) * xn(ASOA,k)  *species(ASOA)%carbons )
-!XSOA     xn(PART_BSOA_OC,k)  = sum ( Fpart(BSOA,k) *xn(BSOA,k)  *species(BSOA)%carbons )
-!XSOA     xn(GAS_BSOA_OC,k)  = sum ( Fgas( BSOA,k) *xn(BSOA,k)  *species(BSOA)%carbons )
-!XSOA     xn(NONVOL_FFUELOC25,k) = sum ( xn(NVFFUELOC25,k) *species(NVFFUELOC25)%carbons)
-!XSOA     xn(NONV_FFUELOC_COARSE,k) = sum ( xn(NVFFUELOCCO,k) *species(NVFFUELOCCO)%carbons)
-!XSOA     xn(NONVOL_WOODOC25,k)  = sum ( xn(NVWOODOC25,k)  *species(NVWOODOC25)%carbons )
-!XSOA     xn(NONVOL_FFIREOC25,k)  = sum ( xn(NVFFIREOC25,k)  *species(NVFFIREOC25)%carbons )
-! want to have PART_FFUELOA25/FFIREOA/WOODOA_OC working also with nonvolatile POA emissions, test this hard coded version first
-!XSOA     xn(PART_FFUELOA25_OC,k)  = sum ( Fpart(SVFFUELOA25,k) *xn(SVFFUELOA25,k) *species(SVFFUELOA25)%carbons ) + &
-!XSOA     xn(NONVOL_FFUELOC25,k)
-!XSOA     xn(PART_WOODOA25_OC,k)  = sum ( Fpart(SVWOODOA25,k) *xn(SVWOODOA25,k)  *species(SVWOODOA25)%carbons )  + &
-!XSOA     xn(NONVOL_WOODOC25,k) 
-!XSOA     xn(PART_FFIREOA25_OC,k)  = sum ( Fpart(SVFFIREOA25,k) *xn(SVFFIREOA25,k)  *species(SVFFIREOA25)%carbons )  + &
-!XSOA       xn(NONVOL_FFIREOC25,k)
-!Test for storing in ug/m3, Use with caution! 
-!XSOA     xn(PART_ASOA_OM,k)  = sum ( ug_semivol(ASOA,k) ) * ug1MW2xn  ! ugC2xn * 12.0 
-!XSOA     xn(PART_BSOA_OM,k)  = sum ( ug_semivol(BSOA,k) ) * ug1MW2xn  !FSOA ugC2xn * 12.0 
-! want to have PART_FFUELOA25/FFIREOA/WOODOA_OM working also with nonvolatile POA emissions, test this hard coded version first
-!XSOA     xn(PART_FFUELOA25_OM,k)  = sum ( ug_semivol(SVFFUELOA25,k) ) * ugC2xn * 12.0 + xn(NONVOL_FFUELOC25,k) * 1.25 * 12.0 ! factor 12.0 from M(OC25-components)=12 and M(OM-components)=1, OM/OC=1.25 assumed for Primary FFUELOC emissions
-!XSOA     xn(PART_FFUELOA25_OM,k)  = sum ( ug_semivol(SVFFUELOA25,k) ) * ugC2xn * 12.0 + xn(NONVOL_FFUELOC25,k) * 1.25 * 12.0 ! factor 12.0 from M(OC25-components)=12 and M(OM-components)=1, OM/OC=1.25 assumed for Primary FFUELOC emissions
-!XSOA     xn(PART_WOODOA25_OM,k)  = sum ( ug_semivol(SVWOODOA25,k) ) * ugC2xn * 12.0 + xn(NONVOL_WOODOC25,k) * 1.7 * 12.0 ! OM/OC=1.7 assumed for Primary WOODOC and FFIRE emissions
-!XSOA     xn(PART_FFIREOA25_OM,k)  = sum ( ug_semivol(SVFFIREOA25,k) ) * ugC2xn * 12.0 + xn(NONVOL_FFIREOC25,k) * 1.7 * 12.0 
-
-!...............................................................................
-!XSOA   end do
-!XSOA   xn(NONVOL_BGNDOC,:)    = ugC2xn * BGND_OC(:)      ! FAKE FOR NOW, 0.5 ug/m3 at surface
-
- ! for convencience:
-! WARNING! Test changing to WOODOC25, FFIREOC25 and NONVOLOC25 may cause problems here, especially if coarse components are inlcuded later! But this is rather hard coded anyway...
-!XSOA   xn(PART_OC10,:)  =  xn(PART_ASOA_OC,:)+xn(PART_BSOA_OC,:)+xn(NONV_FFUELOC_COARSE,:) + &
-!XSOA                    xn(NONVOL_BGNDOC,:)+ &
-!XSOA                    xn(PART_FFUELOA25_OC,:)+xn(PART_WOODOA25_OC,:)+ &
-!XSOA                    xn(PART_FFIREOA25_OC,:)
-!WARNING! The below will NOT work for NPNA (nonvolatile) type runs. These include fine and coarse OC in NONVOL_FFUELOC. So for these runs the FFUELOC-contribution has to be added separately!!!
-!Test shifting to NONVOL_FFUELOC25!
-!XSOA   xn(PART_OC25,:)  =  xn(PART_ASOA_OC,:)+ xn(PART_BSOA_OC,:)+ &
-!XSOA                    xn(NONVOL_BGNDOC,:)+ &
-!XSOA                    xn(PART_FFUELOA25_OC,:)+xn(PART_WOODOA25_OC,:)+ &
-!XSOA                    xn(PART_FFIREOA25_OC,:)
-
-!XSOA   surfASOA  = xn2ugC* xn(PART_ASOA_OC,K2) ! sum ( Fpart(ASOA,K2) * xn(ASOA,K2)*species(ASOA)%carbons )
-!XSOA   surfBSOA  = xn2ugC* xn(PART_BSOA_OC,K2) ! sum ( Fpart(BSOA,K2) * xn(BSOA,K2)*species(BSOA)%carbons )
-!
-!XSOA   surfFFUELOA25_OC  = xn2ugC* xn(PART_FFUELOA25_OC,K2) ! 
-!XSOA   surfWOODOA25_OC = xn2ugC* xn(PART_WOODOA25_OC,K2) !
-!XSOA   surfFFIREOA25_OC = xn2ugC* xn(PART_FFIREOA25_OC,K2) !
-
-!XSOA   surfBGNDOC  = BGND_OC(K2)
-!XSOA   surfOC25    = surfASOA+surfBSOA+surfFFUELOA25_OC+surfWOODOA25_OC+surfBGNDOC+surfFFIREOA25_OC !
-
-!XSOA   !/ Sum of Biogenics -----------------------
-!XSOA
-!XSOA   if ( debug_flag .and. seconds == 0 ) then
-!XSOA
-!XSOA       k=20
-!XSOA       write(unit=6,fmt="(a,3i3,2f7.2,f5.2,11es9.2)")"xns ug ", &
-!XSOA         nmonth, nday, nhour, &
-!XSOA         xn(PART_OM_F,20)*xn2ugC, & 
-!XSOA         COA(20), surfOC25,surfBGNDOC, surfASOA, surfBSOA, surfFFUELOA25_OC, &
-!XSOA         surfWOODOA25_OC, &
-!XSOA         surfFFIREOA25_OC!, &
-!         COA(20), surfOC25,surfBGNDOC, surfASOA, surfBSOA,surfFFUELOA25_OC, &
-!         surfOFFUELOA25_OC,surfFFUELOC25, surfWOODOA25, surfOWOODOA25, surfWOODOC25, &
-!         surfFFIREOA25, surfOFFIREOA25!, &
-!vbs      xn2ugC*xn(PART_IBSOA,k), xn2ugC*xn(PART_TBSOA,k), xn2ugC*xn(PART_SBSOA,k)
-!XSOA
-!XSOA   endif
 
  end subroutine OrganicAerosol
 
@@ -501,20 +441,20 @@ module OrganicAerosol_ml
  subroutine Reset_OrganicAerosol(i_pos,j_pos,debug_flag)
    integer, intent(in) :: i_pos, j_pos
    logical, intent(in) :: debug_flag
-   integer, save :: itot_bgnd = -999
-   integer, save :: itot_om25 = -999
-   integer, save :: igrp_om25 = -999
+  !J16 integer, save :: itot_bgnd = -999
+  !J16 integer, save :: itot_om25 = -999
+  !J16 integer, save :: igrp_om25 = -999
    logical, save :: first_call = .true.
    integer :: k, n, itot
 
    !FSOA xn(PART_OM_F,:)  =  COA(:) * ug1MW2xn
 
-   if( first_call ) then
-     itot_bgnd = find_index( 'OM25_BGND', species(:)%name ) 
-     itot_om25 = find_index( 'OM25_P',  species(:)%name ) 
-     igrp_om25 = find_index( 'OM25',  chemgroups(:)%name ) 
-     if( debug_flag ) print *, "itot_bgnd, om25sum = ", itot_bgnd, itot_om25, igrp_om25
-   end if
+   !J16 if( first_call ) then
+   !J16   itot_bgnd = find_index( 'OM25_BGND', species(:)%name ) 
+   !J16   itot_om25 = find_index( 'OM25_P',  species(:)%name ) 
+   !J16   igrp_om25 = find_index( 'OM25',  chemgroups(:)%name ) 
+   !J16   if( debug_flag ) print *, "itot_bgnd, om25sum = ", itot_bgnd, itot_om25, igrp_om25
+   !J16 end if
 
    !FSOA: OM25_BGND has MW 24, carbons=1
    !xn(OM25_BGND,:) = BGND_OC(:)* ug1MW2xn/ species(OM25_BGND)%molwt

@@ -44,7 +44,7 @@ module RunChem_ml
   use SeaSalt_ml,       only: SeaSalt_flux
   use Setup_1d_ml,      only: setup_1d, setup_rcemis, reset_3d
                       !FUTURE setup_nh3  ! NH3emis (NMR-NH3 project)
-  use Setup_1dfields_ml,only: first_call, & 
+  use Setup_1dfields_ml,only: first_call, &
                               amk, rcemis, xn_2d  ! DEBUG for testing
   use TimeDate_ml,      only: current_date,daynumber
 !--------------------------------
@@ -64,6 +64,7 @@ subroutine runchem()
   integer :: nmonth, nday, nhour     
   logical ::  Jan_1st, End_of_Run
   logical ::  debug_flag    ! =>   Set true for selected i,j
+  logical, save :: first_tstep = .true. ! J16 
   logical :: dbg
   character(len=*), parameter :: sub='RunChem:'
   character(len=10) :: dbgtxt
@@ -150,7 +151,7 @@ subroutine runchem()
       if(DEBUG%RUNCHEM) call check_negs(i,j,'A')
 
       if(ORGANIC_AEROSOLS) &
-        call OrganicAerosol(i,j,debug_flag)
+        call OrganicAerosol(i,j,first_tstep,debug_flag)  ! J16 first_tstep added
       if(DEBUG%RUNCHEM) call check_negs(i,j,'B')
 
       call Add_2timing(30,tim_after,tim_before,"Runchem:2nd setups")
@@ -231,6 +232,7 @@ subroutine runchem()
       first_call = .false.   ! end of first call 
     enddo ! j
   enddo ! i
+  first_tstep = .false.   ! end of first call  over all i,j
 
 endsubroutine runchem
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

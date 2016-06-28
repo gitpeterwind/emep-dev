@@ -154,6 +154,21 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+28 June 2016 Dave, 3243
+
+BUG FIX! Hopefully....
+
+
+SOA_ml -
+  (i)  now add BGND_OA into xn(OM25_BGND, ) before first loop, and
+  (ii) (biggest problem) do not have BGND_OA in loop to get COA values.
+  (iii) removed old commented out XSOA stuff, to clean up.
+
+  Fixes labelled with J16 and BUG FIX
+
+RunChem_ml - add logical first_tstep to help OrganicAerosol know when to do (i)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 27 June 2016 Alvaro, 3241-3242
 
 Reintroduce Log.chage entries to 3231-3234, lost in 3235.
