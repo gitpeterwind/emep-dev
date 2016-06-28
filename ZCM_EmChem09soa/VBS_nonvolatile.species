@@ -5,7 +5,7 @@
 * REMEMBER to NOT include the PM10 and PMFINE groups for the fine (PM2.5) Organic components! Taken care of by the help species PART_OM_F!
 * Aiken et al., EST2008, gives values about 1.56-1.72 for P-BBOA and similar for ambient BBOA
 POM_f_WOOD,1,CO,20.4,PMfS,PMf,0,0,0,xx,OM25;PCM;PPM25;PPM10;NVWOODOC25;NONVOLPCM;NVABSOM,,"!Primary wood burning OC emissions, OM/OC=1.7"
-POM_f_FFUEL,1,CH3,xx,PMfS,PMf,0,0,0,xx,OM25;PCM;PPM25;PPM10;NVFFUELOC25;NVABSOM,,"!Primary fossil fuel burning fine OC emissions, OM/OC=1.25"
+POM_f_FFUEL,1,CH3,xx,PMfS,PMf,0,0,0,xx,OM25;PCM;PPM25;PPM10;NVFFUELOC25;NONVOLPCM;NVABSOM,,"!Primary fossil fuel burning fine OC emissions, OM/OC=1.25"
 POM_c_FFUEL,1,CH3,xx,PMc,PMc,0,0,0,xx,PMCO;PPM_c;PPM10;PM10;PM10anthr;NVFFUELOC_COARSE;OMCOARSE;NONVOLPCM,,"!Primary fossil fuel burning coarse OC emissions, OA/OC=1.25"
 *
 EC_f_WOOD_new,1,C,xx,PMfS,ECfn,ECn,0,0,xx,EC_f;PMFINE;PM10;PPM25;PPM10;PCM;WOODEC;ECFINE;NONVOLPCM,,"!Primary wood burning fine EC emissions"
