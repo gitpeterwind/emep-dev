@@ -108,8 +108,6 @@ module OrganicAerosol_ml
     integer, private, save :: NUM_NONVOLPCM = 0 !  size(NONVOLPCM_GROUP)
     integer, private, save :: NUM_NVABSOM   = 0 !  size(NVABSOM_GROUP)
     integer, private, save :: nonvolpcm = -999, nvabsom  = -999
-!    integer, private, parameter, dimension(NUM_NONVOL) ::  &
-!      NONVOL = (/ NONVOLOC_GROUP, NONVOLEC_GROUP /) ! OC+EC in partitioning OM
     real, private,allocatable, dimension(:,:), save :: ug_nonvol 
 
     real,  private, save, dimension(S1:S2,CHEMTMIN:CHEMTMAX) :: tabCiStar
@@ -219,8 +217,8 @@ module OrganicAerosol_ml
 
          if ( MasterProc ) then 
             do is = S1, S2
-               write(6,"(a,i4,a20,f7.1,i3,8es10.2)") &
-                " Tab SOA: MW, Carbons, C*:", is, trim(species(is)%name), &
+               write(6,"(a,i4,1x,a20,f7.1,i3,8es10.2)") &
+                " Tab SOA: MW, Carbons, C*:", is, adjustl(species(is)%name), &
                  species(is)%molwt, species(is)%carbons, & 
                  tabCiStar(is,273), tabCiStar(is,303)
             end do
@@ -240,6 +238,9 @@ module OrganicAerosol_ml
         Fpart(:,:)         = 0.0
         Fpart(chemgroups(nonvolpcm)%ptr,:)  = 1.0
         Fgas(:,:)         = max(0.0, 1.0 - Fpart(:,:) )
+        !NOT needed Fgas3d(S1:S2,i,j,:)=Fgas(S1:S2,:)  ! J29
+        ! since on 1st call we don't have any of the eg SOA compounds
+        ! where Fgas affects reaction rates
 
            !VBS Grid_avg_mw    = 250.0              ! Da
            !EXC Grid_SOA_gamma = 1.0
@@ -273,13 +274,15 @@ module OrganicAerosol_ml
    integer :: i,  k, iter, ispec   ! loop variables 
    real :: Ksoa
    integer :: nmonth, nday, nhour, seconds
+   logical :: dbg
+   dbg = ( DEBUG%SOA .and. debug_flag) 
 
    nmonth = current_date%month
    nday   = current_date%day
    nhour  = current_date%hour
    seconds = current_date%seconds
 
-   if( DEBUG%SOA .and. debug_flag) write(unit=*,fmt=*) "Into SOA"
+   if( dbg ) write(unit=*,fmt=*) "Into SOA"
    if( .not. ORGANIC_AEROSOLS ) then
      if(MasterProc) write(*,*) dtxt // "skipped. ORGANIC_AEROSOLS=F"
      RETURN
@@ -313,7 +316,7 @@ module OrganicAerosol_ml
 
     ug_nonvol(i,:) = molcc2ugm3 * xn(ispec,:)*species(ispec)%molwt
 
-    if( DEBUG%SOA .and. debug_flag) write(unit=*,fmt="(2a,f7.1,20es12.3)") &
+    if( dbg) write(unit=*,fmt="(2a,f7.1,20es12.3)") &
       "NVABSOM SOA",&
       species(ispec)%name, species(ispec)%molwt,COA(20), &
         xn(ispec,20)*molcc2ugm3*species(ispec)%molwt, ug_nonvol(i,20)
@@ -347,6 +350,7 @@ module OrganicAerosol_ml
 
  !J16 BUGFIX: now BGND_OA is in xn(itot_bgnd)
          !J16 COA(k) = sum( ug_semivol(:,k) ) + sum( ug_nonvol(:,k) ) + BGND_OA(k)
+
          COA(k) = sum( ug_semivol(:,k) ) + sum( ug_nonvol(:,k) ) !J16 BUG: + BGND_OA(k)
 
          !VBS Nmoles = ( sum( Fpart(VOL,k) * xn(VOL,k) ) + sum( xn(NONVOLOC,k) ) &
@@ -357,7 +361,7 @@ module OrganicAerosol_ml
        end do  !k
      ! ====================================================================
 
-      if( DEBUG%SOA  .and. debug_flag ) then
+      if( dbg ) then
 
          if( iter == NITER .and. seconds == 0 ) then
            write(unit=6,fmt="(a,i2,a,3i3,i4)") "Iteration ", Niter, &
@@ -367,10 +371,6 @@ module OrganicAerosol_ml
 
            do i = 1, NUM_NONVOLPCM
               ispec = chemgroups(nonvolpcm)%ptr(i)
-!              write(unit=6,fmt="(a4,i3,a15,es10.2,2f10.3,a4,es10.3,f13.4)")&
-!                "NVOL", ispec,&
-!                species(ispec)%name, xn(ispec,K2),-999.999, &
-!                -999.999, " => ", Fpart(ispec,K2), 1000.0*ug_nonvol(i, K2)
               write(unit=6,fmt="(a4,i3,a15,es10.2,2f10.3)")&
                 "NVOL", ispec,&
                 species(ispec)%name, xn(ispec,K2),-999.999, &
@@ -433,6 +433,8 @@ module OrganicAerosol_ml
 
  end subroutine OrganicAerosol
 
+ ! Reset_OrganicAerosol is called after Dry and Wet deposition, and should
+ ! ensure that OMN25.......
  ! We store OM25_BGND  as a species despite its simple setting above. This makes
  ! makes summation of OM25 and PM25 components easier. Apart from memory increases
  ! the main practuiacl problem is that the advection routine modifies xn_adv values
@@ -446,27 +448,30 @@ module OrganicAerosol_ml
   !J16 integer, save :: igrp_om25 = -999
    logical, save :: first_call = .true.
    integer :: k, n, itot
+   real :: J16tmp
+   logical :: dbg
+   dbg = ( DEBUG%SOA .and. debug_flag) 
 
    !FSOA xn(PART_OM_F,:)  =  COA(:) * ug1MW2xn
-
-   !J16 if( first_call ) then
-   !J16   itot_bgnd = find_index( 'OM25_BGND', species(:)%name ) 
-   !J16   itot_om25 = find_index( 'OM25_P',  species(:)%name ) 
-   !J16   igrp_om25 = find_index( 'OM25',  chemgroups(:)%name ) 
-   !J16   if( debug_flag ) print *, "itot_bgnd, om25sum = ", itot_bgnd, itot_om25, igrp_om25
-   !J16 end if
-
    !FSOA: OM25_BGND has MW 24, carbons=1
    !xn(OM25_BGND,:) = BGND_OC(:)* ug1MW2xn/ species(OM25_BGND)%molwt
 
+   if ( debug_flag ) write(*,*) "Skip Reset Organic Aerosol?", itot_bgnd 
    if( itot_bgnd < 1 ) then
      if ( debug_flag ) write(*,*) "Skips Reset Organic Aerosol" 
      RETURN
    end if
 
+   J16tmp = xn(itot_bgnd,20)
+
+   if ( first_call .and. debug_proc ) write(*,*) "Into Reset Organic Aerosol?",&
+      itot_bgnd , first_call, size(chemgroups(igrp_om25)%ptr)
+
+
    xn(itot_bgnd,:) = BGND_OC(:)* ugC2xn
 
-   if( first_call.and. debug_flag ) print *, "itot_bgnd C = ", itot_bgnd, BGND_OC(20), ugC2xn
+   if( first_call.and. debug_proc ) write(*,"(a,i4,f7.3,9es12.3)") &
+     "itot_bgnd C = ", itot_bgnd, BGND_OC(20), ugC2xn, xn(itot_bgnd,20), J16tmp
 
    ! With SOA modelling some compounds are semivolatile and others non-volatile. If
    ! in a group XXX which asks for ugPM the latter's mass is correct. If semivolatile,
@@ -474,17 +479,23 @@ module OrganicAerosol_ml
 
    xn(itot_om25,:) = 0.0
 
+   if(  dbg  ) write(*,*) 'OFSOA scaling ', xn2ug1MW, molcc2ugm3, &
+      size(chemgroups(igrp_om25)%ptr)
+     !cf xn(itot_bgnd,:) = COA(:)/(molcc2ugm3*species(itot_bgnd)%molwt)  
+
    do n = 1, size(chemgroups(igrp_om25)%ptr)
 
         itot  = chemgroups(igrp_om25)%ptr(n)
 
+       ! Assumes molwt is 1.0 for itot_om25
         xn(itot_om25,:) = xn(itot_om25,:) + Fpart(itot,:) * xn(itot,:) * species(itot)%molwt
    
-        if( first_call.and. debug_flag  )  then
+   if(  dbg ) then
           do k = K1, K2
-            write(*,"(a,2i4,1x,a,9es12.3)") "OFSOA fac ", n, itot, &
-              trim(species(itot)%name), Fpart(itot,k), &
-              Fpart(itot,k) * xn(itot,k) * species(itot)%molwt, xn(itot_om25,k),&
+          !do k = K2, K2
+            write(*,"(a,3i4,1x,a15,9es12.3)") "OFSOA fac ", n, itot, k, &
+              adjustl(species(itot)%name), Fpart(itot,k), &
+              Fpart(itot,k) * xn(itot,k) * species(itot)%molwt*molcc2ugm3,&
               xn(itot_om25,k) * molcc2ugm3,  Grid_COA(i_pos,j_pos,k)
           end do
         end if
