@@ -29,7 +29,9 @@ public :: &
 interface date2string
   module procedure  detail2str
   module procedure  cd2str
+  module procedure  cdYMDH2str
   module procedure  int2str
+  module procedure  YMDH2str
   module procedure  ts2str
   module procedure  cd2str_add
   module procedure  int2str_add
@@ -72,7 +74,7 @@ character(len=*), public, parameter :: &  ! Keywords for ncdate2string
 
 private ::  &
   detail2str,str2detail, & ! detailed date input<--> formatted string
-  cd2str,int2str,ts2str, & ! date/idate (int array)/timestamp --> formatted string
+  cd2str,cdYMDH2str,int2str,YMDH2str,ts2str, & ! date/idate (int array)/timestamp --> formatted string
   cd2str_add,int2str_add,& ! optional addsecs parameter
   cd2file,int2file,ts2file,&  ! * --> file name w/option for old file version
   ts_to_secs1970,cd_to_secs1970,int_to_secs1970,& ! * --> secs since 1970-01-01 00:00 UTC (int)
@@ -256,6 +258,28 @@ function cd2str(iname,cd,debug) result(fname)
                          nproc=me,debug=debug)
 endfunction cd2str
 
+function cdYMDH2str(iname,cd,YMDH_only,debug) result(fname)
+  character(len=*), intent(in)   :: iname
+  character(len=len(iname))      :: fname
+  type(date),intent(in)          :: cd
+  character(len=9), intent(in)   :: YMDH_only
+  logical, intent(in),  optional :: debug
+  if(YMDH_only=='YMDH_only')then
+     fname=detail2str(iname,year=cd%year,month=cd%month,day=cd%day,&
+                         hour=cd%hour,&
+                         days=day_of_year(cd%year,cd%month,cd%day),&
+                         fstep=nint(tdif_days(to_stamp(startdate),to_stamp(cd))*24),&
+                         nproc=me,debug=debug)
+  else
+     fname=detail2str(iname,year=cd%year,month=cd%month,day=cd%day,&
+                         hour=cd%hour,seconds=cd%seconds,&
+                         minute=cd%seconds/60,second=mod(cd%seconds,60),&
+                         days=day_of_year(cd%year,cd%month,cd%day),&
+                         fstep=nint(tdif_days(to_stamp(startdate),to_stamp(cd))*24),&
+                         nproc=me,debug=debug)
+  endif
+endfunction cdYMDH2str
+
 function int2str(iname,id,debug) result(fname)
   character(len=*), intent(in)      :: iname
   character(len=len(iname))         :: fname
@@ -263,6 +287,23 @@ function int2str(iname,id,debug) result(fname)
   logical, intent(in),  optional    :: debug
   fname=cd2str(iname,to_date(id),debug=debug)
 endfunction int2str
+
+function YMDH2str(iname,id,YMDH_only,debug) result(fname)
+  character(len=*), intent(in)      :: iname
+  character(len=len(iname))         :: fname
+  integer, intent(in), dimension(:) :: id
+  character(len=9), intent(in)      :: YMDH_only
+  logical, intent(in),  optional    :: debug
+  if(YMDH_only=='YMDH_only')then
+     fname=key2str(fname,'YYYY',id(1)  )
+     fname=key2str(fname,'YY'  ,mod(id(1),100))
+     fname=key2str(fname,'MM'  ,id(2) )
+     fname=key2str(fname,'DD'  ,id(3) )
+     fname=key2str(fname,'hh'  ,id(4) )
+  else
+     fname=cd2str(iname,to_date(id),debug=debug) 
+  endif
+endfunction YMDH2str
 
 function ts2str(iname,ts,addsecs,debug) result(fname)
   character(len=*), intent(in)      :: iname

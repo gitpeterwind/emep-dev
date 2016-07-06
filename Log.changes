@@ -154,6 +154,17 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6th July 2016 Peter, 3247
+
+A few upgrades that were waiting.
+NetCDF_ml.f90: better interpolation from general projection
+Nest_ml.f90 TimeDate_ExtraUtil_ml.f90 : date2string with YMDH_only option, 
+ to avoid replacing minutes and seconds in the read and write file.
+Emissions_ml.f90 : can choose to read only one pollutant from emission file, 
+use for instance emis_inputlist(3)%pollName(1) = 'voc' in config file.
+Derived_ml: Units for uEMEP
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 29 June 2016 Dave, 3246
 
 SOA_ml - some cleaning of debug code. No change in values

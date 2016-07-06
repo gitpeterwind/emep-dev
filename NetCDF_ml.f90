@@ -2195,7 +2195,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   integer :: startvec(NF90_MAX_VAR_DIMS),Nstartvec(NF90_MAX_VAR_DIMS)
   integer ::alloc_err
   character*100 ::name,used_lat_name, used_lon_name
-  real :: scale,offset,scalefactors(2),dloni,dlati,dlon,dlat
+  real :: scale,offset,scalefactors(2),dloni,dlati,dlonx,dlatx,dlony,dlaty,dlon,dlat
   integer ::ij,jdiv,idiv,Ndiv,Ndiv2,igjgk,ig,jg,ijk,n,im,jm,ijm,iw
   integer ::imin,imax,jmin,jjmin,jmax,igjg,k2
   integer, allocatable:: Ivalues(:)  ! I counts all data
@@ -3300,14 +3300,16 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   else ! data_projection /="lon lat" .and. data_projection/="Stereographic"
 
      if(MasterProc.and.debug)write(*,*)'interpolating from ', trim(data_projection),' to ',trim(projection)
+     if(MasterProc)write(*,*)'interpolating from ', trim(data_projection),' to ',trim(projection)
 
      if(interpol_used=='conservative'.or.interpol_used=='mass_conservative')then
 
 !        call CheckStop((data3D),"3D data in general projection not yet implemented for conservative interpolation")        
         status=nf90_get_att(ncFileID, nf90_global, "Grid_resolution", Grid_resolution )
         call CheckStop(status /= nf90_noerr,"Grid_resolution attribute not found")
-        Ndiv=5*nint(Grid_resolution/GRIDWIDTH_M)
+        Ndiv=nint(5*Grid_resolution/GRIDWIDTH_M)
         Ndiv=max(1,Ndiv)
+        Ndiv=5
         Ndiv2=Ndiv*Ndiv
         if(Ndiv>1.and.MasterProc)then
            write(*,*)'dividing each gridcell into ',Ndiv2,' pieces'
@@ -3372,34 +3374,44 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
         do jg=1,dims(2)
            do jdiv=1,Ndiv              
               do ig=1,dims(1)
-                 do idiv=1,Ndiv
-                    igjg=ig+(jg-1)*dims(1)
-                    if(Ndiv>1)then
-                       if(ig>1.and.jg>1)then
-!                          dlat=(Rlat(igjg)-Rlat(ig-1+(jg-2)*dims(1)))/Ndiv
-!                          dlon=(Rlon(igjg)-Rlon(ig-1+(jg-2)*dims(1)))/Ndiv
-                          dlat=(Rlat(igjg)-Rlat(igjg-dims(1)))/Ndiv
-                          dlon=(Rlon(igjg)-Rlon(igjg-1))/Ndiv
-                       else
-                          if(ig>1)then
-!                             dlat=-((Rlat(igjg)-Rlat(ig-1+(jg)*dims(1)))/Ndiv)
-!                             dlon=((Rlon(igjg)-Rlon(ig-1+(jg)*dims(1)))/Ndiv)
-                             dlat=-(Rlat(igjg)-Rlat(igjg+dims(1)))/Ndiv
-                             dlon=(Rlon(igjg)-Rlon(igjg-1))/Ndiv
-                          else if(jg>1)then
-!                             dlat=((Rlat(igjg)-Rlat(ig+1+(jg-2)*dims(1)))/Ndiv)
+                 igjg=ig+(jg-1)*dims(1)
+                 if(Ndiv>1)then
+                    if(ig>1.and.jg>1)then
+                       !                          dlat=(Rlat(igjg)-Rlat(ig-1+(jg-2)*dims(1)))/Ndiv
+                       !                          dlon=(Rlon(igjg)-Rlon(ig-1+(jg-2)*dims(1)))/Ndiv
+                       dlaty=(Rlat(igjg)-Rlat(igjg-dims(1)))/Ndiv
+                       dlonx=(Rlon(igjg)-Rlon(igjg-1))/Ndiv
+                       dlatx=(Rlat(igjg)-Rlat(igjg-1))/Ndiv
+                       dlony=(Rlon(igjg)-Rlon(igjg-dims(1)))/Ndiv
+                    else
+                       if(ig>1)then
+                          !                             dlat=-((Rlat(igjg)-Rlat(ig-1+(jg)*dims(1)))/Ndiv)
+                          !                             dlon=((Rlon(igjg)-Rlon(ig-1+(jg)*dims(1)))/Ndiv)
+                          dlaty=-(Rlat(igjg)-Rlat(igjg+dims(1)))/Ndiv
+                          dlonx=(Rlon(igjg)-Rlon(igjg-1))/Ndiv
+                          dlatx=(Rlat(igjg)-Rlat(igjg-1))/Ndiv
+                          dlony=-(Rlon(igjg)-Rlon(igjg+dims(1)))/Ndiv
+                       else if(jg>1)then
+                          !                             dlat=((Rlat(igjg)-Rlat(ig+1+(jg-2)*dims(1)))/Ndiv)
 !                             dlon=-((Rlon(igjg)-Rlon(ig+1+(jg-2)*dims(1)))/Ndiv)
-                             dlat=(Rlat(igjg)-Rlat(igjg-dims(1)))/Ndiv
-                             dlon=-(Rlon(igjg)-Rlon(igjg+1))/Ndiv
-                          else
-!                             dlat=-((Rlat(igjg)-Rlat(ig+1+(jg)*dims(1)))/Ndiv)
-!                             dlon=-((Rlon(igjg)-Rlon(ig+1+(jg)*dims(1)))/Ndiv)
-                             dlat=-(Rlat(igjg)-Rlat(igjg+dims(1)))/Ndiv
-                             dlon=-(Rlon(igjg)-Rlon(igjg+1))/Ndiv
-                          endif
+                          dlaty=(Rlat(igjg)-Rlat(igjg-dims(1)))/Ndiv
+                          dlonx=-(Rlon(igjg)-Rlon(igjg+1))/Ndiv
+                          dlatx=-(Rlat(igjg)-Rlat(igjg+1))/Ndiv
+                          dlony=(Rlon(igjg)-Rlon(igjg-dims(1)))/Ndiv
+                       else
+                          !                             dlat=-((Rlat(igjg)-Rlat(ig+1+(jg)*dims(1)))/Ndiv)
+                          !                             dlon=-((Rlon(igjg)-Rlon(ig+1+(jg)*dims(1)))/Ndiv)
+                          dlaty=-(Rlat(igjg)-Rlat(igjg+dims(1)))/Ndiv
+                          dlonx=-(Rlon(igjg)-Rlon(igjg+1))/Ndiv
+                          dlatx=-(Rlat(igjg)-Rlat(igjg+1))/Ndiv
+                          dlony=-(Rlon(igjg)-Rlon(igjg+dims(1)))/Ndiv
                        endif
-                       lon=Rlon(igjg)+dlon*(idiv-0.5-0.5*Ndiv)
-                       lat=Rlat(igjg)+dlat*(jdiv-0.5-0.5*Ndiv)
+                    endif
+                 endif
+                 do idiv=1,Ndiv
+                    if(Ndiv>1)then
+                       lon=Rlon(igjg)+dlonx*(idiv-0.5-0.5*Ndiv)+dlony*(jdiv-0.5-0.5*Ndiv)
+                       lat=Rlat(igjg)+dlaty*(jdiv-0.5-0.5*Ndiv)+dlatx*(idiv-0.5-0.5*Ndiv)
                     else
                        lon=Rlon(igjg)
                        lat=Rlat(igjg)
@@ -3867,7 +3879,7 @@ end subroutine ReadField_CDF
 
         !divide the coarse grid into pieces significantly smaller than the fine grid
         !Divide each global gridcell into Ndiv x Ndiv pieces
-        Ndiv=5*nint(Grid_resolution/GRIDWIDTH_M)
+        Ndiv=nint(5*Grid_resolution/GRIDWIDTH_M)
         Ndiv=max(1,Ndiv)
         Ndiv2=Ndiv*Ndiv
         !

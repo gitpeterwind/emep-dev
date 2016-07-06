@@ -610,19 +610,19 @@ subroutine Define_Derived()
   endif
   if(USE_uEMEP)then
     dname = "Local_Pollutant"
-    call AddNewDeriv( dname, "Local_Pollutant", "-", "-", "", &
+    call AddNewDeriv( dname, "Local_Pollutant", "-", "-", "mg/m2", &
                        -99 , -99, F,  1.0,  T,  IOU_DAY )
     dname = "Total_Pollutant"
-    call AddNewDeriv( dname, "Total_Pollutant", "-", "-", "", &
+    call AddNewDeriv( dname, "Total_Pollutant", "-", "-", "mg/m2", &
                        -99 , -99, F,  1.0,  T,  IOU_DAY )
     dname = "Local_Fraction"!NB must be AFTER "Local_Pollutant" and "Total_Pollutant"
     call AddNewDeriv( dname, "Local_Fraction", "-", "-", "", &
                        -99 , -99, F,  1.0,  F,  IOU_DAY )
     dname = "Local_Pollutant3D"
-    call AddNewDeriv( dname, "Local_Pollutant3D", "-", "-", "", &
+    call AddNewDeriv( dname, "Local_Pollutant3D", "-", "-", "mg/m2", &
                        -99 , -99, F,  1.0,  T,  IOU_MON , .true.)
     dname = "Total_Pollutant3D"
-    call AddNewDeriv( dname, "Total_Pollutant3D", "-", "-", "", &
+    call AddNewDeriv( dname, "Total_Pollutant3D", "-", "-", "mg/m2", &
                        -99 , -99, F,  1.0,  T,  IOU_MON , .true.)
     dname = "Local_Fraction3D"!NB must be AFTER "Local_Pollutant" and "Total_Pollutant"
     call AddNewDeriv( dname, "Local_Fraction3D", "-", "-", "", &

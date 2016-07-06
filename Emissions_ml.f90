@@ -518,7 +518,10 @@ subroutine Emissions(year)
         else
           !yearly grid independent netcdf fraction format emissions                                
           do iem = 1, NEMIS_FILE
-            do isec=1,NSECTORS                      
+             if(emis_inputlist(iemislist)%pollName(1)/='NOTSET')then
+                if(emis_inputlist(iemislist)%pollName(1)/=trim(EMIS_FILE(iem)))cycle      
+             endif
+             do isec=1,NSECTORS                      
               write(varname,"(A,I2.2)")trim(EMIS_FILE(iem))//'_sec',isec
               call EmisGetCdfFrac(iem, isec, fname, varname, sumemis_local, &
                    emis_inputlist(iemislist)%incl, nin, emis_inputlist(iemislist)%excl, nex)
@@ -557,7 +560,13 @@ subroutine Emissions(year)
         !Each pollutant has own file. 
         if(MasterProc)  write(*,*)sub//trim(fname)//" Processing"
         do iem = 1, NEMIS_FILE
-          fname = key2str(emis_inputlist(iemislist)%name,'POLL',EMIS_FILE(iem))
+
+           if(emis_inputlist(iemislist)%pollName(1)/='NOTSET')then
+              if(emis_inputlist(iemislist)%pollName(1)/=trim(EMIS_FILE(iem)))cycle      
+           endif
+
+           fname = key2str(emis_inputlist(iemislist)%name,'POLL',EMIS_FILE(iem))
+
           if(MasterProc) then
             write(*,*)sub//trim(fname)//" iemProcess",iem,trim(fname)
             write(*,"(a,2i3,a,3i3)") "INPUTLIST:", iem, iemislist, trim(fname), nin, nex,me
@@ -1594,7 +1603,10 @@ subroutine newmonth
          /(nmdays(current_date%month)*24.*60.*60.*GRIDWIDTH_M*GRIDWIDTH_M)
 
     do iem = 1,NEMIS_FILE
-      do  isec = 1,NSECTORS            
+       if(emis_inputlist(iemislist)%pollName(1)/='NOTSET')then
+          if(emis_inputlist(iemislist)%pollName(1)/=trim(EMIS_FILE(iem)))cycle      
+       endif
+       do  isec = 1,NSECTORS            
         !define mask (can be omitted if not sent to readfield) 
         NMask_Code=0
         !example if code reductions defined from "femis.dat" shoudl be used to define mask countries
