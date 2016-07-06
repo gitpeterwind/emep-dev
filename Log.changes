@@ -154,6 +154,13 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6th July 2016 Peter, 3248
+
+Reversed the changes in Nest_ml.f90, as it did not work properly.
+(init_icbc needed also a 'YMDH_only' flag but that was difficult to integrate 
+into the library for date2file)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 6th July 2016 Peter, 3247
 
 A few upgrades that were waiting.
