@@ -219,7 +219,7 @@ subroutine readxn(indate)
   case(11,12,30)
     if(.not.first_call)return
     first_call=.false.
-    filename_read_3D=date2string(template_read_3D,ndate,debug=mydebug)
+    filename_read_3D=date2string(template_read_3D,ndate,mode='YMDH',debug=mydebug)
     if(MasterProc) write(*,*)'Nest RESET ALL XN 3D ',trim(filename_read_3D)
     call reset_3D(ndays_indate)
     return
@@ -233,13 +233,13 @@ subroutine readxn(indate)
 
 ! Update filenames according to date following templates defined on Nest_config nml
   if(FORECAST)then
-    filename_read_3D=date2string(template_read_3D,ndate,debug=mydebug)
-    filename_read_BC=date2file  (template_read_BC,ndate,BC_DAYS,"days",debug=mydebug)  
+    filename_read_3D=date2string(template_read_3D,ndate,mode='YMDH',debug=mydebug)
+    filename_read_BC=date2file  (template_read_BC,ndate,BC_DAYS,"days",mode='YMDH',debug=mydebug)  
     inquire(file=filename_read_3D,exist=fexist_3D)
     inquire(file=filename_read_BC,exist=fexist_BC)
   else
-    filename_read_3D=date2string(template_read_3D,ndate,debug=mydebug)
-    filename_read_BC=date2string(template_read_BC,date_nextfile,debug=mydebug)
+    filename_read_3D=date2string(template_read_3D,ndate,mode='YMDH',debug=mydebug)
+    filename_read_BC=date2string(template_read_BC,date_nextfile,mode='YMDH',debug=mydebug)
     fexist_3D=.true.  ! assume 3D file exists
     fexist_BC=.true.  ! assume BC file exists
   endif
@@ -332,7 +332,7 @@ subroutine wrtxn(indate,WriteNow)
 ! and the new data will be appended to the file
   overwrite=first_call.and..not.APPEND
   if(overwrite.and.MasterProc)then
-    filename_write=date2string(template_write,indate,debug=mydebug)
+    filename_write=date2string(template_write,indate,mode='YMDH',debug=mydebug)
     inquire(file=fileName_write,exist=overwrite)
     call CheckStop(overwrite.and..not.FORECAST,&
            "Nest: Refuse to overwrite. Remove this file: "//trim(fileName_write))   
@@ -369,7 +369,7 @@ subroutine wrtxn(indate,WriteNow)
  
 ! Update filenames according to date following templates defined on Nest_config nml
 ! e.g. set template_write="EMEP_BC_MMYYYY.nc" on namelist for different names each month
-  filename_write=date2string(template_write,indate,debug=mydebug)
+  filename_write=date2string(template_write,indate,mode='YMDH',debug=mydebug)
   if(MasterProc)then
     inquire(file=fileName_write,exist=fexist)   
     write(*,*)'Nest:write data ',trim(fileName_write)
@@ -505,9 +505,9 @@ subroutine init_icbc(idate,cdate,ndays,nsecs)
 
   if(.not.EXTERNAL_BIC_SET .and. MODE==0)return !No nesting
 
-  filename_read_3D=date2string(template_read_3D,dat,debug=mydebug)
-  filename_read_BC=date2file  (template_read_BC,dat,BC_DAYS,"days",debug=mydebug)  
-  filename_write  =date2string(template_write  ,dat,debug=mydebug)
+  filename_read_3D=date2string(template_read_3D,dat,mode='YMDH',debug=mydebug)
+  filename_read_BC=date2file  (template_read_BC,dat,BC_DAYS,"days",mode='YMDH',debug=mydebug)  
+  filename_write  =date2string(template_write  ,dat,mode='YMDH',debug=mydebug)
 
   adv_ic(:)%ixadv=(/(n,n=1,NSPEC_ADV)/)
   adv_ic(:)%spcname=species_adv(:)%name

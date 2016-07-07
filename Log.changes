@@ -154,6 +154,25 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+7th July 2016 Alvaro, 3249
+
+TimeDate_ExtraUtil_ml:
+- Add optional parameter mode to date2file and date2str interfaces.
+  Use mode='YMDH' to avoid replacing minutes and seconds in a string/file.
+- Add optional parameter mode string2file interface.
+  Use last=1 to pharse date keywords only on the basename of the file template.
+- Remove cdYMDH2str and YMDH2str functions (date2string inferface),
+  added in 3247 (July 2016).
+- Merge cd2str_add/int2str_add into cd2str/int2str functions.
+- Comment date2file and date2str interfaces to give an overview of the
+  parameters.
+
+Nest_ml:
+- Use date2file(mode='YMDH') and date2str(mode='YMDH')
+  to avoid replacing minutes and seconds in the read and write file,
+  as was intended in 3247.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 6th July 2016 Peter, 3248
 
 Reversed the changes in Nest_ml.f90, as it did not work properly.
