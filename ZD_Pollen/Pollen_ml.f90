@@ -10,7 +10,7 @@ use Pollen_const_ml
 use PhysicalConstants_ml, only: AVOG
 use Biogenics_ml,         only: EMIS_BioNat, EmisNat 
 use CheckStop_ml,         only: CheckStop,CheckNC
-use ChemSpecs,            only: NSPEC_SHL, species
+use ChemSpecs,            only: NSPEC_SHL, species_adv
 use Chemfields_ml,        only: xn_adv    ! emep model concs.
 use Functions_ml,         only: heaviside
 use GridValues_ml ,       only: glon, glat, debug_proc, debug_li, debug_lj
@@ -36,7 +36,7 @@ use SmallUtils_ml,        only: find_index
 use SubMet_ml,            only: Sub
 use TimeDate_ml,          only: current_date,daynumber,date,day_of_year
 use TimeDate_ExtraUtil_ml,only: date2string,compare_date,date2nctime
-use Io_ml,                only: IO_NML
+use Io_ml,                only: IO_NML, PrintLog
 use mpi,                  only: MPI_COMM_WORLD,MPI_DOUBLE_PRECISION,&
                                 MPI_IN_PLACE,MPI_MIN,MPI_MAX!,MPI_ALLREDUCE
 ! openMPI has no explicit interface for MPI_ALLREDUCE
@@ -54,7 +54,7 @@ real, public,save , allocatable, dimension(:,:,:)::&
 
 ! pollen arrays indexing, order must match with POLLEN_GROUP: birch,olive,grass
 integer, save :: &
-  inat(3)=-1,itot(3)=-1,iadv(3)=-1
+  inat(3)=-1,iadv(3)=-1,itot(3)=-1
 
 integer, parameter :: &
   max_string_length=200 ! large enough for paths to be set on Pollen_config namelist
@@ -126,9 +126,12 @@ subroutine Config_Pollen()
 
   do i=1,3
     inat(i) = find_index(POLLEN_GROUP(i),EMIS_BioNat(:))
-    itot(i) = find_index(POLLEN_GROUP(i),species(:)%name)
-    iadv(i) = itot(i)-NSPEC_SHL
+    iadv(i) = find_index(POLLEN_GROUP(i),species_adv(:)%name)
+    itot(i) = iadv(i)+NSPEC_SHL
+    call CheckStop(inat(i)<0,"EMIS_BioNat misses: "//POLLEN_GROUP(i))
+    call CheckStop(iadv(i)<0,"species_adv misses: "//POLLEN_GROUP(i))
   enddo
+  
   if(MasterProc)write(*,"(A,3(' adv#',I3,'=',A))") &
     "Pollen: ",(iadv(i),POLLEN_GROUP(i),i=1,3)
 
@@ -182,14 +185,16 @@ subroutine pollen_flux(i,j,debug_flag)
   logical, intent(in) :: debug_flag
 
   real, parameter :: &
-    Z10 = 10.0, &  ! 10m height
-    UnDef= 0.0
+    kgm2h=grain_wt*1e-6*3600, & ! EmisNat: grains/m2/s --> kg/m2/h
+    Z10  = 10.0,              & ! 10m height
+    UnDef=  0.0
+
   logical, save :: first_call=.true.
   logical :: debug_ij=.false.,found=.false.,pollen_out(3)=.false.
    
   integer :: ii, jj, nlu, ilu, lu, info, g
-  real :: scale,lim_birch,lim_olive,invdz,rcpoll,&
-       n2m(3),u10,prec,relhum,dfirst_g,dlast_g,moleccm3s_2_kgm2h
+  real :: scale,lim_birch,lim_olive,rcpoll,&
+       n2m(3),u10,prec,relhum,dfirst_g,dlast_g
 
   real, save, allocatable, dimension(:,:,:) :: &
     pollen_frac   ! fraction of pollen (birch/olive/grass), read in
@@ -316,7 +321,6 @@ subroutine pollen_flux(i,j,debug_flag)
   lim_birch = (1-prob_in_birch)*birch_h_c(i,j)
   lim_olive = (1-prob_in_olive)*olive_h_c(i,j)
 
-
   !Need to set the meteorological fields if not defined in nwp.
   relhum = 0.0
   u10    = 0.0
@@ -366,13 +370,9 @@ subroutine pollen_flux(i,j,debug_flag)
     .or.(prec>prec_max)                 ! too rainy
 
   ! grains to molecular weight: grains/m2/s --> mol/cm3/s 
-  invdz=1e-6/Grid%DeltaZ         ! 1/dZ [1/cm3]
-  n2m(:) = invdz*grain_wt*AVOG/species(itot(:))%molwt
+  n2m(:) = 1e-6/Grid%DeltaZ           & ! 1/dZ [1/cm3]
+    *grain_wt*AVOG/species_adv(iadv(:))%molwt
 !  write(*,*) "n2m_diff ", n2m(:)
-
-  ! EmisNat: molec/cm3/s --> kg/m2/h
-  moleccm3s_2_kgm2h = Grid%DeltaZ * 1e6 * 3600.0  &! /cm3/s > /m2/hr
-                     /AVOG * 1e-6  ! kg  after *MW
 
 !------------------------
 ! Emission rates: Birch,Olive,Grass
@@ -385,16 +385,14 @@ subroutine pollen_flux(i,j,debug_flag)
       case(OLIVE);scale=scale_factor(OLIVE)
       case(GRASS);scale=scale_factor(GRASS//trim(grass_mode))
     endselect
-    R(i,j,g)=R(i,j,g)+N_TOT(g)*scale*dt   ! R is to check the remains of pollen available
-    rcpoll=N_TOT(g)*scale*pollen_frac(i,j,g) ! The pollen grains production [grains/m2/s]
-    AreaPOLL(i,j,g)=rcpoll*3600           ! [grains/m2/h]
+    R(i,j,g)=R(i,j,g)+N_TOT(g)*scale*dt       ! pollen grains released so far
+    rcpoll=N_TOT(g)*scale*pollen_frac(i,j,g)  ! pollen grains production [grains/m2/s]
+    EmisNat(inat(g),i,j)      = rcpoll*kgm2h  ! [kg/m2/h]
+    rcemis (itot(g),KMAX_MID) = rcpoll*n2m(g) ! [mol/cm3/s]
+    AreaPOLL(i,j,g)           = rcpoll*3600   ! [grains/m2/h]
 
-    rcpoll = rcpoll * n2m(1)              ! [grains/m2/s]-->[mol/cm3/s]
     if(debug_ij) write(*,'(a,3(1x,I3),3(1x,es10.3))')&
-      POLLEN_GROUP(g),me,i,j,rcpoll,R(i,j,g),AreaPOLL(i,j,g)
-
-    EmisNat(inat(g),i,j)      = rcpoll*moleccm3s_2_kgm2h*species(itot(g))%molwt
-    rcemis (itot(g),KMAX_MID) = rcpoll
+      POLLEN_GROUP(g),me,i,j,rcemis(itot(g),KMAX_MID),R(i,j,g),AreaPOLL(i,j,g)
   enddo
 contains
 !------------------------
@@ -476,11 +474,13 @@ function f_gamma_w_tails(relTime,relDt) result(ff)
   if(a1>beta*10.0)return ! too far from the season peak, as decided by timesRel(1)
   ! Be careful: the rise of the function can be quite steep
   a1=exp(-a1/beta)
-  ff=0.5*relDt*(rate(a1,relTime)+rate(a1,relTime+relDt)) ! trapezoidal integration
+! ff=0.5*relDt*(rate(a1,relTime)+rate(a1,relTime+relDt)) ! trapezoidal integration
+! WRONG integration to match SILAM code
+  ff=0.5*relDt*(rate(a1,relTime)+rate(a1*a1,relTime+relDt))
 contains
 real function rate(a,x)
   real, intent(in) :: a,x
-  rate=a*sum(scales*(x-timesRel)**powers,MASK=(x>timesRel))
+  rate=a*sum(scales*DIM(x,timesRel)**powers)  ! DIM(a,b):=max(a-b,0)
 endfunction rate
 endfunction f_gamma_w_tails
 function f_wind(u,wstar) result(ff)
@@ -549,16 +549,72 @@ function f_fade_out(value_rel,uncert_rel_) result(ff)
   ff = min(1.0,max(0.0,(1.0+uncert_rel-value_rel)/(2.0*uncert_rel)))
 endfunction f_fade_out
 !-------------------------------------------------------------------------! 
+function getRecord(fileName,findDate,fatal) result(nstart)
+  character(len=*), intent(in) :: fileName
+  type(date), intent(in) :: findDate
+  logical, intent(in) :: fatal
+  integer :: nstart
+
+  logical :: fexist
+  integer :: nread
+  real(kind=8), parameter :: sec2day=1e0/(24.0*3600.0)
+  real, dimension(366), save :: fdays=-1
+  real :: ncday(0:1)
+
+  ! ensure file exists  
+  inquire(file=filename,exist=fexist)
+  if(.not.fexist)then
+    call CheckStop(fatal,"File not found: "//trim(filename))
+    if(MasterProc) write(*,*)&
+      "Warning Polen dump file not found: "//trim(filename)
+    call PrintLog("WARNING: Pollen_ml cold start",MasterProc)
+    nstart=-1
+    return
+  endif
+
+  ! ensure file has records
+  nread=-1                                ! read all
+  fdays(:)=-1.0                           ! times records
+  call ReadTimeCDF(filename,fdays,nread)  ! in fname
+  if(nread<1)then
+    call CheckStop(fatal,"Corrupted file: "//trim(filename))
+    if(MasterProc) write(*,*)&
+      "Warning Pollen dump file corrupted: "//trim(filename)
+    call PrintLog("WARNING: Pollen_ml forced OFF",MasterProc)
+    USE_POLLEN=.false.
+    nstart=-1
+    return
+  endif
+
+  ! look for current_date in fdays (time var read from filename)
+  call date2nctime(findDate,ncday(1))
+  ncday(0)=ncday(1)-dt*sec2day    ! to avoid rounding errors
+  ncday(1)=ncday(1)+dt*sec2day    ! look for records in +/- 1dt
+
+  nstart=MINLOC(fdays(:nread),DIM=1,&
+    MASK=(fdays(:nread)>=ncday(0)).and.(fdays(:nread)<ncday(1)))
+
+  ! check if we got a match
+  if(nstart<1)then  ! ifort compiler needs option: -assume noold_maxminloc
+    call CheckStop(fatal,&
+      "No records for"//date2string(" YYYY-MM-DD hh:mm ",findDate)//&
+      "found in "//trim(filename))
+    if(MasterProc) write(*,*)&
+      "No records for"//date2string(" YYYY-MM-DD hh:mm ",findDate)//&
+      "found in "//trim(filename)
+    call PrintLog("WARNING: Pollen_ml cold start",MasterProc)
+    nstart=-1
+    return
+  endif  
+endfunction getRecord
+!-------------------------------------------------------------------------! 
 subroutine pollen_read()
 ! Read pollen for forecast restart file: heatsum and pollenrest fields
   character(len=*), parameter :: dfmt="('Read: ',A20,' [',L1,'].')"
   character(len=20) :: spc
   logical, save :: first_call = .true.
-  logical :: fexist,found
-  integer :: nread,nstart,g
-  real(kind=8), parameter :: sec2day=1e0/(24.0*3600.0)
-  real, dimension(366), save :: fdays=-1
-  real :: ncday(0:1)
+  logical :: found
+  integer :: nstart,g
   character(len=len(template_read)) :: filename
   real,allocatable, dimension(:,:,:) :: data ! Data arrays
 
@@ -568,28 +624,8 @@ subroutine pollen_read()
 
   call Config_Pollen()
   filename=date2string(template_read,current_date)
-  inquire(file=filename,exist=fexist)
-  if(FORECAST.and..not.fexist)then
-    if(MasterProc) write(*,*)"Warning Polen dump file not found: "//trim(filename)
-    return
-  endif
-  call CheckStop(.not.fexist,"Did not find file: "//trim(filename))
-
-  nread=-1                                ! read all
-  fdays(:)=-1.0                           ! times records
-  call ReadTimeCDF(filename,fdays,nread)  ! in fname
-  call date2nctime(current_date,ncday(1))
-  ncday(0)=ncday(1)-dt*sec2day    ! to avoid rounding errors
-  ncday(1)=ncday(1)+dt*sec2day    ! look for records in +/- 1dt
-
-  nstart=MINLOC(fdays(:nread),DIM=1,&
-    MASK=(fdays(:nread)>=ncday(0)).and.(fdays(:nread)<ncday(1)))
-
-  if(.not.FORECAST)&
-    call CheckStop(fdays(nstart),ncday(:),&
-      "no records for"//date2string(" YYYY-MM-DD hh:mm ",current_date)//&
-      "found in "//trim(filename))
-
+  nstart=getRecord(filename,current_date,.not.FORECAST)
+  if(nstart<1) return
   if(MasterProc)&
     write(*,"(3(A,1X),I0)") "Read Pollen dump",trim(filename),"record",nstart
 
@@ -698,6 +734,11 @@ subroutine pollen_dump()
   enddo
   if(MasterProc)call CheckNC(nf90_close(ncFileID),"close:"//trim(filename))
   deallocate(data)
+  
+  ! ensure time record can be found, fatal error if not
+  i=getRecord(filename,current_date,.true.)
+  if(DEBUG.and.MasterProc) &
+    write(*,"(3(A,1X),I0)") "Found Pollen dump",trim(filename),"record",i
 endsubroutine pollen_dump   
 endmodule Pollen_ml
   

@@ -154,7 +154,26 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-8th July 2016 Alvaro, 3250-3253
+8th July 2016 Alvaro, 3255
+
+Makefile
+- Test different module configurations for vilje
+- Add ifort option -assume noold_maxminloc, so a minloc(...MASK=.false.)
+  returns zero as gFrotran does.
+- Add ifort option -fpe-all=3 for NetCDF_ml.f90 to avoild a div0 error
+  deep in netcdf/4.3.1 and later versions when compiling with DEBUG=yes.
+
+ZD_Pollen/Pollen_ml:
+- Ensure pollen species are found in species_adv%name and EMIS_BioNat arrays
+- Introduce a feature/bug of SILAM in order to match their code.
+- Switch OFF pollen calculations if dump/restart file is found empty/corrupted.
+- Ensure pollen dump/restart record is written to file.
+
+DOCS/ModelOutput.md
+- Short documentation for the output namelist configuration.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+8th July 2016 Alvaro, 3250-3254
 
 Tag version used on 2016 status runs: r3245 from June 28th.
 
@@ -206,6 +225,9 @@ SOA_ml - some cleaning of debug code. No change in values
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 28 June 2016 Dave, 3245
+==============
+rv4.9: Status 2016 runs
+==============
 
 ZCM_EmChem09soa/VBS_nonvolatile.species - add NONVOLPCM group to POM_F_FFUEL
 

@@ -11,7 +11,7 @@ F90 = mpif90
 DEBUG_FLAGS = -check all -check noarg_temp_created -debug-parameters all \
               -traceback -ftrapuv -g -fpe0 -O0
 OPT_FLAGS = -O3 -ftz
-F90FLAGS = -shared-intel -r8 -convert big_endian -IPF_fp_relaxed
+F90FLAGS = -shared-intel -r8 -convert big_endian -IPF_fp_relaxed -assume noold_maxminloc
 LDFLAGS =  $(F90FLAGS) $(LLIB) $(LIBS)
 
 export MACHINE ?= stallo
@@ -39,8 +39,10 @@ else ifeq ($(MACHINE),gstallo)
   FC=mpif90
   LD=mpif90
 else ifeq ($(MACHINE),vilje)
-  MODULES = intelcomp/13.0.1 mpt/2.06 netcdf/4.3.0
-# MODULES = intelcomp/14.0.1 mpt/2.09 netcdf/4.3.1
+  MODULES ?= intelcomp/13.0.1 mpt/2.06 netcdf/4.3.0 # fftw/3.3.3
+# MODULES ?= intelcomp/14.0.1 mpt/2.09 netcdf/4.3.1 # fftw/3.3.4
+# MODULES ?= intelcomp/15.0.1 mpt/2.10 netcdf/4.3.2 # fftw/3.3.4
+# MODULES ?= intelcomp/16.0.1 mpt/2.13 netcdf/4.4.0 # fftw/3.3.4
   LDFLAGS += $(shell nc-config --flibs)
   F90FLAGS+= $(shell nc-config --cflags)
   MAKEDEPF90=/home/metno/mifapw/bin/makedepf90
@@ -85,6 +87,10 @@ F90FLAGS += -cpp $(DFLAGS) $(addprefix -I,$(INCL)) \
 .SUFFIXES: $(SUFFIXES) .f90
 %.o:%.f90
 	$(F90) $(F90FLAGS) -c $< -o $@
+
+# disable div0 exeption (DEBUG=yes) on netcdf/4.3.1 .. netcdf/4.4.0
+NetCDF_ml.o:NetCDF_ml.f90
+	$(F90) $(F90FLAGS) -fpe-all=3 -c $< -o $@
 
 # Include the dependency-list created by makedepf90 below
 all:  $(PROG)
