@@ -1035,33 +1035,20 @@
 
 module GO
 
-  use GO_FU
-
+! use GO_FU
   use GO_Print
-
-!  use GO_System
-
+! use GO_System
   use GO_String
-
   use GO_Date
-
-  use GO_File
-
-  use GO_Rc
-
-!  !use goRestart
-!
-!  !use goSave
-!  !use goLabel
-!
-!  !use GO_Field
-
-  !use GO_SampStat
-
+! use GO_File
+! use GO_Rc
+! use goRestart
+! use goSave
+! use goLabel
+! use GO_Field
+! use GO_SampStat
   use GO_Timer
-  
-  !use GO_LUT
-  
+! use GO_LUT
   use GO_Par
 
 

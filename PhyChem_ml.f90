@@ -12,7 +12,7 @@ use CheckStop_ml,     only: CheckStop
 use Chemfields_ml,    only: xn_adv,cfac,xn_shl
 use ChemSpecs,        only: IXADV_SO2, IXADV_NH3, IXADV_O3, NSPEC_SHL, species
 use CoDep_ml,         only: make_so2nh3_24hr
-use DA_ml,            only: DEBUG_DA_1STEP,DEBUG_DA_OUTPUT
+use DA_ml,            only: DEBUG_DA_1STEP
 use DA_3DVar_ml,      only: main_3dvar, T_3DVAR
 use Derived_ml,       only: DerivedProds, Derived, num_deriv2d
 use DerivedFields_ml, only: d_2d, f_2d
@@ -98,11 +98,6 @@ subroutine phyche()
   if(FORECAST.and.USE_POLLEN) call pollen_read ()
   call Add_2timing(19,tim_after,tim_before,"nest: Read")
   if(ANALYSIS.and.first_call)then
-    if(DEBUG_DA_OUTPUT)then ! hourly output before 3DVar
-      call Derived(dt_advec,End_of_Day,ONLY_IOU=IOU_HOUR_INST) ! update D2D outputs, to avoid
-      call WrtChem(ONLY_HOUR=IOU_HOUR_INST)    ! eg PM10:=0.0 on first output
-      call Add_2timing(35,tim_after,tim_before,"phyche:outs")
-    endif
     call main_3dvar(status)   ! 3D-VAR Analysis for "Zero hour"
     call CheckStop(status,"main_3dvar in PhyChem_ml/PhyChe")
     call Add_2timing(T_3DVAR,tim_after,tim_before)
@@ -247,11 +242,6 @@ subroutine phyche()
   !====================================
   call Add_2timing(35,tim_after,tim_before,"phyche:outs")
   if(ANALYSIS)then
-    if(DEBUG_DA_OUTPUT)then ! hourly output before 3DVar
-      call Derived(dt_advec,End_of_Day,ONLY_IOU=IOU_HOUR_INST) ! update D2D outputs, to avoid
-      call WrtChem(ONLY_HOUR=IOU_HOUR_INST)    ! eg PM10:=0.0 on first output
-      call Add_2timing(35,tim_after,tim_before,"phyche:outs")
-    endif
     call main_3dvar(status)   ! 3D-VAR Analysis for "non-Zero hours"
     call CheckStop(status,"main_3dvar in PhyChem_ml/PhyChe")
     call Add_2timing(T_3DVAR,tim_after,tim_before)

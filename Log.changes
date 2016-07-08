@@ -154,7 +154,7 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-8th July 2016 Alvaro, 3255,3256
+8th July 2016 Alvaro, 3255-3257
 
 ModelConstants_ml,Derived_ml,My_Derived_ml,EcoSystem_ml,Unimod,
 config_Outputs_*.nml,config_BM-EECCA.nml:
@@ -183,6 +183,12 @@ Makefile
 - Add ifort option -fpe-all=3 for NetCDF_ml.f90 to avoild a div0 error
   deep in netcdf/4.3.1 and later versions when compiling with DEBUG=yes.
 
+Derived,My_Derived_ml:
+- Support 3D USET MISC output.
+
+PhyChem_ml,ZD_3DVar/DA_ml,My_3DVar_ml,ZD_3DVar16/DA_ml:
+- Remove DEBUG_DA_OUTPUT parameter, use 3DVAR_FG output USET instead.
+
 ZD_Pollen/Pollen_ml:
 - Ensure pollen species are found in species_adv%name and EMIS_BioNat arrays
 - Introduce a feature/bug of SILAM in order to match their code.
@@ -191,6 +197,36 @@ ZD_Pollen/Pollen_ml:
 
 DOCS/ModelOutput.md
 - Short documentation for the output namelist configuration.
+
+config_ANALYSIS.nml,ZD_3DVar16/DA_ml,Analysis/DA_3DVar_ml:
+- move DA namelists into config_emep.nml
+
+config_Outputs_CAMS50.nml,ZD_3DVar/Analysis/DA_3DVar_ml,ZD_3DVar16/Analysis/DA_3DVar_ml
+- New USET 3DVAR_FG OutputMisc
+
+ZD_3DVar16/Analysis/DA_3DVar_ml,DA_Obs_ml
+- remove xn_an from get_innovations and ObsOper_Fill
+
+ZD_3DVar16/DA_Util_ml,Makefile,Analysis/DA_3DVar_ml,B_NMC/Util_ml
+- rename Utils_ml to DA_Util_ml
+
+ZD_3DVar16/Analysis/DA_Obs_ml.f90
+- rewrite ObsOper_Fill
+- remove 4 point interpolation
+
+ZD_3DVar16/Makefile,Makefile.conf,DA_Util_ml,
+ZD_3DVar16/Analysis/DA_3DVar_ml,DA_Obs_ml
+ZD_3DVar16/tools/go,go_rc,go_file,B_NMC/c3po_datafile:
+- Replace GO by Unimod modules on DA_Obs_ml and DA_3DVar_ml
+  - Move T_Domains to DA_Util_ml
+  - Remove unused GO modules go_rc.F90 & go_file.F90
+- Support make MACC-3DVar16 DEBUG=yes
+
+ZD_3DVar16/DA_ml:
+- Remove #ifdef with_ajs.
+
+ZD_3DVar16/Analysis/DA_Obs_ml.f90
+- Move obsData setup out from ObsOper_Fill to read_obs
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 8th July 2016 Alvaro, 3250-3254
@@ -433,9 +469,8 @@ mk.testX modified to use ifort, not gfortran (stallo's gfortran is too old),
 
 AeroFunctions_ml modified with !TSTEMX. Had to remove one CheckStop since
   the system doesn't yet cope with netcd/MPI links
-SmallUtilsons_ml modified with !TSTEMX
-TimeDate_ml      modified with !TSTEMX
-
+SmallUtils_ml modified with !TSTEMX
+TimeDate_ml   modified with !TSTEMX
 
 (Reminder, usage is e.g. mk.testX AeroFunctions_ml.)
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

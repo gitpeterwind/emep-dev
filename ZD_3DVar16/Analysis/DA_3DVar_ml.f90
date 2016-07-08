@@ -15,10 +15,10 @@
 
 module DA_3DVar_ml
 
-  use GO             , only : gol, goPr, goErr
+  use DA_Util_ml     , only : gol, goPr, goErr
   use TimeDate_ml    , only : date
   use EMEP_BCovarSqrt, only : T_BCovarSqrt
-  use GO             , only : T_Domains
+  use DA_Util_ml     , only : T_Domains
 
   implicit none
   
@@ -36,9 +36,6 @@ module DA_3DVar_ml
 
   character(len=*), parameter  ::  mname = 'DA_3DVar_ml'
 
-  ! settings used by 3D-var:
-  character(len=*), parameter   ::  rcfile = 'emo.rc'
-
   ! timing parameters:
   integer, parameter  ::  NTIMING_3DVAR = 0
   integer, parameter  ::  T_3DVAR = 0
@@ -47,25 +44,14 @@ module DA_3DVar_ml
   integer, parameter    :: debug_n = 1
   integer, parameter    :: debug_p = 1
   integer, parameter    :: debug_k = 1
-  
 
   ! --- local ----------------------------------------
   
-  !! Number of analysis to perform
-  !integer, parameter     ::  ANALYSIS_NDATE = 4
-  !! When to perform the analysis
-  !! By default an analysis will be done every 00,06,12,18 UTC :
-  !type(date) :: analysis_date(ANALYSIS_NDATE)= (/ &
-  !                 date(-1,-1,-1,00,0), &
-  !                 date(-1,-1,-1,06,0), &
-  !                 date(-1,-1,-1,12,0), &
-  !                 date(-1,-1,-1,18,0)    /)
-  ! ... Fill from rcfile settings:
-  ! Number of analysis to perform
-  integer                   ::  ANALYSIS_NDATE
-  ! When to perform the analysis:
-  !   (/ date(-1,-1,-1,00,00), date(-1,-1,-1,06,00), ... /)
-  type(date), allocatable   ::  analysis_date(:)
+  ! Analysis date patterns:
+  integer, parameter :: ANALYSIS_NDATE_MAX = 24   ! MAX patterns to check  
+  integer, save      :: ANALYSIS_NDATE = 1        ! Patterns to check
+  type(date), dimension(ANALYSIS_NDATE_MAX) :: &  ! When to perform the analysis,
+    analysis_date=date(-1,-1,-1,00,00)            ! every hour by default
 
   ! link from observation element to original observation dataset:
   integer, allocatable  ::  iObsData(:)
@@ -73,25 +59,14 @@ module DA_3DVar_ml
   ! Limit dx,du to 500%
   real, parameter       ::  ANALYSIS_RELINC_MAX = 5.0
 
-  !! interpolation type, see 'DA_Obs_ml/H_op' :
-  !character(len=16)     ::  H_op_interp
-  
-  ! m1qn3 verbose ?
-  logical               ::  m1qn3_log_all
-  ! loging unit:
-  integer               ::  m1qn3_io
-  ! summary table:
-  integer               ::  m1qn3_table
-  ! counter:
-  integer               ::  m1qn3_number
-  ! settings:
-  integer               ::  m1qn3_scaling   ! 0=DIS, 1=SIS
-  ! number of updates stored in work array:
-  integer               ::  m1qn3_nupdates
-  
-  ! counters:
-  integer               ::  m1qn3_maxiter
-  integer               ::  m1qn3_maxsim
+  ! Solver (m1qn3) settings
+  integer, save :: &
+    solver_scaling =  1,& ! 0=DIS, 1=SIS
+    solver_nupdates= 20,& ! number of updates stored in work array
+    solver_maxiter =500,& ! maximum number of solver iterations
+    solver_maxsim  =  2   ! maximum number of simulations per solver iteration
+  logical, save ::  &
+    solver_logall=.false. ! save log from all processors
   
 #ifdef with_ajs
   ! timers:
@@ -101,20 +76,22 @@ module DA_3DVar_ml
 #endif
   
   ! info on assim with single covar:
+  integer,parameter :: TRACER_NAME_LEN=32, FILE_NAME_LEN=1024
+
   type T_BInfo
     ! short description
-    character(len=32)                 ::  name
+    character(len=TRACER_NAME_LEN)    ::  name
     ! number of tracers involved:
     integer                           ::  ntracer
     ! tracer names:
-    character(len=32), allocatable    ::  tracers(:)  ! (ntracer)
+    character(len=TRACER_NAME_LEN), allocatable ::  tracers(:)  ! (ntracer)
     ! mapping from tracer to iChemObs:
     integer, allocatable              ::  iChemObs(:)  ! (ntracer)
     ! mapping from iChemObs to itracer,
     ! could be undefined:
     integer, allocatable              ::  itracer(:)  ! (nChemObs)
     ! input file
-    character(len=1024)               ::  filename
+    character(len=FILE_NAME_LEN)      ::  filename
     ! covariance square root:
     type(T_BCovarSqrt)                ::  BCovarSqrt
   end type T_BInfo
@@ -130,29 +107,23 @@ module DA_3DVar_ml
   type(T_Domains)       ::  doms_adv_m   ! (s,x,y,z) all tracers, model xy decomposition
   type(T_Domains)       ::  doms_an_m    ! (x,y,z,s) analysis tracers, model xy decomposition
   type(T_Domains)       ::  doms_an_fg   ! (x,y,z,s) analysis tracers, fft y decomposition
-  !type(T_Domains)       ::  doms_an_fs   ! (m,nloc,nv1) complex coeff, local slab
-
+ !type(T_Domains)       ::  doms_an_fs   ! (m,nloc,nv1) complex coeff, local slab
 
 contains
-
 
   !-----------------------------------------------------------------------
   ! module init/done
   !-----------------------------------------------------------------------
-
   
   subroutine DA_3DVar_Init( status )
 
 #ifdef with_ajs
+    use DA_Util_ml       , only : GO_Timer_Def
 #else
-    use GO               , only : GO_Init
-    use GO               , only : GO_Par_Setup
-    use GO               , only : GO_Print_Set
-    use GO               , only : GO_Timer_Def
+    use DA_Util_ml       , only : GO_Init
+    use DA_Util_ml       , only : GO_Par_Setup
+    use DA_Util_ml       , only : GO_Print_Set
 #endif
-    use GO               , only : TrcFile, Init, Done, ReadRc
-    use GO               , only : goGetFU, goStdErr
-    use GO               , only : me
     use ModelConstants_ml, only : masterProc
     use MPI_Groups_ml    , only : MPI_COMM_CALC
 
@@ -166,9 +137,6 @@ contains
     
     ! --- local -----------------------------
     
-    character(len=1024)     ::  fname
-    character(len=32)       ::  key
-    type(TRcFile)           ::  rcF
     integer                 ::  analysis_dhour
     integer                 ::  idate
     integer                 ::  hour
@@ -200,78 +168,6 @@ contains
     IF_NOT_OK_RETURN(status=1)
 #endif
   
-    ! extra settings:
-    call Init( rcF, rcfile, status )
-    IF_NOT_OK_RETURN(status=1)
-     
-    ! init counter for number of times that optimzation loop is performed:
-    m1qn3_number = 0
-    
-    ! should all m1qn3 process shout info ?
-    call ReadRc( rcF, 'emo.3dvar.m1qn3.log.all', m1qn3_log_all, status )
-    IF_NOT_OK_RETURN(status=1)
-    ! m1qn3 messages: only on root or on all ?
-    if ( masterProc .or. m1qn3_log_all ) then
-      ! log file for m1qn3 internal messages:
-      call ReadRc( rcF, 'emo.3dvar.m1qn3.log.file', fname, status )
-      IF_NOT_OK_RETURN(status=1)
-      ! extend with processor number:
-      if ( me > 0 ) write (fname,'(a,".",i0)') trim(fname), me
-      ! select free file unit:
-      call goGetFU( m1qn3_io, status )
-      IF_NOT_OK_RETURN(status=1)
-      ! open:
-      open( unit=m1qn3_io, file=trim(fname), form='formatted', iostat=status )
-      if ( status /= 0 ) then
-        write (gol,'("could not open m1qn3 log file (directory not present?) : ",a)') trim(fname); call goErr
-        TRACEBACK; status=1; return
-      end if      
-    else    
-      ! m1qn3 is not supposed to print messages on other processes
-      ! since below 'impres' is set to '0' for these ;
-      ! if it tries to print anyway, write to std.error :
-      m1qn3_io = goStdErr
-    end if
-    
-    ! table with norms and costs will be written by root:
-    if ( masterProc ) then
-      ! csv file for m1qn3 results:
-      call ReadRc( rcF, 'emo.3dvar.m1qn3.table', fname, status )
-      IF_NOT_OK_RETURN(status=1)
-      ! select free file unit:
-      call goGetFU( m1qn3_table, status )
-      IF_NOT_OK_RETURN(status=1)
-      ! open:
-      open( unit=m1qn3_table, file=trim(fname), form='formatted', iostat=status )
-      if ( status /= 0 ) then
-        write (gol,'("could not open m1qn3 table file (directory not present?) : ",a)') trim(fname); call goErr
-        TRACEBACK; status=1; return
-      end if
-      ! header:
-      write (m1qn3_table,'("number,step,J,Jb,Jo,gn")')
-    end if
-  
-    ! scaling:
-    call ReadRc( rcF, 'emo.3dvar.m1qn3.scaling', key, status )
-    IF_NOT_OK_RETURN(status=1)
-    ! set integer flag:
-    select case ( trim(key) )
-      case ( 'DIS' ) ; m1qn3_scaling = 0
-      case ( 'SIS' ) ; m1qn3_scaling = 1
-      case default
-        write (gol,'("unsupported scaling `",a,"`")') trim(key); call goErr
-        TRACEBACK; status=1; return
-    end select
-  
-    ! maximum number of iterations:
-    call ReadRc( rcF, 'emo.3dvar.m1qn3.maxiter', m1qn3_maxiter, status )
-    IF_NOT_OK_RETURN(status=1)
-    ! same for maximum number of simulations:
-    m1qn3_maxsim = m1qn3_maxiter
-    
-    ! number of updates stored in memory:
-    call ReadRc( rcF, 'emo.3dvar.m1qn3.nupdates', m1qn3_nupdates, status )
-    IF_NOT_OK_RETURN(status=1)
 
 #ifdef with_ajs
     ! define timers:
@@ -296,32 +192,6 @@ contains
     call GO_Timer_Def( itim_gradient , 'gradient'         , status )
     IF_NOT_OK_RETURN(status=1)
 #endif
-    
-    ! time step between analyses:
-    call ReadRc( rcF, 'emo.3dvar.analysis.dhour', analysis_dhour, status )
-    IF_NOT_OK_RETURN(status=1)
-    ! check ..
-    if ( modulo(24,analysis_dhour) /= 0 ) then
-      write (gol,'("number of analysis times per day should be integer number;")'); call goErr
-      write (gol,'("requested time step in hours between analysis: ",i0)') analysis_dhour; call goErr
-      TRACEBACK; status=1; return
-    end if
-    ! number of times per day:
-    ANALYSIS_NDATE = 24 / analysis_dhour
-    ! storage for dates:
-    allocate( analysis_date(ANALYSIS_NDATE), stat=status )
-    IF_NOT_OK_RETURN(status=1)
-    ! loop over analysis times:
-    do idate = 1, ANALYSIS_NDATE
-      ! hour from 00:00 with step dhour:
-      hour = (idate-1)*analysis_dhour
-      ! fill:
-      analysis_date(idate) = date(-1,-1,-1,hour,00)
-    end do
-  
-    ! done with settings:
-    call Done( rcF, status )
-    IF_NOT_OK_RETURN(status=1)
 
     ! ok
     status = 0
@@ -336,7 +206,7 @@ contains
 
 #ifdef with_ajs
 #else
-    use GO               , only : GO_Done
+    use DA_Util_ml       , only : GO_Done
 #endif
     use ModelConstants_ml, only : MasterProc
 
@@ -371,19 +241,6 @@ contains
     deallocate( Bmat, stat=status )
     IF_NOT_OK_RETURN(status=1)
 
-    ! only on root ...
-    if ( masterProc ) then
-
-      ! close data file:
-      close( unit=m1qn3_table, iostat=status )
-      IF_NOT_OK_RETURN(status=1)
-
-      ! close logfile:
-      close( unit=m1qn3_io, iostat=status )
-      IF_NOT_OK_RETURN(status=1)
-
-    end if
-
     ! done with domains on model decomposition:
     call doms_adv_m%Done( status )
     IF_NOT_OK_RETURN(status=1)
@@ -396,10 +253,6 @@ contains
     !call doms_an_fs%Done( status )
     !IF_NOT_OK_RETURN(status=1)
 
-    ! clear:
-    deallocate( analysis_date, stat=status )
-    IF_NOT_OK_RETURN(status=1)
-  
 #ifdef with_ajs
 #else
     ! done with GO modules:
@@ -430,8 +283,7 @@ contains
     use ModelConstants_ml    , only : ANALYSIS
     use ModelConstants_ml    , only : MasterProc
     use TimeDate_ml          , only : current_date
-    use TimeDate_ExtraUtil_ml, only : date2string
-    use Util_ml              , only : compare_date
+    use TimeDate_ExtraUtil_ml, only : date2string,compare_date
     use DA_ml                , only : dafmt     => da_fmt_msg
     use DA_ml                , only : DAFMT_DEF => DA_FMT_DEF
     use DA_ml                , only : debug => DEBUG_DA
@@ -499,23 +351,22 @@ contains
   ! @author AMVB
   !-----------------------------------------------------------------------
   
-    use GO                   , only : TrcFile, Init, Done, ReadRc
     use MPIF90               , only : MPIF90_BCast
-    
     use MPI_Groups_ml        , only : MPI_COMM_CALC
     use ModelConstants_ml    , only : MasterProc, nproc
     use ModelConstants_ml    , only : RUNDOMAIN
     use ModelConstants_ml    , only : KMAX_MID, KMAX_BND, KCHEMTOP
     use MPI_Groups_ml        , only : MasterPE
     use Par_ml               , only : me
-    use Par_ml               , only : tlimax, tgi0, tgi1, tljmax, tgj0, tgj1
+    use Par_ml               , only : tgi0, tgi1, tgj0, tgj1
     use CheckStop_ml         , only : CheckStop
     use ChemChemicals_ml     , only : species          ! Gives names
     use ChemGroups_ml        , only : chemgroups       ! group  names
     use ChemSpecs_adv_ml     , only : NSPEC_ADV
     use ChemSpecs_shl_ml     , only : NSPEC_SHL        ! Maps indices
-    use SmallUtils_ml        , only : find_index
-    use DA_ml                , only : dafmt     => da_fmt_msg
+    use SmallUtils_ml        , only : find_index,key2str
+    use Io_Nums_ml           , only : IO_NML
+    use DA_ml                , only : dafmt => da_fmt_msg
     use DA_ml                , only : debug => DEBUG_DA
     use DA_Obs_ml            , only : varName, varSpec, varSpecInv
     use DA_Obs_ml            , only : obsVarName, observedVar
@@ -535,15 +386,8 @@ contains
 
     ! --- local ----------------------------------
     
-    type(TRcFile)         ::  rcF
-    character(len=1024)   :: namelistfile
-    integer(4)            :: inNml = 172
     integer               :: nvar, k
     integer               :: ny_local, iy_offset
-    
-    ! dummy for namelist, actual variables are
-    ! 'm1qn3_maxiter' and 'm1qn3_maxsim' read from rcfile:
-    integer               :: maxiter, maxsim
     
     integer               ::  nx, ny
     integer               ::  iobs, inoobs
@@ -553,38 +397,28 @@ contains
     character(len=16)     ::  species_units
     integer               ::  ivar
 
-    integer                           ::  nB
-    character(len=32), allocatable    ::  Bname(:)       ! (nChemObs)
+    character(len=TRACER_NAME_LEN), allocatable ::  Bname(:)       ! (nChemObs)
     integer, allocatable              ::  tracer2B(:)    ! (nChemObs)
-    integer                           ::  itracer2B
     integer                           ::  iB
-    character(len=32)                 ::  key
+    
+    integer, parameter  :: nBnmc_max=10 ! >=nChemObs
+    integer             :: nBnmc=0      ! ==nChemObs
+    character(len=TRACER_NAME_LEN) :: Bnmc_name(nBnmc_max)=''
+    character(len=FILE_NAME_LEN)   :: Bnmc_filename=''
 
     ! --- namelists ------------------------------
 
-    namelist /DA_CONFIG/ analysis_date, nChem, nChemObs,&
-                         varName, obsVarName, observedVar,&
-                         maxiter, maxsim
+    namelist /DA_CONFIG/ &
+      analysis_ndate, analysis_date, &
+      nChem, nChemObs, varName, obsVarName, observedVar,&
+      nBnmc,Bnmc_name,Bnmc_filename,&
+      solver_scaling,solver_nupdates,solver_maxiter,solver_maxsim,solver_logall
 
     ! --- begin ------------------------------
     
     ! info ...
     write (gol,'(a,": initalize 3D var variables ...")') rname; call goPr
 
-    !-----------------------------------------------------------------------
-    ! Read config: variable names (observed & unobserved)
-    !-----------------------------------------------------------------------
-
-    ! input file:
-    namelistfile = 'namelist.nml'
-    ! open:
-    open( unit=inNml, file=trim(namelistfile), status='OLD', action='READ', &
-            form='FORMATTED',iostat=status)
-    if ( status /= 0 ) then
-      write (gol,'("openening namelist file: ",a)') trim(namelistfile ); call goErr
-      TRACEBACK; status=1; return
-    end if
-    
     !+------------------------------------------------------------------
     ! observed species
     !+------------------------------------------------------------------
@@ -609,6 +443,20 @@ contains
       if ( MasterProc ) print dafmt,'WARNING: DA group not found: "DAUNOBS".'
     end if
 
+    !-----------------------------------------------------------------------
+    ! Read config: variable names (observed & unobserved)
+    !-----------------------------------------------------------------------
+    
+    ! set flags:
+    observedVar(:)=.false.
+
+    rewind(IO_NML)
+    read(unit=IO_NML,nml=DA_CONFIG,iostat=status)
+    if ( status /= 0 ) then
+      write (gol,'(a,"reading namelist DA_CONFIG from: config_emep.nml")') rname; call goErr
+      TRACEBACK; status=1; return
+    end if
+
     ! info ...
     write (gol,'(a,":   settings from DA_CONFIG namelist:")') rname; call goPr
     write (gol,'(a,":     total obs/unobs species (nChem)    : ",i6)') rname, nChem; call goPr
@@ -621,20 +469,6 @@ contains
       do k = 1, nChemObs+1, nChem
         write (gol,'(a,":       ",i2," ",a)') rname, k, trim(varName(k)); call goPr
       end do
-    end if
-    
-    ! set flags:
-    observedVar(:)=.false.
-
-    !+------------------------------------------------------------------
-    !
-    !+------------------------------------------------------------------
-
-    ! read:
-    read (unit=inNml,nml=DA_CONFIG,iostat=status)
-    if ( status /= 0 ) then
-      write (gol,'("reading namelist `DA_CONFIG` from: ",a)') trim(namelistfile); call goErr
-      TRACEBACK; status=1; return
     end if
     
     ! check ...
@@ -685,11 +519,7 @@ contains
     endif
     
     ! info ...
-#ifdef gFortran
     if(debug) write(*,nml=DA_CONFIG)
-#else
-    if(debug) write(*,nml=DA_CONFIG,delim='QUOTE')
-#endif
     
     !-----------------------------------------------------------------------
     ! Read observation parameters
@@ -701,12 +531,13 @@ contains
     !   nobsData                ! number of datasets
     !   obsData(1:nobsData)%..  ! types with dataset properties
     !
-    read (unit=inNml,nml=OBSERVATIONS,iostat=status)
+
+    rewind(IO_NML)
+    read(unit=IO_NML,nml=OBSERVATIONS,iostat=status)
     if ( status /= 0 ) then
-      write (gol,'("reading namelist `OBSERVATIONS` from: ",a)') trim(namelistfile); call goErr
+      write (gol,'(a,"reading namelist OBSERVATIONS from: config_emep.nml")') rname; call goErr
       TRACEBACK; status=1; return
     end if
-
 
     !-----------------------------------------------------------------------
     ! Read covariance matrix
@@ -748,53 +579,38 @@ contains
 
     ! info ...
     write (gol,'(a,": setup B matrices ..")') rname; call goPr
-      
-    ! extra settings:
-    call Init( rcF, rcfile, status )
-    IF_NOT_OK_RETURN(status=1)
     
-    ! init counter:
-    nBmat = 0
+    ! ensure that we have Bnmc settings
+    call CheckStop(nBnmc,nChemObs,"nBnmc/=nChemObs")
+      
     ! storage for keywords defining B for individual or groups of tracers:
-    allocate( Bname(nChemObs), stat=status )
+    allocate( Bname(nChemObs),tracer2B(nChemObs),stat=status )
     IF_NOT_OK_RETURN(status=1)
-    allocate( tracer2B(nChemObs), stat=status )
-    IF_NOT_OK_RETURN(status=1)
+    Bname(:)=""
+    tracer2B(:)=""
+
     ! loop over tracers to be analysed:
+    nBmat = 0                     ! init counter
     do ivar = 1, nChemObs
-      ! read name that identifies B:
-      call ReadRc( rcF, 'emo.3dvar.tracer2B.'//trim(varName(ivar)), key, status )
-      IF_NOT_OK_RETURN(status=1)
       ! info ...
-      write (gol,'(a,":   observed tracer ",i0," : ",a)') rname, ivar, trim(varName(ivar)); call goPr
-      write (gol,'(a,":     associated B : ",a)') rname, key; call goPr
+      write (gol,'(a,":   observed tracer ",i0," : ",a)') &
+        rname, ivar, trim(varName(ivar)); call goPr
+      write (gol,'(a,":     associated B : ",a)') &
+        rname, Bnmc_name(ivar); call goPr
+
       ! search in list of already defined keys:
-      itracer2B = -999
-      do k = 1, nBmat
-        ! tracer should use this B?
-        if ( trim(key) == trim(Bname(k)) ) then
-          ! store index:
-          itracer2B = k
-          ! info ...
-          write (gol,'(a,":     use B matrix nr. ",i0)') rname, itracer2B; call goPr
-          ! leave:
-          exit
-        end if  ! tracer uses this B
-      end do  ! B matrices
+      iB = find_index(Bnmc_name(ivar),Bname(:))
       ! new?
-      if ( itracer2B < 0 ) then
-        ! increase counter:
-        nBmat = nBmat + 1
-        ! store name:
-        Bname(nBmat) = trim(key)
-        ! assign index:
-        itracer2B = nBmat
+      if(iB<0) then
+        nBmat = nBmat + 1         ! increase counter
+        Bname(nBmat) = trim(Bnmc_name(ivar))  ! store name
+        iB = nBmat         ! assign index
         ! info ...
-        write (gol,'(a,":     assign new B matrix nr. ",i0)') rname, itracer2B; call goPr
+        write (gol,'(a,":     assign new B matrix nr. ",i0)') rname, iB; call goPr
       end if
       ! store index in mapping from tracer to covariance:
-      tracer2B(ivar) = itracer2B
-    end do ! tracers
+      tracer2B(ivar) = iB
+    enddo ! tracers
     
     ! info ..
     write (gol,'(a,":   number of B matrices: ",i0)') rname, nBmat; call goPr
@@ -837,8 +653,7 @@ contains
       end do  ! observed variables
 
       ! read filename:
-      call ReadRc( rcF, 'emo.3dvar.B.'//trim(Bname(iB))//'.filename', Bmat(iB)%filename, status )
-      IF_NOT_OK_RETURN(status=1)
+      Bmat(iB)%filename=trim(key2str(Bnmc_filename,'###',trim(Bmat(iB)%name)))
 
       ! info ...
       write (gol,'(a,":     B matrix ",i0," (",a,")")') rname, iB, trim(Bname(iB)); call goPr
@@ -854,22 +669,10 @@ contains
                                        comm=MPI_COMM_CALC )
       IF_NOT_OK_RETURN(status=1)
 
-      !! info ...
-      !write (gol,'(a,":   adhoc scaling factor for sigma : ",f6.1)') &
-      !                  rname, BCovarSqrt_sigma_factor; call goPr
-      !! apply scale factor:
-      !BCovarSqrt%S = BCovarSqrt%S * BCovarSqrt_sigma_factor
-
     end do ! covars
 
     ! clear:
-    deallocate( Bname, stat=status )
-    IF_NOT_OK_RETURN(status=1)
-    deallocate( tracer2B, stat=status )
-    IF_NOT_OK_RETURN(status=1)
-    
-    ! done with settings:
-    call Done( rcF, status )
+    deallocate(Bname,tracer2B,stat=status )
     IF_NOT_OK_RETURN(status=1)
     
     ! *
@@ -1036,12 +839,12 @@ contains
   !-----------------------------------------------------------------------
   subroutine generic3dvar( cdate, status )
   !-----------------------------------------------------------------------
-  ! @description
   ! Generic version of 3d variational analysis.
-  ! @author M.Kahnert
   !-----------------------------------------------------------------------
     use MPIF90               , only : MPIF90_AllReduce, MPI_SUM
-    use GO                   , only : GO_Timer_Start, GO_Timer_End, GO_Timer_Switch
+#ifdef with_ajs
+    use DA_Util_ml           , only : GO_Timer_Start, GO_Timer_End, GO_Timer_Switch
+#endif
     use MPI_Groups_ml        , only : MPI_COMM_CALC
     use ModelConstants_ml    , only : MasterProc, NPROC
     use ModelConstants_ml    , only : RUNDOMAIN
@@ -1051,18 +854,18 @@ contains
     use My_Timing_ml         , only : Code_timer, Add_2timing
     use TimeDate_ml          , only : date  ! date/time structure
     use Par_ml               , only : me
-    use Par_ml               , only : MAXLIMAX, MAXLJMAX   ! local x, y dimensions
-    use Par_ml               , only : tlimax, tgi0, tgi1, tljmax, tgj0, tgj1
+    use Par_ml               , only : tgi0, tgi1, tgj0, tgj1
     use Par_ml               , only : limax, ljmax
-    use GridValues_ml        , only : glon, glat
     use ChemSpecs_adv_ml     , only : NSPEC_ADV
+    use ModelConstants_ml    , only : IOU_INST, num_lev3d, lev3d
+    use DerivedFields_ml     , only : d_2d, f_2d, d_3d, f_3d
+    use Units_ml             , only : Units_Scale
     use MetFields_ml         , only : z_bnd
     use MetFields_ml         , only : roa
     use ChemFields_ml        , only : xn_adv
     use Chemfields_ml        , only : cfac
     use Chemfields_ml        , only : PM25_water
     use Chemfields_ml        , only : PM25_water_rh50
-    !use exd_domain_ml        , only : EXT_DOMAIN, EXT_DOMAIN_INV
     use DA_ml                , only : debug => DEBUG_DA
     use DA_ml                , only : dafmt => da_fmt_msg
     use DA_ml                , only : damsg => da_msg
@@ -1106,6 +909,8 @@ contains
     
     integer               ::  lnx, lny
     logical               ::  has_local_domain
+    integer               ::  n
+    logical               ::  needroa
 
     ! idem operator on model and assimilation decomposition:
     type(T_ObsOpers)      ::  Hops_m
@@ -1181,7 +986,7 @@ contains
     IF_NOT_OK_RETURN(status=1)
 
     ! selection on local grid point domain used by model:
-    call read_obs( doms_adv_m, maxobs, &
+    call read_obs( "processor", maxobs, &
                      stnid, flat,flon,falt, obs, obsstddev1, stncodes, &
                      iObsData, nobs, status )
     IF_NOT_OK_RETURN(status=1)
@@ -1236,7 +1041,30 @@ contains
         ! extract slab:
         !     x,y,z,s                     s     ,    x  ,   y   ,          z
         xn_an(:,:,:,nvar) = xn_adv(varSpec(nvar),1:limax,1:ljmax,KMAX_MID-nlev+1:KMAX_MID)
-      end do
+        do n=1,size(f_2d)
+          if(any([f_2d(n)%class,f_2d(n)%subclass,f_2d(n)%txt]&
+               /=['USET','3DVAR_FG',varName(nvar)]))cycle
+          call Units_Scale(f_2d(n)%unit,varSpec(nvar),f_2d(n)%scale,needroa=needroa)
+          if(needroa)then
+            d_2d(n,:,:,IOU_INST)=xn_adv(varSpec(nvar),:,:,KMAX_MID)&
+                                *cfac(varSpec(nvar),:,:)*roa(:,:,KMAX_MID,1)
+          else
+            d_2d(n,:,:,IOU_INST)=xn_adv(varSpec(nvar),:,:,KMAX_MID)&
+                                *cfac(varSpec(nvar),:,:)
+          endif
+        enddo
+        do n=1,size(f_3d)
+          if(any([f_3d(n)%class,f_3d(n)%subclass,f_3d(n)%txt]&
+               /=['USET','3DVAR_FG',varName(nvar)]))cycle
+          call Units_Scale(f_3d(n)%unit,varSpec(nvar),f_3d(n)%scale,needroa=needroa)
+          if(needroa)then
+            d_3d(n,:,:,:,IOU_INST)=xn_adv(varSpec(nvar),:,:,lev3d(:num_lev3d))&
+                                  *roa(:,:,lev3d(:num_lev3d),1)
+          else
+            d_3d(n,:,:,:,IOU_INST)=xn_adv(varSpec(nvar),:,:,lev3d(:num_lev3d))
+          endif
+        enddo
+      enddo
 
       ! info ...
       write (gol,'(a,": xn_an range : ",2e16.6)') rname, minval(xn_an), maxval(xn_an); call goPr
@@ -1270,7 +1098,7 @@ contains
 
       ! fill innovations and Jacobian of observation operator ;
       ! use full concentration arrays on model decomposition:
-      call get_innovations( Hops_m, nobs, xn_adv, xn_an, &
+      call get_innovations( Hops_m, nobs, xn_adv, &
                               maxobs, stnid, flat,flon,falt, obs, obsstddev1, stncodes, &
                               'xf', status )
       IF_NOT_OK_RETURN(status=1)
@@ -1452,7 +1280,6 @@ contains
       ! loop over variables involved in analysis:
       do nvar = 1, nChem
         ! restore in original location:
-        !xn_adv(varSpec(nvar),1:limax,1:ljmax,KMAX_MID-nlev+1:KMAX_MID) = xn_an_bm(:,:,:,nvar)
         xn_adv(varSpec(nvar),1:limax,1:ljmax,KMAX_MID-nlev+1:KMAX_MID) = xn_an(:,:,:,nvar)
       end do
 
@@ -1530,491 +1357,433 @@ contains
 
   end subroutine generic3dvar
 
+!-----------------------------------------------------------------------
+subroutine var3d( cdate, Hops, Bsqrt, dx_loc, status )
+!-----------------------------------------------------------------------
+! 3-D variational analysis
+!-----------------------------------------------------------------------
+  use MPIF90               , only : MPIF90_BCast
+  use MPIF90               , only : MPIF90_AllReduce, MPI_SUM
+#ifdef with_ajs
+  use DA_Util_ml           , only : GO_Timer_Start, GO_Timer_End, GO_Timer_Switch
+#endif
+  use ModelConstants_ml    , only : MasterProc, NPROC
+  use MPI_Groups_ml        , only : MasterPE
+  use CheckStop_ml         , only : CheckStop
+  use My_Timing_ml         , only : Code_timer, Add_2timing
+  use DA_Util_ml           , only : norm
+  use Io_ml                , only : m1qn3_io=>IO_TMP  ! write unit for m1qn3 printouts
+  use TimeDate_ml          , only : date,current_date ! date/time structure
+  use TimeDate_ExtraUtil_ml, only : date2string
+  use Par_ml               , only : me
+  use DA_ml                , only : debug => DEBUG_DA
+  use DA_ml                , only : dafmt => da_fmt_msg, damsg => da_msg
+  use DA_ml                , only : tim_before => datim_before, tim_after => datim_after
+  use DA_Obs_ml            , only : T_ObsOpers
+  use DA_ml                , only : nlev
+  use DA_ml                , only : nChemObs
+!-----------------------------------------------------------------------
+! Formal parameters
+!-----------------------------------------------------------------------
+  type(date), intent(in)            ::  cdate
+  type(T_ObsOpers), intent(inout)   ::  Hops
+  type(T_BCovarSqrt), intent(inout) ::  Bsqrt
+  real, intent(out)                 ::  dx_loc(:,:,:,:)  ! (limax,ljmax,nlev,nChemObs)
+  integer, intent(out)              ::  status
+!-----------------------------------------------------------------------
+! external routines
+!-----------------------------------------------------------------------
+  ! functions defined in m1qn3 :
+  external simul_rc,euclid,ctonbe,ctcabe
+!-----------------------------------------------------------------------
+! parameters
+!-----------------------------------------------------------------------
+  character(len=*),parameter :: rname = mname//'/var3d'
+  character(len=*),parameter :: normtype='dfn'
+  real(kind=8), parameter    :: dxmin = 1e0/2**22
+  character(len=*),parameter :: LOGFILE="YYYYMMDDhh-PPP_m1qn3.log"
+  character(len=*),parameter :: omode_str(0:7)=[character(len=70):: &
+    'omode==0: The simulator asks to stop by returning the value (indic=0)',&
+    'omode==1: Normal m1qn3 exit: successfull gradient test',       &
+    'omode==2: One of the input arguments is not well initialized', &
+    'omode==3: Line-search blocked on tmax = 10**20',               &
+    'omode==4: Reached maximal number of iterations (maxiter)',     &
+    'omode==5: Reached maximal number of simulations (maxsim)',     &
+    'omode==6: Stop on dxmin during the line-search',               &
+    'omode==7: Either <g,d> is nonnegative or <y,s> is nonpositive']
+!-----------------------------------------------------------------------
+! Local parameters
+!-----------------------------------------------------------------------
+  integer                   ::  itime
+  integer                   ::  nw, nw_local
+  integer                   ::  nv_hcr
+  real, allocatable         ::  chi_hcr(:)
+  real, allocatable         ::  gradJcost_hcr(:)
+  integer, allocatable      ::  l2w_hcr(:)
   
-  ! ***
+  ! global arrays on each pe needed for calls to m1qn3:
+  integer                   ::  nhcr
+  integer                   ::  nv_hcr_all
 
+  real                      ::  Jcost0, Jcost, Jcost_b, Jcost_obs
+  real                      ::  gradnorm_loc, gradnorm
+
+  ! m1qn3 variables:
+  integer                   ::  iz(5)
+  integer                   ::  ndz, ndz_all
+  integer                   ::  indic
+  integer                   ::  imode(3)
+  integer                   ::  omode
+  integer                   ::  niter
+  integer                   ::  nsim
+  integer                   ::  reverse
+  integer                   ::  impres
+  real                      ::  epsg,df1
+  real(kind=8), allocatable ::  dz(:)
+  integer                   ::  izs(1) = 0
+  real(kind=4)              ::  rzs(1) = 0.0
+  real(kind=8)              ::  dzs(1) = 0.0
+
+  integer                   ::  n,l,k
+  logical                   :: first_call
+    
+!-----------------------------------------------------------------------
+! storage
+!-----------------------------------------------------------------------
+
+  ! get index of record holding current hour:
+  call Bsqrt%FindTime( cdate%hour, itime, status )
+  IF_NOT_OK_RETURN(status=1)
+
+  ! current size of half-complex state,
+  ! local as well as global:
+  call Bsqrt%TimeGet( itime, status, &
+                              nw_local=nw_local, nw=nw )
+  IF_NOT_OK_RETURN(status=1)
+  ! size of half-complex-real state is double:
+  nv_hcr     = 2 * nw_local
+  nv_hcr_all = 2 * nw
   
-  !-----------------------------------------------------------------------
-  subroutine var3d( cdate, Hops, Bsqrt, dx_loc, status )
-  !-----------------------------------------------------------------------
-  ! @description
-  ! 3-D variational analysis
-  ! @author M.Kahnert
-  !-----------------------------------------------------------------------
+  !! info ...
+  !write (gol,'(a,": horizontal size of half-complex-to-real (local) : ",i0," (",i0,")")') rname, nhcr, lnhcr; call goPr
+  !write (gol,'(a,": total      size of half-complex-to-real (local) : ",i0," (",i0,")")') rname, nv_hcr_all, nv_hcr; call goPr
   
-    use MPIF90               , only : MPIF90_BCast
-    use MPIF90               , only : MPIF90_AllReduce, MPI_SUM
-    use GO                   , only : GO_Timer_Start, GO_Timer_End, GO_Timer_Switch
-    use ModelConstants_ml    , only : MasterProc, NPROC
-    use MPI_Groups_ml        , only : MasterPE
-    use CheckStop_ml         , only : CheckStop
-    use My_Timing_ml         , only : Code_timer, Add_2timing
-    use Util_ml              , only : norm
-    use TimeDate_ml          , only : date  ! date/time structure
-    use Par_ml               , only : me
-    use DA_ml                , only : debug => DEBUG_DA
-    use DA_ml                , only : dafmt => da_fmt_msg, damsg => da_msg
-    use DA_ml                , only : tim_before => datim_before, tim_after => datim_after
-    use DA_Obs_ml            , only : T_ObsOpers
-    use DA_ml                , only : nlev
-    use DA_ml                , only : nChemObs
-    
-    !-----------------------------------------------------------------------
-    ! Formal parameters
-    !-----------------------------------------------------------------------
-
-    type(date), intent(in)            ::  cdate
-    type(T_ObsOpers), intent(inout)   ::  Hops
-    type(T_BCovarSqrt), intent(inout) ::  Bsqrt
-    real, intent(out)                 ::  dx_loc(:,:,:,:)  ! (limax,ljmax,nlev,nChemObs)
-    integer, intent(out)              ::  status
-
-    !-----------------------------------------------------------------------
-    ! external routines
-    !-----------------------------------------------------------------------
-
-    ! functions defined in m1qn3 :
-    external simul_rc,euclid,ctonbe,ctcabe
-
-    !-----------------------------------------------------------------------
-    ! parameters
-    !-----------------------------------------------------------------------
-
-    character(len=*), parameter   ::  rname = mname//'/var3d'
-
-    character(len=*), parameter   ::  normtype='dfn'
-
-    !! configuration:
-    !integer, parameter ::   imode(3)=(/ 1,&   ! run in SIS mode
-    !                                    0,&   ! cold start
-    !                                    0/)   ! calculate Jcost,gradJcost every interation
-
-    !
-    !integer, parameter            ::  nupdates = 4
-
-    ! norm resolution
-    ! ~ originally copied from 'DAPREC' parameter in spectralcov.f90,
-    !   where it was set to a value based on real number represenation:
-    !     ! 2**-22=2.38e-07 1/real4 wont't overflow
-    !     real, parameter :: DAPREC = 1e0/2**22
-    !real(kind=8), parameter       ::  dxmin = DAPREC
-    ! ~ same value, but parameterized here:
-    real(kind=8), parameter       ::  dxmin = 1e0/2**22
+  ! trap zero length:
+  if ( nv_hcr > 0 ) then
+    ! storage for state provided to optimizer:
+    allocate( chi_hcr(nv_hcr), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    ! weight for l2 norm:
+    allocate( l2w_hcr(nv_hcr), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    ! gradient vector:
+    allocate( gradJcost_hcr(nv_hcr), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+  else
+    ! storage for state provided to optimizer:
+    allocate( chi_hcr(1), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    ! weight for l2 norm:
+    allocate( l2w_hcr(1), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    ! gradient vector:
+    allocate( gradJcost_hcr(1), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+  end if
 
 
-    !-----------------------------------------------------------------------
-    ! Local parameters
-    !-----------------------------------------------------------------------
+  !-----------------------------------------------------------------------
+  ! Make one first call to the objective function
+  !-----------------------------------------------------------------------
 
-    integer                   ::  itime
-    integer                   ::  nw, nw_local
-    integer                   ::  nv_hcr
-    real, allocatable         ::  chi_hcr(:)
-    real, allocatable         ::  gradJcost_hcr(:)
-    integer, allocatable      ::  l2w_hcr(:)
-    
-    ! global arrays on each pe needed for calls to m1qn3:
-    integer                   ::  nhcr
-    integer                   ::  nv_hcr_all
+  !-----------------------------------------------------------------------
+  ! optimizer loop
+  !-----------------------------------------------------------------------
 
-    real                      ::  Jcost0, Jcost, Jcost_b, Jcost_obs
-    real                      ::  gradnorm_loc, gradnorm
+  !-----------------------------------------------------------------------
+  ! Call minimization routine (m1qn3-3.3;2009)
+  ! subroutine m1qn3 (simul, prosca, ctonb, ctcab, n, x, f, g,
+  !                   dxmin, df1, epsg, normtype, impres, io,
+  !                   imode, omode, niter, nsim, iz, dz, ndz,
+  !                   reverse, indic, izs, rzs, dzs)
+  !-----------------------------------------------------------------------
 
-    ! m1qn3 variables:
-    integer                   ::  iz(5)
-    integer                   ::  ndz, ndz_all
-    integer                   ::  indic
-    integer                   ::  imode(3)
-    integer                   ::  omode
-    integer                   ::  niter
-    integer                   ::  nsim
-    integer                   ::  reverse
-    integer                   ::  impres
-    integer                   ::  istep
-    real                      ::  epsg,df1
-    real(kind=8), allocatable ::  dz(:)
-    integer                   ::  izs(1) = 0
-    real(kind=4)              ::  rzs(1) = 0.0
-    real(kind=8)              ::  dzs(1) = 0.0
+  ! initial state:
+  chi_hcr = 0.0
+  l2w_hcr = 0
 
-    integer                   ::  n,l,k
-    
-    !-----------------------------------------------------------------------
-    ! storage
-    !-----------------------------------------------------------------------
+  ! thresholds:
+  epsg = dxmin**0.9
 
-    ! get index of record holding current hour:
-    call Bsqrt%FindTime( cdate%hour, itime, status )
+  ! reverse communication, call cost function (in parallel) outside optimizer:
+  reverse = 1
+
+  ! max counters:
+  niter = solver_maxiter
+  nsim  = solver_maxiter*solver_maxsim
+
+  ! size of work array:
+  ndz     = 4*nv_hcr     + solver_nupdates*(2*nv_hcr    +1)
+  ndz_all = 4*nv_hcr_all + solver_nupdates*(2*nv_hcr_all+1)
+  ! storage:
+  allocate( dz(ndz), stat=status )
+  IF_NOT_OK_RETURN(status=1)
+  
+  ! settings:
+  imode(1) = solver_scaling ! 0=DIS, 1=SIS
+  imode(2) = 0              ! cold start
+  imode(3) = 0              ! calculate Jcost,gradJcost every interation
+
+  if(masterProc.or.solver_logall) then
+    impres = 3  ! verbosity level: 0=No print .. 5=Full verbosity
+  else
+    impres = 0  ! No print
+  endif
+  
+  ! info ...
+  if(debug.and.MasterProc.and.impres>0)then
+    write(damsg,"(A,'=',3(I0,:,','),3(1X,A,'=',I0,:,','))"),&
+      'mode',imode,'reverse',reverse,'niter',niter,'nsim',nsim
+    print dafmt,'Calling m1qn3 '//trim(damsg)
+  endif
+  if(impres>0)then
+    open(m1qn3_io,file=date2string(LOGFILE,current_date),iostat=status)
+    IF_NOT_OK_RETURN(status=1)
+  endif
+
+#ifdef with_ajs
+  ! start timing:
+  call GO_Timer_Start( itim_loop, status )
+  IF_NOT_OK_RETURN(status=1)
+#endif
+
+  ! start timing:
+  call Code_timer(tim_before)
+  
+  ! reverse mode, 'costFunction' is called externally;
+  ! perform loop over optimer steps:
+  first_call=.true.
+  do
+  
+#ifdef with_ajs
+    ! start timing:
+    call GO_Timer_Start( itim_costfunc, status )
+    IF_NOT_OK_RETURN(status=1)
+#endif
+
+    !! info ...
+    !write (gol,'(a,":   evaluate cost function and gradient ...")') rname; call goPr
+    ! next evaluation of costfunction and gradient;
+    ! for operations with H this involves all processes :
+    call costFunction( itime, nv_hcr, chi_hcr, Hops, Bsqrt, &
+                         Jcost, Jcost_b, Jcost_obs, gradJcost_hcr, l2w_hcr, &
+                         dx_loc, .false., status )
     IF_NOT_OK_RETURN(status=1)
 
-    ! current size of half-complex state,
-    ! local as well as global:
-    call Bsqrt%TimeGet( itime, status, &
-                                nw_local=nw_local, nw=nw )
-    IF_NOT_OK_RETURN(status=1)
-    ! size of half-complex-real state is double:
-    nv_hcr     = 2 * nw_local
-    nv_hcr_all = 2 * nw
+    !! info ...
+    !write (gol,'(a,":     Jcost    : ",e16.6)') rname, Jcost; call goPr
+    !write (gol,'(a,":     dx range : ",2e16.6)') rname, minval(dx_loc), maxval(dx_loc); call goPr
     
     !! info ...
-    !write (gol,'(a,": horizontal size of half-complex-to-real (local) : ",i0," (",i0,")")') rname, nhcr, lnhcr; call goPr
-    !write (gol,'(a,": total      size of half-complex-to-real (local) : ",i0," (",i0,")")') rname, nv_hcr_all, nv_hcr; call goPr
-    
-    ! trap zero length:
-    if ( nv_hcr > 0 ) then
-      ! storage for state provided to optimizer:
-      allocate( chi_hcr(nv_hcr), stat=status )
-      IF_NOT_OK_RETURN(status=1)
-      ! weight for l2 norm:
-      allocate( l2w_hcr(nv_hcr), stat=status )
-      IF_NOT_OK_RETURN(status=1)
-      ! gradient vector:
-      allocate( gradJcost_hcr(nv_hcr), stat=status )
-      IF_NOT_OK_RETURN(status=1)
-    else
-      ! storage for state provided to optimizer:
-      allocate( chi_hcr(1), stat=status )
-      IF_NOT_OK_RETURN(status=1)
-      ! weight for l2 norm:
-      allocate( l2w_hcr(1), stat=status )
-      IF_NOT_OK_RETURN(status=1)
-      ! gradient vector:
-      allocate( gradJcost_hcr(1), stat=status )
-      IF_NOT_OK_RETURN(status=1)
-    end if
-
-
-    !-----------------------------------------------------------------------
-    ! Make one first call to the objective function
-    !-----------------------------------------------------------------------
-
-    !-----------------------------------------------------------------------
-    ! optimizer loop
-    !-----------------------------------------------------------------------
-
-    !-----------------------------------------------------------------------
-    ! Call minimization routine (m1qn3-3.3;2009)
-    ! subroutine m1qn3 (simul, prosca, ctonb, ctcab, n, x, f, g,
-    !                   dxmin, df1, epsg, normtype, impres, io,
-    !                   imode, omode, niter, nsim, iz, dz, ndz,
-    !                   reverse, indic, izs, rzs, dzs)
-    ! Very old call minimization routine (m1qn3-2.0d;1996)
-    ! subroutine m1qn3 (simul, prosca, ctonb, ctcab, n, x, f, g,
-    !                   dxmin, df1, epsg,           impres, io,
-    !                   mode,         niter, nsim, iz, rz, nrz)
-    !-----------------------------------------------------------------------
-
-    ! initial state:
-    chi_hcr = 0.0
-    l2w_hcr = 0
-
-    ! thresholds:
-    epsg = dxmin**0.9
-
-    ! reverse communication, call cost function (in parallel) outside optimizer:
-    reverse = 1
-
-    ! max counters:
-    niter = m1qn3_maxiter
-    nsim  = m1qn3_maxsim
-
-    ! size of work array:
-    ndz     = 4*nv_hcr     + m1qn3_nupdates*(2*nv_hcr    +1)
-    ndz_all = 4*nv_hcr_all + m1qn3_nupdates*(2*nv_hcr_all+1)
-    ! storage:
-    allocate( dz(ndz), stat=status )
-    IF_NOT_OK_RETURN(status=1)
-    
-    ! settings:
-    imode(1) = m1qn3_scaling   ! 0=DIS, 1=SIS
-    imode(2) = 0               ! cold start
-    imode(3) = 0               ! calculate Jcost,gradJcost every interation
-
-    ! verbosity level:
-    if ( masterProc .or. m1qn3_log_all ) then
-      ! shout:
-      impres = 5    ! Full verbosity
-    else
-      ! shut up ...
-      impres = 0     ! No print
-    end if
-    
-    ! info ...
-    if(debug.and.MasterProc.and.impres>0)then
-      write(damsg,"(A,'=',3(I0,:,','),3(1X,A,'=',I0,:,','))"),&
-        'mode',imode,'reverse',reverse,'niter',niter,'nsim',nsim
-      print dafmt,'Calling m1qn3 '//trim(damsg)
-    endif
+    !write (gol,'(a,":     call m1qn3 ...")') rname; call goPr
+    !write (gol,'(a,":       state size : ",i0," (local ",i0,")")') rname, nv_hcr_all, nv_hcr; call goPr
+    !write (gol,'(a,":       work  size : ",i0," (local ",i0,")")') rname, ndz_all, ndz; call goPr
 
 #ifdef with_ajs
-    ! start timing:
-    call GO_Timer_Start( itim_loop, status )
+    ! switch timing:
+    call GO_Timer_Switch( itim_costfunc, itim_optimizer, status )
     IF_NOT_OK_RETURN(status=1)
 #endif
 
-    ! start timing:
-    call Code_timer(tim_before)
-    
-    ! increase counter:
-    m1qn3_number = m1qn3_number + 1
-
-    ! reverse mode, 'costFunction' is called externally;
-    ! perform loop over optimer steps:
-    istep = 0
-    do
-
-      ! increase counter:
-      istep = istep + 1
-      !! info ...
-      !write (gol,'(a,": solver step ",i4," ...")') rname, istep; call goPr
-    
-#ifdef with_ajs
-      ! start timing:
-      call GO_Timer_Start( itim_costfunc, status )
-      IF_NOT_OK_RETURN(status=1)
-#endif
-
-      !! info ...
-      !write (gol,'(a,":   evaluate cost function and gradient ...")') rname; call goPr
-      ! next evaluation of costfunction and gradient;
-      ! for operations with H this involves all processes :
-      call costFunction( itime, nv_hcr, chi_hcr, Hops, Bsqrt, &
-                           Jcost, Jcost_b, Jcost_obs, gradJcost_hcr, l2w_hcr, &
-                           dx_loc, .false., status )
-      IF_NOT_OK_RETURN(status=1)
-
-      !! info ...
-      !write (gol,'(a,":     Jcost    : ",e16.6)') rname, Jcost; call goPr
-      !write (gol,'(a,":     dx range : ",2e16.6)') rname, minval(dx_loc), maxval(dx_loc); call goPr
-      
-      ! only on root ...
-      if ( masterProc ) then
-        ! add cost function values to summary:
-        write (m1qn3_table,'(i,",",i,4(",",e))',iostat=status) &
-                 m1qn3_number, istep, Jcost, Jcost_b, Jcost_obs, norm(gradJcost_hcr)
-        IF_NOT_OK_RETURN(status=1)
-      end if
-
-      !! info ...
-      !write (gol,'(a,":     call m1qn3 ...")') rname; call goPr
-      !write (gol,'(a,":       state size : ",i0," (local ",i0,")")') rname, nv_hcr_all, nv_hcr; call goPr
-      !write (gol,'(a,":       work  size : ",i0," (local ",i0,")")') rname, ndz_all, ndz; call goPr
-
-#ifdef with_ajs
-      ! switch timing:
-      call GO_Timer_Switch( itim_costfunc, itim_optimizer, status )
-      IF_NOT_OK_RETURN(status=1)
-#endif
-
-      ! first step ?
-      if ( istep == 1 ) then
-        ! store initial evaluation of cost function:
-        Jcost0 = Jcost
-        ! set threshold:
-        df1 = Jcost * 0.5
-      end if
-      
-      ! Set indicator to inform m1qn3 about latest evaluation:
-      !  < 0  : cost function could not be evaluated at given chi ;
-      !  = 0  : m1qn3 has to stop ; 
-      !  > 1  : cost funcation and gradient have been evaluated correctly.
-      ! Here we assume that evaluation was always possible, 
-      ! or that otherwise errors have been trapped already:
-      indic = 1
-
-      !
-      ! NOTE on the half-complex storage!
-      !
-      !  The spectral fields have the size of the extended grid. 
-      !  For feeding them to m1qn3 routine these have to be stored
-      !  as a single 1D array of real numbers, thus having size:
-      !    2 * nxex * nyex * (nlev*nchemobs)
-      !  where the factor 2 is need to store the real and imag parts.
-      !  However, since the complex values are Fourrier transforms of real values,
-      !  about half of them are conjugates of the other half.
-      !  It is therefor not necessary to store all of them, 
-      !  half is enough to describe the complete field ("half-complex storage").
-      !  This was used in the original code too when reformatting the
-      !  full complex array into a 1D real vector ; only half of the values
-      !  in the "y" direction (actually a spectral direction) were stored.
-      !  Including the complex-to-2-reals packing the size became:
-      !     2 * nxex * nyex/2 * (nlev*nchemobs)
-      !
-      !  A problem with the half-complex-to-two-reals packing is the computation
-      !  of an equivalent for the Hermitian product:
-      !       x^H y = conj(x)^T y
-      !  This is the base for the l2-norm over a vector with complex numbers:
-      !      ||x||^2 = x^H x
-      !  The norm is used by the minimization algorithm to decide on convergence.
-      !  For a full-complex field with the half-is-conjugate feature it can be shown that:
-      !      x^H y  = (Re[x],Im[x])^T (Re[y],Im[y])
-      !  thus the Hermitian-product can be computed as the regular dot-product
-      !  over vectors containing the real and imaginary parts of the vectors.
-      !  Thus, a complex-to-real packing maintains the Hermitian product.
-      !  To remain this property for a half-complex-to-real packing,
-      !  an element wise weight should be used in the dot product:
-      !      x^H y = (Re[x_hc],Im[x_hc])^T D_hc (Re[y_hc],Im[y_hc])
-      !  where D_hc is a diagonal matrix with values :
-      !      1  if the element originates from a real    value in the Fourrier spectrum
-      !      2  "  "   "       "          "    " complex "     "  "   "        "
-      !  
-      !  In the original code this was ignored ;
-      !  now introduced, but results will therefore be slightly different.
-      !
-                  
-      !
-      ! Optimizer step;
-      !  - provided 'simul_rc' is dummy for reverse communication;
-      !  - special l2norm for half-complex-to-real states ;
-      !    provide integer weights to 'izs' user array which is used
-      !    by the 'euclid_hcr' norm routine
-      !  - write messages to seperate log file;
-      !  - provide only local part of the states 'chi' and 'gradJcost',
-      !    and use for the dot-product a 'euclid_hcr' function which
-      !    computes a global sum;
-      !  - size of the problem should at least 1, even if on this
-      !    processor no elements are present ;
-      !    therefore pass the actual size of the state vector
-      !
-      call m1qn3( simul_rc, euclid_hcr, ctonbe, ctcabe, &
-                  nv_hcr_all, nv_hcr, chi_hcr, Jcost, gradJcost_hcr, &
-                  dxmin, df1, epsg, normtype, impres, m1qn3_io, &
-                  imode, omode, niter, nsim, iz, &
-                  dz, ndz_all, ndz, &
-                  reverse, indic, &
-                  l2w_hcr, rzs, dzs )
-
-#ifdef with_ajs
-      ! end timing:
-      call GO_Timer_End( itim_optimizer, status )
-      IF_NOT_OK_RETURN(status=1)
-#endif
-
-      !! info ...
-      !write (gol,'(a,":     returned reverse : ",i4)') rname, reverse; call goPr
-      !
-      ! check value:
-      if ( reverse < 0 ) then
-        ! interupt call loop:
-        exit
-      else if ( reverse == 1 ) then
-        ! continue 
-      else
-        write (gol,'("received unsupported reverse value : ",i0)') reverse; call goErr
-        TRACEBACK; status=1; return
-      end if
-
-      !! info ...
-      !write (gol,'(a,":     returned indic   : ",i4)') rname, indic; call goPr
-      ! check value:
-      select case ( indic )
-        !~ do not call simulator; this should have been trapped already:
-        case ( 1 )
-          write (gol,'("unexpected indic ",i0," should not occure")') indic; call goErr
-          TRACEBACK; status=1; return
-        !~ request new J(chi) and nablaJ(chi):
-        case ( 4 )
-          ! continue
-        !~ unknown:
-        case default
-          write (gol,'("unexpected indic value ",i0)') indic; call goErr
-          TRACEBACK; status=1; return
-      end select
-        
-    end do  ! optimizer steps
-
-    ! info ....
-    if(debug.and.MasterProc.and.impres>0)then
-      write(damsg,"(A,'=',3(I0,:,','),3(1X,A,'=',I0,:,','))"),&
-        'mode',imode,'reverse',reverse,'niter',niter,'nsim',nsim
-      print dafmt,'Finish  m1qn3 '//trim(damsg)
+    ! first step: store initial cost function and threshold
+    if(first_call)then
+      Jcost0 = Jcost    ! initial cost function
+      df1 = Jcost * 0.5 ! set threshold
+      first_call=.false.
     endif
-
-    ! info ...
-    write (gol,'(a,":     returned omode   : ",i4)') rname, omode; call goPr
-    ! check ...
-    select case ( omode )
-      case ( 0 )
-        write (gol,'("omode==0: The simulator asks to stop by returning the value (indic=0)")'); call goErr
-        TRACEBACK; status=1; return
-      case ( 1 )
-        write (gol,'("omode==1: Normal m1qn3 exit: successfull gradient test")'); call goPr
-      case ( 2 )
-        write (gol,'("omode==2: One of the input arguments is not well initialized")'); call goErr
-        TRACEBACK; status=1; return
-      case ( 3 )
-        write (gol,'("omode==3: Line-search blocked on tmax = 10**20")'); call goErr
-        TRACEBACK; status=1; return
-      case ( 4 )
-        write (gol,'("omode==4: Reached maximal number of iterations (maxiter)")'); call goPr
-      case ( 5 )
-        write (gol,'("omode==5: Reached maximal number of simulations (maxsim)")'); call goPr
-      case ( 6 )
-        write (gol,'("omode==6: Stop on dxmin during the line-search")'); call goPr
-      case ( 7 )
-        write (gol,'("omode==7: Either <g,d> is nonnegative or <y,s> is nonpositive")'); call goErr
-        TRACEBACK; status=1; return
-      case default
-        write (gol,'("unsupported omode==",i0)') omode; call goErr
-        TRACEBACK; status=1; return
-    end select
-
-    ! finish timing:
-    call Add_2timing(42,tim_after,tim_before,'3DVar: Optimization.')
     
+    ! Set indicator to inform m1qn3 about latest evaluation:
+    !  < 0  : cost function could not be evaluated at given chi ;
+    !  = 0  : m1qn3 has to stop ; 
+    !  > 1  : cost funcation and gradient have been evaluated correctly.
+    ! Here we assume that evaluation was always possible, 
+    ! or that otherwise errors have been trapped already:
+    indic = 1
+
+    ! NOTE on the half-complex storage!
+    !
+    !  The spectral fields have the size of the extended grid. 
+    !  For feeding them to m1qn3 routine these have to be stored
+    !  as a single 1D array of real numbers, thus having size:
+    !    2 * nxex * nyex * (nlev*nchemobs)
+    !  where the factor 2 is need to store the real and imag parts.
+    !  However, since the complex values are Fourrier transforms of real values,
+    !  about half of them are conjugates of the other half.
+    !  It is therefor not necessary to store all of them, 
+    !  half is enough to describe the complete field ("half-complex storage").
+    !  This was used in the original code too when reformatting the
+    !  full complex array into a 1D real vector ; only half of the values
+    !  in the "y" direction (actually a spectral direction) were stored.
+    !  Including the complex-to-2-reals packing the size became:
+    !     2 * nxex * nyex/2 * (nlev*nchemobs)
+    !
+    !  A problem with the half-complex-to-two-reals packing is the computation
+    !  of an equivalent for the Hermitian product:
+    !       x^H y = conj(x)^T y
+    !  This is the base for the l2-norm over a vector with complex numbers:
+    !      ||x||^2 = x^H x
+    !  The norm is used by the minimization algorithm to decide on convergence.
+    !  For a full-complex field with the half-is-conjugate feature it can be shown that:
+    !      x^H y  = (Re[x],Im[x])^T (Re[y],Im[y])
+    !  thus the Hermitian-product can be computed as the regular dot-product
+    !  over vectors containing the real and imaginary parts of the vectors.
+    !  Thus, a complex-to-real packing maintains the Hermitian product.
+    !  To remain this property for a half-complex-to-real packing,
+    !  an element wise weight should be used in the dot product:
+    !      x^H y = (Re[x_hc],Im[x_hc])^T D_hc (Re[y_hc],Im[y_hc])
+    !  where D_hc is a diagonal matrix with values :
+    !      1  if the element originates from a real    value in the Fourrier spectrum
+    !      2  "  "   "       "          "    " complex "     "  "   "        "
+    !  
+    !  In the original code this was ignored ;
+    !  now introduced, but results will therefore be slightly different.
+                
+    ! Optimizer step;
+    !  - provided 'simul_rc' is dummy for reverse communication;
+    !  - special l2norm for half-complex-to-real states ;
+    !    provide integer weights to 'izs' user array which is used
+    !    by the 'euclid_hcr' norm routine
+    !  - write messages to seperate log file;
+    !  - provide only local part of the states 'chi' and 'gradJcost',
+    !    and use for the dot-product a 'euclid_hcr' function which
+    !    computes a global sum;
+    !  - size of the problem should at least 1, even if on this
+    !    processor no elements are present ;
+    !    therefore pass the actual size of the state vector
+    !
+    call m1qn3( simul_rc, euclid_hcr, ctonbe, ctcabe, &
+                nv_hcr_all, nv_hcr, chi_hcr, Jcost, gradJcost_hcr, &
+                dxmin, df1, epsg, normtype, impres, m1qn3_io, &
+                imode, omode, niter, nsim, iz, &
+                dz, ndz_all, ndz, reverse, indic, l2w_hcr, rzs, dzs )
+    if(impres>0 .and. mod(niter,50)==0) FLUSH(m1qn3_io)
+
 #ifdef with_ajs
     ! end timing:
-    call GO_Timer_End( itim_loop, status )
+    call GO_Timer_End( itim_optimizer, status )
     IF_NOT_OK_RETURN(status=1)
 #endif
 
-    !-----------------------------------------------------------------------
-    ! Make a final call to costFunction for converting \chi to \delta x.
-    !-----------------------------------------------------------------------
-    
+    !! info ...
+    !write (gol,'(a,":     returned reverse : ",i4)') rname, reverse; call goPr
+    !
+    ! check value:
+    if(reverse==1)then
+      ! continue 
+    elseif(reverse<0) then
+      exit  ! interupt call loop
+    else
+      write (gol,'("received unsupported reverse value : ",i0)') reverse; call goErr
+      TRACEBACK; status=1; return
+    endif
+
+    !! info ...
+    !write (gol,'(a,":     returned indic   : ",i4)') rname, indic; call goPr
+    ! check value:
+    select case(indic)
+    case(4) ! request new J(chi) and nablaJ(chi)
+      ! continue
+    case(1) ! do not call simulator; this should have been trapped already
+      write(gol,'("unexpected indic ",i0," should not occure")') indic; call goErr
+      TRACEBACK; status=1; return    
+    case default  ! unknown:
+      write(gol,'("unexpected indic value ",i0)') indic; call goErr
+      TRACEBACK; status=1; return
+    endselect
+      
+  enddo  ! optimizer steps
+
+  ! info ....
+  if(debug.and.MasterProc.and.impres>0)then
+    write(damsg,"(A,'=',3(I0,:,','),3(1X,A,'=',I0,:,','))"),&
+      'mode',imode,'reverse',reverse,'niter',niter,'nsim',nsim
+    print dafmt,'Finish  m1qn3 '//trim(damsg)
+  endif
+  if(impres>0)then
+    close(m1qn3_io,iostat=status)
+    IF_NOT_OK_RETURN(status=1)
+  endif
+
+  ! info ...
+  write (gol,'(a,":     returned omode   : ",i4)') rname, omode; call goPr
+  ! check ...
+  select case(omode)
+  case(1,4,5,6) ! normal exit, OK modes
+    write(gol,'(a)')trim(omode_str(omode)); call goPr
+  case(0,2,3,7) ! error modes
+    write(gol,'(a)')trim(omode_str(omode)); call goErr
+    TRACEBACK; status=1; return
+  case default
+    write (gol,'("unsupported omode==",i0)') omode; call goErr
+    TRACEBACK; status=1; return
+  endselect
+
+  ! finish timing:
+  call Add_2timing(42,tim_after,tim_before,'3DVar: Optimization.')
+  
 #ifdef with_ajs
-    ! start timing:
-    call GO_Timer_Start( itim_post, status )
-    IF_NOT_OK_RETURN(status=1)
+  ! end timing:
+  call GO_Timer_End( itim_loop, status )
+  IF_NOT_OK_RETURN(status=1)
 #endif
 
-    ! postprocessing evaluation,
-    ! computes final dx and evaluates du :
-    call costFunction( itime, nv_hcr, chi_hcr, Hops, Bsqrt, &
-                        Jcost, Jcost_b, Jcost_obs, gradJcost_hcr, l2w_hcr, &
-                        dx_loc, .true., status )
-    IF_NOT_OK_RETURN(status=1)
-
-    ! info ...
-    if ( MasterProc ) then
-      write (damsg,*) Jcost0, '-->', Jcost, '=', (1.0-Jcost/Jcost0)*100
-      print dafmt,'Cost function '//trim(ADJUSTL(damsg))//'% Reduction'
-    end if
-    
+  !-----------------------------------------------------------------------
+  ! Make a final call to costFunction for converting \chi to \delta x.
+  !-----------------------------------------------------------------------
+  
 #ifdef with_ajs
-    ! end timing:
-    call GO_Timer_End( itim_post, status )
-    IF_NOT_OK_RETURN(status=1)
+  ! start timing:
+  call GO_Timer_Start( itim_post, status )
+  IF_NOT_OK_RETURN(status=1)
 #endif
 
-    !-----------------------------------------------------------------------
-    ! done
-    !-----------------------------------------------------------------------
-    
-    ! clear:
-    deallocate( chi_hcr, stat=status )
-    IF_NOT_OK_RETURN(status=1)
-    deallocate( l2w_hcr, stat=status )
-    IF_NOT_OK_RETURN(status=1)
-    deallocate( gradJcost_hcr, stat=status )
-    IF_NOT_OK_RETURN(status=1)
-    deallocate( dz, stat=status )
-    IF_NOT_OK_RETURN(status=1)
+  ! postprocessing evaluation,
+  ! computes final dx and evaluates du :
+  call costFunction( itime, nv_hcr, chi_hcr, Hops, Bsqrt, &
+                      Jcost, Jcost_b, Jcost_obs, gradJcost_hcr, l2w_hcr, &
+                      dx_loc, .true., status )
+  IF_NOT_OK_RETURN(status=1)
 
-    ! ok
-    status = 0
+  ! info ...
+  if(MasterProc) then
+    write (damsg,*) Jcost0, '-->', Jcost, '=', (1.0-Jcost/Jcost0)*100
+    print dafmt,'Cost function '//trim(ADJUSTL(damsg))//'% Reduction'
+  endif
+  
+#ifdef with_ajs
+  ! end timing:
+  call GO_Timer_End( itim_post, status )
+  IF_NOT_OK_RETURN(status=1)
+#endif
 
-  end subroutine var3d
+  !-----------------------------------------------------------------------
+  ! done
+  !-----------------------------------------------------------------------
+  
+  ! clear:
+  deallocate( chi_hcr, stat=status )
+  IF_NOT_OK_RETURN(status=1)
+  deallocate( l2w_hcr, stat=status )
+  IF_NOT_OK_RETURN(status=1)
+  deallocate( gradJcost_hcr, stat=status )
+  IF_NOT_OK_RETURN(status=1)
+  deallocate( dz, stat=status )
+  IF_NOT_OK_RETURN(status=1)
+
+  ! ok
+  status = 0
+
+endsubroutine var3d
   
   
   ! ***
@@ -2086,7 +1855,7 @@ contains
   ! ***
 
 
-  subroutine get_innovations( Hops, nobs, xn_adv_b, xn_b, &
+  subroutine get_innovations( Hops, nobs, xn_adv_b, &
                                 maxobs, stnid, flat,flon,falt, &
                                 obs, obs_stddev, stncodes, state, status )
   !-----------------------------------------------------------------------
@@ -2114,7 +1883,6 @@ contains
     type(T_ObsOpers), intent(inout)     ::  Hops
     integer, intent(in)                 ::  nobs
     real, intent(in)                    ::  xn_adv_b(:,:,:,:)  ! (nspec_adv,lnx,lny,kmax_mid)
-    real, intent(in)                    ::  xn_b(:,:,:,:)      ! (lnx,lny,nlev,nChem)
     integer, intent(in)                 ::  maxobs
     integer, intent(in)                 ::  stnid(maxobs)
     real, intent(inout)                 ::  flon(maxobs)  ! normalized to [-180,180]
@@ -2168,9 +1936,8 @@ contains
         !-----------------------------------------------------------------------
 
         ! only local field ;
-        !  'xn_b' contains scale factor 'FGSCALE' already,
         !  simulation 'yn' is therefore including this factor too:
-        call Hops%obs(n)%Fill( xn_adv_b, xn_b, &
+        call Hops%obs(n)%Fill( xn_adv_b, &
                                iObsData(n), stnid(n), flat(n),flon(n),falt(n), &
                                yn, status )
         IF_NOT_OK_RETURN(status=1)
@@ -2253,7 +2020,9 @@ contains
   !-----------------------------------------------------------------------
     use MPIF90               , only : MPIF90_AllReduce, MPI_SUM
     use MPIF90               , only : MPIF90_BCast
-    use GO                   , only : GO_Timer_Start, GO_Timer_End
+#ifdef with_ajs
+    use DA_Util_ml           , only : GO_Timer_Start, GO_Timer_End
+#endif
     use MPI_Groups_ml        , only : MPI_COMM_CALC
     use MPI_Groups_ml        , only : MasterPE
     use ModelConstants_ml    , only : MasterProc, NPROC

@@ -3,18 +3,21 @@
 #define HERE(MSG)  MSG//" ("//__FILE__//":"//STRING(__LINE__)//")."
 module DA_3DVar_ml
 use ModelConstants_ml,only: KMAX_MID,KCHEMTOP,RUNDOMAIN,PPB,PPBINV,ANALYSIS,&
-                            MasterProc,NPROC
+                            MasterProc,NPROC,IOU_INST,num_lev3d,lev3d
 use ChemSpecs,        only: NSPEC_SHL, species  ! Maps indices, SPC names
 use ChemGroups_ml,    only: chemgroups          ! group names
-use Chemfields_ml,    only: xn_adv
+use Chemfields_ml,    only: xn_adv,cfac
+use DerivedFields_ml, only: d_2d, f_2d, d_3d, f_3d
 use GridValues_ml,    only: coord_in_domain
 use TimeDate_ml,      only: date,current_date
 use TimeDate_ExtraUtil_ml,only: date2string, compare_date
 use Io_ml,            only: IO_TMP
+use MetFields_ml,     only: roa
 use My_Timing_ml,     only: Code_timer,Add_2timing,NTIMING_UNIMOD
 use Par_ml,           only: me,gi0,gi1,gj0,gj1,li0,li1,lj0,lj1,limax,ljmax
 use CheckStop_ml,     only: CheckStop
 use SmallUtils_ml,    only: find_index
+use Units_ml,         only: Units_Scale
 use Util_ml,          only: norm
 use DA_ml,            only: debug=>DEBUG_DA,DAFMT_DEF=>DA_FMT_DEF,&
                             debug_3dv=>DEBUG_DA_3DV,debug_obs=>DEBUG_DA_OBS,&
@@ -271,8 +274,8 @@ real(kind=8) :: dzs=0.0
 !-----------------------------------------------------------------------
 ! Local parameters
 !-----------------------------------------------------------------------
-integer :: i,j,k,kLev0,kLev1,kk,ntot,maxobs,nv,nv2,nvTot,nvLoc,nvar,nv2np,INFO,gIJ(4)
-logical :: laux
+integer :: n,kLev0,kLev1,kk,ntot,maxobs,nv,nv2,nvTot,nvLoc,nvar,nv2np,INFO,gIJ(4)
+logical :: laux,needroa
 real, allocatable, dimension(:) :: flat,flon,falt,obs,obsstddev1
 real, dimension(:,:,:), pointer :: an_bgd=>null(),an_inc=>null()
 !-----------------------------------------------------------------------
@@ -310,6 +313,36 @@ real, dimension(:,:,:), pointer :: an_bgd=>null(),an_inc=>null()
     biasStdDev(:)=biasStdDev(:)*FGSCALE
   endif
 #endif
+!-----------------------------------------------------------------------
+! store first guess output
+!-----------------------------------------------------------------------
+  do nvar = 1, nChem
+! 2d/surface 
+    do n=1,size(f_2d)
+      if(any([f_2d(n)%class,f_2d(n)%subclass,f_2d(n)%txt]&
+           /=['USET','3DVAR_FG',varName(nvar)]))cycle
+      call Units_Scale(f_2d(n)%unit,varSpec(nvar),f_2d(n)%scale,needroa=needroa)
+      if(needroa)then
+        d_2d(n,:,:,IOU_INST)=xn_adv(varSpec(nvar),:,:,KMAX_MID)&
+                            *cfac(varSpec(nvar),:,:)*roa(:,:,KMAX_MID,1)
+      else
+        d_2d(n,:,:,IOU_INST)=xn_adv(varSpec(nvar),:,:,KMAX_MID)&
+                            *cfac(varSpec(nvar),:,:)
+      endif
+    enddo
+! 3d/mod.lev.
+    do n=1,size(f_3d)
+      if(any([f_3d(n)%class,f_3d(n)%subclass,f_3d(n)%txt]&
+           /=['USET','3DVAR_FG',varName(nvar)]))cycle
+      call Units_Scale(f_3d(n)%unit,varSpec(nvar),f_3d(n)%scale,needroa=needroa)
+      if(needroa)then
+        d_3d(n,:,:,:,IOU_INST)=xn_adv(varSpec(nvar),:,:,lev3d(:num_lev3d))&
+                              *roa(:,:,lev3d(:num_lev3d),1)
+      else
+        d_3d(n,:,:,:,IOU_INST)=xn_adv(varSpec(nvar),:,:,lev3d(:num_lev3d))
+      endif
+    enddo
+  enddo
 !-----------------------------------------------------------------------
 ! extend & scale background field
 !-----------------------------------------------------------------------

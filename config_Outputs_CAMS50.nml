@@ -1,7 +1,10 @@
 &OutputConcs_config
-!--DEBUG_PBL
-!OutputMisc=
+OutputMisc=
 ! name,class,subclass,txt,unit,index,f2d,dt_scale,scale,av,iotype,
+!--DEBUG_DA
+! 'SURF_ug_O3_FG','USET','3DVAR_FG','O3','ug/m3',-99,-99,F,-99.9,T,'I',
+!   'D3_ug_O3_FG','USET','3DVAR_FG','O3','ug/m3',-99,-99,F,-99.9,T,'I',
+!--DEBUG_PBL
 ! 'ustar_nwp','MET2D','ustar_nwp','-','m/s',-99,-99,F,1.0,T,'D',
 OutputConcs=
 ! freq: YEAR='Y', MON='M', DAY='D', HOUR='H', HOUR_INST='I'

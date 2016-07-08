@@ -52,6 +52,64 @@
             ! 'CCE_SPRUCE','CCE_BEECH','ACE_PINE','ACE_OAK','ACE_BEECH',
             ! 'NEUR_SPRUCE','NEUR_BIRCH','MED_OAK','MED_PINE','MED_BEECH'
 &end
+!------------------------------
+! ANALYSIS: (new) 3DVar16 modules
+!------------------------------
+&DA_CONFIG
+  analysis_ndate=1,                   ! 1 date setup
+  analysis_date(1)= -1,-1,-1,00,0000, ! analysis every hour of every day
+!+analysis_nspc=3,                    ! potentially analysed tracers (nChem)
+!+analysis_spc='O3','NO2','SO2','PM25','PM10', ! (varName)
+!------------------------------
+! m1qn3 (solver) settings
+!------------------------------
+! Scaling mode of solver and number of updates in memory.
+! Experiments showed that SIS/20 is cheapest for complete convergence;
+! higher number of updates is more accurate for same number of iterations.
+!------------------------------
+  solver_scaling =    1, ! 0=DIS, 1=SIS
+  solver_nupdates=   20, ! number of updates in memory
+  solver_maxiter =  500, ! maximum number of iterations
+! solver_maxiter =   50, ! maximum number of iterations
+  solver_maxsim  =    3, ! maximum number of simulations/iteration
+  solver_logall  =    F, ! each processor writes all messages
+!------------------------------
+! define B matrix to be used for each analysed component
+!------------------------------
+  nBnmc=3
+  Bnmc_name(1:5)='O3','NO2','SO2','PM25','PM10',
+  Bnmc_filename='/work/arjos/Bnmc/batch-02/###_2010/output/nmc-BB.nc',
+&end
+!------------------------------
+! ANALYSIS: NRT observations
+!------------------------------
+&OBSERVATIONS
+  nobsData=4,
+!------------------------------
+! NRT EEA: surface NO2 [ug/m3], valid range: [0,150]
+!------------------------------
+  obsData(1)%file='/home/metno/alvarov/CWF/obs/ObsData/YYYYMM/NO2_YYYYMMDD_hh.txt',
+  obsData(1)%name='NO2',obsData(1)%deriv='surface',obsData(1)%unit='ug/m3',
+  obsData(1)%min=00.0,obsData(1)%max=150.0,obsData(1)%error_rel=0.10,
+!------------------------------
+! NRT OMI: Trop.Col. NO2 [1e15molec/cm2], valid range: [0,50]
+!------------------------------
+  obsData(2)%file='/home/metno/alvarov/CWF/obs/ObsData/YYYYMM/NO2tc_YYYYMMDD_hh.txt',
+  obsData(2)%name='NO2',obsData(2)%deriv='Trop.Col.',obsData(2)%unit='1e15molec/cm2',
+  obsData(2)%min=00.0,obsData(2)%max=050.0,
+!------------------------------
+! NRT EEA: surface O3 [ug/m3], valid range: [0,150]
+!------------------------------
+  obsData(3)%file='/home/metno/alvarov/CWF/obs/ObsData/YYYYMM/O3_YYYYMMDD_hh.txt',
+  obsData(3)%name='O3',obsData(3)%deriv='surface',obsData(3)%unit='ug/m3',
+  obsData(3)%min=00.0,obsData(3)%max=150.0,obsData(3)%error_rel=0.10,
+!------------------------------
+! NRT EEA: surface SO2 [ug/m3], valid range: [0,150]
+!------------------------------
+  obsData(4)%file='/home/metno/alvarov/CWF/obs/ObsData/YYYYMM/SO2_YYYYMMDD_hh.txt',
+  obsData(4)%name='SO2',obsData(4)%deriv='surface',obsData(4)%unit='ug/m3',
+  obsData(4)%min=00.0,obsData(4)%max=150.0,obsData(4)%error_rel=0.10,
+&end
 &Fire_config
   need_file=F,need_date=F,need_poll=F,! continue if don't find file,time record,pollutant
   GFED_PATTERN='$GFED',#GFED
