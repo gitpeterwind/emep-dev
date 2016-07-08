@@ -25,7 +25,7 @@ program myeul
   use ChemGroups_ml,    only: Init_ChemGroups
   use Country_ml,       only: Country_Init
   use DefPhotolysis_ml, only: readdiss
-  use Derived_ml,       only: Init_Derived, iou_min, iou_max, wanted_iou
+  use Derived_ml,       only: Init_Derived, wanted_iou
   use DerivedFields_ml, only: f_2d, f_3d
   use EcoSystem_ml,     only: Init_EcoSystems
   use Emissions_ml,     only: Emissions, newmonth
@@ -202,23 +202,24 @@ program myeul
   if (MasterProc.and.DEBUG%MAINCODE ) print *,"vgrid finish"
 
   ! open only output netCDF files if needed
-  if(MasterProc.and.DEBUG%MAINCODE )print *, "NETCDFINITS: minval, maxval", iou_min, iou_max
+  if(MasterProc.and.DEBUG%MAINCODE )&
+    print *, "NETCDFINITS: iou", (i,wanted_iou(i),i=IOU_INST,IOU_HOUR_INST)
   ! The fullrun file contains the accumulated or average results
   ! over the full run period, often a year, but even just for
   ! a few timesteps if that is all that is run:
 
-  if (wanted_iou(IOU_YEAR)) &
-       call Init_new_netCDF(trim(runlabel1)//'_fullrun.nc',IOU_YEAR)
-  if (wanted_iou(IOU_INST)) &
-       call Init_new_netCDF(trim(runlabel1)//'_inst.nc',IOU_INST)
-  if (wanted_iou(IOU_HOUR_INST)) &
-     call Init_new_netCDF(trim(runlabel1)//'_hourInst.nc',IOU_HOUR_INST)
-  if (wanted_iou(IOU_HOUR)) &
-     call Init_new_netCDF(trim(runlabel1)//'_hour.nc',IOU_HOUR)
-  if (wanted_iou(IOU_DAY)) &
-       call Init_new_netCDF(trim(runlabel1)//'_day.nc',IOU_DAY)
-  if (wanted_iou(IOU_MON)) &
-       call Init_new_netCDF(trim(runlabel1)//'_month.nc',IOU_MON)
+  if(wanted_iou(IOU_INST)) &
+    call Init_new_netCDF(trim(runlabel1)//'_inst.nc',IOU_INST)
+  if(wanted_iou(IOU_YEAR)) &
+    call Init_new_netCDF(trim(runlabel1)//'_fullrun.nc',IOU_YEAR)
+  if(wanted_iou(IOU_MON)) &
+    call Init_new_netCDF(trim(runlabel1)//'_month.nc',IOU_MON)
+  if(wanted_iou(IOU_DAY)) &
+    call Init_new_netCDF(trim(runlabel1)//'_day.nc',IOU_DAY)
+  if(wanted_iou(IOU_HOUR)) &
+    call Init_new_netCDF(trim(runlabel1)//'_hour.nc',IOU_HOUR)
+  if(wanted_iou(IOU_HOUR_INST)) &
+    call Init_new_netCDF(trim(runlabel1)//'_hourInst.nc',IOU_HOUR_INST)
 
   call Add_2timing(4,tim_after,tim_before,"After tabs, defs, adv_var")
 

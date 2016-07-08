@@ -16,8 +16,8 @@ use Landuse_ml,       only: LandCover ! for POD
 use LocalVariables_ml,only: Grid,SubDat, L
 use MetFields_ml
 use ModelConstants_ml,only: MasterProc, DEBUG, &
-                            NLANDUSEMAX, IOU_INST
-use OwnDataTypes_ml,  only: Deriv, print_deriv_type, typ_s5i, typ_si, typ_s3,&
+                            NLANDUSEMAX, IOU_INST,IOU_KEY
+use OwnDataTypes_ml,  only: Deriv, print_deriv_type, typ_s5ind, typ_s1ind, typ_s3,&
                             TXTLEN_DERIV, TXTLEN_SHORT
 use SmallUtils_ml,    only: find_index
 use SubMet_ml,        only: Sub
@@ -79,9 +79,7 @@ subroutine Init_MosaicMMC(MOSAIC_METCONCS)
 end subroutine Init_MosaicMMC
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 subroutine Add_MosaicMetConcs(MOSAIC_METCONCS,MET_LCS,iotyp, nMET)
-  character(len=*), dimension(:), intent(in) :: MOSAIC_METCONCS
-  character(len=*), dimension(:), intent(in) :: MET_LCS
-  integer, intent(in)  :: iotyp
+  character(len=*), intent(in) :: MOSAIC_METCONCS(:),MET_LCS(:),iotyp
   integer, intent(out) :: nMET
   integer :: ilab, n, iLC
   character(len=TXTLEN_DERIV) :: name
@@ -130,7 +128,7 @@ subroutine Add_MosaicMetConcs(MOSAIC_METCONCS,MET_LCS,iotyp, nMET)
  endsubroutine Add_MosaicMetConcs
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
  subroutine Add_NewMosaics(Mc,nMc)
-  type(typ_s5i), dimension(:), intent(in) :: Mc ! eg VG
+  type(typ_s5ind), dimension(:), intent(in) :: Mc ! eg VG
   integer, intent(out) :: nMc
   integer :: n, itot, iLC, iadv
   character(len=TXTLEN_DERIV) :: name
@@ -235,7 +233,7 @@ subroutine Add_MosaicVegO3(nVEGO3)
 end subroutine Add_MosaicVEGO3
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 subroutine Add_MosaicDDEP(DDEP_ECOS,DDEP_WANTED,nDD)
-  type(typ_si), dimension(:), intent(in) :: DDEP_ECOS    !e.g. (%name,DDEP_FREQ)
+  type(typ_s1ind), dimension(:), intent(in) :: DDEP_ECOS    !e.g. (%name,DDEP_FREQ)
   type(typ_s3), dimension(:), intent(in) :: DDEP_WANTED  !e.g. ("NH3","SPECIE","mgN")
   integer, intent(out) :: nDD
   integer :: i, n, iadv,igrp
@@ -257,9 +255,9 @@ subroutine Add_MosaicDDEP(DDEP_ECOS,DDEP_WANTED,nDD)
 
     do n=1,size(DDEP_ECOS)
 
-      if(dbg0) write(*,"(a,2i4,2a12)") dtxt//"DDEP_WANTED,b:", n, DDEP_ECOS(n)%ind, &
+      if(dbg0) write(*,"(a,i4,a6,2a12)") dtxt//"DDEP_WANTED,b:", n, DDEP_ECOS(n)%ind, &
          trim(DDEP_ECOS(n)%name), trim(xtyp)
-      if (DDEP_ECOS(n)%ind < 1) exit
+      if(all(DDEP_ECOS(n)%ind/=IOU_KEY)) exit
       nDD = nDD + 1
       nMosaic = nMosaic + 1
 

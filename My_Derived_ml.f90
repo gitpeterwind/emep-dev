@@ -41,7 +41,7 @@ use LandDefs_ml,      only: LandDefs, LandType, Check_LandCoverPresent ! e.g. "C
 use MetFields_ml,     only: z_bnd, roa
 use ModelConstants_ml,only: MasterProc, SOURCE_RECEPTOR, DEBUG, & !! => DEBUG_MY_DERIVED &
                             USE_AOD, USE_SOILNOX, USE_OCEAN_DMS, USE_uEMEP, &
-                            Y=>IOU_YEAR,M=>IOU_MON,D=>IOU_DAY,H=>IOU_HOUR,  &
+                            IOU_KEY,      & !'Y'=>IOU_YEAR,..,'I'=>IOU_HOUR_INST
                             KMAX_MID,     & ! =>  z dimension
                             RUNDOMAIN,    &
                             fullrun_DOMAIN,month_DOMAIN,day_DOMAIN,hour_DOMAIN,&
@@ -52,7 +52,7 @@ use MosaicOutputs_ml, only: nMosaic, MAX_MOSAIC_OUTPUTS, MosaicOutput, & !
 !  MMC_USTAR, MMC_INVL, MMC_RH, MMC_CANO3, MMC_VPD, MMC_FST, MMC_GSTO, MMC_EVAP
 
 use OwnDataTypes_ml,only: Deriv, TXTLEN_DERIV, TXTLEN_SHORT,&
-                          typ_ss, typ_s3, typ_s4, typ_s5i, typ_si
+                          typ_ss, typ_s3, typ_s4, typ_s5ind, typ_s1ind
 use Par_ml,         only: me,limax,ljmax        ! => used x, y area
 use SmallUtils_ml,  only: AddArray,LenArray,NOT_SET_STRING,WriteArray,find_index
 use TimeDate_ml,    only: current_date
@@ -88,7 +88,7 @@ character(len=TXTLEN_DERIV), public, save :: &
 integer, private, save :: mynum_deriv2d,mynum_deriv3d
 
 !Mass-outputs of advected species, will be added to Derived
-! time-res: M -> monthly, D-> daily....
+! time-res: 'M'-> monthly, 'D'-> daily....
 
 ! some shorthands for this table
 logical, parameter, private :: T=.true., F=.false.
@@ -96,7 +96,7 @@ character(len=TXTLEN_SHORT), private, parameter ::&
   D2="2d", D3="3d", SPEC="SPEC", GROUP="GROUP", SHL ="SHL"
 
 !REMEMBER - KEEP UPPER CASE FOR ALL GASES
-type(typ_s5i), public, save, dimension(MAX_NUM_DERIV2D) :: OutputFields
+type(typ_s5ind), public, save, dimension(MAX_NUM_DERIV2D) :: OutputFields
 integer, public, save :: nOutputFields = 0
 integer, public, save :: nOutputWdep   = 0
 
@@ -104,12 +104,12 @@ integer, public, save :: nOutputWdep   = 0
 type(Deriv), public, save, dimension(MAX_NUM_DERIV2D) :: OutputMisc= Deriv()
 integer, save, public :: nOutputMisc = 0
 
-type(typ_s5i), public, save, dimension(MAX_NUM_DERIV2D) :: &
-  OutputConcs = typ_s5i("-","-","-","-","-",-999)
+type(typ_s5ind), public, save, dimension(MAX_NUM_DERIV2D) :: &
+  OutputConcs = typ_s5ind("-","-","-","-","-","-")
 
 ! Depositions
-type(typ_si), public, save, dimension(MAX_NUM_DDEP_ECOS) :: &
-  DDEP_ECOS = typ_si("-", -999 )  ! e.g. "Grid     ", D), 
+type(typ_s1ind), public, save, dimension(MAX_NUM_DDEP_ECOS) :: &
+  DDEP_ECOS = typ_s1ind("-",'-') ! e.g. "Grid","YMD", 
 
 type(typ_s3), public, save, dimension(MAX_NUM_DDEP_WANTED) :: &
   DDEP_WANTED = typ_s3('-','-','-'), & ! e.g. typ_s3("SO2",SPEC,"mgS"),
@@ -140,8 +140,8 @@ integer, private, save :: nOutMET
 
 !- specify some species and land-covers we want to output
 ! dep. velocities for in netcdf files. Set in My_DryDep_ml.
-type(typ_s5i), public, parameter, dimension(1) :: &
-  NewMosaic = (/typ_s5i( "Mosaic", "VG", "O3       ", "Grid","cms",D ) /)
+type(typ_s5ind), public, parameter, dimension(1) :: &
+  NewMosaic =[typ_s5ind('Mosaic','VG','O3','Grid','cms','YMD')]
 
 ! For met-data and canopy concs/fluxes ...
 character(len=TXTLEN_DERIV), public, parameter, dimension(4) :: &
@@ -172,14 +172,14 @@ character(len=TXTLEN_DERIV), public, save, dimension(4:1) :: &
 
 logical, parameter, public :: EmisSplit_OUT = .false.
 
-integer, private :: i,j,k,n, ivoc, index    ! Local loop variables
+integer, private :: i,j,k,n, ivoc    ! Local loop variables
 
 contains
 
 !=========================================================================
 subroutine Init_My_Deriv()
 
-  integer :: i, itot, nDD, nMET, nVEGO3, n1, n2,istat, nMc
+  integer :: i, itot, nDD, nMET, nVEGO3=0, n1, n2,istat, nMc
   integer :: nOutputConcs
   character(len=TXTLEN_DERIV) :: txt
 ! character(len=TXTLEN_DERIV), &
@@ -247,10 +247,12 @@ subroutine Init_My_Deriv()
        
   if(MasterProc) write(*,"(a,i3)") "NMLOUT nOUTMISC ", nOutputMisc
   do i = 1,nOutputMisc  
-    if(MasterProc) write(*,"(3a,2i3)")"NMLOUT OUTMISC ",OutputMisc(i)%name,&
-            OutputMisc(i)%class, OutputMisc(i)%index
+    Is3D=(OutputMisc(i)%class=="MET3D").or.(OutputMisc(i)%name(1:2)=='D3')
+    if(MasterProc) write(*,"(4(A,1X),i3,1X,L)")"NMLOUT OUTMISC",&
+      trim(OutputMisc(i)%name),trim(OutputMisc(i)%class),&
+      trim(OutputMisc(i)%subclass),OutputMisc(i)%index,Is3D
     tag_name(1) = trim(OutputMisc(i)%name)
-    if(OutputMisc(i)%class=="MET3D")then
+    if(Is3D)then
       call AddArray(tag_name(1:1),wanted_deriv3d,NOT_SET_STRING,errmsg)
     else
       call AddArray(tag_name(1:1),wanted_deriv2d,NOT_SET_STRING,errmsg)
@@ -262,10 +264,10 @@ subroutine Init_My_Deriv()
     write(*,"(3a,f7.1)")("NMLOUT OUTVegO3 ",OutputVegO3(i)%name,&
           OutputVegO3(i)%class, OutputVegO3(i)%Threshold, i=1,nOutputVegO3) 
     write(*,"(a,i3)") "NMLOUT nOUTCONC ", nOutputConcs
-    write(*,"(3a,i3)")("NMLOUT CONC ", OutputConcs(i)%txt1, &
+    write(*,"(4a)")("NMLOUT CONC ", OutputConcs(i)%txt1, &
              OutputConcs(i)%txt4, OutputConcs(i)%ind, i=1,nOutputConcs)
     do i = 1,size(DDEP_ECOS)  
-      if(DDEP_ECOS(i)%ind<1) exit
+      if(all(DDEP_ECOS(i)%ind/=IOU_KEY)) exit
       write(*,"(2a,i3)") "NMLOUT DEP ", DDEP_ECOS(i)%name, DDEP_ECOS(i)%ind
     enddo
     do i = 1,size(DDEP_WANTED)  
@@ -365,7 +367,7 @@ subroutine Init_My_Deriv()
     ! adding them to the derived-type array LCC_Met (e.g. => Met_CF)
     !FEB2011  Daiyl output asked for just now. Change larer
 
-    call Add_MosaicMetConcs(MOSAIC_METCONCS,MET_LCS, D, nMET)
+    call Add_MosaicMetConcs(MOSAIC_METCONCS,MET_LCS,'YMD', nMET)
     nOutMET = nMET !not needed?
   endif ! SOURCE_RECEPTOR
 
@@ -380,9 +382,9 @@ subroutine Init_My_Deriv()
   ! Add the pollutants wanted from OutputConcs:
   ! to both OutputFields and wanted_deriv arrays (TOO MESSY)
   ! Requested species which are not present will trigger warnings
-  !type(typ_s5i), public, parameter, dimension(27) :: &
-  !   OutputConcs = (/  typ_s5i("SO2", "ugS", D2,"AIR_CONCS", SPEC, M),&
-  !                     typ_s5i("SO4", "ugS", D2,"AIR_CONCS", SPEC, M),&
+  !type(typ_s5ind), public, parameter, dimension(27) :: &
+  !   OutputConcs = (/  typ_s5ind("SO2", "ugS", D2,"AIR_CONCS", SPEC, M),&
+  !                     typ_s5ind("SO4", "ugS", D2,"AIR_CONCS", SPEC, M),&
 
   do n = 1, nOutputConcs
     outname= trim(OutputConcs(n)%txt1)

@@ -10,57 +10,57 @@
 !  items:
 !         name      Unit   dim  typ   class  freq
 !
-! where freq = IOU_YEAR=2, IOU_MON=3, IOU_DAY=4, IOU_HOUR=5, IOU_HOUR_INST=6
+! where freq: YEAR='Y', MON='M', DAY='D', HOUR='H', HOUR_INST='I'
 !
 &OutputConcs_config
 OutputConcs= 
-      'SURF_ppbC_VOC'       ,'ppb' ,'2d','VOC'      ,'MISC' ,4,
+      'SURF_ppbC_VOC'       ,'ppb' ,'2d','VOC'      ,'MISC' ,'YMD',
 ! ug/m3                                                    
-      'SO2'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-      'NH3'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-      'HNO3'                ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-      'NO2'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-      'NO'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-      'SO4'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-      'NO3_F'               ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-      'NO3_C'               ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-      'NH4_F'               ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-      'REMPPM25'            ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
-      'REMPPM_C'            ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
+      'SO2'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+      'NH3'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+      'HNO3'                ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+      'NO2'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+      'NO'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+      'SO4'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+      'NO3_F'               ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+      'NO3_C'               ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+      'NH4_F'               ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+      'REMPPM25'            ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+      'REMPPM_C'            ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
 ! ppb                                                      
-      'O3'                  ,'ppb' ,'2d','AIR_CONCS','SPEC' ,4, !! test 3d
+      'O3'                  ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMD', !! test 3d
 ! GenChem produces a number of groups of species.
 ! Here we say which ones we want for different units
 ! ****** UPPER CASE ONLY ************
 ! ugC/m3
-      'OXN'                 ,'ugN' ,'2d','AIR_CONCS','GROUP',4,
-      'NOX'                 ,'ugN' ,'2d','AIR_CONCS','GROUP',4,
-      'RDN'                 ,'ugN' ,'2d','AIR_CONCS','GROUP',4,
-      'TNO3'                ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
-      'SIA'                 ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
-      'PMFINE'              ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
-      'PM10'                ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
-      'PMCO'                ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
-      'PPM25'               ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
-      'PPM_C'               ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
+      'OXN'                 ,'ugN' ,'2d','AIR_CONCS','GROUP','YMD',
+      'NOX'                 ,'ugN' ,'2d','AIR_CONCS','GROUP','YMD',
+      'RDN'                 ,'ugN' ,'2d','AIR_CONCS','GROUP','YMD',
+      'TNO3'                ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+      'SIA'                 ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+      'PMFINE'              ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+      'PM10'                ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+      'PMCO'                ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+      'PPM25'               ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+      'PPM_C'               ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
 ! SOA, PCM_F etc. are special and need appropriate units. Do not confuse! 
 ! Only PCM has proper ug units, the others are carbon-eqiuvalents 
 ! (PCM is particulate carbonaceous matter = sum of all EC and OM components.)
-      'PPM25_FIRE'          ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
+      'PPM25_FIRE'          ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
 ! ============================================================
 ! SOA additions (26 entries)
-     'ECFINE'           ,'ug'    ,'2d','AIR_CONCS','GROUP',4,
-     'ECCOARSE'         ,'ug'    ,'2d','AIR_CONCS','GROUP',4,
-!    'OM25_P'           ,'ug'    ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
-!    'OM_BGND'          ,'ug'    ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
-     'OM25'             ,'ug_PM' ,'2d','AIR_CONCS','GROUP',4, ! FSOA tests
-     'OM25'             ,'ugC_PM','2d','AIR_CONCS','GROUP',4, ! FSOA tests
-     'OMCOARSE'         ,'ug_PM' ,'2d','AIR_CONCS','GROUP',4, !! ugC_PM if needed
-     'OMCOARSE'         ,'ugC_PM','2d','AIR_CONCS','GROUP',4, ! FSOA tests
+     'ECFINE'           ,'ug'    ,'2d','AIR_CONCS','GROUP','YMD',
+     'ECCOARSE'         ,'ug'    ,'2d','AIR_CONCS','GROUP','YMD',
+!    'OM25_P'           ,'ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! NEVER as ugC
+!    'OM_BGND'          ,'ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! NEVER as ugC
+     'OM25'             ,'ug_PM' ,'2d','AIR_CONCS','GROUP','YMD', ! FSOA tests
+     'OM25'             ,'ugC_PM','2d','AIR_CONCS','GROUP','YMD', ! FSOA tests
+     'OMCOARSE'         ,'ug_PM' ,'2d','AIR_CONCS','GROUP','YMD', ! ugC_PM if needed
+     'OMCOARSE'         ,'ugC_PM','2d','AIR_CONCS','GROUP','YMD', ! FSOA tests
 !SPECIAL PM25 will be sum of fine + fraction coarse
-     'SURF_ug_PM25'        ,'ug'  ,'2d','PM25'      ,'MISC',4,
-     'SURF_ug_PM25_rh50'   ,'ug'  ,'2d','PM25_rh50' ,'MISC',4,
-     'SURF_ug_PM10_rh50'   ,'ug'  ,'2d','PM10_rh50' ,'MISC',4,
+     'SURF_ug_PM25'     ,'ug'    ,'2d','PM25'     ,'MISC' ,'YMD',
+     'SURF_ug_PM25_rh50','ug'    ,'2d','PM25_rh50','MISC' ,'YMD',
+     'SURF_ug_PM10_rh50','ug'    ,'2d','PM10_rh50','MISC' ,'YMD',
 !---------------------------------------------
 &end
 
@@ -68,7 +68,7 @@ OutputConcs=
 
 &OutputDep_config
   DDEP_ECOS =
-    'Grid     ', 4,
+    'Grid     ', 'YMD',
 
   DDEP_WANTED =
     'SOX      ', 'GROUP', 'mgS',

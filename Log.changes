@@ -154,7 +154,27 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-8th July 2016 Alvaro, 3255
+8th July 2016 Alvaro, 3255,3256
+
+ModelConstants_ml,Derived_ml,My_Derived_ml,EcoSystem_ml,Unimod,
+config_Outputs_*.nml,config_BM-EECCA.nml:
+- New variable IOU_KEY define strings shorthands
+  for IOUs: yearly 'Y', montly 'M', daily 'D', hourly mean 'H' and
+  hourly instantaneous 'I' (ModelConstants_ml).
+- Replace numerical IOU codes by string shorthands on output definitions:
+  IOU_YEAR(2) by 'Y', IOU_MON(3) by 'YM', IOU_DAY(4) by 'YMD',
+  IOU_HOUR(5) by 'YMDH', IOU_HOUR_INST(6) by 'YMDI'.
+
+OwnDataTypes_ml,Nest_ml,AOTnPOD_ml,ZD_Pollen/Pollen_ml:
+- Redefine type(Deriv)  so %iotype is a string (OwnDataTypes_ml).
+- Redefine type(O3cl_t) so %iotype is a string (AOTnPOD_ml).
+
+OwnDataTypes_ml,Derived_ml,My_Derived_ml,MosaicOutputs_ml:
+- New type(typ_s1ind), like type(typ_si)  with %ind a string instead of integer.
+- New type(typ_s5ind), like type(typ_s5i) with %ind a string instead of integer.
+- Replace type(typ_si)/type(typ_s5i) by type(typ_sind)/type(typ_s5ind).
+- type(typ_si) and type(typ_s5i) could be removed at a later stage,
+  when they are no longer used in the code.
 
 Makefile
 - Test different module configurations for vilje

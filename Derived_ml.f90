@@ -60,7 +60,7 @@ use ModelConstants_ml, only: &
   ,NTDAY              & ! Number of 2D O3 to be saved each day (for SOMO)
   ,num_lev3d,lev3d    & ! 3D levels on 3D output
   ! output types corresponding to instantaneous,year,month,day
-  ,IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY, IOU_HOUR &
+  ,IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY,IOU_HOUR,IOU_HOUR_INST,IOU_KEY &
   ,MasterProc,SOURCE_RECEPTOR,DEBUG_COLSRC  &
   ,USE_AOD, USE_OCEAN_DMS, USE_uEMEP, uEMEP,startdate,enddate
 
@@ -69,7 +69,7 @@ use AOD_PM_ml,            only: AOD_init,aod_grp,wavelength,& ! group and
 use MosaicOutputs_ml,     only: nMosaic, MosaicOutput
 use NumberConstants,      only: UNDEF_R
 use OwnDataTypes_ml,      only: Deriv, print_Deriv_type, &
-                                TXTLEN_DERIV,TXTLEN_SHORT ! type & length of names
+                                TXTLEN_DERIV,TXTLEN_SHORT,TXTLEN_IND ! type & length of names
 use Par_ml,               only: me,                &      ! for print outs
                                 limax, ljmax      ! => used x, y area
 use PhysicalConstants_ml, only: PI,KAPPA,ATWAIR,GRAV
@@ -102,7 +102,13 @@ private :: group_calc     ! Calculates sum of groups, e.g. pm25 from group array
 logical, private, parameter :: T = .true., F = .false. ! shorthands only
 integer, public, save :: num_deriv2d, num_deriv3d
 integer, private,save :: Nadded2d = 0, Nadded3d=0 ! No. defined derived
-integer, public, save :: iou_min=IOU_INST, iou_max=IOU_HOUR
+
+! List of wanted IOUs
+integer, parameter :: &
+  IOU_MIN=lbound(IOU_KEY,DIM=1), &
+  IOU_MAX=ubound(IOU_KEY,DIM=1)
+logical, public, save :: &
+  iou_list(IOU_MIN:IOU_MAX)=.false.
 
 ! The 2-d and 3-d fields use the above as a time-dimension. We define
 ! LENOUTxD according to how fine resolution we want on output. For 2d
@@ -144,7 +150,7 @@ logical, private, save :: dbg0   ! = DEBUG%DERIVED .and. MasterProc
 logical, private, save :: dbgP   ! = DEBUG%DERIVED .and. debug_proc
 character(len=100), private :: errmsg
 
-integer, private :: i,j,k,l,n, ivoc, index, iou   ! Local loop variables
+integer, private :: i,j,k,l,n, ivoc, iou   ! Local loop variables
 
 integer, private, save :: iadv_O3=-999,     & ! Avoid hard codded IXADV_SPCS
   iadv_NO3_C=-999,iadv_EC_C_WOOD=-999,iadv_EC_C_FFUEL=-999,iadv_POM_C_FFUEL=-999
@@ -221,18 +227,18 @@ endsubroutine Init_Derived
 !=========================================================================
 subroutine AddNewDeriv( name,class,subclass,txt,unit,index,f2d,&
        dt_scale,scale, avg,iotype,Is3D)
-  character(len=*), intent(in) :: name ! e.g. DDEP_SO2_m2Conif
-  character(len=*), intent(in) :: class ! Type of data, e.g. ADV or VOC
-  character(len=*), intent(in) :: subclass !
-  character(len=*), intent(in) :: txt ! text where needed, e.g. "Conif"
-  character(len=*), intent(in) :: unit ! writen in netCDF output
+  character(len=*), intent(in) :: name    ! e.g. DDEP_SO2_m2Conif
+  character(len=*), intent(in) :: class   ! Type of data, e.g. ADV or VOC
+  character(len=*), intent(in) :: subclass
+  character(len=*), intent(in) :: txt     ! text where needed, e.g. "Conif"
+  character(len=*), intent(in) :: unit    ! writen in netCDF output
   integer, intent(in)  :: index    ! index in concentation array, or other
   integer, intent(in) :: f2d       ! index in f_2d arrays
   logical, intent(in) :: dt_scale  !  where scaling by dt_advec needed,
   real, intent(in)    :: scale     !  e.g. use 100.0 to get cm/s
   logical, intent(in)  :: avg      ! True => average data (divide by
                      ! nav at end),  else accumulate over run period
-  integer, intent(in)  :: iotype   ! sets daily, monthly, etc.
+  character(len=*), intent(in) :: iotype  ! sets daily, monthly, etc.
 
   logical, intent(in), optional :: Is3D
   type(Deriv) :: inderiv
@@ -289,14 +295,9 @@ subroutine Define_Derived()
   character(len=10) :: unittxt
   character(len=TXTLEN_SHORT) :: outname, outunit, outtyp, outdim, subclass
   character(len=11), parameter:: sub="DefDerived:"
-  integer :: outind
+  character(len=TXTLEN_IND)  :: outind
 
   integer :: ind, iadv, ishl, itot, idebug, n, n2, iLC, igrp, iout
-
-  ! - And to check if a wanted field has been previously defined.
-  integer, dimension(MAXDEF_DERIV2D) :: found_ind2d = 0
-  integer, dimension(MAXDEF_DERIV3D) :: found_ind3d = 0
-
 
   if(dbg0) write(6,*) " START DEFINE DERIVED "
   !   same mol.wt assumed for PPM25 and PPMCOARSE
@@ -316,33 +317,33 @@ subroutine Define_Derived()
   !Deriv index, f2d, dt_scale, scale, avg? rho Inst Yr Mn Day atw
   ! for AOT we can use index for the threshold, usually 40
   call AddNewDeriv( "AOT40_Grid", "GRIDAOT","subclass","-", "ppb h", &
-           40, -99, T, 1.0/3600.0, F,   IOU_DAY    )
+          40, -99, T, 1.0/3600.0, F,   'YMD'    )
 !-------------------------------------------------------------------------------
   !Deriv(name, class,    subc,  txt,           unit
   !Deriv index, f2d, dt_scale, scale, avg? rho Inst Yr Mn Day atw
 
 ! NOT YET: Scale pressure by 0.01 to get hPa
   call AddNewDeriv( "PSURF ","PSURF",  "SURF","-",   "hPa", &
-               -99,  -99,  F,  1.0,  T,   IOU_DAY )
+               -99,  -99,  F,  1.0,  T,   'YMD' )
 
   !Added for TFMM scale runs
   call AddNewDeriv( "Kz_m2s","Kz_m2s",  "-","-",   "m2/s", &
-               -99,  -99, F, 1.0,  T,  IOU_DAY )
+               -99,  -99, F, 1.0,  T,  'YMD' )
 
   call AddNewDeriv( "u_ref","u_ref",  "-","-",   "m/s", &
-               -99,  -99, F, 1.0,  T,  IOU_DAY )
+               -99,  -99, F, 1.0,  T,  'YMD' )
 
 ! call AddNewDeriv( "SoilWater_deep","SoilWater_deep",  "-","-",   "m", &
-!               -99,  -99, F, 1.0,  T,  IOU_DAY )
+!               -99,  -99, F, 1.0,  T,  'YMD' )
 ! call AddNewDeriv( "SoilWater_uppr","SoilWater_uppr",  "-","-",   "m", &
-!               -99,  -99, F, 1.0,  T,  IOU_DAY )
+!               -99,  -99, F, 1.0,  T,  'YMD' )
 
   call AddNewDeriv( "T2m","T2m",  "-","-",   "deg. C", &
-               -99,  -99, F, 1.0,  T,  IOU_DAY )
+               -99,  -99, F, 1.0,  T,  'YMD' )
   call AddNewDeriv( "Idirect","Idirect",  "-","-",   "W/m2", &
-               -99,  -99, F, 1.0,  T,  IOU_DAY )
+               -99,  -99, F, 1.0,  T,  'YMD' )
   call AddNewDeriv( "Idiffuse","Idiffuse",  "-","-",   "W/m2", &
-               -99,  -99, F, 1.0,  T,  IOU_DAY )
+               -99,  -99, F, 1.0,  T,  'YMD' )
 
 ! OutputFields can contain both 2d and 3d specs.
 ! Settings for 2D and 3D are independant.
@@ -445,7 +446,7 @@ subroutine Define_Derived()
          unittxt=trim(outunit)
       endselect
 
-      if(MasterProc)write(*,"(a,i4,a)") &
+      if(MasterProc)write(*,"(3a)") &
         "Deriv:MISC "//trim(outname),outind,trim(class)
 
       call AddNewDeriv(outname,class,subclass,"-",trim(unittxt),&
@@ -504,7 +505,7 @@ subroutine Define_Derived()
         call CheckStop(find_index(dname,def_2d(:)%name)>0,&
           sub//"OutputFields already defined output "//trim(dname))
 
-        if(dbg0) write(*,"(a,2i4,3(1x,a),i4,es10.2)")"ADD",&
+        if(dbg0) write(*,"(a,2i4,4(1x,a),es10.2)")"ADD",&
           ind, iout, trim(dname),";", trim(class), outind,unitscale
         
       case("3d","3D","MLEV")
@@ -515,7 +516,7 @@ subroutine Define_Derived()
           sub//"OutputFields already defined output "//trim(dname))
 
         ! Always print out 3D info. Good to help avoid using 3d unless really needed!
-        if( MasterProc ) write(*,"(a,2i4,3(1x,a),i4,es10.2)")"ADD 3D outputs",  &
+        if( MasterProc ) write(*,"(a,2i4,4(1x,a),es10.2)")"ADD 3D outputs",  &
           ind, iout, trim(dname),";", trim(class), outind,unitscale
       case default
         call CheckStop(sub//" Unsupported OutputFields%outdim "//&
@@ -528,9 +529,11 @@ subroutine Define_Derived()
   enddo ! OutputFields
 
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-  do ind = 1, nOutputMisc
-    if( MasterProc ) print *, "ADDMISC ", OutputMisc(ind)%name
-    call AddDeriv(OutputMisc(ind),Is3D=(OutputMisc(ind)%class=="MET3D"))
+  do n = 1, nOutputMisc
+    Is3D=(OutputMisc(n)%class=="MET3D").or.(OutputMisc(n)%name(1:2)=='D3')
+    if(MasterProc) write(*,"(3(A,1X),L)") &
+      'ADDMISC',trim(OutputMisc(n)%name),'Is3D',Is3D
+    call AddDeriv(OutputMisc(n),Is3D=Is3D)
   enddo
 
 !-------------------------------------------------------------------------------
@@ -552,14 +555,14 @@ subroutine Define_Derived()
     select case(WDEP_WANTED(ind)%txt2)
     case("PREC")
       call AddNewDeriv("WDEP_PREC","PREC ","-","-", "mm",  &
-                        -1, -99,   F,    1.0,   F,    IOU_DAY )
+                        -1, -99,   F,    1.0,   F,    'YMD' )
     case("SPEC")
       iadv = find_index(WDEP_WANTED(ind)%txt1, species_adv(:)%name)
       call CheckStop(iadv<1, "WDEP_WANTED Species not found " // trim(dname) )
 
       call Units_Scale(WDEP_WANTED(ind)%txt3,iadv,unitscale,unittxt)
       call AddNewDeriv( dname, "WDEP", "-", "-", unittxt , &
-              iadv, -99,   F, unitscale,     F,  IOU_DAY)
+              iadv, -99,   F, unitscale,     F,  'YMD')
     case("GROUP")
       igrp = find_index(dname, chemgroups(:)%name)
       call CheckStop(igrp<1, "WDEP_WANTED Group not found " // trim(dname) )
@@ -568,7 +571,7 @@ subroutine Define_Derived()
       ! Init_WetDep gets the unit conversion factors from Group_Scale.
       call Units_Scale(WDEP_WANTED(ind)%txt3,-1,unitscale,unittxt)
       call AddNewDeriv( dname,  "WDEP ","-","-", unittxt ,  &
-              igrp, -99,   F,      1.0,   F,    IOU_DAY)
+              igrp, -99,   F,      1.0,   F,    'YMD')
     case default
       call CheckStop("Unknown WDEP_WANTED type " // trim(WDEP_WANTED(ind)%txt2) )
     endselect
@@ -590,7 +593,7 @@ subroutine Define_Derived()
     if(EMIS_BioNat(ind)(1:5)=="ASH_L")cycle   ! skip ASH_LxxByy for AshInversion
     dname = "Emis_mgm2_BioNat" // trim(EMIS_BioNat(ind) )
     call AddNewDeriv( dname, "NatEmis", "-", "-", "mg/m2", &
-                 ind , -99, T ,    1.0e6,     F, IOU_DAY )
+                 ind , -99, T ,    1.0e6,     F, 'YMD' )
   enddo
 
 ! SNAP emissions called every hour, given in kg/m2/s, but added to
@@ -601,55 +604,55 @@ subroutine Define_Derived()
   do  ind = 1, size(EMIS_FILE)
     dname = "Emis_mgm2_" // trim(EMIS_FILE(ind))
     call AddNewDeriv( dname, "SnapEmis", "-", "-", "mg/m2", &
-                       ind , -99, T,  1.0e6,  F,  IOU_DAY )
+                       ind , -99, T,  1.0e6,  F,  'YMD' )
   enddo ! ind
   if(USE_OCEAN_DMS)then
     dname = "Emis_mgm2_DMS"
     call AddNewDeriv( dname, "Emis_mgm2_DMS", "-", "-", "mg/m2", &
-                       ind , -99, T,  1.0,  F,  IOU_DAY )
+                       ind , -99, T,  1.0,  F,  'YMD' )
   endif
   if(USE_uEMEP)then
     dname = "Local_Pollutant"
     call AddNewDeriv( dname, "Local_Pollutant", "-", "-", "mg/m2", &
-                       -99 , -99, F,  1.0,  T,  IOU_DAY )
+                       -99 , -99, F,  1.0,  T,  'YMD' )
     dname = "Total_Pollutant"
     call AddNewDeriv( dname, "Total_Pollutant", "-", "-", "mg/m2", &
-                       -99 , -99, F,  1.0,  T,  IOU_DAY )
+                       -99 , -99, F,  1.0,  T,  'YMD' )
     dname = "Local_Fraction"!NB must be AFTER "Local_Pollutant" and "Total_Pollutant"
     call AddNewDeriv( dname, "Local_Fraction", "-", "-", "", &
-                       -99 , -99, F,  1.0,  F,  IOU_DAY )
+                       -99 , -99, F,  1.0,  F,  'YMD' )
     dname = "Local_Pollutant3D"
     call AddNewDeriv( dname, "Local_Pollutant3D", "-", "-", "mg/m2", &
-                       -99 , -99, F,  1.0,  T,  IOU_MON , .true.)
+                       -99 , -99, F,  1.0,  T,  'YM' , .true.)
     dname = "Total_Pollutant3D"
     call AddNewDeriv( dname, "Total_Pollutant3D", "-", "-", "mg/m2", &
-                       -99 , -99, F,  1.0,  T,  IOU_MON , .true.)
+                       -99 , -99, F,  1.0,  T,  'YM' , .true.)
     dname = "Local_Fraction3D"!NB must be AFTER "Local_Pollutant" and "Total_Pollutant"
     call AddNewDeriv( dname, "Local_Fraction3D", "-", "-", "", &
-                       -99 , -99, F,  1.0,  F,  IOU_MON, .true.)
+                       -99 , -99, F,  1.0,  F,  'YM', .true.)
    endif
 !Splitted total emissions (inclusive Natural)
   do ind=1,nrcemis
     dname = "EmisSplit_mgm2_"//trim(species(iqrc2itot(ind))%name)
     call AddNewDeriv(dname, "EmisSplit_mgm2", "-", "-", "mg/m2", &
-                        ind , -99, T, 1.0e6,   F,  IOU_DAY )
+                        ind , -99, T, 1.0e6,   F,  'YMD' )
   enddo
 
   if(find_index("SURF_PM25water",def_2d(:)%name)<1)&
   call AddNewDeriv("SURF_PM25water", "PM25water", "-", "-","ug/m3", &
-                       -99 , -99, F, 1.0,   T,  IOU_DAY )
+                       -99 , -99, F, 1.0,   T,  'YMD' )
 ! call AddNewDeriv("SURF_PM25", "PM25", "-", "-", "-", &
-!                      -99 , -99, F, 1.0,   T,  IOU_DAY )
+!                      -99 , -99, F, 1.0,   T,  'YMD' )
 
 
 ! As for GRIDAOT, we can use index for the threshold
   call AddNewDeriv( "SOMO35","SOMO",  "SURF","-",   "ppb.day", &
-                  35, -99, F, 1.0,   F,   IOU_MON )
+                  35, -99, F, 1.0,   F,   'YM' )
   call AddNewDeriv( "SOMO0 ","SOMO",  "SURF","-",   "ppb.day", &
-                  0 , -99, F, 1.0,   F,   IOU_MON )
+                  0 , -99, F, 1.0,   F,   'YM' )
   if(iadv_o3>0) &
   call AddNewDeriv( "SURF_MAXO3","MAXADV", "O3","-",   "ppb", &
-           iadv_o3, -99, F, PPBINV,   F,   IOU_DAY)
+           iadv_o3, -99, F, PPBINV,   F,   'YMD')
 
 !-- 3-D fields
 
@@ -659,78 +662,73 @@ Is3D = .true.
     case ("D3_PM25water")
       if(find_index("D3_PM25water",def_3d(:)%name)<1)&
       call AddNewDeriv("D3_PM25water", "PM25water", "-", "-","ug/m3", &
-         -99, -99, F, 1.0,   T,  IOU_MON,    Is3D ) !
+         -99, -99, F, 1.0,   T,  'YM',    Is3D ) !
 
     case ("D3_m_TH")
       call AddNewDeriv("D3_m_TH","TH", "-","-",   "m", &
-         -99, -99, F,  1.0,  F,  IOU_MON,     Is3D )
+         -99, -99, F,  1.0,  F,  'YM',     Is3D )
 
     case ("D3_m2s_Kz")
       call AddNewDeriv( "D3_Kz","Kz", "-","-",   "-", &
-         -99, -99, F,  1.0,  F,  IOU_MON,     Is3D )
+         -99, -99, F,  1.0,  F,  'YM',     Is3D )
 
     case ("D3_T")
       call AddNewDeriv("D3_T","T", "-","-",   "K", &
-         -99, -99, F,  1.0,  T,  IOU_MON,     Is3D )
+         -99, -99, F,  1.0,  T,  'YM',     Is3D )
 
     case ("D3_Zmid")
       if(find_index("D3_Zmid",def_3d(:)%name)<1)&
       call AddNewDeriv("D3_Zmid", "Z_MID", "-", "-", "m", &
-                      -99 , -99, F, 1.0,   T, IOU_DAY,    Is3D  )
+                      -99 , -99, F, 1.0,   T, 'YMD',    Is3D  )
 
      case ("D3_Zlev")
       if(find_index("D3_Zlev",def_3d(:)%name)<1)&
       call AddNewDeriv("D3_Zlev", "Z_BND", "-", "-", "m", &
-           -99 , -99, F, 1.0,   T, IOU_DAY,    Is3D  )
+           -99 , -99, F, 1.0,   T, 'YMD',    Is3D  )
       
      case ("wind_speed_3D")
       call AddNewDeriv("wind_speed_3D", "wind_speed_3D", "-", "-", "m", &
-                      -99 , -99, F, 1.0,   T, IOU_MON,    Is3D  )
+                      -99 , -99, F, 1.0,   T, 'YM',    Is3D  )
     endselect
   enddo
 
   ! Get indices of wanted fields in larger def_xx arrays:
   do i = 1, num_deriv2d
+    if(dbg0) print *,"CHECK 2d", num_deriv2d, i, trim(wanted_deriv2d(i))
+    if(MasterProc)&
+      call CheckStop(count(f_2d(:i)%name==wanted_deriv2d(i))>0,&
+        sub//"REQUESTED 2D DERIVED ALREADY DEFINED: "//trim(wanted_deriv2d(i)))
     ind = find_index( wanted_deriv2d(i), def_2d(:)%name )
-    !print *, "D2IND check", me, ind, trim(wanted_deriv2d(i))
     if(ind>0)then
       f_2d(i) = def_2d(ind)
-      if(MasterProc.and.found_ind2d(ind)>0) then
-       ! print "(a,3i4,a)", "D2IND", me, ind, size(def_2d(:)%name),  trim( wanted_deriv2d(i) )
-       !do n = 1, size(def_2d(:)%name)
-       !   if( index(def_2d(n)%name,'USTAR') >0 ) print *, "D2IND def2d", n, trim( def_2d(n)%name )
-       !   print *, "D2IND def2d",  me, n, trim( def_2d(n)%name )
-       !enddo
-       !print *, "D2IND def2d", me,  ind, trim( def_2d(ind)%name )
-       !call print_Deriv_type(def_2d(ind))
-        call CheckStop ( found_ind2d(ind) > 0,  &
-          sub//"REQUESTED 2D DERIVED ALREADY DEFINED: "//trim(def_2d(ind)%name))
-      endif
-      if(dbg0) write(*,"(a,3i4,a)") "D2INDSET", me, ind, &
-           size(def_2d(:)%name), trim(def_2d(ind)%name)
-      found_ind2d(ind)  = 1
-    else
+      if(dbg0) print "(2(a,i4),3(1x,a))","Index f_2d ",i,  &
+        " = def ",ind,trim(def_2d(ind)%name),trim(def_2d(ind)%unit),trim(def_2d(ind)%class)
+    elseif(MasterProc)then
       print *,"D2IND OOOPS wanted_deriv2d not found: ", wanted_deriv2d(i)
       print *,"OOOPS N,N :", num_deriv2d, Nadded2d
-      if (MasterProc) then
-        print "(a,i4,a)",("Had def_2d: ",idebug,&
-          trim(def_2d(idebug)%name),idebug = 1, Nadded2d)
-        call CheckStop(sub//"OOPS STOPPED" // trim( wanted_deriv2d(i) ) )
-      endif
+      print "(a,i4,a)",("Had def_2d: ",idebug,&
+        trim(def_2d(idebug)%name),idebug = 1, Nadded2d)
+      call CheckStop(sub//"OOPS STOPPED" // trim( wanted_deriv2d(i) ) )
     endif
-    if(dbg0) print "(2(a,i4),3(1x,a))","Index f_2d ",i,  &
-      " = def ",ind,trim(def_2d(ind)%name),trim(def_2d(ind)%unit),trim(def_2d(ind)%class)
   enddo
 
   do i = 1, num_deriv3d
     if(dbg0) print *,"CHECK 3d", num_deriv3d, i, trim(wanted_deriv3d(i))
+    if(MasterProc)&
+      call CheckStop(count(f_3d(:i)%name==wanted_deriv3d(i))>0,&
+        sub//"REQUESTED 3D DERIVED ALREADY DEFINED: "//trim(wanted_deriv3d(i)))
     ind = find_index( wanted_deriv3d(i), def_3d(:)%name )
-    call CheckStop (MasterProc.and.found_ind3d(ind) > 0,  &
-      "REQUESTED 3D DERIVED ALREADY DEFINED: "// trim(def_3d(ind)%name)  )
-    found_ind3d(ind)  = 1
-    f_3d(i) = def_3d(ind)
-    if(dbg0) print "(2(a,i4),3(1x,a))","Index f_3d ",i,  &
-      " = def ",ind,trim(def_3d(ind)%name),trim(def_3d(ind)%unit),trim(def_3d(ind)%class)
+    if(ind>0)then
+      f_3d(i) = def_3d(ind)
+      if(dbg0) print "(2(a,i4),3(1x,a))","Index f_3d ",i,  &
+        " = def ",ind,trim(def_3d(ind)%name),trim(def_3d(ind)%unit),trim(def_3d(ind)%class)
+    elseif(MasterProc)then
+      print *,"D3IND OOOPS wanted_deriv3d not found: ", wanted_deriv3d(i)
+      print *,"OOOPS N,N :", num_deriv3d, Nadded3d
+      print "(a,i4,a)",("Had def_3d: ",idebug,&
+        trim(def_3d(idebug)%name),idebug = 1, Nadded3d)
+      call CheckStop(sub//"OOPS STOPPED" // trim( wanted_deriv3d(i) ) )
+    endif
   enddo
 
   !Initialise to zero
@@ -740,40 +738,47 @@ Is3D = .true.
   dbgP = ( DEBUG%DERIVED  .and. debug_proc )
 
   ! Determine actual output time ranges for Wanted output
-  iou_min=+999
-  iou_max=-999
-  if(num_deriv2d>0)then
-    iou_min=min(iou_min,minval(f_2d%iotype))
-    iou_max=max(iou_max,maxval(f_2d%iotype))
-  endif
-  if(num_deriv3d>0)then
-    iou_min=min(iou_min,minval(f_3d%iotype))
-    iou_max=max(iou_max,maxval(f_3d%iotype))
-  endif
+  iou_list(:)=.false.
+  do iou=IOU_MIN,IOU_MAX
+    do i=1,num_deriv2d
+      if(iou_list(iou))exit
+      iou_list(iou)=(index(f_2d(i)%iotype,IOU_KEY(iou))>0)
+    enddo
+    do i=1,num_deriv3d
+      if(iou_list(iou))exit
+      iou_list(iou)=(index(f_3d(i)%iotype,IOU_KEY(iou))>0)
+    enddo
+  enddo
 
-  if(SOURCE_RECEPTOR)then             ! We include daily and monthly also 
-    iou_max=IOU_DAY                   ! for SOURCE_RECEPTOR mode which makes
-    iou_min=IOU_YEAR                  ! it easy for debugging. !SVS 22May2014
-  endif
+  if(SOURCE_RECEPTOR)&            ! We include daily and monthly also 
+    iou_list(IOU_DAY+1:)=.false.  ! for SOURCE_RECEPTOR mode which makes
+                                  ! it easy for debugging
 
-  if(FORECAST)then                    ! reduce output on FORECAST mode
+  if(FORECAST)then                ! reduce output on FORECAST mode
     select case(nint(tdif_days(to_stamp(startdate),to_stamp(enddate))))
-      case(   : 27);iou_min=IOU_DAY   ! Only dayly & hourly outputs
-      case( 28:180);iou_min=IOU_MON   ! .. and monthly
-      case(181:   );iou_min=IOU_YEAR  ! .. and full-run
+      case(   : 27);iou_list(:IOU_DAY-1)=.false. ! Only dayly & hourly outputs
+      case( 28:180);iou_list(:IOU_MON-1)=.false. ! .. and monthly
+      case(181:   );                             ! .. and full-run
     endselect
   endif
 
-  !SEP10 if(MasterProc) print "(a,2i4)","IOU_MAX ",  iou_max, iou_min
-  !if(MasterProc) print *, "IOU_MAX ",  iou_max, iou_min
+  if(dbgP) write(*,"(A,': ',10(I2,A2,L2,:,','))")"Wanted IOUs",&
+    (iou,IOU_KEY(iou),iou_list(iou),iou=IOU_MIN,IOU_MAX)
 endsubroutine Define_Derived
 !=========================================================================
-function wanted_iou(iou,iotype) result(wanted)
-  integer, intent(in)           :: iou
-  integer, intent(in), optional :: iotype
-  logical                       :: wanted
-  wanted=(iou>=iou_min).and.(iou<=iou_max)
-  if(present(iotype))wanted=wanted.and.(iou<=iotype)
+function wanted_iou(iou,iotype,only_iou) result(wanted)
+  integer, intent(in)                 :: iou
+  character(len=*),intent(in),optional:: iotype
+  integer         ,intent(in),optional:: only_iou
+  logical                             :: wanted
+  wanted=(iou>=IOU_MIN).and.(iou<=IOU_MAX)  ! in range ov valid IOUs?
+  if(wanted)wanted=iou_list(iou)       ! any output requires iou?
+  if(wanted.and.present(iotype))then
+    wanted=(index(iotype,IOU_KEY(iou))>0)   ! iotype contains IOU_KEY(iou)?
+  endif
+  if(wanted.and.present(only_iou))then
+    wanted=(iou==only_iou)                  ! is only_iou?
+  endif
 endfunction wanted_iou
 !=========================================================================
 subroutine Setups()
@@ -850,7 +855,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
     ind2d_pmwater=-999,ind3d_pmwater=-999,  &
     ind2d_pm10=-999   ,ind3d_pm10=-999
                                              
-  integer :: imet_tmp, iix,ix
+  integer :: imet_tmp, iix,ix,index
   real, pointer, dimension(:,:,:) :: met_p => null()
 
   logical, allocatable, dimension(:)   :: ingrp
@@ -1559,9 +1564,9 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
         write(*,*) "CASErho     ", density(i,j)
       endif
 
-    case  ( "USET" )
-      if ( dbgP ) write(*,"(a18,i4,a12,a4,es12.3)")"USET d_2d",&
-             n, f_2d(n)%name, " is ", d_2d(n,debug_li,debug_lj,IOU_INST)
+    case("USET")
+      if(dbgP) write(*,"(a18,i4,a12,a4,es12.3)")"USET d_2d",&
+        n, f_2d(n)%name, " is ", d_2d(n,debug_li,debug_lj,IOU_INST)
 
     case  default
 
@@ -1597,10 +1602,8 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
       ! only accumulate outputs if they are wanted (will be written out)
       do iou=1,LENOUT2D
-        if(iou==IOU_INST.or..not.wanted_iou(iou,f_2d(n)%iotype))cycle
-        if(present(ONLY_IOU))then
-          if(ONLY_IOU/=iou)cycle
-        endif
+        if(iou==IOU_INST)cycle
+        if(.not.wanted_iou(iou,f_2d(n)%iotype,ONLY_IOU))cycle
         d_2d(n,:,:,iou) = d_2d(n,:,:,iou) + d_2d(n,:,:,IOU_INST)*af
         if(f_2d(n)%avg) nav_2d(n,iou) = nav_2d(n,iou) + 1
       enddo
@@ -1731,7 +1734,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       if(dbgP) write(*,"(a13,i4,f8.3,3es12.3)") "3D3D MAX3DSHL", n, thour, &
         xn_shl(index,debug_li,debug_lj,KMAX_MID), &
         1.0/inv_air_density3D(debug_li,debug_lj,KMAX_MID), &
-        d_3d(n,debug_li,debug_lj,KMAX_MID,IOU_INST)
+        d_3d(n,debug_li,debug_lj,num_lev3d,IOU_INST)
 
     case ( "MAX3DADV" )
       forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
@@ -1740,7 +1743,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
       if(dbgP) write(*,"(a12,i4,f8.3,4es12.3)") "SET MAX3DADV", n, thour, &
         xn_adv(index,debug_li,debug_lj,KMAX_MID), &
-        d_3d(n,debug_li,debug_lj,KMAX_MID,IOU_INST)
+        d_3d(n,debug_li,debug_lj,num_lev3d,IOU_INST)
 
     case ( "SHL" )
       forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
@@ -1897,6 +1900,10 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
                                 (d_3d(n_Total_Pollutant3D,i,j,k,IOU_YEAR)+1.E-30)
       endforall
 
+    case("USET")
+      if(dbgP) write(*,"(a18,i4,a12,a4,es12.3)")"USET d_3d",&
+        n, f_3d(n)%name, " is ", d_3d(n,debug_li,debug_lj,num_lev3d,IOU_INST)
+
     case default
       write(*,"(a,2i3,3a)") "*** NOT FOUND",n,index, trim(f_3d(n)%name),&
                ";Class:", trim(f_3d(n)%class)
@@ -1917,10 +1924,8 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
         ! only accumulate outputs if they are wanted (will be written out)
         do iou=1,LENOUT3D
-          if(iou==IOU_INST.or..not.wanted_iou(iou,f_3d(n)%iotype))cycle
-          if(present(ONLY_IOU))then
-            if(ONLY_IOU/=iou)cycle
-          endif
+          if(iou==IOU_INST)cycle
+          if(.not.wanted_iou(iou,f_3d(n)%iotype,ONLY_IOU))cycle
           d_3d(n,:,:,:,iou) = d_3d(n,:,:,:,iou) + d_3d(n,:,:,:,IOU_INST)
           if(f_3d(n)%avg) nav_3d(n,iou) = nav_3d(n,iou) + 1
         enddo
@@ -1944,10 +1949,8 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
       ! only accumulate outputs if they are wanted (will be written out)
       do iou=1,LENOUT3D
-        if(iou==IOU_INST.or..not.wanted_iou(iou,f_3d(n)%iotype))cycle
-        if(present(ONLY_IOU))then
-          if(ONLY_IOU/=iou)cycle
-        endif
+        if(iou==IOU_INST)cycle      
+        if(.not.wanted_iou(iou,f_3d(n)%iotype,ONLY_IOU))cycle
         d_3d(n,:,:,:,iou) = d_3d(n,:,:,:,iou) + d_3d(n,:,:,:,IOU_INST)*af
         if(f_3d(n)%avg) nav_3d(n,iou) = nav_3d(n,iou) + 1
       enddo
@@ -1965,8 +1968,8 @@ subroutine DerivedProds(text,dt)
 
   character(len=*), intent(in) :: text  ! "Before" or "After"
   real,             intent(in) :: dt    ! timestep (s)
-
   real :: timefrac                      ! dt as fraction of hour (3600/dt)
+  integer :: index
 
 
 
@@ -2009,6 +2012,7 @@ endsubroutine ResetDerived
 !=========================================================================
 subroutine voc_2dcalc()
 !/-- Sums up voc species using the indices defined earlier in Setup_VOCs
+  integer :: index
 
 ! We initialise d_2d first, the use a simple loop
 ! over voc. Some CPU could be saved by initialising
@@ -2028,6 +2032,7 @@ endsubroutine voc_2dcalc
 !=========================================================================
 subroutine voc_3dcalc()
 !/-- as for voc_2dcalc
+  integer :: index
 
   d_3d(n,1:limax,1:ljmax,1:num_lev3d,IOU_INST) =  0.0
   do ivoc = 1, nvoc

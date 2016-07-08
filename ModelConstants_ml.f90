@@ -614,6 +614,9 @@ integer, public, parameter ::  &
   IOU_HOUR_EXTRA=7,IOU_HOUR_EXTRA_MEAN=8, & ! additional hourly output
   IOU_MAX_MAX=8                             ! Max values for of IOU (for array declarations)
 
+character, public, parameter ::  & ! output shorthands, order should match IOU_*
+  IOU_KEY(IOU_YEAR:IOU_HOUR_INST)=['Y','M','D','H','I']
+
 character(len=*), public, parameter :: model="EMEP_MSC-W "
 
 logical, parameter, public :: EmisSplit_OUT = .false.

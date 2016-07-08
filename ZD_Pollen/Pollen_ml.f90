@@ -681,10 +681,10 @@ subroutine pollen_dump()
   if(MasterProc) write(*,*) "Write Pollen dump ",trim(filename)
   inquire(file=filename,exist=fexist)
   
-  def1%avg=.false.                    ! not used
-  def1%index=0                        ! not used
-  def1%scale=1.0                      ! not used
-  def1%iotype=IOU_INST                ! not used
+  def1%avg=.false.                  ! not used
+  def1%index=0                      ! not used
+  def1%scale=1.0                    ! not used
+  def1%iotype=''                    ! not used
   
   allocate(data(LIMAX,LJMAX,KMAX_MID))
   ncfileID=-1 ! must be <0 as initial value

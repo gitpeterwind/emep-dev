@@ -14,7 +14,7 @@ module AOTx_ml
   use ModelConstants_ml, only : dt_advec, KMAX_MID, DEBUG  & 
      ,PPBINV ! 1.0e9, for conversion from mixing ratio to ppb
   use NumberConstants, only : UNDEF_R, UNDEF_I
-  use OwnDataTypes_ml, only : TXTLEN_DERIV, TXTLEN_SHORT
+  use OwnDataTypes_ml, only : TXTLEN_DERIV, TXTLEN_SHORT, TXTLEN_IND
   use Par_ml, only : LIMAX, LJMAX, limax, ljmax, me
   use TimeDate_ml, only : current_date, print_date, jday => effectivdaynumber
   implicit none
@@ -41,10 +41,10 @@ module AOTx_ml
    !================== 
 
     type, public:: O3cl_t
-       character(len=TXTLEN_DERIV) :: name = '-' ! e.g. POD1_IAM_DF
+       character(len=TXTLEN_DERIV) :: name = '-'  ! e.g. POD1_IAM_DF
        character(len=TXTLEN_SHORT) :: class = '-' ! POD or AOT
        real    :: Threshold = UNDEF_R     ! Threshold or CL, e.f. AOTx or AFstY
-       character(len=TXTLEN_SHORT) :: defn = '-' !  MM or EU definitions
+       character(len=TXTLEN_SHORT) :: defn = '-'  !  MM or EU definitions
        character(len=TXTLEN_SHORT) :: txtLC = '-' !  CF, DF, IAM_CF etc.
        logical :: RelSGS = .false.  ! true if accumulation period is relative to
                                     ! start of growing season (SGS)
@@ -52,7 +52,7 @@ module AOTx_ml
        integer :: SAccPeriod = UNDEF_I  ! Start of accumulation period, either
                                     ! rel to SGS or day number, days
        integer :: EAccPeriod = UNDEF_I  ! End ...., days
-       integer :: iotype = UNDEF_I  ! .. 3=>IOU_MON, 4=>IOU_DAY, 5-7=>IOU_HOUR*
+       character(len=TXTLEN_IND)            :: iotype = '-'! .. 'M'=>IOU_MON, 'D'=>IOU_DAY, ...
     end type 
 
    integer, parameter, private :: MAXNVO3  = 60

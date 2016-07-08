@@ -1,20 +1,20 @@
 &OutputConcs_config
-! freq = IOU_YEAR=2, IOU_MON=3, IOU_DAY=4, IOU_HOUR=5, IOU_HOUR_INST=6
+! freq: YEAR='Y', MON='M', DAY='D', HOUR='H', HOUR_INST='I'
 !--MY_OUTPUTS=="MACC_POL": hourly D2D output
 OutputConcs= 
-  'O3'            ,'ug'  ,'2d' ,'AIR_CONCS','SPEC' ,5,
-! 'NO'            ,'ug'  ,'2d' ,'AIR_CONCS','SPEC' ,5,
-! 'NO2'           ,'ug'  ,'2d' ,'AIR_CONCS','SPEC' ,5,
-! 'PMFINE'        ,'ug'  ,'2d' ,'AIR_CONCS','GROUP',0,! needed by PM25_rh50
-  'PM10'          ,'ug'  ,'2d' ,'AIR_CONCS','GROUP',0,! needed by PM10_rh50
-  'SURF_PM25water','ug'  ,'2d' ,'PM25water','MISC' ,0,! needed by    *_rh50
-! 'SURF_ug_PM25_rh50','ug','2d','PM25_rh50','MISC' ,5,
-  'SURF_ug_PM10_rh50','ug','2d','PM10_rh50','MISC' ,5,
+  'O3'            ,'ug'  ,'2d' ,'AIR_CONCS','SPEC' ,'I',
+! 'NO'            ,'ug'  ,'2d' ,'AIR_CONCS','SPEC' ,'I',
+! 'NO2'           ,'ug'  ,'2d' ,'AIR_CONCS','SPEC' ,'I',
+! 'PMFINE'        ,'ug'  ,'2d' ,'AIR_CONCS','GROUP','',! needed by PM25_rh50
+  'PM10'          ,'ug'  ,'2d' ,'AIR_CONCS','GROUP','',! needed by PM10_rh50
+  'SURF_PM25water','ug'  ,'2d' ,'PM25water','MISC' ,'',! needed by    *_rh50
+! 'SURF_ug_PM25_rh50','ug','2d','PM25_rh50','MISC' ,'I',
+  'SURF_ug_PM10_rh50','ug','2d','PM10_rh50','MISC' ,'I',
 &end
 &OutputDep_config
-! freq = IOU_YEAR=2, IOU_MON=3, IOU_DAY=4, IOU_HOUR=5, IOU_HOUR_INST=6
+! freq: YEAR='Y', MON='M', DAY='D', HOUR='H', HOUR_INST='I'
   DDEP_ECOS =
-    'Grid     ', 4,
+    'Grid     ', 'YMD',
   DDEP_WANTED =
     'SOX      ', 'GROUP', 'mgS',
     'OXN      ', 'GROUP', 'mgN',

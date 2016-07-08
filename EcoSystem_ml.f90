@@ -3,8 +3,8 @@ module EcoSystem_ml
  use CheckStop_ml,       only : CheckStop, StopAll
  use GridValues_ml,      only : debug_proc, debug_li, debug_lj
  use LandDefs_ml,        only : LandDefs, LandType
- use ModelConstants_ml , only : MasterProc, DEBUG_ECOSYSTEMS &
-                                , NLANDUSEMAX, IOU_YEAR
+ use ModelConstants_ml , only : MasterProc, DEBUG_ECOSYSTEMS, &
+                                NLANDUSEMAX, IOU_YEAR, IOU_KEY
  use OwnDataTypes_ml,    only : Deriv, print_deriv_type &
                                 ,TXTLEN_DERIV, TXTLEN_SHORT
  use Par_ml,             only : li0, lj0, li1, lj1, LIMAX, LJMAX
@@ -75,7 +75,7 @@ contains
           !Deriv index, f2d, dt_scale, scale, avg? Inst Yr Mn Day
         DepEcoSystem(iEco) = Deriv(  &
                trim(name), "EcoFrac", "Area",trim(DEF_ECOSYSTEMS(iEco)) , trim(unit), &
-                  iEco, -99, F, 1.0, F, IOU_YEAR   )
+                  iEco, -99, F, 1.0, F, IOU_KEY(IOU_YEAR) )
 
         if(DEBUG_ECOSYSTEMS .and. MasterProc) &
              call print_deriv_type( DepEcoSystem(iEco) )

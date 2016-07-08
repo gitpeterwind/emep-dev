@@ -99,301 +99,300 @@
 !  items:
 !         name      Unit   dim  typ   class  freq
 !
-! where freq = IOU_YEAR=2, IOU_MON=3, IOU_DAY=4, IOU_HOUR=5, IOU_HOUR_INST=6
+! where freq: YEAR='Y', MON='M', DAY='D', HOUR='H', HOUR_INST='I'
 !
 &OutputConcs_config
 OutputMisc=
  ! name        class    subclass txt   unit index f2d dt_scale scale avg period
- 'AeroOrig',   'USET', 'rct',   'rct', '/s', 62, -1, F, 1.0, T, 3,
- 'AeroDSmix',  'USET', 'rct',   'rct', '/s', 61, -1, F, 1.0, T, 3,
- 'AerokRH',    'USET', 'rct',   'rct', '/s', 63, -1, F, 1.0, T, 3,
-!'AeroHNO3SS', 'USET', 'rct',   'rct', '/s', 72, -1, F, 1.0, T, 3,
-!'AeroHNO3DU', 'USET', 'rct',   'rct', '/s', 73, -1, F, 1.0, T, 3,
-!'AeroHO2PM',  'USET', 'rct',   'rct', '/s', 74, -1, F, 1.0, T, 3,
-!'AeroO3DU',   'USET', 'rct',   'rct', '/s', 75, -1, F, 1.0, T, 3,
- 'USTAR_NWP', 'MET2D','ustar_nwp','-','m/s',-99,-99, F, 1.0, T, 4,
- 'Snow_m',    'SNOW' , '-'       ,'-', 'm' ,-99,-99, F, 1.0, T, 4,
+ 'AeroOrig',   'USET', 'rct',   'rct', '/s', 62, -1, F, 1.0, T, 'YM',
+ 'AeroDSmix',  'USET', 'rct',   'rct', '/s', 61, -1, F, 1.0, T, 'YM',
+ 'AerokRH',    'USET', 'rct',   'rct', '/s', 63, -1, F, 1.0, T, 'YM',
+!'AeroHNO3SS', 'USET', 'rct',   'rct', '/s', 72, -1, F, 1.0, T, 'YM',
+!'AeroHNO3DU', 'USET', 'rct',   'rct', '/s', 73, -1, F, 1.0, T, 'YM',
+!'AeroHO2PM',  'USET', 'rct',   'rct', '/s', 74, -1, F, 1.0, T, 'YM',
+!'AeroO3DU',   'USET', 'rct',   'rct', '/s', 75, -1, F, 1.0, T, 'YM',
+ 'USTAR_NWP', 'MET2D','ustar_nwp','-','m/s',-99,-99, F, 1.0, T, 'YMD',
+ 'Snow_m',    'SNOW' , '-'       ,'-', 'm' ,-99,-99, F, 1.0, T, 'YMD',
 !
 OutputConcs= 
-      'HMIX'                ,'m'   ,'2d','HMIX'     ,'MISC' ,7, !! hourly tests
-      'SurfAreaNSDF_um2cm3' ,'um2/cm3' ,'2d','SurfAreaNSDF_um2cm3'    ,'MISC' ,4, !
-      'SurfAreaSSF_um2cm3' ,'um2/cm3' ,'2d','SurfAreaSSF_um2cm3'    ,'MISC' ,4, !!
-      'SurfAreaSSC_um2cm3' ,'um2/cm3' ,'2d','SurfAreaSSC_um2cm3'    ,'MISC' ,4, !!
-      'SurfAreaDUF_um2cm3' ,'um2/cm3' ,'2d','SurfAreaDUF_um2cm3'    ,'MISC' ,4, !!
-      'SurfAreaDUC_um2cm3' ,'um2/cm3' ,'2d','SurfAreaDUC_um2cm3'    ,'MISC' ,4, !!
-      'Kz_m2s'              ,'m2/s','2d','Kz_m2s'   ,'MISC' ,7, !! hourly tests
-!     'ws_10m'              ,'m'   ,'2d','ws_10m'   ,'MISC' ,7, !! hourly tests
-      'rh2m'                ,'m'   ,'2d','rh2m'     ,'MISC' ,7, !! hourly tests
-      'T2m'                 ,'degC','2d','T2m'      ,'MISC' ,4,
-      'SURF_ppbC_VOC'       ,'ppb' ,'2d','VOC'      ,'MISC' ,4,
-      'SMI_deep'            ,'-'   ,'2d','SMI_deep' ,'MISC' ,4,
-      'SMI_uppr'            ,'-'   ,'2d','SMI_uppr' ,'MISC' ,4,
+      'HMIX'                ,'m'   ,'2d','HMIX'     ,'MISC' ,'YMDI', !! hourly tests
+      'SurfAreaNSDF_um2cm3','um2/cm3','2d','SurfAreaNSDF_um2cm3','MISC','YMD',
+      'SurfAreaSSF_um2cm3' ,'um2/cm3','2d','SurfAreaSSF_um2cm3' ,'MISC','YMD',
+      'SurfAreaSSC_um2cm3' ,'um2/cm3','2d','SurfAreaSSC_um2cm3' ,'MISC','YMD',
+      'SurfAreaDUF_um2cm3' ,'um2/cm3','2d','SurfAreaDUF_um2cm3' ,'MISC','YMD',
+      'SurfAreaDUC_um2cm3' ,'um2/cm3','2d','SurfAreaDUC_um2cm3' ,'MISC','YMD',
+      'Kz_m2s'              ,'m2/s','2d','Kz_m2s'   ,'MISC' ,'YMDI', !! hourly tests
+!     'ws_10m'              ,'m'   ,'2d','ws_10m'   ,'MISC' ,'YMDI', !! hourly tests
+      'rh2m'                ,'m'   ,'2d','rh2m'     ,'MISC' ,'YMDI', !! hourly tests
+      'T2m'                 ,'degC','2d','T2m'      ,'MISC' ,'YMD',
+      'SURF_ppbC_VOC'       ,'ppb' ,'2d','VOC'      ,'MISC' ,'YMD',
+      'SMI_deep'            ,'-'   ,'2d','SMI_deep' ,'MISC' ,'YMD',
+      'SMI_uppr'            ,'-'   ,'2d','SMI_uppr' ,'MISC' ,'YMD',
 ! ug/m3                                                    
-      'SO2'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-      'NH3'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-      'HNO3'                ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-      'NO2'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-      'NO'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-      'SO4'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-      'NO3_F'               ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-      'NO3_C'               ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-      'NH4_F'               ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-      'SEASALT_F'           ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-      'SEASALT_C'           ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-      'DUST_ROAD_F'         ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-      'DUST_ROAD_C'         ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-      'DUST_WB_F'           ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-      'DUST_WB_C'           ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-      'DUST_SAH_F'          ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-      'DUST_SAH_C'          ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
+      'SO2'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+      'NH3'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+      'HNO3'                ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+      'NO2'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+      'NO'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+      'SO4'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+      'NO3_F'               ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+      'NO3_C'               ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+      'NH4_F'               ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+      'SEASALT_F'           ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+      'SEASALT_C'           ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+      'DUST_ROAD_F'         ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+      'DUST_ROAD_C'         ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+      'DUST_WB_F'           ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+      'DUST_WB_C'           ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+      'DUST_SAH_F'          ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+      'DUST_SAH_C'          ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
 ! ppb                                                      
-      'O3'                  ,'ppb' ,'2d','AIR_CONCS','SPEC' ,4, !! test 3d
-      'NO'                  ,'ppb' ,'2d','AIR_CONCS','SPEC' ,4, !! also have ugN
-      'NO2'                 ,'ppb' ,'2d','AIR_CONCS','SPEC' ,4, !! also have ugN
-      'NH3'                 ,'ppb' ,'2d','AIR_CONCS','SPEC' ,4, !! also have ugN
-      'HNO3'                ,'ppb' ,'2d','AIR_CONCS','SPEC' ,4, !! also have ugN
-      'SO2'                 ,'ppb' ,'2d','AIR_CONCS','SPEC' ,4, !! also have ugN
-      'CO'                  ,'ppb' ,'2d','AIR_CONCS','SPEC' ,4,
-      'HCHO'                ,'ppb' ,'2d','AIR_CONCS','SPEC' ,4,
-      'C5H8'                ,'ppb' ,'2d','AIR_CONCS','SPEC' ,4,
+      'O3'                  ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMD', !! test 3d
+      'NO'                  ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMD', !! also have ugN
+      'NO2'                 ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMD', !! also have ugN
+      'NH3'                 ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMD', !! also have ugN
+      'HNO3'                ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMD', !! also have ugN
+      'SO2'                 ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMD', !! also have ugN
+      'CO'                  ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMD',
+      'HCHO'                ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMD',
+      'C5H8'                ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMD',
 ! GenChem produces a number of groups of species.
 ! Here we say which ones we want for different units
 ! ****** UPPER CASE ONLY ************
 ! ugC/m3
-      'OXN'                 ,'ugN' ,'2d','AIR_CONCS','GROUP',4,
-      'NOX'                 ,'ugN' ,'2d','AIR_CONCS','GROUP',4,
-      'RDN'                 ,'ugN' ,'2d','AIR_CONCS','GROUP',4,
-      'TNO3'                ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
-      'SIA'                 ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
-      'PMFINE'              ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
-      'PM10'                ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
-      'PMCO'                ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
-      'PPM25'               ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
-      'PPM_C'               ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
-      'SS'                  ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
-      'DUST_NAT_F'          ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
-      'DUST_NAT_C'          ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
-      'DUST'                ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
+      'OXN'                 ,'ugN' ,'2d','AIR_CONCS','GROUP','YMD',
+      'NOX'                 ,'ugN' ,'2d','AIR_CONCS','GROUP','YMD',
+      'RDN'                 ,'ugN' ,'2d','AIR_CONCS','GROUP','YMD',
+      'TNO3'                ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+      'SIA'                 ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+      'PMFINE'              ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+      'PM10'                ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+      'PMCO'                ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+      'PPM25'               ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+      'PPM_C'               ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+      'SS'                  ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+      'DUST_NAT_F'          ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+      'DUST_NAT_C'          ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+      'DUST'                ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
 ! SOA, PCM_F etc. are special and need appropriate units. Do not confuse! 
 ! Only PCM has proper ug units, the others are carbon-eqiuvalents 
 ! (PCM is particulate carbonaceous matter = sum of all EC and OM components.)
-    ! 'AER_ASOA'            ,'ugC' ,'2d','AIR_CONCS','SPEC' ,4, !! ALWAYS as ugC
-    ! 'AER_BSOA'            ,'ugC' ,'2d','AIR_CONCS','SPEC' ,4,
-    ! 'DUST'                ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
-      'PPM25_FIRE'          ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
+    ! 'AER_ASOA'            ,'ugC' ,'2d','AIR_CONCS','SPEC' ,'YMD', !! ALWAYS as ugC
+    ! 'AER_BSOA'            ,'ugC' ,'2d','AIR_CONCS','SPEC' ,'YMD',
+    ! 'DUST'                ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+      'PPM25_FIRE'          ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
 ! ============================================================
 ! SOA additions (26 entries)
-      'ECFINE'              ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
-      'ECCOARSE'            ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
+      'ECFINE'              ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+      'ECCOARSE'            ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
 !! note that for nonvolatile type VBS runs (NPNA etc) this lacks the FFUELOC component
-    !  'EC_F'               ,'ug'  ,'2d','AIR_CONCS','GROUP',4
-    ! 'EC_F_FFUEL_NEW'      ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-    ! 'EC_F_FFUEL_AGE'      ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-    ! 'EC_C_FFUEL'          ,'ug'  ,'2d','AIR_CONCS','SPEC' ,3,
+    ! 'EC_F'                ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD'
+    ! 'EC_F_FFUEL_NEW'      ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+    ! 'EC_F_FFUEL_AGE'      ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+    ! 'EC_C_FFUEL'          ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YM',
 ! SOA, PCM_F etc. are special and need appropriate units. Do not confuse! 
 ! Only PCM has proper ug units, the others are carbon-eqiuvalents
 ! (PCM is particulate carbonaceous matter = sum of all EC and OM components.)
-      'PART_ASOA_OC'        ,'ugC' ,'2d','AIR_CONCS','SPEC' ,3, !! ALWAYS as ugC
-      'PART_BSOA_OC'        ,'ugC' ,'2d','AIR_CONCS','SPEC' ,3,
-    ! 'PART_FFUELOA25_OC'   ,'ugC' ,'2d','AIR_CONCS','SPEC' ,3,
-    ! 'PART_WOODOA25_OC'    ,'ugC' ,'2d','AIR_CONCS','SPEC' ,3,
-    ! 'PART_FFIREOA25_OC'   ,'ugC' ,'2d','AIR_CONCS','SPEC' ,3,
-    ! 'NONVOL_BGNDOC'       ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-    ! 'NONV_FFUELOC_COARSE' ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-!XSOA 'PART_ASOA_OM'        ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
-!XSOA 'PART_BSOA_OM'        ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
+      'PART_ASOA_OC'        ,'ugC' ,'2d','AIR_CONCS','SPEC' ,'YM', !! ALWAYS as ugC
+      'PART_BSOA_OC'        ,'ugC' ,'2d','AIR_CONCS','SPEC' ,'YM',
+    ! 'PART_FFUELOA25_OC'   ,'ugC' ,'2d','AIR_CONCS','SPEC' ,'YM',
+    ! 'PART_WOODOA25_OC'    ,'ugC' ,'2d','AIR_CONCS','SPEC' ,'YM',
+    ! 'PART_FFIREOA25_OC'   ,'ugC' ,'2d','AIR_CONCS','SPEC' ,'YM',
+    ! 'NONVOL_BGNDOC'       ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+    ! 'NONV_FFUELOC_COARSE' ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+!XSOA 'PART_ASOA_OM'        ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD', !! NEVER as ugC
+!XSOA 'PART_BSOA_OM'        ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD', !! NEVER as ugC
     !FSOA new system:
     !ug:PM will trigger use of Fgas and Fpart for semivolatile compounds
     !** Needed if semivolatile components 
-      'PMFINE'           ,'ug:PM' ,'2d','AIR_CONCS','GROUP',4, ! FSOA tests
-!     'OM25_P'           ,'ug'    ,'2d','AIR_CONCS','SPEC' ,4, ! NEVER as ugC
-!     'OM25_BGND'        ,'ug'    ,'2d','AIR_CONCS','SPEC' ,3, ! FSOA tests
-!     'OM25_BGND'        ,'ug:PM' ,'2d','AIR_CONCS','SPEC' ,3, ! FSOA tests
-      'OM25'             ,'ug:PM' ,'2d','AIR_CONCS','GROUP',4, ! FSOA tests
-!     'OM25'             ,'ugC:PM','2d','AIR_CONCS','GROUP',4, ! FSOA tests
-      'OMCOARSE'         ,'ug:PM' ,'2d','AIR_CONCS','GROUP',4, ! ugC:PM if needed
-!     'OMCOARSE'         ,'ugC:PM','2d','AIR_CONCS','GROUP',4, ! FSOA tests
-      'ASOA'             ,'ug:PM' ,'2d','AIR_CONCS','GROUP',4, ! FSOA tests
-      'BSOA'             ,'ug:PM' ,'2d','AIR_CONCS','GROUP',4, ! FSOA tests
-!     'BSOA'             ,'ug'    ,'2d','AIR_CONCS','GROUP',4, ! FSOA tests
-!     'NONVOLPCM'        ,'ug:PM' ,'2d','AIR_CONCS','GROUP',4, ! FSOA tests
-!     'FFUELOA25'        ,'ug:PM' ,'2d','AIR_CONCS','SPEC' ,4, ! FSOA tests
-!     'POM_F_FFUEL'      ,'ug:PM' ,'2d','AIR_CONCS','SPEC' ,4, ! FSOA tests
-!     'POM_F_FFUEL'      ,'ug'    ,'2d','AIR_CONCS','SPEC' ,4, ! FSOA tests
-!     'FFUEL_NG10'       ,'ug'    ,'2d','AIR_CONCS','SPEC' ,4, ! FSOA tests
+      'PMFINE'           ,'ug_PM' ,'2d','AIR_CONCS','GROUP','YMD', ! FSOA tests
+    ! 'OM25_P'           ,'ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! NEVER as ugC
+    ! 'OM25_BGND'        ,'ug'    ,'2d','AIR_CONCS','SPEC' ,'YM',  ! FSOA tests
+    ! 'OM25_BGND'        ,'ug_PM' ,'2d','AIR_CONCS','SPEC' ,'YM',  ! FSOA tests
+      'OM25'             ,'ug_PM' ,'2d','AIR_CONCS','GROUP','YMD', ! FSOA tests
+    ! 'OM25'             ,'ugC_PM','2d','AIR_CONCS','GROUP','YMD', ! FSOA tests
+      'OMCOARSE'         ,'ug_PM' ,'2d','AIR_CONCS','GROUP','YMD', ! ugC_PM if needed
+    ! 'OMCOARSE'         ,'ugC_PM','2d','AIR_CONCS','GROUP','YMD', ! FSOA tests
+      'ASOA'             ,'ug_PM' ,'2d','AIR_CONCS','GROUP','YMD', ! FSOA tests
+      'BSOA'             ,'ug_PM' ,'2d','AIR_CONCS','GROUP','YMD', ! FSOA tests
+    ! 'BSOA'             ,'ug'    ,'2d','AIR_CONCS','GROUP','YMD', ! FSOA tests
+    ! 'NONVOLPCM'        ,'ug_PM' ,'2d','AIR_CONCS','GROUP','YMD', ! FSOA tests
+    ! 'FFUELOA25'        ,'ug_PM' ,'2d','AIR_CONCS','SPEC' ,'YMD', ! FSOA tests
+    ! 'POM_F_FFUEL'      ,'ug_PM' ,'2d','AIR_CONCS','SPEC' ,'YMD', ! FSOA tests
+    ! 'POM_F_FFUEL'      ,'ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! FSOA tests
+    ! 'FFUEL_NG10'       ,'ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! FSOA tests
 ! zero for NONVOL:
-!     'PART_FFUELOA25_OM','ug'    ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
-!     'PART_WOODOA25_OM' ,'ug'    ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
-!     'PART_FFIREOA25_OM','ug'    ,'2d','AIR_CONCS','SPEC' ,3, !! NEVER as ugC
+    ! 'PART_FFUELOA25_OM','ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', !! NEVER as ugC
+    ! 'PART_WOODOA25_OM' ,'ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', !! NEVER as ugC
+    ! 'PART_FFIREOA25_OM','ug'    ,'2d','AIR_CONCS','SPEC' ,'YM',  !! NEVER as ugC
 ! Sep16 tests
-      'FFIRE_BC'            ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
-      'FFIRE_REMPPM25'      ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
-      'FFIRE_OM'            ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
+      'FFIRE_BC'            ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD', !! NEVER as ugC
+      'FFIRE_REMPPM25'      ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD', !! NEVER as ugC
+      'FFIRE_OM'            ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD', !! NEVER as ugC
 !SPECIAL PM25 will be sum of fine + fraction coarse
-      'SURF_ug_PM25'        ,'ug'  ,'2d','PM25'      ,'MISC',4,
-      'SURF_ug_PM25X'       ,'ug'  ,'2d','PM25X'     ,'MISC',4,
-      'SURF_ug_PM25X_rh50'  ,'ug'  ,'2d','PM25X_rh50','MISC',4,
-      'SURF_ug_PM25_rh50'   ,'ug'  ,'2d','PM25_rh50' ,'MISC',4,
-      'SURF_ug_PM10_rh50'   ,'ug'  ,'2d','PM10_rh50' ,'MISC',4,
+      'SURF_ug_PM25'        ,'ug'  ,'2d','PM25'      ,'MISC','YMD',
+      'SURF_ug_PM25X'       ,'ug'  ,'2d','PM25X'     ,'MISC','YMD',
+      'SURF_ug_PM25X_rh50'  ,'ug'  ,'2d','PM25X_rh50','MISC','YMD',
+      'SURF_ug_PM25_rh50'   ,'ug'  ,'2d','PM25_rh50' ,'MISC','YMD',
+      'SURF_ug_PM10_rh50'   ,'ug'  ,'2d','PM10_rh50' ,'MISC','YMD',
 !---------------------------------------------
-      'RN222'               ,'ppb' ,'2d','AIR_CONCS','SPEC' ,4,
+      'RN222'               ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMD',
 !-- Emergency: Volcanic Eruption (4 entries). Skipp groups if not found
-      'ASH'                 ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
-      'ASH_F'               ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
-      'ASH_C'               ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
-      'ASH_G'               ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
+      'ASH'                 ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+      'ASH_F'               ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+      'ASH_C'               ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+      'ASH_G'               ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
 !-- Emergency: Nuclear accident (5 entries)
-    ! 'CS137'               ,'mBq' ,'2d','AIR_CONCS','SPEC' ,4,
-    ! 'I131'                ,'mBq' ,'2d','AIR_CONCS','SPEC' ,4,
-    ! 'SR90'                ,'mBq' ,'2d','AIR_CONCS','SPEC' ,4,
-    ! 'KR85'                ,'mBq' ,'2d','AIR_CONCS','SPEC' ,4,
-    ! 'NUCRACT'             ,'mBq' ,'2d','AIR_CONCS','GROUP',4,
-    !!'XE131'               ,'mBq' ,'2d','AIR_CONCS','SPEC' ,4,
-    !!'NUC'                 ,'mBq' ,'2d','AIR_CONCS','GROUP',4,
+    ! 'CS137'               ,'mBq' ,'2d','AIR_CONCS','SPEC' ,'YMD',
+    ! 'I131'                ,'mBq' ,'2d','AIR_CONCS','SPEC' ,'YMD',
+    ! 'SR90'                ,'mBq' ,'2d','AIR_CONCS','SPEC' ,'YMD',
+    ! 'KR85'                ,'mBq' ,'2d','AIR_CONCS','SPEC' ,'YMD',
+    ! 'NUCRACT'             ,'mBq' ,'2d','AIR_CONCS','GROUP','YMD',
+    !!'XE131'               ,'mBq' ,'2d','AIR_CONCS','SPEC' ,'YMD',
+    !!'NUC'                 ,'mBq' ,'2d','AIR_CONCS','GROUP','YMD',
 !-- New AOD(2d)/EXT(3d) system
-      'AOD'                ,' '  ,'550nm','AOD:GROUP','MISC',4,
-      'EXT'                ,'1/m','550nm','EXT:GROUP','MISC',3,
+      'AOD'                ,' '  ,'550nm','AOD:GROUP','MISC','YMD',
+      'EXT'                ,'1/m','550nm','EXT:GROUP','MISC','YM',
 ! ============================================================
-!TFMM'SO2'                  ,'ugS' ,'2d','AIR_CONCS','SPEC' ,4,
-!TFMM'SO4'                  ,'ugS' ,'2d','AIR_CONCS','SPEC' ,4,
+!TFMM'SO2'                  ,'ugS' ,'2d','AIR_CONCS','SPEC' ,'YMD',
+!TFMM'SO4'                  ,'ugS' ,'2d','AIR_CONCS','SPEC' ,'YMD',
 ! Could also add from earlier 2d_EXTRA array:
-!    'RNWATER'              ,'ppb' ,'2d','AIR_CONCS','SPEC' ,4,
+!    'RNWATER'              ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMD',
 ! Omit for CityZen
 !TFMM just keep ppb version below
-!TFMM'NO'                   ,'ugN' ,'2d','AIR_CONCS','SPEC' ,4,
-!TFMM'NO2'                  ,'ugN' ,'2d','AIR_CONCS','SPEC' ,4,
-!TFMM'NH3'                  ,'ugN' ,'2d','AIR_CONCS','SPEC' ,4,
-!TFMM'HNO3'                 ,'ugN' ,'2d','AIR_CONCS','SPEC' ,4,
-!TFMM'HONO'                 ,'ugN' ,'2d','AIR_CONCS','SPEC' ,4,
-!TFMM'PAN'                  ,'ugN' ,'2d','AIR_CONCS','SPEC' ,4,
+!TFMM'NO'                   ,'ugN' ,'2d','AIR_CONCS','SPEC' ,'YMD',
+!TFMM'NO2'                  ,'ugN' ,'2d','AIR_CONCS','SPEC' ,'YMD',
+!TFMM'NH3'                  ,'ugN' ,'2d','AIR_CONCS','SPEC' ,'YMD',
+!TFMM'HNO3'                 ,'ugN' ,'2d','AIR_CONCS','SPEC' ,'YMD',
+!TFMM'HONO'                 ,'ugN' ,'2d','AIR_CONCS','SPEC' ,'YMD',
+!TFMM'PAN'                  ,'ugN' ,'2d','AIR_CONCS','SPEC' ,'YMD',
 !TFMM just keep ug version below
-!TFMM'NO3_F'                ,'ugN' ,'2d','AIR_CONCS','SPEC' ,4,
-!TFMM'NO3_C'                ,'ugN' ,'2d','AIR_CONCS','SPEC' ,4, 
-!TFMM'NH4_F'                ,'ugN' ,'2d','AIR_CONCS','SPEC' ,4, 
-    ! 'PART_SOA_OC'         ,'ugC' ,'2d','AIR_CONCS','SPEC' ,3, 
-    ! 'PART_OFFUELOA25_OC'  ,'ugC' ,'2d','AIR_CONCS','SPEC' ,3,
-    ! 'PART_OWOODOA25_OC'   ,'ugC' ,'2d','AIR_CONCS','SPEC' ,3,
-    ! 'PART_OFFIREOA25_OC'  ,'ugC' ,'2d','AIR_CONCS','SPEC' ,3,
-    ! 'EC_F_WOOD_NEW'       ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-    ! 'EC_F_WOOD_AGE'       ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-    ! 'EC_C_WOOD'           ,'ug'  ,'2d','AIR_CONCS','SPEC' ,3,
+!TFMM'NO3_F'                ,'ugN' ,'2d','AIR_CONCS','SPEC' ,'YMD',
+!TFMM'NO3_C'                ,'ugN' ,'2d','AIR_CONCS','SPEC' ,'YMD', 
+!TFMM'NH4_F'                ,'ugN' ,'2d','AIR_CONCS','SPEC' ,'YMD', 
+    ! 'PART_SOA_OC'         ,'ugC' ,'2d','AIR_CONCS','SPEC' ,'YM', 
+    ! 'PART_OFFUELOA25_OC'  ,'ugC' ,'2d','AIR_CONCS','SPEC' ,'YM',
+    ! 'PART_OWOODOA25_OC'   ,'ugC' ,'2d','AIR_CONCS','SPEC' ,'YM',
+    ! 'PART_OFFIREOA25_OC'  ,'ugC' ,'2d','AIR_CONCS','SPEC' ,'YM',
+    ! 'EC_F_WOOD_NEW'       ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+    ! 'EC_F_WOOD_AGE'       ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+    ! 'EC_C_WOOD'           ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YM',
 !Needed for forest-fire checks
-    ! 'NONVOL_FFUELOC25'    ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-    ! 'NONVOL_WOODOC25'     ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-    ! 'NONVOL_FFIREOC25'    ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-    ! 'PART_SOA_OM'         ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
+    ! 'NONVOL_FFUELOC25'    ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+    ! 'NONVOL_WOODOC25'     ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+    ! 'NONVOL_FFIREOC25'    ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+    ! 'PART_SOA_OM'         ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD', !! NEVER as ugC
 ! CityZen Outputs
-    ! 'O3'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, !! test 3d
-    ! 'NO2'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, !! also have ugN
-    ! 'DUST_NAT_F'          ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-    ! 'DUST_NAT_C'          ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4,
-    ! 'AER_OM_F'            ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
-    ! 'AER_OC'              ,'ug'  ,'2d','AIR_CONCS','SPEC' ,4, !! NEVER as ugC
-    ! 'EC_F'                ,'ug'  ,'2d','AIR_CONCS','GROUP',4,
-    ! 'PART_XO_OFFLOA25_O'  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,3, !! NEVER as ugC
-    ! 'PART_XO_OWDOA25_O'   ,'ug'  ,'2d','AIR_CONCS','SPEC' ,3, !! NEVER as ugC
-    ! 'PART_XO_OFFIOA25_O'  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,3, !! NEVER as ugC
+    ! 'O3'                  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD', !! test 3d
+    ! 'NO2'                 ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD', !! also have ugN
+    ! 'DUST_NAT_F'          ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+    ! 'DUST_NAT_C'          ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD',
+    ! 'AER_OM_F'            ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD', !! NEVER as ugC
+    ! 'AER_OC'              ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YMD', !! NEVER as ugC
+    ! 'EC_F'                ,'ug'  ,'2d','AIR_CONCS','GROUP','YMD',
+    ! 'PART_XO_OFFLOA25_O'  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YM', !! NEVER as ugC
+    ! 'PART_XO_OWDOA25_O'   ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YM', !! NEVER as ugC
+    ! 'PART_XO_OFFIOA25_O'  ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'YM', !! NEVER as ugC
 !
 ! o3 metrics --------------- SEP 2015 added here -----------------------------
 !
 ! MM (Mapping Manual) means use daylight O3, EU uses 7:00 -- 18:59 UTC
-! iotyp is output frequency, 4 is daily, 3 is monthly
+! iotyp is output frequency, 'D' is daily, 'M' is monthly
 !
 OutputVegO3= 
 ! Name                 class  Threshhold  defn  txtLC    RelSGS, SAccPeriod, EAccPeriod, iotyp 
-  'POD05_IAM_CR',      'POD', 0.5,        '- ', 'IAM_CR',  F,       0,          999 ,     4, !TEST
+  'POD05_IAM_CR',      'POD', 0.5,        '- ', 'IAM_CR',  F,       0,          999 ,     'YMD', !TEST
 !
-! 'qPOD1_IAM_DF',     'VEGO3', 'POD',      'IAM_DF',   'mmole/m2', 1,  -99,      F,   1.0, T, 4,
+! 'qPOD1_IAM_DF',     'VEGO3', 'POD',      'IAM_DF',   'mmole/m2', 1,  -99,      F,   1.0, T, 'YMD',
 !====================================================================================
-    'POD1_IAM_DF   ',   'POD', 1.0,  'MM', 'IAM_DF',F,0,999 , 3  , 
-    'POD0_IAM_DF   ',   'POD', 0.0,  'MM', 'IAM_DF',F,0,999 , 3  ,
-    'POD1_IAM_MF   ',   'POD', 1.0,  'MM', 'IAM_MF',F,0,999 , 3  ,
-    'POD0_IAM_MF   ',   'POD', 0.0,  'MM', 'IAM_DF',F,0,999 , 3  ,
-    'POD1_DF       ',   'POD', 1.0,  'MM', 'DF    ',F,0,999 , 3  ,
-    'POD1_CF       ',   'POD', 1.0,  'MM', 'CF    ',F,0,999 , 3  ,
-    'POD3_TC       ',   'POD', 3.0,  'MM', 'TC    ',F,0,999 , 3  , 
+    'POD1_IAM_DF   ',   'POD', 1.0,  'MM', 'IAM_DF',F,0,999 , 'YM', 
+    'POD0_IAM_DF   ',   'POD', 0.0,  'MM', 'IAM_DF',F,0,999 , 'YM',
+    'POD1_IAM_MF   ',   'POD', 1.0,  'MM', 'IAM_MF',F,0,999 , 'YM',
+    'POD0_IAM_MF   ',   'POD', 0.0,  'MM', 'IAM_DF',F,0,999 , 'YM',
+    'POD1_DF       ',   'POD', 1.0,  'MM', 'DF    ',F,0,999 , 'YM',
+    'POD1_CF       ',   'POD', 1.0,  'MM', 'CF    ',F,0,999 , 'YM',
+    'POD3_TC       ',   'POD', 3.0,  'MM', 'TC    ',F,0,999 , 'YM', 
 !CEH JULY2015 ECLGLOB
-!    'POD0_Wheat_Irrigated',   'POD', 0.0,  'MM', 'Wheat_Irrigated',F,0,999 , 4  , 
-!    'POD1_Wheat_Irrigated',   'POD', 1.0,  'MM', 'Wheat_Irrigated',F,0,999 , 4  ,
-!    'POD2_Wheat_Irrigated',   'POD', 2.0,  'MM', 'Wheat_Irrigated',F,0,999 , 4  ,
-!    'POD3_Wheat_Irrigated',   'POD', 3.0,  'MM', 'Wheat_Irrigated',F,0,999 , 4  , 
-!    'POD3c_Wheat_Irrigated',   'POD', 3.0,  'MM:C', 'Wheat_Irrigated',F,0,999 , 4  , 
-!    'POD3p5_Wheat_Irrigated',   'POD', 3.0,  'MM:Plus5', 'Wheat_Irrigated',F,0,999 , 4  , 
-!    'POD3m5_Wheat_Irrigated',   'POD', 3.0,  'MM:Minus5', 'Wheat_Irrigated',F,0,999 , 4  , 
-!    'POD3p5_Wheat_NonIrrig',   'POD', 3.0,  'MM:Plus5', 'Wheat_Irrigated',F,0,999 , 4  , 
-!    'POD3m5_Wheat_NonIrrig',   'POD', 3.0,  'MM:Minus5', 'Wheat_Irrigated',F,0,999 , 4  , 
-!    'POD4_Wheat_Irrigated',   'POD', 4.0,  'MM', 'Wheat_Irrigated',F,0,999 , 4  ,
-!    'POD6_Wheat_Irrigated',   'POD', 6.0,  'MM', 'Wheat_Irrigated',F,0,999 , 4  ,
-!    'POD6p5_Wheat_Irrigated',   'POD', 6.0,  'MM:Plus5', 'Wheat_Irrigated',F,0,999 , 4  ,
-!    'POD6m5_Wheat_Irrigated',   'POD', 6.0,  'MM:Minus5', 'Wheat_Irrigated',F,0,999 , 4  ,
-!    'POD0_Wheat_NonIrrig',   'POD', 0.0,  'MM', 'Wheat_NonIrrig',F,0,999 , 4  ,
-!    'POD1_Wheat_NonIrrig',   'POD', 1.0,  'MM', 'Wheat_NonIrrig',F,0,999 , 4  ,
-!    'POD2_Wheat_NonIrrig',   'POD', 2.0,  'MM', 'Wheat_NonIrrig',F,0,999 , 4  ,
-!    'POD3_Wheat_NonIrrig',   'POD', 3.0,  'MM', 'Wheat_NonIrrig',F,0,999 , 4  ,
-!    'POD4_Wheat_NonIrrig',   'POD', 3.0,  'MM', 'Wheat_NonIrrig',F,0,999 , 4  ,
-!    'POD6_Wheat_NonIrrig',   'POD', 6.0,  'MM', 'Wheat_NonIrrig',F,0,999 , 4  ,
+!   'POD0_Wheat_Irrigated',  'POD', 0.0,'MM',       'Wheat_Irrigated',F,0,999 , 'YMD', 
+!   'POD1_Wheat_Irrigated',  'POD', 1.0,'MM',       'Wheat_Irrigated',F,0,999 , 'YMD',
+!   'POD2_Wheat_Irrigated',  'POD', 2.0,'MM',       'Wheat_Irrigated',F,0,999 , 'YMD',
+!   'POD3_Wheat_Irrigated',  'POD', 3.0,'MM',       'Wheat_Irrigated',F,0,999 , 'YMD', 
+!   'POD3c_Wheat_Irrigated', 'POD', 3.0,'MM:C',     'Wheat_Irrigated',F,0,999 , 'YMD', 
+!   'POD3p5_Wheat_Irrigated','POD', 3.0,'MM:Plus5', 'Wheat_Irrigated',F,0,999 , 'YMD', 
+!   'POD3m5_Wheat_Irrigated','POD', 3.0,'MM:Minus5','Wheat_Irrigated',F,0,999 , 'YMD', 
+!   'POD3p5_Wheat_NonIrrig', 'POD', 3.0,'MM:Plus5', 'Wheat_Irrigated',F,0,999 , 'YMD', 
+!   'POD3m5_Wheat_NonIrrig', 'POD', 3.0,'MM:Minus5','Wheat_Irrigated',F,0,999 , 'YMD', 
+!   'POD4_Wheat_Irrigated',  'POD', 4.0,'MM',       'Wheat_Irrigated',F,0,999 , 'YMD',
+!   'POD6_Wheat_Irrigated',  'POD', 6.0,'MM',       'Wheat_Irrigated',F,0,999 , 'YMD',
+!   'POD6p5_Wheat_Irrigated','POD', 6.0,'MM:Plus5', 'Wheat_Irrigated',F,0,999 , 'YMD',
+!   'POD6m5_Wheat_Irrigated','POD', 6.0,'MM:Minus5','Wheat_Irrigated',F,0,999 , 'YMD',
+!   'POD0_Wheat_NonIrrig',   'POD', 0.0,'MM',       'Wheat_NonIrrig', F,0,999 , 'YMD',
+!   'POD1_Wheat_NonIrrig',   'POD', 1.0,'MM',       'Wheat_NonIrrig', F,0,999 , 'YMD',
+!   'POD2_Wheat_NonIrrig',   'POD', 2.0,'MM',       'Wheat_NonIrrig', F,0,999 , 'YMD',
+!   'POD3_Wheat_NonIrrig',   'POD', 3.0,'MM',       'Wheat_NonIrrig', F,0,999 , 'YMD',
+!   'POD4_Wheat_NonIrrig',   'POD', 3.0,'MM',       'Wheat_NonIrrig', F,0,999 , 'YMD',
+!   'POD6_Wheat_NonIrrig',   'POD', 6.0,'MM',       'Wheat_NonIrrig', F,0,999 , 'YMD',
 !CEH ECLGLOB
-!    'POD1_WinterWheat',   'POD', 1.0,  'MM', 'WinterWheat',F,0,999 ), 4  , !=7
-!    'POD3_WinterWheat',   'POD', 3.0,  'MM', 'WinterWheat',F,0,999 ), 4  , !=7
-!    'POD6_WinterWheat',   'POD', 6.0,  'MM', 'WinterWheat',F,0,999 ), 4  , !=7
-!    'POD1_SpringWheat',   'POD', 1.0,  'MM', 'SpringWheat',F,0,999 ), 4  , !=7
-!    'POD3_SpringWheat',   'POD', 3.0,  'MM', 'SpringWheat',F,0,999 ), 4  , !=7
-!    'POD6_SpringWheat',   'POD', 6.0,  'MM', 'SpringWheat',F,0,999 ), 4  , !=7
+!   'POD1_WinterWheat',   'POD', 1.0,  'MM', 'WinterWheat',F,0,999, 'YMD',
+!   'POD3_WinterWheat',   'POD', 3.0,  'MM', 'WinterWheat',F,0,999, 'YMD',
+!   'POD6_WinterWheat',   'POD', 6.0,  'MM', 'WinterWheat',F,0,999, 'YMD',
+!   'POD1_SpringWheat',   'POD', 1.0,  'MM', 'SpringWheat',F,0,999, 'YMD',
+!   'POD3_SpringWheat',   'POD', 3.0,  'MM', 'SpringWheat',F,0,999, 'YMD',
+!   'POD6_SpringWheat',   'POD', 6.0,  'MM', 'SpringWheat',F,0,999, 'YMD',
 !!
 !!TREE TESTS:
-!    'POD1_NEUR_SPRUCE', 'POD', 1.0,  'MM', 'NEUR_SPRUCE  ',F,0,999 ), &
-!    'POD1_NEUR_BIRCH ', 'POD', 1.0,  'MM', 'NEUR_BIRCH   ',F,0,999 ), &
-!    'POD1_ACE_PINE ',   'POD', 1.0,  'MM', 'ACE_PINE   ',F,0,999 ), & !
-!    'POD1_ACE_OAK  ',   'POD', 1.0,  'MM', 'ACE_OAK    ',F,0,999 ), &
-!    'POD1_ACE_BEECH',   'POD', 1.0,  'MM', 'ACE_BEECH  ',F,0,999 ), &
-!    'POD1_CCE_SPRUCE', 'POD', 1.0,  'MM', 'CCE_SPRUCE  ',F,0,999 ), &
-!    'POD1_CCE_BEECH', 'POD', 1.0,  'MM', 'CCE_BEECH  ',F,0,999 ), &
-!    'POD1_MED_OAK', 'POD', 1.0,  'MM', 'MED_OAK  ',F,0,999 ), &
-!    'POD1_MED_PINE', 'POD', 1.0,  'MM', 'MED_PINE  ',F,0,999 ), &
-!    'POD1_MED_BEECH', 'POD', 1.0,  'MM', 'MED_BEECH  ',F,0,999 ), & !10 =>26
+!   'POD1_NEUR_SPRUCE', 'POD', 1.0,  'MM', 'NEUR_SPRUCE', F,0,999, 'YMD', 
+!   'POD1_NEUR_BIRCH ', 'POD', 1.0,  'MM', 'NEUR_BIRCH',  F,0,999, 'YMD', 
+!   'POD1_ACE_PINE ',   'POD', 1.0,  'MM', 'ACE_PINE',    F,0,999, 'YMD', 
+!   'POD1_ACE_OAK  ',   'POD', 1.0,  'MM', 'ACE_OAK',     F,0,999, 'YMD', 
+!   'POD1_ACE_BEECH',   'POD', 1.0,  'MM', 'ACE_BEECH',   F,0,999, 'YMD', 
+!   'POD1_CCE_SPRUCE',  'POD', 1.0,  'MM', 'CCE_SPRUCE',  F,0,999, 'YMD', 
+!   'POD1_CCE_BEECH',   'POD', 1.0,  'MM', 'CCE_BEECH',   F,0,999, 'YMD', 
+!   'POD1_MED_OAK',     'POD', 1.0,  'MM', 'MED_OAK',     F,0,999, 'YMD', 
+!   'POD1_MED_PINE',    'POD', 1.0,  'MM', 'MED_PINE',    F,0,999, 'YMD', 
+!   'POD1_MED_BEECH',   'POD', 1.0,  'MM', 'MED_BEECH',   F,0,999, 'YMD', 
 !! 30days, 15 before mid, 15 after
-!    'POD3_TC30d    ',   'POD', 3.0,  'MM', 'TC    ',T,30,60 ), & 
+!    'POD3_TC30d',      'POD', 3.0,  'MM', 'TC    ',T,30,60, 'YMD',  
 ! 55days, 15 before mid, 40 after
-!    'POD3_TC55d    ',   'POD', 3.0,  'MM', 'TC    ',T,30,85 ), & 
-!    'POD6_TC55d    ',   'POD', 3.0,  'MM', 'TC    ',T,30,85 ), & ! 55d
-!    'POD3_IAM_CR30d',   'POD', 3.0,  'MM', 'IAM_CR',T,30,60 ), &
-!    'POD3_IAM_CR55d',   'POD', 3.0,  'MM', 'IAM_CR',T,30,85 ), &
+!    'POD3_TC55d',      'POD', 3.0,  'MM', 'TC    ',T,30,85, 'YMD',  
+!    'POD6_TC55d',      'POD', 3.0,  'MM', 'TC    ',T,30,85, 'YMD',  ! 55d
+!    'POD3_IAM_CR30d',  'POD', 3.0,  'MM', 'IAM_CR',T,30,60, 'YMD', 
+!    'POD3_IAM_CR55d',  'POD', 3.0,  'MM', 'IAM_CR',T,30,85, 'YMD', 
 ! WARNING - POD6 is not recommended for European-scale IAM modelling
 ! Way too uncertain!
-    'POD6_TC       ',   'POD', 3.0,  'MM', 'TC    ',F,0,999, 3,   
-    'POD6_IAM_CR   ',   'POD', 6.0,  'MM', 'IAM_CR',F,0,999, 3,   ! WARN!
-!    'POD6_IAM_CR30d',   'POD', 6.0,  'MM', 'IAM_CR',T,30,60, 4,   ! WARN!
-!    'POD6_IAM_CR55d',   'POD', 6.0,  'MM', 'IAM_CR',T,30,85, 4,   ! WARN!
-    'POD1_IAM_CR   ',   'POD', 1.0,  'MM', 'IAM_CR',F,0,999, 3,   ! 
-    'POD0_IAM_CR   ',   'POD', 0.0,  'MM', 'IAM_CR',F,0,999, 3,   
-    'POD3_IAM_CR   ',   'POD', 3.0,  'MM', 'IAM_CR',F,0,999 , 3,  
+    'POD6_TC       ',   'POD', 3.0,  'MM', 'TC    ',F,0,999, 'YM',   
+    'POD6_IAM_CR   ',   'POD', 6.0,  'MM', 'IAM_CR',F,0,999, 'YM',   ! WARN!
+!   'POD6_IAM_CR30d',   'POD', 6.0,  'MM', 'IAM_CR',T,30,60, 'YMD',   ! WARN!
+!   'POD6_IAM_CR55d',   'POD', 6.0,  'MM', 'IAM_CR',T,30,85, 'YMD',   ! WARN!
+    'POD1_IAM_CR   ',   'POD', 1.0,  'MM', 'IAM_CR',F,0,999, 'YM',   ! 
+    'POD0_IAM_CR   ',   'POD', 0.0,  'MM', 'IAM_CR',F,0,999, 'YM',   
+    'POD3_IAM_CR   ',   'POD', 3.0,  'MM', 'IAM_CR',F,0,999 , 'YM',  
 !
-    'MMAOT40_TC    ','AOT', 40.0, 'MM', 'TC    ',F,0,999, 3,   
-    'MMAOT40_IAM_DF','AOT', 40.0, 'MM', 'IAM_DF',F,0,999, 3,   
-    'MMAOT40_IAM_MF','AOT', 40.0, 'MM', 'IAM_MF',F,0,999, 3,   
-    'MMAOT40_IAM_CR','AOT', 40.0, 'MM', 'IAM_CR',F,0,999, 3,   
-!    'MMAOT40p5_IAM_DF','AOT', 40.0, 'MM:Plus5', 'IAM_DF',F,0,999, 3,   
-!    'MMAOT40m5_IAM_DF','AOT', 40.0, 'MM:Minus5', 'IAM_DF',F,0,999, 3,   
+    'MMAOT40_TC',       'AOT', 40.0, 'MM',        'TC',    F,0,999, 'YM',   
+    'MMAOT40_IAM_DF',   'AOT', 40.0, 'MM',        'IAM_DF',F,0,999, 'YM',   
+    'MMAOT40_IAM_MF',   'AOT', 40.0, 'MM',        'IAM_MF',F,0,999, 'YM',   
+    'MMAOT40_IAM_CR',   'AOT', 40.0, 'MM',        'IAM_CR',F,0,999, 'YM',   
+!   'MMAOT40p5_IAM_DF', 'AOT', 40.0, 'MM:Plus5',  'IAM_DF',F,0,999, 'YM',   
+!   'MMAOT40m5_IAM_DF', 'AOT', 40.0, 'MM:Minus5', 'IAM_DF',F,0,999, 'YM',   
 ! IAM_CR, we use 3m O3
-    'EUAOT40_Crops ', 'AOT', 40.0, 'EU', 'IAM_CR',F,0,999, 3,   
+    'EUAOT40_Crops ', 'AOT', 40.0, 'EU', 'IAM_CR',F,0,999, 'YM',   
 ! IAM_DF, we use 3m O3
-    'EUAOT40_Forests', 'AOT', 40.0, 'EU', 'IAM_DF',F,0,999, 3,   
-    'MMAOT40_IAM_WH ','AOT', 40.0, 'MM', 'IAM_WH',F,0,999, 3,
+    'EUAOT40_Forests', 'AOT', 40.0, 'EU', 'IAM_DF',F,0,999, 'YM',   
+    'MMAOT40_IAM_WH ','AOT', 40.0, 'MM', 'IAM_WH',F,0,999, 'YM',
 !    /) !NB -last not found. Could just be skipped, but kept
 ! -------------------------- SEP 2015 added here -----------------------------
 &end
 
-! nb freq =  IOU_YEAR=2,IOU_MON=3, IOU_DAY=4,IOU_HOUR=5, IOU_HOUR_MEAN=7
-!         *NOTE* only the day, month, year flags work so far.
+! where freq: YEAR='Y', MON='M', DAY='D', HOUR='H', HOUR_INST='I'
 
 &OutputDep_config
   DDEP_ECOS =
-   'Grid     ', 4,
-   'Conif    ', 3,
-   'Seminat  ', 3,
-   'Water_D  ', 2,
-   'Decid    ', 2,
-   'Crops    ', 2,
+   'Grid     ', 'YMD',
+   'Conif    ', 'YM',
+   'Seminat  ', 'YM',
+   'Water_D  ', 'Y',
+   'Decid    ', 'Y',
+   'Crops    ', 'Y',
 
  DDEP_WANTED =
    'SOX      ', 'GROUP', 'mgS',
