@@ -1,0 +1,18 @@
+# ECcoar splits for Eucaari trend runs. Don't have wood, no EC_c_split wither
+# 
+# Key-word, MASS_ASSUMED= 0 by default, 
+# change when emissions have artificial mass, e.g. 46 for NOx as NO2
+: MASS_ASSUMED 0 
+99 99   EC_COAR_NEW  EC_COAR_AGE EC_c_WOOD      #HEADERS
+#DATA
+0   1   80.00   20.0  0.0
+0   2   80.00   20.0  0.0
+0   3   80.00   20.0  0.0
+0   4   80.00   20.0  0.0
+0   5   80.00   20.0  0.0
+0   6   80.00   20.0  0.0
+0   7   80.00   20.0  0.0
+0   8   80.00   20.0  0.0
+0   9   80.00   20.0  0.0
+0   10  80.00   20.0  0.0
+0   11  80.00   20.0  0.0

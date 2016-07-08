@@ -1,0 +1,7 @@
+
+# Simply runs doxygen with the ESX configuration settings, and assuming
+# the code is in the .. directory.
+
+doxygen Doxyf90Graph
+
+firefox html/index.html

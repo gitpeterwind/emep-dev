@@ -1,0 +1,323 @@
+*   EMEP chemistry
+*   Note conventions  
+*   END-OF-LINE is ";" (not required in comment section)
+* 
+*   Do *NOT* use white space in rate-coefficients !!
+*
+*   lines beginning with "*" are comments  
+*   lines beginning with "DRY" are dry deposition terms  
+*   lines beginning with "WET" are dry deposition terms  
+*   lines beginning with "rcemis" are emission terms  
+*   lines beginning with "emisfiles" give name of  emission files, e.g. nox
+*   ;
+*   Some coefficients are defined in GenIn.shorthand, e.g. KHO2RO2 
+*   Anything else is simply used as the rate coefficient.  
+*   ;
+*   GenChem checks whether all shorthands used here are also in
+*   GenIn.species. For now, I have put some unused "products"
+*   after the ";" EOL, e.g.HCOOH. 
+* 
+* 6th April 2005: Two types of tracers allowed:
+* 1)   e.g. [OH] + VOC -> SOA   will put xnew(OH) into the loss rate
+*  of VOC, but will not change the loss rate of OH.
+*
+* 2)   e.g. {O2} + OD -> OP   will ignore the O2 term. Make sure
+* it is in the reaction rate though if needed!
+*------------------------------------------------------------ ;
+* Atkinson 1994:
+* k(HO2+CH3O2) = 3.8e-13*exp(780*TINV)    ! => ROOH + O2
+* k(HO2+C2H5O2) = 6.5e-13*exp(650*TINV)   ! => ROOH + O2
+* k(HO2+RO2) = 3.5e-13*exp(1000*TINV)     !  => "" ,factor 2 uncertainty
+* k(HO2+RO2) = 1.9e-13*exp(1300*TINV)     !  revised in appendum,p.180
+*
+*
+*-- Inorganic chemistry ----- ;
+*-- ;
+* Refs: acp2004 - Atkinson et al, ACP, 2004, 1461-1738, Table 1, reaction numbers given as #Num
+*
+0.01                                TRACER2   =      ; 
+(6.0e-34*O2+5.6e-34*N2)*O2*EXP(-2.6*LogTdiv300)   OP + {O2} + {M}  = O3  ; acp2004, #1
+1.8e-11*N2*EXP(107.0*TINV)          OD + {N2}  = OP           ; A97,J
+3.2e-11*O2*EXP(67.0*TINV)           OD + {O2}  = OP           ; A97,J
+2.2e-10*H2O                         OD + {H2O} = 2. OH        ; A97,J
+1.4e-12*EXP(-1310.0*TINV)           O3 + NO    = NO2 + {O2}    ; acp2004
+1.4e-13*EXP(-2470.0*TINV)           O3 + NO2   = NO3 + {O2}    ; acp2004
+1.7e-12*EXP(-940.0*TINV)            O3 + OH    = HO2 + {O2}    ; acp2004 
+2.03e-16*EXP(-4.57*Log300divT)*EXP(693.0*TINV)   O3 + HO2   = OH + 2 {O2}  ; acp2004, #28
+1.8e-11*EXP(110.0*TINV)             NO + NO3   = NO2 + NO2     ; A97,J
+3.6e-12*EXP(270.0*TINV)             NO + HO2   = NO2 + OH      ; acp2004
+4.5e-14*EXP(-1260.0*TINV)           NO2 + NO3  = NO + NO2      ; MCM
+*** REM  4.1e-16                           NO3 + H2O2 = HO2 + HNO3 ; very slow.
+4.8e-11*EXP(250.0*TINV)             OH + HO2   = {H2O} + {O2} ; A97,J
+2.9e-12*EXP(-160.0*TINV)            OH + H2O2 = HO2 + {H2O}   ; A97,J
+7.7e-12*EXP(-2100.0*TINV)           OH + H2 = HO2 + {H2O}     ; acp2004, #20
+KMT3_OH_HNO3                        OH + HNO3 = NO3 + {H2O}   ; acp2004, #40
+* KOH_HNO3 = rc7.2e-15*exp
+*
+* Now we merge 2 reactions of Ho2+HO2
+*
+FH2O*2.2e-13*EXP(600.0*TINV)       HO2 + HO2 = H2O2          ; IUPAC 2001
+FH2O*1.9e-33*EXP(980.0*TINV)*M    HO2 + HO2 = H2O2          ; IUPAC 2001
+* HONO chemistry to be added (also need photolysis of HONO!)
+2.5e-12*EXP(-260.0*TINV)            OH + HONO = NO2         ;
+
+* ;
+*----- sulphur chemistry ----------------------------------- ;
+* ;
+*ESXTMP aqrck(ICLOHSO2,k)*2.00e-12         OH + SO2 = HO2 + SO4   ;  jof, kinf
+*ESXTMP aqrck(ICLRC1,k)                    SO2 + H2O2 =  SO4   ;  !ox limitation
+*ESXTMP aqrck(ICLRC2,k)                    SO2 + O3 =  SO4   ; 
+*ESXTMP aqrck(ICLRC3,k)                    SO2 + {Fe} =  SO4   ; 
+*ESXTMP:
+   1.0e-5        SO2 =  SO4   ;  jof, kinf
+* ;
+*----- methane chemistry ----------------------------------- ;
+* ;
+1.85e-20*EXP(2.82*LOG(TEMP))*EXP(-987.0*TINV)  OH + CH4 = CH3O2  ; acp2006, V6, p3625-4055, Atkinson et al.
+1.44e-13+M*3.43e-33                 OH     + CO    = HO2               ; IUPAC 2005
+*1.44e-13+M*3.43e-33                 [OH]   + CO_FIRE    =             ;  tracer
+*1.44e-13+M*3.43e-33                 [OH]   + CO_BIC     =             ;  tracer
+2.3e-12*EXP(360.0*TINV)             CH3O2  + NO    = HCHO + HO2 + NO2  ; acp2006
+7.4e-13*EXP(-520.0*TINV)            CH3O2  + CH3O2 = 2. HCHO + 2. HO2  ; acp2006
+1.03e-13*EXP(365.0*TINV)-7.4e-13*EXP(-520.0*TINV)  CH3O2 + CH3O2 = CH3OH + HCHO  ; acp2006
+6.38e-18*(TEMP**2)*EXP(144.0*TINV)  OH     + CH3OH = HO2 + HCHO + {H2O} ; acp2006
+3.8e-13*EXP(780.0*TINV)             HO2    + CH3O2 = 0.9 CH3O2H + 0.1 HCHO  ; A97,J,unchanged rate IUPAC2005, add HCHO-formation reaction, ca 10% at 298K (temp dependence available from IUPAC, start w a simple 10% HCHO at all temps
+*-- these are reactions 67, 68 in Note2/93 ;
+5.3e-12*EXP(190.0*TINV)             CH3O2H + OH    = 0.4 HCHO + 0.4 OH + 0.6 CH3O2  + 0.6 {H2O} ; IUPAC 2007
+1.25e-17*(TEMP**2)*EXP(615.0*TINV)  OH     + HCHO  = CO + HO2 + {H2O}   ; acp2006
+2.0e-12*EXP(-2440.0*TINV)           NO3    + HCHO  = HNO3 + CO + HO2    ; IUPACoct2007, suggested temp dependance
+* ;
+*----- ethane chemistry ----------------------------------- ;
+* ;
+6.9e-12*EXP(-1000.0*TINV)     OH     + C2H6 = C2H5O2 + {H2O}     ; IUPAC2007
+2.55e-12*EXP(380.0*TINV)      C2H5O2  + NO  = HO2 + CH3CHO + NO2 ; IUPAC2005
+3.8e-13*EXP(900.0*TINV)       C2H5O2  + HO2 = C2H5OOH            ; IUPAC2005
+8.01e-12                      C2H5OOH + OH  = CH3CHO + OH     ; Saunders ACP3, 2003, 161-180 CR 
+KRC68                         C2H5OOH + OH  = C2H5O2       ;
+4.4e-12*EXP(365.0*TINV)       OH   + CH3CHO = 0.95 CH3COO2 + 0.05 CH3O2 + 0.05 CO  ; IUPAC2008 gives 5% vinoxy radical CH2CHO, which here is assumed to isomerize to an acetyl radical CH3CO and then dissociate to CH3 + CO
+7.5e-12*EXP(290.0*TINV)       CH3COO2 + NO  = NO2 + CH3O2 + {CO2} ; acp2006
+2.0e-12*EXP(500.0*TINV)       CH3O2 + CH3COO2 = 0.9 HO2 + HCHO + 0.9 CH3O2 + 0.1 {CH3COOH} ; IUPAC2002, missing 10% CH3COOH formation, could easily be added acetic acid would only add 1 component and 1 reaction to the scheme
+2.9e-12*EXP(500.0*TINV)       CH3COO2 + CH3COO2 = CH3O2 + CH3O2 ; acp2006
+*NOTE : J(115,116)has other products for HO2:
+5.2e-13*EXP(980.0*TINV)       CH3COO2 + HO2     = 0.41 CH3COO2H + 0.15 O3 + 0.44 OH + 0.44 CH3O2 + 0.15 {CH3COOH}  ; IUPAC2005 HIGHLY uncertain rate 
+1.9e-12*EXP(190.0*TINV)       CH3COO2H + OH     = CH3COO2   ;
+* ;
+*----- ethanol chemistry ----------------------------------- ;
+* ;
+6.7e-18*(TEMP**2)*exp(511.0*TINV)   OH + C2H5OH    = CH3CHO + HO2         ; IUPAC2007
+* ;
+*----- n-butane chemistry ----------------------------------- ;
+* ;
+2.03e-17*(TEMP**2)*EXP(78.0*TINV)    OH + NC4H10  = SECC4H9O2 ; IUPAC2007
+KRO2NO                   NO + SECC4H9O2  = NO2 + 0.65 HO2 + 0.65 MEK + 0.35 CH3CHO + 0.35 C2H5O2 ;
+0.625*KHO2RO2            SECC4H9O2 + HO2 = 0.95 BURO2H ; 5% lost to S/IVOC SOA species
+*
+2.53e-18*(TEMP**2)*EXP(503.0*TINV)  OH     + MEK = MEKO2    ; IUPAC2007
+KRO2NO                   MEKO2  + NO  = NO2 + CH3COO2 + CH3CHO   ;
+0.625*KHO2RO2            MEKO2  + HO2 = MEKO2H   ;
+1.9e-12*EXP(190.0*TINV)  MEKO2H + OH  = MEKO2   ; MCM MEKAO2H reaction (but other reaction missing w rate 4.88d-11! However, the missing reaction leads to a complicated breakdown which we do not want to include...ca 6 extra species & ca 22 extra reactions, need CO2C3CHO?, Already the assumption of only forming MEKAO2H is a great simplification) Approximately 10times faster reaction to form other compounds than MEKO2...
+KRC92                    BURO2H + OH     = SECC4H9O2   ;
+2.15e-11                 BURO2H + OH = OH + MEK   ; MCM, suggested by CR
+* ;
+*----- ethene chemistry ----------------------------------- ;
+* ;
+KRO2NO                   ETRO2 + NO  = NO2 + 2. HCHO + HO2   ;
+1.2e-11                  ETRO2 + HO2 = ETRO2H   ; IUPAC2005 value for 298K, MCM gives different rate: 2.00D-13*EXP(1250/TEMP), perhaps should introduce temp dependence? We will likely underestimate rate at low temperatures
+1.38e-11                 ETRO2H + OH = CH3CHO + OH   ; MCM (CR also suggests that CH3CHO is a poor choice of product since it is a PAN source (in MCM the product is glycolaldehyde (hydroxy acetaldehyde), HOCH2CHO); and according to the MCM scheme there should be no CH3CHO production from this reaction) Could we use HCHO + HO2 instead? Or glyoxal (but Conny tested that with poor ozone results... 
+KRC92                    ETRO2H + OH = ETRO2   ;
+*NOTE - J has maybe different products
+9.1e-15*EXP(-2580.0*TINV)   C2H4 + O3 = 1.14 HCHO + 0.63 CO + 0.13 HO2 + 0.13 OH + 0.14 H2O2  + 0.23 {HCOOH}  ; IUPAC2007, maybe other product yield would be better? MCM products, the stabilised Criegee radical should not only form HCOOH but also other products, see MCM
+* ;
+*----- propene chemistry ----------------------------------- ;
+* ;
+5.5e-15*EXP(-1880.0*TINV)   O3 + C3H6 = 0.545 HCHO + 0.545 CH3CHO + 0.56 CO + 0.36 OH + 0.28 HO2 + 0.09 H2O2 + 0.1 CH4 + 0.28 CH3O2 + 0.075 {HCOOH} + 0.075 {CH3COOH} ; updated rate constant, products based on MCM scheme, Perhaps we should add the simple acids to the EMEP scheme (HCOOH and CH3COOH)?
+KRO2NO                 NO     + PRRO2 = NO2 + CH3CHO + HCHO + HO2 ;
+0.52*KHO2RO2           PRRO2  + HO2   = 0.795 PRRO2H ; 20.5% lost to S/IVOC SOA species
+* old version KRC91                  PRRO2H + OH    = MEK + OH  ; !Creates carbon atom!
+2.44e-11               PRRO2H + OH    = ACETOL + OH ; rate updated from MCM, product should be ACETOL, consider introducing this species? Why not temperature dependent? Much higher rate than earlier (T-dep) version?
+KRC92                  PRRO2H + OH    = PRRO2   ;
+*
+1.36e-11               OXYL   + OH     =  OXYO2 ; updated (MCM)
+KRO2NO                 OXYO2  + NO     =  NO2 + MGLYOX + MAL + HO2 ;
+0.859*KHO2RO2          OXYO2  + HO2    =  0.33 OXYO2H ; 67% lost to S/IVOC SOA species
+4.2e-11                OXYO2H + OH     =  OXYO2   ; one back reaction (for ca 55% of the OXYO2H) is at 7.62d-11 in MCM, so this rate should probably be increased, from 1.7e-11, at least to 4.2d-11, the other OXYO2H products do not react back to OXYO2!
+5.58e-11               MAL    + OH     = MALO2  ; MAL = C5DICARB in MCM
+KRO2NO                 MALO2  + NO     = NO2 + HO2 + MGLYOX + GLYOX   ;
+0.706*KHO2RO2          MALO2  + HO2    = MALO2H    ;
+1.9e-12*EXP(190.0*TINV)    MALO2H + OH     = MALO2   ; MCM
+6.6e-18*(TEMP**2)*EXP(820.0*TINV)   OH  + GLYOX  = HO2 + CO + CO ; IUPAC2008/Feierabend2008, possibly products should be checked? according to MCM only 60% of the product is 2CO + HO2 but we neglect the other one, HCOCO3 in MCM nomenclature
+1.9e-12*EXP(575.0*TINV)    OH     + MGLYOX = CH3COO2 + CO    ;  IUPAC2008
+* ;
+*----- isoprene chemistry ----------------------------------- ;
+* ;
+
+1.03e-14*EXP(-1995.0*TINV) C5H8 + O3   = 0.67 MACR + 0.26 MVK + 0.3 OP + 0.55 OH + 0.07 C3H6 + 0.8 HCHO + 0.06 HO2 + 0.05 CO ;
+2.7E-11*EXP(390.0*TINV)  C5H8  + OH    = ISRO2 ; IUPAC2008
+KRO2NO                   ISRO2 + NO    = 0.32 MACR + 0.42 MVK + 0.74 HCHO + 0.14 ISNI + 0.12 ISRO2 + 0.78 HO2 + 0.86 NO2 ;
+0.706*KHO2RO2            ISRO2 + HO2   = 0.97 ISRO2H ; 3% lost to S/IVOC SOA species
+2.6e-12*EXP(610.0*TINV)  MVK + OH      = MVKO2   ; IUPAC2007
+KRO2NO                   MVKO2 + NO    = 0.684 CH3CHO + 0.684 CH3COO2 + 0.266 MGLYOX + 0.266 HCHO + 0.05 ISNI + 0.95 NO2 + 0.95 HO2    ; would have been great to have hydroxy acetaldehyde in the scheme... PERHAPS test a version including this species (HOCH2CHO)?
+7.5e-11                  ISRO2H + OH   = OH + ISRO2   ; suggested by CR based on MCM 
+* Remove? 8.0e-18                ISRO2H + O3  = 0.7 HCHO ; Probably from Paulson and Seinfeld 1992 but it looks very strange? So, removed
+*No MACR+O3 reaction included earlier?
+1.36e-15*EXP(-2112.0*TINV)   MACR + O3 = 0.59 MGLYOX + 0.41 HO2 + 0.82 CO + 0.82 OH + 0.534 HCHO + 0.124 H2O2 + 0.41 CH3COO2 +0.056 {HCOOH} ; rate from MCM (essentially same as IUPAC) products based on MCM (but IUPAC indicates that there should be more MGLYOX formed than HCHO)
+8.0e-12*EXP(380.0*TINV)  MACR   + OH   = 0.5 MACRO2 + 0.5 MACO3 ; (rate from IUPAC2007) the original EMEP reaction looses a lot of carbons... Here use only 2 of the products from Paulson and Seinfeld. NOW using MCM nomenclature 
+7.6e-12*EXP(180.0*TINV)  MACRO2 + NO   = 0.95 HO2 + 0.95 CO + 0.95 ACETOL + 0.05 ISNI + 0.95 NO2 ; Paulson and Seinfeld 1992 
+KRO2NO3                  MACRO2 + NO3  = NO2 + ACETOL + HCHO + HO2 ; KRO2NO3, from MCM + rapid decomposition of (MCM)MACRO
+0.625*KHO2RO2            MACRO2 + HO2  = MACROOH + {O2} ; from MCM
+2.82e-11                 MACROOH + OH  = MACRO2 ; from MCM
+1.6e-12*EXP(305.0*TINV)  ACETOL + OH   = MGLYOX + HO2  ; Value uncertain, Arrhenius expression as suggested by IUPAC2007; 3.0d-12 from MCM (based on older measurements, new measurement factor 2 higher rate)
+8.7e-12*EXP(290.0*TINV)  MACO3  + NO   = CH3COO2 + HCHO + NO2   ; MCM
+8.5e-16*EXP(-1520.0*TINV)   MVK + O3   = 0.82 MGLYOX + 0.8 HCHO + 0.2 OP + 0.05 CO +  0.06 HO2 + 0.04 CH3CHO + 0.08 OH   ; rate from IUPAC 2007
+5.96e-11                 ISNI  + OH    = ISNIR    ; suggested by CR based on MCM (but note that MCM gives different products! should perhaps be updated?)
+KRO2NO                   ISNIR + NO    = 0.05 ISNI + 0.05 HO2 + 1.9 NO2 + 0.95 CH3CHO + 0.95 ACETOL  ; NOTE! still use CH3CHO instead of OHCH2CHO
+3.15e-12*EXP(-450.0*TINV)  C5H8 + NO3  = ISONO3   ; IUPAC2007
+KRO2NO                   ISONO3 + NO   = 1.1 NO2 + 0.8 HO2 + 0.85 ISNI + 0.1 MACR + 0.15 HCHO + 0.05 MVK   ; Products probably rather different from MCM...
+0.706*KHO2RO2            ISONO3 + HO2  = ISONO3H   ;
+0.625*KHO2RO2            MVKO2  + HO2  = MVKO2H   ;
+4.3e-13*EXP(1040.0*TINV) MACO3 + HO2   = 0.71 MACO3H + 0.29 MACO2H + 0.29 O3 ; MCM KAPHO2 reaction rate!
+1.87e-11                 MACO3H + OH   = MACO3 ; MCM    
+1.51e-11                 MACO2H + OH   = CH3COO2 + HCHO ; MCM
+0.706*KHO2RO2            ISNIR  + HO2  = ISNIRH   ;
+2.0e-11                  ISONO3H + OH  = ISONO3      ; other products , i.e., non-returning, in MCM and much faster reaction 1.03d-10, SHOULD BE LOOKED AT LATER!
+2.2e-11                  MVKO2H + OH   = MVKO2     ; other products in MCM and faster reactions SHOULD BE CHECKED LATER we seem to have several reactions that return peroxyradicals instead of breaking down/aging the VOCs
+* the reaction below is not in MCM
+3.7e-11                  ISNIRH + OH = ISNIR        ;
+2.9e-11                  MPAN + OH   = ACETOL + CO + NO2 ; MCM (crb: new reaction, products from MCM, rate from IUPAC2007, rate is highly uncertain and we should perhaps test setting some temperature dependence? Value given for 298K! NOTE MUCH LOWER RATE IN MCM! According to IUPAC the reaction has been observed to produce ACETOL and HCHO )
+*
+*FEB2012 * Isotopes
+*FEB2012 *
+*FEB2012 *k=1.0/(5.51614*24.0*3600.0):
+*FEB2012 2.1e-6                Rn222 = Pb210 ;
+*FEB2012 2.1e-6                Rnwater = ; # TEST
+*ESX PLUME2
+_func_RiemerN2O5()         N2O5 = 2. HNO3                  ;
+*FEB2012 1.0e-12*h2o                Pb210 = ; # FAKE FAKE TO GET RCMISC(9)
+_func_kaero()              HNO3 = NO3_c        ;
+TROE_NO_OP                 OP + NO  + {M}   = NO2     ; A97,J, jofmiss
+TROE_NO2_NO3               NO2 + NO3  = N2O5          ; A97,J
+TROE_N2O5                  N2O5       = NO2 + NO3     ; A97,J
+TROE_NO2_OH                NO2 + OH + {M}  = HNO3   ; A97,J
+TROE_2PAN                  CH3COO2 + NO2 + {M} = PAN           ; A97,J
+TROE_PAN                   PAN  + {M}    = CH3COO2 + NO2      ; A97,J
+TROE_OH_C2H4               C2H4 + OH + {M}  = ETRO2   ;   A97,J
+TROE_OH_C3H6               OH     + C3H6 + {M}   = PRRO2           ;  A97,J
+TROE_2PAN                  MACO3 + NO2 = MPAN    ; MCM
+TROE_PAN                   MPAN = MACO3 + NO2   ; MCM 
+* HONO chemistry to be added (also need photolysis of HONO!)
+TROE_OH_NO                 OH + NO = HONO          ; IUPAC 2002
+*
+*<----- EC ageing ------- -------------------------------------------->
+* ;
+*USEPPM _func_ec_ageing_rate()               EC_f_new = EC_f_age ;
+
+*ECageing                            EC_f_new = EC_f_age ; # to use const ageing rate
+*ECageing                            EC_c_new = EC_c_age ; # to use const ageing rate
+*_func_ec_ageing_rate()              EC_c_new = EC_c_age ;
+* ;
+
+*Wet * <---------- Wet scavenging ------------------------------------->
+* Rates set in My_Aqueous_ml
+* aqrck(ICLFSO2,k)      SO4 =    ;
+* aqrck(ICLFHCHO,k)     HCHO =    ;
+* aqrck(ICLSCAP,k)      SO4 =    ;
+* aqrck(ICLSCAP,k)      AMSU =    ;
+* aqrck(ICLSCAP,k)      AMNI =    ;
+* aqrck(ICLSCAG,k)      HNO3 =    ;
+* 0.5*aqrck(ICLSCAG,k)  H2O2 =    ;
+*Wet 0.5*aqrck(ICLSCAP,k)  OC  =    ;
+*Wet 0.5*aqrck(ICLSCAP,k)  ASOA =   ;
+*Wet 0.5*aqrck(ICLSCAP,k)  SOA2 =   ;
+*Wet 0.5*aqrck(ICLSCAP,k)  SOA3 =   ;
+*Wet 0.5*aqrck(ICLSCAP,k)  SOA4 =   ;
+*Wet 0.5*aqrck(ICLSCAP,k)  SOA5 =   ;
+*Wet 0.5*aqrck(ICLSCAP,k)  SOA6 =   ;
+*Wet 0.5*aqrck(ICLSCAP,k)  SOA7 =   ;
+*Wet 0.5*aqrck(ICLSCAP,k)  SOA8 =   ;
+*Wet 0.5*aqrck(ICLSCAP,k)  SOA9 =   ;
+*Wet *
+*Wet * <---------- End of Wet scavenging ------------------------------------->
+*
+* <---------- Aerosol reactions (crude....)------------------------------>
+
+1.0e-5                     H2O2 =       ;
+1.0e-5                     CH3O2H =    ;
+*
+*  Photolysis
+*
+*Phux DJ(IDAO3)     O3            = OP             ;   J(4e-4)
+*Phux DJ(IDBO3_O1D)     O3            = OD             ;   J(5e-5)
+*
+DJ(IDO3_O3P)     O3            = OP             ;   J(4e-4)
+DJ(IDO3_O1D)     O3            = OD             ;   J(5e-5)
+DJ(IDNO2)     NO2           = OP  + NO       ;   J(9e-3)
+DJ(IDH2O2)    H2O2          = 2 OH           ;   J(8e-6)
+DJ(IDHNO3)    HNO3          = NO2  + OH      ;   J(8e-7,6e-6)
+DJ(IDHCHO_H)   HCHO          = CO   + 2 HO2   ;   J(3e-5)
+DJ(IDHCHO_H2)   HCHO          = CO   + H2      ;   J(4e-5)
+DJ(IDCH3CHO)  CH3CHO        = CH3O2 + HO2 + CO ; J(6e-6)  
+* Not in Joffen's? DJ(13)  NO3  = NO    ;
+* Added
+* RobCOn DJ(IDANO3)     NO3           = NO2  + OP      ;   J(3e-1)
+* RobCOn DJ(IDBNO3)     NO3           = NO2  + OP      ;   J(3e-1)
+DJ(IDNO3)     NO3           = NO2  + OP      ;   J(3e-1)
+*MCM DJ(IDN2O5)    N2O5          = NO2  + NO3     ;   J(5e-5)
+DJ(IDCH3O2H)  CH3O2H        = HCHO + OH + HO2 ;  J(6e-6)
+DJ(IDCHOCHO)  GLYOX         = 1.9 CO + 0.1 HCHO + 0.5 HO2 ; #From MCM, see run_kpp_constants
+DJ(IDRCOCHO)  MGLYOX        = CH3COO2 + CO + HO2 ; 
+DJ(IDCH3O2H)  C2H5OOH       = HO2 + CH3CHO + OH    ;
+DJ(IDCH3O2H)  ETRO2H        = HO2 + OH + 1.56 HCHO + 0.22 CH3CHO    ;
+DJ(IDCH3O2H)  BURO2H        = OH + 0.65 HO2 + 0.65 MEK + 0.35 CH3CHO + 0.35 C2H5O2    ;
+DJ(IDCH3O2H)  PRRO2H        = CH3CHO + HCHO + HO2    ;
+DJ(IDCH3O2H)  MEKO2H        = CH3CHO + CH3COO2 + OH    ;
+DJ(IDMEK)  MEK           = CH3COO2 + C2H5O2    ;   Joffen's CH3COX = CH3COCH2CH3
+*ESX DJ(IDCH3COX)  MEK           = CH3COO2 + C2H5O2    ;   Joffen's CH3COX = CH3COCH2CH3
+DJ(IDCH3O2H)  CH3COO2H      = CH3O2 + OH    ;
+DJ(IDCH3O2H)  OXYO2H        = OH + MGLYOX + MAL + HO2    ;
+DJ(IDCH3O2H)  MALO2H        = OH + HO2 + MGLYOX + GLYOX    ;
+* NEED TO ADD HONO photolysis! crb: Use 0.222*J(NO2) as suggested by Garry
+DJ(IDNO2)*0.222   HONO           = OH + NO ;
+* Perhaps need to add the following also:
+* ACETOL photolysis (see mcm)
+* MACROOH photolysis (2 paths see mcm)
+* MACO3H photolysis (see mcm)
+*
+* Emissions
+* Note multiplication factors below are okay, as long as they are
+* placed at the beginning.(as (k) is tagged onto the end of the
+* of the rate term. See beta*rcemis_SO2
+*
+emisfiles:sox,nox,co,voc,nh3
+*
+rcemis:NO                           = NO    ;
+rcemis:NO2                          = NO2    ;
+rcemis:SO2                          = SO2    ;
+rcemis:SO4                          = SO4    ;
+rcemis:CO                           = CO    ;
+rcemis:NH3                          = NH3 ;
+rcemis:C2H6                         = C2H6    ;
+rcemis:NC4H10                       = NC4H10    ;
+rcemis:C2H4                         = C2H4    ;
+rcemis:C3H6                         = C3H6    ;
+rcemis:OXYL                         = OXYL    ;
+rcemis:HCHO                         = HCHO    ;
+rcemis:CH3CHO                       = CH3CHO    ;
+rcemis:MEK                          = MEK    ;
+rcemis:C2H5OH                       = C2H5OH    ;
+rcemis:CH3OH                        = CH3OH    ;
+rcemis:GLYOX                       = GLYOX    ;
+rcemis:MGLYOX                      = MGLYOX    ;
+rcemis:C5H8                        = C5H8    ; # Anthropogenic isoprene
+*
+* <----------- Biogenic/natural emissions ----------------------------->
+*
+*emisextra:C5H8,APINENE,NO
+rcbio:C5H8                       = C5H8    ;
+rcbio:APINENE                    = APINENE ;
+rcbio:NO                         = NO ;
+*FEB2012 rc_Rn222(k)                                = Rn222    ;
+*FEB2012 rc_Rnwater(k)                             = Rnwater    ;
+*
+* Add ammonia
+* FUTURE rcnh3(k)                          = NH3 ;  # hbNH3
+*

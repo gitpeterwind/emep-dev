@@ -1,0 +1,237 @@
+!put here only machine specific data. 
+&Machine_config
+!DataDir will attempted replaced by (in this order):
+  DataPath(1) = '/global/work/mifapw/emep/Data',  !Stallo
+  DataPath(2) = '/home/metno/mifapw/work/Data',  !Vilje
+&end
+!-------- Experiment Description
+!  EXP_NAME     one word description, e.g. EMEPSTD,EMEP2010,TFMM
+!  MY_OUTPUTS   hourly outputs, e.g. EMEPSTD,TFMM,EMERGENCY
+!  IC/BC        see namelists Nest_config,ExternalBICs_config,ExternalBICs_bc
+!------------------------------
+&ModelConstants_config
+  meteo                 = './meteoYYYYMMDD.nc',
+  EXP_NAME              = 'ANALYSIS',
+  MY_OUTPUTS            = 'MACC_ENS',
+!------------------------------
+  USES%testname         = 'ANALYSIS',
+  USES%FOREST_FIRES     = T,
+  USES%EMISSTACKS       = F,         ! Reads PointSources file
+  USES%DEGREEDAY_FACTORS= F,
+  USES%PlumeMethod      = 'PVDI',    ! default PVDI, possible: NILU, ASMI, PVDI
+!------------------------------
+  USE_SOILWATER         = F,          ! Uses SMI from meteo data
+  USE_CONVECTION        = F,
+  USE_SEASALT           = T,
+  USE_AIRCRAFT_EMIS     = T,          ! Needs global file, see manual
+  USE_LIGHTNING_EMIS    = T,          ! 
+!------------------------------
+  USE_EURO_SOILNOX      = F,          ! diff for global + Euro runs
+  EURO_SOILNOX_DEPSCALE = 1.0,        ! Scale, default 1  (see ModelConstants_ml)
+  USE_GLOBAL_SOILNOX    = F,          ! diff for global + Euro runs
+!------------------------------
+  USE_POLLEN            = F,          ! EXPERIMENTAL. Only works if start Jan 1
+  USE_ROADDUST          = F,          ! Only EECCA?
+  USE_DUST              = F,          ! Only EECCA?
+  NETCDF_DEFLATE_LEVEL  = 4,          ! 1-9 GZIP compress, 0 no compress, -1 nc3
+!-------- Can switch on INERIS-type degreeday stuff
+  INERIS_SNAP1          = F,          ! Used for TFMM runs
+  INERIS_SNAP2          = F,          ! Used for TFMM runs
+!------------------------------
+  EmisDir               ='DataDir/Emis_TNO7_MACCIII',
+  emis_inputlist(1)%name='EmisDir/Emis_TNO7_MACCIII_$emisyear.nc',
+!------------------------------
+  SELECT_LEVELS_HOURLY  = T,          ! hourly output flag Also for FORECAST, 3DPROFILES
+  FORECAST              = T,
+  USE_ASH               = T,          ! Used for FORECASTs and Status 2010
+  ANALYSIS              = T,          ! EXPERIMENTAL: 3DVar data assimilation
+  USE_AOD               = T,          ! Used for FORECASTs usually
+  BGND_CH4              = -1,         ! Reset CH4 (use ppb). (Use -1 for defaults)
+!--- 'fake' vegetation for ozone POD calculations
+  FLUX_VEGS = 'IAM_CR','IAM_DF','IAM_MF', ! do not need all array elements
+            ! 'CCE_SPRUCE','CCE_BEECH','ACE_PINE','ACE_OAK','ACE_BEECH',
+            ! 'NEUR_SPRUCE','NEUR_BIRCH','MED_OAK','MED_PINE','MED_BEECH'
+&end
+&Fire_config
+  need_file=F,need_date=F,need_poll=F,! continue if don't find file,time record,pollutant
+  GFED_PATTERN='$GFED',#GFED
+  FINN_PATTERN='$FINN',#FINN
+  GFAS_PATTERN='$GFAS',#GFAS
+&end
+&Nest_config
+!-------- Nesting MODEs
+! Produce netcdf dump of concentrations if wanted, or init. run from such a file
+!   0=do nothing; 1=write; 2=read; 3=read and write;
+!  10=write at end of run; 11=read at start; 12=read at start and write at end (BIC)
+!------------------------------
+  MODE             = 0,
+!-------- File name templates for Nest I/O
+  template_read_3D = '$inic',#inic            ! YYYY, YY, MM, DD, hh strings
+  template_read_BC = '$INBC',#inbc            ! will be replaced with numbers
+  template_write   = '$dump',#dump            ! in Nest_ml
+  native_grid_3D = T,                         ! restart file on the same grid
+  native_grid_BC = F,                         ! nest-bc file on a different grid
+!-------- CWF dump/restart
+! WRITE_SPC = 'NO2','O3','SO2','REMPPM25','REMPPM_C', ! reduce output for
+! WRITE_GRP = 'DAOBS','DAUNOBS','PM10','AOD',         ! NMC statistics (3DVar)
+! omit_zero_write= T,                               ! further reduce output
+  FORECAST_NDUMP = 1,                       ! Nr. CWF dump dates
+  outdate        = $outdate,                ! 1st,2nd CWF dump dates
+! outdate(1:4)   = -1,-1,-1,00,0000,        ! everyday at 00:00
+!                  -1,-1,-1,12,0000,        ! everyday at 12:00
+!                  -1,-1,-1,06,0000,        ! everyday at 06:00
+!                  -1,-1,-1,18,0000,        ! everyday at 18:00
+! outdate(1:2)   = -1,-1,01,00,0000,        !  1st of every month at 00:00
+!                  -1,-1,16,00,0000,        ! 16th of every month at 00:00
+! outdate(1:4)   = -1,01,01,00,0000,        ! Jan 1st at 00:00
+!                  -1,04,01,00,0000,        ! Apr 1st at 00:00
+!                  -1,07,01,00,0000,        ! Jul 1st at 00:00
+!                  -1,10,01,00,0000,        ! Oct 1st at 00:00
+&end
+&ExternalBICs_config
+  USE_EXTERNAL_BIC     = T,                   ! .false. to deactivate
+  EXTERNAL_BIC_NAME    = 'MACC_ENS',
+  EXTERNAL_BIC_VERSION = 'MACC_ENS',          ! alias for IFS_MOZ_f7kn|fkya|fnyp
+  TOP_BC               = T,
+  filename_eta         = '$filename_eta',#filename_eta
+&end
+&ExternalBICs_bc
+! BC from IFS-MOZ exp id: f7kn (before 2011-12-01)
+  description='MACC_ENS','IFS_MOZ_f7kn',9,  ! name,version,size
+  map_bc=! emep,external,frac,wanted,found,IXADV,
+    'O3'    ,'O3_VMR_inst'    ,1.0,T,F,-1,
+    'NO'    ,'NO_VMR_inst'    ,1.0,T,F,-1,
+    'NO2'   ,'NO2_VMR_inst'   ,1.0,T,F,-1,
+    'PAN'   ,'PAN_VMR_inst'   ,1.0,T,F,-1,
+    'HNO3'  ,'HNO3_VMR_inst'  ,1.0,T,F,-1,
+    'CO'    ,'CO_VMR_inst'    ,1.0,T,F,-1,
+    'C2H6'  ,'C2H6_VMR_inst'  ,1.0,T,F,-1,
+    'HCHO'  ,'CH2O_VMR_inst'  ,1.0,T,F,-1,
+    'CH3CHO','CH3CHO_VMR_inst',1.0,T,F,-1,
+&end
+&ExternalBICs_bc
+! BC from IFS-MOZ exp id: fkya (2011-12-01..2012-09-03)
+  description='MACC_ENS','IFS_MOZ_fkya',9,  ! name,version,size
+  map_bc=! emep,external,frac,wanted,found,IXADV,
+    'O3'    ,'O3'    ,1.0,T,F,-1,
+    'NO'    ,'NO'    ,1.0,T,F,-1,
+    'NO2'   ,'NO2'   ,1.0,T,F,-1,
+    'PAN'   ,'PAN'   ,1.0,T,F,-1,
+    'HNO3'  ,'HNO3'  ,1.0,T,F,-1,
+    'CO'    ,'CO'    ,1.0,T,F,-1,
+    'C2H6'  ,'C2H6'  ,1.0,T,F,-1,
+    'HCHO'  ,'CH2O'  ,1.0,T,F,-1,
+    'CH3CHO','CH3CHO',1.0,T,F,-1,
+&end
+&ExternalBICs_bc
+! BC from IFS-MOZ exp id: fnyp (2012-09-04..2014-09-30, used 2014-01-15..2014-09-17)
+  description='MACC_ENS','IFS_MOZ_fnyp',12,  ! name,version,size
+  map_bc=! emep,external,frac,wanted,found,IXADV,
+    'O3'    ,'O3'    ,1.0,T,F,-1, ! same as fkya
+    'NO'    ,'NO'    ,1.0,T,F,-1, ! same as fkya
+    'NO2'   ,'NO2'   ,1.0,T,F,-1, ! same as fkya
+    'CH4'   ,'CH4'   ,1.0,T,F,-1,
+    'HNO3'  ,'HNO3'  ,1.0,T,F,-1, ! same as fkya
+    'SO2'   ,'SO2'   ,1.0,T,F,-1, 
+    'CO'    ,'CO'    ,1.0,T,F,-1, ! same as fkya
+    'C5H8'  ,'ISOP'  ,1.0,T,F,-1, 
+    'PAN'   ,'PAN'   ,1.0,T,F,-1, ! same as fkya
+    'HCHO'  ,'CH2O'  ,1.0,T,F,-1, ! same as fkya
+    'C2H6'  ,'C2H6'  ,1.0,T,F,-1, ! same as fkya
+    'CH3CHO','CH3CHO',1.0,T,F,-1, ! not in fnyp, back compat. w/fkya
+&end
+&ExternalBICs_bc
+! BC from C-IFS exp id: g4e2  (from 2014-09-18)
+  description='MACC_ENS','IFS_CMP_g4e2',24,  ! name,version,size
+  map_bc=! emep,external,frac,wanted,found,IXADV,
+    'O3'        ,'go3'    ,1.0,T,F,-1, ! GEMS Ozone
+    'CO'        ,'co'     ,1.0,T,F,-1, ! Carbon monoxide
+    'NO'        ,'no'     ,1.0,T,F,-1, ! Nitrogen monoxide
+    'NO2'       ,'no2'    ,1.0,T,F,-1, ! Nitrogen dioxide
+    'PAN'       ,'pan'    ,1.0,T,F,-1, ! Peroxyacetyl nitrate
+    'HNO3'      ,'hno3'   ,1.0,T,F,-1, ! Nitric acid
+    'HCHO'      ,'hcho'   ,1.0,T,F,-1, ! Formaldehyde
+    'SO2'       ,'so2'    ,1.0,T,F,-1, ! Sulphur dioxide
+    'CH4'       ,'ch4'    ,1.0,T,F,-1, ! Methane
+    'C5H8'      ,'c5h8'   ,1.0,T,F,-1, ! Isoprene
+    'C2H6'      ,'c2h6'   ,1.0,T,F,-1, ! Ethane
+!   'C3H8'      ,'c3h8'        ,1.0,T,F,-1, ! Propane, not in EmChem09soa: do not use
+!   'OH'        ,'oh'          ,1.0,F,F,-1, ! short lived: do not use
+    'SEASALT_F' ,'aermr01',1.0,T,F,-1, ! ss_f: 0.03 - 0.5  um
+    'SEASALT_F' ,'aermr02',1.0,F,F,-1, ! ss_c: 0.5  - 5.0  um
+    'SEASALT_C' ,'aermr02',1.0,T,F,-1, ! ss_c: 0.5  - 5.0  um
+    'SEASALT_C' ,'aermr03',1.0,F,F,-1, ! ss_g: 5.0  - 20   um 
+    'DUST_SAH_F','aermr04',1.0,T,F,-1, ! dd_f: 0.03 - 0.55 um
+    'DUST_SAH_F','aermr05',1.0,T,F,-1, ! dd_c: 0.55 - 0.9  um
+    'DUST_SAH_F','aermr06',.15,T,F,-1, ! dd_g: 0.9  - 20   um
+    'DUST_SAH_C','aermr06',.35,T,F,-1, ! dd_g: 0.9  - 20   um
+    'FFIRE_OM'  ,'aermr07',1.7,F,F,-1, ! Hydrophobic OM: do not use
+    'FFIRE_OM'  ,'aermr08',1.7,F,F,-1, ! Hydrophilic OM: do not use
+    'FFIRE_BC'  ,'aermr09',1.0,F,F,-1, ! Hydrophobic BC: do not use
+    'FFIRE_BC'  ,'aermr10',1.0,F,F,-1, ! Hydrophilic BC: do not use
+    'SO4'       ,'aermr11',1.0,T,F,-1, ! Sulphate
+    'SO2'       ,'aermr12',1.0,F,F,-1, ! SO2 precursor: do not use
+!   '???'       ,'aerlg'  ,1.0,F,F,-1, ! large mode: do not use
+&end
+&ExternalBICs_bc
+! BC for MACC-EVA: IFS-MOZ (MACC-GRG) & IFS-AER (MACC-AER)
+  description='MACC_EVA','EVA_EU_AN',27, ! name,version,size
+  map_bc=! emep,external,frac,wanted,found,IXADV,
+    'O3'        ,'O3'          ,1.0,T,F,-1, ! same as fkya
+    'NO'        ,'NO'          ,1.0,T,F,-1, ! same as fkya
+    'NO2'       ,'NO2'         ,1.0,T,F,-1, ! same as fkya
+    'PAN'       ,'PAN'         ,1.0,T,F,-1, ! same as fkya
+    'HNO3'      ,'HNO3'        ,1.0,T,F,-1, ! same as fkya
+    'CO'        ,'CO'          ,1.0,T,F,-1, ! same as fkya
+    'C2H6'      ,'C2H6'        ,1.0,T,F,-1, ! same as fkya
+    'HCHO'      ,'CH2O'        ,1.0,T,F,-1, ! same as fkya
+    'CH3CHO'    ,'CH3CHO'      ,1.0,T,F,-1, ! same as fkya
+    'CH4'       ,'CH4'         ,1.0,T,F,-1, ! same as fnyp
+    'SO2'       ,'SO2'         ,1.0,T,F,-1, ! same as fnyp 
+    'H2O2'      ,'H2O2'        ,1.0,T,F,-1,
+    'C5H8'      ,'ISOP'        ,1.0,T,F,-1, ! same as fnyp
+    'OH'        ,'OH'          ,1.0,F,F,-1, ! do not use, not ADV
+    'NO2'       ,'HO2NO2'      ,1.0,T,F,-1, 
+    'C3H6'      ,'BIGENE'      ,1.0,T,F,-1, 
+    'NC4H10'    ,'BIGALK'      ,1.0,T,F,-1, 
+    'OXYL'      ,'TOLUENE'     ,1.0,T,F,-1, 
+    'SEASALT_F' ,'SeaSalt_f'   ,1.0,T,F,-1, 
+    'SEASALT_C' ,'SeaSalt_c'   ,1.0,T,F,-1, 
+    'SEASALT_G' ,'SeaSalt_g'   ,1.0,F,F,-1, ! do not use, not EmChem09++
+    'DUST_SAH_F','DesertDust_f',1.0,T,F,-1, 
+    'DUST_SAH_C','DesertDust_c',1.0,T,F,-1, 
+    'DUST_SAH_G','DesertDust_g',1.0,F,F,-1, ! do not use, not EmChem09++
+    'FFIRE_OM'  ,'OC'          ,1.7,F,F,-1, ! do not use
+    'FFIRE_BC'  ,'BC'          ,1.0,F,F,-1, ! do not use
+    'SO4'       ,'SO4'         ,1.0,T,F,-1,
+&end
+&ExternalBICs_bc
+  description='MACC_EVA','EVA_EU_FC',26, ! name,version,size
+  map_bc=! emep,external,frac,wanted,found,IXADV,
+    'O3'        ,'O3'     ,1.0,T,F,-1,
+    'NO'        ,'NO'     ,1.0,T,F,-1, 
+    'NO2'       ,'NO2'    ,1.0,T,F,-1, 
+    'PAN'       ,'PAN'    ,1.0,T,F,-1, 
+    'HNO3'      ,'HNO3'   ,1.0,T,F,-1, ! test MARS
+    'CO'        ,'CO'     ,1.0,T,F,-1,
+    'C2H6'      ,'C2H6'   ,1.0,T,F,-1, 
+    'HCHO'      ,'CH2O'   ,1.0,T,F,-1,
+    'CH4'       ,'CH4'    ,1.0,T,F,-1, 
+    'SO2'       ,'SO2'    ,1.0,T,F,-1, 
+    'C5H8'      ,'ISOP'   ,1.0,T,F,-1,
+    'OH'        ,'OH'     ,1.0,F,F,-1, ! do not use
+    'SEASALT_F' ,'aermr01',1.0,T,F,-1,
+    'SEASALT_F' ,'aermr02',1.0,F,F,-1, ! do not use
+    'SEASALT_C' ,'aermr02',1.0,T,F,-1,
+    'SEASALT_C' ,'aermr03',1.0,F,F,-1, ! do not use
+    'DUST_SAH_F','aermr04',1.0,T,F,-1,
+    'DUST_SAH_F','aermr05',1.0,T,F,-1,
+    'DUST_SAH_F','aermr06',.15,T,F,-1,
+    'DUST_SAH_C','aermr06',.35,T,F,-1,
+    'FFIRE_OM'  ,'aermr07',1.7,F,F,-1, ! do not use
+    'FFIRE_OM'  ,'aermr08',1.7,F,F,-1, ! do not use
+    'FFIRE_BC'  ,'aermr09',1.0,F,F,-1, ! do not use
+    'FFIRE_BC'  ,'aermr10',1.0,F,F,-1, ! do not use
+    'SO4'       ,'aermr11',1.0,T,F,-1, ! test MARS
+    'SO2'       ,'aermr12',1.0,F,F,-1, ! do not use
+&end

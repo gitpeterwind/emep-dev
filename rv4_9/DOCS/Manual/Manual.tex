@@ -1,0 +1,118 @@
+\documentclass[a4paper,12pt]{report}
+\usepackage[dvips]{color}
+\usepackage{lscape}
+\usepackage{color}
+\usepackage{times}
+\usepackage{url}
+\usepackage{rotating}
+\usepackage[pdfborder={0 0 0}]{hyperref}
+\usepackage{breakurl}  %DS added Oct9. Needs to be after hyperref
+\usepackage{parskip}
+\usepackage[margin=2cm]{geometry}
+\usepackage[margin=2cm]{caption}
+\usepackage{etoolbox}
+\usepackage{longtable}
+\usepackage{nicefrac}
+\patchcmd{\quote}{\rightmargin}{\leftmargin 1em \rightmargin}{}{}
+
+\usepackage{ulem}   % added by dave to allow strike-out below
+\newcommand{\QUERY}[1]{{\color{red}{#1}}}
+\newcommand{\NEW}[1]{{\color{blue}{#1}}}
+\newcommand{\DEL}[1]{{\color{red}{\sout{#1}}}}
+\newcommand{\COMMENT}[1]{{\color{magenta}{#1}}}
+
+\usepackage{fancyhdr}
+\usepackage{times}
+\setlength{\headheight}{15pt}
+ 
+\pagestyle{fancyplain}
+\renewcommand{\chaptermark}[1]{\markboth{#1}{}}
+ 
+\lhead{\fancyplain{}{\thepage}}
+\chead{}
+\rhead{\fancyplain{}{\textit{\leftmark}}}
+\lfoot{}
+\cfoot{}
+\rfoot{}
+
+
+
+%\hypersetup{
+%    pdfborder={0 0 0}    % fits the width of the page to the window
+%}
+
+
+%\usepackage[Sonny]{fncychap}
+%\usepackage[Bjarne]{fncychap}
+%\usepackage[Lenny]{fncychap}
+%\usepackage[Glenn]{fncychap}
+%\newcommand{\ug}{$\mu g m^{-3}$}
+%ST
+\newcommand{\degrees}{\ensuremath{^\circ}}
+ \newcommand{\ug}{\ensuremath{\mu \mbox{g m}^{-3}}\,}
+\newcommand{\tug}{$\nicefrac{\mu g}{m^{3}}$}
+\newcommand{\ugN}{\ensuremath{\mu \mbox{g(N) m}^{-3}}}
+\newcommand{\tugN}{$\nicefrac{\mu g(N)}{ m^{3}}$}
+\newcommand{\ugS}{\ensuremath{\mu \mbox{g(S) m}^{-3}}} 
+\newcommand{\tugS}{$\nicefrac{\mu g(S)}{m^{-3}}$}
+
+\newcommand{\mgSl}{\ensuremath{\mbox{mg(S)l}^{-1}}} 
+\newcommand{\tmgSl}{$\nicefrac{mg(S)}{l}$} 
+\newcommand{\mgNl}{\ensuremath{\mbox{mg(N)l}^{-1}}}
+\newcommand{\tmgNl}{$\nicefrac{mg(N)}{l}$} 
+\newcommand{\mgl}{\ensuremath{\mbox{mg l}^{-1}}}
+\newcommand{\tmgl}{$\nicefrac{mg}{l}$} 
+\newcommand{\mgSm}{\ensuremath{\mbox{mg(S)m}^{-2}}}  
+\newcommand{\tmgSm}{$\nicefrac{mg(S)}{m^{2}}$} 
+\newcommand{\mgNm}{\ensuremath{\mbox{mg(N)m}^{-2}}}
+\newcommand{\tmgNm}{$\nicefrac{mg(N)}{m^{2}}$}
+\newcommand{\tmgm}{$\nicefrac{mg}{m^{2}}$}  
+
+%%% I tried using \bv to start a small-tex verbatim section and
+%%% \ev to end this. However, it seems that \end{verbatim} needs to
+%%% to be writtehn explcitly, so I use \ev now to end the small-text.
+%%% Place directly after \end{verbatim}.
+
+%% \newcommand{\bv}{\begin{small}\begin{verbatim}}
+%% \newcommand{\ev}{\end{small}}
+
+\newcommand{\Par}{{\bf Par\_ml}}
+\newcommand{\MyOutputs}{{\bf My\_Outputs\_ml}}
+
+\begin{document}% \sloppy
+%\begin{landscape}
+
+\title{The EMEP/MSC-W Model - User's Guide}
+\date{October 2015}
+\maketitle
+
+\tableofcontents
+\setcounter{page}{0}
+\input{Intro}
+\input{Input}
+\input{Output}
+\input{Subrun}
+
+\input{references}
+
+% More coding comments .....
+%\input{Structure}   %  - same as in cookbook
+%\input{ProgStructure}
+%\input{Domains}
+%\input{Chem}
+%\input{Variable_names}
+%\input{Progrules}
+%\input{CVS}
+%\input{Chem}
+%\input{WetDep}
+%\newpage
+%\input{BCs}
+%\newpage
+%\input{Photolysis}
+%\newpage
+%\input{Advec}
+%\input{Numerics2}
+%\newpage
+
+%\end{landscape}
+\end{document}

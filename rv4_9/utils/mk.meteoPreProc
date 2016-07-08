@@ -1,0 +1,28 @@
+
+# script to compile and run meteoproc (was DegreeDayFactors), to get output files such
+# as HDD18-EECCA-2008.nc
+
+prog=meteoPreProc    # was DegreeDayFactors
+
+#PW 20121105
+#"-Wl,-rpath," gives the libraries to use at runtime.
+ifort -o $prog -O3 -r8 -I/global/apps/netcdf/4.2.1.1/intel/13.0.0/include \
+                       -L/global/apps/netcdf/4.2.1.1/intel/13.0.0/lib \
+                       -Wl,-rpath,/global/apps/netcdf/4.2.1.1/intel/13.0.0/lib \
+                       $prog.f90 -lnetcdf -lnetcdff
+
+#DEBUG 4: ifort -o $prog -shared-intel -r8 -CB -debug-parameters all -traceback -ftrapuv  -I/global/apps/netcdf/4.1.1/include  -L/global/apps/netcdf/4.1.1/lib $1 -lnetcdf -lnetcdff
+
+GRID=EECCA
+met=metdata_EC
+#GRID=EMEP
+#met=metdata
+
+for T in 18;  do
+for year in {2011..2011}  # {2003..2005}   #   ! varies with grid
+do
+  ./$prog $T $year /global/work/mifapw/emep/Data/$GRID/$met/$year $GRID-$year
+ mv HDD${T}-${GRID}-${year}.nc /global/work/mifapw/emep/Data/$GRID/$met/$year
+done
+
+done

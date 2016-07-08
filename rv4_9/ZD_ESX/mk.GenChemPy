@@ -1,0 +1,24 @@
+
+# Run this from the ESX_CanChem directory
+# Usage
+#
+# mk.GenChem ESX_r12    # processes ZCM_ESX_r12 stuff
+# mk.GenChem EmChem09   # processes ZCM_EmChem09stuff
+
+prog=$PWD/D_Misc/GenChem.py
+idir=$PWD/ZCM_$1
+
+if [[ ! -e $idir ]]; then
+   echo "ERROR $idir does not exist"
+   exit
+fi
+
+echo $prog $idir
+
+cd $idir
+$prog
+
+for i in CM_ChemRates.f90 CM_ChemSpecs.f90 CM_Reaction*
+do
+  cp $i ..
+done

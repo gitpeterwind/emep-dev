@@ -1,0 +1,325 @@
+**********************************************************
+* GenIn.reactions for the CB05 chemical mechanism
+**********************************************************
+*
+DJ(IDAO3,k)                              O3 = OP ;
+DJ(IDBO3,k)                              O3 = OD ;
+DJ(IDNO2,k)                              NO2 = NO + OP ;
+DJ(IDH2O2,k)                             H2O2 = 2.000 OH ;
+DJ(IDNO2,k)*0.222                        HONO = OH + NO ;
+DJ(IDACH2O,k)                            HCHO = CO + HO2 + HO2 ;
+DJ(IDBCH2O,k)                            HCHO = CO + H2 ;
+DJ(IDNO3,k)*0.125                        NO3 = NO ;
+DJ(IDNO3,k)*0.875                        NO3 = NO2 + OP ;
+DJ(IDHO2NO2,k)*5.550                     HO2NO2 = 0.610 HO2 + 0.610 NO2 + 0.390 OH + 0.390 NO3 ;
+DJ(IDHNO3,k)*4.854                       HNO3 = OH + NO2 ;
+DJ(IDN2O5,k)                             N2O5 = NO2 + NO3 ;
+DJ(IDHNO3,k)*10.994                      ORGNIT = 1.000 NO2 + 1.000 HO2 + 0.330 HCHO + 0.330 CH3CHO + 0.330 ALDX + -0.660 PAR ;
+DJ(IDCH3O2H,k)                           ROOH = 1.000 OH + 1.000 HO2 + 0.500 CH3CHO + 0.500 ALDX ;
+DJ(IDCH3O2H,k)                           CH3OOH = HCHO + HO2 + OH ;
+DJ(IDCH3CHO,k)                           CH3CHO = 1.000 XO2 + 2.000 HO2 + 1.000 CO + 1.000 HCHO ;
+DJ(IDACETON,k)*0.250                     PAN = CH3COO2 + NO2 ;
+DJ(IDCH3O2H,k)                           PACD = CH3O2 + OH ;
+DJ(IDCH3CHO,k)                           ALDX = CH3O2 + HO2 + CO ;
+DJ(IDACH2O,k)*9.0                        OPEN = CH3COO2 + HO2 + CO ;
+DJ(IDRCOHCO,k)                           CH3COCHO = CH3COO2 + HO2 + CO ;
+DJ(IDBCH2O,k)*0.135*2.0                  ISPD = 0.333 CO + 0.067 CH3CHO + 0.900 HCHO + 0.832 PAR + 1.033 HO2 + 0.700 XO2 + 0.967 CH3COO2 ;
+*DS QUERY DJ(IDACH2O,k)                            PFRM =   ;
+*DS QUERY DJ(IDBCH2O,k)                            PFRM =   ;
+*DS QUERY DJ(IDCH3CHO,k)                           PACT =   ;
+*DS QUERY DJ(IDBCH2O,k)*0.135*2.0                  PACR =   ;
+*DS QUERY DJ(IDBCH2O,k)*0.135*2.0                  SACR =   ;
+6.00e-34*((xt/300.0)**(-2.60))*O2*M      OP = O3 ;
+1.40e-12*exp(-1310*tinv)                 NO + O3 = NO2 ;
+5.50e-12*exp(188*tinv)                   OP + NO2 = NO ;
+KMT02                                    OP + NO2 = NO3 ;
+KMT01                                    OP + NO = NO2 ;
+1.40e-13*exp(-2470*tinv)                 NO2 + O3 = NO3 ;
+3.20e-11*exp(67*tinv)*O2                 OD = OP ;
+1.80e-11*exp(107*tinv)*N2                OD = OP ;
+2.20e-10*h2o                             OD = OH + OH ;
+1.70e-12*exp(-940*tinv)                  OH + O3 = HO2 ;
+2.03e-16*((xt/300.0)**(4.57))*exp(693*tinv) HO2 + O3 = OH ;
+1.80e-11*exp(110*tinv)                   NO + NO3 = 2.000 NO2 ;
+4.50e-14*exp(-1260*tinv)                 NO2 + NO3 = NO + NO2 ;
+KMT03                                    NO2 + NO3 = N2O5 ;
+2.50e-22*h2o+1.80D-39*h2o*h2o            N2O5 = 2.000 HNO3 ;
+KMT04                                    N2O5 = NO2 + NO3 ;
+3.30e-39*exp(530*tinv)*O2                NO + NO = 2.000 NO2 ;
+5.00e-40*h2o                             NO + NO2 = 2.000 HONO ;
+KMT07                                    OH + NO = HONO ;
+2.50e-12*exp(260*tinv)                   OH + HONO = NO2 ;
+1.00e-20                                 HONO + HONO = NO + NO2 ;
+KMT08                                    OH + NO2 = HNO3 ;
+KMT11                                    OH + HNO3 = NO3 ;
+3.60e-12*exp(270*tinv)                   HO2 + NO = OH + NO2 ;
+KMT09                                    HO2 + NO2 = HO2NO2 ;
+KMT10                                    HO2NO2 = HO2 + NO2 ;
+3.20e-13*exp(690*tinv)                   OH + HO2NO2 = NO2 ;
+2.20e-13*exp(600*tinv)*KMT06             HO2 + HO2 = H2O2 ;
+1.90e-33*exp(980*tinv)*KMT06*M           HO2 + HO2 = H2O2 ;
+2.90e-12*exp(-160*tinv)                  OH + H2O2 = HO2 ;
+1.10e-10                                 OD + H2 = OH + HO2 ;
+7.70e-12*exp(-2100*tinv)                 OH + H2 = HO2 ;
+2.20e-11*exp(120*tinv)                   OH + OP = HO2 ;
+4.20e-12*exp(-240*tinv)                  OH + OH = OP ;
+KMT20                                    OH + OH = H2O2 ;
+4.80e-11*exp(250*tinv)                   OH + HO2 =   ;
+3.00e-11*exp(200*tinv)                   HO2 + OP = OH ;
+1.40e-12*exp(-2000*tinv)                 H2O2 + OP = OH + HO2 ;
+1.00e-11                                 NO3 + OP = NO2 ;
+2.00e-11                                 NO3 + OH = HO2 + NO2 ;
+4.00e-12                                 NO3 + HO2 = HNO3 ;
+1.00e-17                                 NO3 + O3 = NO2 ;
+8.50e-13*exp(-2450*tinv)                 NO3 + NO3 = 2.000 NO2 ;
+KRO2NO                                   XO2 + NO = NO2 ;
+KRO2NO                                   XO2N + NO = ORGNIT ;
+7.50e-13*exp(700*tinv)                   XO2 + HO2 = ROOH ;
+7.50e-13*exp(700*tinv)                   XO2N + HO2 = ROOH ;
+6.80e-14                                 XO2 + XO2 =   ;
+6.80e-14                                 XO2N + XO2N =   ;
+6.80e-14                                 XO2 + XO2N =   ;
+5.90e-13*exp(-360*tinv)                  ORGNIT + OH = 1.000 HNO3 + 1.000 HO2 + 0.330 HCHO + 0.330 CH3CHO + 0.330 ALDX + -0.660 PAR ;
+KMT21                                    ROOH + OH = 1.000 XO2 + 0.500 CH3CHO + 0.500 ALDX ;
+KMT05                                    OH + CO = HO2 ;
+1.85e-12*exp(-1690*tinv)                 OH + CH4 = CH3O2 ;
+2.30e-12*exp(360*tinv)                   CH3O2 + NO = HCHO + HO2 + NO2 ;
+3.80e-13*exp(780*tinv)                   CH3O2 + HO2 = CH3OOH ;
+1.00e-13*exp(365*tinv)                   CH3O2 + CH3O2 = 1.370 HCHO + 0.740 HO2 + 0.630 MEOH ;
+KMT21                                    CH3OOH + OH = HCHO + HO2 + NO2 ;
+2.85e-12*exp(-345*tinv)                  MEOH + OH = HCHO + HO2 ;
+5.40e-12*exp(135*tinv)                   OH + HCHO = HO2 + CO ;
+3.40e-11*exp(-1600*tinv)                 OP + HCHO = OH + HO2 + CO ;
+5.60e-16                                 NO3 + HCHO = HO2 + CO + HNO3 ;
+9.70e-15*exp(625*tinv)                   HO2 + HCHO = HCO3 ;
+2.40e+12*exp(-7000*tinv)                 HCO3 = HCHO + HO2 ;
+5.60e-12                                 HCO3 + NO = FACD + HO2 + NO2 ;
+5.6e-15*exp(2300*tinv)                   HCO3 + HO2 = CH3OOH ;
+4.00e-13                                 FACD + OH = HO2 ;
+1.80e-11*exp(-1100*tinv)                 OP + CH3CHO = CH3COO2 + OH ;
+5.60e-12*exp(270*tinv)                   OH + CH3CHO = CH3COO2 ;
+1.40e-12*exp(-1900*tinv)                 NO3 + CH3CHO = CH3COO2 + HNO3 ;
+8.10e-12*exp(270*tinv)                   CH3COO2 + NO = NO2 + XO2 + HCHO + HO2 ;
+KFPAN                                    CH3COO2 + NO2 = PAN ;
+KBPAN                                    PAN = CH3COO2 + NO2 ;
+4.30e-13*exp(1040*tinv)                  CH3COO2 + HO2 = 0.800 PACD + 0.200 AACD + 0.200 O3 ;
+2.00e-12*exp(500*tinv)                   CH3COO2 + CH3O2 = 0.900 CH3O2 + 0.900 HO2 + 1.000 HCHO + 0.100 AACD ;
+4.40e-13*exp(1070*tinv)                  CH3COO2 + XO2 = 0.900 CH3O2 + 0.100 AACD ;
+2.90e-12*exp(500*tinv)                   CH3COO2 + CH3COO2 = 2.000 XO2 + 2.000 HCHO + 2.000 HO2 ;
+4.00e-13*exp(200*tinv)                   PACD + OH = CH3COO2 ;
+4.00e-13*exp(200*tinv)                   AACD + OH = CH3O2 ;
+1.30e-11*exp(-870*tinv)                  OP + ALDX = CXO3 + OH ;
+5.10e-12*exp(405*tinv)                   OH + ALDX = CXO3 ;
+6.50e-15                                 NO3 + ALDX = CXO3 + HNO3 ;
+6.70e-12*exp(340*tinv)                   CXO3 + NO = CH3CHO + XO2 + HO2 + NO2 ;
+KFPAN                                    CXO3 + NO2 = PANX ;
+KBPAN                                    PANX = CXO3 + NO2 ;
+3.00e-13                                 PANX + OH = CH3CHO + NO2 ;
+4.30e-13*exp(1040*tinv)                  CXO3 + HO2 = 0.800 PACD + 0.200 AACD + 0.200 O3 ;
+2.00e-12*exp(500*tinv)                   CXO3 + CH3O2 = 0.900 CH3CHO + 0.900 XO2 + 1.000 HO2 + 0.100 AACD + 0.100 HCHO ;
+4.40e-13*exp(1070*tinv)                  CXO3 + XO2 = 0.900 CH3CHO + 0.100 AACD ;
+2.90e-12*exp(500*tinv)                   CXO3 + CXO3 = 2.000 CH3CHO + 2.000 XO2 + 2.000 HO2 ;
+2.90e-12*exp(500*tinv)                   CXO3 + CH3COO2 = CH3O2 + XO2 + HO2 + CH3CHO ;
+8.10e-13                                 OH + PAR = 0.870 XO2 + 0.130 XO2N + 0.110 HO2 + 0.060 CH3CHO + 0.760 ROR + -0.110 PAR + 0.050 ALDX ;
+1.00e+15*exp(-8000*tinv)                 ROR = 0.960 XO2 + 0.600 CH3CHO + 0.940 HO2 + -2.100 PAR + 0.040 XO2N + 0.020 ROR + 0.500 ALDX ;
+1.60e+03                                 ROR = HO2 ;
+1.50e-11                                 ROR + NO2 = ORGNIT ;
+1.10e-11*exp(-280*tinv)                  OP + OLE = 0.200 CH3CHO + 0.300 ALDX + 0.300 HO2 + 0.200 XO2 + 0.200 CO + 0.200 HCHO + 0.010 XO2N + 0.200 PAR + 0.100 OH ;
+3.20e-11                                 OH + OLE = 0.800 HCHO + 0.330 CH3CHO + 0.620 ALDX + 0.800 XO2 + 0.950 HO2 + -0.700 PAR ;
+6.50e-15*exp(-1900*tinv)                 O3 + OLE = 0.180 CH3CHO + 0.740 HCHO + 0.320 ALDX + 0.220 XO2 + 0.100 OH + 0.330 CO + 0.440 HO2 + -1.000 PAR ;
+7.00e-13*exp(-2160*tinv)                 NO3 + OLE = 1.000 NO2 + 1.000 HCHO + 0.910 XO2 + 0.090 XO2N + 0.560 ALDX + 0.350 CH3CHO + -1.000 PAR ;
+1.04e-11*exp(-792*tinv)                  OP + C2H4 = 1.000 HCHO + 1.700 HO2 + 1.000 CO + 0.700 XO2 + 0.300 OH ;
+KMT15                                    OH + C2H4 = 1.000 XO2 + 1.560 HCHO + 1.000 HO2 + 0.220 ALDX ;
+9.10e-15*exp(-2580*tinv)                 O3 + C2H4 = 1.000 HCHO + 0.630 CO + 0.130 HO2 + 0.130 OH + 0.370 FACD ;
+3.30e-12*exp(-2880*tinv)                 NO3 + C2H4 = 1.000 NO2 + 1.000 XO2 + 2.000 HCHO ;
+2.30e-11                                 OP + IOLE = 1.240 CH3CHO + 0.660 ALDX + 0.100 HO2 + 0.100 XO2 + 0.100 CO + 0.100 PAR ;
+1.10e-11*exp(550*tinv)                   OH + IOLE = 1.300 CH3CHO + 0.700 ALDX + 1.000 HO2 + 1.000 XO2 ;
+8.40e-15*exp(-1100*tinv)                 O3 + IOLE = 0.650 CH3CHO + 0.350 ALDX + 0.250 HCHO + 0.250 CO + 0.500 OP + 0.500 OH + 0.500 HO2 ;
+9.60e-13*exp(-270*tinv)                  NO3 + IOLE = 1.180 CH3CHO + 0.640 ALDX + 1.000 HO2 + 1.000 NO2 ;
+1.81e-12*exp(338*tinv)*YG(3)             OH + TOLUENE = 0.080 XO2 + 0.440 HO2 + 0.360 CRES + 0.560 TO2 ;
+1.81e-12*exp(338*tinv)*YA(3)             OH + TOLUENE = AROMAER ;
+8.10e-12                                 TO2 + NO = 0.900 NO2 + 0.900 HO2 + 0.900 OPEN + 0.100 ORGNIT ;
+4.20e+00                                 TO2 = CRES + HO2 ;
+4.10e-11                                 OH + CRES = 0.400 CRO + 0.600 XO2 + 0.600 HO2 + 0.300 OPEN ;
+2.20e-11                                 NO3 + CRES = CRO + NO3 ;
+1.40e-11                                 CRO + NO2 = ORGNIT ;
+5.50e-12                                 CRO + HO2 = CRES ;
+5.40e-17*exp(-500*tinv)                  O3 + OPEN = 0.030 ALDX + 0.620 CH3COO2 + 0.700 HCHO + 0.030 XO2 + 0.690 CO + 0.080 OH + 0.760 HO2 + 0.200 CH3COCHO ;
+1.36e-11*YG(4)                           OH + XYLENE = 0.700 HO2 + 0.500 XO2 + 1.100 PAR + 0.200 CRES + 0.300 TO2 + 0.800 CH3COCHO ;
+1.36e-11*YA(4)                           OH + XYLENE = AROMAER ;
+1.50e-11                                 OH + CH3COCHO = XO2 + CH3COO2 ;
+3.60e-11                                 OP + C5H8 = 0.750 ISPD + 0.750 HCHO + 0.250 XO2 + 0.250 HO2 + 0.250 CXO3 + 0.250 PAR ;
+2.70e-11*exp(390*tinv)*YG(18)            OH + C5H8 = 0.912 ISPD + 0.629 HCHO + 0.991 XO2 + 0.912 HO2 + 0.088 XO2N ;
+2.70e-11*exp(390*tinv)*YA(18)            OH + C5H8 = BIOAER ;
+1.03e-14*exp(-1995*tinv)*YG(18)          O3 + C5H8 = 0.650 ISPD + 0.600 HCHO + 0.200 XO2 + 0.066 HO2 + 0.266 OH + 0.200 CXO3 + 0.150 ALDX + 0.350 PAR + 0.066 CO ;
+1.03e-14*exp(-1995*tinv)*YA(18)          O3 + C5H8 = BIOAER ;
+3.15e-12*exp(-450*tinv)*YG(18)           NO3 + C5H8 = 0.200 ISPD + 0.800 ORGNIT + 1.000 XO2 + 0.800 HO2 + 0.200 NO2 + 0.800 ALDX + 2.400 PAR ;
+3.15e-12*exp(-450*tinv)*YA(18)           NO3 + C5H8 = BIOAER ;
+3.36e-11                                 OH + ISPD = 1.565 PAR + 0.167 HCHO + 0.713 XO2 + 0.503 HO2 + 0.334 CO + 0.168 CH3COCHO + 0.252 CH3CHO + 0.210 CH3COO2 + 0.250 CXO3 ;
+7.11e-18                                 O3 + ISPD = 0.114 CH3COO2 + 0.150 HCHO + 0.850 CH3COCHO + 0.154 HO2 + 0.268 OH + 0.064 XO2 ;
+1.00e-15                                 NO3 + ISPD = 0.357 ALDX + 0.282 HCHO + 1.282 PAR + 0.952 HO2 + 0.643 CO + 0.850 ORGNIT + 0.075 CXO3 + 0.075 XO2 + 0.150 HNO3 ;
+3.60e-11                                 OP + TERP = 0.150 ALDX + 5.120 PAR ;
+1.20e-11*exp(440*tinv)*YG(1)             OH + TERP = 0.750 HO2 + 1.250 XO2 + 0.250 XO2N + 0.280 HCHO + 1.660 PAR + 0.470 ALDX ;
+1.20e-11*exp(440*tinv)*YA(1)             OH + TERP = BIOAER ;
+6.30e-16*exp(-580*tinv)*YG(1)            O3 + TERP = 0.570 OH + 0.070 HO2 + 0.760 XO2 + 0.180 XO2N + 0.240 HCHO + 0.001 CO + 7.000 PAR + 0.210 ALDX + 0.390 CXO3 ;
+6.30e-16*exp(-580*tinv)*YA(1)            O3 + TERP = BIOAER ;
+1.20e-12*exp(490*tinv)*YG(1)             NO3 + TERP = 0.470 NO2 + 0.280 HO2 + 1.030 XO2 + 0.250 XO2N + 0.470 ALDX + 0.530 ORGNIT ;
+1.20e-12*exp(490*tinv)*YA(1)             NO3 + TERP = BIOAER ;
+*DAVE KMT12                                    OH + SO2 = SO4 + HO2 ;
+3.00e-12*exp(20*tinv)                    OH + C2H5OH = 1.000 HO2 + 0.900 CH3CHO + 0.050 ALDX + 0.100 HCHO + 0.100 XO2N ;
+6.90e-12*exp(-1000*tinv)                 OH + C2H6 = 0.991 CH3CHO + 0.991 XO2 + 0.009 XO2N + 1.000 HO2 ;
+1.50e-19                                 NO2 + C5H8 = 0.200 ISPD + 0.800 ORGNIT + 1.000 XO2 + 0.800 HO2 + 0.200 NO + 0.800 ALDX + 2.400 PAR ;
+*DS QUERY 5.40e-12*exp(135*tinv)                   PFRM + OH = OH ;
+*DS QUERY 5.60e-16                                 PFRM + NO3 = NO3 ;
+*DS QUERY 3.40e-11*exp(-1600*tinv)                 PFRM + OP = OP ;
+*DS QUERY 4.40e-12*exp(365*tinv)                   PACT + OH = OH ;
+*DS QUERY KNO3AL                                   PACT + NO3 = NO3 ;
+*DS QUERY 1.80e-11*exp(-1100*tinv)                 PACT + OP = OP ;
+*DS QUERY 1.48e-11*exp(448*tinv)                   BUTD + OH = OH + SACR ;
+*DS QUERY 1.34e-14*exp(-2283*tinv)                 BUTD + O3 = O3 + SACR ;
+*DS QUERY 1.03e-13                                 BUTD + NO3 = NO3 + SACR ;
+*DS QUERY 3.99e-12*((xt/298.0)**1.45)              BUTD + OP = OP + SACR ;
+*DS QUERY 2.00e-11                                 PACR + OH = OH ;
+*DS QUERY 2.61e-19                                 PACR + O3 = O3 ;
+*DS QUERY 1.71e-11*exp(-3131*tinv)                 PACR + NO3 = NO3 ;
+*DS QUERY 2.00e-11                                 SACR + OH = OH ;
+*DS QUERY 2.61e-19                                 SACR + O3 = O3 ;
+*DS QUERY 1.71e-11*exp(-3131*tinv)                 SACR + NO3 = NO3 ;
+*DS QUERY 1.81e-12*exp(338*tinv)                   TOLU + OH = OH ;
+*DS QUERY 2.31e-11                                 MXYL + OH = OH ;
+*DS QUERY 1.36e-11                                 OXYL + OH = OH ;
+*DS QUERY 1.43e-11                                 PXYL + OH = OH ;
+*DS QUERY 1.20e-11*exp(440*tinv)                   APINENE + OH = OH ;
+*DS QUERY 6.30e-16*exp(-580*tinv)                  APINENE + O3 = O3 ;
+*DS QUERY 1.20e-12*exp(490*tinv)                   APINENE + NO3 = NO3 ;
+*DS QUERY 2.79e-11                                 APINENE + OP = OP ;
+*DS QUERY 2.38e-11*exp(357*tinv)                   BPINENE + OH = OH ;
+*DS QUERY 2.51e-12                                 BPINENE + O3 = O3 ;
+*DS QUERY 1.50e-17                                 BPINENE + NO3 = NO3 ;
+*DS QUERY 2.81e-11                                 BPINENE + OP = OP ;
+* 5.00e-05                                 TRACER =   ;
+* 1.00e-04                                 AROMAER = pSOA ;
+* 1.00e-04                                 BIOAER = pSOA ;
+* 1.55e-11                                 OH + BIOAER =   ;
+1.00e-05                                 H2O2 =   ;
+1.00e-05                                 CH3OOH =   ;
+6.00e-06                                 ORGNIT = NO3_c ;
+*
+* Emissions
+emisfiles:sox,nox,co,voc,nh3
+*
+rcemis:NO                                = NO ;
+rcemis:CO                                = CO ;
+*DAVE (1.0-beta)*rcemis(SO2,k)                 = SO2 ;
+rcemis:SO2                    = SO2 ;
+rcemis:SO4                    = SO4 ;
+rcemis:HCHO                              = HCHO ;
+rcemis:CH3CHO                            = CH3CHO ;
+rcemis:ALDX                              = ALDX ;
+rcemis:C2H5OH                            = C2H5OH ;
+* rcemis:CH4                               = CH4 ;
+rcemis:MEOH                              = MEOH ;
+rcemis:C2H6                              = C2H6 ;
+rcemis:PAR                               = PAR ;
+rcemis:C2H4                              = C2H4 ;
+rcemis:OLE                               = OLE ;
+rcemis:IOLE                              = IOLE ;
+rcemis:C5H8                              = C5H8 ;
+rcemis:TERP                              = TERP ;
+rcemis:TOLUENE                           = TOLUENE ;
+rcemis:XYLENE                            = XYLENE ;
+rcemis:NH3                               = NH3 ;
+*
+* <----------- Biogenic/natural emissions ----------------------------->
+*
+rcbio(BIO_ISOP,k)                       = C5H8    ;
+* rcbio(BIO_TERP,k)                       = TERP ;
+rcbio(BIO_SOILNO,k)                     = NO ;
+* ISOTOPES rc_Rn222(k)                                = Rn222    ;
+* 
+* Deposition
+* - dry deposition
+*
+*DRY_NO2                                  NO2 = ;
+*DRY_O3                                   O3 = ;
+*DRY_O3                                   O3_REG = ;
+*DRY_H2O2                                 H2O2 = ;
+*DRY_HNO3                                 HNO3 = ;
+*DRY_SO2                                  SO2 = ;
+*DRY_HCHO                                 HCHO = ;
+*DRY_PAN                                  PAN = ;
+*DRY_PAN                                  PANX = ;
+*DRY_ROOH                                 CH3OOH = ;
+*DRY_ACID                                 FACD = ;
+*DRY_ROOH                                 ROOH = ;
+*DRY_ACID                                 AACD = ;
+*DRY_ACID                                 PACD = ;
+*DRY_PAN                                  ORGNIT = ;
+*DRY_NH3                                  NH3 = ;
+**DRY_HCL                                  HCL = ;
+*DRY_FIN                                  SO4 = ;
+*DRY_FIN                                  NH4_f = ;
+*DRY_FIN                                  aSO4 = ;
+*DRY_FIN                                  NO3_f = ;
+**DAVE DRY_FIN                                  NO3_c = ;
+*DRY_COA                                  NO3_c = ;
+*DRY_COA                                  SSco = ;
+*DRY_FIN                                  pEC = ;
+*DRY_FIN                                  pOC = ;
+*DRY_FIN                                  pSOA = ;
+*DRY_COA                                  pMIN = ;
+*DRY_COA                                  pOTH = ;
+**
+* - wet deposition
+*
+*WET_H2O2                                 H2O2 = ;
+*WET_SO2                                  HNO3 = ;
+*WET_SO4                                  SO2 = ;
+*WET_HCHO                                 HCHO = ;
+*WET_SO2                                  CH3OOH = ;
+*WET_ACID                                 FACD = ;
+*WET_SO2                                  ROOH = ;
+*WET_ACID                                 AACD = ;
+*WET_ACID                                 PACD = ;
+*WET_HCHO                                 PFRM = ;
+*WET_NH3                                  NH3 = ;
+*WET_HCL                                  HCL = ;
+*WET_SO4                                  SO4 = ;
+*WET_NH4_f                                 NH4_f = ;
+*WET_SO4                                  aSO4 = ;
+*WET_NO3_f                                 NO3_f = ;
+*WET_NO3_c                                 NO3_c = ;
+*WET_SSCO                                 SSco = ;
+*
+*----- Processes involving PM2.5 and PM Coarse ------------- ;
+* Emissions
+*
+*rcemis(PPM25,k)                          = PPM25 ;
+*rcemis(PPMCO,k)                          = PPMCO ;
+*
+*
+*----- Aqueous-phase Sulphur Chemistry---------------------- ;
+*
+aqrck(ICLOHSO2,k)*2.00e-12               OH + SO2 = HO2 + SO4 ;
+aqrck(ICLRC1,k)                          SO2 + H2O2 = SO4 ;
+aqrck(ICLRC2,k)                          SO2 + O3 = SO4   ; 
+aqrck(ICLRC3,k)                          SO2 + {Fe} = SO4   ; 
+*
+*----- Isotope Processes ----------------------------------- ;
+*
+*ISOTOPE rc_Rn222(k)                              = Rn222 ;
+*ISOTOPE 2.1e-6                                   Rn222 = Pb210 ;
+*ISOTOPE 1.0e-12*h2o                              Pb210 = ;
+*
+*----- Uptake Processes ------------------------------------ ;
+*
+_func_RiemerN2O5()                       N2O5 = 2. HNO3 ;
+_func_kaero()                            HNO3 = NO3_c ;
+*
+*----- Aerosol reactions (crude....)------------------------ ;
+*
+* Moved to specific mechanisms
+*
+*1.0e-5                                   H2O2 = ;
+*1.0e-5                                   CH3OOH = ;
+*

@@ -1,0 +1,102 @@
+"* GenIn.species:  List of species.",,,,,,,,,,,,
+"* Give in order desired for twostep scheme, start with short-lived, then move to slower species.",,,,,,,,,,,,
+"* 2nd column (integer) = 1 for advected species, otherwise 0",,,,,,,,,,,,
+"* 3rd column gives chemical forumala - used for mass-balance",,,,,,,,,,,,
+"*Extinc is extinction coefficient for AOD calculations",,,,,,,,,,,,
+"*DRY give CDDEP species (My_DryDep_ml) most appropriate for this species",,,,,,,,,,,,
+"*,,,,,,,,,,,,
+"* *** Important Notes ***:",,,,,,,,,,,,
+"*  1. Use case correctly in 3rd column - secC4H9O2, *not* SECC4H9O2 which would be assigned 5, not 4 carbon atoms.",,,,,,,,,,,,
+"*  2. GenChem uses the 3rd column to calculate masses. If these masses are important use the correct chemical formula!",,,,,,,,,,,,
+"*  (masses not usually needed except for emissions input and if output in ug/m3 or similar wanted).",,,,,,,,,,,,
+"* Masses assigned in 4th column overwrite any calculated from 3rd",,,,,,,,,,,,
+*************************************************************,,,,,,,,,,,,
+"#GROUPED_STYLE - fewer columns than Garry's new-style files",,,,,,,,,,,,
+Spec,adv,forumula,MW,DRY,WET,Extinc,Cstar,DeltaH,Empty,Groups,,!Comments
+OD,0,O,xx,xx,xx,0,0,0,xx,xx,,!
+OP,0,O,xx,xx,xx,0,0,0,xx,xx,,!
+OH,0,OH,xx,xx,xx,0,0,0,xx,xx,,!
+HO2,0,HO2,xx,xx,xx,0,0,0,xx,RO2,,!
+CH3O2,0,CH3O2,xx,xx,xx,0,0,0,xx,RO2,,!
+C2H5O2,0,C2H5O2,xx,xx,xx,0,0,0,xx,RO2,,!
+SECC4H9O2,0,secC4H9O2,xx,xx,xx,0,0,0,xx,RO2,,!
+ISRO2,0,C5H9O2,xx,xx,xx,0,0,0,xx,RO2,,"!( 6 isomers)"
+ETRO2,0,CH2O2CH2OH,xx,xx,xx,0,0,0,xx,RO2,,"!(from ethene ...)"
+PRRO2,0,CH3CHO2CH2OH,xx,xx,xx,0,0,0,xx,RO2,,"!(from propene ...)"
+OXYO2,0,oxyo2,xx,xx,xx,0,0,0,xx,RO2,,!
+MEKO2,0,CH3COCHO2CH3,xx,xx,xx,0,0,0,xx,RO2,,"!(from MEK)"
+MALO2,0,CH3COCH(OH)CH(O2)CHO,xx,xx,xx,0,0,0,xx,RO2,,!
+MVKO2,0,HOCH2CH(OO)C(CH3)=O,xx,xx,xx,0,0,0,xx,RO2,,"!(also OOCH2CH(OH)C(CH3)=CH2 - see P&S"
+MACRO2,0,O=CHC(O2)(CH3)CH2OH,xx,xx,xx,0,0,0,xx,RO2,,"!(from macr degredation; from MCM)"
+MACO3,0,CH2C(CH3)C(=O)O2,xx,xx,xx,0,0,0,xx,RO2,,"!(from macr degredation; from MCM)"
+TERPPeroxy,0,terpperoxy,xx,xx,xx,0,0,0,xx,RO2,,"!From terpene degradation"
+O3,1,O3,xx,O3,xx,0,0,0,xx,OX;daObs,,!
+NO,1,NO,xx,xx,xx,0,0,0,xx,NOX;OXN,,!
+NO2,1,NO2,xx,NO2,xx,0,0,0,xx,NOX;OX;OXN;daObs,,!
+SHIPNOX,1,NO2,xx,NO2,xx,0,0,0,xx,NOX;OX;OXN,,!
+PAN,1,CH3COO2NO2,xx,PAN,xx,0,0,0,xx,OXN,,!
+MPAN,1,CH2CH(CH3)C(=0)O2NO2,xx,PAN,xx,0,0,0,xx,OXN,,"!( from macr degredation)"
+NO3,1,NO3,xx,xx,xx,0,0,0,xx,OXN,,!
+N2O5,1,N2O5,xx,xx,xx,0,0,0,xx,OXN,,!
+ISONO3,1,isono3,xx,xx,xx,0,0,0,xx,OXN,,"!isoprene-NO3 adduct"
+HNO3,1,HNO3,xx,HNO3,HNO3,0,0,0,xx,OXN,,!
+HONO,1,HONO,xx,HNO2,HNO3,0,0,0,xx,OXN,,"!Wet-dep rate might be too high"
+CH3COO2,1,CH3COO2,xx,xx,xx,0,0,0,xx,xx,,!
+MACR,1,CH2=CCH3CHO,xx,xx,xx,0,0,0,xx,xx,,!(structure?)
+ISNI,1,isni,xx,xx,xx,0,0,0,xx,OXN,,!isoprene-nitrate
+ISNIR,1,isnir,xx,xx,xx,0,0,0,xx,OXN,,"!isopr adduct"
+GLYOX,1,HCOHCO,xx,xx,xx,0,0,0,xx,xx,,!
+MGLYOX,1,CH3COCHO,xx,xx,xx,0,0,0,xx,xx,,!
+MAL,1,CH3COCH=CHCHO,xx,ALD,xx,0,0,0,xx,xx,,!
+MEK,1,CH3COC2H5,xx,xx,xx,0,0,0,xx,xx,,!
+MVK,1,CH3C(=O)CH=CH2,xx,xx,xx,0,0,0,xx,xx,,!
+HCHO,1,HCHO,xx,HCHO,HCHO,0,0,0,xx,xx,,!
+CH3CHO,1,CH3CHO,xx,ALD,xx,0,0,0,xx,xx,,!
+C2H6,1,C2H6,xx,xx,xx,0,0,0,xx,xx,,!
+NC4H10,1,nC4H10,xx,xx,xx,0,0,0,xx,xx,,!
+C2H4,1,C2H4,xx,xx,xx,0,0,0,xx,xx,,!
+C3H6,1,C3H6,xx,xx,xx,0,0,0,xx,xx,,!
+OXYL,1,oC6H4(CH3)CH3,xx,xx,xx,0,0,0,xx,xx,,!
+C5H8,1,CH2=HCC=CH2CH3,xx,xx,xx,0,0,0,xx,BVOC,,!
+APINENE,1,C10H16,xx,xx,xx,0,0,0,xx,BVOC,,!
+CH3O2H,1,CH3O2H,xx,ROOH,xx,0,0,0,xx,ROOH,,!
+C2H5OOH,1,C2H5OOH,xx,ROOH,xx,0,0,0,xx,ROOH,,!
+BURO2H,1,secC4H9O2H,xx,xx,xx,0,0,0,xx,ROOH,,"!(butane RO2 + ho2)"
+ETRO2H,1,CH2O2HCH2OH,xx,xx,xx,0,0,0,xx,ROOH,,"!(ethene RO2 + ho2)"
+PRRO2H,1,CH3CHO2HCH2OH,xx,xx,xx,0,0,0,xx,ROOH,,"!from propene degredation + ho2"
+OXYO2H,1,oxyo2H,xx,xx,xx,0,0,0,xx,ROOH,,"!from oxyo2 + ho2"
+MEKO2H,1,CH3COCHO2HCH3,xx,xx,xx,0,0,0,xx,ROOH,,!
+MALO2H,1,CH3COCHOHCHO2CHO,xx,xx,xx,0,0,0,xx,ROOH,,!
+MVKO2H,1,mvko2H,xx,xx,xx,0,0,0,xx,ROOH,,"!from mvko2 + ho2"
+MACROOH,1,O=CHC(CH3)(OOH)CH2OH,xx,xx,xx,0,0,0,xx,ROOH,,"!from macro2 + ho2"
+MACO3H,1,CH2=C(CH3)C(=O)OOH,xx,xx,xx,0,0,0,xx,ROOH,,"!from maco3 + ho2"
+MACO2H,1,CH2=C(CH3)C(=O)OH,xx,xx,xx,0,0,0,xx,xx,,"!Methacrylic acid from maco3 + ho2"
+ISRO2H,1,isro2H,xx,xx,xx,0,0,0,xx,ROOH,,"!from isoprene degredation + ho2"
+H2O2,1,H2O2,xx,SO2,H2O2,0,0,0,xx,ROOH,,"!re-consider dry dep link"
+CH3COO2H,1,CH3COO2H,xx,xx,xx,0,0,0,xx,ROOH,,!
+ISONO3H,1,isono3H,xx,xx,xx,0,0,0,xx,ROOH,,"!from isono3 + ho2"
+ISNIRH,1,isnirH,xx,xx,xx,0,0,0,xx,ROOH,,"!from isnir + ho2"
+CH3OH,1,CH3OH,xx,xx,xx,0,0,0,xx,xx,,!
+C2H5OH,1,C2H5OH,xx,xx,xx,0,0,0,xx,xx,,!
+ACETOL,1,CH3COCH2OH,xx,ALD,xx,0,0,0,xx,xx,,"!hydroxy acetone"
+H2,1,H2,xx,xx,xx,0,0,0,xx,xx,,!
+CO,1,CO,xx,xx,xx,0,0,0,xx,xx,,!
+CH4,1,CH4,xx,xx,xx,0,0,0,xx,xx,,!
+SO2,1,SO2,xx,SO2,SO2,0,0,0,xx,SOX;daObs,,"!Move to slow?"
+*,,,,,,,,,xx,,,
+"* Here we also have particles among the compounds. Specify AOD in groups if this",,,,,,,,,xx,,,
+"* is wanted (or always","it doesn't matter). Same with VBS params for SOA stuff",,,,,,,,xx,,,
+"* if present.",,,,,,,,,xx,,,
+*,,,,,,,,,xx,,,
+"#SLOW,,,,,,,,,xx,,,
+"*Spec,adv,forumula,MW,DRY,WET,Extinc,Cstar,DeltaH,Empty,Groups,,!Comments"
+*
+* For SOA and EC we will use the group PCM_f .... in the PM10, PMFINE groups- 
+* avoids problems with gas/aerosol and simplifies outputs
+*
+SO4,1,SO4,xx,PMfS,SO4,SO4,0,0,xx,PM10;PMFINE;SIA;SOX,,!
+NH3,1,NH3,xx,NH3,NH3,0,0,0,xx,RDN,,!
+NO3_f,1,NO3_f,xx,PMfN,PMf,NO3f,0,0,xx,PM10;PMFINE;SIA;OXN;TNO3,,"!in equilib module"
+NO3_c,1,NO3_c,xx,PMc,PMc,NO3c,0,0,xx,PM10;PMCO;SIA;OXN;TNO3,,"!Coarse nitrate"
+NH4_f,1,NH4_f,xx,PMfNH4,PMf,NH4f,0,0,xx,RDN;PM10;PMFINE;SIA,,"! in equilib module"
+*

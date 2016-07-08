@@ -1,0 +1,38 @@
+\chapter{Concurrent Version System (CVS)}
+
+
+The model is stored under 'CVS' on SGI computers in Trondheim.
+CVS keeps track of changes, which we tag as revisions.
+(Changes should also be described in the Log.changes file in the Unimod
+directory).
+
+A typical procedure is:
+
+\begin{enumerate}
+
+    \item
+     Grab latest model code:
+     \begin{itemize}
+       \item
+       {\bf cvs checkout Unimod}
+     \end{itemize}
+     \item
+
+    \item
+     User makes changes
+     
+    \item
+     User checks for updates with {\bf cvs update}. CVS will report
+     any conflicts and mark these in the code. The user has to resolve
+     these by hand. (Usually not a problem).
+     
+    \item
+     When new version available, consult administrator (Dave)
+
+     \item 
+     Either the administrator or `authorised' persons (Hilde, Peter) 'commit changes'
+     \begin{itemize}
+     \item
+     {\bf cvs commit -m 'Sea-salt added'  Unimod}
+     \end{itemize}
+\end{enumerate}

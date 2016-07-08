@@ -1,0 +1,194 @@
+#### IMPORTANT ####  Please check the 'emis_inputlist' for the emission data to be used
+!***  The default data is linked here.  Change the links according to 
+!***  Each user's need.   
+!-----------------------------------------------------------------------------------------
+!put here only machine specific data. 
+&Machine_config
+!DataDir will attempted replaced by (in this order):
+  DataPath(1) = '/global/work/mifapw/emep/Data',  !Stallo
+  DataPath(2) = '/home/metno/mifapw/work/Data',  !Vilje
+&end
+!-------- Experiment Description
+!  EXP_NAME     one word description, e.g. EMEPSTD,EMEP2010,TFMM
+!  MY_OUTPUTS   hourly outputs, e.g. EMEPSTD,TFMM,EMERGENCY
+!  IC/BC        see namelists Nest_config,ExternalBICs_config,ExternalBICs_bc
+!------------------------------
+&ModelConstants_config
+!NB: set the path with the exact version (metdata_VERSION) if you want to be 
+!sure to run with a constant version of the meteo!
+  meteo     = 'DataDir/GRID/metdata_EC/YYYY/meteoYYYYMMDD.nc',!GRID defined in run.pl
+  EXP_NAME              = 'EMEPSTD',
+  MY_OUTPUTS            = 'EMEPSTD',
+!------------------------------
+!USES system started June 2013
+! Only partially implemented. See below and ModelConstants_ml
+  USES%testname         = 'EMEPSTD',
+  USES%FOREST_FIRES     = T,
+  USES%EMISSTACKS       = F,            ! Reads PointSources file
+  USES%DEGREEDAY_FACTORS = T,
+  USES%PlumeMethod      = 'PVDI',       ! default PVDI, possible: NILU, ASMI, PVDI
+  USES%n2o5HydrolysisMethod = "SmixTen" ! "Gamma:0.002"  ! "OrigRiemer"
+  USES%WHITECAPS =       "Callaghan"    ! Norris , Monahan
+  USES%PFT_MAPS         = F,            ! PFT LAI tests
+!------------------------------
+  USE_SOILWATER         = T,            ! Uses SMI from meteo data
+  USE_CONVECTION        = F,
+  USE_SEASALT           = T,
+  USE_AIRCRAFT_EMIS     = T,            ! Needs global file, see manual
+  USE_LIGHTNING_EMIS    = T,            ! 
+!------------------------------ 
+  USE_EURO_SOILNOX      = T,            ! diff for global + Euro runs
+  EURO_SOILNOX_DEPSCALE = 1.0,          ! Scale, default 1  (see ModelConstants_ml)
+  USE_GLOBAL_SOILNOX    = F,            ! diff for global + Euro runs
+!------------------------------
+  USE_POLLEN            = F,            ! EXPERIMENTAL. Only works if start Jan 1
+  USE_ROADDUST          = T,            ! Only EECCA?
+  USE_DUST              = T,            ! Only EECCA?
+  USE_uEMEP             = F,            ! T for local fractions output
+  uEMEP%emis            = "pm25",       ! one of EMIS_File: "sox ", "nox ", "co  ", "voc ", "nh3 ", "pm25", "pmco"
+  uEMEP%sector          = 0,            ! 0 for all sectors, or choose one sector
+  NETCDF_DEFLATE_LEVEL  = 4,            ! 1-9 GZIP compress, 0 no compress, -1 netcdf3
+!-------- Can switch on INERIS-type degreeday stuff
+  INERIS_SNAP1          = F,            ! Used for TFMM runs
+  INERIS_SNAP2          = F,            ! Used for TFMM runs
+!------------------------------
+!  AERO%EQUILIB          = 'MARS ',     ! MARS, MARS_2900, GEOSCHEM, EQSAM, or EMEP
+!  AERO%NSIZE etc... see ModelConstants
+!------------------------------
+!----------------------------------------------------------------------
+!*** The default emission set up for Regional runs ******
+!----------------------------------------------------------------------
+!
+!only keywords "DataDir, "EmisDir", "YYYY" and "POLL" are recognized
+!  "POLL" will be replaced by emissions names listed in CM_EmisFiles.inc
+
+ !Good EECCA default:
+  EmisDir                 = 'DataDir/EECCA/Modrun15/2015_EMEP_trends/model_input_YYYY',
+
+  emis_inputlist(1)%name  = 'EmisDir/gridPOLL',    ! example of ASCII type.
+
+
+!
+!------ NetCDF emissions in TNO7 grid----------
+!  emis_inputlist(1)%name     = 'DataDir/Emis_TNO7.nc', !example of Fractions type
+
+!**#######################################################
+!*** Special Cases ***
+!**#######################################################
+!
+!Ocean emissions
+  emis_inputlist(2)%name  = 'DataDir/DMS.nc',    !Global DMS in Oceans
+  emis_inputlist(2)%type  = 'DMS',    ! Needs ad-hoc treatment
+!  emis_inputlist(3)%name  = 'DataDir/geia_emissions_nh3_ocean_0.5x0.5.nc',    ! Ocean NH3
+!  emis_inputlist(3)%type  = 'OceanNH3',    ! Needs ad-hoc treatment
+
+!
+!******one can either include or exclude, not both
+!
+!*** Only recognised country group now is EUMACC2 (more can be defined in Emissions_ml.f90)
+!
+!  emis_inputlist(1)%incl(1:) = 'EUMACC2',      !example take only countries from the 'EUMACC2' list
+!  emis_inputlist(2)%excl(1:) = 'EUMACC2'       !example exclude all countries from the 'EUMACC2' list
+!
+! (1) From MACC2 7km:
+!  emis_inputlist(1)%name     = 'GriddedSnapEmis_POLL.nc', !
+!  emis_inputlist(1)%excl(1:) = 'US','INTSHIP',            ! US lat/long limits wrong
+! (2) Shipping:
+!  emis_inputlist(3)%name     = 'GlobalShipEmis_POLL.nc',  !
+!  emis_inputlist(3)%incl(1:) = 'INTSHIPS', 
+!
+  EMIS_OUT              = F,          ! Output emissions in separate files
+!------------------------------
+  SELECT_LEVELS_HOURLY  = F,          ! hourly output flag Also for FORECAST, 3DPROFILES
+  FORECAST              = F,
+  USE_ASH               = F,          ! Used for FORECASTs and Status 2010
+  ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
+  USE_AOD               = F,          ! Used for FORECASTs usually
+  BGND_CH4              = -1,         ! Reset CH4 (use ppb). (Use -1 for defaults)
+  SKIP_RCT              = -1,         ! Will zero-out some rct, for tests. (Use -1 for defaults)
+!--- 'fake' vegetation for ozone POD calculations
+  FLUX_VEGS = 'IAM_CR','IAM_DF','IAM_MF', ! do not need all array elements
+              'Wheat_Irrigated', 'Wheat_NonIrrig',
+            ! 'CCE_SPRUCE','CCE_BEECH','ACE_PINE','ACE_OAK','ACE_BEECH',
+            ! 'NEUR_SPRUCE','NEUR_BIRCH','MED_OAK','MED_PINE','MED_BEECH'
+!-------- Sub domain (x0,x1,y0,y1)
+!!RUNDOMAIN =   1, 100,  1, 100,      ! (EECCA benchmarks)
+! RUNDOMAIN =  40, 210, 12, 184,      ! SR TNO28 area
+! RUNDOMAIN =  20,  70, 40, 90,       ! LPS tests
+! RUNDOMAIN = 240, 720, 48, 736,      ! TNO07 reduced (15W-45E;30N-73N)
+! RUNDOMAIN = 120, 360, 24, 368,      ! TNO14 reduced (15W-45E;30N-73N)
+! RUNDOMAIN =  60, 180, 12, 184,      ! TNO28 reduced (15W-45E;30N-73N)
+! RUNDOMAIN =  30,  90,  6,  92,      ! TNO56 reduced (15W-45E;30N-73N)
+! RUNDOMAIN =  60, 180, 12, 184,      ! TNO07 test
+! RUNDOMAIN =  70, 110, 72, 110,      ! TNO28 test
+! RUNDOMAIN =  36, 167, 12, 122,      ! EMEP domain in PARLAM
+! RUNDOMAIN =   1, 132,  1, 111,      ! EECCA, rep09
+! RUNDOMAIN =   1, 132,  1, 159,      ! EECCA, rep10
+! RUNDOMAIN =  20, 167,  1, 122,      ! OSPAR/HELCOM domain
+! RUNDOMAIN =  18, 169,  1, 124,      ! OSPAR/HELCOM domain+borders
+!
+!DEBUG system started June 2013 -------------------
+! Only partially implemented. See ModelConstants_ml
+! Use  T/F or  integers to control debug level:
+  DEBUG%AEROSOL         = F,
+  DEBUG%AOT             = F,
+  DEBUG%BIO             = F,   ! BVOC emissions, etc.
+  DEBUG%DERIVED         = F,   ! BVOC emissions, etc.
+  DEBUG%DRYDEP          = F,   ! BVOC emissions, etc.
+  DEBUG%FORESTFIRE      = F,
+  DEBUG%GLOBBC          = F,
+  DEBUG%GRIDVALUES      = F,
+  DEBUG%HOURLY_OUTPUTS  = F,
+  DEBUG%LANDDEFS        = F,
+  DEBUG%LANDUSE         = 0,
+  DEBUG%MOSAICS         = F,
+  DEBUG%PFT_MAPS        = 0,   ! in testing
+  DEBUG%PHYCHEM         = F,
+  DEBUG%RSUR            = F,
+  DEBUG%RUNCHEM         = F,
+    DEBUG%SEASALT         = F, ! depends on RUNCHEM
+  DEBUG%SETUP_1DBIO     = F,
+  DEBUG%SETUP_1DCHEM    = F,
+  DEBUG%SITES           = F,
+  DEBUG%SOA             = F,
+  DEBUG%STOFLUX         = F,
+!  DEBUG%STOP_HH        = 1,   ! If >= 0,  stops code after STOP_HH hours
+! Specify here the coords and species index (tot, see CM_ChemSpecs_tot)
+  DEBUG%IJ              =  -60, -50,     ! Default: no debugij output
+! DEBUG%IJ              =  60, 50,       ! Bremen
+! DEBUG%IJ              = 189,144,       ! Bremen, global
+! DEBUG%IJ              =   3, 50,       ! sea I hope...
+  DEBUG%SPEC            = 'OH',
+&end
+&Fire_config
+  need_poll = F,               ! Avoids problems with missing ISOP in later FINN data
+  GFED_PATTERN="$GFED",#GFED   ! Forestfire data is selected in mk.GenChem.  
+  FINN_PATTERN="$FINN",#FINN   ! Check in mk.GenChem to find out which data is linked.
+  GFAS_PATTERN="$GFAS",#GFAS   ! Default EMEP setup is using 'FINN'
+&end
+&Nest_config
+!-------- Nesting MODEs
+! Produce netcdf dump of concentrations if wanted, or init. run from such a file
+!   0=do nothing; 1=write; 2=read; 3=read and write;
+!  10=write at end of run; 11=read at start; 12=read at start and write at end (BIC)
+!------------------------------
+  MODE             = 0,
+! NHOURSAVE        = 3,                       ! hours between saves. Fraction of 24
+! NHOURREAD        = 1,                       ! hours between reads. Fraction of 24
+!-------- File name templates for Nest I/O
+  template_read_3D = 'EMEP_IN.nc',            ! a different path can be set here
+  template_read_BC = 'EMEP_IN.nc',            ! for each of the IO IC/BC files,
+  template_write   = 'EMEP_OUT.nc',           ! if needed.
+! template_read_3D = 'EMEP_IN_IC.nc',         ! YYYY, YY, MM, DD, hh strings
+! template_read_BC = 'EMEP_IN_BC_YYYYMMDD.nc',! will be replaced with numbers
+! template_write   = 'EMEP_OUT_YYYYMMDD.nc',  ! in Nest_ml
+!-------- Sub domain for write modes 
+! istart =  60,   ! default RUNDOMAIN(1)+1
+! jstart =  11,   ! default RUNDOMAIN(3)+1
+! iend   = 107,   ! default RUNDOMAIN(2)-1
+! jend   =  58,   ! default RUNDOMAIN(4)-1
+&end
+&ExternalBICs_config
+  USE_EXTERNAL_BIC  = F,              ! .false. to deactivate
+  EXTERNAL_BIC_NAME = 'DUMMY',        ! No IC/BC will be read
+&end

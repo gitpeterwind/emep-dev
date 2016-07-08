@@ -1,0 +1,88 @@
+\chapter{Model structure}
+
+The model is composed of a large number of modules together with a few
+standalone subroutines. The intention is that \emph{only}
+modules which are prefixed `{\bf My\_}'  should change for different
+model versions. Thus, changing from ozone to acidification models
+should consist of changing only these modules. It is envisaged that
+in future such My\_ files can be collected into separate directories
+and loaded into the main model direcory when required.
+
+Files which do not begin with `My\_' should not need to be changed
+at all for different model versions. Think very carefully before
+making any changes here - there will hopefully be an option to
+do what you want  in the My\_ files!! If not, we need to create
+such an option, or persuade you to make do with another method ;-)
+
+
+Currently, two sub-directories, {\bf ZD\_OZONE} and {\bf ZD\_ACID}
+are used to store the various `My' files. Simply copy these
+into the main directory befor compilation to get the version required.
+
+\begin{small}
+\begin{table}
+\caption{The Unified model files}
+\begin{tabular}{|llll|} \hline
+Unimod.f90  &                      &                    &  \\
+\hline
+BoundaryConditions\_ml.f90 & My\_BoundConditions\_ml.f90 & UiO\_ml.f90  &  \\
+\hline
+Chem\_ml.f90 &  My\_Chem\_ml& My\_Reactions.in  &  \\
+Aqueous\_ml.f90 &  &   &  \\
+Ammonium\_ml.f90 &  &   &  \\
+DefPhotolysis\_ml.f90 &  &   &  \\
+DryDep\_ml.f90     & My\_DryDep\_ml &   &  \\
+WetDep\_ml.f90     & My\_WetDep\_ml &   &  \\
+OrganicAerosol\_ml.f90 &  &   &  \\
+Runchem\_ml.f90 &  &   &  \\
+Solver.f90 &  &   &  \\
+\hline
+EmisGet\_ml.f90 & My\_Emis\_ml.f90 & EmisDef\_ml.f90  &  \\
+Emissions\_ml.f90 &  &   &  \\
+Biogenics\_ml.f90 &  &   &  \\
+AirEmis\_ml.f90 &  &   &  \\
+Timefactors\_ml.f90 &  &   &  \\
+\hline
+ModelConstants\_ml.f90 &  &   &  \\
+PhysicalConstants\_ml.f90 &  &   &  \\
+\hline
+Io\_ml.f90 &  &   &  \\
+NetCDF\_ml.f &  Derived\_ml.f90 & My\_Derived\_ml.f90  &   \\
+Output\_hourly.f &  My\_Outputs\_ml.f90 &   &  \\
+Out\_restri\_ml.f90 &  &   &  \\
+outchem\_restri.f &  &   &  \\
+Sites\_ml.f90 &  &   &  \\
+\hline
+%gc\_com.F &  & Par\_ml   &  \\
+%getflti2.F &  &   &  \\
+%parinit.f &  &   &  \\
+%putflti2.F &  &   &  \\
+%put\_restri\_i2.F &  &   &  \\
+%\hline
+Advection\_ml.f90 &  &   &  \\
+Bud\_ml.f90 &  &   &  \\
+Country\_ml.f90 &  &   &  \\
+Dates\_ml.f90 &  &   &  \\
+Functions\_ml.f90 &  &   &  \\
+GridValues\_ml.f90 &  &   &  \\
+Met\_ml.f90 &  &   &  \\
+Polinat\_ml.f90 &  &   &  \\
+Setup\_1d\_ml.f90 &  &   &  \\
+Setup\_1dfields\_ml.f90 &  &   &  \\
+Tabulations\_ml.f90 &  &   &  \\
+\hline
+gc\_com.F &  & Par\_ml   &  \\
+getflti2.F &  &   &  \\
+parinit.f &  &   &  \\
+putflti2.F &  &   &  \\
+put\_restri\_i2.F &  &   &  \\
+\hline
+global2local.f &  &   &  \\
+local2global.f &  &   &  \\
+phyche.f &  &   &  \\
+zenit\_angle.f &  &   &  \\
+\hline
+\end{tabular}
+\end{table}
+\end{small}
+

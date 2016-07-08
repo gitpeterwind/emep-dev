@@ -1,0 +1,8 @@
+#TYPE/NPP,VARIABLE,BASE[km],H[km above SURF],D[h],dM/dt[kBq/s],EffectFrac[-],START[code/date],END[code/date],DESCRIPTION
+10kt,NUC_1, 2.000, 5.000,1dt,2e17,0.1429,SR,SR+D,10kt: 2e20 Bq over
+10kt,NUC_2, 2.000, 5.000,1dt,2e17,0.1429,SR,SR+D,10kt: one advection step
+10kt,NUC_3, 2.000, 5.000,1dt,2e17,0.1429,SR,SR+D,10kt: distrubuted
+10kt,NUC_4, 2.000, 5.000,1dt,2e17,0.1429,SR,SR+D,10kt: uniformly over
+10kt,NUC_5, 2.000, 5.000,1dt,2e17,0.1429,SR,SR+D,10kt: 7 size classes
+10kt,NUC_6, 2.000, 5.000,1dt,2e17,0.1429,SR,SR+D,10kt: EfectiveFrac=1/7
+10kt,NUC_7, 2.000, 5.000,1dt,2e17,0.1429,SR,SR+D,10kt: =0.1429

@@ -1,0 +1,34 @@
+*
+* Primary OA emissions (from fossil sources and wood burning and vegetation fires) distributed over 9 volatility bins (VBS) 
+* (assuming semi-volatile POA-emissions 2.5 times the inventory POA-emissions, as in Shrivastava et al., 2008) 
+*
+rcemis:POC_f_FFUEL = 0.03 FFUEL_ng10 +  0.06 FFUEL_ng100 +  0.09 FFUEL_ug1 + 0.14 FFUEL_ug10 +  0.18 FFUEL_ug1e2 +  0.30 FFUEL_ug1e3 +  0.40 FFUEL_ug1e4 +  0.50 FFUEL_ug1e5 +  0.80 FFUEL_ug1e6  ;
+*
+* To use nonvolatile POC emissions (traditional assumption) uncomment the below line and remove the above line (and the aging reactions further down)
+*
+* rcemis:POC_f_FFUEL               = POC_f_FFUEL ;
+*
+emisfiles:pocffl,poccfl,ecffl,eccfl,pocfwd,ecfwd,eccwd,forfoc,forfbc
+*
+rcemis:POC_c_FFUEL               = POC_c_FFUEL ;
+rcemis:EC_f_FFUEL                = EC_f_FFUEL ;
+rcemis:EC_c_FFUEL                = EC_c_FFUEL ;
+* Wood OC emissions semi-volatile (assuming semi-volatile POA-emissions 2.5 times the inventory POA-emissions, as in Shrivastava et al., 2008)
+*
+rcemis:POC_f_WOOD = 0.03 WOODOA_ng10 +  0.06 WOODOA_ng100 +  0.09 WOODOA_ug1 + 0.14 WOODOA_ug10 +  0.18 WOODOA_ug1e2 +  0.30 WOODOA_ug1e3 +  0.40 WOODOA_ug1e4 +  0.50 WOODOA_ug1e5 +  0.80 WOODOA_ug1e6  ;
+*
+* To use nonvolatile WOODOC emissions (traditional assumption) uncomment the below line and remove the above line (and the aging reactions further down)
+*
+*rcemis:POC_f_WOOD                = POC_f_WOOD ;
+rcemis:EC_f_WOOD                 = EC_f_WOOD ;
+* rcemis:REMPPM25                  = REMPPM25 ;
+* rcemis:REMPPM_C                  = REMPPM_C ;
+*
+* Vegetation fire OA emissions semi-volatile (assuming semi-volatile FFIRE OA-emissions 2.5 times the inventory FFIRE emissions, as in Shrivastava et al., 2008)
+*
+rcemis:FFIRE_OC = 0.03 FFIREOA_ng10 +  0.06 FFIREOA_ng100 +  0.09 FFIREOA_ug1 + 0.14 FFIREOA_ug10 +  0.18 FFIREOA_ug1e2 +  0.30 FFIREOA_ug1e3 +  0.40 FFIREOA_ug1e4 +  0.50 FFIREOA_ug1e5 +  0.80 FFIREOA_ug1e6 + PPM25_Fire ;
+*
+* To use nonvolatile WOODOC emissions (traditional assumption) uncomment the below line and remove the above line (and the aging reactions further down)
+*
+*rcemis:FFIRE_OC                   = FFIRE_OC + PPM25_Fire ;
+rcemis:FFIRE_BC                   = FFIRE_BC + PPM25_Fire ;

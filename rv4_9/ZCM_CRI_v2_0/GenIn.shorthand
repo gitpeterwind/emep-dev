@@ -1,0 +1,198 @@
+* Shorthands and generic rate data for CRI_v2_0  
+* ==============================================
+
+H2O          h2o
+FH2O         (1.0+1.40e-21*h2o*exp(2200.0*tinv))
+KAEROSOL     rcrhaero
+KRIEMER      rcRiemer(k,xnew(SO4),xnew(aNO3),xnew(aNH4))
+beta         0.05
+F1           0.0166666666   # 1/60 from min-1 to s-1
+F2           6.77e-16       # from ppm-1 min-1 to molec-1 s-1 at 298
+YSO2A        5.00e+13*exp(-(1.0+8656*tinv))
+YSO2B        3.00e-13
+YSO2C        4.00e-12
+JSF01        2.85e-03
+JSF02        5.70e-03
+JSF03        1.40e-02
+JSF04        2.80e-02
+JSF05        1.70e-02
+JSF06        2.50e-02
+JSF07        5.00e-02
+JSF08        5.60e-02
+JSF09        8.40e-02
+JSF10        6.00e-02
+JSF11        8.00e-02
+JSF12        1.20e-01
+JSF13        5.00e-01
+JSF14        2.00e+00
+JSF15        3.00e+00
+JSF16        7.20e-03
+JSF17        9.00e-03
+JSF18        1.10e-02
+JSF19        1.28e-02
+DRY_ROOH     DRY_OP
+DRY_ACID     DRY_OP
+DRY_HCL      DRY_HNO3
+
+* KRO2NO:  RO2 + NO        = RO + NO2    
+
+KRO2NO     2.54e-12*exp(360*tinv)
+
+* KRO2HO2: RO2 + HO2       = ROOH + O2   
+
+KRO2HO2    2.91e-13*exp(1300*tinv)
+
+* KRO2NO3: RO2 + NO3       = Products    
+
+KRO2NO3    2.50e-12
+
+* KNO3AL:  RCHO + NO3      = RO2 + HNO3
+
+KNO3AL     1.40e-12*exp(-1860*tinv)
+
+* KAPNO:   RCOO2 + NO      = R + CO2 + NO2
+
+KAPNO      8.10e-12*exp(270*tinv)
+
+* KAPHO2:  RCOO2 + HO2     = RCOOOH + O2
+
+KAPHO2     4.30e-13*exp(1040*tinv)
+
+* KALKOXY: RO + O2         = Products    
+
+KALKOXY    3.70e-14*exp(-460*tinv)*O2
+
+* KALKPXY: RO + O2         = Products    
+
+KALKPXY    1.80e-14*exp(-260*tinv)*O2
+
+* KROPRIM: prim-RO + O2    = Products    
+
+KROPRIM    3.70e-14*exp(-460*tinv)
+
+* KROSEC:  sec-RO + O2     = Products    
+
+KROSEC     1.80e-14*exp(-260*tinv)
+
+* KDEC:    RO decomp.      = Products    
+
+KDEC       1.0e+06 
+
+* FAC1:    Set branching ratio for reaction of CH3O2 with CH3O2
+
+FAC1       2.50e+01*exp(-1165*tinv)
+BR1        FAC1/(1.0+FAC1)
+
+* FAC2:    Set branching ratio for reaction of CH3COO2 with CH3O2
+
+FAC2       4.40e+05*exp(-3910*tinv)
+BR2        FAC2/(1.0+FAC2)
+
+* KMT01:   O + NO + M      = NO2 + M        
+
+KMT01      IUPAC_troe(1.00e-31*exp(-1.6*logtdiv300),3.00e-11*exp(+0.3*logtdiv300),0.85,M,0.840)
+
+* KMT02:   O + NO2 + M     = NO3 + M        
+
+KMT02      IUPAC_troe(1.30e-31*exp(-1.5*logtdiv300),2.30e-11*exp(-1.5*logtdiv300),0.6,M,1.032)
+
+* KMT03:   NO2 + NO3 + M   = N2O5 + M       
+
+KMT03      IUPAC_troe(3.60e-30*exp(-4.1*logtdiv300),1.90e-12*exp(+0.2*logtdiv300),0.35,M,1.329)
+
+* KMT04:   N2O5 + M        = NO2 + NO3 + M  
+
+KMT04      IUPAC_troe(1.30e-03*exp(-3.5*logtdiv300)*exp(-11000*tinv),9.70e+14*exp(+0.1*logtdiv300)*exp(-11080*tinv),0.35,M,1.329)
+
+* KMT05:   OH + CO + M     = H + CO2 + M    
+
+KMT05      1.44e-13*(1.0+(M/4.00E+19))
+
+* KMT06:   HO2 + HO2       = H2O2           
+
+KMT06      (1.0+1.40e-21*h2o*exp(2200.0*tinv))
+
+* KMT07:   OH + NO + M     = HONO + M       
+
+KMT07      IUPAC_troe(7.40e-31*exp(-2.4*logtdiv300),3.30e-11*exp(-0.3*logtdiv300),0.81,M,0.866)
+
+* KMT08:   OH + NO2 + M    = HNO3 + M       
+
+KMT08      IUPAC_troe(3.30e-30*exp(-3.0*logtdiv300),4.10e-11,0.4,M,1.255)
+
+* KMT09:   HO2 + NO2 + M   = HO2NO2 + M     
+
+KMT09      IUPAC_troe(1.80e-31*exp(-3.2*logtdiv300),4.70e-12,0.6,M,1.032)
+
+* KMT10:   HO2NO2 + M      = HO2 + NO2 + M  
+
+KMT10      IUPAC_troe(4.10e-05*exp(-10650*tinv),4.80e+15*exp(-11170*tinv),0.5,M,1.132)
+
+* KMT11:   OH + HNO3       = H2O + NO3      
+
+RK0        2.40E-14*exp(460*tinv)                  
+RK2        2.70E-17*exp(2199*tinv)                 
+RK3        6.50E-34*exp(1335*tinv)                 
+RFAC1      RK3*M/RK2
+RFAC2      RK3*M/(1.0+RFAC1)
+KMT11      RK0+RFAC2
+
+* KMT12:   OH + SO2 + M    = HSO3 + M       
+
+KMT12      IUPAC_troe(4.50e-31*exp(-3.9*logtdiv300),1.30e-12*exp(-0.7*logtdiv300),0.525,M,1.105)
+
+* KMT13:   CH3O2 + NO2 + M = CH3O2NO2 + M   
+
+KMT13      IUPAC_troe(2.50e-30*exp(-5.5*logtdiv300),1.80e-11,0.36,M,1.313)
+
+* KMT14:   CH3O2NO2 + M    = CH3O2 + NO2 + M
+
+KMT14      IUPAC_troe(9.00e-05*exp(-9690*tinv),1.10e+16*exp(-10560*tinv),0.6,M,1.032)
+
+* KMT15:   OH + C2H4 + M   = C2H4O2 + M     
+
+KMT15      IUPAC_troe(8.60e-29*exp(-3.1*logtdiv300),9.00e-12*exp(-0.85*logtdiv300),0.48,M,1.155)
+
+* KMT16:   OH + C3H6 + M   = Product + M    
+
+KMT16      IUPAC_troe(8.00e-27*exp(-3.5*logtdiv300),3.00e-11*exp(-1.0*logtdiv300),0.5,M,1.132)
+
+* KMT17:   OH + C2H2       = HCOOH + CO + HO2
+
+KMT17      IUPAC_troe(5.00e-30*exp(-1.5*logtdiv300),1.00e-12,0.37,M,1.298)
+
+* KMT18:   OH/NO3 + DMS    = SO2 (YSO2) + MSA (YMSA) 
+
+KMT18      8.50e-24*exp(7810*tinv)*(1.0+2.80E-12*exp(7460*tinv))
+
+* KMT19:   NH3 + HNO3      = NH4NO3 equilibrium; dependent on RH
+
+KMT19      2.80e-04*exp(1.1887E+02-(2.4084E+04*tinv)-6.0250*LOG(xt))
+
+* KMT20:   OH + OH         = H2O2              
+
+KMT20      IUPAC_troe(6.90e-31*exp(-0.8*logtdiv300),2.60e-11,0.5,M,1.132)
+
+* KMT21:   OH + CH3OOH     = Products        
+
+KMT21      2.90e-12*exp(190*tinv)
+
+* KMT22:   OH + CH3OOH     = CH3O2 + H2O     
+
+KMT22      0.65*KMT21
+
+* KMT23:   OH + CH3OOH     = CH2OOH + H2O     
+
+KMT23      0.35*KMT21
+
+* KFPAN:   CH3COO2 + NO2   = PAN             
+
+KFPAN      IUPAC_troe(2.70e-28*exp(-7.1*logtdiv300),1.20e-11*exp(-0.9*logtdiv300),0.3,M,1.414)
+
+* KBPAN:   PAN             = CH3COO2 + NO2     
+
+KBPAN      IUPAC_troe(4.90e-03*exp(-12100*tinv),5.40e+16*exp(-13830*tinv),0.3,M,1.414)
+
+* KAERO:   Gas-particle collision rate - set to zero
+
+KAERO      0.0

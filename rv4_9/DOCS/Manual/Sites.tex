@@ -1,0 +1,45 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{sites and sondes}
+\label{Output:ascii}
+
+Two main options are available for the output of ascii files for comparison
+with measurements or detailed model analysis. These are
+
+\begin{description}
+\item[sites]  
+
+      output of surface concentrations for a set of specified
+      measurement site locations.
+\item[sondes] 
+
+      output of concentrations for the vertical column above
+     a set of specified locations.
+\end{description}
+
+Both sites and sondes are specified and handled in similar ways, in
+the module {\bf Sites\_ml}, so we treat them both together below.
+
+Locations are specified in input files, sites.dat and sondes.dat, whose
+directory-locations should be specified in {\bf run.pl}. For example,
+a sites.dat file might look like:
+
+\begin{small}\begin{verbatim}
+schauinsland    101   51
+thessaloniki    132   58
+ispra           106   48      Comment: 45.8,8.6333-> 105.864 47.742  (to150old)
+testsitemid     120   70      ... just for testing
+testsite12      102   88      ... just for testing
+border_72_84     72   84      ... just for testing
+\end{verbatim}
+\end{small}
+
+
+These file are optional.
+
+The species and meteorological data required are specified in {\bf My\_Outputs}
+through the use of arrays. Only a few met fields are defined so far but
+more can be added into {\bf Sites\_ml} as required. The outputs consist
+of a header giving the number of sites used, species/met data used, and
+then actual values specified with a 5es10.3 format. For the sonde data
+values are given for all 20 levels, starting with the ground-level values.
+

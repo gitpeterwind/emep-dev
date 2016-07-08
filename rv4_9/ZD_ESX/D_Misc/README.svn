@@ -1,0 +1,18 @@
+Some tips on using svn:
+
+Checkout into ESX directory:
+  svn checkout https://svn.met.no/ecosx/trunk ESX 
+
+Adding a new file from within the Unimod directory (README.svn):
+  svn add README.svn
+
+Commit some changed code from within the Unimod directory:
+  svn commit -m "a small message"
+
+Creating a branch from within the Unimod directory:
+  svn copy . https://svn.met.no/ecosx/tags/esx2_5_99
+
+
+
+And the guide of svn for cvs-users:
+  http://svnbook.red-bean.com/en/1.0/apa.html

@@ -1,0 +1,86 @@
+!!put here only machine specific data. 
+&Machine_config
+!DataDir will attempted replaced by (in this order):
+  DataPath(1) = '/global/work/mifapw/emep/Data',  !Stallo
+  DataPath(2) = '/home/metno/mifapw/work/Data',  !Vilje
+&end
+!------- Experiment Description
+!  EXP_NAME     one word description, e.g. EMEPSTD,EMEP2010,TFMM
+!  MY_OUTPUTS   hourly outputs, e.g. EMEPSTD,TFMM,EMERGENCY
+!  IC/BC        see namelists Nest_config,ExternalBICs_config,ExternalBICs_bc
+!------------------------------
+&ModelConstants_config
+  EXP_NAME              = 'EMERGENCY',
+  MY_OUTPUTS            = 'EMERGENCY',
+! MY_OUTPUTS            = 'INVERSION',
+!------------------------------
+!USES system started June 2013
+  USES%testname         = 'EMERGENCY',
+  USES%FOREST_FIRES     = F,
+  USES%EMISSTACKS       = F,         ! Reads PointSources file
+  USES%DEGREEDAY_FACTORS = F,
+  USES%GRIDDED_EMIS_MONTHLY_FACTOR = T, !
+  USES%PlumeMethod      = 'PVDI',    ! default PVDI, possible: NILU, ASMI, PVDI
+  USES%PFT_MAPS         = T,         ! PFT LAI tests
+  USES%n2o5HydrolysisMethod = 'SmixTen', !  "Gamma:0.002' ! 'OrigRiemer'! =ACP2012 EMEP implementation
+  USES%WHITECAPS =       "Callaghan"    ! Norris , Monahan
+!------------------------------
+  USE_SOILWATER         = F,          ! Uses SMI from meteo data
+  USE_CONVECTION        = F,
+  USE_SEASALT           = T,
+  USE_AIRCRAFT_EMIS     = F,          ! Needs global file, see manual
+  USE_LIGHTNING_EMIS    = F,          ! 
+!------------------------------
+  USE_EURO_SOILNOX      = F,          ! diff for global + Euro runs
+  EURO_SOILNOX_DEPSCALE = 1.0,        ! Scale, default 1  (see ModelConstants_ml)
+  USE_GLOBAL_SOILNOX    = F,          ! diff for global + Euro runs
+!------------------------------
+  USE_POLLEN            = F,          ! EXPERIMENTAL. Only works if start Jan 1
+  USE_ROADDUST          = F,          ! Only EECCA?
+  USE_DUST              = F,          ! Only EECCA?
+  NETCDF_DEFLATE_LEVEL  = 1,          ! 1-9 GZIP compress, 0 no compress, -1 nc3
+!-------- Can switch on INERIS-type degreeday stuff
+  INERIS_SNAP1          = F,          ! Used for TFMM runs
+  INERIS_SNAP2          = F,          ! Used for TFMM runs
+!------------------------------
+  EMIS_SOURCE           = 'Mixed', ! 'emislist' or 'CdfFractions'
+  EMIS_TEST             = 'None',     ! 'None' or 'CdfSnap' 
+  EMIS_OUT              = F,          ! Output emissions in separate files (memory demanding)
+!------------------------------
+  SELECT_LEVELS_HOURLY  = T,          ! hourly output flag Also for FORECAST, 3DPROFILES
+  FORECAST              = T,
+  USE_ASH               = T,          ! Used for FORECASTs and Status 2010
+  ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
+  USE_AOD               = T,          ! Used for FORECASTs usually
+!------------------------------
+  DEBUG%GLOBBC          = F,
+  DEBUG%HOURLY_OUTPUTS  = F,
+  DEBUG%DERIVED         = F,
+&end
+&Nest_config
+!-------- Nesting MODEs
+! Produce netcdf dump of concentrations if wanted, or init. run from such a file
+!   0=do nothing; 1=write; 2=read; 3=read and write;
+!  10=write at end of run; 11=read at start; 12=read at start and write at end (BIC)
+!------------------------------
+  MODE             = 0,
+!-------- File name templates for Nest I/O
+  template_read_3D = 'EMEP_IN_YYYYMMDD.nc',   ! YYYY, YY, MM, DD, hh strings
+  template_read_BC = 'EMEP_IN_YYYYMMDD.nc',   ! will be replaced with numbers
+  template_write   = 'EMEP_OUT_YYYYMMDD.nc',  ! in Nest_ml
+!-------- CWF dump/restart
+! WRITE_SPC        = 'NO2','O3','SO2','CO',   ! reduce output for NMC statistics (3DVar)
+! WRITE_GRP        = 'DAOBS','DAUNOBS','PM10','AOD',
+  FORECAST_NDUMP   = 0,                       ! Nr. CWF dump dates
+  outdate          = $outdate,                ! 1st,2nd CWF dump dates
+&end
+&Fire_config
+  GFED_PATTERN="$GFED",#GFED
+  FINN_PATTERN="$FINN",#FINN
+  GFAS_PATTERN="$GFAS",#GFAS
+  need_poll = F,        ! Avoids problems with missing ISOP in later FINN data
+&end
+&ExternalBICs_config
+  USE_EXTERNAL_BIC  = F,              ! .false. to deactivate
+  EXTERNAL_BIC_NAME = 'DUMMY',        ! No IC/BC will be read
+&end

@@ -1,0 +1,46 @@
+vers=rv4.8jvm;year=2015               # Input version/year flags
+tdir=$HOME/Unify                      # top directory - change $HOME as required
+idir=$tdir/Unimod.$vers               # Input dir
+
+odir=$tdir/OpenSource$year.$vers      # Output dir, choose flag or location
+cdir=$odir/code                       # code directory
+mkdir -p $cdir                            
+
+echo "Making $cdir"
+
+#-- 0)  start from a "working" model code
+
+cd $idir
+for i in *.f90; do
+  [[ -L $i ]] && rm -f $i # remove old links to *.f90 files
+done
+make EMEP
+
+#-- 1)  Code ------------------------------------------------------------------
+
+vers+="(`svnversion|tr -d M`)"
+for i in *.f90 *.inc gpl.txt modrun.sh; do
+  case $i in
+  FUTURE*);;         # FUTURE routines not wanted
+  *.f90)
+    if grep -qw 'Copyright' $i;then
+      cp -f $i $cdir
+      sed -i "s/Copyright (C) 2007-.... met.no/Copyright (C) 2007-$year met.no/;" \
+        $cdir/$i
+    else
+      cat copyright.txt $i > $cdir/$i
+      sed -i "s:%filename%:$i:;s:%vers%:$vers:;s://VERSION://'$vers':;s:%year%:$year:;" $cdir/$i
+    fi;;
+  *)cp -u $i $cdir;;
+  esac
+done
+
+#-- 2)  dependencies ----------------------------------------------------------
+
+awk '{if(NR>4) print $0 }' $idir/.depend > $cdir/dependencies
+
+#-- 3)  Makefile stuff ----------------------------------------------------------
+
+cp -u $idir/Makefile.Open $cdir/Makefile      # OpenSource Makefile
+cp -f $idir/Makefile.SRCS $cdir/
+sed -i "s/SRCS/FOBJ/;s/.f90/.o/g;s/.inc$/.o/;" $cdir/Makefile.SRCS
