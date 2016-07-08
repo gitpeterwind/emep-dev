@@ -1,9 +1,0 @@
-* Aerosol tracers for _NUC_ Nuclear explsion
-*"*Spec,adv,forumula,MW,DRY,WET,Extinc,Cstar,DeltaH,Empty,Groups,,!Comments*"
-_NUC__1,1,xx,12,PMfS,PMf,DDf,0,0,xx,NUC;NUCract;NUC_f;PM10;PMFINE,,"!Nuclear explsion; fine      < 0.1 um"
-_NUC__2,1,xx,12,PMfS,PMf,DDf,0,0,xx,NUC;NUCract;NUC_f;PM10;PMFINE,,"!Nuclear explsion; fine   0.1--0.3 um"
-_NUC__3,1,xx,12,PMfS,PMf,DDf,0,0,xx,NUC;NUCract;NUC_f;PM10;PMFINE,,"!Nuclear explsion; fine   0.3--1.0 um"
-_NUC__4,1,xx,12,PMfS,PMf,DDf,0,0,xx,NUC;NUCract;NUC_f;PM10;PMFINE,,"!Nuclear explsion; fine   1.0--3.0 um"
-_NUC__5,1,xx,12,PMc,PMc,DDc,0,0,xx,NUC;NUCract;NUC_c;PM10;PMCO,,   "!Nuclear explsion; coarse 3.0--10. um"
-_NUC__6,1,xx,12,PMc,PMc,DDc,0,0,xx,NUC;NUCract;NUC_g,,             "!Nuclear explsion; gigant 10.--30. um"
-_NUC__7,1,xx,12,PMc,PMc,DDc,0,0,xx,NUC;NUCract;NUC_g,,             "!Nuclear explsion; gigant 30.--100 um"

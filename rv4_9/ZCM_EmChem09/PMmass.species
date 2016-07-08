@@ -1,6 +1,0 @@
-*
-*"*Spec,adv,forumula,MW,DRY,WET,Extinc,Cstar,DeltaH,Empty,Groups,,!Comments*"
-*
-PPM25,1,xx,12,PMfS,PMf,DDf,0,0,xx,PM10;PMFINE;,,"!Primary; fine <2.5um"
-PPM25_FIRE,1,xx,12,PMfS,PMf,DDf,0,0,xx,PM10;PMFINE,,!fires...
-PPM_c,1,xx,12,PMc,PMc,DDc,0,0,xx,PM10;PMCO,,"!Primary; 2.5--10u"

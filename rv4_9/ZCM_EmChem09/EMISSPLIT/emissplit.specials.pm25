@@ -1,9 +1,0 @@
-# PPM25 splits for EmChemXX( FF added)
-# 
-# Key-word, MASS_ASSUMED= 0 by default, 
-# change when emissions have artificial mass, e.g. 46 for NOx as NO2
-# Biomass burning emissions, IE_BB = 101
-: MASS_ASSUMED 0 
-99 99   PPM25    PPM25_FIRE        #HEADERS
-#DATA
-101   11    0.0     100.00

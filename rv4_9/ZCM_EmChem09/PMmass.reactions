@@ -1,6 +1,0 @@
-*
-emisfiles:pm25,pmco
-*
-rcemis:PPM25                     = PPM25 ;
-rcemis:PPM_c                     = PPM_c ;
-rcemis:PPM25_FIRE                = PPM25_FIRE ;

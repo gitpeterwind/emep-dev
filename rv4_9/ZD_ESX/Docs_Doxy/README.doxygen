@@ -1,5 +1,0 @@
-
-Run mk.doxydocs if you have doxygen and Graphviz. This creates html and latex directories. The refman.pdf
-is from the latex, after running pdflatex refman.tex.
-
-Will figure out how to strip the "david" pathnames, and then we can leave html in place.

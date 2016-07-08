@@ -1,4 +1,0 @@
-* Volcanic ash tracers (all active vents)
-*"*Spec,adv,forumula,MW,DRY,WET,Extinc,Cstar,DeltaH,Empty,Groups,,!Comments*"
-ASH_f,1,xx,12,PMfS,PMf,DDf,0,0,xx,ASH;PM10;PMFINE,,"!Volcanic ash; fine     < 2.5 um"
-ASH_c,1,xx,12,PMc,PMc,DDc,0,0,xx,ASH;PM10;PMCO,,   "!Volcanic ash; coarse 2.5--10. um"

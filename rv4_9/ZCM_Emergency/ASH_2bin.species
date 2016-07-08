@@ -1,4 +1,0 @@
-* Volcanic ash tracers for _ASH_
-*"*Spec,adv,forumula,MW,DRY,WET,Extinc,Cstar,DeltaH,Empty,Groups,,!Comments*"
-_ASH__f,1,xx,12,PMfS,PMf,DDf,0,0,xx,_ASH_;ASH;ASH_f;PM10;PMFINE,,"!Volcanic ash; fine     < 2.5 um"
-_ASH__c,1,xx,12,PMc,PMc,DDc,0,0,xx,_ASH_;ASH;ASH_c;PM10;PMCO,,   "!Volcanic ash; coarse 2.5--10. um"
