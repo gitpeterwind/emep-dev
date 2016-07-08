@@ -154,6 +154,15 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+8th July 2016 Alvaro, 3250-3253
+
+Tag version used on 2016 status runs: r3245 from June 28th.
+
+svn copy \
+  https://svn.met.no/unimod/trunk -r3245 \
+  https://svn.met.no/unimod/tags/rv4_9 -m "2016 Status runs"
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 7th July 2016 Alvaro, 3249
 
 TimeDate_ExtraUtil_ml:
