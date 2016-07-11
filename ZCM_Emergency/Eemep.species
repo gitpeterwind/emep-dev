@@ -11,6 +11,7 @@ TRACER2,1,N,xx,xx,xx,0,0,0,xx,,,!
 O3,1,O3,xx,O3,xx,0,0,0,xx,OX,,!
 NO,1,NO,xx,xx,xx,0,0,0,xx,NOX;OXN,,!
 NO2,1,NO2,xx,NO2,xx,0,0,0,xx,NOX;OX;OXN,,!
+SHIPNOX,1,NO2,xx,NO2,xx,0,0,0,xx,NOX;OX;OXN,,!
 HNO3,1,HNO3,xx,HNO3,HNO3,0,0,0,xx,OXN,,!
 VOC,1,nC4H10,xx,xx,xx,0,0,0,xx,xx,,!
 CH3CHO,1,CH3CHO,xx,ALD,xx,0,0,0,xx,xx,,!

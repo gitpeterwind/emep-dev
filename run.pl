@@ -118,7 +118,7 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
- ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3213","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
+ ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3260","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
 #($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3074","EmChem09soa","EMEPGLOB","EMEPSTD","GLOBAL",0);
 
 my %BENCHMARK;
@@ -1462,17 +1462,17 @@ sub generate_updated_femis {
   # Initialise to 1.0:
   my($sox,$nox,$voc,$nh3,$testp,$co,$pm25,$pmco) = ("1.0")x8 ;
   given($pollut){
-    when("AV"  ){ $voc = $nh3 = $redn };
-    when("A"   ){ $nh3 = $redn };
-    when("V"   ){ $voc = $redn };
-    when("S"   ){ $sox = $redn };
-    when("N"   ){ $nox = $redn };
-    when("P"   ){ $pm25 = $pmco = $redn };
-    when("NP"  ){ $nox = $pm25 = $pmco = $redn };
-    when("SNP" ){ $sox = $nox = $pm25 = $pmco =  $redn };
-    when("AN"  ){ $nh3 = $nox = $redn };
-    when("SNAV"){ $sox = $nox = $nh3 = $voc = $redn };
-    when("ALL" ){ $sox=$nox=$voc=$nh3=$testp=$co=$pm25=$pmco=$redn };
+    when("AV"  ){ $voc = $nh3 = $redn; }
+    when("A"   ){ $nh3 = $redn; }
+    when("V"   ){ $voc = $redn; }
+    when("S"   ){ $sox = $redn; }
+    when("N"   ){ $nox = $redn; }
+    when("P"   ){ $pm25 = $pmco = $redn; }
+    when("NP"  ){ $nox = $pm25 = $pmco = $redn; }
+    when("SNP" ){ $sox = $nox = $pm25 = $pmco =  $redn; }
+    when("AN"  ){ $nh3 = $nox = $redn; }
+    when("SNAV"){ $sox = $nox = $nh3 = $voc = $redn; }
+    when("ALL" ){ $sox=$nox=$voc=$nh3=$testp=$co=$pm25=$pmco=$redn; }
    #when("BASE") then no change!
   }
 

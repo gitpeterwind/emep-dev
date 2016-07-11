@@ -154,6 +154,20 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+11th July 2016 Alvaro, 3260
+
+run.pl:
+- correct given/when syntax in generate_updated_femis
+
+ZCM_Emergency/Eemep.species:
+- add SHIPNOX to minimal chemestry set (Eemep).
+  Eemep uses EmChem09soa's EmChem09soa, and stopped working 
+  after the incusion of SHIPNOX into emissplit.*.nox (SVN 322, June 2016)
+
+config_Outputs_CAMS50.nml:
+- comment empty OutputMisc setup
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 8th July 2016 Alvaro, 3255-3259
 
 ModelConstants_ml,Derived_ml,My_Derived_ml,EcoSystem_ml,Unimod,
