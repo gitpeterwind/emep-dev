@@ -72,12 +72,9 @@
   RUNDOMAIN =   1, 100,  1, 100,      ! Orig EMEP domain in EECCA (for benchmarks)
 &end
 &Nest_config
-!-------- Nesting MODEs
-! Produce netcdf dump of concentrations if wanted, or init. run from such a file
-!   0=do nothing; 1=write; 2=read; 3=read and write;
-!  10=write at end of run; 11=read at start; 12=read at start and write at end (BIC)
-!------------------------------
-  MODE             = 0,
+!-------- Read/Write MODEs
+  MODE_READ = 'NONE',         ! do nothing
+  MODE_SAVE = 'NONE',         ! do nothing
 &end
 &Fire_config
   GFED_PATTERN="$GFED",#GFED

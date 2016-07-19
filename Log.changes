@@ -154,6 +154,42 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+19th July 2016 Alvaro, 3261
+
+Nest_ml:
+- Replace integer variable MODE by string variables MODE_READ and MODE_SAVE.
+- Old integer modes can be reproduced as follows:
+    MODE  MODE_READ MODE_SAVE Description
+      0   'NONE'    'NONE'    do nothing
+      1   'NONE'    'NHOUR'   write every NHOURSAVE
+      2   'NHOUR'   'NONE'    read  every NHOURREAD
+      3   'NHOUR'   'NHOUR'   read/write every NHOURREAD/NHOURSAVE
+     10   'NONE'    'END'     write at end of run
+     11   'START'   'NONE'    read at start of run
+     12   'START'   'END'     read at start and write at end of run
+     20   'NHOUR'   'END'     write at end   of run and read  every NHOURREAD
+     30   'START'   'NHOUR'   read  at start of run and write every NHOURSAVE
+    100   'MONTH'   'NONE'    read monthly
+- New read/write modes to obtain FORECAST mode behaviour
+    MODE_READ='FORECAST'  read at the start of run, if the files are found
+    MODE_SAVE='FORECAST'  write every OUTDATE(1:FORECAST_NDUMP)
+- See file header for the full list of supported modes.
+
+
+
+#	modified:   config_EMEPGLOB.nml
+#	modified:   config_EMEPSTD.nml
+#	modified:   config_BM-EECCA.nml
+
+#	modified:   config_FORECAST.nml
+#	modified:   config_FORECAST_CitySR.nml
+#	modified:   config_ANALYSIS.nml
+#	modified:   config_EMERGENCY.nml
+#	modified:   config_IMPACT2C.nml
+
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 11th July 2016 Alvaro, 3260
 
 run.pl:

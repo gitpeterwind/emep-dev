@@ -59,12 +59,9 @@
   GFAS_PATTERN='$GFAS',#GFAS
 &end
 &Nest_config
-!-------- Nesting MODEs
-! Produce netcdf dump of concentrations if wanted, or init. run from such a file
-!   0=do nothing; 1=write; 2=read; 3=read and write;
-!  10=write at end of run; 11=read at start; 12=read at start and write at end (BIC)
-!------------------------------
-  MODE             = 0,
+!-------- Read/Write MODEs
+  MODE_READ = 'FORECAST',     ! at the start of run, if files are found
+  MODE_SAVE = 'FORECAST',     ! every OUTDATE(1:FORECAST_NDUMP)
 !-------- File name templates for Nest I/O
   template_read_3D = '$inic',#inic            ! YYYY, YY, MM, DD, hh strings
   template_read_BC = '$INBC',#inbc            ! will be replaced with numbers

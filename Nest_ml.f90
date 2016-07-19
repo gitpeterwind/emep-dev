@@ -1,19 +1,24 @@
 module Nest_ml
 ! This module performs the reading or writing of data for nested runs
 !
-! The Nesting modes (MODE in Nest_config nml) are:
-! 0=donothing , 1=write , 2=read , 3=read and write
-! 10=write at end of run, 11=read at start , 12=read at start and write at end (BIC)
-! 20=write at end of run and read every NHOURREAD
-! 30=Read at start of run and write every NHOURREAD
-! 100=read monthly (not fully tested)
+! The Nesting modes and related setings read from Nest_config nml:
+!  MODE_READ
+!    'NONE':      do not read (default)
+!    'NHOUR':     read every NHOURREAD
+!    'START':     read at the start of run
+!    'FORECAST':  read at the start of run, if the files are found
+!  MODE_SAVE
+!    'NONE':      do not write (default)
+!    'NHOUR':     write every NHOURSAVE
+!    'END':       write at end of run
+!    'FORECAST':  write every OUTDATE(1:FORECAST_NDUMP)
 !
 ! To make a nested run:
-! 1) run with MODE=1 (MODE in Nest_config nml) to write out 3d BC (name in filename_write defined below)
+! 1) run with MODE_SAVE='NHOUR' to write out 3d BC (name in filename_write defined below)
 ! 2) copy or link filename_write to filename_read_BC (for example "ln -s EMEP_OUT.nc EMEP_IN.nc")
-! 3) run (in a smaller domain) with MODE=2
+! 3) run (in a smaller domain) with MODE_READ='NHOUR'
 !
-! Set MODE (in Nest_config nml) and out_DOMAIN (same namelist)
+! Set MODE_SAVE/MODE_READ (in Nest_config nml) and out_DOMAIN (same namelist)
 ! Choose NHOURSAVE and NHOURREAD
 ! Also filename_read_BC and filename_read_3D should point to appropriate files
 ! Be careful to remove old BC files before making new ones.
@@ -65,16 +70,9 @@ use TimeDate_ml,            only: date,current_date,nmdays
 use TimeDate_ExtraUtil_ml,  only: date2nctime,nctime2date,&
                                   date2string,date2file,compare_date
 use Units_ml,               only: Units_Scale
-use SmallUtils_ml,          only: find_index
+use SmallUtils_ml,          only: find_index,to_upper
 use ChemGroups_ml,          only: chemgroups
 implicit none
-
-! Nesting modes:
-! produces netcdf dump of concentrations if wanted, or initialises mode runs
-! from such a file. Used in Nest_ml:
-!   0=donothing; 1=write; 2=read; 3=read and write;
-!  10=write at end of run; 11=read at start; 12=read atstart and write at end (BIC)
-integer, public, save :: MODE
 
 ! Nested input/output on FORECAST mode
 integer,private,parameter :: FORECAST_NDUMP_MAX = 4  ! Number of nested output
@@ -93,6 +91,14 @@ public  :: wrtxn
 private
 
 logical, private, save :: mydebug =  .false.
+
+integer,private,parameter ::  len_mode=20
+character(len=len_mode),private, parameter :: &
+  READ_MODES(5)=[character(len=len_mode)::'NONE','FORECAST','NHOUR','START','MONTH'],&
+  SAVE_MODES(4)=[character(len=len_mode)::'NONE','FORECAST','NHOUR','END']
+character(len=len_mode),private, save ::  &
+  MODE_READ='',&  ! read  mode
+  MODE_SAVE=''    ! write mode
 integer, private, save :: NHOURSAVE,NHOURREAD ! write/read frequency
 !if(NHOURREAD<NHOURSAVE) the data is interpolated in time
 
@@ -145,15 +151,16 @@ contains
 subroutine Config_Nest()
   integer :: ios,i
   logical, save :: first_call=.true.
-  NAMELIST /Nest_config/ MODE,NHOURSAVE,NHOURREAD, &
+  NAMELIST /Nest_config/ MODE_READ,MODE_SAVE,NHOURREAD,NHOURSAVE, &
     template_read_3D,template_read_BC,template_write,&
     native_grid_3D,native_grid_BC,omit_zero_write,out_DOMAIN,&
     WRITE_SPC,WRITE_GRP,FORECAST_NDUMP,outdate
 
   if(.not.first_call)return
   mydebug = DEBUG_NEST.and.MasterProc
-! Default Nest mode
-  MODE=0        ! do nothing (unless FORECAST mode)
+! default write/read supported modes: do nothing (unless FORECAST mode)
+  MODE_READ='NONE'
+  MODE_SAVE='NONE'
 ! write/read frequency: Hours between consecutive saves(wrtxn)/reads(readxn)
   NHOURSAVE=3   ! Between wrtxn calls.  Should be fraction of 24
   NHOURREAD=1   ! Between readxn calls. Should be fraction of 24
@@ -170,6 +177,28 @@ subroutine Config_Nest()
     write(*,*) "NAMELIST IS "
     write(*,NML=Nest_config)
   endif
+! FORECAST overrides write/read modes 
+  if(FORECAST)then
+    MODE_READ='FORECAST'
+  elseif(MODE_READ=='')then
+    MODE_READ='NONE'
+  else
+    MODE_READ=to_upper(MODE_READ)
+  endif  
+  if(FORECAST)then
+    MODE_SAVE='FORECAST'
+  elseif(MODE_SAVE=='')then
+    MODE_SAVE='NONE'
+  else
+    MODE_SAVE=to_upper(MODE_SAVE)
+  endif
+! write/read supported modes
+  if(MasterProc)then
+    call CheckStop(.not.any(MODE_READ==READ_MODES),&
+      "Config_Nest: Unsupported MODE_READ='"//trim(MODE_READ))
+    call CheckStop(.not.any(MODE_SAVE==SAVE_MODES),&
+      "Config_Nest: Unsupported MODE_SAVE='"//trim(MODE_SAVE))
+  endif
 ! write/read frequency should be fraction of 24
   if(MasterProc)then
     call CheckStop(mod(24,NHOURSAVE),"Config_Nest: NHOURSAVE should be fraction of 24")
@@ -180,11 +209,13 @@ subroutine Config_Nest()
 ! Ensure sub-domain is not larger than run-domain
   call RestrictDomain(out_DOMAIN)
 ! Ensure that only FORECAST_NDUMP are taking into account
-  if(FORECAST.and.(FORECAST_NDUMP<FORECAST_NDUMP_MAX))&
-    outdate(FORECAST_NDUMP+1:FORECAST_NDUMP_MAX)%day=0
-  if(MasterProc.and.FORECAST)&
-    write (*,"(1X,A,10(1X,A,:,','))")'Forecast nest/dump at:',&
-     (date2string("YYYY-MM-DD hh:mm:ss",outdate(i)),i=1,FORECAST_NDUMP)
+  if(MODE_SAVE=='FORECAST')then
+    if(FORECAST_NDUMP<FORECAST_NDUMP_MAX)&
+      outdate(FORECAST_NDUMP+1:FORECAST_NDUMP_MAX)%day=0
+    if(MasterProc)&
+      write (*,"(1X,A,10(1X,A,:,','))")'Forecast nest/dump at:',&
+       (date2string("YYYY-MM-DD hh:mm:ss",outdate(i)),i=1,FORECAST_NDUMP)
+  endif
   first_call=.false.
 endsubroutine Config_Nest
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
@@ -202,21 +233,21 @@ subroutine readxn(indate)
   integer, save :: oldmonth=0
 
   call Config_Nest()
-  if(mydebug) write(*,*)'Nest:Read BC, MODE=',MODE
-  if(.not.any(MODE==[2,3,11,12,20,30]).and..not.FORECAST)return
+  if(mydebug) write(*,*)'Nest:Read BC, MODE=',MODE_READ
+  if(MODE_READ=='NONE')return
 
   KMAX_BC=KMAX_MID
   ndate(1:4)=[indate%year,indate%month,indate%day,indate%hour]
   call date2nctime(ndate,ndays_indate)
   if(first_call)date_nextfile=ndate
 
-  select case(MODE)
-  case(100) ! monthly input file
+  select case(MODE_READ)
+  case('MONTH') ! monthly input file
     if(indate%month==oldmonth)return
     if(MasterProc.and.oldmonth==0) write(*,*)'Nest: Initialzing IC'
     oldmonth=indate%month
     if(MasterProc) write(*,*)'Nest: New month, reset BC'
-  case(11,12,30)
+  case('START')
     if(.not.first_call)return
     first_call=.false.
     filename_read_3D=date2string(template_read_3D,ndate,mode='YMDH',debug=mydebug)
@@ -232,7 +263,7 @@ subroutine readxn(indate)
   if(DEBUG_NEST.and.MasterProc) write(*,*) 'Nest: kt', kt, first_call
 
 ! Update filenames according to date following templates defined on Nest_config nml
-  if(FORECAST)then
+  if(MODE_READ=='FORECAST')then
     filename_read_3D=date2string(template_read_3D,ndate,mode='YMDH',debug=mydebug)
     filename_read_BC=date2file  (template_read_BC,ndate,BC_DAYS,"days",mode='YMDH',debug=mydebug)  
     inquire(file=filename_read_3D,exist=fexist_3D)
@@ -266,7 +297,7 @@ subroutine readxn(indate)
     return
   endif
 
-  if(ndays_indate-rtime_saved(2)>halfsecond.or.MODE==100)then
+  if(ndays_indate-rtime_saved(2)>halfsecond.or.MODE_READ=='MONTH')then
    !look for a new data set
     if(MasterProc) write(*,*)'Nest: READING NEW BC DATA from ',&
           trim(filename_read_BC)
@@ -274,15 +305,15 @@ subroutine readxn(indate)
   endif
 
 !   make weights for time interpolation
-  if(MODE==100)then   ! don't interpolate for now
-    W1=0.0;  W2=1.0   ! use last read value
+  if(MODE_READ=='MONTH')then  ! don't interpolate for now
+    W1=0.0;  W2=1.0           ! use last read value
   else
-    W1=1.0;  W2=0.0   ! default: use first read value
+    W1=1.0;  W2=0.0           ! default: use first read value
     if(rtime_saved(2)-rtime_saved(1)<halfsecond)then
-      W1=0.0;  W2=1.0 ! use last read value
+      W1=0.0;  W2=1.0         ! use last read value
     elseif(ndays_indate-rtime_saved(1)>halfsecond)then
       W2=(ndays_indate-rtime_saved(1))/(rtime_saved(2)-rtime_saved(1))
-      W1=1.0-W2       ! interpolate
+      W1=1.0-W2               ! interpolate
     endif
   endif
   if(DEBUG_NEST.and.MasterProc) then
@@ -325,7 +356,7 @@ subroutine wrtxn(indate,WriteNow)
   logical, save :: first_call=.true.
 
   call Config_Nest()
-  if(.not.any(MODE==[1,3,10,12,20,30]).and..not.FORECAST)return
+  if(MODE_SAVE=='NONE')return
 
 ! Check if the file exist already at start of run. Do not wait until first write to stop!
 ! If you know what you are doing you can set paramter APPEND=.true.,
@@ -334,25 +365,23 @@ subroutine wrtxn(indate,WriteNow)
   if(overwrite.and.MasterProc)then
     filename_write=date2string(template_write,indate,mode='YMDH',debug=mydebug)
     inquire(file=fileName_write,exist=overwrite)
-    call CheckStop(overwrite.and..not.FORECAST,&
-           "Nest: Refuse to overwrite. Remove this file: "//trim(fileName_write))   
+    call CheckStop(overwrite.and.MODE_SAVE/='FORECAST',&
+      "Nest: Refuse to overwrite. Remove this file: "//trim(fileName_write))   
   endif
 
-  select case(MODE)
-  case(10,12,20)
+  select case(MODE_SAVE)
+  case('START')
     if(.not.WriteNow)return
 !   out_DOMAIN=RUNDOMAIN
+  case('FORECAST')
+    outdate(:)%seconds=0   ! output only at full hours
+    if(.not.compare_date(FORECAST_NDUMP,indate,outdate(:FORECAST_NDUMP),&
+                         wildcard=-1))return
+    if(MasterProc) write(*,*)&
+      date2string(" Forecast nest/dump at YYYY-MM-DD hh:mm:ss",indate)
+!  out_DOMAIN=RUNDOMAIN
   case default
-    if(FORECAST)then
-      outdate(:)%seconds=0   ! output only at full hours
-      if(.not.compare_date(FORECAST_NDUMP,indate,outdate(:FORECAST_NDUMP),&
-                           wildcard=-1))return
-      if(MasterProc) write(*,*)&
-        date2string(" Forecast nest/dump at YYYY-MM-DD hh:mm:ss",indate)
-!    out_DOMAIN=RUNDOMAIN
-    else
-      if(mod(indate%hour,NHOURSAVE)/=0.or.indate%seconds/=0)return
-    endif
+    if(mod(indate%hour,NHOURSAVE)/=0.or.indate%seconds/=0)return
   endselect
 
   iotyp=IOU_INST
@@ -503,7 +532,7 @@ subroutine init_icbc(idate,cdate,ndays,nsecs)
   if(present(nsecs)) call nctime2date(dat,nsecs)
   call set_extbic(dat)  ! set mapping, EXTERNAL_BC, TOP_BC
 
-  if(.not.EXTERNAL_BIC_SET .and. MODE==0)return !No nesting
+  if(.not.EXTERNAL_BIC_SET.and.MODE_READ=='NONE'.and.MODE_SAVE=='NONE')return !No nesting
 
   filename_read_3D=date2string(template_read_3D,dat,mode='YMDH',debug=mydebug)
   filename_read_BC=date2file  (template_read_BC,dat,BC_DAYS,"days",mode='YMDH',debug=mydebug)  
@@ -707,7 +736,7 @@ subroutine init_nest(ndays_indate,filename_read,native_grid,IIij,JJij,Weight,&
       !cannot read time on file. assumes it is correct
       ndays_ext(1)=ndays_indate
     endif
-    if(MODE==100)then
+    if(MODE_READ=='MONTH')then
       !asuming 12 monthes for BC, and 12 or 1 values for IC
       ndays_ext(1)=0
       do n=2,N_ext
@@ -992,7 +1021,7 @@ subroutine read_newdata_LATERAL(ndays_indate)
     call init_nest(ndays_indate,filename_read_BC,native_grid_BC,&
                    IIij,JJij,Weight,k1_ext,k2_ext,weight_k1,weight_k2,&
                    N_ext_BC,KMAX_ext_BC,GIMAX_ext,GJMAX_ext)
-    if(MODE==100.and.N_ext_BC/=12.and.MasterProc)then
+    if(MODE_READ=='MONTH'.and.N_ext_BC/=12.and.MasterProc)then
       write(*,*)'Nest: WARNING: Expected 12 monthes in BC file, found ',N_ext_BC
       call CheckStop('Nest BC: wrong number of monthes')
     endif
@@ -1058,7 +1087,7 @@ subroutine read_newdata_LATERAL(ndays_indate)
       allocate(ndays_ext(N_ext_BC))
     endif
 
-    if(MODE==100)then
+    if(MODE_READ=='MONTH')then
       !only care of the month
       call nctime2date(ndate,ndays_indate,'Nest: BC reading record MM')
       n=ndate(2)
@@ -1263,7 +1292,7 @@ subroutine reset_3D(ndays_indate)
     call init_nest(ndays_indate,filename_read_3D,native_grid_3D,&
                   IIij,JJij,Weight,k1_ext,k2_ext,weight_k1,weight_k2,&
                   N_ext,KMAX_ext,GIMAX_ext,GJMAX_ext)
-    if(MODE==100.and.(N_ext/=12.and.N_ext/=1.and.MasterProc))then
+    if(MODE_READ=='MONTH'.and.(N_ext/=12.and.N_ext/=1.and.MasterProc))then
       write(*,*)'Nest: WARNING: Expected 12 or 1 monthes in IC file, found ',N_ext
       call CheckStop('Nest: IC: wrong number of months')
     endif
@@ -1272,7 +1301,7 @@ subroutine reset_3D(ndays_indate)
   allocate(data(GIMAX_ext,GJMAX_ext,KMAX_ext), stat=status)
   if(MasterProc)then
     call check(nf90_open(trim(fileName_read_3D),nf90_nowrite,ncFileID))
-    if(MODE==100)then
+    if(MODE_READ=='MONTH')then
       if(N_ext==1)then
         n=1
       else
