@@ -154,7 +154,7 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-19th July 2016 Alvaro, 3261
+19th July 2016 Alvaro, 3261-3262
 
 Nest_ml:
 - Replace integer variable MODE by string variables MODE_READ and MODE_SAVE.
@@ -175,19 +175,16 @@ Nest_ml:
     MODE_SAVE='FORECAST'  write every OUTDATE(1:FORECAST_NDUMP)
 - See file header for the full list of supported modes.
 
+config_EMEPSTD.nml,config_EMEPGLOB.nml,config_IMPACT2C.nml:
+- set for "do nothing" nesting mode
+- add available nesting modes as comments
 
+config_BM-EECCA.nml:
+- set for "do nothing" nesting mode
 
-#	modified:   config_EMEPGLOB.nml
-#	modified:   config_EMEPSTD.nml
-#	modified:   config_BM-EECCA.nml
-
-#	modified:   config_FORECAST.nml
-#	modified:   config_FORECAST_CitySR.nml
-#	modified:   config_ANALYSIS.nml
-#	modified:   config_EMERGENCY.nml
-#	modified:   config_IMPACT2C.nml
-
-
+config_FORECAST.nml,config_ANALYSIS.nml,
+config_FORECAST_CitySR.nml,config_EMERGENCY.nml:
+- set for "FORECAST" nesting mode
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 11th July 2016 Alvaro, 3260
