@@ -78,7 +78,7 @@
 !------------------------------
   nBnmc=3
   Bnmc_name(1:5)='O3','NO2','SO2','PM25','PM10',
-  Bnmc_filename='/work/arjos/Bnmc/batch-02/###_2010/output/nmc-BB.nc',
+  Bnmc_filename='/work/arjos/Bnmc/batch-02/SPC_2010/output/nmc-BB.nc',
 &end
 !------------------------------
 ! ANALYSIS: NRT observations

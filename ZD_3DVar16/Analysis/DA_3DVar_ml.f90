@@ -51,7 +51,7 @@ module DA_3DVar_ml
   integer, parameter :: ANALYSIS_NDATE_MAX = 24   ! MAX patterns to check  
   integer, save      :: ANALYSIS_NDATE = 1        ! Patterns to check
   type(date), dimension(ANALYSIS_NDATE_MAX) :: &  ! When to perform the analysis,
-    analysis_date=date(-1,-1,-1,00,00)            ! every hour by default
+    analysis_date=date(-1,-1,-1,-1,00)            ! every hour by default
 
   ! link from observation element to original observation dataset:
   integer, allocatable  ::  iObsData(:)
@@ -653,7 +653,7 @@ contains
       end do  ! observed variables
 
       ! read filename:
-      Bmat(iB)%filename=trim(key2str(Bnmc_filename,'###',trim(Bmat(iB)%name)))
+      Bmat(iB)%filename=trim(key2str(Bnmc_filename,'SPC',trim(Bmat(iB)%name)))
 
       ! info ...
       write (gol,'(a,":     B matrix ",i0," (",a,")")') rname, iB, trim(Bname(iB)); call goPr

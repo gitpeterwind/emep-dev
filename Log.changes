@@ -154,6 +154,20 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+8th August 2016 Alvaro, 3263
+
+Makefile
+- Comilation target MACC-EVAan, used on CAMS50 VRA runs,
+  uses new data assimilation modules (ZD_3DVar16)
+
+ZD_3DVar16/Analysis/DA_3DVar_ml,config_ANALYSIS.nml:
+- Use 'SPC' string keyword on Bnmc_filename variable
+- Analysis every hour by default.
+
+ZD_3DVar16/Analysis/DA_Obs_ml:
+- Write total #obs on log file.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 19th July 2016 Alvaro, 3261-3262
 
 Nest_ml:

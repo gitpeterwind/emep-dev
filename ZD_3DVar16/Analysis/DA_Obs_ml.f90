@@ -2006,6 +2006,8 @@ endsubroutine ObsOper_Fill
     use GridValues_ml, only : coord_in_domain
     use Io_ml        , only : IO_TMP
     use AOD_PM_ml    , only : AOD_init,wavelength
+    use MPI          , only : MPI_IN_PLACE,MPI_INTEGER,MPI_SUM
+    use MPI_Groups_ml, only : MasterPE,MPI_COMM_CALC
   
     ! --- in/out ---------------------------------
 
@@ -2204,12 +2206,17 @@ endsubroutine ObsOper_Fill
       if(any(obsData(nd)%iobs/=0))&
         no=DIM(obsData(nd)%iobs(1)+1,obsData(nd)%iobs(0))
       call CheckStop(no,count(ipar(:nobs)==nd),"Inconsistent obsData%nobs")
+! total #obs
+      if(domain=='processor')then
+        CALL MPI_REDUCE(MPI_IN_PLACE,no,1,MPI_INTEGER,MPI_SUM,&
+          MasterPE,MPI_COMM_CALC,status)
+        IF_MPI_NOT_OK_RETURN(status=1)
+      endif
 ! log #obs
       if(MasterProc)then
         file=date2string(obsData(nd)%file,current_date)
-        write(damsg,"('obsData(',I0,') contains ',I0,3(1X,A))")&
-          nd,no,trim(obsData(nd)%name),&
-          trim(obsData(nd)%deriv),"observations"
+        write(damsg,"('obsData(',I0,') contains ',I0,2(1X,A),' observations')")&
+          nd,no,trim(obsData(nd)%name),trim(obsData(nd)%deriv)
         write(damsg,dafmt)trim(damsg)
         call PrintLog(damsg)
         call PrintLog(file)

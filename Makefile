@@ -128,9 +128,9 @@ EMEP HTAP MACC MACC-EVA Polen EmChem09 EmChem09-ESX CRI_v2_R5 eEMEP SR-MACC: \
 	  ./ZD_3DVar/My_3DVar_ml.f90 ./ZD_Pollen/My_Pollen_ml.f90 \
 	  ./ZD_EXTRA/My_ESX_ml.f90
 
-SR-EMEP:    EMEP            # SR is only a different config_emep.nml
-MACC-NMC:   MACC-EVA        # EVA run, with different nest/dump output
-MACC-EVAan: MACC-EVA-3DVar  # 3DVar run, with EVA nest/dump output
+SR-EMEP:    EMEP              # SR is only a different config_emep.nml
+MACC-NMC:   MACC-EVA          # EVA run, with different nest/dump output
+MACC-EVAan: MACC-EVA-3DVar16  # 3DVar run, with EVA nest/dump output
 Pollen:     MACC-Pollen
 
 # Pollen for MACC FC runs
