@@ -154,6 +154,13 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+17th August 2016 Alvaro, 3264
+
+Nest_ml:
+- Fix bug introduced on 3261 (July 2016).
+  MODE_SAVE='END' did not work, Nest output was written every NHOURSAVE hours.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 8th August 2016 Alvaro, 3263
 
 Makefile

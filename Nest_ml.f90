@@ -370,7 +370,7 @@ subroutine wrtxn(indate,WriteNow)
   endif
 
   select case(MODE_SAVE)
-  case('START')
+  case('END')
     if(.not.WriteNow)return
 !   out_DOMAIN=RUNDOMAIN
   case('FORECAST')
