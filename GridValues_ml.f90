@@ -647,26 +647,33 @@ contains
        end do ! j
 
     elseif(trim(projection)==trim('lon lat')) then
-       !NB: lon and lat are stored as 1 dimensional arrays
-       call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
-
-       call check(nf90_get_var(ncFileID, varID, lon_ext(1:limax,1),start=(/gi0+IRUNBEG-1/),count=(/limax/) ))
-       if(LIMAX>limax)lon_ext(LIMAX,1)=lon_ext(limax,1)+(lon_ext(limax,1)-lon_ext(limax-1,1))
-       lon_ext(0,1)=2*lon_ext(1,1)-lon_ext(2,1)
-       lon_ext(LIMAX+1,1)=2*lon_ext(LIMAX,1)-lon_ext(LIMAX-1,1)
-       do j=0,LJMAX+1
-          lon_ext(:,j)=lon_ext(:,1)
-       enddo
-
-       call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
-       call check(nf90_get_var(ncFileID, varID, lat_ext(1,1:ljmax),start=(/gj0+JRUNBEG-1/),count=(/ljmax/) ))
-       if(LJMAX>ljmax)lat_ext(1,LJMAX)=lat_ext(1,ljmax)+(lat_ext(1,ljmax)-lat_ext(1,ljmax-1))
-       lat_ext(1,LJMAX)=min(90.0,lat_ext(1,LJMAX))!should never be used anyway
-       lat_ext(1,0)=2*lat_ext(1,1)-lat_ext(1,2)
-       lat_ext(1,LJMAX+1)=2*lat_ext(1,LJMAX)-lat_ext(1,LJMAX-1)
-       do i=0,LIMAX+1
-          lat_ext(i,:)=lat_ext(1,:)
-       enddo
+       if(.not. USE_WRF_MET_NAMES)then
+          !NB: lon and lat are stored as 1 dimensional arrays
+          call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
+          
+          call check(nf90_get_var(ncFileID, varID, lon_ext(1:limax,1),start=(/gi0+IRUNBEG-1/),count=(/limax/) ))
+          if(LIMAX>limax)lon_ext(LIMAX,1)=lon_ext(limax,1)+(lon_ext(limax,1)-lon_ext(limax-1,1))
+          lon_ext(0,1)=2*lon_ext(1,1)-lon_ext(2,1)
+          lon_ext(LIMAX+1,1)=2*lon_ext(LIMAX,1)-lon_ext(LIMAX-1,1)
+          do j=0,LJMAX+1
+             lon_ext(:,j)=lon_ext(:,1)
+          enddo
+          
+          call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
+          call check(nf90_get_var(ncFileID, varID, lat_ext(1,1:ljmax),start=(/gj0+JRUNBEG-1/),count=(/ljmax/) ))
+          lat_ext(1,LJMAX)=min(90.0,lat_ext(1,LJMAX))!should never be used anyway
+          lat_ext(1,0)=2*lat_ext(1,1)-lat_ext(1,2)
+          lat_ext(1,LJMAX+1)=2*lat_ext(1,LJMAX)-lat_ext(1,LJMAX-1)
+          do i=0,LIMAX+1
+             lat_ext(i,:)=lat_ext(1,:)
+          enddo
+       else
+          !WRF  format
+          call check(nf90_inq_varid(ncid = ncFileID, name = "XLONG", varID = varID))
+          call nf90_get_var_extended(ncFileID,varID,lon_ext,0,LIMAX+1,0,LJMAX+1)
+          call check(nf90_inq_varid(ncid = ncFileID, name = "XLAT", varID = varID))
+          call nf90_get_var_extended(ncFileID,varID,lat_ext,0,LIMAX+1,0,LJMAX+1)
+       endif
     else if(trim(projection)=='Rotated_Spherical')then
        status=nf90_get_att(ncFileID,nf90_global,"grid_north_pole_latitude",grid_north_pole_latitude)
        if(status /= nf90_noerr) then
