@@ -315,7 +315,7 @@ contains
 
     integer :: status,ncFileID,idimID,jdimID, kdimID,timeDimID,varid,timeVarID
     integer :: GIMAX_file,GJMAX_file,KMAX_file,wrf_proj_code
-    real :: wrf_POLE_LAT
+    real :: wrf_POLE_LAT=0.0
 
 
     if(ME_MPI==0)then
@@ -378,8 +378,16 @@ contains
              call check(nf90_inq_dimid(ncid = ncFileID, name = "south_north", dimID = jdimID))
           endif
        elseif(trim(projection)==trim('lon lat')) then
-          call check(nf90_inq_dimid(ncid = ncFileID, name = "lon", dimID = idimID))
-          call check(nf90_inq_dimid(ncid = ncFileID, name = "lat", dimID = jdimID))
+          status=nf90_inq_dimid(ncid = ncFileID, name = "lon", dimID = idimID)
+          if(status /= nf90_noerr) then
+             !WRF format
+             call check(nf90_inq_dimid(ncid = ncFileID, name = "west_east", dimID = idimID))
+          endif
+          status=nf90_inq_dimid(ncid = ncFileID, name = "lat", dimID = jdimID)
+          if(status /= nf90_noerr) then
+             !WRF format
+             call check(nf90_inq_dimid(ncid = ncFileID, name = "south_north", dimID = jdimID))
+          endif
        else
           !     write(*,*)'GENERAL PROJECTION ',trim(projection)
           status=nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID)
@@ -471,7 +479,11 @@ contains
           endif
           
           allocate(latitudes(JJFULLDOM))
-          call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
+          status=nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID)
+          if(status /= nf90_noerr) then
+             !WRF format
+             call check(nf90_inq_varid(ncid = ncFileID, name = "XLAT", varID = varID))
+          endif
           call check(nf90_get_var(ncFileID, varID,latitudes  ))
           if(latitudes(RUNDOMAIN(4))>88.0)then
              write(*,*)'The grid is singular at North Pole'
@@ -571,9 +583,17 @@ contains
           call check(nf90_inq_dimid(ncid = ncFileID, name = "south_north", dimID = jdimID))
        endif
     elseif(trim(projection)==trim('lon lat')) then
-       call check(nf90_inq_dimid(ncid = ncFileID, name = "lon", dimID = idimID))
-       call check(nf90_inq_dimid(ncid = ncFileID, name = "lat", dimID = jdimID))
-    else
+       status=nf90_inq_dimid(ncid = ncFileID, name = "lon", dimID = idimID)
+       if(status /= nf90_noerr) then
+          !WRF  format
+          call check(nf90_inq_dimid(ncid = ncFileID, name = "west_east", dimID = idimID))
+       endif
+       status=nf90_inq_dimid(ncid = ncFileID, name = "lat", dimID = jdimID)
+       if(status /= nf90_noerr) then
+          !WRF  format
+          call check(nf90_inq_dimid(ncid = ncFileID, name = "south_north", dimID = jdimID))
+       endif
+     else
        !     write(*,*)'GENERAL PROJECTION ',trim(projection)
        status=nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID)
        if(status /= nf90_noerr) then
