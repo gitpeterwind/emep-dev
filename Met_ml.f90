@@ -3235,8 +3235,13 @@ subroutine Check_Meteo_Date
        !check if the "bucket" method is used
        status = nf90_get_att(ncFileID,nf90_global,"BUCKET_MM",wrf_bucket)
        if(status == nf90_noerr)then
-          found_wrf_bucket = .true.
-          write(*,*)'assuming constant bucket size: ',wrf_bucket
+          if(wrf_bucket>0.0)then
+             found_wrf_bucket = .true.
+             write(*,*)'assuming constant bucket size: ',wrf_bucket
+          else
+              write(*,*)'Not using buckets ',wrf_bucket
+            
+          endif
        endif
     endif
    call check(nf90_close(ncFileID))
