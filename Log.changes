@@ -152,9 +152,16 @@ info on unused variables, etc.
 
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
+ 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+24th August 2016 Alvaro, 3268
+
+Makefile:
+- Fix pollen forecast setup: MACC compilation target did not include pollen species.
+  This error was intoduced on SVN 3205-3209 (May 2015).
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-19th and 22nd August 2016 Peter, 3265-6
+19th and 22nd August 2016 Peter, 3265-7
 
 GridValues_ml.f90
 Bug when WRF is used in lon lat projection.

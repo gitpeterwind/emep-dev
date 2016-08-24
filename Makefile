@@ -166,7 +166,7 @@ GenChem%:
 GenChem-%:          GenChemOptions += -r $(lastword $(subst -, ,$*))
 GenChem-EMEP-%:     GenChemOptions += -f FINNv1.5 -e SeaSalt,Dust,Isotopes
 GenChem-HTAP-%:     GenChemOptions += -f GFED     -e SeaSalt,Dust,Isotopes
-GenChem-MACC-%:     GenChemOptions += -f GFASv1   -e SeaSalt,Dust,ZCM_Pollen/Pollen
+GenChem-MACC-%:     GenChemOptions += -f GFASv1   -e SeaSalt,Dust,../ZCM_Pollen/Pollen
 GenChem-SR-MACC-%:  GenChemOptions += -f GFASv1   -e none
 GenChem-MACCEVA-%:  GenChemOptions += -f GFASv1   -e SeaSalt,Dust
 GenChem-eEMEP-%:    GenChemOptions += -f GFASv1   -e SeaSalt,Dust
