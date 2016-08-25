@@ -89,8 +89,10 @@ F90FLAGS += -cpp $(DFLAGS) $(addprefix -I,$(INCL)) \
 	$(F90) $(F90FLAGS) -c $< -o $@
 
 # disable div0 exeption (DEBUG=yes) on netcdf/4.3.1 .. netcdf/4.4.0
+ifneq ($(LD),gfortran)
 NetCDF_ml.o:NetCDF_ml.f90
 	$(F90) $(F90FLAGS) -fpe-all=3 -c $< -o $@
+endif
 
 # Include the dependency-list created by makedepf90 below
 all:  $(PROG)
