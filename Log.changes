@@ -154,9 +154,14 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
  
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-25th August 2016 Dave, 3271
+25th August 2016 Dave, 3271-3272
 
-SOA_ml: cleanup
+cleanups:
+
+Runchem_ml
+SmallUtils_ml
+SOA_ml 
+TimeDate_ml
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 25th August 2016 Peter, 3270

@@ -111,7 +111,7 @@ function print_date(cd) result(str)
 end function print_date
    
 !> FUNCTION same_date
-!! DS Returns true if dates equal
+!! Returns true if dates equal
 
 function same_date(cd1,cd2) result(tf)
   type(date) :: cd1, cd2
@@ -292,7 +292,7 @@ END SUBROUTINE get_ymd
 FUNCTION day_of_week (yyyy,mm,dd) RESULT (dow)
 ! Day_Of_Week: (0=Sunday,1=Monday...6=Saturday)
 ! cf J.D.Robertson, CACM 15(10):918
-! renamed dow->day_of_week, keep dow as internal,  DSF
+! renamed dow->day_of_week, keep dow as internal
   INTEGER,INTENT(IN)  :: yyyy,mm,dd
   INTEGER             :: dow
   dow = MODULO((13*(mm+10-(mm+10)/13*12)-1)/5+dd+77     &
@@ -303,7 +303,7 @@ END FUNCTION day_of_week
 FUNCTION day_of_year (yyyy,mm,dd) result (ndiy)
 ! day count in year
 ! cf J.D.Robertson, CACM 15(10):918
-! renamed ndiy->day_of_year, keep ndiy as internal,  DSF
+! renamed ndiy->day_of_year, keep ndiy as internal
   INTEGER,INTENT(IN)  :: yyyy,mm,dd
   INTEGER             :: ndiy
   ndiy = 3055*(mm+2)/100-(mm+10)/13*2-91                    &

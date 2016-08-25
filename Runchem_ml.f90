@@ -7,7 +7,7 @@
 
 module RunChem_ml
 
-  use AerosolCalls,     only: AerosolEquilib & !DEC2014 My_MARS, My_EQSAM, &
+  use AerosolCalls,     only: AerosolEquilib & !-> My_MARS, My_EQSAM, &
                              ,Aero_water, Aero_water_MARS   !DUST -> USE_DUST
   use My_Timing_ml,     only: Code_timer, Add_2timing,  &
                               tim_before, tim_after
@@ -34,8 +34,8 @@ module RunChem_ml
                               DEBUG_EMISSTACKS, & ! MKPS
                               DebugCell, DEBUG    ! RUNCHEM
   use OrganicAerosol_ml,only: ORGANIC_AEROSOLS, OrganicAerosol, &
-                              Init_OrganicAerosol, & !FEB2012
-                              Reset_OrganicAerosol, & !FSOA
+                              Init_OrganicAerosol, & 
+                              Reset_OrganicAerosol, & 
                               SOA_MODULE_FLAG   ! ="VBS" or "NotUsed"
   use Pollen_ml,        only: Pollen_flux
   use Par_ml,           only: lj0,lj1,li0,li1, limax, ljmax,  &
@@ -43,7 +43,6 @@ module RunChem_ml
   use PointSource_ml,    only: pointsources, get_pointsources
   use SeaSalt_ml,       only: SeaSalt_flux
   use Setup_1d_ml,      only: setup_1d, setup_rcemis, reset_3d
-                      !FUTURE setup_nh3  ! NH3emis (NMR-NH3 project)
   use Setup_1dfields_ml,only: first_call, &
                               amk, rcemis, xn_2d  ! DEBUG for testing
   use TimeDate_ml,      only: current_date,daynumber
@@ -132,7 +131,8 @@ subroutine runchem()
 
       if(USE_FASTJ)then
 !         call setup_phot_fastj(i,j,errcode,0)! recalculate the column
-         call  phot_fastj_interpolate(i,j,errcode)!interpolate (intelligently) from 3-hourly values
+        !interpolate (intelligently) from 3-hourly values
+         call  phot_fastj_interpolate(i,j,errcode)
       else
          call setup_phot(i,j,errcode)
       endif
@@ -140,13 +140,10 @@ subroutine runchem()
       call CheckStop(errcode,"setup_photerror in Runchem") 
       call Add_2timing(29,tim_after,tim_before,"Runchem:1st setups")
 
-      ! Called every adv step, only updated every third hour
-!FUTURE call setup_nh3(i,j)    ! NH3emis, experimental (NMR-NH3)
-
-
       if(DEBUG%RUNCHEM.and.debug_flag) &
         call datewrite("Runchem Pre-Chem", (/ rcemis(NO,20), &
-!          rcemis(SHIPNOX,KMAX_MID), &!hardcoded chemical indice are not defined for all chem schemes, and should be avoided
+             !rcemis(SHIPNOX,KMAX_MID), !hardcoded chemical indice are not
+             ! defined for all chem schemes, and should usually be avoided
           rcemis(C5H8,KMAX_MID), xn_2d(NO,20),xn_2d(C5H8,20) /) )
       if(DEBUG%RUNCHEM) call check_negs(i,j,'A')
 
@@ -202,8 +199,8 @@ subroutine runchem()
       end if
 
      !Should be no further concentration changes due to emissions or deposition
-     !FSOA - resets BGND_OM and  ... if needed
-      if(ORGANIC_AEROSOLS) call Reset_OrganicAerosol(i,j,debug_flag) ! FSOA
+
+      if(ORGANIC_AEROSOLS) call Reset_OrganicAerosol(i,j,debug_flag)
 
 
       !// Calculate Aerosol Optical Depth

@@ -7,7 +7,7 @@ module SmallUtils_ml
 !> @brief small utility provides routines to process text strings,
 !!   find array indices, write arrays.
 !!
-!! @author Dave Simpson, 1999-2011
+!! @author Dave Simpson+Alvaro, 1999-2016
 !! Language: F-complaint
 !<____________________________________________________________________________
   implicit none
