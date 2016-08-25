@@ -164,13 +164,10 @@ contains
 
     character(len=*),intent(in):: meteo   ! template for meteofile
     integer,  intent(out)      :: cyclicgrid
-    integer                    :: nyear,nmonth,nday,nhour,i,j,ii,jj,k,kk,ios
-    integer                    :: KMAX,MIN_GRIDS
+    integer                    :: nyear,nmonth,nday,nhour,k,ios
+    integer                    :: MIN_GRIDS
     character(len=len(meteo))  :: filename !name of the input file
     logical :: Use_Grid_Def=.false.!Experimental for now
-    real :: lonstart,latstart,ddeg_lon,ddeg_lat,P0,x1,x2,x3,x4
-    integer ::i0,im,j0,jm,North_pole,South_pole
-    real ::x,y,xr,xr2,yr,yr2,lon,lat,lon2,lat2
 
     nyear=startdate(1)
     nmonth=startdate(2)
@@ -265,9 +262,9 @@ contains
        call Alloc_MetFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND,NMET)
        
        if(ME_CALC>=0)then
-          call Alloc_GridFields(GIMAX,GJMAX,LIMAX,LJMAX,KMAX_MID,KMAX_BND)
+          call Alloc_GridFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND)
        else
-          call Alloc_GridFields(GIMAX,GJMAX,largeLIMAX,largeLJMAX,KMAX_MID,KMAX_BND)
+          call Alloc_GridFields(largeLIMAX,largeLJMAX,KMAX_MID,KMAX_BND)
        endif
 
        if(ME_CALC>=0)then
@@ -313,7 +310,7 @@ contains
     integer, intent(out):: IIFULLDOM,JJFULLDOM,KMAX,METSTEP
     character (len = *), intent(out) ::projection
 
-    integer :: status,ncFileID,idimID,jdimID, kdimID,timeDimID,varid,timeVarID
+    integer :: status,ncFileID,idimID,jdimID, kdimID,timeDimID
     integer :: GIMAX_file,GJMAX_file,KMAX_file,wrf_proj_code
     real :: wrf_POLE_LAT=0.0
 
@@ -523,15 +520,13 @@ contains
     character (len = *), intent(in) ::filename
     integer, intent(out):: cyclicgrid
 
-    integer :: nseconds(1),n,n1,i,j,k,kk,im,jm,i0,j0
-    integer :: ncFileID,idimID,jdimID, kdimID,timeDimID,varid,timeVarID
-    integer :: GIMAX_file,GJMAX_file,KMAX_file,ihh,ndate(4)
-    integer :: status,iglobal,jglobal,info,South_pole,North_pole,Ibuff(2)
-    real :: ndays(1),x1,x2,x3,x4,P0,x,y,mpi_out
-    character (len = 50) :: timeunit
-    logical::found_hybrid=.false.,lonlatready=.false.
+    integer :: n,i,j,k,kk
+    integer :: ncFileID,idimID,jdimID,varID
+    integer :: status,South_pole,North_pole
+    real :: x1,x2,x3,x4,P0,x,y,mpi_out
+    logical::found_hybrid=.false.
     real :: CEN_LAT, CEN_LON,P_TOP_MET
-    real :: dr,om,om2,rb,rl,rp,dx,dy,dy2,glmax,glmin,v2(2),glon_fdom1,glat_fdom1
+    real :: rb,rl,rp,dx,dy,dy2,glmax,glmin,v2(2),glon_fdom1,glat_fdom1
     integer :: iloc_start, iloc_end,jloc_start, jloc_end
 
     real, dimension(-1:LIMAX+2,-1:LJMAX+2)::xm,xm_i_ext,xm_j_ext
@@ -1287,7 +1282,7 @@ subroutine lb2ij_real(gl2,gb2,xr2,yr2,fi2,an2,xp2,yp2)
   real, parameter :: PI=3.14159265358979323,dr=PI/180.0,dri= 180.0/PI
   real    :: PId4,dr2,dist,dist2,dist3
   integer ::i,j,ip1,jp1, ir2, jr2
-  real ::xscen ,yscen,zsycen,zcycen ,zxmxc,zsxmxc,zcxmxc,zsysph,zsyrot,yrot,zsxrot,zcysph,zcyrot,zcxrot,xrot,dx,x1,y1
+  real ::xscen ,yscen,zsycen,zcycen ,zxmxc,zsxmxc,zcxmxc,zsysph,zsyrot,yrot,zsxrot,zcysph,zcyrot,zcxrot,xrot
 
   select case (projection)
   case('Stereographic')
@@ -1710,9 +1705,9 @@ endsubroutine lb2ij_int
     in=coord_in_domain("gridbox",lon,lat,iloc,jloc,iglob,jglob)
   endfunction coord_in_gridbox
 
-  subroutine Alloc_GridFields(GIMAX,GJMAX,LIMAX,LJMAX,KMAX_MID,KMAX_BND)
+  subroutine Alloc_GridFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND)
 
-    integer, intent(in)::GIMAX,GJMAX,LIMAX,LJMAX,KMAX_MID,KMAX_BND
+    integer, intent(in)::LIMAX,LJMAX,KMAX_MID,KMAX_BND
 
     allocate(i_fdom(0:LIMAX+1))
     allocate(j_fdom(0:LJMAX+1))
@@ -1735,7 +1730,7 @@ endsubroutine lb2ij_int
   subroutine make_vertical_levels_interpolation_coeff
     !make interpolation coefficients to convert the levels defined in meteo 
     !into the levels defined in Vertical_levels.txt
-    integer ::i,j,k,k_met
+    integer ::k,k_met
     real ::p_met,p_mod,p1,p2
     if(.not. allocated(k1_met))allocate(k1_met(KMAX_MID),k2_met(KMAX_MID),x_k1_met(KMAX_MID))
     if(.not. allocated(A_bnd_met))then
@@ -1797,11 +1792,10 @@ endsubroutine lb2ij_int
     ! (typically in the middle of the grid, since it is "flat")
     !
     implicit none
-    integer :: j
-    real*8 :: xsph, ysph, xrot, yrot,xcen,ycen,zsycen,zcycen
-    real*8 :: zsxrot,zcxrot,zsyrot,zcyrot,zsysph,zcysph,zcxmxc,zsxmxc,zxmxc
-    real*8 :: grid_north_pole_longitude,grid_north_pole_latitude
-    real*8 :: rad2deg,deg2rad
+    real :: xsph, ysph, xrot, yrot,xcen,ycen,zsycen,zcycen
+    real :: zsxrot,zcxrot,zsyrot,zcyrot,zsysph,zcysph,zcxmxc,zsxmxc,zxmxc
+    real :: grid_north_pole_longitude,grid_north_pole_latitude
+    real :: rad2deg,deg2rad
     !
     deg2rad=3.14159265358979323/180.
     rad2deg=1.0/deg2rad

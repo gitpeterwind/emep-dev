@@ -182,7 +182,6 @@ subroutine Emissions(year)
   integer, intent(in)   :: year        ! Year ( 4-digit)
 
   !-- local variables
-  real    :: conv              ! Conversion factor
   integer :: i, j              ! Loop variables
   real    :: tonne_to_kgm2s    ! Converts tonnes/grid to kg/m2/s
   real    :: ccsum             ! Sum of emissions for one country
@@ -195,16 +194,15 @@ subroutine Emissions(year)
   integer, allocatable, dimension(:,:)      :: road_globnland 
   integer, allocatable, dimension(:,:,:)    :: road_globland 
   real,    allocatable, dimension(:,:)      :: RoadDustEmis_climate_factor ! Climatic factor for scaling road dust emissions (in TNO model based on yearly average soil water)
-  integer :: err1, err2, err3, err4, err5, err6, err7, err8, err9 ! Error messages
+  integer :: err1, err2, err3, err4, err7, err8, err9 ! Error messages
   integer :: fic ,insec,inland,iemis,iemislist 
   integer :: iic,ic,n         ! country codes 
   integer :: isec             ! loop variables: emission sectors
-  integer :: iem,iem2         ! loop variable over pollutants (1..NEMIS_FILE)
-  integer :: icc,ncc          ! loop variables over  sources
+  integer :: iem              ! loop variable over pollutants (1..NEMIS_FILE)
+  integer :: icc              ! loop variables over  sources
   integer :: nin, nex         !  include, exclude numbers for emis_inputlist
   character(len=*), parameter :: sub='Emissions:'
-  character(len=300) :: inputline, fname ! txt, File name
-  real    :: tmpclimfactor
+  character(len=300) :: fname ! txt, File name
 
   ! Emission sums (after e_fact adjustments):
   real, dimension(NEMIS_FILE)       :: emsum ! Sum emis over all countries
@@ -213,16 +211,14 @@ subroutine Emissions(year)
 
 
   ! Road dust emission potential sums (just for testing the code, the actual emissions are weather dependent!)
-  real, dimension(NROAD_FILES)       :: roaddustsum    ! Sum emission potential over all countries
   real, dimension(NLAND,NROAD_FILES) :: sumroaddust    ! Sum of emission potentials per country
   real, dimension(NLAND,NROAD_FILES) :: sumroaddust_local    ! Sum of emission potentials per country in subdomain
-  real :: fractions(LIMAX,LJMAX,NCMAX),SMI(LIMAX,LJMAX),Reduc(NLAND),SMI_roadfactor
+  real :: fractions(LIMAX,LJMAX,NCMAX),SMI(LIMAX,LJMAX),SMI_roadfactor
   logical ::SMI_defined=.false.
   logical,save :: my_first_call=.true.  ! Used for femis call
   logical :: fileExists            ! to test emission files
   character(len=40) :: varname, fmt,cdf_sector_name
-  integer ::allocerr, i_gridemis, i_Emis_4D, i_femis_lonlat
-  real :: lonlat_fac
+  integer ::allocerr, i_Emis_4D
 
   if (MasterProc) write(6,*) "Reading emissions for year",  year
 
@@ -772,8 +768,7 @@ subroutine Emissions(year)
   ! print *, "calling glob2local_int for iem", iem, " me ", me
   select case(EMIS_SOURCE)
   case("emislist")
-     call StopAll("The emislist option is not available anymore! &
-     Use Mixed instead")
+     call StopAll("The emislist option is not available anymore! Use Mixed instead")
   case("CdfFractions")
      ! emissions directly defined into nlandcode,landcode and snapemis
   endselect
@@ -963,15 +958,14 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
 
   integer, save :: oldday = -1, oldhour = -1
   integer, save :: wday , wday_loc ! wday = day of the week 1-7
-  real ::  oldtfac,fac
-  logical :: debug_tfac, debug_kprof
+  real ::  oldtfac
+  logical :: debug_tfac
 
   ! If timezone=-100, calculate daytime based on longitude rather than timezone
   integer :: daytime_longitude, daytime_iland, hour_longitude, hour_iland,nstart
-  integer :: i_Emis_4D,n
+  integer :: i_Emis_4D
   character(len=125) ::varname 
   TYPE(timestamp)   :: ts1,ts2
-  logical, save::firstcall=.true.
 
   ! Initialize
   ehlpcom0 = GRAV* 0.001*AVOG!0.001 = kg_to_g / m3_to_cm3
@@ -1330,12 +1324,12 @@ subroutine newmonth
   integer i, j,k, iyr, iemislist
   integer n, flat_ncmaxfound         ! Max. no. countries w/flat emissions
   real :: rdemis(MAXLIMAX,MAXLJMAX)  ! Emissions read from file
-  character(len=200) :: fname,NC_EMIS_SPEC(NEMIS_FILE)
+  character(len=200) :: fname
   real ktonne_to_kgm2s, tonnemonth_to_kgm2s  ! Units conversion
   integer :: IQSO2                   ! Index of sox in  EMIS_FILE
   integer errcode,iland
-  integer :: month,iem,ic,iic,isec, err3,icc,i_gridemis
-  real :: duml,dumh,tmpsec(NSECTORS),conv
+  integer :: iem,ic,isec, i_gridemis
+  real :: conv
   logical , save :: first_call=.true.
   logical :: needed_found
 
@@ -1346,7 +1340,7 @@ subroutine newmonth
   real, dimension(NEMIS_FILE)       :: emsum ! Sum emis over all countries
   real, dimension(NLAND,NEMIS_FILE) :: sumemis, sumemis_local ! Sum of emissions per country
   character(len=40) :: varname 
-  character(len=125) ::fileName,Mask_fileName,Mask_varname
+  character(len=125) ::fileName
   real :: Mask_ReducFactor
   integer :: NMask_Code,Mask_Code(NLAND), i_femis_lonlat
   real :: lonlat_fac, dms_sum
@@ -1882,7 +1876,7 @@ subroutine uemep_emis(indate)
 
   implicit none
   type(date), intent(in) :: indate  ! Gives year..seconds
-  integer :: i, j, k, f       ! cooridnates, loop variables
+  integer :: i, j, k          ! coordinates, loop variables
   integer :: icc, ncc         ! No. of countries in grid.
   integer :: ficc,fncc        ! No. of countries with
   integer :: iqrc             ! emis indices 
@@ -1894,13 +1888,12 @@ subroutine uemep_emis(indate)
   integer, save, dimension(MAXNLAND) ::  daytime = 0  !  0=night, 1=day
   integer, save, dimension(MAXNLAND) ::  localhour = 1  ! 1-24 local hour in the different countries, ? How to handle Russia, with multiple timezones???
   integer                         ::  hourloc      !  local hour 
-  logical                         ::  hourchange   !             
   real, dimension(NRCEMIS)        ::  tmpemis      !  local array for emissions
-  real ::  tfac, dtgrid    ! time-factor (tmp variable); dt*h*h for scaling
-  real ::  s               ! source term (emis) before splitting
+  real ::  tfac    ! time-factor (tmp variable); dt*h*h for scaling
+  real ::  s       ! source term (emis) before splitting
   integer :: iland, iland_timefac  ! country codes, and codes for timefac 
   integer :: daytime_longitude, daytime_iland, hour_longitude, hour_iland,nstart
-  integer ::icc_uemep,Nuemep_iter,it
+  integer ::icc_uemep
   integer, save :: wday , wday_loc ! wday = day of the week 1-7
   integer ::ix,iix
   real::dt_uemep, xtot, emis_uemep(KMAX_MID),emis_tot(KMAX_MID)
@@ -2011,7 +2004,6 @@ subroutine uemep_emis(indate)
               s = snapemis_flat(i,j,ficc,iem)                        
             endif
 
-88          format(i3,A,20F10.4)
             do k=KEMISTOP,KMAX_MID
               emis_tot(k)=emis_tot(k)+s*emis_kprofile(KMAX_BND-k,sec2hfac_map(isec))*dt_uemep
             enddo
