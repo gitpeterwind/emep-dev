@@ -4,8 +4,8 @@ module OrganicAerosol_ml
   !
   ! References:
   !   S2007: Simpson, D. et al., JGR, 2007, 
-  !   B2012: Bergström, R. et al., ACP (in press Sept.), 2012, 
-  !   S2012: Simpson, D. et al., ACP, 2012, 
+  !   B2012: Bergström, R. et al., Atmos. Chem. Physics, 2012, 12, 8499-8527
+  !   S2012: Simpson, D. et al., Atmos. Chem. Physics, 2012, 12, 7825-7865 
   !
   !
   ! Usage: call OrganicAerosol from Runchem, after setup of column data
@@ -37,7 +37,6 @@ module OrganicAerosol_ml
 
    use ChemGroups_ml  !XSOA , only :    &
 
-   !FSOA use DerivedFields, only: d_2d, f_2d
    use Functions_ml, only: StandardAtmos_kPa_2_km !ds for use in Hz scaling
    use GridValues_ml, only: A_mid,B_mid, debug_proc, debug_li, debug_lj
    use ModelConstants_ml,    only :  PT
@@ -48,9 +47,9 @@ module OrganicAerosol_ml
    use Par_ml,               only : LIDIM => LIMAX, LJDIM => LJMAX, me
    use PhysicalConstants_ml, only : AVOG, RGAS_J 
    use Setup_1dfields_ml,    only : itemp, xn => xn_2d, Fgas, Fpart
-   use Setup_1dfields_ml,    only : amk   ! J16 for OM25_BGND
+   use Setup_1dfields_ml,    only : amk   ! "M" = air density
    use SmallUtils_ml,        only : find_index
-   use TimeDate_ml,          only: current_date
+   use TimeDate_ml,          only : current_date
    implicit none
    private
 
@@ -70,41 +69,29 @@ module OrganicAerosol_ml
    ! calculation to  start off with values of COA, mw and Fgas which 
    ! are about right. Ensures that very few iterations are needed.
 
-!  real,public, save, dimension(S1:S2,LIDIM,LJDIM,K1:K2) :: &
-!            Grid_SOA_Fgas           !EXC Grid_SOA_gamma
+   !  real,public, save, dimension(S1:S2,LIDIM,LJDIM,K1:K2) :: &
+   !            Grid_SOA_Fgas           !EXC Grid_SOA_gamma
 
   real,public, save, allocatable, dimension(:,:,:) :: Grid_COA
 
   real, private, allocatable, dimension(:), save :: &
         COA           & ! Org. aerosol, ug/m3  
                         ! (this version does not include EC as absorber)
-       ,BGND_OC       & ! FAKE FOR NOW, 0.50 ugC/m3 at surface
-       ,BGND_OA         ! Assumed OA/OC=2, -> 1 ug/m3
+       ,BGND_OC       & ! Background OC, assumed 0.20 ugC/m3 at surface
+       ,BGND_OA         ! Assumed OA/OC=2, -> 0.4 ug/m3
 
-  !J16 - moved here
    integer, private, save :: itot_bgnd = -999
    integer, private, save :: itot_om25 = -999
    integer, private, save :: igrp_om25 = -999
-
-  !VBS real, private, dimension(S1:S2,K1:K2), save :: &
-  ! TMP - we assign Fpart for all species for now, since
-  ! it makes it easier to code for nonvol and vol
-! From Setup_1dfields now
-!  real, private, dimension(1:NSPEC_TOT,K1:K2), save :: &
-!              Fgas    & ! Fraction in gas-phase
-!             ,Fpart!   & ! Fraction in gas-phase
-             !VBS ,tabRTpL   ! = 1.0e-6 * R.T(i)/pL(Ti) for all temps i:
-               !EXC ,gamma   & ! activity coefficient
 
   real, parameter, public :: SMALLFN  = 1.0e-20 ! Minimum value of ug allowed
 
    !/-- private
 
    ! ug = array for aerosol masses (ug/m3). Includes non-volatile compounds:
-   ! TMP??? Excluding NVOL for now?
-
     real, private,allocatable, dimension(:,:), save :: ug_semivol 
-! - use new NONVOLOC grpup to define:
+
+   ! - use new NONVOLOC grpup to define:
     integer, private, save :: NUM_NONVOLPCM = 0 !  size(NONVOLPCM_GROUP)
     integer, private, save :: NUM_NVABSOM   = 0 !  size(NVABSOM_GROUP)
     integer, private, save :: nonvolpcm = -999, nvabsom  = -999
@@ -154,19 +141,20 @@ module OrganicAerosol_ml
    end if
 
    if( first_call ) then
-     !J16 moved here:
+
      itot_bgnd = find_index( 'OM25_BGND', species(:)%name ) 
      itot_om25 = find_index( 'OM25_P',  species(:)%name ) 
      igrp_om25 = find_index( 'OM25',  chemgroups(:)%name ) 
-     if( MasterProc ) write(*,*) dtxt//"itot_bgnd, om25sum = ", &
-       itot_bgnd, itot_om25, igrp_om25
-     !J16 -----------
+
       nonvolpcm = find_index( 'NONVOLPCM', chemgroups(:)%name ) 
       nvabsom   = find_index( 'NVABSOM',   chemgroups(:)%name ) 
       if( nonvolpcm > 0 ) NUM_NONVOLPCM = size(chemgroups(nonvolpcm)%ptr)
       if( nvabsom   > 0 ) NUM_NVABSOM   = size(chemgroups(nvabsom)%ptr)
-     if(MasterProc) write(*,*) dtxt // "nonvol,nv ", &
-         nonvolpcm, nvabsom,  NUM_NONVOLPCM, NUM_NVABSOM
+
+      if( MasterProc ) then
+         write(*,*) dtxt//"itot_bgnd, om25sum = ", itot_bgnd, itot_om25, igrp_om25
+         write(*,*) dtxt // "nonvol,nv ", nonvolpcm, nvabsom,  NUM_NONVOLPCM, NUM_NVABSOM
+      end if
       call CheckStop( nvabsom < 1 .or. nonvolpcm < 1, dtxt//' Indices not found')
 
       allocate(COA(K1:K2))
@@ -180,7 +168,7 @@ module OrganicAerosol_ml
     !=========================================================================
     ! Set up background OM 
 
-  ! Use Standard Atmosphere to get average heights of layers
+    ! Use Standard Atmosphere to get average heights of layers
 
        p_kPa(:) = 0.001*( A_mid(:)+B_mid(:)*101325.0 ) ! Pressure in kPa
        h_km     = StandardAtmos_kPa_2_km(p_kPa)
@@ -224,12 +212,10 @@ module OrganicAerosol_ml
             end do
          end if
 
-        !DSD15 allocate( Fgas3d(S1:S2,LIDIM,LJDIM,K1:K2) )
-
        !+ initial guess (1st time-step only)
        ! Fgas3D is only defined for the semivol stuff, so no need for nonvol here
        ! We need to assume something on 1st time-step though:
-       !DSD15 DONE in Chem_ml:  Fgas3d = 1.0
+       ! nb DONE in Chem_ml:  Fgas3d = 1.0
 
        ! Initial values. Should not change except for semi-volatiles
        ! Note. Fgas3D has range S1:S2 only, whereas Fgas has 1:NSPEC_TOT
@@ -238,19 +224,13 @@ module OrganicAerosol_ml
         Fpart(:,:)         = 0.0
         Fpart(chemgroups(nonvolpcm)%ptr,:)  = 1.0
         Fgas(:,:)         = max(0.0, 1.0 - Fpart(:,:) )
+
         !NOT needed Fgas3d(S1:S2,i,j,:)=Fgas(S1:S2,:)  ! J29
         ! since on 1st call we don't have any of the eg SOA compounds
         ! where Fgas affects reaction rates
 
-           !VBS Grid_avg_mw    = 250.0              ! Da
-           !EXC Grid_SOA_gamma = 1.0
-    !=========================================================================
-!     if (debug_proc .and. i == debug_li .and. j == debug_lj ) then
-!          print *, " CHECKXN xn(PART_FFIREOA25_OC,k) ",me,i,j, xn(PART_FFIREOA25_OC,K2)
-!     end if
-       
-    !=========================================================================
         first_call = .false.
+
     end if ! first_call
 
     ! We need to set Fgas at start of each Runchem i,j loop, as it is
@@ -297,15 +277,13 @@ module OrganicAerosol_ml
 
  ! 1st guesses:
 
-  COA(:)          =  Grid_COA(i_pos,j_pos,:)
+   COA(:)          =  Grid_COA(i_pos,j_pos,:)
 
- !J16 BUGFIX: Put OM25_BGND into xn
  ! 2)/ Advected species
 
-    if ( first_tstep ) then
-      xn(itot_bgnd,:) = COA(:)/(molcc2ugm3*species(itot_bgnd)%molwt)  
-    end if
- !J16 END BUGFIX
+  if ( first_tstep ) then
+    xn(itot_bgnd,:) = COA(:)/(molcc2ugm3*species(itot_bgnd)%molwt)  
+  end if
 
 
  ! ============ Non-volatile species first ============================
@@ -333,9 +311,6 @@ module OrganicAerosol_ml
 
        do ispec = S1, S2
 
-          !VBS Fgas(ispec,:) = 1.0/(1.0+tabRTpL(ispec,:)*COA(:)/avg_mw(:) )  
-                                         !EXC *gamma(:,ispec)) )
-
           Fpart(ispec,:) = COA(:)/( COA(:)+tabCiStar(ispec,itemp(:)) )
 
           ug_semivol(ispec,:) = molcc2ugm3 * xn(ispec,:)*species(ispec)%molwt &
@@ -345,18 +320,11 @@ module OrganicAerosol_ml
 
      ! New estimate of COA  (in ug/m3) and avg_mw (g/mole):
      ! (nb. xn in molecules/cm3)
+     ! (nb. BGND_OA is in xn(itot_bgnd))
 
        do k = K1,K2
 
- !J16 BUGFIX: now BGND_OA is in xn(itot_bgnd)
-         !J16 COA(k) = sum( ug_semivol(:,k) ) + sum( ug_nonvol(:,k) ) + BGND_OA(k)
-
-         COA(k) = sum( ug_semivol(:,k) ) + sum( ug_nonvol(:,k) ) !J16 BUG: + BGND_OA(k)
-
-         !VBS Nmoles = ( sum( Fpart(VOL,k) * xn(VOL,k) ) + sum( xn(NONVOLOC,k) ) &
-         !VBS             + BGND_OC_ng(k)*ngm32molcc/250.0 ) &  ! Assumed MW
-         !VBS          * xn2molem3
-         !VBS avg_mw(k)    = 1.0e-6 * COA(k)/Nmoles 
+         COA(k) = sum( ug_semivol(:,k) ) + sum( ug_nonvol(:,k) )
 
        end do  !k
      ! ====================================================================
@@ -378,7 +346,6 @@ module OrganicAerosol_ml
            end do
 
            do ispec = S1,S2
-              ! K = tabRTpL*COA/(mw*gamma) QUERY COA===!!!!
               !Ksoa = tabRTpL(ispec,K2)*COA(K2)/(avg_mw(K2))
               Ksoa = 1.0/tabCiStar(ispec,itemp(K2)) !just for printout
               write(unit=6,fmt="(a4,i3,a15,3es10.2,a4,es10.3,f13.4)") "SOA ",ispec,&
@@ -408,28 +375,9 @@ module OrganicAerosol_ml
 
   ! Set Fgas for later chemistry, and eset 3-D fields
 
-   Fgas(S1:S2,:)  = 1.0 - Fpart(S1:S2,:)
-   Grid_COA(i_pos,j_pos,:)              = COA(:)
+   Fgas(S1:S2,:)               = 1.0 - Fpart(S1:S2,:)
+   Grid_COA(i_pos,j_pos,:)     = COA(:)
    Fgas3d(S1:S2,i_pos,j_pos,:) = Fgas(S1:S2,:) 
-
-! PCM_F is for output only. Has MW 1 to avoid confusion with OC
-! do not use ugC outputs, just ug
-
-   !FSOA xn(PART_OM_F,:)  =  COA(:) * ugC2xn * 12.0
-   !FSOA xn(PART_OM_F,:)  =  COA(:) * ug1MW2xn
-
-    !Grid_SOA_Fgas(S1:S2, i_pos,j_pos,:)  = Fgas(S1:S2,:)
-    !VBS Grid_avg_mw(i_pos,j_pos,:)       = avg_mw(:)
-    !SOA_gamma(i_pos,j_pos,:,:)     = gamma(:,:)
-
-  ! Outputs, ugC/m3
-
-  ! Would like to be able to store also total OM (not only OC) 
-  !    at least for some components. And for a "total" OM and/or OM2.5 and OM10. 
-  !    Total TC and EC (and TC2.5, TC10, EC2.5 and EC10) would also be useful.
-  !    Also perhaps the names of these species should reflect 
-  !    that they are in units of C?   
-
 
  end subroutine OrganicAerosol
 
@@ -443,18 +391,11 @@ module OrganicAerosol_ml
  subroutine Reset_OrganicAerosol(i_pos,j_pos,debug_flag)
    integer, intent(in) :: i_pos, j_pos
    logical, intent(in) :: debug_flag
-  !J16 integer, save :: itot_bgnd = -999
-  !J16 integer, save :: itot_om25 = -999
-  !J16 integer, save :: igrp_om25 = -999
    logical, save :: first_call = .true.
    integer :: k, n, itot
    real :: J16tmp
    logical :: dbg
    dbg = ( DEBUG%SOA .and. debug_flag) 
-
-   !FSOA xn(PART_OM_F,:)  =  COA(:) * ug1MW2xn
-   !FSOA: OM25_BGND has MW 24, carbons=1
-   !xn(OM25_BGND,:) = BGND_OC(:)* ug1MW2xn/ species(OM25_BGND)%molwt
 
    if ( debug_flag ) write(*,*) "Skip Reset Organic Aerosol?", itot_bgnd 
    if( itot_bgnd < 1 ) then
@@ -462,10 +403,12 @@ module OrganicAerosol_ml
      RETURN
    end if
 
-   J16tmp = xn(itot_bgnd,20)
 
-   if ( first_call .and. debug_proc ) write(*,*) "Into Reset Organic Aerosol?",&
-      itot_bgnd , first_call, size(chemgroups(igrp_om25)%ptr)
+   if ( first_call .and. debug_proc ) then
+      J16tmp = xn(itot_bgnd,20)  ! just for printout
+      write(*,*) "Into Reset Organic Aerosol?",&
+        itot_bgnd , first_call, size(chemgroups(igrp_om25)%ptr)
+    end if
 
 
    xn(itot_bgnd,:) = BGND_OC(:)* ugC2xn
@@ -487,8 +430,9 @@ module OrganicAerosol_ml
 
         itot  = chemgroups(igrp_om25)%ptr(n)
 
-       ! Assumes molwt is 1.0 for itot_om25
-        xn(itot_om25,:) = xn(itot_om25,:) + Fpart(itot,:) * xn(itot,:) * species(itot)%molwt
+       ! NOTE !  Assumes molwt is 1.0 for itot_om25
+        xn(itot_om25,:) = xn(itot_om25,:) + &
+             Fpart(itot,:) * xn(itot,:) * species(itot)%molwt
    
    if(  dbg ) then
           do k = K1, K2
