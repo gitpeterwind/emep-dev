@@ -46,7 +46,7 @@ program myeul
        nterm,iyr_trend, nmax,nstep , meteo,     &
        IOU_INST,IOU_HOUR,IOU_HOUR_INST, IOU_YEAR,IOU_MON, IOU_DAY, &
        USES, USE_LIGHTNING_EMIS, &
-       FORECAST,ANALYSIS	! FORECAST/ANALYSIS mode
+       FORECAST,ANALYSIS  ! FORECAST/ANALYSIS mode
   use ModelConstants_ml,only: Config_ModelConstants,DEBUG, startdate,enddate
   use MPI_Groups_ml,    only: MPI_BYTE, ME_CALC, ME_MPI, MPISTATUS, MPI_COMM_CALC,MPI_COMM_WORLD, &
                               MasterPE,IERROR, MPI_world_init, MPI_groups_split
@@ -55,6 +55,7 @@ program myeul
   use Par_ml,           only: me, GIMAX, GJMAX, Topology_io, Topology, parinit
   use PhyChem_ml,       only: phyche    ! Calls phys/chem routines each dt_advec
   use Sites_ml,         only: sitesdef  ! to get output sites
+  use SmallUtils_ml,    only: key2str
   use Tabulations_ml,   only: tabulate
   use TimeDate_ml,      only: date, current_date, day_of_year, daynumber,&
        tdif_secs,date,timestamp,make_timestamp,Init_nmdays
@@ -90,8 +91,7 @@ program myeul
 
   integer :: i, oldseason, newseason, status
   integer :: mm_old   ! month and old-month
-  integer :: nproc_mpi,cyclicgrid
-  character (len=230) :: errmsg,txt
+  integer :: cyclicgrid
   TYPE(timestamp)   :: ts1,ts2
   logical :: End_of_Run=.false.
 
@@ -121,12 +121,11 @@ program myeul
      call PrintLog(trim(runlabel2))
      call PrintLog(date2string("startdate = YYYYMMDD",startdate(1:3)))
      call PrintLog(date2string("enddate   = YYYYMMDD",enddate  (1:3)))
-     ! write(txt,"(a,i4)") "iyr_trend= ", iyr_trend
-     ! call PrintLog(trim(txt))
+    !call PrintLog(key2str("iyr_trend = YYYY","YYYY",iyr_trend))
   endif
 
 
-  if(ANALYSIS)then 	            ! init 3D-var module
+  if(ANALYSIS)then              ! init 3D-var module
     call DA_3DVar_Init(status)  ! pass settings
     call CheckStop(status,"DA_3DVar_Init in Unimod")
   endif

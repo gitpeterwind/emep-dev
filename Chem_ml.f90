@@ -62,7 +62,6 @@ contains
   subroutine alloc_ChemFields
 
     implicit none
-    integer :: nk
 
     allocate(xn_adv(NSPEC_ADV,LIMAX,LJMAX,KMAX_MID))
     xn_adv=0.0
@@ -74,10 +73,6 @@ contains
     PM25_water=0.0
     allocate(PM25_water_rh50(LIMAX,LJMAX))
     PM25_water_rh50=0.0
-!   allocate(AOD(LIMAX,LJMAX))
-!   AOD=0.0
-!   allocate(Extin_coeff(LIMAX,LJMAX,KMAX_MID))
-!   Extin_coeff=0.0
     allocate(cfac(NSPEC_ADV,LIMAX,LJMAX))
     cfac=1.0
     allocate(so2nh3_24hr(LIMAX,LJMAX))
@@ -87,9 +82,8 @@ contains
     allocate(xn_2d_bgn(1,KCHEMTOP:KMAX_MID))
 
     allocate(xn_2d(NSPEC_TOT,KCHEMTOP:KMAX_MID))
-  xn_2d = 0.0
- !   nk = KMAX_MID-KCHEMTOP+1   ! number of levels used in column chemistry
- !   call AllocInit(xn_2d,0.0, NSPEC_TOT, nk)
+    xn_2d = 0.0
+
     allocate(Fgas(NSPEC_TOT,KCHEMTOP:KMAX_MID),Fpart(NSPEC_TOT,KCHEMTOP:KMAX_MID))
     Fgas  = 1.0! Fraction as gas-phase
     Fpart = 0.0

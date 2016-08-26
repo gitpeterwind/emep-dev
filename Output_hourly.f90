@@ -153,7 +153,7 @@ implicit none
     first_call = .false.
     debug_flag=(debug_proc.and.DEBUG)
     allocate(navg(NHOURLY_OUT)) ! allocate and initialize
-    navg(:)=0.0                 ! D2D average counter
+    navg(:)=0                   ! D2D average counter
   endif  ! first_call
 
   filename=trim(runlabel1)//date2string(trim(HOURLYFILE_ending),current_date)
@@ -545,7 +545,7 @@ implicit none
         if(intmax .lt. 0) then
           do n = 1,nmax6_hourly
             if(imax6_hourly(n)%name=="none") then
-              imax6_hourly(n)%name = name
+              imax6_hourly(n)%name = trim(name)
               imax6_hourly(n)%ind = ih
               intmax = n
               exit
@@ -724,13 +724,13 @@ implicit none
         
         if(debug_flag) then
           if(f_2d(ispec)%avg)then           ! averaged variables        
-            write(*,"(a,1x,$)") "OUTHOUR D2D_mean avg"
+            write(*,"(a,1x)",advance='no') "OUTHOUR D2D_mean avg"
           else                              ! accumulated variables --> mean
-            write(*,"(a,1x,$)") "OUTHOUR D2D_mean acc"
+            write(*,"(a,1x)",advance='no') "OUTHOUR D2D_mean acc"
           endif
           i=debug_li
           j=debug_lj
-          write(*,"(a,2i4,a,3g12.3)"),&
+          write(*,"(a,2i4,a,3g12.3)")&
             trim(hr_out(ih)%name), ih, ispec,trim(f_2d(ispec)%name),&
             d_2d(ispec,i,j,[IOU_YEAR,IOU_YEAR_LASTHH]),unit_conv
         endif
@@ -758,13 +758,13 @@ implicit none
         
         if(debug_flag) then
           if(f_3d(ispec)%avg)then           ! averaged variables        
-            write(*,"(a,1x,$)") "OUTHOUR D3D_mean avg"
+            write(*,"(a,1x)",advance='no') "OUTHOUR D3D_mean avg"
           else                              ! accumulated variables --> mean
-            write(*,"(a,1x,$)") "OUTHOUR D3D_mean acc"
+            write(*,"(a,1x)",advance='no') "OUTHOUR D3D_mean acc"
           endif
           i=debug_li
           j=debug_lj
-          write(*,"(a,2i4,a,3g12.3)"),&
+          write(*,"(a,2i4,a,3g12.3)")&
             trim(hr_out(ih)%name), ih, ispec,trim(f_3d(ispec)%name),&
             d_3d(ispec,i,j,ik,[IOU_YEAR,IOU_YEAR_LASTHH]),unit_conv
         endif

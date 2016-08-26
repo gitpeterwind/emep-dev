@@ -180,7 +180,6 @@ contains
     integer :: izen                    ! integer of zenith angle
     real :: o3, o3_ref                 ! Ozone (ppb) - needed if AOTs
     integer :: i, j 
-    logical :: dbg
     character(len=*), parameter :: dtxt='CalcGridAOT:'
 
 

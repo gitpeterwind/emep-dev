@@ -154,6 +154,25 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
  
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+26th August 2016 Alvaro, 3273
+
+AOTnPOD_ml,Chem_ml,Derived_ml,ModelConstants_ml,MosaicOutputs_ml,
+MosaicOutputs_ml,MPI_Groups_ml,My_Derived_ml,Nest_ml,Output_hourly,
+PointSource_ml,TimeDate_ExtraUtil_ml,Unimod:
+- avoid gfortran pedantic warnings, such as unused variables.
+- In MPI_world_init (MPI_Groups_ml) explicitly define the integer kind
+  as sizeof kind is system dependant.
+- In Init_My_Deriv (My_Derived_ml) group USE_uEMEP 2D/3D wanted output
+- In init_nest (Nest_ml) use nctime2string instead of nctime2date for
+  warning messages.
+- In hourly_out (Output_hourly) replace non-standard continuation line
+  write descriptor "$" by f90 standard write(..,adance='no').
+- In errorfunctionc (PointSource_ml) use PI from PhysicalConstants_ml instead
+  of local varaible.
+- In get_pointsources (PointSource_ml) replace if/elseif/else by select/case
+- In readstacks (PointSource_ml) use coord_in_processor
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 25th August 2016 Dave, 3271-3272
 
 cleanups:

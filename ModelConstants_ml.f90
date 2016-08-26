@@ -630,8 +630,7 @@ subroutine Config_ModelConstants(iolog)
   integer, intent(in) :: iolog ! for Log file
   integer :: i, j, ispec, iostat
   logical,save :: first_call = .true.
-  logical :: exist
-
+  
   NAMELIST /ModelConstants_config/ &
     DegreeDayFactorsFile, meteo & !meteo template with full path
    ,EXP_NAME &  ! e.g. EMEPSTD, FORECAST, TFMM, TodayTest, ....
@@ -701,28 +700,25 @@ subroutine Config_ModelConstants(iolog)
   read(IO_NML,NML=Machine_config)
 
   do i=1,size(DataPath)
-     if(DataPath(i)=="NOTSET")then
-        if(MasterProc)then
-           write(*,*)'WARNING: Could not find valid DataDir. Tried:'
-           do j=1,i-1
-              write(*,*)trim(DataPath(j))
-           enddo
-        stop
-        endif
-        exit
-     endif
-!     INQUIRE(directory=trim(DataPath(i)), exist=exist)!intel. does not work for gfortran
-!     INQUIRE(file=trim(DataPath(i)), exist=exist, action = 'read')!gfortran. does not work for intel
-     open(IO_TMP,file=trim(DataPath(i)), iostat=iostat, action='read')!does not work without action='read'
-     if(iostat==0)then
-        DataDir=trim(DataPath(i))
-        if(MasterProc)write(*,*)'DataDir set to',trim(DataDir)
-        close(IO_TMP)
-        exit
-     endif
+    if(DataPath(i)=="NOTSET")then
+      if(MasterProc)then
+         write(*,*)'WARNING: Could not find valid DataDir. Tried:'
+         do j=1,i-1
+            write(*,*)trim(DataPath(j))
+         enddo
+      stop
+      endif
+      exit
+    endif
+!   INQUIRE(...) does not behave consistently across intel/gfortran
+    open(IO_TMP,file=trim(DataPath(i)),iostat=iostat,action='read')! does not work without action='read'
+    if(iostat==0)then
+      DataDir=trim(DataPath(i))
+      if(MasterProc)write(*,*)'DataDir set to',trim(DataDir)
+      close(IO_TMP)
+      exit
+    endif
   enddo
-
-
 
   rewind(IO_NML)
   read(IO_NML,NML=INPUT_PARA)

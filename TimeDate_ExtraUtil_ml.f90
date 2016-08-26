@@ -342,20 +342,23 @@ subroutine ts_to_secs1970(ts,nsecs,iotyp)
   integer, intent(out)              :: nsecs
   integer, optional, intent(in)     :: iotyp
   type(date)                        :: cd
+  integer, parameter ::   &
+    half_day =INT(spd/2), & ! 12h in seconds
+    half_hour=INT(sph/2)    ! 30m in seconds
 
   if(first_call)call init_ts()
-  nsecs=tdif_secs(ts1970,ts)
+  nsecs=INT(tdif_secs(ts1970,ts))
   call CheckStop(nsecs<0,"ERROR in date2nctime: date previous to 1970-01-01")
 
   if(present(iotyp))then
     select case (iotyp)  !middle of period: NB WORKS ONLY FOR COMPLETE PERIODS
     case(IOU_MON)
       cd=to_date(ts)
-      nsecs=nsecs-spd/2*max_day(cd%month,cd%year) !#days(jan)=#days(dec)
+      nsecs=nsecs-half_day*max_day(cd%month,cd%year) !#days(jan)=#days(dec)
     case(IOU_DAY)
-      nsecs=nsecs-spd/2
+      nsecs=nsecs-half_day
     case(IOU_HOUR,IOU_HOUR_EXTRA_MEAN)
-      nsecs=nsecs-sph/2*FREQ_HOURLY
+      nsecs=nsecs-half_hour*FREQ_HOURLY
     endselect
   endif
 endsubroutine ts_to_secs1970
@@ -676,8 +679,8 @@ subroutine self_test()
     date2file(test_file,ts1970,3,"days")  ! no file found, return 3 days before date
 
   print hfmt,3,"nctime2string"
-  days=1.25     ! real ==> days since 1900
-  secs=days*spd ! int  ==> secs since 1970
+  days=1.25           ! real ==> days since 1900
+  secs=INT(days*spd)  ! int  ==> secs since 1970
   print tfmt,'days since 1900 (real input)',&
     key2str("F.FFFF days since ","F.FFFF",days)//date2string(dfmt,ts1900),&
     nctime2string(dfmt,days)

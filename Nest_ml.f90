@@ -67,7 +67,7 @@ use Par_ml,                 only: LIMAX,LJMAX,GIMAX,GJMAX,IRUNBEG,JRUNBEG, &
                                   me, li0,li1,lj0,lj1,limax,ljmax
 use Pollen_const_ml,        only: pollen_check
 use TimeDate_ml,            only: date,current_date,nmdays
-use TimeDate_ExtraUtil_ml,  only: date2nctime,nctime2date,&
+use TimeDate_ExtraUtil_ml,  only: date2nctime,nctime2date,nctime2string,&
                                   date2string,date2file,compare_date
 use Units_ml,               only: Units_Scale
 use SmallUtils_ml,          only: find_index,to_upper
@@ -617,10 +617,9 @@ subroutine init_nest(ndays_indate,filename_read,native_grid,IIij,JJij,Weight,&
   real, intent(out), dimension(*) :: weight_k1,weight_k2
   integer ,intent(out)::N_ext,KMAX_ext,GIMAX_ext,GJMAX_ext
   real(kind=8) :: ndays_indate
-  integer :: ncFileID,timeDimID,varid,status,dimIDs(3) !,timeVarID
-  integer :: ndate(4) !nseconds_indate,
-  real :: DD,dist(4),P_emep
-  integer :: i,j,k,n,k_ext,II,JJ !nseconds(1),n,n1,k
+  integer :: ncFileID,timeDimID,varid,status,dimIDs(3)
+  real :: P_emep
+  integer :: i,j,k,n,k_ext
   real, allocatable, dimension(:,:) ::lon_ext,lat_ext
   real, allocatable, dimension(:) ::hyam,hybm,P_ext,temp_ll
   character(len=80) ::projection,word,iDName,jDName
@@ -743,10 +742,10 @@ subroutine init_nest(ndays_indate,filename_read,native_grid,IIij,JJij,Weight,&
         ndays_ext(n)=ndays_ext(n-1)+nmdays(n-1)
       enddo
     elseif(ndays_ext(1)-ndays_indate>halfsecond)then
-      call nctime2date(ndate,ndays_indate,&
-          'WARNING: Nest did not find BIC for date YYYY-MM-DD hh:mm:ss')
-      call nctime2date(ndate,ndays_ext(1),&
-          'Nest first date found YYYY-MM-DD hh:mm:ss')
+      write(*,*)'WARNING: Nest did not find BIC for date ',&
+        nctime2string('YYYY-MM-DD hh:mm:ss',ndays_indate)
+      write(*,*)'Nest first date found ',&
+        nctime2string('YYYY-MM-DD hh:mm:ss',ndays_ext(1))
     endif
 
     if(N_ext>1)then
@@ -985,7 +984,6 @@ subroutine read_newdata_LATERAL(ndays_indate)
   integer :: ncFileID,varid,status
   integer :: ndate(4),n,i,j,k,bc
   real    :: unitscale
-  real(kind=8) :: ndays(1),ndays_old
   logical, save :: first_call=.true.
 
   !4 nearest points from external grid  (horizontal)
@@ -1256,7 +1254,6 @@ subroutine reset_3D(ndays_indate)
   integer :: ndate(4),n,i,j,k,itime=0,status
   integer :: ncFileID,varid
   real    :: unitscale
-  real(kind=8) :: ndays(1)
   logical, save :: first_call=.true.
 
   !4 nearest points from external grid

@@ -297,7 +297,7 @@ subroutine Define_Derived()
   character(len=11), parameter:: sub="DefDerived:"
   character(len=TXTLEN_IND)  :: outind
 
-  integer :: ind, iadv, ishl, itot, idebug, n, n2, iLC, igrp, iout
+  integer :: ind, iadv, ishl, idebug, n, igrp, iout
 
   if(dbg0) write(6,*) " START DEFINE DERIVED "
   !   same mol.wt assumed for PPM25 and PPMCOARSE
@@ -531,7 +531,7 @@ subroutine Define_Derived()
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
   do n = 1, nOutputMisc
     Is3D=(OutputMisc(n)%class=="MET3D").or.(OutputMisc(n)%name(1:2)=='D3')
-    if(MasterProc) write(*,"(3(A,1X),L)") &
+    if(MasterProc) write(*,"(3(A,1X),L1)") &
       'ADDMISC',trim(OutputMisc(n)%name),'Is3D',Is3D
     call AddDeriv(OutputMisc(n),Is3D=Is3D)
   enddo

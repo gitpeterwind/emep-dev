@@ -148,14 +148,12 @@ character(len=TXTLEN_DERIV), public, parameter, dimension(4) :: &
   MOSAIC_METCONCS = [character(len=TXTLEN_DERIV):: & 
     ! all array members will have len=TXTLEN_DERIV
     "USTAR","LAI","CanopyO3","FstO3"] ! SKIP CanopyO3
-! character(len=TXTLEN_DERIV), public, parameter, dimension(2) :: &
-!   MOSAIC_METCONCS = (/ "USTAR", "LAI  " /) ! TFMM "VPD     "  &
+!character(len=TXTLEN_DERIV), public, parameter, dimension(2) :: &
+! MOSAIC_METCONCS = (/ "USTAR", "LAI  " /) ! TFMM "VPD     "  &
                      ! ,"CanopyO3" & !SKIP
-     !,"VPD     ", "FstO3   " "EVAP    ", "Gsto    " &
-                    !SKIP
-!TFMM                    ,"USTAR   ", "INVL    "  &
-!TFMM                    /)
-                        ! "g_sto" needs more work - only set as L%g_sto
+     !,"VPD","FstO3","EVAP","Gsto" & !SKIP
+!TFMM ,"USTAR","INVL"/)
+! "g_sto" needs more work - only set as L%g_sto
 
 character(len=TXTLEN_DERIV), public, save, dimension(6) :: &
   MET_LCS = [character(len=TXTLEN_DERIV):: & 
@@ -179,12 +177,8 @@ contains
 !=========================================================================
 subroutine Init_My_Deriv()
 
-  integer :: i, itot, nDD, nMET, nVEGO3=0, n1, n2,istat, nMc
+  integer :: i, itot, nDD, nMET, nVEGO3=0, n1, istat, nMc
   integer :: nOutputConcs
-  character(len=TXTLEN_DERIV) :: txt
-! character(len=TXTLEN_DERIV), &
-! dimension(size(COLUMN_MOLEC_CM2)*size(COLUMN_LEVELS)) ::&
-!   tmpname ! e.g. DDEP_SO2_m2Conif
   character(len=100) :: errmsg
   character(len=TXTLEN_DERIV), dimension(size(OutputConcs(:)%txt1)) :: &
     tag_name    ! Needed to concatanate some text in AddArray calls
@@ -248,7 +242,7 @@ subroutine Init_My_Deriv()
   if(MasterProc) write(*,"(a,i3)") "NMLOUT nOUTMISC ", nOutputMisc
   do i = 1,nOutputMisc  
     Is3D=(OutputMisc(i)%class=="MET3D").or.(OutputMisc(i)%name(1:2)=='D3')
-    if(MasterProc) write(*,"(4(A,1X),i3,1X,L)")"NMLOUT OUTMISC",&
+    if(MasterProc) write(*,"(4(A,1X),i3,1X,L1)")"NMLOUT OUTMISC",&
       trim(OutputMisc(i)%name),trim(OutputMisc(i)%class),&
       trim(OutputMisc(i)%subclass),OutputMisc(i)%index,Is3D
     tag_name(1) = trim(OutputMisc(i)%name)
@@ -307,18 +301,13 @@ subroutine Init_My_Deriv()
     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
   endif
   if(USE_uEMEP)then
-    tag_name(1) = "Local_Pollutant"
-    call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
-    tag_name(1) = "Total_Pollutant"
-    call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
-    tag_name(1) = "Local_Fraction"!NB must be AFTER "Local_Pollutant" and "Total_Pollutant"
-    call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
-    tag_name(1) = "Local_Fraction3D"
-!   call AddArray( tag_name(1:1), wanted_deriv3d, NOT_SET_STRING, errmsg)
-    tag_name(1) = "Local_Pollutant3D"
-!   call AddArray( tag_name(1:1), wanted_deriv3d, NOT_SET_STRING, errmsg)
-    tag_name(1) = "Total_Pollutant3D"
-!   call AddArray( tag_name(1:1), wanted_deriv3d, NOT_SET_STRING, errmsg)
+    !NOTE "Local_Fraction" must be AFTER "Local_Pollutant" and "Total_Pollutant"
+    tag_name(1:3) = [character(len=TXTLEN_DERIV)::&
+      "Local_Pollutant","Total_Pollutant","Local_Fraction"]
+    call AddArray( tag_name(1:3), wanted_deriv2d, NOT_SET_STRING, errmsg)
+!   tag_name(1:3) = [character(len=TXTLEN_DERIV)::&
+!      "Local_Fraction3D","Local_Pollutant3D","Total_Pollutant3D"]
+!   call AddArray( tag_name(1:3), wanted_deriv3d, NOT_SET_STRING, errmsg)
   endif
  if(EmisSplit_OUT)then
     do i=1,max(18,nrcemis)

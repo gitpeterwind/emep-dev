@@ -48,7 +48,7 @@ subroutine share(shared_data,data_shape,xsize,MPI_COMM_SHARED)
 !share the array shared_data
   USE, INTRINSIC :: ISO_C_BINDING, ONLY : C_PTR, C_F_POINTER!fortran 2003 extensions 
   implicit none
-  TYPE(C_PTR) :: baseptr,baseptr2
+  TYPE(C_PTR) :: baseptr!,baseptr2
 !  TYPE(MPI_Win) :: win
 !  TYPE(MPI_Comm), intent(in) :: MPI_COMM_SHARED
   integer :: win
@@ -58,10 +58,10 @@ subroutine share(shared_data,data_shape,xsize,MPI_COMM_SHARED)
   INTEGER, intent(inout) :: XSIZE
   INTEGER, intent(in) :: data_shape(3)
   INTEGER DISP_UNIT, IERROR,me_shared
-  integer :: i,j,n,data_size
+  integer :: i,data_size
   real :: ONE
 
-  DISP_UNIT=sizeof(ONE)!8, number of bytes for real
+  DISP_UNIT=INT(sizeof(ONE),KIND(DISP_UNIT))!8, number of bytes for real
 
   CALL MPI_COMM_RANK(MPI_COMM_SHARED, ME_shared, IERROR)
   
@@ -100,10 +100,10 @@ subroutine share(shared_data,data_shape,xsize,MPI_COMM_SHARED)
   endif
   CALL MPI_BARRIER(MPI_COMM_SHARED, IERROR)
   call MPI_Win_fence(0, win, ierror)
- 78 format(A,5i7,12F11.2)
-!  write(*,78)'data in share ',ME_MPI,me_calc,me_io,me_sub,me_shared,shared_data(1,1,1),&
-!shared_data(2,1,1),shared_data(3,1,1),1.0*mpi_xsize!,shared_data(1,2,1),shared_data(2,2,1)
-!  if(me_io>=0)write(*,*)' COMM',MPI_COMM_SHARED,MPI_COMM_WORLD
+!78 format(A,5i7,12F11.2)
+! write(*,78)'data in share ',ME_MPI,me_calc,me_io,me_sub,me_shared,shared_data(1,1,1),&
+!    shared_data(2,1,1),shared_data(3,1,1),1.0*mpi_xsize!,shared_data(1,2,1),shared_data(2,2,1)
+! if(me_io>=0)write(*,*)' COMM',MPI_COMM_SHARED,MPI_COMM_WORLD
 
 end subroutine share
 subroutine share_logical(shared_data,data_shape,xsize,MPI_COMM_SHARED)
@@ -121,8 +121,7 @@ subroutine share_logical(shared_data,data_shape,xsize,MPI_COMM_SHARED)
   INTEGER, intent(inout) :: XSIZE
   INTEGER, intent(in) :: data_shape(1)
   INTEGER DISP_UNIT, IERROR,me_shared
-  integer :: i,j,n,data_size
-  real :: ONE
+  integer :: i,data_size
   logical :: mybool
 
   DISP_UNIT=1!number of bytes for logical
@@ -151,7 +150,6 @@ subroutine share_logical(shared_data,data_shape,xsize,MPI_COMM_SHARED)
   if(me_io==1.and.me_sub==0)shared_data=.true.
   if(me_io==0.and.me_sub==0)shared_data=.false.
   call MPI_Win_fence(0, win, ierror)
- 78 format(A,2i4,12F7.2)
-!  write(*,*)'logical data in share ',ME_MPI,me_shared,shared_data
+! write(*,*)'logical data in share ',ME_MPI,me_shared,shared_data
 end subroutine share_logical
 end module MPI_Groups_ml

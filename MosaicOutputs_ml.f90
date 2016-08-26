@@ -130,7 +130,7 @@ subroutine Add_MosaicMetConcs(MOSAIC_METCONCS,MET_LCS,iotyp, nMET)
  subroutine Add_NewMosaics(Mc,nMc)
   type(typ_s5ind), dimension(:), intent(in) :: Mc ! eg VG
   integer, intent(out) :: nMc
-  integer :: n, itot, iLC, iadv
+  integer :: n, iLC, iadv
   character(len=TXTLEN_DERIV) :: name
   character(len=TXTLEN_SHORT) :: typ, poll, lctxt
   character(len=14), save :: dtxt='AddNewMosaics:'
@@ -328,9 +328,6 @@ end subroutine Add_MosaicDDEP
   character(len=TXTLEN_SHORT) :: subclass, class, txtdate='-'
   logical :: my_first_call = .true.
   logical :: first_call = .true.     ! reset each subroutine call
-  ! for SDEP (tmp)
-   integer, save :: nd2d
-   logical, save :: first_SDEP = .true.
 
   ! Variables added for ecosystem dep
   real, dimension(NDEF_ECOSYSTEMS) :: invEcoFrac, EcoFrac
@@ -524,7 +521,7 @@ end subroutine Add_MosaicDDEP
 
       case default
         if(MasterProc) then
-          write(*,"(/1('OUTVEG UNDEF',2(1x,A)))"),&
+          write(*,"(/1('OUTVEG UNDEF',2(1x,A)))")&
             "name"    ,MosaicOutput(imc)%name,&
             "subclass",MosaicOutput(imc)%subclass
           call CheckStop("OUTVEG UNDEF" // subclass )
