@@ -262,7 +262,7 @@ subroutine Init_My_Deriv()
              OutputConcs(i)%txt4, OutputConcs(i)%ind, i=1,nOutputConcs)
     do i = 1,size(DDEP_ECOS)  
       if(all(DDEP_ECOS(i)%ind/=IOU_KEY)) exit
-      write(*,"(2a,i3)") "NMLOUT DEP ", DDEP_ECOS(i)%name, DDEP_ECOS(i)%ind
+      write(*,"(3a)") "NMLOUT DEP ", DDEP_ECOS(i)%name, DDEP_ECOS(i)%ind
     enddo
     do i = 1,size(DDEP_WANTED)  
       if(DDEP_WANTED(i)%txt1=='-') exit
