@@ -155,10 +155,13 @@ changes here (and when committing svn), and Dave will tag as required
  
  
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-29th August 2016 Alvaro, 3274
+29th-30th August 2016 Alvaro, 3274-5
 
 My_Derived_ml:
-- Fix write/format eerror introduced on 3255-3259 (July 2016)
+- Fix write/format. Error introduced on 3255-3259 (July 2016).
+
+My_Derived_ml,MosaicOutputs_ml:
+- Fix missing DDEP. Error introduced on 3255-3259 (July 2016).
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26th August 2016 Alvaro, 3273

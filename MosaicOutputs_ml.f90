@@ -257,7 +257,7 @@ subroutine Add_MosaicDDEP(DDEP_ECOS,DDEP_WANTED,nDD)
 
       if(dbg0) write(*,"(a,i4,a6,2a12)") dtxt//"DDEP_WANTED,b:", n, DDEP_ECOS(n)%ind, &
          trim(DDEP_ECOS(n)%name), trim(xtyp)
-      if(all(DDEP_ECOS(n)%ind/=IOU_KEY)) exit
+      if(all(SCAN(DDEP_ECOS(n)%ind,IOU_KEY)==0)) exit
       nDD = nDD + 1
       nMosaic = nMosaic + 1
 

@@ -261,7 +261,7 @@ subroutine Init_My_Deriv()
     write(*,"(4a)")("NMLOUT CONC ", OutputConcs(i)%txt1, &
              OutputConcs(i)%txt4, OutputConcs(i)%ind, i=1,nOutputConcs)
     do i = 1,size(DDEP_ECOS)  
-      if(all(DDEP_ECOS(i)%ind/=IOU_KEY)) exit
+      if(all(SCAN(DDEP_ECOS(i)%ind,IOU_KEY)==0)) exit
       write(*,"(3a)") "NMLOUT DEP ", DDEP_ECOS(i)%name, DDEP_ECOS(i)%ind
     enddo
     do i = 1,size(DDEP_WANTED)  
