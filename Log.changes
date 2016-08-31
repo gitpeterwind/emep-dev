@@ -155,11 +155,14 @@ changes here (and when committing svn), and Dave will tag as required
  
  
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-31st August 2016, Dave, 3276
+31st August 2016, Dave and Hannah, 3276-3277
 
 AeroFunctions_ml
-ChecmFunctions_ml
+ChemFunctions_ml
    Clean-up.
+
+NEW! utils/Rd_ncsondes.py - script to read and plot sondes_xxxx.nc files.
+
   
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 29th-30th August 2016 Alvaro, 3274-5
