@@ -1,14 +1,10 @@
 ! <AeroFunctions.f90 - A component of the EMEP MSC-W Chemical transport Model>
+! A collection of functions as used in the EMEP model or in some cases
+! just for testing.
 !*****************************************************************************! 
-!TO CHECK
-! Radius - geometric, etc!
-! Fan & Toon
-! Seasalt PM_water + gerber
-! CF FanToon eqn 19
 module AeroFunctions
 !____________________________________________________________________
 !
-! use CheckStop_ml,         only : CheckStop
  use PhysicalConstants_ml, only : AVOG, RGAS_J, PI
   implicit none
   private
@@ -22,7 +18,6 @@ module AeroFunctions
 
   public ::  kaero !aerosol production rate
   public :: SurfArea_Mono
-  ! public :: SurfArea_cmPoly cm s version
   public :: SurfArea_Poly
   public :: pmSurfArea
 
@@ -40,7 +35,7 @@ module AeroFunctions
   public :: GammaN2O5
   public :: GammaN2O5_so4
   public :: GammaN2O5_om  
-  !public :: GammaN2O5_ome ! emep invented (ds), v. low value for OM
+  !public :: GammaN2O5_ome !testing, v. low value for OM
   public :: GammaN2O5_EJSS
   public :: GammaN2O5_DavisAN
 
@@ -140,8 +135,7 @@ module AeroFunctions
         , 0.3926,3.101,4.190e-11,-1.404   &  ! urban
         , 0.4809,3.082,3.110e-11,-1.428 /)&  ! (NH4)2SO4
         ,(/4,4/) )
-   real, parameter :: THIRD = 1.0/3.0, um2m = 1.0e-6, &
-                      cm2m = 1.0e-2  !ST
+   real, parameter :: THIRD = 1.0/3.0, um2m = 1.0e-6, cm2m = 1.0e-2
    real :: rd, mrh
    integer :: ind  
 
@@ -149,9 +143,7 @@ module AeroFunctions
    if ( present(pmtype) ) ind = pmtype
 
    mrh = max(0.01,fRH)
-!ST   rd = rdry * 1.0e6  ! m -> um
    rd = rdry * 1.0e2  ! m -> cm
-!ST   rwet = um2m * ( K(1,ind)*rd**K(2,ind) / &
    rwet = cm2m * ( K(1,ind)*rd**K(2,ind) / &
      (K(3,ind) *rd**K(4,ind) - log10(mrh))+rd**3) ** THIRD
   end function WetRad 
@@ -179,7 +171,7 @@ module AeroFunctions
    rwet = ( K(1,ind)*rdry**K(2,ind) / &
      (K(3,ind) *rdry**K(4,ind) - log10(fRH))+rdry**3) ** THIRD
 
-   !QUERY - to stop huge wet particles...
+   ! to stop huge wet particles...
    rwet = min( rwet, 10*rdry)
   end function umWetRad 
  !---------------------------------------------------------------------
@@ -211,6 +203,7 @@ module AeroFunctions
   end function cmWetRad 
   !---------------------------------------------------------------------
 
+!OLD:
 ! N2O5 -> nitrate calculation
 !===========================================================================
 ! N2O5 -> nitrate calculation. Some constants for
@@ -284,48 +277,9 @@ module AeroFunctions
     !print "(A,99g12.3)", "SM", xn, rho, Rad, mw, pn*v1, mass, S
   end function SurfArea_Mono
 
-! Original cm,s units version, without wet aerosol
-!  function SurfArea_cmPoly(xn,MolWt,rho_kgm3,Dp,sigma,sigmaFac) result(S) 
-!     real, intent(in) :: xn            !< molecules/cm3
-!     real, intent(in), optional ::&
-!          MolWt      &    !< mean mol.wt, g/mole
-!         ,rho_kgm3   &    !< density, kg/m3 
-!         ,Dp         &    !< particle diameter, wich???, here um
-!         ,sigma      &    !< Sigma of mode
-!         ,sigmaFac        !< pre-calculated Sigma factor (saves CPU)
-!
-!     real :: S            !< Surface area, cm2 per cc air
-!     real :: mass, rho, Rad, mw, sigFac, vol, sig
-!
-!     rho = 1.6                  !< g/cm3   default
-!     Rad = 0.034*1.0e-4         !< 0.0341 um default, in cm
-!     mw  = 100.0                !< g/mole, default
-!
-!     if ( present(rho_kgm3) ) rho = 0.001 * rho_kgm3   !ca 1.6 g/cm3
-!     if ( present(Dp)       ) Rad = 0.5 * Dp
-!     if ( present(MolWt)    ) mw  = MolWt
-!     if ( present(SigmaFac) ) then
-!        sigFac  = sigmaFac
-!     else
-!        sig = 1.8                  !< default
-!        if ( present(sigma) ) sig = sigma
-!        sigFac = exp( -2.5*log(sig)**2 )
-!     end if
-!
-!     mass = xn*mw/AVOG           ! g                  per cc air
-!     vol  = mass/rho             ! cm3 PM             per cc air
-!
-!     ! log normal, S/V = 3/R * exp(-2.5*(log(sigma))**2)
-!
-!     S = 3.0 * vol /Rad * sigfac   ! =>  cm2 polydisperse per cc air
-!
-!    print "(A,99g12.3)", "SP", xn, rho, Rad, mw, vol, mass, S
-!  end function SurfArea_cmPoly
-
   !---------------------------------------------------------------------
   !> FUNCTION SurfArea_Poly 
-  !! TMP - WILL NOT BE USED; so ignore !!
-  !! (logic followed from Unimod, with xn as input.)
+  !! IS NOT BE USED; so ignore !!
 
   function SurfArea_Poly(xn,MolWt,rho_kgm3,Dp,Dpw,sigma,sigmaFac) result(S) 
      real, intent(in) :: xn            !< molecules/cm3
@@ -376,8 +330,8 @@ module AeroFunctions
      ! log normal, S/V = 3/R * exp(-2.5*(log(sigma))**2)
      !S = 3.0 * vol /Rad * sigfac   ! =>  m2 polydisperse
 
-     ! the volume calculated so far is from xn, and knows nothing about wet or dry (except
-     ! possibly some non-implemented rho effect?)
+     ! the volume calculated so far is from xn, and knows nothing about wet or
+     ! dry
 
         S = 3.0 * vol /rwet * sigfac   ! =>  m2 polydisperse
 
@@ -441,8 +395,8 @@ module AeroFunctions
      ! log normal, S/V = 3/R * exp(-2.5*(log(sigma))**2)
      !S = 3.0 * vol /Rad * sigfac   ! =>  m2 polydisperse
 
-     ! the volume calculated so far is from xn, and knows nothing about wet or dry (except
-     ! possibly some non-implemented rho effect?)
+     ! the volume calculated so far is from xn, and knows nothing about wet
+     ! or dry
 
       S = 3.0 * totvol /rwet * sigfac   ! =>  m2 polydisperse
 
@@ -455,9 +409,9 @@ module AeroFunctions
   !! Calculates the surface area for a given mass of dry PM, together
   !! with sigma for log-normal
   !! If Dpw provided, calculates surface area of wet aerosol.
-  !! NOTE - unlike Unimod's use of VOLFACs, here we use simple mass (ug/m3) and
-  !! density. (rho was anyway species independent, so use of specific mol wts.
-  !! for SO4, NO3, SEASALT, etc seems incosistent.)
+  !! NOTE - unlike Unimod's earlier use of VOLFACs, here we use simple
+  !! mass (ug/m3) and density. (rho was anyway species independent, so use of
+  !! specific mol wts.  for SO4, NO3, SEASALT, etc seems incosistent.)
 
   elemental function pmH2O_gerber(dry_ug,rho_kgm3,Dp,Dpw,sigma,sigmaFac) result(ugH2O) 
      real, intent(in) :: dry_ug        !< mass PM, dry, ug/m3
@@ -507,8 +461,8 @@ module AeroFunctions
      ! log normal, S/V = 3/R * exp(-2.5*(log(sigma))**2)
      !S = 3.0 * vol /Rad * sigfac   ! =>  m2 polydisperse
 
-     ! the volume calculated so far is from xn, and knows nothing about wet or dry (except
-     ! possibly some non-implemented rho effect?)
+     ! the volume calculated so far is from xn, and knows nothing about wet
+     ! or dry
 
       ugH2O   = (totvol-dryvol) * 1000.0 * 1.0e9  ! kg/m3
       !S = 3.0 * totvol /rwet * sigfac   ! =>  m2 polydisperse
@@ -573,19 +527,13 @@ module AeroFunctions
     real :: gam
     fsia = 1 - ( fom + fss + fdust + fbc )
 
-    !BUG gam =  fsia * (1-fno3sia) *  GammaN2O5_so4(t,frh) +&
-    !BUG                  fno3sia * GammaN2O5_DavisAN(frh)
-    !BUG2 gam =  fsia *  fso4sia *  GammaN2O5_so4(t,frh) +&
-    !BUG2              (1- fso4sia) * GammaN2O5_DavisAN(frh)
-
      gam =  fsia *  (  fso4sia *  GammaN2O5_so4(t,frh) +&
                       (1- fso4sia) * GammaN2O5_DavisAN(frh) )
-    if( fom   > 1.0e-6 ) gam = gam + fom   * GammaN2O5_om(frh) ! S5c0.005 ! GammaN2O5_ome
+    if( fom   > 1.0e-6 ) gam = gam + fom   * GammaN2O5_om(frh)
     if( fss   > 1.0e-6 ) gam = gam + fss   * GammaN2O5_EJSS(frh)
     if( fdust > 1.0e-6 ) gam = gam + fdust * 0.01 ! EJ 2005
     if( fbc   > 1.0e-6 ) gam = gam + fbc   * 0.005! EJ 2005,kHet
 
-    ! gam =  fom * GammaN2O5_om(frh) too high!
   end function GammaN2O5
   !---------------------------------------------------------------------
   ! Gamma functions for N2O5 from Evans and Jacob, 2005 as 
@@ -601,6 +549,7 @@ module AeroFunctions
 
   end function GammaN2O5_om
   !---------------------------------------------------------------------
+  ! TESTING:
   ! OM generally seems to reduce gamma, and is presumably needed partly
   ! to explain Brown's low measurements. Here we make the crude assumption
   ! that OM has the same gamma as EJ's BC. Much lower than GammaN2O5_om
@@ -643,7 +592,8 @@ module AeroFunctions
    else ! ok for > 100 nm
       k = molSpeed * gam * S /  4
    end if
-   !print "(a,f8.2,4es10.2)", "Uptake terms ", S*toum2cm3, rad, rad/Dg, 4/(molSpeed * gam), k
+   !print "(a,f8.2,4es10.2)", "Uptake terms ", S*toum2cm3, &
+   !    rad, rad/Dg, 4/(molSpeed * gam), k
    
   end function UptakeRate 
 
@@ -729,7 +679,6 @@ module AeroFunctions
          Sdry*um2, Swet*um2,Spm*um2, " ks= ", kd, kw1,kw2,kw3
    end do ! iRH
    end do ! ind
-!stop 'WETY'
 
    open(newunit=io1,file="AeroSurf.txt")
    open(newunit=io2,file="AeroRate.txt")
