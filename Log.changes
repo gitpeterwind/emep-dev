@@ -153,7 +153,14 @@ info on unused variables, etc.
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
  
- 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+2nd Sept 2016 Alvaro, 3279
+
+Derived_ml,EcoSystem_ml,MPI_Groups_ml,ModelConstants_ml,MosaicOutputs_ml,
+My_Derived_ml,Nest_ml,Output_hourly,OwnDataTypes_ml,PhyChem_ml,Unimod,
+ZD_OZONE/My_Outputs_ml,config_Outputs_EMEPSR.nml,config_Outputs_EMEPSTD.nml:
+- Clean-up old comments and re-format.
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 1st Sept 2016, Dave and Hannah, 3278
 
@@ -168,7 +175,6 @@ ChemFunctions_ml
 
 NEW! utils/Rd_ncsondes.py - script to read and plot sondes_xxxx.nc files.
 
-  
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 29th-30th August 2016 Alvaro, 3274-5
 

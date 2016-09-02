@@ -966,11 +966,6 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = glat(i,j)
       end forall
-! deprecated ~3094
-!   case ( "USTAR_NWP" )
-!     forall ( i=1:limax, j=1:ljmax )
-!       d_2d( n, i,j,IOU_INST) = ustar_nwp(i,j)
-!     end forall
     case ( "Kz_m2s" )
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = Kz_m2s(i,j,KMAX_BND-1)
@@ -983,7 +978,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = rh2m(i,j,1)
     end forall
-!GERBER
+
     case ( "SurfAreaPMF_um2cm3" )
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = SurfArea_um2cm3(AERO%PM_F,i,j)
@@ -1015,27 +1010,22 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
        forall ( i=1:limax, j=1:ljmax )
          d_2d( n, i,j,IOU_INST) = SurfArea_um2cm3(AERO%ORIG,i,j)
        end forall
-!GERBER
+
     case ( "u_ref" )
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = u_ref(i,j)
     end forall
 
-    !case ( "SoilWater_deep" )
     case ( "SMI_deep" )
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = SoilWater_deep(i,j,1)
     end forall
     if ( dbgP ) call write_debug(n,index, "SoilWater_DEEP")
-    !if(dbgP) print *, "SOILW_DEEP ", n, SoilWater_deep(2,2,1)
-
-    !case ( "SoilWater_uppr" ) ! Not used so far. (=shallow)
     case ( "SMI_uppr" )
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = SoilWater_uppr(i,j,1)
     end forall
     if ( dbgP ) call write_debug(n,index, "SoilWater_uppr")
-    !if(dbgP) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
 
     case ( "T2m" )
       forall ( i=1:limax, j=1:ljmax )
@@ -1174,7 +1164,6 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
         cycle   !! Skip this case
       endif
 
-      !scale = 62.0
       ! All this size class has the same cfac.
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = d_2d(ind2d_pmfine,i,j,IOU_INST) + &
@@ -1352,10 +1341,11 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
         d_2d(n,:,:,IOU_YEAR ) = d_2d(n,:,:,IOU_YEAR ) + d_2d(n,:,:,IOU_DAY)
         !NB overwritten anyway D2_O3_DAY = 0.
       endif
-    case ( "PREC", "WDEP", "DDEP", "VG" ,"Rs", "Rns", "Gns", "Mosaic", "POD", "SPOD", "AOT" )
-!            if ( dbgP ) write(*,"(2a,i4,a,es12.3)")"PROCESS ",trim(class),&
-!                   n, trim(f_2d(n)%name), d_2d(n,debug_li,debug_lj,IOU_INST)
-!            Nothing to do - all set in My_DryDep
+
+    case("PREC","WDEP","DDEP","VG","Rs","Rns","Gns","Mosaic","POD","SPOD","AOT")
+    ! Nothing to do - all set in My_DryDep
+      ! if(dbgP) write(*,"(2a,i4,a,es12.3)")"PROCESS ",trim(class),&
+      !   n, trim(f_2d(n)%name), d_2d(n,debug_li,debug_lj,IOU_INST)
 
     case('FLYmax6h','FLYmax6h:SPEC')    ! Fly Level, 6 hourly maximum
       ! fl00-20: 0 to 20 kfeet, fl20-35: 20 to 35 kfeet, fl35-50: 35 to 50 kfeet
@@ -1474,7 +1464,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
         d_2d( n, i,j,IOU_INST) = O_DMS%map(i,j)
       end forall
 
-    case ( "Local_Pollutant" )      ! for uEMEP
+    case("Local_Pollutant")   ! for uEMEP, under development
        do j=1,ljmax 
           do i=1,limax
              xtot=0.0
@@ -1488,7 +1478,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
        enddo
        n_Local_Pollutant=n
 
-    case ( "Total_Pollutant" )      ! for uEMEP
+    case("Total_Pollutant")   ! for uEMEP, under development
        do j=1,ljmax 
           do i=1,limax
              xtot=0.0
@@ -1502,19 +1492,18 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
        enddo
        n_Total_Pollutant=n
 
-    case ( "Local_Fraction" )      ! for uEMEP
-      forall ( i=1:limax, j=1:ljmax )
-         !not very elegant...
-        d_2d( n, i,j,IOU_INST) = 0.0
-        d_2d( n, i,j,IOU_HOUR) = &
-        d_2d( n_Local_Pollutant, i,j,IOU_HOUR)/(d_2d( n_Total_Pollutant, i,j,IOU_HOUR)+1.E-30)
-        d_2d( n, i,j,IOU_DAY) =  &
-        d_2d( n_Local_Pollutant, i,j,IOU_DAY)/(d_2d( n_Total_Pollutant, i,j,IOU_DAY)+1.E-30)
-        d_2d( n, i,j,IOU_MON) =  &
-        d_2d( n_Local_Pollutant, i,j,IOU_MON)/(d_2d( n_Total_Pollutant, i,j,IOU_MON)+1.E-30)
-        d_2d( n, i,j,IOU_YEAR) =  &
-        d_2d( n_Local_Pollutant, i,j,IOU_YEAR)/(d_2d( n_Total_Pollutant, i,j,IOU_YEAR)+1.E-30)
-      end forall
+    case("Local_Fraction")    ! for uEMEP, under development
+      forall(i=1:limax,j=1:ljmax)
+        d_2d(n,i,j,IOU_INST) = 0.0
+        d_2d(n,i,j,IOU_HOUR) = d_2d(n_Local_Pollutant,i,j,IOU_HOUR)/&
+                              (d_2d(n_Total_Pollutant,i,j,IOU_HOUR)+1.E-30)
+        d_2d(n,i,j,IOU_DAY ) = d_2d(n_Local_Pollutant,i,j,IOU_DAY)/&
+                              (d_2d(n_Total_Pollutant,i,j,IOU_DAY)+1.E-30)
+        d_2d(n,i,j,IOU_MON ) = d_2d(n_Local_Pollutant,i,j,IOU_MON)/&
+                              (d_2d(n_Total_Pollutant,i,j,IOU_MON)+1.E-30)
+        d_2d(n,i,j,IOU_YEAR) = d_2d(n_Local_Pollutant,i,j,IOU_YEAR)/&
+                              (d_2d(n_Total_Pollutant,i,j,IOU_YEAR)+1.E-30)
+      endforall
 
 
      case ( "EmisSplit_mgm2" )      ! Splitted total emissions (Inclusive natural)
@@ -1523,11 +1512,10 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       end forall
 
     case ( "EXT" )
-
     ! Externally set for IOU_INST (in other routines); so no new work
     ! needed except decision to accumalate to yearly or not.
-      if ( dbgP ) write(*,"(a18,i4,a12,a4,es12.3)")"EXT d_2d",&
-             n, f_2d(n)%name, " is ", d_2d(n,debug_li,debug_lj,IOU_INST)
+      if(dbgP) write(*,"(a18,i4,a12,a4,es12.3)")"EXT d_2d",&
+        n, f_2d(n)%name, " is ", d_2d(n,debug_li,debug_lj,IOU_INST)
 
     case ( "SURF_MASS_GROUP","SURF_PPB_GROUP" ) !
       igrp = f_2d(n)%index
@@ -1625,7 +1613,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
     if(f_3d(n)%unit=="ppb") then
       inv_air_density3D(:,:,:) = 1.0
-    else  !OLD if ( f_3d(n)%rho ) then
+    else
       forall( i=1:limax, j=1:ljmax, k=1:KMAX_MID )&
         inv_air_density3D(i,j,k) = 1.0/( roa(i,j,k,1) * to_molec_cm3 )
     endif
@@ -1809,7 +1797,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
         d_3d(n,i,j,k,IOU_INST)=Kz_m2s(i,j,lev3d(k))
 
-    case ("Z_MID","Z")  ! Mid-layer heigh
+    case ("Z_MID","Z")    ! Mid-layer heigh
       forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
         d_3d(n,i,j,k,IOU_INST)=z_mid(i,j,lev3d(k))
 
@@ -1817,11 +1805,11 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
         d_3d(n,i,j,k,IOU_INST)=z_bnd(i,j,lev3d(k))
 
-    case("dZ_BND","dZ") ! level thickness
+    case("dZ_BND","dZ")   ! level thickness
       forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
         d_3d(n,i,j,k,IOU_INST)=z_bnd(i,j,lev3d(k))-z_bnd(i,j,lev3d(k)+1)
 
-    case ( "wind_speed_3D" )    ! Mid-layer heigh
+    case("wind_speed_3D")
       forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
         d_3d(n,i,j,k,IOU_INST)=sqrt(u_mid(i,j,lev3d(k))**2+v_mid(i,j,lev3d(k))**2)
 
@@ -1851,7 +1839,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
         d_3d(n,i,j,k,IOU_INST)=SUM(Extin_coeff(:,i,j,lev3d(k),wlen),MASK=ingrp)
       deallocate(ingrp)
 
-    case ( "Local_Pollutant3D" )      ! for uEMEP
+    case("Local_Pollutant3D")   ! for uEMEP, under development
       do l=1,num_lev3d
         k=lev3d(l)
         do j=1,ljmax 
@@ -1869,7 +1857,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       n_Local_Pollutant3D=n
      !write(*,*)loc_frac(5,5,kmax_mid,1),loc_frac(5,5,kmax_mid-1,1)
 
-    case ( "Total_Pollutant3D" )      ! for uEMEP
+    case("Total_Pollutant3D")   ! for uEMEP, under development
       do l=1,num_lev3d
         k=lev3d(l)
         do j=1,ljmax 
@@ -1886,9 +1874,8 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       enddo
       n_Total_Pollutant3D=n
 
-    case ( "Local_Fraction3D" )      ! for uEMEP
+    case("Local_Fraction3D")    ! for uEMEP, under development
       forall(i=1:limax,j=1:ljmax,k=1:num_lev3d)
-      ! not very elegant...
         d_3d(n,i,j,k,IOU_INST) = 0.0
         d_3d(n,i,j,k,IOU_HOUR) = d_3d(n_Local_Pollutant3D,i,j,k,IOU_HOUR)/&
                                 (d_3d(n_Total_Pollutant3D,i,j,k,IOU_HOUR)+1.E-30)

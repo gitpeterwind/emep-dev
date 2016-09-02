@@ -1,11 +1,10 @@
 module ModelConstants_ml
- !+
- ! Specifies a number of constants used in the model, and reads namelist
- ! file to (re-)configure where possible. 
- ! Note that physical constants (e.g. gravity, Cp, etc ( are specified in
- ! the module PhysicalConstants_ml.f90)
- !
- !----------------------------------------------------------------------------
+!----------------------------------------------------------------------------
+! Specifies a number of constants used in the model, and reads namelist
+! file to (re-)configure where possible. 
+! Note that physical constants (e.g. gravity, Cp, etc ( are specified in
+! the module PhysicalConstants_ml.f90)
+!----------------------------------------------------------------------------
 use Aerofunctions,        only: DpgV2DpgN
 use CheckStop_ml,         only: CheckStop
 use ChemSpecs,            only: species
@@ -113,38 +112,36 @@ type, public :: emep_debug
      ,DO3SE     = 0         & ! 
      ,STOP_HH   = -1          ! If positive, code will quite when hh==STOP_HH
   !----------------------------------------------------------
-   integer, dimension(2) ::   IJ = (/ -999, -999 /)
-   character(len=20)     ::   SPEC = 'O3'  ! default. 
-   integer               ::   ISPEC = -999 ! Will be set after NML
+   integer, dimension(2) :: IJ = [-999,-999]  ! index for debugging print out
+   character(len=20)     :: SPEC = 'O3'       ! default. 
+   integer               :: ISPEC = -999      ! Will be set after NML
 end type emep_debug
 type(emep_debug), public, save :: DEBUG
 
 
-  !/ Emissions file treatment. Dims more than used.
-  type, public :: emis_in
-    character(len=150) :: name = "NOTSET" ! e.g. POD1_IAM_DF
-    integer :: Nincl=0, Nexcl=0
-    character(len=10), dimension(90) ::  incl = "-"
-    character(len=10), dimension(90) ::  excl = "-"
-    character(len=40), dimension(20) ::  pollName = "NOTSET"
-    character(len=40), dimension(20) ::  pollemepName = "NOTSET"
-    character(len=40) ::  periodicity = "once" !How often new data should be read in
-    character(len=40) ::  type = "sectors" !steers special treatments
-  endtype emis_in
-  type(emis_in), public, dimension(5) :: emis_inputlist = emis_in()
+!/ Emissions file treatment. Dims more than used.
+type, public :: emis_in
+  character(len=150) :: name = "NOTSET" ! e.g. POD1_IAM_DF
+  integer :: Nincl=0, Nexcl=0
+  character(len=10), dimension(90) ::  incl = "-"
+  character(len=10), dimension(90) ::  excl = "-"
+  character(len=40), dimension(20) ::  pollName = "NOTSET"
+  character(len=40), dimension(20) ::  pollemepName = "NOTSET"
+  character(len=40) ::  periodicity = "once" !How often new data should be read in
+  character(len=40) ::  type = "sectors" !steers special treatments
+endtype emis_in
+type(emis_in), public, dimension(5) :: emis_inputlist = emis_in()
 
-  character(len=40), public, save   :: SECTORS_NAME='SNAP'
+character(len=40), public, save   :: SECTORS_NAME='SNAP'
 
-  character (len=200), public, save :: EmisDir = '.'
-  character (len=200), public, save :: DataDir = '.'
-  character (len=200), public, save :: GRID = 'EECCA' !default grid
-  character (len=200), public, save :: meteo = &
-       'DataDir/GRID/metdata_EC/YYYY/meteoYYYYMMDD.nc'  ! template for meteofile
-  character (len=200), public, save :: DegreeDayFactorsFile = &
-       'MetDir/HDD18-GRID-YYYY.nc'  ! template for DegreeDayFactors.nc
-  character (len=200), public, save :: MetDir = './'
+character(len=200), public, save :: &
+  EmisDir = '.',  &
+  DataDir = '.',  &
+  GRID = 'EECCA', & ! default grid
+  meteo= 'DataDir/GRID/metdata_EC/YYYY/meteoYYYYMMDD.nc', & ! template for meteofile
+  DegreeDayFactorsFile = 'MetDir/HDD18-GRID-YYYY.nc'        ! template for DegreeDayFactors.nc
 
-integer, public, save ::  startdate(4),enddate(4)!start and end of the run
+integer, public, save :: startdate(4),enddate(4) ! start and end of the run
 
 !-----------------------------------------------------------
 ! Convection factor - reduces convective fluxes (which can be
@@ -222,8 +219,7 @@ integer, public, save :: &
 !
 !------------ END OF NAMELIST VARIABLES ------------------------------------!
 
-! Some flags for model setup
-! will be removed when code is sufficiently tested
+! Some flags for model setup will be removed when code is sufficiently tested
 ! (for convection use foundconv in permanent code)
 logical, public, parameter ::         &
   NO_CROPNH3DEP      = .true.,        & ! Stop NH3 deposition for growing crops
@@ -232,22 +228,21 @@ logical, public, parameter ::         &
   EXTENDEDMASSBUDGET = .false.,       & ! extended massbudget outputs
   LANDIFY_MET        = .false.         
 
-logical, public ::  USE_EtaCOORDINATES=.true.!set true as default since 22nd October 2014
+logical, public :: &
+  USE_EtaCOORDINATES=.true. ! default since October 2014
 
-
-!IN-TESTING (reset in NML if wanted)
-!Boundary layer profiles
-  character(len=4), parameter, public :: FluxPROFILE = &
-     "Iter"   !
-!      "Ln95"   ! ! will use Launiainen1995  EXPERIMENTAL. Fails in some areas
+! Boundary layer profiles. IN-TESTING
+character(len=4), parameter, public :: &
+  FluxPROFILE = "Iter"
+! FluxPROFILE = "Ln95"  ! use Launiainen1995 EXPERIMENTAL. Fails in some areas
 
 ! Biogenics. Use 3 even if no terpene chemistry - simplifies
 ! rest of code.  iso = isoprene, mtp = monoterpenes from pools,
 ! mtl = monoterpenes with light dependence
 !DSA12 integer, public, parameter ::   NSOIL_EMIS = 2 ! NO + NH3
- integer, public, parameter ::   NBVOC = 3
- character(len=4),public, save, dimension(NBVOC) :: &
-   BVOC_USED = (/ "Eiso","Emt ","Emtl"/)
+integer, public, parameter ::   NBVOC = 3
+character(len=4),public, save, dimension(NBVOC) :: &
+  BVOC_USED = [character(len=4):: "Eiso","Emt","Emtl"]
 
 !The GEA emission data, which is used for EUCAARI runs on the HIRHAM domains
 !have in several sea grid cells non-zero emissions in other sectors than SNAP8
@@ -258,8 +253,8 @@ logical, public ::  USE_EtaCOORDINATES=.true.!set true as default since 22nd Oct
 !are used on the HIRHAM domain, this is not a problem.
 
 logical, public, save :: &
-   SEAFIX_GEA_NEEDED = .false. ! only if problems. Reset in nml files. NOT HERE
-
+  SEAFIX_GEA_NEEDED = .false. ! only if problems. Read from ModelConstants_config
+  
 !=============================================================================
 !+ 1) Define first dimensions that might change quite often -  for different
 !     run domains
@@ -276,78 +271,23 @@ character(len=*), parameter, public :: &
 !  and new cdf emission system in testing. Reset in config_ files
 ! EMIS_TEST can be merged with EMIS_SOURCE after tests
 character(len=20), save, public :: &
-   EMIS_SOURCE = "Mixed"     &! "Mixed" or old formats: "emislist" or "CdfFractions"
-  ,EMIS_TEST   = "None"          ! "None" or "CdfSnap" 
+  EMIS_SOURCE = "Mixed",  & ! "Mixed" or old formats: "emislist" or "CdfFractions"
+  EMIS_TEST   = "None"      ! "None" or "CdfSnap" 
 Logical , save, public :: &
-   EMIS_OUT    = .false.           ! output emissions in separate files (memory demanding)
+  EMIS_OUT    = .false.     ! output emissions in separate files (memory demanding)
 
-integer, public :: KMAX_MID, &  ! Number of points (levels) in vertical
-                   KMAX_BND     ! Number of level boundaries (=KMAX_MID+1)
-integer, public :: IIFULLDOM,JJFULLDOM  ! SET AUTOMATICALLY BY THE CODE
-! IIFULLDOM = 182, JJFULLDOM = 197 ! x,y-Dimensions of full HIRHAM domain
-! IIFULLDOM = 170, JJFULLDOM = 133 ! x,y-Dimensions of full EMEP domain
-! IIFULLDOM = 132, JJFULLDOM = 159 ! x,y-Dimensions of full EECA domain
-! IIFULLDOM = 840, JJFULLDOM = 832 ! x,y-Dimensions of full TNO07 domain     
-! IIFULLDOM = 420, JJFULLDOM = 416 ! x,y-Dimensions of full TNO14 domain   
-! IIFULLDOM = 210, JJFULLDOM = 208 ! x,y-Dimensions of full TNO28 domain 
-! IIFULLDOM = 105, JJFULLDOM = 104 ! x,y-Dimensions of full TNO56 domain
-! IIFULLDOM = 360, JJFULLDOM = 180 ! .... full GLOBAL domain
-! IIFULLDOM = 201, JJFULLDOM = 161 ! .... full GEMS 0.25 domain
-! IIFULLDOM = 301, JJFULLDOM = 221 ! .... full GEMS 0.25 extended domain
-! IIFULLDOM = 321, JJFULLDOM = 221 ! .... full MACC 0.20 domain
+integer, public :: &  ! Full domain, set automatically from meteorology
+  KMAX_MID, &         ! Number of points (levels) in vertical
+  KMAX_BND, &         ! Number of level boundaries (=KMAX_MID+1)
+  IIFULLDOM,JJFULLDOM ! Full grid
 
-! The difference between EMEP and EECCA is confusing...
-integer, public, parameter :: &
-! OFFSET_i=  0, OFFSET_j=  0    ! EMEP or default
-  OFFSET_i=-35, OFFSET_j=-11    ! EECCA
-
-!domains for output in fulldomain coordinates
-integer, public, save, dimension(4) :: fullrun_DOMAIN,month_DOMAIN,day_DOMAIN,hour_DOMAIN
-
-integer, public, save, dimension(4) ::   &!NB in fulldomain coordinates
-!                 x0   x1  y0   y1
-  RUNDOMAIN =(/-999,-999,-999,-999/)     ! Set values later
-! RUNDOMAIN = (/  1, 182,  1, 197 /)     ! HIRHAM
-! RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA = new EMEP domain
-!!
-!  RUNDOMAIN = (/  1, 100,  1, 100 /)     ! Orig EMEP domain in EECCA (for benchmarks)
-! RUNDOMAIN = (/ 40, 210, 12, 184 /)     ! SR TNO28 area
-! RUNDOMAIN = (/  1, 210,  1, 208 /)     ! TNO28
-! RUNDOMAIN = (/240, 720, 48, 736 /)     ! TNO07 reduced (15W-45E;30N-73N)
-! RUNDOMAIN = (/120, 360, 24, 368 /)     ! TNO14 reduced (15W-45E;30N-73N)
-! RUNDOMAIN = (/ 60, 180, 12, 184 /)     ! TNO28 reduced (15W-45E;30N-73N)
-! RUNDOMAIN = (/ 70, 110, 72, 110 /)     ! TNO28  test
-! RUNDOMAIN = (/ 30,  90,  6,  92 /)     ! TNO56 reduced (15W-45E;30N-73N)
-! RUNDOMAIN = (/ 60, 180, 12, 184 /)     !  test TNO7 area
-!--
-! Suggestions, 6th June 2012, for TFMM_RUNS scale-dep -----------------------
-! RUNDOMAIN = (/  40, 210, 12, 184 /)     ! TNO28 SR area (25W-60E;30N-73N)
-! i.e.  - adds 20 squares west, 30 east to TNO28
-! RUNDOMAIN = (/  160, 840, 48, 736 /)    ! TNO07  - add 80, 120
-! RUNDOMAIN = (/   80, 420, 24, 368 /)    ! TNO14  - add 40, 60
-! RUNDOMAIN = (/   20, 105, 6, 92 /)      ! TNO56  - add 10, 15
-!----------------------------------------------------------------------------
-
-! RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain in PARLAM
-! RUNDOMAIN = (/  1, 360,  1, 180 /)     ! FULL GLOBAL
-! RUNDOMAIN = (/  1, 132,  1, 111 /)     ! EECCA, rep09
-! RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA, rep10
-! RUNDOMAIN = (/ 20, 167,  1, 122 /)     ! OSPAR/HELCOM domain
-! RUNDOMAIN = (/ 18, 169,  1, 124 /)     ! OSPAR/HELCOM domain+borders
-! RUNDOMAIN = (/  1, 201,  1, 161 /)     ! EMEP-CWF, GEMS 0.25 domain
-! RUNDOMAIN = (/  1, 301, 26, 221 /)     ! EMEP-CWF, GEMS 0.25 extended domain
-! RUNDOMAIN = (/  1, 321,  1, 221 /)     ! EMEP-CWF, MACC 0.20 domain
-! RUNDOMAIN = (/ 70+OFFSET_i, 90+OFFSET_i, 43+OFFSET_j,  63+OFFSET_j /) ! (UK)
-! RUNDOMAIN = (/ 60+OFFSET_i, 86+OFFSET_i, 43+OFFSET_j,  59+OFFSET_j /) ! (UK)
-! RUNDOMAIN = (/ 40+OFFSET_i, 96+OFFSET_i, 23+OFFSET_j,  69+OFFSET_j /) ! (UK)
-! RUNDOMAIN = (/ 60+OFFSET_i,116+OFFSET_i, 33+OFFSET_j,  69+OFFSET_j /) ! (UK)
-! RUNDOMAIN = (/ 85+OFFSET_i,120+OFFSET_i, 55+OFFSET_j,  70+OFFSET_j /) ! (changeable)
-! RUNDOMAIN = (/ 85+OFFSET_i,120+OFFSET_i, 15+OFFSET_j,  50+OFFSET_j /) ! (changeable)
-! RUNDOMAIN = (/ 75+OFFSET_i,110+OFFSET_i, 45+OFFSET_j,  60+OFFSET_j /) ! (gets Esk)
-! RUNDOMAIN = (/ 80+OFFSET_i, 106+OFFSET_i, 33+OFFSET_j,  55+OFFSET_j /) ! (France)
-! RUNDOMAIN = (/ 80+OFFSET_i, 106+OFFSET_i, 13+OFFSET_j,  35+OFFSET_j /) ! Southern domain
-! RUNDOMAIN = (/ 75+OFFSET_i,110+OFFSET_i, 25+OFFSET_j,  60+OFFSET_j /) ! (gets Esk)
-
+! Sub-domains, in fulldomain coordinates. Read on ModelConstants_config
+integer, public, save, dimension(4) :: &
+  RUNDOMAIN =-999,  & ! run sub-domain
+  fullrun_DOMAIN,   & ! fullrun (year) output sub-domain
+  month_DOMAIN,     & ! montly output sub-domain
+  day_DOMAIN,       & ! daily  output sub-domain
+  hour_DOMAIN         ! hourly output sub-domain
 
 ! 3D Output: all modell levels will be outputed by default
 ! see Init_My_Deriv and OutputSize_config for details
@@ -370,61 +310,11 @@ CHARACTER(LEN=3), public, save :: &
 logical, public, save ::  MasterProc = .true.
 logical, public, save ::  DebugCell  = .false.
 
-! For debugging, we often want to print out for  a specific location
-! Set here:
-
-!Apr 2014  ALL MOVED TO CONFIG SYSTEM DEBUG%IJ
-! The coordinates given here only apply for the standard EMEP domain
-!integer, private, parameter :: &
-! DEBUG_ii=-99, DEBUG_jj=-99 ! none
-! DEBUG_ii= 79, DEBUG_jj= 56 ! Eskdalemuir
-! DEBUG_ii= 73, DEBUG_jj= 48 ! Mace Head
-! DEBUG_ii= 88, DEBUG_jj= 53 ! Sibton
-! DEBUG_ii= 88, DEBUG_jj= 53 ! Sibton
-! DEBUG_ii= 91, DEBUG_jj= 71 ! Rorvik
-! DEBUG_ii= 82, DEBUG_jj= 72 ! Voss, has some snow
-! DEBUG_ii=110, DEBUG_jj= 48 ! High Vg!
-! DEBUG_ii= 96, DEBUG_jj= 40 ! High VG_SO2_CF!
-! DEBUG_ii=111, DEBUG_jj= 54 ! High VG_PMCO_CF!
-! DEBUG_ii=101, DEBUG_jj= 51 ! Schauinsland
-! DEBUG_ii=103, DEBUG_jj= 50 ! Mid-Europe
-! DEBUG_ii= 93, DEBUG_jj= 57 ! Elspeetsche (52d12',5d45') 92.83, 56.64
-! DEBUG_ii= 92, DEBUG_jj= 56 ! Cabauw
-! DEBUG_ii= 97, DEBUG_jj= 62 ! Waldhof
-! DEBUG_ii=116, DEBUG_jj= 63 ! K-Puszta
-! DEBUG_ii=102, DEBUG_jj= 48 ! Payerne
-! DEBUG_ii= 85, DEBUG_jj= 50 ! Harwell
-! DEBUG_ii= 88, DEBUG_jj= 99 ! Harwell TNO TEST
-! DEBUG_ii= 93, DEBUG_jj= 47 !  Grignon, France
-! DEBUG_ii= 90, DEBUG_jj= 104 !  Wetland, Tundra
-! DEBUG_ii= 72-OFFSET_i, DEBUG_jj= 37-OFFSET_j ! biomass burnung, Aug 2003
-! DEBUG_ii= 90-OFFSET_i, DEBUG_jj= 27-OFFSET_j ! biomass burnung, Jul 2009
-! DEBUG_ii= 58-OFFSET_i, DEBUG_jj= 72-OFFSET_j ! 99% water, SMI problems
-! DUST DEBUG_ii= 94-OFFSET_i, DEBUG_jj= 24-OFFSET_j ! 99% water, dust problems
-! DEBUG_ii= 85, DEBUG_jj= 35 ! Sea, Bay of Biscay
-! DEBUG_ii= 76, DEBUG_jj= 65 ! Sea,  North sea
-! DEBUG_ii= 66, DEBUG_jj= 50 ! Sea,  west UK
-! DEBUG_ii= 80, DEBUG_jj= 52 ! Irish sea
-! DEBUG_ii= 91, DEBUG_jj= 67 ! Tange
-! DEBUG_ii=103, DEBUG_jj= 32 ! Prades, SMDge
-! DEBUG_ii=128, DEBUG_jj= 13 !  Desert?
-
-!integer, public, parameter :: &
-! DEBUG_i= 62, DEBUG_j= 45  ! SEA
-! DEBUG_i= 10, DEBUG_j= 140 !NEGSPOD
-! DEBUG_i= 70, DEBUG_j= 40 ! Lichtenstein, to test ncc
-! DEBUG_i= DEBUG_II+OFFSET_i, DEBUG_j= DEBUG_JJ+OFFSET_j    ! EMEP/EECCA
-! DEBUG_i= 60, DEBUG_j= 50 ! Bremen
-! DEBUG_i= 59, DEBUG_j= 79  ! JCOAST
-! DEBUG_i= 48, DEBUG_j= 15  !  BB aug 2006
-! DEBUG_i= 9, DEBUG_j= 201                                  ! MACC02
-! DEBUG_i= 0, DEBUG_j= 0    ! default
-
 !=============================================================================
 ! Some flags for model setup
 
 ! Debug flag DEBUG_XXX  applied in subroutine XXX
- logical, public, parameter ::    &
+logical, public, parameter ::    &
    DEBUG_ADV            = .false. &
   ,PALEO_TEST = .false. &
   ,DEBUG_BLM            = .false. & ! Produces matrix of differnt Kz and Hmix
@@ -511,24 +401,25 @@ type, public :: aero_t
   logical          :: DYNAMICS = .false.
   integer          :: NSIZE    = 5
   real, dimension(5) :: &
-!ds   diam = (/ 0.33e-6, 3.0e-6, 4.8e-6, 5.0e-6 ,22e-6 /) & ! to be replaced by 
-     DpgV = (/ 0.33e-6, 3.0e-6, 4.8e-6, 5.0e-6 ,22e-6 /) & ! DpgV
-    ,DpgN   = (/-1.0,-1.0,-1.0,-1.0,-1.0/)               & ! to be calc
-    ,sigma  = (/ 1.8, 2.0, 2.0, 2.2 ,2.0/)               &
-    ,PMdens = (/ 1600.0, 2200.0, 2200.0, 2600.0, 800.0/) & ! kg/m3
+     DpgV  =[0.33e-6, 3.0e-6,4.8e-6,5.0e-6,22e-6] & ! diameter [m]
+    ,DpgN  =[   -1.0,   -1.0,  -1.0,  -1.0, -1.0] & ! to be calculated
+    ,sigma =[    1.8,    2.0,   2.0,   2.2,  2.0] &
+    ,PMdens=[ 1600.0, 2200.0,2200.0,2600.0,800.0] & ! density [kg/m3]
     ,Vs = 0.0   ! Settling velocity (m/s). Easiest to define here
-  !
-  ! For surface area we track the following (NSD=not seasalt or dust)
-  ! Must make sizes match NSAREA_DEF above
-  ! NB PM is sum of PMf and PMC
-   integer  :: SIA_F=1, PM_F=2, SS_F=3, DU_F=4, PM=5, SS_C=6, DU_C=7, ORIG=8, NSAREA=NSAREA_DEF
-  ! Mappings to DpgV types above, and Gerber types (see AeroFunctions).
-  ! For Gerber (Gb), -1 indicates to use dry radius
-   character(len=4), dimension(NSAREA_DEF) :: SLABELS = (/ &
-      character(len=4) :: 'SIAF',  'PMF','SSF', 'DUF', 'PM', 'SSC', 'DUC', 'ORIG' /)
-   integer, dimension(NSAREA_DEF) ::&
-          Inddry = (/  1,        1,      1,      1,       2,      3,      4,   3 /), &
-          Gb     = (/  1,        1,      2,     -1,       1,      2,     -1,  -1 /)
+
+! For surface area we track the following (NSD=not seasalt or dust)
+! Must make sizes match NSAREA_DEF above
+! NB PM is sum of PMf and PMC
+  integer :: &
+    SIA_F=1,PM_F=2,SS_F=3,DU_F=4,PM=5,SS_C=6,DU_C=7,ORIG=8,NSAREA=NSAREA_DEF
+
+! Mappings to DpgV types above, and Gerber types (see AeroFunctions).
+! For Gerber (Gb), -1 indicates to use dry radius
+character(len=4), dimension(NSAREA_DEF) :: &
+  SLABELS=[character(len=4)::'SIAF','PMF','SSF','DUF','PM','SSC','DUC','ORIG']
+integer, dimension(NSAREA_DEF) ::&
+  Inddry = [ 1, 1, 1, 1, 2, 3, 4, 3], &
+  Gb     = [ 1, 1, 2,-1, 1, 2,-1,-1]
 end type aero_t
 type(aero_t), public, save :: AERO = aero_t()
 
@@ -545,13 +436,13 @@ integer, public, save :: nFluxVegs = 0 ! reset in Landuse_ml
 !NOT USED YET.
 type(typ_ss), public, save, dimension(NLANDUSEMAX) :: &
   PFT_MAPPINGS=typ_ss('-','-')
-    
 
 ! EMEP measurements end at 6am, used in  daily averages
 integer, public, parameter :: END_OF_EMEPDAY  = 6
 
-real, public, save :: dt_advec     ! time-step for advection (s)
-real, public, save :: dt_advec_inv ! =1/dt_advec
+real, public, save :: &
+  dt_advec,   & ! time-step for advection (s), grid resolution dependent
+  dt_advec_inv  ! =1/dt_advec
 
 ! NTDAY:  Number of 2D O3 to be saved each day (for SOMO)
 ! 24/NTDAY is the time integration step for SOMO
@@ -626,10 +517,11 @@ logical, public, parameter:: MANUAL_GRID=.false.!under developement.
 !----------------------------------------------------------------------------
 contains
 subroutine Config_ModelConstants(iolog)
-  character(len=120)  :: txt
   integer, intent(in) :: iolog ! for Log file
+
   integer :: i, j, ispec, iostat
   logical,save :: first_call = .true.
+  character(len=len(meteo)) ::  MetDir='./' ! path from meteo
   
   NAMELIST /ModelConstants_config/ &
     DegreeDayFactorsFile, meteo & !meteo template with full path
@@ -653,44 +545,38 @@ subroutine Config_ModelConstants(iolog)
    ,FLUX_VEGS             & ! Allows user to add veg categories for eg IAM ouput
    ,VEG_2dGS              & ! Allows 2d maps of growing seasons
    ,VEG_2dGS_Params       & ! Allows 2d maps of growing seasons
-   ,PFT_MAPPINGS          &  ! Allows use of external LAI maps
+   ,PFT_MAPPINGS          & ! Allows use of external LAI maps
    ,NETCDF_DEFLATE_LEVEL,  RUNDOMAIN, DOMAIN_DECOM_MODE &
    ,JUMPOVER29FEB, HOURLYFILE_ending, USE_WRF_MET_NAMES
 
   NAMELIST /Machine_config/ DataPath
 
-  namelist /INPUT_PARA/GRID,iyr_trend,runlabel1,runlabel2,&
+  NAMELIST /INPUT_PARA/GRID,iyr_trend,runlabel1,runlabel2,&
        startdate,enddate!,meteo
-
-  txt = "ok"
-  !Can't call check_file due to circularity
-  !call check_file('emep_settings.nml', file_exists, needed=.true., errmsg=txt)
-
 
   open(IO_NML,file='config_emep.nml',delim='APOSTROPHE')
   read(IO_NML,NML=ModelConstants_config)
-  !close(IO_NML)
+  ! do not close(IO_NML), other modules will be read namelist on this file
 
   USE_SOILNOX = USE_EURO_SOILNOX .or. USE_GLOBAL_SOILNOx
 
   ! Convert DEBUG%SPEC to index
   if(first_call) then
     ispec = find_index( DEBUG%SPEC, species(:)%name )
-    !print *, "debug%spec testing", ispec, trim(DEBUG%SPEC)
+  ! print *, "debug%spec testing", ispec, trim(DEBUG%SPEC)
     call CheckStop(ispec<1,"debug%spec not found"//trim(DEBUG%SPEC))
     DEBUG%ISPEC = ispec
     first_call = .false.
 
-    !GERBER work
     do i = 1, size(AERO%DpgN(:))
       AERO%DpgN(i) = DpgV2DpgN(AERO%DpgV(i),AERO%sigma(i))
     enddo     
   endif
 
   if(MasterProc)then
-    !write(*, * ) "NAMELIST IS "
-    !write(*, NML=ModelConstants_config)
-    !write(*,* ) "NAMELIST IOLOG IS ", iolog
+  ! write(*, * ) "NAMELIST IS "
+  ! write(*, NML=ModelConstants_config)
+  ! write(*,* ) "NAMELIST IOLOG IS ", iolog
     write(iolog,*) "NAMELIST IS "
     write(iolog, NML=ModelConstants_config)
   endif
@@ -702,11 +588,11 @@ subroutine Config_ModelConstants(iolog)
   do i=1,size(DataPath)
     if(DataPath(i)=="NOTSET")then
       if(MasterProc)then
-         write(*,*)'WARNING: Could not find valid DataDir. Tried:'
-         do j=1,i-1
-            write(*,*)trim(DataPath(j))
-         enddo
-      stop
+        write(*,*)'WARNING: Could not find valid DataDir. Tried:'
+        do j=1,i-1
+          write(*,*)trim(DataPath(j))
+        enddo
+        stop
       endif
       exit
     endif
@@ -727,16 +613,13 @@ subroutine Config_ModelConstants(iolog)
 
   meteo = key2str(meteo,'DataDir',DataDir)
   meteo = key2str(meteo,'GRID',GRID)
-
-  MetDir = key2str(meteo,'meteoYYYYMMDD.nc','./')
-
+  MetDir= key2str(meteo,'meteoYYYYMMDD.nc','./')
   DegreeDayFactorsFile=key2str(DegreeDayFactorsFile,'MetDir',MetDir)
   DegreeDayFactorsFile=key2str(DegreeDayFactorsFile,'GRID',GRID)
   DegreeDayFactorsFile=key2str(DegreeDayFactorsFile,'YYYY',startdate(1))
-
   if(MasterProc)then
-     write(*,*)'Defined DegreeDayFactorsFile as:'
-     write(*,*)trim(DegreeDayFactorsFile)
+    write(*,*)'Defined DegreeDayFactorsFile as:'
+    write(*,*)trim(DegreeDayFactorsFile)
   endif
 
 endsubroutine Config_ModelConstants

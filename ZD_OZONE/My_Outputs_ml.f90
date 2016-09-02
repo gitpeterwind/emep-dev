@@ -39,12 +39,12 @@ logical, public, parameter :: Ascii3D_WANTED = .false.
 
 integer, private :: isite              ! To assign arrays, if needed
 integer, public, parameter :: &
-   NSITES_MAX =       99      & ! Max. no surface sites allowed
-  ,FREQ_SITE  =        1      & ! Interval (hrs) between outputs
-  ,NADV_SITE  = NSPEC_ADV  & ! No. advected species (1 up to NSPEC_ADV)
-  ,NSHL_SITE  = NSPEC_SHL  & ! No. short-lived species
+   NSITES_MAX =        99     & ! Max. no surface sites allowed
+  ,FREQ_SITE  =         1     & ! Interval (hrs) between outputs
+  ,NADV_SITE  = NSPEC_ADV     & ! No. advected species (1 up to NSPEC_ADV)
+  ,NSHL_SITE  = NSPEC_SHL     & ! No. short-lived species
   ,NXTRA_SITE_MISC =    2     & ! No. Misc. met. params  ( e.g. T2, d_2d)
-  ,NXTRA_SITE_D2D  =    9+8   ! No. Misc. met. params  ( e.g. T2, d_2d)
+  ,NXTRA_SITE_D2D  =  9+8       ! No. Misc. met. params  ( e.g. T2, d_2d)
 
 integer, public, parameter, dimension(NADV_SITE) :: &
   SITE_ADV = [(isite, isite=1,NADV_SITE)]  ! Everything
@@ -67,7 +67,6 @@ character(len=18), public, parameter, dimension(NXTRA_SITE_MISC) :: &
 !These variables must have been set in My_Derived for them to be used.
 character(len=24), public, parameter, dimension(NXTRA_SITE_D2D) :: &
   SITE_XTRA_D2D=[character(len=24):: & 
-    ! all array members will have len=24
     "HMIX","PSURF","ws_10m","rh2m",&
     "Emis_mgm2_BioNatC5H8","Emis_mgm2_BioNatAPINENE",&
     "Emis_mgm2_BioNatNO","Emis_mgm2_nox",&
@@ -118,9 +117,7 @@ integer, public, parameter, dimension(NSHL_SONDE) :: &
   SONDE_SHL = [ IXSHL_OH, IXSHL_OD, IXSHL_OP ]
 character(len=10), public, parameter, dimension(NXTRA_SONDE) :: &
   SONDE_XTRA= [character(len=10):: &
-   ! all array members will have len=10
    "NOy","z_mid","p_mid","th"]!,"Kz_m2s"]
-
 
 !   can access d_3d fields through index here, by
 !   setting "D3D" above and say D3_XKSIG12 here:
@@ -143,8 +140,8 @@ character(len=10), public, parameter, dimension(NXTRA_SONDE) :: &
 !----------------------------------------------------------------
 
 integer, public, save :: &
-  nhourly_out=0,&   ! No. output variables
-  nlevels_hourly=0,&  ! No. output levels
+  nhourly_out=0,    & ! No. output variables
+  nlevels_hourly=0, & ! No. output levels
   nmax6_hourly = 0    ! No of 6 hourly max outputs
 
 ! Output selected model levels
@@ -208,10 +205,11 @@ subroutine set_output_defs
     nlevels_hourly = 1+18
     nhourly_out=4    !PM*,AOD & Z
     ash=find_index("ASH",chemgroups(:)%name)
-    nuc_conc=0!find_index("NUCRACT",chemgroups(:)%name)
-    nuc_wdep=0!find_index("DDEP_NUCRACT",chemgroups(:)%name)
-    nuc_ddep=0!find_index("WDEP_NUCRACT",chemgroups(:)%name)
-    call CheckStop((ash+nuc_conc+nuc_ddep+nuc_wdep)<1,"set_output_defs: Unknown group 'ASH'/'NUC'")
+    nuc_conc=0  ! find_index("NUCRACT",chemgroups(:)%name)
+    nuc_wdep=0  ! find_index("DDEP_NUCRACT",chemgroups(:)%name)
+    nuc_ddep=0  ! find_index("WDEP_NUCRACT",chemgroups(:)%name)
+    call CheckStop((ash+nuc_conc+nuc_ddep+nuc_wdep)<1,&
+      "set_output_defs: Unknown group 'ASH'/'NUC'")
     if(ash>0)then
       name="none"
       do i=1,size(chemgroups(ash)%ptr)
@@ -328,8 +326,8 @@ subroutine set_output_defs
       Asc2D("pm25_3km"  ,"BCVugXXgroup",pm25,NLEVELS_HOURLY,"ug/m3",1.0,-999.9),&
       Asc2D("pm10_3km"  ,"BCVugXXgroup",pm10,NLEVELS_HOURLY,"ug/m3",1.0,-999.9),&
       Asc2D("pm_h2o_3km","PMwater"     ,00  ,NLEVELS_HOURLY,"ug/m3",1.0,-999.9),&
-!      Asc2D("AOD_550nm" ,"D2D",find_index("AOD_550nm",f_2d(:)%name),&
-!             1," ",1.0    ,-9999.9),&
+!     Asc2D("AOD_550nm" ,"D2D",find_index("AOD_550nm",f_2d(:)%name),&
+!            1," ",1.0    ,-9999.9),&
       Asc2D("z"         ,"Z_MID" ,00,NLEVELS_HOURLY,"km",1e-3,-9999.9)/)
     if(ash>0)then
       name="none"
@@ -367,10 +365,10 @@ subroutine set_output_defs
         igrp=find_index(name,chemgroups(:)%name) ! position of NPP/NUC -group
         call CheckStop(igrp<1,"set_output_defs: Unknown wdep group '"//name//"'")
         j=j+1;
-!        hr_out(j)=(/&
-!          Asc2D(name        ,"BCVugXXgroup",igrp,&
-!                1,"uBqh/m2",1.0,-999.9)&
-!                /)
+!       hr_out(j)=(/&
+!         Asc2D(name        ,"BCVugXXgroup",igrp,&
+!               1,"uBqh/m2",1.0,-999.9)&
+!                 /)
         hr_out(j)=Asc2D(trim(name)//"_WDEP","D2D_accum",&
               find_index("WDEP_"//trim(name),f_2d(:)%name),1,"",1.0,-999.9)
 
@@ -383,10 +381,10 @@ subroutine set_output_defs
         igrp=find_index(name,chemgroups(:)%name) ! position of NPP/NUC -group
         call CheckStop(igrp<1,"set_output_defs: Unknown ddep group '"//name//"'")
         j=j+1;
-!        hr_out(j:j)=(/&
-!          Asc2D(name        ,"BCVugXXgroup",igrp,&
-!                1,"uBqh/m2",1.0,-999.9)&
-!                /)
+!       hr_out(j:j)=(/&
+!         Asc2D(name        ,"BCVugXXgroup",igrp,&
+!               1,"uBqh/m2",1.0,-999.9)&
+!               /)
         hr_out(j)=Asc2D(trim(name)//"_DDEP","D2D_accum",&
               find_index("DDEP_"//name,f_2d(:)%name),1,"",1.0,-999.9)
       enddo
@@ -684,6 +682,5 @@ subroutine set_output_defs
   wanted_dates_inst(2) = date(-1,1,1,3,0)
   wanted_dates_inst(3) = date(-1,1,1,6,0)
 
-end subroutine set_output_defs
-
-end module My_Outputs_ml
+endsubroutine set_output_defs
+endmodule My_Outputs_ml

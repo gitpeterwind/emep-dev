@@ -27,18 +27,16 @@ module My_Derived_ml
 !---------------------------------------------------------------------------
 
 use AOTx_ml,          only: VEGO3_OUTPUTS, nOutputVegO3,OutputVegO3
-use CheckStop_ml,     only: CheckStop, StopAll
+use CheckStop_ml,     only: CheckStop
 use Chemfields_ml,    only: xn_adv, xn_shl, cfac
 use ChemSpecs             ! Use IXADV_ indices...
 use ChemGroups_ml         ! Allow all groups to ease compilation
                           !  eg. OXN_GROUP, DDEP_OXNGROUP, BVOC_GROUP
 use EmisDef_ml,       only: EMIS_FILE
 use EmisGet_ml,       only: nrcemis, iqrc2itot
-use GridValues_ml,    only: debug_li, debug_lj, debug_proc, RestrictDomain
+use GridValues_ml,    only: RestrictDomain
 use Io_Nums_ml,       only: IO_NML
 use Io_Progs_ml,      only: PrintLog
-use LandDefs_ml,      only: LandDefs, LandType, Check_LandCoverPresent ! e.g. "CF"
-use MetFields_ml,     only: z_bnd, roa
 use ModelConstants_ml,only: MasterProc, SOURCE_RECEPTOR, DEBUG, & !! => DEBUG_MY_DERIVED &
                             USE_AOD, USE_SOILNOX, USE_OCEAN_DMS, USE_uEMEP, &
                             IOU_KEY,      & !'Y'=>IOU_YEAR,..,'I'=>IOU_HOUR_INST
@@ -48,14 +46,12 @@ use ModelConstants_ml,only: MasterProc, SOURCE_RECEPTOR, DEBUG, & !! => DEBUG_MY
                             num_lev3d,lev3d ! 3D levels on 3D output
 use MosaicOutputs_ml, only: nMosaic, MAX_MOSAIC_OUTPUTS, MosaicOutput, & !
                             Init_MosaicMMC,  Add_MosaicMetConcs, &
-                            Add_NewMosaics, Add_MosaicVEGO3, Add_MosaicDDEP!, &
-!  MMC_USTAR, MMC_INVL, MMC_RH, MMC_CANO3, MMC_VPD, MMC_FST, MMC_GSTO, MMC_EVAP
+                            Add_NewMosaics, Add_MosaicVEGO3, Add_MosaicDDEP
 
 use OwnDataTypes_ml,only: Deriv, TXTLEN_DERIV, TXTLEN_SHORT,&
-                          typ_ss, typ_s3, typ_s4, typ_s5ind, typ_s1ind
-use Par_ml,         only: me,limax,ljmax        ! => used x, y area
+                          typ_s3, typ_s5ind, typ_s1ind
+use Par_ml,         only: limax,ljmax        ! => used x, y area
 use SmallUtils_ml,  only: AddArray,LenArray,NOT_SET_STRING,WriteArray,find_index
-use TimeDate_ml,    only: current_date
 implicit none
 private
 
@@ -451,7 +447,7 @@ subroutine Init_My_Deriv()
         cycle
       endselect
     else
-      call StopAll("My_Deriv: Unsupported OutputConcs" // &
+      call CheckStop("My_Deriv: Unsupported OutputConcs" // &
           trim(outname)//":"//trim(outtyp)//":"//trim(outdim))
     endif
 
@@ -496,10 +492,10 @@ subroutine My_DerivFunc( e_2d, class )!  , density )
       forall ( i=1:limax, j=1:ljmax )
         e_2d( i,j ) = &
           ( xn_adv(IXADV_NO3_f,i,j,KMAX_MID) * cfac(IXADV_NO3_f,i,j)  &
-          +  xn_adv(IXADV_NO3_c,i,j,KMAX_MID) * cfac(IXADV_NO3_c,i,j)) &
+          + xn_adv(IXADV_NO3_c,i,j,KMAX_MID) * cfac(IXADV_NO3_c,i,j)) &
        /max(1E-80, (xn_adv(IXADV_HNO3,i,j,KMAX_MID) *  cfac(IXADV_HNO3,i,j))&
-          +  xn_adv(IXADV_NO3_f,i,j,KMAX_MID) * cfac(IXADV_NO3_f,i,j)    &
-          +  xn_adv(IXADV_NO3_c,i,j,KMAX_MID) * cfac(IXADV_NO3_c,i,j))
+          + xn_adv(IXADV_NO3_f,i,j,KMAX_MID) * cfac(IXADV_NO3_f,i,j)    &
+          + xn_adv(IXADV_NO3_c,i,j,KMAX_MID) * cfac(IXADV_NO3_c,i,j))
       endforall
 
     case default

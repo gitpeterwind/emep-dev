@@ -235,110 +235,104 @@ program myeul
   !     performance of physical and chemical calculations,
   !     three-hourly time loop starts here
   !
-  do while (.not. End_of_Run)        ! main time-loop , timestep is dt_advec
+  do while(.not.End_of_Run)        ! main time-loop , timestep is dt_advec
 
-     nstep=mod(nstep,nmax)+1 !loops from 1 to nmax, between two meteo read
+    nstep=mod(nstep,nmax)+1 !loops from 1 to nmax, between two meteo read
 
-     !FUTURE if (NH3EMIS_VAR) call SetNH3()  ! NH3emis experimental
+    !FUTURE if (NH3EMIS_VAR) call SetNH3()  ! NH3emis experimental
 
-     select case (mm)
-     case(12,1:2);newseason = 1
-     case(3:5)   ;newseason = 2
-     case(6:8)   ;newseason = 3
-     case(9:11)  ;newseason = 4
-     endselect
+    select case (mm)
+      case(12,1:2);newseason = 1
+      case(3:5)   ;newseason = 2
+      case(6:8)   ;newseason = 3
+      case(9:11)  ;newseason = 4
+    endselect
 
-     ! daynumber needed for BCs
-     daynumber=day_of_year(yyyy,mm,dd)
+    ! daynumber needed for BCs
+    daynumber=day_of_year(yyyy,mm,dd)
      
-     if(mm==1 .and. dd==1 .and. hh==0)call Init_nmdays(current_date)!new year starts
+    if(mm==1 .and. dd==1 .and. hh==0)call Init_nmdays(current_date)!new year starts
 
-     call Code_timer(tim_before)
-     if (mm_old /= mm) then   ! START OF NEW MONTH !!!!!
-        call Code_timer(tim_before)
+    call Code_timer(tim_before)
+    if(mm_old/=mm) then   ! START OF NEW MONTH !!!!!
+      call Code_timer(tim_before)
 
-        !subroutines/data that must be updated every month
-        call readdiss(newseason)
+      !subroutines/data that must be updated every month
+      call readdiss(newseason)
 
-        if (MasterProc.and.DEBUG%MAINCODE ) print *,'maaned og sesong', &
-             mm,mm_old,newseason,oldseason
+      if(MasterProc.and.DEBUG%MAINCODE) &
+        print *,'maaned og sesong', mm,mm_old,newseason,oldseason
 
-        call Add_2timing(6,tim_after,tim_before,"readdiss, aircr_nox")
+      call Add_2timing(6,tim_after,tim_before,"readdiss, aircr_nox")
 
-        call MetModel_LandUse(2)   ! e.g.  gets snow_flag
-        if ( MasterProc .and. DEBUG%MAINCODE ) write(6,*)"vnewmonth start"
+      call MetModel_LandUse(2)   ! e.g.  gets snow_flag
+      if(MasterProc.and.DEBUG%MAINCODE) write(*,*)"vnewmonth start"
 
-        call newmonth
+      call newmonth
 
-        call Add_2timing(7,tim_after,tim_before,"newmonth")
+      call Add_2timing(7,tim_after,tim_before,"newmonth")
 
-        if (USE_LIGHTNING_EMIS) call lightning()
+      if(USE_LIGHTNING_EMIS) call lightning()
 
-        call init_aqueous()
+      call init_aqueous()
 
-        call Add_2timing(8,tim_after,tim_before,"init_aqueous")
-        ! Monthly call to BoundaryConditions.
-        if (DEBUG%MAINCODE ) print *, "Into BCs" , me
-        ! We set BCs using the specified iyr_trend
-        !   which may or may not equal the meteorology year
-        call BoundaryConditions(yyyy,mm)
-        if (DEBUG%MAINCODE ) print *, "Finished BCs" , me
+      call Add_2timing(8,tim_after,tim_before,"init_aqueous")
+      ! Monthly call to BoundaryConditions.
+      if(DEBUG%MAINCODE) print *, "Into BCs" , me
+      ! We set BCs using the specified iyr_trend
+      !   which may or may not equal the meteorology year
+      call BoundaryConditions(yyyy,mm)
+      if(DEBUG%MAINCODE) print *, "Finished BCs" , me
 
-        !must be called only once, after BC is set
-        if(mm_old==0)call Init_massbudget()
-        if (DEBUG%MAINCODE ) print *, "Finished Initmass" , me
+      !must be called only once, after BC is set
+      if(mm_old==0)call Init_massbudget()
+      if(DEBUG%MAINCODE) print *, "Finished Initmass" , me
 
-     endif
+    endif
 
-     oldseason = newseason
-     mm_old = mm
+    oldseason = newseason
+    mm_old = mm
 
-     call Add_2timing(9,tim_after,tim_before,"BoundaryConditions")
+    call Add_2timing(9,tim_after,tim_before,"BoundaryConditions")
 
-     if (DEBUG%MAINCODE ) print *, "1st Infield" , me
+    if(DEBUG%MAINCODE) print *, "1st Infield" , me
 
-     call SetLandUse(daynumber, mm) !daily
-     call Add_2timing(11,tim_after,tim_before,"SetLanduse")
+    call SetLandUse(daynumber, mm) !daily
+    call Add_2timing(11,tim_after,tim_before,"SetLanduse")
 
-     call Meteoread() ! 3-hourly or hourly
+    call Meteoread() ! 3-hourly or hourly
 
-     call Add_2timing(10,tim_after,tim_before,"Meteoread")
+    call Add_2timing(10,tim_after,tim_before,"Meteoread")
 
-     call SetDailyBVOC() !daily
+    call SetDailyBVOC() !daily
 
-     if (USES%FOREST_FIRES) call Fire_Emis(daynumber)
+    if(USES%FOREST_FIRES) call Fire_Emis(daynumber)
 
-     call Add_2timing(12,tim_after,tim_before,"Fires+BVOC")
+    call Add_2timing(12,tim_after,tim_before,"Fires+BVOC")
 
+    if(MasterProc) print "(2(1X,A))",'current date and time:',&
+      date2string("YYYY-MM-DD hh:mm:ss",current_date)
 
-     ! if(MasterProc) print "(a,2I2.2,I4,3x,i2.2,a,i2.2,a,i2.2)",' current date and time: ',&
-     !   current_date%day,current_date%month,current_date%year,&
-     !   current_date%hour, ':',current_date%seconds/60,':',current_date%seconds-60*(current_date%seconds/60)
-     if(MasterProc) print "(2(1X,A))",'current date and time:',&
-          date2string("YYYY-MM-DD hh:mm:ss",current_date)
+    call Code_timer(tim_before)
 
-     call Code_timer(tim_before)
+    call phyche()
+    call Add_2timing(14,tim_after,tim_before,"phyche")
 
-     call phyche()
-     call Add_2timing(14,tim_after,tim_before,"phyche")
- 
-     call WrtChem()
+    call WrtChem()
 
-     call trajectory_in
-     call Add_2timing(37,tim_after,tim_before,"massbud,wrtchem,trajectory_in")
+    call trajectory_in
+    call Add_2timing(37,tim_after,tim_before,"massbud,wrtchem,trajectory_in")
 
+    call metfieldint
+    call Add_2timing(36,tim_after,tim_before,"metfieldint")
 
-     call metfieldint
-     call Add_2timing(36,tim_after,tim_before,"metfieldint")
+    !this is a bit complicated because it must account for the fact that for instance 3feb24:00 = 4feb00:00 
+    ts1=make_timestamp(current_date)
+    ts2=make_timestamp(date(enddate(1),enddate(2),enddate(3),enddate(4),0))
+    End_of_Run =  (nint(tdif_secs(ts1,ts2))<=0)
 
-
-
-     !this is a bit complicated because it must account for the fact that for instance 3feb24:00 = 4feb00:00 
-     ts1=make_timestamp(current_date)
-     ts2=make_timestamp(date(enddate(1),enddate(2),enddate(3),enddate(4),0))
-     End_of_Run =  (nint(tdif_secs(ts1,ts2))<=0)
-
-     if( DEBUG%STOP_HH >= 0 .and. DEBUG%STOP_HH == current_date%hour ) End_of_Run = .true.
+    if(DEBUG%STOP_HH>=0 .and. DEBUG%STOP_HH==current_date%hour) &
+      End_of_Run=.true.
 
   enddo ! time-loop
 
@@ -353,22 +347,22 @@ program myeul
   call massbudget()
 
   if(MasterProc)then
-     print *,'programme is finished'
-     ! Gather timing info:
-     if(NPROC-1> 0)then
-        CALL MPI_RECV(lastptim,NTIMING*8,MPI_BYTE,NPROC-1,765,MPI_COMM_CALC,MPISTATUS,IERROR)
-     else
-        lastptim(:) = mytimm(:)
-     endif
-     call Output_timing(IO_MYTIM,me,NPROC,nterm,GIMAX,GJMAX)
+    print *,'programme is finished'
+    ! Gather timing info:
+    if(NPROC-1> 0)then
+      CALL MPI_RECV(lastptim,NTIMING*8,MPI_BYTE,NPROC-1,765,MPI_COMM_CALC,MPISTATUS,IERROR)
+    else
+      lastptim(:) = mytimm(:)
+    endif
+    call Output_timing(IO_MYTIM,me,NPROC,nterm,GIMAX,GJMAX)
   elseif(me==NPROC-1) then
-     CALL MPI_SEND(mytimm,NTIMING*8,MPI_BYTE,MasterPE,765,MPI_COMM_CALC,IERROR)
+    CALL MPI_SEND(mytimm,NTIMING*8,MPI_BYTE,MasterPE,765,MPI_COMM_CALC,IERROR)
   endif
 
   ! write 'modelrun.finished' file to flag the end of the FORECAST
-  if (MasterProc.and.FORECAST) then
-     open(1,file='modelrun.finished')
-     close(1)
+  if(MasterProc.and.FORECAST)then
+    open(1,file='modelrun.finished')
+    close(1)
   endif
 
   if(ANALYSIS)then              ! assimilation enabled
@@ -379,7 +373,7 @@ program myeul
   CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)
   CALL MPI_FINALIZE(IERROR)
 
-end associate   ! yyyy, mm, dd
-end program
+endassociate   ! yyyy, mm, dd
+endprogram
 
 !===========================================================================

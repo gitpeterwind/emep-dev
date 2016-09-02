@@ -160,12 +160,12 @@ implicit none
   if(filename/=filename_iou(IOU_HOUR_EXTRA))then
     if(debug_flag)&
       write(*,*) "DEBUG ",trim(HOURLYFILE_ending),"-Hourlyfile ",trim(filename)
-  !! filename will be overwritten
+    ! filename will be overwritten
     call Init_new_netCDF(trim(filename),IOU_HOUR_EXTRA)
 
     ncfileID=-1 ! must be <0 as initial value
 
-  !! Create variables first, without writing them (for performance purposes)   
+    ! Create variables first, without writing them (for performance purposes)   
     do ih=1,NHOURLY_OUT
       def1%name=hr_out(ih)%name
       def1%unit=hr_out(ih)%unit
@@ -246,7 +246,6 @@ implicit none
           surf_corrected = (ik==0)    ! Will implement cfac
           if(debug_flag.and.surf_corrected) &
             write(*,*)"DEBUG HOURLY Surf_correction", ik, k
-!TESTHH QUERY: see below
           select case(ik)
           case(1:)
             ik=KMAX_MID-ik+1         ! model level to be outputed
@@ -286,26 +285,24 @@ implicit none
         name = species(itot)%name
         unit_conv =  hr_out(ih)%unitconv
         if(itot < NSPEC_SHL .and.  debug_proc) write(*,"(a,a,4es12.3)") &
-          "OUT3D MAR22 ", trim(name), unit_conv, &
-           to_number_cm3,roa(2,2,ik,1)*to_number_cm3, xn_shl(ispec,2,2,ik)
+          "OUT3D ", trim(name), unit_conv, &
+          to_number_cm3,roa(2,2,ik,1)*to_number_cm3, xn_shl(ispec,2,2,ik)
 
-        !MAR22 Added SHL option.
-        if( itot <= NSPEC_SHL ) then !TESTSHL
-         ! CRUDE units fix. Sort out later.
-         !   Inverse of No. air mols/cm3 = 1/M
+        if(itot<=NSPEC_SHL)then
+         ! Units conversion: Inverse of No. air mols/cm3 = 1/M
          ! where M =  roa (kgair m-3) * to_number_cm3  when ! scale in ug,  else 1
-         !inv_air_density3D(i,j,k) = 1.0/( roa(i,j,k,1) * to_number_cm3 )
+         ! inv_air_density3D(i,j,k) = 1.0/(roa(i,j,k,1)*to_number_cm3)
 
           forall(i=1:limax,j=1:ljmax)
-             hourly(i,j) = xn_shl(ispec,i,j,ik)
-          end forall
+            hourly(i,j) = xn_shl(ispec,i,j,ik)
+          endforall
           if(index(hr_out(ih)%unit,"ppt")>0) then
             forall(i=1:limax,j=1:ljmax)
-                hourly(i,j) = hourly(i,j)/( roa(i,j,ik,1) * to_number_cm3 ) * 1.0e9
-            end forall
+              hourly(i,j) = hourly(i,j)/(roa(i,j,ik,1)*to_number_cm3)*1.0e9
+            endforall
           else
             call CheckStop("SHL Out3D option not coded yet")
-          end if
+          endif
         
         else  ! ADV:, original code
   
@@ -313,17 +310,17 @@ implicit none
             forall(i=1:limax,j=1:ljmax)
               hourly(i,j) = xn_adv(iadv ,i,j,ik) &
                           * unit_conv            ! Units conv.
-            end forall
+            endforall
           else if(index(hr_out(ih)%unit,"ug")>0) then
             forall(i=1:limax,j=1:ljmax)
               hourly(i,j) = xn_adv(iadv ,i,j,ik) &
                         * roa(i,j,ik,1)        & ! density.
                         * unit_conv              ! Units conv.
-            end forall
+            endforall
           else
             call CheckStop("ERROR: Output_hourly  unit problem"//trim(name) )
           endif
-        end if ! MAR22 ADV/SHL split 
+        endif ! ADV/SHL split 
 
         if(surf_corrected.and.ik==KMAX_MID.and.itot>NSPEC_SHL) then
           forall(i=1:limax,j=1:ljmax)
@@ -489,7 +486,6 @@ implicit none
         forall(i=1:limax,j=1:ljmax) hourly(i,j) = ws_10m(i,j,1)
    
       case("heatsum")
-       !hr_out(ih)%unit='degree_days'
         ik = hr_out(ih)%spec
         if(allocated(heatsum))then
           call CheckStop(ik,[1,size(heatsum,DIM=3)],"Hourly_out: '"//&
@@ -500,7 +496,6 @@ implicit none
         endif
 
       case("pollen_left")
-       !hr_out(ih)%unit='grains/m3'
         ik = hr_out(ih)%spec
         if(allocated(pollen_released))then
           call CheckStop(ik,[1,size(pollen_released,DIM=3)],"Hourly_out: '"//&
@@ -511,7 +506,6 @@ implicit none
         endif
 
       case("pollen_emiss")
-       !hr_out(ih)%unit='grains/m2/h'
         ik = hr_out(ih)%spec
         if(allocated(AreaPOLL))then
           call CheckStop(ik,[1,size(AreaPOLL,DIM=3)],"Hourly_out: '"//&
@@ -612,7 +606,7 @@ implicit none
       case("D2D_inst")
         call CheckStop(ENFORCE_HOURLY_DERIVED.and.MasterProc,&
           'Hourly_out: deprecated hourly type '//trim(hr_out(ih)%type))
-       ! Here ispec is the index in the f_2d arrays
+        ! Here ispec is the index in the f_2d arrays
         call CheckStop(ispec<1.or.ispec>num_deriv2d,&
           "ERROR-DEF! Hourly_out: "//trim(hr_out(ih)%name)//", wrong D2D id!")
         if(hr_out(ih)%unit=="") hr_out(ih)%unit = f_2d(ispec)%unit
@@ -635,7 +629,7 @@ implicit none
       case("D3D_inst")
         call CheckStop(ENFORCE_HOURLY_DERIVED.and.MasterProc,&
           'Hourly_out: deprecated hourly type '//trim(hr_out(ih)%type))
-       ! Here ispec is the index in the f_3d arrays
+        ! Here ispec is the index in the f_3d arrays
         call CheckStop(ispec<1.or.ispec>num_deriv3d,&
           "ERROR-DEF! Hourly_out: "//trim(hr_out(ih)%name)//", wrong D3D id!")
         if(hr_out(ih)%unit=="") hr_out(ih)%unit = f_3d(ispec)%unit
@@ -660,7 +654,7 @@ implicit none
           'Hourly_out: deprecated hourly type '//trim(hr_out(ih)%type))
         call CheckStop(LENOUT2D<IOU_YEAR_LASTHH,&
           'Hourly_out: unsupported hourly type '//trim(hr_out(ih)%type))
-       ! Here ispec is the index in the f_2d arrays
+        ! Here ispec is the index in the f_2d arrays
         call CheckStop(ispec<1.or.ispec>num_deriv2d,&
           "ERROR-DEF! Hourly_out: "//trim(hr_out(ih)%name)//", wrong D2D id!")
         if(hr_out(ih)%unit=="") hr_out(ih)%unit = f_2d(ispec)%unit
@@ -687,7 +681,7 @@ implicit none
           'Hourly_out: deprecated hourly type '//trim(hr_out(ih)%type))
         call CheckStop(LENOUT3D<IOU_YEAR_LASTHH,&
           'Hourly_out: unsupported hourly type '//trim(hr_out(ih)%type))
-       ! Here ispec is the index in the f_3d arrays
+        ! Here ispec is the index in the f_3d arrays
         call CheckStop(ispec<1.or.ispec>num_deriv3d,&
           "ERROR-DEF! Hourly_out: "//trim(hr_out(ih)%name)//", wrong D3D id!")
         if(hr_out(ih)%unit=="") hr_out(ih)%unit = f_3d(ispec)%unit
@@ -714,7 +708,7 @@ implicit none
           'Hourly_out: deprecated hourly type '//trim(hr_out(ih)%type))
         call CheckStop(LENOUT2D<IOU_YEAR_LASTHH,&
           'Hourly_out: unsupported hourly type '//trim(hr_out(ih)%type))
-       ! Here ispec is the index in the f_2d arrays
+        ! Here ispec is the index in the f_2d arrays
         call CheckStop(ispec<1.or.ispec>num_deriv2d,&
           "ERROR-DEF! Hourly_out: "//trim(hr_out(ih)%name)//", wrong D2D id!")
         if(hr_out(ih)%unit=="") hr_out(ih)%unit = f_2d(ispec)%unit
@@ -748,7 +742,7 @@ implicit none
           'Hourly_out: deprecated hourly type '//trim(hr_out(ih)%type))
         call CheckStop(LENOUT3D<IOU_YEAR_LASTHH,&
           'Hourly_out: unsupported hourly type '//trim(hr_out(ih)%type))
-       ! Here ispec is the index in the f_3d arrays
+        ! Here ispec is the index in the f_3d arrays
         call CheckStop(ispec<1.or.ispec>num_deriv3d,&
           "ERROR-DEF! Hourly_out: "//trim(hr_out(ih)%name)//", wrong D3D id!")
         if(hr_out(ih)%unit=="") hr_out(ih)%unit = f_3d(ispec)%unit
@@ -810,7 +804,7 @@ implicit none
         errmsg="Error, Output_hourly/hourly_out: too big!"
       endif
 
-!NetCDF hourly output
+      ! NetCDF hourly output
       def1%name=hr_out(ih)%name
       def1%unit=hr_out(ih)%unit
       def1%class=hr_out(ih)%type
@@ -843,8 +837,8 @@ implicit none
                     ncFileID_given=ncFileID)     
   endif
 
-!Not closing seems to give a segmentation fault when opening the daily file
-!Probably just a bug in the netcdf4/hdf5 library.
+  ! Not closing seems to give a segmentation fault when opening the file
+  ! Probably just a bug in the netcdf4/hdf5 library.
   call CloseNetCDF
   call CheckStop(errmsg)
 

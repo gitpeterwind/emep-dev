@@ -30,7 +30,7 @@ use ModelConstants_ml,only: MasterProc, KMAX_MID, nmax, nstep &
                            ,FORECAST       & ! use advecdiff_poles on FORECAST mode
                            ,ANALYSIS       & ! 3D-VAR Analysis
                            ,SOURCE_RECEPTOR&
-!                           ,USE_GRAVSET&
+!                          ,USE_GRAVSET&
                            ,FREQ_HOURLY    & ! hourly netcdf output frequency
                            ,USE_POLLEN, USE_EtaCOORDINATES,JUMPOVER29FEB&
                            ,USE_uEMEP, IOU_HOUR, IOU_HOUR_INST
@@ -84,14 +84,14 @@ subroutine phyche()
     if(first_call)  write(*, *) "PhyChe First", me, debug_proc
     call debug_concs("PhyChe start ")
 
-    if ( current_date%hour == 12 ) then
+    if(current_date%hour==12) then
       ndays = day_of_year(current_date%year,current_date%month, &
            current_date%day)
-      write(6,*) 'thour,ndays,nstep,dt', thour,ndays,nstep,dt_advec
+      write(*,*) 'thour,ndays,nstep,dt', thour,ndays,nstep,dt_advec
     endif
   endif
 
-! if(MasterProc) write(6,"(a15,i6,f8.3)") 'timestep nr.',nstep,thour
+! if(MasterProc) write(*,"(a15,i6,f8.3)") 'timestep nr.',nstep,thour
 
   call Code_timer(tim_before)
   call readxn(current_date) !Read xn_adv from earlier runs
@@ -142,7 +142,6 @@ subroutine phyche()
   !===================================
   call Add_2timing(16,tim_after,tim_before,"phyche:ZenAng")
 
-
   !================
   ! advecdiff_poles considers the local Courant number along a 1D line
   ! and divides the advection step "locally" in a number of substeps.
@@ -160,13 +159,12 @@ subroutine phyche()
     call advecdiff_poles
   endif
 
-!   if(USE_GRAVSET) call gravset
+! if(USE_GRAVSET) call gravset
 
   call Add_2timing(17,tim_after,tim_before,"phyche:advecdiff")
   !================
 
   call Code_timer(tim_before)
-
 
   !/ See if we are calculating any before-after chemistry productions:
 
@@ -203,14 +201,12 @@ subroutine phyche()
   !/ See if we are calculating any before-after chemistry productions:
 
   !=============================
-  if ( nstep == nmax ) call DerivedProds("After",dt_advec)
+  if(nstep==nmax) call DerivedProds("After",dt_advec)
   !=============================
 
   call Code_timer(tim_before)
   !=============================
   call Add_2timing(34,tim_after,tim_before,"phyche:drydep")
-
-
 
   !=============================
   ! this output needs the 'old' current_date_hour
@@ -250,15 +246,12 @@ subroutine phyche()
   if(FORECAST.and.USE_POLLEN) call pollen_dump()
   call Add_2timing(18,tim_after,tim_before,"nest: Write")
 
-  End_of_Day = (current_date%seconds == 0 .and. &
-       current_date%hour    == END_OF_EMEPDAY)
+  End_of_Day=(current_date%seconds==0).and.(current_date%hour==END_OF_EMEPDAY)
 
-  if( End_of_Day .and. MasterProc ) then
-     print "(a,i2.2,a,i2.2,a,i2.2,a)",' End of EMEP-day (',&
-          current_date%hour, ':',current_date%seconds/60,&
-                         ':',mod(current_date%seconds,60),')'
-     if(DEBUG%PHYCHEM)write(*,"(a20,2i4,i6)") "END_OF_EMEPDAY ", &
-          END_OF_EMEPDAY, current_date%hour,current_date%seconds
+  if(End_of_Day.and.MasterProc)then
+    print "(a,a)",' End of EMEP-day ',date2string("(hh:mm:ss)",current_date)
+    if(DEBUG%PHYCHEM)write(*,"(a20,2i4,i6)") "END_OF_EMEPDAY ", &
+      END_OF_EMEPDAY, current_date%hour,current_date%seconds
   endif
 
   call debug_concs("PhyChe pre-Derived ")
@@ -280,13 +273,14 @@ subroutine phyche()
       call hourly_out()
 
   endif
-  !CoDep
-  if ( modulo(current_date%hour, 1) == 0 ) & !every hour
-       call make_so2nh3_24hr(current_date%hour,&
-       xn_adv(IXADV_SO2,:,:,KMAX_MID),&
-       xn_adv(IXADV_NH3,:,:,KMAX_MID),&
-       cfac(IXADV_SO2,:,:),&
-       cfac(IXADV_NH3,:,:))
+
+  ! CoDep
+  if(modulo(current_date%hour,1)==0) & ! every hour
+    call make_so2nh3_24hr(current_date%hour,&
+      xn_adv(IXADV_SO2,:,:,KMAX_MID),&
+      xn_adv(IXADV_NH3,:,:,KMAX_MID),&
+      cfac(IXADV_SO2,:,:),&
+      cfac(IXADV_NH3,:,:))
 
   call Add_2timing(35,tim_after,tim_before,"phyche:outs")
 
@@ -303,23 +297,23 @@ subroutine debug_concs(txt)
   ! Simple sub to print out eg O3 concentrations for different stages
   ! of calculation. Saves lots of messy lines above.
 
-  if ( DEBUG%PHYCHEM .and. debug_proc ) then
-    if( first_call ) then
+  if(DEBUG%PHYCHEM.and.debug_proc)then
+    if(first_call) then
       ispec = DEBUG%ISPEC
       iadv  = DEBUG%ISPEC - NSPEC_SHL
       unit = 'ppbv'
-      if ( ispec <= NSPEC_SHL ) unit='pptv'
+      if(ispec<=NSPEC_SHL) unit='pptv'
       first_call = .false.
     endif
 
-    if ( ispec > NSPEC_SHL ) then
+    if(ispec>NSPEC_SHL)then
       c1=xn_adv(iadv,debug_li,debug_lj,KMAX_MID)*PPBINV 
       c2=c1* cfac(iadv,debug_li,debug_lj)
     else
       c1=xn_shl(ispec,debug_li,debug_lj,KMAX_MID)*PPTINV
       c2=-1.0
-    end if
-    write(6,"(a,2i3,i5,i3,a12,2g12.4,1x,a4)") "debug_concs:"// &
+    endif
+    write(*,"(a,2i3,i5,i3,a12,2g12.4,1x,a4)") "debug_concs:"// &
       trim(txt), me, current_date%hour, current_date%seconds, nstep,&
       trim(species(ispec)%name), c1, c2, unit
   endif

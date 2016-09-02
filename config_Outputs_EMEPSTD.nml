@@ -267,27 +267,27 @@ OutputVegO3=
 
 &OutputDep_config
   DDEP_ECOS =
-   'Grid     ', 'YMD',
-   'Conif    ', 'YM',
-   'Seminat  ', 'YM',
-   'Water_D  ', 'Y',
-   'Decid    ', 'Y',
-   'Crops    ', 'Y',
+   'Grid     ','YMD',
+   'Conif    ','YM',
+   'Seminat  ','YM',
+   'Water_D  ','Y',
+   'Decid    ','Y',
+   'Crops    ','Y',
 
  DDEP_WANTED =
-   'SOX      ', 'GROUP', 'mgS',
-   'OXN      ', 'GROUP', 'mgN',
-   'RDN      ', 'GROUP', 'mgN',
-   'O3       ', 'SPEC',  'mg',
-   'STO_O3   ', 'SPEC',  'mg',
+   'SOX      ','GROUP','mgS',
+   'OXN      ','GROUP','mgN',
+   'RDN      ','GROUP','mgN',
+   'O3       ','SPEC' ,'mg' ,
+   'STO_O3   ','SPEC' ,'mg' ,
 
   WDEP_WANTED =
-   'PREC     ','PREC ','mm '
-   'SOX      ','GROUP','mgS'
-   'OXN      ','GROUP','mgN'
-   'RDN      ','GROUP','mgN'
-   'SO2      ','SPEC ','mgS'
-   'HNO3     ','SPEC ','mgN'
+   'PREC     ','PREC ','mm ',
+   'SOX      ','GROUP','mgS',
+   'OXN      ','GROUP','mgN',
+   'RDN      ','GROUP','mgN',
+   'SO2      ','SPEC ','mgS',
+   'HNO3     ','SPEC ','mgN',
 &end 
 !----------------------------------------
 !Older DDEP_WANTED stuff.
