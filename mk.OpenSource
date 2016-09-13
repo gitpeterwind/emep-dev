@@ -1,10 +1,11 @@
-vers=rv4.8jvm;year=2015               # Input version/year flags
+vers=rv4.10;year=2016                 # Input version/year flags
 tdir=$HOME/Unify                      # top directory - change $HOME as required
 idir=$tdir/Unimod.$vers               # Input dir
 
-odir=$tdir/OpenSource$year.$vers      # Output dir, choose flag or location
+odir=EMEP_MSC-W_model.$vers.OpenSource
+odir=$tdir/$odir                      # Output dir, choose flag or location
 cdir=$odir/code                       # code directory
-mkdir -p $cdir                            
+mkdir -p $cdir
 
 echo "Making $cdir"
 
@@ -34,6 +35,8 @@ for i in *.f90 *.inc gpl.txt modrun.sh; do
   *)cp -u $i $cdir;;
   esac
 done
+
+cp -f $idir/config_Open.nml $cdir/config_emep.nml   # configuration file
 
 #-- 2)  dependencies ----------------------------------------------------------
 

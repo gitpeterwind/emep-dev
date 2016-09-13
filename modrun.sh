@@ -3,9 +3,8 @@
 # Minimalistic script for run the Unified EMEP model
 
 # Link the input data
-inputdir=.
-ln -s $inputdir/met/*   .   # Driving meteorology
-ln -s $inputdir/input/* .   # Other input files
+inputdir=../
+ln -s $inputdir/input/* .   # input files except meteorology
 
 # Run the model
 mpiexec $inputdir/code/Unimod
