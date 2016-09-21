@@ -68,9 +68,9 @@ subroutine pollen_check(igrp)
     "USE_POLLEN on model compiled without pollen")
   call CheckStop(DEBUG.and..not.USE_POLLEN,&
     "DEBUG_POLLEN on run without USE_POLLEN")
-  call CheckStop(size(chemgroups(poll)%ptr),size(POLLEN_GROUP),&
+  call CheckStop(size(chemgroups(poll)%specs),size(POLLEN_GROUP),&
     "pollen_check: Inconsistent POLLEN group size")
-  call CheckStop(any(species(chemgroups(poll)%ptr)%name/=POLLEN_GROUP),&
+  call CheckStop(any(species(chemgroups(poll)%specs)%name/=POLLEN_GROUP),&
     "pollen_check: Inconsistent POLLEN group species")
-endsubroutine pollen_check
-endmodule Pollen_const_ml
+end subroutine pollen_check
+end module Pollen_const_ml

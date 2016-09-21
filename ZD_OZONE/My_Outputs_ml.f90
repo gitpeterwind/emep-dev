@@ -212,9 +212,9 @@ subroutine set_output_defs
       "set_output_defs: Unknown group 'ASH'/'NUC'")
     if(ash>0)then
       name="none"
-      do i=1,size(chemgroups(ash)%ptr)
-        if(species(chemgroups(ash)%ptr(i))%name(1:9)==name)cycle
-        name=species(chemgroups(ash)%ptr(i))%name(1:9)
+      do i=1,size(chemgroups(ash)%specs)
+        if(species(chemgroups(ash)%specs(i))%name(1:9)==name)cycle
+        name=species(chemgroups(ash)%specs(i))%name(1:9)
         nhourly_out=nhourly_out+2+1  ! 
         nmax6_hourly=nmax6_hourly+1  ! 
         if(MasterProc.and.DEBUG_COLSRC)&
@@ -223,8 +223,8 @@ subroutine set_output_defs
     endif
     if(nuc_conc>0)then
       name="none"
-      do i=1,size(chemgroups(nuc_conc)%ptr)
-        name=species(chemgroups(nuc_conc)%ptr(i))%name
+      do i=1,size(chemgroups(nuc_conc)%specs)
+        name=species(chemgroups(nuc_conc)%specs(i))%name
         nhourly_out=nhourly_out+1
         if(MasterProc.and.DEBUG_COLSRC)&
           write(*,*)'EMERGENCY: Nuclear accident/explosion, NPP/NUC=',name
@@ -233,8 +233,8 @@ subroutine set_output_defs
     if (.false.) then
     if(nuc_ddep>0)then
       name="none"
-      do i=1,size(chemgroups(nuc_ddep)%ptr)
-        name="DDEP_"//species(chemgroups(nuc_ddep)%ptr(i))%name
+      do i=1,size(chemgroups(nuc_ddep)%specs)
+        name="DDEP_"//species(chemgroups(nuc_ddep)%specs(i))%name
         nhourly_out=nhourly_out+1
         if(MasterProc.and.DEBUG_COLSRC)&
           write(*,*)'EMERGENCY: Nuclear accident/explosion, NPP/NUC=',name
@@ -242,8 +242,8 @@ subroutine set_output_defs
     endif
     if(nuc_wdep>0)then
       name="none"
-      do i=1,size(chemgroups(nuc_wdep)%ptr)
-        name="WDEP_"//species(chemgroups(nuc_wdep)%ptr(i))%name
+      do i=1,size(chemgroups(nuc_wdep)%specs)
+        name="WDEP_"//species(chemgroups(nuc_wdep)%specs(i))%name
         nhourly_out=nhourly_out+1
         if(MasterProc.and.DEBUG_COLSRC)&
           write(*,*)'EMERGENCY: Nuclear accident/explosion, NPP/NUC=',name
@@ -262,9 +262,9 @@ subroutine set_output_defs
 !-  if(USE_AOD     )nhourly_out=nhourly_out+1
     if(USE_POLLEN  )then
 !-    call pollen_check(gpoll)
-!-    nhourly_out=nhourly_out+size(chemgroups(gpoll)%ptr)
+!-    nhourly_out=nhourly_out+size(chemgroups(gpoll)%specs)
       if(DEBUG_POLLEN)&
-      nhourly_out=nhourly_out+size(chemgroups(gpoll)%ptr)*2
+      nhourly_out=nhourly_out+size(chemgroups(gpoll)%specs)*2
     endif
 !- moved to Hourly/Derived
 !-case("MACC_EVA","CAMS50_EVA","CAMS50_IRA")
@@ -331,9 +331,9 @@ subroutine set_output_defs
       Asc2D("z"         ,"Z_MID" ,00,NLEVELS_HOURLY,"km",1e-3,-9999.9)/)
     if(ash>0)then
       name="none"
-      do i=1,size(chemgroups(ash)%ptr)
-        if(species(chemgroups(ash)%ptr(i))%name(1:9)==name)cycle
-        name=species(chemgroups(ash)%ptr(i))%name(1:9)
+      do i=1,size(chemgroups(ash)%specs)
+        if(species(chemgroups(ash)%specs(i))%name(1:9)==name)cycle
+        name=species(chemgroups(ash)%specs(i))%name(1:9)
         igrp=find_index(name,chemgroups(:)%name)
         call CheckStop(igrp<1,"set_output_defs: Unknown group '"//name//"'")
         j=j+3;hr_out(j-2:j)=(/&
@@ -347,21 +347,21 @@ subroutine set_output_defs
     endif
     if(nuc_conc>0)then
       name="none"
-      do i=1,size(chemgroups(nuc_conc)%ptr)
-        name=species(chemgroups(nuc_conc)%ptr(i))%name
+      do i=1,size(chemgroups(nuc_conc)%specs)
+        name=species(chemgroups(nuc_conc)%specs(i))%name
         !igrp=find_index(name,chemgroups(:)%name) ! position of NPP/NUC -group
         !call CheckStop(igrp<1,"set_output_defs: Unknown conc group '"//name//"'")
         j=j+1;
-        idx= chemgroups(nuc_conc)%ptr(i) - NSPEC_SHL ! offset between xn_adv and species
+        idx= chemgroups(nuc_conc)%specs(i) - NSPEC_SHL ! offset between xn_adv and species
         hr_out(j)= Asc2D(trim(name),"BCVugXX",idx,1,"uBq h/m3",&
-                PPBINV/ATWAIR*species(chemgroups(nuc_conc)%ptr(i))%molwt,-999.9)
+                PPBINV/ATWAIR*species(chemgroups(nuc_conc)%specs(i))%molwt,-999.9)
       enddo
     endif
     if (.false.) then
     if(nuc_wdep>0)then
       name="none"
-      do i=1,size(chemgroups(nuc_wdep)%ptr)
-        name=species(chemgroups(nuc_wdep)%ptr(i))%name
+      do i=1,size(chemgroups(nuc_wdep)%specs)
+        name=species(chemgroups(nuc_wdep)%specs(i))%name
         igrp=find_index(name,chemgroups(:)%name) ! position of NPP/NUC -group
         call CheckStop(igrp<1,"set_output_defs: Unknown wdep group '"//name//"'")
         j=j+1;
@@ -376,8 +376,8 @@ subroutine set_output_defs
     endif
     if(nuc_ddep>0)then
       name="none"
-      do i=1,size(chemgroups(nuc_ddep)%ptr)
-        name=species(chemgroups(nuc_ddep)%ptr(i))%name
+      do i=1,size(chemgroups(nuc_ddep)%specs)
+        name=species(chemgroups(nuc_ddep)%specs(i))%name
         igrp=find_index(name,chemgroups(:)%name) ! position of NPP/NUC -group
         call CheckStop(igrp<1,"set_output_defs: Unknown ddep group '"//name//"'")
         j=j+1;
@@ -459,15 +459,15 @@ subroutine set_output_defs
 !-  endif
     if(USE_POLLEN)then
 !- moved to Hourly/Derived
-!-    do i=1,size(chemgroups(gpoll)%ptr)
-!-      idx=chemgroups(gpoll)%ptr(i)-NSPEC_SHL ! offset between xn_adv and species
+!-    do i=1,size(chemgroups(gpoll)%specs)
+!-      idx=chemgroups(gpoll)%specs(i)-NSPEC_SHL ! offset between xn_adv and species
 !-      j=j+1;hr_out(j) = &
 !-      Asc2D(trim(species_adv(idx)%name),"ADVugXX",idx, &
 !-            1,"grains/m3",to_ug_ADV(idx)*ug2grains,-999.9)
 !-    enddo
       if(DEBUG_POLLEN)then
-        do i=1,size(chemgroups(gpoll)%ptr)
-          idx=chemgroups(gpoll)%ptr(i)-NSPEC_SHL ! offset between xn_adv and species
+        do i=1,size(chemgroups(gpoll)%specs)
+          idx=chemgroups(gpoll)%specs(i)-NSPEC_SHL ! offset between xn_adv and species
           j=j+2;hr_out(j-1:j) = (/&
   !       Asc2D(trim(species_adv(idx)%name)//"_heatsum","heatsum"     ,i,&
   !           1,"degree day" ,1.0,-999.9),&
