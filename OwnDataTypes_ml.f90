@@ -2,7 +2,7 @@
 !! ***************************************************************************! 
 
 module OwnDataTypes_ml
-use NumberConstants, only : UNDEF_R, UNDEF_I
+use NumberConstants, only : UNDEF_I, UNDEF_R
 implicit none
 private
 
@@ -31,62 +31,73 @@ type, public :: depmap
   integer :: ind   ! Index of species in IXADV_ or IX_ arrays
   integer :: calc  ! Index of species in  calculated dep arrays
   real    :: vg    ! if CDDEP_SET, give vg in m/s
-endtype depmap
+end type depmap
 
-!==================
-!/ generic group for two integers
-type, public :: typ_i2
-  integer :: int1,int2
-endtype typ_i2
+  !==================
+  !/ generic groups for integers
+  type, public :: typ_i2
+    integer :: int1
+    integer :: int2
+  end type typ_i2
 
-type, public :: typ_i3
-  integer :: int1,int2,int3
-endtype typ_i3
+  type, public :: typ_i3
+    integer :: int1
+    integer :: int2
+    integer :: int3
+  end type typ_i3
+  
+  !/ generic group for two (short) strings
+  type, public :: typ_ss
+    character(len=TXTLEN_SHORT) :: txt1='-' ! e.g. POD1_IAM_DF
+    character(len=TXTLEN_SHORT) :: txt2='-' ! e.g. POD1_IAM_DF
+  end type typ_ss
 
 !/ generic group for two (short) strings
 type, public :: typ_ss
   character(len=TXTLEN_SHORT) :: txt1,txt2 ! e.g. POD1_IAM_DF
-endtype typ_ss
+end type typ_ss
 
-!/ generic group for name and pointer to arrays
-type, public :: typ_sp
-  character(len=TXTLEN_SHORT) :: name ! e.g. POD1_IAM_DF
-  integer, dimension(:), pointer :: ptr
-endtype typ_sp
+  !/ HI: generic group for name and two pointers to integer arrays
+  type, public :: typ_maps
+    character(len=TXTLEN_SHORT) :: name ! e.g. POD1_IAM_DF
+    integer, dimension(:), pointer :: species ! like ptr in typ_sp
+    integer, dimension(:), pointer :: maps ! other species to map this
+                                           !  one to
+  end type typ_maps
 
-!/ generic group one (short) string & one integer
-type, public :: typ_si
-  character(len=TXTLEN_SHORT) :: name
-  integer :: ind
-endtype typ_si
-!/ generic group for one (short) string & one shorter string
-type, public :: typ_s1ind
-  character(len=TXTLEN_SHORT) :: name
-  character(len=TXTLEN_IND)   :: ind  ! e.g. YMDHI
-endtype typ_s1ind
+  !/ generic group one (short) string & one integer
+  type, public :: typ_si
+    character(len=TXTLEN_SHORT) :: name
+    integer :: ind
+  end type typ_si
+  !/ generic group for one (short) string & one shorter string
+  type, public :: typ_s1ind
+    character(len=TXTLEN_SHORT) :: name
+    character(len=TXTLEN_IND)   :: ind  ! e.g. YMDHI
+  end type typ_s1ind
 
 !/ generic group for three (short) strings
 type, public :: typ_s3
   character(len=TXTLEN_SHORT) :: txt1,txt2,txt3
-endtype typ_s3
+end type typ_s3
 
 !/ generic group for four (short) strings
 type, public :: typ_s4
   character(len=TXTLEN_SHORT) :: txt1,txt2,txt3,txt4 ! e.g. POD1_IAM_DF
-endtype typ_s4
+end type typ_s4
 
 !/ generic group for five (short) strings & one integer
 type, public :: typ_s5i
   character(len=TXTLEN_SHORT) :: txt1,txt2,txt3,txt4, &
                                  txt5 ! e.g. SO2,ugS,2d,AIR_CONC,SPEC
   integer                     :: ind  ! e.g. IOU_DAY
-endtype typ_s5i
+end type typ_s5i
 !/ generic group for five (short) strings & one shorter string
 type, public :: typ_s5ind
   character(len=TXTLEN_SHORT) :: txt1,txt2,txt3,txt4, &
                                  txt5 ! e.g. SO2,ugS,2d,AIR_CONC,SPEC,
   character(len=TXTLEN_IND)   :: ind  ! e.g. YMDHI
-endtype typ_s5ind
+end type typ_s5ind
 
 !==================
 !+ Derived output type
@@ -103,7 +114,7 @@ type, public:: Deriv
   logical :: avg           =.true.  ! True => average data (divide by nav at end),
                                     ! else accumulate over run period
   character(len=TXTLEN_IND)   :: iotype   = '-' ! sets output timing
-endtype
+end type
 
 ! Sentinel values (moved to NumberConstants)
 ! real,    private, parameter :: UNDEF_R = -huge(0.0)
@@ -121,7 +132,7 @@ type, public:: Asc2D
   character(len=TXTLEN_SHORT) :: unit   ! Unit used
   real             :: unitconv = UNDEF_R  !  conv. factor
   real             :: max      = UNDEF_R        ! Max allowed value for output
-endtype
+end type
 
 !==================
 !+ Defines SOA, NONVOL and VBS params
@@ -130,7 +141,7 @@ type, public :: VBST
   real        :: CiStar   ! ug/m3
  !real        :: Tref     ! Assumed 300
   real        :: DeltaH   ! kJ/mole
-endtype VBST
+end type VBST
 !==================
 
 !==================
@@ -140,7 +151,7 @@ type, public :: uEMEP_type
   integer, dimension(15)  :: ix    ! Index of components to take
   integer     :: sector=0    ! if only one sector is to be taken
   character(len=4):: emis='none'    ! one of EMIS_File: "sox ", "nox ", "co  ", "voc ", "nh3 ", "pm25", "pmco"
-endtype uEMEP_type
+end type uEMEP_type
 
 contains
 !=========================================================================
