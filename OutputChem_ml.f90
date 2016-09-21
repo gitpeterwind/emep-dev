@@ -146,7 +146,7 @@ subroutine Wrtchem(ONLY_HOUR)
   endif              ! End of NEW MONTH
 
   first_call=.false.
-endsubroutine Wrtchem
+end subroutine Wrtchem
 
 subroutine Output_fields(iotyp)
   integer, intent(in) :: iotyp
@@ -181,7 +181,7 @@ subroutine Output_fields(iotyp)
   open(IO_TMP,file=filename_iou(iotyp)(1:i)//'.msg',position='append')
   write(IO_TMP,*)date2string('FFFF: YYYY-MM-DD hh',current_date)
   close(IO_TMP)
-endsubroutine Output_fields
+end subroutine Output_fields
 
 subroutine Output_f2d (iotyp, dim, nav, def, dat, Init_Only)
 !---------------------------------------------------------------------
@@ -223,7 +223,7 @@ subroutine Output_f2d (iotyp, dim, nav, def, dat, Init_Only)
     endif     ! wanted
   enddo       ! component loop
 
-endsubroutine Output_f2d
+end subroutine Output_f2d
 
 subroutine Output_f3d (iotyp, dim, nav, def, dat, Init_Only)
 !---------------------------------------------------------------------
@@ -253,6 +253,6 @@ subroutine Output_f3d (iotyp, dim, nav, def, dat, Init_Only)
     endif     ! wanted
   enddo       ! component loop
 
-endsubroutine Output_f3d
+end subroutine Output_f3d
 
 endmodule OutputChem_ml

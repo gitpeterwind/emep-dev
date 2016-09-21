@@ -219,11 +219,11 @@ subroutine Init_Derived()
   select case(nint(AERO%DpgV(2)*1e7))
     case(25);fracPM25=0.37
     case(30);fracPM25=0.27
-  endselect
+  end select
   if(dbg0) write(*,"(a,2g12.3,i4)") ' CFAC INIT PMFRACTION ', &
       fracPM25, AERO%DpgV(2), nint(1.0e7*AERO%DpgV(2))
   call CheckStop( fracPM25 < 0.01, "NEED TO SET FRACPM25")
-endsubroutine Init_Derived
+end subroutine Init_Derived
 !=========================================================================
 subroutine AddNewDeriv( name,class,subclass,txt,unit,index,f2d,&
        dt_scale,scale, avg,iotype,Is3D)
@@ -251,7 +251,7 @@ subroutine AddNewDeriv( name,class,subclass,txt,unit,index,f2d,&
                 avg,iotype)
 
   call AddDeriv(inderiv,Is3D=Is3D)
-endsubroutine AddNewDeriv
+end subroutine AddNewDeriv
 !=========================================================================
 subroutine AddDeriv(inderiv,Is3D)
   type(Deriv), intent(in) :: inderiv
@@ -279,7 +279,7 @@ subroutine AddDeriv(inderiv,Is3D)
     call CheckStop(N>MAXDEF_DERIV2D,"Nadded2d too big!")
     def_2d(N) = inderiv
   endif
-endsubroutine AddDeriv
+end subroutine AddDeriv
 !=========================================================================
 subroutine Define_Derived()
 ! Set the parameters for the derived parameters, including the codes
@@ -428,7 +428,7 @@ subroutine Define_Derived()
         case default
           call CheckStop(sub//"OutputFields%class  Unsupported "//&
             trim(outtyp)//":"//trim(outname)//":"//trim(outdim))
-        endselect
+        end select
         call CheckStop(iout<0,sub//"OutputFields%class "//trim(class)//&
                               " not found "//trim(outname))
         unitscale = 1.0
@@ -444,7 +444,7 @@ subroutine Define_Derived()
          unitscale = 1.0
          if(outunit=="ppb") unitscale = PPBINV
          unittxt=trim(outunit)
-      endselect
+      end select
 
       if(MasterProc)write(*,"(3a)") &
         "Deriv:MISC "//trim(outname),outind,trim(class)
@@ -494,7 +494,7 @@ subroutine Define_Derived()
       case default
         call CheckStop(sub//" Unsupported OutputFields%outtyp "//&
           trim(outtyp)//":"//trim(outname)//":"//trim(outdim))
-      endselect
+      end select
 
       class="MASS";if(volunit)class="PPB"   ! CHANGE PPB to VOL
       select case(outdim)
@@ -521,7 +521,7 @@ subroutine Define_Derived()
       case default
         call CheckStop(sub//" Unsupported OutputFields%outdim "//&
           trim(outtyp)//":"//trim(outname)//":"//trim(outdim))
-      endselect
+      end select
 !FSOA call AddNewDeriv(dname,class,"-","-",trim(unittxt),&
       call AddNewDeriv(dname,class,subclass,"-",trim(unittxt),&
                        iout,-99,F,unitscale,T,outind,Is3D=Is3D)
@@ -574,7 +574,7 @@ subroutine Define_Derived()
               igrp, -99,   F,      1.0,   F,    'YMD')
     case default
       call CheckStop("Unknown WDEP_WANTED type " // trim(WDEP_WANTED(ind)%txt2) )
-    endselect
+    end select
     if(MasterProc) write(*,*)"Wet deposition output: ",trim(dname)," ",trim(unittxt)
   enddo
 
@@ -689,7 +689,7 @@ Is3D = .true.
      case ("wind_speed_3D")
       call AddNewDeriv("wind_speed_3D", "wind_speed_3D", "-", "-", "m", &
                       -99 , -99, F, 1.0,   T, 'YM',    Is3D  )
-    endselect
+    end select
   enddo
 
   ! Get indices of wanted fields in larger def_xx arrays:
@@ -759,12 +759,12 @@ Is3D = .true.
       case(   : 27);iou_list(:IOU_DAY-1)=.false. ! Only dayly & hourly outputs
       case( 28:180);iou_list(:IOU_MON-1)=.false. ! .. and monthly
       case(181:   );                             ! .. and full-run
-    endselect
+    end select
   endif
 
   if(dbgP) write(*,"(A,': ',10(I2,A2,L2,:,','))")"Wanted IOUs",&
     (iou,IOU_KEY(iou),iou_list(iou),iou=IOU_MIN,IOU_MAX)
-endsubroutine Define_Derived
+end subroutine Define_Derived
 !=========================================================================
 function wanted_iou(iou,iotype,only_iou) result(wanted)
   integer, intent(in)                 :: iou
@@ -779,7 +779,7 @@ function wanted_iou(iou,iotype,only_iou) result(wanted)
   if(wanted.and.present(only_iou))then
     wanted=(iou==only_iou)                  ! is only_iou?
   endif
-endfunction wanted_iou
+end function wanted_iou
 !=========================================================================
 subroutine Setups()
   integer :: n
@@ -817,7 +817,7 @@ subroutine Setups()
       write(6,"(a12,/,(20i3))")  "carbons ", voc_carbon(1:nvoc)
     endif
   endif
-endsubroutine Setups
+end subroutine Setups
 !=========================================================================
 subroutine Derived(dt,End_of_Day,ONLY_IOU)
 !*** DESCRIPTION
@@ -1225,12 +1225,12 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       case("AOD:GROUP")
         igrp = f_2d(n)%index
         do i=1,ngrp
-          ingrp(i)=any(aod_grp(i)==chemgroups(igrp)%ptr(:))
+          ingrp(i)=any(aod_grp(i)==chemgroups(igrp)%specs(:))
         enddo
       case("AOD:SPEC")
         ispc = f_2d(n)%index
         ingrp(:)=(aod_grp(:)==(ispc+NSPEC_SHL))
-      endselect
+      end select
       forall ( i=1:limax, j=1:ljmax )&
         d_2d( n, i,j,IOU_INST) = SUM(AOD(:,i,j,wlen),MASK=ingrp)
       deallocate(ingrp)
@@ -1522,7 +1522,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       call CheckStop(igrp<1,"NEG GRP "//trim(f_2d(n)%name))
       call CheckStop(igrp>size(chemgroups(:)%name), &
                             "Outside GRP "//trim(f_2d(n)%name))
-      ngrp = size(chemgroups(igrp)%ptr)
+      ngrp = size(chemgroups(igrp)%specs)
 
       if(chemgroups(igrp)%name == "PMFINE" .and. ind2d_pmfine<0) then
         ind2d_pmfine = n
@@ -1537,7 +1537,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       if(dbg0) then
         write(*,"(a,3i5,2(1x,a))")"CASEGRP:"//trim(f_2d(n)%name), n, igrp,&
              ngrp, trim(class), trim(subclass) ! FSOA igrp=109, ngrp=10
-        write(*,"(a,88i4)") "CASEGRP:", chemgroups(igrp)%ptr
+        write(*,"(a,88i4)") "CASEGRP:", chemgroups(igrp)%specs
         write(*,*) "CASEGRPunit ", trim(f_2d(n)%unit)
       endif
       call group_calc(d_2d(n,:,:,IOU_INST),density,f_2d(n)%unit,0,igrp,&
@@ -1571,7 +1571,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
        call My_DerivFunc( d_2d(n,:,:,IOU_INST), class ) ! , density )
 
-    endselect
+    end select
 
     !*** add to daily, monthly and yearly average, and increment counters
     select case(f_2d(n)%class)
@@ -1595,7 +1595,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
         d_2d(n,:,:,iou) = d_2d(n,:,:,iou) + d_2d(n,:,:,IOU_INST)*af
         if(f_2d(n)%avg) nav_2d(n,iou) = nav_2d(n,iou) + 1
       enddo
-    endselect
+    end select
 
   enddo   ! num_deriv2d
 
@@ -1762,7 +1762,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       call CheckStop(igrp<1,"NEG GRP "//trim(f_3d(n)%name))
       call CheckStop(igrp>size(chemgroups(:)%name), &
                             "Outside GRP "//trim(f_3d(n)%name))                            
-      ngrp = size(chemgroups(igrp)%ptr)
+      ngrp = size(chemgroups(igrp)%specs)
       if(chemgroups(igrp)%name == "PMFINE" .and. ind3d_pmfine<0) then
         ind3d_pmfine = n
         if(MasterProc) write(*,"(a,2i4,2a15)") "FOUND FINE 3d FRACTION ",&
@@ -1776,7 +1776,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       if(dbg0) then
         write(*,*) "3DCASEGRP ", n, igrp, ngrp, trim(class)
         write(*,*) "3DCASENAM ", trim(f_3d(n)%name)
-        write(*,*) "3DCASEGRP:", chemgroups(igrp)%ptr
+        write(*,*) "3DCASEGRP:", chemgroups(igrp)%specs
         write(*,*) "3DCASEunit", trim(f_3d(n)%unit)
       endif
       do k=1,num_lev3d
@@ -1829,12 +1829,12 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       case("EXT:GROUP")
         igrp = f_3d(n)%index
         do i=1,ngrp
-          ingrp(i)=any(aod_grp(i)==chemgroups(igrp)%ptr(:))
+          ingrp(i)=any(aod_grp(i)==chemgroups(igrp)%specs(:))
         enddo
       case("EXT:SPEC")
         ispc = f_3d(n)%index
         ingrp(:)=(aod_grp(:)==(ispc+NSPEC_SHL))
-      endselect
+      end select
       forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
         d_3d(n,i,j,k,IOU_INST)=SUM(Extin_coeff(:,i,j,lev3d(k),wlen),MASK=ingrp)
       deallocate(ingrp)
@@ -1897,7 +1897,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       write(unit=errmsg,fmt=*) "Derived 3D class NOT FOUND", n, index, &
                        trim(f_3d(n)%name),trim(f_3d(n)%class)
       call CheckStop( errmsg )
-    endselect
+    end select
 
     !*** add to monthly and yearly average, and increment counters
     select case(f_3d(n)%class)
@@ -1942,7 +1942,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
         if(f_3d(n)%avg) nav_3d(n,iou) = nav_3d(n,iou) + 1
       enddo
 
-    endselect
+    end select
   enddo
   first_call = .false.
 end subroutine Derived
@@ -1978,9 +1978,9 @@ subroutine DerivedProds(text,dt)
       forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
         d_3d(n,i,j,k,IOU_INST)=d_3d(n,i,j,k,IOU_INST)&
                               -xn_adv(index,i,j,lev3d(k))
-    endselect
+    end select
   enddo
-endsubroutine DerivedProds
+end subroutine DerivedProds
 !=========================================================================
 subroutine ResetDerived(period)
   integer, intent(in) :: period   ! Either IOU_DAY or IOU_MON
@@ -1995,7 +1995,7 @@ subroutine ResetDerived(period)
     d_3d(:,:,:,:,period) = 0.0
   endif
 
-endsubroutine ResetDerived
+end subroutine ResetDerived
 !=========================================================================
 subroutine voc_2dcalc()
 !/-- Sums up voc species using the indices defined earlier in Setup_VOCs
@@ -2015,7 +2015,7 @@ subroutine voc_2dcalc()
                      *voc_carbon(ivoc)*cfac(index,i,j)
                      ! multiplied by nr. of C and "reduced to surface"
   enddo ! ivoc
-endsubroutine voc_2dcalc
+end subroutine voc_2dcalc
 !=========================================================================
 subroutine voc_3dcalc()
 !/-- as for voc_2dcalc
@@ -2030,7 +2030,7 @@ subroutine voc_3dcalc()
                        *voc_carbon(ivoc)
   enddo ! ivoc
 
- endsubroutine voc_3dcalc
+ end subroutine voc_3dcalc
 !=========================================================================
 subroutine group_calc( g2d, density, unit, ik, igrp,semivol)
 
@@ -2116,7 +2116,7 @@ subroutine group_calc( g2d, density, unit, ik, igrp,semivol)
     forall(i=1:limax,j=1:ljmax) &
       g2d(i,j) = g2d(i,j) * density(i,j)
   deallocate(gspec,gunit_conv)
-endsubroutine group_calc
+end subroutine group_calc
 !=========================================================================
 subroutine somo_calc( n, iX, debug_flag )
 !/-- Calculates SOMO (8hours) values for input threshold.
@@ -2161,7 +2161,7 @@ subroutine somo_calc( n, iX, debug_flag )
 
     enddo
   enddo
-endsubroutine somo_calc
+end subroutine somo_calc
 !=========================================================================
 subroutine write_debugadv(n,index,rho,txt)
   integer, intent(in) :: n, index
@@ -2173,7 +2173,7 @@ subroutine write_debugadv(n,index,rho,txt)
     ,d_2d(n,debug_li,debug_lj,IOU_INST)*PPBINV &
     ,xn_adv(index,debug_li,debug_lj,KMAX_MID)*PPBINV &
     ,rho, cfac(index,debug_li,debug_lj)
-endsubroutine write_debugadv
+end subroutine write_debugadv
 !=========================================================================
 subroutine write_debug(n,index,txt)
   integer, intent(in) :: n, index
@@ -2181,6 +2181,6 @@ subroutine write_debug(n,index,txt)
 
   write(*,"(2a,2i4,a,4g12.3)") "DERIV: GEN " , txt , n, index  &
     ,trim(f_2d(n)%name),d_2d(n,debug_li,debug_lj,IOU_INST)
-endsubroutine write_debug
+end subroutine write_debug
 !=========================================================================
 endmodule Derived_ml

@@ -129,7 +129,7 @@ type, public :: emis_in
   character(len=40), dimension(20) ::  pollemepName = "NOTSET"
   character(len=40) ::  periodicity = "once" !How often new data should be read in
   character(len=40) ::  type = "sectors" !steers special treatments
-endtype emis_in
+end type emis_in
 type(emis_in), public, dimension(5) :: emis_inputlist = emis_in()
 
 character(len=40), public, save   :: SECTORS_NAME='SNAP'
@@ -622,6 +622,6 @@ subroutine Config_ModelConstants(iolog)
     write(*,*)trim(DegreeDayFactorsFile)
   endif
 
-endsubroutine Config_ModelConstants
+end subroutine Config_ModelConstants
 endmodule ModelConstants_ml
 !_____________________________________________________________________________

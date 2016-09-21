@@ -47,12 +47,12 @@ type, public :: icbc                ! Inital (IC) & Boundary Conditions (BC)
   real              :: frac=1.0                      ! fraction to unimod variable
   logical           :: wanted=.false.,found=.false.  ! BC is wanted,found in file
   integer           :: ixadv=-1                      ! adv index, set from %spcname
-endtype icbc
+end type icbc
 
 type, private :: icbc_desc          ! IC/BC description
   character(len=BIC_NAME_LEN) :: name="none",version="none"
   integer                     :: mapsize=-1
-endtype icbc_desc
+end type icbc_desc
 
 type(icbc), dimension(:), public, pointer :: &
   EXTERNAL_BC=>null() ! external (non Unimod) BCs detailed description/setup
@@ -85,7 +85,7 @@ subroutine Config_ExternalBICs()
     write(*,*) "NAMELIST IS "
     write(*,NML=ExternalBICs_config)
   endif
-endsubroutine Config_ExternalBICs
+end subroutine Config_ExternalBICs
 
 subroutine set_extbic_id(idate)
 !----------------------------------------------------------------------------!
@@ -130,7 +130,7 @@ subroutine set_extbic_id(idate)
       EXTERNAL_BIC_VERSION='IFS_MOZ_fnyp'
     case(2014091800:)            ! from 2014-09-18 00:00
       EXTERNAL_BIC_VERSION='IFS_CMP_g4e2'
-    endselect
+    end select
     BC_DAYS=5   ! if BC file is not found, look for 1..5-day old files
   case("IFS_MOZ_f7kn","IFS_MOZ_fkya","IFS_MOZ_fnyp","IFS_CMP_g4e2") 
     BC_DAYS=5   ! explicit MACC_ENS BC mapping version
@@ -140,14 +140,14 @@ subroutine set_extbic_id(idate)
       EXTERNAL_BIC_VERSION='EVA_EU_AN'
     case(2013:)
       EXTERNAL_BIC_VERSION='EVA_EU_FC'
-    endselect
+    end select
     BC_DAYS=1   ! if BC file is not found, look for 1-day old file
   case("EVA_EU_AN","EVA_EU_FC")
     BC_DAYS=1   ! explicit MACC_EVA BC mapping version
   case default
     EXTERNAL_BIC_VERSION='use_any'
     BC_DAYS=0   ! do not look for old BC files
-  endselect
+  end select
 
 !--- Look for a ExternalBICs_bc with the correct %name and %version
   rewind(IO_NML)
@@ -187,9 +187,9 @@ subroutine set_extbic_id(idate)
     call PrintLog("External BICs set for "//EXTERNAL_BIC_NAME)
   EXTERNAL_BIC_SET = .true.
   first_call = .false.
-endsubroutine set_extbic_id
+end subroutine set_extbic_id
 subroutine set_extbic_cd(cdate)
   type(date) :: cdate
   call set_extbic_id([cdate%year,cdate%month,cdate%day,cdate%hour])
-endsubroutine set_extbic_cd
+end subroutine set_extbic_cd
 endmodule ExternalBICs_ml

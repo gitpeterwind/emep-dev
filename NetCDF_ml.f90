@@ -176,7 +176,7 @@ subroutine Out_CDF_sondes(fileName,SpecName,NSpec,Values,NLevels,g_ps,debug)
     call check(nf90_put_att(ncFileID,nf90_global,"lastmodified_hour",lastmodified_hour))
     call check(nf90_close(ncFileID))
   endif !Masterproc
-endsubroutine Out_CDF_sondes
+end subroutine Out_CDF_sondes
 
 subroutine Create_CDF_sondes(fileName,NSpec,NSpec_Att,SpecDef,&
         NStations,NMetaData,MetaData,KMAXcdf,CDFtype,debug)
@@ -288,7 +288,7 @@ subroutine Create_CDF_sondes(fileName,NSpec,NSpec_Att,SpecDef,&
                    "MetaData="//trim(MetaData(0,n)))
       case default
         call CheckStop("NetCDF_ml: unknown metadata-type "//trim(MetaData(0,n)))
-      endselect
+      end select
     enddo
      
     OUTtype=Real4  !default value
@@ -301,7 +301,7 @@ subroutine Create_CDF_sondes(fileName,NSpec,NSpec_Att,SpecDef,&
       case(Real8);OUTtype=nf90_double
       case default;
         call CheckStop("NetCDF_ml:undefined datatype")
-    endselect
+    end select
 
     do iSpec=1,NSpec
       !define the variables
@@ -332,7 +332,7 @@ subroutine Create_CDF_sondes(fileName,NSpec,NSpec_Att,SpecDef,&
             call check(nf90_put_att(ncFileID,varID,trim(auxL(1)),NF90_FILL_FLOAT))
           case(NF90_DOUBLE) ! _FillValue=9.9692099683868690e+36
             call check(nf90_put_att(ncFileID,varID,trim(auxL(1)),NF90_FILL_DOUBLE))
-          endselect
+          end select
         case default
           auxC(1)=NF90_FILL_CHAR
           auxI(1)=NF90_FILL_INT
@@ -352,8 +352,8 @@ subroutine Create_CDF_sondes(fileName,NSpec,NSpec_Att,SpecDef,&
                        "SpecDef="//trim(SpecDef(iSpec,n)))
           case default
             call CheckStop("NetCDF_ml: unknown metadata-type "//trim(SpecDef(iSpec,n)))
-          endselect
-        endselect
+          end select
+        end select
       enddo
     enddo
 
@@ -382,7 +382,7 @@ subroutine Create_CDF_sondes(fileName,NSpec,NSpec_Att,SpecDef,&
             "def:"//trim(auxL(1))//"@_FillValue")
       case default
         call CheckStop("NetCDF_ml: unknown metadata-type "//trim(MetaData(1,n)))
-      endselect
+      end select
     enddo
 
     call check(nf90_put_att(ncFileID,nf90_global,"lastmodified_date",lastmodified_date))
@@ -415,7 +415,7 @@ subroutine Create_CDF_sondes(fileName,NSpec,NSpec_Att,SpecDef,&
           case("c","C","s","S");auxC(iSta)=trim(auxL(3))  ! string/char attribute
           case("i","I","n","N");read(auxL(3),*)auxI(iSta) ! integer attribute
           case("f","F","d","D");read(auxL(3),*)auxR(iSta) ! float/double attribute
-        endselect
+        end select
       enddo
       call check(nf90_inq_varid(ncFileID,metaName,varID),"inq:"//trim(metaName))
       select case(metaType)
@@ -427,7 +427,7 @@ subroutine Create_CDF_sondes(fileName,NSpec,NSpec_Att,SpecDef,&
         call check(nf90_put_var(ncFileID,varID,auxR),"put:"//trim(metaType))
       case default
         call CheckStop("NetCDF_ml: wrong metadata-type definition "//trim(metaType))
-      endselect
+      end select
     enddo
 
     if(KMAXcdf>1)then
@@ -469,7 +469,7 @@ subroutine Create_CDF_sondes(fileName,NSpec,NSpec_Att,SpecDef,&
     endif
     call check(nf90_close(ncFileID))    
   endif !Masterproc
-endsubroutine Create_CDF_sondes
+end subroutine Create_CDF_sondes
 
 subroutine Init_new_netCDF(fileName,iotyp)
 integer,  intent(in) :: iotyp
@@ -531,7 +531,7 @@ case(IOU_INST)
   period_type = 'instant'
 case default
   period_type = 'unknown'
-endselect
+end select
 
 if(MasterProc.and.DEBUG_NETCDF)&
   write(*,*) "Creating ", trim(fileName),' ',trim(period_type)
@@ -548,7 +548,7 @@ endif
 if(MasterProc.and.DEBUG_NETCDF)&
   write(*,*) "Finished Init_new_netCDF", trim(fileName),' ',trim(period_type)
 !endif
-endsubroutine Init_new_netCDF
+end subroutine Init_new_netCDF
 
 subroutine CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,&
      KMAXcdf,KLEVcdf,KLEVcdf_from_top,RequiredProjection)
@@ -658,7 +658,7 @@ subroutine CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,&
       jVarID    =define_var("j"     ,nf90_float,[jDimID])
       latVarID  =define_var("lat"   ,nf90_float,[iDimID,jDimID])
       longVarID =define_var("lon"   ,nf90_float,[iDimID,jDimID])
-    endselect
+    end select
      
     if(MasterProc.and.DEBUG_NETCDF)write(*,*)'lon lat dims defined'
     call check(nf90_def_dim(ncFileID, "lev",KMAXcdf  , levDimID))
@@ -712,7 +712,7 @@ subroutine CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,&
       varID=define_var("rotated_pole"     ,nf90_char,[0]) ! for NCL
     case default
       varID=define_var("Default_projection_name",nf90_int,[0])
-    endselect
+    end select
 
     ! Leave define mode
     call check(nf90_enddef(ncFileID), "define_done"//trim(fileName) )
@@ -791,7 +791,7 @@ subroutine CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,&
       call check(nf90_put_var(ncFileID,iVarID,xcoord(1:GIMAXcdf)))
       call check(nf90_put_var(ncFileID,jVarID,ycoord(1:GJMAXcdf)))
       !        write(*,*)'coord written'
-    endselect! projections
+    end select! projections
 
     ! Define vertical levels
     if(present(KLEVcdf))then     !order is defined in KLEVcdf
@@ -963,7 +963,7 @@ function define_var(vname,xtype,dimIDs) result(varID)
       call check(nf90_put_att(ncFileID,varID,"long_name","time at end of period"))
     case default
       call check(nf90_put_att(ncFileID,varID,"long_name","time at middle of period"))
-    endselect
+    end select
     call check(nf90_put_att(ncFileID,varID,"units","days since 1900-1-1 0:0:0"))
   case('Polar_Stereographic')
     call check(nf90_def_var(ncFileID,vname,xtype,varID),"def:"//trim(vname))
@@ -986,8 +986,8 @@ function define_var(vname,xtype,dimIDs) result(varID)
     call check(nf90_put_att(ncFileID,varID,"grid_mapping_name",trim(UsedProjection)))
   case default
     call CheckStop("CreatenetCDFfile: unknown metadata varaible "//trim(vname))
-  endselect
-endfunction define_var
+  end select
+end function define_var
 subroutine write_klev(kmax,klev,from_top)
   integer, intent(in) :: kmax,klev(kmax)
   logical, intent(in) :: from_top
@@ -1043,8 +1043,8 @@ subroutine write_klev(kmax,klev,from_top)
   call check(nf90_put_var(ncFileID,varID,Am/Pref+Bm),"put:lev")
   call check(nf90_inq_varid(ncFileID,"ilev",varID)  ,"inq:ilev")
   call check(nf90_put_var(ncFileID,varID,Ai/Pref+Bi),"put:ilev")
-endsubroutine write_klev
-endsubroutine CreatenetCDFfile
+end subroutine write_klev
+end subroutine CreatenetCDFfile
 !_______________________________________________________________________
 subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,out_DOMAIN,ik,&
                       fileName_given,overwrite,create_var_only,chunksizes,ncfileID_given)
@@ -1103,7 +1103,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,out_DOMAIN,ik,&
     domain = day_DOMAIN
   case(IOU_HOUR:IOU_HOUR_EXTRA)
     domain = hour_DOMAIN
-  endselect
+  end select
   if(present(out_DOMAIN)) domain = out_DOMAIN
   !convert into rundomain coordinates
   i1=domain(1)-IRUNBEG+1
@@ -1199,7 +1199,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,out_DOMAIN,ik,&
       case default
         call check(nf90_inq_dimid(ncFileID,"i"  ,idimID),"dim:i")
         call check(nf90_inq_dimid(ncFileID,"j"  ,jdimID),"dim:j")
-      endselect
+      end select
       if(USE_EtaCOORDINATES)then
         call check(nf90_inq_dimid(ncFileID,"lev",kdimID),"dim:lev")
       else
@@ -1250,7 +1250,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,out_DOMAIN,ik,&
     ncFileID = ncFileID_iou(iotyp_new)
   case default
     return
-  endselect
+  end select
 
   if(present(ncFileID_given))ncFileID_given=ncFileID!use rather stored ncFileID_XXX
 
@@ -1275,7 +1275,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,out_DOMAIN,ik,&
         ncFileID_new  = ncFileID  ! not really needed
       case(IOU_INST:IOU_HOUR_EXTRA)
         ncFileID_iou(iotyp_new)=ncFileID
-      endselect
+      end select
     endif
 
     !test first if the variable is already defined:
@@ -1335,7 +1335,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,out_DOMAIN,ik,&
     case default
       WRITE(*,*)'WARNING NetCDF:Data type not supported'
       alloc_err=-1  ! trip error stop
-    endselect
+    end select
     call CheckStop(alloc_err, "alloc failed in NetCDF_ml")
 
     !write own data in global array
@@ -1370,7 +1370,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,out_DOMAIN,ik,&
           enddo
         enddo
       enddo
-    endselect
+    end select
 
     do d = 1, NPROC-1
       CALL MPI_RECV(buff, 8*tlimax(d)*tljmax(d)*kmax, MPI_BYTE, d, &
@@ -1408,7 +1408,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,out_DOMAIN,ik,&
             enddo
           enddo
         enddo
-      endselect
+      end select
     enddo
   else
     CALL MPI_SEND( buff, 8*tlimax(me)*tljmax(me)*kmax, MPI_BYTE, 0, &
@@ -1495,7 +1495,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,out_DOMAIN,ik,&
       deallocate(R8data3D, stat=alloc_err)
       call CheckStop(alloc_err, "dealloc failed in NetCDF_ml")
 
-    endselect !type
+    end select !type
 
     call check(nf90_get_att(ncFileID,nf90_global,"lastmodified_hour",lastmodified_hour0 ))
     call check(nf90_get_att(ncFileID,nf90_global,"created_hour",created_hour))
@@ -1525,7 +1525,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,out_DOMAIN,ik,&
     endif
   endif !MasterProc
   if(DEBUG_NETCDF.and.MasterProc) write(*,*)'Out_NetCDF: FINISHED '
-endsubroutine Out_netCDF
+end subroutine Out_netCDF
 !_______________________________________________________________________
 subroutine  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype,chunksizes)
 ! create new netCDF variable
@@ -1551,7 +1551,7 @@ subroutine  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype,chunksize
     case(Real8);OUTtypeCDF=nf90_double
     case default
     call CheckStop(MasterProc,"NetCDF_ml: undefined datatype")
-  endselect
+  end select
 
   !define mode
   call check(nf90_redef(ncFileID),"file redef:"//trim(varname))
@@ -1564,7 +1564,7 @@ subroutine  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype,chunksize
   case default
     call check(nf90_inq_dimid(ncFileID,"i"  ,idimID),"dim:i")
     call check(nf90_inq_dimid(ncFileID,"j"  ,jdimID),"dim:j")
-  endselect
+  end select
 
   status=nf90_inq_dimid(ncFileID,"k",kdimID)
   if(status/=nf90_noerr)&
@@ -1583,7 +1583,7 @@ subroutine  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype,chunksize
   case default
     print *, 'createnewvariable: unexpected ndim ',ndim
     call CheckStop(MasterProc,"NetCDF_ml: unexpected ndim")
-  endselect
+  end select
 !define variable as to be compressed
   if(NETCDF_DEFLATE_LEVEL >= 0) then
     call check(nf90_def_var_deflate(ncFileid,varID,shuffle=0,deflate=1,&
@@ -1605,7 +1605,7 @@ subroutine  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype,chunksize
     call check(nf90_put_att(ncFileID, varID, "grid_mapping", "Rotated_Spherical"))
   case default
     call check(nf90_put_att(ncFileID, varID, "grid_mapping",Default_projection_name ))
-  endselect
+  end select
 
   nrecords=0
   call check(nf90_put_att(ncFileID, varID, "numberofrecords", nrecords))
@@ -1627,13 +1627,13 @@ subroutine  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype,chunksize
     call check(nf90_put_att(ncFileID,varID,"_FillValue",nf90_fill_float ))
   case(Real8)
     call check(nf90_put_att(ncFileID,varID,"_FillValue",nf90_fill_double))
-  endselect
+  end select
 
   call check(nf90_put_att(ncFileID,varID,"current_date_first",ndate))
   call check(nf90_put_att(ncFileID,varID,"current_date_last" ,ndate))
 
   call check(nf90_enddef(ncFileID))
-endsubroutine  createnewvariable
+end subroutine  createnewvariable
 !_______________________________________________________________________
 
 subroutine CloseNetCDF
@@ -1652,7 +1652,7 @@ subroutine CloseNetCDF
       endif
     enddo
   endif
-endsubroutine CloseNetCDF
+end subroutine CloseNetCDF
 
 subroutine GetCDF(varname,fileName,Rvar,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,needed)
 ! open and reads CDF file
@@ -1772,10 +1772,10 @@ subroutine GetCDF(varname,fileName,Rvar,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,
   case default
     write(*,*)'datatype not yet supported'!Char
     Call StopAll('GetCDF  datatype not yet supported')
-  endselect
+  end select
 
   call check(nf90_close(ncFileID))
-endsubroutine GetCDF
+end subroutine GetCDF
 
 subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,&
                             i_start,j_start,imax_in,jmax_in,reverse_k,needed,found)
@@ -1936,7 +1936,7 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,&
   case default
     write(*,*)'datatype not yet supported'!Char
     Call CheckStop('GetCDF_modelgrid datatype not yet supported')
-  endselect
+  end select
 
   if(reverse_k_loc)then
     ijkn=0
@@ -1971,7 +1971,7 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,&
   deallocate(Rvalues)
   call check(nf90_close(ncFileID))
   if(DEBUG_NETCDF)write(*,*)'finished GetCDF_modelgrid', me
-endsubroutine GetCDF_modelgrid
+end subroutine GetCDF_modelgrid
 
 subroutine WriteCDF(varname,vardate,filename_given,newfile)
 
@@ -2419,7 +2419,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
         case(NF90_FLOAT );FillValue=NF90_FILL_FLOAT
       ! case(NF90_REAL  );FillValue=NF90_FILL_REAL ! same as FLOAT
         case(NF90_DOUBLE);FillValue=NF90_FILL_DOUBLE
-      endselect
+      end select
       if( debug ) write(*,*) 'FillValue not found, using ',FillValue
     endif
   endif
@@ -4126,7 +4126,7 @@ subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read)
            TimesInDays(i) = 30*(times(i)-1)+15
       case default
         call StopAll("ReadTimeCDF, time unit not recognized: "//trim(period))
-      endselect
+      end select
 
     else
       if(DEBUG_NETCDF.and.MasterProc)&
@@ -4163,7 +4163,7 @@ subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read)
 
   call check(nf90_close(ncFileID))
   deallocate(times)
-endsubroutine ReadTimeCDF
+end subroutine ReadTimeCDF
 
 subroutine   vertical_interpolate(filename,Rvar,KMAX_ext,Rvar_emep,debug)
   character(len = *),intent(in) ::fileName
@@ -4336,7 +4336,7 @@ subroutine   vertical_interpolate(filename,Rvar,KMAX_ext,Rvar_emep,debug)
 
   deallocate(P_ext,hyam_ext,hybm_ext,k1_ext,k2_ext,weight_k1)
   call check(nf90_close(ncFileID))
-endsubroutine vertical_interpolate
+end subroutine vertical_interpolate
 
  function IsCDFfractionFormat(filename) result(foundFractions)
 

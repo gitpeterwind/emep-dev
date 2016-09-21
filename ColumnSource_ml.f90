@@ -56,7 +56,7 @@ type :: loc
   real :: lat=-1.0,lon=-1.0,elev=-1.0 ! vent coords and elevation
   character(len=SLEN) :: etype=''     ! e.g. S0, 10kt
   integer :: grp=-1,iloc=-1,jloc=-1   ! Which (ash)goup,local i,j indes
-endtype loc
+end type loc
 type(loc), save, dimension(NMAX_LOC):: &
   locdef=loc('UNDEF','UNKNOWN',-999.0,-999.0,-999.0,"??",-99,-99,-99)
 
@@ -74,7 +74,7 @@ type :: ems
   integer :: loc=-1,spc=-1,grp=-1     ! Which loc,(adv)spc,(ash)goup
   logical :: edef=.true.,&            ! default setings?
              dsec=.false.             ! correct rate by 1/secs(send-sbeg)
-endtype ems
+end type ems
 type(ems), save,  allocatable ,dimension(:,:):: emsdef
 
 character(len=*),parameter :: &
@@ -139,7 +139,7 @@ function ColumnRate(i,j,REDUCE_VOLCANO) result(emiss)
     if(itot<1)then
       call PrintLog("WARNING: "//mname//" ASH not found",MasterProc)
     else
-      iASH=>chemgroups(itot)%ptr
+      iASH=>chemgroups(itot)%specs
     endif
   endif
 !----------------------------!
@@ -208,7 +208,7 @@ function getModLev(i,j,height) result(k)
   do while(k>0.and.height>z_bnd(i,j,k))
     k=k-1
   enddo
-endfunction getModLev
+end function getModLev
 !----------------------------!
 ! Set Volcanic Eruption Param.
 !----------------------------!
@@ -371,16 +371,16 @@ subroutine setRate()
           write(*,MSG_FMT)'Erup.Default',me,'Expand SPC',nems(v),trim(dems%id)
       elseif(dems%grp>0.or.locdef(v)%grp>0)then   ! Expand GROUP of SPC
          if(dems%grp<1)dems%grp=locdef(v)%grp
-        select case (size(chemgroups(dems%grp)%ptr))
+        select case (size(chemgroups(dems%grp)%specs))
         case(2);binsplit=>VAAC_2BIN_SPLIT
         case(7);binsplit=>VAAC_7BIN_SPLIT
         case(9);binsplit=>NILU_9BIN_SPLIT
         case(1);binsplit=>NILU_1BIN_SPLIT
         case default
           call CheckStop(ERR_EMS_CSV//' can not expand '//trim(locdef(v)%id))
-        endselect
-        do g=1,size(chemgroups(dems%grp)%ptr)
-          dems%spc=chemgroups(dems%grp)%ptr(g)  ! Specie (total)
+        end select
+        do g=1,size(chemgroups(dems%grp)%specs)
+          dems%spc=chemgroups(dems%grp)%specs(g)  ! Specie (total)
           dems%name=species(dems%spc)%name
           dems%rate=emsdef(0,e)%rate*binsplit(g)
           nems(v)=nems(v)+1
@@ -397,7 +397,7 @@ subroutine setRate()
     enddo
   enddo doLOCe
   source_found=any(nems(1:nloc)>0)
-endsubroutine setRate
+end subroutine setRate
 !----------------------------!
 ! Extract Vent info from CVS line
 !----------------------------!
@@ -418,18 +418,18 @@ function getVent(line) result(def)
   case("S","s","degS");lat=-lat   ! degS
   case default
     call CheckStop("EMERGENCY: Unknown degN/S "//trim(words(5)))
-  endselect
+  end select
   read(words(6),*)lon
   select case (words(7)) ! EW
   case("E","e","degE")            ! degE
   case("W","w","degW");lon=-lon   ! degW
   case default
     call CheckStop("EMERGENCY: Unknown degE/W "//trim(words(7)))
-  endselect
+  end select
   read(words(8),*)elev            ! [m]
   igrp=find_index(words(1),chemgroups(:)%name)
   def=loc(trim(words(1)),trim(words(2)),lat,lon,elev,trim(words(10)),igrp)
-endfunction getVent
+end function getVent
 !----------------------------!
 ! Extract Erup. info from CVS line
 !----------------------------!
@@ -481,12 +481,12 @@ function getErup(line) result(def)
     base=base*1e3               ! [m]
     read(words(4),*)top         ! [km]
     top=top*1e3                 ! [m]
-  endselect
+  end select
   read(words(6),*)rate
   select case (words(7))        ! m63 or effect.fraction
     case(" ")   ;frac=1.0
     case default;read(words(7),*)frac
-  endselect
+  end select
   select case (words(5))        ! dt[h]
   case("1dt","1DT","1adv","1ADV")
     dhh=dt_advec/3600           ! only one time step
@@ -498,12 +498,12 @@ function getErup(line) result(def)
     read(words(5),*)dhh         ! assume rate in [Kg/s]
     dhh=max(dhh,dt_advec/3600)  ! at least 1 time step
     dsec=.false.
-  endselect   
+  end select   
   words(8)=getDate(words(8),words(8),words(9),dhh,debug=DEBUG) ! Start [date/code]
   words(9)=getDate(words(9),words(8),words(9),dhh,debug=DEBUG) ! End   [date/code]
   def=ems(trim(words(1)),trim(words(2)),trim(words(3)),base,top,rate*frac,&
     trim(words(8)),trim(words(9)),max(iloc,0),max(ispc,0),max(igrp,0),edef,dsec)
-endfunction getErup
+end function getErup
 !----------------------------!
 ! Time/Date CODE--> YYYY-MM-DD hh:mm:ss
 !----------------------------!
@@ -539,7 +539,7 @@ function getDate(code,se,ee,dh,debug) result(str)
     str=date2string(SDATE_FMT,enddate,debug=dbg)
   case default
     str=code
-  endselect
-endfunction getDate
-endfunction ColumnRate
+  end select
+end function getDate
+end function ColumnRate
 endmodule ColumnSource_ml

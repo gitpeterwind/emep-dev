@@ -45,7 +45,7 @@ subroutine StopAll(errmsg)
     write(*,*) "STOP-ALL ERROR: ", trim(errmsg)
     call MPI_ABORT(MPI_COMM_CALC,9,IERROR)
   endif
-endsubroutine StopAll
+end subroutine StopAll
 
 !---- Variations on CheckStop:
 subroutine CheckStop_ok(errmsg)                 ! Test if errmsg /= "ok"
@@ -55,7 +55,7 @@ subroutine CheckStop_ok(errmsg)                 ! Test if errmsg /= "ok"
    !write(*,*) "CheckStop_ok Called with:  errmsg ", errmsg
     call StopAll(errmsg)
   endif
-endsubroutine CheckStop_ok
+end subroutine CheckStop_ok
 
 subroutine CheckStop_okinfo(errmsg,infomsg)     ! Test if errmsg /= "ok"
   character(len=*), intent(in) :: errmsg
@@ -66,7 +66,7 @@ subroutine CheckStop_okinfo(errmsg,infomsg)     ! Test if errmsg /= "ok"
     write(*,*) "                          infomsg ", infomsg
     call StopAll(errmsg)
   endif
-endsubroutine CheckStop_okinfo
+end subroutine CheckStop_okinfo
 
 subroutine CheckStop_int1(int1,infomsg)         ! Test if int1 /= 0
   integer, intent(in)          :: int1
@@ -77,7 +77,7 @@ subroutine CheckStop_int1(int1,infomsg)         ! Test if int1 /= 0
    !write(*,*) "                             infomsg ", infomsg
     call StopAll(infomsg)
   endif
-endsubroutine CheckStop_int1
+end subroutine CheckStop_int1
 
 subroutine CheckStop_int2(int1,int2, infomsg)   ! Test if int1 /= int2
   integer, intent(in)          :: int1, int2
@@ -88,7 +88,7 @@ subroutine CheckStop_int2(int1,int2, infomsg)   ! Test if int1 /= int2
    !write(*,*) "                             infomsg ", infomsg
     call StopAll(infomsg)
   endif
-endsubroutine CheckStop_int2
+end subroutine CheckStop_int2
 
 subroutine CheckStop_str2(str1,str2, infomsg)   ! Test if str1 /= str2
   character(len=*), intent(in) :: str1, str2, infomsg
@@ -98,7 +98,7 @@ subroutine CheckStop_str2(str1,str2, infomsg)   ! Test if str1 /= str2
    !write(*,*) "                             infomsg ", infomsg
     call StopAll(infomsg)
   endif
-endsubroutine CheckStop_str2
+end subroutine CheckStop_str2
 
 subroutine CheckStop_TF(is_error, infomsg)   ! Test expression, e.g. lu<0
   logical, intent(in)          :: is_error  
@@ -109,7 +109,7 @@ subroutine CheckStop_TF(is_error, infomsg)   ! Test expression, e.g. lu<0
    !write(*,*) "                             infomsg ", infomsg
     call StopAll(infomsg)
   endif
-endsubroutine CheckStop_TF
+end subroutine CheckStop_TF
 
 subroutine CheckStop_rangeR(var,vrange,infomsg)  ! test .not.(vrange(0)<=var<=vrange(1))
   real, intent(in) :: var,vrange(0:1)
@@ -122,7 +122,7 @@ subroutine CheckStop_rangeR(var,vrange,infomsg)  ! test .not.(vrange(0)<=var<=vr
    !write(*,*) "                             infomsg ", infomsg
     call StopAll(infomsg)
   endif
-endsubroutine CheckStop_rangeR
+end subroutine CheckStop_rangeR
 
 subroutine CheckStop_rangeI(var,vrange,infomsg)  ! test .not.(vrange(0)<=var<=vrange(1))
   integer, intent(in) :: var,vrange(0:1)
@@ -135,7 +135,7 @@ subroutine CheckStop_rangeI(var,vrange,infomsg)  ! test .not.(vrange(0)<=var<=vr
    !write(*,*) "                             infomsg ", infomsg
     call StopAll(infomsg)
   endif
-endsubroutine CheckStop_rangeI
+end subroutine CheckStop_rangeI
 
 subroutine CheckNC(status,errmsg)
   implicit none
@@ -147,7 +147,7 @@ subroutine CheckNC(status,errmsg)
     if(present(errmsg)) print *, "ERRMSG: ", trim(errmsg)
     call StopAll("Error in netcdf routine")
   endif
-endsubroutine CheckNC
+end subroutine CheckNC
 
 endmodule CheckStop_ml
 

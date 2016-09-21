@@ -50,7 +50,7 @@ logical                     :: first_call = .true.,test_log = .false.
 type :: sediment
    integer :: spec
    real    :: diameter
-endtype sediment
+end type sediment
 type(sediment),save,allocatable,dimension(:,:) :: grav_sed
 
  
@@ -65,17 +65,17 @@ if (first_call) then
    ash=find_index("ASH",chemgroups(:)%name)
    if(ash>0)then
       name="none"
-      do i=1,size(chemgroups(ash)%ptr)
-         if(species(chemgroups(ash)%ptr(i))%name(1:9)==name)cycle
-         name=species(chemgroups(ash)%ptr(i))%name(1:9)
-         !write(*,*) "name",trim(name),i,size(chemgroups(ash)%ptr)
+      do i=1,size(chemgroups(ash)%specs)
+         if(species(chemgroups(ash)%specs(i))%name(1:9)==name)cycle
+         name=species(chemgroups(ash)%specs(i))%name(1:9)
+         !write(*,*) "name",trim(name),i,size(chemgroups(ash)%specs)
          volc_group=find_index(name,chemgroups(:)%name)
-         !write(*,*) "volc_group ",volc_group,size(chemgroups(volc_group)%ptr)
+         !write(*,*) "volc_group ",volc_group,size(chemgroups(volc_group)%specs)
          
          if (volc_group .gt. 0) then
             volc = volc+1
         !   write(*,*) "inn her? ",volc
-            bins = size(chemgroups(volc_group)%ptr)
+            bins = size(chemgroups(volc_group)%specs)
          end if
       enddo
    
@@ -86,56 +86,56 @@ if (first_call) then
       allocate(grav_sed(volc,bins))
       v = 0
       if (bins == 7 ) then 
-         do i=1,size(chemgroups(ash)%ptr)
-            if(species(chemgroups(ash)%ptr(i))%name(1:9)==name)cycle
-            name=species(chemgroups(ash)%ptr(i))%name(1:9)
+         do i=1,size(chemgroups(ash)%specs)
+            if(species(chemgroups(ash)%specs(i))%name(1:9)==name)cycle
+            name=species(chemgroups(ash)%specs(i))%name(1:9)
             volc_group=find_index(name,chemgroups(:)%name)
             v = v+1
          !   write(*,*) "inn her? ",volc,v,i,trim(name),volc_group
-            grav_sed(v,1) = sediment(chemgroups(volc_group)%ptr(1)-NSPEC_SHL,1.00E-07)
-            grav_sed(v,2) = sediment(chemgroups(volc_group)%ptr(2)-NSPEC_SHL,3.00E-07)
-            grav_sed(v,3) = sediment(chemgroups(volc_group)%ptr(3)-NSPEC_SHL,1.00E-06)
-            grav_sed(v,4) = sediment(chemgroups(volc_group)%ptr(4)-NSPEC_SHL,3.00E-06)
-            grav_sed(v,5) = sediment(chemgroups(volc_group)%ptr(5)-NSPEC_SHL,10.00E-06)
-            grav_sed(v,6) = sediment(chemgroups(volc_group)%ptr(6)-NSPEC_SHL,30.00E-06)
-            grav_sed(v,7) = sediment(chemgroups(volc_group)%ptr(7)-NSPEC_SHL,100.00E-06)
+            grav_sed(v,1) = sediment(chemgroups(volc_group)%specs(1)-NSPEC_SHL,1.00E-07)
+            grav_sed(v,2) = sediment(chemgroups(volc_group)%specs(2)-NSPEC_SHL,3.00E-07)
+            grav_sed(v,3) = sediment(chemgroups(volc_group)%specs(3)-NSPEC_SHL,1.00E-06)
+            grav_sed(v,4) = sediment(chemgroups(volc_group)%specs(4)-NSPEC_SHL,3.00E-06)
+            grav_sed(v,5) = sediment(chemgroups(volc_group)%specs(5)-NSPEC_SHL,10.00E-06)
+            grav_sed(v,6) = sediment(chemgroups(volc_group)%specs(6)-NSPEC_SHL,30.00E-06)
+            grav_sed(v,7) = sediment(chemgroups(volc_group)%specs(7)-NSPEC_SHL,100.00E-06)
         !    write(*,*) "specie: ",grav_sed(volc,:)%spec
         !    write(*,*) "diameter",grav_sed(volc,:)%diameter
          end do
       end if
       if (bins == 9 ) then 
-         do i=1,size(chemgroups(ash)%ptr)
-            if(species(chemgroups(ash)%ptr(i))%name(1:9)==name)cycle
-            name=species(chemgroups(ash)%ptr(i))%name(1:9)
+         do i=1,size(chemgroups(ash)%specs)
+            if(species(chemgroups(ash)%specs(i))%name(1:9)==name)cycle
+            name=species(chemgroups(ash)%specs(i))%name(1:9)
             volc_group=find_index(name,chemgroups(:)%name)
-            grav_sed(volc,1) = sediment(chemgroups(volc_group)%ptr(1)-NSPEC_SHL,4.00E-06)
-            grav_sed(volc,2) = sediment(chemgroups(volc_group)%ptr(2)-NSPEC_SHL,6.00E-06)
-            grav_sed(volc,3) = sediment(chemgroups(volc_group)%ptr(3)-NSPEC_SHL,8.00E-06)
-            grav_sed(volc,4) = sediment(chemgroups(volc_group)%ptr(4)-NSPEC_SHL,10.00E-06)
-            grav_sed(volc,5) = sediment(chemgroups(volc_group)%ptr(5)-NSPEC_SHL,12.00E-06)
-            grav_sed(volc,6) = sediment(chemgroups(volc_group)%ptr(6)-NSPEC_SHL,14.00E-06)
-            grav_sed(volc,7) = sediment(chemgroups(volc_group)%ptr(7)-NSPEC_SHL,16.00E-06)
-            grav_sed(volc,8) = sediment(chemgroups(volc_group)%ptr(8)-NSPEC_SHL,18.00E-06)
-            grav_sed(volc,9) = sediment(chemgroups(volc_group)%ptr(9)-NSPEC_SHL,25.00E-06)
+            grav_sed(volc,1) = sediment(chemgroups(volc_group)%specs(1)-NSPEC_SHL,4.00E-06)
+            grav_sed(volc,2) = sediment(chemgroups(volc_group)%specs(2)-NSPEC_SHL,6.00E-06)
+            grav_sed(volc,3) = sediment(chemgroups(volc_group)%specs(3)-NSPEC_SHL,8.00E-06)
+            grav_sed(volc,4) = sediment(chemgroups(volc_group)%specs(4)-NSPEC_SHL,10.00E-06)
+            grav_sed(volc,5) = sediment(chemgroups(volc_group)%specs(5)-NSPEC_SHL,12.00E-06)
+            grav_sed(volc,6) = sediment(chemgroups(volc_group)%specs(6)-NSPEC_SHL,14.00E-06)
+            grav_sed(volc,7) = sediment(chemgroups(volc_group)%specs(7)-NSPEC_SHL,16.00E-06)
+            grav_sed(volc,8) = sediment(chemgroups(volc_group)%specs(8)-NSPEC_SHL,18.00E-06)
+            grav_sed(volc,9) = sediment(chemgroups(volc_group)%specs(9)-NSPEC_SHL,25.00E-06)
          end do
       end if
        if (bins == 10 ) then 
-         do i=1,size(chemgroups(ash)%ptr)
-            if(species(chemgroups(ash)%ptr(i))%name(1:9)==name)cycle
-            name=species(chemgroups(ash)%ptr(i))%name(1:9)
+         do i=1,size(chemgroups(ash)%specs)
+            if(species(chemgroups(ash)%specs(i))%name(1:9)==name)cycle
+            name=species(chemgroups(ash)%specs(i))%name(1:9)
             volc_group=find_index(name,chemgroups(:)%name)
-           ! do i=1,size(chemgroups(ash)%ptr)
-            write(*,*) "chemgroups(volc_group) ",chemgroups(volc_group)%ptr(1),NSPEC_SHL,KMAX_MID
-            grav_sed(volc,1) = sediment(chemgroups(volc_group)%ptr(1)-NSPEC_SHL,2.00E-06)
-            grav_sed(volc,2) = sediment(chemgroups(volc_group)%ptr(1)-NSPEC_SHL,4.00E-06)
-            grav_sed(volc,3) = sediment(chemgroups(volc_group)%ptr(2)-NSPEC_SHL,6.00E-06)
-            grav_sed(volc,4) = sediment(chemgroups(volc_group)%ptr(3)-NSPEC_SHL,8.00E-06)
-            grav_sed(volc,5) = sediment(chemgroups(volc_group)%ptr(4)-NSPEC_SHL,10.00E-06)
-            grav_sed(volc,6) = sediment(chemgroups(volc_group)%ptr(5)-NSPEC_SHL,12.00E-06)
-            grav_sed(volc,7) = sediment(chemgroups(volc_group)%ptr(6)-NSPEC_SHL,14.00E-06)
-            grav_sed(volc,8) = sediment(chemgroups(volc_group)%ptr(7)-NSPEC_SHL,16.00E-06)
-            grav_sed(volc,9) = sediment(chemgroups(volc_group)%ptr(8)-NSPEC_SHL,18.00E-06)
-            grav_sed(volc,10) = sediment(chemgroups(volc_group)%ptr(9)-NSPEC_SHL,25.00E-06)
+           ! do i=1,size(chemgroups(ash)%specs)
+            write(*,*) "chemgroups(volc_group) ",chemgroups(volc_group)%specs(1),NSPEC_SHL,KMAX_MID
+            grav_sed(volc,1) = sediment(chemgroups(volc_group)%specs(1)-NSPEC_SHL,2.00E-06)
+            grav_sed(volc,2) = sediment(chemgroups(volc_group)%specs(1)-NSPEC_SHL,4.00E-06)
+            grav_sed(volc,3) = sediment(chemgroups(volc_group)%specs(2)-NSPEC_SHL,6.00E-06)
+            grav_sed(volc,4) = sediment(chemgroups(volc_group)%specs(3)-NSPEC_SHL,8.00E-06)
+            grav_sed(volc,5) = sediment(chemgroups(volc_group)%specs(4)-NSPEC_SHL,10.00E-06)
+            grav_sed(volc,6) = sediment(chemgroups(volc_group)%specs(5)-NSPEC_SHL,12.00E-06)
+            grav_sed(volc,7) = sediment(chemgroups(volc_group)%specs(6)-NSPEC_SHL,14.00E-06)
+            grav_sed(volc,8) = sediment(chemgroups(volc_group)%specs(7)-NSPEC_SHL,16.00E-06)
+            grav_sed(volc,9) = sediment(chemgroups(volc_group)%specs(8)-NSPEC_SHL,18.00E-06)
+            grav_sed(volc,10) = sediment(chemgroups(volc_group)%specs(9)-NSPEC_SHL,25.00E-06)
          end do
       end if
    end if

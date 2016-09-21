@@ -1060,7 +1060,7 @@ real :: trend_o3=1.0, trend_co, trend_voc
     trend_o3 = exp(-0.01*1.0 *(2000-iyr_trend))
     trend_co = exp(-0.01*0.85*(1990-iyr_trend)) ! Zander:CO
     trend_voc= exp(-0.01*0.85*(1990-iyr_trend)) ! Zander,1975-1990
-  endselect
+  end select
   if (MasterProc.and.first_call) then
     write(unit=txtmsg,fmt="(a,i5,3f8.3,13f9.4)") "BC:trends O3,CO,VOC,SOx,NOx,NH3: ", &
        iyr_trend, trend_o3, trend_co, trend_voc, SIAtrend%so2, SIAtrend%nox, SIAtrend%nh4

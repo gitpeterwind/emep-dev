@@ -346,7 +346,7 @@ pure function skey2str(iname,key,val,xfmt) result(fname)
     fname=fname(1:ind-1)//trim(aux)//fname(ind+n:len_trim(fname))
     ind=index(fname,trim(key))
   enddo
-endfunction skey2str
+end function skey2str
 pure function ikey2str(iname,key,val,xfmt) result(fname)
   character(len=*), intent(in):: iname,key
   integer, intent(in)         :: val
@@ -373,7 +373,7 @@ pure function ikey2str(iname,key,val,xfmt) result(fname)
     write(sval,ifmt)val
   endif
   fname=trim(skey2str(iname,key,sval))
-endfunction ikey2str
+end function ikey2str
 pure function rkey2str(iname,key,val,xfmt) result(fname)
   character(len=*), intent(in):: iname,key
   real, intent(in)            :: val
@@ -405,7 +405,7 @@ pure function rkey2str(iname,key,val,xfmt) result(fname)
     endif
   endif
   fname=trim(skey2str(iname,key,sval))
-endfunction rkey2str
+end function rkey2str
 !============================================================================
 subroutine Self_test()
 

@@ -94,7 +94,7 @@ subroutine Init_massbudget()
     enddo
   endif
 
- endsubroutine Init_massbudget
+ end subroutine Init_massbudget
 !----------------------------------------------------------------------------
 !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 subroutine emis_massbudget_1d(i,j)
@@ -121,7 +121,7 @@ subroutine emis_massbudget_1d(i,j)
     enddo
   enddo ! k loop
 
-endsubroutine emis_massbudget_1d
+end subroutine emis_massbudget_1d
 !----------------------------------------------------------------------------
 subroutine massbudget()
 ! sums over all sulphur and nitrogen, so is model independant.
@@ -275,7 +275,7 @@ subroutine massbudget()
         case(1);natoms = real(species_adv(:)%sulphurs)
         case(2);natoms = real(species_adv(:)%nitrogens)
         case(3);natoms = real(species_adv(:)%carbons)
-      endselect
+      end select
 
       family_init(ifam)   = dot_product(sumini(:)  ,natoms(:))
       family_mass(ifam)   = dot_product(sum_mass(:),natoms(:))
@@ -290,7 +290,7 @@ subroutine massbudget()
         case(1);wgt_fac=32/ATWAIR!sulphurs
         case(2);wgt_fac=14/ATWAIR!nitrogens
         case(3);wgt_fac=12/ATWAIR!carbons
-      endselect
+      end select
       family_init(ifam)=family_init(ifam)*wgt_fac
       family_inflow(ifam)=family_inflow(ifam)*wgt_fac
       family_em(ifam)=family_em(ifam)*wgt_fac
@@ -415,7 +415,7 @@ subroutine massbudget()
         write(*,59)'NH3 emisions from ocean cdf file (Gg)',O_NH3%sum_year
      endif
   endif
-endsubroutine massbudget
+end subroutine massbudget
 !--------------------------------------------------------------------------
  end module MassBudget_ml
 !--------------------------------------------------------------------------

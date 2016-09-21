@@ -188,7 +188,7 @@ function great_circle_distance(fi1,lambda1,fi2,lambda2) result(dist)
        cos(DEG2RAD*lambda1)*cos(DEG2RAD*lambda2)*&
          sin(DEG2RAD*0.5*(fi1-fi2))**2))
 
-endfunction great_circle_distance
+end function great_circle_distance
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 subroutine Nearest4interp(glon, glat, values_grid, &
     dlon,dlat,values_data, NXD,NYD,&
@@ -273,7 +273,7 @@ subroutine Nearest4interp(glon, glat, values_grid, &
       enddo
       print "(12x,a)" , "--------------------------------------------------"
     endif
-endsubroutine Nearest4interp
+end subroutine Nearest4interp
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 subroutine grid2grid_coeff(glon,glat,IIij,JJij,Weight,&
@@ -307,7 +307,7 @@ subroutine grid2grid_coeff(glon,glat,IIij,JJij,Weight,&
              dlon,dlat,NXD,NYD,all((/debug,i==debug_li,j==debug_lj/)))
     enddo
   enddo
-endsubroutine grid2grid_coeff
+end subroutine grid2grid_coeff
 subroutine point2grid_coeff(glon,glat,IIij,JJij,Weight,dlon,dlat,NXD,NYD,debug)
   real, intent(in)    :: glon,glat ! lat/long of target grid
   integer, intent(in) :: NXD,NYD ! dimension of data grid
@@ -341,7 +341,7 @@ subroutine point2grid_coeff(glon,glat,IIij,JJij,Weight,dlon,dlat,NXD,NYD,debug)
   if(debug) write(*,"(a,I1,2es12.3)") &
      "DEBUG-g2gFinal",0,sum(dist),sum(Weight),&
     ("DEBUG-g2gFinal",n,dist(n),Weight(n),n=1,4)
-endsubroutine point2grid_coeff
+end subroutine point2grid_coeff
 
    subroutine Averageconserved_interpolate(Start,Endval,Average,Nvalues,i,x)
      !this routine interpolates a function, and evaluate it at i 

@@ -40,13 +40,13 @@ subroutine MPI_world_init(NPROC,ME)
   MPI_COMM_SUB=MPI_COMM_WORLD
   if(ME==0)write(*,"(A,I5,A)")' Found ',NPROC,' MPI processes available'
 
-endsubroutine MPI_world_init
+end subroutine MPI_world_init
 subroutine share(shared_data,data_shape,xsize,MPI_COMM_SHARED)
 
 !share the array shared_data
   USE, INTRINSIC :: ISO_C_BINDING, ONLY : C_PTR, C_F_POINTER!fortran 2003 extensions 
   implicit none
-  TYPE(C_PTR) :: baseptr!,baseptr2
+  TYPE(C_PTR) :: basespecs!,baseptr2
 ! TYPE(MPI_Win) :: win
 ! TYPE(MPI_Comm), intent(in) :: MPI_COMM_SHARED
   integer :: win
@@ -78,8 +78,8 @@ subroutine share(shared_data,data_shape,xsize,MPI_COMM_SHARED)
 ! CALL MPI_WIN_ALLOCATE_SHARED(MPI_XSIZE, DISP_UNIT, MPI_INFO_NULL, MPI_COMM_SHARED, BASEPTR2, WIN,IERROR)
 
   call MPI_Win_fence(0, win, ierror)
-! CALL MPI_Win_shared_query(win, 0, MPI_xsize, disp_unit, baseptr,IERROR)
-  CALL C_F_POINTER(baseptr, shared_data, data_shape)
+! CALL MPI_Win_shared_query(win, 0, MPI_xsize, disp_unit, basespecs,IERROR)
+  CALL C_F_POINTER(basespecs, shared_data, data_shape)
   call MPI_Win_fence(0, win, ierror)
 
 !test if it works
@@ -97,20 +97,20 @@ subroutine share(shared_data,data_shape,xsize,MPI_COMM_SHARED)
     shared_data(2,1,1)=22.
   case default
     shared_data(3,1,1)=me_mpi
-  endselect
+  end select
   CALL MPI_BARRIER(MPI_COMM_SHARED, IERROR)
   call MPI_Win_fence(0, win, ierror)
 ! write(*,"(A,5i7,12F11.2)")'data in share ',ME_MPI,me_calc,me_io,me_sub,&
 !  me_shared,shared_data(1:3,1,1),1.0*mpi_xsize!,shared_data(1:2,2,1)
 ! if(me_io>=0)write(*,*)' COMM',MPI_COMM_SHARED,MPI_COMM_WORLD
 
-endsubroutine share
+end subroutine share
 subroutine share_logical(shared_data,data_shape,xsize,MPI_COMM_SHARED)
 
 !share the array shared_data
   USE, INTRINSIC :: ISO_C_BINDING, ONLY : C_PTR, C_F_POINTER!fortran 2003 extensions 
   implicit none
-  TYPE(C_PTR) :: baseptr
+  TYPE(C_PTR) :: basespecs
 ! TYPE(MPI_Win) :: win
 ! TYPE(MPI_Comm), intent(in) :: MPI_COMM_SHARED
   integer :: win
@@ -139,8 +139,8 @@ subroutine share_logical(shared_data,data_shape,xsize,MPI_COMM_SHARED)
 
 ! CALL MPI_WIN_ALLOCATE_SHARED(MPI_XSIZE, DISP_UNIT, MPI_INFO_NULL, MPI_COMM_SHARED, BASEPTR, WIN, IERROR)
   call MPI_Win_fence(0, win, ierror)
-! CALL MPI_Win_shared_query(win, 0, MPI_xsize, disp_unit, baseptr, IERROR)
-  CALL C_F_POINTER(baseptr, shared_data)
+! CALL MPI_Win_shared_query(win, 0, MPI_xsize, disp_unit, basespecs, IERROR)
+  CALL C_F_POINTER(basespecs, shared_data)
   call MPI_Win_fence(0, win, ierror)
 
 !test if it works
@@ -150,5 +150,5 @@ subroutine share_logical(shared_data,data_shape,xsize,MPI_COMM_SHARED)
   if(me_io==0.and.me_sub==0)shared_data=.false.
   call MPI_Win_fence(0, win, ierror)
 ! write(*,*)'logical data in share ',ME_MPI,me_shared,shared_data
-endsubroutine share_logical
+end subroutine share_logical
 endmodule MPI_Groups_ml

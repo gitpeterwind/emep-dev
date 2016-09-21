@@ -64,13 +64,13 @@ type, public :: umap
   logical :: volunit  ! volume unit (PPB output class)?
   logical :: needroa  ! need to be multiplied by air density (roa)?,
   real, dimension(0:NSPEC_ADV) :: uconv           ! conversion factor
-endtype umap
+end type umap
 
 type, public :: group_umap
   character(len=TXTLEN_DERIV)  :: name = 'none' ! short name
   integer,pointer,dimension(:) :: iadv =>null() ! advection index
   real,   pointer,dimension(:) :: uconv=>null() ! conversion factor
-endtype group_umap
+end type group_umap
 
 type(umap), public, save :: unit_map(23)=(/&
 ! Air concentration
@@ -137,10 +137,10 @@ subroutine Init_Units()
 !     uconv_spec = species_adv%molwt*Qm_grp(NSPEC_ADV,[1..NSPEC_ADV]+NSPEC_SHL,rh,...)
     case default
       uconv_spec = 1.0
-   endselect
+   end select
    unit_map(i)%uconv(1:)=unit_map(i)%uconv(0)*uconv_spec
  enddo
-endsubroutine Init_Units
+end subroutine Init_Units
 
 subroutine Group_Units_Asc2D(hr_out,gspec,gunit_conv,debug,name,volunit,needroa)
   type(Asc2D), intent(in)                     :: hr_out
@@ -161,8 +161,8 @@ subroutine Group_Units_Asc2D(hr_out,gspec,gunit_conv,debug,name,volunit,needroa)
   if(present(name))name = trim(dname)
 
   if(associated(gspec)) deallocate(gspec)
-  allocate(gspec(size(chemgroups(hr_out%spec)%ptr)))
-  gspec=chemgroups(hr_out%spec)%ptr-NSPEC_SHL
+  allocate(gspec(size(chemgroups(hr_out%spec)%specs)))
+  gspec=chemgroups(hr_out%spec)%specs-NSPEC_SHL
   if(debug) write(*,"(A,'=',30(A,':',I0,:,'+'))") &
     trim(dname),(trim(species_adv(gspec(i))%name),gspec(i),i=1,size(gspec))
 
@@ -176,7 +176,7 @@ subroutine Group_Units_Asc2D(hr_out,gspec,gunit_conv,debug,name,volunit,needroa)
   if(associated(gunit_conv)) deallocate(gunit_conv)
   allocate(gunit_conv(size(gspec)))
   gunit_conv(:)=unit_map(i)%uconv(gspec)
-endsubroutine Group_Units_Asc2D
+end subroutine Group_Units_Asc2D
 
 subroutine Group_Units_detail(igrp,unit,gspec,gunit_conv,debug,volunit,needroa)
   integer, intent(in)                         :: igrp
@@ -191,7 +191,7 @@ subroutine Group_Units_detail(igrp,unit,gspec,gunit_conv,debug,volunit,needroa)
   hr_out%type="Group_Units_detail"
   call Group_Units_Asc2D(hr_out,gspec,gunit_conv,debug,&
                          volunit=volunit,needroa=needroa)
-endsubroutine Group_Units_detail
+end subroutine Group_Units_detail
 
 function Group_Scale(igrp,unit,debug,volunit,needroa) result(gmap)
   integer, intent(in)          :: igrp
@@ -205,7 +205,7 @@ function Group_Scale(igrp,unit,debug,volunit,needroa) result(gmap)
   hr_out%type="Group_Scale"
   call Group_Units_Asc2D(hr_out,gmap%iadv,gmap%uconv,debug,&
                          name=gmap%name,volunit=volunit,needroa=needroa)
-endfunction Group_Scale
+end function Group_Scale
 
 subroutine Units_Scale(txtin,iadv,unitscale,unitstxt,volunit,needroa,semivol,debug_msg)
   character(len=*), intent(in) :: txtin
@@ -237,7 +237,7 @@ subroutine Units_Scale(txtin,iadv,unitscale,unitstxt,volunit,needroa,semivol,deb
     txt="mass_ratio"
   case("ppbv","ppbV")
     txt="ppb"
-  endselect
+  end select
   i=find_index(txt,unit_map(:)%utxt)
   if(i<1)i=find_index(txt,unit_map(:)%units)
   call CheckStop(i<1,"Units_Scale Error: Unknown unit "// trim(txtin) )
@@ -261,8 +261,8 @@ subroutine Units_Scale(txtin,iadv,unitscale,unitstxt,volunit,needroa,semivol,deb
       trim(species_adv(iadv)%name)//" in "//trim(unitstxt)//" at "//trim(debug_msg))
   case default
     call CheckStop(iadv,"Units_Scale Error: Unknown iadv.")
-  endselect
+  end select
 
-endsubroutine Units_Scale
+end subroutine Units_Scale
 
 endmodule Units_ml

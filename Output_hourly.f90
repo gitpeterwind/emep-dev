@@ -183,7 +183,7 @@ implicit none
         nj=hour_DOMAIN(4)-hour_DOMAIN(3)+1
         call Out_netCDF(IOU_HOUR_EXTRA,def1,3,1,hourly,scale,CDFtype,ik=1,&
           create_var_only=.true.,ncFileID_given=ncFileID,chunksizes=[ni,nj,1,1])
-      endselect
+      end select
     enddo
   endif
 !......... Uses concentration/met arrays from Chem_ml or Met_ml ..................
@@ -257,10 +257,10 @@ implicit none
               hr_out_type(1:3)="ADV"
             case("PMwater")
               hr_out_type=trim(hr_out_type)//"SRF"
-            endselect
-          endselect
+            end select
+          end select
         endif
-      endselect
+      end select
 
 
       if(debug_flag) write(*,"(5a,i4)") "DEBUG Hourly MULTI ",&
@@ -775,7 +775,7 @@ implicit none
         call CheckStop( "ERROR-DEF! Hourly_out: '"//trim(hr_out(ih)%type)//&
                         "' hourly type not found!")
 
-      endselect OPTIONS
+      end select OPTIONS
 
       if(debug_flag) &
         write(*,"(a,3i4,2g12.3)")"DEBUG-HOURLY-OUT:"//trim(hr_out(ih)%name),&
@@ -823,7 +823,7 @@ implicit none
         call Out_netCDF(IOU_HOUR_EXTRA,def1,3,1,hourly,scale,CDFtype,ik=klevel,&
                         ncFileID_given=ncFileID)
       !case default   ! no output
-      endselect
+      end select
     enddo KVLOOP    
   enddo HLOOP
   ! CF convention: surface pressure to define vertical coordinates.
@@ -849,4 +849,4 @@ implicit none
   open(IO_TMP,file=filename(1:i)//'.msg',position='append')
   write(IO_TMP,*)date2string('FFFF: YYYY-MM-DD hh',current_date)
   close(IO_TMP)
-endsubroutine hourly_out
+end subroutine hourly_out

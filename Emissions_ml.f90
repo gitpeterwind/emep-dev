@@ -374,7 +374,7 @@ subroutine Emissions(year)
       case(3);ic=find_index("ATL",Country(:)%code)
       case(4);ic=find_index("MED",Country(:)%code)
       case(5);ic=find_index("BLS",Country(:)%code)
-      endselect
+      end select
       call CheckStop(ic<1,"Country_Init error in HIRHAM/GEA fix")
       Country(ic)%is_sea = .false.
     enddo
@@ -684,7 +684,7 @@ subroutine Emissions(year)
 
   case default
     call CheckStop("EMIS_SOURCE not set"//trim(EMIS_SOURCE))
-  endselect
+  end select
 
   if(USE_ROADDUST) then
     !Use grid-independent Netcdf input files
@@ -694,7 +694,7 @@ subroutine Emissions(year)
       select case(iem)
       case(1);varname='HighwayRoadDustPM10_Jun-Feb'
       case(2);varname='nonHighwayRoadDustPM10_Jun-Feb'
-      endselect
+      end select
       roaddust_emis_pot(:,:,:,iem)=0.0
       call ReadField_CDF('RoadMap.nc',varname,roaddust_emis_pot(1,1,1,iem),&
            nstart=1,interpol='mass_conservative',fractions_out=fractions,&
@@ -771,7 +771,7 @@ subroutine Emissions(year)
      call StopAll("The emislist option is not available anymore! Use Mixed instead")
   case("CdfFractions")
      ! emissions directly defined into nlandcode,landcode and snapemis
-  endselect
+  end select
 
   ! Create emislist-type files for both snap emissions and Cdf
   ! Useful for export to other codes, including production of
@@ -863,7 +863,7 @@ subroutine Emissions(year)
     call CheckStop(err3, "Allocation error 3 - gridrcroadd")
     call CheckStop(err4, "Allocation error 4 - gridrcroadd0")
   endif
-endsubroutine Emissions
+end subroutine Emissions
 !----------------------------------------------------------------------!
 !>
 !! expandcclist converts e.g. EU28 to indivdual countries
@@ -893,10 +893,10 @@ subroutine expandcclist(xlist, n)
     !if(MasterProc) print *, "NLIST DEF - ", me, i, n, xlist(i)
       nlist(n) = xlist(i)
       n=n+1
-    endselect
+    end select
   enddo CCLIST ! i
   xlist(1:n) = nlist(1:n) ! overwrites original
-endsubroutine expandcclist
+end subroutine expandcclist
 !----------------------------------------------------------------------!
 subroutine consistency_check()
 !----------------------------------------------------------------------!
@@ -906,7 +906,7 @@ subroutine consistency_check()
   errormsg = "ok"
   if(size(EMIS_FILE)/=NEMIS_FILE) errormsg = " size EMISNAME wrong "
   call CheckStop(errormsg,"Failed consistency check")
-endsubroutine consistency_check
+end subroutine consistency_check
 !***********************************************************************
 subroutine EmisSet(indate)   !  emission re-set every time-step/hour
 !----------------------------------------------------------------------!
@@ -1305,7 +1305,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
     if(DEBUG_ROADDUST.and.debug_proc) &
       write(*,*)"After the unit scaling",gridrcroadd(1:2,DEBUG_li,DEBUG_lj)
   endif
-endsubroutine EmisSet
+end subroutine EmisSet
 !***********************************************************************
 subroutine newmonth
 !----------------------------------------------------------------------!
@@ -1784,7 +1784,7 @@ subroutine newmonth
     enddo
   endif
   first_call=.false.
-endsubroutine newmonth
+end subroutine newmonth
 !***********************************************************************
 subroutine EmisOut(label, iem,nsources,sources,emis)
 !----------------------------------------------------------------------!
@@ -1870,7 +1870,7 @@ subroutine EmisOut(label, iem,nsources,sources,emis)
   
 !  deallocate(locemis,lemis)
 
-endsubroutine EmisOut
+end subroutine EmisOut
 
 subroutine uemep_emis(indate)
 

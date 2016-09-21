@@ -68,7 +68,7 @@ integer, public, parameter :: &
                           ! assume rho_dry as SO4, Q and GF as SSc
 type :: ExtEffMap
   integer :: itot,cext
-endtype ExtEffMap
+end type ExtEffMap
 
 !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 include 'CM_AerExt.inc'
@@ -254,7 +254,7 @@ function Qm(mode,rh,wlen,debug) result(Qm_arr)
 
   case default
     call CheckStop("Unknown extinction mode: "//trim(mode))
-  endselect
+  end select
 
   !.. mass extinction efficiency [m2/g]
   !beta = 3/4 * ExtEff/rho_wet/rad_eff * Mwet/Mdry
@@ -285,8 +285,8 @@ function rho_wet(nc)
 ! rho_wet = Vfr_dry*rho_dry + (1-Vfr_dry)*RHO_H2O
 !         = (rho_dry-RHO_H2O)/GF**3 + RHO_H2O
   rho_wet = (rho_dry(nc)-RHO_H2O)/Gf(nc)**3 + RHO_H2O
-endfunction rho_wet
-endfunction Qm
+end function rho_wet
+end function Qm
 
 function Qm_grp(gtot,rh,debug) result(Qm_arr)
 !-----------------------------------------------------------------------!
@@ -318,7 +318,7 @@ function Qm_grp(gtot,rh,debug) result(Qm_arr)
     i=find_index(gtot(n),ExtMap(:)%itot,debug=my_debug)
     if(i>0)Qm_arr(n)=Qm_aux(i)
   enddo
-endfunction Qm_grp
+end function Qm_grp
 
 subroutine AOD_init(msg,wlen,out3d)
   character(len=*), intent(in) :: msg
@@ -343,7 +343,7 @@ subroutine AOD_init(msg,wlen,out3d)
   if(.not.associated(aod_grp))then
     igrp=find_index('AOD',chemgroups%name)
     if(igrp<1) return   ! AOD group no longer used... nothing to check
-    aod_grp=>chemgroups(igrp)%ptr
+    aod_grp=>chemgroups(igrp)%specs
     call CheckStop(size(aod_grp),NUM_EXT,&
       trim(msg)//" Incompatibe AOD_GROUP size")
     call CheckStop(any(aod_grp/=ExtMap%itot),&
@@ -378,7 +378,7 @@ subroutine AOD_init(msg,wlen,out3d)
     allocate(SpecExtCross(NUM_EXT,KMAX_MID,LIMAX,LJMAX,W340:W1020))
     SpecExtCross=0.0
   endif
-endsubroutine AOD_init
+end subroutine AOD_init
 
 subroutine AOD_Ext(i,j,debug)
 !-----------------------------------------------------------------------!
@@ -451,6 +451,6 @@ subroutine AOD_Ext(i,j,debug)
 
   if(debug) write(*,"(a24,2i5,es10.3,'=',9(es10.3,:,'+'))") &
     '>>>  AOD / AODs  <<<', i_fdom(i), j_fdom(j), sum(AOD(:,i,j,W550)), AOD_cext(:)
-endsubroutine AOD_Ext
+end subroutine AOD_Ext
 endmodule AOD_PM_ml
 

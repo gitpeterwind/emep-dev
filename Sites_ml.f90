@@ -175,7 +175,7 @@ subroutine set_species(adv,shl,xtra,s)
   s(1:nadv)    = species( NSPEC_SHL + adv(:) )%name
   s(nadv+1:n2) = species( shl(:) )%name
   s(n2+1:nout) = xtra(:)
-endsubroutine set_species
+end subroutine set_species
 !==================================================================== >
 subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
         s_gindex, s_gx, s_gy, s_gz, s_x, s_y, s_z, s_n, s_name)
@@ -453,7 +453,7 @@ subroutine siteswrt_surf(xn_adv,cfac,xn_shl)
         case default
           call CheckStop("Error, Sites_ml/siteswrt_surf: SITE_XTRA_MISC:"&
                                // trim(SITE_XTRA_MISC(ispec)))
-        endselect
+        end select
         call CheckStop( abs(out(nn,i))>1.0e99, &
           "ABS(SITES OUT: '"//trim(SITE_XTRA_MISC(ispec))//"') TOO BIG" )
       end do
@@ -524,7 +524,7 @@ subroutine siteswrt_sondes(xn_adv,xn_shl)
     case default
       call CheckStop("Error, Sites_ml/siteswrt_sondes SONDE_XTRA: "//&
           trim(SONDE_XTRA(ispec)))
-    endselect
+    end select
   enddo
 
   i_Att=0
@@ -667,7 +667,7 @@ subroutine siteswrt_sondes(xn_adv,xn_shl)
 
         case("D3D")
           call StopAll("D3D Sites out not defined")
-      endselect
+      end select
 
       nn=nn+NLEVELS_SONDE
     enddo ! ispec (NXTRA_SONDE)
@@ -728,7 +728,7 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
   case default
     write(6,*) "non-possible type in siteswrt_out for ", fname
     return
-  endselect
+  end select
 
   write(suffix,fmt="(i4)") prev_year(type)
   fileName = fname // "_" // suffix // ".nc"!Name of the NetCDF file. Will overwrite any preexisting file
@@ -768,7 +768,7 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
       case("sites")
         NLevels=1
         NSPEC=NSPC_SITE !number of species defined for sites
-      endselect
+      end select
       NStations = nglobal !number of sondes or sites defined
 
       allocate(SpecDef(NSPEC,0:NattributesMAX),MetaData(0:NStations,NattributesMAX))
@@ -820,7 +820,7 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
             write(MetaData(n,5),"(A,':D:',F10.3)")"longitude",sondes_lon(n)
           if(sondes_lat(n)>-990)&
             write(MetaData(n,6),"(A,':D:',F10.3)")"latitude" ,sondes_lat(n)
-        endselect
+        end select
       enddo
       
       !take Spec_Attributes from any processor with at least one site/sonde
@@ -936,6 +936,6 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
 
     deallocate(SpecName)
   endif ! MasterProc
-endsubroutine siteswrt_out
+end subroutine siteswrt_out
 !==================================================================== >
 endmodule Sites_ml

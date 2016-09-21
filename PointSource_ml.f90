@@ -227,7 +227,7 @@ subroutine readstacks(io)
 !      exit
 !   endif
 ! enddo
-endsubroutine readstacks
+end subroutine readstacks
 !----------------------------------------------------------------------------
 subroutine get_pointsources(i,j, debug_flag)
   integer, intent(in) :: i,j
@@ -290,7 +290,7 @@ subroutine get_pointsources(i,j, debug_flag)
 
     case default
       call CheckStop("Unknown PlumeMethod: "//trim(USES%PlumeMethod))
-    endselect
+    end select
 
     dh     = he - Stack(n)%hs
 
@@ -331,7 +331,7 @@ subroutine get_pointsources(i,j, debug_flag)
 
    enddo
    myfirstcall = .false.
-endsubroutine get_pointsources
+end subroutine get_pointsources
 !----------------------------------------------------------------------------
 subroutine spread_plume( h, w, layer_z, fraction_per_layer,Nz)
 !gives the fraction of a gaussian distribution between layer_z levels
@@ -369,7 +369,7 @@ subroutine spread_plume( h, w, layer_z, fraction_per_layer,Nz)
       call CheckStop("FRAC WRONG in spread_plume")
     endif
   enddo
-endsubroutine spread_plume
+end subroutine spread_plume
 
 !--------------------------------------------------------------------------
 real function gauss_integral(x1,x2,x0,sigma) result(integral)
@@ -433,7 +433,7 @@ real function errorfunctionc(x_in) result(erfc)
     erfc=exp(-x*x)*erfc/(x*sqrt(pi))
 !   write(*,*)'result large x',x_in,erfc
   endif
-endfunction  errorfunctionc
+end function  errorfunctionc
 
 !--------------------------------------------------------------------------
   

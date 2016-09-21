@@ -53,7 +53,7 @@ subroutine Init_timing(ntim)
   mytimm(:) = 0.0    !CPU and SYS
   lastptim(:)=0.0    !CPU and SYS
   timing(:)  = ""
-endsubroutine Init_timing
+end subroutine Init_timing
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 subroutine Add_2timing(n,after,before,txt)
 !+ calculates CPU time and resets "before" to "after"
@@ -72,7 +72,7 @@ subroutine Add_2timing(n,after,before,txt)
   if(present(txt)) timing(n) =  txt    ! Descriptive text if wanted
   if(after<before) mytimm(n) = -999    ! WARNING CODE
   before = after
-endsubroutine Add_2timing
+end subroutine Add_2timing
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 subroutine Output_timing(io, me,np,nt,nx,ny)
   integer, intent(in) :: io         !  i/o number
@@ -91,7 +91,7 @@ subroutine Output_timing(io, me,np,nt,nx,ny)
     write(io,fmt="(a3,i3,1x,a30,2f12.4)")'tim',n,timing(n),mytimm(n),lastptim(n)
   enddo
   close(io)
-endsubroutine Output_timing
+end subroutine Output_timing
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 subroutine Code_timer(call_time)
 !SYS integer, intent(inout) :: call_time      !SYS
@@ -101,7 +101,7 @@ subroutine Code_timer(call_time)
 ! call cpu_time(call_time)                  !CPU
   call_time=MPI_WTIME()
 
-endsubroutine Code_timer
+end subroutine Code_timer
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 endmodule My_Timing_ml
 

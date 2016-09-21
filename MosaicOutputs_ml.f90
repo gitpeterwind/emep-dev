@@ -74,7 +74,7 @@ subroutine Init_MosaicMMC(MOSAIC_METCONCS)
   MMC_GSTO  = find_index("GSTO"    ,MOSAIC_METCONCS)
   MMC_EVAP  = find_index("EVAP"    ,MOSAIC_METCONCS)
   MMC_LAI   = find_index("LAI"     ,MOSAIC_METCONCS)
-endsubroutine Init_MosaicMMC
+end subroutine Init_MosaicMMC
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 subroutine Add_MosaicMetConcs(MOSAIC_METCONCS,MET_LCS,iotyp, nMET)
   character(len=*), intent(in) :: MOSAIC_METCONCS(:),MET_LCS(:),iotyp
@@ -118,12 +118,12 @@ subroutine Add_MosaicMetConcs(MOSAIC_METCONCS,MET_LCS,iotyp, nMET)
         case("EVAP"    );MosaicOutput(nMosaic)%unit = "mm"
           MosaicOutput(nMosaic)%avg       =  .false. ! accumulate
           MosaicOutput(nMosaic)%dt_scale  =  .true.
-      endselect
+      end select
 
       if(dbg0) call print_deriv_type(MosaicOutput(nMosaic))
     enddo MET_LC !n
   enddo ! ilab
-endsubroutine Add_MosaicMetConcs
+end subroutine Add_MosaicMetConcs
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 subroutine Add_NewMosaics(Mc,nMc)
   type(typ_s5ind), dimension(:), intent(in) :: Mc ! eg VG
@@ -167,12 +167,12 @@ subroutine Add_NewMosaics(Mc,nMc)
       MosaicOutput(nMosaic) = Deriv( &
         name, "Mosaic", typ, lctxt, "s/m", &
         iadv, -99, F , 1.0,  T, Mc(n)%ind ) ! ind gives iotype
-    endselect
+    end select
 
     if(dbg0) write(*,*) "DEBUG nMc ", &
       trim(name)//":"//trim(Mc(n)%txt2)//":"//trim(Mc(n)%txt3), iadv, iLC
   enddo MC_LOOP
-endsubroutine Add_NewMosaics
+end subroutine Add_NewMosaics
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 subroutine Add_MosaicVegO3(nVEGO3)
   integer, intent(out) :: nVEGO3
@@ -205,7 +205,7 @@ subroutine Add_MosaicVegO3(nVEGO3)
       dt_scale = .true.
     case default
       call CheckStop(DEBUG%MOSAICS,dtxt//"vegclass errror"//veg%class )
-    endselect
+    end select
 
     !------------------- Check if LC present in this array ------!
     iLC = Check_LandCoverPresent( "VEGO3_LCS", veg%TXTLC, .true. )
@@ -228,7 +228,7 @@ subroutine Add_MosaicVegO3(nVEGO3)
       units, n, -99, dt_scale, scale,  F, veg%iotype ) 
    
   enddo VEGO3_LC !n
-endsubroutine Add_MosaicVEGO3
+end subroutine Add_MosaicVEGO3
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 subroutine Add_MosaicDDEP(DDEP_ECOS,DDEP_WANTED,nDD)
   type(typ_s1ind), dimension(:), intent(in) :: DDEP_ECOS    !e.g. (%name,DDEP_FREQ)
@@ -275,7 +275,7 @@ subroutine Add_MosaicDDEP(DDEP_ECOS,DDEP_WANTED,nDD)
         if(dbg0) print *, "ADVNO ",n,iadv,trim(xname), unitscale
 
       case("GROUP")
-        igrp = find_index(xname,chemgroups(:)%name) ! array of members: chemgroups%ptr
+        igrp = find_index(xname,chemgroups(:)%name) ! array of members: chemgroups%specs
         if(igrp<1) print *, "OOPNOW", igrp, trim(xname) // trim(name)
         call CheckStop(igrp<1,dtxt//"Unknown in DDEP_WANTED GROUP: "//trim(xname))
         call Units_Scale(DDEP_WANTED(i)%txt3,-1,unitscale,units)
@@ -287,7 +287,7 @@ subroutine Add_MosaicDDEP(DDEP_ECOS,DDEP_WANTED,nDD)
       case default
         call CheckStop(DEBUG%MOSAICS,&
           dtxt//" unknown MosaicDDEP type "//trim(DDEP_WANTED(i)%txt2))
-      endselect
+      end select
 
       name = "DDEP_"//trim(xname)//"_m2"//trim(DDEP_ECOS(n)%name)
 
@@ -303,7 +303,7 @@ subroutine Add_MosaicDDEP(DDEP_ECOS,DDEP_WANTED,nDD)
       endif
     enddo ! DDEP_SPECS
   enddo ! DDEP_ECOS
-endsubroutine Add_MosaicDDEP
+end subroutine Add_MosaicDDEP
 !<==========================================================================
 subroutine Add_MosaicOutput(debug_flag,i,j,convfac,DepAdv2Calc,fluxfrac,&
                 Deploss)
@@ -410,7 +410,7 @@ subroutine Add_MosaicOutput(debug_flag,i,j,convfac,DepAdv2Calc,fluxfrac,&
         enddo ! n
       case default
         call CheckStop(dtxt//" unknown DDEP Specie/Group")
-      endselect
+      end select
 
       if(DEBUG%MOSAICS.and.Fflux<0.0) then
         write(*,"(a,3i4,a)") dtxt//"DDEP Fflux CATASTR ", imc, f2d, iEco, &
@@ -489,7 +489,7 @@ subroutine Add_MosaicOutput(debug_flag,i,j,convfac,DepAdv2Calc,fluxfrac,&
      !  else
      !    output = 1.0/Gns
      !  endif
-      endselect ! subclass
+      end select ! subclass
 
       if(dbg) write(*,"(2i4,f9.3)") cdep, iLC, output
 
@@ -500,7 +500,7 @@ subroutine Add_MosaicOutput(debug_flag,i,j,convfac,DepAdv2Calc,fluxfrac,&
           "subclass",MosaicOutput(imc)%subclass
         call CheckStop("OUTVEG UNDEF" // subclass )
       endif
-    endselect
+    end select
 
     if(dbg) write(*,"(a,es12.3)") dtxt//"ADDED output: "// &
        trim(MosaicOutput(imc)%name),  output
@@ -508,7 +508,7 @@ subroutine Add_MosaicOutput(debug_flag,i,j,convfac,DepAdv2Calc,fluxfrac,&
   enddo ! Mosaic
 
   my_first_call = .false.
-endsubroutine Add_MosaicOutput
+end subroutine Add_MosaicOutput
 !<==========================================================================
 function find_MosaicLC(imc) result(iLC)
 ! Searches for index in LandType array, and sets to zero if grid or EU
@@ -520,7 +520,7 @@ function find_MosaicLC(imc) result(iLC)
     case("Grid");iLC = FULL_LCGRID   ! zero
     case("EU"  );iLC = FULL_LCGRID   ! zero
     case default;iLC = find_index(MosaicOutput(imc)%txt,LandDefs(:)%code)
-  endselect
-endfunction find_MosaicLC
+  end select
+end function find_MosaicLC
 !<==========================================================================
 endmodule MosaicOutputs_ml

@@ -175,7 +175,7 @@ integer, public, parameter :: &
 type, public :: WScav
   real :: W_sca       ! Scavenging ratio/z_Sca/rho = W_sca/1.0e6
   real :: W_sub       ! same for subcloud
-endtype WScav
+end type WScav
 
 integer, public, parameter :: NWETDEP_CALC =  14 ! No. of solublity classes
 !  Note - these are for "master" or model species - they do not
@@ -303,7 +303,7 @@ subroutine Init_WetDep()
         call CheckStop(igrp,find_index(dname,chemgroups(:)%name),&
           "Inconsistent WDEP_WANTED/f_2d definition for "//trim(dname))
       endif
-    endselect
+    end select
 
     if(DEBUG%AQUEOUS.and.MasterProc)  then
       write(*,"(2a,3i5)") "WETPPP ", trim(f_2d(f2d)%name), f2d, iadv, igrp

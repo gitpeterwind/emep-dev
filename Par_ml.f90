@@ -164,7 +164,7 @@ integer :: ime, imex, imey, rest,i
       endif          
     case default
       call CheckStop('parinit: Wrong Pole_singular value')
-    endselect
+    end select
   endif
 
   select case(DOMAIN_DECOM_MODE)
@@ -191,7 +191,7 @@ integer :: ime, imex, imey, rest,i
     NPROCY=2
   case default
     call CheckStop('parinit: Unknown DOMAIN_DECOM_MODE')
-  endselect
+  end select
  call CheckStop(NPROCX*NPROCY,NPROC,'parinit: X*Y /= NPROC')
  
 ! Check if the subdomain is large enough
@@ -311,7 +311,7 @@ integer :: ime, imex, imey, rest,i
                                    & Limax must be at least min_grids")
   call CheckStop(ljmax < min_grids,"Subdomain too small!&
                                    & Ljmax must be at least min_grids")
-endsubroutine parinit
+end subroutine parinit
 
 subroutine parinit_groups(min_grids,Pole_singular)  
 !decompose first in "largesubdomains", then decompose
@@ -345,7 +345,7 @@ integer :: ime, imex, imey, rest,i
       endif          
     case default
       call CheckStop('parinit: Wrong Pole_singular value')
-    endselect
+    end select
   endif
 
 !decompose into largesubdomains
@@ -375,7 +375,7 @@ integer :: ime, imex, imey, rest,i
  !   NPROCY_IO=2
  ! case default
  !   call CheckStop('parinit: Unknown DOMAIN_DECOM_MODE')
- ! endselect
+ ! end select
  call CheckStop(NPROCX_IO*NPROCY_IO,NPROC_IO,'parinit: X*Y/=NPROC_IO')
  
  if(me_MPI==0)write(*,*)'large subdomain decomposition ',NPROCX_IO,'X',NPROCY_IO
@@ -417,7 +417,7 @@ integer :: ime, imex, imey, rest,i
      endif
   case default
     call CheckStop('parinit: Unknown DOMAIN_DECOM_MODE')
-  endselect
+  end select
   if(me_MPI==0)write(*,*)'each large subdomain divided into',NPROCX_SUB,'X',NPROCY_SUB,' subdomains'
   call CheckStop(NPROCX_SUB*NPROCY_SUB,NPROC_SUB,'parinit: X*Y/=NPROC_SUB')
 
@@ -598,7 +598,7 @@ integer :: ime, imex, imey, rest,i
      call CheckStop(ljmax < min_grids,"Subdomain too small!&
           & Ljmax must be at least min_grids")
   endif
-endsubroutine parinit_groups
+end subroutine parinit_groups
 
 subroutine Topology(cyclicgrid,poles)   
 ! Defines the neighbors and boundaries of (sub)domain
@@ -655,7 +655,7 @@ integer, intent(in) :: poles(2)    !  poles(1)=1 if North pole,
     endif
   endif
 
-endsubroutine topology
+end subroutine topology
 subroutine Topology_io(cyclicgrid,poles)   
 ! Defines the neighbors and boundaries of (sub)domain
 ! Boundaries are defined as having coordinates 
@@ -711,5 +711,5 @@ integer, intent(in) :: poles(2)    !  poles(1)=1 if North pole,
   endif
   write(*,*)'topology io',me_mpi,neighbor(EAST),neighbor(WEST),neighbor(SOUTH),neighbor(NORTH)
 
-endsubroutine topology_io
+end subroutine topology_io
 endmodule Par_ml

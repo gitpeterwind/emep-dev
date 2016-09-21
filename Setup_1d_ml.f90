@@ -151,9 +151,9 @@ contains
           if( MasterProc ) write(*,*) dtxt//"is_BCc check ", iBCc
           do ipm = 1, size( PM10_GROUP )
               ispec = PM10_GROUP(ipm)
-              is_BC(ipm)  = ( find_index( ispec, chemgroups(iBCf)%ptr ) >0 )
+              is_BC(ipm)  = ( find_index( ispec, chemgroups(iBCf)%specs ) >0 )
               if( iBCc > 0 ) then ! have coarse BC too
-                 if( find_index( ispec, chemgroups(iBCc)%ptr ) >0) &
+                 if( find_index( ispec, chemgroups(iBCc)%specs ) >0) &
                     is_BC(ipm)  = .true.
               end if
               if( MasterProc) write(*,*) dtxt//"is_BC ",species(ispec)%name, is_BC(ipm)
@@ -617,7 +617,7 @@ subroutine setup_rcemis(i,j)
 !ESX     rc_Rnwater(KMAX_MID) = water_fraction(i,j)  / &
 !ESX            ((z_bnd(i,j,KMAX_BND-1) - z_bnd(i,j,KMAX_BND))*100.)
 
-endsubroutine setup_rcemis
+end subroutine setup_rcemis
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 subroutine reset_3d(i,j)
   integer, intent(in) :: i,j
@@ -683,7 +683,7 @@ end if
 !!XNCOL
 
 
-endsubroutine reset_3d
+end subroutine reset_3d
 !---------------------------------------------------------------------------
 endmodule Setup_1d_ml
 !_____________________________________________________________________________!

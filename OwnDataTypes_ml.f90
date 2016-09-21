@@ -60,7 +60,7 @@ end type typ_ss
   !/ HI: generic group for name and two pointers to integer arrays
   type, public :: typ_maps
     character(len=TXTLEN_SHORT) :: name ! e.g. POD1_IAM_DF
-    integer, dimension(:), pointer :: species ! like ptr in typ_sp
+    integer, dimension(:), pointer :: species ! like specs in typ_sp
     integer, dimension(:), pointer :: maps ! other species to map this
                                            !  one to
   end type typ_maps
@@ -188,6 +188,6 @@ subroutine print_Deriv_type(w)
   write(*,"(a,es10.3)") "scale  :", w%scale
   write(*,*)            "dt_scale:", w%dt_scale
   write(*,*)            "avg    :", w%avg
-endsubroutine print_Deriv_type
+end subroutine print_Deriv_type
 !=========================================================================
 endmodule OwnDataTypes_ml

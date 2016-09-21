@@ -1410,7 +1410,7 @@ contains
     first_call=.false.
     return
 
-  endsubroutine Meteoread
+  end subroutine Meteoread
 !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -3145,7 +3145,7 @@ subroutine check(status)
   integer, intent (in) :: status
   call CheckStop(status,nf90_noerr,"Error in Met_ml/NetCDF: "//&
      trim(call_msg)//" "//trim(nf90_strerror(status)))
-endsubroutine check
+end subroutine check
 
 subroutine Check_Meteo_Date
   !On first call, check that dates from meteo file correspond to dates requested. 
@@ -3265,7 +3265,7 @@ subroutine Check_Meteo_Date
      met(ix_irainnc)%read_meteo = found_wrf_bucket
      met(ix_irainnc)%needed     = found_wrf_bucket
   endif
-endsubroutine Check_Meteo_Date
+end subroutine Check_Meteo_Date
 
 endmodule met_ml
 ! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD

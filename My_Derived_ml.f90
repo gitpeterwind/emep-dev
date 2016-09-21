@@ -394,7 +394,7 @@ subroutine Init_My_Deriv()
       case default
          if(outdim=='3d')Is3D=.true.
          tag_name(1)= trim(outname) ! Just use raw name here
-      endselect
+      end select
        
       ! OutputConcs can redefine output param of an output that is wanted by default
       if(Is3D)then
@@ -414,7 +414,7 @@ subroutine Init_My_Deriv()
         case(SHL  ) ;n1=find_index(outname,species(:)%name)
         case(GROUP) ;n1=find_index(outname,chemgroups(:)%name)
         case default;n1=-1
-      endselect
+      end select
 
       if(n1<1) then
         if( debug0 ) write(*,*) "Xd-2d-SKIP ", n, trim(outname)
@@ -445,7 +445,7 @@ subroutine Init_My_Deriv()
         call PrintLog("WARNING: Unsupported My_Derived OutputField%outdim: "&
             //trim(outclass)//":"//trim(outname)//":"//trim(outdim), MasterProc)
         cycle
-      endselect
+      end select
     else
       call CheckStop("My_Deriv: Unsupported OutputConcs" // &
           trim(outname)//":"//trim(outtyp)//":"//trim(outdim))
@@ -473,7 +473,7 @@ subroutine Init_My_Deriv()
     call WriteArray(wanted_deriv2d,mynum_deriv2d," Required 2D output ")
     call WriteArray(wanted_deriv3d,mynum_deriv3d," Required 3D output ")
   endif
-endsubroutine Init_My_Deriv
+end subroutine Init_My_Deriv
 !=========================================================================
 subroutine My_DerivFunc( e_2d, class )!  , density )
 
@@ -503,7 +503,7 @@ subroutine My_DerivFunc( e_2d, class )!  , density )
         write(*,*) "My_Deriv:WARNING - REQUEST FOR UNDEFINED OUTPUT:", n, class
           num_warnings = num_warnings + 1
       endif
-    endselect
-endsubroutine My_DerivFunc
+    end select
+end subroutine My_DerivFunc
 !=========================================================================
 endmodule My_Derived_ml

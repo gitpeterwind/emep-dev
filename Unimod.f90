@@ -246,7 +246,7 @@ program myeul
       case(3:5)   ;newseason = 2
       case(6:8)   ;newseason = 3
       case(9:11)  ;newseason = 4
-    endselect
+    end select
 
     ! daynumber needed for BCs
     daynumber=day_of_year(yyyy,mm,dd)

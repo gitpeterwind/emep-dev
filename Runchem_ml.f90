@@ -231,7 +231,7 @@ subroutine runchem()
   enddo ! i
   first_tstep = .false.   ! end of first call  over all i,j
 
-endsubroutine runchem
+end subroutine runchem
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 subroutine check_negs(i,j,txt)
   integer, intent(in) :: i,j

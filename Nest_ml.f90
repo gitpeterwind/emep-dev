@@ -219,7 +219,7 @@ subroutine Config_Nest()
        (date2string("YYYY-MM-DD hh:mm:ss",outdate(i)),i=1,FORECAST_NDUMP)
   endif
   first_call=.false.
-endsubroutine Config_Nest
+end subroutine Config_Nest
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
 subroutine readxn(indate)
   type(date), intent(in) :: indate           ! Gives year..seconds
@@ -258,7 +258,7 @@ subroutine readxn(indate)
   case default
    !if(MasterProc) print *,'call to READXN',indate%hour,indate%seconds
     if(mod(indate%hour,NHOURREAD)/=0.or.indate%seconds/=0)return
-  endselect
+  end select
   ! never comes to this point if MODE=100, 11 or 12
 
   if(DEBUG_NEST.and.MasterProc) write(*,*) 'Nest: kt', kt, first_call
@@ -345,7 +345,7 @@ subroutine readxn(indate)
 
   call CheckStop(EXTERNAL_BIC_NAME=="RCA",&
     "WORK NEEDED: RCA BICs commented out in Nest_ml - not consistent with all chem schemes")
-endsubroutine readxn
+end subroutine readxn
 
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
 subroutine wrtxn(indate,WriteNow)
@@ -385,7 +385,7 @@ subroutine wrtxn(indate,WriteNow)
       date2string(" Forecast nest/dump at YYYY-MM-DD hh:mm:ss",indate)
   case default
     if(mod(indate%hour,NHOURSAVE)/=0.or.indate%seconds/=0)return
-  endselect
+  end select
 
   iotyp=IOU_INST
   ndim=3 !3-dimensional
@@ -419,8 +419,8 @@ subroutine wrtxn(indate,WriteNow)
         if(WRITE_GRP(n)=="")cycle
         i=find_index(WRITE_GRP(n),chemgroups(:)%name)
         if(i>0)then
-          where(chemgroups(i)%ptr>NSPEC_SHL) &
-            adv_ic(chemgroups(i)%ptr-NSPEC_SHL)%wanted=.true.
+          where(chemgroups(i)%specs>NSPEC_SHL) &
+            adv_ic(chemgroups(i)%specs-NSPEC_SHL)%wanted=.true.
         elseif(MasterProc)then
           write(*,"(A,':',/2(2X,A,1X,'''',A,'''',1X,A,'.'))")&
            "Warning (wrtxn)", &
@@ -444,8 +444,8 @@ subroutine wrtxn(indate,WriteNow)
       ! POLLEN group members are written to pollen restart/dump file
       call pollen_check(igrp=i)
       if(i>0)then
-        where(chemgroups(i)%ptr>NSPEC_SHL) &
-          adv_ic(chemgroups(i)%ptr-NSPEC_SHL)%wanted=.false.
+        where(chemgroups(i)%specs>NSPEC_SHL) &
+          adv_ic(chemgroups(i)%specs-NSPEC_SHL)%wanted=.false.
         if((DEBUG_NEST.or.DEBUG_ICBC).and.MasterProc)&
           write(*,"(A,':',/2(2X,A,1X,'''',A,'''',1X,A,'.'))")&
            "Warning (wrtxn)", &
@@ -500,7 +500,7 @@ subroutine wrtxn(indate,WriteNow)
   enddo
   if(MasterProc)call check(nf90_close(ncFileID))
   deallocate(data)
-endsubroutine wrtxn
+end subroutine wrtxn
 
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
 subroutine init_icbc(idate,cdate,ndays,nsecs)
@@ -608,8 +608,8 @@ function find_icbc(filename_read,varname) result(found)
     endif
   endif
   CALL MPI_BCAST(found,size(found),MPI_LOGICAL,0,MPI_COMM_CALC,IERROR)
-endfunction find_icbc
-endsubroutine init_icbc
+end function find_icbc
+end subroutine init_icbc
 
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
 subroutine init_nest(ndays_indate,filename_read,native_grid,IIij,JJij,Weight,&
@@ -676,7 +676,7 @@ subroutine init_nest(ndays_indate,filename_read,native_grid,IIij,JJij,Weight,&
         trim(iDName)//" as i-dimension on "//trim(projection)//" projection")
       call CheckStop("j",jDName,"Nest: unsuported "//&
         trim(jDName)//" as j-dimension on "//trim(projection)//" projection")
-    endselect
+    end select
 
     N_ext=0
     status = nf90_inq_dimid(ncFileID,"time",timeDimID)
@@ -972,8 +972,8 @@ function get_dimLen(dimName,id,name) result(len)
   call CheckStop(status,nf90_noerr,'Nest: '//&
     trim(dimName(1))//'-dimension not found: '//&
     trim(filename_read)//'. Include new name in init_nest')
-endfunction get_dimLen
-endsubroutine init_nest
+end function get_dimLen
+end subroutine init_nest
 
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
 subroutine read_newdata_LATERAL(ndays_indate)
@@ -1234,15 +1234,15 @@ subroutine read_newdata_LATERAL(ndays_indate)
     wsum=dot_product(Weight(:,i,j),[&
       data(IIij(1,i,j),JJij(1,i,j),k),data(IIij(2,i,j),JJij(2,i,j),k),&
       data(IIij(3,i,j),JJij(3,i,j),k),data(IIij(4,i,j),JJij(4,i,j),k)])
-  endfunction WeightData
+  end function WeightData
   subroutine store_old_bc !store the old values in 1
     if(allocated(xn_adv_bndw)) xn_adv_bndw(:,:,:,1)=xn_adv_bndw(:,:,:,2)
     if(allocated(xn_adv_bnde)) xn_adv_bnde(:,:,:,1)=xn_adv_bnde(:,:,:,2)
     if(allocated(xn_adv_bnds)) xn_adv_bnds(:,:,:,1)=xn_adv_bnds(:,:,:,2)
     if(allocated(xn_adv_bndn)) xn_adv_bndn(:,:,:,1)=xn_adv_bndn(:,:,:,2)
     if(allocated(xn_adv_bndt)) xn_adv_bndt(:,:,:,1)=xn_adv_bndt(:,:,:,2)
-  endsubroutine store_old_bc
-endsubroutine read_newdata_LATERAL
+  end subroutine store_old_bc
+end subroutine read_newdata_LATERAL
 
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
 subroutine reset_3D(ndays_indate)
@@ -1373,8 +1373,8 @@ subroutine reset_3D(ndays_indate)
     wsum=dot_product(Weight(:,i,j),[&
       data(IIij(1,i,j),JJij(1,i,j),k),data(IIij(2,i,j),JJij(2,i,j),k),&
       data(IIij(3,i,j),JJij(3,i,j),k),data(IIij(4,i,j),JJij(4,i,j),k)])
-  endfunction WeightData
-endsubroutine reset_3D
+  end function WeightData
+end subroutine reset_3D
 
 endmodule Nest_ml
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!

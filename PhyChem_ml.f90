@@ -285,7 +285,7 @@ subroutine phyche()
   call Add_2timing(35,tim_after,tim_before,"phyche:outs")
 
   first_call=.false.
-endsubroutine phyche
+end subroutine phyche
 !--------------------------------------------------------------------------
 subroutine debug_concs(txt)
   character(len=*), intent(in) :: txt
@@ -317,6 +317,6 @@ subroutine debug_concs(txt)
       trim(txt), me, current_date%hour, current_date%seconds, nstep,&
       trim(species(ispec)%name), c1, c2, unit
   endif
-endsubroutine debug_concs
+end subroutine debug_concs
 !--------------------------------------------------------------------------
 endmodule PhyChem_ml

@@ -1402,8 +1402,8 @@ subroutine lb2ij_real(gl2,gb2,xr2,yr2,fi2,an2,xp2,yp2)
 
     yr2=yr2+(dist*dist+dist3*dist3-dist2*dist2)/(2*dist3*dist3)
 
-  endselect
-endsubroutine lb2ij_real
+  end select
+end subroutine lb2ij_real
 subroutine lb2ij_int(gl2,gb2,ix,iy)
   real, intent(in)    :: gl2,gb2
   integer, intent(out):: ix,iy
@@ -1413,7 +1413,7 @@ subroutine lb2ij_int(gl2,gb2,ix,iy)
   call lb2ij_real(gl2,gb2,x,y)
   ix=nint(x+1.0E-7)
   iy=nint(y+1.0E-7)
-endsubroutine lb2ij_int 
+end subroutine lb2ij_int 
 
   subroutine ij2lbm(imax,jmax,glon,glat,fi,an,xp,yp)
     !-------------------------------------------------------------------! 
@@ -1634,7 +1634,7 @@ endsubroutine lb2ij_int
           write(*,*)"WARNING: ",trim(errmsg)
        endif
     endif
-  endsubroutine range_check
+  end subroutine range_check
   subroutine coord_check(msg,lon,lat,fix)
     !-------------------------------------------------------------------!
     ! lon/lat range check. 
@@ -1651,7 +1651,7 @@ endsubroutine lb2ij_int
        lon=modulo(lon+180.0,360.0)-180.0 ! lon/gl_stagg range -180 .. 180
        call range_check(trim(msg)//" lon",lon,(/-180.0,180.0/),fatal=.true.)
     endif
-  endsubroutine coord_check
+  end subroutine coord_check
   function coord_in_domain(domain,lon,lat,iloc,jloc,iglob,jglob) result(in)
     !-------------------------------------------------------------------!
     ! Is coord (lon/lat) is inside global domain|local domain|grid cell?
@@ -1683,8 +1683,8 @@ endsubroutine lb2ij_int
        if(in) in=(i==iloc).and.(j==jloc)
     case default
        call CheckStop("Unsupporter coord_in_"//trim(domain))
-    endselect
-  endfunction coord_in_domain
+    end select
+  end function coord_in_domain
   function coord_in_processor(lon,lat,iloc,jloc,iglob,jglob) result(in)
     !-------------------------------------------------------------------!
     ! Is coord (lon/lat) is inside local domain?
@@ -1693,7 +1693,7 @@ endsubroutine lb2ij_int
     integer, intent(out),optional:: iloc,jloc,iglob,jglob
     logical :: in
     in=coord_in_domain("processor",lon,lat,iloc,jloc,iglob,jglob)
-  endfunction coord_in_processor
+  end function coord_in_processor
   function coord_in_gridbox(lon,lat,iloc,jloc,iglob,jglob) result(in)
     !-------------------------------------------------------------------!
     ! Is coord (lon/lat) is inside gridbox(iloc,jloc)?
@@ -1703,7 +1703,7 @@ endsubroutine lb2ij_int
     integer, intent(out),optional:: iglob,jglob
     logical :: in
     in=coord_in_domain("gridbox",lon,lat,iloc,jloc,iglob,jglob)
-  endfunction coord_in_gridbox
+  end function coord_in_gridbox
 
   subroutine Alloc_GridFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND)
 
@@ -1900,6 +1900,6 @@ subroutine RestrictDomain(DOMAIN)
     write(*,"(A,'=[',I0,3(',',I0),']')")'Inconsistent DOMAIN',DOMAIN
     call CheckStop('Inconsistent DOMAIN')
   endif
-endsubroutine RestrictDomain
+end subroutine RestrictDomain
 endmodule GridValues_ml
 !==============================================================================

@@ -257,7 +257,7 @@ module MetFields_ml
      real, pointer, dimension(:,:,:)::field_shared
      logical, pointer :: ready ! The field must be present in the external meteo file
      logical, pointer :: copied ! The field must be present in the external meteo file
-  endtype metfield
+  end type metfield
   logical, public,save, target::ready=.false.,copied=.false.
 
   integer, public, parameter   :: NmetfieldsMax=100 !maxnumber of metfields

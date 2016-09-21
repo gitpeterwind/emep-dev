@@ -29,6 +29,6 @@ program tester
 !     call testDefPhotolysis()
     case("SmallUtils_ml","SmallUtils_ml.f90")
       call testSmallUtils()
-    endselect
+    end select
   enddo
 endprogram tester

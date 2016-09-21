@@ -81,7 +81,7 @@ type :: bbtype
   real :: unitsfac
   real :: frac
   integer :: emep
-endtype bbtype
+end type bbtype
 
 ! Here we include the relevant mapping file, which depends on
 ! the source of ffire data and the chemical mechanism (CM)
@@ -134,7 +134,7 @@ subroutine Config_Fire()
     case("FINN");persistence=1  ! 1-day records
     case("GFAS");persistence=3  ! 1-day records, valid for 3 day in FORECAST mode
     case default;call CheckStop("Unknown B.B.Mapping")
-  endselect
+  end select
 
   rewind(IO_NML)
   read(IO_NML,NML=Fire_config,iostat=ios)
@@ -174,7 +174,7 @@ subroutine Config_Fire()
   call CheckStop(any(emep_used<1),"UNSET FFIRE EMEP "//BiomassBurningMapping)
 
   first_call=.false.
-endsubroutine Config_Fire
+end subroutine Config_Fire
 
 subroutine Fire_Emis(daynumber)
 !.....................................................................
@@ -228,7 +228,7 @@ subroutine Fire_Emis(daynumber)
     dn2=day_of_year(yyyy,12,31)
   case default
     call CheckStop("Unknown ForestFire MODE="//trim(MODE))
-  endselect
+  end select
   if(dn1<dn2)then
     allocate(xrdemis(LIMAX,LJMAX),stat=alloc_err)
     nstart=daynumber    ! for debug info
@@ -325,7 +325,7 @@ subroutine Fire_Emis(daynumber)
       fac=FF_defs(iBB)%unitsfac * FF_defs(iBB)%frac
       if(ndn>1) fac=fac/ndn                         ! total-->avg.
       if(fac/=1.0) forall(j=1:ljmax,i=1:limax) rdemis(i,j)=rdemis(i,j)*fac
-    endselect
+    end select
 
    ! Assign . units should be [kg/m2/s] here 
     forall(j=1:ljmax,i=1:limax) &
@@ -396,7 +396,7 @@ function newFFrecord(ymd) result(new)
     case("GFED");fname=date2file(GFED_PATTERN,ymd,persistence-1,"days")
     case("FINN");fname=date2file(FINN_PATTERN,ymd,persistence-1,"days")
     case("GFAS");fname=date2file(GFAS_PATTERN,ymd,persistence-1,"days")
-  endselect
+  end select
   if(fname/=file_old)then
     if(DEBUG%FORESTFIRE.and.MasterProc) &
       write(*,*)"ForestFire new file: ",trim(fname)
@@ -459,8 +459,8 @@ function newFFrecord(ymd) result(new)
     poll_old=FF_poll
     record_old=nstart
   endif
-endfunction newFFrecord
-endsubroutine Fire_Emis
+end function newFFrecord
+end subroutine Fire_Emis
 
 !=============================================================================
 
@@ -535,7 +535,7 @@ subroutine Fire_rcemis(i,j)
 
   enddo ! n
  !       call Export_FireNc() ! Caused problems on last attempt
-endsubroutine Fire_rcemis
+end subroutine Fire_rcemis
 !=============================================================================
 subroutine Export_FireNc()
   type(Deriv) :: def1 ! definition of fields
@@ -551,7 +551,7 @@ subroutine Export_FireNc()
 
   call Out_netCDF(IOU_INST,def1,2,1, BiomassBurningEmis(ieCO,:,:),1.0,&
                   CDFtype=Real4,fileName_given='FF.nc')
-endsubroutine Export_FireNc
+end subroutine Export_FireNc
 
 endmodule ForestFire_ml
 !=============================================================================
