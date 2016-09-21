@@ -155,7 +155,7 @@ changes here (and when committing svn), and Dave will tag as required
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-21st Sep 2016, Dave , 3284-8
+21st Sep 2016, Dave , 3284-90
 
 Some renaming (essentially all modules, and GenChem.pl):
 
@@ -166,6 +166,8 @@ Some renaming (essentially all modules, and GenChem.pl):
   enddo -> end do
 
   chemgroups % ptr -> chemgroups % specs
+
+  Some changes in ZD_ but not completed
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 13th Sept 2016 Alvaro, 3283
