@@ -52,11 +52,6 @@ end type depmap
     character(len=TXTLEN_SHORT) :: txt2='-' ! e.g. POD1_IAM_DF
   end type typ_ss
 
-!/ generic group for two (short) strings
-type, public :: typ_ss
-  character(len=TXTLEN_SHORT) :: txt1,txt2 ! e.g. POD1_IAM_DF
-end type typ_ss
-
   !/ HI: generic group for name and two pointers to integer arrays
   type, public :: typ_maps
     character(len=TXTLEN_SHORT) :: name ! e.g. POD1_IAM_DF
