@@ -1329,7 +1329,7 @@ sub print_groups {
                 ."  ${g}_GROUP = (/ $outline /)\n\n";
     $ngroups ++;
     $groupsub .="  chemgroups($ngroups)%name=\"$g\"\n"
-               ."  chemgroups($ngroups)%ptr=>${g}_GROUP\n\n";
+               ."  chemgroups($ngroups)%specs=>${g}_GROUP\n\n";
   }
 
   print GROUPS "\n! ------- RO2 Pool     species ------------------\n";
