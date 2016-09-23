@@ -3,6 +3,7 @@ module Gravset_ml
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 ! Testing for ash gravitational settling
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+use CheckStop_ml,         only: CheckStop
 use Chemfields_ml,        only: xn_adv
 use ChemChemicals_ml,     only: species,species_adv
 use ChemSpecs_adv_ml
@@ -12,7 +13,6 @@ use DryDep_ml,            only: DDepMap
 use GridValues_ml,        only: A_mid,B_mid,A_bnd,B_bnd
 use MetFields_ml,         only: roa,th,ps
 use ModelConstants_ml,    only: KMAX_MID,KMAX_BND,dt_advec
-!use OwnDataTypes_ml,      only: depmap
 use Par_ml,               only: MAXLIMAX,MAXLJMAX,limax,ljmax,me,li0,li1,lj0,lj1
 use PhysicalConstants_ml, only: GRAV
 use SmallUtils_ml,        only: find_index
@@ -86,41 +86,40 @@ subroutine gravset()
   end if !first_call
 
   do j = lj0,lj1
-     do i = li0,li1
-        do k = 1,KMAX_MID
+    do i = li0,li1
+      do k = 1,KMAX_MID
+        ! dynamic viscosity of air after Prup.Klett in [Pa s]
+        tempc = th(i,j,k,1) - 273.15
+        if (tempc >= 0.0 ) then
+          zvis(k) = (1.718 + 0.0049*tempc)*1.E-5
+        else
+          zvis(k) = (1.718 + 0.0049*tempc - 1.2E-05*(tempc**2))*1.E-5
+        end if
 
-           ! dynamic viscosity of air after Prup.Klett in [Pa s]
-           tempc = th(i,j,k,1) - 273.15
-           if (tempc >= 0.0 ) then
-              zvis(k) = (1.718 + 0.0049*tempc)*1.E-5
-           else
-              zvis(k) = (1.718 + 0.0049*tempc - 1.2E-05*(tempc**2))*1.E-5
-           endif
+        ! mean free path of air (Prupp. Klett) in [10^-6 m]
+        p_mid(k) = A_mid(k)+B_mid(k)*ps(i,j,1)
+        zlair(k) = 0.066 *(1.01325E+5/p_mid(k))*(th(i,j,k,1)/293.15)*1.E-06
 
-           ! mean free path of air (Prupp. Klett) in [10^-6 m]
-           p_mid(k) = A_mid(k)+B_mid(k)*ps(i,j,1)
-           zlair(k) = 0.066 *(1.01325E+5/p_mid(k))*(th(i,j,k,1)/293.15)*1.E-06
+        ! air mass auxiliary  variable --> zdp1 [kg/(m^2 *s)]
+        p_full(k) = A_bnd(k)+B_bnd(k)*ps(i,j,1)
+      end do
+      p_full(KMAX_BND) = A_bnd(KMAX_BND)+B_bnd(KMAX_BND)*ps(i,j,1)
 
-           ! air mass auxiliary  variable --> zdp1 [kg/(m^2 *s)]
-           p_full(k) = A_bnd(k)+B_bnd(k)*ps(i,j,1)
-        end do
-        p_full(KMAX_BND) = A_bnd(KMAX_BND)+B_bnd(KMAX_BND)*ps(i,j,1)
+      do k = 1,KMAX_MID
+        zdp1(k)=(p_full(k+1) - p_full(k))/(GRAV*dt_advec) ! do outside of k-loop????
+      end do
 
-        do k = 1,KMAX_MID
-          zdp1(k)=(p_full(k+1) - p_full(k))/(GRAV*dt_advec) ! do outside of k-loop????
-        end do
-
-        do b = 1,bins
-          do k = 1,KMAX_MID-1
-            knut = 2*zlair(k)/grav_sed(b)%diameter
-            ztemp = 2.*((grav_sed(b)%diameter/2)**2)*(density-roa(i,j,k,1))*GRAV/ &! roa [kg m-3]
-                    (9.*zvis(k))![m/s]
+      do b = 1,bins
+        do k = 1,KMAX_MID-1
+          knut = 2*zlair(k)/grav_sed(b)%diameter
+          ztemp = 2.*((grav_sed(b)%diameter/2)**2)*(density-roa(i,j,k,1))*GRAV/ &! roa [kg m-3]
+                  (9.*zvis(k))![m/s]
           ! with Cunningham slip-flow correction
-            vt = ztemp*slinnfac*     &
-                (1.+ 1.257*knut+0.4*knut*EXP(-1.1/(knut))) ![m/s]
-            Re = grav_sed(b)%diameter*vt/(zvis(k)/roa(i,j,k,1))
-            vt_old = vt
-            vt = vt/wil_hua
+          vt = ztemp*slinnfac*     &
+              (1.+ 1.257*knut+0.4*knut*EXP(-1.1/(knut))) ![m/s]
+          Re = grav_sed(b)%diameter*vt/(zvis(k)/roa(i,j,k,1))
+          vt_old = vt
+          vt = vt/wil_hua
 
             num_sed(b,i,j,k)= vt
           ! calculation of sedimentation flux zflux[kg/(m^2 s)]=zsedl*zdp1
@@ -130,22 +129,21 @@ subroutine gravset()
           ! due to sedimentation from the box
           ! unit of zdp1 kg of air m-2 s-1
 
-            ztempx = min(1.0,vt*roa(i,j,k,1)/zdp1(k)) ! 1, loss is limited to content of box
-            zsedl = ztempx*xn_adv(grav_sed(b)%spec,i,j,k)        ! kg kg-1, loss in terms of mixing ratio ! blir likt uavhengig av vt
-            zflux(k) = zsedl*zdp1(k)                     ! --> [kg m-2 s-1]
+          ztempx = min(1.0,vt*roa(i,j,k,1)/zdp1(k)) ! 1, loss is limited to content of box
+          zsedl = ztempx*xn_adv(grav_sed(b)%spec,i,j,k)        ! kg kg-1, loss in terms of mixing ratio ! blir likt uavhengig av vt
+          zflux(k) = zsedl*zdp1(k)                     ! --> [kg m-2 s-1]
 
           ! loss of mass in layer
-            xn_adv(grav_sed(b)%spec,i,j,k) = xn_adv(grav_sed(b)%spec,i,j,k) - zsedl !  kg kg-1
-          end do
+          xn_adv(grav_sed(b)%spec,i,j,k) = xn_adv(grav_sed(b)%spec,i,j,k) - zsedl !  kg kg-1
+        end do
 
-          ! teste å gjøre det i en ny k-loop så det ikke blir så effektivt
+        ! teste å gjøre det i en ny k-loop så det ikke blir så effektivt
 
-          do  k = 1,KMAX_MID-1
-            ! "arrival" of sedimented mass in box below
-            if (k <KMAX_MID) then
-              xn_adv(grav_sed(b)%spec,i,j,k+1) =  xn_adv(grav_sed(b)%spec,i,j,k+1) +  zflux(k)/zdp1(k+1)
-            end if
-          end do
+        do  k = 1,KMAX_MID-1
+          ! "arrival" of sedimented mass in box below
+          if (k <KMAX_MID) then
+            xn_adv(grav_sed(b)%spec,i,j,k+1) =  xn_adv(grav_sed(b)%spec,i,j,k+1) +  zflux(k)/zdp1(k+1)
+          end if
         end do
       end do
     end do
