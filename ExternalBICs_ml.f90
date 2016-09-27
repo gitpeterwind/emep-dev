@@ -84,7 +84,7 @@ subroutine Config_ExternalBICs()
   if(DEBUG.and.MasterProc)then
     write(*,*) "NAMELIST IS "
     write(*,NML=ExternalBICs_config)
-  endif
+  end if
 end subroutine Config_ExternalBICs
 
 subroutine set_extbic_id(idate)
@@ -112,7 +112,7 @@ subroutine set_extbic_id(idate)
     call PrintLog("No external BICs set",MasterProc)
     first_call = .false.
     return
-  endif
+  end if
 
 !--- Set BC type from idate: on first call only
   if(EXTERNAL_BIC_SET) return
@@ -163,13 +163,13 @@ subroutine set_extbic_id(idate)
     if(EXTERNAL_BIC_SET)then
       EXTERNAL_BC=>map_bc(1:description%mapsize)
       exit READ_NML
-    endif
-  enddo READ_NML
+    end if
+  end do READ_NML
   if(.not.EXTERNAL_BIC_SET)then
     call PrintLog("No external BICs found",MasterProc)
     USE_EXTERNAL_BIC=.false.
     return
-  endif
+  end if
   if(DEBUG.and.MasterProc) write(*,DEBUG_FMT) "set_extbic", &
     date2string("BCs for YYYY-MM-DD hh type",idate),&
     trim(EXTERNAL_BIC_NAME)//"/"//trim(EXTERNAL_BIC_VERSION)
@@ -180,8 +180,8 @@ subroutine set_extbic_id(idate)
       EXTERNAL_BC(n)%wanted=.false.
       if(MasterProc) write(*,DEBUG_FMT) "set_extbic","unknow variable",&
         trim(EXTERNAL_BC(n)%spcname)
-    endif
-  enddo
+    end if
+  end do
 
   if(MasterProc) &
     call PrintLog("External BICs set for "//EXTERNAL_BIC_NAME)

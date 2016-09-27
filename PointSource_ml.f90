@@ -126,7 +126,7 @@ subroutine readstacks(io)
     fname = "PointSources.txt" !TEST
     call open_file(io,"r",fname,needed=.true.)
     call CheckStop(ios,"open_file error on " // fname )
-  endif
+  end if
 
   ! First, we read file to get number and list of country codes
   n = 0
@@ -155,8 +155,8 @@ subroutine readstacks(io)
           ispec_emis(nemis_found) = ispec
           icol_emis(nemis_found)  = emcol
           if(MasterProc) print *, "STACKem ", nemis_found, iemis, species(ispec)%name
-        endif
-      enddo
+        end if
+      end do
       cycle
     else
 
@@ -165,7 +165,7 @@ subroutine readstacks(io)
          lat, long, Ts, diam, Vs, ( emis(nn), nn=1,nemis_cols )
       if(MasterProc) print *, "STACK n HERE  ", n, ns, trim(txtcode),  lat, long
 
-    endif
+    end if
 
     n  = n + 1     ! number, this emis file
     ns = ns + 1    ! number, all emis files
@@ -204,7 +204,7 @@ subroutine readstacks(io)
       ncol = icol_emis(nn)
       stack(ns)%emis(nn) = emis(ncol)
       if( MasterProc ) print *, "STACK SETS ", ns,  nn, ncol, emis(ncol)
-    enddo
+    end do
 
     if(debug_flag ) write(*,"(a,i5,es10.3)") " StacksEmis ", &
       ispec_emis(1), ispec_emis(2)    !DS iemist, emisa1
@@ -214,7 +214,7 @@ subroutine readstacks(io)
        me, i, j,iloc,jloc, lat, long,  hs, dh4, he, stack(ns)%flow
 
       !if ( he > he_max) he_max = he
-  enddo 
+  end do 
   nstacks = ns
   if(debug_flag) write(*,*) "Stacks Read. Done"
 
@@ -225,8 +225,8 @@ subroutine readstacks(io)
 !   if ( layer_z(k) > he_max  )  then
 !      Stacks%kup    = k
 !      exit
-!   endif
-! enddo
+!   end if
+! end do
 end subroutine readstacks
 !----------------------------------------------------------------------------
 subroutine get_pointsources(i,j, debug_flag)
@@ -262,7 +262,7 @@ subroutine get_pointsources(i,j, debug_flag)
         write(*,"(a,i3,f10.4,2f10.4,a,2f10.3,es10.2)") &
         "Plume_ASME: stack he dh",n,he,dh, dtdz, &
         "Tpot?",  Grid%theta_ref, Ta, pp(KMAX_MID)
-      endif
+      end if
 
     case("NILU")
       ObukhovL = 1.0e4  ! safety
@@ -278,7 +278,7 @@ subroutine get_pointsources(i,j, debug_flag)
         if (n==1) write(*,"(a,i3,f10.4,f10.4)") "Plume_NILU: stack he dh",  &
                n,he,he - Stack(n)%hs
        !if (n==1) write(*,*) i,j,GridArea_m2(i,j)
-      endif        
+      end if        
 
     case("PVDI")
       ! Mh: Emitted heat flux in MW, VDI(1985)       
@@ -323,13 +323,13 @@ subroutine get_pointsources(i,j, debug_flag)
        if(mydebug) write(*,"(a20,i3,f7.3,3es10.3)") &
          " StacksEmisRC "//trim(species(ispec)%name),   &
          k, fraction_per_layer(kk), emiss, rcemis(ispec,k)
-      enddo !kk
-    enddo ! iemis 
+      end do !kk
+    end do ! iemis 
 
     if(mydebug ) write(*,"(a,es10.3,es10.3,a,2es10.3)") " StacksEmisConv ",   &
       uconv,GridArea_m2(i,j),trim(species(ispec)%name),species(ispec)%molwt,emiss
 
-   enddo
+   end do
    myfirstcall = .false.
 end subroutine get_pointsources
 !----------------------------------------------------------------------------
@@ -352,14 +352,14 @@ subroutine spread_plume( h, w, layer_z, fraction_per_layer,Nz)
 
   do i=2,Nz-1
     fraction_per_layer(i)=gauss_integral(layer_z(i-1),layer_z(i),h,w)
-  enddo
+  end do
   fraction_per_layer(Nz)=gauss_integral(layer_z(Nz-1),large,h,w)
 
   !normalize (only to get last digits right)
   sum=0.0
   do i=1,Nz
     sum=sum+fraction_per_layer(i)
-  enddo
+  end do
 
   do i=1,Nz
     fraction_per_layer(i)=fraction_per_layer(i)/sum
@@ -367,8 +367,8 @@ subroutine spread_plume( h, w, layer_z, fraction_per_layer,Nz)
     if( fraction_per_layer(i) > 1.0 ) then
       print *, "FRAC WRONG ", i, h,w,Nz, fraction_per_layer(i)
       call CheckStop("FRAC WRONG in spread_plume")
-    endif
-  enddo
+    end if
+  end do
 end subroutine spread_plume
 
 !--------------------------------------------------------------------------
@@ -416,7 +416,7 @@ real function errorfunctionc(x_in) result(erfc)
     do i=1,40,1
       y=-y*x*x/i
       erfc=erfc+y*x/(2*i+1)
-    enddo
+    end do
     erfc=1.0-erfc*2/sqrt(pi)
 !   write(*,*)'result small x',x_in,erfc
   else
@@ -429,10 +429,10 @@ real function errorfunctionc(x_in) result(erfc)
       fac=-fac*i
       y=y*d2x2
       erfc=erfc+fac*y
-    enddo
+    end do
     erfc=exp(-x*x)*erfc/(x*sqrt(pi))
 !   write(*,*)'result large x',x_in,erfc
-  endif
+  end if
 end function  errorfunctionc
 
 !--------------------------------------------------------------------------
@@ -450,7 +450,7 @@ end function  errorfunctionc
 !  integer, parameter :: IONUM = 10
 !  do i=1,Nz-1
 !     layer_z(i)=50+i*50!example
-!  enddo
+!  end do
 !
 !  call readstacks(IONUM, Nz, layer_z)
 !

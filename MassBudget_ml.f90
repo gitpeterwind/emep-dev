@@ -78,9 +78,9 @@ subroutine Init_massbudget()
       do i=li0,li1
         rwork = fac*(dA(k)+dB(k)*ps(i,j,1))* xmd(i,j)
         sumini(:) = sumini(:) + xn_adv(:,i,j,k)*rwork  ! sumini in kg
-      enddo
-    enddo
-  enddo
+      end do
+    end do
+  end do
 
   CALL MPI_ALLREDUCE(MPI_IN_PLACE, sumini , NSPEC_ADV, &
     MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_CALC, IERROR)
@@ -91,8 +91,8 @@ subroutine Init_massbudget()
       wgt_fac=species_adv(n)%molwt/ATWAIR
       write(IO_LOG,"(a15,i4,4x,e10.3)") "Initial mass",n,sumini(n)*wgt_fac
       write(*,"(a15,i4,4x,e10.3)") "Initial mass",n,sumini(n)*wgt_fac
-    enddo
-  endif
+    end do
+  end if
 
  end subroutine Init_massbudget
 !----------------------------------------------------------------------------
@@ -118,8 +118,8 @@ subroutine emis_massbudget_1d(i,j)
     do iadv = 1, NSPEC_ADV
       itot = iadv + NSPEC_SHL
       totem(iadv) = totem(iadv) + rcemis( itot, k ) * scaling_k
-    enddo
-  enddo ! k loop
+    end do
+  end do ! k loop
 
 end subroutine emis_massbudget_1d
 !----------------------------------------------------------------------------
@@ -185,9 +185,9 @@ subroutine massbudget()
         if(all((/DEBUG_MASS,debug_proc,i==debug_li,j==debug_lj/)))&
           call datewrite("MASSBUD",k,(/(dA(k)*dB(k)*ps(i,j,1))*xmd(i,j)/&
           GRAV*GRIDWIDTH_M*GRIDWIDTH_M,ps(i,j,1),PT,xmd(i,j)/))
-      enddo
-    enddo
-  enddo
+      end do
+    end do
+  end do
 
   CALL MPI_ALLREDUCE(MPI_IN_PLACE, xmax, NSPEC_ADV,&
     MPI_DOUBLE_PRECISION, MPI_MAX, MPI_COMM_CALC, IERROR)
@@ -223,7 +223,7 @@ subroutine massbudget()
   amin(:) = min( amin(:), xmin(:) )
   do k = 2,KMAX_MID
     sum_mass(:) = sum_mass(:)+sumk(:,k)
-  enddo
+  end do
 
 
 !O3 flux are also printed out
@@ -248,15 +248,15 @@ subroutine massbudget()
              gtotddep(ix_o3)*species_adv(ix_o3)%molwt
      else
         write(*,*)'O3 index not found'
-     endif
-  endif
+     end if
+  end if
 
 
   do n = 1,NSPEC_ADV
     totdiv = sumini(n) + gtotem(n) + gfluxin(n)
     frac_mass(n) = sum_mass(n) + (gtotddep(n)+gtotwdep(n))*ATWAIR + gfluxout(n)
     if(totdiv>0.0) frac_mass(n) = frac_mass(n)/totdiv
-  enddo
+  end do
 
 
   if(MasterProc) then   ! printout from node 0
@@ -264,8 +264,8 @@ subroutine massbudget()
       do n=1,NSPEC_ADV
          wgt_fac=species_adv(n)%molwt/ATWAIR
         if(gtotem(n)>0.0) write(*,*)'tot. emission of '//trim(species_adv(n)%name)//' ',gtotem(n)*wgt_fac
-      enddo
-    endif
+      end do
+    end if
 
     call PrintLog('++++++++++++++++++++++++++++++++++++++++++++++++')
     do ifam = 1, 3
@@ -326,8 +326,8 @@ subroutine massbudget()
         family_ddep(ifam), family_wdep(ifam), family_em(ifam)
       call PrintLog(logtxt)
       call PrintLog('++++++++++++++++++++++++++++++++++++++++++++++++')
-    enddo  ! ifam = 1,3
-  endif
+    end do  ! ifam = 1,3
+  end if
 
   if(MasterProc) then     ! printout from node 0
 
@@ -342,8 +342,8 @@ subroutine massbudget()
             n,species_adv(n)%name, k,sumk(n,k)*wgt_fac
           write(*     ,"(' Spec ',i3,2x,a12,5x,'k= ',i2,5x,es12.5)")&
             n,species_adv(n)%name, k,sumk(n,k)*wgt_fac
-        enddo
-      enddo
+        end do
+      end do
      end if ! EXTENDED
 
     !2016 NEW: SUMMARY TABLE:
@@ -380,9 +380,9 @@ subroutine massbudget()
           gtotwdep(n)*wgt_fac*ATWAIR, sumini(n)*wgt_fac, sum_mass(n)*wgt_fac,&
           gfluxout(n)*wgt_fac, gfluxin(n)*wgt_fac, frac_mass(n)
 
-     enddo
+     end do
      close(iomb)
-  endif  ! MasterProc
+  end if  ! MasterProc
 
   if(FOUND_OCEAN_DMS)then
      !DMS emissions
@@ -407,14 +407,14 @@ subroutine massbudget()
         write(*,59)'SO2 from ocean DMS cdf file ',O_DMS%sum_year
         write(*,59)'SO2 from natso2.dat ',DMS_natso2_year
 !        write(*,59)'fraction new/old method',O_DMS%sum_year/DMS_natso2_year
-     endif
-  endif
+     end if
+  end if
   if(MasterProc)then
      if(USE_OCEAN_NH3)then
         write(*,*)'NH3 OCEAN emissions '
         write(*,59)'NH3 emisions from ocean cdf file (Gg)',O_NH3%sum_year
-     endif
-  endif
+     end if
+  end if
 end subroutine massbudget
 !--------------------------------------------------------------------------
  end module MassBudget_ml

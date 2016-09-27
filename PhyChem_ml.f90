@@ -88,8 +88,8 @@ subroutine phyche()
       ndays = day_of_year(current_date%year,current_date%month, &
            current_date%day)
       write(*,*) 'thour,ndays,nstep,dt', thour,ndays,nstep,dt_advec
-    endif
-  endif
+    end if
+  end if
 
 ! if(MasterProc) write(*,"(a15,i6,f8.3)") 'timestep nr.',nstep,thour
 
@@ -106,13 +106,13 @@ subroutine phyche()
         write(*,*) 'ANALYSIS DEBUG_DA_1STEP: only 1st assimilation step'
       call Derived(dt_advec,End_of_Day)
       return
-    endif
-  endif
+    end if
+  end if
   if(FORECAST.and.first_call)then     ! Zero hour output
     call Derived(dt_advec,End_of_Day,ONLY_IOU=IOU_HOUR) ! update D2D outputs, to avoid
     call WrtChem(ONLY_HOUR=IOU_HOUR)    ! eg PM10:=0.0 on first output
     call Add_2timing(35,tim_after,tim_before,"phyche:outs")
-  endif
+  end if
 
   call EmisSet(current_date)
   call Add_2timing(15,tim_after,tim_before,"phyche:EmisSet")
@@ -157,7 +157,7 @@ subroutine phyche()
     call advecdiff_Eta
   else
     call advecdiff_poles
-  endif
+  end if
 
 ! if(USE_GRAVSET) call gravset
 
@@ -233,7 +233,7 @@ subroutine phyche()
     current_date = make_current_date(ts_now)       
     if(MasterProc)print "(2(1X,A))",'current date and time after jump:',&
         date2string("YYYY-MM-DD hh:mm:ss",current_date)
-  endif
+  end if
 
   !====================================
   call Add_2timing(35,tim_after,tim_before,"phyche:outs")
@@ -241,7 +241,7 @@ subroutine phyche()
     call main_3dvar(status)   ! 3D-VAR Analysis for "non-Zero hours"
     call CheckStop(status,"main_3dvar in PhyChem_ml/PhyChe")
     call Add_2timing(T_3DVAR,tim_after,tim_before)
-  endif
+  end if
   call wrtxn(current_date,.false.) !Write xn_adv for future nesting
   if(FORECAST.and.USE_POLLEN) call pollen_dump()
   call Add_2timing(18,tim_after,tim_before,"nest: Write")
@@ -252,7 +252,7 @@ subroutine phyche()
     print "(a,a)",' End of EMEP-day ',date2string("(hh:mm:ss)",current_date)
     if(DEBUG%PHYCHEM)write(*,"(a20,2i4,i6)") "END_OF_EMEPDAY ", &
       END_OF_EMEPDAY, current_date%hour,current_date%seconds
-  endif
+  end if
 
   call debug_concs("PhyChe pre-Derived ")
   call Derived(dt_advec,End_of_Day)
@@ -272,7 +272,7 @@ subroutine phyche()
       modulo(current_date%hour,FREQ_HOURLY)==0) &
       call hourly_out()
 
-  endif
+  end if
 
   ! CoDep
   if(modulo(current_date%hour,1)==0) & ! every hour
@@ -304,7 +304,7 @@ subroutine debug_concs(txt)
       unit = 'ppbv'
       if(ispec<=NSPEC_SHL) unit='pptv'
       first_call = .false.
-    endif
+    end if
 
     if(ispec>NSPEC_SHL)then
       c1=xn_adv(iadv,debug_li,debug_lj,KMAX_MID)*PPBINV 
@@ -312,11 +312,11 @@ subroutine debug_concs(txt)
     else
       c1=xn_shl(ispec,debug_li,debug_lj,KMAX_MID)*PPTINV
       c2=-1.0
-    endif
+    end if
     write(*,"(a,2i3,i5,i3,a12,2g12.4,1x,a4)") "debug_concs:"// &
       trim(txt), me, current_date%hour, current_date%seconds, nstep,&
       trim(species(ispec)%name), c1, c2, unit
-  endif
+  end if
 end subroutine debug_concs
 !--------------------------------------------------------------------------
 endmodule PhyChem_ml

@@ -359,7 +359,7 @@ contains
          if(MasterProc)Write(*,*)'Inputs.Landuse not found'
          return
          call StopAll('Inputs.Landuse not found') 
-      endif
+      end if
 
 !      call printCDF('LU', landuse_in(:,:,1),'??')
 
@@ -507,7 +507,7 @@ contains
                    if(landuse_in(i,j,ilu)<-0.1)landuse_in(i,j,ilu)=landuse_tmp(i,j)
                 end do  !j
              end do  !i
-          endif
+          end if
 
          ! Some "IAM" veg species can be defined for calculations of ozone
          ! fluxes. These are assigned very small land-area, using the mask
@@ -539,7 +539,7 @@ contains
            end do IAM_VEG
           end if
           if(MasterProc) write(*,*)"LandDefs DONE ", ilu, Land_codes(ilu)
-       enddo
+       end do
        call check(nf90_close(ncFileID))!fname1
        NLand_codes=ilu
        if(MasterProc) then
@@ -552,7 +552,7 @@ contains
        if ( debug_Master )write(*,*) "LANDUSE: LC: not found "//trim(fName1)
        call CheckStop("Landuse: No landcover files")
 
-    endif !switch hardcoded/fileread lu definitions
+    end if !switch hardcoded/fileread lu definitions
 
     do i = 1, limax
        do j = 1, ljmax
@@ -563,7 +563,7 @@ contains
                      index_lu, maxlufound, landuse_codes, landuse_ncodes)
                 landuse_data(i,j,index_lu) = &
                      landuse_data(i,j,index_lu) + landuse_in(i,j,lu)!already in fraction unit
-             endif
+             end if
           end do ! lu
           LandCover(i,j)%ncodes  = landuse_ncodes(i,j)
           LandCover(i,j)%codes(:) = landuse_codes(i,j,:)
@@ -581,7 +581,7 @@ contains
                else
                    write(*,*)'latitude: ',errmsg,glat(i,j)
                  call CheckStop(errmsg)
-               endif
+               end if
              end if
 
        end do  !j
@@ -693,7 +693,7 @@ contains
                 LandCover(i,j)%LAI(ilu) = 0.0
                 LandCover(i,j)%SAI(ilu) = 0.0
                 cycle    
-             endif!else Growing veg present:
+             end if!else Growing veg present:
 
             if ( LandDefs(lu)%name == "MED_OAK" .or.  &
                   LandDefs(lu)%name == "MED_PINE"   ) then

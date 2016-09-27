@@ -89,7 +89,7 @@ subroutine Output_timing(io, me,np,nt,nx,ny)
     if((timing(n)=="").and.(mytimm(n)==0.0)) cycle
     write(6, fmt="(a3,i3,1x,a30,2f12.4)")'tim',n,timing(n),mytimm(n),lastptim(n)
     write(io,fmt="(a3,i3,1x,a30,2f12.4)")'tim',n,timing(n),mytimm(n),lastptim(n)
-  enddo
+  end do
   close(io)
 end subroutine Output_timing
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

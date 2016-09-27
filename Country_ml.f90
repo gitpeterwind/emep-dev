@@ -329,7 +329,7 @@ integer, public :: IC_VENE  ! Venezuela
   ! First define all countries as undefined
   do iland=1,NLAND
     Country(iland) = cc(  "N/A" , iland ,F,  17 , 0  , "Not_defined                   " )
-  enddo
+  end do
 
 !The value of IC_XX is the index in Country array. Can in principle change between two runs or versions.
 !The emission_code is the country code used in the emission file.

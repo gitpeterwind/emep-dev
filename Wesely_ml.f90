@@ -140,7 +140,7 @@ subroutine Init_GasCoeff()
     DRx   (icmp) = Wesely_tab2(1,WES_O3)/Wesely_tab2(1,icmp)
     Schmidt      = Sc_H20* Wesely_tab2(1,icmp)
     Rb_cor(icmp) = (Schmidt/PRANDTL)**(2.0/3.0)
-  enddo GASLOOP
+  end do GASLOOP
 
   end subroutine Init_GasCoeff
 end module Wesely_ml

@@ -84,7 +84,7 @@ module Ammonium_ml
      if ( my_first_call ) then
         call tabulate()
          my_first_call = .false.
-     endif
+     end if
 
      call setup_ammonium(rcnh4)
      call calc_ammonium(rcnh4)

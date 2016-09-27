@@ -212,7 +212,7 @@ contains
        tab_F3 (ia_SN_24hr)  = 11.84  * exp(1.1 * a_SN_24hr)
        if(MY_DEBUG.and. MasterProc ) write(6,*) "TABIA24 ", ia_SN_24hr, &
             a_SN_24hr, tab_F3(ia_SN_24hr)
-     enddo
+     end do
 
      do IRH = 0, 100
           tab_exp_rh(IRH) = exp( (100.0-IRH)/7.0)
@@ -259,10 +259,10 @@ contains
                 so2nh3_hr(nhour,i,j),so2nh3_24hr(i,j)
               write(*,*) "so2nh3_24hr output", so2nh3_24hr(i,j),&
                 so2conc(i,j),cfac_so2(i,j),nh3conc(i,j),cfac_nh3(i,j)
-          endif
-        enddo ! nhour
-     enddo 
-  enddo
+          end if
+        end do ! nhour
+     end do 
+  end do
 
 end subroutine make_so2nh3_24hr
 !=======================================================================

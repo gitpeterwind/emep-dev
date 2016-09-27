@@ -566,7 +566,7 @@ module Biogenics_ml
      E_ISOP = 0.0
      par = 0.0   ! just for printout
      cL  = 0.0   ! just for printout
-  endif ! daytime
+  end if ! daytime
 
     if ( ispec_APIN > 0 ) then
 

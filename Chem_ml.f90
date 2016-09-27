@@ -94,7 +94,7 @@ contains
     if(FIRST_SEMIVOL>0)then !FSOA
       allocate(Fgas3d(FIRST_SEMIVOL:LAST_SEMIVOL,LIMAX,LJMAX,KCHEMTOP:KMAX_MID))
       Fgas3d = 1.0
-    endif
+    end if
 
     allocate(rcemis(NSPEC_SHL+1:NSPEC_TOT,KCHEMTOP:KMAX_MID))
     allocate(deltaZcm(KCHEMTOP:KMAX_MID))

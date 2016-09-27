@@ -68,7 +68,7 @@ subroutine share(shared_data,data_shape,xsize,MPI_COMM_SHARED)
   data_size=1
   do i=1,size(data_shape)
     data_size=data_size*data_shape(i)
-  enddo
+  end do
   if(data_size/=XSIZE)&
     write(*,*)'WARNING: incompatible dimensions in MPI_groups_ml ',&
       data_size,XSIZE,data_shape
@@ -132,7 +132,7 @@ subroutine share_logical(shared_data,data_shape,xsize,MPI_COMM_SHARED)
   data_size=1
   do i=1,size(data_shape)
     data_size=data_size*data_shape(i)
-  enddo
+  end do
   if(data_size/=XSIZE)&
     write(*,*)'WARNING: incompatible dimensions in MPI_groups_ml ',&
       data_size,XSIZE,data_shape

@@ -192,8 +192,8 @@ subroutine SeibertRiB_Hmix (u,v, zm, theta, pzpbl)
       if(Rib >= Ric) then
              pzpbl = zm(k)
              exit
-      endif
-   enddo
+      end if
+   end do
 
 end subroutine SeibertRiB_Hmix
 
@@ -223,8 +223,8 @@ subroutine JericevicRiB_Hmix (u,v, zm, theta, zi)
        if(Rib >= Ric) then
               zi = zm(k)
               exit
-       endif
-    enddo
+       end if
+    end do
 
 end subroutine JericevicRiB_Hmix
 
@@ -256,8 +256,8 @@ subroutine JericevicRiB_Hmix0 (u,v, zm, theta, zi, theta0, coastal)
        if(Rib >= Ric) then
               zi = zm(k)
               exit
-       endif
-    enddo
+       end if
+    end do
 
 end subroutine JericevicRiB_Hmix0
 
@@ -296,8 +296,8 @@ subroutine VogelezangHoltslag_Hmix (u,v, zm, theta, q, ustar, pzpbl)
       if(Rig >= Ric) then
              pzpbl = zm(k)
              exit
-      endif
-   enddo
+      end if
+   end do
 
 end subroutine VogelezangHoltslag_Hmix
  !----------------------------------------------------------------------------
@@ -396,7 +396,7 @@ subroutine PielkeBlackadarKz (u,v, zm, zb, th, Kz, Pielke_flag, debug_flag)
                 Kz(k)=xl2*dvdz*(1.-Ris(k)/Ric)
          else
                 Kz(k)=KZ_MINIMUM
-         endif
+         end if
       end if ! Pielke or Blackadar
 
    end do ! k
@@ -568,7 +568,7 @@ subroutine TI_Hmix (Kz, zm, zb, fh, th, exnm, pb, zi, debug_flag)
         nh1=k   ! Still unstable
      else
         nh2=0   ! Now stable
-     endif
+     end if
   end do
 
   k=nh1
@@ -581,9 +581,9 @@ subroutine TI_Hmix (Kz, zm, zb, fh, th, exnm, pb, zi, debug_flag)
                      /(xksm(k)-xksm(k-1))
       else
           zis= PBL_ZiMIN
-      endif
+      end if
 
-   endif
+   end if
 
 
    zi = zis
@@ -608,7 +608,7 @@ subroutine TI_Hmix (Kz, zm, zb, fh, th, exnm, pb, zi, debug_flag)
         ! if ( debug_flag ) write(6,"(a,i3,3es10.3)") "DEBUG THC ", 
         !  k, th(k), dthc, thc(k)
 
-  enddo
+  end do
 
   !..estimated as the height to which an hour's input
   !..of heat from the ground is vertically distributed,
@@ -655,7 +655,7 @@ subroutine TI_Hmix (Kz, zm, zb, fh, th, exnm, pb, zi, debug_flag)
           !  if ( debug_flag ) write(6,"(a,i3,2es10.3,i4)") "DEBUG PICTH ",&
           !      kabl, delq, pidth, trc 
 
-        endif
+        end if
 
 
         if ( debug_flag ) write(6,"(a,i3,es10.3,i5)") "DEBUG mid ", &
@@ -673,7 +673,7 @@ subroutine TI_Hmix (Kz, zm, zb, fh, th, exnm, pb, zi, debug_flag)
            ziu=PBL_ZiMAX
 
            trc=0 
-        endif
+        end if
 
      end do ! while
 
@@ -766,9 +766,9 @@ end subroutine TI_Hmix
                     + 2.*(Kzhs-Kzzi)/zimhs))
                if ( debug_flag ) &
                    write(*,"(a,i3,es12.3)") "OBRIEN Kz(k) ", k,  Kz(k)
-            endif
+            end if
 
-         endif
+         end if
 
    end do
 

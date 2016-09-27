@@ -204,7 +204,7 @@ subroutine str2detail(str,fmt,year,month,day,hour,seconds,minute,second,days,&
 ! if(present(nproc  ))nproc  =str2key(str,fmt,'PPP' )
   if(present(debug))then
     if(debug) write(*,*)'string2date: ',trim(str),'/',trim(fmt)
-  endif
+  end if
 contains
 function str2key(str,xfmt,key) result(val)
   character(len=*), intent(in) :: str,xfmt,key
@@ -291,7 +291,7 @@ function detail2str(iname,year,month,day,hour,seconds,minute,second,days,&
   end select
   if(present(debug))then
     if(debug) write(*,*)'date2string: ',trim(iname),'-->',trim(fname)
-  endif
+  end if
 end function detail2str
 
 function cd2str(iname,cd,addsecs,mode,debug) result(fname)
@@ -360,7 +360,7 @@ subroutine ts_to_secs1970(ts,nsecs,iotyp)
     case(IOU_HOUR,IOU_HOUR_EXTRA_MEAN)
       nsecs=nsecs-half_hour*FREQ_HOURLY
     end select
-  endif
+  end if
 end subroutine ts_to_secs1970
 
 subroutine cd_to_secs1970(cd,nsecs,iotyp)
@@ -402,7 +402,7 @@ subroutine ts_to_days1900(ts,ndays,iotyp)
     case(IOU_HOUR,IOU_HOUR_EXTRA_MEAN)
       ndays=ndays-FREQ_HOURLY/48.0  !1.0/48.0=half hour
     end select
-  endif
+  end if
 end subroutine ts_to_days1900
 
 subroutine cd_to_days1900(cd,ndays,iotyp)
@@ -539,9 +539,9 @@ subroutine assign_NTERM(NTERM)
       write(*,*)'WARNING: enddate before startdate, running only one metstep'
       write(*,*)'Start date: ',startdate
       write(*,*)'End   date: ',enddate
-    endif
+    end if
     NTERM=max(2,NTERM)!run at least one period
-  endif
+  end if
 end subroutine assign_NTERM
 
 function compare_date(n,dateA,dateB,wildcard) result(equal)
@@ -559,8 +559,8 @@ function compare_date(n,dateA,dateB,wildcard) result(equal)
       equal=equal.or.all((dA==dB).or.(dA==wildcard).or.(dB==wildcard))
     else
       equal=equal.or.all(dA==dB)
-    endif
-  enddo
+    end if
+  end do
 end function compare_date
 
 function ts2file(iname,ts,max_age,age_unit,mode,last,debug) result(fname)
@@ -594,8 +594,8 @@ function ts2file(iname,ts,max_age,age_unit,mode,last,debug) result(fname)
     do i=1,last
       if(ind==0)exit
       ind=index(iname(:ind),'/',BACK=.true.)
-    enddo
-  endif
+    end do
+  end if
 ! do not pharse the 1st ind chadacters
   if(ind>0)fname=iname(:ind)
   
@@ -605,7 +605,7 @@ function ts2file(iname,ts,max_age,age_unit,mode,last,debug) result(fname)
                               mode=mode,debug=debug)
     inquire(file=fname,exist=fexist)
     if(fexist)exit
-  enddo
+  end do
 end function ts2file
 
 function cd2file(iname,cd,max_age,age_unit,mode,last,debug) result(fname)

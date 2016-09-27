@@ -113,7 +113,7 @@ contains
            if(DEBUG%DRYRUN) write(*,*) "DEBUG%DRYRUN Solver"
        end if
        first_call = .false.
-    endif
+    end if
 
 !======================================================
 
@@ -157,7 +157,7 @@ contains
              x(n) = xnew(n)
              xnew(n) = xextrapol
 
-          enddo
+          end do
 
           dt2  =  dti(ichem) !*(1.0+cc(ichem))/(1.0+2.0*cc(ichem))
 
@@ -189,13 +189,13 @@ contains
                    include 'CM_Reactions1.inc'
                    !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-                !endif
+                !end if
                 !if(k>=6)then
                 !   include 'My_FastReactions.inc'
-                !endif
+                !end if
                 !if(k>=KEMISTOP)then
                 !   include 'My_FastReactions.inc'
-                !endif
+                !end if
             end do !! End iterations
           ! Just before SO4, look after slower? species
 
@@ -217,7 +217,7 @@ contains
             xn_2d(:,k) = xnew(:)
 
 
-    enddo ! End of vertical k-loop
+    end do ! End of vertical k-loop
 
   end subroutine chemistry
 
@@ -270,7 +270,7 @@ subroutine  makedt(dti,nchem,coeff1,coeff2,cc)
    if(dt_advec<= dt_init )then
       nchem=int(dt_advec/DT_INITCHEM)+1
       dt=(dt_advec)/(nchem)
-   endif
+   end if
 !/ **
 
    call CheckStop(nchem>nchemMAX,&
@@ -287,13 +287,13 @@ subroutine  makedt(dti,nchem,coeff1,coeff2,cc)
       do i=1,nchem
          ttot=ttot+dt(i)
          write(*,27)i,dt(i),ttot
-      enddo
+      end do
 
       !check that we are using consistent timesteps
       call CheckStop(abs(ttot-dt_advec)>1.E-5, &
               "Error in Solver/makedt: dt_advec and dt not compatible")
 
-    endif
+    end if
 
 !.. Help variables from Verwer & Simpson
        cc(1)=1.0
@@ -307,7 +307,7 @@ subroutine  makedt(dti,nchem,coeff1,coeff2,cc)
          coeff1(i)=((cc(i)+1.0)**2)*coeff2(i)
          dti(i)=((cc(i)+1.0)/(cc(i)+2.0))*dt(i)
          cc(i)=1.0/cc(i)
-       enddo
+       end do
 
 end subroutine makedt
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

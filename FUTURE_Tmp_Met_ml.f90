@@ -133,7 +133,7 @@ write(6,*) "MasterProc me==", me
        ts_now = make_timestamp(next_inptime)
        call add_secs(ts_now,nsec)
        next_inptime=make_current_date(ts_now)
-     endif
+     end if
 
      nyear=next_inptime%year
      nmonth=next_inptime%month
@@ -154,7 +154,7 @@ write(6,*) "MasterProc me==", me
        write(meteoname,56)'meteo',nyear,nmonth,nday,'.nc'
        if(DEBUG_NH3)write(*,*)'reading ',trim(meteoname)
        nrec = 1
-     endif
+     end if
 
      if(DEBUG_NH3) write(*,*)'nrec,nhour=',nrec,nhour
 
@@ -178,7 +178,7 @@ write(6,*) "MasterProc me==", me
         foundu10_met = .false.
      else
         foundu10_met = .true.
-     endif 
+     end if 
 
      ndim=2
      namefield='v10'
@@ -189,18 +189,18 @@ write(6,*) "MasterProc me==", me
         foundv10_met = .false.
      else
         foundv10_met = .true.
-     endif
+     end if
  
      do j = 1,GJMAX
         do i = 1,GIMAX
           if(foundv10_met .and. foundu10_met)then  
               UREF(i,j,ntime)=&
                 sqrt(( u_10(i,j,1)**2)+(v_10(i,j,1)**2))        
-          endif
-        enddo ! i
-     enddo! j
+          end if
+        end do ! i
+     end do! j
 
-   enddo ! timesteps
+   end do ! timesteps
 
 ! *************************************************************************
 ! Finished reading meteo
@@ -221,14 +221,14 @@ write(6,*) "MasterProc me==", me
                        do i=1, NTIMESTEPS
                           write(6,*) i,T2(i),T2_C(li,lj,i)
                           write(6,*) i,V10(i),UREF(li,lj,i)
-                       enddo
-         endif
+                       end do
+         end if
          
          WRITE(EMISYEAR,'(I4)') year
 
          do k=1,NNH3
             NH3emis_pot(k,li,lj)=0.
-         enddo
+         end do
   
          GEMEMIS(:)=1.
 ! OBS skal en her sette GEMEMIS=de faktiske utslippa?
@@ -238,7 +238,7 @@ write(6,*) "MasterProc me==", me
             if ( DEBUG_NH3 .and.(li==DEBUG_i) .and.(lj==DEBUG_j) )then !write out for Tange
             write(6,*) 'DEBUG DAYDAGT FOR TANGE IN EMISPOTENTIAL'
             write(6,*) (DAYDAGTEMP(KKK),KKK=1,8)
-         endif
+         end if
      
          TIME1=0
          DO I=1, NTIMESTEPS !nhours should be ntimestep
@@ -281,7 +281,7 @@ write(6,*) "MasterProc me==", me
                write(6,*) 'DEBUG OPEN_STABLE IN EMISPOTENSIALE'
                write(6,*) 'I,TSTALD,V10,v10**0.26,TSTALD,TSTALD**0.89,NH3emis_pot(I_OPEN_STABLE,i,j)'
                write(6,*) I,TSTALD,V10(I),V10(I)**0.26,TSTALD**0.89,NH3emis_pot(I_OPEN_STABLE,li,lj)
-            endif
+            end if
             !C
             !C **********************************************
             !C * EMISSION POTENTIAL FOR STORAGE FASCILITIES *
@@ -300,7 +300,7 @@ write(6,*) "MasterProc me==", me
                write(6,*) 'DEBUG STORAGE IN EMISPOTENSIALE'
                write(6,*) 'I,TSTALD,V10,v10**0.26,TSTALD,TSTALD**0.89,NH3emis_pot(I_STORAGE,i,j)'
                write(6,*) I,TSTALD,V10(I),V10(I)**0.26,TSTALD**0.89,NH3emis_pot(I_STORAGE,li,lj)
-            endif
+            end if
 
 
             VH10HELP=EXP(0.0419*V10(I)) !V10=wind speed per hour?
@@ -441,7 +441,7 @@ write(6,*) "MasterProc me==", me
                  li,lj,NH3emis_pot(I_MINERAL_SPRING,li,lj),&
                  li,lj,NH3emis_pot(I_MINERAL_AUTUMN,li,lj),&
                  li,lj,NH3emis_pot(I_GRAZ_CATTLE,li,lj)!,&           
-         endif
+         end if
          
          !C
          !C
@@ -451,9 +451,9 @@ write(6,*) "MasterProc me==", me
          !C
          !C
          !
-      enddo !lj
-   enddo !li
-endif !MasterProc
+      end do !lj
+   end do !li
+end if !MasterProc
 
 call global2local(NH3emis_pot,lNH3emis_pot,MSG_READ2,NNH3,GIMAX,GJMAX,1,1,1)
 call global2local(ddagtemp,lddagtemp,MSG_READ5,8,GIMAX,GJMAX,1,1,1)
@@ -577,7 +577,7 @@ subroutine readNH3emis !read northwestern 16.67km emissions and convert to 50km
               test_nh3(14,IGRIDNR)=RHELP(15)!afraes - Grassing cattle etc.                    
               test_nh3(15,IGRIDNR)=RHELP(16)!nh3_halm - Evaporation of NH3 from straw 
               test_nh3(16,IGRIDNR)=RHELP(17)!traffic 
-           enddo
+           end do
 
 1002    close(IO_NH3)
 
@@ -603,8 +603,8 @@ subroutine readNH3emis !read northwestern 16.67km emissions and convert to 50km
               tmp_nh3(14,i,j)=test_nh3(14,ii)!afraes - Grassing cattle etc.                    
               tmp_nh3(15,i,j)=test_nh3(15,ii)!nh3_halm - Evaporation of NH3 from straw 
               tmp_nh3(16,i,j)=test_nh3(16,ii)!traffic 
-           enddo !j
-        enddo !i
+           end do !j
+        end do !i
 
         do i=1,NX50
            do j=1,NY50
@@ -618,16 +618,16 @@ subroutine readNH3emis !read northwestern 16.67km emissions and convert to 50km
                       tmp_nh3(k,3*i-1,3*j-2)+&
                       tmp_nh3(k,3*i-2,3*j-1)+&
                       tmp_nh3(k,3*i-2,3*j-2)              
-              enddo !k
-           enddo !j
-        enddo !i
+              end do !k
+           end do !j
+        end do !i
 !        write(6,*) 'Sum nh3 emissions after interpol= ',sum(gEmis50_nh3(:,:,:)),sum(tmp_nh3(:,:,:))
         do j=1,GJMAX
            do i=1,GIMAX
               gEmis50_nh3(I_MINERAL_SPRING,i,j)=0.9*gEmis50_nh3(I_MINERAL_SPRING,i,j)
               gEmis50_nh3(I_MINERAL_AUTUMN,i,j)=0.1*gEmis50_nh3(I_MINERAL_SPRING,i,j)
-           enddo
-        enddo
+           end do
+        end do
 
 
         fracemis=dknh3_agr*14.0/((sum(gEmis50_nh3(:,:,:)))*17.0) !to ensure emission the same as reported
@@ -635,11 +635,11 @@ subroutine readNH3emis !read northwestern 16.67km emissions and convert to 50km
         gEmis50_nh3(:,:,:)=gEmis50_nh3(:,:,:)*fracemis
 
         write(6,*)'NMR NH3 after fracemis',sum(gEmis50_nh3(:,:,:))
-     endif ! MasterProc
+     end if ! MasterProc
 
      if ( DEBUG_NH3 .and. MasterProc) then
         write(6,*)'NMR NH3 after if READNH3',sum(gEmis50_nh3(:,:,:))
-     endif
+     end if
      
      !    Conversions --
      !
@@ -657,7 +657,7 @@ subroutine readNH3emis !read northwestern 16.67km emissions and convert to 50km
         write(unit=6,fmt=*) "No. days in Emissions: ", nydays
         write(unit=6,fmt=*) "tonne_to_kgm2s in Emissions: ", tonne_to_kgm2s
         write(unit=6,fmt=*) "Emissions sums:",sum(gEmis50_nh3(:,:,:))
-     endif
+     end if
      
      
 !     write(6,*) 'NMR NH3 emis on this domain ktonne ',0.001*sum(gEmis50_nh3(:,:,:))
@@ -666,10 +666,10 @@ subroutine readNH3emis !read northwestern 16.67km emissions and convert to 50km
      do k=1,NNH3
         !       gEmis50_nh3(k,:,:)=gEmis50_nh3(k,:,:)* tonne_to_kgm2s * xm2(:,:) !do xm2 in NH3Emisvariation_ml
         gEmis50_nh3(k,:,:)=gEmis50_nh3(k,:,:)* tonne_to_kgm2s    !already N(not NH3) in input
-     enddo !k      
+     end do !k      
    
      !gemis on global
-  endif !READNH3 
+  end if !READNH3 
   lEmis50_nh3(:,:,:)=0.0 !initialize
   call global2local(gEmis50_nh3,lEmis50_nh3,MSG_READ3,NNH3,GIMAX,GJMAX,1,1,1) 
   
@@ -707,9 +707,9 @@ subroutine Get_tmpmeteofield(meteoname,namefield,nrec,&
           do i=1,GIMAX
              ijk=ijk+1
              field(ijk)=var_global(i,j,k)*scalefactors(1)+scalefactors(2)
-          enddo
-       enddo
-    enddo
+          end do
+       end do
+    end do
 
     deallocate(var_global)
 

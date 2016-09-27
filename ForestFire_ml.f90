@@ -142,7 +142,7 @@ subroutine Config_Fire()
   if(DEBUG%FORESTFIRE.and.MasterProc)then
     write(*,*) "NAMELIST IS "
     write(*,NML=Fire_config)
-  endif
+  end if
   
   ! set vebosity levels
   verbose=min(max(0,verbose),4) ! debug verbosity 0,..,4
@@ -169,7 +169,7 @@ subroutine Config_Fire()
 
     if(MasterProc) write(*,"(a,2i4,a17)") "FFIRE Mapping EMEP ", &
       ne, iemep, trim(species(iemep)%name)
-  enddo !n
+  end do !n
   call CheckStop(ieCO<1,"No mapping for 'CO' found on "//BiomassBurningMapping)
   call CheckStop(any(emep_used<1),"UNSET FFIRE EMEP "//BiomassBurningMapping)
 
@@ -237,7 +237,7 @@ subroutine Fire_Emis(daynumber)
     FF_poll=""
     if(.not.newFFrecord([yyyy,mm,dd]))&
       return                        ! Continue if new record||file  
-  endif
+  end if
   if(DEBUG%FORESTFIRE.and.MasterProc) &
     write(*,*) "Starting FIRE MODE=",trim(MODE),&
       date2string(" YYYY-MM-DD",[yyyy,mm,dd]),first_call
@@ -273,12 +273,12 @@ subroutine Fire_Emis(daynumber)
           needed=need_poll,UnDef=0.0,debug_flag=debug_nc,ncFileID_given=ncFileID)
           rdemis = rdemis + xrdemis                 ! month total
           ndn    = ndn + 1
-        enddo
+        end do
       else
         ndn=1
         call ReadField_CDF(fname,FF_poll,rdemis,nstart,interpol='zero_order',&
           needed=need_poll,UnDef=0.0,debug_flag=debug_nc,ncFileID_given=ncFileID)
-      endif
+      end if
       !unit conversion to GFED [g/m2/8day]->[kg/m2/s]
       to_kgm2s = 1.0e-3 /(8*24.0*3600.0)
       if(ndn>1) to_kgm2s=to_kgm2s/ndn               ! total-->avg.
@@ -293,12 +293,12 @@ subroutine Fire_Emis(daynumber)
             needed=need_poll,UnDef=0.0,debug_flag=debug_nc,ncFileID_given=ncFileID)
           rdemis = rdemis + xrdemis                 ! month total
           ndn    = ndn + 1
-        enddo
+        end do
       else
         ndn=1
         call ReadField_CDF(fname,FF_poll,rdemis,nstart,interpol='mass_conservative',&
             needed=need_poll,UnDef=0.0,debug_flag=debug_nc,ncFileID_given=ncFileID)
-      endif
+      end if
       ! unit conversion to FINN: Can be negative if REMPPM to be calculated
       fac=FF_defs(iBB)%unitsfac * FF_defs(iBB)%frac ! --> [kg/day]
       fac=fac/(GRIDWIDTH_M*GRIDWIDTH_M*24.0*3600.0) ! [kg/day]->[kg/m2/s]
@@ -314,12 +314,12 @@ subroutine Fire_Emis(daynumber)
             needed=need_poll,debug_flag=debug_nc,ncFileID_given=ncFileID)
           rdemis = rdemis + xrdemis                 ! month total
           ndn    = ndn + 1
-        enddo
+        end do
       else
         ndn=1
         call ReadField_CDF(fname,FF_poll,rdemis,nstart,interpol='conservative',&
             needed=need_poll,debug_flag=debug_nc,ncFileID_given=ncFileID)
-      endif
+      end if
       ! GFAS units are [kg/m2/s]. No further unit conversion is needed.
       ! However, fac can be /=1, e.g. when REMPPM is calculated
       fac=FF_defs(iBB)%unitsfac * FF_defs(iBB)%frac
@@ -339,7 +339,7 @@ subroutine Fire_Emis(daynumber)
       first_call.and.MasterProc)
 
     if(DEBUG%FORESTFIRE) sum_emis(ind)=sum_emis(ind)+sum(BiomassBurningEmis(ind,:,:))
-  enddo ! BB_DEFS
+  end do ! BB_DEFS
 
   call CheckNC(nf90_close(ncFileID),"close:"//trim(fname)) ! has to close the file here
   ncFileID=closedID
@@ -375,7 +375,7 @@ subroutine Fire_Emis(daynumber)
       (/  sum_emis(n), maxval(BiomassBurningEmis(n,:,: ) ), &
           BiomassBurningEmis(n,debug_li,debug_lj) /) )
     end associate ! idbg, jdbg
-  endif ! debug_proc
+  end if ! debug_proc
   !end associate ACDATES
 
 contains
@@ -410,23 +410,23 @@ function newFFrecord(ymd) result(new)
       if(MasterProc)then
         write(*,*)"ForestFire file not found: ",trim(fname)
         call CheckStop(need_file,"Missing ForestFire file")
-      endif
+      end if
       burning(:,:) = .false.
       new=.false.
       return
-    endif
+    end if
   ! read all times records in fname, and process them
     nread=-1                            
     fdays(:)=-1.0                       
     call ReadTimeCDF(fname,fdays,nread) 
     record_old=-1                       
-  endif
+  end if
 
   ! Check: New pollutant
   if(FF_poll/=poll_old)then
     if(DEBUG%FORESTFIRE.and.MasterProc) &
       write(*,*)"ForestFire new pollutant: ",trim(FF_poll)
-  endif
+  end if
 
   ! Check: New time record
   call date2nctime(ymd,ncday(1))
@@ -443,12 +443,12 @@ function newFFrecord(ymd) result(new)
           nctime2string("YYYY-MM-DD 00:00",ncday(0))," and ",&
           nctime2string("YYYY-MM-DD 23:59",ncday(1))
         call CheckStop(need_date,"Missing ForestFire records")
-      endif
+      end if
       burning(:,:) = .false.
       new=.false.
       return
-    endif
-  endif
+    end if
+  end if
   
   ! Update if new
   new=(fname/=file_old).or.(nstart/=record_old).or.(FF_poll/=poll_old)
@@ -458,7 +458,7 @@ function newFFrecord(ymd) result(new)
     file_old=fname
     poll_old=FF_poll
     record_old=nstart
-  endif
+  end if
 end function newFFrecord
 end subroutine Fire_Emis
 
@@ -510,7 +510,7 @@ subroutine Fire_rcemis(i,j)
 
   do k = KEMISFIRE, KMAX_MID
     invDeltaZfac(k) = 1.0/ (z_bnd(i,j,k) - z_bnd(i,j,k+1)) /N_LEVELS
-  enddo
+  end do
  
   do n = 1, NEMEPSPECS 
     iem = emep_used(n)
@@ -520,20 +520,20 @@ subroutine Fire_rcemis(i,j)
     ! distribute vertically:
     do k = KEMISFIRE, KMAX_MID
       rcemis(iem,k) = rcemis(iem,k) + BiomassBurningEmis(n,i,j)*invDeltaZfac(k)*fac
-    enddo !k
+    end do !k
 
     if(debug_flag) then
       k=KMAX_MID
       write(*,"(a,2i3,1x,a8,i4,es10.2,4es10.2)") "FIRERC ",&
         n, iem, trim(species(iem)%name), k, BiomassBurningEmis(iem,i,j),&
         invDeltaZfac(k), origrc, rcemis(iem,k)
-    endif
+    end if
 
 !DSBB    !--  Add up emissions in ktonne ......
 !DSBB    !   totemadd(iem) = totemadd(iem) + &
 !DSBB    !   tmpemis(iqrc) * dtgrid * xmd(i,j)
 
-  enddo ! n
+  end do ! n
  !       call Export_FireNc() ! Caused problems on last attempt
 end subroutine Fire_rcemis
 !=============================================================================

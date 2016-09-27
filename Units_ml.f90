@@ -139,7 +139,7 @@ subroutine Init_Units()
       uconv_spec = 1.0
    end select
    unit_map(i)%uconv(1:)=unit_map(i)%uconv(0)*uconv_spec
- enddo
+ end do
 end subroutine Init_Units
 
 subroutine Group_Units_Asc2D(hr_out,gspec,gunit_conv,debug,name,volunit,needroa)
@@ -221,7 +221,7 @@ subroutine Units_Scale(txtin,iadv,unitscale,unitstxt,volunit,needroa,semivol,deb
   txt=ADJUSTL(txtin)                    ! Remove leading spaces
   do i=1,len(txt)                       ! Remove invisible character
     if(ichar(txt(i:i))==0)txt(i:i)=' '  ! char(0)
-  enddo
+  end do
   select case (txt)
   case("ugSS","ugSS/m3","ugP","ugP/m3",& 
        "mgSS","mgSS/m2","mgP","mgP/m2")

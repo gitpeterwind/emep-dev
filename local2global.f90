@@ -72,8 +72,8 @@
       do j = 1, tljmax(0)
         do i = 1, tlimax(0)
           gloarr(i,j) = locarr(i,j)
-        enddo
-      enddo
+        end do
+      end do
 !
 !    now get from the others
 !
@@ -83,10 +83,10 @@
         do j = 1, tljmax(d)
           do i = 1, tlimax(d)
         gloarr(tgi0(d)-1+i,tgj0(d)-1+j)=locarr(i,j)
-          enddo
-        enddo
-      enddo
+          end do
+        end do
+      end do
 !
-    endif    ! me = ?
+    end if    ! me = ?
 !
     end

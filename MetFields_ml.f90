@@ -295,7 +295,7 @@ subroutine Alloc_MetFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND,NMET)
      met(ix)%found => metfieldfound(ix)!default target
      if(.not. associated(met(ix)%ready))met(ix)%ready=>ready
      if(.not. associated(met(ix)%copied))met(ix)%copied=>copied
-  enddo
+  end do
 
   ix=1
   met(ix)%name             = 'u_wind'
@@ -965,13 +965,13 @@ if(USE_WRF_MET_NAMES)then
    met(ix_sdepth)%name            = 'SNOWNC'!snow and ice in mm
    met(ix_ice_nwp)%name           = 'SEAICE'!flag 0 or 1
 !... addmore
-endif
+end if
 
   Nmetfields=ix
   if(Nmetfields>NmetfieldsMax)then
      write(*,*)"Increase NmetfieldsMax! "
      stop
-  endif
+  end if
 
     allocate(u_ref(LIMAX,LJMAX))
     allocate(rho_surf(LIMAX,LJMAX))
@@ -1011,18 +1011,18 @@ endif
           xsize=largeLIMAX*largeLJMAX
           i=i+1
           call share(met(ix)%field_shared,data_shape,xsize,MPI_COMM_SUB)
-       endif
+       end if
        if(met(ix)%dim==3)then
           j=j+1
           data_shape=(/largeLIMAX,largeLJMAX,KMAX_MID/)
           xsize=largeLIMAX*largeLJMAX*KMAX_MID
           call share(met(ix)%field_shared,data_shape,xsize,MPI_COMM_SUB)
-       endif
+       end if
        CALL MPI_BARRIER(MPI_COMM_SUB, IERROR)
-    enddo
+    end do
     Nshared_2d=i
     Nshared_3d=j
-    endif
+    end if
   end subroutine Alloc_MetFields
 
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

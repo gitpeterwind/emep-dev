@@ -57,7 +57,7 @@ function Daily_cosine(mean, amp, dmax, ndays) result (daily)
 
   do d = 1, ndays
     daily(d) = mean + amp * cos ( twopi * (d - dmax)/ ndays )
-  enddo
+  end do
 end function Daily_cosine
 !-------------------------------------------------------------------
 function Daily_sine(mean, amp, dmax, ndays) result (daily)
@@ -80,7 +80,7 @@ function Daily_sine(mean, amp, dmax, ndays) result (daily)
 
   do d = 1, ndays
     daily(d) = mean + amp * sin ( twopi * (d + shift - dmax)/ ndays )
-  enddo
+  end do
 end function Daily_sine
 !-------------------------------------------------------------------
 function Daily_halfsine(base, amp, ndays) result (daily)
@@ -118,7 +118,7 @@ elemental function StandardAtmos_km_2_kPa(h_km) result (p_kPa)
     p_kPa = 101.325*exp(-5.255876*log(288.15/(288.15-6.5*h_km)))
   else
     p_kPa =  22.632*exp(-0.1576884*(h_km - 11.0)  )
-  endif
+  end if
 end function StandardAtmos_km_2_kPa
 !-------------------------------------------------------------------
 elemental function StandardAtmos_kPa_2_km(p_kPa) result (h_km)
@@ -140,7 +140,7 @@ elemental function StandardAtmos_kPa_2_km(p_kPa) result (h_km)
     h_km = (288.15-t)/6.5
   else
     h_km = 11.0 + log( p_kPa/22.632)/(-0.1576884)
-  endif
+  end if
 end function StandardAtmos_kPa_2_km
 !=======================================================================
 !+
@@ -172,7 +172,7 @@ subroutine Exner_tab()
     p = PBAS + i*PINC
     ! tpi(i) = CP*(p/1.0e+5)**KAPPA ! With CP!!!!
     tab_exf(i) = (p/1.0e+5)**KAPPA  ! Without CP
-  enddo
+  end do
 end subroutine Exner_tab
 !-------------------------------------------------------------------
 elemental function Exner_nd(p) result(exf)
@@ -469,7 +469,7 @@ function heaviside(x)
    heaviside = 0.0
  else
    heaviside = 1.0
- endif
+ end if
 end function heaviside
 !-----------------------------------------------------------------------
 !program Test_exn

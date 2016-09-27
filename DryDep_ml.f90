@@ -540,7 +540,7 @@ contains
               Vg_3m (n) = 1. / ( L%Ra_3m + Rb(n) + Rsur(n) ) 
 
 
-            endif
+            end if
 
            ! Surrogate for NO2 compensation point approach, 
            ! assuming c.p.=4 ppb (ca. 1.0e11 #/cm3):        
@@ -574,7 +574,7 @@ contains
                 Sub(0)%Gsto(n)   =  Sub(0)%Gsto(n)  + L%coverage * Gsto(n)
                 if( dbghh.and.n==2 ) call datewrite("CmpSto", iL, &
                          (/ Sub(iL)%Gsto(n) / Sub(iL)%Gsur(n) /) )
-            endif
+            end if
          end do !species loop
 
          Sumcover = Sumcover + L%coverage
@@ -715,7 +715,7 @@ contains
             else
                DepLoss(nadv) =   vg_fac( ncalc )  * xn_2d( ntot,K2)
                cfac(nadv, i,j) = gradient_fac( ncalc )
-            endif
+            end if
          end if
 
          if ( DepLoss(nadv) < 0.0 .or. DepLoss(nadv)>xn_2d(ntot,K2) ) then
@@ -844,8 +844,8 @@ contains
          do n = 1, NDRYDEP_ADV
             nadv    = DDepMap(n)%ind
             totddep( nadv ) = totddep (nadv) + DepLoss(nadv)*convfac
-         enddo
-      endif
+         end do
+      end if
 
        convfac2 = convfac * xm2(i,j) * inv_gridarea
 

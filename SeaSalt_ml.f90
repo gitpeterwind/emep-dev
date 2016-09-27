@@ -183,7 +183,7 @@
           whitecap   = 4.82e-6 * (u10 + 1.98)**3 
          else
           whitecap   = 4.82e-6 * (23.09 + 1.98)**3 !7.594  !
-         endif
+         end if
     end select
 
          if(DEBUG%SEASALT .and. debug_flag) &
@@ -202,7 +202,7 @@
             Tw = sst(i,j,1)
           else
             Tw = Grid%t2
-          endif
+          end if
           Tw = max(Tw, 270.0)! prevents unrealistic sub.zero values
           Tw = min(Tw, 300.0)! prevents unrealistic high values
 
@@ -222,7 +222,7 @@
 
                if(DEBUG%SEASALT .and. debug_flag) write(6,'(a20,i5,es13.4)') &
                   'SSALT Flux Maarten ->  ',ii, ss_flux(ii)
-          enddo
+          end do
 
 !... Fluxes of larger aerosols for each size bin (Monahan etal,1986)
           do ii = 1, SS_MONA
@@ -237,7 +237,7 @@
 
                if(DEBUG%SEASALT .and. debug_flag) &
                    write(6,'(a20,i5,es13.4)') 'SSALT Flux Monah ->  ',ii, ss_flux(jj)
-          enddo
+          end do
 
          if(DEBUG%SEASALT .and. debug_flag) &
                write(6,'(a20,es13.3)') 'SSALT Total SS flux ->  ',  total_flux
@@ -264,7 +264,7 @@
                                   * water_fraction(i,j) 
             if(DEBUG%SEASALT .and. debug_flag) &
             write(6,'(a20,i5,2es13.4)') 'SSALT Flux fine ->  ',ii,d3(ii), rcss( iSSFI ) !ESX SS_prod(QSSFI,i,j)
-          enddo
+          end do
 
 !..Coarse particles emission [molec/cm3/s]
           do ii = NFIN+1, NFIN+NCOA
@@ -274,7 +274,7 @@
                                   * water_fraction(i,j)
             if(DEBUG%SEASALT .and. debug_flag) &
             write(6,'(a20,i5,2es13.4)') 'SSALT Flux coarse ->  ',ii,d3(ii), rcss( iSSCO ) !ESX SS_prod(QSSCO,i,j)
-          enddo
+          end do
 
 !... Crude fix for the effect of lower salinity in the Baltic Sea
 
@@ -283,14 +283,14 @@
           
                rcss( iSSFI ) = 0.2 * rcss( iSSFI )
                rcss( iSSCO ) = 0.2 * rcss( iSSCO )
-          endif
+          end if
   
           if(DEBUG%SEASALT .and. debug_flag) write(6,'(a35,2es15.4)')  &
              '>> SSALT production fine/coarse  >>', &
                 rcss(  iSSFI ), rcss( iSSCO )
                           
-       endif  ! water
-     enddo  ! LU classes
+       end if  ! water
+     end do  ! LU classes
 
      EmisNat( inat_SSFI, i,j )      = rcss( iSSFI ) * moleccm3s_2_kgm2h * species( itot_SSFI )%molwt
      EmisNat( inat_SSCO, i,j )      = rcss( iSSCO ) * moleccm3s_2_kgm2h * species( itot_SSCO )%molwt
@@ -409,7 +409,7 @@
 !          umWetRad(RLIM(i+1), 0.8, GbSeaSalt),&
 !          umWetRad(RLIM(i), 0.8, GbSeaSalt)
        end if
-     enddo
+     end do
 
 !.. Help parameter
      do i = 1, SS_MONA
@@ -419,7 +419,7 @@
 !st update /3.84e-6     temp_Monah(i) = 1.373 * radSS(i)**(-3) * Rrange(i) *
           temp_Monah(i) = 3.5755e5 * radSS(i)**(-3) * Rrange(i) *      &
                           ( 1.0 + 0.057 * radSS(i)**1.05 )* 10.0**a2
-     enddo
+     end do
 
 !// D_dry^3 -  for production of dry SS mass
      dSS3(:) =  ( 2.0 * rdry(:) )**3

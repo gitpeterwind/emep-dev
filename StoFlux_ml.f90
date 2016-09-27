@@ -132,7 +132,7 @@ contains
                  call datewrite("StoFlux SUMVPD ", iL, &
                     (/ real(ivpd), L%rh, L%t2C,  L%vpd, SumVPD(i,j,ivpd) /) ) 
               !       old_gsun(i,j), tmp_gsun, L%g_sun , L%g_sto
-              endif
+              end if
 
               old_gsun(i,j,ivpd) = L%g_sun
           end if

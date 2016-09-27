@@ -121,8 +121,8 @@ subroutine Add_MosaicMetConcs(MOSAIC_METCONCS,MET_LCS,iotyp, nMET)
       end select
 
       if(dbg0) call print_deriv_type(MosaicOutput(nMosaic))
-    enddo MET_LC !n
-  enddo ! ilab
+    end do MET_LC !n
+  end do ! ilab
 end subroutine Add_MosaicMetConcs
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 subroutine Add_NewMosaics(Mc,nMc)
@@ -149,7 +149,7 @@ subroutine Add_NewMosaics(Mc,nMc)
     if(iadv<1) then
       if(MasterProc) write(*,*) "MOSSPEC not found ", iadv, trim(name)
       cycle MC_LOOP
-    endif
+    end if
     call CheckStop(iadv<1 .or. iadv>NSPEC_ADV,dtxt//" ERR: Mc  _SPECS: Mc_SPECS")
 
     nMosaic = nMosaic + 1
@@ -171,7 +171,7 @@ subroutine Add_NewMosaics(Mc,nMc)
 
     if(dbg0) write(*,*) "DEBUG nMc ", &
       trim(name)//":"//trim(Mc(n)%txt2)//":"//trim(Mc(n)%txt3), iadv, iLC
-  enddo MC_LOOP
+  end do MC_LOOP
 end subroutine Add_NewMosaics
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 subroutine Add_MosaicVegO3(nVEGO3)
@@ -227,7 +227,7 @@ subroutine Add_MosaicVegO3(nVEGO3)
       name, veg%class, veg%defn, veg%TXTLC, &
       units, n, -99, dt_scale, scale,  F, veg%iotype ) 
    
-  enddo VEGO3_LC !n
+  end do VEGO3_LC !n
 end subroutine Add_MosaicVEGO3
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 subroutine Add_MosaicDDEP(DDEP_ECOS,DDEP_WANTED,nDD)
@@ -267,7 +267,7 @@ subroutine Add_MosaicDDEP(DDEP_ECOS,DDEP_WANTED,nDD)
         if(xname(1:4)=="STO_") then
           xxname = xname(5:)
           if(dbg0) print *, "STO_ ", trim(xname) // "=>"//trim(xxname)
-        endif
+        end if
         iadv = find_index(xxname,species_adv(:)%name)         ! Index in ix_adv arrays
         if(iadv<1) print *, "OOPADVNOW", iadv, trim(xname) // trim(name)
         call CheckStop(iadv<1,dtxt//"Unknown in DDEP_WANTED SPEC: "//trim(xname))
@@ -300,9 +300,9 @@ subroutine Add_MosaicDDEP(DDEP_ECOS,DDEP_WANTED,nDD)
       if(dbg0) then
         write(*,*) "DDEP setups", n, nMosaic
         call print_deriv_type(MosaicOutput(nMosaic))
-      endif
-    enddo ! DDEP_SPECS
-  enddo ! DDEP_ECOS
+      end if
+    end do ! DDEP_SPECS
+  end do ! DDEP_ECOS
 end subroutine Add_MosaicDDEP
 !<==========================================================================
 subroutine Add_MosaicOutput(debug_flag,i,j,convfac,DepAdv2Calc,fluxfrac,&
@@ -345,7 +345,7 @@ subroutine Add_MosaicOutput(debug_flag,i,j,convfac,DepAdv2Calc,fluxfrac,&
   invEcoFrac(:) = 0.0
   do n=1,NDEF_ECOSYSTEMS
     if(EcoFrac(n)>1.0e-39) invEcoFrac(n)=1.0/EcoFrac(n)
-  enddo 
+  end do 
 
   !  Query - crops, outisde g.s. ????
   if(first_call) then  ! need to find indices
@@ -353,17 +353,17 @@ subroutine Add_MosaicOutput(debug_flag,i,j,convfac,DepAdv2Calc,fluxfrac,&
       MosaicOutput(imc)%f2d  = find_index(MosaicOutput(imc)%name,f_2d(:)%name)
       if(DEBUG%MOSAICS .and. MasterProc) write(*,*) dtxt//" f2D", imc, &
         trim(MosaicOutput(imc)%name),  MosaicOutput(imc)%f2d
-    enddo
+    end do
 
     if(dbg)then
       write(*,*)  dtxt//"ECOAREAS ", i,j
       do n=1,NDEF_ECOSYSTEMS
         write(*,"(a,i3,a,f14.4,g12.3)")  dtxt//"ECOCHECK ", n, &
           DEF_ECOSYSTEMS(n), EcoFrac(n), invEcoFrac(n)
-      enddo
+      end do
       write(*,*) dtxt//"Done ECOCHECK ========================"
-    endif       
-  endif
+    end if       
+  end if
   first_call = .false.
 
   ! Ecosystem depositions, for grouped or individual species:
@@ -398,7 +398,7 @@ subroutine Add_MosaicOutput(debug_flag,i,j,convfac,DepAdv2Calc,fluxfrac,&
           Fflux = Fflux * Sub(0)%Gsto(CDDEP_O3)/Sub(0)%Gsur(CDDEP_O3)
           if(dbghh) print "(a,2i4,3es12.3)", dtxt//"NOWSDEP ", &
             nadv, current_date%hour,  Sub(0)%Gsur(2), Sub(0)%Gsto(2), Fflux
-        endif
+        end if
 
       case(-size(chemgroups):-1)        ! gropups
         gmap=>dryGroupUnits(imc)
@@ -407,7 +407,7 @@ subroutine Add_MosaicOutput(debug_flag,i,j,convfac,DepAdv2Calc,fluxfrac,&
           nadv = gmap%iadv(n)
           Fflux = Fflux + Deploss(nadv)*gmap%uconv(n) &
                          *sum(fluxfrac(nadv,:),Is_EcoSystem(iEco,:))
-        enddo ! n
+        end do ! n
       case default
         call CheckStop(dtxt//" unknown DDEP Specie/Group")
       end select
@@ -416,7 +416,7 @@ subroutine Add_MosaicOutput(debug_flag,i,j,convfac,DepAdv2Calc,fluxfrac,&
         write(*,"(a,3i4,a)") dtxt//"DDEP Fflux CATASTR ", imc, f2d, iEco, &
           trim(MosaicOutput(imc)%name)
         call CheckStop(dtxt//"CATASTROPHE: "//MosaicOutput(imc)%name)
-      endif
+      end if
 
       ! - invEcoFracCF divides the flux per grid by the landarea of each
       ! ecosystem, to give deposition in units of mg/m2 of ecosystem.
@@ -464,9 +464,9 @@ subroutine Add_MosaicOutput(debug_flag,i,j,convfac,DepAdv2Calc,fluxfrac,&
         write(*,*) "ERROR: DEPADV2CALC had size", size(DepAdv2Calc)
         do n = 1, size( DepAdv2Calc)
           write(*,*) "DEPADVLIST ", n, DepAdv2Calc(n)
-        enddo
+        end do
         call CheckStop(cdep<1,dtxt//"ERROR: Negative cdep")
-      endif
+      end if
 
       select case(subclass)
       case("VG" )
@@ -482,13 +482,13 @@ subroutine Add_MosaicOutput(debug_flag,i,j,convfac,DepAdv2Calc,fluxfrac,&
      !    output = -999.0 
      !  else
      !    output = 1.0/Gs
-     !  endif
+     !  end if
      !case("Rns")
      !  if(Gns < 1.0e-44)then
      !    output = -999.0
      !  else
      !    output = 1.0/Gns
-     !  endif
+     !  end if
       end select ! subclass
 
       if(dbg) write(*,"(2i4,f9.3)") cdep, iLC, output
@@ -499,13 +499,13 @@ subroutine Add_MosaicOutput(debug_flag,i,j,convfac,DepAdv2Calc,fluxfrac,&
           "name"    ,MosaicOutput(imc)%name,&
           "subclass",MosaicOutput(imc)%subclass
         call CheckStop("OUTVEG UNDEF" // subclass )
-      endif
+      end if
     end select
 
     if(dbg) write(*,"(a,es12.3)") dtxt//"ADDED output: "// &
        trim(MosaicOutput(imc)%name),  output
     d_2d(f2d,i,j,IOU_INST) = output
-  enddo ! Mosaic
+  end do ! Mosaic
 
   my_first_call = .false.
 end subroutine Add_MosaicOutput

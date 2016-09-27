@@ -110,7 +110,7 @@ contains
              write(IO_AIRCR,*) 'month and day ',current_date%month&
                   ,current_date%day
              close(IO_AIRCR)
-          endif
+          end if
           iii = 1
 
 !    read on node 0
@@ -121,8 +121,8 @@ contains
           CALL MPI_BCAST( kfalc ,8*iimax,MPI_BYTE, 0,MPI_COMM_CALC,IERROR) 
           CALL MPI_BCAST( fapos ,4*2*iimax,MPI_BYTE, 0,MPI_COMM_CALC,IERROR) 
 !    all distributed
-       endif
-    endif
+       end if
+    end if
 
     return
   end subroutine trajectory_in

@@ -205,7 +205,7 @@
      if (daynumber <  LandCover(i,j)%SGS(ilu) .or.   &
          daynumber >  LandCover(i,j)%EGS(ilu) )      &
              arable = .true.
-   endif
+   end if
 
 !/.. Dust erosion from Crops (Arable) and Desert (Mediterr.Scrubs lu==11 ???)
 !/.. Creates problems on e.g. Greenland, as Bare land is included in Desert
@@ -258,7 +258,7 @@
      else
         !use a threshold consistent with the one IFS uses
         gwc_thr=pwp(i,j)
-     endif
+     end if
  
 
   if (foundSoilWater) then    ! Soil Moisture in met data
@@ -303,7 +303,7 @@
 !__ Put also gwc_thr (=pwp) in same unit
         if(SoilWaterSource == "IFS")then
            gwc_thr=gwc_thr* Ro_water/soil_dns_dry
-        endif
+        end if
 
 ! Soil water correction
      if (gr_h2o > gwc_thr) &
@@ -316,7 +316,7 @@
         write(6,'(a,3f15.5)') 'DUST: SW/VolW/GrW/ ',SoilWater(i,j,1),v_h2o,gr_h2o
         write(6,'(a,3f15.5)') 'DUST: SW COMPS ',SoilWater(i,j,1), fc(i,j), pwp(i,j)
         write(6,'(a,2f10.4)') 'DUST >> U*_moist_corr  >>',gwc_thr, ustar_moist_cor
-     endif
+     end if
  
   else  !.. No SoilWater in met.input; Moisture correction for U*t will be 1.
 
@@ -327,9 +327,9 @@
      if( debug ) then
        write(6,'(a,f8.2,2f12.4)') 'DUST ++ No SoilWater in meteorology++'
        write(6,'(a,f10.4)')  'DUST: >> U*_moist_corr  >>', ustar_moist_cor                                 
-     endif 
+     end if 
 
-  endif
+  end if
 
 ! ===================================
   
@@ -348,7 +348,7 @@
         dust_lim = 0.05
         alfa = 1.3e-5 
 !        alfa = 1.5e-5    ! As for TFMM spring 2005
-     endif
+     end if
 
 !// limit emissions in the Spanish desert grid (covered with greenhouses??)
 !     if ( (i_glob(i) == 102.0 .and. j_glob(j) == 18.0) )  & 
@@ -362,7 +362,7 @@
         z0  = max (0.1 * LandCover(i,j)%hveg(ilu), 0.001)
         dust_lim = 0.02
         alfa = 1.0e-5  !1.e-5 
-  endif
+  end if
 
 !  else                                 ! ---------  temp/root crops ------
 !        z0  = max (0.1 * landuse_hveg(i,j,ilu), 0.001)
@@ -414,7 +414,7 @@
 !       u10_gust = sqrt(u10*u10 + 1.44 *Grid%wstar*Grid%wstar)
 !   else
 !       u10_gust = u10
-!   endif
+!   end if
 !
 !   ustar = KARMAN/log(10.0/z0) *   &
 !           sqrt(u10_gust*u10_gust + 1.44 *Grid%wstar*Grid%wstar)
@@ -429,7 +429,7 @@
       write(6,'(3es12.3)') ustar_th, ustar_moist_cor, ustar_z0_cor
       write(6,'(a35,f8.3,3(a10,f6.3))') 'FINALLY U*_th= ',ustar_th,' U*=',ustar, &
                                    ' U*NWP=',Grid%ustar,' U*sub=',Sub(lu)%ustar
-   endif
+   end if
 
 ! >>>>>  Check for saltation to occur [Whi79 p.4648(19), MaB97 p.16422(28)]        
 
@@ -476,14 +476,14 @@
             ustar,ustar_th, dust_lim, alfa
       write(6,'(a15,f10.3,2es12.3)') 'FLUXES:',uratio, flx_hrz_slt*1000.0,  &
             flx_hrz_slt*dust_lim*alfa *1000.0
-    endif
+    end if
 
 !TEST  to limit the dust production
 !     if (lu == LU_DESERT)  then 
 !        flx_hrz_slt  = min(10.e-3, flx_hrz_slt* dust_lim )
 !     else
 !        flx_hrz_slt  = min(2.e-3, flx_hrz_slt* dust_lim  )
-!     endif
+!     end if
 !        flx_vrt_dst =  flx_vrt_dst + flx_hrz_slt * alfa * cover
 
 !//  Vertical dust flux [kg/m2/s], scaled with area fraction and
@@ -493,7 +493,7 @@
       flx_vrt_dst  =  flx_vrt_dst + min(1.e-7, flx_hrz_slt * alfa * dust_lim)
    else
       flx_vrt_dst  =  flx_vrt_dst + min(1.e-8, flx_hrz_slt * alfa * dust_lim)
-   endif
+   end if
 
    flx_vrt_dst =  flx_vrt_dst * cover
 
@@ -504,23 +504,23 @@
     write(6,'(a35,es12.3/)')  ' Vertical Flux   => ',  Mflux
     write(6,'(a35,es12.3,i4,f8.3)')  'DUST Flux   => ',   flx_vrt_dst, lu, cover
     write(6,'(a15,f10.3,2es12.3)') 'FLUXES:',uratio, flx_hrz_slt*1000., flx_vrt_dst*1000.
-   endif
+   end if
 
-   endif  ! U* > U*_threshold
+   end if  ! U* > U*_threshold
 
-   endif DUST
+   end if DUST
 
-   enddo LUC ! landuse
+   end do LUC ! landuse
 
-  endif FROST
-  endif DRY 
+  end if FROST
+  end if DRY 
 
  else  ! PREC
     dry_period(i,j) = 0
 
     if( debug ) write(6,'(a30,i5,es12.3)')   &
         '>> RAIN-RAIN >>', dry_period(i,j),surface_precip(i,j)
- endif NO_PRECIP
+ end if NO_PRECIP
 
 !//__  N production [ 1/m2/s]:   d3(mkm->m) * 1e-18
 !TEST       Nflux(n) = Mflux(n) *m_to_nDU / dsoil(n)**3 *1.e18
@@ -552,7 +552,7 @@
        '<< DUST OUT>>', EmisNat( inat_DUf,i,j), EmisNat( inat_DUc,i,j), &
        ' > TOTAL >',  sum( EmisNat( dust_indices, i,j )),frac_fin, frac_coa
 
-  endif  ! dust_prod
+  end if  ! dust_prod
 
   if( debug ) write(6,*) '<< No DUST production TOTAL >>', sum( EmisNat( dust_indices, i,j ))
 
@@ -606,7 +606,7 @@
   if (DEBUG_DUST .and. MasterProc) then
    write(6,*)
    write(6,*) ' >> DUST init <<',soil_dens,  inat_DUf,  inat_DUc , itot_DUf, itot_DUc
-  endif
+  end if
 
 
   allocate(dry_period(LIMAX, LJMAX))
@@ -638,7 +638,7 @@
                                                            ! MaB95 p. 16417 (7)
       help_ust = 0.12*0.12 * help_ust*help_ust  ! [frc]                  SQUARED
 
-    endif     ! Re_opt < 0.03
+    end if     ! Re_opt < 0.03
 
 !//__ This method minimizes the number of square root computations performed
 
@@ -660,7 +660,7 @@
       write(6,*)
       write(6,*) 'DUST: >> fractions <<', Nsoil, Ndust
       write(6,'(a,3e12.4)') 'DUST: Sigma =', (sig_soil(i),i=1,Nsoil)
-    endif
+    end if
 
     sum_soil(:) = 0.0
     tot_soil    = 0.0
@@ -682,8 +682,8 @@
        sum_soil(idu) =  sum_soil(idu) + help_diff(isoil,idu)
        tot_soil = tot_soil + help_diff(isoil,idu)
 
-     enddo
-   enddo
+     end do
+   end do
 
    frac_fine =  sum_soil(1) + sum_soil(2) + sum_soil(3) 
    frac_coar =  sum_soil(4)
@@ -693,9 +693,9 @@
       write (6,'(a25,2f8.4,3(f8.3),2f12.3)') 'DUST: frac in bins:',  &
              d1(idu), d2(idu), (help_diff(isoil,idu), isoil=1,3),         &
              sum_soil(idu),sum_soil(idu)/tot_soil
-     enddo
+     end do
      write (6,'(a,2f8.4)') 'DUST: ** FINE / COARSE **',frac_fine, frac_coar
-   endif
+   end if
 
   end subroutine init_dust
 ! >=================================================================<
@@ -726,7 +726,7 @@
    else
       frac_fine   = 0.35
       frac_coarse = 0.11
-   endif
+   end if
 
  end subroutine get_dustfrac
 

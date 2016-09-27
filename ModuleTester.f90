@@ -30,5 +30,5 @@ program tester
     case("SmallUtils_ml","SmallUtils_ml.f90")
       call testSmallUtils()
     end select
-  enddo
+  end do
 endprogram tester

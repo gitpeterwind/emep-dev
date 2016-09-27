@@ -227,7 +227,7 @@ subroutine Init_My_Deriv()
     if(MasterProc)&
       call CheckStop(count(lev3d(1:i)==lev3d(i)),1,&
         "Init_My_Deriv, repeated levels in lev3d")
-  enddo
+  end do
 
   !! Find number of wanted OutoutConcs
   nOutputMisc  = find_index("-", OutputMisc(:)%name, first_only=.true. ) -1
@@ -246,8 +246,8 @@ subroutine Init_My_Deriv()
       call AddArray(tag_name(1:1),wanted_deriv3d,NOT_SET_STRING,errmsg)
     else
       call AddArray(tag_name(1:1),wanted_deriv2d,NOT_SET_STRING,errmsg)
-    endif
-  enddo
+    end if
+  end do
    ! OutputVegO3 will be added to derived fields from within the Mosaics_ml
    ! after adding 
   if(MasterProc) then
@@ -259,15 +259,15 @@ subroutine Init_My_Deriv()
     do i = 1,size(DDEP_ECOS)  
       if(all(SCAN(DDEP_ECOS(i)%ind,IOU_KEY)==0)) exit
       write(*,"(3a)") "NMLOUT DEP ", DDEP_ECOS(i)%name, DDEP_ECOS(i)%ind
-    enddo
+    end do
     do i = 1,size(DDEP_WANTED)  
       if(DDEP_WANTED(i)%txt1=='-') exit
       write(*,"(2a)") "NMLOUT DDEP ", DDEP_WANTED(i)%txt1
-    enddo
+    end do
     write(*,"(3a)")("NMLOUT WDEP ",&
       WDEP_WANTED(i)%txt1,WDEP_WANTED(i)%txt3, i=1,nOutputWdep)
     write(*,*) " END NMLOUT INSIDE Init_My_Deriv"
-  endif
+  end if
 
   call Init_MosaicMMC(MOSAIC_METCONCS)  ! sets MMC_USTAR etc.
 
@@ -282,20 +282,20 @@ subroutine Init_My_Deriv()
   do i = 1, size(EMIS_FILE)
     tag_name(1) = "Emis_mgm2_" // trim(EMIS_FILE(i))
     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
-  enddo
+  end do
   do i = 1, size(BVOC_GROUP)
     itot = BVOC_GROUP(i)
     tag_name(1) = "Emis_mgm2_BioNat" // trim(species(itot)%name)
     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
-  enddo
+  end do
   if(USE_SOILNOX) then
     tag_name(1) = "Emis_mgm2_BioNatNO"
     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
-  endif
+  end if
   if(USE_OCEAN_DMS)then
     tag_name(1) = "Emis_mgm2_DMS"
     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
-  endif
+  end if
   if(USE_uEMEP)then
     !NOTE "Local_Fraction" must be AFTER "Local_Pollutant" and "Total_Pollutant"
     tag_name(1:3) = [character(len=TXTLEN_DERIV)::&
@@ -304,13 +304,13 @@ subroutine Init_My_Deriv()
 !   tag_name(1:3) = [character(len=TXTLEN_DERIV)::&
 !      "Local_Fraction3D","Local_Pollutant3D","Total_Pollutant3D"]
 !   call AddArray( tag_name(1:3), wanted_deriv3d, NOT_SET_STRING, errmsg)
-  endif
+  end if
  if(EmisSplit_OUT)then
     do i=1,max(18,nrcemis)
       tag_name(1) = "EmisSplit_mgm2_"//trim(species(iqrc2itot(i))%name)
       call AddArray(tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
-    enddo
- endif
+    end do
+ end if
 
 ! Do SR last, so we get PM25 after groups have been done
   call AddArray( D2_SR,  wanted_deriv2d, NOT_SET_STRING, errmsg)
@@ -318,7 +318,7 @@ subroutine Init_My_Deriv()
   if(.not.SOURCE_RECEPTOR) then !may want extra?
     call AddArray( D2_EXTRA, wanted_deriv2d, NOT_SET_STRING, errmsg)
     call CheckStop( errmsg, errmsg // "D2_EXTRA too long" )
-  endif
+  end if
 
 !------------- Depositions to ecosystems --------------------------------
   call Add_MosaicDDEP(DDEP_ECOS,DDEP_WANTED,nDD)
@@ -334,7 +334,7 @@ subroutine Init_My_Deriv()
   do n = 1, nOutputVegO3
     VEGO3_OUTPUTS(n) = OutputVegO3(n)
     if(debug0)  write(*,*) "VEGO3 NUMS ", n, n1, trim(OutputVegO3(n)%name) 
-  enddo
+  end do
   if(MasterProc)call WriteArray(VEGO3_OUTPUTS(:)%name,nOutputVegO3," VEGO3 OUTPUTS:")
   call Add_MosaicVEGO3(nOutVEGO3) ! nVEGO3 is output, excluding missing LC types
 
@@ -345,7 +345,7 @@ subroutine Init_My_Deriv()
     if(debug0) then
       write(*,*) "NEWMOSAIC   NUM ", nMc
       write(*,*) "VEGO3 FINAL NUM ", nVEGO3
-    endif
+    end if
 
     !------------- Met data for d_2d -------------------------
     ! We find the various combinations of met and ecosystem,
@@ -354,7 +354,7 @@ subroutine Init_My_Deriv()
 
     call Add_MosaicMetConcs(MOSAIC_METCONCS,MET_LCS,'YMD', nMET)
     nOutMET = nMET !not needed?
-  endif ! SOURCE_RECEPTOR
+  end if ! SOURCE_RECEPTOR
 
 !------------- end LCC data for d_2d -------------------------
   call CheckStop( NMosaic >= MAX_MOSAIC_OUTPUTS, sub//"too many nMosaics" )
@@ -403,7 +403,7 @@ subroutine Init_My_Deriv()
       else
         if(find_index(tag_name(1),wanted_deriv2d)<1)&
         call AddArray(tag_name(1:1),wanted_deriv2d,NOT_SET_STRING,errmsg)
-      endif
+      end if
       call CheckStop(errmsg,errmsg//trim(outname)//" too long")
       nOutputFields = nOutputFields + 1
       OutputFields(nOutputFields) = OutputConcs(n)
@@ -421,7 +421,7 @@ subroutine Init_My_Deriv()
         call PrintLog("WARNING: Requested My_Derived OutputField not found: "&
             //trim(outclass)//":"//trim(outname), MasterProc)
         cycle
-      endif
+      end if
 
       select case(outdim)
       case("2d","2D","SURF")   
@@ -449,16 +449,16 @@ subroutine Init_My_Deriv()
     else
       call CheckStop("My_Deriv: Unsupported OutputConcs" // &
           trim(outname)//":"//trim(outtyp)//":"//trim(outdim))
-    endif
+    end if
 
     if(debug0)write(*,*)"OutputFields-tags ",n,trim(outname),"->",tag_name(1)
-  enddo
+  end do
 
   ! ditto wanted_deriv3d....
   if (.not.SOURCE_RECEPTOR.and.size(D3_OTHER)>0) then
     call AddArray( D3_OTHER,  wanted_deriv3d, NOT_SET_STRING, errmsg)
     call CheckStop( errmsg, errmsg // "Wanted D3 too long" )
-  endif
+  end if
 
 ! TEST HERE
   mynum_deriv2d = LenArray( wanted_deriv2d, NOT_SET_STRING )
@@ -469,10 +469,10 @@ subroutine Init_My_Deriv()
       write(*,*) "Init_My_Deriv, mynum_deriv2d = ", mynum_deriv2d
       write(*,*) "Init_My_Deriv, mynum_deriv3d = ", mynum_deriv3d
       write(*,*)("DEBUG MyDERIV2D ",i,mynum_deriv2d,wanted_deriv2d(i),i=1,mynum_deriv2d)
-    endif
+    end if
     call WriteArray(wanted_deriv2d,mynum_deriv2d," Required 2D output ")
     call WriteArray(wanted_deriv3d,mynum_deriv3d," Required 3D output ")
-  endif
+  end if
 end subroutine Init_My_Deriv
 !=========================================================================
 subroutine My_DerivFunc( e_2d, class )!  , density )
@@ -502,7 +502,7 @@ subroutine My_DerivFunc( e_2d, class )!  , density )
       if ( MasterProc .and. num_warnings < 100 ) then
         write(*,*) "My_Deriv:WARNING - REQUEST FOR UNDEFINED OUTPUT:", n, class
           num_warnings = num_warnings + 1
-      endif
+      end if
     end select
 end subroutine My_DerivFunc
 !=========================================================================

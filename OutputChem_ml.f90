@@ -93,8 +93,8 @@ subroutine Wrtchem(ONLY_HOUR)
 
       if( MasterProc .and. DEBUG) write(6,"(a12,i5,4i4)") "DAILY FIX ", &
                        nmonth, mm_out, nday, dd_out
-    endif
-  endif      ! for END_OF_EMEPDAY <= 7
+    end if
+  end if      ! for END_OF_EMEPDAY <= 7
 
   !== Instantaneous results output ====
   !   Possible actual array output for specified days and hours
@@ -104,34 +104,34 @@ subroutine Wrtchem(ONLY_HOUR)
          wanted_dates_inst(n)%day   == nday   .and. &
          wanted_dates_inst(n)%hour  == nhour ) then
       call Output_fields(IOU_INST)
-    endif
-  enddo
+    end if
+  end do
 
   !== Hourly output ====
   if(modulo(current_date%hour,FREQ_HOURLY)==0) then
     call Output_fields(IOU_HOUR_INST)
     if(present(ONLY_HOUR))then
       if(ONLY_HOUR==IOU_HOUR_INST)return
-    endif
+    end if
     call Output_fields(IOU_HOUR)
     call ResetDerived(IOU_HOUR) 
     if(present(ONLY_HOUR))then
       if(ONLY_HOUR==IOU_HOUR)return
-    endif
-  endif
+    end if
+  end if
 
   !== Daily output ====
   if (nhour ==  END_OF_EMEPDAY ) then
     if (.not.first_call .and. .not.Jan_1st ) &   ! Doesn't write out 1 Jan. at start
       call Output_fields(IOU_DAY)
     call ResetDerived(IOU_DAY)            ! For daily averaging, reset also 1 Jan.
-  endif
+  end if
 
   !== Output at the end of the run
   if ( End_of_Run ) then
     if(nhour/=END_OF_EMEPDAY) call Output_fields(IOU_DAY)! Daily outputs
     call Output_fields(IOU_YEAR)  ! Yearly outputs
-  endif
+  end if
 
 
   !/ NEW MONTH
@@ -143,7 +143,7 @@ subroutine Wrtchem(ONLY_HOUR)
     call Output_fields(IOU_MON)
 
     call ResetDerived(IOU_MON)
-  endif              ! End of NEW MONTH
+  end if              ! End of NEW MONTH
 
   first_call=.false.
 end subroutine Wrtchem
@@ -160,7 +160,7 @@ subroutine Output_fields(iotyp)
      if(num_deriv3d > 0) call Output_f3d(iotyp,num_deriv3d,nav_3d,f_3d,d_3d,Init_Only)
      myfirstcall(iotyp) = .false.
      IF(DEBUG.and.MasterProc)write(*,*)'2d and 3D OUTPUT INITIALIZED',iotyp
-  endif
+  end if
   Init_Only = .false.
   IF(DEBUG.and.MasterProc)write(*,*)'2d and 3D OUTPUT WRITING',iotyp
   !*** 2D fields, e.g. surface SO2, SO4, NO2, NO3 etc.; AOT, fluxes
@@ -215,13 +215,13 @@ subroutine Output_f2d (iotyp, dim, nav, def, dat, Init_Only)
           if( def(icmp)%name == "Emis_mgm2_co" ) then
             call print_deriv_type(def(icmp))
             call datewrite("SnapEmis-Output_f2d Emis", iotyp, (/ dat(icmp,debug_li,debug_lj,my_iotyp) /) )
-          endif
-        endif
+          end if
+        end if
 
       call Out_netCDF(iotyp,def(icmp),2,1,dat(icmp,:,:,my_iotyp),scale,&
                       create_var_only=Init_Only)
-    endif     ! wanted
-  enddo       ! component loop
+    end if     ! wanted
+  end do       ! component loop
 
 end subroutine Output_f2d
 
@@ -250,8 +250,8 @@ subroutine Output_f3d (iotyp, dim, nav, def, dat, Init_Only)
 
       call Out_netCDF(iotyp,def(icmp),3,num_lev3d,dat(icmp,:,:,:,my_iotyp),scale,&
                       create_var_only=Init_Only)
-    endif     ! wanted
-  enddo       ! component loop
+    end if     ! wanted
+  end do       ! component loop
 
 end subroutine Output_f3d
 

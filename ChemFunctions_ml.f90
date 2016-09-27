@@ -296,7 +296,7 @@ module ChemFunctions_ml
               + VOLFACNH4 * x(NH4_f,k) )    !SIA aerosol surface
         else
           rate(k) = 0.0
-        endif
+        end if
     end do ! k
 
   end function RiemerN2O5
@@ -381,7 +381,7 @@ module ChemFunctions_ml
               + VOLFACNH4 * x(NH4_f,k) )    !SIA aerosol surface
         else
           rate(k) = 0.0
-        endif
+        end if
       end do ! k
   !---------------------------------------
    case ( "Smix", "SmixTen" )
@@ -466,7 +466,7 @@ module ChemFunctions_ml
 
       else
          rate(k) = 0.0
-      endif
+      end if
     end do ! k
     case ( "Gamma:0.002", "Gamma:0.05", "Gamma:0.005")  ! Inspired by Brown et al. 2009
      do k = K1, K2
@@ -543,7 +543,7 @@ module ChemFunctions_ml
        rate (K1   : K2-3) = 1.4e-4  !                ~ 2h
       else
        rate (K1 : K2 )    = 9.2e-6  !                ~ 30h
-    endif
+    end if
 
   end function ec_ageing_rate
 

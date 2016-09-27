@@ -250,7 +250,7 @@ function Qm(mode,rh,wlen,debug) result(Qm_arr)
       ExtEff=MATMUL(Qm_ref(:,rh_n-1:rh_n,wlen),rh_w)  ! Extinction efficiencies
       if(debug) write(*,'((a15,9f10.3))') &
         '## GFs   =',gf(:),'## ExtEff=',ExtEff(:)
-    endif
+    end if
 
   case default
     call CheckStop("Unknown extinction mode: "//trim(mode))
@@ -311,13 +311,13 @@ function Qm_grp(gtot,rh,debug) result(Qm_arr)
     Qm_aux=Qm("WET",rh ,W550,my_debug)
   else
     Qm_aux=Qm("DRY",0.0,W550,my_debug)
-  endif
+  end if
 
   Qm_arr(:)=0
   do n=1,size(gtot)
     i=find_index(gtot(n),ExtMap(:)%itot,debug=my_debug)
     if(i>0)Qm_arr(n)=Qm_aux(i)
-  enddo
+  end do
 end function Qm_grp
 
 subroutine AOD_init(msg,wlen,out3d)
@@ -333,10 +333,10 @@ subroutine AOD_init(msg,wlen,out3d)
     call CheckStop(n<1,&
       trim(msg)//" Unknown AOD/EXT wavelength "//trim(wlen))
     wanted_wlen(n)=.true.
-  endif
+  end if
   if(present(out3d))then
     wanted_ext3d=wanted_ext3d.or.out3d
-  endif
+  end if
 !-----------------------------------------------------------------------!
 ! Consistency checks for older model versions using AOD_GROUP
 !-----------------------------------------------------------------------!
@@ -348,7 +348,7 @@ subroutine AOD_init(msg,wlen,out3d)
       trim(msg)//" Incompatibe AOD_GROUP size")
     call CheckStop(any(aod_grp/=ExtMap%itot),&
       trim(msg)//" Incompatibe AOD_GROUP def.")
-  endif   
+  end if   
 !-----------------------------------------------------------------------!
 ! Consistency checks for Qm_ref array
 !-----------------------------------------------------------------------!
@@ -368,16 +368,16 @@ subroutine AOD_init(msg,wlen,out3d)
   if(any(wanted_wlen(:)).and..not.allocated(AOD))then
     allocate(AOD(NUM_EXT,LIMAX,LJMAX,W340:W1020))
     AOD=0.0
-  endif
+  end if
   if(wanted_ext3d.and..not.allocated(Extin_coeff))then
     allocate(Extin_coeff(NUM_EXT,LIMAX,LJMAX,KMAX_MID,W340:W1020))
     Extin_coeff=0.0
-  endif 
+  end if 
   if(ANALYSIS.and..not.associated(SpecExtCross))then
   !!wanted_wlen(W550)=.true.  ! calculate 550nm for AOD assimilation
     allocate(SpecExtCross(NUM_EXT,KMAX_MID,LIMAX,LJMAX,W340:W1020))
     SpecExtCross=0.0
-  endif
+  end if
 end subroutine AOD_init
 
 subroutine AOD_Ext(i,j,debug)
@@ -400,11 +400,11 @@ subroutine AOD_Ext(i,j,debug)
     call CheckStop(USE_AOD.and..not.any(wanted_wlen(:)),&
       "USE_AOR=T, but no AOD/EXT output. Check config_*.nml")
     first_call=.false.
-  endif
+  end if
   if(debug)then
     write(*,*) '#### in AOD module  ###'
     AOD_cext(:)=0.0
-  endif
+  end if
  
   !===========================================================================
   ! Extinction coefficients: 
@@ -438,16 +438,16 @@ subroutine AOD_Ext(i,j,debug)
         !.. Extinction coefficients for diferent optical groups/types
         do n = 1,NUM_CEXT
           kext_cext(n)=sum(kext(:),MASK=(ExtMap(:)%cext==n))
-        enddo
+        end do
         !.. Aerosol optical depth for individual components
         AOD_cext(:)=AOD_cext(:)+kext_cext(:)*(z_bnd(i,j,k)-z_bnd(i,j,k+1))
 
         if((k==KCHEMTOP+1).or.(k==KMAX_MID))&
           write(*,"(a8,'(',i3,')=',es10.3,'=',9(es10.3,:,'+'))") &
             'EXTINCs', k, sum(kext(:)),kext_cext(:)
-      endif
-    enddo
-  enddo
+      end if
+    end do
+  end do
 
   if(debug) write(*,"(a24,2i5,es10.3,'=',9(es10.3,:,'+'))") &
     '>>>  AOD / AODs  <<<', i_fdom(i), j_fdom(j), sum(AOD(:,i,j,W550)), AOD_cext(:)

@@ -51,7 +51,7 @@ subroutine NH3emis_variation() !only one grid cell (and later one timestep at a 
       TIME1=NHOUR/(24/TSPERDAY) +1
       if (MasterProc)then
          write(6,*)'Date and nhour and ntstep in NH3Emis_variation',current_date%year,current_date%month,current_date%day,current_date%hour,NHOUR,TIME1
-      endif
+      end if
 
       NTIMESTEPS=NDAYS*TSPERDAY 
 
@@ -70,18 +70,18 @@ subroutine NH3emis_variation() !only one grid cell (and later one timestep at a 
       if ( i_fdom(i)==DEBUG_i .and. j_fdom(j)==DEBUG_j)then
          debug_flag = .true.
          write(6,*)'Found coords for Tange, prog, i,j, ',me,i,j
-      endif
+      end if
            T2=t2_nwp(i,j,1)-T0 ! T2 in C not in K degrees
      
            if(foundws10_met)then
               V10=ws_10m(i,j,1) 
 !           else
 !              V10=u_ref(i,j) !~45m wind??
-           endif
+           end if
            if ( DEBUG_NH3 .and. debug_flag )then !write out for Tange
             write(6,*) 'DEBUG 2m nwp temp for Tange NDAY, NHOUR',T2,me,i,j, NDAY,NHOUR
             write(6,*) 'DEBUG 10m wind V10 foundu10_met foundv10_met ',foundws10_met,V10,me,i,j
-           endif
+           end if
 
 
 
@@ -304,10 +304,10 @@ subroutine NH3emis_variation() !only one grid cell (and later one timestep at a 
               tnh3_fac(I_MANURE3,i,j),tnh3_fac(I_MANURE4,i,j),tnh3_fac(I_MANURE4a,i,j),tnh3_fac(I_MINERAL_SPRING,i,j),&
               tnh3_fac(I_MINERAL_AUTUMN,i,j),tnh3_fac(I_GRAZ_CATTLE,i,j),&
               tnh3_fac(I_NH3_GRASS,i,j), tnh3_fac(I_TRAFFIC,i,j)
-      endif 
+      end if 
 
-  enddo !i
-enddo !j
+  end do !i
+end do !j
 
 end subroutine NH3emis_variation
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -348,13 +348,13 @@ subroutine SetNH3()
                  write(6,*)'tnh3_fac(k,i,j)', tnh3_fac(k,i,j)*NTPERYEAR 
                  write(6,*)'NH3Emisvariation ',emnh3(k,i,j)
                  write(6,*)'NTPERYEAR, nydays, TSPERDAY',NTPERYEAR,nydays,TSPERDAY
-              endif 
-           enddo
+              end if 
+           end do
 
         end do ! i
      end do ! j
      
-  endif ! NH3EMIS_VAR
+  end if ! NH3EMIS_VAR
 end subroutine SetNH3
 
 end module NH3Emis_variation_ml

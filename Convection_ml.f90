@@ -42,7 +42,7 @@ subroutine convection_pstar(ps3d,dt_conv)
 
   do k=1,KMAX_MID
      dk(k)=sigma_bnd(k+1)-sigma_bnd(k)
-  enddo
+  end do
   totdk=sigma_bnd(KMAX_MID+1)-sigma_bnd(1)!=1 in sigma coordinates
 
 !UPWARD
@@ -58,12 +58,12 @@ subroutine convection_pstar(ps3d,dt_conv)
 !
          do k=1,KMAX_MID
             mass=mass+ps3d(i,j,k)*dk(k)
-         enddo
+         end do
          mass=mass/totdk
 
          do k=1,KMAX_MID
             dp(k)=dA(k)+dB(k)*ps(i,j,1)
-         enddo
+         end do
 
          mass_air_core=0.0
          do k=KMAX_MID,1,-1
@@ -83,7 +83,7 @@ subroutine convection_pstar(ps3d,dt_conv)
                mass_air_core(k+1)=0.0
                xn_in_core(:,k) =xn_in_core(:,k1)*dp(k+1)/dp(k)!flux from below
                xn_in_core(:,k+1) =0.0
-            endif
+            end if
 
 !fraction of grid moved to core:
 ! df/(dp/g)   df=horizontal flux   dp/g= total mass (/m2) in grid
@@ -99,12 +99,12 @@ subroutine convection_pstar(ps3d,dt_conv)
                   !limit fluxes
                   cnvuf(i,j,k+1)=0.99*dp(k)/(GRAV*dt_conv)+cnvuf(i,j,k+1)!0.99 to determine
                   mass_exchanged=(cnvuf(i,j,k+1)-cnvuf(i,j,k))*GRAV*dt_conv/dp(k)*mass_air_grid(k)
-               endif
+               end if
             else
                !mass from core to grid - horizontal exchange
                mass_exchanged=(cnvuf(i,j,k+1)-cnvuf(i,j,k))/cnvuf(i,j,k+1)*mass_air_core(k)
 
-             endif
+             end if
 
             !horizontal exchange
             if(cnvuf(i,j,k+1)-cnvuf(i,j,k)<=0.0)then
@@ -122,9 +122,9 @@ subroutine convection_pstar(ps3d,dt_conv)
                xn_in_core(:,k) = xn_in_core(:,k)-(cnvuf(i,j,k+1)-cnvuf(i,j,k))/cnvuf(i,j,k+1)*xn_in_core(:,k)
                mass_air_core(k)=mass_air_core(k)-mass_exchanged  
                mass_air_grid(k) = mass_air_grid(k)+mass_exchanged
-            endif
+            end if
 
-        enddo
+        end do
 
 !DOWNWARD
       if(.true.)then
@@ -144,7 +144,7 @@ subroutine convection_pstar(ps3d,dt_conv)
                mass_air_core(k-1)=0.0
                xn_in_core(:,k) = xn_in_core(:,k-1)*dp(k-1)/dp(k)!flux from above
                xn_in_core(:,k-1) =0.0
-            endif
+            end if
 
             if(cnvdf(i,j,k+1)-cnvdf(i,j,k)<=0.0)then
                !mass from grid to core - horizontal exchange
@@ -153,11 +153,11 @@ subroutine convection_pstar(ps3d,dt_conv)
                !limit fluxes
                   cnvdf(i,j,k+1)=-0.99*dp(k)/(GRAV*dt_conv)+cnvdf(i,j,k)!0.99 to determine
                   mass_exchanged=(cnvdf(i,j,k+1)-cnvdf(i,j,k))*mass_air_grid(k)*GRAV*dt_conv/dp(k)
-               endif
+               end if
             else
 !NB: cnvdf < 0
                mass_exchanged=-(cnvdf(i,j,k+1)-cnvdf(i,j,k))/cnvdf(i,j,k)*mass_air_core(k)
-            endif
+            end if
 
             !horizontal exchange
 !NB: cnvdf < 0
@@ -177,11 +177,11 @@ subroutine convection_pstar(ps3d,dt_conv)
 
                mass_air_grid(k) = mass_air_grid(k)+mass_exchanged
 
-            endif
+            end if
 
-         enddo
+         end do
 
-         endif
+         end if
 
          if(.true.)then
 !diffusion free method
@@ -200,7 +200,7 @@ subroutine convection_pstar(ps3d,dt_conv)
                mass_air_grid_k_temp=mass_air_grid_k_temp+mass_air_grid(k_fill)*dk(k_fill)
                mass_air_grid(k_fill)=mass_air_grid(k_fill)-mass_air_grid(k_fill)!ZERO
                k_fill=k_fill+1            
-            enddo
+            end do
 
             xn_buff(:,k)=xn_buff(:,k)+ xn_adv(:,i,j,k_fill)*dk(k_fill)*&
                  (mass_air_grid0(k)*dk(k)-mass_air_grid_k_temp)/(mass_air_grid(k_fill)*dk(k_fill))
@@ -213,23 +213,23 @@ subroutine convection_pstar(ps3d,dt_conv)
 
             ps3d(i,j,k) = mass_air_grid0(k)!=(mass_air_grid_k_temp+(mass_air_grid0(k)*dk(k)-mass_air_grid_k_temp))/dk(k)
             
-        enddo
+        end do
         do k=1,KMAX_MID
            xn_adv(:,i,j,k)=xn_buff(:,k)/dk(k)
-        enddo
+        end do
 !check that all mass is distributed
 !         if(abs(mass_air_grid(k_fill))>1.0.or.k_fill/=KMAX_MID)then
 !            if(ME==0)write(*,*)'ERRORMASS',ME,i,j,k_fill,mass_air_grid(k_fill),mass_air_grid_k_temp,mass_air_grid0(k)
-!         endif
+!         end if
          else
             do k=1,KMAX_MID
                ps3d(i,j,k) = mass_air_grid(k)
-            enddo
+            end do
 
-         endif
+         end if
 
-      enddo
-   enddo
+      end do
+   end do
 
  end subroutine convection_pstar
  subroutine convection_Eta(dpdeta,dt_conv)
@@ -250,7 +250,7 @@ subroutine convection_pstar(ps3d,dt_conv)
    do k=1,KMAX_MID
       dk(k)=dA(k)/Pref+dB(k)
       totdk=totdk+dk(k)
-   enddo
+   end do
 
 !UPWARD
 
@@ -265,12 +265,12 @@ subroutine convection_pstar(ps3d,dt_conv)
 !
          do k=1,KMAX_MID
             mass=mass+dpdeta(i,j,k)*dk(k)
-         enddo
+         end do
          mass=mass/totdk
 
          do k=1,KMAX_MID
             dp(k)=dA(k)+dB(k)*ps(i,j,1)
-         enddo
+         end do
 
          mass_air_core=0.0
          do k=KMAX_MID,1,-1
@@ -290,7 +290,7 @@ subroutine convection_pstar(ps3d,dt_conv)
                mass_air_core(k+1)=0.0
                xn_in_core(:,k) =xn_in_core(:,k1)*dp(k+1)/dp(k)!flux from below
                xn_in_core(:,k+1) =0.0
-            endif
+            end if
 
 !fraction of grid moved to core:
 ! df/(dp/g)   df=horizontal flux   dp/g= total mass (/m2) in grid
@@ -306,12 +306,12 @@ subroutine convection_pstar(ps3d,dt_conv)
                   !limit fluxes
                   cnvuf(i,j,k+1)=0.99*dp(k)/(GRAV*dt_conv)+cnvuf(i,j,k+1)!0.99 to determine
                   mass_exchanged=(cnvuf(i,j,k+1)-cnvuf(i,j,k))*GRAV*dt_conv/dp(k)*mass_air_grid(k)
-               endif
+               end if
             else
                !mass from core to grid - horizontal exchange
                mass_exchanged=(cnvuf(i,j,k+1)-cnvuf(i,j,k))/cnvuf(i,j,k+1)*mass_air_core(k)
 
-             endif
+             end if
 
             !horizontal exchange
             if(cnvuf(i,j,k+1)-cnvuf(i,j,k)<=0.0)then
@@ -329,9 +329,9 @@ subroutine convection_pstar(ps3d,dt_conv)
                xn_in_core(:,k) = xn_in_core(:,k)-(cnvuf(i,j,k+1)-cnvuf(i,j,k))/cnvuf(i,j,k+1)*xn_in_core(:,k)
                mass_air_core(k)=mass_air_core(k)-mass_exchanged  
                mass_air_grid(k) = mass_air_grid(k)+mass_exchanged
-            endif
+            end if
 
-        enddo
+        end do
 
 !DOWNWARD
       if(.true.)then
@@ -351,7 +351,7 @@ subroutine convection_pstar(ps3d,dt_conv)
                mass_air_core(k-1)=0.0
                xn_in_core(:,k) = xn_in_core(:,k-1)*dp(k-1)/dp(k)!flux from above
                xn_in_core(:,k-1) =0.0
-            endif
+            end if
 
             if(cnvdf(i,j,k+1)-cnvdf(i,j,k)<=0.0)then
                !mass from grid to core - horizontal exchange
@@ -360,11 +360,11 @@ subroutine convection_pstar(ps3d,dt_conv)
                !limit fluxes
                   cnvdf(i,j,k+1)=-0.99*dp(k)/(GRAV*dt_conv)+cnvdf(i,j,k)!0.99 to determine
                   mass_exchanged=(cnvdf(i,j,k+1)-cnvdf(i,j,k))*mass_air_grid(k)*GRAV*dt_conv/dp(k)
-               endif
+               end if
             else
 !NB: cnvdf < 0
                mass_exchanged=-(cnvdf(i,j,k+1)-cnvdf(i,j,k))/cnvdf(i,j,k)*mass_air_core(k)
-            endif
+            end if
 
             !horizontal exchange
 !NB: cnvdf < 0
@@ -384,11 +384,11 @@ subroutine convection_pstar(ps3d,dt_conv)
 
                mass_air_grid(k) = mass_air_grid(k)+mass_exchanged
 
-            endif
+            end if
 
-         enddo
+         end do
 
-         endif
+         end if
 
          if(.true.)then
 !diffusion free method
@@ -407,7 +407,7 @@ subroutine convection_pstar(ps3d,dt_conv)
                mass_air_grid_k_temp=mass_air_grid_k_temp+mass_air_grid(k_fill)*dk(k_fill)
                mass_air_grid(k_fill)=mass_air_grid(k_fill)-mass_air_grid(k_fill)!ZERO
                k_fill=k_fill+1            
-            enddo
+            end do
 
             xn_buff(:,k)=xn_buff(:,k)+ xn_adv(:,i,j,k_fill)*dk(k_fill)*&
                  (mass_air_grid0(k)*dk(k)-mass_air_grid_k_temp)/(mass_air_grid(k_fill)*dk(k_fill))
@@ -420,23 +420,23 @@ subroutine convection_pstar(ps3d,dt_conv)
 
             dpdeta(i,j,k) = mass_air_grid0(k)!=(mass_air_grid_k_temp+(mass_air_grid0(k)*dk(k)-mass_air_grid_k_temp))/dk(k)
             
-        enddo
+        end do
         do k=1,KMAX_MID
            xn_adv(:,i,j,k)=xn_buff(:,k)/dk(k)
-        enddo
+        end do
 !check that all mass is distributed
 !         if(abs(mass_air_grid(k_fill))>1.0.or.k_fill/=KMAX_MID)then
 !            if(ME==0)write(*,*)'ERRORMASS',ME,i,j,k_fill,mass_air_grid(k_fill),mass_air_grid_k_temp,mass_air_grid0(k)
-!         endif
+!         end if
          else
             do k=1,KMAX_MID
                dpdeta(i,j,k) = mass_air_grid(k)
-            enddo
+            end do
 
-         endif
+         end if
 
-      enddo
-   enddo
+      end do
+   end do
 
  end subroutine convection_Eta
 end module Convection_ml

@@ -134,14 +134,14 @@ function ColumnRate(i,j,REDUCE_VOLCANO) result(emiss)
       call PrintLog("WARNING: "//mname//" SO2 not found",MasterProc)   
     else
       iSO2=itot
-    endif
+    end if
     itot=find_index("ASH",chemgroups(:)%name)
     if(itot<1)then
       call PrintLog("WARNING: "//mname//" ASH not found",MasterProc)
     else
       iASH=>chemgroups(itot)%specs
-    endif
-  endif
+    end if
+  end if
 !----------------------------!
 !
 !----------------------------!
@@ -165,7 +165,7 @@ function ColumnRate(i,j,REDUCE_VOLCANO) result(emiss)
       else
         k0=getModLev(i,j,emsdef(v,e)%base)
         k1=getModLev(i,j,emsdef(v,e)%top)
-      endif
+      end if
       uconv=1e-3                                          ! Kg/s --> ton/s=1e6 g/s
       if(emsdef(v,e)%dsec)uconv=1e6/max(dt_advec,&        ! Tg   --> ton/s=1e6 g/s
         tdif_secs(to_stamp(sbeg,SDATE_FMT),to_stamp(send,SDATE_FMT)))
@@ -176,8 +176,8 @@ function ColumnRate(i,j,REDUCE_VOLCANO) result(emiss)
         write(*,MSG_FMT)snow//' Erup.',me,'me',e,emsdef(v,e)%sbeg,&
           itot,trim(species(itot)%name),k1,'k1',k0,'k0',&
           emiss(itot,k1),'emiss',emsdef(v,e)%rate,'rate',uconv,'uconv'
-    enddo doEMS
-  enddo doLOC
+    end do doEMS
+  end do doLOC
 !----------------------------!
 ! Volcanic emission reduction for SR run
 !----------------------------!
@@ -186,7 +186,7 @@ function ColumnRate(i,j,REDUCE_VOLCANO) result(emiss)
       emiss(iSO2,:)=emiss(iSO2,:)*REDUCE_VOLCANO
     if(associated(iASH))&
       emiss(iASH,:)=emiss(iASH,:)*REDUCE_VOLCANO
-  endif
+  end if
 !----------------------------!
 ! Disable Volcanic emissions
 !----------------------------!
@@ -207,7 +207,7 @@ function getModLev(i,j,height) result(k)
   if(height<=0.0)return
   do while(k>0.and.height>z_bnd(i,j,k))
     k=k-1
-  enddo
+  end do
 end function getModLev
 !----------------------------!
 ! Set Volcanic Eruption Param.
@@ -239,13 +239,13 @@ subroutine setRate()
       write(*,MSG_FMT)'No need for reset volc.def...'
     second_call=.false.
     return
-  endif
+  end if
   first_call=.false.
   if(.not.allocated(emsdef)) then
      allocate(emsdef(0:NMAX_LOC,NMAX_EMS))
      emsdef(:,:)=ems('UNDEF','UNKNOWN','??',-999.0,-999.0,-999.0,&
                      '??','??',-1,-1,-1,.true.,.false.)
-  endif
+  end if
 !----------------------------!
 ! Read Vent CVS
 !----------------------------!
@@ -253,7 +253,7 @@ subroutine setRate()
   if(MasterProc)then
     call open_file(IO_TMP,"r",flocdef,needed=.true.,iostat=stat)
     call CheckStop(stat,ERR_LOC_CSV//' not found')
-  endif
+  end if
   nloc=0
   l = 1
   doLOC: do while (l<=NMAX_LOC)
@@ -277,9 +277,9 @@ subroutine setRate()
         write(*,MSG_FMT)'Vent',me,'out',-1,trim(dloc%id),&
           dloc%grp,trim(dloc%name),dloc%iloc,"i",dloc%jloc,"j",&
           dloc%lon,"lon",dloc%lat,"lat"
-    endif
+    end if
     l = l+1
-  enddo doLOC
+  end do doLOC
   if(MasterProc) close(IO_TMP)
   source_found=(nloc>0).or.(MasterProc.and.DEBUG)
 !----------------------------!
@@ -289,7 +289,7 @@ subroutine setRate()
   if(MasterProc)then
     call open_file(IO_TMP,"r",femsdef,needed=.true.,iostat=stat)
     call CheckStop(stat,ERR_EMS_CSV//' not found')
-  endif
+  end if
   nems(:)=0
   l = 1
   sbeg=date2string(SDATE_FMT,startdate)
@@ -325,9 +325,9 @@ subroutine setRate()
       if(DEBUG) &
         write(*,MSG_FMT)'Erup.Specific',me,'out',-1,trim(dems%id),&
           dems%spc,trim(dems%name),dems%grp,trim(dems%name)//"_GROUP"
-    endif
+    end if
     l = l+1
-  enddo doEMS
+  end do doEMS
   if(MasterProc) close(IO_TMP)
   source_found=any(nems(1:nloc)>0)
 !----------------------------!
@@ -337,7 +337,7 @@ subroutine setRate()
   if(nems(0)<1)then
    !if(DEBUG) write(*,MSG_FMT)'Erup.Default',me,'not found'
     return
-  endif
+  end if
   doLOCe: do v=1,nloc
     if(nems(v)>0)cycle doLOCe   ! Specific found --> no need for Default
     e=nems(0)+1       ! A single defaul can have multiple lines, e.g.
@@ -355,14 +355,14 @@ subroutine setRate()
         if(DEBUG)&
           write(*,MSG_FMT)'Erup.Default',me,'Add loc%elev',&
             nint(dems%base),'ems%base',nint(dems%top),'ems%top'
-      endif
+      end if
       if(dems%spc<1.and.any(dems%name(1:3)==EXPAND_SCENARIO_NAME))then ! Expand variable name
         dems%name=trim(locdef(v)%id)//trim(dems%name(4:)) ! e.g. ASH_F --> V1702A02B_F
         dems%spc=find_index(dems%name,species(:)%name)    ! Specie (total)
         if(DEBUG)&
           write(*,MSG_FMT)'Erup.Default',me,'Expand',&
             dems%spc,trim(dems%name)
-      endif
+      end if
       if(dems%spc>0)then           ! Expand single SPC
         nems(v)=nems(v)+1
         call CheckStop(nems(v)>NMAX_EMS,ERR_EMS_MAX//" expand")
@@ -389,13 +389,13 @@ subroutine setRate()
           if(DEBUG) &
           write(*,MSG_FMT)'Erup.Default',me,'Expand GRP',nems(v),trim(dems%id),&
             dems%spc,trim(dems%name)
-        enddo
+        end do
       else
         if(DEBUG) &
           write(*,MSG_FMT)'Erup.Default',me,'not found'
-      endif
-    enddo
-  enddo doLOCe
+      end if
+    end do
+  end do doLOCe
   source_found=any(nems(1:nloc)>0)
 end subroutine setRate
 !----------------------------!
@@ -467,7 +467,7 @@ function getErup(line) result(def)
     if(iloc>0)then
 !!    call CheckStop(.not.topo_found,ERR_TOPO_NC//' not found')     
       base=locdef(iloc)%elev    ! [m]
-    endif
+    end if
     read(words(4),*)top         ! [km]
     top=top*1e3                 ! [m]
     top=top+base                ! [m]

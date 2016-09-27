@@ -126,7 +126,7 @@ contains
              write(*,*)"GetCdfFrac: Too many emitter countries in one gridcell: ",&
                   me,i,j,nlandcode(i,j)
              call StopAll("To many countries in one gridcell ")
-          endif
+          end if
           lonlat_fac=1.0
           if(N_femis_lonlat>0)then
              do i_femis_lonlat=1,N_femis_lonlat
@@ -135,9 +135,9 @@ contains
                      glon(i,j)>femis_lonmin(i_femis_lonlat).and.&
                      glon(i,j)<femis_lonmax(i_femis_lonlat)     )then
                    lonlat_fac=lonlat_fac*e_fact_lonlat(isec,i_femis_lonlat,iem) 
-                endif
-             enddo
-          endif
+                end if
+             end do
+          end if
           do n=1,nlandcode(i,j)
              ic=find_index(landcode(i,j,n),Country(:)%icode)
 
@@ -147,21 +147,21 @@ contains
                 !1) check that country is in include list
                 found=find_index(Country(ic)%code ,incl(1:nin),first_only=.true.)
                 if(found<=0)cycle!do not include
-             endif
+             end if
              if(nex>0)then
                 !1) check that country is not in exclude list
                 found=find_index(Country(ic)%code ,excl(1:nex),first_only=.true.)
                 if(found>0)cycle!exclude
-             endif
+             end if
 
              if(Country(ic)%icode/=landcode(i,j,n))then
                 write(*,*)"COUNTRY CODE ERROR: ",landcode(i,j,n),ic,Country(ic)%icode
                 call StopAll("COUNTRY CODE ERROR ")
-             endif
+             end if
              if(ic>NLAND)then
                 write(*,*)"COUNTRY CODE NOT RECOGNIZED OR UNDEFINED: ",landcode(i,j,n)
                 call StopAll("COUNTRY CODE NOT RECOGNIZED ")
-             endif
+             end if
 
              !merge into existing emissions           
              Cexist=.false.
@@ -173,8 +173,8 @@ contains
 
                    Cexist=.true.
                    exit
-                endif
-             enddo
+                end if
+             end do
              if(.not.Cexist)then
                 !country not included yet. define it now:
                 nGridEmisCodes(i,j)=nGridEmisCodes(i,j)+1
@@ -182,16 +182,16 @@ contains
                    write(*,*)"Too many emitter countries in one gridemiscell: ",&
                         me,i,j,nGridEmisCodes(i,j)
                    call StopAll("To many countries in one gridemiscell ")
-                endif
+                end if
                 i_gridemis=nGridEmisCodes(i,j)
                 GridEmisCodes(i,j,i_gridemis)=landcode(i,j,n)
                 GridEmis(isec,i,j,i_gridemis,iem)=fractions(i,j,n)*cdfemis(i,j)*lonlat_fac  
-             endif
+             end if
              sumemis_local(ic,iem)=sumemis_local(ic,iem)&
                   +0.001*fractions(i,j,n)*cdfemis(i,j)*lonlat_fac  !for diagnostics, mass balance
-          enddo
-       enddo
-    enddo
+          end do
+       end do
+    end do
 
   end subroutine EmisGetCdfFrac
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -343,9 +343,9 @@ contains
                             glon(i,j)>femis_lonmin(i_femis_lonlat).and.&
                             glon(i,j)<femis_lonmax(i_femis_lonlat)     )then
                           lonlat_fac=lonlat_fac*e_fact_lonlat(isec,i_femis_lonlat,iem) 
-                       endif
-                    enddo
-                 endif
+                       end if
+                    end do
+                 end if
 
                sumcdfemis_loc(ic) = sumcdfemis_loc(ic) + &
                     0.001 *  e_fact(isec,ic,iem) * cdfemis(i,j) *lonlat_fac 
@@ -361,8 +361,8 @@ contains
                        
                        Cexist=.true.
                        exit
-                    endif
-                 enddo
+                    end if
+                 end do
                  if(.not.Cexist)then
                     !country not included yet. define it now:
                     nGridEmisCodes(i,j)=nGridEmisCodes(i,j)+1
@@ -371,12 +371,12 @@ contains
                         "Too many emitter countries in one gridemiscell: ",&
                         me,i,j,nGridEmisCodes(i,j)
                        call StopAll("To many countries in one gridemiscell ")
-                    endif
+                    end if
                     i_gridemis=nGridEmisCodes(i,j)
                     GridEmisCodes(i,j,i_gridemis)=Country(ic)%icode
                     GridEmis(isec,i,j,i_gridemis,iem)= &
                       cdfemis(i,j) * e_fact(isec,ic,iem)*lonlat_fac 
-                 endif
+                 end if
                  
               end if
             end do !i
@@ -426,7 +426,7 @@ contains
          newfname=key2str(newfname,'gridpm10','gridPM10')
          if(MasterProc)write(*,22)'trying: ',trim(newfname)
          call open_file(IO_EMIS,"r",newfname,needed=.true.)
-      endif
+      end if
 READEMIS: do   ! ************* Loop over emislist files *******************
 
             read(unit=IO_EMIS,fmt=*,iostat=ios) CC,i,j, duml,dumh,  &
@@ -437,7 +437,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
             do ic=1,NLAND
                if((Country(ic)%icode==CC))&
                     goto 543
-            enddo 
+            end do 
             write(unit=errmsg,fmt=*) &
                    "COUNTRY CODE NOT RECOGNIZED OR UNDEFINED ", CC
             call CheckStop(errmsg)
@@ -467,12 +467,12 @@ READEMIS: do   ! ************* Loop over emislist files *******************
                 !1) check that country is in include list
                 found=find_index(Country(ic)%code ,incl(1:nin),first_only=.true.)
                 if(found<=0)cycle READEMIS!do not include
-             endif
+             end if
              if(nex>0)then
                 !1) check that country is not in exclude list
                 found=find_index(Country(ic)%code ,excl(1:nex),first_only=.true.)
                 if(found>0)cycle READEMIS!exclude
-             endif
+             end if
 
              lonlat_fac=1.0
              if(N_femis_lonlat>0)then
@@ -482,9 +482,9 @@ READEMIS: do   ! ************* Loop over emislist files *******************
                         glon(i,j)>femis_lonmin(i_femis_lonlat).and.&
                         glon(i,j)<femis_lonmax(i_femis_lonlat)     )then
                       lonlat_fac(:)=lonlat_fac(:)*e_fact_lonlat(:,i_femis_lonlat,iem) 
-                   endif
-                enddo
-             endif
+                   end if
+                end do
+             end if
 
               !merge into existing emissions           
              Cexist=.false.
@@ -497,8 +497,8 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 
                    Cexist=.true.
                    exit
-                endif
-             enddo
+                end if
+             end do
              if(.not.Cexist)then
                 !country not included yet. define it now:
                 nGridEmisCodes(i,j)=nGridEmisCodes(i,j)+1
@@ -508,11 +508,11 @@ READEMIS: do   ! ************* Loop over emislist files *******************
                         me,i,j,CC,&
                        (GridEmisCodes(i,j,i_gridemis),i_gridemis=1,NCMAX)
                    call StopAll("To many countries in one gridemiscell ")
-                endif
+                end if
                 i_gridemis=nGridEmisCodes(i,j)
                 GridEmisCodes(i,j,i_gridemis)=CC
                 GridEmis(:,i,j,i_gridemis,iem)=e_fact(:,ic,iem) *  tmpsec(:)*lonlat_fac(:)
-             endif
+             end if
             !for diagnostics, mass balance:
              sumemis_local(ic,iem)=sumemis_local(ic,iem)&
                   +0.001*sum(e_fact(:,ic,iem)*tmpsec(:)*lonlat_fac(:))
@@ -571,7 +571,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
         ios = 0
         write( *,*) "WARNING: NO FEMIS FILE"
         return !*** if no femis file, e_fact=1 as default *** 
-  endif
+  end if
   call CheckStop( ios < 0 ,"EmisGet:ios error in femis.dat")
 
 
@@ -637,7 +637,7 @@ end if
        if(nwords<ncols+5)then
           if(me==0)write(*,*)'femis.dat not understood ',nwords,ncols+5,txt
           call CheckStop( nwords<ncols+5 , "EmisGet: read error in femis lonlat" )
-       endif
+       end if
 !latmin,latmax,lonmin,lonmax
           N_femis_lonlat=N_femis_lonlat+1
           call CheckStop( N_femis_lonlat>MAXFEMISLONLAT, "EmisGet: increase MAXFEMISLONLAT" )
@@ -691,7 +691,7 @@ end if
              ! find country number  corresponding to index as written in emisfile
              do iland1=1,NLAND
                 if(Country(iland1)%icode==inland) goto 544
-             enddo
+             end do
              
              if(MasterProc) write(*,*)'COUNTRY CODE NOT RECOGNIZED',inland
              
@@ -700,7 +700,7 @@ end if
 544          continue
              if(iland1/=0)   iland2 = iland1
           end if
-       endif
+       end if
 
        if (isec == 0 ) then       ! All sectors
           isec1 = 1
@@ -731,10 +731,10 @@ end if
                      qc(ie), e_f( qc(ie) )
                 write(unit=6,fmt=*) "loops over ", isec1, isec2, iland1, iland2
              end if ! DEBUG_GETEMIS
-          endif
+          end if
        end do !ie
           
-  enddo READFILE ! Loop over femis
+  end do READFILE ! Loop over femis
 
   close(IO_EMIS)
 
@@ -809,7 +809,7 @@ end if
          if(snap > N_HFAC)then
             if(me==0)write(*,*)N_HFAC,' sector classes defined, but found ',snap
             call CheckStop(snap > N_HFAC,"EmisGet: sector class out of bounds")
-         endif
+         end if
          if( DEBUG_GETEMIS.and.MasterProc ) write(*,*) "VER=> ",snap, tmp(1), tmp(3)
          emis_hprofile(1:nemis_hprofile,snap) = tmp(1:nemis_hprofile)
       end if
@@ -845,7 +845,7 @@ end if
       do k=KMAX_BND-1,KMAX_BND-nemis_hprofile,-1
          k_up=k_up+1
          emis_P_level(KMAX_BND-k)=A_bnd(k)+B_bnd(k)*Pref !not used
-      enddo
+      end do
       nemis_kprofile=nemis_hprofile
       allocate(emis_kprofile(nemis_kprofile,N_HFAC),stat=allocerr)
       emis_kprofile(1:nemis_kprofile,:)=emis_hprofile(1:nemis_hprofile,:)
@@ -856,15 +856,15 @@ end if
          write(*,*)'emission heights: defined from pressure levels'
          do k=0,nemis_hprofile
             write(*,*)'P emis levels : ',k,emis_P_level(k)
-         enddo
-      endif
+         end do
+      end if
       !stop
       !find highest level used
       nemis_kprofile = 0
       do k=KMAX_BND-1,1,-1
          nemis_kprofile = nemis_kprofile + 1
          if(A_bnd(k)+B_bnd(k)*Pref-0.0001<emis_P_level(nemis_hprofile))exit
-      enddo
+      end do
       if(MasterProc) write(*,*)'Emissions distributed among ',nemis_kprofile,' lowest levels'
 
       allocate(emis_kprofile(nemis_kprofile,N_HFAC),stat=allocerr)
@@ -888,7 +888,7 @@ end if
             do k_ext=1,nemis_hprofile
                if(emis_P_level(k_ext)<P_emep)exit
                k1_ext(k)=k_ext
-            enddo
+            end do
             if(DEBUG_GETEMIS.and.MasterProc) write(*,*)k,k1_ext(k),k1_ext(k+1)
 
             !sum all contributions starting from last counted level (i.e. P_emep(k+1))
@@ -908,13 +908,13 @@ end if
                if(DEBUG_GETEMIS.and.MasterProc) write(*,fmt="(A,I5,6F10.2)")'adding fraction of level between P_emep(k+1) and P_emep(k)',&
                     k1_ext(k+1)+1,frac,emis_hprofile(k1_ext(k+1)+1,isec),emis_P_level(k1_ext(k+1)+1),&
                     (A_bnd(k+1)+B_bnd(k+1)*Pref ),P_emep,(emis_P_level(k1_ext(k+1))-emis_P_level(k1_ext(k+1)+1))
-            endif
+            end if
 
             !add all full levels in between
             do k_ext=k1_ext(k+1)+2,k1_ext(k)
                emis_kprofile(KMAX_BND-k,isec)=emis_kprofile(KMAX_BND-k,isec)+emis_hprofile(k_ext,isec)
                if(DEBUG_GETEMIS.and.MasterProc) write(*,fmt="(A,I5,6F10.2)")'adding entire level',k_ext,emis_hprofile(k_ext,isec),emis_P_level(k_ext)
-            enddo
+            end do
 
             !add level just below P_emep(k), if not already counted, above k1_ext(k)  below P_emep; and must exist
             if(emis_P_level(k1_ext(k+1)+1)>P_emep.and. k1_ext(k)<nemis_hprofile )then
@@ -923,10 +923,10 @@ end if
                if(DEBUG_GETEMIS.and.MasterProc) write(*,fmt="(A,I5,6F10.2)")'adding last fraction of level',k1_ext(k)+1,&
                     frac,emis_hprofile(k1_ext(k)+1,isec),emis_P_level(k1_ext(k+1)+1),emis_P_level(k1_ext(k)),P_emep,&
                     (emis_P_level(k1_ext(k))-emis_P_level(k1_ext(k)+1))
-            endif
+            end if
 
-         enddo
-      enddo
+         end do
+      end do
       
       CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)!so that output from different CPU does not get mixed up
       
@@ -934,24 +934,24 @@ end if
          write(*,*)'Distribution of emission into levels:'
          do isec=1,N_HFAC! could put inside but easier for debugging to put here now
             write(*,fmt="(A,I5,A,20F6.3)")'sector: ',isec,' fractions: ',(emis_kprofile(k,isec),k=1,nemis_kprofile)
-         enddo
-      endif
+         end do
+      end if
 
-   endif
+   end if
 
 !check normalization of distributions:
    do isec=1,N_HFAC
       sum=0.0
       do k=1,nemis_kprofile
          sum=sum+emis_kprofile(k,isec)
-      enddo
+      end do
       if(abs(sum-1.0)>0.01)then
         if(MasterProc)then
            write(*,*)'WARNING emis height distribution not normalized : ',sum,(emis_kprofile(k,isec),k=1,nemis_kprofile)
            call StopAll( 'emis height distribution not normalized  ')
-        endif
-      endif
-   enddo
+        end if
+      end if
+   end do
 
  end subroutine EmisHeights
 !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -1036,7 +1036,7 @@ end if
                  write(*,fmt=*) "emis_split: no specials for:",EMIS_FILE(ie)
 
               exit IDEF_LOOP
-          endif
+          end if
        end if
 
 
@@ -1141,7 +1141,7 @@ end if
                  trim(EMIS_FILE(ie))//':'//trim(txtinput) )
                  cycle READ_DATA
               end if
-          endif
+          end if
 
            n = n + 1
            if (debugm ) then
@@ -1203,11 +1203,11 @@ end if
                       "DEBUG_EMISGET splitdef UK", isec, ie, i,  &
                        iqrc, itot, trim(species(itot)%name), &
                          tmp_emisfrac(iqrc,isec,iland)
-                endif
-             enddo ! i
-           enddo ! iland
+                end if
+             end do ! i
+           end do ! iland
 
-       enddo READ_DATA 
+       end do READ_DATA 
        close(IO_EMIS)
 
        call CheckStop(  defaults .and. n  /=  N_SPLIT, &
@@ -1260,8 +1260,8 @@ end if
           write(*,fmt=*)"NOTE! WARNING! Molar mass assumed to be 200.0 for all road dust components. Emissions will be in ERROR if another value is set in the GenChem input!"
      do ie=1,NROADDUST
         roaddust_masscorr(ie)=1.0/200.
-     enddo
-  endif
+     end do
+  end if
    
  end subroutine EmisSplit
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -1314,7 +1314,7 @@ end if
          sumroaddust(:,:) =  0.0       ! initialize sums
          ios = 0
          my_first_road = .false.
-    endif
+    end if
 
   !>============================
 
@@ -1333,7 +1333,7 @@ end if
          write(*,*)'First line should be a comment line, starting with #'
       else
          write(*,*)'I read the comment line:',inputline
-      endif     
+      end if     
 
 READEMIS: do   ! ************* Loop over emislist files *******************
 
@@ -1352,7 +1352,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
             do ic=1,NLAND
                if((Country(ic)%icode==iic))&
                     goto 654
-            enddo
+            end do
             write(unit=errmsg,fmt=*) &
                    "COUNTRY CODE NOT RECOGNIZED OR UNDEFINED ", iic
             call CheckStop(errmsg)

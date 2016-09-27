@@ -161,11 +161,11 @@ integer :: ime, imex, imey, rest,i
         DOMAIN_DECOM_MODE="Y=2" !   even NPROC --> divide Y into 2
       else                    
         DOMAIN_DECOM_MODE="Y=1" !   odd  NPROC --> divide only in X direction  
-      endif          
+      end if          
     case default
       call CheckStop('parinit: Wrong Pole_singular value')
     end select
-  endif
+  end if
 
   select case(DOMAIN_DECOM_MODE)
   case("X*Y","XY")            ! try X,Y values until X*Y==NPROC
@@ -176,7 +176,7 @@ integer :: ime, imex, imey, rest,i
       if(NPROCX*NPROCY==NPROC)exit ! we found some values that divide NPROC
       NPROCX=NPROCX+1
       call CheckStop(NPROCX>NPROC,'parinit: bug in NPROCX algorithm')             
-    enddo
+    end do
   case("X*1","Y=1","X")       ! divide only in X direction
     NPROCX=NPROC
     NPROCY=1
@@ -199,7 +199,7 @@ integer :: ime, imex, imey, rest,i
     if(MasterProc) write(*,*)'change number of processors, or rundomain ',min_grids
     call CheckStop(GJMAX/NPROCY<min_grids,'subdomains are too small in Y direction')
     call CheckStop(GIMAX/NPROCX<min_grids,'subdomains are too small in X direction')
-  endif
+  end if
 
 56  format(A,I3,A,I3,A)
 66  format(A,I3,A,I5,A)
@@ -208,7 +208,7 @@ integer :: ime, imex, imey, rest,i
     write(IO_LOG,56)' Using ',NPROCX*NPROCY ,' processors out of ',NPROC !may be different in future versions
     write(*,66)' Divided rundomain into ',NPROCX ,' X',NPROCY ,' subdomains'
     write(IO_LOG,66)' Divided rundomain into ',NPROCX ,' X',NPROCY ,' subdomains'
-  endif
+  end if
 
   MAXLIMAX = (GIMAX+NPROCX-1)/NPROCX ! Maximum number of local points in lon
   MAXLJMAX = (GJMAX+NPROCY-1)/NPROCY !&! Maximum number of local points in lat
@@ -239,8 +239,8 @@ integer :: ime, imex, imey, rest,i
       gi0 = gi0 + mex
     else
       gi0 = gi0 + rest-1
-    endif
-  endif
+    end if
+  end if
   gi1 = gi0 + limax - 1
 
 ! y-direction (latitude)
@@ -256,8 +256,8 @@ integer :: ime, imex, imey, rest,i
       gj0 = gj0 + mey
     else
       gj0 = gj0 + rest-1
-    endif
-  endif
+    end if
+  end if
   gj1 = gj0 + ljmax - 1
 
   if(DEBUG_PAR) &
@@ -284,8 +284,8 @@ integer :: ime, imex, imey, rest,i
         tgi0(ime) = tgi0(ime) + imex
       else
         tgi0(ime) = tgi0(ime) + rest-1
-      endif
-    endif
+      end if
+    end if
     tgi1(ime) = tgi0(ime) + tlimax(ime) - 1
     
     ! y-direction (latitude)
@@ -301,10 +301,10 @@ integer :: ime, imex, imey, rest,i
         tgj0(ime) = tgj0(ime) + imey
       else
         tgj0(ime) = tgj0(ime) + rest-1
-      endif
-    endif
+      end if
+    end if
     tgj1(ime) = tgj0(ime) + tljmax(ime) - 1
-  enddo
+  end do
 
 ! The size of the grid cannot be too small.       
   call CheckStop(limax < min_grids,"Subdomain too small!&
@@ -342,11 +342,11 @@ integer :: ime, imex, imey, rest,i
         DOMAIN_DECOM_MODE="Y=2" !   even NPROC --> divide Y into 2
       else                    
         DOMAIN_DECOM_MODE="Y=1" !   odd  NPROC --> divide only in X direction  
-      endif          
+      end if          
     case default
       call CheckStop('parinit: Wrong Pole_singular value')
     end select
-  endif
+  end if
 
 !decompose into largesubdomains
  ! select case(DOMAIN_DECOM_MODE)
@@ -358,7 +358,7 @@ integer :: ime, imex, imey, rest,i
  !     if(NPROCX_IO*NPROCY_IO==NPROC_IO)exit ! we found some values that divide NPROC
  !     NPROCY_IO=NPROCY_IO+1
  !     call CheckStop(NPROCX_IO>NPROC_IO,'parinit: bug in NPROCX_IO algorithm')             
- !   enddo
+ !   end do
  ! case("X*1","Y=1","X")       ! divide only in X direction
  !   NPROCX_IO=NPROC_IO
  !   NPROCY_IO=1
@@ -390,7 +390,7 @@ integer :: ime, imex, imey, rest,i
       if(NPROCX_SUB*NPROCY_SUB==NPROC_SUB)exit ! we found some values that divide NPROC
       NPROCX_SUB=NPROCX_SUB+1
       call CheckStop(NPROCX_SUB>NPROC_SUB,'parinit: bug in NPROCX_SUB algorithm')             
-    enddo
+    end do
   case("X*1","Y=1","X")       ! divide only in X direction
     NPROCX_SUB=NPROC_SUB
     NPROCY_SUB=1
@@ -405,7 +405,7 @@ integer :: ime, imex, imey, rest,i
      else
         NPROCX_SUB=NPROC_SUB/2
         NPROCY_SUB=2
-     endif
+     end if
   case("X*2","Y=2")           ! divide Y into 2
      if(NPROCY_IO==2)then
         !Y already divided!
@@ -414,7 +414,7 @@ integer :: ime, imex, imey, rest,i
      else
         NPROCX_SUB=NPROC_SUB/2
         NPROCY_SUB=2
-     endif
+     end if
   case default
     call CheckStop('parinit: Unknown DOMAIN_DECOM_MODE')
   end select
@@ -432,7 +432,7 @@ integer :: ime, imex, imey, rest,i
     write(*,*)'change number of processors, or rundomain ',min_grids,GJMAX,NPROCY
     call CheckStop(GJMAX/NPROCY<min_grids,'subdomains are too small in Y direction')
     call CheckStop(GIMAX/NPROCX<min_grids,'subdomains are too small in X direction')
-  endif
+  end if
 
 56  format(A,I3,A,I3,A)
 66  format(A,I3,A,I5,A)
@@ -441,7 +441,7 @@ integer :: ime, imex, imey, rest,i
     write(IO_LOG,56)' Using ',NPROCX*NPROCY ,' processors out of ',NPROC !may be different in future versions
     write(*,66)' Divided rundomain into ',NPROCX ,' X',NPROCY ,' subdomains'
     write(IO_LOG,66)' Divided rundomain into ',NPROCX ,' X',NPROCY ,' subdomains'
-  endif
+  end if
 
   MAXLIMAX = (GIMAX+NPROCX-1)/NPROCX ! Maximum number of local points in lon
   MAXLJMAX = (GJMAX+NPROCY-1)/NPROCY !&! Maximum number of local points in lat
@@ -464,9 +464,9 @@ integer :: ime, imex, imey, rest,i
 !     do i=1,NPROCX_SUB
 !        if(me==(NPROC_SUB*i_io ))me=me_new
 !        me_new=me_new+1
-!     enddo
-!     enddo
-!  enddo
+!     end do
+!     end do
+!  end do
 
 ! Find the x-, y-, and z-addresses of the domain assigned to the processor
   mey = me/NPROCX
@@ -491,8 +491,8 @@ integer :: ime, imex, imey, rest,i
       gi0 = gi0 + mex
     else
       gi0 = gi0 + rest-1
-    endif
-  endif
+    end if
+  end if
   gi1 = gi0 + limax - 1
 
 ! y-direction (latitude)
@@ -508,8 +508,8 @@ integer :: ime, imex, imey, rest,i
       gj0 = gj0 + mey
     else
       gj0 = gj0 + rest-1
-    endif
-  endif
+    end if
+  end if
   gj1 = gj0 + ljmax - 1
 
   if(DEBUG_PAR) &
@@ -538,8 +538,8 @@ integer :: ime, imex, imey, rest,i
         tgi0(ime) = tgi0(ime) + imex
       else
         tgi0(ime) = tgi0(ime) + rest-1
-      endif
-    endif
+      end if
+    end if
     tgi1(ime) = tgi0(ime) + tlimax(ime) - 1
     
     ! y-direction (latitude)
@@ -555,10 +555,10 @@ integer :: ime, imex, imey, rest,i
         tgj0(ime) = tgj0(ime) + imey
       else
         tgj0(ime) = tgj0(ime) + rest-1
-      endif
-    endif
+      end if
+    end if
     tgj1(ime) = tgj0(ime) + tljmax(ime) - 1
-  enddo
+  end do
 
 !For large subdomains
   do ime = 0, NPROC_IO-1
@@ -572,7 +572,7 @@ integer :: ime, imex, imey, rest,i
      tlargeimax(ime) = tlargegi1(ime) - tlargegi0(ime) + 1
      tlargejmax(ime) = tlargegj1(ime) - tlargegj0(ime) + 1
 
-  enddo
+  end do
 
   if(ME_IO>=0)then
      largeLIMAX= tlargeimax(ME_IO)
@@ -585,7 +585,7 @@ integer :: ime, imex, imey, rest,i
      i=ME_MPI/(NPROC_MPI/NPROC_IO)
      largeLIMAX= tlargeimax(i)
      largeLJMAX= tlargejmax(i)
-  endif
+  end if
   if(ME_SUB==0)write(*,*)ME_IO,'size large subdomain',largeLIMAX,'X',largeLJMAX
   if(ME_SUB==0)write(*,*)ME_IO,'from ',gi0,',',gj0,'to',gi1,',',gj1
      write(*,"(a12,20i6)") "gi ", me_io, me, me_sub, &
@@ -597,7 +597,7 @@ integer :: ime, imex, imey, rest,i
           & Limax must be at least min_grids")
      call CheckStop(ljmax < min_grids,"Subdomain too small!&
           & Ljmax must be at least min_grids")
-  endif
+  end if
 end subroutine parinit_groups
 
 subroutine Topology(cyclicgrid,poles)   
@@ -625,13 +625,13 @@ integer, intent(in) :: poles(2)    !  poles(1)=1 if North pole,
   else
     neighbor(SOUTH) = NOPROC
     if(poles(2)==0)lj0 = 2
-  endif
+  end if
   if(mey<NPROCY-1) then
     neighbor(NORTH) = me+NPROCX
   else
     neighbor(NORTH) = NOPROC
     if(poles(1)==0)lj1 = ljmax - 1
-  endif
+  end if
   if(mex > 0) then
     neighbor(WEST) = me-1
     li0 = 1
@@ -641,8 +641,8 @@ integer, intent(in) :: poles(2)    !  poles(1)=1 if North pole,
     if(Cyclicgrid==1)then
       neighbor(WEST) =  me+NPROCX-1
       li0 = 1
-    endif
-  endif
+    end if
+  end if
   if(mex < NPROCX-1) then
     neighbor(EAST) = me+1
     li1 = limax
@@ -652,8 +652,8 @@ integer, intent(in) :: poles(2)    !  poles(1)=1 if North pole,
     if(Cyclicgrid==1)then
       neighbor(EAST) = me-NPROCX+1
       li1 = limax
-    endif
-  endif
+    end if
+  end if
 
 end subroutine topology
 subroutine Topology_io(cyclicgrid,poles)   
@@ -680,13 +680,13 @@ integer, intent(in) :: poles(2)    !  poles(1)=1 if North pole,
   else
     neighbor(SOUTH) = NOPROC
     if(poles(2)==0)lj0 = 2
-  endif
+  end if
   if(mey<NPROCY_IO-1) then
     neighbor(NORTH) = me_IO+NPROCX_IO
   else
     neighbor(NORTH) = NOPROC
     if(poles(1)==0)lj1 = largeljmax - 1
-  endif
+  end if
   if(mex > 0) then
     neighbor(WEST) = me_IO-1
     li0 = 1
@@ -696,8 +696,8 @@ integer, intent(in) :: poles(2)    !  poles(1)=1 if North pole,
     if(Cyclicgrid==1)then
       neighbor(WEST) =  me_IO+NPROCX_IO-1
       li0 = 1
-    endif
-  endif
+    end if
+  end if
   if(mex < NPROCX_IO-1) then
     neighbor(EAST) = me_IO+1
     li1 = largelimax
@@ -707,8 +707,8 @@ integer, intent(in) :: poles(2)    !  poles(1)=1 if North pole,
     if(Cyclicgrid==1)then
       neighbor(EAST) = me_IO-NPROCX_IO+1
       li1 = largelimax
-    endif
-  endif
+    end if
+  end if
   write(*,*)'topology io',me_mpi,neighbor(EAST),neighbor(WEST),neighbor(SOUTH),neighbor(NORTH)
 
 end subroutine topology_io

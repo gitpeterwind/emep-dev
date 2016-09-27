@@ -570,8 +570,8 @@ subroutine Config_ModelConstants(iolog)
 
     do i = 1, size(AERO%DpgN(:))
       AERO%DpgN(i) = DpgV2DpgN(AERO%DpgV(i),AERO%sigma(i))
-    enddo     
-  endif
+    end do     
+  end if
 
   if(MasterProc)then
   ! write(*, * ) "NAMELIST IS "
@@ -579,7 +579,7 @@ subroutine Config_ModelConstants(iolog)
   ! write(*,* ) "NAMELIST IOLOG IS ", iolog
     write(iolog,*) "NAMELIST IS "
     write(iolog, NML=ModelConstants_config)
-  endif
+  end if
 
   DataPath(1) = '.'!default
   rewind(IO_NML)
@@ -591,11 +591,11 @@ subroutine Config_ModelConstants(iolog)
         write(*,*)'WARNING: Could not find valid DataDir. Tried:'
         do j=1,i-1
           write(*,*)trim(DataPath(j))
-        enddo
+        end do
         stop
-      endif
+      end if
       exit
-    endif
+    end if
 !   INQUIRE(...) does not behave consistently across intel/gfortran
     open(IO_TMP,file=trim(DataPath(i)),iostat=iostat,action='read')! does not work without action='read'
     if(iostat==0)then
@@ -603,8 +603,8 @@ subroutine Config_ModelConstants(iolog)
       if(MasterProc)write(*,*)'DataDir set to',trim(DataDir)
       close(IO_TMP)
       exit
-    endif
-  enddo
+    end if
+  end do
 
   rewind(IO_NML)
   read(IO_NML,NML=INPUT_PARA)
@@ -620,7 +620,7 @@ subroutine Config_ModelConstants(iolog)
   if(MasterProc)then
     write(*,*)'Defined DegreeDayFactorsFile as:'
     write(*,*)trim(DegreeDayFactorsFile)
-  endif
+  end if
 
 end subroutine Config_ModelConstants
 endmodule ModelConstants_ml

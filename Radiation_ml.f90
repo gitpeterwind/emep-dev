@@ -388,7 +388,7 @@ contains
               if (Scale <0.1 .or. Scale>10.0) then
                  print  "(a35,2f10.3)","Obs and Mod Radiation large diff", &
                      ObsRad,Idrctt+Idfuse
-              endif
+              end if
            end if
            Idrctt=Scale*Idrctt
            Idfuse=Scale*Idfuse

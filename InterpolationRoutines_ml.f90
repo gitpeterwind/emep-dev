@@ -173,7 +173,7 @@ module InterpolationRoutines_ml
        ((x2-x3)*(y-y3)-(x-x3)*(y2-y3))*((x4-x1)*(y-y1)-(x-x1)*(y4-y1))>0)&
       then
        inside=.true.
-    endif
+    end if
 
   end function inside_1234
 
@@ -228,9 +228,9 @@ subroutine Nearest4interp(glon, glat, values_grid, &
     print "(12x,a)" , "-------------------------------------------------"
     do j = NYD, 1, -1
      print "(f9.1,9f10.3)", dlat(1,j), ( values_data(i,j), i = 1, NXD)
-    enddo
+    end do
     print "(12x,a)" , "-------------------------------------------------"
-  endif
+  end if
 
   call grid2grid_coeff( &
     glon,glat,          &
@@ -250,17 +250,17 @@ subroutine Nearest4interp(glon, glat, values_grid, &
         if ( values_data(ii,jj) > Undefined ) then
           values_grid(i,j)=values_grid(i,j)+ww(k)*values_data(ii,jj)
           sumWeights      =sumWeights      +ww(k)
-        endif
-      enddo
+        end if
+      end do
 
       if(sumWeights>1.0e-9) then
         values_grid(i,j)= values_grid(i,j)/sumWeights
       else
         values_grid(i,j)= Undef
-      endif
+      end if
 
-      enddo
-    enddo
+      end do
+    end do
 
     if(debug)then
       print *, " "
@@ -270,9 +270,9 @@ subroutine Nearest4interp(glon, glat, values_grid, &
       print "(12x,a)" , "--------------------------------------------------"
       do j =  NYG, 1, -1
         print "(f9.1,9f10.3)", glat(1,j), ( values_grid(i,j), i = 1, NXG)
-      enddo
+      end do
       print "(12x,a)" , "--------------------------------------------------"
-    endif
+    end if
 end subroutine Nearest4interp
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -305,8 +305,8 @@ subroutine grid2grid_coeff(glon,glat,IIij,JJij,Weight,&
       call point2grid_coeff(glon(i,j),glat(i,j),&
              IIij(:,i,j),JJij(:,i,j),Weight(:,i,j),&
              dlon,dlat,NXD,NYD,all((/debug,i==debug_li,j==debug_lj/)))
-    enddo
-  enddo
+    end do
+  end do
 end subroutine grid2grid_coeff
 subroutine point2grid_coeff(glon,glat,IIij,JJij,Weight,dlon,dlat,NXD,NYD,debug)
   real, intent(in)    :: glon,glat ! lat/long of target grid
@@ -331,8 +331,8 @@ subroutine point2grid_coeff(glon,glat,IIij,JJij,Weight,dlon,dlat,NXD,NYD,debug)
       JJij(n:4)=EOSHIFT(JJij(n:4),-1,BOUNDARY=JJ)
 !     if(debug) write(*,"(a,2i4,f10.3,2i4,4f9.3,4es12.3)") "DEBUG-g2g", &
 !       II,JJ,DD,IIij(1),JJij(1),dlon(II,JJ),dlat(II,JJ),glon,glat,dist(:)
-    enddo ! II
-  enddo   ! JJ
+    end do ! II
+  end do   ! JJ
 
   Weight(1)=1.0-3.0*dist(1)/sum(dist(1:4))
   Weight(2)=(1.0-Weight(1))*(1.0-2.0*dist(2)/sum(dist(2:4)))
@@ -372,7 +372,7 @@ end subroutine point2grid_coeff
         Middle=2.0*Average-(Start+Endval)*0.5
      else
         Middle=(2.0*Nvalues*Average-(Nvalues-1)*(Start+Endval)*0.5)/(Nvalues+1)
-     endif
+     end if
 
 !B) Evaluate the function at i
 
@@ -393,7 +393,7 @@ end subroutine point2grid_coeff
      else
         !should not be possible
         stop
-     endif
+     end if
 
    end subroutine Averageconserved_interpolate
 

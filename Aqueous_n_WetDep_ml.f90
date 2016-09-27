@@ -282,7 +282,7 @@ subroutine Init_WetDep()
       elseif(DEBUG%AQUEOUS.and.MasterProc)then
         call CheckStop(WDEP_PREC,find_index(dname,f_2d(:)%name),&
           "Inconsistent WDEP_WANTED/f_2d definition for "//trim(dname))
-      endif
+      end if
     case("SPEC")
       iadv=f_2d(f2d)%index
       if(iadv>0) then
@@ -291,7 +291,7 @@ subroutine Init_WetDep()
       elseif(DEBUG%AQUEOUS.and.MasterProc)then
         call CheckStop(iadv,find_index(dname,species_adv(:)%name),&
           "Inconsistent WDEP_WANTED/f_2d definition for "//trim(dname))
-      endif
+      end if
     case("GROUP")
       igrp=f_2d(f2d)%index
       if(igrp>0) then
@@ -302,15 +302,15 @@ subroutine Init_WetDep()
       elseif(DEBUG%AQUEOUS.and.MasterProc)then
         call CheckStop(igrp,find_index(dname,chemgroups(:)%name),&
           "Inconsistent WDEP_WANTED/f_2d definition for "//trim(dname))
-      endif
+      end if
     end select
 
     if(DEBUG%AQUEOUS.and.MasterProc)  then
       write(*,"(2a,3i5)") "WETPPP ", trim(f_2d(f2d)%name), f2d, iadv, igrp
       if(igrp>0) write(*,*) "WETFGROUP ", nwgrp, wetGroupUnits(nwgrp)%iadv
       if(iadv>0) write(*,*) "WETFSPEC  ", nwspec, iadv
-    endif
-  enddo
+    end if
+  end do
 
 !####################### END indices here ##########
 
@@ -324,14 +324,14 @@ subroutine Init_WetDep()
       "CHECKING WetDep Calc2adv ", n,icalc,iadv,nc
     Calc2adv(icalc,0 ) = nc
     Calc2adv(icalc,nc) = iadv
-  enddo
+  end do
 
   if(MasterProc.and.DEBUG%AQUEOUS) then
     write(*,*) "FINAL WetDep Calc2adv "
     write(*,"(i3,i4,15(1x,a))") (icalc, Calc2adv(icalc,0), &
       (trim(species_adv(Calc2adv(icalc,nc))%name),nc=1,Calc2adv(icalc,0)),&
         icalc=1,NWETDEP_CALC)
-  endif
+  end if
 end subroutine Init_WetDep
 !-----------------------------------------------------------------------
 subroutine Setup_Clouds(i,j,debug_flag)
@@ -361,12 +361,12 @@ subroutine Setup_Clouds(i,j,debug_flag)
 !  do k= KUPPER+1, KMAX_MID
 !    pr_acc(k) = pr_acc(k-1) + pr(i,j,k)
 !    pr_acc(k) = max( pr_acc(k), 0.0 )
-!  enddo
+!  end do
 
 !now pr is already defined correctly (>=0)
   do k= KUPPER, KMAX_MID
     pr_acc(k) = pr(i,j,k)
-  enddo
+  end do
 
   prclouds_present=(pr_acc(KMAX_MID)>PR_LIMIT) ! --> precipitation at the surface
 
@@ -409,15 +409,15 @@ subroutine Setup_Clouds(i,j,debug_flag)
 !hf
       pres(k)=ps(i,j,1)
       if(kcloudtop<0) kcloudtop = k
-    endif
-  enddo
+    end if
+  end do
 
   if(kcloudtop == -1) then
     if(prclouds_present.and.DEBUG%AQUEOUS) &
       write(*,"(a20,2i5,3es12.4)") "ERROR prclouds sum_cw", &
         i,j, maxval(lwc(i,j,KUPPER:KMAX_MID),1), maxval(pr(i,j,:)), pr_acc(KMAX_MID)
     kcloudtop = KUPPER ! for safety
-  endif
+  end if
 
 ! sets up the aqueous phase reaction rates (SO2 oxidation) and the
 ! fractional solubility
@@ -439,7 +439,7 @@ subroutine Setup_Clouds(i,j,debug_flag)
      +2.*so32_aq(ksubcloud-1)+no3_aq(ksubcloud-1)-nh4_aq(ksubcloud-1)-nh3_aq(ksubcloud-1)
     write(*,*) "CLW(l_vann/l_luft) ",cloudwater(ksubcloud-1)
     write(*,*) "xn_2d(SO4) ugS/m3 ",(xn_2d(SO4,k)*10.e12*32./AVOG,k=kcloudtop,KMAX_MID)
-  endif
+  end if
 
 end subroutine Setup_Clouds
 !-----------------------------------------------------------------------
@@ -638,9 +638,9 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
               /(pHin(iter-1)-pHin(iter)-pHout(iter-1)+pHout(iter))
          pH(k)=max(1.0,min(pH(k),7.0))! between 1 and 7
          h_plus(k)=exp(-pH(k)*log(10.))
-      endif
+      end if
 
-   enddo
+   end do
 
 
 !after pH determined, final numbers of frac_aq(IH_SO2)
@@ -666,7 +666,7 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
     !        aqrck(ICLRC2,k)   = caqo3(k) * INV_Hplus0p4 * fso2grid(k)
     aqrck(ICLRC2,k)   = caqo3(k) * invhplus04 * fso2grid(k)
     aqrck(ICLRC3,k)   = caqsx(k) *  fso2grid(k)
-  enddo
+  end do
 end subroutine setup_aqurates
 !-----------------------------------------------------------------------
 subroutine get_frac(cloudwater,incloud)
@@ -696,8 +696,8 @@ subroutine get_frac(cloudwater,incloud)
 ! Get aqueous fractions:
     do ih = 1, NHENRY
       frac_aq(ih,k) = 1.0 / ( 1.0+1.0/( H(ih,itemp(k))*VfRT ) )
-    enddo
-  enddo
+    end do
+  end do
 end subroutine get_frac
 !-----------------------------------------------------------------------
 subroutine WetDeposition(i,j,debug_flag)
@@ -726,7 +726,7 @@ subroutine WetDeposition(i,j,debug_flag)
 ! Loop starting from above:
   do k=kcloudtop, KMAX_MID           ! No need to go above cloudtop
     rho(k) = f_rho*(dA(k) + dB(k)*ps(i,j,1))/ amk(k)
-  enddo
+  end do
 
   wdeploss(:) = 0.0
 
@@ -757,20 +757,20 @@ subroutine WetDeposition(i,j,debug_flag)
           loss = xn_2d(itot,k) * Fpart(itot,k)*( 1.0 - lossfac(k)  )
         else
           loss = xn_2d(itot,k) * ( 1.0 - lossfac(k)  )
-        endif
+        end if
         xn_2d(itot,k) = xn_2d(itot,k) - loss
         wdeploss(iadv) = wdeploss(iadv) + loss * rho(k)
-      enddo ! is
-    enddo ! k loop
+      end do ! is
+    end do ! k loop
 
     if(DEBUG%AQUEOUS.and.debug_flag.and.pr_acc(KMAX_MID)>1.0e-5) then
       do k = kcloudtop, KMAX_MID
         write(*,"(a,2i4,a,9es12.2)") "DEBUG_WDEP, k, icalc, spec", k, &
           icalc, trim(species_adv(iadv)%name), vw(k), pr_acc(k), lossfac(k)
-      enddo ! k loop
-    endif ! DEBUG%AQUEOUS
+      end do ! k loop
+    end if ! DEBUG%AQUEOUS
 
-  enddo ! icalc loop
+  end do ! icalc loop
 
   if(WDEP_PREC>0)d_2d(WDEP_PREC,i,j,IOU_INST) = pr(i,j,KMAX_MID) * dt ! Same for all models
 
@@ -801,7 +801,7 @@ subroutine WetDep_Budget(i,j,invgridarea, debug_flag)
     if(DEBUG%MY_WETDEP.and.debug_flag) &
       call datewrite("WET-PPPSPEC: "//species_adv(iadv)%name,&
         iadv,(/wdeploss(iadv)/))
-  enddo
+  end do
 
   ! Deriv.Output: groups of species (SOX, OXN, etc.) as needed
   do n = 1, nwgrp
@@ -817,9 +817,9 @@ subroutine WetDep_Budget(i,j,invgridarea, debug_flag)
         iadv=gmap%iadv(g)
         call datewrite("WET-PPPGROUP: "//species_adv(iadv)%name ,&
           iadv,(/wdeploss(iadv)/))
-      enddo
-    endif
-  enddo
+      end do
+    end if
+  end do
 end subroutine WetDep_Budget
 !-----------------------------------------------------------------------
 end module Aqueous_ml

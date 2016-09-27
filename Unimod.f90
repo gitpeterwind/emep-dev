@@ -122,13 +122,13 @@ program myeul
      call PrintLog(date2string("startdate = YYYYMMDD",startdate(1:3)))
      call PrintLog(date2string("enddate   = YYYYMMDD",enddate  (1:3)))
     !call PrintLog(key2str("iyr_trend = YYYY","YYYY",iyr_trend))
-  endif
+  end if
 
 
   if(ANALYSIS)then              ! init 3D-var module
     call DA_3DVar_Init(status)  ! pass settings
     call CheckStop(status,"DA_3DVar_Init in Unimod")
-  endif
+  end if
 
   !*** Timing ********
   call Init_timing(NTIMING_UNIMOD+NTIMING_3DVAR)
@@ -288,7 +288,7 @@ program myeul
       if(mm_old==0)call Init_massbudget()
       if(DEBUG%MAINCODE) print *, "Finished Initmass" , me
 
-    endif
+    end if
 
     oldseason = newseason
     mm_old = mm
@@ -334,7 +334,7 @@ program myeul
     if(DEBUG%STOP_HH>=0 .and. DEBUG%STOP_HH==current_date%hour) &
       End_of_Run=.true.
 
-  enddo ! time-loop
+  end do ! time-loop
 
   call Code_timer(tim_after0)
   call Add_2timing(38,tim_after0,tim_before1,"total within loops")
@@ -353,22 +353,22 @@ program myeul
       CALL MPI_RECV(lastptim,NTIMING*8,MPI_BYTE,NPROC-1,765,MPI_COMM_CALC,MPISTATUS,IERROR)
     else
       lastptim(:) = mytimm(:)
-    endif
+    end if
     call Output_timing(IO_MYTIM,me,NPROC,nterm,GIMAX,GJMAX)
   elseif(me==NPROC-1) then
     CALL MPI_SEND(mytimm,NTIMING*8,MPI_BYTE,MasterPE,765,MPI_COMM_CALC,IERROR)
-  endif
+  end if
 
   ! write 'modelrun.finished' file to flag the end of the FORECAST
   if(MasterProc.and.FORECAST)then
     open(1,file='modelrun.finished')
     close(1)
-  endif
+  end if
 
   if(ANALYSIS)then              ! assimilation enabled
     call DA_3DVar_Done(status)  ! done with 3D-var module:
     call CheckStop(status,"DA_3DVar_Done in Unimod")
-  endif
+  end if
 
   CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)
   CALL MPI_FINALIZE(IERROR)

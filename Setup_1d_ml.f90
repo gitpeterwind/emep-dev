@@ -459,7 +459,7 @@ subroutine setup_rcemis(i,j)
     itot_Rn222=find_index( "RN222", species(:)%name    )
     IC_NH3=find_index( "NH3", species(:)%name    )
     first_call = .false.
-  endif 
+  end if 
 
 ! initilize ! initilize ! initilize ! initilize
   rcemis(:,:)=0.
@@ -474,20 +474,20 @@ subroutine setup_rcemis(i,j)
     rcemis(:,:)=rcemis(:,:)+ColumnRate(i,j,REDUCE_VOLCANO=0.85)
   else
     rcemis(:,:)=rcemis(:,:)+ColumnRate(i,j)
-  endif
+  end if
 
   ! lightning and aircraft ... Airial NOx emissions if required:
   if(USE_LIGHTNING_EMIS)then
     do k=KCHEMTOP, KMAX_MID
       rcemis(NO ,k) = rcemis(NO ,k) + 0.95 * airlig(k,i,j)
       rcemis(NO2,k) = rcemis(NO2,k) + 0.05 * airlig(k,i,j)
-    enddo
-  endif
+    end do
+  end if
   if(USE_AIRCRAFT_EMIS) then
     do k=KCHEMTOP, KMAX_MID
       rcemis(NO ,k) = rcemis(NO ,k) + 0.95 * airn(k,i,j)
       rcemis(NO2,k) = rcemis(NO2,k) + 0.05 * airn(k,i,j)
-    enddo
+    end do
   end if ! AIRCRAFT NOX
   if(DEBUG%SETUP_1DCHEM.and.debug_proc.and.i==debug_li.and.j==debug_lj)&
     write(*,"(a,2L2,10es10.3)") &
@@ -498,16 +498,16 @@ subroutine setup_rcemis(i,j)
   if(USE_ROADDUST.and.itot_RDF>0) then  ! Hard-code indices for now
     rcemis(itot_RDF,KMAX_MID) = gridrcroadd(1,i,j)
     rcemis(itot_RDC,KMAX_MID) = gridrcroadd(2,i,j)
-   endif
+   end if
 
   if(USES%FOREST_FIRES) then
     if(burning(i,j))call Fire_rcemis(i,j)
-  endif
+  end if
 
   !Soil NOx
   if(USE_GLOBAL_SOILNOX)then !NEEDS CHECKING NOV2011
     rcemis(NO,KMAX_MID)=rcemis(NO,KMAX_MID)+SoilNOx(i,j)
-  endif
+  end if
 
 
   if(USE_OCEAN_NH3)then
@@ -519,7 +519,7 @@ subroutine setup_rcemis(i,j)
      rcemis(O_NH3%index,k)=rcemis(O_NH3%index,k)+O_NH3%emis(i,j)*0.001*AVOG/species(IC_NH3)%molwt&
           *(GRAV*roa(i,j,k,1))/(dA(k)+dB(k)*ps(i,j,1))
 
-  endif
+  end if
 
   if(FOUND_OCEAN_DMS)then!temporarily always compute budgets if file found
      !keep separated from snapemis/rcemis in order to be able to include more advanced processes
@@ -540,12 +540,12 @@ subroutine setup_rcemis(i,j)
         Kw=0.17*ws_10m(i,j,1)*SC_DMS_m23+2.68*(ws_10m(i,j,1)-3.6)*SC_DMS_msqrt
      else
         Kw=0.17*ws_10m(i,j,1)*SC_DMS_m23+2.68*(ws_10m(i,j,1)-3.6)*SC_DMS_msqrt+3.05*(ws_10m(i,j,1)-13)*SC_DMS_msqrt
-     endif
+     end if
      Kw=Kw/3600!cm/hour -> cm/s
 !66% of DMS turns into SO2, Leonor Tarrason (1995)
      if(USE_OCEAN_DMS)then
       rcemis(O_DMS%index,k)=rcemis(O_DMS%index,k)+0.66*O_DMS%emis(i,j)*Kw*0.01*GRAV*roa(i,j,k,1)/(dA(k)+dB(k)*ps(i,j,1)) *AVOG 
-     endif
+     end if
      !in g . Multiply by dz(in cm)  * dx*dx (in cm2) * molwgt(SO2) /AVOG  . (dz/AVOG just removed from above) 
      !g->Gg = 1.0E-9
      O_DMS%sum_month = O_DMS%sum_month+0.66*O_DMS%emis(i,j)*Kw *1.e4*xmd(i,j)*&
@@ -554,7 +554,7 @@ subroutine setup_rcemis(i,j)
 !make map in mg/m2
      O_DMS%map(i,j)=O_DMS%emis(i,j)*Kw *1.e4*62.13*1.0E3!g->mg = 1.0E3  ; /cm2 -> /m2 =1e4
 
-  endif
+  end if
 
 
 
@@ -566,10 +566,10 @@ subroutine setup_rcemis(i,j)
            fac=1.0/1000000.0/3600.0 !convert from Bq/m3/hour into Bq/cm3/s
            do k=KCHEMTOP, KMAX_MID
               rcemis(n,k)=rcemis(n,k)+Emis_4D(i,j,k,i_Emis_4D)*fac
-           enddo
-        endif
-     enddo
-  endif
+           end do
+        end if
+     end do
+  end if
 
 
   do k=KCHEMTOP, KMAX_MID
@@ -598,9 +598,9 @@ subroutine setup_rcemis(i,j)
         SumSplitEmis(i,j,iqrc) = SumSplitEmis(i,j,iqrc)&
           +rcemis(itot,k)*species(itot)%molwt &
           *(dA(k)+dB(k)*ps(i,j,1))/(GRAV*amk(k)*ATWAIR)
-      enddo
-    enddo
-  endif
+      end do
+    end do
+  end if
 
 
   ! Soil Rn222 emissions from non-ice covered land, + water
@@ -636,14 +636,14 @@ subroutine reset_3d(i,j)
     ! 1)/ Short-lived species - no need to scale with M
     do n = 1, NSPEC_SHL
       xn_shl(n,i,j,k) = xn_2d(n,k)
-    enddo ! ispec
+    end do ! ispec
 
     ! 2)/ Advected species
     do n = 1, NSPEC_ADV
       ispec = NSPEC_SHL + n
       xn_adv(n,i,j,k) = xn_2d(ispec,k)/amk(k)
-    enddo ! ispec
-  enddo ! k
+    end do ! ispec
+  end do ! k
 
 !XNCOL !======================================================================
 !! If column totals are wanted, we can do those here also since xn_2d are

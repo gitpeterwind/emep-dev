@@ -96,7 +96,7 @@ subroutine runchem()
         debug_flag = (debug_li==i .and. debug_lj==j) 
         DebugCell = debug_flag
         if(debug_flag) write(*,*) "RUNCHEM DEBUG START!"
-      endif
+      end if
      !write(*,"(a,4i4)") "RUNCHEM DEBUG IJTESTS", debug_li, debug_lj, i,j
      !write(*,*) "RUNCHEM DEBUG LLTESTS", me,debug_proc,debug_flag
 
@@ -135,7 +135,7 @@ subroutine runchem()
          call  phot_fastj_interpolate(i,j,errcode)
       else
          call setup_phot(i,j,errcode)
-      endif
+      end if
 
       call CheckStop(errcode,"setup_photerror in Runchem") 
       call Add_2timing(29,tim_after,tim_before,"Runchem:1st setups")
@@ -188,7 +188,7 @@ subroutine runchem()
         !if(AERO%EQUILIB=='EMEP' ) call ammonium() 
         !if(AERO%EQUILIB=='MARS' ) call My_MARS(debug_flag)
         !if(AERO%EQUILIB=='EQSAM') call My_EQSAM(debug_flag) 
-      endif
+      end if
       !????????????????????????????????????????????????????
 
       call Add_2timing(32,tim_after,tim_before,"Runchem:ammonium+Drydep")
@@ -227,8 +227,8 @@ subroutine runchem()
 
       call Add_2timing(33,tim_after,tim_before,"Runchem:post stuff")
       first_call = .false.   ! end of first call 
-    enddo ! j
-  enddo ! i
+    end do ! j
+  end do ! i
   first_tstep = .false.   ! end of first call  over all i,j
 
 end subroutine runchem

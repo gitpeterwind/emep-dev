@@ -250,7 +250,7 @@ subroutine Emissions(year)
           emis_inputlist(iemislist)%Nexcl = n
           if(MasterProc) write(*,*) sub//trim(fname)//" INPUTLIST-EXCL", n
 
-        endif
+        end if
 
         !replace keywords
 22      format(5A)
@@ -271,9 +271,9 @@ subroutine Emissions(year)
            SECTORS_NAME=trim(cdf_sector_name)
            if(Masterproc)write(*,*)"Switching sector categories to ",trim(SECTORS_NAME)
            if(Masterproc)write(IO_LOG,*)"Switching sector categories to ",trim(SECTORS_NAME)
-        endif
-      enddo ! iemislist
-    endif
+        end if
+      end do ! iemislist
+    end if
 
     !>============================
     
@@ -305,7 +305,7 @@ subroutine Emissions(year)
        sec2split_map => TEST_sec2split_map
     else
        call StopAll("Sectors not defined")
-    endif
+    end if
     
     allocate(cdfemis(LIMAX,LJMAX))
     allocate(nGridEmisCodes(LIMAX,LJMAX))
@@ -337,7 +337,7 @@ subroutine Emissions(year)
     if(USE_uEMEP)then
        allocate(loc_frac(LIMAX,LJMAX,KMAX_MID,1))
        loc_frac=0.0
-    endif
+    end if
     !=========================
     !  call Country_Init() ! In Country_ml, => NLAND, country codes and names, timezone
     
@@ -354,7 +354,7 @@ subroutine Emissions(year)
     call femis()              ! emission factors (femis.dat file)
     if(ios/=0) return
     my_first_call = .false.
-  endif
+  end if
 
 
   ! The GEA emission data, which is used for EUCAARI runs on the HIRHAM
@@ -377,8 +377,8 @@ subroutine Emissions(year)
       end select
       call CheckStop(ic<1,"Country_Init error in HIRHAM/GEA fix")
       Country(ic)%is_sea = .false.
-    enddo
-  endif ! HIRHAM/GEA fix
+    end do
+  end if ! HIRHAM/GEA fix
 
   !=========================
   call consistency_check()               ! Below
@@ -397,11 +397,11 @@ subroutine Emissions(year)
     if(USES%GRIDDED_EMIS_MONTHLY_FACTOR)then
       write(*,*)"Emissions using gridded monhtly timefactors "
       write(IO_LOG,*)"Emissions using gridded monhtly timefactors "       
-    endif
+    end if
     !=========================
     call timefactors(year)               ! => fac_emm, fac_edd
     !=========================
-  endif
+  end if
   !=========================
   call EmisSplit()    ! In EmisGet_ml, => emisfrac
   !=========================
@@ -409,7 +409,7 @@ subroutine Emissions(year)
   if(EmisSplit_OUT)then
     allocate(SumSplitEmis(LIMAX,LJMAX,nrcemis))
     SumSplitEmis=0.0
-  endif
+  end if
   !=========================
   call CheckStop(ios, "ioserror: EmisSplit")
 
@@ -446,7 +446,7 @@ subroutine Emissions(year)
       call CheckStop(err8, "Allocation error 8 - globroadland")
       call CheckStop(err9, "Allocation error 9 - globroad_dust_pot")
       call CheckStop(err1, "Allocation error 1 - RoadDustEmis_climate_factor")
-    endif ! road dust
+    end if ! road dust
 
     ! Initialise with 0
     sumemis_local(:,:)=0.0
@@ -457,15 +457,15 @@ subroutine Emissions(year)
       road_globland(:,:,:)=0
       globroad_dust_pot(:,:,:)=0.
       RoadDustEmis_climate_factor(:,:)=1.0 ! default, no scaling
-    endif ! road dust
+    end if ! road dust
   else
     ! needed for DEBUG=yes compilation options
     if(USE_ROADDUST)then
       allocate(road_globnland(1,1),road_globland(1,1,1),&
            globroad_dust_pot(1,1,1),stat=err9)
       call CheckStop(err9, "Allocation error 9 - dummy roadglob")
-    endif ! road dust
-  endif
+    end if ! road dust
+  end if
 
 
   select case(EMIS_SOURCE)
@@ -510,27 +510,27 @@ subroutine Emissions(year)
             write(*,*)"Uncompatible settings: you use monthly emissions and GRIDDED_EMIS_MONTHLY_FACTOR=T "
             !If you really want this, you can uncomment the stop
             call StopAll("monthly emissions and GRIDDED_EMIS_MONTHLY_FACTOR=T not allowed ")
-          endif
+          end if
         else
           !yearly grid independent netcdf fraction format emissions                                
           do iem = 1, NEMIS_FILE
              if(emis_inputlist(iemislist)%pollName(1)/='NOTSET')then
                 if(emis_inputlist(iemislist)%pollName(1)/=trim(EMIS_FILE(iem)))cycle      
-             endif
+             end if
              do isec=1,NSECTORS                      
               write(varname,"(A,I2.2)")trim(EMIS_FILE(iem))//'_sec',isec
               call EmisGetCdfFrac(iem, isec, fname, varname, sumemis_local, &
                    emis_inputlist(iemislist)%incl, nin, emis_inputlist(iemislist)%excl, nex)
 
-            enddo!sectors
-          enddo!NEMIS_FILE
+            end do!sectors
+          end do!NEMIS_FILE
 
           !add together totals from each processor (only me=0 get results)
           sumemis=0.0
           CALL MPI_REDUCE(sumemis_local,sumemis,&
                NLAND*NEMIS_FILE,MPI_REAL8,MPI_SUM,0,MPI_COMM_CALC,IERROR)        
 
-        endif
+        end if
 
       elseif(index(emis_inputlist(iemislist)%name,"Emis_4D.nc")>0)then 
         !under development
@@ -547,9 +547,9 @@ subroutine Emissions(year)
             else                   
               write(*,*)'Emis_4D: WARNING did not find ',emis_inputlist(Found_Emis_4D)%pollemepName(i_Emis_4D),' among the emep species'
               write(*,*)'Emis_4D: WARNING ',emis_inputlist(Found_Emis_4D)%pollName(i_Emis_4D),' is not used'
-            endif
-          endif
-        enddo
+            end if
+          end if
+        end do
         !   else if(IsCDFSnapFormat(trim(emis_inputlist(iemislist)%name)))then !This Does not work because of "POLL"
       elseif(emis_inputlist(iemislist)%type == "sectors" .and. index(emis_inputlist(iemislist)%name,".nc")>1)then 
         !not in "fraction" format. Each land has own set of fields
@@ -559,7 +559,7 @@ subroutine Emissions(year)
 
            if(emis_inputlist(iemislist)%pollName(1)/='NOTSET')then
               if(emis_inputlist(iemislist)%pollName(1)/=trim(EMIS_FILE(iem)))cycle      
-           endif
+           end if
 
            fname = key2str(emis_inputlist(iemislist)%name,'POLL',EMIS_FILE(iem))
 
@@ -570,7 +570,7 @@ subroutine Emissions(year)
             if(.not.fileExists) write(*,"(a)") 'WARNING EMISFile missing! '//trim(fname)
             write(*,*)sub//trim(fname)//" REPLACE ",iem,trim(fname),&
               key2str(emis_inputlist(iemislist)%name,'POLL',EMIS_FILE(iem))
-          endif
+          end if
 
           call CheckStop( nin>0 .and. nex > 0, &
               "emis_inputlists cannot have inc and exc")
@@ -582,10 +582,10 @@ subroutine Emissions(year)
                  excl=emis_inputlist(iemislist)%excl(1:nex) ) 
           else
             call EmisGetCdf(iem,fname, sumemis(1,iem))
-          endif
+          end if
           if(MasterProc) write(*,*) "PARTEMIS ", iem, trim(fname), sumemis(27,iem) 
 
-        enddo
+        end do
       elseif(index(emis_inputlist(iemislist)%name,"grid")>0)then
         !ASCII format
         do iem = 1, NEMIS_FILE
@@ -593,7 +593,7 @@ subroutine Emissions(year)
           if(MasterProc)write(*,fmt='(A)')'Reading ASCII format '//trim(fname)
           call EmisGetASCII(iem, fname, trim(EMIS_FILE(iem)), sumemis_local, &
                emis_inputlist(iemislist)%incl, nin, emis_inputlist(iemislist)%excl, nex)
-        enddo
+        end do
 
         !add together totals from each processor (only me=0 get results)
         sumemis=0.0
@@ -617,7 +617,7 @@ subroutine Emissions(year)
           if(MasterProc)write(*,*)' found  OceanNH3 monthly'    
         else
           call StopAll("Yearly OceanNH3 not implemented")
-        endif
+        end if
       elseif (emis_inputlist(iemislist)%type == "DMS")then
         if(MasterProc)write(*,*)'using DMS'    
         USE_OCEAN_DMS=.true.
@@ -636,11 +636,11 @@ subroutine Emissions(year)
           if(MasterProc)write(*,*)' found DMS monthly'    
         else
           call StopAll("Yearly DMS not implemented")
-        endif
+        end if
       else
         if(MasterProc)write(*,*)'WARNING: did not recognize format of '//trim(emis_inputlist(iemislist)%name)
         call StopAll("Emissions file format not recognized ")
-      endif
+      end if
 
 
       if(MasterProc.and. emis_inputlist(iemislist)%periodicity == "once") then
@@ -655,32 +655,32 @@ subroutine Emissions(year)
           if ( ccsum > 0.0 )then
             write(*,     fmt) icc, Country(ic)%code, sumemis(ic,:)
             write(IO_LOG,fmt) icc, Country(ic)%code, sumemis(ic,:)
-          endif
+          end if
           if(find_index(Country(ic)%code,EU28(:))>0) sumEU = sumEU + sumemis(ic,:)
-        enddo
+        end do
         if ( sum(sumEU(:))>0.001) then
           write(*     ,fmt) 0, "EU", sumEU(:)
           write(IO_LOG,fmt) 0, "EU", sumEU(:)
-        endif
-      endif
+        end if
+      end if
 
       !total of emissions from all countries and files into emsum
       do iem = 1, NEMIS_FILE
         emsum(iem)= emsum(iem)+sum(sumemis(:,iem))
-      enddo
+      end do
 
-    enddo
+    end do
 
     if(MasterProc)then
       write(*     ,"(a9,3x,30(f12.2,:))")' TOTAL : ',emsum(:)
       write(IO_LOG,"(a9,3x,30(f12.2,:))")' TOTAL : ',emsum(:)
-    endif
+    end if
 
     !temporary: nlandcode,landcode,snapemis will be completely removed
     nlandcode=nGridEmisCodes
     landcode=GridEmisCodes
     snapemis=GridEmis
-    !endif ! EMIS_TEST /Mixed
+    !end if ! EMIS_TEST /Mixed
 
   case default
     call CheckStop("EMIS_SOURCE not set"//trim(EMIS_SOURCE))
@@ -705,7 +705,7 @@ subroutine Emissions(year)
          call ReadField_CDF('AVG_SMI_2005_2010.nc',varname,SMI,nstart=1,&
               interpol='conservative',needed=.true.,debug_flag=.false.)
          SMI_defined=.true.
-      endif
+      end if
 
       do i=1,LIMAX
          do j=1,LJMAX
@@ -716,9 +716,9 @@ subroutine Emissions(year)
             do iic=road_nlandcode(i,j),1,-1
               roaddust_emis_pot(i,j,iic,iem)=roaddust_emis_pot(i,j,1,iem) &
                    *fractions(i,j,iic)*SMI_roadfactor
-            enddo
-         enddo
-      enddo
+            end do
+         end do
+      end do
       sumroaddust_local(:,iem)=0.0
       do i=1,LIMAX
         do j=1,LJMAX
@@ -728,22 +728,22 @@ subroutine Emissions(year)
             if(Country(ic)%icode/=road_landcode(i,j,iic))then
               write(*,*)"COUNTRY ROAD CODE ERROR: ",road_landcode(i,j,iic),ic,Country(ic)%icode
               call StopAll("COUNTRY CODE ERROR ")
-            endif
+            end if
             if(ic>NLAND)then
               write(*,*)"COUNTRY CODE NOT RECOGNIZED OR UNDEFINED: ",road_landcode(i,j,iic)
               call StopAll("COUNTRY CODE NOT RECOGNIZED ")
-            endif
+            end if
             sumroaddust_local(ic,iem)=sumroaddust_local(ic,iem)&
                  +0.001*roaddust_emis_pot(i,j,iic,iem)
-          enddo
-        enddo
-      enddo
-    enddo ! iem = 1, NROAD_FILES-loop
+          end do
+        end do
+      end do
+    end do ! iem = 1, NROAD_FILES-loop
     sumroaddust=0.0
     CALL MPI_REDUCE(sumroaddust_local,sumroaddust,NLAND*NROAD_FILES,MPI_REAL8,&
          MPI_SUM,0,MPI_COMM_CALC,IERROR) 
 
-  endif !USE_ROADDUST
+  end if !USE_ROADDUST
 
   if(MasterProc) then
     if(USE_ROADDUST)THEN
@@ -758,10 +758,10 @@ subroutine Emissions(year)
           icc=Country(ic)%icode
           write(*     ,"(i4,1x,a4,3x,30(f12.2,:))")icc, Country(ic)%code, sumroaddust(ic,:)
           write(IO_LOG,"(i4,1x,a4,3x,30(f12.2,:))")icc, Country(ic)%code, sumroaddust(ic,:)
-        endif
-      enddo
-    endif ! ROAD DUST
-  endif
+        end if
+      end do
+    end if ! ROAD DUST
+  end if
 
   ! now all values are read, snapemis is distributed, globnland and 
   ! globland are ready for distribution
@@ -787,7 +787,7 @@ subroutine Emissions(year)
 
     if((EMIS_TEST=="CdfSnap").and.EMIS_OUT) &
       call EmisOut("Cdf",iem,nGridEmisCodes,GridEmisCodes,GridEmis(:,:,:,:,iem))
-  enddo
+  end do
 
   !**  Conversions:
   ! The emission-data file are so far in units of 
@@ -803,8 +803,8 @@ subroutine Emissions(year)
     write(*,*) "Emissions sums:"
     do iem = 1, NEMIS_FILE
       write(*,"(a15,f12.2)") EMIS_FILE(iem),emsum(iem)
-    enddo
-  endif
+    end do
+  end if
 
   iemCO=find_index("co",EMIS_FILE(:)) ! save this index
 
@@ -831,7 +831,7 @@ subroutine Emissions(year)
       roaddust_emis_pot(i,j,ic,iem) = &
            roaddust_emis_pot(i,j,ic,iem) * tonne_to_kgm2s * xm2(i,j)
     endforall
-  endif !road dust
+  end if !road dust
 
   err1 = 0
   if(MasterProc) then
@@ -842,14 +842,14 @@ subroutine Emissions(year)
       call CheckStop(err7, "De-Allocation error 7 - roadglob")
       call CheckStop(err8, "De-Allocation error 8 - roadglob")
       call CheckStop(err9, "De-Allocation error 9 - roadglob")
-    endif
+    end if
   else
     ! needed for DEBUG=yes compilation options
     if(USE_ROADDUST)THEN
        deallocate(road_globnland,road_globland,globroad_dust_pot,stat=err9)
        call CheckStop(err9, "De-Allocation error 9 - dummy roadglob")
-    endif
-  endif
+    end if
+  end if
 
   ! now we have nrecmis and can allocate for gridrcemis:
   ! print *, "ALLOCATING GRIDRC", me, NRCEMIS
@@ -862,7 +862,7 @@ subroutine Emissions(year)
     allocate(gridrcroadd0(NROADDUST,LIMAX,LJMAX),stat=err4)
     call CheckStop(err3, "Allocation error 3 - gridrcroadd")
     call CheckStop(err4, "Allocation error 4 - gridrcroadd0")
-  endif
+  end if
 end subroutine Emissions
 !----------------------------------------------------------------------!
 !>
@@ -894,7 +894,7 @@ subroutine expandcclist(xlist, n)
       nlist(n) = xlist(i)
       n=n+1
     end select
-  enddo CCLIST ! i
+  end do CCLIST ! i
   xlist(1:n) = nlist(1:n) ! overwrites original
 end subroutine expandcclist
 !----------------------------------------------------------------------!
@@ -990,7 +990,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
       wday=day_of_week(indate%year,indate%month,indate%day)
       if(wday==0)wday=7 ! Sunday -> 7
       oldday = indate%day
-    endif
+    end if
 
     if(Found_Emis_4D>0)then
       if(.not.allocated(Emis_4D))allocate(Emis_4D(LIMAX,LJMAX,KMAX_MID,N_Emis_4D))
@@ -1007,25 +1007,25 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
           if(MasterProc)write(*,*)'Emis_4D: found matching date ',i,TimesInDays(i)
           nstart=i
           exit
-        endif
-      enddo
+        end if
+      end do
       if(i>NTime_Read )then
         if(MasterProc)then
           write(*,*)'Emis_4D: WARNING DID NOT FIND ANY MATCHING DATE '
           write(*,*)'Emis_4D: first date found ',TimesInDays(1)
           write(*,*)'Emis_4D: last date found ',TimesInDays(NTime_Read)
           write(*,*)'Emis_4D: difference to last date ',tdif_secs(ts1,ts2)/3600,' hours'
-        endif
+        end if
       else
         do i_Emis_4D=1,N_Emis_4D
           if(emis_inputlist(Found_Emis_4D)%pollName(i_Emis_4D)=='NOTSET')exit
           varname=emis_inputlist(Found_Emis_4D)%pollName(i_Emis_4D)
           !if(MasterProc)write(*,*)'Fetching ',trim(varname)
           call GetCDF_modelgrid(varname,emis_inputlist(Found_Emis_4D)%Name,Emis_4D(1,1,1,i_Emis_4D),1,kmax_mid,nstart,1,reverse_k=.true.)
-        enddo
-      endif
-    endif
-  endif
+        end do
+      end if
+    end if
+  end if
 
   if(DEBUG_EMISTIMEFACS.and.MasterProc) &
     write(*,"(a,2f8.3)") " EmisSet  traffic 24x7", &
@@ -1038,7 +1038,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
     hourloc        = indate%hour + Country(iland)%timezone
     localhour(iland) = hourloc  ! here from 0 to 23
     if(hourloc>=7 .and. hourloc<=18) daytime(iland)=1
-  enddo ! iland
+  end do ! iland
 
   if(hourchange) then 
     totemadd(:)  = 0.
@@ -1073,7 +1073,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
           else
             daytime_iland=daytime(iland)
             hour_iland=localhour(iland) + 1
-          endif
+          end if
           !if( hour_iland > 24 ) hour_iland = 1 !DSA12
           wday_loc=wday 
           if(hour_iland>24) then
@@ -1081,7 +1081,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
             wday_loc=wday + 1
             if(wday_loc==0)wday_loc=7 ! Sunday -> 7
             if(wday_loc>7 )wday_loc=1 
-          endif
+          end if
           call CheckStop(hour_iland<1,"ERROR: HOUR Zero in EmisSet")
           if(debug_tfac) then 
           write(*,"(a,i4,2i3,i5,2i4,3x,4i3)") "EmisSet DAYS times ", daynumber, &
@@ -1090,7 +1090,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
           call datewrite("EmisSet DAY 24x7:", &
             (/ icc, iland, wday, wday_loc, hour_iland /), &
             (/ fac_ehh24x7(ISNAP_TRAF,hour_iland,wday_loc) /) )
-          endif
+          end if
           !  As each emission sector has a different diurnal profile
           !  and possibly speciation, we loop over each sector, adding
           !  the found emission rates to gridrcemis as we go.
@@ -1126,7 +1126,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                     isec, sec2tfac_map(isec),iland, daynumber, indate%hour, &
                     timefac(iland_timefac,sec2tfac_map(isec),iem), t2_nwp(i,j,2)-273.15, &
                     fac_min(iland,sec2tfac_map(isec),iem),  gridfac_HDD(i,j), tfac
-              endif ! =============== HDD 
+              end if ! =============== HDD 
 
               s = tfac * snapemis(isec,i,j,icc,iem)
 
@@ -1140,8 +1140,8 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                 ! Add up emissions in ktonne 
                 totemadd(itot) = totemadd(itot) &
                      + tmpemis(iqrc) * dtgrid * xmd(i,j)
-              enddo ! f
-            enddo ! iem
+              end do ! f
+            end do ! iem
 
             !  Assign to height levels 1-KEMISTOP
             do k=KEMISTOP,KMAX_MID
@@ -1156,11 +1156,11 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                 !    VERTFAC(KMAX_BND-k,sec2hfac_map(isec)),  &
                 !    emis_kprofile(KMAX_BND-k,sec2hfac_map(isec))
                 !end if
-              enddo ! iem
-            enddo   ! k
-          enddo  ! isec
+              end do ! iem
+            end do   ! k
+          end do  ! isec
           !      ==================================================
-        enddo ! icc  
+        end do ! icc  
         !************************************
         ! Then loop over flat emissions
         !************************************
@@ -1173,7 +1173,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
             isec = ISEC_SHIP 
           else
             isec = ISEC_NAT
-          endif
+          end if
 
           !  As each emission sector has a different diurnal profile
           !  and possibly speciation, we loop over each sector, adding
@@ -1193,15 +1193,15 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
               ! Add flat emissions in ktonne 
               totemadd(itot) = totemadd(itot) &
                    + tmpemis(iqrc) * dtgrid * xmd(i,j)
-            enddo ! f
-          enddo ! iem
+            end do ! f
+          end do ! iem
           ! Assign flat emissions to height levels 1-4. Note, no VERTFAC
           do iqrc =1, nrcemis
             gridrcemis0(iqrc,KMAX_MID,i,j) = gridrcemis0(iqrc,KMAX_MID,i,j) &
                  + tmpemis(iqrc)*ehlpcom0*emis_masscorr(iqrc)
-          enddo ! iem
+          end do ! iem
           !      ==================================================
-        enddo !ficc 
+        end do !ficc 
 
         if(USE_ROADDUST)then
           ! Limit as in TNO-model (but Lotos/Euros has precip in mm/3h)
@@ -1219,7 +1219,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
 
             ! if( DEBUG_ROADDUST .and. debug_proc .and. i==DEBUG_li .and. j==DEBUG_lj )THEN
             !    write(*,*)"DEBUG ROADDUST! Dry! ncc=", road_nlandcode(i,j)
-            ! endif
+            ! end if
 
             ncc = road_nlandcode(i,j) ! number of countries in grid point
             do icc = 1, ncc    
@@ -1229,21 +1229,21 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                 hour_iland=hour_longitude+1
               else
                 hour_iland=localhour(iland)+1
-              endif
+              end if
 
               wday_loc = wday ! DS added here also, for fac_ehh24x7
               if( hour_iland > 24 ) then
                 hour_iland = 1
                 if(wday_loc==0)wday_loc=7 ! Sunday -> 7
                 if(wday_loc>7 )wday_loc=1 
-              endif
+              end if
 
               if(ANY(iland==(/IC_FI,IC_NO,IC_SE/)).and. & ! Nordic countries
                  ANY(indate%month==(/3,4,5/)))then        ! spring road dust
                 tfac = fac_ehh24x7(ISNAP_TRAF,hour_iland,wday_loc)*2.0 ! Doubling in Mar-May (as in TNO model)
               else
                 tfac = fac_ehh24x7(ISNAP_TRAF,hour_iland,wday_loc)
-              endif
+              end if
 
               do iem = 1, NROAD_FILES
                 s = tfac * roaddust_emis_pot(i,j,icc,iem)
@@ -1259,23 +1259,23 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                 if(all([DEBUG_ROADDUST,debug_proc,i==debug_li,j==debug_lj]))then
                   write(*,*)"gridrcroadfine"  ,gridrcroadd0(QROADDUST_FI,i,j)
                   write(*,*)"gridrcroadcoarse",gridrcroadd0(QROADDUST_CO,i,j)
-                endif
-              enddo ! nroad files
-            enddo   ! icc
+                end if
+              end do ! nroad files
+            end do   ! icc
             ! should pick the correct emissions (spring or rest of year)
             ! and add the emissions from HIGHWAYplus and NONHIGHWAYS,
             ! using correct fine and coarse fractions.
           else ! precipitation
             gridrcroadd0(:,i,j)=0.
-          endif NO_PRECIP
-        endif ! ROADDUST
-      enddo   ! i
-    enddo     ! j
+          end if NO_PRECIP
+        end if ! ROADDUST
+      end do   ! i
+    end do     ! j
     if(MYDEBUG.and.debug_proc) &    ! emis sum kg/m2/s
       call datewrite("SnapSum, kg/m2/s:"//trim(EMIS_FILE(iemCO)), &
          (/ SumSnapEmis(debug_li,debug_lj,iemCO)  /) )
 
-  endif ! hourchange 
+  end if ! hourchange 
 
   ! We now scale gridrcemis to get emissions in molecules/cm3/s
   do k= KEMISTOP, KMAX_MID
@@ -1285,10 +1285,10 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
         !RB: This should also be done for the road dust emissions
         do iqrc =1, NRCEMIS
           gridrcemis(iqrc,k,i,j) =  gridrcemis0(iqrc,k,i,j)* ehlpcom
-        enddo ! iqrc
-      enddo   ! i
-    enddo     ! j
-  enddo       ! k
+        end do ! iqrc
+      end do   ! i
+    end do     ! j
+  end do       ! k
 
   if(USE_ROADDUST)THEN
     if(DEBUG_ROADDUST.and.debug_proc) &
@@ -1299,12 +1299,12 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
         do iqrc =1, NROADDUST
           gridrcroadd(iqrc,i,j) =  gridrcroadd0(iqrc,i,j)* ehlpcom * ehlpcom0 &
               * roaddust_masscorr(iqrc)
-        enddo ! iqrc
-      enddo   ! i
-    enddo     ! j
+        end do ! iqrc
+      end do   ! i
+    end do     ! j
     if(DEBUG_ROADDUST.and.debug_proc) &
       write(*,*)"After the unit scaling",gridrcroadd(1:2,DEBUG_li,DEBUG_lj)
-  endif
+  end if
 end subroutine EmisSet
 !***********************************************************************
 subroutine newmonth
@@ -1377,10 +1377,10 @@ subroutine newmonth
         do i=1,limax
           airn(k,i,j)=airn(k,i,j)*conv*(roa(i,j,k,1))&
                /(dA(k)+dB(k)*ps(i,j,1))*xm2(i,j)
-        enddo
-      enddo
-    enddo
-  endif
+        end do
+      end do
+    end do
+  end if
 
   if(USE_EURO_SOILNOX)then  ! European Soil NOx emissions
     if(DEBUG_SOILNOX.and.debug_proc) write(*,*)"Emissions DEBUG_SOILNOX START"
@@ -1420,25 +1420,25 @@ subroutine newmonth
         do j=1,ljmax 
           do i=1,limax
             SoilNOx(i,j)=SoilNOx(i,j)+buffer(i,j)
-          enddo
-        enddo
+          end do
+        end do
         if(DEBUG_SOILNOX.and.debug_proc) &
           write(*,"(a,2i6,es10.3,a,2es10.3)") "Averaging SOILNO  inputs", &
             1995+(iyr-1), nstart,SoilNOx(debug_li, debug_lj), &
             "max: ", maxval(buffer), maxval(SoilNOx)
-      enddo
+      end do
       SoilNOx=SoilNOx/Nyears
-    endif ! nstart test
+    end if ! nstart test
 
      if(DEBUG_SOILNOX.and.debug_proc) then
         write(*,"(a,i3,3es10.3)") "After Global SOILNO ",&
              me,maxval(SoilNOx),SoilNOx(debug_li,debug_lj)
        !write(*,"(a,i3,3es10.3)") "After Global SOILNO ",  me, maxval(SoilNOx), SoilNOx(3, 3)
-     endif
+     end if
   else ! no soil NO
     if(DEBUG_SOILNOX.and.debug_proc) &
       write(*,*) "Emissions DEBUG_SOILNOX - none"
-  endif !  SOIL NO
+  end if !  SOIL NO
 
   !for testing, compute total soil NOx emissions within domain
   !convert from g/m2/day into kg/day
@@ -1448,8 +1448,8 @@ subroutine newmonth
     do j=1,ljmax
       do i=1,limax      
         SumSoilNOx=SumSoilNOx+0.001*SoilNOx(i,j)*gridwidth_m**2*xmd(i,j)      
-      enddo
-    enddo
+      end do
+    end do
     CALL MPI_ALLREDUCE(SumSoilNOx,mpi_out,1,MPI_DOUBLE_PRECISION, &
          MPI_SUM,MPI_COMM_CALC,IERROR) 
     SumSoilNOx = mpi_out
@@ -1467,9 +1467,9 @@ subroutine newmonth
     do j=1,ljmax
       do i=1,limax      
         SoilNOx(i,j)=SoilNOx(i,j)*conv*roa(i,j,k,1)/(dA(k)+dB(k)*ps(i,j,1))
-      enddo
-    enddo
-  endif
+      end do
+    end do
+  end if
 
   ! DMS
   !   Units:
@@ -1489,7 +1489,7 @@ subroutine newmonth
     write(*,*) 'Enters newmonth, mm, ktonne_to_kgm2s = ', &
          current_date%month,ktonne_to_kgm2s
     write(*,*) ' first_dms_read = ', first_dms_read
-  endif
+  end if
   !...........................................................................
   !        DMS Input - land 35 - SNAP sector 11
   !...........................................................................
@@ -1512,13 +1512,13 @@ subroutine newmonth
       write(*,59)'SO2 from ocean DMS cdf file ',O_DMS%sum_month
       write(*,59)'SO2 from natso2.dat ',DMS_natso2_month
       write(*,59)'fraction new/old method',O_DMS%sum_month/DMS_natso2_month
-      endif
+      end if
       O_DMS%sum_year=O_DMS%sum_year+O_DMS%sum_month
       O_DMS%sum_month=0.0
       !natso2 already allreduced
       DMS_natso2_year=DMS_natso2_year+DMS_natso2_month
       DMS_natso2_month=0.0
-    endif
+    end if
 
     write(fname,'(''natso2'',i2.2,''.dat'')')current_date%month
     if(MasterProc)write(*,*) 'Reading DMS emissions from ',trim(fname)
@@ -1542,17 +1542,17 @@ subroutine newmonth
             flat_ncmaxfound = n 
             if (MYDEBUG) write(6,*)'DMS Increased flat_ncmaxfound to ',n 
             call CheckStop( n > FNCMAX, "IncreaseFNCMAX for dms")
-          endif
+          end if
         else  ! We know that DMS lies last in the array, so:
           n = flat_nlandcode(i,j)
           call CheckStop(flat_landcode(i,j,n),IQ_DMS,"Newmonth:DMS not last!")
-        endif
+        end if
         if(.not.USE_OCEAN_DMS)then
         snapemis_flat(i,j,n,IQSO2) = rdemis(i,j) * ktonne_to_kgm2s * xm2(i,j)
-        endif
+        end if
         dms_sum=dms_sum+rdemis(i,j)
-      enddo ! i
-    enddo   ! j
+      end do ! i
+    end do   ! j
     CALL MPI_ALLREDUCE(dms_sum, mpi_out, 1,&
          MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_CALC, IERROR)
     dms_sum=mpi_out
@@ -1562,16 +1562,16 @@ subroutine newmonth
     if(MasterProc) then
       write(*,*)'total dms emission from ',trim(fname),dms_sum,DMS_natso2_year+DMS_natso2_month
       write(*,*)' Gg this month ',DMS_natso2_month
-    endif
+    end if
     if(first_dms_read) then
       if(MYDEBUG) &
         write(*,*)'me ',me, ' Increased flat_ncmaxfound to ',flat_ncmaxfound 
       first_dms_read = .false.
-    endif
+    end if
     else!no dms file found
       call PrintLog("WARNING: NO DMS emissions found",MasterProc)
-    endif
-  endif  ! IQSO2>0
+    end if
+  end if  ! IQSO2>0
 
   sumemis=0.0
   do iemislist = 1, size( emis_inputlist(:)%name )
@@ -1599,7 +1599,7 @@ subroutine newmonth
     do iem = 1,NEMIS_FILE
        if(emis_inputlist(iemislist)%pollName(1)/='NOTSET')then
           if(emis_inputlist(iemislist)%pollName(1)/=trim(EMIS_FILE(iem)))cycle      
-       endif
+       end if
        do  isec = 1,NSECTORS            
         !define mask (can be omitted if not sent to readfield) 
         NMask_Code=0
@@ -1610,8 +1610,8 @@ subroutine newmonth
             Mask_Code(NMask_Code) = iland!codes from mask file to be reduced
             Mask_ReducFactor=e_fact(isec,iland,iem)!NB: will only take the last defined value!
             !if(MasterProc)write(*,*)'maskcode ',iland,isec,iem,Mask_ReducFactor
-          endif
-        enddo
+          end if
+        end do
 
         !example if hardcoded definitions are to be used. Here multiply country_code=18 emissions with 0.8
         !Mask_ReducFactor=0.8
@@ -1639,7 +1639,7 @@ subroutine newmonth
               write(*,*)"To many emitter countries in one gridcell: ",&
                    me,i,j,nlandcode(i,j)
               call StopAll("To many countries in one gridcell ")
-            endif
+            end if
             lonlat_fac=1.0
             if(N_femis_lonlat>0)then
               do i_femis_lonlat=1,N_femis_lonlat
@@ -1648,9 +1648,9 @@ subroutine newmonth
                    glon(i,j)>femis_lonmin(i_femis_lonlat).and.&
                    glon(i,j)<femis_lonmax(i_femis_lonlat)     )then
                   lonlat_fac=lonlat_fac*e_fact_lonlat(isec,i_femis_lonlat,iem) 
-                endif
-              enddo
-            endif
+                end if
+              end do
+            end if
             do n=1,nlandcode(i,j)
               ic=find_index(landcode(i,j,n),Country(:)%icode)                     
               !exclude or include countries
@@ -1659,30 +1659,30 @@ subroutine newmonth
                 !1) check that country is in include list
                 found=find_index(Country(ic)%code ,incl_monthly(1:nin_monthly),first_only=.true.)
                 if(found<=0)cycle!do not include
-              endif
+              end if
               if(nex_monthly>0)then
                 !1) check that country is not in exclude list
                 found=find_index(Country(ic)%code ,excl_monthly(1:nex_monthly),first_only=.true.)
                 if(found>0)cycle!exclude
-              endif
+              end if
               snapemis(isec,i,j,n,iem)=snapemis(isec,i,j,n,iem)&
                    +fractions(i,j,n)*cdfemis(i,j)*lonlat_fac*tonnemonth_to_kgm2s*xm2(i,j)                
 
               if(Country(ic)%icode/=landcode(i,j,n))then
                 write(*,*)"COUNTRY CODE ERROR: ",landcode(i,j,n),ic,Country(ic)%icode
                 call StopAll("COUNTRY CODE ERROR ")
-              endif
+              end if
               if(ic>NLAND)then
                 write(*,*)"COUNTRY CODE NOT RECOGNIZED OR UNDEFINED: ",landcode(i,j,n)
                 call StopAll("COUNTRY CODE NOT RECOGNIZED ")
-              endif
+              end if
 
               sumemis_local(ic,iem)=sumemis_local(ic,iem)&
                    +0.001*snapemis(isec,i,j,n,iem)*lonlat_fac/(tonnemonth_to_kgm2s*xm2(i,j))!for diagnostics, mass balance
-            enddo
-          enddo
-        enddo
-      enddo!sectors
+            end do
+          end do
+        end do
+      end do!sectors
 
       CALL MPI_REDUCE(sumemis_local(1,iem),sumemis(1,iem),NLAND,MPI_REAL8,&
                       MPI_SUM,0,MPI_COMM_CALC,IERROR) 
@@ -1706,8 +1706,8 @@ subroutine newmonth
 
                   Cexist=.true.
                   exit
-                endif
-              enddo
+                end if
+              end do
               if(.not.Cexist)then
                 !country not included yet. define it now:
                 nlandcode(i,j)=nlandcode(i,j)+1
@@ -1715,19 +1715,19 @@ subroutine newmonth
                   write(*,*)"Too many emitter countries in one gridemiscell: ",&
                        me,i,j,nGridEmisCodes(i,j)
                   call StopAll("To many countries in one gridemiscell ")
-                endif
+                end if
                 n=nlandcode(i,j)
                 landcode(i,j,n)=GridEmisCodes(i,j,i_gridemis)
                 snapemis(:,i,j,n,iem)=snapemis(:,i,j,n,iem)+GridEmis(:,i,j,i_gridemis,iem)
-              endif
+              end if
 !             sumemis_local(ic,iem)=sumemis_local(ic,iem)&
 !               +0.001*fractions(i,j,n)*cdfemis(i,j)!for diagnostics, mass balance
-            enddo
-          enddo
-        enddo
-      endif
+            end do
+          end do
+        end do
+      end if
 
-    enddo! iem = 1,NEMIS_FILE
+    end do! iem = 1,NEMIS_FILE
 
   elseif(emis_inputlist(iemislist)%type == 'OceanNH3')then
     if(MasterProc)write(*,*)'reading OceanNH3'
@@ -1743,8 +1743,8 @@ subroutine newmonth
       do i=1,limax            
         O_NH3%sum_month=O_NH3%sum_month+O_NH3%emis(i,j)&
              *gridwidth_m**2*xmd(i,j)*3600*24*nmdays(current_date%month)             
-      enddo
-    enddo
+      end do
+    end do
     !sum all subdomains
     CALL MPI_ALLREDUCE(O_NH3%sum_month, mpi_out, 1,&
          MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_CALC, IERROR)
@@ -1769,9 +1769,9 @@ subroutine newmonth
 
     else !
       call StopAll("Monthly emission type not implemented "//trim(emis_inputlist(iemislist)%type))
-    endif
+    end if
 
-  enddo !iemislist
+  end do !iemislist
 
   if(MasterProc)then
     do ic = 1, NLAND
@@ -1780,9 +1780,9 @@ subroutine newmonth
       if(ccsum>0.0 .and. MasterProc ) then
         write(*,"(i5,1x,a10,3x,30(f12.2,:))")ic, Country(ic)%code, sumemis(ic,:)
         write(IO_LOG,"(i5,1x,a10,3x,30(f12.2,:))")ic, Country(ic)%code, sumemis(ic,:)
-      endif
-    enddo
-  endif
+      end if
+    end do
+  end if
   first_call=.false.
 end subroutine newmonth
 !***********************************************************************
@@ -1822,7 +1822,7 @@ subroutine EmisOut(label, iem,nsources,sources,emis)
         open(IO_TMP,file="EmisOut"//trim(txt))!new file
       else
         open(IO_TMP,file="EmisOut"//trim(txt),access='append')!append
-      endif
+      end if
       EMLAND: do iland = 1, NLAND
         locemis = 0.0
         !    print *,  trim(txt)//" iland ", me, iland, maxval(emis(:,:,:,:))
@@ -1836,10 +1836,10 @@ subroutine EmisOut(label, iem,nsources,sources,emis)
               if(sources(i,j,icc)==iland) then
                 locemis(i,j,: ) = emis(:, i,j,icc)
                 if(MYDEBUG) call CheckStop(any(locemis(i,j,:)< 0.0),"NEG LOCEMIS")
-              endif
-            enddo
-          enddo
-        enddo ! j
+              end if
+            end do
+          end do
+        end do ! j
         if(ncc==-999)cycle!ncountry not in this subdomain
         ! Should never happen, but...
         !call CheckStop( any( lemis < 0.0 ) , "NEG LEMIS")
@@ -1853,20 +1853,20 @@ subroutine EmisOut(label, iem,nsources,sources,emis)
               low =  sum(locemis(i,j,2:NSECTORS))
               write(IO_TMP,"(i3,2i4,2x,13es10.3)") iland, ii,jj, &
                    low, high, (locemis(i,j,isec),isec=1,NSECTORS)
-            endif
-          enddo
-        enddo
-      enddo EMLAND
+            end if
+          end do
+        end do
+      end do EMLAND
       
       do isec = 1, NSECTORS
          lemis = locemis(:,:,isec)
          if(MYDEBUG.and.debug_proc) write(*,*) trim(txt)//" lemis ",me,iland,isec,maxval(lemis(:,:))
-      enddo ! isec
+      end do ! isec
       
-    endif
+    end if
     close(IO_TMP)
     CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)!wait: one should write at a time
-  enddo
+  end do
   
 !  deallocate(locemis,lemis)
 
@@ -1914,15 +1914,15 @@ subroutine uemep_emis(indate)
       iqrc=sum(emis_nsplit(1:iem-1)) + i
       itot=iqrc2itot(iqrc)
       uEMEP%ix(i)=itot-NSPEC_SHL
-    enddo
+    end do
     if(MasterProc)then
       write(*,*)'uEMEP sector: ',uEMEP%sector
       write(*,*)'uEMEP emission file: ',uEMEP%emis
       write(*,*)'uEMEP number of species in group: ',uEMEP%Nix
       write(*,"(30A)")'including: ',(trim(species_adv(uEMEP%ix(i))%name),' ', i=1,uEMEP%Nix)
-    endif
+    end if
 
-  endif
+  end if
 
   dt_uemep=dt_advec
 
@@ -1933,7 +1933,7 @@ subroutine uemep_emis(indate)
     hourloc        = indate%hour + Country(iland)%timezone
     localhour(iland) = hourloc  ! here from 0 to 23
     if(hourloc>=7 .and. hourloc<=18) daytime(iland)=1
-  enddo ! iland
+  end do ! iland
    
   do j = lj0,lj1
     do i = li0,li1
@@ -1957,7 +1957,7 @@ subroutine uemep_emis(indate)
           iland=find_index(landcode(i,j,icc),Country(:)%icode) !array index
         else
           iland=find_index(flat_landcode(i,j,ficc),Country(:)%icode) 
-        endif
+        end if
         !array index of country that should be used as reference for timefactor
         iland_timefac = find_index(Country(iland)%timefac_index,Country(:)%timefac_index)
 
@@ -1967,7 +1967,7 @@ subroutine uemep_emis(indate)
         else
           daytime_iland=daytime(iland)
           hour_iland=localhour(iland) + 1
-        endif
+        end if
         !if( hour_iland > 24 ) hour_iland = 1 !DSA12
         wday_loc=wday 
         if(hour_iland>24) then
@@ -1975,7 +1975,7 @@ subroutine uemep_emis(indate)
           wday_loc=wday + 1
           if(wday_loc==0)wday_loc=7 ! Sunday -> 7
           if(wday_loc>7 )wday_loc=1 
-        endif
+        end if
 
         do iem = 1, NEMIS_FILE 
           if(trim(EMIS_File(iem))/=trim(uEMEP%emis))cycle
@@ -1997,28 +1997,28 @@ subroutine uemep_emis(indate)
                  tfac = ( fac_min(iland,sec2tfac_map(isec),iem) & ! constant baseload
                       + ( 1.0-fac_min(iland,sec2tfac_map(isec),iem) )* gridfac_HDD(i,j) ) &
                       * fac_ehh24x7(sec2tfac_map(isec),hour_iland,wday_loc)
-              endif ! =============== HDD 
+              end if ! =============== HDD 
               
               s = tfac * snapemis(isec,i,j,icc,iem)
             else
               s = snapemis_flat(i,j,ficc,iem)                        
-            endif
+            end if
 
             do k=KEMISTOP,KMAX_MID
               emis_tot(k)=emis_tot(k)+s*emis_kprofile(KMAX_BND-k,sec2hfac_map(isec))*dt_uemep
-            enddo
+            end do
 
             if(isec==uEMEP%sector .or. uEMEP%sector==0)then
               do k=KEMISTOP,KMAX_MID
                 emis_uemep(k)=emis_uemep(k)+s*emis_kprofile(KMAX_BND-k,sec2hfac_map(isec))*dt_uemep
-              enddo
-            endif
+              end do
+            end if
 
-          enddo ! iem
+          end do ! iem
 
-        enddo  ! isec
+        end do  ! isec
         !      ==================================================
-      enddo ! icc  
+      end do ! icc  
       
       do k=KEMISTOP,KMAX_MID
         if(emis_tot(k)<1.E-20)cycle
@@ -2028,12 +2028,12 @@ subroutine uemep_emis(indate)
         do iix=1,uEMEP%Nix
           ix=uEMEP%ix(iix)
           xtot=xtot+(xn_adv(ix,i,j,k)*species_adv(ix)%molwt)*(dA(k)+dB(k)*ps(i,j,1))/ATWAIR/GRAV
-        enddo
+        end do
         loc_frac(i,j,k,1)=(loc_frac(i,j,k,1)*xtot+emis_uemep(k))/(xtot+emis_tot(k)+1.e-20)
-      enddo
+      end do
 
-    enddo ! i
-  enddo ! j
+    end do ! i
+  end do ! j
 
   first_call=.false. 
 

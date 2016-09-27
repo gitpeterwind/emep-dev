@@ -182,7 +182,7 @@ contains
          call DO_RPMARES_new (so4in, hno3in,no3in ,nh3in, nh4in , rh(k), temp(k),   &
               aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out, &
               ERRMARK,debug_flag)
-      endif
+      end if
 
  !--------------------------------------------------------------------------
 
@@ -198,7 +198,7 @@ contains
       xn_2d(NO3_f,k)  = max (FLOOR, aNO3out / (species(NO3_f)%molwt  *coef) )
       xn_2d(NH4_f,k)  = max (FLOOR, aNH4out / (species(NH4_f)%molwt  *coef) )
 
-   enddo  ! K-levels
+   end do  ! K-levels
 
  end subroutine emep2MARS
 
@@ -248,7 +248,7 @@ contains
   if ( debug_flag  ) then ! Selected debug cell
     write(*,*)'Before EQSAM',xn_2d(SO4,20),xn_2d(HNO3,20),&
                xn_2d(NH3,20),xn_2d(NO3_f,20),xn_2d(NH4_f,20)
-  endif
+  end if
 
 !//.... molec/cm3 -> micromoles/m**3
     so4in(KCHEMTOP:KMAX_MID)  = xn_2d(SO4,KCHEMTOP:KMAX_MID)*1.e12/AVOG
@@ -280,7 +280,7 @@ contains
  if ( debug_flag ) then ! Selected debug cell
     write(*,*)'After EQSAM',xn_2d(SO4,20),xn_2d(HNO3,20),&
                xn_2d(NH3,20),xn_2d(NO3_f,20),xn_2d(NH4_f,20)
-  endif
+  end if
 
  end subroutine emep2EQSAM
 
@@ -335,7 +335,7 @@ contains
   if ( debug_flag ) then ! Selected debug cell
     write(*,*)'Before EQSAM',xn_2d(SO4,20),xn_2d(HNO3,20),&
                xn_2d(NH3,20),xn_2d(NO3_f,20),xn_2d(NH4_f,20)
-  endif
+  end if
 
 !//.... molec/cm3 -> micromoles/m**3
       so4in(KCHEMTOP:KMAX_MID)  = xn_2d(SO4,KCHEMTOP:KMAX_MID)*1.e12/AVOG
@@ -356,7 +356,7 @@ contains
       else                              ! for gravimetric mass
                   rlhum(:) = 0.5
                   tmpr(:)  = 293.15
-      endif
+      end if
 
  !--------------------------------------------------------------------------                
   
@@ -371,12 +371,12 @@ contains
       PM25_water(i,j,KCHEMTOP:KMAX_MID) = max(0., aH2Oout(KCHEMTOP:KMAX_MID) )
  else                    ! In gravimetric PM (Rh=50% and t=20C)
       PM25_water_rh50 (i,j)             = max(0., aH2Oout(KMAX_MID) )
- endif
+ end if
 
  if ( debug_flag ) then ! Selected debug cell
     write(*,*)'After EQSAM',xn_2d(SO4,20),xn_2d(HNO3,20),&
                xn_2d(NH3,20),xn_2d(NO3_f,20),xn_2d(NH4_f,20)
-  endif
+  end if
 
  end subroutine  Aero_water
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -431,13 +431,13 @@ contains
          call DO_RPMARES_new (so4in, hno3in,no3in ,nh3in, nh4in , rlhum(k), tmpr(k),   &
               aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out, &
               ERRMARK,debug_flag) 
-      endif
+      end if
       !--------------------------------------------------------------------------
 
 !//....aerosol water (ug/m**3) 
       PM25_water(i,j,k) = max (0., aH2Oout )
 
-    enddo  ! k-loop
+    end do  ! k-loop
 
 !.. PM2.5 water at equilibration conditions for gravimetric PM (Rh=50% and t=20C)
                             
@@ -463,7 +463,7 @@ contains
          call DO_RPMARES_new (so4in, hno3in,no3in ,nh3in, nh4in , rlhum(k), tmpr(k),   &
               aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out, &
               ERRMARK,debug_flag) 
-      endif
+      end if
   !--------------------------------------------------------------------------
 
       PM25_water_rh50 (i,j) = max (0., aH2Oout )
