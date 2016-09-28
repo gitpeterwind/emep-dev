@@ -155,11 +155,14 @@ changes here (and when committing svn), and Dave will tag as required
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-28th Sep 2016, Agnes, Alvaro, 3295-6
+28th Sep 2016, Agnes, Alvaro, 3295-7
 
 ModelConstants_ml,Runchem_ml:
 - New config variable USE_NOCHEM, read from ModelConstants_config namelist,
   allows to bypass chemistry call on subroutine runchem (Runchem_ml)
+
+Derived_ml,Output_hourly:
+- Fix flight level definitions, eg FL20 means 2000 feet.
 
 ColumnSource_ml:
 - Increase NMAX_EMS

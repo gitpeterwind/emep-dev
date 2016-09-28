@@ -50,7 +50,7 @@ use MetFields_ml,     only: roa,pzpbl,Kz_m2s,th,zen, ustar_nwp, u_ref,&
 use ModelConstants_ml, only: &
    KMAX_MID,KMAX_BND  & ! =>  z dimension: layer number,level number
   ,NPROC              & ! No. processors
-  ,dt_advec           &  
+  ,dt_advec           &
   ,PPBINV             & ! 1.0e9, for conversion of units
   ,PPTINV             & ! 1.0e12, for conversion of units
   ,DEBUG              & ! gives DEBUG%AOT
@@ -64,7 +64,7 @@ use ModelConstants_ml, only: &
   ,MasterProc,SOURCE_RECEPTOR,DEBUG_COLSRC  &
   ,USE_AOD, USE_OCEAN_DMS, USE_uEMEP, uEMEP,startdate,enddate
 
-use AOD_PM_ml,            only: AOD_init,aod_grp,wavelength,& ! group and 
+use AOD_PM_ml,            only: AOD_init,aod_grp,wavelength,& ! group and
                                 wanted_wlen,wanted_ext3d      ! wavelengths
 use MosaicOutputs_ml,     only: nMosaic, MosaicOutput
 use NumberConstants,      only: UNDEF_R
@@ -163,7 +163,7 @@ contains
 !=========================================================================
 subroutine Init_Derived()
   integer :: alloc_err
-  dbg0 = (DEBUG%DERIVED .and. MasterProc ) 
+  dbg0 = (DEBUG%DERIVED .and. MasterProc )
 
   allocate(D2_O3_DAY( LIMAX, LJMAX, NTDAY))
   D2_O3_DAY = 0.0
@@ -258,7 +258,7 @@ subroutine AddDeriv(inderiv,Is3D)
   logical, intent(in), optional :: Is3D
   logical :: Is3D_local
 
-  dbg0 = (DEBUG%DERIVED .and. MasterProc ) 
+  dbg0 = (DEBUG%DERIVED .and. MasterProc )
   Is3D_local = .false.
   if(present(Is3D)) Is3D_local = Is3D
 
@@ -362,7 +362,7 @@ subroutine Define_Derived()
       class = trim(OutputFields(ind)%txt4)
       select case(class)
       case ('Z_MID','Z','Z_BND','Zlev','dZ_BND','dZ')
-        iadv = -1 
+        iadv = -1
         unittxt="m"
         Is3D=.true.
       case('PM25','PM25X','PM25_rh50','PM25X_rh50','PM10_rh50',&
@@ -383,7 +383,7 @@ subroutine Define_Derived()
         call CheckStop(iout<0,sub//"OutputFields "//trim(outtyp)//&
                               " not found "//trim(outname))
         outtyp = "FLYmax6h:SPEC"
-        subclass = outdim   ! flxx-yy: xx to yy 1000 feet
+        subclass = outdim   ! flxx-yy: xx to yy 100 feet
         outname = "MAX6h_"//trim(outname)//"_"//trim(subclass)
       case('FLYmax6h:GROUP')          ! Fly Level, 6 hourly maximum
         iout=find_index(outname,chemgroups(:)%name)
@@ -396,7 +396,7 @@ subroutine Define_Derived()
         call CheckStop(iout<0,sub//"OutputFields "//trim(outtyp)//&
                               " not found "//trim(outname))
         outtyp = "FLYmax6h:GROUP"
-        subclass = outdim   ! flxx-yy: xx to yy 1000 feet
+        subclass = outdim   ! flxx-yy: xx to yy 100 feet
         outname = "MAX6h_"//trim(outname)//"_"//trim(subclass)
       case('COLUMN','COLUMN:SPEC')
      !COL  'NO2',          'molec/cm2' ,'k20','COLUMN'   ,'MISC' ,4,
@@ -437,7 +437,7 @@ subroutine Define_Derived()
         if(outname(1:3)/=class(1:3))&
           outname = class(1:3)//"_"//trim(outname)
         outname   = trim(outname)//"_"//trim(subclass)
-        Is3D      = (class(1:3)=="EXT")       
+        Is3D      = (class(1:3)=="EXT")
         call AOD_init("Derived:"//trim(class),wlen=trim(subclass),out3d=Is3D)
       case default
          if(outdim=='3d')Is3D=.true.
@@ -488,7 +488,7 @@ subroutine Define_Derived()
         call Units_Scale(outunit,-1,unitscale,unittxt,volunit,semivol=semivol)
         ! Units_Scale(iadv=-1) returns 1.0
         ! group_calc gets the unit conversion factor from Group_Units
-        if( semivol ) subclass = 'FSOA'    
+        if( semivol ) subclass = 'FSOA'
         if(debug_proc.and.DEBUG%DERIVED) write(*,"(2a)") 'FSOA GRPOM:', &
           trims( outname // ':' // outunit // ':' // subclass )
       case default
@@ -507,7 +507,7 @@ subroutine Define_Derived()
 
         if(dbg0) write(*,"(a,2i4,4(1x,a),es10.2)")"ADD",&
           ind, iout, trim(dname),";", trim(class), outind,unitscale
-        
+
       case("3d","3D","MLEV")
         Is3D = .true.
         class = "3D_"//trim(class)  //"_"//trim(outtyp)
@@ -685,7 +685,7 @@ Is3D = .true.
       if(find_index("D3_Zlev",def_3d(:)%name)<1)&
       call AddNewDeriv("D3_Zlev", "Z_BND", "-", "-", "m", &
            -99 , -99, F, 1.0,   T, 'YMD',    Is3D  )
-      
+
      case ("wind_speed_3D")
       call AddNewDeriv("wind_speed_3D", "wind_speed_3D", "-", "-", "m", &
                       -99 , -99, F, 1.0,   T, 'YM',    Is3D  )
@@ -750,7 +750,7 @@ Is3D = .true.
     end do
   end do
 
-  if(SOURCE_RECEPTOR)&            ! We include daily and monthly also 
+  if(SOURCE_RECEPTOR)&            ! We include daily and monthly also
     iou_list(IOU_DAY+1:)=.false.  ! for SOURCE_RECEPTOR mode which makes
                                   ! it easy for debugging
 
@@ -854,7 +854,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
     ind2d_pmfine=-999 ,ind3d_pmfine=-999,   &
     ind2d_pmwater=-999,ind3d_pmwater=-999,  &
     ind2d_pm10=-999   ,ind3d_pm10=-999
-                                             
+
   integer :: imet_tmp, iix,ix,index
   real, pointer, dimension(:,:,:) :: met_p => null()
 
@@ -917,11 +917,11 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
      !DS May 2015
      ! Meteo fields are available through their names and a pointer, either
-     ! from the read-in NWP fields (met%) or the derived met fields 
+     ! from the read-in NWP fields (met%) or the derived met fields
      ! (metderiv%), see MetFields_ml. We thus use the required name and see
      ! if we can find it in either met% or metderiv%
 
-      imet_tmp = find_index(subclass, met(:)%name ) ! subclass has meteo name from MetFields 
+      imet_tmp = find_index(subclass, met(:)%name ) ! subclass has meteo name from MetFields
       if( imet_tmp > 0 ) then
         met_p => met(imet_tmp)%field(:,:,:,1)
       else
@@ -937,7 +937,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
          forall ( i=1:limax, j=1:ljmax )
             d_2d( n, i,j,IOU_INST) = met_p(i,j,kmax)
          end forall
-         
+
          met_p => null()
 
       else ! Not found!
@@ -1102,7 +1102,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
          end forall
       else
          forall ( i=1:limax, j=1:ljmax )
-           d_2d( n, i,j,IOU_INST) = xn_shl(index,i,j,KMAX_MID) 
+           d_2d( n, i,j,IOU_INST) = xn_shl(index,i,j,KMAX_MID)
          end forall
       end if
 
@@ -1216,9 +1216,9 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
         call CheckStop(wlen<1,&
           "Unknown AOD wavelength "//trim(f_2d(n)%subclass))
         call CheckStop(.not.wanted_wlen(wlen),&
-          "Unwanted AOD wavelength "//trim(f_2d(n)%subclass))        
+          "Unwanted AOD wavelength "//trim(f_2d(n)%subclass))
       end if
-      
+
       ngrp = size(aod_grp)
       allocate(ingrp(ngrp))
       select case(class)
@@ -1348,10 +1348,10 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       !   n, trim(f_2d(n)%name), d_2d(n,debug_li,debug_lj,IOU_INST)
 
     case('FLYmax6h','FLYmax6h:SPEC')    ! Fly Level, 6 hourly maximum
-      ! fl00-20: 0 to 20 kfeet, fl20-35: 20 to 35 kfeet, fl35-50: 35 to 50 kfeet
+      ! fl00-20: 0 to 2 kfeet, fl20-35: 2 to 3.5 kfeet, fl35-50: 3.5 to 5 kfeet
       read(subclass,"(a2,i2,a1,i2)") txt2, k, txt2, l
-      fl0=k*304.8 ! 1e3 [feet] to [m]
-      fl1=l*304.8 ! 1e3 [feet] to [m]
+      fl0=k*30.48 ! [100 feet] to [m]
+      fl1=l*30.48 ! [100 feet] to [m]
       call Units_Scale(f_2d(n)%unit,index,af,needroa=needroa) ! only want needroa
       if(needroa)then
         tmpwork=maxval(xn_adv(index,:,:,:)*roa(:,:,:,1),dim=3,&
@@ -1363,10 +1363,10 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       forall(i=1:limax,j=1:ljmax)&  ! use IOU_YEAR as a buffer
         d_2d(n,i,j,IOU_YEAR)=max(d_2d(n,i,j,IOU_YEAR),tmpwork(i,j))
     case('FLYmax6h:GROUP')           ! Fly Level, 6 hourly maximum
-      ! fl00-02: 0 to 2 kfeet, fl02-35: 2 to 35 kfeet, fl35-50: 35 to 50 kfeet
+      ! fl00-02: 0 to 2 kfeet, fl02-35: 2 to 3.5 kfeet, fl35-50: 3.5 to 5 kfeet
       read(subclass,"(a2,i2,a1,i2)") txt2, k, txt2, l
-      fl0=k*304.8 ! 1e3 [feet] to [m]
-      fl1=l*304.8 ! 1e3 [feet] to [m]
+      fl0=k*30.48 ! [100 feet] to [m]
+      fl1=l*30.48 ! [100 feet] to [m]
       if(dbgP)print *,trim(subclass),fl0,fl1
       do k=1,KMAX_MID
         mask2d(:,:)=(z_mid(:,:,k)>=fl0.and.z_mid(:,:,k)<=fl1)
@@ -1465,7 +1465,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       end forall
 
     case("Local_Pollutant")   ! for uEMEP, under development
-       do j=1,ljmax 
+       do j=1,ljmax
           do i=1,limax
              xtot=0.0
              do iix=1,uEMEP%Nix
@@ -1479,7 +1479,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
        n_Local_Pollutant=n
 
     case("Total_Pollutant")   ! for uEMEP, under development
-       do j=1,ljmax 
+       do j=1,ljmax
           do i=1,limax
              xtot=0.0
              do iix=1,uEMEP%Nix
@@ -1580,7 +1580,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       d_2d(n,:,:,IOU_INST) = d_2d(n,:,:,IOU_YEAR) ! use IOU_YEAR as a buffer
       d_2d(n,:,:,IOU_HOUR) = d_2d(n,:,:,IOU_YEAR)
       if(mod(current_date%hour,6)==0)&  ! reset buffer
-        d_2d(n,:,:,IOU_YEAR)=0.0        
+        d_2d(n,:,:,IOU_YEAR)=0.0
     case("MAXADV","MAXSHL","SOMO")
     !  MAXADV and MAXSHL and SOMO needn't be summed here.
     !  These d_2d ( MAXADV, MAXSHL, SOMO) are set elsewhere
@@ -1622,7 +1622,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
     case ( "MET3D" )
 
-      imet_tmp = find_index(f_3d(n)%subclass, met(:)%name ) ! subclass has meteo name from MetFields 
+      imet_tmp = find_index(f_3d(n)%subclass, met(:)%name ) ! subclass has meteo name from MetFields
       if(imet_tmp>0) then
         if(met(imet_tmp)%dim==3)then
           if( MasterProc.and.first_call) write(*,*) "MET3D"//trim(f_3d(n)%name), &
@@ -1645,7 +1645,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
     case ( "BGN" )
       forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
         d_3d(n,i,j,k,IOU_INST)=xn_bgn(index,i,j,lev3d(k))
-  
+
     case ( "PM25water" )         !particle water
       forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
         d_3d(n,i,j,k,IOU_INST)=PM25_water(i,j,lev3d(k))
@@ -1701,11 +1701,11 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
     case ("XKSIG00", "XKSIG12" ) !hf hmix Kz_m2s
       forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
         d_3d(n,i,j,k,IOU_INST)=Kz_m2s(i,j,lev3d(k))
-  
+
     case ("TH" ) ! Pot. temp (needed for cross sections)
       forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
         d_3d(n,i,j,k,IOU_INST)=th(i,j,lev3d(k),1)
-  
+
     case ("T" ) ! Absolute Temperature
       forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
         d_3d(n,i,j,k,IOU_INST)=th(i,j,lev3d(k),1)&
@@ -1761,7 +1761,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       igrp = f_3d(n)%index
       call CheckStop(igrp<1,"NEG GRP "//trim(f_3d(n)%name))
       call CheckStop(igrp>size(chemgroups(:)%name), &
-                            "Outside GRP "//trim(f_3d(n)%name))                            
+                            "Outside GRP "//trim(f_3d(n)%name))
       ngrp = size(chemgroups(igrp)%specs)
       if(chemgroups(igrp)%name == "PMFINE" .and. ind3d_pmfine<0) then
         ind3d_pmfine = n
@@ -1820,7 +1820,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
         call CheckStop(wlen<1,&
           "Unknown EXT wavelength "//trim(f_3d(n)%subclass))
         call CheckStop(.not.(wanted_wlen(wlen).and.wanted_ext3d),&
-          "Unwanted EXT wavelength "//trim(f_3d(n)%subclass))        
+          "Unwanted EXT wavelength "//trim(f_3d(n)%subclass))
       end if
 
       ngrp = size(aod_grp)
@@ -1842,8 +1842,8 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
     case("Local_Pollutant3D")   ! for uEMEP, under development
       do l=1,num_lev3d
         k=lev3d(l)
-        do j=1,ljmax 
-          do i=1,limax             
+        do j=1,ljmax
+          do i=1,limax
              xtot=0.0
              do iix=1,uEMEP%Nix
                 ix=uEMEP%ix(iix)
@@ -1860,7 +1860,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
     case("Total_Pollutant3D")   ! for uEMEP, under development
       do l=1,num_lev3d
         k=lev3d(l)
-        do j=1,ljmax 
+        do j=1,ljmax
           do i=1,limax
             xtot=0.0
             do iix=1,uEMEP%Nix
@@ -1925,9 +1925,9 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
           write(*,"(a20,i4,2x,6i6)") "END_OF_DAY NAV ", &
             n, (nav_3d(n,i), i=1,LENOUT3D)
         end if
-    
+
         d_3d(n,:,:,:,IOU_INST ) = 0.0  !! Reset d_3d
-    
+
       end if ! End_of_Day
     case default
 
@@ -1936,7 +1936,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
       ! only accumulate outputs if they are wanted (will be written out)
       do iou=1,LENOUT3D
-        if(iou==IOU_INST)cycle      
+        if(iou==IOU_INST)cycle
         if(.not.wanted_iou(iou,f_3d(n)%iotype,ONLY_IOU))cycle
         d_3d(n,:,:,:,iou) = d_3d(n,:,:,:,iou) + d_3d(n,:,:,:,IOU_INST)*af
         if(f_3d(n)%avg) nav_3d(n,iou) = nav_3d(n,iou) + 1
@@ -2059,7 +2059,7 @@ subroutine group_calc( g2d, density, unit, ik, igrp,semivol)
 
   semivol_wanted=.false.
   if(present(semivol)) semivol_wanted = semivol
-  
+
   if(DEBUG%DERIVED .and.debug_proc) &
     write(*,"(a,L1,3i4,2a16,L2)") "DEBUG GROUP-PM-N",debug_proc,me,ik, kk, &
       trim(chemgroups(igrp)%name), trim(unit), semivol_wanted
@@ -2079,11 +2079,11 @@ subroutine group_calc( g2d, density, unit, ik, igrp,semivol)
     do i = 1, limax
       g2d(i,j) = 0.0
       do nspec = 1, size(gspec)
-        iadv  = gspec(nspec) 
+        iadv  = gspec(nspec)
         itot  = iadv + NSPEC_SHL
         fac = 1.0
 
-        ! With SOA modelling some compounds are semivolatile and others 
+        ! With SOA modelling some compounds are semivolatile and others
         ! non-volatile. If in a group XXX which asks for ugPM the latter's
         ! mass is correct. If semivolatile, we need to calculate the PM
         ! fraction and just add this.
@@ -2110,7 +2110,7 @@ subroutine group_calc( g2d, density, unit, ik, igrp,semivol)
       first_call = .false.
     end do ! i
   end do ! j
-       
+
 
   if(needroa)&
     forall(i=1:limax,j=1:ljmax) &
