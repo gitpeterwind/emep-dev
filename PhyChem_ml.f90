@@ -19,18 +19,18 @@ use DerivedFields_ml, only: d_2d, f_2d
 use DryDep_ml,        only: init_drydep
 use EmisDef_ml,       only: loc_frac
 use Emissions_ml,     only: EmisSet,uemep_emis
-!use Gravset_ml,       only: gravset
+use Gravset_ml,       only: gravset
 use GridValues_ml,    only: debug_proc,debug_li,debug_lj,&
                             glon,glat,projection,i_local,j_local,i_fdom,j_fdom
 use ModelConstants_ml,only: MasterProc, KMAX_MID, nmax, nstep &
                            ,dt_advec       & ! time-step for phyche/advection
-                           ,DEBUG, PPBINV, PPTINV  & 
+                           ,DEBUG, PPBINV, PPTINV  &
                            ,END_OF_EMEPDAY & ! (usually 6am)
                            ,IOU_INST       &
                            ,FORECAST       & ! use advecdiff_poles on FORECAST mode
                            ,ANALYSIS       & ! 3D-VAR Analysis
                            ,SOURCE_RECEPTOR&
-!                          ,USE_GRAVSET&
+                           ,USE_ASH&
                            ,FREQ_HOURLY    & ! hourly netcdf output frequency
                            ,USE_POLLEN, USE_EtaCOORDINATES,JUMPOVER29FEB&
                            ,USE_uEMEP, IOU_HOUR, IOU_HOUR_INST
@@ -148,8 +148,8 @@ subroutine phyche()
   ! Up north in a LatLong domain such as MACC02, mapfactors go up to four,
   ! so using advecdiff_poles pays off, even though none of the poles are
   ! included in the domain.
-  ! For efficient parallellisation each subdomain needs to have the same work 
-  ! load; this can be obtained by setting NPROCY=1 (number of subdomains in 
+  ! For efficient parallellisation each subdomain needs to have the same work
+  ! load; this can be obtained by setting NPROCY=1 (number of subdomains in
   ! latitude- or y-direction).
   ! Then, all subdomains have exactly the same geometry.
 
@@ -159,7 +159,7 @@ subroutine phyche()
     call advecdiff_poles
   end if
 
-! if(USE_GRAVSET) call gravset
+  if(USE_ASH) call gravset
 
   call Add_2timing(17,tim_after,tim_before,"phyche:advecdiff")
   !================
@@ -230,7 +230,7 @@ subroutine phyche()
     if(MasterProc)print "(2(1X,A))",'current date and time before jump:',&
           date2string("YYYY-MM-DD hh:mm:ss",current_date)
     call add_secs(ts_now,24*3600.)
-    current_date = make_current_date(ts_now)       
+    current_date = make_current_date(ts_now)
     if(MasterProc)print "(2(1X,A))",'current date and time after jump:',&
         date2string("YYYY-MM-DD hh:mm:ss",current_date)
   end if
@@ -307,7 +307,7 @@ subroutine debug_concs(txt)
     end if
 
     if(ispec>NSPEC_SHL)then
-      c1=xn_adv(iadv,debug_li,debug_lj,KMAX_MID)*PPBINV 
+      c1=xn_adv(iadv,debug_li,debug_lj,KMAX_MID)*PPBINV
       c2=c1* cfac(iadv,debug_li,debug_lj)
     else
       c1=xn_shl(ispec,debug_li,debug_lj,KMAX_MID)*PPTINV

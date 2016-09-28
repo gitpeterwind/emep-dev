@@ -1,7 +1,7 @@
 module ModelConstants_ml
 !----------------------------------------------------------------------------
 ! Specifies a number of constants used in the model, and reads namelist
-! file to (re-)configure where possible. 
+! file to (re-)configure where possible.
 ! Note that physical constants (e.g. gravity, Cp, etc ( are specified in
 ! the module PhysicalConstants_ml.f90)
 !----------------------------------------------------------------------------
@@ -44,7 +44,7 @@ logical, private, parameter :: F = .false.
 type, public :: emep_useconfig
   character(len=10) :: testname = "STD"
   logical :: &                   ! Forest fire options
-     FOREST_FIRES     = .true.  &! 
+     FOREST_FIRES     = .true.  &!
     ,SURF_AREA        = .true.  &! For improved aerosol uptake
     ,MACEHEADFIX      = .true.  &! Correction to O3 BCs (Mace Head Obs.)
     ,MACEHEAD_AVG     = .false. &! Uses 10-year avg. Good for e.g. RCA runs.
@@ -55,12 +55,12 @@ type, public :: emep_useconfig
     ,DEGREEDAY_FACTORS = .false.    &!
     ,EMISSTACKS       = F       &!
     ,PFT_MAPS         = .false.  ! Future option
- 
+
  ! If USES%EMISTACKS, need to set:
   character(len=4) :: PlumeMethod = "none" !MKPS:"ASME","NILU","PVDI"
 
  ! N2O5 hydrolysis
- ! During 2015 the aersol surface area calculation was much improved, and this 
+ ! During 2015 the aersol surface area calculation was much improved, and this
  ! leads to the need for new n2o5 hydrolysis  methods. DO NOT USE EmepReimer,
  ! but one of :; 'SmixTen' , 'Smix', 'Gamma:0.002'
 
@@ -69,7 +69,7 @@ type, public :: emep_useconfig
 ! Selection of method for Whitecap calculation for Seasalt
   character(len=15) :: WHITECAPS  = 'Callaghan'
 
-end type emep_useconfig 
+end type emep_useconfig
 type(emep_useconfig), public, save :: USES
 
 type, public :: emep_debug
@@ -80,14 +80,14 @@ type, public :: emep_debug
     ,BCS             = .false. & ! BoundaryConditions
     ,BIO             = .false. & !< Biogenic emissions
     ,COLUMN          = .false. & !  Used in Derived_ml for column integratton
-    ,DERIVED         = .false. & ! 
+    ,DERIVED         = .false. & !
     ,DRYDEP          = .false. & ! Skips fast chemistry to save some CPU
     ,DRYRUN          = .false. & ! Skips fast chemistry to save some CPU
     ,EQUIB           = .false. &   !MARS, EQSAM etc.
     ,FORESTFIRE      = .false. &
     ,GLOBBC          = .false. &
     ,GRIDVALUES      = .false. &
-    ,HOURLY_OUTPUTS  = .false. & !  
+    ,HOURLY_OUTPUTS  = .false. & !
     ,IOPROG          = .false. &
     ,LANDDEFS        = .false. &
     ,MAINCODE        = .false. & !< debugs main code (Unimod) driver
@@ -95,7 +95,7 @@ type, public :: emep_debug
     ,MY_DERIVED      = .false. &
     ,pH              = .false. &
     ,PHYCHEM         = .false. &
-    ,RSUR            = .false. & ! Surface resistance 
+    ,RSUR            = .false. & ! Surface resistance
     ,RUNCHEM         = .false. & ! DEBUG%RUNCHEM is SPECIAL
        ,MY_WETDEP    = .false. &
     ,SEASALT         = .false. &
@@ -104,16 +104,16 @@ type, public :: emep_debug
     ,SITES           = .false. &
     ,SOLVER          = .false. &
     ,SOA             = .false. &
-    ,STOFLUX         = .false. 
+    ,STOFLUX         = .false.
   ! integer debug options allow different levels of verbosity
    integer               :: &
       PFT_MAPS  = 0         & !< Future option
      ,LANDUSE   = 0         & !
-     ,DO3SE     = 0         & ! 
+     ,DO3SE     = 0         & !
      ,STOP_HH   = -1          ! If positive, code will quite when hh==STOP_HH
   !----------------------------------------------------------
    integer, dimension(2) :: IJ = [-999,-999]  ! index for debugging print out
-   character(len=20)     :: SPEC = 'O3'       ! default. 
+   character(len=20)     :: SPEC = 'O3'       ! default.
    integer               :: ISPEC = -999      ! Will be set after NML
 end type emep_debug
 type(emep_debug), public, save :: DEBUG
@@ -156,7 +156,7 @@ logical, public, save ::             &
 !
 ! Might sometimes change for scenario runs (e.g. EnsClim):
  ,USE_AIRCRAFT_EMIS  = .true.        & ! Needs global file, see manual
- ,USE_LIGHTNING_EMIS = .true.        & 
+ ,USE_LIGHTNING_EMIS = .true.        &
 !
 ! More experimental:
  ,USE_ROADDUST       = .false.       & ! TNO Road Dust routine. So far with simplified "climate-correction" factor
@@ -164,51 +164,50 @@ logical, public, save ::             &
  ,TEGEN_DATA         = .true.        & ! Interpolate global data to make dust if  USE_DUST=.true.
  ,INERIS_SNAP1       = .false.       & !(EXP_NAME=="TFMM"), & ! Switches off decadal trend
  ,INERIS_SNAP2       = .false.       & !(EXP_NAME=="TFMM"), & ! Allows near-zero summer values
- ,USE_ASH            = .false.       & ! Ash from Volcanic Eruption
+ ,USE_ASH            = .false.       & ! Ash from Volcanic Eruption, w/gravitational settling
  ,USE_AOD            = .false.       &
  ,USE_POLLEN         = .false.       & ! EXPERIMENTAL. Only works if start Jan 1
-!,USE_GRAVSET        = .false.       & ! Gravitationsl settlign, very hardcoded, just testing
  ,USE_AMINEAQ        = .false.       & ! MKPS
  ,ANALYSIS           = .false.       & ! EXPERIMENTAL: 3DVar data assimilation
  ,USE_FASTJ          = .false.       & ! use FastJ_ml for computing rcphot
 !
 ! Output flags
  ,SELECT_LEVELS_HOURLY  = .false.    & ! for FORECAST, 3DPROFILES
- ,JUMPOVER29FEB      = .false.         ! When current date is 29th February, jump to next date. 
+ ,JUMPOVER29FEB      = .false.         ! When current date is 29th February, jump to next date.
                                        !NB: this is not identical to assuming not a leap year,
                                        !for instance the assumed number of days in the year  will still be 366
 logical, public, save :: USE_uEMEP = .false.  ! make local fraction of pollutants
 type(uEMEP_type), public, save :: uEMEP ! could be moved to own file when uEMEP is more mature
 
-                                      
+
 integer, public, save :: &
   FREQ_HOURLY = 1  ! 3Dhourly netcdf special output frequency
 
-! Soil NOx. Choose EURO for better spatial and temp res, but for 
+! Soil NOx. Choose EURO for better spatial and temp res, but for
 ! global runs need global monthly. Variable USE_SOILNOX set from
 ! these below.
 !
 ! Also, is scaling needed for EURO_SOILNOX?
-! The Euro soil NO emissions are based upon average Nr-deposition calculated 
-!  for the 2000s, as given in the AnnualNdep.nc files. For future years a 
-!  new AnnualNdep.nc could be pre-calculated. A simpler but approximate 
-!  way is to scale with some other factor, e.g. the ratio of emissions over  
-!  some area (EMEP, or EU) in year YYYY divided by year 2005 values.  
+! The Euro soil NO emissions are based upon average Nr-deposition calculated
+!  for the 2000s, as given in the AnnualNdep.nc files. For future years a
+!  new AnnualNdep.nc could be pre-calculated. A simpler but approximate
+!  way is to scale with some other factor, e.g. the ratio of emissions over
+!  some area (EMEP, or EU) in year YYYY divided by year 2005 values.
 ! Remember, soil-NO emissions are *very* uncertain.
 
   logical, public, save ::             &
     USE_EURO_SOILNOX      = .true.     & ! ok, but diff for global + Euro runs
    ,USE_GLOBAL_SOILNOX    = .false.    & ! Need to design better switch
    ,USE_SOILNOX           = .true.       ! DO NOT ALTER: Set after config
-  real, public, save :: EURO_SOILNOX_DEPSCALE = 1.0 ! 
+  real, public, save :: EURO_SOILNOX_DEPSCALE = 1.0 !
 
 !NB: *OCEAN*  are internal variables. Cannot be set manually.
   logical, public, save ::  USE_OCEAN_DMS = .false. !set automatically true if found.
   logical, public, save ::  FOUND_OCEAN_DMS = .false. !set automatically true if found
   logical, public, save ::  USE_OCEAN_NH3 = .false. !set automatically true if found
 
-! Methane background. 
-  real, public, save :: BGND_CH4 = -1  ! -1 gives defaults in BoundaryConditions_ml, 
+! Methane background.
+  real, public, save :: BGND_CH4 = -1  ! -1 gives defaults in BoundaryConditions_ml,
 ! To skip rct value   (jAero work)
   integer, public, save, dimension(10) :: SKIP_RCT  = -1  ! -1 gives defaults
 !
@@ -226,7 +225,7 @@ logical, public, parameter ::         &
   USE_SOILNH3        = .false.,       & ! DUMMY VALUES, DO NOT USE!
   USE_ZREF           = .false.,       & ! testing
   EXTENDEDMASSBUDGET = .false.,       & ! extended massbudget outputs
-  LANDIFY_MET        = .false.         
+  LANDIFY_MET        = .false.
 
 logical, public :: &
   USE_EtaCOORDINATES=.true. ! default since October 2014
@@ -254,7 +253,7 @@ character(len=4),public, save, dimension(NBVOC) :: &
 
 logical, public, save :: &
   SEAFIX_GEA_NEEDED = .false. ! only if problems. Read from ModelConstants_config
-  
+
 !=============================================================================
 !+ 1) Define first dimensions that might change quite often -  for different
 !     run domains
@@ -272,7 +271,7 @@ character(len=*), parameter, public :: &
 ! EMIS_TEST can be merged with EMIS_SOURCE after tests
 character(len=20), save, public :: &
   EMIS_SOURCE = "Mixed",  & ! "Mixed" or old formats: "emislist" or "CdfFractions"
-  EMIS_TEST   = "None"      ! "None" or "CdfSnap" 
+  EMIS_TEST   = "None"      ! "None" or "CdfSnap"
 Logical , save, public :: &
   EMIS_OUT    = .false.     ! output emissions in separate files (memory demanding)
 
@@ -296,7 +295,7 @@ integer, public, save ::  &
 
 integer, public, save ::  & ! Actual number of processors in longitude, latitude
   NPROCX, NPROCY, NPROC     ! and total. NPROCY must be 2 for GLOBAL runs.
-  
+
 CHARACTER(LEN=3), public, save :: &
   DOMAIN_DECOM_MODE=''      ! override parinit(Pole_singular) option (Par_ml)
 
@@ -393,7 +392,7 @@ integer, public :: METSTEP = 3  ! time-step of met. (h). 3 hours default, but WR
 
 !Namelist controlled: aerosols
 !Number of aerosol sizes (1-fine, 2-coarse, 3-'giant' for sea salt )
-! FINE_PM = 1, COAR_NO3 = 2, COAR_SS = 3, COAR DUST = 4,pollen = 5    
+! FINE_PM = 1, COAR_NO3 = 2, COAR_SS = 3, COAR DUST = 4,pollen = 5
 
 integer, parameter :: NSAREA_DEF = 8 ! needs to be consistent with type below
 type, public :: aero_t
@@ -522,14 +521,14 @@ subroutine Config_ModelConstants(iolog)
   integer :: i, j, ispec, iostat
   logical,save :: first_call = .true.
   character(len=len(meteo)) ::  MetDir='./' ! path from meteo
-  
+
   NAMELIST /ModelConstants_config/ &
     DegreeDayFactorsFile, meteo & !meteo template with full path
    ,EXP_NAME &  ! e.g. EMEPSTD, FORECAST, TFMM, TodayTest, ....
    ,USES   & ! just testname so far
    ,AERO   & ! Aerosol settings
    ,DEBUG  & !
-   ,MY_OUTPUTS  &  ! e.g. EMEPSTD, FORECAST, TFMM 
+   ,MY_OUTPUTS  &  ! e.g. EMEPSTD, FORECAST, TFMM
    ,USE_SOILWATER, USE_CONVECTION, CONVECTION_FACTOR &
    ,USE_AIRCRAFT_EMIS, USE_LIGHTNING_EMIS, USE_ROADDUST, USE_DUST &
    ,USE_EURO_SOILNOX, USE_GLOBAL_SOILNOX, EURO_SOILNOX_DEPSCALE &
@@ -539,8 +538,8 @@ subroutine Config_ModelConstants(iolog)
    ,SELECT_LEVELS_HOURLY, FREQ_HOURLY  & ! incl. FORECAST, 3DPROFILES
    ,FORECAST, ANALYSIS, SOURCE_RECEPTOR, VOLCANO_SR &
    ,SEAFIX_GEA_NEEDED     & ! only if problems, see text above.
-   ,BGND_CH4              & ! Can reset background CH4 values 
-   ,SKIP_RCT              & ! Can  skip some rct 
+   ,BGND_CH4              & ! Can reset background CH4 values
+   ,SKIP_RCT              & ! Can  skip some rct
    ,EMIS_SOURCE, EMIS_TEST, EMIS_OUT, emis_inputlist, EmisDir &
    ,FLUX_VEGS             & ! Allows user to add veg categories for eg IAM ouput
    ,VEG_2dGS              & ! Allows 2d maps of growing seasons
@@ -561,7 +560,7 @@ subroutine Config_ModelConstants(iolog)
   USE_SOILNOX = USE_EURO_SOILNOX .or. USE_GLOBAL_SOILNOx
 
   ! Convert DEBUG%SPEC to index
-  if(first_call) then
+  if(first_call)then
     ispec = find_index( DEBUG%SPEC, species(:)%name )
   ! print *, "debug%spec testing", ispec, trim(DEBUG%SPEC)
     call CheckStop(ispec<1,"debug%spec not found"//trim(DEBUG%SPEC))
@@ -570,7 +569,7 @@ subroutine Config_ModelConstants(iolog)
 
     do i = 1, size(AERO%DpgN(:))
       AERO%DpgN(i) = DpgV2DpgN(AERO%DpgV(i),AERO%sigma(i))
-    end do     
+    end do
   end if
 
   if(MasterProc)then
@@ -608,7 +607,7 @@ subroutine Config_ModelConstants(iolog)
 
   rewind(IO_NML)
   read(IO_NML,NML=INPUT_PARA)
-  startdate(4)=0                ! meteo hour to start/end the run 
+  startdate(4)=0                ! meteo hour to start/end the run
   enddate  (4)=0                ! are set in assign_NTERM
 
   meteo = key2str(meteo,'DataDir',DataDir)

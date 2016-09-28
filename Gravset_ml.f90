@@ -5,18 +5,16 @@ module Gravset_ml
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 use CheckStop_ml,         only: CheckStop
 use Chemfields_ml,        only: xn_adv
-use ChemChemicals_ml,     only: species,species_adv
+use ChemChemicals_ml,     only: species_adv
 use ChemSpecs_adv_ml
 use ChemSpecs_shl_ml,     only: NSPEC_SHL
 use ChemGroups_ml,        only: chemgroups
-use DryDep_ml,            only: DDepMap
 use GridValues_ml,        only: A_mid,B_mid,A_bnd,B_bnd
 use MetFields_ml,         only: roa,th,ps
-use ModelConstants_ml,    only: KMAX_MID,KMAX_BND,dt_advec
-use Par_ml,               only: MAXLIMAX,MAXLJMAX,limax,ljmax,me,li0,li1,lj0,lj1
+use ModelConstants_ml,    only: KMAX_MID,KMAX_BND,dt_advec,MasterProc
+use Par_ml,               only: MAXLIMAX,MAXLJMAX,li0,li1,lj0,lj1
 use PhysicalConstants_ml, only: GRAV
 use SmallUtils_ml,        only: find_index
-use NetCDF_ml,            only: printCDF
 
 implicit none
 private
@@ -25,26 +23,22 @@ public :: gravset
 
 real, public, allocatable, dimension(:,:,:,:) ::num_sed
 
+real, parameter :: &
+  slinnfac = 1.0  ,&
+  density = 2.5E03,& !3.0E03
+  F = 0.8, wil_hua = F**(-0.828) + 2*SQRT(1.07-F)
+
 contains
 
 subroutine gravset()
-  real                        :: slinnfac = 1.0,&
-                                 density = 2.5E03 !3.0E03
   real                        :: ztempx,vt,zsedl,tempc,knut
   real                        :: Re,Re_f, X ,vt_old,z,ztemp
-  real, save                  :: wil_hua
-  real,dimension(7)           :: B_n = &
-       (/-3.18657,0.992696,-0.00153193,-0.000987059,-0.000578878 ,&
-       0.0000855176,-0.00000327815/)
-  real,dimension(KMAX_MID)    :: zvis,p_mid,zlair, zflux,zdp1
-  real,dimension(KMAX_BND)    :: p_full
-  integer                     :: i,j,k,ispec,ash,volc_group
-  integer,save                :: bins,volc
+  real,dimension(KMAX_MID)    :: zvis,p_mid,zlair,zflux,zdp1,p_full
+  integer                     :: i,j,k,ispec,ash
+  integer,save                :: bins
   integer                     :: v,b
   character(len=256)          :: name     ! Volcano (vent) name
-  logical                     :: first_call = .true.,test_log = .false.
-  real                        :: F = 0.8
-
+  logical                     :: first_call = .true.
 
 ! need to calculate
 ! zvis -> dynamic viscosity of air.. dependent on temperature
@@ -57,32 +51,29 @@ subroutine gravset()
 
 
   if (first_call) then
-    first_call = .false.
+    if(MasterProc) &
+      write(*,*) "Gravset called!"
 
-    write(*,*) "Gravset called!"
-
-    wil_hua = F**(-0.828) + 2*SQRT(1.07-F)
     ash=find_index("ASH",chemgroups(:)%name)
-    if(ash>0)then
-       bins=size(chemgroups(ash)%specs)
-       allocate(num_sed(bins,MAXLIMAX,MAXLJMAX,KMAX_MID))
-       num_sed(:,:,:,:)=0.0
-       allocate(grav_sed(bins))
+    call CheckStop(ash<1,"ASH group not found")
+    bins=size(chemgroups(ash)%specs)
+    allocate(num_sed(bins,MAXLIMAX,MAXLJMAX,KMAX_MID),grav_sed(bins))
+    num_sed(:,:,:,:)=0.0
+    select case(bins)
+    case(7)
+      grav_sed(:)%spec = chemgroups(ash)%specs(:)-NSPEC_SHL
+      grav_sed(:)%diameter = [0.1,0.3,1.0,3.0,10.0,30.0,100.0]*1e-6
+    case(9)
+      grav_sed(:)%spec = chemgroups(ash)%specs(:)-NSPEC_SHL
+      grav_sed(:)%diameter = [4.0,6.0,8.0,10.0,12.0,14.0,16.0,18.0,25.0]*1e-6
+!   case(10)
+!     grav_sed(:)%spec = chemgroups(ash)%specs(:)-NSPEC_SHL
+!     grav_sed(:)%diameter = [2.0,4.0,6.0,8.0,10.0,12.0,14.0,16.0,18.0,25.0]*1e-6
+    case default
+       call CheckStop("Unsupported number of ASH bins")
+    end select
 
-       select case(bins)
-       case(7)
-         grav_sed(:)%spec = chemgroups(volc_group)%specs(:)-NSPEC_SHL
-         grav_sed(:)%diameter = [0.1,0.3,1.0,3.0,10.0,30.0,100.0]*1e-6
-       case(9)
-         grav_sed(:)%spec = chemgroups(volc_group)%specs(:)-NSPEC_SHL
-         grav_sed(:)%diameter = [4.0,6.0,8.0,10.0,12.0,14.0,16.0,18.0,25.0]*1e-6
-!      case(10)
-!        grav_sed(:)%spec = chemgroups(volc_group)%specs(:)-NSPEC_SHL
-!        grav_sed(:)%diameter = [2.0,4.0,6.0,8.0,10.0,12.0,14.0,16.0,18.0,25.0]*1e-6
-       case default
-         call CheckStop("Unsupported number of ASH bins")
-       end select
-     end if
+    first_call = .false.
   end if !first_call
 
   do j = lj0,lj1

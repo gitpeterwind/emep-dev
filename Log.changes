@@ -155,6 +155,17 @@ changes here (and when committing svn), and Dave will tag as required
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+28th Sep 2016, Alvaro, 3295
+
+ModelConstants_ml,PhyChem_ml,Makefile.SRCS:
+- Ash gravitational settling (gravset) when USE_ASH=T
+- Remove USE_GRAVSET variable, use USE_ASH instead.
+- Compile and Gravset_ml out of the box.
+
+Gravset_ml:
+- Fix 3293 update
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 27th Sep 2016, Dave , 3294
 
 Make changes that I thought 3284-90 had done for endif, enddo and endfunction.
