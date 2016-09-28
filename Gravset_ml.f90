@@ -33,7 +33,8 @@ contains
 subroutine gravset()
   real                        :: ztempx,vt,zsedl,tempc,knut
   real                        :: Re,Re_f, X ,vt_old,z,ztemp
-  real,dimension(KMAX_MID)    :: zvis,p_mid,zlair,zflux,zdp1,p_full
+  real,dimension(KMAX_MID)    :: zvis,p_mid,zlair,zflux,zdp1
+  real,dimension(KMAX_BND)    :: p_full
   integer                     :: i,j,k,ispec,ash
   integer,save                :: bins
   integer                     :: v,b
