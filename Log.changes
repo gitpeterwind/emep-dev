@@ -155,7 +155,18 @@ changes here (and when committing svn), and Dave will tag as required
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-28th Sep 2016, Alvaro, 3295
+28th Sep 2016, Agnes, Alvaro, 3295-6
+
+ModelConstants_ml,Runchem_ml:
+- New config variable USE_NOCHEM, read from ModelConstants_config namelist,
+  allows to bypass chemistry call on subroutine runchem (Runchem_ml)
+
+ColumnSource_ml:
+- Increase NMAX_EMS
+
+config_EMERGENCY.nml,config_Outputs_EMERGENCY.nml:
+- USE_NOCHEM=T
+- Update output
 
 ModelConstants_ml,PhyChem_ml,Makefile.SRCS:
 - Ash gravitational settling (gravset) when USE_ASH=T

@@ -31,6 +31,7 @@ module RunChem_ml
                               KMAX_MID, END_OF_EMEPDAY, nstep,  &
                               AERO,  USES, & ! need USES%EMISSTACKS 
                               USE_FASTJ, &
+                              dt_advec, USE_NOCHEM, &  ! for Emergency
                               DEBUG_EMISSTACKS, & ! MKPS
                               DebugCell, DEBUG    ! RUNCHEM
   use OrganicAerosol_ml,only: ORGANIC_AEROSOLS, OrganicAerosol, &
@@ -159,7 +160,13 @@ subroutine runchem()
 !     !-------------------------------------------------
 !     !-------------------------------------------------
 !     !-------------------------------------------------
-      call chemistry(i,j,DEBUG%RUNCHEM.and.debug_flag)
+
+      if( .not. USE_NOCHEM) then
+        call chemistry(i,j,DEBUG%RUNCHEM.and.debug_flag)
+      else
+        xn_2d(NSPEC_SHL+1:NSPEC_TOT,:) =  xn_2d(NSPEC_SHL+1:NSPEC_TOT,:)+rcemis(NSPEC_SHL+1:NSPEC_TOT,:)*dt_advec
+      end if
+
       if(DEBUG%RUNCHEM) call check_negs(i,j,'C')
 !     !-------------------------------------------------
 !     !-------------------------------------------------

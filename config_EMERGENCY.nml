@@ -10,11 +10,11 @@
 !  IC/BC        see namelists Nest_config,ExternalBICs_config,ExternalBICs_bc
 !------------------------------
 &ModelConstants_config
+  meteo                 = './meteoYYYYMMDD.nc',
   EXP_NAME              = 'EMERGENCY',
   MY_OUTPUTS            = 'EMERGENCY',
 ! MY_OUTPUTS            = 'INVERSION',
 !------------------------------
-!USES system started June 2013
   USES%testname         = 'EMERGENCY',
   USES%FOREST_FIRES     = F,
   USES%EMISSTACKS       = F,         ! Reads PointSources file
@@ -50,6 +50,7 @@
   SELECT_LEVELS_HOURLY  = T,          ! hourly output flag Also for FORECAST, 3DPROFILES
   FORECAST              = T,
   USE_ASH               = T,          ! Used for FORECASTs and Status 2010
+  USE_NOCHEM            = T,          ! Turns off chemistry
   ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
   USE_AOD               = T,          ! Used for FORECASTs usually
 !------------------------------
@@ -70,12 +71,6 @@
 ! WRITE_GRP        = 'DAOBS','DAUNOBS','PM10','AOD',
   FORECAST_NDUMP   = 0,                       ! Nr. CWF dump dates
   outdate          = $outdate,                ! 1st,2nd CWF dump dates
-&end
-&Fire_config
-  GFED_PATTERN="$GFED",#GFED
-  FINN_PATTERN="$FINN",#FINN
-  GFAS_PATTERN="$GFAS",#GFAS
-  need_poll = F,        ! Avoids problems with missing ISOP in later FINN data
 &end
 &ExternalBICs_config
   USE_EXTERNAL_BIC  = F,              ! .false. to deactivate
