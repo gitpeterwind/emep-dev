@@ -155,21 +155,21 @@ changes here (and when committing svn), and Dave will tag as required
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-28th Sep 2016, Agnes, Alvaro, 3295-8
+28-29th Sep 2016, Agnes, Alvaro, 3295-9
 
 ModelConstants_ml,Runchem_ml:
 - New config variable USE_NOCHEM, read from ModelConstants_config namelist,
   allows to bypass chemistry call on subroutine runchem (Runchem_ml)
 
-Derived_ml,Output_hourly:
-- Fix flight level definitions, eg FL20 means 2000 feet.
+Derived_ml,config_Outputs_EMERGENCY.nml:
+- Fix flight level definitions, eg FL200 means 20.000 feet.
 
 ColumnSource_ml:
 - Increase NMAX_EMS
 
 config_EMERGENCY.nml,config_Outputs_EMERGENCY.nml:
-- USE_NOCHEM=T
-- Update output
+- USE_NOCHEM=T, USE_AOD=F (currently needs chem)
+- Update output.
 
 ModelConstants_ml,PhyChem_ml,Makefile.SRCS:
 - Ash gravitational settling (gravset) when USE_ASH=T

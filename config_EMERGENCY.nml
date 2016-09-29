@@ -1,4 +1,4 @@
-!!put here only machine specific data. 
+!!put here only machine specific data.
 &Machine_config
 !DataDir will attempted replaced by (in this order):
   DataPath(1) = '/global/work/mifapw/emep/Data',  !Stallo
@@ -29,7 +29,7 @@
   USE_CONVECTION        = F,
   USE_SEASALT           = T,
   USE_AIRCRAFT_EMIS     = F,          ! Needs global file, see manual
-  USE_LIGHTNING_EMIS    = F,          ! 
+  USE_LIGHTNING_EMIS    = F,          !
 !------------------------------
   USE_EURO_SOILNOX      = F,          ! diff for global + Euro runs
   EURO_SOILNOX_DEPSCALE = 1.0,        ! Scale, default 1  (see ModelConstants_ml)
@@ -44,7 +44,7 @@
   INERIS_SNAP2          = F,          ! Used for TFMM runs
 !------------------------------
   EMIS_SOURCE           = 'Mixed', ! 'emislist' or 'CdfFractions'
-  EMIS_TEST             = 'None',     ! 'None' or 'CdfSnap' 
+  EMIS_TEST             = 'None',     ! 'None' or 'CdfSnap'
   EMIS_OUT              = F,          ! Output emissions in separate files (memory demanding)
 !------------------------------
   SELECT_LEVELS_HOURLY  = T,          ! hourly output flag Also for FORECAST, 3DPROFILES
@@ -52,7 +52,7 @@
   USE_ASH               = T,          ! Used for FORECASTs and Status 2010
   USE_NOCHEM            = T,          ! Turns off chemistry
   ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
-  USE_AOD               = T,          ! Used for FORECASTs usually
+  USE_AOD               = F,          ! Used for FORECASTs usually
 !------------------------------
   DEBUG%GLOBBC          = F,
   DEBUG%HOURLY_OUTPUTS  = F,

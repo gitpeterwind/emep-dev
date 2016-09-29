@@ -1348,7 +1348,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       !   n, trim(f_2d(n)%name), d_2d(n,debug_li,debug_lj,IOU_INST)
 
     case('FLYmax6h','FLYmax6h:SPEC')    ! Fly Level, 6 hourly maximum
-      ! fl00-20: 0 to 2 kfeet, fl20-35: 2 to 3.5 kfeet, fl35-50: 3.5 to 5 kfeet
+      ! fl000-200: 0 to 20 kfeet, fl200-350: 20 to 35 kfeet, fl350-500: 35 to 50 kfeet
       read(subclass,"(a2,i2,a1,i2)") txt2, k, txt2, l
       fl0=k*30.48 ! [100 feet] to [m]
       fl1=l*30.48 ! [100 feet] to [m]
@@ -1363,7 +1363,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       forall(i=1:limax,j=1:ljmax)&  ! use IOU_YEAR as a buffer
         d_2d(n,i,j,IOU_YEAR)=max(d_2d(n,i,j,IOU_YEAR),tmpwork(i,j))
     case('FLYmax6h:GROUP')           ! Fly Level, 6 hourly maximum
-      ! fl00-02: 0 to 2 kfeet, fl02-35: 2 to 3.5 kfeet, fl35-50: 3.5 to 5 kfeet
+      ! fl000-200: 0 to 20 kfeet, fl200-350: 20 to 35 kfeet, fl350-500: 35 to 50 kfeet
       read(subclass,"(a2,i2,a1,i2)") txt2, k, txt2, l
       fl0=k*30.48 ! [100 feet] to [m]
       fl1=l*30.48 ! [100 feet] to [m]

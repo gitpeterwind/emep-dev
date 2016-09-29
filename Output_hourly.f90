@@ -553,7 +553,7 @@ implicit none
               if (ik .eq. KMAX_MID) then
                 do k_flight = KMAX_MID,1,-1
 !if(me==23.and.i==3.and.j==10)write(*,*) "k_flight: ",k_flight,z_mid(i,j,k_flight) 
-                  if (z_mid(i,j,k_flight) .gt. 609.6) exit !0 - 2.000 feet
+                  if (z_mid(i,j,k_flight) .gt. 6096.0) exit !0 - 20 000 feet
                 end do
                 flight_start = KMAX_MID
                 flight_end   = k_flight+1
@@ -561,30 +561,30 @@ implicit none
               elseif (ik .eq. KMAX_MID-1) then
                 flight_end =  KMAX_MID
                 do k_flight = KMAX_MID,1,-1
-                  if(z_mid(i,j,k_flight) .gt. 609.6 .and.&
+                  if(z_mid(i,j,k_flight) .gt. 6096.0 .and.&
                      z_mid(i,j,flight_end).eq. z_mid(i,j,KMAX_MID)) then
                     flight_start = k_flight
                     flight_end   = k_flight
                   end if
-                  if(z_mid(i,j,k_flight) .gt. 609.6 .and. &
-                     z_mid(i,j,k_flight) .lt. 1066.8) flight_end = k_flight
-                  if(z_mid(i,j,k_flight) .gt. 1066.8) exit
+                  if(z_mid(i,j,k_flight) .gt. 6096.0 .and. &
+                     z_mid(i,j,k_flight) .lt. 10668.0) flight_end = k_flight
+                  if(z_mid(i,j,k_flight) .gt. 10668.0) exit
                 end do
               elseif (ik .eq. KMAX_MID-2) then
                 flight_end =  KMAX_MID
-                if (z_mid(i,j,1) .lt. 1066.8) then 
+                if (z_mid(i,j,1) .lt. 10668.0) then 
                   flight_end = 1
                   flight_start = 1
                 else
                   do k_flight = KMAX_MID,1,-1
-                    if(z_mid(i,j,k_flight) .gt. 1066.8 .and.&
+                    if(z_mid(i,j,k_flight) .gt. 10668.0 .and.&
                        z_mid(i,j,flight_end).eq. z_mid(i,j,KMAX_MID)) then
                       flight_start = k_flight
                       flight_end   = k_flight 
                     end if
-                    if(z_mid(i,j,k_flight) .gt. 1066.8 .and.  &
-                       z_mid(i,j,k_flight) .lt. 1524.0) flight_end = k_flight
-                    if(z_mid(i,j,k_flight) .gt. 1524.0) exit
+                    if(z_mid(i,j,k_flight) .gt. 10668.0 .and.  &
+                       z_mid(i,j,k_flight) .lt. 15240.0) flight_end = k_flight
+                    if(z_mid(i,j,k_flight) .gt. 15240.0) exit
                   end do
                 end if
               end if
