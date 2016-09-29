@@ -1349,7 +1349,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
     case('FLYmax6h','FLYmax6h:SPEC')    ! Fly Level, 6 hourly maximum
       ! fl000-200: 0 to 20 kfeet, fl200-350: 20 to 35 kfeet, fl350-500: 35 to 50 kfeet
-      read(subclass,"(a2,i2,a1,i2)") txt2, k, txt2, l
+      read(subclass,"(a2,i3,a1,i3)") txt2, k, txt2, l
       fl0=k*30.48 ! [100 feet] to [m]
       fl1=l*30.48 ! [100 feet] to [m]
       call Units_Scale(f_2d(n)%unit,index,af,needroa=needroa) ! only want needroa
@@ -1364,7 +1364,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
         d_2d(n,i,j,IOU_YEAR)=max(d_2d(n,i,j,IOU_YEAR),tmpwork(i,j))
     case('FLYmax6h:GROUP')           ! Fly Level, 6 hourly maximum
       ! fl000-200: 0 to 20 kfeet, fl200-350: 20 to 35 kfeet, fl350-500: 35 to 50 kfeet
-      read(subclass,"(a2,i2,a1,i2)") txt2, k, txt2, l
+      read(subclass,"(a2,i3,a1,i3)") txt2, k, txt2, l
       fl0=k*30.48 ! [100 feet] to [m]
       fl1=l*30.48 ! [100 feet] to [m]
       if(dbgP)print *,trim(subclass),fl0,fl1
