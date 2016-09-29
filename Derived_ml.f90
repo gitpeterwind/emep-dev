@@ -1377,7 +1377,13 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
           d_2d(n,i,j,IOU_YEAR)=max(d_2d(n,i,j,IOU_YEAR),tmpwork(i,j))
       end do
     case ("COLUMN","COLUMN:SPEC") ! unit conversion factor stored in f_2d(n)%scale
-      read(f_2d(n)%subclass,"(a1,i2)") txt2, klow ! Connvert e.g. k20 to klow=20
+      klow = KMAX_MID + 1 ! initialize too large
+      if (f_2d(n)%subclass == "kmax") then
+        klow = KMAX_MID
+      else
+        read(f_2d(n)%subclass,"(a1,i2)") txt2, klow ! Connvert e.g. k20 to klow=20
+      end if
+      call CheckStop(klow>KMAX_MID, "column definition too large: "// f_2d(n)%subclass)
       do j = 1, ljmax
         do i = 1, limax
           k = 1
@@ -1406,7 +1412,13 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       call CheckStop(igrp<1,"NEG GRP "//trim(f_2d(n)%name))
       call CheckStop(igrp>size(chemgroups(:)%name), &
                             "Outside GRP "//trim(f_2d(n)%name))
-      read(f_2d(n)%subclass,"(a1,i2)") txt2, klow ! Connvert e.g. k20 to klow=20
+      klow = KMAX_MID + 1 ! initialize too large
+      if (f_2d(n)%subclass == "kmax") then
+        klow = KMAX_MID
+      else
+        read(f_2d(n)%subclass,"(a1,i2)") txt2, klow ! Connvert e.g. k20 to klow=20
+      end if
+      call CheckStop(klow>KMAX_MID, "column definition too large: "// f_2d(n)%subclass)
       d_2d(n,:,:,IOU_INST) = 0.0
       do k=1,klow
         call group_calc(tmpwork(:,:),roa(:,:,k,1),f_2d(n)%unit,k,igrp)

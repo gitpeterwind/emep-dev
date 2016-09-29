@@ -153,6 +153,14 @@ info on unused variables, etc.
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+29th Sep 2016, Heiko, 3301
+
+Derived_ml:
+-add kmax to select all levels to COLUMN output instead of k20
+
+config_Outputs_EMERGENCY.nml,config_EMERGENCY.nml:
+- start using namelist for Volc-emergencys, start updating output for VOLCEX16
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 28-29th Sep 2016, Agnes, Alvaro, 3295-3300

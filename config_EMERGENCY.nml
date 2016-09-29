@@ -12,7 +12,7 @@
 &ModelConstants_config
   meteo                 = './meteoYYYYMMDD.nc',
   EXP_NAME              = 'EMERGENCY',
-  MY_OUTPUTS            = 'EMERGENCY',
+  MY_OUTPUTS            = '', ! outputs now defined in config_Outputs
 ! MY_OUTPUTS            = 'INVERSION',
 !------------------------------
   USES%testname         = 'EMERGENCY',

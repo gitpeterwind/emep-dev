@@ -1,22 +1,24 @@
 &OutputConcs_config
 OutputConcs=
-! freq: YEAR='Y', MON='M', DAY='D', HOUR='H', HOUR_INST='I'
+! freq: YEAR='Y', MON='M', DAY='D', HOUR='H', HOUR_INST='I', HOUR_AVG='A'
 !SPECIAL PM25 will be sum of fine + fraction coarse
 ! 'PMFINE'            ,'ug','2d','AIR_CONCS','GROUP','I',
 ! 'PMCO'              ,'ug','2d','AIR_CONCS','GROUP','I',
 ! 'PM10'              ,'ug','2d','AIR_CONCS','GROUP','I',
 ! 'SURF_ug_PM25_rh50' ,'ug','2d','PM25_rh50' ,'MISC','I',
 ! 'SURF_ug_PM10_rh50' ,'ug','2d','PM10_rh50' ,'MISC','I',
-!-- Emergency: Volcanic Eruption (4 entries). Skipp groups if not found
-  'ASH'               ,'ug','2d','AIR_CONCS','GROUP','I',
+!-- Emergency: Volcanic Eruption (4 entries). Skip groups if not found
+!  'ASH'              ,'ug','2d','AIR_CONCS','GROUP','I', ! surface
 ! 'ASH_F'             ,'ug','2d','AIR_CONCS','GROUP','I',
 ! 'ASH_C'             ,'ug','2d','AIR_CONCS','GROUP','I',
 ! 'ASH_G'             ,'ug','2d','AIR_CONCS','GROUP','I',
-! 'ASH'               ,'ug','3d','AIR_CONCS','GROUP','I',
-! 'ASH'          ,'ugm2','k20','COLUMN:GROUP','MISC','I',
+  'ASH'               ,'ug','3d','AIR_CONCS','GROUP','I',
+  'ASH'         ,'ugm2','kmax','COLUMN:GROUP','MISC','A',
+  'ASH'         ,'ugm2','kmax','COLUMN:GROUP','MISC','I',
   'ASH'    ,'ug','fl000-200','FLYmax6h:GROUP','MISC','I', ! 6h max between surface and 20.000 feet
   'ASH'    ,'ug','fl200-350','FLYmax6h:GROUP','MISC','I', ! 6h max between 20.000  and 35.000 feet
-  'ASH'    ,'ug','fl350-500','FLYmax6h:GROUP','MISC','I', ! 6h max between 25.000  and 50.000 feet
+  'ASH'    ,'ug','fl350-550','FLYmax6h:GROUP','MISC','I', ! 6h max between 25.000  and 55.000 feet
+! Do we need the fl000-200 also as FLYmean6h:GROUP? (not in Derived_ml.f90 yet)
 !-- Emergency: Nuclear accident (5 entries). Skipp groups if not found
 ! 'CS137'            ,'mBq','2d','AIR_CONCS','SPEC' ,'I',
 ! 'I131'             ,'mBq','2d','AIR_CONCS','SPEC' ,'I',
@@ -25,7 +27,7 @@ OutputConcs=
 ! 'NUCRACT'          ,'mBq','2d','AIR_CONCS','GROUP','I',
 !!'XE131'            ,'mBq','2d','AIR_CONCS','SPEC' ,'I',
 !!'NUC'              ,'mBq','2d','AIR_CONCS','GROUP','I',
-!-- Emergency: Ash Inversion (19 entries). Skipp groups if not found
+!-- Emergency: Ash Inversion (19 entries). Skip groups if not found
 ! 'ASH_L01'        ,'ug','k20','COLUMN:GROUP','MISC','I',
 ! 'ASH_L02'        ,'ug','k20','COLUMN:GROUP','MISC','I',
 ! 'ASH_L03'        ,'ug','k20','COLUMN:GROUP','MISC','I',
