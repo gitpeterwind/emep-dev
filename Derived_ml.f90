@@ -377,26 +377,28 @@ subroutine Define_Derived()
   !-- Volcanic Emission: Skipp if not found
         if(outname(1:3)=="ASH")then
           if(MasterProc.and.DEBUG_COLSRC)&
-            write(*,"(A,':',A,1X,I0,':',A)")'ColumSource',trim(outtyp),iadv,trim(outname)
+            write(*,"(A,':',A,1X,I0,':',A)")'ColumSource',trim(outtyp),iout,trim(outname)
           if(iout<1)cycle
         end if
         call CheckStop(iout<0,sub//"OutputFields "//trim(outtyp)//&
                               " not found "//trim(outname))
+        call Units_Scale(outunit,iout,unitscale,unittxt)
         outtyp = "FLYmax6h:SPEC"
-        subclass = outdim   ! flxx-yy: xx to yy 100 feet
+        subclass = outdim   ! flxxx-yyy: xxx to yyy 100 feet
         outname = "MAX6h_"//trim(outname)//"_"//trim(subclass)
       case('FLYmax6h:GROUP')          ! Fly Level, 6 hourly maximum
         iout=find_index(outname,chemgroups(:)%name)
   !-- Volcanic Emission: Skipp if not found
         if(outname(1:3)=="ASH")then
           if(MasterProc.and.DEBUG_COLSRC)&
-            write(*,"(A,':',A,1X,I0,':',A)")'ColumSource',trim(class),igrp,trim(outname)
+            write(*,"(A,':',A,1X,I0,':',A)")'ColumSource',trim(class),iout,trim(outname)
           if(iout<1)cycle
         end if
         call CheckStop(iout<0,sub//"OutputFields "//trim(outtyp)//&
                               " not found "//trim(outname))
+        call Units_Scale(outunit,-1,unitscale,unittxt)
         outtyp = "FLYmax6h:GROUP"
-        subclass = outdim   ! flxx-yy: xx to yy 100 feet
+        subclass = outdim   ! flxxx-yyy: xxx to yyy 100 feet
         outname = "MAX6h_"//trim(outname)//"_"//trim(subclass)
       case('COLUMN','COLUMN:SPEC')
      !COL  'NO2',          'molec/cm2' ,'k20','COLUMN'   ,'MISC' ,4,
@@ -480,7 +482,7 @@ subroutine Define_Derived()
   !-- Volcanic Emission: Skipp if not found
         if(outname(1:3)=="ASH")then
           if(MasterProc.and.DEBUG_COLSRC)&
-            write(*,"(A,':',A,1X,I0,':',A)")'ColumSource',trim(outtyp),iadv,trim(outname)
+            write(*,"(A,':',A,1X,I0,':',A)")'ColumSource',trim(outtyp),igrp,trim(outname)
           if(igrp<1)cycle
         end if
         call CheckStop(igrp<0,sub//"OutputFields Group not found "//trim(outname))
