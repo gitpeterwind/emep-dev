@@ -9,9 +9,11 @@ use ChemChemicals_ml,     only: species_adv
 use ChemSpecs_adv_ml
 use ChemSpecs_shl_ml,     only: NSPEC_SHL
 use ChemGroups_ml,        only: chemgroups
+use DerivedFields_ml,     only: f_3d,d_3d ! debug output
 use GridValues_ml,        only: A_mid,B_mid,A_bnd,B_bnd
 use MetFields_ml,         only: roa,th,ps
-use ModelConstants_ml,    only: KMAX_MID,KMAX_BND,dt_advec,MasterProc
+use ModelConstants_ml,    only: KMAX_MID,KMAX_BND,dt_advec,MasterProc,&
+                                IOU_INST,num_lev3d,lev3d
 use Par_ml,               only: MAXLIMAX,MAXLJMAX,li0,li1,lj0,lj1
 use PhysicalConstants_ml, only: GRAV
 use SmallUtils_ml,        only: find_index
@@ -20,8 +22,6 @@ implicit none
 private
 
 public :: gravset
-
-real, public, allocatable, dimension(:,:,:,:) ::num_sed
 
 real, parameter :: &
   slinnfac = 1.0  ,&
@@ -33,19 +33,17 @@ contains
 subroutine gravset()
   real                        :: ztempx,vt,zsedl,tempc,knut
   real                        :: Re,Re_f, X ,vt_old,z,ztemp
-  real,dimension(KMAX_MID)    :: zvis,p_mid,zlair,zflux,zdp1
+  real,dimension(KMAX_MID)    :: zvis,p_mid,zlair,zflux,zdp1,num_sed
   real,dimension(KMAX_BND)    :: p_full
-  integer                     :: i,j,k,ispec,ash
-  integer,save                :: bins
-  integer                     :: v,b
-  character(len=256)          :: name     ! Volcano (vent) name
+  integer                     :: i,j,k,ispec,ash,n,b
+  integer,save                :: bins=0
   logical                     :: first_call = .true.
 
 ! need to calculate
 ! zvis -> dynamic viscosity of air.. dependent on temperature
 
   type :: sediment
-    integer :: spec
+    integer :: spec,n3d_gravset
     real    :: diameter
   end type sediment
   type(sediment),save,allocatable,dimension(:) :: grav_sed
@@ -56,26 +54,46 @@ subroutine gravset()
       write(*,*) "Gravset called!"
 
     ash=find_index("ASH",chemgroups(:)%name)
-    call CheckStop(ash<1,"ASH group not found")
-    bins=size(chemgroups(ash)%specs)
-    allocate(num_sed(bins,MAXLIMAX,MAXLJMAX,KMAX_MID),grav_sed(bins))
-    num_sed(:,:,:,:)=0.0
+    bins=0
+    if(ash>0)&
+      bins=size(chemgroups(ash)%specs)
     select case(bins)
     case(7)
+      allocate(grav_sed(bins))
       grav_sed(:)%spec = chemgroups(ash)%specs(:)-NSPEC_SHL
       grav_sed(:)%diameter = [0.1,0.3,1.0,3.0,10.0,30.0,100.0]*1e-6
     case(9)
+      allocate(grav_sed(bins))
       grav_sed(:)%spec = chemgroups(ash)%specs(:)-NSPEC_SHL
       grav_sed(:)%diameter = [4.0,6.0,8.0,10.0,12.0,14.0,16.0,18.0,25.0]*1e-6
 !   case(10)
+!     allocate(grav_sed(bins))
 !     grav_sed(:)%spec = chemgroups(ash)%specs(:)-NSPEC_SHL
 !     grav_sed(:)%diameter = [2.0,4.0,6.0,8.0,10.0,12.0,14.0,16.0,18.0,25.0]*1e-6
     case default
-       call CheckStop("Unsupported number of ASH bins")
+      if(MasterProc) &
+        write(*,"(A,I0,A)") "Unsupported number of ASH bins ",bins,", skip gravset."
     end select
+
+    if(allocated(grav_sed))then
+      grav_sed(:)%n3d_gravset=0
+      do n=1,size(f_3d)
+        if(f_3d(n)%class/='USET')cycle
+        b=find_index(f_3d(n)%txt,species_adv(grav_sed(:)%spec)%name)
+        if(b<1)cycle
+        select case(f_3d(n)%subclass)
+        case('gravset_3D')
+          grav_sed(b)%n3d_gravset=n
+          f_3d(n)%unit="m/s"
+          f_3d(n)%scale=1.0
+        end select
+      end do
+    end if
 
     first_call = .false.
   end if !first_call
+  if(.not.allocated(grav_sed))&
+    return
 
   do j = lj0,lj1
     do i = li0,li1
@@ -112,8 +130,8 @@ subroutine gravset()
           Re = grav_sed(b)%diameter*vt/(zvis(k)/roa(i,j,k,1))
           vt_old = vt
           vt = vt/wil_hua
+          num_sed(k)= vt
 
-            num_sed(b,i,j,k)= vt
           ! calculation of sedimentation flux zflux[kg/(m^2 s)]=zsedl*zdp1
           ! definition of  zflux=vt*ztm1(:,:,jt)*zdens
           ! compute flux in terms of mixing ratio zsedl= zflux/zdp1 -->>zsedl [kg/kg]
@@ -133,10 +151,15 @@ subroutine gravset()
 
         do  k = 1,KMAX_MID-1
           ! "arrival" of sedimented mass in box below
-          if (k <KMAX_MID) then
+          if(k<KMAX_MID)then
             xn_adv(grav_sed(b)%spec,i,j,k+1) =  xn_adv(grav_sed(b)%spec,i,j,k+1) +  zflux(k)/zdp1(k+1)
           end if
         end do
+
+        n=grav_sed(b)%n3d_gravset
+        if(n>0)&
+          d_3d(n,i,j,:,IOU_INST)=num_sed(lev3d(:num_lev3d))
+
       end do
     end do
   end do

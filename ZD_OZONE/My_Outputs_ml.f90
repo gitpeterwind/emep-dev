@@ -13,7 +13,7 @@ use ChemSpecs
 use ChemGroups_ml,     only: chemgroups
 use DerivedFields_ml,  only: f_2d,f_3d          ! D2D/D3D houtly output type
 use ModelConstants_ml, only: PPBINV, PPTINV, MasterProc, KMAX_MID,&
-                             MY_OUTPUTS, FORECAST, DEBUG_COLSRC,&
+                             MY_OUTPUTS, FORECAST, DEBUG,&
                              USE_AOD, USE_POLLEN, DEBUG_POLLEN, &
                              SELECT_LEVELS_HOURLY!, FREQ_HOURLY
 use PhysicalConstants_ml, only: ATWAIR
@@ -66,7 +66,7 @@ character(len=18), public, parameter, dimension(NXTRA_SITE_MISC) :: &
 
 !These variables must have been set in My_Derived for them to be used.
 character(len=24), public, parameter, dimension(NXTRA_SITE_D2D) :: &
-  SITE_XTRA_D2D=[character(len=24):: & 
+  SITE_XTRA_D2D=[character(len=24):: &
     "HMIX","PSURF","ws_10m","rh2m",&
     "Emis_mgm2_BioNatC5H8","Emis_mgm2_BioNatAPINENE",&
     "Emis_mgm2_BioNatNO","Emis_mgm2_nox",&
@@ -215,9 +215,9 @@ subroutine set_output_defs
       do i=1,size(chemgroups(ash)%specs)
         if(species(chemgroups(ash)%specs(i))%name(1:9)==name)cycle
         name=species(chemgroups(ash)%specs(i))%name(1:9)
-        nhourly_out=nhourly_out+2+1  ! 
-        nmax6_hourly=nmax6_hourly+1  ! 
-        if(MasterProc.and.DEBUG_COLSRC)&
+        nhourly_out=nhourly_out+2+1  !
+        nmax6_hourly=nmax6_hourly+1  !
+        if(MasterProc.and.DEBUG%COLSRC)&
           write(*,*)'EMERGENCY: Volcanic Ash, Vent=',name
       enddo
     endif
@@ -226,7 +226,7 @@ subroutine set_output_defs
       do i=1,size(chemgroups(nuc_conc)%specs)
         name=species(chemgroups(nuc_conc)%specs(i))%name
         nhourly_out=nhourly_out+1
-        if(MasterProc.and.DEBUG_COLSRC)&
+        if(MasterProc.and.DEBUG%COLSRC)&
           write(*,*)'EMERGENCY: Nuclear accident/explosion, NPP/NUC=',name
       enddo
     endif
@@ -236,7 +236,7 @@ subroutine set_output_defs
       do i=1,size(chemgroups(nuc_ddep)%specs)
         name="DDEP_"//species(chemgroups(nuc_ddep)%specs(i))%name
         nhourly_out=nhourly_out+1
-        if(MasterProc.and.DEBUG_COLSRC)&
+        if(MasterProc.and.DEBUG%COLSRC)&
           write(*,*)'EMERGENCY: Nuclear accident/explosion, NPP/NUC=',name
       enddo
     endif
@@ -245,7 +245,7 @@ subroutine set_output_defs
       do i=1,size(chemgroups(nuc_wdep)%specs)
         name="WDEP_"//species(chemgroups(nuc_wdep)%specs(i))%name
         nhourly_out=nhourly_out+1
-        if(MasterProc.and.DEBUG_COLSRC)&
+        if(MasterProc.and.DEBUG%COLSRC)&
           write(*,*)'EMERGENCY: Nuclear accident/explosion, NPP/NUC=',name
       enddo
     endif
@@ -280,7 +280,7 @@ subroutine set_output_defs
   case("3DPROFILES")
     nhourly_out=2
     nlevels_hourly = 2  ! nb zero is one of levels in this system
-    SELECT_LEVELS_HOURLY = .true.    
+    SELECT_LEVELS_HOURLY = .true.
   case("IMPACT2C")
     nhourly_out=4  ! Dave's starting set
     nlevels_hourly = 2  ! nb zero is one of levels, so we have 3m and 45m
@@ -481,7 +481,7 @@ subroutine set_output_defs
   case("MACC_EVA","CAMS50_EVA","CAMS50_IRA")
     call CheckStop("set_output_defs: Use hourly Derived instead of "//trim(MY_OUTPUTS))
     levels_hourly = [0]
-!**         name     type     ofmt    ispec    
+!**         name     type     ofmt    ispec
 !**         ix1 ix2 iy1 iy2 nk sellev? unit conv  max
     hr_out(:) = (/&
       Asc2D("O3"  ,"D2D_inst",find_index("SURF_ug_O3"       ,f_2d(:)%name),&
@@ -516,7 +516,7 @@ subroutine set_output_defs
              nlevels_hourly,"ppbv", PPBINV,600.0*2.0) &
        ,Asc2D("no_3dppb"   ,"Out3D",&
              NO  ,nlevels_hourly,"ppbv",PPBINV ,600.0*1.91) &
-       ,Asc2D("no2_3dppb"   ,"Out3D",& 
+       ,Asc2D("no2_3dppb"   ,"Out3D",&
              NO2  ,nlevels_hourly,"ppbv",PPBINV ,600.0*1.91) &
        ,Asc2D("ho2_3dppt"   ,"Out3D",&  !NOTE ppt
              HO2  ,nlevels_hourly,"pptv",PPBINV ,600.0*1.91) &
@@ -609,7 +609,7 @@ subroutine set_output_defs
   case("average_vs_instantaneous")
   ! Example of different hourly output types - hourly average and hourly instantaneous value
   ! variables of type "ADVppbv" will be outputted instantaneous and
-  ! variables of type "D2D_mean" will be hourly averages. 
+  ! variables of type "D2D_mean" will be hourly averages.
     hr_out(:) = (/  &
       Asc2D("SURF_ppb_O3_inst","ADVppbv", IXADV_O3,1,"ppbv",PPBINV,600.0) ,&
       Asc2D("SURF_ppb_O3_mean","D2D_mean",find_index("SURF_ppb_O3",f_2d(:)%name), &

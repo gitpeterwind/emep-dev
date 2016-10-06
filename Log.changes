@@ -154,6 +154,17 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6th Oct 2016, Alvaro, 3303
+
+ModelConstants_ml,Derived_ml,My_Outputs_ml,ColumnSource_ml,config_EMERGENCY.nml:
+- Move variable DEBUG_COLSRC to DEBUG%COLSRC,
+  so it can be read from ModelConstants_config.
+
+Gravset_ml,config_Outputs_EMERGENCY.nml:
+- Only apply gravset to ASH with 7 or 9 bins.
+- Ash particles settling velocity output (USET) for debug/test.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 30th Sep 2016, Alvaro, 3302
 
 Derived_ml:

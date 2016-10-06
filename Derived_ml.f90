@@ -61,8 +61,8 @@ use ModelConstants_ml, only: &
   ,num_lev3d,lev3d    & ! 3D levels on 3D output
   ! output types corresponding to instantaneous,year,month,day
   ,IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY,IOU_HOUR,IOU_HOUR_INST,IOU_KEY &
-  ,MasterProc,SOURCE_RECEPTOR,DEBUG_COLSRC  &
-  ,USE_AOD, USE_OCEAN_DMS, USE_uEMEP, uEMEP,startdate,enddate
+  ,MasterProc, SOURCE_RECEPTOR &
+  ,USE_AOD, USE_OCEAN_DMS, USE_uEMEP, uEMEP, startdate,enddate
 
 use AOD_PM_ml,            only: AOD_init,aod_grp,wavelength,& ! group and
                                 wanted_wlen,wanted_ext3d      ! wavelengths
@@ -376,7 +376,7 @@ subroutine Define_Derived()
         iout=find_index(outname, species_adv(:)%name )
   !-- Volcanic Emission: Skipp if not found
         if(outname(1:3)=="ASH")then
-          if(MasterProc.and.DEBUG_COLSRC)&
+          if(MasterProc.and.DEBUG%COLSRC)&
             write(*,"(A,':',A,1X,I0,':',A)")'ColumSource',trim(outtyp),iout,trim(outname)
           if(iout<1)cycle
         end if
@@ -390,7 +390,7 @@ subroutine Define_Derived()
         iout=find_index(outname,chemgroups(:)%name)
   !-- Volcanic Emission: Skipp if not found
         if(outname(1:3)=="ASH")then
-          if(MasterProc.and.DEBUG_COLSRC)&
+          if(MasterProc.and.DEBUG%COLSRC)&
             write(*,"(A,':',A,1X,I0,':',A)")'ColumSource',trim(class),iout,trim(outname)
           if(iout<1)cycle
         end if
@@ -461,7 +461,7 @@ subroutine Define_Derived()
         iadv = find_index(outname, species_adv(:)%name )
   !-- Volcanic Emission: Skipp if not found
         if(outname(1:3)=="ASH")then
-          if(MasterProc.and.DEBUG_COLSRC)&
+          if(MasterProc.and.DEBUG%COLSRC)&
             write(*,"(A,':',A,1X,I0,':',A)")'ColumSource',trim(outtyp),iadv,trim(outname)
           if(iadv<1)cycle
         end if
@@ -481,7 +481,7 @@ subroutine Define_Derived()
         igrp = find_index(outname, chemgroups(:)%name )
   !-- Volcanic Emission: Skipp if not found
         if(outname(1:3)=="ASH")then
-          if(MasterProc.and.DEBUG_COLSRC)&
+          if(MasterProc.and.DEBUG%COLSRC)&
             write(*,"(A,':',A,1X,I0,':',A)")'ColumSource',trim(outtyp),igrp,trim(outname)
           if(igrp<1)cycle
         end if

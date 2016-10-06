@@ -57,6 +57,7 @@
   DEBUG%GLOBBC          = F,
   DEBUG%HOURLY_OUTPUTS  = F,
   DEBUG%DERIVED         = F,
+  DEBUG%COLSRC          = F,
 &end
 &Nest_config
 !-------- Read/Write MODEs

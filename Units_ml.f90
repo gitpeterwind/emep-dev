@@ -12,7 +12,7 @@ private
 
 ! Subroutines & Functions
 public ::                   &
-  Init_Units,               & ! initalize conversion arrays
+  Init_Units,               & ! initialize conversion arrays
   Units_Scale,              & ! unit factor for single SPC
   Group_Units,              & ! unit factors for a GROUP
   Group_Scale                 ! function version of Group_Units
@@ -83,7 +83,7 @@ type(umap), public, save :: unit_map(23)=(/&
   umap("ppbh","ppb h",T,F,s2h   ),& ! PPBINV already included in AOT calculations
   umap("ug" ,"ug/m3" ,F,T,ugXm3),&  ! ug* units need to be further multiplied
   umap("ugC","ugC/m3",F,T,ugCm3),&  !   by the air density (roa) as part of the
-  umap("ugN","ugN/m3",F,T,ugNm3),&  !   unit covnersion
+  umap("ugN","ugN/m3",F,T,ugNm3),&  !   unit conversion
   umap("ugS","ugS/m3",F,T,ugSm3),&
 ! Dry/Wet deposition
   umap("mm" ,"mm"    ,F,F,1.0  ),&
@@ -99,7 +99,7 @@ type(umap), public, save :: unit_map(23)=(/&
   umap("mBq" ,"mBq/m2"  ,F,F,mgXm2),& ! deposition
 ! Aerosol optical properties
 ! umap("ext" ,"ext550nm",F,T,extX),&! ext* units need to be further multiplied...
-! Coulumn output
+! Column output
   umap("ugm2"   ,"ug/m2"        ,F,T,ugXm3),&  ! ug* units need to be further multiplied
   umap("mcm2"   ,"molec/cm2"    ,F,T,to_molec_cm2),&
   umap("e15mcm2","1e15molec/cm2",F,T,to_molec_cm2*1e-15)/)
@@ -223,7 +223,7 @@ subroutine Units_Scale(txtin,iadv,unitscale,unitstxt,volunit,needroa,semivol,deb
     if(ichar(txt(i:i))==0)txt(i:i)=' '  ! char(0)
   end do
   select case (txt)
-  case("ugSS","ugSS/m3","ugP","ugP/m3",& 
+  case("ugSS","ugSS/m3","ugP","ugP/m3",&
        "mgSS","mgSS/m2","mgP","mgP/m2")
     txt=txt(1:2)
   case("micro g/m3")

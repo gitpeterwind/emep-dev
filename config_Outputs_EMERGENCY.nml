@@ -1,4 +1,12 @@
 &OutputConcs_config
+!OutputMisc=
+! name,class,subclass,txt,unit,index,f2d,dt_scale,scale,av,iotype,
+!--DEBUG gravset
+! 'gravset_ash_1','USET','gravset_3D','ASH_1','',-99,-99,F,-99.9,T,'I',
+! 'gravset_ash_4','USET','gravset_3D','ASH_4','',-99,-99,F,-99.9,T,'I',
+! 'gravset_ash_7','USET','gravset_3D','ASH_7','',-99,-99,F,-99.9,T,'I',
+! 'gravset_ash_9','USET','gravset_3D','ASH_9','',-99,-99,F,-99.9,T,'I',
+
 OutputConcs=
 ! freq: YEAR='Y', MON='M', DAY='D', HOUR='H', HOUR_INST='I', HOUR_AVG='A'
 !SPECIAL PM25 will be sum of fine + fraction coarse

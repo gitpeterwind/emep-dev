@@ -79,7 +79,8 @@ type, public :: emep_debug
     ,AQUEOUS         = .false. &
     ,BCS             = .false. & ! BoundaryConditions
     ,BIO             = .false. & !< Biogenic emissions
-    ,COLUMN          = .false. & !  Used in Derived_ml for column integratton
+    ,COLUMN          = .false. & !  Used in Derived_ml for column integration
+    ,COLSRC          = .false. & !  Volcanic emissions and Emergency scenarios
     ,DERIVED         = .false. & !
     ,DRYDEP          = .false. & ! Skips fast chemistry to save some CPU
     ,DRYRUN          = .false. & ! Skips fast chemistry to save some CPU
@@ -319,7 +320,6 @@ logical, public, parameter ::    &
   ,PALEO_TEST = .false. &
   ,DEBUG_BLM            = .false. & ! Produces matrix of differnt Kz and Hmix
   ,DEBUG_DERIVED        = .false. &
-    ,DEBUG_COLUMN       = .false. & ! Extra option in Derived
   ,DEBUG_ECOSYSTEMS     = .false. &
   ,DEBUG_EMISSTACKS     = .false. &
   ,DEBUG_Kz             = .false. &
@@ -348,8 +348,7 @@ logical, public, parameter ::    &
     ,DEBUG_WETDEP       = .false. &
   ,DEBUG_RB             = .false. &
   ,DEBUG_SOILWATER      = .false. &
-  ,DEBUG_SOILNOX        = .false. &
-  ,DEBUG_COLSRC         = .false.    ! Volcanic emissions and Emergency scenarios
+  ,DEBUG_SOILNOX        = .false.
 
 !=============================================================================
 ! 3)  Source-receptor runs?

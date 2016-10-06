@@ -17,7 +17,7 @@ use GridValues_ml,        only: xm2,sigma_bnd,GridArea_m2,&
 use Io_ml,                only: open_file,read_line,IO_TMP,PrintLog
 use MetFields_ml,         only: roa, z_bnd
 use ModelConstants_ml,    only: KCHEMTOP,KMAX_MID,MasterProc, &
-                                USE_ASH,DEBUG=>DEBUG_COLSRC,&
+                                USE_ASH,DEBUG,&
                                 TXTLEN_NAME,dt_advec,dt_advec_inv,&
                                 startdate,enddate
 use NetCDF_ml,            only: GetCDF_modelgrid
@@ -41,7 +41,7 @@ logical, save ::      &
 
 integer, parameter :: &
   NMAX_LOC = 24, &  ! Max number of locations on processor/subdomain
-  NMAX_EMS =60000   ! Max number of events def per location 
+  NMAX_EMS =60000   ! Max number of events def per location
 
 integer, save ::   &        ! No. of ... found on processor/subdomain
   nloc             = -1,&   ! Source locations
@@ -131,7 +131,7 @@ function ColumnRate(i,j,REDUCE_VOLCANO) result(emiss)
     first_call=.false.
     itot=find_index("SO2",species(:)%name)
     if(itot<1)then
-      call PrintLog("WARNING: "//mname//" SO2 not found",MasterProc)   
+      call PrintLog("WARNING: "//mname//" SO2 not found",MasterProc)
     else
       iSO2=itot
     end if
@@ -151,7 +151,7 @@ function ColumnRate(i,j,REDUCE_VOLCANO) result(emiss)
   doLOC: do v=1,nloc
     if((i/=locdef(v)%iloc).or.(j/=locdef(v)%jloc) & ! Wrong gridbox
        .or.(nems(v)<1)) cycle doLOC                 ! Not erupting
-    if(DEBUG) &
+    if(DEBUG%COLSRC) &
       write(*,MSG_FMT)snow//' Vent',me,'me',v,trim(locdef(v)%id),i,"i",j,"j"
     doEMS: do e=1,nems(v)
       sbeg=date2string(emsdef(v,e)%sbeg,current_date)
@@ -172,7 +172,7 @@ function ColumnRate(i,j,REDUCE_VOLCANO) result(emiss)
       uconv=uconv/(GridArea_m2(i,j)*DIM(z_bnd(i,j,k1),z_bnd(i,j,k0+1))) ! --> g/s/cm3=1e-6 g/s/m3
       uconv=uconv*AVOG/species(itot)%molwt                              ! --> molecules/s/cm3
       emiss(itot,k1:k0)=emiss(itot,k1:k0)+emsdef(v,e)%rate*uconv
-      if(DEBUG) &
+      if(DEBUG%COLSRC) &
         write(*,MSG_FMT)snow//' Erup.',me,'me',e,emsdef(v,e)%sbeg,&
           itot,trim(species(itot)%name),k1,'k1',k0,'k0',&
           emiss(itot,k1),'emiss',emsdef(v,e)%rate,'rate',uconv,'uconv'
@@ -235,7 +235,7 @@ subroutine setRate()
 !
 !----------------------------!
   if(.not.first_call)then
-    if(MasterProc.and.DEBUG.and.second_call) &
+    if(MasterProc.and.DEBUG%COLSRC.and.second_call) &
       write(*,MSG_FMT)'No need for reset volc.def...'
     second_call=.false.
     return
@@ -249,7 +249,7 @@ subroutine setRate()
 !----------------------------!
 ! Read Vent CVS
 !----------------------------!
-  if(DEBUG) CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)
+  if(DEBUG%COLSRC) CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)
   if(MasterProc)then
     call open_file(IO_TMP,"r",flocdef,needed=.true.,iostat=stat)
     call CheckStop(stat,ERR_LOC_CSV//' not found')
@@ -268,12 +268,12 @@ subroutine setRate()
       ! remove model surface height from vent elevation
       dloc%elev=dloc%elev-surf_height(dloc%iloc,dloc%jloc)
       locdef(nloc)=dloc
-      if(DEBUG) &
+      if(DEBUG%COLSRC) &
         write(*,MSG_FMT)'Vent',me,'in',nloc,trim(dloc%id),&
           dloc%grp,trim(dloc%name),dloc%iloc,"i",dloc%jloc,"j",&
           dloc%lon,"lon",dloc%lat,"lat"
     elseif(MasterProc)then
-      if(DEBUG) &
+      if(DEBUG%COLSRC) &
         write(*,MSG_FMT)'Vent',me,'out',-1,trim(dloc%id),&
           dloc%grp,trim(dloc%name),dloc%iloc,"i",dloc%jloc,"j",&
           dloc%lon,"lon",dloc%lat,"lat"
@@ -281,11 +281,11 @@ subroutine setRate()
     l = l+1
   end do doLOC
   if(MasterProc) close(IO_TMP)
-  source_found=(nloc>0).or.(MasterProc.and.DEBUG)
+  source_found=(nloc>0).or.(MasterProc.and.DEBUG%COLSRC)
 !----------------------------!
 ! Read Eruption CVS
 !----------------------------!
-  if(DEBUG) CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)
+  if(DEBUG%COLSRC) CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)
   if(MasterProc)then
     call open_file(IO_TMP,"r",femsdef,needed=.true.,iostat=stat)
     call CheckStop(stat,ERR_EMS_CSV//' not found')
@@ -293,18 +293,18 @@ subroutine setRate()
   nems(:)=0
   l = 1
   sbeg=date2string(SDATE_FMT,startdate)
-  send=date2string(SDATE_FMT,enddate)    
+  send=date2string(SDATE_FMT,enddate)
   doEMS: do while(l<=NMAX_EMS)
     call read_line(IO_TMP,txtline,stat)
     if(stat/=0) exit doEMS            ! End of file
-    if(.not.source_found)cycle doEMS  ! There is no vents on subdomain
+    if(.not.source_found)cycle doEMS  ! There is no vents on sub-domain
     txtline=ADJUSTL(txtline)          ! Remove leading spaces
     if(txtline(1:1)=='#')cycle doEMS  ! Comment line
     dems=getErup(txtline)
     if(sbeg>date2string(dems%send,enddate  ).or.& ! starts after end of run
        send<date2string(dems%sbeg,startdate).or.& ! ends before start of run
        dems%rate<=0.0)then                        ! nothing to emit
-      if(DEBUG.and.dems%loc>0) &
+      if(DEBUG%COLSRC.and.dems%loc>0) &
         write(*,MSG_FMT)'Erup.skip',me,'in',dems%loc,trim(dems%id),&
           0,trim(dems%sbeg),1,trim(dems%send)
       cycle doEMS
@@ -312,17 +312,18 @@ subroutine setRate()
       nems(0)=nems(0)+1
       call CheckStop(nems(0)>NMAX_EMS,ERR_EMS_MAX//" read")
       emsdef(0,nems(dems%loc))=dems
-      if(DEBUG) &
+      if(DEBUG%COLSRC) &
         write(*,MSG_FMT)'Erup.Default',me,'in',nems(0),trim(dems%id)
     elseif(dems%loc>0.and.(dems%spc>0.or.dems%grp>0))then ! Specific
       nems(dems%loc)=nems(dems%loc)+1
       call CheckStop(nems(dems%loc)>NMAX_EMS,ERR_EMS_MAX//" read")
       emsdef(dems%loc,nems(dems%loc))=dems
-      if(DEBUG) &
+      if(DEBUG%COLSRC) &
         write(*,MSG_FMT)'Erup.Specific',me,'in',nems(dems%loc),trim(dems%id),&
           dems%spc,trim(dems%name),dems%grp,trim(dems%name)//"_GROUP"
+      call CheckStop(dems%spc<1.and.dems%grp>0,"Erup.Specific unsupported group")
     elseif(MasterProc)then                         ! or Unknown Vent/SPC/GROUP
-      if(DEBUG) &
+      if(DEBUG%COLSRC) &
         write(*,MSG_FMT)'Erup.Specific',me,'out',-1,trim(dems%id),&
           dems%spc,trim(dems%name),dems%grp,trim(dems%name)//"_GROUP"
     end if
@@ -333,44 +334,43 @@ subroutine setRate()
 !----------------------------!
 ! Expand Eruption Defaults
 !----------------------------!
-  if(DEBUG) CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)
+  if(DEBUG%COLSRC) CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)
   if(nems(0)<1)then
-   !if(DEBUG) write(*,MSG_FMT)'Erup.Default',me,'not found'
+  ! if(DEBUG%COLSRC) write(*,MSG_FMT)'Erup.Default',me,'not found'
     return
   end if
   doLOCe: do v=1,nloc
     if(nems(v)>0)cycle doLOCe   ! Specific found --> no need for Default
-    e=nems(0)+1       ! A single defaul can have multiple lines, e.g.
-    do                ! each line with a difinition for a different specie
+    e=nems(0)+1       ! A single default can have multiple lines, e.g.
+    do                ! each line with a definition for a different specie
       e=find_index(locdef(v)%etype,emsdef(0,:e-1)%id)
-      if(e<1)       cycle doLOCe   ! No Default found
-      if(DEBUG) &
+      if(e<1)    cycle doLOCe   ! No Default found
+      if(DEBUG%COLSRC) &
         write(*,MSG_FMT)'Erup.Default',me,'Expand',&
           v,trim(locdef(v)%id),e,trim(emsdef(0,e)%id)
       dems=emsdef(0,e)
       if(dems%htype=='VENT')then
-!!      call CheckStop(.not.topo_found,ERR_TOPO_NC//' not found')     
+!!      call CheckStop(.not.topo_found,ERR_TOPO_NC//' not found')
         dems%base=dems%base+locdef(v)%elev
         dems%top =dems%top +locdef(v)%elev
-        if(DEBUG)&
+        if(DEBUG%COLSRC)&
           write(*,MSG_FMT)'Erup.Default',me,'Add loc%elev',&
             nint(dems%base),'ems%base',nint(dems%top),'ems%top'
       end if
       if(dems%spc<1.and.any(dems%name(1:3)==EXPAND_SCENARIO_NAME))then ! Expand variable name
         dems%name=trim(locdef(v)%id)//trim(dems%name(4:)) ! e.g. ASH_F --> V1702A02B_F
         dems%spc=find_index(dems%name,species(:)%name)    ! Specie (total)
-        if(DEBUG)&
+        if(DEBUG%COLSRC)&
           write(*,MSG_FMT)'Erup.Default',me,'Expand',&
             dems%spc,trim(dems%name)
       end if
-      if(dems%spc>0)then           ! Expand single SPC
+      if(dems%spc>0)then        ! Expand single SPC
         nems(v)=nems(v)+1
         call CheckStop(nems(v)>NMAX_EMS,ERR_EMS_MAX//" expand")
         emsdef(v,nems(v))=dems
-        if(DEBUG) &
+        if(DEBUG%COLSRC) &
           write(*,MSG_FMT)'Erup.Default',me,'Expand SPC',nems(v),trim(dems%id)
-      elseif(dems%grp>0.or.locdef(v)%grp>0)then   ! Expand GROUP of SPC
-         if(dems%grp<1)dems%grp=locdef(v)%grp
+      elseif(dems%grp>0)then    ! Expand GROUP of SPC
         select case (size(chemgroups(dems%grp)%specs))
         case(2);binsplit=>VAAC_2BIN_SPLIT
         case(7);binsplit=>VAAC_7BIN_SPLIT
@@ -386,12 +386,12 @@ subroutine setRate()
           nems(v)=nems(v)+1
           call CheckStop(nems(v)>NMAX_EMS,ERR_EMS_MAX//" expand")
           emsdef(v,nems(v))=dems
-          if(DEBUG) &
+          if(DEBUG%COLSRC) &
           write(*,MSG_FMT)'Erup.Default',me,'Expand GRP',nems(v),trim(dems%id),&
             dems%spc,trim(dems%name)
         end do
       else
-        if(DEBUG) &
+        if(DEBUG%COLSRC) &
           write(*,MSG_FMT)'Erup.Default',me,'not found'
       end if
     end do
@@ -465,7 +465,7 @@ function getErup(line) result(def)
 ! emiss default: vent%elev is added on expansion (doLOCe: in setRate)
     base=0.0
     if(iloc>0)then
-!!    call CheckStop(.not.topo_found,ERR_TOPO_NC//' not found')     
+!!    call CheckStop(.not.topo_found,ERR_TOPO_NC//' not found')
       base=locdef(iloc)%elev    ! [m]
     end if
     read(words(4),*)top         ! [km]
@@ -492,15 +492,15 @@ function getErup(line) result(def)
     dhh=dt_advec/3600           ! only one time step
     frac=frac*dt_advec_inv      ! assume rate=total emission in [Kg]
     dsec=.false.
-  case("total","TOTAL","event","EVENT")     
+  case("total","TOTAL","event","EVENT")
     dsec=.true.
   case default
     read(words(5),*)dhh         ! assume rate in [Kg/s]
     dhh=max(dhh,dt_advec/3600)  ! at least 1 time step
     dsec=.false.
-  end select   
-  words(8)=getDate(words(8),words(8),words(9),dhh,debug=DEBUG) ! Start [date/code]
-  words(9)=getDate(words(9),words(8),words(9),dhh,debug=DEBUG) ! End   [date/code]
+  end select
+  words(8)=getDate(words(8),words(8),words(9),dhh,debug=DEBUG%COLSRC) ! Start [date/code]
+  words(9)=getDate(words(9),words(8),words(9),dhh,debug=DEBUG%COLSRC) ! End   [date/code]
   def=ems(trim(words(1)),trim(words(2)),trim(words(3)),base,top,rate*frac,&
     trim(words(8)),trim(words(9)),max(iloc,0),max(ispc,0),max(igrp,0),edef,dsec)
 end function getErup
