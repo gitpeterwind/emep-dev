@@ -4,6 +4,15 @@
 !--DEBUG_DA
 ! 'SURF_ug_O3_FG','USET','3DVAR_FG','O3','ug/m3',-99,-99,F,-99.9,T,'I',
 !   'D3_ug_O3_FG','USET','3DVAR_FG','O3','ug/m3',-99,-99,F,-99.9,T,'I',
+!--DEBUG_POLLEN
+! 'POLLEN_BIRCH_heatsum','USET','heatsum'     ,'POLLEN_BIRCH','',-99,-99,F,-99.9,T,'I',
+! 'POLLEN_OLIVE_heatsum','USET','heatsum'     ,'POLLEN_OLIVE','',-99,-99,F,-99.9,T,'I',
+! 'POLLEN_BIRCH_left'   ,'USET','pollen_left' ,'POLLEN_BIRCH','',-99,-99,F,-99.9,T,'I',
+! 'POLLEN_OLIVE_left'   ,'USET','pollen_left' ,'POLLEN_OLIVE','',-99,-99,F,-99.9,T,'I',
+! 'POLLEN_GRASS_left'   ,'USET','pollen_left' ,'POLLEN_GRASS','',-99,-99,F,-99.9,T,'I',
+! 'POLLEN_BIRCH_emiss'  ,'USET','pollen_emiss','POLLEN_BIRCH','',-99,-99,F,-99.9,T,'I',
+! 'POLLEN_OLIVE_emiss'  ,'USET','pollen_emiss','POLLEN_OLIVE','',-99,-99,F,-99.9,T,'I',
+! 'POLLEN_GRASS_emiss'  ,'USET','pollen_emiss','POLLEN_GRASS','',-99,-99,F,-99.9,T,'I',
 !--DEBUG_PBL
 ! 'ustar_nwp','MET2D','ustar_nwp','-','m/s',-99,-99,F,1.0,T,'D',
 OutputConcs=
@@ -23,10 +32,10 @@ OutputConcs=
   'NH3'           ,'ug'  ,'2d' ,'AIR_CONCS','SPEC' ,'DI',
   'PAN'           ,'ug'  ,'2d' ,'AIR_CONCS','SPEC' ,'DI',
   'NMVOC'         ,'ug'  ,'2d' ,'AIR_CONCS','GROUP','DI',
-  'POLLEN_BIRCH','grains','2d' ,'AIR_CONCS','SPEC' ,'DI',
-  'POLLEN_OLIVE','grains','2d' ,'AIR_CONCS','SPEC' ,'DI',
-  'POLLEN_GRASS','grains','2d' ,'AIR_CONCS','SPEC' ,'DI',
-  'POLLEN_RWEED','grains','2d' ,'AIR_CONCS','SPEC' ,'DI',
+  'POLLEN_BIRCH'  ,'Gm3' ,'2d' ,'AIR_CONCS','SPEC' ,'DI',
+  'POLLEN_OLIVE'  ,'Gm3' ,'2d' ,'AIR_CONCS','SPEC' ,'DI',
+  'POLLEN_GRASS'  ,'Gm3' ,'2d' ,'AIR_CONCS','SPEC' ,'DI',
+!!'POLLEN_RWEED'  ,'Gm3' ,'2d' ,'AIR_CONCS','SPEC' ,'DI',
 !--MY_OUTPUTS=="MACC_ENS": hourly 3D output
   'O3'            ,'ug'  ,'3d' ,'AIR_CONCS','SPEC' ,'I',
   'NO2'           ,'ug'  ,'3d' ,'AIR_CONCS','SPEC' ,'I',
@@ -41,12 +50,12 @@ OutputConcs=
   'NH3'           ,'ug'  ,'3d' ,'AIR_CONCS','SPEC' ,'I',
   'PAN'           ,'ug'  ,'3d' ,'AIR_CONCS','SPEC' ,'I',
   'NMVOC'         ,'ug'  ,'3d' ,'AIR_CONCS','GROUP','I',
+! 'POLLEN_BIRCH'  ,'Gm3' ,'3d' ,'AIR_CONCS','SPEC' ,'DI',
+! 'POLLEN_OLIVE'  ,'Gm3' ,'3d' ,'AIR_CONCS','SPEC' ,'DI',
+! 'POLLEN_GRASS'  ,'Gm3' ,'3d' ,'AIR_CONCS','SPEC' ,'DI',
+!!'POLLEN_RWEED'  ,'Gm3' ,'3d' ,'AIR_CONCS','SPEC' ,'DI',
 !--MY_OUTPUTS=="MACC_ENS": additional output
-  'RN222'         ,'ug'  ,'2d' ,'AIR_CONCS','SPEC' ,'I',
-! 'NO2'           ,'mcm2','k20','COLUMN'   ,'MISC' ,'I',
-! 'O3'            ,'mcm2','k20','COLUMN'   ,'MISC' ,'I',
-! 'CO'            ,'mcm2','k20','COLUMN'   ,'MISC' ,'I',
-! 'HCHO'          ,'mcm2','k20','COLUMN'   ,'MISC' ,'I',
+! 'RN222'         ,'ug'  ,'2d' ,'AIR_CONCS','SPEC' ,'I',
   'NO2'           ,'ugm2','k20','COLUMN'   ,'MISC' ,'I',
   'O3'            ,'ugm2','k20','COLUMN'   ,'MISC' ,'I',
   'CO'            ,'ugm2','k20','COLUMN'   ,'MISC' ,'I',
@@ -66,21 +75,28 @@ OutputConcs=
 &end
 &OutputDep_config
 ! freq: YEAR='Y', MON='M', DAY='D', HOUR='H', HOUR_INST='I'
-  DDEP_ECOS =
-   'Grid'     , 'YMD',
-  DDEP_WANTED =
-   'SOX'      ,'GROUP','mgS',
-   'OXN'      ,'GROUP','mgN',
-   'RDN'      ,'GROUP','mgN',
-   'O3'       ,'SPEC' , 'mg',
-   'STO_O3'   ,'SPEC' , 'mg',
-  WDEP_WANTED =
-   'PREC'     ,'PREC' , 'mm',
-   'SOX'      ,'GROUP','mgS',
-   'OXN'      ,'GROUP','mgN',
-   'RDN'      ,'GROUP','mgN',
-   'SO2'      ,'SPEC' ,'mgS',
-   'HNO3'     ,'SPEC' ,'mgN',
+DDEP_ECOS =
+  'Grid'     , 'D',
+DDEP_WANTED =
+  'SOX'      ,'GROUP','mgS',
+  'OXN'      ,'GROUP','mgN',
+  'RDN'      ,'GROUP','mgN',
+  'O3'       ,'SPEC' , 'mg',
+! 'POLLEN_BIRCH','SPEC','Gm2',
+! 'POLLEN_OLIVE','SPEC','Gm2',
+! 'POLLEN_GRASS','SPEC','Gm2',
+!!'POLLEN_RWEED','SPEC','Gm2',
+WDEP_WANTED =
+  'PREC'     ,'PREC' , 'mm','D',
+  'SOX'      ,'GROUP','mgS','D',
+  'OXN'      ,'GROUP','mgN','D',
+  'RDN'      ,'GROUP','mgN','D',
+  'SO2'      ,'SPEC' ,'mgS','D',
+  'HNO3'     ,'SPEC' ,'mgN','D',
+! 'POLLEN_BIRCH','SPEC','Gm2','DI',
+! 'POLLEN_OLIVE','SPEC','Gm2','DI',
+! 'POLLEN_GRASS','SPEC','Gm2','DI',
+!!'POLLEN_RWEED','SPEC','Gm2','DI',
 &end
 &OutputSize_config
 ! hour_DOMAIN=60,107,11,58, !=[istart,iend,jstart,jend], default RUNDOMAIN+[1,-1,1,-1]

@@ -554,17 +554,18 @@ subroutine Define_Derived()
 
   do ind = 1, size(WDEP_WANTED(1:nOutputWdep)%txt1)
     dname = "WDEP_"//trim(WDEP_WANTED(ind)%txt1)
+    outind = trim(WDEP_WANTED(ind)%txt4)
     select case(WDEP_WANTED(ind)%txt2)
     case("PREC")
       call AddNewDeriv("WDEP_PREC","PREC ","-","-", "mm",  &
-                        -1, -99,   F,    1.0,   F,    'YMD' )
+                        -1, -99,   F,    1.0,   F,    outind)
     case("SPEC")
       iadv = find_index(WDEP_WANTED(ind)%txt1, species_adv(:)%name)
       call CheckStop(iadv<1, "WDEP_WANTED Species not found " // trim(dname) )
 
       call Units_Scale(WDEP_WANTED(ind)%txt3,iadv,unitscale,unittxt)
       call AddNewDeriv( dname, "WDEP", "-", "-", unittxt , &
-              iadv, -99,   F, unitscale,     F,  'YMD')
+              iadv, -99,   F, unitscale,     F,  outind)
     case("GROUP")
       igrp = find_index(dname, chemgroups(:)%name)
       call CheckStop(igrp<1, "WDEP_WANTED Group not found " // trim(dname) )
@@ -573,7 +574,7 @@ subroutine Define_Derived()
       ! Init_WetDep gets the unit conversion factors from Group_Scale.
       call Units_Scale(WDEP_WANTED(ind)%txt3,-1,unitscale,unittxt)
       call AddNewDeriv( dname,  "WDEP ","-","-", unittxt ,  &
-              igrp, -99,   F,      1.0,   F,    'YMD')
+              igrp, -99,   F,      1.0,   F,     outind)
     case default
       call CheckStop("Unknown WDEP_WANTED type " // trim(WDEP_WANTED(ind)%txt2) )
     end select
@@ -1759,7 +1760,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
         d_3d(n,i,j,k,IOU_INST)=xn_adv(index,i,j,lev3d(k))
 
-      if(dbgP) call write_debugadv(n,index, 1.0, "3D PPB OUTS")
+      if(dbgP) call write_debugadv(n,index, 1.0, "3D PPB OUTS",IS3D=.true.)
 
     case ( "3D_PPB_SHL" )
       forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
@@ -1769,7 +1770,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
         d_3d(n,i,j,k,IOU_INST)=xn_adv(index,i,j,lev3d(k))*roa(i,j,lev3d(k),1)
 
-      if(dbgP) call write_debugadv(n,index, 1.0, "3D UG OUTS")
+      if(dbgP) call write_debugadv(n,index, 1.0, "3D UG OUTS",IS3D=.true.)
 
     case ( "3D_MASS_GROUP" ) !
       igrp = f_3d(n)%index
@@ -2177,16 +2178,29 @@ subroutine somo_calc( n, iX, debug_flag )
   end do
 end subroutine somo_calc
 !=========================================================================
-subroutine write_debugadv(n,index,rho,txt)
+subroutine write_debugadv(n,index,rho,txt,Is3D)
   integer, intent(in) :: n, index
   real, intent(in) :: rho
   character(len=*) :: txt
+  logical, intent(in), optional :: Is3D
+  logical :: Is3D_local
 
-  write(*,"(2a,2i4,2a,4f12.3)") "PROCESS " , trim(txt) , n, index  &
-    ,trim(f_2d(n)%name),trim(f_2d(n)%unit)  &
-    ,d_2d(n,debug_li,debug_lj,IOU_INST)*PPBINV &
-    ,xn_adv(index,debug_li,debug_lj,KMAX_MID)*PPBINV &
-    ,rho, cfac(index,debug_li,debug_lj)
+  Is3D_local = .false.
+  if(present(Is3D)) Is3D_local = Is3D
+  if(Is3D_local)then
+    k=1; l=lev3d(k)
+    write(*,"(2a,2i4,2(1x,a),4f12.3)") "PROCESS " , trim(txt) , n, index  &
+      ,trim(f_3d(n)%name),trim(f_3d(n)%unit)  &
+      ,d_3d(n,debug_li,debug_lj,k,IOU_INST)*f_3d(n)%scale &
+      ,xn_adv(index,debug_li,debug_lj,l)*f_3d(n)%scale &
+      ,rho, cfac(index,debug_li,debug_lj)
+  else
+    write(*,"(2a,2i4,2(1x,a),4f12.3)") "PROCESS " , trim(txt) , n, index  &
+      ,trim(f_2d(n)%name),trim(f_2d(n)%unit)  &
+      ,d_2d(n,debug_li,debug_lj,IOU_INST)*f_2d(n)%scale &
+      ,xn_adv(index,debug_li,debug_lj,KMAX_MID)*f_2d(n)%scale &
+      ,rho, cfac(index,debug_li,debug_lj)
+  end if
 end subroutine write_debugadv
 !=========================================================================
 subroutine write_debug(n,index,txt)
@@ -2197,4 +2211,4 @@ subroutine write_debug(n,index,txt)
     ,trim(f_2d(n)%name),d_2d(n,debug_li,debug_lj,IOU_INST)
 end subroutine write_debug
 !=========================================================================
-endmodule Derived_ml
+end module Derived_ml

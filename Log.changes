@@ -154,6 +154,32 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+7th Oct 2016, Alvaro, 3304
+
+Derived_ml,My_Derived_ml,config_Outputs_*.nml
+- Add output period (eg 'YMD') to WDEP_WANTED variable on OutputDep_config namelist.
+  It is no longer needed to edit the source code to change the WDEP output period.
+- Improve debug messages (write_debugadv) for 3D outputs.
+
+ModelConstants_ml,Wesely_ml,ZCM_Pollen/Pollen.species:
+- Different pollen types have different diameters
+- Expand AERO_SIZE, additional CDDEP_* constants.
+
+Units_ml,ZD_Pollen/My_Pollen_ml,Pollen_const_ml,Pollen_ml:
+- Update unit conversion for pollen species, taking into account
+  the different diameters.
+- Redefine 'grains' units, to support deposition.
+  Use 'grains/m3' for concentrations ('Gm3' shorthand),
+  and 'grains/m2' for deposition ('Gm2' shorthand).
+
+ZD_OZONE/My_Outputs_ml,ZD_Pollen/Pollen_ml
+config_FORECAST.nml,config_Outputs_CAMS50.nml:
+- Update pollen extra hourly output (old style). Only for debug.
+  To be removed in the near future.
+- Derived USET pollen output. Only for debug.
+  Meant to replace pollen extra output.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 6th Oct 2016, Alvaro, 3303
 
 ModelConstants_ml,Derived_ml,My_Outputs_ml,ColumnSource_ml,config_EMERGENCY.nml:

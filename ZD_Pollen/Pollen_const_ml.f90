@@ -6,10 +6,10 @@ module Pollen_const_ml
 ! Pollen emission based upon meteorology paparameters, and heatsum.
 ! Pollen particles are assumed of 22 um diameter and 800 kg/m3 density. 
 !-----------------------------------------------------------------------!
-use PhysicalConstants_ml, only: PI
+use PhysicalConstants_ml, only: PI,ATWAIR,AVOG
 use ModelConstants_ml,    only: USE_POLLEN,DEBUG=>DEBUG_POLLEN
 use CheckStop_ml,         only: CheckStop
-use ChemChemicals_ml,     only: species
+use ChemSpecs,            only: NSPEC_ADV,NSPEC_SHL,species
 use ChemGroups_ml,        only: chemgroups
 use SmallUtils_ml,        only: find_index
 implicit none
@@ -37,27 +37,37 @@ real, parameter  :: &
   uncert_grass_day = 7,       &
   uncert_tot_grass_poll = 0.2,& ! end uncertainty for linear releases
 ! uncert_tot_grass_poll = 0.6,& ! end uncertainty for linear releases (new value)
-  D_POLL   = 22.0,            & ! Pollen grain diameter [um]
+  D_POLL_birch = 22.0,        & ! Pollen grain diameter [um] birch
+  D_POLL_olive = 28.0,        & ! Pollen grain diameter [um] olive
+  D_POLL_grass = 32.0,        & ! Pollen grain diameter [um] grass
   POLL_DENS= 800e3              ! Pollen density [g/m3]
 
-real, parameter  :: &
-  grain_wt = POLL_DENS*PI*(D_POLL*1e-6)**3/6.0, &! 1 grain weight [g]
-  ug2grains= 1e-6/grain_wt
-
 ! pollen arrays indexing, order must match with POLLEN_GROUP: birch,olive,grass
-real, parameter  :: &
-  N_TOT(3)=[N_TOT_birch,N_TOT_olive,N_TOT_grass]
 character(len=*), parameter :: &
   BIRCH = "POLLEN_BIRCH",&
   OLIVE = "POLLEN_OLIVE",&
   GRASS = "POLLEN_GRASS",&
   POLLEN_GROUP(3)=[BIRCH,OLIVE,GRASS]
+integer, parameter :: &
+  POLLEN_NUM=size(POLLEN_GROUP)
+real, parameter  :: &
+  N_TOT(POLLEN_NUM)=[N_TOT_birch,N_TOT_olive,N_TOT_grass]
 
-private :: N_TOT_birch,N_TOT_olive,N_TOT_grass
+real, parameter  :: &
+  D_POLL(POLLEN_NUM)=[D_POLL_birch,D_POLL_olive,D_POLL_grass], & ! pollen diameter
+  grain_wt(POLLEN_NUM) = POLL_DENS*PI*(D_POLL*1e-6)**3/6.0       ! 1 grain weight [g]
+! weight 1 grain [ug], 1 mol of grains (AVOG*grain_wt) [Tonne=1e3 kg]
+! BIRCH: 4.460e-3, 2686e6
+! OLIVE: 9.195e-3, 5538e6
+! GRASS: 13.73e-3, 8267e6
+
+private :: N_TOT_birch,N_TOT_olive,N_TOT_grass,&
+           D_POLL_birch,D_POLL_olive,D_POLL_grass
 
 contains
-subroutine pollen_check(igrp)
+subroutine pollen_check(igrp,uconv_adv)
   integer, intent(inout), optional :: igrp
+  real, dimension(NSPEC_ADV), intent(inout), optional :: uconv_adv
   integer :: poll
   logical,save :: first_call=.true.
   poll=find_index("POLLEN",chemgroups(:)%name)
@@ -72,5 +82,8 @@ subroutine pollen_check(igrp)
     "pollen_check: Inconsistent POLLEN group size")
   call CheckStop(any(species(chemgroups(poll)%specs)%name/=POLLEN_GROUP),&
     "pollen_check: Inconsistent POLLEN group species")
+  if(present(uconv_adv))&
+    uconv_adv(chemgroups(poll)%specs-NSPEC_SHL)=&
+      uconv_adv(chemgroups(poll)%specs-NSPEC_SHL)/grain_wt
 end subroutine pollen_check
 end module Pollen_const_ml

@@ -19,12 +19,12 @@ use ModelConstants_ml, only: PPBINV, PPTINV, MasterProc, KMAX_MID,&
 use PhysicalConstants_ml, only: ATWAIR
 use OwnDataTypes_ml,   only: Asc2D
 use Par_ml,            only: GIMAX,GJMAX,IRUNBEG,JRUNBEG,me
-use Pollen_const_ml,   only: ug2grains,pollen_check
+use Pollen_const_ml,   only: pollen_check
 use SmallUtils_ml,     only: find_index
 use TimeDate_ml,       only: date
 use Units_ml,          only: Init_Units,&
                              to_molec_cm3,to_molec_cm2,to_mgSIA,to_ugSIA,&
-                             to_ug_ADV,to_ug_C,to_ug_N,to_ug_S
+                             to_ug_ADV,to_ug_C,to_ug_N,to_ug_S,to_number_m3
 
 implicit none
 
@@ -255,16 +255,18 @@ subroutine set_output_defs
     nlevels_hourly = 1
   case("MACC_ENS","CAMS50_ENS","FORECAST")
     nhourly_out=0
-    nlevels_hourly=9
+    nlevels_hourly=0
 !- moved to Hourly/Derived
+!-  nlevels_hourly=9
 !-  nhourly_out=nhourly_out+15
 !-  if(any(species_adv(:)%name=="RN222"))nhourly_out=nhourly_out+1
 !-  if(USE_AOD     )nhourly_out=nhourly_out+1
     if(USE_POLLEN  )then
-!-    call pollen_check(gpoll)
+      nlevels_hourly=1
+      call pollen_check(gpoll)
 !-    nhourly_out=nhourly_out+size(chemgroups(gpoll)%specs)
       if(DEBUG_POLLEN)&
-      nhourly_out=nhourly_out+size(chemgroups(gpoll)%specs)*2
+      nhourly_out=nhourly_out+size(chemgroups(gpoll)%specs)*3-1
     endif
 !- moved to Hourly/Derived
 !-case("MACC_EVA","CAMS50_EVA","CAMS50_IRA")
@@ -401,11 +403,11 @@ subroutine set_output_defs
            1,"ug/m2",1e0/3600.,-999.9)  ! 1kg/s --> 1kg/h
     enddo
   case("MACC_ENS","CAMS50_ENS","FORECAST")
-    levels_hourly = [0,1,2,3,4,6,9,10,12]
-    pm25 =find_index("PMFINE"  ,chemgroups(:)%name) !NB There is no "PM25" group
-    pm10 =find_index("PM10"    ,chemgroups(:)%name)
-    nmvoc=find_index("NMVOC"   ,chemgroups(:)%name)
-    rn222=find_index("RN222"  ,species_adv(:)%name)
+!-  levels_hourly = [0,1,2,3,4,6,9,10,12]
+!-  pm25 =find_index("PMFINE"  ,chemgroups(:)%name) !NB There is no "PM25" group
+!-  pm10 =find_index("PM10"    ,chemgroups(:)%name)
+!-  nmvoc=find_index("NMVOC"   ,chemgroups(:)%name)
+!-  rn222=find_index("RN222"  ,species_adv(:)%name)
 !**               name     type     ispec
 !**               nk unit unit_conv  max
 !- moved to Hourly/Derived
@@ -458,19 +460,24 @@ subroutine set_output_defs
 !-          1," ",1.0                               ,-999.9)
 !-  endif
     if(USE_POLLEN)then
+      j=0
+      levels_hourly = 0
 !- moved to Hourly/Derived
 !-    do i=1,size(chemgroups(gpoll)%specs)
 !-      idx=chemgroups(gpoll)%specs(i)-NSPEC_SHL ! offset between xn_adv and species
 !-      j=j+1;hr_out(j) = &
 !-      Asc2D(trim(species_adv(idx)%name),"ADVugXX",idx, &
-!-            1,"grains/m3",to_ug_ADV(idx)*ug2grains,-999.9)
+!-            1,"grains/m3",to_number_m3,-999.9)
 !-    enddo
       if(DEBUG_POLLEN)then
         do i=1,size(chemgroups(gpoll)%specs)
           idx=chemgroups(gpoll)%specs(i)-NSPEC_SHL ! offset between xn_adv and species
+          if(i<3)then
+            j=j+1;hr_out(j) = &
+            Asc2D(trim(species_adv(idx)%name)//"_heatsum","heatsum"     ,i,&
+              1,"degree day" ,1.0,-999.9)
+          endif
           j=j+2;hr_out(j-1:j) = (/&
-  !       Asc2D(trim(species_adv(idx)%name)//"_heatsum","heatsum"     ,i,&
-  !           1,"degree day" ,1.0,-999.9),&
           Asc2D(trim(species_adv(idx)%name)//"_emiss"  ,"pollen_emiss",i,&
               1,"grains/m2/h",1.0,-999.9),&
           Asc2D(trim(species_adv(idx)%name)//"_left"   ,"pollen_left" ,i,&

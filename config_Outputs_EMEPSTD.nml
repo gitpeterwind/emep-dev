@@ -282,12 +282,12 @@ OutputVegO3=
    'STO_O3   ','SPEC' ,'mg' ,
 
   WDEP_WANTED =
-   'PREC     ','PREC ','mm ',
-   'SOX      ','GROUP','mgS',
-   'OXN      ','GROUP','mgN',
-   'RDN      ','GROUP','mgN',
-   'SO2      ','SPEC ','mgS',
-   'HNO3     ','SPEC ','mgN',
+   'PREC     ','PREC ','mm ','YMD',
+   'SOX      ','GROUP','mgS','YMD',
+   'OXN      ','GROUP','mgN','YMD',
+   'RDN      ','GROUP','mgN','YMD',
+   'SO2      ','SPEC ','mgS','YMD',
+   'HNO3     ','SPEC ','mgN','YMD',
 &end 
 !----------------------------------------
 !Older DDEP_WANTED stuff.

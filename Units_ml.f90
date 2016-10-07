@@ -4,9 +4,9 @@ use ChemGroups_ml,        only: chemgroups
 use ChemSpecs,            only: NSPEC_ADV, NSPEC_SHL, species_adv
 use ModelConstants_ml,    only: PPBINV
 use PhysicalConstants_ml, only: AVOG,ATWAIR
+use Pollen_const_ml,      only: pollen_check
 use OwnDataTypes_ml,      only: TXTLEN_DERIV,TXTLEN_SHORT,Asc2D
 use SmallUtils_ml,        only: find_index
-use Pollen_const_ml,      only: ug2grains
 implicit none
 private
 
@@ -33,7 +33,8 @@ real, private, parameter :: &
   mgSm2 = mgXm2*atwS,       &                       ! species(?)%sulphurs
   mgNm2 = mgXm2*atwN,       &                       ! species(?)%nitrogens
   mgCm2 = mgXm2*atwC,       &                       ! species(?)%carbons
-  grainsXm3=ugXm3*ug2grains,& ! will be multiplied by species(?)%molwt
+  grainsXm3=ugXm3*1e-6,     & ! [g/m3]/grain_wt=[#/m3]
+  grainsXm2=mgXm2*1e-3,     & ! [g/m2]/grain_wt=[#/m2]
 ! Extinction coefficient [1/m] = %ExtC [m2/g] * mass [g/m3]
   extX  = ugXm3*1e-6,       & ! will be multiplied by species(?)%molwt*%ExtC
   s2h   = 1.0/3600.           ! sec to hour conversion factor
@@ -43,7 +44,8 @@ real, public, parameter ::  &
   to_mgSIA=to_ugSIA*1e3,    & ! conversion to mg
   to_number_cm3=0.001*AVOG/ATWAIR,& ! from density (roa, kg/m3) to molecules/cm3
   to_molec_cm3=to_number_cm3,&    ! kg/m3=1000 g/m3=0.001*Avog/Atw molecules/cm3
-  to_molec_cm2=to_molec_cm3*1e2
+  to_molec_cm2=to_molec_cm3*1e2,&
+  to_number_m3=to_number_cm3*1e6  ! 1 [#/cm3]=1e6 [#/m3]
 
 ! Conversion to ug/m3
 !   xn_adv(ixadv,ix,iy,k)*roa(ix,iy,k,1)*to_ug_ADV(ixadv)
@@ -72,7 +74,7 @@ type, public :: group_umap
   real,   pointer,dimension(:) :: uconv=>null() ! conversion factor
 end type group_umap
 
-type(umap), public, save :: unit_map(23)=(/&
+type(umap), public, save :: unit_map(24)=(/&
 ! Air concentration
   umap("mix_ratio","mol/mol",T,F,1.0),&  ! Internal model unit
   umap("mass_ratio","kg/kg" ,T,F,1.0/ATWAIR), &  ! mass mixing ratio
@@ -91,8 +93,9 @@ type(umap), public, save :: unit_map(23)=(/&
   umap("mgC","mgC/m2",F,F,mgCm2),&
   umap("mgN","mgN/m2",F,F,mgNm2),&
   umap("mgS","mgS/m2",F,F,mgSm2),&
-! Pollen concentration
-  umap("grains","grains/m3",F,T,grainsXm3),&  ! needs to be further multiplied
+! Pollen concentration/deposition
+  umap("Gm3","grains/m3",F,T,grainsXm3),&
+  umap("Gm2","grains/m2",F,F,grainsXm2),&
 ! Exposure to radioactive material
   umap("uBq" ,"uBq/m3"  ,F,T,ugXm3),& ! inst/mean   exposure
   umap("uBqh","uBq h/m3",F,T,ugXm3),& ! accumulated exposure over 1 hour
@@ -108,9 +111,13 @@ logical, private, save :: Initialize_Units = .true.
 
 contains
 
-subroutine Init_Units()
+subroutine Init_Units(update)
+  logical, optional :: update
   real, dimension(NSPEC_ADV) :: uconv_spec
-  integer :: i
+  integer :: i,igrp
+  if(present(update))then
+    Initialize_Units = Initialize_Units .or. update
+  endif
   if(.not.Initialize_Units) return
   Initialize_Units = .false.
 
@@ -124,7 +131,7 @@ subroutine Init_Units()
 
  do i=1,size(unit_map)
    select case (unit_map(i)%utxt)
-    case("ug","mg","uBq","uBqh","mBq","ugm2","mass_ratio","grains")
+    case("ug","mg","uBq","uBqh","mBq","ugm2","mass_ratio")
       uconv_spec = species_adv%molwt
     case("ugC","mgC","ppbC")
       uconv_spec = species_adv%carbons
@@ -132,6 +139,9 @@ subroutine Init_Units()
       uconv_spec = species_adv%nitrogens
     case("ugS","mgS","ppbS")
       uconv_spec = species_adv%sulphurs
+    case("Gm3","Gm2")
+      uconv_spec = species_adv%molwt
+      call pollen_check(uconv_adv=uconv_spec)
 !   case("ext")
 !     uconv_spec = species_adv%molwt*species_adv%ExtC
 !     uconv_spec = species_adv%molwt*Qm_grp(NSPEC_ADV,[1..NSPEC_ADV]+NSPEC_SHL,rh,...)

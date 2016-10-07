@@ -76,9 +76,9 @@ OutputConcs=
     'RDN      ','GROUP','mgN',
 
   WDEP_WANTED = 
-    'SOX      ','GROUP','mgS',
-    'OXN      ','GROUP','mgN',
-    'RDN      ','GROUP','mgN',
+    'SOX      ','GROUP','mgS','YMD',
+    'OXN      ','GROUP','mgN','YMD',
+    'RDN      ','GROUP','mgN','YMD',
 &end
 &OutputSize_config
 !restrict size of output files. (Sizes defined with respect to fulldomain)

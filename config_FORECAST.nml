@@ -12,13 +12,13 @@
 &ModelConstants_config
   meteo                 = './meteoYYYYMMDD.nc',
   EXP_NAME              = 'FORECAST',
-  MY_OUTPUTS            = 'MACC_ENS',
+  MY_OUTPUTS            = '',         ! deprecated hourly out: MACC_ENS|MACC_EVA
 !------------------------------
   USES%testname         = 'FORECAST',
   USES%FOREST_FIRES     = T,
-  USES%EMISSTACKS       = F,         ! Reads PointSources file
+  USES%EMISSTACKS       = F,          ! Reads PointSources file
   USES%DEGREEDAY_FACTORS= F,
-  USES%PlumeMethod      = 'PVDI',    ! default PVDI, possible: NILU, ASMI, PVDI
+  USES%PlumeMethod      = 'PVDI',     ! default PVDI, possible: NILU, ASMI, PVDI
 !------------------------------
   USE_SOILWATER         = F,          ! Uses SMI from meteo data
   USE_CONVECTION        = F,

@@ -94,14 +94,16 @@ integer, public, parameter :: CDDEP_RCHO = CDDEP_ALD ! Convenience
 ! specials for aerosols. we have 2 fine, 1 coarse and 1 'giant'type
 integer, public, parameter :: &
   CDDEP_PMfS= 12, CDDEP_PMfN= 13, CDDEP_PMc  = 14, &
-  CDDEP_SSc = 15, CDDEP_DUc = 16, CDDEP_POLLd= 17
-integer, public, parameter :: CDDEP_PMfNH4 = 18  ! TEST_2014
-integer, public, parameter :: CDDEP_LASTPM = 18  ! Safety. Catches changes
+  CDDEP_SSc = 15, CDDEP_DUc = 16, &
+  CDDEP_BIRCH=17, CDDEP_OLIVE=18, CDDEP_GRASS=19 ! Pollen types
+integer, public, parameter :: CDDEP_PMfNH4 = 20  ! TEST_2014
+integer, public, parameter :: CDDEP_LASTPM = 20  ! Safety. Catches changes
 
 integer, dimension(CDDEP_PMfS:CDDEP_LASTPM), public, parameter :: &
-  AERO_SIZE = (/ 1, 1, 2, 3, 4, 5, 1 /) !1=fine,2=coarse,3=coarse sea salt, 4=dust, 5 = pollen
+! 1=fine,2=coarse,3=coarse sea salt, 4=dust, 5/6/7 = birch/olive/grass pollen
+  AERO_SIZE = (/ 1, 1, 2, 3, 4, 5, 6, 7, 1 /)
 
-integer, public, parameter :: NDRYDEP_AER = 7   ! aerosols with CDDEP_PMfNH4 
+integer, public, parameter :: NDRYDEP_AER = 9    ! aerosols with CDDEP_PMfNH4 
 integer, public, parameter :: NDRYDEP_CALC = NDRYDEP_GASES + NDRYDEP_AER
 
 integer, public, parameter :: &

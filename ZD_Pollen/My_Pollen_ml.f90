@@ -8,28 +8,20 @@
 ! Pollen particles are assumed of 22 um diameter and 800 kg/m3 density. 
 !-----------------------------------------------------------------------!
 module Pollen_const_ml
-use PhysicalConstants_ml, only: PI
 use ModelConstants_ml,    only: USE_POLLEN,DEBUG=>DEBUG_POLLEN
-use ChemSpecs,            only: species_adv
+use ChemSpecs,            only: NSPEC_ADV
 use CheckStop_ml,         only: CheckStop
 implicit none
 public
-
-real, parameter :: &
-  D_POLL   = 22e-6,     & ! Pollen grain diameter [m]
-  POLL_DENS= 800e3        ! Pollen density [g/m3]
-
-real, parameter :: &
-  grain_wt = POLL_DENS*PI*D_POLL**3/6.0, &  ! 1 grain weight [g]
-  ug2grains= 1e-6/grain_wt                  ! # grains in 1 ug
 
 real, parameter  :: &
   N_TOT(3)=1.0  ! avoid div0
 
 contains
 
-subroutine pollen_check(igrp)
+subroutine pollen_check(igrp,uconv_adv)
   integer, intent(out), optional :: igrp
+  real, dimension(NSPEC_ADV), intent(inout), optional :: uconv_adv
   logical,save :: first_call=.true.
   if(present(igrp))igrp=-1
   if(.not.first_call)return

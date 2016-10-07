@@ -340,7 +340,7 @@ logical, public, parameter ::    &
   ,DEBUG_NH3            = .false. & ! NH3Emis experimental
   ,DEBUG_OUTPUTCHEM     = .false. & ! Output of netcdf results
   ,DEBUG_OUT_HOUR       = .false. & ! Debug Output_hourly.f90
-  ,DEBUG_POLLEN         = .false.  &
+  ,DEBUG_POLLEN         = .false. &
 !MV  ,DEBUG_RUNCHEM        = .false. & ! DEBUG_RUNCHEM is SPECIAL
     ,DEBUG_DUST           = .false. & ! Skips fast chemistry to save some CPU
     ,DEBUG_ROADDUST     = .false. &
@@ -398,12 +398,12 @@ integer, parameter :: NSAREA_DEF = 8 ! needs to be consistent with type below
 type, public :: aero_t
   character(len=15) :: EQUILIB  = 'MARS ' !aerosol themodynamics
   logical          :: DYNAMICS = .false.
-  integer          :: NSIZE    = 5
-  real, dimension(5) :: &
-     DpgV  =[0.33e-6, 3.0e-6,4.8e-6,5.0e-6,22e-6] & ! diameter [m]
-    ,DpgN  =[   -1.0,   -1.0,  -1.0,  -1.0, -1.0] & ! to be calculated
-    ,sigma =[    1.8,    2.0,   2.0,   2.2,  2.0] &
-    ,PMdens=[ 1600.0, 2200.0,2200.0,2600.0,800.0] & ! density [kg/m3]
+  integer          :: NSIZE    = 7
+  real, dimension(7) :: &
+     DpgV  =[0.33e-6,3.0e-6,4.8e-6,5.0e-6,22e-6,28e-6,32e-6] & ! diameter [m]
+    ,DpgN  =[   -1.0,  -1.0,  -1.0,  -1.0, -1.0, -1.0, -1.0] & ! to be calculated
+    ,sigma =[    1.8,   2.0,   2.0,   2.2,  2.0,  2.0,  2.0] &
+    ,PMdens=[ 1600.0,2200.0,2200.0,2600.0,800.0,800.0,800.0] & ! density [kg/m3]
     ,Vs = 0.0   ! Settling velocity (m/s). Easiest to define here
 
 ! For surface area we track the following (NSD=not seasalt or dust)

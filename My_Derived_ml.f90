@@ -49,7 +49,7 @@ use MosaicOutputs_ml, only: nMosaic, MAX_MOSAIC_OUTPUTS, MosaicOutput, & !
                             Add_NewMosaics, Add_MosaicVEGO3, Add_MosaicDDEP
 
 use OwnDataTypes_ml,only: Deriv, TXTLEN_DERIV, TXTLEN_SHORT,&
-                          typ_s3, typ_s5ind, typ_s1ind
+                          typ_s3, typ_s4, typ_s5ind, typ_s1ind
 use Par_ml,         only: limax,ljmax        ! => used x, y area
 use SmallUtils_ml,  only: AddArray,LenArray,NOT_SET_STRING,WriteArray,find_index
 implicit none
@@ -110,8 +110,8 @@ type(typ_s1ind), public, save, dimension(MAX_NUM_DDEP_ECOS) :: &
 type(typ_s3), public, save, dimension(MAX_NUM_DDEP_WANTED) :: &
   DDEP_WANTED = typ_s3('-','-','-'), & ! e.g. typ_s3("SO2",SPEC,"mgS"),
   SDEP_WANTED = typ_s3('-','-','-')    ! Stomatal deposition (for HTAP)
-type(typ_s3), public, save, dimension(MAX_NUM_WDEP_WANTED) :: &
-  WDEP_WANTED = typ_s3('-','-','-')
+type(typ_s4), public, save, dimension(MAX_NUM_WDEP_WANTED) :: &
+  WDEP_WANTED = typ_s4('-','-','-','-')
 
 character(len=TXTLEN_DERIV), public, parameter, dimension(4) :: &
   D2_SR = [character(len=TXTLEN_DERIV):: &

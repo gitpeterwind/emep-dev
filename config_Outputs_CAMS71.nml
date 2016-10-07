@@ -20,10 +20,10 @@ OutputConcs=
     'OXN      ', 'GROUP', 'mgN',
     'RDN      ', 'GROUP', 'mgN',
   WDEP_WANTED = 
-    'PREC'     ,'PREC' , 'mm',
-    'SOX      ','GROUP','mgS',
-    'OXN      ','GROUP','mgN',
-    'RDN      ','GROUP','mgN',
+    'PREC'     ,'PREC' , 'mm','YMD',
+    'SOX      ','GROUP','mgS','YMD',
+    'OXN      ','GROUP','mgN','YMD',
+    'RDN      ','GROUP','mgN','YMD',
 &end
 &OutputSize_config
 ! hour_DOMAIN=60,107,11,58, !=[istart,iend,jstart,jend], default RUNDOMAIN+[1,-1,1,-1]
