@@ -645,10 +645,10 @@ subroutine Emissions(year)
 
       if(MasterProc.and. emis_inputlist(iemislist)%periodicity == "once") then
         call PrintLog("Total emissions by countries for "//trim(emis_inputlist(iemislist)%name)//" (Gg)")
-        write(*     ,"(2a4,3x,30(a12,:))")"  N "," CC ",EMIS_FILE(:)
-        write(IO_LOG,"(2a4,3x,30(a12,:))")"  N "," CC ",EMIS_FILE(:)                
+        write(*     ,"(a4,a9,3x,30(a12,:))")"  N "," CC ",EMIS_FILE(:)
+        write(IO_LOG,"(a4,a9,3x,30(a12,:))")"  N "," CC ",EMIS_FILE(:)                
         sumEU(:) = 0.0
-        fmt="(i4,1x,a4,3x,30(f12.2,:))"
+        fmt="(i4,1x,a9,3x,30(f12.2,:))"
         do ic = 1, NLAND
           ccsum = sum( sumemis(ic,:) )
           icc=Country(ic)%icode

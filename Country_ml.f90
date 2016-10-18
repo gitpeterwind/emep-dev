@@ -26,7 +26,7 @@ module Country_ml
   public :: Country_Init     ! sets country details
   public :: Country_test     ! just to test numbering
 
-  integer, parameter, public  :: MAXNLAND = 350  ! max number of countries 
+  integer, parameter, public  :: MAXNLAND = 400  ! max number of countries 
   integer,  public            :: NLAND  ! actaua number of countries defined
   logical, parameter, private :: T = .true.   ! shorthand
   logical, parameter, private :: F = .false.  ! shorthand
@@ -185,7 +185,7 @@ integer, public :: IC_VIET  ! Vietnam
 integer, public :: IC_EGYP  ! Egypt
 integer, public :: IC_HANO  ! Hanoi
 integer, public :: IC_NVIE  ! North Vietnam
-integer, public :: IC_RVIE  ! Rest of Vietnam
+integer, public :: IC_SVIE  ! South Vietnam
 integer, public :: IC_BOLV  ! Bolivia
 integer, public :: IC_CARB  ! Caribbean
 integer, public :: IC_CEAM  ! Central America
@@ -195,6 +195,10 @@ integer, public :: IC_PARA  ! Paraguay
 integer, public :: IC_PERU  ! Peru
 integer, public :: IC_URUG  ! Uruguay
 integer, public :: IC_VENE  ! Venezuela
+integer, public :: IC_IRAN  ! Iran
+integer, public :: IC_SAAR  ! Saudi Arabia
+integer, public :: IC_KOSO  ! Kosovo
+integer, public :: IC_OCEC  ! Oceania
 
   ! extra subdivisions of ship emissions into shipping categories:
   ! Baltic Sea  (30)
@@ -315,6 +319,98 @@ integer, public :: IC_VENE  ! Venezuela
   integer,  public :: IC_HT1019
   integer,  public :: IC_HT1020
   integer,  public :: IC_HT1000
+
+! UNEP SR regions
+  integer,  public :: IC_BANG_DHAK
+  integer,  public :: IC_BANG_REST
+  integer,  public :: IC_CHIN_ANHU
+  integer,  public :: IC_CHIN_BEIJ
+  integer,  public :: IC_CHIN_CHON
+  integer,  public :: IC_CHIN_FUJI 
+  integer,  public :: IC_CHIN_GANS
+  integer,  public :: IC_CHIN_GUAD
+  integer,  public :: IC_CHIN_GUAX
+  integer,  public :: IC_CHIN_GUIZ
+  integer,  public :: IC_CHIN_HAIN
+  integer,  public :: IC_CHIN_HEBE  
+  integer,  public :: IC_CHIN_HEIL
+  integer,  public :: IC_CHIN_HENA
+  integer,  public :: IC_CHIN_HONG
+  integer,  public :: IC_CHIN_HUBE
+  integer,  public :: IC_CHIN_HUNA
+  integer,  public :: IC_CHIN_JILI
+  integer,  public :: IC_CHIN_JINU
+  integer,  public :: IC_CHIN_JINX
+  integer,  public :: IC_CHIN_LIAO
+  integer,  public :: IC_CHIN_NEMO
+  integer,  public :: IC_CHIN_NINX
+  integer,  public :: IC_CHIN_QING
+  integer,  public :: IC_CHIN_SHAA
+  integer,  public :: IC_CHIN_SHAN
+  integer,  public :: IC_CHIN_SHND
+  integer,  public :: IC_CHIN_SHNX
+  integer,  public :: IC_CHIN_SICH
+  integer,  public :: IC_CHIN_TIAN
+  integer,  public :: IC_CHIN_TIBE
+  integer,  public :: IC_CHIN_XING
+  integer,  public :: IC_CHIN_YUNN
+  integer,  public :: IC_CHIN_ZHEJ
+  integer,  public :: IC_INDI_ANPR
+  integer,  public :: IC_INDI_ASSA
+  integer,  public :: IC_INDI_BENG
+  integer,  public :: IC_INDI_BIHA
+  integer,  public :: IC_INDI_CHHA
+  integer,  public :: IC_INDI_DELH
+  integer,  public :: IC_INDI_EHIM 
+  integer,  public :: IC_INDI_GOA
+  integer,  public :: IC_INDI_GUJA
+  integer,  public :: IC_INDI_HARY
+  integer,  public :: IC_INDI_HIPR
+  integer,  public :: IC_INDI_JHAR
+  integer,  public :: IC_INDI_KARN
+  integer,  public :: IC_INDI_KERA
+  integer,  public :: IC_INDI_MAHA
+  integer,  public :: IC_INDI_MAPR
+  integer,  public :: IC_INDI_ORIS
+  integer,  public :: IC_INDI_PUNJ
+  integer,  public :: IC_INDI_RAJA
+  integer,  public :: IC_INDI_TAMI
+  integer,  public :: IC_INDI_UTAN
+  integer,  public :: IC_INDI_UTPR
+  integer,  public :: IC_INDI_WHIM
+  integer,  public :: IC_INDO_JAKA 
+  integer,  public :: IC_INDO_JAVA 
+  integer,  public :: IC_INDO_REST 
+  integer,  public :: IC_INDO_SUMA
+  integer,  public :: IC_JAPA_CHSH
+  integer,  public :: IC_JAPA_CHUB
+  integer,  public :: IC_JAPA_HOTO
+  integer,  public :: IC_JAPA_KANT
+  integer,  public :: IC_JAPA_KINK
+  integer,  public :: IC_JAPA_KYOK
+  integer,  public :: IC_KORS_NORT
+  integer,  public :: IC_KORS_PUSA
+  integer,  public :: IC_KORS_SEOI
+  integer,  public :: IC_KORS_SOUT
+  integer,  public :: IC_MALA_KUAL
+  integer,  public :: IC_MALA_PENM
+  integer,  public :: IC_MALA_SASA
+  integer,  public :: IC_PAKI_KARA
+  integer,  public :: IC_PAKI_NMWP
+  integer,  public :: IC_PAKI_PUNJ
+  integer,  public :: IC_PAKI_SIND
+  integer,  public :: IC_PHIL_BVMI
+  integer,  public :: IC_PHIL_LUZO
+  integer,  public :: IC_PHIL_MANI
+  integer,  public :: IC_RUSS_ASIA
+  integer,  public :: IC_RUSS_EURO
+  integer,  public :: IC_THAI_BANG
+  integer,  public :: IC_THAI_CVAL
+  integer,  public :: IC_THAI_NEPL
+  integer,  public :: IC_THAI_NHIG
+  integer,  public :: IC_THAI_SPEN
+  integer,  public :: IC_IRAN_REST
+  integer,  public :: IC_IRAN_TEHR
 
   contains
   
@@ -904,8 +1000,8 @@ ix=ix+1
 IC_NVIE=ix
 Country(IC_NVIE) = cc( "NVIET", 239, F, 239, -100, "North Vietnam")
 ix=ix+1
-IC_RVIE=ix
-Country(IC_RVIE) = cc( "RVIET", 240, F, 240, -100, "Rest of Vietnam")
+IC_SVIE=ix
+Country(IC_SVIE) = cc( "SVIET", 240, F, 240, -100, "South Vietnam")
 ix=ix+1
 IC_BOLV=ix
 Country(IC_BOLV) = cc( "BOLV", 241, F, 241, -100, "Bolivia")
@@ -933,9 +1029,21 @@ Country(IC_URUG) = cc( "URUG", 248, F, 248, -100, "Uruguay")
 ix=ix+1
 IC_VENE=ix
 Country(IC_VENE) = cc( "VENE", 249, F, 249, -100, " Venezuela")
+ix=ix+1
+IC_IRAN=ix
+Country(IC_IRAN) = cc( "IRAN", 250, F, 250, -100, "Iran")
+ix=ix+1
+IC_SAAR=ix
+Country(IC_SAAR) = cc( "SAAR", 251, F, 251, -100, "Saudi Arabia")
 ix=ix+1 
 IC_INTSHIPS=ix
-Country(IC_INTSHIPS ) = cc(  "INTSHIPS" ,350 ,T, 350, -100  , "International ships, RCP6" )
+Country(IC_INTSHIPS) = cc( "INTSHIPS" ,350 ,T, 350, -100  , "International ships" )
+ix=ix+1
+IC_KOSO=ix
+Country(IC_KOSO) = cc( "KOSO", 373, F, 373, -100, "Kosovo")
+ix=ix+1
+IC_OCEC=ix
+Country(IC_OCEC) = cc( "OCEC", 393, F, 393, -100, "Oceania")
 
 !!  HTAP2 regions
 ix=ix+1 
@@ -999,7 +1107,277 @@ ix=ix+1
 IC_HT1020 = ix
 Country(IC_HT1020 ) = cc(  "HT1020" ,1020 ,T, -100, 2  , "HT 1020" )
 
-
+!UNEP SR regions'
+ix=ix+1
+IC_BANG_DHAK = ix
+Country(IC_BANG_DHAK) = cc( "BANG_DHAK",  252 , F,   252 ,-100, "Bangladesh:Dhaka")
+ix=ix+1
+IC_BANG_REST = ix
+Country(IC_BANG_REST) = cc( "BANG_REST",  253 , F,   253 ,-100, "Rest_of_Bangladesh")
+ix=ix+1
+IC_CHIN_ANHU = ix
+Country(IC_CHIN_ANHU) = cc( "CHIN_ANHU",  254 , F,   254 ,-100, "China:Anhui")
+ix=ix+1
+IC_CHIN_BEIJ = ix
+Country(IC_CHIN_BEIJ) = cc( "CHIN_BEIJ",  255 , F,   255 ,-100, "China:Beijing")
+ix=ix+1
+IC_CHIN_CHON = ix
+Country(IC_CHIN_CHON) = cc( "CHIN_CHON",  256 , F,   256 ,-100, "China:Chongqing")
+ix=ix+1
+IC_CHIN_FUJI = ix
+Country(IC_CHIN_FUJI) = cc( "CHIN_FUJI",  257 , F,   257 ,-100, "China:Fujian")
+ix=ix+1
+IC_CHIN_GANS = ix
+Country(IC_CHIN_GANS) = cc( "CHIN_GANS",  258 , F,   258 ,-100, "China:Gansu")
+ix=ix+1
+IC_CHIN_GUAD = ix
+Country(IC_CHIN_GUAD) = cc( "CHIN_GUAD",  259 , F,   259 ,-100, "China:Guangdong")
+ix=ix+1
+IC_CHIN_GUAX = ix
+Country(IC_CHIN_GUAX) = cc( "CHIN_GUAX",  260 , F,   260 ,-100, "China:Guangxi")
+ix=ix+1
+IC_CHIN_GUIZ = ix
+Country(IC_CHIN_GUIZ) = cc( "CHIN_GUIZ",  261 , F,   261 ,-100, "China:Guizhou")
+ix=ix+1
+IC_CHIN_HAIN = ix
+Country(IC_CHIN_HAIN) = cc( "CHIN_HAIN",  262 , F,   262 ,-100, "China:Hainan")
+ix=ix+1
+IC_CHIN_HEBE = ix
+Country(IC_CHIN_HEBE) = cc( "CHIN_HEBE",  263 , F,   263 ,-100, "China:Hebei")
+ix=ix+1
+IC_CHIN_HEIL = ix
+Country(IC_CHIN_HEIL) = cc( "CHIN_HEIL",  264 , F,   264 ,-100, "China:Heilongjiang")
+ix=ix+1
+IC_CHIN_HENA = ix
+Country(IC_CHIN_HENA) = cc( "CHIN_HENA",  265 , F,   265 ,-100, "China:Henan")
+ix=ix+1
+IC_CHIN_HONG = ix
+Country(IC_CHIN_HONG) = cc( "CHIN_HONG",  266 , F,   266 ,-100, "China:Hong_Kong_&_Macau")
+ix=ix+1
+IC_CHIN_HUBE = ix
+Country(IC_CHIN_HUBE) = cc( "CHIN_HUBE",  267 , F,   267 ,-100, "China:Hubei")
+ix=ix+1
+IC_CHIN_HUNA = ix
+Country(IC_CHIN_HUNA) = cc( "CHIN_HUNA",  268 , F,   268 ,-100, "China:Hunan")
+ix=ix+1
+IC_CHIN_JILI = ix
+Country(IC_CHIN_JILI) = cc( "CHIN_JILI",  269 , F,   269 ,-100, "China:Jilin")
+ix=ix+1
+IC_CHIN_JINU = ix
+Country(IC_CHIN_JINU) = cc( "CHIN_JINU",  270 , F,   270 ,-100, "China:Jiangsu")
+ix=ix+1
+IC_CHIN_JINX = ix
+Country(IC_CHIN_JINX) = cc( "CHIN_JINX",  271 , F,   271 ,-100, "China:Jiangxi")
+ix=ix+1
+IC_CHIN_LIAO = ix
+Country(IC_CHIN_LIAO) = cc( "CHIN_LIAO",  272 , F,   272 ,-100, "China:Liaoning")
+ix=ix+1
+IC_CHIN_NEMO = ix
+Country(IC_CHIN_NEMO) = cc( "CHIN_NEMO",  273 , F,   273 ,-100, "China:Inner_Mongolia")
+ix=ix+1
+IC_CHIN_NINX = ix
+Country(IC_CHIN_NINX) = cc( "CHIN_NINX",  274 , F,   274 ,-100, "China:Ningxia")
+ix=ix+1
+IC_CHIN_QING = ix
+Country(IC_CHIN_QING) = cc( "CHIN_QING",  275 , F,   275 ,-100, "China:Qinghai")
+ix=ix+1
+IC_CHIN_SHAA = ix
+Country(IC_CHIN_SHAA) = cc( "CHIN_SHAA",  276 , F,   276 ,-100, "China:Shaanxi")
+ix=ix+1
+IC_CHIN_SHAN = ix
+Country(IC_CHIN_SHAN) = cc( "CHIN_SHAN",  277 , F,   277 ,-100, "China:Shanghai")
+ix=ix+1
+IC_CHIN_SHND = ix
+Country(IC_CHIN_SHND) = cc( "CHIN_SHND",  278 , F,   278 ,-100, "China:Shandong")
+ix=ix+1
+IC_CHIN_SHNX = ix
+Country(IC_CHIN_SHNX) = cc( "CHIN_SHNX",  279 , F,   279 ,-100, "China:Shanxi")
+ix=ix+1
+IC_CHIN_SICH = ix
+Country(IC_CHIN_SICH) = cc( "CHIN_SICH",  280 , F,   280 ,-100, "China:Sichuan")
+ix=ix+1
+IC_CHIN_TIAN = ix
+Country(IC_CHIN_TIAN) = cc( "CHIN_TIAN",  281 , F,   281 ,-100, "China:Tianjin")
+ix=ix+1
+IC_CHIN_TIBE = ix
+Country(IC_CHIN_TIBE) = cc( "CHIN_TIBE",  282 , F,   282 ,-100, "China:Tibet_(Xizang)")
+ix=ix+1
+IC_CHIN_XING = ix
+Country(IC_CHIN_XING) = cc( "CHIN_XING",  283 , F,   283 ,-100, "China:Xinjiang")
+ix=ix+1
+IC_CHIN_YUNN = ix
+Country(IC_CHIN_YUNN) = cc( "CHIN_YUNN",  284 , F,   284 ,-100, "China:Yunnan")
+ix=ix+1
+IC_CHIN_ZHEJ = ix
+Country(IC_CHIN_ZHEJ) = cc( "CHIN_ZHEJ",  285 , F,   285 ,-100, "China:Zhejiang")
+ix=ix+1
+IC_INDI_ANPR = ix
+Country(IC_INDI_ANPR) = cc( "INDI_ANPR",  286 , F,   286 ,-100, "India:Andhra_Pradesh")
+ix=ix+1
+IC_INDI_ASSA = ix
+Country(IC_INDI_ASSA) = cc( "INDI_ASSA",  287 , F,   287 ,-100, "India:Assam")
+ix=ix+1
+IC_INDI_BENG = ix
+Country(IC_INDI_BENG) = cc( "INDI_BENG",  288 , F,   288 ,-100, "India:West_Bengal")
+ix=ix+1
+IC_INDI_BIHA = ix
+Country(IC_INDI_BIHA) = cc( "INDI_BIHA",  289 , F,   289 ,-100, "India:Bihar")
+ix=ix+1
+IC_INDI_CHHA = ix
+Country(IC_INDI_CHHA) = cc( "INDI_CHHA",  290 , F,   290 ,-100, "India:Chhattisgarh")
+ix=ix+1
+IC_INDI_DELH = ix
+Country(IC_INDI_DELH) = cc( "INDI_DELH",  291 , F,   291 ,-100, "India:Delhi")
+ix=ix+1
+IC_INDI_EHIM = ix
+Country(IC_INDI_EHIM) = cc( "INDI_EHIM",  292 , F,   292 ,-100, "India:North_East_(excl._Assam)")
+ix=ix+1
+IC_INDI_GOA = ix
+Country(IC_INDI_GOA) = cc( "INDI_GOA",  293 , F,   293 ,-100, "India:Goa")
+ix=ix+1
+IC_INDI_GUJA = ix
+Country(IC_INDI_GUJA) = cc( "INDI_GUJA",  294 , F,   294 ,-100, "India:Gujarat")
+ix=ix+1
+IC_INDI_HARY = ix
+Country(IC_INDI_HARY) = cc( "INDI_HARY",  295 , F,   295 ,-100, "India:Haryana")
+ix=ix+1
+IC_INDI_HIPR = ix
+Country(IC_INDI_HIPR) = cc( "INDI_HIPR",  296 , F,   296 ,-100, "India:Himachal_Pradesh")
+ix=ix+1
+IC_INDI_JHAR = ix
+Country(IC_INDI_JHAR) = cc( "INDI_JHAR",  297 , F,   297 ,-100, "India:Jharkhand")
+ix=ix+1
+IC_INDI_KARN = ix
+Country(IC_INDI_KARN) = cc( "INDI_KARN",  298 , F,   298 ,-100, "India:Karnataka")
+ix=ix+1
+IC_INDI_KERA = ix
+Country(IC_INDI_KERA) = cc( "INDI_KERA",  299 , F,   299 ,-100, "India:Kerala")
+ix=ix+1
+IC_INDI_MAHA = ix
+Country(IC_INDI_MAHA) = cc( "INDI_MAHA",  300 , F,   300 ,-100, "India:Maharashtra-Dadra-Nagar-Haveli-Daman-Diu")
+ix=ix+1
+IC_INDI_MAPR = ix
+Country(IC_INDI_MAPR) = cc( "INDI_MAPR",  351 , F,   351 ,-100, "India:Madhya_Pradesh")
+ix=ix+1
+IC_INDI_ORIS = ix
+Country(IC_INDI_ORIS) = cc( "INDI_ORIS",  352 , F,   352 ,-100, "India:Orissa")
+ix=ix+1
+IC_INDI_PUNJ = ix
+Country(IC_INDI_PUNJ) = cc( "INDI_PUNJ",  353 , F,   353 ,-100, "India:Punjab")
+ix=ix+1
+IC_INDI_RAJA = ix
+Country(IC_INDI_RAJA) = cc( "INDI_RAJA",  354 , F,   354 ,-100, "India:Rajasthan")
+ix=ix+1
+IC_INDI_TAMI = ix
+Country(IC_INDI_TAMI) = cc( "INDI_TAMI",  355 , F,   355 ,-100, "India:Tamil_Nadu")
+ix=ix+1
+IC_INDI_UTAN = ix
+Country(IC_INDI_UTAN) = cc( "INDI_UTAN",  356 , F,   356 ,-100, "India:Uttaranchal")
+ix=ix+1
+IC_INDI_UTPR = ix
+Country(IC_INDI_UTPR) = cc( "INDI_UTPR",  357 , F,   357 ,-100, "India:Uttar_Pradesh")
+ix=ix+1
+IC_INDI_WHIM = ix
+Country(IC_INDI_WHIM) = cc( "INDI_WHIM",  358 , F,   358 ,-100, "India:Jammu_and_Kashmir")
+ix=ix+1
+IC_INDO_JAKA = ix
+Country(IC_INDO_JAKA) = cc( "INDO_JAKA",  359 , F,   359 ,-100, "Indonesia:Jakarta")
+ix=ix+1
+IC_INDO_JAVA = ix
+Country(IC_INDO_JAVA) = cc( "INDO_JAVA",  360 , F,   360 ,-100, "Indonesia:Java")
+ix=ix+1
+IC_INDO_REST = ix
+Country(IC_INDO_REST) = cc( "INDO_REST",  361 , F,   361 ,-100, "Indonesia:Rest_of_Indonesia")
+ix=ix+1
+IC_INDO_SUMA = ix
+Country(IC_INDO_SUMA) = cc( "INDO_SUMA",  362 , F,   362 ,-100, "Indonesia:Sumatra")
+ix=ix+1
+IC_JAPA_CHSH = ix
+Country(IC_JAPA_CHSH) = cc( "JAPA_CHSH",  363 , F,   363 ,-100, "Japan:Chugoku-Shikoku")
+ix=ix+1
+IC_JAPA_CHUB = ix
+Country(IC_JAPA_CHUB) = cc( "JAPA_CHUB",  364 , F,   364 ,-100, "Japan:Chubu")
+ix=ix+1
+IC_JAPA_HOTO = ix
+Country(IC_JAPA_HOTO) = cc( "JAPA_HOTO",  365 , F,   365 ,-100, "Japan:Hokkaido-Tohoku")
+ix=ix+1
+IC_JAPA_KANT = ix
+Country(IC_JAPA_KANT) = cc( "JAPA_KANT",  366 , F,   366 ,-100, "Japan:Kanto")
+ix=ix+1
+IC_JAPA_KINK = ix
+Country(IC_JAPA_KINK) = cc( "JAPA_KINK",  367 , F,   367 ,-100, "Japan:Kinki")
+ix=ix+1
+IC_JAPA_KYOK = ix
+Country(IC_JAPA_KYOK) = cc( "JAPA_KYOK",  368 , F,   368 ,-100, "Japan:Kyushu-Okinawa")
+ix=ix+1
+IC_KORS_NORT = ix
+Country(IC_KORS_NORT) = cc( "KORS_NORT",  369 , F,   369 ,-100, "South_Korea:North")
+ix=ix+1
+IC_KORS_PUSA = ix
+Country(IC_KORS_PUSA) = cc( "KORS_PUSA",  370 , F,   370 ,-100, "South_Korea:Pusan")
+ix=ix+1
+IC_KORS_SEOI = ix
+Country(IC_KORS_SEOI) = cc( "KORS_SEOI",  371 , F,   371 ,-100, "South_Korea:Seoul-Inchon")
+ix=ix+1
+IC_KORS_SOUT = ix
+Country(IC_KORS_SOUT) = cc( "KORS_SOUT",  372 , F,   372 ,-100, "South_Korea:South")
+ix=ix+1
+IC_MALA_KUAL = ix
+Country(IC_MALA_KUAL) = cc( "MALA_KUAL",  374 , F,   374 ,-100, "Malaysia:Kuala_Lumpur")
+ix=ix+1
+IC_MALA_PENM = ix
+Country(IC_MALA_PENM) = cc( "MALA_PENM",  375 , F,   375 ,-100, "Malaysia:Peninsular_Malaysia")
+ix=ix+1
+IC_MALA_SASA = ix
+Country(IC_MALA_SASA) = cc( "MALA_SASA",  376 , F,   376 ,-100, "Malaysia:Sarawak-Sabah")
+ix=ix+1
+IC_PAKI_KARA = ix
+Country(IC_PAKI_KARA) = cc( "PAKI_KARA",  377 , F,   377 ,-100, "Pakistan:Karachi")
+ix=ix+1
+IC_PAKI_NMWP = ix
+Country(IC_PAKI_NMWP) = cc( "PAKI_NMWP",  378 , F,   378 ,-100, "Pakistan:NW_Frontier_Provinces-Baluchistan")
+ix=ix+1
+IC_PAKI_PUNJ = ix
+Country(IC_PAKI_PUNJ) = cc( "PAKI_PUNJ",  379 , F,   379 ,-100, "Pakistan:Punjab")
+ix=ix+1
+IC_PAKI_SIND = ix
+Country(IC_PAKI_SIND) = cc( "PAKI_SIND",  380 , F,   380 ,-100, "Pakistan:Sind")
+ix=ix+1
+IC_PHIL_BVMI = ix
+Country(IC_PHIL_BVMI) = cc( "PHIL_BVMI",  381 , F,   381 ,-100, "Philipinnes:Bicol-Visayas-Mindanao")
+ix=ix+1
+IC_PHIL_LUZO = ix
+Country(IC_PHIL_LUZO) = cc( "PHIL_LUZO",  382 , F,   382 ,-100, "Philipinnes:Luzon")
+ix=ix+1
+IC_PHIL_MANI = ix
+Country(IC_PHIL_MANI) = cc( "PHIL_MANI",  383 , F,   383 ,-100, "Philipinnes:Metropolitan_Manila")
+ix=ix+1
+IC_RUSS_ASIA = ix
+Country(IC_RUSS_ASIA) = cc( "RUSS_ASIA",  384 , F,   384 ,-100, "Russia:Asian_part")
+ix=ix+1
+IC_RUSS_EURO = ix
+Country(IC_RUSS_EURO) = cc( "RUSS_EURO",  385 , F,   385 ,-100, "Russia:European_part")
+ix=ix+1
+IC_THAI_BANG = ix
+Country(IC_THAI_BANG) = cc( "THAI_BANG",  386 , F,   386 ,-100, "Thailand:Bangkok_Metropolitan_Region")
+ix=ix+1
+IC_THAI_CVAL = ix
+Country(IC_THAI_CVAL) = cc( "THAI_CVAL",  387 , F,   387 ,-100, "Thailand:Central_Valley")
+ix=ix+1
+IC_THAI_NEPL = ix
+Country(IC_THAI_NEPL) = cc( "THAI_NEPL",  388 , F,   388 ,-100, "Thailand:NE_Plateau")
+ix=ix+1
+IC_THAI_NHIG = ix
+Country(IC_THAI_NHIG) = cc( "THAI_NHIG",  389 , F,   389 ,-100, "Thailand:N_Highlands")
+ix=ix+1
+IC_THAI_SPEN = ix
+Country(IC_THAI_SPEN) = cc( "THAI_SPEN",  390 , F,   390 ,-100, "Thailand:S_Peninsula")
+ix=ix+1
+IC_IRAN_REST = ix
+Country(IC_IRAN_REST) = cc( "IRAN_REST",  391 , F,   391 ,-100, "Iran:Rest_of_Iran")
+ix=ix+1
+IC_IRAN_TEHR = ix
+Country(IC_IRAN_TEHR) = cc( "IRAN_TEHR",  392 , F,   392 ,-100, "Iran:Teheran")
 
 NLAND=ix !actual number of countries defined
 
