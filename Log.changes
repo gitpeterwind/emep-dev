@@ -154,13 +154,22 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+19th Oct 2016 Alvaro, 3306
+
+run.pl:
+- On FORECAST mode, fix year change for 12UTC meteo.
+
+ZD_3DVar/Analysis/DA_3DVar_ml:
+- fix chemgroups type changes after 3290
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 18th Oct 2016 Agnes, 3305
 
 Country_ml, Emissions_ml
 -New sub-regions in Asia added for the UNEP-SR project (IIASA) in
 Country_ml. The new sub-region abbrevations are 9 digit long, therefore the
 format of writing the emission table into the log file has been changed in
-Emissions_ml (before only 4 digits of the country name abbrevations were visible in the emission table). 
+Emissions_ml (before only 4 digits of the country name abbrevations were visible in the emission table).
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 7th Oct 2016, Alvaro, 3304

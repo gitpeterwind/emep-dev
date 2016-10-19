@@ -118,7 +118,7 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
- ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3260","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
+ ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3306","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
 #($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3074","EmChem09soa","EMEPGLOB","EMEPSTD","GLOBAL",0);
 
 my %BENCHMARK;
@@ -290,7 +290,7 @@ if ($STALLO) {
   $DataDir  = "$HOMEROOT/mifapw/work/Data";
   $DataDir  = "$CWF_DIR/Data" if $CWF and -d $CWF_DIR;
   $MetDir   = "$DataDir/$GRID/metdata_EC/$year";
-  $MetDir   = "$DataDir/$GRID/metdata_CWF/$year"
+  $MetDir   = "$DataDir/$GRID/metdata_CWF/YYYY"
               .sprintf("_%02dUTC",($CWFMETV%24)) if $CWF; # 00/12 UTC versions
   $MetDir   = "/prod/forecast/work/emep/ec/prepmet" if $eCWF and ($USER eq $FORCAST);
   $MetDir   = "$CWF_WRK/".sprintf("prepmet_%02d",($CWFMETV%24)) if $CWF and -d $CWF_WRK;

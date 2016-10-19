@@ -163,13 +163,13 @@ namelist /DA_CONFIG/ analysis_date, nChem, nChemObs,&
 !+------------------------------------------------------------------
   k=find_index("DAOBS",chemgroups(:)%name)
   call CheckStop(k<1,HERE('DA group not found: "DAOBS"'))
-  nChemObs=size(chemgroups(k)%ptr)
-  obsVarName(:nChemObs)=species(chemgroups(k)%ptr)%name
+  nChemObs=size(chemgroups(k)%specs)
+  obsVarName(:nChemObs)=species(chemgroups(k)%specs)%name
   varName(:nChemObs)=obsVarName(:nChemObs)
   k=find_index("DAUNOBS",chemgroups(:)%name)
   if(k>0)then
-  nChem=nChemObs+size(chemgroups(k)%ptr(:))
-    varName(nChemObs+1:nChem)=species(chemgroups(k)%ptr)%name
+  nChem=nChemObs+size(chemgroups(k)%specs(:))
+    varName(nChemObs+1:nChem)=species(chemgroups(k)%specs)%name
   else
     use_unobserved=.false.
     nChem=nChemObs
