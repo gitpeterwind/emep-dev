@@ -427,17 +427,17 @@ contains
     k = find_index("DAOBS",chemgroups(:)%name)
     call CheckStop(k<1,'DA group not found: "DAOBS".')
     ! count:
-    nChemObs = size(chemgroups(k)%ptr)
+    nChemObs = size(chemgroups(k)%specs)
     ! copy names from this chemgroup:
-    obsVarName(1:nChemObs) = species(chemgroups(k)%ptr(:))%name
+    obsVarName(1:nChemObs) = species(chemgroups(k)%specs(:))%name
     ! copy:
     varName(1:nChemObs) = obsVarName(1:nChemObs)
 
     ! find index of 'DAUNOBS' in 'chemgroups' array:
     k=find_index("DAUNOBS",chemgroups(:)%name)
     if ( k > 0 ) then
-      nChem = nChemObs+size(chemgroups(k)%ptr(:))
-      varName(nChemObs+1:nChem) = species(chemgroups(k)%ptr(:))%name
+      nChem = nChemObs+size(chemgroups(k)%specs(:))
+      varName(nChemObs+1:nChem) = species(chemgroups(k)%specs(:))%name
     else
       nChem = nChemObs
       if ( MasterProc ) print dafmt,'WARNING: DA group not found: "DAUNOBS".'
