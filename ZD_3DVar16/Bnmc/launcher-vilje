@@ -1,0 +1,222 @@
+#! /bin/sh
+
+# exit on error:
+set -e
+
+
+#------------------------------------------------
+# names
+#------------------------------------------------
+
+# script name:
+prog='launcher'
+
+# basename for temporary (log) files etc:
+bname='emep-nmc'
+
+#------------------------------------------------
+# arguments
+#------------------------------------------------
+
+# defaults:
+clean=''
+
+# loop:
+for arg in $* ; do
+  case ${arg} in
+    -h | --help )
+      echo "Usage:"
+      echo "  $prog [-c|--clean]"
+      echo "  $prog -h|--help"
+      exit 0
+      ;;
+    -c | --clean )
+      clean='True'
+      ;;
+    * )
+      echo "$prog - ERROR - unsupported argument '${arg}'"
+      exit 1
+  esac
+done
+
+
+
+#------------------------------------------------
+# info
+#------------------------------------------------
+
+# info ...
+echo "$prog - "
+echo "$prog - Start at `date`"
+echo "$prog - "
+
+
+#------------------------------------------------
+# settings
+#------------------------------------------------
+
+# settings:
+rcfile_orig="rc/${bname}.rc"
+#cfile_orig="rc/emep-nmc__batch03.rc"
+
+# trap problems in rcfile ...
+if ! ( ./bin/rcget ${rcfile_orig} 'run.dir' > /dev/null ) ; then
+  ./bin/rcget ${rcfile_orig} 'run.dir'
+  echo "$prog - ERROR - reading 'run.dir' directory from '${rcfile_orig}'"
+  exit 1
+fi
+# shoud work now ...
+rundir=`./bin/rcget ${rcfile_orig} 'run.dir'`
+# info ...
+echo "$prog - rundir : ${rundir}"
+# create ?
+test ! -d ${rundir} && mkdir -p ${rundir}
+
+# target settings:
+rcfile="${rundir}/${bname}.rc"
+# info ...
+echo "$prog - preprocess rcfile .."
+echo "$prog -   ${rcfile}"
+# preprocess:
+./bin/rcget ${rcfile_orig} --write > ${rcfile}
+
+
+#------------------------------------------------
+# output
+#------------------------------------------------
+
+# info ...
+echo "$prog - output directory .."
+
+# output directory:
+outdir=`./bin/rcget ${rcfile} 'output.dir'`
+# create if necessary:
+test ! -d ${outdir} && /bin/mkdir -p ${outdir}
+
+
+#------------------------------------------------
+# compile
+#------------------------------------------------
+
+# info ...
+echo "$prog - build .."
+
+# build directory:
+builddir="${rundir}/src"
+# create:
+test ! -d ${builddir} && /bin/mkdir -p ${builddir}
+# info ...
+echo "$prog - copy code to ${builddir} ..."
+# copy code, preserve dates:
+/bin/cp -p src/* ${builddir}
+
+# which flags ?
+flags=`./bin/rcget ${rcfile} 'compiler.flags'`
+
+# which exe ?
+exe='emep_nmc.x'
+
+# goto:
+cwd="${PWD}"
+cd ${builddir}
+# build:
+test -n "${clean}"  &&  make clean
+#make ${exe} flags=${flags} with_mpi=True
+make ${exe} machine='vilje' flags="${flags}"
+make install exe="${exe}" prefix="${rundir}"
+# back:
+cd ${cwd}
+
+
+#------------------------------------------------
+# submit
+#------------------------------------------------
+
+# info ...
+echo "$prog - create job file ..."
+
+# account name (from 'cost -u ${USER}'):
+account=`./bin/rcget ${rcfile} 'job.account'`
+
+# resources:
+walltime=`./bin/rcget ${rcfile} 'job.walltime'`
+
+# job file:
+jbfile="${bname}.jb"
+
+# fill:
+/bin/cat > ${rundir}/${jbfile} << EOF
+#! /bin/sh
+
+#PBS -N ${bname}
+#PBS -A ${account}
+#PBS -l walltime="${walltime}"
+#PBS -l select=1:ncpus=32:ompthreads=32
+#xPBS -l select=1:ncpus=1:mem=4gb
+#PBS -o ${rundir}/${bname}.out
+#PBS -e ${rundir}/${bname}.err
+
+# exit on error:
+set -e
+
+# environment:
+module load intelcomp/14.0.1
+module load mpt/2.09
+module load hdf5/1.8.12
+module load netcdf/4.3.1
+module load fftw/3.3.4
+
+# permissions:
+umask 022
+
+# goto rundir:
+cd ${rundir}
+
+# run:
+./bin/${exe} ${rcfile}
+
+EOF
+
+# make executable for testing:
+chmod a+x ${rundir}/${jbfile}
+
+# where to ?
+dest=`./bin/rcget ${rcfile} 'submit.to'`
+
+# switch:
+if [ "${dest}" == "foreground" ]; then
+
+  # info ...
+  echo "$prog - run ..."
+  # goto rundir:
+  cd ${rundir}
+  # run:
+  ./${jbfile}
+
+elif [ "${dest}" == "queue" ]; then
+
+  # info ...
+  echo "$prog - submit ..."
+  # submit:
+  qsub ${rundir}/${jbfile}
+
+else
+  echo "$prog - ERROR - unsupported run destination '${dest}'"
+  exit 1
+fi
+
+
+#------------------------------------------------
+# done
+#------------------------------------------------
+
+# info ...
+echo "$prog - "
+echo "$prog - End at `date`"
+echo "$prog - "
+
+#------------------------------------------------
+# end
+#------------------------------------------------
+
+
