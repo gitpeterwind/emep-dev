@@ -1,0 +1,64 @@
+# git ls-files --others --exclude-from=.git/info/exclude
+# Lines that start with '#' are comments.
+# For a project mostly in C, the following would be a good set of
+# exclude patterns (uncomment them if you want to use them):
+# *.[oa]
+# *~
+
+### git svn show-ignore
+/.project
+
+### https://github.com/github/gitignore/blob/master/Fortran.gitignore
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+### Unimod specific
+
+# GenChem output
+CM_*.txt
+CM_*.csv
+CM_*.inc
+CM_*.f90
+BiomassBurningMapping.inc
+GenIn.*
+*GenOut*
+femis.defaults
+
+# Makefile output
+/My_*.f90
+/Pollen*_ml.f90
+.depend
+Unimod
+Unimod_3DVar
+ZD_3DVar/fftpack5
+ZD_3DVar/m1qn3-3.3-distrib
+ZD_3DVar16/tools/PortGO.md
+ZD_3DVar16/Makefile.deps
