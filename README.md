@@ -4,7 +4,7 @@
 ### I only want to run the model
 Get the latest stable model version from the `master` branch
 ```bash
-clone -b master --single-branch git@github.com:metno/emep-mscw.git
+git clone -b master --single-branch git@github.com:metno/emep-mscw.git
 ```
 
 #### I want a specific source/status run version
@@ -21,7 +21,7 @@ git checkout -b status2016 rv4_9
 ### I want to develop the model
 Get the develoment version from the `dev` branch
 ```bash
-clone -b dev --single-branch git@github.com:metno/emep-mscw.git
+git clone -b dev --single-branch git@github.com:metno/emep-mscw.git
 ```
 
 Try to:
