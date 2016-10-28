@@ -1182,7 +1182,7 @@ contains
       ! loop over levels:
       do ilev = 1, self%nlev
         ! skip if fixed:
-        if ( self%fixed(ilev,itr) ) cycle
+        if ( self%fixed(ilev,itr)==1 ) cycle
         ! scale:
         x_f(:,:,ilev,itr) = x_f(:,:,ilev,itr) * self%sqrt_phi(ilev,itracer,itime)
       end do ! levels

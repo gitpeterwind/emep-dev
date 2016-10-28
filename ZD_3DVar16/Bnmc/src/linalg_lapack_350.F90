@@ -8,9 +8,9 @@
 !
 !######################################################################
 
-#ifdef with_lapack
-
 module LinAlg_LaPack_350
+
+#ifdef with_lapack
 
   implicit none
   
@@ -287,7 +287,7 @@ contains
     end if
     
   end subroutine lapack_350_dSyEvR
-    
-end module LinAlg_LaPack_350
 
 #endif
+    
+end module LinAlg_LaPack_350

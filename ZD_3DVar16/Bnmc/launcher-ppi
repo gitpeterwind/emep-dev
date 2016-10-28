@@ -3,13 +3,17 @@
 # exit on error:
 set -e
 
+. /etc/profile
+module load netcdf/4.3.3-fortran-4.2-metno
+module load OpenMPI/1.8.2
+export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$MPI_HOME/lib/pkgconfig
 
 #------------------------------------------------
 # names
 #------------------------------------------------
 
 # hpc/machine name:
-hpc='vilje'
+hpc='ppi'
 
 # script name:
 prog='launcher'
@@ -60,7 +64,6 @@ echo "$prog - "
 
 # settings:
 rcfile_orig="rc/${bname}.rc"
-#cfile_orig="rc/emep-nmc__batch03.rc"
 
 # trap problems in rcfile ...
 if ! ( ./bin/rcget ${rcfile_orig} 'run.dir' > /dev/null ) ; then
@@ -111,7 +114,8 @@ test ! -d ${builddir} && /bin/mkdir -p ${builddir}
 # info ...
 echo "$prog - copy code to ${builddir} ..."
 # copy code, preserve dates:
-/bin/cp -p src/* ${builddir}
+#/bin/cp -p src/* ${builddir}
+rsync -auhPC src/* ${builddir}
 
 # which flags ?
 flags=`./bin/rcget ${rcfile} 'compiler.flags'`
@@ -123,10 +127,10 @@ exe='emep_nmc.x'
 cwd="${PWD}"
 cd ${builddir}
 # build:
-test -n "${clean}"  &&  make clean
-#make ${exe} flags=${flags} with_mpi=True
-make ${exe} machine=${hpc} flags="${flags}"
-make install exe="${exe}" prefix="${rundir}"
+test -n "${clean}"  &&  $make clean
+#make ${exe} flags=${flags} with_mpi=T
+make ${exe} machine=${hpc} flags=${flags}
+make install exe=${exe} prefix=${rundir}
 # back:
 cd ${cwd}
 
@@ -151,23 +155,19 @@ jbfile="${bname}.jb"
 /bin/cat > ${rundir}/${jbfile} << EOF
 #! /bin/sh
 
-#PBS -N ${bname}
-#PBS -A ${account}
-#PBS -l walltime="${walltime}"
-#PBS -l select=1:ncpus=32:ompthreads=32
-#xPBS -l select=1:ncpus=1:mem=4gb
-#PBS -o ${rundir}/${bname}.out
-#PBS -e ${rundir}/${bname}.err
+#$ -N ${bname}
+#$ -S /bin/sh
+#$ -j y
+#$ -l h_rt=${walltime}
+#$ -o ${rundir}/${bname}.out
+#$ -e ${rundir}/${bname}.err
 
 # exit on error:
 set -e
 
 # environment:
-module load intelcomp/14.0.1
-module load mpt/2.09
-module load hdf5/1.8.12
-module load netcdf/4.3.1
-module load fftw/3.3.4
+module load netcdf/4.3.3-fortran-4.2-metno
+module load OpenMPI/1.8.2
 
 # permissions:
 umask 022
@@ -185,9 +185,10 @@ chmod a+x ${rundir}/${jbfile}
 
 # where to ?
 dest=`./bin/rcget ${rcfile} 'submit.to'`
+echo "submit.to ${dest}"
 
 # switch:
-if [ "${dest}" == "foreground" ]; then
+if [ "${dest}" = "foreground" ]; then
 
   # info ...
   echo "$prog - run ..."
@@ -196,7 +197,7 @@ if [ "${dest}" == "foreground" ]; then
   # run:
   ./${jbfile}
 
-elif [ "${dest}" == "queue" ]; then
+elif [ "${dest}" = "queue" ]; then
 
   # info ...
   echo "$prog - submit ..."
