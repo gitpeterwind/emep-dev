@@ -154,6 +154,13 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+28th Oct 2016 Alvaro, from dev branch
+
+First git pull request:
+- add .gitignore
+- update README.md with git usage
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 19th,24th Oct 2016 Alvaro, 3306-3307
 
 run.pl:
