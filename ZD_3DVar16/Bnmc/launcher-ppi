@@ -161,11 +161,14 @@ jbfile="${bname}.jb"
 #$ -l h_rt=${walltime}
 #$ -o ${rundir}/${bname}.out
 #$ -e ${rundir}/${bname}.err
+trusty:
+#$ -q ded-parallel.q
 
 # exit on error:
 set -e
 
 # environment:
+. /etc/profile
 module load netcdf/4.3.3-fortran-4.2-metno
 module load OpenMPI/1.8.2
 

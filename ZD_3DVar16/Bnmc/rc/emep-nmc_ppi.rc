@@ -93,7 +93,7 @@ nmc.variables   :  PM10
 !
 
 ! filename template:
-my.files          :  /lustre/storeB/project/fou/kl/emep/ModelRuns/CWF/nmc/MACC14_svn3304/NMC_%{id}_%{yyyy}%{mm}.nc
+my.files          :  /lustre/storeB/project/fou/kl/emep/ModelRuns/CWF/nmc/MACC14_svn3304/NMC%{id}_%{yyyy}%{mm}_%{hh}.nc
 
 ! run with '00' meteo:
 nmc.run.00.file       :  ${my.files}
