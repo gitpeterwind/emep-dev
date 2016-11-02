@@ -368,7 +368,7 @@ contains
     
     ! --- local ----------------------------------
     
-    integer                 ::  yyyy, mm, dd
+    integer                 ::  yyyy, mm, dd, hh
     character(len=1024)     ::  filename
     logical                 ::  exist
     integer                 ::  ncid, dimid, varid
@@ -387,7 +387,7 @@ contains
     ! --- begin ----------------------------------
     
     ! get time values:
-    call Get( t, year=yyyy, month=mm, day=dd )
+    call Get( t, year=yyyy, month=mm, day=dd, hour=hh )
     
     ! filename, replace keys:
     filename = trim(self%filename_template)
@@ -396,6 +396,8 @@ contains
     call goReplace( filename, '%{mm}'  , '(i2.2)', mm  , status )
     IF_NOT_OK_RETURN(status=1)
     call goReplace( filename, '%{dd}'  , '(i2.2)', dd  , status )
+    IF_NOT_OK_RETURN(status=1)
+    call goReplace( filename, '%{hh}'  , '(i2.2)', hh  , status )
     IF_NOT_OK_RETURN(status=1)
     
     ! different from curren ?

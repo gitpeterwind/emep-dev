@@ -384,6 +384,8 @@ contains
     IF_NOT_OK_RETURN(status=1)
     call goReplace( filename, '%{dd}'  , '(i2.2)', self%tday1%day  , status )
     IF_NOT_OK_RETURN(status=1)
+    call goReplace( filename, '%{hh}'  , '(i2.2)', self%tday1%hour , status )
+    IF_NOT_OK_RETURN(status=1)
           
     ! open file with scaling:
     call inp_file%Open( trim(filename), status )

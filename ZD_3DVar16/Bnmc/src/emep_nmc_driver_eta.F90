@@ -234,6 +234,8 @@ contains
       IF_NOT_OK_RETURN(status=1)
       call goReplace( filename, '%{dd}'  , '(i2.2)', tday%day  , status )
       IF_NOT_OK_RETURN(status=1)
+      call goReplace( filename, '%{hh}'  , '(i2.2)', tday%hour , status )
+      IF_NOT_OK_RETURN(status=1)
       
       ! new ?
       if ( trim(filename) /= trim(eps_filename) ) then
