@@ -13,7 +13,8 @@
 my.batch        :  batch-03
 
 ! produce per tracer:
-my.runid        :  NO2_2010
+my.runid        :  ${RUNID}  
+!my.runid        :  NO2_2010
 !my.runid        :  O3_2010
 !my.runid        :  SO2_2010
 !my.runid        :  CO_2010
@@ -37,7 +38,7 @@ compiler.flags    :  optim
 submit.to         :  queue
 
 ! resources:
-job.walltime      :  4:00:00
+job.walltime      : 12:00:00
 
 ! job directory:
 job.dir           :  /lustre/storeB/users/${USER}/Bnmc/${my.batch}/${my.runid}
@@ -93,7 +94,11 @@ nmc.variables   :  PM10
 !
 
 ! filename template:
-my.files          :  /lustre/storeB/project/fou/kl/emep/ModelRuns/CWF/nmc/MACC14_svn3304/NMC%{id}_%{yyyy}%{mm}_%{hh}.nc
+#if "${my.runid}".startswith("PM")
+my.files : /lustre/storeB/project/fou/kl/emep/ModelRuns/CWF/nmc/MACC14_svn3304/NMC%{id}-%{yyyy}_hourInst.nc
+#else
+my.files : /lustre/storeB/project/fou/kl/emep/ModelRuns/CWF/nmc/MACC14_svn3304/NMC%{id}_%{yyyy}%{mm}_%{hh}.nc
+#endif
 
 ! run with '00' meteo:
 nmc.run.00.file       :  ${my.files}
@@ -101,8 +106,8 @@ nmc.run.00.var.NO2    :  NO2
 nmc.run.00.var.O3     :  O3
 nmc.run.00.var.SO2    :  SO2
 nmc.run.00.var.CO     :  CO
-nmc.run.00.var.PM25   :  PMFINE
-nmc.run.00.var.PM10   :  PM10
+nmc.run.00.var.PM25   :  D3_ug_PM25_wet
+nmc.run.00.var.PM10   :  D3_ug_PM10_wet
 
 ! run with '12' meteo:
 nmc.run.12.file       :  ${my.files}
@@ -110,8 +115,8 @@ nmc.run.12.var.NO2    :  NO2
 nmc.run.12.var.O3     :  O3
 nmc.run.12.var.SO2    :  SO2
 nmc.run.12.var.CO     :  CO
-nmc.run.12.var.PM25   :  PMFINE
-nmc.run.12.var.PM10   :  PM10
+nmc.run.12.var.PM25   :  D3_ug_PM25_wet
+nmc.run.12.var.PM10   :  D3_ug_PM10_wet
 
 
 ! time range in days:
