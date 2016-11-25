@@ -232,9 +232,9 @@ rcemis:NH3                               = NH3 ;
 *
 * <----------- Biogenic/natural emissions ----------------------------->
 *
-rcbio(BIO_ISOP,k)                       = C5H8    ;
-* rcbio(BIO_TERP,k)                       = TERP ;
-rcbio(BIO_SOILNO,k)                     = NO ;
+rcbio:C5H8                       = C5H8    ;
+rcbio:APINENE                       = TERP ;
+rcbio:NO                     = NO ;
 * ISOTOPES rc_Rn222(k)                                = Rn222    ;
 * 
 * Deposition
@@ -313,8 +313,9 @@ aqrck(ICLRC3,k)                          SO2 + {Fe} = SO4   ;
 *
 *----- Uptake Processes ------------------------------------ ;
 *
-_func_RiemerN2O5()                       N2O5 = 2. HNO3 ;
-_func_kaero()                            HNO3 = NO3_c ;
+*N16 _func_RiemerN2O5()                       N2O5 = 2. HNO3 ;
+_func_HydrolysisN2O5()                   N2O5 = 2 HNO3 ;
+*N16 _func_kaero()                            HNO3 = NO3_c ;
 *
 *----- Aerosol reactions (crude....)------------------------ ;
 *
