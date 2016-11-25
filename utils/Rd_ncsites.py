@@ -10,6 +10,9 @@ import pdb
 import calendar # for days in months
 import argparse # argument passing to script
 
+# author: Hannah Imhof, Chalmers, 2016, 
+# loosely based upon David Simpson's Rd_csvsites.f90
+# but for netcdf files and adding plotting functionality
 
 #  Reads from input file (e.g. model file sites_2007.nc say), and provides
 #  various outputs for a chosen pollutant. Also does plots for several sites
