@@ -428,32 +428,26 @@ function scale_factor(spc) result(scale)
   character(len=*), intent(in)  :: spc
   real :: scale
   integer :: g
+
+  scale=f_wind(u10,Grid%wstar)           & ! wind dependence
+       *f_cond(relhum,RH_LOW,RH_HIGH)    & ! rh dependence
+       *f_cond(prec,PREC_MIN,PREC_MAX)     ! precipitation dependence
   select case(spc)
   case(BIRCH)
     g=1
-    scale=birch_corr(i,j)*(t2_nwp(i,j,1)-T_cutoff_birch)/dH_birch &
-      *f_wind(u10,Grid%wstar)           & ! wind dependece
-      ! probability for flowering to start
-      *f_in(heatsum(i,j,g),birch_h_c(i,j),PROB_IN_birch) &
-      ! probability for flowering to end
-      *f_out(R(i,j,g),N_TOT(g),PROB_OUT_birch) &
-      *f_cond(relhum,RH_LOW,RH_HIGH)    & ! rh dependence
-      *f_cond(prec,PREC_MIN,PREC_MAX)     ! precipitation dependence
+    scale = scale*birch_corr(i,j) &
+      *(t2_nwp(i,j,1)-T_cutoff_birch)/dH_birch &
+      *f_in(heatsum(i,j,g),birch_h_c(i,j),PROB_IN_birch) &  ! prob. flowering start
+      *f_out(R(i,j,g),N_TOT(g),PROB_OUT_birch)              ! prob. flowering end
   case(OLIVE)
     g=2
-    scale=(t2_nwp(i,j,1)-T_cutoff_olive)/dH_olive &
-      *f_wind(u10,Grid%wstar)           & ! wind dependece
-      ! probability for flowering to start
-      *f_in(heatsum(i,j,g),olive_h_c(i,j),PROB_IN_olive) &
-      ! probability for flowering to end
-      *f_out(R(i,j,g),N_TOT(g),PROB_OUT_olive)&
-      *f_cond(relhum,RH_LOW,RH_HIGH)    & ! rh dependence
-      *f_cond(prec,PREC_MIN,PREC_MAX)     ! precipitation dependence
+    scale = scale &
+      *(t2_nwp(i,j,1)-T_cutoff_olive)/dH_olive &
+      *f_in(heatsum(i,j,g),olive_h_c(i,j),PROB_IN_olive) &  ! prob. flowering start
+      *f_out(R(i,j,g),N_TOT(g),PROB_OUT_olive)              ! prob. flowering end
   case(GRASS//'linear')   ! emission mass assuming linear release
     g=3
-    scale=f_wind(u10,Grid%wstar)        & ! wind dependece
-      *f_cond(relhum,RH_LOW,RH_HIGH)    & ! rh dependence
-      *(1.0-prec/PREC_MAX)              & ! precipitation dependence
+    scale = scale &
       *f_fade_in (real(daynumber)/grass_start(i,j), &
                   uncert_grass_day/grass_start(i,j))& ! fade-in
       *f_fade_out(real(daynumber)/grass_end(i,j),   &
@@ -464,10 +458,16 @@ function scale_factor(spc) result(scale)
     scale = scale/(grass_end(i,j)-daynumber+uncert_grass_day)&
                  /(grass_end(i,j)-grass_start(i,j))/86400.0
   case(GRASS//'gamma')    ! assume the modified "taily" Gamma distribution of the season
-    scale = f_gamma_w_tails((real(daynumber)-grass_start(i,j))  & ! days since season start
-                            /(grass_end(i,j)-grass_start(i,j)), & ! season lenght
-                             dt/86400.0                         & ! timestep in days
-                            /(grass_end(i,j)-grass_start(i,j)))   ! season lenght
+    g=3
+    scale = scale&
+      *f_gamma_w_tails((real(daynumber)-grass_start(i,j))  & ! days since season start
+                       /(grass_end(i,j)-grass_start(i,j)), & ! season length
+                        dt/86400.0                         & ! timestep in days
+                       /(grass_end(i,j)-grass_start(i,j))) & ! season length
+      *f_fade_out(R(i,j,g)/N_TOT(g),&
+                  1.0-uncert_tot_grass_poll)          ! total-pollen fade-out
+     ! Full-emission rate is total pollen divided by the total duration of the season
+     scale = scale/(grass_end(i,j)-daynumber+uncert_grass_day)
   case default
     call CheckStop("Unknown pollen type: "//trim(spc))
   end select
@@ -557,7 +557,7 @@ function f_gamma_w_tails(relTime,relDt) result(ff)
 contains
 real function rate(a,x)
   real, intent(in) :: a,x
-  rate=a*sum(scales*DIM(x,timesRel)**powers)  ! DIM(a,b):=max(a-b,0)
+  rate=a*sum(scales*(x-timesRel)**powers,MASK=(x>timesRel))
 end function rate
 end function f_gamma_w_tails
 function f_wind(u,wstar) result(ff)
