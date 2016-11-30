@@ -459,7 +459,7 @@ function scale_factor(spc) result(scale)
                  /(grass_end(i,j)-grass_start(i,j))/86400.0
   case(GRASS//'gamma')    ! assume the modified "taily" Gamma distribution of the season
     g=3
-    scale = scale&
+    scale = scale &
       *f_gamma_w_tails((real(daynumber)-grass_start(i,j))  & ! days since season start
                        /(grass_end(i,j)-grass_start(i,j)), & ! season length
                         dt/86400.0                         & ! timestep in days
