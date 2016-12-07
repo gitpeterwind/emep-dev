@@ -159,6 +159,12 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 top vertical level allowed to be exactly = top met level
 The code stopped because of numerical differences when they where exactly =.
 
+Better interpolation for fine resolution model grids:
+Bilinear interpoaltion is used when going interpolating from a coarse lat-lon grid 
+into a fine resolution model grid (specially useful for emissions).
+Also the interpolation from polarstereographic is now using a finer subdivision of 
+gridcells; this may however increase the time for interpolating landuse.
+
 (and testing git!)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

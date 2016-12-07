@@ -525,7 +525,7 @@ contains
     integer :: status,South_pole,North_pole
     real :: x1,x2,x3,x4,P0,x,y,mpi_out
     logical::found_hybrid=.false.
-    real :: CEN_LAT, CEN_LON,P_TOP_MET
+    real :: CEN_LAT, CEN_LON,P_TOP_MET, WRF_DY
     real :: rb,rl,rp,dx,dy,dy2,glmax,glmin,v2(2),glon_fdom1,glat_fdom1
     integer :: iloc_start, iloc_end,jloc_start, jloc_end
 
@@ -820,7 +820,17 @@ contains
           !WRF  format
           call check(nf90_inq_varid(ncid=ncFileID, name="MAPFAC_UY", varID=varID))
           call nf90_get_var_extended(ncFileID,varID,xm_j_ext,-1,LIMAX+2,-1,LJMAX+2,ishift_in=1)!NB:shift i by 1 since wrf start at left face
-       end if
+          status = nf90_get_att(ncFileID,nf90_global,"DY",WRF_DY)
+          if(status == nf90_noerr) then
+             !WRF uses DY/MAPFAC_UY while emep uses GRIDWIDTH_M/xm_j for the y size
+             if(abs(GRIDWIDTH_M/WRF_DY-1.0)>1.E-6)then
+                if(MasterProc)write(*,*)"rescaling y mapfactors with = ",GRIDWIDTH_M/WRF_DY
+                xm_j_ext=xm_j_ext*GRIDWIDTH_M/WRF_DY
+             endif
+          else
+              if(MasterProc)write(*,*)"not rescaling y mapfactors"        
+          endif
+        end if
 
        !define xm2, xm_i and xm_j now
        !Note that xm is inverse length: interpolate 1/xm rather than xm

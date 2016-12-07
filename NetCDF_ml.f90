@@ -1206,10 +1206,10 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,out_DOMAIN,ik,&
         call check(nf90_inq_dimid(ncFileID,"k"  ,kdimID),"dim:k")
       end if
       ! only i,j coords can be handled for PS so far.
-      ! Posisble x,y would give wrong dimID. 
+      ! Possible x,y would give wrong dimID. 
       ! Check if all dims are found:
       call CheckStop(any([idimID,jdimID,kdimID]<0),&
-           "ReadField_CDF: no dimID found for"//trim(fileName_given))
+           "Out_NetCDF: no dimID found for"//trim(fileName_given))
       
       call check(nf90_inquire_dimension(ncFileID,idimID,len=GIMAX_old),"len:i")
       call check(nf90_inquire_dimension(ncFileID,jdimID,len=GJMAX_old),"len:j")
@@ -1869,7 +1869,7 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,&
         ' has different dimensions than model grid: ',&
         dims(1:2),' instead of ',IIFULLDOM,JJFULLDOM
     call CheckStop(.not.present(i_start),'GetCDF_modelgrid: incompatible grid.&
-       & This routine does not interpolate. Give i_start, j_start')
+       & This routine does not interpolate. Give i_start, j_start '//trim(fileName))
   end if
 
   if(ndims>3.and.dims(3)>k_end)then
@@ -2195,8 +2195,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   integer :: startvec(NF90_MAX_VAR_DIMS),Nstartvec(NF90_MAX_VAR_DIMS)
   integer ::alloc_err
   character*100 ::name,used_lat_name, used_lon_name
-  real :: scale,offset,scalefactors(2),dloni,dlati,dlonx,dlatx,dlony,dlaty,dlon,dlat
-  integer ::ij,jdiv,idiv,Ndiv,Ndiv2,igjgk,ig,jg,ijk,n,im,jm,ijm,iw
+  real :: scale,offset,scalefactors(2),dloni,dlati,dlonx,dlatx,dlony,dlaty,dlon,dlat,dx,dy,dx1,dy1,gdlon,gdlat
+  integer ::ij,jdiv,idiv,Ndiv,Ndiv2,igjgk,ig,jg,ijk,n,im,jm,ijm,iw,ig1,jg1,ig1jgk,ig1jg1k,igjg1k
   integer ::imin,imax,jmin,jjmin,jmax,igjg,k2
   integer, allocatable:: Ivalues(:)  ! I counts all data
   integer, allocatable:: Nvalues(:)  !ds counts all values
@@ -2223,6 +2223,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   integer ::N_out,Ng,Nmax,kstart_loc,kend_loc,lon_shift_Mask,startlat_Mask
   logical :: Reverse_lat_direction_Mask
   character(len=*),parameter  :: field_not_found='field_not_found'
+  real :: latlon_weight,lon_weight,lat_weight,low,high,normalize
 
   !_______________________________________________________________________________
   !
@@ -2862,6 +2863,72 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      end if
 
      if(interpol_used=='conservative'.or.interpol_used=='mass_conservative')then
+
+        if(projection=='lon lat' .and. Grid_resolution+0.01 > 2*GRIDWIDTH_M )then
+           !we do a bilinear interpolation, since it is both exact and faster than subdividing the gridcells
+        ijk=0
+        k2=1
+        if(data3D)k2=kend_loc-kstart_loc+1
+        gdlon=glon(2,1)-glon(1,1)
+        gdlat=glat(1,2)-glat(1,1)
+
+        do k=1,k2
+           do j=1,ljmax
+              do i=1,limax
+                 ij=i+(j-1)*LIMAX
+                 ijk=k+(ij-1)*k2
+                 Rvar(ijk)=0.0
+                 ig=floor((glon(i,j)-Rlon(startvec(1)))*dloni)+1
+                 if(ig<0.5)ig=ig+dims(1)
+                 if(ig>dims(1))ig=ig-dims(1)
+                 ig1 = ig+1
+                 if(ig1>dims(1))ig1=ig                 
+                 ig = max(1,min(dims(1),ig))
+                 jg = max(1,min(dims(2),floor((glat(i,j)-Rlat(startvec(2)))*dlati)+1))
+                 jg1 = jg+1
+                 if(jg1>dims(2))jg1=jg                 
+                 igjgk=ig +(jg-1)*dims(1)+(k-1)*dims(1)*dims(2)
+                 ig1jgk=ig1 +(jg-1)*dims(1)+(k-1)*dims(1)*dims(2)
+                 ig1jg1k=ig1 +(jg1-1)*dims(1)+(k-1)*dims(1)*dims(2)
+                 igjg1k=ig +(jg1-1)*dims(1)+(k-1)*dims(1)*dims(2)
+                 dx=glon(i,j)-Rlon(startvec(1)-1+ig)
+                 dx1=Rlon(startvec(1)-1+ig1)-glon(i,j)
+                 dy=glat(i,j)-Rlat(startvec(2)-1+jg)
+                 dy1=Rlat(startvec(2)-1+jg1)-glat(i,j)
+                 !weights: (1 - dx/(dx+dx1)) = dx1/(dx+dx1) 
+                 normalize = 1.0/((dx+dx1)*(dy+dy1)+1.E-10)
+                 if(interpol_used=='mass_conservative')normalize = normalize*gdlat*gdlon*dlati*dloni!scale for gridcell size differences
+
+                 if(OnlyDefinedValues.or.(Rvalues(igjgk)/=FillValue .and. .not.isnan(Rvalues(igjgk))))then
+                    if(fractions)then
+
+                    call readfrac(Ncc(igjgk),CC,Rvalues(igjgk),fraction_in,fractions_out,Ncc_out,CC_out,&
+                                  Rvar(ijk),dims(1)*dims(2),igjgk,ijk,dx1*dy1*normalize,Reduc)
+
+                    call readfrac(Ncc(ig1jgk),CC,Rvalues(ig1jgk),fraction_in,fractions_out,Ncc_out,CC_out,&
+                                  Rvar(ijk),dims(1)*dims(2),ig1jgk,ijk,dx*dy1*normalize,Reduc)
+
+                    call readfrac(Ncc(ig1jg1k),CC,Rvalues(ig1jg1k),fraction_in,fractions_out,Ncc_out,CC_out,&
+                                  Rvar(ijk),dims(1)*dims(2),ig1jg1k,ijk,dx*dy*normalize,Reduc)
+
+                    call readfrac(Ncc(igjg1k),CC,Rvalues(igjg1k),fraction_in,fractions_out,Ncc_out,CC_out,&
+                                  Rvar(ijk),dims(1)*dims(2),igjg1k,ijk,dx1*dy*normalize,Reduc)
+
+                    else
+                       Rvar(ijk) = ( Rvalues(igjgk)*(dx1*dy1) &
+                            + Rvalues(ig1jgk)*(dx*dy1) &
+                            + Rvalues(ig1jg1k)*(dx*dy) &
+                            + Rvalues(igjg1k)*(dx1*dy)) *normalize
+                    endif
+                 else
+                    Rvar(ijk)=UnDef
+                 end if
+              end do
+           end do
+        end do
+!
+        else
+
         !conserves integral (almost, does not take into account local differences in mapping factor)
         !takes weighted average over gridcells covered by model gridcell
 
@@ -2905,59 +2972,16 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                           Ivalues(ijk)=Ivalues(ijk)+1
                           Nvalues(ijk)=Nvalues(ijk)+1
                           igjgk=igjg+(k-1)*dims(1)*dims(2)
-                          
+                          latlon_weight=1.0
+
                           if(fractions)then
-                             do Ng=1,Ncc(igjgk)!number of fields at igjg as read
-                                do N_out=1,Ncc_out(ijk) !number of fields at ij already saved in the model grid
-                                   if(CC(igjgk,Ng)==CC_out(ijk,N_out))goto 731
-                                end do
-                                !the country is not yet used for this gridcell. Define it now
-                                Ncc_out(ijk)=Ncc_out(ijk)+1
-                                N_out=Ncc_out(ijk)
-                                CC_out(ijk, N_out)=CC(igjgk,Ng)
-                                fractions_out(ijk,N_out)=0.0
-731                             continue
-                                factor=1.0!default reduction factor
-                                !if(present(Reduc).and.CC(igjgk,Ng)>0.and.CC(igjgk,Ng)<=NLAND)factor=Reduc(CC(igjgk,Ng))                               
-                                if(present(Reduc).and.CC(igjgk,Ng)>0)then
-                                   ic=find_index(CC(igjgk,Ng),Country(:)%icode)
-                                   if(ic>NLAND.or.ic<1)then
-                                      write(*,*)"ReadField_cdf: COUNTRY CODE NOT RECOGNIZED OR UNDEFINED: ",&
-                                           CC(igjgk,Ng)
-                                      call StopAll("COUNTRY CODE NOT RECOGNIZED ")
-                                   end if
-                                   factor=Reduc(ic)
-                                end if
-                                !update fractions
-                                total=Rvar(ijk)+Rvalues(igjgk)*fraction_in(igjgk,Ng)*factor
-                                if(debug.and.fraction_in(igjgk,Ng)>1.001)then
-                                   write(*,*)'fractions_in TOO LARGE ',Ng,ig,jg,k,fraction_in(igjgk,Ng)
-                                   stop
-                                end if
-                                if(abs(total)>1.0E-30)then
-                                   do N=1,Ncc_out(ijk)
-                                      !reduce previously defined fractions
-                                      fractions_out(ijk,N)=fractions_out(ijk,N)*Rvar(ijk)/total
-                                   end do
-                                   !increase fraction of this country (yes, after having reduced it!)
-                                   fractions_out(ijk,N_out)=fractions_out(ijk,N_out)+Rvalues(igjgk)*fraction_in(igjgk,Ng)/total*factor
-                                else
-                                   !should try to keep proportions right in case cancellation of positive an negative; not finished!
-                                   do N=1,Ncc_out(ijk)
-                                      !reduce existing fractions
-                                      fractions_out(ijk,N)=fractions_out(ijk,N)/Ncc_out(ijk)
-                                   end do
-                                   !increase fraction of this country (yes, after having reduced it!)
-                                   fractions_out(ijk,N_out)=fractions_out(ijk,N_out)+Rvalues(igjgk)*fraction_in(igjgk,Ng)/Ncc_out(ijk)*factor
-                                end if
-                                Rvar(ijk)=total
-                             end do
+                             call readfrac(Ncc(igjgk),CC,Rvalues(igjgk),fraction_in,fractions_out,Ncc_out,CC_out,&
+                                  Rvar(ijk),dims(1)*dims(2),igjgk,ijk,latlon_weight,Reduc)
                           elseif(OnlyDefinedValues.or.Rvalues(igjgk)/=FillValue)then
                              Rvar(ijk)=Rvar(ijk)+Rvalues(igjgk)
                           else
                              !Not defined: don't include this Rvalue
-                             Ivalues(ijk)=Ivalues(ijk)-1
-                             
+                             Ivalues(ijk)=Ivalues(ijk)-1                             
                           end if
                        end do
 
@@ -3009,10 +3033,10 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
               end do
            end do
         end do
-
         deallocate(Ivalues)
         deallocate(Nvalues)
-
+       endif
+ 
      elseif(interpol_used=='zero_order')then
         !interpolation 1:
         !nearest gridcell
@@ -3123,7 +3147,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
         !divide the external grid into pieces significantly smaller than the fine grid
         !Divide each global gridcell into Ndiv x Ndiv pieces
-        Ndiv=nint(2*Grid_resolution/GRIDWIDTH_M)
+        Ndiv=nint(3*Grid_resolution/GRIDWIDTH_M)
         Ndiv=max(1,Ndiv)
         Ndiv2=Ndiv*Ndiv
         Grid_resolution_div=Grid_resolution/Ndiv
@@ -4369,4 +4393,63 @@ end subroutine vertical_interpolate
    end if
 
  end subroutine ReadSectorName
+
+ subroutine readfrac(Ncc,CC,Rvalues,fraction_in,fractions_out,Ncc_out,CC_out,val,dim1dim2,igjgk,ijk,latlon_weight,Reduc)
+   implicit none
+   real, optional,intent(in) :: Reduc(NLAND)
+   integer, intent(in) :: dim1dim2,igjgk,ijk
+   real, intent(inout) :: fractions_out(LIMAX*LJMAX,*),val
+   real, intent(in) :: Rvalues,fraction_in(dim1dim2,*),latlon_weight
+   integer, intent(inout)  ::Ncc_out(*), CC_out(LIMAX*LJMAX,*)
+   integer, intent(in)  ::Ncc,CC(dim1dim2,*)
+   integer :: N,Ng,N_out,ic
+   real :: factor, total
+
+   do Ng=1,Ncc!number of fields at igjg as read
+      do N_out=1,Ncc_out(ijk) !number of fields at ij already saved in the model grid
+         if(CC(igjgk,Ng)==CC_out(ijk,N_out))goto 737
+      end do
+      !the country is not yet used for this gridcell. Define it now
+      Ncc_out(ijk)=Ncc_out(ijk)+1
+      N_out=Ncc_out(ijk)
+      CC_out(ijk, N_out)=CC(igjgk,Ng)
+      fractions_out(ijk,N_out)=0.0
+737   continue
+      factor=1.0!default reduction factor
+      !if(present(Reduc).and.CC(igjgk,Ng)>0.and.CC(igjgk,Ng)<=NLAND)factor=Reduc(CC(igjgk,Ng))                               
+      if(present(Reduc).and.CC(igjgk,Ng)>0)then
+         ic=find_index(CC(igjgk,Ng),Country(:)%icode)
+         if(ic>NLAND.or.ic<1)then
+            write(*,*)"ReadField_cdf: COUNTRY CODE NOT RECOGNIZED OR UNDEFINED: ",&
+                 CC(igjgk,Ng)
+            call StopAll("COUNTRY CODE NOT RECOGNIZED ")
+         end if
+         factor=Reduc(ic)
+      end if
+      !update fractions
+      total=val+Rvalues*fraction_in(igjgk,Ng)*factor*latlon_weight
+!      if(debug.and.fraction_in(igjgk,Ng)>1.001)then
+!         write(*,*)'fractions_in TOO LARGE ',Ng,ig,jg,k,fraction_in(igjgk,Ng)
+!         stop
+!      end if
+      if(abs(total)>1.0E-30)then
+         do N=1,Ncc_out(ijk)
+            !reduce previously defined fractions
+            fractions_out(ijk,N)=fractions_out(ijk,N)*val/total
+         end do
+         !increase fraction of this country (yes, after having reduced it!)
+         fractions_out(ijk,N_out)=fractions_out(ijk,N_out)+Rvalues*fraction_in(igjgk,Ng)*latlon_weight/total*factor
+      else
+         !should try to keep proportions right in case cancellation of positive an negative; not finished!
+         do N=1,Ncc_out(ijk)
+            !reduce existing fractions
+            fractions_out(ijk,N)=fractions_out(ijk,N)/Ncc_out(ijk)
+         end do
+         !increase fraction of this country (yes, after having reduced it!)
+         fractions_out(ijk,N_out)=fractions_out(ijk,N_out)+Rvalues*fraction_in(igjgk,Ng)*latlon_weight/Ncc_out(ijk)*factor
+      end if
+      val=total
+   enddo
+ end subroutine readfrac
+
 endmodule NetCDF_ml
