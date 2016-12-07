@@ -932,7 +932,7 @@ contains
           if(me==0)write(*,44)k, A_bnd(k)+P0*B_bnd(k)
        end do
        !test if the top is within the height defined in the meteo files
-       if(me==0.and.External_Levels_Def.and.(A_bnd(1)+P0*B_bnd(1)<A_bnd_met(1)+P0*B_bnd_met(1)))then
+       if(me==0.and.External_Levels_Def.and.(A_bnd(1)+P0*B_bnd(1)+0.01<A_bnd_met(1)+P0*B_bnd_met(1)))then
           write(*,*)'Pressure at top of defined levels is ',A_bnd(1)+P0*B_bnd(1)
           write(*,*)'Pressure at top defined in meteo files is ',A_bnd_met(1)+P0*B_bnd_met(1)
           write(*,*)'Pressure at op must be higher (lower altitude) than top defined in meteo '
