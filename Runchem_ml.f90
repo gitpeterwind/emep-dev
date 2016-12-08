@@ -103,12 +103,16 @@ subroutine runchem()
 
       ! Prepare some near-surface grid and sub-scale meteorology for MicroMet
       call Get_CellMet(i,j,debug_flag) 
+      call Add_2timing(24,tim_after,tim_before,"Runchem:Get_CellMet ")
 
       ! we need to get the gas fraction of semivols:
       if ( ORGANIC_AEROSOLS ) call Init_OrganicAerosol(i,j,debug_flag)
+      call Add_2timing(25,tim_after,tim_before,"Runchem:OrganicAerosol")
 
       call setup_1d(i,j)   
+      call Add_2timing(26,tim_after,tim_before,"Runchem:setup_1d")
       call setup_rcemis(i,j) ! Sets initial rcemis=0.0
+      call Add_2timing(27,tim_after,tim_before,"Runchem:setup_rcemis ")
  
       if(USE_SEASALT)  &
         call SeaSalt_flux(i,j,debug_flag) ! sets rcemis(SEASALT_...)
@@ -128,7 +132,6 @@ subroutine runchem()
       call setup_bio(i,j)   ! Adds bio/nat to rcemis
 
       call emis_massbudget_1d(i,j)   ! Adds bio/nat to rcemis
-      call Add_2timing(28,tim_after,tim_before,"Runchem:setup_cl/bio")
 
       if(USE_FASTJ)then
 !         call setup_phot_fastj(i,j,errcode,0)! recalculate the column
@@ -139,7 +142,6 @@ subroutine runchem()
       end if
 
       call CheckStop(errcode,"setup_photerror in Runchem") 
-      call Add_2timing(29,tim_after,tim_before,"Runchem:1st setups")
 
       if(DEBUG%RUNCHEM.and.debug_flag) &
         call datewrite("Runchem Pre-Chem", (/ rcemis(NO,20), &
@@ -152,9 +154,7 @@ subroutine runchem()
         call OrganicAerosol(i,j,first_tstep,debug_flag)  ! J16 first_tstep added
       if(DEBUG%RUNCHEM) call check_negs(i,j,'B')
 
-      call Add_2timing(30,tim_after,tim_before,"Runchem:2nd setups")
-      call Add_2timing(27,tim_after,tim_before,"Runchem:setup_1d+rcemis")
-
+      call Add_2timing(28,tim_after,tim_before,"Runchem:other setups")
 !     if(DEBUG%RUNCHEM.and.debug_flag) &
 !       call datewrite("RUNCHEM PRE-CHEM",(/xn_2d(PPM25,20),xn_2d(AER_BGNDOC,20)/))
 !     !-------------------------------------------------
@@ -175,22 +175,26 @@ subroutine runchem()
         call datewrite("Runchem Post-Chem",(/xn_2d(NO,20),xn_2d(C5H8,20)/))
       !_________________________________________________
 
-      call Add_2timing(31,tim_after,tim_before,"Runchem:chemistry")
+      call Add_2timing(29,tim_after,tim_before,"Runchem:chemistry")
                 
       !  Alternating Dry Deposition and Equilibrium chemistry
       !  Check that one and only one eq is chosen
       if(mod(nstep,2)/=0) then 
         call AerosolEquilib(debug_flag)
+        call Add_2timing(30,tim_after,tim_before,"Runchem:AerosolEquilib")
         if(DEBUG%RUNCHEM) call check_negs(i,j,'D')
         !if(AERO%EQUILIB=='EMEP' ) call ammonium() 
         !if(AERO%EQUILIB=='MARS' ) call My_MARS(debug_flag)
         !if(AERO%EQUILIB=='EQSAM') call My_EQSAM(debug_flag) 
         call DryDep(i,j)
+        call Add_2timing(31,tim_after,tim_before,"Runchem:DryDep")
         if(DEBUG%RUNCHEM) call check_negs(i,j,'E')
       else !do drydep first, then eq
         call DryDep(i,j)
+        call Add_2timing(31,tim_after,tim_before,"Runchem:DryDep")
         if(DEBUG%RUNCHEM) call check_negs(i,j,'F')
         call AerosolEquilib(debug_flag)
+        call Add_2timing(30,tim_after,tim_before,"Runchem:AerosolEquilib")
         if(DEBUG%RUNCHEM) call check_negs(i,j,'G')
         !if(AERO%EQUILIB=='EMEP' ) call ammonium() 
         !if(AERO%EQUILIB=='MARS' ) call My_MARS(debug_flag)
@@ -198,11 +202,10 @@ subroutine runchem()
       end if
       !????????????????????????????????????????????????????
 
-      call Add_2timing(32,tim_after,tim_before,"Runchem:ammonium+Drydep")
-
       if(prclouds_present) then
         call WetDeposition(i,j,debug_flag)
         call check_negs(i,j,'H')
+        call Add_2timing(32,tim_after,tim_before,"Runchem:WetDeposition")
       end if
 
      !Should be no further concentration changes due to emissions or deposition

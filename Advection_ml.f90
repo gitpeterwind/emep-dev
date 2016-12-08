@@ -333,7 +333,7 @@
     end do
 
 
-    call Add_2timing(25,tim_after,tim_before,"advecdiff:ps")
+    call Add_2timing(22,tim_after,tim_before,"advecdiff:ps")
 
     !     time-splitting is used for the physical and chemical operators.
     !     second-order accuracy in time is obtained by alternating the order
@@ -464,7 +464,7 @@
 
     ! stop
 
-    call Add_2timing(20,tim_after,tim_before,"advecdiff:synchronization")
+    call Add_2timing(17,tim_after,tim_before,"advecdiff:synchronization")
 
     ! Start xys advection loop:
     iterxys = 0
@@ -523,7 +523,7 @@
              end do !j
              !          end do !k horizontal (x) advection
 
-             call Add_2timing(21,tim_after,tim_before,"advecdiff:advx")
+             call Add_2timing(18,tim_after,tim_before,"advecdiff:advx")
 
              ! y-direction
              !          do k = 1,KMAX_MID
@@ -573,7 +573,7 @@
              end do !i
           end do !k horizontal (y) advection
 
-          call Add_2timing(23,tim_after,tim_before,"advecdiff:advy")
+          call Add_2timing(20,tim_after,tim_before,"advecdiff:advy")
 
           do iters=1,niters
 
@@ -624,7 +624,7 @@
           end do ! vertical (s) advection
 
 
-          call Add_2timing(24,tim_after,tim_before,"advecdiff:advvk")
+          call Add_2timing(21,tim_after,tim_before,"advecdiff:advvk")
 
 
        else  !start a yxs sequence
@@ -678,7 +678,7 @@
              end do !i
              !         end do !k horizontal (y) advection
 
-             call Add_2timing(23,tim_after,tim_before,"advecdiff:preadvy,advy")
+             call Add_2timing(20,tim_after,tim_before,"advecdiff:preadvy,advy")
 
              !          do k = 1,KMAX_MID
              do j = lj0,lj1
@@ -730,7 +730,7 @@
              end do !j
           end do !k horizontal (x) advection
 
-          call Add_2timing(21,tim_after,tim_before,"advecdiff:preadvx,advx") 
+          call Add_2timing(18,tim_after,tim_before,"advecdiff:preadvx,advx") 
 
           do iters=1,niters
 
@@ -779,7 +779,7 @@
              end do
           end do ! vertical (s) advection
 
-          call Add_2timing(24,tim_after,tim_before,"advecdiff:advvk")
+          call Add_2timing(21,tim_after,tim_before,"advecdiff:advvk")
 
        end if ! yxs sequence
     end do
@@ -866,7 +866,7 @@
        end do
     end do
 
-    call Add_2timing(25,tim_after,tim_before,"advecdiff:ps")
+    call Add_2timing(22,tim_after,tim_before,"advecdiff:ps")
 
     ! vertical diffusion
     ndiff = 1 !number of vertical diffusion iterations (the larger the better)
@@ -925,7 +925,7 @@
     !      sum = sum + xn_adv(1,4,4,k)/dhs1i(k+1)
     !   end do
     !   write(*,*)'sum after diffusion ',me,sum
-    call Add_2timing(22,tim_after,tim_before,"advecdiff:diffusion")
+    call Add_2timing(19,tim_after,tim_before,"advecdiff:diffusion")
 
     if(lj0.ne.1)then
        do k=KCHEMTOP,KMAX_MID
