@@ -3084,6 +3084,13 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
         Grid_resolution=GRIDWIDTH_M_EMEP
         if ( debug )write(*,*)'Grid_resolution assumed =',Grid_resolution
      end if
+
+     !the method chosen depends on the relative resolutions
+     if(interpol_used=='conservative'.and.Grid_resolution/GRIDWIDTH_M>2)then
+        interpol_used='zero_order'!usually good enough, and keeps gradients
+        if ( MasterProc .and. debug) write(*,*) 'Asked for conservative interpolation, but redefined as ',interpol_used
+     end if
+
      status = nf90_get_att(ncFileID, nf90_global, "xcoordinate_NorthPole", xp_ext )
      if(status /= nf90_noerr)then
         xp_ext=xp_EMEP_old
