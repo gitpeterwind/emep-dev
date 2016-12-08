@@ -34,7 +34,7 @@ logical, parameter, private ::  IS_CPU_TIME = .true.
 
 !SYS   integer, public, save :: &   !SYS
 real,    public, save :: &   !CPU
-  tim_before,tim_before0,tim_after,tim_after0,tim_before1
+  tim_before,tim_before0,tim_after,tim_after0,tim_before1,tim_before2
 
 contains
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
