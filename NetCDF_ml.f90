@@ -2573,7 +2573,12 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      N=1
      if(present(NMask_Code))N=NMask_Code
      if(N>0)then!otherwise no need to do anything!
-     call check(nf90_open(path = trim(Mask_fileName), mode = nf90_nowrite, ncid = ncFileID_Mask))
+     status=nf90_open(path = trim(Mask_fileName), mode = nf90_nowrite, ncid = ncFileID_Mask)
+     if(status /= nf90_noerr) then
+        write(*,*)'MASK file does not exist: ',trim(Mask_fileName),nf90_strerror(status)
+        write(*,*)'Check the call for monthly emis in Emissions_ml.f90'
+        call StopAll("ReadField_CDF : Mask file needed but not found")
+     endif
     !verify that x, y dimensions have same size
      call check(nf90_inq_varid(ncid = ncFileID_Mask, name = trim(Mask_varname), varID = VarID_Mask),"Var_Mask")
      call check(nf90_Inquire_Variable(ncFileID_Mask,VarID_Mask,name,xtype_Mask,ndims_Mask,dimids_Mask,nAtts),"GetDimsId_Mask")
