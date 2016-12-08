@@ -66,6 +66,7 @@
   EmisDir                 = 'DataDir/EECCA/Modrun15/2015_EMEP_trends/model_input_YYYY',
 
   emis_inputlist(1)%name  = 'EmisDir/gridPOLL',    ! example of ASCII type.
+!  emis_inputlist(1)%pollName(1:2)     = 'voc','sox', !example of restricted choice of pollutants
 
 
 !

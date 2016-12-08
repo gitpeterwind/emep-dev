@@ -154,6 +154,16 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+13rd Dec 2016 Peter
+
+Possibility to choose a limited number of pollutants from each emission file.
+Example in config which will take only voc and sox from Emis_GLOB_05.nc:
+  emis_inputlist(1)%name     = 'DataDir/Emis_GLOB_05.nc', !example of Fractions type
+  emis_inputlist(1)%pollName(1:2)     = 'voc','sox', !example of restricted choice of pollutants
+
+By default (i.e. if the line is commented out), all pollutants are included.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 12th Dec 2016 Peter
 
 top vertical level allowed to be exactly = top met level

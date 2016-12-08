@@ -515,7 +515,8 @@ subroutine Emissions(year)
           !yearly grid independent netcdf fraction format emissions                                
           do iem = 1, NEMIS_FILE
              if(emis_inputlist(iemislist)%pollName(1)/='NOTSET')then
-                if(emis_inputlist(iemislist)%pollName(1)/=trim(EMIS_FILE(iem)))cycle      
+                if(all(emis_inputlist(iemislist)%pollName(:)/=trim(EMIS_FILE(iem))))cycle      
+                if(Masterproc)write(*,*)'reading '//trim(EMIS_FILE(iem))//' from '//trim(fname)
              end if
              do isec=1,NSECTORS                      
               write(varname,"(A,I2.2)")trim(EMIS_FILE(iem))//'_sec',isec
@@ -558,7 +559,8 @@ subroutine Emissions(year)
         do iem = 1, NEMIS_FILE
 
            if(emis_inputlist(iemislist)%pollName(1)/='NOTSET')then
-              if(emis_inputlist(iemislist)%pollName(1)/=trim(EMIS_FILE(iem)))cycle      
+                if(all(emis_inputlist(iemislist)%pollName(:)/=trim(EMIS_FILE(iem))))cycle      
+                if(Masterproc)write(*,*)'reading '//trim(EMIS_FILE(iem))//' from '//trim(fname)
            end if
 
            fname = key2str(emis_inputlist(iemislist)%name,'POLL',EMIS_FILE(iem))
@@ -589,6 +591,10 @@ subroutine Emissions(year)
       elseif(index(emis_inputlist(iemislist)%name,"grid")>0)then
         !ASCII format
         do iem = 1, NEMIS_FILE
+          if(emis_inputlist(iemislist)%pollName(1)/='NOTSET')then
+             if(all(emis_inputlist(iemislist)%pollName(:)/=trim(EMIS_FILE(iem))))cycle      
+             if(Masterproc)write(*,*)'reading '//trim(EMIS_FILE(iem))//' from '//trim(fname)
+          endif
           fname=key2str(emis_inputlist(iemislist)%name,'POLL',EMIS_FILE(iem)) ! e.g. POLL -> sox
           if(MasterProc)write(*,fmt='(A)')'Reading ASCII format '//trim(fname)
           call EmisGetASCII(iem, fname, trim(EMIS_FILE(iem)), sumemis_local, &
@@ -1598,7 +1604,8 @@ subroutine newmonth
 
     do iem = 1,NEMIS_FILE
        if(emis_inputlist(iemislist)%pollName(1)/='NOTSET')then
-          if(emis_inputlist(iemislist)%pollName(1)/=trim(EMIS_FILE(iem)))cycle      
+          if(all(emis_inputlist(iemislist)%pollName(:)/=trim(EMIS_FILE(iem))))cycle      
+          if(Masterproc)write(*,*)'reading '//trim(EMIS_FILE(iem))//' from '//trim(fname)
        end if
        do  isec = 1,NSECTORS            
         !define mask (can be omitted if not sent to readfield) 
