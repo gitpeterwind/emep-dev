@@ -82,10 +82,11 @@
                                 ,uw,ue,vs,vn
   use MassBudget_ml,     only : fluxin_top,fluxout_top,fluxin,fluxout
   use My_Timing_ml,      only : Code_timer, Add_2timing, tim_before,tim_after
-  use MPI_Groups_ml,      only :MPI_DOUBLE_PRECISION, MPI_MAX, MPI_SUM,MPI_INTEGER, MPI_BYTE, IERROR,&
-                            MPISTATUS, MPI_COMM_IO, MPI_COMM_CALC, ME_IO, ME_CALC, ME_MPI,MPI_IN_PLACE,&
-                            request_n,request_s,request_xn_n,request_xn_s,&
-                            request_e,request_w, request_xn_w, request_xn_e
+  !do not use "only", because MPI_IN_PLACE does not behave well on certain versions of gfortran(?)
+  use MPI_Groups_ml !,      only :MPI_DOUBLE_PRECISION, MPI_MAX, MPI_SUM,MPI_INTEGER, MPI_BYTE, IERROR,&
+                    !       MPISTATUS, MPI_COMM_IO, MPI_COMM_CALC, ME_IO, ME_CALC, ME_MPI,MPI_IN_PLACE,&
+                    !       request_n,request_s,request_xn_n,request_xn_s,&
+                    !       request_e,request_w, request_xn_w, request_xn_e
   use Par_ml,            only : LIMAX,LJMAX,GJMAX,GIMAX,me,mex,mey,&
             li0,li1,lj0,lj1 ,limax,ljmax, gi0, IRUNBEG,gj0, JRUNBEG &
            ,neighbor,WEST,EAST,SOUTH,NORTH,NOPROC            &
