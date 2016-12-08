@@ -440,7 +440,7 @@ type(typ_ss), public, save, dimension(NLANDUSEMAX) :: &
 integer, public, parameter :: END_OF_EMEPDAY  = 6
 
 real, public, save :: &
-  dt_advec,   & ! time-step for advection (s), grid resolution dependent
+  dt_advec = -999.9,   & ! time-step for advection (s), grid resolution dependent
   dt_advec_inv  ! =1/dt_advec
 
 ! NTDAY:  Number of 2D O3 to be saved each day (for SOMO)
@@ -546,7 +546,8 @@ subroutine Config_ModelConstants(iolog)
    ,VEG_2dGS_Params       & ! Allows 2d maps of growing seasons
    ,PFT_MAPPINGS          & ! Allows use of external LAI maps
    ,NETCDF_DEFLATE_LEVEL,  RUNDOMAIN, DOMAIN_DECOM_MODE &
-   ,JUMPOVER29FEB, HOURLYFILE_ending, USE_WRF_MET_NAMES
+   ,JUMPOVER29FEB, HOURLYFILE_ending, USE_WRF_MET_NAMES &
+   ,dt_advec ! can be set to override dt_advec
 
   NAMELIST /Machine_config/ DataPath
 

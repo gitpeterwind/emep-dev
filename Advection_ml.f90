@@ -156,22 +156,28 @@
 
     implicit none
     real, intent(in) ::GRIDWIDTH_M
-
-    dt_advec=1800.0
-    if(GRIDWIDTH_M<61000.0) dt_advec=1200.0
-    if(GRIDWIDTH_M<21000.0) dt_advec= 900.0
-    if(GRIDWIDTH_M<11000.0) dt_advec= 600.0
-    if(GRIDWIDTH_M< 6000.0) dt_advec= 300.0
+    
+    if(dt_advec<0.0)then
+       dt_advec=1800.0
+       if(GRIDWIDTH_M<61000.0) dt_advec=1200.0
+       if(GRIDWIDTH_M<21000.0) dt_advec= 900.0
+       if(GRIDWIDTH_M<11000.0) dt_advec= 600.0
+       if(GRIDWIDTH_M< 6000.0) dt_advec= 300.0
 
 ! GEMS025 domain 0.25 deg resol --> GRIDWIDTH_M~=27.8 km --> dt_advec=1200.0
 ! MACC02  domain 0.20 deg resol --> GRIDWIDTH_M~=22.2 km --> dt_advec=1200.0
+
+       if(me==0)write(*,fmt="(a,F8.1,a)")' advection time step (dt_advec) set to: ',dt_advec,' seconds'
+    else
+       !the value prescribed by the config file overrides dt_advec
+       if(me==0)write(*,fmt="(a,F8.1,a)")&
+            ' advection time step (dt_advec) set by config file to: ',dt_advec,' seconds'
+    endif
 
 !check that it is allowed:
     call CheckStop(mod(3600,nint(dt_advec)).ne.0, "3600/dt_advec must be an integer")
 
     dt_advec_inv=1.0/dt_advec
-
-   if(me==0)write(*,fmt="(a,F8.1,a)")' advection time step (dt_advec) set to: ',dt_advec,' seconds'
 
    call alloc_adv_arrays!should be moved elsewhere
 
