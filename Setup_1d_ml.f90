@@ -128,6 +128,9 @@ contains
     integer           :: k, n, ispec   ! loop variables
     real              :: qsat ! saturation water content
     integer, save :: nSKIP_RCT = 0
+    logical, save ::is_finepm_a(size( PM10_GROUP ))
+    logical, save ::is_ssalt_a(size( PM10_GROUP ))
+    logical, save ::is_dust_a(size( PM10_GROUP ))
 
     debug_flag =  ( DEBUG%SETUP_1DCHEM .and. debug_proc .and.  &
       i==debug_li .and. j==debug_lj .and. current_date%seconds == 0 )
@@ -159,6 +162,12 @@ contains
               if( MasterProc) write(*,*) dtxt//"is_BC ",species(ispec)%name, is_BC(ipm)
           end do
        end if
+       do ipm = 1, size( PM10_GROUP )
+          ispec = PM10_GROUP(ipm)
+          is_finepm_a(ipm) = ( find_index( ispec, PMFINE_GROUP) > 0 )
+          is_ssalt_a(ipm)  = ( find_index( ispec, SS_GROUP ) >0)
+          is_dust_a(ipm)   = ( find_index( ispec, DUST_GROUP )>0)
+       enddo
     end if ! first_call
 
     if( debug_flag ) write(*,*) dtxt//"=DBG=======  ", first_call, me
@@ -230,9 +239,12 @@ contains
              ispec = PM10_GROUP(ipm)
 
              ugtmp  = xn_2d(ispec,k)*species(ispec)%molwt*1.0e12/AVOG
-             is_finepm = ( find_index( ispec, PMFINE_GROUP) > 0 )
-             is_ssalt  = ( find_index( ispec, SS_GROUP ) >0)
-             is_dust   = ( find_index( ispec, DUST_GROUP )>0)
+!             is_finepm = ( find_index( ispec, PMFINE_GROUP) > 0 )
+!             is_ssalt  = ( find_index( ispec, SS_GROUP ) >0)!
+!             is_dust   = ( find_index( ispec, DUST_GROUP )>0)
+             is_finepm = is_finepm_a(ipm)
+             is_ssalt  = is_ssalt_a(ipm)
+             is_dust   = is_dust_a(ipm)
              if( is_finepm ) then
                ugpmF  = ugpmF   + ugtmp
                if(is_ssalt) ugSSaltF = ugSSaltF  +  ugtmp
