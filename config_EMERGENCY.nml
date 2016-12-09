@@ -21,13 +21,14 @@
   USES%DEGREEDAY_FACTORS = F,
   USES%GRIDDED_EMIS_MONTHLY_FACTOR = T, !
   USES%PlumeMethod      = 'PVDI',    ! default PVDI, possible: NILU, ASMI, PVDI
-  USES%PFT_MAPS         = T,         ! PFT LAI tests
+  USES%PFT_MAPS         = F,         ! PFT LAI tests
   USES%n2o5HydrolysisMethod = 'SmixTen', !  "Gamma:0.002' ! 'OrigRiemer'! =ACP2012 EMEP implementation
-  USES%WHITECAPS =       "Callaghan"    ! Norris , Monahan
+  USES%WHITECAPS =       "Callaghan",    ! Norris , Monahan
+  USES%SURF_AREA        = F,
 !------------------------------
   USE_SOILWATER         = F,          ! Uses SMI from meteo data
   USE_CONVECTION        = F,
-  USE_SEASALT           = T,
+  USE_SEASALT           = F,
   USE_AIRCRAFT_EMIS     = F,          ! Needs global file, see manual
   USE_LIGHTNING_EMIS    = F,          !
 !------------------------------
