@@ -38,7 +38,7 @@ use GridValues_ml,    only: RestrictDomain
 use Io_Nums_ml,       only: IO_NML
 use Io_Progs_ml,      only: PrintLog
 use ModelConstants_ml,only: MasterProc, SOURCE_RECEPTOR, DEBUG, & !! => DEBUG_MY_DERIVED &
-                            USE_AOD, USE_SOILNOX, USE_OCEAN_DMS, USE_uEMEP, &
+                            USE_AOD, USE_SOILNOX, USE_OCEAN_DMS, USE_OCEAN_NH3, USE_uEMEP, &
                             IOU_KEY,      & !'Y'=>IOU_YEAR,..,'I'=>IOU_HOUR_INST
                             KMAX_MID,     & ! =>  z dimension
                             RUNDOMAIN,    &
@@ -294,6 +294,10 @@ subroutine Init_My_Deriv()
   end if
   if(USE_OCEAN_DMS)then
     tag_name(1) = "Emis_mgm2_DMS"
+    call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
+  end if
+  if(USE_OCEAN_NH3)then
+    tag_name(1) = "Emis_mgm2_Ocean_NH3"
     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
   end if
   if(USE_uEMEP)then

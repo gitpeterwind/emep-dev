@@ -608,6 +608,7 @@ subroutine Emissions(year)
 
       elseif(emis_inputlist(iemislist)%type == "OceanNH3")then
         if(MasterProc)write(*,*)' using  OceanNH3'    
+        USE_OCEAN_NH3=.true.
         O_NH3%index=find_index("NH3",species(:)%name)
         call CheckStop(O_NH3%index<0,'Index for NH3 not found')
         NTime_Read=-1

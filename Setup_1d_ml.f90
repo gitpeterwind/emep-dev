@@ -530,6 +530,8 @@ subroutine setup_rcemis(i,j)
      
      rcemis(O_NH3%index,k)=rcemis(O_NH3%index,k)+O_NH3%emis(i,j)*0.001*AVOG/species(IC_NH3)%molwt&
           *(GRAV*roa(i,j,k,1))/(dA(k)+dB(k)*ps(i,j,1))
+!make map in mg/m2
+     O_NH3%map(i,j)=O_NH3%emis(i,j)*dt_advec*1.0E6!kg->mg = 1.0E6
 
   end if
 

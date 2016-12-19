@@ -37,7 +37,7 @@ use DerivedFields_ml, only: MAXDEF_DERIV2D, MAXDEF_DERIV3D, &
                             def_2d, def_3d, f_2d, f_3d, d_2d, d_3d
 use EcoSystem_ml,     only: DepEcoSystem, NDEF_ECOSYSTEMS, &
                             EcoSystemFrac,FULL_ECOGRID
-use EmisDef_ml,       only: NSECTORS, EMIS_FILE, O_DMS, loc_frac
+use EmisDef_ml,       only: NSECTORS, EMIS_FILE, O_DMS, O_NH3, loc_frac
 use EmisGet_ml,       only: nrcemis,iqrc2itot
 use Emissions_ml,     only: SumSnapEmis, SumSplitEmis
 use GridValues_ml,    only: debug_li, debug_lj, debug_proc, A_mid, B_mid, &
@@ -62,7 +62,7 @@ use ModelConstants_ml, only: &
   ! output types corresponding to instantaneous,year,month,day
   ,IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY,IOU_HOUR,IOU_HOUR_INST,IOU_KEY &
   ,MasterProc, SOURCE_RECEPTOR &
-  ,USE_AOD, USE_OCEAN_DMS, USE_uEMEP, uEMEP, startdate,enddate
+  ,USE_AOD, USE_OCEAN_DMS, USE_OCEAN_NH3, USE_uEMEP, uEMEP, startdate,enddate
 
 use AOD_PM_ml,            only: AOD_init,aod_grp,wavelength,& ! group and
                                 wanted_wlen,wanted_ext3d      ! wavelengths
@@ -615,6 +615,12 @@ subroutine Define_Derived()
     call AddNewDeriv( dname, "Emis_mgm2_DMS", "-", "-", "mg/m2", &
                        ind , -99, T,  1.0,  F,  'YMD' )
   end if
+  if(USE_OCEAN_NH3)then
+     dname = "Emis_mgm2_Ocean_NH3"
+    call AddNewDeriv( dname, "Emis_mgm2_Ocean_NH3", "-", "-", "mg/m2", &
+                       ind , -99, T,  1.0,  F,  'YM' )
+  end if
+ 
   if(USE_uEMEP)then
      dname = "Total_Pollutant"
      call AddNewDeriv( dname, "Total_Pollutant", "-", "-", "mg/m2", &
@@ -1481,6 +1487,11 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
     case ( "Emis_mgm2_DMS" )      ! DMS
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = O_DMS%map(i,j)
+      end forall
+
+    case ( "Emis_mgm2_Ocean_NH3" )      ! Ocean_NH3
+      forall ( i=1:limax, j=1:ljmax )
+        d_2d( n, i,j,IOU_INST) = O_NH3%map(i,j)
       end forall
 
     case("Local_Pollutant")   ! for uEMEP, under development
