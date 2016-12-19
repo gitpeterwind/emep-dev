@@ -37,7 +37,7 @@ use DerivedFields_ml, only: MAXDEF_DERIV2D, MAXDEF_DERIV3D, &
                             def_2d, def_3d, f_2d, f_3d, d_2d, d_3d
 use EcoSystem_ml,     only: DepEcoSystem, NDEF_ECOSYSTEMS, &
                             EcoSystemFrac,FULL_ECOGRID
-use EmisDef_ml,       only: EMIS_FILE, O_DMS, loc_frac
+use EmisDef_ml,       only: NSECTORS, EMIS_FILE, O_DMS, loc_frac
 use EmisGet_ml,       only: nrcemis,iqrc2itot
 use Emissions_ml,     only: SumSnapEmis, SumSplitEmis
 use GridValues_ml,    only: debug_li, debug_lj, debug_proc, A_mid, B_mid, &
@@ -150,7 +150,7 @@ logical, private, save :: dbg0   ! = DEBUG%DERIVED .and. MasterProc
 logical, private, save :: dbgP   ! = DEBUG%DERIVED .and. debug_proc
 character(len=100), private :: errmsg
 
-integer, private :: i,j,k,l,n, ivoc, iou   ! Local loop variables
+integer, private :: i,j,k,l,n, ivoc, iou, isec   ! Local loop variables
 
 integer, private, save :: iadv_O3=-999,     & ! Avoid hard codded IXADV_SPCS
   iadv_NO3_C=-999,iadv_EC_C_WOOD=-999,iadv_EC_C_FFUEL=-999,iadv_POM_C_FFUEL=-999
@@ -298,6 +298,7 @@ subroutine Define_Derived()
   character(len=TXTLEN_IND)  :: outind
 
   integer :: ind, iadv, ishl, idebug, n, igrp, iout
+  character(len=2)::  isec_char
 
   if(dbg0) write(6,*) " START DEFINE DERIVED "
   !   same mol.wt assumed for PPM25 and PPMCOARSE
@@ -615,24 +616,27 @@ subroutine Define_Derived()
                        ind , -99, T,  1.0,  F,  'YMD' )
   end if
   if(USE_uEMEP)then
-    dname = "Local_Pollutant"
-    call AddNewDeriv( dname, "Local_Pollutant", "-", "-", "mg/m2", &
-                       -99 , -99, F,  1.0,  T,  'YMD' )
-    dname = "Total_Pollutant"
-    call AddNewDeriv( dname, "Total_Pollutant", "-", "-", "mg/m2", &
-                       -99 , -99, F,  1.0,  T,  'YMD' )
-    dname = "Local_Fraction"!NB must be AFTER "Local_Pollutant" and "Total_Pollutant"
-    call AddNewDeriv( dname, "Local_Fraction", "-", "-", "", &
-                       -99 , -99, F,  1.0,  F,  'YMD' )
-    dname = "Local_Pollutant3D"
-    call AddNewDeriv( dname, "Local_Pollutant3D", "-", "-", "mg/m2", &
-                       -99 , -99, F,  1.0,  T,  'YM' , .true.)
-    dname = "Total_Pollutant3D"
-    call AddNewDeriv( dname, "Total_Pollutant3D", "-", "-", "mg/m2", &
-                       -99 , -99, F,  1.0,  T,  'YM' , .true.)
-    dname = "Local_Fraction3D"!NB must be AFTER "Local_Pollutant" and "Total_Pollutant"
-    call AddNewDeriv( dname, "Local_Fraction3D", "-", "-", "", &
-                       -99 , -99, F,  1.0,  F,  'YM', .true.)
+     dname = "Total_Pollutant"
+     call AddNewDeriv( dname, "Total_Pollutant", "-", "-", "mg/m2", &
+          -99 , -99, F,  1.0e6,  T,  'YMDH' )
+     do isec=1,NSECTORS
+        write(isec_char,fmt='(i2.2)')isec
+        dname = "Local_Pollutant_sec"//isec_char
+        call AddNewDeriv( dname, "Local_Pollutant", "-", "-", "mg/m2", &
+             isec , -99, F,  1.0e6,  T,  'YMDH' )
+        dname = "Local_Fraction_sec"//isec_char!NB must be AFTER "Local_Pollutant" and "Total_Pollutant"
+        call AddNewDeriv( dname, "Local_Fraction", "-", "-", "", &
+             isec , -99, F,  1.0,  F,  'YMDH' )
+!        dname = "Local_Pollutant3D"//isec_char
+!        call AddNewDeriv( dname, "Local_Pollutant3D", "-", "-", "mg/m2", &
+!             isec , -99, F,  1.0e6,  T,  'YM' , .true.)
+!        dname = "Total_Pollutant3D"//isec_char
+!        call AddNewDeriv( dname, "Total_Pollutant3D", "-", "-", "mg/m2", &
+!             isec , -99, F,  1.0e6,  T,  'YM' , .true.)
+!        dname = "Local_Fraction3D"//isec_char!NB must be AFTER "Local_Pollutant" and "Total_Pollutant"
+!        call AddNewDeriv( dname, "Local_Fraction3D", "-", "-", "", &
+!             isec , -99, F,  1.0,  F,  'YM', .true.)
+     enddo
    end if
 !Splitted total emissions (inclusive Natural)
   do ind=1,nrcemis
@@ -1488,7 +1492,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
                 xtot=xtot+(xn_adv(ix,i,j,kmax_mid)*species_adv(ix)%molwt)&
                  *(dA(kmax_mid)+dB(kmax_mid)*ps(i,j,1))/ATWAIR/GRAV
              end do
-             d_2d( n, i,j,IOU_INST) = loc_frac(i,j,kmax_mid,1)*xtot
+             d_2d( n, i,j,IOU_INST) = loc_frac(f_2d(n)%Index,i,j,kmax_mid)*xtot
           end do
        end do
        n_Local_Pollutant=n

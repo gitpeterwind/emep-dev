@@ -32,7 +32,7 @@ use Chemfields_ml,    only: xn_adv, xn_shl, cfac
 use ChemSpecs             ! Use IXADV_ indices...
 use ChemGroups_ml         ! Allow all groups to ease compilation
                           !  eg. OXN_GROUP, DDEP_OXNGROUP, BVOC_GROUP
-use EmisDef_ml,       only: EMIS_FILE
+use EmisDef_ml,       only: NSECTORS, EMIS_FILE
 use EmisGet_ml,       only: nrcemis, iqrc2itot
 use GridValues_ml,    only: RestrictDomain
 use Io_Nums_ml,       only: IO_NML
@@ -73,7 +73,7 @@ public  :: My_DerivFunc ! Miscelleaneous functions of xn_adv for output
 
 !============ parameters for concentration + dep outputs ==================!
 integer, public, parameter ::       &
-  MAX_NUM_DERIV2D = 250,            &
+  MAX_NUM_DERIV2D = 283,            &
   MAX_NUM_DERIV3D =  16,            &
   MAX_NUM_DDEP_ECOS = 6,            & ! Grid, Conif, etc.
   MAX_NUM_DDEP_WANTED = NSPEC_ADV,  & !plenty big
@@ -166,7 +166,7 @@ character(len=TXTLEN_DERIV), public, save, dimension(4:1) :: &
 
 logical, parameter, public :: EmisSplit_OUT = .false.
 
-integer, private :: i,j,k,n, ivoc    ! Local loop variables
+integer, private :: i,j,k,n, ivoc, isec    ! Local loop variables
 
 contains
 
@@ -184,7 +184,7 @@ subroutine Init_My_Deriv()
   character(len=12), save :: sub='InitMyDeriv:'
   logical ::  &
     lev3d_from_surface=.false. ! levels are to be read from surface up
-   
+  character(len=2)::  isec_char
   NAMELIST /OutputConcs_config/OutputMisc,OutputConcs,OutputVegO3
   NAMELIST /OutputDep_config/DDEP_ECOS, DDEP_WANTED, WDEP_WANTED, SDEP_WANTED
   NAMELIST /OutputSize_config/fullrun_DOMAIN,month_DOMAIN,day_DOMAIN,hour_DOMAIN,&
@@ -298,12 +298,19 @@ subroutine Init_My_Deriv()
   end if
   if(USE_uEMEP)then
     !NOTE "Local_Fraction" must be AFTER "Local_Pollutant" and "Total_Pollutant"
-    tag_name(1:3) = [character(len=TXTLEN_DERIV)::&
-      "Local_Pollutant","Total_Pollutant","Local_Fraction"]
-    call AddArray( tag_name(1:3), wanted_deriv2d, NOT_SET_STRING, errmsg)
-!   tag_name(1:3) = [character(len=TXTLEN_DERIV)::&
-!      "Local_Fraction3D","Local_Pollutant3D","Total_Pollutant3D"]
-!   call AddArray( tag_name(1:3), wanted_deriv3d, NOT_SET_STRING, errmsg)
+     tag_name(1) = "Total_Pollutant"
+     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
+     do isec=1,NSECTORS
+        !        if(any(uEMEP%sectors(:)==isec))then
+        write(isec_char,fmt='(i2.2)')isec
+        tag_name(1:2) = [character(len=TXTLEN_DERIV)::&
+             "Local_Pollutant_sec"//isec_char,"Local_Fraction_sec"//isec_char]
+           call AddArray( tag_name(1:2), wanted_deriv2d, NOT_SET_STRING, errmsg)
+           !   tag_name(1:3) = [character(len=TXTLEN_DERIV)::&
+           !      "Local_Fraction3D","Local_Pollutant3D","Total_Pollutant3D"]
+           !   call AddArray( tag_name(1:3), wanted_deriv3d, NOT_SET_STRING, errmsg)
+!        end if
+     enddo
   end if
  if(EmisSplit_OUT)then
     do i=1,max(18,nrcemis)

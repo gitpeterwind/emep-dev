@@ -1846,7 +1846,10 @@ end subroutine lb2ij_int
 !//Lat and Long are in decimal degrees
 
 !Angle with North: (called "convergence")
-!arctan(tan(lon)*sin(lat)) lon is longitude relative to middle of utm zone.
+!angle = arctan(tan(lon)*sin(lat)) lon is longitude relative to middle of utm zone: lon=gl-Lambda0
+!works for northern hemisphere at least
+!u_utm = u_ll*cos(angle)+v_ll*sin(angle)
+!v_utm =-u_ll*sin(angle)+v_ll*cos(angle)
 
     implicit none
     
