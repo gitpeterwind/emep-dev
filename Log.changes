@@ -156,8 +156,10 @@ changes here (and when committing svn), and Dave will tag as required
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23rd Dec 2016 Peter
 
-Bug when wrf is used: XLAT reading for pole detection was read as a one-dimensional array. Detected by Massimo.
+Bug when wrf is used: XLAT reading for pole detection was read as a one-dimensional array. 
+Detected by Massimo.
 
+Reading 3 hourly O3 from top when fileName_O3_Top is set in config file
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 19th Dec 2016 Peter
