@@ -1,0 +1,93 @@
+#
+# Machine specific settings for vilje.
+#
+# Include this file in the main Makefile:
+#   include Makefile.vilje
+#
+# The following macro's are used from the main Makefile:
+#   with_mpi                : defined if MPI should be enabled
+#   with_omp                : defined if OpenMP should be enabled
+#   flags = (optim|check)   : selects compiler flags
+#
+# Using these and given the compilers/libraries present on this machine,
+# the following macros's should be defined here:
+#   F2003, LD
+#   FFLAGS, LDFLAGS
+#   INCS, LIBS
+#
+# Ensure that the FFLAGS include fpp macro definitions to select
+# the appropriate LAPack code in the '*linalg*' files:
+#   -Dwith_lapack95_mkl
+#   -Dwith_lapack
+#
+
+# --- compiler --------------------------------------
+
+ifdef with_mpi
+F2003 = mpif90 -D_MPI
+LD    = mpif90
+else
+F2003 = ifort
+LD    = ifort
+endif
+
+FFLAGS_DEFAULT    = -extend-source -traceback -warn errors -warn declarations -r8
+FFLAGS_CHECK      = -check all -fpe0 -ftrapuv
+FFLAGS_OPTIM_NONE = -O0
+FFLAGS_OPTIM_FAST = -O3
+
+ifdef with_omp
+FFLAGS_OPENMP  = -openmp
+LDFLAGS_OPENMP = -openmp
+endif
+
+# * collect
+
+ifeq "$(flags)" "optim"
+FFLAGS  = $(FFLAGS_OPENMP) $(FFLAGS_DEFAULT) $(FFLAGS_OPTIM_FAST)
+LDFLAGS = $(LDFLAGS_OPENMP)
+else
+ifeq "$(flags)" "check"
+FFLAGS  = $(FFLAGS_OPENMP) $(FFLAGS_DEFAULT) $(FFLAGS_OPTIM_NONE) $(FFLAGS_CHECK)
+LDFLAGS = $(LDFLAGS_OPENMP)
+else
+FFLAGS  = $(FFLAGS_OPENMP) $(FFLAGS_DEFAULT)
+LDFLAGS = $(LDFLAGS_OPENMP)
+endif
+endif
+
+# --- libs -------------------------------------------
+
+# OpenMP extension:
+ifdef with_omp
+FFTW_OMP_LIBS =  -lfftw3_omp
+endif
+# MPI extension:
+ifdef with_mpi
+FFTW_MPI_LIBS =  -lfftw3_mpi
+endif
+# flags:
+FFTW_INCS = -I$(FFTW_ROOT)/include
+FFTW_LIBS = -L$(FFTW_ROOT)/lib $(FFTW_MPI_LIBS) $(FFTW_OMP_LIBS) -lfftw3
+
+# netcdf4
+NETCDF_INCS = -I$(NETCDF_ROOT)/include
+NETCDF_LIBS = -L$(NETCDF_ROOT)/lib -lnetcdff -lnetcdf
+
+# Math Kernel Library
+MKL_ROOT = /sw/sdev/Modules/intelcomp/14.0.1/composer_xe_2013_sp1.1.106/mkl
+MKL_ARCH = intel64
+MKL_LP   = lp64
+MKL_INCS = -I$(MKL_ROOT)/include/$(MKL_ARCH)/$(MKL_LP)
+#MKL_LIBS = -DMKL -lmkl_rt
+MKL_LIBS = -L$(MKL_ROOT)/lib/$(MKL_ARCH) \
+       -lmkl_lapack95_${MKL_LP} -lmkl_blas95_${MKL_LP} \
+       -lmkl_intel_${MKL_LP} -lmkl_sequential -lmkl_core
+# define macro used in linalg files:
+MKL_DEFS = -Dwith_lapack95_mkl
+
+# collect:
+INCS = $(NETCDF_INCS) $(FFTW_INCS) $(MKL_INCS) $(MKL_DEFS)
+LIBS = $(NETCDF_LIBS) $(FFTW_LIBS) $(MKL_LIBS)
+
+
