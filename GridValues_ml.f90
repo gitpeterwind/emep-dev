@@ -481,8 +481,11 @@ contains
           if(status /= nf90_noerr) then
              !WRF format
              call check(nf90_inq_varid(ncid = ncFileID, name = "XLAT", varID = varID))
-          end if
-          call check(nf90_get_var(ncFileID, varID,latitudes  ))
+             call check(nf90_get_var(ncFileID, varID,latitudes ,start=(/1,1/), count=(/1,JJFULLDOM/)   ))
+          else
+             call check(nf90_get_var(ncFileID, varID,latitudes  ))
+          endif
+
           if(latitudes(RUNDOMAIN(4))>88.0)then
              write(*,*)'The grid is singular at North Pole'
              Pole_Singular=Pole_Singular+1

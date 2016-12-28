@@ -508,6 +508,7 @@ character, public, parameter ::  & ! output shorthands, order should match IOU_*
   IOU_KEY(IOU_YEAR:IOU_HOUR_INST)=['Y','M','D','H','I']
 
 character(len=*), public, parameter :: model="EMEP_MSC-W "
+character(len=200), public :: fileName_O3_Top = "NOTSET"
 
 logical, parameter, public :: EmisSplit_OUT = .false.
 
@@ -547,8 +548,8 @@ subroutine Config_ModelConstants(iolog)
    ,PFT_MAPPINGS          & ! Allows use of external LAI maps
    ,NETCDF_DEFLATE_LEVEL,  RUNDOMAIN, DOMAIN_DECOM_MODE &
    ,JUMPOVER29FEB, HOURLYFILE_ending, USE_WRF_MET_NAMES &
-   ,dt_advec ! can be set to override dt_advec
-
+   ,dt_advec & ! can be set to override dt_advec
+   ,fileName_O3_Top
   NAMELIST /Machine_config/ DataPath
 
   NAMELIST /INPUT_PARA/GRID,iyr_trend,runlabel1,runlabel2,&
@@ -606,6 +607,7 @@ subroutine Config_ModelConstants(iolog)
     end if
   end do
 
+
   rewind(IO_NML)
   read(IO_NML,NML=INPUT_PARA)
   startdate(4)=0                ! meteo hour to start/end the run
@@ -621,6 +623,15 @@ subroutine Config_ModelConstants(iolog)
     write(*,*)'Defined DegreeDayFactorsFile as:'
     write(*,*)trim(DegreeDayFactorsFile)
   end if
+
+  if(trim(fileName_O3_Top)/="NOTSET")then
+     fileName_O3_Top = key2str(fileName_O3_Top,'DataDir',DataDir)
+     fileName_O3_Top = key2str(fileName_O3_Top,'YYYY',startdate(1))
+     if(MasterProc)then
+        write(*,*)'Reading 3 hourly O3 at top from :'
+        write(*,*)trim(fileName_O3_Top)
+     end if
+  endif
 
 end subroutine Config_ModelConstants
 endmodule ModelConstants_ml

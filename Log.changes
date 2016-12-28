@@ -159,6 +159,14 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Update pollen modules (ZD_Pollen)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+23rd Dec 2016 Peter
+
+Bug when wrf is used: XLAT reading for pole detection was read as a one-dimensional array. 
+Detected by Massimo.
+
+Reading 3 hourly O3 from top when fileName_O3_Top is set in config file
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 20th Dec 2016 Alvaro
 
 Update assimilation modules (ZD_3DVar16)

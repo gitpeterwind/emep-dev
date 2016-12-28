@@ -311,7 +311,7 @@ my $ProjDataDir = "";          # Change for specific project data
 my $VBS   = 0;
 
 #User directories
-my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
+my $ProgDir  = "$HOMEROOT/mifapw/emep-mscw";   # input of source-code
    $ProgDir  = "/prod/forecast/emep/eemep/src/Unimod.$testv" if $eCWF and ($USER eq $FORCAST);
    $ProgDir  = "$CWF_DIR/src/Unimod.$testv" if $CWF and -d $CWF_DIR;
 my $ChemDir  = "$ProgDir/ZCM_$Chem";

@@ -33,9 +33,10 @@ use ModelConstants_ml,only: MasterProc, KMAX_MID, nmax, nstep &
                            ,USE_ASH&
                            ,FREQ_HOURLY    & ! hourly netcdf output frequency
                            ,USE_POLLEN, USE_EtaCOORDINATES,JUMPOVER29FEB&
-                           ,USE_uEMEP, IOU_HOUR, IOU_HOUR_INST
+                           ,USE_uEMEP, IOU_HOUR, IOU_HOUR_INST, fileName_O3_Top
 use MetFields_ml,     only: ps,roa,z_bnd,z_mid,cc3dmax, &
                             zen,coszen,Idirect,Idiffuse
+use NetCDF_ml,        only: ReadField_CDF
 use OutputChem_ml,    only: WrtChem
 use My_Outputs_ml ,   only: NHOURLY_OUT, FREQ_SITE, FREQ_SONDE
 use My_Timing_ml,     only: Code_timer, Add_2timing, tim_before, tim_before0, tim_after
@@ -67,7 +68,7 @@ contains
 subroutine phyche()
 
   logical, save :: End_of_Day = .false.
-  integer :: ndays,status
+  integer :: ndays,status,nstart,kstart
   real :: thour
   type(timestamp) :: ts_now !date in timestamp format
   logical,save :: first_call = .true.
@@ -91,10 +92,22 @@ subroutine phyche()
     end if
   end if
 
-! if(MasterProc) write(*,"(a15,i6,f8.3)") 'timestep nr.',nstep,thour
+  if(trim(fileName_O3_Top)/="NOTSET" .and.&
+       mod(current_date%hour,3)==0.and.current_date%seconds==0)then
+     kstart=6!NB: must be the level corresponding to model top! Hardcoded for now
+     if(DEBUG%PHYCHEM .and. MasterProc)write(*,*)'UPDATING TOP O3 with ',trim(fileName_O3_Top)
+     !first available day is 2nd January for 2008,2009,2011,2012:
+     nstart=max(1,8*(daynumber-2)+current_date%hour/3)
+     !first available day is 2nd January for 2010:
+     if(current_date%year==2010)nstart=max(1,8*(daynumber-1)+current_date%hour/3)
+     call  ReadField_CDF(trim(fileName_O3_Top),'O3',xn_adv(IXADV_O3,:,:,1),&
+          nstart=nstart,kstart=kstart,kend=kstart,&
+          interpol='zero_order',debug_flag=.false.)     
+  endif
 
   call Code_timer(tim_before)
   call readxn(current_date) !Read xn_adv from earlier runs
+
   if(FORECAST.and.USE_POLLEN) call pollen_read ()
   call Add_2timing(15,tim_after,tim_before,"nest: Read")
   if(ANALYSIS.and.first_call)then
