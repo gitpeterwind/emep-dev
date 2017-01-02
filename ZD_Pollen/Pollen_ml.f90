@@ -817,13 +817,12 @@ subroutine pollen_dump()
           fileName_given=trim(filename),ncFileID_given=ncFileID)
     end do
   end do
-  if(MasterProc)then
+  if(MasterProc)&
     call CheckNC(nf90_close(ncFileID),"close:"//trim(filename))
   ! ensure time record can be found, fatal error if not
-    i=getRecord(filename,current_date,.true.)
-    if(DEBUG) &
-      write(*,"(3(A,1X),I0)") "Found Pollen dump",trim(filename),"record",i
-  end if
+  i=getRecord(filename,current_date,.true.) ! MPI_BCAST inside
+  if(MasterProc.and.DEBUG) &
+    write(*,"(3(A,1X),I0)") "Found Pollen dump",trim(filename),"record",i
   deallocate(data)
 end subroutine pollen_dump
 end module Pollen_ml
