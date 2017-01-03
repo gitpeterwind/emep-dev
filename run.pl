@@ -245,7 +245,7 @@ print "Year is $yy YEAR $year Trend year $iyr_trend\n";
 
 #---  User-specific directories (changeable)
 
-my $PETER      = "mifapw/emep";
+my $PETER      = "mifapw";
 my $DAVE       = "mifads";
 my $JOFFEN     = "mifajej";
 my $HILDE      = "mifahf";
@@ -311,7 +311,7 @@ my $ProjDataDir = "";          # Change for specific project data
 my $VBS   = 0;
 
 #User directories
-my $ProgDir  = "$HOMEROOT/mifapw/emep-mscw";   # input of source-code
+my $ProgDir  = "$HOMEROOT/$USER/emep-mscw";   # input of source-code
    $ProgDir  = "/prod/forecast/emep/eemep/src/Unimod.$testv" if $eCWF and ($USER eq $FORCAST);
    $ProgDir  = "$CWF_DIR/src/Unimod.$testv" if $CWF and -d $CWF_DIR;
 my $ChemDir  = "$ProgDir/ZCM_$Chem";
