@@ -38,6 +38,7 @@ use EmisDef_ml,       only: &
      ,MAXFEMISLONLAT,N_femis_lonlat,loc_frac &
      ,NSECTORS, N_HFAC, N_TFAC, N_SPLIT     & ! No. emis sectors, height, time and split classes
      ,sec2tfac_map, sec2hfac_map, sec2split_map& !generic mapping of indices
+     ,Nneighbors & !used for uemep/loc_frac
      ,NSECTORS_SNAP, SNAP_sec2tfac_map, SNAP_sec2hfac_map, SNAP_sec2split_map&!SNAP specific mapping
      ,NSECTORS_GNFR, GNFR_sec2tfac_map, GNFR_sec2hfac_map, GNFR_sec2split_map&!GNFR specific mapping
      ,NSECTORS_TEST, TEST_sec2tfac_map, TEST_sec2hfac_map, TEST_sec2split_map!TEST specific mapping
@@ -219,7 +220,6 @@ subroutine Emissions(year)
   logical :: fileExists            ! to test emission files
   character(len=40) :: varname, fmt,cdf_sector_name
   integer ::allocerr, i_Emis_4D
-
   if (MasterProc) write(6,*) "Reading emissions for year",  year
 
 
@@ -335,7 +335,7 @@ subroutine Emissions(year)
     allocate(SumSnapEmis(LIMAX,LJMAX,NEMIS_FILE))
     SumSnapEmis=0.0
     if(USE_uEMEP)then
-       allocate(loc_frac(NSECTORS,LIMAX,LJMAX,KMAX_MID))
+       allocate(loc_frac(0:NSECTORS,Nneighbors,LIMAX,LJMAX,KMAX_MID))
        loc_frac=0.0
     end if
     !=========================
@@ -1903,7 +1903,7 @@ subroutine uemep_emis(indate)
   integer :: daytime_longitude, daytime_iland, hour_longitude, hour_iland,nstart
   integer ::icc_uemep
   integer, save :: wday , wday_loc ! wday = day of the week 1-7
-  integer ::ix,iix
+  integer ::ix,iix, neigbor
   real::dt_uemep, xtot, emis_uemep(KMAX_MID,NSECTORS),emis_tot(KMAX_MID)
   logical,save :: first_call=.true.  
 
@@ -2037,10 +2037,21 @@ subroutine uemep_emis(indate)
             ix=uEMEP%ix(iix)
             xtot=xtot+(xn_adv(ix,i,j,k)*species_adv(ix)%molwt)*(dA(k)+dB(k)*ps(i,j,1))/ATWAIR/GRAV
          end do
-         do isec = 1, NSECTORS       ! Loop over snap codes
-            loc_frac(isec,i,j,k)=(loc_frac(isec,i,j,k)*xtot+emis_uemep(k,isec))/(xtot+emis_tot(k)+1.e-20)
+         neigbor = 1!local fraction from this i,j
+         do isec = 1, NSECTORS
+            loc_frac(isec,neigbor,i,j,k)=(loc_frac(isec,neigbor,i,j,k)*xtot+emis_uemep(k,isec))/(xtot+emis_tot(k)+1.e-20)
          end do
-      end do
+         isec = 0 !sum over all sectors
+         loc_frac(isec,neigbor,i,j,k)=(loc_frac(isec,neigbor,i,j,k)*xtot+emis_tot(k))/(xtot+emis_tot(k)+1.e-20)
+
+         !local fractions from other cells
+         do neigbor = 2,Nneighbors
+            do isec = 0, NSECTORS
+               loc_frac(isec,neigbor,i,j,k)=(loc_frac(isec,neigbor,i,j,k)*xtot)/(xtot+emis_tot(k)+1.e-20)
+            enddo
+         enddo
+
+      end do! k
 
     end do ! i
   end do ! j

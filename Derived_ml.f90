@@ -1503,7 +1503,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
                 xtot=xtot+(xn_adv(ix,i,j,kmax_mid)*species_adv(ix)%molwt)&
                  *(dA(kmax_mid)+dB(kmax_mid)*ps(i,j,1))/ATWAIR/GRAV
              end do
-             d_2d( n, i,j,IOU_INST) = loc_frac(f_2d(n)%Index,i,j,kmax_mid)*xtot
+             d_2d( n, i,j,IOU_INST) = loc_frac(f_2d(n)%Index,1,i,j,kmax_mid)*xtot
           end do
        end do
        n_Local_Pollutant=n
@@ -1880,7 +1880,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
                 xtot=xtot+(xn_adv(ix,i,j,k)*species_adv(ix)%molwt)&
                  *(dA(k)+dB(k)*ps(i,j,1))/ATWAIR/GRAV*1.0E6
              end do
-             d_3d(n,i,j,l,IOU_INST) = loc_frac(i,j,k,1)*xtot
+             d_3d(n,i,j,l,IOU_INST) = loc_frac(f_3d(n)%Index,1,i,j,k)*xtot
           end do
         end do
       end do

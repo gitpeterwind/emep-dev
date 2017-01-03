@@ -262,7 +262,6 @@ my $BIRTHE     = "birthems";
 my $FORCAST    = "forecast";
 
 my $USER = $ENV{"USER"};
-if ($PETER =~ m/$USER/) { $USER="$PETER" };
 print "USER = $USER\n";
 
 
@@ -277,11 +276,11 @@ our $DataDir;
 if ($STALLO) {
   $HOMEROOT = "/home";
   $WORKROOT = "/global/work";
-  $DataDir  = "$WORKROOT/$PETER/Data";
+  $DataDir  = "$WORKROOT/$PETER/emep/Data";
   $MetDir   = "$DataDir/$GRID/metdata_EC/$year";
   $MetDir   = "$DataDir/$GRID/metdata_H20/$year" unless -d $MetDir;
   $MetDir   = "$DataDir/$GRID/metdata/$year"     unless -d $MetDir;
-  $MetDir   = "$WORKROOT/$PETER/ClimData/$year"  if ($GRID eq "RCA" );
+  $MetDir   = "$WORKROOT/$PETER/emep/ClimData/$year"  if ($GRID eq "RCA" );
   $MetDir   = "$DataDir/$GRID/metdata_CWF/YYYY"
               .sprintf("_%02dUTC",($CWFMETV%24)) if $CWF; # 00/12 UTC versions
 } else { #Ve or Vilje

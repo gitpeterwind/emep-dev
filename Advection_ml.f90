@@ -70,7 +70,7 @@
 !CRM  use ChemSpecs_adv_ml , only : NSPEC_ADV
   use CheckStop_ml,      only : CheckStop,StopAll
   use Convection_ml,     only : convection_pstar,convection_Eta
-  use EmisDef_ml,        only : NSECTORS,loc_frac
+  use EmisDef_ml,        only : NSECTORS, Nneighbors, loc_frac
   use GridValues_ml,     only : GRIDWIDTH_M,xm2,xmd,xm2ji,xmdji,xm_i, Pole_Singular, &
                                 dA,dB,i_fdom,j_fdom,i_local,j_local,Eta_bnd,dEta_i
   use Io_ml,             only : datewrite
@@ -509,7 +509,15 @@
                             xx=xx!*uEMEPfac(k)
                             xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. outgoing flux 
                             f_in=max(0.0,x)+max(0.0,xx)!positive part. incoming flux
-                            loc_frac(1:NSECTORS,i,j,k)=(loc_frac(1:NSECTORS,i,j,k)*xn)/(xn+f_in+1.e-20)
+                            loc_frac(0:NSECTORS,1,i,j,k)=(loc_frac(0:NSECTORS,1,i,j,k)*xn)/(xn+f_in+1.e-20)
+                            !local fraction from East neighbor
+                            loc_frac(0:NSECTORS,2,i,j,k)=(loc_frac(0:NSECTORS,2,i,j,k)*xn+loc_frac(0:NSECTORS,1,max(1,i-1),j,k)*max(0.0,xx))/(xn+f_in+1.e-20)
+                            !local fraction from West neighbor
+                            loc_frac(0:NSECTORS,3,i,j,k)=(loc_frac(0:NSECTORS,3,i,j,k)*xn+loc_frac(0:NSECTORS,1,min(li1,i+1),j,k)*max(0.0,x))/(xn+f_in+1.e-20)
+                            !local fraction from South neighbor
+                            loc_frac(0:NSECTORS,4,i,j,k)=(loc_frac(0:NSECTORS,4,i,j,k)*xn)/(xn+f_in+1.e-20)
+                            !local fraction from North neighbor
+                            loc_frac(0:NSECTORS,5,i,j,k)=(loc_frac(0:NSECTORS,5,i,j,k)*xn)/(xn+f_in+1.e-20)
                          end if
 
                          dpdeta0=(dA(k)+dB(k)*ps(i,j,1))*dEta_i(k)
@@ -560,7 +568,15 @@
                          xx=xx!*uEMEPfac(k)
                          xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. outgoing flux 
                          f_in=max(0.0,x)+max(0.0,xx)!positive part. incoming flux
-                         loc_frac(1:NSECTORS,i,j,k)=(loc_frac(1:NSECTORS,i,j,k)*xn)/(xn+f_in+1.e-20)
+                         loc_frac(0:NSECTORS,1,i,j,k)=(loc_frac(0:NSECTORS,1,i,j,k)*xn)/(xn+f_in+1.e-20)
+                         !local fraction from East neighbor
+                         loc_frac(0:NSECTORS,2,i,j,k)=(loc_frac(0:NSECTORS,2,i,j,k)*xn)/(xn+f_in+1.e-20)
+                         !local fraction from West neighbor
+                         loc_frac(0:NSECTORS,3,i,j,k)=(loc_frac(0:NSECTORS,3,i,j,k)*xn)/(xn+f_in+1.e-20)
+                         !local fraction from South neighbor
+                         loc_frac(0:NSECTORS,4,i,j,k)=(loc_frac(0:NSECTORS,4,i,j,k)*xn+loc_frac(0:NSECTORS,1,i,max(1,j-1),k)*max(0.0,xx))/(xn+f_in+1.e-20)
+                         !local fraction from North neighbor
+                         loc_frac(0:NSECTORS,5,i,j,k)=(loc_frac(0:NSECTORS,5,i,j,k)*xn+loc_frac(0:NSECTORS,1,i,min(lj1,j+1),k)*max(0.0,x))/(xn+f_in+1.e-20)
                       end if
 
                       dpdeta0=(dA(k)+dB(k)*ps(i,j,1))*dEta_i(k)
@@ -600,7 +616,11 @@
                          xx=xx!*uEMEPfac(k)
                          xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. outgoing flux 
                          f_in=max(0.0,x)+max(0.0,xx)!positive part. incoming flux
-                         loc_frac(1:NSECTORS,i,j,k)=(loc_frac(1:NSECTORS,i,j,k)*xn)/(xn+f_in+1.e-20)
+                         do n=1,Nneighbors
+                            loc_frac(0:NSECTORS,n,i,j,k)=(loc_frac(0:NSECTORS,n,i,j,k)*xn + &
+                                 loc_frac(0:NSECTORS,n,i,j,max(k-1,KMIN_uemep))*max(0.0,xx) + & !will be wrong at top, but loc_frac at top should be negligible
+                                 loc_frac(0:NSECTORS,n,i,j,min(k+1,KMAX_MID))*max(0.0,x))/(xn+f_in+1.e-20)
+                         enddo
                       end do
                    end if
 
@@ -666,8 +686,16 @@
                          xx=xx!*uEMEPfac(k)
                          xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. outgoing flux 
                          f_in=max(0.0,x)+max(0.0,xx)!positive part. incoming flux
-                         loc_frac(1:NSECTORS,i,j,k)=(loc_frac(1:NSECTORS,i,j,k)*xn)/(xn+f_in+1.e-20)
-                      end if
+                         loc_frac(0:NSECTORS,1,i,j,k)=(loc_frac(0:NSECTORS,1,i,j,k)*xn)/(xn+f_in+1.e-20)
+                         !local fraction from East neighbor
+                         loc_frac(0:NSECTORS,2,i,j,k)=(loc_frac(0:NSECTORS,2,i,j,k)*xn)/(xn+f_in+1.e-20)
+                         !local fraction from West neighbor
+                         loc_frac(0:NSECTORS,3,i,j,k)=(loc_frac(0:NSECTORS,3,i,j,k)*xn)/(xn+f_in+1.e-20)
+                         !local fraction from South neighbor
+                         loc_frac(0:NSECTORS,4,i,j,k)=(loc_frac(0:NSECTORS,4,i,j,k)*xn+loc_frac(0:NSECTORS,1,i,max(1,j-1),k)*max(0.0,xx))/(xn+f_in+1.e-20)
+                         !local fraction from North neighbor
+                         loc_frac(0:NSECTORS,5,i,j,k)=(loc_frac(0:NSECTORS,5,i,j,k)*xn+loc_frac(0:NSECTORS,1,i,min(lj1,j+1),k)*max(0.0,x))/(xn+f_in+1.e-20)
+                       end if
 
                       dpdeta0=(dA(k)+dB(k)*ps(i,j,1))*dEta_i(k)
                       psi = dpdeta0/max(dpdeta(i,j,k),1.0)
@@ -716,8 +744,16 @@
                             xx=xx!*uEMEPfac(k)
                             xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. outgoing flux 
                             f_in=max(0.0,x)+max(0.0,xx)!positive part. incoming flux
-                            loc_frac(1:NSECTORS,i,j,k)=(loc_frac(1:NSECTORS,i,j,k)*xn)/(xn+f_in+1.e-20)
-                         end if
+                            loc_frac(0:NSECTORS,1,i,j,k)=(loc_frac(0:NSECTORS,1,i,j,k)*xn)/(xn+f_in+1.e-20)
+                            !local fraction from East neighbor
+                            loc_frac(0:NSECTORS,2,i,j,k)=(loc_frac(0:NSECTORS,2,i,j,k)*xn+loc_frac(0:NSECTORS,1,max(1,i-1),j,k)*max(0.0,xx))/(xn+f_in+1.e-20)
+                            !local fraction from West neighbor
+                            loc_frac(0:NSECTORS,3,i,j,k)=(loc_frac(0:NSECTORS,3,i,j,k)*xn+loc_frac(0:NSECTORS,1,min(li1,i+1),j,k)*max(0.0,x))/(xn+f_in+1.e-20)
+                            !local fraction from South neighbor
+                            loc_frac(0:NSECTORS,4,i,j,k)=(loc_frac(0:NSECTORS,4,i,j,k)*xn)/(xn+f_in+1.e-20)
+                            !local fraction from North neighbor
+                            loc_frac(0:NSECTORS,5,i,j,k)=(loc_frac(0:NSECTORS,5,i,j,k)*xn)/(xn+f_in+1.e-20)
+                          end if
 
                          dpdeta0=(dA(k)+dB(k)*ps(i,j,1))*dEta_i(k)
                          psi = dpdeta0/max(dpdeta(i,j,k),1.0)
@@ -757,7 +793,11 @@
                          xx=xx!*uEMEPfac(k)
                          xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. outgoing flux 
                          f_in=max(0.0,x)+max(0.0,xx)!positive part. incoming flux
-                         loc_frac(1:NSECTORS,i,j,k)=(loc_frac(1:NSECTORS,i,j,k)*xn)/(xn+f_in+1.e-20)
+                         do n=1,Nneighbors
+                            loc_frac(0:NSECTORS,n,i,j,k)=(loc_frac(0:NSECTORS,n,i,j,k)*xn + &
+                                 loc_frac(0:NSECTORS,n,i,j,max(k-1,KMIN_uemep))*max(0.0,xx) + & !will be wrong at top, but loc_frac at top should be negligible
+                                 loc_frac(0:NSECTORS,n,i,j,min(k+1,KMAX_MID))*max(0.0,x))/(xn+f_in+1.e-20)
+                         enddo
                       end do
                    end if
 
@@ -886,7 +926,7 @@
        do i = li0,li1
 
           if(USE_uEMEP)then
-             do isec=1,NSECTORS
+             do isec=0,NSECTORS
                 xn_k_old=0.0
                 do k = 1,KMAX_MID
                    xn_k(k,isec)=0.0
@@ -896,7 +936,7 @@
                       xn_k(k,isec)=xn_k(k,isec)+xn_adv(ix,i,j,k)*species_adv(ix)%molwt
                    end do
                    if(k==kmax_mid)xn_k_old=xn_k(KMAX_MID,isec)!save for udiff
-                   xn_k(k,isec)=xn_k(k,isec)*loc_frac(isec,i,j,k)
+                   xn_k(k,isec)=xn_k(k,isec)*loc_frac(isec,1,i,j,k)
                 end do
                 call vertdiff_1d(xn_k(1,isec),EtaKz(i,j,1,1),ds3,ds4,ndiff)!does the same as vertdiffn, but for one component
              enddo
@@ -914,8 +954,8 @@
                    !conversion from mixing ratio to mg/m2
                    x=x+xn_adv(ix,i,j,k)*species_adv(ix)%molwt
                 end do
-                do isec=1,NSECTORS
-                   loc_frac(isec,i,j,k)=xn_k(k,isec)/(x+1.E-30)
+                do isec=0,NSECTORS
+                   loc_frac(isec,1,i,j,k)=xn_k(k,isec)/(x+1.E-30)
                    !if(k==KMAX_MID)udiff(i,j)=(x-xn_k_old)*(dA(kmax_mid)+dB(kmax_mid)*ps(i,j,1))/ATWAIR/GRAV*1.0E6
                 end do
              end do
