@@ -3,22 +3,25 @@
 #Common script for Njord, Stallo.
 #Choose $VILJE=1 or $STALLO=1
 #___________________________________________________________________
-# queue commands for PBS
 
-#Queue system commands start with #PBS (these are not comments!)
-# Vilje: (take out one # and put one # before the Stallo). 
+#Queue system commands start with #SBATCH for Stallo and #PBS for Vilje (these are not comments!)
+#___________________________________________________________________
+#Stallo SLURM queue commands
+#submit with:  sbatch run.pl
+#for express queue (max 4 hours):  sbatch --qos=devel run.pl
+#Queue system commands start with #SBATCH 
+#SBATCH -A nn2890k
+#SBATCH --ntasks=40
+#SBATCH --mem=32000
+#SBATCH --time=4:0:0
+#SBATCH --job-name=emep
+#SBATCH --output=run.%j.out
+
+# Vilje:
 #   select= number of nodes, ncpus=number of threads per node to reserve, 
-#   mpiprocs=number of MPI threads per node. For 64 processors:
+# to activate take out one # from ##
+#   mpiprocs=number of MPI threads per node. select=number of nodes
 ##PBS -l select=4:ncpus=32:mpiprocs=32 -v MPI_MSGS_MAX=2097152,MPI_BUFS_PER_PROC=2048
-# Stallo:
-#   Some nodes on Stallo have 16, most have 20 cpus
-#   use ib for infiniband (fast interconnect).
-#   lnodes= number of nodes, ppn=processor per node (max 20 on stallo)
-#   lpmeme=memory to reserve per processor (max 16GB per node)
-##PBS -lnodes=64 -lpmem=1000MB
-##PBS -lnodes=16 -lpmem=1000MB
-##PBS -lnodes=80
-#PBS -lnodes=1:ppn=20
 # Wall time limit of run
 #PBS -lwalltime=00:20:00
 # Make results readable for others:
@@ -29,17 +32,6 @@
 ##PBS -t 1-56
 #___________________________________________________________________
 
-
-#___________________________________________________________________
-#Abel queue commands ?
-
-#Queue system commands start with #SBATCH (these are not comments!)
-#SBATCH --account=nn2890k
-#SBATCH --nodes=8 --ntasks-per-node=8 --constraint=ib
-#SBATCH --mem-per-cpu=2G --time=06:00:00
-#SBATCH --job-name=emep
-#SBATCH --output=job.%N.%j.out
-#SBATCH  --error=job.%N.%j.err
 
 ######################################################################
 # Features
@@ -86,7 +78,7 @@ $| = 1; # autoflush STDOUT
 #my $VILJE=0;  #1 if Ve or Vilje is used
 #my $STALLO=1; #1 if stallo is used
 my ( $STALLO, $VILJE ) = (0) x 2;
-foreach my $key  (qw ( PBS_O_HOST HOSTNAME PBS_SERVER MACHINE )) {
+foreach my $key  (qw ( PBS_O_HOST HOSTNAME PBS_SERVER MACHINE SLURM_SUBMIT_HOST)) {
  next unless defined $ENV{$key};
  $STALLO = 1 if $ENV{$key} =~/stallo/;
  $VILJE  = 1 if $ENV{$key} =~/vilje/;
@@ -845,8 +837,6 @@ foreach my $scenflag ( @runs ) {
 
   foreach my $mmm ($mm1,($mm1+1)..($mm2-1),$mm2) {
     my $mm = sprintf "%2.2d", $mmm;
-    $ifile{"$DATA_LOCAL/natso2$mm.dat"} =  "natso2$mm.dat" unless ($GRID eq "MACC14");
- print "natso2 $mm  \n";
    $ifile{"$DataDir/lt21-nox.dat$mm"} =  "lightning$mm.dat";
 # BIC for Saharan dust
     if ( $SoilDir ) { # Not yet for EMEP domain
@@ -899,14 +889,10 @@ foreach my $scenflag ( @runs ) {
   $ifile{"$DataDir/AnnualNdep_PS50x_EECCA2005_2009.nc"} = "annualNdep.nc";
 #}
 
-# hb NH3emis
-# New ammonia emissions  ---   NB no read permissions yet!!
-  $ifile{"/home/$HALDIS/Unimod_NMR_NH3/Unimod.rv3_6_8/Sector_NH3Emis.txt"}="Sector_NH3Emis.txt" if($NH3EMIS_VAR);
-
 # new inputs style (Aug 2007)  with compulsory headers:
 # From rv3_14 used only for FORECAST mode
   $ifile{"$DATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse" if ($CWF and ($GRID ne "MACC14")) ;
-  $ifile{"$DataDir/Landuse/landuseGLC2000_INT1.nc"} ="GLOBAL_landuse.nc";
+#  $ifile{"$DataDir/Landuse/landuseGLC2000_INT1.nc"} ="GLOBAL_landuse.nc";
 
   $ifile{"$DataDir/LanduseGLC.nc"} ="LanduseGLC.nc";
   # NB: a 1km Landuse is also available 
@@ -1040,7 +1026,7 @@ foreach my $scenflag ( @runs ) {
     } else {
       print "Missing Input $f !!!\n";
       die "ERROR: Missing $f (or possibly wrong Chem$Chem)\n" 
-        unless( $f =~ /special/ or $f =~ /natso2/ );#natso2 not needed
+        unless( $f =~ /special/ );
     }
   }
 
