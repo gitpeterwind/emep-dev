@@ -278,7 +278,7 @@
     integer ::isum,isumtot,iproc
     real :: xn_advjktot(NSPEC_ADV),xn_advjk(NSPEC_ADV),rfac
     real :: dpdeta0,mindpdeta,xxdg,fac1
-    real :: xnold,xn_k_old,xn_k(kmax_mid,NSECTORS),xn,x,xx
+    real :: xnold,xn_k_old,xn_k(kmax_mid,NSECTORS,Nneighbors),xn,x,xx
     real :: fluxx(NSPEC_ADV,-1:LIMAX+1)
     real :: fluxy(NSPEC_ADV,-1:LJMAX+1)
     real :: fluxk(NSPEC_ADV,KMAX_MID)
@@ -823,7 +823,13 @@
 
        end if ! yxs sequence
     end do
-
+    if(USE_uEMEP)then
+       !we put zero in the cells which are wrong anyway (they are on subdomain boundaries)
+       loc_frac(0:NSECTORS,2,1,:,:) = 0.0
+       loc_frac(0:NSECTORS,3,li1,:,:) = 0.0
+       loc_frac(0:NSECTORS,4,:,1,:) = 0.0
+       loc_frac(0:NSECTORS,5,:,lj1,:) = 0.0
+    endif
 
     if(USE_CONVECTION)then
 
@@ -926,19 +932,19 @@
        do i = li0,li1
 
           if(USE_uEMEP)then
-             do isec=0,NSECTORS
-                xn_k_old=0.0
-                do k = 1,KMAX_MID
-                   xn_k(k,isec)=0.0
-                   do iix=1,uEMEP%Nix
-                      ix=uEMEP%ix(iix)
-                      !assumes mixing ratios units, but weight by mass
-                      xn_k(k,isec)=xn_k(k,isec)+xn_adv(ix,i,j,k)*species_adv(ix)%molwt
+             do n=1,Nneighbors
+                do isec=0,NSECTORS
+                   do k = 1,KMAX_MID
+                      xn_k(k,isec,n)=0.0
+                      do iix=1,uEMEP%Nix
+                         ix=uEMEP%ix(iix)
+                         !assumes mixing ratios units, but weight by mass
+                         xn_k(k,isec,n)=xn_k(k,isec,n)+xn_adv(ix,i,j,k)*species_adv(ix)%molwt
+                      end do
+                      xn_k(k,isec,n)=xn_k(k,isec,n)*loc_frac(isec,n,i,j,k)
                    end do
-                   if(k==kmax_mid)xn_k_old=xn_k(KMAX_MID,isec)!save for udiff
-                   xn_k(k,isec)=xn_k(k,isec)*loc_frac(isec,1,i,j,k)
-                end do
-                call vertdiff_1d(xn_k(1,isec),EtaKz(i,j,1,1),ds3,ds4,ndiff)!does the same as vertdiffn, but for one component
+                   call vertdiff_1d(xn_k(1,isec,n),EtaKz(i,j,1,1),ds3,ds4,ndiff)!does the same as vertdiffn, but for one component
+                enddo
              enddo
           end if
              
@@ -954,9 +960,11 @@
                    !conversion from mixing ratio to mg/m2
                    x=x+xn_adv(ix,i,j,k)*species_adv(ix)%molwt
                 end do
-                do isec=0,NSECTORS
-                   loc_frac(isec,1,i,j,k)=xn_k(k,isec)/(x+1.E-30)
+               do n=1,Nneighbors
+                  do isec=0,NSECTORS
+                     loc_frac(isec,n,i,j,k)=xn_k(k,isec,n)/(x+1.E-30)
                    !if(k==KMAX_MID)udiff(i,j)=(x-xn_k_old)*(dA(kmax_mid)+dB(kmax_mid)*ps(i,j,1))/ATWAIR/GRAV*1.0E6
+                  end do
                 end do
              end do
           end if
