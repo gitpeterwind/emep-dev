@@ -37,7 +37,7 @@ use DerivedFields_ml, only: MAXDEF_DERIV2D, MAXDEF_DERIV3D, &
                             def_2d, def_3d, f_2d, f_3d, d_2d, d_3d
 use EcoSystem_ml,     only: DepEcoSystem, NDEF_ECOSYSTEMS, &
                             EcoSystemFrac,FULL_ECOGRID
-use EmisDef_ml,       only: NSECTORS, EMIS_FILE, O_DMS, O_NH3, loc_frac
+use EmisDef_ml,       only: NSECTORS, EMIS_FILE, O_DMS, O_NH3, loc_frac, Nneighbors
 use EmisGet_ml,       only: nrcemis,iqrc2itot
 use Emissions_ml,     only: SumSnapEmis, SumSplitEmis
 use GridValues_ml,    only: debug_li, debug_lj, debug_proc, A_mid, B_mid, &
@@ -150,7 +150,7 @@ logical, private, save :: dbg0   ! = DEBUG%DERIVED .and. MasterProc
 logical, private, save :: dbgP   ! = DEBUG%DERIVED .and. debug_proc
 character(len=100), private :: errmsg
 
-integer, private :: i,j,k,l,n, ivoc, iou, isec   ! Local loop variables
+integer, private :: i,j,k,l,n, ivoc, iou, isec, neigh   ! Local loop variables
 
 integer, private, save :: iadv_O3=-999,     & ! Avoid hard codded IXADV_SPCS
   iadv_NO3_C=-999,iadv_EC_C_WOOD=-999,iadv_EC_C_FFUEL=-999,iadv_POM_C_FFUEL=-999
@@ -266,7 +266,7 @@ subroutine AddDeriv(inderiv,Is3D)
     Nadded3d = Nadded3d + 1
     N = Nadded3d
     if(dbg0) write(*,*) "Define 3d deriv ", N, trim(inderiv%name)
-    call CheckStop(N>MAXDEF_DERIV3D,"Nadded3d too big!")
+    call CheckStop(N>MAXDEF_DERIV3D,"Nadded3d too big! Increase MAXDEF_DERIV3D in DerivedFields_ml")
     def_3d(N) = inderiv
   else
     Nadded2d = Nadded2d + 1
@@ -276,7 +276,7 @@ subroutine AddDeriv(inderiv,Is3D)
       call print_Deriv_type(inderiv)
     end if
    !if(dbg0) write(*,*) "DALL", inderiv
-    call CheckStop(N>MAXDEF_DERIV2D,"Nadded2d too big!")
+    call CheckStop(N>MAXDEF_DERIV2D,"Nadded2d too big! Increase MAXDEF_DERIV2D in DerivedFields_ml")
     def_2d(N) = inderiv
   end if
 end subroutine AddDeriv
@@ -299,6 +299,7 @@ subroutine Define_Derived()
 
   integer :: ind, iadv, ishl, idebug, n, igrp, iout
   character(len=2)::  isec_char
+  character(len=2)::  neigh_char
 
   if(dbg0) write(6,*) " START DEFINE DERIVED "
   !   same mol.wt assumed for PPM25 and PPMCOARSE
@@ -329,7 +330,7 @@ subroutine Define_Derived()
 
   !Added for TFMM scale runs
   call AddNewDeriv( "Kz_m2s","Kz_m2s",  "-","-",   "m2/s", &
-               -99,  -99, F, 1.0,  T,  'YMD' )
+               -99,  -99, F, 1.0,  T,  'YMDH' )
 
   call AddNewDeriv( "u_ref","u_ref",  "-","-",   "m/s", &
                -99,  -99, F, 1.0,  T,  'YMD' )
@@ -625,23 +626,30 @@ subroutine Define_Derived()
      dname = "Total_Pollutant"
      call AddNewDeriv( dname, "Total_Pollutant", "-", "-", "mg/m2", &
           -99 , -99, F,  1.0e6,  T,  'YMDH' )
-     do isec=1,NSECTORS
-        write(isec_char,fmt='(i2.2)')isec
-        dname = "Local_Pollutant_sec"//isec_char
-        call AddNewDeriv( dname, "Local_Pollutant", "-", "-", "mg/m2", &
-             isec , -99, F,  1.0e6,  T,  'YMDH' )
-        dname = "Local_Fraction_sec"//isec_char!NB must be AFTER "Local_Pollutant" and "Total_Pollutant"
-        call AddNewDeriv( dname, "Local_Fraction", "-", "-", "", &
-             isec , -99, F,  1.0,  F,  'YMDH' )
-!        dname = "Local_Pollutant3D"//isec_char
-!        call AddNewDeriv( dname, "Local_Pollutant3D", "-", "-", "mg/m2", &
-!             isec , -99, F,  1.0e6,  T,  'YM' , .true.)
-!        dname = "Total_Pollutant3D"//isec_char
-!        call AddNewDeriv( dname, "Total_Pollutant3D", "-", "-", "mg/m2", &
-!             isec , -99, F,  1.0e6,  T,  'YM' , .true.)
-!        dname = "Local_Fraction3D"//isec_char!NB must be AFTER "Local_Pollutant" and "Total_Pollutant"
-!        call AddNewDeriv( dname, "Local_Fraction3D", "-", "-", "", &
-!             isec , -99, F,  1.0,  F,  'YM', .true.)
+     dname = "Total_Pollutant3D"
+     call AddNewDeriv( dname, "Total_Pollutant3D", "-", "-", "ug/m3", &
+          -99 , -99, F,  1.0,  T,  'YMDH' , .true.)
+     do neigh=1,Nneighbors
+        if(neigh==1)neigh_char=''
+        if(neigh==2)neigh_char='_E'
+        if(neigh==3)neigh_char='_W'
+        if(neigh==4)neigh_char='_S'
+        if(neigh==5)neigh_char='_N'
+        do isec=0,NSECTORS
+           write(isec_char,fmt='(i2.2)')isec
+           dname = "Local_Pollutant_sec"//isec_char//neigh_char
+           call AddNewDeriv( dname, "Local_Pollutant", "-", "-", "mg/m2", &
+                (isec*Nneighbors)+neigh , -99, F,  1.0e6,  T,  'YMDH' )
+           dname = "Local_Fraction_sec"//isec_char//neigh_char!NB must be AFTER "Local_Pollutant" and "Total_Pollutant"
+           call AddNewDeriv( dname, "Local_Fraction", "-", "-", "", &
+                (isec*Nneighbors)+neigh , -99, F,  1.0,  F,  'YMDH' )
+                   dname = "Local_Pollutant3D_sec"//isec_char//neigh_char
+        call AddNewDeriv( dname, "Local_Pollutant3D", "-", "-", "ug/m3", &
+             (isec*Nneighbors)+neigh , -99, F,  1.0,  T,  'YMDH' , .true.)
+        dname = "Local_Fraction3D_sec"//isec_char//neigh_char!NB must be AFTER "Local_Pollutant" and "Total_Pollutant"
+        call AddNewDeriv( dname, "Local_Fraction3D", "-", "-", "", &
+             (isec*Nneighbors)+neigh , -99, F,  1.0,  F,  'YMDH', .true.)
+        enddo
      enddo
    end if
 !Splitted total emissions (inclusive Natural)
@@ -721,7 +729,7 @@ Is3D = .true.
       print *,"OOOPS N,N :", num_deriv2d, Nadded2d
       print "(a,i4,a)",("Had def_2d: ",idebug,&
         trim(def_2d(idebug)%name),idebug = 1, Nadded2d)
-      call CheckStop(sub//"OOPS STOPPED" // trim( wanted_deriv2d(i) ) )
+      call CheckStop(sub//"OOPS1 STOPPED" // trim( wanted_deriv2d(i) ) )
     end if
   end do
 
@@ -1503,7 +1511,9 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
                 xtot=xtot+(xn_adv(ix,i,j,kmax_mid)*species_adv(ix)%molwt)&
                  *(dA(kmax_mid)+dB(kmax_mid)*ps(i,j,1))/ATWAIR/GRAV
              end do
-             d_2d( n, i,j,IOU_INST) = loc_frac(f_2d(n)%Index,1,i,j,kmax_mid)*xtot
+             isec=f_2d(n)%Index/Nneighbors
+             neigh=f_2d(n)%Index-isec*Nneighbors
+             d_2d( n, i,j,IOU_INST) = loc_frac(isec,neigh,i,j,kmax_mid)*xtot
           end do
        end do
        n_Local_Pollutant=n
@@ -1870,6 +1880,8 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       deallocate(ingrp)
 
     case("Local_Pollutant3D")   ! for uEMEP, under development
+       isec=f_3d(n)%Index/Nneighbors
+       neigh=f_3d(n)%Index-isec*Nneighbors
       do l=1,num_lev3d
         k=lev3d(l)
         do j=1,ljmax
@@ -1877,26 +1889,27 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
              xtot=0.0
              do iix=1,uEMEP%Nix
                 ix=uEMEP%ix(iix)
-                xtot=xtot+(xn_adv(ix,i,j,k)*species_adv(ix)%molwt)&
-                 *(dA(k)+dB(k)*ps(i,j,1))/ATWAIR/GRAV*1.0E6
+                xtot=xtot+(xn_adv(ix,i,j,k)*species_adv(ix)%molwt)/ATWAIR&
+                    *roa(i,j,k,1)*1.E9 !for ug/m3
+!                *(dA(k)+dB(k)*ps(i,j,1))/GRAV !for mg/m2
              end do
-             d_3d(n,i,j,l,IOU_INST) = loc_frac(f_3d(n)%Index,1,i,j,k)*xtot
+             d_3d(n,i,j,l,IOU_INST) = loc_frac(isec,neigh,i,j,k)*xtot
           end do
         end do
       end do
       n_Local_Pollutant3D=n
-     !write(*,*)loc_frac(5,5,kmax_mid,1),loc_frac(5,5,kmax_mid-1,1)
 
     case("Total_Pollutant3D")   ! for uEMEP, under development
       do l=1,num_lev3d
-        k=lev3d(l)
+         k=lev3d(l)
         do j=1,ljmax
           do i=1,limax
             xtot=0.0
             do iix=1,uEMEP%Nix
               ix=uEMEP%ix(iix)
-              xtot=xtot+(xn_adv(ix,i,j,k)*species_adv(ix)%molwt)&
-                   *(dA(k)+dB(k)*ps(i,j,1))/ATWAIR/GRAV*1.0E6
+              xtot=xtot+(xn_adv(ix,i,j,k)*species_adv(ix)%molwt)/ATWAIR&
+                   *roa(i,j,k,1)*1.E9 !for ug/m3
+!                   *(dA(k)+dB(k)*ps(i,j,1))/GRAV*1.E6 !for mg/m2
             end do
             d_3d(n,i,j,l,IOU_INST) = xtot
           end do
@@ -1905,7 +1918,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       n_Total_Pollutant3D=n
 
     case("Local_Fraction3D")    ! for uEMEP, under development
-      forall(i=1:limax,j=1:ljmax,k=1:num_lev3d)
+      forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) 
         d_3d(n,i,j,k,IOU_INST) = 0.0
         d_3d(n,i,j,k,IOU_HOUR) = d_3d(n_Local_Pollutant3D,i,j,k,IOU_HOUR)/&
                                 (d_3d(n_Total_Pollutant3D,i,j,k,IOU_HOUR)+1.E-30)

@@ -118,7 +118,8 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
- ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3306","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
+# ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3306","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
+ ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3306","EmChem09soa","EMEPSTD","EMEPSTD","EMEP01",0);
 #($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3074","EmChem09soa","EMEPGLOB","EMEPSTD","GLOBAL",0);
 
 my %BENCHMARK;
@@ -229,7 +230,7 @@ if($CWF){
 #  --- Here, the main changeable parameters are given. The variables
 #      are explained below, and derived variables set later.-
 
-my $year = "2012";
+my $year = "2015";
    $year = substr($CWFBASE,0,4) if $CWF;
    $year = $BENCHMARK{"year"} if %BENCHMARK;
 ( my $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
@@ -413,6 +414,8 @@ my $subv        = "$testv" ;                  # sub-version (to track changes)
 # The effect is to choose the approproate femis file
 
 my $scenario = "Base";     # Reset later if SR
+#my $scenario = "Oslo_only";     # Reset later if SR
+#my $scenario = "Oslo_s7";     # Reset later if SR
 my @runs     = ( $scenario );
 
 #Possible emission scenarios for HIRHAM run
@@ -516,8 +519,8 @@ $month_days[2] += leap_year($year);
 
 my $mm1 ="06";      # first month, use 2-digits!
 my $mm2 ="06";      # last month, use 2-digits!
-my $dd1 =  1;       # Start day, usually 1
-my $dd2 =  1;       # End day (can be too large; will be limited to max number of days in the month)
+my $dd1 =  5;       # Start day, usually 1
+my $dd2 =  6;       # End day (can be too large; will be limited to max number of days in the month)
                     # put dd2=0 for 1 timestep run/test.
 # Allways runn full year on benchmark mode
 ($mm1,$mm2,$dd1,$dd2)=("01","12",1,31) if (%BENCHMARK);
@@ -865,6 +868,7 @@ foreach my $scenflag ( @runs ) {
     $ifile{"$ProjDataDir/femis.ecl2005to$iyr_trend"} =  "femis.dat"; 
   } else {
     $ifile{"$ChemDir/femis.defaults"} =  "femis.dat";  # created now by GenChem
+#    $ifile{"$ChemDir/femis.Oslo_s7"} =  "femis.dat";  # created now by GenChem
   }
 
 # my $old="$DATA_LOCAL/Boundary_and_Initial_Conditions.nc";

@@ -823,6 +823,22 @@ subroutine Emissions(year)
   forall (ic=1:NCMAX, j=1:ljmax, i=1:limax, isec=1:NSECTORS,iem=1:NEMIS_FILE)
     snapemis (isec,i,j,ic,iem) = snapemis (isec,i,j,ic,iem) * tonne_to_kgm2s * xm2(i,j)
   endforall
+  !do ic=1,NCMAX
+  !   do j=1,ljmax
+  !     do i=1,limax
+  !        do isec=1,NSECTORS
+  !           iem=6
+  !           if(isec==7 .and. i_fdom(i)==51 .and. j_fdom(j)==63)then 
+  !              !snapemis (isec,i,j,ic,iem) = snapemis (isec,i,j,ic,iem) * tonne_to_kgm2s * xm2(i,j)
+  !           else
+  !              snapemis (isec,i,j,ic,iem) = 0.0
+  !           endif
+  !        enddo
+  !     enddo
+  !  enddo
+  !enddo
+  
+
 
   forall (fic=1:FNCMAX, j=1:ljmax, i=1:limax,iem=1:NEMIS_FILE)
     snapemis_flat(i,j,fic,iem) = snapemis_flat(i,j,fic,iem) * tonne_to_kgm2s * xm2(i,j)

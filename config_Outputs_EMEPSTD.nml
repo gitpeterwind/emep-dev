@@ -38,6 +38,8 @@ OutputMisc=
  ! For meteo fields defined in "met%". Set subclass as met%name defined in MetFields_ml:
  !3D use MET3D
  'rho_airdensity',  'MET3D', 'air_density', '-', 'kg/m3', -99,  -99,      F,   1.0, T, 'YM',
+ 'u_wind_center',  'MET3D', 'u_wind_3D', '-', 'm/s', -99,  -99,      F,   1.0, T, 'YMDH',
+ 'v_wind_center',  'MET3D', 'v_wind_3D', '-', 'm/s', -99,  -99,      F,   1.0, T, 'YMDH',
  !2D use MET2D. Can output also lowest level values of 3D fields. 
  'met2d_ustar_nwp','MET2D','ustar_nwp',                 '-','m/s' ,-99,-99,F,1.0,T,'YM',
  'met2d_uref',     'MET2D','u_ref',                     '-','m/s' ,-99,-99,F,1.0,T,'YM',
@@ -60,7 +62,7 @@ OutputMisc=
  'Psurf_d',        'PSURF','-',  '-','hPa' ,-99,-99,F,1.0,T,'YMD',
 !====================================================================================
 OutputConcs= 
-      'HMIX'                ,'m'   ,'2d','HMIX'     ,'MISC' ,'YM', !! hourly tests
+      'HMIX'                ,'m'   ,'2d','HMIX'     ,'MISC' ,'YMDH', !! hourly tests
       'SurfAreaPMF_um2cm3' ,'um2/cm3' ,'2d','SurfAreaPMF_um2cm3'    ,'MISC' ,'YM', !
       'SurfAreaPM_um2cm3'  ,'um2/cm3' ,'2d','SurfAreaPM_um2cm3'     ,'MISC' ,'YM', !
       'SurfAreaSSF_um2cm3' ,'um2/cm3' ,'2d','SurfAreaSSF_um2cm3'    ,'MISC' ,'YM', !!
@@ -75,7 +77,9 @@ OutputConcs=
       'CH4',          'molec/cm2' ,'k20','COLUMN'   ,'MISC' ,'YMD', !! New Column system
       'CO',           'molec/cm2' ,'k20','COLUMN'   ,'MISC' ,'YMD', !! New Column system
      !----------------------------------------------------------------
-!     'Kz_m2s'              ,'m2/s','2d','Kz_m2s'   ,'MISC' ,'YMDI', !! hourly tests
+     'D3_m2s_Kz'              ,'m2/s','3d','Kz'   ,'MISC' ,'YMDH', !! hourly tests
+     'NO2'           ,'ug'  ,'3d' ,'AIR_CONCS','SPEC' ,'YMDH',
+     'NO'            ,'ug'  ,'3d' ,'AIR_CONCS','SPEC' ,'YMDH',
       'T2m'                 ,'degC','2d','T2m'      ,'MISC' ,'YMD',
       'SURF_ppbC_VOC'       ,'ppb' ,'2d','VOC'      ,'MISC' ,'YMD',
 ! ug/m3                                                    
@@ -333,6 +337,11 @@ COLUMNDAT_WANTED =
 &end
 &OutputSize_config
 !restrict size of output files. (Sizes defined with respect to fulldomain)
+!
+  hour_DOMAIN=330,430,250,350, !=[istart,iend,jstart,jend], default RUNDOMAIN+[1,-1,1,-1]
+  num_lev3d =8,
+  lev3d=13,14,15,16,17,18,19,20,
+  lev3d_from_surface=F,
 !    fullrun_DOMAIN = 1,100,1,100 ,
 !    month_DOMAIN =   100,300,1,100 ,
 !    day_DOMAIN =     1,100,90,100 ,
