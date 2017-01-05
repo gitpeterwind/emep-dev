@@ -154,6 +154,12 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+5th Jan 2017 Dave   rv4_11_0
+
+Re-started tags. We need something to keep track of model changes in
+a simple way - as had with svnversion. 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 2nd Jan 2017 Alvaro
 
 Fix pollen forecast crash, issue #18
