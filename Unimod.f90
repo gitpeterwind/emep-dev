@@ -12,7 +12,7 @@ program myeul
   use My_Outputs_ml,    only: set_output_defs, NHOURLY_OUT
   use My_Timing_ml,     only: lastptim, mytimm, Output_timing, &
        Init_timing, Add_2timing, Code_timer, &
-       tim_before, tim_before0, tim_before1, tim_before2, &
+       tim_before, tim_before1, tim_before2, &
        tim_after, tim_after0, NTIMING_UNIMOD,NTIMING
   use Advection_ml,     only: vgrid, assign_nmax, assign_dtadvec
   use Aqueous_ml,       only: init_aqueous, Init_WetDep   !  Initialises & tabulates
@@ -94,7 +94,7 @@ program myeul
   integer :: cyclicgrid
   TYPE(timestamp)   :: ts1,ts2
   logical :: End_of_Run=.false.
-
+  real :: tim_before0 !private
 
   associate ( yyyy => current_date%year, mm => current_date%month, &
        dd => current_date%day,  hh => current_date%hour)

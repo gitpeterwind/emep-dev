@@ -520,7 +520,7 @@ $month_days[2] += leap_year($year);
 my $mm1 ="06";      # first month, use 2-digits!
 my $mm2 ="06";      # last month, use 2-digits!
 my $dd1 =  5;       # Start day, usually 1
-my $dd2 =  6;       # End day (can be too large; will be limited to max number of days in the month)
+my $dd2 =  5;       # End day (can be too large; will be limited to max number of days in the month)
                     # put dd2=0 for 1 timestep run/test.
 # Allways runn full year on benchmark mode
 ($mm1,$mm2,$dd1,$dd2)=("01","12",1,31) if (%BENCHMARK);

@@ -74,7 +74,7 @@ public  :: My_DerivFunc ! Miscelleaneous functions of xn_adv for output
 !============ parameters for concentration + dep outputs ==================!
 integer, public, parameter ::       &
   MAX_NUM_DERIV2D = 343,            &
-  MAX_NUM_DERIV3D = 129,            &
+  MAX_NUM_DERIV3D = 179,            &
   MAX_NUM_DDEP_ECOS = 6,            & ! Grid, Conif, etc.
   MAX_NUM_DDEP_WANTED = NSPEC_ADV,  & !plenty big
   MAX_NUM_WDEP_WANTED = NSPEC_ADV     !plenty big
@@ -317,12 +317,18 @@ subroutine Init_My_Deriv()
         if(isec/=0 .and. isec/=2 .and. isec/=7 .and. isec/=8)cycle
         !        if(any(uEMEP%sectors(:)==isec))then
         write(isec_char,fmt='(i2.2)')isec
-        tag_name(1:2) = [character(len=TXTLEN_DERIV)::&
-             "Local_Pollutant_sec"//isec_char//neigh_char,"Local_Fraction_sec"//isec_char//neigh_char]
-           call AddArray( tag_name(1:2), wanted_deriv2d, NOT_SET_STRING, errmsg)
-        tag_name(1:2) = [character(len=TXTLEN_DERIV)::&
-             "Local_Pollutant3D_sec"//isec_char//neigh_char,"Local_Fraction3D_sec"//isec_char//neigh_char]
-              call AddArray( tag_name(1:2), wanted_deriv3d, NOT_SET_STRING, errmsg)
+!        tag_name(1:2) = [character(len=TXTLEN_DERIV)::&
+!             "Local_Pollutant_sec"//isec_char//neigh_char,"Local_Fraction_sec"//isec_char//neigh_char]
+!           call AddArray( tag_name(1:2), wanted_deriv2d, NOT_SET_STRING, errmsg)
+!        tag_name(1:2) = [character(len=TXTLEN_DERIV)::&
+!             "Local_Pollutant3D_sec"//isec_char//neigh_char,"Local_Fraction3D_sec"//isec_char//neigh_char]
+!              call AddArray( tag_name(1:2), wanted_deriv3d, NOT_SET_STRING, errmsg)
+        tag_name(1:1) = [character(len=TXTLEN_DERIV)::&
+             "Local_Pollutant_sec"//isec_char//neigh_char]
+           call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
+        tag_name(1:1) = [character(len=TXTLEN_DERIV)::&
+             "Local_Pollutant3D_sec"//isec_char//neigh_char]
+              call AddArray( tag_name(1:1), wanted_deriv3d, NOT_SET_STRING, errmsg)
      enddo
      enddo
   end if

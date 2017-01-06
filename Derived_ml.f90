@@ -609,7 +609,7 @@ subroutine Define_Derived()
   do  ind = 1, size(EMIS_FILE)
     dname = "Emis_mgm2_" // trim(EMIS_FILE(ind))
     call AddNewDeriv( dname, "SnapEmis", "-", "-", "mg/m2", &
-                       ind , -99, T,  1.0e6,  F,  'YMD' )
+                       ind , -99, T,  1.0e6,  F,  'YMDH' )
   end do ! ind
   if(USE_OCEAN_DMS)then
     dname = "Emis_mgm2_DMS"
