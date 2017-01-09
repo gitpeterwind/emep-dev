@@ -5,6 +5,7 @@
 #___________________________________________________________________
 
 #Queue system commands start with #SBATCH for Stallo and #PBS for Vilje (these are not comments!)
+# to activate take out one # from ##
 #___________________________________________________________________
 #Stallo SLURM queue commands
 #submit with:  sbatch run.pl
@@ -14,6 +15,8 @@
 #SBATCH --ntasks=40
 #SBATCH --mem=32000
 #SBATCH --time=4:0:0
+#activate the following line for runs which last longer than 48 hours
+##SBATCH --partition=multinode 
 #SBATCH --job-name=emep
 #SBATCH --output=run.%j.out
 
@@ -23,7 +26,7 @@
 #   mpiprocs=number of MPI threads per node. select=number of nodes
 ##PBS -l select=4:ncpus=32:mpiprocs=32 -v MPI_MSGS_MAX=2097152,MPI_BUFS_PER_PROC=2048
 # Wall time limit of run
-#PBS -lwalltime=00:20:00
+##PBS -lwalltime=00:20:00
 # Make results readable for others:
 #PBS -W umask=0022
 # Account for billing
