@@ -1,24 +1,27 @@
 #!/usr/bin/perl
 
 #Common script for Njord, Stallo.
-#Choose $VILJE=1 or $STALLO=1
+#$STALLO=1
 #___________________________________________________________________
-# queue commands for PBS
+#Queue system commands start with #SBATCH for Stallo and #PBS for Vilje (these are not comments!)
+#___________________________________________________________________
+#Stallo SLURM queue commands
+#submit with:  sbatch run.pl
+#for express queue (max 4 hours):  sbatch --qos=devel run.pl
+#Queue system commands start with #SBATCH 
+#SBATCH -A nn2890k
+#SBATCH --partition=multinode 
+#SBATCH --time=80:00:00
+#SBATCH --ntasks=20
+#SBATCH --mem=32000
+#SBATCH --job-name=emep
+#SBATCH --output=run.%j.out
 
-#Queue system commands start with #PBS (these are not comments!)
-# Vilje: (take out one # and put one # before the Stallo). 
+# Vilje:
 #   select= number of nodes, ncpus=number of threads per node to reserve, 
-#   mpiprocs=number of MPI threads per node. For 64 processors:
+# to activate take out one # from ##
+#   mpiprocs=number of MPI threads per node. select=number of nodes
 ##PBS -l select=4:ncpus=32:mpiprocs=32 -v MPI_MSGS_MAX=2097152,MPI_BUFS_PER_PROC=2048
-# Stallo:
-#   Some nodes on Stallo have 16, most have 20 cpus
-#   use ib for infiniband (fast interconnect).
-#   lnodes= number of nodes, ppn=processor per node (max 20 on stallo)
-#   lpmeme=memory to reserve per processor (max 16GB per node)
-##PBS -lnodes=64 -lpmem=1000MB
-##PBS -lnodes=16 -lpmem=1000MB
-##PBS -lnodes=80
-#PBS -lnodes=1:ppn=20
 # Wall time limit of run
 #PBS -lwalltime=00:20:00
 # Make results readable for others:
@@ -27,19 +30,11 @@
 #PBS -A nn2890k
 # Multiple tasks for paralel SR runs (one task per country)
 ##PBS -t 1-56
-#___________________________________________________________________
-
 
 #___________________________________________________________________
-#Abel queue commands ?
 
-#Queue system commands start with #SBATCH (these are not comments!)
-#SBATCH --account=nn2890k
-#SBATCH --nodes=8 --ntasks-per-node=8 --constraint=ib
-#SBATCH --mem-per-cpu=2G --time=06:00:00
-#SBATCH --job-name=emep
-#SBATCH --output=job.%N.%j.out
-#SBATCH  --error=job.%N.%j.err
+
+#___________________________________________________________________
 
 ######################################################################
 # Features
@@ -84,8 +79,8 @@ $| = 1; # autoflush STDOUT
 
 #Choose one machine
 #my $VILJE=0;  #1 if Ve or Vilje is used
-#my $STALLO=1; #1 if stallo is used
 my ( $STALLO, $VILJE ) = (0) x 2;
+$STALLO=1; #1 if stallo is used
 foreach my $key  (qw ( PBS_O_HOST HOSTNAME PBS_SERVER MACHINE )) {
  next unless defined $ENV{$key};
  $STALLO = 1 if $ENV{$key} =~/stallo/;
@@ -517,10 +512,10 @@ $month_days[2] += leap_year($year);
 #Only 360 days in HIRHAM metdata. We ignore leaps
 @month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,24) if $GRID eq "HIRHAM";
 
-my $mm1 ="06";      # first month, use 2-digits!
-my $mm2 ="06";      # last month, use 2-digits!
-my $dd1 =  5;       # Start day, usually 1
-my $dd2 =  5;       # End day (can be too large; will be limited to max number of days in the month)
+my $mm1 ="01";      # first month, use 2-digits!
+my $mm2 ="12";      # last month, use 2-digits!
+my $dd1 =  1;       # Start day, usually 1
+my $dd2 = 31;       # End day (can be too large; will be limited to max number of days in the month)
                     # put dd2=0 for 1 timestep run/test.
 # Allways runn full year on benchmark mode
 ($mm1,$mm2,$dd1,$dd2)=("01","12",1,31) if (%BENCHMARK);
