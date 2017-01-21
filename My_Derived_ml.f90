@@ -314,7 +314,8 @@ subroutine Init_My_Deriv()
         if(neigh==4)neigh_char='_S'
         if(neigh==5)neigh_char='_N'
      do isec=0,NSECTORS
-        if(isec/=0 .and. isec/=2 .and. isec/=7 .and. isec/=8)cycle
+!        if(isec/=0 .and. isec/=2 .and. isec/=7 .and. isec/=8)cycle
+        if(isec/=0 .and. isec/=10)cycle
         !        if(any(uEMEP%sectors(:)==isec))then
         write(isec_char,fmt='(i2.2)')isec
 !        tag_name(1:2) = [character(len=TXTLEN_DERIV)::&
@@ -326,10 +327,13 @@ subroutine Init_My_Deriv()
         tag_name(1:1) = [character(len=TXTLEN_DERIV)::&
              "Local_Pollutant_sec"//isec_char//neigh_char]
            call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
+       tag_name(1:1) = [character(len=TXTLEN_DERIV)::&
+             "Local_Fraction_sec"//isec_char//neigh_char]
+           call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
         tag_name(1:1) = [character(len=TXTLEN_DERIV)::&
              "Local_Pollutant3D_sec"//isec_char//neigh_char]
               call AddArray( tag_name(1:1), wanted_deriv3d, NOT_SET_STRING, errmsg)
-     enddo
+      enddo
      enddo
   end if
  if(EmisSplit_OUT)then
