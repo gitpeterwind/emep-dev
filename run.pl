@@ -10,7 +10,7 @@
 #for express queue (max 4 hours):  sbatch --qos=devel run.pl
 #Queue system commands start with #SBATCH 
 #SBATCH -A nn2890k
-#SBATCH --partition=multinode 
+##SBATCH --partition=singlenode 
 #SBATCH --time=80:00:00
 #SBATCH --ntasks=20
 #SBATCH --mem=32000
@@ -23,7 +23,7 @@
 #   mpiprocs=number of MPI threads per node. select=number of nodes
 ##PBS -l select=4:ncpus=32:mpiprocs=32 -v MPI_MSGS_MAX=2097152,MPI_BUFS_PER_PROC=2048
 # Wall time limit of run
-#PBS -lwalltime=00:20:00
+##PBS -lwalltime=00:20:00
 # Make results readable for others:
 #PBS -W umask=0022
 # Account for billing
@@ -408,7 +408,7 @@ my $subv        = "$testv" ;                  # sub-version (to track changes)
 # For SR runs we can add many scenarios - dealt with later.
 # The effect is to choose the approproate femis file
 
-my $scenario = "Base";     # Reset later if SR
+my $scenario = "Base_nh3";     # Reset later if SR
 #my $scenario = "Oslo_only";     # Reset later if SR
 #my $scenario = "Oslo_s7";     # Reset later if SR
 my @runs     = ( $scenario );
