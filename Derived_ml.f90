@@ -642,7 +642,7 @@ subroutine Define_Derived()
                 (isec*Nneighbors)+neigh , -99, F,  1.0e6,  T,  'YMDH' )
            dname = "Local_Fraction_sec"//isec_char//neigh_char!NB must be AFTER "Local_Pollutant" and "Total_Pollutant"
            call AddNewDeriv( dname, "Local_Fraction", "-", "-", "", &
-                (isec*Nneighbors)+neigh , -99, F,  1.0,  F,  'YMDH' )
+                (isec*Nneighbors)+neigh , -99, F,  1.0,  F,  'YM' )
                    dname = "Local_Pollutant3D_sec"//isec_char//neigh_char
         call AddNewDeriv( dname, "Local_Pollutant3D", "-", "-", "ug/m3", &
              (isec*Nneighbors)+neigh , -99, F,  1.0,  T,  'YMDH' , .true.)
