@@ -15,7 +15,7 @@
 #SBATCH --ntasks=40
 #SBATCH --mem=32000
 #SBATCH --time=4:0:0
-#activate the following line for runs which last longer than 48 hours
+#activate the following line for runs which last longer than 48 hours AND use more than one node
 ##SBATCH --partition=multinode 
 #SBATCH --job-name=emep
 #SBATCH --output=run.%j.out
