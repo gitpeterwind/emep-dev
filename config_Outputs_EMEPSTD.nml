@@ -59,7 +59,7 @@ OutputMisc=
 !
 !'ws10m',          'MET2D','u10','-','m/s' ,-99,-99,F,1.0,T,'YMD',
  'Snow_F',         'XSNOW','-',  '-','frac',-99,-99,F,1.0,T,'YM',
- 'Psurf_d',        'PSURF','-',  '-','hPa' ,-99,-99,F,1.0,T,'YMD',
+ 'Psurf_d',        'PSURF','-',  '-','hPa' ,-99,-99,F,1.0,T,'YMDH',
 !====================================================================================
 OutputConcs= 
       'HMIX'                ,'m'   ,'2d','HMIX'     ,'MISC' ,'YMDH', !! hourly tests
@@ -338,7 +338,10 @@ COLUMNDAT_WANTED =
 &OutputSize_config
 !restrict size of output files. (Sizes defined with respect to fulldomain)
 !
-  hour_DOMAIN=330,430,250,350, !=[istart,iend,jstart,jend], default RUNDOMAIN+[1,-1,1,-1]
+!SOUTH NORWAY:
+!  hour_DOMAIN=330,430,250,350, !=[istart,iend,jstart,jend], default RUNDOMAIN+[1,-1,1,-1]
+!NL
+  hour_DOMAIN=320,390,200,240, !=[istart,iend,jstart,jend], default RUNDOMAIN+[1,-1,1,-1]
   num_lev3d =8,
   lev3d=13,14,15,16,17,18,19,20,
   lev3d_from_surface=F,

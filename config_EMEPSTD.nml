@@ -46,7 +46,7 @@
   USE_ROADDUST          = T,            ! Only EECCA?
   USE_DUST              = T,            ! Only EECCA?
   USE_uEMEP             = T,            ! T for local fractions output
-  uEMEP%emis            = "nox",       ! one of EMIS_File: "sox ", "nox ", "co  ", "voc ", "nh3 ", "pm25", "pmco"
+  uEMEP%emis            = "nh3",       ! one of EMIS_File: "sox ", "nox ", "co  ", "voc ", "nh3 ", "pm25", "pmco"
   uEMEP%sector          = 0,            ! 0 for all sectors, or choose one sector
   NETCDF_DEFLATE_LEVEL  = 4,            ! 1-9 GZIP compress, 0 no compress, -1 netcdf3
 !-------- Can switch on INERIS-type degreeday stuff
@@ -114,7 +114,7 @@
             ! 'CCE_SPRUCE','CCE_BEECH','ACE_PINE','ACE_OAK','ACE_BEECH',
             ! 'NEUR_SPRUCE','NEUR_BIRCH','MED_OAK','MED_PINE','MED_BEECH'
 !-------- Sub domain (x0,x1,y0,y1)
- RUNDOMAIN =  230, 530, 150, 450,      !EMEP01 reduced to South Norway
+ RUNDOMAIN =  230, 530, 150, 450,      !EMEP01 reduced around South Norway
 ! RUNDOMAIN =  330, 430, 250, 350,      !EMEP01 reduced to South Norway
 !!RUNDOMAIN =   1, 100,  1, 100,      ! (EECCA benchmarks)
 ! RUNDOMAIN =  40, 210, 12, 184,      ! SR TNO28 area
