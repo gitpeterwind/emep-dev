@@ -155,6 +155,13 @@ changes here (and when committing svn), and Dave will tag as required
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+23rd Jan 2017 Peter      rv4_11_5
+
+Smoother interpolation when lon and lat resolution is not the same, as in TNO7 
+emissions.
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 20th Jan 2017 Dave      rv4_11_4
 
 run.pl
