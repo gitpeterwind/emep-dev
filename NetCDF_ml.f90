@@ -2196,7 +2196,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   integer ::alloc_err
   character*100 ::name,used_lat_name, used_lon_name
   real :: scale,offset,scalefactors(2),dloni,dlati,dlonx,dlatx,dlony,dlaty,dlon,dlat,dx,dy,dx1,dy1,gdlon,gdlat
-  integer ::ij,jdiv,idiv,Ndiv,Ndiv2,igjgk,ig,jg,ijk,n,im,jm,ijm,iw,ig1,jg1,ig1jgk,ig1jg1k,igjg1k
+  integer ::ij,jdiv,idiv,Ndiv_lon,Ndiv,Ndiv2,igjgk,ig,jg,ijk,n,im,jm,ijm,iw,ig1,jg1,ig1jgk,ig1jg1k,igjg1k
   integer ::imin,imax,jmin,jjmin,jmax,igjg,k2
   integer, allocatable:: Ivalues(:)  ! I counts all data
   integer, allocatable:: Nvalues(:)  !ds counts all values
@@ -2205,7 +2205,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   real ::lat,lon,maxlon,minlon,maxlat,minlat,maxlon_var,minlon_var,maxlat_var,minlat_var
   logical ::fileneeded, debug,data3D
   character(len = 50) :: interpol_used, data_projection=""
-  real :: Grid_resolution
+  real :: Grid_resolution_lon,Grid_resolution
   type(Deriv) :: def1 ! definition of fields
   logical ::  OnlyDefinedValues
 
@@ -2626,6 +2626,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      dlati=1.0/(Rlat(2)-Rlat(1))
 
      Grid_resolution = EARTH_RADIUS*abs(Rlat(2)-Rlat(1))*PI/180.0
+     Grid_resolution_lon = EARTH_RADIUS*abs(Rlon(2)-Rlon(1))*PI/180.0!NB: varies with latitude
 
      !the method chosen depends on the relative resolutions
      if(.not.present(interpol).and.Grid_resolution/GRIDWIDTH_M>4)then
@@ -2870,6 +2871,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      if(interpol_used=='conservative'.or.interpol_used=='mass_conservative')then
 
         if(projection=='lon lat' .and. Grid_resolution+0.01 > 2*GRIDWIDTH_M )then
+!NB:not completely mass conservative!
            !we do a bilinear interpolation, since it is both exact and faster than subdividing the gridcells
         ijk=0
         k2=1
@@ -2942,6 +2944,9 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
         Ndiv=nint(5*Grid_resolution/GRIDWIDTH_M)
         Ndiv=max(1,Ndiv)
         Ndiv2=Ndiv*Ndiv
+        Ndiv_lon=nint(5*Grid_resolution_lon/GRIDWIDTH_M)
+        Ndiv_lon=max(1,Ndiv_lon)
+        Ndiv2=Ndiv_lon*Ndiv
         !
         if(projection/='Stereographic'.and.projection/='lon lat'.and.projection/='Rotated_Spherical')then
            !the method should be revised or used only occasionally
@@ -2962,8 +2967,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
               lat=Rlat(startvec(2)-1+jg)-0.5/dlati+(jdiv-0.5)/(dlati*Ndiv)
               do ig=1,dims(1)
                  igjg=ig+(jg-1)*dims(1)
-                 do idiv=1,Ndiv
-                    lon=Rlon(startvec(1)-1+ig)-0.5/dloni+(idiv-0.5)/(dloni*Ndiv)
+                 do idiv=1,Ndiv_lon
+                    lon=Rlon(startvec(1)-1+ig)-0.5/dloni+(idiv-0.5)/(dloni*Ndiv_lon)
                     call lb2ij(lon,lat,i,j)
                     i=i-gi0-IRUNBEG+2
                     j=j-gj0-JRUNBEG+2
