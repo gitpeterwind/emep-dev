@@ -15,9 +15,9 @@ use EmisDef_ml,           only: VOLCANOES_LL
 use GridValues_ml,        only: xm2,sigma_bnd,GridArea_m2,&
                                 coord_in_processor,coord_in_gridbox
 use Io_ml,                only: open_file,read_line,IO_TMP,PrintLog
-use MetFields_ml,         only: roa, z_bnd
-use ModelConstants_ml,    only: KCHEMTOP,KMAX_MID,MasterProc, &
-                                USE_ASH,DEBUG,&
+use MetFields_ml,         only: roa, z_bnd, u_xmj, v_xmi
+use ModelConstants_ml,    only: KCHEMTOP,KMAX_MID,MasterProc,NPROC, &
+                                USE_ASH,DEBUG,USE_PREADV,&
                                 TXTLEN_NAME,dt_advec,dt_advec_inv,&
                                 startdate,enddate
 use NetCDF_ml,            only: GetCDF_modelgrid
@@ -34,6 +34,7 @@ private
 
 !** subroutines:
 public :: ColumnRate      ! Emission rate
+public :: getWinds   ! Wind speeds at locations
 
 logical, save ::      &
   source_found=.true.,&   ! Are sources found on this processor/subdomain?
@@ -94,6 +95,8 @@ character(len=3), parameter :: &  ! Expand variable name for multy sceario runs
   EXPAND_SCENARIO_NAME(1)=""                        ! do not expand
 
 real,save,allocatable,dimension(:,:) :: surf_height ! [m], read from topo_nc
+integer, public, save :: PROC_LOC(NMAX_LOC)=-1
+real, allocatable, public, save  :: Winds(:,:,:)
 
 contains
 !-----------------------------------------------------------------------!
@@ -141,6 +144,7 @@ function ColumnRate(i,j,REDUCE_VOLCANO) result(emiss)
     else
       iASH=>chemgroups(itot)%specs
     end if
+
   end if
 !----------------------------!
 !
@@ -149,8 +153,12 @@ function ColumnRate(i,j,REDUCE_VOLCANO) result(emiss)
   if(.not.source_found)return
   snow=date2string(SDATE_FMT,current_date)
   doLOC: do v=1,nloc
-    if((i/=locdef(v)%iloc).or.(j/=locdef(v)%jloc) & ! Wrong gridbox
-       .or.(nems(v)<1)) cycle doLOC                 ! Not erupting
+     if(USE_PREADV)then
+        !spread emissions in case of strong winds
+     else
+        if((i/=locdef(v)%iloc).or.(j/=locdef(v)%jloc) & ! Wrong gridbox
+             .or.(nems(v)<1)) cycle doLOC                 ! Not erupting
+     endif
     if(DEBUG%COLSRC) &
       write(*,MSG_FMT)snow//' Vent',me,'me',v,trim(locdef(v)%id),i,"i",j,"j"
     doEMS: do e=1,nems(v)
@@ -231,9 +239,11 @@ subroutine setRate()
                         0.079647,0.060689,0.07127 ,0.069065],&
     NILU_1BIN_SPLIT(1)=[1.0]
   real, pointer, dimension(:) :: binsplit => NULL()
+
 !----------------------------!
 !
 !----------------------------!
+  if(first_call .and. USE_PREADV)allocate(Winds(KMAX_MID,2,NMAX_LOC))
   if(.not.first_call)then
     if(MasterProc.and.DEBUG%COLSRC.and.second_call) &
       write(*,MSG_FMT)'No need for reset volc.def...'
@@ -263,6 +273,7 @@ subroutine setRate()
     if(txtline(1:1)=='#')cycle doLOC  ! Comment line
     dloc=getVent(txtline)
     if(coord_in_processor(dloc%lon,dloc%lat,iloc=dloc%iloc,jloc=dloc%jloc))then
+      PROC_LOC(l) = ME!The source is located on this proc 
       nloc=nloc+1
       call CheckStop(nloc>NMAX_LOC,ERR_LOC_MAX//" read")
       ! remove model surface height from vent elevation
@@ -273,6 +284,8 @@ subroutine setRate()
           dloc%grp,trim(dloc%name),dloc%iloc,"i",dloc%jloc,"j",&
           dloc%lon,"lon",dloc%lat,"lat"
     elseif(MasterProc)then
+      PROC_LOC(l) = -1!The source is not located on this proc 
+                      !we use -1, so that we know that if the sum all  PROC_LOC(l)<0, it is not in the rundomain
       if(DEBUG%COLSRC) &
         write(*,MSG_FMT)'Vent',me,'out',-1,trim(dloc%id),&
           dloc%grp,trim(dloc%name),dloc%iloc,"i",dloc%jloc,"j",&
@@ -282,6 +295,20 @@ subroutine setRate()
   end do doLOC
   if(MasterProc) close(IO_TMP)
   source_found=(nloc>0).or.(MasterProc.and.DEBUG%COLSRC)
+  if(USE_PREADV)then
+     !broadcast the PROC_LOC
+     CALL MPI_ALLREDUCE(MPI_IN_PLACE,PROC_LOC,NMAX_LOC,MPI_INTEGER, &
+          MPI_SUM,MPI_COMM_CALC,IERROR)
+     do l=1,NMAX_LOC
+        PROC_LOC(l) = PROC_LOC(l)+NPROC-1
+        if(MasterProc .and. PROC_LOC(l)>=0)write(*,*)'source ',l,' on PROC ',PROC_LOC(l)
+     enddo
+     !Now PROC_LOC=ME, because
+     !(ME) + (NPROC-1)*(-1) + NPROC-1= ME
+     !if not in the rundomain, PROC_LOC = -1
+     call getWinds
+
+  endif
 !----------------------------!
 ! Read Eruption CVS
 !----------------------------!
@@ -542,4 +569,20 @@ function getDate(code,se,ee,dh,debug) result(str)
   end select
 end function getDate
 end function ColumnRate
+
+subroutine getWinds
+  integer ::l
+  !broadcast wind speeds at emis locations
+  do l=1,NMAX_LOC
+     if(PROC_LOC(l)>=0)then
+        !exchange wind speed
+        if(PROC_LOC(l) == ME)then
+           Winds(:,1,l)=u_xmj(locdef(l)%iloc,locdef(l)%jloc,:,1)
+           Winds(:,2,l)=v_xmi(locdef(l)%iloc,locdef(l)%jloc,:,1)
+        endif
+        CALL MPI_BCAST(Winds(1,1,l),2*8*KMAX_MID,MPI_BYTE,PROC_LOC(l),MPI_COMM_CALC,IERROR)
+     endif
+  enddo
+end subroutine getWinds
+
 endmodule ColumnSource_ml

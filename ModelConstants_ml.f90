@@ -166,6 +166,7 @@ logical, public, save ::             &
  ,INERIS_SNAP1       = .false.       & !(EXP_NAME=="TFMM"), & ! Switches off decadal trend
  ,INERIS_SNAP2       = .false.       & !(EXP_NAME=="TFMM"), & ! Allows near-zero summer values
  ,USE_ASH            = .false.       & ! Ash from Volcanic Eruption, w/gravitational settling
+ ,USE_PREADV         = .true.        & ! Column Emissions are preadvected when winds are very strong 
  ,USE_NOCHEM         = .false.       & ! Turns of chemistry for emergency runs
  ,USE_AOD            = .false.       &
  ,USE_POLLEN         = .false.       & ! EXPERIMENTAL. Only works if start Jan 1
