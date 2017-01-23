@@ -510,10 +510,10 @@
                             xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. outgoing flux 
                             f_in=max(0.0,x)+max(0.0,xx)!positive part. incoming flux
                             loc_frac(0:NSECTORS,1,i,j,k)=(loc_frac(0:NSECTORS,1,i,j,k)*xn)/(xn+f_in+1.e-20)
-                            !local fraction from East neighbor
-                            loc_frac(0:NSECTORS,2,i,j,k)=(loc_frac(0:NSECTORS,2,i,j,k)*xn+loc_frac(0:NSECTORS,1,max(1,i-1),j,k)*max(0.0,xx))/(xn+f_in+1.e-20)
                             !local fraction from West neighbor
-                            loc_frac(0:NSECTORS,3,i,j,k)=(loc_frac(0:NSECTORS,3,i,j,k)*xn+loc_frac(0:NSECTORS,1,min(li1,i+1),j,k)*max(0.0,x))/(xn+f_in+1.e-20)
+                            loc_frac(0:NSECTORS,3,i,j,k)=(loc_frac(0:NSECTORS,2,i,j,k)*xn+loc_frac(0:NSECTORS,1,max(1,i-1),j,k)*max(0.0,xx))/(xn+f_in+1.e-20)
+                            !local fraction from East neighbor
+                            loc_frac(0:NSECTORS,2,i,j,k)=(loc_frac(0:NSECTORS,3,i,j,k)*xn+loc_frac(0:NSECTORS,1,min(li1,i+1),j,k)*max(0.0,x))/(xn+f_in+1.e-20)
                             !local fraction from South neighbor
                             loc_frac(0:NSECTORS,4,i,j,k)=(loc_frac(0:NSECTORS,4,i,j,k)*xn)/(xn+f_in+1.e-20)
                             !local fraction from North neighbor
@@ -569,10 +569,10 @@
                          xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. outgoing flux 
                          f_in=max(0.0,x)+max(0.0,xx)!positive part. incoming flux
                          loc_frac(0:NSECTORS,1,i,j,k)=(loc_frac(0:NSECTORS,1,i,j,k)*xn)/(xn+f_in+1.e-20)
-                         !local fraction from East neighbor
-                         loc_frac(0:NSECTORS,2,i,j,k)=(loc_frac(0:NSECTORS,2,i,j,k)*xn)/(xn+f_in+1.e-20)
                          !local fraction from West neighbor
-                         loc_frac(0:NSECTORS,3,i,j,k)=(loc_frac(0:NSECTORS,3,i,j,k)*xn)/(xn+f_in+1.e-20)
+                         loc_frac(0:NSECTORS,3,i,j,k)=(loc_frac(0:NSECTORS,2,i,j,k)*xn)/(xn+f_in+1.e-20)
+                         !local fraction from East neighbor
+                         loc_frac(0:NSECTORS,2,i,j,k)=(loc_frac(0:NSECTORS,3,i,j,k)*xn)/(xn+f_in+1.e-20)
                          !local fraction from South neighbor
                          loc_frac(0:NSECTORS,4,i,j,k)=(loc_frac(0:NSECTORS,4,i,j,k)*xn+loc_frac(0:NSECTORS,1,i,max(1,j-1),k)*max(0.0,xx))/(xn+f_in+1.e-20)
                          !local fraction from North neighbor
@@ -687,10 +687,10 @@
                          xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. outgoing flux 
                          f_in=max(0.0,x)+max(0.0,xx)!positive part. incoming flux
                          loc_frac(0:NSECTORS,1,i,j,k)=(loc_frac(0:NSECTORS,1,i,j,k)*xn)/(xn+f_in+1.e-20)
-                         !local fraction from East neighbor
-                         loc_frac(0:NSECTORS,2,i,j,k)=(loc_frac(0:NSECTORS,2,i,j,k)*xn)/(xn+f_in+1.e-20)
                          !local fraction from West neighbor
-                         loc_frac(0:NSECTORS,3,i,j,k)=(loc_frac(0:NSECTORS,3,i,j,k)*xn)/(xn+f_in+1.e-20)
+                         loc_frac(0:NSECTORS,3,i,j,k)=(loc_frac(0:NSECTORS,2,i,j,k)*xn)/(xn+f_in+1.e-20)
+                         !local fraction from East neighbor
+                         loc_frac(0:NSECTORS,2,i,j,k)=(loc_frac(0:NSECTORS,3,i,j,k)*xn)/(xn+f_in+1.e-20)
                          !local fraction from South neighbor
                          loc_frac(0:NSECTORS,4,i,j,k)=(loc_frac(0:NSECTORS,4,i,j,k)*xn+loc_frac(0:NSECTORS,1,i,max(1,j-1),k)*max(0.0,xx))/(xn+f_in+1.e-20)
                          !local fraction from North neighbor
@@ -745,10 +745,10 @@
                             xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. outgoing flux 
                             f_in=max(0.0,x)+max(0.0,xx)!positive part. incoming flux
                             loc_frac(0:NSECTORS,1,i,j,k)=(loc_frac(0:NSECTORS,1,i,j,k)*xn)/(xn+f_in+1.e-20)
-                            !local fraction from East neighbor
-                            loc_frac(0:NSECTORS,2,i,j,k)=(loc_frac(0:NSECTORS,2,i,j,k)*xn+loc_frac(0:NSECTORS,1,max(1,i-1),j,k)*max(0.0,xx))/(xn+f_in+1.e-20)
                             !local fraction from West neighbor
-                            loc_frac(0:NSECTORS,3,i,j,k)=(loc_frac(0:NSECTORS,3,i,j,k)*xn+loc_frac(0:NSECTORS,1,min(li1,i+1),j,k)*max(0.0,x))/(xn+f_in+1.e-20)
+                            loc_frac(0:NSECTORS,3,i,j,k)=(loc_frac(0:NSECTORS,2,i,j,k)*xn+loc_frac(0:NSECTORS,1,max(1,i-1),j,k)*max(0.0,xx))/(xn+f_in+1.e-20)
+                            !local fraction from East neighbor
+                            loc_frac(0:NSECTORS,2,i,j,k)=(loc_frac(0:NSECTORS,3,i,j,k)*xn+loc_frac(0:NSECTORS,1,min(li1,i+1),j,k)*max(0.0,x))/(xn+f_in+1.e-20)
                             !local fraction from South neighbor
                             loc_frac(0:NSECTORS,4,i,j,k)=(loc_frac(0:NSECTORS,4,i,j,k)*xn)/(xn+f_in+1.e-20)
                             !local fraction from North neighbor
