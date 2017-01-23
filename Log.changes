@@ -153,6 +153,22 @@ info on unused variables, etc.
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+20th Jan 2017 Dave      rv4_11_4
+
+run.pl
+- added testv in ProgDir defaults. Most people will have several test versions.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+17th Jan 2017 Alvaro    rv4_11_3
+
+config_BM-EECCA.nml:
+- Add missing output period (eg 'YMD') to WDEP_WANTED.
+- Missing since Oct 2016 (svn 3304)
+
+Benckmark:
+  vilje:~alvarov/work/Benchmark/EECCA.2012/BM_dev@ace01da
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 6th Jan 2017 Dave    rv4_11_2
 Testing tags
