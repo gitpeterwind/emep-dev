@@ -2225,6 +2225,11 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   character(len=*),parameter  :: field_not_found='field_not_found'
   real :: latlon_weight,lon_weight,lat_weight,low,high,normalize
 
+  real ::Rlonmin,Rlonmax,dRlon,dRloni,frac,frac_j,ir,jr
+  real ::Rlatmin,Rlatmax,dRlat,dRlati
+  integer, allocatable ::ifirst(:),ilast(:),jfirst(:),jlast(:)
+  real, allocatable :: fracfirstlon(:),fraclastlon(:),fracfirstlat(:),fraclastlat(:)
+
   !_______________________________________________________________________________
   !
   !1)           General checks and init
@@ -2622,8 +2627,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
      !NB: we assume regular grid
      !inverse of resolution
-     dloni=1.0/(Rlon(2)-Rlon(1))
-     dlati=1.0/(Rlat(2)-Rlat(1))
+     dRloni=1.0/(Rlon(2)-Rlon(1))
+     dRlati=1.0/(Rlat(2)-Rlat(1))
 
      Grid_resolution = EARTH_RADIUS*abs(Rlat(2)-Rlat(1))*PI/180.0
      Grid_resolution_lon = EARTH_RADIUS*abs(Rlon(2)-Rlon(1))*PI/180.0!NB: varies with latitude
@@ -2637,38 +2642,44 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      if(debug) then
         write(*,*) "SET Grid resolution:" // trim(fileName), Grid_resolution
         write(*,"(a,6f8.2,2x,4f8.2)") 'ReadCDF LL values ',&
-             Rlon(2),Rlon(1),dloni, Rlat(2),Rlat(1), dlati, &
+             Rlon(2),Rlon(1),dRloni, Rlat(2),Rlat(1), dRlati, &
              maxlon, minlon, maxlat, minlat
      end if
 
      if(mod(nint(100.*(Rlon(dims(1))+(Rlon(2)-Rlon(1))-Rlon(1))),36000)/=0)then
+           if(MasterProc.and.debug)write(*,*)'Grid does not cover 360 degrees ', Rlon(1),Rlon(dims(1))
         !the grid does not cover 360 degrees
-        if(MasterProc.and.debug)write(*,*)'Grid does not cover 360 degrees ', Rlon(1),Rlon(dims(1))
-        imin=1!cover everything available
-        imax=dims(1)!cover everything available
-     else if(dloni>0)then
-        !floor((minlon-Rlon(1))*dloni)<=number of gridcells between minlon and Rlon(1)
-        !mod(floor((minlon-Rlon(1))*dloni)+dims(1),dims(1))+1 = get a number in [1,dims(1)]
-        imin=mod( floor((minlon-Rlon(1))*dloni)+dims(1),dims(1))+1!NB lon  -90 = +270
-        imax=mod(ceiling((maxlon-Rlon(1))*dloni)+dims(1),dims(1))+1!NB lon  -90 = +270
+        if(Rlon(1)>Rlon(dims(1)))then
+           if(MasterProc.and.debug)write(*,*)'Longitudes not monotonic ', Rlon(1),Rlon(dims(1))
+           imin=1!cover everything available
+           imax=dims(1)!cover everything available
+        else
+          imin=max(1,floor((minlon-Rlon(1))*dRloni-0.001))+1
+          imax=min(dims(1),ceiling((maxlon-Rlon(1))*dRloni+1.001))
+        endif
+     else if(dRloni>0)then
+        !floor((minlon-Rlon(1))*dRloni)<=number of gridcells between minlon and Rlon(1)
+        !mod(floor((minlon-Rlon(1))*dRloni)+dims(1),dims(1))+1 = get a number in [1,dims(1)]
+        imin=mod( floor((minlon-Rlon(1))*dRloni)+dims(1),dims(1))+1!NB lon  -90 = +270
+        imax=mod(ceiling((maxlon-Rlon(1))*dRloni)+dims(1),dims(1))+1!NB lon  -90 = +270
         if(imax==1)imax=dims(1)!covered entire circle
         if(minlon-Rlon(1)<0.0)then
            imin=1!cover entire circle
            imax=dims(1)!cover entire circle
         end if
      else
-        call CheckStop("Not tested: negativ dloni")
-        imin=mod(floor((maxlon-Rlon(1))*dloni)+dims(1),dims(1))+1!NB lon  -90 = +270
-        imax=mod(ceiling((minlon-Rlon(1))*dloni)+dims(1),dims(1))+1!NB lon  -90 = +270
+        call CheckStop("Not tested: negativ dRloni")
+        imin=mod(floor((maxlon-Rlon(1))*dRloni)+dims(1),dims(1))+1!NB lon  -90 = +270
+        imax=mod(ceiling((minlon-Rlon(1))*dRloni)+dims(1),dims(1))+1!NB lon  -90 = +270
         if(imax==1)imax=dims(1)!covered entire circle
      end if
 
-     if(dlati>0)then
-        jmin=max(1,min(dims(2),floor((minlat-Rlat(1))*dlati)))
-        jmax=max(1,min(dims(2),ceiling((maxlat-Rlat(1))*dlati)+1))
+     if(dRlati>0)then
+        jmin=max(1,min(dims(2),floor((minlat-Rlat(1))*dRlati)))
+        jmax=max(1,min(dims(2),ceiling((maxlat-Rlat(1))*dRlati)+1))
      else!if starting to count from north pole
-        jmin=max(1,min(dims(2),floor((maxlat-Rlat(1))*dlati)))!maxlat is closest to Rlat(1)
-        jmax=max(1,min(dims(2),ceiling((minlat-Rlat(1))*dlati)+1))
+        jmin=max(1,min(dims(2),floor((maxlat-Rlat(1))*dRlati)))!maxlat is closest to Rlat(1)
+        jmax=max(1,min(dims(2),ceiling((minlat-Rlat(1))*dRlati)+1))
      end if
 
      if(maxlat>85.0.or.minlat<-85.0)then
@@ -2748,7 +2759,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
         lon_shift_Mask=0
         status=nf90_get_var(ncFileID_Mask, dimids_Mask(1), lon_mask)
         if(status==nf90_noerr)then
-           lon_shift_Mask=nint((Rlon(1)-lon_mask(1))*dloni)
+           lon_shift_Mask=nint((Rlon(1)-lon_mask(1))*dRloni)
            if(lon_shift_Mask/=0)then
               write(*,*)'ReadCDF mask: should shifting longitude by ',lon_shift_Mask,'=',Rlon(1)-lon_mask(1),'degrees'
               call StopAll("Longitude shift for Mask not implemented")
@@ -2870,70 +2881,139 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
      if(interpol_used=='conservative'.or.interpol_used=='mass_conservative')then
 
-        if(projection=='lon lat' .and. Grid_resolution+0.01 > 2*GRIDWIDTH_M )then
-!NB:not completely mass conservative!
-           !we do a bilinear interpolation, since it is both exact and faster than subdividing the gridcells
-        ijk=0
-        k2=1
-        if(data3D)k2=kend_loc-kstart_loc+1
-        gdlon=glon(2,1)-glon(1,1)
-        gdlat=glat(1,2)-glat(1,1)
+        if(projection=='lon lat')then
+           !exact integrals assuming uniform emission over emitter gridcells
+           if(.not.allocated(fracfirstlon))then
+              allocate(fracfirstlon(dims(1)),fraclastlon(dims(1)),ifirst(dims(1)),ilast(dims(1)))
+              allocate(fracfirstlat(dims(2)),fraclastlat(dims(2)),jfirst(dims(2)),jlast(dims(2)))
+           endif
+           !precompute factors 1-dimensionally
+           dRlon = Rlon(2)-Rlon(1)
+           if(dRlon<0)dRlon = dRlon+360.0
+           dRloni=1.0/dRlon
+           dlon=glon(2,1)-glon(1,1)
+           if(dlon<0)dlon = dlon+360.0
+           dloni=1.0/dlon
+           dRlat = Rlat(2)-Rlat(1)
+           dRlati=1.0/dRlat
+           dlat=glat(1,2)-glat(1,1)
+           dlati=1.0/dlat
 
-        do k=1,k2
-           do j=1,ljmax
-              do i=1,limax
-                 ij=i+(j-1)*LIMAX
-                 ijk=k+(ij-1)*k2
-                 Rvar(ijk)=0.0
-                 ig=floor((glon(i,j)-Rlon(startvec(1)))*dloni)+1
-                 if(ig<0.5)ig=ig+dims(1)
-                 if(ig>dims(1))ig=ig-dims(1)
-                 ig1 = ig+1
-                 if(ig1>dims(1))ig1=ig                 
-                 ig = max(1,min(dims(1),ig))
-                 jg = max(1,min(dims(2),floor((glat(i,j)-Rlat(startvec(2)))*dlati)+1))
-                 jg1 = jg+1
-                 if(jg1>dims(2))jg1=jg                 
-                 igjgk=ig +(jg-1)*dims(1)+(k-1)*dims(1)*dims(2)
-                 ig1jgk=ig1 +(jg-1)*dims(1)+(k-1)*dims(1)*dims(2)
-                 ig1jg1k=ig1 +(jg1-1)*dims(1)+(k-1)*dims(1)*dims(2)
-                 igjg1k=ig +(jg1-1)*dims(1)+(k-1)*dims(1)*dims(2)
-                 dx=glon(i,j)-Rlon(startvec(1)-1+ig)
-                 dx1=Rlon(startvec(1)-1+ig1)-glon(i,j)
-                 dy=glat(i,j)-Rlat(startvec(2)-1+jg)
-                 dy1=Rlat(startvec(2)-1+jg1)-glat(i,j)
-                 !weights: (1 - dx/(dx+dx1)) = dx1/(dx+dx1) 
-                 normalize = 1.0/((dx+dx1)*(dy+dy1)+1.E-10)
-                 if(interpol_used=='mass_conservative')normalize = normalize*gdlat*gdlon*dlati*dloni!scale for gridcell size differences
+           do ig=1,dims(1)
+              !longitude of edges
+              Rlonmin = Rlon(ig+imin-1) - 0.5*dRlon
+              Rlonmax = Rlonmin + dRlon
+              !find all cells with at least some part in emitter cell ig
+              call lb2ij(Rlonmin,0.0,ir,jr)
+              ifirst(ig)=floor(ir+0.5+1.E-6)!first i to be treated
+              call lb2ij(Rlonmax,0.0,ir,jr)
+              ilast(ig)=floor(ir+0.5-1.E-6)!last i to be treated
+              if(ifirst(ig)>rundomain(2) .or. ilast(ig)<rundomain(1))then
+                 !outside rundomain no need to spend time with this ig
+                 ilast(ig)=ifirst(ig)-1
+                 cycle
+              endif
+              ifirst(ig)=max(1,i_local(ifirst(ig)))
+              ilast(ig)=min(limax,i_local(ilast(ig)))
+              if(ifirst(ig)>limax .or. ilast(ig)<1)then
+                 !outside subdomain. no need to spend time with this ig
+                 ilast(ig)=ifirst(ig)-1
+                 cycle
+              endif
 
-                 if(OnlyDefinedValues.or.(Rvalues(igjgk)/=FillValue .and. .not.isnan(Rvalues(igjgk))))then
-                    if(fractions)then
+              !make fraction of overlap. Only first or last i can overlap
+              fracfirstlon(ig) = min(1.0,(glon(ifirst(ig),1)+ 0.5*dlon - Rlonmin)*dloni)
+              fraclastlon(ig)  = min(1.0,(Rlonmax - (glon(ilast(ig),1) - 0.5*dlon))*dloni)
+              !NB: when reducing on both sides need to ADD reductions not multiply
+              if(ifirst(ig)==ilast(ig))fraclastlon(ig)  = fraclastlon(ig) -(1.0-fracfirstlon(ig))!include reduction from both sides
 
-                    call readfrac(Ncc(igjgk),CC,Rvalues(igjgk),fraction_in,fractions_out,Ncc_out,CC_out,&
-                                  Rvar(ijk),dims(1)*dims(2),igjgk,ijk,dx1*dy1*normalize,Reduc)
+631 format(I4,A,F8.4,A,F8.4,A,I4,A,F8.4,A,I4,A,F8.4,A,F8.4)
+!              if(me==1)write(*,631)ig,'strart '//trim(varname),Rlonmin,' end',Rlonmax,' firsti',ifirst(ig),'lon ',glon(ifirst(ig),1),'last i',ilast(ig),'frac ',fracfirstlon(ig),' and ',fraclastlon(ig)
+           enddo
 
-                    call readfrac(Ncc(ig1jgk),CC,Rvalues(ig1jgk),fraction_in,fractions_out,Ncc_out,CC_out,&
-                                  Rvar(ijk),dims(1)*dims(2),ig1jgk,ijk,dx*dy1*normalize,Reduc)
+           !make factors for j
+           do jg=1,dims(2)
+              !latitude of edges. NB:Rlat is over fullgrid, while jg is in restricted grid
+              Rlatmin = Rlat(jg+jmin-1) - 0.5*dRlat
+              Rlatmax = Rlatmin + dRlat
+              !find all cells with at least some part in emitter cell jg
+              call lb2ij(0.0,Rlatmin,ir,jr)
+              jfirst(jg)=floor(jr+0.5+1.E-6)!first j to be treated
+              call lb2ij(0.0,Rlatmax,ir,jr)
+              jlast(jg)=floor(jr+0.5-1.E-6)!last j to be treated
+              !write(*,*)trim(varname)//' ',me,jg,jfirst(jg),Rlatmin,Rlatmax,jr,dims(2)
+              if(jfirst(jg)>rundomain(4) .or. jlast(jg)<rundomain(3))then
+                 !outside rundomain, no need to spend time with this jg
+                 jlast(jg)=jfirst(jg)-1
+                 cycle
+              endif
+              jfirst(jg)=max(1,j_local(jfirst(jg)))
+              jlast(jg)=min(ljmax,j_local(jlast(jg)))
+              if(jfirst(jg)>ljmax .or. jlast(jg)<1)then
+                 !no need to spend time with this jg
+                 jlast(jg)=jfirst(jg)-1
+                 cycle
+              endif
 
-                    call readfrac(Ncc(ig1jg1k),CC,Rvalues(ig1jg1k),fraction_in,fractions_out,Ncc_out,CC_out,&
-                                  Rvar(ijk),dims(1)*dims(2),ig1jg1k,ijk,dx*dy*normalize,Reduc)
+              fracfirstlat(jg) = min(1.0,(glat(1,jfirst(jg))+ 0.5*dlat - Rlatmin)*dlati)
+              fraclastlat(jg)  = min(1.0,(Rlatmax - (glat(1,jlast(jg)) - 0.5*dlat))*dlati)
+              if(jfirst(jg)==jlast(jg))fraclastlat(jg)  = fraclastlat(jg) -(1.0-fracfirstlat(jg))!include reduction from both sides
 
-                    call readfrac(Ncc(igjg1k),CC,Rvalues(igjg1k),fraction_in,fractions_out,Ncc_out,CC_out,&
-                                  Rvar(ijk),dims(1)*dims(2),igjg1k,ijk,dx1*dy*normalize,Reduc)
+           enddo
+           K2=1
+           if(data3D)k2=kend_loc-kstart_loc+1
+           ijk=LIMAX*LJMAX*k2
+           Rvar(1:ijk)=0.0
 
-                    else
-                       Rvar(ijk) = ( Rvalues(igjgk)*(dx1*dy1) &
-                            + Rvalues(ig1jgk)*(dx*dy1) &
-                            + Rvalues(ig1jg1k)*(dx*dy) &
-                            + Rvalues(igjg1k)*(dx1*dy)) *normalize
-                    endif
+           do jg=1,dims(2)
+             do j=jfirst(jg),jlast(jg)
+              if(j>=1.and.j<=ljmax)then
+                 if(interpol_used=='mass_conservative')then
+                    !scale for gridcell size differences
+                    frac = dRlati*dRloni*dlat*dlon!Divide by number of model cell in readin cell
                  else
-                    Rvar(ijk)=UnDef
-                 end if
-              end do
-           end do
-        end do
-!
+                    !will give average value (emissions in kg/m2 for instance)
+                    frac = 1.0
+                 endif
+                 if(j==jfirst(jg))frac_j=frac*fracfirstlat(jg)
+                 if(j==jlast(jg))frac_j=frac*fraclastlat(jg)
+
+                 do ig=1,dims(1)
+                    igjg=ig+(jg-1)*dims(1)
+                    
+                    do i=ifirst(ig),ilast(ig)
+                       if(i>=1.and.i<=limax)then
+
+                          if(i==ifirst(ig))frac=frac_j*fracfirstlon(ig)
+                          if(i==ilast(ig))frac=frac_j*fraclastlon(ig)
+
+                          ij=i+(j-1)*LIMAX
+                          k2=1
+                          if(data3D)k2=kend_loc-kstart_loc+1
+                          do k=1,k2
+                             ijk=k+(ij-1)*k2
+                             igjgk=igjg+(k-1)*dims(1)*dims(2)
+
+                             if(fractions)then
+                                call readfrac(Ncc(igjgk),CC,Rvalues(igjgk),fraction_in,fractions_out,Ncc_out,CC_out,&
+                                     Rvar(ijk),dims(1)*dims(2),igjgk,ijk,frac,Reduc)
+                                
+                             elseif(OnlyDefinedValues.or.Rvalues(igjgk)/=FillValue)then
+                                Rvar(ijk)=Rvar(ijk)+Rvalues(igjgk)*frac
+                             else
+                                !Not defined: don't include this Rvalue
+                                Rvar(ijk) = UnDef_local
+                             end if
+                          end do
+                       end if
+                    enddo
+                 enddo
+              endif              
+           enddo
+           enddo
+           deallocate(fracfirstlon,fraclastlon,ifirst,ilast)
+           deallocate(fracfirstlat,fraclastlat,jfirst,jlast)
+           
         else
 
         !conserves integral (almost, does not take into account local differences in mapping factor)
@@ -2964,11 +3044,11 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
         do jg=1,dims(2)
            do jdiv=1,Ndiv
-              lat=Rlat(startvec(2)-1+jg)-0.5/dlati+(jdiv-0.5)/(dlati*Ndiv)
+              lat=Rlat(startvec(2)-1+jg)-0.5/dRlati+(jdiv-0.5)/(dRlati*Ndiv)
               do ig=1,dims(1)
                  igjg=ig+(jg-1)*dims(1)
                  do idiv=1,Ndiv_lon
-                    lon=Rlon(startvec(1)-1+ig)-0.5/dloni+(idiv-0.5)/(dloni*Ndiv_lon)
+                    lon=Rlon(startvec(1)-1+ig)-0.5/dRloni+(idiv-0.5)/(dRloni*Ndiv_lon)
                     call lb2ij(lon,lat,i,j)
                     i=i-gi0-IRUNBEG+2
                     j=j-gj0-JRUNBEG+2
@@ -3022,7 +3102,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                             Ivalues(ijk),Ndiv,Rlon(startvec(1)),Rlon(startvec(1)+dims(1)-1),Rlat(startvec(2)),Rlat(startvec(2)-1+dims(2))
                        call CheckStop("Interpolation error")
                     else                       
-                       Rvar(ijk)=UnDef
+                       Rvar(ijk)=UnDef_local
                     end if
                  else
                     if(interpol_used=='mass_conservative')then
@@ -3045,7 +3125,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
         end do
         deallocate(Ivalues)
         deallocate(Nvalues)
-       endif
+     endif
  
      elseif(interpol_used=='zero_order')then
         !interpolation 1:
@@ -3058,16 +3138,16 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
               do i=1,limax
                  ij=i+(j-1)*LIMAX
                  ijk=k+(ij-1)*k2
-                 ig=nint((glon(i,j)-Rlon(startvec(1)))*dloni)+1
+                 ig=nint((glon(i,j)-Rlon(startvec(1)))*dRloni)+1
                  if(ig<0.5)ig=ig+dims(1)
                  if(ig>dims(1))ig=ig-dims(1)
                  ig=max(1,min(dims(1),ig))
-                 jg=max(1,min(dims(2),nint((glat(i,j)-Rlat(startvec(2)))*dlati)+1))
+                 jg=max(1,min(dims(2),nint((glat(i,j)-Rlat(startvec(2)))*dRlati)+1))
                  igjgk=ig+(jg-1)*dims(1)+(k-1)*dims(1)*dims(2)
                  if(OnlyDefinedValues.or.(Rvalues(igjgk)/=FillValue.and. .not.isnan(Rvalues(igjgk))))then
                     Rvar(ijk)=Rvalues(igjgk)
                  else
-                    Rvar(ijk)=UnDef
+                    Rvar(ijk)=UnDef_local
                  end if
               end do
            end do
@@ -4412,6 +4492,7 @@ end subroutine vertical_interpolate
  end subroutine ReadSectorName
 
  subroutine readfrac(Ncc,CC,Rvalues,fraction_in,fractions_out,Ncc_out,CC_out,val,dim1dim2,igjgk,ijk,latlon_weight,Reduc)
+!accumulates the values val, and update fractions
    implicit none
    real, optional,intent(in) :: Reduc(NLAND)
    integer, intent(in) :: dim1dim2,igjgk,ijk
