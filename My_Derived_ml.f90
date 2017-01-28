@@ -185,7 +185,7 @@ subroutine Init_My_Deriv()
   logical ::  &
     lev3d_from_surface=.false. ! levels are to be read from surface up
   character(len=2)::  isec_char
-  character(len=2)::  neigh_char
+  character(len=3)::  neigh_char
   NAMELIST /OutputConcs_config/OutputMisc,OutputConcs,OutputVegO3
   NAMELIST /OutputDep_config/DDEP_ECOS, DDEP_WANTED, WDEP_WANTED, SDEP_WANTED
   NAMELIST /OutputSize_config/fullrun_DOMAIN,month_DOMAIN,day_DOMAIN,hour_DOMAIN,&
@@ -313,9 +313,13 @@ subroutine Init_My_Deriv()
         if(neigh==3)neigh_char='_W'
         if(neigh==4)neigh_char='_S'
         if(neigh==5)neigh_char='_N'
+        if(neigh==6)neigh_char='_NW'
+        if(neigh==7)neigh_char='_NE'
+        if(neigh==8)neigh_char='_SW'
+        if(neigh==9)neigh_char='_SE'
      do isec=0,NSECTORS
-!        if(isec/=0 .and. isec/=2 .and. isec/=7 .and. isec/=8)cycle
-        if(isec/=0 .and. isec/=10)cycle
+        if(isec/=0 .and. isec/=2 .and. isec/=7 .and. isec/=8)cycle
+!        if(isec/=0 .and. isec/=10)cycle
         !        if(any(uEMEP%sectors(:)==isec))then
         write(isec_char,fmt='(i2.2)')isec
 !        tag_name(1:2) = [character(len=TXTLEN_DERIV)::&

@@ -23,10 +23,10 @@ use ModelConstants_ml,      only: &
      DEBUG,              & ! DEBUG%GRIDVALUES
      MasterProc,NPROC,IIFULLDOM,JJFULLDOM,RUNDOMAIN,&
      PT,Pref,NMET,METSTEP,USE_EtaCOORDINATES,MANUAL_GRID,USE_WRF_MET_NAMES,startdate
-use MPI_Groups_ml    , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER, MPI_LOGICAL, &
-                              MPI_MIN, MPI_MAX, MPI_SUM, &
-                              MPI_COMM_CALC, MPI_COMM_WORLD, MPISTATUS, IERROR, ME_MPI, NPROC_MPI,&
-                              ME_CALC, largeLIMAX,largeLJMAX 
+use MPI_Groups_ml!    , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER, MPI_LOGICAL, &
+                 !             MPI_MIN, MPI_MAX, MPI_SUM, &
+                 !             MPI_COMM_CALC, MPI_COMM_WORLD, MPISTATUS, IERROR, ME_MPI, NPROC_MPI,&
+                 !             ME_CALC, largeLIMAX,largeLJMAX 
 use Par_ml, only : &
      LIMAX,LJMAX,  & ! max. possible i, j in this domain
      limax,ljmax,        & ! actual max.   i, j in this domain
@@ -36,6 +36,7 @@ use Par_ml, only : &
      gi0,gj0,            & ! full-dom coordinates of domain lower l.h. corner
      gi1,gj1,            & ! full-dom coordinates of domain uppet r.h. corner
      me,                 & ! local processor
+     neighbor,WEST,EAST,SOUTH,NORTH,NOPROC,  &
      parinit,parinit_groups
 use PhysicalConstants_ml,     only: GRAV, PI, EARTH_RADIUS ! gravity, pi
 use TimeDate_ml,              only: current_date,date,Init_nmdays,nmdays
@@ -75,6 +76,8 @@ public :: &
 public :: RestrictDomain !mask from full domain to rundomain
 
 public :: GridRead!,Getgridparams
+public :: extendarea_N! returns array which includes neighbours from other subdomains
+
 private :: Alloc_GridFields
 private :: GetFullDomainSize
 private :: find_poles
@@ -2050,5 +2053,282 @@ subroutine RestrictDomain(DOMAIN)
     call CheckStop('Inconsistent DOMAIN')
   end if
 end subroutine RestrictDomain
+  !  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+  subroutine extendarea_N(f,h,thick,Size1,Size2,debug_flag)
+
+    !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+    !c
+    !     - returns extended array array, reading neighbour procs as needed
+    !     size of h MUST be as declared below
+    !c----------------------------------------------------------------------
+
+    integer, intent(in) :: thick,Size1,Size2
+    real, intent(in) :: f(Size1,LIMAX,LJMAX,Size2)
+    real, intent(inout) :: h(Size1,1-thick:LIMAX+thick,1-thick:LJMAX+thick,Size2)
+    logical, intent(in), optional :: debug_flag
+    logical :: mydebug = .false.
+
+    real, dimension(Size1,LIMAX,thick,Size2)            :: f_south,f_north
+    real, dimension(Size1,thick,1-thick:LJMAX+thick,Size2)        :: f_west,f_east
+
+!    integer :: thick ! = size(h,1) - size(f,1) ! Caller has to make h > f 
+    integer :: iif,jjf,i,j,ii,jj,iifl,jjfl,i1,i2
+    if ( present(debug_flag)  ) mydebug = debug_flag
+
+    ! readneighbours twice
+    iifl=limax+2*thick
+    jjfl=ljmax+2*thick
+    if(mydebug .and. MasterProc ) write(*,*) "DEBUG extendarea", iif,jjf,thick
+
+    call readneighbors_N(f,f_south,f_north,f_west,f_east,thick,Size1,Size2)
+
+    do i2=1,Size2
+    do j=1,jjf
+       do i=1,iif
+          do i1=1,Size1
+             h(i1,i,j,i2) = f(i1,i,j,i2)
+          enddo
+       end do
+    end do
+    end do
+    do i2=1,Size2
+    do j=1,thick
+       do i=1,limax
+          do i1=1,Size1
+          h(i1,i,j-thick,i2) = f_south(i1,i,j,i2)
+       end do
+    end do
+       end do
+    end do
+       if(me==8)write(*,*)'NORTH ',f_north(1,1,ljmax+1,1)
+
+    do i2=1,Size2
+    do j=1,thick
+       do i=1,limax
+          do i1=1,Size1
+          h(i1,i,ljmax+j,i2) = f_north(i1,i,j,i2)
+       end do
+    end do
+       end do
+    end do
+
+    do i2=1,Size2
+    do j=1-thick,ljmax+thick
+       do i=1,thick
+          do i1=1,Size1
+          h(i1,i-thick,j,i2) = f_west(i1,i,j,i2)
+       end do
+    end do
+       end do
+    end do
+
+    do i2=1,Size2
+    do j=1-thick,ljmax+thick
+       do i=1,thick
+          do i1=1,Size1
+          h(i1,limax+i,j,i2) = f_east(i1,i,j,i2)
+       end do
+    end do
+       end do
+    end do
+
+  end subroutine extendarea_N
+
+  subroutine readneighbors_N(data,data_south,data_north,data_west,data_east,thick,Size1,Size2)
+
+
+    ! Read data at the other side of the boundaries
+    !
+    ! thick is the number of gridcells in each direction to be transferred
+    ! Note that we also fetch data from processors in the "diagonal"
+    ! directions
+    !
+    ! Written by Peter January 2017
+    !
+    !Note,
+    !The data_west(jj,:)=data(1,j) is not a bug: when there is no west
+    !neighbour,
+    !the data is simply copied from the nearest points: data_west(jj,:) should
+    !be =data(-thick+1:0,j), but since this data does not exist, we
+    !put it =data(1,j).
+
+
+    implicit none
+
+    integer, intent(in) :: thick,Size1,Size2
+    real,intent(in), dimension(Size1,LIMAX,LJMAX,Size2) ::data
+    real,intent(out), dimension(Size1,LIMAX,thick,Size2) ::data_south,data_north
+    real,intent(out), dimension(Size1,thick,1-thick:LJMAX+thick,Size2) ::data_west,data_east
+    real, dimension(Size1,LIMAX,thick,Size2) ::data_south_snd,data_north_snd
+    real, dimension(Size1,thick,1-thick:LJMAX+thick,Size2) ::data_west_snd,data_east_snd
+
+    integer :: msgnr,info
+    integer :: i,it,j,tj,jj,jt,i1,i2
+
+    !check that limax and ljmax are large enough. Can only read neighboring subdomain
+    call CheckStop(limax < thick, "ERROR readneighbors_N in Met_ml")
+    call CheckStop(ljmax < thick, "ERROR readneighbors_N in Met_ml")
+
+
+    msgnr=1
+
+    data_south_snd(:,:,:,:)=data(:,:,1:thick,:)
+    data_north_snd(:,:,:,:)=data(:,:,ljmax-thick+1:ljmax,:)
+    if(neighbor(SOUTH) >= 0 )then
+       CALL MPI_ISEND( data_south_snd , 8*LIMAX*thick*Size1*Size2, MPI_BYTE,&
+            neighbor(SOUTH), msgnr, MPI_COMM_CALC, request_s,IERROR)
+    end if
+    if(neighbor(NORTH) >= 0 )then
+       CALL MPI_ISEND( data_north_snd , 8*LIMAX*thick*Size1*Size2, MPI_BYTE,&
+            neighbor(NORTH), msgnr+9, MPI_COMM_CALC, request_n,IERROR)
+    end if
+
+    if(neighbor(SOUTH) >= 0 )then
+       CALL MPI_RECV( data_south, 8*LIMAX*thick*Size1*Size2, MPI_BYTE,&
+            neighbor(SOUTH), msgnr+9, MPI_COMM_CALC, MPISTATUS, IERROR)
+    else
+       do i2=1,Size2
+       do jt=1,thick
+       do i=1,limax
+       do i1=1,Size1
+           data_south(i1,i,jt,i2)=data(i1,i,1,i2)
+       end do
+       end do
+       end do
+       end do
+    end if
+    if(neighbor(NORTH) >= 0 )then
+       CALL MPI_RECV( data_north, 8*LIMAX*thick*Size1*Size2, MPI_BYTE,&
+            neighbor(NORTH), msgnr, MPI_COMM_CALC, MPISTATUS, IERROR)
+    else
+       do i2=1,Size2
+       do jt=1,thick
+       do i=1,limax
+       do i1=1,Size1
+          data_north(i1,i,jt,i2)=data(i1,i,ljmax,i2)          
+       end do
+       end do
+       end do
+       end do
+    end if
+
+    jj=0
+    do i2=1,Size2
+       do jt=1,thick
+          do it=1,thick
+             do i1=1,Size1
+                data_west_snd(i1,it,jt-thick,i2)=data_south(i1,it,jt,i2)
+                data_east_snd(i1,it,jt-thick,i2)=data_south(i1,limax-thick+it,jt,i2)
+             end do
+          end do
+       end do
+       do j=1,ljmax
+          do it=1,thick
+             do i1=1,Size1
+                data_west_snd(i1,it,j,i2)=data(i1,it,j,i2)
+                data_east_snd(i1,it,j,i2)=data(i1,limax-thick+it,j,i2)
+             end do
+          end do
+       end do
+       do jt=1,thick
+          do it=1,thick
+             do i1=1,Size1
+                data_west_snd(i1,it,ljmax+jt,i2)=data_north(i1,it,jt,i2)
+                data_east_snd(i1,it,ljmax+jt,i2)=data_north(i1,limax-thick+it,jt,i2)
+             end do
+          end do
+       end do
+    end do
+
+    if(neighbor(WEST) >= 0 )then
+       CALL MPI_ISEND( data_west_snd , 8*(LJMAX+2*thick)*thick*Size1*Size2, MPI_BYTE,&
+            neighbor(WEST), msgnr+3, MPI_COMM_CALC, request_w,IERROR)
+    end if
+    if(neighbor(EAST) >= 0 )then
+       CALL MPI_ISEND( data_east_snd , 8*(LJMAX+2*thick)*thick*Size1*Size2, MPI_BYTE,&
+            neighbor(EAST), msgnr+7, MPI_COMM_CALC, request_e,IERROR)
+    end if
+
+
+
+    if(neighbor(WEST) >= 0 )then
+       CALL MPI_RECV( data_west, 8*(LJMAX+2*thick)*thick*Size1*Size2, MPI_BYTE,&
+            neighbor(WEST), msgnr+7, MPI_COMM_CALC, MPISTATUS, IERROR)
+    else
+
+       do i2=1,Size2
+       do jt=1,thick
+       do it=1,thick
+       do i1=1,Size1
+          data_west(i1,it,jt-thick,i2)=data_south(i1,1,jt,i2)
+       end do
+       end do
+       end do
+
+       do j=1,ljmax
+       do it=1,thick
+       do i1=1,Size1
+          data_west(i1,it,j,i2)=data(i1,1,j,i2)
+       end do
+       end do
+       end do
+       do jt=1,thick
+       do it=1,thick
+       do i1=1,Size1
+          data_west(i1,it,ljmax+jt,i2)=data_north(i1,1,jt,i2)
+       end do
+       end do
+       end do
+
+       end do
+    end if
+    if(neighbor(EAST) >= 0 )then
+       CALL MPI_RECV( data_east, 8*(LJMAX+2*thick)*thick*Size1*Size2, MPI_BYTE, &
+            neighbor(EAST), msgnr+3, MPI_COMM_CALC, MPISTATUS, IERROR)
+    else
+       do i2=1,Size2
+       do jt=1,thick
+       do it=1,thick
+       do i1=1,Size1
+          data_east(i1,it,jt-thick,i2)=data_south(i1,limax,jt,i2)
+       end do
+       end do
+       end do
+
+       do j=1,ljmax
+       do it=1,thick
+       do i1=1,Size1
+           data_east(i1,it,j,i2)=data(i1,limax,j,i2)
+       end do
+       end do
+       end do
+
+       do jt=1,thick
+       do it=1,thick
+       do i1=1,Size1
+          data_east(i1,it,ljmax+jt,i2)=data_north(i1,limax,jt,i2)
+       end do
+       end do
+       end do
+       end do
+    end if
+
+
+    if(neighbor(SOUTH) >= 0 )then
+       CALL MPI_WAIT(request_s, MPISTATUS,IERROR)
+    end if
+    if(neighbor(NORTH) >= 0 )then
+       CALL MPI_WAIT(request_n, MPISTATUS,IERROR)
+    end if
+    if(neighbor(WEST) >= 0 )then
+       CALL MPI_WAIT(request_w, MPISTATUS, IERROR)
+    end if
+    if(neighbor(EAST) >= 0 )then
+       CALL MPI_WAIT(request_e, MPISTATUS,IERROR)
+    end if
+
+ end subroutine readneighbors_N
+
+  !  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 endmodule GridValues_ml
 !==============================================================================

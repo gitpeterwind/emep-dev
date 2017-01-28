@@ -299,7 +299,7 @@ subroutine Define_Derived()
 
   integer :: ind, iadv, ishl, idebug, n, igrp, iout
   character(len=2)::  isec_char
-  character(len=2)::  neigh_char
+  character(len=3)::  neigh_char
 
   if(dbg0) write(6,*) " START DEFINE DERIVED "
   !   same mol.wt assumed for PPM25 and PPMCOARSE
@@ -635,6 +635,10 @@ subroutine Define_Derived()
         if(neigh==3)neigh_char='_W'
         if(neigh==4)neigh_char='_S'
         if(neigh==5)neigh_char='_N'
+        if(neigh==6)neigh_char='_NW'
+        if(neigh==7)neigh_char='_NE'
+        if(neigh==8)neigh_char='_SW'
+        if(neigh==9)neigh_char='_SE'
         do isec=0,NSECTORS
            write(isec_char,fmt='(i2.2)')isec
            dname = "Local_Pollutant_sec"//isec_char//neigh_char

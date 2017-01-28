@@ -2181,7 +2181,6 @@ contains
     end do
 
   end subroutine extendarea
-  !  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
   subroutine landify(x,intxt,xmin,xmax,wfmin,xmask)
     real, dimension(LIMAX,LJMAX), intent(inout) :: x

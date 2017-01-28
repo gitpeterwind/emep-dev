@@ -10,9 +10,10 @@
 #for express queue (max 4 hours):  sbatch --qos=devel run.pl
 #Queue system commands start with #SBATCH 
 #SBATCH -A nn2890k
-##SBATCH --partition=singlenode 
-#SBATCH --time=80:00:00
-#SBATCH --ntasks=20
+##SBATCH --partition=multinode 
+#SBATCH --time=24:00:00
+#SBATCH --nodes=4
+#SBATCH --ntasks-per-node=20
 #SBATCH --mem=32000
 #SBATCH --job-name=emep
 #SBATCH --output=run.%j.out
@@ -408,7 +409,8 @@ my $subv        = "$testv" ;                  # sub-version (to track changes)
 # For SR runs we can add many scenarios - dealt with later.
 # The effect is to choose the approproate femis file
 
-my $scenario = "Base_nh3";     # Reset later if SR
+my $scenario = "uEMEP_NOx_new";     # Reset later if SR
+#my $scenario = "Base_nh3";     # Reset later if SR
 #my $scenario = "Oslo_only";     # Reset later if SR
 #my $scenario = "Oslo_s7";     # Reset later if SR
 my @runs     = ( $scenario );
@@ -513,7 +515,7 @@ $month_days[2] += leap_year($year);
 @month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,24) if $GRID eq "HIRHAM";
 
 my $mm1 ="01";      # first month, use 2-digits!
-my $mm2 ="12";      # last month, use 2-digits!
+my $mm2 ="01";      # last month, use 2-digits!
 my $dd1 =  1;       # Start day, usually 1
 my $dd2 = 31;       # End day (can be too large; will be limited to max number of days in the month)
                     # put dd2=0 for 1 timestep run/test.

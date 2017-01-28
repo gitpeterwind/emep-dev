@@ -35,7 +35,7 @@ use EmisDef_ml,       only: &
      ,DMS_natso2_month, DMS_natso2_year,O_NH3, O_DMS&
      ,Emis_4D,N_Emis_4D,Found_Emis_4D & !used for EEMEP 
      ,KEMISTOP&
-     ,MAXFEMISLONLAT,N_femis_lonlat,loc_frac &
+     ,MAXFEMISLONLAT,N_femis_lonlat,loc_frac,loc_frac_ext &
      ,NSECTORS, N_HFAC, N_TFAC, N_SPLIT     & ! No. emis sectors, height, time and split classes
      ,sec2tfac_map, sec2hfac_map, sec2split_map& !generic mapping of indices
      ,Nneighbors & !used for uemep/loc_frac
@@ -336,6 +336,7 @@ subroutine Emissions(year)
     SumSnapEmis=0.0
     if(USE_uEMEP)then
        allocate(loc_frac(0:NSECTORS,Nneighbors,LIMAX,LJMAX,KMAX_MID))
+       allocate(loc_frac_ext(0:NSECTORS,Nneighbors,0:LIMAX+1,0:LJMAX+1,KMAX_MID))
        loc_frac=0.0
     end if
     !=========================
