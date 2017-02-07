@@ -33,7 +33,13 @@ use GridValues_ml,     only : GRIDWIDTH_M,fi,xp,yp,xp_EMEP_official&
                              ,lb2ij,lb2ijm,ij2lb&
                              ,ref_latitude_EMEP,xp_EMEP_old,yp_EMEP_old&
                              ,i_local,j_local,i_fdom,j_fdom&
-                             ,Eta_bnd,Eta_mid,A_bnd,B_bnd,A_mid,B_mid
+                             ,Eta_bnd,Eta_mid,A_bnd,B_bnd,A_mid,B_mid&
+                             ,lon0_lambert,&!reference longitude, also called phi, at which y=0 if lat=lat0_lambert
+                             lat0_lambert,&!reference latitude, at which x=0 
+                             lat_stand1_lambert,&!standard latitude at which mapping factor=1
+                             lat_stand2_lambert,&!second standard latitude
+                             x1_lambert,& !x value at i=1
+                             y1_lambert  !y value at j=1                             
 use InterpolationRoutines_ml,  only : grid2grid_coeff
 use ModelConstants_ml,  only: KMAX_MID,KMAX_BND, runlabel1, runlabel2 &
                              ,MasterProc, FORECAST, NETCDF_DEFLATE_LEVEL &
@@ -648,6 +654,16 @@ subroutine CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,&
       jVarID    =define_var("j_RotS",nf90_float,[jDimID])
       latVarID  =define_var("lat"   ,nf90_float,[iDimID,jDimID])
       longVarID =define_var("lon"   ,nf90_float,[iDimID,jDimID])
+    case('lambert')
+      ! define coordinate dimensions
+      call check(nf90_def_dim(ncFileID,"i",GIMAXcdf,iDimID))
+      call check(nf90_def_dim(ncFileID,"j",GJMAXcdf,jDimID))
+
+      ! define coordinate variables
+      iVarID    =define_var("i_lambert",nf90_float,[iDimID])
+      jVarID    =define_var("j_lambert",nf90_float,[jDimID])
+      latVarID  =define_var("lat"   ,nf90_float,[iDimID,jDimID])
+      longVarID =define_var("lon"   ,nf90_float,[iDimID,jDimID])
     case default !general projection
       ! define coordinate dimensions
       call check(nf90_def_dim(ncFileID,"i",GIMAXcdf,iDimID),"dim:i")
@@ -710,6 +726,8 @@ subroutine CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,&
     case('Rotated_Spherical')
       varID=define_var("Rotated_Spherical",nf90_int ,[0])
       varID=define_var("rotated_pole"     ,nf90_char,[0]) ! for NCL
+    case('lambert')
+      varID=define_var("projection_lambert",nf90_int ,[0])
     case default
       varID=define_var("Default_projection_name",nf90_int,[0])
     end select
@@ -764,6 +782,15 @@ subroutine CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,&
       call check(nf90_put_var(ncFileID,iVarID,xcoord(1:GIMAXcdf)))
       call check(nf90_put_var(ncFileID,jVarID,ycoord(1:GJMAXcdf)))
 
+    case('lambert')
+      do i=1,GIMAXcdf
+        xcoord(i)= (i+IBEGcdf-2)*GRIDWIDTH_M+x1_lambert
+      end do
+      do j=1,GJMAXcdf
+        ycoord(j)= (j+JBEGcdf-2)*GRIDWIDTH_M+y1_lambert
+      end do
+      call check(nf90_put_var(ncFileID,iVarID,xcoord(1:GIMAXcdf)))
+      call check(nf90_put_var(ncFileID,jVarID,ycoord(1:GJMAXcdf)))
     case('lon lat')
       do i=1,GIMAXcdf
         xcoord(i)= glon(1,1)+(i_local(i+IBEGcdf-1)-1)*(glon(2,1)-glon(1,1))
@@ -916,6 +943,18 @@ function define_var(vname,xtype,dimIDs) result(varID)
     call check(nf90_put_att(ncFileID,varID,"long_name","Rotated latitude"))
     call check(nf90_put_att(ncFileID,varID,"units","degrees"))
     call check(nf90_put_att(ncFileID,varID,"axis","Y"))
+  case("i_lambert")
+    call check(nf90_def_var(ncFileID,"i",xtype,dimIDs,varID),"def:"//trim(vname))
+    call check(nf90_put_att(ncFileID,varID,"standard_name","projection_x_coordinate"))
+    call check(nf90_put_att(ncFileID,varID,"long_name","x-coordinate in Cartesian system"))
+    call check(nf90_put_att(ncFileID,varID,"units","m"))
+    call check(nf90_put_att(ncFileID,varID,"axis","X"))
+  case("j_lambert")
+    call check(nf90_def_var(ncFileID,"j",xtype,dimIDs,varID),"def:"//trim(vname))
+    call check(nf90_put_att(ncFileID,varID,"standard_name","projection_y_coordinate"))
+    call check(nf90_put_att(ncFileID,varID,"long_name","y-coordinate in Cartesian system"))
+    call check(nf90_put_att(ncFileID,varID,"units","m"))
+    call check(nf90_put_att(ncFileID,varID,"axis","Y"))
   case("lat")
     call check(nf90_def_var(ncFileID,"lat",xtype,dimIDs,varID),"def:"//trim(vname))
     call check(nf90_put_att(ncFileID,varID,"long_name","latitude"))
@@ -981,11 +1020,18 @@ function define_var(vname,xtype,dimIDs) result(varID)
     call check(nf90_put_att(ncFileID,varID,"grid_mapping_name","rotated_latitude_longitude"))
     call check(nf90_put_att(ncFileID,varID,"grid_north_pole_latitude",grid_north_pole_latitude))
     call check(nf90_put_att(ncFileID,varID,"grid_north_pole_longitude", grid_north_pole_longitude))
+  case('projection_lambert')
+    call check(nf90_def_var(ncFileID,vname,xtype,varID),"def:"//trim(vname))
+    call check(nf90_put_att(ncFileID,varID,"grid_mapping_name","lambert_conformal_conic"))
+    call check(nf90_put_att(ncFileID,varID,"standard_parallel",(/lat_stand1_lambert,lat_stand2_lambert/)))
+    call check(nf90_put_att(ncFileID,varID,"longitude_of_central_meridian",lon0_lambert))
+    call check(nf90_put_att(ncFileID,varID,"latitude_of_projection_origin",lat0_lambert))
+    call check(nf90_put_att(ncFileID,varID,"earth_radius",earth_radius))!NB: reset to the same as in metdata
   case(Default_projection_name)
     call check(nf90_def_var(ncFileID,vname,xtype,varID),"def:"//trim(vname))
     call check(nf90_put_att(ncFileID,varID,"grid_mapping_name",trim(UsedProjection)))
   case default
-    call CheckStop("CreatenetCDFfile: unknown metadata varaible "//trim(vname))
+    call CheckStop("CreatenetCDFfile: unknown metadata variable "//trim(vname))
   end select
 end function define_var
 subroutine write_klev(kmax,klev,from_top)
@@ -1603,6 +1649,8 @@ subroutine  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype,chunksize
   case('lon lat')
   case('Rotated_Spherical')
     call check(nf90_put_att(ncFileID, varID, "grid_mapping", "Rotated_Spherical"))
+  case('lambert')
+    call check(nf90_put_att(ncFileID, varID, "grid_mapping", "projection_lambert"))
   case default
     call check(nf90_put_att(ncFileID, varID, "grid_mapping",Default_projection_name ))
   end select
@@ -3028,7 +3076,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
         Ndiv_lon=max(1,Ndiv_lon)
         Ndiv2=Ndiv_lon*Ndiv
         !
-        if(projection/='Stereographic'.and.projection/='lon lat'.and.projection/='Rotated_Spherical')then
+        if(projection/='Stereographic'.and.projection/='lon lat'.and.projection/='Rotated_Spherical'.and.projection/='lambert')then
            !the method should be revised or used only occasionally
            if(me==0)write(*,*)'WARNING: interpolation method may be CPU demanding'
         end if
@@ -3252,9 +3300,9 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
         yp_ext_div=(yp_ext+0.5)*Ndiv-0.5
         an_ext_div=an_ext*Ndiv
 
-        if(projection/='Stereographic'.and.projection/='lon lat'.and.projection/='Rotated_Spherical')then
+        if(projection/='Stereographic'.and.projection/='lon lat'.and.projection/='Rotated_Spherical'.and.projection/='lambert')then
            !the method should be revised or used only occasionally
-           if(me==0)write(*,*)'WARNING: interpolation method may be CPU demanding:',projection
+           if(me==0)write(*,*)'WARNING: interpolation from stereographic to '//trim(projection)//'may be CPU demanding:'
         end if
         k2=1
         if(data3D)k2=kend_loc-kstart_loc+1
@@ -3279,6 +3327,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                     i_ext=(ig-1)*Ndiv+idiv
                     call ij2lb(i_ext,j_ext,lon,lat,fi_ext,an_ext_div,xp_ext_div,yp_ext_div)
                     call lb2ij(lon,lat,i,j)!back to model (fulldomain) coordinates
+
+!                    if(abs(lon-15)<0.02 .and. abs(lat-63)<0.02)write(*,*)jg,ig,lon,lat,i,j,me
                     !convert from fulldomain to local domain
                     !i,j may be any integer, therefore should not use i_local array
                     i=i-gi0-IRUNBEG+2
@@ -3367,7 +3417,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
         an_ext_div=an_ext*Ndiv
         if(MasterProc.and.debug)write(*,*)'zero_order interpolation ',an_ext_div,xp_ext_div,yp_ext_div,dims(1),dims(2)
 
-        if(projection/='Stereographic'.and.projection/='lon lat'.and.projection/='Rotated_Spherical')then
+        if(projection/='Stereographic'.and.projection/='lon lat'.and.projection/='Rotated_Spherical'.and.projection/='lambert')then
            !the method should be revised or used only occasionally
            if(me==0)write(*,*)'WARNING: interpolation method may be CPU demanding',projection
         end if
@@ -4000,7 +4050,7 @@ end subroutine ReadField_CDF
 
         !divide the coarse grid into pieces significantly smaller than the fine grid
         !Divide each global gridcell into Ndiv x Ndiv pieces
-        Ndiv=nint(5*Grid_resolution/GRIDWIDTH_M)
+        Ndiv=nint(3*Grid_resolution/GRIDWIDTH_M)
         Ndiv=max(1,Ndiv)
         Ndiv2=Ndiv*Ndiv
         !
@@ -4026,7 +4076,7 @@ end subroutine ReadField_CDF
                     j=j-gj0-JRUNBEG+2
 
                     if(i>=1.and.i<=limax.and.j>=1.and.j<=ljmax)then
-                       ij=i+(j-1)*LIMAX
+                      ij=i+(j-1)*LIMAX
                        k2=kend-kstart+1
                        if(Flight_Levels)then
                           !Flight_Levels
@@ -4080,8 +4130,9 @@ end subroutine ReadField_CDF
                             trim(fileName) // ":" // trim(varname), &
                             i,j,k,me,minlon,maxlon,minlat,maxlat,glon(i,j),glat(i,j), &
                             Ivalues(ijk),Ndiv,Rlon(startvec(1)),Rlon(startvec(1)+dims(1)-1),Rlat(startvec(2)),Rlat(startvec(2)-1+dims(2))
-                       call CheckStop("Interpolation error")
-
+!                       call CheckStop("Interpolation error")
+                    !we simply set emission=0
+                    Rvar(ijk)=0.0
                  else
                     if(interpol_used=='mass_conservative')then
                        !used for example for emissions in kg (or kg/s)
