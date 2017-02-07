@@ -303,13 +303,6 @@
        do k = 1,KMAX_MID
           uEMEPfac(k)=(dA(k)/Pref+dB(k))/ATWAIR/GRAV*1.0E6
        end do
-       do j=1,ljmax
-       do i = 1,limax
-          loc_frac_ext(:,:,i,j,:)=loc_frac(:,:,i,j,:)
-       enddo
-       enddo
-       call  extendarea_N(loc_frac,loc_frac_ext,1,(NSECTORS+1)*Nneighbors,KMAX_MID)
-
     end if
 
     call Code_timer(tim_before)
@@ -482,6 +475,11 @@
           iterxys = iterxys + 1
           do k = 1,KMAX_MID
              fac1=(dA(k)/Pref+dB(k))*xxdg
+
+             if(USE_uEMEP)then
+                 call  extendarea_N(loc_frac(0,1,1,1,k),loc_frac_ext,1,(NSECTORS+1)*Nneighbors,1)                
+             end if
+
              do j = lj0,lj1
                 if(niterx(j,k)<=NITERXMAX)then
                    dth = dt_x(j,k)/GRIDWIDTH_M
@@ -519,22 +517,22 @@
                             f_in=max(0.0,x)+max(0.0,xx)!positive part. incoming flux
                             loc_frac(0:NSECTORS,1,i,j,k)=(loc_frac(0:NSECTORS,1,i,j,k)*xn)/(xn+f_in+1.e-20)
                             !local fraction from West neighbor
-                            loc_frac(0:NSECTORS,3,i,j,k)=(loc_frac(0:NSECTORS,3,i,j,k)*xn+loc_frac_ext(0:NSECTORS,1,i-1,j,k)*max(0.0,xx))/(xn+f_in+1.e-20)
+                            loc_frac(0:NSECTORS,3,i,j,k)=(loc_frac(0:NSECTORS,3,i,j,k)*xn+loc_frac_ext(0:NSECTORS,1,i-1,j)*max(0.0,xx))/(xn+f_in+1.e-20)
                             !local fraction from East neighbor
-                            loc_frac(0:NSECTORS,2,i,j,k)=(loc_frac(0:NSECTORS,2,i,j,k)*xn+loc_frac_ext(0:NSECTORS,1,i+1,j,k)*max(0.0,x))/(xn+f_in+1.e-20)
+                            loc_frac(0:NSECTORS,2,i,j,k)=(loc_frac(0:NSECTORS,2,i,j,k)*xn+loc_frac_ext(0:NSECTORS,1,i+1,j)*max(0.0,x))/(xn+f_in+1.e-20)
                             !local fraction from South neighbor
                             loc_frac(0:NSECTORS,4,i,j,k)=(loc_frac(0:NSECTORS,4,i,j,k)*xn)/(xn+f_in+1.e-20)
                             !local fraction from North neighbor
                             loc_frac(0:NSECTORS,5,i,j,k)=(loc_frac(0:NSECTORS,5,i,j,k)*xn)/(xn+f_in+1.e-20)
 
                             !local fraction from NorthWest neighbor
-                            loc_frac(0:NSECTORS,6,i,j,k)=(loc_frac(0:NSECTORS,6,i,j,k)*xn+loc_frac_ext(0:NSECTORS,5,i-1,j,k)*max(0.0,xx))/(xn+f_in+1.e-20)
+                            loc_frac(0:NSECTORS,6,i,j,k)=(loc_frac(0:NSECTORS,6,i,j,k)*xn+loc_frac_ext(0:NSECTORS,5,i-1,j)*max(0.0,xx))/(xn+f_in+1.e-20)
                             !local fraction from NorthEast neighbor
-                            loc_frac(0:NSECTORS,7,i,j,k)=(loc_frac(0:NSECTORS,7,i,j,k)*xn+loc_frac_ext(0:NSECTORS,5,i+1,j,k)*max(0.0,x))/(xn+f_in+1.e-20)
+                            loc_frac(0:NSECTORS,7,i,j,k)=(loc_frac(0:NSECTORS,7,i,j,k)*xn+loc_frac_ext(0:NSECTORS,5,i+1,j)*max(0.0,x))/(xn+f_in+1.e-20)
                             !local fraction from SouthWest neighbor
-                            loc_frac(0:NSECTORS,8,i,j,k)=(loc_frac(0:NSECTORS,8,i,j,k)*xn+loc_frac_ext(0:NSECTORS,4,i-1,j,k)*max(0.0,xx))/(xn+f_in+1.e-20)
+                            loc_frac(0:NSECTORS,8,i,j,k)=(loc_frac(0:NSECTORS,8,i,j,k)*xn+loc_frac_ext(0:NSECTORS,4,i-1,j)*max(0.0,xx))/(xn+f_in+1.e-20)
                             !local fraction from SouthEast neighbor
-                            loc_frac(0:NSECTORS,9,i,j,k)=(loc_frac(0:NSECTORS,9,i,j,k)*xn+loc_frac_ext(0:NSECTORS,4,i+1,j,k)*max(0.0,x))/(xn+f_in+1.e-20)
+                            loc_frac(0:NSECTORS,9,i,j,k)=(loc_frac(0:NSECTORS,9,i,j,k)*xn+loc_frac_ext(0:NSECTORS,4,i+1,j)*max(0.0,x))/(xn+f_in+1.e-20)
                              
                          end if
 
@@ -550,6 +548,9 @@
              !          end do !k horizontal (x) advection
 
              call Add_2timing(18,tim_after,tim_before,"advecdiff:advx")
+             if(USE_uEMEP)then
+                call  extendarea_N(loc_frac(0,1,1,1,k),loc_frac_ext,1,(NSECTORS+1)*Nneighbors,1)                
+             end if
 
              ! y-direction
              !          do k = 1,KMAX_MID
@@ -592,18 +593,18 @@
                          !local fraction from East neighbor
                          loc_frac(0:NSECTORS,2,i,j,k)=(loc_frac(0:NSECTORS,2,i,j,k)*xn)/(xn+f_in+1.e-20)
                          !local fraction from South neighbor
-                         loc_frac(0:NSECTORS,4,i,j,k)=(loc_frac(0:NSECTORS,4,i,j,k)*xn+loc_frac_ext(0:NSECTORS,1,i,j-1,k)*max(0.0,xx))/(xn+f_in+1.e-20)
+                         loc_frac(0:NSECTORS,4,i,j,k)=(loc_frac(0:NSECTORS,4,i,j,k)*xn+loc_frac_ext(0:NSECTORS,1,i,j-1)*max(0.0,xx))/(xn+f_in+1.e-20)
                          !local fraction from North neighbor
-                         loc_frac(0:NSECTORS,5,i,j,k)=(loc_frac(0:NSECTORS,5,i,j,k)*xn+loc_frac_ext(0:NSECTORS,1,i,j+1,k)*max(0.0,x))/(xn+f_in+1.e-20)
+                         loc_frac(0:NSECTORS,5,i,j,k)=(loc_frac(0:NSECTORS,5,i,j,k)*xn+loc_frac_ext(0:NSECTORS,1,i,j+1)*max(0.0,x))/(xn+f_in+1.e-20)
 
                          !local fraction from NorthWest neighbor
-                         loc_frac(0:NSECTORS,6,i,j,k)=(loc_frac(0:NSECTORS,6,i,j,k)*xn+loc_frac_ext(0:NSECTORS,3,i,j+1,k)*max(0.0,x))/(xn+f_in+1.e-20)
+                         loc_frac(0:NSECTORS,6,i,j,k)=(loc_frac(0:NSECTORS,6,i,j,k)*xn+loc_frac_ext(0:NSECTORS,3,i,j+1)*max(0.0,x))/(xn+f_in+1.e-20)
                          !local fraction from NorthEast neighbor
-                         loc_frac(0:NSECTORS,7,i,j,k)=(loc_frac(0:NSECTORS,7,i,j,k)*xn+loc_frac_ext(0:NSECTORS,2,i,j+1,k)*max(0.0,x))/(xn+f_in+1.e-20)
+                         loc_frac(0:NSECTORS,7,i,j,k)=(loc_frac(0:NSECTORS,7,i,j,k)*xn+loc_frac_ext(0:NSECTORS,2,i,j+1)*max(0.0,x))/(xn+f_in+1.e-20)
                          !local fraction from SouthWest neighbor
-                         loc_frac(0:NSECTORS,8,i,j,k)=(loc_frac(0:NSECTORS,8,i,j,k)*xn+loc_frac_ext(0:NSECTORS,3,i,j-1,k)*max(0.0,xx))/(xn+f_in+1.e-20)
+                         loc_frac(0:NSECTORS,8,i,j,k)=(loc_frac(0:NSECTORS,8,i,j,k)*xn+loc_frac_ext(0:NSECTORS,3,i,j-1)*max(0.0,xx))/(xn+f_in+1.e-20)
                          !local fraction from SouthEast neighbor
-                         loc_frac(0:NSECTORS,9,i,j,k)=(loc_frac(0:NSECTORS,9,i,j,k)*xn+loc_frac_ext(0:NSECTORS,2,i,j-1,k)*max(0.0,xx))/(xn+f_in+1.e-20)
+                         loc_frac(0:NSECTORS,9,i,j,k)=(loc_frac(0:NSECTORS,9,i,j,k)*xn+loc_frac_ext(0:NSECTORS,2,i,j-1)*max(0.0,xx))/(xn+f_in+1.e-20)
  
                       end if
 
@@ -680,6 +681,9 @@
           iterxys = iterxys + 1
           do k = 1,KMAX_MID
              fac1=(dA(k)/Pref+dB(k))*xxdg
+             if(USE_uEMEP)then
+                call  extendarea_N(loc_frac(0,1,1,1,k),loc_frac_ext,1,(NSECTORS+1)*Nneighbors,1)                
+             end if
              do i = li0,li1
                 dth = dt_y(i,k)/GRIDWIDTH_M
                 do itery=1,nitery(i,k)
@@ -720,18 +724,18 @@
                          !local fraction from East neighbor
                          loc_frac(0:NSECTORS,2,i,j,k)=(loc_frac(0:NSECTORS,2,i,j,k)*xn)/(xn+f_in+1.e-20)
                          !local fraction from South neighbor
-                         loc_frac(0:NSECTORS,4,i,j,k)=(loc_frac(0:NSECTORS,4,i,j,k)*xn+loc_frac_ext(0:NSECTORS,1,i,j-1,k)*max(0.0,xx))/(xn+f_in+1.e-20)
+                         loc_frac(0:NSECTORS,4,i,j,k)=(loc_frac(0:NSECTORS,4,i,j,k)*xn+loc_frac_ext(0:NSECTORS,1,i,j-1)*max(0.0,xx))/(xn+f_in+1.e-20)
                          !local fraction from North neighbor
-                         loc_frac(0:NSECTORS,5,i,j,k)=(loc_frac(0:NSECTORS,5,i,j,k)*xn+loc_frac_ext(0:NSECTORS,1,i,j+1,k)*max(0.0,x))/(xn+f_in+1.e-20)
+                         loc_frac(0:NSECTORS,5,i,j,k)=(loc_frac(0:NSECTORS,5,i,j,k)*xn+loc_frac_ext(0:NSECTORS,1,i,j+1)*max(0.0,x))/(xn+f_in+1.e-20)
 
                          !local fraction from NorthWest neighbor
-                         loc_frac(0:NSECTORS,6,i,j,k)=(loc_frac(0:NSECTORS,6,i,j,k)*xn+loc_frac_ext(0:NSECTORS,3,i,j+1,k)*max(0.0,x))/(xn+f_in+1.e-20)
+                         loc_frac(0:NSECTORS,6,i,j,k)=(loc_frac(0:NSECTORS,6,i,j,k)*xn+loc_frac_ext(0:NSECTORS,3,i,j+1)*max(0.0,x))/(xn+f_in+1.e-20)
                          !local fraction from NorthEast neighbor
-                         loc_frac(0:NSECTORS,7,i,j,k)=(loc_frac(0:NSECTORS,7,i,j,k)*xn+loc_frac_ext(0:NSECTORS,2,i,j+1,k)*max(0.0,x))/(xn+f_in+1.e-20)
+                         loc_frac(0:NSECTORS,7,i,j,k)=(loc_frac(0:NSECTORS,7,i,j,k)*xn+loc_frac_ext(0:NSECTORS,2,i,j+1)*max(0.0,x))/(xn+f_in+1.e-20)
                          !local fraction from SouthWest neighbor
-                         loc_frac(0:NSECTORS,8,i,j,k)=(loc_frac(0:NSECTORS,8,i,j,k)*xn+loc_frac_ext(0:NSECTORS,3,i,j-1,k)*max(0.0,xx))/(xn+f_in+1.e-20)
+                         loc_frac(0:NSECTORS,8,i,j,k)=(loc_frac(0:NSECTORS,8,i,j,k)*xn+loc_frac_ext(0:NSECTORS,3,i,j-1)*max(0.0,xx))/(xn+f_in+1.e-20)
                          !local fraction from SouthEast neighbor
-                         loc_frac(0:NSECTORS,9,i,j,k)=(loc_frac(0:NSECTORS,9,i,j,k)*xn+loc_frac_ext(0:NSECTORS,2,i,j-1,k)*max(0.0,xx))/(xn+f_in+1.e-20)
+                         loc_frac(0:NSECTORS,9,i,j,k)=(loc_frac(0:NSECTORS,9,i,j,k)*xn+loc_frac_ext(0:NSECTORS,2,i,j-1)*max(0.0,xx))/(xn+f_in+1.e-20)
 
                        end if
 
@@ -747,7 +751,11 @@
              call Add_2timing(20,tim_after,tim_before,"advecdiff:preadvy,advy")
 
              !          do k = 1,KMAX_MID
-             do j = lj0,lj1
+             if(USE_uEMEP)then
+                call  extendarea_N(loc_frac(0,1,1,1,k),loc_frac_ext,1,(NSECTORS+1)*Nneighbors,1)                
+             end if
+ 
+            do j = lj0,lj1
                 if(niterx(j,k)<=NITERXMAX)then
                    dth = dt_x(j,k)/GRIDWIDTH_M
                    do iterx=1,niterx(j,k)
@@ -784,22 +792,22 @@
                             f_in=max(0.0,x)+max(0.0,xx)!positive part. incoming flux
                             loc_frac(0:NSECTORS,1,i,j,k)=(loc_frac(0:NSECTORS,1,i,j,k)*xn)/(xn+f_in+1.e-20)
                             !local fraction from West neighbor
-                            loc_frac(0:NSECTORS,3,i,j,k)=(loc_frac(0:NSECTORS,3,i,j,k)*xn+loc_frac_ext(0:NSECTORS,1,i-1,j,k)*max(0.0,xx))/(xn+f_in+1.e-20)
+                            loc_frac(0:NSECTORS,3,i,j,k)=(loc_frac(0:NSECTORS,3,i,j,k)*xn+loc_frac_ext(0:NSECTORS,1,i-1,j)*max(0.0,xx))/(xn+f_in+1.e-20)
                             !local fraction from East neighbor
-                            loc_frac(0:NSECTORS,2,i,j,k)=(loc_frac(0:NSECTORS,2,i,j,k)*xn+loc_frac_ext(0:NSECTORS,1,i+1,j,k)*max(0.0,x))/(xn+f_in+1.e-20)
+                            loc_frac(0:NSECTORS,2,i,j,k)=(loc_frac(0:NSECTORS,2,i,j,k)*xn+loc_frac_ext(0:NSECTORS,1,i+1,j)*max(0.0,x))/(xn+f_in+1.e-20)
                             !local fraction from South neighbor
                             loc_frac(0:NSECTORS,4,i,j,k)=(loc_frac(0:NSECTORS,4,i,j,k)*xn)/(xn+f_in+1.e-20)
                             !local fraction from North neighbor
                             loc_frac(0:NSECTORS,5,i,j,k)=(loc_frac(0:NSECTORS,5,i,j,k)*xn)/(xn+f_in+1.e-20)
 
                             !local fraction from NorthWest neighbor
-                            loc_frac(0:NSECTORS,6,i,j,k)=(loc_frac(0:NSECTORS,6,i,j,k)*xn+loc_frac_ext(0:NSECTORS,5,i-1,j,k)*max(0.0,xx))/(xn+f_in+1.e-20)
+                            loc_frac(0:NSECTORS,6,i,j,k)=(loc_frac(0:NSECTORS,6,i,j,k)*xn+loc_frac_ext(0:NSECTORS,5,i-1,j)*max(0.0,xx))/(xn+f_in+1.e-20)
                             !local fraction from NorthEast neighbor
-                            loc_frac(0:NSECTORS,7,i,j,k)=(loc_frac(0:NSECTORS,7,i,j,k)*xn+loc_frac_ext(0:NSECTORS,5,i+1,j,k)*max(0.0,x))/(xn+f_in+1.e-20)
+                            loc_frac(0:NSECTORS,7,i,j,k)=(loc_frac(0:NSECTORS,7,i,j,k)*xn+loc_frac_ext(0:NSECTORS,5,i+1,j)*max(0.0,x))/(xn+f_in+1.e-20)
                             !local fraction from SouthWest neighbor
-                            loc_frac(0:NSECTORS,8,i,j,k)=(loc_frac(0:NSECTORS,8,i,j,k)*xn+loc_frac_ext(0:NSECTORS,4,i-1,j,k)*max(0.0,xx))/(xn+f_in+1.e-20)
+                            loc_frac(0:NSECTORS,8,i,j,k)=(loc_frac(0:NSECTORS,8,i,j,k)*xn+loc_frac_ext(0:NSECTORS,4,i-1,j)*max(0.0,xx))/(xn+f_in+1.e-20)
                             !local fraction from SouthEast neighbor
-                            loc_frac(0:NSECTORS,9,i,j,k)=(loc_frac(0:NSECTORS,9,i,j,k)*xn+loc_frac_ext(0:NSECTORS,4,i+1,j,k)*max(0.0,x))/(xn+f_in+1.e-20)
+                            loc_frac(0:NSECTORS,9,i,j,k)=(loc_frac(0:NSECTORS,9,i,j,k)*xn+loc_frac_ext(0:NSECTORS,4,i+1,j)*max(0.0,x))/(xn+f_in+1.e-20)
                              
                           end if
 

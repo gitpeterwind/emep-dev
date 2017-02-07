@@ -336,7 +336,7 @@ subroutine Emissions(year)
     SumSnapEmis=0.0
     if(USE_uEMEP)then
        allocate(loc_frac(0:NSECTORS,Nneighbors,LIMAX,LJMAX,KMAX_MID))
-       allocate(loc_frac_ext(0:NSECTORS,Nneighbors,0:LIMAX+1,0:LJMAX+1,KMAX_MID))
+       allocate(loc_frac_ext(0:NSECTORS,Nneighbors,0:LIMAX+1,0:LJMAX+1))
        loc_frac=0.0
     end if
     !=========================

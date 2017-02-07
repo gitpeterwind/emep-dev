@@ -2083,8 +2083,8 @@ end subroutine RestrictDomain
     call readneighbors_N(f,f_south,f_north,f_west,f_east,thick,Size1,Size2)
 
     do i2=1,Size2
-    do j=1,jjf
-       do i=1,iif
+    do j=1,ljmax
+       do i=1,limax
           do i1=1,Size1
              h(i1,i,j,i2) = f(i1,i,j,i2)
           enddo
@@ -2100,7 +2100,6 @@ end subroutine RestrictDomain
     end do
        end do
     end do
-       if(me==8)write(*,*)'NORTH ',f_north(1,1,ljmax+1,1)
 
     do i2=1,Size2
     do j=1,thick
@@ -2174,6 +2173,7 @@ end subroutine RestrictDomain
 
     data_south_snd(:,:,:,:)=data(:,:,1:thick,:)
     data_north_snd(:,:,:,:)=data(:,:,ljmax-thick+1:ljmax,:)
+
     if(neighbor(SOUTH) >= 0 )then
        CALL MPI_ISEND( data_south_snd , 8*LIMAX*thick*Size1*Size2, MPI_BYTE,&
             neighbor(SOUTH), msgnr, MPI_COMM_CALC, request_s,IERROR)

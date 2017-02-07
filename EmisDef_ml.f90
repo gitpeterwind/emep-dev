@@ -189,7 +189,9 @@ real, public, allocatable, save, dimension(:,:,:) :: &
   gridrcroadd0      ! varies every hour
 
 real, public, allocatable, dimension(:,:,:,:,:), save :: &
-  loc_frac, loc_frac_ext    ! Fraction of pollutants that are produced locally in the gridcell
+  loc_frac    ! Fraction of pollutants that are produced locally in the gridcell
+real, public, allocatable, dimension(:,:,:,:), save :: &
+  loc_frac_ext    ! Fraction of pollutants extended size, without k dimension
 integer, public, parameter:: Nneighbors = 9 !localfractions from 8 neighbors + self
 
 !Ocean variables

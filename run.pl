@@ -10,11 +10,11 @@
 #for express queue (max 4 hours):  sbatch --qos=devel run.pl
 #Queue system commands start with #SBATCH 
 #SBATCH -A nn2890k
-##SBATCH --partition=multinode 
-#SBATCH --time=24:00:00
-#SBATCH --nodes=4
-#SBATCH --ntasks-per-node=20
-#SBATCH --mem=32000
+#SBATCH --partition multinode 
+#SBATCH --time=0-04:00:00
+##SBATCH --nodes=2
+#SBATCH --ntasks=80
+#SBATCH --mem=24000
 #SBATCH --job-name=emep
 #SBATCH --output=run.%j.out
 
@@ -115,7 +115,8 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
 # ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3306","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
- ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3306","EmChem09soa","EMEPSTD","EMEPSTD","EMEP01",0);
+# ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3306","EmChem09soa","EMEPSTD","EMEPSTD","EMEP01",0);
+ ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3306","EmChem09soa","EMEPSTD","EMEPSTD","GLOBAL05",0);
 #($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3074","EmChem09soa","EMEPGLOB","EMEPSTD","GLOBAL",0);
 
 my %BENCHMARK;
@@ -409,7 +410,8 @@ my $subv        = "$testv" ;                  # sub-version (to track changes)
 # For SR runs we can add many scenarios - dealt with later.
 # The effect is to choose the approproate femis file
 
-my $scenario = "uEMEP_NOx_new";     # Reset later if SR
+my $scenario = "uEMEP05_nh3";     # Reset later if SR
+#my $scenario = "uEMEP_NOx";     # Reset later if SR
 #my $scenario = "Base_nh3";     # Reset later if SR
 #my $scenario = "Oslo_only";     # Reset later if SR
 #my $scenario = "Oslo_s7";     # Reset later if SR
@@ -515,7 +517,7 @@ $month_days[2] += leap_year($year);
 @month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,24) if $GRID eq "HIRHAM";
 
 my $mm1 ="01";      # first month, use 2-digits!
-my $mm2 ="01";      # last month, use 2-digits!
+my $mm2 ="12";      # last month, use 2-digits!
 my $dd1 =  1;       # Start day, usually 1
 my $dd2 = 31;       # End day (can be too large; will be limited to max number of days in the month)
                     # put dd2=0 for 1 timestep run/test.

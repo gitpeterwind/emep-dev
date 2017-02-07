@@ -643,16 +643,16 @@ subroutine Define_Derived()
            write(isec_char,fmt='(i2.2)')isec
            dname = "Local_Pollutant_sec"//isec_char//neigh_char
            call AddNewDeriv( dname, "Local_Pollutant", "-", "-", "mg/m2", &
-                (isec*Nneighbors)+neigh , -99, F,  1.0e6,  T,  'YMDH' )
+                (isec*Nneighbors)+neigh-1 , -99, F,  1.0e6,  T,  'YMDH' )
            dname = "Local_Fraction_sec"//isec_char//neigh_char!NB must be AFTER "Local_Pollutant" and "Total_Pollutant"
            call AddNewDeriv( dname, "Local_Fraction", "-", "-", "", &
-                (isec*Nneighbors)+neigh , -99, F,  1.0,  F,  'YM' )
+                (isec*Nneighbors)+neigh-1 , -99, F,  1.0,  F,  'YM' )
                    dname = "Local_Pollutant3D_sec"//isec_char//neigh_char
         call AddNewDeriv( dname, "Local_Pollutant3D", "-", "-", "ug/m3", &
-             (isec*Nneighbors)+neigh , -99, F,  1.0,  T,  'YMDH' , .true.)
+             (isec*Nneighbors)+neigh-1 , -99, F,  1.0,  T,  'YMDH' , .true.)
         dname = "Local_Fraction3D_sec"//isec_char//neigh_char!NB must be AFTER "Local_Pollutant" and "Total_Pollutant"
         call AddNewDeriv( dname, "Local_Fraction3D", "-", "-", "", &
-             (isec*Nneighbors)+neigh , -99, F,  1.0,  F,  'YMDH', .true.)
+             (isec*Nneighbors)+neigh-1 , -99, F,  1.0,  F,  'YMDH', .true.)
         enddo
      enddo
    end if
@@ -1516,7 +1516,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
                  *(dA(kmax_mid)+dB(kmax_mid)*ps(i,j,1))/ATWAIR/GRAV
              end do
              isec=f_2d(n)%Index/Nneighbors
-             neigh=f_2d(n)%Index-isec*Nneighbors
+             neigh=f_2d(n)%Index-isec*Nneighbors+1
              d_2d( n, i,j,IOU_INST) = loc_frac(isec,neigh,i,j,kmax_mid)*xtot
           end do
        end do
@@ -1885,7 +1885,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
     case("Local_Pollutant3D")   ! for uEMEP, under development
        isec=f_3d(n)%Index/Nneighbors
-       neigh=f_3d(n)%Index-isec*Nneighbors
+       neigh=f_3d(n)%Index-isec*Nneighbors+1
       do l=1,num_lev3d
         k=lev3d(l)
         do j=1,ljmax
