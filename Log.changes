@@ -154,21 +154,6 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-2nd  Feb 2017  Dave
-
-Country_ml.f90 - added 199 to cope with non-specific emissions as seen 
-  in annual Emis_01degGLOBAL_2012_HTAP_MIEC.nc file.
-
-EECCA 2012 beckmark, submitted to AeroCom
-  EMEP_dev@0ecbb68_170208alvarov_RGBMEECCA_day_2012.nc
-  vilje:~alvarov/work/Benchmark/EECCA.2012/BM_dev@0ecbb68
-
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-1st  Feb 2017  Dave
-
-run.pl - used pattern match on EmChems to get emissplit.specials
-
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 9th Feb 2017 Peter
 
 Problems from the new interpolation routine (26th Jan) for global grids:
@@ -186,6 +171,20 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Support for Lambert conical conformal projection.
 Tested for WRF metdata.
 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+2nd  Feb 2017  Dave
+
+Country_ml.f90 - added 199 to cope with non-specific emissions as seen 
+  in annual Emis_01degGLOBAL_2012_HTAP_MIEC.nc file.
+
+EECCA 2012 beckmark, submitted to AeroCom
+  EMEP_dev@0ecbb68_170208alvarov_RGBMEECCA_day_2012.nc
+  vilje:~alvarov/work/Benchmark/EECCA.2012/BM_dev@0ecbb68
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+1st  Feb 2017  Dave
+
+run.pl - used pattern match on EmChems to get emissplit.specials
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26th Jan 2017 Peter
