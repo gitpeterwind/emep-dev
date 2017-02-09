@@ -2269,7 +2269,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   integer, allocatable ::CC(:,:),Ncc(:)
   real ::total,UnDef_local
   integer ::N_out,Ng,Nmax,kstart_loc,kend_loc,lon_shift_Mask,startlat_Mask
-  logical :: Reverse_lat_direction_Mask
+  logical :: Reverse_lat_direction_Mask,ilast_corrected
   character(len=*),parameter  :: field_not_found='field_not_found'
   real :: latlon_weight,lon_weight,lat_weight,low,high,normalize
 
@@ -2287,7 +2287,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
   debug = .false.
   if(present(debug_flag))then
-     debug = debug_flag .and. MasterProc
+     debug = debug_flag .and. me==9!MasterProc
      if ( debug ) write(*,*) 'ReadCDF start: ',trim(filename),':', trim(varname)
   end if
   if(present(needed))   fileneeded=needed
@@ -2929,7 +2929,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
      if(interpol_used=='conservative'.or.interpol_used=='mass_conservative')then
 
-        if(projection=='lon lat')then
+        if(projection=='lon lat' .and. .false.)then
            !exact integrals assuming uniform emission over emitter gridcells
            if(.not.allocated(fracfirstlon))then
               allocate(fracfirstlon(dims(1)),fraclastlon(dims(1)),ifirst(dims(1)),ilast(dims(1)))
@@ -2956,27 +2956,60 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
               ifirst(ig)=floor(ir+0.5+1.E-6)!first i to be treated
               call lb2ij(Rlonmax,0.0,ir,jr)
               ilast(ig)=floor(ir+0.5-1.E-6)!last i to be treated
-              if(ifirst(ig)>rundomain(2) .or. ilast(ig)<rundomain(1))then
+
+              !end of the world tests
+              if(ilast(ig)>= ifirst(ig))then
+                 !no problems with monotonicity
+              else                 
+                 !Problems: we cross the point where lon+eps=lon-360
+                 !several cases according to which points are in the subdomain
+                  ilast_corrected=.false.
+                 if(ifirst(ig)>=rundomain(1) .and. ifirst(ig)<=rundomain(2))then
+                    !inside rundomain
+                    if(i_local(ifirst(ig))>=1 .and. i_local(ifirst(ig))<=limax)then
+                       !inside subdomain. ilast(ig) is wrong, set it at the end of subdomain
+                       ilast(ig)=i_fdom(limax)
+                       !we are done with correction
+                       ilast_corrected=.true.
+                    endif
+                 endif
+                 if((.not. ilast_corrected) .and. ilast(ig)>=rundomain(1) .and. ilast(ig)<=rundomain(2))then
+                    !inside rundomain
+                    if(i_local(ilast(ig))>=1 .and. i_local(ilast(ig))<=limax)then
+                       !inside subdomain. ifirst(ig) is wrong, set it at the start of subdomain
+                       ifirst(ig)=i_fdom(1)
+                    endif
+                 endif
+                 if(ilast(ig)< ifirst(ig))then
+                    !none of them are in subdomain. nothing to do
+                    ilast(ig)=ifirst(ig)-1
+                    cycle
+                 endif
+              endif              
+
+              if((ifirst(ig)>rundomain(2) .or. ilast(ig)<rundomain(1)))then
                  !outside rundomain no need to spend time with this ig
                  ilast(ig)=ifirst(ig)-1
                  cycle
               endif
               ifirst(ig)=max(1,i_local(ifirst(ig)))
               ilast(ig)=min(limax,i_local(ilast(ig)))
-              if(ifirst(ig)>limax .or. ilast(ig)<1)then
+              if((ifirst(ig)>limax .or. ilast(ig)<1) )then
                  !outside subdomain. no need to spend time with this ig
                  ilast(ig)=ifirst(ig)-1
                  cycle
               endif
 
-              !make fraction of overlap. Only first or last i can overlap
-              fracfirstlon(ig) = min(1.0,(glon(ifirst(ig),1)+ 0.5*dlon - Rlonmin)*dloni)
-              fraclastlon(ig)  = min(1.0,(Rlonmax - (glon(ilast(ig),1) - 0.5*dlon))*dloni)
+              !make fraction of overlap. Only first or last i can overlap. 1*dloni means 100% of the incoming data is taken.
+              !put all incoming longitudes in the range 0-360
+              fracfirstlon(ig) = min(1.0, mod(360.0 + mod(glon(ifirst(ig),1)+360.0,360.0)+ 0.5*dlon - mod(Rlonmin+360.0,360.0),360.0)*dloni)
+              fraclastlon(ig)  = min(1.0, mod(360.0 + mod(Rlonmax+360.0,360.0) - (mod(glon(ilast(ig),1)+360.0,360.0) - 0.5*dlon),360.0)*dloni)
               !NB: when reducing on both sides need to ADD reductions not multiply
               if(ifirst(ig)==ilast(ig))fraclastlon(ig)  = fraclastlon(ig) -(1.0-fracfirstlon(ig))!include reduction from both sides
-
-631 format(I4,A,F8.4,A,F8.4,A,I4,A,F8.4,A,I4,A,F8.4,A,F8.4)
-!              if(me==1)write(*,631)ig,'strart '//trim(varname),Rlonmin,' end',Rlonmax,' firsti',ifirst(ig),'lon ',glon(ifirst(ig),1),'last i',ilast(ig),'frac ',fracfirstlon(ig),' and ',fraclastlon(ig)
+              if(fracfirstlon(ig)<0.0)write(*,*)'ERROR A in interpolation',me,ig,fracfirstlon(ig)
+              if(fraclastlon(ig)<0.0)write(*,*)'ERROR B in interpolation',me,ig,fraclastlon(ig)
+631           format(I4,A,F10.4,A,F10.4,A,I4,A,F10.4,A,I4,A,F10.4,A,F10.4)
+!              if(me==10 .and. (ig==3 .or. abs(Rlon(ig))<1.0 ))write(*,631)ig,' start '//trim(varname),Rlonmin,' end',Rlonmax,' firsti',ifirst(ig),'lon ',glon(ifirst(ig),1),'last i',ilast(ig),'frac ',fracfirstlon(ig),' and ',fraclastlon(ig)
            enddo
 
            !make factors for j
@@ -3012,7 +3045,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
            if(data3D)k2=kend_loc-kstart_loc+1
            ijk=LIMAX*LJMAX*k2
            Rvar(1:ijk)=0.0
-
+           idiv=0
            do jg=1,dims(2)
              do j=jfirst(jg),jlast(jg)
               if(j>=1.and.j<=ljmax)then
@@ -3024,7 +3057,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                     frac = 1.0
                  endif
                  if(j==jfirst(jg))frac_j=frac*fracfirstlat(jg)
-                 if(j==jlast(jg))frac_j=frac*fraclastlat(jg)
+                 if(j==jlast(jg))frac_j=frac*fraclastlat(jg)!fracfirstlat not used!
 
                  do ig=1,dims(1)
                     igjg=ig+(jg-1)*dims(1)
@@ -3033,7 +3066,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                        if(i>=1.and.i<=limax)then
 
                           if(i==ifirst(ig))frac=frac_j*fracfirstlon(ig)
-                          if(i==ilast(ig))frac=frac_j*fraclastlon(ig)
+                          if(i==ilast(ig))frac=frac_j*fraclastlon(ig)!fracfirstlon not used!
 
                           ij=i+(j-1)*LIMAX
                           k2=1
@@ -3058,11 +3091,12 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                  enddo
               endif              
            enddo
-           enddo
-           deallocate(fracfirstlon,fraclastlon,ifirst,ilast)
-           deallocate(fracfirstlat,fraclastlat,jfirst,jlast)
-           
-        else
+        enddo
+        
+        deallocate(fracfirstlon,fraclastlon,ifirst,ilast)
+        deallocate(fracfirstlat,fraclastlat,jfirst,jlast)
+        
+     else
 
         !conserves integral (almost, does not take into account local differences in mapping factor)
         !takes weighted average over gridcells covered by model gridcell
@@ -3174,8 +3208,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
         deallocate(Ivalues)
         deallocate(Nvalues)
      endif
- 
-     elseif(interpol_used=='zero_order')then
+
+  elseif(interpol_used=='zero_order')then
         !interpolation 1:
         !nearest gridcell
         ijk=0
@@ -3200,7 +3234,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
               end do
            end do
         end do
-
+     else
+        write(*,*)'interpolation method not implemented'
      end if
     !_________________________________________________________________________________________________________
      !_________________________________________________________________________________________________________
