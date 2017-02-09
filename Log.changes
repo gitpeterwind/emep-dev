@@ -20,7 +20,7 @@ IMPORTANT NOTE:
        This is the easiest and safest method as of 2012!!
 
 ****** PLEASE READ CAREFULLY  "*****Run/Make examples:" SECTION BELOW
-	BEFORE SUBMITTING ANY RUN  **********************************
+    BEFORE SUBMITTING ANY RUN  **********************************
 
 
     2) By hand:
@@ -154,10 +154,142 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-12th Dec 2016 Peter
+2nd  Feb 2017  Dave
+
+Country_ml.f90 - added 199 to cope with non-specific emissions as seen 
+  in annual Emis_01degGLOBAL_2012_HTAP_MIEC.nc file.
+
+EECCA 2012 beckmark, submitted to AeroCom
+  EMEP_dev@0ecbb68_170208alvarov_RGBMEECCA_day_2012.nc
+  vilje:~alvarov/work/Benchmark/EECCA.2012/BM_dev@0ecbb68
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+1st  Feb 2017  Dave
+
+run.pl - used pattern match on EmChems to get emissplit.specials
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+26th Jan 2017 Peter
+
+Faster and better latlon to latlon interpolation: 
+integrates exactly, assuming uniform emissions over gridcells
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+23rd Jan 2017 Peter      rv4_11_5
+
+Smoother interpolation when lon and lat resolution is not the same, as in TNO7 
+emissions.
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+20th Jan 2017 Dave      rv4_11_4
+
+run.pl
+- added testv in ProgDir defaults. Most people will have several test versions.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+17th Jan 2017 Alvaro    rv4_11_3
+
+config_BM-EECCA.nml:
+- Add missing output period (eg 'YMD') to WDEP_WANTED.
+- Missing since Oct 2016 (svn 3304)
+
+EECCA 2012 beckmark, submitted to AeroCom
+  EMEP_dev@ace01da_170117alvarov_RGBMEECCA_day_2012.nc
+  vilje:~alvarov/work/Benchmark/EECCA.2012/BM_dev@ace01da
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6th Jan 2017 Dave    rv4_11_2
+
+Testing tags
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+5th Jan 2017 Peter   rv4_11_0
+
+Updated run.pl with the SLURM queue commands for Stallo.
+Removed links to natso2 (use DMS in config instead)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+5th Jan 2017 Dave   rv4_11_0
+
+Re-started tags. We need something to keep track of model changes in
+a simple way - as had with svnversion. 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+2nd Jan 2017 Alvaro
+
+Fix pollen forecast crash, issue #18
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+28th Dec 2016 Alvaro
+
+Update pollen modules (ZD_Pollen), issue #12
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+23rd Dec 2016 Peter
+
+Bug when wrf is used: XLAT reading for pole detection was read as a one-dimensional array. 
+Detected by Massimo.
+
+Reading 3 hourly O3 from top when fileName_O3_Top is set in config file
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+20th Dec 2016 Alvaro
+
+Update assimilation modules (ZD_3DVar16)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+19th Dec 2016 Peter
+
+Sectorwise uemep. For now all sectors included
+
+Map of Ocean NH3 when emissions provided
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+9th Dec 2016 Peter
+
+GridValues: transformation to and from UTM (Transverse Mercator) projection routines
+
+AeroFunctions.f90, Setup_1d_ml.f90 some simple optimizations (could require more)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+9th Dec 2016 Heiko
+
+Disabling SURF_AREA and SEA_SALT in config_EMERGENCY, 1.5times faster
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+8th Dec 2016 Peter
+
+Possibility to choose a limited number of pollutants from each emission file.
+Example in config which will take only voc and sox from Emis_GLOB_05.nc:
+  emis_inputlist(1)%name     = 'DataDir/Emis_GLOB_05.nc', !example of Fractions type
+  emis_inputlist(1)%pollName(1:2)     = 'voc','sox', !example of restricted choice of pollutants
+
+By default (i.e. if the line is commented out), all pollutants are included.
+
+
+Faster transformation from stereographic (landuse) for fine resolution model grids
+
+dt_advec can be set by config file
+
+removed the "only" in use MPI_Groups_ml. MPI_IN_PLACE is a special variable, and
+it does not behave well under certain versions of gfortran (reported by Massimo)
+
+Meaningful error message when Mask file (monthly emissions) not found
+
+Attempt to clean the timings overview
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+7th Dec 2016 Peter
 
 top vertical level allowed to be exactly = top met level
 The code stopped because of numerical differences when they where exactly =.
+
+Better interpolation for fine resolution model grids:
+Bilinear interpoaltion is used when going interpolating from a coarse lat-lon grid
+into a fine resolution model grid (specially useful for emissions).
+Also the interpolation from polarstereographic is now using a finer subdivision of
+gridcells; this may however increase the time for interpolating landuse.
 
 (and testing git!)
 
@@ -7890,21 +8022,21 @@ Dave: BUGFIX: Runchem_ml:   2nd call to setup_bio removed.
 Alvaro/Peter (1st October)
 Advection_ml: Change of algoritm; more robust advection.
               NB: The results will show differences.
-	      The concentrations are "renormalized" (division by p*)
+          The concentrations are "renormalized" (division by p*)
               after each partial advection (x, y or z direction).
               This removes the problems
               caused by emptying an entire gridcell (extreme divergence).
               It has been tested in two cases where the old scheme failed:
-	      at NorthPole, and a 2km resolution run with extreme winds
+          at NorthPole, and a 2km resolution run with extreme winds
               around Jan Mayen (NILU).
-	      The scheme was also recommended by Alain Clappier to reduce the
+          The scheme was also recommended by Alain Clappier to reduce the
               "cross problem" (underestimation of advection in diagonal
               directions)
-	      There is some CPU penalty for using this scheme.
+          There is some CPU penalty for using this scheme.
 
 NetCDF_ml: "Read_Inter_CDF", close at end.
            " CreatenetCDFfile", do not open after created
-	   stop if fraction and not latlon
+       stop if fraction and not latlon
 
 Par_ml:    NPROCY=1 (init for runs with very few processors)
 
@@ -9777,10 +9909,10 @@ Peter:
    ReadTime: include the proleptic_gregorian calendar
 
    Nest_ml: for 3D IC files with different vertical levels was wrong.
-	replaced
-	forall (k=1:KMAX_ext, j=1:ljmax, i=1:limax)
+    replaced
+    forall (k=1:KMAX_ext, j=1:ljmax, i=1:limax)
     with
-	forall (k=1:KMAX_MID, j=1:ljmax, i=1:limax)
+    forall (k=1:KMAX_MID, j=1:ljmax, i=1:limax)
 
 Dave:
 
@@ -11935,7 +12067,7 @@ xxxxxxxxxxxxxx rv3_7eucaari xxxxx Many authors !! 21 Nov 2010 xxxxxxxxxxxxxxxx
   Sites_ml,   just renamed CALL to call. Was looking ofr lat/long "LL"
 
     xxxxxxxxxxxxxx ....  (Peter 23/11-2010)xxxxxxxxxxxxxxxx
-	new bug in ReadField_CDF: special case when imax=360 because the area covers all longitudes (was set to 1)
+    new bug in ReadField_CDF: special case when imax=360 because the area covers all longitudes (was set to 1)
 
     xxxxxxxxxxxxxx .... SoilNOx  (Peter 11/11-2010)xxxxxxxxxxxxxxxx
    set USE_SOIL_NOX=.true. in ModelConstants_ml to get soil nox
@@ -11969,7 +12101,7 @@ run.pl
     Note that Volcanoes_found is a local variable (different value on different processors)
     There are still some back and forth i,j conversion which should be removed once.
 
-	11th November: corrected small bug    (character(len=20), dimension(5) :: Headers )
+    11th November: corrected small bug    (character(len=20), dimension(5) :: Headers )
 
 xxxxxxxxxxxxxx rv3_7beta7b Robert Oct 30 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -14692,10 +14824,10 @@ Country_ml.f90 updated with the new country codes from Agnes (EECCA countries)
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx rv3.0.5, Peter,  Apr 15th 2008  xxxxxxxxxxxxxx
 
 Output_hourly: put the vertical coordinate for hourly output right.
-	       If 20 level are requested the lowest level has kx20 (as usual)
-	       If less than 20 levels are requested the lowest level has kx1
-	       Also corrected ist etc. to be compatible with the nesting changes
-	       made in rv3.0.4
+           If 20 level are requested the lowest level has kx20 (as usual)
+           If less than 20 levels are requested the lowest level has kx1
+           Also corrected ist etc. to be compatible with the nesting changes
+           made in rv3.0.4
 
 Makefile is now Makefile_stallo
 
@@ -14840,10 +14972,10 @@ xxxxxxxxxxxxxx rv3beta5  Nov 7-8  2007  xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Peter
 Met_ml: non-blocking MPI_ISEND for wind speeds in metvar.
         Uses dedicated arrays for receive buffers.
-	Was giving worng results with -O3 option (!?)
+    Was giving worng results with -O3 option (!?)
 
 SubMet_ml: Sub(iL)%rh x min(1.0,Sub(iL)%rh)! keeps rh <x 1
-	   instead of e x min(esat,e)
+       instead of e x min(esat,e)
            Is mathematically identical, but gave slightly different results with -O3 option.
 
 Dave
@@ -15070,7 +15202,7 @@ New run.pl with SR stuff placed near end of file.
 xxxxxxxxxxxxxx Peter, Svetlana, rv2_9_8, Sept.  21th 2007  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 run.pl $linex~ s/!.*//;
-	for cases where NPROCX has been uncommented
+    for cases where NPROCX has been uncommented
 
 Solver_ml - cleanup
 
@@ -15096,7 +15228,7 @@ EmisGet : removed stop when country "N/A" is detected
 
 run.pl: changed the crash message
         included $METformat to switch to necdf for netcdf metdata
-	changed -lnodesx16 to be compatible with ModelConstants
+    changed -lnodesx16 to be compatible with ModelConstants
 
 xxxxxxxxxxxxxx Dave, rv2_9_5, Sept.  15th 2007  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -15140,7 +15272,7 @@ cvs DELETED::  UiO_ml  Wrtchem_ml
 xxxxxxxxxxxxxx Peter, rv2_9_3, August 28th 2007  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Unimod.f90: Removed call to DefGrid (moved into Met_ml)
-	    Read input parameters using read_line
+        Read input parameters using read_line
 
 Met_ml.f90: call to infield(1) and DefGrid in the MeteoGridRead routine,
             for the case where felt files are used.
@@ -15443,14 +15575,14 @@ April 10th, Dave:
 
 April 18th, Peter/Semeena:
 
-	Updated NetCDF_ml such that:
-	1) Output is CF-1.0 compilant for the vertical coordinates
-	2) Corrected a bug when 3D hourly output is required
+    Updated NetCDF_ml such that:
+    1) Output is CF-1.0 compilant for the vertical coordinates
+    2) Corrected a bug when 3D hourly output is required
 
-	Derived_mland My_Derived: renamed D2_PS as PS, to be more compatible
-	with what other use (PS is used in the definition of the vertical levels)
+    Derived_mland My_Derived: renamed D2_PS as PS, to be more compatible
+    with what other use (PS is used in the definition of the vertical levels)
 
-	run.pl: put lpmemx200MB
+    run.pl: put lpmemx200MB
 
 
 xxxxxxxxxxxxxx Misc, rv2_7_4, Mar 30 2007  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -15513,7 +15645,7 @@ xxxxxxxxxxxxxx Misc, rv2_7_1  2007  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Peter:
    Nest_ml - Modex12, for read 3D at start of run and write at end
-	     and corrected bug in lat lon nesting.
+         and corrected bug in lat lon nesting.
    Makefile_snow, Makefile_njord - replaced Polinat_ml with Trajectory_ml
 
 Joffen:
@@ -15607,8 +15739,8 @@ Changed units written in outputs for all depositions (ug/m2  was written instead
 Small changes for the global version: (does not affect other runs)
 
 Advection_ml: 2 old "bugs" corrected.
-	preadvx(2): did not work if west neighbour x east neighbour (possible in cyclic grid)
-	adv_var: nonblocking sends. Otherwise may hang if extremely large grids are used.
+    preadvx(2): did not work if west neighbour x east neighbour (possible in cyclic grid)
+    adv_var: nonblocking sends. Otherwise may hang if extremely large grids are used.
 
 Met_ml:
 Defined poles when lat > 88 degrees.
@@ -15645,7 +15777,7 @@ MARS_ml.f90 line 864 1.d0 changed to 1.0
 TimeDate_ml: line 53 reduced month length to 10
 Derived_ml.f90 : case ( "MAXADV" ) changed forall (program crashes with segmentation fault otherwise??)
 Advection_ml: changed hel1/hel2 into hel1/(hel2+1.0E-100)
-	      because of overflow otherwise (compiler weakness, works without if only -O2 is used)
+          because of overflow otherwise (compiler weakness, works without if only -O2 is used)
 removed all *.f files (gc_com.f,local2global.f,global2local.f)
 new nrun.pl and nSRrun.pl (n for njord)
 
@@ -15660,9 +15792,9 @@ xxxxxxxxxxxxxx Heiko  rv2_6_1  25/10/2006 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
  I just found a problem in the Makefile_snow, it included
 
  clean:
- 	rm ... \
- 	touch ... \
- 	make depend
+     rm ... \
+     touch ... \
+     make depend
 
 
  The last one did thus run 'make depend' instead of 'make -f
@@ -15862,7 +15994,7 @@ Sites_ml: can read files in lon-lat coordinates. The file must be
 called sondesLL.dat or sitesLL.dat. Height is always set to KMAX_MID.
 
 Biogenics_ml: Includes an option to read BVOC.dat directly
-	(temporary solution)
+    (temporary solution)
 
 
 xxxxxxxxxxxxxx Peter rv2_4_2, 22/11/2005 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -15879,8 +16011,8 @@ Lat lon grid possible (defined through mapping factors xm_i and xm_j)
 Cyclic grid in i direction
 
 Special treatment at poles:
-	-.no "neighbors", but not an outer boundary
-	-.special treatment of advection
+    -.no "neighbors", but not an outer boundary
+    -.special treatment of advection
 
 Emission_ml includes an option to choose that the local time
  (used for the day/night timefactor) is determined by the longitude
@@ -16458,9 +16590,9 @@ Solver and My_Reactions.inc (ZD_ACID) changed.
 
 xxxxxxxxxxxxxxxxxx Peter,               31/03/2004/ 01/04/2004, rv1_9_33   xxxxxxxxxxxxxxxxxxxxxxxxxx
 small changes in grun.pl:
-	sites.* are tared: tar cvf ${runlabel1}.sites sites.*
-	RunLog is renamed ${runlabel1}_RunLog
-	bzip2 is made parallell: to compress files just add them into  @bigfile_list
+    sites.* are tared: tar cvf ${runlabel1}.sites sites.*
+    RunLog is renamed ${runlabel1}_RunLog
+    bzip2 is made parallell: to compress files just add them into  @bigfile_list
 ZD_OZONE/My_Output: only O3 as hourly output
 
 some removal of double declarations
@@ -16529,8 +16661,8 @@ xxxxxxxxxxxxxxxxxx Dave,     17/03/2004, rv1_9_28   xxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Derived_ml: Many changes
 
-	Bug-fix i_glob defined ,locally
-	Deriv for new 3D fields added
+    Bug-fix i_glob defined ,locally
+    Deriv for new 3D fields added
         d_3d for new 3D fields added, inc use of End_of_Day
         gc_abort  added if 3d type not found
 
@@ -16567,14 +16699,14 @@ Version compatible with Intel and Lahey compiler on IBM cluster (blizzard)
 NB: change in grun.pl: will not work with old grun.pl
 
 Several modules: Removed double declarations,
-	         Removed lines containing only a continuation line (&) (compiler bug)
+             Removed lines containing only a continuation line (&) (compiler bug)
 
 Advection_ml: preadvx,preadvy:
-		 small bug in array size declaration (preadvx only)
-	         non-blocking send with buffered arrays
+         small bug in array size declaration (preadvx only)
+             non-blocking send with buffered arrays
 BoundaryConditions_ml:
-		allocate also when sizex0
-	        forall with mask replaced by loop
+        allocate also when sizex0
+            forall with mask replaced by loop
 
 Dates_ml: small bug in add_2dates (newdate%month could be > 12 at some intermediate stage)
 
@@ -16585,12 +16717,12 @@ Emissions_ml: initialisations
 MARS_ml: molnu,phimult defined as intent(in)
 
 Radiation_ml: initialize coszenx0. ( (?)so that it can be used in
-		"real, dimension(size(coszen,1),size(coszen,2)) :: expa, catten, Idrctn")
+        "real, dimension(size(coszen,1),size(coszen,2)) :: expa, catten, Idrctn")
 
 Sites_ml: added fmtx" " in write(xxx,fmtx" " )
 
 Unimod.f90: read input parameters from file (INPUT.PARA) instead of from standard input
-		The file INPUT.PARA is produced by grun.pl
+        The file INPUT.PARA is produced by grun.pl
 
 grun.pl: produce INPUT.PARA to be read by Unimod.f90
 
@@ -16644,13 +16776,13 @@ Radiation_ml.f90 --- Bug found! 1900 wrongly added to year. Gives small
 
 xxxxxxxxxxxxxxxxxx Peter,        17/02/2004, rv1_9_24 xxxxxxxxxxxxxxxxxxxxxxxxxx
 NetCDF_ml: Out_netCDF, optional input parameter "fileName_given", can be
-	used to explicitely give the name of an output file.
-	The use of fileName_given is probably slower than the implicit
-	filename used by defining iotyp. Use it only if a "non-standard"
-	output (i.e. not out_year.nc etc.) is needed
+    used to explicitely give the name of an output file.
+    The use of fileName_given is probably slower than the implicit
+    filename used by defining iotyp. Use it only if a "non-standard"
+    output (i.e. not out_year.nc etc.) is needed
 
 Met_ml: defined case(-11) to define sdot when it is given at level
-	boundaries instead of midlevels. (ident(6)x-11 is pw defined)
+    boundaries instead of midlevels. (ident(6)x-11 is pw defined)
 
 xxxxxxxxxxxxxxxxxx Dave,        29/01/2004, rv1_9_23 xxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -16717,8 +16849,8 @@ BUG-FIX - c_hveg O3 calculation improved in DryDep_ml
 BUG-FIX -  grun.pl improved for usage of mkp.pmadd
 
 NetCDF_ml: write NetCDF output files
-	   new definition of projection_params
-	   Instantaneous concentration file
+       new definition of projection_params
+       Instantaneous concentration file
 
 Many changes in Nest_ml
 
@@ -17040,7 +17172,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ZD_ACID: My_Reactions re-corrected for old errors which seemed to come back!
          : HNO3 mssing from pNO3 production, aqrck(ICL3 missing from SO4
 grun.pl - now calls "gmake depend" and "gmake" instead of just "make".
-	This creates the .depend file
+    This creates the .depend file
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxxxxxxxx Dave  27th March 2003, rv1.4.28   xxxxxxxxxxxxxxxxxxxxxxxx
@@ -17251,8 +17383,8 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 1)DryDep_ml:
-	use amk
-	confac2x... /amk(KMAX_MID)
+    use amk
+    confac2x... /amk(KMAX_MID)
         ds-Bug created whewn xn_2d used instead of xn_adv (when put inside i,j loop ?)
 
 2)NetCDF_ml: new module
@@ -17262,19 +17394,19 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 3)GridValues_ml: added routine coordzero (used by NetCDF_ml)
 
 4)ReadCDF_ml: not used by the model, but contains routines that can read the
-	NetCDF output.
+    NetCDF output.
 
 5)Makefile:
-	LIBS x -lmpi -lnetcdf
-	INCL x -I/home/u4/mifahik/netcdf/include
-	LLIB x -L/home/u4/mifahik/netcdf/lib64
+    LIBS x -lmpi -lnetcdf
+    INCL x -I/home/u4/mifahik/netcdf/include
+    LLIB x -L/home/u4/mifahik/netcdf/lib64
 
 
 6)My_Derived: included /max(1E-80, (xn_adv(...))) in order to avoid division by zero for 0 concentrations.
 
 
 7)./ZD_ACID/My_Derived_ml:      (was done in ZD_OZONE, but not in ZD_ACID)
-	 wdep( :,:,:,:) x 0.0
+     wdep( :,:,:,:) x 0.0
       ddep( :,:,:,:) x 0.0
       d_2d( :,:,:,:) x 0.0
       d_3d( :,:,:,:,:) x 0.0

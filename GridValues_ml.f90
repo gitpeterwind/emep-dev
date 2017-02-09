@@ -56,6 +56,9 @@ public :: lb2ijm  ! longitude latitude to grid in polar stereo
 public :: ij2ijm  ! polar grid1 to polar grid2
 public :: lb2ij   ! longitude latitude to (i,j) in any grid projection
 public :: ij2lb   ! polar stereo grid to longitude latitude
+public :: lb_rot2lb !rotated lon lat to lon lat
+public :: lb2UTM ! lon lat to Transverse Mercator
+public :: UTM2lb ! Transverse Mercator to lon lat
 
 interface lb2ij
   module procedure lb2ij_real,lb2ij_int
@@ -296,8 +299,6 @@ contains
 !
   end subroutine GridRead
 
-
-
   subroutine GetFullDomainSize(filename,IIFULLDOM,JJFULLDOM,KMAX,METSTEP,projection)
 
     !
@@ -480,8 +481,11 @@ contains
           if(status /= nf90_noerr) then
              !WRF format
              call check(nf90_inq_varid(ncid = ncFileID, name = "XLAT", varID = varID))
-          end if
-          call check(nf90_get_var(ncFileID, varID,latitudes  ))
+             call check(nf90_get_var(ncFileID, varID,latitudes ,start=(/1,1/), count=(/1,JJFULLDOM/)   ))
+          else
+             call check(nf90_get_var(ncFileID, varID,latitudes  ))
+          endif
+
           if(latitudes(RUNDOMAIN(4))>88.0)then
              write(*,*)'The grid is singular at North Pole'
              Pole_Singular=Pole_Singular+1
@@ -525,7 +529,7 @@ contains
     integer :: status,South_pole,North_pole
     real :: x1,x2,x3,x4,P0,x,y,mpi_out
     logical::found_hybrid=.false.
-    real :: CEN_LAT, CEN_LON,P_TOP_MET
+    real :: CEN_LAT, CEN_LON,P_TOP_MET, WRF_DY
     real :: rb,rl,rp,dx,dy,dy2,glmax,glmin,v2(2),glon_fdom1,glat_fdom1
     integer :: iloc_start, iloc_end,jloc_start, jloc_end
 
@@ -820,7 +824,17 @@ contains
           !WRF  format
           call check(nf90_inq_varid(ncid=ncFileID, name="MAPFAC_UY", varID=varID))
           call nf90_get_var_extended(ncFileID,varID,xm_j_ext,-1,LIMAX+2,-1,LJMAX+2,ishift_in=1)!NB:shift i by 1 since wrf start at left face
-       end if
+          status = nf90_get_att(ncFileID,nf90_global,"DY",WRF_DY)
+          if(status == nf90_noerr) then
+             !WRF uses DY/MAPFAC_UY while emep uses GRIDWIDTH_M/xm_j for the y size
+             if(abs(GRIDWIDTH_M/WRF_DY-1.0)>1.E-6)then
+                if(MasterProc)write(*,*)"rescaling y mapfactors with = ",GRIDWIDTH_M/WRF_DY
+                xm_j_ext=xm_j_ext*GRIDWIDTH_M/WRF_DY
+             endif
+          else
+              if(MasterProc)write(*,*)"not rescaling y mapfactors"        
+          endif
+        end if
 
        !define xm2, xm_i and xm_j now
        !Note that xm is inverse length: interpolate 1/xm rather than xm
@@ -1827,6 +1841,141 @@ end subroutine lb2ij_int
 
   end subroutine lb_rot2lb
 
+  subroutine lb2UTM(Long, Lat, UTMEasting, UTMNorthing, UTMZone)
+
+!//converts lat/long to UTM coords.  Equations from USGS Bulletin 1532 
+!//East Longitudes are positive, West longitudes are negative. 
+!//North latitudes are positive, South latitudes are negative
+!//Lat and Long are in decimal degrees
+
+!Angle with North: (called "convergence")
+!angle = arctan(tan(lon)*sin(lat)) lon is longitude relative to middle of utm zone: lon=gl-Lambda0
+!works for northern hemisphere at least
+!u_utm = u_ll*cos(angle)+v_ll*sin(angle)
+!v_utm =-u_ll*sin(angle)+v_ll*cos(angle)
+
+    implicit none
+    
+    real :: UTMNorthing, UTMEasting,  Lat,  Long
+    integer :: UTMZone
+    real :: a = 6378137.0 !WGS-84
+    real :: eccSquared = 0.00669438 !WGS-84
+    real :: k0 = 0.9996
+    real :: LongOrigin
+    real :: eccPrimeSquared
+    real :: N, T, C, AA, M
+    real :: rad2deg,deg2rad
+    
+    real :: LongTemp    
+    real :: LatRad
+    real :: LongRad
+    real :: LongOriginRad;
+    
+    rad2deg=180.0/Pi
+    deg2rad=Pi/180.
+    LatRad = Lat*deg2rad
+    !//Make sure the longitude is between -180.00 .. 179.9
+    LongTemp = (Long+180)-int((Long+180)/360)*360-180!; // -180.00 .. 179.9;
+    LongRad = LongTemp*deg2rad
+    UTMZone = int((LongTemp + 180)/6) + 1;
+    
+    !Southern Norway, zone 32 is extended by 3 degrees to the West
+    if( Lat >= 56.0 .and. Lat < 64.0  .and. LongTemp >= 3.0 .and. LongTemp < 12.0 )UTMZone  = 32
+    
+    !// Special zones for Svalbard
+    if( Lat >= 72.0 .and. Lat < 84.0 ) then
+       if(      LongTemp >= 0.0  .and. LongTemp <  9.0 )then
+          UTMZone = 31
+       else if( LongTemp >= 9.0  .and. LongTemp < 21.0 )then
+          UTMZone = 33
+       else if( LongTemp >= 21.0 .and. LongTemp < 33.0 )then
+          UTMZone = 35
+       else if( LongTemp >= 33.0 .and. LongTemp < 42.0 )then
+          UTMZone = 37
+       endif
+    endif
+    LongOrigin = (UTMZone - 1)*6 - 180 + 3!  //+3 puts origin in middle of zone
+    LongOriginRad = LongOrigin * deg2rad
+    
+    !//compute the UTM Zone from the latitude and longitude
+    
+    eccPrimeSquared = (eccSquared)/(1-eccSquared)
+    
+    N = a/sqrt(1-eccSquared*sin(LatRad)*sin(LatRad))
+    T = tan(LatRad)*tan(LatRad)
+    C = eccPrimeSquared*cos(LatRad)*cos(LatRad)
+    AA = cos(LatRad)*(LongRad-LongOriginRad)
+    
+    M = a*((1 - eccSquared/4 - 3*eccSquared*eccSquared/64- 5*eccSquared*eccSquared*eccSquared/256)*LatRad &
+	 - (3*eccSquared/8 + 3*eccSquared*eccSquared/32	+ 45*eccSquared*eccSquared*eccSquared/1024)*sin(2*LatRad)&
+         + (15*eccSquared*eccSquared/256 + 45*eccSquared*eccSquared*eccSquared/1024)*sin(4*LatRad) &
+         - (35*eccSquared*eccSquared*eccSquared/3072)*sin(6*LatRad))
+    
+    UTMEasting = k0*N*(AA+(1-T+C)*AA*AA*AA/6+ (5-18*T+T*T+72*C-58*eccPrimeSquared)*AA*AA*AA*AA*AA/120)+ 500000.0
+    
+    UTMNorthing = (k0*(M+N*tan(LatRad)*(AA*AA/2+(5-T+9*C+4*C*C)*AA*AA*AA*AA/24+ (61-58*T+T*T+600*C-330*eccPrimeSquared)*AA*AA*AA*AA*AA*AA/720)))
+    if(Lat < 0)UTMNorthing =UTMNorthing + 10000000.0!; //10000000 meter offset for southern hemisphere
+    
+  end subroutine lb2UTM
+
+  subroutine UTM2lb(UTMEasting, UTMNorthing, UTMZone,  Long, Lat )
+
+!//converts UTM coords to lat/long.  Equations from USGS Bulletin 1532 
+!//East Longitudes are positive, West longitudes are negative. 
+!//North latitudes are positive, South latitudes are negative
+!//Lat and Long are in decimal degrees. 
+
+    implicit none
+    
+    real :: UTMNorthing, UTMEasting,  Lat,  Long
+    integer :: UTMZone
+    real :: k0 = 0.9996
+    real :: a = 6378137.0 !WGS-84
+    real :: eccSquared = 0.00669438 !WGS-84
+    real :: eccPrimeSquared
+    real :: e1,rad2deg
+    real :: N1, T1, C1, R1, D, M
+    real :: LongOrigin
+    real :: mu, phi1, phi1Rad
+    real :: x, y, ww
+    !char* ZoneLetter;
+    integer :: NorthernHemisphere !1 for northern hemispher, 0 for southern
+    
+    rad2deg=180.0/Pi
+    
+    x = UTMEasting - 500000.0 !remove 500,000 meter offset for longitude
+    y = UTMNorthing
+    
+    NorthernHemisphere = 1 !point is in northern hemisphere
+    
+    LongOrigin = (UTMZone - 1)*6 - 180 + 3 !+3 puts origin in middle of zone
+    
+    e1 = (1-sqrt(1-eccSquared))/(1+sqrt(1-eccSquared))
+    
+    eccPrimeSquared = (eccSquared)/(1-eccSquared)
+    
+    M = y / k0
+    mu = M/(a*(1-eccSquared/4-3*eccSquared*eccSquared/64-5*eccSquared*eccSquared*eccSquared/256))
+    
+    phi1Rad = mu + (3*e1/2-27*e1*e1*e1/32)*sin(2*mu)+ (21*e1*e1/16-55*e1*e1*e1*e1/32)*sin(4*mu)+(151*e1*e1*e1/96)*sin(6*mu)
+    phi1 = phi1Rad*rad2deg
+    
+    N1 = a/sqrt(1-eccSquared*sin(phi1Rad)*sin(phi1Rad))
+    T1 = tan(phi1Rad)*tan(phi1Rad)
+    C1 = eccPrimeSquared*cos(phi1Rad)*cos(phi1Rad)
+    ww = 1-eccSquared*sin(phi1Rad)*sin(phi1Rad)
+    R1 = a*(1-eccSquared)/(ww*sqrt(ww))
+    D = x/(N1*k0)
+    
+    Lat = phi1Rad - (N1*tan(phi1Rad)/R1)*(D*D/2-(5+3*T1+10*C1-4*C1*C1-9*eccPrimeSquared)*D*D*D*D/24&
+         +(61+90*T1+298*C1+45*T1*T1-252*eccPrimeSquared-3*C1*C1)*D*D*D*D*D*D/720)
+    Lat = Lat * rad2deg
+    
+    Long = (D-(1+2*T1+C1)*D*D*D/6+(5-2*C1+28*T1-3*C1*C1+8*eccPrimeSquared+24*T1*T1)&
+         *D*D*D*D*D/120)/cos(phi1Rad)
+    Long = LongOrigin + Long * rad2deg
+
+  end subroutine UTM2lb
 
   subroutine nf90_get_var_extended(ncFileID,varID,Var,i0,i1,j0,j1,ishift_in,jshift_in)
 

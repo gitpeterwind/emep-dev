@@ -33,6 +33,7 @@
   USE_SOILWATER         = T,             ! Uses SMI from meteo data
   USE_CONVECTION        = T,
   CONVECTION_FACTOR     = 0.33           ! Test reduced convection
+!  fileName_O3_Top   = 'DataDir/CLIM/O3_EC/EC_O3_3D_YYYY.nc', ! Use O3 from EC every 3 hours. Only for 2008-2012
   USE_SEASALT           = T,
   USE_AIRCRAFT_EMIS     = T,             ! Needs global file, see manual
   USE_LIGHTNING_EMIS    = T,             ! 

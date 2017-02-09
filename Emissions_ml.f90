@@ -335,7 +335,7 @@ subroutine Emissions(year)
     allocate(SumSnapEmis(LIMAX,LJMAX,NEMIS_FILE))
     SumSnapEmis=0.0
     if(USE_uEMEP)then
-       allocate(loc_frac(LIMAX,LJMAX,KMAX_MID,1))
+       allocate(loc_frac(NSECTORS,LIMAX,LJMAX,KMAX_MID))
        loc_frac=0.0
     end if
     !=========================
@@ -515,7 +515,8 @@ subroutine Emissions(year)
           !yearly grid independent netcdf fraction format emissions                                
           do iem = 1, NEMIS_FILE
              if(emis_inputlist(iemislist)%pollName(1)/='NOTSET')then
-                if(emis_inputlist(iemislist)%pollName(1)/=trim(EMIS_FILE(iem)))cycle      
+                if(all(emis_inputlist(iemislist)%pollName(:)/=trim(EMIS_FILE(iem))))cycle      
+                if(Masterproc)write(*,*)'reading '//trim(EMIS_FILE(iem))//' from '//trim(fname)
              end if
              do isec=1,NSECTORS                      
               write(varname,"(A,I2.2)")trim(EMIS_FILE(iem))//'_sec',isec
@@ -558,7 +559,8 @@ subroutine Emissions(year)
         do iem = 1, NEMIS_FILE
 
            if(emis_inputlist(iemislist)%pollName(1)/='NOTSET')then
-              if(emis_inputlist(iemislist)%pollName(1)/=trim(EMIS_FILE(iem)))cycle      
+                if(all(emis_inputlist(iemislist)%pollName(:)/=trim(EMIS_FILE(iem))))cycle      
+                if(Masterproc)write(*,*)'reading '//trim(EMIS_FILE(iem))//' from '//trim(fname)
            end if
 
            fname = key2str(emis_inputlist(iemislist)%name,'POLL',EMIS_FILE(iem))
@@ -589,6 +591,10 @@ subroutine Emissions(year)
       elseif(index(emis_inputlist(iemislist)%name,"grid")>0)then
         !ASCII format
         do iem = 1, NEMIS_FILE
+          if(emis_inputlist(iemislist)%pollName(1)/='NOTSET')then
+             if(all(emis_inputlist(iemislist)%pollName(:)/=trim(EMIS_FILE(iem))))cycle      
+             if(Masterproc)write(*,*)'reading '//trim(EMIS_FILE(iem))//' from '//trim(fname)
+          endif
           fname=key2str(emis_inputlist(iemislist)%name,'POLL',EMIS_FILE(iem)) ! e.g. POLL -> sox
           if(MasterProc)write(*,fmt='(A)')'Reading ASCII format '//trim(fname)
           call EmisGetASCII(iem, fname, trim(EMIS_FILE(iem)), sumemis_local, &
@@ -602,6 +608,7 @@ subroutine Emissions(year)
 
       elseif(emis_inputlist(iemislist)%type == "OceanNH3")then
         if(MasterProc)write(*,*)' using  OceanNH3'    
+        USE_OCEAN_NH3=.true.
         O_NH3%index=find_index("NH3",species(:)%name)
         call CheckStop(O_NH3%index<0,'Index for NH3 not found')
         NTime_Read=-1
@@ -1598,7 +1605,8 @@ subroutine newmonth
 
     do iem = 1,NEMIS_FILE
        if(emis_inputlist(iemislist)%pollName(1)/='NOTSET')then
-          if(emis_inputlist(iemislist)%pollName(1)/=trim(EMIS_FILE(iem)))cycle      
+          if(all(emis_inputlist(iemislist)%pollName(:)/=trim(EMIS_FILE(iem))))cycle      
+          if(Masterproc)write(*,*)'reading '//trim(EMIS_FILE(iem))//' from '//trim(fname)
        end if
        do  isec = 1,NSECTORS            
         !define mask (can be omitted if not sent to readfield) 
@@ -1896,7 +1904,7 @@ subroutine uemep_emis(indate)
   integer ::icc_uemep
   integer, save :: wday , wday_loc ! wday = day of the week 1-7
   integer ::ix,iix
-  real::dt_uemep, xtot, emis_uemep(KMAX_MID),emis_tot(KMAX_MID)
+  real::dt_uemep, xtot, emis_uemep(KMAX_MID,NSECTORS),emis_tot(KMAX_MID)
   logical,save :: first_call=.true.  
 
   if(first_call)then
@@ -2008,11 +2016,11 @@ subroutine uemep_emis(indate)
               emis_tot(k)=emis_tot(k)+s*emis_kprofile(KMAX_BND-k,sec2hfac_map(isec))*dt_uemep
             end do
 
-            if(isec==uEMEP%sector .or. uEMEP%sector==0)then
+            !if(isec==uEMEP%sector .or. uEMEP%sector==0)then
               do k=KEMISTOP,KMAX_MID
-                emis_uemep(k)=emis_uemep(k)+s*emis_kprofile(KMAX_BND-k,sec2hfac_map(isec))*dt_uemep
+                emis_uemep(k,isec)=emis_uemep(k,isec)+s*emis_kprofile(KMAX_BND-k,sec2hfac_map(isec))*dt_uemep
               end do
-            end if
+            !end if
 
           end do ! iem
 
@@ -2021,15 +2029,17 @@ subroutine uemep_emis(indate)
       end do ! icc  
       
       do k=KEMISTOP,KMAX_MID
-        if(emis_tot(k)<1.E-20)cycle
-        !units kg/m2
-        !total pollutant
-        xtot=0.0
-        do iix=1,uEMEP%Nix
-          ix=uEMEP%ix(iix)
-          xtot=xtot+(xn_adv(ix,i,j,k)*species_adv(ix)%molwt)*(dA(k)+dB(k)*ps(i,j,1))/ATWAIR/GRAV
-        end do
-        loc_frac(i,j,k,1)=(loc_frac(i,j,k,1)*xtot+emis_uemep(k))/(xtot+emis_tot(k)+1.e-20)
+         if(emis_tot(k)<1.E-20)cycle
+         !units kg/m2
+         !total pollutant
+         xtot=0.0
+         do iix=1,uEMEP%Nix
+            ix=uEMEP%ix(iix)
+            xtot=xtot+(xn_adv(ix,i,j,k)*species_adv(ix)%molwt)*(dA(k)+dB(k)*ps(i,j,1))/ATWAIR/GRAV
+         end do
+         do isec = 1, NSECTORS       ! Loop over snap codes
+            loc_frac(isec,i,j,k)=(loc_frac(isec,i,j,k)*xtot+emis_uemep(k,isec))/(xtot+emis_tot(k)+1.e-20)
+         end do
       end do
 
     end do ! i

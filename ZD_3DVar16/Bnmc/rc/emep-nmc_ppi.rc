@@ -1,0 +1,291 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!
+!!! EMEP DA NMC settings
+!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+!-------------------------------------------------
+! testing
+!-------------------------------------------------
+
+! NMC runs created in 2016, incl. PM:
+my.batch        :  batch-03
+
+! produce per tracer:
+my.runid        :  ${RUNID}  
+!my.runid        :  NO2_2010
+!my.runid        :  O3_2010
+!my.runid        :  SO2_2010
+!my.runid        :  CO_2010
+!my.runid        :  PM25_2010
+!my.runid        :  PM10_2010
+
+! old: incl. tracer correlations:
+!my.runid        :  NO2-O3_2010
+
+
+!-------------------------------------------------
+! compile and run
+!-------------------------------------------------
+
+! which flags ? passed by 'launcher' script to Makefile:
+compiler.flags    :  optim
+!compiler.flags    :  check
+
+! destination:
+!submit.to         :  foreground
+submit.to         :  queue
+
+! resources:
+job.walltime      : 12:00:00
+
+! job directory:
+job.dir           :  /lustre/storeB/users/${USER}/Bnmc/${my.batch}/${my.runid}
+! run directory:
+run.dir           :  ${job.dir}/run
+! run directory:
+output.dir        :  ${job.dir}/output
+
+! account name (from 'cost -u ${USER}'):
+!~ group:
+!job.account       :  nn2890k
+!~ reserved nodes, short jobs only:
+job.account        :  mifa02kl
+
+
+!-------------------------------------------------
+! runs
+!-------------------------------------------------
+
+! Specification of the two runs driven by
+! different meteorology.
+
+! id's for the two runs:
+nmc.run.id1     :  00
+nmc.run.id2     :  12
+
+! variables:
+#if "${my.runid}".startswith("NO2-O3_")
+nmc.variables   :  NO2 O3
+#elif "${my.runid}".startswith("NO2_")
+nmc.variables   :  NO2
+#elif "${my.runid}".startswith("O3_")
+nmc.variables   :  O3
+#elif "${my.runid}".startswith("SO2_")
+nmc.variables   :  SO2
+#elif "${my.runid}".startswith("CO_")
+nmc.variables   :  CO
+#elif "${my.runid}".startswith("PM25_")
+nmc.variables   :  PM25
+#elif "${my.runid}".startswith("PM10_")
+nmc.variables   :  PM10
+#else
+#error could not set nmc.variables for run.id "${my.runid}"
+#endif
+
+!
+! specify runs for each id
+!  file     : template for filename, keys are replaced:
+!               %{id}       :  id
+!               %{yyyy}     :  4-digit year
+!               %{mm}       :  2-digit month
+!  variable : variable name in nc files
+!
+
+! filename template:
+#if "${my.runid}".startswith("PM")
+my.files : /lustre/storeB/project/fou/kl/emep/ModelRuns/CWF/nmc/MACC14_svn3304/NMC%{id}-%{yyyy}_hourInst.nc
+#else
+my.files : /lustre/storeB/project/fou/kl/emep/ModelRuns/CWF/nmc/MACC14_svn3304/NMC%{id}_%{yyyy}%{mm}_%{hh}.nc
+#endif
+
+! run with '00' meteo:
+nmc.run.00.file       :  ${my.files}
+nmc.run.00.var.NO2    :  NO2
+nmc.run.00.var.O3     :  O3
+nmc.run.00.var.SO2    :  SO2
+nmc.run.00.var.CO     :  CO
+nmc.run.00.var.PM25   :  D3_ug_PM25_wet
+nmc.run.00.var.PM10   :  D3_ug_PM10_wet
+
+! run with '12' meteo:
+nmc.run.12.file       :  ${my.files}
+nmc.run.12.var.NO2    :  NO2
+nmc.run.12.var.O3     :  O3
+nmc.run.12.var.SO2    :  SO2
+nmc.run.12.var.CO     :  CO
+nmc.run.12.var.PM25   :  D3_ug_PM25_wet
+nmc.run.12.var.PM10   :  D3_ug_PM10_wet
+
+
+! time range in days:
+nmc.timerange.t1      :  2010-01-01
+nmc.timerange.t2      :  2010-12-31
+
+! which hours ?
+nmc.hours             :  06 12 18 24
+
+
+!-------------------------------------------------
+! padding
+!-------------------------------------------------
+
+!!~ no padding:
+!nmc.spectral.padding.301   :  301
+!~ current:
+nmc.spectral.padding.301   :  349
+!~ lon extend to 360
+!nmc.spectral.padding.301   :  $(( 2**3 * 3**2 * 5 ))
+
+!!~ no padding:
+!nmc.spectral.padding.369   :  369
+!~ current:
+nmc.spectral.padding.369   :  465
+!!~ lat extend to 432
+!nmc.spectral.padding.369   :  $(( 2**4 * 3**3 ))
+
+
+!-------------------------------------------------
+! tasks
+!-------------------------------------------------
+
+! apply ?
+nmc.eps.compute               :  T      ! eps_i ; mu_eps, sigma_eps
+nmc.eta.compute               :  T      ! eta_i = (eps_i - <eps_i>)/sigma_eps
+nmc.eta_f.compute             :  T      ! eta_f_i = F eta_i
+nmc.C_f.compute               :  T      ! C_f = < eta_f, eta_f >
+nmc.D_f.compute               :  T      ! D_f = angular average of C_f
+nmc.B_f.compute               :  T      ! Gamma, B_f
+nmc.XLX.compute               :  T      ! X L X^T = B_f
+nmc.BB.collect                :  T
+
+! ~ output of eps.compute :
+
+! eps samples:
+nmc.eps.samples.filename      :  ${output.dir}/nmc-eps-samp_%{yyyy}%{mm}%{dd}.nc
+
+! mean and stdv of eps:
+nmc.eps.stats.filename        :  ${output.dir}/nmc-eps-stat.nc
+
+! ~ output of eta.compute :
+
+! eta samples:
+nmc.eta.samples.filename      :  ${output.dir}/nmc-eta-samp_%{yyyy}%{mm}%{dd}.nc
+
+! ~ output of eta_f.compute :
+
+! spectral transforms of eta samples:
+nmc.eta_f.samples.filename    :  ${output.dir}/nmc-eta-f-samp_%{yyyy}%{mm}%{dd}.nc
+
+! ~ output of C_f.compute :
+
+! covariances per spectral index:
+nmc.C_f.filename              :  ${output.dir}/nmc-C-f.nc
+
+! angular average covariances:
+nmc.D_f.filename              :  ${output.dir}/nmc-D-f.nc
+! average k* step size:
+nmc.D_f.akstar_step           :  3.0
+! number of theta segments per 90 degree:
+nmc.D_f.ntheta                :  9
+
+! gamma scaling:
+nmc.gamma.filename            :  ${output.dir}/nmc-gamma.nc
+! scalled average covariances:
+nmc.B_f.filename              :  ${output.dir}/nmc-B-f.nc
+
+! eigenvalue decompo:
+nmc.XLX.filename              :  ${output.dir}/nmc-XLX.nc
+
+! collection:
+nmc.BB.filename               :  ${output.dir}/nmc-BB.nc
+
+
+!-------------------------------------------------
+! grid point stats from eps samples
+!-------------------------------------------------
+
+! apply ?
+nmc.sample-B                     :  F
+
+! correlation output?
+nmc.sample-B.correlation         :  T
+
+! evaluate level/tracer covariance?
+nmc.sample-B.levtr               :  T
+
+! output file with covariances with point locations:
+nmc.sample-B.filename            :  ${output.dir}/nmc-eps-B-point.nc
+
+
+!-------------------------------------------------
+! approx B
+!-------------------------------------------------
+
+! Evaluate B matrix in columns of specified points;
+! provides covariances with concentrations in these locations,
+! to be compared with output in gridpoint file.
+
+! apply ?
+nmc.approx-B                  :  T
+
+! correlation output?
+nmc.approx-B.correlation      :  T
+
+! evaluate level/tracer covariance?
+nmc.approx-B.levtr            :  T
+
+! evaluation:
+nmc.approx-B.filename         :  ${output.dir}/nmc-B-point.nc
+
+
+
+!-------------------------------------------------
+! points
+!-------------------------------------------------
+
+!
+! Used for evaluation of covariances, see settings:
+!   nmc.stats.gridpoint
+!   nmc.approx-B
+!
+! resolution        :        1/4       x        1/8
+! grid point domain : [-30    ,45    ] x [30     ,76     ]
+! grid cell domain  : [-30.125,45.125] x [29.9375,76.0625]
+!
+
+! test points, covariance with these are put out:
+!nmc.points                    :  Oslo Utrecht Gunnbjorn Bjornoya Babylon Agadir
+nmc.points                    :  
+
+! define location:
+nmc.point.Oslo.lon            :  10.75
+nmc.point.Oslo.lat            :  59.95
+
+! define location:
+nmc.point.Utrecht.lon         :   5.12
+nmc.point.Utrecht.lat         :  52.08
+
+! mountain on east coast of Greenland ;
+! actual location lon=-29.88, 
+! but this is on the interface cell
+nmc.point.Gunnbjorn.lon       : -29.80
+nmc.point.Gunnbjorn.lat       :  68.92
+
+! north (Bear Island, meteo station)
+nmc.point.Bjornoya.lon        :  19.00
+nmc.point.Bjornoya.lat        :  74.50
+
+! south-east tip of domain:
+nmc.point.Babylon.lon         :  44.42
+nmc.point.Babylon.lat         :  32.53
+
+! south at costline of Morocco
+nmc.point.Agadir.lon          :  -9.60
+nmc.point.Agadir.lat          :  30.43
+
+
+!-------------------------------------------------
+! end
+!-------------------------------------------------

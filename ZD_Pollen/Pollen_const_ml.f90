@@ -4,7 +4,7 @@ module Pollen_const_ml
 ! M. Sofiev et al. 2006, doi:10.1007/s00484-006-0027-x
 !
 ! Pollen emission based upon meteorology paparameters, and heatsum.
-! Pollen particles are assumed of 22 um diameter and 800 kg/m3 density. 
+! Pollen particles are assumed of 22 um diameter and 800 kg/m3 density.
 !-----------------------------------------------------------------------!
 use PhysicalConstants_ml, only: PI,ATWAIR,AVOG
 use ModelConstants_ml,    only: USE_POLLEN,DEBUG=>DEBUG_POLLEN
@@ -26,17 +26,16 @@ real, parameter  :: &
   PREC_MAX = 0.5,             & ! Max cut-off precipitation [mm/h]
   N_TOT_birch = 1.0e9,        & ! Available pollen [grains/m2] birch
   N_TOT_olive = 3.9e8,        & ! Available pollen [grains/m2] olive
-  N_TOT_grass = 2.0e8,        & ! Available pollen [grains/m2] grass
+  N_TOT_grass = 2.0e7,        & ! Available pollen [grains/m2] grass
   RH_LOW   = 0.50,            & ! Min cut-off relative humidity [1]
   RH_HIGH  = 0.80,            & ! Max cut-off relative humidity [1]
   PROB_IN_birch  = 0.2,       & ! Probability for flowering to start
-  PROB_OUT_birch = 0.2,       & ! Probability for flowering to end 
+  PROB_OUT_birch = 0.2,       & ! Probability for flowering to end
   PROB_IN_olive  = 0.1,       & ! Probability for flowering to start
-  PROB_OUT_olive = 0.1,       & ! Probability for flowering to end 
+  PROB_OUT_olive = 0.1,       & ! Probability for flowering to end
                                 ! (could be assumed to be larger than PROB_IN)
   uncert_grass_day = 7,       &
   uncert_tot_grass_poll = 0.2,& ! end uncertainty for linear releases
-! uncert_tot_grass_poll = 0.6,& ! end uncertainty for linear releases (new value)
   D_POLL_birch = 22.0,        & ! Pollen grain diameter [um] birch
   D_POLL_olive = 28.0,        & ! Pollen grain diameter [um] olive
   D_POLL_grass = 32.0,        & ! Pollen grain diameter [um] grass

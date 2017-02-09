@@ -70,7 +70,7 @@
 !CRM  use ChemSpecs_adv_ml , only : NSPEC_ADV
   use CheckStop_ml,      only : CheckStop,StopAll
   use Convection_ml,     only : convection_pstar,convection_Eta
-  use EmisDef_ml,        only : loc_frac
+  use EmisDef_ml,        only : NSECTORS,loc_frac
   use GridValues_ml,     only : GRIDWIDTH_M,xm2,xmd,xm2ji,xmdji,xm_i, Pole_Singular, &
                                 dA,dB,i_fdom,j_fdom,i_local,j_local,Eta_bnd,dEta_i
   use Io_ml,             only : datewrite
@@ -82,10 +82,11 @@
                                 ,uw,ue,vs,vn
   use MassBudget_ml,     only : fluxin_top,fluxout_top,fluxin,fluxout
   use My_Timing_ml,      only : Code_timer, Add_2timing, tim_before,tim_after
-  use MPI_Groups_ml,      only :MPI_DOUBLE_PRECISION, MPI_MAX, MPI_SUM,MPI_INTEGER, MPI_BYTE, IERROR,&
-                            MPISTATUS, MPI_COMM_IO, MPI_COMM_CALC, ME_IO, ME_CALC, ME_MPI,MPI_IN_PLACE,&
-                            request_n,request_s,request_xn_n,request_xn_s,&
-                            request_e,request_w, request_xn_w, request_xn_e
+  !do not use "only", because MPI_IN_PLACE does not behave well on certain versions of gfortran(?)
+  use MPI_Groups_ml !,      only :MPI_DOUBLE_PRECISION, MPI_MAX, MPI_SUM,MPI_INTEGER, MPI_BYTE, IERROR,&
+                    !       MPISTATUS, MPI_COMM_IO, MPI_COMM_CALC, ME_IO, ME_CALC, ME_MPI,MPI_IN_PLACE,&
+                    !       request_n,request_s,request_xn_n,request_xn_s,&
+                    !       request_e,request_w, request_xn_w, request_xn_e
   use Par_ml,            only : LIMAX,LJMAX,GJMAX,GIMAX,me,mex,mey,&
             li0,li1,lj0,lj1 ,limax,ljmax, gi0, IRUNBEG,gj0, JRUNBEG &
            ,neighbor,WEST,EAST,SOUTH,NORTH,NOPROC            &
@@ -156,22 +157,28 @@
 
     implicit none
     real, intent(in) ::GRIDWIDTH_M
-
-    dt_advec=1800.0
-    if(GRIDWIDTH_M<61000.0) dt_advec=1200.0
-    if(GRIDWIDTH_M<21000.0) dt_advec= 900.0
-    if(GRIDWIDTH_M<11000.0) dt_advec= 600.0
-    if(GRIDWIDTH_M< 6000.0) dt_advec= 300.0
+    
+    if(dt_advec<0.0)then
+       dt_advec=1800.0
+       if(GRIDWIDTH_M<61000.0) dt_advec=1200.0
+       if(GRIDWIDTH_M<21000.0) dt_advec= 900.0
+       if(GRIDWIDTH_M<11000.0) dt_advec= 600.0
+       if(GRIDWIDTH_M< 6000.0) dt_advec= 300.0
 
 ! GEMS025 domain 0.25 deg resol --> GRIDWIDTH_M~=27.8 km --> dt_advec=1200.0
 ! MACC02  domain 0.20 deg resol --> GRIDWIDTH_M~=22.2 km --> dt_advec=1200.0
+
+       if(me==0)write(*,fmt="(a,F8.1,a)")' advection time step (dt_advec) set to: ',dt_advec,' seconds'
+    else
+       !the value prescribed by the config file overrides dt_advec
+       if(me==0)write(*,fmt="(a,F8.1,a)")&
+            ' advection time step (dt_advec) set by config file to: ',dt_advec,' seconds'
+    endif
 
 !check that it is allowed:
     call CheckStop(mod(3600,nint(dt_advec)).ne.0, "3600/dt_advec must be an integer")
 
     dt_advec_inv=1.0/dt_advec
-
-   if(me==0)write(*,fmt="(a,F8.1,a)")' advection time step (dt_advec) set to: ',dt_advec,' seconds'
 
    call alloc_adv_arrays!should be moved elsewhere
 
@@ -267,11 +274,11 @@
     real dt_xmax(LJMAX,KMAX_MID),dt_ymax(LIMAX,KMAX_MID)
     integer niterx(LJMAX,KMAX_MID),nitery(LIMAX,KMAX_MID)
     integer niterxys,niters,nxy,ndiff
-    integer iterxys,iters,iterx,itery,nxx,nxxmin,nyy
+    integer iterxys,iters,iterx,itery,nxx,nxxmin,nyy,isec
     integer ::isum,isumtot,iproc
     real :: xn_advjktot(NSPEC_ADV),xn_advjk(NSPEC_ADV),rfac
     real :: dpdeta0,mindpdeta,xxdg,fac1
-    real :: xnold,xn_k_old,xn_k(kmax_mid),xn,x,xx
+    real :: xnold,xn_k_old,xn_k(kmax_mid,NSECTORS),xn,x,xx
     real :: fluxx(NSPEC_ADV,-1:LIMAX+1)
     real :: fluxy(NSPEC_ADV,-1:LJMAX+1)
     real :: fluxk(NSPEC_ADV,KMAX_MID)
@@ -326,7 +333,7 @@
     end do
 
 
-    call Add_2timing(25,tim_after,tim_before,"advecdiff:ps")
+    call Add_2timing(22,tim_after,tim_before,"advecdiff:ps")
 
     !     time-splitting is used for the physical and chemical operators.
     !     second-order accuracy in time is obtained by alternating the order
@@ -457,7 +464,7 @@
 
     ! stop
 
-    call Add_2timing(20,tim_after,tim_before,"advecdiff:synchronization")
+    call Add_2timing(17,tim_after,tim_before,"advecdiff:synchronization")
 
     ! Start xys advection loop:
     iterxys = 0
@@ -502,7 +509,7 @@
                             xx=xx!*uEMEPfac(k)
                             xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. outgoing flux 
                             f_in=max(0.0,x)+max(0.0,xx)!positive part. incoming flux
-                            loc_frac(i,j,k,ip)=(loc_frac(i,j,k,ip)*xn)/(xn+f_in+1.e-20)
+                            loc_frac(1:NSECTORS,i,j,k)=(loc_frac(1:NSECTORS,i,j,k)*xn)/(xn+f_in+1.e-20)
                          end if
 
                          dpdeta0=(dA(k)+dB(k)*ps(i,j,1))*dEta_i(k)
@@ -516,7 +523,7 @@
              end do !j
              !          end do !k horizontal (x) advection
 
-             call Add_2timing(21,tim_after,tim_before,"advecdiff:advx")
+             call Add_2timing(18,tim_after,tim_before,"advecdiff:advx")
 
              ! y-direction
              !          do k = 1,KMAX_MID
@@ -553,7 +560,7 @@
                          xx=xx!*uEMEPfac(k)
                          xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. outgoing flux 
                          f_in=max(0.0,x)+max(0.0,xx)!positive part. incoming flux
-                         loc_frac(i,j,k,ip)=(loc_frac(i,j,k,ip)*xn)/(xn+f_in+1.e-20)
+                         loc_frac(1:NSECTORS,i,j,k)=(loc_frac(1:NSECTORS,i,j,k)*xn)/(xn+f_in+1.e-20)
                       end if
 
                       dpdeta0=(dA(k)+dB(k)*ps(i,j,1))*dEta_i(k)
@@ -566,7 +573,7 @@
              end do !i
           end do !k horizontal (y) advection
 
-          call Add_2timing(23,tim_after,tim_before,"advecdiff:advy")
+          call Add_2timing(20,tim_after,tim_before,"advecdiff:advy")
 
           do iters=1,niters
 
@@ -593,7 +600,7 @@
                          xx=xx!*uEMEPfac(k)
                          xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. outgoing flux 
                          f_in=max(0.0,x)+max(0.0,xx)!positive part. incoming flux
-                         loc_frac(i,j,k,ip)=(loc_frac(i,j,k,ip)*xn)/(xn+f_in+1.e-20)
+                         loc_frac(1:NSECTORS,i,j,k)=(loc_frac(1:NSECTORS,i,j,k)*xn)/(xn+f_in+1.e-20)
                       end do
                    end if
 
@@ -617,7 +624,7 @@
           end do ! vertical (s) advection
 
 
-          call Add_2timing(24,tim_after,tim_before,"advecdiff:advvk")
+          call Add_2timing(21,tim_after,tim_before,"advecdiff:advvk")
 
 
        else  !start a yxs sequence
@@ -659,7 +666,7 @@
                          xx=xx!*uEMEPfac(k)
                          xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. outgoing flux 
                          f_in=max(0.0,x)+max(0.0,xx)!positive part. incoming flux
-                         loc_frac(i,j,k,ip)=(loc_frac(i,j,k,ip)*xn)/(xn+f_in+1.e-20)
+                         loc_frac(1:NSECTORS,i,j,k)=(loc_frac(1:NSECTORS,i,j,k)*xn)/(xn+f_in+1.e-20)
                       end if
 
                       dpdeta0=(dA(k)+dB(k)*ps(i,j,1))*dEta_i(k)
@@ -671,7 +678,7 @@
              end do !i
              !         end do !k horizontal (y) advection
 
-             call Add_2timing(23,tim_after,tim_before,"advecdiff:preadvy,advy")
+             call Add_2timing(20,tim_after,tim_before,"advecdiff:preadvy,advy")
 
              !          do k = 1,KMAX_MID
              do j = lj0,lj1
@@ -709,7 +716,7 @@
                             xx=xx!*uEMEPfac(k)
                             xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. outgoing flux 
                             f_in=max(0.0,x)+max(0.0,xx)!positive part. incoming flux
-                            loc_frac(i,j,k,ip)=(loc_frac(i,j,k,ip)*xn)/(xn+f_in+1.e-20)
+                            loc_frac(1:NSECTORS,i,j,k)=(loc_frac(1:NSECTORS,i,j,k)*xn)/(xn+f_in+1.e-20)
                          end if
 
                          dpdeta0=(dA(k)+dB(k)*ps(i,j,1))*dEta_i(k)
@@ -723,7 +730,7 @@
              end do !j
           end do !k horizontal (x) advection
 
-          call Add_2timing(21,tim_after,tim_before,"advecdiff:preadvx,advx") 
+          call Add_2timing(18,tim_after,tim_before,"advecdiff:preadvx,advx") 
 
           do iters=1,niters
 
@@ -750,7 +757,7 @@
                          xx=xx!*uEMEPfac(k)
                          xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. outgoing flux 
                          f_in=max(0.0,x)+max(0.0,xx)!positive part. incoming flux
-                         loc_frac(i,j,k,ip)=(loc_frac(i,j,k,ip)*xn)/(xn+f_in+1.e-20)
+                         loc_frac(1:NSECTORS,i,j,k)=(loc_frac(1:NSECTORS,i,j,k)*xn)/(xn+f_in+1.e-20)
                       end do
                    end if
 
@@ -772,7 +779,7 @@
              end do
           end do ! vertical (s) advection
 
-          call Add_2timing(24,tim_after,tim_before,"advecdiff:advvk")
+          call Add_2timing(21,tim_after,tim_before,"advecdiff:advvk")
 
        end if ! yxs sequence
     end do
@@ -859,7 +866,7 @@
        end do
     end do
 
-    call Add_2timing(25,tim_after,tim_before,"advecdiff:ps")
+    call Add_2timing(22,tim_after,tim_before,"advecdiff:ps")
 
     ! vertical diffusion
     ndiff = 1 !number of vertical diffusion iterations (the larger the better)
@@ -879,24 +886,26 @@
        do i = li0,li1
 
           if(USE_uEMEP)then
-             xn_k_old=0.0
-             do k = 1,KMAX_MID
-                xn_k(k)=0.0
-                do iix=1,uEMEP%Nix
-                   ix=uEMEP%ix(iix)
-                   !assumes mixing ratios units, but weight by mass
-                   xn_k(k)=xn_k(k)+xn_adv(ix,i,j,k)*species_adv(ix)%molwt
+             do isec=1,NSECTORS
+                xn_k_old=0.0
+                do k = 1,KMAX_MID
+                   xn_k(k,isec)=0.0
+                   do iix=1,uEMEP%Nix
+                      ix=uEMEP%ix(iix)
+                      !assumes mixing ratios units, but weight by mass
+                      xn_k(k,isec)=xn_k(k,isec)+xn_adv(ix,i,j,k)*species_adv(ix)%molwt
+                   end do
+                   if(k==kmax_mid)xn_k_old=xn_k(KMAX_MID,isec)!save for udiff
+                   xn_k(k,isec)=xn_k(k,isec)*loc_frac(isec,i,j,k)
                 end do
-                if(k==kmax_mid)xn_k_old=xn_k(KMAX_MID)!save for udiff
-                xn_k(k)=xn_k(k)*loc_frac(i,j,k,ip)
-             end do
-             call vertdiff_1d(xn_k,EtaKz(i,j,1,1),ds3,ds4,ndiff)!does the same as vertdiffn, but for one component
+                call vertdiff_1d(xn_k(1,isec),EtaKz(i,j,1,1),ds3,ds4,ndiff)!does the same as vertdiffn, but for one component
+             enddo
           end if
-
-!________ vertical diffusion ______
+             
+          !________ vertical diffusion ______
           call vertdiffn(xn_adv(1,i,j,1),EtaKz(i,j,1,1),ds3,ds4,ndiff)
-!________
-
+          !________
+          
           if(USE_uEMEP)then
              do k = 2,KMAX_MID
                 x=0.0
@@ -905,8 +914,10 @@
                    !conversion from mixing ratio to mg/m2
                    x=x+xn_adv(ix,i,j,k)*species_adv(ix)%molwt
                 end do
-                loc_frac(i,j,k,ip)=xn_k(k)/(x+1.E-30)
-                !if(k==KMAX_MID)udiff(i,j)=(x-xn_k_old)*(dA(kmax_mid)+dB(kmax_mid)*ps(i,j,1))/ATWAIR/GRAV*1.0E6
+                do isec=1,NSECTORS
+                   loc_frac(isec,i,j,k)=xn_k(k,isec)/(x+1.E-30)
+                   !if(k==KMAX_MID)udiff(i,j)=(x-xn_k_old)*(dA(kmax_mid)+dB(kmax_mid)*ps(i,j,1))/ATWAIR/GRAV*1.0E6
+                end do
              end do
           end if
 
@@ -918,7 +929,7 @@
     !      sum = sum + xn_adv(1,4,4,k)/dhs1i(k+1)
     !   end do
     !   write(*,*)'sum after diffusion ',me,sum
-    call Add_2timing(22,tim_after,tim_before,"advecdiff:diffusion")
+    call Add_2timing(19,tim_after,tim_before,"advecdiff:diffusion")
 
     if(lj0.ne.1)then
        do k=KCHEMTOP,KMAX_MID

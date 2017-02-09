@@ -12,7 +12,7 @@ program myeul
   use My_Outputs_ml,    only: set_output_defs, NHOURLY_OUT
   use My_Timing_ml,     only: lastptim, mytimm, Output_timing, &
        Init_timing, Add_2timing, Code_timer, &
-       tim_before, tim_before0, tim_before1, &
+       tim_before, tim_before1, tim_before2, &
        tim_after, tim_after0, NTIMING_UNIMOD,NTIMING
   use Advection_ml,     only: vgrid, assign_nmax, assign_dtadvec
   use Aqueous_ml,       only: init_aqueous, Init_WetDep   !  Initialises & tabulates
@@ -94,7 +94,7 @@ program myeul
   integer :: cyclicgrid
   TYPE(timestamp)   :: ts1,ts2
   logical :: End_of_Run=.false.
-
+  real :: tim_before0 !private
 
   associate ( yyyy => current_date%year, mm => current_date%month, &
        dd => current_date%day,  hh => current_date%hour)
@@ -156,7 +156,6 @@ program myeul
   !
   !++  parameters and initial fields.
   !
-  call Add_2timing(1,tim_after,tim_before,"Before define_Chemicals")
 
   call alloc_ChemFields     !allocate chemistry arrays
 !TEST  call define_chemicals()    ! sets up species details
@@ -166,20 +165,23 @@ program myeul
 
   call trajectory_init()
 
-  call Add_2timing(2,tim_after,tim_before,"After define_Chems, readpar")
-
   call Country_Init() ! In Country_ml, => NLAND, country codes and names, timezone
+
+  call Add_2timing(1,tim_after,tim_before,"Grid init + chem init")
 
   call SetLandUse(daynumber, mm) !  Reads Inputs.Landuse, Inputs.LandPhen
 
+  call Add_2timing(1,tim_after,tim_before,"landuse read in")
+
   call MeteoRead()
 
-  call Add_2timing(3,tim_after,tim_before,"After infield")
+  call Add_2timing(2,tim_after,tim_before,"Meteo read first record")
 
   if (MasterProc.and.DEBUG%MAINCODE) print *,"Calling emissions with year",yyyy
 
   call Emissions(yyyy)
 
+  call Add_2timing(3,tim_after,tim_before,"Yearly emissions read in")
 
   call MetModel_LandUse(1)   !
 
@@ -220,7 +222,7 @@ program myeul
   if(wanted_iou(IOU_HOUR_INST)) &
     call Init_new_netCDF(trim(runlabel1)//'_hourInst.nc',IOU_HOUR_INST)
 
-  call Add_2timing(4,tim_after,tim_before,"After tabs, defs, adv_var")
+  call Add_2timing(4,tim_after,tim_before,"Other init")
 
   tim_before = tim_before0
   call Add_2timing(5,tim_after,tim_before,"Total until time loop")
@@ -263,68 +265,69 @@ program myeul
       if(MasterProc.and.DEBUG%MAINCODE) &
         print *,'maaned og sesong', mm,mm_old,newseason,oldseason
 
-      call Add_2timing(6,tim_after,tim_before,"readdiss, aircr_nox")
-
       call MetModel_LandUse(2)   ! e.g.  gets snow_flag
-      if(MasterProc.and.DEBUG%MAINCODE) write(*,*)"vnewmonth start"
+      if(MasterProc.and.DEBUG%MAINCODE) write(*,*)"Newmonth start"
 
       call newmonth
 
-      call Add_2timing(7,tim_after,tim_before,"newmonth")
-
-      if(USE_LIGHTNING_EMIS) call lightning()
+       if(USE_LIGHTNING_EMIS) call lightning()
 
       call init_aqueous()
 
-      call Add_2timing(8,tim_after,tim_before,"init_aqueous")
       ! Monthly call to BoundaryConditions.
       if(DEBUG%MAINCODE) print *, "Into BCs" , me
       ! We set BCs using the specified iyr_trend
       !   which may or may not equal the meteorology year
+      call Code_timer(tim_before2)
       call BoundaryConditions(yyyy,mm)
+      call Add_2timing(6,tim_after,tim_before2,"BoundaryConditions")
+
       if(DEBUG%MAINCODE) print *, "Finished BCs" , me
 
       !must be called only once, after BC is set
       if(mm_old==0)call Init_massbudget()
       if(DEBUG%MAINCODE) print *, "Finished Initmass" , me
 
-    end if
+      call Add_2timing(7,tim_after,tim_before,"Total newmonth setup")
+
+   end if
 
     oldseason = newseason
     mm_old = mm
 
-    call Add_2timing(9,tim_after,tim_before,"BoundaryConditions")
-
     if(DEBUG%MAINCODE) print *, "1st Infield" , me
 
     call SetLandUse(daynumber, mm) !daily
-    call Add_2timing(11,tim_after,tim_before,"SetLanduse")
+    call Add_2timing(8,tim_after,tim_before,"SetLanduse")
 
     call Meteoread() ! 3-hourly or hourly
 
-    call Add_2timing(10,tim_after,tim_before,"Meteoread")
+    call Add_2timing(9,tim_after,tim_before,"Meteoread")
 
     call SetDailyBVOC() !daily
 
     if(USES%FOREST_FIRES) call Fire_Emis(daynumber)
 
-    call Add_2timing(12,tim_after,tim_before,"Fires+BVOC")
+    call Add_2timing(10,tim_after,tim_before,"Fires+BVOC")
 
     if(MasterProc) print "(2(1X,A))",'current date and time:',&
       date2string("YYYY-MM-DD hh:mm:ss",current_date)
 
-    call Code_timer(tim_before)
-
+    call Code_timer(tim_before2)
     call phyche()
-    call Add_2timing(14,tim_after,tim_before,"phyche")
+    call Add_2timing(11,tim_after,tim_before2,"Total phyche")
+
+    call Code_timer(tim_before)
 
     call WrtChem()
 
+    call Add_2timing(36,tim_after,tim_before,"WrtChem")
+
     call trajectory_in
-    call Add_2timing(37,tim_after,tim_before,"massbud,wrtchem,trajectory_in")
 
     call metfieldint
-    call Add_2timing(36,tim_after,tim_before,"metfieldint")
+
+    call Add_2timing(37,tim_after,tim_before,"metfieldint")
 
     !this is a bit complicated because it must account for the fact that for instance 3feb24:00 = 4feb00:00 
     ts1=make_timestamp(current_date)

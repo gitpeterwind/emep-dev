@@ -38,33 +38,33 @@ module DA_Obs_ml
 
   implicit none
 
-  
+
   ! --- const -----------------------------------------
 
   character(len=*), parameter  ::  mname = 'DA_Obs_ml'
-  
+
   ! max length:
   integer, parameter  ::  LEN_LABEL = 64
   integer, parameter  ::  LEN_SCODE = 8
-  
-  
+
+
   ! --- in/out ---------------------------------------
-  
+
   private
 
   public    ::  Read_Obs
-  
+
   public    ::  T_ObsOper
   public    ::  T_ObsOpers
-  
+
   public    ::  varName, varSpec, varSpecInv
   public    ::  obsVarName, observedVar
   public    ::  OBSERVATIONS, nobsData, obsData
   public    ::  nchemobs, ichemObs
-  
+
 
   ! --- types ----------------------------------------
-  
+
   type obs_data
     logical            :: set       = .false.
     logical            :: found     = .false.
@@ -186,7 +186,7 @@ contains
   subroutine ObsOper_Init( self, nchm, status )
 
     ! --- in/out -----------------------------
-    
+
     class(T_ObsOper), intent(out)   ::  self
     integer, intent(in)             ::  nchm  ! (nChemObs) or (ntracer)
     integer, intent(out)            ::  status
@@ -196,13 +196,13 @@ contains
     character(len=*), parameter  ::  rname = mname//'/ObsOper_Init'
 
     ! --- begin -----------------------------
-    
+
     ! storage:
     allocate( self%H_jac(nlev,nchm), stat=status )
     IF_NOT_OK_RETURN(status=1)
     ! dummy values:
     self%H_jac     = -999.9
-    
+
     ! dummy values:
     self%obs       = -999.9
     self%xf        = -999.9
@@ -232,7 +232,7 @@ contains
   subroutine ObsOper_Done( self, status )
 
     ! --- in/out -----------------------------
-    
+
     class(T_ObsOper), intent(inout)   ::  self
     integer, intent(out)              ::  status
 
@@ -241,7 +241,7 @@ contains
     character(len=*), parameter  ::  rname = mname//'/ObsOper_Done'
 
     ! --- begin -----------------------------
-    
+
     ! clear:
     deallocate( self%H_jac, stat=status )
     IF_NOT_OK_RETURN(status=1)
@@ -256,11 +256,11 @@ contains
 
 
   ! copy tracer selection from 'nChemObs' arrays to 'ntracer' arrays
-  
+
   subroutine ObsOper_FillTracers( self, src, itracers, status )
 
     ! --- in/out -----------------------------
-    
+
     class(T_ObsOper), intent(inout)   ::  self
     class(T_ObsOper), intent(in)      ::  src      ! with iChemObs and H_jac(:,:,nChemObs)
     integer, intent(in)               ::  itracers(:)   ! (nChemObs)
@@ -271,12 +271,12 @@ contains
     character(len=*), parameter  ::  rname = mname//'/ObsOper_FillTracers'
 
     ! --- local -----------------------------
-    
+
     integer       ::  ichemobs
     integer       ::  itracer
 
     ! --- begin -----------------------------
-    
+
     ! copy scalar values:
     self%obs       = src%obs
     self%xf        = src%xf
@@ -295,7 +295,7 @@ contains
     self%iChemObs   = -999
     ! instead, new index:
     self%itracer    = itracers(src%iChemObs)
-    
+
     ! loop over original chemobs:
     do ichemobs = 1, nChemObs
       ! target tracer:
@@ -377,7 +377,7 @@ real                           :: z_middle
 logical :: local_model_grid
 
 ! --- begin -----------------------------
-    
+
   ! store meta data:
   self%stnid = stnid
   self%lon   = lon
@@ -401,7 +401,7 @@ logical :: local_model_grid
     write (gol,'("  j index : ",i4)') j; call goErr
     TRACEBACK; status=1; return
   end if
-  
+
   !-----------------------------------------------------------------------
   ! z grid coordinate of observations:
   !-----------------------------------------------------------------------
@@ -443,7 +443,7 @@ logical :: local_model_grid
 
   ! copy value from obsData element into data type:
   self%iChemObs = obsData(ipar)%iChemObs
-  
+
   !! info ...
   !write (gol,'(a,":   shape(xn_b)=",4i4)') rname, shape(xn_b); call goPr
   !write (gol,'(a,":   deriv=",a)') rname, trim(obsData(ipar)%deriv); call goPr
@@ -468,7 +468,7 @@ logical :: local_model_grid
 ! direct observations: model mid-levels
 !-----------------------------------------------------------------------
     case('mod-lev')
-      if(obsData(ipar)%unitroa)then   ! unit conversion        
+      if(obsData(ipar)%unitroa)then   ! unit conversion
         Hj=unitconv*roa(i,j,ll,1)
       else
         Hj=unitconv
@@ -501,7 +501,7 @@ logical :: local_model_grid
 !-----------------------------------------------------------------------
     case('Trop.Col.')
       call CheckStop(.not.obsData(ipar)%unitroa,&
-        "Unsupported obsData unit for: "//trim(obsData(ipar)%tag))     
+        "Unsupported obsData unit for: "//trim(obsData(ipar)%tag))
       do ll=1,KMAX_MID
         Hj=unitconv                       & ! unit conversion
           * roa(i,j,ll,1)                 & ! density.
@@ -650,7 +650,7 @@ endsubroutine ObsOper_Fill
   subroutine ObsOper_Evaluate( self, key, xn_b, status )
 
     ! --- in/out -----------------------------
-    
+
     class(T_ObsOper), intent(inout)   ::  self
     character(len=*), intent(in)      ::  key
     real, intent(in)                  ::  xn_b(:,:,:,:)      ! (lnx,lny,nlev,nchem)
@@ -666,7 +666,7 @@ endsubroutine ObsOper_Fill
     integer         ::  l0, l1
     integer         ::  ichem
     real            ::  yn
-    
+
     ! --- begin -----------------------------
 
     ! init sum:
@@ -695,7 +695,7 @@ endsubroutine ObsOper_Fill
 
     ! ok
     status = 0
-    
+
   end subroutine ObsOper_Evaluate
 
 
@@ -717,7 +717,7 @@ endsubroutine ObsOper_Fill
     !-----------------------------------------------------------------------
 
     ! --- in/out -----------------------------
-    
+
     class(T_ObsOpers), intent(out)  ::  self
     integer, intent(out)            ::  status
 
@@ -726,7 +726,7 @@ endsubroutine ObsOper_Fill
     character(len=*), parameter  ::  rname = mname//'/ObsOpers_Init'
 
     ! --- begin -----------------------------
-    
+
     ! no values yet:
     self%nobs = -999
 
@@ -742,7 +742,7 @@ endsubroutine ObsOper_Fill
   subroutine ObsOpers_Done( self, status )
 
     ! --- in/out -----------------------------
-    
+
     class(T_ObsOpers), intent(inout)  ::  self
     integer, intent(out)              ::  status
 
@@ -751,7 +751,7 @@ endsubroutine ObsOper_Fill
     character(len=*), parameter  ::  rname = mname//'/ObsOpers_Done'
 
     ! --- begin -----------------------------
-    
+
     ! clear:
     call self%DeAlloc( status )
     IF_NOT_OK_RETURN(status=1)
@@ -768,7 +768,7 @@ endsubroutine ObsOper_Fill
   subroutine ObsOpers_Alloc( self, nobs, nchm, status )
 
     ! --- in/out -----------------------------
-    
+
     class(T_ObsOpers), intent(out)  ::  self
     integer, intent(in)             ::  nobs
     integer, intent(in)             ::  nchm
@@ -779,11 +779,11 @@ endsubroutine ObsOper_Fill
     character(len=*), parameter  ::  rname = mname//'/ObsOpers_Alloc'
 
     ! --- local -----------------------------
-    
+
     integer   ::  iobs
 
     ! --- begin -----------------------------
-    
+
     ! different from current ?
     if ( self%nobs /= nobs ) then
       ! clear (if necessary):
@@ -806,10 +806,10 @@ endsubroutine ObsOper_Fill
         IF_NOT_OK_RETURN(status=1)
       end do
     end if
-    
+
     ! store:
     self%nobs = nobs
-    
+
     ! ok
     status = 0
 
@@ -822,7 +822,7 @@ endsubroutine ObsOper_Fill
   subroutine ObsOpers_DeAlloc( self, status )
 
     ! --- in/out -----------------------------
-    
+
     class(T_ObsOpers), intent(inout)  ::  self
     integer, intent(out)              ::  status
 
@@ -831,11 +831,11 @@ endsubroutine ObsOper_Fill
     character(len=*), parameter  ::  rname = mname//'/ObsOpers_DeAlloc'
 
     ! --- local -----------------------------
-    
+
     integer   ::  iobs
 
     ! --- begin -----------------------------
-    
+
     ! initialized ?
     if ( allocated(self%obs) ) then
       ! loop over new values:
@@ -866,15 +866,15 @@ endsubroutine ObsOper_Fill
   ! @description
   ! Set unique for each id equal to global order in all domains.
   !-----------------------------------------------------------------------
-  
+
     use MPI, only : MPI_INTEGER
     use MPI, only : MPI_AllGather
     use MPIF90, only : MPIF90_Displacements
-    
+
     use MPI_Groups_ml, only : MPI_COMM_CALC
 
     ! --- in/out -----------------------------
-    
+
     class(T_ObsOpers), intent(inout)  ::  self
     integer, intent(out)              ::  status
 
@@ -883,19 +883,19 @@ endsubroutine ObsOper_Fill
     character(len=*), parameter  ::  rname = mname//'/ObsOpers_Set_IDs'
 
     ! --- local -----------------------------
-    
+
     integer                         ::  iobs
     integer, allocatable            ::  recvcounts(:)  ! (0:nproc-1)
     integer, allocatable            ::  rdispls(:)     ! (0:nproc-1)
-    
+
     ! --- begin -----------------------------
-    
+
     ! storage:
     allocate( recvcounts(0:nproc-1), stat=status )
     IF_NOT_OK_RETURN(status=1)
     allocate( rdispls(0:nproc-1), stat=status )
     IF_NOT_OK_RETURN(status=1)
-    
+
     ! exchange number of observations:
     call MPI_AllGather( self%nobs , 1, MPI_INTEGER, &
                         recvcounts, 1, MPI_INTEGER, &
@@ -908,23 +908,23 @@ endsubroutine ObsOper_Fill
     do iobs = 1, self%nobs
       self%obs(iobs)%id = rdispls(me) + iobs
     end do
-    
+
     ! info ...
     if ( self%nobs > 0 ) then
       write (gol,'(a,": proc observations : ",i0," - ",i0)') rname, self%obs(1)%id, self%obs(self%nobs)%id; call goPr
     else
       write (gol,'(a,": proc observations : none")') rname; call goPr
     end if
-    
+
     ! clear:
     deallocate( recvcounts, stat=status )
     IF_NOT_OK_RETURN(status=1)
     deallocate( rdispls, stat=status )
     IF_NOT_OK_RETURN(status=1)
-    
+
     ! ok
     status = 0
-    
+
   end subroutine ObsOpers_Set_IDs
 
 
@@ -938,14 +938,14 @@ endsubroutine ObsOper_Fill
   ! Fill initialized obseration operator decomposed over domains 'doms_new'
   ! from similar structure 'self' decomposed over domains 'doms'.
   !-----------------------------------------------------------------------
-  
+
     ! NOTE: This routine was originaly implemented by defining
     ! a new MPI type for an instance of the 'T_ObsOper' class.
     ! However, this requires that the compiler aligns the variables
     ! contigeously but that is dificult to ensure for all compilers around ...
     ! Therefore here we simply copy the data into arrays and swap
     ! these to the other domains.
-  
+
     use MPIF90       , only : MPIF90_AllToAll
     use MPIF90       , only : MPIF90_AllToAllV
     use MPIF90       , only : MPIF90_Displacements
@@ -953,7 +953,7 @@ endsubroutine ObsOper_Fill
     use MPI_Groups_ml, only : MPI_COMM_CALC
 
     ! --- in/out -----------------------------
-    
+
     class(T_ObsOpers), intent(in)     ::  self
     type(T_Domains), intent(in)       ::  doms
     type(T_ObsOpers), intent(inout)   ::  Hops_new
@@ -965,7 +965,7 @@ endsubroutine ObsOper_Fill
     character(len=*), parameter  ::  rname = mname//'/ObsOpers_Swap'
 
     ! --- local -----------------------------
-    
+
     integer                         ::  iobs, iobs_in
     integer                         ::  iproc, iproc_in
     integer                         ::  ind(4)
@@ -978,9 +978,9 @@ endsubroutine ObsOper_Fill
     integer, allocatable            ::  rdispls(:)     ! (0:nproc-1)
     integer                         ::  nobs_new
     integer                         ::  nval
-    
+
     ! --- begin -----------------------------
-    
+
     ! storage:
     allocate( sendcounts(0:nproc-1), stat=status )
     IF_NOT_OK_RETURN(status=1)
@@ -990,7 +990,7 @@ endsubroutine ObsOper_Fill
     IF_NOT_OK_RETURN(status=1)
     allocate( rdispls(0:nproc-1), stat=status )
     IF_NOT_OK_RETURN(status=1)
-    
+
     !! info ...
     !do iobs = 1, self%nobs
     !  write (gol,*) rname//': obs ', self%obs(iobs)%id, &
@@ -998,7 +998,7 @@ endsubroutine ObsOper_Fill
     !    sum(self%obs(iobs)%H_jac), ';', &
     !    self%obs(iobs)%i(1), self%obs(iobs)%j(1), self%obs(iobs)%l; call goPr
     !end do
-    
+
     ! storage for sorted version that can be passed through MPI;
     ! decomposition over observation, so this should be last index:
     nrr = 2
@@ -1010,7 +1010,7 @@ endsubroutine ObsOper_Fill
     nii = 6
     allocate( srt_ii(nii,self%nobs), stat=status )
     IF_NOT_OK_RETURN(status=1)
-    
+
     ! init counter for sorted obs on this proc:
     iobs = 0
     ! loop over target procs:
@@ -1058,7 +1058,7 @@ endsubroutine ObsOper_Fill
     ! compute displacements:
     call MPIF90_Displacements( recvcounts, rdispls, status )
     IF_NOT_OK_RETURN(status=1)
-    
+
     !! info ...
     !write (gol,'(a,": exchange H ...")') rname; call goPr
     !write (gol,*) rname//':    sendcounts   : ', sendcounts; call goPr
@@ -1069,7 +1069,7 @@ endsubroutine ObsOper_Fill
     ! total number to be received:
     nobs_new = sum(recvcounts)
 
-    ! storage for arrays to be received; 
+    ! storage for arrays to be received;
     ! allocate at least something to avoid bound check errors:
     nval = max( 1, nobs_new )
     allocate( new_rr(nrr,nval), stat=status )
@@ -1078,7 +1078,7 @@ endsubroutine ObsOper_Fill
     IF_NOT_OK_RETURN(status=1)
     allocate( new_ii(nii,nval), stat=status )
     IF_NOT_OK_RETURN(status=1)
-    
+
     ! swap real values:
     nval = nrr
     call MPIF90_AllToAllV( srt_rr, nval*sendcounts, nval*sdispls, &
@@ -1097,15 +1097,15 @@ endsubroutine ObsOper_Fill
                            new_ii, nval*recvcounts, nval*rdispls, &
                            MPI_COMM_CALC, status )
     IF_MPI_NOT_OK_RETURN(status=1)
-    
+
     ! storage for structures:
     call Hops_new%Alloc( nobs_new, nChemObs, status )
     IF_NOT_OK_RETURN(status=1)
     ! unpack:
     do iobs = 1, nobs_new
       ! copy values, convert from global to local horizontal indices:
-      Hops_new%obs(iobs)%innov     = new_rr(1,iobs)    
-      Hops_new%obs(iobs)%obsstddev = new_rr(2,iobs)    
+      Hops_new%obs(iobs)%innov     = new_rr(1,iobs)
+      Hops_new%obs(iobs)%obsstddev = new_rr(2,iobs)
       Hops_new%obs(iobs)%H_jac     = new_Hj(:,:,iobs)
       Hops_new%obs(iobs)%i         = new_ii(1  ,iobs) - doms_new%off(1,me)
       Hops_new%obs(iobs)%j         = new_ii(2  ,iobs) - doms_new%off(2,me)
@@ -1113,7 +1113,7 @@ endsubroutine ObsOper_Fill
       Hops_new%obs(iobs)%id        = new_ii(5  ,iobs)
       Hops_new%obs(iobs)%iChemObs  = new_ii(6  ,iobs)
     end do
-    
+
     !! info ...
     !do iobs = 1, Hops_new%nobs
     !  write (gol,*) rname//': obs ', Hops_new%obs(iobs)%id, &
@@ -1121,7 +1121,7 @@ endsubroutine ObsOper_Fill
     !    sum(Hops_new%obs(iobs)%H_jac), ';', &
     !    Hops_new%obs(iobs)%i(1), Hops_new%obs(iobs)%j(1), Hops_new%obs(iobs)%l; call goPr
     !end do
-    
+
     ! clear:
     deallocate( new_rr, stat=status )
     IF_NOT_OK_RETURN(status=1)
@@ -1129,7 +1129,7 @@ endsubroutine ObsOper_Fill
     IF_NOT_OK_RETURN(status=1)
     deallocate( new_ii, stat=status )
     IF_NOT_OK_RETURN(status=1)
-    
+
     ! clear:
     deallocate( srt_rr, stat=status )
     IF_NOT_OK_RETURN(status=1)
@@ -1137,7 +1137,7 @@ endsubroutine ObsOper_Fill
     IF_NOT_OK_RETURN(status=1)
     deallocate( srt_ii, stat=status )
     IF_NOT_OK_RETURN(status=1)
-    
+
     ! clear:
     deallocate( sendcounts, stat=status )
     IF_NOT_OK_RETURN(status=1)
@@ -1164,9 +1164,9 @@ endsubroutine ObsOper_Fill
   ! Fill (already initialized) observation structure
   ! with subset of self with only selected tracers
   !-----------------------------------------------------------------------
-  
+
     ! --- in/out -----------------------------
-    
+
     class(T_ObsOpers), intent(inout)  ::  self
     type(T_ObsOpers), intent(in)      ::  H
     integer, intent(in)               ::  itracers(:)   ! (nChemObs)
@@ -1177,23 +1177,23 @@ endsubroutine ObsOper_Fill
     character(len=*), parameter  ::  rname = mname//'/ObsOpers_Swap'
 
     ! --- local -----------------------------
-    
+
     integer                         ::  ntracer
     integer                         ::  nobs
     integer                         ::  iobs
     integer                         ::  k
-    
+
     ! --- begin -----------------------------
-    
+
     ! check ...
     if ( size(itracers) /= nChemObs ) then
       write (gol,'("size of itracer is ",i0," while nChemObs is ",i0)') size(itracers), nChemObs; call goErr
       TRACEBACK; status=1; return
     end if
-    
+
     ! count:
     ntracer = count( itracers > 0 )
-    
+
     ! init new number of observations:
     nobs = 0
     ! loop over existing observations:
@@ -1201,7 +1201,7 @@ endsubroutine ObsOper_Fill
       ! check index in 'nChemObs' arrays:
       if ( itracers(H%obs(iobs)%iChemObs) > 0 ) nobs = nobs + 1
     end do
-    
+
     ! storage for structures:
     call self%Alloc( nobs, ntracer, status )
     IF_NOT_OK_RETURN(status=1)
@@ -1231,7 +1231,7 @@ endsubroutine ObsOper_Fill
   subroutine ObsOpers_Evaluate( self, key, xn_b, status )
 
     ! --- in/out -----------------------------
-    
+
     class(T_ObsOpers), intent(inout)  ::  self
     character(len=*), intent(in)      ::  key
     real, intent(in)                  ::  xn_b(:,:,:,:)      ! (lnx,lny,nlev,nchem)
@@ -1242,9 +1242,9 @@ endsubroutine ObsOper_Fill
     character(len=*), parameter  ::  rname = mname//'/ObsOpers_Evaluate'
 
     ! --- local -----------------------------
-    
+
     integer         ::  n
-    
+
     ! --- begin -----------------------------
 
     ! any local observations?
@@ -1256,10 +1256,10 @@ endsubroutine ObsOper_Fill
         IF_NOT_OK_RETURN(status=1)
       end do ! n
     end if  ! nobs > 0
-    
+
     ! ok
     status = 0
-    
+
   end subroutine ObsOpers_Evaluate
 
 
@@ -1282,7 +1282,7 @@ endsubroutine ObsOper_Fill
     use NetCDF           , only : NF90_Put_Att
 
     ! --- in/out -----------------------------
-    
+
     class(T_ObsOpers), intent(in)     ::  self
     type(date), intent(in)            ::  cdate     ! current date
     integer, intent(out)              ::  status
@@ -1292,10 +1292,10 @@ endsubroutine ObsOper_Fill
     character(len=*), parameter  ::  rname = mname//'/ObsOpers_WriteToFile'
 
     ! --- local -----------------------------
-    
+
     integer, allocatable      ::  recvcounts(:)  ! (0:nproc-1)
     integer, allocatable      ::  rdispls(:)     ! (0:nproc-1)
-    
+
     character(len=1024)       ::  fname
     type(Datafile)            ::  F
     integer                   ::  varid
@@ -1313,7 +1313,7 @@ endsubroutine ObsOper_Fill
     integer                   ::  nobs_all
     integer                   ::  iobs
     type(IntegerCoordinate)   ::  obs_coor
-    
+
     integer                   ::  iobsdata
     type(Dimension)           ::  obsdata_dim
     type(Dimension)           ::  obsdata_len_dim
@@ -1321,28 +1321,28 @@ endsubroutine ObsOper_Fill
     character(len=LEN_LABEL)  ::  label
     character(len=LEN_SCODE)  ::  scode
     integer                   ::  vlen
-    
+
     ! --- begin -----------------------------
-    
+
     ! storage:
     allocate( recvcounts(0:nproc-1), stat=status )
     IF_NOT_OK_RETURN(status=1)
     allocate( rdispls(0:nproc-1), stat=status )
     IF_NOT_OK_RETURN(status=1)
-    
+
     ! exchange number of observations:
     call MPIF90_AllGather( (/self%nobs/), recvcounts, MPI_COMM_CALC, status )
     IF_NOT_OK_RETURN(status=1)
     ! create displacements from these:
     call MPIF90_Displacements( recvcounts, rdispls, status )
     IF_NOT_OK_RETURN(status=1)
-    
+
     ! total:
     nobs_all = sum(recvcounts)
 
     ! check ...
     if ( nobs_all == 0 ) then
-      
+
       ! info ..
       write (gol,'("WARNING - could not write, no observations at all ...")'); call goPr
 
@@ -1366,7 +1366,7 @@ endsubroutine ObsOper_Fill
         allocate( svalues(1), stat=status )
         IF_NOT_OK_RETURN(status=1)
       end if
-      
+
       ! write on root:
       if (MasterProc) then
 
@@ -1400,7 +1400,7 @@ endsubroutine ObsOper_Fill
         ! set total size:
         call scode_len_dim%Set_Dim( status, n=LEN_SCODE )
         IF_NOT_OK_RETURN(status=1)
-        
+
         ! target file:
         write (fname,'("obs_",i4.4,2i2.2,"_",2i2.2,".nc")') &
                  cdate%year, cdate%month, cdate%day, cdate%hour, nint(cdate%seconds/60.0)
@@ -1582,7 +1582,7 @@ endsubroutine ObsOper_Fill
         IF_NOT_OK_RETURN(status=1)
 
       end if  ! master
-      
+
       ! fill local observation ids:
       do iobs = 1, self%nobs
         ivalues(iobs) = self%obs(iobs)%id
@@ -1601,7 +1601,7 @@ endsubroutine ObsOper_Fill
         call obs_coor%Write( F, status )
         IF_NOT_OK_RETURN(status=1)
       end if
-      
+
       ! write obsdata info from root, same everywhere:
       if (MasterProc) then
 
@@ -1617,7 +1617,7 @@ endsubroutine ObsOper_Fill
                                   start=(/1,iobsdata/), count=(/LEN_LABEL,1/) )
           IF_NF90_NOT_OK_RETURN(status=1)
         end do ! obsdata
-        
+
         ! loop:
         do iobsdata = 1, nObsData
           ! whitespace:
@@ -1645,7 +1645,7 @@ endsubroutine ObsOper_Fill
         end do ! obsdata
 
       end if  ! root
-      
+
       ! fill local values:
       do iobs = 1, self%nobs
         ivalues(iobs) = self%obs(iobs)%iObsData
@@ -1654,7 +1654,7 @@ endsubroutine ObsOper_Fill
       call ObsOpers_Write_i( F%ncid, varid_iobsdata, ivalues, self%nobs, &
                                 recvcounts, rdispls, &
                                 me, MasterPE, MPI_COMM_CALC, status )
-      
+
       ! fill local values:
       do iobs = 1, self%nobs
         ivalues(iobs) = self%obs(iobs)%stnid
@@ -1663,7 +1663,7 @@ endsubroutine ObsOper_Fill
       call ObsOpers_Write_i( F%ncid, varid_stnid, ivalues, self%nobs, &
                                 recvcounts, rdispls, &
                                 me, MasterPE, MPI_COMM_CALC, status )
-      
+
       ! fill local values:
       do iobs = 1, self%nobs
         ! whitespace:
@@ -1678,7 +1678,7 @@ endsubroutine ObsOper_Fill
       call ObsOpers_Write_s( F%ncid, varid_scode, svalues, self%nobs, LEN_SCODE, &
                                 recvcounts, rdispls, &
                                 me, MasterPE, MPI_COMM_CALC, status )
-      
+
       ! fill local values:
       do iobs = 1, self%nobs
         rvalues(iobs) = self%obs(iobs)%lon
@@ -1687,7 +1687,7 @@ endsubroutine ObsOper_Fill
       call ObsOpers_Write_r( F%ncid, varid_lon, rvalues, self%nobs, &
                                 recvcounts, rdispls, &
                                 me, MasterPE, MPI_COMM_CALC, status )
-      
+
       ! fill local values:
       do iobs = 1, self%nobs
         rvalues(iobs) = self%obs(iobs)%lat
@@ -1696,7 +1696,7 @@ endsubroutine ObsOper_Fill
       call ObsOpers_Write_r( F%ncid, varid_lat, rvalues, self%nobs, &
                                 recvcounts, rdispls, &
                                 me, MasterPE, MPI_COMM_CALC, status )
-      
+
       ! fill local values:
       do iobs = 1, self%nobs
         rvalues(iobs) = self%obs(iobs)%alt
@@ -1705,7 +1705,7 @@ endsubroutine ObsOper_Fill
       call ObsOpers_Write_r( F%ncid, varid_alt, rvalues, self%nobs, &
                                 recvcounts, rdispls, &
                                 me, MasterPE, MPI_COMM_CALC, status )
-      
+
       ! fill local values:
       do iobs = 1, self%nobs
         rvalues(iobs) = self%obs(iobs)%obs
@@ -1714,7 +1714,7 @@ endsubroutine ObsOper_Fill
       call ObsOpers_Write_r( F%ncid, varid_y, rvalues, self%nobs, &
                                 recvcounts, rdispls, &
                                 me, MasterPE, MPI_COMM_CALC, status )
-      
+
       ! fill local values:
       do iobs = 1, self%nobs
         rvalues(iobs) = self%obs(iobs)%obsstddev
@@ -1723,7 +1723,7 @@ endsubroutine ObsOper_Fill
       call ObsOpers_Write_r( F%ncid, varid_r, rvalues, self%nobs, &
                                 recvcounts, rdispls, &
                                 me, MasterPE, MPI_COMM_CALC, status )
-      
+
       ! fill local values:
       do iobs = 1, self%nobs
         rvalues(iobs) = self%obs(iobs)%xf
@@ -1732,7 +1732,7 @@ endsubroutine ObsOper_Fill
       call ObsOpers_Write_r( F%ncid, varid_xf, rvalues, self%nobs, &
                                 recvcounts, rdispls, &
                                 me, MasterPE, MPI_COMM_CALC, status )
-      
+
       ! fill local values:
       do iobs = 1, self%nobs
         rvalues(iobs) = self%obs(iobs)%xa
@@ -1766,22 +1766,22 @@ endsubroutine ObsOper_Fill
       ! clear:
       deallocate( ivalues_all, stat=status )
       IF_NOT_OK_RETURN(status=1)
-      
+
     end if
-    
+
     ! clear:
     deallocate( recvcounts, stat=status )
     IF_NOT_OK_RETURN(status=1)
     deallocate( rdispls, stat=status )
     IF_NOT_OK_RETURN(status=1)
-    
+
     ! ok
     status = 0
-  
+
   end subroutine ObsOpers_WriteToFile
-  
+
   ! *
-  
+
   subroutine ObsOpers_Write_i( ncid, varid, values, n, &
                                 recvcounts, rdispls, &
                                 me, root, comm, status )
@@ -1790,7 +1790,7 @@ endsubroutine ObsOper_Fill
     use NetCDF, only : NF90_Put_Var
 
     ! --- in/out -----------------------------
-    
+
     integer, intent(in)               ::  ncid
     integer, intent(in)               ::  varid
     integer, intent(in)               ::  values(:)      ! (n) or dummy if n==0
@@ -1807,14 +1807,14 @@ endsubroutine ObsOper_Fill
     character(len=*), parameter  ::  rname = mname//'/ObsOpers_Write_r'
 
     ! --- local -----------------------------
-    
+
     integer, allocatable      ::  values_all(:)
     integer                   ::  n_all
-    
+
     ! --- begin -----------------------------
-      
+
     ! root?
-    if ( me == root ) then                          
+    if ( me == root ) then
       ! total number:
       n_all = sum(recvcounts)
       ! storage:
@@ -1847,9 +1847,9 @@ endsubroutine ObsOper_Fill
     status = 0
 
   end subroutine ObsOpers_Write_i
-  
+
   ! *
-  
+
   subroutine ObsOpers_Write_r( ncid, varid, values, n, &
                                 recvcounts, rdispls, &
                                 me, root, comm, status )
@@ -1858,7 +1858,7 @@ endsubroutine ObsOper_Fill
     use NetCDF, only : NF90_Put_Var
 
     ! --- in/out -----------------------------
-    
+
     integer, intent(in)               ::  ncid
     integer, intent(in)               ::  varid
     real, intent(in)                  ::  values(:)      ! (n) or dummy if n==0
@@ -1875,14 +1875,14 @@ endsubroutine ObsOper_Fill
     character(len=*), parameter  ::  rname = mname//'/ObsOpers_Write_r'
 
     ! --- local -----------------------------
-    
+
     real, allocatable         ::  values_all(:)
     integer                   ::  n_all
-    
+
     ! --- begin -----------------------------
-      
+
     ! root?
-    if ( me == root ) then                          
+    if ( me == root ) then
       ! total number:
       n_all = sum(recvcounts)
       ! storage:
@@ -1915,9 +1915,9 @@ endsubroutine ObsOper_Fill
     status = 0
 
   end subroutine ObsOpers_Write_r
-  
+
   ! *
-  
+
   subroutine ObsOpers_Write_s( ncid, varid, values, n, maxlen, &
                                 recvcounts, rdispls, &
                                 me, root, comm, status )
@@ -1926,7 +1926,7 @@ endsubroutine ObsOper_Fill
     use NetCDF, only : NF90_Put_Var
 
     ! --- in/out -----------------------------
-    
+
     integer, intent(in)               ::  ncid
     integer, intent(in)               ::  varid
     character(len=*), intent(in)      ::  values(:)      ! (n) or dummy if n==0
@@ -1944,14 +1944,14 @@ endsubroutine ObsOper_Fill
     character(len=*), parameter  ::  rname = mname//'/ObsOpers_Write_s'
 
     ! --- local -----------------------------
-    
+
     character(len=maxlen), allocatable      ::  values_all(:)
     integer                                 ::  n_all
-    
+
     ! --- begin -----------------------------
 
     ! root?
-    if ( me == root ) then                          
+    if ( me == root ) then
       ! total number:
       n_all = sum(recvcounts)
       ! storage:
@@ -1984,8 +1984,8 @@ endsubroutine ObsOper_Fill
     status = 0
 
   end subroutine ObsOpers_Write_s
-  
-  
+
+
   !=========================================================================
   !===
   !=== raw data
@@ -2002,13 +2002,13 @@ endsubroutine ObsOper_Fill
   ! (Station-No flat flon falt obs-value stddev).
   ! @author M.Kahnert
   !-----------------------------------------------------------------------
-  
+
     use GridValues_ml, only : coord_in_domain
     use Io_ml        , only : IO_TMP
     use AOD_PM_ml    , only : AOD_init,wavelength
     use MPI          , only : MPI_IN_PLACE,MPI_INTEGER,MPI_SUM
     use MPI_Groups_ml, only : MasterPE,MPI_COMM_CALC
-  
+
     ! --- in/out ---------------------------------
 
     character(len=*), intent(in)    ::  domain ! domain/scope for observations
@@ -2029,7 +2029,7 @@ endsubroutine ObsOper_Fill
     ! --- const --------------------------------------
 
     character(len=*), parameter  ::  rname = mname//'/read_obs'
-    
+
     ! --- local ----------------------------------
 
     integer             ::  nd
@@ -2040,7 +2040,7 @@ endsubroutine ObsOper_Fill
     real                ::  flon0, flat0, falt0, y0, stddev0
     character(len=16)   ::  scode0
     integer             ::  slen
-                                            
+
     ! --- begin ----------------------------------
 
     ! init counter:
@@ -2054,7 +2054,7 @@ endsubroutine ObsOper_Fill
     !-----------------------------------------------------------------------
     ! loop over data sets:
     do nd = 1, nobsData
-    
+
       ! undefined ? probably a mistake ..
       if ( len_trim(obsData(nd)%file) == 0 ) then
         ! info ...
@@ -2064,14 +2064,14 @@ endsubroutine ObsOper_Fill
 
       ! replace time values in templage:
       file = date2string( obsData(nd)%file, current_date )
-      
+
       ! might not be present ...
       inquire( file=trim(file), exist=exist )
       if ( .not. exist ) then
         write (gol,'("WARNING - observation file `",a,"` not found; continue ...")') trim(file); call goPr
         cycle
       end if
-      
+
       ! open:
       open( IO_TMP, file=trim(file), form='formatted', status='old', iostat=status )
       if ( status /= 0 ) then
@@ -2091,7 +2091,7 @@ endsubroutine ObsOper_Fill
 
       ! loop over lines:
       do
-      
+
         ! expected format:
         !     0    48.391670   13.671114      0.00       5.19      0.519 #AT0ENK1
 
@@ -2103,10 +2103,10 @@ endsubroutine ObsOper_Fill
           exit
 
         elseif(status==0) then
-        
+
           ! extract parts:
           read(line,*,iostat=status)no,flat0,flon0,falt0,y0,stddev0!,scode0
-          IF_NOT_OK_RETURN(status=1)         
+          IF_NOT_OK_RETURN(status=1)
 
           ! read station code, code starts with '#', skip leading hash:
           no=index(line,'#')
@@ -2145,12 +2145,12 @@ endsubroutine ObsOper_Fill
           stddev(nobs) = max( stddev(nobs), &
                               obsData(nd)%error_rel * y(nobs), &
                               obsData(nd)%error_rep            )
-          ! check .. 
+          ! check ..
           if ( stddev(nobs) <= 0e0 ) then
             print dafmt,'WARNING obs stddev <= 0'
             stddev(nobs) = 1e-9
           end if
-          
+
           !! testing ...
           !write (gol,'(a,": observation ",2i6,2f8.2)') rname, nd, nobs, flon(nobs), flat(nobs); call goPr
 
@@ -2208,8 +2208,8 @@ endsubroutine ObsOper_Fill
       call CheckStop(no,count(ipar(:nobs)==nd),"Inconsistent obsData%nobs")
 ! total #obs
       if(domain=='processor')then
-        CALL MPI_REDUCE(MPI_IN_PLACE,no,1,MPI_INTEGER,MPI_SUM,&
-          MasterPE,MPI_COMM_CALC,status)
+        CALL MPI_ALLREDUCE(MPI_IN_PLACE,no,1,MPI_INTEGER,&
+          MPI_SUM,MPI_COMM_CALC,status)
         IF_MPI_NOT_OK_RETURN(status=1)
       endif
 ! log #obs
@@ -2222,7 +2222,7 @@ endsubroutine ObsOper_Fill
         call PrintLog(file)
       endif
     enddo
-    
+
     ! ok
     status = 0
 

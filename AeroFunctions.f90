@@ -362,7 +362,7 @@ module AeroFunctions
      real :: rhod, fwetvol
 
      rho = 1600.0                                  !< kg/m3 default
-     rdry= 0.034*1.0e-6                            !< 0.0341 um default, in m
+     rdry= 0.034e-6                            !< 0.0341 um default, in m
 
 ! RDRY AND MASS AND RHO Should be self-consistent. No! Number!
 
@@ -371,9 +371,11 @@ module AeroFunctions
      if ( present(SigmaFac) ) then
         sigFac  = sigmaFac
      else
-        sig = 1.8                                  !< default
-        if ( present(sigma) ) sig = sigma
-        sigFac = exp( -2.5*log(sig)**2 )
+        if ( present(sigma) )then
+           sigFac = exp( -2.5*log(sigma)**2 )
+        else              
+           sigFac = 0.421585401578311!=exp( -2.5*log(1.8)**2 )
+        endif
      end if
 
      rhod =rho ! for print
