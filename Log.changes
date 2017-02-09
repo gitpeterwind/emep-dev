@@ -159,6 +159,10 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Country_ml.f90 - added 199 to cope with non-specific emissions as seen 
   in annual Emis_01degGLOBAL_2012_HTAP_MIEC.nc file.
 
+EECCA 2012 beckmark, submitted to AeroCom
+  EMEP_dev@0ecbb68_170208alvarov_RGBMEECCA_day_2012.nc
+  vilje:~alvarov/work/Benchmark/EECCA.2012/BM_dev@0ecbb68
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 1st  Feb 2017  Dave
 
@@ -189,12 +193,15 @@ config_BM-EECCA.nml:
 - Add missing output period (eg 'YMD') to WDEP_WANTED.
 - Missing since Oct 2016 (svn 3304)
 
-Benckmark:
+EECCA 2012 beckmark, submitted to AeroCom
+  EMEP_dev@ace01da_170117alvarov_RGBMEECCA_day_2012.nc
   vilje:~alvarov/work/Benchmark/EECCA.2012/BM_dev@ace01da
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 6th Jan 2017 Dave    rv4_11_2
+
 Testing tags
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 5th Jan 2017 Peter   rv4_11_0
 
