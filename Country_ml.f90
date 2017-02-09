@@ -298,6 +298,9 @@ integer, public :: IC_OCEC  ! Oceania
  ! NH3Emis x=44-75, y=35-66
   integer,  public :: IC_NMR  ! EMEP NMR-NH3 temporal emissions
 
+ ! 199 not country-specific land based emissions -found in PANHAM/MEIC
+  integer, public :: IC_LANDX  ! 199 not country-specific land based emissions
+
 ! HTAP2 regions
   integer,  public :: IC_HTNATL
   integer,  public :: IC_HTUSCA
@@ -737,6 +740,11 @@ Country( IC_TMT ) = cc(  "TMT" , 95 ,F, 95, -100  , "Turkmenistan  (all)" )
 ix=ix+1 
 IC_BB=ix
 Country( IC_BB)  = cc(  "BB ", 101,F,  101, -100  , "Biomass burning (wild)        " )
+
+!
+ix=ix+1
+IC_LANDX=ix
+Country( IC_LANDX)  = cc(  "LANDX ", 199,F,  199, -100  , "not country-specific land based emissions" )
 
 ! Sea areas split according to innside/outside 12 nautical mile zone, 
 ! ferries/cargo ships, registred inside/outside EU

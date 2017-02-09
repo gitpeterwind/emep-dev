@@ -817,9 +817,10 @@ foreach my $scenflag ( @runs ) {
     # INERIS special! nox and pm. Take from 2010 IIASA
     #if ( $INERIS_FACS && -e "$timeseries/emissplit.specials.$poll.2010" ) {
 
-    #J16 change. Added EmChem09soa here to use default EMISSPLIT
     #J16 if (($Chem eq "EmChem09")or($Chem eq "Emergency")) { # e.g. when PM25 is not split, e.g. RCA, make EMCHEM09
-    if (($Chem eq "EmChem09")or($Chem eq "EmChem09soa")or($Chem eq "Emergency")) { # e.g. when PM25 is not split, e.g. RCA, make EMCHEM09
+    #J17 if (($Chem eq "EmChem09")or($Chem eq "EmChem09soa")or($Chem eq "Emergency")) { # e.g. when PM25 is not split, e.g. RCA, make EMCHEM09
+    #T2017 improvement: Any EmChem uses ame emissplit.specials - solves SHIPNOX problem
+    if (($Chem =~ /EmChem/)or($Chem eq "Emergency")) { # e.g. when PM25 is not split, e.g. RCA, make EMCHEM09
       $ifile{"$SplitDir/emissplit.specials.$poll"} = "emissplit.specials.$poll"
       if( -e "$SplitDir/emissplit.specials.$poll" );
     } elsif ( $Chem eq "CRI_v2_R5" ) { # e.g. TSAP

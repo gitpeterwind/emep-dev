@@ -412,7 +412,6 @@ module Biogenics_ml
              
               if( LandCover(i,j)%LAI(iiL)< 1.0e-5 ) then ! likely wetlands, tundra
                  LAIfac = 1.0
-                 if( mydebug ) write(*,*)"BVOC TUNDRA/WETLANDS",iL,LandCover(i,j)%LAI(iiL)
               else
                 LAIfac = LandCover(i,j)%LAI(iiL)/LandDefs(IL)%LAImax
                 LAIfac= min(LAIfac, 1.0)
@@ -423,7 +422,6 @@ module Biogenics_ml
               do ibvoc = 1, size(BVOC_USED) 
                 day_embvoc(i,j,ibvoc) = day_embvoc(i,j,ibvoc) + &
                    LAIfac * max(1.0e-10,bvocEF(i,j,iL,ibvoc))
-                   !done above LandCover(i,j)%fraction(iiL) *  &
               end do
 
               if ( mydebug ) then
@@ -512,13 +510,14 @@ module Biogenics_ml
   real    :: E_ISOP, E_MTP, E_MTL
 
 ! To get from ug/m2/h to molec/cm3/s
-! ug -> g  1.0e-9; g -> mole / MW; x AVOG
-! will need /Grid%DeltaZ
+! ug -> g  1.0e-6; m2-> cm2 1e-4, g -> mole / MW; x AVOG
+! will use /Grid%DeltaZ, which is in m, so anoter 1e-2  tp et cm-3
   real, parameter :: & 
         biofac_ISOP   = 1.0e-12*AVOG/68.0 /3600.0  &
        ,biofac_TERP   = 1.0e-12*AVOG/136.0/3600.0  &
        ,biofac_SOILNO = 1.0e-12*AVOG/14.0 /3600.0  &
        ,biofac_SOILNH3= 1.0e-12*AVOG/14.0 /3600.0  
+  logical :: dbg
 
  ! Light effects added for isoprene emissions
 
@@ -530,6 +529,8 @@ module Biogenics_ml
 
   if ( size(BVOC_USED) == 0  ) return   ! e.g. for ACID only
 
+  dbg = ( DEBUG%BIO .and. debug_proc .and. &
+          i==debug_li .and. j==debug_lj .and. current_date%seconds == 0 )
 
   it2m = nint( Grid%t2C - TINY )
   it2m = max(it2m,1)
@@ -593,13 +594,14 @@ module Biogenics_ml
     end if
      
  
-    if ( DEBUG%BIO .and. debug_proc .and. i==debug_li .and. j==debug_lj .and. &
-         current_date%seconds == 0 ) then
+    if ( dbg ) then 
 
       call datewrite("DBIO env ", it2m, (/ max(par,0.0), max(cL,0.0), &
             canopy_ecf(BIO_ISOP,it2m),canopy_ecf(BIO_TERP,it2m) /) )
       call datewrite("DBIO EISOP EMTP EMTL ESOIL ", (/  E_ISOP, &
              E_MTP, E_MTL, SoilNOx(i,j) /) ) 
+      call datewrite("DBIO rcemisL ", (/ &
+            rcemis(itot_C5H8,KG), rcemis(itot_APIN,KG) /))
       call datewrite("DBIO EmisNat ", EmisNat(:,i,j) )
 
      end if
