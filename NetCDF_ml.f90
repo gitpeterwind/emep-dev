@@ -1826,7 +1826,7 @@ subroutine GetCDF(varname,fileName,Rvar,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,
 end subroutine GetCDF
 
 subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,&
-                            i_start,j_start,imax_in,jmax_in,reverse_k,needed,found)
+                            unit,validity,i_start,j_start,imax_in,jmax_in,reverse_k,needed,found)
 ! open and reads CDF file 
 ! The grid MUST be in the same projection and resolution as the model grid
 ! the field are read directly into the subdomains
@@ -1844,6 +1844,7 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,&
   integer, intent(in) :: nstart,nfetch,k_start,k_end
 ! real, intent(out) :: Rvar(LIMAX,LJMAX,k_end-k_start+1,nfetch)
   real, intent(out) :: Rvar(*)
+  character(len=*), optional, intent(out) ::unit,validity
   integer, optional, intent(in) :: i_start,j_start,imax_in,jmax_in
   logical, optional, intent(in) :: reverse_k,needed
   logical, optional, intent(out):: found
@@ -2016,6 +2017,26 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,&
       end do
     end do
   end if
+
+  if(present(unit))then
+    status = nf90_get_att(ncFileID, VarID, "units", unit  )
+    if(status /= nf90_noerr)then
+       unit='unknown' !default
+    end if     
+  endif
+  if(present(validity))then
+     status = nf90_get_att(ncFileID, VarID, "validity", validity  )
+     if(status == nf90_noerr)then
+        !validity  = trim(period_read)
+     else
+        status = nf90_get_att(ncFileID, VarID, "period_of_validity", &
+             validity  )
+        if(status /= nf90_noerr)then
+           validity='instantaneous' !default
+        end if
+     end if
+  end if
+
   deallocate(Rvalues)
   call check(nf90_close(ncFileID))
   if(DEBUG_NETCDF)write(*,*)'finished GetCDF_modelgrid', me
@@ -3104,6 +3125,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
         !divide the coarse grid into pieces significantly smaller than the fine grid
         !Divide each global gridcell into Ndiv x Ndiv pieces
         Ndiv=nint(5*Grid_resolution/GRIDWIDTH_M)
+!        if(interpol_used=='conservative')Ndiv=nint(2*Grid_resolution/GRIDWIDTH_M)!Will be smooth anyway
         Ndiv=max(1,Ndiv)
         Ndiv2=Ndiv*Ndiv
         Ndiv_lon=nint(5*Grid_resolution_lon/GRIDWIDTH_M)
@@ -3362,12 +3384,13 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                     i_ext=(ig-1)*Ndiv+idiv
                     call ij2lb(i_ext,j_ext,lon,lat,fi_ext,an_ext_div,xp_ext_div,yp_ext_div)
                     call lb2ij(lon,lat,i,j)!back to model (fulldomain) coordinates
-
+!                    if(abs(lat-57.0)<0.01 .and. abs(lon-1.3)<0.01)write(*,*)'fullij ',lat,lon,me,i,j
 !                    if(abs(lon-15)<0.02 .and. abs(lat-63)<0.02)write(*,*)jg,ig,lon,lat,i,j,me
                     !convert from fulldomain to local domain
                     !i,j may be any integer, therefore should not use i_local array
                     i=i-gi0-IRUNBEG+2
                     j=j-gj0-JRUNBEG+2
+
 
 83                  format(2I4,31F9.2)
                     !if ( debug .and.me==0) write(*,83)i,j,lon,lat,fi_ext,an_ext_div,xp_ext_div,yp_ext_div,fi,xp,yp,Rvalues(igjg)

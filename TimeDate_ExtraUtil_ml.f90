@@ -14,7 +14,6 @@ IMPLICIT NONE
 PRIVATE
 
 public :: &
-  assign_NTERM,     & ! set NTERM, the number of 3-hourly periods
   date2string,      & ! date (various formats) --> formatted string
   date2file,        & ! date (various formats) --> file name w/option for old file version
   string2date,      & ! formatted string & format (pattern) --> date (CD format)
@@ -25,8 +24,8 @@ public :: &
   to_stamp,         & ! extended interface for make_timestamp (TimeDate_ml)
   to_date,          & ! extended interface for make_current_date (TimeDate_ml)
   to_idate,         & ! create int array from timestap or date
-  self_test           ! test/example ussages for different interface/module procedures
-
+  self_test,        & ! test/example ussages for different interface/module procedures
+  assign_startandenddate !if needed, correct days and hours of startdate and enddate
 interface date2string!(iname,...,mode,debug) result(fname)
 !   character(len=*),intent(in) :: iname
 !   character(len=len(iname))   :: fname
@@ -515,35 +514,6 @@ function days2str(iname,ndays,debug) result(fname)
   fname=date2string(key2str(iname,nctime_key,ndays,nctime_fmt),idate,debug=debug)
 end function days2str
 
-subroutine assign_NTERM(NTERM)
-! calculate NTERM (the number of metdata periods)
-! on the basis of start and enddate
-  integer,intent(out) :: NTERM
-  type(timestamp)     :: ts1, ts2
-!  real     :: spMETSTEP=sph*METSTEP  ! seconds in period of metadat
-
-  ! ensure that a valid day of the month,
-  ! e.g. Feb 31=>Feb 28/29 depending the year
-  startdate(3)=min(startdate(3),max_day(startdate(2),startdate(1)))
-  enddate  (3)=min(enddate  (3),max_day(enddate  (2),enddate  (1)))
-
-  startdate(4)=0  ! simulation starts at 00:00 UTC
-  enddate  (4)=24 ! simulation ends   at 24:00 UTC
-
-  ts1=to_stamp(startdate)
-  ts2=to_stamp(enddate)
-
-  NTERM=1+ceiling(tdif_secs(ts1,ts2)/(sph*METSTEP)) !NTERM=1+#time-step
-  if(NTERM<=1)then
-    if(MasterProc)then
-      write(*,*)'WARNING: enddate before startdate, running only one metstep'
-      write(*,*)'Start date: ',startdate
-      write(*,*)'End   date: ',enddate
-    end if
-    NTERM=max(2,NTERM)!run at least one period
-  end if
-end subroutine assign_NTERM
-
 function compare_date(n,dateA,dateB,wildcard) result(equal)
   integer,   intent(in)           :: n
   type(date),intent(in)           :: dateA,dateB(n)
@@ -706,6 +676,14 @@ subroutine self_test()
     key2str("HHHHHH secs since ","HHHHHH",secs)//date2string(dfmt,ts1970),&
     date2string(dfmt,intdate)              
 end subroutine self_test
+
+subroutine assign_startandenddate()
+  ! ensure that a valid day of the month,
+  ! e.g. Feb 31=>Feb 28/29 depending the year
+  startdate(3)=min(startdate(3),max_day(startdate(2),startdate(1)))
+  enddate  (3)=min(enddate  (3),max_day(enddate  (2),enddate  (1)))
+end subroutine assign_startandenddate
+
 ENDMODULE TimeDate_ExtraUtil_ml
 
 !DSX program tester

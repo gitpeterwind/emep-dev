@@ -91,9 +91,9 @@ foreach my $key  (qw ( PBS_O_HOST HOSTNAME PBS_SERVER MACHINE SLURM_SUBMIT_HOST)
 print "HOST DETECT: V$VILJE S$STALLO \n";
 
 # -j4 parallel make with 4 threads
-my @MAKE = ("gmake", "-j4", "MACHINE=snow");
-   @MAKE = ( "make", "-j4", "MACHINE=vilje")  if $VILJE==1 ;
-   @MAKE = ( "make", "-j4", "MACHINE=stallo") if $STALLO==1 ;
+my @MAKE = ("gmake", "-j8", "MACHINE=snow");
+   @MAKE = ( "make", "-j8", "MACHINE=vilje")  if $VILJE==1 ;
+   @MAKE = ( "make", "-j8", "MACHINE=stallo") if $STALLO==1 ;
 die "Must choose STALLO **or** VILJE !\n"
   unless $STALLO+$VILJE==1;
 
@@ -1090,7 +1090,7 @@ foreach my $scenflag ( @runs ) {
         ."  runlabel1 = '$runlabel1',\n"
         ."  runlabel2 = '$runlabel2',\n"
         ."  startdate = ".date2str($startdate ,"%Y,%m,%d,000000,\n")
-        ."  enddate   = ".date2str($enddate   ,"%Y,%m,%d,000000,\n")
+        ."  enddate   = ".date2str($enddate   ,"%Y,%m,%d,000024,\n")
 #       ."  meteo     = '$METformat',\n" #moved to config
         ."&end\n";
     # NML namelist options.

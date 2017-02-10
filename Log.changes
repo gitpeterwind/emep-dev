@@ -154,6 +154,17 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+10th Feb 2017 Peter
+
+Removed NTERM (and assign_NTERM). Was not really used.
+Allow (eventually) to set hours for start- and enddate in config file.
+NB: run.pl changed (slightly), line 1092:
+        ."  enddate   = ".date2str($enddate   ,"%Y,%m,%d,000024,\n")
+
+NetCDF_ml: GetCDF_modelgrid can return units and validity (needed for Harmonie).
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 9th Feb 2017 Peter
 
 Problems from the new interpolation routine (26th Jan) for global grids:
