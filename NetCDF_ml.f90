@@ -2758,7 +2758,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
         jmax=max(1,min(dims(2),ceiling((minlat-Rlat(1))*dRlati)+1))
      end if
 
-     if(maxlat>85.0.or.minlat<-85.0  .and. .not. (trim(projection)=='lon lat' .or. trim(data_projection)=='lon lat'))then
+     if(maxlat>85.0.or.minlat<-85.0  .and. ( (.not. (trim(projection)=='lon lat')) .or. (.not. trim(data_projection)=='lon lat')))then
         !close to poles
         imin=1
         imax=dims(1)
