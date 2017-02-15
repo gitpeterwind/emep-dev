@@ -2308,7 +2308,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
   debug = .false.
   if(present(debug_flag))then
-     debug = debug_flag .and. me==9!MasterProc
+     debug = debug_flag .and. me==0
      if ( debug ) write(*,*) 'ReadCDF start: ',trim(filename),':', trim(varname)
   end if
   if(present(needed))   fileneeded=needed
@@ -2406,11 +2406,17 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   !Check first that variable has data covering the relevant part of the grid:
 
   !Find chunk of data required (local)
-  maxlon=max(maxval(gl_stagg),maxval(glon))
-  minlon=min(minval(gl_stagg),minval(glon))
-  maxlat=max(maxval(gb_stagg),maxval(glat))
-  minlat=min(minval(gb_stagg),minval(glat))
-
+  if(projection=="lon lat")then
+     maxlon=maxval(glon)+0.5*(glon(2,1)-glon(1,1))
+     minlon=minval(glon)-0.5*(glon(2,1)-glon(1,1))
+     maxlat=maxval(glat)+0.5*(glat(1,2)-glat(1,1))
+     minlat=minval(glat)-0.5*(glat(1,2)-glat(1,1))
+  else
+     maxlon=max(maxval(gl_stagg),maxval(glon))
+     minlon=min(minval(gl_stagg),minval(glon))
+     maxlat=max(maxval(gb_stagg),maxval(glat))
+     minlat=min(minval(gb_stagg),minval(glat))
+  endif
   !Read the extension of the data in the file (if available)
   status = nf90_get_att(ncFileID, VarID, "minlat", minlat_var  )
   if(status == nf90_noerr)then
@@ -2633,6 +2639,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 !Should define longitude in the range [-180, 180]
   do ij=1,size(Rlon)
      if(Rlon(ij)>180)Rlon(ij)=Rlon(ij)-360.0
+     if(Rlon(ij)<-180)Rlon(ij)=Rlon(ij)+360.0
   end do
 
   if ( debug ) write(*,*) 'ReadCDF lon bounds',minval(Rlon),maxval(Rlon)
@@ -2751,7 +2758,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
         jmax=max(1,min(dims(2),ceiling((minlat-Rlat(1))*dRlati)+1))
      end if
 
-     if(maxlat>85.0.or.minlat<-85.0)then
+     if(maxlat>85.0.or.minlat<-85.0  .and. .not. (trim(projection)=='lon lat' .or. trim(data_projection)=='lon lat'))then
         !close to poles
         imin=1
         imax=dims(1)
@@ -2950,7 +2957,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
      if(interpol_used=='conservative'.or.interpol_used=='mass_conservative')then
 
-        if(projection=='lon lat' .and. .false.)then
+        if(projection=='lon lat')then
            !exact integrals assuming uniform emission over emitter gridcells
            if(.not.allocated(fracfirstlon))then
               allocate(fracfirstlon(dims(1)),fraclastlon(dims(1)),ifirst(dims(1)),ilast(dims(1)))
@@ -3014,7 +3021,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                  cycle
               endif
               ifirst(ig)=max(1,i_local(ifirst(ig)))
-              ilast(ig)=min(limax,i_local(ilast(ig)))
+              ilast(ig)=min(limax,i_local(min(rundomain(2),ilast(ig))))
               if((ifirst(ig)>limax .or. ilast(ig)<1) )then
                  !outside subdomain. no need to spend time with this ig
                  ilast(ig)=ifirst(ig)-1
@@ -3030,7 +3037,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
               if(fracfirstlon(ig)<0.0)write(*,*)'ERROR A in interpolation',me,ig,fracfirstlon(ig)
               if(fraclastlon(ig)<0.0)write(*,*)'ERROR B in interpolation',me,ig,fraclastlon(ig)
 631           format(I4,A,F10.4,A,F10.4,A,I4,A,F10.4,A,I4,A,F10.4,A,F10.4)
-!              if(me==10 .and. (ig==3 .or. abs(Rlon(ig))<1.0 ))write(*,631)ig,' start '//trim(varname),Rlonmin,' end',Rlonmax,' firsti',ifirst(ig),'lon ',glon(ifirst(ig),1),'last i',ilast(ig),'frac ',fracfirstlon(ig),' and ',fraclastlon(ig)
+              if(me==19 .and. (ig==-3 .or. abs(Rlat(ig))<-89.0 ))write(*,631)ig,' start '//trim(varname),Rlonmin,' end',Rlonmax,' firsti',ifirst(ig),'lon ',glon(ifirst(ig),1),'last i',ilast(ig),'frac ',fracfirstlon(ig),' and ',fraclastlon(ig)
            enddo
 
            !make factors for j
