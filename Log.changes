@@ -154,6 +154,12 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+15th Feb 2017 Peter
+
+Removed the diagnostic "natso2" from the old system: 
+it was producing a divide by zero.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 10th Feb 2017 Peter
 
 Removed NTERM (and assign_NTERM). Was not really used.
