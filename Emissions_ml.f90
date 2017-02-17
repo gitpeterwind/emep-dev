@@ -244,13 +244,24 @@ subroutine Emissions(year)
 
           call expandcclist( emis_inputlist(iemislist)%incl , n)
           emis_inputlist(iemislist)%Nincl = n
-          if(MasterProc) write(*,*) sub//trim(fname)//" INPUTLIST-INCL", n
-
+          if(MasterProc .and. n>0) then
+             write(*,*) sub//trim(fname)//" INPUTLIST-INCL", n
+             write(*,*)'including only countries: ', (trim(emis_inputlist(2)%incl(i))//' ',i=1,n)
+          endif
           call expandcclist( emis_inputlist(iemislist)%excl , n)
           emis_inputlist(iemislist)%Nexcl = n
-          if(MasterProc) write(*,*) sub//trim(fname)//" INPUTLIST-EXCL", n
-
+          if(MasterProc .and. n>0) then
+             write(*,*)'excluding countries: ', (trim(emis_inputlist(2)%excl(i))//' ',i=1,n)
+          endif
         end if
+        if(emis_inputlist(iemislist)%pollName(1)/='NOTSET')then
+           do iem = 1, NEMIS_FILE
+              if(all(emis_inputlist(iemislist)%pollName(:)/=trim(EMIS_FILE(iem))))cycle      
+              if(Masterproc)write(*,"(A)")'including pollutant '//trim(EMIS_FILE(iem))//' from '//trim(fname)
+           enddo
+        else
+           !include all pollutants
+        endif
 
         !replace keywords
 22      format(5A)
@@ -516,7 +527,7 @@ subroutine Emissions(year)
           do iem = 1, NEMIS_FILE
              if(emis_inputlist(iemislist)%pollName(1)/='NOTSET')then
                 if(all(emis_inputlist(iemislist)%pollName(:)/=trim(EMIS_FILE(iem))))cycle      
-                if(Masterproc)write(*,*)'reading '//trim(EMIS_FILE(iem))//' from '//trim(fname)
+                if(Masterproc)write(*,"(A)")'reading '//trim(EMIS_FILE(iem))//' from '//trim(fname)
              end if
              do isec=1,NSECTORS                      
               write(varname,"(A,I2.2)")trim(EMIS_FILE(iem))//'_sec',isec
@@ -652,8 +663,8 @@ subroutine Emissions(year)
 
       if(MasterProc.and. emis_inputlist(iemislist)%periodicity == "once") then
         call PrintLog("Total emissions by countries for "//trim(emis_inputlist(iemislist)%name)//" (Gg)")
-        write(*     ,"(a4,a9,3x,30(a12,:))")"  N "," CC ",EMIS_FILE(:)
-        write(IO_LOG,"(a4,a9,3x,30(a12,:))")"  N "," CC ",EMIS_FILE(:)                
+        write(*     ,"(a4,a9,3x,30(a12,:))")" CC ","    ",EMIS_FILE(:)
+        write(IO_LOG,"(a4,a9,3x,30(a12,:))")" CC ","    ",EMIS_FILE(:)                
         sumEU(:) = 0.0
         fmt="(i4,1x,a9,3x,30(f12.2,:))"
         do ic = 1, NLAND
