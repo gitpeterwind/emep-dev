@@ -154,6 +154,17 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21st Feb 2017 Dave
+
+Small changes
+
+My_Derived_ml.f90
+ -  Removed n1 from print - was not set when DEBUG turned on
+
+Setup_1d_ml.f90 
+ - Increased length of specname and size of d2index
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15th Feb 2017 Peter
 
 The new interpolation method (9th feb) was switched off. Switched on now.
