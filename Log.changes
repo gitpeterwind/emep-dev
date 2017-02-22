@@ -154,6 +154,21 @@ TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+22nd Feb 2017 Dave
+
+ModelConstants_ml
+Runchem_ml
+
+  - Added DEBUG%datetxt - to add a date string which  can be accessed from
+     other modules while debugging. Saves the need for TimeDate_ml, 
+     print_date etc.
+
+Wesely_ml
+  - massive expansion in number of species to cope with 2017 CRI
+    chemistry. No change in resuls for EmChem09 though.
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 21st Feb 2017 Dave
 
 Small changes

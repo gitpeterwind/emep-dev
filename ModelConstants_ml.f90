@@ -115,6 +115,7 @@ type, public :: emep_debug
   !----------------------------------------------------------
    integer, dimension(2) :: IJ = [-999,-999]  ! index for debugging print out
    character(len=20)     :: SPEC = 'O3'       ! default.
+   character(len=20)     :: datetxt = '-'       ! default.
    integer               :: ISPEC = -999      ! Will be set after NML
 end type emep_debug
 type(emep_debug), public, save :: DEBUG
