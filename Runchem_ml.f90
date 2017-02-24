@@ -35,7 +35,7 @@ module RunChem_ml
                               dt_advec, USE_NOCHEM, &  ! for Emergency
                               DEBUG_EMISSTACKS, & ! MKPS
                               DebugCell, DEBUG, &    ! RUNCHEM
-                              USE_PREADV
+                              USE_PreADV
   use OrganicAerosol_ml,only: ORGANIC_AEROSOLS, OrganicAerosol, &
                               Init_OrganicAerosol, & 
                               Reset_OrganicAerosol, & 
@@ -84,7 +84,7 @@ subroutine runchem()
                    "Wrong My_SOA? Flag is "// trim(SOA_MODULE_FLAG) )
 
 !TEMPORARY HERE could be put in Met_ml
-  if( (.not. first_call) .and. USE_PREADV)then
+  if( (.not. first_call) .and. USE_PreADV)then
      call getWinds
   endif
 ! Processes calls 

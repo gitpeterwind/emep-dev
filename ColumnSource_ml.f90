@@ -18,7 +18,7 @@ use GridValues_ml,        only: xm2,sigma_bnd,GridArea_m2,&
 use Io_ml,                only: open_file,read_line,IO_TMP,PrintLog
 use MetFields_ml,         only: roa, z_bnd, u_xmj, v_xmi
 use ModelConstants_ml,    only: KCHEMTOP,KMAX_MID,MasterProc,NPROC, &
-                                USE_ASH,DEBUG,USE_PREADV,&
+                                USE_ASH,DEBUG,USE_PreADV,&
                                 TXTLEN_NAME,dt_advec,dt_advec_inv,&
                                 startdate,enddate
 use NetCDF_ml,            only: GetCDF_modelgrid
@@ -156,7 +156,7 @@ function ColumnRate(i,j,REDUCE_VOLCANO) result(emiss)
   snow=date2string(SDATE_FMT,current_date)
 
   doLOC: do v=1,nloc
-     if(USE_PREADV)then
+     if(USE_PreADV)then
 !cannot use formula below directly, because location may be in another subdomain
 !           Winds(:,1,l)=u_xmj(locdef(l)%iloc,locdef(l)%jloc,:,1)*xm2(locdef(l)%iloc,locdef(l)%jloc)*dt_advec/gridwidth_m
 !           Winds(:,2,l)=v_xmi(locdef(l)%iloc,locdef(l)%jloc,:,1)*xm2(locdef(l)%iloc,locdef(l)%jloc)*dt_advec/gridwidth_m
@@ -168,7 +168,7 @@ function ColumnRate(i,j,REDUCE_VOLCANO) result(emiss)
         if((i/=locdef(v)%iloc).or.(j/=locdef(v)%jloc) & ! Wrong gridbox
              .or.(nems(v)<1)) cycle doLOC                 ! Not erupting
      endif
-    if(DEBUG%COLSRC .and. .not. USE_PREADV) &
+    if(DEBUG%COLSRC .and. .not. USE_PreADV) &
       write(*,MSG_FMT)snow//' Vent',me,'me',v,trim(locdef(v)%id),i,"i",j,"j"
     doEMS: do e=1,nems(v)
       sbeg=date2string(emsdef(v,e)%sbeg,current_date)
@@ -188,7 +188,7 @@ function ColumnRate(i,j,REDUCE_VOLCANO) result(emiss)
         tdif_secs(to_stamp(sbeg,SDATE_FMT),to_stamp(send,SDATE_FMT)))
       uconv=uconv/(GridArea_m2(i,j)*DIM(z_bnd(i,j,k1),z_bnd(i,j,k0+1))) ! --> g/s/cm3=1e-6 g/s/m3
       uconv=uconv*AVOG/species(itot)%molwt                              ! --> molecules/s/cm3
-      if(USE_PREADV)then
+      if(USE_PreADV)then
 
          do k=k1,k0
 
@@ -279,7 +279,7 @@ subroutine setRate()
 !----------------------------!
 !
 !----------------------------!
-  if(first_call .and. USE_PREADV)allocate(Winds(KMAX_MID,2,NMAX_LOC))
+  if(first_call .and. USE_PreADV)allocate(Winds(KMAX_MID,2,NMAX_LOC))
   if(.not.first_call)then
     if(MasterProc.and.DEBUG%COLSRC.and.second_call) &
       write(*,MSG_FMT)'No need for reset volc.def...'
@@ -331,7 +331,7 @@ subroutine setRate()
   end do doLOC
   if(MasterProc) close(IO_TMP)
   source_found=(nloc>0).or.(MasterProc.and.DEBUG%COLSRC)
-  if(USE_PREADV)then
+  if(USE_PreADV)then
      !broadcast the PROC_LOC
      CALL MPI_ALLREDUCE(MPI_IN_PLACE,PROC_LOC,NMAX_LOC,MPI_INTEGER, &
           MPI_SUM,MPI_COMM_CALC,IERROR)

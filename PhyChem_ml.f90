@@ -193,12 +193,13 @@ subroutine phyche()
   call init_drydep()
   !===================================
 
+
+  if(USE_uEMEP)call uemep_emis(current_date)
+
   !=========================================================!
   call debug_concs("PhyChe pre-chem ")
 
   !************ NOW THE HEAVY BIT **************************!
-
-  if(USE_uEMEP)call uemep_emis(current_date)
 
   call Code_timer(tim_before0)
   call runchem()   !  calls setup subs and runs chemistry

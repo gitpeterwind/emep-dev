@@ -166,7 +166,7 @@ logical, public, save ::             &
  ,INERIS_SNAP1       = .false.       & !(EXP_NAME=="TFMM"), & ! Switches off decadal trend
  ,INERIS_SNAP2       = .false.       & !(EXP_NAME=="TFMM"), & ! Allows near-zero summer values
  ,USE_ASH            = .false.       & ! Ash from Volcanic Eruption, w/gravitational settling
- ,USE_PREADV         = .true.        & ! Column Emissions are preadvected when winds are very strong 
+ ,USE_PreADV         = .false.       & ! Column Emissions are preadvected when winds are very strong 
  ,USE_NOCHEM         = .false.       & ! Turns of chemistry for emergency runs
  ,USE_AOD            = .false.       &
  ,USE_POLLEN         = .false.       & ! EXPERIMENTAL. Only works if start Jan 1
@@ -534,7 +534,7 @@ subroutine Config_ModelConstants(iolog)
    ,USE_SOILWATER, USE_CONVECTION, CONVECTION_FACTOR &
    ,USE_AIRCRAFT_EMIS, USE_LIGHTNING_EMIS, USE_ROADDUST, USE_DUST &
    ,USE_EURO_SOILNOX, USE_GLOBAL_SOILNOX, EURO_SOILNOX_DEPSCALE &
-   ,USE_SEASALT, USE_POLLEN, USE_ASH, USE_NOCHEM, USE_AOD &
+   ,USE_SEASALT, USE_POLLEN, USE_ASH, USE_NOCHEM, USE_AOD,USE_PreADV &
    ,USE_uEMEP, uEMEP &
    ,INERIS_SNAP1, INERIS_SNAP2 &   ! Used for TFMM time-factors
    ,SELECT_LEVELS_HOURLY, FREQ_HOURLY  & ! incl. FORECAST, 3DPROFILES

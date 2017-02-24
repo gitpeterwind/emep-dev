@@ -14,7 +14,7 @@ program myeul
        Init_timing, Add_2timing, Code_timer, &
        tim_before, tim_before1, tim_before2, &
        tim_after, tim_after0, NTIMING_UNIMOD,NTIMING
-  use Advection_ml,     only: vgrid, assign_nmax, assign_dtadvec
+  use Advection_ml,     only: vgrid_Eta, assign_nmax, assign_dtadvec
   use Aqueous_ml,       only: init_aqueous, Init_WetDep   !  Initialises & tabulates
   use AirEmis_ml,       only: lightning
   use Biogenics_ml,     only: Init_BVOC, SetDailyBVOC
@@ -199,7 +199,7 @@ program myeul
   call sitesdef()            ! see if any output for specific sites is wanted
   ! (read input files "sites.dat" and "sondes.dat" )
 
-  call vgrid           !  initialisation of constants used in vertical advection
+  call vgrid_Eta           !  initialisation of constants used in vertical advection
   if (MasterProc.and.DEBUG%MAINCODE ) print *,"vgrid finish"
 
   ! open only output netCDF files if needed
