@@ -48,7 +48,7 @@ module RunChem_ml
   use Setup_1d_ml,      only: setup_1d, setup_rcemis, reset_3d
   use Setup_1dfields_ml,only: first_call, &
                               amk, rcemis, xn_2d  ! DEBUG for testing
-  use TimeDate_ml,      only: current_date,daynumber
+  use TimeDate_ml,      only: current_date,daynumber,print_date
 !--------------------------------
   implicit none
   private

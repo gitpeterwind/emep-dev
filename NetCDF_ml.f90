@@ -3020,7 +3020,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                  ilast(ig)=ifirst(ig)-1
                  cycle
               endif
-              ifirst(ig)=max(1,i_local(ifirst(ig)))
+              ifirst(ig)=max(1,i_local(max(1,ifirst(ig))))
               ilast(ig)=min(limax,i_local(min(rundomain(2),ilast(ig))))
               if((ifirst(ig)>limax .or. ilast(ig)<1) )then
                  !outside subdomain. no need to spend time with this ig
@@ -3056,8 +3056,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                  jlast(jg)=jfirst(jg)-1
                  cycle
               endif
-              jfirst(jg)=max(1,j_local(jfirst(jg)))
-              jlast(jg)=min(ljmax,j_local(jlast(jg)))
+              jfirst(jg)=max(1,j_local(max(1,jfirst(jg))))
+              jlast(jg)=min(ljmax,j_local(min(rundomain(4),jlast(jg))))
               if(jfirst(jg)>ljmax .or. jlast(jg)<1)then
                  !no need to spend time with this jg
                  jlast(jg)=jfirst(jg)-1
