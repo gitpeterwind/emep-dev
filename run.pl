@@ -15,7 +15,7 @@
 #SBATCH --ntasks=40
 #SBATCH --mem=32000
 #SBATCH --time=4:0:0
-#activate the following line for runs which last longer than 48 hours
+#activate the following line for runs which last longer than 48 hours AND use more than one node
 ##SBATCH --partition=multinode 
 #SBATCH --job-name=emep
 #SBATCH --output=run.%j.out
@@ -91,9 +91,9 @@ foreach my $key  (qw ( PBS_O_HOST HOSTNAME PBS_SERVER MACHINE SLURM_SUBMIT_HOST)
 print "HOST DETECT: V$VILJE S$STALLO \n";
 
 # -j4 parallel make with 4 threads
-my @MAKE = ("gmake", "-j4", "MACHINE=snow");
-   @MAKE = ( "make", "-j4", "MACHINE=vilje")  if $VILJE==1 ;
-   @MAKE = ( "make", "-j4", "MACHINE=stallo") if $STALLO==1 ;
+my @MAKE = ("gmake", "-j8", "MACHINE=snow");
+   @MAKE = ( "make", "-j8", "MACHINE=vilje")  if $VILJE==1 ;
+   @MAKE = ( "make", "-j8", "MACHINE=stallo") if $STALLO==1 ;
 die "Must choose STALLO **or** VILJE !\n"
   unless $STALLO+$VILJE==1;
 
@@ -113,7 +113,7 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
- ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3306","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
+ ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_11_3","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
 #($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3074","EmChem09soa","EMEPGLOB","EMEPSTD","GLOBAL",0);
 
 my %BENCHMARK;
@@ -306,6 +306,7 @@ my $VBS   = 0;
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/emep-mscw";   # input of source-code
+   $ProgDir  = "$HOMEROOT/$USER/emep-mscw/$testv";   # input of source-code for testv
    $ProgDir  = "/prod/forecast/emep/eemep/src/Unimod.$testv" if $eCWF and ($USER eq $FORCAST);
    $ProgDir  = "$CWF_DIR/src/Unimod.$testv" if $CWF and -d $CWF_DIR;
 my $ChemDir  = "$ProgDir/ZCM_$Chem";
@@ -816,9 +817,10 @@ foreach my $scenflag ( @runs ) {
     # INERIS special! nox and pm. Take from 2010 IIASA
     #if ( $INERIS_FACS && -e "$timeseries/emissplit.specials.$poll.2010" ) {
 
-    #J16 change. Added EmChem09soa here to use default EMISSPLIT
     #J16 if (($Chem eq "EmChem09")or($Chem eq "Emergency")) { # e.g. when PM25 is not split, e.g. RCA, make EMCHEM09
-    if (($Chem eq "EmChem09")or($Chem eq "EmChem09soa")or($Chem eq "Emergency")) { # e.g. when PM25 is not split, e.g. RCA, make EMCHEM09
+    #J17 if (($Chem eq "EmChem09")or($Chem eq "EmChem09soa")or($Chem eq "Emergency")) { # e.g. when PM25 is not split, e.g. RCA, make EMCHEM09
+    #T2017 improvement: Any EmChem uses ame emissplit.specials - solves SHIPNOX problem
+    if (($Chem =~ /EmChem/)or($Chem eq "Emergency")) { # e.g. when PM25 is not split, e.g. RCA, make EMCHEM09
       $ifile{"$SplitDir/emissplit.specials.$poll"} = "emissplit.specials.$poll"
       if( -e "$SplitDir/emissplit.specials.$poll" );
     } elsif ( $Chem eq "CRI_v2_R5" ) { # e.g. TSAP
@@ -1088,7 +1090,7 @@ foreach my $scenflag ( @runs ) {
         ."  runlabel1 = '$runlabel1',\n"
         ."  runlabel2 = '$runlabel2',\n"
         ."  startdate = ".date2str($startdate ,"%Y,%m,%d,000000,\n")
-        ."  enddate   = ".date2str($enddate   ,"%Y,%m,%d,000000,\n")
+        ."  enddate   = ".date2str($enddate   ,"%Y,%m,%d,000024,\n")
 #       ."  meteo     = '$METformat',\n" #moved to config
         ."&end\n";
     # NML namelist options.

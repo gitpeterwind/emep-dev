@@ -102,6 +102,7 @@ subroutine runchem()
       if(DEBUG%RUNCHEM.and.debug_proc) then
         debug_flag = (debug_li==i .and. debug_lj==j) 
         DebugCell = debug_flag
+        DEBUG%datetxt = print_date(current_date)
         if(debug_flag) write(*,*) "RUNCHEM DEBUG START!"
       end if
      !write(*,"(a,4i4)") "RUNCHEM DEBUG IJTESTS", debug_li, debug_lj, i,j

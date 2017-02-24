@@ -115,6 +115,7 @@ type, public :: emep_debug
   !----------------------------------------------------------
    integer, dimension(2) :: IJ = [-999,-999]  ! index for debugging print out
    character(len=20)     :: SPEC = 'O3'       ! default.
+   character(len=20)     :: datetxt = '-'       ! default.
    integer               :: ISPEC = -999      ! Will be set after NML
 end type emep_debug
 type(emep_debug), public, save :: DEBUG
@@ -142,7 +143,7 @@ character(len=200), public, save :: &
   meteo= 'DataDir/GRID/metdata_EC/YYYY/meteoYYYYMMDD.nc', & ! template for meteofile
   DegreeDayFactorsFile = 'MetDir/HDD18-GRID-YYYY.nc'        ! template for DegreeDayFactors.nc
 
-integer, public, save :: startdate(4),enddate(4) ! start and end of the run
+integer, public, save :: startdate(4)=(/0,0,0,0/),enddate(4)=(/0,0,0,24/) ! start and end of the run
 
 !-----------------------------------------------------------
 ! Convection factor - reduces convective fluxes (which can be
@@ -611,8 +612,6 @@ subroutine Config_ModelConstants(iolog)
 
   rewind(IO_NML)
   read(IO_NML,NML=INPUT_PARA)
-  startdate(4)=0                ! meteo hour to start/end the run
-  enddate  (4)=0                ! are set in assign_NTERM
 
   meteo = key2str(meteo,'DataDir',DataDir)
   meteo = key2str(meteo,'GRID',GRID)

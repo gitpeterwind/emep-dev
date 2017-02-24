@@ -639,8 +639,8 @@ subroutine reset_3d(i,j)
 ! ! XNCOL testing -- sets d_2d for column data from molec/cm3 concs.
  ! if variables are wanted for d_2d output (via USET), we use these indices:
   character(len=*),parameter :: dtxt='reset3dxncol:'
-  character(len=10) :: specname
-  integer, dimension(10), save :: d2index, id2col
+  character(len=20) :: specname
+  integer, dimension(20), save :: d2index, id2col
   logical, save :: first_call = .true.
   integer, save :: nd2d
 !XNCOL  end testing

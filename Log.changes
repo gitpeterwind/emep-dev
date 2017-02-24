@@ -170,8 +170,122 @@ strong wind, since the advection will move pollutants far away, while emissions
 are put into the atmosphere only every dt_advec.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+22nd Feb 2017 Dave
+
+ModelConstants_ml
+Runchem_ml
+
+  - Added DEBUG%datetxt - to add a date string which  can be accessed from
+     other modules while debugging. Saves the need for TimeDate_ml, 
+     print_date etc.
+
+Wesely_ml
+  - massive expansion in number of species to cope with 2017 CRI
+    chemistry. No change in resuls for EmChem09 though.
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21st Feb 2017 Dave
+
+Small changes
+
+My_Derived_ml.f90
+ -  Removed n1 from print - was not set when DEBUG turned on
+
+Setup_1d_ml.f90 
+ - Increased length of specname and size of d2index
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+15th Feb 2017 Peter
+
+The new interpolation method (9th feb) was switched off. Switched on now.
+Also improved the selection of data to be read in, as it was reading way too much 
+for lon lat grids, thereby wasting lots of memory.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+15th Feb 2017 Peter
+
+Removed the diagnostic "natso2" from the old system: 
+it was producing a divide by zero.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+10th Feb 2017 Peter
+
+Removed NTERM (and assign_NTERM). Was not really used.
+Allow (eventually) to set hours for start- and enddate in config file.
+NB: run.pl changed (slightly), line 1092:
+        ."  enddate   = ".date2str($enddate   ,"%Y,%m,%d,000024,\n")
+
+NetCDF_ml: GetCDF_modelgrid can return units and validity (needed for Harmonie).
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+9th Feb 2017 Peter
+
+Problems from the new interpolation routine (26th Jan) for global grids:
+the cyclic longitudes where not taken correctly into account.
+
+The landuse could be numerically large than 1 (1E-15 over), and that caused
+negative deposition over south pole for PB210. Added a "max(1,lu_cover)" 
+
+Found a few (3?) gridcell at south pole (left corner) in LanduseGLC.nc with 150% 
+lu coverage. Will replace with correct one.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+7th Feb 2017 Peter
+
+Support for Lambert conical conformal projection.
+Tested for WRF metdata.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+2nd  Feb 2017  Dave
+
+Country_ml.f90 - added 199 to cope with non-specific emissions as seen 
+  in annual Emis_01degGLOBAL_2012_HTAP_MIEC.nc file.
+
+EECCA 2012 beckmark, submitted to AeroCom
+  EMEP_dev@0ecbb68_170208alvarov_RGBMEECCA_day_2012.nc
+  vilje:~alvarov/work/Benchmark/EECCA.2012/BM_dev@0ecbb68
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+1st  Feb 2017  Dave
+
+run.pl - used pattern match on EmChems to get emissplit.specials
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+26th Jan 2017 Peter
+
+Faster and better latlon to latlon interpolation: 
+integrates exactly, assuming uniform emissions over gridcells
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+23rd Jan 2017 Peter      rv4_11_5
+
+Smoother interpolation when lon and lat resolution is not the same, as in TNO7 
+emissions.
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+20th Jan 2017 Dave      rv4_11_4
+
+run.pl
+- added testv in ProgDir defaults. Most people will have several test versions.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+17th Jan 2017 Alvaro    rv4_11_3
+
+config_BM-EECCA.nml:
+- Add missing output period (eg 'YMD') to WDEP_WANTED.
+- Missing since Oct 2016 (svn 3304)
+
+EECCA 2012 beckmark, submitted to AeroCom
+  EMEP_dev@ace01da_170117alvarov_RGBMEECCA_day_2012.nc
+  vilje:~alvarov/work/Benchmark/EECCA.2012/BM_dev@ace01da
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 6th Jan 2017 Dave    rv4_11_2
+
 Testing tags
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 5th Jan 2017 Peter   rv4_11_0
 
