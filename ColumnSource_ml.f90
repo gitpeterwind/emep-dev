@@ -191,7 +191,6 @@ function ColumnRate(i,j,REDUCE_VOLCANO) result(emiss)
       if(USE_PreADV)then
 
          do k=k1,k0
-
             !only a fraction of the emission is used in each reachable gridcell
             !test if in range. NB: Winds have sign
             if(Winds(k,1,v)>=0.0 .and. ((i-locdef(v)%iloc)>floor(Winds(k,1,v)) .or. (i-locdef(v)%iloc)<0))cycle
@@ -200,10 +199,13 @@ function ColumnRate(i,j,REDUCE_VOLCANO) result(emiss)
             if(Winds(k,2,v)<=0.0 .and. ((j-locdef(v)%jloc)<floor(Winds(k,2,v)) .or. (j-locdef(v)%jloc)>0))cycle
 
             !test if along the line of wind, i.e. i/j = Winds(:,1,v)/Winds(:,2,v)
-            if(nint((i-locdef(v)%iloc)*Winds(k,2,v))/=nint((j-locdef(v)%jloc)*Winds(k,1,v))) cycle
+            if(abs(Winds(k,1,v))>1.E-6)then
+               if(nint((i-locdef(v)%iloc)*Winds(k,2,v)/Winds(k,1,v))/=j-locdef(v)%jloc) cycle
+            endif
+
+            if(DEBUG%COLSRC)write(*,MSG_FMT)snow//' Vent',me,'me',v,trim(locdef(v)%id),i,"i",j,"j"
+
             Ncells=max(abs(Winds(k,1,v)),abs(Winds(k,2,v)))!NB: not an integer
-            if(DEBUG%COLSRC) &
-                 write(*,MSG_FMT)snow//' Vent',me,'me',v,trim(locdef(v)%id),i,"i",j,"j"
             if(Ncells<=1.0)then
                emiss(itot,k)=emiss(itot,k)+emsdef(v,e)%rate*uconv
             else
@@ -211,7 +213,10 @@ function ColumnRate(i,j,REDUCE_VOLCANO) result(emiss)
                if(abs(i-locdef(v)%iloc)-floor(abs(Winds(k,1,v))) ==0 .and. &
                     abs(j-locdef(v)%jloc)-floor(abs(Winds(k,2,v)))==0)frac=frac*mod(Ncells,1.0)!last cell take only what is left
                if(DEBUG%COLSRC)write(*,*)'including fraction ',frac,' for ',i,j,k,v,locdef(v)%iloc,locdef(v)%jloc 
-            endif
+
+                emiss(itot,k)=emiss(itot,k)+frac*emsdef(v,e)%rate*uconv
+         
+           endif
          enddo
       else
          emiss(itot,k1:k0)=emiss(itot,k1:k0)+emsdef(v,e)%rate*uconv
@@ -370,6 +375,7 @@ subroutine setRate()
       if(DEBUG%COLSRC.and.dems%loc>0) &
         write(*,MSG_FMT)'Erup.skip',me,'in',dems%loc,trim(dems%id),&
           0,trim(dems%sbeg),1,trim(dems%send)
+      if(DEBUG%COLSRC.and.dems%loc>0)write(*,*)'RATE',dems%rate
       cycle doEMS
     elseif(dems%edef)then                                 ! Default
       nems(0)=nems(0)+1
