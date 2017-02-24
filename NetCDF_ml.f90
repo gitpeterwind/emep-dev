@@ -3043,8 +3043,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
            !make factors for j
            do jg=1,dims(2)
               !latitude of edges. NB:Rlat is over fullgrid, while jg is in restricted grid
-              Rlatmin = Rlat(jg+jmin-1) - 0.5*dRlat
-              Rlatmax = Rlatmin + dRlat
+              Rlatmin = Rlat(jg+jmin-1) - 0.5*abs(dRlat)
+              Rlatmax = Rlatmin + abs(dRlat)
               !find all cells with at least some part in emitter cell jg
               call lb2ij(0.0,Rlatmin,ir,jr)
               jfirst(jg)=floor(jr+0.5+1.E-6)!first j to be treated
@@ -3079,7 +3079,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
               if(j>=1.and.j<=ljmax)then
                  if(interpol_used=='mass_conservative')then
                     !scale for gridcell size differences
-                    frac = dRlati*dRloni*dlat*dlon!Divide by number of model cell in readin cell
+                    frac = abs(dRlati*dRloni*dlat*dlon)!Divide by number of model cell in readin cell
                  else
                     !will give average value (emissions in kg/m2 for instance)
                     frac = 1.0
