@@ -155,7 +155,9 @@ changes here (and when committing svn), and Dave will tag as required
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-10th Mar 2017 Dave
+10th Mar 2017 Dave  rv4_12beta
+
+BIG CHANGE FOR GLOBAL BVOC and also some structural changes
 
 1)  emep_Config_mod.f90 - ** NEW **
 
