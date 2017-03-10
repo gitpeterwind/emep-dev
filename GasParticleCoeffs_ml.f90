@@ -1,18 +1,18 @@
-module Wesely_ml
+module GasParticleCoeffs_ml
 !..............................................................................
-! specifies data for deposition modelling using procedures recommended by
-! Wesely, 1989, Atmos. Environ., 23, No.6, pp. 1293-1304
-!
+! specifies data for deposition modelling. Initial parameters for Henry's
+! law and reactivit scaling from:
+!   Wesely, 1989, Atmos. Environ., 23, No.6, pp. 1293-1304
+! extended/modified for EMEP usage.
 !..............................................................................
 
 
-! includes Wesely_tab2 for 14 gases
+! includes DryDepDefs for 14 gases
 ! specifies Henry's coefficients, reactivities for gases
 !
 use PhysicalConstants_ml, only : PRANDTL, Sc_H20
 implicit none
 private
-
 
 
 !-------------------------------------------------------------------------
@@ -27,11 +27,10 @@ private
 public ::  Init_GasCoeff
 
 
-!RB integer, public, parameter :: NWESELY = 14   ! no. of gases in Wesely tables
-integer, public, parameter :: NWESELY = 64   ! no. of gases in Wesely tables
+integer, public, parameter :: NDRYDEP_DEF = 64   ! no. of gases in tables below
 
-  real, public, parameter,                 & ! Wesely Table 2
-  dimension(5,NWESELY)  :: Wesely_tab2 =   &
+  real, public, parameter,                 & ! Extension of Wesely Table
+  dimension(5,NDRYDEP_DEF)  :: DryDepDefs =   &
   reshape (                             &
  (/                                     &
 !    D     H*      pe     k     f0       
@@ -105,16 +104,16 @@ integer, public, parameter :: NWESELY = 64   ! no. of gases in Wesely tables
    4.6, 3.2e7, 9999.0,  9999.0, 0.0     &! 64 = SVBSOA - to model Hodzics 100ug/m3 Biogenic VSOA bin
 !END RB 
   /), &
-  (/5,NWESELY/) )
+  (/5,NDRYDEP_DEF/) )
 
 
 !/ Ratio of diffusivites compared to ozone..
 
-real, public, dimension(NWESELY), save :: DRx      ! Ratio D(O3)/D(x)
+real, public, dimension(NDRYDEP_DEF), save :: DRx      ! Ratio D(O3)/D(x)
 
 !/ and for the calculation of Rb we need:
 
-real, public, dimension(NWESELY), save :: Rb_cor   ! two-thirds power of the 
+real, public, dimension(NDRYDEP_DEF), save :: Rb_cor   ! two-thirds power of the 
                                                    ! Schmidt to Prandtl numbers
 
 !RB integer, public, parameter :: &
@@ -144,7 +143,7 @@ integer, public, parameter :: &
 !*** Variables used in deposition calculations
 
 ! DDEP_xx gives the index that will be used in the EMEP model
-! WES_xx gives the index of the Wesely gas to which this corresponds
+! WES_xx gives the index of the DryDepDefs gas to which this corresponds
  
 ! Here we define the minimum set of species which has different
 ! deposition velocities. We calculate Vg for these, and then
@@ -169,6 +168,7 @@ integer, public, parameter :: &
 !RB  CDDEP_NH3  =  4, CDDEP_NO2 =  5, CDDEP_PAN = 6, &
 !RB  CDDEP_H2O2 =  7, CDDEP_ALD =  8, CDDEP_HCHO= 9, &
 !RB  CDDEP_MEOOH = 10, CDDEP_HNO2= 11,
+  CDDEP_MEOOH = 10, &  !DSRD SAME AS ROOH?
   CDDEP_PAA= 12,&
   CDDEP_HCOOH= 13, CDDEP_HO2NO2=14, CDDEP_ANHY=15,&
   CDDEP_CO2C3PAN = 16, CDDEP_VHISOLNO3 = 17, CDDEP_HISOLNO3 = 18,&
@@ -258,7 +258,7 @@ subroutine Init_GasCoeff()
 !calculates:
 ! 1) DRx - ratio of diffusivities of ozone to gas requried
 ! 2) Rb_corr -  the two-thirds power of the Schmidt to Prandtl
-!number ratio values for all 14 gases listed in Wesely_tab2
+!number ratio values for all 14 gases listed in DryDepDefs
 
 !==========================================================
 ! -> Calculated Rb_cor
@@ -269,11 +269,11 @@ subroutine Init_GasCoeff()
   real    :: Schmidt !..  number
     
 
-  GASLOOP: do icmp = 1, NWESELY
-    DRx   (icmp) = Wesely_tab2(1,WES_O3)/Wesely_tab2(1,icmp)
-    Schmidt      = Sc_H20* Wesely_tab2(1,icmp)
+  GASLOOP: do icmp = 1, NDRYDEP_DEF
+    DRx   (icmp) = DryDepDefs(1,WES_O3)/DryDepDefs(1,icmp)
+    Schmidt      = Sc_H20* DryDepDefs(1,icmp)
     Rb_cor(icmp) = (Schmidt/PRANDTL)**(2.0/3.0)
   end do GASLOOP
 
   end subroutine Init_GasCoeff
-end module Wesely_ml
+end module GasParticleCoeffs_ml

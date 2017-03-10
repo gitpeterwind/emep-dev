@@ -6,7 +6,8 @@ SRCS ?=	\
 	ChemFunctions_ml.f90 CM_ChemRates_ml.f90 Convection_ml.f90 ColumnSource_ml.f90 \
 	CM_ChemGroups_ml.f90 CM_ChemSpecs_ml.f90 CM_ChemSpecs_tmp.f90 \
 	DefPhotolysis_ml.f90 Derived_ml.f90 DerivedFields_ml.f90 DO3SE_ml.f90  DryDep_ml.f90 DustProd_ml.f90 \
-	EcoSystem_ml.f90 EmisDef_ml.f90 EmisGet_ml.f90 Emissions_ml.f90 ExternalBICs_ml.f90 \
+	EcoSystem_ml.f90 emep_Config_mod.f90 \
+	EmisDef_ml.f90 EmisGet_ml.f90 Emissions_ml.f90 ExternalBICs_ml.f90 \
 	FastJ_ml.f90 ForestFire_ml.f90 Functions_ml.f90 \
         GasParticleCoeffs_ml.f90 \
 	Gravset_ml.f90 GridAllocate_ml.f90 GridValues_ml.f90 \

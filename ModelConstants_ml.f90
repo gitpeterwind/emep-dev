@@ -8,6 +8,7 @@ module ModelConstants_ml
 use Aerofunctions,        only: DpgV2DpgN
 use CheckStop_ml,         only: CheckStop
 use ChemSpecs,            only: species
+use emep_Config_mod,      only: PBL
 use Io_Nums_ml,           only: IO_NML, IO_LOG, IO_TMP
 use OwnDataTypes_ml,      only: typ_ss, uEMEP_type
 use Precision_ml,         only: dp
@@ -529,6 +530,7 @@ subroutine Config_ModelConstants(iolog)
     DegreeDayFactorsFile, meteo & !meteo template with full path
    ,EXP_NAME &  ! e.g. EMEPSTD, FORECAST, TFMM, TodayTest, ....
    ,USES   & ! just testname so far
+   ,PBL    & ! Mar2017 testing
    ,AERO   & ! Aerosol settings
    ,DEBUG  & !
    ,MY_OUTPUTS  &  ! e.g. EMEPSTD, FORECAST, TFMM
