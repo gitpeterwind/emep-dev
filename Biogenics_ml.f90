@@ -78,7 +78,7 @@ module Biogenics_ml
   !e.g.
   !  integer, parameter, public ::  NEMIS_BioNat  = 3
   !  character(len=7), save, dimension(NEMIS_BioNat), public:: &
-  !    EMIS_BioNat =  (/ "C5H8   " , "APINENE" , "NO     " /)
+  !    EMIS_BioNat =  (/ "C5H8   " , "BIOTERP" , "NO     " /)
  
   INTEGER STATUS(MPI_STATUS_SIZE),INFO
   integer, public, parameter :: N_ECF=2, ECF_ISOP=1, ECF_TERP=2
@@ -126,8 +126,8 @@ module Biogenics_ml
   real, public, save, dimension(N_ECF,40) :: canopy_ecf  ! Canopy env. factors
 
  ! Indices for the species defined in this routine. Only set if found
-  integer, private, save :: ispec_C5H8, ispec_APIN, ispec_NO , ispec_NH3
-  integer, private, save :: itot_C5H8,  itot_APIN,  itot_NO , itot_NH3
+  integer, private, save :: ispec_C5H8, ispec_TERP, ispec_NO , ispec_NH3
+  integer, private, save :: itot_C5H8,  itot_TERP,  itot_NO , itot_NH3
 
   contains
   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -163,19 +163,19 @@ module Biogenics_ml
    !====================================
    ! get indices.  NH3 not yet used.
       ispec_C5H8 = find_index( "C5H8", EMIS_BioNat(:) ) 
-      ispec_APIN = find_index( "APINENE", EMIS_BioNat(:) ) 
+      ispec_TERP = find_index( "BIOTERP", EMIS_BioNat(:) ) 
       ispec_NO   = find_index( "NO", EMIS_BioNat(:) ) 
       ispec_NH3  = find_index( "NH3", EMIS_BioNat(:) ) 
       call CheckStop( ispec_C5H8 < 1 , "BiogencERROR C5H8")
-      !call CheckStop( ispec_APIN < 1 , "BiogencERROR APIN")
-      if( ispec_APIN < 0 ) call PrintLog("WARNING: No APINENE Emissions")
+      !call CheckStop( ispec_TERP < 1 , "BiogencERROR TERP")
+      if( ispec_TERP < 0 ) call PrintLog("WARNING: No TERPENE Emissions")
      
       call CheckStop( USE_EURO_SOILNOX .and. ispec_NO < 1 , "BiogencERROR NO")
       call CheckStop( USE_GLOBAL_SOILNOX .and. ispec_NO < 1 , "BiogencERROR NO")
       if( MasterProc ) write(*,*) "SOILNOX ispec ", ispec_NO
 
       itot_C5H8 = find_index( "C5H8", species(:)%name    ) 
-      itot_APIN = find_index( "APINENE", species(:)%name )
+      itot_TERP = find_index( "BIOTERP", species(:)%name )
       itot_NO   = find_index( "NO", species(:)%name      )
       itot_NH3  = find_index( "NH3", species(:)%name      )
 
@@ -569,13 +569,13 @@ module Biogenics_ml
      cL  = 0.0   ! just for printout
   end if ! daytime
 
-    if ( ispec_APIN > 0 ) then
+    if ( ispec_TERP > 0 ) then
 
      ! add pool-only terpenes rate;
         E_MTP = day_embvoc(i,j,BIO_MTP)*canopy_ecf(ECF_TERP,it2m)
-        rcemis(itot_APIN,KG)    = rcemis(itot_APIN,KG) + &
+        rcemis(itot_TERP,KG)    = rcemis(itot_TERP,KG) + &
                (E_MTL+E_MTP) * biofac_TERP/Grid%DeltaZ
-        EmisNat(ispec_APIN,i,j) = (E_MTL+E_MTP) * 1.0e-9/3600.0
+        EmisNat(ispec_TERP,i,j) = (E_MTL+E_MTP) * 1.0e-9/3600.0
     end if
 
     if ( USE_EURO_SOILNOX ) then
@@ -601,7 +601,7 @@ module Biogenics_ml
       call datewrite("DBIO EISOP EMTP EMTL ESOIL ", (/  E_ISOP, &
              E_MTP, E_MTL, SoilNOx(i,j) /) ) 
       call datewrite("DBIO rcemisL ", (/ &
-            rcemis(itot_C5H8,KG), rcemis(itot_APIN,KG) /))
+            rcemis(itot_C5H8,KG), rcemis(itot_TERP,KG) /))
       call datewrite("DBIO EmisNat ", EmisNat(:,i,j) )
 
      end if

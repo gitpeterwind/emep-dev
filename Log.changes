@@ -153,6 +153,24 @@ info on unused variables, etc.
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+10th Mar 2017 Dave
+
+Biogenics_ml
+  - now uses BIOTERP for terpene emissions, since APINENE is just one of
+    many possible terpenes.
+
+ZCM_EmChem09/EmChem09base.species/reactions - modified with BIOTERP
+
+Wesely_ml renamed to GasParticleCoeffs_ml
+  - since it has less and less to do with Wesely, and for future ESX merge
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+24th Feb 2017 Peter
+
+NetCDF_ml - fixed bug with GOBAL_SOILNOx which had been zero since ???
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 24th Feb 2017 Peter
 
