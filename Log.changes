@@ -202,6 +202,21 @@ Wesely_ml renamed to GasParticleCoeffs_ml
     coded for gas and aerosol yields so far, e.g. to allow:
      A + B = |YG_isopO3| gas-phase-products + |YA_isopO3| aerosol-phase-products 
     Needs more work.
+
+5) Name changes
+
+  Chem_ml -> ChemFields_ml, since it contained ChemFields_ml!
+
+  CM_ChemSpecs_tmp.f90 ->  ChemSpecs_wrapper.f90 to be slightly more explicit
+         and to avoid the mistake of rm CM_* and thinking only GenChem files
+         will be removed
+
+6) Defaults for n2o5Hydrolysis set to Smix, not SmixTen
+   (THIS WILL CHANGE RESULTS IF USERS HAD FORGOTTEN TO EXPLICITLY SET Smix!)
+
+
+  Makefile.SRCS - adapted to these changes
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 24th Feb 2017 Peter
 

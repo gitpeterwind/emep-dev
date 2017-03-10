@@ -68,7 +68,7 @@ type, public :: emep_useconfig
  ! leads to the need for new n2o5 hydrolysis  methods. DO NOT USE EmepReimer,
  ! but one of :; 'SmixTen' , 'Smix', 'Gamma:0.002'
 
-  character(len=20) :: n2o5HydrolysisMethod = 'SmixTen'
+  character(len=20) :: n2o5HydrolysisMethod = 'Smix'
 
 ! Selection of method for Whitecap calculation for Seasalt
   character(len=15) :: WHITECAPS  = 'Callaghan'

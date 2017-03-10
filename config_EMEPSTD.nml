@@ -21,8 +21,8 @@
   MY_OUTPUTS            = 'EMEPSTD',
 !------------------------------
 ! testing March 2017
- EmBio%GlobBvocMethod = 'MEGAN',
- EmBio%IsopFac           =  1.0,
+! EmBio%GlobBvocMethod = 'MEGAN',
+! EmBio%IsopFac           =  1.0,
 ! PBL%ZiMIN             =  50.0,
 !------------------------------
 !USES system started June 2013
@@ -32,7 +32,7 @@
   USES%EMISSTACKS       = F,            ! Reads PointSources file
   USES%DEGREEDAY_FACTORS = T,
   USES%PlumeMethod      = 'PVDI',       ! default PVDI, possible: NILU, ASMI, PVDI
-  USES%n2o5HydrolysisMethod = "SmixTen" ! "Gamma:0.002"  ! "OrigRiemer"
+  USES%n2o5HydrolysisMethod = "Smix" ! "SmixTen" "Gamma:0.002" NOT:"OrigRiemer"
   USES%WHITECAPS =       "Callaghan"    ! Norris , Monahan
   USES%PFT_MAPS         = F,            ! PFT LAI tests
 !------------------------------
