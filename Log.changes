@@ -162,7 +162,9 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
   - will take over the non-constant stuff from ModelConstants one day
   - designed to ease merge of emep with ESX and BoxChem (we have an
     esx_Config and Box_Config also
-  - currently just has PBL type - with ZiMin, ZiMAN and HmixMethod
+  - currently just has:
+       PBL type - with ZiMin, ZiMAN and HmixMethod
+       EmBio type, with GlobBvocEmis, IsopFac, TerpFac
 
   BLPhysics_ml
   Met_ml
@@ -175,11 +177,17 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
   Note: The _mod suffix is intended also for the merge with ESX/BoxChem - 
         - I will use it to denote modules which have been updated/merged.
 
-2) BIOTERP changes
+2) Biogenic changes
 
 Biogenics_ml
+
+  - Added MEGAN_ml within to look after MEGAN-like global BVOC
+    (working version. Tripples global isoprene if used. Will be
+     improved, but this should be the new default.)
   - now uses BIOTERP for terpene emissions, since APINENE is just one of
     many possible terpenes.
+
+run.pl - linked to Megan4Emep.nc file
 
 ZCM_EmChem09/EmChem09base.species/reactions - modified with BIOTERP
 
@@ -188,6 +196,12 @@ ZCM_EmChem09/EmChem09base.species/reactions - modified with BIOTERP
 Wesely_ml renamed to GasParticleCoeffs_ml
   - since it has less and less to do with Wesely, and for future ESX merge
 
+4) GenChem changes
+
+  - added option of variable yields on RHS of equations, with |YA_xx| notation, e.g.
+    coded for gas and aerosol yields so far, e.g. to allow:
+     A + B = |YG_isopO3| gas-phase-products + |YA_isopO3| aerosol-phase-products 
+    Needs more work.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 24th Feb 2017 Peter
 

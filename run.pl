@@ -115,6 +115,7 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_11_3","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
 #($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3074","EmChem09soa","EMEPGLOB","EMEPSTD","GLOBAL",0);
+ ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("emep-dev","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
 
 my %BENCHMARK;
 # OpenSource 2008
@@ -906,6 +907,12 @@ foreach my $scenflag ( @runs ) {
 
   $ifile{"$DataDir/LandInputs_Jul2015/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
   $ifile{"$DataDir/LandInputs_Jul2015/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
+  # JPC:
+  #    $ifile{"$DataDir/LandInputs_Feb2017/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
+  #    $ifile{"$DataDir/LandInputs_Feb2017/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
+       $ifile{"$DataDir/LandInputs_Feb2017/Megan4Emep.nc"} = "Megan4Emep.nc";
+  #
+  #
 
 #For dust: clay and sand fractions
   $ifile{"$DataDir/Soil_Tegen.nc"} ="Soil_Tegen.nc";

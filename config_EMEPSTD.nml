@@ -20,6 +20,11 @@
   EXP_NAME              = 'EMEPSTD',
   MY_OUTPUTS            = 'EMEPSTD',
 !------------------------------
+! testing March 2017
+ EmBio%GlobBvocMethod = 'MEGAN',
+ EmBio%IsopFac           =  1.0,
+! PBL%ZiMIN             =  50.0,
+!------------------------------
 !USES system started June 2013
 ! Only partially implemented. See below and ModelConstants_ml
   USES%testname         = 'EMEPSTD',
