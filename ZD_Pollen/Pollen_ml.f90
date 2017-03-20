@@ -463,11 +463,8 @@ function scale_factor(spc) result(scale)
       *f_gamma_w_tails((real(daynumber)-grass_start(i,j))  & ! days since season start
                        /(grass_end(i,j)-grass_start(i,j)), & ! season length
                         dt/86400.0                         & ! timestep in days
-                       /(grass_end(i,j)-grass_start(i,j))) & ! season length
-      *f_fade_out(R(i,j,g)/N_TOT(g),&
-                  1.0-uncert_tot_grass_poll)          ! total-pollen fade-out
-     ! Full-emission rate is total pollen divided by the total duration of the season
-     scale = scale/(grass_end(i,j)-daynumber+uncert_grass_day)
+                       /(grass_end(i,j)-grass_start(i,j)))   ! season length
+    scale = scale/dt ! emited fration over dt to emission rate
   case default
     call CheckStop("Unknown pollen type: "//trim(spc))
   end select
