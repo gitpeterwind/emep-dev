@@ -60,7 +60,7 @@ femis.defaults
 .depend
 Unimod
 Unimod_3DVar
-ZD_3DVar/fftpack5
-ZD_3DVar/m1qn3-3.3-distrib
+#ZD_3DVar/fftpack5
+#ZD_3DVar/m1qn3-3.3-distrib
 ZD_3DVar16/tools/PortGO.md
 ZD_3DVar16/Makefile.deps
