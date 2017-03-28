@@ -318,8 +318,8 @@ subroutine Init_My_Deriv()
         if(neigh==8)neigh_char='_SW'
         if(neigh==9)neigh_char='_SE'
      do isec=0,NSECTORS
-!        if(isec/=0 .and. isec/=2 .and. isec/=7 .and. isec/=8)cycle
-        if(isec/=0 .and. isec/=10)cycle
+        if(isec/=0 .and. isec/=2 .and. isec/=7 .and. isec/=8)cycle
+!        if(isec/=0 .and. isec/=10)cycle
         !        if(any(uEMEP%sectors(:)==isec))then
         write(isec_char,fmt='(i2.2)')isec
 !        tag_name(1:2) = [character(len=TXTLEN_DERIV)::&

@@ -150,7 +150,8 @@ end type VBST
 integer, parameter :: Nsector_uemep_max=10
 type, public :: uEMEP_type
   integer     :: Nix=0      ! Number of components to take
-  integer, dimension(15)  :: ix    ! Index of components to take
+  integer, dimension(15) :: ix    ! Index of components to take
+  real, dimension(15)    :: mw=0.0 !molecular weight used, for instance NO as NO2
   integer     :: sector=0    ! if only one sector is to be taken
   integer     :: Nsectors=1    ! Number of sector to be taken
   integer     :: sectors(Nsector_uemep_max)=-1    ! sectors to be taken

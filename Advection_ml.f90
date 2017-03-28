@@ -506,9 +506,9 @@
                             xx=0.0
                             do iix=1,uEMEP%Nix
                                ix=uEMEP%ix(iix)
-                               xn=xn+xn_adv(ix,i,j,k)*species_adv(ix)%molwt
-                               x=x-xm2(i,j)*fluxx(ix,i)*species_adv(ix)%molwt
-                               xx=xx+xm2(i,j)*fluxx(ix,i-1)*species_adv(ix)%molwt
+                               xn=xn+xn_adv(ix,i,j,k)*uEMEP%mw(iix)
+                               x=x-xm2(i,j)*fluxx(ix,i)*uEMEP%mw(iix)
+                               xx=xx+xm2(i,j)*fluxx(ix,i-1)*uEMEP%mw(iix)
                             end do
                             xn=xn!*uEMEPfac(k)
                             x=x!*uEMEPfac(k)
@@ -578,9 +578,9 @@
                          xx=0.0
                          do iix=1,uEMEP%Nix
                             ix=uEMEP%ix(iix)
-                            xn=xn+xn_adv(ix,i,j,k)*species_adv(ix)%molwt
-                            x=x-xm2(i,j)*fluxy(ix,j)*species_adv(ix)%molwt
-                            xx=xx+xm2(i,j)*fluxy(ix,j-1)*species_adv(ix)%molwt
+                            xn=xn+xn_adv(ix,i,j,k)*uEMEP%mw(iix)
+                            x=x-xm2(i,j)*fluxy(ix,j)*uEMEP%mw(iix)
+                            xx=xx+xm2(i,j)*fluxy(ix,j-1)*uEMEP%mw(iix)
                          end do
                          xn=xn!*uEMEPfac(k)
                          x=x!*uEMEPfac(k)
@@ -636,9 +636,9 @@
                          xx=0.0
                          do iix=1,uEMEP%Nix
                             ix=uEMEP%ix(iix)
-                            xn=xn+xn_adv(ix,i,j,k)*species_adv(ix)%molwt
-                            if(k<KMAX_MID)x=x-dhs1i(k+1)*fluxk(ix,k+1)*species_adv(ix)%molwt
-                            xx=xx+dhs1i(k+1)*fluxk(ix,k)*species_adv(ix)%molwt
+                            xn=xn+xn_adv(ix,i,j,k)*uEMEP%mw(iix)
+                            if(k<KMAX_MID)x=x-dhs1i(k+1)*fluxk(ix,k+1)*uEMEP%mw(iix)
+                            xx=xx+dhs1i(k+1)*fluxk(ix,k)*uEMEP%mw(iix)
                          end do
                          xn=xn!*uEMEPfac(k)
                          x=x!*uEMEPfac(k)
@@ -709,9 +709,9 @@
                          xx=0.0
                          do iix=1,uEMEP%Nix
                             ix=uEMEP%ix(iix)
-                            xn=xn+xn_adv(ix,i,j,k)*species_adv(ix)%molwt
-                            x=x-xm2(i,j)*fluxy(ix,j)*species_adv(ix)%molwt
-                            xx=xx+xm2(i,j)*fluxy(ix,j-1)*species_adv(ix)%molwt
+                            xn=xn+xn_adv(ix,i,j,k)*uEMEP%mw(iix)
+                            x=x-xm2(i,j)*fluxy(ix,j)*uEMEP%mw(iix)
+                            xx=xx+xm2(i,j)*fluxy(ix,j-1)*uEMEP%mw(iix)
                          end do
                          xn=xn!*uEMEPfac(k)
                          x=x!*uEMEPfac(k)
@@ -781,9 +781,9 @@
                             xx=0.0
                             do iix=1,uEMEP%Nix
                                ix=uEMEP%ix(iix)
-                               xn=xn+xn_adv(ix,i,j,k)*species_adv(ix)%molwt
-                               x=x-xm2(i,j)*fluxx(ix,i)*species_adv(ix)%molwt
-                               xx=xx+xm2(i,j)*fluxx(ix,i-1)*species_adv(ix)%molwt
+                               xn=xn+xn_adv(ix,i,j,k)*uEMEP%mw(iix)
+                               x=x-xm2(i,j)*fluxx(ix,i)*uEMEP%mw(iix)
+                               xx=xx+xm2(i,j)*fluxx(ix,i-1)*uEMEP%mw(iix)
                             end do
                             xn=xn!*uEMEPfac(k)
                             x=x!*uEMEPfac(k)
@@ -840,9 +840,9 @@
                          xx=0.0
                          do iix=1,uEMEP%Nix
                             ix=uEMEP%ix(iix)
-                            xn=xn+xn_adv(ix,i,j,k)*species_adv(ix)%molwt
-                            if(k<KMAX_MID)x=x-dhs1i(k+1)*fluxk(ix,k+1)*species_adv(ix)%molwt
-                            xx=xx+dhs1i(k+1)*fluxk(ix,k)*species_adv(ix)%molwt
+                            xn=xn+xn_adv(ix,i,j,k)*uEMEP%mw(iix)
+                            if(k<KMAX_MID)x=x-dhs1i(k+1)*fluxk(ix,k+1)*uEMEP%mw(iix)
+                            xx=xx+dhs1i(k+1)*fluxk(ix,k)*uEMEP%mw(iix)
                          end do
                          xn=xn!*uEMEPfac(k)
                          x=x!*uEMEPfac(k)
@@ -995,7 +995,7 @@
                       do iix=1,uEMEP%Nix
                          ix=uEMEP%ix(iix)
                          !assumes mixing ratios units, but weight by mass
-                         xn_k(k,isec,n)=xn_k(k,isec,n)+xn_adv(ix,i,j,k)*species_adv(ix)%molwt
+                         xn_k(k,isec,n)=xn_k(k,isec,n)+xn_adv(ix,i,j,k)*uEMEP%mw(iix)
                       end do
                       xn_k(k,isec,n)=xn_k(k,isec,n)*loc_frac(isec,n,i,j,k)
                    end do
@@ -1014,7 +1014,7 @@
                 do iix=1,uEMEP%Nix
                    ix=uEMEP%ix(iix)
                    !conversion from mixing ratio to mg/m2
-                   x=x+xn_adv(ix,i,j,k)*species_adv(ix)%molwt
+                   x=x+xn_adv(ix,i,j,k)*uEMEP%mw(iix)
                 end do
                do n=1,Nneighbors
                   do isec=0,NSECTORS

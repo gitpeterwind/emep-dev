@@ -1950,12 +1950,14 @@ subroutine uemep_emis(indate)
       iqrc=sum(emis_nsplit(1:iem-1)) + i
       itot=iqrc2itot(iqrc)
       uEMEP%ix(i)=itot-NSPEC_SHL
+      uEMEP%mw(i)=species_adv(3)%molwt!HARDCODED NO2 FOR NOW
+      write(*,*)i,'WARNING NB: UEMEP molweight hardcoded to NO2 ',uEMEP%mw(i)
     end do
     if(MasterProc)then
       write(*,*)'uEMEP sector: ',uEMEP%sector
       write(*,*)'uEMEP emission file: ',uEMEP%emis
       write(*,*)'uEMEP number of species in group: ',uEMEP%Nix
-      write(*,"(30A)")'including: ',(trim(species_adv(uEMEP%ix(i))%name),' ', i=1,uEMEP%Nix)
+      write(*,"(A,30(A,F6.2))")'including:',('; '//trim(species_adv(uEMEP%ix(i))%name)//', mw ',uEMEP%mw(i),i=1,uEMEP%Nix)
     end if
 
   end if
@@ -2063,7 +2065,7 @@ subroutine uemep_emis(indate)
          xtot=0.0
          do iix=1,uEMEP%Nix
             ix=uEMEP%ix(iix)
-            xtot=xtot+(xn_adv(ix,i,j,k)*species_adv(ix)%molwt)*(dA(k)+dB(k)*ps(i,j,1))/ATWAIR/GRAV
+            xtot=xtot+(xn_adv(ix,i,j,k)*uEMEP%mw(iix))*(dA(k)+dB(k)*ps(i,j,1))/ATWAIR/GRAV
          end do
          neigbor = 1!local fraction from this i,j
          do isec = 1, NSECTORS

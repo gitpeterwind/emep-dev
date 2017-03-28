@@ -11,7 +11,7 @@
 #Queue system commands start with #SBATCH 
 #SBATCH -A nn2890k
 #SBATCH --partition multinode 
-#SBATCH --time=0-04:00:00
+#SBATCH --time=1-012:00:00
 ##SBATCH --nodes=2
 #SBATCH --ntasks=80
 #SBATCH --mem=24000
@@ -115,8 +115,8 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
 # ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3306","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
-# ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3306","EmChem09soa","EMEPSTD","EMEPSTD","EMEP01",0);
- ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3306","EmChem09soa","EMEPSTD","EMEPSTD","GLOBAL05",0);
+ ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3306","EmChem09soa","EMEPSTD","EMEPSTD","EMEP01",0);
+# ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3306","EmChem09soa","EMEPSTD","EMEPSTD","GLOBAL05",0);
 #($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3074","EmChem09soa","EMEPGLOB","EMEPSTD","GLOBAL",0);
 
 my %BENCHMARK;
@@ -309,8 +309,8 @@ my $VBS   = 0;
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/emep-mscw";   # input of source-code
-   $ProgDir  = "/prod/forecast/emep/eemep/src/Unimod.$testv" if $eCWF and ($USER eq $FORCAST);
-   $ProgDir  = "$CWF_DIR/src/Unimod.$testv" if $CWF and -d $CWF_DIR;
+#   $ProgDir  = "/prod/forecast/emep/eemep/src/Unimod.$testv" if $eCWF and ($USER eq $FORCAST);
+#   $ProgDir  = "$CWF_DIR/src/Unimod.$testv" if $CWF and -d $CWF_DIR;
 my $ChemDir  = "$ProgDir/ZCM_$Chem";
 my $Specials = "specials";  # default
 #$Specials = "TSAP_Jul2012";  # used for TSAP runs in July 2012
@@ -410,8 +410,9 @@ my $subv        = "$testv" ;                  # sub-version (to track changes)
 # For SR runs we can add many scenarios - dealt with later.
 # The effect is to choose the approproate femis file
 
-my $scenario = "uEMEP05_nh3";     # Reset later if SR
+#my $scenario = "uEMEP05_nh3";     # Reset later if SR
 #my $scenario = "uEMEP_NOx";     # Reset later if SR
+my $scenario = "uEMEP_NOx_newmass";     # Reset later if SR
 #my $scenario = "Base_nh3";     # Reset later if SR
 #my $scenario = "Oslo_only";     # Reset later if SR
 #my $scenario = "Oslo_s7";     # Reset later if SR

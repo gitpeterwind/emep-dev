@@ -1512,7 +1512,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
              xtot=0.0
              do iix=1,uEMEP%Nix
                 ix=uEMEP%ix(iix)
-                xtot=xtot+(xn_adv(ix,i,j,kmax_mid)*species_adv(ix)%molwt)&
+                xtot=xtot+(xn_adv(ix,i,j,kmax_mid)*uEMEP%mw(iix))&
                  *(dA(kmax_mid)+dB(kmax_mid)*ps(i,j,1))/ATWAIR/GRAV
              end do
              isec=f_2d(n)%Index/Nneighbors
@@ -1528,7 +1528,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
              xtot=0.0
              do iix=1,uEMEP%Nix
                 ix=uEMEP%ix(iix)
-                xtot=xtot+(xn_adv(ix,i,j,kmax_mid)*species_adv(ix)%molwt)&
+                xtot=xtot+(xn_adv(ix,i,j,kmax_mid)*uEMEP%mw(iix))&
                      *(dA(kmax_mid)+dB(kmax_mid)*ps(i,j,1))/ATWAIR/GRAV
              end do
              d_2d( n, i,j,IOU_INST) = xtot
@@ -1893,7 +1893,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
              xtot=0.0
              do iix=1,uEMEP%Nix
                 ix=uEMEP%ix(iix)
-                xtot=xtot+(xn_adv(ix,i,j,k)*species_adv(ix)%molwt)/ATWAIR&
+                xtot=xtot+(xn_adv(ix,i,j,k)*uEMEP%mw(iix))/ATWAIR&
                     *roa(i,j,k,1)*1.E9 !for ug/m3
 !                *(dA(k)+dB(k)*ps(i,j,1))/GRAV !for mg/m2
              end do
@@ -1911,7 +1911,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
             xtot=0.0
             do iix=1,uEMEP%Nix
               ix=uEMEP%ix(iix)
-              xtot=xtot+(xn_adv(ix,i,j,k)*species_adv(ix)%molwt)/ATWAIR&
+              xtot=xtot+(xn_adv(ix,i,j,k)*uEMEP%mw(iix))/ATWAIR&
                    *roa(i,j,k,1)*1.E9 !for ug/m3
 !                   *(dA(k)+dB(k)*ps(i,j,1))/GRAV*1.E6 !for mg/m2
             end do
