@@ -1357,7 +1357,7 @@ contains
 
   subroutine lb2ijm(imax,jmax,lon,lat,xr2,yr2,fi2,an2,xp2,yp2)
     !-------------------------------------------------------------------! 
-    !   calculates coordinates xr2, yr2 (real values) from glat(lat),glon(long) 
+    !   calculates coordinates xr2, yr2 (real values) from lat and lon 
     !
     !   input: glon,glat:   coord. of the polar point in grid1
     !          an2:   number of grid-distances from pole to equator in grid2.
@@ -1474,7 +1474,7 @@ contains
 subroutine lb2ij_real(gl,gb,xr2,yr2,fi2,an2,xp2,yp2)
 !Note: this routine is not yet CPU optimized
 !-------------------------------------------------------------------! 
-!      calculates coordinates xr2, yr2 (real values) from gl(lat),gb(long) 
+!      calculates coordinates xr2, yr2 (real values) from gl(lon),gb(lat) 
 !      NB: xr2, yr2 are given in FULLDOMAIN coordinates
 !
 !      input:  xp2,yp2:   coord. of the polar point in grid2
@@ -1632,11 +1632,11 @@ subroutine lb2ij_real(gl,gb,xr2,yr2,fi2,an2,xp2,yp2)
   end select
 end subroutine lb2ij_real
 subroutine lb2ij_int(gl,gb,ix,iy)
-  real, intent(in)    :: gl,gb
+  real, intent(in)    :: gl,gb !gl=lon, gb=lat
   integer, intent(out):: ix,iy
   real ::x,y
 ! stations can easily be defined exactly at gridcell boundaries
-! 1.0E-7 is to ensure same rounding for all CPUs
+! 1.0E-7 is to ensure same rounding for all situations
   call lb2ij_real(gl,gb,x,y)
   ix=nint(x+1.0E-7)
   iy=nint(y+1.0E-7)
@@ -1644,8 +1644,8 @@ end subroutine lb2ij_int
 
   subroutine ij2lbm(imax,jmax,glon,glat,fi,an,xp,yp)
     !-------------------------------------------------------------------! 
-    !      calculates l(lat),b(long) (geographical coord.) 
-    !      in every grid point. 
+    !      calculates lon and lat (geographical coord.) 
+    !      in every grid point for a polarsteraographic projection. 
     !
     !      input:  xp,yp:   coord. of the polar point.
     !              an:      number of grid-distances from pole to equator.
@@ -1695,7 +1695,7 @@ end subroutine lb2ij_int
 
   subroutine ij2lb(i,j,lon,lat,fi,an,xp,yp)
     !-------------------------------------------------------------------! 
-    !      calculates l(lat),b(long) (geographical coord.) 
+    !      calculates lon and lat (geographical coord.) 
     !      from i,j coordinates in polar stereographic projection 
     !
     !      input:  i,j
@@ -1748,8 +1748,10 @@ end subroutine lb2ij_int
   subroutine ij2ijm(in_field,imaxin,jmaxin,out_field,imaxout,jmaxout, &
        fiin,anin,xpin,ypin,fiout,anout,xpout,ypout)
 
-    !   Converts data (in_field) stored in coordinates (fiin,anin,xpin,ypin) 
-    !   into data (out_field) in coordinates (fiout,anout,xpout,ypout)
+    !   Converts data (in_field) stored in polar stereo coordinates 
+    !   with parameters "fiin,anin,xpin,ypin,"
+    !   into data (out_field) in polar stereo coordinates with parameters 
+    !   "fiout,anout,xpout,ypout"
     !   pw august 2002
 
 
