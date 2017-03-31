@@ -35,7 +35,7 @@ use EmisDef_ml,       only: &
      ,DMS_natso2_month, DMS_natso2_year,O_NH3, O_DMS&
      ,Emis_4D,N_Emis_4D,Found_Emis_4D & !used for EEMEP 
      ,KEMISTOP&
-     ,MAXFEMISLONLAT,N_femis_lonlat,loc_frac,loc_frac_ext &
+     ,MAXFEMISLONLAT,N_femis_lonlat,loc_frac &
      ,NSECTORS, N_HFAC, N_TFAC, N_SPLIT     & ! No. emis sectors, height, time and split classes
      ,sec2tfac_map, sec2hfac_map, sec2split_map& !generic mapping of indices
      ,Nneighbors & !used for uemep/loc_frac
@@ -345,11 +345,7 @@ subroutine Emissions(year)
     roaddust_emis_pot=0.0
     allocate(SumSnapEmis(LIMAX,LJMAX,NEMIS_FILE))
     SumSnapEmis=0.0
-    if(USE_uEMEP)then
-       allocate(loc_frac(0:NSECTORS,Nneighbors,LIMAX,LJMAX,KMAX_MID))
-       allocate(loc_frac_ext(0:NSECTORS,Nneighbors,0:LIMAX+1,0:LJMAX+1))
-       loc_frac=0.0
-    end if
+
     !=========================
     !  call Country_Init() ! In Country_ml, => NLAND, country codes and names, timezone
     
@@ -1931,7 +1927,7 @@ subroutine uemep_emis(indate)
   integer :: daytime_longitude, daytime_iland, hour_longitude, hour_iland,nstart
   integer ::icc_uemep
   integer, save :: wday , wday_loc ! wday = day of the week 1-7
-  integer ::ix,iix, neigbor
+  integer ::ix,iix, neigbor, dx, dy, isec_poll
   real::dt_uemep, xtot, emis_uemep(KMAX_MID,NSECTORS),emis_tot(KMAX_MID)
   logical,save :: first_call=.true.  
 
@@ -1953,6 +1949,7 @@ subroutine uemep_emis(indate)
       uEMEP%mw(i)=species_adv(3)%molwt!HARDCODED NO2 FOR NOW
       write(*,*)i,'WARNING NB: UEMEP molweight hardcoded to NO2 ',uEMEP%mw(i)
     end do
+
     if(MasterProc)then
       write(*,*)'uEMEP sector: ',uEMEP%sector
       write(*,*)'uEMEP emission file: ',uEMEP%emis
@@ -2068,16 +2065,23 @@ subroutine uemep_emis(indate)
             xtot=xtot+(xn_adv(ix,i,j,k)*uEMEP%mw(iix))*(dA(k)+dB(k)*ps(i,j,1))/ATWAIR/GRAV
          end do
          neigbor = 1!local fraction from this i,j
-         do isec = 1, NSECTORS
-            loc_frac(isec,neigbor,i,j,k)=(loc_frac(isec,neigbor,i,j,k)*xtot+emis_uemep(k,isec))/(xtot+emis_tot(k)+1.e-20)
-         end do
+         dx=0 ; dy=0!local fraction from this i,j
+         do isec_poll=2,uEMEP%Nsec_poll
+            loc_frac(isec_poll,dx,dy,i,j,k)=(loc_frac(isec_poll,dx,dy,i,j,k)*xtot+emis_uemep(k,isec_poll-1))/(xtot+emis_tot(k)+1.e-20)
+         enddo
+
          isec = 0 !sum over all sectors
-         loc_frac(isec,neigbor,i,j,k)=(loc_frac(isec,neigbor,i,j,k)*xtot+emis_tot(k))/(xtot+emis_tot(k)+1.e-20)
+         isec_poll=1 !sum over all sectors
+         loc_frac(isec_poll,dx,dy,i,j,k)=(loc_frac(isec_poll,dx,dy,i,j,k)*xtot+emis_tot(k))/(xtot+emis_tot(k)+1.e-20)
 
          !local fractions from other cells
-         do neigbor = 2,Nneighbors
-            do isec = 0, NSECTORS
-               loc_frac(isec,neigbor,i,j,k)=(loc_frac(isec,neigbor,i,j,k)*xtot)/(xtot+emis_tot(k)+1.e-20)
+
+         do dy=-uEMEP%dist,uEMEP%dist
+            do dx=-uEMEP%dist,uEMEP%dist
+               if(dx==0 .and. dy==0)cycle!local fractions from other cells only
+               do isec_poll=1,uEMEP%Nsec_poll
+                  loc_frac(isec_poll,dx,dy,i,j,k)=(loc_frac(isec_poll,dx,dy,i,j,k)*xtot)/(xtot+emis_tot(k)+1.e-20)
+               enddo
             enddo
          enddo
 

@@ -17,7 +17,7 @@ use DA_3DVar_ml,      only: main_3dvar, T_3DVAR
 use Derived_ml,       only: DerivedProds, Derived, num_deriv2d
 use DerivedFields_ml, only: d_2d, f_2d
 use DryDep_ml,        only: init_drydep
-use EmisDef_ml,       only: loc_frac
+use EmisDef_ml,       only: loc_frac, loc_frac_ext, NSECTORS
 use Emissions_ml,     only: EmisSet,uemep_emis
 use Gravset_ml,       only: gravset
 use GridValues_ml,    only: debug_proc,debug_li,debug_lj,&
@@ -33,7 +33,7 @@ use ModelConstants_ml,only: MasterProc, KMAX_MID, nmax, nstep &
                            ,USE_ASH&
                            ,FREQ_HOURLY    & ! hourly netcdf output frequency
                            ,USE_POLLEN, USE_EtaCOORDINATES,JUMPOVER29FEB&
-                           ,USE_uEMEP, IOU_HOUR, IOU_HOUR_INST, fileName_O3_Top
+                           ,USE_uEMEP, uEMEP, IOU_HOUR, IOU_HOUR_INST, fileName_O3_Top
 use MetFields_ml,     only: ps,roa,z_bnd,z_mid,cc3dmax, &
                             zen,coszen,Idirect,Idiffuse
 use NetCDF_ml,        only: ReadField_CDF
@@ -125,6 +125,13 @@ subroutine phyche()
     call Derived(dt_advec,End_of_Day,ONLY_IOU=IOU_HOUR) ! update D2D outputs, to avoid
     call WrtChem(ONLY_HOUR=IOU_HOUR)    ! eg PM10:=0.0 on first output
   end if
+  if(first_call)then
+     uEMEP%Nsec_poll = NSECTORS+1
+     uEMEP%dist = 1
+     allocate(loc_frac(uEMEP%Nsec_poll,-uEMEP%dist:uEMEP%dist,-uEMEP%dist:uEMEP%dist,LIMAX,LJMAX,KMAX_MID))
+     allocate(loc_frac_ext(uEMEP%Nsec_poll,-uEMEP%dist:uEMEP%dist,-uEMEP%dist:uEMEP%dist,0:LIMAX+1,0:LJMAX+1))
+     loc_frac=0.0
+  endif
 
   call EmisSet(current_date)
   call Add_2timing(12,tim_after,tim_before,"phyche:EmisSet")

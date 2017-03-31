@@ -11,9 +11,9 @@
 #Queue system commands start with #SBATCH 
 #SBATCH -A nn2890k
 #SBATCH --partition multinode 
-#SBATCH --time=1-012:00:00
+#SBATCH --time=12:00:00
 ##SBATCH --nodes=2
-#SBATCH --ntasks=80
+#SBATCH --ntasks=40
 #SBATCH --mem=24000
 #SBATCH --job-name=emep
 #SBATCH --output=run.%j.out
@@ -92,9 +92,9 @@ foreach my $key  (qw ( PBS_O_HOST HOSTNAME PBS_SERVER MACHINE )) {
 print "HOST DETECT: V$VILJE S$STALLO \n";
 
 # -j4 parallel make with 4 threads
-my @MAKE = ("gmake", "-j4", "MACHINE=snow");
-   @MAKE = ( "make", "-j4", "MACHINE=vilje")  if $VILJE==1 ;
-   @MAKE = ( "make", "-j4", "MACHINE=stallo") if $STALLO==1 ;
+my @MAKE = ("gmake", "-j8", "MACHINE=snow");
+   @MAKE = ( "make", "-j8", "MACHINE=vilje")  if $VILJE==1 ;
+   @MAKE = ( "make", "-j8", "MACHINE=stallo") if $STALLO==1 ;
 die "Must choose STALLO **or** VILJE !\n"
   unless $STALLO+$VILJE==1;
 
@@ -412,7 +412,8 @@ my $subv        = "$testv" ;                  # sub-version (to track changes)
 
 #my $scenario = "uEMEP05_nh3";     # Reset later if SR
 #my $scenario = "uEMEP_NOx";     # Reset later if SR
-my $scenario = "uEMEP_NOx_newmass";     # Reset later if SR
+#my $scenario = "uEMEP_NOx_newmass";     # Reset later if SR
+my $scenario = "test";     # Reset later if SR
 #my $scenario = "Base_nh3";     # Reset later if SR
 #my $scenario = "Oslo_only";     # Reset later if SR
 #my $scenario = "Oslo_s7";     # Reset later if SR
@@ -518,9 +519,9 @@ $month_days[2] += leap_year($year);
 @month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,24) if $GRID eq "HIRHAM";
 
 my $mm1 ="01";      # first month, use 2-digits!
-my $mm2 ="12";      # last month, use 2-digits!
+my $mm2 ="01";      # last month, use 2-digits!
 my $dd1 =  1;       # Start day, usually 1
-my $dd2 = 31;       # End day (can be too large; will be limited to max number of days in the month)
+my $dd2 =  1;       # End day (can be too large; will be limited to max number of days in the month)
                     # put dd2=0 for 1 timestep run/test.
 # Allways runn full year on benchmark mode
 ($mm1,$mm2,$dd1,$dd2)=("01","12",1,31) if (%BENCHMARK);

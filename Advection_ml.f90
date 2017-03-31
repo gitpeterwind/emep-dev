@@ -130,6 +130,8 @@
   private :: advy
   private :: preadvx
   private :: preadvy
+  private :: uemep_adv_x
+  private :: uemep_adv_y
 
    ! Checks & warnings
    ! introduced after getting Nan when using "poor" meteo can give this too.
@@ -275,7 +277,7 @@
     real dt_xmax(LJMAX,KMAX_MID),dt_ymax(LIMAX,KMAX_MID)
     integer niterx(LJMAX,KMAX_MID),nitery(LIMAX,KMAX_MID)
     integer niterxys,niters,nxy,ndiff
-    integer iterxys,iters,iterx,itery,nxx,nxxmin,nyy,isec
+    integer iterxys,iters,iterx,itery,nxx,nxxmin,nyy,isec,dx,dy,isec_poll
     integer ::isum,isumtot,iproc
     real :: xn_advjktot(NSPEC_ADV),xn_advjk(NSPEC_ADV),rfac
     real :: dpdeta0,mindpdeta,xxdg,fac1
@@ -477,7 +479,7 @@
              fac1=(dA(k)/Pref+dB(k))*xxdg
 
              if(USE_uEMEP)then
-                 call  extendarea_N(loc_frac(0,1,1,1,k),loc_frac_ext,1,(NSECTORS+1)*Nneighbors,1)                
+                 call  extendarea_N(loc_frac(1,-uEMEP%dist,-uEMEP%dist,1,1,k),loc_frac_ext,1,uEMEP%Nsec_poll*(2*uEMEP%dist+1)**2,1)                
              end if
 
              do j = lj0,lj1
@@ -500,41 +502,7 @@
                            ,dth,fac1,fluxx)
 
                       do i = li0,li1
-                         if(USE_uEMEP)then
-                            xn=0.0
-                            x=0.0
-                            xx=0.0
-                            do iix=1,uEMEP%Nix
-                               ix=uEMEP%ix(iix)
-                               xn=xn+xn_adv(ix,i,j,k)*uEMEP%mw(iix)
-                               x=x-xm2(i,j)*fluxx(ix,i)*uEMEP%mw(iix)
-                               xx=xx+xm2(i,j)*fluxx(ix,i-1)*uEMEP%mw(iix)
-                            end do
-                            xn=xn!*uEMEPfac(k)
-                            x=x!*uEMEPfac(k)
-                            xx=xx!*uEMEPfac(k)
-                            xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. outgoing flux 
-                            f_in=max(0.0,x)+max(0.0,xx)!positive part. incoming flux
-                            loc_frac(0:NSECTORS,1,i,j,k)=(loc_frac(0:NSECTORS,1,i,j,k)*xn)/(xn+f_in+1.e-20)
-                            !local fraction from West neighbor
-                            loc_frac(0:NSECTORS,3,i,j,k)=(loc_frac(0:NSECTORS,3,i,j,k)*xn+loc_frac_ext(0:NSECTORS,1,i-1,j)*max(0.0,xx))/(xn+f_in+1.e-20)
-                            !local fraction from East neighbor
-                            loc_frac(0:NSECTORS,2,i,j,k)=(loc_frac(0:NSECTORS,2,i,j,k)*xn+loc_frac_ext(0:NSECTORS,1,i+1,j)*max(0.0,x))/(xn+f_in+1.e-20)
-                            !local fraction from South neighbor
-                            loc_frac(0:NSECTORS,4,i,j,k)=(loc_frac(0:NSECTORS,4,i,j,k)*xn)/(xn+f_in+1.e-20)
-                            !local fraction from North neighbor
-                            loc_frac(0:NSECTORS,5,i,j,k)=(loc_frac(0:NSECTORS,5,i,j,k)*xn)/(xn+f_in+1.e-20)
-
-                            !local fraction from NorthWest neighbor
-                            loc_frac(0:NSECTORS,6,i,j,k)=(loc_frac(0:NSECTORS,6,i,j,k)*xn+loc_frac_ext(0:NSECTORS,5,i-1,j)*max(0.0,xx))/(xn+f_in+1.e-20)
-                            !local fraction from NorthEast neighbor
-                            loc_frac(0:NSECTORS,7,i,j,k)=(loc_frac(0:NSECTORS,7,i,j,k)*xn+loc_frac_ext(0:NSECTORS,5,i+1,j)*max(0.0,x))/(xn+f_in+1.e-20)
-                            !local fraction from SouthWest neighbor
-                            loc_frac(0:NSECTORS,8,i,j,k)=(loc_frac(0:NSECTORS,8,i,j,k)*xn+loc_frac_ext(0:NSECTORS,4,i-1,j)*max(0.0,xx))/(xn+f_in+1.e-20)
-                            !local fraction from SouthEast neighbor
-                            loc_frac(0:NSECTORS,9,i,j,k)=(loc_frac(0:NSECTORS,9,i,j,k)*xn+loc_frac_ext(0:NSECTORS,4,i+1,j)*max(0.0,x))/(xn+f_in+1.e-20)
-                             
-                         end if
+                         if(USE_uEMEP)call uemep_adv_x(fluxx,i,j,k)                             
 
                          dpdeta0=(dA(k)+dB(k)*ps(i,j,1))*dEta_i(k)
                          psi = dpdeta0/max(dpdeta(i,j,k),1.0)
@@ -549,7 +517,7 @@
 
              call Add_2timing(18,tim_after,tim_before,"advecdiff:advx")
              if(USE_uEMEP)then
-                call  extendarea_N(loc_frac(0,1,1,1,k),loc_frac_ext,1,(NSECTORS+1)*Nneighbors,1)                
+                call  extendarea_N(loc_frac(1,-uEMEP%dist,-uEMEP%dist,1,1,k),loc_frac_ext,1,uEMEP%Nsec_poll*(2*uEMEP%dist+1)**2,1)                
              end if
 
              ! y-direction
@@ -572,41 +540,7 @@
                         ,dth,fac1,fluxy)
 
                    do j = lj0,lj1
-                      if(USE_uEMEP)then
-                         xn=0.0
-                         x=0.0
-                         xx=0.0
-                         do iix=1,uEMEP%Nix
-                            ix=uEMEP%ix(iix)
-                            xn=xn+xn_adv(ix,i,j,k)*uEMEP%mw(iix)
-                            x=x-xm2(i,j)*fluxy(ix,j)*uEMEP%mw(iix)
-                            xx=xx+xm2(i,j)*fluxy(ix,j-1)*uEMEP%mw(iix)
-                         end do
-                         xn=xn!*uEMEPfac(k)
-                         x=x!*uEMEPfac(k)
-                         xx=xx!*uEMEPfac(k)
-                         xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. outgoing flux 
-                         f_in=max(0.0,x)+max(0.0,xx)!positive part. incoming flux
-                         loc_frac(0:NSECTORS,1,i,j,k)=(loc_frac(0:NSECTORS,1,i,j,k)*xn)/(xn+f_in+1.e-20)
-                         !local fraction from West neighbor
-                         loc_frac(0:NSECTORS,3,i,j,k)=(loc_frac(0:NSECTORS,3,i,j,k)*xn)/(xn+f_in+1.e-20)
-                         !local fraction from East neighbor
-                         loc_frac(0:NSECTORS,2,i,j,k)=(loc_frac(0:NSECTORS,2,i,j,k)*xn)/(xn+f_in+1.e-20)
-                         !local fraction from South neighbor
-                         loc_frac(0:NSECTORS,4,i,j,k)=(loc_frac(0:NSECTORS,4,i,j,k)*xn+loc_frac_ext(0:NSECTORS,1,i,j-1)*max(0.0,xx))/(xn+f_in+1.e-20)
-                         !local fraction from North neighbor
-                         loc_frac(0:NSECTORS,5,i,j,k)=(loc_frac(0:NSECTORS,5,i,j,k)*xn+loc_frac_ext(0:NSECTORS,1,i,j+1)*max(0.0,x))/(xn+f_in+1.e-20)
-
-                         !local fraction from NorthWest neighbor
-                         loc_frac(0:NSECTORS,6,i,j,k)=(loc_frac(0:NSECTORS,6,i,j,k)*xn+loc_frac_ext(0:NSECTORS,3,i,j+1)*max(0.0,x))/(xn+f_in+1.e-20)
-                         !local fraction from NorthEast neighbor
-                         loc_frac(0:NSECTORS,7,i,j,k)=(loc_frac(0:NSECTORS,7,i,j,k)*xn+loc_frac_ext(0:NSECTORS,2,i,j+1)*max(0.0,x))/(xn+f_in+1.e-20)
-                         !local fraction from SouthWest neighbor
-                         loc_frac(0:NSECTORS,8,i,j,k)=(loc_frac(0:NSECTORS,8,i,j,k)*xn+loc_frac_ext(0:NSECTORS,3,i,j-1)*max(0.0,xx))/(xn+f_in+1.e-20)
-                         !local fraction from SouthEast neighbor
-                         loc_frac(0:NSECTORS,9,i,j,k)=(loc_frac(0:NSECTORS,9,i,j,k)*xn+loc_frac_ext(0:NSECTORS,2,i,j-1)*max(0.0,xx))/(xn+f_in+1.e-20)
- 
-                      end if
+                      if(USE_uEMEP)call uemep_adv_y(fluxy,i,j,k)
 
                       dpdeta0=(dA(k)+dB(k)*ps(i,j,1))*dEta_i(k)
                       psi = dpdeta0/max(dpdeta(i,j,k),1.0)
@@ -645,11 +579,16 @@
                          xx=xx!*uEMEPfac(k)
                          xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. outgoing flux 
                          f_in=max(0.0,x)+max(0.0,xx)!positive part. incoming flux
-                         do n=1,Nneighbors
-                            loc_frac(0:NSECTORS,n,i,j,k)=(loc_frac(0:NSECTORS,n,i,j,k)*xn + &
-                                 loc_frac(0:NSECTORS,n,i,j,max(k-1,KMIN_uemep))*max(0.0,xx) + & !will be wrong at top, but loc_frac at top should be negligible
-                                 loc_frac(0:NSECTORS,n,i,j,min(k+1,KMAX_MID))*max(0.0,x))/(xn+f_in+1.e-20)
+                         do dy=-uEMEP%dist,uEMEP%dist
+                            do dx=-uEMEP%dist,uEMEP%dist
+                               do isec_poll=1,uEMEP%Nsec_poll
+                                  loc_frac(isec_poll,dx,dy,i,j,k) = (loc_frac(isec_poll,dx,dy,i,j,k) *xn + &
+                                 loc_frac(isec_poll,dx,dy,i,j,max(k-1,KMIN_uemep))*max(0.0,xx) + & !will be wrong at top, but loc_frac at top should be negligible
+                                 loc_frac(isec_poll,dx,dy,i,j,min(k+1,KMAX_MID))*max(0.0,x))/(xn+f_in+1.e-20)
+                               enddo
+                            enddo
                          enddo
+
                       end do
                    end if
 
@@ -682,7 +621,7 @@
           do k = 1,KMAX_MID
              fac1=(dA(k)/Pref+dB(k))*xxdg
              if(USE_uEMEP)then
-                call  extendarea_N(loc_frac(0,1,1,1,k),loc_frac_ext,1,(NSECTORS+1)*Nneighbors,1)                
+                call  extendarea_N(loc_frac(1,-uEMEP%dist,-uEMEP%dist,1,1,k),loc_frac_ext,1,uEMEP%Nsec_poll*(2*uEMEP%dist+1)**2,1)                
              end if
              do i = li0,li1
                 dth = dt_y(i,k)/GRIDWIDTH_M
@@ -703,41 +642,7 @@
                         ,dth,fac1,fluxy)
 
                    do j = lj0,lj1
-                      if(USE_uEMEP)then
-                         xn=0.0
-                         x=0.0
-                         xx=0.0
-                         do iix=1,uEMEP%Nix
-                            ix=uEMEP%ix(iix)
-                            xn=xn+xn_adv(ix,i,j,k)*uEMEP%mw(iix)
-                            x=x-xm2(i,j)*fluxy(ix,j)*uEMEP%mw(iix)
-                            xx=xx+xm2(i,j)*fluxy(ix,j-1)*uEMEP%mw(iix)
-                         end do
-                         xn=xn!*uEMEPfac(k)
-                         x=x!*uEMEPfac(k)
-                         xx=xx!*uEMEPfac(k)
-                         xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. outgoing flux 
-                         f_in=max(0.0,x)+max(0.0,xx)!positive part. incoming flux
-                         loc_frac(0:NSECTORS,1,i,j,k)=(loc_frac(0:NSECTORS,1,i,j,k)*xn)/(xn+f_in+1.e-20)
-                         !local fraction from West neighbor
-                         loc_frac(0:NSECTORS,3,i,j,k)=(loc_frac(0:NSECTORS,3,i,j,k)*xn)/(xn+f_in+1.e-20)
-                         !local fraction from East neighbor
-                         loc_frac(0:NSECTORS,2,i,j,k)=(loc_frac(0:NSECTORS,2,i,j,k)*xn)/(xn+f_in+1.e-20)
-                         !local fraction from South neighbor
-                         loc_frac(0:NSECTORS,4,i,j,k)=(loc_frac(0:NSECTORS,4,i,j,k)*xn+loc_frac_ext(0:NSECTORS,1,i,j-1)*max(0.0,xx))/(xn+f_in+1.e-20)
-                         !local fraction from North neighbor
-                         loc_frac(0:NSECTORS,5,i,j,k)=(loc_frac(0:NSECTORS,5,i,j,k)*xn+loc_frac_ext(0:NSECTORS,1,i,j+1)*max(0.0,x))/(xn+f_in+1.e-20)
-
-                         !local fraction from NorthWest neighbor
-                         loc_frac(0:NSECTORS,6,i,j,k)=(loc_frac(0:NSECTORS,6,i,j,k)*xn+loc_frac_ext(0:NSECTORS,3,i,j+1)*max(0.0,x))/(xn+f_in+1.e-20)
-                         !local fraction from NorthEast neighbor
-                         loc_frac(0:NSECTORS,7,i,j,k)=(loc_frac(0:NSECTORS,7,i,j,k)*xn+loc_frac_ext(0:NSECTORS,2,i,j+1)*max(0.0,x))/(xn+f_in+1.e-20)
-                         !local fraction from SouthWest neighbor
-                         loc_frac(0:NSECTORS,8,i,j,k)=(loc_frac(0:NSECTORS,8,i,j,k)*xn+loc_frac_ext(0:NSECTORS,3,i,j-1)*max(0.0,xx))/(xn+f_in+1.e-20)
-                         !local fraction from SouthEast neighbor
-                         loc_frac(0:NSECTORS,9,i,j,k)=(loc_frac(0:NSECTORS,9,i,j,k)*xn+loc_frac_ext(0:NSECTORS,2,i,j-1)*max(0.0,xx))/(xn+f_in+1.e-20)
-
-                       end if
+                      if(USE_uEMEP)call uemep_adv_y(fluxy,i,j,k)
 
                       dpdeta0=(dA(k)+dB(k)*ps(i,j,1))*dEta_i(k)
                       psi = dpdeta0/max(dpdeta(i,j,k),1.0)
@@ -752,7 +657,7 @@
 
              !          do k = 1,KMAX_MID
              if(USE_uEMEP)then
-                call  extendarea_N(loc_frac(0,1,1,1,k),loc_frac_ext,1,(NSECTORS+1)*Nneighbors,1)                
+                call  extendarea_N(loc_frac(1,-uEMEP%dist,-uEMEP%dist,1,1,k),loc_frac_ext,1,uEMEP%Nsec_poll*(2*uEMEP%dist+1)**2,1)                
              end if
  
             do j = lj0,lj1
@@ -775,41 +680,7 @@
                            ,dth,fac1,fluxx)
 
                       do i = li0,li1
-                         if(USE_uEMEP)then
-                            xn=0.0
-                            x=0.0
-                            xx=0.0
-                            do iix=1,uEMEP%Nix
-                               ix=uEMEP%ix(iix)
-                               xn=xn+xn_adv(ix,i,j,k)*uEMEP%mw(iix)
-                               x=x-xm2(i,j)*fluxx(ix,i)*uEMEP%mw(iix)
-                               xx=xx+xm2(i,j)*fluxx(ix,i-1)*uEMEP%mw(iix)
-                            end do
-                            xn=xn!*uEMEPfac(k)
-                            x=x!*uEMEPfac(k)
-                            xx=xx!*uEMEPfac(k)
-                            xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. outgoing flux 
-                            f_in=max(0.0,x)+max(0.0,xx)!positive part. incoming flux
-                            loc_frac(0:NSECTORS,1,i,j,k)=(loc_frac(0:NSECTORS,1,i,j,k)*xn)/(xn+f_in+1.e-20)
-                            !local fraction from West neighbor
-                            loc_frac(0:NSECTORS,3,i,j,k)=(loc_frac(0:NSECTORS,3,i,j,k)*xn+loc_frac_ext(0:NSECTORS,1,i-1,j)*max(0.0,xx))/(xn+f_in+1.e-20)
-                            !local fraction from East neighbor
-                            loc_frac(0:NSECTORS,2,i,j,k)=(loc_frac(0:NSECTORS,2,i,j,k)*xn+loc_frac_ext(0:NSECTORS,1,i+1,j)*max(0.0,x))/(xn+f_in+1.e-20)
-                            !local fraction from South neighbor
-                            loc_frac(0:NSECTORS,4,i,j,k)=(loc_frac(0:NSECTORS,4,i,j,k)*xn)/(xn+f_in+1.e-20)
-                            !local fraction from North neighbor
-                            loc_frac(0:NSECTORS,5,i,j,k)=(loc_frac(0:NSECTORS,5,i,j,k)*xn)/(xn+f_in+1.e-20)
-
-                            !local fraction from NorthWest neighbor
-                            loc_frac(0:NSECTORS,6,i,j,k)=(loc_frac(0:NSECTORS,6,i,j,k)*xn+loc_frac_ext(0:NSECTORS,5,i-1,j)*max(0.0,xx))/(xn+f_in+1.e-20)
-                            !local fraction from NorthEast neighbor
-                            loc_frac(0:NSECTORS,7,i,j,k)=(loc_frac(0:NSECTORS,7,i,j,k)*xn+loc_frac_ext(0:NSECTORS,5,i+1,j)*max(0.0,x))/(xn+f_in+1.e-20)
-                            !local fraction from SouthWest neighbor
-                            loc_frac(0:NSECTORS,8,i,j,k)=(loc_frac(0:NSECTORS,8,i,j,k)*xn+loc_frac_ext(0:NSECTORS,4,i-1,j)*max(0.0,xx))/(xn+f_in+1.e-20)
-                            !local fraction from SouthEast neighbor
-                            loc_frac(0:NSECTORS,9,i,j,k)=(loc_frac(0:NSECTORS,9,i,j,k)*xn+loc_frac_ext(0:NSECTORS,4,i+1,j)*max(0.0,x))/(xn+f_in+1.e-20)
-                             
-                          end if
+                         if(USE_uEMEP)call uemep_adv_x(fluxx,i,j,k)
 
                          dpdeta0=(dA(k)+dB(k)*ps(i,j,1))*dEta_i(k)
                          psi = dpdeta0/max(dpdeta(i,j,k),1.0)
@@ -849,10 +720,14 @@
                          xx=xx!*uEMEPfac(k)
                          xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. outgoing flux 
                          f_in=max(0.0,x)+max(0.0,xx)!positive part. incoming flux
-                         do n=1,Nneighbors
-                            loc_frac(0:NSECTORS,n,i,j,k)=(loc_frac(0:NSECTORS,n,i,j,k)*xn + &
-                                 loc_frac(0:NSECTORS,n,i,j,max(k-1,KMIN_uemep))*max(0.0,xx) + & !will be wrong at top, but loc_frac at top should be negligible
-                                 loc_frac(0:NSECTORS,n,i,j,min(k+1,KMAX_MID))*max(0.0,x))/(xn+f_in+1.e-20)
+                         do dy=-uEMEP%dist,uEMEP%dist
+                            do dx=-uEMEP%dist,uEMEP%dist
+                               do isec_poll=1,uEMEP%Nsec_poll
+                                  loc_frac(isec_poll,dx,dy,i,j,k) = (loc_frac(isec_poll,dx,dy,i,j,k) *xn + &
+                                 loc_frac(isec_poll,dx,dy,i,j,max(k-1,KMIN_uemep))*max(0.0,xx) + & !will be wrong at top, but loc_frac at top should be negligible
+                                 loc_frac(isec_poll,dx,dy,i,j,min(k+1,KMAX_MID))*max(0.0,x))/(xn+f_in+1.e-20)
+                               enddo
+                            enddo
                          enddo
                       end do
                    end if
@@ -879,13 +754,6 @@
 
        end if ! yxs sequence
     end do
-    if(USE_uEMEP)then
-       !we put zero in the cells which are wrong anyway (they are on subdomain boundaries)
-!       loc_frac(0:NSECTORS,2,1,:,:) = 0.0
-!       loc_frac(0:NSECTORS,3,li1,:,:) = 0.0
-!       loc_frac(0:NSECTORS,4,:,1,:) = 0.0
-!       loc_frac(0:NSECTORS,5,:,lj1,:) = 0.0
-    endif
 
     if(USE_CONVECTION)then
 
@@ -988,18 +856,32 @@
        do i = li0,li1
 
           if(USE_uEMEP)then
-             do n=1,Nneighbors
-                do isec=0,NSECTORS
-                   do k = 1,KMAX_MID
-                      xn_k(k,isec,n)=0.0
-                      do iix=1,uEMEP%Nix
-                         ix=uEMEP%ix(iix)
-                         !assumes mixing ratios units, but weight by mass
-                         xn_k(k,isec,n)=xn_k(k,isec,n)+xn_adv(ix,i,j,k)*uEMEP%mw(iix)
+
+             do dy=-uEMEP%dist,uEMEP%dist
+                do dx=-uEMEP%dist,uEMEP%dist
+                   if(dx==0 .and. dy==0 )n=1
+                   if(dx==-1 .and. dy==0 )n=2
+                   if(dx==1 .and. dy== 0)n=3
+                   if(dx== 0.and. dy== -1)n=5
+                   if(dx== 0.and. dy== 1)n=4
+                   if(dx== 1.and. dy== 1)n=8
+                   if(dx== -1.and. dy== 1)n=9
+                   if(dx== 1.and. dy== -1)n=6
+                   if(dx== -1.and. dy==-1 )n=7
+                   do isec_poll=1,uEMEP%Nsec_poll
+                      isec=isec_poll-1
+                      do k = 1,KMAX_MID
+                         xn_k(k,isec,n)=0.0
+                         do iix=1,uEMEP%Nix
+                            ix=uEMEP%ix(iix)
+                            !assumes mixing ratios units, but weight by mass
+                            xn_k(k,isec,n)=xn_k(k,isec,n)+xn_adv(ix,i,j,k)*uEMEP%mw(iix)
+                         end do
+                         !                      xn_k(k,isec,n)=xn_k(k,isec,n)*loc_frac(isec,n,i,j,k)
+                         xn_k(k,isec,n)=xn_k(k,isec,n)*loc_frac(isec_poll,dx,dy,i,j,k)
                       end do
-                      xn_k(k,isec,n)=xn_k(k,isec,n)*loc_frac(isec,n,i,j,k)
-                   end do
-                   call vertdiff_1d(xn_k(1,isec,n),EtaKz(i,j,1,1),ds3,ds4,ndiff)!does the same as vertdiffn, but for one component
+                      call vertdiff_1d(xn_k(1,isec,n),EtaKz(i,j,1,1),ds3,ds4,ndiff)!does the same as vertdiffn, but for one component
+                   enddo
                 enddo
              enddo
           end if
@@ -1016,11 +898,24 @@
                    !conversion from mixing ratio to mg/m2
                    x=x+xn_adv(ix,i,j,k)*uEMEP%mw(iix)
                 end do
-               do n=1,Nneighbors
-                  do isec=0,NSECTORS
-                     loc_frac(isec,n,i,j,k)=xn_k(k,isec,n)/(x+1.E-30)
-                   !if(k==KMAX_MID)udiff(i,j)=(x-xn_k_old)*(dA(kmax_mid)+dB(kmax_mid)*ps(i,j,1))/ATWAIR/GRAV*1.0E6
-                  end do
+
+                do dy=-uEMEP%dist,uEMEP%dist
+                   do dx=-uEMEP%dist,uEMEP%dist
+                   if(dx==0 .and. dy==0 )n=1
+                   if(dx==-1 .and. dy==0 )n=2
+                   if(dx==1 .and. dy== 0)n=3
+                   if(dx== 0.and. dy== -1)n=5
+                   if(dx== 0.and. dy== 1)n=4
+                   if(dx== 1.and. dy== 1)n=8
+                   if(dx== -1.and. dy== 1)n=9
+                   if(dx== 1.and. dy== -1)n=6
+                   if(dx== -1.and. dy==-1 )n=7
+
+                      do isec_poll=1,uEMEP%Nsec_poll
+                         isec=isec_poll-1
+                         loc_frac(isec_poll,dx,dy,i,j,k) = xn_k(k,isec,n)/(x+1.E-30)
+                      end do
+                   end do
                 end do
              end do
           end if
@@ -4039,5 +3934,96 @@ end if
     end if
 
   end subroutine adv_vert_fourth
+
+  subroutine uemep_adv_y(fluxy,i,j,k)
+    real, intent(in)::fluxy(NSPEC_ADV,-1:LJMAX+1)
+    integer, intent(in)::i,j,k
+    real ::x,xn,xx,f_in,inv_tot
+    integer ::iix,ix,dx,dy,isec_poll
+    xn=0.0
+    x=0.0
+    xx=0.0
+    do iix=1,uEMEP%Nix
+       ix=uEMEP%ix(iix)
+       !NB: here xn already includes the fluxes
+       !xn=xn+(xn_adv(ix,i,j,k)+xm2(i,j)*fluxy(ix,j)-xm2(i,j)*fluxy(ix,j-1))*uEMEP%mw(iix)
+       xn=xn+xn_adv(ix,i,j,k)*uEMEP%mw(iix)
+       x=x-xm2(i,j)*fluxy(ix,j)*uEMEP%mw(iix)!flux through "North" face (Up)
+       xx=xx+xm2(i,j)*fluxy(ix,j-1)*uEMEP%mw(iix)!flux through "South" face (Bottom)
+    end do
+
+    xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. all outgoing flux 
+    f_in=max(0.0,x)+max(0.0,xx)!positive part. all incoming flux
+    inv_tot=1.0/(xn+f_in+1.e-20)!incoming dilutes
+
+    xx=max(0.0,xx)*inv_tot!dilution factor due to flux through "South" face (Bottom)
+    x =max(0.0,x)*inv_tot!dilution factor due to flux through "North" face (Up)
+
+    do dy=-uEMEP%dist,uEMEP%dist
+       do dx=-uEMEP%dist,uEMEP%dist
+!        if(k==KMAX_MID.and.i==5.and.j==5.and.)write(*,*)'B ',me,loc_frac(0,1,i,j,k),xn/(xn+f_in+1.e-20)
+          do isec_poll=1,uEMEP%Nsec_poll
+             loc_frac(isec_poll,dx,dy,i,j,k) = loc_frac(isec_poll,dx,dy,i,j,k) *xn *inv_tot
+          enddo
+          if(dx==0 .and. dy==0)cycle!temporary: no return of pollutants
+          if(x>0.0.and.dy<uEMEP%dist)then
+             do isec_poll=1,uEMEP%Nsec_poll
+                loc_frac(isec_poll,dx,dy,i,j,k) = loc_frac(isec_poll,dx,dy,i,j,k)+ loc_frac_ext(isec_poll,dx,dy+1,i,j+1)*x
+             enddo
+          endif
+          if(xx>0.0.and.dy>uEMEP%dist-1)then
+             do isec_poll=1,uEMEP%Nsec_poll
+                loc_frac(isec_poll,dx,dy,i,j,k) = loc_frac(isec_poll,dx,dy,i,j,k)+ loc_frac_ext(isec_poll,dx,dy-1,i,j-1)*xx
+             enddo
+          endif
+       enddo
+    enddo
+
+  end subroutine uemep_adv_y
+
+  subroutine uemep_adv_x(fluxx,i,j,k)
+    real, intent(in)::fluxx(NSPEC_ADV,-1:LIMAX+1)
+    integer, intent(in)::i,j,k
+    real ::x,xn,xx,f_in,inv_tot
+    integer ::iix,ix,dx,dy,isec_poll
+    xn=0.0
+    x=0.0
+    xx=0.0
+    do iix=1,uEMEP%Nix
+       ix=uEMEP%ix(iix)
+       !NB: here xn already includes the fluxes
+       !xn=xn+(xn_adv(ix,i,j,k)+xm2(i,j)*fluxy(ix,j)-xm2(i,j)*fluxx(ix,i-1))*uEMEP%mw(iix)
+       xn=xn+xn_adv(ix,i,j,k)*uEMEP%mw(iix)
+       x=x-xm2(i,j)*fluxx(ix,i)*uEMEP%mw(iix)!flux through "East" face (Right)
+       xx=xx+xm2(i,j)*fluxx(ix,i-1)*uEMEP%mw(iix)!flux through 
+    end do
+
+    xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. all outgoing flux 
+    f_in=max(0.0,x)+max(0.0,xx)!positive part. all incoming flux
+    inv_tot=1.0/(xn+f_in+1.e-20)!incoming dilutes
+
+    x =max(0.0,x)*inv_tot!dilution factor due to flux through "East" face (Right)
+    xx=max(0.0,xx)*inv_tot!dilution factor due to flux through "West" face (Left)
+
+    do dy=-uEMEP%dist,uEMEP%dist
+       do dx=-uEMEP%dist,uEMEP%dist
+          do isec_poll=1,uEMEP%Nsec_poll
+             loc_frac(isec_poll,dx,dy,i,j,k) = loc_frac(isec_poll,dx,dy,i,j,k) *xn *inv_tot
+          enddo
+          if(dx==0 .and. dy==0)cycle
+          if(x>0.0.and.dx<uEMEP%dist)then
+             do isec_poll=1,uEMEP%Nsec_poll
+                loc_frac(isec_poll,dx,dy,i,j,k) = loc_frac(isec_poll,dx,dy,i,j,k)+ loc_frac_ext(isec_poll,dx+1,dy,i+1,j)*x
+             enddo
+          endif
+          if(xx>0.0.and.dx>uEMEP%dist-1)then
+             do isec_poll=1,uEMEP%Nsec_poll
+                loc_frac(isec_poll,dx,dy,i,j,k) = loc_frac(isec_poll,dx,dy,i,j,k)+ loc_frac_ext(isec_poll,dx-1,dy,i-1,j)*xx
+             enddo
+          endif
+       enddo
+    enddo
+
+  end subroutine uemep_adv_x
 
 end module Advection_ml

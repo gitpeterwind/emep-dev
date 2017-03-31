@@ -887,6 +887,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
   integer :: wlen,ispc,kmax
   integer,save :: n_Local_Pollutant, n_Total_Pollutant,&
        n_Local_Pollutant3D, n_Total_Pollutant3D
+  integer ::dx,dy,isec_poll
 
   timefrac = dt/3600.0
   thour = current_date%hour+current_date%seconds/3600.0
@@ -1517,7 +1518,47 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
              end do
              isec=f_2d(n)%Index/Nneighbors
              neigh=f_2d(n)%Index-isec*Nneighbors+1
-             d_2d( n, i,j,IOU_INST) = loc_frac(isec,neigh,i,j,kmax_mid)*xtot
+
+             isec_poll=isec+1
+             !temporary hardcoded
+                   if(neigh==1)then
+                      dx=0 
+                      dy=0 
+                   endif
+                   if(neigh==2)then
+                      dx=-1 
+                      dy= 0
+                   endif
+                   if(neigh==3)then
+                      dx= 1
+                      dy= 0
+                   endif
+                   if(neigh==5)then
+                      dx= 0
+                      dy=-1
+                   endif
+                   if(neigh==4)then
+                      dx= 0
+                      dy= 1
+                   endif
+                   if(neigh==8)then
+                      dx= 1
+                      dy= 1
+                   endif
+                   if(neigh==9)then
+                      dx=-1
+                      dy= 1
+                   endif
+                   if(neigh==6)then
+                      dx= 1
+                      dy=-1
+                   endif
+                   if(neigh==7)then
+                      dx=-1 
+                      dy=-1 
+                   endif
+             d_2d( n, i,j,IOU_INST) = loc_frac(isec_poll,dx,dy,i,j,kmax_mid)*xtot
+
           end do
        end do
        n_Local_Pollutant=n
@@ -1886,6 +1927,44 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
     case("Local_Pollutant3D")   ! for uEMEP, under development
        isec=f_3d(n)%Index/Nneighbors
        neigh=f_3d(n)%Index-isec*Nneighbors+1
+             isec_poll=isec+1
+             !temporary hardcoded
+                   if(neigh==1)then
+                      dx=0 
+                      dy=0 
+                   endif
+                   if(neigh==2)then
+                      dx=-1 
+                      dy= 0
+                   endif
+                   if(neigh==3)then
+                      dx= 1
+                      dy= 0
+                   endif
+                   if(neigh==5)then
+                      dx= 0
+                      dy=-1
+                   endif
+                   if(neigh==4)then
+                      dx= 0
+                      dy= 1
+                   endif
+                   if(neigh==8)then
+                      dx= 1
+                      dy= 1
+                   endif
+                   if(neigh==9)then
+                      dx=-1
+                      dy= 1
+                   endif
+                   if(neigh==6)then
+                      dx= 1
+                      dy=-1
+                   endif
+                   if(neigh==7)then
+                      dx=-1 
+                      dy=-1 
+                   endif
       do l=1,num_lev3d
         k=lev3d(l)
         do j=1,ljmax
@@ -1897,7 +1976,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
                     *roa(i,j,k,1)*1.E9 !for ug/m3
 !                *(dA(k)+dB(k)*ps(i,j,1))/GRAV !for mg/m2
              end do
-             d_3d(n,i,j,l,IOU_INST) = loc_frac(isec,neigh,i,j,k)*xtot
+             d_3d(n,i,j,l,IOU_INST) = loc_frac(isec_poll,dx,dy,i,j,k)*xtot
           end do
         end do
       end do
