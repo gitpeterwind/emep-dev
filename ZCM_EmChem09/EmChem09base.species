@@ -58,7 +58,8 @@ C2H4,1,C2H4,xx,xx,xx,0,0,0,xx,xx,,!
 C3H6,1,C3H6,xx,xx,xx,0,0,0,xx,xx,,!
 OXYL,1,oC6H4(CH3)CH3,xx,xx,xx,0,0,0,xx,xx,,!
 C5H8,1,CH2=HCC=CH2CH3,xx,xx,xx,0,0,0,xx,BVOC,,!
-APINENE,1,C10H16,xx,xx,xx,0,0,0,xx,BVOC,,!
+APINENE,1,C10H16,xx,xx,xx,0,0,0,xx,MONOTERP,,! 
+BIOTERP,1,C10H16,xx,xx,xx,0,0,0,xx,BVOC,,! Helper species for emissions,
 CH3O2H,1,CH3O2H,xx,ROOH,xx,0,0,0,xx,ROOH,,!
 C2H5OOH,1,C2H5OOH,xx,ROOH,xx,0,0,0,xx,ROOH,,!
 BURO2H,1,secC4H9O2H,xx,xx,xx,0,0,0,xx,ROOH,,"!(butane RO2 + ho2)"

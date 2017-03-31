@@ -153,6 +153,222 @@ info on unused variables, etc.
 TAGS. svn does not have the same tagging system as cvs. For now, record
 changes here (and when committing svn), and Dave will tag as required
 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+10th Mar 2017 Dave  rv4_12beta
+
+BIG CHANGE FOR GLOBAL BVOC and also some structural changes
+
+1)  emep_Config_mod.f90 - ** NEW **
+
+  - will take over the non-constant stuff from ModelConstants one day
+  - designed to ease merge of emep with ESX and BoxChem (we have an
+    esx_Config and Box_Config also
+  - currently just has:
+       PBL type - with ZiMin, ZiMAN and HmixMethod
+       EmBio type, with GlobBvocEmis, IsopFac, TerpFac
+
+  BLPhysics_ml
+  Met_ml
+  ModelConstants_ml
+
+  - all modified to use emep_Config_mod
+
+  config_EMEPSTD.nml - just added commented out example for PBL%ZiMin
+
+  Note: The _mod suffix is intended also for the merge with ESX/BoxChem - 
+        - I will use it to denote modules which have been updated/merged.
+
+2) Biogenic changes
+
+Biogenics_ml
+
+  - Added MEGAN_ml within to look after MEGAN-like global BVOC
+    (working version. Tripples global isoprene if used. Will be
+     improved, but this should be the new default.)
+  - now uses BIOTERP for terpene emissions, since APINENE is just one of
+    many possible terpenes.
+
+run.pl - linked to Megan4Emep.nc file
+
+ZCM_EmChem09/EmChem09base.species/reactions - modified with BIOTERP
+
+3) Wesely changes
+
+Wesely_ml renamed to GasParticleCoeffs_ml
+  - since it has less and less to do with Wesely, and for future ESX merge
+
+4) GenChem changes
+
+  - added option of variable yields on RHS of equations, with |YA_xx| notation, e.g.
+    coded for gas and aerosol yields so far, e.g. to allow:
+     A + B = |YG_isopO3| gas-phase-products + |YA_isopO3| aerosol-phase-products 
+    Needs more work.
+
+5) Name changes
+
+  Chem_ml -> ChemFields_ml, since it contained ChemFields_ml!
+
+  CM_ChemSpecs_tmp.f90 ->  ChemSpecs_wrapper.f90 to be slightly more explicit
+         and to avoid the mistake of rm CM_* and thinking only GenChem files
+         will be removed
+
+6) Defaults for n2o5Hydrolysis set to Smix, not SmixTen
+   (THIS WILL CHANGE RESULTS IF USERS HAD FORGOTTEN TO EXPLICITLY SET Smix!)
+
+
+  Makefile.SRCS - adapted to these changes
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+24th Feb 2017 Peter
+
+NetCDF_ml - fixed bug with GOBAL_SOILNOx which had been zero since ???
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+24th Feb 2017 Peter
+
+Pre-advection of ColumnSources.
+Define USE_PreADV=T in config to activate. (otherwise no effect).
+The emissions from ColumnSources are distributed along a line.
+The length and direction of the line is defined according to winds at each level.
+The line is "one-dimensional" in the 2D layer.
+The wind is defind only at origin (emission source), it is not varying along 
+the line. The number of gridcells on the line is equal to the Courant number in 
+each direction (nearest integer larger than C).
+
+This is to avoid the problem of holes in the concentration when there are 
+strong wind, since the advection will move pollutants far away, while emissions
+are put into the atmosphere only every dt_advec.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+22nd Feb 2017 Dave
+
+ModelConstants_ml
+Runchem_ml
+
+  - Added DEBUG%datetxt - to add a date string which  can be accessed from
+     other modules while debugging. Saves the need for TimeDate_ml, 
+     print_date etc.
+
+Wesely_ml
+  - massive expansion in number of species to cope with 2017 CRI
+    chemistry. No change in resuls for EmChem09 though.
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21st Feb 2017 Dave
+
+Small changes
+
+My_Derived_ml.f90
+ -  Removed n1 from print - was not set when DEBUG turned on
+
+Setup_1d_ml.f90 
+ - Increased length of specname and size of d2index
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+15th Feb 2017 Peter
+
+The new interpolation method (9th feb) was switched off. Switched on now.
+Also improved the selection of data to be read in, as it was reading way too much 
+for lon lat grids, thereby wasting lots of memory.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+15th Feb 2017 Peter
+
+Removed the diagnostic "natso2" from the old system: 
+it was producing a divide by zero.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+10th Feb 2017 Peter
+
+Removed NTERM (and assign_NTERM). Was not really used.
+Allow (eventually) to set hours for start- and enddate in config file.
+NB: run.pl changed (slightly), line 1092:
+        ."  enddate   = ".date2str($enddate   ,"%Y,%m,%d,000024,\n")
+
+NetCDF_ml: GetCDF_modelgrid can return units and validity (needed for Harmonie).
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+9th Feb 2017 Peter
+
+Problems from the new interpolation routine (26th Jan) for global grids:
+the cyclic longitudes where not taken correctly into account.
+
+The landuse could be numerically large than 1 (1E-15 over), and that caused
+negative deposition over south pole for PB210. Added a "max(1,lu_cover)" 
+
+Found a few (3?) gridcell at south pole (left corner) in LanduseGLC.nc with 150% 
+lu coverage. Will replace with correct one.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+7th Feb 2017 Peter
+
+Support for Lambert conical conformal projection.
+Tested for WRF metdata.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+2nd  Feb 2017  Dave
+
+Country_ml.f90 - added 199 to cope with non-specific emissions as seen 
+  in annual Emis_01degGLOBAL_2012_HTAP_MIEC.nc file.
+
+EECCA 2012 beckmark, submitted to AeroCom
+  EMEP_dev@0ecbb68_170208alvarov_RGBMEECCA_day_2012.nc
+  vilje:~alvarov/work/Benchmark/EECCA.2012/BM_dev@0ecbb68
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+1st  Feb 2017  Dave
+
+run.pl - used pattern match on EmChems to get emissplit.specials
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+26th Jan 2017 Peter
+
+Faster and better latlon to latlon interpolation: 
+integrates exactly, assuming uniform emissions over gridcells
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+23rd Jan 2017 Peter      rv4_11_5
+
+Smoother interpolation when lon and lat resolution is not the same, as in TNO7 
+emissions.
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+20th Jan 2017 Dave      rv4_11_4
+
+run.pl
+- added testv in ProgDir defaults. Most people will have several test versions.
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+17th Jan 2017 Alvaro    rv4_11_3
+
+config_BM-EECCA.nml:
+- Add missing output period (eg 'YMD') to WDEP_WANTED.
+- Missing since Oct 2016 (svn 3304)
+
+EECCA 2012 beckmark, submitted to AeroCom
+  EMEP_dev@ace01da_170117alvarov_RGBMEECCA_day_2012.nc
+  vilje:~alvarov/work/Benchmark/EECCA.2012/BM_dev@ace01da
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6th Jan 2017 Dave    rv4_11_2
+
+Testing tags
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+5th Jan 2017 Peter   rv4_11_0
+
+Updated run.pl with the SLURM queue commands for Stallo.
+Removed links to natso2 (use DMS in config instead)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+5th Jan 2017 Dave   rv4_11_0
+
+Re-started tags. We need something to keep track of model changes in
+a simple way - as had with svnversion. 
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 28th Jan 2017 Peter
 

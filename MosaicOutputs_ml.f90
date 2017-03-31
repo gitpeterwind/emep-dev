@@ -9,6 +9,7 @@ use ChemGroups_ml,    only: chemgroups
 use DerivedFields_ml, only: f_2d, d_2d
 use EcoSystem_ml,     only: NDEF_ECOSYSTEMS, DEF_ECOSYSTEMS, EcoSystemFrac, &
                             FULL_ECOGRID, FULL_LCGRID, Is_EcoSystem
+use GasParticleCoeffs_ml,  only: NDRYDEP_CALC, CDDEP_O3
 use Io_Progs_ml,      only: datewrite
 use LandDefs_ml,      only: LandDefs, LandType, Check_LandCoverPresent ! e.g. "CF"
 use Landuse_ml,       only: LandCover ! for POD
@@ -22,7 +23,6 @@ use SmallUtils_ml,    only: find_index
 use SubMet_ml,        only: Sub
 use TimeDate_ml,      only: current_date, effectivdaynumber, print_date
 use Units_ml,         only: Units_Scale,Group_Scale,group_umap
-use Wesely_ml,        only: NDRYDEP_CALC, CDDEP_O3
 
 implicit none
 private

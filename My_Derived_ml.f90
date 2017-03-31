@@ -368,7 +368,7 @@ subroutine Init_My_Deriv()
 
   do n = 1, nOutputVegO3
     VEGO3_OUTPUTS(n) = OutputVegO3(n)
-    if(debug0)  write(*,*) "VEGO3 NUMS ", n, n1, trim(OutputVegO3(n)%name) 
+    if(debug0)  write(*,*) "VEGO3 NUMS ", n, trim(OutputVegO3(n)%name) 
   end do
   if(MasterProc)call WriteArray(VEGO3_OUTPUTS(:)%name,nOutputVegO3," VEGO3 OUTPUTS:")
   call Add_MosaicVEGO3(nOutVEGO3) ! nVEGO3 is output, excluding missing LC types

@@ -7,10 +7,10 @@ Module GridValues_ml
 ! Nomenclature:
 ! fulldomain is the largest grid, usually where metdata is defined.
 ! rundomain is a grid where the run is performed, smaller than fulldomain.
+! subdomain: the domain covered by one MPI process or processor.
 ! restricted domain is a grid smaller than rundomain, where data is outputed;
 !  (the restricted domains are for instance, fullrun_DOMAIN,month_DOMAIN,
 !  day_DOMAIN,hour_DOMAIN).
-! subdomain: the domain covered by one MPI process or processor.
 !
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 
@@ -28,17 +28,16 @@ use MPI_Groups_ml!    , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_IN
                  !             MPI_COMM_CALC, MPI_COMM_WORLD, MPISTATUS, IERROR, ME_MPI, NPROC_MPI,&
                  !             ME_CALC, largeLIMAX,largeLJMAX 
 use Par_ml, only : &
-     LIMAX,LJMAX,  & ! max. possible i, j in this domain
-     limax,ljmax,        & ! actual max.   i, j in this domain
-     li0,li1,lj0,lj1,    & ! for debugging TAB
      GIMAX,GJMAX,        & ! Size of rundomain
-     IRUNBEG,JRUNBEG,    & ! start of user-specified domain
-     gi0,gj0,            & ! full-dom coordinates of domain lower l.h. corner
-     gi1,gj1,            & ! full-dom coordinates of domain uppet r.h. corner
+     IRUNBEG,JRUNBEG,    & ! start of rundomain in fulldomain coordinates
+     gi0,gj0,            & ! rundomain coordinates of subdomain lower l.h. corner
+     gi1,gj1,            & ! rundomain coordinates of subdomain uppet r.h. corner
+     limax,ljmax,        & ! max.   i, j in this subdomain (can differ on different subdomains)
+     li0,li1,lj0,lj1,    & ! start and end of i,j excluding outer frame of rundomain. li0=1 or 2, li1=limax or limax-1 
      me,                 & ! local processor
      neighbor,WEST,EAST,SOUTH,NORTH,NOPROC,  &
      parinit,parinit_groups
-use PhysicalConstants_ml,     only: GRAV, PI, EARTH_RADIUS ! gravity, pi
+use PhysicalConstants_ml,     only: GRAV, PI,EARTH_RADIUS,deg2rad,rad2deg ! gravity, pi
 use TimeDate_ml,              only: current_date,date,Init_nmdays,nmdays
 use TimeDate_ExtraUtil_ml,    only: date2string
 use InterpolationRoutines_ml, only: inside_1234
@@ -71,7 +70,7 @@ public :: coord_check   ! normalize longitudes
 public :: &
   coord_in_gridbox,  &  ! Are coord (lon/lat) inside gridbox(i,j)?
   coord_in_processor,&  ! Are coord (lon/lat) inside local domain?
-  coord_in_domain       ! Are coord (lon/lat) inside "domain"?
+  coord_in_domain       ! Are coord (lon/lat) inside "domain" (full, run or sub)?
 
 public :: RestrictDomain !mask from full domain to rundomain
 
@@ -84,16 +83,31 @@ private :: find_poles
 
 !** 1) Public (saved) Variables from module:
 
+!Polar stereographic projection parameters
 real, public, save :: &
-     xp=0.0, yp=1.0,     & ! Coordinates of North pole (from infield)
-     fi=0.0,         & ! projections rotation angle around y axis (from infield)
+     xp=0.0, yp=1.0,     & ! Coordinates of North pole
+     fi=0.0,         & ! projections rotation angle around y axis
      AN=1.0,         & ! Distance on the map from pole to equator (No. of cells)
-     GRIDWIDTH_M=1.0,& ! width of grid at 60N, in meters (old "h")(from infield)
+     GRIDWIDTH_M=1.0,& ! width of grid at ref_latitude, in meters
      ref_latitude =60. ! latitude at which projection is true (degrees)
 
 !Rotated_Spherical grid prarameters
 real, public, save :: grid_north_pole_latitude,grid_north_pole_longitude,&
      dx_rot,dx_roti,x1_rot,y1_rot
+
+!Lambert conformal projection parameters
+real, public, save :: lon0_lambert,&!reference longitude, also called phi, at which y=0 if lat=lat0_lambert
+                      lat0_lambert,&!reference latitude, at which x=0 
+                      lat_stand1_lambert,&!standard latitude at which mapping factor=1
+                      lat_stand2_lambert,&!second standard latitude
+                      y0_lambert,&!reference y coordinate, also called rho0
+                      k_lambert,&! also called n, = sin(lat_stand1_lambert)
+                      earth_radius_lambert,&!earth_radius used to define x and y in the met file. NOT USED
+                      F_lambert,& !normalization constant = cos(dr*lat0_lambert)*tan(PI/4+dr2*lat0_lambert)**k_lambert/k_lambert
+                      x1_lambert,& !x value at i=1
+                      y1_lambert  !y value at j=1
+
+
 
 !/ Variables to define full-domain (fdom) coordinates of local i,j values,
 !  and reciprocal variables.
@@ -159,6 +173,7 @@ integer, allocatable, save, public :: k1_met(:),k2_met(:)
 real, allocatable, save, public :: x_k1_met(:)
 logical, public, save ::  External_Levels_Def=.false.
 integer, public, save :: KMAX_MET !number of vertical levels from the meteo files
+real, private :: u(2),v(2)!array for temporary use
 
 contains
 
@@ -317,6 +332,7 @@ contains
     integer :: status,ncFileID,idimID,jdimID, kdimID,timeDimID
     integer :: GIMAX_file,GJMAX_file,KMAX_file,wrf_proj_code
     real :: wrf_POLE_LAT=0.0
+    character (len = 30) ::MAP_PROJ_CHAR
 
 
     if(ME_MPI==0)then
@@ -351,6 +367,10 @@ contains
              end if
           else if(wrf_proj_code==2)then
              projection='Stereographic'     
+          else if(wrf_proj_code==1)then
+             projection='lambert'     
+             call check(nf90_get_att(ncFileID,nf90_global,"MAP_PROJ_CHAR",MAP_PROJ_CHAR))
+             write(*,*)"wrf projection: "//trim(MAP_PROJ_CHAR)          
           else
              call StopAll("Projection not recognized")  
           end if
@@ -363,6 +383,8 @@ contains
             .or.trim(projection)=='rotated_pole'.or.trim(projection)=='rotated_latitude_longitude')then
           projection='Rotated_Spherical'
        end if
+
+       if(trim(projection)=='lambert_conformal_conic'.or.trim(projection)=='Lambert Conformal')projection='lambert'
 
        write(*,*)'projection: ',trim(projection)
 
@@ -378,6 +400,18 @@ contains
              !WRF  format
              call check(nf90_inq_dimid(ncid = ncFileID, name = "south_north", dimID = jdimID))
           end if
+       elseif(trim(projection)=='lambert') then
+          status = nf90_inq_dimid(ncid = ncFileID, name = "x", dimID = idimID)
+          if(status /= nf90_noerr) then
+             !WRF  format
+             call check(nf90_inq_dimid(ncid = ncFileID, name = "west_east", dimID = idimID))
+          end if
+          status = nf90_inq_dimid(ncid = ncFileID, name = "y", dimID = jdimID)
+          if(status /= nf90_noerr) then
+             !WRF  format
+             call check(nf90_inq_dimid(ncid = ncFileID, name = "south_north", dimID = jdimID))
+          end if
+          write(*,*)'x y dimensions'
        elseif(trim(projection)==trim('lon lat')) then
           status=nf90_inq_dimid(ncid = ncFileID, name = "lon", dimID = idimID)
           if(status /= nf90_noerr) then
@@ -402,13 +436,16 @@ contains
              call check(nf90_inq_dimid(ncid = ncFileID, name = "south_north", dimID = jdimID))
           end if
        end if
-
+       
        status=nf90_inq_dimid(ncid = ncFileID, name = "k", dimID = kdimID)
        if(status /= nf90_noerr)then
           status=nf90_inq_dimid(ncid = ncFileID, name = "lev", dimID = kdimID)!hybrid coordinates
           if(status /= nf90_noerr) then
-             !WRF  format
-             call check(nf90_inq_dimid(ncid = ncFileID, name = "bottom_top", dimID = kdimID))      
+             status=nf90_inq_dimid(ncid = ncFileID, name = "hybrid", dimID = kdimID)!hybrid coordinates
+             if(status /= nf90_noerr) then
+                !WRF  format
+                call check(nf90_inq_dimid(ncid = ncFileID, name = "bottom_top", dimID = kdimID))      
+             end if
           end if
        end if
 
@@ -530,14 +567,15 @@ contains
     integer :: n,i,j,k,kk
     integer :: ncFileID,idimID,jdimID,varID
     integer :: status,South_pole,North_pole
-    real :: x1,x2,x3,x4,P0,x,y,mpi_out
-    logical::found_hybrid=.false.
+    real :: x1,x2,x3,x4,P0,x,y,mpi_out,r,t
+    logical::found_hybrid=.false.,found_metlevels=.false.
     real :: CEN_LAT, CEN_LON,P_TOP_MET, WRF_DY
-    real :: rb,rl,rp,dx,dy,dy2,glmax,glmin,v2(2),glon_fdom1,glat_fdom1
+    real :: rb,rl,rp,dx,dy,dy2,glmax,glmin,v2(2),glon_fdom1,glat_fdom1,lon,lat
     integer :: iloc_start, iloc_end,jloc_start, jloc_end
 
     real, dimension(-1:LIMAX+2,-1:LJMAX+2)::xm,xm_i_ext,xm_j_ext
     real, dimension(0:LIMAX+1,0:LJMAX+1)::lon_ext,lat_ext
+
 
     !define longitudes in interval [-180,180]
     glmin = -180.0 
@@ -584,6 +622,17 @@ contains
           !WRF  format
           call check(nf90_inq_dimid(ncid = ncFileID, name = "south_north", dimID = jdimID))
        end if
+    elseif(trim(projection)=='lambert') then
+       status = nf90_inq_dimid(ncid = ncFileID, name = "x", dimID = idimID)
+       if(status /= nf90_noerr) then
+          !WRF  format
+          call check(nf90_inq_dimid(ncid = ncFileID, name = "west_east", dimID = idimID))
+       end if
+       status = nf90_inq_dimid(ncid = ncFileID, name = "y", dimID = jdimID)
+       if(status /= nf90_noerr) then
+          !WRF  format
+          call check(nf90_inq_dimid(ncid = ncFileID, name = "south_north", dimID = jdimID))
+       end if
     elseif(trim(projection)==trim('lon lat')) then
        status=nf90_inq_dimid(ncid = ncFileID, name = "lon", dimID = idimID)
        if(status /= nf90_noerr) then
@@ -614,6 +663,11 @@ contains
     if(status /= nf90_noerr) then
        !WRF  format
        call check(nf90_get_att(ncFileID,nf90_global,"DX",GRIDWIDTH_M))
+       status = nf90_get_att(ncFileID,nf90_global,"DY",v(1))
+       if(status == nf90_noerr .and. abs(GRIDWIDTH_M-v(1))>0.01) then
+          write(*,*)'Only rectangular gridcells tested for wrf'
+          call StopAll('DX not equal DY')          
+       endif
     end if
     if(MasterProc)write(*,*)"Grid_resolution",GRIDWIDTH_M
 
@@ -668,7 +722,119 @@ contains
           end do ! i
        end do ! j
 
-    elseif(trim(projection)==trim('lon lat')) then
+    elseif(trim(projection)=='lambert') then
+       if(USE_WRF_MET_NAMES)then
+          call check(nf90_get_att(ncFileID, nf90_global, "TRUELAT1",lat_stand1_lambert ))
+          call check(nf90_get_att(ncFileID, nf90_global, "TRUELAT2",lat_stand2_lambert ))
+          call check(nf90_get_att(ncFileID, nf90_global, "STAND_LON",lon0_lambert ))
+          earth_radius_lambert = earth_radius
+       else
+          status = nf90_get_att(ncFileID,nf90_global,"latitude_of_projection_origin",lat0_lambert)!reference latitude, at which x=0 
+          if(status /= nf90_noerr) then
+             call check(nf90_inq_varid(ncid = ncFileID, name = "projection_lambert", varID = varID))
+             call check(nf90_get_att(ncFileID,varID,"latitude_of_projection_origin",lat0_lambert))
+          endif
+          status = nf90_get_att(ncFileID,nf90_global,"longitude_of_central_meridian",lon0_lambert)!reference longitude
+          if(status /= nf90_noerr) then
+             call check(nf90_inq_varid(ncid = ncFileID, name = "projection_lambert", varID = varID))
+             call check(nf90_get_att(ncFileID,varID,"longitude_of_central_meridian",lon0_lambert))
+          endif
+          status = nf90_get_att(ncFileID,nf90_global,"earth_radius",earth_radius_lambert)!
+          if(status /= nf90_noerr) then
+             call check(nf90_inq_varid(ncid = ncFileID, name = "projection_lambert", varID = varID))
+             call check(nf90_get_att(ncFileID,varID,"earth_radius",earth_radius_lambert))
+          endif
+          !status = nf90_get_att(ncFileID,nf90_global,"standard_parallel",(/lat_stand1_lambert,lat_stand2_lambert/))!standard latitude at which mapping factor=1
+          !default lat_stand1_lambert=lat_stand2_lambert=lat0_lambert
+          lat_stand1_lambert = lat0_lambert
+          lat_stand2_lambert = lat0_lambert
+       endif
+       if(abs(lat_stand1_lambert-lat_stand2_lambert)>1.E-4)then
+          k_lambert = log(cos(deg2rad*lat_stand1_lambert)/cos(deg2rad*lat_stand2_lambert))/&
+               (log(tan(0.25*PI+0.5*deg2rad*lat_stand2_lambert)/tan(0.25*PI+0.5*deg2rad*lat_stand1_lambert)))
+           lat0_lambert = rad2deg*asin(k_lambert)
+           if(me==0)write(*,*)'first true latitude ',lat_stand1_lambert
+           if(me==0)write(*,*)'second true latitude ',lat_stand2_lambert
+           if(me==0)write(*,*)'latitude of projection origin calculated to ',lat0_lambert
+        else
+           k_lambert = sin(deg2rad*lat0_lambert)! also called n
+        endif
+        F_lambert = cos(deg2rad*lat_stand1_lambert) * tan(0.25*PI+0.5*deg2rad*lat_stand1_lambert)**k_lambert /k_lambert!normalization constant
+        y0_lambert = F_lambert*tan(0.25*PI-0.5*deg2rad*lat0_lambert)**k_lambert!reference y coordinate, also called rho0 
+        if(USE_WRF_MET_NAMES)then
+           call check(nf90_inq_varid(ncid = ncFileID, name = "XLONG", varID = varID))
+           call check(nf90_get_var(ncFileID,varID,v,count=(/1/)))
+           call check(nf90_inq_varid(ncid = ncFileID, name = "XLAT", varID = varID))
+           call check(nf90_get_var(ncFileID,varID,u,count=(/1/)))
+        else
+           status = nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID)
+           if(status /= nf90_noerr)then
+              call check(nf90_inq_varid(ncid = ncFileID, name = "longitude", varID = varID))
+           endif
+           call check(nf90_get_var(ncFileID,varID,v,count=(/1/)))
+           x1_lambert=v(1)
+           status = nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID)
+           if(status /= nf90_noerr)then
+              call check(nf90_inq_varid(ncid = ncFileID, name = "latitude", varID = varID))
+           endif
+           call check(nf90_get_var(ncFileID,varID,v,count=(/1/)))
+           y1_lambert=v(1)
+        endif
+
+        x1_lambert=0.0
+        y1_lambert=0.0
+        call lb2ij(v(1),u(1),x1_lambert,y1_lambert)
+        x1_lambert = (x1_lambert-1)*GRIDWIDTH_M
+        y1_lambert = (y1_lambert-1)*GRIDWIDTH_M
+        !test that (i,j)=(1,1) has the coordinates (1,1)
+        !call lb2ij(v(1),u(1),v(2),u(2))
+        !write(*,*)v(2),u(2)
+
+
+        if(MasterProc)write(*,*)"Lambert grid resolution (m) ",GRIDWIDTH_M
+        if(MasterProc)write(*,*)"x and y at (i,j)=(1,1)",x1_lambert,y1_lambert
+        if(MasterProc)write(*,*)"y0_lambert,F_lambert ",y0_lambert,F_lambert
+
+        !make lon lat and mapping factors
+        do j = 0, LJMAX+1
+           y = (y1_lambert+(j_fdom(j)-1)*GRIDWIDTH_M)/EARTH_RADIUS
+           do i = 0, LIMAX+1
+              x = (x1_lambert+(i_fdom(i)-1)*GRIDWIDTH_M)/EARTH_RADIUS
+              r = sqrt(x*x+(y0_lambert-y)*(y0_lambert-y))
+              if(k_lambert<0.0)r = -r
+              t = atan(x/(y0_lambert-y))
+              lat_ext(i,j) = 2*rad2deg*atan((F_lambert/r)**(1.0/k_lambert))-90.0
+              lon_ext(i,j) = lon0_lambert + rad2deg*t/k_lambert              
+              !does not work for lat = -90.0
+              xm(i,j)=k_lambert*F_lambert*tan(PI*0.25-deg2rad*0.5*lat_ext(i,j))**(k_lambert-1)*0.5/(cos(PI*0.25-deg2rad*0.5*lat_ext(i,j))**2)
+              xm2(i,j) = xm(i,j)*xm(i,j)
+              xmd(i,j) = 1.0/xm2(i,j)
+              xm2ji(j,i) = xm2(i,j)
+              xmdji(j,i) = xmd(i,j)                
+           enddo
+        enddo
+        !staggered map factors
+        do j = 0, LJMAX+1
+           y = (y1_lambert+(j_fdom(j)-1+0.5)*GRIDWIDTH_M)/EARTH_RADIUS
+           do i = 0, LIMAX+1
+              x = (x1_lambert+(i_fdom(i)-1)*GRIDWIDTH_M)/EARTH_RADIUS
+              r = sqrt(x*x+(y0_lambert-y)*(y0_lambert-y))
+              if(k_lambert<0.0)r = -r
+              lat = 2*rad2deg*atan((F_lambert/r)**(1.0/k_lambert))-90.0
+              xm_i(i,j)=k_lambert*F_lambert*tan(PI*0.25-deg2rad*0.5*lat)**(k_lambert-1)*0.5/(cos(PI*0.25-deg2rad*0.5*lat)**2)
+           enddo
+        enddo
+        do j = 0, LJMAX+1
+           y = (y1_lambert+(j_fdom(j)-1)*GRIDWIDTH_M)/EARTH_RADIUS
+           do i = 0, LIMAX+1
+              x = (x1_lambert+(i_fdom(i)-1+0.5)*GRIDWIDTH_M)/EARTH_RADIUS
+              r = sqrt(x*x+(y0_lambert-y)*(y0_lambert-y))
+              if(k_lambert<0.0)r = -r
+              lat = 2*rad2deg*atan((F_lambert/r)**(1.0/k_lambert))-90.0
+              xm_j(i,j)=k_lambert*F_lambert*tan(PI*0.25-deg2rad*0.5*lat)**(k_lambert-1)*0.5/(cos(PI*0.25-deg2rad*0.5*lat)**2)
+           enddo
+        enddo
+    elseif(trim(projection)=='lon lat') then
        if(.not. USE_WRF_MET_NAMES)then
           !NB: lon and lat are stored as 1 dimensional arrays
           call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
@@ -799,7 +965,8 @@ contains
              xmdji(j,i) = xmd(i,j)                
           end do
        end do
-
+    elseif(trim(projection)=='lambert') then
+       !map factors have been computed already (above)
     else
        !map factor are already staggered
        status=nf90_inq_varid(ncid=ncFileID, name="map_factor_i", varID=varID)
@@ -871,6 +1038,7 @@ contains
        !          call check(nf90_inq_varid(ncid = ncFileID, name = "hybm", varID = varID))                 
        !          call check(nf90_get_var(ncFileID, varID,B_mid))
        status=nf90_inq_varid(ncid = ncFileID, name = "P0", varID = varID) 
+       if(status /= nf90_noerr)status=nf90_inq_varid(ncid = ncFileID, name = "p0", varID = varID) 
        if(status /= nf90_noerr)then
           status=nf90_inq_varid(ncid = ncFileID, name = "P00", varID = varID) !WRF case
           if(status /= nf90_noerr)then
@@ -899,6 +1067,7 @@ contains
                 end do
              end if
              A_bnd_met=P_TOP_MET*(1.-B_bnd_met)
+             found_metlevels=.true.
           end if
           if(MET_REVERSE_K)then
              if(MasterProc)write(*,*)"Reversed vertical levels from met, P at levels boundaries:"
@@ -910,28 +1079,53 @@ contains
           end do
        else
           call check(nf90_get_var(ncFileID, varID, P0 ))
+          if(MasterProc)write(*,*)'P0 = ',P0
           if(.not.allocated(A_bnd_met))allocate(A_bnd_met(KMAX_MET+1),B_bnd_met(KMAX_MET+1))
-          call check(nf90_inq_varid(ncid = ncFileID, name = "hyai", varID = varID))                 
-          call check(nf90_get_var(ncFileID, varID, A_bnd_met ))
-          A_bnd_met=P0*A_bnd_met!different definition in model and grid_Def
-          call check(nf90_inq_varid(ncid = ncFileID, name = "hybi", varID = varID))                 
-          call check(nf90_get_var(ncFileID, varID, B_bnd_met ))          
+          status=nf90_inq_varid(ncid = ncFileID, name = "hyai", varID = varID)
+          if(status /= nf90_noerr)then
+             call check(nf90_inq_varid(ncid = ncFileID, name = "ap", varID = varID))
+             call check(nf90_get_var(ncFileID, varID, A_bnd_met, count=(/KMAX_MET/)))!read mid values!
+             call check(nf90_inq_varid(ncid = ncFileID, name = "b", varID = varID))                 
+             call check(nf90_get_var(ncFileID, varID, B_bnd_met, count=(/KMAX_MET/) )) !read mid values!
+             A_bnd_met(KMAX_MET+1)=0.0
+             B_bnd_met(KMAX_MET+1)=1.0
+             do k=KMAX_MET,1,-1
+                A_bnd_met(k)=A_bnd_met(k+1)-2.0*(A_bnd_met(k+1)-A_bnd_met(k))!from mid to bnd values!
+                B_bnd_met(k)=B_bnd_met(k+1)-2.0*(B_bnd_met(k+1)-B_bnd_met(k))!from mid to bnd values!
+             end do
+
+             if(MasterProc)write(*,*)'Met hybrid vertical coordinates, P at levels boundaries:'
+             do k=1,KMAX_MET+1
+                if(MasterProc)write(*,44)k, A_bnd_met(k)+P0*B_bnd_met(k)
+             end do
+             found_metlevels=.true.
+
+          else
+             call check(nf90_get_var(ncFileID, varID, A_bnd_met ))
+             A_bnd_met=P0*A_bnd_met!different definition in model and grid_Def
+             call check(nf90_inq_varid(ncid = ncFileID, name = "hybi", varID = varID))                 
+             call check(nf90_get_var(ncFileID, varID, B_bnd_met ))          
+             found_metlevels=.true.
+          end if
        end if
        if(External_Levels_Def)then
           !model levels defined from external text file
-          if(MasterProc)write(*,*)'reading external hybrid levels from ',trim(filename_vert)
+          if(MasterProc)write(*,*)'reading external hybrid levels from ',trim(filename_vert),A_bnd_met(kMAX_met-20),B_bnd_met(kMAX_met+1)
           P0=Pref
           do k=1,KMAX_MID+1
              read(IO_TMP,*)kk,A_bnd(k),B_bnd(k)
              if(kk/=k.and.MasterProc)write(*,*)'WARNING: unexpected format for vertical levels ',k,kk
           end do
-          if(status /= nf90_noerr)then
+             if(me==0)write(*,*)'A_bnd_met A2',A_bnd_met(kMAX_met-20),B_bnd_met(kMAX_met+1)
+       
+          if(.not. found_metlevels)then
              !assume levels from metdata are defined in filename_vert
              if(.not.allocated(A_bnd_met))allocate(A_bnd_met(KMAX_MET+1),B_bnd_met(KMAX_MET+1))
              A_bnd_met=A_bnd
              B_bnd_met=B_bnd
           end if
-       else
+
+      else
           !vertical model levels are the same as in meteo 
           A_bnd=A_bnd_met
           B_bnd=B_bnd_met
@@ -1163,7 +1357,7 @@ contains
 
   subroutine lb2ijm(imax,jmax,lon,lat,xr2,yr2,fi2,an2,xp2,yp2)
     !-------------------------------------------------------------------! 
-    !   calculates coordinates xr2, yr2 (real values) from glat(lat),glon(long) 
+    !   calculates coordinates xr2, yr2 (real values) from lat and lon 
     !
     !   input: glon,glat:   coord. of the polar point in grid1
     !          an2:   number of grid-distances from pole to equator in grid2.
@@ -1277,10 +1471,11 @@ contains
     end if
   end subroutine lb2ijm
 
-subroutine lb2ij_real(gl2,gb2,xr2,yr2,fi2,an2,xp2,yp2)
+subroutine lb2ij_real(gl,gb,xr2,yr2,fi2,an2,xp2,yp2)
 !Note: this routine is not yet CPU optimized
 !-------------------------------------------------------------------! 
-!      calculates coordinates xr2, yr2 (real values) from gl(lat),gb(long) 
+!      calculates coordinates xr2, yr2 (real values) from gl(lon),gb(lat) 
+!      NB: xr2, yr2 are given in FULLDOMAIN coordinates
 !
 !      input:  xp2,yp2:   coord. of the polar point in grid2
 !              an2:   number of grid-distances from pole to equator in grid2.
@@ -1291,20 +1486,19 @@ subroutine lb2ij_real(gl2,gb2,xr2,yr2,fi2,an2,xp2,yp2)
 !      output: xr2(i1,j1): i coordinates in grid2 
 !              yr2(i1,j1): j coordinates in grid2 
 !-------------------------------------------------------------------! 
-  real, intent(in)    :: gl2,gb2 
+  real, intent(in)    :: gl,gb 
   real, intent(out)   :: xr2,yr2
   real, intent(in), optional    :: fi2,an2,xp2,yp2
 
   real  :: fi_loc,an_loc,xp_loc,yp_loc
-  real, parameter :: PI=3.14159265358979323,dr=PI/180.0,dri= 180.0/PI
-  real    :: PId4,dr2,dist,dist2,dist3
+  real, parameter :: PI=3.14159265358979323,PId4=PI/4.0,dr=PI/180.0,dri= 180.0/PI,dr2=dr*0.5
+  real    :: dist,dist2,dist3,r
   integer ::i,j,ip1,jp1, ir2, jr2
   real ::xscen ,yscen,zsycen,zcycen ,zxmxc,zsxmxc,zcxmxc,zsysph,zsyrot,yrot,zsxrot,zcysph,zcyrot,zcxrot,xrot
+!  real,save :: r_save,lat_save=-999.0
 
   select case (projection)
   case('Stereographic')
-    PId4  =PI/4.      
-    dr2   =dr*0.5   ! degrees to radians /2
     fi_loc=fi
     an_loc=an
     xp_loc=xp
@@ -1315,17 +1509,17 @@ subroutine lb2ij_real(gl2,gb2,xr2,yr2,fi2,an2,xp2,yp2)
     if(present(xp2))xp_loc=xp2
     if(present(yp2))yp_loc=yp2
 
-    xr2=xp_loc+an_loc*tan(PId4-gb2*dr2)*sin(dr*(gl2-fi_loc))
-    yr2=yp_loc-an_loc*tan(PId4-gb2*dr2)*cos(dr*(gl2-fi_loc))
+    xr2=xp_loc+an_loc*tan(0.25*PI-0.5*deg2rad*gb)*sin(deg2rad*(gl-fi_loc))
+    yr2=yp_loc-an_loc*tan(0.25*PI-0.5*deg2rad*gb)*cos(deg2rad*(gl-fi_loc))
 
   case('lon lat')           ! lon-lat grid    
-    if((gl2-glon(1,1))+i_fdom(1)*(glon(2,1)-glon(1,1))<360.0)then
-       xr2=(gl2-glon(1,1))/(glon(2,1)-glon(1,1))+i_fdom(1)
+    if((gl-glon(1,1))+i_fdom(1)*(glon(2,1)-glon(1,1))<360.0)then
+       xr2=(gl-glon(1,1))/(glon(2,1)-glon(1,1))+i_fdom(1)
     else          
-       xr2=(gl2-360.0-glon(1,1))/(glon(2,1)-glon(1,1))+i_fdom(1)
+       xr2=(gl-360.0-glon(1,1))/(glon(2,1)-glon(1,1))+i_fdom(1)
     end if
     if(xr2<0.5)xr2=xr2+360.0/(glon(2,1)-glon(1,1))
-    yr2=(gb2-glat(1,1))/(glat(1,2)-glat(1,1))+j_fdom(1)
+    yr2=(gb-glat(1,1))/(glat(1,2)-glat(1,1))+j_fdom(1)
 
   case('Rotated_Spherical') ! rotated lon-lat grid
     !       dx_roti=20.0
@@ -1339,11 +1533,11 @@ subroutine lb2ij_real(gl2,gb2,xr2,yr2,fi2,an2,xp2,yp2)
     zsycen = sin(dr*yscen)
     zcycen = cos(dr*yscen)
     !
-    zxmxc  = dr*(gl2 - xscen)
+    zxmxc  = dr*(gl - xscen)
     zsxmxc = sin(zxmxc)
     zcxmxc = cos(zxmxc)
-    zsysph = sin(dr*gb2)
-    zcysph = cos(dr*gb2)
+    zsysph = sin(dr*gb)
+    zcysph = cos(dr*gb)
     zsyrot = zcycen*zsysph - zsycen*zcysph*zcxmxc
     zsyrot = amax1(zsyrot,-1.0)
     zsyrot = amin1(zsyrot,+1.0)
@@ -1363,6 +1557,22 @@ subroutine lb2ij_real(gl2,gb2,xr2,yr2,fi2,an2,xp2,yp2)
     xr2=(xrot-x1_rot)*dx_roti+1
     yr2=(yrot-y1_rot)*dx_roti+1
 
+  case('lambert')           ! lambert projection
+!     if(gb==lat_save)then       
+!        r=r_save
+!     else
+     !r depends only on latitude -> reuse save a little, but not worth it?
+        r = F_lambert*tan(PId4-dr2*gb)**k_lambert 
+!        r_save=r
+!        lat_save=gb
+!     endif
+     xr2 = r*sin(dr*k_lambert*(gl-lon0_lambert))
+     yr2 = y0_lambert - r*cos(dr*k_lambert*(gl-lon0_lambert))
+
+    !convert from x,y (erath radius=1) to i,j
+     xr2=(xr2*EARTH_RADIUS-x1_lambert)/GRIDWIDTH_M + 1
+     yr2=(yr2*EARTH_RADIUS-y1_lambert)/GRIDWIDTH_M + 1
+
   case default ! general projection, Use only info from glon_fdom and glat_fdom
     !first find closest by testing all gridcells. 
     call StopAll('lb2ij: conversion broken 27 Oct 2015, Peter')
@@ -1372,9 +1582,9 @@ subroutine lb2ij_real(gl2,gb2,xr2,yr2,fi2,an2,xp2,yp2)
     dist=10.0!max distance is PI
     do j=1,JJFULLDOM
       do i=1,IIFULLDOM
-!       if(dist>great_circle_distance(gl2,gb2,glon_fdom(i,j) &
+!       if(dist>great_circle_distance(gl,gb,glon_fdom(i,j) &
 !           ,glat_fdom(i,j)))then
-!         dist=great_circle_distance(gl2,gb2,glon_fdom(i,j) &
+!         dist=great_circle_distance(gl,gb,glon_fdom(i,j) &
 !              ,glat_fdom(i,j))
 !         xr2=i
 !         yr2=j
@@ -1390,7 +1600,7 @@ subroutine lb2ij_real(gl2,gb2,xr2,yr2,fi2,an2,xp2,yp2)
     !  /  |  \
     ! A---D---B
     !
-    !A=(i,j) ,B=(i+1,j), C=(gl2,gb2)
+    !A=(i,j) ,B=(i+1,j), C=(gl,gb)
     !dist=AC, dist2=BC, dist3=AB
     !AD=(dist*dist+dist3*dist3-dist2*dist2)/(2*dist3)
     !
@@ -1398,7 +1608,7 @@ subroutine lb2ij_real(gl2,gb2,xr2,yr2,fi2,an2,xp2,yp2)
     jr2 = nint(yr2)
     ip1=ir2+1
     if(ip1>IIFULLDOM)ip1=ip1-2
-!      dist2=great_circle_distance(gl2,gb2,glon_fdom(ip1,jr2),glat_fdom(ip1,jr2))
+!      dist2=great_circle_distance(gl,gb,glon_fdom(ip1,jr2),glat_fdom(ip1,jr2))
 !      dist3=great_circle_distance( glon_fdom(ir2,jr2), &
 !           glat_fdom(ir2,jr2), &
 !           glon_fdom(ip1,jr2), &
@@ -1410,7 +1620,7 @@ subroutine lb2ij_real(gl2,gb2,xr2,yr2,fi2,an2,xp2,yp2)
     jp1=jr2+1
     if(jp1>JJFULLDOM)jp1=jp1-2
 
-!      dist2=great_circle_distance(gl2,gb2,glon_fdom(ir2,jp1),glat_fdom(ir2,jp1))
+!      dist2=great_circle_distance(gl,gb,glon_fdom(ir2,jp1),glat_fdom(ir2,jp1))
     !GFORTRAN CHANGE
 !      dist3=great_circle_distance( glon_fdom(ir2,jr2), &
 !           glat_fdom(ir2,jr2), &
@@ -1421,21 +1631,21 @@ subroutine lb2ij_real(gl2,gb2,xr2,yr2,fi2,an2,xp2,yp2)
 
   end select
 end subroutine lb2ij_real
-subroutine lb2ij_int(gl2,gb2,ix,iy)
-  real, intent(in)    :: gl2,gb2
+subroutine lb2ij_int(gl,gb,ix,iy)
+  real, intent(in)    :: gl,gb !gl=lon, gb=lat
   integer, intent(out):: ix,iy
   real ::x,y
 ! stations can easily be defined exactly at gridcell boundaries
-! 1.0E-7 is to ensure same rounding for all CPUs
-  call lb2ij_real(gl2,gb2,x,y)
+! 1.0E-7 is to ensure same rounding for all situations
+  call lb2ij_real(gl,gb,x,y)
   ix=nint(x+1.0E-7)
   iy=nint(y+1.0E-7)
 end subroutine lb2ij_int 
 
   subroutine ij2lbm(imax,jmax,glon,glat,fi,an,xp,yp)
     !-------------------------------------------------------------------! 
-    !      calculates l(lat),b(long) (geographical coord.) 
-    !      in every grid point. 
+    !      calculates lon and lat (geographical coord.) 
+    !      in every grid point for a polarsteraographic projection. 
     !
     !      input:  xp,yp:   coord. of the polar point.
     !              an:      number of grid-distances from pole to equator.
@@ -1485,7 +1695,7 @@ end subroutine lb2ij_int
 
   subroutine ij2lb(i,j,lon,lat,fi,an,xp,yp)
     !-------------------------------------------------------------------! 
-    !      calculates l(lat),b(long) (geographical coord.) 
+    !      calculates lon and lat (geographical coord.) 
     !      from i,j coordinates in polar stereographic projection 
     !
     !      input:  i,j
@@ -1538,8 +1748,10 @@ end subroutine lb2ij_int
   subroutine ij2ijm(in_field,imaxin,jmaxin,out_field,imaxout,jmaxout, &
        fiin,anin,xpin,ypin,fiout,anout,xpout,ypout)
 
-    !   Converts data (in_field) stored in coordinates (fiin,anin,xpin,ypin) 
-    !   into data (out_field) in coordinates (fiout,anout,xpout,ypout)
+    !   Converts data (in_field) stored in polar stereo coordinates 
+    !   with parameters "fiin,anin,xpin,ypin,"
+    !   into data (out_field) in polar stereo coordinates with parameters 
+    !   "fiout,anout,xpout,ypout"
     !   pw august 2002
 
 
@@ -1766,7 +1978,7 @@ end subroutine lb2ij_int
           k_met=KMAX_MET-1
           p_met=0.5*(A_bnd_met(k_met+1)+A_bnd_met(k_met))+Pref*0.5*(B_bnd_met(k_met+1)+B_bnd_met(k_met))
           do while(p_met>P_mod.and.k_met>1)
-             ! write(*,*)P_mod,p_met
+             !if(me==0) write(*,*)P_mod,p_met
              k_met=k_met-1
              p_met=0.5*(A_bnd_met(k_met+1)+A_bnd_met(k_met))+Pref*0.5*(B_bnd_met(k_met+1)+B_bnd_met(k_met))
           end do
@@ -1791,6 +2003,27 @@ end subroutine lb2ij_int
     CALL MPI_BCAST(x_k1_met,8*KMAX_MID,MPI_BYTE,0,MPI_COMM_WORLD,IERROR)
 
   end subroutine make_vertical_levels_interpolation_coeff
+
+
+  subroutine lambert2lb(x,y,gl,gb,lon0,y0,k,F)
+    real, intent(in) ::x,y,lon0,y0,k,F
+    real, intent(out)::gl,gb
+    real ::r,t
+    r = sqrt(x*x+(y0-y)*(y0-y))
+    if(k<0.0)r = -r
+    t = atan(x/(y0-y))
+    gb = 2*180./PI*atan((F/r)**(1.0/k))-90.0
+    gl = lon0 + 180./PI*t/k
+  end subroutine lambert2lb
+  subroutine lb2lambert(x,y,gl,gb,lon0,y0,k,F)
+    real, intent(in) ::gl,gb,lon0,y0,k,F
+    real, intent(out)::x,y
+    real ::r
+     r = F*tan(0.25*PI-0.5*deg2rad*gb)**k!depends only on latitude ->reuse!  (about 100 cycles/**operation?)
+     x = r*sin(deg2rad*k*(gl-lon0))
+     y = y0 - r*cos(deg2rad*k*(gl-lon0))
+
+  end subroutine lb2lambert
 
   subroutine lb_rot2lb(xsph,ysph,xrot,yrot,grid_north_pole_longitude,grid_north_pole_latitude)
     !

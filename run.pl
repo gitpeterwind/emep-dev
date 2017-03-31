@@ -3,18 +3,20 @@
 #Common script for Njord, Stallo.
 #$STALLO=1
 #___________________________________________________________________
+
 #Queue system commands start with #SBATCH for Stallo and #PBS for Vilje (these are not comments!)
+# to activate take out one # from ##
 #___________________________________________________________________
 #Stallo SLURM queue commands
 #submit with:  sbatch run.pl
 #for express queue (max 4 hours):  sbatch --qos=devel run.pl
 #Queue system commands start with #SBATCH 
 #SBATCH -A nn2890k
-#SBATCH --partition multinode 
-#SBATCH --time=12:00:00
-##SBATCH --nodes=2
 #SBATCH --ntasks=40
-#SBATCH --mem=24000
+#SBATCH --mem=32000
+#SBATCH --time=4:0:0
+#activate the following line for runs which last longer than 48 hours AND use more than one node
+##SBATCH --partition=multinode 
 #SBATCH --job-name=emep
 #SBATCH --output=run.%j.out
 
@@ -35,7 +37,6 @@
 #___________________________________________________________________
 
 
-#___________________________________________________________________
 
 ######################################################################
 # Features
@@ -81,8 +82,8 @@ $| = 1; # autoflush STDOUT
 #Choose one machine
 #my $VILJE=0;  #1 if Ve or Vilje is used
 my ( $STALLO, $VILJE ) = (0) x 2;
-$STALLO=1; #1 if stallo is used
-foreach my $key  (qw ( PBS_O_HOST HOSTNAME PBS_SERVER MACHINE )) {
+
+foreach my $key  (qw ( PBS_O_HOST HOSTNAME PBS_SERVER MACHINE SLURM_SUBMIT_HOST)) {
  next unless defined $ENV{$key};
  $STALLO = 1 if $ENV{$key} =~/stallo/;
  $VILJE  = 1 if $ENV{$key} =~/vilje/;
@@ -114,10 +115,10 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
-# ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3306","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
- ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3306","EmChem09soa","EMEPSTD","EMEPSTD","EMEP01",0);
-# ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3306","EmChem09soa","EMEPSTD","EMEPSTD","GLOBAL05",0);
+
+ ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_11_3","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
 #($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3074","EmChem09soa","EMEPGLOB","EMEPSTD","GLOBAL",0);
+ ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("emep-dev","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
 
 my %BENCHMARK;
 # OpenSource 2008
@@ -309,8 +310,10 @@ my $VBS   = 0;
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/emep-mscw";   # input of source-code
-#   $ProgDir  = "/prod/forecast/emep/eemep/src/Unimod.$testv" if $eCWF and ($USER eq $FORCAST);
-#   $ProgDir  = "$CWF_DIR/src/Unimod.$testv" if $CWF and -d $CWF_DIR;
+
+   $ProgDir  = "$HOMEROOT/$USER/emep-mscw/$testv";   # input of source-code for testv
+   $ProgDir  = "/prod/forecast/emep/eemep/src/Unimod.$testv" if $eCWF and ($USER eq $FORCAST);
+   $ProgDir  = "$CWF_DIR/src/Unimod.$testv" if $CWF and -d $CWF_DIR;
 my $ChemDir  = "$ProgDir/ZCM_$Chem";
 my $Specials = "specials";  # default
 #$Specials = "TSAP_Jul2012";  # used for TSAP runs in July 2012
@@ -825,9 +828,10 @@ foreach my $scenflag ( @runs ) {
     # INERIS special! nox and pm. Take from 2010 IIASA
     #if ( $INERIS_FACS && -e "$timeseries/emissplit.specials.$poll.2010" ) {
 
-    #J16 change. Added EmChem09soa here to use default EMISSPLIT
     #J16 if (($Chem eq "EmChem09")or($Chem eq "Emergency")) { # e.g. when PM25 is not split, e.g. RCA, make EMCHEM09
-    if (($Chem eq "EmChem09")or($Chem eq "EmChem09soa")or($Chem eq "Emergency")) { # e.g. when PM25 is not split, e.g. RCA, make EMCHEM09
+    #J17 if (($Chem eq "EmChem09")or($Chem eq "EmChem09soa")or($Chem eq "Emergency")) { # e.g. when PM25 is not split, e.g. RCA, make EMCHEM09
+    #T2017 improvement: Any EmChem uses ame emissplit.specials - solves SHIPNOX problem
+    if (($Chem =~ /EmChem/)or($Chem eq "Emergency")) { # e.g. when PM25 is not split, e.g. RCA, make EMCHEM09
       $ifile{"$SplitDir/emissplit.specials.$poll"} = "emissplit.specials.$poll"
       if( -e "$SplitDir/emissplit.specials.$poll" );
     } elsif ( $Chem eq "CRI_v2_R5" ) { # e.g. TSAP
@@ -849,8 +853,6 @@ foreach my $scenflag ( @runs ) {
 
   foreach my $mmm ($mm1,($mm1+1)..($mm2-1),$mm2) {
     my $mm = sprintf "%2.2d", $mmm;
-    $ifile{"$DATA_LOCAL/natso2$mm.dat"} =  "natso2$mm.dat" unless ($GRID eq "MACC14");
- print "natso2 $mm  \n";
    $ifile{"$DataDir/lt21-nox.dat$mm"} =  "lightning$mm.dat";
 # BIC for Saharan dust
     if ( $SoilDir ) { # Not yet for EMEP domain
@@ -904,14 +906,10 @@ foreach my $scenflag ( @runs ) {
   $ifile{"$DataDir/AnnualNdep_PS50x_EECCA2005_2009.nc"} = "annualNdep.nc";
 #}
 
-# hb NH3emis
-# New ammonia emissions  ---   NB no read permissions yet!!
-  $ifile{"/home/$HALDIS/Unimod_NMR_NH3/Unimod.rv3_6_8/Sector_NH3Emis.txt"}="Sector_NH3Emis.txt" if($NH3EMIS_VAR);
-
 # new inputs style (Aug 2007)  with compulsory headers:
 # From rv3_14 used only for FORECAST mode
   $ifile{"$DATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse" if ($CWF and ($GRID ne "MACC14")) ;
-  $ifile{"$DataDir/Landuse/landuseGLC2000_INT1.nc"} ="GLOBAL_landuse.nc";
+#  $ifile{"$DataDir/Landuse/landuseGLC2000_INT1.nc"} ="GLOBAL_landuse.nc";
 
   $ifile{"$DataDir/LanduseGLC.nc"} ="LanduseGLC.nc";
   # NB: a 1km Landuse is also available 
@@ -920,6 +918,12 @@ foreach my $scenflag ( @runs ) {
 
   $ifile{"$DataDir/LandInputs_Jul2015/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
   $ifile{"$DataDir/LandInputs_Jul2015/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
+  # JPC:
+  #    $ifile{"$DataDir/LandInputs_Feb2017/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
+  #    $ifile{"$DataDir/LandInputs_Feb2017/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
+       $ifile{"$DataDir/LandInputs_Feb2017/Megan4Emep.nc"} = "Megan4Emep.nc";
+  #
+  #
 
 #For dust: clay and sand fractions
   $ifile{"$DataDir/Soil_Tegen.nc"} ="Soil_Tegen.nc";
@@ -1045,7 +1049,7 @@ foreach my $scenflag ( @runs ) {
     } else {
       print "Missing Input $f !!!\n";
       die "ERROR: Missing $f (or possibly wrong Chem$Chem)\n" 
-        unless( $f =~ /special/ or $f =~ /natso2/ );#natso2 not needed
+        unless( $f =~ /special/ );
     }
   }
 
@@ -1104,7 +1108,7 @@ foreach my $scenflag ( @runs ) {
         ."  runlabel1 = '$runlabel1',\n"
         ."  runlabel2 = '$runlabel2',\n"
         ."  startdate = ".date2str($startdate ,"%Y,%m,%d,000000,\n")
-        ."  enddate   = ".date2str($enddate   ,"%Y,%m,%d,000000,\n")
+        ."  enddate   = ".date2str($enddate   ,"%Y,%m,%d,000024,\n")
 #       ."  meteo     = '$METformat',\n" #moved to config
         ."&end\n";
     # NML namelist options.

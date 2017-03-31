@@ -1541,8 +1541,6 @@ subroutine newmonth
 59    format(A,6F14.5)
       write(*,*)'DMS OCEAN emissions '
       write(*,59)'SO2 from ocean DMS cdf file ',O_DMS%sum_month
-      write(*,59)'SO2 from natso2.dat ',DMS_natso2_month
-      write(*,59)'fraction new/old method',O_DMS%sum_month/DMS_natso2_month
       end if
       O_DMS%sum_year=O_DMS%sum_year+O_DMS%sum_month
       O_DMS%sum_month=0.0

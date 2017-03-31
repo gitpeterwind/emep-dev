@@ -73,7 +73,7 @@ use StoFlux_ml,  only:   unit_flux, &! = sto. flux per m2
                         Setup_StoFlux, Calc_StoFlux  ! subs
 use SubMet_ml,            only: Sub
 use TimeDate_ml,          only: daynumber, current_date
-use Wesely_ml         ! ... Init_GasCoeff, DRx, Rb_Cor, ...
+use GasParticleCoeffs_ml         ! ... Init_GasCoeff, DRx, Rb_Cor, ...
 use ESX_ml,               only: Init_ESX, Run_ESX
 
 implicit none
@@ -105,7 +105,7 @@ integer, public, parameter :: pNH4  = NH4_f
 logical, public, parameter :: COMPENSATION_PT = .false. 
 
 !***************************************************************************
-!  Specifies which of the possible species (from Wesely's list)
+!  Specifies which of the possible species (from DryDepDefs list)
 !  are required in the current air pollution model   
 !***************************************************************************
 ! .... Define the mapping between the advected species and
@@ -138,7 +138,7 @@ contains
   if ( my_first_call ) then 
 
      call Init_DepMap()               ! Maps CDDEP to IXADV
-     call Init_GasCoeff()             ! Sets Wesely coeffs.
+     call Init_GasCoeff()             ! Sets DryDepDefs coeffs.
 
      if (USES%ESX) then
        call Init_ESX()
@@ -470,7 +470,7 @@ contains
 
             if ( n > NDRYDEP_GASES )  then    ! particles
 
-              nae = AERO_SIZE(n) ! See Wesely_ml
+              nae = AERO_SIZE(n) ! See GasParticleCoeffs_ml
 
 
               if ( LandType(iL)%is_forest  ) then 

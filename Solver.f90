@@ -27,7 +27,8 @@
     use ChemFunctions_ml, only :VOLFACSO4,VOLFACNO3,VOLFACNH4 !TEST TTTT
     use ChemGroups_ml,     only: RO2_POOL, RO2_GROUP
     use ChemSpecs                  ! => NSPEC_TOT, O3, NO2, etc.
-    use Chemfields_ml, only : NSPEC_BGN  ! => IXBGN_  indices and xn_2d_bgn
+    use ChemFields_ml, only : x, xold ,xnew  & ! Working arrays [molecules/cm3]
+                             ,NSPEC_BGN  ! => IXBGN_  indices and xn_2d_bgn
     use ChemRates_rct_ml,   only: rct
     !ESX use ChemRates_rcmisc_ml,only: rcmisc
     use GridValues_ml,     only : GRIDWIDTH_M
@@ -43,7 +44,8 @@
                                  Fgas,   & ! fraction in gas-phase, for SOA
                                  amk
                                  !FUTURE rcnh3,         & ! NH3emis
- use Setup_1dfields_ml,     only : itemp, tinv, rh, x=> xn_2d, amk
+ !M17 use Setup_1dfields_ml,     only : itemp, tinv, rh, x=> xn_2d, amk
+ use Setup_1dfields_ml,     only : itemp, tinv, rh,  amk
   implicit none
 
   private
@@ -87,8 +89,8 @@ contains
     ! Concentrations : xold=old, x=current, xnew=predicted
     ! - dimensioned to have same size as "x"
 
-    real(kind=dp), dimension(NSPEC_TOT)      :: &
-                        x, xold ,xnew   ! Working array [molecules/cm3]
+    !M17 real(kind=dp), dimension(NSPEC_TOT)      :: &
+    !M17                     x, xold ,xnew   ! Working array [molecules/cm3]
     real(kind=dp), dimension(nchemMAX), save :: &
                         dti             ! variable timestep*(c+1)/(c+2)
     real(kind=dp), dimension(nchemMAX), save :: &

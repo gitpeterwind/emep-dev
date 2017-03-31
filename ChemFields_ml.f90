@@ -1,4 +1,4 @@
-module Chemfields_ml
+module ChemFields_ml
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 use AllocInits,   only: AllocInit
 use ChemSpecs,    only: NSPEC_ADV, NSPEC_SHL, NSPEC_TOT, & ! => No. species 
@@ -30,6 +30,11 @@ private
     !  Here we declare and initialise to zero the chemical fields used in the  !
     !  model, as well as cfac (converts from 50m to 1m/3m output)         ! 
     !---------------------------------------------------------------------!
+
+
+    !March 2017: moved from Solver
+  real, save, public, dimension(NSPEC_TOT):: &
+     x, xold ,xnew  ! Work arrays [molecules/cm3]
 
   real, save, allocatable, public :: &
      xn_adv(:,:,:,:)  &
@@ -140,5 +145,5 @@ contains
 
 
 !_____________________________________________________________________________
-endmodule Chemfields_ml
+endmodule ChemFields_ml
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

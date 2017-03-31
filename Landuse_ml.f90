@@ -502,9 +502,11 @@ contains
              call ReadField_CDF(trim(fName2),varname,&
                   landuse_tmp,1,interpol='conservative', &
                   needed=.true.,debug_flag=.false.)
+
              do j = 1, ljmax
                 do i = 1, limax
-                   if(landuse_in(i,j,ilu)<-0.1)landuse_in(i,j,ilu)=landuse_tmp(i,j)
+                   !landuse_tmp can be numerically larger than 1.0 (1E-15 larger). That made negative deposition for PB210
+                   if(landuse_in(i,j,ilu)<-0.1)landuse_in(i,j,ilu)=min(1.0,landuse_tmp(i,j))
                 end do  !j
              end do  !i
           end if
