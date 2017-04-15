@@ -137,7 +137,7 @@ integer, private, save :: nOutMET
 !- specify some species and land-covers we want to output
 ! dep. velocities for in netcdf files. Set in My_DryDep_ml.
 type(typ_s5ind), public, parameter, dimension(1) :: &
-  NewMosaic =[typ_s5ind('Mosaic','VG','O3','Grid','cms','YMD')]
+  NewMosaic =[typ_s5ind('Mosaic','VG','O3','Grid','cms','YM')]
 
 ! For met-data and canopy concs/fluxes ...
 character(len=TXTLEN_DERIV), public, parameter, dimension(4) :: &
@@ -363,7 +363,7 @@ subroutine Init_My_Deriv()
     ! adding them to the derived-type array LCC_Met (e.g. => Met_CF)
     !FEB2011  Daiyl output asked for just now. Change larer
 
-    call Add_MosaicMetConcs(MOSAIC_METCONCS,MET_LCS,'YMD', nMET)
+    call Add_MosaicMetConcs(MOSAIC_METCONCS,MET_LCS,'YM', nMET)
     nOutMET = nMET !not needed?
   end if ! SOURCE_RECEPTOR
 
