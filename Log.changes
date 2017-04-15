@@ -208,6 +208,11 @@ Setup_ml
 
    Added safety catch on RCT_USED in debug mode
 
+run.pl
+
+   Point to LandInputs_Apr2017 which has GLC-CLM based global use and 
+   appropriate Inputs files.
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 10th Mar 2017 Dave  rv4_12beta
 
