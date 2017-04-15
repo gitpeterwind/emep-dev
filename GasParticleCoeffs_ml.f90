@@ -35,22 +35,51 @@ integer, public, parameter :: NDRYDEP_DEF = 64   ! no. of gases in tables below
  (/                                     &
 !    D     H*      pe     k     f0       
    1.9, 1.0e5,    -5.0, 9999.0, 0.0,    &! 1 = SO2      Sulphur dioxide
-   1.6, 1.0e-2,   28.0,  6.0e8, 1.0,    &! 2 = O3       Ozone
-   1.6, 1.0e-2, 9999.0,  2.0e6, 0.1,    &! 3 = NO2      Nitrogen dioxide
-   1.3, 2.0e-3, 9999.0, 1.0e-2, 0.0,    &! 4 = NO       Nitric oxide
-   1.9, 1.0e14,    7.0, 1.0e-2, 0.0,    &! 5 = HNO3     Nitric acid vapour
-   1.4, 1.0e5,   23.0,     7.0, 1.0,    &! 6 = H2O2     Hydrogen peroxide
-   1.6, 1.5e1,   -1.0,  9999.0, 0.0,    &! 7 = (ALD)    Acetaldehyde
-   1.3, 6.0e3,   -3.0,  9999.0, 0.0,    &! 8 = HCHO     Formaldehyde
-   1.6, 2.4e2, 9999.0,     2.0, 0.1,    &! 9 = (OP)     Methyl hydroperoxide
-   2.0, 5.4e2, 9999.0,   6.0e2, 0.1,    &! 10 = PAA     Peroxyacetic acid
-   1.6, 4.0e6,   -8.0,  9999.0, 0.0,    &! 11 = (ORA)   Formic acid
+!-----------------------------------------------------------------------------
+!ORIG   1.6, 1.0e-2,   28.0,  6.0e8, 1.0,    &! 2 = O3       Ozone
+!ORIG   1.6, 1.0e-2, 9999.0,  2.0e6, 0.1,    &! 3 = NO2      Nitrogen dioxide
+!RB Ozone revised D-value based on Massman 1998 - the diffusion coefficient
+!    in air has a large uncertainty - no experimental determination seems to
+!    be available.
+!-----------------------------------------------------------------------------
+     1.51, 1.0e-2,   28.0,  6.0e8, 1.0,    &! 2 = O3       Ozone  RB update
+!RB Nitrogen dioxide - reactivity increased - diffusion coeff. uncertain!
+!    D could be higher - based on Tang et al. 2014 D is estimated to be
+!     ca 1.76 (range 1.3 - 2.7!)
+     1.6, 1.0e-2, 9999.0,  2.0e6, 0.5,    &! 3 = NO2     RB update
+!-----------------------------------------------------------------------------
+!
+  1.3, 2.0e-3, 9999.0, 1.0e-2, 0.0,    &! 4 = NO       Nitric oxide
+  1.9, 1.0e14,    7.0, 1.0e-2, 0.0,    &! 5 = HNO3     Nitric acid vapour
+!-----------------------------------------------------------------------------
+!ORIG 1.4, 1.0e5,   23.0,     7.0, 1.0,    &! 6 = H2O2     Hydrogen peroxide
+!ORIG 1.6, 1.5e1,   -1.0,  9999.0, 0.0,    &! 7 = (ALD)    Acetaldehyde
+!ORIG 1.3, 6.0e3,   -3.0,  9999.0, 0.0,    &! 8 = HCHO     Formaldehyde
+!ORIG 1.6, 2.4e2, 9999.0,     2.0, 0.1,    &! 9 = (OP)     Methyl hydroperoxide
+!ORIG 2.0, 5.4e2, 9999.0,   6.0e2, 0.1,    &! 10 = PAA     Peroxyacetic acid
+!ORIG 1.6, 4.0e6,   -8.0,  9999.0, 0.0,    &! 11 = (ORA)   Formic acid
+!-----------------------------------------------------------------------------
+  1.36, 1.0e5,   23.0,     7.0, 1.0,     &! 6 = H2O2   Hydrogen peroxide
+   2.1, 1.3e1,   -1.0,  9999.0, 0.05,    &! 7 = ALD    Acetaldehyde - RB update
+   1.4, 3.2e3,   -3.0,  9999.0, 0.2,     &! 8 = HCHO   Formaldehyde - RB update
+!RB MEOOH  Methyl hydroperoxide - maybe reactivity should be higher!
+   1.9, 3.0e2, 9999.0,     2.0, 0.2,    &! 9 = MEOOH  Methyl hydroperoxide
+   2.4, 8.3e2, 9999.0,   6.0e2, 0.2,    &! 10 = PAA   Peroxyacetic acid - RB
+! HCOOH - NOTE - may need updating - solubility is even higher at pH=7 but
+!  surface resistance should perhaps not be 1/100 of that for SO2...
+   1.6, 1.6e7,   -8.0,  9999.0, 0.0,    &! 11 = HCOOH   Formic acid  RB 
+!-----------------------------------------------------------------------------
  ! followed CEH recommendation and set H* NH3 equal to sulphur
  ! (actually, CEH would have set it much higher than SO2!)
  !orig: 2.0e4, 9999.0,  9999.0, 0.0,    &! 12 = NH3     Ammonia
-   1.0, 1.0e5, 9999.0,  9999.0, 0.0,    &! 12 = NH3     Ammonia
-   2.6, 3.6e0, 9999.0,   3.0e3, 0.1,    &! 13 = PAN     Peroxyacetyl nitrate
-   1.6, 1.0e5,    6.0,  4.0e-4, 0.1,    &! 14 = HNO2    Nitrous acid !START RB 
+!ORIG 1.0, 1.0e5, 9999.0,  9999.0, 0.0,    &! 12 = NH3     Ammonia
+!ORIG 2.6, 3.6e0, 9999.0,   3.0e3, 0.1,    &! 13 = PAN     Peroxyacetyl nitrate
+!ORIG 1.6, 1.0e5,    6.0,  4.0e-4, 0.1,    &! 14 = HNO2    Nitrous acid
+  1.1, 1.0e5, 9999.0,  9999.0, 0.0,    &! 12 = NH3   Ammonia RB
+  2.8, 3.0e0, 9999.0,   3.0e3, 0.5,    &! 13 = PAN   Peroxyacetyl nitrate. RB
+!RB HNO2 - uncertain about the f0 - Zhang et al. assume much higher reactivity
+  1.6, 2.6e5,    6.0,  4.0e-4, 0.5,    &! 14 = HNO2  Nitrous acid RB
+!-----------------------------------------------------------------------------
  ! Now Robert's extension to lots of organics:
    2.1, 6.0e4, 9999.0,  9999.0, 1.0,    &! 15 = HO2NO2  Pernitric acid
    2.9, 2.5e2, 9999.0,  9999.0, 1.0,    &! 16 = ANHY    Maleic anhydride (2,5-furandione)
