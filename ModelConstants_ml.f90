@@ -58,7 +58,8 @@ type, public :: emep_useconfig
     ,PFT_MAPS         = .false.  ! Future option
 
  ! Mar 2017. Allow new MEGAN-like BVOC
-  character(len=10) :: GlobBvocMethod = "-" ! MEGAN
+ ! Moved to emep_Config
+ ! character(len=10) :: GlobBvocMethod = "-" ! MEGAN
 
  ! If USES%EMISTACKS, need to set:
   character(len=4) :: PlumeMethod = "none" !MKPS:"ASME","NILU","PVDI"
@@ -386,7 +387,7 @@ logical, public, parameter :: NH3_U10 = .false.
 !       generally only change when switching Met-driver
 integer, public, parameter ::  &
 !TREEX  NLANDUSEMAX  = 19   &   ! Number of land use types in Inputs.Landuse file
-  NLANDUSEMAX  = 30    &    ! Max num land use types in Inputs.Landuse file
+  NLANDUSEMAX  = 40    &    ! Max num land use types in Inputs.Landuse file
 , KTOP         = 1     &    ! K-value at top of domain
 , KWINDTOP     = 5     &    ! Define extent needed for wind-speed array
 , NMET         = 2     &    ! No. met fields in memory
