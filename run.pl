@@ -116,6 +116,7 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_11_3","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
 #($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3074","EmChem09soa","EMEPGLOB","EMEPSTD","GLOBAL",0);
  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("emep-dev","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
+ ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_12gclm","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
 
 my %BENCHMARK;
 # OpenSource 2008
@@ -900,17 +901,22 @@ foreach my $scenflag ( @runs ) {
   $ifile{"$DATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse" if ($CWF and ($GRID ne "MACC14")) ;
 #  $ifile{"$DataDir/Landuse/landuseGLC2000_INT1.nc"} ="GLOBAL_landuse.nc";
 
-  $ifile{"$DataDir/LanduseGLC.nc"} ="LanduseGLC.nc";
+  #CLM $ifile{"$DataDir/LanduseGLC.nc"} ="LanduseGLC.nc";
   # NB: a 1km Landuse is also available 
   $ifile{"$DataDir/Landuse/Landuse_PS_5km_LC.nc"} ="Landuse_PS_5km_LC.nc";
 #  $ifile{"$DataDir/Landuse/Landuse_PS_1km_LC.nc"} ="Landuse_PS_5km_LC.nc";
 
-  $ifile{"$DataDir/LandInputs_Jul2015/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
-  $ifile{"$DataDir/LandInputs_Jul2015/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
+  #CLM $ifile{"$DataDir/LandInputs_Jul2015/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
+  #CLM $ifile{"$DataDir/LandInputs_Jul2015/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
   # JPC:
   #    $ifile{"$DataDir/LandInputs_Feb2017/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
   #    $ifile{"$DataDir/LandInputs_Feb2017/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
-       $ifile{"$DataDir/LandInputs_Feb2017/Megan4Emep.nc"} = "Megan4Emep.nc";
+  #CLM      $ifile{"$DataDir/LandInputs_Feb2017/Megan4Emep.nc"} = "Megan4Emep.nc";
+  #CLM:
+      $ifile{"$ProgDir/LandInputs_Apr2017/glc2000mCLM.nc"} = "LanduseGLC.nc";
+      $ifile{"$ProgDir/LandInputs_Apr2017/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
+      $ifile{"$ProgDir/LandInputs_Apr2017/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
+  #
   #
   #
 
