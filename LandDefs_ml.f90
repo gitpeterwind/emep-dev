@@ -134,33 +134,39 @@ contains
       character(len=200) :: txtinput  ! Big enough to contain one input record
       type(KeyVal), dimension(2) :: KeyValues ! Info on units, coords, etc.
       character(len=50) :: errmsg, fname
-      character(len=*), parameter :: sub='Ini-LandDefs:'
+      character(len=*), parameter :: dtxt='Ini-LandDefs:'
       integer :: n, nn, NHeaders, NKeys
       logical :: dbg
 
       dbg = ( DEBUG%LANDDEFS .and. MasterProc ) 
 
+      if ( dbg ) then
+         do n = 1, size(wanted_codes)
+            write(*,*) dtxt//' WANTED ', n, wanted_codes(n)
+         end do
+      end if
+
       ! Quick safety check (see Landuse_ml for explanation)
        call CheckStop(&
          maxval( len_trim(wanted_codes(:))) >= len(LandInput%code),& 
-          sub//" increase size of character array" )
+          dtxt//" increase size of character array" )
 
       ! Read data
 
 
       fname = "Inputs_LandDefs.csv"
       if ( MasterProc ) then
-         write(*,*) sub//" for Ncodes= ", ncodes
+         write(*,*) dtxt//" for Ncodes= ", ncodes
          do n = 1, ncodes
-            write(*,*) sub//"LC  wants ",n, trim(wanted_codes(n))
+            write(*,*) dtxt//"LC  wants ",n, trim(wanted_codes(n))
          end do
          call open_file(IO_TMP,"r",fname,needed=.true.)
-         call CheckStop(ios,sub//"open_file error on " // fname )
+         call CheckStop(ios,dtxt//"open_file error on " // fname )
       end if
 
       call Read_Headers(IO_TMP,errmsg,NHeaders,NKeys,Headers,Keyvalues)
 
-      call CheckStop( errmsg , sub//"Read Headers" )
+      call CheckStop( errmsg , dtxt//"Read Headers" )
  
 
       !------ Read in file. Lines beginning with "!" are taken as
@@ -172,7 +178,7 @@ contains
             if ( ios /= 0 ) then
                  exit   ! likely end of file
             end if
-            if ( dbg ) write(*,*) sub//' READLINE: ------ '// trim(txtinput)
+            if ( dbg ) write(*,*) dtxt//' READLINE: ------ '// trim(txtinput)
             if ( txtinput(1:1) == "#" ) then
                  cycle
             end if
@@ -184,7 +190,7 @@ contains
             call CheckStop ( ios, fname // " txt error:" // trim(txtinput) )
             n = find_index( LandInput%code, wanted_codes )!index in map data?
             if ( n < 1 ) then
-                if ( MasterProc ) write(*,*) sub//" skipping nn,n ",&
+                if ( MasterProc ) write(*,*) dtxt//" skipping nn,n ",&
                    nn,n, trim(LandInput%code)
                 cycle
             end if
@@ -201,12 +207,12 @@ contains
 
             if ( dbg ) then
                  write(*,"(a)") trim(txtinput)
-                 write(unit=*,fmt="(a,3i3,2a,2i5,f7.3,f10.3)") sub//":=> ", &
+                 write(unit=*,fmt="(a,3i3,2a,2i5,f7.3,f10.3)") dtxt//":=> ", &
                   n,nn, ncodes, trim(LandInput%name), trim(LandInput%code),&
                     LandDefs(n)%SGS50,LandDefs(n)%EGS50, &
                     LandDefs(n)%LAImax, LandDefs(n)%Emtp
             end if
-            call CheckStop(  LandInput%code, wanted_codes(n), sub//"MATCHING CODES")
+            call CheckStop(  LandInput%code, wanted_codes(n), dtxt//"MATCHING CODES")
 
             LandType(n)%is_water  =  LandInput%code == "W" 
             LandType(n)%is_ice    =  LandInput%code == "ICE" 
@@ -215,7 +221,7 @@ contains
             LandType(n)%flux_wanted = LandType(n)%is_iam  ! default
            !Also:
            if( find_index( LandInput%code, FLUX_VEGS(:) ) > 0 ) then
-             if(MasterProc) write(*,*) sub//"FLUX_VEG SET:", trim(LandInput%code)
+             if(MasterProc) write(*,*) dtxt//"FLUX_VEG SET:", trim(LandInput%code)
              LandType(n)%flux_wanted = .true.
            end if
 
@@ -227,9 +233,9 @@ contains
 
             LandType(n)%pft = find_index( LandDefs(n)%LPJtype, PFT_CODES)
 
-            if ( dbg ) write(unit=*,fmt='(a,i3,a,i5)') sub//"PFT? ", n,&
-             trims(LandInput%name//':'// LandInput%code//':'// &
-                   wanted_codes(n) ), LandType(n)%pft
+            if ( dbg ) write(unit=*,fmt='(a,i3,a,i5)') dtxt//"PFT? ", n,&
+             !trims(LandInput%name//':'// LandInput%code//':'// &
+                  trim(  wanted_codes(n) ), LandType(n)%pft
 
            !is_decid, is_conif used mainly for BVOC and soil-NO. Not essential
            ! for IAM-type landcover
@@ -244,10 +250,10 @@ contains
        end do
        if ( MasterProc ) then 
              close(unit=IO_TMP)
-             write(*,*) sub//"DONE NN,NCODES = ", nn, ncodes
+             write(*,*) dtxt//"DONE NN,NCODES = ", nn, ncodes
        end if
 
-       call CheckStop( nn /= ncodes, sub//" didn't find all codes")
+       call CheckStop( nn /= ncodes, dtxt//" didn't find all codes")
 
   end subroutine Init_LandDefs
  !=========================================================================
