@@ -155,14 +155,21 @@ changes here (and when committing svn), and Dave will tag as required
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-15th Apr 2017 Dave
+15th Apr 2017 Dave/Robert/Hannah
 
-ZCM_EmChem16mt introduced
+MEW::: ZCM_EmChem16mt introduced
 
   Significant update of chemistry! Added monoterpenes, simple SQT, replaced
   isoprene chemistry. Fixed PAN rate coefficient bug.
 
   Contributions from Hannah Imhof and Robert Begström included.
+
+
+Aqueous_ml
+
+   Corrected use of Fpart in dep calculations
+   Expanded list of surrogates (e.g. CWDEP_0p5) for organics
+
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 10th Mar 2017 Dave  rv4_12beta

@@ -177,7 +177,7 @@ type, public :: WScav
   real :: W_sub       ! same for subcloud
 end type WScav
 
-integer, public, parameter :: NWETDEP_CALC =  14 ! No. of solublity classes
+integer, public, parameter :: NWETDEP_CALC =  22 ! No. of solublity classes
 !  Note - these are for "master" or model species - they do not
 !  need to be present in the chemical scheme. However, the chemical
 !  scheme needs to define wet scavenging after these. If you would
@@ -187,7 +187,9 @@ integer, parameter, public :: &
   CWDEP_H2O2 =  5, CWDEP_HCHO =  6, CWDEP_PMf  =  7, CWDEP_PMc  =  8, &
   CWDEP_ECfn =  9, CWDEP_SSf  = 10, CWDEP_SSc  = 11, CWDEP_SSg  = 12, &
   CWDEP_POLLw= 13, &
-  CWDEP_ROOH = 14   ! TEST!!
+  CWDEP_ROOH = 14, &   ! TEST!!
+  CWDEP_0p2 = 15, CWDEP_0p3 = 16, CWDEP_0p4 = 17, CWDEP_0p5 = 18, &
+  CWDEP_0p6 = 19, CWDEP_0p7 = 20, CWDEP_0p8 = 21, CWDEP_1p3 = 22
 integer, parameter, public :: &
   CWDEP_ASH1=CWDEP_PMf,CWDEP_ASH2=CWDEP_PMf,CWDEP_ASH3=CWDEP_PMf,&
   CWDEP_ASH4=CWDEP_PMf,CWDEP_ASH5=CWDEP_PMc,CWDEP_ASH6=CWDEP_PMc,&
@@ -255,7 +257,17 @@ subroutine Init_WetDep()
   WetDep(CWDEP_PMf)   = WScav(   1.0,  EFF25) !!
   WetDep(CWDEP_PMc)   = WScav(   1.0,  EFFCO) !!
   WetDep(CWDEP_POLLw) = WScav(   1.0,  SUBCLFAC) ! pollen
-  WetDep(CWDEP_ROOH)  = WScav(   0.05, 0.015) ! assumed half of HCHO
+!RB extras:
+!perhaps too high for MeOOH? About an order of magnitude lower H* than HCHO:
+  WetDep(CWDEP_ROOH)  = WScav(   0.05, 0.015) ! assumed half of HCHO - 
+  WetDep(CWDEP_0p2)  = WScav(   0.2, 0.06) !
+  WetDep(CWDEP_0p3)  = WScav(   0.3, 0.09) !
+  WetDep(CWDEP_0p4)  = WScav(   0.4, 0.12) !
+  WetDep(CWDEP_0p5)  = WScav(   0.5, 0.15) !
+  WetDep(CWDEP_0p6)  = WScav(   0.6, 0.18) !
+  WetDep(CWDEP_0p7)  = WScav(   0.7, 0.21) !
+  WetDep(CWDEP_0p8)  = WScav(   0.8, 0.24) ! 
+  WetDep(CWDEP_1p3)  = WScav(   1.3, 0.39) !
 
 ! Other PM compounds treated with SO4-LIKE array defined above
 
@@ -720,6 +732,7 @@ subroutine WetDeposition(i,j,debug_flag)
   real    :: loss    ! conc. loss due to scavenging
   real, dimension(KUPPER:KMAX_MID) :: vw ! Svavenging rates (tmp. array)
   real, dimension(KUPPER:KMAX_MID) :: lossfac ! EGU
+  real, dimension(KUPPER:KMAX_MID) :: lossfacPMf ! for particle fraction of semi-volatile (VBS) species
 
   invgridarea = xm2(i,j)/( gridwidth_m*gridwidth_m )
   f_rho  = 1.0/(invgridarea*GRAV*ATWAIR)
@@ -735,6 +748,13 @@ subroutine WetDeposition(i,j,debug_flag)
 
   if(DEBUG%AQUEOUS.and.debug_flag) write(*,*) "(a15,2i4,es14.4)", &
      "DEBUG_WDEP2", kcloudtop, ksubcloud, pr_acc(KMAX_MID)
+
+! need particle fraction wet deposition for semi-volatile species - here hard coded to use scavenging parameters for PMf
+  vw(kcloudtop:ksubcloud-1) = WetDep(CWDEP_PMf)%W_sca ! Scav. for incloud
+  vw(ksubcloud:KMAX_MID  )  = WetDep(CWDEP_PMf)%W_sub ! Scav. for subcloud
+  do k = kcloudtop, KMAX_MID
+    lossfacPMf(k)  = exp( -vw(k)*pr_acc(k)*dt )
+  enddo 
 
   do icalc = 1, NWETDEP_CALC  ! Here we loop over "model" species
 
@@ -753,15 +773,17 @@ subroutine WetDeposition(i,j,debug_flag)
         itot = iadv+NSPEC_SHL
 
     ! For semivolatile species only the particle fraction is deposited
+!RB: This assumption needs to be revised. The semi-volatile organics are likely highly soluble and should wet deposit also in the gas phase
         if(itot>=FIRST_SEMIVOL .and. itot<=LAST_SEMIVOL) then
-          loss = xn_2d(itot,k) * Fpart(itot,k)*( 1.0 - lossfac(k)  )
+!          loss = xn_2d(itot,k) * Fpart(itot,k)*( 1.0 - lossfac(k)  )
+          loss = xn_2d(itot,k) * ( Fpart(itot,k)*( 1.0 - lossfacPMf(k) ) + (1.0-Fpart(itot,k))*( 1.0 - lossfac(k) ) )
         else
           loss = xn_2d(itot,k) * ( 1.0 - lossfac(k)  )
-        end if
+        endif
         xn_2d(itot,k) = xn_2d(itot,k) - loss
         wdeploss(iadv) = wdeploss(iadv) + loss * rho(k)
-      end do ! is
-    end do ! k loop
+      enddo ! is
+    enddo ! k loop
 
     if(DEBUG%AQUEOUS.and.debug_flag.and.pr_acc(KMAX_MID)>1.0e-5) then
       do k = kcloudtop, KMAX_MID
