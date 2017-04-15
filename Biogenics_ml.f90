@@ -3,6 +3,7 @@
 module MEGAN_ml
 
 use CheckStop_ml,   only: CheckStop, StopAll
+use emep_Config_mod, only : EmBio
 use GridValues_ml,  only: debug_proc, debug_li, debug_lj
 use LandDefs_ml,    only: LandDefs
 use ModelConstants_ml, only : MasterProc, BVOC_USED, DEBUG, NLANDUSEMAX
@@ -387,7 +388,9 @@ module Biogenics_ml
    ! to molecules/cm2/s  (needs more documentation!)
 
    !====================================
-    call GetMEGAN_BVOC( last_bvoc_LC )
+    if ( EmBio%GlobBvocMethod == 'MEGAN' ) then
+      call GetMEGAN_BVOC( last_bvoc_LC )
+    end if
    !====================================
 
     call GetEuroBVOC()
@@ -503,13 +506,14 @@ module Biogenics_ml
       character(len=15) :: merge_case
       real :: biso, bmt    !  Just for printout
       logical :: use_local, debug_flag
+      character(len=*),parameter :: dtxt='MergedBvoc:'
 
 
       if ( debug_proc ) then
-         write(*,*) "Into MergedBVOC"
+         write(*,*) dtxt//" Start"
          i= debug_li; j= debug_lj
          nlu= LandCover(i,j)%ncodes
-         write(*,*) 'INTO MEGAN Merge ', maxval(megan_bvoc)!F24, maxval(clm_bvoc)
+         !write(*,*) 'INTO MEGAN Merge ', maxval(megan_bvoc)!F24, maxval(clm_bvoc)
          write(*,*) 'MEGAN map: ', globBvoc2emep
          write(*,*) 'MEGAN  DBG stuff:', me, debug_proc, debug_li, debug_lj
          write(*,*) 'MEGAN  DBG codes:', nlu, LandCover(i,j)%codes(1:nlu)
@@ -531,16 +535,16 @@ module Biogenics_ml
            gLC1 = -1
            if ( EmBio%GlobBvocMethod == 'MEGAN' ) then ! set these as defaults first
               gLC1 = globBvoc2emep(iL)
-           end if
 
-           if( debug_flag ) then
-               write(*,"(a,3i4,2L2,i3)") &
-                   "TryMergeBVOC" //trim(LandDefs(iL)%name), iL, pft, gLC1, &
+             if( debug_flag ) then
+               write(*,"(a,3i5,2L2,i3)") &
+                   "TryMergeBVOC:" //trim(LandDefs(iL)%name), iL, pft, gLC1, &
                      use_local, HaveLocalEF(iL), last_bvoc_LC
                if ( gLC1 > 0 ) then
                   write(*,"(a,2i4,9f9.3)") 'MEGAN/CLM EMIS: ', iL, &
                    gLC1, megan_bvoc(i,j,gLC1)!F24, clm_bvoc(i,j,gLC2) 
                end if
+             end if
            end if
 
            if( use_local .and. HaveLocalEF(iL) ) then 
@@ -589,9 +593,11 @@ module Biogenics_ml
                end if
 
            else if ( iL <= last_bvoc_LC ) then ! otherwise use defaults
-               bvocEF(i,j,iL,BIO_ISOP) = LandDefs(iL)%Eiso * LandDefs(iL)%BiomassD 
+             
+     ! CLF canopy light factor, 1/1.7=0.59, based on Lamb 1993 (cf MEGAN 0.57)
+               bvocEF(i,j,iL,BIO_ISOP) = LandDefs(iL)%Eiso * LandDefs(iL)%BiomassD *EmBio%CLF
+               bvocEF(i,j,iL,BIO_MTL)  = LandDefs(iL)%Emtl * LandDefs(iL)%BiomassD *EmBio%CLF
                bvocEF(i,j,iL,BIO_MTP)  = LandDefs(iL)%Emtp * LandDefs(iL)%BiomassD
-               bvocEF(i,j,iL,BIO_MTL)  = LandDefs(iL)%Emtl * LandDefs(iL)%BiomassD
                 if( debug_flag ) then
                    merge_case = 'defaultBVOC'
                   write(*,"(a,i3,8f8.2)") &
@@ -734,9 +740,9 @@ module Biogenics_ml
 
     agts = 303.
     agr = 8.314
-    agtm = 314.
-    agct1 = 95000.
-    agct2 = 230000.
+    agtm = 314.         ! G93/G95
+    agct1 = 95000.      ! G93/G95
+    agct2 = 230000.     ! G93/G95
 
     do it = 1,40
       itk = it + 273.15
@@ -747,6 +753,7 @@ module Biogenics_ml
 
       ! Terpenes
       agct = exp( 0.09*(itk-agts) )
+      !agct = exp( 0.1*(itk-agts) )
       canopy_ecf(ECF_TERP,it) = agct
 
       !?? for terpene fac = 0.5*fac(iso): as mass terpene = 2xmass isoprene
@@ -790,8 +797,9 @@ module Biogenics_ml
   real            :: par   ! Photosynthetically active radiation
   real            :: cL    ! Factor for light effects
   real, parameter :: &
-      CL1 = 1.066  , &    ! Guenther et al's params
-      ALPHA = 0.0027      ! Guenther et al's params
+      CL1 = 1.066  , &    ! Guenther et al's G93/G95 params
+      ALPHA = 0.0027, &   ! Guenther et al's G93/G95 params
+      AG99  = 0.001 * 1.42  ! " Warneke update, but not same as G99?
 
   if ( size(BVOC_USED) == 0  ) return   ! e.g. for ACID only
 

@@ -22,6 +22,8 @@ module emep_Config_mod
     character(len=10) :: GlobBvocMethod = '-' ! can be MEGAN
     real :: IsopFac = 1.0                     ! for experiments
     real :: TerpFac = 1.0                     ! for experiments
+  ! canopy light factor, 1/1.7=0.59, based on Lamb 1993 (cf MEGAN 0.57)
+    real :: CLF     = 1.0                     ! canopy factor, leaf vs branch emissions
   end type EmBio_t
   type(EmBio_t), public, save :: EmBio = EmBio_t()
   

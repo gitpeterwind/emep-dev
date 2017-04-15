@@ -170,6 +170,13 @@ Aqueous_ml
    Corrected use of Fpart in dep calculations
    Expanded list of surrogates (e.g. CWDEP_0p5) for organics
 
+Biogenics_ml, emep_Config_mod
+
+   Added explicit EmBio%CLF variable for default (non-Euro) BVOC
+    - to be used with new LandInputs files
+
+   Downgraded MEGAN. Now prefer to use GLC/CLM methods (to be commited soon!)
+
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 10th Mar 2017 Dave  rv4_12beta
