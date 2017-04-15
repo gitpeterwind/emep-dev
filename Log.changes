@@ -177,6 +177,36 @@ Biogenics_ml, emep_Config_mod
 
    Downgraded MEGAN. Now prefer to use GLC/CLM methods (to be commited soon!)
 
+DO3SE_ml
+
+   Longer names allowed (to cope with CLM,eg BDLF_EVGN_TROP_TREE)
+
+GasParticleCoeffs_ml
+
+   Updated and extended. Higher PAN and HONO deposition.
+
+LandDefs_ml
+
+   Small tidy up, changed sub to dtxt for debug output
+
+Landuse_ml
+
+   Updated to cope with CLM
+   Now allows landcover to be different in European and global files
+   
+ModelConstants_ml
+
+   Moved GlobBvocMethod to emep_Config
+   Extended NLANDUSEMAX to 40
+
+My_Derived_ml
+
+   Changed YMD to YM for mosaic outputs to reduce size of Base_day. This
+   should really be done in config one day.
+
+Setup_ml
+
+   Added safety catch on RCT_USED in debug mode
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 10th Mar 2017 Dave  rv4_12beta
