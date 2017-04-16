@@ -903,7 +903,7 @@ foreach my $scenflag ( @runs ) {
 
   #CLM $ifile{"$DataDir/LanduseGLC.nc"} ="LanduseGLC.nc";
   # NB: a 1km Landuse is also available 
-  $ifile{"$DataDir/Landuse/Landuse_PS_5km_LC.nc"} ="Landuse_PS_5km_LC.nc";
+#APR15  $ifile{"$DataDir/Landuse/Landuse_PS_5km_LC.nc"} ="Landuse_PS_5km_LC.nc";
 #  $ifile{"$DataDir/Landuse/Landuse_PS_1km_LC.nc"} ="Landuse_PS_5km_LC.nc";
 
   #CLM $ifile{"$DataDir/LandInputs_Jul2015/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
@@ -913,11 +913,9 @@ foreach my $scenflag ( @runs ) {
   #    $ifile{"$DataDir/LandInputs_Feb2017/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
   #CLM      $ifile{"$DataDir/LandInputs_Feb2017/Megan4Emep.nc"} = "Megan4Emep.nc";
   #CLM:
-      $ifile{"$ProgDir/LandInputs_Apr2017/glc2000mCLM.nc"} = "LanduseGLC.nc";
-      $ifile{"$ProgDir/LandInputs_Apr2017/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
-      $ifile{"$ProgDir/LandInputs_Apr2017/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
-  #
-  #
+#APR15      $ifile{"$DataDir/LandInputs_Apr2017/glc2000mCLM.nc"} = "LanduseGLC.nc";
+#APR15      $ifile{"$DataDir/LandInputs_Apr2017/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
+#APR15      $ifile{"$DataDir/LandInputs_Apr2017/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
   #
 
 #For dust: clay and sand fractions
