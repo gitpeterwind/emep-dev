@@ -155,9 +155,47 @@ changes here (and when committing svn), and Dave will tag as required
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16th Apr 2017 Dave
+
+1) LandConverInputs - config'd:
+
+emep_Config_mod.f90
+LandDef_ml.f90
+Landuse_ml.f90
+ModelConstants_ml.f90
+config_EMEPSTD.nml
+config_EMEPGLOB.nml
+
+  -  Adding landcover file names and LandDefs, DO3SE inputs to config system.
+  -  Defaults now from LandInputs_Apr2017, incl. glc2000mCLM.nc
+
+run.pl
+
+  - commented out links to Landuse_PS, LanduseGLC. Use config instead.
+
+2) Mosaic outputs - config'd:
+
+MosaicOutputs_ml.f90
+My_Derived_ml.f90
+config_Outputs_EMEPSTD
+
+  - added NewMosaic, MOSIAC_METCONC, MET_LCS and Mosaic_timefmt to config
+  - in future NewMosaic should replace other systems, but as with much else
+    we are currently running partially completed upgrades..
+  - also noticed that with new landcover system, outputs such as VG_O3_GR
+    only apply to European part of globe, not to e.g. C3_NARC_GRASS. Need
+    to modify to cover PFTs or ecosystem definitions.
+
+
+3) ColumnSource_ml - reduced NMAX_LOC, NMAX_EMS to 5, 300 to avoid problems 
+   discussed on github issues. 
+
+   *  Action needed: Alvaro
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15th Apr 2017 Dave/Robert/Hannah
 
-MEW::: ZCM_EmChem16mt introduced
+NEW::: ZCM_EmChem16mt introduced
 
   Significant update of chemistry! Added monoterpenes, simple SQT, replaced
   isoprene chemistry. Fixed PAN rate coefficient bug.
