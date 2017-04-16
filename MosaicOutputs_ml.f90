@@ -19,7 +19,7 @@ use ModelConstants_ml,only: MasterProc, DEBUG, &
                             NLANDUSEMAX, IOU_INST,IOU_KEY
 use OwnDataTypes_ml,  only: Deriv, print_deriv_type, typ_s5ind, typ_s1ind, typ_s3,&
                             TXTLEN_DERIV, TXTLEN_SHORT
-use SmallUtils_ml,    only: find_index
+use SmallUtils_ml,    only: find_index, trims
 use SubMet_ml,        only: Sub
 use TimeDate_ml,      only: current_date, effectivdaynumber, print_date
 use Units_ml,         only: Units_Scale,Group_Scale,group_umap
@@ -99,7 +99,7 @@ subroutine Add_MosaicMetConcs(MOSAIC_METCONCS,MET_LCS,iotyp, nMET)
       !-------------End of Check if LC present in this array ------!
 
       nMET = nMET + 1
-      name = trim ( MOSAIC_METCONCS(ilab) ) // "_"  // trim( MET_LCS(n) )
+      name = trims ( MOSAIC_METCONCS(ilab) // "_"  // MET_LCS(n) )
 
       nMosaic = nMosaic + 1
       call CheckStop(NMosaic>=MAX_MOSAIC_OUTPUTS,dtxt//"too many nMosaics, nMET")
@@ -136,6 +136,7 @@ subroutine Add_NewMosaics(Mc,nMc)
   nMc = 0
   MC_LOOP: do n = 1, size( Mc(:)%txt1 )
     !------------------- Check if LC present in this array ------!
+    if ( Mc(n)%txt1 == '-' )  cycle MC_LOOP  ! 
     iLC = Check_LandCoverPresent("MMC-VG",n,Mc(:)%txt4,write_condition=.true.)
     if(iLC<0) cycle MC_LOOP
     !-------------End of Check if LC present in this array ------!
@@ -143,7 +144,7 @@ subroutine Add_NewMosaics(Mc,nMc)
     typ   = Mc(n)%txt2                                  ! VG
     poll  = Mc(n)%txt3                                  ! O3, HNO3, ...
     lctxt = Mc(n)%txt4                                  ! Grid, SNL,..
-    name = trim(typ)//"_"//trim(poll)//"_"//trim(lctxt) ! VG_O3_GRID?
+    name = trims( 'MSC_' // typ//"_"//poll//"_"//lctxt ) ! VG_O3_GRID?
     
     iadv = find_index(poll,species_adv(:)%name )
     if(iadv<1) then
@@ -170,7 +171,7 @@ subroutine Add_NewMosaics(Mc,nMc)
     end select
 
     if(dbg0) write(*,*) "DEBUG nMc ", &
-      trim(name)//":"//trim(Mc(n)%txt2)//":"//trim(Mc(n)%txt3), iadv, iLC
+      trims(name//":"//Mc(n)%txt2//":"//Mc(n)%txt3), iadv, iLC
   end do MC_LOOP
 end subroutine Add_NewMosaics
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -218,7 +219,7 @@ subroutine Add_MosaicVegO3(nVEGO3)
     nMosaic = nMosaic + 1
     call CheckStop(NMosaic>=MAX_MOSAIC_OUTPUTS,dtxt//"too many nMos..EGO3")
     if(dbg0)&
-      write(*,*) "Moscaics", nMosaic, trim(name)// "->" //trim(veg%TXTLC)
+      write(*,*) "Moscaics", nMosaic, trims(name// "->" //veg%TXTLC)
 
     ! Deriv(name, class,    subc,  txt,           unit
     ! Deriv index, f2d,LC, scale dt_scale avg? Inst Yr Mn Day
@@ -266,17 +267,17 @@ subroutine Add_MosaicDDEP(DDEP_ECOS,DDEP_WANTED,nDD)
         xxname = xname
         if(xname(1:4)=="STO_") then
           xxname = xname(5:)
-          if(dbg0) print *, "STO_ ", trim(xname) // "=>"//trim(xxname)
+          if(dbg0) print *, "STO_ ", trims(xname // "=>"// xxname)
         end if
         iadv = find_index(xxname,species_adv(:)%name)         ! Index in ix_adv arrays
-        if(iadv<1) print *, "OOPADVNOW", iadv, trim(xname) // trim(name)
+        if(iadv<1) print *, "OOPADVNOW", iadv, trims(xname // name)
         call CheckStop(iadv<1,dtxt//"Unknown in DDEP_WANTED SPEC: "//trim(xname))
         call Units_Scale(DDEP_WANTED(i)%txt3,iadv,unitscale,units)
         if(dbg0) print *, "ADVNO ",n,iadv,trim(xname), unitscale
 
       case("GROUP")
         igrp = find_index(xname,chemgroups(:)%name) ! array of members: chemgroups%specs
-        if(igrp<1) print *, "OOPNOW", igrp, trim(xname) // trim(name)
+        if(igrp<1) print *, "OOPNOW", igrp, trims(xname // name)
         call CheckStop(igrp<1,dtxt//"Unknown in DDEP_WANTED GROUP: "//trim(xname))
         call Units_Scale(DDEP_WANTED(i)%txt3,-1,unitscale,units)
                       ! Units_Scale(iadv=-1) returns 1.0
@@ -289,7 +290,7 @@ subroutine Add_MosaicDDEP(DDEP_ECOS,DDEP_WANTED,nDD)
           dtxt//" unknown MosaicDDEP type "//trim(DDEP_WANTED(i)%txt2))
       end select
 
-      name = "DDEP_"//trim(xname)//"_m2"//trim(DDEP_ECOS(n)%name)
+      name = "DDEP_"//trims(xname//"_m2"//DDEP_ECOS(n)%name)
 
       ! Deriv(name, class,    subc,  txt,           unit
       ! Deriv index, f2d,dt_scale, scale, avg? Inst/Yr/Mn/Day
@@ -384,7 +385,7 @@ subroutine Add_MosaicOutput(debug_flag,i,j,convfac,DepAdv2Calc,fluxfrac,&
                   ! here and set d-2d at end
 
     if(dbg) write(*,"(a,a)") dtxt//"Add_Mosaic: "// &
-      trim(MosaicOutput(imc)%name), ", " // trim(subclass)
+      trims( MosaicOutput(imc)%name// ", "// subclass )
 
     select case(subclass)
     case("DDEP")
