@@ -16,7 +16,6 @@ module emep_Config_mod
       ! "SbRb"= Seibert !"TIZi" = Original from Trond Iversen tiphysics
   end type PBL_t
   type(PBL_t), public, save :: PBL = PBL_t()
-  
 
   type, private :: EmBio_t
     character(len=10) :: GlobBvocMethod = '-' ! can be MEGAN
@@ -27,5 +26,11 @@ module emep_Config_mod
   end type EmBio_t
   type(EmBio_t), public, save :: EmBio = EmBio_t()
   
+  type, private :: LandCoverInputs_t
+    character(len=200), dimension(2) :: MapFile = 'NOTSET'  ! Usually PS European + global
+    character(len=200) :: LandDefs = '-'   !  LAI, h, etc (was Inputs_LandDefs
+    character(len=200) :: Do3seDefs = '-'  !  DO3SE inputs
+  end type LandCoverInputs_t
+  type(LandCoverInputs_t), public, save :: LandCoverInputs=LandCoverInputs_t()
 
 end module emep_Config_mod

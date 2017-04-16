@@ -123,17 +123,18 @@ contains
   end subroutine Growing_season
 
   !=======================================================================
-  subroutine Init_LandDefs(ncodes, wanted_codes)
+  subroutine Init_LandDefs(fname,ncodes, wanted_codes)
   !=======================================================================
       !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       ! Reads file Inputs_LandDefs.csv and extracts land-defs. Checks that
       ! codes match the "wanted_codes" which have been set in Inputs-Landuse
+      character(len=*), intent(in) :: fname  ! for LandDefs
       integer, intent(in) :: ncodes  ! Num. land codes found in mapped data
       character(len=*), dimension(:), intent(in) :: wanted_codes
       character(len=20), dimension(25) :: Headers
       character(len=200) :: txtinput  ! Big enough to contain one input record
       type(KeyVal), dimension(2) :: KeyValues ! Info on units, coords, etc.
-      character(len=50) :: errmsg, fname
+      character(len=50) :: errmsg
       character(len=*), parameter :: dtxt='Ini-LandDefs:'
       integer :: n, nn, NHeaders, NKeys
       logical :: dbg
@@ -154,7 +155,7 @@ contains
       ! Read data
 
 
-      fname = "Inputs_LandDefs.csv"
+      !fname = "Inputs_LandDefs.csv"
       if ( MasterProc ) then
          write(*,*) dtxt//" for Ncodes= ", ncodes
          do n = 1, ncodes
