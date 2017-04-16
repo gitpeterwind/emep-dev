@@ -42,8 +42,10 @@ logical, save ::      &
   topo_found=.false.      ! topo_nc file found? (vent elevation-model surface height)
 
 integer, parameter :: &
-  NMAX_LOC = 24, &  ! Max number of locations on processor/subdomain
-  NMAX_EMS =6000   ! Max number of events def per location
+  !DSTMP NMAX_LOC = 24, &  ! Max number of locations on processor/subdomain
+  !DSTMP NMAX_EMS =6000   ! Max number of events def per location
+  NMAX_LOC = 5, &  ! Max number of locations on processor/subdomain
+  NMAX_EMS = 300   ! Max number of events def per location
 
 integer, save ::   &        ! No. of ... found on processor/subdomain
   nloc             = -1,&   ! Source locations
