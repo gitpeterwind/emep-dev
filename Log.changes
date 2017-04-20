@@ -155,7 +155,7 @@ changes here (and when committing svn), and Dave will tag as required
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-16th Apr 2017 Dave
+15-20th Apr 2017 Dave, tag rv4_12
 
 1) LandConverInputs - config'd:
 
@@ -192,10 +192,11 @@ config_Outputs_EMEPSTD
 
    *  Action needed: Alvaro
 
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-15th Apr 2017 Dave/Robert/Hannah
+4) NEW DEFAULT CHEM - EmChem16mt
+
 
 NEW::: ZCM_EmChem16mt introduced
+  (Dave/Robert/Hannah)
 
   Significant update of chemistry! Added monoterpenes, simple SQT, replaced
   isoprene chemistry. Fixed PAN rate coefficient bug.
@@ -203,10 +204,13 @@ NEW::: ZCM_EmChem16mt introduced
   Contributions from Hannah Imhof and Robert Begström included.
 
 
+5) Improved Fpart (Robert)
 Aqueous_ml
 
    Corrected use of Fpart in dep calculations
    Expanded list of surrogates (e.g. CWDEP_0p5) for organics
+
+6) BVOC, etc, Dave
 
 Biogenics_ml, emep_Config_mod
 
