@@ -899,8 +899,11 @@ foreach my $scenflag ( @runs ) {
 # new inputs style (Aug 2007)  with compulsory headers:
 # From rv3_14 used only for FORECAST mode
   $ifile{"$DATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse" if ($CWF and ($GRID ne "MACC14")) ;
-#  $ifile{"$DataDir/Landuse/landuseGLC2000_INT1.nc"} ="GLOBAL_landuse.nc";
 
+# *******
+#  APRIL 2017. Use config system  now to specify landcover files!
+# *******
+#  $ifile{"$DataDir/Landuse/landuseGLC2000_INT1.nc"} ="GLOBAL_landuse.nc";
   #CLM $ifile{"$DataDir/LanduseGLC.nc"} ="LanduseGLC.nc";
   # NB: a 1km Landuse is also available 
 #APR15  $ifile{"$DataDir/Landuse/Landuse_PS_5km_LC.nc"} ="Landuse_PS_5km_LC.nc";
