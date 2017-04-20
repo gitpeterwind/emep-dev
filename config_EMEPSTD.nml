@@ -26,8 +26,9 @@
 !
  LandCoverInputs%LandDefs   = 'DataDir/LandInputs_Apr2017/Inputs_LandDefs.csv',
  LandCoverInputs%Do3seDefs  = 'DataDir/LandInputs_Apr2017/Inputs_DO3SE.csv',
- LandCoverInputs%MapFile(1) = 'DataDir/Landuse/Landuse_PS_5km_LC.nc',
-! LandCoverInputs%MapFile(2) = 'DataDir/LandInputs_Apr2017/glc2000mCLM.nc',
+ LandCoverInputs%MapFile =
+    'DataDir/Landuse/Landuse_PS_5km_LC.nc',
+    'DataDir/LandInputs_Apr2017/glc2000mCLM.nc',
 ! EmBio%IsopFac           =  1.0,
 ! PBL%ZiMIN             =  50.0,
 !------------------------------
@@ -159,7 +160,7 @@
   DEBUG%HOURLY_OUTPUTS  = F,
   DEBUG%LANDDEFS        = F,
   DEBUG%LANDUSE         = 0,
-  DEBUG%MOSAICS         = T,
+  DEBUG%MOSAICS         = F,
   DEBUG%PFT_MAPS        = 0,   ! in testing
   DEBUG%PHYCHEM         = F,
   DEBUG%RSUR            = F,
