@@ -318,21 +318,21 @@ subroutine Define_Derived()
   !Deriv index, f2d, dt_scale, scale, avg? rho Inst Yr Mn Day atw
   ! for AOT we can use index for the threshold, usually 40
   call AddNewDeriv( "AOT40_Grid", "GRIDAOT","subclass","-", "ppb h", &
-          40, -99, T, 1.0/3600.0, F,   'YMD'    )
+          40, -99, T, 1.0/3600.0, F,   'YM'    )
 !-------------------------------------------------------------------------------
   !Deriv(name, class,    subc,  txt,           unit
   !Deriv index, f2d, dt_scale, scale, avg? rho Inst Yr Mn Day atw
 
 ! NOT YET: Scale pressure by 0.01 to get hPa
   call AddNewDeriv( "PSURF ","PSURF",  "SURF","-",   "hPa", &
-               -99,  -99,  F,  1.0,  T,   'YMD' )
+               -99,  -99,  F,  1.0,  T,   'YM' )
 
   !Added for TFMM scale runs
-  call AddNewDeriv( "Kz_m2s","Kz_m2s",  "-","-",   "m2/s", &
-               -99,  -99, F, 1.0,  T,  'YMD' )
+!A17  call AddNewDeriv( "Kz_m2s","Kz_m2s",  "-","-",   "m2/s", &
+!A17               -99,  -99, F, 1.0,  T,  'Y' )
 
-  call AddNewDeriv( "u_ref","u_ref",  "-","-",   "m/s", &
-               -99,  -99, F, 1.0,  T,  'YMD' )
+!A17  call AddNewDeriv( "u_ref","u_ref",  "-","-",   "m/s", &
+!A17               -99,  -99, F, 1.0,  T,  'Y' )
 
 ! call AddNewDeriv( "SoilWater_deep","SoilWater_deep",  "-","-",   "m", &
 !               -99,  -99, F, 1.0,  T,  'YMD' )
@@ -340,11 +340,11 @@ subroutine Define_Derived()
 !               -99,  -99, F, 1.0,  T,  'YMD' )
 
   call AddNewDeriv( "T2m","T2m",  "-","-",   "deg. C", &
-               -99,  -99, F, 1.0,  T,  'YMD' )
-  call AddNewDeriv( "Idirect","Idirect",  "-","-",   "W/m2", &
-               -99,  -99, F, 1.0,  T,  'YMD' )
-  call AddNewDeriv( "Idiffuse","Idiffuse",  "-","-",   "W/m2", &
-               -99,  -99, F, 1.0,  T,  'YMD' )
+               -99,  -99, F, 1.0,  T,  'YM' )
+!A17  call AddNewDeriv( "Idirect","Idirect",  "-","-",   "W/m2", &
+!A17               -99,  -99, F, 1.0,  T,  'YM' )
+!A17  call AddNewDeriv( "Idiffuse","Idiffuse",  "-","-",   "W/m2", &
+!A17               -99,  -99, F, 1.0,  T,  'YM' )
 
 ! OutputFields can contain both 2d and 3d specs.
 ! Settings for 2D and 3D are independant.
@@ -597,7 +597,7 @@ subroutine Define_Derived()
     if(EMIS_BioNat(ind)(1:5)=="ASH_L")cycle   ! skip ASH_LxxByy for AshInversion
     dname = "Emis_mgm2_BioNat" // trim(EMIS_BioNat(ind) )
     call AddNewDeriv( dname, "NatEmis", "-", "-", "mg/m2", &
-                 ind , -99, T ,    1.0e6,     F, 'YMD' )
+                 ind , -99, T ,    1.0e6,     F, 'YM' )
   end do
 
 ! SNAP emissions called every hour, given in kg/m2/s, but added to
@@ -608,12 +608,12 @@ subroutine Define_Derived()
   do  ind = 1, size(EMIS_FILE)
     dname = "Emis_mgm2_" // trim(EMIS_FILE(ind))
     call AddNewDeriv( dname, "SnapEmis", "-", "-", "mg/m2", &
-                       ind , -99, T,  1.0e6,  F,  'YMD' )
+                       ind , -99, T,  1.0e6,  F,  'YM' )
   end do ! ind
   if(USE_OCEAN_DMS)then
     dname = "Emis_mgm2_DMS"
     call AddNewDeriv( dname, "Emis_mgm2_DMS", "-", "-", "mg/m2", &
-                       ind , -99, T,  1.0,  F,  'YMD' )
+                       ind , -99, T,  1.0,  F,  'YM' )
   end if
   if(USE_OCEAN_NH3)then
      dname = "Emis_mgm2_Ocean_NH3"
@@ -648,7 +648,7 @@ subroutine Define_Derived()
   do ind=1,nrcemis
     dname = "EmisSplit_mgm2_"//trim(species(iqrc2itot(ind))%name)
     call AddNewDeriv(dname, "EmisSplit_mgm2", "-", "-", "mg/m2", &
-                        ind , -99, T, 1.0e6,   F,  'YMD' )
+                        ind , -99, T, 1.0e6,   F,  'YM' )
   end do
 
   if(find_index("SURF_PM25water",def_2d(:)%name)<1)&
