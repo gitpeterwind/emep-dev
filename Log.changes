@@ -157,6 +157,8 @@ changes here (and when committing svn), and Dave will tag as required
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15-20th Apr 2017 Dave, tag rv4_12
 
+BIGGISH CHANGES CONTINUE. RESULTS HAVE CHANGED!!!!
+
 1) LandConverInputs - config'd:
 
 emep_Config_mod.f90
@@ -203,6 +205,16 @@ NEW::: ZCM_EmChem16mt introduced
 
   Contributions from Hannah Imhof and Robert Begström included.
 
+NEW::: ZCM_EmChem16mt/Aero2017n.species, .reactions  introduced
+
+   update/cleanup of  aerosol  reactions for N2O5 testing. May change in
+   April as testing proceeds.
+
+
+mk.GenChem  - defaults to new system
+
+Setup_1d_ml - Added cNO3, cNO2 for N2O5 testing
+
 
 5) Improved Fpart (Robert)
 Aqueous_ml
@@ -210,7 +222,7 @@ Aqueous_ml
    Corrected use of Fpart in dep calculations
    Expanded list of surrogates (e.g. CWDEP_0p5) for organics
 
-6) BVOC, etc, Dave
+6) BVOC, Dave
 
 Biogenics_ml, emep_Config_mod
 
@@ -218,6 +230,11 @@ Biogenics_ml, emep_Config_mod
     - to be used with new LandInputs files
 
    Downgraded MEGAN. Now prefer to use GLC/CLM methods (to be commited soon!)
+
+7) Misc
+
+Derived_ml - changed YMD to YM for various not so important outputs (u_ref, Kz, Idirect, etc) to
+  reduce size of Base_day.nc . Need to move to config soon!
 
 DO3SE_ml
 
