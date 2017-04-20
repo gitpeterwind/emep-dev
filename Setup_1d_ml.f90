@@ -392,8 +392,8 @@ contains
    cHNO3(:) = cMolSpeed(temp(:), 63.0)
    cHO2(:)  = cMolSpeed(temp(:), 33.0)
    cO3(:)   = cMolSpeed(temp(:), 48.0)
-   !cNO3(:)  = cMolSpeed(temp(:), 62.0)
-   !cNO2(:)  = cMolSpeed(temp(:), 46.0)
+   cNO3(:)  = cMolSpeed(temp(:), 62.0)
+   cNO2(:)  = cMolSpeed(temp(:), 46.0)
 
   ! 5 ) Rates  (!!!!!!!!!! NEEDS TO BE AFTER RH, XN, etc. !!!!!!!!!!)
 
