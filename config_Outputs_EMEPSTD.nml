@@ -339,8 +339,8 @@ COLUMNDAT_WANTED =
 !restrict size of output files. (Sizes defined with respect to fulldomain)
 !
 !SOUTH NORWAY:
-  hour_DOMAIN=330,430,250,350, !=[istart,iend,jstart,jend], default RUNDOMAIN+[1,-1,1,-1]
-  day_DOMAIN=330,430,250,350, !=[istart,iend,jstart,jend], default RUNDOMAIN+[1,-1,1,-1]
+!  hour_DOMAIN=330,430,250,350, !=[istart,iend,jstart,jend], default RUNDOMAIN+[1,-1,1,-1]
+!  day_DOMAIN=330,430,250,350, !=[istart,iend,jstart,jend], default RUNDOMAIN+[1,-1,1,-1]
 !NL
 !  hour_DOMAIN=320,390,200,240, !=[istart,iend,jstart,jend], default RUNDOMAIN+[1,-1,1,-1]
 !  day_DOMAIN=320,390,200,240, !=[istart,iend,jstart,jend], default RUNDOMAIN+[1,-1,1,-1]

@@ -150,9 +150,14 @@ the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
-TAGS. svn does not have the same tagging system as cvs. For now, record
-changes here (and when committing svn), and Dave will tag as required
-
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21st Apr 2017 Peter
+Reorganization of uEMEP. Own uEMEP file with uemep routines.
+uEMEP: for each gridcell computes fractions for a surrounding region.
+Needs write out many dimensional data (i,j,k,t,sector, + x and y for origin of pollutant).
+New routine in NetCDF_ml that writes many dimensional array.
+Still need interface for input parameters and more checking.
+Molecular mass of emissions/pollutant hardcoded now. 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 10th Mar 2017 Dave  rv4_12beta

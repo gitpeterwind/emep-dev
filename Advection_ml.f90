@@ -72,6 +72,7 @@
   use Convection_ml,     only : convection_pstar,convection_Eta
   use EmisDef_ml,        only : NSECTORS, Nneighbors, loc_frac, loc_frac_ext
   use GridValues_ml,     only : GRIDWIDTH_M,xm2,xmd,xm2ji,xmdji,xm_i, Pole_Singular, &
+                                dhs1, dhs1i, dhs2i, &
                                 dA,dB,i_fdom,j_fdom,i_local,j_local,Eta_bnd,dEta_i,&
                                 extendarea_N
   use Io_ml,             only : datewrite
@@ -93,13 +94,12 @@
            ,neighbor,WEST,EAST,SOUTH,NORTH,NOPROC            &
            ,MSG_NORTH2,MSG_EAST2,MSG_SOUTH2,MSG_WEST2
   use PhysicalConstants_ml, only : GRAV,ATWAIR ! gravity
+  use uEMEP_ml, only :uemep_adv_x, uemep_adv_y, uemep_adv_k
 
   implicit none
   private
 
   integer, private, parameter :: NADVS      =  3
-
-  real, public, save, allocatable,dimension(:)  ::  dhs1, dhs1i, dhs2i
 
 !  for vertical advection (nonequidistant spacing)
   real, private, save, allocatable, dimension(:,:,:)  ::  alfnew
@@ -130,8 +130,6 @@
   private :: advy
   private :: preadvx
   private :: preadvy
-  private :: uemep_adv_x
-  private :: uemep_adv_y
 
    ! Checks & warnings
    ! introduced after getting Nan when using "poor" meteo can give this too.
@@ -281,11 +279,11 @@
     integer ::isum,isumtot,iproc
     real :: xn_advjktot(NSPEC_ADV),xn_advjk(NSPEC_ADV),rfac
     real :: dpdeta0,mindpdeta,xxdg,fac1
-    real :: xnold,xn_k_old,xn_k(kmax_mid,0:NSECTORS,Nneighbors),xn,x,xx
+    real :: xnold,xn_k_old,xn_k(kmax_mid,1:uEMEP%Nsec_poll,(uEMEP%dist*2+1)*(uEMEP%dist*2+1)),xn,x,xx
     real :: fluxx(NSPEC_ADV,-1:LIMAX+1)
     real :: fluxy(NSPEC_ADV,-1:LJMAX+1)
     real :: fluxk(NSPEC_ADV,KMAX_MID)
-    real :: uEMEPfac(KMAX_MID),f_in,f_out
+    real :: f_in,f_out
     logical,save :: firstcall = .true.
 
 
@@ -299,13 +297,6 @@
     integer,parameter :: KMIN_uemep=2
 
     xxdg=GRIDWIDTH_M*GRIDWIDTH_M/GRAV !constant used in loops
-
-    if(USE_uEMEP)then
-       ip=1
-       do k = 1,KMAX_MID
-          uEMEPfac(k)=(dA(k)/Pref+dB(k))/ATWAIR/GRAV*1.0E6
-       end do
-    end if
 
     call Code_timer(tim_before)
 
@@ -478,9 +469,9 @@
           do k = 1,KMAX_MID
              fac1=(dA(k)/Pref+dB(k))*xxdg
 
-             if(USE_uEMEP)then
+             if(USE_uEMEP .and. k>KMAX_MID-uEMEP%Nvert)then                
                  call  extendarea_N(loc_frac(1,-uEMEP%dist,-uEMEP%dist,1,1,k),loc_frac_ext,1,uEMEP%Nsec_poll*(2*uEMEP%dist+1)**2,1)                
-             end if
+              end if
 
              do j = lj0,lj1
                 if(niterx(j,k)<=NITERXMAX)then
@@ -502,7 +493,7 @@
                            ,dth,fac1,fluxx)
 
                       do i = li0,li1
-                         if(USE_uEMEP)call uemep_adv_x(fluxx,i,j,k)                             
+                         if(USE_uEMEP .and. k>KMAX_MID-uEMEP%Nvert)call uemep_adv_x(fluxx,i,j,k)                             
 
                          dpdeta0=(dA(k)+dB(k)*ps(i,j,1))*dEta_i(k)
                          psi = dpdeta0/max(dpdeta(i,j,k),1.0)
@@ -516,10 +507,10 @@
              !          end do !k horizontal (x) advection
 
              call Add_2timing(18,tim_after,tim_before,"advecdiff:advx")
-             if(USE_uEMEP)then
+             if(USE_uEMEP .and. k>KMAX_MID-uEMEP%Nvert)then
                 call  extendarea_N(loc_frac(1,-uEMEP%dist,-uEMEP%dist,1,1,k),loc_frac_ext,1,uEMEP%Nsec_poll*(2*uEMEP%dist+1)**2,1)                
              end if
-
+             
              ! y-direction
              !          do k = 1,KMAX_MID
              do i = li0,li1
@@ -540,7 +531,7 @@
                         ,dth,fac1,fluxy)
 
                    do j = lj0,lj1
-                      if(USE_uEMEP)call uemep_adv_y(fluxy,i,j,k)
+                      if(USE_uEMEP .and. k>KMAX_MID-uEMEP%Nvert)call uemep_adv_y(fluxy,i,j,k)
 
                       dpdeta0=(dA(k)+dB(k)*ps(i,j,1))*dEta_i(k)
                       psi = dpdeta0/max(dpdeta(i,j,k),1.0)
@@ -564,32 +555,7 @@
                    call advvk(xn_adv(1,i,j,1),dpdeta(i,j,1),Etadot(i,j,1,1),dt_s,fluxk)
 
                    if(USE_uEMEP)then
-                      do k=KMIN_uemep,KMAX_MID
-                         xn=0.0
-                         x=0.0
-                         xx=0.0
-                         do iix=1,uEMEP%Nix
-                            ix=uEMEP%ix(iix)
-                            xn=xn+xn_adv(ix,i,j,k)*uEMEP%mw(iix)
-                            if(k<KMAX_MID)x=x-dhs1i(k+1)*fluxk(ix,k+1)*uEMEP%mw(iix)
-                            xx=xx+dhs1i(k+1)*fluxk(ix,k)*uEMEP%mw(iix)
-                         end do
-                         xn=xn!*uEMEPfac(k)
-                         x=x!*uEMEPfac(k)
-                         xx=xx!*uEMEPfac(k)
-                         xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. outgoing flux 
-                         f_in=max(0.0,x)+max(0.0,xx)!positive part. incoming flux
-                         do dy=-uEMEP%dist,uEMEP%dist
-                            do dx=-uEMEP%dist,uEMEP%dist
-                               do isec_poll=1,uEMEP%Nsec_poll
-                                  loc_frac(isec_poll,dx,dy,i,j,k) = (loc_frac(isec_poll,dx,dy,i,j,k) *xn + &
-                                 loc_frac(isec_poll,dx,dy,i,j,max(k-1,KMIN_uemep))*max(0.0,xx) + & !will be wrong at top, but loc_frac at top should be negligible
-                                 loc_frac(isec_poll,dx,dy,i,j,min(k+1,KMAX_MID))*max(0.0,x))/(xn+f_in+1.e-20)
-                               enddo
-                            enddo
-                         enddo
-
-                      end do
+                      call uemep_adv_k(fluxk,i,j)
                    end if
 
                    if(iters<niters .or. iterxys < niterxys)then
@@ -620,7 +586,7 @@
           iterxys = iterxys + 1
           do k = 1,KMAX_MID
              fac1=(dA(k)/Pref+dB(k))*xxdg
-             if(USE_uEMEP)then
+             if(USE_uEMEP .and. k>KMAX_MID-uEMEP%Nvert)then
                 call  extendarea_N(loc_frac(1,-uEMEP%dist,-uEMEP%dist,1,1,k),loc_frac_ext,1,uEMEP%Nsec_poll*(2*uEMEP%dist+1)**2,1)                
              end if
              do i = li0,li1
@@ -642,7 +608,7 @@
                         ,dth,fac1,fluxy)
 
                    do j = lj0,lj1
-                      if(USE_uEMEP)call uemep_adv_y(fluxy,i,j,k)
+                      if(USE_uEMEP .and. k>KMAX_MID-uEMEP%Nvert)call uemep_adv_y(fluxy,i,j,k)
 
                       dpdeta0=(dA(k)+dB(k)*ps(i,j,1))*dEta_i(k)
                       psi = dpdeta0/max(dpdeta(i,j,k),1.0)
@@ -656,7 +622,7 @@
              call Add_2timing(20,tim_after,tim_before,"advecdiff:preadvy,advy")
 
              !          do k = 1,KMAX_MID
-             if(USE_uEMEP)then
+             if(USE_uEMEP .and. k>KMAX_MID-uEMEP%Nvert)then
                 call  extendarea_N(loc_frac(1,-uEMEP%dist,-uEMEP%dist,1,1,k),loc_frac_ext,1,uEMEP%Nsec_poll*(2*uEMEP%dist+1)**2,1)                
              end if
  
@@ -680,7 +646,7 @@
                            ,dth,fac1,fluxx)
 
                       do i = li0,li1
-                         if(USE_uEMEP)call uemep_adv_x(fluxx,i,j,k)
+                         if(USE_uEMEP .and. k>KMAX_MID-uEMEP%Nvert)call uemep_adv_x(fluxx,i,j,k)
 
                          dpdeta0=(dA(k)+dB(k)*ps(i,j,1))*dEta_i(k)
                          psi = dpdeta0/max(dpdeta(i,j,k),1.0)
@@ -705,31 +671,7 @@
                    call advvk(xn_adv(1,i,j,1),dpdeta(i,j,1),Etadot(i,j,1,1),dt_s,fluxk)
 
                    if(USE_uEMEP)then
-                      do k=KMIN_uemep,KMAX_MID
-                         xn=0.0
-                         x=0.0
-                         xx=0.0
-                         do iix=1,uEMEP%Nix
-                            ix=uEMEP%ix(iix)
-                            xn=xn+xn_adv(ix,i,j,k)*uEMEP%mw(iix)
-                            if(k<KMAX_MID)x=x-dhs1i(k+1)*fluxk(ix,k+1)*uEMEP%mw(iix)
-                            xx=xx+dhs1i(k+1)*fluxk(ix,k)*uEMEP%mw(iix)
-                         end do
-                         xn=xn!*uEMEPfac(k)
-                         x=x!*uEMEPfac(k)
-                         xx=xx!*uEMEPfac(k)
-                         xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. outgoing flux 
-                         f_in=max(0.0,x)+max(0.0,xx)!positive part. incoming flux
-                         do dy=-uEMEP%dist,uEMEP%dist
-                            do dx=-uEMEP%dist,uEMEP%dist
-                               do isec_poll=1,uEMEP%Nsec_poll
-                                  loc_frac(isec_poll,dx,dy,i,j,k) = (loc_frac(isec_poll,dx,dy,i,j,k) *xn + &
-                                 loc_frac(isec_poll,dx,dy,i,j,max(k-1,KMIN_uemep))*max(0.0,xx) + & !will be wrong at top, but loc_frac at top should be negligible
-                                 loc_frac(isec_poll,dx,dy,i,j,min(k+1,KMAX_MID))*max(0.0,x))/(xn+f_in+1.e-20)
-                               enddo
-                            enddo
-                         enddo
-                      end do
+                      call uemep_adv_k(fluxk,i,j)
                    end if
 
                    if(iters<niters .or. iterxys < niterxys)then
@@ -856,31 +798,23 @@
        do i = li0,li1
 
           if(USE_uEMEP)then
-
+             n=0
              do dy=-uEMEP%dist,uEMEP%dist
                 do dx=-uEMEP%dist,uEMEP%dist
-                   if(dx==0 .and. dy==0 )n=1
-                   if(dx==-1 .and. dy==0 )n=2
-                   if(dx==1 .and. dy== 0)n=3
-                   if(dx== 0.and. dy== -1)n=5
-                   if(dx== 0.and. dy== 1)n=4
-                   if(dx== 1.and. dy== 1)n=8
-                   if(dx== -1.and. dy== 1)n=9
-                   if(dx== 1.and. dy== -1)n=6
-                   if(dx== -1.and. dy==-1 )n=7
+                   n=n+1
                    do isec_poll=1,uEMEP%Nsec_poll
-                      isec=isec_poll-1
-                      do k = 1,KMAX_MID
-                         xn_k(k,isec,n)=0.0
+                      xn_k(1:KMAX_MID,isec_poll,n)=0.0
+                      do k = KMAX_MID-uEMEP%Nvert+1,KMAX_MID
                          do iix=1,uEMEP%Nix
                             ix=uEMEP%ix(iix)
                             !assumes mixing ratios units, but weight by mass
-                            xn_k(k,isec,n)=xn_k(k,isec,n)+xn_adv(ix,i,j,k)*uEMEP%mw(iix)
+                            xn_k(k,isec_poll,n)=xn_k(k,isec_poll,n)+xn_adv(ix,i,j,k)*uEMEP%mw(iix)
                          end do
-                         !                      xn_k(k,isec,n)=xn_k(k,isec,n)*loc_frac(isec,n,i,j,k)
-                         xn_k(k,isec,n)=xn_k(k,isec,n)*loc_frac(isec_poll,dx,dy,i,j,k)
-                      end do
-                      call vertdiff_1d(xn_k(1,isec,n),EtaKz(i,j,1,1),ds3,ds4,ndiff)!does the same as vertdiffn, but for one component
+
+                         xn_k(k,isec_poll,n)=xn_k(k,isec_poll,n)*loc_frac(isec_poll,dx,dy,i,j,k)
+ 
+                     end do
+                      call vertdiff_1d(xn_k(1,isec_poll,n),EtaKz(i,j,1,1),ds3,ds4,ndiff)!does the same as vertdiffn, but for one component
                    enddo
                 enddo
              enddo
@@ -891,29 +825,19 @@
           !________
           
           if(USE_uEMEP)then
-             do k = 2,KMAX_MID
+             do k = KMAX_MID-uEMEP%Nvert+1,KMAX_MID
                 x=0.0
                 do iix=1,uEMEP%Nix
                    ix=uEMEP%ix(iix)
                    !conversion from mixing ratio to mg/m2
                    x=x+xn_adv(ix,i,j,k)*uEMEP%mw(iix)
                 end do
-
+                n=0
                 do dy=-uEMEP%dist,uEMEP%dist
                    do dx=-uEMEP%dist,uEMEP%dist
-                   if(dx==0 .and. dy==0 )n=1
-                   if(dx==-1 .and. dy==0 )n=2
-                   if(dx==1 .and. dy== 0)n=3
-                   if(dx== 0.and. dy== -1)n=5
-                   if(dx== 0.and. dy== 1)n=4
-                   if(dx== 1.and. dy== 1)n=8
-                   if(dx== -1.and. dy== 1)n=9
-                   if(dx== 1.and. dy== -1)n=6
-                   if(dx== -1.and. dy==-1 )n=7
-
+                      n=n+1
                       do isec_poll=1,uEMEP%Nsec_poll
-                         isec=isec_poll-1
-                         loc_frac(isec_poll,dx,dy,i,j,k) = xn_k(k,isec,n)/(x+1.E-30)
+                         loc_frac(isec_poll,dx,dy,i,j,k) = xn_k(k,isec_poll,n)/(x+1.E-30)
                       end do
                    end do
                 end do
@@ -3934,96 +3858,4 @@ end if
     end if
 
   end subroutine adv_vert_fourth
-
-  subroutine uemep_adv_y(fluxy,i,j,k)
-    real, intent(in)::fluxy(NSPEC_ADV,-1:LJMAX+1)
-    integer, intent(in)::i,j,k
-    real ::x,xn,xx,f_in,inv_tot
-    integer ::iix,ix,dx,dy,isec_poll
-    xn=0.0
-    x=0.0
-    xx=0.0
-    do iix=1,uEMEP%Nix
-       ix=uEMEP%ix(iix)
-       !NB: here xn already includes the fluxes
-       !xn=xn+(xn_adv(ix,i,j,k)+xm2(i,j)*fluxy(ix,j)-xm2(i,j)*fluxy(ix,j-1))*uEMEP%mw(iix)
-       xn=xn+xn_adv(ix,i,j,k)*uEMEP%mw(iix)
-       x=x-xm2(i,j)*fluxy(ix,j)*uEMEP%mw(iix)!flux through "North" face (Up)
-       xx=xx+xm2(i,j)*fluxy(ix,j-1)*uEMEP%mw(iix)!flux through "South" face (Bottom)
-    end do
-
-    xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. all outgoing flux 
-    f_in=max(0.0,x)+max(0.0,xx)!positive part. all incoming flux
-    inv_tot=1.0/(xn+f_in+1.e-20)!incoming dilutes
-
-    xx=max(0.0,xx)*inv_tot!dilution factor due to flux through "South" face (Bottom)
-    x =max(0.0,x)*inv_tot!dilution factor due to flux through "North" face (Up)
-
-    do dy=-uEMEP%dist,uEMEP%dist
-       do dx=-uEMEP%dist,uEMEP%dist
-!        if(k==KMAX_MID.and.i==5.and.j==5.and.)write(*,*)'B ',me,loc_frac(0,1,i,j,k),xn/(xn+f_in+1.e-20)
-          do isec_poll=1,uEMEP%Nsec_poll
-             loc_frac(isec_poll,dx,dy,i,j,k) = loc_frac(isec_poll,dx,dy,i,j,k) *xn *inv_tot
-          enddo
-          if(dx==0 .and. dy==0)cycle!temporary: no return of pollutants
-          if(x>0.0.and.dy<uEMEP%dist)then
-             do isec_poll=1,uEMEP%Nsec_poll
-                loc_frac(isec_poll,dx,dy,i,j,k) = loc_frac(isec_poll,dx,dy,i,j,k)+ loc_frac_ext(isec_poll,dx,dy+1,i,j+1)*x
-             enddo
-          endif
-          if(xx>0.0.and.dy>uEMEP%dist-1)then
-             do isec_poll=1,uEMEP%Nsec_poll
-                loc_frac(isec_poll,dx,dy,i,j,k) = loc_frac(isec_poll,dx,dy,i,j,k)+ loc_frac_ext(isec_poll,dx,dy-1,i,j-1)*xx
-             enddo
-          endif
-       enddo
-    enddo
-
-  end subroutine uemep_adv_y
-
-  subroutine uemep_adv_x(fluxx,i,j,k)
-    real, intent(in)::fluxx(NSPEC_ADV,-1:LIMAX+1)
-    integer, intent(in)::i,j,k
-    real ::x,xn,xx,f_in,inv_tot
-    integer ::iix,ix,dx,dy,isec_poll
-    xn=0.0
-    x=0.0
-    xx=0.0
-    do iix=1,uEMEP%Nix
-       ix=uEMEP%ix(iix)
-       !NB: here xn already includes the fluxes
-       !xn=xn+(xn_adv(ix,i,j,k)+xm2(i,j)*fluxy(ix,j)-xm2(i,j)*fluxx(ix,i-1))*uEMEP%mw(iix)
-       xn=xn+xn_adv(ix,i,j,k)*uEMEP%mw(iix)
-       x=x-xm2(i,j)*fluxx(ix,i)*uEMEP%mw(iix)!flux through "East" face (Right)
-       xx=xx+xm2(i,j)*fluxx(ix,i-1)*uEMEP%mw(iix)!flux through 
-    end do
-
-    xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. all outgoing flux 
-    f_in=max(0.0,x)+max(0.0,xx)!positive part. all incoming flux
-    inv_tot=1.0/(xn+f_in+1.e-20)!incoming dilutes
-
-    x =max(0.0,x)*inv_tot!dilution factor due to flux through "East" face (Right)
-    xx=max(0.0,xx)*inv_tot!dilution factor due to flux through "West" face (Left)
-
-    do dy=-uEMEP%dist,uEMEP%dist
-       do dx=-uEMEP%dist,uEMEP%dist
-          do isec_poll=1,uEMEP%Nsec_poll
-             loc_frac(isec_poll,dx,dy,i,j,k) = loc_frac(isec_poll,dx,dy,i,j,k) *xn *inv_tot
-          enddo
-          if(dx==0 .and. dy==0)cycle
-          if(x>0.0.and.dx<uEMEP%dist)then
-             do isec_poll=1,uEMEP%Nsec_poll
-                loc_frac(isec_poll,dx,dy,i,j,k) = loc_frac(isec_poll,dx,dy,i,j,k)+ loc_frac_ext(isec_poll,dx+1,dy,i+1,j)*x
-             enddo
-          endif
-          if(xx>0.0.and.dx>uEMEP%dist-1)then
-             do isec_poll=1,uEMEP%Nsec_poll
-                loc_frac(isec_poll,dx,dy,i,j,k) = loc_frac(isec_poll,dx,dy,i,j,k)+ loc_frac_ext(isec_poll,dx-1,dy,i-1,j)*xx
-             enddo
-          endif
-       enddo
-    enddo
-
-  end subroutine uemep_adv_x
-
 end module Advection_ml

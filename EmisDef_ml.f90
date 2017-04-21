@@ -188,8 +188,34 @@ real, public, allocatable, save, dimension(:,:,:) :: &
   gridrcroadd,    & ! Road dust emissions
   gridrcroadd0      ! varies every hour
 
+!
+! The output emission matrix for the 11-SNAP data is snapemis:
+!
+real, public, allocatable, dimension(:,:,:,:,:), save :: &
+  snapemis      ! main emission arrays, in kg/m2/s
+
+real, public, allocatable, dimension(:,:,:,:), save :: &
+  snapemis_flat ! main emission arrays, in kg/m2/s  
+
+real, public, allocatable, dimension(:,:,:,:), save :: &
+! Not sure if it is really necessary to keep the country info; gives rather messy code but consistent with the rest at least (and can do the seasonal scaling for Nordic countries in the code instead of as preprocessing) 
+  roaddust_emis_pot ! main road dust emission potential arrays, in kg/m2/s (to be scaled!)
+
+! We store the emissions for output to d_2d files and netcdf in kg/m2/s
+real, public, allocatable, dimension(:,:,:), save :: SumSnapEmis,SumSplitEmis
+
+!should be defined somewhere else?
 real, public, allocatable, dimension(:,:,:,:,:,:), save :: &
-  loc_frac    ! Fraction of pollutants that are produced locally
+  loc_frac&    ! Fraction of pollutants that are produced locally
+  ,loc_frac_hour&  !Houry average of local fractions
+  ,loc_frac_day&  !Daily average of local fractions
+  ,loc_frac_month&  !Monthly average of local fractions
+  ,loc_frac_full  !Fullrun average of local fractions
+real, public, allocatable, dimension(:,:,:), save :: &
+   loc_tot_hour&   !Daily average of all contributions
+  ,loc_tot_day&   !Daily average of all contributions
+  ,loc_tot_month&  !Monthly average of all contributions
+  ,loc_tot_full  !Fullrun average of all contributions
 real, public, allocatable, dimension(:,:,:,:,:), save :: &
   loc_frac_ext  ! Fraction of pollutants extended xy size, without k dimension
 integer, public, parameter:: Nneighbors = 9 !localfractions from 8 neighbors + self

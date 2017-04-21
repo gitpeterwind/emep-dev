@@ -12,9 +12,9 @@
 #for express queue (max 4 hours):  sbatch --qos=devel run.pl
 #Queue system commands start with #SBATCH 
 #SBATCH -A nn2890k
-#SBATCH --ntasks=40
+#SBATCH --ntasks=120
 #SBATCH --mem=32000
-#SBATCH --time=4:0:0
+#SBATCH --time=24:0:0
 #activate the following line for runs which last longer than 48 hours AND use more than one node
 ##SBATCH --partition=multinode 
 #SBATCH --job-name=emep
@@ -117,8 +117,9 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
 
  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_11_3","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
+ ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_11_3","EmChem09soa","EMEPSTD","EMEPSTD","EMEP01",0);
 #($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3074","EmChem09soa","EMEPGLOB","EMEPSTD","GLOBAL",0);
- ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("emep-dev","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
+# ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("emep-dev","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
 
 my %BENCHMARK;
 # OpenSource 2008
@@ -311,9 +312,9 @@ my $VBS   = 0;
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/emep-mscw";   # input of source-code
 
-   $ProgDir  = "$HOMEROOT/$USER/emep-mscw/$testv";   # input of source-code for testv
-   $ProgDir  = "/prod/forecast/emep/eemep/src/Unimod.$testv" if $eCWF and ($USER eq $FORCAST);
-   $ProgDir  = "$CWF_DIR/src/Unimod.$testv" if $CWF and -d $CWF_DIR;
+ #  $ProgDir  = "$HOMEROOT/$USER/emep-mscw/$testv";   # input of source-code for testv
+#   $ProgDir  = "/prod/forecast/emep/eemep/src/Unimod.$testv" if $eCWF and ($USER eq $FORCAST);
+#   $ProgDir  = "$CWF_DIR/src/Unimod.$testv" if $CWF and -d $CWF_DIR;
 my $ChemDir  = "$ProgDir/ZCM_$Chem";
 my $Specials = "specials";  # default
 #$Specials = "TSAP_Jul2012";  # used for TSAP runs in July 2012
@@ -416,7 +417,7 @@ my $subv        = "$testv" ;                  # sub-version (to track changes)
 #my $scenario = "uEMEP05_nh3";     # Reset later if SR
 #my $scenario = "uEMEP_NOx";     # Reset later if SR
 #my $scenario = "uEMEP_NOx_newmass";     # Reset later if SR
-my $scenario = "test";     # Reset later if SR
+my $scenario = "JanN7d20";     # Reset later if SR
 #my $scenario = "Base_nh3";     # Reset later if SR
 #my $scenario = "Oslo_only";     # Reset later if SR
 #my $scenario = "Oslo_s7";     # Reset later if SR
@@ -524,7 +525,7 @@ $month_days[2] += leap_year($year);
 my $mm1 ="01";      # first month, use 2-digits!
 my $mm2 ="01";      # last month, use 2-digits!
 my $dd1 =  1;       # Start day, usually 1
-my $dd2 =  1;       # End day (can be too large; will be limited to max number of days in the month)
+my $dd2 = 31;       # End day (can be too large; will be limited to max number of days in the month)
                     # put dd2=0 for 1 timestep run/test.
 # Allways runn full year on benchmark mode
 ($mm1,$mm2,$dd1,$dd2)=("01","12",1,31) if (%BENCHMARK);

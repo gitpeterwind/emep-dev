@@ -17,8 +17,9 @@ use DA_3DVar_ml,      only: main_3dvar, T_3DVAR
 use Derived_ml,       only: DerivedProds, Derived, num_deriv2d
 use DerivedFields_ml, only: d_2d, f_2d
 use DryDep_ml,        only: init_drydep
-use EmisDef_ml,       only: loc_frac, loc_frac_ext, NSECTORS
-use Emissions_ml,     only: EmisSet,uemep_emis
+use EmisDef_ml,       only: loc_frac, loc_frac_ext, loc_frac_day, loc_tot_day, loc_frac_month&
+                            , loc_tot_month,loc_frac_full,loc_tot_full, NSECTORS
+use Emissions_ml,     only: EmisSet
 use Gravset_ml,       only: gravset
 use GridValues_ml,    only: debug_proc,debug_li,debug_lj,&
                             glon,glat,projection,i_local,j_local,i_fdom,j_fdom
@@ -33,15 +34,17 @@ use ModelConstants_ml,only: MasterProc, KMAX_MID, nmax, nstep &
                            ,USE_ASH&
                            ,FREQ_HOURLY    & ! hourly netcdf output frequency
                            ,USE_POLLEN, USE_EtaCOORDINATES,JUMPOVER29FEB&
-                           ,USE_uEMEP, uEMEP, IOU_HOUR, IOU_HOUR_INST, fileName_O3_Top
+                           ,USE_uEMEP, IOU_HOUR, IOU_HOUR_INST, IOU_YEAR&
+                           ,fileName_O3_Top
 use MetFields_ml,     only: ps,roa,z_bnd,z_mid,cc3dmax, &
                             zen,coszen,Idirect,Idiffuse
-use NetCDF_ml,        only: ReadField_CDF
+use NetCDF_ml,        only: ReadField_CDF,Real4,Out_netCDF_n
 use OutputChem_ml,    only: WrtChem
 use My_Outputs_ml ,   only: NHOURLY_OUT, FREQ_SITE, FREQ_SONDE
 use My_Timing_ml,     only: Code_timer, Add_2timing, tim_before, tim_before0, tim_after
 use Nest_ml,          only: readxn, wrtxn
 use Par_ml,           only: me, LIMAX, LJMAX
+use PhysicalConstants_ml, only : ATWAIR 
 use Pollen_ml,        only: pollen_dump,pollen_read
 use SoilWater_ml,     only: Set_SoilWater
 use TimeDate_ml,      only: date,daynumber,day_of_year, add_secs, &
@@ -49,6 +52,7 @@ use TimeDate_ml,      only: date,daynumber,day_of_year, add_secs, &
                             make_timestamp, make_current_date
 use TimeDate_ExtraUtil_ml,only : date2string
 use Trajectory_ml,    only: trajectory_out     ! 'Aircraft'-type  outputs
+use uEMEP_ml,         only: uEMEP_emis
 use Radiation_ml,     only: SolarSetup,       &! sets up radn params
                             ZenithAngle,      &! gets zenith angle
                             ClearSkyRadn,     &! Idirect, Idiffuse
@@ -69,9 +73,11 @@ subroutine phyche()
 
   logical, save :: End_of_Day = .false.
   integer :: ndays,status,nstart,kstart
-  real :: thour
+  real :: thour, xtot,scale
   type(timestamp) :: ts_now !date in timestamp format
   logical,save :: first_call = .true.
+  integer ::i,j,k,dx,dy,ix,iix
+
 
   !------------------------------------------------------------------
   !     physical and  chemical routines.
@@ -125,15 +131,9 @@ subroutine phyche()
     call Derived(dt_advec,End_of_Day,ONLY_IOU=IOU_HOUR) ! update D2D outputs, to avoid
     call WrtChem(ONLY_HOUR=IOU_HOUR)    ! eg PM10:=0.0 on first output
   end if
-  if(first_call)then
-     uEMEP%Nsec_poll = NSECTORS+1
-     uEMEP%dist = 1
-     allocate(loc_frac(uEMEP%Nsec_poll,-uEMEP%dist:uEMEP%dist,-uEMEP%dist:uEMEP%dist,LIMAX,LJMAX,KMAX_MID))
-     allocate(loc_frac_ext(uEMEP%Nsec_poll,-uEMEP%dist:uEMEP%dist,-uEMEP%dist:uEMEP%dist,0:LIMAX+1,0:LJMAX+1))
-     loc_frac=0.0
-  endif
 
   call EmisSet(current_date)
+
   call Add_2timing(12,tim_after,tim_before,"phyche:EmisSet")
 
   !       For safety we initialise instant. values here to zero.
@@ -200,7 +200,7 @@ subroutine phyche()
   call init_drydep()
   !===================================
 
-
+  !must be placed just before emissions are used
   if(USE_uEMEP)call uemep_emis(current_date)
 
   !=========================================================!

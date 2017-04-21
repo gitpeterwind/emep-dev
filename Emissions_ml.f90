@@ -29,6 +29,7 @@ use EmisDef_ml,       only: &
      ,ROADDUST_FINE_FRAC  & ! fine (PM2.5) fraction of road dust emis
      ,ROADDUST_CLIMATE_FILE &! TEMPORARY! file for road dust climate factors 
      ,nGridEmisCodes,GridEmisCodes,GridEmis,cdfemis&
+     ,snapemis,snapemis_flat,roaddust_emis_pot,SumSplitEmis,SumSnapEmis&
      ,nlandcode,landcode,flat_nlandcode,flat_landcode&
      ,road_nlandcode,road_landcode&
      ,gridrcemis,gridrcemis0,gridrcroadd,gridrcroadd0&
@@ -63,7 +64,7 @@ use EmisGet_ml,       only: &
 use GridValues_ml,    only: GRIDWIDTH_M    & ! size of grid (m)
                            ,xm2            & ! map factor squared
                            ,debug_proc,debug_li,debug_lj & 
-                           ,xmd,dA,dB,i_fdom,j_fdom,glon,glon,glat
+                           ,xmd,dA,dB,i_fdom,j_fdom,glon,glat
 use Io_Nums_ml,       only: IO_LOG, IO_DMS, IO_EMIS, IO_TMP
 use Io_Progs_ml,      only: ios, open_file, datewrite, PrintLog
 use MetFields_ml,     only: u_xmj, v_xmi, roa, ps, z_bnd, surface_precip,EtaKz ! ps in Pa, roa in kg/m3
@@ -120,27 +121,11 @@ public :: Emissions         ! Main emissions module
 public :: newmonth
 public :: EmisSet           ! Sets emission rates every hour/time-step
 public :: EmisOut           ! Outputs emissions in ascii
-public :: uemep_emis
 
 ! The main code does not need to know about the following 
 private :: expandcclist            !  expands e.g. EU28, EUMACC2
 private :: consistency_check       ! Safety-checks
 
-!
-! The output emission matrix for the 11-SNAP data is snapemis:
-!
-real, private, allocatable, dimension(:,:,:,:,:), save :: &
-  snapemis      ! main emission arrays, in kg/m2/s
-
-real, private, allocatable, dimension(:,:,:,:), save :: &
-  snapemis_flat ! main emission arrays, in kg/m2/s  
-
-real, private, allocatable, dimension(:,:,:,:), save :: &
-! Not sure if it is really necessary to keep the country info; gives rather messy code but consistent with the rest at least (and can do the seasonal scaling for Nordic countries in the code instead of as preprocessing) 
-  roaddust_emis_pot ! main road dust emission potential arrays, in kg/m2/s (to be scaled!)
-
-! We store the emissions for output to d_2d files and netcdf in kg/m2/s
-real, public, allocatable, dimension(:,:,:), save :: SumSnapEmis,SumSplitEmis
 
 logical, save, private  :: first_dms_read
 
@@ -1901,195 +1886,5 @@ subroutine EmisOut(label, iem,nsources,sources,emis)
 !  deallocate(locemis,lemis)
 
 end subroutine EmisOut
-
-subroutine uemep_emis(indate)
-
-  implicit none
-  type(date), intent(in) :: indate  ! Gives year..seconds
-  integer :: i, j, k          ! coordinates, loop variables
-  integer :: icc, ncc         ! No. of countries in grid.
-  integer :: ficc,fncc        ! No. of countries with
-  integer :: iqrc             ! emis indices 
-  integer :: isec             ! loop variables: emission sectors
-  integer :: iem              ! loop variable over 1..NEMIS_FILE
-  integer :: itot             ! index in xn()
-
-  ! Save daytime value between calls, initialise to zero
-  integer, save, dimension(MAXNLAND) ::  daytime = 0  !  0=night, 1=day
-  integer, save, dimension(MAXNLAND) ::  localhour = 1  ! 1-24 local hour in the different countries, ? How to handle Russia, with multiple timezones???
-  integer                         ::  hourloc      !  local hour 
-  real, dimension(NRCEMIS)        ::  tmpemis      !  local array for emissions
-  real ::  tfac    ! time-factor (tmp variable); dt*h*h for scaling
-  real ::  s       ! source term (emis) before splitting
-  integer :: iland, iland_timefac  ! country codes, and codes for timefac 
-  integer :: daytime_longitude, daytime_iland, hour_longitude, hour_iland,nstart
-  integer ::icc_uemep
-  integer, save :: wday , wday_loc ! wday = day of the week 1-7
-  integer ::ix,iix, neigbor, dx, dy, isec_poll
-  real::dt_uemep, xtot, emis_uemep(KMAX_MID,NSECTORS),emis_tot(KMAX_MID)
-  logical,save :: first_call=.true.  
-
-  if(first_call)then
-    !init uemep
-!   uEMEP%emis="pm25"!one of the emission: pm25, sox, nox, voc, pmco, nh3 or co.
-!   uEMEP%sector=0!0 = all sectors, or choose one ector
-
-    iem=find_index(uEMEP%emis ,EMIS_FILE(1:NEMIS_FILE))
-    call CheckStop( iem<1, "uEMEP did not find corresponding emission file: "//trim(uEMEP%emis) )
-    
-    uEMEP%Nix=emis_nsplit(iem)
-    call CheckStop( uEMEP%Nix>size(uEMEP%ix), "uEMEP: increase size of uEMEP%ix()!" )
-
-    do i=1,uEMEP%Nix
-      iqrc=sum(emis_nsplit(1:iem-1)) + i
-      itot=iqrc2itot(iqrc)
-      uEMEP%ix(i)=itot-NSPEC_SHL
-      uEMEP%mw(i)=species_adv(3)%molwt!HARDCODED NO2 FOR NOW
-      write(*,*)i,'WARNING NB: UEMEP molweight hardcoded to NO2 ',uEMEP%mw(i)
-    end do
-
-    if(MasterProc)then
-      write(*,*)'uEMEP sector: ',uEMEP%sector
-      write(*,*)'uEMEP emission file: ',uEMEP%emis
-      write(*,*)'uEMEP number of species in group: ',uEMEP%Nix
-      write(*,"(A,30(A,F6.2))")'including:',('; '//trim(species_adv(uEMEP%ix(i))%name)//', mw ',uEMEP%mw(i),i=1,uEMEP%Nix)
-    end if
-
-  end if
-
-  dt_uemep=dt_advec
-
-  wday=day_of_week(indate%year,indate%month,indate%day)
-  if(wday==0)wday=7 ! Sunday -> 7
-  do iland = 1, NLAND
-    daytime(iland) = 0
-    hourloc        = indate%hour + Country(iland)%timezone
-    localhour(iland) = hourloc  ! here from 0 to 23
-    if(hourloc>=7 .and. hourloc<=18) daytime(iland)=1
-  end do ! iland
-   
-  do j = lj0,lj1
-    do i = li0,li1
-      ncc = nlandcode(i,j)            ! No. of countries in grid
-      fncc = flat_nlandcode(i,j) ! No. of countries with flat emissions in grid
-      hourloc= mod(nint(indate%hour+24*(1+glon(i,j)/360.0)),24)
-      hour_longitude=hourloc
-      daytime_longitude=0
-      if(hourloc>=7 .and. hourloc<= 18) daytime_longitude=1            
-      !*************************************************
-      ! First loop over non-flat (one sector) emissions
-      !*************************************************
-      tmpemis(:)=0.
-      icc_uemep=0
-      emis_uemep=0.0
-      emis_tot=0.0
-      do icc = 1, ncc+fncc
-        ficc=icc-ncc
-        !          iland = landcode(i,j,icc)     ! 1=Albania, etc.
-        if(icc<=ncc)then
-          iland=find_index(landcode(i,j,icc),Country(:)%icode) !array index
-        else
-          iland=find_index(flat_landcode(i,j,ficc),Country(:)%icode) 
-        end if
-        !array index of country that should be used as reference for timefactor
-        iland_timefac = find_index(Country(iland)%timefac_index,Country(:)%timefac_index)
-
-        if(Country(iland)%timezone==-100)then
-          daytime_iland=daytime_longitude
-          hour_iland=hour_longitude + 1   ! add 1 to get 1..24 
-        else
-          daytime_iland=daytime(iland)
-          hour_iland=localhour(iland) + 1
-        end if
-        !if( hour_iland > 24 ) hour_iland = 1 !DSA12
-        wday_loc=wday 
-        if(hour_iland>24) then
-          hour_iland = hour_iland - 24
-          wday_loc=wday + 1
-          if(wday_loc==0)wday_loc=7 ! Sunday -> 7
-          if(wday_loc>7 )wday_loc=1 
-        end if
-
-        do iem = 1, NEMIS_FILE 
-          if(trim(EMIS_File(iem))/=trim(uEMEP%emis))cycle
-          do isec = 1, NSECTORS       ! Loop over snap codes
-            ! Calculate emission rates from snapemis, time-factors, 
-            ! and if appropriate any speciation fraction (NEMIS_FRAC)
-            iqrc = 0   ! index over emisfrac
-            ! kg/m2/s
-            
-            if(icc<=ncc)then
-              tfac = timefac(iland_timefac,sec2tfac_map(isec),iem) &
-                   * fac_ehh24x7(sec2tfac_map(isec),hour_iland,wday_loc)
-
-              !Degree days - only SNAP-2 
-              if(USES%DEGREEDAY_FACTORS .and. &
-                   sec2tfac_map(isec)==ISNAP_DOM .and. Gridded_SNAP2_Factors) then
-                 ! If INERIS_SNAP2  set, the fac_min will be zero, otherwise
-                 ! we make use of a baseload even for SNAP2
-                 tfac = ( fac_min(iland,sec2tfac_map(isec),iem) & ! constant baseload
-                      + ( 1.0-fac_min(iland,sec2tfac_map(isec),iem) )* gridfac_HDD(i,j) ) &
-                      * fac_ehh24x7(sec2tfac_map(isec),hour_iland,wday_loc)
-              end if ! =============== HDD 
-              
-              s = tfac * snapemis(isec,i,j,icc,iem)
-            else
-              s = snapemis_flat(i,j,ficc,iem)                        
-            end if
-
-            do k=KEMISTOP,KMAX_MID
-              emis_tot(k)=emis_tot(k)+s*emis_kprofile(KMAX_BND-k,sec2hfac_map(isec))*dt_uemep
-            end do
-
-            !if(isec==uEMEP%sector .or. uEMEP%sector==0)then
-              do k=KEMISTOP,KMAX_MID
-                emis_uemep(k,isec)=emis_uemep(k,isec)+s*emis_kprofile(KMAX_BND-k,sec2hfac_map(isec))*dt_uemep
-              end do
-            !end if
-
-          end do ! iem
-
-        end do  ! isec
-        !      ==================================================
-      end do ! icc  
-      
-      do k=KEMISTOP,KMAX_MID
-         if(emis_tot(k)<1.E-20)cycle
-         !units kg/m2
-         !total pollutant
-         xtot=0.0
-         do iix=1,uEMEP%Nix
-            ix=uEMEP%ix(iix)
-            xtot=xtot+(xn_adv(ix,i,j,k)*uEMEP%mw(iix))*(dA(k)+dB(k)*ps(i,j,1))/ATWAIR/GRAV
-         end do
-         neigbor = 1!local fraction from this i,j
-         dx=0 ; dy=0!local fraction from this i,j
-         do isec_poll=2,uEMEP%Nsec_poll
-            loc_frac(isec_poll,dx,dy,i,j,k)=(loc_frac(isec_poll,dx,dy,i,j,k)*xtot+emis_uemep(k,isec_poll-1))/(xtot+emis_tot(k)+1.e-20)
-         enddo
-
-         isec = 0 !sum over all sectors
-         isec_poll=1 !sum over all sectors
-         loc_frac(isec_poll,dx,dy,i,j,k)=(loc_frac(isec_poll,dx,dy,i,j,k)*xtot+emis_tot(k))/(xtot+emis_tot(k)+1.e-20)
-
-         !local fractions from other cells
-
-         do dy=-uEMEP%dist,uEMEP%dist
-            do dx=-uEMEP%dist,uEMEP%dist
-               if(dx==0 .and. dy==0)cycle!local fractions from other cells only
-               do isec_poll=1,uEMEP%Nsec_poll
-                  loc_frac(isec_poll,dx,dy,i,j,k)=(loc_frac(isec_poll,dx,dy,i,j,k)*xtot)/(xtot+emis_tot(k)+1.e-20)
-               enddo
-            enddo
-         enddo
-
-      end do! k
-
-    end do ! i
-  end do ! j
-
-  first_call=.false. 
-
-end subroutine uemep_emis
 
 endmodule Emissions_ml

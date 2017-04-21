@@ -153,6 +153,9 @@ real, public, save,allocatable, dimension(:,:) ::  &
      xm2,      & ! xm*xm: area factor in the middle of a cell (i,j)
      xmd,      & ! 1/xm2  
      xm2ji,xmdji
+!vertical "map factors"
+real, public, save, allocatable,dimension(:)  ::  dhs1, dhs1i, dhs2i
+
 
 !*** Grid Area
 real, public, save,allocatable, dimension(:,:) :: GridArea_m2

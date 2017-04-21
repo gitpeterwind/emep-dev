@@ -153,10 +153,14 @@ type, public :: uEMEP_type
   integer, dimension(15) :: ix    ! Index of components to take
   real, dimension(15)    :: mw=0.0 !molecular weight used, for instance NO as NO2
   integer     :: sector=0    ! if only one sector is to be taken
-  integer     :: Nsectors=1    ! Number of sector to be taken
+  integer     :: Nsectors=1    ! Number of sectors to be taken
   integer     :: Nsec_poll=1    ! Number of sector and pollutants to treat in total
-  integer     :: dist=1    ! max distance of neighbor to include. (distance here is max(i,j))
+  integer     :: dist=1    ! max distance of neighbor to include. (will include a square with edge size=2*dist+1)
+  integer     :: Nvert=20   ! number of k levels to include
   integer     :: sectors(Nsector_uemep_max)=-1    ! sectors to be taken
+  integer     :: DOMAIN(4)
+!  logical     :: IOU_wanted(IOU_MAX_MAX)=.false.
+  logical     :: IOU_wanted(8)=.false.
   character(len=4):: emis='none'    ! one of EMIS_File: "sox ", "nox ", "co  ", "voc ", "nh3 ", "pm25", "pmco"
 end type uEMEP_type
 

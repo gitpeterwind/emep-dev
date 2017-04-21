@@ -24,6 +24,7 @@ program myeul
   use ChemSpecs,        only: define_chemicals
   use ChemGroups_ml,    only: Init_ChemGroups
   use Country_ml,       only: Country_Init
+  use DA_3DVar_ml,      only: NTIMING_3DVAR,DA_3DVar_Init, DA_3DVar_Done
   use DefPhotolysis_ml, only: readdiss
   use Derived_ml,       only: Init_Derived, wanted_iou
   use DerivedFields_ml, only: f_2d, f_3d
@@ -45,11 +46,12 @@ program myeul
        runlabel2,  &   ! explanatory text
        iyr_trend, nmax,nstep , meteo,     &
        IOU_INST,IOU_HOUR,IOU_HOUR_INST, IOU_YEAR,IOU_MON, IOU_DAY, &
-       USES, USE_LIGHTNING_EMIS, &
+       USES, USE_LIGHTNING_EMIS, USE_uEMEP,&
        FORECAST,ANALYSIS  ! FORECAST/ANALYSIS mode
   use ModelConstants_ml,only: Config_ModelConstants,DEBUG, startdate,enddate
   use MPI_Groups_ml,    only: MPI_BYTE, ME_CALC, ME_MPI, MPISTATUS, MPI_COMM_CALC,MPI_COMM_WORLD, &
                               MasterPE,IERROR, MPI_world_init, MPI_groups_split
+  use Nest_ml,          only: wrtxn     ! write nested output (IC/BC)
   use NetCDF_ml,        only: Init_new_netCDF
   use OutputChem_ml,    only: WrtChem, wanted_iou
   use Par_ml,           only: me, GIMAX, GJMAX, Topology_io, Topology, parinit
@@ -61,8 +63,7 @@ program myeul
        tdif_secs,date,timestamp,make_timestamp,Init_nmdays
   use TimeDate_ExtraUtil_ml,only : date2string, assign_startandenddate
   use Trajectory_ml,    only: trajectory_init,trajectory_in
-  use Nest_ml,          only: wrtxn     ! write nested output (IC/BC)
-  use DA_3DVar_ml,      only: NTIMING_3DVAR,DA_3DVar_Init, DA_3DVar_Done
+  use uEMEP_ml,         only: init_uEMEP
   !--------------------------------------------------------------------
   !
   !  Variables. There are too many to list here. Still, here are a
@@ -183,6 +184,8 @@ program myeul
   call Emissions(yyyy)
 
   call Add_2timing(3,tim_after,tim_before,"Yearly emissions read in")
+
+  if(USE_uEMEP) call init_uEMEP
 
   call MetModel_LandUse(1)   !
 

@@ -509,6 +509,7 @@ integer, public, parameter ::  &
   IOU_INST=1,IOU_YEAR=2,IOU_MON=3,IOU_DAY=4,IOU_HOUR=5,IOU_HOUR_INST=6, & ! Derived output
   IOU_HOUR_EXTRA=7,IOU_HOUR_EXTRA_MEAN=8, & ! additional hourly output
   IOU_MAX_MAX=8                             ! Max values for of IOU (for array declarations)
+  !IOU_MAX_MAX hardcoded in OwnDataTypes: please modify consistently!
 
 character, public, parameter ::  & ! output shorthands, order should match IOU_*
   IOU_KEY(IOU_YEAR:IOU_HOUR_INST)=['Y','M','D','H','I']

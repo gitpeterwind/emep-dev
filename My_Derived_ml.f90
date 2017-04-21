@@ -38,7 +38,7 @@ use GridValues_ml,    only: RestrictDomain
 use Io_Nums_ml,       only: IO_NML
 use Io_Progs_ml,      only: PrintLog
 use ModelConstants_ml,only: MasterProc, SOURCE_RECEPTOR, DEBUG, & !! => DEBUG_MY_DERIVED &
-                            USE_AOD, USE_SOILNOX, USE_OCEAN_DMS, USE_OCEAN_NH3, USE_uEMEP, &
+                            USE_AOD, USE_SOILNOX, USE_OCEAN_DMS, USE_OCEAN_NH3, &
                             IOU_KEY,      & !'Y'=>IOU_YEAR,..,'I'=>IOU_HOUR_INST
                             KMAX_MID,     & ! =>  z dimension
                             RUNDOMAIN,    &
@@ -301,45 +301,7 @@ subroutine Init_My_Deriv()
     tag_name(1) = "Emis_mgm2_Ocean_NH3"
     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
   end if
-  if(USE_uEMEP)then
-    !NOTE "Local_Fraction" must be AFTER "Local_Pollutant" and "Total_Pollutant"
-     tag_name(1) = "Total_Pollutant"
-     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
-     tag_name(1) = "Total_Pollutant3D"
-     call AddArray( tag_name(1:1), wanted_deriv3d, NOT_SET_STRING, errmsg)
-     do neigh=1,Nneighbors
-        if(neigh==1)neigh_char=''
-        if(neigh==2)neigh_char='_E'
-        if(neigh==3)neigh_char='_W'
-        if(neigh==4)neigh_char='_S'
-        if(neigh==5)neigh_char='_N'
-        if(neigh==6)neigh_char='_NW'
-        if(neigh==7)neigh_char='_NE'
-        if(neigh==8)neigh_char='_SW'
-        if(neigh==9)neigh_char='_SE'
-     do isec=0,NSECTORS
-        if(isec/=0 .and. isec/=2 .and. isec/=7 .and. isec/=8)cycle
-!        if(isec/=0 .and. isec/=10)cycle
-        !        if(any(uEMEP%sectors(:)==isec))then
-        write(isec_char,fmt='(i2.2)')isec
-!        tag_name(1:2) = [character(len=TXTLEN_DERIV)::&
-!             "Local_Pollutant_sec"//isec_char//neigh_char,"Local_Fraction_sec"//isec_char//neigh_char]
-!           call AddArray( tag_name(1:2), wanted_deriv2d, NOT_SET_STRING, errmsg)
-!        tag_name(1:2) = [character(len=TXTLEN_DERIV)::&
-!             "Local_Pollutant3D_sec"//isec_char//neigh_char,"Local_Fraction3D_sec"//isec_char//neigh_char]
-!              call AddArray( tag_name(1:2), wanted_deriv3d, NOT_SET_STRING, errmsg)
-        tag_name(1:1) = [character(len=TXTLEN_DERIV)::&
-             "Local_Pollutant_sec"//isec_char//neigh_char]
-           call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
-       tag_name(1:1) = [character(len=TXTLEN_DERIV)::&
-             "Local_Fraction_sec"//isec_char//neigh_char]
-           call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
-        tag_name(1:1) = [character(len=TXTLEN_DERIV)::&
-             "Local_Pollutant3D_sec"//isec_char//neigh_char]
-              call AddArray( tag_name(1:1), wanted_deriv3d, NOT_SET_STRING, errmsg)
-      enddo
-     enddo
-  end if
+
  if(EmisSplit_OUT)then
     do i=1,max(18,nrcemis)
       tag_name(1) = "EmisSplit_mgm2_"//trim(species(iqrc2itot(i))%name)

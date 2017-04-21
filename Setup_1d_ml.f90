@@ -17,9 +17,8 @@ use CheckStop_ml,        only:  CheckStop, StopAll
 use ColumnSource_ml,     only: ColumnRate
 use DerivedFields_ml,    only: d_2d, f_2d
 use EmisDef_ml,          only: gridrcemis, gridrcroadd, KEMISTOP,Emis_4D,N_Emis_4D,Found_Emis_4D&
-                                , O_NH3, O_DMS
+                                , O_NH3, O_DMS, SumSplitEmis
 use EmisGet_ml,          only:  nrcemis, iqrc2itot  !DSRC added nrcemis
-use Emissions_ml,        only:  SumSplitEmis
 use ForestFire_ml,       only: Fire_rcemis, burning
 use Functions_ml,        only:  Tpot_2_T
 use ChemFields_ml,       only: SurfArea_um2cm3
