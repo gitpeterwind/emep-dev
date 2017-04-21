@@ -20,7 +20,6 @@ use EmisDef_ml,       only: &
      ,ISNAP_TRAF    & ! snap index for road-traffic (SNAP7)
      ,ISEC_NAT      & ! index for natural (and flat?) emissions
      ,ISEC_SHIP     & ! index for flat emissions, e.g ship
-     ,IQ_DMS        & ! code for DMS emissions
      ,NROAD_FILES   & ! No. road dust emis potential files
      ,ROAD_FILE     & ! Names of road dust emission files
      ,NROADDUST     & ! No. road dust components 
@@ -32,7 +31,7 @@ use EmisDef_ml,       only: &
      ,nlandcode,landcode,flat_nlandcode,flat_landcode&
      ,road_nlandcode,road_landcode&
      ,gridrcemis,gridrcemis0,gridrcroadd,gridrcroadd0&
-     ,DMS_natso2_month, DMS_natso2_year,O_NH3, O_DMS&
+     ,O_NH3, O_DMS&
      ,Emis_4D,N_Emis_4D,Found_Emis_4D & !used for EEMEP 
      ,KEMISTOP&
      ,MAXFEMISLONLAT,N_femis_lonlat,loc_frac &
@@ -289,8 +288,7 @@ subroutine Emissions(year)
     !>============================
     
 
-    ! 0) set molwts, conversion factors (e.g. tonne NO2 -> tonne N), and
-    !    emission indices (IQSO2=.., )
+    ! 0) set molwts, conversion factors (e.g. tonne NO2 -> tonne N)
     
     ! init_sectors
     if(SECTORS_NAME=='SNAP')then
@@ -435,12 +433,6 @@ subroutine Emissions(year)
        fac_min(inland,insec,iemis) = minval(fac_emm(inland,:,insec,iemis))
   if(INERIS_SNAP2) & !  INERIS do not use any base-line for SNAP2
        fac_min(:,ISNAP_DOM,:) = 0.
-
-  !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  ! c4b) Set up DMS factors here - to be used in newmonth
-  !      Taken from IQ_DMS=35 for SO2 nature (sector 11)
-  !      first_dms_read is true until first call to newmonth finished.
-  first_dms_read = .true. 
 
   ! 4) Read emission files 
 
@@ -1344,7 +1336,6 @@ subroutine newmonth
   real :: rdemis(MAXLIMAX,MAXLJMAX)  ! Emissions read from file
   character(len=200) :: fname
   real ktonne_to_kgm2s, tonnemonth_to_kgm2s  ! Units conversion
-  integer :: IQSO2                   ! Index of sox in  EMIS_FILE
   integer errcode,iland
   integer :: iem,ic,isec, i_gridemis
   real :: conv
@@ -1508,86 +1499,6 @@ subroutine newmonth
          current_date%month,ktonne_to_kgm2s
     write(*,*) ' first_dms_read = ', first_dms_read
   end if
-  !...........................................................................
-  !        DMS Input - land 35 - SNAP sector 11
-  !...........................................................................
-  flat_ncmaxfound = 0  ! Max. no. countries(w/flat emissions) per grid
-  !  Natural SO2 emissions
-  IQSO2=find_index("sox",EMIS_FILE(:))
-  if(IQSO2<1) then
-    write(*,*) " No SO2 emissions - need to skip DMS also"
-    return     ! No need to read DMS fields 
-  else    
-    ! We have so2 emission so need DMS also
-    if(.not.first_call)then
-      !write some diagnostic for the past month emissions
-      CALL MPI_ALLREDUCE(O_DMS%sum_month, mpi_out, 1,&
-           MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_CALC, IERROR)
-      O_DMS%sum_month = mpi_out
-      if(MasterProc)then
-59    format(A,6F14.5)
-      write(*,*)'DMS OCEAN emissions '
-      write(*,59)'SO2 from ocean DMS cdf file ',O_DMS%sum_month
-      end if
-      O_DMS%sum_year=O_DMS%sum_year+O_DMS%sum_month
-      O_DMS%sum_month=0.0
-      !natso2 already allreduced
-      DMS_natso2_year=DMS_natso2_year+DMS_natso2_month
-      DMS_natso2_month=0.0
-    end if
-
-    write(fname,'(''natso2'',i2.2,''.dat'')')current_date%month
-    if(MasterProc)write(*,*) 'Reading DMS emissions from ',trim(fname)
-    needed_found=.false.
-    call ReadField(IO_DMS,fname,rdemis,needed_found)
-
-    if(needed_found)then
-    errcode = 0
-    dms_sum=0.0
-    do j=1,ljmax
-      do i=1,limax                     
-        ! Add DMS for country code IQ_DMS=35  to snap sector 11=Nature.
-        ! First time we read we must add DMS to the "countries" 
-        ! contributing within the grid square.                      
-        ! - for flat emissions:                     
-        if(first_dms_read) then 
-          flat_nlandcode(i,j) = flat_nlandcode(i,j) + 1 
-          n = flat_nlandcode(i,j)
-          flat_landcode(i,j,n) = IQ_DMS !=Country(IC_NAT)%icode   ! IQ_DMS country code index 35 
-          if(n>flat_ncmaxfound) then
-            flat_ncmaxfound = n 
-            if (MYDEBUG) write(6,*)'DMS Increased flat_ncmaxfound to ',n 
-            call CheckStop( n > FNCMAX, "IncreaseFNCMAX for dms")
-          end if
-        else  ! We know that DMS lies last in the array, so:
-          n = flat_nlandcode(i,j)
-          call CheckStop(flat_landcode(i,j,n),IQ_DMS,"Newmonth:DMS not last!")
-        end if
-        if(.not.USE_OCEAN_DMS)then
-        snapemis_flat(i,j,n,IQSO2) = rdemis(i,j) * ktonne_to_kgm2s * xm2(i,j)
-        end if
-        dms_sum=dms_sum+rdemis(i,j)
-      end do ! i
-    end do   ! j
-    CALL MPI_ALLREDUCE(dms_sum, mpi_out, 1,&
-         MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_CALC, IERROR)
-    dms_sum=mpi_out
-
-    DMS_natso2_month=dms_sum*nmdays(current_date%month)/nydays
-
-    if(MasterProc) then
-      write(*,*)'total dms emission from ',trim(fname),dms_sum,DMS_natso2_year+DMS_natso2_month
-      write(*,*)' Gg this month ',DMS_natso2_month
-    end if
-    if(first_dms_read) then
-      if(MYDEBUG) &
-        write(*,*)'me ',me, ' Increased flat_ncmaxfound to ',flat_ncmaxfound 
-      first_dms_read = .false.
-    end if
-    else!no dms file found
-      call PrintLog("WARNING: NO DMS emissions found",MasterProc)
-    end if
-  end if  ! IQSO2>0
 
   sumemis=0.0
   do iemislist = 1, size( emis_inputlist(:)%name )

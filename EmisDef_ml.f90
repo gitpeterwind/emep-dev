@@ -158,8 +158,6 @@ implicit none
                                                          ! and disregard them 
                                                          ! from gridSOx
 
-  integer, public, parameter :: IQ_DMS = 35  ! code for DMS emissions
-
 !
 real, public, save,  allocatable,dimension(:,:) ::  sumcdfemis ! Only used fby MasterProc
 real, allocatable, public, save,  dimension(:,:) :: cdfemis
@@ -202,7 +200,6 @@ end type Ocean
 
 type(Ocean), public, save:: O_NH3, O_DMS 
 
-real, public, save :: DMS_natso2_month=0.0, DMS_natso2_year=0.0
 !used for EEMEP 
 real, allocatable, save, dimension(:,:,:,:)       ::  Emis_4D !(i,j,k,pollutant)
 integer, save ::N_Emis_4D=0 !number of pollutants to read
