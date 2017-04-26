@@ -29,6 +29,7 @@ SRCS ?=	\
 	SubMet_ml.f90 Tabulations_ml.f90 TimeDate_ml.f90 TimeDate_ExtraUtil_ml.f90 \
 	Timefactors_ml.f90 Timing_ml.f90 \
 	Trajectory_ml.f90 Units_ml.f90 Unimod.f90 \
+        YieldModifications_mod.f90 \
         isocom.f90 ISOFWD.f90 isorev.f90 \
 	global2local.f90 PhyChem_ml.f90 My_3DVar_ml.f90 My_Pollen_ml.f90 My_ESX_ml.f90
 
