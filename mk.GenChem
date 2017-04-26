@@ -36,6 +36,7 @@ run=CB05
 run=CRI_v2_R5
 run=EmChem09
 run=EmChem09soa
+run=CRIv2R5jpc # April 2017
 run=EmChem16mt # new default, Apr 2017, Still some testing
 #run=EmChem09ecom # for G20
 Aero=" "     # for Riemer, VOLFAC etc.
@@ -155,6 +156,14 @@ EmChem09ecom)
           ./EC_OM  )
   bics=( $xdir/EmChem09base )  # No special SOA BICs (yet)
 ;;
+CRIv2R5jpc)
+  echo "RUN $run chosen"
+  spcs=( ${run}base $xdir/$Aero \
+         ./CRIv2R5jpc_nonvolatile ./Hodzic_VBSpartitioning )
+  rcns=( ${run}base ./CRIv2R5jpc_BVOC $xdir/$Aero \
+         ./Hodzic_VBSformation ./VBS_emissions_nonvolatilePOA_FromPM25 )
+  bics=( ${run}base )
+;;
 CRI_v2_R5)
   echo "RUN $run chosen"
   spcs=( ${run}base $xdir/$Aero $xdir/PMmass )
@@ -240,6 +249,9 @@ echo "NEW BICS ", ${bics[@]}
 cdir=$PWD       #  Current when starting. Assumed now as a Unimod
 wdir=$PWD/ZCM_$run   # work-directory, with input files
 cd $wdir
+echo "CDIR $cdir"
+echo "WDIR $wdir"
+sleep 1
 #
 mv GenIn.species GenIn.species.bk # Safety
 echo "Species Files:" > CM_chempackages.txt
