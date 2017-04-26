@@ -18,14 +18,16 @@
   EXP_NAME              = 'EMEPGLOB',
   MY_OUTPUTS            = 'EMEPSTD',
 !------------------------------
-! changes March 2017
+! changes March-April 2017
  EmBio%GlobBvocMethod = 'GLC-CLM',  ! NEW default for GLOBAL
  EmBio%CLF            =  0.59,      ! 1/1.7 for CLM
 !
  LandCoverInputs%LandDefs   = 'DataDir/LandInputs_Apr2017/Inputs_LandDefs.csv',
  LandCoverInputs%Do3seDefs  = 'DataDir/LandInputs_Apr2017/Inputs_DO3SE.csv',
- LandCoverInputs%MapFile(1) = 'DataDir/Landuse/Landuse_PS_5km_LC.nc',
- LandCoverInputs%MapFile(2) = 'DataDir/LandInputs_Apr2017/glc2000mCLM.nc',
+ LandCoverInputs%MapFile =
+    'DataDir/Landuse/Landuse_PS_5km_LC.nc',
+    'DataDir/LandInputs_Apr2017/glc2000mCLM.nc',
+! YieldModifications = '-'   ! For JPC tests we used: 'JPC-VY-acid',
 ! EmBio%IsopFac           =  1.0,
 ! PBL%ZiMIN             =  50.0,
 !------------------------------
@@ -52,8 +54,6 @@
   USE_EURO_SOILNOX      = F,             ! diff for global + Euro runs
   EURO_SOILNOX_DEPSCALE = 1.0,           ! Scale, default 1  (see ModelConstants_ml)
   USE_GLOBAL_SOILNOX    = T,             ! diff for global + Euro runs
-!------------------------------
-!SOON:  CONVECTION_FACTOR     = 0.33      ! Test reduced convection
 !------------------------------
   USE_POLLEN            = F,             ! EXPERIMENTAL. Only works if start Jan 1
   USE_ROADDUST          = F,             ! Only EECCA?
