@@ -8,7 +8,7 @@ module ModelConstants_ml
 use Aerofunctions,        only: DpgV2DpgN
 use CheckStop_ml,         only: CheckStop
 use ChemSpecs,            only: species
-use emep_Config_mod,      only: PBL, EmBio, LandCoverInputs
+use emep_Config_mod,      only: PBL, EmBio, YieldModifications, LandCoverInputs
 use Io_Nums_ml,           only: IO_NML, IO_LOG, IO_TMP
 use OwnDataTypes_ml,      only: typ_ss, uEMEP_type
 use Precision_ml,         only: dp
@@ -537,6 +537,7 @@ subroutine Config_ModelConstants(iolog)
    ,USES   & ! just testname so far
    ,PBL    & ! Mar2017 testing
    ,EmBio  & ! Mar2017 testing
+   ,YieldModifications &  ! Allows dynamic change of chemical yields
    ,LandCoverInputs  & ! Apr2017 for CLM, etc
    ,AERO   & ! Aerosol settings
    ,DEBUG  & !
