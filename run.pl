@@ -116,7 +116,7 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_11_3","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
 #($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3074","EmChem09soa","EMEPGLOB","EMEPSTD","GLOBAL",0);
  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("emep-dev","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
- ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_12gclm","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
+ ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_13","EmChem16mt","EMEPSTD","EMEPSTD","EECCA",0);
 
 my %BENCHMARK;
 # OpenSource 2008
@@ -399,6 +399,7 @@ print "TESTING ENV:", $ENV{PWD}, "\n";
 # Default emissplits used here. if $Specials is set will look
 my $SplitDir = "$DataDir/SPLITS_JAN2010/BASE_NAEI2000_GH2009.$Chem" ;
    $SplitDir = "$ChemDir/EMISSPLIT";
+print "CHEM, SPLITDIR $ChemDir $SplitDir\n"; 
 #RB:had "~mifarb/Unify/MyData/D_EGU/SPLITS_NOV2009v2/BASE_NAEI2000_GH2009.$Chem" ;
 
 my $version     = "Unimod" ;
@@ -825,7 +826,8 @@ foreach my $scenflag ( @runs ) {
     if (($Chem =~ /EmChem/)or($Chem eq "Emergency")) { # e.g. when PM25 is not split, e.g. RCA, make EMCHEM09
       $ifile{"$SplitDir/emissplit.specials.$poll"} = "emissplit.specials.$poll"
       if( -e "$SplitDir/emissplit.specials.$poll" );
-    } elsif ( $Chem eq "CRI_v2_R5" ) { # e.g. TSAP
+    #A17 } elsif ( $Chem eq "CRI_v2_R5" ) { # e.g. TSAP
+    } elsif ( $Chem =~ /CRI/ ) { # e.g. TSAP
        print "NO SPECIALS in EMISSPLIT for $Chem DIR was $SplitDir\n";
     } elsif ( -e "$timeseries/emissplit.$Specials.$poll.$iyr_trend" ) { # e.g. TSAP
       $ifile{"$timeseries/emissplit.$Specials.$poll.$iyr_trend"} =
