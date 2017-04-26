@@ -25,6 +25,14 @@ module emep_Config_mod
     real :: CLF     = 1.0                     ! canopy factor, leaf vs branch emissions
   end type EmBio_t
   type(EmBio_t), public, save :: EmBio = EmBio_t()
+
+ ! We allow a flexible string which can switch between different
+ ! experiments called by e.g. Solver. A but crude, but
+ ! it makes sure the experiments are recorded in the config
+ ! system
+
+  character(len=100), save, public :: YieldModifications = '-'
+
   
   type, private :: LandCoverInputs_t
     character(len=200), dimension(2) :: MapFile = 'NOTSET'  ! Usually PS European + global
