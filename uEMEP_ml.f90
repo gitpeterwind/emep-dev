@@ -14,11 +14,11 @@ use EmisDef_ml,       only: loc_frac, loc_frac_ext, loc_frac_hour, loc_tot_hour,
                             snapemis_flat,roaddust_emis_pot,KEMISTOP
 
 use EmisGet_ml,       only: nrcemis, iqrc2itot, emis_nsplit,nemis_kprofile, emis_kprofile
-use GridValues_ml,    only: dA,dB,xm2, dhs1i, glon, projection
+use GridValues_ml,    only: dA,dB,xm2, dhs1i, glat, glon, projection
 use MetFields_ml,     only: ps,roa
 use ModelConstants_ml,only: KMAX_MID, KMAX_BND,USES, USE_uEMEP, uEMEP, IOU_HOUR, IOU_HOUR_INST,&
                             IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY,IOU_HOUR,IOU_HOUR_INST, &
-                            KMAX_MID,  MasterProc,dt_advec
+                            KMAX_MID,  MasterProc,dt_advec, RUNDOMAIN
 use NetCDF_ml,        only: Real4,Out_netCDF_n
 use OwnDataTypes_ml,  only: Deriv
 use Par_ml,           only: me, LIMAX, LJMAX,gi0,gj0,li0,li1,lj0,lj1,GIMAX,GJMAX
@@ -46,19 +46,20 @@ real, private, save ::av_fac_hour,av_fac_day,av_fac_month,av_fac_full
 
 contains
 subroutine init_uEMEP
-  integer :: i, itot, iqrc, iem
+  integer :: i, ix, itot, iqrc, iem
 
 !should be set through config
   
   uEMEP%IOU_wanted = .false.
   uEMEP%IOU_wanted(IOU_YEAR) = .true.
-!  uEMEP%IOU_wanted(IOU_HOUR_INST) = .true.
+!  uEMEP%IOU_wanted(IOU_DAY) = .true.
+  uEMEP%IOU_wanted(IOU_HOUR_INST) = .true.
 
   uEMEP%Nsec_poll = NSECTORS+1
-  uEMEP%dist = 20
+  uEMEP%dist = 5
   uEMEP%Nvert =7
-  uEMEP%DOMAIN = [1,GIMAX,1,GJMAX]
-  uEMEP%DOMAIN = [280,430,130,340]
+  uEMEP%DOMAIN = RUNDOMAIN
+!  uEMEP%DOMAIN = [280,430,130,340]
 !  uEMEP%DOMAIN = [35,90,2,75]!ECCAA 
 
 
@@ -68,18 +69,35 @@ subroutine init_uEMEP
   do i=1,uEMEP%Nix
      iqrc=sum(emis_nsplit(1:iem-1)) + i
      itot=iqrc2itot(iqrc)
-     uEMEP%ix(i)=itot-NSPEC_SHL
-     uEMEP%mw(i)=species_adv(3)%molwt!HARDCODED NO2 FOR NOW
-     write(*,*)i,'WARNING NB: UEMEP molweight hardcoded to NO2 ',uEMEP%mw(i)
+     ix=itot-NSPEC_SHL
+     uEMEP%ix(i)=ix
+     uEMEP%mw(i)=species_adv(ix)%molwt
+     if(uEMEP%emis=="nox ")then
+        ix=find_index("NO2",species_adv(:)%name)
+        call CheckStop(ix<0,'Index for NO2 not found')
+        uEMEP%mw(i)=species_adv(ix)%molwt
+     endif
+     if(uEMEP%emis=="sox ")then
+        ix=find_index("SO2",species_adv(:)%name)
+        call CheckStop(ix<0,'Index for SO2 not found')
+        uEMEP%mw(i)=species_adv(ix)%molwt
+     endif
   end do
 
+  if(MasterProc)then
+     write(*,*)'uEMEP Nsec_poll: ',uEMEP%Nsec_poll
+     write(*,*)'uEMEP emission file: ',uEMEP%emis
+     write(*,*)'uEMEP number of species in group: ',uEMEP%Nix
+     write(*,"(A,30(A,F6.2))")'including:',('; '//trim(species_adv(uEMEP%ix(i))%name)//', mw ',uEMEP%mw(i),i=1,uEMEP%Nix)
+  end if
+  
   av_fac_hour=0.0
   av_fac_day=0.0
   av_fac_month=0.0
   av_fac_full=0.0
   
   allocate(loc_frac(uEMEP%Nsec_poll,-uEMEP%dist:uEMEP%dist,-uEMEP%dist:uEMEP%dist,LIMAX,LJMAX,KMAX_MID-uEMEP%Nvert+1:KMAX_MID))
-  loc_frac=0.0
+  loc_frac=0.0 !must be initiated to 0 so that outer frame does not contribute.
   allocate(loc_frac_ext(uEMEP%Nsec_poll,-uEMEP%dist:uEMEP%dist,-uEMEP%dist:uEMEP%dist,0:LIMAX+1,0:LJMAX+1))        
   if(uEMEP%IOU_wanted(IOU_HOUR))then
      allocate(loc_frac_hour(uEMEP%Nsec_poll,-uEMEP%dist:uEMEP%dist,-uEMEP%dist:uEMEP%dist,LIMAX,LJMAX,KMAX_MID-uEMEP%Nvert+1:KMAX_MID))
@@ -145,7 +163,7 @@ subroutine out_uEMEP(iotyp)
      if(me==0)write(*,*)'IOU not recognized'
   endif
   ndim=6
-  ndim_tot=4
+  ndim_tot=3
   kmax=uEMEP%Nvert
   scale=1.0
   CDFtype=Real4
@@ -158,43 +176,41 @@ subroutine out_uEMEP(iotyp)
   dimSizes(4)=LIMAX
   dimSizes(5)=LJMAX
 
-  dimSizes_tot(1)=1
-  dimNames_tot(1)='allsector'
-  dimSizes_tot(2)=LIMAX
-  dimSizes_tot(3)=LJMAX
+  dimSizes_tot(1)=LIMAX
+  dimSizes_tot(2)=LJMAX
 
   select case(projection)
   case('Stereographic')
      dimNames(4)='i'
      dimNames(5)='j'      
-     dimNames_tot(2)='i'
-     dimNames_tot(3)='j'      
+     dimNames_tot(1)='i'
+     dimNames_tot(2)='j'      
   case('lon lat')
      dimNames(4)='lon'
      dimNames(5)='lat'
-     dimNames_tot(2)='lon'
-     dimNames_tot(3)='lat'      
+     dimNames_tot(1)='lon'
+     dimNames_tot(2)='lat'      
   case('Rotated_Spherical')
      dimNames(4)='i'
      dimNames(5)='j'      
-     dimNames_tot(2)='i'
-     dimNames_tot(3)='j'      
+     dimNames_tot(1)='i'
+     dimNames_tot(2)='j'      
   case('lambert')
      dimNames(4)='i'
      dimNames(5)='j'      
-     dimNames_tot(2)='i'
-     dimNames_tot(3)='j'      
+     dimNames_tot(1)='i'
+     dimNames_tot(2)='j'      
   case default
      dimNames(4)='i'
      dimNames(5)='j'      
-     dimNames_tot(2)='i'
-     dimNames_tot(3)='j'      
+     dimNames_tot(1)='i'
+     dimNames_tot(2)='j'      
   end select
 
   dimSizes(6)=kmax
   dimNames(6)='klevel'
-  dimSizes_tot(4)=kmax
-  dimNames_tot(4)='klevel'
+  dimSizes_tot(3)=kmax
+  dimNames_tot(3)='klevel'
   def1%class='uEMEP' !written
   def1%avg=.false.      !not used
   def1%index=0          !not used
@@ -206,9 +222,9 @@ subroutine out_uEMEP(iotyp)
   chunksizes(5)=dimSizes(5)
   chunksizes(6)=dimSizes(6)
   chunksizes_tot=1
+  chunksizes_tot(1)=dimSizes_tot(1)
   chunksizes_tot(2)=dimSizes_tot(2)
   chunksizes_tot(3)=dimSizes_tot(3)
-  chunksizes_tot(4)=dimSizes_tot(4)
 
   if(first_call(iotyp))then
      def1%name='local_fraction'
@@ -343,7 +359,7 @@ subroutine out_uEMEP(iotyp)
      def1%name='local_fraction'
      call Out_netCDF_n(iotyp,def1,ndim,kmax,loc_frac_full,scale,CDFtype,dimSizes,dimNames,out_DOMAIN=uEMEP%DOMAIN,&
        fileName_given=trim(fileName),overwrite=.false.,create_var_only=.false.)       
-     loc_tot_month=loc_tot_full/av_fac_full
+     loc_tot_full=loc_tot_full/av_fac_full
      av_fac_full=0.0
      def1%name='tot_pollutant'
      call Out_netCDF_n(iotyp,def1,ndim_tot,kmax,loc_tot_full,scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=uEMEP%DOMAIN,&
@@ -383,7 +399,6 @@ subroutine av_uEMEP(dt,End_of_Day)
                    *roa(i,j,k,1)*1.E9 !for ug/m3
               !                   *(dA(k)+dB(k)*ps(i,j,1))/GRAV*1.E6 !for mg/m2
            end do
-
            if(uEMEP%IOU_wanted(IOU_HOUR))then
               loc_tot_hour(i,j,k)=loc_tot_hour(i,j,k)+xtot
               do dy=-uEMEP%dist,uEMEP%dist
@@ -420,6 +435,7 @@ subroutine av_uEMEP(dt,End_of_Day)
                   enddo
                  enddo
               enddo
+!              if(i==5.and.j==5.and.k==KMAX_MID)write(*,*)me,xtot,loc_tot_full(i,j,k),loc_frac_full(1,0,0,i,j,k)
            endif
         enddo
      enddo
@@ -439,6 +455,7 @@ end subroutine av_uEMEP
     xn=0.0
     x=0.0
     xx=0.0
+    !positive x or xx means incoming, negative means outgoing
     do iix=1,uEMEP%Nix
        ix=uEMEP%ix(iix)
        xn=xn+xn_adv(ix,i,j,k)*uEMEP%mw(iix)
@@ -446,7 +463,7 @@ end subroutine av_uEMEP
        xx=xx+xm2(i,j)*fluxy(ix,j-1)*uEMEP%mw(iix)!flux through "South" face (Bottom)
     end do
     !NB: here xn already includes the fluxes. Remove them!
-    xn=xn-xx+x
+    xn=xn-xx-x
 
     xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. all outgoing flux 
     f_in=max(0.0,x)+max(0.0,xx)!positive part. all incoming flux
@@ -485,6 +502,7 @@ end subroutine av_uEMEP
     xn=0.0
     x=0.0
     xx=0.0
+    !positive x or xx means incoming, negative means outgoing
     do iix=1,uEMEP%Nix
        ix=uEMEP%ix(iix)
        xn=xn+xn_adv(ix,i,j,k)*uEMEP%mw(iix)
@@ -492,7 +510,7 @@ end subroutine av_uEMEP
        xx=xx+xm2(i,j)*fluxx(ix,i-1)*uEMEP%mw(iix)!flux through "West" face (Left)
     end do
     !NB: here xn already includes the fluxes. Remove them!
-    xn=xn-xx+x
+    xn=xn-xx-x
 
     xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. all outgoing flux 
     f_in=max(0.0,x)+max(0.0,xx)!positive part. all incoming flux
@@ -519,10 +537,7 @@ end subroutine av_uEMEP
           endif
        enddo
     enddo
-    isec_poll=1
-    dx=-1
-    dy=0
-
+ 
   end subroutine uemep_adv_x
 
   subroutine uemep_adv_k(fluxk,i,j)
@@ -542,7 +557,7 @@ end subroutine av_uEMEP
           xx=xx+dhs1i(k+1)*fluxk(ix,k)*uEMEP%mw(iix)
        end do
        !NB: here xn already includes the fluxes. Remove them!
-       xn=xn-xx+x
+       xn=xn-xx-x
 
        xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. outgoing flux 
        f_in=max(0.0,x)+max(0.0,xx)!positive part. incoming flux
@@ -621,34 +636,6 @@ subroutine uEMEP_emis(indate)
   integer ::ix,iix, neigbor, dx, dy, isec_poll
   real::dt_uemep, xtot, emis_uemep(KMAX_MID,NSECTORS),emis_tot(KMAX_MID)
   logical,save :: first_call=.true.  
-
-  if(first_call)then
-    !init uemep
-!   uEMEP%emis="pm25"!one of the emission: pm25, sox, nox, voc, pmco, nh3 or co.
-!   uEMEP%sector=0!0 = all sectors, or choose one ector
-
-!!$    iem=find_index(uEMEP%emis ,EMIS_FILE(1:NEMIS_FILE))
-!!$    call CheckStop( iem<1, "uEMEP did not find corresponding emission file: "//trim(uEMEP%emis) )
-!!$    
-!!$    uEMEP%Nix=emis_nsplit(iem)
-!!$    call CheckStop( uEMEP%Nix>size(uEMEP%ix), "uEMEP: increase size of uEMEP%ix()!" )
-!!$
-!!$    do i=1,uEMEP%Nix
-!!$      iqrc=sum(emis_nsplit(1:iem-1)) + i
-!!$      itot=iqrc2itot(iqrc)
-!!$      uEMEP%ix(i)=itot-NSPEC_SHL
-!!$      uEMEP%mw(i)=species_adv(3)%molwt!HARDCODED NO2 FOR NOW
-!!$      write(*,*)i,'WARNING NB: UEMEP molweight hardcoded to NO2 ',uEMEP%mw(i)
-!!$    end do
-
-    if(MasterProc)then
-      write(*,*)'uEMEP sector: ',uEMEP%sector
-      write(*,*)'uEMEP emission file: ',uEMEP%emis
-      write(*,*)'uEMEP number of species in group: ',uEMEP%Nix
-      write(*,"(A,30(A,F6.2))")'including:',('; '//trim(species_adv(uEMEP%ix(i))%name)//', mw ',uEMEP%mw(i),i=1,uEMEP%Nix)
-    end if
-
-  end if
 
   dt_uemep=dt_advec
 

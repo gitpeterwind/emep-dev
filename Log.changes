@@ -151,6 +151,14 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+28th Apr 2017 Peter
+
+Sign error when pre-correcting the fluxes in uEMEP:
+     xn=xn-xx+x -> xn=xn-xx-x
+
+Some clean up (uemep rundomain, molecular weights,..)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 21st Apr 2017 Peter
 Reorganization of uEMEP. Own uEMEP file with uemep routines.
 uEMEP: for each gridcell computes fractions for a surrounding region.
