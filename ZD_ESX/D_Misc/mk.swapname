@@ -1,7 +1,0 @@
-
-for i in *.f90 *.inc
-do
-  cp $i $i.bk
-  D_Misc/swapname.pl < $i > $i.new
-  mv $i.new $i
-done
