@@ -17,7 +17,7 @@ use DA_3DVar_ml,      only: main_3dvar, T_3DVAR
 use Derived_ml,       only: DerivedProds, Derived, num_deriv2d
 use DerivedFields_ml, only: d_2d, f_2d
 use DryDep_ml,        only: init_drydep
-use EmisDef_ml,       only: loc_frac, loc_frac_ext, loc_frac_day, loc_tot_day, loc_frac_month&
+use EmisDef_ml,       only: loc_frac, loc_frac_day, loc_tot_day, loc_frac_month&
                             , loc_tot_month,loc_frac_full,loc_tot_full, NSECTORS
 use Emissions_ml,     only: EmisSet
 use Gravset_ml,       only: gravset

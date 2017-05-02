@@ -70,7 +70,7 @@
 !CRM  use ChemSpecs_adv_ml , only : NSPEC_ADV
   use CheckStop_ml,      only : CheckStop,StopAll
   use Convection_ml,     only : convection_pstar,convection_Eta
-  use EmisDef_ml,        only : NSECTORS, Nneighbors, loc_frac, loc_frac_ext
+  use EmisDef_ml,        only : NSECTORS, Nneighbors, loc_frac, loc_frac_1d
   use GridValues_ml,     only : GRIDWIDTH_M,xm2,xmd,xm2ji,xmdji,xm_i, Pole_Singular, &
                                 dhs1, dhs1i, dhs2i, &
                                 dA,dB,i_fdom,j_fdom,i_local,j_local,Eta_bnd,dEta_i,&
@@ -94,7 +94,7 @@
            ,neighbor,WEST,EAST,SOUTH,NORTH,NOPROC            &
            ,MSG_NORTH2,MSG_EAST2,MSG_SOUTH2,MSG_WEST2
   use PhysicalConstants_ml, only : GRAV,ATWAIR ! gravity
-  use uEMEP_ml, only :uemep_adv_x, uemep_adv_y, uemep_adv_k
+  use uEMEP_ml, only : uEMEP_Size1, uemep_adv_x, uemep_adv_y, uemep_adv_k
 
   implicit none
   private
@@ -128,8 +128,8 @@
   private :: adv_vert_zero
   private :: advx
   private :: advy
-  private :: preadvx
-  private :: preadvy
+  private :: preadvx3
+  private :: preadvy3
 
    ! Checks & warnings
    ! introduced after getting Nan when using "poor" meteo can give this too.
@@ -141,7 +141,8 @@
 
     integer, private, save :: nWarnings = 0
     integer, private, parameter :: MAX_WARNINGS = 100
-    logical, parameter :: hor_adv0th=.false.
+    logical, parameter :: hor_adv0th=.true.
+    logical, parameter :: vert_adv0th=.true.
 
   contains
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -286,7 +287,6 @@
     real :: f_in,f_out
     logical,save :: firstcall = .true.
 
-
     !NITERXMAX=max value of iterations accepted for fourth order Bott scheme.
     !If the calculated number of iterations (determined from Courant number)
     !exceeds NITERXMAX, the advection is not done, but instead all the mixing
@@ -294,7 +294,6 @@
     !This case can arises where there is a singularity close to the
     !poles in long-lat coordinates.
     integer,parameter :: NITERXMAX=10
-    integer,parameter :: KMIN_uemep=2
 
     xxdg=GRIDWIDTH_M*GRIDWIDTH_M/GRAV !constant used in loops
 
@@ -469,20 +468,16 @@
           do k = 1,KMAX_MID
              fac1=(dA(k)/Pref+dB(k))*xxdg
 
-             if(USE_uEMEP .and. k>KMAX_MID-uEMEP%Nvert)then                
-                 call  extendarea_N(loc_frac(1,-uEMEP%dist,-uEMEP%dist,1,1,k),loc_frac_ext,1,uEMEP%Nsec_poll*(2*uEMEP%dist+1)**2,1)                
-              end if
-
              do j = lj0,lj1
                 if(niterx(j,k)<=NITERXMAX)then
                    dth = dt_x(j,k)/GRIDWIDTH_M
                    do iterx=1,niterx(j,k)
 
                       ! send/receive in x-direction
-                      call preadvx2(110+k+KMAX_MID*j               &
+                      call preadvx3(110+k+KMAX_MID*j               &
                            ,xn_adv(1,1,j,k),dpdeta(1,j,k),u_xmj(0,j,k,1)&
                            ,xnw,xne                               &
-                           ,psw,pse)
+                           ,psw,pse,j,k,loc_frac_1d)
 
                       ! x-direction
                       call advx(                                   &
@@ -507,9 +502,6 @@
              !          end do !k horizontal (x) advection
 
              call Add_2timing(18,tim_after,tim_before,"advecdiff:advx")
-             if(USE_uEMEP .and. k>KMAX_MID-uEMEP%Nvert)then
-                call  extendarea_N(loc_frac(1,-uEMEP%dist,-uEMEP%dist,1,1,k),loc_frac_ext,1,uEMEP%Nsec_poll*(2*uEMEP%dist+1)**2,1)                
-             end if
              
              ! y-direction
              !          do k = 1,KMAX_MID
@@ -518,10 +510,10 @@
                 do itery=1,nitery(i,k)
 
                    ! send/receive in y-direction
-                   call preadvy2(520+k                            &
+                   call preadvy3(520+k                            &
                         ,xn_adv(1,1,1,k),dpdeta(1,1,k),v_xmi(1,0,k,1)    &
                         ,xns, xnn                                  &
-                        ,pss, psn,i)
+                        ,pss, psn,i,k,loc_frac_1d)
 
                    call advy(                                     &
                         v_xmi(i,0,k,1),vs(i,k,1),vn(i,k,1)            &
@@ -550,10 +542,13 @@
              ! perform vertical advection
              do j = lj0,lj1
                 do i = li0,li1
-                   !                   call adv_vert_zero(xn_adv(1,i,j,1),dpdeta(i,j,1),Etadot(i,j,1,1),dt_s)
-                   !                   call adv_vert_fourth(xn_adv(1,i,j,1),dpdeta(i,j,1),Etadot(i,j,1,1),dt_s)
-                   call advvk(xn_adv(1,i,j,1),dpdeta(i,j,1),Etadot(i,j,1,1),dt_s,fluxk)
 
+                   if(vert_adv0th)then
+                      call adv_vert_zero(xn_adv(1,i,j,1),dpdeta(i,j,1),Etadot(i,j,1,1),dt_s,fluxk)
+                   else
+                      !                   call adv_vert_fourth(xn_adv(1,i,j,1),dpdeta(i,j,1),Etadot(i,j,1,1),dt_s)
+                      call advvk(xn_adv(1,i,j,1),dpdeta(i,j,1),Etadot(i,j,1,1),dt_s,fluxk)
+                   endif
                    if(USE_uEMEP)then
                       call uemep_adv_k(fluxk,i,j)
                    end if
@@ -586,18 +581,16 @@
           iterxys = iterxys + 1
           do k = 1,KMAX_MID
              fac1=(dA(k)/Pref+dB(k))*xxdg
-             if(USE_uEMEP .and. k>KMAX_MID-uEMEP%Nvert)then
-                call  extendarea_N(loc_frac(1,-uEMEP%dist,-uEMEP%dist,1,1,k),loc_frac_ext,1,uEMEP%Nsec_poll*(2*uEMEP%dist+1)**2,1)                
-             end if
+
              do i = li0,li1
                 dth = dt_y(i,k)/GRIDWIDTH_M
                 do itery=1,nitery(i,k)
 
                    ! send/receive in y-direction
-                   call preadvy2(13000+k+KMAX_MID*itery+1000*i    &
+                   call preadvy3(13000+k+KMAX_MID*itery+1000*i    &
                         ,xn_adv(1,1,1,k),dpdeta(1,1,k),v_xmi(1,0,k,1)    &
                         ,xns, xnn                                  &
-                        ,pss, psn,i)
+                        ,pss, psn,i,k,loc_frac_1d)
 
                    ! y-direction
                    call advy(                                    &
@@ -622,20 +615,17 @@
              call Add_2timing(20,tim_after,tim_before,"advecdiff:preadvy,advy")
 
              !          do k = 1,KMAX_MID
-             if(USE_uEMEP .and. k>KMAX_MID-uEMEP%Nvert)then
-                call  extendarea_N(loc_frac(1,-uEMEP%dist,-uEMEP%dist,1,1,k),loc_frac_ext,1,uEMEP%Nsec_poll*(2*uEMEP%dist+1)**2,1)                
-             end if
- 
-            do j = lj0,lj1
+
+             do j = lj0,lj1
                 if(niterx(j,k)<=NITERXMAX)then
                    dth = dt_x(j,k)/GRIDWIDTH_M
                    do iterx=1,niterx(j,k)
 
                       ! send/receive in x-direction
-                      call preadvx2(21000+k+KMAX_MID*iterx+1000*j  &
+                      call preadvx3(21000+k+KMAX_MID*iterx+1000*j  &
                            ,xn_adv(1,1,j,k),dpdeta(1,j,k),u_xmj(0,j,k,1)&
                            ,xnw,xne                               &
-                           ,psw,pse)
+                           ,psw,pse,j,k,loc_frac_1d)
 
                       ! x-direction
                       call advx(                                   &
@@ -662,13 +652,16 @@
           call Add_2timing(18,tim_after,tim_before,"advecdiff:preadvx,advx") 
 
           do iters=1,niters
-
+             
              ! perform vertical advection
              do j = lj0,lj1
                 do i = li0,li1
-                   !                   call adv_vert_zero(xn_adv(1,i,j,1),dpdeta(i,j,1),Etadot(i,j,1,1),dt_s)
+                   if(vert_adv0th)then
+                      call adv_vert_zero(xn_adv(1,i,j,1),dpdeta(i,j,1),Etadot(i,j,1,1),dt_s,fluxk)
+                   else
                    !                   call adv_vert_fourth(xn_adv(1,i,j,1),dpdeta(i,j,1),Etadot(i,j,1,1),dt_s)
-                   call advvk(xn_adv(1,i,j,1),dpdeta(i,j,1),Etadot(i,j,1,1),dt_s,fluxk)
+                      call advvk(xn_adv(1,i,j,1),dpdeta(i,j,1),Etadot(i,j,1,1),dt_s,fluxk)
+                   endif
 
                    if(USE_uEMEP)then
                       call uemep_adv_k(fluxk,i,j)
@@ -3090,6 +3083,229 @@ end if
 
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
+  subroutine preadvx3(msgnr                &
+                     ,xn_adv,ps3d,vel      &
+                     ,xnbeg, xnend         &
+                     ,psbeg, psend,j,k,loc_frac_1d)
+
+    ! Initialize arrays holding boundary slices
+
+    use Par_ml , only : lj0,lj1,li1,neighbor,WEST,EAST
+    use ChemSpecs,         only : NSPEC_ADV
+    implicit none
+
+!    input
+    integer,intent(in):: msgnr,j,k
+    real,intent(in):: xn_adv(NSPEC_ADV,LIMAX:LIMAX*(LJMAX+1))
+    real,intent(in):: ps3d(LIMAX:LIMAX*(LJMAX+1))        &
+                     ,vel(LIMAX+1:(LIMAX+1)*(LJMAX+1))
+
+!    output
+    real,intent(out),dimension(NSPEC_ADV,3) :: xnend,xnbeg 
+    real,intent(out),dimension(3)           :: psend,psbeg 
+    real,intent(inout),dimension(uEMEP_Size1,0:limax+1)  :: loc_frac_1d
+
+!    local
+    integer  n,i,dx,dy,isec_poll, ii,info, uEMEP_Size1_local
+
+    real,dimension((NSPEC_ADV+1)*3+uEMEP_Size1) :: send_buf_w, rcv_buf_w, send_buf_e, rcv_buf_e
+    
+    uEMEP_Size1_local = 0!default: do not treat this region
+
+    if(uEMEP_Size1>0 .and. k>KMAX_MID-uEMEP%Nvert)then
+       uEMEP_Size1_local = uEMEP_Size1!treat this region
+       do i=li0,li1
+          n=0
+          do dy=-uEMEP%dist,uEMEP%dist
+             do dx=-uEMEP%dist,uEMEP%dist
+                do isec_poll=1,uEMEP%Nsec_poll
+                   n=n+1
+                   loc_frac_1d(n,i) = loc_frac(isec_poll,dx,dy,i,j,k)
+                enddo
+             enddo
+          enddo
+       enddo
+    endif
+    !     Initialize arrays holding boundary slices    
+    !     send to WEST neighbor if any
+    if (neighbor(WEST).ge.0) then
+       n=0
+       do ii=1,NSPEC_ADV
+          n=n+1
+          send_buf_w(n) = xn_adv(ii,LIMAX)
+       end do
+       do ii=1,NSPEC_ADV
+          n=n+1
+          send_buf_w(n) = xn_adv(ii,LIMAX+1)
+       end do
+       do ii=1,NSPEC_ADV
+          n=n+1
+          send_buf_w(n) = xn_adv(ii,LIMAX+2)
+       end do
+       n=n+1
+       send_buf_w(n) = ps3d(LIMAX)
+       n=n+1
+       send_buf_w(n) = ps3d(LIMAX+1)
+       n=n+1
+       send_buf_w(n) = ps3d(LIMAX+2)
+       do ii=1,uEMEP_Size1_local
+          n=n+1
+          send_buf_w(n) = loc_frac_1d(ii,1)
+       enddo
+       
+       CALL MPI_ISEND( send_buf_w, 8*((NSPEC_ADV+1)*3+uEMEP_Size1_local), MPI_BYTE,&
+            neighbor(WEST), msgnr+1000 , MPI_COMM_CALC, request_w, IERROR)
+    end if
+    
+    if (neighbor(EAST).ge.0) then
+       n=0
+       do ii=1,NSPEC_ADV
+          n=n+1
+          send_buf_e(n) = xn_adv(ii,LIMAX+li1-3)
+       end do
+       do ii=1,NSPEC_ADV
+          n=n+1
+          send_buf_e(n) = xn_adv(ii,LIMAX+li1-2)
+       end do
+       do ii=1,NSPEC_ADV
+          n=n+1
+          send_buf_e(n) = xn_adv(ii,LIMAX+li1-1)
+       end do
+       n=n+1
+       send_buf_e(n) = ps3d(LIMAX+li1-3)
+       n=n+1
+       send_buf_e(n) = ps3d(LIMAX+li1-2)
+       n=n+1
+       send_buf_e(n) = ps3d(LIMAX+li1-1)
+       do ii=1,uEMEP_Size1_local
+          n=n+1
+          send_buf_e(n) = loc_frac_1d(ii,li1)
+       enddo
+
+      CALL MPI_ISEND( send_buf_e, 8*((NSPEC_ADV+1)*3+uEMEP_Size1_local), MPI_BYTE,&
+          neighbor(EAST), msgnr+3000, MPI_COMM_CALC, request_e, IERROR)
+    end if
+
+    if (neighbor(WEST).lt.0) then
+       if(vel((LIMAX+1)+1).lt.0)then
+          xnbeg(:,2) = 3.*xn_adv(:,LIMAX+1)    &
+               -2.*xn_adv(:,LIMAX+2)
+          xnbeg(:,3) = 2.*xn_adv(:,LIMAX+1)    &
+               -xn_adv(:,LIMAX+2)
+          
+          psbeg(2) = 3.*ps3d(LIMAX+1)-2.*ps3d(LIMAX+2)
+          psbeg(3) = 2.*ps3d(LIMAX+1)-ps3d(LIMAX+2)
+       else
+          xnbeg(:,1) = xn_adv(:,LIMAX)
+          xnbeg(:,2) = xn_adv(:,LIMAX)
+          xnbeg(:,3) = xn_adv(:,LIMAX)
+          
+          psbeg(1) = ps3d(LIMAX)
+          psbeg(2) = ps3d(LIMAX)
+          psbeg(3) = ps3d(LIMAX)
+       end if
+       do ii=1,uEMEP_Size1_local
+          loc_frac_1d(ii,0)=0.0
+       enddo
+       
+    else
+       
+       CALL MPI_RECV(rcv_buf_w, 8*((NSPEC_ADV+1)*3+uEMEP_Size1_local), MPI_BYTE, &
+            neighbor(WEST), msgnr+3000, MPI_COMM_CALC, MPISTATUS, IERROR)
+       
+       n=0
+       do ii=1,NSPEC_ADV
+          n=n+1
+          xnbeg(ii,1) = rcv_buf_w(n)
+       end do
+       do ii=1,NSPEC_ADV
+          n=n+1
+          xnbeg(ii,2) = rcv_buf_w(n)
+       end do
+       do ii=1,NSPEC_ADV
+          n=n+1
+          xnbeg(ii,3) = rcv_buf_w(n)
+       end do
+       n=n+1
+       psbeg(1) = rcv_buf_w(n)
+       n=n+1
+       psbeg(2) = rcv_buf_w(n)
+       n=n+1
+       psbeg(3) = rcv_buf_w(n)
+       
+       do ii=1,uEMEP_Size1_local
+          n=n+1
+          loc_frac_1d(ii,0) = rcv_buf_w(n)
+       enddo
+       
+    end if
+    
+    if (neighbor(EAST).lt.0) then
+       if(vel((LIMAX+1)+li1).ge.0)then
+          xnend(:,1) = 2.*xn_adv(:,LIMAX+li1-1)    &
+               -xn_adv(:,LIMAX+li1-2)
+          xnend(:,2) = 3.*xn_adv(:,LIMAX+li1-1)    &
+               -2.*xn_adv(:,LIMAX+li1-2)
+          
+          psend(1) = 2.*ps3d(LIMAX+li1-1)    &
+               -ps3d(LIMAX+li1-2)
+          psend(2) = 3.*ps3d(LIMAX+li1-1)    &
+               -2.*ps3d(LIMAX+li1-2)
+       else
+          xnend(:,1) = xn_adv(:,LIMAX+li1)
+          xnend(:,2) = xn_adv(:,LIMAX+li1)
+          xnend(:,3) = xn_adv(:,LIMAX+li1)
+          
+          psend(1) = ps3d(LIMAX+li1)
+          psend(2) = ps3d(LIMAX+li1)
+          psend(3) = ps3d(LIMAX+li1)
+       end if
+       do ii=1,uEMEP_Size1_local
+          loc_frac_1d(ii,li1+1)=0.0
+       enddo
+    else
+       
+      CALL MPI_RECV( rcv_buf_e, 8*((NSPEC_ADV+1)*3+uEMEP_Size1_local), MPI_BYTE, &
+           neighbor(EAST), msgnr+1000, MPI_COMM_CALC, MPISTATUS, IERROR)
+      
+      n=0
+      do ii=1,NSPEC_ADV
+         n=n+1
+         xnend(ii,1) = rcv_buf_e(n)
+      end do
+      do ii=1,NSPEC_ADV
+         n=n+1
+         xnend(ii,2) = rcv_buf_e(n)
+      end do
+      do ii=1,NSPEC_ADV
+         n=n+1
+         xnend(ii,3) = rcv_buf_e(n)
+      end do
+      n=n+1
+      psend(1) = rcv_buf_e(n)
+      n=n+1
+      psend(2) = rcv_buf_e(n)
+      n=n+1
+      psend(3) = rcv_buf_e(n)
+      
+      do ii=1,uEMEP_Size1_local
+         n=n+1
+         loc_frac_1d(ii,li1+1) = rcv_buf_e(n)
+      enddo
+
+   end if
+
+    !  synchronizing sent buffers (must be done for all ISENDs!!!)
+    if (neighbor(WEST) .ge. 0) then
+      CALL MPI_WAIT(request_w, MPISTATUS, IERROR)
+    end if
+    if (neighbor(EAST) .ge. 0) then
+      CALL MPI_WAIT(request_e, MPISTATUS, IERROR)
+    end if
+  end subroutine preadvx3
+
+! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
   subroutine preadvy(msgnr                &
                     ,xn_adv,ps3d,vel      &
                     ,xnbeg, xnend         &
@@ -3374,6 +3590,229 @@ end if
   end subroutine preadvy2
 
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+  subroutine preadvy3(msgnr                &
+                     ,xn_adv,ps3d,vel      &
+                     ,xnbeg, xnend         &
+                     ,psbeg, psend,i_send,k,loc_frac_1d)
+
+    ! Initialize arrays holding boundary slices
+
+    use Par_ml , only : li0,li1,lj0,lj1,ljmax,neighbor,NORTH,SOUTH
+    use ChemSpecs,         only : NSPEC_ADV
+    implicit none
+
+!    input
+    integer,intent(in):: msgnr,i_send,k
+    real,intent(in):: xn_adv(NSPEC_ADV,LIMAX*LJMAX)
+    real,intent(in):: ps3d(LIMAX*LJMAX)                &
+                     ,vel(LIMAX*(LJMAX+1))
+
+!    output
+    real,intent(out),dimension(NSPEC_ADV,3) :: xnend,xnbeg 
+    real,intent(out),dimension(3)           :: psend,psbeg 
+    real,intent(inout),dimension(uEMEP_Size1,0:ljmax+1)  :: loc_frac_1d
+
+!    local
+    integer  ii,j,dx,dy,isec_poll,n, info, uEMEP_Size1_local
+    real,dimension((NSPEC_ADV+1)*3+uEMEP_Size1) :: send_buf_n, rcv_buf_n, send_buf_s, rcv_buf_s
+
+    uEMEP_Size1_local = 0!default: do not treat this region
+
+    if(uEMEP_Size1>0 .and. k>KMAX_MID-uEMEP%Nvert)then
+       uEMEP_Size1_local = uEMEP_Size1!treat this region
+       do j=lj0,lj1
+          n=0
+          do dy=-uEMEP%dist,uEMEP%dist
+             do dx=-uEMEP%dist,uEMEP%dist
+                do isec_poll=1,uEMEP%Nsec_poll
+                   n=n+1
+                   loc_frac_1d(n,j) = loc_frac(isec_poll,dx,dy,i_send,j,k)
+                enddo
+             enddo
+          enddo
+       enddo
+    endif
+ 
+!     send to SOUTH neighbor if any
+
+    if (neighbor(SOUTH) .ge. 0) then
+       n=0
+       do ii=1,NSPEC_ADV
+          n=n+1
+          send_buf_s(n) = xn_adv(ii,i_send)
+       end do
+       do ii=1,NSPEC_ADV
+          n=n+1
+          send_buf_s(n) = xn_adv(ii,i_send+LIMAX)
+       end do
+       do ii=1,NSPEC_ADV
+          n=n+1
+          send_buf_s(n) = xn_adv(ii,i_send+2*LIMAX)
+       end do
+       n=n+1
+       send_buf_s(n) = ps3d(i_send)
+       n=n+1
+       send_buf_s(n) = ps3d(i_send+LIMAX)
+       n=n+1
+       send_buf_s(n) = ps3d(i_send+2*LIMAX)
+       do ii=1,uEMEP_Size1_local
+          n=n+1
+          send_buf_s(n) = loc_frac_1d(ii,1)
+       enddo
+
+      CALL MPI_ISEND( send_buf_s, 8*((NSPEC_ADV+1)*3+uEMEP_Size1_local), MPI_BYTE,&
+            neighbor(SOUTH), msgnr+100, MPI_COMM_CALC, request_s, IERROR)
+    end if
+
+    if (neighbor(NORTH) .ge. 0) then
+
+       n=0
+       do ii=1,NSPEC_ADV
+          n=n+1
+          send_buf_n(n) = xn_adv(ii,i_send+(lj1-3)*LIMAX)
+       end do
+       do ii=1,NSPEC_ADV
+          n=n+1
+          send_buf_n(n) = xn_adv(ii,i_send+(lj1-2)*LIMAX)
+       end do
+       do ii=1,NSPEC_ADV
+          n=n+1
+          send_buf_n(n) = xn_adv(ii,i_send+(lj1-1)*LIMAX)
+       end do
+       n=n+1
+       send_buf_n(n) = ps3d(i_send+(lj1-3)*LIMAX)
+       n=n+1
+       send_buf_n(n) = ps3d(i_send+(lj1-2)*LIMAX)
+       n=n+1
+       send_buf_n(n) = ps3d(i_send+(lj1-1)*LIMAX)
+       do ii=1,uEMEP_Size1_local
+          n=n+1
+          send_buf_n(n) = loc_frac_1d(ii,lj1)
+       enddo
+
+      CALL MPI_ISEND( send_buf_n, 8*((NSPEC_ADV+1)*3+uEMEP_Size1_local), MPI_BYTE,&
+            neighbor(NORTH), msgnr+100, MPI_COMM_CALC, request_n, IERROR)
+    end if
+
+!     receive from SOUTH neighbor if any
+
+    if (neighbor(SOUTH).lt.0) then
+        if(vel(i_send+LIMAX).lt.0.and.lj0==2)then
+          xnbeg(:,2) = 3.*xn_adv(:,i_send+LIMAX)        &
+                    -2.*xn_adv(:,i_send+2*LIMAX)
+          xnbeg(:,3) = 2.*xn_adv(:,i_send+LIMAX)        &
+                    -xn_adv(:,i_send+2*LIMAX)
+          xnbeg(:,1) =  xnbeg(:,2)
+
+          psbeg(2) = 3.*ps3d(i_send+LIMAX)-2.*ps3d(i_send+2*LIMAX)
+          psbeg(3) = 2.*ps3d(i_send+LIMAX)-ps3d(i_send+2*LIMAX)
+          psbeg(1) = psbeg(2)
+        else
+          xnbeg(:,1) = xn_adv(:,i_send)
+          xnbeg(:,2) = xnbeg(:,1)
+          xnbeg(:,3) = xnbeg(:,1)
+
+          psbeg(1) = ps3d(i_send)
+          psbeg(2) =  psbeg(1)
+          psbeg(3) =  psbeg(1)
+        end if
+       do ii=1,uEMEP_Size1_local
+          loc_frac_1d(ii,0)=0.0
+       enddo
+
+    else
+
+      CALL MPI_RECV( rcv_buf_s, 8*((NSPEC_ADV+1)*3+uEMEP_Size1_local) , MPI_BYTE,&
+            neighbor(SOUTH), msgnr+100, MPI_COMM_CALC, MPISTATUS, IERROR)
+       n=0
+       do ii=1,NSPEC_ADV
+          n=n+1
+          xnbeg(ii,1) = rcv_buf_s(n)
+       end do
+       do ii=1,NSPEC_ADV
+          n=n+1
+          xnbeg(ii,2) = rcv_buf_s(n)
+       end do
+       do ii=1,NSPEC_ADV
+          n=n+1
+          xnbeg(ii,3) = rcv_buf_s(n)
+       end do
+       n=n+1
+       psbeg(1) = rcv_buf_s(n)
+       n=n+1
+       psbeg(2) = rcv_buf_s(n)
+       n=n+1
+       psbeg(3) = rcv_buf_s(n)
+       
+       do ii=1,uEMEP_Size1_local
+          n=n+1
+          loc_frac_1d(ii,0) = rcv_buf_s(n)
+       enddo
+     end if
+
+    if (neighbor(NORTH).lt.0) then
+        if(vel(i_send+lj1*LIMAX).ge.0.and.ljmax/=lj1)then
+          xnend(:,1) = 2.*xn_adv(:,i_send+(lj1-1)*LIMAX)        &
+                    -xn_adv(:,i_send+(lj1-2)*LIMAX)
+          xnend(:,2) = 3.*xn_adv(:,i_send+(lj1-1)*LIMAX)        &
+                    -2.*xn_adv(:,i_send+(lj1-2)*LIMAX)
+          xnend(:,3) = xnend(:,2)
+
+          psend(1) = 2.*ps3d(i_send+(lj1-1)*LIMAX)        &
+                    -ps3d(i_send+(lj1-2)*LIMAX)
+          psend(2) = 3.*ps3d(i_send+(lj1-1)*LIMAX)        &
+                    -2.*ps3d(i_send+(lj1-2)*LIMAX)
+          psend(3) = psend(2)
+        else
+          xnend(:,1) = xn_adv(:,i_send+(ljmax-1)*LIMAX)
+          xnend(:,2) = xnend(:,1)
+          xnend(:,3) = xnend(:,1)
+
+          psend(1) = ps3d(i_send+(ljmax-1)*LIMAX)
+          psend(2) = psend(1)
+          psend(3) = psend(1)
+        end if
+    else
+
+      CALL MPI_RECV( rcv_buf_n, 8*((NSPEC_ADV+1)*3+uEMEP_Size1_local), MPI_BYTE,&
+            neighbor(NORTH), msgnr+100, MPI_COMM_CALC, MPISTATUS, IERROR)
+      n=0
+      do ii=1,NSPEC_ADV
+         n=n+1
+         xnend(ii,1) = rcv_buf_n(n)
+      end do
+      do ii=1,NSPEC_ADV
+         n=n+1
+         xnend(ii,2) = rcv_buf_n(n)
+      end do
+      do ii=1,NSPEC_ADV
+         n=n+1
+         xnend(ii,3) = rcv_buf_n(n)
+      end do
+      n=n+1
+      psend(1) = rcv_buf_n(n)
+      n=n+1
+      psend(2) = rcv_buf_n(n)
+      n=n+1
+      psend(3) = rcv_buf_n(n)
+      
+      do ii=1,uEMEP_Size1_local
+         n=n+1
+         loc_frac_1d(ii,lj1+1) = rcv_buf_n(n)
+      enddo
+    end if
+
+!  synchronizing sent buffers (must be done for all ISENDs!!!)
+    if (neighbor(SOUTH) .ge. 0) then
+      CALL MPI_WAIT(request_s, MPISTATUS, IERROR)
+    end if
+    if (neighbor(NORTH) .ge. 0) then
+      CALL MPI_WAIT(request_n, MPISTATUS, IERROR)
+    end if
+
+  end subroutine preadvy3
+
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 !  subroutine convection_pstar(ps3d,dt_conv)
@@ -3393,7 +3832,7 @@ end if
 
 
 
-  subroutine adv_vert_zero(xn_adv,ps3d,sdot,dt_s)
+  subroutine adv_vert_zero(xn_adv,ps3d,sdot,dt_s,fluxk)
  !"zero order Bott" advection for vertical
     implicit none
 
@@ -3403,8 +3842,9 @@ end if
 !    input+output
     real ,intent(inout):: xn_adv(NSPEC_ADV,0:LIMAX*LJMAX*KMAX_MID-1)
     real ,intent(inout):: ps3d(0:LIMAX*LJMAX*KMAX_MID-1)
+    real ,intent(inout)::fluxk(NSPEC_ADV,KMAX_MID)
    
-    real :: fluxk(NSPEC_ADV,KMAX_MID),fluxps(KMAX_MID),fc(KMAX_MID)
+    real :: fluxps(KMAX_MID),fc(KMAX_MID)
     integer :: k
 
     do k = 1,KMAX_MID-1
@@ -3413,34 +3853,35 @@ end if
 
 !dhs1(k+1) is thickness of layer k
 !concentrations and thickness from upwind cell
+    fluxk(:,KMAX_MID)=0.0
     do k = 1,KMAX_MID-1
        if(fc(k).lt.0.)then
-          fluxk(:,k) = xn_adv(:,k*LIMAX*LJMAX) * fc(k)
-          fluxps(k) = ps3d(k*LIMAX*LJMAX) * fc(k)
+          fluxk(:,k+1) = xn_adv(:,k*LIMAX*LJMAX) * fc(k)
+          fluxps(k+1) = ps3d(k*LIMAX*LJMAX) * fc(k)
        else
-          fluxk(:,k) = xn_adv(:,(k-1)*LIMAX*LJMAX) * fc(k)  
-          fluxps(k) = ps3d((k-1)*LIMAX*LJMAX) * fc(k)  
+          fluxk(:,k+1) = xn_adv(:,(k-1)*LIMAX*LJMAX) * fc(k)  
+          fluxps(k+1) = ps3d((k-1)*LIMAX*LJMAX) * fc(k)  
        end if
     end do
 
     k=0
-    xn_adv(:,k*LIMAX*LJMAX)=max(0.0,xn_adv(:,k*LIMAX*LJMAX)+(-fluxk(:,k+1))*dhs1i(k+2))
-    ps3d(k*LIMAX*LJMAX)=max(0.0,ps3d(k*LIMAX*LJMAX)+(-fluxps(k+1))*dhs1i(k+2))
+    xn_adv(:,k*LIMAX*LJMAX)=max(0.0,xn_adv(:,k*LIMAX*LJMAX)+(-fluxk(:,k+2))*dhs1i(k+2))
+    ps3d(k*LIMAX*LJMAX)=max(0.0,ps3d(k*LIMAX*LJMAX)+(-fluxps(k+2))*dhs1i(k+2))
     do k = 1,KMAX_MID-2
-       if(xn_adv(1,k*LIMAX*LJMAX)+(fluxk(1,k)-fluxk(1,k+1))*dhs1i(k+2)<0.0)then
-       write(*,*)'PWPW a',me,k,xn_adv(1,k*LIMAX*LJMAX)+(fluxk(1,k)-fluxk(1,k+1))*dhs1i(k+2),xn_adv(1,k*LIMAX*LJMAX),fluxk(1,k),-fluxk(1,k+1),dhs1i(k+2)
+       if(xn_adv(1,k*LIMAX*LJMAX)+(fluxk(1,k+1)-fluxk(1,k+2))*dhs1i(k+2)<0.0)then
+       write(*,*)'PWPW a',me,k,xn_adv(1,k*LIMAX*LJMAX)+(fluxk(1,k+1)-fluxk(1,k+2))*dhs1i(k+2),xn_adv(1,k*LIMAX*LJMAX),fluxk(1,k+1),-fluxk(1,k+2),dhs1i(k+2)
        stop
        end if
-       xn_adv(:,k*LIMAX*LJMAX)=max(0.0,xn_adv(:,k*LIMAX*LJMAX)+(fluxk(:,k)-fluxk(:,k+1))*dhs1i(k+2))
-       if(ps3d(k*LIMAX*LJMAX)+(fluxps(k)-fluxps(k+1))*dhs1i(k+2)<0.0001)then
-          write(*,*)'PWPW ',me,ps3d(k*LIMAX*LJMAX)+(fluxps(k)-fluxps(k+1))*dhs1i(k+2),ps3d(k*LIMAX*LJMAX),(fluxps(k)),-fluxps(k+1),dhs1i(k+2)
+       xn_adv(:,k*LIMAX*LJMAX)=max(0.0,xn_adv(:,k*LIMAX*LJMAX)+(fluxk(:,k+1)-fluxk(:,k+2))*dhs1i(k+2))
+       if(ps3d(k*LIMAX*LJMAX)+(fluxps(k+1)-fluxps(k+2))*dhs1i(k+2)<0.0001)then
+          write(*,*)'PWPW ',me,ps3d(k*LIMAX*LJMAX)+(fluxps(k+1)-fluxps(k+2))*dhs1i(k+2),ps3d(k*LIMAX*LJMAX),(fluxps(k+1)),-fluxps(k+2),dhs1i(k+2)
           stop
        end if
-       ps3d(k*LIMAX*LJMAX)=max(0.0,ps3d(k*LIMAX*LJMAX)+(fluxps(k)-fluxps(k+1))*dhs1i(k+2))
+       ps3d(k*LIMAX*LJMAX)=max(0.0,ps3d(k*LIMAX*LJMAX)+(fluxps(k+1)-fluxps(k+2))*dhs1i(k+2))
     end do
     k=KMAX_MID-1
-    xn_adv(:,k*LIMAX*LJMAX)=max(0.0,xn_adv(:,k*LIMAX*LJMAX)+(fluxk(:,k))*dhs1i(k+2))
-    ps3d(k*LIMAX*LJMAX)=max(0.0,ps3d(k*LIMAX*LJMAX)+(fluxps(k))*dhs1i(k+2))
+    xn_adv(:,k*LIMAX*LJMAX)=max(0.0,xn_adv(:,k*LIMAX*LJMAX)+(fluxk(:,k+1))*dhs1i(k+2))
+    ps3d(k*LIMAX*LJMAX)=max(0.0,ps3d(k*LIMAX*LJMAX)+(fluxps(k+1))*dhs1i(k+2))
 
 
   end subroutine adv_vert_zero

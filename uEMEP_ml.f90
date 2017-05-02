@@ -6,7 +6,7 @@ use CheckStop_ml,     only: CheckStop,StopAll
 use Chemfields_ml,    only: xn_adv
 use ChemSpecs,        only: NSPEC_ADV, NSPEC_SHL,species_adv
 use Country_ml,       only: MAXNLAND,NLAND,Country
-use EmisDef_ml,       only: loc_frac, loc_frac_ext, loc_frac_hour, loc_tot_hour, &
+use EmisDef_ml,       only: loc_frac, loc_frac_1d, loc_frac_hour, loc_tot_hour, &
                             loc_frac_day, loc_tot_day, loc_frac_month&
                             , loc_tot_month,loc_frac_full,loc_tot_full, NSECTORS,NEMIS_FILE, &
                             EMIS_FILE,nlandcode,landcode,flat_nlandcode,flat_landcode,&
@@ -42,7 +42,12 @@ public  :: uemep_adv_y
 public  :: uemep_adv_k
 public  :: uemep_emis
 
+integer, public, save :: uEMEP_Size1=0 !total size of the first 3 dimensions of loc_frac
+!uEMEP_Size1=uEMEP%Nsec_poll*(2*uEMEP%dist+1)**2
+
 real, private, save ::av_fac_hour,av_fac_day,av_fac_month,av_fac_full
+real, allocatable, save ::loc_frac_to(:,:,:,:,:,:)
+
 
 contains
 subroutine init_uEMEP
@@ -62,6 +67,7 @@ subroutine init_uEMEP
 !  uEMEP%DOMAIN = [280,430,130,340]
 !  uEMEP%DOMAIN = [35,90,2,75]!ECCAA 
 
+  uEMEP_Size1 = uEMEP%Nsec_poll*(2*uEMEP%dist+1)**2
 
   iem=find_index(uEMEP%emis ,EMIS_FILE(1:NEMIS_FILE))
   call CheckStop( iem<1, "uEMEP did not find corresponding emission file: "//trim(uEMEP%emis) )
@@ -98,7 +104,9 @@ subroutine init_uEMEP
   
   allocate(loc_frac(uEMEP%Nsec_poll,-uEMEP%dist:uEMEP%dist,-uEMEP%dist:uEMEP%dist,LIMAX,LJMAX,KMAX_MID-uEMEP%Nvert+1:KMAX_MID))
   loc_frac=0.0 !must be initiated to 0 so that outer frame does not contribute.
-  allocate(loc_frac_ext(uEMEP%Nsec_poll,-uEMEP%dist:uEMEP%dist,-uEMEP%dist:uEMEP%dist,0:LIMAX+1,0:LJMAX+1))        
+  allocate(loc_frac_to(uEMEP%Nsec_poll,-uEMEP%dist:uEMEP%dist,-uEMEP%dist:uEMEP%dist,LIMAX,LJMAX,KMAX_MID-uEMEP%Nvert+1:KMAX_MID))
+  loc_frac_to=0.0 
+  allocate(loc_frac_1d(uEMEP%Nsec_poll,-uEMEP%dist:uEMEP%dist,-uEMEP%dist:uEMEP%dist,0:max(LIMAX,LJMAX)+1))        
   if(uEMEP%IOU_wanted(IOU_HOUR))then
      allocate(loc_frac_hour(uEMEP%Nsec_poll,-uEMEP%dist:uEMEP%dist,-uEMEP%dist:uEMEP%dist,LIMAX,LJMAX,KMAX_MID-uEMEP%Nvert+1:KMAX_MID))
      loc_frac_hour=0.0
@@ -233,6 +241,9 @@ subroutine out_uEMEP(iotyp)
       def1%name='tot_pollutant'
      call Out_netCDF_n(iotyp,def1,ndim_tot,kmax,loc_tot_full,scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=uEMEP%DOMAIN,&
           fileName_given=trim(fileName),overwrite=.false.,create_var_only=.true.,chunksizes=chunksizes_tot)
+!      def1%name='local_transport'
+!      call Out_netCDF_n(iotyp,def1,ndim,kmax,loc_frac_full,scale,CDFtype,dimSizes,dimNames,out_DOMAIN=uEMEP%DOMAIN,&
+!           fileName_given=trim(fileName),overwrite=.false.,create_var_only=.true.,chunksizes=chunksizes)  
  endif
 
   if(iotyp==IOU_HOUR .or. iotyp==IOU_HOUR_INST)then
@@ -263,7 +274,33 @@ subroutine out_uEMEP(iotyp)
      loc_tot_hour=0.0
      else
         !IOU_HOUR_INST. No need to average
-        
+!!$      do k = KMAX_MID-uEMEP%Nvert+1,KMAX_MID
+!!$        do j=1,ljmax
+!!$           do i=1,limax
+!!$              if(i+uEMEP%dist<=limax .and. i-uEMEP%dist>0 .and. j+uEMEP%dist<=ljmax .and. j-uEMEP%dist>0)then
+!!$                 xtot=0.0
+!!$                 do iix=1,uEMEP%Nix
+!!$                    ix=uEMEP%ix(iix)
+!!$                    xtot=xtot+(xn_adv(ix,i,j,k)*uEMEP%mw(iix))/ATWAIR&
+!!$                         *roa(i,j,k,1)*1.E9 !for ug/m3
+!!$                    !                   *(dA(k)+dB(k)*ps(i,j,1))/GRAV*1.E6 !for mg/m2
+!!$                 end do
+!!$                 invtot=1.0/(1.E-20+xtot)
+!!$                 do dy=-uEMEP%dist,uEMEP%dist
+!!$                    do dx=-uEMEP%dist,uEMEP%dist
+!!$                       do isec_poll=1,uEMEP%Nsec_poll
+!!$                          loc_frac_to(isec_poll,dx,dy,i,j,k)=loc_frac_to(isec_poll,dx,dy,i,j,k)+loc_frac(isec_poll,-dx,-dy,i-dx,j-dy,k)*invtot
+!!$                       enddo
+!!$                    enddo
+!!$                 enddo
+!!$              endif
+!!$           enddo
+!!$        enddo
+!!$     enddo
+!!$      def1%name='local_transport'
+!!$      call Out_netCDF_n(iotyp,def1,ndim,kmax,loc_frac_to,scale,CDFtype,dimSizes,dimNames,out_DOMAIN=uEMEP%DOMAIN,&
+!!$           fileName_given=trim(fileName),overwrite=.false.,create_var_only=.false.)       
+!!$       loc_frac_to=0.0
      def1%name='local_fraction'
         call Out_netCDF_n(iotyp,def1,ndim,kmax,loc_frac,scale,CDFtype,dimSizes,dimNames,out_DOMAIN=uEMEP%DOMAIN,&
              fileName_given=trim(fileName),overwrite=.false.,create_var_only=.false.)       
@@ -342,6 +379,26 @@ subroutine out_uEMEP(iotyp)
 
   else  if(iotyp==IOU_YEAR)then
 
+     
+     do k = KMAX_MID-uEMEP%Nvert+1,KMAX_MID
+        do j=1,ljmax
+           do i=1,limax
+              if(i+uEMEP%dist<=limax .and. i-uEMEP%dist>0 .and. j+uEMEP%dist<=ljmax .and. j-uEMEP%dist>0)then
+                 invtot=1.0/(1.E-20+loc_tot_full(i,j,k))
+                 do dy=-uEMEP%dist,uEMEP%dist
+                    do dx=-uEMEP%dist,uEMEP%dist
+                       do isec_poll=1,uEMEP%Nsec_poll
+                          loc_frac_to(isec_poll,dx,dy,i,j,k)=loc_frac_to(isec_poll,dx,dy,i,j,k)+loc_frac_full(isec_poll,-dx,-dy,i-dx,j-dy,k)*invtot
+                       enddo
+                    enddo
+                 enddo
+              endif
+           enddo
+        enddo
+     enddo
+      def1%name='local_transport'
+      call Out_netCDF_n(iotyp,def1,ndim,kmax,loc_frac_to,scale,CDFtype,dimSizes,dimNames,out_DOMAIN=uEMEP%DOMAIN,&
+           fileName_given=trim(fileName),overwrite=.false.,create_var_only=.false.)       
      do k = KMAX_MID-uEMEP%Nvert+1,KMAX_MID
         do j=1,ljmax
            do i=1,limax
@@ -363,10 +420,10 @@ subroutine out_uEMEP(iotyp)
      av_fac_full=0.0
      def1%name='tot_pollutant'
      call Out_netCDF_n(iotyp,def1,ndim_tot,kmax,loc_tot_full,scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=uEMEP%DOMAIN,&
-       fileName_given=trim(fileName),overwrite=.false.,create_var_only=.false.)       
+       fileName_given=trim(fileName),overwrite=.false.,create_var_only=.false.)   
      loc_frac_full=0.0
      loc_tot_full=0.0
-
+    
   else
      if(me==0)write(*,*)'IOU not recognized'
   endif
@@ -481,12 +538,12 @@ end subroutine av_uEMEP
 !          if(dx==0 .and. dy==0)cycle!temporary: no return of pollutants
           if(x>0.0.and.dy>-uEMEP%dist)then
              do isec_poll=1,uEMEP%Nsec_poll
-                loc_frac(isec_poll,dx,dy,i,j,k) = loc_frac(isec_poll,dx,dy,i,j,k)+ loc_frac_ext(isec_poll,dx,dy-1,i,j+1)*x
+                loc_frac(isec_poll,dx,dy,i,j,k) = loc_frac(isec_poll,dx,dy,i,j,k)+ loc_frac_1d(isec_poll,dx,dy-1,j+1)*x
              enddo
           endif
           if(xx>0.0.and.dy<uEMEP%dist)then
              do isec_poll=1,uEMEP%Nsec_poll
-                loc_frac(isec_poll,dx,dy,i,j,k) = loc_frac(isec_poll,dx,dy,i,j,k)+ loc_frac_ext(isec_poll,dx,dy+1,i,j-1)*xx
+                loc_frac(isec_poll,dx,dy,i,j,k) = loc_frac(isec_poll,dx,dy,i,j,k)+ loc_frac_1d(isec_poll,dx,dy+1,j-1)*xx
              enddo
           endif
        enddo
@@ -515,7 +572,7 @@ end subroutine av_uEMEP
     xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. all outgoing flux 
     f_in=max(0.0,x)+max(0.0,xx)!positive part. all incoming flux
     inv_tot=1.0/(xn+f_in+1.e-20)!incoming dilutes
-
+ 
     x =max(0.0,x)*inv_tot!factor due to flux through "East" face (Right)
     xx=max(0.0,xx)*inv_tot!factor due to flux through "West" face (Left)
 
@@ -527,12 +584,12 @@ end subroutine av_uEMEP
 !          if(dx==0 .and. dy==0)cycle
           if(x>0.0.and.dx>-uEMEP%dist)then
              do isec_poll=1,uEMEP%Nsec_poll
-                loc_frac(isec_poll,dx,dy,i,j,k) = loc_frac(isec_poll,dx,dy,i,j,k)+ loc_frac_ext(isec_poll,dx-1,dy,i+1,j)*x
+                loc_frac(isec_poll,dx,dy,i,j,k) = loc_frac(isec_poll,dx,dy,i,j,k)+ loc_frac_1d(isec_poll,dx-1,dy,i+1)*x
              enddo
           endif
           if(xx>0.0.and.dx<uEMEP%dist)then
              do isec_poll=1,uEMEP%Nsec_poll
-                loc_frac(isec_poll,dx,dy,i,j,k) = loc_frac(isec_poll,dx,dy,i,j,k)+ loc_frac_ext(isec_poll,dx+1,dy,i-1,j)*xx
+                loc_frac(isec_poll,dx,dy,i,j,k) = loc_frac(isec_poll,dx,dy,i,j,k)+ loc_frac_1d(isec_poll,dx+1,dy,i-1)*xx
              enddo
           endif
        enddo
@@ -545,8 +602,13 @@ end subroutine av_uEMEP
     integer, intent(in)::i,j
     real ::x,xn,xx,f_in,inv_tot
     integer ::k,iix,ix,dx,dy,isec_poll
-
-    do k = KMAX_MID-uEMEP%Nvert+1,KMAX_MID
+    real loc_frac_km1(uEMEP%Nsec_poll,-uEMEP%dist:uEMEP%dist,-uEMEP%dist:uEMEP%dist,KMAX_MID-uEMEP%Nvert+1:KMAX_MID-1)
+    
+!need to be careful to always use non-updated values on the RHS
+    do k = KMAX_MID-uEMEP%Nvert+2,KMAX_MID
+       loc_frac_km1(:,:,:,k-1)=loc_frac(:,:,:,i,j,k-1)
+    enddo
+    do k = KMAX_MID-uEMEP%Nvert+1,KMAX_MID!k is increasing-> can use k+1 to access non-updated value
        xn=0.0
        x=0.0
        xx=0.0
@@ -572,12 +634,12 @@ end subroutine av_uEMEP
        xx=max(0.0,xx)*inv_tot!factor due to flux through top face
        if(k<KMAX_MID)then
           if(k>KMAX_MID-uEMEP%Nvert+1)then
-             do dy=-uEMEP%dist,uEMEP%dist
+            do dy=-uEMEP%dist,uEMEP%dist
                 do dx=-uEMEP%dist,uEMEP%dist
                    do isec_poll=1,uEMEP%Nsec_poll
                       loc_frac(isec_poll,dx,dy,i,j,k) = loc_frac(isec_poll,dx,dy,i,j,k) * xn * inv_tot &
-                       + loc_frac(isec_poll,dx,dy,i,j,k-1) * xx&
-                       + loc_frac(isec_poll,dx,dy,i,j,k+1) * x
+                       + loc_frac_km1(isec_poll,dx,dy,k-1) * xx&
+                       + loc_frac(isec_poll,dx,dy,i,j,k+1) * x!k is increasing-> can use k+1 to access non-updated value
                    enddo
                 enddo
              enddo
@@ -587,7 +649,7 @@ end subroutine av_uEMEP
                 do dx=-uEMEP%dist,uEMEP%dist
                    do isec_poll=1,uEMEP%Nsec_poll
                       loc_frac(isec_poll,dx,dy,i,j,k) = loc_frac(isec_poll,dx,dy,i,j,k)* xn * inv_tot &
-                       + loc_frac(isec_poll,dx,dy,i,j,k+1) * x
+                       + loc_frac(isec_poll,dx,dy,i,j,k+1) * x!k is increasing-> can use k+1 to access non-updated value
                    enddo
                 enddo
              enddo
@@ -598,7 +660,7 @@ end subroutine av_uEMEP
              do dx=-uEMEP%dist,uEMEP%dist
                 do isec_poll=1,uEMEP%Nsec_poll
                    loc_frac(isec_poll,dx,dy,i,j,k) = loc_frac(isec_poll,dx,dy,i,j,k)* xn * inv_tot &
-                       + loc_frac(isec_poll,dx,dy,i,j,k-1) * xx
+                       + loc_frac_km1(isec_poll,dx,dy,k-1) * xx
                 enddo
              enddo
           enddo

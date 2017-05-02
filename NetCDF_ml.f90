@@ -1745,7 +1745,7 @@ subroutine Out_netCDF_n(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames
     GJMAXcdf=j2-j1+1
 
     if(createfile) then ! the file does not exist yet or is overwritten
-      if(MasterProc)write(6,*) 'creating file: ',trim(fileName_given)
+      if(MasterProc)write(6,*) 'creating file: ',trim(fileName_given),GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,KMAX
       period_type = 'unknown'
       call CreatenetCDFfile(trim(fileName_given),GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,KMAX)
       if(present(ncFileID_given))then
@@ -1761,22 +1761,23 @@ subroutine Out_netCDF_n(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames
       end if
    elseif(MasterProc)then
       !test if the defined dimensions are compatible
-      if(DEBUG_NETCDF)&
-        write(6,*) 'check dims file: ',trim(fileName_given),ncFileID
+        if(DEBUG_NETCDF)then
+           write(6,*) 'checking dims file: ',trim(fileName_given),ncFileID
+            ! find main properties
+            call check(nf90_Inquire(ncFileID,n,i,j))
+            print *, trim(fileName),ncfileid,' properties: '
+            print *, 'Nb of dimensions: ',n
+            print *, 'Nb of variables: ',i
+         endif
       select case(projection)
       case('lon lat')
-! find main properties
-  call check(nf90_Inquire(ncFileID,n,i,j,iDimID))
-  print *, me,trim(fileName),ncfileid,' properties: '
-  print *, me,'Nb of dimensions: ',n
-  print *, me,'Nb of variables: ',i
-        call check(nf90_inq_dimid(ncFileID,"lon",idimID),"dim:lon")
-        call check(nf90_inq_dimid(ncFileID,"lat",jdimID),"dim:lat")
+         call check(nf90_inq_dimid(ncFileID,"lon",idimID),"dim:lon")
+         call check(nf90_inq_dimid(ncFileID,"lat",jdimID),"dim:lat")
       case default
         call check(nf90_inq_dimid(ncFileID,"i"  ,idimID),"dim:i")
         call check(nf90_inq_dimid(ncFileID,"j"  ,jdimID),"dim:j")
       end select
-  print *, me,'dim checked '
+
       if(USE_EtaCOORDINATES)then
         call check(nf90_inq_dimid(ncFileID,"lev",kdimID),"dim:lev")
       else
@@ -1919,7 +1920,16 @@ subroutine Out_netCDF_n(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames
            do i = 1,tlimax(me)
               ijk=ijk+1
               nijk=nijk+Nextradim
+!              if(i==5.and.j==5.and.k==kmax.and.mod(iextradim-1,11)==0.and.dat(nijk)>1.E-12)write(*,*)trim(varname),me,iextradim,dat(nijk)
               buff(ijk)=dat(nijk)*scale
+              !if(isnan(buff(ijk)))then
+              !   write(*,*)'ERROR ',me,i,j,k,iextradim,ijk
+              !   stop
+              !endif
+              !if(buff(ijk)>1.1)then
+              !   write(*,*)'too large ERROR ',trim(varname),me,i,j,k,iextradim,ijk,buff(ijk)
+              !   stop
+              !endif
            end do
         end do
      end do
@@ -2085,6 +2095,9 @@ subroutine Out_netCDF_n(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames
                    start=(/1,1,nrecords/)))
            else
               !write(*,*)'writing slice ',iextradim,' of ',Nextradim
+!              if(mod(iextradim-1,12)==0)then
+!                 write(*,*)trim(varname),me,startvec(2),startvec(3),iextradim,R4data3D(GIMAX/2,GJMAX/2,kmax)
+!              endif
               call check(nf90_put_var(ncFileID, VarID,R4data3D(i1:i2,j1:j2,1:kmax),&
                    start=startvec(1:ndim+1),count=countvec(1:ndim+1)))
           end if
