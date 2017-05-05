@@ -292,6 +292,22 @@ OutputVegO3=
    'RDN      ','GROUP','mgN','YMD',
    'SO2      ','SPEC ','mgS','YMD',
    'HNO3     ','SPEC ','mgN','YMD',
+
+! Mosaics. The output will .....
+ ! Uses s5 type
+  NewMosaic =
+     'Mosaic', 'VG', 'HNO3', 'Grid', 'cms', 'YM'
+     'Mosaic', 'VG', 'PAN', 'BDLF_DECD_TROP_TREE', 'cms', 'YM'
+  MOSAIC_METCONCS = 
+    'USTAR', 
+    'LAI', 
+    'VG', 
+    'CanopyO3', 
+    'FstO3'
+  MET_LCS = 
+    'DF','GR','BF','TC','IAM_DF','IAM_CR','C3_NARC_GRSS',
+  Mosaic_timefmt = 'YMD'
+
 &end 
 !----------------------------------------
 !Older DDEP_WANTED stuff.

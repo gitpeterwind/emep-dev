@@ -20,6 +20,19 @@
   EXP_NAME              = 'EMEPSTD',
   MY_OUTPUTS            = 'EMEPSTD',
 !------------------------------
+! changes March-April 2017
+ EmBio%GlobBvocMethod = 'GLC-CLM',  ! NEW default for GLOBAL, not used for Euro
+ EmBio%CLF            =  0.59,      ! 1/1.7 for CLM
+!
+ LandCoverInputs%LandDefs   = 'DataDir/LandInputs_Apr2017/Inputs_LandDefs.csv',
+ LandCoverInputs%Do3seDefs  = 'DataDir/LandInputs_Apr2017/Inputs_DO3SE.csv',
+ LandCoverInputs%MapFile =
+    'DataDir/Landuse/Landuse_PS_5km_LC.nc',
+    'DataDir/LandInputs_Apr2017/glc2000mCLM.nc',
+ YieldModifications = '-'   ! None for EmChems 'JPC-VY-acid',
+! EmBio%IsopFac           =  1.0,
+! PBL%ZiMIN             =  50.0,
+!------------------------------
 ! testing March 2017
 ! EmBio%GlobBvocMethod = 'MEGAN',
 ! EmBio%IsopFac           =  1.0,

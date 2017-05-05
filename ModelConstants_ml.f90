@@ -8,7 +8,7 @@ module ModelConstants_ml
 use Aerofunctions,        only: DpgV2DpgN
 use CheckStop_ml,         only: CheckStop
 use ChemSpecs,            only: species
-use emep_Config_mod,      only: PBL, EmBio
+use emep_Config_mod,      only: PBL, EmBio, YieldModifications, LandCoverInputs
 use Io_Nums_ml,           only: IO_NML, IO_LOG, IO_TMP
 use OwnDataTypes_ml,      only: typ_ss, uEMEP_type
 use Precision_ml,         only: dp
@@ -58,7 +58,8 @@ type, public :: emep_useconfig
     ,PFT_MAPS         = .false.  ! Future option
 
  ! Mar 2017. Allow new MEGAN-like BVOC
-  character(len=10) :: GlobBvocMethod = "-" ! MEGAN
+ ! Moved to emep_Config
+ ! character(len=10) :: GlobBvocMethod = "-" ! MEGAN
 
  ! If USES%EMISTACKS, need to set:
   character(len=4) :: PlumeMethod = "none" !MKPS:"ASME","NILU","PVDI"
@@ -386,7 +387,7 @@ logical, public, parameter :: NH3_U10 = .false.
 !       generally only change when switching Met-driver
 integer, public, parameter ::  &
 !TREEX  NLANDUSEMAX  = 19   &   ! Number of land use types in Inputs.Landuse file
-  NLANDUSEMAX  = 30    &    ! Max num land use types in Inputs.Landuse file
+  NLANDUSEMAX  = 40    &    ! Max num land use types in Inputs.Landuse file
 , KTOP         = 1     &    ! K-value at top of domain
 , KWINDTOP     = 5     &    ! Define extent needed for wind-speed array
 , NMET         = 2     &    ! No. met fields in memory
@@ -529,6 +530,7 @@ subroutine Config_ModelConstants(iolog)
   integer :: i, j, ispec, iostat
   logical,save :: first_call = .true.
   character(len=len(meteo)) ::  MetDir='./' ! path from meteo
+  character(len=*), parameter ::  dtxt='Config_MC:'
 
   NAMELIST /ModelConstants_config/ &
     DegreeDayFactorsFile, meteo & !meteo template with full path
@@ -536,6 +538,8 @@ subroutine Config_ModelConstants(iolog)
    ,USES   & ! just testname so far
    ,PBL    & ! Mar2017 testing
    ,EmBio  & ! Mar2017 testing
+   ,YieldModifications &  ! Allows dynamic change of chemical yields
+   ,LandCoverInputs  & ! Apr2017 for CLM, etc
    ,AERO   & ! Aerosol settings
    ,DEBUG  & !
    ,MY_OUTPUTS  &  ! e.g. EMEPSTD, FORECAST, TFMM
@@ -584,10 +588,10 @@ subroutine Config_ModelConstants(iolog)
   end if
 
   if(MasterProc)then
-  ! write(*, * ) "NAMELIST IS "
+    write(*, * ) dtxt//"NAMELIST START "
   ! write(*, NML=ModelConstants_config)
   ! write(*,* ) "NAMELIST IOLOG IS ", iolog
-    write(iolog,*) "NAMELIST IS "
+    write(iolog,*) dtxt//"NAMELIST IS "
     write(iolog, NML=ModelConstants_config)
   end if
 
@@ -598,7 +602,7 @@ subroutine Config_ModelConstants(iolog)
   do i=1,size(DataPath)
     if(DataPath(i)=="NOTSET")then
       if(MasterProc)then
-        write(*,*)'WARNING: Could not find valid DataDir. Tried:'
+        write(*,*)dtxt//'WARNING: Could not find valid DataDir. Tried:'
         do j=1,i-1
           write(*,*)trim(DataPath(j))
         end do
@@ -610,7 +614,7 @@ subroutine Config_ModelConstants(iolog)
     open(IO_TMP,file=trim(DataPath(i)),iostat=iostat,action='read')! does not work without action='read'
     if(iostat==0)then
       DataDir=trim(DataPath(i))
-      if(MasterProc)write(*,*)'DataDir set to',trim(DataDir)
+      if(MasterProc)write(*,*)dtxt//'DataDir set to',trim(DataDir)
       close(IO_TMP)
       exit
     end if
@@ -627,7 +631,7 @@ subroutine Config_ModelConstants(iolog)
   DegreeDayFactorsFile=key2str(DegreeDayFactorsFile,'GRID',GRID)
   DegreeDayFactorsFile=key2str(DegreeDayFactorsFile,'YYYY',startdate(1))
   if(MasterProc)then
-    write(*,*)'Defined DegreeDayFactorsFile as:'
+    write(*,*)dtxt//'Defined DegreeDayFactorsFile as:'
     write(*,*)trim(DegreeDayFactorsFile)
   end if
 
@@ -635,10 +639,28 @@ subroutine Config_ModelConstants(iolog)
      fileName_O3_Top = key2str(fileName_O3_Top,'DataDir',DataDir)
      fileName_O3_Top = key2str(fileName_O3_Top,'YYYY',startdate(1))
      if(MasterProc)then
-        write(*,*)'Reading 3 hourly O3 at top from :'
+        write(*,*)dtxt//'Reading 3 hourly O3 at top from :'
         write(*,*)trim(fileName_O3_Top)
      end if
   endif
+
+ ! LandCoverInputs
+  !print *, dtxt//'Landcover data:', trim(DataDir)
+  do i = 1, size(LandCoverInputs%MapFile(:))
+    if ( LandCoverInputs%MapFile(i) /= 'NOTSET' ) then
+       LandCoverInputs%MapFile(i)= &
+          key2str(LandCoverInputs%MapFile(i),'DataDir',DataDir)
+       print *, dtxt//'Landcover file', i, trim(LandCoverInputs%MapFile(i))
+       if(MasterProc)then
+          write(*,*)dtxt//'Landcover file', i, trim(LandCoverInputs%MapFile(i))
+       end if
+    end if
+  end do
+  LandCoverInputs%LandDefs=&
+       key2str(LandCoverInputs%LandDefs,'DataDir',DataDir)
+  LandCoverInputs%Do3seDefs=&
+       key2str(LandCoverInputs%Do3seDefs,'DataDir',DataDir)
+  !print *, dtxt//'Landcover =>', LandCoverInputs
 
 end subroutine Config_ModelConstants
 endmodule ModelConstants_ml

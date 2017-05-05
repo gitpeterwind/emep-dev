@@ -1,0 +1,123 @@
+********************** BVOC starter reactions here ********************
+*| NEW GenChem notation: |Yxxxx| for BSOA yields. The contents of || will be passed straight
+*| to CM_Reactions as multipliers for the product terms. Allows in-chemstep changes,
+*| depending on e.g. dISOP/dMT
+
+
+*| Isoprene:
+* Add fixed-yield non-volatile SOA-formation ISOP_BSOA_NV (model M=24) -
+*  Assume 1% (mass) yield -> "molar yield" 0.02833
+*  Assume 4% (mass-based) BSOA yield for isoprene + NO3 reaction - based on
+*  lowest yield observed by Ng et al. 2008
+
+2.70e-11*exp(390*tinv)  [OH]  + [C5H8] = |YA_ISOPOH| ISOPOH_BSOA_NV + OHLOSS_ISO  ;
+3.15e-12*exp(-450*tinv) [NO3] + [C5H8] = |YA_ISOPNO3| ISOPNO3_BSOA_NV ;
+
+*| Emissions:
+
+rcbio:BIOTERP  = 0.45 APINENE + 0.2 BPINENE + 0.1 CARENE + 0.05 MYRCENE + 0.1 LIMONENE + 0.1 OCIMENE  + 0.01534 SQT_SOA_NV ;
+
+*| OH chemistry
+
+1.20e-11*exp(440*tinv)  APINENE + OH = |YG_APINOH| RTN28O2 + OHLOSS_MT + |YA_APINOH| APINOH_BSOA_NV  ;
+2.38e-11*exp(357*tinv)  BPINENE + OH = |YG_BPINO3| RTX28O2 + |YA_BPINO3| BPINOH_BSOA_NV + OHLOSS_MT ;
+1.20e-11*exp(440*tinv)*4.693   OCIMENE     + OH = XMTOH_RO2 + OHLOSS_MT ;
+1.20e-11*exp(440*tinv)*3.184   LIMONENE    + OH = XMTOH_RO2 + OHLOSS_MT ;
+1.20e-11*exp(440*tinv)*2.179   SABINENE    + OH = XMTOH_RO2 + OHLOSS_MT ;
+1.20e-11*exp(440*tinv)*4.004   MYRCENE     + OH = XMTOH_RO2 + OHLOSS_MT ;
+1.20e-11*exp(440*tinv)*1.639   CARENE      + OH = XMTOH_RO2 + OHLOSS_MT ;
+
+*| Generic:
+* APINENE WOULD give: RTN28O2, BPINENE WOULD give: RTX28O2. As we really
+* don't know which MT are involved, we assume 50:50 split for gas-phase products:
+
+*FAST
+1.0e6 XMTOH_RO2  = |YG_MTOH| 0.5 RTN28O2 + |YG_MTOH| 0.5 RTX28O2 + |YA_MTOH| XMTOH_BSOA_NV ;
+
+*-------------------------------------------------------------------------------------------
+*| O3 reactions. We produce first an RO2 and let it decay v. fast to gas-phase
+
+8.05e-16*exp(-640*tinv)   APINENE + O3 = |YG_APINO3| APINO3_RO2 + |YA_APINO3| APINO3_BSOA_NV ;
+1.35e-15*exp(-1270*tinv)  BPINENE + O3 = |YG_BPINO3| BPINO3_RO2 + |YA_BPINO3| BPINO3_BSOA_NV ;
+
+8.05e-16*exp(-640*tinv)*6.236   OCIMENE     + O3 = |YG_MTO3| XMTO3_RO2 + |YA_MTO3|  XMTO3_BSOA_NV ;
+8.05e-16*exp(-640*tinv)*2.309   LIMONENE    + O3 = |YG_MTO3| XMTO3_RO2 + |YA_MTO3|  XMTO3_BSOA_NV ;
+8.05e-16*exp(-640*tinv)*0.993   SABINENE    + O3 = |YG_MTO3| XMTO3_RO2 + |YA_MTO3|  XMTO3_BSOA_NV ;
+8.05e-16*exp(-640*tinv)*5.427   MYRCENE     + O3 = |YG_MTO3| XMTO3_RO2 + |YA_MTO3|  XMTO3_BSOA_NV ;
+8.05e-16*exp(-640*tinv)*0.427   CARENE      + O3 = |YG_MTO3| XMTO3_RO2 + |YA_MTO3|  XMTO3_BSOA_NV ;
+
+*FAST
+1.0e6  APINO3_RO2  = 0.8 OH + 0.8 RTN26O2 + 0.075 TNCARB26 + 0.075 H2O2 + 0.125 RCOOH25 ;
+1.0e6  BPINO3_RO2 = 0.35 RTX24O2 + 0.35 OH  + 0.45 HCHO + 0.4 TXCARB24 + 0.2 H2O2 + 0.25 TXCARB22 + 0.2 CO  ;
+
+1.0e6   XMTO3_RO2 = 0.5 APINO3_RO2 + 0.5 BPINO3_RO2  ;
+
+*-------------------------------------------------------------------------------------------
+*| NO3 chemistry
+
+1.20e-12*exp(490*tinv)  APINENE + NO3 = NRTN28O2 ; No SOA
+2.51e-12                BPINENE + NO3 = |YG_BPINNO3| NRTX28O2 + |YA_BPINNO3| BPINNO3_BSOA_NV ;
+
+1.20e-12*exp(490*tinv)*3.548  OCIMENE  + NO3 = |YG_MTNO3| XMTNO3_RO2 + |YA_MTNO3| XMTNO3_BSOA_NV ;
+1.20e-12*exp(490*tinv)*1.968  LIMONENE + NO3 = |YG_MTNO3| XMTNO3_RO2 + |YA_MTNO3| XMTNO3_BSOA_NV ;
+1.20e-12*exp(490*tinv)*1.613  SABINENE + NO3 = |YG_MTNO3| XMTNO3_RO2 + |YA_MTNO3| XMTNO3_BSOA_NV ;
+1.20e-12*exp(490*tinv)*1.774  MYRCENE  + NO3 = |YG_MTNO3| XMTNO3_RO2 + |YA_MTNO3| XMTNO3_BSOA_NV ;#Q
+1.20e-12*exp(490*tinv)*1.468  CARENE   + NO3 = |YG_MTNO3| XMTNO3_RO2 + |YA_MTNO3| XMTNO3_BSOA_NV ;
+
+1.0e6    XMTNO3_RO2   =  0.5 NRTN28O2 + 0.5 NRTX28O2 ;
+
+*-------------------------------------------------------------------------------------------
+* OHLOSS_ISO, OHLOSS_MT -  used to get these "short-lived"
+* species into equilibrium, while keeping ratio ISO/MT correct.
+*
+1.0e6   OHLOSS_ISO = SUMOHLOSS_ISO ;
+1.0e6   OHLOSS_MT  = SUMOHLOSS_MT  ;
+*
+*********************** END C2017 *******************
+* NOTES
+* MCM has different APINENE + O3 reaction rate! 8.05e-16*exp(-640*tinv)
+* the rate used in the CRIv2R5 was based on an earlier IUPAC preferred rate
+*  expression (for T in the range 270K-370K). The preferred value was updated in September 2013
+*
+* BPINENE + O3 reaction gives different products in MCM 
+* MCM reaction rate is also different! 1.35e-15*exp(-1270*tinv)
+* test updating the rate expression (to the MCM version) but keep CRI products
+*
+* Emissions:
+* Rates here loosely based upon Guenther et al 2012 and Tarvainen et al 2007,
+* with a bias towards boreal/temperate, and species covered by Wolfe &
+* Thornton 2011.Thus, no OCIMENE or SABINENE so far
+*
+* results from Mentel et al. (personal communication, 2017)
+*  - 17% for OH-reaction, 15% for O3-reaction 
+* apinene: assume zero BSOA formation by NO3-reaction (based on Fry et al. 2014)
+* B-pinene + NO3 has high SOA-yield test using mass yield of 33% -
+*   based on Fry et al. (2014)
+* As these yields are fixed, we can scale with the FEB23 MW of 248.0
+* YA = 0.33 * 138/248 = 0.184; YG = 1 - YA = 0.816
+* (nb 0.184*248/20.4 = 2.237, close to RBs 2.1615)
+*
+*SENSITIVITY TEST 1 - Assume all monoterpenes (except b-pinene) behave as a-pinene (after initial oxidation step) - but use SOA-yields based on Fry et al. (2014) for NO3-reaction and scale reaction rates according to Griffin et al. 1999
+*
+* DAVE: added XMT_RO2 etc, to allow mixture of APIN and BPIN 
+* ALSO: XMTOH_RO2 will decay v. quickly to gas and aerosols
+* see their reactions later
+*
+* The following was merged for JPC, since we use generic product RO2
+* k =8.05e-16*exp(-640*tinv):
+* *0.80*YG(Y_APIN_O3)     APINENE + O3 = OH + RTN26O2 + 0.9825 APINO3_BSOA_NV ;
+* *0.075*YG(Y_APIN_O3)    APINENE + O3 = TNCARB26 + H2O2 + 0.9825 APINO3_BSOA_NV ;
+* *0.125*YG(Y_APIN_O3)    APINENE + O3 = RCOOH25 + 0.9825 APINO3_BSOA_NV ;
+*
+* 1.35e-15*exp(-1270*tinv)*0.35  BPINENE + O3 = |YG_BPINO3| RTX24O2 + |YG_BPINO3| OH  ;
+* 1.35e-15*exp(-1270*tinv)*0.20  BPINENE + O3 = |YG_BPINO3| HCHO + |YG_BPINO3| TXCARB24 + |YG_BPINO3| H2O2  ;
+* 1.35e-15*exp(-1270*tinv)*0.25  BPINENE + O3 = |YG_BPINO3| HCHO + |YG_BPINO3| TXCARB22 ;
+* 1.35e-15*exp(-1270*tinv)*0.20*YG(Y_BPIN_O3)   BPINENE + O3 = |YG_BPINO3| TXCARB24 + |YG_BPINO3| CO ;
+* Skipped, since emissions are so small:
+* 1.20e-11*exp(440*tinv)*4.190   TERPINOLENE + OH = XMTOH_RO2 + OHLOSS_MT ;
+* 8.05e-16*exp(-640*tinv)*21.709 TERPINOLENE + O3 = |YG_MTO3| XMTO3_RO2 + |YA_MTO3|  XMTO3_BSOA_NV ;
+* 1.20e-12*exp(490*tinv)*15.645 TERPINOLENE + NO3 = XMTNO3_RO2 ;
+* Robert had zero NO3 SOA from myrcene, due to lack of measurements. Dave
+* used lowish 30% for all non a-pinene yields.  To be discussed.
+* 1.20e-12*exp(490*tinv)*1.774  MYRCENE  + NO3 = XMTNO3_RO2 ;
+********************** BVOC starter reactions (were) here ********************

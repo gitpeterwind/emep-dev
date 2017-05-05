@@ -23,7 +23,7 @@ use ForestFire_ml,       only: Fire_rcemis, burning
 use Functions_ml,        only:  Tpot_2_T
 use ChemFields_ml,       only: SurfArea_um2cm3
 use ChemSpecs  !,           only:  SO4,C5H8,NO,NO2,SO2,CO,
-use ChemRates_rct_ml,    only:  set_rct_rates, rct
+use ChemRates_rct_ml,    only:  set_rct_rates, rct, NRCT
 use GridValues_ml,       only:  xmd, GridArea_m2, & 
                                  debug_proc, debug_li, debug_lj,&
                                  A_mid,B_mid,gridwidth_m,dA,dB,&
@@ -391,8 +391,8 @@ contains
    cHNO3(:) = cMolSpeed(temp(:), 63.0)
    cHO2(:)  = cMolSpeed(temp(:), 33.0)
    cO3(:)   = cMolSpeed(temp(:), 48.0)
-   !cNO3(:)  = cMolSpeed(temp(:), 62.0)
-   !cNO2(:)  = cMolSpeed(temp(:), 46.0)
+   cNO3(:)  = cMolSpeed(temp(:), 62.0)
+   cNO2(:)  = cMolSpeed(temp(:), 46.0)
 
   ! 5 ) Rates  (!!!!!!!!!! NEEDS TO BE AFTER RH, XN, etc. !!!!!!!!!!)
 
@@ -419,6 +419,11 @@ contains
      nd2d = 0
      do itmp = 1, size(f_2d)
            if ( f_2d(itmp)%subclass == 'rct' ) then
+            !check if index of rate constant (config) possible
+             if ( f_2d(itmp)%index > NRCT ) then
+                if(MasterProc) write(*,*) 'RCT NOT AVAILABLE!', itmp, f_2d(itmp)%index, NRCT
+                cycle
+             end if
              nd2d =  nd2d  + 1
              call CheckStop(nd2d>size(id2rct),dtxt//"Need bigger id2rct array")
              d2index(nd2d)= itmp

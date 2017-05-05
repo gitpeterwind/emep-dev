@@ -18,6 +18,19 @@
   EXP_NAME              = 'EMEPGLOB',
   MY_OUTPUTS            = 'EMEPSTD',
 !------------------------------
+! changes March-April 2017
+ EmBio%GlobBvocMethod = 'GLC-CLM',  ! NEW default for GLOBAL
+ EmBio%CLF            =  0.59,      ! 1/1.7 for CLM
+!
+ LandCoverInputs%LandDefs   = 'DataDir/LandInputs_Apr2017/Inputs_LandDefs.csv',
+ LandCoverInputs%Do3seDefs  = 'DataDir/LandInputs_Apr2017/Inputs_DO3SE.csv',
+ LandCoverInputs%MapFile =
+    'DataDir/Landuse/Landuse_PS_5km_LC.nc',
+    'DataDir/LandInputs_Apr2017/glc2000mCLM.nc',
+! YieldModifications = '-'   ! For JPC tests we used: 'JPC-VY-acid',
+! EmBio%IsopFac           =  1.0,
+! PBL%ZiMIN             =  50.0,
+!------------------------------
 !USES system started June 2013
 ! Only partially implemented. See below and ModelConstants_ml
   USES%testname         = 'EMEPSTD',
@@ -41,8 +54,6 @@
   USE_EURO_SOILNOX      = F,             ! diff for global + Euro runs
   EURO_SOILNOX_DEPSCALE = 1.0,           ! Scale, default 1  (see ModelConstants_ml)
   USE_GLOBAL_SOILNOX    = T,             ! diff for global + Euro runs
-!------------------------------
-!SOON:  CONVECTION_FACTOR     = 0.33      ! Test reduced convection
 !------------------------------
   USE_POLLEN            = F,             ! EXPERIMENTAL. Only works if start Jan 1
   USE_ROADDUST          = F,             ! Only EECCA?
@@ -139,16 +150,17 @@
   DEBUG%AOT             = F,
   DEBUG%BIO             = F,   ! BVOC emissions, etc.
   DEBUG%DERIVED         = F,   ! 
+  DEBUG%MY_DERIVED      = T,   ! 
   DEBUG%DO3SE           = 0,   !  gstomatal etc.
   DEBUG%DRYDEP          = F,   !
   DEBUG%FORESTFIRE      = F,
   DEBUG%GLOBBC          = F,
   DEBUG%GRIDVALUES      = F,
   DEBUG%HOURLY_OUTPUTS  = F,
-  DEBUG%LANDDEFS        = F,
-  DEBUG%LANDUSE         = 0,
-  DEBUG%MOSAICS         = F,
-  DEBUG%PFT_MAPS        = 0,           ! in testing
+  DEBUG%LANDDEFS        = T,
+  DEBUG%LANDUSE         = 1,
+  DEBUG%MOSAICS         = T,
+  DEBUG%PFT_MAPS        = 1,           ! in testing
   DEBUG%PHYCHEM         = F,
   DEBUG%RSUR            = F,
   DEBUG%RUNCHEM         = F,
@@ -162,11 +174,12 @@
   DEBUG%PFT_MAPS        = 0,           ! in testing
 !   DEBUG%STOP_HH        = 8,          ! If >= 0,  stops code after STOP_HH hours
 ! Specify here the coords and species index (tot, see CM_ChemSpecs_tot)
-  DEBUG%IJ              =  -60, -50,     ! Default: no debugij output
+!  DEBUG%IJ              =  -60, -50,     ! Default: no debugij output
 !  DEBUG%IJ              = 60, 50      ! Bremen
 !  DEBUG%IJ              = 15, 15      ! sea
 !  DEBUG%IJ              = 186, 113    ! Sahara
-  DEBUG%IJ              = 189, 144     ! Bremen, global
+!  DEBUG%IJ              = 189, 144     ! Bremen, global
+  DEBUG%IJ              = 130,  80     !  S.America
 !  DEBUG%IJ              = 175, 131    !  c. Spain, global
 !   DEBUG%IJ = 95, 125 ! CEH C.Ame.
 !   DEBUG%IJ = 49, 133 ! N. Pacific

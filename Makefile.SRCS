@@ -29,26 +29,10 @@ SRCS ?=	\
 	SubMet_ml.f90 Tabulations_ml.f90 TimeDate_ml.f90 TimeDate_ExtraUtil_ml.f90 \
 	Timefactors_ml.f90 Timing_ml.f90 \
 	Trajectory_ml.f90 uEMEP_ml.f90 Units_ml.f90 Unimod.f90 \
+        YieldModifications_mod.f90 \
         isocom.f90 ISOFWD.f90 isorev.f90 \
-	global2local.f90 PhyChem_ml.f90 My_3DVar_ml.f90 My_Pollen_ml.f90 My_ESX_ml.f90
+	global2local.f90 PhyChem_ml.f90 My_3DVar_ml.f90 My_Pollen_ml.f90 
 
-ESX_SRCS = ZD_ESX/AllocInit.f90 \
-		   ZD_ESX/CheckStops.f90 \
-		   ZD_ESX/ChemFunctions.f90 \
-		   ZD_ESX/CM_ChemDims.f90 \
-		   ZD_ESX/CM_ChemRates.f90 \
-		   ZD_ESX/CM_ChemSpecs.f90 \
-		   ZD_ESX/DefPhotolysis.f90 \
-		   ZD_ESX/esx_Variables.f90 \
-		   ZD_ESX/esx_Zchem.f90 \
-		   ZD_ESX/esx_Zgrid.f90 \
-		   ZD_ESX/esx_Zveg.f90 \
-		   ZD_ESX/Io_Routines.f90 \
-		   ZD_ESX/LocalVariables.f90 \
-		   ZD_ESX/ModelConstants.f90 \
-		   ZD_ESX/ZchemData.f90 \
-		   ZD_ESX/Zmet_ml.f90 \
-		   ZD_ESX/My_ESX_ml.f90
 
 # default target
 all:

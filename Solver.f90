@@ -22,8 +22,6 @@
 
     use Aqueous_ml,        only: aqrck, ICLOHSO2, ICLRC1, ICLRC2, ICLRC3
     use CheckStop_ml,      only: CheckStop
-    use DefPhotolysis_ml         ! => IDHNO3, etc.
-    use EmisDef_ml,      only: KEMISTOP
     use ChemFunctions_ml, only :VOLFACSO4,VOLFACNO3,VOLFACNH4 !TEST TTTT
     use ChemGroups_ml,     only: RO2_POOL, RO2_GROUP
     use ChemSpecs                  ! => NSPEC_TOT, O3, NO2, etc.
@@ -31,6 +29,9 @@
                              ,NSPEC_BGN  ! => IXBGN_  indices and xn_2d_bgn
     use ChemRates_rct_ml,   only: rct
     !ESX use ChemRates_rcmisc_ml,only: rcmisc
+    use DefPhotolysis_ml         ! => IDHNO3, etc.
+    use emep_Config_mod,    only : YieldModifications
+    use EmisDef_ml,      only: KEMISTOP
     use GridValues_ml,     only : GRIDWIDTH_M
     use Io_ml,             only : IO_LOG, datewrite
     use ModelConstants_ml, only: KMAX_MID, KCHEMTOP, dt_advec,dt_advec_inv, &
@@ -43,9 +44,10 @@
                                  rh,            &
                                  Fgas,   & ! fraction in gas-phase, for SOA
                                  amk
-                                 !FUTURE rcnh3,         & ! NH3emis
- !M17 use Setup_1dfields_ml,     only : itemp, tinv, rh, x=> xn_2d, amk
- use Setup_1dfields_ml,     only : itemp, tinv, rh,  amk
+    use Setup_1dfields_ml,     only : itemp, tinv, rh,  amk
+    use YieldModifications_mod  ! eg YA_ for SOA aerosol. Allows changes with
+                                ! e.g. concentrations
+
   implicit none
 
   private
@@ -114,6 +116,11 @@ contains
            write(IO_LOG,"(a,i4)") 'Chem dts: EXTRA_ITER: ', EXTRA_ITER
            if(DEBUG%DRYRUN) write(*,*) "DEBUG%DRYRUN Solver"
        end if
+
+       if ( YieldModifications /= '-' ) then
+          ! sets YieldModificationsInUse
+          call doYieldModifications('first')
+       end if
        first_call = .false.
     end if
 
@@ -147,6 +154,9 @@ contains
        !*************************************
        !     Start of integration loop      *
        !*************************************
+       if ( YieldModificationsInUse ) then
+          call doYieldModifications('init')
+       end if
 
 
        do ichem = 1, nchem
@@ -198,6 +208,20 @@ contains
                 !if(k>=KEMISTOP)then
                 !   include 'My_FastReactions.inc'
                 !end if
+
+                !Mar-Apr 2017 NEW, still under testing
+                ! Allows change of gas/aerosol yield
+                ! BUT only takes effect on 2nd iteration, since the current
+                ! formulation makes use of e.g. OHLOSS_MT over this time step
+                ! Still, we have nchem*niter loops
+
+                 if ( YieldModificationsInUse ) then
+                    if(DebugCell) write(*,'(a,5i4,f8.3,3es12.3)') 'JPCDTDBG ',&
+                       i,j, k, ichem, nchem, dt2, &
+                       xnew(OH),xnew(C5H8), xnew(APINENE)
+                    call doYieldModifications('run')
+                 end if
+
             end do !! End iterations
           ! Just before SO4, look after slower? species
 

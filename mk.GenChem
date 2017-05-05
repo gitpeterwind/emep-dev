@@ -36,6 +36,8 @@ run=CB05
 run=CRI_v2_R5
 run=EmChem09
 run=EmChem09soa
+run=CRIv2R5jpc # April 2017
+run=EmChem16mt # new default, Apr 2017, Still some testing
 #run=EmChem09ecom # for G20
 Aero=" "     # for Riemer, VOLFAC etc.
 Aero="Aero2015"     # for Riemer, VOLFAC etc.
@@ -127,6 +129,19 @@ EmChem09soa)
           ./VBS_emissions_nonvolatilePOA_FromPM25  ) # VBS NPNA
   bics=( $xdir/EmChem09base )  # No special SOA BICs (yet)
 ;;
+# Updated rates with MCM (and PAN correction). Assume SOA wanted
+EmChem16mt)
+  echo "RUN $run chosen."
+  spcs=( ${run}base Aero2017n $xdir/Ash \
+          VBS_nonvolatile ../ZCM_vbs_tests/VBS_partitioning )  #  VBS NPNA
+  rcns=( ${run}base Aero2017n $xdir/Ash \
+	 ${run}BVOC \
+         ../ZCM_vbs_tests/VBS_SOAformation ../ZCM_vbs_tests/VBS_SOAageing \
+         ../ZCM_EmChem09soa/VBS_emissions_nonvolatilePOA_FromPM25  ) # VBS NPNA
+  bics=( ${run}base )
+  #bics=( $x16mt/EmChem16mtbase )  # No special SOA BICs (yet)
+  #rcns=( ${run}base $xdir/$Aero \  #$xdir/PMmass )
+;;
 EmChem09ecom)
   echo "RUN $run chosen."
   sdir=$PWD/ZCM_EmChem09soa
@@ -140,6 +155,14 @@ EmChem09ecom)
          ../ZCM_vbs_tests/VBS_SOAformation ../ZCM_vbs_tests/VBS_SOAageing \
           ./EC_OM  )
   bics=( $xdir/EmChem09base )  # No special SOA BICs (yet)
+;;
+CRIv2R5jpc)
+  echo "RUN $run chosen"
+  spcs=( ${run}base $xdir/$Aero \
+         ./CRIv2R5jpc_nonvolatile ./Hodzic_VBSpartitioning )
+  rcns=( ${run}base ./CRIv2R5jpc_BVOC $xdir/$Aero \
+         ./Hodzic_VBSformation ./VBS_emissions_nonvolatilePOA_FromPM25 )
+  bics=( ${run}base )
 ;;
 CRI_v2_R5)
   echo "RUN $run chosen"
@@ -192,6 +215,7 @@ bics=("${bics[@]}" "${extras[@]}")
 
 echo "NEW SPECS ", ${spcs[@]}
 echo "NEW REACTIONS ", ${rcns[@]}
+echo "NEW BICS ", ${bics[@]}
 
 #VBS
 #run=vbs_tests   # VBS based Organic Aerosol Model, different versions use different spcs and rcns, choose one set below
@@ -225,6 +249,9 @@ echo "NEW REACTIONS ", ${rcns[@]}
 cdir=$PWD       #  Current when starting. Assumed now as a Unimod
 wdir=$PWD/ZCM_$run   # work-directory, with input files
 cd $wdir
+echo "CDIR $cdir"
+echo "WDIR $wdir"
+sleep 1
 #
 mv GenIn.species GenIn.species.bk # Safety
 echo "Species Files:" > CM_chempackages.txt
@@ -252,19 +279,17 @@ for FF in ${rcns[@]}; do
 done
 echo " " >> CM_chempackages.txt
 # ==========================================
-#FEB2012:
 echo "!---- Boundary conditions -------" >  CM_BoundaryConditions.inc
 for FF in ${bics[@]}; do
   if [[ -s $FF.BoundaryConditions ]];then
     echo "+ BIC FILE" $FF
-  echo "!---- SECTION BICs $bic" >> CM_BoundaryConditions.inc
+    echo "!---- SECTION BICs $bic" >> CM_BoundaryConditions.inc
     cat $FF.BoundaryConditions     >> CM_BoundaryConditions.inc
   fi
 done
-echo " " >> CM_BoundaryConditions.inc.txt
+echo " " >> CM_BoundaryConditions.inc
 # ==========================================
 
-#GenSort.pl $run   # Creates GenIn.species, so be careful !#
 
 # 1) Runs GenChem to get chemical mechanism
 #######################################################################
@@ -303,10 +328,10 @@ mv GenOut_WetDep.inc      $odir/CM_WetDep.inc
 #mv Log.GenOut  $odir/Log.$run
 
 for i in $odir/CM*; do
-	filename=`basename $i`
+    filename=`basename $i`
     cp_if_diff $i $cdir/$filename
 done
-#FEB2012 cp $odir/SAFE.CM_BoundaryConditions.inc $cdir/CM_BoundaryConditions.inc  # Special
+
 # FINNv1 or GFED:
 echo ${ffires};
 cp_if_diff $odir/BiomassBurning_${ffires}_to_$run.inc $cdir/BiomassBurningMapping.inc  # Special

@@ -5,6 +5,7 @@ module Landuse_ml
 
 use CheckStop_ml,   only: CheckStop,StopAll
 use DO3SE_ml,       only: fPhenology, Init_DO3SE
+use emep_Config_mod, only : LandCoverInputs 
 use GridAllocate_ml,only: GridAllocate
 use GridValues_ml,  only:  glat , glon   & ! latitude,
                           , i_fdom, j_fdom   & ! coordinates
@@ -90,7 +91,7 @@ private
  real,public,save, allocatable,dimension(:,:) :: water_fraction, ice_landcover 
  logical,public,save :: water_frac_set = .false.
 
- character(len=80), private :: errmsg
+ character(len=200), private :: errmsg
 
 ! integer ::ierror,mpi_comm_calc, mpi_integer
 contains
@@ -100,14 +101,14 @@ contains
     integer, intent(in) :: daynumber
     logical :: filefound
     integer ::i,j,ilu,lu, ipar
-    logical :: debug_flag = .false.
+    logical :: dbgij
     ! Some config options, for veg with 2-D growing seasons
     ! needs map2d.. as real for ReadCDF
     integer :: n2dGS, n2dGSpars, i2dGS
     real,dimension(:,:,:),allocatable :: map2dGrowingSeasons
     character(len=len(VEG_2dGS_Params(1))) :: fname
     character(len=20) :: varname
-    character(len=*), parameter :: sub='InitLanduse:'
+    character(len=*), parameter :: dtxt='InitLanduse:'
     !=====================================
 
     !ALLOCATE ARRAYS
@@ -122,7 +123,7 @@ contains
         if(len_trim(FLUX_VEGS(ilu))>0) nFluxVegs=nFluxVegs+1
     end do
 
-    if(MasterProc) write(*,*) sub//" nFluxVegs= ",nFluxVegs
+    if(MasterProc) write(*,*) dtxt//" nFluxVegs= ",nFluxVegs
 
     !ReadLandUse_CDF to be used as default when glc2000 data is improved?
 
@@ -131,7 +132,7 @@ contains
 
     !ReadLandUse_CDF use Max Posch 5km landuse over emep area and glc200 where this dat is not defined.
     if(.not.filefound) then
-        if(MasterProc) write(*,*) sub//" Into CDF "
+        if(MasterProc) write(*,*) dtxt//" Into CDF "
         call ReadLandUse_CDF(filefound) !=> Land_codes, Percentage cover per grid
     end if
 
@@ -146,10 +147,12 @@ contains
     call CheckStop(.not.filefound,"InitLanduse failed!")
 
     if(MasterProc) then
-        print *,  sub//" Into Init_LandDefs ", NLand_codes
-        print *,  sub//" Codes: ", Land_codes
+        print *,  dtxt//" Into Init_LandDefs ", NLand_codes
+        print *,  dtxt//" Codes: ", Land_codes
+        print *,  dtxt//" LandCoverInputs: ", LandCoverInputs
     end if
-    call Init_LandDefs(NLand_codes, Land_codes)   ! => LandType, LandDefs
+    !call Init_LandDefs(NLand_codes, Land_codes)   ! => LandType, LandDefs
+    call Init_LandDefs(LandCoverInputs%LandDefs,NLand_codes, Land_codes)   ! => LandType, LandDefs
 
     !------ 2D maps of growing season, if set in config ----------------------- 
 
@@ -201,7 +204,7 @@ contains
     do i = 1, limax
        do j = 1, ljmax
 
-          debug_flag = ( debug_proc .and. i == debug_li .and. j == debug_lj )
+          dbgij = ( debug_proc .and. i == debug_li .and. j == debug_lj )
           do ilu= 1, LandCover(i,j)%ncodes
              lu      = LandCover(i,j)%codes(ilu)
              call CheckStop( lu < 0 .or. lu > NLANDUSEMAX , &
@@ -229,7 +232,7 @@ contains
                 LandCover(i,j)%SGS(ilu) =  LandCover(i,j)%EGS(ilu) - 90
              end if
 
-             if ( DEBUG%LANDUSE>0 .and. debug_flag ) &
+             if ( DEBUG%LANDUSE>0 .and. dbgij ) &
                   write(*,"(a,i3,a20,3i4)")"LANDUSE: LU_SETGS", &
                   lu, LandDefs(lu)%name,&
                   LandCover(i,j)%SGS(ilu),LandCover(i,j)%ANTH(ilu), &
@@ -265,7 +268,7 @@ contains
           if(water_fraction(i,j)>SEA_LIMIT(1).and. &
              water_fraction(i,j) < 0.999 ) likely_coastal(i,j) = .true.
 
-          if ( DEBUG%LANDUSE>0 .and. debug_flag )  then
+          if ( DEBUG%LANDUSE>0 .and. dbgij )  then
              write(*,"(a,2i4,f7.3,2L2)") "SEACOAST ", i_fdom(i), j_fdom(j), &
                 water_fraction(i,j), mainly_sea(i,j), likely_coastal(i,j)
           end if
@@ -284,7 +287,7 @@ contains
    type(KeyVal), dimension(10)      :: KeyValues ! Info on units, coords, etc.
    character(len=50) :: fname
    integer :: NHeaders, NKeys, Nlines
-   logical :: debug_flag
+   logical :: dbg
    real :: sumfrac
    
   ! Specify the assumed coords and units - Read2DN will check that the data
@@ -294,6 +297,7 @@ contains
            keyval("Coords","ModelCoords") /)
 
  ! temporary arrays used.  Will re-write one day....
+   real, dimension(LIMAX,LJMAX,NLANDUSEMAX):: landuse_tmp ! tmp, with all data
    real, dimension(LIMAX,LJMAX,NLANDUSEMAX):: landuse_in ! tmp, with all data
    real, dimension(LIMAX,LJMAX,NLUMAX):: landuse_data ! tmp, with all data
    integer, dimension(LIMAX,LJMAX):: landuse_ncodes ! tmp, with all data
@@ -365,7 +369,7 @@ contains
 
     do i = 1, limax
        do j = 1, ljmax
-           debug_flag = ( debug_proc .and. i == debug_li .and. j == debug_lj ) 
+           dbg = ( debug_proc .and. i == debug_li .and. j == debug_lj ) 
            do lu = 1, NLand_codes
               if ( landuse_in(i,j,lu) > 0.0 ) then
 
@@ -375,7 +379,7 @@ contains
                      landuse_data(i,j,index_lu) = &
                        landuse_data(i,j,index_lu) + 0.01 * landuse_in(i,j,lu)
                end if
-               if ( DEBUG%LANDUSE>0 .and. debug_flag )  &
+               if ( DEBUG%LANDUSE>0 .and. dbg )  &
                        write(*,"(a15,i3,f8.4,a10,i3,f8.4)") "DEBUG Landuse ",&
                           lu, landuse_in(i,j,lu), &
                            "index_lu ", index_lu, landuse_data(i,j,index_lu)
@@ -409,33 +413,38 @@ contains
     !
     implicit none
     logical :: filefound
-    integer :: i,j,lu, ilu, index_lu, maxlufound, iam, iveg
-    logical :: debug_flag
+    integer :: i,j,lu, ilu, index_lu, maxlufound, iam, iveg, ifile
     real :: sumfrac
 
     character(len=40) :: varname
-    character(len=200) :: fname1,fname2
+    character(len=200) :: fname1,fname2, fName
+!XX    character(len=200), dimension(2) :: fnamesLC
     integer :: ncFileID, nDimensions,nVariables,nAttributes,timeDimID,varid
     integer :: nwords, err, xtype,ndims  ,status
-    character(len=10) :: ewords(7), code ! LC:CF:EMEP
-    character(len=*), parameter :: sub='RdLanduseCDF:'
+    character(len=20) :: ewords(7), code ! LC:CF:EMEP
+    character(len=*), parameter :: dtxt='RdLanduseCDF:'
     logical :: fexist=.false.!file exist flag
   
-    ! temporary arrays used.  Will re-write one day....
     real, dimension(LIMAX,LJMAX,NLANDUSEMAX):: landuse_in ! tmp, with all data
+    real, dimension(LIMAX,LJMAX,NLANDUSEMAX):: landuse_glob  ! CLM crude
+    real, dimension(LIMAX,LJMAX):: landuse_tot ! CLM 
     real, dimension(LIMAX,LJMAX):: landuse_tmp ! tmp, with all data
+    real    :: dbgsum
+    logical :: EuroFileFound=.false., GlobFileFound=.false. !file exist flags
+
     real, dimension(LIMAX,LJMAX,NLUMAX):: landuse_data ! tmp, with all data
     integer, dimension(LIMAX,LJMAX):: landuse_ncodes ! tmp, with all data
     integer, dimension(LIMAX,LJMAX,NLUMAX):: landuse_codes ! tmp, with all data
-    logical, save :: debug_Master=.false.
+    logical, save :: dbg0=.false.
+    logical :: dbgij
 
     if(  DEBUG%LANDUSE>0 .and. MasterProc )  then
-       write(*,*) sub//" Starting"
-       debug_Master = .true.
+       write(*,*) dtxt//" Starting"
+       dbg0 = .true.
     end if
 
 
-    if (MasterProc ) write(*,*) sub//"LANDUSE_CDF:"
+    if (MasterProc ) write(*,*) dtxt//"LANDUSE_CDF:"
     !    filefound=.false.
     !    return
 
@@ -444,73 +453,114 @@ contains
     landuse_ncodes(:,:)   = 0     !***  initialise  ***
     landuse_codes(:,:,:)  = 0     !***  initialise  ***
     landuse_data  (:,:,:) = 0.0   !***  initialise  ***
-    landuse_in = 0.0              !***  initialise  ***
+    landuse_in  = 0.0              !***  initialise  ***
+    landuse_glob  = 0.0              !***  initialise  ***
 
     !Landusefile where landcodes are not predefined, but read from the file.
-    fName1='Landuse_PS_5km_LC.nc'
-    fName2='LanduseGLC.nc'
+    !DS fName1='Landuse_PS_5km_LC.nc'
+    !DS fName2='LanduseGLC.nc'
     !1)check that file exists
     !note that every processor open and read the same file
-    status=nf90_open(path = trim(fName1), mode = nf90_nowrite, ncid = ncFileID)
-    inquire(file=trim(fName2),exist=fexist)
-    if ( debug_Master .and. fexist)write(*,*) sub//"LANDUSE: found "//trim(fName2)
-    if(status==nf90_noerr)then
-       if ( debug_Master )write(*,*) sub//"LANDUSE: found "//trim(fName1)
-       !get list of variables
-       call check(nf90_Inquire(ncFileID,nDimensions,nVariables,nAttributes,timeDimID))
-       ! All the inquire functions are inexpensive to use and require no I/O, since the information
-       ! they provide is stored in memory when a netCDF dataset is first opened.   
+    ilu=0 ! DS here
+    !XX fnamesLC = [ 'Landuse_PS_5km_LC.nc', 'LanduseGLC.nc' ]
 
-       !loop over all variables in file
-       ilu=0
-       do varid=1,nVariables
+    if(MasterProc) print *,'LC NAMES ', &
+      trim(LandCoverInputs%MapFile(1)) // ' ' //trim(LandCoverInputs%MapFile(2)) 
+
+    FILELOOP: do ifile = 1, size(LandCoverInputs%MapFile(:))
+      fName = LandCoverInputs%MapFile(ifile)   !XX fnamesLC(ifile)
+      status=nf90_open(path = trim(fName), mode = nf90_nowrite, ncid = ncFileID)
+      inquire(file=trim(fName),exist=fexist)
+      if ( dbg0 .and. fexist)write(*,*) dtxt//"LANDUSE: found "//trim(fName)
+
+      if(status /= nf90_noerr) then
+         if ( dbg0 )write(*,*) dtxt//"LANDUSE: NOT found "//trim(fName)
+         cycle !CLM
+      end if
+      if ( ifile==1 ) EuroFileFound = .true. ! CRUDE; DANGEROUS; ARGH!
+      if ( ifile==2 ) GlobFileFound = .true. ! CRUDE; DANGEROUS; ARGH!
+      if ( dbg0 )write(*,*) dtxt//"LANDUSE: found "//trim(fName)
+
+     !get list of variables
+      call check(nf90_Inquire(ncFileID,nDimensions,nVariables,nAttributes,timeDimID))
+      ! All the inquire functions are inexpensive to use and require no I/O, since the information
+      ! they provide is stored in memory when a netCDF dataset is first opened.   
+
+      !loop over all variables in file
+      VARIDLOOP1: do varid=1,nVariables
           if ( DEBUG%LANDUSE>0 )  CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)
 
           call check(nf90_Inquire_Variable(ncFileID,varid,varname,xtype,ndims))
-          if ( debug_Master )write(*,*) sub//"checking "//trim(varname), index( varname, "LC:") 
+          if ( dbg0 ) write(*,*) dtxt//"checking "//trim(fName)//':'// &
+                trim(varname), index( varname, "LC:") 
 
           ! landcover terms look like, e.g. LC:CF:EMEP
-          if( index( varname, "LC:") < 1 ) cycle ! ONLY LC: (LandCode) wanted
+          if( index( varname, "LC:") < 1 ) then
+            if ( dbg0 ) write(*,*) dtxt//"Skips ", ifile, trim(varname)
+            cycle ! ONLY LC: (LandCode) wanted
+          end if
           call wordsplit(varname,3,ewords,nwords,err,separator=":")
-          if( ewords(3) /= "EMEP" ) cycle ! ONLY EMEP coded for now
+          if( ewords(3) /= "EMEP" .and.  ewords(3) /= "CLM" ) cycle ! ONLY EMEP coded for now
+     !       print *, dtxt//"Does ", me, ifile, trim(varname), trim(ewords(2))
 
           !=========================
           if( ewords(2) == "IAM_VEG" .and. nFluxVegs < 1 ) exit  ! No IAM veg to process
           !=========================
 
-          ilu=ilu+1
-          if ( debug_Master )&
-               write(*,*) "defining new LC "//ewords(2)//"  ilu= " , ilu
+!CHECK HERE to see if we already have this landcode:...
+          lu = find_index( ewords(2), Land_codes(:) ) 
           call CheckStop( ilu>NLANDUSEMAX , &
-               sub//"NLANDUSEMAX smaller than number of landuses defined in file "//trim(fname1) )
-
-          Land_codes(ilu) = ewords(2)    ! Landuse code found on file
-
-          call ReadField_CDF(trim(fName1),varname,& 
-               landuse_in(1,1,ilu),1,interpol='conservative', &
-               needed=.true.,debug_flag=.false.,UnDef=-9.9E19) 
-
-          if(fexist .and. any(landuse_in(1:limax,1:ljmax,ilu)<-0.1))then
-             !complete missing data with data from second file
-             !name in second file may be defined differently
-             varname=Land_codes(ilu) !name such as CF (without LC: etc.)
-
-            ! ---- TMP. Will sort out GLC file  another day
-             if( Land_codes(ilu) == "IAM_VEG" ) varname = "IAM_DF" ! good enough
-            ! ------
-
-             call ReadField_CDF(trim(fName2),varname,&
-                  landuse_tmp,1,interpol='conservative', &
-                  needed=.true.,debug_flag=.false.)
-
-             do j = 1, ljmax
-                do i = 1, limax
-                   !landuse_tmp can be numerically larger than 1.0 (1E-15 larger). That made negative deposition for PB210
-                   if(landuse_in(i,j,ilu)<-0.1)landuse_in(i,j,ilu)=min(1.0,landuse_tmp(i,j))
-                end do  !j
-             end do  !i
+               dtxt//"NLANDUSEMAX smaller than number of landuses defined in file "//trim(fname) )
+          if(dbg0) print *, dtxt//'LUVARNAME', ifile, ilu, trim(varname)
+          if(dbg0) print *, dtxt//'LULU', ifile, ilu, trim(ewords(1)), trim(ewords(2))
+          if (  lu > 0 ) then
+            if ( dbg0 ) write(*,*) dtxt//"Already have"//ewords(2), lu
+          else
+            ilu = ilu + 1
+            lu  = ilu  
+            if ( dbg0 ) write(*,*) dtxt//"Adding code"//ewords(2), ilu
+            Land_codes(ilu) = ewords(2)    ! Landuse code found on file
           end if
 
+          !TMP call ReadField_CDF(trim(fName),varname,& 
+          !TMP      !CLM landuse_in(1,1,ilu),1,interpol='conservative', &
+          !TMP      landuse_tmp,1,interpol='conservative', &
+           !TMP     needed=.true.,debug_flag=.true.,UnDef=-9.9E19) 
+               !TMP needed=.true.,debug_flag=.false.,UnDef=-9.9E19) 
+
+          if(debug_proc) print *, dtxt//'IFILE', ifile,trim(varname)
+
+          call ReadField_CDF(trim(fName),varname,& 
+               landuse_tmp,1,interpol='conservative', &
+               needed=.true.,debug_flag=.true.,UnDef=-9.9E19) 
+
+          if ( ifile == 1 ) then
+               landuse_in(:,:,lu) = landuse_tmp
+               landuse_tot(:,:) = landuse_tot(:,:) + landuse_tmp
+          else
+               landuse_glob(:,:,lu) = landuse_tmp ! will merge below
+          end if
+ 
+          if ( debug_proc ) then
+               print "(a,2i4,4es12.3,1x,a,2f8.2)", "F1 ", ifile,lu, &
+                    landuse_tmp(debug_li,debug_lj), &
+                    landuse_tot(debug_li,debug_lj), maxval(landuse_tmp(:,:)), &
+                    landuse_glob(debug_li,debug_lj,lu), &
+                    trim(ewords(2)), glat(debug_li,debug_lj), glon(debug_li,debug_lj)
+           end if
+          !if(debug_proc) print *, dtxt//'IFILE2', ifile,trim(varname)
+          !  call ReadField_CDF(trim(fName),varname,& 
+          !     landuse_tmp,1,interpol='conservative', &
+          !     !known_projection='lon lat', &
+          !     needed=.true.,debug_flag=.true.,UnDef=-9.9E19) 
+          !   if ( debug_proc ) then
+          !     print "(a,2i4,3es12.3,a,2f7.3)", "F1 ", ifile,lu, &
+          !          landuse_tmp(debug_li,debug_lj), &
+          !          landuse_tot(debug_li,debug_lj), maxval(landuse_tmp(:,:)), &
+          !          trim(ewords(2)), glat(debug_li,debug_lj), glon(debug_li,debug_lj)
+          !   end if
+!
+         ! ---- TMP. Will sort out GLC file  another day
          ! Some "IAM" veg species can be defined for calculations of ozone
          ! fluxes. These are assigned very small land-area, using the mask
          ! which the IAM_VEG species gives.  
@@ -518,6 +568,7 @@ contains
 
           if ( Land_codes(ilu) == "IAM_VEG" ) then 
 
+             varname = "IAM_DF" ! good enough
              iveg = ilu
              forall ( i=1:limax,j=1:ljmax)
                 landuse_in(i,j,ilu) = landuse_in(i,j,ilu) / real(nFluxVegs)
@@ -539,32 +590,82 @@ contains
                 landuse_in(i,j,ilu) = landuse_in(i,j,iveg)
              end forall
            end do IAM_VEG
-          end if
-          if(MasterProc) write(*,*)"LandDefs DONE ", ilu, Land_codes(ilu)
-       end do
-       call check(nf90_close(ncFileID))!fname1
-       NLand_codes=ilu
+          end if ! IAM_VEG
+         ! ------
+
+         end do VARIDLOOP1
+         call check(nf90_close(ncFileID))!fname1
+       end do FILELOOP ! DSLC
+
+       NLand_codes=ilu !DSCLM now here
+
+!DSQUERY          if(fexist .and. any(landuse_in(1:limax,1:ljmax,ilu)<-0.1))then
+!DSQUERY             !complete missing data with data from second file
+!DSQUERY             !name in second file may be defined differently
+!DSQUERY             varname=Land_codes(ilu) !name such as CF (without LC: etc.)
+
+
+!DS             call ReadField_CDF(trim(fName2),varname,&
+!DS                  landuse_tmp,1,interpol='conservative', &
+!DS                  needed=.false.,debug_flag=.false.)
+                  !CLM needed=.true.,debug_flag=.false.)
+
+       if  ( EuroFileFound .and. GlobFileFound ) then ! we need to merge
+             do j = 1, ljmax
+                do i = 1, limax
+                   !landuse_tmp can be numerically larger than 1.0 (1E-15 larger). That made negative deposition for PB210
+                   !DS if(landuse_in(i,j,ilu)<-0.1)landuse_in(i,j,ilu)=min(1.0,landuse_tmp(i,j))
+                   dbgij = ( dbg0 .and. i==debug_li.and.j==debug_lj ) 
+                   if ( dbgij ) print *, "F3 ", landuse_tot(debug_li,debug_lj)
+                   if(landuse_tot(i,j)< 0.99999 ) then
+                      landuse_in(i,j,:)= 0.0  ! Will overwrite all PS stuff
+                      dbgsum = 0.0
+                      do ilu = 1, NLand_codes
+                        landuse_in(i,j,ilu) = min(1.0, landuse_glob(i,j,ilu) )
+                         dbgsum = dbgsum + landuse_in(i,j,ilu)
+             if ( dbgij ) then
+               print "(a,i3,3es15.6,1x,a)", "F4 ", ilu, landuse_in(debug_li,debug_lj,ilu), &
+                  landuse_tot(debug_li,debug_lj), dbgsum, trim(Land_Codes(ilu))
+             end if
+                      end do
+                   end if
+                end do  !j
+             end do  !i
+       end if 
+!DSCLM          end if
+
+          if(MasterProc) write(*,*)"LandDefs DONE ", ilu, Land_codes(ilu), maxval( landuse_in ), minval(landuse_in)
+!DSCLM       NLand_codes=ilu
        if(MasterProc) then
             write( *,*) "Number of landuse codes ", NLand_codes
             write( *,*) "LAND_CODES: ", Land_codes(1:NLand_codes)
        end if
 
-    else
-       !the landusefile with softcoded lancodes has not been found. Use "old" method 
-       if ( debug_Master )write(*,*) "LANDUSE: LC: not found "//trim(fName1)
-       call CheckStop("Landuse: No landcover files")
+!DS    else
+!DS       !the landusefile with softcoded lancodes has not been found. Use "old" method 
+!DS       if ( dbg0 )write(*,*) "LANDUSE: LC: not found "//trim(fName1)
+!DS       call CheckStop("Landuse: No landcover files")
 
-    end if !switch hardcoded/fileread lu definitions
+ !DS   end if !switch hardcoded/fileread lu definitions
 
     do i = 1, limax
        do j = 1, ljmax
+          dbgij = ( dbg0 .and. i==debug_li.and.j==debug_lj ) 
           do lu = 1, NLand_codes
+              if ( dbgij ) then
+                  print *, dtxt//'preGridAll', lu,& 
+                     landuse_in(i,j,lu)
+             end if
              if ( landuse_in(i,j,lu) > 0.0 ) then
 
                 call GridAllocate("LANDUSE",i,j,lu,NLUMAX, &
                      index_lu, maxlufound, landuse_codes, landuse_ncodes)
                 landuse_data(i,j,index_lu) = &
                      landuse_data(i,j,index_lu) + landuse_in(i,j,lu)!already in fraction unit
+                if ( dbgij ) then
+                  print *, dtxt//'GridAll', lu, index_lu,& 
+                     landuse_data(i,j,index_lu),  landuse_in(i,j,lu)
+                end if
              end if
           end do ! lu
           LandCover(i,j)%ncodes  = landuse_ncodes(i,j)
@@ -574,14 +675,18 @@ contains
 
 
             if (  sumfrac < 0.99 .or. sumfrac > 1.01 ) then
-               write(unit=errmsg,fmt="(a19,3i4,f12.4,8i4)") &
-                 "Land SumFrac Error ", me,  &
+               print *,  & !nb len(dtxt)=13
+                 dtxt//"PRSumFrac Error ", me,i,j,  &
+                    i_fdom(i),j_fdom(j), sumfrac, glat(i,j), glon(i,j)
+               write(unit=errmsg,fmt="(a34,5i4,f12.4,6i4)") & !nb len(dtxt)=13
+                 dtxt//" SumFrac Error ", me,i,j,  &
                     i_fdom(i),j_fdom(j), sumfrac, limax,  ljmax, &
                        i_fdom(1), j_fdom(1), i_fdom(limax), j_fdom(ljmax)
+               write(*,*)dtxt//'lat/lon: ',trim(errmsg),glat(i,j), glon(i,j)
                if(abs(sumfrac-1.0)<0.2.and.abs(glat(i,j))>89.0)then
-                  write(*,*)'WARNING: ',errmsg,sumfrac,glat(i,j)
+                  write(*,*)'WARNING: ',trim(errmsg),sumfrac,glat(i,j)
                else
-                   write(*,*)'latitude: ',errmsg,glat(i,j)
+                   write(*,*)'lat/lon: ',trim(errmsg),glat(i,j), glon(i,j)
                  call CheckStop(errmsg)
                end if
              end if
@@ -604,12 +709,13 @@ contains
     integer, save :: old_daynumber = -1
     logical, save :: my_first_call = .true.
     logical, save :: init_needed=.true. ! since my_first_call had some confusions..
-    logical :: debug_flag = .false., debug_sgs
     real :: hveg, lat_factor
     real :: xSAIadd
     integer :: pft
     logical, save :: debugProc = .false.
-    character (len=*), parameter :: sub='SetLandUse:'
+    logical :: dbgij, debug_sgs
+    character (len=*), parameter :: dtxt='SetLandUse:'
+    character (len=60) :: dnam !mainly for debug
 
 ! Treatment of growing seasons in the southern hemisphere:
 !   all the static definitions (SGS,EGS...) refer to northern hemisphere, 
@@ -631,7 +737,10 @@ contains
 
        ! The DO3SE params are needed for the call to fPhenology
       
-        call Init_DO3SE(IO_DO3SE,"Inputs_DO3SE.csv",NLand_codes, Land_codes, errmsg)
+        call Init_DO3SE(IO_DO3SE, &
+              LandCoverInputs%Do3seDefs,NLand_codes, Land_codes, errmsg)
+      !trim(LandCoverInputs%Do3sDefs), &
+      !  call Init_DO3SE(IO_DO3SE,"Inputs_DO3SE.csv",NLand_codes, Land_codes, errmsg)
         call CheckStop(errmsg, "Reading DO3SE ")
 
     end if ! my_first_call
@@ -643,8 +752,8 @@ contains
     end if
     old_daynumber = daynumber
 
-    if(MasterProc) write(*,*) "LANDUSE: SetLandUse, day ", daynumber
-    if(debugProc ) write(*,"(a,5i5,L2)") "LANDUSE: debug me i j pft? ", me, &
+    if(MasterProc) write(*,*) dtxt//" day, pfts? ", daynumber, USES%PFT_MAPS
+    if(debugProc ) write(*,"(a,5i5,L2)") dtxt//" debug me i j pft? ", me, &
          debug_li, debug_lj, limax, ljmax, USES%PFT_MAPS
 
 
@@ -652,7 +761,7 @@ contains
    !PFTs, or from the "older" DO3SE inputs file
 
      if ( USES%PFT_MAPS ) then !- Check for LPJ-derived data -
-         if (MasterProc) print *, "New PFTMAPS ", month, old_month
+         if (MasterProc) print *, dtxt//"New PFTMAPS ", month, old_month
          if ( month /= old_month ) then 
            call MapPFT_LAI( month )
          end if
@@ -678,18 +787,20 @@ contains
          ! effectiv daynumber to shift 6 months when in southern hemisphere
           if(glat(i,j)<0.0)effectivdaynumber=mod(daynumber+182,nydays)+1 
 
-          debug_flag = ( debugProc .and. i == debug_li .and. j == debug_lj ) 
-          if ( debug_flag ) then
-                 write(*,"(a12,i3,9i6)") "LANDUSE debug DATE ", &
+          dbgij = ( debugProc .and. i == debug_li .and. j == debug_lj ) 
+
+          if ( dbgij ) then
+                 write(*,"(a,i3,9i6)") dtxt//" debug DATE ", &
                   LandCover(i,j)%ncodes, daynumber, current_date
           end if
 
           do ilu= 1, LandCover(i,j)%ncodes
              lu      = LandCover(i,j)%codes(ilu)
              pft     = LandType(lu)%pft
+             dnam    = dtxt//trim(LandDefs(lu)%name)
 
-             if ( debug_flag ) print *, sub//"debug_flag lu pft", lu, pft,&
-                  LandDefs(lu)%name, LandType(lu)%is_bulk  
+             if ( dbgij ) print *, trim(dnam)//" lu pft", lu, pft,&
+               LandType(lu)%is_bulk, LandType(lu)%is_forest
 
              if ( LandType(lu)%is_bulk ) then
                 LandCover(i,j)%LAI(ilu) = 0.0
@@ -703,7 +814,7 @@ contains
                 LandCover(i,j)%LAI(ilu) = MedLAI(effectivdaynumber, &
                    100, 166, & ! Hard-code from Mapping Manual
                      LandDefs(lu)%LAImin, LandDefs(lu)%LAImax )
-                if ( debug_flag ) then
+                if ( dbgij ) then
                    write(*,"(a,3i4,3f8.3)") "MED_TREE "//&
                      trim(LandDefs(lu)%name), effectivdaynumber,&
                      LandCover(i,j)%SGS(ilu), LandCover(i,j)%EGS(ilu),  &
@@ -721,32 +832,34 @@ contains
              LandCover(i,j)%fphen(ilu) = fPhenology( lu &
                 ,effectivdaynumber &
                 ,LandCover(i,j)%SGS(ilu), LandCover(i,j)%EGS(ilu)&
-                ,debug_flag )
+                ,dbgij )
 
-             if ( debug_flag ) then
+             if ( dbgij ) then
              !if (debug_sgs  ) then
-               write(*,"(a,3i4,5f8.3)")"LANDUSE CHECK_VEG "//&
-                trim(LandDefs(lu)%name), effectivdaynumber, &
+               write(*,"(a,3i4,5f8.3)")trim(dnam)//" CHECK_VEG ",&
+                 effectivdaynumber, &
                  LandCover(i,j)%SGS(ilu), LandCover(i,j)%EGS(ilu),  &
                  LandDefs(lu)%LAImin, LandDefs(lu)%LAImax,&
                  LandCover(i,j)%LAI(ilu), LandCover(i,j)%fphen(ilu)
+               write(*,"(a,L3)")trim(dnam)//' CHECK_PFT', USES%PFT_MAPS
             end if
 
-
             if ( USES%PFT_MAPS ) then
-                if ( DEBUG%PFT_MAPS.gt.0 .and. debug_flag ) then
+                if ( DEBUG%PFT_MAPS > 0 .and. dbgij ) then
                      if ( pft > 0 ) then
-                       write(*,"(2a,i4,i6,2f8.3)") "LANDUSE PFTS COMP? ", &
-                          LandDefs(lu)%name, daynumber, pft,&
-                           LandCover(i,j)%LAI(ilu), pft_lai(i,j, pft)*LandDefs(lu)%LAImax
+                       write(*,"(a,i4,i6,2f8.3)") trim(dnam)//" PFTS COMP? ", &
+                          daynumber, pft, LandCover(i,j)%LAI(ilu), &
+                           pft_lai(i,j, pft)*LandDefs(lu)%LAImax
                      else
-                       write(*,"(2a,i4,i6,2f8.3)") "LANDUSE PFTS COMP? ", &
-                          LandDefs(lu)%name, daynumber, pft,&
+                       write(*,"(2a,i4,i6,2f8.3)") trim(dnam)//" PFTS COMP? ", &
+                          daynumber, pft,&
                            LandCover(i,j)%LAI(ilu), -1.0
                      end if
                  end if
                  if ( pft > 0 ) then !PFT OVERWRITE!
                     LandCover(i,j)%LAI(ilu)= pft_lai(i,j, pft)*LandDefs(lu)%LAImax
+               if(dbgij) write(*,"(a,2i4,5f8.3)")dtxt//' CHECK_LAI', lu, pft, &
+                      pft_lai(i,j, pft),LandDefs(lu)%LAImax
                     LandCover(i,j)%fphen(ilu)= 1.0  ! Skip fphen if using PFT
                     LandCover(i,j)%SGS(ilu)=  -999  ! Marker, since not used
                     LandCover(i,j)%EGS(ilu)=  -999  ! Marker, since not used
@@ -759,15 +872,6 @@ contains
              xSAIadd = 0.0
 
              if (  LandType(lu)%is_crop ) then
-
-                !DS2014 if ( LandType(lu)%is_iam  ) then ! IAM wheat
-                !DS2014     if  ( effectivdaynumber >= LandCover(i,j)%SGS(ilu) .and. &
-                !DS2014           effectivdaynumber <= LandCover(i,j)%EGS(ilu)  ) then
-                !DS2014             WheatGrowingSeason(i,j) =  1
-                !DS2014     else
-                !DS2014             WheatGrowingSeason(i,j) =  0
-                !DS2014     end if
-                !DS2014 end if
 
                ! Note that IAM crops have SLAIlen=0, so are immediately
                ! given LAI=3.5, SAI=5.
@@ -801,6 +905,13 @@ contains
                        LandCover(i,j)%LAI(ilu) = LandCover(i,j)%LAI(ilu)  * lat_factor
                end if
                LandCover(i,j)%SAI(ilu) = LandCover(i,j)%LAI(ilu)  + 1.0
+             else if( LandType(lu)%is_seminat ) then !A2017 SNL
+               if ( glat(i,j) >= 60.0 ) then
+                       lat_factor  = max(0.3, ( 1.0 - 0.05* (glat(i,j)-60.0)) )
+                       hveg  = hveg *  lat_factor
+                       LandCover(i,j)%LAI(ilu) = LandCover(i,j)%LAI(ilu)  * lat_factor
+               end if
+               LandCover(i,j)%SAI(ilu) = LandCover(i,j)%LAI(ilu)  + 0.5 !  A2017SNL
              else
                LandCover(i,j)%SAI(ilu) = LandCover(i,j)%LAI(ilu)   !defaults
              end if
@@ -808,13 +919,13 @@ contains
              LandCover(i,j)%hveg(ilu) =  hveg
 
 
-if( debug_sgs  ) then
-   write(*, "(a20,i4,2f7.1,3i5,f8.2)") "ESGS:"//trim(LandDefs(lu)%name),&
+if( debug_sgs .or. dbgij  ) then
+   write(*, "(a20,i4,2f7.1,3i5,f8.2)") trim(dnam)//":ESGS:",&
      lu, glat(i,j), glon(i,j), &
      daynumber, effectivdaynumber, Landcover(i,j)%SGS(ilu), Landcover(i,j)%LAI(ilu)
 !end if
 !             if (debug_sgs  ) then
-               write(*,"(a,3i4,5f8.3)")"CHECK_VEGB"//trim(LandDefs(lu)%name),&
+               write(*,"(a,3i4,5f8.3)")trim(dnam)//"CHECK_VEGB:",&
                  effectivdaynumber, &
                  LandCover(i,j)%SGS(ilu), LandCover(i,j)%EGS(ilu),  &
                  LandDefs(lu)%LAImin, LandDefs(lu)%LAImax,&

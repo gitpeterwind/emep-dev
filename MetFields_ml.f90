@@ -328,7 +328,7 @@ subroutine Alloc_MetFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND,NMET)
   ix_v_xmi=ix
 
   ix=ix+1
-  met(ix)%name             = 'specific_humidity'
+  met(ix)%name             = 'specific_humidity' ! kg/kg
   met(ix)%dim              = 3
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .true.

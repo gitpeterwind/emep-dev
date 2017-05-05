@@ -74,7 +74,7 @@ use StoFlux_ml,  only:   unit_flux, &! = sto. flux per m2
 use SubMet_ml,            only: Sub
 use TimeDate_ml,          only: daynumber, current_date
 use GasParticleCoeffs_ml         ! ... Init_GasCoeff, DRx, Rb_Cor, ...
-use ESX_ml,               only: Init_ESX, Run_ESX
+!FUTURE use ESX_ml,               only: Init_ESX, Run_ESX
 
 implicit none
 private
@@ -140,9 +140,9 @@ contains
      call Init_DepMap()               ! Maps CDDEP to IXADV
      call Init_GasCoeff()             ! Sets DryDepDefs coeffs.
 
-     if (USES%ESX) then
-       call Init_ESX()
-     end if
+!FUTURE      if (USES%ESX) then
+!FUTURE        call Init_ESX()
+!FUTURE      end if
 
      nadv = 0
      do n = 1, NDRYDEP_ADV  
@@ -855,9 +855,9 @@ contains
            DepAdv2Calc, fluxfrac_adv, Deploss ) 
 
 
-      if (USES%ESX) then
-        call Run_ESX()
-      end if
+!FUTURE       if (USES%ESX) then
+!FUTURE         call Run_ESX()
+!FUTURE       end if
 
 
       !----------------------------------------------------------------

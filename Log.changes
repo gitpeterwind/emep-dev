@@ -171,6 +171,176 @@ New routine in NetCDF_ml that writes many dimensional array.
 Still need interface for input parameters and more checking.
 Molecular mass of emissions/pollutant hardcoded now. 
 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+28th Apr 2017 Dave
+
+ZD_ESX deleted - wasn't being used and was more confusing than helpful
+
+Modified to remove ESX bits:
+DryDep_ml.f90
+Makefile.SRCS
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+26th Apr 2017 Dave/Robert, tag rv4_13
+
+BIGGISH CHANGES CONTINUE. RESULTS HAVE CHANGED!!!!
+
+Makefile - now uses EmChem16mt as default
+
+ZCM_EmChem16mt/GenIn.shorthand - added. (Same as EmChem16mt.shorthand)
+
+NEW CHEM:
+ZCM_CRIv2R6jpc/ - CRI_v2_R5 with new isoprene from Mike Jenkin (via Robert)
+
+BUG-FIXED emissplit:
+ZCM_CRI_v2_R5/EMISSPLIT/emissplit.defaults.voc
+   -  Garry H sent new file to replace old (and badly bugged) previous version
+   -  old version had loads of BPINENE, new version hardly any.
+
+run.pl - now checks for CRI pattern for emissplits
+
+NEW FILE:
+ YieldModifications_mod.f90
+  - allows changes in e.g. yield coefficients during execution of
+    Solver iterations.
+  - only triggered with CRIv2R5 so far, for SOA yields and JPC testing
+
+Associated changes:
+
+config_EMEPSTD, config_EMEPGLOB - mentions YieldModifications
+
+Makefile.SRCS - added YieldModifications_mod.f90
+
+Solver_ml.f90 - calls YieldModifications if wanted
+
+
+
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21st Apr 2017 Peter
+
+Old DMS (natso2.dat) removed from the code
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+15-20th Apr 2017 Dave, tag rv4_12
+
+BIGGISH CHANGES CONTINUE. RESULTS HAVE CHANGED!!!!
+
+1) LandConverInputs - config'd:
+
+emep_Config_mod.f90
+LandDef_ml.f90
+Landuse_ml.f90
+ModelConstants_ml.f90
+config_EMEPSTD.nml
+config_EMEPGLOB.nml
+
+  -  Adding landcover file names and LandDefs, DO3SE inputs to config system.
+  -  Defaults now from LandInputs_Apr2017, incl. glc2000mCLM.nc
+
+run.pl
+
+  - commented out links to Landuse_PS, LanduseGLC. Use config instead.
+
+2) Mosaic outputs - config'd:
+
+MosaicOutputs_ml.f90
+My_Derived_ml.f90
+config_Outputs_EMEPSTD
+
+  - added NewMosaic, MOSIAC_METCONC, MET_LCS and Mosaic_timefmt to config
+  - in future NewMosaic should replace other systems, but as with much else
+    we are currently running partially completed upgrades..
+  - also noticed that with new landcover system, outputs such as VG_O3_GR
+    only apply to European part of globe, not to e.g. C3_NARC_GRASS. Need
+    to modify to cover PFTs or ecosystem definitions.
+
+
+3) ColumnSource_ml - reduced NMAX_LOC, NMAX_EMS to 5, 300 to avoid problems 
+   discussed on github issues. 
+
+   *  Action needed: Alvaro
+
+4) NEW DEFAULT CHEM - EmChem16mt
+
+
+NEW::: ZCM_EmChem16mt introduced
+  (Dave/Robert/Hannah)
+
+  Significant update of chemistry! Added monoterpenes, simple SQT, replaced
+  isoprene chemistry. Fixed PAN rate coefficient bug.
+
+  Contributions from Hannah Imhof and Robert Begström included.
+
+NEW::: ZCM_EmChem16mt/Aero2017n.species, .reactions  introduced
+
+   update/cleanup of  aerosol  reactions for N2O5 testing. May change in
+   April as testing proceeds.
+
+
+mk.GenChem  - defaults to new system
+
+Setup_1d_ml - Added cNO3, cNO2 for N2O5 testing
+
+
+5) Improved Fpart (Robert)
+Aqueous_ml
+
+   Corrected use of Fpart in dep calculations
+   Expanded list of surrogates (e.g. CWDEP_0p5) for organics
+
+6) BVOC, Dave
+
+Biogenics_ml, emep_Config_mod
+
+   Added explicit EmBio%CLF variable for default (non-Euro) BVOC
+    - to be used with new LandInputs files
+
+   Downgraded MEGAN. Now prefer to use GLC/CLM methods (to be commited soon!)
+
+7) Misc
+
+Derived_ml - changed YMD to YM for various not so important outputs (u_ref, Kz, Idirect, etc) to
+  reduce size of Base_day.nc . Need to move to config soon!
+
+DO3SE_ml
+
+   Longer names allowed (to cope with CLM,eg BDLF_EVGN_TROP_TREE)
+
+GasParticleCoeffs_ml
+
+   Updated and extended. Higher PAN and HONO deposition.
+
+LandDefs_ml
+
+   Small tidy up, changed sub to dtxt for debug output
+
+Landuse_ml
+
+   Updated to cope with CLM
+   Now allows landcover to be different in European and global files
+   
+ModelConstants_ml
+
+   Moved GlobBvocMethod to emep_Config
+   Extended NLANDUSEMAX to 40
+
+My_Derived_ml
+
+   Changed YMD to YM for mosaic outputs to reduce size of Base_day. This
+   should really be done in config one day.
+
+Setup_ml
+
+   Added safety catch on RCT_USED in debug mode
+
+run.pl
+
+   Point to LandInputs_Apr2017 which has GLC-CLM based global use and 
+   appropriate Inputs files.
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 10th Mar 2017 Dave  rv4_12beta
 
