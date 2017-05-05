@@ -185,7 +185,7 @@ logical, public, save ::             &
                                        !NB: this is not identical to assuming not a leap year,
                                        !for instance the assumed number of days in the year  will still be 366
 logical, public, save :: USE_uEMEP = .false.  ! make local fraction of pollutants
-type(uEMEP_type), public, save :: uEMEP ! could be moved to own file when uEMEP is more mature
+type(uEMEP_type), public, save :: uEMEP ! The parameters steering uEMEP
 
 
 integer, public, save :: &

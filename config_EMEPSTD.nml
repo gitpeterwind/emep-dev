@@ -50,13 +50,34 @@
   USE_POLLEN            = F,            ! EXPERIMENTAL. Only works if start Jan 1
   USE_ROADDUST          = T,            ! Only EECCA?
   USE_DUST              = T,            ! Only EECCA?
-  USE_uEMEP             = T,            ! T for local fractions output
-  uEMEP%emis            = "pm25",       ! one of EMIS_File: "sox ", "nox ", "co  ", "voc ", "nh3 ", "pm25", "pmco"
-  uEMEP%sector          = 0,            ! 0 for all sectors, or choose one sector
   NETCDF_DEFLATE_LEVEL  = 4,            ! 1-9 GZIP compress, 0 no compress, -1 netcdf3
 !-------- Can switch on INERIS-type degreeday stuff
   INERIS_SNAP1          = F,            ! Used for TFMM runs
   INERIS_SNAP2          = F,            ! Used for TFMM runs
+
+!-------uEMEP setup example
+  USE_uEMEP             = T, ! T for computing uEMEP 
+  !uEMEP pollutants and sectors to include:
+  uEMEP%poll(1)%emis="pm25" ! any of EMIS_File: "sox ", "nox ", "co  ", "voc ", "nh3 ", "pm25", "pmco"
+  uEMEP%poll(1)%sector(1)=0 !0 means sum of all sectors
+  uEMEP%poll(1)%sector(2)=1 !1 means sector 1
+  uEMEP%poll(1)%sector(3)=7
+  uEMEP%poll(1)%sector(4)=8
+
+  uEMEP%poll(2)%emis="nox "
+  uEMEP%poll(2)%sector(1)=0
+  uEMEP%poll(2)%sector(2)=7
+  uEMEP%poll(2)%sector(3)=8
+
+  !uEMEP frequency of output separate file for each. Can be any of: YEAR, MONTH, DAY, HOUR, HOUR_INST 
+  uEMEP%YEAR = T !set T as default
+  uEMEP%HOUR_INST = T !set F as default
+
+  uEMEP%dist = 5  !how far the neighbors can be in each direction (NB: high cost for large dist)
+  uEMEP%Nvert = 7 !How many vertical level to include in treatment. Should be higher than highest emissions (?)
+
+  uEMEP%DOMAIN = 370, 420, 270, 320, !which domain to include in output. Will save disk, but not CPU to reduce.
+
 !------------------------------
 !  AERO%EQUILIB          = 'MARS ',     ! MARS, MARS_2900, GEOSCHEM, EQSAM, or EMEP
 !  AERO%NSIZE etc... see ModelConstants

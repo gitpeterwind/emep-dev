@@ -276,11 +276,11 @@
     real dt_xmax(LJMAX,KMAX_MID),dt_ymax(LIMAX,KMAX_MID)
     integer niterx(LJMAX,KMAX_MID),nitery(LIMAX,KMAX_MID)
     integer niterxys,niters,nxy,ndiff
-    integer iterxys,iters,iterx,itery,nxx,nxxmin,nyy,isec,dx,dy,isec_poll
-    integer ::isum,isumtot,iproc
+    integer iterxys,iters,iterx,itery,nxx,nxxmin,nyy,isec,dx,dy
+    integer ::isum,isumtot,iproc,isec_poll1,ipoll,isec_poll
     real :: xn_advjktot(NSPEC_ADV),xn_advjk(NSPEC_ADV),rfac
     real :: dpdeta0,mindpdeta,xxdg,fac1
-    real :: xnold,xn_k_old,xn_k(kmax_mid,1:uEMEP%Nsec_poll,(uEMEP%dist*2+1)*(uEMEP%dist*2+1)),xn,x,xx
+    real :: xnold,xn_k_old,xn_k(kmax_mid,uEMEP%Nsec_poll,(uEMEP%dist*2+1)*(uEMEP%dist*2+1)),xn,x,xx
     real :: fluxx(NSPEC_ADV,-1:LIMAX+1)
     real :: fluxy(NSPEC_ADV,-1:LJMAX+1)
     real :: fluxk(NSPEC_ADV,KMAX_MID)
@@ -502,7 +502,7 @@
              !          end do !k horizontal (x) advection
 
              call Add_2timing(18,tim_after,tim_before,"advecdiff:advx")
-             
+          
              ! y-direction
              !          do k = 1,KMAX_MID
              do i = li0,li1
@@ -612,7 +612,7 @@
              end do !i
              !         end do !k horizontal (y) advection
 
-             call Add_2timing(20,tim_after,tim_before,"advecdiff:preadvy,advy")
+            call Add_2timing(20,tim_after,tim_before,"advecdiff:preadvy,advy")
 
              !          do k = 1,KMAX_MID
 
@@ -647,6 +647,7 @@
                 end if
 
              end do !j
+
           end do !k horizontal (x) advection
 
           call Add_2timing(18,tim_after,tim_before,"advecdiff:preadvx,advx") 
@@ -685,7 +686,7 @@
              end do
           end do ! vertical (s) advection
 
-          call Add_2timing(21,tim_after,tim_before,"advecdiff:advvk")
+         call Add_2timing(21,tim_after,tim_before,"advecdiff:advvk")
 
        end if ! yxs sequence
     end do
@@ -795,44 +796,52 @@
              do dy=-uEMEP%dist,uEMEP%dist
                 do dx=-uEMEP%dist,uEMEP%dist
                    n=n+1
-                   do isec_poll=1,uEMEP%Nsec_poll
-                      xn_k(1:KMAX_MID,isec_poll,n)=0.0
-                      do k = KMAX_MID-uEMEP%Nvert+1,KMAX_MID
-                         do iix=1,uEMEP%Nix
-                            ix=uEMEP%ix(iix)
-                            !assumes mixing ratios units, but weight by mass
-                            xn_k(k,isec_poll,n)=xn_k(k,isec_poll,n)+xn_adv(ix,i,j,k)*uEMEP%mw(iix)
-                         end do
-
-                         xn_k(k,isec_poll,n)=xn_k(k,isec_poll,n)*loc_frac(isec_poll,dx,dy,i,j,k)
- 
-                     end do
-                      call vertdiff_1d(xn_k(1,isec_poll,n),EtaKz(i,j,1,1),ds3,ds4,ndiff)!does the same as vertdiffn, but for one component
-                   enddo
+                   isec_poll1=1
+                   do ipoll=1,uEMEP%Npoll
+                      do isec_poll=isec_poll1,isec_poll1+uEMEP%poll(ipoll)%Nsectors-1
+                         xn_k(1:KMAX_MID,isec_poll,n)=0.0
+                         do k = KMAX_MID-uEMEP%Nvert+1,KMAX_MID
+                            do iix=1,uEMEP%poll(ipoll)%Nix
+                               ix=uEMEP%poll(ipoll)%ix(iix)
+                               !assumes mixing ratios units, but weight by mass
+                               xn_k(k,isec_poll,n)=xn_k(k,isec_poll,n)+xn_adv(ix,i,j,k)*uEMEP%poll(ipoll)%mw(iix)
+                            end do
+                            
+                            xn_k(k,isec_poll,n)=xn_k(k,isec_poll,n)*loc_frac(isec_poll,dx,dy,i,j,k)
+                           
+                          end do
+                         call vertdiff_1d(xn_k(1,isec_poll,n),EtaKz(i,j,1,1),ds3,ds4,ndiff)!does the same as vertdiffn, but for one component
+                      end do
+                      isec_poll1=isec_poll1+uEMEP%poll(ipoll)%Nsectors
+                   end do
                 enddo
              enddo
           end if
-             
+            
           !________ vertical diffusion ______
           call vertdiffn(xn_adv(1,i,j,1),EtaKz(i,j,1,1),ds3,ds4,ndiff)
           !________
-          
+
           if(USE_uEMEP)then
              do k = KMAX_MID-uEMEP%Nvert+1,KMAX_MID
                 x=0.0
-                do iix=1,uEMEP%Nix
-                   ix=uEMEP%ix(iix)
-                   !conversion from mixing ratio to mg/m2
-                   x=x+xn_adv(ix,i,j,k)*uEMEP%mw(iix)
-                end do
-                n=0
-                do dy=-uEMEP%dist,uEMEP%dist
-                   do dx=-uEMEP%dist,uEMEP%dist
-                      n=n+1
-                      do isec_poll=1,uEMEP%Nsec_poll
-                         loc_frac(isec_poll,dx,dy,i,j,k) = xn_k(k,isec_poll,n)/(x+1.E-30)
+                isec_poll1=1
+                do ipoll=1,uEMEP%Npoll
+                   do iix=1,uEMEP%poll(ipoll)%Nix
+                      ix=uEMEP%poll(ipoll)%ix(iix)
+                      !conversion from mixing ratio to mg/m2
+                      x=x+xn_adv(ix,i,j,k)*uEMEP%poll(ipoll)%mw(iix)
+                   end do
+                   n=0
+                   do dy=-uEMEP%dist,uEMEP%dist
+                      do dx=-uEMEP%dist,uEMEP%dist
+                         n=n+1
+                         do isec_poll=isec_poll1,isec_poll1+uEMEP%poll(ipoll)%Nsectors-1
+                            loc_frac(isec_poll,dx,dy,i,j,k) = xn_k(k,isec_poll,n)/(x+1.E-30)
+                         end do
                       end do
                    end do
+                   isec_poll1=isec_poll1+uEMEP%poll(ipoll)%Nsectors
                 end do
              end do
           end if
@@ -3121,7 +3130,7 @@ end if
                 do isec_poll=1,uEMEP%Nsec_poll
                    n=n+1
                    loc_frac_1d(n,i) = loc_frac(isec_poll,dx,dy,i,j,k)
-                enddo
+               enddo
              enddo
           enddo
        enddo
@@ -3205,7 +3214,7 @@ end if
           psbeg(3) = ps3d(LIMAX)
        end if
        do ii=1,uEMEP_Size1_local
-          loc_frac_1d(ii,0)=0.0
+          loc_frac_1d(ii,li0-1)=0.0
        enddo
        
     else
@@ -3235,7 +3244,7 @@ end if
        
        do ii=1,uEMEP_Size1_local
           n=n+1
-          loc_frac_1d(ii,0) = rcv_buf_w(n)
+          loc_frac_1d(ii,li0-1) = rcv_buf_w(n)
        enddo
        
     end if
@@ -3294,7 +3303,8 @@ end if
       enddo
 
    end if
-
+       do ii=1,uEMEP_Size1_local
+  enddo
     !  synchronizing sent buffers (must be done for all ISENDs!!!)
     if (neighbor(WEST) .ge. 0) then
       CALL MPI_WAIT(request_w, MPISTATUS, IERROR)

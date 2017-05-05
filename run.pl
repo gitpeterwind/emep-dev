@@ -417,7 +417,7 @@ my $subv        = "$testv" ;                  # sub-version (to track changes)
 #my $scenario = "uEMEP05_nh3";     # Reset later if SR
 #my $scenario = "uEMEP_NOx";     # Reset later if SR
 #my $scenario = "uEMEP_NOx_newmass";     # Reset later if SR
-my $scenario = "pm_zv_sk_d5_ny2";     # Reset later if SR
+my $scenario = "pm";     # Reset later if SR
 #my $scenario = "Base_nh3";     # Reset later if SR
 #my $scenario = "Oslo_only";     # Reset later if SR
 #my $scenario = "Oslo_s7";     # Reset later if SR
@@ -767,8 +767,8 @@ foreach my $scenflag ( @runs ) {
   #$ifile{"$timeseries/HourlyFacs.TNO2005"} = "HOURLY-FACS";
 # INERIS provided the most complete hourly file, we use as default
   $ifile{"$timeseries/HourlyFacs.INERIS"} = "HOURLY-FACS";
-#  $ifile{"$timeseries/EmisHeights.txt"} = "EmisHeights.txt";
-  $ifile{"/home/mifapw/emep/temp/EmisHeights.txt"} = "EmisHeights.txt";
+  $ifile{"$timeseries/EmisHeights.txt"} = "EmisHeights.txt";
+#  $ifile{"/home/mifapw/emep/temp/EmisHeights.txt"} = "EmisHeights.txt";
 #emission levels defined by pressure instead of level number:
 #  $ifile{"$timeseries/EmisHeights_P.txt"} = "EmisHeights.txt"; #not much tested yet
 

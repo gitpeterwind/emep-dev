@@ -996,6 +996,12 @@ function define_var(vname,xtype,dimIDs) result(varID)
   case("P0")
     call check(nf90_def_var(ncFileID,vname,xtype,varID),"def:"//trim(vname))
     call check(nf90_put_att(ncFileID,varID,"units","hPa"))
+  case("x_dist")
+    call check(nf90_def_var(ncFileID,vname,xtype,varID),"def:"//trim(vname))
+    call check(nf90_put_att(ncFileID,varID,"long_name","displacement in x direction"))
+  case("y_dist")
+    call check(nf90_def_var(ncFileID,vname,xtype,varID),"def:"//trim(vname))
+    call check(nf90_put_att(ncFileID,varID,"long_name","displacement in y direction"))
   case("time")
     call check(nf90_def_var(ncFileID,vname,xtype,dimIDs,varID),"def:"//trim(vname))
     select case(period_type)
@@ -1745,7 +1751,8 @@ subroutine Out_netCDF_n(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames
     GJMAXcdf=j2-j1+1
 
     if(createfile) then ! the file does not exist yet or is overwritten
-      if(MasterProc)write(6,*) 'creating file: ',trim(fileName_given),GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,KMAX
+       
+      if(MasterProc)write(6,fmt='(A,12I6)') 'creating file: '//trim(fileName_given)//"with sizes ",GIMAXcdf,GJMAXcdf,KMAX
       period_type = 'unknown'
       call CreatenetCDFfile(trim(fileName_given),GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,KMAX)
       if(present(ncFileID_given))then
@@ -2098,6 +2105,7 @@ subroutine Out_netCDF_n(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames
 !              if(mod(iextradim-1,12)==0)then
 !                 write(*,*)trim(varname),me,startvec(2),startvec(3),iextradim,R4data3D(GIMAX/2,GJMAX/2,kmax)
 !              endif
+    !if(me>=0)write(*,*)iextradim,'outcdf locfrac ',R4data3D(4,37,7),trim(varname),trim(fileName)
               call check(nf90_put_var(ncFileID, VarID,R4data3D(i1:i2,j1:j2,1:kmax),&
                    start=startvec(1:ndim+1),count=countvec(1:ndim+1)))
           end if
@@ -2772,11 +2780,11 @@ subroutine  createnewvariable_n(ncFileID,varname,ndim,ndate,def1,OUTtype,chunksi
   integer,dimension(ndim),intent(in), optional :: chunksizes,dimSizes
   character(len=*),intent(in), optional :: dimNames(ndim)
   integer :: iDimID,jDimID,kDimID,timeDimID,nDimID(10)
-  integer ::n
-  integer :: varID,nrecords,status
+  integer ::n, i
+  integer :: varID,dimVarID,nrecords,status
   real :: scale
   integer :: OUTtypeCDF !NetCDF code for type
-
+  real,allocatable, dimension(:) :: tmp 
 
   select case(OUTtype)
     case(Int1 );OUTtypeCDF=nf90_byte
@@ -2826,22 +2834,38 @@ subroutine  createnewvariable_n(ncFileID,varname,ndim,ndate,def1,OUTtype,chunksi
         status = nf90_inq_dimid(ncFileID,dimNames(n),ndimID(n))
         if(status/=nf90_noerr)then
            !define new dimension
+           !write(*,*)'defining new dimension: '//trim(dimNames(n))//' for '//trim(varname)
            call check(nf90_def_dim(ncFileID,trim(dimNames(n)),dimSizes(n),ndimID(n)),"dim:"//trim(dimNames(n)))
+           call check(nf90_def_var(ncFileID,trim(dimNames(n)),nf90_float,ndimID(n),dimvarID),"defvar:"//trim(dimNames(n)))
+ 
+           !call check(nf90_enddef(ncFileID))
+           allocate(tmp(dimSizes(n)))
+           do i=1,dimSizes(n)
+              if(trim(dimNames(n))=='x_dist'.or.trim(dimNames(n))=='y_dist')then
+                 tmp(i)=i-(dimSizes(n)+1)/2
+              else if(trim(dimNames(n))=='klevel')then
+                 tmp(i)=KMAX_MID+i-dimSizes(n)
+              else
+                 write(*,*)'ERROR: Dimension Name not recognized: '//trim(dimNames(n))
+              endif
+           enddo
+           call check(nf90_put_var(ncFileID,dimVarID,tmp))
+           deallocate(tmp)
+           !call check(nf90_redef(ncFileID),"file redef:"//trim(varname))
+           write(*,*)'defining new dimension: '//trim(dimNames(n)),', size ',dimSizes(n)
         endif
-        write(*,*)n,dimSizes(n),trim(dimNames(n)),ndimID(n)
      enddo
+
      ndimID(ndim+1)=timeDimID
      call check(nf90_def_var(ncFileID,varname,OUTtypeCDF,&
           ndimID(1:ndim+1),varID),"defnd:"//trim(varname))     
-!     call check(nf90_def_var(ncFileID,varname,OUTtypeCDF,&
-!          [ndimID(1),ndimID(2),ndimID(3),ndimID(4),ndimID(5),ndimID(6),ndimID(7)],varID),"defnd:"//trim(varname))     
   endif
 !define variable as to be compressed
   if(NETCDF_DEFLATE_LEVEL >= 0) then
     call check(nf90_def_var_deflate(ncFileid,varID,shuffle=0,deflate=1,&
                deflate_level=NETCDF_DEFLATE_LEVEL),"compress:"//trim(varname))
     if(present(chunksizes))then      ! set chunk-size for 2d slices of 3d output
-       write(*,*)' chunksizes ',trim(varname),chunksizes
+      ! write(*,*)' chunksizes ',trim(varname),chunksizes
       call check(nf90_def_var_chunking(ncFileID,varID,NF90_CHUNKED,&
                  chunksizes(:)),"chunk:"//trim(varname))
    endif

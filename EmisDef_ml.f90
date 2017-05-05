@@ -207,12 +207,14 @@ real, public, allocatable, dimension(:,:,:), save :: SumSnapEmis,SumSplitEmis
 !should be defined somewhere else?
 real, public, allocatable, dimension(:,:,:,:,:,:), save :: &
   loc_frac&    ! Fraction of pollutants that are produced locally
+  ,loc_frac_hour_inst&  !Houry local fractions
   ,loc_frac_hour&  !Houry average of local fractions
   ,loc_frac_day&  !Daily average of local fractions
   ,loc_frac_month&  !Monthly average of local fractions
   ,loc_frac_full  !Fullrun average of local fractions
-real, public, allocatable, dimension(:,:,:), save :: &
-   loc_tot_hour&   !Daily average of all contributions
+real, public, allocatable, dimension(:,:,:,:), save :: &
+   loc_tot_hour_inst&   !all contributions
+  ,loc_tot_hour&   !Hourly average of all contributions
   ,loc_tot_day&   !Daily average of all contributions
   ,loc_tot_month&  !Monthly average of all contributions
   ,loc_tot_full  !Fullrun average of all contributions
