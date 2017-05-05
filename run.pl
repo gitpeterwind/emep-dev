@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 #Common script for Njord, Stallo.
-#$STALLO=1
+#Choose $VILJE=1 or $STALLO=1
 #___________________________________________________________________
 
 #Queue system commands start with #SBATCH for Stallo and #PBS for Vilje (these are not comments!)
@@ -33,9 +33,7 @@
 #PBS -A nn2890k
 # Multiple tasks for paralel SR runs (one task per country)
 ##PBS -t 1-56
-
 #___________________________________________________________________
-
 
 
 ######################################################################
@@ -81,8 +79,8 @@ $| = 1; # autoflush STDOUT
 
 #Choose one machine
 #my $VILJE=0;  #1 if Ve or Vilje is used
+#my $STALLO=1; #1 if stallo is used
 my ( $STALLO, $VILJE ) = (0) x 2;
-
 foreach my $key  (qw ( PBS_O_HOST HOSTNAME PBS_SERVER MACHINE SLURM_SUBMIT_HOST)) {
  next unless defined $ENV{$key};
  $STALLO = 1 if $ENV{$key} =~/stallo/;
@@ -115,11 +113,10 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
-
  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_11_3","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
- ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_11_3","EmChem09soa","EMEPSTD","EMEPSTD","EMEP01",0);
 #($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3074","EmChem09soa","EMEPGLOB","EMEPSTD","GLOBAL",0);
-# ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("emep-dev","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
+ ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("emep-dev","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
+ ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_13","EmChem16mt","EMEPSTD","EMEPSTD","EECCA",0);
 
 my %BENCHMARK;
 # OpenSource 2008
@@ -229,7 +226,7 @@ if($CWF){
 #  --- Here, the main changeable parameters are given. The variables
 #      are explained below, and derived variables set later.-
 
-my $year = "2015";
+my $year = "2012";
    $year = substr($CWFBASE,0,4) if $CWF;
    $year = $BENCHMARK{"year"} if %BENCHMARK;
 ( my $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
@@ -311,10 +308,9 @@ my $VBS   = 0;
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/emep-mscw";   # input of source-code
-
- #  $ProgDir  = "$HOMEROOT/$USER/emep-mscw/$testv";   # input of source-code for testv
-#   $ProgDir  = "/prod/forecast/emep/eemep/src/Unimod.$testv" if $eCWF and ($USER eq $FORCAST);
-#   $ProgDir  = "$CWF_DIR/src/Unimod.$testv" if $CWF and -d $CWF_DIR;
+   $ProgDir  = "$HOMEROOT/$USER/emep-mscw/$testv";   # input of source-code for testv
+   $ProgDir  = "/prod/forecast/emep/eemep/src/Unimod.$testv" if $eCWF and ($USER eq $FORCAST);
+   $ProgDir  = "$CWF_DIR/src/Unimod.$testv" if $CWF and -d $CWF_DIR;
 my $ChemDir  = "$ProgDir/ZCM_$Chem";
 my $Specials = "specials";  # default
 #$Specials = "TSAP_Jul2012";  # used for TSAP runs in July 2012
@@ -403,6 +399,7 @@ print "TESTING ENV:", $ENV{PWD}, "\n";
 # Default emissplits used here. if $Specials is set will look
 my $SplitDir = "$DataDir/SPLITS_JAN2010/BASE_NAEI2000_GH2009.$Chem" ;
    $SplitDir = "$ChemDir/EMISSPLIT";
+print "CHEM, SPLITDIR $ChemDir $SplitDir\n"; 
 #RB:had "~mifarb/Unify/MyData/D_EGU/SPLITS_NOV2009v2/BASE_NAEI2000_GH2009.$Chem" ;
 
 my $version     = "Unimod" ;
@@ -414,13 +411,7 @@ my $subv        = "$testv" ;                  # sub-version (to track changes)
 # For SR runs we can add many scenarios - dealt with later.
 # The effect is to choose the approproate femis file
 
-#my $scenario = "uEMEP05_nh3";     # Reset later if SR
-#my $scenario = "uEMEP_NOx";     # Reset later if SR
-#my $scenario = "uEMEP_NOx_newmass";     # Reset later if SR
-my $scenario = "pm";     # Reset later if SR
-#my $scenario = "Base_nh3";     # Reset later if SR
-#my $scenario = "Oslo_only";     # Reset later if SR
-#my $scenario = "Oslo_s7";     # Reset later if SR
+my $scenario = "Base";     # Reset later if SR
 my @runs     = ( $scenario );
 
 #Possible emission scenarios for HIRHAM run
@@ -522,8 +513,8 @@ $month_days[2] += leap_year($year);
 #Only 360 days in HIRHAM metdata. We ignore leaps
 @month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,24) if $GRID eq "HIRHAM";
 
-my $mm1 ="01";      # first month, use 2-digits!
-my $mm2 ="01";      # last month, use 2-digits!
+my $mm1 ="06";      # first month, use 2-digits!
+my $mm2 ="06";      # last month, use 2-digits!
 my $dd1 =  1;       # Start day, usually 1
 my $dd2 =  1;       # End day (can be too large; will be limited to max number of days in the month)
                     # put dd2=0 for 1 timestep run/test.
@@ -768,7 +759,6 @@ foreach my $scenflag ( @runs ) {
 # INERIS provided the most complete hourly file, we use as default
   $ifile{"$timeseries/HourlyFacs.INERIS"} = "HOURLY-FACS";
   $ifile{"$timeseries/EmisHeights.txt"} = "EmisHeights.txt";
-#  $ifile{"/home/mifapw/emep/temp/EmisHeights.txt"} = "EmisHeights.txt";
 #emission levels defined by pressure instead of level number:
 #  $ifile{"$timeseries/EmisHeights_P.txt"} = "EmisHeights.txt"; #not much tested yet
 
@@ -836,7 +826,8 @@ foreach my $scenflag ( @runs ) {
     if (($Chem =~ /EmChem/)or($Chem eq "Emergency")) { # e.g. when PM25 is not split, e.g. RCA, make EMCHEM09
       $ifile{"$SplitDir/emissplit.specials.$poll"} = "emissplit.specials.$poll"
       if( -e "$SplitDir/emissplit.specials.$poll" );
-    } elsif ( $Chem eq "CRI_v2_R5" ) { # e.g. TSAP
+    #A17 } elsif ( $Chem eq "CRI_v2_R5" ) { # e.g. TSAP
+    } elsif ( $Chem =~ /CRI/ ) { # e.g. TSAP
        print "NO SPECIALS in EMISSPLIT for $Chem DIR was $SplitDir\n";
     } elsif ( -e "$timeseries/emissplit.$Specials.$poll.$iyr_trend" ) { # e.g. TSAP
       $ifile{"$timeseries/emissplit.$Specials.$poll.$iyr_trend"} =
@@ -873,9 +864,6 @@ foreach my $scenflag ( @runs ) {
     $ifile{"$ProjDataDir/femis.ecl2005to$iyr_trend"} =  "femis.dat"; 
   } else {
     $ifile{"$ChemDir/femis.defaults"} =  "femis.dat";  # created now by GenChem
-#    $ifile{"$ChemDir/femis.Oslo"} =  "femis.dat";  # NEW POSITION
-#    $ifile{"$ChemDir/femis.OsloL"} =  "femis.dat";  # NEW POSITION
-#    $ifile{"$ChemDir/femis.Oslo_s7"} =  "femis.dat";  # created now by GenChem
   }
 
 # my $old="$DATA_LOCAL/Boundary_and_Initial_Conditions.nc";
@@ -913,20 +901,26 @@ foreach my $scenflag ( @runs ) {
 # new inputs style (Aug 2007)  with compulsory headers:
 # From rv3_14 used only for FORECAST mode
   $ifile{"$DATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse" if ($CWF and ($GRID ne "MACC14")) ;
-#  $ifile{"$DataDir/Landuse/landuseGLC2000_INT1.nc"} ="GLOBAL_landuse.nc";
 
-  $ifile{"$DataDir/LanduseGLC.nc"} ="LanduseGLC.nc";
+# *******
+#  APRIL 2017. Use config system  now to specify landcover files!
+# *******
+#  $ifile{"$DataDir/Landuse/landuseGLC2000_INT1.nc"} ="GLOBAL_landuse.nc";
+  #CLM $ifile{"$DataDir/LanduseGLC.nc"} ="LanduseGLC.nc";
   # NB: a 1km Landuse is also available 
-  $ifile{"$DataDir/Landuse/Landuse_PS_5km_LC.nc"} ="Landuse_PS_5km_LC.nc";
+#APR15  $ifile{"$DataDir/Landuse/Landuse_PS_5km_LC.nc"} ="Landuse_PS_5km_LC.nc";
 #  $ifile{"$DataDir/Landuse/Landuse_PS_1km_LC.nc"} ="Landuse_PS_5km_LC.nc";
 
-  $ifile{"$DataDir/LandInputs_Jul2015/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
-  $ifile{"$DataDir/LandInputs_Jul2015/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
+  #CLM $ifile{"$DataDir/LandInputs_Jul2015/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
+  #CLM $ifile{"$DataDir/LandInputs_Jul2015/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
   # JPC:
   #    $ifile{"$DataDir/LandInputs_Feb2017/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
   #    $ifile{"$DataDir/LandInputs_Feb2017/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
-       $ifile{"$DataDir/LandInputs_Feb2017/Megan4Emep.nc"} = "Megan4Emep.nc";
-  #
+  #CLM      $ifile{"$DataDir/LandInputs_Feb2017/Megan4Emep.nc"} = "Megan4Emep.nc";
+  #CLM:
+#APR15      $ifile{"$DataDir/LandInputs_Apr2017/glc2000mCLM.nc"} = "LanduseGLC.nc";
+#APR15      $ifile{"$DataDir/LandInputs_Apr2017/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
+#APR15      $ifile{"$DataDir/LandInputs_Apr2017/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
   #
 
 #For dust: clay and sand fractions
