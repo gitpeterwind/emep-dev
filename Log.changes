@@ -151,7 +151,7 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-28th Apr - 2nd May 2017 Peter
+28th Apr - 8th May 2017 Peter
 
 Sign error when pre-correcting the fluxes in uEMEP:
      xn=xn-xx+x -> xn=xn-xx-x
@@ -161,6 +161,9 @@ presave loc_frac in advec microiterations.
 zero order vert advection flag.
 for zero order advection, uemep (for ppm) gives exactely the same result as SR,
 also the 2nd, third neighbor. (one day test).
+
+bug in uemep diffusion corrected
+set advection to 4th order again
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 21st Apr 2017 Peter

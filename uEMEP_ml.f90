@@ -52,7 +52,7 @@ real, allocatable, save ::loc_frac_to(:,:,:,:,:,:)
 
 contains
 subroutine init_uEMEP
-  integer :: i, ix, itot, iqrc, iem, iemis, isec, ipoll
+  integer :: i, ix, itot, iqrc, iem, iemis, isec, ipoll, ixnh3, ixnh4
 
   uEMEP%Nsec_poll = 0
   uEMEP%Npoll = 0
@@ -119,13 +119,43 @@ subroutine init_uEMEP
            call CheckStop(ix<0,'Index for SO2 not found')
            uEMEP%poll(ipoll)%mw(i)=species_adv(ix)%molwt
         endif
-     end do
 
+!!$     if(uEMEP%poll(ipoll)%emis=="nox ")then
+!!$        uEMEP%poll(ipoll)%Nix=0
+!!$        ixnh4=find_index("NH4_F",species_adv(:)%name)
+!!$        ixnh3=find_index("NH3",species_adv(:)%name)
+!!$        do ix=1,NSPEC_ADV
+!!$           if(ix==ixnh4.or.ix==ixnh3)cycle!reduced nitrogen
+!!$           if(species_adv(ix)%nitrogens>0)then
+!!$              uEMEP%poll(ipoll)%ix(uEMEP%poll(ipoll)%Nix)=ix
+!!$              uEMEP%poll(ipoll)%Nix =  uEMEP%poll(ipoll)%Nix + 1
+!!$              if(species_adv(ix)%nitrogens==1)uEMEP%poll(ipoll)%mw(uEMEP%poll(ipoll)%Nix)=46
+!!$              if(species_adv(ix)%nitrogens==2)uEMEP%poll(ipoll)%mw(uEMEP%poll(ipoll)%Nix)=92
+!!$           endif
+!!$        enddo
+!!$     endif
+!!$     if(uEMEP%poll(ipoll)%emis=="nh3 ")then
+!!$        uEMEP%poll(ipoll)%Nix=0
+!!$        ixnh4=find_index("NH4_F",species_adv(:)%name)
+!!$        ixnh3=find_index("NH3",species_adv(:)%name)
+!!$        write(*,*)'NH3ix ',ixnh3,ixnh4
+!!$       do ix=1,NSPEC_ADV
+!!$           if(ix/=ixnh4.and.ix/=ixnh3)cycle!not reduced nitrogen
+!!$           if(species_adv(ix)%nitrogens>0)then
+!!$              uEMEP%poll(ipoll)%Nix =  uEMEP%poll(ipoll)%Nix + 1
+!!$              uEMEP%poll(ipoll)%ix(uEMEP%poll(ipoll)%Nix)=ix
+!!$              if(species_adv(ix)%nitrogens==1)uEMEP%poll(ipoll)%mw(uEMEP%poll(ipoll)%Nix)=17
+!!$              if(species_adv(ix)%nitrogens==2)uEMEP%poll(ipoll)%mw(uEMEP%poll(ipoll)%Nix)=34
+!!$           endif
+!!$        enddo
+!!$     endif
+     end do
      if(MasterProc)then
         write(*,*)'uEMEP pollutant : ',uEMEP%poll(ipoll)%emis
         write(*,*)'uEMEP number of species in '//trim(uEMEP%poll(ipoll)%emis)//' group: ',uEMEP%poll(ipoll)%Nix
         write(*,"(A,30(A,F6.2))")'including:',('; '//trim(species_adv(uEMEP%poll(ipoll)%ix(i))%name)//', mw ',uEMEP%poll(ipoll)%mw(i),i=1,uEMEP%poll(ipoll)%Nix)
         write(*,"(A,30I4)")'sectors:',(uEMEP%poll(ipoll)%sector(i),i=1,uEMEP%poll(ipoll)%Nsectors)
+        write(*,"(A,30I4)")'ix:',(uEMEP%poll(ipoll)%ix(i),i=1,uEMEP%poll(ipoll)%Nix)
      end if
   end do
   
@@ -147,7 +177,9 @@ subroutine init_uEMEP
   endif  
   if(uEMEP%HOUR_INST)then
      allocate(loc_frac_hour_inst(-uEMEP%dist:uEMEP%dist,-uEMEP%dist:uEMEP%dist,LIMAX,LJMAX,KMAX_MID-uEMEP%Nvert+1:KMAX_MID,uEMEP%Nsec_poll))
+     loc_frac_hour_inst=0.0
      allocate(loc_tot_hour_inst(LIMAX,LJMAX,KMAX_MID-uEMEP%Nvert+1:KMAX_MID,uEMEP%Npoll))
+     loc_tot_hour_inst=0.0
   endif  
   if(uEMEP%DAY)then
      allocate(loc_frac_day(-uEMEP%dist:uEMEP%dist,-uEMEP%dist:uEMEP%dist,LIMAX,LJMAX,KMAX_MID-uEMEP%Nvert+1:KMAX_MID,uEMEP%Nsec_poll))
@@ -287,7 +319,7 @@ subroutine out_uEMEP(iotyp)
 
      if(iotyp==IOU_HOUR_INST)then
         !compute instantaneous values
-        !need to transpose loc_frac. Coould be avoided?
+        !need to transpose loc_frac. Could be avoided?
         do iisec=1,uEMEP%poll(ipoll)%Nsectors
            isec_poll=isec_poll1+iisec-1
            isec=uEMEP%poll(ipoll)%sector(iisec)

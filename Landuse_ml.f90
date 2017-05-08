@@ -532,7 +532,7 @@ contains
 
           call ReadField_CDF(trim(fName),varname,& 
                landuse_tmp,1,interpol='conservative', &
-               needed=.true.,debug_flag=.true.,UnDef=-9.9E19) 
+               needed=.true.,debug_flag=.false.,UnDef=-9.9E19) 
 
           if ( ifile == 1 ) then
                landuse_in(:,:,lu) = landuse_tmp

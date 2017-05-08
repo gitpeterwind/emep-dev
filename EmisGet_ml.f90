@@ -1257,7 +1257,7 @@ end if
      allocate(roaddust_masscorr(NROADDUST),stat=allocerr)
      call CheckStop(allocerr, "Allocation error for emis_masscorr")
      if(MasterProc) &
-          write(*,fmt=*)"NOTE! WARNING! Molar mass assumed to be 200.0 for all road dust components. Emissions will be in ERROR if another value is set in the GenChem input!"
+          write(*,fmt='(A)')"WARNING! Molar mass assumed to be 200.0 for all road dust components. Emissions will be WRONG if another value is set in the GenChem input!"
      do ie=1,NROADDUST
         roaddust_masscorr(ie)=1.0/200.
      end do

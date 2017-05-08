@@ -1752,7 +1752,7 @@ subroutine Out_netCDF_n(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames
 
     if(createfile) then ! the file does not exist yet or is overwritten
        
-      if(MasterProc)write(6,fmt='(A,12I6)') 'creating file: '//trim(fileName_given)//"with sizes ",GIMAXcdf,GJMAXcdf,KMAX
+      if(MasterProc)write(6,fmt='(A,12I6)') 'creating file: '//trim(fileName_given)//" with sizes ",GIMAXcdf,GJMAXcdf,KMAX
       period_type = 'unknown'
       call CreatenetCDFfile(trim(fileName_given),GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,KMAX)
       if(present(ncFileID_given))then

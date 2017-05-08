@@ -141,8 +141,8 @@
 
     integer, private, save :: nWarnings = 0
     integer, private, parameter :: MAX_WARNINGS = 100
-    logical, parameter :: hor_adv0th=.true.
-    logical, parameter :: vert_adv0th=.true.
+    logical, parameter :: hor_adv0th=.false.
+    logical, parameter :: vert_adv0th=.false.
 
   contains
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -824,9 +824,9 @@
 
           if(USE_uEMEP)then
              do k = KMAX_MID-uEMEP%Nvert+1,KMAX_MID
-                x=0.0
                 isec_poll1=1
                 do ipoll=1,uEMEP%Npoll
+                   x=0.0
                    do iix=1,uEMEP%poll(ipoll)%Nix
                       ix=uEMEP%poll(ipoll)%ix(iix)
                       !conversion from mixing ratio to mg/m2
