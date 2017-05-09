@@ -309,6 +309,7 @@
        end if
        !Overwrite the cooefficients for vertical advection, with Eta-adpated values
        call vgrid_Eta 
+       if(.not.allocated(loc_frac_1d))allocate(loc_frac_1d(0,1,1,1))!to avoid error messages
     end if
 
     if(KCHEMTOP==2)then

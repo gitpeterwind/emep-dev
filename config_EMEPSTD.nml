@@ -29,7 +29,7 @@
  LandCoverInputs%MapFile =
     'DataDir/Landuse/Landuse_PS_5km_LC.nc',
     'DataDir/LandInputs_Apr2017/glc2000mCLM.nc',
- YieldModifications = '-'   ! None for EmChems 'JPC-VY-acid',
+ YieldModifications = '-' ,   ! None for EmChems 'JPC-VY-acid'
 ! EmBio%IsopFac           =  1.0,
 ! PBL%ZiMIN             =  50.0,
 !------------------------------
@@ -68,28 +68,6 @@
   INERIS_SNAP1          = F,            ! Used for TFMM runs
   INERIS_SNAP2          = F,            ! Used for TFMM runs
 
-!-------uEMEP setup example
-  USE_uEMEP             = F, ! T for computing uEMEP 
-  !uEMEP pollutants and sectors to include:
-  uEMEP%poll(1)%emis="pm25" ! any of EMIS_File: "sox ", "nox ", "co  ", "voc ", "nh3 ", "pm25", "pmco"
-  uEMEP%poll(1)%sector(1)=0 !0 means sum of all sectors
-  uEMEP%poll(1)%sector(2)=1 !1 means sector 1
-  uEMEP%poll(1)%sector(3)=7
-  uEMEP%poll(1)%sector(4)=8
-
-  uEMEP%poll(2)%emis="nox "
-  uEMEP%poll(2)%sector(1)=0
-  uEMEP%poll(2)%sector(2)=7
-  uEMEP%poll(2)%sector(3)=8
-
-  !uEMEP frequency of output separate file for each. Can be any of: YEAR, MONTH, DAY, HOUR, HOUR_INST 
-  uEMEP%YEAR = T !set T as default
-  uEMEP%HOUR_INST = F !set F as default
-
-  uEMEP%dist = 3  !how far the neighbors can be in each direction (NB: high cost for large dist)
-  uEMEP%Nvert = 7 !How many vertical level to include in treatment. Should be higher than highest emissions (?)
-
-!  uEMEP%DOMAIN = 370, 420, 270, 320, !which domain to include in output. Will save disk, but not CPU to reduce.
 
 !------------------------------
 !  AERO%EQUILIB          = 'MARS ',     ! MARS, MARS_2900, GEOSCHEM, EQSAM, or EMEP
@@ -105,7 +83,8 @@
  !Good EECCA default:
   EmisDir                 = 'DataDir/EECCA/Modrun15/2015_EMEP_trends/model_input_YYYY',
 
-  emis_inputlist(1)%name  = 'DataDir/Emis_TNO7_MACCIII/Emis_TNO7_MACCIII_2011.nc',
+  emis_inputlist(1)%name  = 'EmisDir/gridPOLL',    ! example of ASCII type.
+!  emis_inputlist(1)%name  = 'DataDir/Emis_TNO7_MACCIII/Emis_TNO7_MACCIII_2011.nc',
 !  emis_inputlist(1)%pollName(1:2)     = 'voc','sox', !example of restricted choice of pollutants
 
 
@@ -152,6 +131,31 @@
               'Wheat_Irrigated', 'Wheat_NonIrrig',
             ! 'CCE_SPRUCE','CCE_BEECH','ACE_PINE','ACE_OAK','ACE_BEECH',
             ! 'NEUR_SPRUCE','NEUR_BIRCH','MED_OAK','MED_PINE','MED_BEECH'
+
+
+!-------uEMEP setup example
+  USE_uEMEP             = F, ! T for computing uEMEP 
+  !uEMEP pollutants and sectors to include:
+  uEMEP%poll(1)%emis="pm25" ! any of EMIS_File: "sox ", "nox ", "co  ", "voc ", "nh3 ", "pm25", "pmco"
+  uEMEP%poll(1)%sector(1)=0 !0 means sum of all sectors
+  uEMEP%poll(1)%sector(2)=1 !1 means sector 1
+  uEMEP%poll(1)%sector(3)=7
+  uEMEP%poll(1)%sector(4)=8
+
+  uEMEP%poll(2)%emis="nox "
+  uEMEP%poll(2)%sector(1)=0
+  uEMEP%poll(2)%sector(2)=7
+  uEMEP%poll(2)%sector(3)=8
+
+  !uEMEP frequency of output separate file for each. Can be any of: YEAR, MONTH, DAY, HOUR, HOUR_INST 
+  uEMEP%YEAR = T !set T as default
+  uEMEP%HOUR_INST = F !set F as default
+
+  uEMEP%dist = 3  !how far the neighbors can be in each direction (NB: high cost for large dist)
+  uEMEP%Nvert = 7 !How many vertical level to include in treatment. Should be higher than highest emissions (?)
+
+!  uEMEP%DOMAIN = 370, 420, 270, 320, !which domain to include in output. Will save disk, but not CPU to reduce.
+
 !-------- Sub domain (x0,x1,y0,y1)
 ! RUNDOMAIN =  200, 214, 150, 164,      !EMEP01 reduced
 ! RUNDOMAIN =  345, 406, 268, 324,      !GLOBAL05  reduced around South Norway
