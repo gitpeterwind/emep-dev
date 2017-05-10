@@ -183,8 +183,7 @@ logical, public, save ::             &
 ! Output flags
  ,SELECT_LEVELS_HOURLY  = .false.    & ! for FORECAST, 3DPROFILES
  ,JUMPOVER29FEB      = .false.         ! When current date is 29th February, jump to next date.
-                                       !NB: this is not identical to assuming not a leap year,
-                                       !for instance the assumed number of days in the year  will still be 366
+
 logical, public, save :: USE_uEMEP = .false.  ! make local fraction of pollutants
 type(uEMEP_type), public, save :: uEMEP ! The parameters steering uEMEP
 

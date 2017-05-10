@@ -46,7 +46,7 @@ program myeul
        runlabel2,  &   ! explanatory text
        iyr_trend, nmax,nstep , meteo,     &
        IOU_INST,IOU_HOUR,IOU_HOUR_INST, IOU_YEAR,IOU_MON, IOU_DAY, &
-       USES, USE_LIGHTNING_EMIS, USE_uEMEP,&
+       USES, USE_LIGHTNING_EMIS, USE_uEMEP,JUMPOVER29FEB,&
        FORECAST,ANALYSIS  ! FORECAST/ANALYSIS mode
   use ModelConstants_ml,only: Config_ModelConstants,DEBUG, startdate,enddate
   use MPI_Groups_ml,    only: MPI_BYTE, ME_CALC, ME_MPI, MPISTATUS, MPI_COMM_CALC,MPI_COMM_WORLD, &
@@ -257,7 +257,7 @@ program myeul
     ! daynumber needed for BCs
     daynumber=day_of_year(yyyy,mm,dd)
      
-    if(mm==1 .and. dd==1 .and. hh==0)call Init_nmdays(current_date)!new year starts
+    if(mm==1 .and. dd==1 .and. hh==0)call Init_nmdays(current_date, JUMPOVER29FEB)!new year starts
 
     call Code_timer(tim_before)
     if(mm_old/=mm) then   ! START OF NEW MONTH !!!!!

@@ -356,14 +356,16 @@ SUBROUTINE get_hms (secs,hour,minute,second)
   second = INT(secs - sph*REAL(hour) - spm*REAL(minute))
 END SUBROUTINE get_hms
 
-SUBROUTINE Init_nmdays (indate)
+SUBROUTINE Init_nmdays (indate,JUMPOVER29FEB)
   TYPE(date),INTENT(IN)              :: indate
+  LOGICAL , INTENT(IN)               :: JUMPOVER29FEB
   INTEGER,DIMENSION(12),PARAMETER    :: daycount =  &
     (/31,28,31,30,31,30,31,31,30,31,30,31/) ! table lookup for most months
 
   nmdays(:)=daycount(:)
-  IF (leapyear(indate%year)) nmdays(2) = nmdays(2)+1
+  IF (leapyear(indate%year) .and. .not. JUMPOVER29FEB) nmdays(2) = nmdays(2)+1
   nydays=sum(nmdays)
+  if(JUMPOVER29FEB .and. leapyear(indate%year))write(*,*)'WARNING: assuming not leap year, even if it is! nydays = ',nydays 
 END SUBROUTINE Init_nmdays
 
 END MODULE TimeDate_ml

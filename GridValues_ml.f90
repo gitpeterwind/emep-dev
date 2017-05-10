@@ -21,7 +21,7 @@ use MetFields_ml
 use ModelConstants_ml,      only: &
      KMAX_BND, KMAX_MID, & ! vertical extent
      DEBUG,              & ! DEBUG%GRIDVALUES
-     MasterProc,NPROC,IIFULLDOM,JJFULLDOM,RUNDOMAIN,&
+     MasterProc,NPROC,IIFULLDOM,JJFULLDOM,RUNDOMAIN, JUMPOVER29FEB,&
      PT,Pref,NMET,METSTEP,USE_EtaCOORDINATES,MANUAL_GRID,USE_WRF_MET_NAMES,startdate
 use MPI_Groups_ml!    , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER, MPI_LOGICAL, &
                  !             MPI_MIN, MPI_MAX, MPI_SUM, &
@@ -198,7 +198,7 @@ contains
     nday=startdate(3)
     nhour=0
     current_date = date(nyear, nmonth, nday, nhour, 0 )
-    call Init_nmdays( current_date )
+    call Init_nmdays( current_date, JUMPOVER29FEB)
 
     !*********initialize grid parameters*********
     if(MANUAL_GRID)then
