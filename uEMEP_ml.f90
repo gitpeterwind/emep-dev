@@ -134,21 +134,19 @@ subroutine init_uEMEP
 !!$           endif
 !!$        enddo
 !!$     endif
-!!$     if(uEMEP%poll(ipoll)%emis=="nh3 ")then
-!!$        uEMEP%poll(ipoll)%Nix=0
-!!$        ixnh4=find_index("NH4_F",species_adv(:)%name)
-!!$        ixnh3=find_index("NH3",species_adv(:)%name)
-!!$        write(*,*)'NH3ix ',ixnh3,ixnh4
-!!$       do ix=1,NSPEC_ADV
-!!$           if(ix/=ixnh4.and.ix/=ixnh3)cycle!not reduced nitrogen
-!!$           if(species_adv(ix)%nitrogens>0)then
-!!$              uEMEP%poll(ipoll)%Nix =  uEMEP%poll(ipoll)%Nix + 1
-!!$              uEMEP%poll(ipoll)%ix(uEMEP%poll(ipoll)%Nix)=ix
-!!$              if(species_adv(ix)%nitrogens==1)uEMEP%poll(ipoll)%mw(uEMEP%poll(ipoll)%Nix)=17
-!!$              if(species_adv(ix)%nitrogens==2)uEMEP%poll(ipoll)%mw(uEMEP%poll(ipoll)%Nix)=34
-!!$           endif
-!!$        enddo
-!!$     endif
+     if(uEMEP%poll(ipoll)%emis=="nh3 ")then
+        uEMEP%poll(ipoll)%Nix=0
+        ixnh4=find_index("NH4_F",species_adv(:)%name)
+        ixnh3=find_index("NH3",species_adv(:)%name)
+        do ix=1,NSPEC_ADV
+           if(ix/=ixnh4.and.ix/=ixnh3)cycle!not reduced nitrogen
+           if(species_adv(ix)%nitrogens>0)then
+              uEMEP%poll(ipoll)%Nix =  uEMEP%poll(ipoll)%Nix + 1
+              uEMEP%poll(ipoll)%ix(uEMEP%poll(ipoll)%Nix)=ix
+              uEMEP%poll(ipoll)%mw(uEMEP%poll(ipoll)%Nix)=species_adv(ixnh3)%molwt!use NH3 mw also for NH4
+           endif
+        enddo
+     endif
      end do
      if(MasterProc)then
         write(*,*)'uEMEP pollutant : ',uEMEP%poll(ipoll)%emis
@@ -876,7 +874,7 @@ subroutine uEMEP_emis(indate)
                       + ( 1.0-fac_min(iland,sec2tfac_map(isec),iem) )* gridfac_HDD(i,j) ) &
                       * fac_ehh24x7(sec2tfac_map(isec),hour_iland,wday_loc)
               end if ! =============== HDD 
-              
+
               s = tfac * snapemis(isec,i,j,icc,iem)
             else
               s = snapemis_flat(i,j,ficc,iem)                        
