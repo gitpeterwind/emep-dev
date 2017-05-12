@@ -1040,9 +1040,9 @@ module GO
   use GO_Date
   use GO_Timer
   use GO_Par
+  use GO_FU
 
 #ifdef with_ajs
-  use GO_FU
   use GO_Rc
   use GO_System
 #endif
