@@ -1152,15 +1152,18 @@ foreach my $scenflag ( @runs ) {
     "startdate $startdate\nenddate $enddate\n";
     print "CWFDUMP1 $CWFDUMP[0]\nCWFDUMP2 $CWFDUMP[1]\n" if $CWF;
 
-    if ($DRY_RUN) {
-      print "DRY_RUN: not running '| mpirun ./$LPROG'\n";
-      system("ls -lht --time-style=long-iso *")
+    my $MPIRUN = "mpiexec";
+    if ($STALLO) {
+      $MPIRUN = "mpirun";
     } elsif ($USER eq $FORCAST) {
-    # FORCAST/forecast user use special mpiexec_mpt!
-      open (PROG, "| mpiexec_mpt ./$LPROG") || die "Unable to execute $LPROG. Exiting.\\n" ;
-      close(PROG);
+      $MPIRUN = "mpiexec_mpt"; # forecast user use special mpiexec_mpt!
+    }
+    if ($DRY_RUN) {
+      print "DRY_RUN: not running '| $MPIRUN ./$LPROG'\n";
+      system("ls -lht --time-style=long-iso *");
     } else {
-      open (PROG, "| mpiexec ./$LPROG") || die "Unable to execute $LPROG. Exiting.\\n" ;
+      open (PROG, "| $MPIRUN ./$LPROG") ||
+        die "Unable to execute $LPROG. Exiting.\\n" ;
       close(PROG);
     }
 
