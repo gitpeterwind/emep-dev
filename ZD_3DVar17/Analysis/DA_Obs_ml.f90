@@ -207,7 +207,7 @@ module DA_Obs_ml
   !--- local -------------------------------------------------------------
 
   ! maximum number of data sets:
-  integer, parameter :: nObsDataMax=5
+  integer, parameter :: nObsDataMax=6
   ! storage for dataset definitions:
   type(obs_data)     :: obsData(nObsDataMax)
   ! actual number:
