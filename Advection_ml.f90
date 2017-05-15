@@ -314,7 +314,7 @@
        if(ZERO_ORDER_ADVEC)then
           hor_adv0th = .true.
           vert_adv0th = .true.
-          call PrintLog("USING ZERO ORDER ADVECTION")
+          if(me==0)call PrintLog("USING ZERO ORDER ADVECTION")
       endif
     end if
 
