@@ -46,6 +46,15 @@ module DA_Obs_ml
   integer, parameter  ::  LEVTYPE_3D_ML_TC   = 3  ! 3D model layers, sum to total column
   integer, parameter  ::  LEVTYPE_2D_ML_SFC  = 4  ! 2D extract of bottom layer
   integer, parameter  ::  LEVTYPE_2D_OBS_SFC = 5  ! 2D simulated observations, surface
+  ! counter:
+  integer, parameter  ::  NLEVTYPE = 5
+  ! names:
+  character(len=10), parameter   ::  LEVTYPE_NAME(NLEVTYPE) = (/ &
+                                        '3D_ML     ', &
+                                        '3D_ML_SFC ', &
+                                        '3D_ML_TC  ', &
+                                        '2D_ML_SFC ', &
+                                        '2D_OBS_SFC' /)
   
   
   ! --- in/out ---------------------------------------
@@ -207,7 +216,7 @@ module DA_Obs_ml
   !--- local -------------------------------------------------------------
 
   ! maximum number of data sets:
-  integer, parameter :: nObsDataMax=6
+  integer, parameter :: nObsDataMax = 6
   ! storage for dataset definitions:
   type(obs_data)     :: obsData(nObsDataMax)
   ! actual number:
@@ -2489,6 +2498,10 @@ contains
   
   subroutine ObsOpers_SelectTracers( self, H, iObsComps, status, nana )
 
+    use MPIF90           , only : MPIF90_AllReduce, MPI_SUM
+    use MPI_Groups_ml    , only : MPI_COMM_CALC
+    use ModelConstants_ml, only : MasterProc
+
     ! --- in/out -----------------------------
     
     class(T_ObsOpers), intent(inout)  ::  self
@@ -2507,11 +2520,26 @@ contains
     integer                         ::  iobs
     integer                         ::  k
     
+    ! counters ...
+    integer, allocatable    ::  tab_loc(:,:,:)  ! (nObsComp,NLEVTYPE,ana/val)
+    integer, allocatable    ::  tab_tot(:,:,:)  ! (nObsComp,NLEVTYPE,ana/val)
+    integer                 ::  iobscomp
+    integer                 ::  ilevtype
+    integer                 ::  iav
+    
     ! --- begin -----------------------------
     
     ! init counter:
     if ( present(nana) ) nana = 0
     
+    ! storage:
+    allocate( tab_loc(nObsComp,NLEVTYPE,2), stat=status )    
+    IF_NOT_OK_RETURN(status=1)
+    allocate( tab_tot(nObsComp,NLEVTYPE,2), stat=status )    
+    IF_NOT_OK_RETURN(status=1)
+    ! init:
+    tab_loc = 0
+
     ! init new number of observations:
     nobs = 0
     ! loop over existing observations:
@@ -2524,6 +2552,12 @@ contains
         if ( present(nana) ) then
           if ( H%obs(k)%analyse ) nana = nana + 1
         end if ! nana
+        ! increase stat:
+        iobscomp = H%obs(k)%iObsComp
+        ilevtype = H%obs(k)%levtype
+        iav = 2
+        if ( H%obs(k)%analyse ) iav = 1
+        tab_loc(iobscomp,ilevtype,iav) = tab_loc(iobscomp,ilevtype,iav) + 1
       end if ! match comp
     end do ! obs
     
@@ -2548,6 +2582,38 @@ contains
       write (gol,'("something wrong, filled ",i0," of ",i0," selected observations")') iobs, nobs; call goErr
       TRACEBACK; status=1; return
     end if
+
+    ! collect from other processes:
+    call MPIF90_AllReduce( tab_loc, tab_tot, MPI_SUM, MPI_COMM_CALC, status )
+    IF_NOT_OK_RETURN(status=1)
+    ! loop:
+    do iobscomp = 1, nObsComp
+      do ilevtype = 1, NLEVTYPE
+        ! overview:
+        if ( any( tab_tot(iobscomp,ilevtype,:) > 0 ) ) then
+          write (gol,'(a,":     number of ",a6," ",a10," observations: ",i6," (",i6," analyzed, ",i6," validated)")') &
+                              rname, trim(ObsCompInfo(iobscomp)%name), &
+                              trim(LEVTYPE_NAME(ilevtype)), sum(tab_tot(iobscomp,ilevtype,:)), &
+                              tab_tot(iobscomp,ilevtype,1), tab_tot(iobscomp,ilevtype,2); call goPr
+        end if  ! any obs
+        ! for logfile:
+        if ( MasterProc ) then
+          if ( tab_tot(iobscomp,ilevtype,1) > 0 ) then
+            write (gol,'("number of analyzed ",a6," ",a10," observations: ",i6)') &
+                              trim(ObsCompInfo(iobscomp)%name), &
+                              trim(LEVTYPE_NAME(ilevtype)), tab_tot(iobscomp,ilevtype,1)
+            call PrintLog(gol)
+          end if  ! any obs
+        end if  ! master
+      end do ! levtype
+    end do ! comp
+
+    ! clear:
+    deallocate( tab_loc, stat=status )    
+    IF_NOT_OK_RETURN(status=1)
+    deallocate( tab_tot, stat=status )    
+    IF_NOT_OK_RETURN(status=1)
+
 
     ! ok
     status = 0
@@ -3813,7 +3879,7 @@ contains
           ! undefined ? 
           if ( len_trim(obsData(nd)%file) == 0 ) then
             ! info ...
-            write (gol,'("WARNING - no analysis data file specified for Obsdata ",i6)') nd; call goErr
+            write (gol,'("WARNING - no analysis data file specified for Obsdata ",i6)') nd; call goPr
             ! next:
             cycle
           end if
@@ -3828,7 +3894,7 @@ contains
           ! undefined ? 
           if ( len_trim(obsData(nd)%file_val) == 0 ) then
             ! info ...
-            write (gol,'("WARNING - no validation data file specified for Obsdata ",i6)') nd; call goErr
+            write (gol,'("WARNING - no validation data file specified for Obsdata ",i6)') nd; call goPr
             ! next:
             cycle
           end if
@@ -3977,19 +4043,19 @@ contains
 
     end do  ! data sets
 
-    ! Write #obs to log file
-    if ( MasterProc ) then
-      do nd = 1, nobsData
-        file = date2string(obsData(nd)%file,current_date)
-        no = max(obsData(nd)%iobs(1)-obsData(nd)%iobs(0)+1,0)
-        write (damsg,"('obsData(',I0,') contains ',I0,3(1X,A))") &
-            nd, no, trim(obsData(nd)%name), &
-            trim(obsData(nd)%deriv), "observations"
-        write (damsg,dafmt) trim(damsg)
-        call PrintLog(damsg)
-        call PrintLog(file)
-      end do
-    end if
+!   ! Write #obs to log file
+!   if ( MasterProc ) then
+!     do nd = 1, nobsData
+!       file = date2string(obsData(nd)%file,current_date)
+!       no = max(obsData(nd)%iobs(1)-obsData(nd)%iobs(0)+1,0)
+!       write (damsg,"('obsData(',I0,') contains ',I0,3(1X,A))") &
+!           nd, no, trim(obsData(nd)%name), &
+!           trim(obsData(nd)%deriv), "observations"
+!       write (damsg,dafmt) trim(damsg)
+!       call PrintLog(damsg)
+!       call PrintLog(file)
+!     end do
+!   end if
     
     ! ok
     status = 0

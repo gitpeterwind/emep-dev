@@ -18,7 +18,7 @@ module DA_3DVar_ml
 #ifdef with_ajs
   use GO, only : gol, goPr, goErr
   use GO, only : GO_Print_Set
-  use GO, only : goMem
+  !use GO, only : goMem
 #else
   use DA_Util_ml     , only : gol, goPr, goErr
 #endif
@@ -181,13 +181,13 @@ contains
     IF_NOT_OK_RETURN(status=1)
 
 #ifdef with_ajs
-    !! info as error message to have it in the log file ..
-    !write (gol,'(a,": enable GO logging on from this routine if necessary ...")') rname; call goErr
-    ! log from all:
-    call GO_Print_Set( status, apply=.true. )
-    IF_NOT_OK_RETURN(status=1)
-    ! info ..
-    write (gol,'(a,": enabled GO logging on all processes ...")') rname; call goPr
+    ! info as error message to have it in the log file ..
+    write (gol,'(a,": enable GO logging from this routine if necessary ...")') rname; call goPr
+    !! log from all:
+    !call GO_Print_Set( status, apply=.true. )
+    !IF_NOT_OK_RETURN(status=1)
+    !! info ..
+    !write (gol,'(a,": enabled GO logging on all processes ...")') rname; call goPr
 
     ! define timers:
     call GO_Timer_Def( itim_read_obs , 'read observations', status )
@@ -841,9 +841,11 @@ contains
     ! begin
     !-----------------------------------------------------------------------
 
+#ifdef with_ajs
     !! testing ..
     !call goMem( rname//' - MEMORY begin', status )
     !IF_NOT_OK_RETURN(status=1)
+#endif
 
     !-----------------------------------------------------------------------
     ! first-guess output
@@ -853,10 +855,11 @@ contains
     call Fill_Output_xn_adv( '3DVAR_FG', xn_adv, status )
     IF_NOT_OK_RETURN(status=1)
     
+#ifdef with_ajs
     !! testing ..
     !call goMem( rname//' - MEMORY 1    ', status )
     !IF_NOT_OK_RETURN(status=1)
-
+#endif
 
     !-----------------------------------------------------------------------
     ! local grid
@@ -879,9 +882,11 @@ contains
       write (gol,'(a,": no local 3D-var domain")') rname; call goPr
     end if
 
+#ifdef with_ajs
     !! testing ..
     !call goMem( rname//' - MEMORY 2a   ', status )
     !IF_NOT_OK_RETURN(status=1)
+#endif
 
     !-----------------------------------------------------------------------
     ! read observations
@@ -955,13 +960,13 @@ contains
     ! end timing:
     call GO_Timer_End( itim_read_obs, status )
     IF_NOT_OK_RETURN(status=1)
-#endif
 
     !! testing ..
     !call goMem( rname//' - MEMORY 3a   ', status )
     !IF_NOT_OK_RETURN(status=1)
     !write (gol,'("WARNING - reset n_obs_tot=0 ...")'); call goErr
     !nobs_tot = 0
+#endif
 
     ! no observations at all ?
     if ( nobs_tot == 0 ) then
@@ -1050,9 +1055,11 @@ contains
         IF_NOT_OK_RETURN(status=1)
       end if
 
+#ifdef with_ajs
       !! testing ..
       !call goMem( rname//' - MEMORY 4a   ', status )
       !IF_NOT_OK_RETURN(status=1)
+#endif
 
 
       !-----------------------------------------------------------------------
@@ -1188,9 +1195,11 @@ contains
 
       ! ...................................
 
+#ifdef with_ajs
       !! testing ..
       !call goMem( rname//' - MEMORY 5a   ', status )
       !IF_NOT_OK_RETURN(status=1)
+#endif
 
       ! initialize observation operator on analysis decomposition:
       call Hops_f%Init( status )
@@ -1216,9 +1225,11 @@ contains
       ! info ...
       write (gol,'(a,": call var3d ...")') rname; call goPr
 
+#ifdef with_ajs
       !! testing ..
       !call goMem( rname//' - MEMORY 6a   ', status )
       !IF_NOT_OK_RETURN(status=1)
+#endif
 
       ! init array with all increments to zero:
       dx_loc = 0.0
@@ -1328,9 +1339,11 @@ contains
 
       end do ! B matrices
 
+#ifdef with_ajs
       !! testing ..
       !call goMem( rname//' - MEMORY 6b   ', status )
       !IF_NOT_OK_RETURN(status=1)
+#endif
 
 
       !-----------------------------------------------------------------------
@@ -1400,9 +1413,11 @@ contains
       call Fill_Output_xn_adv( '3DVAR_AN', xn_adv, status )
       IF_NOT_OK_RETURN(status=1)
 
+#ifdef with_ajs
       !! testing ..
       !call goMem( rname//' - MEMORY 6c   ', status )
       !IF_NOT_OK_RETURN(status=1)
+#endif
 
 
       !-----------------------------------------------------------------------
@@ -1423,6 +1438,7 @@ contains
       call Hops_m%WriteToFile( cdate, status )
       IF_NOT_OK_RETURN(status=1)
 
+#ifdef with_ajs
       !! testing ..
       !write (gol,'("break after Hops write")'); call goErr
       !TRACEBACK; status=1; return
@@ -1430,6 +1446,7 @@ contains
       !! testing ..
       !call goMem( rname//' - MEMORY 6d   ', status )
       !IF_NOT_OK_RETURN(status=1)
+#endif
 
 
       !-----------------------------------------------------------------------
@@ -1443,17 +1460,21 @@ contains
       call Hops_f%Done( status )
       IF_NOT_OK_RETURN(status=1)
 
+#ifdef with_ajs
       !! testing ..
       !call goMem( rname//' - MEMORY 5b   ', status )
       !IF_NOT_OK_RETURN(status=1)
+#endif
 
       ! done with obs operators:
       call Hops_m%Done( status )
       IF_NOT_OK_RETURN(status=1)
 
+#ifdef with_ajs
       !! testing ..
       !call goMem( rname//' - MEMORY 4b   ', status )
       !IF_NOT_OK_RETURN(status=1)
+#endif
 
       ! clear:
       deallocate( dx_loc, stat=status )
@@ -1473,9 +1494,11 @@ contains
       
     end if  ! observations present
 
+#ifdef with_ajs
     !! testing ..
     !call goMem( rname//' - MEMORY 3b   ', status )
     !IF_NOT_OK_RETURN(status=1)
+#endif
 
 
     !-----------------------------------------------------------------------
@@ -1507,6 +1530,7 @@ contains
     deallocate( iObsData, stat=status )
     IF_NOT_OK_RETURN(status=1)
 
+#ifdef with_ajs
     !! testing ..
     !call goMem( rname//' - MEMORY 2b   ', status )
     !IF_NOT_OK_RETURN(status=1)
@@ -1514,6 +1538,7 @@ contains
     !! testing ..
     !call goMem( rname//' - MEMORY end  ', status )
     !IF_NOT_OK_RETURN(status=1)
+#endif
 
     !! testing ...
     !nmemtest = nmemtest + 1
