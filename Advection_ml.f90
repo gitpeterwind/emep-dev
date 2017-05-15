@@ -76,10 +76,11 @@
                                 dA,dB,i_fdom,j_fdom,i_local,j_local,Eta_bnd,dEta_i,&
                                 extendarea_N
   use Io_ml,             only : datewrite
+  use Io_Progs_ml,       only : PrintLog
   use ModelConstants_ml, only : KMAX_BND,KMAX_MID,NMET, nstep, nmax, &
                   dt_advec, dt_advec_inv,  PT,Pref, KCHEMTOP, NPROCX,NPROCY,NPROC, &
                   FORECAST,& 
-                  USE_CONVECTION,DEBUG_ADV,USE_uEMEP,uEMEP
+                  USE_CONVECTION,DEBUG_ADV,USE_uEMEP,uEMEP,ZERO_ORDER_ADVEC
   use MetFields_ml,      only : ps,sdot,Etadot,SigmaKz,EtaKz,u_xmj,v_xmi,cnvuf,cnvdf&
                                 ,uw,ue,vs,vn
   use MassBudget_ml,     only : fluxin_top,fluxout_top,fluxin,fluxout
@@ -141,8 +142,8 @@
 
     integer, private, save :: nWarnings = 0
     integer, private, parameter :: MAX_WARNINGS = 100
-    logical, parameter :: hor_adv0th=.false.
-    logical, parameter :: vert_adv0th=.false.
+    logical, save :: hor_adv0th=.false.
+    logical, save :: vert_adv0th=.false.
 
   contains
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -310,6 +311,11 @@
        !Overwrite the cooefficients for vertical advection, with Eta-adpated values
        call vgrid_Eta 
        if(.not.allocated(loc_frac_1d))allocate(loc_frac_1d(0,1,1,1))!to avoid error messages
+       if(ZERO_ORDER_ADVEC)then
+          hor_adv0th = .true.
+          vert_adv0th = .true.
+          call PrintLog("USING ZERO ORDER ADVECTION")
+      endif
     end if
 
     if(KCHEMTOP==2)then

@@ -182,6 +182,7 @@ logical, public, save ::             &
 !
 ! Output flags
  ,SELECT_LEVELS_HOURLY  = .false.    & ! for FORECAST, 3DPROFILES
+ ,ZERO_ORDER_ADVEC  = .false.        & ! force zero order horizontal and vertical advection
  ,JUMPOVER29FEB      = .false.         ! When current date is 29th February, jump to next date.
 
 logical, public, save :: USE_uEMEP = .false.  ! make local fraction of pollutants
@@ -561,6 +562,7 @@ subroutine Config_ModelConstants(iolog)
    ,NETCDF_DEFLATE_LEVEL,  RUNDOMAIN, DOMAIN_DECOM_MODE &
    ,JUMPOVER29FEB, HOURLYFILE_ending, USE_WRF_MET_NAMES &
    ,dt_advec & ! can be set to override dt_advec
+   ,ZERO_ORDER_ADVEC &! force zero order horizontal and vertical advection 
    ,fileName_O3_Top
   NAMELIST /Machine_config/ DataPath
 
