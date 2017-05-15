@@ -649,7 +649,7 @@ subroutine Config_ModelConstants(iolog)
     if ( LandCoverInputs%MapFile(i) /= 'NOTSET' ) then
        LandCoverInputs%MapFile(i)= &
           key2str(LandCoverInputs%MapFile(i),'DataDir',DataDir)
-       print *, dtxt//'Landcover file', i, trim(LandCoverInputs%MapFile(i))
+!       print *, dtxt//'Landcover file', i, trim(LandCoverInputs%MapFile(i))
        if(MasterProc)then
           write(*,*)dtxt//'Landcover file', i, trim(LandCoverInputs%MapFile(i))
        end if
