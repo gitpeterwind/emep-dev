@@ -227,6 +227,7 @@ module MPIF90
     module procedure MPIF90_AllReduce_i4_0d
     module procedure MPIF90_AllReduce_r4_0d
     module procedure MPIF90_AllReduce_r8_0d
+    module procedure MPIF90_AllReduce_i4_3d
   end interface MPIF90_AllReduce
   
   
@@ -1055,6 +1056,32 @@ contains
     ! ok
     status = 0
   end subroutine MPIF90_AllReduce_r8_0d
+  
+  ! *
+
+  subroutine MPIF90_AllReduce_i4_3d( sendbuf, recvbuf, op, comm, status )
+#ifdef _MPI
+    ! external:
+    use MPI, only : MPI_INTEGER
+    use MPI, only : MPI_AllReduce
+#endif
+    ! arguments:
+    integer(4), intent(in)        ::  sendbuf(:,:,:)
+    integer(4), intent(out)       ::  recvbuf(:,:,:)
+    integer, intent(in)           ::  op
+    integer, intent(in)           ::  comm
+    integer, intent(out)          ::  status
+#ifdef _MPI
+    ! specific call:
+    call MPI_AllReduce( sendbuf, recvbuf, size(sendbuf), MPI_INTEGER, op, comm, status )
+    IF_MPI_NOT_OK_RETURN(status=1)
+#else
+    ! copy:
+    recvbuf = sendbuf
+#endif
+    ! ok
+    status = 0
+  end subroutine MPIF90_AllReduce_i4_3d
 
 
   ! ********************************************************************
