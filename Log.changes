@@ -151,6 +151,14 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+12th  May 2017  Alvaro
+
+Update for new modules in stallo:
+Makefile, run.pl:
+- compile with mpiifort instead of mpif90
+- execute with mpirun instead of mpiexec
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 28th Apr - 8th May 2017 Peter
 
 Sign error when pre-correcting the fluxes in uEMEP:
