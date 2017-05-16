@@ -38,7 +38,7 @@ use ModelConstants_ml,only: MasterProc, KMAX_MID, nmax, nstep &
                            ,fileName_O3_Top
 use MetFields_ml,     only: ps,roa,z_bnd,z_mid,cc3dmax, &
                             zen,coszen,Idirect,Idiffuse
-use NetCDF_ml,        only: ReadField_CDF,Real4,Out_netCDF_n
+use NetCDF_ml,        only: ReadField_CDF,Real4
 use OutputChem_ml,    only: WrtChem
 use My_Outputs_ml ,   only: NHOURLY_OUT, FREQ_SITE, FREQ_SONDE
 use My_Timing_ml,     only: Code_timer, Add_2timing, tim_before, tim_before0, tim_after
