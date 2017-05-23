@@ -152,9 +152,11 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-23rd  May 2017  Dave
+23rd May 2017  Dave,  rv4_14
 
 ZCM_EmChem16mt/EmChem16mtbase.reactions
+
+  - CHANGES results!
 
   - removed most SOA-induced yield reductions in gase-phase. Just keeping
     any SOA-effect for compounds which partition at 1ug/m3 and under
