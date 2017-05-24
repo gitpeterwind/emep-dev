@@ -916,17 +916,18 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
       imet_tmp = find_index(subclass, met(:)%name ) ! subclass has meteo name from MetFields
       if( imet_tmp > 0 ) then
-        met_p => met(imet_tmp)%field(:,:,:,1)
+        !Note: must write bounds explicitly for "special2d" to work
+        met_p => met(imet_tmp)%field(1:limax,1:ljmax,1:1,1)
       else
         imet_tmp = find_index(subclass, derivmet(:)%name )
-        if( imet_tmp > 0 ) met_p => derivmet(imet_tmp)%field(:,:,:,1)
+        if( imet_tmp > 0 ) met_p => derivmet(imet_tmp)%field(1:limax,1:ljmax,1:1,1)
       end if
-
+      
       if( imet_tmp > 0 ) then
          kmax=1
          if(met(imet_tmp)%dim==3)kmax=KMAX_MID!take lowest level
          if( MasterProc.and.first_call) write(*,*) "MET2D"//trim(name), &
-              imet_tmp, met_p(2,2,kmax)
+              imet_tmp, met_p(1,1,kmax),loc(met(imet_tmp)%field(1,1,1,1))
          forall ( i=1:limax, j=1:ljmax )
             d_2d( n, i,j,IOU_INST) = met_p(i,j,kmax)
          end forall

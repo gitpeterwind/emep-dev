@@ -12,7 +12,10 @@
 #for express queue (max 4 hours):  sbatch --qos=devel run.pl
 #Queue system commands start with #SBATCH 
 #SBATCH -A nn2890k
-#SBATCH --ntasks=40
+#you can change number of nodes. Total CPU = nodes*ntasks-per-node
+#SBATCH --nodes=2 
+#SBATCH --ntasks-per-node=20
+##SBATCH --ntasks=40 Do not use for now! (bug on Stallo)
 #SBATCH --mem=32000
 #SBATCH --time=4:0:0
 #activate the following line for runs which last longer than 48 hours AND use more than one node
