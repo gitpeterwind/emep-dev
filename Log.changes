@@ -173,6 +173,17 @@ For 3D fields replace all the "2d" by "3d"
 
 Redefined a group OX in ZCM_EmChem16mt/EmChem16mtbase.species
 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+23rd  May 2017  Dave
+
+ZCM_EmChem16mt/EmChem16mtbase.reactions
+
+  - removed most SOA-induced yield reductions in gase-phase. Just keeping
+    any SOA-effect for compounds which partition at 1ug/m3 and under
+
+  - added Photolysis of HO2NO2, based upon MOZART chemistry
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16th  May 2017  Peter
 
