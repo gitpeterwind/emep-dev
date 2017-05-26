@@ -622,7 +622,7 @@ subroutine Define_Derived()
     call AddNewDeriv( dname, "Emis_mgm2_Ocean_NH3", "-", "-", "mg/m2", &
                        ind , -99, T,  1.0,  F,  'YM' )
   end if
- 
+
 !Splitted total emissions (inclusive Natural)
   do ind=1,nrcemis
     dname = "EmisSplit_mgm2_"//trim(species(iqrc2itot(ind))%name)
@@ -922,7 +922,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
         imet_tmp = find_index(subclass, derivmet(:)%name )
         if( imet_tmp > 0 ) met_p => derivmet(imet_tmp)%field(1:limax,1:ljmax,1:1,1)
       end if
-      
+
       if( imet_tmp > 0 ) then
          kmax=1
          if(met(imet_tmp)%dim==3)kmax=KMAX_MID!take lowest level
@@ -1726,7 +1726,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
       if(dbgP) call write_debugadv(n,index, 1.0, "3D UG OUTS",IS3D=.true.)
 
-    case ( "3D_MASS_GROUP" ) !
+    case ( "3D_MASS_GROUP","3D_PPB_GROUP" ) !
       igrp = f_3d(n)%index
       call CheckStop(igrp<1,"NEG GRP "//trim(f_3d(n)%name))
       call CheckStop(igrp>size(chemgroups(:)%name), &
@@ -1869,7 +1869,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
   !the uemep fields do not fit in the general d_3d arrays. Use ad hoc routine
   if(USE_uEMEP .and. .not. present(ONLY_IOU))then
     call av_uEMEP(dt,End_of_Day)
-  endif  
+  endif
 
   first_call = .false.
 end subroutine Derived
