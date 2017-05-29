@@ -47,14 +47,12 @@ use Chemfields_ml,          only: xn_adv    ! emep model concs.
 use ChemSpecs,              only: NSPEC_ADV, NSPEC_SHL, species_adv
 use GridValues_ml,          only: A_mid,B_mid, glon,glat, i_fdom,j_fdom, RestrictDomain
 use Io_ml,                  only: open_file,IO_TMP,IO_NML,PrintLog
-use InterpolationRoutines_ml,  only : grid2grid_coeff
+use InterpolationRoutines_ml,  only : grid2grid_coeff,point2grid_coeff
 use MetFields_ml,           only: roa
-use ModelConstants_ml,      only: Pref,PT,KMAX_MID, MasterProc, &
+use ModelConstants_ml,      only: Pref,PT,KMAX_MID, MasterProc,NPROC, &
                                   IOU_INST, RUNDOMAIN, FORECAST,USE_POLLEN,&
                                   DEBUG_NEST,DEBUG_ICBC=>DEBUG_NEST_ICBC
-use MPI_Groups_ml      , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER, MPI_LOGICAL, &
-                                MPI_LOR,MPI_MIN, MPI_MAX, MPI_SUM, &
-                                MPI_COMM_CALC, MPI_COMM_WORLD,IERROR
+use MPI_Groups_ml  
 use netcdf,                 only: nf90_open,nf90_close,nf90_inq_dimid,&
                                   nf90_inquire_dimension,nf90_inq_varid,&
                                   nf90_inquire_variable,nf90_get_var,nf90_get_att,&
@@ -62,7 +60,7 @@ use netcdf,                 only: nf90_open,nf90_close,nf90_inq_dimid,&
 use netcdf_ml,              only: Out_netCDF,&
                                   CDFtype=>Real4,ReadTimeCDF,max_filename_length
 use OwnDataTypes_ml,        only: Deriv,TXTLEN_SHORT
-use Par_ml,                 only: me, li0,li1,lj0,lj1,limax,ljmax
+use Par_ml,                 only: me,li0,li1,lj0,lj1,limax,ljmax,GIMAX,GJMAX,gi0,gj0,gi1,gj1
 use Pollen_const_ml,        only: pollen_check
 use TimeDate_ml,            only: date,current_date,nmdays
 use TimeDate_ExtraUtil_ml,  only: date2nctime,nctime2date,nctime2string,&
@@ -79,7 +77,7 @@ integer, public, save     :: FORECAST_NDUMP     = 1  ! Read by Unimod.f90
 type(date), public :: outdate(FORECAST_NDUMP_MAX)=date(-1,-1,-1,-1,-1)
 
 !coordinates of subdomain to write, relative to FULL domain (only used in write mode)
-integer, public :: out_DOMAIN(4) ! =[istart,iend,jstart,jend]
+integer, public, save :: out_DOMAIN(4) ! =[istart,iend,jstart,jend]
 
 !/-- subroutines
 
@@ -112,6 +110,9 @@ logical,private, save ::  &               ! if IC/BC are in the same model/run
   native_grid_3D = .false.,&              ! grid, the expensive call to
   native_grid_BC = .false.,&              ! grid2grid_coeff in init_nest can be avoided
   omit_zero_write= .false.                ! skip const=0.0 variables
+
+character(len=max_filename_length),public, save :: MET_inner ='NOTSET' !path to metdata for inner grid
+integer, save, public :: RUNDOMAIN_inner(4)=-1 ! RUNDOMAIN used for run in inner grid
 
 ! Limit output, e.g. for NMC statistics (3DVar)
 character(len=TXTLEN_SHORT), private, save, dimension(NSPEC_ADV) :: &
@@ -148,6 +149,9 @@ type(icbc), private, target, dimension(NSPEC_ADV) :: &
 type(icbc), private, pointer, dimension(:) :: &
   adv_bc=>null()                                     ! Time dependent BC: spcname,varname,wanted,found,ixadv
 
+logical, allocatable, save :: mask_restrict(:,:)
+logical, save :: MASK_SET=.false.
+
 contains
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
 subroutine Config_Nest()
@@ -156,6 +160,7 @@ subroutine Config_Nest()
   NAMELIST /Nest_config/ MODE_READ,MODE_SAVE,NHOURREAD,NHOURSAVE, &
     template_read_3D,template_read_BC,template_write,&
     native_grid_3D,native_grid_BC,omit_zero_write,out_DOMAIN,&
+    MET_inner,RUNDOMAIN_inner,&
     WRITE_SPC,WRITE_GRP,FORECAST_NDUMP,outdate
 
   if(.not.first_call)return
@@ -351,11 +356,11 @@ end subroutine readxn
 subroutine wrtxn(indate,WriteNow)
   type(date), intent(in) :: indate
   logical, intent(in) :: WriteNow !Do not check indate value
-  real,allocatable, dimension(:,:,:) :: data ! Data arrays
+  real :: data(LIMAX,LJMAX,KMAX_MID) ! Data array
   logical, parameter :: APPEND=.false.
 
   type(Deriv) :: def1 ! definition of fields
-  integer :: n,iotyp,ndim,kmax,i,ncfileID
+  integer :: n,i,j,k,iotyp,ndim,kmax,ncfileID
   real :: scale
   logical :: fexist, wanted, wanted_out, overwrite
   logical, save :: first_call=.true.
@@ -409,7 +414,7 @@ subroutine wrtxn(indate,WriteNow)
   CALL MPI_BCAST(fexist,1,MPI_LOGICAL,0,MPI_COMM_CALC,IERROR)
   overwrite=fexist.and.first_call.and..not.APPEND
 
-! Limit output, e.g. for NMC statistics (3DVar)
+! Limit output, e.g. for NMC statistics (3DVar and restriction to inner grid BC)
   if(first_call)then
     first_call=.false.
     call init_icbc(cdate=indate)
@@ -473,9 +478,15 @@ subroutine wrtxn(indate,WriteNow)
             "Will not be written to file:",trim(filename_write),""
       end if
     end do
+
+    if(MET_inner /= "NOTSET")then
+       ! find region that is really needed, i.e. boundaries of inner grid
+       !find lon and lat of inner grid restricted to BC 
+       call init_mask_restrict(MET_inner,RUNDOMAIN_inner)
+    endif
+
   end if
 
-  allocate(data(LIMAX,LJMAX,KMAX_MID))
   !do first one loop to define the fields, without writing them (for performance purposes)
   ncfileID=-1 ! must be <0 as initial value
   if(.not.fexist.or.overwrite)then
@@ -493,13 +504,27 @@ subroutine wrtxn(indate,WriteNow)
   do n=1,NSPEC_ADV
     if(.not.adv_ic(n)%wanted)cycle
     def1%name=species_adv(n)%name     ! written
-    data=xn_adv(n,:,:,:)
+    if(MASK_SET)then
+       do k=1,KMAX_MID
+          do j=1,LJMAX
+             do i=1,LIMAX
+                if(mask_restrict(i,j))then
+                   data(i,j,k)=xn_adv(n,i,j,k)
+                else
+                   data(i,j,k)=0.0
+                endif
+             end do
+          end do
+       end do
+    else
+       data=xn_adv(n,:,:,:)
+    endif
     call Out_netCDF(iotyp,def1,ndim,kmax,data,scale,CDFtype=CDFtype,&
-          out_DOMAIN=out_DOMAIN,create_var_only=.false.,&
-          fileName_given=trim(fileName_write),ncFileID_given=ncFileID)
+         out_DOMAIN=out_DOMAIN,create_var_only=.false.,&
+         fileName_given=trim(fileName_write),ncFileID_given=ncFileID)
   end do
   if(MasterProc)call check(nf90_close(ncFileID))
-  deallocate(data)
+
 end subroutine wrtxn
 
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
@@ -974,6 +999,238 @@ function get_dimLen(dimName,id,name) result(len)
     trim(filename_read)//'. Include new name in init_nest')
 end function get_dimLen
 end subroutine init_nest
+
+!++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
+subroutine init_mask_restrict(filename_read,rundomain_ext)
+
+  !find lon and lat of boundaries of grid and build mask_restrict
+  integer,intent(in) ::rundomain_ext(4)
+  character(len=*),intent(in) :: filename_read
+  integer ::GIMAX_ext,GJMAX_ext
+  integer :: ncFileID,timeDimID,varid,status,dimIDs(3)
+  integer :: i,j,k,n
+  real, allocatable, dimension(:,:) ::lon_ext,lat_ext
+  real, allocatable, dimension(:) :: temp_ll
+  character(len=80) ::projection,word,iDName,jDName
+  logical :: fexist
+  real, allocatable, dimension(:,:) ::Weight_rstrct,glon_rundom,glat_rundom
+  integer, allocatable, dimension(:,:) ::IIij_rstrct,JJij_rstrct
+  real, allocatable, dimension(:) ::lon_rstrct,lat_rstrct
+  integer :: N_rstrct_BC,n4,N_rstrct_BC_per_proc
+
+  allocate(mask_restrict(limax,ljmax))
+
+  !Read dimensions (global)
+  if(me==0)then
+     status = nf90_open(trim(filename_read),nf90_nowrite,ncFileID)
+     if(status/=nf90_noerr) then
+        print *,'init_mask_restrict: not found',trim(filename_read)      
+     else
+        MASK_SET = .true.
+        print *,'init_mask_restrict: reading ',trim(filename_read)
+
+        projection='Unknown'
+        status = nf90_get_att(ncFileID,nf90_global,"projection",projection)
+        if(status==nf90_noerr) then
+           if(projection=='lon_lat')projection='lon lat'
+           write(*,*)'Nest: projection: '//trim(projection)
+        else
+           projection='lon lat'
+           write(*,*)'Nest: projection not found for ',&
+                trim(filename_read)//', assuming '//trim(projection)
+        end if
+        !get dimensions id/name/len: include more dimension names, if necessary
+        GIMAX_ext=get_dimLen([character(len=12)::"i","lon","longitude"],name=iDName)
+        GJMAX_ext=get_dimLen([character(len=12)::"j","lat","latitude" ],name=jDName)
+
+        select case(projection)
+        case('Stereographic')
+           call CheckStop("i",iDName,"Nest: unsuported "//&
+                trim(iDName)//" as i-dimension on "//trim(projection)//" projection")
+           call CheckStop("j",jDName,"Nest: unsuported "//&
+                trim(jDName)//" as j-dimension on "//trim(projection)//" projection")
+        case('lon lat')
+           call CheckStop("lon",iDName(1:3),"Nest: unsuported "//&
+                trim(iDName)//" as i-dimension on "//trim(projection)//" projection")
+           call CheckStop("lat",jDName(1:3),"Nest: unsuported "//&
+                trim(jDName)//" as j-dimension on "//trim(projection)//" projection")
+        case default
+           !call CheckStop("Nest: unsuported projection "//trim(projection))
+           !write(*,*)'GENERAL PROJECTION ',trim(projection)
+           call CheckStop("i",iDName,"Nest: unsuported "//&
+                trim(iDName)//" as i-dimension on "//trim(projection)//" projection")
+           call CheckStop("j",jDName,"Nest: unsuported "//&
+                trim(jDName)//" as j-dimension on "//trim(projection)//" projection")
+        end select
+
+        write(*,*)'Nest: dimensions inner grid',GIMAX_ext,GJMAX_ext
+
+     end if
+  end if
+
+  CALL MPI_BCAST(MASK_SET,1,MPI_LOGICAL,0,MPI_COMM_CALC,IERROR)
+  if (.not.MASK_SET)then
+     deallocate(mask_restrict)
+     return
+  endif
+
+  if(me==0)then
+     allocate(lon_ext(GIMAX_ext,GJMAX_ext),lat_ext(GIMAX_ext,GJMAX_ext))
+     !Read lon lat of the external grid (global)
+     if(trim(projection)==trim('lon lat')) then
+        call check(nf90_inq_varid(ncFileID,iDName,varID),&
+             "Read lon-variable: "//trim(iDName))
+        allocate(temp_ll(GIMAX_ext))
+        call check(nf90_get_var(ncFileID,varID,temp_ll))
+        lon_ext=SPREAD(temp_ll,2,GJMAX_ext)
+        deallocate(temp_ll)
+        call check(nf90_inq_varid(ncFileID,jDName,varID),&
+             "Read lat-variable: "//trim(jDName))
+        allocate(temp_ll(GJMAX_ext))
+        call check(nf90_get_var(ncFileID,varID,temp_ll))
+        lat_ext=SPREAD(temp_ll,1,GIMAX_ext)
+        deallocate(temp_ll)
+     else
+        call check(nf90_inq_varid(ncFileID,"lon",varID),"dim:lon")
+        call check(nf90_get_var(ncFileID,varID,lon_ext),"get:lon")
+
+        call check(nf90_inq_varid(ncFileID,"lat",varID),"dim:lat")
+        call check(nf90_get_var(ncFileID,varID,lat_ext),"get:lat")
+     end if
+
+     call check(nf90_close(ncFileID))
+
+     !N_rstrct_BC = number of points on boundaries in the inner grid 
+     N_rstrct_BC=2*(rundomain_ext(2)-rundomain_ext(1)+1)+2*(rundomain_ext(4)-rundomain_ext(3)-1)
+     allocate(lon_rstrct(N_rstrct_BC))
+     allocate(lat_rstrct(N_rstrct_BC))
+
+     !take out only boundary cells
+     N_rstrct_BC=0
+     j=rundomain_ext(3)
+     do i=rundomain_ext(1),rundomain_ext(2)
+        N_rstrct_BC = N_rstrct_BC + 1
+        lon_rstrct(N_rstrct_BC)=lon_ext(i,j)
+        lat_rstrct(N_rstrct_BC)=lat_ext(i,j)
+     enddo
+     j=rundomain_ext(4)
+     do i=rundomain_ext(1),rundomain_ext(2)
+        N_rstrct_BC = N_rstrct_BC + 1
+        lon_rstrct(N_rstrct_BC)=lon_ext(i,j)
+        lat_rstrct(N_rstrct_BC)=lat_ext(i,j)
+     enddo
+     i=rundomain_ext(1)
+     do j=rundomain_ext(3)+1,rundomain_ext(4)-1
+        N_rstrct_BC = N_rstrct_BC + 1
+        lon_rstrct(N_rstrct_BC)=lon_ext(i,j)
+        lat_rstrct(N_rstrct_BC)=lat_ext(i,j)
+     enddo
+     i=rundomain_ext(2)
+     do j=rundomain_ext(3)+1,rundomain_ext(4)-1
+        N_rstrct_BC = N_rstrct_BC + 1
+        lon_rstrct(N_rstrct_BC)=lon_ext(i,j)
+        lat_rstrct(N_rstrct_BC)=lat_ext(i,j)
+     enddo
+     if(N_rstrct_BC/=2*(rundomain_ext(2)-rundomain_ext(1)+1)+2*(rundomain_ext(4)-rundomain_ext(3)-1))then
+        write(*,*)'accounting error'
+        stop
+     endif
+     deallocate(lon_ext,lat_ext)
+  else
+     N_rstrct_BC=2*(rundomain_ext(2)-rundomain_ext(1)+1)+2*(rundomain_ext(4)-rundomain_ext(3)-1)
+     allocate(lon_rstrct(N_rstrct_BC))
+     allocate(lat_rstrct(N_rstrct_BC))
+  endif
+
+  CALL MPI_BCAST(lon_rstrct,N_rstrct_BC*8,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
+  CALL MPI_BCAST(lat_rstrct,N_rstrct_BC*8,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
+
+
+  allocate(IIij_rstrct(4,N_rstrct_BC))
+  allocate(JJij_rstrct(4,N_rstrct_BC))
+  allocate(Weight_rstrct(4,N_rstrct_BC))
+
+  !find nearest neighbors of model grid for each lon_rstrct_BC lat_rstrct_BC
+  allocate(glon_rundom(RUNDOMAIN(1):RUNDOMAIN(2),RUNDOMAIN(3):RUNDOMAIN(4)))
+  allocate(glat_rundom(RUNDOMAIN(1):RUNDOMAIN(2),RUNDOMAIN(3):RUNDOMAIN(4)))
+  glon_rundom=0.0
+  glat_rundom=0.0
+  do j=1,ljmax
+     do i=1,limax
+        glon_rundom(gi0+i-1,gj0+j-1)=glon(i,j)
+        glat_rundom(gi0+i-1,gj0+j-1)=glat(i,j)
+     enddo
+  enddo
+  CALL MPI_ALLREDUCE(MPI_IN_PLACE, glon_rundom, GIMAX*GJMAX, &
+       MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_CALC, IERROR)
+  CALL MPI_ALLREDUCE(MPI_IN_PLACE, glat_rundom, GIMAX*GJMAX, &
+       MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_CALC, IERROR)
+
+  
+  !divide the work among processors
+  N_rstrct_BC_per_proc=(N_rstrct_BC+NPROC-1)/NPROC
+  
+  ! find the four closest points
+!  call grid2grid_coeff( &
+!       lon_rstrct,lat_rstrct,         &
+!       IIij_rstrct,JJij_rstrct,Weight_rstrct,   & ! Returns coordinates of 4 nearest pts and weights
+!       glon_rundom,glat_rundom,GIMAX,GJMAX,N_rstrct_BC,1,N_rstrct_BC,1,&
+!       .false., 1, 1) !1,1 is just a crude coord, while checking
+  IIij_rstrct=0
+  JJij_rstrct=0
+  Weight_rstrct=0.0
+  do n=me*N_rstrct_BC_per_proc+1,min((me+1)*N_rstrct_BC_per_proc,N_rstrct_BC)
+     call point2grid_coeff(lon_rstrct(n),lat_rstrct(n),&
+          IIij_rstrct(1,n),JJij_rstrct(1,n),Weight_rstrct(1,n),&
+          glon_rundom,glat_rundom,GIMAX,GJMAX,.false.)
+  enddo
+  deallocate(glon_rundom,glat_rundom,lon_rstrct,lat_rstrct)
+  CALL MPI_ALLREDUCE(MPI_IN_PLACE, IIij_rstrct, 4*N_rstrct_BC, &
+       MPI_INTEGER, MPI_SUM, MPI_COMM_CALC, IERROR)
+  CALL MPI_ALLREDUCE(MPI_IN_PLACE, JJij_rstrct, 4*N_rstrct_BC, &
+       MPI_INTEGER, MPI_SUM, MPI_COMM_CALC, IERROR)
+  CALL MPI_ALLREDUCE(MPI_IN_PLACE, Weight_rstrct, 4*N_rstrct_BC, &
+       MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_CALC, IERROR)
+
+  mask_restrict = .false. !default: do not include
+  do n=1, N_rstrct_BC
+     do n4=1, 4
+        i=IIij_rstrct(n4,n)
+        j=JJij_rstrct(n4,n)
+        if(i>=gi0 .and. i<=gi1 .and. j>=gj0 .and. j<=gj1)then
+           if(abs(Weight_rstrct(n4,n))> 1.0E-6)then !contribute little, probably noise
+              mask_restrict(i-gi0+1,j-gj0+1)= .true.
+           endif
+        endif
+     enddo
+  enddo
+  deallocate(IIij_rstrct,JJij_rstrct,Weight_rstrct)
+
+
+  if(mydebug) &
+       write(*,*)'Nest: finished determination of interpolation parameters'
+contains
+  function get_dimLen(dimName,id,name) result(len)
+    character(len=*), dimension(:), intent(in) :: dimName
+    integer,          optional,     intent(out):: id
+    character(len=*), optional,     intent(out):: name
+    integer :: d, dID, len
+
+    do d=1,size(dimName)
+       status = nf90_inq_dimid(ncFileID,dimName(d),dID)
+       if(status==nf90_noerr)then
+          if(present(id))  id=dID
+          if(present(name))name=trim(dimName(d))
+          call check(nf90_inquire_dimension(ncFileID,dID,len=len),&
+               "get_dimLen: "//trim(dimName(d)))
+          exit
+       end if
+    end do
+    call CheckStop(status,nf90_noerr,'Nest: '//&
+         trim(dimName(1))//'-dimension not found: '//&
+         trim(filename_read)//'. Include new name in init_nest_restrict')
+  end function get_dimLen
+end subroutine init_mask_restrict
 
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++!
 subroutine read_newdata_LATERAL(ndays_indate)
