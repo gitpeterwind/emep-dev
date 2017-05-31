@@ -150,6 +150,17 @@ the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+31st  May 2017  Peter
+
+NetCDF_ml: bug in interpolation routine:
+Can affect only cases where:
+1)interpolation from lon-lat to lon-lat
+and 2) the model grid has finer resoltion than the data interpolated (which is normally not the case)
+
+Nest_ml.f90: option to save only the data at BC  of inner grid. 
+Set  "MET_inner" and "RUNDOMAIN_inner" in config.
+Still under testing.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 24th  May 2017  Peter
