@@ -3145,8 +3145,20 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
               !make fraction of overlap. Only first or last i can overlap. 1*dloni means 100% of the incoming data is taken.
               !put all incoming longitudes in the range 0-360
-              fracfirstlon(ig) = min(1.0, mod(360.0 + mod(glon(ifirst(ig),1)+360.0,360.0)+ 0.5*dlon - mod(Rlonmin+360.0,360.0),360.0)*dloni)
-              fraclastlon(ig)  = min(1.0, mod(360.0 + mod(Rlonmax+360.0,360.0) - (mod(glon(ilast(ig),1)+360.0,360.0) - 0.5*dlon),360.0)*dloni)
+!              fracfirstlon(ig) = min(1.0, mod(360.0 + mod(glon(ifirst(ig),1)+360.0,360.0)+ 0.5*dlon - mod(Rlonmin+360.0,360.0),360.0)*dloni)
+              fracfirstlon(ig) = mod(360.0 + mod(glon(ifirst(ig),1)+360.0,360.0)+ 0.5*dlon - mod(Rlonmin+360.0,360.0),360.0)*dloni
+              if(fracfirstlon(ig)<0.0 .or. fracfirstlon(ig)>10.0)then
+                 fracfirstlon(ig)=0.0!numerical noise in glon?
+              endif
+              fracfirstlon(ig)=min(1.0,fracfirstlon(ig))
+ 
+!             fraclastlon(ig)  = min(1.0, mod(360.0 + mod(Rlonmax+360.0,360.0) - (mod(glon(ilast(ig),1)+360.0,360.0) - 0.5*dlon),360.0)*dloni)
+              fraclastlon(ig)  =  mod(360.0 + mod(Rlonmax+360.0,360.0) - (mod(glon(ilast(ig),1)+360.0,360.0) - 0.5*dlon),360.0)*dloni
+              if(fraclastlon(ig)<0.0 .or. fraclastlon(ig)>10.0)then
+                 fraclastlon(ig)=0.0!numerical noise
+              endif
+              fraclastlon(ig)=min(1.0,fraclastlon(ig))
+
               !NB: when reducing on both sides need to ADD reductions not multiply
               if(ifirst(ig)==ilast(ig))fraclastlon(ig)  = fraclastlon(ig) -(1.0-fracfirstlon(ig))!include reduction from both sides
               if(fracfirstlon(ig)<0.0)write(*,*)'ERROR A in interpolation',me,ig,fracfirstlon(ig)
@@ -3203,8 +3215,9 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                     !will give average value (emissions in kg/m2 for instance)
                     frac = 1.0
                  endif
-                 if(j==jfirst(jg))frac_j=frac*fracfirstlat(jg)
+                 frac_j = frac
 
+                 if(j==jfirst(jg))frac_j=frac*fracfirstlat(jg)
                  if(j==jlast(jg))frac_j=frac*fraclastlat(jg)!fracfirstlat not used!
 
                  do ig=1,dims(1)
@@ -3213,8 +3226,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                     do i=ifirst(ig),ilast(ig)
                        if(i>=1.and.i<=limax)then
 
+                          frac = frac_j
                           if(i==ifirst(ig))frac=frac_j*fracfirstlon(ig)
-
                           if(i==ilast(ig))frac=frac_j*fraclastlon(ig)!fracfirstlon not used!
 
                           ij=i+(j-1)*LIMAX
