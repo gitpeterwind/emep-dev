@@ -1,9 +1,11 @@
-#!/usr/bin/python3
+#!/home/mifapw/anaconda3/envs/conda_python3_netcdf4_pyqt5_hdf4/bin/python3
+
 
 # Written by Johan S. Wind April 2017
 # Modified by Peter Wind May 2017
 
 import sys
+sys.path.append('/home/mifapw/software/PyQt5_gpl-5.8.2')
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
@@ -224,7 +226,7 @@ class MapView(QWidget):
         sum = 0
         oscale = 1.0
         maxval = max(self.data.flatten())
-        if re.search(r'transport', self.par.loc_poll): oscale = 1.0/(1.E-6+odata[(self.overh-1)/2,(self.overw-1)/2])
+        if re.search(r'transport', self.par.loc_poll): oscale = 1.0/(1.E-6+odata[int((self.overh-1)/2),int((self.overw-1)/2)])
         for y in range(self.overh):
             for x in range(self.overw):
                 v = odata[self.overh-1-y,x]
@@ -243,14 +245,14 @@ class MapView(QWidget):
         x, y = event.pos().x(), event.pos().y()
         self.overx, self.overy = x*self.data_w//self.frameGeometry().width(), y*self.data_h//self.frameGeometry().height()
         proj = self.par.fh.projection
-        if(proj == 'lat lon'):
+        if(proj == 'lon lat'):
             latname = self.par.fh.variables[self.par.reg_poll].dimensions[2]
             lonname = self.par.fh.variables[self.par.reg_poll].dimensions[3]
-            lat = self.par.fh.variables[latname][self.overy]
-            lon = self.par.fh.variables[lonname][self.overx]
+            lat = self.par.fh.variables[latname][int(self.data_h-1-self.overy)]
+            lon = self.par.fh.variables[lonname][int(self.overx)]
         else:
-            lat = self.par.fh.variables['lat'][self.data_h-1-self.overy,self.overx]
-            lon = self.par.fh.variables['lon'][self.data_h-1-self.overy,self.overx]            
+            lat = self.par.fh.variables['lat'][int(self.data_h-1-self.overy),int(self.overx)]
+            lon = self.par.fh.variables['lon'][int(self.data_h-1-self.overy),int(self.overx)]            
         txt = 'lat='+str(lat)+' lon='+str(lon)
         self.setToolTip(txt)
     def mousePressEvent(self, e):
