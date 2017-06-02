@@ -3195,6 +3195,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
               fracfirstlat(jg) = min(1.0,(glat(1,jfirst(jg))+ 0.5*dlat - Rlatmin)*dlati)
               fraclastlat(jg)  = min(1.0,(Rlatmax - (glat(1,jlast(jg)) - 0.5*dlat))*dlati)
+              fracfirstlat(jg) = max(0.0,fracfirstlat(jg))
+              fraclastlat(jg)  = max(0.0,fraclastlat(jg))
               if(jfirst(jg)==jlast(jg))fraclastlat(jg)  = fraclastlat(jg) -(1.0-fracfirstlat(jg))!include reduction from both sides
 
            enddo
