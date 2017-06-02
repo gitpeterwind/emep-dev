@@ -13,6 +13,7 @@ integer :: MPIInfo, MPISTATUS(MPI_STATUS_SIZE)
 integer, public :: request_ps_w, request_ps_e, request_xn_w, request_xn_e
 integer, public :: request_ps_s, request_ps_n, request_xn_s, request_xn_n
 integer, public :: request_s, request_n, request_w, request_e
+integer, public :: irequest_s(100), irequest_n(100), irequest_w(100), irequest_e(100)
 integer, public :: IERROR
 
 !dummy
