@@ -668,8 +668,7 @@ contains
        call check(nf90_get_att(ncFileID,nf90_global,"DX",GRIDWIDTH_M))
        status = nf90_get_att(ncFileID,nf90_global,"DY",v(1))
        if(status == nf90_noerr .and. abs(GRIDWIDTH_M-v(1))>0.01) then
-          write(*,*)'Only rectangular gridcells tested for wrf'
-          call StopAll('DX not equal DY')          
+!          if(me==0)write(*,*)'Gridcells not square. Will correct y mapping factor'
        endif
     end if
     if(MasterProc)write(*,*)"Grid_resolution",GRIDWIDTH_M

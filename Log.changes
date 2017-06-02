@@ -150,6 +150,40 @@ the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+31st  May 2017  Peter
+
+NetCDF_ml: bug in interpolation routine:
+Can affect only cases where:
+1)interpolation from lon-lat to lon-lat
+and 2) the model grid has finer resoltion than the data interpolated (which is normally not the case)
+
+Nest_ml.f90: option to save only the data at BC  of inner grid. 
+Set  "MET_inner" and "RUNDOMAIN_inner" in config.
+Still under testing.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+24th  May 2017  Peter
+
+run.pl: changed SLURM commands. There is a bug on Stallo, that makes MPI count 
+wrong the number of CPUs if not entire nodes are taken.
+
+Introduced special2d and special3d arrays in MetFields. 
+If you need very special output (i.e some quantity that cannot be outputted by 
+standard My_Derived). For 2D fields
+1) set Nspecial2d  in MetFields according to the number of new outputs
+2) write in set in the code the values of the array special2d(i,j,N), where N is 
+   the output number (i.e. 1,2,... Nspecial2d). 
+   For instance special2d(i,j,1)=Grid%invL in CellMet_ml.f90 for invL
+3) include in the same routine the use MetFields_ml  , only : special2d
+4) In config_Output.nml include the line for instance
+ 'MyName','MET2D','special2d1', '-','MyUnit' ,-99,-99,F,1.0,T,'YMD',
+(and 'special2d2', 'special2d3', ... for other outputs)
+
+For 3D fields replace all the "2d" by "3d"
+
+Redefined a group OX in ZCM_EmChem16mt/EmChem16mtbase.species
+
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23rd May 2017  Dave,  rv4_14
