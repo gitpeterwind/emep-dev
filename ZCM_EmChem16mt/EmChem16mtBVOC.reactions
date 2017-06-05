@@ -21,13 +21,14 @@ rcbio:BIOTERP  = 0.45 APINENE + 0.2 BPINENE + 0.35 XTERP  + 0.01534 SQT_SOA_NV ;
 
 *| OH chemistry
 *E: Keep TERPPeroxy as a crude fix since this is used in VBS. We allow XMT stuff to chemically react though
+*Y remove now we have YIELD method
 
 *E:1.20e-11*exp(440*tinv)  APINENE + OH =  |YG_APINOH| RTN28O2 + OHLOSS_MT + |YA_APINOH| APINOH_BSOA_NV  ;
 *E:2.38e-11*exp(357*tinv)  BPINENE + OH =  |YG_BPINO3| RTX28O2 + |YA_BPINO3| BPINOH_BSOA_NV + OHLOSS_MT ;
 *
-1.20e-11*exp(440*tinv)         APINENE  + OH = TERPO2 + TERPPeroxy ; *E: + OHLOSS_MT ;
-2.38e-11*exp(357*tinv)         BPINENE  + OH = TERPO2 + TERPPeroxy ; *E: + OHLOSS_MT ;
-1.20e-11*exp(440*tinv)*3.29     XTERP   + OH = TERPO2 + TERPPeroxy ; *E: + OHLOSS_MT ;
+1.20e-11*exp(440*tinv)         APINENE  + OH = TERPO2  ; Y + TERPPeroxy ; *E: + OHLOSS_MT ;
+2.38e-11*exp(357*tinv)         BPINENE  + OH = TERPO2 ; Y  + TERPPeroxy ; *E: + OHLOSS_MT ;
+1.20e-11*exp(440*tinv)*3.29     XTERP   + OH = TERPO2 ; Y  + TERPPeroxy ; *E: + OHLOSS_MT ;
 *1.20e-11*exp(440*tinv)*4.693   OCIMENE  + OH = TERPO2 + TERPPeroxy ; *E: + OHLOSS_MT ;
 *1.20e-11*exp(440*tinv)*3.184   LIMONENE + OH = TERPO2 + TERPPeroxy ; *E: + OHLOSS_MT ;
 * SAB is missing from rcbio!
@@ -70,15 +71,16 @@ KRO2NO                   TERPO2  + NO  =  HO2 + MVK + MACR + NO2 ;  # skip 0.1 C
 * New CheT2 doesn't have MVK. Use products of ISRO2 + O3
 * : 0.65 MACR + 0.58 HCHO + MACRO2 + CH3COO2 + 0.08 CH3O2 + 0.28 HCOOH + 0.14 CO + 0.09 H2O2 + 0.25 HO2 + 0.25 OH ;
 
-1.0e6  XMTO3_RO2 = TERPPeroxy + 0.65 MACR + 0.58 HCHO + MACRO2 + CH3COO2 + 0.08 CH3O2 + 0.28 HCOOH + 0.14 CO + 0.09 H2O2 + 0.25 HO2 + 0.25 OH ;
+*Y 1.0e6  XMTO3_RO2 = TERPPeroxy + 0.65 MACR + 0.58 HCHO + MACRO2 + CH3COO2 + 0.08 CH3O2 + 0.28 HCOOH + 0.14 CO + 0.09 H2O2 + 0.25 HO2 + 0.25 OH ;
+1.0e6  XMTO3_RO2 = 0.65 MACR + 0.58 HCHO + MACRO2 + CH3COO2 + 0.08 CH3O2 + 0.28 HCOOH + 0.14 CO + 0.09 H2O2 + 0.25 HO2 + 0.25 OH ;
 
 *-------------------------------------------------------------------------------------------
 *| NO3 chemistry
 
-1.20e-12*exp(490*tinv)  APINENE + NO3 = TERPO2 + TERPPeroxy ; NRTN28O2 ; No SOA
-2.51e-12                BPINENE + NO3 = TERPO2 + TERPPeroxy ; |YG_BPINNO3| NRTX28O2 + |YA_BPINNO3| BPINNO3_BSOA_NV ;
+1.20e-12*exp(490*tinv)  APINENE + NO3 = TERPO2 ; Y  + TERPPeroxy ; NRTN28O2 ; No SOA
+2.51e-12                BPINENE + NO3 = TERPO2 ; Y  + TERPPeroxy ; |YG_BPINNO3| NRTX28O2 + |YA_BPINNO3| BPINNO3_BSOA_NV ;
 
-1.20e-12*exp(490*tinv)*2.249   XTERP   + NO3 = TERPO2 + TERPPeroxy ; |YG_MTNO3| XMTNO3_RO2 + |YA_MTNO3| XMTNO3_BSOA_NV ;
+1.20e-12*exp(490*tinv)*2.249   XTERP   + NO3 = TERPO2 ; Y  + TERPPeroxy ; |YG_MTNO3| XMTNO3_RO2 + |YA_MTNO3| XMTNO3_BSOA_NV ;
 *1.20e-12*exp(490*tinv)*3.548  OCIMENE  + NO3 = TERPO2 + TERPPeroxy ; |YG_MTNO3| XMTNO3_RO2 + |YA_MTNO3| XMTNO3_BSOA_NV ;
 *1.20e-12*exp(490*tinv)*1.968  LIMONENE + NO3 = TERPO2 + TERPPeroxy ; |YG_MTNO3| XMTNO3_RO2 + |YA_MTNO3| XMTNO3_BSOA_NV ;
 *1.20e-12*exp(490*tinv)*1.613  SABINENE + NO3 = TERPO2 + TERPPeroxy ; |YG_MTNO3| XMTNO3_RO2 + |YA_MTNO3| XMTNO3_BSOA_NV ;
