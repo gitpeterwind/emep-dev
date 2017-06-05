@@ -148,21 +148,10 @@ contains
     do k = 2, KMAX_MID
 
        xnew(:) = xn_2d(:,k)
-     !if ( i_fdom(i)==116 .and. j_fdom(j) == 140 ) then
-     if ( minval(xnew) < 0.0 ) then
-       do n = 101, 111  !!  1, NSPEC_TOT
-         print '(a20,4i4,2es12.3)', 'XNEW'//species(n)%name, me, i_fdom(i), j_fdom(j),  n, Dchem(n,k,i,j), xnew(n)
-       end do
-     end if
 
        x(:)    = xn_2d(:,k) - Dchem(:,k,i,j)*dti(1)*1.5
        x(:)    = max (x(:), 0.0)
 
-     if ( minval(x) < 0.0 ) then
-       do n = 101, 111  !!  1, NSPEC_TOT
-         print '(a20,4i4,2es12.3)', 'XXXX'//species(n)%name, me, i_fdom(i), j_fdom(j),  n, Dchem(n,k,i,j), xnew(n)
-       end do
-     end if
 
        !*************************************
        !     Start of integration loop      *
