@@ -171,41 +171,6 @@ KRO2NO                 MALO2  + NO     = NO2 + HO2 + MGLYOX + GLYOX   ;
 * ;
 *----- isoprene chemistry ----------------------------------- ;
 * ;
-
-*CHET2:1.03e-14*EXP(-1995.0*TINV) C5H8 + O3   = 0.67 MACR + 0.26 MVK + 0.3 OP + 0.55 OH + 0.07 C3H6 + 0.8 HCHO + 0.06 HO2 + 0.05 CO ;
-*CHET2:2.7E-11*EXP(390.0*TINV)  C5H8  + OH    = ISRO2 ; IUPAC2008
-*CHET2:KRO2NO                   ISRO2 + NO    = 0.32 MACR + 0.42 MVK + 0.74 HCHO + 0.14 ISNI + 0.12 ISRO2 + 0.78 HO2 + 0.86 NO2 ;
-*CHET2:0.706*KHO2RO2            ISRO2 + HO2   = 0.97 ISRO2H ; 3% lost to S/IVOC SOA species
-*CHET2:2.6e-12*EXP(610.0*TINV)  MVK + OH      = MVKO2   ; IUPAC2007
-*CHET2:KRO2NO                   MVKO2 + NO    = 0.684 CH3CHO + 0.684 CH3COO2 + 0.266 MGLYOX + 0.266 HCHO + 0.05 ISNI + 0.95 NO2 + 0.95 HO2    ; would have been great to have hydroxy acetaldehyde in the scheme... PERHAPS test a version including this species (HOCH2CHO)?
-*CHET2:7.5e-11                  ISRO2H + OH   = OH + ISRO2   ; suggested by CR based on MCM 
-*CHET2:* Remove? 8.0e-18                ISRO2H + O3  = 0.7 HCHO ; Probably from Paulson and Seinfeld 1992 but it looks very strange? So, removed
-*CHET2:*No MACR+O3 reaction included earlier?
-*CHET2:1.36e-15*EXP(-2112.0*TINV)   MACR + O3 = 0.59 MGLYOX + 0.41 HO2 + 0.82 CO + 0.82 OH + 0.534 HCHO + 0.124 H2O2 + 0.41 CH3COO2 +0.056 {HCOOH} ; rate from MCM (essentially same as IUPAC) products based on MCM (but IUPAC indicates that there should be more MGLYOX formed than HCHO)
-*CHET2:8.0e-12*EXP(380.0*TINV)  MACR   + OH   = 0.5 MACRO2 + 0.5 MACO3 ; (rate from IUPAC2007) the original EMEP reaction looses a lot of carbons... Here use only 2 of the products from Paulson and Seinfeld. NOW using MCM nomenclature 
-*CHET2:7.6e-12*EXP(180.0*TINV)  MACRO2 + NO   = 0.95 HO2 + 0.95 CO + 0.95 ACETOL + 0.05 ISNI + 0.95 NO2 ; Paulson and Seinfeld 1992 
-*CHET2:KRO2NO3                  MACRO2 + NO3  = NO2 + ACETOL + HCHO + HO2 ; KRO2NO3, from MCM + rapid decomposition of (MCM)MACRO
-*CHET2:0.625*KHO2RO2            MACRO2 + HO2  = MACROOH {+O2} ; from MCM
-*CHET2:2.82e-11                 MACROOH + OH  = MACRO2 ; from MCM
-*CHET2:1.6e-12*EXP(305.0*TINV)  ACETOL + OH   = MGLYOX + HO2  ; Value uncertain, Arrhenius expression as suggested by IUPAC2007; 3.0d-12 from MCM (based on older measurements, new measurement factor 2 higher rate)
-*CHET2:8.7e-12*EXP(290.0*TINV)  MACO3  + NO   = CH3COO2 + HCHO + NO2   ; MCM
-*CHET2:8.5e-16*EXP(-1520.0*TINV)   MVK + O3   = 0.82 MGLYOX + 0.8 HCHO + 0.2 OP + 0.05 CO +  0.06 HO2 + 0.04 CH3CHO + 0.08 OH   ; rate from IUPAC 2007
-*CHET2:5.96e-11                 ISNI  + OH    = ISNIR    ; suggested by CR based on MCM (but note that MCM gives different products! should perhaps be updated?)
-*CHET2:KRO2NO                   ISNIR + NO    = 0.05 ISNI + 0.05 HO2 + 1.9 NO2 + 0.95 CH3CHO + 0.95 ACETOL  ; NOTE! still use CH3CHO instead of OHCH2CHO
-*CHET2:3.15e-12*EXP(-450.0*TINV)  C5H8 + NO3  = ISONO3   ; IUPAC2007
-*CHET2:KRO2NO                   ISONO3 + NO   = 1.1 NO2 + 0.8 HO2 + 0.85 ISNI + 0.1 MACR + 0.15 HCHO + 0.05 MVK   ; Products probably rather different from MCM...
-*CHET2:0.706*KHO2RO2            ISONO3 + HO2  = ISONO3H   ;
-*CHET2:0.625*KHO2RO2            MVKO2  + HO2  = MVKO2H   ;
-*CHET2:4.3e-13*EXP(1040.0*TINV) MACO3 + HO2   = 0.71 MACO3H + 0.29 MACO2H + 0.29 O3 ; MCM KAPHO2 reaction rate!
-*CHET2:1.87e-11                 MACO3H + OH   = MACO3 ; MCM    
-*CHET2:1.51e-11                 MACO2H + OH   = CH3COO2 + HCHO ; MCM
-*CHET2:0.706*KHO2RO2            ISNIR  + HO2  = ISNIRH   ;
-*CHET2:2.0e-11                  ISONO3H + OH  = ISONO3      ; other products , i.e., non-returning, in MCM and much faster reaction 1.03d-10, SHOULD BE LOOKED AT LATER!
-*CHET2:2.2e-11                  MVKO2H + OH   = MVKO2     ; other products in MCM and faster reactions SHOULD BE CHECKED LATER we seem to have several reactions that return peroxyradicals instead of breaking down/aging the VOCs
-*CHET2:* the reaction below is not in MCM
-*CHET2:3.7e-11                  ISNIRH + OH = ISNIR        ;
-*CHET2:2.9e-11                  MPAN + OH   = ACETOL + CO + NO2 ; MCM (crb: new reaction, products from MCM, rate from IUPAC2007, rate is highly uncertain and we should perhaps test setting some temperature dependence? Value given for 298K! NOTE MUCH LOWER RATE IN MCM! According to IUPAC the reaction has been observed to produce ACETOL and HCHO )
-*
 ** ========================================================================
 ** CheT2
 * ****************************************************************** ;
