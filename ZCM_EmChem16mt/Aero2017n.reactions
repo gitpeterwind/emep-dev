@@ -35,4 +35,6 @@ _func_UptakeRate(cO3,gam=1.0e-6,S=S_m2m3(AERO%DU_C,:))           O3 = HO2 ;
 
 * FAKE to get GammaN2O5 as rate coefficient
 gamN2O5(:)   DUMMY =  ;
+* JUNE 2017 extras
+_func_UptakeRate(cO3,gam=1.0e-6,S=S_m2m3(AERO%DU_F,:))           O3 = HO2 ;
 
