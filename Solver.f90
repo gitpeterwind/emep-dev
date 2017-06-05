@@ -21,18 +21,19 @@
   !=======================================================================!
 
     use Aqueous_ml,        only: aqrck, ICLOHSO2, ICLRC1, ICLRC2, ICLRC3
-    use CheckStop_ml,      only: CheckStop
+    use CheckStop_ml,      only: CheckStop, StopAll
     use ChemFunctions_ml, only :VOLFACSO4,VOLFACNO3,VOLFACNH4 !TEST TTTT
     use ChemGroups_ml,     only: RO2_POOL, RO2_GROUP
     use ChemSpecs                  ! => NSPEC_TOT, O3, NO2, etc.
     use ChemFields_ml, only : x, xold ,xnew  & ! Working arrays [molecules/cm3]
+                             ,cell_tinv & ! tmp location, for Yields
                              ,NSPEC_BGN  ! => IXBGN_  indices and xn_2d_bgn
     use ChemRates_rct_ml,   only: rct
     !ESX use ChemRates_rcmisc_ml,only: rcmisc
     use DefPhotolysis_ml         ! => IDHNO3, etc.
     use emep_Config_mod,    only : YieldModifications
     use EmisDef_ml,      only: KEMISTOP
-    use GridValues_ml,     only : GRIDWIDTH_M
+    use GridValues_ml,     only : GRIDWIDTH_M, i_fdom, j_fdom
     use Io_ml,             only : IO_LOG, datewrite
     use ModelConstants_ml, only: KMAX_MID, KCHEMTOP, dt_advec,dt_advec_inv, &
                                  DebugCell, MasterProc, DEBUG, USE_SEASALT
@@ -87,6 +88,7 @@ contains
     real(kind=dp)    ::  dt2
     real(kind=dp)    ::  P, L                ! Production, loss terms
     real(kind=dp)    :: xextrapol   !help variable
+    character(len=15) :: runlabel
 
     ! Concentrations : xold=old, x=current, xnew=predicted
     ! - dimensioned to have same size as "x"
@@ -146,15 +148,27 @@ contains
     do k = 2, KMAX_MID
 
        xnew(:) = xn_2d(:,k)
+     !if ( i_fdom(i)==116 .and. j_fdom(j) == 140 ) then
+     if ( minval(xnew) < 0.0 ) then
+       do n = 101, 111  !!  1, NSPEC_TOT
+         print '(a20,4i4,2es12.3)', 'XNEW'//species(n)%name, me, i_fdom(i), j_fdom(j),  n, Dchem(n,k,i,j), xnew(n)
+       end do
+     end if
 
        x(:)    = xn_2d(:,k) - Dchem(:,k,i,j)*dti(1)*1.5
        x(:)    = max (x(:), 0.0)
 
+     if ( minval(x) < 0.0 ) then
+       do n = 101, 111  !!  1, NSPEC_TOT
+         print '(a20,4i4,2es12.3)', 'XXXX'//species(n)%name, me, i_fdom(i), j_fdom(j),  n, Dchem(n,k,i,j), xnew(n)
+       end do
+     end if
 
        !*************************************
        !     Start of integration loop      *
        !*************************************
        if ( YieldModificationsInUse ) then
+          cell_tinv = tinv(k)
           call doYieldModifications('init')
        end if
 
@@ -163,6 +177,9 @@ contains
 
           do n=1,NSPEC_TOT
 
+!if ( x(n) < 0.0 ) then
+!   print *, 'NCHEM', me,  n, species(n)%name, x(n), xnew(n)
+!end if
              xextrapol = xnew(n) + (xnew(n)-x(n)) *cc(ichem)
              xold(n) = coeff1(ichem)*xnew(n) - coeff2(ichem)*x(n)
              xold(n) = max( xold(n), 0.0 )
@@ -216,15 +233,27 @@ contains
                 ! Still, we have nchem*niter loops
 
                  if ( YieldModificationsInUse ) then
-                    if(DebugCell) write(*,'(a,5i4,f8.3,3es12.3)') 'JPCDTDBG ',&
-                       i,j, k, ichem, nchem, dt2, &
-                       xnew(OH),xnew(C5H8), xnew(APINENE)
-                    call doYieldModifications('run')
+                    runlabel='run'
+                    if( iter == toiter(k) ) runlabel='lastFastChem'
+                    call doYieldModifications(runlabel)
+
+                    !if(DebugCell .and. ichem==nchem) &
+                       !write(*,'(a,5i4,f8.3,4es12.3)') 'JPCDTDBG ',&
+                       !print '(a,5i4,f8.3,4es12.3)', 'JPCDTDBG ',&
+                       !i,j, k, ichem, nchem, dt2, &
+                       !xnew(OH),xnew(C5H8), xnew(APINENE), YCOXY(1)
+!                       print '(a,2i4,4es12.3)', 'JPCin '//runlabel, ichem, me,&
+!                        YCOXY(1)
                  end if
 
             end do !! End iterations
           ! Just before SO4, look after slower? species
 
+!            print '(a,5i4,f8.3,4es12.3)', 'JPCYIELD ',&
+!                       i,j, k, ichem, nchem, dt2, &
+!                       xnew(OH),xnew(C5H8), xnew(APINENE), YCOXY(1)
+!
+!            call StopAll('INTERIM')
           !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
            include 'CM_Reactions2.inc'
           !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
