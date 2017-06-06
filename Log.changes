@@ -151,6 +151,11 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+06th June 2017  Dave
+
+mk.testX - added 2nd optional argument which can be ifort. Otherwise gfortran used.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 05th June 2017  Dave,  rv4_15
 
 BUG fix on apinene reactions - was reacting in two .reactions files
