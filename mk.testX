@@ -3,12 +3,21 @@
 # and to create and run the appropriate Makefile
 # In Unimod, works for SmallUtils so far.
 
-echo Usage:  mk.testX xxxx.f90
+echo Usage:  mk.testX xxxx.f90 
 
 b=`basename $1 .f90`
 tstMakeFile=testX_Makefile_$b
 tstfile=testX_$1
 runfile=testX_$b
+
+# Select compiler (arg2 else gfortran)
+f90=${2-gfortran}
+if [[ $f90 == 'ifort' ]]; then
+  f90="ifort -r8 -check all -check noarg_temp_created -debug-parameters all -traceback -ftrapuv -g -fpe0 -O0"
+else
+  f90="gfortran  -pedantic -Wall -fbounds-check -fdefault-real-8 -finit-real=nan -ffree-line-length-none"
+fi
+echo COMPILER IS $f90
 
 # Create new test-prog from commented out !TSTESX lines of module:
 grep "\!TSTEMX" $1  > $tstfile
@@ -16,9 +25,13 @@ sed -i "s/\!TSTEMX//" $tstfile
 
 make clean
 
-utils/fmkmf \
-  -f90  "ifort -r8 -check all -check noarg_temp_created -debug-parameters all -traceback -ftrapuv -g -fpe0 -O0"\
-    -tag "(f95|F95|f90|F90)" $tstfile > $tstMakeFile 
+#utils/fmkmf \
+#  $f90  -tag "(f95|F95|f90|F90)" $tstfile > $tstMakeFile 
+echo utils/fmkmf -f90 "$f90" XXX
+utils/fmkmf -f90 "$f90" \
+  -tag "(f95|F95|f90|F90)" $tstfile > $tstMakeFile 
+
+#  -f90  "ifort -r8 -check all -check noarg_temp_created -debug-parameters all -traceback -ftrapuv -g -fpe0 -O0"\
   #-f90  "gfortran  -pedantic -Wall -fbounds-check -fdefault-real-8 -finit-real=nan -ffree-line-length-none"\
   #  -tag "(f95|F95|f90|F90)" $tstfile > $tstMakeFile 
 
