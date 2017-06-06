@@ -53,7 +53,7 @@ integer, public, save :: uEMEP_Sizedxdy=0 !total size of the first 3 dimensions 
 real, private, save ::av_fac_hour,av_fac_day,av_fac_month,av_fac_full
 real, allocatable, save ::loc_poll_to(:,:,:,:,:)
 
-logical, public, save :: COMPUTE_LOCAL_TRANSPORT=.true.
+logical, public, save :: COMPUTE_LOCAL_TRANSPORT=.false.
 
 contains
 subroutine init_uEMEP
@@ -163,12 +163,8 @@ subroutine init_uEMEP
      end if
   end do
 
-!if uEMEP%dist is too large the routine extendarea_N will fail, because it needs data from processors far
-!  if(uEMEP%dist>MAXLIMAX .or. uEMEP%dist>MAXLJMAX)then
-!     if(me==0)write(*,*)'Warning: uEMEP%dist or NPROC large. Not effective?'
-!     COMPUTE_LOCAL_TRANSPORT=.false.
-!  endif
-  
+  COMPUTE_LOCAL_TRANSPORT = uEMEP%COMPUTE_LOCAL_TRANSPORT
+
   av_fac_hour=0.0
   av_fac_day=0.0
   av_fac_month=0.0
@@ -645,7 +641,8 @@ subroutine av_uEMEP(dt,End_of_Day)
                        enddo
                     enddo
                  enddo
-              else if(uEMEP%DAY)then
+              endif
+              if(uEMEP%DAY)then
                  loc_tot_day(i,j,k,ipoll)=loc_tot_day(i,j,k,ipoll)+xtot
                  do dy=-uEMEP%dist,uEMEP%dist
                     do dx=-uEMEP%dist,uEMEP%dist
@@ -654,7 +651,8 @@ subroutine av_uEMEP(dt,End_of_Day)
                        enddo
                     enddo
                  enddo
-              else if(uEMEP%MONTH)then
+              endif
+              if(uEMEP%MONTH)then
                  loc_tot_month(i,j,k,ipoll)=loc_tot_month(i,j,k,ipoll)+xtot
                  do dy=-uEMEP%dist,uEMEP%dist
                     do dx=-uEMEP%dist,uEMEP%dist
@@ -663,7 +661,8 @@ subroutine av_uEMEP(dt,End_of_Day)
                        enddo
                     enddo
                  enddo
-              else if(uEMEP%YEAR)then
+              endif
+              if(uEMEP%YEAR)then
                  loc_tot_full(i,j,k,ipoll)=loc_tot_full(i,j,k,ipoll)+xtot
                  do dy=-uEMEP%dist,uEMEP%dist
                     do dx=-uEMEP%dist,uEMEP%dist
