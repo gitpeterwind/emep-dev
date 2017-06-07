@@ -3161,6 +3161,10 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
               !NB: when reducing on both sides need to ADD reductions not multiply
               if(ifirst(ig)==ilast(ig))fraclastlon(ig)  = fraclastlon(ig) -(1.0-fracfirstlon(ig))!include reduction from both sides
+              if(fraclastlon(ig)<0.0 .or. fraclastlon(ig)>10.0)then
+                 fraclastlon(ig)=0.0!numerical noise
+              endif
+
               if(fracfirstlon(ig)<0.0)write(*,*)'ERROR A in interpolation',me,ig,fracfirstlon(ig)
               if(fraclastlon(ig)<0.0)write(*,*)'ERROR B in interpolation',me,ig,fraclastlon(ig)
 631           format(I4,A,F10.4,A,F10.4,A,I4,A,F10.4,A,I4,A,F10.4,A,F10.4)
