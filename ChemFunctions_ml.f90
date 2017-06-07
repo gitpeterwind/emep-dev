@@ -340,7 +340,7 @@ module ChemFunctions_ml
    real, dimension(K1:K2) :: rate
    real    :: rc
    real    :: f   ! Was f_Riemer
-   real    :: gam, S, Rwet  ! for newer methods
+   real    :: gam, S,  S_ss, S_du, Rwet  ! for newer methods
    real, save :: g1 = 0.02, g2=0.002 ! gammas for 100% SO4, 100% NO3, default
    real, save :: gFix  ! for Gamma:xxxx values
    real, parameter :: EPSIL = 1.0  ! One mol/cm3 to stop div by zero
@@ -384,7 +384,7 @@ module ChemFunctions_ml
         end if
       end do ! k
   !---------------------------------------
-   case ( "Smix", "SmixTen" )
+   case ( "Smix", "SmixTen", "SmixC" )
 
      do k = K1, K2
 
@@ -400,6 +400,15 @@ module ChemFunctions_ml
             if( method == "SmixTen") gam = 0.1 * gam ! cf Brown et al, 2009!
 
             rate(k) = UptakeRate(cN2O5(k),gam,S) !1=fine SIA ! +OM
+
+            if( method == "SmixC") then
+                 S_ss = S_m2m3(AERO%SS_C,k)
+                 gam=GammaN2O5_EJSS(rh(k))
+                 S_du = S_m2m3(AERO%DU_C,k)
+                 gam=0.01 ! for dust
+               ! same as UptakeRate(cN2O5,gam,S), but easier to code here:
+                 rate(k) = rate(k) + cN2O5(k)*(gam*S_ss+0.01*S_du)/4 
+            end if ! SmixC
        else
             gam = 0.0 ! just for export
             rate(k) = 0.0

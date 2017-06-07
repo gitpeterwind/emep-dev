@@ -31,7 +31,7 @@ module emep_Config_mod
  ! it makes sure the experiments are recorded in the config
  ! system
 
-  character(len=100), save, public :: YieldModifications = '-'
+  character(len=100), save, public :: YieldModifications = 'VBS' ! Default for EmChem16mt
 
   
   type, private :: LandCoverInputs_t

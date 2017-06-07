@@ -29,12 +29,7 @@
  LandCoverInputs%MapFile =
     'DataDir/Landuse/Landuse_PS_5km_LC.nc',
     'DataDir/LandInputs_Apr2017/glc2000mCLM.nc',
- YieldModifications = '-' ,   ! None for EmChems 'JPC-VY-acid'
-! EmBio%IsopFac           =  1.0,
-! PBL%ZiMIN             =  50.0,
-!------------------------------
-! testing March 2017
-! EmBio%GlobBvocMethod = 'MEGAN',
+ YieldModifications = 'VBS'   ! None for EmChems 'JPC-VY-acid',
 ! EmBio%IsopFac           =  1.0,
 ! PBL%ZiMIN             =  50.0,
 !------------------------------
