@@ -151,6 +151,14 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+07th June 2017  Dave
+
+mk.testX - small update to remove previous executable
+
+Country_ml.f90 - Added 4-letter gains code to Country type. Not used in EMEP
+  yet, but useful offline for processing info from IIASA
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 06th June 2017  Dave
 
 mk.testX - added 2nd optional argument which can be ifort. Otherwise gfortran used.

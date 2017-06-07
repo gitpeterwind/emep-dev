@@ -9,6 +9,10 @@ b=`basename $1 .f90`
 tstMakeFile=testX_Makefile_$b
 tstfile=testX_$1
 runfile=testX_$b
+if [[ -f $runfile ]]; then
+  rm $runfile
+fi
+
 
 # Select compiler (arg2 else gfortran)
 f90=${2-gfortran}
