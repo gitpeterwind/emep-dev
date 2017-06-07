@@ -32,7 +32,7 @@ use Chemfields_ml,    only: xn_adv, xn_shl, cfac
 use ChemSpecs             ! Use IXADV_ indices...
 use ChemGroups_ml         ! Allow all groups to ease compilation
                           !  eg. OXN_GROUP, DDEP_OXNGROUP, BVOC_GROUP
-use EmisDef_ml,       only: NSECTORS, EMIS_FILE, Nneighbors
+use EmisDef_ml,       only: NSECTORS, EMIS_FILE, NEMIS_FILE, SecEmisOut, Nneighbors
 use EmisGet_ml,       only: nrcemis, iqrc2itot
 use GridValues_ml,    only: RestrictDomain
 use Io_Nums_ml,       only: IO_NML
@@ -291,6 +291,14 @@ subroutine Init_My_Deriv()
     tag_name(1) = "Emis_mgm2_" // trim(EMIS_FILE(i))
     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
   end do
+  do  i = 1, NEMIS_FILE
+    if(SecEmisOut(i))then
+       do isec=1,NSECTORS
+          write(tag_name(1),"(A,I0,A)")"Emis_mgm2_sec",isec,trim(EMIS_FILE(i))
+          call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
+       end do
+    endif
+  end do ! ind  
   do i = 1, size(BVOC_GROUP)
     itot = BVOC_GROUP(i)
     tag_name(1) = "Emis_mgm2_BioNat" // trim(species(itot)%name)

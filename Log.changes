@@ -151,6 +151,16 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+7th  June 2017  Peter
+
+Allow for outputting sectorwise emission.
+In ModelConstants_config set for instance:
+
+  SecEmisOutPoll(1:)	= 'pm25', 'nox',	
+
+This will give you separately all the 11 sectors for each of these pollutants
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 31st  May 2017  Peter
 
 NetCDF_ml: bug in interpolation routine:

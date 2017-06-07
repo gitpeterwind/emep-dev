@@ -201,6 +201,7 @@ real, public, allocatable, dimension(:,:,:,:), save :: &
 
 ! We store the emissions for output to d_2d files and netcdf in kg/m2/s
 real, public, allocatable, dimension(:,:,:), save :: SumSnapEmis,SumSplitEmis
+real, public, allocatable, dimension(:,:,:,:), save :: SumSecEmis
 
 !should be defined somewhere else?
 real, public, allocatable, dimension(:,:,:,:,:,:), save :: &
@@ -262,6 +263,9 @@ integer, public, save :: KEMISTOP ! not defined yet= KMAX_MID - nemis_kprofile +
   integer, parameter, public :: MAXFEMISLONLAT = 10!max number of lines with lonlat reductions
   integer,   public          :: N_femis_lonlat    !number of femis lonlat lines defined
 
+
+  integer, public, save :: NSecEmisOut = 0
+  logical, public, save :: SecEmisOut(NEMIS_FILE) = .false.
 
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 ! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
