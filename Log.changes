@@ -151,6 +151,85 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+7th  June 2017  Peter
+
+Allow for outputting sectorwise emission.
+In ModelConstants_config set for instance:
+
+  SecEmisOutPoll(1:)	= 'pm25', 'nox',	
+
+This will give you separately all the 11 sectors for each of these pollutants
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+07th June 2017  Dave
+
+mk.testX - small update to remove previous executable
+
+Country_ml.f90 - Added 4-letter gains code to Country type. Not used in EMEP
+  yet, but useful offline for processing info from IIASA
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+06th June 2017  Dave
+
+mk.testX - added 2nd optional argument which can be ifort. Otherwise gfortran used.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+05th June 2017  Dave,  rv4_15
+
+BUG fix on apinene reactions - was reacting in two .reactions files
+
+  - CHANGES results!
+
+So, chemistry cleanup was the result, with new VBS system to keep the code
+shorted and more visible.
+
+VBS reactions and coefficients now dealt with in YieldModifications_mod, together
+with new system in ZCM_EmChem16mt/VBS_SOAformationY.reactions. The new system
+now makes use of labels, e.g. |YCOXY(1)| to set yields for different components
+in different VBS bins. Here, from OXYL into 10**1 (ie 10ug/m3) bin.
+
+ZCM_CRIv2R5/GenIn.shorthand 
+  Copied CRIv2R5jpc.shorthand to GenIn.shorthand
+
+ZCM_EmChem16mt:
+
+  Aero2017n.reactions:
+    Added fine-mode O3 uptake on dust
+
+ EmChem16mtbase.reactions:
+    Cleaned out old C5H8 chemistry
+
+ EmChem16mtbase.species:
+    Removed TERPPeroxy, since we now use new VBS system
+
+ VBS_SOAformationY.reactions  ---- NEW !!!
+    uses new and improved YieldModifications for VBS
+
+ChemFields_ml.f90 
+  Adding cell_tinv as 1/T for use in YieldModifications
+
+ChemFunctions_ml.f90 
+  Added SmixC option to explore coarse-mode uptake. Not used yet.
+ 
+mk.GenChem 
+  Used new SOAformation file for EmChem16mt - using YieldModification methods
+
+config_EMEPSTD.nml 
+  Using YieldModification = VBS
+
+emep_Config_mod.f90
+  Made YieldModification = VBS default. Also safe for EmChem09soa; just wastes
+a little CPU.
+
+config_Outputs_EMEPSTD
+   Added SQT output
+
+Solver.f90 
+  Adapted for new VBS methods in YieldModifications
+
+>>>>>>> 27ddc801f707bb3dd0a6a5ed01ad0056fa69cfa6
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 31st  May 2017  Peter
 
 NetCDF_ml: bug in interpolation routine:

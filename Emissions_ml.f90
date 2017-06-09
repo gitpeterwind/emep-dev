@@ -29,6 +29,7 @@ use EmisDef_ml,       only: &
      ,ROADDUST_CLIMATE_FILE &! TEMPORARY! file for road dust climate factors 
      ,nGridEmisCodes,GridEmisCodes,GridEmis,cdfemis&
      ,snapemis,snapemis_flat,roaddust_emis_pot,SumSplitEmis,SumSnapEmis&
+     ,SumSecEmis,SecEmisOut,NSecEmisOut&
      ,nlandcode,landcode,flat_nlandcode,flat_landcode&
      ,road_nlandcode,road_landcode&
      ,gridrcemis,gridrcemis0,gridrcroadd,gridrcroadd0&
@@ -86,7 +87,7 @@ use ModelConstants_ml,only: &
     USE_LIGHTNING_EMIS,USE_AIRCRAFT_EMIS,USE_ROADDUST, &
     USE_EURO_SOILNOX, USE_GLOBAL_SOILNOX, EURO_SOILNOX_DEPSCALE,&! one or the other
     USE_OCEAN_NH3,USE_OCEAN_DMS,FOUND_OCEAN_DMS,&
-    NPROC, EmisSplit_OUT,USE_uEMEP,uEMEP,SECTORS_NAME
+    NPROC, EmisSplit_OUT,USE_uEMEP,uEMEP,SECTORS_NAME,SecEmisOutPoll
 use MPI_Groups_ml  , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER&
                             ,MPI_SUM,MPI_COMM_CALC, IERROR
 use NetCDF_ml,        only: ReadField_CDF,ReadField_CDF_FL,ReadTimeCDF,IsCDFfractionFormat,&
@@ -203,7 +204,8 @@ subroutine Emissions(year)
   logical,save :: my_first_call=.true.  ! Used for femis call
   logical :: fileExists            ! to test emission files
   character(len=40) :: varname, fmt,cdf_sector_name
-  integer ::allocerr, i_Emis_4D
+  integer ::allocerr, i_Emis_4D, iemsec
+  
   if (MasterProc) write(6,*) "Reading emissions for year",  year
 
 
@@ -328,6 +330,21 @@ subroutine Emissions(year)
     roaddust_emis_pot=0.0
     allocate(SumSnapEmis(LIMAX,LJMAX,NEMIS_FILE))
     SumSnapEmis=0.0
+
+    iemsec = 0
+!    SecEmisOutPoll(1:2) = ['pm25','nox'] 
+    do iem = 1, NEMIS_FILE 
+       if(SecEmisOutPoll(1)/='NOTSET')then
+          if(all(SecEmisOutPoll(:)/=trim(EMIS_FILE(iem))))cycle      
+          SecEmisOut(iem) = .true.
+          iemsec = iemsec + 1
+       endif
+    enddo
+    NSecEmisOut = iemsec
+    if(NSecEmisOut>0)then
+       allocate(SumSecEmis(LIMAX,LJMAX,NSECTORS,NSecEmisOut))
+       SumSecEmis=0.0
+    endif
 
     !=========================
     !  call Country_Init() ! In Country_ml, => NLAND, country codes and names, timezone
@@ -971,7 +988,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
 
   ! If timezone=-100, calculate daytime based on longitude rather than timezone
   integer :: daytime_longitude, daytime_iland, hour_longitude, hour_iland,nstart
-  integer :: i_Emis_4D
+  integer :: i_Emis_4D, iemsec
   character(len=125) ::varname 
   TYPE(timestamp)   :: ts1,ts2
 
@@ -1052,6 +1069,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
     totemadd(:)  = 0.
     gridrcemis0(:,:,:,:) = 0.0 
     SumSnapEmis(:,:,:) = 0.0
+    SumSecEmis(:,:,:,:) = 0.0
     if(USE_ROADDUST)gridrcroadd0(:,:,:) = 0.0
     !..........................................
     ! Process each grid:
@@ -1107,7 +1125,9 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
             ! Calculate emission rates from snapemis, time-factors, 
             ! and if appropriate any speciation fraction (NEMIS_FRAC)
             iqrc = 0   ! index over emisfrac
+            iemsec = 0
             do iem = 1, NEMIS_FILE 
+              if(SecEmisOut(iem))iemsec = iemsec + 1
               tfac = timefac(iland_timefac,sec2tfac_map(isec),iem) &
                    * fac_ehh24x7(sec2tfac_map(isec),hour_iland,wday_loc)
 
@@ -1140,6 +1160,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
 
               ! prelim emis sum kg/m2/s
               SumSnapEmis(i,j,iem) = SumSnapEmis(i,j,iem) + s
+              if(SecEmisOut(iem))SumSecEmis(i,j,isec,iemsec) = SumSecEmis(i,j,isec,iemsec) + s
 
               do f = 1,emis_nsplit(iem)
                 iqrc = iqrc + 1
@@ -1190,10 +1211,12 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
           !  Calculate emission rates from snapemis, time-factors, 
           !  and if appropriate any speciation  fraction (NEMIS_FRAC)
           iqrc  = 0   ! index over emis
+          iemsec = 0
           do iem = 1, NEMIS_FILE 
             sf =  snapemis_flat(i,j,ficc,iem)    
             ! prelim emis sum kg/m2/s
             SumSnapEmis(i,j,iem) = SumSnapEmis(i,j,iem) + sf
+            if(SecEmisOut(iem))SumSecEmis(i,j,isec,iemsec) = SumSecEmis(i,j,isec,iemsec) + sf
             do f = 1,emis_nsplit(iem)
               iqrc = iqrc + 1
               itot = iqrc2itot(iqrc)

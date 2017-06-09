@@ -139,6 +139,8 @@ type, public :: emis_in
 end type emis_in
 type(emis_in), public, dimension(5) :: emis_inputlist = emis_in()
 
+character(len=40), dimension(20), public, save  :: SecEmisOutPoll = "NOTSET"
+
 character(len=40), public, save   :: SECTORS_NAME='SNAP'
 
 character(len=200), public, save :: &
@@ -147,6 +149,8 @@ character(len=200), public, save :: &
   GRID = 'EECCA', & ! default grid
   meteo= 'DataDir/GRID/metdata_EC/YYYY/meteoYYYYMMDD.nc', & ! template for meteofile
   DegreeDayFactorsFile = 'MetDir/HDD18-GRID-YYYY.nc'        ! template for DegreeDayFactors.nc
+
+
 
 integer, public, save :: startdate(4)=(/0,0,0,0/),enddate(4)=(/0,0,0,24/) ! start and end of the run
 
@@ -555,6 +559,7 @@ subroutine Config_ModelConstants(iolog)
    ,BGND_CH4              & ! Can reset background CH4 values
    ,SKIP_RCT              & ! Can  skip some rct
    ,EMIS_SOURCE, EMIS_TEST, EMIS_OUT, emis_inputlist, EmisDir &
+   ,SecEmisOutPoll        & ! to output sectorwise emissions
    ,FLUX_VEGS             & ! Allows user to add veg categories for eg IAM ouput
    ,VEG_2dGS              & ! Allows 2d maps of growing seasons
    ,VEG_2dGS_Params       & ! Allows 2d maps of growing seasons

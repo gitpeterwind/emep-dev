@@ -171,6 +171,7 @@ type, public :: uEMEP_type
   logical     :: DAY =.false.
   logical     :: HOUR =.false.
   logical     :: HOUR_INST =.false.
+  logical     :: COMPUTE_LOCAL_TRANSPORT=.true.
 end type uEMEP_type
 
 contains

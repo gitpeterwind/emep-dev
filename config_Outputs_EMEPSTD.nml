@@ -178,6 +178,7 @@ OutputConcs=
       'BSOA'             ,'ug_PM' ,'2d','AIR_CONCS','GROUP','YMD', ! FSOA tests
       'BSOA'             ,'ug'    ,'2d','AIR_CONCS','GROUP','YMD', ! FSOA tests
       'NONVOLPCM'        ,'ug_PM' ,'2d','AIR_CONCS','GROUP','YMD', ! FSOA tests
+      'SQT_SOA_NV'       ,'ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! FSOA tests
       'FFUELOA25'        ,'ug_PM' ,'2d','AIR_CONCS','SPEC' ,'YMD', ! FSOA tests
       'POM_F_FFUEL'      ,'ug_PM' ,'2d','AIR_CONCS','SPEC' ,'YMD', ! FSOA tests
       'POM_F_FFUEL'      ,'ug'    ,'2d','AIR_CONCS','SPEC' ,'YMD', ! FSOA tests

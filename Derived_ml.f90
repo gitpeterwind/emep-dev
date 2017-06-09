@@ -38,7 +38,7 @@ use DerivedFields_ml, only: MAXDEF_DERIV2D, MAXDEF_DERIV3D, &
 use EcoSystem_ml,     only: DepEcoSystem, NDEF_ECOSYSTEMS, &
                             EcoSystemFrac,FULL_ECOGRID
 use EmisDef_ml,       only: NSECTORS, EMIS_FILE, O_DMS, O_NH3, loc_frac, Nneighbors&
-                            ,SumSnapEmis, SumSplitEmis
+                            ,SumSnapEmis, SumSecEmis, SumSplitEmis, SecEmisOut, NEMIS_FILE
 use EmisGet_ml,       only: nrcemis,iqrc2itot
 use GridValues_ml,    only: debug_li, debug_lj, debug_proc, A_mid, B_mid, &
                             dA,dB,xm2, GRIDWIDTH_M, GridArea_m2,xm_i,xm_j,glon,glat
@@ -151,7 +151,7 @@ logical, private, save :: dbg0   ! = DEBUG%DERIVED .and. MasterProc
 logical, private, save :: dbgP   ! = DEBUG%DERIVED .and. debug_proc
 character(len=100), private :: errmsg
 
-integer, private :: i,j,k,l,n, ivoc, iou, isec, neigh   ! Local loop variables
+integer, private :: i,j,k,l,n, ivoc, iou, isec, iem, neigh   ! Local loop variables
 
 integer, private, save :: iadv_O3=-999,     & ! Avoid hard codded IXADV_SPCS
   iadv_NO3_C=-999,iadv_EC_C_WOOD=-999,iadv_EC_C_FFUEL=-999,iadv_POM_C_FFUEL=-999
@@ -298,7 +298,7 @@ subroutine Define_Derived()
   character(len=11), parameter:: sub="DefDerived:"
   character(len=TXTLEN_IND)  :: outind
 
-  integer :: ind, iadv, ishl, idebug, n, igrp, iout
+  integer :: ind, iadv, ishl, idebug, n, igrp, iout, isec_poll
   character(len=2)::  isec_char
   character(len=3)::  neigh_char
 
@@ -612,6 +612,18 @@ subroutine Define_Derived()
     call AddNewDeriv( dname, "SnapEmis", "-", "-", "mg/m2", &
                        ind , -99, T,  1.0e6,  F,  'YM' )
   end do ! ind
+
+  isec_poll = 0
+  do  i = 1, NEMIS_FILE
+    if(SecEmisOut(i))then
+       do isec=1,NSECTORS
+          write(dname,"(A,I0,A)")"Emis_mgm2_sec",isec,trim(EMIS_FILE(i))
+          call AddNewDeriv( dname, "SecEmis", "-", "-", "mg/m2", &
+               isec_poll , -99, T,  1.0e6,  F,  'YM' )
+          isec_poll = isec_poll + 1
+       end do
+    endif
+  end do
   if(USE_OCEAN_DMS)then
     dname = "Emis_mgm2_DMS"
     call AddNewDeriv( dname, "Emis_mgm2_DMS", "-", "-", "mg/m2", &
@@ -854,7 +866,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
   integer :: wlen,ispc,kmax
   integer,save :: n_Local_Pollutant, n_Total_Pollutant,&
        n_Local_Pollutant3D, n_Total_Pollutant3D
-  integer ::dx,dy,isec_poll
+  integer ::dx,dy,isec_poll,isec
 
   timefrac = dt/3600.0
   thour = current_date%hour+current_date%seconds/3600.0
@@ -1464,6 +1476,14 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       if( dbgP .and. f_2d(n)%Index == 3  ) & ! CO:
         call datewrite("SnapEmis-in-Derived, still kg/m2/s", n, & !f_2d(n)%Index,&
               (/   SumSnapEmis( debug_li,debug_lj, f_2d(n)%Index ) /) )
+
+    case ( "SecEmis" ) !emissions in mg/m2 per sector
+
+      isec=mod(f_2d(n)%Index,NSECTORS)+1
+      isec_poll=f_2d(n)%Index/NSECTORS + 1
+      forall ( i=1:limax, j=1:ljmax )
+         d_2d(n,i,j,IOU_INST) =  SumSecEmis( i,j, isec,isec_poll)
+      end forall
 
     case ( "Emis_mgm2_DMS" )      ! DMS
       forall ( i=1:limax, j=1:ljmax )
