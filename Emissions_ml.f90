@@ -42,8 +42,8 @@ use EmisDef_ml,       only: &
      ,Nneighbors & !used for uemep/loc_frac
      ,NSECTORS_SNAP, SNAP_sec2tfac_map, SNAP_sec2hfac_map, SNAP_sec2split_map&!SNAP specific mapping
      ,NSECTORS_GNFR, GNFR_sec2tfac_map, GNFR_sec2hfac_map, GNFR_sec2split_map&!GNFR specific mapping
-     ,NSECTORS_TEST, TEST_sec2tfac_map, TEST_sec2hfac_map, TEST_sec2split_map!TEST specific mapping
-
+     ,NSECTORS_TEST, TEST_sec2tfac_map, TEST_sec2hfac_map, TEST_sec2split_map&!TEST specific mapping
+     ,gnfr2snap,snap2gnfr
 use EmisGet_ml,       only: &
      EmisSplit &
     ,EmisGetCdf &  ! 
@@ -226,18 +226,19 @@ subroutine Emissions(year)
           write(*,*)"Emission source number ", iemislist,"from ",sub//trim(fname)
 
         if(emis_inputlist(iemislist)%type == "sectors".or.&
-           emis_inputlist(iemislist)%type == "GNFRsectors")then ! Expand groups, e.g. EUMACC2
+           emis_inputlist(iemislist)%type == "GNFRsectors".or.&
+           emis_inputlist(iemislist)%type == "SNAPsectors")then ! Expand groups, e.g. EUMACC2
 
           call expandcclist( emis_inputlist(iemislist)%incl , n)
           emis_inputlist(iemislist)%Nincl = n
           if(MasterProc .and. n>0) then
              write(*,*) sub//trim(fname)//" INPUTLIST-INCL", n
-             write(*,*)'including only countries: ', (trim(emis_inputlist(2)%incl(i))//' ',i=1,n)
+             write(*,*)'including only countries: ', (trim(emis_inputlist(iemislist)%incl(i))//' ',i=1,n)
           endif
           call expandcclist( emis_inputlist(iemislist)%excl , n)
           emis_inputlist(iemislist)%Nexcl = n
           if(MasterProc .and. n>0) then
-             write(*,*)'excluding countries: ', (trim(emis_inputlist(2)%excl(i))//' ',i=1,n)
+             write(*,*)'excluding countries: ', (trim(emis_inputlist(iemislist)%excl(i))//' ',i=1,n)
           endif
         end if
         if(emis_inputlist(iemislist)%pollName(1)/='NOTSET')then
@@ -521,7 +522,17 @@ subroutine Emissions(year)
                 if(Masterproc)write(*,"(A)")'reading '//trim(EMIS_FILE(iem))//' from '//trim(fname)
              end if
              do isec=1,NSECTORS                      
-              write(varname,"(A,I2.2)")trim(EMIS_FILE(iem))//'_sec',isec
+                if(SECTORS_NAME=='GNFR'.and.emis_inputlist(iemislist)%type == "SNAPsectors")then
+                   if(gnfr2snap(isec)<=0)cycle
+                   write(varname,"(A,I2.2)")trim(EMIS_FILE(iem))//'_sec',gnfr2snap(isec)
+                   if(me==0.and.iem==1)write(*,*)'WARNING, maping snap sector ',gnfr2snap(isec),'onto gnfr',isec
+                else if(SECTORS_NAME=='SNAP'.and.emis_inputlist(iemislist)%type == "SNAPsectors")then
+                   if(snap2gnfr(isec)<=0)cycle
+                   if(me==0.and.iem==1)write(*,*)'WARNING, maping gnfr sector ',snap2gnfr(isec),'onto snap',isec
+                   write(varname,"(A,I2.2)")trim(EMIS_FILE(iem))//'_sec',snap2gnfr(isec)
+                else
+                   write(varname,"(A,I2.2)")trim(EMIS_FILE(iem))//'_sec',isec
+                endif
               call EmisGetCdfFrac(iem, isec, fname, varname, sumemis_local, &
                    emis_inputlist(iemislist)%incl, nin, emis_inputlist(iemislist)%excl, nex)
 
@@ -554,7 +565,9 @@ subroutine Emissions(year)
           end if
         end do
         !   else if(IsCDFSnapFormat(trim(emis_inputlist(iemislist)%name)))then !This Does not work because of "POLL"
-      elseif(emis_inputlist(iemislist)%type == "sectors" .and. index(emis_inputlist(iemislist)%name,".nc")>1)then 
+      elseif((emis_inputlist(iemislist)%type == "sectors".or.&
+           emis_inputlist(iemislist)%type == "GNFRsectors".or.&
+           emis_inputlist(iemislist)%type == "SNAPsectors") .and. index(emis_inputlist(iemislist)%name,".nc")>1)then 
         !not in "fraction" format. Each land has own set of fields
         !Each pollutant has own file. 
         if(MasterProc)  write(*,*)sub//trim(fname)//" Processing"

@@ -452,6 +452,14 @@ subroutine Init_My_Deriv()
         nOutputFields = nOutputFields + 1
         OutputFields(nOutputFields) = OutputConcs(n)
 
+      case("Local_Correct")   
+        tag_name(1) = "SURF_LF_" // trim(outunit) // "_" //  trim(outname)
+        call AddArray(  tag_name(1:1) , wanted_deriv2d, &
+                  NOT_SET_STRING, errmsg)
+        call CheckStop( errmsg, errmsg // trim(outname) // " too long" )
+        nOutputFields = nOutputFields + 1
+        OutputFields(nOutputFields) = OutputConcs(n)
+
       case("3d","3D","MLEV")
         tag_name(1) = "D3_" // trim(outunit) // "_" //  trim(outname)
         call AddArray(  tag_name(1:1) , wanted_deriv3d, &

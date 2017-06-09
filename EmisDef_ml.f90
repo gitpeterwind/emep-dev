@@ -100,6 +100,7 @@ implicit none
         SNAP_sec2hfac_map = (/1,2,3,4,5,6,7,8,9,10,11/) !values must be <= N_HFAC
    integer, save, target, dimension(NSECTORS_SNAP) :: & ! mapping of sector to height distribution class
         SNAP_sec2split_map = (/1,2,3,4,5,6,7,8,9,10,11/) !values must be <= N_SPECIATION
+   integer, save, dimension(NSECTORS_SNAP) ::snap2gnfr=(/1,3,2,4,13,5,6,7,10,11,-1/)
 
 !GNFR  specific definitions
    integer, public, parameter :: &
@@ -110,6 +111,8 @@ implicit none
         GNFR_sec2hfac_map = (/1,3,2,4,6,7,8,8,8,9,10,10,5/) !values must be <= N_HFAC
    integer, save, target, dimension(NSECTORS_GNFR) :: & ! mapping of sector to height distribution class
         GNFR_sec2split_map = (/1,3,2,4,6,7,8,8,8,9,10,10,5/) !values must be <= N_SPECIATION
+
+   integer, save, dimension(NSECTORS_GNFR) ::gnfr2snap=(/1,3,2,4,6,7,8,-1,-1,9,10,-1,5/)
 
 !TEST  specific definitions
    integer, public, parameter :: &

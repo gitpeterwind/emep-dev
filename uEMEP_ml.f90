@@ -68,6 +68,7 @@ subroutine init_uEMEP
      else
         uEMEP%Npoll = uEMEP%Npoll + 1
         uEMEP%poll(iemis)%Nsectors = 0
+        uEMEP%poll(iemis)%sec_poll_ishift=uEMEP%Nsec_poll
         do isec=1,Nsector_uemep_max
            if(uEMEP%poll(iemis)%sector(isec)<0)then
               call CheckStop(isec==0,"init_uEMEP: nosector specified for "//uEMEP%poll(iemis)%emis)

@@ -151,6 +151,20 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+9th  June 2017  Peter
+
+Can use a mix of SNAP and GNFR emission, if the type of the second is specified.
+The first emission determines the main sector categories, the other emissions 
+will be mapped. For instance 
+
+  emis_inputlist(1)%name = '/global/work/nyiri/emis01deg_EMEP2015/GNFREmis_EMEP01_2015.nc',! GNFR 
+
+  emis_inputlist(3)%name     = '/global/work/mifapw/emep/Data/Emis_TNO7_MACCIII/Emis_TNO7_MACCIII_2011.nc',
+  emis_inputlist(3)%type     = 'SNAPsectors',          !interpret as SNAP
+  emis_inputlist(3)%incl(1:) = 'MED','NOS','ATL','BAS','BLS',
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 9th  June 2017  Dave 
 
 CellMet_ml - restriced z_ref to be >= 30m to avoid negative height calculations
