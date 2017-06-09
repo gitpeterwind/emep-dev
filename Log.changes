@@ -151,6 +151,12 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+9th  June 2017  Dave 
+
+CellMet_ml - restriced z_ref to be >= 30m to avoid negative height calculations
+  in SubMet_ml.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 7th  June 2017  Peter
 
 Allow for outputting sectorwise emission.

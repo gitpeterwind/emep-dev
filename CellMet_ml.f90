@@ -102,6 +102,11 @@ contains
         Grid%z_ref    = z_mid(i,j,KMAX_MID)    ! within or top of SL
      end if
 
+    ! June 2017:
+    ! The biggest trees in the new CLM ssytem are 35m high, giving displacement
+    ! hts of 24.5m. We ensure that z_ref -d > z0
+     Grid%z_ref    = max(30.0, Grid%z_ref ) ! for trees d=14m, 
+
 ! More exact for thickness of bottom layer, since used for emissions
 ! from  dp = g. rho . dz and d sigma = dp/pstar
 ! we get dz = d sigma . pstar/(g.rho)
