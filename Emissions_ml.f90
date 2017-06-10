@@ -525,10 +525,10 @@ subroutine Emissions(year)
                 if(SECTORS_NAME=='GNFR'.and.emis_inputlist(iemislist)%type == "SNAPsectors")then
                    if(gnfr2snap(isec)<=0)cycle
                    write(varname,"(A,I2.2)")trim(EMIS_FILE(iem))//'_sec',gnfr2snap(isec)
-                   if(me==0.and.iem==1)write(*,*)'WARNING, maping snap sector ',gnfr2snap(isec),'onto gnfr',isec
-                else if(SECTORS_NAME=='SNAP'.and.emis_inputlist(iemislist)%type == "SNAPsectors")then
+                   if(me==0.and.iem==1)write(*,*)'WARNING, mapping snap sector ',gnfr2snap(isec),'onto gnfr',isec
+                else if(SECTORS_NAME=='SNAP'.and.emis_inputlist(iemislist)%type == "GNFRsectors")then
                    if(snap2gnfr(isec)<=0)cycle
-                   if(me==0.and.iem==1)write(*,*)'WARNING, maping gnfr sector ',snap2gnfr(isec),'onto snap',isec
+                   if(me==0.and.iem==1)write(*,*)'WARNING, mapping gnfr sector ',snap2gnfr(isec),'onto snap',isec
                    write(varname,"(A,I2.2)")trim(EMIS_FILE(iem))//'_sec',snap2gnfr(isec)
                 else
                    write(varname,"(A,I2.2)")trim(EMIS_FILE(iem))//'_sec',isec
