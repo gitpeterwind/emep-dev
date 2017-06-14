@@ -345,6 +345,8 @@ subroutine Emissions(year)
     if(NSecEmisOut>0)then
        allocate(SumSecEmis(LIMAX,LJMAX,NSECTORS,NSecEmisOut))
        SumSecEmis=0.0
+    else
+        allocate(SumSecEmis(1,1,1,1))!to avoid debug error messages      
     endif
 
     !=========================
