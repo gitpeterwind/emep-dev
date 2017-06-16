@@ -43,7 +43,11 @@ use EmisDef_ml,       only: &
      ,NSECTORS_SNAP, SNAP_sec2tfac_map, SNAP_sec2hfac_map, SNAP_sec2split_map&!SNAP specific mapping
      ,NSECTORS_GNFR, GNFR_sec2tfac_map, GNFR_sec2hfac_map, GNFR_sec2split_map&!GNFR specific mapping
      ,NSECTORS_TEST, TEST_sec2tfac_map, TEST_sec2hfac_map, TEST_sec2split_map&!TEST specific mapping
-     ,gnfr2snap,snap2gnfr
+     ,gnfr2snap,snap2gnfr&
+     ,AISco, AISnox, AISsox, AISso4, AISash, AISec , AISoc, FOUND_Special_ShipEmis&
+     ,NO_ix,NO2_ix,SO2_ix,SO4_ix,CO_ix,REMPPM25_ix&
+     ,EC_F_FFUEL_NEW_ix,EC_F_FFUEL_AGE_ix,POM_F_FFUEL_ix
+
 use EmisGet_ml,       only: &
      EmisSplit &
     ,EmisGetCdf &  ! 
@@ -661,6 +665,29 @@ subroutine Emissions(year)
         else
           call StopAll("Yearly DMS not implemented")
         end if
+      elseif(emis_inputlist(iemislist)%type == "Special_ShipEmis")then
+        !should put in a single array 
+        allocate(AISco(LIMAX,LJMAX))
+        allocate(AISnox(LIMAX,LJMAX))
+        allocate(AISsox(LIMAX,LJMAX))
+        allocate(AISso4(LIMAX,LJMAX))
+        allocate(AISash(LIMAX,LJMAX))
+        allocate(AISec(LIMAX,LJMAX))
+        allocate(AISoc(LIMAX,LJMAX))
+        FOUND_Special_ShipEmis = .true.
+        NO_ix = find_index("NO",species(:)%name)
+        NO2_ix = find_index("NO2",species(:)%name)
+        SO2_ix = find_index("SO2",species(:)%name)
+        SO4_ix = find_index("SO4",species(:)%name)
+        CO_ix = find_index("CO",species(:)%name)
+        REMPPM25_ix = find_index("REMPPM25",species(:)%name)
+        EC_F_FFUEL_NEW_ix = find_index("EC_F_FFUEL_NEW",species(:)%name)
+        EC_F_FFUEL_AGE_ix = find_index("EC_F_FFUEL_AGE",species(:)%name)
+        POM_F_FFUEL_ix = find_index("POM_F_FFUEL",species(:)%name)
+
+        call ReadTimeCDF(trim(fname),TimesInDays,NTime_Read)
+        if(NTime_Read==12)emis_inputlist(iemislist)%periodicity = "monthly"
+        if(NTime_Read>364 .and. NTime_Read<367)emis_inputlist(iemislist)%periodicity = "daily"
       else
         if(MasterProc)write(*,*)'WARNING: did not recognize format of '//trim(emis_inputlist(iemislist)%name)
         call StopAll("Emissions file format not recognized ")
@@ -1388,7 +1415,7 @@ subroutine newmonth
   character(len=125) ::fileName
   real :: Mask_ReducFactor
   integer :: NMask_Code,Mask_Code(NLAND), i_femis_lonlat
-  real :: lonlat_fac, dms_sum
+  real :: lonlat_fac, dms_sum, mw
 
   if(.not.allocated(airn).and.(USE_LIGHTNING_EMIS.or.USE_AIRCRAFT_EMIS))&
     allocate(airn(KCHEMTOP:KMAX_MID,LIMAX,LJMAX))
@@ -1731,7 +1758,31 @@ subroutine newmonth
       !from nanomol/l -> mol/cm3
       O_DMS%emis=O_DMS%emis*1.0e-12
 
-    else !
+   elseif(emis_inputlist(iemislist)%type == "Special_ShipEmis" .and. emis_inputlist(iemislist)%periodicity == "monthly")then
+      nstart=current_date%month
+      !factor from kg/grid -> g/s/cm2
+      conv = AVOG * 1.e-4 * 1.e3  &    !  1.e-4 converts from m*2 to cm*2 and 
+                                    !  1.e3 converts from kg to g
+          /(GRIDWIDTH_M*GRIDWIDTH_M * nmdays(current_date%month)*24.*3600.)   
+
+      !conv=RedFactorShips*conv
+
+      !mw from Jukka-Pekka  Jalkanen  (e-post 16 June 2016)
+      mw=46.0
+      call ReadShipEmis(trim(emis_inputlist(iemislist)%name),'NOx',AISnox,nstart,mw,conv)
+      mw=28.0
+      call ReadShipEmis(trim(emis_inputlist(iemislist)%name),'CO',AISco,nstart,mw,conv)
+      mw=64.0655
+      call ReadShipEmis(trim(emis_inputlist(iemislist)%name),'SOx',AISsox,nstart,mw,conv)
+      mw=96.0655
+      call ReadShipEmis(trim(emis_inputlist(iemislist)%name),'SO4',AISso4,nstart,mw,conv)
+      mw=42.4
+      call ReadShipEmis(trim(emis_inputlist(iemislist)%name),'Ash',AISash,nstart,mw,conv)
+      mw=12.01
+      call ReadShipEmis(trim(emis_inputlist(iemislist)%name),'EC',AISec,nstart,mw,conv)
+      mw=17.32
+      call ReadShipEmis(trim(emis_inputlist(iemislist)%name),'OC',AISoc,nstart,mw,conv)
+   else !
       call StopAll("Monthly emission type not implemented "//trim(emis_inputlist(iemislist)%type))
     end if
 
@@ -1835,5 +1886,31 @@ subroutine EmisOut(label, iem,nsources,sources,emis)
 !  deallocate(locemis,lemis)
 
 end subroutine EmisOut
+
+!***********************************************************************
+
+  subroutine ReadShipEMis(filename,varname,shipemis,nstart,mw,conv)
+    character(len=*),intent(in) ::filename,varname
+    real, intent(inout) ::shipemis(LIMAX,LJMAX)
+    real, intent(in) :: mw,conv
+    integer,intent(in) :: nstart
+    real :: invmw
+    integer ::i,j
+
+    
+    shipemis=0.0
+    call ReadField_CDF(trim(filename),trim(varname),shipemis,nstart=nstart,  & 
+         interpol='mass_conservative',known_projection='longitude latitude', &
+         needed=.true.,debug_flag=.false.,UnDef=0.0)
+    if(me==0)write(*,*)'Reading ship from ',trim(filename),' ',trim(varname)
+    invmw=1.0/mw
+    do j = 1,ljmax
+       do i = 1, limax
+          shipemis(i,j) = shipemis(i,j)*  conv * xm2(i,j) *invmw
+          
+       end do
+    end do
+
+  end subroutine ReadShipEMis
 
 endmodule Emissions_ml

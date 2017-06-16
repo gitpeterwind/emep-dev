@@ -112,6 +112,9 @@
 !  emis_inputlist(3)%name     = 'GlobalShipEmis_POLL.nc',  !
 !  emis_inputlist(3)%incl(1:) = 'INTSHIPS', 
 !
+!  emis_inputlist(3)%name     = '/home/mifajej/Emissions/Ships/FMI_Glob/2015/FMIGlobShip2015mon.nc',  !
+!  emis_inputlist(3)%type = 'Special_ShipEmis',
+
   EMIS_OUT              = F,          ! Output emissions in separate files
 !------------------------------
   SELECT_LEVELS_HOURLY  = F,          ! hourly output flag Also for FORECAST, 3DPROFILES

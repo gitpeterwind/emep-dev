@@ -17,7 +17,10 @@ use CheckStop_ml,        only:  CheckStop, StopAll
 use ColumnSource_ml,     only: ColumnRate
 use DerivedFields_ml,    only: d_2d, f_2d
 use EmisDef_ml,          only: gridrcemis, gridrcroadd, KEMISTOP,Emis_4D,N_Emis_4D,Found_Emis_4D&
-                                , O_NH3, O_DMS, SumSplitEmis
+                                , O_NH3, O_DMS, SumSplitEmis&
+                                ,AISco, AISnox, AISsox, AISso4, AISash, AISec , AISoc, FOUND_Special_ShipEmis&
+                                ,NO_ix,NO2_ix,SO2_ix,SO4_ix,CO_ix,REMPPM25_ix&
+                                ,EC_F_FFUEL_NEW_ix,EC_F_FFUEL_AGE_ix,POM_F_FFUEL_ix
 use EmisGet_ml,          only:  nrcemis, iqrc2itot  !DSRC added nrcemis
 use ForestFire_ml,       only: Fire_rcemis, burning
 use Functions_ml,        only:  Tpot_2_T
@@ -88,6 +91,8 @@ integer, private, parameter :: NROADDUST = 2
 integer, private, parameter :: iROADF=1,  iROADC=2
 integer, private, save :: inat_RDF,  inat_RDC, inat_Rn222
 integer, private, save :: itot_RDF=-999,  itot_RDC=-999, itot_Rn222=-999
+
+
 
 ! Minimum concentration allowed for advected species. Avoids some random
 ! variations between debugged/normal runs with concs of e.g. 1.0e-23 ppb or
@@ -464,7 +469,7 @@ subroutine setup_rcemis(i,j)
   integer ::  i_help,j_help,i_l,j_l, i_Emis_4D,n
   logical, save     :: first_call = .true. 
   character(len=13) :: dtxt="setup_rcemis:"
-  real :: SC_DMS,SC_DMS_m23,SC_DMS_msqrt,SST_C
+  real :: SC_DMS,SC_DMS_m23,SC_DMS_msqrt,SST_C,invDeltaZfac
   integer,save ::IC_NH3
 
   if(first_call)then
@@ -603,6 +608,50 @@ subroutine setup_rcemis(i,j)
     end if
   end do
 
+  if(FOUND_Special_ShipEmis)then
+     !NB: the species indices (NO2, SO2...) may not be defined in some configurations:
+     ! this will make the model compilation crash *also* when no ship emis are used.
+     invDeltaZfac = 1.0/deltaZcm(KMAX_MID)
+     if(NO_ix>0) rcemis(NO_ix,KMAX_MID)  = rcemis(NO_ix,KMAX_MID) &
+                               + 0.95 * AISnox(i,j) *  invDeltaZfac
+     if(NO2_ix>0) rcemis(NO2_ix,KMAX_MID) = rcemis(NO2_ix,KMAX_MID) &
+                               + 0.05 * AISnox(i,j) * invDeltaZfac
+     if(SO2_ix>0)  rcemis(SO2_ix,KMAX_MID) = rcemis(SO2_ix,KMAX_MID) &
+          +  AISsox(i,j) * invDeltaZfac
+     if(SO4_ix>0)  rcemis(SO4_ix,KMAX_MID) = rcemis(SO4_ix,KMAX_MID) &
+          +  AISso4(i,j) * invDeltaZfac
+     if(CO_ix>0)  rcemis(CO_ix,KMAX_MID) = rcemis(CO_ix,KMAX_MID) &
+          +  AISco(i,j) * invDeltaZfac
+
+! Comments from Jukka-Pekka
+
+!   The composition of Ash can be taken from Jana’s paper 
+!   (Moldanova et al, Atm Env 43 (2009) 2632-2641), Table 8. According to 
+!   that, the composition by weight is: C (11.1%), O (5.7%), S (4.9%), 
+!   V (30.7%), Ni (20.9%), Ca (26.7%). This composition was determined for 
+!   fuel with 1.9% sulphur and it will not be directly applicable to fuels 
+!   used in the Baltic Sea during 2015. However, that is the only reference 
+!   I could find which reports the elemental composition of Ash.
+
+! All primary PM emitted should be assigned to PM2.5 fraction since the PM 
+! size of fresh exhaust is less than 100 nm. Whether this grows fast enough 
+! to >2.5 microns in the timescale used by the regional models is not known 
+! to me at this point.        
+ 
+        if(REMPPM25_ix>0)  rcemis(REMPPM25_ix,KMAX_MID) = rcemis(REMPPM25_ix,KMAX_MID) &
+                                    +  1.0 * AISash(i,j) * invDeltaZfac
+!          rcemis(REMPPM_C,KMAX_MID) = rcemis(REMPPM_C,KMAX_MID) &
+!                                    +  0.5 * AISash(i,j) * invDeltaZfac
+      
+        if(EC_F_FFUEL_NEW_ix>0)  rcemis(EC_F_FFUEL_NEW_ix,KMAX_MID) = rcemis(EC_F_FFUEL_NEW_ix,KMAX_MID) &
+                                          +  0.8 * AISec(i,j) * invDeltaZfac
+        if(EC_F_FFUEL_AGE_ix>0)  rcemis(EC_F_FFUEL_AGE_ix,KMAX_MID) = rcemis(EC_F_FFUEL_AGE_ix,KMAX_MID) &
+                                          +  0.2 * AISec(i,j) * invDeltaZfac
+
+        if(POM_F_FFUEL_ix>0)  rcemis(POM_F_FFUEL_ix,KMAX_MID) = rcemis(POM_F_FFUEL_ix,KMAX_MID) &
+                                       +  AISoc(i,j) * invDeltaZfac
+
+  endif
 
 
 

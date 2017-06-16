@@ -955,14 +955,23 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
          met_p => null()
 
       else ! Not found!
-        if( first_call)  then
-          if( MasterProc) write(*,*) "MET2D NOT FOUND"//trim(name)//":"//trim(subclass)
-            forall ( i=1:limax, j=1:ljmax )
-              d_2d( n, i,j,IOU_INST) = 0.0 ! UNDEF_R
-          end forall
-        end if
-      end if
-
+        !make derived fields:
+        select case ( subclass )
+        case ("inv_u10")
+           forall ( i=1:limax, j=1:ljmax )
+              d_2d( n, i,j,IOU_INST) = 1.0/(0.2+ws_10m(i,j,1))
+           end forall
+ 
+        case default
+           if( first_call)  then
+              if( MasterProc) write(*,*) "MET2D NOT FOUND"//trim(name)//":"//trim(subclass)
+              forall ( i=1:limax, j=1:ljmax )
+                 d_2d( n, i,j,IOU_INST) = 0.0 ! UNDEF_R
+              end forall
+           end if
+        end select
+     end if
+      
     ! The following can be deleted once testing of MET2D is finished...
     case ( "xm_i" )
       forall ( i=1:limax, j=1:ljmax )
@@ -1734,8 +1743,19 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
           write(*,*) "Warning: requested 2D field with MET3D: ",trim(f_3d(n)%name)
         end if
       elseif(first_call)then
-        if(MasterProc) write(*,*) "MET3D NOT FOUND"//trim(f_3d(n)%name)//":"//trim(f_3d(n)%subclass)
-        d_3d(n,:,:,:,IOU_INST)=0.0
+        !make derived fields:
+        select case ( f_3d(n)%subclass )
+        case ("inv_wind_speed_3D")
+           forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
+                d_3d(n,i,j,k,IOU_INST)=1.0/(0.2+sqrt(u_mid(i,j,lev3d(k))**2+v_mid(i,j,lev3d(k))**2))
+        case("wind_speed_3D")
+           forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
+                d_3d(n,i,j,k,IOU_INST)=sqrt(u_mid(i,j,lev3d(k))**2+v_mid(i,j,lev3d(k))**2)
+           
+        case default
+           if(MasterProc) write(*,*) "MET3D NOT FOUND"//trim(f_3d(n)%name)//":"//trim(f_3d(n)%subclass)
+           d_3d(n,:,:,:,IOU_INST)=0.0
+        end select
       end if
 
     ! Simple advected species:

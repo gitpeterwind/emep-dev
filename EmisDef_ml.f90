@@ -235,6 +235,17 @@ end type Ocean
 
 type(Ocean), public, save:: O_NH3, O_DMS 
 
+!Special_ShipEmis
+real, public, allocatable, dimension(:,:), save :: &
+ AISco, AISnox, AISsox, AISso4, AISash, AISec , AISoc
+
+!NB: the species indices (NO2, SO2...) may not be defined in some configurations:
+! this will make the model compilation crash *also* when no ship emis are used.
+integer, public, save ::NO_ix,NO2_ix,SO2_ix,SO4_ix,CO_ix,REMPPM25_ix&
+     ,EC_F_FFUEL_NEW_ix,EC_F_FFUEL_AGE_ix,POM_F_FFUEL_ix
+
+logical, public, save :: FOUND_Special_ShipEmis = .false.
+
 !used for EEMEP 
 real, allocatable, save, dimension(:,:,:,:)       ::  Emis_4D !(i,j,k,pollutant)
 integer, save ::N_Emis_4D=0 !number of pollutants to read
