@@ -2394,19 +2394,20 @@ end subroutine RestrictDomain
     real,intent(in), dimension(Size1,LIMAX,LJMAX,Size2) ::data
     real,intent(out), dimension(Size1,LIMAX,thick,Size2) ::data_south,data_north
     real,intent(out), dimension(Size1,thick,1-thick:LJMAX+thick,Size2) ::data_west,data_east
-    real, dimension(Size1,LIMAX,min(thick,LJMAX),Size2) ::data_south_snd,data_north_snd
-    real, dimension(Size1,min(thick,LIMAX),1-thick:LJMAX+thick,Size2) ::data_west_snd,data_east_snd
-    real, dimension(Size1,LIMAX,min(thick,LJMAX),Size2) ::data_sn_rcv
-    real, dimension(Size1,min(thick,LIMAX),1-thick:LJMAX+thick,Size2) ::data_we_rcv
+    real, dimension(Size1,LIMAX,min(thick,MAXLJMAX),Size2) ::data_south_snd,data_north_snd
+    real, dimension(Size1,min(thick,MAXLIMAX),1-thick:LJMAX+thick,Size2) ::data_west_snd,data_east_snd
+    real, dimension(Size1,LIMAX,min(MAXLJMAX,thick),Size2) ::data_sn_rcv
+    real, dimension(Size1,min(MAXLIMAX,thick),1-thick:LJMAX+thick,Size2) ::data_we_rcv
 
     integer :: msgnr,info
     integer :: i,it,j,tj,jj,jt,i1,i2,n
-    integer :: mythick,myithick,myjthick,rcvthick,totthick,ineighbor
+    integer :: mythick,myithick,myjthick,rcvthick,totthick,ineighbor,limaxloc,ljmaxloc
 
     !check that limax and ljmax are large enough. Can only read neighboring subdomain
 !    call CheckStop(limax < thick, "ERROR readneighbors_N in Met_ml")
 !    call CheckStop(ljmax < thick, "ERROR readneighbors_N in Met_ml")
-
+    limaxloc = min(MAXLIMAX,thick)!array size common for all
+    ljmaxloc = min(MAXLJMAX,thick)!array size common for all
 
     msgnr=1
     myjthick = min(thick,LJMAX)
@@ -2440,8 +2441,8 @@ end subroutine RestrictDomain
           ineighbor=neighbor(SOUTH)
           totthick=0
           do n=1,NPROCY
-             mythick=min(myjthick,thick-totthick)
-             CALL MPI_ISEND( data_south_snd , 8*LIMAX*myjthick*Size1*Size2, MPI_BYTE,&!NB: send everything anyway!
+             mythick=min(tljmax(ineighbor),thick-totthick)
+             CALL MPI_ISEND( data_south_snd , 8*LIMAX*ljmaxloc*Size1*Size2, MPI_BYTE,&
                   ineighbor, msgnr, MPI_COMM_CALC, irequest_s(n),IERROR)
              totthick=totthick+mythick
              if(totthick>=thick) exit
@@ -2459,8 +2460,8 @@ end subroutine RestrictDomain
           ineighbor=neighbor(NORTH)
           totthick=0
           do n=1,NPROCY
-             mythick=min(myjthick,thick-totthick)
-             CALL MPI_ISEND( data_north_snd , 8*LIMAX*myjthick*Size1*Size2, MPI_BYTE,&!NB: send everything anyway!
+             mythick=min(tljmax(ineighbor),thick-totthick)
+             CALL MPI_ISEND( data_north_snd , 8*LIMAX*ljmaxloc*Size1*Size2, MPI_BYTE,&!NB: send everything anyway!
                   ineighbor, msgnr+9, MPI_COMM_CALC, irequest_n(n),IERROR)
              totthick=totthick+mythick
              if(totthick>=thick) exit
@@ -2479,22 +2480,34 @@ end subroutine RestrictDomain
           ineighbor=neighbor(SOUTH)
           totthick=0
           do n=1,NPROCY
-             mythick=min(myjthick,thick-totthick)
-             CALL MPI_RECV( data_sn_rcv, 8*LIMAX*myjthick*Size1*Size2, MPI_BYTE,&
+             mythick=min(tljmax(ineighbor),thick-totthick)
+             CALL MPI_RECV( data_sn_rcv, 8*LIMAX*ljmaxloc*Size1*Size2, MPI_BYTE,&
                   ineighbor, msgnr+9, MPI_COMM_CALC, MPISTATUS, IERROR)
              do i2=1,Size2
                 do jt=1,mythick
                    do i=1,limax
                       do i1=1,Size1
-                         data_south(i1,i,totthick+jt,i2)=data_sn_rcv(i1,i,jt,i2)
+                         data_south(i1,i,thick-totthick-mythick+jt,i2)=data_sn_rcv(i1,i,tljmax(ineighbor)-mythick+jt,i2)
                       end do
                    end do
                 end do
              end do
-             totthick=totthick+mythick
+            totthick=totthick+mythick
              if(totthick>=thick) exit
              ineighbor=ineighbor-NPROCX
-             if(ineighbor<0) exit
+             if(ineighbor<0)then
+                !must fill remainder data, even if out of rundomain
+                do i2=1,Size2
+                   do jt=1,thick-totthick
+                      do i=1,limax
+                         do i1=1,Size1
+                            data_south(i1,i,jt,i2)=data_south(i1,i,thick-totthick+1,i2)
+                         end do
+                      end do
+                   end do
+                end do
+                exit
+             endif
           enddo
        endif
     else
@@ -2508,6 +2521,7 @@ end subroutine RestrictDomain
        end do
        end do
     end if
+
     if(neighbor(NORTH) >= 0 )then
        if(thick<MINLJMAX)then
           CALL MPI_RECV( data_north, 8*LIMAX*thick*Size1*Size2, MPI_BYTE,&
@@ -2516,8 +2530,8 @@ end subroutine RestrictDomain
           ineighbor=neighbor(NORTH)
           totthick=0
           do n=1,NPROCY
-             mythick=min(myjthick,thick-totthick)
-             CALL MPI_RECV( data_sn_rcv, 8*LIMAX*myjthick*Size1*Size2, MPI_BYTE,&
+             mythick=min(tljmax(ineighbor),thick-totthick)
+             CALL MPI_RECV( data_sn_rcv, 8*LIMAX*ljmaxloc*Size1*Size2, MPI_BYTE,&
                   ineighbor, msgnr, MPI_COMM_CALC, MPISTATUS, IERROR)
              do i2=1,Size2
                 do jt=1,mythick
@@ -2528,10 +2542,21 @@ end subroutine RestrictDomain
                    end do
                 end do
              end do
-             totthick=totthick+mythick
+              totthick=totthick+mythick
              if(totthick>=thick) exit
              ineighbor=ineighbor+NPROCX
-             if(ineighbor>=NPROC) exit
+             if(ineighbor>=NPROC)then
+             do i2=1,Size2
+                do jt=totthick+1,thick
+                   do i=1,limax
+                      do i1=1,Size1
+                         data_north(i1,i,jt,i2) = data_north(i1,i,totthick,i2)
+                      end do
+                   end do
+                end do
+             end do
+                exit
+             endif
           enddo
        endif
     else
@@ -2575,15 +2600,16 @@ end subroutine RestrictDomain
     end do
 
     if(neighbor(WEST) >= 0 )then
+
        if(thick<MINLIMAX)then
-          CALL MPI_ISEND( data_west_snd , 8*(LJMAX+2*thick)*myithick*Size1*Size2, MPI_BYTE,&
+          CALL MPI_ISEND( data_west_snd , 8*(LJMAX+2*thick)*thick*Size1*Size2, MPI_BYTE,&
                neighbor(WEST), msgnr+3, MPI_COMM_CALC, request_w,IERROR)
        else
           ineighbor=neighbor(WEST)
           totthick=0
           do n=1,NPROCX
-             mythick=min(myithick,thick-totthick)             
-             CALL MPI_ISEND( data_west_snd , 8*(LJMAX+2*thick)*myithick*Size1*Size2, MPI_BYTE,&
+             mythick=min(tlimax(ineighbor),thick-totthick)             
+            CALL MPI_ISEND( data_west_snd , 8*(LJMAX+2*thick)*limaxloc*Size1*Size2, MPI_BYTE,&
                   ineighbor, msgnr+3, MPI_COMM_CALC, irequest_w(n),IERROR)
              totthick=totthick+mythick
              if(totthick>=thick) exit
@@ -2600,8 +2626,8 @@ end subroutine RestrictDomain
           ineighbor=neighbor(EAST)
           totthick=0
           do n=1,NPROCX
-             mythick=min(myithick,thick-totthick)
-             CALL MPI_ISEND( data_west_snd , 8*(LJMAX+2*thick)*myithick*Size1*Size2, MPI_BYTE,&
+             mythick=min(tlimax(ineighbor),thick-totthick)
+            CALL MPI_ISEND( data_east_snd , 8*(LJMAX+2*thick)*limaxloc*Size1*Size2, MPI_BYTE,&
                   ineighbor, msgnr+7, MPI_COMM_CALC, irequest_e(n),IERROR)
              totthick=totthick+mythick
              if(totthick>=thick) exit
@@ -2621,23 +2647,34 @@ end subroutine RestrictDomain
           ineighbor=neighbor(WEST)
           totthick=0
           do n=1,NPROCX
-             mythick=min(myithick,thick-totthick)
-             CALL MPI_RECV( data_we_rcv, 8*(LJMAX+2*thick)*myithick*Size1*Size2, MPI_BYTE,&
+             mythick=min(tlimax(ineighbor),thick-totthick)
+             CALL MPI_RECV( data_we_rcv, 8*(LJMAX+2*thick)*limaxloc*Size1*Size2, MPI_BYTE,&
                   ineighbor, msgnr+7, MPI_COMM_CALC, MPISTATUS, IERROR)
 
              do i2=1,Size2
                 do it=1-thick,LJMAX+thick
                    do jt=1,mythick
                       do i1=1,Size1
-                         data_west(i1,totthick+jt,it,i2)=data_we_rcv(i1,jt,it,i2)
+                         data_west(i1,thick-totthick-mythick+jt,it,i2)=data_we_rcv(i1,tlimax(ineighbor)-mythick+jt,it,i2)
                       end do
                    end do
                 end do
              end do
              totthick=totthick+mythick
-             if(totthick>=thick) exit
+             if(totthick>=thick)exit
              ineighbor=ineighbor-1
-             if((ineighbor/NPROCX) /= (me/NPROCX).or. ineighbor<0) exit
+             if((ineighbor/NPROCX) /= (me/NPROCX).or. ineighbor<0)then
+             do i2=1,Size2
+                do it=1-thick,LJMAX+thick
+                   do jt=1,thick-totthick
+                      do i1=1,Size1
+                         data_west(i1,jt,it,i2)=data_west(i1,thick-totthick+1,it,i2)
+                      end do
+                   end do
+                end do
+             end do
+                exit
+             endif
           enddo
        endif
     else
@@ -2676,9 +2713,9 @@ end subroutine RestrictDomain
           ineighbor=neighbor(EAST)
           totthick=0
           do n=1,NPROCX
-             mythick=min(myithick,thick-totthick)
-             CALL MPI_RECV( data_east, 8*(LJMAX+2*thick)*myithick*Size1*Size2, MPI_BYTE,&
-                  ineighbor, msgnr+7, MPI_COMM_CALC, MPISTATUS, IERROR)
+             mythick=min(tlimax(ineighbor),thick-totthick)
+             CALL MPI_RECV( data_we_rcv, 8*(LJMAX+2*thick)*limaxloc*Size1*Size2, MPI_BYTE,&
+                  ineighbor, msgnr+3, MPI_COMM_CALC, MPISTATUS, IERROR)
 
              do i2=1,Size2
                 do it=1-thick,LJMAX+thick
@@ -2690,9 +2727,20 @@ end subroutine RestrictDomain
                 end do
              end do
              totthick=totthick+mythick
-             if(totthick>=thick) exit
+             if(totthick>=thick)exit
              ineighbor=ineighbor+1
-             if((ineighbor/NPROCX) /= (me/NPROCX)) exit
+             if((ineighbor/NPROCX) /= (me/NPROCX))then
+             do i2=1,Size2
+                do it=1-thick,LJMAX+thick
+                   do jt=totthick+1,thick
+                      do i1=1,Size1
+                         data_east(i1,jt,it,i2)=data_east(i1,totthick,it,i2)
+                      end do
+                   end do
+                end do
+             end do
+                exit
+             endif
           enddo
        endif
     else
@@ -2722,7 +2770,17 @@ end subroutine RestrictDomain
        end do
        end do
     end if
-
+!    if(me==9)then
+!       write(*,*)'DATA 9 EAST'
+!       54 format(200I7)
+!       do j=1-thick,ljmax+thick
+!       write(*,54)(nint(data_east(1,i,j,1)),i=1,thick)
+!       enddo
+!       write(*,*)'DATA 9 WEST'
+!       do j=1-thick,ljmax+thick
+!       write(*,54)(nint(data_west(1,i,j,1)),i=1,thick)
+!       enddo
+ !   endif
 
     if(neighbor(SOUTH) >= 0 )then
         if(thick<MINLJMAX)then
@@ -2731,7 +2789,7 @@ end subroutine RestrictDomain
           ineighbor=neighbor(SOUTH)
           totthick=0
           do n=1,NPROCY
-             mythick=min(myjthick,thick-totthick)
+             mythick=min(tljmax(ineighbor),thick-totthick)
              CALL MPI_WAIT(irequest_s(n), MPISTATUS,IERROR)
              totthick=totthick+mythick
              if(totthick>=thick) exit
@@ -2747,7 +2805,7 @@ end subroutine RestrictDomain
           ineighbor=neighbor(NORTH)
           totthick=0
           do n=1,NPROCY
-             mythick=min(myjthick,thick-totthick)
+             mythick=min(tljmax(ineighbor),thick-totthick)
              CALL MPI_WAIT(irequest_n(n), MPISTATUS,IERROR)
              totthick=totthick+mythick
              if(totthick>=thick) exit
@@ -2763,7 +2821,7 @@ end subroutine RestrictDomain
           ineighbor=neighbor(WEST)
           totthick=0
           do n=1,NPROCX
-             mythick=min(myithick,thick-totthick)             
+             mythick=min(tlimax(ineighbor),thick-totthick)             
              CALL MPI_WAIT(irequest_w(n), MPISTATUS, IERROR)
              totthick=totthick+mythick
              if(totthick>=thick) exit
@@ -2779,7 +2837,7 @@ end subroutine RestrictDomain
           ineighbor=neighbor(EAST)
           totthick=0
           do n=1,NPROCX
-             mythick=min(myithick,thick-totthick)
+             mythick=min(tlimax(ineighbor),thick-totthick)
              CALL MPI_WAIT(irequest_e(n), MPISTATUS,IERROR)
              totthick=totthick+mythick
              if(totthick>=thick) exit
