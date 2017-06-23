@@ -20,6 +20,7 @@ use MetFields_ml,     only: ps,roa
 use ModelConstants_ml,only: KMAX_MID, KMAX_BND,USES, USE_uEMEP, uEMEP, IOU_HOUR, IOU_HOUR_INST,&
                             IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY,IOU_HOUR,IOU_HOUR_INST, &
                             KMAX_MID,  MasterProc,dt_advec, RUNDOMAIN
+use MPI_Groups_ml
 use NetCDF_ml,        only: Real4,Out_netCDF
 use OwnDataTypes_ml,  only: Deriv, Npoll_uemep_max, Nsector_uemep_max
 use Par_ml,           only: me,LIMAX,LJMAX,MAXLIMAX,MAXLJMAX,gi0,gj0,li0,li1,lj0,lj1,GIMAX,GJMAX
@@ -224,8 +225,9 @@ subroutine out_uEMEP(iotyp)
   type(Deriv) :: def2 ! definition of fields
   logical ::overwrite
   logical,save :: first_call(10)=.true.
-  real ::tmp_ext(-uEMEP%dist:uEMEP%dist,-uEMEP%dist:uEMEP%dist,1-uEMEP%dist:LIMAX+uEMEP%dist,1-uEMEP%dist:LJMAX+uEMEP%dist,KMAX_MID-uEMEP%Nvert+1:KMAX_MID)
+  real,allocatable ::tmp_ext(:,:,:,:,:)!allocate since it may be heavy for the stack
 
+  if(COMPUTE_LOCAL_TRANSPORT)allocate(tmp_ext(-uEMEP%dist:uEMEP%dist,-uEMEP%dist:uEMEP%dist,1-uEMEP%dist:LIMAX+uEMEP%dist,1-uEMEP%dist:LJMAX+uEMEP%dist,KMAX_MID-uEMEP%Nvert+1:KMAX_MID))
   if(iotyp==IOU_HOUR_INST .and. uEMEP%HOUR_INST)then
      fileName='uEMEP_hour_inst.nc'
   else if(iotyp==IOU_HOUR .and. uEMEP%HOUR)then
@@ -364,29 +366,41 @@ subroutine out_uEMEP(iotyp)
                 fileName_given=trim(fileName),overwrite=.false.,create_var_only=.false.) 
 
            if(isec==0 .and. COMPUTE_LOCAL_TRANSPORT)then
+              !loc_frac_hour_instare fractions -> convert first to pollutant                          
+              do k = KMAX_MID-uEMEP%Nvert+1,KMAX_MID
+                 do j=1,ljmax
+                    do i=1,limax
+                       do dy=-uEMEP%dist,uEMEP%dist
+                          do dx=-uEMEP%dist,uEMEP%dist
+                             !in  loc_poll_to (dx,dy,i,j) shows from (i,j) to (i+dx,j+dy)
+                             loc_frac_hour_inst(dx,dy,i,j,k,isec_poll)=loc_frac_hour_inst(dx,dy,i,j,k,isec_poll)*loc_tot_hour_inst(i,j,k,ipoll)
+                          enddo
+                       enddo
+                    enddo
+                 enddo
+              enddo
               call extendarea_N(loc_frac_hour_inst(-uEMEP%dist,-uEMEP%dist,1,1,KMAX_MID-uEMEP%Nvert+1,isec_poll),tmp_ext,uEMEP%dist,uEMEP_Sizedxdy,uEMEP%Nvert)
-           
+
            do k = KMAX_MID-uEMEP%Nvert+1,KMAX_MID
-              !     do k = KMAX_MID,KMAX_MID
               do j=1,ljmax
                  do i=1,limax
-                    invtot=1.0/(1.E-20+loc_tot_hour_inst(i,j,k,ipoll))!tmp_ext are fractions -> convert to pollutant
                     do dy=-uEMEP%dist,uEMEP%dist
                        do dx=-uEMEP%dist,uEMEP%dist
                           !in  loc_poll_to (dx,dy,i,j) shows from (i,j) to (i+dx,j+dy)
-                          loc_poll_to(dx,dy,i,j,k)=tmp_ext(-dx,-dy,i+dx,j+dy,k)*invtot
+                          loc_poll_to(dx,dy,i,j,k)=tmp_ext(-dx,-dy,i+dx,j+dy,k)!tmp_ext already converted to pollutant                          
                        enddo
                     enddo
                  enddo
               enddo
            enddo
+
            write(def1%name,"(A,I2.2,A)")trim(uEMEP%poll(ipoll)%emis)//'_sec',isec,'_local_transport'
            if(isec==0)write(def1%name,"(A,I2.2,A)")trim(uEMEP%poll(ipoll)%emis)//'_local_transport'
            scale=1.0
            call Out_netCDF(iotyp,def1,ndim,kmax,loc_poll_to,scale,CDFtype,dimSizes,dimNames,out_DOMAIN=uEMEP%DOMAIN,&
                 fileName_given=trim(fileName),overwrite=.false.,create_var_only=.false.)   
-        endif
-        enddo
+       endif
+       enddo
 
            scale=1.0
            def1%name=trim(uEMEP%poll(ipoll)%emis)
@@ -396,6 +410,10 @@ subroutine out_uEMEP(iotyp)
         do iisec=1,uEMEP%poll(ipoll)%Nsectors
            isec_poll=isec_poll1+iisec-1
            isec=uEMEP%poll(ipoll)%sector(iisec)
+
+           !copy before dividing by loc_tot_hour
+           if(COMPUTE_LOCAL_TRANSPORT)call extendarea_N(loc_frac_hour(-uEMEP%dist,-uEMEP%dist,1,1,KMAX_MID-uEMEP%Nvert+1,isec_poll),tmp_ext,uEMEP%dist,uEMEP_Sizedxdy,uEMEP%Nvert)
+
            do k = KMAX_MID-uEMEP%Nvert+1,KMAX_MID
               do j=1,ljmax
                  do i=1,limax
@@ -414,12 +432,32 @@ subroutine out_uEMEP(iotyp)
            
            call Out_netCDF(iotyp,def1,ndim,kmax,loc_frac_hour(-uEMEP%dist,-uEMEP%dist,1,1,KMAX_MID-uEMEP%Nvert+1,isec_poll),scale,CDFtype,dimSizes,dimNames,out_DOMAIN=uEMEP%DOMAIN,&
                 fileName_given=trim(fileName),overwrite=.false.,create_var_only=.false.) 
+           if(isec==0 .and. COMPUTE_LOCAL_TRANSPORT)then
+              do k = KMAX_MID-uEMEP%Nvert+1,KMAX_MID
+                 do j=1,ljmax
+                    do i=1,limax
+                       do dy=-uEMEP%dist,uEMEP%dist
+                          do dx=-uEMEP%dist,uEMEP%dist
+                             !in  loc_poll_to (dx,dy,i,j) shows from (i,j) to (i+dx,j+dy)
+                             loc_poll_to(dx,dy,i,j,k)=tmp_ext(-dx,-dy,i+dx,j+dy,k)
+                          enddo
+                       enddo
+                    enddo
+                 enddo
+              enddo
+              write(def1%name,"(A,I2.2,A)")trim(uEMEP%poll(ipoll)%emis)//'_sec',isec,'_local_transport'
+              if(isec==0)write(def1%name,"(A,I2.2,A)")trim(uEMEP%poll(ipoll)%emis)//'_local_transport'
+              scale=1.0/av_fac_hour
+              call Out_netCDF(iotyp,def1,ndim,kmax,loc_poll_to,scale,CDFtype,dimSizes,dimNames,out_DOMAIN=uEMEP%DOMAIN,&
+                   fileName_given=trim(fileName),overwrite=.false.,create_var_only=.false.)       
+           endif
         enddo
         !              loc_tot_hour=loc_tot_hour/av_fac_hour
         scale=1.0/av_fac_hour
         def1%name=trim(uEMEP%poll(ipoll)%emis)
         call Out_netCDF(iotyp,def1,ndim_tot,kmax,loc_tot_hour(1,1,KMAX_MID-uEMEP%Nvert+1,ipoll),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=uEMEP%DOMAIN,&
              fileName_given=trim(fileName),overwrite=.false.,create_var_only=.false.) 
+
      else  if(iotyp==IOU_DAY)then
         
         do iisec=1,uEMEP%poll(ipoll)%Nsectors
@@ -602,7 +640,10 @@ subroutine out_uEMEP(iotyp)
   endif
 
   first_call(iotyp)=.false.
-
+  if(COMPUTE_LOCAL_TRANSPORT)deallocate(tmp_ext)
+! CALL MPI_BARRIER(MPI_COMM_CALC, I)
+ 
+!stop
 end subroutine out_uEMEP
 
 subroutine av_uEMEP(dt,End_of_Day)
