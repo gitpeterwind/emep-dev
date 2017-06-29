@@ -100,11 +100,11 @@ character(len=len_mode),private, save ::  &
 integer, private, save :: NHOURSAVE,NHOURREAD ! write/read frequency
 !if(NHOURREAD<NHOURSAVE) the data is interpolated in time
 
-character(len=max_filename_length),public, save ::  &  
+character(len=max_filename_length),public, save ::  &
   template_read_3D = 'EMEP_IN.nc',&       ! Different paths can be set here
   template_read_BC = 'EMEP_IN.nc',&       ! for each of the IO IC/BC files,
   template_write   = 'EMEP_OUT.nc'        ! on Nest_config namelist, if needed.
-character(len=max_filename_length),private, save ::  &  
+character(len=max_filename_length),private, save ::  &
   filename_read_3D = 'template_read_3D',& ! Overwritten in readxn and wrtxn.
   filename_read_BC = 'template_read_BC',& ! Filenames are updated according to date
   filename_write   = 'template_write'     ! following respective templates
@@ -166,7 +166,7 @@ subroutine Config_Nest()
 ! write/read frequency: Hours between consecutive saves(wrtxn)/reads(readxn)
   NHOURSAVE=3   ! Between wrtxn calls.  Should be fraction of 24
   NHOURREAD=1   ! Between readxn calls. Should be fraction of 24
-! Default domain for write modes 
+! Default domain for write modes
   if(.not.FORECAST)then
     out_DOMAIN=RUNDOMAIN+[1,-1,1,-1]
   else
@@ -174,19 +174,19 @@ subroutine Config_Nest()
   end if
   rewind(IO_NML)
   read(IO_NML,NML=Nest_config,iostat=ios)
-  call CheckStop(ios,"NML=Nest_config")  
+  call CheckStop(ios,"NML=Nest_config")
   if(mydebug)then
     write(*,*) "NAMELIST IS "
     write(*,NML=Nest_config)
   end if
-! FORECAST overrides write/read modes 
+! FORECAST overrides write/read modes
   if(FORECAST)then
     MODE_READ='FORECAST'
   elseif(MODE_READ=='')then
     MODE_READ='NONE'
   else
     MODE_READ=to_upper(MODE_READ)
-  end if  
+  end if
   if(FORECAST)then
     MODE_SAVE='FORECAST'
   elseif(MODE_SAVE=='')then
@@ -268,7 +268,7 @@ subroutine readxn(indate)
     filename_read_3D=date2string(template_read_3D,ndate,&
                                  mode='YMDH',debug=mydebug)
     filename_read_BC=date2file  (template_read_BC,ndate,BC_DAYS,"days",&
-                                 mode='YMDH',debug=mydebug)  
+                                 mode='YMDH',debug=mydebug)
     inquire(file=filename_read_3D,exist=fexist_3D)
     inquire(file=filename_read_BC,exist=fexist_BC)
   else
@@ -371,7 +371,7 @@ subroutine wrtxn(indate,WriteNow)
     filename_write=date2string(template_write,indate,mode='YMDH',debug=mydebug)
     inquire(file=fileName_write,exist=overwrite)
     call CheckStop(overwrite.and.MODE_SAVE/='FORECAST',&
-      "Nest: Refuse to overwrite. Remove this file: "//trim(fileName_write))   
+      "Nest: Refuse to overwrite. Remove this file: "//trim(fileName_write))
   end if
 
   select case(MODE_SAVE)
@@ -398,12 +398,12 @@ subroutine wrtxn(indate,WriteNow)
   def1%iotype=''        ! not used
   def1%name=''          ! written
   def1%unit='mix_ratio' ! written
- 
+
 ! Update filenames according to date following templates defined on Nest_config nml
 ! e.g. set template_write="EMEP_BC_MMYYYY.nc" on namelist for different names each month
   filename_write=date2string(template_write,indate,mode='YMDH',debug=mydebug)
   if(MasterProc)then
-    inquire(file=fileName_write,exist=fexist)   
+    inquire(file=fileName_write,exist=fexist)
     write(*,*)'Nest:write data ',trim(fileName_write)
   end if
   CALL MPI_BCAST(fexist,1,MPI_LOGICAL,0,MPI_COMM_CALC,IERROR)
@@ -529,7 +529,7 @@ subroutine init_icbc(idate,cdate,ndays,nsecs)
                         present(nsecs)]),1,"init_icbc: wrong date option")
 
 ! Update filenames according to date following templates defined on Nest_config nml
-  if(present(idate)) dat=idate 
+  if(present(idate)) dat=idate
   if(present(cdate)) dat=[cdate%year,cdate%month,cdate%day,cdate%hour]
   if(present(ndays)) call nctime2date(dat,ndays)
   if(present(nsecs)) call nctime2date(dat,nsecs)
@@ -540,7 +540,7 @@ subroutine init_icbc(idate,cdate,ndays,nsecs)
   filename_read_3D=date2string(template_read_3D,dat,&
                                mode='YMDH',debug=mydebug)
   filename_read_BC=date2file  (template_read_BC,dat,BC_DAYS,"days",&
-                               mode='YMDH',debug=mydebug)  
+                               mode='YMDH',debug=mydebug)
   filename_write  =date2string(template_write  ,dat,&
                                mode='YMDH',debug=mydebug)
 
@@ -556,24 +556,24 @@ subroutine init_icbc(idate,cdate,ndays,nsecs)
   else
     adv_bc=>adv_ic
   end if
-  
+
   if(MasterProc)then
     do n = 1,size(adv_ic%varname)
       if(.not.adv_ic(n)%found)then
         call PrintLog("WARNING: IC variable '"//trim(adv_ic(n)%varname)//"' not found")
-      elseif(DEBUG_NEST.or.DEBUG_ICBC)then 
+      elseif(DEBUG_NEST.or.DEBUG_ICBC)then
         write(*,*) "init_icbc filled adv_ic "//trim(adv_ic(n)%varname)
       end if
     end do
     do n = 1,size(adv_bc%varname)
       if(.not.adv_bc(n)%found)then
         call PrintLog("WARNING: BC variable '"//trim(adv_bc(n)%varname)//"' not found")
-      elseif(DEBUG_NEST.or.DEBUG_ICBC)then 
+      elseif(DEBUG_NEST.or.DEBUG_ICBC)then
         write(*,*) "init_icbc filled adv_bc "//trim(adv_bc(n)%varname)
       end if
     end do
   end if
-  
+
   if((DEBUG_NEST.or.DEBUG_ICBC).and.MasterProc)then
     write(*,"(a)") "Nest: DEBUG_ICBC Variables:",&
       trim(filename_read_3D),trim(filename_read_BC)
@@ -687,7 +687,7 @@ subroutine init_nest(ndays_indate,filename_read,native_grid,IIij,JJij,Weight,&
       status = nf90_inq_dimid(ncFileID,"Months",dimID=timeDimID)
       if(status==nf90_noerr)then
         call check(nf90_inquire_dimension(ncFileID,timedimID,len=N_ext))
-        call CheckStop(N_ext,12,'Nest BC: did not find 12 monthes')
+        call CheckStop(N_ext,12,'Nest BC: did not find 12 months')
       else
         write(*,*)'Nest: time dimension not found. Assuming only one record '
         N_ext=1
@@ -875,10 +875,13 @@ subroutine init_nest(ndays_indate,filename_read,native_grid,IIij,JJij,Weight,&
   ! note that i,j are local and but IIij,JJij refer to the full nest-file
   if(native_grid)then   ! nest-file is on the model/run grid
     forall(i=1:limax,j=1:ljmax)
-      IIij(:,i,j)=i_fdom(i)
-      JJij(:,i,j)=j_fdom(j)
+      IIij(:,i,j)=i_fdom(i)-RUNDOMAIN(1)+1
+      JJij(:,i,j)=j_fdom(j)-RUNDOMAIN(3)+1
       Weight(:,i,j)=[1.0,0.0,0.0,0.0]
     endforall
+    i=IIij(1,limax,ljmax);j=JJij(1,limax,ljmax)
+    call CheckStop((i>GIMAX_ext).or.(j>GJMAX_ext),&
+                  'Nest: domain mismatch for native_grid')
   else                  ! find the four closest points
     call grid2grid_coeff(glon,glat,IIij,JJij,Weight,lon_ext,lat_ext,&
       GIMAX_ext,GJMAX_ext,LIMAX,LJMAX,limax,ljmax,mydebug,1,1)
@@ -1018,11 +1021,11 @@ subroutine read_newdata_LATERAL(ndays_indate)
                    IIij,JJij,Weight,k1_ext,k2_ext,weight_k1,weight_k2,&
                    N_ext_BC,KMAX_ext_BC,GIMAX_ext,GJMAX_ext)
     if(MODE_READ=='MONTH'.and.N_ext_BC/=12.and.MasterProc)then
-      write(*,*)'Nest: WARNING: Expected 12 monthes in BC file, found ',N_ext_BC
-      call CheckStop('Nest BC: wrong number of monthes')
+      write(*,*)'Nest: WARNING: Expected 12 months in BC file, found ',N_ext_BC
+      call CheckStop('Nest BC: wrong number of months')
     end if
 
-    ! Define & allocate West/East/South/Nort Boundaries
+    ! Define & allocate West/East/South/North Boundaries
     iw=li0-1;ie=li1+1   ! i West/East   boundaries
     js=lj0-1;jn=lj1+1   ! j South/North boundaries
     kt=0;if(TOP_BC)kt=1 ! k Top         boundary
@@ -1273,7 +1276,7 @@ subroutine reset_3D(ndays_indate)
   logical :: divbyroa
 
   if(mydebug) write(*,*) 'Nest: initializations 3D', first_call
- 
+
   if(first_call)then
     if(mydebug) write(*,*)'Nest: initializations 3D'
     allocate(IIij(4,LIMAX,LJMAX),JJij(4,LIMAX,LJMAX))
@@ -1316,7 +1319,7 @@ subroutine reset_3D(ndays_indate)
   end if
 
   if(mydebug)write(*,*)'Nest: overwrite 3D'
- 
+
   DO_SPEC: do n= 1, NSPEC_ADV
     if(.not.(adv_ic(n)%wanted.and.adv_ic(n)%found)) cycle DO_SPEC
     if(MasterProc)then
