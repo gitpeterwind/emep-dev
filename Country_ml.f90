@@ -420,7 +420,7 @@ integer, public :: IC_OCEC  ! Oceania
 
  
   integer,  public :: IC_BERLIN
-  integer,  public :: IC_BRUSSELL
+  integer,  public :: IC_BRUSSEL
   integer,  public :: IC_COPENHAGEN
   integer,  public :: IC_MADRID
   integer,  public :: IC_HELSINKI
