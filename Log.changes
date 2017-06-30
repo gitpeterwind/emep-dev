@@ -151,6 +151,26 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+30th  June 2017  Peter, Anna
+
+Bug fix! timefactors can be wrong in certain cases.
+If a timefactor code is defined several times in Country_ml, the timefactor for 
+the last one is used instead of the first one (using find_index). 
+This will normally give a default timefactor of 1. Affects:
+shipping emissions (country codes 30-34, but does not matter, since the timefactors are 1 anyway?)
+"European Community" (code 64, not used?), Turkey (code 25), "Rest of Russia " (Code 42).
+
+
+Allow country specific hourly factor. The idea is that we define cities by a new 
+country code, and special traffic hourly factors are applied to those (CAMS50 project).
+17 European cities are defined in Country_ml.f90.
+The new factors are given for now at:
+$DataDir/inputs_emepdefaults_Jun2017/HourlyFacsSpecials.CAMS50
+As long as the emisions do not have these new City-codes, there will be no effect.
+Defaults are the old values.
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16th  June 2017  Peter, Joffen
 
 Allow a special format for ship emissions.

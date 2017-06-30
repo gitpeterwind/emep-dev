@@ -361,7 +361,7 @@ subroutine Emissions(year)
     allocate(e_fact_lonlat(NSECTORS,MAXFEMISLONLAT,NEMIS_FILE))
     e_fact_lonlat=1.0
     if(.not.allocated(timefac))allocate(timefac(NLAND,N_TFAC,NEMIS_FILE))
-    if(.not.allocated(fac_ehh24x7))allocate(fac_ehh24x7(N_TFAC,24,7))
+    if(.not.allocated(fac_ehh24x7))allocate(fac_ehh24x7(N_TFAC,24,7,NLAND))
     if(.not.allocated(fac_emm))allocate(fac_emm(NLAND,12,N_TFAC,NEMIS_FILE))
     if(.not.allocated(fac_min))allocate(fac_min(NLAND,N_TFAC,NEMIS_FILE))
     if(.not.allocated(fac_edd))allocate(fac_edd(NLAND, 7,N_TFAC,NEMIS_FILE))
@@ -432,7 +432,7 @@ subroutine Emissions(year)
   ! Broadcast  monthly and Daily factors (and hourly factors if needed/wanted)
   CALL MPI_BCAST(fac_emm,8*NLAND*12*N_TFAC*NEMIS_FILE,MPI_BYTE,0,MPI_COMM_CALC,IERROR) 
   CALL MPI_BCAST(fac_edd,8*NLAND*7*N_TFAC*NEMIS_FILE,MPI_BYTE,0,MPI_COMM_CALC,IERROR) 
-  CALL MPI_BCAST(fac_ehh24x7,8*N_TFAC*24*7,MPI_BYTE,0,MPI_COMM_CALC,IERROR) 
+  CALL MPI_BCAST(fac_ehh24x7,8*N_TFAC*24*7*NLAND,MPI_BYTE,0,MPI_COMM_CALC,IERROR) 
 
   !define fac_min for all processors
   forall(iemis=1:NEMIS_FILE,insec=1:N_TFAC,inland=1:NLAND) &
@@ -1019,7 +1019,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
   real ::  ehlpcom,ehlpcom0
   real ::  tfac, dtgrid    ! time-factor (tmp variable); dt*h*h for scaling
   real ::  s               ! source term (emis) before splitting
-  integer :: iland, iland_timefac  ! country codes, and codes for timefac 
+  integer :: iland, iland_timefac, iland_timefac_hour  ! country codes, and codes for timefac 
   real ::  sf              ! source term (emis) before splitting  (flat emissions)
   integer :: flat_iland    ! country codes (countries with flat emissions)
 
@@ -1096,7 +1096,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
 
   if(DEBUG_EMISTIMEFACS.and.MasterProc) &
     write(*,"(a,2f8.3)") " EmisSet  traffic 24x7", &
-      fac_ehh24x7(ISNAP_TRAF,1,4),fac_ehh24x7(ISNAP_TRAF,13,4)
+      fac_ehh24x7(ISNAP_TRAF,1,4,1),fac_ehh24x7(ISNAP_TRAF,13,4,1)
   !..........................................
   !  Look for day-night changes, after local time correction
   !  (daytime(iland) not used if  LONGITUDE_TIME=true)
@@ -1133,7 +1133,8 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
           iland=find_index(landcode(i,j,icc),Country(:)%icode) !array index
 
           !array index of country that should be used as reference for timefactor
-          iland_timefac = find_index(Country(iland)%timefac_index,Country(:)%timefac_index)
+          iland_timefac = find_index(Country(iland)%timefac_index,Country(:)%icode)
+          iland_timefac_hour = find_index(Country(iland)%timefac_index_hourly,Country(:)%icode)
 
           if(Country(iland)%timezone==-100)then
             daytime_iland=daytime_longitude
@@ -1157,7 +1158,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
             hour_longitude, hour_iland, hourloc, Country(iland)%timezone
           call datewrite("EmisSet DAY 24x7:", &
             (/ icc, iland, wday, wday_loc, hour_iland /), &
-            (/ fac_ehh24x7(ISNAP_TRAF,hour_iland,wday_loc) /) )
+            (/ fac_ehh24x7(ISNAP_TRAF,hour_iland,wday_loc,iland_timefac_hour) /) )
           end if
           !  As each emission sector has a different diurnal profile
           !  and possibly speciation, we loop over each sector, adding
@@ -1171,8 +1172,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
             do iem = 1, NEMIS_FILE 
               if(SecEmisOut(iem))iemsec = iemsec + 1
               tfac = timefac(iland_timefac,sec2tfac_map(isec),iem) &
-                   * fac_ehh24x7(sec2tfac_map(isec),hour_iland,wday_loc)
-
+                   * fac_ehh24x7(sec2tfac_map(isec),hour_iland,wday_loc,iland_timefac_hour)
 
               if(debug_tfac.and.iem==1) &
                 write(*,"(a,3i4,f8.3)")"EmisSet DAY TFAC:",isec,sec2tfac_map(isec),hour_iland,tfac
@@ -1189,7 +1189,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
                 ! we make use of a baseload even for SNAP2
                 tfac = ( fac_min(iland,sec2tfac_map(isec),iem) & ! constant baseload
                      + ( 1.0-fac_min(iland,sec2tfac_map(isec),iem) )* gridfac_HDD(i,j) ) &
-                     * fac_ehh24x7(sec2tfac_map(isec),hour_iland,wday_loc)
+                     * fac_ehh24x7(sec2tfac_map(isec),hour_iland,wday_loc,iland_timefac_hour)
 
                 if(debug_tfac .and. indate%hour==12 .and. iem==1) &
                   write(*,"(a,3i3,2i4,7f8.3)") "SNAPHDD tfac ",  &
@@ -1298,6 +1298,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
             do icc = 1, ncc    
               !iland = road_landcode(i,j,icc)
               iland = find_index(road_landcode(i,j,icc),Country(:)%icode)
+              iland_timefac_hour = find_index(Country(iland)%timefac_index_hourly,Country(:)%icode)
               if(Country(iland)%timezone==-100)then
                 hour_iland=hour_longitude+1
               else
@@ -1313,9 +1314,9 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
 
               if(ANY(iland==(/IC_FI,IC_NO,IC_SE/)).and. & ! Nordic countries
                  ANY(indate%month==(/3,4,5/)))then        ! spring road dust
-                tfac = fac_ehh24x7(ISNAP_TRAF,hour_iland,wday_loc)*2.0 ! Doubling in Mar-May (as in TNO model)
+                tfac = fac_ehh24x7(ISNAP_TRAF,hour_iland,wday_loc,iland_timefac_hour)*2.0 ! Doubling in Mar-May (as in TNO model)
               else
-                tfac = fac_ehh24x7(ISNAP_TRAF,hour_iland,wday_loc)
+                tfac = fac_ehh24x7(ISNAP_TRAF,hour_iland,wday_loc,iland_timefac_hour)
               end if
 
               do iem = 1, NROAD_FILES

@@ -926,7 +926,7 @@ subroutine uEMEP_emis(indate)
   real, dimension(NRCEMIS)        ::  tmpemis      !  local array for emissions
   real ::  tfac    ! time-factor (tmp variable); dt*h*h for scaling
   real ::  s       ! source term (emis) before splitting
-  integer :: iland, iland_timefac  ! country codes, and codes for timefac 
+  integer :: iland, iland_timefac, iland_timefac_hour  ! country codes, and codes for timefac 
   integer :: daytime_longitude, daytime_iland, hour_longitude, hour_iland,nstart
   integer ::icc_uemep
   integer, save :: wday , wday_loc ! wday = day of the week 1-7
@@ -968,7 +968,8 @@ subroutine uEMEP_emis(indate)
           iland=find_index(flat_landcode(i,j,ficc),Country(:)%icode) 
         end if
         !array index of country that should be used as reference for timefactor
-        iland_timefac = find_index(Country(iland)%timefac_index,Country(:)%timefac_index)
+        iland_timefac = find_index(Country(iland)%timefac_index,Country(:)%icode)
+        iland_timefac_hour = find_index(Country(iland)%timefac_index_hourly,Country(:)%icode)
 
         if(Country(iland)%timezone==-100)then
           daytime_iland=daytime_longitude
@@ -995,7 +996,7 @@ subroutine uEMEP_emis(indate)
             
             if(icc<=ncc)then
               tfac = timefac(iland_timefac,sec2tfac_map(isec),iem) &
-                   * fac_ehh24x7(sec2tfac_map(isec),hour_iland,wday_loc)
+                   * fac_ehh24x7(sec2tfac_map(isec),hour_iland,wday_loc,iland_timefac_hour)
 
               !Degree days - only SNAP-2 
               if(USES%DEGREEDAY_FACTORS .and. &
@@ -1004,7 +1005,7 @@ subroutine uEMEP_emis(indate)
                  ! we make use of a baseload even for SNAP2
                  tfac = ( fac_min(iland,sec2tfac_map(isec),iem) & ! constant baseload
                       + ( 1.0-fac_min(iland,sec2tfac_map(isec),iem) )* gridfac_HDD(i,j) ) &
-                      * fac_ehh24x7(sec2tfac_map(isec),hour_iland,wday_loc)
+                      * fac_ehh24x7(sec2tfac_map(isec),hour_iland,wday_loc,iland_timefac_hour)
               end if ! =============== HDD 
 
               s = tfac * snapemis(isec,i,j,icc,iem)
