@@ -57,8 +57,8 @@ module Country_ml
      integer           :: icode         ! integer number for land code (corresponds to 
                                         ! country code number in emission files)
      logical           :: is_sea        ! 1 for sea area, 0 otherwise
-     integer           :: timefac_index ! see explanation above
-     integer           :: timefac_index_hourly ! see explanation above
+     integer           :: timefac_index ! Country code to use for timefactors
+     integer           :: timefac_index_hourly !  Country code to use for hourly timefactors
      integer           :: timezone      ! timezone, deviation from UTC time
      character(len=30) :: name          ! name of country/region
   end type cc
@@ -1417,8 +1417,8 @@ ix=ix+1
 IC_BERLIN = ix
 Country(IC_BERLIN) = cc( "BERLIN",  '-', 401 , F,   60, 401 , 1, "DE:BERLIN")
 ix=ix+1
-IC_BRUSSELL = ix
-Country(IC_BRUSSELL) = cc( "BRUSSELL", '-',  402 , F,   3, 402 , 1, "BE:BRUSSELL")
+IC_BRUSSEL = ix
+Country(IC_BRUSSEL) = cc( "BRUSSEL", '-',  402 , F,   3, 402 , 1, "BE:BRUSSEL")
 ix=ix+1
 IC_COPENHAGEN = ix
 Country(IC_COPENHAGEN) = cc( "COPENHAGEN", '-',  403 , F,   6, 403 , 1, "DK:COPENHAGEN")
@@ -1463,7 +1463,7 @@ IC_STOCKHOLM = ix
 Country(IC_STOCKHOLM) = cc( "STOCKHOLM", '-',  416 , F,   23, 416 , 1, "SE:STOCKHOLM")
 ix=ix+1
 IC_GENEVA = ix
-Country(IC_GENEVA) = cc( "GENEVA", '-',  417 , F,   24, 417 , 1, "GENEVA")
+Country(IC_GENEVA) = cc( "GENEVA", '-',  417 , F,   24, 417 , 1, "CH:GENEVA")
 
 NLAND=ix !actual number of countries defined
 
