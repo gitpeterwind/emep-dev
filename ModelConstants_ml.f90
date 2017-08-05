@@ -562,6 +562,7 @@ subroutine Config_ModelConstants(iolog)
    ,EMIS_SOURCE, EMIS_TEST, EMIS_OUT, emis_inputlist, EmisDir &
    ,SecEmisOutPoll        & ! to output sectorwise emissions
    ,FLUX_VEGS             & ! Allows user to add veg categories for eg IAM ouput
+   ,FLUX_IGNORE           & ! Specify which landcovers don't need FLUX
    ,VEG_2dGS              & ! Allows 2d maps of growing seasons
    ,VEG_2dGS_Params       & ! Allows 2d maps of growing seasons
    ,PFT_MAPPINGS          & ! Allows use of external LAI maps

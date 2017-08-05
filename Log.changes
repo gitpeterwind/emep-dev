@@ -176,6 +176,26 @@ Fix GFASv1 ForestFire mapping for EmChem16mt
 and update FORECAST/ANALYSIS namelist (see #50)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+5th   Aug  2017  Dave
+Bug-fix to restore IAM_VEG for whole domain. (rv4_15 only had IAM_VEG for the inner
+area where landocover came from the Landuse_PS_5km_LC.nc file.
+
+Solution now is to set IAM_VEG for all land-cover areas except those specified
+in the config array FLUX_IGNORE:
+
+  FLUX_IGNORE = 'W', 'D', 'DE', 'ICE', 'BARE'   ! Ignore these for FLUX calcs.  
+
+This allows for future landcover data-sets, which might have other codes for
+these non-veg areas. (The 'IAM_VEG' currently found in Landuse_PS_5km_LC.nc
+is now ignored.)
+
+Changes:
+Landuse_ml - as above
+ModelCostants_ml - added FLUX_IGNORE
+config_EMEPSTD.nml - added FLUX_IGNORE
+config_EMEPGLOB.nml - added FLUX_IGNORE
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 18th June 2017 Peter rv4_15_1 (status 2017 version, 494ad81)
 
 GridValues_ml:
