@@ -7,13 +7,7 @@ IMPORTANT NOTE:
 
     1) Use the make system (stallo/vilje only!), e.g. type:
         make EMEP
-        make SR-EMEP
-
-        make EMEP2011 for met year 2011 Base runs
-        make SR-EMEP2011 for met year 2011 SR runs
-
-    make EMEP2010 for met year 2010 Base runs
-    make SR-EMEP2010 for met year 2010 SR runs
+        make SR-EMEP is an alias for make EMEP, as the only differ on config_emep.nml
 
       or other targets. See Makefile for these
 
@@ -40,33 +34,27 @@ IMPORTANT NOTE:
 
 *****    Run/Make examples:
   2011 Base run:
-    * Compile the model with `make EMEP2011` and
-      USE_EMERGENCY=.true. in config_EMEPSTD.nml to use Grimsvotn eruption data.
-    * run.pl: $year=2011 and $MAKEMODE="EMEP2011", and the program
-      will be compiled by run.pl including Grimsvotn eruption tracers.
+    * Set USE_ASH=T in config_EMEPSTD.nml to use Grimsvotn eruption data.
+    * Compile the model with `make EMEP`, ash tracers included by default.
+    * Run with $year=2011 and $MAKEMODE="EMEP" in run.pl.
   2011 SR run:
-    * Compile the model with `make SR-EMEP2011` and
-      USE_EMERGENCY=.true. in config_EMEPSTD.nml to use Grimsvotn eruption data.
-    * run.pl: $year=2011, $SR=1 and $MAKEMODE="EMEP2011", and the program
-      will be compiled by run.pl including Grimsvotn eruption tracers.
+    * Set USE_ASH=T in config_EMEPSTD.nml to use Grimsvotn eruption data.
+    * Compile the model with `make SR-EMEP`, ash tracers included by default.
+    * Run with $year=2011, $SR=1 and $MAKEMODE="EMEP" in run.pl.
   2010 Base run
-    * Compile the model with `make EMEP2010` and USE_EMERGENCY=.true.
-      USE_EMERGENCY=.true. in config_EMEPSTD.nml to use Eyjafjöll eruption data.
-    * Run $year=2010 and $MAKEMODE="EMEP2010" (run.pl), and the program
-      will be compiled by run.pl including Eyjafjöll eruption tracers.
+    * Set USE_ASH=T in config_EMEPSTD.nml to use Eyjafjöll eruption data.
+    * Compile the model with `make EMEP`, ash tracers included by default.
+    * Run $year=2010 and $MAKEMODE="EMEP" in run.pl.
   2010 SR run
-    * Compile the model with `make SR-EMEP2010` and USE_EMERGENCY=.true.
-      USE_EMERGENCY=.true. in config_EMEPSTD.nml to use Eyjafjöll eruption data.
-    * Run $year=2010, $SR=1 and $MAKEMODE="EMEP2010" (run.pl), and the program
-      will be compiled by run.pl including Eyjafjöll eruption tracers.
-  2009 Base run (or any other year/=2010)
+    * Set USE_ASH=T in config_EMEPSTD.nml to use Eyjafjöll eruption data.
+    * Compile the model with `make SR-EMEP`, ash tracers included by default.
+    * Run with $year=2010, $SR=1 and $MAKEMODE="EMEP" in run.pl.
+  2009 Base run (or any other year<2010)
     * Compile the model with `make EMEP`.
-    * Run $year=2009 and $MAKEMODE="EMEP" (run.pl),
-      and the program will be compiled by run.pl.
-  2009 SR run (or any other year/=2010)
+    * Run $year=2009 and $MAKEMODE="EMEP" in run.pl.
+  2009 SR run (or any other year<2010)
     * Compile the model with `make SR-EMEP`.
-    * Run $year=2009, $SR=1 and $MAKEMODE="EMEP" (run.pl),
-      and the program will be compiled by run.pl.
+    * Run with $year=2009, $SR=1 and $MAKEMODE="EMEP" in run.pl.
 
   Modules & Make in stallo/vilje
     Since rv4rc8, the modules required for compilation are set and tested on Makefile.
@@ -74,11 +62,10 @@ IMPORTANT NOTE:
     Please add the following lines to your ~/.bashrc file
 
 ## Unimod: Modules & Make
-export MACHINE=vilje                  # select stallo/vilje machine
+export MACHINE=vilje               # select stallo/vilje machine
 case $MACHINE in                   # modules needed to compile Unimod
- stallo)EMEPMODULES="intel/13.0 openmpi/1.6.2 hdf5/1.8.9 netcdf/4.2.1.1";;
-gstallo)EMEPMODULES="gcc/4.7.2  openmpi/1.6.2 hdf5/1.8.9 netcdf/4.2.1.1";;
-  vilje)EMEPMODULES="intelcomp/14.0.1 mpt/2.09 netcdf/4.3.1";;
+ stallo)EMEPMODULES="netCDF-Fortran/4.4.4-intel-2016b";;
+  vilje)EMEPMODULES="intelcomp/13.0.1 mpt/2.06 netcdf/4.3.0 fftw/3.3.3";;
 esac
 [[ -z "$MODULESHOME" && -s /etc/profile.d/modules.sh ]] &&
   . /etc/profile.d/modules.sh      # load modulecmd wraper, fi needed
