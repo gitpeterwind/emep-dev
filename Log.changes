@@ -149,7 +149,7 @@ ColumnSource_ml:
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 8th   Aug  2017  Alvaro
 
-Compile MACC targets with EmChem09soa (#50)
+Fix GFASv1 ForestFire mapping for EmChem16mt (see #50)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 18th June 2017 Peter rv4_15_1 (status 2017 version, 494ad81)

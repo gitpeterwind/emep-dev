@@ -158,9 +158,8 @@ EMEP HTAP MACC MACC-EVA MACC-Pollen EmChem16mt EmChem09 EmChem09-ESX CRI_v2_R5 e
 EMEP:               GenChem-EMEP-EmChem09soa
 EmChem09 CRI_v2_R5: GenChem-EMEP-$$@
 EmChem09-ESX:       GenChem-EMEP-EmChem09
-HTAP:               GenChem-$$@-EmChem16mt
-MACC SR-MACC:       GenChem-$$@-EmChem09soa
-MACC-EVA:           GenChem-MACCEVA-EmChem09soa
+HTAP MACC SR-MACC:  GenChem-$$@-EmChem16mt
+MACC-EVA:           GenChem-MACCEVA-EmChem16mt
 MACC-Pollen:        GenChem-MACCEVA-Pollen
 eEMEP:              GenChem-$$@-Emergency
 eEMEP ?= Emergency  # Emergency | AshInversion
