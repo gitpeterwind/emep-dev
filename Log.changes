@@ -138,6 +138,11 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+8th   Aug  2017  Alvaro
+
+Compile MACC targets with EmChem09soa (#50)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 5th   Aug  2017  Dave
 Bug-fix to restore IAM_VEG for whole domain. (rv4_15 only had IAM_VEG for the inner
 area where landocover came from the Landuse_PS_5km_LC.nc file.
