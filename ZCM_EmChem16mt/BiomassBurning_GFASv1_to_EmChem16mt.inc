@@ -4,10 +4,10 @@
 !-------------------------------------------------------------------------!
 
   character(len=*), public, parameter :: &
-    BiomassBurningMapping = "GFASv1toEmChem09"
+    BiomassBurningMapping = "GFASv1toEmChem09soa"
   integer, private, parameter :: &
-    NBB_DEFS   = 25-6, & ! No mapping lines below
-    NEMEPSPECS = 20-4+1  ! No EMEP chemical mech specs used
+    NBB_DEFS   = 25-2, & ! No mapping lines below
+    NEMEPSPECS = 20-1    ! No EMEP chemical mech specs used
 
 !-----------------------------------------------------------------------!
 ! Column-1 gives GFASv1 species,
@@ -21,14 +21,13 @@
     bbtype("ch4fire      ", 1.000, 1.000, CH4           ), & ! 082.210 | Methane
     bbtype("h2fire       ", 1.000, 1.000, H2            ), & ! 084.210 | Hydrogen
     bbtype("noxfire      ", 1.000, 1.000, NO            ), & ! 085.210 | Nitrogen Oxide. Use as NO
-!!  bbtype("pm10fire     ", 1.000, 1.000, FFIRE_REMPPMco), & ! 087.210 | PM 10
-!!  bbtype("pm2p5fire    ", 1.000,-1.000, FFIRE_REMPPMco), & ! 087.210 | PM 10 - PM 2.5
-!   bbtype("pm2p5fire    ", 1.000, 1.000, FFIRE_REMPPM25), & ! 087.210 | PM 2.5
-    bbtype("pm2p5fire    ", 1.000, 1.000, PPM25_FIRE    ), & ! 087.210 | PM 2.5
-!   bbtype("ocfire       ", 1.700,-1.000, FFIRE_REMPPM25), & ! 090.210 | PM 2.5 - Organic Matter
-!   bbtype("bcfire       ", 1.000,-1.000, FFIRE_REMPPM25), & ! 091.210 | PM 2.5 - Black Carbon
-!   bbtype("ocfire       ", 1.700, 1.000, FFIRE_OM      ), & ! 090.210 | Organic Carbon --> O.Matter (OM/OC=1.7)
-!   bbtype("bcfire       ", 1.000, 1.000, FFIRE_BC      ), & ! 091.210 | Black Carbon
+!   bbtype("pm10fire     ", 1.000, 1.000, FFIRE_REMPPMco), & ! 087.210 | PM 10
+!   bbtype("pm2p5fire    ", 1.000,-1.000, FFIRE_REMPPMco), & ! 087.210 | PM 10 - PM 2.5
+    bbtype("pm2p5fire    ", 1.000, 1.000, FFIRE_REMPPM25), & ! 087.210 | PM 2.5
+    bbtype("ocfire       ", 1.700,-1.000, FFIRE_REMPPM25), & ! 090.210 | PM 2.5 - Organic Matter
+    bbtype("bcfire       ", 1.000,-1.000, FFIRE_REMPPM25), & ! 091.210 | PM 2.5 - Black Carbon
+    bbtype("ocfire       ", 1.700, 1.000, FFIRE_OM      ), & ! 090.210 | Organic Carbon --> O.Matter (OM/OC=1.7)
+    bbtype("bcfire       ", 1.000, 1.000, FFIRE_BC      ), & ! 091.210 | Black Carbon
     bbtype("so2fire      ", 1.000, 1.000, SO2           ), & ! 102.210 | Sulfur Dioxide
     bbtype("ch3ohfire    ", 1.000, 1.000, CH3OH         ), & ! 103.210 | Methanol
     bbtype("c2h5ohfire   ", 1.000, 1.000, C2H5OH        ), & ! 104.210 | Ethanol

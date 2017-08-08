@@ -140,7 +140,7 @@ info on unused variables, etc.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 8th   Aug  2017  Alvaro
 
-Compile MACC targets with EmChem09soa (#50)
+Fix GFASv1 ForestFire mapping for EmChem16mt (see #50)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 5th   Aug  2017  Dave
