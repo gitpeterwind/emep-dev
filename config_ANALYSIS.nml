@@ -12,7 +12,18 @@
 &ModelConstants_config
   meteo                 = './meteoYYYYMMDD.nc',
   EXP_NAME              = 'ANALYSIS',
-  MY_OUTPUTS            = 'MACC_ENS',
+  MY_OUTPUTS            = '',         ! deprecated hourly out: MACC_ENS|MACC_EVA
+!------------------------------
+  EmBio%GlobBvocMethod = 'GLC-CLM',  ! NEW default for GLOBAL, not used for Euro
+  EmBio%CLF            =  0.59,      ! 1/1.7 for CLM
+! EmBio%IsopFac        =  1.0,
+  LandCoverInputs%LandDefs   = 'DataDir/LandInputs_Apr2017/Inputs_LandDefs.csv',
+  LandCoverInputs%Do3seDefs  = 'DataDir/LandInputs_Apr2017/Inputs_DO3SE.csv',
+  LandCoverInputs%MapFile =
+    'DataDir/Landuse/Landuse_PS_5km_LC.nc',
+    'DataDir/LandInputs_Apr2017/glc2000mCLM.nc',
+!   'DataDir/LanduseGLC.nc',
+  YieldModifications = 'VBS'   ! None for EmChems 'JPC-VY-acid',
 !------------------------------
   USES%testname         = 'ANALYSIS',
   USES%FOREST_FIRES     = T,
