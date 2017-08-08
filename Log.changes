@@ -140,7 +140,8 @@ info on unused variables, etc.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 8th   Aug  2017  Alvaro
 
-Fix GFASv1 ForestFire mapping for EmChem16mt (see #50)
+Fix GFASv1 ForestFire mapping for EmChem16mt
+and update FORECAST/ANALYSIS namelist (see #50)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 5th   Aug  2017  Dave
