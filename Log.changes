@@ -147,6 +147,11 @@ ColumnSource_ml:
   It caused the default emissions used by eEMEP to fail to expand as groups
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+8th   Aug  2017  Alvaro
+
+Compile MACC targets with EmChem09soa (#50)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 18th June 2017 Peter rv4_15_1 (status 2017 version, 494ad81)
 
 GridValues_ml:
