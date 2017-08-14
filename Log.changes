@@ -4162,6 +4162,7 @@ Affects runs with year_trend<1990 or  (year_trend<2000 and USES%MACEHEADFIX=fals
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 12th February 2015 Peter 2943-6
+(2946 was used for EuroDelta SOA. Denote as rv4.6 in Status Report 2017 Table)
 
 Refactoring the GlobalBC_ml  and BoundaryConditions_ml.
 
