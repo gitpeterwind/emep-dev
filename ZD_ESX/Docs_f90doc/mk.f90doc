@@ -1,7 +1,0 @@
-
-for i in ../*f90
-do
-  f90doc $i
-done
-
-firefox tester.html

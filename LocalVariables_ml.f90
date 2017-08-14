@@ -6,7 +6,7 @@ module LocalVariables_ml
 ! e.g. for a measurement site or for a specific landuse within a grid square
 ! -----------------------------------------------------------------------
 
-use Wesely_ml,         only: NDRYDEP_CALC
+use GasParticleCoeffs_ml,         only: NDRYDEP_CALC
 
 implicit none
 private

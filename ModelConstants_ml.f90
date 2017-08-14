@@ -8,6 +8,7 @@ module ModelConstants_ml
 use Aerofunctions,        only: DpgV2DpgN
 use CheckStop_ml,         only: CheckStop
 use ChemSpecs,            only: species
+use emep_Config_mod,      only: PBL, EmBio, YieldModifications, LandCoverInputs
 use Io_Nums_ml,           only: IO_NML, IO_LOG, IO_TMP
 use OwnDataTypes_ml,      only: typ_ss, uEMEP_type
 use Precision_ml,         only: dp
@@ -56,6 +57,10 @@ type, public :: emep_useconfig
     ,EMISSTACKS       = F       &!
     ,PFT_MAPS         = .false.  ! Future option
 
+ ! Mar 2017. Allow new MEGAN-like BVOC
+ ! Moved to emep_Config
+ ! character(len=10) :: GlobBvocMethod = "-" ! MEGAN
+
  ! If USES%EMISTACKS, need to set:
   character(len=4) :: PlumeMethod = "none" !MKPS:"ASME","NILU","PVDI"
 
@@ -64,7 +69,7 @@ type, public :: emep_useconfig
  ! leads to the need for new n2o5 hydrolysis  methods. DO NOT USE EmepReimer,
  ! but one of :; 'SmixTen' , 'Smix', 'Gamma:0.002'
 
-  character(len=20) :: n2o5HydrolysisMethod = 'SmixTen'
+  character(len=20) :: n2o5HydrolysisMethod = 'Smix'
 
 ! Selection of method for Whitecap calculation for Seasalt
   character(len=15) :: WHITECAPS  = 'Callaghan'
@@ -115,6 +120,7 @@ type, public :: emep_debug
   !----------------------------------------------------------
    integer, dimension(2) :: IJ = [-999,-999]  ! index for debugging print out
    character(len=20)     :: SPEC = 'O3'       ! default.
+   character(len=20)     :: datetxt = '-'       ! default.
    integer               :: ISPEC = -999      ! Will be set after NML
 end type emep_debug
 type(emep_debug), public, save :: DEBUG
@@ -142,7 +148,7 @@ character(len=200), public, save :: &
   meteo= 'DataDir/GRID/metdata_EC/YYYY/meteoYYYYMMDD.nc', & ! template for meteofile
   DegreeDayFactorsFile = 'MetDir/HDD18-GRID-YYYY.nc'        ! template for DegreeDayFactors.nc
 
-integer, public, save :: startdate(4),enddate(4) ! start and end of the run
+integer, public, save :: startdate(4)=(/0,0,0,0/),enddate(4)=(/0,0,0,24/) ! start and end of the run
 
 !-----------------------------------------------------------
 ! Convection factor - reduces convective fluxes (which can be
@@ -166,6 +172,7 @@ logical, public, save ::             &
  ,INERIS_SNAP1       = .false.       & !(EXP_NAME=="TFMM"), & ! Switches off decadal trend
  ,INERIS_SNAP2       = .false.       & !(EXP_NAME=="TFMM"), & ! Allows near-zero summer values
  ,USE_ASH            = .false.       & ! Ash from Volcanic Eruption, w/gravitational settling
+ ,USE_PreADV         = .false.       & ! Column Emissions are preadvected when winds are very strong 
  ,USE_NOCHEM         = .false.       & ! Turns of chemistry for emergency runs
  ,USE_AOD            = .false.       &
  ,USE_POLLEN         = .false.       & ! EXPERIMENTAL. Only works if start Jan 1
@@ -175,11 +182,11 @@ logical, public, save ::             &
 !
 ! Output flags
  ,SELECT_LEVELS_HOURLY  = .false.    & ! for FORECAST, 3DPROFILES
+ ,ZERO_ORDER_ADVEC  = .false.        & ! force zero order horizontal and vertical advection
  ,JUMPOVER29FEB      = .false.         ! When current date is 29th February, jump to next date.
-                                       !NB: this is not identical to assuming not a leap year,
-                                       !for instance the assumed number of days in the year  will still be 366
+
 logical, public, save :: USE_uEMEP = .false.  ! make local fraction of pollutants
-type(uEMEP_type), public, save :: uEMEP ! could be moved to own file when uEMEP is more mature
+type(uEMEP_type), public, save :: uEMEP ! The parameters steering uEMEP
 
 
 integer, public, save :: &
@@ -380,7 +387,7 @@ logical, public, parameter :: NH3_U10 = .false.
 !       generally only change when switching Met-driver
 integer, public, parameter ::  &
 !TREEX  NLANDUSEMAX  = 19   &   ! Number of land use types in Inputs.Landuse file
-  NLANDUSEMAX  = 30    &    ! Max num land use types in Inputs.Landuse file
+  NLANDUSEMAX  = 40    &    ! Max num land use types in Inputs.Landuse file
 , KTOP         = 1     &    ! K-value at top of domain
 , KWINDTOP     = 5     &    ! Define extent needed for wind-speed array
 , NMET         = 2     &    ! No. met fields in memory
@@ -503,11 +510,13 @@ integer, public, parameter ::  &
   IOU_INST=1,IOU_YEAR=2,IOU_MON=3,IOU_DAY=4,IOU_HOUR=5,IOU_HOUR_INST=6, & ! Derived output
   IOU_HOUR_EXTRA=7,IOU_HOUR_EXTRA_MEAN=8, & ! additional hourly output
   IOU_MAX_MAX=8                             ! Max values for of IOU (for array declarations)
+  !IOU_MAX_MAX hardcoded in OwnDataTypes: please modify consistently!
 
 character, public, parameter ::  & ! output shorthands, order should match IOU_*
   IOU_KEY(IOU_YEAR:IOU_HOUR_INST)=['Y','M','D','H','I']
 
 character(len=*), public, parameter :: model="EMEP_MSC-W "
+character(len=200), public :: fileName_O3_Top = "NOTSET"
 
 logical, parameter, public :: EmisSplit_OUT = .false.
 
@@ -521,18 +530,23 @@ subroutine Config_ModelConstants(iolog)
   integer :: i, j, ispec, iostat
   logical,save :: first_call = .true.
   character(len=len(meteo)) ::  MetDir='./' ! path from meteo
+  character(len=*), parameter ::  dtxt='Config_MC:'
 
   NAMELIST /ModelConstants_config/ &
     DegreeDayFactorsFile, meteo & !meteo template with full path
    ,EXP_NAME &  ! e.g. EMEPSTD, FORECAST, TFMM, TodayTest, ....
    ,USES   & ! just testname so far
+   ,PBL    & ! Mar2017 testing
+   ,EmBio  & ! Mar2017 testing
+   ,YieldModifications &  ! Allows dynamic change of chemical yields
+   ,LandCoverInputs  & ! Apr2017 for CLM, etc
    ,AERO   & ! Aerosol settings
    ,DEBUG  & !
    ,MY_OUTPUTS  &  ! e.g. EMEPSTD, FORECAST, TFMM
    ,USE_SOILWATER, USE_CONVECTION, CONVECTION_FACTOR &
    ,USE_AIRCRAFT_EMIS, USE_LIGHTNING_EMIS, USE_ROADDUST, USE_DUST &
    ,USE_EURO_SOILNOX, USE_GLOBAL_SOILNOX, EURO_SOILNOX_DEPSCALE &
-   ,USE_SEASALT, USE_POLLEN, USE_ASH, USE_NOCHEM, USE_AOD &
+   ,USE_SEASALT, USE_POLLEN, USE_ASH, USE_NOCHEM, USE_AOD,USE_PreADV &
    ,USE_uEMEP, uEMEP &
    ,INERIS_SNAP1, INERIS_SNAP2 &   ! Used for TFMM time-factors
    ,SELECT_LEVELS_HOURLY, FREQ_HOURLY  & ! incl. FORECAST, 3DPROFILES
@@ -547,8 +561,9 @@ subroutine Config_ModelConstants(iolog)
    ,PFT_MAPPINGS          & ! Allows use of external LAI maps
    ,NETCDF_DEFLATE_LEVEL,  RUNDOMAIN, DOMAIN_DECOM_MODE &
    ,JUMPOVER29FEB, HOURLYFILE_ending, USE_WRF_MET_NAMES &
-   ,dt_advec ! can be set to override dt_advec
-
+   ,dt_advec & ! can be set to override dt_advec
+   ,ZERO_ORDER_ADVEC &! force zero order horizontal and vertical advection 
+   ,fileName_O3_Top
   NAMELIST /Machine_config/ DataPath
 
   NAMELIST /INPUT_PARA/GRID,iyr_trend,runlabel1,runlabel2,&
@@ -574,10 +589,10 @@ subroutine Config_ModelConstants(iolog)
   end if
 
   if(MasterProc)then
-  ! write(*, * ) "NAMELIST IS "
+    write(*, * ) dtxt//"NAMELIST START "
   ! write(*, NML=ModelConstants_config)
   ! write(*,* ) "NAMELIST IOLOG IS ", iolog
-    write(iolog,*) "NAMELIST IS "
+    write(iolog,*) dtxt//"NAMELIST IS "
     write(iolog, NML=ModelConstants_config)
   end if
 
@@ -588,7 +603,7 @@ subroutine Config_ModelConstants(iolog)
   do i=1,size(DataPath)
     if(DataPath(i)=="NOTSET")then
       if(MasterProc)then
-        write(*,*)'WARNING: Could not find valid DataDir. Tried:'
+        write(*,*)dtxt//'WARNING: Could not find valid DataDir. Tried:'
         do j=1,i-1
           write(*,*)trim(DataPath(j))
         end do
@@ -600,16 +615,15 @@ subroutine Config_ModelConstants(iolog)
     open(IO_TMP,file=trim(DataPath(i)),iostat=iostat,action='read')! does not work without action='read'
     if(iostat==0)then
       DataDir=trim(DataPath(i))
-      if(MasterProc)write(*,*)'DataDir set to',trim(DataDir)
+      if(MasterProc)write(*,*)dtxt//'DataDir set to',trim(DataDir)
       close(IO_TMP)
       exit
     end if
   end do
 
+
   rewind(IO_NML)
   read(IO_NML,NML=INPUT_PARA)
-  startdate(4)=0                ! meteo hour to start/end the run
-  enddate  (4)=0                ! are set in assign_NTERM
 
   meteo = key2str(meteo,'DataDir',DataDir)
   meteo = key2str(meteo,'GRID',GRID)
@@ -618,9 +632,36 @@ subroutine Config_ModelConstants(iolog)
   DegreeDayFactorsFile=key2str(DegreeDayFactorsFile,'GRID',GRID)
   DegreeDayFactorsFile=key2str(DegreeDayFactorsFile,'YYYY',startdate(1))
   if(MasterProc)then
-    write(*,*)'Defined DegreeDayFactorsFile as:'
+    write(*,*)dtxt//'Defined DegreeDayFactorsFile as:'
     write(*,*)trim(DegreeDayFactorsFile)
   end if
+
+  if(trim(fileName_O3_Top)/="NOTSET")then
+     fileName_O3_Top = key2str(fileName_O3_Top,'DataDir',DataDir)
+     fileName_O3_Top = key2str(fileName_O3_Top,'YYYY',startdate(1))
+     if(MasterProc)then
+        write(*,*)dtxt//'Reading 3 hourly O3 at top from :'
+        write(*,*)trim(fileName_O3_Top)
+     end if
+  endif
+
+ ! LandCoverInputs
+  !print *, dtxt//'Landcover data:', trim(DataDir)
+  do i = 1, size(LandCoverInputs%MapFile(:))
+    if ( LandCoverInputs%MapFile(i) /= 'NOTSET' ) then
+       LandCoverInputs%MapFile(i)= &
+          key2str(LandCoverInputs%MapFile(i),'DataDir',DataDir)
+!       print *, dtxt//'Landcover file', i, trim(LandCoverInputs%MapFile(i))
+       if(MasterProc)then
+          write(*,*)dtxt//'Landcover file', i, trim(LandCoverInputs%MapFile(i))
+       end if
+    end if
+  end do
+  LandCoverInputs%LandDefs=&
+       key2str(LandCoverInputs%LandDefs,'DataDir',DataDir)
+  LandCoverInputs%Do3seDefs=&
+       key2str(LandCoverInputs%Do3seDefs,'DataDir',DataDir)
+  !print *, dtxt//'Landcover =>', LandCoverInputs
 
 end subroutine Config_ModelConstants
 endmodule ModelConstants_ml

@@ -17,8 +17,9 @@ use DA_3DVar_ml,      only: main_3dvar, T_3DVAR
 use Derived_ml,       only: DerivedProds, Derived, num_deriv2d
 use DerivedFields_ml, only: d_2d, f_2d
 use DryDep_ml,        only: init_drydep
-use EmisDef_ml,       only: loc_frac
-use Emissions_ml,     only: EmisSet,uemep_emis
+use EmisDef_ml,       only: loc_frac, loc_frac_day, loc_tot_day, loc_frac_month&
+                            , loc_tot_month,loc_frac_full,loc_tot_full, NSECTORS
+use Emissions_ml,     only: EmisSet
 use Gravset_ml,       only: gravset
 use GridValues_ml,    only: debug_proc,debug_li,debug_lj,&
                             glon,glat,projection,i_local,j_local,i_fdom,j_fdom
@@ -33,14 +34,17 @@ use ModelConstants_ml,only: MasterProc, KMAX_MID, nmax, nstep &
                            ,USE_ASH&
                            ,FREQ_HOURLY    & ! hourly netcdf output frequency
                            ,USE_POLLEN, USE_EtaCOORDINATES,JUMPOVER29FEB&
-                           ,USE_uEMEP, IOU_HOUR, IOU_HOUR_INST
+                           ,USE_uEMEP, IOU_HOUR, IOU_HOUR_INST, IOU_YEAR&
+                           ,fileName_O3_Top
 use MetFields_ml,     only: ps,roa,z_bnd,z_mid,cc3dmax, &
                             zen,coszen,Idirect,Idiffuse
+use NetCDF_ml,        only: ReadField_CDF,Real4
 use OutputChem_ml,    only: WrtChem
 use My_Outputs_ml ,   only: NHOURLY_OUT, FREQ_SITE, FREQ_SONDE
 use My_Timing_ml,     only: Code_timer, Add_2timing, tim_before, tim_before0, tim_after
 use Nest_ml,          only: readxn, wrtxn
 use Par_ml,           only: me, LIMAX, LJMAX
+use PhysicalConstants_ml, only : ATWAIR 
 use Pollen_ml,        only: pollen_dump,pollen_read
 use SoilWater_ml,     only: Set_SoilWater
 use TimeDate_ml,      only: date,daynumber,day_of_year, add_secs, &
@@ -48,6 +52,7 @@ use TimeDate_ml,      only: date,daynumber,day_of_year, add_secs, &
                             make_timestamp, make_current_date
 use TimeDate_ExtraUtil_ml,only : date2string
 use Trajectory_ml,    only: trajectory_out     ! 'Aircraft'-type  outputs
+use uEMEP_ml,         only: uEMEP_emis
 use Radiation_ml,     only: SolarSetup,       &! sets up radn params
                             ZenithAngle,      &! gets zenith angle
                             ClearSkyRadn,     &! Idirect, Idiffuse
@@ -67,10 +72,12 @@ contains
 subroutine phyche()
 
   logical, save :: End_of_Day = .false.
-  integer :: ndays,status
-  real :: thour
+  integer :: ndays,status,nstart,kstart
+  real :: thour, xtot,scale
   type(timestamp) :: ts_now !date in timestamp format
   logical,save :: first_call = .true.
+  integer ::i,j,k,dx,dy,ix,iix
+
 
   !------------------------------------------------------------------
   !     physical and  chemical routines.
@@ -91,10 +98,22 @@ subroutine phyche()
     end if
   end if
 
-! if(MasterProc) write(*,"(a15,i6,f8.3)") 'timestep nr.',nstep,thour
+  if(trim(fileName_O3_Top)/="NOTSET" .and.&
+       mod(current_date%hour,3)==0.and.current_date%seconds==0)then
+     kstart=6!NB: must be the level corresponding to model top! Hardcoded for now
+     if(DEBUG%PHYCHEM .and. MasterProc)write(*,*)'UPDATING TOP O3 with ',trim(fileName_O3_Top)
+     !first available day is 2nd January for 2008,2009,2011,2012:
+     nstart=max(1,8*(daynumber-2)+current_date%hour/3)
+     !first available day is 2nd January for 2010:
+     if(current_date%year==2010)nstart=max(1,8*(daynumber-1)+current_date%hour/3)
+     call  ReadField_CDF(trim(fileName_O3_Top),'O3',xn_adv(IXADV_O3,:,:,1),&
+          nstart=nstart,kstart=kstart,kend=kstart,&
+          interpol='zero_order',debug_flag=.false.)     
+  endif
 
   call Code_timer(tim_before)
   call readxn(current_date) !Read xn_adv from earlier runs
+
   if(FORECAST.and.USE_POLLEN) call pollen_read ()
   call Add_2timing(15,tim_after,tim_before,"nest: Read")
   if(ANALYSIS.and.first_call)then
@@ -114,6 +133,7 @@ subroutine phyche()
   end if
 
   call EmisSet(current_date)
+
   call Add_2timing(12,tim_after,tim_before,"phyche:EmisSet")
 
   !       For safety we initialise instant. values here to zero.
@@ -180,12 +200,13 @@ subroutine phyche()
   call init_drydep()
   !===================================
 
+  !must be placed just before emissions are used
+  if(USE_uEMEP)call uemep_emis(current_date)
+
   !=========================================================!
   call debug_concs("PhyChe pre-chem ")
 
   !************ NOW THE HEAVY BIT **************************!
-
-  if(USE_uEMEP)call uemep_emis(current_date)
 
   call Code_timer(tim_before0)
   call runchem()   !  calls setup subs and runs chemistry

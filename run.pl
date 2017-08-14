@@ -3,24 +3,30 @@
 #Common script for Njord, Stallo.
 #Choose $VILJE=1 or $STALLO=1
 #___________________________________________________________________
-# queue commands for PBS
 
-#Queue system commands start with #PBS (these are not comments!)
-# Vilje: (take out one # and put one # before the Stallo). 
+#Queue system commands start with #SBATCH for Stallo and #PBS for Vilje (these are not comments!)
+# to activate take out one # from ##
+#___________________________________________________________________
+#Stallo SLURM queue commands
+#submit with:  sbatch run.pl
+#for express queue (max 4 hours):  sbatch --qos=devel run.pl
+#Queue system commands start with #SBATCH 
+#SBATCH -A nn2890k
+#SBATCH --ntasks=40
+#SBATCH --mem=32000
+#SBATCH --time=4:0:0
+#activate the following line for runs which last longer than 48 hours AND use more than one node
+##SBATCH --partition=multinode 
+#SBATCH --job-name=emep
+#SBATCH --output=run.%j.out
+
+# Vilje:
 #   select= number of nodes, ncpus=number of threads per node to reserve, 
-#   mpiprocs=number of MPI threads per node. For 64 processors:
+# to activate take out one # from ##
+#   mpiprocs=number of MPI threads per node. select=number of nodes
 ##PBS -l select=4:ncpus=32:mpiprocs=32 -v MPI_MSGS_MAX=2097152,MPI_BUFS_PER_PROC=2048
-# Stallo:
-#   Some nodes on Stallo have 16, most have 20 cpus
-#   use ib for infiniband (fast interconnect).
-#   lnodes= number of nodes, ppn=processor per node (max 20 on stallo)
-#   lpmeme=memory to reserve per processor (max 16GB per node)
-##PBS -lnodes=64 -lpmem=1000MB
-##PBS -lnodes=16 -lpmem=1000MB
-##PBS -lnodes=80
-#PBS -lnodes=1:ppn=20
 # Wall time limit of run
-#PBS -lwalltime=00:20:00
+##PBS -lwalltime=00:20:00
 # Make results readable for others:
 #PBS -W umask=0022
 # Account for billing
@@ -29,17 +35,6 @@
 ##PBS -t 1-56
 #___________________________________________________________________
 
-
-#___________________________________________________________________
-#Abel queue commands ?
-
-#Queue system commands start with #SBATCH (these are not comments!)
-#SBATCH --account=nn2890k
-#SBATCH --nodes=8 --ntasks-per-node=8 --constraint=ib
-#SBATCH --mem-per-cpu=2G --time=06:00:00
-#SBATCH --job-name=emep
-#SBATCH --output=job.%N.%j.out
-#SBATCH  --error=job.%N.%j.err
 
 ######################################################################
 # Features
@@ -86,7 +81,7 @@ $| = 1; # autoflush STDOUT
 #my $VILJE=0;  #1 if Ve or Vilje is used
 #my $STALLO=1; #1 if stallo is used
 my ( $STALLO, $VILJE ) = (0) x 2;
-foreach my $key  (qw ( PBS_O_HOST HOSTNAME PBS_SERVER MACHINE )) {
+foreach my $key  (qw ( PBS_O_HOST HOSTNAME PBS_SERVER MACHINE SLURM_SUBMIT_HOST)) {
  next unless defined $ENV{$key};
  $STALLO = 1 if $ENV{$key} =~/stallo/;
  $VILJE  = 1 if $ENV{$key} =~/vilje/;
@@ -96,9 +91,9 @@ foreach my $key  (qw ( PBS_O_HOST HOSTNAME PBS_SERVER MACHINE )) {
 print "HOST DETECT: V$VILJE S$STALLO \n";
 
 # -j4 parallel make with 4 threads
-my @MAKE = ("gmake", "-j4", "MACHINE=snow");
-   @MAKE = ( "make", "-j4", "MACHINE=vilje")  if $VILJE==1 ;
-   @MAKE = ( "make", "-j4", "MACHINE=stallo") if $STALLO==1 ;
+my @MAKE = ("gmake", "-j8", "MACHINE=snow");
+   @MAKE = ( "make", "-j8", "MACHINE=vilje")  if $VILJE==1 ;
+   @MAKE = ( "make", "-j8", "MACHINE=stallo") if $STALLO==1 ;
 die "Must choose STALLO **or** VILJE !\n"
   unless $STALLO+$VILJE==1;
 
@@ -118,8 +113,10 @@ my ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_6gamma"   ,"EmChem0
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("test"    ,"EmChem09"   ,"EMEPSTD","EMEPSTD","EECCA",0);
 #  ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("testcri2","CRI_v2_R5"  ,"CRITEST","EMEPSTD","EECCA",0);
 #eg ($testv,$Chem,$exp_name,$GRID,$MAKEMODE) = ("tests","EmChem09","TESTS","RCA","EmChem09");
- ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3306","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
+ ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_11_3","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
 #($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("3074","EmChem09soa","EMEPGLOB","EMEPSTD","GLOBAL",0);
+ ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("emep-dev","EmChem09soa","EMEPSTD","EMEPSTD","EECCA",0);
+ ($testv,$Chem,$exp_name,$outputs,$GRID,$MAKEMODE) = ("rv4_13","EmChem16mt","EMEPSTD","EMEPSTD","EECCA",0);
 
 my %BENCHMARK;
 # OpenSource 2008
@@ -245,7 +242,7 @@ print "Year is $yy YEAR $year Trend year $iyr_trend\n";
 
 #---  User-specific directories (changeable)
 
-my $PETER      = "mifapw/emep";
+my $PETER      = "mifapw";
 my $DAVE       = "mifads";
 my $JOFFEN     = "mifajej";
 my $HILDE      = "mifahf";
@@ -262,7 +259,6 @@ my $BIRTHE     = "birthems";
 my $FORCAST    = "forecast";
 
 my $USER = $ENV{"USER"};
-if ($PETER =~ m/$USER/) { $USER="$PETER" };
 print "USER = $USER\n";
 
 
@@ -277,11 +273,11 @@ our $DataDir;
 if ($STALLO) {
   $HOMEROOT = "/home";
   $WORKROOT = "/global/work";
-  $DataDir  = "$WORKROOT/$PETER/Data";
+  $DataDir  = "$WORKROOT/$PETER/emep/Data";
   $MetDir   = "$DataDir/$GRID/metdata_EC/$year";
   $MetDir   = "$DataDir/$GRID/metdata_H20/$year" unless -d $MetDir;
   $MetDir   = "$DataDir/$GRID/metdata/$year"     unless -d $MetDir;
-  $MetDir   = "$WORKROOT/$PETER/ClimData/$year"  if ($GRID eq "RCA" );
+  $MetDir   = "$WORKROOT/$PETER/emep/ClimData/$year"  if ($GRID eq "RCA" );
   $MetDir   = "$DataDir/$GRID/metdata_CWF/YYYY"
               .sprintf("_%02dUTC",($CWFMETV%24)) if $CWF; # 00/12 UTC versions
 } else { #Ve or Vilje
@@ -311,7 +307,8 @@ my $ProjDataDir = "";          # Change for specific project data
 my $VBS   = 0;
 
 #User directories
-my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
+my $ProgDir  = "$HOMEROOT/$USER/emep-mscw";   # input of source-code
+   $ProgDir  = "$HOMEROOT/$USER/emep-mscw/$testv";   # input of source-code for testv
    $ProgDir  = "/prod/forecast/emep/eemep/src/Unimod.$testv" if $eCWF and ($USER eq $FORCAST);
    $ProgDir  = "$CWF_DIR/src/Unimod.$testv" if $CWF and -d $CWF_DIR;
 my $ChemDir  = "$ProgDir/ZCM_$Chem";
@@ -402,6 +399,7 @@ print "TESTING ENV:", $ENV{PWD}, "\n";
 # Default emissplits used here. if $Specials is set will look
 my $SplitDir = "$DataDir/SPLITS_JAN2010/BASE_NAEI2000_GH2009.$Chem" ;
    $SplitDir = "$ChemDir/EMISSPLIT";
+print "CHEM, SPLITDIR $ChemDir $SplitDir\n"; 
 #RB:had "~mifarb/Unify/MyData/D_EGU/SPLITS_NOV2009v2/BASE_NAEI2000_GH2009.$Chem" ;
 
 my $version     = "Unimod" ;
@@ -822,12 +820,14 @@ foreach my $scenflag ( @runs ) {
     # INERIS special! nox and pm. Take from 2010 IIASA
     #if ( $INERIS_FACS && -e "$timeseries/emissplit.specials.$poll.2010" ) {
 
-    #J16 change. Added EmChem09soa here to use default EMISSPLIT
     #J16 if (($Chem eq "EmChem09")or($Chem eq "Emergency")) { # e.g. when PM25 is not split, e.g. RCA, make EMCHEM09
-    if (($Chem eq "EmChem09")or($Chem eq "EmChem09soa")or($Chem eq "Emergency")) { # e.g. when PM25 is not split, e.g. RCA, make EMCHEM09
+    #J17 if (($Chem eq "EmChem09")or($Chem eq "EmChem09soa")or($Chem eq "Emergency")) { # e.g. when PM25 is not split, e.g. RCA, make EMCHEM09
+    #T2017 improvement: Any EmChem uses ame emissplit.specials - solves SHIPNOX problem
+    if (($Chem =~ /EmChem/)or($Chem eq "Emergency")) { # e.g. when PM25 is not split, e.g. RCA, make EMCHEM09
       $ifile{"$SplitDir/emissplit.specials.$poll"} = "emissplit.specials.$poll"
       if( -e "$SplitDir/emissplit.specials.$poll" );
-    } elsif ( $Chem eq "CRI_v2_R5" ) { # e.g. TSAP
+    #A17 } elsif ( $Chem eq "CRI_v2_R5" ) { # e.g. TSAP
+    } elsif ( $Chem =~ /CRI/ ) { # e.g. TSAP
        print "NO SPECIALS in EMISSPLIT for $Chem DIR was $SplitDir\n";
     } elsif ( -e "$timeseries/emissplit.$Specials.$poll.$iyr_trend" ) { # e.g. TSAP
       $ifile{"$timeseries/emissplit.$Specials.$poll.$iyr_trend"} =
@@ -846,8 +846,6 @@ foreach my $scenflag ( @runs ) {
 
   foreach my $mmm ($mm1,($mm1+1)..($mm2-1),$mm2) {
     my $mm = sprintf "%2.2d", $mmm;
-    $ifile{"$DATA_LOCAL/natso2$mm.dat"} =  "natso2$mm.dat" unless ($GRID eq "MACC14");
- print "natso2 $mm  \n";
    $ifile{"$DataDir/lt21-nox.dat$mm"} =  "lightning$mm.dat";
 # BIC for Saharan dust
     if ( $SoilDir ) { # Not yet for EMEP domain
@@ -900,22 +898,30 @@ foreach my $scenflag ( @runs ) {
   $ifile{"$DataDir/AnnualNdep_PS50x_EECCA2005_2009.nc"} = "annualNdep.nc";
 #}
 
-# hb NH3emis
-# New ammonia emissions  ---   NB no read permissions yet!!
-  $ifile{"/home/$HALDIS/Unimod_NMR_NH3/Unimod.rv3_6_8/Sector_NH3Emis.txt"}="Sector_NH3Emis.txt" if($NH3EMIS_VAR);
-
 # new inputs style (Aug 2007)  with compulsory headers:
 # From rv3_14 used only for FORECAST mode
   $ifile{"$DATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse" if ($CWF and ($GRID ne "MACC14")) ;
-  $ifile{"$DataDir/Landuse/landuseGLC2000_INT1.nc"} ="GLOBAL_landuse.nc";
 
-  $ifile{"$DataDir/LanduseGLC.nc"} ="LanduseGLC.nc";
+# *******
+#  APRIL 2017. Use config system  now to specify landcover files!
+# *******
+#  $ifile{"$DataDir/Landuse/landuseGLC2000_INT1.nc"} ="GLOBAL_landuse.nc";
+  #CLM $ifile{"$DataDir/LanduseGLC.nc"} ="LanduseGLC.nc";
   # NB: a 1km Landuse is also available 
-  $ifile{"$DataDir/Landuse/Landuse_PS_5km_LC.nc"} ="Landuse_PS_5km_LC.nc";
+#APR15  $ifile{"$DataDir/Landuse/Landuse_PS_5km_LC.nc"} ="Landuse_PS_5km_LC.nc";
 #  $ifile{"$DataDir/Landuse/Landuse_PS_1km_LC.nc"} ="Landuse_PS_5km_LC.nc";
 
-  $ifile{"$DataDir/LandInputs_Jul2015/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
-  $ifile{"$DataDir/LandInputs_Jul2015/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
+  #CLM $ifile{"$DataDir/LandInputs_Jul2015/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
+  #CLM $ifile{"$DataDir/LandInputs_Jul2015/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
+  # JPC:
+  #    $ifile{"$DataDir/LandInputs_Feb2017/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
+  #    $ifile{"$DataDir/LandInputs_Feb2017/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
+  #CLM      $ifile{"$DataDir/LandInputs_Feb2017/Megan4Emep.nc"} = "Megan4Emep.nc";
+  #CLM:
+#APR15      $ifile{"$DataDir/LandInputs_Apr2017/glc2000mCLM.nc"} = "LanduseGLC.nc";
+#APR15      $ifile{"$DataDir/LandInputs_Apr2017/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
+#APR15      $ifile{"$DataDir/LandInputs_Apr2017/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
+  #
 
 #For dust: clay and sand fractions
   $ifile{"$DataDir/Soil_Tegen.nc"} ="Soil_Tegen.nc";
@@ -1041,7 +1047,7 @@ foreach my $scenflag ( @runs ) {
     } else {
       print "Missing Input $f !!!\n";
       die "ERROR: Missing $f (or possibly wrong Chem$Chem)\n" 
-        unless( $f =~ /special/ or $f =~ /natso2/ );#natso2 not needed
+        unless( $f =~ /special/ );
     }
   }
 
@@ -1100,7 +1106,7 @@ foreach my $scenflag ( @runs ) {
         ."  runlabel1 = '$runlabel1',\n"
         ."  runlabel2 = '$runlabel2',\n"
         ."  startdate = ".date2str($startdate ,"%Y,%m,%d,000000,\n")
-        ."  enddate   = ".date2str($enddate   ,"%Y,%m,%d,000000,\n")
+        ."  enddate   = ".date2str($enddate   ,"%Y,%m,%d,000024,\n")
 #       ."  meteo     = '$METformat',\n" #moved to config
         ."&end\n";
     # NML namelist options.
@@ -1146,15 +1152,18 @@ foreach my $scenflag ( @runs ) {
     "startdate $startdate\nenddate $enddate\n";
     print "CWFDUMP1 $CWFDUMP[0]\nCWFDUMP2 $CWFDUMP[1]\n" if $CWF;
 
-    if ($DRY_RUN) {
-      print "DRY_RUN: not running '| mpirun ./$LPROG'\n";
-      system("ls -lht --time-style=long-iso *")
+    my $MPIRUN = "mpiexec";
+    if ($STALLO) {
+      $MPIRUN = "mpirun";
     } elsif ($USER eq $FORCAST) {
-    # FORCAST/forecast user use special mpiexec_mpt!
-      open (PROG, "| mpiexec_mpt ./$LPROG") || die "Unable to execute $LPROG. Exiting.\\n" ;
-      close(PROG);
+      $MPIRUN = "mpiexec_mpt"; # forecast user use special mpiexec_mpt!
+    }
+    if ($DRY_RUN) {
+      print "DRY_RUN: not running '| $MPIRUN ./$LPROG'\n";
+      system("ls -lht --time-style=long-iso *");
     } else {
-      open (PROG, "| mpiexec ./$LPROG") || die "Unable to execute $LPROG. Exiting.\\n" ;
+      open (PROG, "| $MPIRUN ./$LPROG") ||
+        die "Unable to execute $LPROG. Exiting.\\n" ;
       close(PROG);
     }
 

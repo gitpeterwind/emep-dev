@@ -14,13 +14,13 @@ use ModelConstants_ml, only: END_OF_EMEPDAY, num_lev3d, MasterProc, &
                              DEBUG => DEBUG_OUTPUTCHEM, METSTEP, &
                              IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY,&
                              IOU_HOUR,IOU_HOUR_INST, IOU_MAX_MAX,&
-                             startdate, enddate 
+                             startdate, enddate, USE_uEMEP
 use NetCDF_ml,         only: CloseNetCDF, Out_netCDF, filename_iou
 use OwnDataTypes_ml,   only: Deriv, print_deriv_type
 use Par_ml,            only: LIMAX,LJMAX
 use TimeDate_ml,       only: tdif_secs,date,timestamp,make_timestamp,current_date, max_day ! days in month
 use TimeDate_ExtraUtil_ml,only: date2string
-
+use uEMEP_ml,          only: out_uEMEP
 
 implicit none
 
@@ -173,6 +173,11 @@ subroutine Output_fields(iotyp)
   if(num_deriv3d > 0) call Output_f3d(iotyp,num_deriv3d,nav_3d,f_3d,d_3d,Init_Only)
 
   call CloseNetCDF
+
+  !uemep use own outputting for now, since it has several extra dimensions
+  if(USE_uEMEP)then
+    call out_uEMEP(iotyp)
+  endif
 
   ! Write text file to mark output is finished
   if(.not.all([FORECAST,MasterProc,wanted_iou(iotyp)]))return

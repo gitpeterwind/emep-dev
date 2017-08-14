@@ -147,14 +147,30 @@ end type VBST
 
 !==================
 ! uEMEP parameters
-integer, parameter :: Nsector_uemep_max=10
-type, public :: uEMEP_type
-  integer     :: Nix=0      ! Number of components to take
-  integer, dimension(15)  :: ix    ! Index of components to take
-  integer     :: sector=0    ! if only one sector is to be taken
-  integer     :: Nsectors=1    ! Number of sector to be taken
-  integer     :: sectors(Nsector_uemep_max)=-1    ! sectors to be taken
+integer, public, parameter :: Npoll_uemep_max=7 !max number of uEMEP pollutant
+integer, public, parameter :: Nsector_uemep_max=10 !max number of sectors for each uEMEP pollutant
+type, public :: poll_type
   character(len=4):: emis='none'    ! one of EMIS_File: "sox ", "nox ", "co  ", "voc ", "nh3 ", "pm25", "pmco"
+  integer, dimension(Nsector_uemep_max) ::sector=-1    ! sectors to be included for this pollutant. Zero is sum of all sectors
+  integer :: EMIS_File_ix = 0 !index in EMIS_File (set by model)
+  integer :: Nsectors = 0 !set by model
+  integer     :: Nix=0      ! Number of components to take (set by model)
+  integer, dimension(15) :: ix    ! Index of components to take (set by model)
+  real, dimension(15)    :: mw=0.0 ! (set by model)
+end type poll_type
+
+type, public :: uEMEP_type
+  integer     :: Npoll=0    ! Number of pollutants to treat in total
+  integer     :: Nsec_poll=1    ! Number of sector and pollutants to treat in total
+  integer     :: dist=0    ! max distance of neighbor to include. (will include a square with edge size=2*dist+1)
+  integer     :: Nvert=20   ! number of k levels to include
+  integer     :: DOMAIN(4) = -999
+  type(poll_type) :: poll(Npoll_uemep_max) !pollutants to include
+  logical     :: YEAR =.true.! Output frequency
+  logical     :: MONTH =.false.
+  logical     :: DAY =.false.
+  logical     :: HOUR =.false.
+  logical     :: HOUR_INST =.false.
 end type uEMEP_type
 
 contains

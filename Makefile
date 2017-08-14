@@ -9,7 +9,7 @@ include Makefile.SRCS
 
 F90 = mpif90
 DEBUG_FLAGS = -check all -check noarg_temp_created -debug-parameters all \
-              -traceback -ftrapuv -g -fpe0 -O0
+              -traceback -ftrapuv -g -fpe0 -O0 -fp-stack-check
 OPT_FLAGS = -O3 -ftz
 F90FLAGS = -shared-intel -r8 -convert big_endian -IPF_fp_relaxed -assume noold_maxminloc
 LDFLAGS =  $(F90FLAGS) $(LLIB) $(LIBS)
@@ -18,12 +18,13 @@ export MACHINE ?= stallo
 export DEBUG ?= no
 export ARCHIVE ?= no
 ifeq ($(MACHINE),stallo)
-  MODULES = intel/13.0 openmpi/1.6.2 netcdf/4.2.1.1
+  MODULES = netCDF-Fortran/4.4.4-intel-2016b 
   LDFLAGS +=  $(shell nc-config --flibs)
   F90FLAGS += $(shell nc-config --cflags)
   MAKEDEPF90=/home/mifapw/bin/makedepf90
   OPT_FLAGS = -O2 -ftz
   LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
+  F90=mpiifort
 else ifeq ($(MACHINE),gstallo)
   # Needs module swap intel gcc/4.7.2
   MODULES = gcc/4.7.2 openmpi/1.6.2 netcdf/4.2.1.1
@@ -125,7 +126,7 @@ touchdepend:
 # Model/Config specific targets
 ###
 # My_* files pre-requisites
-EMEP HTAP MACC MACC-EVA Polen EmChem09 EmChem09-ESX CRI_v2_R5 eEMEP SR-MACC: \
+EMEP HTAP MACC MACC-EVA Polen EmChem16mt EmChem09 EmChem09-ESX CRI_v2_R5 eEMEP SR-MACC: \
 	  ./ZD_OZONE/My_Outputs_ml.f90 \
 	  ./ZD_3DVar/My_3DVar_ml.f90 ./ZD_Pollen/My_Pollen_ml.f90 \
 	  ./ZD_EXTRA/My_ESX_ml.f90
@@ -149,16 +150,16 @@ TEST:
 	  SRCS="$(filter-out Unimod.f90,$(SRCS)) ModuleTester.f90"
 
 # Link My_* files and MAKE target
-EMEP HTAP MACC MACC-EVA MACC-Pollen EmChem09 EmChem09-ESX CRI_v2_R5 eEMEP SR-MACC:
+EMEP HTAP MACC MACC-EVA MACC-Pollen EmChem16mt EmChem09 EmChem09-ESX CRI_v2_R5 eEMEP SR-MACC:
 	ln -sf $(filter %.f90 %.inc,$+) . && $(MAKE)
 
 # GenChem config
 .SECONDEXPANSION:
-EMEP:               GenChem-EMEP-EmChem09soa
+EMEP:               GenChem-EMEP-EmChem16mt
 EmChem09 CRI_v2_R5: GenChem-EMEP-$$@
 EmChem09-ESX:       GenChem-EMEP-EmChem09
-HTAP MACC SR-MACC:  GenChem-$$@-EmChem09soa
-MACC-EVA:           GenChem-MACCEVA-EmChem09soa
+HTAP MACC SR-MACC:  GenChem-$$@-EmChem16mt
+MACC-EVA:           GenChem-MACCEVA-EmChem16mt
 MACC-Pollen:        GenChem-MACCEVA-Pollen
 eEMEP:              GenChem-$$@-Emergency
 eEMEP ?= Emergency  # Emergency | AshInversion

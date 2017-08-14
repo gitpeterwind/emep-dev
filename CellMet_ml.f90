@@ -1,5 +1,4 @@
-! <CellMet_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
-!          Chemical transport Model>
+! <CellMet_ml.f90 - A component of the EMEP MSC-W Chemical transport Model>
 !*****************************************************************************! 
 !* 
 !*  Copyright (C) 2007-2012 met.no
