@@ -138,6 +138,17 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+14th   Aug  2017  Alvaro
+
+cherry-pick patches from cams50 branch
+  2017-06-29: fix Nest for native_grid, close #48
+  2017-05-15: log #obs assimilated
+  2017-05-12: compile new 3Dvar17 version
+  2017-05-10: import new 3Dvar17 version
+  2017-03-20: fix grass pollen forecast (#12)
+  2017-01-02: fix pollen forecast crash, close #18
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 8th   Aug  2017  Alvaro
 
 Fix GFASv1 ForestFire mapping for EmChem16mt
