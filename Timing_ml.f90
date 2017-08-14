@@ -74,16 +74,16 @@ subroutine Add_2timing(n,after,before,txt)
   before = after
 end subroutine Add_2timing
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-subroutine Output_timing(io, me,np,nt,nx,ny)
+subroutine Output_timing(io, me,np,nx,ny)
   integer, intent(in) :: io         !  i/o number
   integer, intent(in) :: me         ! number of this processor
-  integer, intent(in) :: np, nt     ! number of processors, time-steps
+  integer, intent(in) :: np     ! number of processors
   integer, intent(in) :: nx, ny     !  dimensions of grid
   integer :: n
 
   open(io,file='Timing.out')
-  write(io,"(a40,I7,2i5)") "Timing for No. grids, procs, time-steps",nx*ny,np,nt
-  write( 6,"(a40,I7,2i5)") "Timing for No. grids, procs, time-steps",nx*ny,np,nt
+  write(io,"(a40,I7,2i5)") "Timing for No. grids, procs",nx*ny,np
+  write( 6,"(a40,I7,2i5)") "Timing for No. grids, procs",nx*ny,np
 
   do n=1,NTIMING
     if((timing(n)=="").and.(mytimm(n)==0.0)) cycle

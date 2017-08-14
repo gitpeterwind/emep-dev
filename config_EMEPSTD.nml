@@ -20,6 +20,24 @@
   EXP_NAME              = 'EMEPSTD',
   MY_OUTPUTS            = 'EMEPSTD',
 !------------------------------
+! changes March-April 2017
+ EmBio%GlobBvocMethod = 'GLC-CLM',  ! NEW default for GLOBAL, not used for Euro
+ EmBio%CLF            =  0.59,      ! 1/1.7 for CLM
+!
+ LandCoverInputs%LandDefs   = 'DataDir/LandInputs_Apr2017/Inputs_LandDefs.csv',
+ LandCoverInputs%Do3seDefs  = 'DataDir/LandInputs_Apr2017/Inputs_DO3SE.csv',
+ LandCoverInputs%MapFile =
+    'DataDir/Landuse/Landuse_PS_5km_LC.nc',
+    'DataDir/LandInputs_Apr2017/glc2000mCLM.nc',
+ YieldModifications = '-' ,   ! None for EmChems 'JPC-VY-acid'
+! EmBio%IsopFac           =  1.0,
+! PBL%ZiMIN             =  50.0,
+!------------------------------
+! testing March 2017
+! EmBio%GlobBvocMethod = 'MEGAN',
+! EmBio%IsopFac           =  1.0,
+! PBL%ZiMIN             =  50.0,
+!------------------------------
 !USES system started June 2013
 ! Only partially implemented. See below and ModelConstants_ml
   USES%testname         = 'EMEPSTD',
@@ -27,7 +45,7 @@
   USES%EMISSTACKS       = F,            ! Reads PointSources file
   USES%DEGREEDAY_FACTORS = T,
   USES%PlumeMethod      = 'PVDI',       ! default PVDI, possible: NILU, ASMI, PVDI
-  USES%n2o5HydrolysisMethod = "SmixTen" ! "Gamma:0.002"  ! "OrigRiemer"
+  USES%n2o5HydrolysisMethod = "Smix" ! "SmixTen" "Gamma:0.002" NOT:"OrigRiemer"
   USES%WHITECAPS =       "Callaghan"    ! Norris , Monahan
   USES%PFT_MAPS         = F,            ! PFT LAI tests
 !------------------------------
@@ -45,13 +63,12 @@
   USE_POLLEN            = F,            ! EXPERIMENTAL. Only works if start Jan 1
   USE_ROADDUST          = T,            ! Only EECCA?
   USE_DUST              = T,            ! Only EECCA?
-  USE_uEMEP             = F,            ! T for local fractions output
-  uEMEP%emis            = "pm25",       ! one of EMIS_File: "sox ", "nox ", "co  ", "voc ", "nh3 ", "pm25", "pmco"
-  uEMEP%sector          = 0,            ! 0 for all sectors, or choose one sector
   NETCDF_DEFLATE_LEVEL  = 4,            ! 1-9 GZIP compress, 0 no compress, -1 netcdf3
 !-------- Can switch on INERIS-type degreeday stuff
   INERIS_SNAP1          = F,            ! Used for TFMM runs
   INERIS_SNAP2          = F,            ! Used for TFMM runs
+
+
 !------------------------------
 !  AERO%EQUILIB          = 'MARS ',     ! MARS, MARS_2900, GEOSCHEM, EQSAM, or EMEP
 !  AERO%NSIZE etc... see ModelConstants
@@ -67,6 +84,7 @@
   EmisDir                 = 'DataDir/EECCA/Modrun15/2015_EMEP_trends/model_input_YYYY',
 
   emis_inputlist(1)%name  = 'EmisDir/gridPOLL',    ! example of ASCII type.
+!  emis_inputlist(1)%name  = 'DataDir/Emis_TNO7_MACCIII/Emis_TNO7_MACCIII_2011.nc',
 !  emis_inputlist(1)%pollName(1:2)     = 'voc','sox', !example of restricted choice of pollutants
 
 
@@ -113,7 +131,38 @@
               'Wheat_Irrigated', 'Wheat_NonIrrig',
             ! 'CCE_SPRUCE','CCE_BEECH','ACE_PINE','ACE_OAK','ACE_BEECH',
             ! 'NEUR_SPRUCE','NEUR_BIRCH','MED_OAK','MED_PINE','MED_BEECH'
+
+
+!-------uEMEP setup example
+  USE_uEMEP             = F, ! T for computing uEMEP 
+  !uEMEP pollutants and sectors to include:
+  uEMEP%poll(1)%emis="pm25" ! any of EMIS_File: "sox ", "nox ", "co  ", "voc ", "nh3 ", "pm25", "pmco"
+  uEMEP%poll(1)%sector(1)=0 !0 means sum of all sectors
+  uEMEP%poll(1)%sector(2)=1 !1 means sector 1
+  uEMEP%poll(1)%sector(3)=7
+  uEMEP%poll(1)%sector(4)=8
+
+  uEMEP%poll(2)%emis="nox "
+  uEMEP%poll(2)%sector(1)=0
+  uEMEP%poll(2)%sector(2)=7
+  uEMEP%poll(2)%sector(3)=8
+
+  !uEMEP frequency of output separate file for each. Can be any of: YEAR, MONTH, DAY, HOUR, HOUR_INST 
+  uEMEP%YEAR = T !set T as default
+  uEMEP%HOUR_INST = F !set F as default
+
+  uEMEP%dist = 3  !how far the neighbors can be in each direction (NB: high cost for large dist)
+  uEMEP%Nvert = 7 !How many vertical level to include in treatment. Should be higher than highest emissions (?)
+
+!  uEMEP%DOMAIN = 370, 420, 270, 320, !which domain to include in output. Will save disk, but not CPU to reduce.
+
 !-------- Sub domain (x0,x1,y0,y1)
+! RUNDOMAIN =  200, 214, 150, 164,      !EMEP01 reduced
+! RUNDOMAIN =  345, 406, 268, 324,      !GLOBAL05  reduced around South Norway
+! RUNDOMAIN =  230, 530, 150, 415,      !EMEP01 reduced around South Norway
+! RUNDOMAIN =  230, 450, 120, 350,      !EMEP01 reduced South Norway Apr 2017
+! RUNDOMAIN =  370, 420, 270, 320,      !EMEP01 small oslo tests reduced to South Norway
+! RUNDOMAIN =  330, 430, 250, 350,      !EMEP01 reduced to South Norway
 !!RUNDOMAIN =   1, 100,  1, 100,      ! (EECCA benchmarks)
 ! RUNDOMAIN =  40, 210, 12, 184,      ! SR TNO28 area
 ! RUNDOMAIN =  20,  70, 40, 90,       ! LPS tests

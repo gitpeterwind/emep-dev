@@ -65,6 +65,7 @@ module Met_ml
 ! 
 !============================================================================= 
 
+use emep_Config_mod,      only : PBL
 use OwnDataTypes_ml,      only : Deriv
 use BLPhysics_ml,         only : &
    KZ_MINIMUM, KZ_MAXIMUM, KZ_SBL_LIMIT,PIELKE   &
@@ -73,7 +74,7 @@ use BLPhysics_ml,         only : &
   ,MIN_USTAR_LAND          & ! sets u* > 0.1 m/s over land
   ,OB_invL_LIMIT           & ! 
   ,Test_BLM                & ! Tests all Kz, Hmix routines
-  ,PBL_ZiMAX, PBL_ZiMIN    & ! max  and min PBL heights
+!  ,PBL_ZiMAX, PBL_ZiMIN    & ! max  and min PBL heights
   ,JericevicRiB_Hmix       & ! TESTING
   ,JericevicRiB_Hmix0      & ! Used, now allows shallow SBL
   ,Venkatram_Hmix          & ! TESTING
@@ -1770,8 +1771,8 @@ contains
                  p_bnd(:), pzpbl(i,j), &       
                  .false.)
 
-                 pzpbl(i,j) = max( PBL_ZiMIN, pzpbl(i,j))  ! Keep old fixed height ZiMin here
-                 pzpbl(i,j)  = min( PBL_ZiMAX, pzpbl(i,j))
+                 pzpbl(i,j) = max( PBL%ZiMIN, pzpbl(i,j))  ! Keep old fixed height ZiMin here
+                 pzpbl(i,j)  = min( PBL%ZiMAX, pzpbl(i,j))
 
                end do
             end do
@@ -1808,8 +1809,8 @@ contains
 
            ! Set limits on Zi
               forall(i=1:limax,j=1:ljmax)
-                 pzpbl(i,j) = max( PBL_ZiMIN, pzpbl(i,j))
-                 pzpbl(i,j) = min( PBL_ZiMAX, pzpbl(i,j) )
+                 pzpbl(i,j) = max( PBL%ZiMIN, pzpbl(i,j))
+                 pzpbl(i,j) = min( PBL%ZiMAX, pzpbl(i,j) )
               end forall
            ! mid-call at k=19 is lowest we can resolve, so set as min
            !ORIG   forall(i=1:limax,j=1:ljmax)
@@ -1823,7 +1824,7 @@ contains
 
      if(LANDIFY_MET) &
          call landify(pzpbl,"pzbpl") 
-     call smoosp(pzpbl,PBL_ZiMIN,PBL_ZiMAX)
+     call smoosp(pzpbl,PBL%ZiMIN,PBL%ZiMAX)
 ! and for later...
 
         !======================================================================
@@ -2181,7 +2182,6 @@ contains
     end do
 
   end subroutine extendarea
-  !  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
   subroutine landify(x,intxt,xmin,xmax,wfmin,xmask)
     real, dimension(LIMAX,LJMAX), intent(inout) :: x

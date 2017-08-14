@@ -4,6 +4,7 @@ module BLPhysics_ml
  !  here in future. Try to keep 1-D or elemental to allow use in offline codes 
  ! (*No* routines in use, except for testing)
 
+ use emep_Config_mod,       only : PBL
  use Landuse_ml,           only : Landcover, water_fraction
  use ModelConstants_ml,    only : KMAX_MID, KMAX_BND, KWINDTOP, PT
  use PhysicalConstants_ml, only : KARMAN, GRAV
@@ -12,8 +13,8 @@ module BLPhysics_ml
 
 ! minimum value now generally calculated as z_mid(19), but we
 !   keep a fixed value for smoothing. 
- real, parameter, public :: PBL_ZiMIN=100.   ! EMEP/TI and smooth(zi)
- real, parameter, public :: PBL_ZiMAX=3000.  ! EMEP/TI
+! real, parameter, public :: PBL_ZiMIN=100.   ! EMEP/TI and smooth(zi)
+! real, parameter, public :: PBL_ZiMAX=3000.  ! EMEP/TI
 
 ! Choose one Hmix method here (not needed for NWP?)
  character(len=4), parameter, public :: HmixMethod = &
@@ -558,7 +559,7 @@ subroutine TI_Hmix (Kz, zm, zb, fh, th, exnm, pb, zi, debug_flag)
  !..The height of the stable BL is the lowest level for which:
  !..xksm .le. 1 m2/s (this limit may be changed):
  
-  zis = PBL_ZiMIN
+  zis = PBL%ZiMIN
   nh1 = KMAX_MID
   nh2 = 1
 
@@ -572,7 +573,7 @@ subroutine TI_Hmix (Kz, zm, zb, fh, th, exnm, pb, zi, debug_flag)
   end do
 
   k=nh1
-  if(zb(nh1) >=  PBL_ZiMIN) then
+  if(zb(nh1) >=  PBL%ZiMIN) then
 
       if( abs(xksm(k)-xksm(k-1)) > eps) then
 
@@ -580,7 +581,7 @@ subroutine TI_Hmix (Kz, zm, zb, fh, th, exnm, pb, zi, debug_flag)
                + (KZ_SBL_LIMIT -xksm(k-1))*zb(k))&
                      /(xksm(k)-xksm(k-1))
       else
-          zis= PBL_ZiMIN
+          zis= PBL%ZiMIN
       end if
 
    end if
@@ -670,7 +671,7 @@ subroutine TI_Hmix (Kz, zm, zb, fh, th, exnm, pb, zi, debug_flag)
            !end if
            
 
-           ziu=PBL_ZiMAX
+           ziu=PBL%ZiMAX
 
            trc=0 
         end if
@@ -678,7 +679,7 @@ subroutine TI_Hmix (Kz, zm, zb, fh, th, exnm, pb, zi, debug_flag)
      end do ! while
 
   zi = max( ziu, zis)
-  zi = min( PBL_ZiMAX, zi)
+  zi = min( PBL%ZiMAX, zi)
 
 
 end subroutine TI_Hmix

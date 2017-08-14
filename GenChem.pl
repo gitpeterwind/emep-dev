@@ -409,11 +409,23 @@ print LOG "\n\n............... read_reactions .........................
 
 		my $factor = 1;
 		@rhs = (); @rhtracer = (); %rhfactor = ();
+		#my @yFacs = ();
+		my $yFac = ''; 
+		my $nFac = 0;
 		while ( ($term=$terms[++$i]) ne ";" ){
+			$nFac++ ;
+			my $last = $i - 1 ;
+			print "RHS - i$i n$nFac y : $yFac\n";
 			if ( &is_float($term)  ){  # matches any number (inc. eE type, but not dD)
-			  $factor = $term ;
+			  $factor = $term ; # JPC
 			} elsif ( $term eq "+" ){
 			   ;
+			} elsif ($term =~ /\|Y/ ){ # JPC
+			  $yFac = $term ;
+			  die ("Mangled YA line $line\n")  unless ( $terms[$last] eq '+' || $terms[$last] eq '=' );
+			  $yFac =~ s/\|//g ;
+                          print "YYY $term I$i N$nFac  -> $yFac\n" ;
+                          print "YYY factor $factor I$flux\n" ;
 			} elsif ($term =~ /{.+}/ ){ # Matches {} - tracers
 			   push(@rhtracer,$term) ;  # Add tracer
 			   count_tracer($term);    # Count atom
@@ -426,9 +438,19 @@ print LOG "\n\n............... read_reactions .........................
 			   push(@rhs,$term);      # Add to rhs array
 	printall("CHECK_MATCH FROM RHS  RR${term}RR ");
 			   check_match( $term ) ;  # Check that species exists
-			   process_rhs( $term,$factor,$flux ) ;
-			   if( $factor != 1) {printall("Used RH factor $factor for $term\n")};
+			   my $dbg = ( $term eq "OH") ;
+			   print "PREFAC y $yFac f  $factor\n" ;
+
+			   process_rhs( $term,$factor, $yFac, $flux ) ;
+
+			   $yFac = '' ; # reset
+
+			   #YJPC if( $factor != 1) {printall("Used RH $i factor $factor for $term\n")};
+			   printall("JPC $yFac RH $nFac factor $factor for $term\n");
+			#   printall("JPC TO: $yFacs[$nFac-1] RH $i factor $factor for $term\n");
 			   $rhfactor{$term} = $factor, $factor = 1;
+#			   printall("JPCRHSfactor $term Fac: $rhfactor{$term}\n" ) ;
+			   print("JPCRHSfactor $term Fac: $rhfactor{$term}\n" ) ;
 			}
 		}
 		carbon_count_etc() ;
@@ -729,23 +751,48 @@ sub process_rhs {
 ## string "P =  .." for fortran code output. The user-defined variable
 ## $PROD can be e.g. "P" or "P(iq)" or whatever.
 #######################################################################
-	my ($spec,$factor,$flux) = @_ ;
+	my ($spec,$factor,$yFac,$flux) = @_ ;
 	my ($i) ;
+        #my $dbg =( $factor =~ /YG_BPIN/ && $spec == "CO") ;
+        my $dbg =( $spec eq "H2O2") ;
+        $dbg = 1; # ( $spec eq "H2O2") ;
+	my $yf = '' ;
+	if ( $yFac ){
+	   $yf = "$yFac*" ;
+	   $flux = "$yFac * $flux";
+	   print ("FOUNDY f $factor y $yFac fy $yf fl $flux \n") ;
+	   #die('YF')
+	}
 
-	if ( $factor != 1 ){ $flux = $factor . "*" . $flux }
+	#if ( $yield =~ /Y.*/  ){  # Yield system
+	#    print("PROCESSRHS FIN $spec F $factor FLUX $flux\n") if $dbg ;
+        #    $flux = $factor . "*" . $flux ;
+	#    print("PROCESSRHS FOUT $spec F $factor FLUX $flux\n") if $dbg ;
+	#}
 
-	if ( $prod{$spec} and $factor > 0 )
+        if ( $factor != 1 ){ 
+		$flux = $factor . "*" . $flux ;
+	        print("PROCESSRHS IN $spec F $factor FLUX $flux\n") if $dbg ;
+	}
+
+	if ( $prod{$spec} and $factor > 0 ) # Continue for spec
 	{
 		$prod{$spec}    .= ( $CONTLINE . "   + $flux" )  ;
+        	print("AA Fl $flux P$prod{$spec}\n") if $dbg ;
 	}
 	elsif ( $prod{$spec} and $factor < 0 )
 	{
 		$prod{$spec}    .= ( $CONTLINE . "    $flux" )  ;
+        	print("BB Fl $flux P$prod{$spec}\n") if $dbg ;
+        	print("BB Fl $flux P$prod{$spec}\n") ;
+		die("BB Shouldn'rt happen?")
 	}
-	else
+	else # Start new 
 	{
 		$prod{$spec}    = "\n      $PROD = " . $CONTLINE . "     " .  $flux ;
+        	print("CC Fl $flux P$prod{$spec}\n") if $dbg ;
 	}
+        print("PROCESSENDprod $spec Fac $factor Prod $prod{$spec}\n") if $dbg ;
 
 } # end of sub process_rhs
 

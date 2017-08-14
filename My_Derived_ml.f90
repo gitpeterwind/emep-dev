@@ -32,13 +32,13 @@ use Chemfields_ml,    only: xn_adv, xn_shl, cfac
 use ChemSpecs             ! Use IXADV_ indices...
 use ChemGroups_ml         ! Allow all groups to ease compilation
                           !  eg. OXN_GROUP, DDEP_OXNGROUP, BVOC_GROUP
-use EmisDef_ml,       only: NSECTORS, EMIS_FILE
+use EmisDef_ml,       only: NSECTORS, EMIS_FILE, Nneighbors
 use EmisGet_ml,       only: nrcemis, iqrc2itot
 use GridValues_ml,    only: RestrictDomain
 use Io_Nums_ml,       only: IO_NML
 use Io_Progs_ml,      only: PrintLog
 use ModelConstants_ml,only: MasterProc, SOURCE_RECEPTOR, DEBUG, & !! => DEBUG_MY_DERIVED &
-                            USE_AOD, USE_SOILNOX, USE_OCEAN_DMS, USE_OCEAN_NH3, USE_uEMEP, &
+                            USE_AOD, USE_SOILNOX, USE_OCEAN_DMS, USE_OCEAN_NH3, &
                             IOU_KEY,      & !'Y'=>IOU_YEAR,..,'I'=>IOU_HOUR_INST
                             KMAX_MID,     & ! =>  z dimension
                             RUNDOMAIN,    &
@@ -73,11 +73,14 @@ public  :: My_DerivFunc ! Miscelleaneous functions of xn_adv for output
 
 !============ parameters for concentration + dep outputs ==================!
 integer, public, parameter ::       &
-  MAX_NUM_DERIV2D = 283,            &
-  MAX_NUM_DERIV3D =  16,            &
+  MAX_NUM_DERIV2D = 343,            &
+  MAX_NUM_DERIV3D = 179,            &
   MAX_NUM_DDEP_ECOS = 6,            & ! Grid, Conif, etc.
   MAX_NUM_DDEP_WANTED = NSPEC_ADV,  & !plenty big
-  MAX_NUM_WDEP_WANTED = NSPEC_ADV     !plenty big
+  MAX_NUM_WDEP_WANTED = NSPEC_ADV,  & !plenty big
+  MAX_NUM_NEWMOS  = 10,           & !careful here, we multiply by next:
+  MAX_NUM_MOSCONCS  = 10,           & !careful here, we multiply by next:
+  MAX_NUM_MOSLCS    = 10              !careful here, we multiply bY prev:
 character(len=TXTLEN_DERIV), public, save :: &
   wanted_deriv2d(MAX_NUM_DERIV2D) = NOT_SET_STRING, &
   wanted_deriv3d(MAX_NUM_DERIV3D) = NOT_SET_STRING
@@ -136,26 +139,26 @@ integer, private, save :: nOutMET
 
 !- specify some species and land-covers we want to output
 ! dep. velocities for in netcdf files. Set in My_DryDep_ml.
-type(typ_s5ind), public, parameter, dimension(1) :: &
-  NewMosaic =[typ_s5ind('Mosaic','VG','O3','Grid','cms','YMD')]
+!A17 type(typ_s5ind), public, parameter, dimension(1) :: &
+!A17 QUERY - WHY 1???
+! NewMosaic seems to mean new-style, to avoid  needing all combinations
+! of MET & LC
+type(typ_s5ind), public, save, dimension(MAX_NUM_NEWMOS) :: &
+  NewMosaic = typ_s5ind('-','-','-','-','-','-')
+  !A17 =[typ_s5ind('Mosaic','VG','O3','Grid','cms','YM')]
+integer, private, save :: nOutputMosMet, nOutputMosLC, nOutputNewMos
+character(len=10), private, save ::  Mosaic_timefmt='YM'  ! eg 'YMD'
 
 ! For met-data and canopy concs/fluxes ...
-character(len=TXTLEN_DERIV), public, parameter, dimension(4) :: &
-  MOSAIC_METCONCS = [character(len=TXTLEN_DERIV):: & 
-    ! all array members will have len=TXTLEN_DERIV
-    "USTAR","LAI","CanopyO3","FstO3"] ! SKIP CanopyO3
-!character(len=TXTLEN_DERIV), public, parameter, dimension(2) :: &
-! MOSAIC_METCONCS = (/ "USTAR", "LAI  " /) ! TFMM "VPD     "  &
-                     ! ,"CanopyO3" & !SKIP
-     !,"VPD","FstO3","EVAP","Gsto" & !SKIP
-!TFMM ,"USTAR","INVL"/)
+character(len=TXTLEN_DERIV), public, save, dimension(MAX_NUM_MOSCONCS) :: &
+  MOSAIC_METCONCS = '-' ! = [character(len=TXTLEN_DERIV):: & 
+!A16    "USTAR","LAI","CanopyO3","FstO3"] ! SKIP CanopyO3
+     !,"VPD","FstO3","EVAP","Gsto" ,"USTAR","INVL"/)
 ! "g_sto" needs more work - only set as L%g_sto
 
-character(len=TXTLEN_DERIV), public, save, dimension(6) :: &
-  MET_LCS = [character(len=TXTLEN_DERIV):: & 
-  ! all array members will have len=TXTLEN_DERIV
-  !"DF","GR","CF","BF","NF"]
-   "DF","GR","BF","TC","IAM_DF","IAM_CR"]
+character(len=TXTLEN_DERIV), public, save, dimension(MAX_NUM_MOSLCS) :: &
+  MET_LCS = '-' !A17 = [character(len=TXTLEN_DERIV):: & 
+!A17    "DF","GR","BF","TC","IAM_DF","IAM_CR"]
 
 !----------------------
 ! For some reason having this as a parameter caused problems for PC-gfortran runs.
@@ -173,7 +176,7 @@ contains
 !=========================================================================
 subroutine Init_My_Deriv()
 
-  integer :: i, itot, nDD, nMET, nVEGO3=0, n1, istat, nMc
+  integer :: i, itot, nDD, nMET, nVEGO3=0, n1, istat, nMc, neigh
   integer :: nOutputConcs
   character(len=100) :: errmsg
   character(len=TXTLEN_DERIV), dimension(size(OutputConcs(:)%txt1)) :: &
@@ -185,8 +188,10 @@ subroutine Init_My_Deriv()
   logical ::  &
     lev3d_from_surface=.false. ! levels are to be read from surface up
   character(len=2)::  isec_char
+  character(len=3)::  neigh_char
   NAMELIST /OutputConcs_config/OutputMisc,OutputConcs,OutputVegO3
-  NAMELIST /OutputDep_config/DDEP_ECOS, DDEP_WANTED, WDEP_WANTED, SDEP_WANTED
+  NAMELIST /OutputDep_config/DDEP_ECOS, DDEP_WANTED, WDEP_WANTED, SDEP_WANTED,&
+             NewMosaic, MOSAIC_METCONCS, MET_LCS, Mosaic_timefmt
   NAMELIST /OutputSize_config/fullrun_DOMAIN,month_DOMAIN,day_DOMAIN,hour_DOMAIN,&
                               num_lev3d,lev3d,lev3d_from_surface
 
@@ -234,6 +239,9 @@ subroutine Init_My_Deriv()
   nOutputConcs = find_index("-", OutputConcs(:)%txt1, first_only=.true. ) -1
   nOutputVegO3 = find_index("-", OutputVegO3(:)%name, first_only=.true. ) -1
   nOutputWdep  = find_index("-", WDEP_WANTED(:)%txt1, first_only=.true. ) -1
+  nOutputMosMet = find_index("-", MOSAIC_METCONCS(:), first_only=.true. ) -1
+  nOutputMosLC  = find_index("-", MET_LCS(:), first_only=.true. ) -1
+  nOutputNewMos = find_index("-", NewMosaic(:)%txt1, first_only=.true. ) -1
        
   if(MasterProc) write(*,"(a,i3)") "NMLOUT nOUTMISC ", nOutputMisc
   do i = 1,nOutputMisc  
@@ -300,22 +308,7 @@ subroutine Init_My_Deriv()
     tag_name(1) = "Emis_mgm2_Ocean_NH3"
     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
   end if
-  if(USE_uEMEP)then
-    !NOTE "Local_Fraction" must be AFTER "Local_Pollutant" and "Total_Pollutant"
-     tag_name(1) = "Total_Pollutant"
-     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
-     do isec=1,NSECTORS
-        !        if(any(uEMEP%sectors(:)==isec))then
-        write(isec_char,fmt='(i2.2)')isec
-        tag_name(1:2) = [character(len=TXTLEN_DERIV)::&
-             "Local_Pollutant_sec"//isec_char,"Local_Fraction_sec"//isec_char]
-           call AddArray( tag_name(1:2), wanted_deriv2d, NOT_SET_STRING, errmsg)
-           !   tag_name(1:3) = [character(len=TXTLEN_DERIV)::&
-           !      "Local_Fraction3D","Local_Pollutant3D","Total_Pollutant3D"]
-           !   call AddArray( tag_name(1:3), wanted_deriv3d, NOT_SET_STRING, errmsg)
-!        end if
-     enddo
-  end if
+
  if(EmisSplit_OUT)then
     do i=1,max(18,nrcemis)
       tag_name(1) = "EmisSplit_mgm2_"//trim(species(iqrc2itot(i))%name)
@@ -344,7 +337,7 @@ subroutine Init_My_Deriv()
 
   do n = 1, nOutputVegO3
     VEGO3_OUTPUTS(n) = OutputVegO3(n)
-    if(debug0)  write(*,*) "VEGO3 NUMS ", n, n1, trim(OutputVegO3(n)%name) 
+    if(debug0)  write(*,*) "VEGO3 NUMS ", n, trim(OutputVegO3(n)%name) 
   end do
   if(MasterProc)call WriteArray(VEGO3_OUTPUTS(:)%name,nOutputVegO3," VEGO3 OUTPUTS:")
   call Add_MosaicVEGO3(nOutVEGO3) ! nVEGO3 is output, excluding missing LC types
@@ -353,18 +346,26 @@ subroutine Init_My_Deriv()
   if( .not.SOURCE_RECEPTOR)then
     !------------- Deposition velocities ---------------------
     call Add_NewMosaics(NewMosaic, nMc)
-    if(debug0) then
-      write(*,*) "NEWMOSAIC   NUM ", nMc
-      write(*,*) "VEGO3 FINAL NUM ", nVEGO3
-    end if
+    if(debug0)  write(*,*) 'NewMos Nums ', nOutputNewMos, nMC !mMC not needed?
 
     !------------- Met data for d_2d -------------------------
     ! We find the various combinations of met and ecosystem,
     ! adding them to the derived-type array LCC_Met (e.g. => Met_CF)
     !FEB2011  Daiyl output asked for just now. Change larer
 
-    call Add_MosaicMetConcs(MOSAIC_METCONCS,MET_LCS,'YMD', nMET)
+    call Add_MosaicMetConcs(MOSAIC_METCONCS(1:nOutputMosMet),&
+           MET_LCS(1:nOutputMosLC),Mosaic_timefmt, nMET)
     nOutMET = nMET !not needed?
+
+    if(debug0) then
+      write(*,*) "NEWMOSAIC   NUM ", nMc
+      write(*,*) "VEGO3 FINAL NUM ", nVEGO3
+      write(*,*) "nOutputMosMet FINAL NUM ", nOutputMosMet
+      write(*,*) "nOutputMosLC  FINAL NUM ", nOutputMosLC
+      write(*,*) "nOutputNewMos  FINAL NUM ", nOutputNewMos
+      write(*,*) "nOutMet  FINAL NUM ", nOutMet
+      write(*,*) "nMosaic  FINAL NUM ", nMosaic 
+    end if
   end if ! SOURCE_RECEPTOR
 
 !------------- end LCC data for d_2d -------------------------

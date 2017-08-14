@@ -6,8 +6,7 @@ module   MassBudget_ml
 use CheckStop_ml,       only: CheckStop
 use ChemSpecs,          only: NSPEC_ADV, NSPEC_SHL, species_adv
 use Chemfields_ml,      only: xn_adv        ! advected species
-use EmisDef_ml,       only: DMS_natso2_month, DMS_natso2_year&
-                            ,O_NH3, O_DMS
+use EmisDef_ml,         only: O_NH3, O_DMS
 use GridValues_ml,      only: xmd, &  
                               gridwidth_m,dA,dB,debug_proc,debug_li,debug_lj
 use Io_ml,              only: IO_LOG, PrintLog, datewrite
@@ -396,23 +395,16 @@ subroutine massbudget()
      
      if(MasterProc)then
         write(*,59)'SO2 from ocean DMS cdf file last month ',O_DMS%sum_month
-        write(*,59)'SO2 from natso2.dat last month',DMS_natso2_month
         
-        DMS_natso2_year=DMS_natso2_year+DMS_natso2_month
-        DMS_natso2_month=0.0
         O_DMS%sum_year=O_DMS%sum_year+O_DMS%sum_month
         O_DMS%sum_month=0.0
         
 59      format(A,6F14.5)
-        write(*,*)'DMS OCEAN emissions '
         write(*,59)'SO2 from ocean DMS cdf file ',O_DMS%sum_year
-        write(*,59)'SO2 from natso2.dat ',DMS_natso2_year
-!        write(*,59)'fraction new/old method',O_DMS%sum_year/DMS_natso2_year
      end if
   end if
   if(MasterProc)then
      if(USE_OCEAN_NH3)then
-        write(*,*)'NH3 OCEAN emissions '
         write(*,59)'NH3 emisions from ocean cdf file (Gg)',O_NH3%sum_year
      end if
   end if

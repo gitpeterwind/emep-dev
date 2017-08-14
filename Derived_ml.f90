@@ -37,9 +37,9 @@ use DerivedFields_ml, only: MAXDEF_DERIV2D, MAXDEF_DERIV3D, &
                             def_2d, def_3d, f_2d, f_3d, d_2d, d_3d
 use EcoSystem_ml,     only: DepEcoSystem, NDEF_ECOSYSTEMS, &
                             EcoSystemFrac,FULL_ECOGRID
-use EmisDef_ml,       only: NSECTORS, EMIS_FILE, O_DMS, O_NH3, loc_frac
+use EmisDef_ml,       only: NSECTORS, EMIS_FILE, O_DMS, O_NH3, loc_frac, Nneighbors&
+                            ,SumSnapEmis, SumSplitEmis
 use EmisGet_ml,       only: nrcemis,iqrc2itot
-use Emissions_ml,     only: SumSnapEmis, SumSplitEmis
 use GridValues_ml,    only: debug_li, debug_lj, debug_proc, A_mid, B_mid, &
                             dA,dB,xm2, GRIDWIDTH_M, GridArea_m2,xm_i,xm_j,glon,glat
 use Io_Progs_ml,      only: datewrite
@@ -56,7 +56,7 @@ use ModelConstants_ml, only: &
   ,DEBUG              & ! gives DEBUG%AOT
   ,AERO               & ! for DpgV (was diam) -  aerosol MMD (um)
   ,PT                 &
-  ,FORECAST           & ! only dayly (and hourly) output on FORECAST mode
+  ,FORECAST           & ! only daily (and hourly) output on FORECAST mode
   ,NTDAY              & ! Number of 2D O3 to be saved each day (for SOMO)
   ,num_lev3d,lev3d    & ! 3D levels on 3D output
   ! output types corresponding to instantaneous,year,month,day
@@ -78,6 +78,7 @@ use SmallUtils_ml,        only: find_index, LenArray, NOT_SET_STRING, trims
 use TimeDate_ml,          only: day_of_year,daynumber,current_date,&
                                 tdif_days
 use TimeDate_ExtraUtil_ml,only: to_stamp
+use uEMEP_ml,             only: av_uEMEP
 use Units_ml,             only: Units_Scale,Group_Units,&
                                 to_molec_cm3 ! converts roa [kg/m3] to M [molec/cm3]
 implicit none
@@ -150,7 +151,7 @@ logical, private, save :: dbg0   ! = DEBUG%DERIVED .and. MasterProc
 logical, private, save :: dbgP   ! = DEBUG%DERIVED .and. debug_proc
 character(len=100), private :: errmsg
 
-integer, private :: i,j,k,l,n, ivoc, iou, isec   ! Local loop variables
+integer, private :: i,j,k,l,n, ivoc, iou, isec, neigh   ! Local loop variables
 
 integer, private, save :: iadv_O3=-999,     & ! Avoid hard codded IXADV_SPCS
   iadv_NO3_C=-999,iadv_EC_C_WOOD=-999,iadv_EC_C_FFUEL=-999,iadv_POM_C_FFUEL=-999
@@ -266,7 +267,7 @@ subroutine AddDeriv(inderiv,Is3D)
     Nadded3d = Nadded3d + 1
     N = Nadded3d
     if(dbg0) write(*,*) "Define 3d deriv ", N, trim(inderiv%name)
-    call CheckStop(N>MAXDEF_DERIV3D,"Nadded3d too big!")
+    call CheckStop(N>MAXDEF_DERIV3D,"Nadded3d too big! Increase MAXDEF_DERIV3D in DerivedFields_ml")
     def_3d(N) = inderiv
   else
     Nadded2d = Nadded2d + 1
@@ -276,7 +277,7 @@ subroutine AddDeriv(inderiv,Is3D)
       call print_Deriv_type(inderiv)
     end if
    !if(dbg0) write(*,*) "DALL", inderiv
-    call CheckStop(N>MAXDEF_DERIV2D,"Nadded2d too big!")
+    call CheckStop(N>MAXDEF_DERIV2D,"Nadded2d too big! Increase MAXDEF_DERIV2D in DerivedFields_ml")
     def_2d(N) = inderiv
   end if
 end subroutine AddDeriv
@@ -299,6 +300,7 @@ subroutine Define_Derived()
 
   integer :: ind, iadv, ishl, idebug, n, igrp, iout
   character(len=2)::  isec_char
+  character(len=3)::  neigh_char
 
   if(dbg0) write(6,*) " START DEFINE DERIVED "
   !   same mol.wt assumed for PPM25 and PPMCOARSE
@@ -318,21 +320,21 @@ subroutine Define_Derived()
   !Deriv index, f2d, dt_scale, scale, avg? rho Inst Yr Mn Day atw
   ! for AOT we can use index for the threshold, usually 40
   call AddNewDeriv( "AOT40_Grid", "GRIDAOT","subclass","-", "ppb h", &
-          40, -99, T, 1.0/3600.0, F,   'YMD'    )
+          40, -99, T, 1.0/3600.0, F,   'YM'    )
 !-------------------------------------------------------------------------------
   !Deriv(name, class,    subc,  txt,           unit
   !Deriv index, f2d, dt_scale, scale, avg? rho Inst Yr Mn Day atw
 
 ! NOT YET: Scale pressure by 0.01 to get hPa
   call AddNewDeriv( "PSURF ","PSURF",  "SURF","-",   "hPa", &
-               -99,  -99,  F,  1.0,  T,   'YMD' )
+               -99,  -99,  F,  1.0,  T,   'YM' )
 
   !Added for TFMM scale runs
-  call AddNewDeriv( "Kz_m2s","Kz_m2s",  "-","-",   "m2/s", &
-               -99,  -99, F, 1.0,  T,  'YMD' )
+!A17  call AddNewDeriv( "Kz_m2s","Kz_m2s",  "-","-",   "m2/s", &
+!A17               -99,  -99, F, 1.0,  T,  'Y' )
 
-  call AddNewDeriv( "u_ref","u_ref",  "-","-",   "m/s", &
-               -99,  -99, F, 1.0,  T,  'YMD' )
+!A17  call AddNewDeriv( "u_ref","u_ref",  "-","-",   "m/s", &
+!A17               -99,  -99, F, 1.0,  T,  'Y' )
 
 ! call AddNewDeriv( "SoilWater_deep","SoilWater_deep",  "-","-",   "m", &
 !               -99,  -99, F, 1.0,  T,  'YMD' )
@@ -340,11 +342,11 @@ subroutine Define_Derived()
 !               -99,  -99, F, 1.0,  T,  'YMD' )
 
   call AddNewDeriv( "T2m","T2m",  "-","-",   "deg. C", &
-               -99,  -99, F, 1.0,  T,  'YMD' )
-  call AddNewDeriv( "Idirect","Idirect",  "-","-",   "W/m2", &
-               -99,  -99, F, 1.0,  T,  'YMD' )
-  call AddNewDeriv( "Idiffuse","Idiffuse",  "-","-",   "W/m2", &
-               -99,  -99, F, 1.0,  T,  'YMD' )
+               -99,  -99, F, 1.0,  T,  'YM' )
+!A17  call AddNewDeriv( "Idirect","Idirect",  "-","-",   "W/m2", &
+!A17               -99,  -99, F, 1.0,  T,  'YM' )
+!A17  call AddNewDeriv( "Idiffuse","Idiffuse",  "-","-",   "W/m2", &
+!A17               -99,  -99, F, 1.0,  T,  'YM' )
 
 ! OutputFields can contain both 2d and 3d specs.
 ! Settings for 2D and 3D are independant.
@@ -597,7 +599,7 @@ subroutine Define_Derived()
     if(EMIS_BioNat(ind)(1:5)=="ASH_L")cycle   ! skip ASH_LxxByy for AshInversion
     dname = "Emis_mgm2_BioNat" // trim(EMIS_BioNat(ind) )
     call AddNewDeriv( dname, "NatEmis", "-", "-", "mg/m2", &
-                 ind , -99, T ,    1.0e6,     F, 'YMD' )
+                 ind , -99, T ,    1.0e6,     F, 'YM' )
   end do
 
 ! SNAP emissions called every hour, given in kg/m2/s, but added to
@@ -608,12 +610,12 @@ subroutine Define_Derived()
   do  ind = 1, size(EMIS_FILE)
     dname = "Emis_mgm2_" // trim(EMIS_FILE(ind))
     call AddNewDeriv( dname, "SnapEmis", "-", "-", "mg/m2", &
-                       ind , -99, T,  1.0e6,  F,  'YMD' )
+                       ind , -99, T,  1.0e6,  F,  'YM' )
   end do ! ind
   if(USE_OCEAN_DMS)then
     dname = "Emis_mgm2_DMS"
     call AddNewDeriv( dname, "Emis_mgm2_DMS", "-", "-", "mg/m2", &
-                       ind , -99, T,  1.0,  F,  'YMD' )
+                       ind , -99, T,  1.0,  F,  'YM' )
   end if
   if(USE_OCEAN_NH3)then
      dname = "Emis_mgm2_Ocean_NH3"
@@ -621,34 +623,11 @@ subroutine Define_Derived()
                        ind , -99, T,  1.0,  F,  'YM' )
   end if
  
-  if(USE_uEMEP)then
-     dname = "Total_Pollutant"
-     call AddNewDeriv( dname, "Total_Pollutant", "-", "-", "mg/m2", &
-          -99 , -99, F,  1.0e6,  T,  'YMDH' )
-     do isec=1,NSECTORS
-        write(isec_char,fmt='(i2.2)')isec
-        dname = "Local_Pollutant_sec"//isec_char
-        call AddNewDeriv( dname, "Local_Pollutant", "-", "-", "mg/m2", &
-             isec , -99, F,  1.0e6,  T,  'YMDH' )
-        dname = "Local_Fraction_sec"//isec_char!NB must be AFTER "Local_Pollutant" and "Total_Pollutant"
-        call AddNewDeriv( dname, "Local_Fraction", "-", "-", "", &
-             isec , -99, F,  1.0,  F,  'YMDH' )
-!        dname = "Local_Pollutant3D"//isec_char
-!        call AddNewDeriv( dname, "Local_Pollutant3D", "-", "-", "mg/m2", &
-!             isec , -99, F,  1.0e6,  T,  'YM' , .true.)
-!        dname = "Total_Pollutant3D"//isec_char
-!        call AddNewDeriv( dname, "Total_Pollutant3D", "-", "-", "mg/m2", &
-!             isec , -99, F,  1.0e6,  T,  'YM' , .true.)
-!        dname = "Local_Fraction3D"//isec_char!NB must be AFTER "Local_Pollutant" and "Total_Pollutant"
-!        call AddNewDeriv( dname, "Local_Fraction3D", "-", "-", "", &
-!             isec , -99, F,  1.0,  F,  'YM', .true.)
-     enddo
-   end if
 !Splitted total emissions (inclusive Natural)
   do ind=1,nrcemis
     dname = "EmisSplit_mgm2_"//trim(species(iqrc2itot(ind))%name)
     call AddNewDeriv(dname, "EmisSplit_mgm2", "-", "-", "mg/m2", &
-                        ind , -99, T, 1.0e6,   F,  'YMD' )
+                        ind , -99, T, 1.0e6,   F,  'YM' )
   end do
 
   if(find_index("SURF_PM25water",def_2d(:)%name)<1)&
@@ -721,7 +700,7 @@ Is3D = .true.
       print *,"OOOPS N,N :", num_deriv2d, Nadded2d
       print "(a,i4,a)",("Had def_2d: ",idebug,&
         trim(def_2d(idebug)%name),idebug = 1, Nadded2d)
-      call CheckStop(sub//"OOPS STOPPED" // trim( wanted_deriv2d(i) ) )
+      call CheckStop(sub//"OOPS1 STOPPED" // trim( wanted_deriv2d(i) ) )
     end if
   end do
 
@@ -875,6 +854,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
   integer :: wlen,ispc,kmax
   integer,save :: n_Local_Pollutant, n_Total_Pollutant,&
        n_Local_Pollutant3D, n_Total_Pollutant3D
+  integer ::dx,dy,isec_poll
 
   timefrac = dt/3600.0
   thour = current_date%hour+current_date%seconds/3600.0
@@ -1494,49 +1474,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
         d_2d( n, i,j,IOU_INST) = O_NH3%map(i,j)
       end forall
 
-    case("Local_Pollutant")   ! for uEMEP, under development
-       do j=1,ljmax
-          do i=1,limax
-             xtot=0.0
-             do iix=1,uEMEP%Nix
-                ix=uEMEP%ix(iix)
-                xtot=xtot+(xn_adv(ix,i,j,kmax_mid)*species_adv(ix)%molwt)&
-                 *(dA(kmax_mid)+dB(kmax_mid)*ps(i,j,1))/ATWAIR/GRAV
-             end do
-             d_2d( n, i,j,IOU_INST) = loc_frac(f_2d(n)%Index,i,j,kmax_mid)*xtot
-          end do
-       end do
-       n_Local_Pollutant=n
-
-    case("Total_Pollutant")   ! for uEMEP, under development
-       do j=1,ljmax
-          do i=1,limax
-             xtot=0.0
-             do iix=1,uEMEP%Nix
-                ix=uEMEP%ix(iix)
-                xtot=xtot+(xn_adv(ix,i,j,kmax_mid)*species_adv(ix)%molwt)&
-                     *(dA(kmax_mid)+dB(kmax_mid)*ps(i,j,1))/ATWAIR/GRAV
-             end do
-             d_2d( n, i,j,IOU_INST) = xtot
-          end do
-       end do
-       n_Total_Pollutant=n
-
-    case("Local_Fraction")    ! for uEMEP, under development
-      forall(i=1:limax,j=1:ljmax)
-        d_2d(n,i,j,IOU_INST) = 0.0
-        d_2d(n,i,j,IOU_HOUR) = d_2d(n_Local_Pollutant,i,j,IOU_HOUR)/&
-                              (d_2d(n_Total_Pollutant,i,j,IOU_HOUR)+1.E-30)
-        d_2d(n,i,j,IOU_DAY ) = d_2d(n_Local_Pollutant,i,j,IOU_DAY)/&
-                              (d_2d(n_Total_Pollutant,i,j,IOU_DAY)+1.E-30)
-        d_2d(n,i,j,IOU_MON ) = d_2d(n_Local_Pollutant,i,j,IOU_MON)/&
-                              (d_2d(n_Total_Pollutant,i,j,IOU_MON)+1.E-30)
-        d_2d(n,i,j,IOU_YEAR) = d_2d(n_Local_Pollutant,i,j,IOU_YEAR)/&
-                              (d_2d(n_Total_Pollutant,i,j,IOU_YEAR)+1.E-30)
-      endforall
-
-
-     case ( "EmisSplit_mgm2" )      ! Splitted total emissions (Inclusive natural)
+    case ( "EmisSplit_mgm2" )      ! Splitted total emissions (Inclusive natural)
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = SumSplitEmis(i,j,f_2d(n)%Index)
       end forall
@@ -1869,54 +1807,6 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
         d_3d(n,i,j,k,IOU_INST)=SUM(Extin_coeff(:,i,j,lev3d(k),wlen),MASK=ingrp)
       deallocate(ingrp)
 
-    case("Local_Pollutant3D")   ! for uEMEP, under development
-      do l=1,num_lev3d
-        k=lev3d(l)
-        do j=1,ljmax
-          do i=1,limax
-             xtot=0.0
-             do iix=1,uEMEP%Nix
-                ix=uEMEP%ix(iix)
-                xtot=xtot+(xn_adv(ix,i,j,k)*species_adv(ix)%molwt)&
-                 *(dA(k)+dB(k)*ps(i,j,1))/ATWAIR/GRAV*1.0E6
-             end do
-             d_3d(n,i,j,l,IOU_INST) = loc_frac(i,j,k,1)*xtot
-          end do
-        end do
-      end do
-      n_Local_Pollutant3D=n
-     !write(*,*)loc_frac(5,5,kmax_mid,1),loc_frac(5,5,kmax_mid-1,1)
-
-    case("Total_Pollutant3D")   ! for uEMEP, under development
-      do l=1,num_lev3d
-        k=lev3d(l)
-        do j=1,ljmax
-          do i=1,limax
-            xtot=0.0
-            do iix=1,uEMEP%Nix
-              ix=uEMEP%ix(iix)
-              xtot=xtot+(xn_adv(ix,i,j,k)*species_adv(ix)%molwt)&
-                   *(dA(k)+dB(k)*ps(i,j,1))/ATWAIR/GRAV*1.0E6
-            end do
-            d_3d(n,i,j,l,IOU_INST) = xtot
-          end do
-        end do
-      end do
-      n_Total_Pollutant3D=n
-
-    case("Local_Fraction3D")    ! for uEMEP, under development
-      forall(i=1:limax,j=1:ljmax,k=1:num_lev3d)
-        d_3d(n,i,j,k,IOU_INST) = 0.0
-        d_3d(n,i,j,k,IOU_HOUR) = d_3d(n_Local_Pollutant3D,i,j,k,IOU_HOUR)/&
-                                (d_3d(n_Total_Pollutant3D,i,j,k,IOU_HOUR)+1.E-30)
-        d_3d(n,i,j,k,IOU_DAY ) = d_3d(n_Local_Pollutant3D,i,j,k,IOU_DAY)/&
-                                (d_3d(n_Total_Pollutant3D,i,j,k,IOU_DAY)+1.E-30)
-        d_3d(n,i,j,k,IOU_MON ) = d_3d(n_Local_Pollutant3D,i,j,k,IOU_MON)/&
-                                (d_3d(n_Total_Pollutant3D,i,j,k,IOU_MON)+1.E-30)
-        d_3d(n,i,j,k,IOU_YEAR) = d_3d(n_Local_Pollutant3D,i,j,k,IOU_YEAR)/&
-                                (d_3d(n_Total_Pollutant3D,i,j,k,IOU_YEAR)+1.E-30)
-      endforall
-
     case("USET")
       if(dbgP) write(*,"(a18,i4,a12,a4,es12.3)")"USET d_3d",&
         n, f_3d(n)%name, " is ", d_3d(n,debug_li,debug_lj,num_lev3d,IOU_INST)
@@ -1974,6 +1864,12 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
     end select
   end do
+
+  !the uemep fields do not fit in the general d_3d arrays. Use ad hoc routine
+  if(USE_uEMEP .and. .not. present(ONLY_IOU))then
+    call av_uEMEP(dt,End_of_Day)
+  endif  
+
   first_call = .false.
 end subroutine Derived
 !=========================================================================

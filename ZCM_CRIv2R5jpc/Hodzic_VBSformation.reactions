@@ -1,0 +1,51 @@
+*===========================================================================
+******************************************** VBS Hodzic et al. 2016 **************
+
+* VBS scheme 
+* Aromatic SOA
+* BENZENE - for simplicity base SOA formation on the RA13O2 product from the BENZENE + OH reaction (47% yield of this and 53% of phenol) - so scale yields by 1/0.47 
+* Hodzic et al. (2016) [converting from mass yields in Hodzic et al.] QUERY1: What about RO2 + NO3 reaction? Does it also produce SOA? [I think it produces the same major carbon-product as the NO-reaction in the CRI-scheme] QUERY2: What about RO2 + RO2POOL reaction? I guess it also would produce SOA? QUERY 3: VERY much higher SOA-yields in ACP-version of Table 1 than in the ACPD-version - especially for BENZENE.
+* High-NOx
+*yields to be scaled by RA13O2 fraction KRO2NO          [RA13O2] + [NO]     =  0.09609 ASOC_ng10 + 1.26836 NON_C_ASOA_ng10 + 0.03410 ASOC_ng1e2 + 0.45006 NON_C_ASOA_ng1e2 + 1.57150 ASOC_ug1 + 20.74378 NON_C_ASOA_ug1 + 0.05889 ASOC_ug10 + 0.77738 NON_C_ASOA_ug10 + 0.09299 ASOC_ug1e2 + 1.22744 NON_C_ASOA_ug1e2 + 0.44014 ASOC_ug1e3 + 5.8099 NON_C_ASOA_ug1e3 ; Assume OM/OC = 2.1
+
+KRO2NO         [RA13O2] + [NO]     =  0.20445 ASOC_ng10 + 2.69864 NON_C_ASOA_ng10 + 0.072553 ASOC_ng1e2 + 0.95757 NON_C_ASOA_ng1e2 + 3.34362 ASOC_ug1 + 44.13570 NON_C_ASOA_ug1 + 0.12530 ASOC_ug10 + 1.65400 NON_C_ASOA_ug10 + 0.19785 ASOC_ug1e2 + 2.61157 NON_C_ASOA_ug1e2 + 0.93647 ASOC_ug1e3 + 12.36149 NON_C_ASOA_ug1e3 ; Assume OM/OC = 2.1
+
+* Low-Nox
+*yields to be scaled by RA13O2 fraction KRO2HO2*0.770   [RA13O2] + [HO2]    =  0.02170 ASOC_ng10 + 0.28640 NON_C_ASOA_ng10 + 0.00930 ASOC_ng1e2 + 0.12274 NON_C_ASOA_ng1e2 + 0.83689 ASOC_ug1 + 11.04699 NON_C_ASOA_ug1 + 0.44014 ASOC_ug10 + 5.80990 NON_C_ASOA_ug10 + 1.23984 ASOC_ug1e2 + 16.3659 NON_C_ASOA_ug1e2 + 0.37195 ASOC_ug1e3 + 4.90977 NON_C_ASOA_ug1e3 ; Assume OM/OC = 2.1
+
+KRO2HO2*0.770  [RA13O2] + [HO2]    =  0.04617 ASOC_ng10 + 0.60936 NON_C_ASOA_ng10 + 0.019787 ASOC_ng1e2 + 0.26115 NON_C_ASOA_ng1e2 + 1.78062 ASOC_ug1 + 23.50423 NON_C_ASOA_ug1 + 0.93647 ASOC_ug10 + 12.36149 NON_C_ASOA_ug10 + 2.63796 ASOC_ug1e2 + 34.82106 NON_C_ASOA_ug1e2 + 0.79138 ASOC_ug1e3 + 10.44632 NON_C_ASOA_ug1e3 ; Assume OM/OC = 2.1
+
+*TOLUENE - for simplicity base SOA formation on the RA16O2 product from the TOLUENE + OH reaction (82% yield of this and 18% of (mainly) o-cresol) - so scale yields by 1/0.82
+* High-NOx
+*yields to be scaled by RA16O2 fraction KRO2NO         [RA16O2] + [NO] = 0.15357 ASOC_ng10 + 2.02708 NON_C_ASOA_ng10 + 0.44973 ASOC_ng1e2 + 5.93645 NON_C_ASOA_ng1e2 + 0.96162 ASOC_ug1 + 12.69338 NON_C_ASOA_ug1 + 0.073127 ASOC_ug10 + 0.96528 NON_C_ASOA_ug10 + 1.16638 ASOC_ug1e2 + 15.39616 NON_C_ASOA_ug1e2 + 1.20294 ASOC_ug1e3 + 15.87879 NON_C_ASOA_ug1e3 ; Assume OM/OC = 2.1
+
+KRO2NO         [RA16O2] + [NO] = 0.18728 ASOC_ng10 + 2.47205 NON_C_ASOA_ng10 + 0.54845 ASOC_ng1e2 + 7.23957 NON_C_ASOA_ng1e2 + 1.17271 ASOC_ug1 + 15.47973 NON_C_ASOA_ug1 + 0.089179 ASOC_ug10 + 1.17717 NON_C_ASOA_ug10 + 1.42241 ASOC_ug1e2 + 18.77580 NON_C_ASOA_ug1e2 + 1.46700 ASOC_ug1e3 + 19.36438 NON_C_ASOA_ug1e3 ; Assume OM/OC = 2.1
+
+* Low-Nox
+*yields to be scaled by RA16O2 fraction KRO2HO2*0.820   [RA16O2] + [HO2] = 1.356506 ASOC_ng10 + 17.90587 NON_C_ASOA_ng10 + 0.10238 ASOC_ng1e2 + 1.35139 NON_C_ASOA_ng1e2 + 0.75686 ASOC_ug1 + 9.99061 NON_C_ASOA_ug1 + 2.14262 ASOC_ug10 + 28.28259 NON_C_ASOA_ug10 + 0.23035 ASOC_ug1e2 + 3.04062 NON_C_ASOA_ug1e2 + 0.50458 ASOC_ug1e3 + 6.660406 NON_C_ASOA_ug1e3 ; Assume OM/OC = 2.1
+
+KRO2HO2*0.820   [RA16O2] + [HO2] = 1.654275 ASOC_ng10 + 21.83643 NON_C_ASOA_ng10 + 0.12485 ASOC_ng1e2 + 1.64803 NON_C_ASOA_ng1e2 + 0.923005 ASOC_ug1 + 12.18367 NON_C_ASOA_ug1 + 2.61295 ASOC_ug10 + 34.49097 NON_C_ASOA_ug10 + 0.280915 ASOC_ug1e2 + 3.70807 NON_C_ASOA_ug1e2 + 0.61534 ASOC_ug1e3 + 8.122446 NON_C_ASOA_ug1e3 ; Assume OM/OC = 2.1
+
+
+*XYLENES - for simplicity base SOA formation on the RA19AO2 product from the OXYL + OH reaction (70% yield of this and 30% of RA19CO2) - so scale yields by 1/0.70
+* High-NOx
+*yields to be scaled by RA19AO2 fraction KRO2NO          [RA19AO2] + [NO] = 0.063196 ASOC_ng10 + 0.83419 NON_C_ASOA_ng10 + 0.23593 ASOC_ng1e2 + 3.11432 NON_C_ASOA_ng1e2 + 0.025279 ASOC_ug1 + 0.33368 NON_C_ASOA_ug1 + 0.10954 ASOC_ug10 + 1.44593 NON_C_ASOA_ug10 + 0.36654 ASOC_ug1e2 + 4.83832 NON_C_ASOA_ug1e2 + 0.81313 ASOC_ug1e3 + 10.73328 NON_C_ASOA_ug1e3 ; Assume OM/OC = 2.1
+
+KRO2NO          [RA19AO2] + [NO] = 0.090281 ASOC_ng10 + 1.19170 NON_C_ASOA_ng10 + 0.33705 ASOC_ng1e2 + 4.44903 NON_C_ASOA_ng1e2 + 0.036112 ASOC_ug1 + 0.47668 NON_C_ASOA_ug1 + 0.15649 ASOC_ug10 + 2.06562 NON_C_ASOA_ug10 + 0.52363 ASOC_ug1e2 + 6.91188 NON_C_ASOA_ug1e2 + 1.16161 ASOC_ug1e3 + 15.33326 NON_C_ASOA_ug1e3  ; Assume OM/OC = 2.1
+
+* Low-Nox
+*yields to be scaled by RA19AO2 fraction KRO2HO2*0.859   [RA19AO2] + [HO2] = 1.66417 ASOC_ng10 + 21.96708 NON_C_ASOA_ng10 + 0.17274 ASOC_ng1e2 + 2.28013 NON_C_ASOA_ng1e2 + 0.85526 ASOC_ug1 + 11.28941 NON_C_ASOA_ug1 + 0.50978 ASOC_ug10 + 6.72916 NON_C_ASOA_ug10 + 0.97744 ASOC_ug1e2 + 12.90218 NON_C_ASOA_ug1e2 + 0.61090 ASOC_ug1e3 + 8.06386 NON_C_ASOA_ug1e3 ; Assume OM/OC = 2.1
+
+KRO2HO2*0.859   [RA19AO2] + [HO2] = 2.37739 ASOC_ng10 + 31.38154 NON_C_ASOA_ng10 + 0.24677 ASOC_ng1e2 + 3.257324 NON_C_ASOA_ng1e2 + 1.2218 ASOC_ug1 + 16.12773 NON_C_ASOA_ug1 + 0.72826 ASOC_ug10 + 9.61308 NON_C_ASOA_ug10 + 1.39634 ASOC_ug1e2 + 18.43169 NON_C_ASOA_ug1e2 + 0.87271 ASOC_ug1e3 + 11.51981 NON_C_ASOA_ug1e3 ; Assume OM/OC = 2.1
+
+***************************************************
+* Initially neglect SOA formation from other anthropogenic VOCs (ALKANES and ALKENES - could add anthropogenic S/IVOC-emissions as in Hodzic et al. later - probably much more important than SOA formation from smaller alkanes and alkenes)
+***************************************************
+
+*Biogenic VOC-SOA
+*
+* TEST RUNNING WITH FIXED-YIELD NON-VOLATILE BSOA 
+* based on Hodzic et al. 2016
+
+*
+*===========================================================================

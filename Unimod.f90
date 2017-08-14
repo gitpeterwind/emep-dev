@@ -14,7 +14,7 @@ program myeul
        Init_timing, Add_2timing, Code_timer, &
        tim_before, tim_before1, tim_before2, &
        tim_after, tim_after0, NTIMING_UNIMOD,NTIMING
-  use Advection_ml,     only: vgrid, assign_nmax, assign_dtadvec
+  use Advection_ml,     only: vgrid_Eta, assign_nmax, assign_dtadvec
   use Aqueous_ml,       only: init_aqueous, Init_WetDep   !  Initialises & tabulates
   use AirEmis_ml,       only: lightning
   use Biogenics_ml,     only: Init_BVOC, SetDailyBVOC
@@ -24,6 +24,7 @@ program myeul
   use ChemSpecs,        only: define_chemicals
   use ChemGroups_ml,    only: Init_ChemGroups
   use Country_ml,       only: Country_Init
+  use DA_3DVar_ml,      only: NTIMING_3DVAR,DA_3DVar_Init, DA_3DVar_Done
   use DefPhotolysis_ml, only: readdiss
   use Derived_ml,       only: Init_Derived, wanted_iou
   use DerivedFields_ml, only: f_2d, f_3d
@@ -43,13 +44,14 @@ program myeul
        METSTEP,    &   ! Hours between met input
        runlabel1,  &   ! explanatory text
        runlabel2,  &   ! explanatory text
-       nterm,iyr_trend, nmax,nstep , meteo,     &
+       iyr_trend, nmax,nstep , meteo,     &
        IOU_INST,IOU_HOUR,IOU_HOUR_INST, IOU_YEAR,IOU_MON, IOU_DAY, &
-       USES, USE_LIGHTNING_EMIS, &
+       USES, USE_LIGHTNING_EMIS, USE_uEMEP,JUMPOVER29FEB,&
        FORECAST,ANALYSIS  ! FORECAST/ANALYSIS mode
   use ModelConstants_ml,only: Config_ModelConstants,DEBUG, startdate,enddate
   use MPI_Groups_ml,    only: MPI_BYTE, ME_CALC, ME_MPI, MPISTATUS, MPI_COMM_CALC,MPI_COMM_WORLD, &
                               MasterPE,IERROR, MPI_world_init, MPI_groups_split
+  use Nest_ml,          only: wrtxn     ! write nested output (IC/BC)
   use NetCDF_ml,        only: Init_new_netCDF
   use OutputChem_ml,    only: WrtChem, wanted_iou
   use Par_ml,           only: me, GIMAX, GJMAX, Topology_io, Topology, parinit
@@ -59,10 +61,9 @@ program myeul
   use Tabulations_ml,   only: tabulate
   use TimeDate_ml,      only: date, current_date, day_of_year, daynumber,&
        tdif_secs,date,timestamp,make_timestamp,Init_nmdays
-  use TimeDate_ExtraUtil_ml,only : date2string, assign_NTERM
+  use TimeDate_ExtraUtil_ml,only : date2string, assign_startandenddate
   use Trajectory_ml,    only: trajectory_init,trajectory_in
-  use Nest_ml,          only: wrtxn     ! write nested output (IC/BC)
-  use DA_3DVar_ml,      only: NTIMING_3DVAR,DA_3DVar_Init, DA_3DVar_Done
+  use uEMEP_ml,         only: init_uEMEP
   !--------------------------------------------------------------------
   !
   !  Variables. There are too many to list here. Still, here are a
@@ -116,11 +117,13 @@ program myeul
   call define_chemicals()    ! sets up species details
   call Config_ModelConstants(IO_LOG)
 
+  call assign_startandenddate()
+ 
   if(MasterProc)then
      call PrintLog(trim(runlabel1))
      call PrintLog(trim(runlabel2))
-     call PrintLog(date2string("startdate = YYYYMMDD",startdate(1:3)))
-     call PrintLog(date2string("enddate   = YYYYMMDD",enddate  (1:3)))
+     call PrintLog(date2string("startdate = YYYYMMDDhh",startdate(1:4)))
+     call PrintLog(date2string("enddate   = YYYYMMDDhh",enddate  (1:4)))
     !call PrintLog(key2str("iyr_trend = YYYY","YYYY",iyr_trend))
   end if
 
@@ -146,7 +149,6 @@ program myeul
 
   call Topology(cyclicgrid,Poles)   ! def GlobalBoundaries & subdomain neighbors
   call DefDebugProc()               ! Sets debug_proc, debug_li, debuglj
-  call assign_NTERM(NTERM)          ! set NTERM, the number of 3-hourly periods
   call assign_dtadvec(GRIDWIDTH_M)  ! set dt_advec
 
   ! daynumber needed  for BCs, so call here to get initial
@@ -183,6 +185,8 @@ program myeul
 
   call Add_2timing(3,tim_after,tim_before,"Yearly emissions read in")
 
+  if(USE_uEMEP) call init_uEMEP
+
   call MetModel_LandUse(1)   !
 
   call Init_EcoSystems()     ! Defines ecosystem-groups for dep output
@@ -199,7 +203,7 @@ program myeul
   call sitesdef()            ! see if any output for specific sites is wanted
   ! (read input files "sites.dat" and "sondes.dat" )
 
-  call vgrid           !  initialisation of constants used in vertical advection
+  call vgrid_Eta           !  initialisation of constants used in vertical advection
   if (MasterProc.and.DEBUG%MAINCODE ) print *,"vgrid finish"
 
   ! open only output netCDF files if needed
@@ -253,7 +257,7 @@ program myeul
     ! daynumber needed for BCs
     daynumber=day_of_year(yyyy,mm,dd)
      
-    if(mm==1 .and. dd==1 .and. hh==0)call Init_nmdays(current_date)!new year starts
+    if(mm==1 .and. dd==1 .and. hh==0)call Init_nmdays(current_date, JUMPOVER29FEB)!new year starts
 
     call Code_timer(tim_before)
     if(mm_old/=mm) then   ! START OF NEW MONTH !!!!!
@@ -357,7 +361,7 @@ program myeul
     else
       lastptim(:) = mytimm(:)
     end if
-    call Output_timing(IO_MYTIM,me,NPROC,nterm,GIMAX,GJMAX)
+    call Output_timing(IO_MYTIM,me,NPROC,GIMAX,GJMAX)
   elseif(me==NPROC-1) then
     CALL MPI_SEND(mytimm,NTIMING*8,MPI_BYTE,MasterPE,765,MPI_COMM_CALC,IERROR)
   end if

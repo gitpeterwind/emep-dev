@@ -19,6 +19,7 @@ module RunChem_ml
   use Chemfields_ml,    only: xn_adv    ! For DEBUG 
   use Chemsolver_ml,    only: chemistry
   use ChemSpecs                         ! DEBUG ONLY
+  use ColumnSource_ml,  only: Winds, getWinds
   use DefPhotolysis_ml, only: setup_phot
   use DryDep_ml,        only: drydep
   use DustProd_ml,      only: WindDust
@@ -33,7 +34,8 @@ module RunChem_ml
                               USE_FASTJ, &
                               dt_advec, USE_NOCHEM, &  ! for Emergency
                               DEBUG_EMISSTACKS, & ! MKPS
-                              DebugCell, DEBUG    ! RUNCHEM
+                              DebugCell, DEBUG, &    ! RUNCHEM
+                              USE_PreADV
   use OrganicAerosol_ml,only: ORGANIC_AEROSOLS, OrganicAerosol, &
                               Init_OrganicAerosol, & 
                               Reset_OrganicAerosol, & 
@@ -46,7 +48,7 @@ module RunChem_ml
   use Setup_1d_ml,      only: setup_1d, setup_rcemis, reset_3d
   use Setup_1dfields_ml,only: first_call, &
                               amk, rcemis, xn_2d  ! DEBUG for testing
-  use TimeDate_ml,      only: current_date,daynumber
+  use TimeDate_ml,      only: current_date,daynumber,print_date
 !--------------------------------
   implicit none
   private
@@ -81,6 +83,10 @@ subroutine runchem()
     call CheckStop(SOA_MODULE_FLAG == "NotUsed", & ! Just safety
                    "Wrong My_SOA? Flag is "// trim(SOA_MODULE_FLAG) )
 
+!TEMPORARY HERE could be put in Met_ml
+  if( (.not. first_call) .and. USE_PreADV)then
+     call getWinds
+  endif
 ! Processes calls 
   errcode = 0
 
@@ -96,6 +102,7 @@ subroutine runchem()
       if(DEBUG%RUNCHEM.and.debug_proc) then
         debug_flag = (debug_li==i .and. debug_lj==j) 
         DebugCell = debug_flag
+        DEBUG%datetxt = print_date(current_date)
         if(debug_flag) write(*,*) "RUNCHEM DEBUG START!"
       end if
      !write(*,"(a,4i4)") "RUNCHEM DEBUG IJTESTS", debug_li, debug_lj, i,j
