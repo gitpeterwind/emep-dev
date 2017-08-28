@@ -150,6 +150,151 @@ the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16th  June 2017  Peter, Joffen
+
+Allow a special format for ship emissions.
+Implemented in a rush for reporting. Should be cleaned/revised.
+Monthly only for now.
+
+Example of format:
+!  emis_inputlist(3)%name     = '/home/mifajej/Emissions/Ships/FMI_Glob/2015/FMIGlobShip2015mon.nc',  !
+!  emis_inputlist(3)%type = 'Special_ShipEmis',
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+9th  June 2017  Peter
+
+Can use a mix of SNAP and GNFR emission, if the type of the second is specified.
+The first emission determines the main sector categories, the other emissions 
+will be mapped. For instance 
+
+  emis_inputlist(1)%name = '/global/work/nyiri/emis01deg_EMEP2015/GNFREmis_EMEP01_2015.nc',! GNFR 
+
+  emis_inputlist(3)%name     = '/global/work/mifapw/emep/Data/Emis_TNO7_MACCIII/Emis_TNO7_MACCIII_2011.nc',
+  emis_inputlist(3)%type     = 'SNAPsectors',          !interpret as SNAP
+  emis_inputlist(3)%incl(1:) = 'MED','NOS','ATL','BAS','BLS',
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+9th  June 2017  Dave 
+
+CellMet_ml - restriced z_ref to be >= 30m to avoid negative height calculations
+  in SubMet_ml.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+7th  June 2017  Peter
+
+Allow for outputting sectorwise emission.
+In ModelConstants_config set for instance:
+
+  SecEmisOutPoll(1:)	= 'pm25', 'nox',	
+
+This will give you separately all the 11 sectors for each of these pollutants
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+07th June 2017  Dave
+
+mk.testX - small update to remove previous executable
+
+Country_ml.f90 - Added 4-letter gains code to Country type. Not used in EMEP
+  yet, but useful offline for processing info from IIASA
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+06th June 2017  Dave
+
+mk.testX - added 2nd optional argument which can be ifort. Otherwise gfortran used.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+05th June 2017  Dave,  rv4_15
+
+BUG fix on apinene reactions - was reacting in two .reactions files
+
+  - CHANGES results!
+
+So, chemistry cleanup was the result, with new VBS system to keep the code
+shorted and more visible.
+
+VBS reactions and coefficients now dealt with in YieldModifications_mod, together
+with new system in ZCM_EmChem16mt/VBS_SOAformationY.reactions. The new system
+now makes use of labels, e.g. |YCOXY(1)| to set yields for different components
+in different VBS bins. Here, from OXYL into 10**1 (ie 10ug/m3) bin.
+
+ZCM_CRIv2R5/GenIn.shorthand 
+  Copied CRIv2R5jpc.shorthand to GenIn.shorthand
+
+ZCM_EmChem16mt:
+
+  Aero2017n.reactions:
+    Added fine-mode O3 uptake on dust
+
+ EmChem16mtbase.reactions:
+    Cleaned out old C5H8 chemistry
+
+ EmChem16mtbase.species:
+    Removed TERPPeroxy, since we now use new VBS system
+
+ VBS_SOAformationY.reactions  ---- NEW !!!
+    uses new and improved YieldModifications for VBS
+
+ChemFields_ml.f90 
+  Adding cell_tinv as 1/T for use in YieldModifications
+
+ChemFunctions_ml.f90 
+  Added SmixC option to explore coarse-mode uptake. Not used yet.
+ 
+mk.GenChem 
+  Used new SOAformation file for EmChem16mt - using YieldModification methods
+
+config_EMEPSTD.nml 
+  Using YieldModification = VBS
+
+emep_Config_mod.f90
+  Made YieldModification = VBS default. Also safe for EmChem09soa; just wastes
+a little CPU.
+
+config_Outputs_EMEPSTD
+   Added SQT output
+
+Solver.f90 
+  Adapted for new VBS methods in YieldModifications
+
+>>>>>>> 27ddc801f707bb3dd0a6a5ed01ad0056fa69cfa6
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+31st  May 2017  Peter
+
+NetCDF_ml: bug in interpolation routine:
+Can affect only cases where:
+1)interpolation from lon-lat to lon-lat
+and 2) the model grid has finer resoltion than the data interpolated (which is normally not the case)
+
+Nest_ml.f90: option to save only the data at BC  of inner grid. 
+Set  "MET_inner" and "RUNDOMAIN_inner" in config.
+Still under testing.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+24th  May 2017  Peter
+
+run.pl: changed SLURM commands. There is a bug on Stallo, that makes MPI count 
+wrong the number of CPUs if not entire nodes are taken.
+
+Introduced special2d and special3d arrays in MetFields. 
+If you need very special output (i.e some quantity that cannot be outputted by 
+standard My_Derived). For 2D fields
+1) set Nspecial2d  in MetFields according to the number of new outputs
+2) write in set in the code the values of the array special2d(i,j,N), where N is 
+   the output number (i.e. 1,2,... Nspecial2d). 
+   For instance special2d(i,j,1)=Grid%invL in CellMet_ml.f90 for invL
+3) include in the same routine the use MetFields_ml  , only : special2d
+4) In config_Output.nml include the line for instance
+ 'MyName','MET2D','special2d1', '-','MyUnit' ,-99,-99,F,1.0,T,'YMD',
+(and 'special2d2', 'special2d3', ... for other outputs)
+
+For 3D fields replace all the "2d" by "3d"
+
+Redefined a group OX in ZCM_EmChem16mt/EmChem16mtbase.species
+
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23rd May 2017  Dave,  rv4_14

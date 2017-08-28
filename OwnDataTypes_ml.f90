@@ -154,6 +154,7 @@ type, public :: poll_type
   integer, dimension(Nsector_uemep_max) ::sector=-1    ! sectors to be included for this pollutant. Zero is sum of all sectors
   integer :: EMIS_File_ix = 0 !index in EMIS_File (set by model)
   integer :: Nsectors = 0 !set by model
+  integer :: sec_poll_ishift = 0 !The start of index for isec_poll loops
   integer     :: Nix=0      ! Number of components to take (set by model)
   integer, dimension(15) :: ix    ! Index of components to take (set by model)
   real, dimension(15)    :: mw=0.0 ! (set by model)
@@ -171,6 +172,7 @@ type, public :: uEMEP_type
   logical     :: DAY =.false.
   logical     :: HOUR =.false.
   logical     :: HOUR_INST =.false.
+  logical     :: COMPUTE_LOCAL_TRANSPORT=.true.
 end type uEMEP_type
 
 contains

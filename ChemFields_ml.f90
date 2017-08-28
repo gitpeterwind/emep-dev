@@ -60,6 +60,8 @@ private
   real, save, allocatable, public :: &
      Grid_snow(:,:) !snow_flag fraction in grid
 
+  real, save, public :: cell_tinv  ! 1/temp,  tmp location
+
   public ::alloc_ChemFields
 
 contains

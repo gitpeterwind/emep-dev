@@ -23,7 +23,7 @@ program myeul
   use Chemfields_ml,    only: alloc_ChemFields
   use ChemSpecs,        only: define_chemicals
   use ChemGroups_ml,    only: Init_ChemGroups
-  use Country_ml,       only: Country_Init
+  use Country_ml,       only: init_Country
   use DA_3DVar_ml,      only: NTIMING_3DVAR,DA_3DVar_Init, DA_3DVar_Done
   use DefPhotolysis_ml, only: readdiss
   use Derived_ml,       only: Init_Derived, wanted_iou
@@ -167,7 +167,7 @@ program myeul
 
   call trajectory_init()
 
-  call Country_Init() ! In Country_ml, => NLAND, country codes and names, timezone
+  call init_Country() ! In Country_ml, => NLAND, country codes and names, timezone
 
   call Add_2timing(1,tim_after,tim_before,"Grid init + chem init")
 

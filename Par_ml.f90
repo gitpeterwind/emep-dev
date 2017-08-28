@@ -39,7 +39,8 @@ private
 integer, public, save ::  &
   IRUNBEG,JRUNBEG,  &
   GIMAX,GJMAX,      & ! Number of rundomain points in x,y direction
-  MAXLIMAX,MAXLJMAX   ! Maximum number of subdomain points in x,y
+  MAXLIMAX,MAXLJMAX,& ! Maximum number of subdomain points in x,y
+  MINLIMAX,MINLJMAX   ! Minimum number of subdomain points in x,y
 
 ! Parameter statements for the parameters used to access the table 
 ! of neighbor processors (neighbor)
@@ -212,6 +213,8 @@ integer :: ime, imex, imey, rest,i
 
   MAXLIMAX = (GIMAX+NPROCX-1)/NPROCX ! Maximum number of local points in lon
   MAXLJMAX = (GJMAX+NPROCY-1)/NPROCY !&! Maximum number of local points in lat
+  MINLIMAX = GIMAX/NPROCX ! Minimum number of local points in lon
+  MINLJMAX = GJMAX/NPROCY !&! Minimum number of local points in lat
 
 ! Find the x-, y-, and z-addresses of the domain assigned to the processor
   mey = me/NPROCX

@@ -38,7 +38,7 @@ use DerivedFields_ml, only: MAXDEF_DERIV2D, MAXDEF_DERIV3D, &
 use EcoSystem_ml,     only: DepEcoSystem, NDEF_ECOSYSTEMS, &
                             EcoSystemFrac,FULL_ECOGRID
 use EmisDef_ml,       only: NSECTORS, EMIS_FILE, O_DMS, O_NH3, loc_frac, Nneighbors&
-                            ,SumSnapEmis, SumSplitEmis
+                            ,SumSnapEmis, SumSecEmis, SumSplitEmis, SecEmisOut, NEMIS_FILE
 use EmisGet_ml,       only: nrcemis,iqrc2itot
 use GridValues_ml,    only: debug_li, debug_lj, debug_proc, A_mid, B_mid, &
                             dA,dB,xm2, GRIDWIDTH_M, GridArea_m2,xm_i,xm_j,glon,glat
@@ -151,7 +151,7 @@ logical, private, save :: dbg0   ! = DEBUG%DERIVED .and. MasterProc
 logical, private, save :: dbgP   ! = DEBUG%DERIVED .and. debug_proc
 character(len=100), private :: errmsg
 
-integer, private :: i,j,k,l,n, ivoc, iou, isec, neigh   ! Local loop variables
+integer, private :: i,j,k,l,n, ivoc, iou, isec, iem, neigh   ! Local loop variables
 
 integer, private, save :: iadv_O3=-999,     & ! Avoid hard codded IXADV_SPCS
   iadv_NO3_C=-999,iadv_EC_C_WOOD=-999,iadv_EC_C_FFUEL=-999,iadv_POM_C_FFUEL=-999
@@ -298,7 +298,7 @@ subroutine Define_Derived()
   character(len=11), parameter:: sub="DefDerived:"
   character(len=TXTLEN_IND)  :: outind
 
-  integer :: ind, iadv, ishl, idebug, n, igrp, iout
+  integer :: ind, iadv, ishl, idebug, n, igrp, iout, isec_poll
   character(len=2)::  isec_char
   character(len=3)::  neigh_char
 
@@ -509,6 +509,13 @@ subroutine Define_Derived()
         dname = "SURF_"//trim(outunit)//"_"//trim(outname)
         call CheckStop(find_index(dname,def_2d(:)%name)>0,&
           sub//"OutputFields already defined output "//trim(dname))
+      case("Local_Correct")
+        Is3D = .false.
+        class = "SURF_"//trim(class)  //"_"//trim(outtyp)
+        dname = "SURF_LF_"//trim(outunit)//"_"//trim(outname)
+        subclass = 'LocFrac_corrected'
+        call CheckStop(find_index(dname,def_2d(:)%name)>0,&
+          sub//"OutputFields already defined output "//trim(dname))
 
         if(dbg0) write(*,"(a,2i4,4(1x,a),es10.2)")"ADD",&
           ind, iout, trim(dname),";", trim(class), outind,unitscale
@@ -612,6 +619,18 @@ subroutine Define_Derived()
     call AddNewDeriv( dname, "SnapEmis", "-", "-", "mg/m2", &
                        ind , -99, T,  1.0e6,  F,  'YM' )
   end do ! ind
+
+  isec_poll = 0
+  do  i = 1, NEMIS_FILE
+    if(SecEmisOut(i))then
+       do isec=1,NSECTORS
+          write(dname,"(A,I0,A)")"Emis_mgm2_sec",isec,trim(EMIS_FILE(i))
+          call AddNewDeriv( dname, "SecEmis", "-", "-", "mg/m2", &
+               isec_poll , -99, T,  1.0e6,  F,  'YM' )
+          isec_poll = isec_poll + 1
+       end do
+    endif
+  end do
   if(USE_OCEAN_DMS)then
     dname = "Emis_mgm2_DMS"
     call AddNewDeriv( dname, "Emis_mgm2_DMS", "-", "-", "mg/m2", &
@@ -622,7 +641,7 @@ subroutine Define_Derived()
     call AddNewDeriv( dname, "Emis_mgm2_Ocean_NH3", "-", "-", "mg/m2", &
                        ind , -99, T,  1.0,  F,  'YM' )
   end if
- 
+
 !Splitted total emissions (inclusive Natural)
   do ind=1,nrcemis
     dname = "EmisSplit_mgm2_"//trim(species(iqrc2itot(ind))%name)
@@ -854,7 +873,8 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
   integer :: wlen,ispc,kmax
   integer,save :: n_Local_Pollutant, n_Total_Pollutant,&
        n_Local_Pollutant3D, n_Total_Pollutant3D
-  integer ::dx,dy,isec_poll
+  integer ::dx,dy,isec_poll,isec,iisec,ipoll
+  real :: default_frac,tot_frac,loc_frac_corr
 
   timefrac = dt/3600.0
   thour = current_date%hour+current_date%seconds/3600.0
@@ -916,17 +936,18 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
       imet_tmp = find_index(subclass, met(:)%name ) ! subclass has meteo name from MetFields
       if( imet_tmp > 0 ) then
-        met_p => met(imet_tmp)%field(:,:,:,1)
+        !Note: must write bounds explicitly for "special2d" to work
+        met_p => met(imet_tmp)%field(1:limax,1:ljmax,1:1,1)
       else
         imet_tmp = find_index(subclass, derivmet(:)%name )
-        if( imet_tmp > 0 ) met_p => derivmet(imet_tmp)%field(:,:,:,1)
+        if( imet_tmp > 0 ) met_p => derivmet(imet_tmp)%field(1:limax,1:ljmax,1:1,1)
       end if
 
       if( imet_tmp > 0 ) then
          kmax=1
          if(met(imet_tmp)%dim==3)kmax=KMAX_MID!take lowest level
          if( MasterProc.and.first_call) write(*,*) "MET2D"//trim(name), &
-              imet_tmp, met_p(2,2,kmax)
+              imet_tmp, met_p(1,1,kmax),loc(met(imet_tmp)%field(1,1,1,1))
          forall ( i=1:limax, j=1:ljmax )
             d_2d( n, i,j,IOU_INST) = met_p(i,j,kmax)
          end forall
@@ -934,14 +955,23 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
          met_p => null()
 
       else ! Not found!
-        if( first_call)  then
-          if( MasterProc) write(*,*) "MET2D NOT FOUND"//trim(name)//":"//trim(subclass)
-            forall ( i=1:limax, j=1:ljmax )
-              d_2d( n, i,j,IOU_INST) = 0.0 ! UNDEF_R
-          end forall
-        end if
-      end if
-
+        !make derived fields:
+        select case ( subclass )
+        case ("inv_u10")
+           forall ( i=1:limax, j=1:ljmax )
+              d_2d( n, i,j,IOU_INST) = 1.0/(0.2+ws_10m(i,j,1))
+           end forall
+ 
+        case default
+           if( first_call)  then
+              if( MasterProc) write(*,*) "MET2D NOT FOUND"//trim(name)//":"//trim(subclass)
+              forall ( i=1:limax, j=1:ljmax )
+                 d_2d( n, i,j,IOU_INST) = 0.0 ! UNDEF_R
+              end forall
+           end if
+        end select
+     end if
+      
     ! The following can be deleted once testing of MET2D is finished...
     case ( "xm_i" )
       forall ( i=1:limax, j=1:ljmax )
@@ -1062,15 +1092,118 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       end if
 
     case ( "SURF_PPB_SPEC" )
-      forall ( i=1:limax, j=1:ljmax )
-        d_2d( n, i,j,IOU_INST) = xn_adv(index,i,j,KMAX_MID) &
-                               * cfac(index,i,j)
-      end forall
-      if ( dbgP ) call write_debugadv(n,index, 1.0, "PPB OUTS")
+      if(subclass=='LocFrac_corrected')then
+         do ipoll=1,uEMEP%Npoll        
+            do i=1,uEMEP%poll(ipoll)%Nix
+               if(index==uEMEP%poll(ipoll)%ix(i))goto 44
+            enddo
+         enddo
+         if(me==0)write(*,*)'WARNING, no local fractions found for ',trim(class),' index ',index
+         44 continue
+         if(me==0.and. first_call)then
+            write(*,*)'local fractions found for ',trim(class),' index ',index,' name ',species_adv(index)%name,' locfrac pollutant ',uEMEP%poll(ipoll)%emis
+            do iisec=1,uEMEP%poll(ipoll)%Nsectors
+            isec_poll=uEMEP%poll(ipoll)%sec_poll_ishift+iisec
+            isec=uEMEP%poll(ipoll)%sector(iisec)
+             write(*,*)'local correction for sector',isec,' pollutant ',trim(species_adv(index)%name)
+         enddo
 
+         endif
+         do j=1,ljmax
+         do i=1,limax
+         default_frac=0.0!local, but any sector that is not explicit
+         tot_frac=0.0!all local (any sector)
+         loc_frac_corr=0.0
+         !isec is sector (number between 1 and 11)
+         !iisec is index over available sectors
+         !isec_poll is an internal uEMEP index that is a combination of sector and pollutant indices 
+         do iisec=1,uEMEP%poll(ipoll)%Nsectors
+            isec_poll=uEMEP%poll(ipoll)%sec_poll_ishift+iisec
+            isec=uEMEP%poll(ipoll)%sector(iisec)
+            if(isec/=0)then
+               default_frac = default_frac - loc_frac(isec_poll,0,0,i,j,KMAX_MID)
+               tot_frac =  tot_frac + loc_frac(isec_poll,0,0,i,j,KMAX_MID)
+            endif
+            if(isec==0)default_frac = default_frac + loc_frac(isec_poll,0,0,i,j,KMAX_MID)
+         enddo
+         default_frac=max(0.0,default_frac)!in case "sec=0" not available
+         tot_frac = tot_frac + default_frac
+         do iisec=1,uEMEP%poll(ipoll)%Nsectors
+            isec_poll=uEMEP%poll(ipoll)%sec_poll_ishift+iisec
+            isec=uEMEP%poll(ipoll)%sector(iisec)
+            if(isec/=0)then
+               loc_frac_corr=loc_frac_corr+loc_frac(isec_poll,0,0,i,j,KMAX_MID)*2!*LocEmisFac(isec)
+            endif
+         enddo
+         loc_frac_corr=loc_frac_corr+default_frac*2!*LocEmisFac_default
+         loc_frac_corr=loc_frac_corr+(1-tot_frac)!No correction for pollutants from other sources
+         
+               d_2d( n, i,j,IOU_INST) = xn_adv(index,i,j,KMAX_MID) &
+                    * cfac(index,i,j) * loc_frac_corr
+         enddo
+         enddo
+      else
+         forall ( i=1:limax, j=1:ljmax )
+            d_2d( n, i,j,IOU_INST) = xn_adv(index,i,j,KMAX_MID) &
+                 * cfac(index,i,j)
+         end forall
+      endif
+      if ( dbgP ) call write_debugadv(n,index, 1.0, "PPB OUTS")
+      
     case ( "SURF_MASS_SPEC" )  ! Here we need density
 
-      forall ( i=1:limax, j=1:ljmax )
+      if(subclass=='LocFrac_corrected')then
+         do ipoll=1,uEMEP%Npoll        
+            do i=1,uEMEP%poll(ipoll)%Nix
+               if(index==uEMEP%poll(ipoll)%ix(i))goto 45
+            enddo
+         enddo
+         if(me==0)write(*,*)'WARNING, no local fractions found for ',trim(class),' index ',index
+         45 continue
+         if(me==0.and. first_call)then
+            write(*,*)'local fractions found for ',trim(class),' index ',index,' name ',species_adv(index)%name,' locfrac pollutant ',uEMEP%poll(ipoll)%emis
+            do iisec=1,uEMEP%poll(ipoll)%Nsectors
+            isec_poll=uEMEP%poll(ipoll)%sec_poll_ishift+iisec
+            isec=uEMEP%poll(ipoll)%sector(iisec)
+             write(*,*)'local correction for sector',isec,' pollutant ',trim(species_adv(index)%name)
+         enddo
+
+         endif
+         do j=1,ljmax
+         do i=1,limax
+         default_frac=0.0!local, but any sector that is not explicit
+         tot_frac=0.0!all local (any sector)
+         loc_frac_corr=0.0
+         !isec is sector (number between 1 and 11)
+         !iisec is index over available sectors
+         !isec_poll is an internal uEMEP index that is a combination of sector and pollutant indices 
+         do iisec=1,uEMEP%poll(ipoll)%Nsectors
+            isec_poll=uEMEP%poll(ipoll)%sec_poll_ishift+iisec
+            isec=uEMEP%poll(ipoll)%sector(iisec)
+            if(isec/=0)then
+               default_frac = default_frac - loc_frac(isec_poll,0,0,i,j,KMAX_MID)
+               tot_frac =  tot_frac + loc_frac(isec_poll,0,0,i,j,KMAX_MID)
+            endif
+            if(isec==0)default_frac = default_frac + loc_frac(isec_poll,0,0,i,j,KMAX_MID)
+         enddo
+         default_frac=max(0.0,default_frac)!in case "sec=0" not available
+         tot_frac = tot_frac + default_frac
+         do iisec=1,uEMEP%poll(ipoll)%Nsectors
+            isec_poll=uEMEP%poll(ipoll)%sec_poll_ishift+iisec
+            isec=uEMEP%poll(ipoll)%sector(iisec)
+            if(isec/=0)then
+               loc_frac_corr=loc_frac_corr+loc_frac(isec_poll,0,0,i,j,KMAX_MID)*2!*LocEmisFac(isec)
+            endif
+         enddo
+         loc_frac_corr=loc_frac_corr+default_frac*2!*LocEmisFac_default
+         loc_frac_corr=loc_frac_corr+(1-tot_frac)!No correction for pollutants from other sources
+         
+               d_2d( n, i,j,IOU_INST) = xn_adv(index,i,j,KMAX_MID) &
+                    * cfac(index,i,j)  * density(i,j)* loc_frac_corr
+         enddo
+         enddo
+      else
+       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = xn_adv(index,i,j,KMAX_MID) &
                                * cfac(index,i,j) * density(i,j)
       end forall
@@ -1086,6 +1219,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 !          'SHLSHLmcc'//trim( species(index)%name), thour, &
 !           xn_shl(index,debug_li,debug_lj,KMAX_MID), density(debug_li,debug_lj), to_molec_cm3
 !
+      endif
    ! WARNING CLASS PPB just means volume based..
     case ( "SURF_PPB_SHL" )        ! short-lived. Follows pattern of MAXSHL below
       if (  f_2d(n)%unit == "ppb"  ) then  !  NOT ENABLED SO FAR !
@@ -1464,6 +1598,14 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
         call datewrite("SnapEmis-in-Derived, still kg/m2/s", n, & !f_2d(n)%Index,&
               (/   SumSnapEmis( debug_li,debug_lj, f_2d(n)%Index ) /) )
 
+    case ( "SecEmis" ) !emissions in mg/m2 per sector
+
+      isec=mod(f_2d(n)%Index,NSECTORS)+1
+      isec_poll=f_2d(n)%Index/NSECTORS + 1
+      forall ( i=1:limax, j=1:ljmax )
+         d_2d(n,i,j,IOU_INST) =  SumSecEmis( i,j, isec,isec_poll)
+      end forall
+
     case ( "Emis_mgm2_DMS" )      ! DMS
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = O_DMS%map(i,j)
@@ -1601,8 +1743,19 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
           write(*,*) "Warning: requested 2D field with MET3D: ",trim(f_3d(n)%name)
         end if
       elseif(first_call)then
-        if(MasterProc) write(*,*) "MET3D NOT FOUND"//trim(f_3d(n)%name)//":"//trim(f_3d(n)%subclass)
-        d_3d(n,:,:,:,IOU_INST)=0.0
+        !make derived fields:
+        select case ( f_3d(n)%subclass )
+        case ("inv_wind_speed_3D")
+           forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
+                d_3d(n,i,j,k,IOU_INST)=1.0/(0.2+sqrt(u_mid(i,j,lev3d(k))**2+v_mid(i,j,lev3d(k))**2))
+        case("wind_speed_3D")
+           forall(i=1:limax,j=1:ljmax,k=1:num_lev3d) &
+                d_3d(n,i,j,k,IOU_INST)=sqrt(u_mid(i,j,lev3d(k))**2+v_mid(i,j,lev3d(k))**2)
+           
+        case default
+           if(MasterProc) write(*,*) "MET3D NOT FOUND"//trim(f_3d(n)%name)//":"//trim(f_3d(n)%subclass)
+           d_3d(n,:,:,:,IOU_INST)=0.0
+        end select
       end if
 
     ! Simple advected species:
@@ -1725,7 +1878,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
 
       if(dbgP) call write_debugadv(n,index, 1.0, "3D UG OUTS",IS3D=.true.)
 
-    case ( "3D_MASS_GROUP" ) !
+    case ( "3D_MASS_GROUP","3D_PPB_GROUP" ) !
       igrp = f_3d(n)%index
       call CheckStop(igrp<1,"NEG GRP "//trim(f_3d(n)%name))
       call CheckStop(igrp>size(chemgroups(:)%name), &
@@ -1868,7 +2021,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
   !the uemep fields do not fit in the general d_3d arrays. Use ad hoc routine
   if(USE_uEMEP .and. .not. present(ONLY_IOU))then
     call av_uEMEP(dt,End_of_Day)
-  endif  
+  endif
 
   first_call = .false.
 end subroutine Derived
