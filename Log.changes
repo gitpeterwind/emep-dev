@@ -162,7 +162,7 @@ area where landocover came from the Landuse_PS_5km_LC.nc file.
 Solution now is to set IAM_VEG for all land-cover areas except those specified
 in the config array FLUX_IGNORE:
 
-  FLUX_IGNORE = 'W', 'D', 'DE', 'ICE', 'BARE'   ! Ignore these for FLUX calcs.  
+  FLUX_IGNORE = 'W', 'D', 'DE', 'ICE', 'BARE'   ! Ignore these for FLUX calcs.
 
 This allows for future landcover data-sets, which might have other codes for
 these non-veg areas. (The 'IAM_VEG' currently found in Landuse_PS_5km_LC.nc
@@ -178,14 +178,13 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 30th  June 2017  Peter, Anna
 
 Bug fix! timefactors can be wrong in certain cases.
-If a timefactor code is defined several times in Country_ml, the timefactor for 
-the last one is used instead of the first one (using find_index). 
+If a timefactor code is defined several times in Country_ml, the timefactor for
+the last one is used instead of the first one (using find_index).
 This will normally give a default timefactor of 1. Affects:
 shipping emissions (country codes 30-34, but does not matter, since the timefactors are 1 anyway?)
 "European Community" (code 64, not used?), Turkey (code 25), "Rest of Russia " (Code 42).
 
-
-Allow country specific hourly factor. The idea is that we define cities by a new 
+Allow country specific hourly factor. The idea is that we define cities by a new
 country code, and special traffic hourly factors are applied to those (CAMS50 project).
 17 European cities are defined in Country_ml.f90.
 The new factors are given for now at:
@@ -193,6 +192,11 @@ $DataDir/inputs_emepdefaults_Jun2017/HourlyFacsSpecials.CAMS50
 As long as the emisions do not have these new City-codes, there will be no effect.
 Defaults are the old values.
 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+18th June 2017 Peter rv4_15_1 (status 2017 version, 494ad81)
+
+GridValues_ml:
+  bug for uemep long rang transport corrected
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16th  June 2017  Peter, Joffen
@@ -205,15 +209,14 @@ Example of format:
 !  emis_inputlist(3)%name     = '/home/mifajej/Emissions/Ships/FMI_Glob/2015/FMIGlobShip2015mon.nc',  !
 !  emis_inputlist(3)%type = 'Special_ShipEmis',
 
-
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 9th  June 2017  Peter
 
 Can use a mix of SNAP and GNFR emission, if the type of the second is specified.
-The first emission determines the main sector categories, the other emissions 
-will be mapped. For instance 
+The first emission determines the main sector categories, the other emissions
+will be mapped. For instance
 
-  emis_inputlist(1)%name = '/global/work/nyiri/emis01deg_EMEP2015/GNFREmis_EMEP01_2015.nc',! GNFR 
+  emis_inputlist(1)%name = '/global/work/nyiri/emis01deg_EMEP2015/GNFREmis_EMEP01_2015.nc',! GNFR
 
   emis_inputlist(3)%name     = '/global/work/mifapw/emep/Data/Emis_TNO7_MACCIII/Emis_TNO7_MACCIII_2011.nc',
   emis_inputlist(3)%type     = 'SNAPsectors',          !interpret as SNAP
@@ -221,7 +224,7 @@ will be mapped. For instance
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-9th  June 2017  Dave 
+9th  June 2017  Dave
 
 CellMet_ml - restriced z_ref to be >= 30m to avoid negative height calculations
   in SubMet_ml.
@@ -232,7 +235,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Allow for outputting sectorwise emission.
 In ModelConstants_config set for instance:
 
-  SecEmisOutPoll(1:)	= 'pm25', 'nox',	
+  SecEmisOutPoll(1:)	= 'pm25', 'nox',
 
 This will give you separately all the 11 sectors for each of these pollutants
 
@@ -264,7 +267,7 @@ with new system in ZCM_EmChem16mt/VBS_SOAformationY.reactions. The new system
 now makes use of labels, e.g. |YCOXY(1)| to set yields for different components
 in different VBS bins. Here, from OXYL into 10**1 (ie 10ug/m3) bin.
 
-ZCM_CRIv2R5/GenIn.shorthand 
+ZCM_CRIv2R5/GenIn.shorthand
   Copied CRIv2R5jpc.shorthand to GenIn.shorthand
 
 ZCM_EmChem16mt:
@@ -281,16 +284,16 @@ ZCM_EmChem16mt:
  VBS_SOAformationY.reactions  ---- NEW !!!
     uses new and improved YieldModifications for VBS
 
-ChemFields_ml.f90 
+ChemFields_ml.f90
   Adding cell_tinv as 1/T for use in YieldModifications
 
-ChemFunctions_ml.f90 
+ChemFunctions_ml.f90
   Added SmixC option to explore coarse-mode uptake. Not used yet.
- 
-mk.GenChem 
+
+mk.GenChem
   Used new SOAformation file for EmChem16mt - using YieldModification methods
 
-config_EMEPSTD.nml 
+config_EMEPSTD.nml
   Using YieldModification = VBS
 
 emep_Config_mod.f90
@@ -300,7 +303,7 @@ a little CPU.
 config_Outputs_EMEPSTD
    Added SQT output
 
-Solver.f90 
+Solver.f90
   Adapted for new VBS methods in YieldModifications
 
 >>>>>>> 27ddc801f707bb3dd0a6a5ed01ad0056fa69cfa6
@@ -313,22 +316,22 @@ Can affect only cases where:
 1)interpolation from lon-lat to lon-lat
 and 2) the model grid has finer resoltion than the data interpolated (which is normally not the case)
 
-Nest_ml.f90: option to save only the data at BC  of inner grid. 
+Nest_ml.f90: option to save only the data at BC  of inner grid.
 Set  "MET_inner" and "RUNDOMAIN_inner" in config.
 Still under testing.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 24th  May 2017  Peter
 
-run.pl: changed SLURM commands. There is a bug on Stallo, that makes MPI count 
+run.pl: changed SLURM commands. There is a bug on Stallo, that makes MPI count
 wrong the number of CPUs if not entire nodes are taken.
 
-Introduced special2d and special3d arrays in MetFields. 
-If you need very special output (i.e some quantity that cannot be outputted by 
+Introduced special2d and special3d arrays in MetFields.
+If you need very special output (i.e some quantity that cannot be outputted by
 standard My_Derived). For 2D fields
 1) set Nspecial2d  in MetFields according to the number of new outputs
-2) write in set in the code the values of the array special2d(i,j,N), where N is 
-   the output number (i.e. 1,2,... Nspecial2d). 
+2) write in set in the code the values of the array special2d(i,j,N), where N is
+   the output number (i.e. 1,2,... Nspecial2d).
    For instance special2d(i,j,1)=Grid%invL in CellMet_ml.f90 for invL
 3) include in the same routine the use MetFields_ml  , only : special2d
 4) In config_Output.nml include the line for instance
@@ -355,7 +358,7 @@ ZCM_EmChem16mt/EmChem16mtbase.reactions
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16th  May 2017  Peter
 
-Some uemep improvements: pollutant destination, more dimensions possible in 
+Some uemep improvements: pollutant destination, more dimensions possible in
 Out_NetCDF, zero order advction config flag
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -388,7 +391,7 @@ uEMEP: for each gridcell computes fractions for a surrounding region.
 Needs write out many dimensional data (i,j,k,t,sector, + x and y for origin of pollutant).
 New routine in NetCDF_ml that writes many dimensional array.
 Still need interface for input parameters and more checking.
-Molecular mass of emissions/pollutant hardcoded now. 
+Molecular mass of emissions/pollutant hardcoded now.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -477,8 +480,8 @@ config_Outputs_EMEPSTD
     to modify to cover PFTs or ecosystem definitions.
 
 
-3) ColumnSource_ml - reduced NMAX_LOC, NMAX_EMS to 5, 300 to avoid problems 
-   discussed on github issues. 
+3) ColumnSource_ml - reduced NMAX_LOC, NMAX_EMS to 5, 300 to avoid problems
+   discussed on github issues.
 
    *  Action needed: Alvaro
 
@@ -540,7 +543,7 @@ Landuse_ml
 
    Updated to cope with CLM
    Now allows landcover to be different in European and global files
-   
+
 ModelConstants_ml
 
    Moved GlobBvocMethod to emep_Config
@@ -557,7 +560,7 @@ Setup_ml
 
 run.pl
 
-   Point to LandInputs_Apr2017 which has GLC-CLM based global use and 
+   Point to LandInputs_Apr2017 which has GLC-CLM based global use and
    appropriate Inputs files.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -582,7 +585,7 @@ BIG CHANGE FOR GLOBAL BVOC and also some structural changes
 
   config_EMEPSTD.nml - just added commented out example for PBL%ZiMin
 
-  Note: The _mod suffix is intended also for the merge with ESX/BoxChem - 
+  Note: The _mod suffix is intended also for the merge with ESX/BoxChem -
         - I will use it to denote modules which have been updated/merged.
 
 2) Biogenic changes
@@ -608,7 +611,7 @@ Wesely_ml renamed to GasParticleCoeffs_ml
 
   - added option of variable yields on RHS of equations, with |YA_xx| notation, e.g.
     coded for gas and aerosol yields so far, e.g. to allow:
-     A + B = |YG_isopO3| gas-phase-products + |YA_isopO3| aerosol-phase-products 
+     A + B = |YG_isopO3| gas-phase-products + |YA_isopO3| aerosol-phase-products
     Needs more work.
 
 5) Name changes
@@ -638,11 +641,11 @@ Define USE_PreADV=T in config to activate. (otherwise no effect).
 The emissions from ColumnSources are distributed along a line.
 The length and direction of the line is defined according to winds at each level.
 The line is "one-dimensional" in the 2D layer.
-The wind is defind only at origin (emission source), it is not varying along 
-the line. The number of gridcells on the line is equal to the Courant number in 
+The wind is defind only at origin (emission source), it is not varying along
+the line. The number of gridcells on the line is equal to the Courant number in
 each direction (nearest integer larger than C).
 
-This is to avoid the problem of holes in the concentration when there are 
+This is to avoid the problem of holes in the concentration when there are
 strong wind, since the advection will move pollutants far away, while emissions
 are put into the atmosphere only every dt_advec.
 
@@ -653,7 +656,7 @@ ModelConstants_ml
 Runchem_ml
 
   - Added DEBUG%datetxt - to add a date string which  can be accessed from
-     other modules while debugging. Saves the need for TimeDate_ml, 
+     other modules while debugging. Saves the need for TimeDate_ml,
      print_date etc.
 
 Wesely_ml
@@ -669,20 +672,20 @@ Small changes
 My_Derived_ml.f90
  -  Removed n1 from print - was not set when DEBUG turned on
 
-Setup_1d_ml.f90 
+Setup_1d_ml.f90
  - Increased length of specname and size of d2index
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15th Feb 2017 Peter
 
 The new interpolation method (9th feb) was switched off. Switched on now.
-Also improved the selection of data to be read in, as it was reading way too much 
+Also improved the selection of data to be read in, as it was reading way too much
 for lon lat grids, thereby wasting lots of memory.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15th Feb 2017 Peter
 
-Removed the diagnostic "natso2" from the old system: 
+Removed the diagnostic "natso2" from the old system:
 it was producing a divide by zero.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -703,9 +706,9 @@ Problems from the new interpolation routine (26th Jan) for global grids:
 the cyclic longitudes where not taken correctly into account.
 
 The landuse could be numerically large than 1 (1E-15 over), and that caused
-negative deposition over south pole for PB210. Added a "max(1,lu_cover)" 
+negative deposition over south pole for PB210. Added a "max(1,lu_cover)"
 
-Found a few (3?) gridcell at south pole (left corner) in LanduseGLC.nc with 150% 
+Found a few (3?) gridcell at south pole (left corner) in LanduseGLC.nc with 150%
 lu coverage. Will replace with correct one.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -717,7 +720,7 @@ Tested for WRF metdata.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 2nd  Feb 2017  Dave
 
-Country_ml.f90 - added 199 to cope with non-specific emissions as seen 
+Country_ml.f90 - added 199 to cope with non-specific emissions as seen
   in annual Emis_01degGLOBAL_2012_HTAP_MIEC.nc file.
 
 EECCA 2012 beckmark, submitted to AeroCom
@@ -732,13 +735,13 @@ run.pl - used pattern match on EmChems to get emissplit.specials
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26th Jan 2017 Peter
 
-Faster and better latlon to latlon interpolation: 
+Faster and better latlon to latlon interpolation:
 integrates exactly, assuming uniform emissions over gridcells
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23rd Jan 2017 Peter      rv4_11_5
 
-Smoother interpolation when lon and lat resolution is not the same, as in TNO7 
+Smoother interpolation when lon and lat resolution is not the same, as in TNO7
 emissions.
 
 
@@ -773,7 +776,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 5th Jan 2017 Dave   rv4_11_0
 
 Re-started tags. We need something to keep track of model changes in
-a simple way - as had with svnversion. 
+a simple way - as had with svnversion.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 28th Jan 2017 Peter
@@ -785,7 +788,7 @@ uEMEP: diagonal neighbors.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26th Jan 2017 Peter
 
-Faster and better latlon to latlon interpolation: 
+Faster and better latlon to latlon interpolation:
 integrates exactly, assuming uniform emissions over gridcells
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -802,7 +805,7 @@ Update pollen modules (ZD_Pollen), issue #12
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23rd Dec 2016 Peter
 
-Bug when wrf is used: XLAT reading for pole detection was read as a one-dimensional array. 
+Bug when wrf is used: XLAT reading for pole detection was read as a one-dimensional array.
 Detected by Massimo.
 
 Reading 3 hourly O3 from top when fileName_O3_Top is set in config file
