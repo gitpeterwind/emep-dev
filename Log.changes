@@ -151,6 +151,12 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+18th June 2017 Peter rv4_15_1 (status 2017 version, 494ad81)
+
+GridValues_ml:
+  bug for uemep long rang transport corrected
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16th  June 2017  Peter, Joffen
 
 Allow a special format for ship emissions.
