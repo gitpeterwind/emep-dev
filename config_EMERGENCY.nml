@@ -1,8 +1,15 @@
+&INPUT_PARA
+  GRID      = 'EMERGENCY',
+  iyr_trend = 2010,
+  runlabel1 = 'eemep',
+  runlabel2 = 'rv4_14',
+  startdate = 2010,04,13,000000,
+  enddate   = 2010,04,14,000000,
+&end
 !!put here only machine specific data.
 &Machine_config
 !DataDir will attempted replaced by (in this order):
-  DataPath(1) = '/global/work/mifapw/emep/Data',  !Stallo
-  DataPath(2) = '/home/metno/mifapw/work/Data',  !Vilje
+  DataPath(1) = '/home/metno_op/emep/eemep2/input/eEMEP_OpenSource',
 &end
 !------- Experiment Description
 !  EXP_NAME     one word description, e.g. EMEPSTD,EMEP2010,TFMM
@@ -15,11 +22,19 @@
   MY_OUTPUTS            = '', ! outputs now defined in config_Outputs
 ! MY_OUTPUTS            = 'INVERSION',
 !------------------------------
+ EmBio%GlobBvocMethod = 'GLC-CLM',  ! NEW default for GLOBAL, not used for Euro
+ EmBio%CLF            =  0.59,      ! 1/1.7 for CLM
+ LandCoverInputs%LandDefs   = 'DataDir/LandInputs_Apr2017/Inputs_LandDefs.csv',
+ LandCoverInputs%Do3seDefs  = 'DataDir/LandInputs_Apr2017/Inputs_DO3SE.csv',
+ LandCoverInputs%MapFile =
+    'DataDir/Landuse_PS_5km_LC.nc',
+    'DataDir/LandInputs_Apr2017/glc2000mCLM.nc',
+ YieldModifications = '-' ,   ! None for EmChems 'JPC-VY-acid'
   USES%testname         = 'EMERGENCY',
   USES%FOREST_FIRES     = F,
   USES%EMISSTACKS       = F,         ! Reads PointSources file
   USES%DEGREEDAY_FACTORS = F,
-  USES%GRIDDED_EMIS_MONTHLY_FACTOR = T, !
+  USES%GRIDDED_EMIS_MONTHLY_FACTOR = F, !
   USES%PlumeMethod      = 'PVDI',    ! default PVDI, possible: NILU, ASMI, PVDI
   USES%PFT_MAPS         = F,         ! PFT LAI tests
   USES%n2o5HydrolysisMethod = 'SmixTen', !  "Gamma:0.002' ! 'OrigRiemer'! =ACP2012 EMEP implementation
