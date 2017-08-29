@@ -106,6 +106,20 @@ character(len=max_string_length), save :: &
   FINN_PATTERN = 'FINN_ForestFireEmis_v15_YYYY.nc',&
   GFAS_PATTERN = 'GFAS_ForestFireEmis_YYYY.nc'
 
+character(len=30), save :: &
+    bbunits  = '-', &              ! will decide interpolation method
+    bbinterp = '-'                 ! interpolation method in ReadField_CDF
+!interpolation: (from NetCDF_ml)
+  !'zero_order' gives value at closest gridcell. Probably good enough for most applications.
+  !Does not smooth out values
+  !'conservative' and 'mass_conservative' give smoother fields and are approximatively
+  !integral conservative (integral over a region is conserved). The initial gridcells
+  !are subdivided into smaller subcells and each subcell is assigned to a cell in the model grid
+  !'conservative' can be used for emissions given in kg/m2 (or kg/m2/s) or landuse or most fields.
+  !The value in the netcdf file and in model gridcell are of the similar.
+  !'mass_conservative' can be used for emissions in kg (or kg/s). If the gricell in the model are
+  !twice as small as the gridcell in the netcdf file, the values will also be reduced by a factor 2.
+
 integer, save ::    &
   verbose=1,        & ! debug verbosity 0,..,4
   persistence=1,    & ! persistence in days
@@ -130,9 +144,18 @@ subroutine Config_Fire()
 
   if(DEBUG%FORESTFIRE.and.MasterProc) write(*,*) "FIRE selects ",BBMAP
   select case(BBMAP)
-    case("GFED");persistence=8  ! 8-day records
-    case("FINN");persistence=1  ! 1-day records
-    case("GFAS");persistence=3  ! 1-day records, valid for 3 day in FORECAST mode
+    case("GFED")
+       persistence=8  ! 8-day records
+       bbunits  = 'g/m2/8-days'
+       bbinterp = 'conservative'
+    case("FINN")
+       persistence=1  ! 1-day records
+       bbunits  = 'mole/day'
+       bbinterp = 'mass_conservative'
+    case("GFAS")
+       persistence=3  ! 1-day records, valid for 3 day in FORECAST mode
+       bbunits  = 'kg/m2/s'
+       bbinterp = 'conservative'
     case default;call CheckStop("Unknown B.B.Mapping")
   end select
 
@@ -331,7 +354,8 @@ subroutine Fire_Emis(daynumber)
     forall(j=1:ljmax,i=1:limax) &
       BiomassBurningEmis(ind,i,j) = BiomassBurningEmis(ind,i,j) + rdemis(i,j) 
 
-    if(debug_ff)  write(*,"(3a10,i4,f8.3,es12.3)") "FFIRE SUMS:", &
+    !AUGif(debug_ff)  write(*,"(3a10,i4,f8.3,es12.3)") "FFIRE SUMS:", &
+    if(debug_ff.and.debug_proc)  write(*,"(3a10,i4,f8.3,es12.3)") "FFIRE SUMS:", &
       trim(FF_poll), trim( species(iemep)%name), ind, &
       species(iemep)%molwt, sum( BiomassBurningEmis(ind,:,:) )
 
