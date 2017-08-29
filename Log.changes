@@ -140,7 +140,12 @@ info on unused variables, etc.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 29th   Aug  2017 Alvaro
 
-Fix Pollen_ml after rv4_12beta
+- make EMEP on EmChem16mt (#50)
+- Fix Pollen_ml after rv4_12beta
+
+Makefile
+  On 6b4c9e3 (Aug 8th) the configuration for EMEP was wolled back to EmChem09soa
+  by mistake. This change set it back to EmChem16mt
 
 Pollen_ml.f90
   On rv4_12beta (Mar 2017) Wesely_ml was renamed to GasParticleCoeffs_ml
