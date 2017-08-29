@@ -138,6 +138,14 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+29th   Aug  2017 Alvaro
+
+Fix Pollen_ml after rv4_12beta
+
+Pollen_ml.f90
+  On rv4_12beta (Mar 2017) Wesely_ml was renamed to GasParticleCoeffs_ml
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 29th   Aug  2017 Dave
 
 ForestFire_ml.f90

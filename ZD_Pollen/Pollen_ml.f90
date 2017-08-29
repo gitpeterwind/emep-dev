@@ -13,7 +13,7 @@ use CheckStop_ml,         only: CheckStop,CheckNC
 use ChemSpecs,            only: NSPEC_SHL, species_adv
 use Chemfields_ml,        only: xn_adv    ! emep model concs.
 use DerivedFields_ml,     only: f_2d,d_2d ! D2D houtly (debug) output
-use Wesely_ml,            only: AERO_SIZE,CDDEP_BIRCH,CDDEP_OLIVE,CDDEP_GRASS
+use GasParticleCoeffs_ml, only: AERO_SIZE,CDDEP_BIRCH,CDDEP_OLIVE,CDDEP_GRASS
 use Functions_ml,         only: heaviside
 use GridValues_ml ,       only: glon, glat, debug_proc, debug_li, debug_lj
 use Landuse_ml,           only: LandCover
