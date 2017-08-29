@@ -1,0 +1,5 @@
+# ZCM_Emergency specific files
+Emergency.reactions
+Emergency.species
+emergency_emission.csv
+emergency_location.csv
