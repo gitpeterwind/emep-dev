@@ -175,8 +175,8 @@ GenChem-MACCEVA-%:  GenChemOptions += -f GFASv1   -e SeaSalt,Dust
 GenChem-eEMEP-%:    GenChemOptions += -f GFASv1   -e SeaSalt,Dust
 
 # eEMP Default Scenarios: Vents, NPPs & NUCs
-Emergency: VENTS ?= Eyjafjoll
-#Vesuvius,Etna,Kr.suv.k,Katla,Askja
+Emergency: VENTS ?= DefaultVolcano
+#Eyjafjoll,Vesuvius,Etna,Kr.suv.k,Katla,Askja
 Emergency: NPPAS ?= 
 #Olkiluoto,Loviisa,Kola,Leningrad,Ringhals,Forsmark,Oskarshamn,Torness,Sellafield
 Emergency: NUCXS ?= 

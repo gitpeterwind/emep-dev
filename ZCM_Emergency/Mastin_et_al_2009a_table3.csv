@@ -4,6 +4,7 @@
 # L.G. Mastin, M. Guffanti, J.E. Ewert and J. Spiegel.
 # http://pubs.usgs.gov/of/2009/1133
 #NUMBER,RN,SN,VN,NAME,LOCATION,STATUS,LATITUDE,NS,VF,LONGITUDE,EW,ELEV,TYPE,TIMEFRAME,ERUPTION TYPE
+OLCANO00,01,00,-02-,DefaultVolcano,Iceland-S,Default,60.00,N,, 10.00,W,1000,Stratovolcano,D3,S0
 0100-01-,01,00,-01-,West_Eifel_Volc_Field,Germany,Radiocarbon,50.17,N,*,  6.85,E,600,Maars,D7,S0
 0100-02-,01,00,-02-,Chaine_des_Puys,France,Radiocarbon,45.775,N,*,  2.97,E,1464,Cinder cones,D7,M0
 0100-03-,01,00,-03-,Olot_Volc_Field,Spain,Holocene,42.17,N,*,  2.53,E,893,Pyroclastic cones,U,M0
