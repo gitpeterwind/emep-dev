@@ -151,6 +151,15 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+29th   Aug  2017 Alvaro
+
+Fix eEMEP emission expansion, close #54
+
+ColumnSource_ml:
+  Refvert bug introduced on svn 3303 (Oct 2016, git aaa393b).
+  It caused the default emissions used by eEMEP to fail to expand as groups
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 18th June 2017 Peter rv4_15_1 (status 2017 version, 494ad81)
 
 GridValues_ml:
