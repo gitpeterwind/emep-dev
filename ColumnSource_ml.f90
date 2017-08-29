@@ -441,7 +441,8 @@ subroutine setRate()
         emsdef(v,nems(v))=dems
         if(DEBUG%COLSRC) &
           write(*,MSG_FMT)'Erup.Default',me,'Expand SPC',nems(v),trim(dems%id)
-      elseif(dems%grp>0)then    ! Expand GROUP of SPC
+      elseif(dems%grp>0.or.locdef(v)%grp>0)then   ! Expand GROUP of SPC
+        if(dems%grp<1)dems%grp=locdef(v)%grp
         select case (size(chemgroups(dems%grp)%specs))
         case(2);binsplit=>VAAC_2BIN_SPLIT
         case(7);binsplit=>VAAC_7BIN_SPLIT
