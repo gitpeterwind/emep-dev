@@ -88,7 +88,7 @@
 !-------- CWF dump/restart
 ! WRITE_SPC        = 'NO2','O3','SO2','CO',   ! reduce output for NMC statistics (3DVar)
 ! WRITE_GRP        = 'DAOBS','DAUNOBS','PM10','AOD',
-  FORECAST_NDUMP   = 0,                       ! Nr. CWF dump dates
+  FORECAST_NDUMP   = 1,                       ! Nr. CWF dump dates
   outdate          = $outdate,                ! 1st,2nd CWF dump dates
 &end
 &ExternalBICs_config
