@@ -155,7 +155,7 @@ EMEP HTAP MACC MACC-EVA MACC-Pollen EmChem16mt EmChem09 EmChem09-ESX CRI_v2_R5 e
 
 # GenChem config
 .SECONDEXPANSION:
-EMEP:               GenChem-EMEP-EmChem09soa
+EMEP:               GenChem-EMEP-EmChem16mt
 EmChem09 CRI_v2_R5: GenChem-EMEP-$$@
 EmChem09-ESX:       GenChem-EMEP-EmChem09
 HTAP MACC SR-MACC:  GenChem-$$@-EmChem16mt
