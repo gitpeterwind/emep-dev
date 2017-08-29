@@ -138,6 +138,16 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+29th   Aug  2017 Dave
+
+ForestFire_ml.f90
+
+  Merged ReadField_CDF coding for GFAS, GFED and FINN, folllowing #51
+  Added explanation of Interpolation options from ReadField_CDF for
+  fiture reference.
+  Small tidy-up, with line length < 78 chars
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 29th   Aug  2017 Alvaro
 
 Fix eEMEP emission expansion, close #54
