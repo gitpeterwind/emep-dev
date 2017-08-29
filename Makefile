@@ -161,8 +161,8 @@ EmChem09-ESX:       GenChem-EMEP-EmChem09
 HTAP MACC SR-MACC:  GenChem-$$@-EmChem16mt
 MACC-EVA:           GenChem-MACCEVA-EmChem16mt
 MACC-Pollen:        GenChem-MACCEVA-Pollen
-eEMEP:              GenChem-$$@-Emergency
-eEMEP ?= Emergency  # Emergency | AshInversion
+eEMEP ?= Emergency # Emergency | AshInversion
+eEMEP:              $$(eEMEP) GenChem-$$@-Emergency
 
 GenChem%:
 	mk.GenChem $(GenChemOptions) -q
@@ -173,14 +173,17 @@ GenChem-MACC-%:     GenChemOptions += -f GFASv1   -e SeaSalt,Dust,../ZCM_Pollen/
 GenChem-SR-MACC-%:  GenChemOptions += -f GFASv1   -e none
 GenChem-MACCEVA-%:  GenChemOptions += -f GFASv1   -e SeaSalt,Dust
 GenChem-eEMEP-%:    GenChemOptions += -f GFASv1   -e SeaSalt,Dust
-GenChem-eEMEP-%:    $$(eEMEP)
 
 # eEMP Default Scenarios: Vents, NPPs & NUCs
-Emergency: VENTS ?= Vesuvius,Etna,Kr.suv.k,Katla,Askja
-Emergency: NPPAS ?= Olkiluoto,Loviisa,Kola,Leningrad,Ringhals,Forsmark,Oskarshamn,Torness,Sellafield
-Emergency: NUCXS ?= NorthKorea,Tehran
+Emergency: VENTS ?= Eyjafjoll
+#Vesuvius,Etna,Kr.suv.k,Katla,Askja
+Emergency: NPPAS ?= 
+#Olkiluoto,Loviisa,Kola,Leningrad,Ringhals,Forsmark,Oskarshamn,Torness,Sellafield
+Emergency: NUCXS ?= 
+#NorthKorea,Tehran
 Emergency:
-	ZCM_Emergency/mk.Emergency -V 7bin,$(VENTS) -N $(NPPAS) -X $(NUCXS)
+	ZCM_Emergency/mk.Emergency -V 7bin,$(VENTS)
+#-N $(NPPAS) -X $(NUCXS)
 
 # eEMP Default AshInversion: Vents
 AshInversion: VENTS ?= Eyjafjoll
