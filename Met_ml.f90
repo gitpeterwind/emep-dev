@@ -1795,14 +1795,10 @@ contains
                       theta2 = t2_nwp(i,j,nr) * T_2_Tpot(ps(i,j,nr))
                       call JericevicRiB_Hmix0(&
                           u_mid(i,j,:), v_mid(i,j,:),  &
-                          z_mid(i,j,:), th(i,j,:,nr),  & ! WHY nr??
-                          pzpbl(i,j), theta2, likely_coastal(i,j) )
-!                      if(  pzpbl(i,j)  < z_bnd(i,j,20) ) then
-!                        write(*,"(a8,i2,2i4,5f8.3,f7.2)") "PZPBL ", nr, i_fdom(i), j_fdom(j), t2_nwp(i,j,nr), theta2, th(i,j,20,nr), u_mid(i,j,20), v_mid(i,j,20),pzpbl(i,j)
-!                      end if !OS_TEST debug
+                          z_mid(i,j,:), th(i,j,:,nr),  pzpbl(i,j))
                       end do
                    end do
- 
+
               else
                  call CheckStop("Need HmixMethod")
               end if ! end of newer methods
@@ -1812,18 +1808,13 @@ contains
                  pzpbl(i,j) = max( PBL%ZiMIN, pzpbl(i,j))
                  pzpbl(i,j) = min( PBL%ZiMAX, pzpbl(i,j) )
               end forall
-           ! mid-call at k=19 is lowest we can resolve, so set as min
-           !ORIG   forall(i=1:limax,j=1:ljmax)
-           !ORIG      pzpbl(i,j) = max( z_mid(i,j,KMAX_MID-1), pzpbl(i,j))
-           !ORIG      pzpbl(i,j) = min( PBL_ZiMAX, pzpbl(i,j) )
-           !ORIG   end forall
 
           end if ! Hmix done
     !..spatial smoothing of new zi: Need fixed minimum here. 100 or 50 m is okay
     !  First, we make sure coastal areas had "land-like" values.
 
      if(LANDIFY_MET) &
-         call landify(pzpbl,"pzbpl") 
+         call landify(pzpbl,"pzbpl")
      call smoosp(pzpbl,PBL%ZiMIN,PBL%ZiMAX)
 ! and for later...
 
@@ -1835,11 +1826,6 @@ contains
               do j=1,ljmax
                  do i=1,limax
                  Kz_m2s(i,j,k) = JericevicKz( z_bnd(i,j,k), pzpbl(i,j), ustar_nwp(i,j), Kz_m2s(i,j,k) )
-               !if v.low zi, then set Kz at bottom boundary
-               ! to zero to stop dispersion.
-!                if ( k==KMAX_MID .and. pzpbl(i,j) <= z_bnd(i,j,KMAX_MID) ) then
-!                    Kz_m2s(i,j,k) = 0.0
-!                end if
              end do
              end do
              end do
