@@ -139,6 +139,11 @@ subroutine Get_CellMet(i,j,debug_flag)
 
   Grid%invL  = -1* KARMAN * GRAV * Grid%Hd & ! -Grid%Hd disliked by gfortran
             / (CP*Grid%rho_s * Grid%ustar*Grid%ustar*Grid%ustar * Grid%t2 )
+  !.. we limit the range of 1/L to prevent numerical and printout problems
+  !.. and because we don't trust HIRLAM or other NWPs enough.
+  !   This range is very wide anyway.
+  ! Grid%invL  = max( -1.0, Grid%invL ) !! limit very unstable
+  ! Grid%invL  = min(  1.0, Grid%invL ) !! limit very stable
 
 
   ! wstar for particle deposition, based on Wesely
