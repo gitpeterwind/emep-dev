@@ -111,7 +111,6 @@ integer, public, parameter :: &
 ! Aqueous fractions:
 real, save,allocatable, public,  dimension(:,:) :: frac_aq
 real, private, dimension(NHENRY,CHEMTMIN:CHEMTMAX), save :: H
-real, private, dimension(NK1,CHEMTMIN:CHEMTMAX),    save :: K1fac
 !hf NEW
 real, private, dimension(CHEMTMIN:CHEMTMAX), save :: &
   K1,           & ! K for SO2->HSO3-
@@ -127,7 +126,6 @@ integer, private, parameter :: &
 real, public, save,allocatable, dimension(:,:) :: aqrck
 real, private, dimension(NAQRC), save :: aqrc ! constant rates for
                                               ! so2 oxidn.
-real, private, dimension(2), save :: vw       ! constant rates for
 logical, public,save :: prclouds_present      ! true if precipitating clouds
 
 integer, public, parameter :: &
@@ -805,7 +803,6 @@ subroutine WetDep_Budget(i,j,invgridarea, debug_flag)
   real,    intent(in) :: invgridarea
   logical, intent(in) :: debug_flag
 
-  logical :: inside
   integer :: f2d, igrp ,iadv, n, g
   real    :: wdep
   type(group_umap), pointer :: gmap=>null()  ! group unit mapping
