@@ -55,9 +55,8 @@
   public  :: chemistry        ! Runs chemical solver
 
   INCLUDE 'mpif.h'
-
-  integer::  STATUS(MPI_STATUS_SIZE),INFO
-     integer, parameter:: nchemMAX=15
+  
+  integer, parameter:: nchemMAX=15
   integer, parameter:: NUM_INITCHEM=5    ! Number of initial time-steps with shorter dt
   real, save::         DT_INITCHEM=20.0  ! shorter dt for initial time-steps, reduced for
   integer, parameter  :: EXTRA_ITER = 1    ! Set > 1 for even more iteration

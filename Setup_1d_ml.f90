@@ -89,7 +89,7 @@ public :: reset_3d     ! Exports final results for i,j column to 3-D fields
 ! Hard-coded for 2 specs just now. Could extend and allocate.
 integer, private, parameter :: NROADDUST = 2
 integer, private, parameter :: iROADF=1,  iROADC=2
-integer, private, save :: inat_RDF,  inat_RDC, inat_Rn222
+integer, private, save :: inat_RDF,  inat_RDC
 integer, private, save :: itot_RDF=-999,  itot_RDC=-999, itot_Rn222=-999
 
 
@@ -118,7 +118,7 @@ contains
     real :: ugtmp, ugSIApm, ugDustF, ugSSaltF, ugDustC, ugSSaltC
     real, save ::  ugBCf=0.0, ugBCc=0.0 !not always present
     real :: ugSO4, ugNO3f, ugNO3c, ugRemF, ugRemC, ugpmF, ugpmC, rho
-    logical :: is_finepm, is_ssalt, is_dust ,have_BC
+    logical :: is_finepm, is_ssalt, is_dust
     logical, dimension(size(PM10_GROUP)), save  :: is_BC 
     real, dimension(size(AERO%Inddry))  :: Ddry ! Dry diameter
     integer :: iw, ipm ! for wet rad
@@ -463,10 +463,10 @@ subroutine setup_rcemis(i,j)
   integer, intent(in) ::  i,j     ! coordinates of column
 
   !  local
-  integer ::  iqrc,k, itot
+  integer :: iqrc,k, itot
   real    :: Kw,fac, eland   ! for Pb210  - emissions from land
 
-  integer ::  i_help,j_help,i_l,j_l, i_Emis_4D,n
+  integer :: i_Emis_4D,n
   logical, save     :: first_call = .true. 
   character(len=13) :: dtxt="setup_rcemis:"
   real :: SC_DMS,SC_DMS_m23,SC_DMS_msqrt,SST_C,invDeltaZfac
@@ -725,7 +725,7 @@ subroutine reset_3d(i,j)
              nd2d =  nd2d  + 1
              call CheckStop( nd2d > size(id2col), &
                  dtxt//"Need bigger id2col array" )
-             specname = f_2d(id)%name(7:)  ! Strip XNCOL_
+             specname = trim(f_2d(id)%name(7:))  ! Strip XNCOL_
              ispec = find_index( specname, species(:)%name )
              call CheckStop(ispec < 1, dtxt//"XNCOL not found"//specname )
              d2index(nd2d)= id

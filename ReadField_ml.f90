@@ -53,7 +53,7 @@
   use Io_ml,         only : ios, open_file
   implicit none
 
-  integer,private  :: i, j, n,  INFO       ! Local variables
+  integer,private  :: i, j       ! Local variables
 
   interface ReadField 
      module procedure ReadField_r

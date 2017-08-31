@@ -22,8 +22,6 @@ private
 
 public   :: Rsurface
 INCLUDE 'mpif.h'
-INTEGER STATUS(MPI_STATUS_SIZE),INFO
-
 
 real, public, save :: Rinc, RigsO, GnsO, RgsS
 
