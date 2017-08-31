@@ -220,11 +220,10 @@ contains
 !=========================================================================
 !Calc_POD called from DryDep -> Add_MosaicOutput,  after deploss
 
-  subroutine Calc_POD(iO3cl,iLC, pod, debug_flag, debug_txt )
+  subroutine Calc_POD(iO3cl,iLC, pod, debug_flag)
     logical, intent(in) :: debug_flag
-    character(len=*), intent(in), optional :: debug_txt
     integer, intent(in) :: iO3cl,iLC
-    real, intent(out)    :: pod
+    real, intent(out)   :: pod
     character(len=*),parameter :: dtxt='CalcPOD:'
     character(len=10):: txt
 

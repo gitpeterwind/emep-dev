@@ -197,8 +197,8 @@ real, parameter, dimension(NUM_CEXT,NumRH,W340:W1020) :: &
     [NUM_CEXT,NumRH,W1020-W340+1],order=[2,1,3])
 
 real,parameter,dimension(NUM_CEXT) :: &
-  Qm_Dabs= & ! (dry) mass absorption efficiency [m?/g] at 550 nm
-          [0.0  ,0.0  ,0.0  ,0.0  ,8.5  ,11.5 ,0.0  ,0.0  ,0.0  ], & 
+! Qm_Dabs= & ! (dry) mass absorption efficiency [m?/g] at 550 nm
+!         [0.0  ,0.0  ,0.0  ,0.0  ,8.5  ,11.5 ,0.0  ,0.0  ,0.0  ], & 
   rho_dry=[2.6  ,2.6  ,2.2  ,2.2  ,1.0  ,1.0  ,1.8  ,1.6  ,1.6  ], &
   rad_eff=[0.80 ,4.5  ,0.80 ,5.73 ,0.039,0.039,0.087,0.156,5.73 ]
          ! 1:DDf 2:DDc 3:SSf 4:SSc 5:ECn 6:ECa 7:OC  8:SO4 9:NO3c

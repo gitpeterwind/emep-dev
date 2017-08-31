@@ -20,9 +20,6 @@ private
   public :: GetMEGAN_BVOC
 
  INCLUDE 'mpif.h'
- INTEGER STATUS(MPI_STATUS_SIZE),INFO
-
- character(len=80), private :: errmsg
 
  integer, parameter, public  :: NCLM   = 2 ! CF, DF, C3, C4
  integer, parameter, public  :: NMEGAN = 4
@@ -87,7 +84,6 @@ contains
 
     !real    :: megan(LIMAX,LJMAX)  ! Emissions read from file
     real, allocatable :: Ebvoc_tmp(:,:) 
-    real, parameter :: UNDEF = -1  ! avoids undef over sea
     logical, save :: my_first_call = .true., dbg = .false.
     integer ::  n
     character(len=200) :: varname
@@ -271,7 +267,6 @@ module Biogenics_ml
   !  character(len=7), save, dimension(NEMIS_BioNat), public:: &
   !    EMIS_BioNat =  (/ "C5H8   " , "BIOTERP" , "NO     " /)
  
-  INTEGER STATUS(MPI_STATUS_SIZE),INFO
   integer, public, parameter :: N_ECF=2, ECF_ISOP=1, ECF_TERP=2
   integer, public, parameter :: BIO_ISOP=1, BIO_MTP=2, &
                                  BIO_MTL=3 ! , BIO_SOILNO=4, BIO_SOILNH3=5
@@ -798,8 +793,8 @@ module Biogenics_ml
   real            :: cL    ! Factor for light effects
   real, parameter :: &
       CL1 = 1.066  , &    ! Guenther et al's G93/G95 params
-      ALPHA = 0.0027, &   ! Guenther et al's G93/G95 params
-      AG99  = 0.001 * 1.42  ! " Warneke update, but not same as G99?
+      ALPHA = 0.0027!,&   ! Guenther et al's G93/G95 params
+!     AG99  = 0.001 * 1.42  ! " Warneke update, but not same as G99?
 
   if ( size(BVOC_USED) == 0  ) return   ! e.g. for ACID only
 
