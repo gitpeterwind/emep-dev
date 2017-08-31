@@ -89,10 +89,8 @@ contains
   ! DS added
    real, parameter :: Ncm3_to_molesm3 = 1.0e6/AVOG    ! #/cm3 to moles/m3
    real, parameter :: molesm3_to_Ncm3 = 1.0/Ncm3_to_molesm3
-   real :: FLOOR = 1.0e-30               !
-   integer :: i, ispec, k
-   real :: atwNa =  22.989770, atwCl = 35.453   ! g/mole !DOCS had 36.5?
-   real :: tmpno3, tmpnh4
+   integer :: k
+   real :: tmpno3
 
    ! WI(1)  = max(FLOOR2, xn_2d(Na,k))  / species(Na)%molwt  * Ncm3_to_molesm3
    ! 5=Cl, 6=Ca, 7=K, 8=Mg
@@ -153,7 +151,6 @@ contains
              aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out,   &
              coef
   integer :: k, errmark
-  logical,save  :: firstcall=.true.
  !-----------------------------------
 
    coef = 1.e12 / AVOG
@@ -328,7 +325,6 @@ contains
              gSO4out(KCHEMTOP:KMAX_MID), &
              rlhum(KCHEMTOP:KMAX_MID),tmpr(KCHEMTOP:KMAX_MID)
 
-  real, parameter ::    FLOOR = 1.0E-30         ! minimum concentration  
  !-----------------------------------
 
 
@@ -392,7 +388,6 @@ contains
 
  integer, intent(in)  :: i, j
  logical, intent(in)  :: debug_flag
- real, parameter      :: FLOOR = 1.0E-30  ! minimum concentration  
 
  !.. local
   real    :: rlhum(KCHEMTOP:KMAX_MID), tmpr(KCHEMTOP:KMAX_MID)
@@ -473,5 +468,3 @@ contains
 !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 end module AerosolCalls
-
-

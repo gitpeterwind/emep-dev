@@ -262,7 +262,7 @@
 
     !    local
 
-    integer i,j,k,n,ix,iix,ip,info
+    integer i,j,k,n,ix,iix
     real dth
     real xntop(NSPEC_ADV,LIMAX,LJMAX)
     real xnw(3*NSPEC_ADV),xne(3*NSPEC_ADV)
@@ -272,20 +272,19 @@
     real psn(3),pss(3)
     real ds3(2:KMAX_MID),ds4(2:KMAX_MID)
     real xcmax(KMAX_MID,GJMAX),ycmax(KMAX_MID,GIMAX),scmax,sdcmax
-    real dt_smax,dt_s,div
+    real dt_smax,dt_s
     real dt_x(LJMAX,KMAX_MID),dt_y(LIMAX,KMAX_MID)
     real dt_xmax(LJMAX,KMAX_MID),dt_ymax(LIMAX,KMAX_MID)
     integer niterx(LJMAX,KMAX_MID),nitery(LIMAX,KMAX_MID)
     integer niterxys,niters,nxy,ndiff
-    integer iterxys,iters,iterx,itery,nxx,nxxmin,nyy,isec,dx,dy
+    integer iterxys,iters,iterx,itery,nxx,nxxmin,nyy,dx,dy
     integer ::isum,isumtot,iproc,isec_poll1,ipoll,isec_poll
     real :: xn_advjktot(NSPEC_ADV),xn_advjk(NSPEC_ADV),rfac
     real :: dpdeta0,mindpdeta,xxdg,fac1
-    real :: xnold,xn_k_old,xn_k(kmax_mid,uEMEP%Nsec_poll,(uEMEP%dist*2+1)*(uEMEP%dist*2+1)),xn,x,xx
+    real :: xn_k(kmax_mid,uEMEP%Nsec_poll,(uEMEP%dist*2+1)*(uEMEP%dist*2+1)),x
     real :: fluxx(NSPEC_ADV,-1:LIMAX+1)
     real :: fluxy(NSPEC_ADV,-1:LJMAX+1)
     real :: fluxk(NSPEC_ADV,KMAX_MID)
-    real :: f_in,f_out
     logical,save :: firstcall = .true.
 
     !NITERXMAX=max value of iterations accepted for fourth order Bott scheme.
@@ -1367,7 +1366,6 @@
 
 !     executes vertical diffusion
 
-    use ModelConstants_ml  , only : KCHEMTOP, EPSIL
     use ChemSpecs,         only : NSPEC_ADV
 
     implicit none
@@ -1417,8 +1415,6 @@
   subroutine vertdiff_1d(xn_adv,SigmaKz,ds3,ds4,ndiff)
 
 !     executes vertical diffusion
-
-    use ModelConstants_ml  , only : KCHEMTOP, EPSIL
 
     implicit none
 
@@ -1491,7 +1487,6 @@
 !            SigmaKz(k)*ds4(k)= SigmaKz(k)*dt_advec*dhs1i(k+1)*dhs2i(k)
 !            = SigmaKz(k+1)*dt_advec/(sigma_bnd(k+1)-sigma_bnd(k))/(sigma_mid(k)-sigma_mid(k-1))
 
-    use ModelConstants_ml  , only : KCHEMTOP, EPSIL
     use ChemSpecs,         only : NSPEC_ADV
 
     implicit none
@@ -1554,7 +1549,6 @@
 
 !     executes vertical diffusion ndiff times
 
-    use ModelConstants_ml  , only : KCHEMTOP, EPSIL
     use ChemSpecs,         only : NSPEC_ADV
 
     implicit none
@@ -1627,7 +1621,7 @@
 !     in such a way that a Courant number of one corresponds exactly to "empty" a cell.
 !     (small effects on results: less than 1%)
 
-    use Par_ml   , only : me,li0,li1,limax
+    use Par_ml   , only : li0,li1,limax
     use ChemSpecs,         only : NSPEC_ADV
     use MassBudget_ml , only : fluxin,fluxout
     implicit none
@@ -2847,7 +2841,7 @@ end if
     real,intent(out),dimension(3,LJMAX)           :: psend,psbeg
 
 !    local
-    integer  i, info
+    integer  i
 
     real,dimension(NSPEC_ADV, 3, LJMAX) :: buf_xn_w,buf_xn_e
     real,dimension(3, LJMAX)            :: buf_ps_w,buf_ps_e
@@ -2969,7 +2963,7 @@ end if
 
 !send only one row
 
-    use Par_ml , only : lj0,lj1,li1,neighbor,WEST,EAST
+    use Par_ml , only : li1,neighbor,WEST,EAST
     use ChemSpecs,         only : NSPEC_ADV
     implicit none
 
@@ -2984,7 +2978,7 @@ end if
     real,intent(out),dimension(3)           :: psend,psbeg
 
 !    local
-    integer  i, info
+    integer  i
 
   real,dimension(NSPEC_ADV,3) :: buf_xn_w,buf_xn_e
   real,dimension(3)           :: buf_ps_w,buf_ps_e
@@ -3106,7 +3100,7 @@ end if
 
     ! Initialize arrays holding boundary slices
 
-    use Par_ml , only : lj0,lj1,li1,neighbor,WEST,EAST
+    use Par_ml , only : li1,neighbor,WEST,EAST
     use ChemSpecs,         only : NSPEC_ADV
     implicit none
 
@@ -3122,7 +3116,7 @@ end if
     real,intent(inout),dimension(uEMEP_Size1,0:limax+1)  :: loc_frac_1d
 
 !    local
-    integer  n,i,dx,dy,isec_poll, ii,info, uEMEP_Size1_local
+    integer  n,i,dx,dy,isec_poll, ii, uEMEP_Size1_local
 
     real,dimension((NSPEC_ADV+1)*3+uEMEP_Size1) :: send_buf_w, rcv_buf_w, send_buf_e, rcv_buf_e
 
@@ -3343,7 +3337,7 @@ end if
     real,intent(out),dimension(3,LIMAX)           :: psend,psbeg
 
 !    local
-    integer  i, info
+    integer  i
 
   real,dimension(NSPEC_ADV,3,LIMAX) :: buf_xn_n,buf_xn_s
   real,dimension(3,LIMAX)           :: buf_ps_n,buf_ps_s
@@ -3471,7 +3465,7 @@ end if
                      ,xnbeg, xnend         &
                      ,psbeg, psend,i_send)
 
-    use Par_ml , only : li0,li1,lj0,lj1,ljmax,neighbor,NORTH,SOUTH
+    use Par_ml , only : lj0,lj1,ljmax,neighbor,NORTH,SOUTH
     use ChemSpecs,         only : NSPEC_ADV
     implicit none
 
@@ -3487,7 +3481,7 @@ end if
     real,intent(out),dimension(3)           :: psend,psbeg
 
 !    local
-    integer  i, info
+    integer  i
 
     real,dimension(NSPEC_ADV,3) :: buf_xn_n,buf_xn_s
     real,dimension(3)           :: buf_ps_n,buf_ps_s
@@ -3615,7 +3609,7 @@ end if
 
     ! Initialize arrays holding boundary slices
 
-    use Par_ml , only : li0,li1,lj0,lj1,ljmax,neighbor,NORTH,SOUTH
+    use Par_ml , only : lj0,lj1,ljmax,neighbor,NORTH,SOUTH
     use ChemSpecs,         only : NSPEC_ADV
     implicit none
 
@@ -3631,7 +3625,7 @@ end if
     real,intent(inout),dimension(uEMEP_Size1,0:ljmax+1)  :: loc_frac_1d
 
 !    local
-    integer  ii,j,dx,dy,isec_poll,n, info, uEMEP_Size1_local
+    integer  ii,j,dx,dy,isec_poll,n, uEMEP_Size1_local
     real,dimension((NSPEC_ADV+1)*3+uEMEP_Size1) :: send_buf_n, rcv_buf_n, send_buf_s, rcv_buf_s
 
     uEMEP_Size1_local = 0!default: do not treat this region
