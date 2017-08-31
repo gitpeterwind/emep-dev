@@ -3778,11 +3778,13 @@ use netcdf
      write(*,22) 'CH3CHO ',         rcphot(IDCH3CHO,kmax_bnd-L) , ZPJ(L,54),SZA,x*0.00073*13.84,x**2*13.84,x**4*31952662!54 CH3CHO    PHOTON    CH3       HCO                     1.000 /ActAld/
      write(*,22) 'CH3COX ',         rcphot(IDCH3COX,kmax_bnd-L) , ZPJ(L,61)+ZPJ(L,62),SZA,x*0.00073*13.84,x**2*13.84,x**4*31952662!61 CH3COC2H5 PHOTON    C2H5      CH3CO                   0.850 /MEKeto/
      !62 CH3COC2H5 PHOTON    CH3       C2H5CO                  0.150 /MEKeto/  ?
-     write(*,22) 'HCOHCO ',         rcphot(IDHCOHCO,kmax_bnd-L) , ZPJ(L,66),SZA,x*0.00073*50.7692,x**2*50.7692,x**4*117159763, ZPJ(L,67),ZPJ(L,65)
+     write(*,22) 'HCOHCO ',         rcphot(IDHCOHCO,kmax_bnd-L) , ZPJ(L,66),SZA,&
+      x*0.00073*50.7692,x**2*50.7692,x**4*117159763, ZPJ(L,67),ZPJ(L,65)
      write(*,22) 'RCOHCO ',         rcphot(IDRCOHCO,kmax_bnd-L) , ZPJ(L,64),SZA,x*0.00073*576.92,x**2*576.92,x**4*1331360946.0!64 CH3COCHO  PHOTON    CH3CO     CO                      1.000 /MGlyxl/
 
      !should add 11 and 12 or only 12? 11 NO3       PHOTON    NO        O2                      0.114 /NO3   /
-     write(*,22) 'IDNO3 ',         rcphot(IDNO3,kmax_bnd-L) , ZPJ(L,11)+ZPJ(L,12),SZA,x*0.00073*623076,x**2*623076,x**4*1437869822485.0!12 NO3       PHOTON    NO2       O                       0.886 /NO3   /
+     write(*,22) 'IDNO3 ',         rcphot(IDNO3,kmax_bnd-L) , ZPJ(L,11)+ZPJ(L,12),SZA,&
+      x*0.00073*623076,x**2*623076,x**4*1437869822485.0!12 NO3       PHOTON    NO2       O                       0.886 /NO3   /
 
      write(*,22) 'IDCH3O2H ',         rcphot(IDCH3O2H,kmax_bnd-L) , ZPJ(L,8),SZA,x*0.00073*16.6,x**2*16.6,x**4*38343195!8 CH3OOH    PHOTON    CH3O      OH                      1.000 /CH3OOH/
   end if

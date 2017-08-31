@@ -809,7 +809,9 @@ contains
               lat_ext(i,j) = 2*rad2deg*atan((F_lambert/r)**(1.0/k_lambert))-90.0
               lon_ext(i,j) = lon0_lambert + rad2deg*t/k_lambert
               !does not work for lat = -90.0
-              xm(i,j)=k_lambert*F_lambert*tan(PI*0.25-deg2rad*0.5*lat_ext(i,j))**(k_lambert-1)*0.5/(cos(PI*0.25-deg2rad*0.5*lat_ext(i,j))**2)
+              xm(i,j)=k_lambert*F_lambert&
+                *tan(PI*0.25-deg2rad*0.5*lat_ext(i,j))**(k_lambert-1)&
+                *0.5/(cos(PI*0.25-deg2rad*0.5*lat_ext(i,j))**2)
               xm2(i,j) = xm(i,j)*xm(i,j)
               xmd(i,j) = 1.0/xm2(i,j)
               xm2ji(j,i) = xm2(i,j)
@@ -1113,7 +1115,9 @@ contains
        end if
        if(External_Levels_Def)then
           !model levels defined from external text file
-          if(MasterProc)write(*,*)'reading external hybrid levels from ',trim(filename_vert),A_bnd_met(kMAX_met-20),B_bnd_met(kMAX_met+1)
+          if(MasterProc)&
+            write(*,*)'reading external hybrid levels from ',trim(filename_vert),&
+            A_bnd_met(kMAX_met-20),B_bnd_met(kMAX_met+1)
           P0=Pref
           do k=1,KMAX_MID+1
              read(IO_TMP,*)kk,A_bnd(k),B_bnd(k)
@@ -2146,13 +2150,15 @@ end subroutine lb2ij_int
     AA = cos(LatRad)*(LongRad-LongOriginRad)
 
     M = a*((1 - eccSquared/4 - 3*eccSquared*eccSquared/64- 5*eccSquared*eccSquared*eccSquared/256)*LatRad &
-	 - (3*eccSquared/8 + 3*eccSquared*eccSquared/32	+ 45*eccSquared*eccSquared*eccSquared/1024)*sin(2*LatRad)&
+         - (3*eccSquared/8 + 3*eccSquared*eccSquared/32 + 45*eccSquared*eccSquared*eccSquared/1024)*sin(2*LatRad)&
          + (15*eccSquared*eccSquared/256 + 45*eccSquared*eccSquared*eccSquared/1024)*sin(4*LatRad) &
          - (35*eccSquared*eccSquared*eccSquared/3072)*sin(6*LatRad))
 
-    UTMEasting = k0*N*(AA+(1-T+C)*AA*AA*AA/6+ (5-18*T+T*T+72*C-58*eccPrimeSquared)*AA*AA*AA*AA*AA/120)+ 500000.0
+    UTMEasting = k0*N*(AA+(1-T+C)*AA*AA*AA/6&
+                       +(5-18*T+T*T+72*C-58*eccPrimeSquared)*AA*AA*AA*AA*AA/120)+ 500000.0
 
-    UTMNorthing = (k0*(M+N*tan(LatRad)*(AA*AA/2+(5-T+9*C+4*C*C)*AA*AA*AA*AA/24+ (61-58*T+T*T+600*C-330*eccPrimeSquared)*AA*AA*AA*AA*AA*AA/720)))
+    UTMNorthing = (k0*(M+N*tan(LatRad)*(AA*AA/2+(5-T+9*C+4*C*C)*AA*AA*AA*AA/24+&
+       (61-58*T+T*T+600*C-330*eccPrimeSquared)*AA*AA*AA*AA*AA*AA/720)))
     if(Lat < 0)UTMNorthing =UTMNorthing + 10000000.0!; //10000000 meter offset for southern hemisphere
 
   end subroutine lb2UTM

@@ -2811,7 +2811,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
      if(data3D)then
         call check(nf90_inquire_dimension(ncid = ncFileID, dimID = dimids(3), name=name ))
-        call CheckStop(trim(name)/='k'.and.trim(name)/='N'.and.trim(name)/='lev'.and.trim(name)/='height',"vertical coordinate (k, lev, N or height) not found")
+        call CheckStop(name/='k'.and.name/='N'.and.name/='lev'.and.name/='height',&
+          "vertical coordinate (k, lev, N or height) not found")
      end if
 
      !NB: we assume regular grid
@@ -2871,7 +2872,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
         jmax=max(1,min(dims(2),ceiling((minlat-Rlat(1))*dRlati)+1))
      end if
 
-     if(maxlat>85.0.or.minlat<-85.0  .and. ( (.not. (trim(projection)=='lon lat')) .or. (.not. trim(data_projection)=='lon lat')))then
+     if(maxlat>85.0.or.minlat<-85.0  .and. &
+       ((.not.(projection=='lon lat')) .or. (.not.data_projection=='lon lat')))then
         !close to poles
         imin=1
         imax=dims(1)
@@ -2941,9 +2943,10 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
         status=nf90_get_var(ncFileID_Mask, dimids_Mask(2), lat_mask)
         if(status==nf90_noerr.and.(lat_mask(2)-lat_mask(1))*(Rlat(2)-Rlat(1))<0)then
            Reverse_lat_direction_Mask=.true.
-           if ( debug ) write(*,*) 'ReadCDF mask: reverting latitude direction'
+           if(debug) write(*,*)'ReadCDF mask: reverting latitude direction'
         else
-           if (debug) write(*,*) 'ReadCDF mask: not reverting latitude direction',(lat_mask(2)-lat_mask(1))*(Rlat(2)-Rlat(1)),status==nf90_noerr
+           if(debug) write(*,*)'ReadCDF mask: not reverting latitude direction',&
+             (lat_mask(2)-lat_mask(1))*(Rlat(2)-Rlat(1)),status==nf90_noerr
         end if
         lon_shift_Mask=0
         status=nf90_get_var(ncFileID_Mask, dimids_Mask(1), lon_mask)
@@ -3146,14 +3149,16 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
               !make fraction of overlap. Only first or last i can overlap. 1*dloni means 100% of the incoming data is taken.
               !put all incoming longitudes in the range 0-360
 !              fracfirstlon(ig) = min(1.0, mod(360.0 + mod(glon(ifirst(ig),1)+360.0,360.0)+ 0.5*dlon - mod(Rlonmin+360.0,360.0),360.0)*dloni)
-              fracfirstlon(ig) = mod(360.0 + mod(glon(ifirst(ig),1)+360.0,360.0)+ 0.5*dlon - mod(Rlonmin+360.0,360.0),360.0)*dloni
+              fracfirstlon(ig) = mod(360.0 + mod(glon(ifirst(ig),1)+360.0,360.0)&
+                                + 0.5*dlon - mod(Rlonmin+360.0,360.0),360.0)*dloni
               if(fracfirstlon(ig)<0.0 .or. fracfirstlon(ig)>10.0)then
                  fracfirstlon(ig)=0.0!numerical noise in glon?
               endif
               fracfirstlon(ig)=min(1.0,fracfirstlon(ig))
  
 !             fraclastlon(ig)  = min(1.0, mod(360.0 + mod(Rlonmax+360.0,360.0) - (mod(glon(ilast(ig),1)+360.0,360.0) - 0.5*dlon),360.0)*dloni)
-              fraclastlon(ig)  =  mod(360.0 + mod(Rlonmax+360.0,360.0) - (mod(glon(ilast(ig),1)+360.0,360.0) - 0.5*dlon),360.0)*dloni
+              fraclastlon(ig)  =  mod(360.0 + mod(Rlonmax+360.0,360.0) &
+                  - (mod(glon(ilast(ig),1)+360.0,360.0) - 0.5*dlon),360.0)*dloni
               if(fraclastlon(ig)<0.0 .or. fraclastlon(ig)>10.0)then
                  fraclastlon(ig)=0.0!numerical noise
               endif
@@ -3317,8 +3322,10 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                           latlon_weight=1.0
 
                           if(fractions)then
-                             call readfrac(Ncc(igjgk),CC,Rvalues(igjgk),fraction_in,fractions_out,Ncc_out,CC_out,&
-                                  Rvar(ijk),dims(1)*dims(2),igjgk,ijk,latlon_weight,Reduc)
+                             call readfrac(Ncc(igjgk),CC,Rvalues(igjgk),&
+                                  fraction_in,fractions_out,Ncc_out,CC_out,&
+                                  Rvar(ijk),dims(1)*dims(2),igjgk,ijk,&
+                                  latlon_weight,Reduc)
                           elseif(OnlyDefinedValues.or.Rvalues(igjgk)/=FillValue)then
                              Rvar(ijk)=Rvar(ijk)+Rvalues(igjgk)
                           else
@@ -3351,7 +3358,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                             'ERROR, NetCDF_ml no values found here ! ', &
                             trim(fileName) // ":" // trim(varname), &
                             i,j,k,me,minlon,maxlon,minlat,maxlat,glon(i,j),glat(i,j), &
-                            Ivalues(ijk),Ndiv,Rlon(startvec(1)),Rlon(startvec(1)+dims(1)-1),Rlat(startvec(2)),Rlat(startvec(2)-1+dims(2))
+                            Ivalues(ijk),Ndiv,Rlon(startvec(1)),Rlon(startvec(1)+dims(1)-1),&
+                            Rlat(startvec(2)),Rlat(startvec(2)-1+dims(2))
                        call CheckStop("Interpolation error")
                     else                       
                        Rvar(ijk)=UnDef_local
@@ -4336,7 +4344,9 @@ end subroutine ReadField_CDF
                             'ERROR, NetCDF_ml no values found!', &
                             trim(fileName) // ":" // trim(varname), &
                             i,j,k,me,minlon,maxlon,minlat,maxlat,glon(i,j),glat(i,j), &
-                            Ivalues(ijk),Ndiv,Rlon(startvec(1)),Rlon(startvec(1)+dims(1)-1),Rlat(startvec(2)),Rlat(startvec(2)-1+dims(2))
+                            Ivalues(ijk),Ndiv,Rlon(startvec(1)),&
+                            Rlon(startvec(1)+dims(1)-1),Rlat(startvec(2)),&
+                            Rlat(startvec(2)-1+dims(2))
 !                       call CheckStop("Interpolation error")
                     !we simply set emission=0
                     Rvar(ijk)=0.0

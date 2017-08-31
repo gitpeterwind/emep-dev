@@ -1097,7 +1097,9 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
          if(me==0)write(*,*)'WARNING, no local fractions found for ',trim(class),' index ',index
          44 continue
          if(me==0.and. first_call)then
-            write(*,*)'local fractions found for ',trim(class),' index ',index,' name ',species_adv(index)%name,' locfrac pollutant ',uEMEP%poll(ipoll)%emis
+            write(*,*)'local fractions found for ',trim(class),&
+              ' index ',index,' name ',trim(species_adv(index)%name),&
+              ' locfrac pollutant ',trim(uEMEP%poll(ipoll)%emis)
             do iisec=1,uEMEP%poll(ipoll)%Nsectors
             isec_poll=uEMEP%poll(ipoll)%sec_poll_ishift+iisec
             isec=uEMEP%poll(ipoll)%sector(iisec)
@@ -1157,7 +1159,9 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
          if(me==0)write(*,*)'WARNING, no local fractions found for ',trim(class),' index ',index
          45 continue
          if(me==0.and. first_call)then
-            write(*,*)'local fractions found for ',trim(class),' index ',index,' name ',species_adv(index)%name,' locfrac pollutant ',uEMEP%poll(ipoll)%emis
+            write(*,*)'local fractions found for ',trim(class),' index ',index,&
+              ' name ',trim(species_adv(index)%name),&
+              ' locfrac pollutant ',trim(uEMEP%poll(ipoll)%emis)
             do iisec=1,uEMEP%poll(ipoll)%Nsectors
             isec_poll=uEMEP%poll(ipoll)%sec_poll_ishift+iisec
             isec=uEMEP%poll(ipoll)%sector(iisec)
