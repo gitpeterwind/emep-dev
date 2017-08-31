@@ -28,8 +28,8 @@
 
   private :: init_VBSyields
   private :: update_VBSyields
-  integer, private, parameter   :: NVBS = 5 !Number VOC 
-  real, private, save :: kro2ho2, kro2no, fNO=UNDEF_R  !  rate-coeffs and fraction
+  integer, private, parameter   :: NVBS = 5 ! Number VOC 
+  real, private, save :: kro2ho2, kro2no    ! rate-coeffs and fraction
  ! Yield arrays used in CM_Reaction2 are hard coded, with OXY=1, ... see below
   real, public, dimension(0:3),  save :: &
     YCOXY =UNDEF_R,  YNOXY =UNDEF_R & !  OXYL carbon and non-carbon yields
@@ -107,7 +107,7 @@
    character(len=*), parameter :: dtxt='initVBS:'
    logical, save :: first_call = .true.
    real :: mwC = 12.0, mwH = 1.0,  r1, r2
-   integer :: bin, lev, isoa
+   integer :: isoa
 
   !! Yields derived from Tsimpidi et al., ACP, 2010, p529
   !! and Robert's VBS_SOAformation
@@ -174,11 +174,11 @@
          Yemep(isoa)%ratio =  r2/mwH * mwC/r1  ! non-carbon to carbon ratio
          
          if ( MasterProc ) then
-           write(*,'(a,4f10.4,2x,4f10.2)') Yemep(isoa)%name//',&
-             YIELD HighNox ASOC, NOC:: ', Yemep(isoa)%highnox, &
+           write(*,'(a,4f10.4,2x,4f10.2)') Yemep(isoa)%name//&
+             ',YIELD HighNox ASOC, NOC:: ', Yemep(isoa)%highnox, &
               Yemep(isoa)%highnox * Yemep(isoa)%ratio
-           write(*,'(a,4f10.4,2x,4f10.2)') Yemep(isoa)%name//',&
-             YIELD Low Nox ASOC, NOC:: ', Yemep(isoa)%lownox, &
+           write(*,'(a,4f10.4,2x,4f10.2)') Yemep(isoa)%name//&
+             ',YIELD Low Nox ASOC, NOC:: ', Yemep(isoa)%lownox, &
               Yemep(isoa)%lownox * Yemep(isoa)%ratio
          end if
       end do ! isoa
@@ -190,9 +190,8 @@
 
   subroutine update_VBSyields()
      character(len=*), parameter :: dtxt='updateVBSY:'
-     logical, save :: first_call = .true.
      real          ::  kNO, kHO2, fNO
-     integer :: bin, isoa
+     integer ::isoa
 
      kro2no  = 2.54e-12*exp(360*cell_tinv)
      kro2ho2 = 2.91e-13*exp(1300*cell_tinv) ! will modify below
@@ -229,8 +228,8 @@
       if ( dbg ) then
           write(*,'(a,f8.5,4es12.3)') 'YIELD RUN '//dtxt,  fNO, &
              kro2no, kro2ho2, xnew(NO), xnew(HO2)
-          write(*,'(a,es10.2,4f10.4,2x,4f10.2)') Yemep(1)%name//',&
-             YIELD EMEP ASOC, NOC:: ', fNO, YCOXY(:), YNOXY(:)
+          write(*,'(a,es10.2,4f10.4,2x,4f10.2)') Yemep(1)%name//&
+             ',YIELD EMEP ASOC, NOC:: ', fNO, YCOXY(:), YNOXY(:)
       end if
 
   end subroutine update_VBSyields

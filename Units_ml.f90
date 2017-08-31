@@ -114,7 +114,7 @@ contains
 subroutine Init_Units(update)
   logical, optional :: update
   real, dimension(NSPEC_ADV) :: uconv_spec
-  integer :: i,igrp
+  integer :: i
   if(present(update))then
     Initialize_Units = Initialize_Units .or. update
   endif

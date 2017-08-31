@@ -32,7 +32,7 @@ module StoFlux_ml
   integer, private, save, dimension(NLANDUSEMAX) :: mapSumVPD
 
   real, private, save :: gext_leaf = 1.0/2500.0
-  real, private :: rc_leaf, rb_leaf, Fst
+  real, private :: rc_leaf, rb_leaf
 
 
 
