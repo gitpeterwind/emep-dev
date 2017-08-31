@@ -574,7 +574,7 @@ contains
     real :: x1,x2,x3,x4,P0,x,y,mpi_out,r,t
     logical::found_hybrid=.false.,found_metlevels=.false.
     real :: CEN_LAT, CEN_LON,P_TOP_MET, WRF_DY
-    real :: rb,rl,rp,dx,dy,dy2,glmax,glmin,v2(2),glon_fdom1,glat_fdom1,lon,lat
+    real :: rb,rl,rp,dx,dy,dy2,glmax,glmin,v2(2),glon_fdom1,glat_fdom1,lat
     integer :: iloc_start, iloc_end,jloc_start, jloc_end
 
     real, dimension(-1:LIMAX+2,-1:LJMAX+2)::xm,xm_i_ext,xm_j_ext
@@ -2314,7 +2314,7 @@ end subroutine RestrictDomain
     real, dimension(Size1,thick,1-thick:LJMAX+thick,Size2)        :: f_west,f_east
 
 !    integer :: thick ! = size(h,1) - size(f,1) ! Caller has to make h > f
-    integer :: iif,jjf,i,j,ii,jj,iifl,jjfl,i1,i2
+    integer :: iif,jjf,i,j,iifl,jjfl,i1,i2
     if ( present(debug_flag)  ) mydebug = debug_flag
 
     ! readneighbours twice
@@ -2405,9 +2405,9 @@ end subroutine RestrictDomain
     real, dimension(Size1,LIMAX,min(MAXLJMAX,thick),Size2) ::data_sn_rcv
     real, dimension(Size1,min(MAXLIMAX,thick),1-thick:LJMAX+thick,Size2) ::data_we_rcv
 
-    integer :: msgnr,info
-    integer :: i,it,j,tj,jj,jt,i1,i2,n
-    integer :: mythick,myithick,myjthick,rcvthick,totthick,ineighbor,limaxloc,ljmaxloc
+    integer :: msgnr
+    integer :: i,it,j,jj,jt,i1,i2,n
+    integer :: mythick,myithick,myjthick,totthick,ineighbor,limaxloc,ljmaxloc
 
     !check that limax and ljmax are large enough. Can only read neighboring subdomain
 !    call CheckStop(limax < thick, "ERROR readneighbors_N in Met_ml")

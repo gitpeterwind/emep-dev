@@ -125,7 +125,7 @@ subroutine MeteoRead_io()
   type(date)      ::  next_inptime             ! hfTD,addhours_to_input
   type(timestamp) ::  ts_now                   ! time in timestamp format
   real :: nsec                                 ! step in seconds
-  logical :: fexist,found
+  logical :: fexist
 
   if(current_date%seconds /= 0 .or. (mod(current_date%hour,METSTEP)/=0) )return
 
@@ -260,10 +260,9 @@ subroutine MeteoRead()
   real :: nsec                                 ! step in seconds
 
   real :: buff(LIMAX,LJMAX)!temporary metfields
-  integer :: i, j, ix, k, kk, ii,jj,ii2,jj2, nrix, isw, KMAX
-  logical :: fexist,found
+  integer :: i, j, ix, k, kk, nrix, isw, KMAX
+  logical :: fexist
   logical,save :: first_call = .true.
-  logical,save :: newrain = .true.
 
   ! Soil water has many names. Some we can deal with:
   ! (and all need to end up as SMI)
@@ -280,7 +279,7 @@ subroutine MeteoRead()
   logical :: write_now
 
   real :: relh1,relh2,temperature,swp,wp, x_out
-  real, dimension(KMAX_MID)       ::  prhelp, exf2
+  real, dimension(KMAX_MID)       ::  exf2
   real, dimension(KMAX_BND)       ::  exf1
 
   real, dimension(LJMAX,KMAX_MID) :: usnd   ! send in x
@@ -289,12 +288,11 @@ subroutine MeteoRead()
   real, dimension(LIMAX,KMAX_MID) :: vrcv   ! and in y direction
 
   real :: p1, p2, x, y
-  real :: prhelp_sum,divk(KMAX_MID),sumdiv,dB_sum
+  real :: divk(KMAX_MID),sumdiv,dB_sum
   real :: divt, inv_METSTEP
 
   real :: Ps_extended(0:LIMAX+1,0:LJMAX+1),Pmid,Pu1,Pu2,Pv1,Pv2
 
-  real :: tmpsw, landfrac, sumland  ! for soil water averaging
   real :: minprecip, tmpmax ! debug
 
   real, dimension(LJMAX,KMAX_MID) :: buf_uw,buf_ue
@@ -1491,10 +1489,8 @@ subroutine MetModel_LandUse(callnum)
   implicit none
 
   integer, intent(in) :: callnum
-  integer ::  i,j
 
-  character*20 fname
-  logical :: needed_found
+  character(len=20) :: fname
 
   ios = 0
 
@@ -1534,8 +1530,6 @@ subroutine BLPhysics()
   ! and vertical exchange coefficient in sigma surfaces.
   ! The height zi of the "well mixed layer" or ABL-height is also calculated.
   !-----------------------------------------------------------------
-
-  logical, parameter :: TKE_DIFF = .false.  !!! CODE NEEDS TESTING/TIDY UP
 
   real, dimension(LIMAX,LJMAX,KMAX_MID)::exnm
   real, dimension(LIMAX,LJMAX,KMAX_BND)::exns
@@ -2145,7 +2139,7 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
   real, dimension(LIMAX,thick) ::data_south_snd,data_north_snd
   real, dimension(LJMAX+2*thick,thick) ::data_west_snd,data_east_snd
 
-  integer :: msgnr,info
+  integer :: msgnr
   integer :: j,tj,jj,jt
 
   !check that limax and ljmax are large enough
@@ -2281,10 +2275,10 @@ subroutine tkediff (nr)
   real, parameter :: &
     SZKM=1600.     &   ! Constant (Blackadar, 1976)
    ,CKZ=0.001      &   ! Constant (Zhang and Athens, 1982)
-   ,REFPR=1.0E+05  &   ! Referent pressure
+!  ,REFPR=1.0E+05  &   ! Referent pressure
    ,KZ0LT=1.0E-04  &   ! Constant (Alapaty et al., 1997)
-   ,RIC=0.10       &   ! Critical Richardson number (Holstlag et al., 1993)
-   ,ROVG=RGAS_KG/GRAV  ! Used in Calculation of R-number
+   ,RIC=0.10      !&   ! Critical Richardson number (Holstlag et al., 1993)
+!  ,ROVG=RGAS_KG/GRAV  ! Used in Calculation of R-number
 
   ! INPUT
   integer, intent(in) :: nr  ! Number of meteorological stored in arrays (1 or 2)
@@ -2616,7 +2610,7 @@ subroutine Getmeteofield(meteoname,namefield,nrec,&
   logical,intent(out),optional :: found
   character(len=len(namefield)) :: namefield_met
 
-  real :: scalefactors(2),x,y
+  real :: scalefactors(2)
   integer :: KMAX,ijk,i,k,j,nfetch,k1,k2,istart,jstart,Nlevel,kstart,kend
   logical :: reverse_k
   real, allocatable,save ::meteo_3D(:,:,:)
@@ -2904,8 +2898,8 @@ subroutine Check_Meteo_Date
   ! Also defines nhour_first and Nhh (and METSTEP in case of WRF metdata)
   !----------------------------------------------------------------------
   character(len=len(meteo)) :: meteoname
-  integer :: nyear,nmonth,nday,nhour
-  integer :: status,ncFileID,timeDimID,varid,timeVarID
+  integer :: nyear,nmonth,nday
+  integer :: status,ncFileID,timeDimID,timeVarID
   character (len = 50) :: timeunit
   integer ::ihh,ndate(4),n1,nseconds(1)
   real :: ndays(1),Xminutes(24)

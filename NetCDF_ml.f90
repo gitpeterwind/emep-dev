@@ -120,12 +120,12 @@ subroutine Out_CDF_sondes(fileName,SpecName,NSpec,Values,NLevels,g_ps,debug)
   real,intent(in)  :: Values(Nlevels,NSpec,*),g_ps(*)
   logical, intent(in), optional  :: debug
   logical  :: debug_1D
-  integer :: ncFileID,status
+  integer :: ncFileID
   integer :: varID,dimID
   character(len=8)  :: lastmodified_date
   character(len=10) :: lastmodified_hour
-  integer :: i,j,k,n,iSpec,nrecords,nstations
-  real :: rdays,x
+  integer :: i,iSpec,nrecords,nstations
+  real :: rdays
   real,save,allocatable :: buff(:,:)
 
 
@@ -194,12 +194,12 @@ subroutine Create_CDF_sondes(fileName,NSpec,NSpec_Att,SpecDef,&
   integer, intent(in), optional :: CDFtype
   logical, intent(in), optional :: debug
   logical  :: debug_1D
-  integer :: OUTtype,ncFileID,status,levDimID,ilevDimID,timeDimID
-  integer :: varID,StationDimID,StationVarID,StringDimID
+  integer :: OUTtype,ncFileID,levDimID,ilevDimID,timeDimID
+  integer :: varID,StationDimID,StringDimID
   character (len=*), parameter :: vert_coord='atmosphere_hybrid_sigma_pressure_coordinate'
   character(len=8)  :: lastmodified_date
   character(len=10) :: lastmodified_hour
-  integer :: i,j,k,n,iSpec,iSta
+  integer :: i,k,n,iSpec,iSta
   real :: kcoord(KMAXcdf+1)
   real :: Acdf(KMAXcdf),Bcdf(KMAXcdf),Aicdf(KMAXcdf+1),Bicdf(KMAXcdf+1)
   integer,parameter :: MAX_String_length=36
@@ -402,8 +402,8 @@ subroutine Create_CDF_sondes(fileName,NSpec,NSpec_Att,SpecDef,&
       call wordsplit(trim(MetaData(1,n)),3,auxL,k,ierr,strict_separator=':')
       call CheckStop(3,k,&
         "NetCDF_ml: too short metadata definition "//trim(MetaData(1,n)))
-      metaName=auxL(1)
-      metaType=auxL(2)
+      metaName=trim(auxL(1))
+      metaType=trim(auxL(2))
       auxC(:)=NF90_FILL_CHAR
       auxI(:)=NF90_FILL_INT
       auxR(:)=NF90_FILL_DOUBLE
@@ -482,7 +482,7 @@ integer,  intent(in) :: iotyp
 character(len=*),  intent(in)  :: fileName
 
 integer :: GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,KMAXcdf
-integer :: ih,i1,i2,j1,j2
+integer :: i1,i2,j1,j2
 
 call CloseNetCDF !must be called by all procs, to syncronize outCDFtag
 
@@ -1131,7 +1131,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
   character(len=08) :: lastmodified_date
   character(len=10) :: lastmodified_hour,lastmodified_hour0,created_hour
   integer :: varID,nrecords,ncFileID=closedID,ndate(4)
-  integer :: info,d,alloc_err,ijk,status,i,j,k,i1,i2,j1,j2
+  integer :: d,alloc_err,ijk,status,i,j,k,i1,i2,j1,j2
   real :: buff(MAXLIMAX*MAXLJMAX*KMAX_MID)
   real(kind=8),   allocatable,dimension(:,:,:) :: R8data3D
   real(kind=4),   allocatable,dimension(:,:,:) :: R4data3D
@@ -1966,7 +1966,7 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,&
   integer :: status,ndims,alloc_err
   integer :: totsize,xtype,dimids(NF90_MAX_VAR_DIMS),nAtts,imax,jmax
   integer :: dims(NF90_MAX_VAR_DIMS),startvec(NF90_MAX_VAR_DIMS)
-  integer :: ncFileID,VarID,i,j,k,n,it,i1,j1,i0,j0,ijkn,ij,ijk,ijknR,jkn
+  integer :: ncFileID,VarID,i,j,k,n,it,i1,j1,i0,j0,ijkn,ijknR,jkn
   character(len=100)::name
   real :: scale,offset
   integer, allocatable:: Ivalues(:)
@@ -2377,8 +2377,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   integer :: startvec(NF90_MAX_VAR_DIMS),Nstartvec(NF90_MAX_VAR_DIMS)
   integer ::alloc_err
   character*100 ::name,used_lat_name, used_lon_name
-  real :: scale,offset,scalefactors(2),dloni,dlati,dlonx,dlatx,dlony,dlaty,dlon,dlat,dx,dy,dx1,dy1,gdlon,gdlat
-  integer ::ij,jdiv,idiv,Ndiv_lon,Ndiv,Ndiv2,igjgk,ig,jg,ijk,n,im,jm,ijm,iw,ig1,jg1,ig1jgk,ig1jg1k,igjg1k
+  real :: scale,offset,scalefactors(2),dloni,dlati,dlonx,dlatx,dlony,dlaty,dlon,dlat
+  integer ::ij,jdiv,idiv,Ndiv_lon,Ndiv,Ndiv2,igjgk,ig,jg,ijk,n,im,jm,ijm,iw
   integer ::imin,imax,jmin,jjmin,jmax,igjg,k2
   integer, allocatable:: Ivalues(:)  ! I counts all data
   integer, allocatable:: Nvalues(:)  !ds counts all values
@@ -2393,19 +2393,19 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
   real, pointer :: Weight(:,:,:)=>null(), ww(:)=>null()
   integer, allocatable :: IIij(:,:,:),JJij(:,:,:)
-  real :: FillValue=0,Pcounted
+  real :: FillValue=0
   real    :: sumWeights
   integer, dimension(4) :: ijn
-  integer :: ii, jj,i_ext,j_ext,ic
+  integer :: ii, jj,i_ext,j_ext
   real::an_ext,xp_ext,yp_ext,fi_ext,ref_lat_ext,xp_ext_div,yp_ext_div,Grid_resolution_div,an_ext_div
   real ::buffer1(LIMAX, LJMAX),buffer2(LIMAX, LJMAX)
   real, allocatable ::fraction_in(:,:)
   integer, allocatable ::CC(:,:),Ncc(:)
-  real ::total,UnDef_local
-  integer ::N_out,Ng,Nmax,kstart_loc,kend_loc,lon_shift_Mask,startlat_Mask
+  real :: UnDef_local
+  integer :: Nmax,kstart_loc,kend_loc,lon_shift_Mask,startlat_Mask
   logical :: Reverse_lat_direction_Mask,ilast_corrected
   character(len=*),parameter  :: field_not_found='field_not_found'
-  real :: latlon_weight,lon_weight,lat_weight,low,high,normalize
+  real :: latlon_weight
 
   real ::Rlonmin,Rlonmax,dRlon,dRloni,frac,frac_j,ir,jr
   real ::Rlatmin,Rlatmax,dRlat,dRlati
@@ -3034,13 +3034,13 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
         call check(nf90_get_var(ncFileID, VarIDfrac,fraction_in ,start=Nstartvec,count=NCdims),&
              errmsg="fractions")
 
-        if( debug )then
-           !           write(*,*)'More than 2 countries:'
-           !           do i=1,dims(1)*dims(2)
-           !              if(NCC(i)>2)write(*,77)me,i,NCC(i),CC(i,1),fraction_in(i,1),CC(i,NCC(i)),fraction_in(i,NCC(i))
-77         format(3I7,2(I5,F6.3))
-           !           end do
-        end if
+!        if( debug )then
+!           write(*,*)'More than 2 countries:'
+!           do i=1,dims(1)*dims(2)
+!              if(NCC(i)>2)write(*,77)me,i,NCC(i),CC(i,1),fraction_in(i,1),CC(i,NCC(i)),fraction_in(i,NCC(i))
+!77         format(3I7,2(I5,F6.3))
+!           end do
+!        end if
 
         Ncc_out(1:LIMAX*LJMAX)=0
         CC_out(1:LIMAX*LJMAX,1:Nmax)=0
@@ -3172,7 +3172,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
               if(fracfirstlon(ig)<0.0)write(*,*)'ERROR A in interpolation',me,ig,fracfirstlon(ig)
               if(fraclastlon(ig)<0.0)write(*,*)'ERROR B in interpolation',me,ig,fraclastlon(ig)
-631           format(I4,A,F10.4,A,F10.4,A,I4,A,F10.4,A,I4,A,F10.4,A,F10.4)
+!631           format(I4,A,F10.4,A,F10.4,A,I4,A,F10.4,A,I4,A,F10.4,A,F10.4)
 !              if(me==19 .and. (ig==-3 .or. abs(Rlat(ig))<-89.0 ))write(*,631)ig,' start '//trim(varname),Rlonmin,' end',Rlonmax,' firsti',ifirst(ig),'lon ',glon(ifirst(ig),1),'last i',ilast(ig),'frac ',fracfirstlon(ig),' and ',fraclastlon(ig)
            enddo
 
@@ -3549,7 +3549,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                     j=j-gj0-JRUNBEG+2
 
 
-83                  format(2I4,31F9.2)
+!83                  format(2I4,31F9.2)
                     !if ( debug .and.me==0) write(*,83)i,j,lon,lat,fi_ext,an_ext_div,xp_ext_div,yp_ext_div,fi,xp,yp,Rvalues(igjg)
 
                     if(i>=1.and.i<=limax.and.j>=1.and.j<=ljmax)then
@@ -4057,25 +4057,23 @@ end subroutine ReadField_CDF
   logical, optional, intent(in) :: debug_flag
 
   integer :: ncFileID,VarID,lonVarID,latVarID,status,ndims,dimids(NF90_MAX_VAR_DIMS),xtype,nAtts
-  integer :: dims(NF90_MAX_VAR_DIMS),NCdims(NF90_MAX_VAR_DIMS),totsize,i,j,k
-  integer :: startvec(NF90_MAX_VAR_DIMS),Nstartvec(NF90_MAX_VAR_DIMS)
+  integer :: dims(NF90_MAX_VAR_DIMS),totsize,i,j,k
+  integer :: startvec(NF90_MAX_VAR_DIMS)
   integer ::alloc_err
-  real :: dloni,dlati,dlon,dlat
-  integer ::ij,jdiv,idiv,Ndiv,Ndiv2,igjgk,ig,jg,ijk,n,im,jm,ijm,iw
-  integer ::imin,imax,jmin,jjmin,jmax,igjg,k2
+  real :: dloni,dlati
+  integer ::ij,jdiv,idiv,Ndiv,Ndiv2,igjgk,ig,jg,ijk
+  integer ::imin,imax,jmin,jmax,igjg,k2
   integer, allocatable:: Ivalues(:)  ! I counts all data
   integer, allocatable:: Nvalues(:)  !ds counts all values
   real, allocatable:: Rvalues(:),Rlon(:),Rlat(:)
-  integer, allocatable:: Mask_values(:)
   real ::lat,lon,maxlon,minlon,maxlat,minlat
   logical ::fileneeded, debug,data3D
   character(len = 50) :: interpol_used, data_projection="",name
   real :: Grid_resolution
-  type(Deriv) :: def1 ! definition of fields
   integer, parameter ::NFL=23,NFLmax=50 !number of flight level (could be read from file)
   real :: P_FL(0:NFLmax),P_FL0,Psurf_ref(LIMAX, LJMAX),P_EMEP,dp!
 
-  real :: FillValue=0,Pcounted
+  real :: Pcounted
   logical :: Flight_Levels
   integer :: k_FL,k_FL2
 
@@ -4416,7 +4414,7 @@ subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read)
   character(len=50) :: varname,period,since,name,timeunit,wordarray(wordarraysize),calendar
 
   integer :: yyyy,mo,dd,hh,mi,ss,julian,julian_1900,diff_1900,nwords,errcode
-  logical:: proleptic_gregorian,calendar_360_day
+  logical:: proleptic_gregorian
 
   call check(nf90_open(path=fileName, mode=nf90_nowrite, ncid=ncFileID),&
        errmsg="ReadTimeCDF, file not found: "//trim(fileName))
@@ -4562,7 +4560,7 @@ subroutine   vertical_interpolate(filename,Rvar,KMAX_ext,Rvar_emep,debug)
   logical, optional, intent(in) :: debug!output only masterproc
   real, allocatable,dimension(:)::hyam_ext,hybm_ext,P_ext,weight_k1
   integer, allocatable,dimension(:)::k1_ext,k2_ext
-  integer :: ncFileID,varID,status,n,i,j,k,k_ext!,ij,ijk
+  integer :: ncFileID,varID,status,i,j,k,k_ext!,ij,ijk
   real :: P_emep,P0
   character(len=100) :: word
   logical ::reversed_k

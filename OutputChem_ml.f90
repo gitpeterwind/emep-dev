@@ -50,11 +50,10 @@ subroutine Wrtchem(ONLY_HOUR)
 !----------------------------------------------------------------------
   integer, intent(in), optional :: ONLY_HOUR  ! output hourly fields
 
-  integer :: i,j,n,k,msnr1
+  integer :: n
   integer :: nyear,nmonth,nday,nhour,nmonpr
   integer :: mm_out, dd_out
   logical :: Jan_1st, End_of_Run
-  character(len=30) :: outfilename
   logical,save :: first_call = .true.
   TYPE(timestamp)   :: ts1,ts2
 !---------------------------------------------------------------------

@@ -297,7 +297,6 @@ contains
            keyval("Coords","ModelCoords") /)
 
  ! temporary arrays used.  Will re-write one day....
-   real, dimension(LIMAX,LJMAX,NLANDUSEMAX):: landuse_tmp ! tmp, with all data
    real, dimension(LIMAX,LJMAX,NLANDUSEMAX):: landuse_in ! tmp, with all data
    real, dimension(LIMAX,LJMAX,NLUMAX):: landuse_data ! tmp, with all data
    integer, dimension(LIMAX,LJMAX):: landuse_ncodes ! tmp, with all data
@@ -417,11 +416,11 @@ contains
     real :: sumfrac
 
     character(len=40) :: varname
-    character(len=200) :: fname1,fname2, fName
+    character(len=200) :: fName
 !XX    character(len=200), dimension(2) :: fnamesLC
     integer :: ncFileID, nDimensions,nVariables,nAttributes,timeDimID,varid
     integer :: nwords, err, xtype,ndims  ,status
-    character(len=20) :: ewords(7), code ! LC:CF:EMEP
+    character(len=20) :: ewords(7)
     character(len=*), parameter :: dtxt='RdLanduseCDF:'
     logical :: fexist=.false.!file exist flag
   
@@ -708,7 +707,6 @@ contains
     integer, save :: old_month = -1
     integer, save :: old_daynumber = -1
     logical, save :: my_first_call = .true.
-    logical, save :: init_needed=.true. ! since my_first_call had some confusions..
     real :: hveg, lat_factor
     real :: xSAIadd
     integer :: pft

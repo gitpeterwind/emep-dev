@@ -24,9 +24,6 @@ private
 
 
  INCLUDE 'mpif.h'
- INTEGER STATUS(MPI_STATUS_SIZE),INFO
-
- character(len=80), private :: errmsg
 
  real, public, allocatable :: pft_lai(:,:,:) 
  real, public, allocatable :: pft_bvoc(:,:,:,:) 

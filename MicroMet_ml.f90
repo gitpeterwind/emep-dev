@@ -165,7 +165,6 @@ module Micromet_ml
     
    ! Local
    real :: x
-   real, parameter :: a=1, b=0.667, c=5.0, d=0.35
  
     if (zL <  0) then !unstable
         x    = sqrt(1.0 - 16.0 * zL)
@@ -190,7 +189,6 @@ module Micromet_ml
                                ! notation must be preserved         
     real :: stab_m
     real  :: x
-   real, parameter :: a=1, b=0.667, c=5.0, d=0.35
  
     if( zL < 0) then !unstable
        x    = sqrt(sqrt(1.0 - 16.0*zL))

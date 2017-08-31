@@ -73,11 +73,9 @@ subroutine phyche()
 
   logical, save :: End_of_Day = .false.
   integer :: ndays,status,nstart,kstart
-  real :: thour, xtot,scale
+  real :: thour
   type(timestamp) :: ts_now !date in timestamp format
   logical,save :: first_call = .true.
-  integer ::i,j,k,dx,dy,ix,iix
-
 
   !------------------------------------------------------------------
   !     physical and  chemical routines.
