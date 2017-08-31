@@ -358,6 +358,7 @@ module AeroFunctions
          ,rho_kgm3        !< density, kg/m3 
 
      real :: S            !< Surface area, m2 per m3 air
+     real :: rho, rdry, rwet, sigFac, dryvol, totvol
      real :: rhod, fwetvol
 
      rho = 1600.0                                  !< kg/m3 default
