@@ -44,7 +44,7 @@ use EmisDef_ml,       only: &
      ,NSECTORS_GNFR, GNFR_sec2tfac_map, GNFR_sec2hfac_map, GNFR_sec2split_map&!GNFR specific mapping
      ,NSECTORS_TEST, TEST_sec2tfac_map, TEST_sec2hfac_map, TEST_sec2split_map&!TEST specific mapping
      ,gnfr2snap,snap2gnfr&
-     ,AISco, AISnox, AISsox, AISso4, AISash, AISec , AISoc, FOUND_Special_ShipEmis&
+     ,AISco, AISnox, AISsox, AISso4, AISash, AISec, AISoc, FOUND_Special_ShipEmis&
      ,NO_ix,NO2_ix,SO2_ix,SO4_ix,CO_ix,REMPPM25_ix&
      ,EC_F_FFUEL_NEW_ix,EC_F_FFUEL_AGE_ix,POM_F_FFUEL_ix
 
@@ -666,24 +666,26 @@ subroutine Emissions(year)
           call StopAll("Yearly DMS not implemented")
         end if
       elseif(emis_inputlist(iemislist)%type == "Special_ShipEmis")then
-        !should put in a single array 
-        allocate(AISco(LIMAX,LJMAX))
-        allocate(AISnox(LIMAX,LJMAX))
-        allocate(AISsox(LIMAX,LJMAX))
-        allocate(AISso4(LIMAX,LJMAX))
-        allocate(AISash(LIMAX,LJMAX))
-        allocate(AISec(LIMAX,LJMAX))
-        allocate(AISoc(LIMAX,LJMAX))
-        FOUND_Special_ShipEmis = .true.
-        NO_ix = find_index("NO",species(:)%name)
-        NO2_ix = find_index("NO2",species(:)%name)
-        SO2_ix = find_index("SO2",species(:)%name)
-        SO4_ix = find_index("SO4",species(:)%name)
-        CO_ix = find_index("CO",species(:)%name)
-        REMPPM25_ix = find_index("REMPPM25",species(:)%name)
-        EC_F_FFUEL_NEW_ix = find_index("EC_F_FFUEL_NEW",species(:)%name)
-        EC_F_FFUEL_AGE_ix = find_index("EC_F_FFUEL_AGE",species(:)%name)
-        POM_F_FFUEL_ix = find_index("POM_F_FFUEL",species(:)%name)
+        if(.not.FOUND_Special_ShipEmis)then
+          !should put in a single array
+          allocate(AISco(LIMAX,LJMAX))
+          allocate(AISnox(LIMAX,LJMAX))
+          allocate(AISsox(LIMAX,LJMAX))
+          allocate(AISso4(LIMAX,LJMAX))
+          allocate(AISash(LIMAX,LJMAX))
+          allocate(AISec(LIMAX,LJMAX))
+          allocate(AISoc(LIMAX,LJMAX))
+          FOUND_Special_ShipEmis = .true.
+          NO_ix = find_index("NO",species(:)%name)
+          NO2_ix = find_index("NO2",species(:)%name)
+          SO2_ix = find_index("SO2",species(:)%name)
+          SO4_ix = find_index("SO4",species(:)%name)
+          CO_ix = find_index("CO",species(:)%name)
+          REMPPM25_ix = find_index("REMPPM25",species(:)%name)
+          EC_F_FFUEL_NEW_ix = find_index("EC_F_FFUEL_NEW",species(:)%name)
+          EC_F_FFUEL_AGE_ix = find_index("EC_F_FFUEL_AGE",species(:)%name)
+          POM_F_FFUEL_ix = find_index("POM_F_FFUEL",species(:)%name)
+        end if
 
         call ReadTimeCDF(trim(fname),TimesInDays,NTime_Read)
         if(NTime_Read==12)emis_inputlist(iemislist)%periodicity = "monthly"
@@ -1397,7 +1399,6 @@ subroutine newmonth
 
   integer i, j,k, iyr, iemislist
   integer n, flat_ncmaxfound         ! Max. no. countries w/flat emissions
-  real :: rdemis(MAXLIMAX,MAXLJMAX)  ! Emissions read from file
   character(len=200) :: fname
   real ktonne_to_kgm2s, tonnemonth_to_kgm2s  ! Units conversion
   integer errcode,iland
@@ -1564,6 +1565,17 @@ subroutine newmonth
     write(*,*) ' first_dms_read = ', first_dms_read
   end if
 
+  ! reset shipping emissions
+  if(FOUND_Special_ShipEmis)then
+    AISco(:,:)  = 0.0
+    AISnox(:,:) = 0.0
+    AISsox(:,:) = 0.0 
+    AISso4(:,:) = 0.0
+    AISash(:,:) = 0.0
+    AISec(:,:)  = 0.0
+    AISoc(:,:)  = 0.0
+  end if
+
   sumemis=0.0
   do iemislist = 1, size( emis_inputlist(:)%name )
 
@@ -1577,12 +1589,11 @@ subroutine newmonth
     !Read monthly emission snap sector files
 
     !reset emissions (except flat emissions!)
-    snapemis(:,:,:,:,:) = 0.
-    fractions(:,:,:)    = 0.
-    cdfemis(:,:)       = 0.
-    sumemis_local       = 0.
-    emsum               = 0.
-
+    snapemis(:,:,:,:,:) = 0.0
+    fractions(:,:,:)    = 0.0
+    cdfemis(:,:)        = 0.0
+    sumemis_local       = 0.0
+    emsum               = 0.0
 
     tonnemonth_to_kgm2s = 1.0e3 &
          /(nmdays(current_date%month)*24.*60.*60.*GRIDWIDTH_M*GRIDWIDTH_M)
@@ -1895,22 +1906,18 @@ end subroutine EmisOut
     real, intent(inout) ::shipemis(LIMAX,LJMAX)
     real, intent(in) :: mw,conv
     integer,intent(in) :: nstart
+    real :: rdemis(LIMAX,LJMAX)  ! Emissions read from file
     real :: invmw
     integer ::i,j
-
     
-    shipemis=0.0
-    call ReadField_CDF(trim(filename),trim(varname),shipemis,nstart=nstart,  & 
+    rdemis=0.0
+    call ReadField_CDF(trim(filename),trim(varname),rdemis,nstart=nstart,  & 
          interpol='mass_conservative',known_projection='longitude latitude', &
          needed=.true.,debug_flag=.false.,UnDef=0.0)
     if(me==0)write(*,*)'Reading ship from ',trim(filename),' ',trim(varname)
     invmw=1.0/mw
-    do j = 1,ljmax
-       do i = 1, limax
-          shipemis(i,j) = shipemis(i,j)*  conv * xm2(i,j) *invmw
-          
-       end do
-    end do
+    forall(j=1:ljmax,i=1:limax) &
+      shipemis(i,j) = shipemis(i,j) + rdemis(i,j)*conv*xm2(i,j)*invmw        
 
   end subroutine ReadShipEMis
 
