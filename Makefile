@@ -18,7 +18,7 @@ export MACHINE ?= stallo
 export DEBUG ?= no
 export ARCHIVE ?= no
 ifeq ($(MACHINE),stallo)
-  MODULES = netCDF-Fortran/4.4.4-intel-2016b 
+  MODULES = netCDF-Fortran/4.4.4-intel-2016b
   LDFLAGS +=  $(shell nc-config --flibs)
   F90FLAGS += $(shell nc-config --cflags)
   MAKEDEPF90=/home/mifapw/bin/makedepf90
@@ -56,7 +56,7 @@ else ifeq ($(MACHINE),byvind)
 # MAKEDEPF90=????
   LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
 else ifeq ($(MACHINE),frost)
-  MODULES = buildenv-intel/2015-1 hdf5/1.8.14-i1501 netcdf/4.3.2-i1501-hdf5-1.8.14 
+  MODULES = buildenv-intel/2015-1 hdf5/1.8.14-i1501 netcdf/4.3.2-i1501-hdf5-1.8.14
   LIBS += -lnetcdf -lnetcdff
   INCL += /software/apps/netcdf/4.3.2/i1501-hdf5-1.8.14/include/
   LLIB += /software/apps/netcdf/4.3.2/i1501-hdf5-1.8.14/lib/
@@ -73,14 +73,15 @@ else ifeq ($(MACHINE),abel)
   INCL += $(NETCDF)/include $(INTEL)/include/intel64
   LLIB += -L$(NETCDF)/lib -L$(INTEL)/lib/intel64
   MAKEDEPF90=/usit/$(MACHINE)/u1/mifapw/bin/makedepf90
-else ifeq ($(MACHINE),precise)  #ubuntu 12.04
+else ifeq ($(MACHINE),xenial)  # ubuntu 16.04
+  # sudo apt-get install makedepf90 libmpich-dev libnetcdf-dev libnetcdff-dev
   F90FLAGS = -fdefault-real-8 -ffixed-line-length-none -ffree-line-length-none -fno-range-check
-  LDFLAGS += $(shell nc-config --flibs)
-  F90FLAGS+= $(shell nc-config --cflags)
-  MAKEDEPF90 = $(EMEPLOCAL)/bin/makedepf90
+  LDFLAGS += $(shell nf-config --flibs)
+  F90FLAGS+= $(shell nf-config --cflags)
+  MAKEDEPF90 = /usr/bin/makedepf90
   LD = gfortran
-  DEBUG_FLAGS = -Wall -fbacktrace -fbounds-check -fimplicit-none -pedantic 
-  OPT_FLAGS = -O3  
+  DEBUG_FLAGS = -Wall -fbacktrace -fbounds-check -fimplicit-none -pedantic
+  OPT_FLAGS = -O3
 endif
 F90FLAGS += -cpp $(DFLAGS) $(addprefix -I,$(INCL)) \
    $(if $(filter yes,$(DEBUG)),$(DEBUG_FLAGS),$(OPT_FLAGS))
@@ -165,7 +166,7 @@ eEMEP:              GenChem-$$@-Emergency
 eEMEP ?= Emergency  # Emergency | AshInversion
 
 GenChem%:
-	mk.GenChem $(GenChemOptions) -q
+	./mk.GenChem $(GenChemOptions) -q
 GenChem-%:          GenChemOptions += -r $(lastword $(subst -, ,$*))
 GenChem-EMEP-%:     GenChemOptions += -f FINNv1.5 -e SeaSalt,Dust,Isotopes
 GenChem-HTAP-%:     GenChemOptions += -f GFED     -e SeaSalt,Dust,Isotopes

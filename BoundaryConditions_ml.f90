@@ -178,16 +178,13 @@ contains
     ! ---------------------------------------------------------------------------
     integer, intent(in) :: year         ! "meteorology" year
     integer, intent(in) :: month
-    integer :: ibc, iem, k, iem1, i, j ,n, nadv,ntot ! loop variables
+    integer :: ibc, iem, k, i, j ,n, ntot ! loop variables
     integer :: info                     ! used in rsend
-    integer :: alloc_err
     real    :: bc_fac      ! Set to 1.0, except sea-salt over land = 0.01
     logical :: bc_seaspec  ! if sea-salt species
 
-    integer  :: errcode, Nlevel_logan
+    integer  :: errcode
     integer, save :: idebug=0, itest=1, i_test=0, j_test=0
-    character(len = 100) ::fileName,varname
-    logical :: NewLogan=.true.! under testing
     real :: bc_data(LIMAX,LJMAX,KMAX_MID)
 
     if (first_call) then
@@ -862,7 +859,7 @@ type :: SIAfac ! trends in boundary conditions
   integer :: year
   real:: so2,nox,nh4
 end type SIAfac
-integer,parameter ::KMAX20=20
+
 !temporary used by BoundaryConditions
 real :: O3fix=0.0
 real :: trend_o3=1.0, trend_co, trend_voc
@@ -934,19 +931,17 @@ real :: trend_o3=1.0, trend_co, trend_voc
     (/39.8,41.9,45.4,46.5,43.2,36.2,30.5,30.1,34.1,37.0,39.0,38.5/)
   real, dimension(12):: macehead_O3=macehead_default
   !---------------------------------------------------------------------------
-  integer :: i, j, k, i0, i1, j1, icount, Nlevel_logan, Nlevel_Dust, ierror
+  integer :: i, j, k, i0, i1, Nlevel_logan, Nlevel_Dust, ierror
   real    :: f0, f1             ! interpolation factors
   character(len=30) :: fname    ! input filename
   character(len=99) :: txtmsg   ! error messages
-  character(len=30) :: BCpoll   ! pollutant name
   real,allocatable,save, dimension(:) :: p_kPa, h_km  !Use of standard atmosphere
 
-  real :: scale_old, scale_new,iMH,jMH
-  logical :: notfound !set true if NetCDF BIC are not found
+  real :: scale_old, scale_new
   real, parameter :: macehead_lat = 53.3 !latitude of Macehead station
   real, parameter :: macehead_lon = -9.9 !longitude of Macehead station
   character(len = 100) ::fileName,varname
-  real count,count_loc,O3fix_loc, mpi_rcv(2),mpi_snd(2)
+  real :: count_loc,O3fix_loc, mpi_rcv(2),mpi_snd(2)
   real :: conv_fac
 
 !----------------------------------------------------------
@@ -1050,7 +1045,7 @@ real :: trend_o3=1.0, trend_co, trend_voc
     trend_co = 1.0
     trend_voc= 1.0
   case(1990:1999)
-	if( USES%MACEHEADFIX ) then
+  if( USES%MACEHEADFIX ) then
        trend_o3 = 1.0
     else
        trend_o3 = exp(-0.01*1.0 *(2000-iyr_trend))

@@ -608,12 +608,9 @@ end subroutine out_uEMEP
 subroutine av_uEMEP(dt,End_of_Day)
   real, intent(in)    :: dt                   ! time-step used in integrations
   logical, intent(in) :: End_of_Day           ! e.g. 6am for EMEP sites
-  real :: xtot,scale
+  real :: xtot
   integer ::i,j,k,dx,dy,ix,iix,ipoll,isec_poll1
-  integer ::isec_poll,ndim,kmax,CDFtype,dimSizes(10),chunksizes(10),iotyp
-  character (len=20) ::dimNames(10)
-  type(Deriv) :: def1 ! definition of fields
-  logical,save :: first_call=.true.
+  integer ::isec_poll
   
   if(.not. uEMEP%HOUR.and.&
      .not. uEMEP%DAY .and.&
@@ -876,7 +873,6 @@ subroutine uEMEP_emis(indate)
   integer :: iqrc             ! emis indices 
   integer :: isec             ! loop variables: emission sectors
   integer :: iem              ! loop variable over 1..NEMIS_FILE
-  integer :: itot             ! index in xn()
 
   ! Save daytime value between calls, initialise to zero
   integer, save, dimension(MAXNLAND) ::  daytime(1:MAXNLAND) = 0  !  0=night, 1=day
@@ -886,10 +882,10 @@ subroutine uEMEP_emis(indate)
   real ::  tfac    ! time-factor (tmp variable); dt*h*h for scaling
   real ::  s       ! source term (emis) before splitting
   integer :: iland, iland_timefac  ! country codes, and codes for timefac 
-  integer :: daytime_longitude, daytime_iland, hour_longitude, hour_iland,nstart
+  integer :: daytime_longitude, daytime_iland, hour_longitude, hour_iland
   integer ::icc_uemep
   integer, save :: wday , wday_loc ! wday = day of the week 1-7
-  integer ::ix,iix, neigbor, dx, dy, isec_poll, iisec_poll, isec_poll1, ipoll
+  integer ::ix,iix, dx, dy, isec_poll, iisec_poll, isec_poll1, ipoll
   real::dt_uemep, xtot, emis_uemep(KMAX_MID,NEMIS_FILE,NSECTORS),emis_tot(KMAX_MID,NEMIS_FILE)
 
   dt_uemep=dt_advec

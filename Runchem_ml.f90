@@ -61,15 +61,13 @@ contains
 subroutine runchem()
 
 !  local
-  integer :: i, j, n
+  integer :: i, j
   integer :: errcode
   integer :: nmonth, nday, nhour     
-  logical ::  Jan_1st, End_of_Run
+  logical ::  Jan_1st
   logical ::  debug_flag    ! =>   Set true for selected i,j
   logical, save :: first_tstep = .true. ! J16 
-  logical :: dbg
   character(len=*), parameter :: sub='RunChem:'
-  character(len=10) :: dbgtxt
 ! =============================
   nmonth = current_date%month
   nday   = current_date%day

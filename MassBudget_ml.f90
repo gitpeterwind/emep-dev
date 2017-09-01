@@ -67,9 +67,7 @@ subroutine Init_massbudget()
 ! within 3-D grid, after boundary conditions
 !
 !----------------------------------------------------------------------
-  integer i, j, k, n, info    ! lon,lat,lev indexes
-                              ! n - No. of species
-                              ! info - printing info
+  integer i, j, k, n          ! lon,lat,lev indexes, n - No. of species
   real rwork,fac,wgt_fac
 
   fac = GRIDWIDTH_M*GRIDWIDTH_M/GRAV
@@ -126,10 +124,7 @@ end subroutine emis_massbudget_1d
 subroutine massbudget()
 ! sums over all sulphur and nitrogen, so is model independant.
 
-  integer ::  i, j, k, n, nn, info  ! lon,lat,lev indexes
-                                    ! n - No. of species
-                                    ! nn - Total no. of short lived and advected species
-                                    ! info - printing info
+  integer ::  i, j, k, n            ! lon,lat,lev indexes, n - No. of species
   integer :: ix_o3, ifam            ! family index
   integer :: iomb                   ! for MassBugetSummary.txt Table
   real,  dimension(NSPEC_ADV,KMAX_MID) ::  sumk   ! total mass in each layer

@@ -135,9 +135,9 @@ module AeroFunctions
         , 0.3926,3.101,4.190e-11,-1.404   &  ! urban
         , 0.4809,3.082,3.110e-11,-1.428 /)&  ! (NH4)2SO4
         ,(/4,4/) )
-   real, parameter :: THIRD = 1.0/3.0, um2m = 1.0e-6, cm2m = 1.0e-2
+   real, parameter :: THIRD = 1.0/3.0, cm2m = 1.0e-2
    real :: rd, mrh
-   integer :: ind  
+   integer :: ind
 
    ind = 1 ! default = rural
    if ( present(pmtype) ) ind = pmtype
@@ -358,7 +358,7 @@ module AeroFunctions
          ,rho_kgm3        !< density, kg/m3 
 
      real :: S            !< Surface area, m2 per m3 air
-     real :: dryvol, rho, rdry, rwet, sigFac, totvol, sig
+     real :: rho, rdry, rwet, sigFac, dryvol, totvol
      real :: rhod, fwetvol
 
      rho = 1600.0                                  !< kg/m3 default
@@ -587,7 +587,6 @@ module AeroFunctions
    real, intent(in) :: S                    !< Aerosol surface area, m2 per m3 air
    real, intent(in), optional :: rad        !< aerosol radius, m
    real, parameter :: Dg = 0.1 * 1.0e-4     ! 0.1 cm2/s -> m2/s
-   real, parameter :: toum2cm3 = 1.0e12*1.0e-6
    real :: k
    if( present(rad) )  then
       k = S / ( rad/Dg  + 4/(molSpeed * gam) )
