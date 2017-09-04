@@ -29,7 +29,6 @@
                              ,cell_tinv & ! tmp location, for Yields
                              ,NSPEC_BGN  ! => IXBGN_  indices and xn_2d_bgn
     use ChemRates_rct_ml,   only: rct
-    !ESX use ChemRates_rcmisc_ml,only: rcmisc
     use DefPhotolysis_ml         ! => IDHNO3, etc.
     use emep_Config_mod,    only : YieldModifications
     use EmisDef_ml,      only: KEMISTOP
@@ -92,8 +91,6 @@ contains
     ! Concentrations : xold=old, x=current, xnew=predicted
     ! - dimensioned to have same size as "x"
 
-    !M17 real(kind=dp), dimension(NSPEC_TOT)      :: &
-    !M17                     x, xold ,xnew   ! Working array [molecules/cm3]
     real(kind=dp), dimension(nchemMAX), save :: &
                         dti             ! variable timestep*(c+1)/(c+2)
     real(kind=dp), dimension(nchemMAX), save :: &
@@ -193,12 +190,12 @@ contains
 ! The chemistry is iterated several times, more close to the ground than aloft.
 ! For some reason, it proved faster for some compilers to include files as given below
 ! with the if statements, than to use loops.
-!Just add some comments:
-!At present the "difference" between My_FastReactions and My_SlowReactions
-!is that in My_Reactions the products do not reacts chemically at all,
-!and therefore do not need to be iterated.  We could have another class
-!"slowreactions", which is not iterated or fewer times. This needs some
-!work to draw a proper line ......
+! Just add some comments:
+! At present the "difference" between My_FastReactions and My_SlowReactions
+! is that in My_Reactions the products do not reacts chemically at all,
+! and therefore do not need to be iterated.  We could have another class
+! "slowreactions", which is not iterated or fewer times. This needs some
+! work to draw a proper line ......
 
                 !if(k>=KCHEMTOP)then
 
@@ -214,10 +211,9 @@ contains
                 !   include 'My_FastReactions.inc'
                 !end if
 
-                !Mar-Apr 2017 NEW, still under testing
+                !Mar-Apr 2017 NEW
                 ! Allows change of gas/aerosol yield
-                ! BUT only takes effect on 2nd iteration, since the current
-                ! formulation makes use of e.g. OHLOSS_MT over this time step
+                ! BUT only takes effect on 2nd iteration
                 ! Still, we have nchem*niter loops
 
                  if ( YieldModificationsInUse ) then
@@ -225,23 +221,10 @@ contains
                     if( iter == toiter(k) ) runlabel='lastFastChem'
                     call doYieldModifications(runlabel)
 
-                    !if(DebugCell .and. ichem==nchem) &
-                       !write(*,'(a,5i4,f8.3,4es12.3)') 'JPCDTDBG ',&
-                       !print '(a,5i4,f8.3,4es12.3)', 'JPCDTDBG ',&
-                       !i,j, k, ichem, nchem, dt2, &
-                       !xnew(OH),xnew(C5H8), xnew(APINENE), YCOXY(1)
-!                       print '(a,2i4,4es12.3)', 'JPCin '//runlabel, ichem, me,&
-!                        YCOXY(1)
                  end if
 
             end do !! End iterations
-          ! Just before SO4, look after slower? species
 
-!            print '(a,5i4,f8.3,4es12.3)', 'JPCYIELD ',&
-!                       i,j, k, ichem, nchem, dt2, &
-!                       xnew(OH),xnew(C5H8), xnew(APINENE), YCOXY(1)
-!
-!            call StopAll('INTERIM')
           !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
            include 'CM_Reactions2.inc'
           !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
