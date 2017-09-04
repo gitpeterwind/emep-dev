@@ -437,6 +437,7 @@ type(aero_t), public, save :: AERO = aero_t()
 !! We will put the filename, and params (SGS, EGS, etc) in
 !! the _Params array.
 character(len=15), public, save, dimension(20) :: FLUX_VEGS=""
+character(len=15), public, save, dimension(20) :: FLUX_IGNORE=""   ! e.g. Water, desert..
 character(len=15), public, save, dimension(20) :: VEG_2dGS=""
 character(len=99), public, save, dimension(10) :: VEG_2dGS_Params=""
 integer, public, save :: nFluxVegs = 0 ! reset in Landuse_ml
