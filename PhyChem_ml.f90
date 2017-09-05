@@ -80,7 +80,6 @@ subroutine phyche()
   !------------------------------------------------------------------
   !     physical and  chemical routines.
 
-
   !     Hours since midnight at any time-step
   !    using current_date we have already nstep taken into account
   thour = real(current_date%hour) + current_date%seconds/3600.0
@@ -134,11 +133,11 @@ subroutine phyche()
 
   call Add_2timing(12,tim_after,tim_before,"phyche:EmisSet")
 
-  !       For safety we initialise instant. values here to zero.
-  !       Usually not needed, but sometimes
-  !       ==================
+  ! For safety we initialise instant. values here to zero.
+  ! Usually not needed, but sometimes
+  ! ========================
   d_2d(:,:,:,IOU_INST) = 0.0
-  !       ==================
+  ! ========================
 
 
   !===================================
