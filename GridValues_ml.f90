@@ -1376,15 +1376,14 @@ contains
     !           yr2(i1,j1): j coordinates in grid2 (with decimals)
     !-------------------------------------------------------------------!
 
+    integer, intent(in) :: imax,jmax
     real, intent(in)    :: lon(imax,jmax),lat(imax,jmax)
     real, intent(out)   :: xr2(imax,jmax),yr2(imax,jmax)
     real, intent(in), optional    :: fi2,an2,xp2,yp2
-    integer, intent(in) :: imax,jmax
     real  :: fi_loc,an_loc,xp_loc,yp_loc
     real, parameter :: PI=3.14159265358979323
     real    :: PId4,dr,dr2,dist,dist2,dist3
     integer ::i,j,ip1,jp1, ir2, jr2,i1,j1
-
 
     if(projection=='Stereographic'.or.(present(fi2).and.present(an2).and.present(xp2).and.present(yp2)))then
        PId4  =PI/4.
@@ -2227,9 +2226,8 @@ end subroutine lb2ij_int
     !fetch a 2D array over an extended subdomain.
     !i.e. extended arrays are overlapping, and parts outside the fulldomain are extrapolated linearly.
     implicit none
-    integer, intent(in) ::ncFileID,varID
-    real, intent(inout) ::Var(i0:i1,j0:j1)!the extended local array
-    integer, intent(in)::i0,i1,j0,j1
+    integer, intent(in) :: ncFileID,varID,i0,i1,j0,j1
+    real, intent(inout) :: Var(i0:i1,j0:j1) !the extended local array
     integer, optional, intent(in)::ishift_in,jshift_in
 
     integer ::iloc_start,iloc_end,jloc_start,jloc_end
