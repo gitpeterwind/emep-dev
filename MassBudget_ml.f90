@@ -17,19 +17,19 @@ use ModelConstants_ml,  only: KMAX_MID,KCHEMTOP,& ! Start and upper k for 1d fie
                               PT,               & ! Pressure at top
                               USE_OCEAN_NH3,USE_OCEAN_DMS,FOUND_OCEAN_DMS,&
                               DEBUG_MASS,EXTENDEDMASSBUDGET
-!do not use "only", because MPI_IN_PLACE does not behave well on certain versions of gfortran(?)
-use MPI_Groups_ml !   , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER, MPI_LOGICAL, &
+! do not use "only", because MPI_IN_PLACE does not behave well on certain
+! versions of gfortran(?), and MPI stuff clearly inidcated anyway
+use MPI_Groups_ml !   , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, &
+                  !            MPI_INTEGER, MPI_LOGICAL, &
                   !            MPI_MIN, MPI_MAX, MPI_SUM, MPI_IN_PLACE, &
-                  !            MPI_COMM_CALC, MPI_COMM_WORLD, MPISTATUS, IERROR, ME_MPI, NPROC_MPI
+                  !            MPI_COMM_CALC, MPI_COMM_WORLD, MPISTATUS,&
+                  ! IERROR, ME_MPI, NPROC_MPI
 use Par_ml,             only: &
-  li0,li1,& ! First/Last local index in longitude when outer boundary is excluded
-  lj0,lj1   ! First/Last local index in latitude  when outer boundary is excluded
+  li0,li1,& ! First/Last local index in long. when outer boundary is excluded
+  lj0,lj1   ! First/Last local index in lat.  when outer boundary is excluded
 use PhysicalConstants_ml,only: GRAV,ATWAIR! Mol. weight of air(Jones,1992)
 use Setup_1dfields_ml,  only: amk, rcemis ! Air concentrations , emissions
 use SmallUtils_ml,       only: find_index
-!use mpi,                only: MPI_COMM_CALC, MPI_IN_PLACE,&
-!                              MPI_DOUBLE_PRECISION, MPI_SUM, MPI_MIN, MPI_MAX
-! openMPI has no explicit interface for MPI_ALLREDUCE
 implicit none
 private
 
@@ -111,7 +111,8 @@ subroutine emis_massbudget_1d(i,j)
   do k = KCHEMTOP,KMAX_MID
     scaling_k = scaling * (dA(k) + dB(k)*ps(i,j,1))/amk(k)
     if(all((/DEBUG_MASS,debug_proc,i==debug_li,j==debug_lj/)))&
-      call datewrite("MASSRC ",k,(/dB(k)*ps(i,j,1),xmd(i,j),ps(i,j,1),scaling_k/))
+      call datewrite("MASSRC ",k,(/dB(k)*ps(i,j,1),xmd(i,j),&
+          ps(i,j,1),scaling_k/))
 
     do iadv = 1, NSPEC_ADV
       itot = iadv + NSPEC_SHL
@@ -147,7 +148,7 @@ subroutine massbudget()
   real, dimension(NSPEC_ADV) :: &
     xmax, xmin,         & ! min and max value for the individual species
     sum_mass,           & ! total mass of species
-    frac_mass,          & ! mass budget fraction (should=1) for groups of species
+    frac_mass,          & ! mass budget frac. (should=1) for groups of species
     gfluxin,gfluxout,   & ! flux in  and out
     gtotem,             & ! total emission
     gtotddep, gtotwdep, & ! total dry and wet deposition
@@ -233,12 +234,12 @@ subroutine massbudget()
         33 FORMAT(5(A,es10.3))
         write(*,*)'Ozone fluxes (kg):'   
         write(*,33)'Net from top = ', fluxin_top(ix_o3)-fluxout_top(ix_o3),&
-                  '  in from top = ',fluxin_top(ix_o3),' out of top = ',fluxout_top(ix_o3)
+          '  in from top = ',fluxin_top(ix_o3),' out of top = ',fluxout_top(ix_o3)
         write(*,33)'Net lateral faces = ', fluxin(ix_o3)-fluxout(ix_o3),&
-             '  in lateral faces = '  ,fluxin(ix_o3), &
-             ' out lateral faces = ',  fluxout (ix_o3)
-        write(*,33)'O3 in atmosphere at start of run = ', sumini(ix_o3)*o3_fac,&
-             ' at end of run = ', sum_mass(ix_o3)*o3_fac
+          '  in lateral faces = '  ,fluxin(ix_o3), &
+          ' out lateral faces = ',  fluxout (ix_o3)
+        write(*,33)'O3 in atmosphere at start of run = ', &
+          sumini(ix_o3)*o3_fac, ' at end of run = ', sum_mass(ix_o3)*o3_fac
         write(*,33)'O3 dry deposited = ',&
              gtotddep(ix_o3)*species_adv(ix_o3)%molwt
      else
@@ -257,8 +258,9 @@ subroutine massbudget()
   if(MasterProc) then   ! printout from node 0
     if(EXTENDEDMASSBUDGET)then
       do n=1,NSPEC_ADV
-         wgt_fac=species_adv(n)%molwt/ATWAIR
-        if(gtotem(n)>0.0) write(*,*)'tot. emission of '//trim(species_adv(n)%name)//' ',gtotem(n)*wgt_fac
+        wgt_fac=species_adv(n)%molwt/ATWAIR
+        if(gtotem(n)>0.0) write(*,*)'tot. emission of '//&
+               trim(species_adv(n)%name)//' ',gtotem(n)*wgt_fac
       end do
     end if
 
@@ -280,7 +282,7 @@ subroutine massbudget()
       family_wdep(ifam)   = dot_product(gtotwdep(:),natoms(:))
       family_em(ifam)     = dot_product(gtotem(:)  ,natoms(:))
 
-!convert into kg
+    !convert into kg
       select case(ifam)
         case(1);wgt_fac=32/ATWAIR!sulphurs
         case(2);wgt_fac=14/ATWAIR!nitrogens
@@ -307,7 +309,8 @@ subroutine massbudget()
 
 
       call PrintLog('++++++++++++++++++++++++++++++++++++++++++++++++')
-      write(logtxt,"(a9,5a12)")" ","sumini","summas","fluxout","fluxin","fracmass"
+      write(logtxt,"(a9,5a12)")" ","sumini","summas","fluxout","fluxin",&
+        "fracmass"
       call PrintLog(logtxt)
 
       write(logtxt,"(a9,5es12.4)") family_name(ifam), &
@@ -341,7 +344,7 @@ subroutine massbudget()
       end do
      end if ! EXTENDED
 
-    !2016 NEW: SUMMARY TABLE:
+    ! SUMMARY TABLE:
      open(newunit=iomb,file="MassBudgetSummary.txt")
      write(iomb,'(a)') ' # Mass Budget. Units are kg with MW used here. ADJUST! if needed' 
      write(iomb,'(a3,1x,a14,a7,99a12)') '#n', 'Spec       ', &
@@ -359,7 +362,8 @@ subroutine massbudget()
              write(*,"(a3,6a12)")" n ", "Spec", &
                "sumini", "summas", "fluxout", "fluxin", "fracmass"
              write(*,"(i3,1x,a11,5es12.4)") n,species_adv(n)%name, &
-               sumini(n)*wgt_fac, sum_mass(n)*wgt_fac, gfluxout(n)*wgt_fac, gfluxin(n)*wgt_fac, frac_mass(n)
+               sumini(n)*wgt_fac, sum_mass(n)*wgt_fac, gfluxout(n)*wgt_fac, &
+                 gfluxin(n)*wgt_fac, frac_mass(n)
              write(*,*)
              write(*,"(a3,6a12)") "n ", "species", "totddep", "totwdep", "totem"
              write(*,"(i3,1x,a11,5es12.4)") n, species_adv(n)%name, &
@@ -380,7 +384,6 @@ subroutine massbudget()
   end if  ! MasterProc
 
   if(FOUND_OCEAN_DMS)then
-     !DMS emissions
      ! update dms budgets
      CALL MPI_ALLREDUCE(MPI_IN_PLACE, O_DMS%sum_month, 1,&
           MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_CALC, IERROR)
