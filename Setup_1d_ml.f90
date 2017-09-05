@@ -21,7 +21,7 @@ use EmisDef_ml,          only: gridrcemis, gridrcroadd, KEMISTOP,Emis_4D,N_Emis_
                                 ,AISco, AISnox, AISsox, AISso4, AISash, AISec , AISoc, FOUND_Special_ShipEmis&
                                 ,NO_ix,NO2_ix,SO2_ix,SO4_ix,CO_ix,REMPPM25_ix&
                                 ,EC_F_FFUEL_NEW_ix,EC_F_FFUEL_AGE_ix,POM_F_FFUEL_ix
-use EmisGet_ml,          only:  nrcemis, iqrc2itot  !DSRC added nrcemis
+use EmisGet_ml,          only:  nrcemis, iqrc2itot  
 use ForestFire_ml,       only: Fire_rcemis, burning
 use Functions_ml,        only:  Tpot_2_T
 use ChemFields_ml,       only: SurfArea_um2cm3
@@ -43,16 +43,16 @@ use ModelConstants_ml,   only:  &
   ,SKIP_RCT                     & ! kHet tests
   ,dt_advec                     & ! time-step
   ,IOU_INST                     & ! for OUTMISC
-  ,MasterProc                   &
-  ,PPB, PT                      & ! Pressure at top
-  ,USES                         & ! Forest fires so far
+  ,MasterProc                   & 
+  ,PPB, PT                      & ! PT-pressure at top
+  ,USES                         & ! forest fires, hydrolysis, dergee_days etc.
   ,USE_SEASALT                  &
   ,USE_LIGHTNING_EMIS, USE_AIRCRAFT_EMIS      &
   ,USE_GLOBAL_SOILNOX, USE_DUST, USE_ROADDUST &
   ,USE_OCEAN_NH3,USE_OCEAN_DMS,FOUND_OCEAN_DMS&
   ,VOLCANO_SR                   & ! Reduce Volcanic Emissions
   ,emis_inputlist               & ! Used in EEMEP
-  ,KMAX_MID ,KMAX_BND, KCHEMTOP   ! Start and upper k for 1d fields
+  ,KMAX_MID ,KMAX_BND, KCHEMTOP   ! Upper layer (k), upper level, and k for 1d fields
 use My_Derived_ml,       only: EmisSplit_OUT
 use Landuse_ml,          only: water_fraction, ice_landcover
 use Par_ml,              only: me, & 
@@ -60,14 +60,14 @@ use Par_ml,              only: me, &
 use PhysicalConstants_ml,only: ATWAIR, AVOG, PI, GRAV, T0
 use Radiation_ml,        only: PARfrac, Wm2_uE
 use Setup_1dfields_ml,   only: &
-   xn_2d                &  ! concentration terms
-  ,rcemis, deltaZcm     &  ! emission terms and layer thickness
+   xn_2d                &  ! concentration terms (molec/cm3)
+  ,rcemis, deltaZcm     &  ! emission terms and lowest layer thickness
   ,rh, temp, tinv, itemp,pp      &  !
   ,amk, o2, n2, h2o     &  ! Air concentrations
   ,cN2O5, cHO2, cO3, cHNO3 &  ! mol speeds, m/s
-  ,cNO2, cNO3              &  ! mol speeds, m/s, kHet tests
-  ,gamN2O5  & !kHet for printout
-  ,DpgNw,S_m2m3   &  ! for wet diameter and surf area
+  ,cNO2, cNO3              &  ! mol speeds, m/s, kHetero tests
+  ,gamN2O5                 &  ! kHetero test - for printout
+  ,DpgNw, S_m2m3           &  ! for wet diameter and surf area
   ,aero_fom, aero_fbc, aero_fss, aero_fdust
 use SmallUtils_ml,       only: find_index
 use Tabulations_ml,      only: tab_esat_Pa
@@ -80,9 +80,9 @@ implicit none
 private
 !-----------------------------------------------------------------------!
 
-public :: setup_1d   ! Extracts results for i,j column from 3-D fields
-public :: setup_rcemis ! Emissions  (formerly "poll")
-public :: reset_3d     ! Exports final results for i,j column to 3-D fields
+public :: setup_1d     ! Extracts results for i,j column from 3-D fields
+public :: setup_rcemis ! Emissions in i,j column
+public :: reset_3d     ! Exports final results from i,j column to 3-D fields
                        ! (and XNCOL outputs if asked for)
 
 ! Indices for the species defined in this routine. Only set if found
@@ -183,8 +183,8 @@ contains
        h2o(k) = max( 1.e-5*amk(k), &
                      q(i,j,k,1)*amk(k)*ATWAIR/18.0)
 
-      ! nb. max function for h2o  used as semi-lagrangian scheme used
-      ! in LAM50 (and HIRLAM) often gives negative H2O....   :-(
+      ! nb. max function for h2o used as some NWP numerics can give 
+      ! negative negative H2O....   :-(
 
        pp(k) = A_mid(k) + B_mid(k)*ps(i,j,1)
 
@@ -197,7 +197,7 @@ contains
        rh(k) = min( q(i,j,k,1)/qsat , 1.0)
        rh(k) = max( rh(k) , 0.001)
 
-        ! 1)/ Short-lived species - no need to scale with M
+        ! 1)/ Short-lived species - no need to convert units
 
          do n = 1, NSPEC_SHL
                xn_2d(n,k) = max(0.0,xn_shl(n,i,j,k))
@@ -209,7 +209,7 @@ contains
               xn_2d(ispec,k) = max(0.0,xn_adv(n,i,j,k)*amk(k))
         end do ! ispec
 
-        ! 3)/ Background species ( * CTM2 with units in mix. ratio)
+        ! 3)/ Background species (with units in mix. ratio)
         do n = 1, NSPEC_BGN
               xn_2d_bgn(n,k) = max(0.0,xn_bgn(n,i,j,k)*amk(k))
         end do ! ispec
@@ -451,8 +451,7 @@ subroutine setup_rcemis(i,j)
 !-------------------------------------------------------------------
 !    DESCRIPTION:
 !    Extracts emissions in column from gridrcemis, for input to chemistry
-!    routines. Results in "rcemis" array
-!    units of rcemis are molecule/cm3/s
+!    routines. Results in "rcemis" array with unts: molecule/cm3/s
 !-------------------------------------------------------------------
   !-- arguments
   integer, intent(in) ::  i,j     ! coordinates of column
@@ -492,7 +491,7 @@ subroutine setup_rcemis(i,j)
     rcemis(:,:)=rcemis(:,:)+ColumnRate(i,j)
   end if
 
-  ! lightning and aircraft ... Airial NOx emissions if required:
+  ! lightning and aircraft ... Aerial NOx emissions if required:
   if(USE_LIGHTNING_EMIS)then
     do k=KCHEMTOP, KMAX_MID
       rcemis(NO ,k) = rcemis(NO ,k) + 0.95 * airlig(k,i,j)
@@ -510,22 +509,23 @@ subroutine setup_rcemis(i,j)
       dtxt//"AIRNOX ", USE_LIGHTNING_EMIS, USE_AIRCRAFT_EMIS, &
       airn(KMAX_MID,i,j),airlig(KMAX_MID,i,j)
 
-  ! Add sea salt production
+  ! Road dust
   if(USE_ROADDUST.and.itot_RDF>0) then  ! Hard-code indices for now
     rcemis(itot_RDF,KMAX_MID) = gridrcroadd(1,i,j)
     rcemis(itot_RDC,KMAX_MID) = gridrcroadd(2,i,j)
    end if
-
+   
+  ! Forest fires
   if(USES%FOREST_FIRES) then
     if(burning(i,j))call Fire_rcemis(i,j)
   end if
 
-  !Soil NOx
+  ! Soil NOx
   if(USE_GLOBAL_SOILNOX)then !NEEDS CHECKING NOV2011
     rcemis(NO,KMAX_MID)=rcemis(NO,KMAX_MID)+SoilNOx(i,j)
   end if
 
-
+  ! Emissions from GEIA, was use for Aerocom NO3 experiment
   if(USE_OCEAN_NH3)then
      !keep separated from snapemis/rcemis in order to be able to include more
      ! advanced processes
@@ -541,6 +541,7 @@ subroutine setup_rcemis(i,j)
 
   end if
 
+  ! Ocean DMS -> SO2
   if(FOUND_OCEAN_DMS)then!temporarily always compute budgets if file found
      !keep separated from snapemis/rcemis in order to be able to include more
      ! advanced processes
