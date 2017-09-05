@@ -94,13 +94,6 @@ integer, private, save :: itot_RDF=-999,  itot_RDC=-999, itot_Rn222=-999
 
 
 
-! Minimum concentration allowed for advected species. Avoids some random
-! variations between debugged/normal runs with concs of e.g. 1.0e-23 ppb or
-! less. 1.0e-20 ppb is ca. 2.5e-10 molec/cm3 at sea-level, ca. 2.5e-11 at top
-! e.g.: MINCONC = 1.0e-29
-
-!DUST_ROAD_F
-
 contains
  !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
    subroutine setup_1d(i,j)
@@ -146,13 +139,15 @@ contains
        do n = 1, size(SKIP_RCT)
           if ( SKIP_RCT(n) > 0 ) nSKIP_RCT = nSKIP_RCT  + 1
        end do
-       if( MasterProc ) write(*,"(a,10i4)") dtxt//"SKIP_RCT:", SKIP_RCT(1:nSKIP_RCT)
+       if( MasterProc ) write(*,"(a,10i4)") &
+          dtxt//"SKIP_RCT:", SKIP_RCT(1:nSKIP_RCT)
 
        is_BC(:) = .false.
 
 
        iBCf = find_index('ECFINE',chemgroups(:)%name)
-       if( MasterProc ) write(*,*) dtxt//"is_BCf check ", iBCf, trim(USES%n2o5HydrolysisMethod)
+       if( MasterProc ) write(*,*) dtxt//"is_BCf check ", iBCf, &
+           trim(USES%n2o5HydrolysisMethod)
        if ( iBCf > 0 ) then
           iBCc = find_index('ECCOARSE',chemgroups(:)%name)
           if( MasterProc ) write(*,*) dtxt//"is_BCc check ", iBCc
@@ -163,7 +158,8 @@ contains
                  if( find_index( ispec, chemgroups(iBCc)%specs ) >0) &
                     is_BC(ipm)  = .true.
               end if
-              if( MasterProc) write(*,*) dtxt//"is_BC ",species(ispec)%name, is_BC(ipm)
+              if( MasterProc) write(*,*) dtxt//"is_BC ",&
+                   species(ispec)%name, is_BC(ipm)
           end do
        end if
        do ipm = 1, size( PM10_GROUP )
@@ -228,8 +224,8 @@ contains
            ugRemC      = 0.0
            ugpmF       = 0.0
            ugpmC       = 0.0
-           ugNO3f      = 0.0 !  0.27*xn_2d(ispec,k)*species(ispec)%molwt*1.0e12/AVOG
-           ugNO3c      = 0.0 !  0.27*xn_2d(ispec,k)*species(ispec)%molwt*1.0e12/AVOG
+           ugNO3f      = 0.0 !  0.27*xn_2d(i,k)*species(i)%molwt*1.0e12/AVOG
+           ugNO3c      = 0.0 !  0.27*xn_2d(i,k)*species(i)%molwt*1.0e12/AVOG
            ugSIApm     = 0.0 
            ugBCf       = 0.0
            ugBCc       = 0.0
@@ -243,9 +239,6 @@ contains
              ispec = PM10_GROUP(ipm)
 
              ugtmp  = xn_2d(ispec,k)*species(ispec)%molwt*1.0e12/AVOG
-!             is_finepm = ( find_index( ispec, PMFINE_GROUP) > 0 )
-!             is_ssalt  = ( find_index( ispec, SS_GROUP ) >0)!
-!             is_dust   = ( find_index( ispec, DUST_GROUP )>0)
              is_finepm = is_finepm_a(ipm)
              is_ssalt  = is_ssalt_a(ipm)
              is_dust   = is_dust_a(ipm)
@@ -279,7 +272,7 @@ contains
            end do
 
          ! FRACTIONS used for N2O5 hydrolysis
-         ! We use mass fractions, since we anyway don't have MW for OM, dust,...
+         ! We use mass fractions, since we anyway don't have MW for OM, dust,
          !  ugRemF will include OM, EC, PPM, Treat as OM 
 
           ugRemF = ugpmf - ugSIApm -ugSSaltF -ugDustF
@@ -361,7 +354,8 @@ contains
 
            ! For total area, we simply sum. We ignore some non-SS or dust _C.
            iw= AERO%PM
-           S_m2m3(iw,k) = S_m2m3(AERO%PM_F,k) + S_m2m3(AERO%SS_C,k) + S_m2m3(AERO%DU_C,k) 
+           S_m2m3(iw,k) = S_m2m3(AERO%PM_F,k) + S_m2m3(AERO%SS_C,k) &
+                             + S_m2m3(AERO%DU_C,k) 
 
            iw= AERO%ORIG
            S_m2m3(iw,k) = S_RiemerN2O5(k)
@@ -426,7 +420,8 @@ contains
            if ( f_2d(itmp)%subclass == 'rct' ) then
             !check if index of rate constant (config) possible
              if ( f_2d(itmp)%index > NRCT ) then
-                if(MasterProc) write(*,*) 'RCT NOT AVAILABLE!', itmp, f_2d(itmp)%index, NRCT
+                if(MasterProc) write(*,*) 'RCT NOT AVAILABLE!', itmp, &
+                  f_2d(itmp)%index, NRCT
                 cycle
              end if
              nd2d =  nd2d  + 1
@@ -532,25 +527,28 @@ subroutine setup_rcemis(i,j)
 
 
   if(USE_OCEAN_NH3)then
-     !keep separated from snapemis/rcemis in order to be able to include more advanced processes
+     !keep separated from snapemis/rcemis in order to be able to include more
+     ! advanced processes
      k=KMAX_MID
      !convert from kg/m2/s into molecules/cm3/s . 
      !kg->g=1000 , /m3->/cm3=1e-6 , 1000*1e-6=0.001
      
-     rcemis(O_NH3%index,k)=rcemis(O_NH3%index,k)+O_NH3%emis(i,j)*0.001*AVOG/species(IC_NH3)%molwt&
+     rcemis(O_NH3%index,k)=rcemis(O_NH3%index,k)+ &
+       O_NH3%emis(i,j)*0.001*AVOG/species(IC_NH3)%molwt&
           *(GRAV*roa(i,j,k,1))/(dA(k)+dB(k)*ps(i,j,1))
-!make map in mg/m2
+    !make map in mg/m2
      O_NH3%map(i,j)=O_NH3%emis(i,j)*dt_advec*1.0E6!kg->mg = 1.0E6
 
   end if
 
   if(FOUND_OCEAN_DMS)then!temporarily always compute budgets if file found
-     !keep separated from snapemis/rcemis in order to be able to include more advanced processes
+     !keep separated from snapemis/rcemis in order to be able to include more
+     ! advanced processes
      k=KMAX_MID
      !convert from mol/cm3 into molecules/cm3/s . 
      !Kw in cm/hour after Leonor Tarrason (1995), after Liss and Merlivat (1986)
      !assumes 20 degrees C
-!NB: misprint in gbc1385.pdf!
+    !NB: misprint in gbc1385.pdf!
      SST_C=max(0.0,min(30.0,(SST(i,j,1)-T0))) !the formula uses degrees C
      SC_DMS=2674 -147.12*SST_C + 3.726*SST_C*SST_C - 0.038 * SST_C*SST_C*SST_C
      SC_DMS=SC_DMS/600.0
@@ -562,20 +560,26 @@ subroutine setup_rcemis(i,j)
      elseif(ws_10m(i,j,1)<=13.0)then
         Kw=0.17*ws_10m(i,j,1)*SC_DMS_m23+2.68*(ws_10m(i,j,1)-3.6)*SC_DMS_msqrt
      else
-        Kw=0.17*ws_10m(i,j,1)*SC_DMS_m23+2.68*(ws_10m(i,j,1)-3.6)*SC_DMS_msqrt+3.05*(ws_10m(i,j,1)-13)*SC_DMS_msqrt
+        Kw=0.17*ws_10m(i,j,1)*SC_DMS_m23+ &
+           2.68*(ws_10m(i,j,1)-3.6)*SC_DMS_msqrt+ &
+           3.05*(ws_10m(i,j,1)-13)*SC_DMS_msqrt
      end if
      Kw=Kw/3600!cm/hour -> cm/s
+
 !66% of DMS turns into SO2, Leonor Tarrason (1995)
      if(USE_OCEAN_DMS)then
-      rcemis(O_DMS%index,k)=rcemis(O_DMS%index,k)+0.66*O_DMS%emis(i,j)*Kw*0.01*GRAV*roa(i,j,k,1)/(dA(k)+dB(k)*ps(i,j,1)) *AVOG 
+      rcemis(O_DMS%index,k)=rcemis(O_DMS%index,k)+ &
+      0.66*O_DMS%emis(i,j)*Kw*0.01*GRAV*roa(i,j,k,1)/ &
+                           (dA(k)+dB(k)*ps(i,j,1)) *AVOG 
      end if
-     !in g . Multiply by dz(in cm)  * dx*dx (in cm2) * molwgt(SO2) /AVOG  . (dz/AVOG just removed from above) 
+     !in g . Multiply by dz(in cm)  * dx*dx (in cm2) * ...
+     !... molwgt(SO2) /AVOG . (dz/AVOG just removed from above) 
      !g->Gg = 1.0E-9
      O_DMS%sum_month = O_DMS%sum_month+0.66*O_DMS%emis(i,j)*Kw *1.e4*xmd(i,j)*&
           gridwidth_m*gridwidth_m*dt_advec *64.0*1.0E-9
 
-!make map in mg/m2
-     O_DMS%map(i,j)=O_DMS%emis(i,j)*Kw *1.e4*62.13*1.0E3!g->mg = 1.0E3  ; /cm2 -> /m2 =1e4
+!make map in mg/m2,    g->mg = 1.0E3  ; /cm2 -> /m2 =1e4
+     O_DMS%map(i,j)=O_DMS%emis(i,j)*Kw *1.e4*62.13*1.0E3  
 
   end if
 
@@ -584,7 +588,8 @@ subroutine setup_rcemis(i,j)
   if(Found_Emis_4D>0)then
      do i_Emis_4D=1,N_Emis_4D
         if(emis_inputlist(Found_Emis_4D)%pollemepName(i_Emis_4D)=='NOTSET')exit
-        n=find_index(emis_inputlist(Found_Emis_4D)%pollemepName(i_Emis_4D),species(:)%name)
+        n=find_index(emis_inputlist(Found_Emis_4D)%pollemepName(i_Emis_4D),&
+                      species(:)%name)
         if(n>0)then
            fac=1.0/1000000.0/3600.0 !convert from Bq/m3/hour into Bq/cm3/s
            do k=KCHEMTOP, KMAX_MID
