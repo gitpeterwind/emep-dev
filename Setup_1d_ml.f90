@@ -629,7 +629,7 @@ subroutine setup_rcemis(i,j)
      if(CO_ix>0)  rcemis(CO_ix,KMAX_MID) = rcemis(CO_ix,KMAX_MID) &
           +  AISco(i,j) * invDeltaZfac
 
-! Comments from Jukka-Pekka
+! Comments from Jukka-Pekka Jalkanen at FMI 
 
 !   The composition of Ash can be taken from Jana’s paper 
 !   (Moldanova et al, Atm Env 43 (2009) 2632-2641), Table 8. According to 
@@ -646,8 +646,6 @@ subroutine setup_rcemis(i,j)
  
         if(REMPPM25_ix>0)  rcemis(REMPPM25_ix,KMAX_MID) = rcemis(REMPPM25_ix,KMAX_MID) &
                                     +  1.0 * AISash(i,j) * invDeltaZfac
-!          rcemis(REMPPM_C,KMAX_MID) = rcemis(REMPPM_C,KMAX_MID) &
-!                                    +  0.5 * AISash(i,j) * invDeltaZfac
       
         if(EC_F_FFUEL_NEW_ix>0)  rcemis(EC_F_FFUEL_NEW_ix,KMAX_MID) = rcemis(EC_F_FFUEL_NEW_ix,KMAX_MID) &
                                           +  0.8 * AISec(i,j) * invDeltaZfac
