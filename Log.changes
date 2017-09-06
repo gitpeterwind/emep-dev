@@ -138,6 +138,13 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6th   Sep  2017 Alvaro
+
+config_BM-EECCA.nml,config_Open.nml,
+config_ANALYSIS.nml,config_FORECAST.nml,config_FORECAST_CitySR.nml:
+  Add FLUX_IGNORE bug-fix entry from Aug 5th to remaining namelists
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 29th   Aug  2017 Alvaro
 
 - make EMEP on EmChem16mt (#50)
