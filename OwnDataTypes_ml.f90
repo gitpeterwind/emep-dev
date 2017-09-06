@@ -6,8 +6,6 @@ use NumberConstants, only : UNDEF_I, UNDEF_R
 implicit none
 private
 
-! depmap
-! gtype for species groups, used in CM_ChemSpecs and Derived
 
 public :: print_Deriv_type
 public :: print_Asc2D
