@@ -1,6 +1,6 @@
-vers=rv4.10;year=2016                 # Input version/year flags
+vers=rv4.15;year=2017                 # Input version/year flags
 tdir=$HOME/Unify                      # top directory - change $HOME as required
-idir=$tdir/Unimod.$vers               # Input dir
+idir=$tdir/emep-mscw                  # Input dir
 
 odir=EMEP_MSC-W_model.$vers.OpenSource
 odir=$tdir/$odir                      # Output dir, choose flag or location
@@ -19,24 +19,26 @@ make EMEP
 
 #-- 1)  Code ------------------------------------------------------------------
 
-vers+="(`svnversion|tr -d M`)"
-for i in *.f90 *.inc gpl.txt modrun.sh; do
+for i in *.f90 *.inc gpl.txt modrun.sh CITATION.txt; do
   case $i in
   FUTURE*);;         # FUTURE routines not wanted
   *.f90)
-    if grep -qw 'Copyright' $i;then
-      cp -f $i $cdir
-      sed -i "s/Copyright (C) 2007-.... met.no/Copyright (C) 2007-$year met.no/;" \
-        $cdir/$i
-    else
-      cat copyright.txt $i > $cdir/$i
-      sed -i "s:%filename%:$i:;s:%vers%:$vers:;s://VERSION://'$vers':;s:%year%:$year:;" $cdir/$i
+    if grep -qw $i $idir/.depend;then
+      if grep -qw 'Copyright' $i;then
+        cp -f $i $cdir
+        sed -i "s/Copyright (C) 2007-.... met.no/Copyright (C) 2007-$year met.no/;" \
+          $cdir/$i
+      else
+        cat copyright.txt $i > $cdir/$i
+        sed -i "s:%filename%:$i:;s:%vers%:$vers:;s://VERSION://'$vers':;s:%year%:$year:;" $cdir/$i
+      fi
     fi;;
   *)cp -u $i $cdir;;
   esac
 done
 
 cp -f $idir/config_Open.nml $cdir/config_emep.nml   # configuration file
+cp -u $idir/README_Open.md  $cdir/README.md         # OpenSource README
 
 #-- 2)  dependencies ----------------------------------------------------------
 
