@@ -36,11 +36,9 @@ public :: Add_MosaicOutput
 public :: find_MosaicLC
 
 INCLUDE 'mpif.h'
-INTEGER STATUS(MPI_STATUS_SIZE),INFO
 
 integer, public, save :: MMC_RH, MMC_CANO3, MMC_VPD, MMC_FST, &
   MMC_USTAR, MMC_INVL, MMC_GSTO, MMC_EVAP, MMC_LAI
-character(len=30),private, save :: errmsg = "ok"
 
 ! Mosaic-specific outputs, e.g. VG_CF_HNO3 or Rns_GR_NH3
 integer, public, save :: nMosaic = 0

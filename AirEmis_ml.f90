@@ -167,7 +167,6 @@ module AirEmis_ml
                        rlon   ,area   ,secmonth  )
 
 
-      integer, parameter  :: KMAX_BND_AIR = 21 
       integer, intent(in) :: ILON,IGL,GGL,iktop
       real, intent(in)    :: area(IGL), ygrdum(IGL),DLON,RLON0,secmonth
 
@@ -179,7 +178,6 @@ module AirEmis_ml
       real, intent(out)   :: rlon(ILON+1)
 
       !    local
-      integer info
       integer lon,lat,i,j,ig,jg,kg,k, i_sh
       integer la_tst1, la_tst2, lo_tst1, lo_tst2   !  test area for sums
       real    height,     &  !  height of the emission levels

@@ -519,7 +519,9 @@ subroutine siteswrt_sondes(xn_adv,xn_shl)
     case("PM25","PMco","NOy","SH","RH","roa","dz","z_mid","p_mid","Kz_m2s","th","U","V")
       errmsg = "ok"
     case("T")
-      call CheckStop(all(SONDE_XTRA(1:ispec)/="RH"),"Error, Sites_ml/siteswrt_sondes SONDE_XTRA: '"//trim(SONDE_XTRA(ispec))//"' needs to be requested after 'RH'")
+      call CheckStop(all(SONDE_XTRA(1:ispec)/="RH"),&
+        "Error, Sites_ml/siteswrt_sondes SONDE_XTRA: '"//&
+        trim(SONDE_XTRA(ispec))//"' needs to be requested after 'RH'")
       errmsg = "ok"
     case default
       call CheckStop("Error, Sites_ml/siteswrt_sondes SONDE_XTRA: "//&
@@ -709,16 +711,13 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
   character(len=4)   :: suffix
   integer, parameter :: NTYPES = 2      ! No. types, now 2 (sites, sondes)
   integer ::  type=-1                   ! = 1 for sites, 2 for sondes
-  integer, save, dimension(NTYPES):: prev_month = (/ -99, -99 /) ! Initialise
   integer, save, dimension(NTYPES):: prev_year = (/ -99, -99 /) ! Initialise
-  integer :: ii,nn
+  integer :: ii
 
   integer, parameter :: NattributesMAX=10
   character(len=200),allocatable  :: SpecName(:),SpecDef(:,:),MetaData(:,:)
   character(len=200)              :: fileName
-  real,allocatable  :: CoordValues(:,:)
   integer  :: Nlevels,ispec,NSPEC,NStations,NMetaData
-  real ::Values(KMAX_MID)
   integer ::i_Att_MPI
   logical :: debug_1d=.false.
 

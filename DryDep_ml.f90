@@ -259,13 +259,13 @@ contains
     real :: no3nh4ratio      ! Crude NH4/NO3 for Vds ammonium 
 
     real :: c_hveg, Ra_diff, surf_ppb  ! for O3 fluxes and Fst where needed
-    real :: c_hveg3m, o3_45m  !TESTS ONLY
-    real :: tmpv0, tmpv1, tmpv2 ! testing 1-exp
+    real :: c_hveg3m, o3_45m  ! TESTS ONLY
+    real :: tmpv0             ! testing 1-exp
 ! temporary for POD/SPOD
     logical, parameter :: SPOD_OUT = .false.  ! MAKES HUGE FILES. Not for routine use!
     logical, save      :: first_spod = .true.
     character(len=20), save :: fname
-    integer :: nglob, itst
+    integer :: nglob
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! Extra outputs sometime used. Important that this 
 !! line is kept at the end of the variable definitions and the start of real

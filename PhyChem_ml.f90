@@ -73,15 +73,12 @@ subroutine phyche()
 
   logical, save :: End_of_Day = .false.
   integer :: ndays,status,nstart,kstart
-  real :: thour, xtot,scale
+  real :: thour
   type(timestamp) :: ts_now !date in timestamp format
   logical,save :: first_call = .true.
-  integer ::i,j,k,dx,dy,ix,iix
-
 
   !------------------------------------------------------------------
   !     physical and  chemical routines.
-
 
   !     Hours since midnight at any time-step
   !    using current_date we have already nstep taken into account
@@ -136,11 +133,11 @@ subroutine phyche()
 
   call Add_2timing(12,tim_after,tim_before,"phyche:EmisSet")
 
-  !       For safety we initialise instant. values here to zero.
-  !       Usually not needed, but sometimes
-  !       ==================
+  ! For safety we initialise instant. values here to zero.
+  ! Usually not needed, but sometimes
+  ! ========================
   d_2d(:,:,:,IOU_INST) = 0.0
-  !       ==================
+  ! ========================
 
 
   !===================================

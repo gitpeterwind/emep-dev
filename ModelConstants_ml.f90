@@ -139,6 +139,8 @@ type, public :: emis_in
 end type emis_in
 type(emis_in), public, dimension(5) :: emis_inputlist = emis_in()
 
+character(len=40), dimension(20), public, save  :: SecEmisOutPoll = "NOTSET"
+
 character(len=40), public, save   :: SECTORS_NAME='SNAP'
 
 character(len=200), public, save :: &
@@ -147,6 +149,8 @@ character(len=200), public, save :: &
   GRID = 'EECCA', & ! default grid
   meteo= 'DataDir/GRID/metdata_EC/YYYY/meteoYYYYMMDD.nc', & ! template for meteofile
   DegreeDayFactorsFile = 'MetDir/HDD18-GRID-YYYY.nc'        ! template for DegreeDayFactors.nc
+
+
 
 integer, public, save :: startdate(4)=(/0,0,0,0/),enddate(4)=(/0,0,0,24/) ! start and end of the run
 
@@ -433,6 +437,7 @@ type(aero_t), public, save :: AERO = aero_t()
 !! We will put the filename, and params (SGS, EGS, etc) in
 !! the _Params array.
 character(len=15), public, save, dimension(20) :: FLUX_VEGS=""
+character(len=15), public, save, dimension(20) :: FLUX_IGNORE=""   ! e.g. Water, desert..
 character(len=15), public, save, dimension(20) :: VEG_2dGS=""
 character(len=99), public, save, dimension(10) :: VEG_2dGS_Params=""
 integer, public, save :: nFluxVegs = 0 ! reset in Landuse_ml
@@ -555,7 +560,9 @@ subroutine Config_ModelConstants(iolog)
    ,BGND_CH4              & ! Can reset background CH4 values
    ,SKIP_RCT              & ! Can  skip some rct
    ,EMIS_SOURCE, EMIS_TEST, EMIS_OUT, emis_inputlist, EmisDir &
+   ,SecEmisOutPoll        & ! to output sectorwise emissions
    ,FLUX_VEGS             & ! Allows user to add veg categories for eg IAM ouput
+   ,FLUX_IGNORE           & ! Specify which landcovers don't need FLUX
    ,VEG_2dGS              & ! Allows 2d maps of growing seasons
    ,VEG_2dGS_Params       & ! Allows 2d maps of growing seasons
    ,PFT_MAPPINGS          & ! Allows use of external LAI maps

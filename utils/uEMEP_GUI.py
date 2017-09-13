@@ -1,18 +1,17 @@
-#!/usr/bin/python3
+#!/home/mifapw/anaconda3/envs/conda_python3_netcdf4_pyqt5_hdf4/bin/python3
+
 
 # Written by Johan S. Wind April 2017
 # Modified by Peter Wind May 2017
 
 import sys
+sys.path.append('/home/mifapw/software/PyQt5_gpl-5.8.2')
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 from math import *
 import re
 import netCDF4
-
-global local_pollutant
-global regional_pollutant
 
 class ContourPlotter:
     def __init__(self, par):
@@ -21,17 +20,29 @@ class ContourPlotter:
         t = f.read()
         f.close()
         self.data = []
+        proj = self.par.fh.projection
+        print('projection: ',proj)
         for i in t.split("\n\n"):#split into blocks of "islands"
             self.data.append([])#list of lists
             for j in i.split("\n"):
                 if not j: continue
                 x, y = j.split()
-                self.data[-1].append([float(x), float(y)])
+                if(proj == 'Stereographic'):
+                    xp = 8*50
+                    yp = 110*50
+                    fi = -32.0
+                    an = 237.73*50
+                    if float(y)<0: y='0'
+                    x_ps = an*tan(pi*0.25-radians(float(y))*0.5)*sin(radians(float(x)-fi))
+                    y_ps = -an*tan(pi*0.25-radians(float(y))*0.5)*cos(radians(float(x)-fi))
+                    self.data[-1].append([x_ps, y_ps])
+                else:
+                    self.data[-1].append([float(x), float(y)])
         self.convert2pixels()
 
     def convert2pixels(self):
-        latname = self.par.fh.variables[regional_pollutant].dimensions[2]
-        lonname = self.par.fh.variables[regional_pollutant].dimensions[3]
+        latname = self.par.fh.variables[self.par.reg_poll].dimensions[2]
+        lonname = self.par.fh.variables[self.par.reg_poll].dimensions[3]
         lat = self.par.fh.variables[latname][:]
         lon = self.par.fh.variables[lonname][:]
 
@@ -58,8 +69,7 @@ class DimEdit(QWidget):
         super(DimEdit, self).__init__(par)#init QWidget
 
         self.par = par #parent
-        self.name = self.par.fh.variables[regional_pollutant].dimensions[dimid] # fh file handle
-
+        self.name = self.par.fh.variables[self.par.reg_poll].dimensions[dimid] # fh file handle
         vlayout = QVBoxLayout() #init boxes over each others
         vlayout.addWidget(QLabel(self.name)) #add a text to widget
         mbutton = QPushButton("-") #init a button
@@ -74,7 +84,7 @@ class DimEdit(QWidget):
         adjust.addWidget(self.valueLabel)
         adjust.addWidget(pbutton)
         if self.name == "klevel": 
-            self.par.dim[map_or_over][dimid] = self.par.fh[regional_pollutant].shape[dimid]-1
+            self.par.dim[map_or_over][dimid] = self.par.fh[self.par.reg_poll].shape[dimid]-1
 
 
         vlayout.addLayout(adjust)#put the QHBox in the QVBox
@@ -89,7 +99,7 @@ class DimEdit(QWidget):
     def updateText(self):#write text in side bar
         self.valueLabel.setText("%d"%self.par.dim[self.map_or_over][self.dimid])
         try: #if string value is defined
-            self.valueLabel.setText(str(self.par.fh[self.name][self.par.dim[self.map_or_over][self.dimid]]))
+            self.valueLabel.setText(str(int(self.par.fh[self.name][self.par.dim[self.map_or_over][self.dimid]])))
         except:
             pass
 
@@ -102,7 +112,7 @@ class DimEdit(QWidget):
         self.updateText()
 
     def increment(self):
-        maxsize = self.par.fh[regional_pollutant].shape[self.dimid]-1
+        maxsize = self.par.fh[self.par.reg_poll].shape[self.dimid]-1
         self.par.dim[self.map_or_over][self.dimid] = min(self.par.dim[self.map_or_over][self.dimid]+1, maxsize)#in side bar
         if self.map_or_over == 0:
             self.par.mapView.updateImage()
@@ -163,8 +173,8 @@ class MapView(QWidget):
         self.par = par
         self.data = []
 
-        s_r = self.par.fh.variables[regional_pollutant].shape#reg all dimensions 
-        s_l = self.par.fh.variables[local_pollutant].shape#loc all dimensions 
+        s_r = self.par.fh.variables[self.par.reg_poll].shape#reg all dimensions 
+        s_l = self.par.fh.variables[self.par.loc_poll].shape#loc all dimensions 
         self.data_h, self.data_w = s_r[2], s_r[3]
         if len(s_l)>5:
             self.overh, self.overw = s_l[4], s_l[5]
@@ -181,16 +191,16 @@ class MapView(QWidget):
         self.contour = ContourPlotter(self.par)#coastal line
 
     def updateImage(self):
-        if  len(self.par.fh.variables[regional_pollutant].dimensions)==6:
-            self.data = self.par.fh.variables[regional_pollutant][self.par.dim[0][0],self.par.dim[0][1],:,:,self.overw//2,self.overh//2]
-        elif  len(self.par.fh.variables[regional_pollutant].dimensions)==4:
-            self.data = self.par.fh.variables[regional_pollutant][self.par.dim[0][0],self.par.dim[0][1],:,:]
+        if  len(self.par.fh.variables[self.par.reg_poll].dimensions)==6:
+            self.data = self.par.fh.variables[self.par.reg_poll][self.par.dim[0][0],self.par.dim[0][1],:,:,self.overw//2,self.overh//2]
+        elif  len(self.par.fh.variables[self.par.reg_poll].dimensions)==4:
+            self.data = self.par.fh.variables[self.par.reg_poll][self.par.dim[0][0],self.par.dim[0][1],:,:]
         else:
             print("ERROR")
     
         maxval = max(self.data.flatten())
 
-        if re.search(r'fraction', regional_pollutant): 
+        if re.search(r'fraction', self.par.reg_poll): 
             oscale = 1.0
         else:
             oscale = 1.0/(1.E-6+ maxval)
@@ -202,21 +212,21 @@ class MapView(QWidget):
 
                 self.img.setPixel(x, self.data_h-1-y, toColor(v).rgb())#put data in img as color
         self.par.colorScale_reg.scale = maxval
-        self.unit_reg = self.par.fh.variables[regional_pollutant].units
-        self.par.colorScale_reg.unit = self.par.fh.variables[regional_pollutant].units
-        self.par.colorScale_reg.name = self.par.fh.variables[regional_pollutant].long_name
+        self.unit_reg = self.par.fh.variables[self.par.reg_poll].units
+        self.par.colorScale_reg.unit = self.par.fh.variables[self.par.reg_poll].units
+        self.par.colorScale_reg.name = self.par.fh.variables[self.par.reg_poll].long_name
         self.par.colorScale_reg.update()
         self.repaint()
 
     def updateOverlay(self):
-        odata = self.par.fh.variables[local_pollutant][self.par.dim[1][0],self.par.dim[1][1],self.data_h-1-self.overy,self.overx,:,:]
+        odata = self.par.fh.variables[self.par.loc_poll][self.par.dim[1][0],self.par.dim[1][1],self.data_h-1-self.overy,self.overx,:,:]
         self.overh, self.overw = odata.shape
         self.overimg = QImage(self.overw, self.overh, QImage.Format_ARGB32)
         
         sum = 0
         oscale = 1.0
         maxval = max(self.data.flatten())
-        if re.search(r'transport', local_pollutant): oscale = 1.0/(1.E-6+odata[(self.overh-1)/2,(self.overw-1)/2])
+        if re.search(r'transport', self.par.loc_poll): oscale = 1.0/(1.E-6+odata[int((self.overh-1)/2),int((self.overw-1)/2)])
         for y in range(self.overh):
             for x in range(self.overw):
                 v = odata[self.overh-1-y,x]
@@ -225,15 +235,30 @@ class MapView(QWidget):
                 self.overimg.setPixel(x, y, toColor(v).rgb())
         self.par.slabel.setText("Local sum: %.1f%%"%(sum*100))
         self.par.colorScale_loc.scale = 1.0/oscale
-        self.par.colorScale_loc.unit = self.par.fh.variables[local_pollutant].units
-        self.par.colorScale_loc.name = self.par.fh.variables[local_pollutant].long_name
+        self.par.colorScale_loc.unit = self.par.fh.variables[self.par.loc_poll].units
+        self.par.colorScale_loc.name = self.par.fh.variables[self.par.loc_poll].long_name
 
         self.par.colorScale_loc.update()
         self.repaint()
 
+    def mouseMoveEvent(self, event):
+        x, y = event.pos().x(), event.pos().y()
+        self.overx, self.overy = x*self.data_w//self.frameGeometry().width(), y*self.data_h//self.frameGeometry().height()
+        proj = self.par.fh.projection
+        if(proj == 'lon lat'):
+            latname = self.par.fh.variables[self.par.reg_poll].dimensions[2]
+            lonname = self.par.fh.variables[self.par.reg_poll].dimensions[3]
+            lat = self.par.fh.variables[latname][int(self.data_h-1-self.overy)]
+            lon = self.par.fh.variables[lonname][int(self.overx)]
+        else:
+            lat = self.par.fh.variables['lat'][int(self.data_h-1-self.overy),int(self.overx)]
+            lon = self.par.fh.variables['lon'][int(self.data_h-1-self.overy),int(self.overx)]            
+        txt = 'lat='+str(lat)+' lon='+str(lon)
+        self.setToolTip(txt)
     def mousePressEvent(self, e):
         if self.overlay:
             self.overlay = 0
+            self.setMouseTracking(1)
             self.par.slabel.setText("Local sum:")
             self.repaint()
         else:
@@ -241,6 +266,8 @@ class MapView(QWidget):
             self.overx, self.overy = x*self.data_w//self.frameGeometry().width(), y*self.data_h//self.frameGeometry().height()
 
             self.overlay = 1
+            self.setToolTip('')
+            self.setMouseTracking(0)
             self.updateOverlay()
 
     def paintEvent(self, e):
@@ -292,10 +319,8 @@ class Main(QWidget):
 
         for var in self.fh.variables:
             if re.search(r'local', var): 
-                global regional_pollutant
-                global local_pollutant
-                regional_pollutant = var #init
-                local_pollutant = var #init
+                self.reg_poll = var #init
+                self.loc_poll = var #init
                 break
 
         self.slabel = QLabel("Local sum: ")
@@ -368,12 +393,10 @@ class Main(QWidget):
 
 
     def set_pollutant_reg(self, text):
-        global regional_pollutant
-        regional_pollutant = text
+        self.reg_poll = text
         self.mapView.updateImage()
     def set_pollutant_loc(self, text):
-        global local_pollutant
-        local_pollutant = text
+        self.loc_poll = text
         self.mapView.updateOverlay()
 
     def openFile(self):

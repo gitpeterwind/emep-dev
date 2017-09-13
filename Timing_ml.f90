@@ -26,7 +26,6 @@ real, public, dimension(:), allocatable, save :: &
   lastptim              ! for final CPU-s
 character(len=30), dimension(:), allocatable, public, save :: &
   timing                ! description
-real, private, save  :: rclksec      ! rate-of-clock
 
 !/--- MAKE CHANGE HERE TO SWAP FROM SYSTEM_CLOCK TO SYSTEM_TIME
 

@@ -106,6 +106,23 @@ character(len=max_string_length), save :: &
   FINN_PATTERN = 'FINN_ForestFireEmis_v15_YYYY.nc',&
   GFAS_PATTERN = 'GFAS_ForestFireEmis_YYYY.nc'
 
+! interpolation method in ReadField_CDF
+character(len=30), save :: bbinterp = '-'
+
+! Notes on interpolation choices: (from NetCDF_ml)
+  !'zero_order' gives value at closest gridcell. Probably good enough for most
+  ! applications.  Does not smooth out values
+  !'conservative' and 'mass_conservative' give smoother fields and
+  !are approximatively integral conservative (integral over a region is
+  !conserved). The initial gridcells are subdivided into smaller subcells
+  !and each subcell is assigned to a cell in the model grid
+  !'conservative' can be used for emissions given in kg/m2 (or kg/m2/s)
+  !or landuse or most fields.  The value in the netcdf file and in
+  !model gridcell are of the similar.  'mass_conservative' can be used
+  !for emissions in kg (or kg/s). If the gricell in the model are !twice
+  !as small as the gridcell in the netcdf file, the values will also be
+  !reduced by a factor 2.
+
 integer, save ::    &
   verbose=1,        & ! debug verbosity 0,..,4
   persistence=1,    & ! persistence in days
@@ -130,9 +147,15 @@ subroutine Config_Fire()
 
   if(DEBUG%FORESTFIRE.and.MasterProc) write(*,*) "FIRE selects ",BBMAP
   select case(BBMAP)
-    case("GFED");persistence=8  ! 8-day records
-    case("FINN");persistence=1  ! 1-day records
-    case("GFAS");persistence=3  ! 1-day records, valid for 3 day in FORECAST mode
+    case("GFED")
+       persistence=8  ! 8-day records
+       bbinterp = 'conservative'
+    case("FINN")
+       persistence=1  ! 1-day records
+       bbinterp = 'mass_conservative'
+    case("GFAS")
+       persistence=3  ! 1-day records, valid for 3 day in FORECAST mode
+       bbinterp = 'conservative'
     case default;call CheckStop("Unknown B.B.Mapping")
   end select
 
@@ -211,24 +234,25 @@ subroutine Fire_Emis(daynumber)
   if(fire_year>1) yyyy=fire_year
   
   select case(MODE)
-  case("DAILY_REC","D","d")
-    if(nn_old==daynumber) return  ! Calculate once per day
-    nn_old=daynumber
-    dn1=dd
-    dn2=dd
-  case("MONTHLY_AVG","M","m")
-    if(nn_old==mm) return         ! Calculate once per month
-    nn_old=mm
-    dn1=day_of_year(yyyy,mm,01)
-    dn2=dn1+max_day(mm,yyyy)-1
-  case("YEARLY_AVG","Y","y")
-    if(nn_old==yyyy) return       ! Calculate once per year
-    nn_old=yyyy
-    dn1=day_of_year(yyyy,01,01)
-    dn2=day_of_year(yyyy,12,31)
-  case default
-    call CheckStop("Unknown ForestFire MODE="//trim(MODE))
+    case("DAILY_REC","D","d")
+      if(nn_old==daynumber) return  ! Calculate once per day
+      nn_old=daynumber
+      dn1=dd
+      dn2=dd
+    case("MONTHLY_AVG","M","m")
+      if(nn_old==mm) return         ! Calculate once per month
+      nn_old=mm
+      dn1=day_of_year(yyyy,mm,01)
+      dn2=dn1+max_day(mm,yyyy)-1
+    case("YEARLY_AVG","Y","y")
+      if(nn_old==yyyy) return       ! Calculate once per year
+      nn_old=yyyy
+      dn1=day_of_year(yyyy,01,01)
+      dn2=day_of_year(yyyy,12,31)
+    case default
+      call CheckStop("Unknown ForestFire MODE="//trim(MODE))
   end select
+
   if(dn1<dn2)then
     allocate(xrdemis(LIMAX,LJMAX),stat=alloc_err)
     nstart=daynumber    ! for debug info
@@ -238,9 +262,12 @@ subroutine Fire_Emis(daynumber)
     if(.not.newFFrecord([yyyy,mm,dd]))&
       return                        ! Continue if new record||file  
   end if
-  if(DEBUG%FORESTFIRE.and.MasterProc) &
+
+  if(DEBUG%FORESTFIRE.and.MasterProc) then
     write(*,*) "Starting FIRE MODE=",trim(MODE),&
-      date2string(" YYYY-MM-DD",[yyyy,mm,dd]),first_call
+      date2string(" YYYY-MM-DD",[yyyy,mm,dd]),first_call,debug_ff,debug_nc
+    write(*,*) 'FFIRE Interp= ', trim(bbinterp), dn1, dn2
+  end if
 
   BiomassBurningEmis(:,:,:) = 0.0
   allocate(rdemis(LIMAX,LJMAX),stat=alloc_err)
@@ -251,77 +278,60 @@ subroutine Fire_Emis(daynumber)
   do iBB = 1, NBB_DEFS
     FF_poll = FF_defs(iBB)%BBname
     iemep   = FF_defs(iBB)%emep  ! 
-    ind     = find_index( iemep, emep_used )  !  Finds 1st emep in BiomassBurning
+    ind     = find_index( iemep, emep_used ) !Finds 1st emep in BiomassBurning
 
-    if(DEBUG%FORESTFIRE.and.MasterProc) &
+    if(DEBUG%FORESTFIRE.and.MasterProc) then 
       write(*,"( a,3i5, a8,i3)") "FIRE SETUP: ", iBB,iemep,ind, &
         trim(FF_poll), len_trim(FF_poll)
+      if(debug_ff) &
+        write(*,*) 'FFIRE ',BBMAP,':',me,iBB,nstart,trim(FF_poll),trim(fname)
+    end if
 
    ! if(.not.need_file|time|poll) continue if file|time|poll is not found
     rdemis(:,:)=0.0
 
-    if(debug_ff) &
-      write(*,*) "FFIRE ",BBMAP,":",me,iBB,nstart,trim(FF_poll),trim(fname)
-    select case(BBMAP)
-    case("GFED")
-      if(dn1<dn2)then
+
+!--------- Aug 2017: methods merged. Keep UnDef=0 for future safety
+    if(dn1<dn2)then
         rdemis = 0.0
         ndn=0
         do dd = dn1, dn2
           if(newFFrecord([yyyy,01,dd])) &
-          call ReadField_CDF(fname,FF_poll,xrdemis,nstart,interpol='zero_order',&
-          needed=need_poll,UnDef=0.0,debug_flag=debug_nc,ncFileID_given=ncFileID)
+          call ReadField_CDF(fname,FF_poll,xrdemis,nstart,interpol=bbinterp,&
+             needed=need_poll,UnDef=0.0,debug_flag=debug_nc,&
+             ncFileID_given=ncFileID)
           rdemis = rdemis + xrdemis                 ! month total
           ndn    = ndn + 1
         end do
-      else
+    else
         ndn=1
-        call ReadField_CDF(fname,FF_poll,rdemis,nstart,interpol='zero_order',&
-          needed=need_poll,UnDef=0.0,debug_flag=debug_nc,ncFileID_given=ncFileID)
-      end if
-      !unit conversion to GFED [g/m2/8day]->[kg/m2/s]
+        call ReadField_CDF(fname,FF_poll,rdemis,nstart,interpol=bbinterp,&
+          needed=need_poll,UnDef=0.0,debug_flag=debug_nc,&
+          ncFileID_given=ncFileID)
+    end if
+!-------- Aug 2017
+
+    select case(BBMAP)
+    case("GFED")
+
+     !unit conversion, GFED [g/m2/8day]->[kg/m2/s]
       to_kgm2s = 1.0e-3 /(8*24.0*3600.0)
       if(ndn>1) to_kgm2s=to_kgm2s/ndn               ! total-->avg.
       forall(j=1:ljmax,i=1:limax) rdemis(i,j)=rdemis(i,j)*to_kgm2s
+
     case("FINN")
-     if(dn1<dn2)then
-        rdemis = 0.0
-        ndn=0
-        do dd = dn1, dn2
-          if(newFFrecord([yyyy,01,dd])) &
-          call ReadField_CDF(fname,FF_poll,xrdemis,nstart,interpol='mass_conservative',&
-            needed=need_poll,UnDef=0.0,debug_flag=debug_nc,ncFileID_given=ncFileID)
-          rdemis = rdemis + xrdemis                 ! month total
-          ndn    = ndn + 1
-        end do
-      else
-        ndn=1
-        call ReadField_CDF(fname,FF_poll,rdemis,nstart,interpol='mass_conservative',&
-            needed=need_poll,UnDef=0.0,debug_flag=debug_nc,ncFileID_given=ncFileID)
-      end if
-      ! unit conversion to FINN: Can be negative if REMPPM to be calculated
+
+     ! unit conversion, FINN [mole/day]->[kg/m2/s]
+     ! (Can be negative if REMPPM to be calculated)
       fac=FF_defs(iBB)%unitsfac * FF_defs(iBB)%frac ! --> [kg/day]
       fac=fac/(GRIDWIDTH_M*GRIDWIDTH_M*24.0*3600.0) ! [kg/day]->[kg/m2/s]
       if(ndn>1) fac=fac/ndn                         ! total-->avg.
       forall(j=1:ljmax,i=1:limax) rdemis(i,j)=rdemis(i,j)*fac*xm2(i,j)
+
     case("GFAS")
-      if(dn1<dn2)then
-        rdemis = 0.0
-        ndn=0
-        do dd = dn1, dn2
-          if(newFFrecord([yyyy,01,dd])) &
-          call ReadField_CDF(fname,FF_poll,xrdemis,nstart,interpol='conservative',&
-            needed=need_poll,debug_flag=debug_nc,ncFileID_given=ncFileID)
-          rdemis = rdemis + xrdemis                 ! month total
-          ndn    = ndn + 1
-        end do
-      else
-        ndn=1
-        call ReadField_CDF(fname,FF_poll,rdemis,nstart,interpol='conservative',&
-            needed=need_poll,debug_flag=debug_nc,ncFileID_given=ncFileID)
-      end if
-      ! GFAS units are [kg/m2/s]. No further unit conversion is needed.
-      ! However, fac can be /=1, e.g. when REMPPM is calculated
+
+     ! GFAS units are [kg/m2/s]. No further unit conversion is needed.
+     ! However, fac can be /=1, e.g. when REMPPM is calculated
       fac=FF_defs(iBB)%unitsfac * FF_defs(iBB)%frac
       if(ndn>1) fac=fac/ndn                         ! total-->avg.
       if(fac/=1.0) forall(j=1:ljmax,i=1:limax) rdemis(i,j)=rdemis(i,j)*fac
@@ -331,44 +341,48 @@ subroutine Fire_Emis(daynumber)
     forall(j=1:ljmax,i=1:limax) &
       BiomassBurningEmis(ind,i,j) = BiomassBurningEmis(ind,i,j) + rdemis(i,j) 
 
-    if(debug_ff)  write(*,"(3a10,i4,f8.3,es12.3)") "FFIRE SUMS:", &
-      trim(FF_poll), trim( species(iemep)%name), ind, &
-      species(iemep)%molwt, sum( BiomassBurningEmis(ind,:,:) )
+    if(debug_ff.and. debug_proc) &
+       write(*,"(3a10,2i4,f8.3,es12.3)") "FFIRE SUMS:", &
+        trim(FF_poll), trim( species(iemep)%name), me, ind, &
+        species(iemep)%molwt, sum( BiomassBurningEmis(ind,:,:) )
 
     call PrintLog("ForestFire_ml :: Assigns "//trim(FF_poll),&
       first_call.and.MasterProc)
 
-    if(DEBUG%FORESTFIRE) sum_emis(ind)=sum_emis(ind)+sum(BiomassBurningEmis(ind,:,:))
+    if(DEBUG%FORESTFIRE) sum_emis(ind)=sum_emis(ind)+&
+          sum(BiomassBurningEmis(ind,:,:))
   end do ! BB_DEFS
 
-  call CheckNC(nf90_close(ncFileID),"close:"//trim(fname)) ! has to close the file here
+  ! have to close the file here
+  call CheckNC(nf90_close(ncFileID),"close:"//trim(fname))
   ncFileID=closedID
 
   first_call  = .false.
   deallocate(rdemis)
   if(allocated(xrdemis)) deallocate(xrdemis)
 
-  ! For cases where REMPPM25 s derived as the difference between PM25 and (BC+1.7*OC)
-  ! we need some safety:
+  ! For cases where REMPPM25 s derived as the difference between PM25 and
+  !  (BC+1.7*OC) we need some safety:
 
   BiomassBurningEmis(:,:,:) = max( BiomassBurningEmis(:,:,:), 0.0 )
 
-  ! Logical to let Unimod know if there is any emission here to worry about
+  ! Logical to tell if there is any emission here to worry about
   burning(:,:) = ( BiomassBurningEmis(ieCO,:,:) > 1.0e-19 )
 
 
 
-  ! Some databases (e.g. FINN, GFED) have both total PM25 and EC, OC. The difference
-  ! REMPPM25, is created by the BiomasBurning mapping procedure, but we just
-  ! check here
+  ! Some databases (e.g. FINN, GFED) have both total PM25 and EC, OC. The
+  ! difference, REMPPM25, is created by the BiomasBurning mapping procedure,
+  ! but we just check here
   if(DEBUG%FORESTFIRE.and.debug_proc) then
     n = ieCO
     loc_maxemis = maxloc(BiomassBurningEmis(n,:,: ) )
 
     associate ( idbg=>loc_maxemis(1), jdbg=>loc_maxemis(2) )
 
-    write(*,"(a,i4,i3,2i4,2i5,es12.3, 2i4)") "SUM_FF CHECK ME: ",  daynumber, me, loc_maxemis, &
-         i_fdom(idbg), j_fdom(jdbg), BiomassBurningEmis(n,idbg,jdbg), debug_li,debug_lj
+    write(*,"(a,i4,i3,2i4,2i5,es12.3, 2i4)") "SUM_FF CHECK ME: ",  daynumber,&
+       me, loc_maxemis, i_fdom(idbg), j_fdom(jdbg),&
+         BiomassBurningEmis(n,idbg,jdbg), debug_li,debug_lj
 
     call datewrite("SUM_FF CHECK CO: ",  &
       (/ daynumber, n, i_fdom( idbg ), j_fdom( jdbg ) /) ,&
@@ -486,7 +500,7 @@ subroutine Fire_rcemis(i,j)
   debug_flag = (DEBUG%FORESTFIRE.and.debug_proc .and.&
                 i==debug_li.and.j==debug_lj)
   if(debug_flag.and.BiomassBurningEmis(ieCO,i,j) > 1.0e-10)  &
-    write(*,"(a,5i4,es12.3,f9.3)") "BurningDEBUG ", me, i,j, &
+    write(*,"(a,5i4,es12.3,f9.3)") "FIREBurningDEBUG ", me, i,j, &
       i_fdom(i), j_fdom(j), BiomassBurningEmis(ieCO,i,j)
 
   N_LEVELS = KMAX_MID - KEMISFIRE + 1 

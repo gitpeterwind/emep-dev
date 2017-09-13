@@ -21,18 +21,18 @@
   !=======================================================================!
 
     use Aqueous_ml,        only: aqrck, ICLOHSO2, ICLRC1, ICLRC2, ICLRC3
-    use CheckStop_ml,      only: CheckStop
+    use CheckStop_ml,      only: CheckStop, StopAll
     use ChemFunctions_ml, only :VOLFACSO4,VOLFACNO3,VOLFACNH4 !TEST TTTT
     use ChemGroups_ml,     only: RO2_POOL, RO2_GROUP
     use ChemSpecs                  ! => NSPEC_TOT, O3, NO2, etc.
     use ChemFields_ml, only : x, xold ,xnew  & ! Working arrays [molecules/cm3]
+                             ,cell_tinv & ! tmp location, for Yields
                              ,NSPEC_BGN  ! => IXBGN_  indices and xn_2d_bgn
     use ChemRates_rct_ml,   only: rct
-    !ESX use ChemRates_rcmisc_ml,only: rcmisc
     use DefPhotolysis_ml         ! => IDHNO3, etc.
     use emep_Config_mod,    only : YieldModifications
     use EmisDef_ml,      only: KEMISTOP
-    use GridValues_ml,     only : GRIDWIDTH_M
+    use GridValues_ml,     only : GRIDWIDTH_M, i_fdom, j_fdom
     use Io_ml,             only : IO_LOG, datewrite
     use ModelConstants_ml, only: KMAX_MID, KCHEMTOP, dt_advec,dt_advec_inv, &
                                  DebugCell, MasterProc, DEBUG, USE_SEASALT
@@ -54,9 +54,8 @@
   public  :: chemistry        ! Runs chemical solver
 
   INCLUDE 'mpif.h'
-
-  integer::  STATUS(MPI_STATUS_SIZE),INFO
-     integer, parameter:: nchemMAX=15
+  
+  integer, parameter:: nchemMAX=15
   integer, parameter:: NUM_INITCHEM=5    ! Number of initial time-steps with shorter dt
   real, save::         DT_INITCHEM=20.0  ! shorter dt for initial time-steps, reduced for
   integer, parameter  :: EXTRA_ITER = 1    ! Set > 1 for even more iteration
@@ -87,12 +86,11 @@ contains
     real(kind=dp)    ::  dt2
     real(kind=dp)    ::  P, L                ! Production, loss terms
     real(kind=dp)    :: xextrapol   !help variable
+    character(len=15) :: runlabel
 
     ! Concentrations : xold=old, x=current, xnew=predicted
     ! - dimensioned to have same size as "x"
 
-    !M17 real(kind=dp), dimension(NSPEC_TOT)      :: &
-    !M17                     x, xold ,xnew   ! Working array [molecules/cm3]
     real(kind=dp), dimension(nchemMAX), save :: &
                         dti             ! variable timestep*(c+1)/(c+2)
     real(kind=dp), dimension(nchemMAX), save :: &
@@ -155,6 +153,7 @@ contains
        !     Start of integration loop      *
        !*************************************
        if ( YieldModificationsInUse ) then
+          cell_tinv = tinv(k)
           call doYieldModifications('init')
        end if
 
@@ -163,6 +162,9 @@ contains
 
           do n=1,NSPEC_TOT
 
+!if ( x(n) < 0.0 ) then
+!   print *, 'NCHEM', me,  n, species(n)%name, x(n), xnew(n)
+!end if
              xextrapol = xnew(n) + (xnew(n)-x(n)) *cc(ichem)
              xold(n) = coeff1(ichem)*xnew(n) - coeff2(ichem)*x(n)
              xold(n) = max( xold(n), 0.0 )
@@ -188,12 +190,12 @@ contains
 ! The chemistry is iterated several times, more close to the ground than aloft.
 ! For some reason, it proved faster for some compilers to include files as given below
 ! with the if statements, than to use loops.
-!Just add some comments:
-!At present the "difference" between My_FastReactions and My_SlowReactions
-!is that in My_Reactions the products do not reacts chemically at all,
-!and therefore do not need to be iterated.  We could have another class
-!"slowreactions", which is not iterated or fewer times. This needs some
-!work to draw a proper line ......
+! Just add some comments:
+! At present the "difference" between My_FastReactions and My_SlowReactions
+! is that in My_Reactions the products do not reacts chemically at all,
+! and therefore do not need to be iterated.  We could have another class
+! "slowreactions", which is not iterated or fewer times. This needs some
+! work to draw a proper line ......
 
                 !if(k>=KCHEMTOP)then
 
@@ -209,21 +211,19 @@ contains
                 !   include 'My_FastReactions.inc'
                 !end if
 
-                !Mar-Apr 2017 NEW, still under testing
+                !Mar-Apr 2017 NEW
                 ! Allows change of gas/aerosol yield
-                ! BUT only takes effect on 2nd iteration, since the current
-                ! formulation makes use of e.g. OHLOSS_MT over this time step
+                ! BUT only takes effect on 2nd iteration
                 ! Still, we have nchem*niter loops
 
                  if ( YieldModificationsInUse ) then
-                    if(DebugCell) write(*,'(a,5i4,f8.3,3es12.3)') 'JPCDTDBG ',&
-                       i,j, k, ichem, nchem, dt2, &
-                       xnew(OH),xnew(C5H8), xnew(APINENE)
-                    call doYieldModifications('run')
+                    runlabel='run'
+                    if( iter == toiter(k) ) runlabel='lastFastChem'
+                    call doYieldModifications(runlabel)
+
                  end if
 
             end do !! End iterations
-          ! Just before SO4, look after slower? species
 
           !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
            include 'CM_Reactions2.inc'

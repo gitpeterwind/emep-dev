@@ -136,7 +136,8 @@ EmChem16mt)
           VBS_nonvolatile ../ZCM_vbs_tests/VBS_partitioning )  #  VBS NPNA
   rcns=( ${run}base Aero2017n $xdir/Ash \
 	 ${run}BVOC \
-         ../ZCM_vbs_tests/VBS_SOAformation ../ZCM_vbs_tests/VBS_SOAageing \
+         VBS_SOAformationY ../ZCM_vbs_tests/VBS_SOAageing \
+#Y         ../ZCM_vbs_tests/VBS_SOAformation ../ZCM_vbs_tests/VBS_SOAageing \
          ../ZCM_EmChem09soa/VBS_emissions_nonvolatilePOA_FromPM25  ) # VBS NPNA
   bics=( ${run}base )
   #bics=( $x16mt/EmChem16mtbase )  # No special SOA BICs (yet)

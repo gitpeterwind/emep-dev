@@ -29,12 +29,8 @@
  LandCoverInputs%MapFile =
     'DataDir/Landuse/Landuse_PS_5km_LC.nc',
     'DataDir/LandInputs_Apr2017/glc2000mCLM.nc',
- YieldModifications = '-' ,   ! None for EmChems 'JPC-VY-acid'
-! EmBio%IsopFac           =  1.0,
-! PBL%ZiMIN             =  50.0,
-!------------------------------
-! testing March 2017
-! EmBio%GlobBvocMethod = 'MEGAN',
+!    'DataDir/LanduseGLC.nc',
+ YieldModifications = 'VBS'   ! None for EmChems 'JPC-VY-acid',
 ! EmBio%IsopFac           =  1.0,
 ! PBL%ZiMIN             =  50.0,
 !------------------------------
@@ -117,6 +113,9 @@
 !  emis_inputlist(3)%name     = 'GlobalShipEmis_POLL.nc',  !
 !  emis_inputlist(3)%incl(1:) = 'INTSHIPS', 
 !
+!  emis_inputlist(3)%name     = '/home/mifajej/Emissions/Ships/FMI_Glob/2015/FMIGlobShip2015mon.nc',  !
+!  emis_inputlist(3)%type = 'Special_ShipEmis',
+
   EMIS_OUT              = F,          ! Output emissions in separate files
 !------------------------------
   SELECT_LEVELS_HOURLY  = F,          ! hourly output flag Also for FORECAST, 3DPROFILES
@@ -131,6 +130,7 @@
               'Wheat_Irrigated', 'Wheat_NonIrrig',
             ! 'CCE_SPRUCE','CCE_BEECH','ACE_PINE','ACE_OAK','ACE_BEECH',
             ! 'NEUR_SPRUCE','NEUR_BIRCH','MED_OAK','MED_PINE','MED_BEECH'
+  FLUX_IGNORE = 'W', 'D', 'DE', 'ICE', 'BARE'   ! Ignore these for FLUX calcs.  
 
 
 !-------uEMEP setup example
@@ -205,8 +205,8 @@
   DEBUG%STOFLUX         = F,
 !  DEBUG%STOP_HH        = 1,   ! If >= 0,  stops code after STOP_HH hours
 ! Specify here the coords and species index (tot, see CM_ChemSpecs_tot)
-  DEBUG%IJ              =  -60, -50,     ! Default: no debugij output
-! DEBUG%IJ              =  60, 50,       ! Bremen
+!  DEBUG%IJ              =  -60, -50,     ! Default: no debugij output
+ DEBUG%IJ              =  60, 50,       ! Bremen
 ! DEBUG%IJ              = 189,144,       ! Bremen, global
 ! DEBUG%IJ              =   3, 50,       ! sea I hope...
   DEBUG%SPEC            = 'OH',
@@ -236,11 +236,15 @@
 ! template_read_3D = 'EMEP_IN_IC.nc',         ! YYYY, YY, MM, DD, hh strings
 ! template_read_BC = 'EMEP_IN_BC_YYYYMMDD.nc',! will be replaced with numbers
 ! template_write   = 'EMEP_OUT_YYYYMMDD.nc',  ! in Nest_ml
+
+!---- To save disk space, you can also indicate the domain of the inner (small) grid,
+!-----and the model will only save the BC data for that grid:
+! MET_inner = '/global/work/mifapw/emep/Data/EMEP01/metdata_EC/2015/meteo20150101.nc',!path to metdata for inner grid (i.e. next run!)
+! RUNDOMAIN_inner = 370, 420, 270, 320, !RUNDOMAIN used in run for inner grid (i.e. next run!)
+
 !-------- Sub domain for write modes 
-! istart =  60,   ! default RUNDOMAIN(1)+1
-! jstart =  11,   ! default RUNDOMAIN(3)+1
-! iend   = 107,   ! default RUNDOMAIN(2)-1
-! jend   =  58,   ! default RUNDOMAIN(4)-1
+!out_DOMAIN  = 370, 420, 270, 320, !restrict the save data to this part
+
 &end
 &ExternalBICs_config
   USE_EXTERNAL_BIC  = F,              ! .false. to deactivate

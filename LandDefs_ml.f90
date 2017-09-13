@@ -213,7 +213,8 @@ contains
                     LandDefs(n)%SGS50,LandDefs(n)%EGS50, &
                     LandDefs(n)%LAImax, LandDefs(n)%Emtp
             end if
-            call CheckStop(  LandInput%code, wanted_codes(n), dtxt//"MATCHING CODES")
+            call CheckStop(  LandInput%code, wanted_codes(n), &
+                                           dtxt//"MATCHING CODES")
 
             LandType(n)%is_water  =  LandInput%code == "W" 
             LandType(n)%is_ice    =  LandInput%code == "ICE" 
@@ -235,7 +236,6 @@ contains
             LandType(n)%pft = find_index( LandDefs(n)%LPJtype, PFT_CODES)
 
             if ( dbg ) write(unit=*,fmt='(a,i3,a,i5)') dtxt//"PFT? ", n,&
-             !trims(LandInput%name//':'// LandInput%code//':'// &
                   trim(  wanted_codes(n) ), LandType(n)%pft
 
            !is_decid, is_conif used mainly for BVOC and soil-NO. Not essential
@@ -247,7 +247,7 @@ contains
             LandType(n)%is_bulk   =  LandInput%type == "BLK" 
             LandType(n)%is_veg    =  LandInput%code /= "U" .and. &
                   LandInput%hveg_max > 0.01   ! Excludes water, ice_nwp, desert 
-            if( LandInput%code(1:2) == "GR" ) iLC_grass =  n ! for use with clover
+            if( LandInput%code(1:2) == "GR" ) iLC_grass =  n ! for eg clover
        end do
        if ( MasterProc ) then 
              close(unit=IO_TMP)
@@ -268,13 +268,14 @@ contains
              ind = 0
           else
              ind = find_index(  txt, LandDefs(:)%code )
-          !if( DEBUG ) print *, "LC-CHECKING", descrip, txt, ind
           end if
           if( ind < 0 .and.  write_condition .and. MasterProc ) write(*,*) &
                 descrip // "NOT FOUND!! Skipping : " //  txt
   end function Check_LandCoverPresent_Item
  !=========================================================================
-  function Check_LandCoverPresent_Array( descrip, n, txt, write_condition) result(ind)
+  function Check_LandCoverPresent_Array( descrip, n, txt, &
+                                          write_condition) result(ind)
+
     character(len=*),intent(in) :: descrip
     integer, intent(in) :: n
     character(len=*),dimension(:),intent(in) :: txt
@@ -286,7 +287,6 @@ contains
           else
              ind = find_index(  txt(n), LandDefs(:)%code )
           end if
-          !if( DEBUG ) print *, "LC-CHECKING", descrip, n, txt(n), ind
           if( ind < 0 .and.  write_condition .and. MasterProc ) write(*,*) &
                 descrip // "NOT FOUND!! Skipping : " //  txt(n)
   end function Check_LandCoverPresent_Array

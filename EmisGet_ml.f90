@@ -106,11 +106,9 @@ contains
 
 
     real :: fractions(LIMAX,LJMAX,NCMAX),Reduc(NLAND)
-    character(len=125) ::Mask_fileName,Mask_varname
-    real :: Mask_ReducFactor,lonlat_fac
-    integer :: NMask_Code,Mask_Code(NLAND)
+    real :: lonlat_fac
 
-    integer ::i,j,k,n,ic,i_gridemis,found
+    integer ::i,j,n,ic,i_gridemis,found
     logical :: Cexist
 
     !yearly grid independent netcdf fraction format emissions                                
@@ -201,11 +199,9 @@ contains
    real, intent(inout) ::sumemis(*)
    character(len=*),dimension(:), optional :: &
        incl, excl ! Arrays of cc to inc/exclude
-   integer :: i,j, ic, isec, allocerr(6), icode, status
-   real, dimension(NLAND) :: sumcdfemis_loc, sumcdfemis_iem
-   integer :: icc, ncc
+   integer :: i,j, ic, isec, allocerr(6), status
+   real, dimension(NLAND) :: sumcdfemis_loc
    character(len=40) :: varname, fmt
-   integer, save :: ncmaxfound = 0 ! Max no. countries found in grid
    integer, save :: ncalls=0
    integer :: ncFileID, nDimensions,nVariables,nAttributes,timeDimID,varid,&
            xtype,ndims  !TESTE testing
@@ -402,7 +398,7 @@ contains
     character(len=*),intent(in) :: fname, emisname, incl(*),excl(*)
     real,intent(inout), dimension(NLAND,NEMIS_FILE) &
         :: sumemis_local ! Sum of emissions per country
-    integer ::i,j,k,n,ic,CC,isec,i_gridemis,found
+    integer ::i,j,ic,CC,isec,i_gridemis,found
     character(len=*), parameter ::  sub = 'EmisGetASCII:'
     logical :: Cexist
     real :: tmpsec(NSECTORS),duml,dumh
@@ -764,7 +760,6 @@ end if
    integer :: k_up
    real,allocatable:: emis_P_level(:)
    real :: P_emep,frac,sum
-   real, parameter:: PT_EMEP=10000.0!Pa = 100 hPa
    integer :: isec,k_ext,k1_ext(KMAX_BND),nemis_hprofile
 
    !emis_hprofile are read from file. 
@@ -896,16 +891,20 @@ end if
 !part just above P_emep(k+1)
             if(emis_P_level(k1_ext(k+1)+1)>P_emep)then
                !part below k1_ext(k+1)+1  above P_emep(k+1)
-               frac=((A_bnd(k+1)+B_bnd(k+1)*Pref )-emis_P_level(k1_ext(k+1)+1))/(emis_P_level(k1_ext(k+1))-emis_P_level(k1_ext(k+1)+1))
+               frac=((A_bnd(k+1)+B_bnd(k+1)*Pref )-emis_P_level(k1_ext(k+1)+1))&
+                    /(emis_P_level(k1_ext(k+1))-emis_P_level(k1_ext(k+1)+1))
                emis_kprofile(KMAX_BND-k,isec)=frac*emis_hprofile(k1_ext(k+1)+1,isec)
-               if(DEBUG_GETEMIS.and.MasterProc) write(*,fmt="(A,I5,6F10.2)")'adding fraction of level',&
-                    k1_ext(k+1)+1,frac,emis_hprofile(k1_ext(k+1)+1,isec),emis_P_level(k1_ext(k+1)+1),&
-                    (A_bnd(k+1)+B_bnd(k+1)*Pref ),emis_P_level(k1_ext(k+1)+1),(emis_P_level(k1_ext(k+1))-emis_P_level(k1_ext(k+1)+1))
+               if(DEBUG_GETEMIS.and.MasterProc) &
+                write(*,fmt="(A,I5,6F10.2)")'adding fraction of level',&
+                  k1_ext(k+1)+1,frac,emis_hprofile(k1_ext(k+1)+1,isec),&
+                  emis_P_level(k1_ext(k+1)+1),(A_bnd(k+1)+B_bnd(k+1)*Pref),&
+                  emis_P_level(k1_ext(k+1)+1),(emis_P_level(k1_ext(k+1))-emis_P_level(k1_ext(k+1)+1))
             else
                !everything between P_emep(k+1) and P_emep(k)
                frac=((A_bnd(k+1)+B_bnd(k+1)*Pref )-P_emep)/(emis_P_level(k1_ext(k+1))-emis_P_level(k1_ext(k+1)+1))
                emis_kprofile(KMAX_BND-k,isec)=frac*emis_hprofile(k1_ext(k+1)+1,isec)
-               if(DEBUG_GETEMIS.and.MasterProc) write(*,fmt="(A,I5,6F10.2)")'adding fraction of level between P_emep(k+1) and P_emep(k)',&
+               if(DEBUG_GETEMIS.and.MasterProc) &
+                write(*,"(A,I5,6F10.2)")'adding fraction of level between P_emep(k+1) and P_emep(k)',&
                     k1_ext(k+1)+1,frac,emis_hprofile(k1_ext(k+1)+1,isec),emis_P_level(k1_ext(k+1)+1),&
                     (A_bnd(k+1)+B_bnd(k+1)*Pref ),P_emep,(emis_P_level(k1_ext(k+1))-emis_P_level(k1_ext(k+1)+1))
             end if
@@ -913,7 +912,9 @@ end if
             !add all full levels in between
             do k_ext=k1_ext(k+1)+2,k1_ext(k)
                emis_kprofile(KMAX_BND-k,isec)=emis_kprofile(KMAX_BND-k,isec)+emis_hprofile(k_ext,isec)
-               if(DEBUG_GETEMIS.and.MasterProc) write(*,fmt="(A,I5,6F10.2)")'adding entire level',k_ext,emis_hprofile(k_ext,isec),emis_P_level(k_ext)
+               if(DEBUG_GETEMIS.and.MasterProc) &
+                 write(*,"(A,I5,6F10.2)")'adding entire level',&
+                   k_ext,emis_hprofile(k_ext,isec),emis_P_level(k_ext)
             end do
 
             !add level just below P_emep(k), if not already counted, above k1_ext(k)  below P_emep; and must exist
@@ -979,9 +980,6 @@ end if
   integer ::  ie             ! emission index in EMIS_FILE (1..NEMIS_FILE)
   integer ::  itot           ! Index in IX_ arrays
   integer ::  iqrc           ! index of split compound in emisfrac   
-
-  integer, parameter :: NONREACTIVE = 1   ! No. columns of non-reactive species
-                                          ! enforced for read-ins.
 
   !-- for read-ins, dimension for max possible number of columns: 
   !-- for CRI we have 100s of VOC, hence
@@ -1257,7 +1255,9 @@ end if
      allocate(roaddust_masscorr(NROADDUST),stat=allocerr)
      call CheckStop(allocerr, "Allocation error for emis_masscorr")
      if(MasterProc) &
-          write(*,fmt='(A)')"WARNING! Molar mass assumed to be 200.0 for all road dust components. Emissions will be WRONG if another value is set in the GenChem input!"
+          write(*,'(A)') "WARNING! Molar mass assumed to be 200.0&
+            & for all road dust components. Emissions will be WRONG&
+            & if another value is set in the GenChem input!"
      do ie=1,NROADDUST
         roaddust_masscorr(ie)=1.0/200.
      end do
@@ -1301,10 +1301,10 @@ end if
   real,    intent(inout), dimension(:,:)  :: sumroaddust ! Emission potential sums per country
 
   !--local
-  integer :: i, j, isec, iland,         &  ! loop variables
-             iic,ic                        ! country code (read from file)
-  real    :: tmpdust                       ! for reading road dust emission potential file
-  integer, save :: ncmaxfound = 0          ! Max no. countries found in grid
+  integer :: i, j, iland,             &  ! loop variables
+             iic,ic                      ! country code (read from file)
+  real    :: tmpdust                     ! for reading road dust emission potential file
+  integer, save :: ncmaxfound = 0        ! Max no. countries found in grid
   character(len=300) :: inputline
 
    !>============================

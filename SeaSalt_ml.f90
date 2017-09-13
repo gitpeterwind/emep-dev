@@ -54,7 +54,6 @@
 
   logical, private, save :: my_first_call = .true.
   logical, private, save :: seasalt_found
-  integer, private, save :: iseasalt   ! index of SEASALT_F
 
  ! Indices for the species defined in this routine. Only set if found
  ! Hard-coded for 2 specs just now. Could extend and allocate.

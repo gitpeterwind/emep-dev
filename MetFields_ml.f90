@@ -4,7 +4,7 @@ module MetFields_ml
   use MPI_Groups_ml     , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER, MPI_LOGICAL, &
                                  MPI_COMM_CALC, MPI_COMM_WORLD, MPI_COMM_SUB, MPISTATUS, &
                                  IERROR, ME_MPI, NPROC_MPI, largeLIMAX,largeLJMAX, share, share_logical
-
+  use Par_ml            , only : me
   implicit none
   private
 
@@ -183,7 +183,13 @@ module MetFields_ml
       ,Idiffuse     &  ! diffuse solar radiation (W/m^2)
       ,Idirect         ! total direct solar radiation (W/m^2)
 
-
+  integer, parameter ::Nspecial2d = 0
+  real,target, public,allocatable, dimension(:,:,:), save:: &
+       special2d
+  integer, parameter ::Nspecial3d = 0
+  real,target, public,allocatable, dimension(:,:,:,:), save:: &
+       special3d
+  integer, public, save   :: ix_special2d(Nspecial2d),ix_special3d(Nspecial3d)
 
   real,target,public, save,allocatable, dimension(:,:) :: &   !st-dust
        clay_frac  &  ! clay fraction (%) in the soil
@@ -261,7 +267,7 @@ module MetFields_ml
   logical, public,save, target::ready=.false.,copied=.false.
 
   integer, public, parameter   :: NmetfieldsMax=100 !maxnumber of metfields
-  type(metfield),  public :: met(NmetfieldsMax)  !To put the metfirelds that need systematic treatment
+  type(metfield),  public :: met(NmetfieldsMax)  !To put the metfields that need systematic treatment
   type(metfield),  public :: derivmet(20)  !DSA15 To put the metfields derived from NWP, eg for output
   logical, target :: metfieldfound(NmetfieldsMax)=.false. !default for met(ix)%found 
   integer, public, save   :: Nmetfields! number of fields defined in met
@@ -289,7 +295,7 @@ subroutine Alloc_MetFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND,NMET)
   implicit none
   
   integer, intent(in) ::LIMAX,LJMAX,KMAX_MID,KMAX_BND,NMET
-  integer ::ix,i,j,data_shape(3),xsize
+  integer ::ix,i,j,n,data_shape(3),xsize
 
   do ix=1,NmetfieldsMax
      met(ix)%found => metfieldfound(ix)!default target
@@ -886,6 +892,51 @@ subroutine Alloc_MetFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%zsize = KMAX_MID
   met(ix)%msize = NMET
   ix_vn=ix
+
+!can be used to output any 2d field, using 'MET2D'
+  do n = 1, Nspecial2d
+  ix=ix+1
+  write(met(ix)%name,fmt='(A,I0)')'special2d',n
+  met(ix)%dim              = 2
+  met(ix)%frequency        = 3
+  met(ix)%time_interpolate = .false.
+  met(ix)%read_meteo       = .false.
+  met(ix)%needed           = .false.
+  met(ix)%found            = .false.
+  if(n==1)then
+     allocate(special2d(LIMAX,LJMAX,Nspecial2d))
+     special2d=0.0
+  endif
+!  met(ix)%field(1:LIMAX,1:LJMAX,1:1,1:1)  => special2d(1:LIMAX,1:LJMAX,n)
+!Since the syntax above is not allowed, we move the adress of the pointer, instead of the target
+  met(ix)%field(1:LIMAX,1:LJMAX,1-(n-1):1-(n-1),1:1)  => special2d
+  met(ix)%zsize = 1
+  met(ix)%msize = 1
+  ix_special2d(n)=ix
+  enddo
+
+!can be used to output any 2d field, using 'MET2D'
+  do n = 1, Nspecial3d
+  ix=ix+1
+  write(met(ix)%name,fmt='(A,I0)')'special3d',n
+  met(ix)%dim              = 3
+  met(ix)%frequency        = 3
+  met(ix)%time_interpolate = .false.
+  met(ix)%read_meteo       = .false.
+  met(ix)%needed           = .false.
+  met(ix)%found            = .false.
+  if(n==1)then
+     allocate(special3d(LIMAX,LJMAX,KMAX_MID,Nspecial3d))
+     special3d=0.0
+  endif
+!  met(ix)%field(1:LIMAX,1:LJMAX,1:KMAX_MID,1:1)  => special3d(1:LIMAX,1:LJMAX,1:KMAX_MID,n)
+!Since the syntax above is not allowed, we move the adress of the pointer, instead of the target
+  met(ix)%field(1:LIMAX,1:LJMAX,1:KMAX_MID,1-(n-1):1-(n-1))  => special3d
+  met(ix)%zsize = KMAX_MID
+  met(ix)%msize = 1
+  ix_special3d(n)=ix
+  enddo
+
 
 
 if(USE_WRF_MET_NAMES)then

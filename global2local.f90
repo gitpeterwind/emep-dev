@@ -34,8 +34,7 @@
 !    the input array gloarr may be already restricted or not
 !
     use ModelConstants_ml, only : NPROC  ! Actual total number of processors
-    use MPI_Groups_ml    , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER&
-                                 ,MPI_SUM,MPI_COMM_CALC, MPISTATUS,IERROR
+    use MPI_Groups_ml    , only : MPI_BYTE, MPI_COMM_CALC, MPISTATUS,IERROR
     use PAR_ML , only : &
              MAXLIMAX&    ! Maximum number of local points in longitude&
              ,MAXLJMAX&    ! Maximum number of local points in latitude&
@@ -194,8 +193,7 @@
 !
 
     use ModelConstants_ml, only : NPROC  ! Actual total number of processors
-    use MPI_Groups_ml    , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER,&
-                                  MPISTATUS, MPI_SUM,MPI_COMM_CALC, IERROR
+    use MPI_Groups_ml    , only : MPI_BYTE, MPISTATUS, MPI_COMM_CALC, IERROR
     use PAR_ML , only : &
              MAXLIMAX&    ! Maximum number of local points in longitude&
              ,MAXLJMAX&    ! Maximum number of local points in latitude&
@@ -263,4 +261,3 @@
 !
     return
     end
-

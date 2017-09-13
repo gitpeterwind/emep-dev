@@ -79,7 +79,7 @@ contains
 
     character*20 falc
     logical tra_exist
-    integer ii,info
+    integer ii
 
     if(current_date%seconds /= 0 .or. (mod(current_date%hour,METSTEP)/=0) )return
 
@@ -132,7 +132,7 @@ contains
   subroutine trajectory_out
 
     real ttt, dtmil
-    integer ii,jj,k,jjj,info
+    integer ii,jj,k,jjj
     integer :: i
 
 !    trajectory positions

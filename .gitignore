@@ -54,6 +54,12 @@ GenIn.*
 *GenOut*
 femis.defaults
 
+# Emergency output
+ZCM_Emergency/Emergency.reactions
+ZCM_Emergency/Emergency.species
+ZCM_Emergency/emergency_emission.csv
+ZCM_Emergency/emergency_location.csv
+
 # Makefile output
 /My_*.f90
 /Pollen*_ml.f90

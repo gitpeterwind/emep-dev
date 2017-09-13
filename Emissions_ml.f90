@@ -29,6 +29,7 @@ use EmisDef_ml,       only: &
      ,ROADDUST_CLIMATE_FILE &! TEMPORARY! file for road dust climate factors 
      ,nGridEmisCodes,GridEmisCodes,GridEmis,cdfemis&
      ,snapemis,snapemis_flat,roaddust_emis_pot,SumSplitEmis,SumSnapEmis&
+     ,SumSecEmis,SecEmisOut,NSecEmisOut&
      ,nlandcode,landcode,flat_nlandcode,flat_landcode&
      ,road_nlandcode,road_landcode&
      ,gridrcemis,gridrcemis0,gridrcroadd,gridrcroadd0&
@@ -41,7 +42,11 @@ use EmisDef_ml,       only: &
      ,Nneighbors & !used for uemep/loc_frac
      ,NSECTORS_SNAP, SNAP_sec2tfac_map, SNAP_sec2hfac_map, SNAP_sec2split_map&!SNAP specific mapping
      ,NSECTORS_GNFR, GNFR_sec2tfac_map, GNFR_sec2hfac_map, GNFR_sec2split_map&!GNFR specific mapping
-     ,NSECTORS_TEST, TEST_sec2tfac_map, TEST_sec2hfac_map, TEST_sec2split_map!TEST specific mapping
+     ,NSECTORS_TEST, TEST_sec2tfac_map, TEST_sec2hfac_map, TEST_sec2split_map&!TEST specific mapping
+     ,gnfr2snap,snap2gnfr&
+     ,AISco, AISnox, AISsox, AISso4, AISash, AISec , AISoc, FOUND_Special_ShipEmis&
+     ,NO_ix,NO2_ix,SO2_ix,SO4_ix,CO_ix,REMPPM25_ix&
+     ,EC_F_FFUEL_NEW_ix,EC_F_FFUEL_AGE_ix,POM_F_FFUEL_ix
 
 use EmisGet_ml,       only: &
      EmisSplit &
@@ -86,7 +91,7 @@ use ModelConstants_ml,only: &
     USE_LIGHTNING_EMIS,USE_AIRCRAFT_EMIS,USE_ROADDUST, &
     USE_EURO_SOILNOX, USE_GLOBAL_SOILNOX, EURO_SOILNOX_DEPSCALE,&! one or the other
     USE_OCEAN_NH3,USE_OCEAN_DMS,FOUND_OCEAN_DMS,&
-    NPROC, EmisSplit_OUT,USE_uEMEP,uEMEP,SECTORS_NAME
+    NPROC, EmisSplit_OUT,USE_uEMEP,uEMEP,SECTORS_NAME,SecEmisOutPoll
 use MPI_Groups_ml  , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER&
                             ,MPI_SUM,MPI_COMM_CALC, IERROR
 use NetCDF_ml,        only: ReadField_CDF,ReadField_CDF_FL,ReadTimeCDF,IsCDFfractionFormat,&
@@ -135,7 +140,7 @@ integer, private, save :: iemCO  ! index of CO emissions, for debug
 
 logical :: Cexist,USE_MONTHLY_GRIDEMIS=.false.!internal flag
 real ::TimesInDays(120),mpi_out
-integer ::NTime_Read=-1,ncFileID,VarID,found, cdfstatus
+integer ::NTime_Read=-1,found
 character(len=125) ::fileName_monthly='NOT_SET'!must be initialized with 'NOT_SET'
 character(len=10), private,save ::  incl_monthly(size(emis_inputlist(1)%incl)),&
      excl_monthly(size(emis_inputlist(1)%excl))
@@ -203,7 +208,8 @@ subroutine Emissions(year)
   logical,save :: my_first_call=.true.  ! Used for femis call
   logical :: fileExists            ! to test emission files
   character(len=40) :: varname, fmt,cdf_sector_name
-  integer ::allocerr, i_Emis_4D
+  integer ::allocerr, i_Emis_4D, iemsec
+  
   if (MasterProc) write(6,*) "Reading emissions for year",  year
 
 
@@ -224,18 +230,19 @@ subroutine Emissions(year)
           write(*,*)"Emission source number ", iemislist,"from ",sub//trim(fname)
 
         if(emis_inputlist(iemislist)%type == "sectors".or.&
-           emis_inputlist(iemislist)%type == "GNFRsectors")then ! Expand groups, e.g. EUMACC2
+           emis_inputlist(iemislist)%type == "GNFRsectors".or.&
+           emis_inputlist(iemislist)%type == "SNAPsectors")then ! Expand groups, e.g. EUMACC2
 
           call expandcclist( emis_inputlist(iemislist)%incl , n)
           emis_inputlist(iemislist)%Nincl = n
           if(MasterProc .and. n>0) then
              write(*,*) sub//trim(fname)//" INPUTLIST-INCL", n
-             write(*,*)'including only countries: ', (trim(emis_inputlist(2)%incl(i))//' ',i=1,n)
+             write(*,*)'including only countries: ', (trim(emis_inputlist(iemislist)%incl(i))//' ',i=1,n)
           endif
           call expandcclist( emis_inputlist(iemislist)%excl , n)
           emis_inputlist(iemislist)%Nexcl = n
           if(MasterProc .and. n>0) then
-             write(*,*)'excluding countries: ', (trim(emis_inputlist(2)%excl(i))//' ',i=1,n)
+             write(*,*)'excluding countries: ', (trim(emis_inputlist(iemislist)%excl(i))//' ',i=1,n)
           endif
         end if
         if(emis_inputlist(iemislist)%pollName(1)/='NOTSET')then
@@ -328,6 +335,23 @@ subroutine Emissions(year)
     roaddust_emis_pot=0.0
     allocate(SumSnapEmis(LIMAX,LJMAX,NEMIS_FILE))
     SumSnapEmis=0.0
+
+    iemsec = 0
+!    SecEmisOutPoll(1:2) = ['pm25','nox'] 
+    do iem = 1, NEMIS_FILE 
+       if(SecEmisOutPoll(1)/='NOTSET')then
+          if(all(SecEmisOutPoll(:)/=trim(EMIS_FILE(iem))))cycle      
+          SecEmisOut(iem) = .true.
+          iemsec = iemsec + 1
+       endif
+    enddo
+    NSecEmisOut = iemsec
+    if(NSecEmisOut>0)then
+       allocate(SumSecEmis(LIMAX,LJMAX,NSECTORS,NSecEmisOut))
+       SumSecEmis=0.0
+    else
+        allocate(SumSecEmis(1,1,1,1))!to avoid debug error messages      
+    endif
 
     !=========================
     !  call Country_Init() ! In Country_ml, => NLAND, country codes and names, timezone
@@ -504,7 +528,17 @@ subroutine Emissions(year)
                 if(Masterproc)write(*,"(A)")'reading '//trim(EMIS_FILE(iem))//' from '//trim(fname)
              end if
              do isec=1,NSECTORS                      
-              write(varname,"(A,I2.2)")trim(EMIS_FILE(iem))//'_sec',isec
+                if(SECTORS_NAME=='GNFR'.and.emis_inputlist(iemislist)%type == "SNAPsectors")then
+                   if(gnfr2snap(isec)<=0)cycle
+                   write(varname,"(A,I2.2)")trim(EMIS_FILE(iem))//'_sec',gnfr2snap(isec)
+                   if(me==0.and.iem==1)write(*,*)'WARNING, mapping snap sector ',gnfr2snap(isec),'onto gnfr',isec
+                else if(SECTORS_NAME=='SNAP'.and.emis_inputlist(iemislist)%type == "GNFRsectors")then
+                   if(snap2gnfr(isec)<=0)cycle
+                   if(me==0.and.iem==1)write(*,*)'WARNING, mapping gnfr sector ',snap2gnfr(isec),'onto snap',isec
+                   write(varname,"(A,I2.2)")trim(EMIS_FILE(iem))//'_sec',snap2gnfr(isec)
+                else
+                   write(varname,"(A,I2.2)")trim(EMIS_FILE(iem))//'_sec',isec
+                endif
               call EmisGetCdfFrac(iem, isec, fname, varname, sumemis_local, &
                    emis_inputlist(iemislist)%incl, nin, emis_inputlist(iemislist)%excl, nex)
 
@@ -529,15 +563,22 @@ subroutine Emissions(year)
           n=find_index(emis_inputlist(Found_Emis_4D)%pollemepName(i_Emis_4D),species(:)%name)
           if(MasterProc)then
             if(n>0)then
-              write(*,*)'Emis_4D: will write to ',n,emis_inputlist(Found_Emis_4D)%pollemepName(i_Emis_4D)        
+              write(*,*)'Emis_4D: will write to ',&
+                n,trim(emis_inputlist(Found_Emis_4D)%pollemepName(i_Emis_4D))
             else                   
-              write(*,*)'Emis_4D: WARNING did not find ',emis_inputlist(Found_Emis_4D)%pollemepName(i_Emis_4D),' among the emep species'
-              write(*,*)'Emis_4D: WARNING ',emis_inputlist(Found_Emis_4D)%pollName(i_Emis_4D),' is not used'
+              write(*,*)'Emis_4D: WARNING did not find ',&
+                trim(emis_inputlist(Found_Emis_4D)%pollemepName(i_Emis_4D)),&
+                ' among the emep species'
+              write(*,*)'Emis_4D: WARNING ',&
+                trim(emis_inputlist(Found_Emis_4D)%pollName(i_Emis_4D)),&
+                ' is not used'
             end if
           end if
         end do
         !   else if(IsCDFSnapFormat(trim(emis_inputlist(iemislist)%name)))then !This Does not work because of "POLL"
-      elseif(emis_inputlist(iemislist)%type == "sectors" .and. index(emis_inputlist(iemislist)%name,".nc")>1)then 
+      elseif((emis_inputlist(iemislist)%type == "sectors".or.&
+           emis_inputlist(iemislist)%type == "GNFRsectors".or.&
+           emis_inputlist(iemislist)%type == "SNAPsectors") .and. index(emis_inputlist(iemislist)%name,".nc")>1)then 
         !not in "fraction" format. Each land has own set of fields
         !Each pollutant has own file. 
         if(MasterProc)  write(*,*)sub//trim(fname)//" Processing"
@@ -629,6 +670,29 @@ subroutine Emissions(year)
         else
           call StopAll("Yearly DMS not implemented")
         end if
+      elseif(emis_inputlist(iemislist)%type == "Special_ShipEmis")then
+        !should put in a single array 
+        allocate(AISco(LIMAX,LJMAX))
+        allocate(AISnox(LIMAX,LJMAX))
+        allocate(AISsox(LIMAX,LJMAX))
+        allocate(AISso4(LIMAX,LJMAX))
+        allocate(AISash(LIMAX,LJMAX))
+        allocate(AISec(LIMAX,LJMAX))
+        allocate(AISoc(LIMAX,LJMAX))
+        FOUND_Special_ShipEmis = .true.
+        NO_ix = find_index("NO",species(:)%name)
+        NO2_ix = find_index("NO2",species(:)%name)
+        SO2_ix = find_index("SO2",species(:)%name)
+        SO4_ix = find_index("SO4",species(:)%name)
+        CO_ix = find_index("CO",species(:)%name)
+        REMPPM25_ix = find_index("REMPPM25",species(:)%name)
+        EC_F_FFUEL_NEW_ix = find_index("EC_F_FFUEL_NEW",species(:)%name)
+        EC_F_FFUEL_AGE_ix = find_index("EC_F_FFUEL_AGE",species(:)%name)
+        POM_F_FFUEL_ix = find_index("POM_F_FFUEL",species(:)%name)
+
+        call ReadTimeCDF(trim(fname),TimesInDays,NTime_Read)
+        if(NTime_Read==12)emis_inputlist(iemislist)%periodicity = "monthly"
+        if(NTime_Read>364 .and. NTime_Read<367)emis_inputlist(iemislist)%periodicity = "daily"
       else
         if(MasterProc)write(*,*)'WARNING: did not recognize format of '//trim(emis_inputlist(iemislist)%name)
         call StopAll("Emissions file format not recognized ")
@@ -971,7 +1035,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
 
   ! If timezone=-100, calculate daytime based on longitude rather than timezone
   integer :: daytime_longitude, daytime_iland, hour_longitude, hour_iland,nstart
-  integer :: i_Emis_4D
+  integer :: i_Emis_4D, iemsec
   character(len=125) ::varname 
   TYPE(timestamp)   :: ts1,ts2
 
@@ -1029,7 +1093,8 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
           if(emis_inputlist(Found_Emis_4D)%pollName(i_Emis_4D)=='NOTSET')exit
           varname=emis_inputlist(Found_Emis_4D)%pollName(i_Emis_4D)
           !if(MasterProc)write(*,*)'Fetching ',trim(varname)
-          call GetCDF_modelgrid(varname,emis_inputlist(Found_Emis_4D)%Name,Emis_4D(1,1,1,i_Emis_4D),1,kmax_mid,nstart,1,reverse_k=.true.)
+          call GetCDF_modelgrid(varname,emis_inputlist(Found_Emis_4D)%Name,&
+            Emis_4D(1,1,1,i_Emis_4D),1,kmax_mid,nstart,1,reverse_k=.true.)
         end do
       end if
     end if
@@ -1052,6 +1117,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
     totemadd(:)  = 0.
     gridrcemis0(:,:,:,:) = 0.0 
     SumSnapEmis(:,:,:) = 0.0
+    SumSecEmis(:,:,:,:) = 0.0
     if(USE_ROADDUST)gridrcroadd0(:,:,:) = 0.0
     !..........................................
     ! Process each grid:
@@ -1107,7 +1173,9 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
             ! Calculate emission rates from snapemis, time-factors, 
             ! and if appropriate any speciation fraction (NEMIS_FRAC)
             iqrc = 0   ! index over emisfrac
+            iemsec = 0
             do iem = 1, NEMIS_FILE 
+              if(SecEmisOut(iem))iemsec = iemsec + 1
               tfac = timefac(iland_timefac,sec2tfac_map(isec),iem) &
                    * fac_ehh24x7(sec2tfac_map(isec),hour_iland,wday_loc)
 
@@ -1140,6 +1208,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
 
               ! prelim emis sum kg/m2/s
               SumSnapEmis(i,j,iem) = SumSnapEmis(i,j,iem) + s
+              if(SecEmisOut(iem))SumSecEmis(i,j,isec,iemsec) = SumSecEmis(i,j,isec,iemsec) + s
 
               do f = 1,emis_nsplit(iem)
                 iqrc = iqrc + 1
@@ -1190,10 +1259,12 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
           !  Calculate emission rates from snapemis, time-factors, 
           !  and if appropriate any speciation  fraction (NEMIS_FRAC)
           iqrc  = 0   ! index over emis
+          iemsec = 0
           do iem = 1, NEMIS_FILE 
             sf =  snapemis_flat(i,j,ficc,iem)    
             ! prelim emis sum kg/m2/s
             SumSnapEmis(i,j,iem) = SumSnapEmis(i,j,iem) + sf
+            if(SecEmisOut(iem))SumSecEmis(i,j,isec,iemsec) = SumSecEmis(i,j,isec,iemsec) + sf
             do f = 1,emis_nsplit(iem)
               iqrc = iqrc + 1
               itot = iqrc2itot(iqrc)
@@ -1329,16 +1400,12 @@ subroutine newmonth
   use ModelConstants_ml, only : KCHEMTOP, KMAX_MID
   use NetCDF_ml, only : ReadField_CDF
 
-  integer i, j,k, iyr, iemislist
-  integer n, flat_ncmaxfound         ! Max. no. countries w/flat emissions
-  real :: rdemis(MAXLIMAX,MAXLJMAX)  ! Emissions read from file
+  integer :: i, j,k, iyr, iemislist, n
   character(len=200) :: fname
   real ktonne_to_kgm2s, tonnemonth_to_kgm2s  ! Units conversion
-  integer errcode,iland
-  integer :: iem,ic,isec, i_gridemis
+  integer :: iland, iem,ic,isec, i_gridemis
   real :: conv
   logical , save :: first_call=.true.
-  logical :: needed_found
 
   ! For now, only the global runs use the Monthly files
   integer :: kstart,kend,nstart,Nyears
@@ -1350,7 +1417,7 @@ subroutine newmonth
   character(len=125) ::fileName
   real :: Mask_ReducFactor
   integer :: NMask_Code,Mask_Code(NLAND), i_femis_lonlat
-  real :: lonlat_fac, dms_sum
+  real :: lonlat_fac, mw
 
   if(.not.allocated(airn).and.(USE_LIGHTNING_EMIS.or.USE_AIRCRAFT_EMIS))&
     allocate(airn(KCHEMTOP:KMAX_MID,LIMAX,LJMAX))
@@ -1693,7 +1760,31 @@ subroutine newmonth
       !from nanomol/l -> mol/cm3
       O_DMS%emis=O_DMS%emis*1.0e-12
 
-    else !
+   elseif(emis_inputlist(iemislist)%type == "Special_ShipEmis" .and. emis_inputlist(iemislist)%periodicity == "monthly")then
+      nstart=current_date%month
+      !factor from kg/grid -> g/s/cm2
+      conv = AVOG * 1.e-4 * 1.e3  &    !  1.e-4 converts from m*2 to cm*2 and 
+                                    !  1.e3 converts from kg to g
+          /(GRIDWIDTH_M*GRIDWIDTH_M * nmdays(current_date%month)*24.*3600.)   
+
+      !conv=RedFactorShips*conv
+
+      !mw from Jukka-Pekka  Jalkanen  (e-post 16 June 2016)
+      mw=46.0
+      call ReadShipEmis(trim(emis_inputlist(iemislist)%name),'NOx',AISnox,nstart,mw,conv)
+      mw=28.0
+      call ReadShipEmis(trim(emis_inputlist(iemislist)%name),'CO',AISco,nstart,mw,conv)
+      mw=64.0655
+      call ReadShipEmis(trim(emis_inputlist(iemislist)%name),'SOx',AISsox,nstart,mw,conv)
+      mw=96.0655
+      call ReadShipEmis(trim(emis_inputlist(iemislist)%name),'SO4',AISso4,nstart,mw,conv)
+      mw=42.4
+      call ReadShipEmis(trim(emis_inputlist(iemislist)%name),'Ash',AISash,nstart,mw,conv)
+      mw=12.01
+      call ReadShipEmis(trim(emis_inputlist(iemislist)%name),'EC',AISec,nstart,mw,conv)
+      mw=17.32
+      call ReadShipEmis(trim(emis_inputlist(iemislist)%name),'OC',AISoc,nstart,mw,conv)
+   else !
       call StopAll("Monthly emission type not implemented "//trim(emis_inputlist(iemislist)%type))
     end if
 
@@ -1797,5 +1888,31 @@ subroutine EmisOut(label, iem,nsources,sources,emis)
 !  deallocate(locemis,lemis)
 
 end subroutine EmisOut
+
+!***********************************************************************
+
+  subroutine ReadShipEMis(filename,varname,shipemis,nstart,mw,conv)
+    character(len=*),intent(in) ::filename,varname
+    real, intent(inout) ::shipemis(LIMAX,LJMAX)
+    real, intent(in) :: mw,conv
+    integer,intent(in) :: nstart
+    real :: invmw
+    integer ::i,j
+
+    
+    shipemis=0.0
+    call ReadField_CDF(trim(filename),trim(varname),shipemis,nstart=nstart,  & 
+         interpol='mass_conservative',known_projection='longitude latitude', &
+         needed=.true.,debug_flag=.false.,UnDef=0.0)
+    if(me==0)write(*,*)'Reading ship from ',trim(filename),' ',trim(varname)
+    invmw=1.0/mw
+    do j = 1,ljmax
+       do i = 1, limax
+          shipemis(i,j) = shipemis(i,j)*  conv * xm2(i,j) *invmw
+          
+       end do
+    end do
+
+  end subroutine ReadShipEMis
 
 endmodule Emissions_ml

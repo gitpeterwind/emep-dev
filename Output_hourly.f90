@@ -41,7 +41,6 @@ use My_Outputs_ml,    only: NHOURLY_OUT,    & ! No. outputs
                             nmax6_hourly      ! 6 hourly maximum
 use CheckStop_ml,     only: CheckStop
 use Chemfields_ml,    only: xn_adv,xn_shl,cfac,PM25_water,PM25_water_rh50
-use ChemGroups_ml,    only: chemgroups
 use Derived_ml,       only: num_deriv2d,nav_2d,LENOUT2D,& ! D2D
                             num_deriv3d,nav_3d,LENOUT3D ! D3D
 use DerivedFields_ml, only: f_2d,d_2d,f_3d,d_3d       ! houtly output types
@@ -55,14 +54,12 @@ use ModelConstants_ml,only: KMAX_MID, MasterProc, MY_OUTPUTS, &
                             DEBUG => DEBUG_OUT_HOUR,runlabel1,HOURLYFILE_ending,&
                             FORECAST, hour_DOMAIN, SELECT_LEVELS_HOURLY !NML
 use MetFields_ml,     only: t2_nwp,th, q, roa, surface_precip, ws_10m ,rh2m,&
-                            pzpbl, ustar_nwp, Kz_m2s, &
                             Idirect, Idiffuse, z_bnd, z_mid,ps
 use NetCDF_ml,        only: Out_netCDF, CloseNetCDF, Init_new_netCDF, &
                             max_filename_length, fileName_iou, &
                             Int1, Int2, Int4, Real4, Real8  !Output data type to choose
 use OwnDataTypes_ml,  only: TXTLEN_DERIV,TXTLEN_SHORT
-use Par_ml,           only: LIMAX, LJMAX, GIMAX,GJMAX,        &
-                            me, IRUNBEG, JRUNBEG, limax, ljmax
+use Par_ml,           only: me, limax, ljmax
 use Pollen_ml,        only: heatsum, pollen_released=>R, AreaPOLL
 use Pollen_const_ml,  only: pollen_total=>N_TOT
 use SmallUtils_ml,    only: find_index

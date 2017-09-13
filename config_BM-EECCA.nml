@@ -68,6 +68,7 @@
   FLUX_VEGS = 'IAM_CR','IAM_DF','IAM_MF', ! do not need all array elements
             ! 'CCE_SPRUCE','CCE_BEECH','ACE_PINE','ACE_OAK','ACE_BEECH',
             ! 'NEUR_SPRUCE','NEUR_BIRCH','MED_OAK','MED_PINE','MED_BEECH'
+  FLUX_IGNORE = 'W', 'D', 'DE', 'ICE', 'BARE'   ! Ignore these for FLUX calcs.  
 !-------- Sub domain (x0,x1,y0,y1)
   RUNDOMAIN =   1, 100,  1, 100,      ! Orig EMEP domain in EECCA (for benchmarks)
 &end

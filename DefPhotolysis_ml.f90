@@ -76,7 +76,6 @@
 
       integer ::  k     &  ! help index
                  ,izn   &  ! integer zenith angle
-                 ,info  &  ! used for broadcast
                  ,nr    &  ! numbering of photolytic reactions
                  ,la       ! counting every 10 deg. latitude
         real myz
