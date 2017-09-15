@@ -11,24 +11,30 @@ character(len=20), dimension(MAXDIM) :: sitename
 character(len=20), dimension(MAXDIM) :: specname
 real             , dimension(MAXDIM) :: xin
 real             , dimension(366,0:23) :: data
-integer          , dimension(366) :: cmonth, cday
-character(len=20) :: wpoll, wsite, date, txt1, txt2
+integer          , dimension(366) :: cmonth, cday, nhours = 0
+character(len=20) :: wpoll, wsite, date, txt1, txt2, dbg_flag
 integer :: i, yy, mm, dd, hh, isite, nsites, n, ispec, nspec, freq
 integer :: wanted_site, wanted_spec, last_day, jd, old_dd, wanted_year
 integer :: io_in, io_dmax, io_dmean, io_vals, io_hrly, io_dates
 integer :: comma, comma2
-logical :: first=.true.
+logical :: first=.true., dbg = .false.
 
    if ( iargc() > 0 ) then
      call getarg(1,infile)
      call getarg(2,wsite)
      call getarg(3,wpoll)
+     call getarg(4,dbg_flag)
      print *, "Input argument: ", infile
      if ( len_trim(wsite)>0 ) print *, "Site wanted ", wsite
      if ( len_trim(wpoll)>0 ) print *, "Poll wanted ", wpoll
+     if ( len_trim(dbg_flag)>0 ) then
+       if ( dbg_flag == '-d' ) dbg = .true.
+       print *, "Debug wanted? ", trim(dbg_flag),  dbg
+     end if
    end if
    if ( infile == "-h"  .or. iargc() == 0 ) then
-     print *, "Usage: Rd_sites sites.mmyy  [site_name] [poll_name]"
+     print *, "Usage: Rd_sites sites.mmyy  [site_name] [poll_name] {-d}"
+     print *, " (-d triggers extra debug info)"
      print *, " => "
      print *, "     SITES.dmax     - dailymax values  "
      print *, "     SITES.dmean    - dailymean values  "
@@ -107,33 +113,34 @@ print *, "NSITES ", nsites, "FREQ ", freq, "WANTED_SITEXX ", wanted_site, trim(w
    do while (.true.)
      do isite = 1, nsites
 
-       read(io_in,"(a)",end=100) longline 
+       read(io_in,"(a)",err=100,end=100) longline 
 
-      if (isite == wanted_site ) then !NEW HERE
+       if (isite == wanted_site ) then !NEW HERE
 
-      ! We process by splitting on commas
-       comma=index(longline, ",")
-       wsite=longline(1:comma-1)      ! site name
-       longline=longline(comma+1:)    !
-       comma2=index(longline, ",")     ! end of date section
-       date= longline(1:comma2-1)      ! date
-       read(unit=date(2:3),fmt="(i2)")  dd
-       read(unit=date(5:6),fmt="(i2)")  mm
-       read(unit=date(8:11),fmt="(i4)")  yy
-       read(unit=date(13:14),fmt="(i2)")  hh
-       if ( dd /= old_dd ) then
-          if ( first ) then
+        ! We process by splitting on commas
+         comma=index(longline, ",")
+         wsite=longline(1:comma-1)      ! site name
+         longline=longline(comma+1:)    !
+         comma2=index(longline, ",")     ! end of date section
+         date= longline(1:comma2-1)      ! date
+         read(unit=date(2:3),fmt="(i2)")  dd
+         read(unit=date(5:6),fmt="(i2)")  mm
+         read(unit=date(8:11),fmt="(i4)")  yy
+         read(unit=date(13:14),fmt="(i2)")  hh
+         if ( dd /= old_dd ) then
+           if ( first ) then
              wanted_year = yy
              first = .false.
-          end if
-          if ( yy > wanted_year ) EXIT
-          jd = jd + 1
-          cmonth(jd) = mm
-          cday(jd) = dd
-          old_dd = dd
-       end if
-       longline=longline(comma2+1:)
-       read(longline,*) xin(1:nspec)
+           end if
+           if ( yy > wanted_year ) EXIT
+           jd = jd + 1
+           cmonth(jd) = mm
+           cday(jd) = dd
+           old_dd = dd
+         end if
+         nhours(jd) = nhours(jd)  + 1 
+         longline=longline(comma2+1:)
+         read(longline,*) xin(1:nspec)
 
      ! ----------------------------------
      !OLD  if (isite == wanted_site ) then
@@ -142,6 +149,7 @@ print *, "NSITES ", nsites, "FREQ ", freq, "WANTED_SITEXX ", wanted_site, trim(w
          data(jd,hh) = xin(wanted_spec)
          if( jd == 1 .and. hh == freq) then
                  data(jd,0) = data(jd,hh)
+                 nhours(jd) = 1  ! Initialise
          end if
       end if
      end do ! isite
@@ -149,6 +157,10 @@ print *, "NSITES ", nsites, "FREQ ", freq, "WANTED_SITEXX ", wanted_site, trim(w
 100 continue
 
     !write(unit=io_snam,fmt="(a20)") sitename(wanted_site)
+    if ( nhours(last_day) < 24 ) then
+       if ( dbg ) print *, "Incomplete last day ", last_day, nhours(last_day)
+       last_day = last_day  - 1
+    end if
     do jd = 1, last_day
 
        ! The file SITES.vals has all values for one day in one record.
@@ -164,6 +176,7 @@ print *, "NSITES ", nsites, "FREQ ", freq, "WANTED_SITEXX ", wanted_site, trim(w
         end if
 
        ! Max, Mean
+        print *, jd, nhours(jd), maxval(data(jd,:))
         write(unit=io_dmax,fmt="(g14.4)") maxval(data(jd,:))
         write(unit=io_dmean,fmt="(g14.4)") sum(data(jd,:))/24.0
         write(unit=io_dates,fmt="(4i4)") yy, cmonth(jd), cday(jd), jd
