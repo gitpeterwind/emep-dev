@@ -1,194 +1,5 @@
 !> <Biogenics_ml.f90 - A component of the EMEP MSC-W Chemical transport Model>
 !  **************************************************************************! 
-module MEGAN_ml
-
-use CheckStop_ml,   only: CheckStop, StopAll
-use emep_Config_mod, only : EmBio
-use GridValues_ml,  only: debug_proc, debug_li, debug_lj
-use LandDefs_ml,    only: LandDefs
-use ModelConstants_ml, only : MasterProc, BVOC_USED, DEBUG, NLANDUSEMAX
-use NetCDF_ml, only: ReadField_CDF !dsLPJ
-use Par_ml,         only: LIMAX, LJMAX
-use SmallUtils_ml,  only: find_index, NOT_FOUND, WriteArray
-
-implicit none
-private
-
-
-!/- subroutines:
-
-  public :: GetMEGAN_BVOC
-
- INCLUDE 'mpif.h'
- INTEGER STATUS(MPI_STATUS_SIZE),INFO
-
- character(len=80), private :: errmsg
-
- integer, parameter, public  :: NCLM   = 2 ! CF, DF, C3, C4
- integer, parameter, public  :: NMEGAN = 4
- real, public, allocatable :: megan_bvoc(:,:,:) 
- real, public, allocatable ::   clm_bvoc(:,:,:)  ! CLM based for MT so far.
-
- integer, public, dimension(NLANDUSEMAX) :: globBvoc2emep = -999 ! for mapping land-covers
- !character(len=2),public,dimension(4), parameter :: CLM_PFTS = [ 'DF', 'CF', 'C3', 'C4' ]
- character(len=2),public,dimension(2), parameter :: CLM_PFTS = [ 'DF', 'CF' ]
- character(len=7),public, dimension(NMEGAN), parameter :: MEGAN_VARS = (/&
-        "isobtr ", &
-        "isogrs ", &
-        "isofte ", & 
-        "isoshr " /) !, &
-
-contains
-
- !==========================================================================
-
- subroutine GetMEGAN_BVOC(nLC)
-   integer, intent(in) :: nLC  ! number land-cover types needing BVOC
-
-!.....................................................................
-!**    DESCRIPTION:
-
-!    Reads  MEGAN BVOC emission potentials.
-!    We have mtall for terpenes (could use separate later)
-!    and isobtr, isogrs, isofte, isoshr,isocrp, isoftd, although we
-!    ignore ftd = needleleaf decid as we don't have much data in larch
-!
-!    Note that in the EMEP model these emission factprs are used along
-!    with "real" land-cover data. We assume therefore that the EFs are
-!    a smooth field, which can be interpolated, and that the LC data provides
-!    the detail. Also, over Europe, we have detailed forest-species data and
-!    hence own EFs. Thus, for the rest of the globe, we are happy enough with
-!    the low-res 30min MEGAN data sets and don't bother with the 150 sec stuff.
-
-
-
-!    character(len=30), parameter :: &
-!            MEGAN_PRETXT  = "Isoprene_emission_factor_for_"
-!    character(len=50), parameter :: &
-!            MEGAN_POSTTXT = "_for_year_2000_(microgram_per_m2_per_hr)"
-!    character(len=30), dimension(NMEGAN), parameter :: MEGAN_NAMES= (/&
-!        "broadleaf_trees           ", &
-!        "grass_herbs               ", &
-!        "needleleaf_evergreen_trees", &
-!        "shrubs                    " /)  
-        !"needleleaf_deciduous_trees", &
-        !"crops                     " /) !, &
-        !"herbaceous                " /) !, &
-        !"emep_summt                "  /)
-!    character(len=7), dimension(NMEGAN), parameter :: MEGAN_VARS = (/&
-!        "isobtr ", &
-!        "isogrs ", &
-!        "isofte ", & 
-!        "isoshr " /) !, &
-        !"mtall  " /)  - not related to veg???  
-        !"isoftd ", & ! Not in 2.1. version, but part of 30min data
-        !"isocrp " /)! &
-        !"mtall  " /)   
-
-    !real    :: megan(LIMAX,LJMAX)  ! Emissions read from file
-    real, allocatable :: Ebvoc_tmp(:,:) 
-    real, parameter :: UNDEF = -1  ! avoids undef over sea
-    logical, save :: my_first_call = .true., dbg = .false.
-    integer ::  n
-    character(len=200) :: varname
-    character(len=20) :: code
-    character(len=300)  :: filname
-
-       !varname="Isoprene_emission_factor_for_broadleaf_trees_for_year_2000_\(microgram_per_m2_per_hr\)"
-       !varname="Isoprene_emission_factor_for_broadleaf_trees_for_year_2000_(microgram_per_m2_per_hr)"
-       !call ReadField_CDF('isobtr2000.nc',varname,&
-       !    megan,1,interpol='zero_order',known_projection='lon lat', &
-       !     needed=.true.,debug_flag=.true.)
-       !if( debug_proc ) print *, "MEGAN 2000 ", megan(debug_li, debug_lj)
-
-    ! Ebvoc already includes monthly LAI changes - might be wrong?
-    ! For simplicity we allocate 5 isos and 1 mt
-    
-     if ( my_first_call ) then
-         my_first_call = .false.
-         dbg = DEBUG%BIO .and. debug_proc
-
-         allocate ( megan_bvoc(LIMAX,LJMAX,NMEGAN ))
-!F24         allocate ( clm_bvoc(LIMAX,LJMAX,2) ) ! NCLM=4 = tmp!
-         allocate ( Ebvoc_tmp(LIMAX,LJMAX))
-
-         do n = 1, nLC
-           code = LandDefs(n)%code
-           select case(code)
-             case( 'DF', 'BF' )
-                globBvoc2emep(n) = 1
-             case( 'CF', 'NF' )
-                globBvoc2emep(n) = 3 ! CHECK - OK
-             case( 'GR' )
-                globBvoc2emep(n) = 2
-             case( 'SNL' )
-                globBvoc2emep(n) = 4
-             case( 'MS' )
-                globBvoc2emep(n) = 4
-             case default
-                if(dbg) write(*,*) "MEGAN_ml nocode: ", code
-           end select
-           if ( MasterProc ) write(*,*) 'MEGAN_ml glob:', &
-              code, globBvoc2emep(n)
-         end do ! n
-
-     end if
-         
-    ! Get BVOC data. Code assumes that we want isoprene first, then
-    !    apinene if provided. Multiple terpenes not considered yet,
-    !    but we have just Emt anyway.
-
-!F24     do n =1, NCLM
-!F24       varname = 'Emt_' // CLM_PFTS(n) ! just want MT from CLM
-!F24       !filname = tmpdir // 'CLM4emepEbvoc4.nc'
-!F24       filname = 'CLM4emepEbvoc4.nc'
-!F24       if ( dbg ) write(*,*) "CLM START ", n, &
-!F24                trim(CLM_PFTS(n)), trim(varname), trim(filname)
-!F24       call ReadField_CDF(filname,varname,&
-!F24          Ebvoc_tmp,1,interpol='conservative', known_projection='lon lat', &
-!F24          needed=.true.,debug_flag=.true., UnDef= -999.0 ) !&
-!F24         clm_bvoc(:,:,n ) = Ebvoc_tmp(:,:) ! CCE=0.57?
-!F24       clm_bvoc(:,:,n) = 10000.0
-!F24       if ( debug_proc ) then
-!F24         write(*,*) "CLM DEBUG ", n, &
-        ! print *, "CLM DEBUG ", n, &
-!F24            trim(CLM_PFTS(n)), Ebvoc_tmp(debug_li,debug_lj)
-!F24       end if
-!F24     end do
-      !if ( debug_proc ) then ! write(*,*) "MEGAN DEBUG ", n, &
-      !    call StopAll('CLM STOP')
-      !end if
-     do n =1, NMEGAN
-           !varname = trim(MEGAN_PRETXT) // trim(MEGAN_NAMES(n)) // MEGAN_POSTTXT
-           !filname = "Megan4Emep.nc"
-           !filname = tmpdir//trim(MEGAN_VARS(n)) // "2000_30m.nc"
-           !filname = tmpdir // 'Megan4Emep.nc'
-           filname = 'Megan4Emep.nc'
-           if ( dbg ) write(*,"(a,i2,2a15)") "MEGAN START ", n, &
-                trim(MEGAN_VARS(n)), trim(filname)
-
-          ! We read MEGAN, and take set undefined emissions to be zero
-          ! code will use simple  interpolate 
-           varname = MEGAN_VARS(n)  ! eg 'isobtr'
-           call ReadField_CDF(filname,varname,&
-              Ebvoc_tmp,1,interpol='conservative', known_projection='lon lat', &
-                needed=.true.,debug_flag=.true., UnDef=0.0 ) !&
-                !F24 needed=.true.,debug_flag=.true., UnDef= -999.0 ) !&
-!IMPEMENT SOON ,& Undef_threshold=UNDEF)
-
-           megan_bvoc(:,:,n ) = 0.57 * Ebvoc_tmp(:,:) ! CCE=0.57
-           !if ( dbg ) write(*,*) "MEGAN DEBUG ", n, &
-           if ( debug_proc ) then
-             write(*,"(a,i2,a,f12.2)") "MEGAN DEBUG ", n, &
-                trim(MEGAN_VARS(n)), Ebvoc_tmp(debug_li,debug_lj)
-           end if
-
-     end do ! n
-
-  end subroutine GetMEGAN_BVOC
-
- !=======================================================================
-end module MEGAN_ml
 
 module Biogenics_ml
 
@@ -218,9 +29,10 @@ module Biogenics_ml
   !    conserving these very imperfect numbers accurately ;-)
   !
   !    Dave Simpson, 2010-2012
+  !    Updated for CLM-GLC merge, 2017
   !---------------------------------------------------------------------------
 
-  use CheckStop_ml,      only: CheckStop, StopAll !BIO
+  use CheckStop_ml,      only: CheckStop, StopAll
   use ChemSpecs,         only : species
   use emep_Config_mod, only: EmBio
   use GridValues_ml    , only : i_fdom,j_fdom, debug_proc,debug_li,debug_lj
@@ -230,7 +42,6 @@ module Biogenics_ml
   use LandPFT_ml,        only: MapPFT_LAI, pft_lai
   use Landuse_ml,        only : LandCover
   use LocalVariables_ml, only : Grid  ! -> izen, DeltaZ
-  use MEGAN_ml, only : GetMEGAN_BVOC, globBvoc2emep, megan_bvoc, MEGAN_VARS
   use MetFields_ml,      only : t2_nwp
   use ModelConstants_ml, only : NPROC, MasterProc, TINY, &
                            NLANDUSEMAX, IOU_INST, & 
@@ -271,7 +82,6 @@ module Biogenics_ml
   !  character(len=7), save, dimension(NEMIS_BioNat), public:: &
   !    EMIS_BioNat =  (/ "C5H8   " , "BIOTERP" , "NO     " /)
  
-  INTEGER STATUS(MPI_STATUS_SIZE),INFO
   integer, public, parameter :: N_ECF=2, ECF_ISOP=1, ECF_TERP=2
   integer, public, parameter :: BIO_ISOP=1, BIO_MTP=2, &
                                  BIO_MTL=3 ! , BIO_SOILNO=4, BIO_SOILNH3=5
@@ -287,8 +97,6 @@ module Biogenics_ml
  ! Set true if LCC read from e.g. EMEP_EuroBVOC.nc:
  ! (Currently for 1st four LCC, CF, DF, BF, NF)
   logical, private, dimension(NLANDUSEMAX), save :: HaveLocalEF 
-
-! real, public, save, dimension(LIMAX,LJMAX,size(BVOC_USED)+NSOIL_EMIS) :: &
 
   ! EmisNat is used for BVOC; soil-NO, also in futur for sea-salt etc.
   ! Main criteria is not provided in gridded data-bases, often land-use
@@ -388,10 +196,6 @@ module Biogenics_ml
    ! to molecules/cm2/s  (needs more documentation!)
 
    !====================================
-    if ( EmBio%GlobBvocMethod == 'MEGAN' ) then
-      call GetMEGAN_BVOC( last_bvoc_LC )
-    end if
-   !====================================
 
     call GetEuroBVOC()
    !====================================
@@ -402,7 +206,6 @@ module Biogenics_ml
 
     call MergedBVOC() 
    !====================================
-!call StopAll('MERG CLM')
 
    !========================================================================!
 
@@ -460,17 +263,19 @@ module Biogenics_ml
        ibvoc = find_index( VegName(iveg), LandDefs(:)%code )
        HaveLocalEF(ibvoc) = .true.
        do iEmis = 1, size(BVOC_USED)
-          varname = trim(BVOC_USED(iEmis)) // "_" // trim(VegName(iVeg))
+         varname = trim(BVOC_USED(iEmis)) // "_" // trim(VegName(iVeg))
           
-          call ReadField_CDF('EMEP_EuroBVOC.nc',varname,&
-             bvocEF(:,:,ibvoc,iEmis),1,interpol='zero_order',needed=.true.,debug_flag=.false.,UnDef=-999.0)
+         call ReadField_CDF('EMEP_EuroBVOC.nc',varname,&
+             bvocEF(:,:,ibvoc,iEmis),1,interpol='zero_order',needed=.true.,&
+              debug_flag=.false.,UnDef=-999.0)
 
  
          if( debug_proc ) then
-              write(*, "(2a,f12.3,3i2)") "EURO-BVOC:E ", &
-             trim(varname), bvocEF(debug_li, debug_lj,ibvoc,iEmis), iVeg, ibvoc, iEmis
-              write(*, "(2a,2es12.3)") "EURO-BVOC:minmax ", &
-             trim(varname), minval(bvocEF(:,:,ibvoc,iEmis)), maxval(bvocEF(:,:,ibvoc,iEmis))
+           write(*, "(2a,f12.3,3i2)") "EURO-BVOC:E ", &
+             trim(varname), bvocEF(debug_li, debug_lj,ibvoc,iEmis), &
+               iVeg, ibvoc, iEmis
+           write(*, "(2a,2es12.3)") "EURO-BVOC:minmax ", trim(varname), &
+             minval(bvocEF(:,:,ibvoc,iEmis)), maxval(bvocEF(:,:,ibvoc,iEmis))
          end if     
 
        end do
@@ -513,8 +318,6 @@ module Biogenics_ml
          write(*,*) dtxt//" Start"
          i= debug_li; j= debug_lj
          nlu= LandCover(i,j)%ncodes
-         !write(*,*) 'INTO MEGAN Merge ', maxval(megan_bvoc)!F24, maxval(clm_bvoc)
-         write(*,*) 'MEGAN map: ', globBvoc2emep
          write(*,*) 'MEGAN  DBG stuff:', me, debug_proc, debug_li, debug_lj
          write(*,*) 'MEGAN  DBG codes:', nlu, LandCover(i,j)%codes(1:nlu)
       end if
@@ -533,71 +336,24 @@ module Biogenics_ml
             pft     = LandType(iL)%pft
 
            gLC1 = -1
-           if ( EmBio%GlobBvocMethod == 'MEGAN' ) then ! set these as defaults first
-              gLC1 = globBvoc2emep(iL)
-
-             if( debug_flag ) then
-               write(*,"(a,3i5,2L2,i3)") &
-                   "TryMergeBVOC:" //trim(LandDefs(iL)%name), iL, pft, gLC1, &
-                     use_local, HaveLocalEF(iL), last_bvoc_LC
-               if ( gLC1 > 0 ) then
-                  write(*,"(a,2i4,9f9.3)") 'MEGAN/CLM EMIS: ', iL, &
-                   gLC1, megan_bvoc(i,j,gLC1)!F24, clm_bvoc(i,j,gLC2) 
-               end if
-             end if
-           end if
+           !.. some MEGAN pre-code removed here
 
            if( use_local .and. HaveLocalEF(iL) ) then 
 
                 ! Keep EFs from EuroBVOC
                 if( debug_flag ) merge_case = 'Local'
 
-           else if ( EmBio%GlobBvocMethod == 'MEGAN' .and. &
-                     globBvoc2emep(iL) > 0 .and. & ! okay test for CLM also
-                         iL <= last_bvoc_LC ) then ! otherwise use defaults
-
-               bvocEF(i,j,iL,BIO_ISOP) = megan_bvoc(i,j,gLC1)
-              if( gLC1 > 0 .and. debug_flag ) then
-                  write(*,"(a,2i4,2f12.3)") 'MEGAN ISO ', iL, gLC1, &
-                    bvocEF(i,j,iL,BIO_ISOP), megan_bvoc(i,j,gLC1)
-              end if
-
-              ! give all non-Euro forests same rate, equiv 1200 g/m2
-              ! Matches Table 3 of Guenther 2012 pretty well, and we don't
-              ! really know the species anyway!
-              ! Assume DF + BF have 70:30 split MTL:MTP 
-              ! Assume CF + NF have 30:70 split MTL:MTP 
-              if( iL == 1 .or. iL == 3 ) then 
-               bvocEF(i,j,iL,BIO_MTP) = 0.7 * 1200 
-               bvocEF(i,j,iL,BIO_MTL) = 0.3 * 1200 
-              else if( iL == 2 .or. iL == 4 ) then 
-               bvocEF(i,j,iL,BIO_MTP) = 0.3 * 1200
-               bvocEF(i,j,iL,BIO_MTL) = 0.7 * 1200
-              else ! SNL, GR etc, G EF12-EF14
-               bvocEF(i,j,iL,BIO_MTP) = 6.25  ! Guenther et al 2012 
-               bvocEF(i,j,iL,BIO_MTL) = 6.25 * 0.57  ! Guenther et al 2012 
-              end if
-       
-               !if( flag ) then
-               !   write(*,*) '  CLM MTP ', iL,  &
-               !       bvocEF(i,j,iL,BIO_MTL)+bvocEF(i,j,iL,BIO_MTL)
-              !end if
-
-               if( debug_flag )  then
-                   merge_case = 'megan/clm'
-                   write(*,"(a,i4,9f12.4)")  "DO:MergeBVOC: ", iL, &
-                     LandDefs(iL)%Eiso*LandDefs(iL)%BiomassD, &
-                     LandDefs(iL)%Emtp*LandDefs(iL)%BiomassD, &
-                     LandDefs(iL)%Emtl*LandDefs(iL)%BiomassD,&
-                     bvocEF(i,j,iL,:)
-               end if
+           !.. some MEGAN pre-code removed here
 
            else if ( iL <= last_bvoc_LC ) then ! otherwise use defaults
              
      ! CLF canopy light factor, 1/1.7=0.59, based on Lamb 1993 (cf MEGAN 0.57)
-               bvocEF(i,j,iL,BIO_ISOP) = LandDefs(iL)%Eiso * LandDefs(iL)%BiomassD *EmBio%CLF
-               bvocEF(i,j,iL,BIO_MTL)  = LandDefs(iL)%Emtl * LandDefs(iL)%BiomassD *EmBio%CLF
-               bvocEF(i,j,iL,BIO_MTP)  = LandDefs(iL)%Emtp * LandDefs(iL)%BiomassD
+               bvocEF(i,j,iL,BIO_ISOP) = LandDefs(iL)%Eiso * &
+                   LandDefs(iL)%BiomassD *EmBio%CLF
+               bvocEF(i,j,iL,BIO_MTL)  = LandDefs(iL)%Emtl * &
+                   LandDefs(iL)%BiomassD *EmBio%CLF
+               bvocEF(i,j,iL,BIO_MTP)  = LandDefs(iL)%Emtp * &
+                   LandDefs(iL)%BiomassD
                 if( debug_flag ) then
                    merge_case = 'defaultBVOC'
                   write(*,"(a,i3,8f8.2)") &
@@ -619,13 +375,13 @@ module Biogenics_ml
               end if
               write(*,"(a24,2i4,2L2,f9.4,9f10.3)") &
                 "MergeBVOC:" // trim(merge_case), &
-                 iL, pft,  use_local, HaveLocalEF(iL),  &
-                   LandCover(i,j)%fraction(iiL), biso, bmt, LandDefs(iL)%Eiso, &
-                     LandDefs(iL)%Emtp, LandDefs(iL)%Emtl
+                  iL, pft,  use_local, HaveLocalEF(iL),  &
+                   LandCover(i,j)%fraction(iiL), biso, bmt,&
+                    LandDefs(iL)%Eiso, LandDefs(iL)%Emtp, LandDefs(iL)%Emtl
            end if 
         end do LULOOP
-      end do
-      end do
+      end do !j
+      end do !i
 
    end subroutine MergedBVOC
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -641,8 +397,9 @@ module Biogenics_ml
       logical :: mydebug
       logical, save :: my_first_call = .true.
       real, allocatable, dimension(:,:,:) ::  workarray
+      character(len=*), parameter :: dtxt='SetDailyBVOC:' 
 
-      if( MasterProc .and. DEBUG%BIO ) write(*,"(a,3i5)") "Into SetDailyBVOC", &
+      if( MasterProc .and. DEBUG%BIO ) write(*,"(a,3i5)") dtxt//"start ", &
             daynumber, last_daynumber, last_bvoc_LC
 
       if ( daynumber == last_daynumber ) return
@@ -650,12 +407,12 @@ module Biogenics_ml
 
       if ( DEBUG%BIO .and.  my_first_call  ) then
            allocate(  workarray(last_bvoc_LC,LIMAX,LJMAX), stat=alloc_err )
-           call CheckStop( alloc_err , "workarray alloc failed"  )
+           call CheckStop( alloc_err , dtxt//"workarray alloc failed"  )
            workarray = 0.0
       end if
 
-      do i = 1, limax !PPP LIMAX
-      do j = 1, ljmax !PPP LJMAX
+      do i = 1, limax
+      do j = 1, ljmax
 
         nlu = LandCover(i,j)%ncodes
 
@@ -672,8 +429,8 @@ module Biogenics_ml
             !for tundra and wetlands we have zero LAI, so omit
             !LAI scaling. Not an ideal system.... rewrite one day.
              
-              if( LandCover(i,j)%LAI(iiL)< 1.0e-5 ) then ! likely wetlands, tundra
-                 LAIfac = 1.0
+              if( LandCover(i,j)%LAI(iiL)< 1.0e-5 ) then
+                 LAIfac = 1.0       ! likely wetlands, tundra
               else
                 LAIfac = LandCover(i,j)%LAI(iiL)/LandDefs(IL)%LAImax
                 LAIfac= min(LAIfac, 1.0)
@@ -689,44 +446,31 @@ module Biogenics_ml
               if ( mydebug ) then
                  b = 0.0
                  if ( iL <= last_bvoc_LC ) b = bvocEF(i, j,iL, BIO_ISOP)
-                 write(*,"(a,a10,2i5,f9.5,2f7.3,9f10.3)") "SetBVOC ", &
+                 write(*,"(a,a10,2i5,f9.5,2f7.3,9f10.3)") dtxt//"Set ", &
                   trim(LandDefs(iL)%name), daynumber, iL, &
                    LandCover(i,j)%fraction(iiL), &
                    LandCover(i,j)%LAI(iiL), LandDefs(iL)%LAImax, b, LAIfac, &
                      ( day_embvoc(i, j, ibvoc), ibvoc = 1, size(BVOC_USED) ) 
 
-     !PALEO write(*,'(a,i3,3g12.3)') "NPALEObvoc ", me, &
-     !   PALEO_mlai(i,j), PALEO_miso(i,j),PALEO_mmon(i,j)
-                  
               end if
               ! When debugging it helps with an LAI map
               if( DEBUG%BIO .and. my_first_call ) &
                  workarray(iL,i,j) = workarray(iL,i,j) + &
                     bvocEF(i, j,iL, BIO_ISOP) * & 
                     LandDEfs(iL)%LAImax*LandCover(i,j)%fraction(iiL)
-                    !JANLandCover(i,j)%LAImax(iiL)*LandCover(i,j)%fraction(iiL)
         end do LULOOP
       end do ! ij
       end do
 
-      !if ( DEBUG%BIO ) then
        if ( my_first_call  ) then ! print out 1st day
-      !   do iL=1,4
-      !        call printCDF("MEG-OUT"//trim(MEGAN_VARS(iL)), megan_bvoc(:,:,iL), "ug/m2/h" )
-      !   end do
          if ( DEBUG%BIO ) then
            do iL = 1, 12
-              call printCDF("BIO-OUT"//trim(LandDefs(iL)%code), workarray(iL,:,:), "ug/m2/h" )
-!XX              workarray(iL,:,:) = day_embvoc(:,:,1)
-!XX              call printCDF("BIO-OUT"//trim(LandDefs(iL)%code, workarray, "m2/m2" )
-!              call printCDF("BIO-Eiso", workarray, "ug/m2/h" )
-!              workarray(:,:) = day_embvoc(:,:,2) + day_embvoc(:,:,3)
-!              call printCDF("BIO-Emt", workarray, "ug/m2/h" )
-!              deallocate(  workarray )
+              call printCDF(dtxt//"BIO-OUT"//trim(LandDefs(iL)%code), &
+                      workarray(iL,:,:), "ug/m2/h" )
            end do
          end if
       end if 
-       my_first_call = .false.
+      my_first_call = .false.
 
    end subroutine SetDailyBVOC
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -798,8 +542,8 @@ module Biogenics_ml
   real            :: cL    ! Factor for light effects
   real, parameter :: &
       CL1 = 1.066  , &    ! Guenther et al's G93/G95 params
-      ALPHA = 0.0027, &   ! Guenther et al's G93/G95 params
-      AG99  = 0.001 * 1.42  ! " Warneke update, but not same as G99?
+      ALPHA = 0.0027!,&   ! Guenther et al's G93/G95 params
+!     AG99  = 0.001 * 1.42  ! " Warneke update, but not same as G99?
 
   if ( size(BVOC_USED) == 0  ) return   ! e.g. for ACID only
 

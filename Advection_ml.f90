@@ -38,9 +38,9 @@
 ! "Bott's fourth order scheme". The routine preadvx and preadvy take care of
 ! the transfer of information between processors before the advection step.
 !
-! The advvk routine performs the vertical advection. Bott's second order 
-! scheme with variable grid distance is used. 
-! The calculation of the coefficients used for this scheme is done in the 
+! The advvk routine performs the vertical advection. Bott's second order
+! scheme with variable grid distance is used.
+! The calculation of the coefficients used for this scheme is done in the
 ! routine vgrid.
 !
 ! Notes from Peter; 7/11/01
@@ -79,7 +79,7 @@
   use Io_Progs_ml,       only : PrintLog
   use ModelConstants_ml, only : KMAX_BND,KMAX_MID,NMET, nstep, nmax, &
                   dt_advec, dt_advec_inv,  PT,Pref, KCHEMTOP, NPROCX,NPROCY,NPROC, &
-                  FORECAST,& 
+                  FORECAST,&
                   USE_CONVECTION,DEBUG_ADV,USE_uEMEP,uEMEP,ZERO_ORDER_ADVEC
   use MetFields_ml,      only : ps,sdot,Etadot,SigmaKz,EtaKz,u_xmj,v_xmi,cnvuf,cnvdf&
                                 ,uw,ue,vs,vn
@@ -110,8 +110,8 @@
 !  real, private,save,allocatable, dimension(:,:,:) :: vs,vn
 
   integer, public, parameter :: ADVEC_TYPE = 1 ! Divides by advected p*
-! integer, public, parameter :: ADVEC_TYPE = 2 ! Divides by "meteorologically" 
-                                               ! advected p* 
+! integer, public, parameter :: ADVEC_TYPE = 2 ! Divides by "meteorologically"
+                                               ! advected p*
 
   public :: assign_dtadvec
   public :: assign_nmax
@@ -134,9 +134,9 @@
 
    ! Checks & warnings
    ! introduced after getting Nan when using "poor" meteo can give this too.
-   !  ps3d can get zero values when winds are extremely divergent (empty a 
-   !  gridcell for air). This seems to happen only very occasionally (one 
-   !  gridcell, once every week for instance); & does not harm results 
+   !  ps3d can get zero values when winds are extremely divergent (empty a
+   !  gridcell for air). This seems to happen only very occasionally (one
+   !  gridcell, once every week for instance); & does not harm results
    !  significantly, at least much less than the poor metdata does anyway.
    !  Still, we need to know about it.
 
@@ -160,7 +160,7 @@
 
     implicit none
     real, intent(in) ::GRIDWIDTH_M
-    
+
     if(dt_advec<0.0)then
        dt_advec=1800.0
        if(GRIDWIDTH_M<61000.0) dt_advec=1200.0
@@ -234,7 +234,7 @@
     !2)Do not advect but only "mix" the concentrations near poles ("near"
     !  poles is determined by NITERXMAX.
     !
-    !1/10/2012: divide by ps3d (p*) after each partial advection (x,y or z 
+    !1/10/2012: divide by ps3d (p*) after each partial advection (x,y or z
     !direction)
     !
     !Flexible timestep. Peter Wind january-2002
@@ -256,13 +256,13 @@
     !
     ! March 2013: Eta coordinates
     ! P* = Ps-PT is replaced by (dA+dB*Ps)/(dA/Pref+dB)
-    ! Both are defined by dP/dEta, but in general Eta coordinates it is not height independent 
+    ! Both are defined by dP/dEta, but in general Eta coordinates it is not height independent
 
     implicit none
 
     !    local
 
-    integer i,j,k,n,ix,iix,ip,info
+    integer i,j,k,n,ix,iix
     real dth
     real xntop(NSPEC_ADV,LIMAX,LJMAX)
     real xnw(3*NSPEC_ADV),xne(3*NSPEC_ADV)
@@ -272,20 +272,19 @@
     real psn(3),pss(3)
     real ds3(2:KMAX_MID),ds4(2:KMAX_MID)
     real xcmax(KMAX_MID,GJMAX),ycmax(KMAX_MID,GIMAX),scmax,sdcmax
-    real dt_smax,dt_s,div
+    real dt_smax,dt_s
     real dt_x(LJMAX,KMAX_MID),dt_y(LIMAX,KMAX_MID)
     real dt_xmax(LJMAX,KMAX_MID),dt_ymax(LIMAX,KMAX_MID)
     integer niterx(LJMAX,KMAX_MID),nitery(LIMAX,KMAX_MID)
     integer niterxys,niters,nxy,ndiff
-    integer iterxys,iters,iterx,itery,nxx,nxxmin,nyy,isec,dx,dy
+    integer iterxys,iters,iterx,itery,nxx,nxxmin,nyy,dx,dy
     integer ::isum,isumtot,iproc,isec_poll1,ipoll,isec_poll
     real :: xn_advjktot(NSPEC_ADV),xn_advjk(NSPEC_ADV),rfac
     real :: dpdeta0,mindpdeta,xxdg,fac1
-    real :: xnold,xn_k_old,xn_k(kmax_mid,uEMEP%Nsec_poll,(uEMEP%dist*2+1)*(uEMEP%dist*2+1)),xn,x,xx
+    real :: xn_k(kmax_mid,uEMEP%Nsec_poll,(uEMEP%dist*2+1)*(uEMEP%dist*2+1)),x
     real :: fluxx(NSPEC_ADV,-1:LIMAX+1)
     real :: fluxy(NSPEC_ADV,-1:LJMAX+1)
     real :: fluxk(NSPEC_ADV,KMAX_MID)
-    real :: f_in,f_out
     logical,save :: firstcall = .true.
 
     !NITERXMAX=max value of iterations accepted for fourth order Bott scheme.
@@ -309,7 +308,7 @@
                'COMMENT: Advection routine will work faster if NDY = 1'
        end if
        !Overwrite the cooefficients for vertical advection, with Eta-adpated values
-       call vgrid_Eta 
+       call vgrid_Eta
        if(.not.allocated(loc_frac_1d))allocate(loc_frac_1d(0,1,1,1))!to avoid error messages
        if(ZERO_ORDER_ADVEC)then
           hor_adv0th = .true.
@@ -495,7 +494,7 @@
                            ,dth,fac1,fluxx)
 
                       do i = li0,li1
-                         if(USE_uEMEP .and. k>KMAX_MID-uEMEP%Nvert)call uemep_adv_x(fluxx,i,j,k)                             
+                         if(USE_uEMEP .and. k>KMAX_MID-uEMEP%Nvert)call uemep_adv_x(fluxx,i,j,k)
 
                          dpdeta0=(dA(k)+dB(k)*ps(i,j,1))*dEta_i(k)
                          psi = dpdeta0/max(dpdeta(i,j,k),1.0)
@@ -509,7 +508,7 @@
              !          end do !k horizontal (x) advection
 
              call Add_2timing(18,tim_after,tim_before,"advecdiff:advx")
-          
+
              ! y-direction
              !          do k = 1,KMAX_MID
              do i = li0,li1
@@ -657,10 +656,10 @@
 
           end do !k horizontal (x) advection
 
-          call Add_2timing(18,tim_after,tim_before,"advecdiff:preadvx,advx") 
+          call Add_2timing(18,tim_after,tim_before,"advecdiff:preadvx,advx")
 
           do iters=1,niters
-             
+
              ! perform vertical advection
              do j = lj0,lj1
                 do i = li0,li1
@@ -813,9 +812,9 @@
                                !assumes mixing ratios units, but weight by mass
                                xn_k(k,isec_poll,n)=xn_k(k,isec_poll,n)+xn_adv(ix,i,j,k)*uEMEP%poll(ipoll)%mw(iix)
                             end do
-                            
+
                             xn_k(k,isec_poll,n)=xn_k(k,isec_poll,n)*loc_frac(isec_poll,dx,dy,i,j,k)
-                           
+
                           end do
                          call vertdiff_1d(xn_k(1,isec_poll,n),EtaKz(i,j,1,1),ds3,ds4,ndiff)!does the same as vertdiffn, but for one component
                       end do
@@ -824,7 +823,7 @@
                 enddo
              enddo
           end if
-            
+
           !________ vertical diffusion ______
           call vertdiffn(xn_adv(1,i,j,1),EtaKz(i,j,1,1),ds3,ds4,ndiff)
           !________
@@ -1367,7 +1366,6 @@
 
 !     executes vertical diffusion
 
-    use ModelConstants_ml  , only : KCHEMTOP, EPSIL
     use ChemSpecs,         only : NSPEC_ADV
 
     implicit none
@@ -1417,8 +1415,6 @@
   subroutine vertdiff_1d(xn_adv,SigmaKz,ds3,ds4,ndiff)
 
 !     executes vertical diffusion
-
-    use ModelConstants_ml  , only : KCHEMTOP, EPSIL
 
     implicit none
 
@@ -1491,7 +1487,6 @@
 !            SigmaKz(k)*ds4(k)= SigmaKz(k)*dt_advec*dhs1i(k+1)*dhs2i(k)
 !            = SigmaKz(k+1)*dt_advec/(sigma_bnd(k+1)-sigma_bnd(k))/(sigma_mid(k)-sigma_mid(k-1))
 
-    use ModelConstants_ml  , only : KCHEMTOP, EPSIL
     use ChemSpecs,         only : NSPEC_ADV
 
     implicit none
@@ -1508,7 +1503,7 @@
 
     integer  k,n
 
-    real, dimension(0:KMAX_MID-1) :: adif,bdif,cdif,e1  
+    real, dimension(0:KMAX_MID-1) :: adif,bdif,cdif,e1
 
     real ndiffi
 
@@ -1554,7 +1549,6 @@
 
 !     executes vertical diffusion ndiff times
 
-    use ModelConstants_ml  , only : KCHEMTOP, EPSIL
     use ChemSpecs,         only : NSPEC_ADV
 
     implicit none
@@ -1571,7 +1565,7 @@
 
     integer  k,n
 
-    real, dimension(KMAX_MID) :: adif,bdif,cdif,e1 
+    real, dimension(KMAX_MID) :: adif,bdif,cdif,e1
 
     real ndiffi
 
@@ -1627,7 +1621,7 @@
 !     in such a way that a Courant number of one corresponds exactly to "empty" a cell.
 !     (small effects on results: less than 1%)
 
-    use Par_ml   , only : me,li0,li1,limax
+    use Par_ml   , only : li0,li1,limax
     use ChemSpecs,         only : NSPEC_ADV
     use MassBudget_ml , only : fluxin,fluxout
     implicit none
@@ -1635,8 +1629,8 @@
 !    parameter:
 !    input
     real,intent(in) :: vel(0:LIMAX),velbeg, velend
-    real,intent(in),dimension(NSPEC_ADV,3) :: xnbeg,xnend 
-    real,intent(in),dimension(3)           :: psbeg,psend 
+    real,intent(in),dimension(NSPEC_ADV,3) :: xnbeg,xnend
+    real,intent(in),dimension(3)           :: psbeg,psend
     real,intent(in),dimension(0:LIMAX+1):: xm2loc,xmdloc
     real,intent(in) :: dth,fac1
 
@@ -1676,7 +1670,7 @@ if(hor_adv0th)then
          flux(:,ij)=C1*xn_adv(:,ij)
          fluxps(ij)=C1*ps3d(ij)
       else
-         flux(:,ij)=C1*xn_adv(:,ij+1)         
+         flux(:,ij)=C1*xn_adv(:,ij+1)
          fluxps(ij)=C1*ps3d(ij+1)
       end if
    end do
@@ -1686,7 +1680,7 @@ if(hor_adv0th)then
       flux(:,ij)=C1*xnbeg(:,3)
       fluxps(ij)=C1*psbeg(3)
    else
-      flux(:,ij)=C1*xn_adv(:,ij+1)         
+      flux(:,ij)=C1*xn_adv(:,ij+1)
       fluxps(ij)=C1*ps3d(ij+1)
    end if
    ij=limax
@@ -1695,7 +1689,7 @@ if(hor_adv0th)then
       flux(:,ij)=C1*xn_adv(:,ij)
       fluxps(ij)=C1*ps3d(ij)
    else
-      flux(:,ij)=C1*xnend(:,1)         
+      flux(:,ij)=C1*xnend(:,1)
       fluxps(ij)=C1*psend(1)
    end if
 
@@ -1704,7 +1698,7 @@ if(hor_adv0th)then
       xn_adv(:,ij) = max(0.0,xn_adv(:,ij)                            &
            -xm2loc(ij)*(flux(:,ij)-flux(:,ij-1)))
       ps3d(ij)     = max(0.0,ps3d(ij)                                &
-           -xm2loc(ij)*(fluxps(ij)-fluxps(ij-1)))      
+           -xm2loc(ij)*(fluxps(ij)-fluxps(ij-1)))
    end do
 
 else
@@ -2015,7 +2009,7 @@ else
     if(limtlow.eq.-1)then
       hel1(:) = xnbeg(:,3)*xmdloc(0)
       hel2(:) = flux(:,0) +  flux(:,-1)
-      where(hel1(:).lt.hel2(:)) flux(:,0)=flux(:,0)*hel1(:)/(hel2(:)+1.0E-100)
+      where(hel1(:).lt.hel2(:)) flux(:,0)=flux(:,0)*hel1(:)/(hel2(:)+1d-100)
       hel1ps = psbeg(3)*xmdloc(0)
       hel2ps = fluxps(0) +  fluxps(-1)
       if(hel1ps.lt.hel2ps) fluxps(0) = fluxps(0)*hel1ps/hel2ps
@@ -2034,8 +2028,8 @@ else
           hel1(:) = xn_adv(:,li0)*xmdloc(li0)
           hel2(:) = flux(:,li0) + flux(:,li0-1)
           where(hel1(:).lt.hel2(:))
-            flux(:,li0-1) =-flux(:,li0-1)*hel1(:)/(hel2(:)+1.0E-100)
-            flux(:,li0)   = flux(:,li0  )*hel1(:)/(hel2(:)+1.0E-100)
+            flux(:,li0-1) =-flux(:,li0-1)*hel1(:)/(hel2(:)+1d-100)
+            flux(:,li0)   = flux(:,li0  )*hel1(:)/(hel2(:)+1d-100)
             xn_adv(:,li0) = 0.
           elsewhere
             flux(:,li0-1) =-flux(:,li0-1)
@@ -2114,8 +2108,8 @@ else
 
         where(hel1(:).lt.hel2(:))
 !On IBM machine the division can give overflow if hel2 is too small
-          flux(:,ij)   =-(flux(:,ij)  *hel1(:))/(hel2(:)+1.0E-100)
-          flux(:,ij+1) = (flux(:,ij+1)*hel1(:))/(hel2(:)+1.0E-100)
+          flux(:,ij)   =-(flux(:,ij)  *hel1(:))/(hel2(:)+1d-100)
+          flux(:,ij+1) = (flux(:,ij+1)*hel1(:))/(hel2(:)+1d-100)
           xn_adv(:,ij+1) = 0.
         elsewhere
           flux(:,ij) = -flux(:,ij)
@@ -2145,7 +2139,7 @@ else
         hel1(:) = xnend(:,1)*xmdloc(li1+1)
         hel2(:) = flux(:,li1+1) + flux(:,li1)
         where(hel1(:).lt.hel2(:))
-          flux(:,li1) =-flux(:,li1)*hel1(:)/(hel2(:)+1.0E-100)
+          flux(:,li1) =-flux(:,li1)*hel1(:)/(hel2(:)+1d-100)
         elsewhere
           flux(:,li1) =-flux(:,li1)
         end where
@@ -2227,8 +2221,8 @@ end if
 !    parameter:
 !    input
     real,intent(in) :: vel(0:LIMAX*LJMAX),velbeg, velend
-    real,intent(in),dimension(NSPEC_ADV,3) :: xnbeg,xnend  
-    real,intent(in),dimension(3)           :: psbeg,psend  
+    real,intent(in),dimension(NSPEC_ADV,3) :: xnbeg,xnend
+    real,intent(in),dimension(3)           :: psbeg,psend
     real,intent(in),dimension(0:LJMAX+1):: xm2loc,xmdloc
     real,intent(in):: dth,fac1
 
@@ -2269,7 +2263,7 @@ if(hor_adv0th)then
          flux(:,ij)=C1*xn_adv(:,ij*LIMAX)
          fluxps(ij)=C1*ps3d(ij*LIMAX)
       else
-         flux(:,ij)=C1*xn_adv(:,(ij+1)*LIMAX)         
+         flux(:,ij)=C1*xn_adv(:,(ij+1)*LIMAX)
          fluxps(ij)=C1*ps3d((ij+1)*LIMAX)
       end if
    end do
@@ -2279,7 +2273,7 @@ if(hor_adv0th)then
       flux(:,ij)=C1*xnbeg(:,3)
       fluxps(ij)=C1*psbeg(3)
    else
-      flux(:,ij)=C1*xn_adv(:,(ij+1)*LIMAX)         
+      flux(:,ij)=C1*xn_adv(:,(ij+1)*LIMAX)
       fluxps(ij)=C1*ps3d((ij+1)*LIMAX)
    end if
    ij=ljmax
@@ -2288,7 +2282,7 @@ if(hor_adv0th)then
       flux(:,ij)=C1*xn_adv(:,ij*LIMAX)
       fluxps(ij)=C1*ps3d(ij*LIMAX)
    else
-      flux(:,ij)=C1*xnend(:,1)         
+      flux(:,ij)=C1*xnend(:,1)
       fluxps(ij)=C1*psend(1)
    end if
 
@@ -2620,7 +2614,7 @@ else
     if(limtlow.eq.-1)then
       hel1(:) = xnbeg(:,3)*xmdloc(0)
       hel2(:) = flux(:,0) +  flux(:,-1)
-      where(hel1(:).lt.hel2(:)) flux(:,0)=flux(:,0)*hel1(:)/(hel2(:)+1.0E-100)
+      where(hel1(:).lt.hel2(:)) flux(:,0)=flux(:,0)*hel1(:)/(hel2(:)+1d-100)
       hel1ps = psbeg(3)*xmdloc(0)
       hel2ps = fluxps(0) +  fluxps(-1)
       if(hel1ps.lt.hel2ps) fluxps(0)=fluxps(0)*hel1ps/hel2ps
@@ -2639,8 +2633,8 @@ else
           hel1(:) = xn_adv(:,lj0*LIMAX)*xmdloc(lj0)
           hel2(:) = flux(:,lj0) +  flux(:,lj0-1)
           where(hel1(:).lt.hel2(:))
-            flux(:,lj0-1) =-flux(:,lj0-1)*hel1(:)/(hel2(:)+1.0E-100)
-            flux(:,lj0)   = flux(:,lj0)  *hel1(:)/(hel2(:)+1.0E-100)
+            flux(:,lj0-1) =-flux(:,lj0-1)*hel1(:)/(hel2(:)+1d-100)
+            flux(:,lj0)   = flux(:,lj0)  *hel1(:)/(hel2(:)+1d-100)
             xn_adv(:,lj0*LIMAX) = 0.
           elsewhere
             flux(:,lj0-1) =-flux(:,lj0-1)
@@ -2724,8 +2718,8 @@ else
       hel2(:) = flux(:,ij+1) +  flux(:,ij)
       where(hel1(:).lt.hel2(:))
 !On IBM machine the division can give overflow if hel2 is too small
-        flux(:,ij)   =-flux(:,ij)  *hel1(:)/(hel2(:)+1.0E-100)
-        flux(:,ij+1) = flux(:,ij+1)*hel1(:)/(hel2(:)+1.0E-100)
+        flux(:,ij)   =-flux(:,ij)  *hel1(:)/(hel2(:)+1d-100)
+        flux(:,ij+1) = flux(:,ij+1)*hel1(:)/(hel2(:)+1d-100)
         xn_adv(:,(ij+1)*LIMAX) = 0.
       elsewhere
         flux(:,ij)   =-flux(:,ij)
@@ -2757,7 +2751,7 @@ else
         hel1(:) = xnend(:,1)*xmdloc(lj1+1)
         hel2(:) = flux(:,lj1+1) + flux(:,lj1)
         where(hel1(:).lt.hel2(:))
-          flux(:,lj1) =-flux(:,lj1)*hel1(:)/(hel2(:)+1.0E-100)
+          flux(:,lj1) =-flux(:,lj1)*hel1(:)/(hel2(:)+1d-100)
         elsewhere
           flux(:,lj1) =-flux(:,lj1)
         end where
@@ -2847,7 +2841,7 @@ end if
     real,intent(out),dimension(3,LJMAX)           :: psend,psbeg
 
 !    local
-    integer  i, info
+    integer  i
 
     real,dimension(NSPEC_ADV, 3, LJMAX) :: buf_xn_w,buf_xn_e
     real,dimension(3, LJMAX)            :: buf_ps_w,buf_ps_e
@@ -2969,7 +2963,7 @@ end if
 
 !send only one row
 
-    use Par_ml , only : lj0,lj1,li1,neighbor,WEST,EAST
+    use Par_ml , only : li1,neighbor,WEST,EAST
     use ChemSpecs,         only : NSPEC_ADV
     implicit none
 
@@ -2980,14 +2974,14 @@ end if
                      ,vel(LIMAX+1:(LIMAX+1)*(LJMAX+1))
 
 !    output
-    real,intent(out),dimension(NSPEC_ADV,3) :: xnend,xnbeg 
-    real,intent(out),dimension(3)           :: psend,psbeg 
+    real,intent(out),dimension(NSPEC_ADV,3) :: xnend,xnbeg
+    real,intent(out),dimension(3)           :: psend,psbeg
 
 !    local
-    integer  i, info
+    integer  i
 
-  real,dimension(NSPEC_ADV,3) :: buf_xn_w,buf_xn_e  
-  real,dimension(3)           :: buf_ps_w,buf_ps_e  
+  real,dimension(NSPEC_ADV,3) :: buf_xn_w,buf_xn_e
+  real,dimension(3)           :: buf_ps_w,buf_ps_e
 
 !     Initialize arrays holding boundary slices
 
@@ -3106,7 +3100,7 @@ end if
 
     ! Initialize arrays holding boundary slices
 
-    use Par_ml , only : lj0,lj1,li1,neighbor,WEST,EAST
+    use Par_ml , only : li1,neighbor,WEST,EAST
     use ChemSpecs,         only : NSPEC_ADV
     implicit none
 
@@ -3117,15 +3111,15 @@ end if
                      ,vel(LIMAX+1:(LIMAX+1)*(LJMAX+1))
 
 !    output
-    real,intent(out),dimension(NSPEC_ADV,3) :: xnend,xnbeg 
-    real,intent(out),dimension(3)           :: psend,psbeg 
+    real,intent(out),dimension(NSPEC_ADV,3) :: xnend,xnbeg
+    real,intent(out),dimension(3)           :: psend,psbeg
     real,intent(inout),dimension(uEMEP_Size1,0:limax+1)  :: loc_frac_1d
 
 !    local
-    integer  n,i,dx,dy,isec_poll, ii,info, uEMEP_Size1_local
+    integer  n,i,dx,dy,isec_poll, ii, uEMEP_Size1_local
 
     real,dimension((NSPEC_ADV+1)*3+uEMEP_Size1) :: send_buf_w, rcv_buf_w, send_buf_e, rcv_buf_e
-    
+
     uEMEP_Size1_local = 0!default: do not treat this region
 
     if(uEMEP_Size1>0 .and. k>KMAX_MID-uEMEP%Nvert)then
@@ -3142,7 +3136,7 @@ end if
           enddo
        enddo
     endif
-    !     Initialize arrays holding boundary slices    
+    !     Initialize arrays holding boundary slices
     !     send to WEST neighbor if any
     if (neighbor(WEST).ge.0) then
        n=0
@@ -3168,11 +3162,11 @@ end if
           n=n+1
           send_buf_w(n) = loc_frac_1d(ii,1)
        enddo
-       
+
        CALL MPI_ISEND( send_buf_w, 8*((NSPEC_ADV+1)*3+uEMEP_Size1_local), MPI_BYTE,&
             neighbor(WEST), msgnr+1000 , MPI_COMM_CALC, request_w, IERROR)
     end if
-    
+
     if (neighbor(EAST).ge.0) then
        n=0
        do ii=1,NSPEC_ADV
@@ -3208,14 +3202,14 @@ end if
                -2.*xn_adv(:,LIMAX+2)
           xnbeg(:,3) = 2.*xn_adv(:,LIMAX+1)    &
                -xn_adv(:,LIMAX+2)
-          
+
           psbeg(2) = 3.*ps3d(LIMAX+1)-2.*ps3d(LIMAX+2)
           psbeg(3) = 2.*ps3d(LIMAX+1)-ps3d(LIMAX+2)
        else
           xnbeg(:,1) = xn_adv(:,LIMAX)
           xnbeg(:,2) = xn_adv(:,LIMAX)
           xnbeg(:,3) = xn_adv(:,LIMAX)
-          
+
           psbeg(1) = ps3d(LIMAX)
           psbeg(2) = ps3d(LIMAX)
           psbeg(3) = ps3d(LIMAX)
@@ -3223,12 +3217,12 @@ end if
        do ii=1,uEMEP_Size1_local
           loc_frac_1d(ii,li0-1)=0.0
        enddo
-       
+
     else
-       
+
        CALL MPI_RECV(rcv_buf_w, 8*((NSPEC_ADV+1)*3+uEMEP_Size1_local), MPI_BYTE, &
             neighbor(WEST), msgnr+3000, MPI_COMM_CALC, MPISTATUS, IERROR)
-       
+
        n=0
        do ii=1,NSPEC_ADV
           n=n+1
@@ -3248,21 +3242,21 @@ end if
        psbeg(2) = rcv_buf_w(n)
        n=n+1
        psbeg(3) = rcv_buf_w(n)
-       
+
        do ii=1,uEMEP_Size1_local
           n=n+1
           loc_frac_1d(ii,li0-1) = rcv_buf_w(n)
        enddo
-       
+
     end if
-    
+
     if (neighbor(EAST).lt.0) then
        if(vel((LIMAX+1)+li1).ge.0)then
           xnend(:,1) = 2.*xn_adv(:,LIMAX+li1-1)    &
                -xn_adv(:,LIMAX+li1-2)
           xnend(:,2) = 3.*xn_adv(:,LIMAX+li1-1)    &
                -2.*xn_adv(:,LIMAX+li1-2)
-          
+
           psend(1) = 2.*ps3d(LIMAX+li1-1)    &
                -ps3d(LIMAX+li1-2)
           psend(2) = 3.*ps3d(LIMAX+li1-1)    &
@@ -3271,7 +3265,7 @@ end if
           xnend(:,1) = xn_adv(:,LIMAX+li1)
           xnend(:,2) = xn_adv(:,LIMAX+li1)
           xnend(:,3) = xn_adv(:,LIMAX+li1)
-          
+
           psend(1) = ps3d(LIMAX+li1)
           psend(2) = ps3d(LIMAX+li1)
           psend(3) = ps3d(LIMAX+li1)
@@ -3280,10 +3274,10 @@ end if
           loc_frac_1d(ii,li1+1)=0.0
        enddo
     else
-       
+
       CALL MPI_RECV( rcv_buf_e, 8*((NSPEC_ADV+1)*3+uEMEP_Size1_local), MPI_BYTE, &
            neighbor(EAST), msgnr+1000, MPI_COMM_CALC, MPISTATUS, IERROR)
-      
+
       n=0
       do ii=1,NSPEC_ADV
          n=n+1
@@ -3303,7 +3297,7 @@ end if
       psend(2) = rcv_buf_e(n)
       n=n+1
       psend(3) = rcv_buf_e(n)
-      
+
       do ii=1,uEMEP_Size1_local
          n=n+1
          loc_frac_1d(ii,li1+1) = rcv_buf_e(n)
@@ -3339,11 +3333,11 @@ end if
                      ,vel(LIMAX*(LJMAX+1))
 
 !    output
-    real,intent(out),dimension(NSPEC_ADV,3,LIMAX) :: xnend,xnbeg 
-    real,intent(out),dimension(3,LIMAX)           :: psend,psbeg 
+    real,intent(out),dimension(NSPEC_ADV,3,LIMAX) :: xnend,xnbeg
+    real,intent(out),dimension(3,LIMAX)           :: psend,psbeg
 
 !    local
-    integer  i, info
+    integer  i
 
   real,dimension(NSPEC_ADV,3,LIMAX) :: buf_xn_n,buf_xn_s
   real,dimension(3,LIMAX)           :: buf_ps_n,buf_ps_s
@@ -3471,7 +3465,7 @@ end if
                      ,xnbeg, xnend         &
                      ,psbeg, psend,i_send)
 
-    use Par_ml , only : li0,li1,lj0,lj1,ljmax,neighbor,NORTH,SOUTH
+    use Par_ml , only : lj0,lj1,ljmax,neighbor,NORTH,SOUTH
     use ChemSpecs,         only : NSPEC_ADV
     implicit none
 
@@ -3483,14 +3477,14 @@ end if
 
 !    output
 
-    real,intent(out),dimension(NSPEC_ADV,3) :: xnend,xnbeg 
-    real,intent(out),dimension(3)           :: psend,psbeg 
+    real,intent(out),dimension(NSPEC_ADV,3) :: xnend,xnbeg
+    real,intent(out),dimension(3)           :: psend,psbeg
 
 !    local
-    integer  i, info
+    integer  i
 
-    real,dimension(NSPEC_ADV,3) :: buf_xn_n,buf_xn_s 
-    real,dimension(3)           :: buf_ps_n,buf_ps_s 
+    real,dimension(NSPEC_ADV,3) :: buf_xn_n,buf_xn_s
+    real,dimension(3)           :: buf_ps_n,buf_ps_s
 
 !     Initialize arrays holding boundary slices
 
@@ -3615,7 +3609,7 @@ end if
 
     ! Initialize arrays holding boundary slices
 
-    use Par_ml , only : li0,li1,lj0,lj1,ljmax,neighbor,NORTH,SOUTH
+    use Par_ml , only : lj0,lj1,ljmax,neighbor,NORTH,SOUTH
     use ChemSpecs,         only : NSPEC_ADV
     implicit none
 
@@ -3626,12 +3620,12 @@ end if
                      ,vel(LIMAX*(LJMAX+1))
 
 !    output
-    real,intent(out),dimension(NSPEC_ADV,3) :: xnend,xnbeg 
-    real,intent(out),dimension(3)           :: psend,psbeg 
+    real,intent(out),dimension(NSPEC_ADV,3) :: xnend,xnbeg
+    real,intent(out),dimension(3)           :: psend,psbeg
     real,intent(inout),dimension(uEMEP_Size1,0:ljmax+1)  :: loc_frac_1d
 
 !    local
-    integer  ii,j,dx,dy,isec_poll,n, info, uEMEP_Size1_local
+    integer  ii,j,dx,dy,isec_poll,n, uEMEP_Size1_local
     real,dimension((NSPEC_ADV+1)*3+uEMEP_Size1) :: send_buf_n, rcv_buf_n, send_buf_s, rcv_buf_s
 
     uEMEP_Size1_local = 0!default: do not treat this region
@@ -3650,7 +3644,7 @@ end if
           enddo
        enddo
     endif
- 
+
 !     send to SOUTH neighbor if any
 
     if (neighbor(SOUTH) .ge. 0) then
@@ -3761,7 +3755,7 @@ end if
        psbeg(2) = rcv_buf_s(n)
        n=n+1
        psbeg(3) = rcv_buf_s(n)
-       
+
        do ii=1,uEMEP_Size1_local
           n=n+1
           loc_frac_1d(ii,0) = rcv_buf_s(n)
@@ -3813,7 +3807,7 @@ end if
       psend(2) = rcv_buf_n(n)
       n=n+1
       psend(3) = rcv_buf_n(n)
-      
+
       do ii=1,uEMEP_Size1_local
          n=n+1
          loc_frac_1d(ii,lj1+1) = rcv_buf_n(n)
@@ -3836,7 +3830,7 @@ end if
 !  moved to Convection_ml.f90
 
 
- 
+
   subroutine alloc_adv_arrays
 
     !allocate the arrays once
@@ -3860,7 +3854,7 @@ end if
     real ,intent(inout):: xn_adv(NSPEC_ADV,0:LIMAX*LJMAX*KMAX_MID-1)
     real ,intent(inout):: ps3d(0:LIMAX*LJMAX*KMAX_MID-1)
     real ,intent(inout)::fluxk(NSPEC_ADV,KMAX_MID)
-   
+
     real :: fluxps(KMAX_MID),fc(KMAX_MID)
     integer :: k
 
@@ -3876,8 +3870,8 @@ end if
           fluxk(:,k+1) = xn_adv(:,k*LIMAX*LJMAX) * fc(k)
           fluxps(k+1) = ps3d(k*LIMAX*LJMAX) * fc(k)
        else
-          fluxk(:,k+1) = xn_adv(:,(k-1)*LIMAX*LJMAX) * fc(k)  
-          fluxps(k+1) = ps3d((k-1)*LIMAX*LJMAX) * fc(k)  
+          fluxk(:,k+1) = xn_adv(:,(k-1)*LIMAX*LJMAX) * fc(k)
+          fluxps(k+1) = ps3d((k-1)*LIMAX*LJMAX) * fc(k)
        end if
     end do
 
@@ -3886,13 +3880,17 @@ end if
     ps3d(k*LIMAX*LJMAX)=max(0.0,ps3d(k*LIMAX*LJMAX)+(-fluxps(k+2))*dhs1i(k+2))
     do k = 1,KMAX_MID-2
        if(xn_adv(1,k*LIMAX*LJMAX)+(fluxk(1,k+1)-fluxk(1,k+2))*dhs1i(k+2)<0.0)then
-       write(*,*)'PWPW a',me,k,xn_adv(1,k*LIMAX*LJMAX)+(fluxk(1,k+1)-fluxk(1,k+2))*dhs1i(k+2),xn_adv(1,k*LIMAX*LJMAX),fluxk(1,k+1),-fluxk(1,k+2),dhs1i(k+2)
-       stop
+         write(*,*)'PWPW a',me,k,&
+         xn_adv(1,k*LIMAX*LJMAX)+(fluxk(1,k+1)-fluxk(1,k+2))*dhs1i(k+2),&
+         xn_adv(1,k*LIMAX*LJMAX),fluxk(1,k+1),-fluxk(1,k+2),dhs1i(k+2)
+         stop
        end if
        xn_adv(:,k*LIMAX*LJMAX)=max(0.0,xn_adv(:,k*LIMAX*LJMAX)+(fluxk(:,k+1)-fluxk(:,k+2))*dhs1i(k+2))
        if(ps3d(k*LIMAX*LJMAX)+(fluxps(k+1)-fluxps(k+2))*dhs1i(k+2)<0.0001)then
-          write(*,*)'PWPW ',me,ps3d(k*LIMAX*LJMAX)+(fluxps(k+1)-fluxps(k+2))*dhs1i(k+2),ps3d(k*LIMAX*LJMAX),(fluxps(k+1)),-fluxps(k+2),dhs1i(k+2)
-          stop
+         write(*,*)'PWPW ',me,&
+           ps3d(k*LIMAX*LJMAX)+(fluxps(k+1)-fluxps(k+2))*dhs1i(k+2),&
+           ps3d(k*LIMAX*LJMAX),(fluxps(k+1)),-fluxps(k+2),dhs1i(k+2)
+         stop
        end if
        ps3d(k*LIMAX*LJMAX)=max(0.0,ps3d(k*LIMAX*LJMAX)+(fluxps(k+1)-fluxps(k+2))*dhs1i(k+2))
     end do
@@ -3915,7 +3913,7 @@ end if
 !    input+output
     real ,intent(inout):: xn_adv(NSPEC_ADV,LIMAX*LJMAX:LIMAX*LJMAX*KMAX_MID)
     real ,intent(inout):: ps3d(LIMAX*LJMAX:LIMAX*LJMAX*KMAX_MID)
-   
+
     integer :: k
 
     integer ij, ijn,ijll
@@ -3935,8 +3933,8 @@ end if
     integer ijb2(KMAX_MID),ije2(KMAX_MID),ijb3(KMAX_MID)
     logical ijdoend
     integer kstart,kend
-    real,dimension(NSPEC_ADV,3) :: xnbeg,xnend  
-    real,dimension(3)           :: psbeg,psend  
+    real,dimension(NSPEC_ADV,3) :: xnbeg,xnend
+    real,dimension(3)           :: psbeg,psend
     real ::xm(0:KMAX_MID),xmi(0:KMAX_MID)
 
 !-----------------------------------------------------------------------
@@ -4176,8 +4174,8 @@ end if
           hel1(:) = xn_adv(:,kstart*STRIDE)*xmi(kstart)
           hel2(:) = flux(:,kstart) +  flux(:,kstart-1)
           where(hel1(:).lt.hel2(:))
-            flux(:,kstart-1) =-flux(:,kstart-1)*hel1(:)/(hel2(:)+1.0E-100)
-            flux(:,kstart)   = flux(:,kstart)  *hel1(:)/(hel2(:)+1.0E-100)
+            flux(:,kstart-1) =-flux(:,kstart-1)*hel1(:)/(hel2(:)+1d-100)
+            flux(:,kstart)   = flux(:,kstart)  *hel1(:)/(hel2(:)+1d-100)
             xn_adv(:,kstart*STRIDE) = 0.
           elsewhere
             flux(:,kstart-1) =-flux(:,kstart-1)
@@ -4261,8 +4259,8 @@ end if
       hel2(:) = flux(:,ij+1) +  flux(:,ij)
       where(hel1(:).lt.hel2(:))
 !On IBM machine the division can give overflow if hel2 is too small
-        flux(:,ij)   =-flux(:,ij)  *hel1(:)/(hel2(:)+1.0E-100)
-        flux(:,ij+1) = flux(:,ij+1)*hel1(:)/(hel2(:)+1.0E-100)
+        flux(:,ij)   =-flux(:,ij)  *hel1(:)/(hel2(:)+1d-100)
+        flux(:,ij+1) = flux(:,ij+1)*hel1(:)/(hel2(:)+1d-100)
         xn_adv(:,(ij+1)*STRIDE) = 0.
       elsewhere
         flux(:,ij)   =-flux(:,ij)

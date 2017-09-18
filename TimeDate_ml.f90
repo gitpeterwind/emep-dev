@@ -70,7 +70,6 @@ REAL,private,PARAMETER    :: spd = 86400.0
 REAL,private,PARAMETER    :: sph =  3600.0
 REAL,private,PARAMETER    :: spm =    60.0
 
-TYPE(timestamp),private,PARAMETER  :: ts_null = timestamp(0, 0.0)
 TYPE(timestamp),public, save       :: ts_now    ! current local time
 TYPE(timestamp),public, save       :: ts_next   ! next inp
 

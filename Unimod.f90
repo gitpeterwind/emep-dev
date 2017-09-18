@@ -9,7 +9,7 @@ program myeul
   !
   !-----------------------------------------------------------------------!
 
-  use My_Outputs_ml,    only: set_output_defs, NHOURLY_OUT
+  use My_Outputs_ml,    only: set_output_defs
   use My_Timing_ml,     only: lastptim, mytimm, Output_timing, &
        Init_timing, Add_2timing, Code_timer, &
        tim_before, tim_before1, tim_before2, &
@@ -27,7 +27,6 @@ program myeul
   use DA_3DVar_ml,      only: NTIMING_3DVAR,DA_3DVar_Init, DA_3DVar_Done
   use DefPhotolysis_ml, only: readdiss
   use Derived_ml,       only: Init_Derived, wanted_iou
-  use DerivedFields_ml, only: f_2d, f_3d
   use EcoSystem_ml,     only: Init_EcoSystems
   use Emissions_ml,     only: Emissions, newmonth
   use ForestFire_ml,    only: Fire_Emis
@@ -35,7 +34,7 @@ program myeul
                               DefDebugProc, GridRead
   use Io_ml,            only: IO_MYTIM,IO_RES,IO_LOG,IO_NML,IO_DO3SE
   use Io_Progs_ml,      only: read_line, PrintLog
-  use Landuse_ml,       only: InitLandUse, SetLanduse, Land_codes
+  use Landuse_ml,       only: InitLandUse, SetLanduse
   use MassBudget_ml,    only: Init_massbudget, massbudget
   use Met_ml,           only: metfieldint, MetModel_LandUse, Meteoread
   use ModelConstants_ml,only: MasterProc, &   ! set true for host processor, me==MasterPE
@@ -49,8 +48,8 @@ program myeul
        USES, USE_LIGHTNING_EMIS, USE_uEMEP,JUMPOVER29FEB,&
        FORECAST,ANALYSIS  ! FORECAST/ANALYSIS mode
   use ModelConstants_ml,only: Config_ModelConstants,DEBUG, startdate,enddate
-  use MPI_Groups_ml,    only: MPI_BYTE, ME_CALC, ME_MPI, MPISTATUS, MPI_COMM_CALC,MPI_COMM_WORLD, &
-                              MasterPE,IERROR, MPI_world_init, MPI_groups_split
+  use MPI_Groups_ml,    only: MPI_BYTE, MPISTATUS, MPI_COMM_CALC,MPI_COMM_WORLD, &
+                              MasterPE,IERROR, MPI_world_init
   use Nest_ml,          only: wrtxn     ! write nested output (IC/BC)
   use NetCDF_ml,        only: Init_new_netCDF
   use OutputChem_ml,    only: WrtChem, wanted_iou

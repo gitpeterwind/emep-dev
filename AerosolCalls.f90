@@ -13,9 +13,6 @@ module AerosolCalls
  use CheckStop_ml,         only : StopAll, CheckStop
  use ChemGroups_ml,         only : SS_GROUP, RDN_GROUP
  use ChemSpecs
-! use ChemSpecs,            only :  SO4, NH3, HNO3, NO3_f, NH4_f, &
-!                                     SEASALT_F, & ! ISORROPIA
-!                                     NSPEC_SHL, species
  use Chemfields_ml,        only :  PM25_water, PM25_water_rh50,  & !PMwater 
                                    cfac
  use EQSAM_v03d_ml,        only :  eqsam_v03d
@@ -30,7 +27,7 @@ module AerosolCalls
 
  public :: AerosolEquilib
  public :: emep2MARS, emep2EQSAM, Aero_Water, Aero_Water_MARS
- private :: emep2isorropia
+ !FUTURE private :: emep2isorropia
                     
 !    logical, public, parameter :: AERO_DYNAMICS     = .false.  &  
 !                                , EQUILIB_EMEP      = .false.  & !old Ammonium stuff
@@ -60,7 +57,8 @@ contains
       case ( 'EQSAM' )
         call emep2EQSAM(debug_flag)
       case ( 'ISORROPIA' )
-        call emep2Isorropia(debug_flag)
+        call StopAll('Isorropia problems found. Removed for now')
+        !call emep2Isorropia(debug_flag)
       case default
         if( my_first_call .and. MasterProc ) then
           write(*,*) 'WARNING: AerosolEquilib: nothing chosen:'
@@ -74,67 +72,65 @@ contains
 
  ! Adapted from List 10, p130, Isoropia manual
 
- subroutine emep2isorropia(debug_flag)
-   logical, intent(in) :: debug_flag
-
-   real, dimension(8) :: wi = 0.0, wt
-   real, dimension(3) :: gas
-   real, dimension(15) :: aerliq
-   real, dimension(19) :: aersld
-   real, parameter, dimension(2) :: CNTRL =  (/ 0, 0 /)
-   real, dimension(9) :: other
-   !real :: rhi, tempi
-   character(len=15) :: scase
-
-  ! DS added
-   real, parameter :: Ncm3_to_molesm3 = 1.0e6/AVOG    ! #/cm3 to moles/m3
-   real, parameter :: molesm3_to_Ncm3 = 1.0/Ncm3_to_molesm3
-   real :: FLOOR = 1.0e-30               !
-   integer :: i, ispec, k
-   real :: atwNa =  22.989770, atwCl = 35.453   ! g/mole !DOCS had 36.5?
-   real :: tmpno3, tmpnh4
-
-   ! WI(1)  = max(FLOOR2, xn_2d(Na,k))  / species(Na)%molwt  * Ncm3_to_molesm3
-   ! 5=Cl, 6=Ca, 7=K, 8=Mg
-
-   do k = KMAX_MID, KMAX_MID  ! TESTING KCHEMTOP, KMAX_MID
-
-     WI(1)  = 0.0 !FINE sum( xn_2d(SS_GROUP,k) ) * Ncm3_to_molesm3
-     WI(2)  = xn_2d(SO4,k)             * Ncm3_to_molesm3
-     WI(3)  = sum( xn_2d(RDN_GROUP,k) ) * Ncm3_to_molesm3  !NH3, NH4
-     !FINE WI(4)  = ( xn_2d(NO3_F,k) + xn_2d(NO3_C,k) + xn_2d(HNO3,k) )&
-     WI(4)  = ( xn_2d(NO3_F,k) + xn_2d(HNO3,k) )&
-                * Ncm3_to_molesm3
-     WI(5)  =0.0 !FINE  WI(1)  ! Cl only from sea-salt. Needs consideration!
-
-     call isoropia ( wi, rh(k), temp(k), CNTRL,&
-                     wt, gas, aerliq, aersld, scase, other)
-
-    ! gas outputs are in moles/m3(air)
-
-     xn_2d(NH3,k)  = gas(1) * molesm3_to_Ncm3
-     xn_2d(HNO3,k) = gas(2) * molesm3_to_Ncm3
-     !xn_2d(HCl,k) = gas(3) * molesm3_to_Ncm3
-
-    ! aerosol outputs are in moles/m3(air)
-    ! 1=H+, 2=Na+, 3=NH4+, 4=Cl-, 5=SO42-, 6=HSO4-, 7=NO3-, 8=Ca2+
-    ! 9=K+, 10=Mg2+
-     !xn_2d(NH4_F,k) = MOLAL(3)
-
-    ! Just use those needed:
-    ! QUERY: Is NaNO3 always solid? Ans = No!
-
-      !xn_2d(NO3_c,k ) = aeroHCl * molesm3_to_Ncm3 ! assume all HCl from NaNO3 formation?
-      !FINE xn_2d(NO3_f,k ) = tmpno3 - xn_2d(NO3_c,k ) - xn_2d(HNO3,k)
-      xn_2d(NO3_f,k ) = tmpno3 - xn_2d(HNO3,k)
-
-     if( debug_flag ) then 
-       write(*, "(a,2f8.3,99g12.3)") "ISORROPIA ", rh(k), temp(k), gas
-     end if
-     !call StopAll("ISOR")
-     
-   end do
- end subroutine emep2isorropia
+ !FUTURE subroutine emep2isorropia(debug_flag)
+!FUTURE   logical, intent(in) :: debug_flag
+!FUTURE
+!FUTURE   real, dimension(8) :: wi = 0.0, wt
+!FUTURE   real, dimension(3) :: gas
+!FUTURE   real, dimension(15) :: aerliq
+!FUTURE   real, dimension(19) :: aersld
+!FUTURE   real, parameter, dimension(2) :: CNTRL =  (/ 0, 0 /)
+!FUTURE   real, dimension(9) :: other
+!FUTURE   !real :: rhi, tempi
+!FUTURE   character(len=15) :: scase
+!FUTURE
+!FUTURE   !EMEP
+!FUTURE   real, parameter :: Ncm3_to_molesm3 = 1.0e6/AVOG    ! #/cm3 to moles/m3
+!FUTURE   real, parameter :: molesm3_to_Ncm3 = 1.0/Ncm3_to_molesm3
+!FUTURE   integer :: k
+!FUTURE!BUG   real :: tmpno3
+!FUTURE
+!FUTURE   ! WI(1)  = max(FLOOR2, xn_2d(Na,k))  / species(Na)%molwt  * Ncm3_to_molesm3
+!FUTURE   ! 5=Cl, 6=Ca, 7=K, 8=Mg
+!FUTURE
+!FUTURE   do k = KMAX_MID, KMAX_MID  ! TESTING KCHEMTOP, KMAX_MID
+!FUTURE
+!FUTURE     WI(1)  = 0.0 !FINE sum( xn_2d(SS_GROUP,k) ) * Ncm3_to_molesm3
+!FUTURE     WI(2)  = xn_2d(SO4,k)             * Ncm3_to_molesm3
+!FUTURE     WI(3)  = sum( xn_2d(RDN_GROUP,k) ) * Ncm3_to_molesm3  !NH3, NH4
+!FUTURE     !FINE WI(4)  = ( xn_2d(NO3_F,k) + xn_2d(NO3_C,k) + xn_2d(HNO3,k) )&
+!FUTURE     WI(4)  = ( xn_2d(NO3_F,k) + xn_2d(HNO3,k) )&
+!FUTURE                * Ncm3_to_molesm3
+!FUTURE     WI(5)  =0.0 !FINE  WI(1)  ! Cl only from sea-salt. Needs consideration!
+!FUTURE
+!FUTURE     call isoropia ( wi, rh(k), temp(k), CNTRL,&
+!FUTURE                     wt, gas, aerliq, aersld, scase, other)
+!FUTURE
+!FUTURE    ! gas outputs are in moles/m3(air)
+!FUTURE
+!FUTURE     xn_2d(NH3,k)  = gas(1) * molesm3_to_Ncm3
+!FUTURE     xn_2d(HNO3,k) = gas(2) * molesm3_to_Ncm3
+!FUTURE     !xn_2d(HCl,k) = gas(3) * molesm3_to_Ncm3
+!FUTURE
+!FUTURE    ! aerosol outputs are in moles/m3(air)
+!FUTURE    ! 1=H+, 2=Na+, 3=NH4+, 4=Cl-, 5=SO42-, 6=HSO4-, 7=NO3-, 8=Ca2+
+!FUTURE    ! 9=K+, 10=Mg2+
+!FUTURE     !xn_2d(NH4_F,k) = MOLAL(3)
+!FUTURE
+!FUTURE    ! Just use those needed:
+!FUTURE    ! QUERY: Is NaNO3 always solid? Ans = No!
+!FUTURE
+!FUTURE      !xn_2d(NO3_c,k ) = aeroHCl * molesm3_to_Ncm3 ! assume all HCl from NaNO3 formation?
+!FUTURE      !FINE xn_2d(NO3_f,k ) = tmpno3 - xn_2d(NO3_c,k ) - xn_2d(HNO3,k)
+!FUTURE      xn_2d(NO3_f,k ) = tmpno3 - xn_2d(HNO3,k)
+!FUTURE
+!FUTURE     if( debug_flag ) then 
+!FUTURE       write(*, "(a,2f8.3,99g12.3)") "ISORROPIA ", rh(k), temp(k), gas
+!FUTURE     end if
+!FUTURE     !call StopAll("ISOR")
+!FUTURE     
+!FUTURE   end do
+!FUTURE end subroutine emep2isorropia
  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
       subroutine emep2MARS(debug_flag)
@@ -153,7 +149,6 @@ contains
              aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out,   &
              coef
   integer :: k, errmark
-  logical,save  :: firstcall=.true.
  !-----------------------------------
 
    coef = 1.e12 / AVOG
@@ -162,7 +157,7 @@ contains
   
 
 !//.... molec/cm3 -> ug/m3
-!DEC2014. Use FLOOR2 = 1.0e-8 molec/cm3 for input. Too many problems
+! Use FLOOR2 = 1.0e-8 molec/cm3 for input. Too many problems
       so4in  = max(FLOOR2, xn_2d(SO4,k)) * species(SO4)%molwt  *coef
       hno3in = max(FLOOR2, xn_2d(HNO3,k))* species(HNO3)%molwt *coef 
       nh3in  = max(FLOOR2, xn_2d(NH3,k)) * species(NH3)%molwt  *coef
@@ -328,7 +323,6 @@ contains
              gSO4out(KCHEMTOP:KMAX_MID), &
              rlhum(KCHEMTOP:KMAX_MID),tmpr(KCHEMTOP:KMAX_MID)
 
-  real, parameter ::    FLOOR = 1.0E-30         ! minimum concentration  
  !-----------------------------------
 
 
@@ -392,7 +386,6 @@ contains
 
  integer, intent(in)  :: i, j
  logical, intent(in)  :: debug_flag
- real, parameter      :: FLOOR = 1.0E-30  ! minimum concentration  
 
  !.. local
   real    :: rlhum(KCHEMTOP:KMAX_MID), tmpr(KCHEMTOP:KMAX_MID)
@@ -473,5 +466,3 @@ contains
 !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 end module AerosolCalls
-
-

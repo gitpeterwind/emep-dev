@@ -224,7 +224,7 @@ contains
     logical, intent(in) :: debug_flag
     character(len=*), intent(in), optional :: debug_txt
     integer, intent(in) :: iO3cl,iLC
-    real, intent(out)    :: pod
+    real, intent(out)   :: pod
     character(len=*),parameter :: dtxt='CalcPOD:'
     character(len=10):: txt
 

@@ -621,7 +621,7 @@ contains
     integer,dimension(2)  :: ijloc   ! debug only 
     integer :: iii, jjj              ! debug only 
     real :: checkmax
-    character(len=80) :: errmsg, units, varname
+    character(len=80) :: errmsg
     real, dimension(IIFULLDOM,JJFULLDOM) :: var2d_global
     integer :: kmax=1, nfetch=1 ! for HDD
 
@@ -693,9 +693,8 @@ contains
 
      implicit none
      integer, intent(in) ::month
-     integer ::iemis,isec,i
+     integer ::iemis,isec
      character(len=20) ::sector_map(NSECTORS_SNAP,NEMIS_FILE),name
-     real :: x(12)
 ! sector_map(sector,emis) = name_in_netcdf_file
      sector_map(:,:)='default'
      sector_map(2,:)='dom'

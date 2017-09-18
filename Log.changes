@@ -164,9 +164,24 @@ ForestFire_ml.f90
   - Modified debug, though this is still somewhat confusing
      
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
- OPEN-SOURCE RELEASED FROM SEPARATE BRANCH AROUND HERE.... (Alvaro, more details?)
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+8th   Sep  2017 Alvaro
 
+OPEN-SOURCE RELEASE (tag rv4_15os)
+ 
+The open source release contains some commits between rv4_15_1 and this point.
+The list of commit included can be found on issue #52.
+
+The release is based on master after cleanUp2017 (PR #56, #61 & #62).
+It contains some additional clean up, intended only for the open source release.
+ 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6th   Sep  2017 Alvaro
+
+config_BM-EECCA.nml,config_Open.nml,
+config_ANALYSIS.nml,config_FORECAST.nml,config_FORECAST_CitySR.nml:
+ Add FLUX_IGNORE bug-fix entry from Aug 5th to remaining namelists
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 1st    Sep  2017 Alvaro
 
 allow multiple Special_ShipEmis files, see #55
@@ -200,7 +215,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Fix eEMEP emission expansion, close #54
 
 ColumnSource_ml:
-  Refvert bug introduced on svn 3303 (Oct 2016, git aaa393b).
+  Revert bug introduced on svn 3303 (Oct 2016, git aaa393b).
   It caused the default emissions used by eEMEP to fail to expand as groups
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -272,7 +287,7 @@ Implemented in a rush for reporting. Should be cleaned/revised.
 Monthly only for now.
 
 Example of format:
-!  emis_inputlist(3)%name     = '/home/mifajej/Emissions/Ships/FMI_Glob/2015/FMIGlobShip2015mon.nc',  !
+!  emis_inputlist(3)%name = '/home/mifajej/Emissions/Ships/FMI_Glob/2015/FMIGlobShip2015mon.nc',  !
 !  emis_inputlist(3)%type = 'Special_ShipEmis',
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -371,8 +386,6 @@ config_Outputs_EMEPSTD
 
 Solver.f90
   Adapted for new VBS methods in YieldModifications
-
->>>>>>> 27ddc801f707bb3dd0a6a5ed01ad0056fa69cfa6
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 31st  May 2017  Peter
@@ -782,6 +795,14 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Support for Lambert conical conformal projection.
 Tested for WRF metdata.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+12th  May 2017  Alvaro
+
+Update for new modules in stallo:
+Makefile, run.pl:
+- compile with mpiifort instead of mpif90
+- execute with mpirun instead of mpiexec
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 2nd  Feb 2017  Dave

@@ -58,8 +58,8 @@
 
   public ::  WindDust       
 
-  real, private, save         :: kg2molecDU, m_to_nDU, frac_fine, frac_coar,  &
-                                 soil_dns_dry, help_ustar_th
+  real, private, save         :: kg2molecDU, frac_fine, frac_coar,  &
+                                 help_ustar_th
   real, parameter             :: soil_dens = 2650.0  ! [kg/m3]
   logical, private, save      :: my_first_call = .true.
   logical, private, save      :: dust_found
@@ -86,24 +86,17 @@
    integer, intent(in) :: i,j                 ! coordinates of column
    logical, intent(in) :: debug_flag
 
-   integer, parameter  :: Ndust = 2, &        ! number of size classes 
-                          DU_F = 1, DU_C = 2
    integer, parameter  :: LU_DESERT = 13    ! REMOVE HARD-CODE
    real   , parameter  :: Ro_water = 1000.0 
-   real, parameter, dimension(Ndust) ::                    &
-                    dsoil = (/ 1.5, 6.7/)   & ! diameter of dust particles [mkm]
-                   ,mfrac = (/0.05, 0.45/)    ! mass fraction of the total mass
 
-   real, parameter:: D_opt = 75.e-6,     &  ! [m]
-                     Dm_soil = 210.0e-6,  & ! [m] MMD of the coarsest soil  (100)
-                     Z0s = Dm_soil/30.0 , & ! [m] Smooth roughness length MaB95 p.16426, 
+   real, parameter:: Dm_soil = 210.0e-6,  & ! [m] MMD of the coarsest soil  (100)
+                     Z0s = Dm_soil/30.0     ! [m] Smooth roughness length MaB95 p.16426, 
                                             !     MaB97 p.4392, GMB98 p.6207
-                     !z0 = 0.5e-3,  & !(for desert..) 1.e-4 saltation roughness length 
-                     z10 = 10.0             ! Z=10m
+
    real ::  Mflux = 0.0 
    real ::  cover, z0, vh2o_sat, gr_h2o, v_h2o, ustar_moist_cor    &
-          , gwc_thr, dust_lim, soil_dns_dry, ustar_z0_cor, u10     &
-          , u10g_2, u10_gust, alfa, ustar_th, uratio, ustar, clay  &
+          , gwc_thr, dust_lim, soil_dns_dry, ustar_z0_cor          &
+          , alfa, ustar_th, uratio, ustar, clay                    &
           , frac_fin, frac_coa, flx_hrz_slt,  flx_vrt_dst
 
    logical :: arable, dust_prod = .false., debug

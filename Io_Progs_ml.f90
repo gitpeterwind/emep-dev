@@ -88,7 +88,6 @@ subroutine read_line(io_in,txt,status,label,printif)
   character(len=*), intent(inout) :: txt
   character(len=len(txt)+30) :: errmsg
   integer, intent(out) :: status
-  integer :: INFO
   character(len=*), intent(in), optional :: label
   logical, intent(in), optional :: printif   ! Can switch debug printouts
   logical :: ok2print

@@ -90,7 +90,6 @@ logical, private, parameter :: DEBUG_PAR = .false.
 integer, public, parameter ::  NX_BROADCAST = -1
 
 ! The different messages used in the bott version of airpol
-character (len=230) :: txt
 integer, public, parameter :: &
   MSG_INIT0 = 10,     &
   MSG_INIT1 = 11,     &

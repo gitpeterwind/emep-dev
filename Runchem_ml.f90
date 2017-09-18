@@ -8,7 +8,7 @@
 module RunChem_ml
 
   use AerosolCalls,     only: AerosolEquilib & !-> My_MARS, My_EQSAM, &
-                             ,Aero_water, Aero_water_MARS   !DUST -> USE_DUST
+                             ,Aero_water, Aero_water_MARS 
   use My_Timing_ml,     only: Code_timer, Add_2timing,  &
                               tim_before, tim_after
   use AOD_PM_ml,        only: AOD_Ext
@@ -22,7 +22,7 @@ module RunChem_ml
   use ColumnSource_ml,  only: Winds, getWinds
   use DefPhotolysis_ml, only: setup_phot
   use DryDep_ml,        only: drydep
-  use DustProd_ml,      only: WindDust
+  use DustProd_ml,      only: WindDust  !DUST -> USE_DUST
   use FastJ_ml,         only: setup_phot_fastj,phot_fastj_interpolate
   use GridValues_ml,    only: debug_proc, debug_li, debug_lj, i_fdom, j_fdom
   use Io_Progs_ml,      only: datewrite
@@ -61,15 +61,13 @@ contains
 subroutine runchem()
 
 !  local
-  integer :: i, j, n
+  integer :: i, j
   integer :: errcode
   integer :: nmonth, nday, nhour     
-  logical ::  Jan_1st, End_of_Run
+  logical ::  Jan_1st
   logical ::  debug_flag    ! =>   Set true for selected i,j
   logical, save :: first_tstep = .true. ! J16 
-  logical :: dbg
   character(len=*), parameter :: sub='RunChem:'
-  character(len=10) :: dbgtxt
 ! =============================
   nmonth = current_date%month
   nday   = current_date%day
@@ -116,7 +114,7 @@ subroutine runchem()
       if ( ORGANIC_AEROSOLS ) call Init_OrganicAerosol(i,j,debug_flag)
       call Add_2timing(25,tim_after,tim_before,"Runchem:OrganicAerosol")
 
-      call setup_1d(i,j)   
+      call setup_1d(i,j)     ! Extracting i,j column data
       call Add_2timing(26,tim_after,tim_before,"Runchem:setup_1d")
       call setup_rcemis(i,j) ! Sets initial rcemis=0.0
       call Add_2timing(27,tim_after,tim_before,"Runchem:setup_rcemis ")
@@ -171,7 +169,8 @@ subroutine runchem()
       if( .not. USE_NOCHEM) then
         call chemistry(i,j,DEBUG%RUNCHEM.and.debug_flag)
       else
-        xn_2d(NSPEC_SHL+1:NSPEC_TOT,:) =  xn_2d(NSPEC_SHL+1:NSPEC_TOT,:)+rcemis(NSPEC_SHL+1:NSPEC_TOT,:)*dt_advec
+        xn_2d(NSPEC_SHL+1:NSPEC_TOT,:) =  xn_2d(NSPEC_SHL+1:NSPEC_TOT,:)  &
+                                         +rcemis(NSPEC_SHL+1:NSPEC_TOT,:)*dt_advec
       end if
 
       if(DEBUG%RUNCHEM) call check_negs(i,j,'C')
@@ -224,7 +223,7 @@ subroutine runchem()
       if(USE_AOD)  &
         call AOD_Ext(i,j,debug_flag)
 
-      !  Calculates PM water: 1. for ambient condition (3D)
+      !  Calculates PM water: 1. for ambient Rh and T (3D)
       !  and for filter equlibration conditions (2D at surface) 
       !  T=20C and Rh=50% for comparability with gravimetric PM
       call Aero_water_MARS(i,j, debug_flag)

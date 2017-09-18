@@ -230,20 +230,18 @@ subroutine JericevicRiB_Hmix (u,v, zm, theta, zi)
 end subroutine JericevicRiB_Hmix
 
  !----------------------------------------------------------------------------
-subroutine JericevicRiB_Hmix0 (u,v, zm, theta, zi, theta0, coastal)
+subroutine JericevicRiB_Hmix0 (u,v, zm, theta, zi)
  !- as above, but allow test for surface SBL
   real, dimension(KMAX_MID), intent(in) :: u,v ! winds
   real, dimension(KMAX_MID), intent(in) :: zm ! mid-cell height
   real, dimension(KMAX_MID), intent(in) :: theta !pot. temp
   real, intent(out) :: zi
-  real, intent(in) :: theta0  ! pot temp at ground (2m)
-  logical, intent(in) :: coastal ! or likely coastal, be careful
   integer :: k
   real, parameter :: Ric = 0.25  ! critical Ric
   real :: Rib  ! bulk Richardson number
   real :: Theta1, z1  ! pot temp  and height of lowest cell
 
-! Jericevic et al., ACP, 2009, pp1001-,  eqn (17): 
+! Jericevic et al., ACP, 2009, pp1001-,  eqn (17):
 
    Theta1 = theta(KMAX_MID)
    z1     = zm(KMAX_MID)

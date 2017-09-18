@@ -1070,7 +1070,7 @@
 
 99      continue
 
-      
+
 
       END SUBROUTINE PHOTO_JX
 
@@ -2838,11 +2838,11 @@
         if (W_.eq.18 .or. TSTRAT.ne.'x') then
            if (TITLEJ2 .ne. TITLEJX(JJ)) then
               JJ = JJ+1
-              
+
               if (JJ .gt. X_) then
                  call EXITC(' RD_XXX:  X_ not large enough for Xsects read in')
               end if
-              
+
               TITLEJX(JJ) = TITLEJ2
               LQQ(JJ) = 1
               SQQ(JJ) = TSTRAT
@@ -2970,10 +2970,6 @@
   102 format(10x,    6e10.3/(10x,6e10.3)/(10x,6e10.3))
   103 format(a6,1x,f3.0,6e10.3/(10x,6e10.3)/(10x,6e10.3))
   104 format(a6,a1,f3.0,6e10.3/(10x,6e10.3)/(10x,6e10.3))
-  200 format(1x,' x-sect:',i3,a10,a4,i5,3(3x,f6.2))
-  201 format(' Number of x-sections supplied to Fast-J2: ',i3,/,    &
-             ' Maximum number allowed (X_) only set to: ',i3,       &
-             ' - increase in cmn_FJX.f')
 
       END SUBROUTINE RD_XXX
 
@@ -3197,7 +3193,6 @@
       end do
       end do
 
- 1000 format(1x,'std atmos profiles: ',i3,' lat x ',i2,' mon')
 
       END SUBROUTINE RD_PROF
 
@@ -3291,13 +3286,13 @@
         use LandDefs_ml,    only: LandType, LandDefs
         use Landuse_ml,    only: LandCover
         use MetFields_ml, only : ps ,foundcloudwater,q,th,lwc,cc3dmax
-        use ModelConstants_ml,    only : KMAX_BND,KMAX_MID,KCHEMTOP, METSTEP 
+        use ModelConstants_ml,    only : KMAX_BND,KMAX_MID,KCHEMTOP, METSTEP
         use NetCDF_ml, only :ReadField_CDF
         use Par_ml,           only: me,LIMAX, LJMAX
-        use PhysicalConstants_ml, only :KAPPA, RGAS_KG, GRAV  
+        use PhysicalConstants_ml, only :KAPPA, RGAS_KG, GRAV
         use Radiation_ml, only : ZenithAngleS,ZenithAngle
         use TimeDate_ml, only : daynumber,current_date
-       
+
       USE FJX_CMN_MOD
 
       USE FJX_SUB_MOD
@@ -3363,10 +3358,10 @@
         integer, intent(in) ::i_emep,j_emep
         integer, intent(inout) ::errcode
         logical, save::first_call=.true.
-        
+
         real*8 :: weight1,weight2, y, y1, y2, Z, CosZ, latitude, longitude
         real*8 :: thour,thour1,thour2,YGRD,XGRD,SOLF
- 
+
 !part of this could be put somewhere else (in metint and store all results in nr=1?)
         ! we assume the rates followe a sqrt(cos(zenithangle)) function
 
@@ -3375,7 +3370,7 @@
          YGRD = latitude*PI180
          XGRD = longitude*PI180
         thour = real(current_date%hour) + current_date%seconds/3600.0
-        thour1 = int((thour+0.000001)/METSTEP)*METSTEP !last meteo time 
+        thour1 = int((thour+0.000001)/METSTEP)*METSTEP !last meteo time
         thour2 = thour1 + METSTEP !next meteo time (nr=2)
 !        call ZenithAngleS( longitude, latitude,daynumber, 365,thour, Z, CosZ )
         call SOLAR_JX(thour,daynumber,YGRD,XGRD, Z,CosZ,SOLF)
@@ -3425,18 +3420,20 @@
 
 !FOR TESTING
 if(me==-6.and.i_emep==5.and.j_emep==5)then
-L=3 !NB: k=kmax_bnd-L
-write(*,22)'AO3 ',         rcphot(IDAO3,kmax_bnd-L) , rcphot_3D(IDAO3,kmax_bnd-L,i_emep,j_emep,1) ,rcphot_3D(IDAO3,kmax_bnd-L,i_emep,j_emep,2)
-write(*,22)'BO3 ',          rcphot(IDBO3,kmax_bnd-L)
-write(*,22) 'NO2 ',         rcphot(IDNO2,kmax_bnd-L)
-write(*,22) 'H2O2 ',         rcphot(IDH2O2,kmax_bnd-L) 
-write(*,22) 'HNO3 ',         rcphot(IDHNO3,kmax_bnd-L) 
-write(*,22) 'ACH2O ',         rcphot(IDACH2O,kmax_bnd-L)
-write(*,22) 'BCH2O ',         rcphot(IDBCH2O,kmax_bnd-L)
-write(*,22) 'CH3CHO ',         rcphot(IDCH3CHO,kmax_bnd-L)
-write(*,22) 'CH3COX ',         rcphot(IDCH3COX,kmax_bnd-L)
-write(*,22) 'HCOHCO ',         rcphot(IDHCOHCO,kmax_bnd-L)
-write(*,22) 'RCOHCO ',         rcphot(IDRCOHCO,kmax_bnd-L)
+  L=3 !NB: k=kmax_bnd-L
+  write(*,22)'AO3 ',    rcphot(IDAO3,kmax_bnd-L) , &
+                        rcphot_3D(IDAO3,kmax_bnd-L,i_emep,j_emep,1) ,&
+                        rcphot_3D(IDAO3,kmax_bnd-L,i_emep,j_emep,2)
+  write(*,22)'BO3 ',    rcphot(IDBO3,kmax_bnd-L)
+  write(*,22)'NO2 ',    rcphot(IDNO2,kmax_bnd-L)
+  write(*,22)'H2O2 ',   rcphot(IDH2O2,kmax_bnd-L)
+  write(*,22)'HNO3 ',   rcphot(IDHNO3,kmax_bnd-L)
+  write(*,22)'ACH2O ',  rcphot(IDACH2O,kmax_bnd-L)
+  write(*,22)'BCH2O ',  rcphot(IDBCH2O,kmax_bnd-L)
+  write(*,22)'CH3CHO ', rcphot(IDCH3CHO,kmax_bnd-L)
+  write(*,22)'CH3COX ', rcphot(IDCH3COX,kmax_bnd-L)
+  write(*,22)'HCOHCO ', rcphot(IDHCOHCO,kmax_bnd-L)
+  write(*,22)'RCOHCO ', rcphot(IDRCOHCO,kmax_bnd-L)
 
 22 format(a,15E12.4)
 end if
@@ -3500,29 +3497,29 @@ use netcdf
 
      !find vertical levels in clim file
      !Note: The pressure at the upper levels from clim file are (almost) identical with the CTM levels
-     call check(nf90_open(path=trim(filename),mode=nf90_nowrite,ncid=ncFileID))        
+     call check(nf90_open(path=trim(filename),mode=nf90_nowrite,ncid=ncFileID))
      call check(nf90_inq_dimid(ncid = ncFileID, name = "lev", dimID = dimID))
      call check(nf90_inquire_dimension(ncid=ncFileID,dimID=dimID,len=Nlevel_CLIM ))
      if(me==0)write(*,*)'Clim number of levels ',Nlevel_CLIM
- 
+
      allocate(etaa_CLIM(Nlevel_CLIM+1),etab_CLIM(Nlevel_CLIM+1))
      allocate(temperature_clim(Nlevel_CLIM,LIMAX,LJMAX))
      allocate(cloudliquidwater_clim(Nlevel_CLIM,LIMAX,LJMAX))
      allocate(humidity_clim(Nlevel_CLIM,LIMAX,LJMAX))
      allocate(o3_clim(Nlevel_CLIM,LIMAX,LJMAX))
      allocate(rcphot_3D(NRCPHOT,KCHEMTOP:KMAX_MID,LIMAX,LJMAX,2))
-      
-     call check(nf90_inq_varid(ncid = ncFileID, name = "P0", varID = varID))                 
+
+     call check(nf90_inq_varid(ncid = ncFileID, name = "P0", varID = varID))
      call check(nf90_get_var(ncFileID, varID, P0 ))
-     call check(nf90_inq_varid(ncid = ncFileID, name = "hyai", varID = varID))                 
+     call check(nf90_inq_varid(ncid = ncFileID, name = "hyai", varID = varID))
      call check(nf90_get_var(ncFileID, varID,  etaa_CLIM ))
      !(clim file uses: P=hyai*101325.0+hybi*PS)
      etaa_CLIM=P0*etaa_CLIM!different definition in model and grid_Def
-     call check(nf90_inq_varid(ncid = ncFileID, name = "hybi", varID = varID))                 
-     call check(nf90_get_var(ncFileID, varID, etab_CLIM ))          
+     call check(nf90_inq_varid(ncid = ncFileID, name = "hybi", varID = varID))
+     call check(nf90_get_var(ncFileID, varID, etab_CLIM ))
      call check(nf90_close(ncFileID))
      !level 1 is P=0 corresponds to "L1_+1"
-     
+
      !find number of levels above emep levels.
      !find first level with pressure at least 100 Pa smaller than topp emep level (i.e with lowest pressure)
      !NB: Pa here (not hPa)
@@ -3544,7 +3541,7 @@ use netcdf
         if(me==0)write(*,*)'FASTJ number of levels ',L_FastJ,' , above emep levels: ',L_CLIM_first
      end if
 
-!define the boundaries of the vertical levels used in FastJ. FastJ counts from surface (L=1) to top (L =  L_FastJ+1) 
+!define the boundaries of the vertical levels used in FastJ. FastJ counts from surface (L=1) to top (L =  L_FastJ+1)
      L=0
      !first put emep levels
      do k=kmax_bnd,1,-1
@@ -3569,7 +3566,7 @@ use netcdf
            stop
         end if
      end do
-     
+
   end if
 
 
@@ -3647,7 +3644,7 @@ use netcdf
   L_CLIM = 0
   do L=L_FastJ,kmax_mid+1,-1
      L_CLIM = L_CLIM+1
-     TI(L) = temperature_clim(L_CLIM,i_emep,j_emep) 
+     TI(L) = temperature_clim(L_CLIM,i_emep,j_emep)
      swp=611.2*exp(17.67*(TI(L)-273.15)/(TI(L)-29.65))!saturation water pressure in Pa
      !   write(*,*)'humidity ',q(i_emep,j_emep,kmid,1)*(Pres_mid)/0.622 /swp,RI(L)
      RI(L) =  humidity_clim(L_CLIM,i_emep,j_emep)*100*0.5*(PPP(L)+PPP(L-1))/0.622 /swp
@@ -3773,7 +3770,7 @@ use netcdf
      write(*,22)'PARAMETERS ',         SZA,x,GMTAU,XGRD/PI180,YGRD/PI180!3 O3        PHOTON    O2        O(total)                1.000 /
      write(*,22)'AO3 ',         rcphot(IDAO3,kmax_bnd-L) , ZPJ(L,3), SZA,x,x**2/0.00073,x**4/0.00073/0.00073/0.00073!3 O3        PHOTON    O2        O(total)                1.000 /O3    /
      write(*,22)'BO3 ',          rcphot(IDBO3,kmax_bnd-L) , ZPJ(L,4), SZA,x*90*0.00073,x**2*90,x**4*213017751,x**6*491579426490669.0!4 O3        PHOTON    O2        O(1D)                   1.000 /O3(1D)/
-     write(*,22) 'NO2 ',         rcphot(IDNO2,kmax_bnd-L) , ZPJ(L,9),SZA,x*0.00073*27692,x**2*27692,x**4*63905325443.0!9 NO2       PHOTON    N2        O                       1.000 /NO2   /  
+     write(*,22) 'NO2 ',         rcphot(IDNO2,kmax_bnd-L) , ZPJ(L,9),SZA,x*0.00073*27692,x**2*27692,x**4*63905325443.0!9 NO2       PHOTON    N2        O                       1.000 /NO2   /
      write(*,22) 'H2O2 ',         rcphot(IDH2O2,kmax_bnd-L) , ZPJ(L,7),SZA,x*0.00073*22.38,x**2*22.38,x**4*51656804!7 H2O2      PHOTON    OH        OH                      1.000 /H2O2  /
      write(*,22) 'HNO3 ',         rcphot(IDHNO3,kmax_bnd-L) , ZPJ(L,15),SZA,x*0.00073*1.846,x**2*1.846,x**4*4260355!15 HNO3      PHOTON    NO2       OH                      1.000 /HNO3  /
      write(*,22) 'ACH2O ',         rcphot(IDACH2O,kmax_bnd-L) , ZPJ(L,5),SZA,x*0.00073*103.8461,x**2*103.8461,x**4*239644970!5 H2CO      PHOTON    HCO       H                       1.000 /H2COa /
@@ -3781,11 +3778,13 @@ use netcdf
      write(*,22) 'CH3CHO ',         rcphot(IDCH3CHO,kmax_bnd-L) , ZPJ(L,54),SZA,x*0.00073*13.84,x**2*13.84,x**4*31952662!54 CH3CHO    PHOTON    CH3       HCO                     1.000 /ActAld/
      write(*,22) 'CH3COX ',         rcphot(IDCH3COX,kmax_bnd-L) , ZPJ(L,61)+ZPJ(L,62),SZA,x*0.00073*13.84,x**2*13.84,x**4*31952662!61 CH3COC2H5 PHOTON    C2H5      CH3CO                   0.850 /MEKeto/
      !62 CH3COC2H5 PHOTON    CH3       C2H5CO                  0.150 /MEKeto/  ?
-     write(*,22) 'HCOHCO ',         rcphot(IDHCOHCO,kmax_bnd-L) , ZPJ(L,66),SZA,x*0.00073*50.7692,x**2*50.7692,x**4*117159763, ZPJ(L,67),ZPJ(L,65)
+     write(*,22) 'HCOHCO ',         rcphot(IDHCOHCO,kmax_bnd-L) , ZPJ(L,66),SZA,&
+      x*0.00073*50.7692,x**2*50.7692,x**4*117159763, ZPJ(L,67),ZPJ(L,65)
      write(*,22) 'RCOHCO ',         rcphot(IDRCOHCO,kmax_bnd-L) , ZPJ(L,64),SZA,x*0.00073*576.92,x**2*576.92,x**4*1331360946.0!64 CH3COCHO  PHOTON    CH3CO     CO                      1.000 /MGlyxl/
 
      !should add 11 and 12 or only 12? 11 NO3       PHOTON    NO        O2                      0.114 /NO3   /
-     write(*,22) 'IDNO3 ',         rcphot(IDNO3,kmax_bnd-L) , ZPJ(L,11)+ZPJ(L,12),SZA,x*0.00073*623076,x**2*623076,x**4*1437869822485.0!12 NO3       PHOTON    NO2       O                       0.886 /NO3   /
+     write(*,22) 'IDNO3 ',         rcphot(IDNO3,kmax_bnd-L) , ZPJ(L,11)+ZPJ(L,12),SZA,&
+      x*0.00073*623076,x**2*623076,x**4*1437869822485.0!12 NO3       PHOTON    NO2       O                       0.886 /NO3   /
 
      write(*,22) 'IDCH3O2H ',         rcphot(IDCH3O2H,kmax_bnd-L) , ZPJ(L,8),SZA,x*0.00073*16.6,x**2*16.6,x**4*38343195!8 CH3OOH    PHOTON    CH3O      OH                      1.000 /CH3OOH/
   end if
@@ -3794,7 +3793,7 @@ use netcdf
 !could put directly into rcphot_3D in later version
   do L=1,KMAX_BND-KCHEMTOP
      !hardcoded for now
-     !definitions of reactions and indices in FJX_j2j.dat 
+     !definitions of reactions and indices in FJX_j2j.dat
      !example of interpretation (by PeterW!)
      !  11 NO3       PHOTON    NO        O2                      0.114 /NO3   /
      !  12 NO3       PHOTON    NO2       O                       0.886 /NO3   /
@@ -3808,7 +3807,7 @@ use netcdf
 
      rcphot(IDAO3,kmax_bnd-L) = ZPJ(L,3)!3 O3        PHOTON    O2        O(total)                1.000 /O3    /
      rcphot(IDBO3,kmax_bnd-L) = ZPJ(L,4)!4 O3        PHOTON    O2        O(1D)                   1.000 /O3(1D)/
-     rcphot(IDNO2,kmax_bnd-L) = ZPJ(L,9)!9 NO2       PHOTON    N2        O                       1.000 /NO2   /  
+     rcphot(IDNO2,kmax_bnd-L) = ZPJ(L,9)!9 NO2       PHOTON    N2        O                       1.000 /NO2   /
      rcphot(IDH2O2,kmax_bnd-L) = ZPJ(L,7)!7 H2O2      PHOTON    OH        OH                      1.000 /H2O2  /
      rcphot(IDHNO3,kmax_bnd-L) = ZPJ(L,15)!15 HNO3      PHOTON    NO2       OH                      1.000 /HNO3  /
      rcphot(IDACH2O,kmax_bnd-L) = ZPJ(L,5)!5 H2CO      PHOTON    HCO       H                       1.000 /H2COa /
@@ -3832,11 +3831,11 @@ use netcdf
 
      rcphot(IDCH3O2H,kmax_bnd-L) = ZPJ(L,8)!8 CH3OOH    PHOTON    CH3O      OH                      1.000 /CH3OOH/
      rcphot(IDHO2NO2,kmax_bnd-L) = ZPJ(L,16)!not used !16 HNO4      PHOTON    NO2       HO2                     1.000 /HNO4  /
-     rcphot(IDACETON,kmax_bnd-L) = ZPJ(L,68)!not used !68 CH3COCH3  PHOTON    CH3CO     CH3                     1.000 /Acet-a/    
+     rcphot(IDACETON,kmax_bnd-L) = ZPJ(L,68)!not used !68 CH3COCH3  PHOTON    CH3CO     CH3                     1.000 /Acet-a/
 
   end do
 
-  if(mode/=0)rcphot_3D(:,:,i_emep,j_emep,nr_local)=rcphot(:,:)       
+  if(mode/=0)rcphot_3D(:,:,i_emep,j_emep,nr_local)=rcphot(:,:)
 
   first_call=.false.
 
@@ -3853,4 +3852,3 @@ end subroutine setup_phot_fastj
   end subroutine check
 
     end module FastJ_ml
-

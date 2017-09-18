@@ -1010,12 +1010,11 @@ subroutine init_mask_restrict(filename_read,rundomain_ext)
   integer,intent(in) ::rundomain_ext(4)
   character(len=*),intent(in) :: filename_read
   integer ::GIMAX_ext,GJMAX_ext
-  integer :: ncFileID,timeDimID,varid,status,dimIDs(3)
-  integer :: i,j,k,n
+  integer :: ncFileID,varid,status
+  integer :: i,j,n
   real, allocatable, dimension(:,:) ::lon_ext,lat_ext
   real, allocatable, dimension(:) :: temp_ll
-  character(len=80) ::projection,word,iDName,jDName
-  logical :: fexist
+  character(len=80) ::projection,iDName,jDName
   real, allocatable, dimension(:,:) ::Weight_rstrct,glon_rundom,glat_rundom
   integer, allocatable, dimension(:,:) ::IIij_rstrct,JJij_rstrct
   real, allocatable, dimension(:) ::lon_rstrct,lat_rstrct

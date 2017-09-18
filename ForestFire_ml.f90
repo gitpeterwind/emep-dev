@@ -158,15 +158,16 @@ subroutine Config_Fire()
   if(DEBUG%FORESTFIRE.and.MasterProc) write(*,*) dtxt//" selects ",BBMAP
   select case(BBMAP)
     case("GFED")
-       persistence=8  ! 8-day records
-       bbinterp = 'conservative'
+      persistence=8  ! 8-day records
+      bbinterp = 'conservative'
     case("FINN")
-       persistence=1  ! 1-day records
-       bbinterp = 'mass_conservative'
+      persistence=1  ! 1-day records
+      bbinterp = 'mass_conservative'
     case("GFAS")
-       persistence=3  ! 1-day records, valid for 3 day in FORECAST mode
-       bbinterp = 'conservative'
-    case default;call CheckStop(dtxt//"Unknown Mapping")
+      persistence=3  ! 1-day records, valid for 3 day in FORECAST mode
+      bbinterp = 'conservative'
+    case default
+      call CheckStop(dtxt//"Unknown Mapping")
   end select
 
   rewind(IO_NML)

@@ -140,7 +140,7 @@ integer, private, save :: iemCO  ! index of CO emissions, for debug
 
 logical :: Cexist,USE_MONTHLY_GRIDEMIS=.false.!internal flag
 real ::TimesInDays(120),mpi_out
-integer ::NTime_Read=-1,ncFileID,VarID,found, cdfstatus
+integer ::NTime_Read=-1,found
 character(len=125) ::fileName_monthly='NOT_SET'!must be initialized with 'NOT_SET'
 character(len=10), private,save ::  incl_monthly(size(emis_inputlist(1)%incl)),&
      excl_monthly(size(emis_inputlist(1)%excl))
@@ -563,10 +563,15 @@ subroutine Emissions(year)
           n=find_index(emis_inputlist(Found_Emis_4D)%pollemepName(i_Emis_4D),species(:)%name)
           if(MasterProc)then
             if(n>0)then
-              write(*,*)'Emis_4D: will write to ',n,emis_inputlist(Found_Emis_4D)%pollemepName(i_Emis_4D)        
+              write(*,*)'Emis_4D: will write to ',&
+                n,trim(emis_inputlist(Found_Emis_4D)%pollemepName(i_Emis_4D))
             else                   
-              write(*,*)'Emis_4D: WARNING did not find ',emis_inputlist(Found_Emis_4D)%pollemepName(i_Emis_4D),' among the emep species'
-              write(*,*)'Emis_4D: WARNING ',emis_inputlist(Found_Emis_4D)%pollName(i_Emis_4D),' is not used'
+              write(*,*)'Emis_4D: WARNING did not find ',&
+                trim(emis_inputlist(Found_Emis_4D)%pollemepName(i_Emis_4D)),&
+                ' among the emep species'
+              write(*,*)'Emis_4D: WARNING ',&
+                trim(emis_inputlist(Found_Emis_4D)%pollName(i_Emis_4D)),&
+                ' is not used'
             end if
           end if
         end do
@@ -1090,7 +1095,8 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
           if(emis_inputlist(Found_Emis_4D)%pollName(i_Emis_4D)=='NOTSET')exit
           varname=emis_inputlist(Found_Emis_4D)%pollName(i_Emis_4D)
           !if(MasterProc)write(*,*)'Fetching ',trim(varname)
-          call GetCDF_modelgrid(varname,emis_inputlist(Found_Emis_4D)%Name,Emis_4D(1,1,1,i_Emis_4D),1,kmax_mid,nstart,1,reverse_k=.true.)
+          call GetCDF_modelgrid(varname,emis_inputlist(Found_Emis_4D)%Name,&
+            Emis_4D(1,1,1,i_Emis_4D),1,kmax_mid,nstart,1,reverse_k=.true.)
         end do
       end if
     end if
@@ -1397,15 +1403,12 @@ subroutine newmonth
   use ModelConstants_ml, only : KCHEMTOP, KMAX_MID
   use NetCDF_ml, only : ReadField_CDF
 
-  integer i, j,k, iyr, iemislist
-  integer n, flat_ncmaxfound         ! Max. no. countries w/flat emissions
+  integer :: i, j,k, iyr, iemislist, n
   character(len=200) :: fname
   real ktonne_to_kgm2s, tonnemonth_to_kgm2s  ! Units conversion
-  integer errcode,iland
-  integer :: iem,ic,isec, i_gridemis
+  integer :: iland, iem,ic,isec, i_gridemis
   real :: conv
   logical , save :: first_call=.true.
-  logical :: needed_found
 
   ! For now, only the global runs use the Monthly files
   integer :: kstart,kend,nstart,Nyears
@@ -1417,7 +1420,7 @@ subroutine newmonth
   character(len=125) ::fileName
   real :: Mask_ReducFactor
   integer :: NMask_Code,Mask_Code(NLAND), i_femis_lonlat
-  real :: lonlat_fac, dms_sum, mw
+  real :: lonlat_fac, mw
 
   if(.not.allocated(airn).and.(USE_LIGHTNING_EMIS.or.USE_AIRCRAFT_EMIS))&
     allocate(airn(KCHEMTOP:KMAX_MID,LIMAX,LJMAX))

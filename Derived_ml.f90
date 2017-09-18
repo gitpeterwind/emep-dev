@@ -151,7 +151,7 @@ logical, private, save :: dbg0   ! = DEBUG%DERIVED .and. MasterProc
 logical, private, save :: dbgP   ! = DEBUG%DERIVED .and. debug_proc
 character(len=100), private :: errmsg
 
-integer, private :: i,j,k,l,n, ivoc, iou, isec, iem, neigh   ! Local loop variables
+integer, private :: i,j,k,l,n, ivoc, iou, isec   ! Local loop variables
 
 integer, private, save :: iadv_O3=-999,     & ! Avoid hard codded IXADV_SPCS
   iadv_NO3_C=-999,iadv_EC_C_WOOD=-999,iadv_EC_C_FFUEL=-999,iadv_POM_C_FFUEL=-999
@@ -299,9 +299,7 @@ subroutine Define_Derived()
   character(len=TXTLEN_IND)  :: outind
 
   integer :: ind, iadv, ishl, idebug, n, igrp, iout, isec_poll
-  character(len=2)::  isec_char
-  character(len=3)::  neigh_char
-
+  
   if(dbg0) write(6,*) " START DEFINE DERIVED "
   !   same mol.wt assumed for PPM25 and PPMCOARSE
 
@@ -848,7 +846,7 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
   real :: thour                          ! Time of day (GMT)
   real :: timefrac                       ! dt as fraction of hour (3600/dt)
   real :: dayfrac              ! fraction of day elapsed (in middle of dt)
-  real :: af, xtot, fl0, fl1
+  real :: af, fl0, fl1
   real, save :: km2_grid
   integer :: ntime                        ! 1...NTDAYS
   integer :: klow                         ! lowest extent of column data
@@ -866,14 +864,12 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
     ind2d_pmwater=-999,ind3d_pmwater=-999,  &
     ind2d_pm10=-999   ,ind3d_pm10=-999
 
-  integer :: imet_tmp, iix,ix,index
+  integer :: imet_tmp, index
   real, pointer, dimension(:,:,:) :: met_p => null()
 
   logical, allocatable, dimension(:)   :: ingrp
   integer :: wlen,ispc,kmax
-  integer,save :: n_Local_Pollutant, n_Total_Pollutant,&
-       n_Local_Pollutant3D, n_Total_Pollutant3D
-  integer ::dx,dy,isec_poll,isec,iisec,ipoll
+  integer :: isec_poll,isec,iisec,ipoll
   real :: default_frac,tot_frac,loc_frac_corr
 
   timefrac = dt/3600.0
@@ -1101,7 +1097,9 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
          if(me==0)write(*,*)'WARNING, no local fractions found for ',trim(class),' index ',index
          44 continue
          if(me==0.and. first_call)then
-            write(*,*)'local fractions found for ',trim(class),' index ',index,' name ',species_adv(index)%name,' locfrac pollutant ',uEMEP%poll(ipoll)%emis
+            write(*,*)'local fractions found for ',trim(class),&
+              ' index ',index,' name ',trim(species_adv(index)%name),&
+              ' locfrac pollutant ',trim(uEMEP%poll(ipoll)%emis)
             do iisec=1,uEMEP%poll(ipoll)%Nsectors
             isec_poll=uEMEP%poll(ipoll)%sec_poll_ishift+iisec
             isec=uEMEP%poll(ipoll)%sector(iisec)
@@ -1161,7 +1159,9 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
          if(me==0)write(*,*)'WARNING, no local fractions found for ',trim(class),' index ',index
          45 continue
          if(me==0.and. first_call)then
-            write(*,*)'local fractions found for ',trim(class),' index ',index,' name ',species_adv(index)%name,' locfrac pollutant ',uEMEP%poll(ipoll)%emis
+            write(*,*)'local fractions found for ',trim(class),' index ',index,&
+              ' name ',trim(species_adv(index)%name),&
+              ' locfrac pollutant ',trim(uEMEP%poll(ipoll)%emis)
             do iisec=1,uEMEP%poll(ipoll)%Nsectors
             isec_poll=uEMEP%poll(ipoll)%sec_poll_ishift+iisec
             isec=uEMEP%poll(ipoll)%sector(iisec)
