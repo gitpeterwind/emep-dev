@@ -138,6 +138,35 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+18th Sep  2017  Dave
+
+ForestFire_ml.f90
+
+   - added new option (MODE="MONTHLY_CLIM" or "C" or "c") to deal with
+   climatological BB emissions, where the monthly averages have been
+   pre-calculated. This might be from the year in question, but the main
+   aim is to allow e.g. 10-year average climatologies to be used where
+   'real' data is not available.
+
+   (A preliminary 10-year data set from FINNv1.5 can be found in
+    /global/work/mifads/FFIRE_TESTS/gRemapMonthly10yr.nc.  Also need to
+    set ${'FINN'} in run.pl to use, along with modified MODE in 
+    config Fire_config. )
+
+   - changed function newFFrecord to be subroutine, since (a) I don't
+   like functions to do more than return one value (ie no side-effects),
+   (b) most fortran style-suggestions don't like that either, and (c)
+   having more than one contains command per module is also confusing
+   (IMO!).
+
+  - harmonised treatement of ReadField_CDF across different BB sources
+  - Extra documentation
+  - Modified debug, though this is still somewhat confusing
+     
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ OPEN-SOURCE RELEASED FROM SEPARATE BRANCH AROUND HERE.... (Alvaro, more details?)
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 1st    Sep  2017 Alvaro
 
 allow multiple Special_ShipEmis files, see #55
