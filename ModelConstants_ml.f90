@@ -175,7 +175,7 @@ logical, public, save ::             &
  ,TEGEN_DATA         = .true.        & ! Interpolate global data to make dust if  USE_DUST=.true.
  ,INERIS_SNAP1       = .false.       & !(EXP_NAME=="TFMM"), & ! Switches off decadal trend
  ,INERIS_SNAP2       = .false.       & !(EXP_NAME=="TFMM"), & ! Allows near-zero summer values
- ,USE_ASH            = .false.       & ! Ash from Volcanic Eruption, w/gravitational settling
+ ,USE_ASH            = .true.        & ! Ash from historical Volcanic Eruption
  ,USE_PreADV         = .false.       & ! Column Emissions are preadvected when winds are very strong 
  ,USE_NOCHEM         = .false.       & ! Turns of chemistry for emergency runs
  ,USE_AOD            = .false.       &

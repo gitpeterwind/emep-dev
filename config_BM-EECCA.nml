@@ -60,7 +60,7 @@
 !------------------------------
   SELECT_LEVELS_HOURLY  = F,          ! hourly output flag Also for FORECAST, 3DPROFILES
   FORECAST              = F,
-  USE_ASH               = F,          ! Used for FORECASTs and Status 2010
+  USE_ASH               = F,          ! Ash from historical Volcanic Eruptions
   ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
   USE_AOD               = T,          ! Used for FORECASTs usually
   BGND_CH4              = -1,         ! Reset CH4 (use ppb). (Use -1 for defaults)

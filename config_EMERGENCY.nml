@@ -66,7 +66,7 @@
 !------------------------------
   SELECT_LEVELS_HOURLY  = T,          ! hourly output flag Also for FORECAST, 3DPROFILES
   FORECAST              = T,
-  USE_ASH               = T,          ! Used for FORECASTs and Status 2010
+  USE_ASH               = T,          ! Ash from historical Volcanic Eruptions
   USE_PreADV            = T,          ! Distribute point-source before advection
   USE_NOCHEM            = T,          ! Turns off chemistry
   ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
