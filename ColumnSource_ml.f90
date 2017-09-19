@@ -305,7 +305,7 @@ subroutine setRate()
   end if
   nloc=0
   l = 1
-  doLOC: do while (l<=NMAX_LOC)
+  doLOC: do ! read all entries on file, stop simulation if are too many entries 
     call read_line(IO_TMP,txtline,stat)
     if(stat/=0) exit doLOC            ! End of file
     txtline=ADJUSTL(txtline)          ! Remove leading spaces
@@ -361,7 +361,7 @@ subroutine setRate()
   l = 1
   sbeg=date2string(SDATE_FMT,startdate)
   send=date2string(SDATE_FMT,enddate)
-  doEMS: do while(l<=NMAX_EMS)
+  doEMS: do ! read all entries on file, stop simulation if are too many entries 
     call read_line(IO_TMP,txtline,stat)
     if(stat/=0) exit doEMS            ! End of file
     if(.not.source_found)cycle doEMS  ! There is no vents on sub-domain
