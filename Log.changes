@@ -138,6 +138,22 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+19th Sep  2017  Alvaro
+
+ForestFire_ml:
+- fix gFortran compile error
+
+ModelConstants_ml
+- Ash from historical Eruptions by default (#49,#29)
+
+ColumnSource_ml:
+- stop simulation when NMAX_LOC/NMAX_EMS is exceeded (#44)
+
+ColumnSource_ml,run.pl,config_$exp_name.nml
+- read NMAX_LOC/NMAX_EMS from ColumnSource_config namelist (#29)
+- estimate NMAX_LOC/NMAX_EMS from lines on input files when NMAX_LOC/NMAX_EMS<1 (#29
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 18th Sep  2017  Dave
 
 ForestFire_ml.f90
