@@ -43,7 +43,7 @@ logical, save ::      &
 
 integer, save ::  &
   NMAX_LOC = 5,   &! Max number of locations on processor/subdomain (increase to 24 for eEMEP)
-  NMAX_EMS = 300   ! Max number of events def per location (increase to 6000 for eEMEP)
+  NMAX_EMS = 250   ! Max number of events def per location (increase to 6000 for eEMEP)
 
 integer, save ::  &! No. of ... found on processor/subdomain
   nloc    = -1     ! Source locations
@@ -99,24 +99,56 @@ integer,save,public,allocatable :: PROC_LOC(:)
 real,save,public,allocatable  :: Winds(:,:,:)
 
 contains
+
+function file_lines(fname,comment) result(lines)
+!-----------------------------------------------------------------------!
+! Count lines on a file
+!-----------------------------------------------------------------------!
+  character(len=*), intent(in) :: fname
+  character(len=1), intent(in) :: comment
+  integer :: lines, ios
+  character(len=SLEN*10):: txtline        ! Long enough for a full line
+
+  if(MasterProc)then
+    ! open file, has to exists
+    open(IO_TMP,file=fname,status="old",action="read",iostat=ios)
+    call CheckStop(ios,mname//" def.file "//trim(fname)//' not found')
+    ! count lines on file
+    lines = 0
+    doLINES: do                           ! read all entries on file
+      read(IO_TMP,"(a)",iostat=ios) txtline
+      if(ios/=0) exit doLINES             ! End of file
+      txtline=ADJUSTL(txtline)            ! Remove leading spaces
+      if(txtline(1:1)==comment)cycle doLINES  ! skip comment line
+      lines = lines +1
+    end do doLINES
+    close(IO_TMP)
+  end if
+  call MPI_BCAST(lines,1,MPI_INTEGER,MasterPE,MPI_COMM_CALC,IERROR)
+end function file_lines
+
 subroutine Config_ColumnSource()
-  integer,parameter::read_ok(4)=[0,-1,84,85] ! OK if namelist not found
+!-----------------------------------------------------------------------!
+! Read config namelist and allocate definition arrays
+!-----------------------------------------------------------------------!
+  integer,parameter :: read_ok(4)=[0,-1,84,85] ! OK if namelist not found
   integer :: ios=0
   NAMELIST /ColumnSource_config/&
     NMAX_LOC,NMAX_EMS,topo_nc,flocdef,femsdef
   rewind(IO_NML)
   read(IO_NML,NML=ColumnSource_config,iostat=ios)
   call CheckStop(all(ios/=read_ok),"NML=ColumnSource_config")
-  ! expand DataDir/GRID/date keyswords
+  ! expand DataDir/GRID keyswords
   topo_nc=key2str(topo_nc,'DataDir',DataDir)
   topo_nc=key2str(topo_nc,'GRID',GRID)
   flocdef=key2str(flocdef,'DataDir',DataDir)
-  flocdef=key2str(flocdef,'GRID',GRID)
-  flocdef=date2string(flocdef,current_date)
   femsdef=key2str(femsdef,'DataDir',DataDir)
-  femsdef=key2str(femsdef,'GRID',GRID)
-  femsdef=date2string(femsdef,current_date)
-  ! allocate deffinition arrays
+  ! estimate NMAX_LOC/EMS from lines in file, if not defined
+  if(NMAX_LOC<1) NMAX_LOC=file_lines(flocdef,"#")
+  if(NMAX_EMS<1) NMAX_EMS=file_lines(femsdef,"#")
+  if(DEBUG%COLSRC.and.MasterProc) &
+    write(*,*)mname,': NMAX_LOC=',NMAX_LOC,',NMAX_EMS=',NMAX_EMS
+  ! allocate definition arrays
   allocate(nems(0:NMAX_LOC),locdef(NMAX_LOC),emsdef(0:NMAX_LOC,NMAX_EMS),&
            PROC_LOC(NMAX_LOC))
   nems(:)=-1
@@ -124,6 +156,8 @@ subroutine Config_ColumnSource()
   emsdef(:,:)=ems('UNDEF','UNKNOWN','??',-999.0,-999.0,-999.0,&
                   '??','??',-1,-1,-1,.true.,.false.)
   PROC_LOC(:)=-1
+  if(USE_PreADV) allocate(Winds(KMAX_MID,2,NMAX_LOC))
+
   ! read topography file
   allocate(surf_height(LIMAX,LJMAX))
   call GetCDF_modelgrid("topography",topo_nc,surf_height,&
@@ -309,7 +343,6 @@ subroutine setRate()
 !----------------------------!
 !
 !----------------------------!
-  if(first_call .and. USE_PreADV) allocate(Winds(KMAX_MID,2,NMAX_LOC))
   if(.not.first_call)then
     if(MasterProc.and.DEBUG%COLSRC.and.second_call) &
       write(*,MSG_FMT)'No need for reset volc.def...'
@@ -397,7 +430,6 @@ subroutine setRate()
       if(DEBUG%COLSRC.and.dems%loc>0) &
         write(*,MSG_FMT)'Erup.skip',me,'in',dems%loc,trim(dems%id),&
           0,trim(dems%sbeg),1,trim(dems%send)
-      if(DEBUG%COLSRC.and.dems%loc>0)write(*,*)'RATE',dems%rate
       cycle doEMS
     elseif(dems%edef)then                                 ! Default
       nems(0)=nems(0)+1
