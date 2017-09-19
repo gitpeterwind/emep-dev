@@ -348,7 +348,7 @@ subroutine Fire_Emis(daynumber)
           needed=need_poll,UnDef=0.0,debug_flag=debug_nc,&
           ncFileID_given=ncFileID)
         if( debug_proc.and.FF_poll=="CO" ) write(*,"(a,i5,a,es12.3)") &
-           dtxt//" CO READ: ", nstart, & trim(FF_poll), maxval(rdemis)
+           dtxt//" CO READ: ", nstart, trim(FF_poll), maxval(rdemis)
     end if
 !-------- Aug 2017
 
@@ -559,7 +559,7 @@ subroutine Fire_rcemis(i,j)
   integer ::  N_LEVELS  ! = 9.0 here
 
   character(len=*), parameter :: dtxt = 'BB:rcemis'
-  real    :: origrc, bbe, fac
+  real    :: origrc, fac
   logical :: debug_flag
 
   debug_flag = (DEBUG%FORESTFIRE.and.debug_proc .and.&
