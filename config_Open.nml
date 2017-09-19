@@ -48,7 +48,7 @@
 ! One can either include or exclude, not both, as follows
 ! emis_inputlist(1)%incl(1:) = 'EU15', ! example take only countries from the 'EUMACC2' list
 ! emis_inputlist(2)%name     = 'EmisDir/Emis_GLOB_05.nc', !example of Fractions type
-  EMIS_OUT              = F,          ! Output emissions in separate files (memory demanding)!------------------------------
+  EMIS_OUT              = F,          ! Output emissions in separate files (memory demanding)
 !------------------------------
   SELECT_LEVELS_HOURLY  = F,          ! hourly output flag for 3DPROFILES
   FORECAST              = F,
@@ -60,6 +60,16 @@
 !--- 'fake' vegetation for ozone POD calculations
   FLUX_VEGS = 'IAM_CR','IAM_DF','IAM_MF',
   FLUX_IGNORE = 'W', 'D', 'DE', 'ICE', 'BARE'   ! Ignore these for FLUX calcs. 
+&end
+&ColumnSource_config
+!------------------------------
+! volcanic emissions from passive degassing and historical eruptions
+!------------------------------
+  flocdef="DataDir/columnsource_location.csv",
+  femsdef="DataDir/columnsource_location.csv",
+  topo_nc="DataDir/GRID/topography.nc",
+  NMAX_LOC=-1, ! estimate from lines in flocdef
+  NMAX_EMS=-1, ! estiamte from lines in femsdef
 &end
 &Fire_config
   need_poll = F,

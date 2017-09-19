@@ -952,58 +952,6 @@ foreach my $scenflag ( @runs ) {
     $ifile{"$DataDir/jcl3.$s"}        = "jcl3km$seasons{$s}.dat";
   }
 
- #EnsClim RCA, and should be default:
-# if ($GRID eq "RCA") {
-#   $ifile{"$DataDir/VolcanoesLL_2010.dat"} = "VolcanoesLL.dat";
-# } else {
-#   $ifile{"$DataDir/VolcanoesLL.dat"} = "VolcanoesLL.dat";
-# }
-  if($eCWF){
-    my ($emis,$loct,$f,$vname);
-    given($eCWF){
-    when("AshInversion"){
-      $loct=EMEP::Sr::slurp("$EmergencyDir/AshInv_9bin19lev.location");
-      $emis=EMEP::Sr::slurp("$EmergencyDir/AshInv_9bin19lev.eruption");
-      $vname=(split(",",(split(/\n/,$loct))[-1]))[0];   # Vent name
-#     $emis=~s:AshInv:$vname:g;
-      $emis=~s:SR\+H..:SR\+H$eSTART:g;
-   }when("Emergency"){
-      $loct=EMEP::Sr::slurp("$ProgDir/ZCM_Emergency/emergency_location.csv");
-      $emis=EMEP::Sr::slurp("$ProgDir/ZCM_Emergency/emergency_emission.csv");
-      foreach my $line (split(/\n/,$loct)){ # Split lines
-        unless ($line =~ /#.*/) {           # Skip comment lines
-          $vname=(split(",",$line))[0];     # Emergency tracer name
-          $f="$EmergencyDir/${vname}_7bin.eruptions";# Volcanic eruption
-          $emis.=EMEP::Sr::slurp($f)if(-e $f);
-          $f="$EmergencyDir/${vname}.accident";      # NPP accident
-          $emis.=EMEP::Sr::slurp($f)if(-e $f);
-          $f="$EmergencyDir/${vname}.explosion";     # NUC explosion
-          $emis.=EMEP::Sr::slurp($f)if(-e $f);
-        }
-      }
-    }default{
-      die "Unsiported eEMEP mode $eCWF";
-    }}
-    open(TMP,">columnsource_location.csv");
-    print TMP "$loct";
-    close(TMP);
-    open(TMP,">columnsource_emission.csv");
-    print TMP "$emis";
-    close(TMP);
-  }else{
-    die "Need to provide your own volcanic emissions for $GRID" if($GRID eq "RCA");
-#    $ifile{"$DataDir/volcano_location.csv"} = "columnsource_location.csv";
-#    $ifile{"$DataDir/volcano_emission.csv"} = "columnsource_emission.csv";
-#  New data file for volcano emissions from June 2016
-#  Passive degassing from three volcanoes: Stromboli, Etna, Vulcano
-#  We use emission as reported by CEIP in the new files
-    $ifile{"$DataDir/volcano_location.csv_20160610"} = "columnsource_location.csv"; #J16
-    $ifile{"$DataDir/volcano_emission.csv_20160610"} = "columnsource_emission.csv"; #J16
-  }
-  # Topography file for volcano_elevation-surface_height correction
-  my $topo="$DataDir/$GRID/topography.nc";
-  $ifile{$topo} = "topography.nc" if(-e $topo);
-
 # For Pollen
   if($PollenDir) {
     $inml{'birch_frac'}="$PollenDir/birch_frac.nc";

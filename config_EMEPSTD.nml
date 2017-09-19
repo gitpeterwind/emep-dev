@@ -211,6 +211,16 @@
 ! DEBUG%IJ              =   3, 50,       ! sea I hope...
   DEBUG%SPEC            = 'OH',
 &end
+&ColumnSource_config
+!------------------------------
+! volcanic emissions from passive degassing and historical eruptions
+!------------------------------
+  flocdef="DataDir/volcano_location.csv_20160610",
+  femsdef="DataDir/volcano_emission.csv_20160610",
+  topo_nc="DataDir/GRID/topography.nc",
+! NMAX_LOC=-1, ! estimate from lines in flocdef
+! NMAX_EMS=-1, ! estiamte from lines in femsdef
+&end
 &Fire_config
   need_poll = F,              ! Avoids problems with missing ISOP in later FINN data
   GFED_PATTERN="$GFED",#GFED  ! Forestfire data is selected in mk.GenChem.  
