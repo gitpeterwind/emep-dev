@@ -364,6 +364,7 @@ subroutine Define_Derived()
       select case(class)
       case ('Z_MID','Z','Z_BND','Zlev','dZ_BND','dZ')
         iadv = -1
+        unitscale=1.0
         unittxt="m"
         Is3D=.true.
       case('PM25','PM25X','PM25_rh50','PM25X_rh50','PM10_rh50',&

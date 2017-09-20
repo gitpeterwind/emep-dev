@@ -153,7 +153,10 @@ ColumnSource_ml:
 
 ColumnSource_ml,run.pl,config_$exp_name.nml
 - read NMAX_LOC/NMAX_EMS from ColumnSource_config namelist (#29)
-- estimate NMAX_LOC/NMAX_EMS from lines on input files when NMAX_LOC/NMAX_EMS<1 (#29
+- estimate NMAX_LOC/NMAX_EMS from lines on input files when NMAX_LOC/NMAX_EMS<1 (#29)
+
+Derived_ml:
+- fix bug afecting Z_MID output (#47)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 18th Sep  2017  Dave
