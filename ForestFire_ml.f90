@@ -43,7 +43,7 @@ use GridValues_ml,        only: i_fdom, j_fdom, debug_li, debug_lj, &
                                 debug_proc,xm2,GRIDWIDTH_M
 use Io_ml,                only: PrintLog, datewrite, IO_NML
 use MetFields_ml,         only: z_bnd
-use ModelConstants_ml,    only: MasterProc, KMAX_MID, DEBUG, IOU_INST
+use ModelConstants_ml,    only: MasterProc, DataDir, KMAX_MID, DEBUG, IOU_INST
 use netcdf,               only: nf90_open, nf90_nowrite, nf90_close
 use NetCDF_ml,            only: ReadTimeCDF,ReadField_CDF,Out_netCDF,Real4,&
                                 closedID
@@ -51,7 +51,7 @@ use OwnDataTypes_ml,      only: Deriv, TXTLEN_SHORT
 use Par_ml,               only: LIMAX, LJMAX, me,limax,ljmax
 use PhysicalConstants_ml, only: AVOG
 use Setup_1dfields_ml,    only: rcemis
-use SmallUtils_ml,        only: find_index
+use SmallUtils_ml,        only: find_index, key2str
 ! No. days per year, date-type:
 use TimeDate_ml,          only: current_date,day_of_year,max_day
 use TimeDate_ExtraUtil_ml,only: date2string,nctime2string,date2nctime,date2file
@@ -457,6 +457,7 @@ subroutine checkNewFFrecord(ymd, ncFileID,fname,new,nstart)
     case("FINN");fname=date2file(FINN_PATTERN,ymd,persistence-1,"days")
     case("GFAS");fname=date2file(GFAS_PATTERN,ymd,persistence-1,"days")
   end select
+  fname=key2str(fname,'DataDir',DataDir) ! expand DataDir keysword
 
   !if(debug_proc .and. verbose >2 ) then
   if(debug_proc ) then

@@ -880,9 +880,6 @@ foreach my $scenflag ( @runs ) {
   $ifile{"$DataDir/Dust.nc"} = "Dust.nc";#BIC for DUST
   $ifile{"$DataDir/GLOBAL_O3.nc"} = "GLOBAL_O3.nc";
   $ifile{"$DataDir/amilt42-nox.dat"} = "ancatmil.dat";#RENAME TO AIRCARAFT?!
-  $inml{'GFED'}="$DataDir/GLOBAL_ForestFireEmis.nc";                    # GFED emissions
-  $inml{'FINN'}="$DataDir/ForestFire/FINN/ForestFire_Emis_v15_YYYY.nc"; # FINN emissions
-  $inml{'GFAS'}="$DataDir/ForestFire/GFAS/GFAS_ForestFireEmis_YYYY.nc"; # GFAS emissions
   $ifile{"$DataDir/nox_emission_1996-2005.nc"} = "nox_emission_1996-2005.nc";
   $ifile{"$DataDir/AircraftEmis_FL.nc"} = "AircraftEmis_FL.nc";
   $ifile{"$DataDir/SurfacePressure.nc"} = "SurfacePressure.nc";

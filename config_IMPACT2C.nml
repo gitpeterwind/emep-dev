@@ -72,9 +72,9 @@ FLUX_VEGS = "IAM_CR" "IAM_DF" "IAM_MF"  ! do not need all array elements
 ! out_DOMAIN=60,107,11,58, !=[istart,iend,jstart,jend], default RUNDOMAIN+[1,-1,1,-1]
 &end
 &Fire_config
-  GFED_PATTERN="$GFED",
-  FINN_PATTERN="$FINN",
-  GFAS_PATTERN="$GFAS",
+  GFED_PATTERN='DataDir/GLOBAL_ForestFireEmis.nc',
+  FINN_PATTERN='DataDir/ForestFire/FINN/ForestFire_Emis_v15_YYYY.nc',
+  GFAS_PATTERN='DataDir/ForestFire/GFAS/GFAS_ForestFireEmis_YYYY.nc',
 &end
 &ExternalBICs_config
   USE_EXTERNAL_BIC  = F,              ! .false. to deactivate

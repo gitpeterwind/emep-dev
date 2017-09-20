@@ -198,10 +198,15 @@
 ! NMAX_EMS=-1, ! estiamte from lines in femsdef
 &end
 &Fire_config
-  need_poll = F,               ! Avoids problems with missing ISOP in later FINN data
-  GFED_PATTERN="$GFED",#GFED   ! Forestfire data is selected in mk.GenChem.  
-  FINN_PATTERN="$FINN",#FINN   ! Check in mk.GenChem to find out which data is linked.
-  GFAS_PATTERN="$GFAS",#GFAS   ! Default EMEP setup is using 'FINN'
+!------------------------------
+! ForestFire data is selected in mk.GenChem.  
+! Check in mk.GenChem to find out which data is linked.
+! Default EMEP setup is using 'FINN'
+!------------------------------
+  need_poll = F,              ! Avoids problems with missing ISOP in later FINN data
+  GFED_PATTERN='DataDir/GLOBAL_ForestFireEmis.nc',
+  FINN_PATTERN='DataDir/ForestFire/FINN/ForestFire_Emis_v15_YYYY.nc',
+  GFAS_PATTERN='DataDir/ForestFire/GFAS/GFAS_ForestFireEmis_YYYY.nc',
 &end
 &Nest_config
 !-------- Read/Write MODEs

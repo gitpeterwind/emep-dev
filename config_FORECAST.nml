@@ -77,9 +77,9 @@
 &end
 &Fire_config
   need_file=F,need_date=F,need_poll=F,! continue if don't find file,time record,pollutant
-  GFED_PATTERN='$GFED',#GFED
-  FINN_PATTERN='$FINN',#FINN
-  GFAS_PATTERN='$GFAS',#GFAS
+  GFED_PATTERN='DataDir/GLOBAL_ForestFireEmis.nc',
+  FINN_PATTERN='DataDir/ForestFire/FINN/ForestFire_Emis_v15_YYYY.nc',
+  GFAS_PATTERN='DataDir/ForestFire/GFAS/GFAS_ForestFireEmis_YYYY.nc',
 &end
 &Pollen_config
   birch_frac_nc  = '$birch_frac',#birch_frac
