@@ -49,8 +49,8 @@ use GridValues_ml,          only: A_mid,B_mid, glon,glat, i_fdom,j_fdom, Restric
 use Io_ml,                  only: open_file,IO_TMP,IO_NML,PrintLog
 use InterpolationRoutines_ml,  only : grid2grid_coeff,point2grid_coeff
 use MetFields_ml,           only: roa
-use ModelConstants_ml,      only: Pref,PT,KMAX_MID, MasterProc,NPROC, &
-                                  IOU_INST, RUNDOMAIN, FORECAST,USE_POLLEN,&
+use ModelConstants_ml,      only: Pref,PT,KMAX_MID,MasterProc,NPROC,DataDir,GRID,&
+                                  IOU_INST,RUNDOMAIN,FORECAST,USE_POLLEN,&
                                   DEBUG_NEST,DEBUG_ICBC=>DEBUG_NEST_ICBC
 use MPI_Groups_ml  
 use netcdf,                 only: nf90_open,nf90_close,nf90_inq_dimid,&
@@ -66,7 +66,7 @@ use TimeDate_ml,            only: date,current_date,nmdays
 use TimeDate_ExtraUtil_ml,  only: date2nctime,nctime2date,nctime2string,&
                                   date2string,date2file,compare_date
 use Units_ml,               only: Units_Scale
-use SmallUtils_ml,          only: find_index,to_upper
+use SmallUtils_ml,          only: find_index,key2str,to_upper
 use ChemGroups_ml,          only: chemgroups
 implicit none
 
@@ -211,6 +211,13 @@ subroutine Config_Nest()
     call CheckStop(mod(24,NHOURSAVE),"Config_Nest: NHOURSAVE should be fraction of 24")
     call CheckStop(mod(24,NHOURREAD),"Config_Nest: NHOURREAD should be fraction of 24")
   end if
+! expand DataDir/GRID keyswords
+  template_read_3D=key2str(template_read_3D,'DataDir',DataDir)
+  template_read_3D=key2str(template_read_3D,'GRID',GRID)
+  template_read_BC=key2str(template_read_BC,'DataDir',DataDir)
+  template_read_BC=key2str(template_read_BC,'GRID',GRID)
+  template_write  =key2str(template_write  ,'DataDir',DataDir)
+  template_write  =key2str(template_write  ,'GRID',GRID)
 ! Update filenames according to date following templates defined on Nest_config
   call init_icbc(cdate=current_date)
 ! Ensure sub-domain is not larger than run-domain

@@ -158,7 +158,7 @@ ColumnSource_ml,run.pl,config_$exp_name.nml
 Derived_ml:
 - fix bug afecting Z_MID output (#47)
 
-ForestFire_ml,run.pl,config_$exp_name.nml
+ForestFire_ml,Nest_ml,run.pl,config_$exp_name.nml
 - use DataDir keyword on Fire_config (#63)
 
 NetCDF_ml:
