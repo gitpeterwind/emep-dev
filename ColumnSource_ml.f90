@@ -37,9 +37,10 @@ private
 public :: ColumnRate      ! Emission rate
 public :: getWinds        ! Wind speeds at locations
 
-logical, save ::      &
-  source_found=.true.,&   ! Are sources found on this processor/subdomain?
-  topo_found=.false.      ! topo_nc file found? (vent elevation-model surface height)
+logical, save ::          &
+  found_source = .true.,  & ! Are sources found on this processor/subdomain?
+  found_topo   = .false., & ! topo_nc file found?
+  need_topo    = .true.     ! stop if topo_nc is not found
 
 integer, save ::  &
   NMAX_LOC = 5,   &! Max number of locations on processor/subdomain (increase to 24 for eEMEP)
@@ -134,7 +135,7 @@ subroutine Config_ColumnSource()
   integer,parameter :: read_ok(4)=[0,-1,84,85] ! OK if namelist not found
   integer :: ios=0
   NAMELIST /ColumnSource_config/&
-    NMAX_LOC,NMAX_EMS,topo_nc,flocdef,femsdef
+    NMAX_LOC,NMAX_EMS,flocdef,femsdef,topo_nc,need_topo
   rewind(IO_NML)
   read(IO_NML,NML=ColumnSource_config,iostat=ios)
   call CheckStop(all(ios/=read_ok),"NML=ColumnSource_config")
@@ -161,8 +162,11 @@ subroutine Config_ColumnSource()
   ! read topography file
   allocate(surf_height(LIMAX,LJMAX))
   call GetCDF_modelgrid("topography",topo_nc,surf_height,&
-                        1,1,1,1,needed=.false.,found=topo_found)
-  if(.not.topo_found)surf_height=0.0
+                        1,1,1,1,needed=need_topo,found=found_topo)
+  if(.not.found_topo)then
+    call PrintLog("WARNING: "//mname//" topography file not found",MasterProc)
+    surf_height=0.0
+  end if
 end subroutine Config_ColumnSource
 !-----------------------------------------------------------------------!
 ! Emergency scenarios:
@@ -213,7 +217,7 @@ function ColumnRate(i,j,REDUCE_VOLCANO) result(emiss)
 !
 !----------------------------!
   emiss(:,:)=0.0
-  if(.not.source_found)return
+  if(.not.found_source)return
   snow=date2string(SDATE_FMT,current_date)
   
   doLOC: do v=1,nloc 
@@ -389,7 +393,7 @@ subroutine setRate()
     l = l+1
   end do doLOC
   if(MasterProc) close(IO_TMP)
-  source_found=(nloc>0).or.(MasterProc.and.DEBUG%COLSRC)
+  found_source=(nloc>0).or.(MasterProc.and.DEBUG%COLSRC)
 
   if(USE_PreADV)then ! spread emissions in case of strong winds
     ! broadcast the PROC_LOC
@@ -420,7 +424,7 @@ subroutine setRate()
   doEMS: do ! read all entries on file, stop simulation if are too many entries 
     call read_line(IO_TMP,txtline,stat)
     if(stat/=0) exit doEMS            ! End of file
-    if(.not.source_found)cycle doEMS  ! There is no vents on sub-domain
+    if(.not.found_source)cycle doEMS  ! There is no vents on sub-domain
     txtline=ADJUSTL(txtline)          ! Remove leading spaces
     if(txtline(1:1)=='#')cycle doEMS  ! Comment line
     dems=getErup(txtline)
@@ -455,7 +459,7 @@ subroutine setRate()
     l = l+1
   end do doEMS
   if(MasterProc) close(IO_TMP)
-  source_found=any(nems(1:nloc)>0)
+  found_source=any(nems(1:nloc)>0)
 !----------------------------!
 ! Expand Eruption Defaults
 !----------------------------!
@@ -475,7 +479,6 @@ subroutine setRate()
           v,trim(locdef(v)%id),e,trim(emsdef(0,e)%id)
       dems=emsdef(0,e)
       if(dems%htype=='VENT')then
-!!      call CheckStop(.not.topo_found,mname//" EMS def.file "//trim(topo_nc)//' not found')
         dems%base=dems%base+locdef(v)%elev
         dems%top =dems%top +locdef(v)%elev
         if(DEBUG%COLSRC)&
@@ -525,7 +528,7 @@ subroutine setRate()
       end if
     end do
   end do doLOCe
-  source_found=any(nems(1:nloc)>0)
+  found_source=any(nems(1:nloc)>0)
 end subroutine setRate
 !----------------------------!
 ! Extract Vent info from CVS line
@@ -594,7 +597,6 @@ function getErup(line) result(def)
 ! emiss default: vent%elev is added on expansion (doLOCe: in setRate)
     base=0.0
     if(iloc>0)then
-!!    call CheckStop(.not.topo_found,mname//" EMS def.file "//trim(topo_nc)//' not found')
       base=locdef(iloc)%elev    ! [m]
     end if
     read(words(4),*)top         ! [km]

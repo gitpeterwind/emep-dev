@@ -138,7 +138,7 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-19th Sep  2017  Alvaro
+19-20th Sep  2017  Alvaro
 
 ForestFire_ml:
 - fix gFortran compile error
@@ -148,6 +148,8 @@ ModelConstants_ml
 
 ColumnSource_ml:
 - stop simulation when NMAX_LOC/NMAX_EMS is exceeded (#44)
+- topography file (topo_nc) is required by default,
+  can be made optional on ColumnSource_config namelist (need_topo=F) (#31)
 
 ColumnSource_ml,run.pl,config_$exp_name.nml
 - read NMAX_LOC/NMAX_EMS from ColumnSource_config namelist (#29)
