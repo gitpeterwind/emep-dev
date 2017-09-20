@@ -1994,7 +1994,8 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,&
   if(present(found))found=.false.
 
   if(fileneeded)then
-    call check(nf90_open(trim(fileName),nf90_nowrite,ncFileID))
+    call check(nf90_open(trim(fileName),nf90_nowrite,ncFileID),&
+               trim(fileName)//" not found")
   else
     status=nf90_open(trim(fileName),nf90_nowrite,ncFileID)
     if(status/=nf90_noerr)then

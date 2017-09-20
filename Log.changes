@@ -161,6 +161,9 @@ Derived_ml:
 ForestFire_ml,run.pl,config_$exp_name.nml
 - use DataDir keyword on Fire_config (#63)
 
+NetCDF_ml:
+- improve missing file error message 
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 18th Sep  2017  Dave
 
