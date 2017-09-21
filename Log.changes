@@ -138,7 +138,7 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-19-20th Sep  2017  Alvaro
+19-21th Sep  2017  Alvaro
 
 ForestFire_ml:
 - fix gFortran compile error
@@ -158,8 +158,8 @@ ColumnSource_ml,run.pl,config_$exp_name.nml
 Derived_ml:
 - fix bug afecting Z_MID output (#47)
 
-ForestFire_ml,Nest_ml,run.pl,config_$exp_name.nml
-- use DataDir keyword on Fire_config (#63)
+ForestFire_ml,Nest_ml,Pollen_ml,run.pl,config_$exp_name.nml
+- use DataDir/GRID keywords on Fire_config,Nest_config,Pollen_config (#63)
 
 NetCDF_ml:
 - improve missing file error message 

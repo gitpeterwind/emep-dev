@@ -144,11 +144,11 @@
   MODE_READ = 'FORECAST',     ! at the start of run, if files are found
   MODE_SAVE = 'FORECAST',     ! every OUTDATE(1:FORECAST_NDUMP)
 !-------- File name templates for Nest I/O
-  template_read_3D = '$inic',#inic            ! YYYY, YY, MM, DD, hh strings
-  template_read_BC = '$INBC',#inbc            ! will be replaced with numbers
-  template_write   = '$dump',#dump            ! in Nest_ml
-  native_grid_3D = T,                         ! restart file on the same grid
-  native_grid_BC = F,                         ! nest-bc file on a different grid
+  template_read_3D = '../RESTART/CWF_00AN-YYYYMMDD_restart.nc',
+  template_read_BC = 'DataDir/GRID/Boundary_conditions/YYYY_ENS/cwf-cifs_hYYYYMMDD12_raqbc',
+  template_write   = '../RESTART/CWF_12FC-YYYYMMDD_restart.nc',
+  native_grid_3D = T,         ! restart file on the same grid
+  native_grid_BC = F,         ! nest-bc file on a different grid
 !-------- CWF dump/restart
 ! WRITE_SPC = 'NO2','O3','SO2','REMPPM25','REMPPM_C', ! reduce output for
 ! WRITE_GRP = 'DAOBS','DAUNOBS','PM10','AOD',         ! NMC statistics (3DVar)
@@ -171,7 +171,7 @@
   EXTERNAL_BIC_NAME    = 'MACC_ENS',
   EXTERNAL_BIC_VERSION = 'MACC_ENS',          ! alias for IFS_MOZ_f7kn|fkya|fnyp
   TOP_BC               = T,
-  filename_eta         = '$filename_eta',#filename_eta
+  filename_eta         = 'DataDir/GRID/Boundary_conditions/mozart_eta.zaxis',
 &end
 &ExternalBICs_bc
 ! BC from IFS-MOZ exp id: f7kn (before 2011-12-01)

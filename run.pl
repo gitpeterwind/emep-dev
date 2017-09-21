@@ -349,49 +349,11 @@ my $MyDataDir="$HOMEROOT/$USER/Unify/MyData"; # for each user's private input
 my $SoilDir = "$DATA_LOCAL/dust_input";       # Saharan BIC
    $SoilDir = 0 unless -d "$SoilDir/BC_DUST/2000";
 
-# Pollen data (CAMS50)
-my $PollenDir;#="$HOMEROOT/$BIRTHE/Unify/MyData";
-foreach my $dir ("$MyDataDir/Pollen","$DataDir/Pollen",
-                 "/prod/forecast/emep/cwfemep/Data/Pollen") {
-  $PollenDir=$dir unless -d $PollenDir;
-}
-
-# Emergency (eEMEP), e.g. volcanic ash
-my $EmergencyDir;#="$HOMEROOT/$ALVARO/Unify/MyData";
-foreach my $dir ("$MyDataDir/Emergency","$DataDir/Emergency",
-                 "/prod/forecast/emep/eemep/Data/Emergency") {
-  $EmergencyDir=$dir unless -d $EmergencyDir;
-}
-
-# TEST! Road dust NOTE! The road dust code may not be working properly yet! Not tested enough!
+# TEST! Road dust NOTE! The road dust coddumpe may not be working properly yet! Not tested enough!
 my $RoadDir = "$HOMEROOT/$ROBERT/Unify/MyData/TNO_traffic" ;
    $RoadDir = "$HOMEROOT/$AGNES/MyData/TNO_traffic" if $VILJE;
    $RoadDir = 0 unless -d $RoadDir;
    $RoadDir = 0 if $CWF;
-
-# Forecast: nest/dump dir, BCs pattern
-my ($CWFIC, $CWFBC, $CWFPL) if $CWF;
-my ($cwfic, $cwfbc, $cwfpl) = ("No IC file","No BC file","No Pollen file");
-if ($CWF) {
- ($CWFIC = "${CWF}_dump.nc" ) =~ s|$CWFBASE|%Y%m%d|g;
- ($CWFIC = "$WORKDIR/$CWFIC") =~ s|$testv.$year|$testv.dump|;
-  $CWFIC =~ s|run/eemep|work/emep/restart| if $eCWF and ($USER eq $FORCAST);
-  $CWFBC  = "$DataDir/$GRID/Boundary_conditions/"; # IFS-MOZ/C-IFS
-  if(-d $CWF_WRK){
-    $CWFIC =~ s[$CWF_WRK][$CWF_WRK/input];
-    $CWFBC = "$CWF_WRK/input/cwf-cifs_hYYYYMMDD00_raqbc.nc";
-  }elsif($MAKEMODE=~/(EVA|NMC)/){
-##  $CWFBC .= "hYYYYMMDD00_raqbc.nc":      # IFS-MOZ ReAnalysis
-    $CWFBC .= ($CWFBASE <= 20121231)?
-      "YYYY_EVA/EVA_YYYYMMDD_EU_AQ.nc":    # EVA 2008..2012
-      "YYYY_EVA/EVA_YYYYMMDD_EU_EVA.nc";   # EVA 2013
-  }else{
-    $CWFBC .= ($CWFBASE <= 20140917)?
-      "YYYY_ENS/cwf-mozifs_hYYYYMMDD00_raqbc.nc": # IFS-MOZ Forecast
-      "YYYY_ENS/cwf-cifs_hYYYYMMDD00_raqbc.nc";   # C-IFS   Forecast
-  }
- ($CWFPL = $CWFIC) =~ s|_dump|_pollen|;
-}
 
 #ds check: and change
 chdir "$ProgDir";
@@ -667,36 +629,6 @@ foreach my $scenflag ( @runs ) {
         unless (-e $metfile);
       $CWFDATE[3]=date2str($CWFBASE." $n day","%Y%m%d");
       mylink("CWF Met:",$metfile,date2str($CWFDATE[3],"meteoYYYYMMDD.nc"));
-      # IFS-MOZ/C-IFS BC file
-      $cwfbc=date2str($CWFDATE[3],$CWFBC);
-      $cwfbc=date2str($CWFDATE[0],$CWFBC) unless (-e $cwfbc);
-    }
-# Forecast nest/dump files
-    unless($MAKEMODE=~/EVA/){
-      my $dump=date2str($CWFDATE[0],$CWFIC);            # yesterday's dump
-      foreach my $k ("00AN","00FC","00","12AN","12FC","12") {
-        ($cwfic=$dump)=~s/_.*-/_$k-/ unless(-e $cwfic); # try CWF_$k-dump.nc
-      }
-      $cwfic=$dump unless(-e $cwfic);                   # try yesterday's dump
-      die "$CWF restart file for $CWFBASE not available (yet):\n\t$CWFIC\n\t$cwfic\n"
-          ."Try later...\n" if($aCWF and ! -e $cwfic);
-      my $metfile="$MetDir/meteo${CWFDATE[0]}_00.nc";   # yesterday's met
-      if(-e $metfile and ! -e $cwfic) {
-        print "No dumpfile present:\n\t$cwfbc.\n\tTake extra spin-up day.\n";
-        # Update simulation: start-date ($CWFDATE[1]), "yesterday" ($CWFDATE[0])
-        $CWFDATE[1]=$CWFDATE[0];
-        $CWFDATE[0]=date2str($CWFDATE[0]." 1 day ago","%Y%m%d");
-        mylink("CWF Met:",$metfile,date2str($CWFDATE[1],"meteoYYYYMMDD.nc"));
-        # IFS-MOZ/C-IFS BC file
-        $cwfbc=date2str($CWFDATE[1],$CWFBC);
-        $cwfbc=date2str($CWFDATE[0],$CWFBC) unless (-e $cwfbc);
-        # see if we can link to a dump file ...
-        $dump=date2str($CWFDATE[0],$CWFIC);               # yesterday's dump
-        foreach my $k ("00AN","00FC","00","12AN","12FC","12") {
-          ($cwfic=$dump)=~s/_.*-/_$k-/ unless(-e $cwfic); # try CWF_$k-dump.nc
-        }
-        $cwfic=$dump unless(-e $cwfic);                   # try yesterday's dump
-      }
     }
 # Update start and end months (used for linking some climatological files)
     $mm1=substr($CWFDATE[1],4,2);  # start date
@@ -949,26 +881,6 @@ foreach my $scenflag ( @runs ) {
     $ifile{"$DataDir/jcl3.$s"}        = "jcl3km$seasons{$s}.dat";
   }
 
-# For Pollen
-  if($PollenDir) {
-    $inml{'birch_frac'}="$PollenDir/birch_frac.nc";
-    $inml{'birch_data'}="$PollenDir/pollen_data.nc";
-    $inml{'birch_corr'}="$PollenDir/birch_factor_YYYY.nc";
-    $inml{'olive_data'}="$PollenDir/oliven_data.nc";
-    $inml{'grass_time'}="$PollenDir/grass_time.nc";
-    $inml{'grass_frac'}="$PollenDir/grass_frac.nc";
-    $inml{'grass_data'}="$PollenDir/grass_data.nc";
-    if($CWF){
-      my $dump=date2str($CWFDATE[0],$CWFPL);            # yesterday's dump
-      foreach my $k ($CWFMETV."AN",$CWFMETV."FC",$CWFMETV."") {
-        ($cwfpl=$dump)=~s/_.*-/_$k-/ unless(-e $cwfpl); # try CWF_$k-dump.nc
-      }
-      $cwfpl=$dump unless(-e $cwfpl);                   # try yesterday's dump
-      $inml{'poll_read'}=$cwfpl;
-      $inml{'poll_write'}=date2str($CWFBASE,$CWFPL);
-    }
-  }
-
 # For windblown dust
   if($SoilDir) {
     $ifile{"$SoilDir/clay_isric_percent_ext.dat"} = "clay_frac.dat";
@@ -986,9 +898,6 @@ foreach my $scenflag ( @runs ) {
     $ifile{"$DATA_LOCAL/nonHIGHWAYs_RoadDust_potentials.txt"} = "NONHIGHWAY";
     $ifile{"$DATA_LOCAL/ClimateFactors_SMI.txt"} = "ROADDUST_CLIMATE_FAC";
   }
-# IFZ-MOZ BCs levels description (in cdo zaxisdes/eta format)
-  $inml{'filename_eta'}= "$DataDir/$GRID/Boundary_conditions/mozart_eta.zaxis"
-    if ($CWF and -e $cwfbc);
 
   foreach my $f (sort keys %ifile) {  # CHECK and LINK
     if (-r $f) {
@@ -1064,8 +973,6 @@ foreach my $scenflag ( @runs ) {
     }
     # fill in variables on the template file with corresponding $hash{key}
     %h=(%h,'year'=>$year,'emisyear'=>$emisyear,'utc'=>$CWFMETV,
-           'INIC'=>$CWFIC,'INBC'=>$CWFBC,'DUMP'=>$CWFIC,
-           'inic'=>$cwfic,'inbc'=>$cwfbc,'dump'=>date2str($CWFBASE,$CWFIC),
            'outdate'=>date2str($CWFDUMP[0],"%Y,%m,%d,000000,")
                      .date2str($CWFDUMP[1],"%Y,%m,%d,000000")) if $CWF;
   }
@@ -1130,13 +1037,6 @@ foreach my $scenflag ( @runs ) {
     print "\n  The program stopped abnormally!! \n" unless $DRY_RUN;
   }
 
-# Special CWF input files
-  my $CWFINPUT="CWF? $CWF";
-     $CWFINPUT.="\n".
-     "  IC: ".(-e $cwfic?$cwfic:"Not found")."\n".
-     "  BC: ".(-e $cwfbc?$cwfbc:"Not found")."\n".
-     "  PL: ".(-e $cwfpl?$cwfpl:"Not found") if $CWF;
-
 #move RunLog
   rename "RunLog.out",  "${runlabel1}_RunLog"
     or warn "cannot mv RunLog.out ${runlabel1}_RunLog\n" unless $DRY_RUN;
@@ -1153,7 +1053,6 @@ Version: $testv
 Chemical scheme: $Chem
 @packages
 SR?  $SR
-$CWFINPUT
 iyr_trend: $iyr_trend
 ------------------------------
 femis: femis.$scenario
@@ -1194,11 +1093,6 @@ EOT
 
   if ($CWF and not $DRY_RUN) {
     die "$CWF did not fiished as expected!\n" unless -e "modelrun.finished";
-    my $old="EMEP_OUT.nc";
-       $old=date2str($CWFBASE." 1 day","EMEP_OUT_%Y%m%d.nc") unless (-e "$old"); # 1st dump/nest
-       $old=date2str($CWFBASE." 2 day","EMEP_OUT_%Y%m%d.nc") unless (-e "$old"); # 2nd dump/nest
-    my $new=date2str($CWFBASE,$CWFIC);      # today's dump
-    system("mkdir -p `dirname $new`; mv $old $new") if (-e "$old");
   }
 
 ################################## END OF RUNS ######################

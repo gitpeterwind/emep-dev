@@ -21,7 +21,7 @@ use LocalVariables_ml,    only: Grid
 use MetFields_ml,         only: surface_precip, ws_10m ,rh2m,t2_nwp,&
                                 foundws10_met,foundprecip,pr,u_ref,z_bnd,z_mid
 use MicroMet_ml,          only: Wind_at_h
-use ModelConstants_ml,    only: AERO, KMAX_MID, nstep, FORECAST, &
+use ModelConstants_ml,    only: AERO, KMAX_MID, nstep, DataDir, FORECAST, &
                                 METSTEP, MasterProc, IOU_INST, RUNDOMAIN, &
                                 dt=>dt_advec, DEBUG=>DEBUG_POLLEN
 use MPI_Groups_ml,        only: MPI_INTEGER,MPI_LOGICAL,MPI_COMM_CALC,&
@@ -36,7 +36,7 @@ use Par_ml,               only: limax, ljmax, LIMAX, LJMAX, me
 use PhysicalConstants_ml, only: PI
 use OwnDataTypes_ml,      only: Deriv
 use Setup_1dfields_ml,    only: rcemis
-use SmallUtils_ml,        only: find_index
+use SmallUtils_ml,        only: find_index,key2str
 use SubMet_ml,            only: Sub
 use TimeDate_ml,          only: current_date,daynumber,date,day_of_year
 use TimeDate_ExtraUtil_ml,only: date2string,compare_date,date2nctime
@@ -130,6 +130,10 @@ subroutine Config_Pollen()
     write(*,*) "NAMELIST IS "
     write(*,NML=Pollen_config)
   end if
+
+  ! expand DataDir keysword
+  template_read =key2str(template_read ,'DataDir',DataDir)
+  template_write=key2str(template_write,'DataDir',DataDir)
 
   do g=1,POLLEN_NUM
     inat(g) = find_index(POLLEN_GROUP(g),EMIS_BioNat(:))
