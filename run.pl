@@ -792,9 +792,6 @@ foreach my $scenflag ( @runs ) {
   }
 
 # Emissions setup:
-#  if ($EUCAARI) { # DS RE-CHECK shouldn't be needed
-#    $ifile{"$TNOemisDir/femis.dat"} =  "femis.dat";
-#    $ifile{"$DATA_LOCAL/emissions/femis.dat"} =  "femis.dat" if $GRID eq "HIRHAM" ;
 
   if ($ProjDataDir =~ /eclaire/ ) { # As example
     $ifile{"$ProjDataDir/femis.ecl2005to$iyr_trend"} =  "femis.dat"; 
@@ -802,12 +799,6 @@ foreach my $scenflag ( @runs ) {
     $ifile{"$ChemDir/femis.defaults"} =  "femis.dat";  # created now by GenChem
   }
 
-# my $old="$DATA_LOCAL/Boundary_and_Initial_Conditions.nc";
-# my $new="Boundary_and_Initial_Conditions.nc";
-# mylink( "BIC: ", $old,$new ) ;
-#EUCAARI, but all?
-# Skip:  $ifile{"$DATA_LOCAL/Boundary_and_Initial_Conditions.nc"} =
-#                     "Boundary_and_Initial_Conditions.nc" unless ($GRID =~ /MACC/);
   $ifile{"$DataDir/Logan_P.nc"} = "Logan_P.nc";#instead of GLOBAL_O3.nc
   $ifile{"$DataDir/Dust.nc"} = "Dust.nc";#BIC for DUST
   $ifile{"$DataDir/GLOBAL_O3.nc"} = "GLOBAL_O3.nc";
@@ -819,10 +810,6 @@ foreach my $scenflag ( @runs ) {
 #netcdf RoadDust inputs:
   $ifile{"$DataDir/RoadMap.nc"} = "RoadMap.nc";
   $ifile{"$DataDir/AVG_SMI_2005_2010.nc"} = "AVG_SMI_2005_2010.nc";
-
-#TEMPORARY SETUP
-#  my $tmpndep = "/home/$DAVE/Work/RESULTS/MAPS/AnnualSums/AnnualNdep";
-#  $ifile{"$tmpndep/AnnualNdep_BM_rv3_9_20soa-EmChem09soa.nc"} = "AnnualNdep.nc";
 
 # April 2013. Now use EU emissions as proxy for future changes
 #if ( $iyr_trend > 2015 )  {
@@ -838,23 +825,6 @@ foreach my $scenflag ( @runs ) {
 # *******
 #  APRIL 2017. Use config system  now to specify landcover files!
 # *******
-#  $ifile{"$DataDir/Landuse/landuseGLC2000_INT1.nc"} ="GLOBAL_landuse.nc";
-  #CLM $ifile{"$DataDir/LanduseGLC.nc"} ="LanduseGLC.nc";
-  # NB: a 1km Landuse is also available 
-#APR15  $ifile{"$DataDir/Landuse/Landuse_PS_5km_LC.nc"} ="Landuse_PS_5km_LC.nc";
-#  $ifile{"$DataDir/Landuse/Landuse_PS_1km_LC.nc"} ="Landuse_PS_5km_LC.nc";
-
-  #CLM $ifile{"$DataDir/LandInputs_Jul2015/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
-  #CLM $ifile{"$DataDir/LandInputs_Jul2015/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
-  # JPC:
-  #    $ifile{"$DataDir/LandInputs_Feb2017/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
-  #    $ifile{"$DataDir/LandInputs_Feb2017/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
-  #CLM      $ifile{"$DataDir/LandInputs_Feb2017/Megan4Emep.nc"} = "Megan4Emep.nc";
-  #CLM:
-#APR15      $ifile{"$DataDir/LandInputs_Apr2017/glc2000mCLM.nc"} = "LanduseGLC.nc";
-#APR15      $ifile{"$DataDir/LandInputs_Apr2017/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
-#APR15      $ifile{"$DataDir/LandInputs_Apr2017/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
-  #
 
 #For dust: clay and sand fractions
   $ifile{"$DataDir/Soil_Tegen.nc"} ="Soil_Tegen.nc";
@@ -888,7 +858,9 @@ foreach my $scenflag ( @runs ) {
   }
 
 # TEST!!! Road dust NOTE! The road dust code is NOT thoroughly tested yet!
-# NOTE ALSO THAT the Climate factors in the file below are just rough estimates based on the TNO soil water data, to be updated with something based on EMEP soil water!
+# NOTE ALSO THAT the Climate factors in the file below are just rough estimates
+# based on the TNO soil water data, to be updated with something based on EMEP
+# soil water!
   if (($GRID eq "EECCA")and($RoadDir)) {
     $ifile{"$RoadDir/RoadDust_HIGHWAYplus_emis_potential.txt"} = "HIGHWAYplus";
     $ifile{"$RoadDir/RoadDust_NonHighway_emis_potential.txt"} = "NONHIGHWAY";

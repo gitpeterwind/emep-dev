@@ -25,7 +25,7 @@
  LandCoverInputs%LandDefs   = 'DataDir/LandInputs_Apr2017/Inputs_LandDefs.csv',
  LandCoverInputs%Do3seDefs  = 'DataDir/LandInputs_Apr2017/Inputs_DO3SE.csv',
  LandCoverInputs%MapFile =
-    'DataDir/Landuse/Landuse_PS_5km_LC.nc',
+    'DataDir/Landuse/Landuse_PS_5km_LC.nc',    ! 1km also available
     'DataDir/LandInputs_Apr2017/glc2000mCLM.nc',
 ! YieldModifications = '-'   ! For JPC tests we used: 'JPC-VY-acid',
 ! EmBio%IsopFac           =  1.0,

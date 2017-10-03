@@ -138,6 +138,13 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+03rd Oct     2017  Dave
+
+  config_*nml files. Added comment that 1km PS Landcover also available
+
+  run.pl. Started to remove ancient or config'd code lines
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 19-21th Sep  2017  Alvaro
 
 ForestFire_ml:
