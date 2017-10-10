@@ -446,3 +446,22 @@ contains
 !===============================================================
 end module Radiation_ml
 !===============================================================
+!TSTEMX program testr
+!TSTEMX use Radiation_ml
+!TSTEMX use PhysicalConstants_ml, only:  DEG2RAD
+!TSTEMX implicit none
+!TSTEMX integer :: iZen,icl
+!TSTEMX real :: CosZ,Idirect,Idiffuse,cl,xIdir, xIdiff
+!TSTEMX call SolarSetup(2012,6,22,0.0)
+!TSTEMX do icl = 0,10,2
+!TSTEMX   cl = 0.1 * icl
+!TSTEMX   do iZen = 0, 90, 20
+!TSTEMX    CosZ = cos(iZen*DEG2RAD)
+!TSTEMX    call ClearSkyRadn(1.0e5,CosZ,Idirect,Idiffuse)
+!TSTEMX    xIdir=Idirect; xIdiff = Idiffuse
+!TSTEMX    call CloudAtten(cl,Idirect,Idiffuse)
+!TSTEMX    print "(f6.1,i3,5f10.3)", cl, iZen, xIdir, xIdiff, Idirect, Idiffuse, Idiffuse/(Idirect+ Idiffuse)
+!TSTEMX   end do
+!TSTEMX end do
+!TSTEMX print *, DEG2RAD
+!TSTEMX end program testr
