@@ -270,7 +270,6 @@ contains
   subroutine MPIF90_BCast_i4_0d( buffer, root, comm, status )
     ! external:
     use MPI, only : MPI_INTEGER
-    use MPI, only : MPI_BCast
     ! arguments:
     integer(4), intent(inout)     ::  buffer
     integer, intent(in)           ::  root
@@ -288,7 +287,6 @@ contains
   subroutine MPIF90_BCast_i4_1d( buffer, root, comm, status )
     ! external:
     use MPI, only : MPI_INTEGER
-    use MPI, only : MPI_BCast
     ! arguments:
     integer(4), intent(inout)     ::  buffer(:)
     integer, intent(in)           ::  root
@@ -306,7 +304,6 @@ contains
   subroutine MPIF90_BCast_i4_4d( buffer, root, comm, status )
     ! external:
     use MPI, only : MPI_INTEGER
-    use MPI, only : MPI_BCast
     ! arguments:
     integer(4), intent(inout)     ::  buffer(:,:,:,:)
     integer, intent(in)           ::  root
@@ -324,7 +321,6 @@ contains
   subroutine MPIF90_BCast_r4_0d( buffer, root, comm, status )
     ! external:
     use MPI, only : MPI_REAL
-    use MPI, only : MPI_BCast
     ! arguments:
     real(4), intent(inout)        ::  buffer
     integer, intent(in)           ::  root
@@ -342,7 +338,6 @@ contains
   subroutine MPIF90_BCast_r4_1d( buffer, root, comm, status )
     ! external:
     use MPI, only : MPI_REAL
-    use MPI, only : MPI_BCast
     ! arguments:
     real(4), intent(inout)        ::  buffer(:)
     integer, intent(in)           ::  root
@@ -360,7 +355,6 @@ contains
   subroutine MPIF90_BCast_r4_4d( buffer, root, comm, status )
     ! external:
     use MPI, only : MPI_REAL
-    use MPI, only : MPI_BCast
     ! arguments:
     real(4), intent(inout)        ::  buffer(:,:,:,:)
     integer, intent(in)           ::  root
@@ -378,7 +372,6 @@ contains
   subroutine MPIF90_BCast_r8_0d( buffer, root, comm, status )
     ! external:
     use MPI, only : MPI_DOUBLE_PRECISION
-    use MPI, only : MPI_BCast
     ! arguments:
     real(8), intent(inout)        ::  buffer
     integer, intent(in)           ::  root
@@ -396,7 +389,6 @@ contains
   subroutine MPIF90_BCast_r8_1d( buffer, root, comm, status )
     ! external:
     use MPI, only : MPI_DOUBLE_PRECISION
-    use MPI, only : MPI_BCast
     ! arguments:
     real(8), intent(inout)        ::  buffer(:)
     integer, intent(in)           ::  root
@@ -414,7 +406,6 @@ contains
   subroutine MPIF90_BCast_r8_4d( buffer, root, comm, status )
     ! external:
     use MPI, only : MPI_DOUBLE_PRECISION
-    use MPI, only : MPI_BCast
     ! arguments:
     real(8), intent(inout)        ::  buffer(:,:,:,:)
     integer, intent(in)           ::  root
@@ -437,7 +428,6 @@ contains
                                   root, comm, status )
     ! external:
     use MPI, only : MPI_INTEGER
-    use MPI, only : MPI_Gather
     ! arguments:
     integer(4), intent(in)        ::  sendbuf(:)
     integer, intent(in)           ::  sendcount
@@ -462,7 +452,6 @@ contains
                                   root, comm, status )
     ! external:
     use MPI, only : MPI_REAL
-    use MPI, only : MPI_Gather
     ! arguments:
     real(4), intent(in)           ::  sendbuf(:)
     integer, intent(in)           ::  sendcount
@@ -487,7 +476,6 @@ contains
                                   root, comm, status )
     ! external:
     use MPI, only : MPI_DOUBLE_PRECISION
-    use MPI, only : MPI_Gather
     ! arguments:
     real(8), intent(in)           ::  sendbuf(:)
     integer, intent(in)           ::  sendcount
@@ -513,7 +501,6 @@ contains
   subroutine MPIF90_AllGather_i4_0d( sendbuf, recvbuf, comm, status )
     ! external:
     use MPI, only : MPI_INTEGER
-    use MPI, only : MPI_AllGather
     ! arguments:
     integer(4), intent(in)        ::  sendbuf       ! (1)
     integer(4), intent(out)       ::  recvbuf(:)    ! (1*nproc)
@@ -533,7 +520,6 @@ contains
   subroutine MPIF90_AllGather_i4_1d( sendbuf, recvbuf, comm, status )
     ! external:
     use MPI, only : MPI_INTEGER
-    use MPI, only : MPI_AllGather
     ! arguments:
     integer(4), intent(in)        ::  sendbuf(:)   ! (n)
     integer(4), intent(out)       ::  recvbuf(:)   ! (n*nproc)
@@ -562,7 +548,6 @@ contains
                                    root, comm, status )
     ! external:
     use MPI, only : MPI_CHAR
-    use MPI, only : MPI_GatherV
     ! arguments:
     character(len=MAXLEN), intent(in)   ::  sendbuf(:)
     integer, intent(in)                 ::  sendcount
@@ -590,7 +575,6 @@ contains
                                    root, comm, status )
     ! external:
     use MPI, only : MPI_INTEGER
-    use MPI, only : MPI_GatherV
     ! arguments:
     integer(4), intent(in)        ::  sendbuf(:)
     integer, intent(in)           ::  sendcount
@@ -616,7 +600,6 @@ contains
                                    root, comm, status )
     ! external:
     use MPI, only : MPI_REAL
-    use MPI, only : MPI_GatherV
     ! arguments:
     real(4), intent(in)           ::  sendbuf(:)
     integer, intent(in)           ::  sendcount
@@ -642,7 +625,6 @@ contains
                                    root, comm, status )
     ! external:
     use MPI, only : MPI_DOUBLE_PRECISION
-    use MPI, only : MPI_GatherV
     ! arguments:
     real(8), intent(in)           ::  sendbuf(:)
     integer, intent(in)           ::  sendcount
@@ -671,7 +653,6 @@ contains
                                     comm, status )
     ! external:
     use MPI, only : MPI_INTEGER
-    use MPI, only : MPI_AllToAll
     ! arguments:
     integer(4), intent(in)        ::  sendbuf(:)
     integer, intent(in)           ::  sendcount
@@ -695,7 +676,6 @@ contains
                                     comm, status )
     ! external:
     use MPI, only : MPI_REAL
-    use MPI, only : MPI_AllToAll
     ! arguments:
     real(4), intent(in)           ::  sendbuf(:)
     integer, intent(in)           ::  sendcount
@@ -719,7 +699,6 @@ contains
                                     comm, status )
     ! external:
     use MPI, only : MPI_DOUBLE_PRECISION
-    use MPI, only : MPI_AllToAll
     ! arguments:
     real(8), intent(in)           ::  sendbuf(:)
     integer, intent(in)           ::  sendcount
@@ -746,7 +725,6 @@ contains
                                     comm, status )
     ! external:
     use MPI, only : MPI_INTEGER
-    use MPI, only : MPI_AllToAllV
     ! arguments:
     integer(4), intent(in)        ::  sendbuf(:,:)
     integer, intent(in)           ::  sendcounts(2)
@@ -772,7 +750,6 @@ contains
                                     comm, status )
     ! external:
     use MPI, only : MPI_REAL
-    use MPI, only : MPI_AllToAllV
     ! arguments:
     real(4), intent(in)           ::  sendbuf(:,:)
     integer, intent(in)           ::  sendcounts(2)
@@ -798,7 +775,6 @@ contains
                                     comm, status )
     ! external:
     use MPI, only : MPI_DOUBLE_PRECISION
-    use MPI, only : MPI_AllToAllV
     ! arguments:
     real(8), intent(in)           ::  sendbuf(:,:)
     integer, intent(in)           ::  sendcounts(2)
@@ -824,7 +800,6 @@ contains
                                     comm, status )
     ! external:
     use MPI, only : MPI_INTEGER
-    use MPI, only : MPI_AllToAllV
     ! arguments:
     integer(4), intent(in)        ::  sendbuf(:,:,:)
     integer, intent(in)           ::  sendcounts(3)
@@ -850,7 +825,6 @@ contains
                                     comm, status )
     ! external:
     use MPI, only : MPI_REAL
-    use MPI, only : MPI_AllToAllV
     ! arguments:
     real(4), intent(in)           ::  sendbuf(:,:,:)
     integer, intent(in)           ::  sendcounts(3)
@@ -876,7 +850,6 @@ contains
                                     comm, status )
     ! external:
     use MPI, only : MPI_DOUBLE_PRECISION
-    use MPI, only : MPI_AllToAllV
     ! arguments:
     real(8), intent(in)           ::  sendbuf(:,:,:)
     integer, intent(in)           ::  sendcounts(3)
@@ -904,7 +877,6 @@ contains
 #ifdef _MPI
     ! external:
     use MPI, only : MPI_LOGICAL
-    use MPI, only : MPI_AllReduce
 #endif
     ! arguments:
     logical, intent(in)           ::  sendbuf
@@ -930,7 +902,6 @@ contains
 #ifdef _MPI
     ! external:
     use MPI, only : MPI_INTEGER
-    use MPI, only : MPI_AllReduce
 #endif
     ! arguments:
     integer(4), intent(in)        ::  sendbuf
@@ -956,7 +927,6 @@ contains
 #ifdef _MPI
     ! external:
     use MPI, only : MPI_REAL
-    use MPI, only : MPI_AllReduce
 #endif
     ! arguments:
     real(4), intent(in)           ::  sendbuf
@@ -982,7 +952,6 @@ contains
 #ifdef _MPI
     ! external:
     use MPI, only : MPI_DOUBLE_PRECISION
-    use MPI, only : MPI_AllReduce
 #endif
     ! arguments:
     real(8), intent(in)           ::  sendbuf

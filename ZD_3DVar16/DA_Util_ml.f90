@@ -19,8 +19,7 @@ use go
 #else
 use ModelConstants_ml,  only: nproc
 use Par_ml,             only: me
-use MPI,                only: MPI_AllGather, MPI_INTEGER
-use MPI,                only: MPI_DOUBLE_PRECISION, MPI_AllToAllV
+use MPI,                only: MPI_INTEGER, MPI_DOUBLE_PRECISION
 #endif
 ! --- const --------------------------------------
 character(len=*), parameter :: mname = 'DA_Util_ml'

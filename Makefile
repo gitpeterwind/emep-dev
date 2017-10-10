@@ -14,7 +14,7 @@ OPT_FLAGS = -O3 -ftz
 F90FLAGS = -shared-intel -r8 -convert big_endian -IPF_fp_relaxed -assume noold_maxminloc
 LDFLAGS =  $(F90FLAGS) $(LLIB) $(LIBS)
 
-export MACHINE ?= stallo
+export MACHINE ?= frost
 export DEBUG ?= no
 export ARCHIVE ?= no
 ifeq ($(MACHINE),stallo)
@@ -55,7 +55,7 @@ else ifeq ($(MACHINE),byvind)
   LLIB += /software/apps/netcdf/4.1.2/i1210/lib
 # MAKEDEPF90=????
   LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
-else ifeq ($(MACHINE),frost)
+else ifeq ($(MACHINE),frost) || ifeq ($(MACHINE),alvin) || ifeq ($(MACHINE),elvis)
   MODULES = buildenv-intel/2015-1 hdf5/1.8.14-i1501 netcdf/4.3.2-i1501-hdf5-1.8.14
   LIBS += -lnetcdf -lnetcdff
   INCL += /software/apps/netcdf/4.3.2/i1501-hdf5-1.8.14/include/
@@ -160,7 +160,7 @@ EMEP:               GenChem-EMEP-EmChem16mt
 EmChem09 CRI_v2_R5: GenChem-EMEP-$$@
 EmChem09-ESX:       GenChem-EMEP-EmChem09
 HTAP MACC SR-MACC:  GenChem-$$@-EmChem16mt
-MACC-EVA:           GenChem-MACCEVA-EmChem16mt
+MACC-EVA _3DVar:    GenChem-MACCEVA-EmChem16mt
 MACC-Pollen:        GenChem-MACCEVA-Pollen
 eEMEP:              GenChem-$$@-Emergency
 eEMEP ?= Emergency  # Emergency | AshInversion
@@ -189,12 +189,12 @@ AshInversion:
 	ZCM_Emergency/mk.Emergency -V 19lev,9bin,$(VENTS)
 
 # Data assimilation: Bnmc / 3DVar
-%-Bnmc %-3DVar: PASS_GOALS=$(filter clean modules,$(MAKECMDGOALS))
-%-Bnmc %-3DVar: GenChem-MACCEVA-EmChem09soa
-	$(MAKE) -C ZD_3DVar/ $(if $(PASS_GOALS),$(@:$*-%=EXP=%) $(PASS_GOALS),$(@:$*-%=EXP_%))
-%-3DVar16: GenChem-MACCEVA-EmChem09soa
+#%-Bnmc %-3DVar: PASS_GOALS=$(filter clean modules,$(MAKECMDGOALS))
+#%-Bnmc %-3DVar: _3DVar
+#	$(MAKE) -C ZD_3DVar/ $(if $(PASS_GOALS),$(@:$*-%=EXP=%) $(PASS_GOALS),$(@:$*-%=EXP_%))
+%-3DVar16: _3DVar
 	$(MAKE) -C ZD_3DVar16/ PROG=$(PROG)_3DVar $(PROG)_3DVar
-%-3DVar17: GenChem-MACCEVA-EmChem09soa
+%-3DVar17: _3DVar
 	$(MAKE) -C ZD_3DVar17/ PROG=$(PROG)_3DVar $(PROG)_3DVar
 
 
