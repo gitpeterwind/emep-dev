@@ -138,6 +138,12 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+10th Oct     2017  Dave/Roy
+
+Radiation_ml:  identified problem with diffuse/direct !!! TO-FIX
+               Added TSTEMX lines to illustrate this.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 03rd Oct     2017  Dave
 
   config_*nml files. Added comment that 1km PS Landcover also available
