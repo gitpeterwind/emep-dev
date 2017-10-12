@@ -35,7 +35,7 @@ XMTO3_RO2,0,terpperoxy,xx,xx,xx,0,0,0,xx,RO2,,"!From terpene degradation"
 O3,1,O3,xx,O3,xx,0,0,0,xx,TMPOX;daObs;OX,,!
 NO,1,NO,xx,xx,xx,0,0,0,xx,NOX;OXN,,!
 NO2,1,NO2,xx,NO2,xx,0,0,0,xx,NOX;TMPOX;OXN;daObs;OX,,!
-HO2NO2,1,HO2NO2,xx,HNO3,HNO3,0,0,0,xx,TMPOX;OXN;daObs,,!
+HO2NO2,1,HO2NO2,xx,HNO3,HNO3,0,0,0,xx,TMPOX;OXN,,!
 SHIPNOX,1,NO2,xx,NO2,xx,0,0,0,xx,NOX;TMPOX;OXN,,!
 PAN,1,CH3COO2NO2,xx,PAN,xx,0,0,0,xx,OXN,,!
 *CHET2:MPAN,1,CH2CH(CH3)C(=0)O2NO2,xx,PAN,xx,0,0,0,xx,OXN,,"!( from macr degredation)"
