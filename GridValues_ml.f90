@@ -1085,13 +1085,13 @@ subroutine Getgridparams(LIMAX,LJMAX,filename,cyclicgrid)
       !model levels defined from external text file
       if(MasterProc)&
       write(*,*)'reading external hybrid levels from ',trim(filename_vert),&
-      A_bnd_met(kMAX_met-20),B_bnd_met(kMAX_met+1)
+        A_bnd_met(kMAX_met+1),B_bnd_met(kMAX_met+1)
       P0=Pref
       do k=1,KMAX_MID+1
         read(IO_TMP,*)kk,A_bnd(k),B_bnd(k)
         if(kk/=k.and.MasterProc)write(*,*)'WARNING: unexpected format for vertical levels ',k,kk
       end do
-      if(MasterProc)write(*,*)'A_bnd_met A2',A_bnd_met(kMAX_met-20),B_bnd_met(kMAX_met+1)
+      if(MasterProc)write(*,*)'A_bnd_met A2',A_bnd_met(kMAX_met+1),B_bnd_met(kMAX_met+1)
       
       if(.not.found_metlevels)then
         ! assume levels from metdata are defined in filename_vert
