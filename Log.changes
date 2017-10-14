@@ -138,6 +138,12 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+14th Oct     2017  Dave
+
+run.pl - just added Peter's text concerning 16 or 32 threads, since this it
+ clarifies a lot!
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 10th Oct     2017  Dave/Roy
 
 Radiation_ml:  identified problem with diffuse/direct !!! TO-FIX
