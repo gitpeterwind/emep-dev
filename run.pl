@@ -27,7 +27,14 @@
 #   select= number of nodes, ncpus=number of threads per node to reserve, 
 # to activate take out one # from ##
 #   mpiprocs=number of MPI threads per node. select=number of nodes
-#PBS -l select=4:ncpus=32:mpiprocs=32 -v MPI_MSGS_MAX=2097152,MPI_BUFS_PER_PROC=2048
+# Q. 32 or 16 threads? There are only 16 threads per node, so  if asking for 32
+# The 2 threads per core run on the same core and try to utilize different part
+# of the core (like one thread fetch from memory, while the other thread does
+# a multiplication). This is not very efficient, therefore it will not run
+#  much faster than if you use select=4:ncpus=16:mpiprocs=16) 
+#
+#PBS -l select=4:ncpus=16:mpiprocs=16 -v MPI_MSGS_MAX=2097152,MPI_BUFS_PER_PROC=2048
+#
 # Wall time limit of run
 #PBS -lwalltime=06:20:00
 # Make results readable for others:
