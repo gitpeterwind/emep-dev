@@ -136,6 +136,10 @@ type, public :: emis_in
   character(len=40), dimension(20) ::  pollemepName = "NOTSET"
   character(len=40) ::  periodicity = "once" !How often new data should be read in
   character(len=40) ::  type = "sectors" !steers special treatments
+  logical ::  use_lonlat_femis = .true. !allows to switch off lonlat femis reductions 
+                                        !for specific emission files
+                                        !Country+sector specific reductions can be dealt
+                                        !with with incl/excl, so those are not affected
 end type emis_in
 type(emis_in), public, dimension(5) :: emis_inputlist = emis_in()
 

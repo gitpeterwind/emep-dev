@@ -138,6 +138,18 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16th Oct     2017  Peter
+
+Allow to switch off (i.e. not take into account) femis for specific emissions 
+files. Only the lines with "lonlat" format are switched off.
+To switch off femis-lonlat for the emissions specified in emis_inputlist(1), 
+add this in config file:  
+emis_inputlist(1)%use_lonlat_femis = F,
+
+uEMEP: output only lowest level (can be modified to different number of levels, 
+but hardcoded for now)  
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 14th Oct     2017  Dave
 
 run.pl - just added Peter's text concerning 16 or 32 threads, since this it
