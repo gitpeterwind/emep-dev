@@ -96,14 +96,14 @@ contains
 
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
   subroutine EmisGetCdfFrac(iem, isec, fname, varname, sumemis_local, &
-    incl, nin, excl, nex)
+    incl, nin, excl, nex, use_lonlat_femis)
 
     implicit none
     integer, intent(in) ::iem, isec, nin, nex
     character(len=*),intent(in) :: fname, varname, incl(*),excl(*)
    ! Sum of emissions per country
     real,intent(inout), dimension(NLAND,NEMIS_FILE) :: sumemis_local 
-
+    logical, intent(in) :: use_lonlat_femis
 
     real :: fractions(LIMAX,LJMAX,NCMAX),Reduc(NLAND)
     real :: lonlat_fac
@@ -126,7 +126,7 @@ contains
              call StopAll("To many countries in one gridcell ")
           end if
           lonlat_fac=1.0
-          if(N_femis_lonlat>0)then
+          if(N_femis_lonlat>0 .and. use_lonlat_femis)then
              do i_femis_lonlat=1,N_femis_lonlat
                 if(glat(i,j)>femis_latmin(i_femis_lonlat).and.&
                      glat(i,j)<femis_latmax(i_femis_lonlat).and.&
@@ -207,12 +207,13 @@ contains
 
   end subroutine EmisGetCdfFrac
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-  subroutine EmisGetCdf(iem, fname, sumemis, incl,excl)
+  subroutine EmisGetCdf(iem, fname, sumemis, use_lonlat_femis, incl,excl)
    integer, intent(in) :: iem ! index in EMIS_FILE array and GridEmis output
    character(len=*), intent(in)    :: fname
    real, intent(inout) ::sumemis(*)
    character(len=*),dimension(:), optional :: &
        incl, excl ! Arrays of cc to inc/exclude
+   logical, intent(in) :: use_lonlat_femis
    integer :: i,j, ic, isec, allocerr(6), status
    real, dimension(NLAND) :: sumcdfemis_loc
    character(len=40) :: varname, fmt
@@ -346,7 +347,7 @@ contains
                  end if !========== AFRICA
 
                  lonlat_fac=1.0
-                 if(N_femis_lonlat>0)then
+                 if(N_femis_lonlat>0 .and. use_lonlat_femis)then
                     do i_femis_lonlat=1,N_femis_lonlat
                        if(glat(i,j)>femis_latmin(i_femis_lonlat).and.&
                             glat(i,j)<femis_latmax(i_femis_lonlat).and.&
@@ -408,12 +409,14 @@ contains
 
 
 
-  subroutine EmisGetASCII(iem, fname, emisname, sumemis_local, incl, nin, excl, nex)
+  subroutine EmisGetASCII(iem, fname, emisname, sumemis_local, incl, nin, excl, nex, &
+                           	use_lonlat_femis)
     implicit none
     integer, intent(in) ::iem, nin, nex
     character(len=*),intent(in) :: fname, emisname, incl(*),excl(*)
     real,intent(inout), dimension(NLAND,NEMIS_FILE) &
         :: sumemis_local ! Sum of emissions per country
+    logical, intent(in) :: use_lonlat_femis
     integer ::i,j,ic,CC,isec,i_gridemis,found
     character(len=*), parameter ::  sub = 'EmisGetASCII:'
     logical :: Cexist
@@ -487,7 +490,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
              end if
 
              lonlat_fac=1.0
-             if(N_femis_lonlat>0)then
+             if(N_femis_lonlat>0 .and. use_lonlat_femis)then
                 do i_femis_lonlat=1,N_femis_lonlat
                    if(glat(i,j)>femis_latmin(i_femis_lonlat).and.&
                         glat(i,j)<femis_latmax(i_femis_lonlat).and.&

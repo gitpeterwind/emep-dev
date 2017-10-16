@@ -540,7 +540,8 @@ subroutine Emissions(year)
                    write(varname,"(A,I2.2)")trim(EMIS_FILE(iem))//'_sec',isec
                 endif
               call EmisGetCdfFrac(iem, isec, fname, varname, sumemis_local, &
-                   emis_inputlist(iemislist)%incl, nin, emis_inputlist(iemislist)%excl, nex)
+                   emis_inputlist(iemislist)%incl, nin, emis_inputlist(iemislist)%excl, nex, &
+                    emis_inputlist(iemislist)%use_lonlat_femis)
 
             end do!sectors
           end do!NEMIS_FILE
@@ -604,12 +605,15 @@ subroutine Emissions(year)
               "emis_inputlists cannot have inc and exc")
           if ( nin > 0 ) then
             call EmisGetCdf(iem,fname, sumemis(1,iem), &
+                 emis_inputlist(iemislist)%use_lonlat_femis, &
                  incl=emis_inputlist(iemislist)%incl(1:nin) )
           elseif (  nex > 0 ) then
             call EmisGetCdf(iem,fname, sumemis(1,iem), &
+                 emis_inputlist(iemislist)%use_lonlat_femis, &
                  excl=emis_inputlist(iemislist)%excl(1:nex) ) 
           else
-            call EmisGetCdf(iem,fname, sumemis(1,iem))
+            call EmisGetCdf(iem,fname, sumemis(1,iem), &
+                 emis_inputlist(iemislist)%use_lonlat_femis )
           end if
           if(MasterProc) write(*,*) "PARTEMIS ", iem, trim(fname), sumemis(27,iem) 
 
@@ -624,7 +628,8 @@ subroutine Emissions(year)
           fname=key2str(emis_inputlist(iemislist)%name,'POLL',EMIS_FILE(iem)) ! e.g. POLL -> sox
           if(MasterProc)write(*,fmt='(A)')'Reading ASCII format '//trim(fname)
           call EmisGetASCII(iem, fname, trim(EMIS_FILE(iem)), sumemis_local, &
-               emis_inputlist(iemislist)%incl, nin, emis_inputlist(iemislist)%excl, nex)
+               emis_inputlist(iemislist)%incl, nin, emis_inputlist(iemislist)%excl, nex, &
+               emis_inputlist(iemislist)%use_lonlat_femis)
         end do
 
         !add together totals from each processor (only me=0 get results)
