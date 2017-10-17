@@ -147,14 +147,16 @@ character(len=40), dimension(20), public, save  :: SecEmisOutPoll = "NOTSET"
 
 character(len=40), public, save   :: SECTORS_NAME='SNAP'
 
-character(len=200), public, save :: &
+integer, public, parameter :: &
+  TXTLEN_NAME =  50, &
+  TXTLEN_FILE = 200    ! large enough for paths from namelists
+
+character(len=TXTLEN_FILE), public, save :: &
   EmisDir = '.',  &
   DataDir = '.',  &
   GRID = 'EECCA', & ! default grid
   meteo= 'DataDir/GRID/metdata_EC/YYYY/meteoYYYYMMDD.nc', & ! template for meteofile
   DegreeDayFactorsFile = 'MetDir/HDD18-GRID-YYYY.nc'        ! template for DegreeDayFactors.nc
-
-
 
 integer, public, save :: startdate(4)=(/0,0,0,0/),enddate(4)=(/0,0,0,24/) ! start and end of the run
 
@@ -231,7 +233,7 @@ integer, public, save :: &
   logical, public, save :: USE_WRF_MET_NAMES = .false. !to read directly WRF metdata
 
 !Machine_config variables
- character (len=100), public :: DataPath(20) = 'NOTSET'
+ character (len=TXTLEN_FILE), public :: DataPath(20) = 'NOTSET'
 !
 !------------ END OF NAMELIST VARIABLES ------------------------------------!
 
@@ -485,7 +487,6 @@ real, public, parameter :: &
 integer, public, save   :: nterm, nmax, nstep &
                          , iyr_trend ! Year specified for say BC changes
 
-integer, public, parameter :: TXTLEN_NAME = 50
 character(len=120), public, save :: runlabel1&!SHORT Allows explanatory text
                                   , runlabel2 !LONG  Read in from grun.pl
 
@@ -525,7 +526,7 @@ character, public, parameter ::  & ! output shorthands, order should match IOU_*
   IOU_KEY(IOU_YEAR:IOU_HOUR_INST)=['Y','M','D','H','I']
 
 character(len=*), public, parameter :: model="EMEP_MSC-W "
-character(len=200), public :: fileName_O3_Top = "NOTSET"
+character(len=TXTLEN_FILE), public :: fileName_O3_Top = "NOTSET"
 
 logical, parameter, public :: EmisSplit_OUT = .false.
 

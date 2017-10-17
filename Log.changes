@@ -138,6 +138,14 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+17th Oct     2017  Alvaro
+
+ModelConstants_ml, Met_ml, ColumnSource_ml, ForestFire_ml, ZD_Pollen/Pollen_ml:
+- Extend length of the meteo path/filename variable.
+  From open source user feedback, see metno/emep-ctm#25.
+- TXTLEN_FILE parameter defines path/filename length.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16th Oct     2017  Peter
 
 Allow to switch off (i.e. not take into account) femis for specific emissions 
