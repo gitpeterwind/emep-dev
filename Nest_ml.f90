@@ -1014,7 +1014,7 @@ end subroutine init_nest
 subroutine init_mask_restrict(filename_read,rundomain_ext)
 
   !find lon and lat of boundaries of grid and build mask_restrict
-  integer,intent(in) ::rundomain_ext(4)
+  integer,intent(inout) ::rundomain_ext(4)
   character(len=*),intent(in) :: filename_read
   integer ::GIMAX_ext,GJMAX_ext
   integer :: ncFileID,varid,status
@@ -1049,8 +1049,8 @@ subroutine init_mask_restrict(filename_read,rundomain_ext)
                 trim(filename_read)//', assuming '//trim(projection)
         end if
         !get dimensions id/name/len: include more dimension names, if necessary
-        GIMAX_ext=get_dimLen([character(len=12)::"i","lon","longitude"],name=iDName)
-        GJMAX_ext=get_dimLen([character(len=12)::"j","lat","latitude" ],name=jDName)
+        GIMAX_ext=get_dimLen([character(len=12)::"i","lon","longitude","west_east"],name=iDName)
+        GJMAX_ext=get_dimLen([character(len=12)::"j","lat","latitude","south_north" ],name=jDName)
 
         select case(projection)
         case('Stereographic')
@@ -1059,10 +1059,14 @@ subroutine init_mask_restrict(filename_read,rundomain_ext)
            call CheckStop("j",jDName,"Nest: unsuported "//&
                 trim(jDName)//" as j-dimension on "//trim(projection)//" projection")
         case('lon lat')
-           call CheckStop("lon",iDName(1:3),"Nest: unsuported "//&
-                trim(iDName)//" as i-dimension on "//trim(projection)//" projection")
-           call CheckStop("lat",jDName(1:3),"Nest: unsuported "//&
-                trim(jDName)//" as j-dimension on "//trim(projection)//" projection")
+           if(trim(iDName)=='west_east')then!wrf metdata
+              iDName='XLONG'
+              write(*,*)'assuming ',trim(iDName)//' as longitude variable'
+           endif
+           if(trim(jDName)=='south_north')then!wrf metdata
+              jDName='XLAT'
+              write(*,*)'assuming ',trim(jDName)//' as latitude variable'
+           endif
         case default
            !call CheckStop("Nest: unsuported projection "//trim(projection))
            !write(*,*)'GENERAL PROJECTION ',trim(projection)
@@ -1087,18 +1091,27 @@ subroutine init_mask_restrict(filename_read,rundomain_ext)
      allocate(lon_ext(GIMAX_ext,GJMAX_ext),lat_ext(GIMAX_ext,GJMAX_ext))
      !Read lon lat of the external grid (global)
      if(trim(projection)==trim('lon lat')) then
-        call check(nf90_inq_varid(ncFileID,iDName,varID),&
-             "Read lon-variable: "//trim(iDName))
-        allocate(temp_ll(GIMAX_ext))
-        call check(nf90_get_var(ncFileID,varID,temp_ll))
-        lon_ext=SPREAD(temp_ll,2,GJMAX_ext)
-        deallocate(temp_ll)
-        call check(nf90_inq_varid(ncFileID,jDName,varID),&
-             "Read lat-variable: "//trim(jDName))
-        allocate(temp_ll(GJMAX_ext))
-        call check(nf90_get_var(ncFileID,varID,temp_ll))
-        lat_ext=SPREAD(temp_ll,1,GIMAX_ext)
-        deallocate(temp_ll)
+        if(trim(iDName)=='XLONG')then
+           !wrf metdata
+           call check(nf90_inq_varid(ncFileID,trim(iDName),varID),"dim:"//trim(iDName))
+           call check(nf90_get_var(ncFileID,varID,lon_ext),"get:lon")
+           
+           call check(nf90_inq_varid(ncFileID,trim(jDName),varID),"dim:"//trim(jDName))
+           call check(nf90_get_var(ncFileID,varID,lat_ext),"get:lat")
+        else
+           call check(nf90_inq_varid(ncFileID,iDName,varID),&
+                "Read lon-variable: "//trim(iDName))
+           allocate(temp_ll(GIMAX_ext))
+           call check(nf90_get_var(ncFileID,varID,temp_ll))
+           lon_ext=SPREAD(temp_ll,2,GJMAX_ext)
+           deallocate(temp_ll)
+           call check(nf90_inq_varid(ncFileID,jDName,varID),&
+                "Read lat-variable: "//trim(jDName))
+           allocate(temp_ll(GJMAX_ext))
+           call check(nf90_get_var(ncFileID,varID,temp_ll))
+           lat_ext=SPREAD(temp_ll,1,GIMAX_ext)
+           deallocate(temp_ll)
+        endif
      else
         call check(nf90_inq_varid(ncFileID,"lon",varID),"dim:lon")
         call check(nf90_get_var(ncFileID,varID,lon_ext),"get:lon")
@@ -1110,7 +1123,12 @@ subroutine init_mask_restrict(filename_read,rundomain_ext)
      call check(nf90_close(ncFileID))
 
      !N_rstrct_BC = number of points on boundaries in the inner grid 
+     if(rundomain_ext(1)<1)rundomain_ext(1)=1
+     if(rundomain_ext(2)<1 .or. rundomain_ext(2)>GIMAX_ext) rundomain_ext(2)=GIMAX_ext
+     if(rundomain_ext(3)<1)rundomain_ext(3)=1
+     if(rundomain_ext(4)<1 .or. rundomain_ext(4)>GJMAX_ext) rundomain_ext(4)=GJMAX_ext
      N_rstrct_BC=2*(rundomain_ext(2)-rundomain_ext(1)+1)+2*(rundomain_ext(4)-rundomain_ext(3)-1)
+    N_rstrct_BC=2*(rundomain_ext(2)-rundomain_ext(1)+1)+2*(rundomain_ext(4)-rundomain_ext(3)-1)
      allocate(lon_rstrct(N_rstrct_BC))
      allocate(lat_rstrct(N_rstrct_BC))
 
@@ -1145,8 +1163,9 @@ subroutine init_mask_restrict(filename_read,rundomain_ext)
         stop
      endif
      deallocate(lon_ext,lat_ext)
+     CALL MPI_BCAST(N_rstrct_BC,1,MPI_INTEGER,0,MPI_COMM_CALC,IERROR)
   else
-     N_rstrct_BC=2*(rundomain_ext(2)-rundomain_ext(1)+1)+2*(rundomain_ext(4)-rundomain_ext(3)-1)
+     CALL MPI_BCAST(N_rstrct_BC,1,MPI_INTEGER,0,MPI_COMM_CALC,IERROR)
      allocate(lon_rstrct(N_rstrct_BC))
      allocate(lat_rstrct(N_rstrct_BC))
   endif
@@ -1160,8 +1179,8 @@ subroutine init_mask_restrict(filename_read,rundomain_ext)
   allocate(Weight_rstrct(4,N_rstrct_BC))
 
   !find nearest neighbors of model grid for each lon_rstrct_BC lat_rstrct_BC
-  allocate(glon_rundom(RUNDOMAIN(1):RUNDOMAIN(2),RUNDOMAIN(3):RUNDOMAIN(4)))
-  allocate(glat_rundom(RUNDOMAIN(1):RUNDOMAIN(2),RUNDOMAIN(3):RUNDOMAIN(4)))
+  allocate(glon_rundom(GIMAX,GJMAX))
+  allocate(glat_rundom(GIMAX,GJMAX))
   glon_rundom=0.0
   glat_rundom=0.0
   do j=1,ljmax
