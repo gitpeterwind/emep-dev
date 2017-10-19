@@ -23,7 +23,7 @@ use MetFields_ml,         only: surface_precip, ws_10m ,rh2m,t2_nwp,&
 use MicroMet_ml,          only: Wind_at_h
 use ModelConstants_ml,    only: AERO, KMAX_MID, nstep, DataDir, FORECAST, &
                                 METSTEP, MasterProc, IOU_INST, RUNDOMAIN, &
-                                dt=>dt_advec, DEBUG=>DEBUG_POLLEN
+                                TXTLEN_FILE, dt=>dt_advec, DEBUG=>DEBUG_POLLEN
 use MPI_Groups_ml,        only: MPI_INTEGER,MPI_LOGICAL,MPI_COMM_CALC,&
                                 MasterPE,IERROR
 use Nest_ml,              only: outdate,FORECAST_NDUMP,out_DOMAIN,&
@@ -60,8 +60,6 @@ real, public,save , allocatable, dimension(:,:,:)::&
 integer, save, dimension(POLLEN_NUM) :: &
   inat=-1,iadv=-1,itot=-1
 
-integer, parameter :: &
-  max_string_length=200 ! large enough for paths to be set on Pollen_config namelist
 !-------------------------------------
 ! Variables read from NetCDF Files
 ! pollen_flux   NetCDF file    NetCDF var
@@ -80,7 +78,7 @@ integer, parameter :: &
 !   xn_adv(i,:,:,:)         BIRCH,OLIVE,GRASS   SPC
 !   N_TOT(i)-R(:,:,i)       BIRCH,OLIVE,GRASS   SPC//'_rest'
 !   heatsum(:,:,i)          BIRCH,OLIVE         SPC//'_heatsum'
-character(len=max_string_length), save :: &
+character(len=TXTLEN_FILE), save :: &
   birch_frac_nc ='birch_frac.nc',         &
   birch_data_nc ='pollen_data.nc',        &
   birch_corr_nc ='birch_factor_YYYY.nc',  &

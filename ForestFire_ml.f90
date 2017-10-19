@@ -43,7 +43,8 @@ use GridValues_ml,        only: i_fdom, j_fdom, debug_li, debug_lj, &
                                 debug_proc,xm2,GRIDWIDTH_M
 use Io_ml,                only: PrintLog, datewrite, IO_NML
 use MetFields_ml,         only: z_bnd
-use ModelConstants_ml,    only: MasterProc, DataDir, KMAX_MID, DEBUG, IOU_INST
+use ModelConstants_ml,    only: MasterProc, DataDir, KMAX_MID, TXTLEN_FILE, &
+                                DEBUG, IOU_INST
 use netcdf,               only: nf90_open, nf90_nowrite, nf90_close
 use NetCDF_ml,            only: ReadTimeCDF,ReadField_CDF,Out_netCDF,Real4,&
                                 closedID
@@ -108,9 +109,7 @@ real,    save :: sum_emis(NEMEPSPECS) = 0
 character(len=4), parameter :: BBMAP=BiomassBurningMapping(1:4)
 character(len=TXTLEN_SHORT) :: MODE="DAILY_REC"
 
-integer, parameter :: &
-  max_string_length=200 ! large enough for paths to be set on Fire_config namelist
-character(len=max_string_length), save :: &
+character(len=TXTLEN_FILE), save :: &
   GFED_PATTERN = 'GFED_ForestFireEmis.nc',&
   FINN_PATTERN = 'FINN_ForestFireEmis_v15_YYYY.nc',&
   GFAS_PATTERN = 'GFAS_ForestFireEmis_YYYY.nc'
@@ -231,7 +230,7 @@ subroutine Fire_Emis(daynumber)
   integer :: ind, ncFileID=closedID
   integer :: loc_maxemis(2) ! debug
 
-  character(len=max_string_length), save :: fname='new'
+  character(len=TXTLEN_FILE), save :: fname='new'
   logical :: debug_ff=.false.,debug_nc=.false., newFFrecord=.false.
   real, allocatable :: xrdemis(:,:) ! MODE=*_AVG
   integer :: dn1, dn2, ndn          ! MODE=*_AVG
@@ -444,7 +443,7 @@ subroutine checkNewFFrecord(ymd, ncFileID,fname,new,nstart)
   integer, intent(out) :: nstart
 
   character(len=TXTLEN_SHORT), save      :: poll_old=''
-  character(len=max_string_length), save :: file_old=''
+  character(len=TXTLEN_FILE), save :: file_old=''
   integer, save                          :: record_old=-1
   real, dimension(366), save :: fdays=-1
   logical :: fexist=.false.

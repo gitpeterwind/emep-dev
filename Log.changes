@@ -156,6 +156,14 @@ lonlat 0.0 25.0 45.0 60.0  17 0    1.0  0.0   1.0   1.0   1.0   1.0   1.0
 lonlat 0.0 25.0 45.0 60.0  3 0    1.0   1.0   1.0   1.0   0.0   1.0   1.0
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+17th Oct     2017  Alvaro
+
+ModelConstants_ml, Met_ml, ColumnSource_ml, ForestFire_ml, ZD_Pollen/Pollen_ml:
+- Extend length of the meteo path/filename variable.
+  From open source user feedback, see metno/emep-ctm#25.
+- TXTLEN_FILE parameter defines path/filename length.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16th Oct     2017  Peter
 
 Allow to switch off (i.e. not take into account) femis for specific emissions 

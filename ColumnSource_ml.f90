@@ -19,7 +19,7 @@ use Io_ml,                only: open_file,read_line,IO_NML,IO_TMP,PrintLog
 use MetFields_ml,         only: roa, z_bnd, u_xmj, v_xmi
 use ModelConstants_ml,    only: KCHEMTOP,KMAX_MID,MasterProc,NPROC, &
                                 USE_ASH,DEBUG,USE_PreADV,&
-                                TXTLEN_NAME,dt_advec,dt_advec_inv,&
+                                TXTLEN_NAME,TXTLEN_FILE,dt_advec,dt_advec_inv,&
                                 startdate,enddate,DataDir,GRID
 use NetCDF_ml,            only: GetCDF_modelgrid
 use MPI_Groups_ml
@@ -84,9 +84,7 @@ character(len=*),parameter :: &
   mname = "ColumnSource",     &
   MSG_FMT="('"//mname//":',:,1X,A,5(:,1X,I0,':',A),3(:,1X,ES10.3,':',A))"
 
-integer, parameter :: &
-  max_string_length=200 ! large enough for paths on ColumnSource_config namelist
-character(len=max_string_length), save :: &
+character(len=TXTLEN_FILE), save :: &
   topo_nc="topography.nc",&
   flocdef="columnsource_location.csv",  & ! see locdef
   femsdef="columnsource_emission.csv"     ! see emsdef

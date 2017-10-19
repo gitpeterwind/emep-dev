@@ -64,6 +64,7 @@ use ModelConstants_ml,    only: PASCAL, PT, Pref, METSTEP  &
      ,KMAX_BND, KMAX_MID, MasterProc, DEBUG_MET, nmax  &
      ,DEBUG_BLM, DEBUG_Kz, DEBUG_SOILWATER, DEBUG_LANDIFY &
      ,DomainName & !HIRHAM,EMEP,EECCA etc.
+     ,TXTLEN_FILE & ! path/filename lenght for namelist inputs
      ,USE_DUST, TEGEN_DATA, USE_SOILWATER &
      ,nstep,USE_CONVECTION,USE_EtaCOORDINATES,USE_FASTJ &
      ,CONVECTION_FACTOR &
@@ -115,8 +116,8 @@ contains
 
 subroutine MeteoRead_io()
 
-  character (len = 100), save  ::  meteoname   ! name of the meteofile
-  character (len = 100)        ::  namefield  ! name of the requested field
+  character(len=TXTLEN_FILE), save :: meteoname   ! name of the meteofile
+  character(len=100) ::  namefield  ! name of the requested field
   integer :: ix, KMAX, istart,jstart,ijk,i,j,k,k1,k2
   integer :: nr
   integer ::   ndim,nyear,nmonth,nday,nhour
@@ -248,8 +249,8 @@ subroutine MeteoRead()
   !       domains    and sends subfields to the processors
   implicit none
 
-  character (len = 100), save  ::  meteoname   ! name of the meteofile
-  character (len = 100)        ::  namefield & ! name of the requested field
+  character(len=TXTLEN_FILE), save :: meteoname   ! name of the meteofile
+  character(len=100) ::  namefield & ! name of the requested field
        ,unit='   ',validity='    '    ! field is either instaneous or averaged
   integer ::   ndim,nyear,nmonth,nday,nhour
   integer ::   nr   ! Fields are interpolate in
