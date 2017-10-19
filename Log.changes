@@ -138,6 +138,24 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+19th Oct     2017  Peter
+
+Country code column in the "lonlat" lines in femis.dat.
+If the code is zero, all countries within the lonlat rectangle will be reduced; 
+otherwise only the country corresponding toi the code will be reduced.
+
+There is backward compatibility, in the sense that it will work if the country code
+is omitted, however this should be avoided: put 0 instead for reducing all countries.
+The backward compatibility will not work if there are comments at the end of the line
+
+Example of femis:
+Name  7         sox        nox        co       voc     nh3     pm25   pmco
+ 28    0        1.0        1.0       1.0      1.0      1.0     1.0    1.0
+lonlat 0.0 25.0 45.0 60.0  0 0    0.0  1.0   1.0   1.0   1.0   1.0   1.0
+lonlat 0.0 25.0 45.0 60.0  17 0    1.0  0.0   1.0   1.0   1.0   1.0   1.0
+lonlat 0.0 25.0 45.0 60.0  3 0    1.0   1.0   1.0   1.0   0.0   1.0   1.0
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16th Oct     2017  Peter
 
 Allow to switch off (i.e. not take into account) femis for specific emissions 

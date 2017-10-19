@@ -64,7 +64,7 @@ use EmisGet_ml,       only: &
     ,emis_nsplit                 &  ! No. species per emis file
     ,RoadDustGet                 &  
     ,roaddust_masscorr           &   ! 1/200. Hard coded at the moment, needs proper setting in EmisGet_ml...   
-    ,femis_latmin,femis_latmax,femis_lonmin,femis_lonmax
+    ,femis_latmin,femis_latmax,femis_lonmin,femis_lonmax,femis_lonlat_ic
 use GridValues_ml,    only: GRIDWIDTH_M    & ! size of grid (m)
                            ,xm2            & ! map factor squared
                            ,debug_proc,debug_li,debug_lj & 
@@ -1426,6 +1426,7 @@ subroutine newmonth
   real :: Mask_ReducFactor
   integer :: NMask_Code,Mask_Code(NLAND), i_femis_lonlat
   real :: lonlat_fac, mw
+  logical :: use_lonlat_femis
 
   if(.not.allocated(airn).and.(USE_LIGHTNING_EMIS.or.USE_AIRCRAFT_EMIS))&
     allocate(airn(KCHEMTOP:KMAX_MID,LIMAX,LJMAX))
@@ -1592,7 +1593,9 @@ subroutine newmonth
     !periodicity set in routine Emissions(year) if 12 records are found
     if(emis_inputlist(iemislist)%periodicity /= "monthly")cycle
     if(MasterProc)write(*,*)'reading monthly emissions for ',trim(emis_inputlist(iemislist)%name) 
-     
+
+    use_lonlat_femis = emis_inputlist(iemislist)%use_lonlat_femis
+
     if(emis_inputlist(iemislist)%type == "sectors")then !sectors is default
     !Read monthly emission snap sector files
 
@@ -1651,17 +1654,6 @@ subroutine newmonth
                    me,i,j,nlandcode(i,j)
               call StopAll("To many countries in one gridcell ")
             end if
-            lonlat_fac=1.0
-            if(N_femis_lonlat>0)then
-              do i_femis_lonlat=1,N_femis_lonlat
-                if(glat(i,j)>femis_latmin(i_femis_lonlat).and.&
-                   glat(i,j)<femis_latmax(i_femis_lonlat).and.&
-                   glon(i,j)>femis_lonmin(i_femis_lonlat).and.&
-                   glon(i,j)<femis_lonmax(i_femis_lonlat)     )then
-                  lonlat_fac=lonlat_fac*e_fact_lonlat(isec,i_femis_lonlat,iem) 
-                end if
-              end do
-            end if
             do n=1,nlandcode(i,j)
               ic=find_index(landcode(i,j,n),Country(:)%icode)                     
               !exclude or include countries
@@ -1676,6 +1668,21 @@ subroutine newmonth
                 found=find_index(Country(ic)%code ,excl_monthly(1:nex_monthly),first_only=.true.)
                 if(found>0)cycle!exclude
               end if
+
+              lonlat_fac=1.0
+              if(N_femis_lonlat>0 .and. use_lonlat_femis)then
+                 do i_femis_lonlat=1,N_femis_lonlat
+                    if(glat(i,j)>femis_latmin(i_femis_lonlat).and.&
+                         glat(i,j)<femis_latmax(i_femis_lonlat).and.&
+                         glon(i,j)>femis_lonmin(i_femis_lonlat).and.&
+                         glon(i,j)<femis_lonmax(i_femis_lonlat).and.&
+                         (femis_lonlat_ic(i_femis_lonlat)==0 .or. &
+                          femis_lonlat_ic(i_femis_lonlat)==landcode(i,j,n)))then
+                       lonlat_fac=lonlat_fac*e_fact_lonlat(isec,i_femis_lonlat,iem) 
+                    end if
+                 end do
+              end if
+
               snapemis(isec,i,j,n,iem)=snapemis(isec,i,j,n,iem)&
                    +fractions(i,j,n)*cdfemis(i,j)*lonlat_fac*tonnemonth_to_kgm2s*xm2(i,j)                
 

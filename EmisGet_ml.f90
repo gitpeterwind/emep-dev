@@ -62,7 +62,7 @@ real, public, save, allocatable, &
 real, public, save, allocatable, &
 !         dimension(NSECTORS,MAXFEMISLONLAT,NEMIS_FILE)  :: e_fact_lonlat
    dimension(:,:,:)  :: e_fact_lonlat
-real, public, save, dimension(MAXFEMISLONLAT) :: femis_latmin,femis_latmax,femis_lonmin,femis_lonmax
+real, public, save, dimension(MAXFEMISLONLAT) :: femis_latmin,femis_latmax,femis_lonmin,femis_lonmax,femis_lonlat_ic
 
 ! emisfrac is used at each time-step of the model run to split
 ! emissions such as VOC, PM into species. 
@@ -125,17 +125,6 @@ contains
                   me,i,j,nlandcode(i,j)
              call StopAll("To many countries in one gridcell ")
           end if
-          lonlat_fac=1.0
-          if(N_femis_lonlat>0 .and. use_lonlat_femis)then
-             do i_femis_lonlat=1,N_femis_lonlat
-                if(glat(i,j)>femis_latmin(i_femis_lonlat).and.&
-                     glat(i,j)<femis_latmax(i_femis_lonlat).and.&
-                     glon(i,j)>femis_lonmin(i_femis_lonlat).and.&
-                     glon(i,j)<femis_lonmax(i_femis_lonlat)     )then
-                   lonlat_fac=lonlat_fac*e_fact_lonlat(isec,i_femis_lonlat,iem) 
-                end if
-             end do
-          end if
           do n=1,nlandcode(i,j)
              ic=find_index(landcode(i,j,n),Country(:)%icode)
 
@@ -161,6 +150,20 @@ contains
                 call StopAll("COUNTRY CODE NOT RECOGNIZED ")
              end if
 
+             lonlat_fac=1.0
+             if(N_femis_lonlat>0 .and. use_lonlat_femis)then
+                do i_femis_lonlat=1,N_femis_lonlat
+                   if(glat(i,j)>femis_latmin(i_femis_lonlat).and.&
+                        glat(i,j)<femis_latmax(i_femis_lonlat).and.&
+                        glon(i,j)>femis_lonmin(i_femis_lonlat).and.&
+                        glon(i,j)<femis_lonmax(i_femis_lonlat).and.&
+                         (femis_lonlat_ic(i_femis_lonlat)==0 .or. &
+                          femis_lonlat_ic(i_femis_lonlat)==landcode(i,j,n)) )then
+                      lonlat_fac=lonlat_fac*e_fact_lonlat(isec,i_femis_lonlat,iem) 
+                   end if
+                end do
+             end if
+             
              !merge into existing emissions           
              Cexist=.false.
              do i_gridemis=1,nGridEmisCodes(i,j)
@@ -338,13 +341,15 @@ contains
                        if(glat(i,j)>femis_latmin(i_femis_lonlat).and.&
                             glat(i,j)<femis_latmax(i_femis_lonlat).and.&
                             glon(i,j)>femis_lonmin(i_femis_lonlat).and.&
-                            glon(i,j)<femis_lonmax(i_femis_lonlat)     )then
+                            glon(i,j)<femis_lonmax(i_femis_lonlat).and.&
+                            (femis_lonlat_ic(i_femis_lonlat)==0 .or. &
+                            femis_lonlat_ic(i_femis_lonlat)==Country(ic)%icode) )then
                           lonlat_fac=lonlat_fac*e_fact_lonlat(isec,i_femis_lonlat,iem) 
                        end if
                     end do
                  end if
 
-               sumcdfemis_loc(ic) = sumcdfemis_loc(ic) + &
+                 sumcdfemis_loc(ic) = sumcdfemis_loc(ic) + &
                     0.001 *  e_fact(isec,ic,iem) * cdfemis(i,j) *lonlat_fac 
 
                  !merge into existing emissions           
@@ -479,7 +484,9 @@ READEMIS: do   ! ************* Loop over emislist files *******************
                    if(glat(i,j)>femis_latmin(i_femis_lonlat).and.&
                         glat(i,j)<femis_latmax(i_femis_lonlat).and.&
                         glon(i,j)>femis_lonmin(i_femis_lonlat).and.&
-                        glon(i,j)<femis_lonmax(i_femis_lonlat)     )then
+                        glon(i,j)<femis_lonmax(i_femis_lonlat).and.&
+                        (femis_lonlat_ic(i_femis_lonlat)==0 .or. &
+                        femis_lonlat_ic(i_femis_lonlat)==CC) )then
                       lonlat_fac(:)=lonlat_fac(:)*e_fact_lonlat(:,i_femis_lonlat,iem) 
                    end if
                 end do
@@ -633,17 +640,37 @@ end if
        if(me==0)write(IO_LOG,55)trim(txt)
        if(txtinwords(1)=='lonlat')then
 !reductions defined with coordinates
-       if(nwords<ncols+5)then
-          if(me==0)write(*,*)'femis.dat not understood ',nwords,ncols+5,txt
-          call CheckStop( nwords<ncols+5 , "EmisGet: read error in femis lonlat" )
-       end if
-!latmin,latmax,lonmin,lonmax
+          if(nwords<ncols+6)then
+             if(me==0)write(*,*)'femis.dat not understood ',nwords,ncols+5,txt
+             call CheckStop( nwords<ncols+5 , "EmisGet: read error in femis lonlat" )
+          end if
+          !latmin,latmax,lonmin,lonmax
           N_femis_lonlat=N_femis_lonlat+1
           call CheckStop( N_femis_lonlat>MAXFEMISLONLAT, "EmisGet: increase MAXFEMISLONLAT" )
-!         77 format(A,4F,I,20F)
-          read(txt,*)txtinwords(1)&
-          ,femis_lonmin(N_femis_lonlat),femis_lonmax(N_femis_lonlat),femis_latmin(N_femis_lonlat),femis_latmax(N_femis_lonlat)&
-          ,isec,(e_f_lonlat(ic),ic=1,ncols)
+          inland = 0!default
+          if(nwords>ncols+6)then
+             !         76 format(A,4F,2I,20F)
+             read(txt,*)txtinwords(1),&
+                  femis_lonmin(N_femis_lonlat),&
+                  femis_lonmax(N_femis_lonlat),&
+                  femis_latmin(N_femis_lonlat),&
+                  femis_latmax(N_femis_lonlat),&
+                  inland, isec, & !country code and sector
+                  (e_f_lonlat(ic),ic=1,ncols)!reductions
+          else
+             !old format without country code
+             !         77 format(A,4F,I,20F)
+             if(me==0)write(*,*)'WARNING: USING OLD FORMAT for femis.&
+                  Please, add country code (zero for all countries)'
+             read(txt,*)txtinwords(1),&
+                  femis_lonmin(N_femis_lonlat),&
+                  femis_lonmax(N_femis_lonlat),&
+                  femis_latmin(N_femis_lonlat),&
+                  femis_latmax(N_femis_lonlat)&
+                  ,isec,(e_f_lonlat(ic),ic=1,ncols)
+          endif
+
+          femis_lonlat_ic(N_femis_lonlat) = inland !country code to reduce (or reduce all for 0)             
 
 !It is rather easy to get coordinates which are equals. 
 !In order to avoid random decisions when this happens, we increase slightly the bounds:
@@ -737,7 +764,7 @@ end if
 
   close(IO_EMIS)
 
-  if( MasterProc) write(unit=6,fmt=*) "femis, read ", n, "country code lines from femis"
+  if( MasterProc) write(unit=6,fmt=*) "femis, read ", n, "i j lines from femis"
   if( MasterProc) write(unit=6,fmt=*) "femis, read ", N_femis_lonlat, "lonlat lines from femis"
   if(debugm0) then
     ! Extra checks
