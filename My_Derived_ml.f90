@@ -78,7 +78,7 @@ integer, public, parameter ::       &
   MAX_NUM_DDEP_ECOS = 6,            & ! Grid, Conif, etc.
   MAX_NUM_DDEP_WANTED = NSPEC_ADV,  & !plenty big
   MAX_NUM_WDEP_WANTED = NSPEC_ADV,  & !plenty big
-  MAX_NUM_NEWMOS  = 10,           & !careful here, we multiply by next:
+  MAX_NUM_NEWMOS  = 30,           & !careful here, we multiply by next:
   MAX_NUM_MOSCONCS  = 10,           & !careful here, we multiply by next:
   MAX_NUM_MOSLCS    = 10              !careful here, we multiply bY prev:
 character(len=TXTLEN_DERIV), public, save :: &
