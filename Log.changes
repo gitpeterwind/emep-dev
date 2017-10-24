@@ -139,6 +139,13 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+24th Oct     2017  Dave
+
+Landuse_ml - BUG FIX for non Euro domains anyway
+             Initialise landuse_tot
+             Add where statement to check if landuse_tmp > 0
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 19th Oct     2017  Dave
 
 My_Derived_ml - just increased default size of MAX_NUM_NEWMOS to be 30, see #76.
