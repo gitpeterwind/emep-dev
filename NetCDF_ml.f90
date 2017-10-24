@@ -3138,10 +3138,13 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                  cycle
               endif
 
-              ifirst(ig)=max(1,i_local(max(1,ifirst(ig))))
-              ilast(ig)=min(limax,i_local(min(rundomain(2),ilast(ig))))
+               ! convert to local coordinates:
+              ifirst(ig)=max(ifirst(ig),rundomain(1)) ! first trim to rundomain
+              ilast(ig) =min(ilast(ig) ,rundomain(2))
+              ifirst(ig)=max(i_local(ifirst(ig)),1)   ! convert to local coordinates
+              ilast(ig) =min(i_local(ilast(ig)) ,limax)
               if((ifirst(ig)>limax .or. ilast(ig)<1) )then
-                 !outside subdomain. no need to spend time with this ig
+                 ! outside local domain. no need to spend time with this ig
                  ilast(ig)=ifirst(ig)-1
                  cycle
               endif
