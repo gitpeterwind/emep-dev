@@ -454,6 +454,7 @@ contains
     landuse_codes(:,:,:)  = 0     !***  initialise  ***
     landuse_data  (:,:,:) = 0.0   !***  initialise  ***
     landuse_in  = 0.0              !***  initialise  ***
+    landuse_tot   = 0.0              !***  initialise  *** Oct2017
     landuse_glob  = 0.0              !***  initialise  ***
 
     !Landusefile where landcodes are not predefined, but read from the file.
@@ -534,8 +535,10 @@ contains
                needed=.true.,debug_flag=.false.,UnDef=-9.9E19) 
 
           if ( ifile == 1 ) then
+             where ( landuse_tmp > 0.0 ) !Oct2017
                landuse_in(:,:,lu) = landuse_tmp
-               landuse_tot(:,:) = landuse_tot(:,:) + landuse_tmp
+               landuse_tot(:,:) = landuse_tot(:,:) + landuse_tmp ! Sum of data from file1
+             end where  !Oct2017
           else
                landuse_glob(:,:,lu) = landuse_tmp ! will merge below
           end if
