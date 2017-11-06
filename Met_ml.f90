@@ -140,7 +140,7 @@ subroutine MeteoRead_io()
 
       !On first call, check that date from meteo file correspond to dates requested.
       !Also defines nhour_first and Nhh (and METSTEP in case of WRF metdata).
-      call Check_Meteo_Date !note that all procs read this
+      call Check_Meteo_Date_Short !note that all procs read this
     else
       nsec=METSTEP*3600.0 !from hr to sec
       ts_now = make_timestamp(current_date)
@@ -299,6 +299,8 @@ subroutine MeteoRead()
   real, dimension(LJMAX,KMAX_MID) :: buf_uw,buf_ue
   real, dimension(LIMAX,KMAX_MID) :: buf_vn,buf_vs
   integer :: INFO,i_large,j_large
+  logical, save:: ps_in_hPa = .true.
+  logical, save:: precip_accumulated = .false.
 
   if(current_date%seconds /= 0 .or. (mod(current_date%hour,METSTEP)/=0) )return
 
@@ -323,7 +325,8 @@ subroutine MeteoRead()
 
      !On first call, check that date from meteo file correspond to dates requested.
      !Also defines nhour_first and Nhh (and METSTEP and bucket in case of WRF metdata).
-     call Check_Meteo_Date !note that all procs read this
+     !Also check if data is in format short
+     call Check_Meteo_Date_Short !note that all procs read this
 
      call Exner_tab()!init table
 
@@ -581,8 +584,17 @@ subroutine MeteoRead()
   end if
 
   ! correct surface pressure here, because we will need it before we get to the 2D block
+  if(first_call)then
+     if(maxval(ps)<2000.0)then
+        ps_in_hPa = .true.
+        if(write_now)write(*,*)'Asuming surface pressure in hPa'
+      else
+        if(write_now)write(*,*)'Asuming surface pressure in Pa'
+        ps_in_hPa = .false.
+     endif
+  endif
   ! conversion of pressure from hPa to Pascal.
-  if(.not.WRF_MET_CORRECTIONS)ps(1:limax,1:ljmax,nr) = ps(1:limax,1:ljmax,nr)*PASCAL
+  if(ps_in_hPa)ps(1:limax,1:ljmax,nr) = ps(1:limax,1:ljmax,nr)*PASCAL
 
   if(foundcc3d)then
     if(WRF_MET_CORRECTIONS)then
@@ -611,20 +623,49 @@ subroutine MeteoRead()
 
   if(.not.foundprecip)then
     !Will construct 3D precipitations from 2D precipitations
-    if(write_now)then
-      write(*,*)'WARNING: deriving 3D precipitations from 2D precipitations '
-      write(*,*)'2D precipitations sum of large_scale and convective precipitations'
-    end if
+    if(write_now)write(*,*)'WARNING: deriving 3D precipitations from 2D precipitations '
 
     ix = ix_surface_precip
-    call Getmeteofield(meteoname,met(ix)%name,nrec,met(ix)%dim,unit,&
+    met(ix)%found = .false.
+    if(.not. precip_accumulated)then
+      call Getmeteofield(meteoname,met(ix)%name,nrec,met(ix)%dim,unit,&
            met(ix)%validity,met(ix)%field,needed=met(ix)%needed,found=met(ix)%found)
+      if(met(ix)%found)then
+         if(write_now )write(*,*)'2D precipitations sum of large_scale and convective precipitations'
+         ix = ix_convective_precip
+         call Getmeteofield(meteoname,met(ix)%name,nrec,met(ix)%dim,unit,&
+              met(ix)%validity,met(ix)%field,needed=met(ix)%needed,found=met(ix)%found)
+         surface_precip = surface_precip + convective_precip
+      else
+         !only set once
+         if(write_now )write(*,*)trim(met(ix)%name),' not found. assuming accumulated'
+         precip_accumulated = .true.
+      endif
+    endif
+    ix = ix_surface_precip
+    if(precip_accumulated)then
+       !assume accumulated precipitations (AROME)
+       ix = ix_surface_precip
+       met(ix)%name = 'precipitation_amount_acc' 
+       if(me==0)write(*,*)'assuming 2D precipitations accumulated and named '//trim(met(ix)%name)
+       call Getmeteofield(meteoname,met(ix)%name,nrec,met(ix)%dim,unit,&
+            met(ix)%validity,met(ix)%field,needed=met(ix)%needed,found=met(ix)%found)
+       buff=surface_precip !save to save in old below
+       !must first check that precipitation is increasing. At some dates acc maybe restarted!
+       minprecip=minval(surface_precip(1:limax,1:ljmax) - surface_precip_old(1:limax,1:ljmax))
+       
+       CALL MPI_ALLREDUCE(minprecip, x_out, 1,MPI_DOUBLE_PRECISION, &
+            MPI_MIN, MPI_COMM_CALC, IERROR)
+       minprecip=x_out
+       if(minprecip<-10)then
+          if(me==0)write(*,*)'WARNING: found negative precipitations. set precipitations to zero!',minprecip
+          surface_precip = 0.0
+       else
+          surface_precip = max(0.0,(surface_precip - surface_precip_old))*0.001/(METSTEP*3600)! get only the variation. mm ->m/s
+       end if
+       surface_precip_old = buff ! Accumulated precipitation
+     end if
 
-    ix = ix_convective_precip
-    call Getmeteofield(meteoname,met(ix)%name,nrec,met(ix)%dim,unit,&
-           met(ix)%validity,met(ix)%field,needed=met(ix)%needed,found=met(ix)%found)
-
-    surface_precip = surface_precip + convective_precip
     !write(*,*)'precip ',nrec,Nhh,surface_precip(5,5),convective_precip(5,5),surface_precip_old(5,5)
     if(WRF_MET_CORRECTIONS) then
       if(found_wrf_bucket)then
@@ -770,7 +811,7 @@ subroutine MeteoRead()
             if(relh1>RH_THRESHOLD.or.relh2>RH_THRESHOLD)then
               !fill the column up to this level with constant precip
               do kk=k,KMAX_MID-1
-                pr(i,j,kk)= surface_precip(i,j)*METSTEP*3600.0*1000.0!3hours and m->mm
+                pr(i,j,kk)= surface_precip(i,j)*METSTEP*3600.0*1000.0!METSTEP hours and m->mm
               end do
               exit
             else
@@ -2893,14 +2934,15 @@ subroutine check(status)
      trim(call_msg)//" "//trim(nf90_strerror(status)))
 end subroutine check
 
-subroutine Check_Meteo_Date
+subroutine Check_Meteo_Date_Short
   !----------------------------------------------------------------------
   ! On first call, check that dates from meteo file correspond to dates requested.
   ! Also defines nhour_first and Nhh (and METSTEP in case of WRF metdata)
+  ! Also check if data is in format short
   !----------------------------------------------------------------------
   character(len=len(meteo)) :: meteoname
   integer :: nyear,nmonth,nday
-  integer :: status,ncFileID,timeDimID,timeVarID
+  integer :: status,ncFileID,timeDimID,timeVarID,VarID,xtype
   character (len = 50) :: timeunit
   integer ::ihh,ndate(4),n1,nseconds(1)
   real :: ndays(1),Xminutes(24)
@@ -2994,18 +3036,32 @@ subroutine Check_Meteo_Date
         end if
       end if
     end if
-   call check(nf90_close(ncFileID))
+
+    !check wether the meteo fields are defined as short
+    call check(nf90_inq_varid(ncid = ncFileID, name = met(ix_ps)%name, varID = VarID))
+    call check(nf90_Inquire_Variable(ncFileID,VarID,xtype=xtype))
+    if(xtype==NF90_SHORT)then
+       write(*,*)'assuming meteo variables type short'
+    else
+       if(xtype==NF90_FLOAT .or. xtype==NF90_DOUBLE)then
+          write(*,*)'assuming meteo variables type float or double'
+          MET_SHORT = .false.
+       endif
+    endif
+    call check(nf90_close(ncFileID))
   end if
   if(me_calc>=0)then
     CALL MPI_BCAST(nhour_first,4*1,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
     CALL MPI_BCAST(Nhh,4*1,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
     CALL MPI_BCAST(METSTEP,4*1,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
     CALL MPI_BCAST(found_wrf_bucket,1,MPI_LOGICAL,0,MPI_COMM_CALC,IERROR)
+    CALL MPI_BCAST(MET_SHORT,1,MPI_LOGICAL,0,MPI_COMM_CALC,IERROR)
   else
     CALL MPI_BCAST(nhour_first,4*1,MPI_BYTE,0,MPI_COMM_IO,IERROR)
     CALL MPI_BCAST(Nhh,4*1,MPI_BYTE,0,MPI_COMM_IO,IERROR)
     CALL MPI_BCAST(METSTEP,4*1,MPI_BYTE,0,MPI_COMM_IO,IERROR)
     CALL MPI_BCAST(found_wrf_bucket,1,MPI_LOGICAL,0,MPI_COMM_IO,IERROR)
+    CALL MPI_BCAST(MET_SHORT,1,MPI_LOGICAL,0,MPI_COMM_CALC,IERROR)
   end if
   if(found_wrf_bucket)then
     if(me_calc>=0)CALL MPI_BCAST(wrf_bucket,8,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
@@ -3015,6 +3071,6 @@ subroutine Check_Meteo_Date
     met(ix_irainnc)%read_meteo = found_wrf_bucket
     met(ix_irainnc)%needed     = found_wrf_bucket
   end if
-end subroutine Check_Meteo_Date
+end subroutine Check_Meteo_Date_Short
 
 end module met_ml

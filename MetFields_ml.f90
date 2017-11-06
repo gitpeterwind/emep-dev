@@ -809,7 +809,7 @@ subroutine Alloc_MetFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .false.
   met(ix)%read_meteo       = .false.
-  met(ix)%needed           = .true.
+  met(ix)%needed           = .false.
   met(ix)%found            = .false.
   allocate(surface_precip(LIMAX,LJMAX))
   surface_precip=0.0

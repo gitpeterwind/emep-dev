@@ -139,6 +139,17 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6th Nov     2017  Peter
+
+Some flexibilities for AROME meteorology:
+Surface precipitations can be accumulated. Assumes it has name
+'precipitation_amount_acc'and unit mm (or kg/m2).
+Surface pressure can be either Pa or hPa (it looks at the value to find out).
+Time dimension can be called "times" (but it is not recommended).
+The code accept meteorology in either Short or Float (or Double) types.
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 24th Oct     2017  Dave
 
 Landuse_ml - BUG FIX for non Euro domains anyway
