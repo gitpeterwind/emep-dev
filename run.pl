@@ -162,74 +162,6 @@ if (%BENCHMARK) {
 my $INERIS_FACS=0;  # Used for timefactors, and e,g TNOxx tests
 my $SR= 0;     # Set to 1 if source-receptor calculation
                # check also variables in package EMEP::Sr below!!
-
-my $CWF=0;     # Set to N for 'N'-day forecast mode (0 otherwise)
-   $CWF=0 if %BENCHMARK;
-my ($CWFBASE,$CWFDAYS,$CWFMETV,$CWF_DIR,$CWF_WRK,
-    @CWFDATE,@CWFDUMP,$eCWF,$eSTART,$aCWF,$CWFTAG) if($CWF);
-if($CWF){
-  $CWFBASE=defined($ENV{"DATE"})?$ENV{"DATE"}:"today"; # Forecast base date     (default today)
-  $CWFDAYS=defined($ENV{"NDAY"})?$ENV{"NDAY"}:$CWF;    # Forecast lenght indays (default $CWF)
-  $CWFMETV=defined($ENV{"UTC"})?$ENV{"UTC"}:"12";      # Met.UTC version        (default 12UTC)
-  $CWFBASE=shift if @ARGV;              # Forecast base date, lenght
-  $CWFDAYS=shift if @ARGV;              #  & MetUTC version can be passed
-  $CWFMETV=shift if @ARGV;              #  as argument to script
-  $CWF_DIR=shift if @ARGV;              # SMS script variable: $CWFEMEPDIR
-  $CWF_WRK=shift if @ARGV;              # SMS script variable: $WRKDIR
-# $CWFBASE="tomorrow" if($CWFBASE eq "today")and($CWFMETV =~ /12/);  # default date for 12UTC version 
-  $CWFBASE=date2str($CWFBASE,"%Y%m%d");
-# eCWF: 0[none]|Emergency[Forecast]|AshInversion[Hindcast]
-# eSTART: emission start [in hours since $CWFBASE]
-  $eCWF=$ENV{"eEMEP"}?$ENV{"eEMEP"}:0;
-  $eSTART=$ENV{'START_ASH'}?$ENV{'START_ASH'}:                
-          $ENV{'PBS_ARRAY_INDEX'}?$ENV{'PBS_ARRAY_INDEX'}*3-3:
-          $ENV{'PBS_ARRAYID'}?$ENV{'PBS_ARRAYID'}*3-3:
-          $ENV{'TASK_ID'}?$ENV{'TASK_ID'}*3-3:0 if($eCWF=~/AshInversion/);
-  $eSTART=sprintf("%02d",$eSTART) if defined($eSTART);
-# Analysis:
-  $aCWF=($CWFMETV=~/AN/);              
-  $CWF=($eCWF?"eemep-":"CWF_").($CWFMETV?"$CWFMETV-$CWFBASE":"$CWFBASE").
-       ($eSTART?"+$eSTART":"");
-# $CWFMETV:
-# Forecast/Analysis ($CWFDAYS<=6): meteo${CWFBASE}_{00,01,..}d.nc
-#   AN00|AN Analysis w/ 00UTC met
-#   FC12|12 Forecast w/ 12UTC met
-# Hindcast ($CWFDAYS>6): meteo{DAY1,DAY2,..}_??d.nc
-#   *00|24|48|72 run w/ 00UTC met 00d|01d|02d|03d
-#   *12|36|60|84 run w/ 12UTC met 01d|02d|03d|04d
-  $CWFMETV =~s/[^\d.]//g;                           # extract number part
-  $CWFDATE[0]=date2str($CWFBASE." 1 day ago"  ,"%Y%m%d");     # yesterday
-  $CWFDATE[1]=$CWFBASE;                                       # start date
-  $CWFDATE[2]=date2str($CWFDATE[0]." $CWFDAYS day","%Y%m%d"); # end date
-  $CWFDATE[3]=$CWFDATE[2];                        # date loop index
-##$CWFDUMP[0]=date2str($CWFBASE."                 ,"%Y-1-1"); # dump/nest every day at 00
-  $CWFDUMP[0]=date2str($CWFBASE." 1 day"          ,"%Y%m%d"); # 1st dump/nest
-  $CWFDUMP[1]=date2str($CWFBASE." 2 day"          ,"%Y%m%d"); # 2nd dump/nest
-  given($ENV{"PBS_JOBNAME"}){
-    when(/nmc/){$MAKEMODE="MACC-NMC";}            # NMC run
-    when(/eva/){$MAKEMODE="MACC-EVA";}            # EVA run
-    default    {$MAKEMODE=($eCWF)?"eEMEP":"MACC";}# eEMEP|ENS run
-  }
-  $MAKEMODE =$ENV{"MAKEMODE"} if($ENV{"MAKEMODE"});# override by env variable
-  $MAKEMODE.="-3DVar" if($aCWF);
-  if(defined($ENV{'CitySR'})){
-    $exp_name = "FORECAST_CitySR";
-    $outputs  = "CAMS71";
-    $SR       = 1;
-  }else{
-    $exp_name = ($eCWF)?"EMERGENCY":($aCWF?"ANALYSIS":"FORECAST");
-    $exp_name.= "_REVA" if($MAKEMODE=~/EVA/);
-    $exp_name.= "_NMC"  if($MAKEMODE=~/NMC/);
-    $exp_name.= "-dbg"  if($ENV{"DEBUG"} and ($ENV{"DEBUG"} eq "yes"));
-    $outputs  = ($eCWF)?"EMERGENCY":"CAMS50";
-  }
-  $testv.= ($eCWF)?".eCWF":".CWF";
-  $Chem  = ($ENV{"CHEM"})?$ENV{"CHEM"}:($eCWF)?"Emergency":"EmChem09soa";
-  $GRID  = ($ENV{"GRID"})?$ENV{"GRID"}:($eCWF)?"GLOBAL":"MACC14";
-  $CWFTAG.= ".REVA" if($MAKEMODE=~/EVA/);
-  $CWFTAG.= ".NMC"  if($MAKEMODE=~/NMC/);
-  $CWFTAG.= "_".$ENV{'TAG'}  if($ENV{'TAG'});
-}
  $MAKEMODE="SR-$MAKEMODE" if($MAKEMODE and $SR);
 
 # <---------- start of user-changeable section ----------------->
@@ -238,7 +170,6 @@ if($CWF){
 #      are explained below, and derived variables set later.-
 
 my $year = "2012";
-   $year = substr($CWFBASE,0,4) if $CWF;
    $year = $BENCHMARK{"year"} if %BENCHMARK;
 ( my $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
 
@@ -289,18 +220,11 @@ if ($STALLO) {
   $MetDir   = "$DataDir/$GRID/metdata_H20/$year" unless -d $MetDir;
   $MetDir   = "$DataDir/$GRID/metdata/$year"     unless -d $MetDir;
   $MetDir   = "$WORKROOT/$PETER/emep/ClimData/$year"  if ($GRID eq "RCA" );
-  $MetDir   = "$DataDir/$GRID/metdata_CWF/YYYY"
-              .sprintf("_%02dUTC",($CWFMETV%24)) if $CWF; # 00/12 UTC versions
 } else { #Ve or Vilje
   $HOMEROOT = "/home/metno";
   $WORKROOT = "$HOMEROOT/$USER/work";
   $DataDir  = "$HOMEROOT/mifapw/work/Data";
-  $DataDir  = "$CWF_DIR/Data" if $CWF and -d $CWF_DIR;
   $MetDir   = "$DataDir/$GRID/metdata_EC/$year";
-  $MetDir   = "$DataDir/$GRID/metdata_CWF/YYYY"
-              .sprintf("_%02dUTC",($CWFMETV%24)) if $CWF; # 00/12 UTC versions
-  $MetDir   = "/prod/forecast/work/emep/ec/prepmet" if $eCWF and ($USER eq $FORCAST);
-  $MetDir   = "$CWF_WRK/".sprintf("prepmet_%02d",($CWFMETV%24)) if $CWF and -d $CWF_WRK;
 }
 #$MetDir   = "/hard/code/path/to/$GRID/metdata/$year/if/necessary";
 die "Missing MetDir='$MetDir'\n" unless -d date2str($year."0101",$MetDir);
@@ -320,8 +244,6 @@ my $VBS   = 0;
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/emep-mscw";   # input of source-code
    $ProgDir  = "$HOMEROOT/$USER/emep-mscw/$testv";   # input of source-code for testv
-   $ProgDir  = "/prod/forecast/emep/eemep/src/Unimod.$testv" if $eCWF and ($USER eq $FORCAST);
-   $ProgDir  = "$CWF_DIR/src/Unimod.$testv" if $CWF and -d $CWF_DIR;
 my $ChemDir  = "$ProgDir/ZCM_$Chem";
 my $Specials = "specials";  # default
 #$Specials = "TSAP_Jul2012";  # used for TSAP runs in July 2012
@@ -350,8 +272,6 @@ close(CHEM);
 my $WORKDIR = "$WORKROOT/$USER/$testv.$year";  # working and result directory
    $WORKDIR = "$WORKROOT/$testv.$year" if($WORKROOT =~ /$USER/);
    $WORKDIR =~ s|$testv.$year|Benchmark/$GRID.$year|g if (%BENCHMARK);
-   $WORKDIR = "/prod/forecast/run/eemep" if $eCWF and ($USER eq $FORCAST);
-   $WORKDIR = "$CWF_WRK" if $CWF and -d $CWF_WRK;
 my $MyDataDir="$HOMEROOT/$USER/Unify/MyData"; # for each user's private input
 my $SoilDir = "$DATA_LOCAL/dust_input";       # Saharan BIC
    $SoilDir = 0 unless -d "$SoilDir/BC_DUST/2000";
@@ -360,7 +280,6 @@ my $SoilDir = "$DATA_LOCAL/dust_input";       # Saharan BIC
 my $RoadDir = "$HOMEROOT/$ROBERT/Unify/MyData/TNO_traffic" ;
    $RoadDir = "$HOMEROOT/$AGNES/MyData/TNO_traffic" if $VILJE;
    $RoadDir = 0 unless -d $RoadDir;
-   $RoadDir = 0 if $CWF;
 
 #ds check: and change
 chdir "$ProgDir";
@@ -376,7 +295,6 @@ print "CHEM, SPLITDIR $ChemDir $SplitDir\n";
 #RB:had "~mifarb/Unify/MyData/D_EGU/SPLITS_NOV2009v2/BASE_NAEI2000_GH2009.$Chem" ;
 
 my $version     = "Unimod" ;
-   $version     = "ZD_3DVar/Unimod_3DVar" if($aCWF);
 my $PROGRAM     = "$ProgDir/$version";        # programme
 my $subv        = "$testv" ;                  # sub-version (to track changes)
 
@@ -461,7 +379,6 @@ my $RESET        = 0; # usually 0 (false) is ok, but set to 1 for full restart
 my $COMPILE_ONLY = 0; # usually 0 (false) is ok, but set to 1 for compile-only
 my $DRY_RUN      = 0; # Test script without running model (but compiling)
 my $KEEP_LINKS   = 0; # Keep @list_of_files after run
-$RESET=($MAKEMODE=~/MACC/) if($CWF);
 #$KEEP_LINKS=not $BENCHMARK{'archive'} if(%BENCHMARK);
 
 if(%BENCHMARK and $BENCHMARK{'debug'}){
@@ -503,11 +420,6 @@ $dd2=($dd2>$month_days[$mm2])?$month_days[$mm2]:$dd2;
 if ($SR) {
     print "SR is true\n";
     @runs = EMEP::Sr::initRuns();
-}
-
-if ($CWF) {
-  print "CWF is true: $CWFDAYS-day foracast mode\n";
-  @runs = ( $CWF ) unless $SR ;
 }
 
 if (%BENCHMARK){
@@ -608,41 +520,12 @@ foreach my $scenflag ( @runs ) {
 
   my $RESDIR = "$WORKDIR/$scenario";
      $RESDIR = "$WORKDIR/$scenario.$iyr_trend" if ($GRID eq "RCA");
-     $RESDIR.= $CWFTAG if($CWF and $CWFTAG);
   mkdir_p($RESDIR);
-  if($CWF and -e "$RESDIR/modelrun.finished"){
-    print "$CWF already fiished!\n";
-    next;
-  }
 
   chdir $RESDIR;   ############ ------ Change to RESDIR
   print "Working in directory: $RESDIR\n";
 
-  if($CWF) { # Forecast Meteorology in NetCDF
-    my $metday = 0;
-    if($CWFMETV) { # UTC version and DAY offset for MET.UTC version
-      $metday = int($CWFMETV/24+0.99);             # DAY offset
-      die "Missing MetDir='$MetDir'\n" unless -d date2str($year."0101",$MetDir);
-    }
-    for my $n (0,1..($CWFDAYS-1)) {
-      my $metfile="$MetDir/meteo%Y%m%d_%%02d.nc";
-      if($aCWF or $CWFDAYS>4){  # hindcast using day 0,..,4 FC met.
-        $metfile=sprintf date2str($CWFBASE." $metday day ago $n day",$metfile),$metday;
-      }else{                    # forecast with 00/12 UTC FC met.
-        $metfile=sprintf date2str($CWFBASE." $metday day ago",$metfile),$n+$metday;
-      }
-      # Chech if meteo is in place
-      die "Meteo file $metfile for $CWFBASE not available (yet). Try later...\n"
-        unless (-e $metfile);
-      $CWFDATE[3]=date2str($CWFBASE." $n day","%Y%m%d");
-      mylink("CWF Met:",$metfile,date2str($CWFDATE[3],"meteoYYYYMMDD.nc"));
-    }
-# Update start and end months (used for linking some climatological files)
-    $mm1=substr($CWFDATE[1],4,2);  # start date
-    $mm2=substr($CWFDATE[2],4,2);  # end date
-  }
 
-  my ($old, $new);
 #Experimental: Grid definitions in a separate file 
   #my $old = "$DATA_LOCAL/Grid_Def.nc";
   #my $new = "Grid_Def.nc";
@@ -652,7 +535,6 @@ foreach my $scenflag ( @runs ) {
   #NB: link/define "EmisHeights_P.txt" if you are using different 6 lowest levels (for instance 34 levels);
   $old = "$DataDir/Vertical_levels20.txt";
   $new = "Vertical_levels.txt";
-  mylink( "Linking:", $old, $new) unless($CWF and ($GRID eq "MACC14"));
 
 #To use FastJ some data files are required. Could be moved elsewhere 
  my $FASTJ = 0;
@@ -825,10 +707,6 @@ foreach my $scenflag ( @runs ) {
   $ifile{"$DataDir/AnnualNdep_PS50x_EECCA2005_2009.nc"} = "annualNdep.nc";
 #}
 
-# new inputs style (Aug 2007)  with compulsory headers:
-# From rv3_14 used only for FORECAST mode
-  $ifile{"$DATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse" if ($CWF and ($GRID ne "MACC14")) ;
-
 # *******
 #  APRIL 2017. Use config system  now to specify landcover files!
 # *******
@@ -900,7 +778,6 @@ foreach my $scenflag ( @runs ) {
 # compile/copy executable to $RESDIR/
   my $LPROG = "Unimod";
   if($MAKEMODE){  # compile/link program into $RESDIR/
-    $LPROG = "Unimod_3DVar" if($aCWF);
     system(@MAKE,"$MAKEMODE","-C$ProgDir/",
            "ARCHIVE=yes","BINDIR=$RESDIR/") == 0
       or die "@MAKE $MAKEMODE -C$ProgDir/ failed"; 
@@ -919,7 +796,6 @@ foreach my $scenflag ( @runs ) {
 
   my ($startdate,$enddate)=("$year-$mm1-$dd1","$year-$mm2-$dd2");
      $enddate=date2str($startdate." 1 day ago","%F") unless $dd2;
-     ($startdate,$enddate)=("$CWFDATE[1]","$CWFDATE[2]") if $CWF;
   $startdate=date2str("$startdate","%Y%m%d");
   $enddate  =date2str("$enddate"  ,"%Y%m%d");
 # check if met-files exist
@@ -951,9 +827,6 @@ foreach my $scenflag ( @runs ) {
       $nml.=EMEP::Sr::slurp("$ProgDir/$f");
     }
     # fill in variables on the template file with corresponding $hash{key}
-    %h=(%h,'year'=>$year,'emisyear'=>$emisyear,'utc'=>$CWFMETV,
-           'outdate'=>date2str($CWFDUMP[0],"%Y,%m,%d,000000,")
-                     .date2str($CWFDUMP[1],"%Y,%m,%d,000000")) if $CWF;
   }
   # fill in variables on the template file with corresponding $hash{key}
   foreach my $k (keys %h) {
@@ -985,7 +858,6 @@ foreach my $scenflag ( @runs ) {
     print "starting $PROGRAM with\n".
     "EXCLU $exclu\nIYR_TREND $iyr_trend\nLABEL1 $runlabel1\nLABEL2 $runlabel2\n".
     "startdate $startdate\nenddate $enddate\n";
-    print "CWFDUMP1 $CWFDUMP[0]\nCWFDUMP2 $CWFDUMP[1]\n" if $CWF;
 
     my $MPIRUN = "mpiexec";
     if ($STALLO) {
@@ -1061,17 +933,11 @@ EOT
  unlink ( @list_of_files ) unless($KEEP_LINKS);
 
 #tar sites and sondes. Use sondes to check as these are produced les frequently.
-  my $last_sondes = sprintf  "sondes.%02d%02d", $mm2, $yy;
-     $last_sondes = "sondes_$year.csv" if ($CWF);
   print "LOOKING FOR LAST SITES $last_sondes\n";
   if ( -r $last_sondes ) {
     print "FOUND LAST sondes $last_sondes\n";
     system("tar cvzf $runlabel1.sites.tgz  sites.*");
     system("tar cvzf $runlabel1.sondes.tgz sondes.*");
-  }
-
-  if ($CWF and not $DRY_RUN) {
-    die "$CWF did not fiished as expected!\n" unless -e "modelrun.finished";
   }
 
 ################################## END OF RUNS ######################
@@ -1282,7 +1148,6 @@ sub getScenario {
   my ($scenflag) = @_;
   my $cc = $scenflag->[0];
   my $pollut = $scenflag->[1];
-  $base = $CWF if $CWF ;
   my $scenario = "${base}_${cc}_${pollut}_${rednflag}";
   $scenario = "${base}" if $pollut eq "BASE" ;
   return $scenario;
