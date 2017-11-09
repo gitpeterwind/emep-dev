@@ -828,12 +828,14 @@ end subroutine av_uEMEP
     integer, intent(in)::i,j
     real ::x,xn,xx,f_in,inv_tot
     integer ::k,iix,ix,dx,dy,ipoll,isec_poll,isec_poll1
-    real loc_frac_km1(uEMEP%Nsec_poll,-uEMEP%dist:uEMEP%dist,-uEMEP%dist:uEMEP%dist,KMAX_MID-uEMEP%Nvert+1:KMAX_MID-1)
-    
-!need to be careful to always use non-updated values on the RHS
-    do k = KMAX_MID-uEMEP%Nvert+2,KMAX_MID
-       loc_frac_km1(:,:,:,k-1)=loc_frac(:,:,:,i,j,k-1)
+    real loc_frac_km1(uEMEP%Nsec_poll,-uEMEP%dist:uEMEP%dist,-uEMEP%dist:uEMEP%dist,KMAX_MID-uEMEP%Nvert:KMAX_MID-1)
+
+    !need to be careful to always use non-updated values on the RHS
+    do k = KMAX_MID-uEMEP%Nvert+1,KMAX_MID-1
+       loc_frac_km1(:,:,:,k)=loc_frac(:,:,:,i,j,k)
     enddo
+    loc_frac_km1(:,:,:,KMAX_MID-uEMEP%Nvert)=0.0!Assume zero local fractions coming from above
+
     do k = KMAX_MID-uEMEP%Nvert+1,KMAX_MID!k is increasing-> can use k+1 to access non-updated value
 
        isec_poll1=1
@@ -854,11 +856,6 @@ end subroutine av_uEMEP
           xn=max(0.0,xn+min(0.0,x)+min(0.0,xx))!include negative part. outgoing flux 
           f_in=max(0.0,x)+max(0.0,xx)!positive part. incoming flux
           inv_tot = 1.0/(xn+f_in+1.e-20)
-          
-          if(k==KMAX_MID-uEMEP%Nvert+1)then
-             !highest level for uemep. Assume zero local fractions coming from above
-             xx=0.0
-          endif
           
           x =max(0.0,x)*inv_tot!factor due to flux through bottom face
           xx=max(0.0,xx)*inv_tot!factor due to flux through top face

@@ -139,6 +139,12 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+9th Nov     2017  Peter
+
+Corrected bug in uEMEP/uemep_adv_k when uEMEP%Nvert = 1
+(Otherwise no effect)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 6th Nov     2017  Peter
 
 Some flexibilities for AROME meteorology:
