@@ -444,8 +444,6 @@ subroutine GetFullDomainSize(filename,IIFULLDOM,JJFULLDOM,KMAX,METSTEP,projectio
   ! find METSTEP (checked also in first meteo read)
   status=nf90_inq_dimid(ncid=ncFileID,name="time",dimID=timedimID)
   if(status/=nf90_noerr)&
-    status=nf90_inq_dimid(ncid=ncFileID,name="times",dimID=timedimID)!AROME
-  if(status/=nf90_noerr)&
     status=nf90_inq_dimid(ncid=ncFileID,name="Time",dimID=timedimID)! WRF
   if(status/=nf90_noerr)then
     write(*,*)'time variable not found assuming 8 records'
