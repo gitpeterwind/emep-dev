@@ -651,6 +651,7 @@ subroutine MeteoRead()
        call Getmeteofield(meteoname,met(ix)%name,nrec,met(ix)%dim,unit,&
             met(ix)%validity,met(ix)%field,needed=met(ix)%needed,found=met(ix)%found)
        buff=surface_precip !save to save in old below
+       if(nr == 1 .and. nhour_first>0) buff=0.0 !the first reading of metdata is not from 00:00
        !must first check that precipitation is increasing. At some dates acc maybe restarted!
        minprecip=minval(surface_precip(1:limax,1:ljmax) - surface_precip_old(1:limax,1:ljmax))
        
