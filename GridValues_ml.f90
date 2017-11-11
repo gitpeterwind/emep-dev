@@ -740,8 +740,8 @@ subroutine Getgridparams(LIMAX,LJMAX,filename,cyclicgrid)
       status = nf90_inq_varid(ncid=ncFileID, name="lat", varID=varID)
       if(status/=nf90_noerr)&
         call check(nf90_inq_varid(ncid=ncFileID, name="latitude", varID=varID))
-      call check(nf90_get_var(ncFileID,varID,v,count=(/1/)))
-      y1_lambert=v(1)
+      call check(nf90_get_var(ncFileID,varID,u,count=(/1/)))
+      y1_lambert=u(1)
     endif
     
     x1_lambert=0.0
@@ -749,15 +749,20 @@ subroutine Getgridparams(LIMAX,LJMAX,filename,cyclicgrid)
     call lb2ij(v(1),u(1),x1_lambert,y1_lambert)
     x1_lambert = (x1_lambert-1)*GRIDWIDTH_M
     y1_lambert = (y1_lambert-1)*GRIDWIDTH_M
-    ! test that (i,j)=(1,1) has the coordinates (1,1)
-    ! call lb2ij(v(1),u(1),v(2),u(2))
-    ! write(*,*)v(2),u(2)
-    
+
     if(MasterProc)then
-      write(*,*)"Lambert grid resolution (m) ",GRIDWIDTH_M
-      write(*,*)"x and y at (i,j)=(1,1)",x1_lambert,y1_lambert
-      write(*,*)"y0_lambert,F_lambert ",y0_lambert,F_lambert
-    end if
+    ! test that lon lat from meteo is the same as calculated, for the point (i,j)=(1,1)
+       call lb2ij(v(1),u(1),v(2),u(2))
+       if(abs(u(2)-1.0)+abs(v(2)-1.0)>1.E-4)then
+          write(*,*)'ERROR Lambert projection lon lat of (i,j)=(1,1) in file is',v(1),u(1)
+          write(*,*)'BUT Lambert projection (i,j) for this lon lat is not (1,1) but ',v(2),u(2)
+          call StopAll('ERROR in Lambert projection parameters')
+       else
+          write(*,*)'Lambert projection checked. (i,j)=(1,1) has lon lat',v(1),u(1)
+          write(*,*)"x and y at (i,j)=(1,1)",x1_lambert,y1_lambert
+          write(*,*)"y0_lambert,F_lambert ",y0_lambert,F_lambert
+       endif
+    endif
     
     !make lon lat and mapping factors
     do j = 0, LJMAX+1
