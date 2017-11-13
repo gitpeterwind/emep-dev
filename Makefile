@@ -55,7 +55,7 @@ else ifeq ($(MACHINE),byvind)
   LLIB += /software/apps/netcdf/4.1.2/i1210/lib
 # MAKEDEPF90=????
   LLIB := $(foreach L,$(LLIB),-L$(L) -Wl,-rpath,$(L))
-else ifeq ($(MACHINE),frost) || ifeq ($(MACHINE),alvin) || ifeq ($(MACHINE),elvis)
+else ifneq (,$(findstring $(MACHINE),frost alvin elvis))
   MODULES = buildenv-intel/2015-1 hdf5/1.8.14-i1501 netcdf/4.3.2-i1501-hdf5-1.8.14
   LIBS += -lnetcdf -lnetcdff
   INCL += /software/apps/netcdf/4.3.2/i1501-hdf5-1.8.14/include/
