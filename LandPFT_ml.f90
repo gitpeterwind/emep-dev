@@ -8,7 +8,8 @@ module LandPFT_ml
 
 use CheckStop_ml,   only: CheckStop, StopAll
 use GridValues_ml,  only: debug_proc, debug_li, debug_lj, glon, glat
-use ModelConstants_ml,  only : DEBUG, MasterProc, BVOC_USED, PFT_MAPPINGS
+use ModelConstants_ml,  only : DEBUG, MasterProc, BVOC_USED, PFT_MAPPINGS&
+                               ,GLOBAL_LAInBVOCFile
 use NetCDF_ml, only: ReadField_CDF
 use Par_ml,         only: LIMAX, LJMAX, me
 use SmallUtils_ml,  only: find_index, NOT_FOUND, WriteArray, trims
@@ -78,7 +79,7 @@ contains
      do pft =1, N_PFTS
            varname = trims( "Normed_" // LAI_VAR // PFT_CODES(pft) ) 
 
-           call ReadField_CDF('GLOBAL_LAInBVOC.nc',varname,&
+           call ReadField_CDF(GLOBAL_LAInBVOCFile,varname,&
               lpj,month,interpol='zero_order',needed=.true.,debug_flag=.false.)
 
            pft_lai(:,:,pft ) = lpj(:,:)
@@ -130,7 +131,7 @@ return ! JAN31TEST
        do ivar =1, size( BVOC_USED ) 
            varname = trim(BVOC_VAR(ivar)) // trim(PFT_CODES(pft)) 
 
-           call ReadField_CDF('GLOBAL_LAInBVOC.nc',varname,&
+           call ReadField_CDF(GLOBAL_LAInBVOCFile,varname,&
               lpj,month,interpol='zero_order',needed=.true.,debug_flag=.true.)
 
            pft_bvoc(:,:,pft, ivar ) = lpj(:,:)

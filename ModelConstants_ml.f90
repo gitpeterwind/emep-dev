@@ -532,6 +532,54 @@ logical, parameter, public :: EmisSplit_OUT = .false.
 
 logical, public, parameter:: MANUAL_GRID=.false.!under developement.
 
+!file names
+type, public ::names
+character(len=TXTLEN_FILE), pointer:: filename => null()
+end type names
+integer, public, parameter :: Size_InputFiles = 40
+type(names), public, save :: InputFiles(Size_InputFiles)
+
+!To add a new filename:
+!1) add a line just here below, XXFile = '/default/Path/Default.name'
+!2) add the XXFile in NAMELIST /ModelConstants_config/
+!3) add a call associate_File(XXFile) near the end of Config_ModelConstants
+!4) In the routine using the file, add the XXFile under  "use ModelConstants"
+!5) replace the name you used in the routine with XX_File
+character(len=TXTLEN_FILE), target, save, public :: femisFile = 'DataDir/femis.dat'
+character(len=TXTLEN_FILE), target, save, public :: Vertical_levelsFile = 'DataDir/Vertical_levels20.txt'
+character(len=TXTLEN_FILE), target, save, public :: EmisHeightsFile = 'DataDir/inputs_emepdefaults_Jun2017/EmisHeights.txt'
+character(len=TXTLEN_FILE), target, save, public :: SoilTypesFile = 'DataDir/SoilTypes_IFS.nc'
+character(len=TXTLEN_FILE), target, save, public :: SurfacePressureFile = 'DataDir/SurfacePressure.nc'
+character(len=TXTLEN_FILE), target, save, public :: AircraftEmis_FLFile = 'DataDir/AircraftEmis_FL.nc'
+character(len=TXTLEN_FILE), target, save, public :: nox_emission_1996_2005File = 'DataDir/nox_emission_1996-2005.nc'
+!POLL replaced by name of pollutant in EmisSplit
+character(len=TXTLEN_FILE), target, save, public :: MonthlyFacFile = 'DataDir/inputs_emepdefaults_Jun2012/MonthlyFac.POLL'
+!POLL replaced by name of pollutant in EmisSplit
+character(len=TXTLEN_FILE), target, save, public :: DailyFacFile = 'DataDir/inputs_emepdefaults_Jun2012/DailyFac.POLL'
+character(len=TXTLEN_FILE), target, save, public :: HourlyFacFile = 'DataDir/inputs_emepdefaults_Jun2012/HourlyFacs.INERIS'
+!POLL replaced by name of pollutant in EmisSplit
+character(len=TXTLEN_FILE), target, save, public :: SplitDefaultFile = 'DataDir/ZCM_EmChem16mt/EMISSPLIT/emissplit.defaults.POLL'
+!POLL replaced by name of pollutant in EmisSplit
+character(len=TXTLEN_FILE), target, save, public :: SplitSpecialsFile = 'DataDir/ZCM_EmChem16mt/EMISSPLIT/emissplit.specials.POLL'
+character(len=TXTLEN_FILE), target, save, public :: RoadMapFile = 'DataDir/RoadMap.nc'
+character(len=TXTLEN_FILE), target, save, public :: AVG_SMI_2005_2010File = 'DataDir/AVG_SMI_2005_2010.nc'
+character(len=TXTLEN_FILE), target, save, public :: Soil_TegenFile = 'DataDir/Soil_Tegen.nc'
+character(len=TXTLEN_FILE), target, save, public :: SitesFile = 'DataDir/sitesLL.dat'
+character(len=TXTLEN_FILE), target, save, public :: SondesFile = 'DataDir/sondesLL.dat'
+character(len=TXTLEN_FILE), target, save, public :: GLOBAL_LAInBVOCFile = 'DataDir/GLOBAL_LAInBVOC.nc'
+character(len=TXTLEN_FILE), target, save, public :: EMEP_EuroBVOCFile = 'DataDir/LandInputs_Mar2011/EMEP_EuroBVOC.nc'
+!SEASON replace by 'jan', 'apr', 'jul' or 'oct' in readdiss
+character(len=TXTLEN_FILE), target, save, public :: jclearFile = 'DataDir/jclear.SEASON'
+!SEASON replace by 'jan', 'apr', 'jul' or 'oct' in readdiss
+character(len=TXTLEN_FILE), target, save, public :: jcl1kmFile = 'DataDir/jcl1.SEASON'
+!SEASON replace by 'jan', 'apr', 'jul' or 'oct' in readdiss
+character(len=TXTLEN_FILE), target, save, public :: jcl3kmFile = 'DataDir/jcl3.SEASON'
+character(len=TXTLEN_FILE), target, save, public :: NdepFile = 'DataDir/AnnualNdep_PS50x_EECCA2005_2009.nc'
+!MM replace by month in lightning()
+character(len=TXTLEN_FILE), target, save, public :: lightningFile = 'DataDir/lt21-nox.datMM'
+character(len=TXTLEN_FILE), target, save, public :: LoganO3File = 'DataDir/Logan_P.nc'
+character(len=TXTLEN_FILE), target, save, public :: DustFile = 'DataDir/Dust.nc'
+
 !----------------------------------------------------------------------------
 contains
 subroutine Config_ModelConstants(iolog)
@@ -575,7 +623,33 @@ subroutine Config_ModelConstants(iolog)
    ,JUMPOVER29FEB, HOURLYFILE_ending, USE_WRF_MET_NAMES &
    ,dt_advec & ! can be set to override dt_advec
    ,ZERO_ORDER_ADVEC &! force zero order horizontal and vertical advection 
-   ,fileName_O3_Top
+   ,fileName_O3_Top&
+   ,femisFile&
+   ,Vertical_levelsFile&
+   ,EmisHeightsFile&
+   ,SoilTypesFile&
+   ,SurfacePressureFile&
+   ,AircraftEmis_FLFile&
+   ,nox_emission_1996_2005File&
+   ,MonthlyFacFile&
+   ,DailyFacFile&
+   ,HourlyFacFile&
+   ,SplitDefaultFile&
+   ,RoadMapFile&
+   ,AVG_SMI_2005_2010File&
+   ,Soil_TegenFile&
+   ,SitesFile&
+   ,SondesFile&
+   ,GLOBAL_LAInBVOCFile&
+   ,EMEP_EuroBVOCFile&
+   ,jclearFile&
+   ,jcl1kmFile&
+   ,jcl3kmFile&
+   ,NdepFile&
+   ,lightningFile&
+   ,LoganO3File&
+   ,DustFile
+
   NAMELIST /Machine_config/ DataPath
 
   NAMELIST /INPUT_PARA/GRID,iyr_trend,runlabel1,runlabel2,&
@@ -675,6 +749,48 @@ subroutine Config_ModelConstants(iolog)
        key2str(LandCoverInputs%Do3seDefs,'DataDir',DataDir)
   !print *, dtxt//'Landcover =>', LandCoverInputs
 
+
+  call associate_File(femisFile)
+  call associate_File(Vertical_levelsFile)
+  call associate_File(EmisHeightsFile)
+  call associate_File(SoilTypesFile)
+  call associate_File(SurfacePressureFile)
+  call associate_File(AircraftEmis_FLFile)
+  call associate_File(nox_emission_1996_2005File)
+  call associate_File(MonthlyFacFile)
+  call associate_File(DailyFacFile)
+  call associate_File(HourlyFacFile)
+  call associate_File(SplitDefaultFile)
+  call associate_File(SplitSpecialsFile)
+  call associate_File(RoadMapFile)
+  call associate_File(AVG_SMI_2005_2010File)
+  call associate_File(Soil_TegenFile)
+  call associate_File(SitesFile)
+  call associate_File(SondesFile)
+  call associate_File(GLOBAL_LAInBVOCFile)
+  call associate_File(EMEP_EuroBVOCFile)
+  call associate_File(jclearFile)
+  call associate_File(jcl1kmFile)
+  call associate_File(jcl3kmFile)
+  call associate_File(NdepFile)
+  call associate_File(lightningFile)
+  call associate_File(LoganO3File)
+  call associate_File(DustFile)
+
+  do i = 1,size(InputFiles)
+     if(associated(InputFiles(i)%filename))then
+        InputFiles(i)%filename = key2str(InputFiles(i)%filename,'DataDir',DataDir)
+     endif
+  enddo
 end subroutine Config_ModelConstants
+
+subroutine associate_File(FileName)
+  integer, save::ix=0
+  character(len=*), target ::FileName
+  ix = ix+1
+  call CheckStop(ix > size(InputFiles) , "ModelConstants_ml: Size_InputFiles too small")
+  InputFiles(ix)%filename => FileName  
+end subroutine associate_File
+
 endmodule ModelConstants_ml
 !_____________________________________________________________________________

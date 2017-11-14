@@ -63,12 +63,13 @@
   use ModelConstants_ml, only : MasterProc, DEBUG => DEBUG_EMISTIMEFACS
   use ModelConstants_ml, only : IIFULLDOM, JJFULLDOM
   use ModelConstants_ml, only : iyr_trend ,USES  ! for GRIDDED_EMIS_MONTHLY_FACTOR 
-  use ModelConstants_ml, only : INERIS_SNAP1, INERIS_SNAP2, DegreeDayFactorsFile
+  use ModelConstants_ml, only : INERIS_SNAP1, INERIS_SNAP2, DegreeDayFactorsFile&
+                                ,DailyFacFile,MonthlyFacFile,HourlyFacFile,TXTLEN_FILE
   use NetCDF_ml,    only : GetCDF , ReadField_CDF
   use Par_ml,       only : MAXLIMAX,MAXLJMAX, limax,ljmax, me, li0, lj0, li1, lj1
   use Par_ml,       only : IRUNBEG, JRUNBEG, MSG_READ8
   use PhysicalConstants_ml, only : PI
-  use SmallUtils_ml,    only: find_index
+  use SmallUtils_ml,    only: find_index, key2str
   use Io_ml,        only :            &
                      open_file,       & ! subroutine
                      check_file,       & ! subroutine
@@ -121,7 +122,7 @@
 
   ! Used for general file calls and mpi routines below
 
-  character(len=30), private :: fname2   ! input filename - do not change 
+  character(len=TXTLEN_FILE), private :: fname2   ! input filename - do not change 
 
   real, allocatable, public, save,  dimension(:,:,:,:):: GridTfac
 
@@ -196,7 +197,7 @@ contains
 
    do iemis = 1, NEMIS_FILE
 
-       fname2 = "MonthlyFac." // trim ( EMIS_FILE(iemis) )
+       fname2 = key2str(MonthlyFacFile,'POLL',trim ( EMIS_FILE(iemis) ))
        call open_file(IO_TIMEFACS,"r",fname2,needed=.true.)
 
        call CheckStop( ios, &
@@ -253,7 +254,7 @@ contains
 
   do iemis = 1, NEMIS_FILE
 
-       fname2 = "DailyFac." // trim ( EMIS_FILE(iemis) )
+       fname2 = key2str(DailyFacFile,'POLL',trim ( EMIS_FILE(iemis) ))
        call open_file(IO_TIMEFACS,"r",fname2,needed=.true.)
 
        call CheckStop( ios, "Timefactors: Opening error in Dailyfac")
@@ -293,7 +294,7 @@ contains
    ! TNO2005 option has 11x24 
    ! EMEP2003 option has very simple day night
 !
-       fname2 = "HOURLY-FACS"  ! From EURODELTA/INERIS/TNO or EMEP2003
+       fname2 = trim(HourlyFacFile) ! From EURODELTA/INERIS/TNO or EMEP2003
        write(unit=6,fmt=*) "Starting HOURLY-FACS"
        call open_file(IO_TIMEFACS,"r",fname2,needed=.true.)
 

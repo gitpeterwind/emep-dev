@@ -139,6 +139,25 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+14-15th Nov     2017  Peter
+
+All files (except config) can be linked through config.
+Only Unimod and config_emep.nml are needed.
+Just run from any directory; copy Unimod (executable) and config_emep.pl and: 
+mpirun Unimod
+(you should of course do this from a compute-node or in a script)
+
+config_emep.nml is now simply made from config_EMEPSTD.nml+config_Outputs_EMEPSTD.nml
+and the first &INPUT_PARA Block
+At present default path are set in ModelConstants_ml
+ALL links removed from run.pl. We do not need it anymore?
+Still to be done:
+.-Emissplit now taken from DataDir/ZCM_EmChem16mt/EMISSPLIT/ . Should be adapted to chemistry in use
+.-femis/SR runs?
+.-general bash script?
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 9th Nov     2017  Peter
 
 Corrected bug in uEMEP/uemep_adv_k when uEMEP%Nvert = 1

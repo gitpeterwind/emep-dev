@@ -69,7 +69,8 @@ use ModelConstants_ml,    only: PASCAL, PT, Pref, METSTEP  &
      ,nstep,USE_CONVECTION,USE_EtaCOORDINATES,USE_FASTJ &
      ,CONVECTION_FACTOR &
      ,LANDIFY_MET,MANUAL_GRID  &
-     ,CW_THRESHOLD,RH_THRESHOLD, CW2CC, JUMPOVER29FEB, meteo, startdate
+     ,CW_THRESHOLD,RH_THRESHOLD, CW2CC, JUMPOVER29FEB, meteo, startdate&
+     ,SoilTypesFile, Soil_TegenFile
 use MPI_Groups_ml,     only: MPI_DOUBLE_PRECISION, MPI_BYTE, MPI_LOGICAL,&
                              MPI_COMM_IO, MPI_COMM_CALC, IERROR, ME_IO, ME_CALC,&
                              request_e,request_n,request_s,request_w,LargeSub_Ix,&
@@ -970,9 +971,9 @@ subroutine MeteoRead()
     if(SoilWaterSource == "IFS")then
       if(first_call)then
         !needed for transforming IFS soil water
-        call ReadField_CDF('SoilTypes_IFS.nc','pwp',pwp, 1,&
+        call ReadField_CDF(SoilTypesFile,'pwp',pwp, 1,&
             interpol='conservative',needed=.true.,UnDef=-999.,debug_flag=.false.)
-        call ReadField_CDF('SoilTypes_IFS.nc','fc',fc, 1,&
+        call ReadField_CDF(SoilTypesFile,'fc',fc, 1,&
             interpol='conservative',needed=.true.,UnDef=-999.,debug_flag=.false.)
 
         ! landify(x,intxt,xmin,xmax,wfmin,xmask)
@@ -1533,8 +1534,6 @@ subroutine MetModel_LandUse(callnum)
 
   integer, intent(in) :: callnum
 
-  character(len=20) :: fname
-
   ios = 0
 
   if ( callnum == 1  ) then
@@ -1544,12 +1543,11 @@ subroutine MetModel_LandUse(callnum)
       if(TEGEN_DATA)then
         !use global data interpolated to present grid
 
-        fname='Soil_Tegen.nc'
-        if(MasterProc)write(6,*)'Sand and clay fractions from ',fname
+        if(MasterProc)write(6,*)'Sand and clay fractions from ',trim(Soil_TegenFile)
 
-        call ReadField_CDF(fname,'clay',clay_frac,1,  &
+        call ReadField_CDF(Soil_TegenFile,'clay',clay_frac,1,  &
              interpol='conservative',needed=.true.,debug_flag=.false.)
-        call ReadField_CDF(fname,'sand',sand_frac,1,  &
+        call ReadField_CDF(Soil_TegenFile,'sand',sand_frac,1,  &
              interpol='conservative',needed=.true.,debug_flag=.false.)
 
       elseif(MasterProc)then

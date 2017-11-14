@@ -49,7 +49,8 @@ use ModelConstants_ml,  only: KMAX_MID,KMAX_BND, runlabel1, runlabel2 &
                              ,IOU_HOUR,IOU_HOUR_INST,IOU_HOUR_EXTRA &
                              ,PT,Pref,NLANDUSEMAX, model&
                              ,USE_EtaCOORDINATES,RUNDOMAIN&
-                             ,fullrun_DOMAIN,month_DOMAIN,day_DOMAIN,hour_DOMAIN
+                             ,fullrun_DOMAIN,month_DOMAIN,day_DOMAIN,hour_DOMAIN&
+                             ,SurfacePressureFile
 use ModelConstants_ml,  only: SELECT_LEVELS_HOURLY,&  ! NML
                               num_lev3d,lev3d         ! 3D levels on 3D output
 use MPI_Groups_ml, only     :MPI_LOGICAL, MPI_SUM,MPI_INTEGER, MPI_BYTE,MPISTATUS, &
@@ -4195,7 +4196,7 @@ end subroutine ReadField_CDF
         
         !need average surface pressure for the current month
         !montly average is needed, not instantaneous pressure
-        call ReadField_CDF('SurfacePressure.nc','surface_pressure',&
+        call ReadField_CDF(SurfacePressureFile,'surface_pressure',&
              Psurf_ref,current_date%month,needed=.true.,interpol='zero_order',debug_flag=debug_flag)
   end if
 

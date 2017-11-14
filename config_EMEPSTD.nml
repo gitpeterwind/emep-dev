@@ -79,8 +79,9 @@
  !Good EECCA default:
   EmisDir                 = 'DataDir/EECCA/Modrun15/2015_EMEP_trends/model_input_YYYY',
 
-  emis_inputlist(1)%name  = 'EmisDir/gridPOLL',    ! example of ASCII type.
-!  emis_inputlist(1)%name  = 'DataDir/Emis_TNO7_MACCIII/Emis_TNO7_MACCIII_2011.nc',
+!  emis_inputlist(1)%name  = 'EmisDir/gridPOLL',    ! example of ASCII type.
+  emis_inputlist(1)%name  = 'DataDir/Emis_TNO7_MACCIII/Emis_TNO7_MACCIII_2011.nc',
+!  emis_inputlist(1)%name  = 'DataDir/Emis_GLOB_05.nc',
 !  emis_inputlist(1)%pollName(1:2)     = 'voc','sox', !example of restricted choice of pollutants
 
 
@@ -115,6 +116,8 @@
 !
 !  emis_inputlist(3)%name     = '/home/mifajej/Emissions/Ships/FMI_Glob/2015/FMIGlobShip2015mon.nc',  !
 !  emis_inputlist(3)%type = 'Special_ShipEmis',
+
+  femisFile               = 'DataDir/femis.dat' ,!Default does not make any reduction
 
   EMIS_OUT              = F,          ! Output emissions in separate files
 !------------------------------
@@ -158,7 +161,7 @@
 
 !-------- Sub domain (x0,x1,y0,y1)
 ! RUNDOMAIN =  200, 214, 150, 164,      !EMEP01 reduced
-! RUNDOMAIN =  345, 406, 268, 324,      !GLOBAL05  reduced around South Norway
+ RUNDOMAIN =  1, 360, 2, 179,      !GLOBAL05  reduced around South Norway
 ! RUNDOMAIN =  230, 530, 150, 415,      !EMEP01 reduced around South Norway
 ! RUNDOMAIN =  230, 450, 120, 350,      !EMEP01 reduced South Norway Apr 2017
 ! RUNDOMAIN =  370, 420, 270, 320,      !EMEP01 small oslo tests reduced to South Norway
@@ -206,7 +209,7 @@
 !  DEBUG%STOP_HH        = 1,   ! If >= 0,  stops code after STOP_HH hours
 ! Specify here the coords and species index (tot, see CM_ChemSpecs_tot)
 !  DEBUG%IJ              =  -60, -50,     ! Default: no debugij output
- DEBUG%IJ              =  60, 50,       ! Bremen
+! DEBUG%IJ              =  60, 50,       ! Bremen
 ! DEBUG%IJ              = 189,144,       ! Bremen, global
 ! DEBUG%IJ              =   3, 50,       ! sea I hope...
   DEBUG%SPEC            = 'OH',

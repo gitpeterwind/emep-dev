@@ -31,7 +31,8 @@ use MetFields_ml,      only : t2_nwp, th, pzpbl  &  ! output with concentrations
 use MetFields_ml,      only : u_xmj, v_xmi, ps
 use ModelConstants_ml, only : NMET,PPBINV,PPTINV, KMAX_MID, MasterProc &
                               ,KMAX_BND,PT, NPROC, DEBUG & ! => DEBUG%SITES &
-                              ,DomainName, RUNDOMAIN, IOU_INST, SOURCE_RECEPTOR, meteo
+                              ,DomainName, RUNDOMAIN, IOU_INST, SOURCE_RECEPTOR, meteo&
+                              ,SitesFile,SondesFile
 use MPI_Groups_ml   , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER, MPI_LOGICAL, &
                              MPI_MIN, MPI_MAX, MPI_SUM, &
                              MPI_COMM_CALC, MPI_COMM_WORLD, MPISTATUS, IERROR, ME_MPI, NPROC_MPI
@@ -131,13 +132,13 @@ subroutine sitesdef()
   allocate(site_gindex(0:NPROC-1,NSITES_MAX))
   allocate(sonde_gindex(0:NPROC-1,NSONDES_MAX))
 
-  call Init_sites("sites",IO_SITES,NSITES_MAX, &
+  call Init_sites(SitesFile,IO_SITES,NSITES_MAX, &
         nglobal_sites,nlocal_sites, &
         site_gindex, site_gx, site_gy, site_gz, &
         site_x, site_y, site_z, site_gn, &
         site_name)
 
-  call Init_sites("sondes",IO_SONDES,NSONDES_MAX, &
+  call Init_sites(SondesFile,IO_SONDES,NSONDES_MAX, &
         nglobal_sondes,nlocal_sondes, &
         sonde_gindex, sonde_gx, sonde_gy, sonde_gz, &
         sonde_x, sonde_y, sonde_z, sonde_gn, &
@@ -210,7 +211,7 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
   integer           :: lev     ! vertical coordinate (20=ground)
   character(len=20) :: s       ! Name of site read in
   character(len=30) :: comment ! comment on site location
-  character(len=40) :: infile, errmsg
+  character(len=40) :: errmsg
   real              :: lat,lon
   character(len=*),parameter :: sub='SitesInit:'
 
@@ -223,13 +224,12 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
   ios = 0                      ! zero indicates no errors
   errmsg = ''
   if ( MasterProc ) then
-    infile  = fname // ".dat"
-    call check_file(infile,fexist,needed=.false.,errmsg=errmsg)
+    call check_file(fname,fexist,needed=.false.,errmsg=errmsg)
     if ( .not.fexist )then
       ios=1
     else
-      call open_file(io_num,"r",infile,needed=.true.)
-      call CheckStop(ios,"ios error on "//trim(infile))
+      call open_file(io_num,"r",fname,needed=.true.)
+      call CheckStop(ios,"ios error on "//trim(fname))
     end if
   end if
 
@@ -260,7 +260,7 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
     end if
 
     if (ioerr < 0) then
-      write(6,*) sub//" end of file after ", nin-1, infile
+      write(6,*) sub//" end of file after ", nin-1, trim(fname)
       exit SITELOOP
     end if ! ioerr
 
@@ -281,11 +281,11 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
       s_gy(n)   = iy
       s_gz(n)   = lev
 
-      if(trim(fname)=="sites")then
+      if(trim(fname)==trim(SitesFile))then
          if(lon>-990)Sites_lon(n) = lon
          if(lat>-990)Sites_lat(n) = lat
       end if
-      if(trim(fname)=="sondes")then
+      if(trim(fname)==trim(SondesFile))then
          if(lon>-990)Sondes_lon(n) = lon
          if(lat>-990)Sondes_lat(n) = lat
       end if

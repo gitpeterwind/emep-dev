@@ -91,7 +91,9 @@ use ModelConstants_ml,only: &
     USE_LIGHTNING_EMIS,USE_AIRCRAFT_EMIS,USE_ROADDUST, &
     USE_EURO_SOILNOX, USE_GLOBAL_SOILNOX, EURO_SOILNOX_DEPSCALE,&! one or the other
     USE_OCEAN_NH3,USE_OCEAN_DMS,FOUND_OCEAN_DMS,&
-    NPROC, EmisSplit_OUT,USE_uEMEP,uEMEP,SECTORS_NAME,SecEmisOutPoll
+    NPROC, EmisSplit_OUT,USE_uEMEP,uEMEP,SECTORS_NAME,SecEmisOutPoll,&
+    AircraftEmis_FLFile,nox_emission_1996_2005File,RoadMapFile,&
+    AVG_SMI_2005_2010File,NdepFile
 use MPI_Groups_ml  , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER&
                             ,MPI_SUM,MPI_COMM_CALC, IERROR
 use NetCDF_ml,        only: ReadField_CDF,ReadField_CDF_FL,ReadTimeCDF,IsCDFfractionFormat,&
@@ -759,13 +761,13 @@ subroutine Emissions(year)
       case(2);varname='nonHighwayRoadDustPM10_Jun-Feb'
       end select
       roaddust_emis_pot(:,:,:,iem)=0.0
-      call ReadField_CDF('RoadMap.nc',varname,roaddust_emis_pot(1,1,1,iem),&
+      call ReadField_CDF(RoadMapFile,varname,roaddust_emis_pot(1,1,1,iem),&
            nstart=1,interpol='mass_conservative',fractions_out=fractions,&
            CC_out=road_landcode,Ncc_out=road_nlandcode,needed=.true.,&
            debug_flag=.false.,Undef=0.0)
       if(.not.SMI_defined)then
          varname='SMI1'
-         call ReadField_CDF('AVG_SMI_2005_2010.nc',varname,SMI,nstart=1,&
+         call ReadField_CDF(AVG_SMI_2005_2010File,varname,SMI,nstart=1,&
               interpol='conservative',needed=.true.,debug_flag=.false.)
          SMI_defined=.true.
       end if
@@ -1440,7 +1442,7 @@ subroutine newmonth
     kstart=KCHEMTOP
     kend=KMAX_MID
 
-    call ReadField_CDF_FL('AircraftEmis_FL.nc','NOx',airn,&
+    call ReadField_CDF_FL(AircraftEmis_FLFile,'NOx',airn,&
          current_date%month,kstart,kend,&
          interpol='mass_conservative', needed=.true.,debug_flag=.false.)
 
@@ -1470,7 +1472,7 @@ subroutine newmonth
 
     ! read in map of annual N-deposition produced from pre-runs of EMEP model
     ! with script mkcdo.annualNdep
-    call ReadField_CDF('annualNdep.nc','Ndep_m2',AnnualNdep,1,&
+    call ReadField_CDF(NdepFile,'Ndep_m2',AnnualNdep,1,&
           interpol='zero_order',needed=.true.,debug_flag=.false.,UnDef=0.0)
 
     if(DEBUG_SOILNOX.and.debug_proc)&
@@ -1487,7 +1489,7 @@ subroutine newmonth
     nstart=(current_date%year-1996)*12 + current_date%month
     if(nstart>0.and.nstart<=120)then
       !the month is defined
-      call ReadField_CDF('nox_emission_1996-2005.nc','NOX_EMISSION',SoilNOx,&
+      call ReadField_CDF(nox_emission_1996_2005File,'NOX_EMISSION',SoilNOx,&
              nstart=nstart,interpol='conservative',known_projection="lon lat",&
              needed=.true.,debug_flag=.false.,UnDef=0.0)
       if(DEBUG_SOILNOX.and.debug_proc) &
@@ -1497,7 +1499,7 @@ subroutine newmonth
       Nyears=10 !10 years defined
       do iyr=1,Nyears 
         nstart=12*(iyr-1) + current_date%month  
-        call ReadField_CDF('nox_emission_1996-2005.nc','NOX_EMISSION',buffer,&
+        call ReadField_CDF(nox_emission_1996_2005File,'NOX_EMISSION',buffer,&
               nstart=nstart,interpol='conservative',known_projection="lon lat",&
               needed=.true.,debug_flag=.false.,UnDef=0.0)
         do j=1,ljmax 
@@ -1637,8 +1639,9 @@ subroutine newmonth
         !    will be applied to countries defined in emissions file 
 
         Reduc=e_fact(isec,:,iem) 
-        fileName='EmisFracs.nc'
-        if(EMIS_SOURCE=="Mixed") fileName=fileName_monthly!will be default in the future
+        
+        call CheckStop(EMIS_SOURCE=="Mixed", "only EMIS_SOURCE = Mixed implemented") 
+        fileName=fileName_monthly!will be default in the future
         write(varname,"(A,I2.2)")trim(EMIS_FILE(iem))//'_sec',isec
         call  ReadField_CDF(trim(fileName),varname,cdfemis(1,1),nstart=current_date%month,&
              interpol='mass_conservative',fractions_out=fractions,&

@@ -49,7 +49,8 @@ module Biogenics_ml
                            EURO_SOILNOX_DEPSCALE, & 
                            DEBUG, BVOC_USED, MasterProc, &
                            USE_EURO_SOILNOX, USE_GLOBAL_SOILNOx, &
-                           DEBUG_SOILNOX, USE_SOILNH3
+                           DEBUG_SOILNOX, USE_SOILNH3,&
+                           EMEP_EuroBVOCFile
   use NetCDF_ml,        only : ReadField_CDF, printCDF
   use OwnDataTypes_ml,  only : Deriv, TXTLEN_SHORT
 !  use Paleo_ml, only : PALEO_mlai, PALEO_miso, PALEO_mmon
@@ -265,7 +266,7 @@ module Biogenics_ml
        do iEmis = 1, size(BVOC_USED)
          varname = trim(BVOC_USED(iEmis)) // "_" // trim(VegName(iVeg))
           
-         call ReadField_CDF('EMEP_EuroBVOC.nc',varname,&
+         call ReadField_CDF(EMEP_EuroBVOCFile,varname,&
              bvocEF(:,:,ibvoc,iEmis),1,interpol='zero_order',needed=.true.,&
               debug_flag=.false.,UnDef=-999.0)
 

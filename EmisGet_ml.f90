@@ -24,8 +24,9 @@ use KeyValueTypes,    only: KeyVal
 use ModelConstants_ml,only: NPROC, TXTLEN_NAME, &
                              DEBUG,  KMAX_MID,KMAX_BND, Pref,&
                              SEAFIX_GEA_NEEDED, & ! only if emission problems over sea
-                             MasterProc,DEBUG_GETEMIS,DEBUG_ROADDUST,USE_ROADDUST&
-                             ,IIFULLDOM,JJFULLDOM, SECTORS_NAME
+                             MasterProc,DEBUG_GETEMIS,DEBUG_ROADDUST,USE_ROADDUST,&
+                             IIFULLDOM,JJFULLDOM, SECTORS_NAME, TXTLEN_FILE,&
+                             SplitSpecialsFile,SplitDefaultFile,EmisHeightsFile,femisFile
 use MPI_Groups_ml   , only : MPI_BYTE, MPI_REAL8, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_INTEGER&
                                      ,MPI_COMM_CALC, IERROR
 use NetCDF_ml, only  : ReadField_CDF  !CDF_SNAP
@@ -77,13 +78,13 @@ integer, public, dimension(NEMIS_FILE), save :: Emis_MolWt
 real, public,allocatable, dimension(:), save :: emis_masscorr
 real, public,allocatable, dimension(:), save :: roaddust_masscorr
 
-! vertical profiles for SNAP emis, read from EmisHeights.txt
+! vertical profiles for SNAP emis, read from EmisHeightsFile
 integer, public, save :: nemis_kprofile
 real, public,allocatable, dimension(:,:), save :: emis_kprofile
 real, public,allocatable, dimension(:,:), save :: emis_hprofile
 
 ! some common variables
-character(len=80), private :: fname             ! File name
+character(len=TXTLEN_FILE), private :: fname             ! File name
 character(len=80), private :: errmsg
 
 ! Import list of the emitted species we need to find in the 
@@ -571,14 +572,14 @@ READEMIS: do   ! ************* Loop over emislist files *******************
   associate ( debugm0 => ( DEBUG_GETEMIS .and. MasterProc ) )
 
   if( debugm0 ) write(*,*) "Enters femis", me
-  call open_file(IO_EMIS,"r","femis.dat",needed=.false.)
+  call open_file(IO_EMIS,"r",femisFile,needed=.false.)
 
   if ( ios == NO_FILE ) then
         ios = 0
         write( *,*) "WARNING: NO FEMIS FILE"
         return !*** if no femis file, e_fact=1 as default *** 
   end if
-  call CheckStop( ios < 0 ,"EmisGet:ios error in femis.dat")
+  call CheckStop( ios < 0 ,"EmisGet:ios error in "//trim(femisFile))
 
 
   ! Reads in the header line, e.g. name sec sox nox voc. 
@@ -641,7 +642,7 @@ end if
        if(txtinwords(1)=='lonlat')then
 !reductions defined with coordinates
           if(nwords<ncols+6)then
-             if(me==0)write(*,*)'femis.dat not understood ',nwords,ncols+5,txt
+             if(me==0)write(*,*)trim(femisFile)//' not understood ',nwords,ncols+5,txt
              call CheckStop( nwords<ncols+5 , "EmisGet: read error in femis lonlat" )
           end if
           !latmin,latmax,lonmin,lonmax
@@ -801,13 +802,13 @@ end if
    !        defines the levels where to use 2 or 3 chemical "2steps" iterations.
 
    !use old format
-   call open_file(IO_EMIS,"r","EmisHeights.txt",needed=.true.)
+   call open_file(IO_EMIS,"r",EmisHeightsFile,needed=.true.)
 
 
    do
       call read_line(IO_EMIS,txtinput,ios,'EmisHeight')
 
-      if(me==1) write(*,fmt='(A)') "read from EmisHeights.txt : " // trim(txtinput)!, ios
+      if(me==1) write(*,fmt='(A)') "read from "//trim(EmisHeightsFile)//": " // trim(txtinput)
       if ( ios <  0 ) exit     ! End of file
       if( index(txtinput,"#")>0 ) then ! Headers
          call PrintLog(trim(txtinput),MasterProc)
@@ -845,7 +846,7 @@ end if
 
    close(IO_EMIS)
 
-   !Pressure boundaries for emission levels defined in EmisHeights.txt
+   !Pressure boundaries for emission levels defined in EmisHeightsFile
    !NB in emis_P_level, k increase means higher up, i.e. smaller P (opposite as emep)
    emis_P_level(0)=Pref
 
@@ -896,7 +897,7 @@ end if
       emis_kprofile=0.0
 
       !convert height (given as pressure) distribution into model level distribution
-      !ext meaning using levels from file (EmisHeights.txt)
+      !ext meaning using levels from file (EmisHeightsFile)
       k1_ext(KMAX_BND)=0
       do isec=1,N_HFAC! could put inside but easier for debugging to put here now
          if(DEBUG_GETEMIS.and.MasterProc) write(*,*)'Sector ',isec
@@ -1047,7 +1048,7 @@ end if
 
        if ( defaults ) then
 
-          fname = trim( "emissplit.defaults." // EMIS_FILE(ie) )
+          fname = key2str(SplitDefaultFile,'POLL', EMIS_FILE(ie) )
           call open_file(IO_EMIS,"r",fname,needed=.true.)
 
           call CheckStop( ios, "EmisGet: ioserror:split.defaults " )
@@ -1055,7 +1056,7 @@ end if
        else 
     !** If specials exists, they will overwrite the defaults
 
-          fname = trim( "emissplit.specials." // EMIS_FILE(ie) )
+          fname = key2str(SplitSpecialsFile,'POLL', EMIS_FILE(ie) )
           call open_file(IO_EMIS,"r",fname,needed=.false.)
 
           if ( ios == NO_FILE ) then  

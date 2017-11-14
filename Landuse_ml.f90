@@ -515,13 +515,13 @@ contains
 
          !CHECK HERE to see if we already have this landcode:...
           lu = find_index( ewords(2), Land_codes(:) ) 
-          call CheckStop( ilu>NLANDUSEMAX , dtxt//&
-            "NLANDUSEMAX smaller than number of landuses defined in file "//&
-            trim(fname) )
           if (  lu > 0 ) then
             if ( mydbg ) write(*,*) dtxt//"Already have"//ewords(2), lu
           else
             ilu = ilu + 1
+            call CheckStop( ilu>NLANDUSEMAX , dtxt//&
+            "NLANDUSEMAX smaller than number of landuses defined in file "//&
+            trim(fname) )
             lu  = ilu  
             if ( mydbg ) write(*,*) dtxt//"Adding code"//ewords(2), ilu
             Land_codes(ilu) = ewords(2)    ! Landuse code found on file
@@ -613,6 +613,8 @@ contains
   ! Append flux vegs to Land_codes
     do iam = 1, nFluxVegs
        NLand_codes = NLand_codes + 1
+       call CheckStop( NLand_codes>NLANDUSEMAX , dtxt//&
+            " flux vegs makes NLANDUSEMAX smaller than number of landuses defined")
        Land_codes(NLand_codes) = FLUX_vegs(iam) 
        iam_index(iam) = NLand_codes
        if ( mydbg ) write(*,*) dtxt//'IAM veg:'//trim(FLUX_VEGS(iam)), &
@@ -678,6 +680,10 @@ contains
                     i_fdom(i),j_fdom(j), sumfrac, limax,  ljmax, &
                        i_fdom(1), j_fdom(1), i_fdom(limax), j_fdom(ljmax), &
                          glat(i,j), glon(i,j)
+               write(*,*)'LandCover(i,j)%ncodes ',LandCover(i,j)%ncodes
+               write(*,*)'LandCover(i,j)%codes(:) ',LandCover(i,j)%codes(1),LandCover(i,j)%codes(2:LandCover(i,j)%ncodes)
+               write(*,*)'landuse_tot(i,j) ',landuse_tot(i,j)
+               write(*,*)'landuse_glob(i,j,:) ',landuse_glob(i,j,:)
                print *, trim(errmsg)
 
                if(abs(sumfrac-1.0)<0.2.and.abs(glat(i,j))>89.0)then
