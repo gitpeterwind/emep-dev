@@ -139,6 +139,15 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16th Nov     2017  Peter
+
+GetEuroBVOC() uses hardcoded landuse (CF,DF...). If these where not defined 
+the index (ibvoc) gets negative, and values are written in a random part of memory.
+This might be the reason why the code crash when glc2000.nc was defined for both
+landuse files.
+Added if(ibvoc<0)cycle which seems to solve this problem.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 14-15th Nov     2017  Peter
 
 All files (except config) can be linked through config.

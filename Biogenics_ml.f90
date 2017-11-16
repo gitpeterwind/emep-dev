@@ -262,6 +262,7 @@ module Biogenics_ml
 
      do iVeg = 1, size(VegName)
        ibvoc = find_index( VegName(iveg), LandDefs(:)%code )
+       if( ibvoc<0 ) cycle
        HaveLocalEF(ibvoc) = .true.
        do iEmis = 1, size(BVOC_USED)
          varname = trim(BVOC_USED(iEmis)) // "_" // trim(VegName(iVeg))
