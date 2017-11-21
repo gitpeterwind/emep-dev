@@ -127,7 +127,9 @@ module DA_Obs_ml
     ! scaling factor for sigma:
     real                      :: Bsigfac    = 1.0
     ! feedback analysis to model?
-    logical                   :: feedback   = .true.
+    logical                   :: feedback        = .true.
+    !~ feedback by fine/coarse ratio?
+    logical                   :: feedback_fico   = .false.
   end type
 
   !-----------------------------------------------------------------------
@@ -250,19 +252,22 @@ module DA_Obs_ml
     ! unit conversion:
     real, allocatable                ::  unitconv(:)  ! (nspec)
     logical, allocatable             ::  unitroa(:)
-    ! add course NO3 aerosol fraction (assigned to PM25) ?
+    ! add coarse NO3 aerosol fraction (assigned to PM25) ?
     logical                          ::  with_no3c_frac
     ! add aerosol water?
     logical                          ::  with_pmwater
     ! feed back into model?
     logical                          ::  feedback
+    !~ feedback by fine/coarse ratio?
+    logical                          ::  feedback_fico
   contains
-    procedure :: Init                 => ObsCompInfo_Init
-    procedure :: Done                 => ObsCompInfo_Done
-    procedure :: Show                 => ObsCompInfo_Show
-    procedure :: FillFields           => ObsCompInfo_FillFields
-    procedure :: DistributeIncrement  => ObsCompInfo_DistributeIncrement_3d
-    procedure :: DistributeIncrement1 => ObsCompInfo_DistributeIncrement1_3d
+    procedure :: Init                   => ObsCompInfo_Init
+    procedure :: Done                   => ObsCompInfo_Done
+    procedure :: Show                   => ObsCompInfo_Show
+    procedure :: FillFields             => ObsCompInfo_FillFields
+    procedure :: DistributeIncrement    => ObsCompInfo_DistributeIncrement_3d
+    procedure :: DistributeIncrement1   => ObsCompInfo_DistributeIncrement1_3d
+    procedure :: ChangeFineCoarseRatio  => ObsCompInfo_ChangeFineCoarseRatio_3d
     !
   end type T_ObsCompInfo
   
@@ -283,7 +288,7 @@ contains
 
   
   subroutine ObsCompInfo_Init( self, name, units, deriv, Bfile, indices, status, &
-                                 with_no3c_frac, with_pmwater, feedback, Bsigfac )
+                                 with_no3c_frac, with_pmwater, feedback, feedback_fico, Bsigfac )
   
     use Units_ml        , only : Units_Scale
     use SmallUtils_ml   , only : find_index
@@ -302,6 +307,7 @@ contains
     logical, intent(in), optional       ::  with_no3c_frac
     logical, intent(in), optional       ::  with_pmwater
     logical, intent(in), optional       ::  feedback
+    logical, intent(in), optional       ::  feedback_fico
     real, intent(in), optional          ::  Bsigfac
     
     ! --- const ----------------------------
@@ -331,8 +337,11 @@ contains
     ! feed back into model?
     self%feedback = .true.
     if ( present(feedback) ) self%feedback = feedback
+    ! feed back by fine/coarse ratio?
+    self%feedback_fico = .false.
+    if ( present(feedback_fico) ) self%feedback_fico = feedback_fico
     
-    ! include fraction of course nitrate aerosol ? used for PM25:
+    ! include fraction of coarse nitrate aerosol ? used for PM25:
     self%with_no3c_frac = .false.
     if ( present(with_no3c_frac) ) self%with_no3c_frac = with_no3c_frac
 
@@ -456,9 +465,18 @@ contains
       rholab = '      '
       if ( self%unitroa(i) ) rholab = ' * rho'
       ! show:
-      write (gol,'(a,":   ",i3," ",a8," * ",es12.4,a," * ",f8.2)') rname, &
+      write (gol,'(a,":   ",i3," ",a20," * ",es12.4,a," * ",f8.2)') rname, &
                ispec, trim(species_adv(ispec)%name), self%unitconv(i), rholab, self%w(i); call goPr
     end do
+    ! aerosol water?
+    if ( self%with_pmwater ) then
+      ! dummy:
+      ispec = -99
+      rholab = '      '
+      ! extra line:
+      write (gol,'(a,":   ",i3," ",a20,"               ",a," * ",f8.2)') rname, &
+               ispec, 'PM25_water', rholab, 1.0; call goPr
+    end if
     
     ! ok
     status = 0
@@ -473,8 +491,9 @@ contains
   ! Eventually add increments too if 'dx_obs'is present.
   !
   
-  subroutine ObsCompInfo_FillFields( self, xn_adv, xn_obs_sfc, xn_obs_ml, xn_obs_units, status, &
-                                             dx_obs, maxratio )
+  subroutine ObsCompInfo_FillFields( self, xn_adv, xn_adv_units, &
+                                       xn_obs_sfc, xn_obs_ml, xn_obs_units, status, &
+                                       dx_obs, maxratio )
   
     use MetFields_ml , only : roa
     use ChemFields_ml, only : cfac
@@ -484,6 +503,7 @@ contains
     
     class(T_ObsCompInfo), intent(in)      ::  self
     real, intent(in)                      ::  xn_adv(:,:,:,:)    ! (nspec_adv,lnx,lny,nlev)
+    character(len=*), intent(in)          ::  xn_adv_units(:)    ! (nspec_adv)
     real, intent(out)                     ::  xn_obs_sfc(:,:)    ! (lnx,lny)
     real, intent(inout)                   ::  xn_obs_ml(:,:,:)   ! (lnx,lny,nlev)
     character(len=*), intent(out)         ::  xn_obs_units
@@ -525,6 +545,9 @@ contains
       ! accumulated fields:
       case ( '2D-OBS-SFC' )
       
+        ! units is the same as observations:
+        xn_obs_units = trim(self%units)
+        
         ! init sum for surface field:
         xn_obs_sfc = 0.0
         xn_obs_ml  = 0.0
@@ -536,8 +559,10 @@ contains
           xn_adv1 = xn_adv(ispec,:,:,:)
           ! add increment ?
           if ( present(dx_obs) ) then
-            call self%DistributeIncrement1( xn_adv1, ispec, xn_obs_ml__in, dx_obs, status, &
-                                                       maxratio=maxratio )
+            !  add:
+            call self%DistributeIncrement1( ispec, xn_adv1, xn_adv_units(ispec), &
+                                              xn_obs_ml__in, dx_obs, xn_obs_units, &
+                                              status, maxratio=maxratio )
             IF_NOT_OK_RETURN(status=1)
           end if
           ! include density conversion for this tracer?
@@ -578,9 +603,6 @@ contains
           xn_obs_ml  = xn_obs_ml  + PM25_water
         endif
         
-        ! units is the same as observations:
-        xn_obs_units = trim(self%units)
-        
       !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       ! For following deriv's, H will include factors etc to convert 
       ! from model units (mole/mole) to the observation unit and type:
@@ -600,12 +622,16 @@ contains
         ! current (and only) species:
         ispec = self%ispec(1)
 
+        ! native model units:
+        xn_obs_units = 'mol mol^-1'
+        
         ! copy original field:
         xn_adv1 = xn_adv(ispec,:,:,:)
         ! add increment ?
         if ( present(dx_obs) ) then
-          call self%DistributeIncrement1( xn_adv1, ispec, xn_obs_ml__in, dx_obs, status, &
-                                                     maxratio=maxratio )
+          call self%DistributeIncrement1( ispec, xn_adv1, xn_adv_units(ispec), &
+                                             xn_obs_ml__in, dx_obs, xn_obs_units, &
+                                             status, maxratio=maxratio )
           IF_NOT_OK_RETURN(status=1)
         end if
 
@@ -624,9 +650,6 @@ contains
                    trim(self%name); call goErr
           TRACEBACK; status=1; return
         endif
-        
-        ! native model units:
-        xn_obs_units = 'mol mol^-1'
         
       !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       ! not yet
@@ -658,20 +681,22 @@ contains
   ! Change xn_adv array (all tracers) given observed field (total pm?) and increment.
   !
   
-  subroutine ObsCompInfo_DistributeIncrement_3d( self, xn_adv, xn_obs, dx_obs, status, &
-                                                   maxratio )
-  
-    use MetFields_ml , only : roa
+  subroutine ObsCompInfo_DistributeIncrement_3d( self, xn_adv, xn_adv_units, &
+                                                   xn_obs, dx_obs, obs_units, status, &
+                                                   maxratio, verbose )
 
     ! --- in/out ----------------------------
     
     class(T_ObsCompInfo), intent(in)      ::  self
     real, intent(inout)                   ::  xn_adv(:,:,:,:)  ! (nspec_adv,lnx,lny,nz)
+    character(len=*), intent(in)          ::  xn_adv_units(:)  ! (nspec_adv)
     real, intent(in)                      ::  xn_obs(:,:,:)    ! (lnx,lny,nz)
     real, intent(in)                      ::  dx_obs(:,:,:)    ! (lnx,lny,nz)
+    character(len=*), intent(in)          ::  obs_units
     integer, intent(out)                  ::  status
     
     real, intent(in), optional            ::  maxratio
+    logical, intent(in), optional         ::  verbose
     
     ! --- const ----------------------------
     
@@ -680,15 +705,21 @@ contains
     ! --- local -----------------------------
     
     integer               ::  ispec_adv
+    logical               ::  verb
     
     ! --- begin -----------------------------
+    
+    ! verbose?
+    verb = .false.
+    if ( present(verbose) ) verb = verbose
     
     ! apply per advected tracer:
     do ispec_adv = 1, size(xn_adv,1)
     
       ! apply per tracer:
-      call self%DistributeIncrement1( xn_adv(ispec_adv,:,:,:), ispec_adv, xn_obs, dx_obs, status, &
-                                           maxratio=maxratio )
+      call self%DistributeIncrement1( ispec_adv, xn_adv(ispec_adv,:,:,:), xn_adv_units(ispec_adv), &
+                                           xn_obs, dx_obs, obs_units, status, &
+                                           maxratio=maxratio, verbose=verbose )
       IF_NOT_OK_RETURN(status=1)
       
     end do  ! ispec_adv
@@ -708,21 +739,25 @@ contains
   ! assimilation result is requested as post-processing only (not fed back).
   !
   
-  subroutine ObsCompInfo_DistributeIncrement1_3d( self, xn_adv1, ispec_adv, xn_obs, dx_obs, status, &
-                                                   maxratio )
+  subroutine ObsCompInfo_DistributeIncrement1_3d( self, ispec_adv, xn_adv1, xn_adv1_units, &
+                                                   xn_obs, dx_obs, obs_units, status, &
+                                                   maxratio, verbose )
   
     use MetFields_ml , only : roa
 
     ! --- in/out ----------------------------
     
     class(T_ObsCompInfo), intent(in)      ::  self
-    real, intent(inout)                   ::  xn_adv1(:,:,:)   ! (lnx,lny,nz) valid for ispec_adv
     integer, intent(in)                   ::  ispec_adv
+    real, intent(inout)                   ::  xn_adv1(:,:,:)   ! (lnx,lny,nz) valid for ispec_adv
+    character(len=*), intent(in)          ::  xn_adv1_units
     real, intent(in)                      ::  xn_obs(:,:,:)    ! (lnx,lny,nz)
     real, intent(in)                      ::  dx_obs(:,:,:)    ! (lnx,lny,nz)
+    character(len=*), intent(in)          ::  obs_units
     integer, intent(out)                  ::  status
     
     real, intent(in), optional            ::  maxratio
+    logical, intent(in), optional         ::  verbose
     
     ! --- const ----------------------------
     
@@ -733,8 +768,13 @@ contains
     real, allocatable     ::  ratio(:,:,:)
     integer               ::  i
     integer               ::  ispec
+    logical               ::  verb
     
     ! --- begin -----------------------------
+    
+    ! verbose?
+    verb = .false.
+    if ( present(verbose) ) verb = verbose
     
     ! single spec? then just add the increment:
     if ( self%nspec == 1 ) then
@@ -745,14 +785,28 @@ contains
       ispec = self%ispec(i)
       ! target?
       if ( ispec == ispec_adv ) then
+        ! testing ..
+        if ( verb ) then
+          write (gol,*) 'xxx reset tracer ', ispec, ' from ', minval(xn_adv1), ' - ', maxval(xn_adv1); call goPr
+        end if
+        ! check units ..
+        if ( trim(xn_adv1_units) /= trim(obs_units) ) then
+          write (gol,'("xn_adv units `",a,"` while obs units `",a,"`")') trim(xn_adv1_units), trim(obs_units); call goErr
+          TRACEBACK; status=1; return
+        end if
         ! add increment:
         xn_adv1 = max( 0.0, xn_adv1 + dx_obs )
+        ! testing ..
+        if ( verb ) then
+          write (gol,*) 'xxx                             to ', minval(xn_adv1), ' - ', maxval(xn_adv1); call goPr
+        end if
       end if
       
     else
     
       ! composed of sum, distribute according to ratio;
       ! note that if sum is zero, no distribution can be made ...
+      ! also no need to check units, ratio will have units 1 anyway
     
       ! loop over original species:
       do i = 1, self%nspec
@@ -774,8 +828,13 @@ contains
 
           ! maximum?
           if ( present(maxratio) ) ratio = min( ratio, maxratio )
+          
+          ! testing ..
+          if ( verb ) then
+            write (gol,*) 'xxx scale tracer ', ispec, ' with ratios ', minval(ratio), ' - ', maxval(ratio); call goPr
+          end if
 
-          ! scale:
+          ! scale
           xn_adv1 = xn_adv1 * ratio
           
           ! clear:
@@ -791,6 +850,286 @@ contains
     status = 0
     
   end subroutine ObsCompInfo_DistributeIncrement1_3d
+
+
+  ! *
+
+
+  !
+  ! Change ratio of fine/coarse aerosol in "xn_adv" 
+  ! to reach the analysed total fine part "xn_obs+dx_obs"
+  !
+  
+  subroutine ObsCompInfo_ChangeFineCoarseRatio_3d( self, xn_adv, xn_adv_units, &
+                                                     xn_obs, dx_obs, obs_units, status, &
+                                                     verbose )
+
+    use ChemGroups_ml    , only : PMFINE_GROUP, PM10_GROUP   ! requires offset NSPEC_SHL !
+    use ChemSpecs_shl_ml , only : NSPEC_SHL  ! number of short-lived tracers
+    use ChemChemicals_ml , only : species_adv
+    use Units_ml         , only : Units_Scale
+    use MetFields_ml     , only : roa
+    use Chemfields_ml    , only : PM25_water       ! (i,j,k) model levels
+    use ModelConstants_ml, only : lev3d, num_lev3d
+
+    ! --- in/out ----------------------------
+    
+    class(T_ObsCompInfo), intent(in)      ::  self
+    real, intent(inout)                   ::  xn_adv(:,:,:,:)  ! (nspec_adv,lnx,lny,nz)
+    character(len=*), intent(in)          ::  xn_adv_units(:)  ! (nspec_adv)
+    real, intent(in)                      ::  xn_obs(:,:,:)    ! (lnx,lny,nz)
+    real, intent(in)                      ::  dx_obs(:,:,:)    ! (lnx,lny,nz)
+    character(len=*), intent(in)          ::  obs_units
+    integer, intent(out)                  ::  status
+    
+    logical, intent(in), optional         ::  verbose
+    
+    ! --- const ----------------------------
+    
+    character(len=*), parameter  ::  rname = mname//'/ObsCompInfo_ChangeFineCoarseRatio_3d'
+    
+    ! --- local -----------------------------
+    
+    logical               ::  verb
+    integer               ::  nspec, lnx, lny, nz
+    real, allocatable     ::  tpm(:,:,:,:)  ! (lnx,lny,nz,2)
+    real, allocatable     ::  tpm0(:,:,:,:)  ! (lnx,lny,nz,2)
+    real, allocatable     ::  xn_ana(:,:,:)  ! (lnx,lny,nz)
+    real, allocatable     ::  fine_factor  (:,:,:)  ! (lnx,lny,nz)
+    real, allocatable     ::  coarse_factor(:,:,:)  ! (lnx,lny,nz)
+    real, allocatable     ::  w(:,:)  ! (nspec_adv,2)
+    integer               ::  ipm
+    integer, pointer      ::  out_group(:)
+    integer               ::  out_offset
+    integer               ::  ispec
+    real                  ::  fscale
+    logical               ::  needroa
+    integer               ::  k
+
+    ! --- begin -----------------------------
+    
+    ! verbose?
+    verb = .false.
+    if ( present(verbose) ) verb = verbose
+    
+    ! shape:
+    nspec = size(xn_adv,1)
+    lnx   = size(xn_adv,2)
+    lny   = size(xn_adv,3)
+    nz    = size(xn_adv,4)
+    
+    ! storage for current total fine/coarse aerosol:
+    allocate( tpm(lnx,lny,nz,2), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    allocate( tpm0(lnx,lny,nz,2), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    ! target obs:
+    allocate( xn_ana(lnx,lny,nz), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    ! storage for factors:
+    allocate( fine_factor(lnx,lny,nz), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    allocate( coarse_factor(lnx,lny,nz), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    
+    ! weights of tracers in fine and corase:
+    allocate( w(nspec,2), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    ! init with no contribution:
+    w = 0.0
+
+    ! loop over fine (=1) and coarse (=2):
+    do ipm = 1, 2
+      ! use group defined in 'ChemGroups_ml':
+      if ( ipm == 1 ) then
+        out_group => PMFINE_GROUP
+      else
+        out_group => PM10_GROUP
+      end if
+      ! offset:
+      out_offset = NSPEC_SHL
+      ! loop over group members:
+      do k = 1, size(out_group)
+        ! extract index of specie:
+        ispec = out_group(k) - out_offset
+        ! store relative weight in fine and coarse parts:
+        if ( ipm == 1 ) then
+          ! contributes to fine part:
+          w(ispec,ipm) = 1.0
+        else
+          ! only if exclusevely coarse:
+          if ( w(ispec,1) <= 0.0 ) w(ispec,ipm) = 1.0
+        end if
+      end do ! group elements
+    end do  ! total fine and coarse
+    ! add coarse nitrate fraction to fine part ;
+    ! find index of coarse nitrate:
+    ispec = find_index( 'NO3_C', species_adv(:)%name )
+    ! add 27% of weight to fine, remainder to coarse:
+    w(ispec,1) = 0.27
+    w(ispec,2) = 1.0 - w(ispec,1)
+    
+    !! info ...
+    !write (gol,*) 'rrr weights: '; call goPr
+    !do ispec = 1, nspec
+    !  if ( any(w(ispec,:) > 0.0) ) then
+    !    write (gol,'("rrr ",2f8.2," ",a)') w(ispec,:), trim(species_adv(ispec)%name); call goPr
+    !  end if
+    !end do
+
+    ! init sums:
+    tpm = 0.0
+    ! loop over fine (=1) and coarse (=2):
+    do ipm = 1, 2
+      ! loop over species:
+      do ispec = 1, nspec
+        ! skip if no contribution:
+        if ( w(ispec,ipm) <= 0.0 ) cycle
+        ! info on conversion to target units:
+#ifdef with_ajs
+        call Units_Scale( obs_units, ispec, fscale, &
+                                 needroa=needroa, status=status )
+        IF_NOT_OK_RETURN(status=1)
+#else
+        call Units_Scale( obs_units, ispec, fscale, &
+                                 needroa=needroa )
+#endif
+        !! testing ...
+        !write (gol,*) 'qqq ', ipm, ' ', obs_units, ispec, ' ', trim(species_adv(ispec)%name), fscale, needroa; call goPr
+        ! convert using air density?
+        if ( needroa ) then
+          ! add contribution, multiply with air density:
+          tpm(:,:,:,ipm) = tpm(:,:,:,ipm) + &
+                             xn_adv(ispec,:,:,lev3d(:num_lev3d)) * w(ispec,ipm) &
+                             * fscale &
+                             * roa(:,:,lev3d(:num_lev3d),1)
+        else
+          ! add contribution:
+          tpm(:,:,:,ipm) = tpm(:,:,:,ipm) + &
+                             xn_adv(ispec,:,:,lev3d(:num_lev3d)) * w(ispec,ipm) &
+                             * fscale
+        end if
+      end do  ! spec
+      ! add 3D aersosol water to fine fraction:
+      if ( ipm == 1 ) then
+        tpm(:,:,:,ipm) = tpm(:,:,:,ipm) + PM25_water
+      end if
+    end do  ! total fine and coarse
+    
+    ! testing ..
+    write (gol,*) 'ppp0 tpm = ', tpm(100,100,nz,:); call goPr
+    
+    ! analyzed total pm25:  xn_obs + dx_obs
+    ! in theory this could not exceed total pm10,
+    ! but total pm10 was analyzed independently and sometimes
+    ! obserations are found with pm25 > pm10 ;
+    ! limit the analyzed field to the current total 
+    ! (which should remain unchanged in this update):
+    xn_ana = max( xn_obs + dx_obs, tpm(:,:,:,1)+tpm(:,:,:,2) )
+    
+    ! testing ..
+    write (gol,*) 'ppp0 xn_ana = ', xn_ana(100,100,nz); call goPr
+    
+    ! scale factor to bring fine fraction to observations ;
+    ! analyzed tpm25 (xn_obs+dx_obs) should not exceed tpm10 in theory,
+    ! but it might be possible dus to inconsistent observations;
+    ! any fine pm?
+    where ( tpm(:,:,:,1) > 0.0 )
+      ! fine pm present, scale:
+      fine_factor = xn_ana / tpm(:,:,:,1)
+    elsewhere
+      ! no fine pm present, dummy factor:
+      fine_factor = 1.0
+    end where
+    
+    ! scale factor to bring coarse fraction in agreement with analyzed fine fraction;
+    ! any coarse pm?
+    where ( tpm(:,:,:,2) > 0.0 )
+      ! coarse pm present, scale:
+      !               ( (  fine      +    coarse  ) - fine_ana ) /   coarse
+      coarse_factor = ( tpm(:,:,:,1) + tpm(:,:,:,2) -  xn_ana  ) / tpm(:,:,:,2)
+    elsewhere
+      ! no coarse pm present, dummy:
+      coarse_factor = 1.0
+    end where
+    
+    ! info ..
+    write (gol,*) 'ppp2 fine   factor = ', fine_factor  (100,100,nz); call goPr
+    write (gol,*) 'ppp2 coarse factor = ', coarse_factor(100,100,nz); call goPr
+
+    ! apply factors:
+    do ispec = 1, nspec
+      ! skip if no contribution:
+      if ( all(w(ispec,:) <= 0.0) ) cycle
+      ! apply factors ; for most species either w(1) or w(2) is zero,
+      ! only coarse nitrate contributes both to total fine and total coarse:
+      xn_adv(ispec,:,:,:) = xn_adv(ispec,:,:,:) * ( w(ispec,1) * fine_factor + w(ispec,2) * coarse_factor )
+    end do
+    ! ADHOC: also apply (fine) factor to aersol water;
+    ! water content should be recomputed after changing the aerosol load ...
+    PM25_water = PM25_water * fine_factor
+    
+    ! save:
+    tpm0 = tpm
+    ! init sums:
+    tpm = 0.0
+    ! loop over fine (=1) and coarse (=2):
+    do ipm = 1, 2
+      ! loop over species:
+      do ispec = 1, nspec
+        ! skip if no contribution:
+        if ( w(ispec,ipm) <= 0.0 ) cycle
+        ! info on conversion to target units:
+#ifdef with_ajs
+        call Units_Scale( obs_units, ispec, fscale, &
+                                 needroa=needroa, status=status )
+        IF_NOT_OK_RETURN(status=1)
+#else
+        call Units_Scale( obs_units, ispec, fscale, &
+                                 needroa=needroa )
+#endif
+        !! testing ...
+        !write (gol,*) 'qqq ', ipm, ' ', obs_units, ispec, ' ', trim(species_adv(ispec)%name), fscale, needroa; call goPr
+        ! convert using air density?
+        if ( needroa ) then
+          ! add contribution, multiply with air density:
+          tpm(:,:,:,ipm) = tpm(:,:,:,ipm) + &
+                             xn_adv(ispec,:,:,lev3d(:num_lev3d)) * w(ispec,ipm) &
+                             * fscale &
+                             * roa(:,:,lev3d(:num_lev3d),1)
+        else
+          ! add contribution:
+          tpm(:,:,:,ipm) = tpm(:,:,:,ipm) + &
+                             xn_adv(ispec,:,:,lev3d(:num_lev3d)) * w(ispec,ipm) &
+                             * fscale
+        end if
+      end do  ! spec
+      ! add 3D aersosol water ;
+      ! this should be re-computed after changing the aerosol components:
+      tpm(:,:,:,ipm) = tpm(:,:,:,ipm) + PM25_water
+    end do  ! total fine and coarse
+    
+    ! testing ..
+    write (gol,*) 'ppp3 tpm = ', tpm(100,100,nz,:); call goPr
+    
+    ! clear:
+    deallocate( tpm, stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    deallocate( tpm0, stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    deallocate( xn_ana, stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    deallocate( fine_factor, stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    deallocate( coarse_factor, stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    deallocate( w, stat=status )
+    IF_NOT_OK_RETURN(status=1)
+
+    ! ok
+    status = 0
+    
+  end subroutine ObsCompInfo_ChangeFineCoarseRatio_3d
 
 
 
@@ -833,6 +1172,7 @@ contains
     character(len=1024) ::  ObsBfile(nObsDataMax)
     real                ::  Bsigfac(nObsDataMax)
     logical             ::  ObsFeedback(nObsDataMax)
+    logical             ::  ObsFeedbackFico(nObsDataMax)
     integer             ::  iObsComp
     integer             ::  i
 
@@ -958,12 +1298,13 @@ contains
         ! increase counter:
         nObsComp = nObsComp + 1
         ! store name etc:
-        ObsComp    (nObsComp) = trim(obsData(iObsData)%name)
-        ObsType    (nObsComp) = trim(obsData(iObsData)%deriv)
-        ObsBfile   (nObsComp) = trim(obsData(iObsData)%Bfile)
-        ObsBUnit   (nObsComp) = trim(obsData(iObsData)%Bunit)
-        Bsigfac    (nObsComp) = obsData(iObsData)%Bsigfac
-        ObsFeedback(nObsComp) = obsData(iObsData)%feedback
+        ObsComp        (nObsComp) = trim(obsData(iObsData)%name)
+        ObsType        (nObsComp) = trim(obsData(iObsData)%deriv)
+        ObsBfile       (nObsComp) = trim(obsData(iObsData)%Bfile)
+        ObsBUnit       (nObsComp) = trim(obsData(iObsData)%Bunit)
+        Bsigfac        (nObsComp) = obsData(iObsData)%Bsigfac
+        ObsFeedback    (nObsComp) = obsData(iObsData)%feedback
+        ObsFeedbackFiCo(nObsComp) = obsData(iObsData)%feedback_fico
         ! set index:
         iObsComp = nObsComp
       end if
@@ -1031,7 +1372,8 @@ contains
                                            PMFINE_GROUP-NSPEC_SHL, status, &
                                            Bsigfac=Bsigfac(iObsComp), &
                                            with_no3c_frac=.true., with_pmwater=.true., &
-                                           feedback=ObsFeedback(iObsComp) )
+                                           feedback=ObsFeedback(iObsComp), &
+                                           feedback_fico=ObsFeedbackFiCo(iObsComp) )
           IF_NOT_OK_RETURN(status=1)
           !
         !~ total coarse pm:
@@ -1044,7 +1386,8 @@ contains
                                            PM10_GROUP-NSPEC_SHL, status, &
                                            Bsigfac=Bsigfac(iObsComp), &
                                            with_pmwater=.true., &
-                                           feedback=ObsFeedback(iObsComp) )
+                                           feedback=ObsFeedback(iObsComp), &
+                                           feedback_fico=ObsFeedbackFiCo(iObsComp) )
           IF_NOT_OK_RETURN(status=1)
           !
         !~ expected a single model species ...
@@ -1061,7 +1404,8 @@ contains
                                            trim(ObsType(iObsComp)), trim(ObsBfile(iObsComp)), &
                                            (/ispec/), status, &
                                            Bsigfac=Bsigfac(iObsComp), &
-                                           feedback=ObsFeedback(iObsComp) )
+                                           feedback=ObsFeedback(iObsComp), &
+                                           feedback_fico=ObsFeedbackFiCo(iObsComp) )
           IF_NOT_OK_RETURN(status=1)
       end select
       ! info ...
@@ -1429,6 +1773,9 @@ contains
     ! --- const ----------------------------
 
     character(len=*), parameter  ::  rname = mname//'/ObsError_List_ReadFiles'
+    
+    ! default station code (median value for suburban type):
+    character(len=*), parameter  ::  scode0 = 'XX9999S'
 
     ! --- local -----------------------------
     
@@ -1438,8 +1785,10 @@ contains
 
     ! --- begin -----------------------------
 
-    ! search in existing records:
+    ! search in existing records;
+    ! init target index:
     irec = -999
+    ! loop over records:
     do i = 1, self%n
       ! match?
       if ( trim(self%scode(i)) == trim(scode) ) then
@@ -1447,11 +1796,32 @@ contains
         irec = i
         ! leave:
         exit
-      end if
-    end do ! existing records
+      end if ! match
+    end do ! records
+
+    ! not found? try default for station type "suburban" ...
+    if ( irec < 0 ) then
+      ! init target index:
+      irec = -999
+      ! loop over records:
+      do i = 1, self%n
+        ! match?
+        if ( trim(self%scode(i)) == trim(scode0) ) then
+          ! info ...
+          write (gol,'("WARNING - station code `",a,"` not found in obserr records, use default `",a,"`")') &
+                        trim(scode), trim(scode0); call goErr
+          ! store record:
+          irec = i
+          ! leave:
+          exit
+        end if
+      end do ! records
+    end if  ! station code not found
+
     ! check:
     if ( irec < 0 ) then
-      write (gol,'("station code `",a,"` not found in records")') trim(scode); call goErr
+      write (gol,'("station code `",a,"` nor default `",a,"` found in records")') &
+                        trim(scode), trim(scode0); call goErr
       TRACEBACK; status=1; return
     end if
     
@@ -2601,8 +2971,8 @@ contains
           if ( tab_tot(iobscomp,ilevtype,1) > 0 ) then
             write (gol,'("number of analyzed ",a6," ",a10," observations: ",i6)') &
                               trim(ObsCompInfo(iobscomp)%name), &
-                              trim(LEVTYPE_NAME(ilevtype)), tab_tot(iobscomp,ilevtype,1)
-            call PrintLog(gol)
+                              trim(LEVTYPE_NAME(ilevtype)), tab_tot(iobscomp,ilevtype,1); call goPr
+            !call PrintLog(gol)
           end if  ! any obs
         end if  ! master
       end do ! levtype
@@ -4043,19 +4413,19 @@ contains
 
     end do  ! data sets
 
-!   ! Write #obs to log file
-!   if ( MasterProc ) then
-!     do nd = 1, nobsData
-!       file = date2string(obsData(nd)%file,current_date)
-!       no = max(obsData(nd)%iobs(1)-obsData(nd)%iobs(0)+1,0)
-!       write (damsg,"('obsData(',I0,') contains ',I0,3(1X,A))") &
-!           nd, no, trim(obsData(nd)%name), &
-!           trim(obsData(nd)%deriv), "observations"
-!       write (damsg,dafmt) trim(damsg)
-!       call PrintLog(damsg)
-!       call PrintLog(file)
-!     end do
-!   end if
+    ! Write #obs to log file
+    if ( MasterProc ) then
+      do nd = 1, nobsData
+        file = date2string(obsData(nd)%file,current_date)
+        no = max(obsData(nd)%iobs(1)-obsData(nd)%iobs(0)+1,0)
+        write (damsg,"('obsData(',I0,') contains ',I0,3(1X,A))") &
+            nd, no, trim(obsData(nd)%name), &
+            trim(obsData(nd)%deriv), "observations"
+        write (damsg,dafmt) trim(damsg)
+        call PrintLog(damsg)
+        call PrintLog(file)
+      end do
+    end if
     
     ! ok
     status = 0

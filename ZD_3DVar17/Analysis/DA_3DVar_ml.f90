@@ -1021,7 +1021,7 @@ contains
         !!     x,y,z,s                     s     ,    x  ,   y   ,          z
         !xn_an(:,:,:,iObsComp) = xn_adv(varSpec(iObsComp),1:limax,1:ljmax,KMAX_MID-nlev+1:KMAX_MID)
         ! weighted sum:
-        call ObsCompInfo(iObsComp)%FillFields( xn_adv, &
+        call ObsCompInfo(iObsComp)%FillFields( xn_adv, xn_adv_units, &
                     sf_an(:,:,iObsComp), xn_an(:,:,:,iObsComp), xn_obs_units(iObsComp), &
                     status )
         IF_NOT_OK_RETURN(status=1)
@@ -1383,7 +1383,7 @@ contains
 
         ! simulate observed components (surface and 3D)
         ! from xn_adv (first guess) plus increments (and also xn_an if relative change is needed):
-        call ObsCompInfo(iObsComp)%FillFields( xn_adv, &
+        call ObsCompInfo(iObsComp)%FillFields( xn_adv, xn_adv_units, &
                     sf_an(:,:,iObsComp), xn_an(:,:,:,iObsComp), xn_obs_units(iObsComp), status, &
                     dx_obs=dx_an(:,:,:,iObsComp) )
         IF_NOT_OK_RETURN(status=1)
@@ -1392,17 +1392,30 @@ contains
         if ( ObsCompInfo(iObsComp)%feedback ) then
           ! info ...
           write (gol,'(a,":   feedback ",a," ...")') rname, trim(ObsCompInfo(iObsComp)%name); call goPr
-          ! distribute increment over original species:
-          call ObsCompInfo(iObsComp)%DistributeIncrement( xn_adv, &
-                        xn_an(:,:,:,iObsComp), dx_an(:,:,:,iObsComp), status, &
-                        maxratio=ANALYSIS_RELINC_MAX )
-          IF_NOT_OK_RETURN(status=1)
+          ! change fine/coarse ratio's?
+          if ( ObsCompInfo(iObsComp)%feedback_fico ) then
+            ! info ..
+            write (gol,'(a,"     change fine/coarse ratios ...")') rname; call goPr
+            ! analyzed total fine-pm is "xn_an+dx_an" ;
+            ! change fine/coarse ratio in "xn_adv" towards to this total,
+            ! but do not change the total fine+coarse:
+            call ObsCompInfo(iObsComp)%ChangeFineCoarseRatio( xn_adv, xn_adv_units, &
+                          xn_an(:,:,:,iObsComp), dx_an(:,:,:,iObsComp), xn_obs_units(iObsComp), &
+                          status, verbose=.true. )
+            IF_NOT_OK_RETURN(status=1)
+          else
+            ! distribute increment over original species:
+            call ObsCompInfo(iObsComp)%DistributeIncrement( xn_adv, xn_adv_units, &
+                          xn_an(:,:,:,iObsComp), dx_an(:,:,:,iObsComp), xn_obs_units(iObsComp), &
+                          status, maxratio=ANALYSIS_RELINC_MAX, verbose=.true. )
+            IF_NOT_OK_RETURN(status=1)
+          end if
         else
           ! info ...
           write (gol,'(a,":   do not feedback ",a," (yet) ...")') rname, trim(ObsCompInfo(iObsComp)%name); call goPr
         end if
 
-      end do
+      end do  ! analyzed components
 
 
       ! analysed output
@@ -1679,7 +1692,7 @@ contains
       if ( trim(f_3d(iout)%class   ) /= 'USET'         ) cycle
       if ( trim(f_3d(iout)%subclass) /= trim(subclass) ) cycle
       ! set list of contributing species:
-      select case ( trim(f_2d(iout)%txt) )
+      select case ( trim(f_3d(iout)%txt) )
         !~ total fine pm:
         case ( 'PM25' )
           ! use group defined in 'ChemGroups_ml':
@@ -1699,7 +1712,7 @@ contains
         !~ expected a single model species ...
         case default
           ! find index:
-          out_group1(1) = find_index( trim(f_2d(iout)%txt), species_adv(:)%name )
+          out_group1(1) = find_index( trim(f_3d(iout)%txt), species_adv(:)%name )
           ! assign:
           out_group => out_group1
           ! no offset:
@@ -1740,7 +1753,7 @@ contains
       end do  ! spec
       ! add aerosol water?
       if ( addwater ) then
-        ! add surface aersosol water:
+        ! add 3D aersosol water:
         d_3d(iout,:,:,:,IOU_INST) = d_3d(iout,:,:,:,IOU_INST) + PM25_water
       end if ! add water
     end do  ! 3D output fields
@@ -2301,8 +2314,7 @@ contains
 
     ! info ...
     if ( MasterProc ) then
-      write (damsg,*) Jcost0, '-->', Jcost, '=', (1.0-Jcost/Jcost0)*100
-      print dafmt,'Cost function '//trim(ADJUSTL(damsg))//'% Reduction'
+      write (gol,*) 'Cost function ', Jcost0, '-->', Jcost, '=', (1.0-Jcost/Jcost0)*100, '% Reduction'; call goPr
     end if
 
 #ifdef with_ajs
@@ -3181,7 +3193,9 @@ contains
     subroutine my_deallocate(verb,msg)
       logical, intent(in)           ::  verb
       character(len=*), intent(in)  ::  msg
-      if (verb) print dafmt,msg
+      if (verb) then
+        write (gol,'(a)') trim(msg); call goPr
+      end if
       if ( allocated(chi_hc        ) ) deallocate( chi_hc         )
       if ( allocated(hcn_local     ) ) deallocate( hcn_local      )
       if ( allocated(yn            ) ) deallocate( yn             )
