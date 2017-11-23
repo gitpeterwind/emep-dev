@@ -919,7 +919,20 @@ subroutine Getgridparams(LIMAX,LJMAX,filename,cyclicgrid)
       if(glon(i,j)<glmin)glon(i,j)=glon(i,j)+360.0
     end do
   end do
-  
+
+  if(projection=='lon lat')then
+     !we require the longitudes to increase if i increases
+     if(glon(1,1)>glon(limax,1))then
+        write(*,*)'WARNING: shifting longitudes by 360 deg for processor ',me,&
+             ' lon was from ', glon(1,1),'to ',glon(limax,1)
+        do j=1,LJMAX
+           do i=1,LIMAX
+              if(glon(i,j)<glon(1,j))glon(i,j)=glon(i,j)+360.0
+           end do
+        end do
+     endif
+  endif
+
   ! map factors
   status=nf90_inq_varid(ncid=ncFileID, name="map_factor", varID=varID)
   

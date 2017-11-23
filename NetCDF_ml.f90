@@ -2821,6 +2821,11 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      !inverse of resolution
      dRloni=1.0/(Rlon(2)-Rlon(1))
      dRlati=1.0/(Rlat(2)-Rlat(1))
+     
+     !not likely to happen, but check. Quick fix: change number of procs
+     call CheckStop(abs(Rlon(2)-Rlon(1))>180.0,&
+          "longitude error: crossing of -180 not implemented. file "//trim(fileName))
+     
 
      Grid_resolution = EARTH_RADIUS*abs(Rlat(2)-Rlat(1))*PI/180.0
      Grid_resolution_lon = EARTH_RADIUS*abs(Rlon(2)-Rlon(1))*PI/180.0!NB: varies with latitude

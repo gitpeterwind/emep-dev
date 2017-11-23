@@ -1,5 +1,5 @@
-##!/home/mifapw/anaconda3/envs/conda_python3_netcdf4_pyqt5_hdf4/bin/python3
-#!/usr/bin/python3
+#!/home/mifapw/anaconda3/envs/conda_python3_netcdf4_pyqt5_hdf4/bin/python3
+##!/usr/bin/python3
 
 # Written by Johan S. Wind April 2017
 # Modified by Peter Wind June 2017

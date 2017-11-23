@@ -139,6 +139,16 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+23rd Nov     2017  Peter, Massimo
+
+There was a bug when the lon lat grid is defined in such a way that the transition
+from negative to positive longitudes is on the same processor. 
+This does never happen if the grid starts at -180, such as our GLOBAL or GLOBAL05 grids.
+The model could then crash in the landuse (explains Massimo's issue).
+
+Also changed the lib path in utils/uEMEP_GUI.py , so that it works on Stallo.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16th Nov     2017  Peter
 
 GetEuroBVOC() uses hardcoded landuse (CF,DF...). If these where not defined 
