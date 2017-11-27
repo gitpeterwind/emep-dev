@@ -1167,6 +1167,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
             if(wday_loc>7 )wday_loc=1 
           end if
           call CheckStop(hour_iland<1,"ERROR: HOUR Zero in EmisSet")
+          call CheckStop(hour_iland>24,"ERROR: HOUR >24 in EmisSet")
           if(debug_tfac) then 
           write(*,"(a,i4,2i3,i5,2i4,3x,4i3)") "EmisSet DAYS times ", daynumber, &
             wday, wday_loc, iland, daytime_longitude, daytime_iland,&
@@ -1640,7 +1641,9 @@ subroutine newmonth
 
         Reduc=e_fact(isec,:,iem) 
         
-        call CheckStop(EMIS_SOURCE=="Mixed", "only EMIS_SOURCE = Mixed implemented") 
+        call CheckStop(EMIS_SOURCE/="Mixed", &
+           trim(EMIS_SOURCE)// " ??; only EMIS_SOURCE = Mixed implemented") 
+
         fileName=fileName_monthly!will be default in the future
         write(varname,"(A,I2.2)")trim(EMIS_FILE(iem))//'_sec',isec
         call  ReadField_CDF(trim(fileName),varname,cdfemis(1,1),nstart=current_date%month,&
