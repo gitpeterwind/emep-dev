@@ -139,6 +139,14 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+27th Nov     2017  Dave
+
+Country_ml
+   Fixed --100 to -100 for HT1015   ! BUG!!
+   More length to country name
+   Extra tests in self_test
+   
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23rd Nov     2017  Peter, Massimo
 
 There was a bug when the lon lat grid is defined in such a way that the transition
