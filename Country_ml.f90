@@ -60,7 +60,7 @@ module Country_ml
      integer           :: timefac_index ! Country code to use for timefactors
      integer           :: timefac_index_hourly !  Country code to use for hourly timefactors
      integer           :: timezone      ! timezone, deviation from UTC time
-     character(len=30) :: name          ! name of country/region
+     character(len=60) :: name          ! name of country/region
   end type cc
 
   type(cc), public, save, dimension(MAXNLAND) :: Country
