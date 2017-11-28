@@ -139,6 +139,14 @@ info on unused variables, etc.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+28th Nov     2017  Dave
+
+ChemFunctions_ml
+  Now allows any number in Gamma:xxxx for N2O5 hydrolysis (instead of SmixC
+   etc). For example, with Gamma:0.02 we derive the numerical value, gFix=0.02,
+   from this string
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 27th Nov     2017  Dave
 
 Country_ml
