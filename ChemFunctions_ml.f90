@@ -336,13 +336,16 @@ module ChemFunctions_ml
 
   function HydrolysisN2O5(ormethod) result(rate) 
    character(len=*), intent(in) , optional:: ormethod ! overrides default method if wanted
-   character(len=30) :: method
+   character(len=30), save :: method
    real, dimension(K1:K2) :: rate
    real    :: rc
    real    :: f   ! Was f_Riemer
    real    :: gam, S,  S_ss, S_du, Rwet  ! for newer methods
    real, save :: g1 = 0.02, g2=0.002 ! gammas for 100% SO4, 100% NO3, default
-   real, save :: gFix  ! for Gamma:xxxx values
+  ! fixed-value gammas can be specified with e.g. Gamma:0.02. We derive
+  ! the numerical value, gFix, from this string
+   real, save :: gFix= -999.         ! fixed-value, from Gamma:xxxx values
+   character(len=20) :: gtxt         ! for Gamma:xxxx values
    real, parameter :: EPSIL = 1.0  ! One mol/cm3 to stop div by zero
    integer :: k
    real :: xNO3  ! As the partitioning between fine and coarse is so difficult
@@ -350,14 +353,14 @@ module ChemFunctions_ml
    logical, save :: first_call = .true.
 
 
-   method = USES%n2o5HydrolysisMethod
-   if ( present(ormethod) )then
-     method = ormethod
-   end if
-   if( first_call .and. method(1:6)=="Gamma:"  ) then
-       gFix = 0.002
-       if( method == "Gamma:0.05" ) gFix = 0.05
-       if( method == "Gamma:0.005" ) gFix = 0.005
+   if( first_call ) then
+     method = USES%n2o5HydrolysisMethod
+     if ( present(ormethod) ) method = ormethod  ! WHEN is this used?
+     if( method(1:6)=="Gamma:"  ) then
+       gtxt=method(7:)
+       read(gtxt,*) gFix
+       method='gFixed'
+      end if
    end if
 
    select case ( method )
@@ -477,7 +480,8 @@ module ChemFunctions_ml
          rate(k) = 0.0
       end if
     end do ! k
-    case ( "Gamma:0.002", "Gamma:0.05", "Gamma:0.005")  ! Inspired by Brown et al. 2009
+    !case ( "Gamma:0.002", "Gamma:0.05", "Gamma:0.005")  ! Inspired by Brown et al. 2009
+    case ( "gFixed")  !  Fixed gammas
      do k = K1, K2
 
        if ( rh(k)  > 0.4) then ! QUERY???
