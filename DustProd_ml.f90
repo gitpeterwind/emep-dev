@@ -40,7 +40,7 @@
                                   clay_frac, sand_frac,                   & 
                                   pwp, fc, SoilWaterSource
  use ModelConstants_ml,    only : KMAX_MID, KMAX_BND, dt_advec, METSTEP, &
-                                  NPROC, MasterProc, USE_DUST, DEBUG_DUST
+                                  NPROC, MasterProc, USES, DEBUG_DUST
  use MicroMet_ml,          only : Wind_at_h
  use Par_ml,               only : me,LIMAX,LJMAX
  use Par_ml,               only : limax, ljmax ! Debugging 
@@ -103,7 +103,7 @@
    integer :: nlu, ilu, lu
 
 !_______________________________________________________
-    if ( USE_DUST .eqv. .false. ) then
+    if ( USES%DUST .eqv. .false. ) then
         call PrintLog("Skipping soil dust")
         return
     end if
