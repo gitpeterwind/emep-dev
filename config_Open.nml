@@ -23,11 +23,11 @@
   USES%PFT_MAPS         = F,         ! PFT LAI tests
   USES%n2o5HydrolysisMethod = "Gamma:0.002" ! EmepRiemer=ACP2012 EMEP implementation
 !------------------------------
-  USE_SOILWATER         = T,          ! Uses SMI from meteo data
-  USE_CONVECTION        = F,
+  USES%SOILWATER         = T,          ! Uses SMI from meteo data
+  USES%CONVECTION        = F,
   USE_SEASALT           = T,
-  USE_AIRCRAFT_EMIS     = T,          ! Needs global file, see manual
-  USE_LIGHTNING_EMIS    = T,
+  USES%AIRCRAFT_EMIS     = T,          ! Needs global file, see manual
+  USES%LIGHTNING_EMIS    = T,
 !------------------------------
   USE_EURO_SOILNOX      = T,          ! diff for global + Euro runs
   EURO_SOILNOX_DEPSCALE = 1.0,        ! Scale, default 1  (see ModelConstants_ml)
