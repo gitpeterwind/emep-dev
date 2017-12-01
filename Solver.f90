@@ -35,7 +35,7 @@
     use GridValues_ml,     only : GRIDWIDTH_M, i_fdom, j_fdom
     use Io_ml,             only : IO_LOG, datewrite
     use ModelConstants_ml, only: KMAX_MID, KCHEMTOP, dt_advec,dt_advec_inv, &
-                                 DebugCell, MasterProc, DEBUG, USE_SEASALT
+                                 DebugCell, MasterProc, DEBUG, USES
     use Par_ml,            only: me, LIMAX, LJMAX
     use PhysicalConstants_ml, only:  RGAS_J
     use Precision_ml, only:  dp
