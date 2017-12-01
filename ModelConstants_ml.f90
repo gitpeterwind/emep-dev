@@ -47,9 +47,14 @@ type, public :: emep_useconfig
   logical :: &                   ! Forest fire options
      FOREST_FIRES     = .true.  &!
     ,SOILWATER        = .false. &!
+    ,SEASALT          = .true.  &!
     ,CONVECTION       = .false. &! false works best for Euro runs
     ,AIRCRAFT_EMIS    = .true.  &! Needs global file, see manual 
     ,LIGHTNING_EMIS   = .true.  &! 
+    ,ROADDUST         = .false. &! TNO Road Dust routine. So far with simplified "climate-correction" factor
+    ,DUST             = .false. &! Experimental
+    ,EURO_SOILNOX = .true.  &! ok, but diff for global + Euro runs
+    ,GLOBAL_SOILNOX=.false. &! Need to design better switch
     ,SURF_AREA        = .true.  &! For improved aerosol uptake
     ,MACEHEADFIX      = .true.  &! Correction to O3 BCs (Mace Head Obs.)
     ,MACEHEAD_AVG     = .false. &! Uses 10-year avg. Good for e.g. RCA runs.
@@ -172,7 +177,7 @@ real, public, save :: CONVECTION_FACTOR = 1.0
 logical, public, save ::             &
   FORECAST              = .false.    & ! reset in namelist
 ! ,USE_SOILWATER         = .false.    &
- ,USE_SEASALT           = .true.     &
+! ,USE_SEASALT           = .true.     &
 ! ,USE_CONVECTION        = .false.    & ! false works best for Euro runs,
 !
 ! Might sometimes change for scenario runs (e.g. EnsClim):
@@ -180,8 +185,8 @@ logical, public, save ::             &
 ! ,USE_LIGHTNING_EMIS = .true.        &
 !
 ! More experimental:
- ,USE_ROADDUST       = .false.       & ! TNO Road Dust routine. So far with simplified "climate-correction" factor
- ,USE_DUST           = .false.       & ! Experimental
+! ,USE_ROADDUST       = .false.       & ! TNO Road Dust routine. So far with simplified "climate-correction" factor
+! ,USE_DUST           = .false.       & ! Experimental
  ,TEGEN_DATA         = .true.        & ! Interpolate global data to make dust if  USE_DUST=.true.
  ,INERIS_SNAP1       = .false.       & !(EXP_NAME=="TFMM"), & ! Switches off decadal trend
  ,INERIS_SNAP2       = .false.       & !(EXP_NAME=="TFMM"), & ! Allows near-zero summer values
@@ -219,9 +224,9 @@ integer, public, save :: &
 ! Remember, soil-NO emissions are *very* uncertain.
 
   logical, public, save ::             &
-    USE_EURO_SOILNOX      = .true.     & ! ok, but diff for global + Euro runs
-   ,USE_GLOBAL_SOILNOX    = .false.    & ! Need to design better switch
-   ,USE_SOILNOX           = .true.       ! DO NOT ALTER: Set after config
+!    USE_EURO_SOILNOX      = .true.     & ! ok, but diff for global + Euro runs
+!   ,USE_GLOBAL_SOILNOX    = .false.    & ! Need to design better switch
+   USE_SOILNOX           = .true.       ! DO NOT ALTER: Set after config
   real, public, save :: EURO_SOILNOX_DEPSCALE = 1.0 !
 
 !NB: *OCEAN*  are internal variables. Cannot be set manually.
@@ -605,10 +610,9 @@ subroutine Config_ModelConstants(iolog)
    ,AERO   & ! Aerosol settings
    ,DEBUG  & !
    ,MY_OUTPUTS  &  ! e.g. EMEPSTD, FORECAST, TFMM
-   , CONVECTION_FACTOR &
-   , USE_ROADDUST, USE_DUST &
-   ,USE_EURO_SOILNOX, USE_GLOBAL_SOILNOX, EURO_SOILNOX_DEPSCALE &
-   ,USE_SEASALT, USE_POLLEN, USE_ASH, USE_NOCHEM, USE_AOD,USE_PreADV &
+   ,CONVECTION_FACTOR &
+   , EURO_SOILNOX_DEPSCALE &
+   ,USE_POLLEN, USE_ASH, USE_NOCHEM, USE_AOD,USE_PreADV &
    ,USE_uEMEP, uEMEP &
    ,INERIS_SNAP1, INERIS_SNAP2 &   ! Used for TFMM time-factors
    ,SELECT_LEVELS_HOURLY, FREQ_HOURLY  & ! incl. FORECAST, 3DPROFILES
@@ -663,7 +667,7 @@ subroutine Config_ModelConstants(iolog)
   read(IO_NML,NML=ModelConstants_config)
   ! do not close(IO_NML), other modules will be read namelist on this file
 
-  USE_SOILNOX = USE_EURO_SOILNOX .or. USE_GLOBAL_SOILNOx
+  USE_SOILNOX = USES%EURO_SOILNOX .or. USES%GLOBAL_SOILNOx
 
   ! Convert DEBUG%SPEC to index
   if(first_call)then
