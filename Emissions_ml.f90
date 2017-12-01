@@ -88,8 +88,7 @@ use ModelConstants_ml,only: &
     DEBUG_SOILNOX, DEBUG_EMISTIMEFACS, DEBUG_ROADDUST, &
     USES,  &  ! Gives USES%EMISSTACKS, DEGREEDAY_FACTORS,GRIDDED_EMIS_MONTHLY_FACTOR
     SEAFIX_GEA_NEEDED, & ! see below
-    USE_ROADDUST, &
-    USE_EURO_SOILNOX, USE_GLOBAL_SOILNOX, EURO_SOILNOX_DEPSCALE,&! one or the other
+    EURO_SOILNOX_DEPSCALE,&! one or the other
     USE_OCEAN_NH3,USE_OCEAN_DMS,FOUND_OCEAN_DMS,&
     NPROC, EmisSplit_OUT,USE_uEMEP,uEMEP,SECTORS_NAME,SecEmisOutPoll,&
     AircraftEmis_FLFile,nox_emission_1996_2005File,RoadMapFile,&
@@ -447,7 +446,7 @@ subroutine Emissions(year)
   ! allocate for MasterProc (me:=0) only:
   err1 = 0
   if(MasterProc) then
-    if(USE_ROADDUST)then
+    if(USES%ROADDUST)then
       allocate(road_globnland(GIMAX,GJMAX),stat=err7)
       allocate(road_globland(GIMAX,GJMAX,NCMAX),stat=err8)
       allocate(globroad_dust_pot(GIMAX,GJMAX,NCMAX),stat=err9)
@@ -463,7 +462,7 @@ subroutine Emissions(year)
     sumemis_local(:,:)=0.0
     emsum=0.0
 
-    if(USE_ROADDUST)then
+    if(USES%ROADDUST)then
       road_globnland(:,:)=0
       road_globland(:,:,:)=0
       globroad_dust_pot(:,:,:)=0.
@@ -471,7 +470,7 @@ subroutine Emissions(year)
     end if ! road dust
   else
     ! needed for DEBUG=yes compilation options
-    if(USE_ROADDUST)then
+    if(USES%ROADDUST)then
       allocate(road_globnland(1,1),road_globland(1,1,1),&
            globroad_dust_pot(1,1,1),stat=err9)
       call CheckStop(err9, "Allocation error 9 - dummy roadglob")
@@ -751,7 +750,7 @@ subroutine Emissions(year)
     call CheckStop("EMIS_SOURCE not set"//trim(EMIS_SOURCE))
   end select
 
-  if(USE_ROADDUST) then
+  if(USES%ROADDUST) then
     !Use grid-independent Netcdf input files
     call CheckStop(NROAD_FILES>2, "TOO MANY ROADFILES")
     do iem = 1, NROAD_FILES
@@ -808,10 +807,10 @@ subroutine Emissions(year)
     CALL MPI_REDUCE(sumroaddust_local,sumroaddust,NLAND*NROAD_FILES,MPI_REAL8,&
          MPI_SUM,0,MPI_COMM_CALC,IERROR) 
 
-  end if !USE_ROADDUST
+  end if !USES%ROADDUST
 
   if(MasterProc) then
-    if(USE_ROADDUST)THEN
+    if(USES%ROADDUST)THEN
       call PrintLog("Total road dust emission potentials by countries &
            &(before precipitation and land corrections):")
       write(*     ,"(2a4,11x,30(a12,:))")"  N "," CC ",ROAD_FILE(:)
@@ -907,7 +906,7 @@ subroutine Emissions(year)
       sum(snapemis   (:,debug_li,debug_lj,:,iemCO)), &
       sum(snapemis_flat(debug_li,debug_lj,:,iemCO))
 
-  if(USE_ROADDUST)THEN
+  if(USES%ROADDUST)THEN
     forall (ic=1:NCMAX, j=1:ljmax, i=1:limax, iem=1:NROAD_FILES)
       roaddust_emis_pot(i,j,ic,iem) = &
            roaddust_emis_pot(i,j,ic,iem) * tonne_to_kgm2s * xm2(i,j)
@@ -916,7 +915,7 @@ subroutine Emissions(year)
 
   err1 = 0
   if(MasterProc) then
-    if(USE_ROADDUST)THEN
+    if(USES%ROADDUST)THEN
       deallocate(road_globnland   ,stat=err7)
       deallocate(road_globland    ,stat=err8)
       deallocate(globroad_dust_pot,stat=err9)
@@ -926,7 +925,7 @@ subroutine Emissions(year)
     end if
   else
     ! needed for DEBUG=yes compilation options
-    if(USE_ROADDUST)THEN
+    if(USES%ROADDUST)THEN
        deallocate(road_globnland,road_globland,globroad_dust_pot,stat=err9)
        call CheckStop(err9, "De-Allocation error 9 - dummy roadglob")
     end if
@@ -938,7 +937,7 @@ subroutine Emissions(year)
   allocate(gridrcemis0(NRCEMIS,KEMISTOP:KMAX_MID,LIMAX,LJMAX),stat=err2)
   call CheckStop(err1, "Allocation error 1 - gridrcemis") 
   call CheckStop(err2, "Allocation error 2 - gridrcemis0")
-  if(USE_ROADDUST)THEN
+  if(USES%ROADDUST)THEN
     allocate(gridrcroadd(NROADDUST,LIMAX,LJMAX),stat=err3)
     allocate(gridrcroadd0(NROADDUST,LIMAX,LJMAX),stat=err4)
     call CheckStop(err3, "Allocation error 3 - gridrcroadd")
@@ -1127,7 +1126,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
     gridrcemis0(:,:,:,:) = 0.0 
     SumSnapEmis(:,:,:) = 0.0
     SumSecEmis(:,:,:,:) = 0.0
-    if(USE_ROADDUST)gridrcroadd0(:,:,:) = 0.0
+    if(USES%ROADDUST)gridrcroadd0(:,:,:) = 0.0
     !..........................................
     ! Process each grid:
     do j = 1,ljmax
@@ -1292,7 +1291,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
           !      ==================================================
         end do !ficc 
 
-        if(USE_ROADDUST)then
+        if(USES%ROADDUST)then
           ! Limit as in TNO-model (but Lotos/Euros has precip in mm/3h)
           ! In the EMEP case this is in mm/h, so should be equivalent with 2.4mm per day
           NO_PRECIP: if(surface_precip(i,j) < 0.1) then
@@ -1380,7 +1379,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
     end do     ! j
   end do       ! k
 
-  if(USE_ROADDUST)THEN
+  if(USES%ROADDUST)THEN
     if(DEBUG_ROADDUST.and.debug_proc) &
       write(*,*)"Before the unit scaling",gridrcroadd(1:2,DEBUG_li,DEBUG_lj)
     do j = 1,ljmax
@@ -1468,7 +1467,7 @@ subroutine newmonth
     end do
   end if
 
-  if(USE_EURO_SOILNOX)then  ! European Soil NOx emissions
+  if(USES%EURO_SOILNOX)then  ! European Soil NOx emissions
     if(DEBUG_SOILNOX.and.debug_proc) write(*,*)"Emissions DEBUG_SOILNOX START"
 
     ! read in map of annual N-deposition produced from pre-runs of EMEP model
@@ -1480,10 +1479,10 @@ subroutine newmonth
       write(*,"(a,4es12.3)") "Emissions_ml: SOILNOX AnnualDEBUG ", &
         AnnualNdep(debug_li, debug_lj), maxval(AnnualNdep), minval(AnnualNdep)
 
-    call CheckStop(USE_GLOBAL_SOILNOX, "SOILNOX - cannot use global with Euro")
+    call CheckStop(USES%GLOBAL_SOILNOX, "SOILNOX - cannot use global with Euro")
     ! We then calculate SoulNOx in Biogenics_ml
 
-  elseif(USE_GLOBAL_SOILNOX) then ! Global soil NOx
+  elseif(USES%GLOBAL_SOILNOX) then ! Global soil NOx
 
     SoilNOx(:,:)=0.0      
     buffer(:,:)=0.0      
@@ -1528,7 +1527,7 @@ subroutine newmonth
 
   !for testing, compute total soil NOx emissions within domain
   !convert from g/m2/day into kg/day
-  if(USE_GLOBAL_SOILNOX) then 
+  if(USES%GLOBAL_SOILNOX) then 
     SumSoilNOx=0.0
     SoilNOx = max(0.0, SoilNOx)  ! Stops the NEGs!
     do j=1,ljmax
