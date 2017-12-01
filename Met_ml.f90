@@ -65,7 +65,7 @@ use ModelConstants_ml,    only: PASCAL, PT, Pref, METSTEP  &
      ,DEBUG_BLM, DEBUG_Kz, DEBUG_SOILWATER, DEBUG_LANDIFY &
      ,DomainName & !HIRHAM,EMEP,EECCA etc.
      ,TXTLEN_FILE & ! path/filename lenght for namelist inputs
-     ,USE_DUST, TEGEN_DATA, USES &
+     ,TEGEN_DATA, USES &
      ,nstep,USE_EtaCOORDINATES,USE_FASTJ &
      ,CONVECTION_FACTOR &
      ,LANDIFY_MET,MANUAL_GRID  &
@@ -917,7 +917,7 @@ subroutine MeteoRead()
   !
   ! Start with shallow
 
-  call CheckStop(USE_DUST.and..not.USES%SOILWATER,"Inconsistent SM, DUST")
+  call CheckStop(USES%DUST.and..not.USES%SOILWATER,"Inconsistent SM, DUST")
 
   if(USES%SOILWATER) then
     ! Soil water fields. Somewhat tricky.
@@ -1539,7 +1539,7 @@ subroutine MetModel_LandUse(callnum)
   if ( callnum == 1  ) then
   !.. Clay soil content    !
     ios = 0
-    if(USE_DUST)then
+    if(USES%DUST)then
       if(TEGEN_DATA)then
         !use global data interpolated to present grid
 
@@ -1554,7 +1554,7 @@ subroutine MetModel_LandUse(callnum)
         !use grid specific data
         call CheckStop('ASCII DUST NO MORE AVAILABLE! ')
       end if
-    end if ! USE_DUST
+    end if ! USES%DUST
 
   end if ! callnum == 1
 end subroutine MetModel_LandUse
