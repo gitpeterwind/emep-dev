@@ -43,6 +43,7 @@ module Biogenics_ml
   use Landuse_ml,        only : LandCover
   use LocalVariables_ml, only : Grid  ! -> izen, DeltaZ
   use MetFields_ml,      only : t2_nwp
+  use MetFields_ml,     only: PARdbh, PARdif !WN17, in W/m2
   use ModelConstants_ml, only : NPROC, MasterProc, TINY, &
                            NLANDUSEMAX, IOU_INST, & 
                            KT => KCHEMTOP, KG => KMAX_MID, & 
@@ -561,7 +562,8 @@ module Biogenics_ml
 
      ! Light effects from Guenther G93
 
-      par = (Grid%Idirect + Grid%Idiffuse) * PARfrac * Wm2_uE
+!WN      par = (Grid%Idirect + Grid%Idiffuse) * PARfrac * Wm2_uE
+      par = ( PARdbh(i,j) + PARdif(i,j)  ) * Wm2_uE
 
       cL = ALPHA * CL1 * par/ sqrt( 1 + ALPHA*ALPHA * par*par)
 
