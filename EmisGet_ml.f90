@@ -24,7 +24,7 @@ use KeyValueTypes,    only: KeyVal
 use ModelConstants_ml,only: NPROC, TXTLEN_NAME, &
                              DEBUG,  KMAX_MID,KMAX_BND, Pref,&
                              SEAFIX_GEA_NEEDED, & ! only if emission problems over sea
-                             MasterProc,DEBUG_GETEMIS,DEBUG_ROADDUST,USE_ROADDUST,&
+                             MasterProc,DEBUG_GETEMIS,DEBUG_ROADDUST,USES,&
                              IIFULLDOM,JJFULLDOM, SECTORS_NAME, TXTLEN_FILE,&
                              SplitSpecialsFile,SplitDefaultFile,EmisHeightsFile,femisFile
 use MPI_Groups_ml   , only : MPI_BYTE, MPI_REAL8, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_INTEGER&
@@ -1282,7 +1282,7 @@ end if
 ! Temporary solution! Need to find the molweight from the
 ! GenChem input but just to get something running first set
 ! a hard coded molar mass of 200. 
-  if(USE_ROADDUST)THEN
+  if(USES%ROADDUST)THEN
      allocate(roaddust_masscorr(NROADDUST),stat=allocerr)
      call CheckStop(allocerr, "Allocation error for emis_masscorr")
      if(MasterProc) &
