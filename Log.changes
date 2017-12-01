@@ -138,6 +138,20 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+1st Dec      2017 Dave
+
+*** RESULTS CHANGING ***** START of rv4_16beta
+
+Implemented Weiss & Norman radiation scheme, to give better diffuse/direct
+treatment. Changes in:
+
+  Biogencs_ml - modified to use total PAR from W & N
+  MetFields - added PARdbh, PARdif, fCloud
+  Radiation_ml - add WeissNorman routines and usage
+  Rsurface_ml  - add WeissNorman routines and usage
+  PhyChem -  use of above
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 01st Dec     2017 Michael G
 
 Switched from USE_XXX to USES%XXX method for nine variables:
