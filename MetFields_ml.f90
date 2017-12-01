@@ -180,6 +180,9 @@ module MetFields_ml
   real,target, public,allocatable, dimension(:,:), save:: &
        zen          &  ! Zenith angle (degrees)
       ,coszen       &  ! cos of zenith angle
+      ,PARdbh       &  ! PAR, direct beam on horizontal surface, W/m2 !WN17
+      ,PARdif       &  ! PAR, diffuse, W/m2 !WN17
+      ,fCloud       &  ! cloud atten. factor (0-1), for Weiss&Norman approach !WN17
       ,Idiffuse     &  ! diffuse solar radiation (W/m^2)
       ,Idirect         ! total direct solar radiation (W/m^2)
 
@@ -1039,6 +1042,9 @@ end if
     coszen=0.0
     allocate(Idiffuse(LIMAX, LJMAX))
     allocate(Idirect(LIMAX, LJMAX))
+    allocate(PARdbh(LIMAX, LJMAX)) !WN17
+    allocate(PARdif(LIMAX, LJMAX)) !WN17
+    allocate(fCloud(LIMAX, LJMAX)) !WN17
     allocate(clay_frac(LIMAX, LJMAX))
     allocate(sand_frac(LIMAX, LJMAX))
     allocate(surface_precip_old(LIMAX,LJMAX))
