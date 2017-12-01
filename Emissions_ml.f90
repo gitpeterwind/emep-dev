@@ -88,7 +88,7 @@ use ModelConstants_ml,only: &
     DEBUG_SOILNOX, DEBUG_EMISTIMEFACS, DEBUG_ROADDUST, &
     USES,  &  ! Gives USES%EMISSTACKS, DEGREEDAY_FACTORS,GRIDDED_EMIS_MONTHLY_FACTOR
     SEAFIX_GEA_NEEDED, & ! see below
-    USE_LIGHTNING_EMIS,USE_AIRCRAFT_EMIS,USE_ROADDUST, &
+    USE_ROADDUST, &
     USE_EURO_SOILNOX, USE_GLOBAL_SOILNOX, EURO_SOILNOX_DEPSCALE,&! one or the other
     USE_OCEAN_NH3,USE_OCEAN_DMS,FOUND_OCEAN_DMS,&
     NPROC, EmisSplit_OUT,USE_uEMEP,uEMEP,SECTORS_NAME,SecEmisOutPoll,&
@@ -1431,14 +1431,14 @@ subroutine newmonth
   real :: lonlat_fac, mw
   logical :: use_lonlat_femis
 
-  if(.not.allocated(airn).and.(USE_LIGHTNING_EMIS.or.USE_AIRCRAFT_EMIS))&
+  if(.not.allocated(airn).and.(USES%LIGHTNING_EMIS.or.USES%AIRCRAFT_EMIS))&
     allocate(airn(KCHEMTOP:KMAX_MID,LIMAX,LJMAX))
 
 
   if(USES%GRIDDED_EMIS_MONTHLY_FACTOR)&
     call Read_monthly_emis_grid_fac(current_date%month)
 
-  if(USE_AIRCRAFT_EMIS)then
+  if(USES%AIRCRAFT_EMIS)then
     airn = 0.0
     kstart=KCHEMTOP
     kend=KMAX_MID
