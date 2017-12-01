@@ -33,13 +33,13 @@
   USES%WHITECAPS =       "Callaghan"    ! Norris , Monahan
   USES%PFT_MAPS         = T,         ! PFT LAI tests
 !------------------------------
-  USE_SOILWATER         = T,          ! Uses SMI from meteo data
-  USE_CONVECTION        = F,          ! False for EECCA runs performs better
+  USES%SOILWATER         = T,          ! Uses SMI from meteo data
+  USES%CONVECTION        = F,          ! False for EECCA runs performs better
   CONVECTION_FACTOR     = 0.33,
 !  USES%DEGREEDAY_FACTORS = T,
   USE_SEASALT           = T,
-  USE_AIRCRAFT_EMIS     = T,          ! Needs global file, see manual
-  USE_LIGHTNING_EMIS    = T,          ! 
+  USES%AIRCRAFT_EMIS     = T,          ! Needs global file, see manual
+  USES%LIGHTNING_EMIS    = T,          ! 
 !------------------------------
   USE_EURO_SOILNOX      = T,          ! diff for global + Euro runs
   EURO_SOILNOX_DEPSCALE = 1.0,        ! Scale, default 1  (see ModelConstants_ml)
