@@ -16,11 +16,11 @@
   USES%CONVECTION        = F,          ! NB: Switch on for global
   USES%DEGREEDAY_FACTORS = T,
 !xx  USE_FOREST_FIRES      = T,
-  USE_SEASALT           = T,
+  USES%SEASALT           = T,
   USE_SOILNOX           = F,          ! diff for global + Euro runs, *NOT for IMPACT2C*
   USE_POLLEN            = F,          ! EXPERIMENTAL. Only works if start Jan 1
-  USE_ROADDUST          = F,          ! Only EECCA?
-  USE_DUST              = F,          ! Only EECCA?
+  USES%ROADDUST          = F,          ! Only EECCA?
+  USES%DUST              = F,          ! Only EECCA?
   NETCDF_DEFLATE_LEVEL  = 4,          ! 1-9 GZIP compress, 0 no compress, -1 nc3
 !-------- Can switch on INERIS-type degreeday stuff
   INERIS_SNAP1          = F,          ! Used for TFMM runs

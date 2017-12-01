@@ -25,17 +25,17 @@
 !------------------------------
   USES%SOILWATER         = T,          ! Uses SMI from meteo data
   USES%CONVECTION        = F,
-  USE_SEASALT           = T,
+  USES%SEASALT           = T,
   USES%AIRCRAFT_EMIS     = T,          ! Needs global file, see manual
   USES%LIGHTNING_EMIS    = T,
 !------------------------------
-  USE_EURO_SOILNOX      = T,          ! diff for global + Euro runs
+  USES%EURO_SOILNOX      = T,          ! diff for global + Euro runs
   EURO_SOILNOX_DEPSCALE = 1.0,        ! Scale, default 1  (see ModelConstants_ml)
-  USE_GLOBAL_SOILNOX    = F,          ! diff for global + Euro runs
+  USES%GLOBAL_SOILNOX    = F,          ! diff for global + Euro runs
 !------------------------------
   USE_POLLEN            = F,
-  USE_ROADDUST          = T,
-  USE_DUST              = T,
+  USES%ROADDUST          = T,
+  USES%DUST              = T,
   NETCDF_DEFLATE_LEVEL  = 4,          ! 1-9 GZIP compress, 0 no compress, -1 netcdf3
   INERIS_SNAP1          = F,
   INERIS_SNAP2          = F,

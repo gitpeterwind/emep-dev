@@ -46,8 +46,7 @@ use LocalVariables_ml, only: Grid
 use MetFields_ml,      only: roa
 use ModelConstants_ml, only: KMAX_MID  &  ! Number of levels in vertical
                             ,iyr_trend &  ! Used for e.g. future scenarios
-                            ,BGND_CH4  &  ! If positive, replaces defaults
-                            ,USE_SEASALT,USE_DUST & 
+                            ,BGND_CH4  &  ! If positive, replaces defaults 
                             ,USES,DEBUG  & ! %BCs
                             ,MasterProc, PPB, Pref, LoganO3File, DustFile
 use MPI_Groups_ml,     only: MPI_DOUBLE_PRECISION, MPI_SUM,MPI_INTEGER, &
@@ -294,7 +293,7 @@ contains
              !  If SeaSalt isn't called from mk.GenChem, we don't have the
              !  SS_GROUP, so we search for the simple SEASALT name.
              bc_seaspec = .false.
-             if ( USE_SEASALT .and. &
+             if ( USES%SEASALT .and. &
                   ( index( species(ntot)%name, "SEASALT_" ) > 0 ) ) then
                 bc_seaspec = .true.
              end if
@@ -310,7 +309,7 @@ contains
 
                       if ( bc_seaspec ) then
                          if ( .not. mainly_sea(i,j))  bc_fac = 0.001 ! low over land
-                         if ( .not. USE_SEASALT )  bc_fac = 0.0   ! not wanted!
+                         if ( .not. USES%SEASALT )  bc_fac = 0.0   ! not wanted!
                       end if
 
                       xn_adv(iem,i,j,k) =   xn_adv(iem,i,j,k) +&
@@ -346,7 +345,7 @@ contains
              iem = spc_used_adv(ibc,n)
              ntot = iem + NSPEC_SHL 
              bc_seaspec = .false.
-             if ( USE_SEASALT .and. ( index( species(ntot)%name, "SEASALT_" ) > 0 ) ) then
+             if ( USES%SEASALT .and. ( index( species(ntot)%name, "SEASALT_" ) > 0 ) ) then
                 bc_seaspec = .true.
              end if
 
@@ -358,7 +357,7 @@ contains
 
                       if ( bc_seaspec ) then
                          if ( .not. mainly_sea(i,j))  bc_fac = 0.001 ! low over land
-                         if ( .not. USE_SEASALT )  bc_fac = 0.0   ! not wanted!
+                         if ( .not. USES%SEASALT )  bc_fac = 0.0   ! not wanted!
                       end if
 
                       xn_adv(iem,i,j,k) =   xn_adv(iem,i,j,k) +&
@@ -372,7 +371,7 @@ contains
 
                       if ( bc_seaspec ) then
                          if ( .not. mainly_sea(i,j))  bc_fac = 0.001 ! low over land
-                         if ( .not. USE_SEASALT )  bc_fac = 0.0   ! not wanted!
+                         if ( .not. USES%SEASALT )  bc_fac = 0.0   ! not wanted!
                       end if
 
                       xn_adv(iem,i,j,k) =   xn_adv(iem,i,j,k) +&
@@ -389,7 +388,7 @@ contains
 
                       if ( bc_seaspec ) then
                          if ( .not. mainly_sea(i,j))  bc_fac = 0.001 ! low over land
-                         if ( .not. USE_SEASALT )  bc_fac = 0.0   ! not wanted!
+                         if ( .not. USES%SEASALT )  bc_fac = 0.0   ! not wanted!
                       end if
 
                       xn_adv(iem,i,j,k) =   xn_adv(iem,i,j,k) +&
@@ -406,7 +405,7 @@ contains
 
                       if ( bc_seaspec ) then
                          if ( .not. mainly_sea(i,j))  bc_fac = 0.001 ! low over land
-                         if ( .not. USE_SEASALT )  bc_fac = 0.0   ! not wanted!
+                         if ( .not. USES%SEASALT )  bc_fac = 0.0   ! not wanted!
                       end if
 
                       xn_adv(iem,i,j,k) =   xn_adv(iem,i,j,k) +&
@@ -425,7 +424,7 @@ contains
 
                       if ( bc_seaspec ) then
                          if ( .not. mainly_sea(i,j))  bc_fac = 0.001 ! low over land
-                         if ( .not. USE_SEASALT )  bc_fac = 0.0   ! not wanted!
+                         if ( .not. USES%SEASALT )  bc_fac = 0.0   ! not wanted!
                       end if
 
                       xn_adv(iem,i,j,k) =   xn_adv(iem,i,j,k) +&
@@ -1277,7 +1276,7 @@ real :: trend_o3=1.0, trend_co, trend_voc
     endforall
 
     case (IBC_DUST_C,IBC_DUST_F)
-       if(USE_DUST)then
+       if(USES%DUST)then
 !         bc_data(:,:,:) = 0.0
 
 !dust are read from the results of a Global run

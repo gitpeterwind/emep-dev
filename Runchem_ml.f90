@@ -22,15 +22,15 @@ module RunChem_ml
   use ColumnSource_ml,  only: Winds, getWinds
   use DefPhotolysis_ml, only: setup_phot
   use DryDep_ml,        only: drydep
-  use DustProd_ml,      only: WindDust  !DUST -> USE_DUST
+  use DustProd_ml,      only: WindDust  !DUST -> USES%DUST
   use FastJ_ml,         only: setup_phot_fastj,phot_fastj_interpolate
   use GridValues_ml,    only: debug_proc, debug_li, debug_lj, i_fdom, j_fdom
   use Io_Progs_ml,      only: datewrite
   use MassBudget_ml,    only: emis_massbudget_1d
-  use ModelConstants_ml,only: USE_DUST, USE_SEASALT, USE_AOD, USE_POLLEN, & 
+  use ModelConstants_ml,only: USE_AOD, USE_POLLEN, & 
                               MasterProc, & 
                               KMAX_MID, END_OF_EMEPDAY, nstep,  &
-                              AERO,  USES, & ! need USES%EMISSTACKS 
+                              AERO, USES, & ! need USES%EMISSTACKS and more 
                               USE_FASTJ, &
                               dt_advec, USE_NOCHEM, &  ! for Emergency
                               DEBUG_EMISSTACKS, & ! MKPS
@@ -119,10 +119,10 @@ subroutine runchem()
       call setup_rcemis(i,j) ! Sets initial rcemis=0.0
       call Add_2timing(27,tim_after,tim_before,"Runchem:setup_rcemis ")
  
-      if(USE_SEASALT)  &
+      if(USES%SEASALT)  &
         call SeaSalt_flux(i,j,debug_flag) ! sets rcemis(SEASALT_...)
 
-      if(USE_DUST)     &
+      if(USES%DUST)     &
         call WindDust(i,j,debug_flag)     ! sets rcemis(DUST...)
 
       if ( USES%EMISSTACKS ) then

@@ -1,6 +1,6 @@
 module MetFields_ml
 
-  use ModelConstants_ml,  only : USE_CONVECTION,USE_SOILWATER,USE_WRF_MET_NAMES,NPROC
+  use ModelConstants_ml,  only : USES,USE_WRF_MET_NAMES,NPROC
   use MPI_Groups_ml     , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER, MPI_LOGICAL, &
                                  MPI_COMM_CALC, MPI_COMM_WORLD, MPI_COMM_SUB, MPISTATUS, &
                                  IERROR, ME_MPI, NPROC_MPI, largeLIMAX,largeLJMAX, share, share_logical
@@ -431,7 +431,7 @@ subroutine Alloc_MetFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%dim              = 3
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .false.
-  met(ix)%read_meteo       = USE_CONVECTION
+  met(ix)%read_meteo       = USES%CONVECTION
   met(ix)%needed           = .true.
   met(ix)%found            = .false.
   allocate(cnvuf(LIMAX,LJMAX,KMAX_BND))
@@ -446,7 +446,7 @@ subroutine Alloc_MetFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%dim              = 3
   met(ix)%frequency        = 3
   met(ix)%time_interpolate = .false.
-  met(ix)%read_meteo       = USE_CONVECTION
+  met(ix)%read_meteo       = USES%CONVECTION
   met(ix)%needed           = .true.
   met(ix)%found            = .false.
   allocate(cnvdf(LIMAX,LJMAX,KMAX_BND))
@@ -735,8 +735,8 @@ subroutine Alloc_MetFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%name             = 'SMI1'
   met(ix)%dim              = 2
   met(ix)%frequency        = 3
-  met(ix)%time_interpolate = USE_SOILWATER
-  met(ix)%read_meteo       = USE_SOILWATER
+  met(ix)%time_interpolate = USES%SOILWATER
+  met(ix)%read_meteo       = USES%SOILWATER
   met(ix)%needed           = .false.
   met(ix)%found            => foundSoilWater_uppr
   allocate(SoilWater_uppr(LIMAX,LJMAX,NMET))
@@ -750,8 +750,8 @@ subroutine Alloc_MetFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%name             = 'SMI3'
   met(ix)%dim              = 2
   met(ix)%frequency        = 3
-  met(ix)%time_interpolate = USE_SOILWATER
-  met(ix)%read_meteo       = USE_SOILWATER
+  met(ix)%time_interpolate = USES%SOILWATER
+  met(ix)%read_meteo       = USES%SOILWATER
   met(ix)%needed           = .false.
   met(ix)%found            =>  foundSoilWater_deep
   allocate(SoilWater_deep(LIMAX,LJMAX,NMET))

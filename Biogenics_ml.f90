@@ -49,7 +49,7 @@ module Biogenics_ml
                            KT => KCHEMTOP, KG => KMAX_MID, & 
                            EURO_SOILNOX_DEPSCALE, & 
                            DEBUG, BVOC_USED, MasterProc, &
-                           USE_EURO_SOILNOX, USE_GLOBAL_SOILNOx, &
+                           USES, &
                            DEBUG_SOILNOX, USE_SOILNH3,&
                            EMEP_EuroBVOCFile
   use NetCDF_ml,        only : ReadField_CDF, printCDF
@@ -171,8 +171,8 @@ module Biogenics_ml
       !call CheckStop( ispec_TERP < 1 , "BiogencERROR TERP")
       if( ispec_TERP < 0 ) call PrintLog("WARNING: No TERPENE Emissions")
      
-      call CheckStop( USE_EURO_SOILNOX .and. ispec_NO < 1 , "BiogencERROR NO")
-      call CheckStop( USE_GLOBAL_SOILNOX .and. ispec_NO < 1 , "BiogencERROR NO")
+      call CheckStop( USES%EURO_SOILNOX .and. ispec_NO < 1 , "BiogencERROR NO")
+      call CheckStop( USES%GLOBAL_SOILNOX .and. ispec_NO < 1 , "BiogencERROR NO")
       if( MasterProc ) write(*,*) "SOILNOX ispec ", ispec_NO
 
       itot_C5H8 = find_index( "C5H8", species(:)%name    ) 
@@ -601,11 +601,11 @@ module Biogenics_ml
         EmisNat(ispec_TERP,i,j) = (E_MTL+E_MTP) * 1.0e-9/3600.0
     end if
 
-    if ( USE_EURO_SOILNOX ) then
+    if ( USES%EURO_SOILNOX ) then
         rcemis(itot_NO,KG)    = rcemis(itot_NO,KG) + &
              SoilNOx(i,j) * biofac_SOILNO/Grid%DeltaZ
         EmisNat(ispec_NO,i,j) =  SoilNOx(i,j) * 1.0e-9/3600.0
-    else if ( USE_GLOBAL_SOILNOX ) then !TEST
+    else if ( USES%GLOBAL_SOILNOX ) then !TEST
         EmisNat(ispec_NO,i,j) =  SoilNOx(i,j)*Grid%DeltaZ/biofac_SOILNO * 1.0e-9/3600.0
     end if
 
@@ -644,12 +644,12 @@ module Biogenics_ml
       real :: hfac
 
 
-      if ( .not. USE_EURO_SOILNOX  ) return ! and fSW has been set to 1. at start
+      if ( .not. USES%EURO_SOILNOX  ) return ! and fSW has been set to 1. at start
 
       if( DEBUG_SOILNOX .and. debug_proc ) then
          write(*,*)"Biogenic_ml DEBUG_SOILNOX EURO: ",&
           current_date%day, current_date%hour, current_date%seconds,&
-          USE_EURO_SOILNOX, EURO_SOILNOX_DEPSCALE
+          USES%EURO_SOILNOX, EURO_SOILNOX_DEPSCALE
       end if
 
       ! We reset once per hour

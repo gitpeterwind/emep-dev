@@ -37,17 +37,17 @@
   USES%CONVECTION        = F,          ! False for EECCA runs performs better
   CONVECTION_FACTOR     = 0.33,
 !  USES%DEGREEDAY_FACTORS = T,
-  USE_SEASALT           = T,
+  USES%SEASALT           = T,
   USES%AIRCRAFT_EMIS     = T,          ! Needs global file, see manual
   USES%LIGHTNING_EMIS    = T,          ! 
 !------------------------------
-  USE_EURO_SOILNOX      = T,          ! diff for global + Euro runs
+  USES%EURO_SOILNOX      = T,          ! diff for global + Euro runs
   EURO_SOILNOX_DEPSCALE = 1.0,        ! Scale, default 1  (see ModelConstants_ml)
-  USE_GLOBAL_SOILNOX    = F,          ! diff for global + Euro runs
+  USES%GLOBAL_SOILNOX    = F,          ! diff for global + Euro runs
 !------------------------------
   USE_POLLEN            = F,          ! EXPERIMENTAL. Only works if start Jan 1
-  USE_ROADDUST          = T,          ! Only EECCA?
-  USE_DUST              = T,          ! Only EECCA?
+  USES%ROADDUST          = T,          ! Only EECCA?
+  USES%DUST              = T,          ! Only EECCA?
   NETCDF_DEFLATE_LEVEL  = 4,          ! 1-9 GZIP compress, 0 no compress, -1 netcdf3
 !-------- Can switch on INERIS-type degreeday stuff
   INERIS_SNAP1          = F,          ! Used for TFMM runs

@@ -46,8 +46,6 @@ use ModelConstants_ml,   only:  &
   ,MasterProc                   & 
   ,PPB, PT                      & ! PT-pressure at top
   ,USES                         & ! forest fires, hydrolysis, dergee_days etc.
-  ,USE_SEASALT                  &
-  ,USE_GLOBAL_SOILNOX, USE_DUST, USE_ROADDUST &
   ,USE_OCEAN_NH3,USE_OCEAN_DMS,FOUND_OCEAN_DMS&
   ,VOLCANO_SR                   & ! Reduce Volcanic Emissions
   ,emis_inputlist               & ! Used in EEMEP
@@ -509,7 +507,7 @@ subroutine setup_rcemis(i,j)
       airn(KMAX_MID,i,j),airlig(KMAX_MID,i,j)
 
   ! Road dust
-  if(USE_ROADDUST.and.itot_RDF>0) then  ! Hard-code indices for now
+  if(USES%ROADDUST.and.itot_RDF>0) then  ! Hard-code indices for now
     rcemis(itot_RDF,KMAX_MID) = gridrcroadd(1,i,j)
     rcemis(itot_RDC,KMAX_MID) = gridrcroadd(2,i,j)
    end if
@@ -520,7 +518,7 @@ subroutine setup_rcemis(i,j)
   end if
 
   ! Soil NOx
-  if(USE_GLOBAL_SOILNOX)then !NEEDS CHECKING NOV2011
+  if(USES%GLOBAL_SOILNOX)then !NEEDS CHECKING NOV2011
     rcemis(NO,KMAX_MID)=rcemis(NO,KMAX_MID)+SoilNOx(i,j)
   end if
 
