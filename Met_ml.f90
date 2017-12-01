@@ -65,8 +65,8 @@ use ModelConstants_ml,    only: PASCAL, PT, Pref, METSTEP  &
      ,DEBUG_BLM, DEBUG_Kz, DEBUG_SOILWATER, DEBUG_LANDIFY &
      ,DomainName & !HIRHAM,EMEP,EECCA etc.
      ,TXTLEN_FILE & ! path/filename lenght for namelist inputs
-     ,USE_DUST, TEGEN_DATA, USE_SOILWATER &
-     ,nstep,USE_CONVECTION,USE_EtaCOORDINATES,USE_FASTJ &
+     ,USE_DUST, TEGEN_DATA, USES &
+     ,nstep,USE_EtaCOORDINATES,USE_FASTJ &
      ,CONVECTION_FACTOR &
      ,LANDIFY_MET,MANUAL_GRID  &
      ,CW_THRESHOLD,RH_THRESHOLD, CW2CC, JUMPOVER29FEB, meteo, startdate&
@@ -832,7 +832,7 @@ subroutine MeteoRead()
   ! large_scale_precipitations+convective_precipitations)
   surface_precip(:,:) = pr(:,:,KMAX_MID) * inv_METSTEP
 
-  if(USE_CONVECTION)then
+  if(USES%CONVECTION)then
     cnvuf=max(0.0,cnvuf)      !no negative upward fluxes
     cnvuf(:,:,KMAX_BND)=0.0   !no flux through surface
     cnvuf(:,:,1)=0.0          !no flux through top
@@ -917,9 +917,9 @@ subroutine MeteoRead()
   !
   ! Start with shallow
 
-  call CheckStop(USE_DUST.and..not.USE_SOILWATER,"Inconsistent SM, DUST")
+  call CheckStop(USE_DUST.and..not.USES%SOILWATER,"Inconsistent SM, DUST")
 
-  if(USE_SOILWATER) then
+  if(USES%SOILWATER) then
     ! Soil water fields. Somewhat tricky.
     ! Ideal is soil moisture index, available from IFS, = (SW-PWP)/(FC-PWP)
     ! Otherwise m3/m3 or m units are converted
@@ -1049,7 +1049,7 @@ subroutine MeteoRead()
     SoilWater_uppr(:,:,nr) = min(1.0, SoilWater_uppr(:,:,nr))
     SoilWater_deep(:,:,nr) = min(1.0, SoilWater_deep(:,:,nr) )
 
-  end if ! USE_SOILWATER
+  end if ! USES%SOILWATER
 
   !========================================
 
