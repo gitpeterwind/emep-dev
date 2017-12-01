@@ -137,6 +137,21 @@ the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+01st Dec     2017 Michael G
+
+Tried to switch from USE_XXX to USES%XXX method for four variables:
+USE_SOILWATER, USE_CONVECTION, USE_AIRCRAFT_EMIS, USE_LIGHTNING_EMIS
+
+Files affected:
+config_*nml MetFields.f90 DO3SE_ml.f90 Met_ml.f90 SoilWater_ml.f90
+SubMet_ml.f90 Advection_ml.f90 Convection_ml.f90 Emissions_ml.f90
+Setup_1d_ml.f90 AirEmis_ml.f90 Unimod.f90 ModelConstants_ml.f90
+
+This should not lead to any changes in the model results and this was
+tested before git push.
+David will anyway check the code, so further updates will be made.
+Other USE_* variables will be changed in further updates soon.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 28th Nov     2017  Dave
