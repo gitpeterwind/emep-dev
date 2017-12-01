@@ -24,7 +24,7 @@ use ModelConstants_ml, only :  DEBUG_SUBMET &  ! Needs DEBUG_RUNCHEM to get debu
                               , USE_ZREF & ! TEST
                               , FluxPROFILE &
                               , LANDIFY_MET   &
-                              , USE_SOILWATER 
+                              , USES 
 use ModelConstants_ml, only: NLANDUSEMAX
 use PhysicalConstants_ml, only : PI, RGAS_KG, CP, GRAV, KARMAN, CHARNOCK, T0
 
@@ -114,7 +114,7 @@ real :: theta2
         Sub(iL)%is_forest = LandType(iL)%is_forest
         Sub(iL)%is_crop   = LandType(iL)%is_crop   
 
-        !if( USE_SOILWATER )
+        !if( USES%SOILWATER )
           Sub(iL)%fSW    = Grid%fSW ! MAR2013 - not needed, but for safety
 !GMO3
   if( index( LandDefs(iL)%name , 'Irrigated' ) > 0 ) then
