@@ -31,11 +31,11 @@
   USES%DEGREEDAY_FACTORS= F,
   USES%PlumeMethod      = 'PVDI',    ! default PVDI, possible: NILU, ASMI, PVDI
 !------------------------------
-  USE_SOILWATER         = F,          ! Uses SMI from meteo data
-  USE_CONVECTION        = F,
+  USES%SOILWATER         = F,          ! Uses SMI from meteo data
+  USES%CONVECTION        = F,
   USE_SEASALT           = T,
-  USE_AIRCRAFT_EMIS     = T,          ! Needs global file, see manual
-  USE_LIGHTNING_EMIS    = T,          ! 
+  USES%AIRCRAFT_EMIS     = T,          ! Needs global file, see manual
+  USES%LIGHTNING_EMIS    = T,          ! 
 !------------------------------
   USE_EURO_SOILNOX      = F,          ! diff for global + Euro runs
   EURO_SOILNOX_DEPSCALE = 1.0,        ! Scale, default 1  (see ModelConstants_ml)
