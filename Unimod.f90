@@ -45,7 +45,7 @@ program myeul
        runlabel2,  &   ! explanatory text
        iyr_trend, nmax,nstep , meteo,     &
        IOU_INST,IOU_HOUR,IOU_HOUR_INST, IOU_YEAR,IOU_MON, IOU_DAY, &
-       USES, USE_LIGHTNING_EMIS, USE_uEMEP,JUMPOVER29FEB,&
+       USES, USE_uEMEP,JUMPOVER29FEB,&
        FORECAST,ANALYSIS  ! FORECAST/ANALYSIS mode
   use ModelConstants_ml,only: Config_ModelConstants,DEBUG, startdate,enddate
   use MPI_Groups_ml,    only: MPI_BYTE, MPISTATUS, MPI_COMM_CALC,MPI_COMM_WORLD, &
@@ -273,7 +273,7 @@ program myeul
 
       call newmonth
 
-       if(USE_LIGHTNING_EMIS) call lightning()
+       if(USES%LIGHTNING_EMIS) call lightning()
 
       call init_aqueous()
 
