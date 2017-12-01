@@ -88,7 +88,7 @@
  
   if ( my_first_call ) then 
 
-    ! We might have USE_SEASALT=.true. in ModelConstants, but the
+    ! We might have USES%SEASALT=.true. in ModelConstants, but the
     ! chemical scheme might not have seasalt species. We check.
 
     inat_SSFI = find_index( "SEASALT_F", EMIS_BioNat(:) )
