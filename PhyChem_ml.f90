@@ -37,6 +37,7 @@ use ModelConstants_ml,only: MasterProc, KMAX_MID, nmax, nstep &
                            ,USE_uEMEP, IOU_HOUR, IOU_HOUR_INST, IOU_YEAR&
                            ,fileName_O3_Top
 use MetFields_ml,     only: ps,roa,z_bnd,z_mid,cc3dmax, &
+                            PARdbh, PARdif, fCloud, & !WN17
                             zen,coszen,Idirect,Idiffuse
 use NetCDF_ml,        only: ReadField_CDF,Real4
 use OutputChem_ml,    only: WrtChem
@@ -56,6 +57,8 @@ use uEMEP_ml,         only: uEMEP_emis
 use Radiation_ml,     only: SolarSetup,       &! sets up radn params
                             ZenithAngle,      &! gets zenith angle
                             ClearSkyRadn,     &! Idirect, Idiffuse
+                            WeissNormanPAR,   &! WN17=WeissNorman radn, 2017 work
+                            fCloudAtten,      &!
                             CloudAtten         !
 use Runchem_ml,       only: runchem   ! Calls setup subs and runs chemistry
 use Sites_ml,         only: siteswrt_surf, siteswrt_sondes    ! outputs
@@ -154,6 +157,11 @@ subroutine phyche()
   call ClearSkyRadn(ps(:,:,1),coszen,Idirect,Idiffuse)
 
   call CloudAtten(cc3dmax(:,:,KMAX_MID),Idirect,Idiffuse)
+
+!WN17
+! Gets PAR values, W/m2 here
+  fCloud = fCloudAtten(cc3dmax(:,:,KMAX_MID))
+  call WeissNormanPAR(ps(:,:,1),coszen,fCloud,PARdbh,PARdif)
 
   !================
   ! advecdiff_poles considers the local Courant number along a 1D line
