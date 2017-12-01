@@ -16,6 +16,7 @@ use TimeDate_ml,  only : current_date
 use GasParticleCoeffs_ml,    only : DryDepDefs &  ! Extension of Wesely Table 2
    ,WES_HNO3, WES_NH3,DRx,WES_SO2    ! Indices and Ratio of diffusivities to ozone
 use MetFields_ml, only : foundsdepth, foundice
+use MetFields_ml, only : PARdbh, PARdif
 use Par_ml,only :me
 implicit none
 private
@@ -210,9 +211,10 @@ contains
    end if
    if( leafy_canopy  .and. G%Idirect > 0.001 .and. G%sdepth< (1.0 +Sdmax) ) then  ! Daytime 
 
-        call CanopyPAR(L%LAI, G%coszen, G%Idirect, G%Idiffuse, &
+        !WN17 call CanopyPAR(L%LAI, G%coszen, G%Idirect, G%Idiffuse, &
+        !WN17             L%PARsun, L%PARshade, L%LAIsunfrac)
+        call CanopyPAR(L%LAI, G%coszen, PARdbh(i,j), PARdif(i,j), &
                     L%PARsun, L%PARshade, L%LAIsunfrac)
-
 
         call g_stomatal(iL, debug_flag )
 
