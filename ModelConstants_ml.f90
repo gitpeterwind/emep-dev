@@ -46,6 +46,10 @@ type, public :: emep_useconfig
   character(len=10) :: testname = "STD"
   logical :: &                   ! Forest fire options
      FOREST_FIRES     = .true.  &!
+    ,SOILWATER        = .false. &!
+    ,CONVECTION       = .false. &! false works best for Euro runs
+    ,AIRCRAFT_EMIS    = .true.  &! Needs global file, see manual 
+    ,LIGHTNING_EMIS   = .true.  &! 
     ,SURF_AREA        = .true.  &! For improved aerosol uptake
     ,MACEHEADFIX      = .true.  &! Correction to O3 BCs (Mace Head Obs.)
     ,MACEHEAD_AVG     = .false. &! Uses 10-year avg. Good for e.g. RCA runs.
@@ -167,13 +171,13 @@ real, public, save :: CONVECTION_FACTOR = 1.0
 !-----------------------------------------------------------
 logical, public, save ::             &
   FORECAST              = .false.    & ! reset in namelist
- ,USE_SOILWATER         = .false.    &
+! ,USE_SOILWATER         = .false.    &
  ,USE_SEASALT           = .true.     &
- ,USE_CONVECTION        = .false.    & ! false works best for Euro runs,
+! ,USE_CONVECTION        = .false.    & ! false works best for Euro runs,
 !
 ! Might sometimes change for scenario runs (e.g. EnsClim):
- ,USE_AIRCRAFT_EMIS  = .true.        & ! Needs global file, see manual
- ,USE_LIGHTNING_EMIS = .true.        &
+! ,USE_AIRCRAFT_EMIS  = .true.        & ! Needs global file, see manual
+! ,USE_LIGHTNING_EMIS = .true.        &
 !
 ! More experimental:
  ,USE_ROADDUST       = .false.       & ! TNO Road Dust routine. So far with simplified "climate-correction" factor
@@ -601,8 +605,8 @@ subroutine Config_ModelConstants(iolog)
    ,AERO   & ! Aerosol settings
    ,DEBUG  & !
    ,MY_OUTPUTS  &  ! e.g. EMEPSTD, FORECAST, TFMM
-   ,USE_SOILWATER, USE_CONVECTION, CONVECTION_FACTOR &
-   ,USE_AIRCRAFT_EMIS, USE_LIGHTNING_EMIS, USE_ROADDUST, USE_DUST &
+   , CONVECTION_FACTOR &
+   , USE_ROADDUST, USE_DUST &
    ,USE_EURO_SOILNOX, USE_GLOBAL_SOILNOX, EURO_SOILNOX_DEPSCALE &
    ,USE_SEASALT, USE_POLLEN, USE_ASH, USE_NOCHEM, USE_AOD,USE_PreADV &
    ,USE_uEMEP, uEMEP &
