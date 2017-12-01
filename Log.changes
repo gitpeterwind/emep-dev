@@ -140,17 +140,19 @@ info on unused variables, etc.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 01st Dec     2017 Michael G
 
-Tried to switch from USE_XXX to USES%XXX method for four variables:
-USE_SOILWATER, USE_CONVECTION, USE_AIRCRAFT_EMIS, USE_LIGHTNING_EMIS
+Switched from USE_XXX to USES%XXX method for nine variables:
+USE_SOILWATER, USE_CONVECTION, USE_AIRCRAFT_EMIS, USE_LIGHTNING_EMIS,
+USE_SEASALT, USE_DUST, USE_ROADDUST, USE_EURO_SOILNOX, USE_GLOBAL_SOILNOX
 
 Files affected:
-config_*nml MetFields.f90 DO3SE_ml.f90 Met_ml.f90 SoilWater_ml.f90
+config_*nml MetFields_ml.f90 DO3SE_ml.f90 Met_ml.f90 SoilWater_ml.f90
 SubMet_ml.f90 Advection_ml.f90 Convection_ml.f90 Emissions_ml.f90
 Setup_1d_ml.f90 AirEmis_ml.f90 Unimod.f90 ModelConstants_ml.f90
+BoundaryConditions_ml.f90 Runchem_ml.f90 SeaSalt_ml.f90 Solver.f90
+DustProd_ml.f90 EmisGet_ml.f90 Biogenics_ml.f90
 
 This should not lead to any changes in the model results and this was
 tested before git push.
-David will anyway check the code, so further updates will be made.
 Other USE_* variables will be changed in further updates soon.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
