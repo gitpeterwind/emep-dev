@@ -42,11 +42,11 @@
   USES%WHITECAPS =       "Callaghan",    ! Norris , Monahan
   USES%SURF_AREA        = F,
 !------------------------------
-  USE_SOILWATER         = F,          ! Uses SMI from meteo data
-  USE_CONVECTION        = F,
+  USES%SOILWATER         = F,          ! Uses SMI from meteo data
+  USES%CONVECTION        = F,
   USE_SEASALT           = F,
-  USE_AIRCRAFT_EMIS     = F,          ! Needs global file, see manual
-  USE_LIGHTNING_EMIS    = F,          !
+  USES%AIRCRAFT_EMIS     = F,          ! Needs global file, see manual
+  USES%LIGHTNING_EMIS    = F,          !
 !------------------------------
   USE_EURO_SOILNOX      = F,          ! diff for global + Euro runs
   EURO_SOILNOX_DEPSCALE = 1.0,        ! Scale, default 1  (see ModelConstants_ml)
