@@ -47,7 +47,6 @@ use ModelConstants_ml,   only:  &
   ,PPB, PT                      & ! PT-pressure at top
   ,USES                         & ! forest fires, hydrolysis, dergee_days etc.
   ,USE_SEASALT                  &
-  ,USE_LIGHTNING_EMIS, USE_AIRCRAFT_EMIS      &
   ,USE_GLOBAL_SOILNOX, USE_DUST, USE_ROADDUST &
   ,USE_OCEAN_NH3,USE_OCEAN_DMS,FOUND_OCEAN_DMS&
   ,VOLCANO_SR                   & ! Reduce Volcanic Emissions
@@ -492,13 +491,13 @@ subroutine setup_rcemis(i,j)
   end if
 
   ! lightning and aircraft ... Aerial NOx emissions if required:
-  if(USE_LIGHTNING_EMIS)then
+  if(USES%LIGHTNING_EMIS)then
     do k=KCHEMTOP, KMAX_MID
       rcemis(NO ,k) = rcemis(NO ,k) + 0.95 * airlig(k,i,j)
       rcemis(NO2,k) = rcemis(NO2,k) + 0.05 * airlig(k,i,j)
     end do
   end if
-  if(USE_AIRCRAFT_EMIS) then
+  if(USES%AIRCRAFT_EMIS) then
     do k=KCHEMTOP, KMAX_MID
       rcemis(NO ,k) = rcemis(NO ,k) + 0.95 * airn(k,i,j)
       rcemis(NO2,k) = rcemis(NO2,k) + 0.05 * airn(k,i,j)
@@ -506,7 +505,7 @@ subroutine setup_rcemis(i,j)
   end if ! AIRCRAFT NOX
   if(DEBUG%SETUP_1DCHEM.and.debug_proc.and.i==debug_li.and.j==debug_lj)&
     write(*,"(a,2L2,10es10.3)") &
-      dtxt//"AIRNOX ", USE_LIGHTNING_EMIS, USE_AIRCRAFT_EMIS, &
+      dtxt//"AIRNOX ", USES%LIGHTNING_EMIS, USES%AIRCRAFT_EMIS, &
       airn(KMAX_MID,i,j),airlig(KMAX_MID,i,j)
 
   ! Road dust
