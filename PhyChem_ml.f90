@@ -31,9 +31,9 @@ use ModelConstants_ml,only: MasterProc, KMAX_MID, nmax, nstep &
                            ,FORECAST       & ! use advecdiff_poles on FORECAST mode
                            ,ANALYSIS       & ! 3D-VAR Analysis
                            ,SOURCE_RECEPTOR&
-                           ,USE_ASH&
+                           ,USES&
                            ,FREQ_HOURLY    & ! hourly netcdf output frequency
-                           ,USE_POLLEN, USE_EtaCOORDINATES,JUMPOVER29FEB&
+                           ,USE_EtaCOORDINATES,JUMPOVER29FEB&
                            ,USE_uEMEP, IOU_HOUR, IOU_HOUR_INST, IOU_YEAR&
                            ,fileName_O3_Top
 use MetFields_ml,     only: ps,roa,z_bnd,z_mid,cc3dmax, &
@@ -114,7 +114,7 @@ subroutine phyche()
   call Code_timer(tim_before)
   call readxn(current_date) !Read xn_adv from earlier runs
 
-  if(FORECAST.and.USE_POLLEN) call pollen_read ()
+  if(FORECAST.and.USES%POLLEN) call pollen_read ()
   call Add_2timing(15,tim_after,tim_before,"nest: Read")
   if(ANALYSIS.and.first_call)then
     call main_3dvar(status)   ! 3D-VAR Analysis for "Zero hour"
@@ -184,7 +184,7 @@ subroutine phyche()
  
   call Add_2timing(13,tim_after,tim_before0,"phyche: total advecdiff")
 
-  if(USE_ASH) call gravset
+  if(USES%ASH) call gravset
 
   !================
 
@@ -264,7 +264,7 @@ subroutine phyche()
     call Add_2timing(T_3DVAR,tim_after,tim_before)
   end if
   call wrtxn(current_date,.false.) !Write xn_adv for future nesting
-  if(FORECAST.and.USE_POLLEN) call pollen_dump()
+  if(FORECAST.and.USES%POLLEN) call pollen_dump()
   call Add_2timing(14,tim_after,tim_before,"nest: Write")
 
   End_of_Day=(current_date%seconds==0).and.(current_date%hour==END_OF_EMEPDAY)
