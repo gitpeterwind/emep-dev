@@ -14,7 +14,7 @@ use ChemGroups_ml,     only: chemgroups
 use DerivedFields_ml,  only: f_2d,f_3d          ! D2D/D3D houtly output type
 use ModelConstants_ml, only: PPBINV, PPTINV, MasterProc, KMAX_MID,&
                              MY_OUTPUTS, FORECAST, DEBUG,&
-                             USE_AOD, USE_POLLEN, DEBUG_POLLEN, &
+                             USES, DEBUG_POLLEN, &
                              SELECT_LEVELS_HOURLY!, FREQ_HOURLY
 use PhysicalConstants_ml, only: ATWAIR
 use OwnDataTypes_ml,   only: Asc2D
@@ -260,8 +260,8 @@ subroutine set_output_defs
 !-  nlevels_hourly=9
 !-  nhourly_out=nhourly_out+15
 !-  if(any(species_adv(:)%name=="RN222"))nhourly_out=nhourly_out+1
-!-  if(USE_AOD     )nhourly_out=nhourly_out+1
-    if(USE_POLLEN  )then
+!-  if(USES%AOD     )nhourly_out=nhourly_out+1
+    if(USES%POLLEN  )then
       nlevels_hourly=1
       call pollen_check(gpoll)
 !-    nhourly_out=nhourly_out+size(chemgroups(gpoll)%specs)
@@ -278,7 +278,7 @@ subroutine set_output_defs
 !-case("MACC_NMC")
 !-  nhourly_out=4
 !-  nlevels_hourly=KMAX_MID     ! nb zero is *not* one of levels
-!-  call CheckStop(.not.USE_AOD,"MACC_NMC hourly output needs USE_AOD")
+!-  call CheckStop(.not.USES%AOD,"MACC_NMC hourly output needs USES%AOD")
   case("3DPROFILES")
     nhourly_out=2
     nlevels_hourly = 2  ! nb zero is one of levels in this system
@@ -294,7 +294,7 @@ subroutine set_output_defs
     nlevels_hourly = 1
   case("TRENDS")
     nhourly_out=2
-    if(USE_AOD     )nhourly_out=nhourly_out+1
+    if(USES%AOD     )nhourly_out=nhourly_out+1
     nlevels_hourly = 1  ! nb zero is *not* one of levels
   case("TRENDS@12UTC")
     nhourly_out=3
@@ -454,12 +454,12 @@ subroutine set_output_defs
 !-    Asc2D("Rn222_3km" ,"BCVugXX",rn222,&
 !-          NLEVELS_HOURLY,"ug",to_ug_ADV(rn222)    ,-999.9)
 !-  endif
-!-  if(USE_AOD)then
+!-  if(USES%AOD)then
 !-    j=j+1;hr_out(j) = &
 !-    Asc2D("AOD_550nm" ,"D2D_inst",find_index("AOD_550nm",f_2d(:)%name),&
 !-          1," ",1.0                               ,-999.9)
 !-  endif
-    if(USE_POLLEN)then
+    if(USES%POLLEN)then
       j=0
       levels_hourly = 0
 !- moved to Hourly/Derived
@@ -636,7 +636,7 @@ subroutine set_output_defs
       Asc2D("no2_col","COLUMN" ,IXADV_NO2,1,"molec/cm2",to_molec_cm2,-999.9) &
 !!    Asc2D("no2_col","COLUMN" ,IXADV_NO2,1,"ug",to_ug_ADV(IXADV_NO2),-999.9) &
     /)
-    if(USE_AOD)then
+    if(USES%AOD)then
       j=j+1;hr_out(j) = &
       Asc2D("AOD_550nm","D2D_inst",find_index("AOD_550nm",f_2d(:)%name),&
             1," ",1.0,-999.9)
