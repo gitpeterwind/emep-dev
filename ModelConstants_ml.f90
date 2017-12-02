@@ -53,8 +53,13 @@ type, public :: emep_useconfig
     ,LIGHTNING_EMIS   = .true.  &! 
     ,ROADDUST         = .false. &! TNO Road Dust routine. So far with simplified "climate-correction" factor
     ,DUST             = .false. &! Experimental
-    ,EURO_SOILNOX = .true.  &! ok, but diff for global + Euro runs
-    ,GLOBAL_SOILNOX=.false. &! Need to design better switch
+    ,EURO_SOILNOX     = .true.  &! ok, but diff for global + Euro runs
+    ,GLOBAL_SOILNOX   = .false. &! Need to design better switch
+    ,ASH          = .true.  &! Ash from historical Volcanic Eruption
+    ,PreADV       = .false. &! Column Emissions are preadvected when winds are very strong 
+    ,NOCHEM       = .false. &! Turns of chemistry for emergency runs
+    ,AOD          = .false. &
+    ,POLLEN       = .false. &! EXPERIMENTAL. Only works if start Jan 1
     ,SURF_AREA        = .true.  &! For improved aerosol uptake
     ,MACEHEADFIX      = .true.  &! Correction to O3 BCs (Mace Head Obs.)
     ,MACEHEAD_AVG     = .false. &! Uses 10-year avg. Good for e.g. RCA runs.
@@ -190,11 +195,11 @@ logical, public, save ::             &
  ,TEGEN_DATA         = .true.        & ! Interpolate global data to make dust if  USE_DUST=.true.
  ,INERIS_SNAP1       = .false.       & !(EXP_NAME=="TFMM"), & ! Switches off decadal trend
  ,INERIS_SNAP2       = .false.       & !(EXP_NAME=="TFMM"), & ! Allows near-zero summer values
- ,USE_ASH            = .true.        & ! Ash from historical Volcanic Eruption
- ,USE_PreADV         = .false.       & ! Column Emissions are preadvected when winds are very strong 
- ,USE_NOCHEM         = .false.       & ! Turns of chemistry for emergency runs
- ,USE_AOD            = .false.       &
- ,USE_POLLEN         = .false.       & ! EXPERIMENTAL. Only works if start Jan 1
+! ,USE_ASH            = .true.        & ! Ash from historical Volcanic Eruption
+! ,USE_PreADV         = .false.       & ! Column Emissions are preadvected when winds are very strong 
+! ,USE_NOCHEM         = .false.       & ! Turns of chemistry for emergency runs
+! ,USE_AOD            = .false.       &
+! ,USE_POLLEN         = .false.       & ! EXPERIMENTAL. Only works if start Jan 1
  ,USE_AMINEAQ        = .false.       & ! MKPS
  ,ANALYSIS           = .false.       & ! EXPERIMENTAL: 3DVar data assimilation
  ,USE_FASTJ          = .false.       & ! use FastJ_ml for computing rcphot
@@ -611,8 +616,7 @@ subroutine Config_ModelConstants(iolog)
    ,DEBUG  & !
    ,MY_OUTPUTS  &  ! e.g. EMEPSTD, FORECAST, TFMM
    ,CONVECTION_FACTOR &
-   , EURO_SOILNOX_DEPSCALE &
-   ,USE_POLLEN, USE_ASH, USE_NOCHEM, USE_AOD,USE_PreADV &
+   ,EURO_SOILNOX_DEPSCALE &
    ,USE_uEMEP, uEMEP &
    ,INERIS_SNAP1, INERIS_SNAP2 &   ! Used for TFMM time-factors
    ,SELECT_LEVELS_HOURLY, FREQ_HOURLY  & ! incl. FORECAST, 3DPROFILES
