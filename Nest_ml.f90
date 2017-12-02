@@ -50,7 +50,7 @@ use Io_ml,                  only: open_file,IO_TMP,IO_NML,PrintLog
 use InterpolationRoutines_ml,  only : grid2grid_coeff,point2grid_coeff
 use MetFields_ml,           only: roa
 use ModelConstants_ml,      only: Pref,PT,KMAX_MID,MasterProc,NPROC,DataDir,GRID,&
-                                  IOU_INST,RUNDOMAIN,FORECAST,USE_POLLEN,&
+                                  IOU_INST,RUNDOMAIN,FORECAST,USES,&
                                   DEBUG_NEST,DEBUG_ICBC=>DEBUG_NEST_ICBC
 use MPI_Groups_ml  
 use netcdf,                 only: nf90_open,nf90_close,nf90_inq_dimid,&
@@ -452,7 +452,7 @@ subroutine wrtxn(indate,WriteNow)
            "Can not be written to file:",trim(filename_write),""
         end if
       end do
-    elseif(FORECAST.and.USE_POLLEN)then
+    elseif(FORECAST.and.USES%POLLEN)then
       ! POLLEN group members are written to pollen restart/dump file
       call pollen_check(igrp=i)
       if(i>0)then
