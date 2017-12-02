@@ -138,6 +138,17 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+2nd Dec      2017 Michael G
+
+Switched from USE_XXX to USES%XXX method for five variables:
+USE_POLLEN, USE_ASH, USE_NOCHEM, USE_AOD, USE_PreADV
+
+Files affected:
+config_*nml ModelConstants_ml.f90 My_Outputs_ml.f90 My_Pollen_ml.f90
+Nest_ml.f90 PhyChem_ml.f90 Runchem_ml.f90 ColumnSource_ml.f90 AOD_PM_ml.f90
+Derived_ml.f90 My_Derived_ml.f90
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 1st Dec      2017 Dave
 
 *** RESULTS CHANGING ***** START of rv4_16beta
