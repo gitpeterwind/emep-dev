@@ -38,7 +38,7 @@ use GridValues_ml,    only: RestrictDomain
 use Io_Nums_ml,       only: IO_NML
 use Io_Progs_ml,      only: PrintLog
 use ModelConstants_ml,only: MasterProc, SOURCE_RECEPTOR, DEBUG, & !! => DEBUG_MY_DERIVED &
-                            USE_AOD, USE_SOILNOX, USE_OCEAN_DMS, USE_OCEAN_NH3, &
+                            USES, USE_SOILNOX, USE_OCEAN_DMS, USE_OCEAN_NH3, &
                             IOU_KEY,      & !'Y'=>IOU_YEAR,..,'I'=>IOU_HOUR_INST
                             KMAX_MID,     & ! =>  z dimension
                             RUNDOMAIN,    &
@@ -408,7 +408,7 @@ subroutine Init_My_Deriv()
         tag_name(1)= "COLUMN_"//trim(outname)//"_"//trim(outdim)
       case('AOD','AOD:TOTAL','AOD:SPEC','AOD:SHL','AOD:GROUP',&
            'EXT','EXT:TOTAL','EXT:SPEC','EXT:SHL','EXT:GROUP')
-        if(.not.USE_AOD)cycle
+        if(.not.USES%AOD)cycle
         if(outname(1:3)/=outtyp(1:3))&
           outname  = outtyp(1:3)//"_"//trim(outname)
         tag_name(1)=            trim(outname)//"_"//trim(outdim)
