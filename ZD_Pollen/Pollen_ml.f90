@@ -633,7 +633,7 @@ integer function getRecord(fileName,findDate,fatal)
   if(MasterProc) getRecord=startRecord()
   call MPI_BCAST(getRecord,1,MPI_INTEGER,MasterPE,MPI_COMM_CALC,IERROR)
   if(getRecord<1)&  ! switch off Pollen_ml when restart file is corrupted
-    call MPI_BCAST(USE_POLLEN,1,MPI_LOGICAL,MasterPE,MPI_COMM_CALC,IERROR)
+    call MPI_BCAST(USES%POLLEN,1,MPI_LOGICAL,MasterPE,MPI_COMM_CALC,IERROR)
 contains
 function startRecord() result(nstart)
   integer :: nstart
@@ -664,7 +664,7 @@ function startRecord() result(nstart)
     if(MasterProc) write(*,*)&
       "Warning Pollen dump file corrupted: "//trim(filename)
     call PrintLog("WARNING: Pollen_ml forced OFF",MasterProc)
-    USE_POLLEN=.false.
+    USES%POLLEN=.false.
     nstart=-1
     return
   end if
