@@ -18,7 +18,7 @@ use GridValues_ml,        only: xm2,sigma_bnd,GridArea_m2,&
 use Io_ml,                only: open_file,read_line,IO_NML,IO_TMP,PrintLog
 use MetFields_ml,         only: roa, z_bnd, u_xmj, v_xmi
 use ModelConstants_ml,    only: KCHEMTOP,KMAX_MID,MasterProc,NPROC, &
-                                USE_ASH,DEBUG,USE_PreADV,&
+                                USES,DEBUG,&
                                 TXTLEN_NAME,TXTLEN_FILE,dt_advec,dt_advec_inv,&
                                 startdate,enddate,DataDir,GRID
 use NetCDF_ml,            only: GetCDF_modelgrid
@@ -155,7 +155,7 @@ subroutine Config_ColumnSource()
   emsdef(:,:)=ems('UNDEF','UNKNOWN','??',-999.0,-999.0,-999.0,&
                   '??','??',-1,-1,-1,.true.,.false.)
   PROC_LOC(:)=-1
-  if(USE_PreADV) allocate(Winds(KMAX_MID,2,NMAX_LOC))
+  if(USES%PreADV) allocate(Winds(KMAX_MID,2,NMAX_LOC))
 
   ! read topography file
   allocate(surf_height(LIMAX,LJMAX))
@@ -220,7 +220,7 @@ function ColumnRate(i,j,REDUCE_VOLCANO) result(emiss)
   
   doLOC: do v=1,nloc 
   
-    if(USE_PreADV)then ! spread emissions in case of strong winds
+    if(USES%PreADV)then ! spread emissions in case of strong winds
     !cannot use formula below directly, because location may be in another subdomain
     !  Winds(:,1,l)=u_xmj(locdef(l)%iloc,locdef(l)%jloc,:,1)*xm2(locdef(l)%iloc,locdef(l)%jloc)*dt_advec/gridwidth_m
     !  Winds(:,2,l)=v_xmi(locdef(l)%iloc,locdef(l)%jloc,:,1)*xm2(locdef(l)%iloc,locdef(l)%jloc)*dt_advec/gridwidth_m
@@ -229,7 +229,7 @@ function ColumnRate(i,j,REDUCE_VOLCANO) result(emiss)
       if((i/=locdef(v)%iloc).or.(j/=locdef(v)%jloc) & ! Wrong gridbox
            .or.(nems(v)<1)) cycle doLOC               ! Not erupting
     end if
-    if(DEBUG%COLSRC .and. .not. USE_PreADV) &
+    if(DEBUG%COLSRC .and. .not. USES%PreADV) &
       write(*,MSG_FMT)snow//' Vent',me,'me',v,trim(locdef(v)%id),i,"i",j,"j"
     doEMS: do e=1,nems(v)
       sbeg=date2string(emsdef(v,e)%sbeg,current_date)
@@ -250,7 +250,7 @@ function ColumnRate(i,j,REDUCE_VOLCANO) result(emiss)
       uconv=uconv/(GridArea_m2(i,j)*DIM(z_bnd(i,j,k1),z_bnd(i,j,k0+1))) ! --> g/s/cm3=1e-6 g/s/m3
       uconv=uconv*AVOG/species(itot)%molwt                              ! --> molecules/s/cm3
 
-      if(USE_PreADV)then ! spread emissions in case of strong winds
+      if(USES%PreADV)then ! spread emissions in case of strong winds
         do k=k1,k0
           ! only a fraction of the emission is used in each reachable gridcell
           ! test if in range. NB: Winds have sign
@@ -302,7 +302,7 @@ function ColumnRate(i,j,REDUCE_VOLCANO) result(emiss)
 !----------------------------!
   if(.not.VOLCANOES_LL.and.iSO2>0)&       ! read from emislist.sox instead
     emiss(iSO2,:)=0.0
-  if(.not.USE_ASH.and.associated(iASH))&  ! do not use ASH emissions
+  if(.not.USES%ASH.and.associated(iASH))&  ! do not use ASH emissions
     emiss(iASH,:)=0.0
 !----------------------------!
  contains
@@ -393,7 +393,7 @@ subroutine setRate()
   if(MasterProc) close(IO_TMP)
   found_source=(nloc>0).or.(MasterProc.and.DEBUG%COLSRC)
 
-  if(USE_PreADV)then ! spread emissions in case of strong winds
+  if(USES%PreADV)then ! spread emissions in case of strong winds
     ! broadcast the PROC_LOC
     CALL MPI_ALLREDUCE(MPI_IN_PLACE,PROC_LOC,NMAX_LOC,MPI_INTEGER, &
          MPI_SUM,MPI_COMM_CALC,IERROR)
