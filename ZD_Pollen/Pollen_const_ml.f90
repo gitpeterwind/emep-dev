@@ -7,7 +7,7 @@ module Pollen_const_ml
 ! Pollen particles are assumed of 22 um diameter and 800 kg/m3 density.
 !-----------------------------------------------------------------------!
 use PhysicalConstants_ml, only: PI,ATWAIR,AVOG
-use ModelConstants_ml,    only: USE_POLLEN,DEBUG=>DEBUG_POLLEN
+use ModelConstants_ml,    only: USES,DEBUG=>DEBUG_POLLEN
 use CheckStop_ml,         only: CheckStop
 use ChemSpecs,            only: NSPEC_ADV,NSPEC_SHL,species
 use ChemGroups_ml,        only: chemgroups
@@ -73,10 +73,10 @@ subroutine pollen_check(igrp,uconv_adv)
   if(present(igrp))igrp=poll
   if(.not.first_call)return
   first_call=.false.
-  call CheckStop(USE_POLLEN.and.(poll<1),&
-    "USE_POLLEN on model compiled without pollen")
-  call CheckStop(DEBUG.and..not.USE_POLLEN,&
-    "DEBUG_POLLEN on run without USE_POLLEN")
+  call CheckStop(USES%POLLEN.and.(poll<1),&
+    "USES%POLLEN on model compiled without pollen")
+  call CheckStop(DEBUG.and..not.USES%POLLEN,&
+    "DEBUG_POLLEN on run without USES%POLLEN")
   call CheckStop(size(chemgroups(poll)%specs),size(POLLEN_GROUP),&
     "pollen_check: Inconsistent POLLEN group size")
   call CheckStop(any(species(chemgroups(poll)%specs)%name/=POLLEN_GROUP),&
