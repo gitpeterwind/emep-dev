@@ -30,7 +30,7 @@
   EURO_SOILNOX_DEPSCALE = 1.0,        ! Scale, default 1  (see ModelConstants_ml)
   USES%GLOBAL_SOILNOX    = F,          ! diff for global + Euro runs
 !------------------------------
-  USE_POLLEN            = F,          ! EXPERIMENTAL. Only works if start Jan 1
+  USES%POLLEN            = F,          ! EXPERIMENTAL. Only works if start Jan 1
   USES%ROADDUST          = F,          ! Only EECCA?
   USES%DUST              = F,          ! Only EECCA?
   NETCDF_DEFLATE_LEVEL  = 4,          ! 1-9 GZIP compress, 0 no compress, -1 nc3
@@ -43,9 +43,9 @@
 !------------------------------
   SELECT_LEVELS_HOURLY  = T,          ! hourly output flag Also for FORECAST, 3DPROFILES
   FORECAST              = T,
-  USE_ASH               = T,          ! Ash from historical Volcanic Eruptions
+  USES%ASH               = T,          ! Ash from historical Volcanic Eruptions
   ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
-  USE_AOD               = F,          ! Used for FORECASTs usually
+  USES%AOD               = F,          ! Used for FORECASTs usually
   BGND_CH4              = -1,         ! Reset CH4 (use ppb). (Use -1 for defaults)
 !--- 'fake' vegetation for ozone POD calculations
   FLUX_VEGS = 'IAM_CR','IAM_DF','IAM_MF', ! do not need all array elements
