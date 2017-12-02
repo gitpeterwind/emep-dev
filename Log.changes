@@ -144,9 +144,14 @@ Switched from USE_XXX to USES%XXX method for five variables:
 USE_POLLEN, USE_ASH, USE_NOCHEM, USE_AOD, USE_PreADV
 
 Files affected:
-config_*nml ModelConstants_ml.f90 My_Outputs_ml.f90 My_Pollen_ml.f90
-Nest_ml.f90 PhyChem_ml.f90 Runchem_ml.f90 ColumnSource_ml.f90 AOD_PM_ml.f90
-Derived_ml.f90 My_Derived_ml.f90
+config_*nml
+ModelConstants_ml.f90
+ZD_OZONE/My_Outputs_ml.f90
+ZD_POLLEN/My_Pollen_ml.f90
+ZD_POLLEN/Pollen_ml.f90
+ZD_POLLEN/Pollen_const_ml.f90
+Nest_ml.f90 PhyChem_ml.f90 Runchem_ml.f90 ColumnSource_ml.f90
+AOD_PM_ml.f90 Derived_ml.f90 My_Derived_ml.f90
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 1st Dec      2017 Dave
