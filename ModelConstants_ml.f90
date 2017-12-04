@@ -115,6 +115,7 @@ type, public :: emep_debug
     ,MY_DERIVED      = .false. &
     ,pH              = .false. &
     ,PHYCHEM         = .false. &
+    ,POLLEN          = .false. &
     ,RSUR            = .false. & ! Surface resistance
     ,RUNCHEM         = .false. & ! DEBUG%RUNCHEM is SPECIAL
        ,MY_WETDEP    = .false. &
@@ -371,7 +372,7 @@ logical, public, parameter ::    &
   ,DEBUG_NH3            = .false. & ! NH3Emis experimental
   ,DEBUG_OUTPUTCHEM     = .false. & ! Output of netcdf results
   ,DEBUG_OUT_HOUR       = .false. & ! Debug Output_hourly.f90
-  ,DEBUG_POLLEN         = .false. &
+! ,DEBUG_POLLEN         = .false. &
 !MV  ,DEBUG_RUNCHEM        = .false. & ! DEBUG_RUNCHEM is SPECIAL
     ,DEBUG_DUST           = .false. & ! Skips fast chemistry to save some CPU
     ,DEBUG_ROADDUST     = .false. &

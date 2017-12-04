@@ -23,7 +23,7 @@ use MetFields_ml,         only: surface_precip, ws_10m ,rh2m,t2_nwp,&
 use MicroMet_ml,          only: Wind_at_h
 use ModelConstants_ml,    only: AERO, KMAX_MID, nstep, DataDir, FORECAST, &
                                 METSTEP, MasterProc, IOU_INST, RUNDOMAIN, &
-                                TXTLEN_FILE, dt=>dt_advec, DEBUG=>DEBUG_POLLEN
+                                TXTLEN_FILE, dt=>dt_advec, DEBUG
 use MPI_Groups_ml,        only: MPI_INTEGER,MPI_LOGICAL,MPI_COMM_CALC,&
                                 MasterPE,IERROR
 use Nest_ml,              only: outdate,FORECAST_NDUMP,out_DOMAIN,&
@@ -124,7 +124,7 @@ subroutine Config_Pollen()
   rewind(IO_NML)
   read(IO_NML,NML=Pollen_config,iostat=ios)
   call CheckStop(ios,"NML=Pollen_config")
-  if(debug.and.MasterProc)then
+  if(DEBUG%POLLEN.and.MasterProc)then
     write(*,*) "NAMELIST IS "
     write(*,NML=Pollen_config)
   end if
@@ -299,7 +299,7 @@ subroutine pollen_flux(i,j,debug_flag)
       write(*,*) "POLLEN setup ",date2string("YYYY-MM-DD hh:mm",current_date)
     first_call = .false.
   end if !first_call
-  debug_ij=all([DEBUG.or.debug_flag,debug_proc,i==debug_li,j==debug_lj])
+  debug_ij=all([DEBUG%POLLEN.or.debug_flag,debug_proc,i==debug_li,j==debug_lj])
 
   pollen_out(1)=.not.checkdates(daynumber,BIRCH)&
     .or.any([pollen_frac(i,j,1),birch_h_c(i,j)]==UnDef)
@@ -721,7 +721,7 @@ subroutine pollen_read()
 !------------------------
     call GetCDF_modelgrid(trim(spc),filename,data,&
           1,KMAX_MID,nstart,1,needed=.not.FORECAST,found=found)
-    if(DEBUG.and.MasterProc) write(*,dfmt)spc,found
+    if(DEBUG%POLLEN.and.MasterProc) write(*,dfmt)spc,found
     if(found)xn_adv(iadv(g),:,:,:)=data(:,:,:)
 !------------------------
 ! pollen_rest
@@ -729,7 +729,7 @@ subroutine pollen_read()
     spc=trim(POLLEN_GROUP(g))//'_rest'
     call GetCDF_modelgrid(trim(spc),filename,data(:,:,1),&
         1,1,nstart,1,needed=.not.FORECAST,found=found)
-    if(DEBUG.and.MasterProc) write(*,dfmt)spc,found
+    if(DEBUG%POLLEN.and.MasterProc) write(*,dfmt)spc,found
     if(found)R(:,:,g)=N_TOT(g)-data(:,:,1)
 !------------------------
 ! heatsum
@@ -738,7 +738,7 @@ subroutine pollen_read()
     spc=trim(POLLEN_GROUP(g))//'_heatsum'
     call GetCDF_modelgrid(trim(spc),filename,heatsum(:,:,g),&
         1,1,nstart,1,needed=.not.FORECAST,found=found)
-    if(DEBUG.and.MasterProc) write(*,dfmt)spc,found
+    if(DEBUG%POLLEN.and.MasterProc) write(*,dfmt)spc,found
   end do
   deallocate(data)
 end subroutine pollen_read
@@ -786,7 +786,7 @@ subroutine pollen_dump()
       def1%class='Advected'           ! written
       def1%unit='mix_ratio'           ! written
       def1%name=trim(spc)             ! written
-      if(DEBUG.and.MasterProc) write(*,dfmt)def1%name,trim(def1%unit)
+      if(DEBUG%POLLEN.and.MasterProc) write(*,dfmt)def1%name,trim(def1%unit)
       if(.not.create_var)data=xn_adv(iadv(g),:,:,:)
       call Out_netCDF(IOU_INST,def1,3,KMAX_MID,data,1.0,CDFtype=CDFtype,&
           out_DOMAIN=out_DOMAIN,create_var_only=create_var,overwrite=overwrite,&
@@ -798,7 +798,7 @@ subroutine pollen_dump()
       def1%class='pollen_out'         ! written
       def1%unit='pollengrains'        ! written
       def1%name=trim(spc)//'_rest'    ! written
-      if(DEBUG.and.MasterProc) write(*,dfmt)def1%name,trim(def1%unit)
+      if(DEBUG%POLLEN.and.MasterProc) write(*,dfmt)def1%name,trim(def1%unit)
       data(:,:,1)=N_TOT(g)-R(:,:,g)
       call Out_netCDF(IOU_INST,def1,2,1,data(:,:,1),1.0,CDFtype=CDFtype,&
           out_DOMAIN=out_DOMAIN,create_var_only=create_var,&
@@ -810,7 +810,7 @@ subroutine pollen_dump()
       def1%class='pollen_out'         ! written
       def1%unit='degreedays'          ! written
       def1%name=trim(spc)//'_heatsum' ! written
-      if(DEBUG.and.MasterProc) write(*,dfmt)def1%name,trim(def1%unit)
+      if(DEBUG%POLLEN.and.MasterProc) write(*,dfmt)def1%name,trim(def1%unit)
       call Out_netCDF(IOU_INST,def1,2,1,heatsum(:,:,g),1.0,CDFtype=CDFtype,&
           out_DOMAIN=out_DOMAIN,create_var_only=create_var,&
           fileName_given=trim(filename),ncFileID_given=ncFileID)
@@ -820,7 +820,7 @@ subroutine pollen_dump()
     call CheckNC(nf90_close(ncFileID),"close:"//trim(filename))
   ! ensure time record can be found, fatal error if not
   i=getRecord(filename,current_date,.true.) ! MPI_BCAST inside
-  if(MasterProc.and.DEBUG) &
+  if(DEBUG%POLLEN.and.MasterProc) &
     write(*,"(3(A,1X),I0)") "Found Pollen dump",trim(filename),"record",i
   deallocate(data)
 end subroutine pollen_dump

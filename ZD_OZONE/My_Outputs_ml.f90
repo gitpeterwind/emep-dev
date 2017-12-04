@@ -13,8 +13,7 @@ use ChemSpecs
 use ChemGroups_ml,     only: chemgroups
 use DerivedFields_ml,  only: f_2d,f_3d          ! D2D/D3D houtly output type
 use ModelConstants_ml, only: PPBINV, PPTINV, MasterProc, KMAX_MID,&
-                             MY_OUTPUTS, FORECAST, DEBUG,&
-                             USES, DEBUG_POLLEN, &
+                             MY_OUTPUTS, FORECAST, USES, DEBUG,&
                              SELECT_LEVELS_HOURLY!, FREQ_HOURLY
 use PhysicalConstants_ml, only: ATWAIR
 use OwnDataTypes_ml,   only: Asc2D
@@ -265,7 +264,7 @@ subroutine set_output_defs
       nlevels_hourly=1
       call pollen_check(gpoll)
 !-    nhourly_out=nhourly_out+size(chemgroups(gpoll)%specs)
-      if(DEBUG_POLLEN)&
+      if(DEBUG%POLLEN)&
       nhourly_out=nhourly_out+size(chemgroups(gpoll)%specs)*3-1
     endif
 !- moved to Hourly/Derived
@@ -469,7 +468,7 @@ subroutine set_output_defs
 !-      Asc2D(trim(species_adv(idx)%name),"ADVugXX",idx, &
 !-            1,"grains/m3",to_number_m3,-999.9)
 !-    enddo
-      if(DEBUG_POLLEN)then
+      if(DEBUG%POLLEN)then
         do i=1,size(chemgroups(gpoll)%specs)
           idx=chemgroups(gpoll)%specs(i)-NSPEC_SHL ! offset between xn_adv and species
           if(i<3)then
