@@ -19,6 +19,9 @@ module DA_3DVar_ml
   use GO, only : gol, goPr, goErr
   use GO, only : GO_Print_Set
   !use GO, only : goMem
+  !use Par_ml, only : me
+  !use ChemChemicals_ml , only : species_adv
+  !use DA_Obs_ml            , only : dbg_cell, dbg_i, dbg_j
 #else
   use DA_Util_ml     , only : gol, goPr, goErr
 #endif
@@ -183,8 +186,8 @@ contains
     IF_NOT_OK_RETURN(status=1)
 
 #ifdef with_ajs
-    ! info as error message to have it in the log file ..
-    write (gol,'(a,": enable GO logging from this routine if necessary ...")') rname; call goPr
+    !! info as error message to have it in the log file ..
+    !write (gol,'(a,": INFO - enable GO logging from this routine if necessary ...")') rname; call goErr
     ! log from all:
     call GO_Print_Set( status, apply=.true. )
     IF_NOT_OK_RETURN(status=1)
@@ -699,6 +702,13 @@ contains
                           (/ nspec_adv, tgi1(me), tgj1(me), kmax_mid /), status )
     IF_NOT_OK_RETURN(status=1)
 
+!#ifdef with_ajs
+!    ! debug ...
+!    dbg_i = 6
+!    dbg_j = 74
+!    dbg_cell = (dbg_i <= doms_adv_m%shp(2,me)) .and. (dbg_j <= doms_adv_m%shp(3,me))
+!#endif
+
     ! analyis tracers and order;
     ! original model decomposition on standard domain:
     !                         lon       lat      lev
@@ -772,8 +782,6 @@ contains
     use DA_Obs_ml            , only : Read_Obs
     use DA_Obs_ml            , only : nObsComp, ObsCompInfo
     use DA_ml                , only : nlev
-
-    !use DA_Obs_ml            , only : dbg_cell, dbg_i, dbg_j
 
     !-----------------------------------------------------------------------
     ! Formal parameters
@@ -1456,6 +1464,14 @@ contains
 
       end do  ! analyzed components
 
+!#ifdef with_ajs
+!      if ( dbg_cell ) then
+!        do ispec = 1, size(xn_adv,1)
+!          write (gol,*) 'vvv1 adv spec ', ispec, ' ',  trim(species_adv(ispec)%name), xn_adv(ispec,dbg_i,dbg_j,20); call goPr
+!        end do
+!      end if
+!#endif
+
       ! all advected tracers now analysed ;
       ! fill simulate 'observation' fields 'xn_an' and 'sf_an';
       ! loop over variables involved in analysis:
@@ -1477,6 +1493,14 @@ contains
       ! fill arrays for requested subclass using analysed concentrations:
       call Fill_Output_xn_adv( '3DVAR_AN', xn_adv, status )
       IF_NOT_OK_RETURN(status=1)
+
+!#ifdef with_ajs
+!      if ( dbg_cell ) then
+!        do ispec = 1, size(xn_adv,1)
+!          write (gol,*) 'vvv2 adv spec ', ispec, ' ',  trim(species_adv(ispec)%name), xn_adv(ispec,dbg_i,dbg_j,20); call goPr
+!        end do
+!      end if
+!#endif
 
 
       !-----------------------------------------------------------------------
@@ -1605,6 +1629,14 @@ contains
     !  write (gol,'(a," - MEMORY break")') rname; call goPr
     !  TRACEBACK; status=1; return
     !end if
+
+!#ifdef with_ajs
+!      if ( dbg_cell ) then
+!        do ispec = 1, size(xn_adv,1)
+!          write (gol,*) 'vvv3 adv spec ', ispec, ' ',  trim(species_adv(ispec)%name), xn_adv(ispec,dbg_i,dbg_j,20); call goPr
+!        end do
+!      end if
+!#endif
 
     ! info ...
     write (gol,'(a,": end")') rname; call goPr

@@ -77,7 +77,7 @@ module DA_Obs_ml
   public    ::  LEVTYPE_2D_ML_SFC
   public    ::  LEVTYPE_2D_OBS_SFC
   
-  !public    ::  dbg_cell, dbg_i, dbg_j
+!  public    ::  dbg_cell, dbg_i, dbg_j
 
 
   ! --- types ----------------------------------------
@@ -279,10 +279,10 @@ module DA_Obs_ml
   ! info:
   type(T_ObsCompInfo), allocatable   ::  ObsCompInfo(:)  ! (nObsComp)
   
-  !! testing ...
-  !logical            ::  dbg_cell = .false.
-  !integer            ::  dbg_i    = -999
-  !integer            ::  dbg_j    = -999
+!  ! testing ...
+!  logical            ::  dbg_cell = .false.
+!  integer            ::  dbg_i    = -999
+!  integer            ::  dbg_j    = -999
   
 
 contains
@@ -519,7 +519,7 @@ contains
     real, intent(in)                      ::  xn_adv(:,:,:,:)    ! (nspec_adv,lnx,lny,nlev)
     character(len=*), intent(in)          ::  xn_adv_units(:)    ! (nspec_adv)
     real, intent(out)                     ::  xn_obs_sfc(:,:)    ! (lnx,lny)
-    real, intent(inout)                   ::  xn_obs_ml(:,:,:)   ! (lnx,lny,nlev)
+    real, intent(out)                     ::  xn_obs_ml(:,:,:)   ! (lnx,lny,nlev)
     character(len=*), intent(out)         ::  xn_obs_units
     integer, intent(out)                  ::  status
     
@@ -723,7 +723,6 @@ contains
     integer               ::  ispec_adv
     logical               ::  verb
 
-    integer               ::  nlev
     real                  ::  tpm
     integer               ::  i
     integer               ::  ispec
@@ -736,7 +735,7 @@ contains
 
     !! testing ...
     !if ( dbg_cell ) then
-    !  nlev = size(xn_adv,4)
+    !  !nlev = size(xn_adv,4)
     !  tpm = 0.0
     !  do i = 1, self%nspec
     !    ispec = self%ispec(i)
@@ -757,17 +756,16 @@ contains
       
     end do  ! ispec_adv
 
-    !! testing ...
-    !if ( dbg_cell ) then
-    !  nlev = size(xn_adv,4)
-    !  tpm = 0.0
-    !  do i = 1, self%nspec
-    !    ispec = self%ispec(i)
-    !    tpm = tpm + xn_adv(ispec,dbg_i,dbg_j,nlev)
-    !    write (gol,*) 'yyy after  xn_adv = ', xn_adv(ispec,dbg_i,dbg_j,nlev); call goPr
-    !  end do
-    !  write (gol,*) 'yyy after  tpm    = ', tpm; call goPr
-    !end if
+!    ! testing ...
+!    if ( dbg_cell ) then
+!      tpm = 0.0
+!      do i = 1, self%nspec
+!        ispec = self%ispec(i)
+!        tpm = tpm + xn_adv(ispec,dbg_i,dbg_j,nlev)
+!        write (gol,*) 'yyy after  xn_adv = ', xn_adv(ispec,dbg_i,dbg_j,nlev); call goPr
+!      end do
+!      write (gol,*) 'yyy after  tpm    = ', tpm; call goPr
+!    end if
 
     ! ok
     status = 0
@@ -815,8 +813,6 @@ contains
     integer               ::  i
     integer               ::  ispec
     logical               ::  verb
-    
-    integer               ::  nlev
     
     ! --- begin -----------------------------
     
@@ -882,11 +878,10 @@ contains
           !  write (gol,*) 'xxx scale tracer ', ispec, ' with ratios ', minval(ratio), ' - ', maxval(ratio); call goPr
           !end if
 
-          !! testing ...
-          !if ( dbg_cell ) then
-          !  nlev = size(xn_obs,3)
-          !  write (gol,*) 'yyy update: ', xn_adv1(dbg_i,dbg_j,nlev), ratio(dbg_i,dbg_j,nlev), xn_adv1(dbg_i,dbg_j,nlev) * ratio(dbg_i,dbg_j,nlev); call goPr
-          !end if
+!          ! testing ...
+!          if ( dbg_cell ) then
+!            write (gol,*) 'yyy update: ', xn_adv1(dbg_i,dbg_j,nlev), ratio(dbg_i,dbg_j,nlev), xn_adv1(dbg_i,dbg_j,nlev) * ratio(dbg_i,dbg_j,nlev); call goPr
+!          end if
 
           ! scale
           xn_adv1 = xn_adv1 * ratio
@@ -1427,7 +1422,7 @@ contains
     !end if
     ! scale profile to have factors at bottom layer equal to factor for surface field:
     do k = 1, nz
-      where ( coarse_factor_ml(:,:,k) /= 1.0 )
+      where ( coarse_factor_ml(:,:,nz) /= 1.0 )
         coarse_factor_ml(:,:,k) = 1.0 + (coarse_factor_ml(:,:,k)-1.0) * (coarse_factor_sfc-1.0) / (coarse_factor_ml(:,:,nz)-1.0)
       endwhere
     end do
@@ -1473,10 +1468,10 @@ contains
 !    tpm_sfc = 0.0
 !    ! loop over fine (=1) and coarse (=2):
 !    do ipm = 1, 2
-!      ! testing ...
-!      if ( dbg_cell ) then
-!        write (gol,*) 'yyy ipm = ', ipm; call goPr
-!      end if
+!      !! testing ...
+!      !if ( dbg_cell ) then
+!      !  write (gol,*) 'yyy ipm = ', ipm; call goPr
+!      !end if
 !      ! loop over species:
 !      do ispec = 1, nspec
 !        ! skip if no contribution:
@@ -1505,11 +1500,11 @@ contains
 !                               * fscale &
 !                               * roa(:,:,nlev,1)    &  ! density
 !                               * cfac(ispec,:,:)       ! 50 m -> 3 m
-!          ! testing ...
-!          if ( dbg_cell ) then
-!            write (gol,*) 'yyy   r ispec ', ispec, xn_adv(ispec,dbg_i,dbg_j,nlev) * w(ispec,ipm) &
-!                                                 * fscale * roa(dbg_i,dbg_j,nlev,1) * cfac(ispec,dbg_i,dbg_j); call goPr
-!          end if
+!          !! testing ...
+!          !if ( dbg_cell ) then
+!          !  write (gol,*) 'yyy   r ispec ', ispec, xn_adv(ispec,dbg_i,dbg_j,nlev) * w(ispec,ipm) &
+!          !                                       * fscale * roa(dbg_i,dbg_j,nlev,1) * cfac(ispec,dbg_i,dbg_j); call goPr
+!          !end if
 !                               
 !        else
 !          ! add contribution:
@@ -1521,21 +1516,21 @@ contains
 !                               xn_adv(ispec,:,:,nlev) * w(ispec,ipm) &
 !                               * fscale &
 !                               * cfac(ispec,:,:)       ! 50 m -> 3 m
-!          ! testing ...
-!          if ( dbg_cell ) then
-!            write (gol,*) 'yyy   p ispec ', ispec, xn_adv(ispec,dbg_i,dbg_j,nlev) * w(ispec,ipm) &
-!                                                 * fscale * cfac(ispec,dbg_i,dbg_j); call goPr
-!          end if
+!          !! testing ...
+!          !if ( dbg_cell ) then
+!          !  write (gol,*) 'yyy   p ispec ', ispec, xn_adv(ispec,dbg_i,dbg_j,nlev) * w(ispec,ipm) &
+!          !                                       * fscale * cfac(ispec,dbg_i,dbg_j); call goPr
+!          !end if
 !        end if
 !      end do  ! spec
 !      ! add 3D aersosol water to fine fraction:
 !      if ( ipm == 1 ) then
 !        tpm_ml (:,:,:,ipm) = tpm_ml (:,:,:,ipm) + PM25_water
 !        tpm_sfc(:,:  ,ipm) = tpm_sfc(:,:  ,ipm) + PM25_water_rh50
-!        ! testing ...
-!        if ( dbg_cell ) then
-!          write (gol,*) 'yyy   rh50           = ', PM25_water_rh50(dbg_i,dbg_j); call goPr
-!        end if
+!        !! testing ...
+!        !if ( dbg_cell ) then
+!        !  write (gol,*) 'yyy   rh50           = ', PM25_water_rh50(dbg_i,dbg_j); call goPr
+!        !end if
 !      end if
 !    end do  ! total fine and coarse
 !    
@@ -1558,19 +1553,19 @@ contains
 !      no3c_sfc = xn_adv(ispec,:,:,nlev) * fscale &
 !                 * roa(:,:,nlev,1)    &  ! density
 !                 * cfac(ispec,:,:)       ! 50 m -> 3 m
-!      ! testing ...
-!      if ( dbg_cell ) then
-!        write (gol,*) 'yyy   r ispec ', ispec, no3c_sfc(dbg_i,dbg_j); call goPr
-!      end if
+!      !! testing ...
+!      !if ( dbg_cell ) then
+!      !  write (gol,*) 'yyy   r ispec ', ispec, no3c_sfc(dbg_i,dbg_j); call goPr
+!      !end if
 !
 !    else
 !      ! surface fraction:
 !      no3c_sfc = xn_adv(ispec,:,:,nlev) * fscale &
 !                 * cfac(ispec,:,:)       ! 50 m -> 3 m
-!      ! testing ...
-!      if ( dbg_cell ) then
-!        write (gol,*) 'yyy   p ispec ', ispec, no3c_sfc(dbg_i,dbg_j); call goPr
-!      end if
+!      !! testing ...
+!      !if ( dbg_cell ) then
+!      !  write (gol,*) 'yyy   p ispec ', ispec, no3c_sfc(dbg_i,dbg_j); call goPr
+!      !end if
 !    end if
 !
 !    ! testing ...
@@ -1579,6 +1574,15 @@ contains
 !      write (gol,*) 'yyy after no3c_sfc     = ', no3c_sfc(dbg_i,dbg_j); call goPr
 !      write (gol,*) 'yyy after f + a*no3c   = ', tpm_sfc(dbg_i,dbg_j,1)+alfa*no3c_sfc(dbg_i,dbg_j); call goPr
 !      write (gol,*) 'yyy after f + c + no3c = ', sum(tpm_sfc(dbg_i,dbg_j,:))+no3c_sfc(dbg_i,dbg_j); call goPr
+!      do ispec = 1, nspec
+!        !if ( any(w(ispec,:) > 0.0) .or. (ispec == ispec_no3c) ) then
+!        !  write (gol,*) 'yyy ispec ', ispec, ' ', trim(species_adv(ispec)%name); call goPr
+!        !  do k = 1, nz
+!        !    write (gol,*) k, xn_adv(ispec,dbg_i,dbg_j,k); call goPr
+!        !  end do
+!        !end if
+!        write (gol,*) 'yyy ispec ', ispec, ' ', trim(species_adv(ispec)%name), xn_adv(ispec,dbg_i,dbg_j,nlev); call goPr
+!      end do
 !    end if
 !    
 !    ! ...............................
