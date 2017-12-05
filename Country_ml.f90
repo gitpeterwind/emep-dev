@@ -315,12 +315,12 @@ integer, public :: IC_OCEC  ! Oceania
   integer,  public :: IC_HTNAFR
   integer,  public :: IC_HTRAFR
   integer,  public :: IC_HTMIDE
-  integer,  public :: IC_HT1012
-  integer,  public :: IC_HT1013
-  integer,  public :: IC_HT1014
-  integer,  public :: IC_HT1015
-  integer,  public :: IC_HT1016
-  integer,  public :: IC_HT1017
+  integer,  public :: IC_HTCEAM
+  integer,  public :: IC_HTSOAM
+  integer,  public :: IC_HTRUBU
+  integer,  public :: IC_HTCASI
+  integer,  public :: IC_HTPOLA
+  integer,  public :: IC_HTSPOL
   integer,  public :: IC_HT1018
   integer,  public :: IC_HT1019
   integer,  public :: IC_HT1020
@@ -1112,23 +1112,23 @@ ix=ix+1
 IC_HTMIDE = ix
 Country(IC_HTMIDE ) = cc(  "MIDEAST" ,'-',1011 ,T, 25, 25, 2  , "Middle East" )
 ix=ix+1 
-IC_HT1012 = ix
-Country(IC_HT1012 ) = cc(  "HT1012" ,'-',1012 ,T, 218, 218,-100, "HT 1012" )
+IC_HTCEAM = ix
+Country(IC_HTCEAM ) = cc(  "HTCEAM" ,'-',1012 ,T, 243, 243, -100  , "C. Am. Carib" )
 ix=ix+1 
-IC_HT1013 = ix
-Country(IC_HT1013 ) = cc(  "HT1013" ,'-',1013 ,T, 206, 206,-100,  "HT 1013" )
+IC_HTSOAM = ix
+Country(IC_HTSOAM ) = cc(  "HTSOAM" ,'-',1013 ,T, 227, 227, -100  , "S. America" )
 ix=ix+1 
-IC_HT1014 = ix
-Country(IC_HT1014 ) = cc(  "HT1014" ,'-',1014 ,T, 61, 61, -100,  "HT 1014" )
+IC_HTRUBU = ix
+Country(IC_HTRUBU ) = cc(  "HTRUBU" ,'-',1014 ,T, 39, 39, -100  , "Russ Bel. Ukr" )
 ix=ix+1 
-IC_HT1015 = ix
-Country(IC_HT1015 ) = cc(  "HT1015" ,'-',1015 ,T, 30, 30, -100, "HT 1015" )
+IC_HTCASI = ix
+Country(IC_HTCASI ) = cc(  "HTCASI" ,'-',1015 ,T, 92, 92, -100  , "C. Asia" )
 ix=ix+1 
-IC_HT1016 = ix
-Country(IC_HT1016 ) = cc(  "HT1016",'-' ,1016 ,T, 202, 202, -100,  "Antarctic" )
-ix=ix+1 
-IC_HT1017 = ix
-Country(IC_HT1017 ) = cc(  "HT1017",'-' ,1017 ,T, 30, 30, -100 , "undefined" )
+IC_HTPOLA = ix
+Country(IC_HTPOLA ) = cc(  "HTPOLA" ,'-',1016 ,T, 30, 30, -100 , "Pol. N 66" )
+ix=ix+1
+IC_HTSPOL = ix
+Country(IC_HTSPOL ) = cc(  "HTSPOL" ,'-',1017 ,T, 30, 30, -100  , "S. Pol .S 60" )
 ix=ix+1 
 IC_HT1018 = ix
 Country(IC_HT1018 ) = cc(  "HT1018",'-' ,1018 ,T,  30, 30,-100  , "undefined" )
