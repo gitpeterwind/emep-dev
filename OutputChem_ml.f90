@@ -9,7 +9,8 @@ use GridValues_ml,     only: debug_proc ,debug_li, debug_lj
 use My_Outputs_ml,     only: NBDATES, wanted_dates_inst,            &
                              Ascii3D_WANTED
 use Io_ml,             only: IO_WRTCHEM, IO_TMP, datewrite
-use ModelConstants_ml, only: END_OF_EMEPDAY, num_lev3d, MasterProc, &
+use emep_Config_mod,   only: END_OF_EMEPDAY
+use Config_module, only: num_lev3d, MasterProc, &
                              FREQ_HOURLY, FORECAST, &
                              DEBUG => DEBUG_OUTPUTCHEM, METSTEP, &
                              IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY,&
