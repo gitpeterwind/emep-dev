@@ -8,7 +8,7 @@ module LandPFT_ml
 
 use CheckStop_ml,   only: CheckStop, StopAll
 use GridValues_ml,  only: debug_proc, debug_li, debug_lj, glon, glat
-use ModelConstants_ml,  only : DEBUG, MasterProc, BVOC_USED, PFT_MAPPINGS&
+use Config_module,  only : DEBUG, MasterProc, BVOC_USED, PFT_MAPPINGS&
                                ,GLOBAL_LAInBVOCFile
 use NetCDF_ml, only: ReadField_CDF
 use Par_ml,         only: LIMAX, LJMAX, me
