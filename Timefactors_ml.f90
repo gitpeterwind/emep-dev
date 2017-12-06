@@ -60,10 +60,10 @@
   use GridValues_ml    , only : i_fdom,j_fdom, debug_proc,debug_li,debug_lj
   use InterpolationRoutines_ml, only : Averageconserved_interpolate
   use Met_ml,       only : Getmeteofield
-  use ModelConstants_ml, only : MasterProc, DEBUG => DEBUG_EMISTIMEFACS
-  use ModelConstants_ml, only : IIFULLDOM, JJFULLDOM
-  use ModelConstants_ml, only : iyr_trend ,USES  ! for GRIDDED_EMIS_MONTHLY_FACTOR 
-  use ModelConstants_ml, only : INERIS_SNAP1, INERIS_SNAP2, DegreeDayFactorsFile&
+  use Config_module, only : MasterProc, DEBUG => DEBUG_EMISTIMEFACS
+  use Config_module, only : IIFULLDOM, JJFULLDOM
+  use Config_module, only : iyr_trend ,USES  ! for GRIDDED_EMIS_MONTHLY_FACTOR 
+  use Config_module, only : INERIS_SNAP1, INERIS_SNAP2, DegreeDayFactorsFile&
                                 ,DailyFacFile,MonthlyFacFile,HourlyFacFile,TXTLEN_FILE
   use NetCDF_ml,    only : GetCDF , ReadField_CDF
   use Par_ml,       only : MAXLIMAX,MAXLJMAX, limax,ljmax, me, li0, lj0, li1, lj1
