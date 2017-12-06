@@ -18,7 +18,7 @@ use LandDefs_ml,    only: Init_LandDefs, LandType, LandDefs, &
                           STUBBLE, Growing_Season,&
                           NLANDUSE_EMEP
 use LandPFT_ml,       only: MapPFT_LAI, pft_lai
-use ModelConstants_ml,only: DEBUG, NLANDUSEMAX, &
+use Config_module,only: DEBUG, NLANDUSEMAX, &
                             SEA_LIMIT, & 
                             USES, emep_debug, &
                             FLUX_VEGS, FLUX_IGNORE,  nFluxVegs, & 
