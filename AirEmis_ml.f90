@@ -37,7 +37,7 @@ module AirEmis_ml
    use Io_ml                , only : IO_AIRN, IO_LIGHT, ios, open_file
    use GridValues_ml        , only : glon,glat, GRIDWIDTH_M
    use MetFields_ml         , only : z_bnd  
-   use ModelConstants_ml    , only : KCHEMTOP, KMAX_MID, KMAX_BND, NPROC, &
+   use Config_module    , only : KCHEMTOP, KMAX_MID, KMAX_BND, NPROC, &
                                      USES, TXTLEN_FILE, lightningFile
    use MPI_Groups_ml, only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER, MPI_LOGICAL, &
                              MPI_MIN, MPI_MAX, MPI_SUM, &
