@@ -12,7 +12,7 @@
   use ChemFields_ml             ! => cell_tinv,  NSPEC_TOT, O3, NO2, etc.
   use ChemSpecs                  ! => NSPEC_TOT, O3, NO2, etc.
   use emep_Config_mod,    only : YieldModifications
-  use ModelConstants_ml,  only : MasterProc, DebugCell, DEBUG, USES! JPCIsoYield
+  use Config_module,  only : MasterProc, DebugCell, DEBUG, USES! JPCIsoYield
   use NumberConstants,    only : UNDEF_R, UNDEF_I
   use SmallUtils_ml,      only : find_index, trims
 
