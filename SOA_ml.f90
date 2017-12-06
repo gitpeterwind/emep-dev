@@ -39,9 +39,9 @@ module OrganicAerosol_ml
 
    use Functions_ml, only: StandardAtmos_kPa_2_km !ds for use in Hz scaling
    use GridValues_ml, only: A_mid,B_mid, debug_proc, debug_li, debug_lj
-   use ModelConstants_ml,    only :  PT
+   use Config_module,    only :  PT
 
-   use ModelConstants_ml,    only : CHEMTMIN, CHEMTMAX, &
+   use Config_module,    only : CHEMTMIN, CHEMTMAX, &
                                     MasterProc, DEBUG, &
                                     K2 => KMAX_MID, K1 => KCHEMTOP
    use Par_ml,               only : LIDIM => LIMAX, LJDIM => LJMAX, me
