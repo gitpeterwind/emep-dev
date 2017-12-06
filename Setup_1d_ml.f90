@@ -37,7 +37,7 @@ use MassBudget_ml,       only: totem    ! sum of emissions
 use MetFields_ml,        only: ps,sst
 use MetFields_ml,        only: roa, th, q, t2_nwp, cc3dmax, &
                                zen, Idirect, Idiffuse,z_bnd,ws_10m
-use ModelConstants_ml,   only:  &
+use Config_module,   only:  &
    DEBUG,DEBUG_MASS             &
   ,AERO                         & ! for wet radii and surf area.
   ,SKIP_RCT                     & ! kHet tests
