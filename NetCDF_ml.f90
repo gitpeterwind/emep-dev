@@ -41,7 +41,7 @@ use GridValues_ml,     only : GRIDWIDTH_M,fi,xp,yp,xp_EMEP_official&
                              x1_lambert,& !x value at i=1
                              y1_lambert  !y value at j=1                             
 use InterpolationRoutines_ml,  only : grid2grid_coeff
-use ModelConstants_ml,  only: KMAX_MID,KMAX_BND, runlabel1, runlabel2 &
+use Config_module,  only: KMAX_MID,KMAX_BND, runlabel1, runlabel2 &
                              ,MasterProc, FORECAST, NETCDF_DEFLATE_LEVEL &
                              ,DEBUG_NETCDF, DEBUG_NETCDF_RF &
                              ,NPROC, IIFULLDOM,JJFULLDOM &
@@ -51,7 +51,7 @@ use ModelConstants_ml,  only: KMAX_MID,KMAX_BND, runlabel1, runlabel2 &
                              ,USE_EtaCOORDINATES,RUNDOMAIN&
                              ,fullrun_DOMAIN,month_DOMAIN,day_DOMAIN,hour_DOMAIN&
                              ,SurfacePressureFile
-use ModelConstants_ml,  only: SELECT_LEVELS_HOURLY,&  ! NML
+use Config_module,  only: SELECT_LEVELS_HOURLY,&  ! NML
                               num_lev3d,lev3d         ! 3D levels on 3D output
 use MPI_Groups_ml, only     :MPI_LOGICAL, MPI_SUM,MPI_INTEGER, MPI_BYTE,MPISTATUS, &
                              MPI_COMM_IO, MPI_COMM_CALC, IERROR, ME_IO, ME_CALC
