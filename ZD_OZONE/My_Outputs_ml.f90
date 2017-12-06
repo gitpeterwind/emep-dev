@@ -12,7 +12,7 @@ use CheckStop_ml,      only: CheckStop
 use ChemSpecs
 use ChemGroups_ml,     only: chemgroups
 use DerivedFields_ml,  only: f_2d,f_3d          ! D2D/D3D houtly output type
-use ModelConstants_ml, only: PPBINV, PPTINV, MasterProc, KMAX_MID,&
+use Config_module, only: PPBINV, PPTINV, MasterProc, KMAX_MID,&
                              MY_OUTPUTS, FORECAST, USES, DEBUG,&
                              SELECT_LEVELS_HOURLY!, FREQ_HOURLY
 use PhysicalConstants_ml, only: ATWAIR
