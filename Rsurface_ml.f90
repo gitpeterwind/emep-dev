@@ -10,7 +10,7 @@ use LocalVariables_ml, only : iL, L, G => Grid
   !      PARsun,PARshade,LAIsunfrac, RgsO, RgsS, is_water, is_forest
   ! G (Grid)  provides snow, sdepth so2nh3ratio, 
 
-use ModelConstants_ml, only: DEBUG, NO_CROPNH3DEP
+use Config_module, only: DEBUG, NO_CROPNH3DEP
 use Radiation_ml, only : CanopyPAR
 use TimeDate_ml,  only : current_date
 use GasParticleCoeffs_ml,    only : DryDepDefs &  ! Extension of Wesely Table 2
