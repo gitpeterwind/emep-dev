@@ -49,7 +49,7 @@ use GridValues_ml,          only: A_mid,B_mid, glon,glat, i_fdom,j_fdom, Restric
 use Io_ml,                  only: open_file,IO_TMP,IO_NML,PrintLog
 use InterpolationRoutines_ml,  only : grid2grid_coeff,point2grid_coeff
 use MetFields_ml,           only: roa
-use ModelConstants_ml,      only: Pref,PT,KMAX_MID,MasterProc,NPROC,DataDir,GRID,&
+use Config_module,      only: Pref,PT,KMAX_MID,MasterProc,NPROC,DataDir,GRID,&
                                   IOU_INST,RUNDOMAIN,FORECAST,USES,&
                                   DEBUG_NEST,DEBUG_ICBC=>DEBUG_NEST_ICBC
 use MPI_Groups_ml  
