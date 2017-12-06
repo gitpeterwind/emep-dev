@@ -51,7 +51,7 @@ use MassBudget_ml,    only: totddep
 use MetFields_ml,     only: u_ref, rh2m
 use MetFields_ml,     only: tau, sdepth, SoilWater_deep, th,pzpbl
 use MicroMet_ml,      only: AerRes, Wind_at_h
-use ModelConstants_ml,only: dt_advec,PT, K2=> KMAX_MID, NPROC, &
+use Config_module,only: dt_advec,PT, K2=> KMAX_MID, NPROC, &
                             DEBUG, DEBUG_ECOSYSTEMS, DEBUG_VDS,&
                             USES, AERO, &
                             USE_SOILNOX, &
