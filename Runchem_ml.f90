@@ -27,7 +27,8 @@ module RunChem_ml
   use GridValues_ml,    only: debug_proc, debug_li, debug_lj, i_fdom, j_fdom
   use Io_Progs_ml,      only: datewrite
   use MassBudget_ml,    only: emis_massbudget_1d
-  use ModelConstants_ml,only: USES, & 
+  use emep_Config_mod,  only: END_OF_EMEPDAY
+  use Config_module,only: USES, & 
                               MasterProc, & 
                               KMAX_MID, END_OF_EMEPDAY, nstep,  &
                               AERO, USES, & ! need USES%EMISSTACKS and more 
