@@ -6,7 +6,7 @@ module BLPhysics_ml
 
  use emep_Config_mod,       only : PBL
  use Landuse_ml,           only : Landcover, water_fraction
- use ModelConstants_ml,    only : KMAX_MID, KMAX_BND, KWINDTOP, PT
+ use Config_module,    only : KMAX_MID, KMAX_BND, KWINDTOP, PT
  use PhysicalConstants_ml, only : KARMAN, GRAV
  implicit none
  private
