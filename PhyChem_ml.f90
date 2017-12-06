@@ -23,10 +23,10 @@ use Emissions_ml,     only: EmisSet
 use Gravset_ml,       only: gravset
 use GridValues_ml,    only: debug_proc,debug_li,debug_lj,&
                             glon,glat,projection,i_local,j_local,i_fdom,j_fdom
-use ModelConstants_ml,only: MasterProc, KMAX_MID, nmax, nstep &
+use emep_Config_mod,  only : END_OF_EMEPDAY  ! (usually 6am)
+use Config_module,only: MasterProc, KMAX_MID, nmax, nstep &
                            ,dt_advec       & ! time-step for phyche/advection
                            ,DEBUG, PPBINV, PPTINV  &
-                           ,END_OF_EMEPDAY & ! (usually 6am)
                            ,IOU_INST       &
                            ,FORECAST       & ! use advecdiff_poles on FORECAST mode
                            ,ANALYSIS       & ! 3D-VAR Analysis
