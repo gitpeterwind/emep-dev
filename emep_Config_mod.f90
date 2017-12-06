@@ -8,6 +8,10 @@ module emep_Config_mod
   implicit none
   private
 
+ ! EMEP daily measurements end at 6am, hence we typically adjust
+ ! for that. For global though, zero would be more normal
+  integer, save, public :: END_OF_EMEPDAY = 6 ! 
+
   type, private :: PBL_t
     real :: ZiMIN = 100.0                     ! minimum mixing height
     real :: ZiMAX = 3000.0                    ! maximum mixing height
