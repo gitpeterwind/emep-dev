@@ -20,7 +20,7 @@ use ChemGroups_ml,        only: chemgroups
 use CheckStop_ml,         only: CheckStop
 use GridValues_ml,        only: i_fdom, j_fdom
 use MetFields_ml,         only: z_bnd
-use ModelConstants_ml,    only: KMAX_MID, KCHEMTOP, ANALYSIS, USES
+use Config_module,    only: KMAX_MID, KCHEMTOP, ANALYSIS, USES
 use Par_ml,               only: LIMAX,LJMAX   ! => x, y dimensions
 use PhysicalConstants_ml, only: AVOG
 use Setup_1dfields_ml,    only: xn_2d, rh
