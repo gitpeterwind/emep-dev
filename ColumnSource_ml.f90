@@ -17,7 +17,7 @@ use GridValues_ml,        only: xm2,sigma_bnd,GridArea_m2,&
                                 coord_in_processor,coord_in_gridbox
 use Io_ml,                only: open_file,read_line,IO_NML,IO_TMP,PrintLog
 use MetFields_ml,         only: roa, z_bnd, u_xmj, v_xmi
-use ModelConstants_ml,    only: KCHEMTOP,KMAX_MID,MasterProc,NPROC, &
+use Config_module,    only: KCHEMTOP,KMAX_MID,MasterProc,NPROC, &
                                 USES,DEBUG,&
                                 TXTLEN_NAME,TXTLEN_FILE,dt_advec,dt_advec_inv,&
                                 startdate,enddate,DataDir,GRID
