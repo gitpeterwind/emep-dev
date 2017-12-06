@@ -8,7 +8,7 @@ endmodule DA_ml
 !-----------------------------------------------------------------------
 module DA_3DVar_ml
 use CheckStop_ml,     only: CheckStop
-use ModelConstants_ml,only: ANALYSIS
+use Config_module,only: ANALYSIS
 implicit none
 character(len=*), parameter  ::  &
   mname = 'DA_3DVar_ml', &
