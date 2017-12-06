@@ -17,7 +17,7 @@ use EmisDef_ml,       only: loc_frac, loc_frac_1d, loc_frac_hour, loc_tot_hour, 
 use EmisGet_ml,       only: nrcemis, iqrc2itot, emis_nsplit,nemis_kprofile, emis_kprofile
 use GridValues_ml,    only: dA,dB,xm2, dhs1i, glat, glon, projection, extendarea_N
 use MetFields_ml,     only: ps,roa
-use ModelConstants_ml,only: KMAX_MID, KMAX_BND,USES, USE_uEMEP, uEMEP, IOU_HOUR, IOU_HOUR_INST,&
+use Config_module,only: KMAX_MID, KMAX_BND,USES, USE_uEMEP, uEMEP, IOU_HOUR, IOU_HOUR_INST,&
                             IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY,IOU_HOUR,IOU_HOUR_INST, &
                             KMAX_MID,  MasterProc,dt_advec, RUNDOMAIN
 use MPI_Groups_ml
