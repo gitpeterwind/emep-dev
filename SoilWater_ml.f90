@@ -34,7 +34,7 @@ module SoilWater_ml
  use Met_ml,            only : extendarea
  use MetFields_ml,      only : SoilWater_deep, SoilWaterSource,fSW &
                                ,foundSoilWater_deep  ! false if no SW-deep
- use ModelConstants_ml, only : USES, DEBUG_SOILWATER
+ use Config_module, only : USES, DEBUG_SOILWATER
  use Par_ml,            only : limax, ljmax, me
  use TimeDate_ml,       only : current_date, daynumber
 
@@ -71,7 +71,7 @@ contains
 
   ! WARNING - THE SOIL MOISTURE WORK IS STILL UNDERWAY, AND IS NOT
   ! FUNCTIONING FOR ALL POSSIBLE METEOROLOGY INPUTS.
-  ! If in doubt, set USE_SOILWATER = .false. in ModelConstants_ml
+  ! If in doubt, set USE_SOILWATER = .false. in Config_module
    subroutine Set_SoilWater()
       integer :: i, j, hourloc
       logical :: my_first_call = .true.
