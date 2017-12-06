@@ -39,7 +39,7 @@
                                   foundws10_met, ws_10m,                  &
                                   clay_frac, sand_frac,                   & 
                                   pwp, fc, SoilWaterSource
- use ModelConstants_ml,    only : KMAX_MID, KMAX_BND, dt_advec, METSTEP, &
+ use Config_module,    only : KMAX_MID, KMAX_BND, dt_advec, METSTEP, &
                                   NPROC, MasterProc, USES, DEBUG_DUST
  use MicroMet_ml,          only : Wind_at_h
  use Par_ml,               only : me,LIMAX,LJMAX
