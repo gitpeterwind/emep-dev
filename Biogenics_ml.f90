@@ -44,7 +44,7 @@ module Biogenics_ml
   use LocalVariables_ml, only : Grid  ! -> izen, DeltaZ
   use MetFields_ml,      only : t2_nwp
   use MetFields_ml,     only: PARdbh, PARdif !WN17, in W/m2
-  use ModelConstants_ml, only : NPROC, MasterProc, TINY, &
+  use Config_module, only : NPROC, MasterProc, TINY, &
                            NLANDUSEMAX, IOU_INST, & 
                            KT => KCHEMTOP, KG => KMAX_MID, & 
                            EURO_SOILNOX_DEPSCALE, & 
@@ -673,7 +673,7 @@ module Biogenics_ml
            ! We use a factor normalised to 1.0 at 5000 mgN/m2/a
 
              fn = AnnualNdep(i,j)/5000.0 ! scale for now
-             fn = fn * EURO_SOILNOX_DEPSCALE  ! See ModelConstants_ml
+             fn = fn * EURO_SOILNOX_DEPSCALE  ! See Config_module
 
              ftn = ft * fn * hfac 
 
