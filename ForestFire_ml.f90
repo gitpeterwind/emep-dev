@@ -43,7 +43,7 @@ use GridValues_ml,        only: i_fdom, j_fdom, debug_li, debug_lj, &
                                 debug_proc,xm2,GRIDWIDTH_M
 use Io_ml,                only: PrintLog, datewrite, IO_NML
 use MetFields_ml,         only: z_bnd
-use ModelConstants_ml,    only: MasterProc, DataDir, KMAX_MID, TXTLEN_FILE, &
+use Config_module,    only: MasterProc, DataDir, KMAX_MID, TXTLEN_FILE, &
                                 DEBUG, IOU_INST
 use netcdf,               only: nf90_open, nf90_nowrite, nf90_close
 use NetCDF_ml,            only: ReadTimeCDF,ReadField_CDF,Out_netCDF,Real4,&
@@ -198,7 +198,10 @@ subroutine Config_Fire()
     emep_used(ne) = iemep
 
     ! CO is special. Keep the index
-    if(species(iemep)%name=="CO") ieCO=ne
+    !TRACER if(species(iemep)%name=="CO") ieCO=ne
+    ! Now allow emep species to be FFIRE_CO
+    if(ieCO<0 .and. species(iemep)%name=="CO" ) ieCO=ne
+    if(ieCO<0 .and.FF_defs(n)%BBname=="CO"    ) ieCO=ne
 
     if(MasterProc) write(*,"(a,2i4,2x,a)") dtxt//" Mapping EMEP ", &
       ne, iemep, trim(species(iemep)%name)
