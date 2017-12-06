@@ -10,7 +10,7 @@ module DO3SE_ml
 !        ,PARshade => L%PARshade       &!  " " for shade leaves
 !        ,LAIsunfrac => L%LAIsunfrac      ! fraction of LAI in sun
 
-  use ModelConstants_ml, only : NLANDUSEMAX, DEBUG, MasterProc, &
+  use Config_module, only : NLANDUSEMAX, DEBUG, MasterProc, &
       USES
   use SmallUtils_ml,     only : find_index
   use TimeDate_ml,       only : current_date, daynumber, print_date
