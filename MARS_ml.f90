@@ -36,7 +36,7 @@ module MARS_ml
  use CheckStop_ml,       only : CheckStop
  use Io_ml,              only : ios, datewrite
  use MARS_Aero_water_ml, only:  Awater!,awater_2900
- use ModelConstants_ml,  only : NPROC, DEBUG
+ use Config_module,  only : NPROC, DEBUG
  use Par_ml,             only : me
  implicit none
  private
