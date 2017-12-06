@@ -47,7 +47,7 @@ use MetFields_ml,     only: roa,pzpbl,Kz_m2s,th,zen, ustar_nwp, u_ref,&
                             met, derivmet,  & !TEST of targets
                             ws_10m, rh2m, z_bnd, z_mid, u_mid,v_mid,ps, t2_nwp, &
                             SoilWater_deep, SoilWater_uppr, Idirect, Idiffuse
-use ModelConstants_ml, only: &
+use Config_module, only: &
    KMAX_MID,KMAX_BND  & ! =>  z dimension: layer number,level number
   ,NPROC              & ! No. processors
   ,dt_advec           &
