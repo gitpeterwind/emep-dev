@@ -21,7 +21,7 @@ use LocalVariables_ml,    only: Grid
 use MetFields_ml,         only: surface_precip, ws_10m ,rh2m,t2_nwp,&
                                 foundws10_met,foundprecip,pr,u_ref,z_bnd,z_mid
 use MicroMet_ml,          only: Wind_at_h
-use ModelConstants_ml,    only: AERO, KMAX_MID, nstep, DataDir, FORECAST, &
+use Config_module,    only: AERO, KMAX_MID, nstep, DataDir, FORECAST, &
                                 METSTEP, MasterProc, IOU_INST, RUNDOMAIN, &
                                 TXTLEN_FILE, dt=>dt_advec, DEBUG
 use MPI_Groups_ml,        only: MPI_INTEGER,MPI_LOGICAL,MPI_COMM_CALC,&
