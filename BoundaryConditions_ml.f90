@@ -44,7 +44,7 @@ use Io_Progs_ml,       only: datewrite, PrintLog
 use Landuse_ml,        only: mainly_sea
 use LocalVariables_ml, only: Grid
 use MetFields_ml,      only: roa
-use ModelConstants_ml, only: KMAX_MID  &  ! Number of levels in vertical
+use Config_module, only: KMAX_MID  &  ! Number of levels in vertical
                             ,iyr_trend &  ! Used for e.g. future scenarios
                             ,BGND_CH4  &  ! If positive, replaces defaults 
                             ,USES,DEBUG  & ! %BCs
