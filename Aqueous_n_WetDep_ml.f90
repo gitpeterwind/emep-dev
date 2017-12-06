@@ -38,7 +38,7 @@ use DerivedFields_ml, only: f_2d, d_2d     ! Contains Wet deposition fields
 use GridValues_ml,    only: gridwidth_m,xm2,dA,dB
 use Io_ml,            only: IO_DEBUG, datewrite
 use MassBudget_ml,    only : wdeploss,totwdep
-use ModelConstants_ml,only: &
+use Config_module,only: &
     CHEMTMIN, CHEMTMAX      &       ! -> range of temperature
    ,MasterProc              &
    ,DEBUG   &  !  => DEBUG%AQUEOUS, DEBUG%MY_WETDEP, DEBUG%pH &
