@@ -18,7 +18,7 @@ use CheckStop_ml,           only: CheckStop,StopAll,check=>CheckNC
 use Functions_ml,           only: great_circle_distance
 use Io_Nums_ml,             only: IO_LOG,IO_TMP
 use MetFields_ml
-use ModelConstants_ml,      only: &
+use Config_module,      only: &
      KMAX_BND, KMAX_MID, & ! vertical extent
      DEBUG,              & ! DEBUG%GRIDVALUES
      MasterProc,NPROC,IIFULLDOM,JJFULLDOM,RUNDOMAIN, JUMPOVER29FEB,&
