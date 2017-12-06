@@ -11,7 +11,7 @@ module AOTx_ml
   use LandDefs_ml,   only : LandType, LandDefs
   use LocalVariables_ml, only : Grid, L
   use MetFields_ml, only: zen
-  use ModelConstants_ml, only : dt_advec, KMAX_MID, DEBUG  & 
+  use Config_module, only : dt_advec, KMAX_MID, DEBUG  & 
      ,PPBINV ! 1.0e9, for conversion from mixing ratio to ppb
   use NumberConstants, only : UNDEF_R, UNDEF_I
   use OwnDataTypes_ml, only : TXTLEN_DERIV, TXTLEN_SHORT, TXTLEN_IND
