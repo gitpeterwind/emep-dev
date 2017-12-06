@@ -20,7 +20,7 @@
    use Io_ml,           only : IO_DJ, open_file, ios
    use LocalVariables_ml, only : Grid  ! => izen
    use MetFields_ml           , only : cc3d,cc3dmax,z_bnd
-   use ModelConstants_ml,    only: TXTLEN_FILE, KMAX_MID, KCHEMTOP, NPROC,&
+   use Config_module,    only: TXTLEN_FILE, KMAX_MID, KCHEMTOP, NPROC,&
                                    jcl1kmFile,jcl3kmFile,jclearFile
    use MPI_Groups_ml      , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_INTEGER&
                                      ,MPI_COMM_CALC, IERROR
