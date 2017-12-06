@@ -3,7 +3,7 @@ module ChemFields_ml
 use AllocInits,   only: AllocInit
 use ChemSpecs,    only: NSPEC_ADV, NSPEC_SHL, NSPEC_TOT, & ! => No. species 
                     FIRST_SEMIVOL, LAST_SEMIVOL ! both -999 unless SOA used
-use ModelConstants_ml,    only: KMAX_MID, KCHEMTOP, AERO        ! =>  z dimension
+use Config_module,    only: KMAX_MID, KCHEMTOP, AERO        ! =>  z dimension
 use NumberConstants,      only: UNDEF_R
 use Par_ml,               only: LIMAX,LJMAX   ! => x, y dimensions
 use Setup_1dfields_ml
