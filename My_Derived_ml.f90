@@ -37,7 +37,7 @@ use EmisGet_ml,       only: nrcemis, iqrc2itot
 use GridValues_ml,    only: RestrictDomain
 use Io_Nums_ml,       only: IO_NML
 use Io_Progs_ml,      only: PrintLog
-use ModelConstants_ml,only: MasterProc, SOURCE_RECEPTOR, DEBUG, & !! => DEBUG_MY_DERIVED &
+use Config_module,only: MasterProc, SOURCE_RECEPTOR, DEBUG, & !! => DEBUG_MY_DERIVED &
                             USES, USE_SOILNOX, USE_OCEAN_DMS, USE_OCEAN_NH3, &
                             IOU_KEY,      & !'Y'=>IOU_YEAR,..,'I'=>IOU_HOUR_INST
                             KMAX_MID,     & ! =>  z dimension
