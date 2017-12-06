@@ -21,7 +21,7 @@ use GridValues_ml,    only: glon, glat, A_bnd, B_bnd
 use Io_ml,            only: open_file,IO_LOG, NO_FILE, ios, IO_EMIS, &
                              Read_Headers, read_line, PrintLog
 use KeyValueTypes,    only: KeyVal
-use ModelConstants_ml,only: NPROC, TXTLEN_NAME, &
+use Config_module,only: NPROC, TXTLEN_NAME, &
                              DEBUG,  KMAX_MID,KMAX_BND, Pref,&
                              SEAFIX_GEA_NEEDED, & ! only if emission problems over sea
                              MasterProc,DEBUG_GETEMIS,DEBUG_ROADDUST,USES,&
