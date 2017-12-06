@@ -73,7 +73,7 @@ use Io_Nums_ml,       only: IO_LOG, IO_DMS, IO_EMIS, IO_TMP
 use Io_Progs_ml,      only: ios, open_file, datewrite, PrintLog
 use MetFields_ml,     only: u_xmj, v_xmi, roa, ps, z_bnd, surface_precip,EtaKz ! ps in Pa, roa in kg/m3
 use MetFields_ml,     only: t2_nwp   ! DS_TEST SOILNO - was zero!
-use ModelConstants_ml,only: &
+use Config_module,only: &
     KMAX_MID, KMAX_BND, PT ,dt_advec, &
     EMIS_SOURCE,   &    ! emislist, CdfFractions
     EMIS_TEST,     &    ! CdfSnap or none
@@ -1407,7 +1407,7 @@ subroutine newmonth
 !   April 2010: read monthly aircraft NOx emissions
 !----------------------------------------------------------------------!
   use AirEmis_ml, only : airn
-  use ModelConstants_ml, only : KCHEMTOP, KMAX_MID
+  use Config_module, only : KCHEMTOP, KMAX_MID
   use NetCDF_ml, only : ReadField_CDF
 
   integer :: i, j,k, iyr, iemislist, n
