@@ -133,8 +133,10 @@ EmChem09soa)
 EmChem16mt)
   echo "RUN $run chosen."
   spcs=( ${run}base Aero2017n $xdir/Ash \
+          $xdir/ForestTracers \
           VBS_nonvolatile ../ZCM_vbs_tests/VBS_partitioning )  #  VBS NPNA
   rcns=( ${run}base Aero2017n $xdir/Ash \
+          $xdir/ForestTracers \
 	 ${run}BVOC \
          VBS_SOAformationY ../ZCM_vbs_tests/VBS_SOAageing \
 #Y         ../ZCM_vbs_tests/VBS_SOAformation ../ZCM_vbs_tests/VBS_SOAageing \
