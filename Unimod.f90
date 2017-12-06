@@ -37,7 +37,7 @@ program myeul
   use Landuse_ml,       only: InitLandUse, SetLanduse
   use MassBudget_ml,    only: Init_massbudget, massbudget
   use Met_ml,           only: metfieldint, MetModel_LandUse, Meteoread
-  use ModelConstants_ml,only: MasterProc, &   ! set true for host processor, me==MasterPE
+  use Config_module,only: MasterProc, &   ! set true for host processor, me==MasterPE
        RUNDOMAIN,  &   ! Model domain
        NPROC,      &   ! No. processors
        METSTEP,    &   ! Hours between met input
@@ -47,7 +47,7 @@ program myeul
        IOU_INST,IOU_HOUR,IOU_HOUR_INST, IOU_YEAR,IOU_MON, IOU_DAY, &
        USES, USE_uEMEP,JUMPOVER29FEB,&
        FORECAST,ANALYSIS  ! FORECAST/ANALYSIS mode
-  use ModelConstants_ml,only: Config_ModelConstants,DEBUG, startdate,enddate
+  use Config_module,only: Config_ModelConstants,DEBUG, startdate,enddate
   use MPI_Groups_ml,    only: MPI_BYTE, MPISTATUS, MPI_COMM_CALC,MPI_COMM_WORLD, &
                               MasterPE,IERROR, MPI_world_init
   use Nest_ml,          only: wrtxn     ! write nested output (IC/BC)
