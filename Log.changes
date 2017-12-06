@@ -138,6 +138,49 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6th Dec      2017 Dave
+
+*** RESULTS CHANGING ***** START of rv4_16beta
+** ModelConstants_ml renamed!
+
+1) Science
+
+N2O5:
+
+  EmChem16mtbase.species now has deposition of N2O5 set to that of HNO3. This
+  makes a big difference to N2O5 levels, and some difference to
+  o3 etc.  Could have done the same for NO3 but that causes small changes.
+
+FFIRE_CO:
+  ZCM_EmChem16mt:
+
+  BiomassBurning_FINNv1.5_to_EmChem16mt  - added FFIRE_CO
+
+  ZCM_EmChem09:
+
+  Added ForestTracers.species ForestTracers.reactions
+
+  ForestFire_ml - modified to cope with FFIRE_CO
+
+  config_emep.nml and config_Outputs_EMEPSTD now have FFIRE_CO as examples.
+
+  mk.GenChem - uses ForestFire tracers for EmChem16mt
+
+
+ModelConstants_ml now renamed to Config_module
+
+  - since the constants are now very variable and it was easier to rename this
+    than to move code into emep_Config. In the next step the small emep_Confg
+    stuff can move here, and maye we can even retsart ModelConstants for some
+    constants ;-)
+
+  - change 'use' calls in most files.
+
+  NOTE: Changed also in ZD_Pollen, but not ZD_Var directories.
+
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 2nd Dec      2017 Michael G
 
 Switched from USE_XXX to USES%XXX method for five variables:
