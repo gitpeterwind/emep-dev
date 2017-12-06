@@ -11,7 +11,7 @@ use MetFields_ml,           only : t2_nwp,u_ref, &
                                    foundv10_met,ps, roa,foundws10_met,ws_10m
 use Par_ml,                 only : LIMAX,LJMAX,me,limax,ljmax
 use GridValues_ml ,         only : i_fdom, j_fdom, sigma_bnd, xm2  
-use ModelConstants_ml,      only : DEBUG_i, DEBUG_j, PT, DEBUG_NH3, &
+use Config_module,      only : DEBUG_i, DEBUG_j, PT, DEBUG_NH3, &
                                    KMAX_MID, MasterProc
 use Io_ml,                  only : IO_NH3_DEB 
 use TimeDate_ml,            only : day_of_year, nmdays
