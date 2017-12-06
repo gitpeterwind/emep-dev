@@ -1,6 +1,6 @@
 module MetFields_ml
 
-  use ModelConstants_ml,  only : USES,USE_WRF_MET_NAMES,NPROC
+  use Config_module,  only : USES,USE_WRF_MET_NAMES,NPROC
   use MPI_Groups_ml     , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER, MPI_LOGICAL, &
                                  MPI_COMM_CALC, MPI_COMM_WORLD, MPI_COMM_SUB, MPISTATUS, &
                                  IERROR, ME_MPI, NPROC_MPI, largeLIMAX,largeLJMAX, share, share_logical
