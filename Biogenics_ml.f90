@@ -34,7 +34,14 @@ module Biogenics_ml
 
   use CheckStop_ml,      only: CheckStop, StopAll
   use ChemSpecs,         only : species
-  use emep_Config_mod, only: EmBio
+  use Config_module, only : NPROC, MasterProc, TINY, &
+                           NLANDUSEMAX, IOU_INST, & 
+                           KT => KCHEMTOP, KG => KMAX_MID, & 
+                           EURO_SOILNOX_DEPSCALE, & 
+                           DEBUG, BVOC_USED, MasterProc, &
+                           USES, &
+                           DEBUG_SOILNOX, USE_SOILNH3,&
+                           EmBio, EMEP_EuroBVOCFile
   use GridValues_ml    , only : i_fdom,j_fdom, debug_proc,debug_li,debug_lj
   use Io_ml            , only : IO_FORES, open_file, ios, PrintLog, datewrite
   use KeyValueTypes,     only : KeyVal,KeyValue
@@ -44,14 +51,6 @@ module Biogenics_ml
   use LocalVariables_ml, only : Grid  ! -> izen, DeltaZ
   use MetFields_ml,      only : t2_nwp
   use MetFields_ml,     only: PARdbh, PARdif !WN17, in W/m2
-  use Config_module, only : NPROC, MasterProc, TINY, &
-                           NLANDUSEMAX, IOU_INST, & 
-                           KT => KCHEMTOP, KG => KMAX_MID, & 
-                           EURO_SOILNOX_DEPSCALE, & 
-                           DEBUG, BVOC_USED, MasterProc, &
-                           USES, &
-                           DEBUG_SOILNOX, USE_SOILNH3,&
-                           EMEP_EuroBVOCFile
   use NetCDF_ml,        only : ReadField_CDF, printCDF
   use OwnDataTypes_ml,  only : Deriv, TXTLEN_SHORT
 !  use Paleo_ml, only : PALEO_mlai, PALEO_miso, PALEO_mmon
