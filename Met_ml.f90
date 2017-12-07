@@ -25,7 +25,6 @@ module Met_ml
 !
 !=============================================================================
 
-use emep_Config_mod,      only: PBL
 use BLPhysics_ml,         only: &
    KZ_MINIMUM, KZ_SBL_LIMIT, PIELKE   &
   ,HmixMethod, UnstableKzMethod, StableKzMethod, KzMethod  &
@@ -46,6 +45,18 @@ use BLPhysics_ml,         only: &
   ,SigmaKz_2_m2s
 
 use CheckStop_ml,         only: CheckStop
+use Config_module,    only: PASCAL, PT, Pref, METSTEP  &
+     ,PBL & ! Has ZiMIN, ZiMAX, HmixMethod
+     ,KMAX_BND, KMAX_MID, MasterProc, DEBUG_MET, nmax  &
+     ,DEBUG_BLM, DEBUG_Kz, DEBUG_SOILWATER, DEBUG_LANDIFY &
+     ,DomainName & !HIRHAM,EMEP,EECCA etc.
+     ,TXTLEN_FILE & ! path/filename lenght for namelist inputs
+     ,TEGEN_DATA, USES &
+     ,nstep,USE_EtaCOORDINATES,USE_FASTJ &
+     ,CONVECTION_FACTOR &
+     ,LANDIFY_MET,MANUAL_GRID  &
+     ,CW_THRESHOLD,RH_THRESHOLD, CW2CC, JUMPOVER29FEB, meteo, startdate&
+     ,SoilTypesFile, Soil_TegenFile
 use FastJ_ml,             only: setup_phot_fastj,rcphot_3D
 use Functions_ml,         only: Exner_tab, Exner_nd
 use Functions_ml,         only: T_2_Tpot  !OS_TESTS
@@ -60,17 +71,6 @@ use Landuse_ml,           only: water_fraction, water_frac_set, &
                                 likely_coastal, mainly_sea
 use MetFields_ml
 use MicroMet_ml,          only: PsiH  ! Only if USE_MIN_KZ
-use Config_module,    only: PASCAL, PT, Pref, METSTEP  &
-     ,KMAX_BND, KMAX_MID, MasterProc, DEBUG_MET, nmax  &
-     ,DEBUG_BLM, DEBUG_Kz, DEBUG_SOILWATER, DEBUG_LANDIFY &
-     ,DomainName & !HIRHAM,EMEP,EECCA etc.
-     ,TXTLEN_FILE & ! path/filename lenght for namelist inputs
-     ,TEGEN_DATA, USES &
-     ,nstep,USE_EtaCOORDINATES,USE_FASTJ &
-     ,CONVECTION_FACTOR &
-     ,LANDIFY_MET,MANUAL_GRID  &
-     ,CW_THRESHOLD,RH_THRESHOLD, CW2CC, JUMPOVER29FEB, meteo, startdate&
-     ,SoilTypesFile, Soil_TegenFile
 use MPI_Groups_ml,     only: MPI_DOUBLE_PRECISION, MPI_BYTE, MPI_LOGICAL,&
                              MPI_COMM_IO, MPI_COMM_CALC, IERROR, ME_IO, ME_CALC,&
                              request_e,request_n,request_s,request_w,LargeSub_Ix,&
