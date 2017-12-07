@@ -137,6 +137,19 @@ the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+7th Dec      2017 Dave
+
+Config_module - now includes previous emep_Config_mod.f90
+
+rm emep_Config_mod.f90
+
+Changes in :
+
+  Biogenics_ml.f90 BLPhysics_ml.f90 Config_module.f90 Landuse_ml.f90 Met_ml.f90
+  OutputChem_ml.f90 PhyChem_ml.f90 Runchem_ml.f90 Solver.f90 YieldModifications_mod.f90
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 6th Dec      2017 Dave
 
@@ -167,7 +180,7 @@ FFIRE_CO:
   mk.GenChem - uses ForestFire tracers for EmChem16mt
 
 
-ModelConstants_ml now renamed to Config_module
+ModelConstants_ml now renamed to Config_module!
 
   - since the constants are now very variable and it was easier to rename this
     than to move code into emep_Config. In the next step the small emep_Confg
@@ -176,7 +189,7 @@ ModelConstants_ml now renamed to Config_module
 
   - change 'use' calls in most files.
 
-  NOTE: Changed also in ZD_Pollen, but not ZD_Var directories.
+  NOTE: Changed also in ZD_Pollen, and ZD_3CVar, but not other ZD_Var directories.
 
 
 
