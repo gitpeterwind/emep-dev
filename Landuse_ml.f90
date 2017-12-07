@@ -4,8 +4,13 @@
 module Landuse_ml
 
 use CheckStop_ml,   only: CheckStop,StopAll
+use Config_module,only: DEBUG, NLANDUSEMAX, SEA_LIMIT, & 
+                            USES, emep_debug, &
+                            FLUX_VEGS, FLUX_IGNORE,  nFluxVegs, & 
+                            VEG_2dGS, VEG_2dGS_Params, & 
+                            NPROC, IIFULLDOM, JJFULLDOM, &
+                            DomainName, MasterProc, LandCoverInputs 
 use DO3SE_ml,       only: fPhenology, Init_DO3SE
-use emep_Config_mod, only : LandCoverInputs 
 use GridAllocate_ml,only: GridAllocate
 use GridValues_ml,  only:  glat , glon   & ! latitude,
                           , i_fdom, j_fdom   & ! coordinates
@@ -18,13 +23,6 @@ use LandDefs_ml,    only: Init_LandDefs, LandType, LandDefs, &
                           STUBBLE, Growing_Season,&
                           NLANDUSE_EMEP
 use LandPFT_ml,       only: MapPFT_LAI, pft_lai
-use Config_module,only: DEBUG, NLANDUSEMAX, &
-                            SEA_LIMIT, & 
-                            USES, emep_debug, &
-                            FLUX_VEGS, FLUX_IGNORE,  nFluxVegs, & 
-                            VEG_2dGS, VEG_2dGS_Params, & 
-                            NPROC, IIFULLDOM, JJFULLDOM, &
-                            DomainName, MasterProc
 use MPI_Groups_ml, only : MPI_INTEGER,MPI_COMM_CALC, IERROR
 use Par_ml,         only: LIMAX, LJMAX, &
                           limax, ljmax, me
