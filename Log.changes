@@ -141,6 +141,9 @@ info on unused variables, etc.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 7th Dec      2017 Dave
 
+** TAGGING as rv4_16beta **
+Should be same as code used for N2O5 paper
+
 Config_module - now includes previous emep_Config_mod.f90
 
 rm emep_Config_mod.f90
