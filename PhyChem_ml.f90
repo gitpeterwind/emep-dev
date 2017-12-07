@@ -12,19 +12,7 @@ use CheckStop_ml,     only: CheckStop
 use Chemfields_ml,    only: xn_adv,cfac,xn_shl
 use ChemSpecs,        only: IXADV_SO2, IXADV_NH3, IXADV_O3, NSPEC_SHL, species
 use CoDep_ml,         only: make_so2nh3_24hr
-use DA_ml,            only: DEBUG_DA_1STEP
-use DA_3DVar_ml,      only: main_3dvar, T_3DVAR
-use Derived_ml,       only: DerivedProds, Derived, num_deriv2d
-use DerivedFields_ml, only: d_2d, f_2d
-use DryDep_ml,        only: init_drydep
-use EmisDef_ml,       only: loc_frac, loc_frac_day, loc_tot_day, loc_frac_month&
-                            , loc_tot_month,loc_frac_full,loc_tot_full, NSECTORS
-use Emissions_ml,     only: EmisSet
-use Gravset_ml,       only: gravset
-use GridValues_ml,    only: debug_proc,debug_li,debug_lj,&
-                            glon,glat,projection,i_local,j_local,i_fdom,j_fdom
-use emep_Config_mod,  only : END_OF_EMEPDAY  ! (usually 6am)
-use Config_module,only: MasterProc, KMAX_MID, nmax, nstep &
+use Config_module,only: MasterProc, KMAX_MID, nmax, nstep,END_OF_EMEPDAY &
                            ,dt_advec       & ! time-step for phyche/advection
                            ,DEBUG, PPBINV, PPTINV  &
                            ,IOU_INST       &
@@ -36,6 +24,17 @@ use Config_module,only: MasterProc, KMAX_MID, nmax, nstep &
                            ,USE_EtaCOORDINATES,JUMPOVER29FEB&
                            ,USE_uEMEP, IOU_HOUR, IOU_HOUR_INST, IOU_YEAR&
                            ,fileName_O3_Top
+use DA_ml,            only: DEBUG_DA_1STEP
+use DA_3DVar_ml,      only: main_3dvar, T_3DVAR
+use Derived_ml,       only: DerivedProds, Derived, num_deriv2d
+use DerivedFields_ml, only: d_2d, f_2d
+use DryDep_ml,        only: init_drydep
+use EmisDef_ml,       only: loc_frac, loc_frac_day, loc_tot_day, loc_frac_month&
+                            , loc_tot_month,loc_frac_full,loc_tot_full, NSECTORS
+use Emissions_ml,     only: EmisSet
+use Gravset_ml,       only: gravset
+use GridValues_ml,    only: debug_proc,debug_li,debug_lj,&
+                            glon,glat,projection,i_local,j_local,i_fdom,j_fdom
 use MetFields_ml,     only: ps,roa,z_bnd,z_mid,cc3dmax, &
                             PARdbh, PARdif, fCloud, & !WN17
                             zen,coszen,Idirect,Idiffuse
