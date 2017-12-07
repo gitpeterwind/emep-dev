@@ -20,15 +20,7 @@ module RunChem_ml
   use Chemsolver_ml,    only: chemistry
   use ChemSpecs                         ! DEBUG ONLY
   use ColumnSource_ml,  only: Winds, getWinds
-  use DefPhotolysis_ml, only: setup_phot
-  use DryDep_ml,        only: drydep
-  use DustProd_ml,      only: WindDust  !DUST -> USES%DUST
-  use FastJ_ml,         only: setup_phot_fastj,phot_fastj_interpolate
-  use GridValues_ml,    only: debug_proc, debug_li, debug_lj, i_fdom, j_fdom
-  use Io_Progs_ml,      only: datewrite
-  use MassBudget_ml,    only: emis_massbudget_1d
-  use emep_Config_mod,  only: END_OF_EMEPDAY
-  use Config_module,only: USES, & 
+  use Config_module,    only: USES, & 
                               MasterProc, & 
                               KMAX_MID, END_OF_EMEPDAY, nstep,  &
                               AERO, USES, & ! need USES%EMISSTACKS and more 
@@ -36,6 +28,13 @@ module RunChem_ml
                               dt_advec, &  ! for Emergency
                               DEBUG_EMISSTACKS, & ! MKPS
                               DebugCell, DEBUG    ! RUNCHEM
+  use DefPhotolysis_ml, only: setup_phot
+  use DryDep_ml,        only: drydep
+  use DustProd_ml,      only: WindDust  !DUST -> USES%DUST
+  use FastJ_ml,         only: setup_phot_fastj,phot_fastj_interpolate
+  use GridValues_ml,    only: debug_proc, debug_li, debug_lj, i_fdom, j_fdom
+  use Io_Progs_ml,      only: datewrite
+  use MassBudget_ml,    only: emis_massbudget_1d
   use OrganicAerosol_ml,only: ORGANIC_AEROSOLS, OrganicAerosol, &
                               Init_OrganicAerosol, & 
                               Reset_OrganicAerosol, & 
