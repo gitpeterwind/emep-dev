@@ -1473,7 +1473,8 @@ contains
 !#endif
 
       ! all advected tracers now analysed ;
-      ! fill simulate 'observation' fields 'xn_an' and 'sf_an';
+      ! fill 'simulated observation' fields 'xn_an' and 'sf_an',
+      ! and copy these into output buffers if requested;
       ! loop over variables involved in analysis:
       do iObsComp = 1, nObsComp
         ! info ...
@@ -3058,13 +3059,31 @@ contains
             yn(n) = sum( Hops%obs(n)%H_jac(l0:l1) * dx_loc(i,j,l0:l1,itracer) )
 
           ! surface
-          case ( LEVTYPE_2D_ML_SFC, LEVTYPE_2D_OBS_SFC )
+          case ( LEVTYPE_2D_ML_SFC )
             ! check ...
             if ( Bmat%nlev /= 1 ) then
               write (gol,'("expected 2D fields for levtype sfc")'); call goErr
               TRACEBACK; status=1; return
             end if
-            ! simulation for this cell:
+            ! level range:
+            l0 = Hops%obs(n)%l(0)
+            l1 = Hops%obs(n)%l(1)
+            ! check ...
+            if ( l0 /= l1 ) then
+              write (gol,'("level range ",i0,":",i0," in H_jac should be one level only")') l0, l1; call goErr
+              TRACEBACK; status=1; return
+            end if
+            ! simulation for this cell, use just one level index to avoid errors on wrong shape ...
+            yn(n) = Hops%obs(n)%H_jac(l0) * dx_loc(i,j,1,itracer)
+
+          ! observation field
+          case ( LEVTYPE_2D_OBS_SFC )
+            ! check ...
+            if ( Bmat%nlev /= 1 ) then
+              write (gol,'("expected 2D fields for levtype sfc")'); call goErr
+              TRACEBACK; status=1; return
+            end if
+            ! simulation for this cell, H_jac has only one element:
             yn(n) = Hops%obs(n)%H_jac(1) * dx_loc(i,j,1,itracer)
 
           ! unknown ...
@@ -3098,21 +3117,27 @@ contains
       do n = 1, Hops%nobs
         ! to be analysed?
         if ( Hops%obs(n)%analyse ) then
+
           ! departures:
           !  dep =  [h(xb) + H_jac*dx] - obs
           !      =        h(xb) - obs      +   H_jac*dx
           dep(n) =     Hops%obs(n)%innov   +    yn(n)
+
+          ! O^{-1} * [ H(xb)+H_jac*dx - obs ]
+          !          = [ H(xb)+H_jac*dx - obs ] /       sigma_obs**2
+          OinvDep(n) =         dep(n)           / (Hops%obs(n)%obsstddev**2)
+
+          !! testing ...
+          !write (gol,*) rname//':    yyy1 innov  ', n, Hops%obs(n)%innov; call goPr
+          !write (gol,*) rname//':    yyy1 dep    ', n, dep(n); call goPr
+          !write (gol,*) rname//':    yyy1 OinvDep', n, OinvDep(n); call goPr
+
         else
           ! set to zero, then no impact in J_obs and grad_J_obs:
-          dep(n) = 0.0
+          dep(n)     = 0.0
+          OinvDep(n) = 0.0
         end if
-        ! O^{-1} * [ H(xb)+H_jac*dx - obs ]
-        !          = [ H(xb)+H_jac*dx - obs ] /       sigma_obs**2
-        OinvDep(n) =         dep(n)           / (Hops%obs(n)%obsstddev**2)
         
-        !! testing ...
-        !write (gol,*) rname//':    yyy1 dep ', n, dep(n), OinvDep(n); call goPr
-
       end do  ! n (obs)
 
     end if
@@ -3176,13 +3201,32 @@ contains
           !         n, p, l0, l1, ichem, Hops%obs(n)%H_jac(p,l0:l1,ichem), OinvDep(n); call goPr
 
         ! surface
-        case ( LEVTYPE_2D_ML_SFC, LEVTYPE_2D_OBS_SFC )
+        case ( LEVTYPE_2D_ML_SFC )
           ! check ...
           if ( Bmat%nlev /= 1 ) then
             write (gol,'("expected 2D fields for levtype sfc")'); call goErr
             TRACEBACK; status=1; return
           end if
-          ! fill departure:
+          ! level range:
+          l0 = Hops%obs(n)%l(0)
+          l1 = Hops%obs(n)%l(1)
+          ! check ...
+          if ( l0 /= l1 ) then
+            write (gol,'("level range ",i0,":",i0," in H_jac should be one level only")') l0, l1; call goErr
+            TRACEBACK; status=1; return
+          end if
+          ! fill departure in level range (array has only 1 level);
+          ! use only one level from H_jac too to avoid errors on shape:
+          HT_OinvDep_loc(i,j,1,itracer) = HT_OinvDep_loc(i,j,1,itracer) + Hops%obs(n)%H_jac(l0) * OinvDep(n)
+
+        ! observation field
+        case ( LEVTYPE_2D_OBS_SFC )
+          ! check ...
+          if ( Bmat%nlev /= 1 ) then
+            write (gol,'("expected 2D fields for levtype sfc")'); call goErr
+            TRACEBACK; status=1; return
+          end if
+          ! fill departure; both HT_OinvDep_loc and H_jac have only one level:
           HT_OinvDep_loc(i,j,1,itracer) = HT_OinvDep_loc(i,j,1,itracer) + Hops%obs(n)%H_jac(1) * OinvDep(n)
 
         ! unknown ...

@@ -506,8 +506,7 @@ contains
 !  !
   
   subroutine ObsCompInfo_FillFields( self, xn_adv, xn_adv_units, &
-                                       xn_obs_sfc, xn_obs_ml, xn_obs_units, status )!, &
-!                                       xn_obs, dx_obs, maxratio )
+                                       xn_obs_sfc, xn_obs_ml, xn_obs_units, status )
   
     use MetFields_ml , only : roa
     use ChemFields_ml, only : cfac
@@ -523,10 +522,6 @@ contains
     character(len=*), intent(out)         ::  xn_obs_units
     integer, intent(out)                  ::  status
     
-!    real, intent(in), optional            ::  xn_obs(:,:,:)   ! (lnx,lny,nlev)
-!    real, intent(in), optional            ::  dx_obs(:,:,:)   ! (lnx,lny,nlev)
-!    real, intent(in), optional            ::  maxratio
-
     ! --- const ----------------------------
     
     character(len=*), parameter  ::  rname = mname//'/ObsCompInfo_FillFields'
@@ -541,14 +536,6 @@ contains
     
     ! --- begin -----------------------------
     
-!    ! analyzed fields 
-!    if ( present(dx_obs) ) then
-!      ! storage:
-!      allocate( xn_obs_ml__in(size(xn_obs_ml,1),size(xn_obs_ml,2),size(xn_obs_ml,3)), stat=status )
-!      IF_NOT_OK_RETURN(status=1)
-!      ! copy:
-!      xn_obs_ml__in = xn_obs_ml
-!    end if
     ! storage for single tracer field:
     allocate( xn_adv1(size(xn_obs_ml,1),size(xn_obs_ml,2),size(xn_obs_ml,3)), stat=status )
     IF_NOT_OK_RETURN(status=1)
@@ -572,15 +559,6 @@ contains
           ispec = self%ispec(i)
           ! copy original field:
           xn_adv1 = xn_adv(ispec,:,:,:)
-!          ! add increment ?
-!          if ( present(dx_obs) ) then
-!            !  add (fraction of) dx_obs to xn_adv1,
-!            !  or multiply xn_adv1 with ratio dx_obs/xn_obs :
-!            call self%DistributeIncrement1( ispec, xn_adv1, xn_adv_units(ispec), &
-!                                              xn_obs_ml__in, dx_obs, xn_obs_units, &
-!                                              status, maxratio=maxratio )
-!            IF_NOT_OK_RETURN(status=1)
-!          end if
           ! include density conversion for this tracer?
           if ( self%unitroa(i) ) then
             ! surface from bottom layer:
@@ -643,13 +621,6 @@ contains
         
         ! copy original field:
         xn_adv1 = xn_adv(ispec,:,:,:)
-!        ! add increment ?
-!        if ( present(dx_obs) ) then
-!          call self%DistributeIncrement1( ispec, xn_adv1, xn_adv_units(ispec), &
-!                                             xn_obs_ml__in, dx_obs, xn_obs_units, &
-!                                             status, maxratio=maxratio )
-!          IF_NOT_OK_RETURN(status=1)
-!        end if
 
         ! surface from bottom layer:
         k = size(xn_adv,4)
@@ -674,12 +645,6 @@ contains
         TRACEBACK; status=1; return
     end select
     
-!    ! added increment?
-!    if ( present(dx_obs) ) then
-!      ! clear:
-!      deallocate( xn_obs_ml__in, stat=status )
-!      IF_NOT_OK_RETURN(status=1)
-!    end if
     ! clear:
     deallocate( xn_adv1, stat=status )
     IF_NOT_OK_RETURN(status=1)
@@ -829,10 +794,10 @@ contains
       ispec = self%ispec(i)
       ! target?
       if ( ispec == ispec_adv ) then
-        ! testing ..
-        if ( verb ) then
-          write (gol,*) 'xxx reset tracer ', ispec, ' from ', minval(xn_adv1), ' - ', maxval(xn_adv1); call goPr
-        end if
+        !! testing ..
+        !if ( verb ) then
+        !  write (gol,*) 'xxx reset tracer ', ispec, ' from ', minval(xn_adv1), ' - ', maxval(xn_adv1); call goPr
+        !end if
         ! check units ..
         if ( trim(xn_adv1_units) /= trim(obs_units) ) then
           write (gol,'("xn_adv units `",a,"` while obs units `",a,"`")') trim(xn_adv1_units), trim(obs_units); call goErr
@@ -889,10 +854,10 @@ contains
           ! also apply to aerosol water?
           ! select first species to perform this:
           if ( self%with_pmwater .and. (i == 1) ) then
-            ! testing ..
-            if ( verb ) then
-              write (gol,*) 'xxx scale pm water ...'; call goPr
-            end if
+            !! testing ..
+            !if ( verb ) then
+            !  write (gol,*) 'xxx scale pm water ...'; call goPr
+            !end if
             ! apply same ratio:
             PM25_water = PM25_water * ratio
           end if
