@@ -2,8 +2,8 @@
 * <----------- Biogenic/natural emissions ----------------------------->
 * Pollen
 *
-*rcpol(QPOL,k)                           = Pollen_b ;
 
-rcbio:POLLEN_BIRCH                      = pollen_birch ;
-rcbio:POLLEN_OLIVE                      = Pollen_olive ;
-rcbio:POLLEN_GRASS                      = Pollen_grass ;
+rcbio:POLLEN_BIRCH                      = POLLEN_BIRCH ;
+rcbio:POLLEN_OLIVE                      = POLLEN_OLIVE ;
+rcbio:POLLEN_RWEED                      = POLLEN_RWEED ;
+rcbio:POLLEN_GRASS                      = POLLEN_GRASS ;

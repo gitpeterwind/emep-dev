@@ -27,6 +27,7 @@ real, parameter  :: &
   N_TOT_birch = 1.0e9,        & ! Available pollen [grains/m2] birch
   N_TOT_olive = 3.9e8,        & ! Available pollen [grains/m2] olive
   N_TOT_grass = 2.0e7,        & ! Available pollen [grains/m2] grass
+  N_TOT_rweed = 1.7e7,        & ! Available pollen [grains/m2] ragweed
   RH_LOW   = 0.50,            & ! Min cut-off relative humidity [1]
   RH_HIGH  = 0.80,            & ! Max cut-off relative humidity [1]
   PROB_IN_birch  = 0.2,       & ! Probability for flowering to start
@@ -39,29 +40,31 @@ real, parameter  :: &
   D_POLL_birch = 22.0,        & ! Pollen grain diameter [um] birch
   D_POLL_olive = 28.0,        & ! Pollen grain diameter [um] olive
   D_POLL_grass = 32.0,        & ! Pollen grain diameter [um] grass
+  D_POLL_rweed = 18.0,        & ! Pollen grain diameter [um] grass
   POLL_DENS= 800e3              ! Pollen density [g/m3]
 
 ! pollen arrays indexing, order must match with POLLEN_GROUP: birch,olive,grass
 character(len=*), parameter :: &
   BIRCH = "POLLEN_BIRCH",&
   OLIVE = "POLLEN_OLIVE",&
+  RWEED = "POLLEN_RWEED",&
   GRASS = "POLLEN_GRASS",&
-  POLLEN_GROUP(3)=[BIRCH,OLIVE,GRASS]
+  POLLEN_GROUP(4)=[BIRCH,OLIVE,RWEED,GRASS]
 integer, parameter :: &
   POLLEN_NUM=size(POLLEN_GROUP)
 real, parameter  :: &
-  N_TOT(POLLEN_NUM)=[N_TOT_birch,N_TOT_olive,N_TOT_grass]
+  N_TOT(POLLEN_NUM)=[N_TOT_birch,N_TOT_olive,N_TOT_rweed,N_TOT_grass]
 
 real, parameter  :: &
-  D_POLL(POLLEN_NUM)=[D_POLL_birch,D_POLL_olive,D_POLL_grass], & ! pollen diameter
+  D_POLL(POLLEN_NUM)=[D_POLL_birch,D_POLL_olive,D_POLL_grass,D_POLL_rweed], & ! pollen diameter
   grain_wt(POLLEN_NUM) = POLL_DENS*PI*(D_POLL*1e-6)**3/6.0       ! 1 grain weight [g]
 ! weight 1 grain [ug], 1 mol of grains (AVOG*grain_wt) [Tonne=1e3 kg]
 ! BIRCH: 4.460e-3, 2686e6
 ! OLIVE: 9.195e-3, 5538e6
 ! GRASS: 13.73e-3, 8267e6
 
-private :: N_TOT_birch,N_TOT_olive,N_TOT_grass,&
-           D_POLL_birch,D_POLL_olive,D_POLL_grass
+private :: N_TOT_birch,N_TOT_olive,N_TOT_rweed,N_TOT_grass,&
+           D_POLL_birch,D_POLL_olive,D_POLL_rweed,D_POLL_grass
 
 contains
 subroutine pollen_check(igrp,uconv_adv)

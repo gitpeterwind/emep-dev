@@ -238,13 +238,13 @@ integer, public, parameter :: &
 !RB   CDDEP_PMfS= 12, CDDEP_PMfN= 13, CDDEP_PMc  = 14, &
 !RB    CDDEP_SSc = 15, CDDEP_DUc = 16, &
 !RN  CDDEP_BIRCH=17, CDDEP_OLIVE=18, CDDEP_GRASS=19 ! Pollen types
-  CDDEP_BIRCH=NG+6, CDDEP_OLIVE=NG+7, CDDEP_GRASS=NG+8 ! Pollen types
-integer, public, parameter :: CDDEP_PMfNH4 = NG+9  ! TEST_2014
-integer, public, parameter :: CDDEP_LASTPM = NG+9  ! Safety. Catches changes
+  CDDEP_BIRCH=NG+6, CDDEP_OLIVE=NG+7, CDDEP_RWEED=NG+8, CDDEP_GRASS=NG+9 ! Pollen types
+integer, public, parameter :: CDDEP_PMfNH4 = NG+10  ! TEST_2014
+integer, public, parameter :: CDDEP_LASTPM = NG+10  ! Safety. Catches changes
 
 integer, dimension(CDDEP_PMfS:CDDEP_LASTPM), public, parameter :: &
-! 1=fine,2=coarse,3=coarse sea salt, 4=dust, 5/6/7 = birch/olive/grass pollen
-  AERO_SIZE = (/ 1, 1, 2, 3, 4, 5, 6, 7, 1 /)
+! 1=fine,2=coarse,3=coarse sea salt, 4=dust, 5/6/7/8 = birch/olive/ragweed/grass pollen
+  AERO_SIZE = (/ 1, 1, 2, 3, 4, 5, 6, 7, 8, 1 /)
 
 integer, public, parameter :: NDRYDEP_AER = 9    ! aerosols with CDDEP_PMfNH4 
 integer, public, parameter :: NDRYDEP_CALC = NDRYDEP_GASES + NDRYDEP_AER

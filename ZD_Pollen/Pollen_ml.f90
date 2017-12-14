@@ -13,7 +13,7 @@ use CheckStop_ml,         only: CheckStop,CheckNC
 use ChemSpecs,            only: NSPEC_SHL, species_adv
 use Chemfields_ml,        only: xn_adv    ! emep model concs.
 use DerivedFields_ml,     only: f_2d,d_2d ! D2D houtly (debug) output
-use GasParticleCoeffs_ml, only: AERO_SIZE,CDDEP_BIRCH,CDDEP_OLIVE,CDDEP_GRASS
+use GasParticleCoeffs_ml, only: AERO_SIZE,CDDEP_BIRCH,CDDEP_OLIVE,CDDEP_GRASS,CDDEP_RWEED
 use Functions_ml,         only: heaviside
 use GridValues_ml ,       only: glon, glat, debug_proc, debug_li, debug_lj
 use Landuse_ml,           only: LandCover
@@ -142,14 +142,15 @@ subroutine Config_Pollen()
     select case(POLLEN_GROUP(g))
       case(BIRCH);n=AERO_SIZE(CDDEP_BIRCH)
       case(OLIVE);n=AERO_SIZE(CDDEP_OLIVE)
+      case(RWEED);n=AERO_SIZE(CDDEP_RWEED)
       case(GRASS);n=AERO_SIZE(CDDEP_GRASS)
     end select
     AERO%DpgV(n)=D_POLL(g)*1e-6  ! um to m
   ! AERO%sigma(n)=0.01
     AERO%PMdens(n)=POLL_DENS*1e-3 ! g/m3 to kg/m3
   end do
-  if(MasterProc)write(*,"(A,3(' adv#',I3,'=',A,1X,es10.3))") &
-    "Pollen: ",(iadv(g),POLLEN_GROUP(g),grain_wt(g),g=1,3)
+  if(MasterProc)write(*,"(A,10(' adv#',I3,'=',A,1X,es10.3,:))") &
+    "Pollen: ",(iadv(g),POLLEN_GROUP(g),grain_wt(g),g=1,POLLEN_NUM)
 
   allocate(heatsum(LIMAX,LJMAX,POLLEN_NUM-1),&     ! Grass does not need heatsum
            R(LIMAX,LJMAX,POLLEN_NUM))
@@ -261,7 +262,7 @@ subroutine pollen_flux(i,j,debug_flag)
         interpol='conservative',needed=.false.,debug_flag=DEBUG_NC,UnDef=UnDef,found=found)
     if(.not.found) olive_dH(:,:) = dH_d_olive
 ! grass
-    call ReadField_CDF(grass_field_nc,'grass_frac',pollen_frac(:,:,3),1, &
+    call ReadField_CDF(grass_field_nc,'grass_frac',pollen_frac(:,:,4),1, &
         interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
     call ReadField_CDF(grass_time_nc,'grass_start',grass_start,1, &
         interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
@@ -310,7 +311,7 @@ subroutine pollen_flux(i,j,debug_flag)
   pollen_out(2)=.not.checkdates(daynumber,OLIVE)&
     .or.any([pollen_frac(i,j,2),olive_h_c(i,j)]==UnDef)
 
-  pollen_out(3)=.not.checkdates(daynumber,GRASS)&
+  pollen_out(4)=.not.checkdates(daynumber,GRASS)&
     .or.(daynumber<(grass_start(i,j)-uncert_grass_day))&
     .or.(daynumber>(grass_end  (i,j)+uncert_grass_day))&
     .or.any([pollen_frac(i,j,3),grass_start(i,j),grass_end(i,j)]==UnDef)
@@ -394,8 +395,8 @@ subroutine pollen_flux(i,j,debug_flag)
     .or.(heatsum(i,j,2)-olive_h_c(i,j)> olive_dH(i,j))
 
 ! Grass specific emission inhibitors
-  pollen_out(3)=pollen_out(3)         & ! out season
-    .or.(R(i,j,3)>N_TOT(3))           & ! out of pollen
+  pollen_out(4)=pollen_out(4)         & ! out season
+    .or.(R(i,j,4)>N_TOT(4))           & ! out of pollen
     .or.(relhum>RH_HIGH)              & ! too humid
     .or.(prec>prec_max)                 ! too rainy
 
@@ -413,6 +414,7 @@ subroutine pollen_flux(i,j,debug_flag)
     select case(POLLEN_GROUP(g))
       case(BIRCH);scale=scale_factor(BIRCH)
       case(OLIVE);scale=scale_factor(OLIVE)
+      case(RWEED);cycle
       case(GRASS);scale=scale_factor(GRASS//trim(grass_mode))
     endselect
     R(i,j,g)=R(i,j,g)+N_TOT(g)*scale*dt       ! pollen grains released so far
@@ -452,7 +454,7 @@ function scale_factor(spc) result(scale)
       *f_in(heatsum(i,j,g),olive_h_c(i,j),PROB_IN_olive) &  ! prob. flowering start
       *f_out(R(i,j,g),N_TOT(g),PROB_OUT_olive)              ! prob. flowering end
   case(GRASS//'linear')   ! emission mass assuming linear release
-    g=3
+    g=4
     scale = scale &
       *f_fade_in (real(daynumber)/grass_start(i,j), &
                   uncert_grass_day/grass_start(i,j))& ! fade-in
@@ -464,7 +466,7 @@ function scale_factor(spc) result(scale)
     scale = scale/(grass_end(i,j)-daynumber+uncert_grass_day)&
                  /(grass_end(i,j)-grass_start(i,j))/86400.0
   case(GRASS//'gamma')    ! assume the modified "taily" Gamma distribution of the season
-    g=3
+    g=4
     scale = scale &
       *f_gamma_w_tails((real(daynumber)-grass_start(i,j))  & ! days since season start
                        /(grass_end(i,j)-grass_start(i,j)), & ! season length
