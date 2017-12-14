@@ -84,7 +84,7 @@ character(len=max_string_length), save :: &
   birch_frac_nc ='birch_frac.nc',         &
   birch_data_nc ='pollen_data.nc',        &
   birch_corr_nc ='birch_factor_YYYY.nc',  &
-  olive_data_nc ='maccoliven_data.nc',    &
+  olive_data_nc ='olive_YYYY.nc',    &
   grass_field_nc='grass_frac.nc',         &
   grass_time_nc ='grass_time.nc',         &
   grass_mode    ='linear',      & ! 'linear' (old) | 'gamma' (new)
@@ -218,6 +218,7 @@ subroutine pollen_flux(i,j,debug_flag)
     birch_h_c,  & ! temperature treshold birch, read in
     birch_corr, & ! correction field for p.emission, read in
     olive_h_c,  & ! temperature treshold olive, read in
+    olive_dH,   & ! flowering period [degree days]
     h_day         ! temperature summed over a day
 
   integer,save,allocatable, dimension(:,:) :: &
@@ -236,7 +237,7 @@ subroutine pollen_flux(i,j,debug_flag)
 
     allocate(pollen_frac(LIMAX,LJMAX,POLLEN_NUM))
     allocate(birch_h_c(LIMAX,LJMAX),birch_corr(LIMAX,LJMAX))
-    allocate(olive_h_c(LIMAX,LJMAX))
+    allocate(olive_h_c(LIMAX,LJMAX),olive_dH(LIMAX,LJMAX))
     allocate(grass_start(LIMAX,LJMAX),grass_end(LIMAX,LJMAX))
     call ReadField_CDF(birch_frac_nc,'birch_frac',pollen_frac(:,:,1),1, &
        interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
@@ -255,6 +256,9 @@ subroutine pollen_flux(i,j,debug_flag)
         interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
     call ReadField_CDF(olive_data_nc,'olive_th',olive_h_c,1, &
         interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
+    call ReadField_CDF(olive_data_nc,'olive_th',olive_dH,1, &
+        interpol='conservative',needed=.false.,debug_flag=DEBUG_NC,UnDef=UnDef,found=found)
+    if(.not.found) olive_dH(:,:) = dH_d_olive
 ! grass
     call ReadField_CDF(grass_field_nc,'grass_frac',pollen_frac(:,:,3),1, &
         interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
@@ -386,7 +390,7 @@ subroutine pollen_flux(i,j,debug_flag)
     .or.(prec>prec_max)               & ! too rainy
     .or.(heatsum(i,j,2)<lim_olive)    & ! too cold
     .or.(t2_nwp(i,j,1)<T_cutoff_olive)& ! too windy
-    .or.(heatsum(i,j,2)-olive_h_c(i,j)> dH_d_olive)
+    .or.(heatsum(i,j,2)-olive_h_c(i,j)> olive_dH(i,j))
 
 ! Grass specific emission inhibitors
   pollen_out(3)=pollen_out(3)         & ! out season
@@ -426,7 +430,7 @@ contains
 !------------------------
 function scale_factor(spc) result(scale)
   character(len=*), intent(in)  :: spc
-  real :: scale
+  real :: scale, dHsec
   integer :: g
 
   scale=f_wind(u10,Grid%wstar)           & ! wind dependence
@@ -441,8 +445,9 @@ function scale_factor(spc) result(scale)
       *f_out(R(i,j,g),N_TOT(g),PROB_OUT_birch)              ! prob. flowering end
   case(OLIVE)
     g=2
+    dHsec = olive_dH(i,j)*24*3600   ! Flowering period [degree seconds] olive
     scale = scale &
-      *(t2_nwp(i,j,1)-T_cutoff_olive)/dH_olive &
+      *(t2_nwp(i,j,1)-T_cutoff_olive)/dHsec &
       *f_in(heatsum(i,j,g),olive_h_c(i,j),PROB_IN_olive) &  ! prob. flowering start
       *f_out(R(i,j,g),N_TOT(g),PROB_OUT_olive)              ! prob. flowering end
   case(GRASS//'linear')   ! emission mass assuming linear release

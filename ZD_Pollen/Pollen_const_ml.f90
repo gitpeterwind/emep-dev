@@ -21,7 +21,7 @@ real, parameter  :: &
   dH_d_birch    =  50,        & ! Flowering period [degree days] birch
   dH_d_olive    = 275,        & ! Flowering period [degree days] olive
   dH_birch=dH_d_birch*24*3600,& ! Flowering period [degree seconds] birch
-  dH_olive=dH_d_olive*24*3600,& ! Flowering period [degree seconds] olive
+! dH_olive=dH_d_olive*24*3600,& ! Flowering period [degree seconds] olive
   PREC_MIN = 0.0,             & ! Min cut-off precipitation [mm/h]
   PREC_MAX = 0.5,             & ! Max cut-off precipitation [mm/h]
   N_TOT_birch = 1.0e9,        & ! Available pollen [grains/m2] birch
