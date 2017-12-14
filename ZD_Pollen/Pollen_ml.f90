@@ -93,7 +93,8 @@ character(len=max_string_length), save :: &
 
 type(date), parameter :: &
   date_first_birch=date(-1,3,1,0,0),date_last_birch=date(-1,8,1,0,0),&
-  date_first_olive=date(-1,1,1,0,0),date_last_olive=date_last_birch
+  date_first_olive=date(-1,1,1,0,0),date_last_olive=date_last_birch,&
+  date_first_rweed=date(-1,3,20,0,0),date_last_rweed=date_last_birch
 type(date), save :: & ! will be updated when grass_time.nc is read
   date_first_grass=date(-1,2,7,0,0),date_last_grass=date(-1,9,23,0,0)
 
@@ -163,20 +164,24 @@ function checkdates(nday,spc,update) result(ok)
   character(len=*), intent(in)  :: spc
   logical, intent(in), optional :: update
   logical :: ok
-  integer, save :: day_first_b=1,day_last_b=366,&
-                   day_first_o=1,day_last_o=366,&
-                   day_first_g=1,day_last_g=366
+  integer, save :: &
+    day_first_b=1,day_last_b=366,&
+    day_first_o=1,day_last_o=366,&
+    day_first_r=1,day_last_r=366,&
+    day_first_g=1,day_last_g=366
   logical, save :: first_call = .true.
   if(present(update))first_call=first_call.and.update
   if(first_call)then
     day_first_b=day_of_year(current_date%year,date_first_birch%month,date_first_birch%day)
     day_first_o=day_of_year(current_date%year,date_first_olive%month,date_first_olive%day)
+    day_first_r=day_of_year(current_date%year,date_first_rweed%month,date_first_rweed%day)
     day_first_g=day_of_year(current_date%year,date_first_grass%month,date_first_grass%day)
     day_first_g=day_first_g-uncert_grass_day
     day_first=min(day_first_b,day_first_o,day_first_g)
 
     day_last_b=day_of_year(current_date%year,date_last_birch%month,date_last_birch%day)
     day_last_o=day_of_year(current_date%year,date_last_olive%month,date_last_olive%day)
+    day_last_r=day_of_year(current_date%year,date_last_rweed%month,date_last_rweed%day)
     day_last_g=day_of_year(current_date%year,date_last_grass%month,date_last_grass%day)
     day_last_g=day_last_g+uncert_grass_day
     day_last=max(day_last_b,day_last_o,day_last_g)
@@ -310,6 +315,9 @@ subroutine pollen_flux(i,j,debug_flag)
 
   pollen_out(2)=.not.checkdates(daynumber,OLIVE)&
     .or.any([pollen_frac(i,j,2),olive_h_c(i,j)]==UnDef)
+  
+  pollen_out(3)=.not.checkdates(daynumber,RWEED)&
+    .or..true. ! RAGWEED under development
 
   pollen_out(4)=.not.checkdates(daynumber,GRASS)&
     .or.(daynumber<(grass_start(i,j)-uncert_grass_day))&
@@ -340,6 +348,8 @@ subroutine pollen_flux(i,j,debug_flag)
           heatsum(i,j,2)=heatsum(i,j,2)&
             +heatsum_calc((h_day(i,j)/(24/METSTEP)),T_cutoff_olive)
       end if
+      if(.not.pollen_out(3)) &
+        call CheckStop(RWEED//' under development')
     else
       p_day(i,j) = current_date%day
       h_day(i,j) = t2_nwp(i,j,1)
@@ -393,6 +403,8 @@ subroutine pollen_flux(i,j,debug_flag)
     .or.(heatsum(i,j,2)<lim_olive)    & ! too cold
     .or.(t2_nwp(i,j,1)<T_cutoff_olive)& ! too windy
     .or.(heatsum(i,j,2)-olive_h_c(i,j)> olive_dH(i,j))
+
+  pollen_out(3)=.true. ! RAGWEED under development
 
 ! Grass specific emission inhibitors
   pollen_out(4)=pollen_out(4)         & ! out season
