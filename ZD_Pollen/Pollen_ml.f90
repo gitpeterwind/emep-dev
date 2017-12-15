@@ -34,6 +34,7 @@ use NetCDF_ml,            only: ReadField_CDF,Out_netCDF,GetCDF_modelgrid,&
 use netcdf,               only: nf90_close
 use Par_ml,               only: limax, ljmax, LIMAX, LJMAX, me
 use PhysicalConstants_ml, only: PI
+use Radiation_ml,         only: daylength
 use OwnDataTypes_ml,      only: Deriv
 use Setup_1dfields_ml,    only: rcemis
 use SmallUtils_ml,        only: find_index
@@ -343,18 +344,20 @@ subroutine pollen_flux(i,j,debug_flag)
       if(current_date%hour==21)then
         if(.not.pollen_out(1)) &
           heatsum(i,j,1)=heatsum(i,j,1)&
-            +heatsum_calc((h_day(i,j)/(24/METSTEP)),T_cutoff_birch)
+            +heatsum_calc(h_day(i,j)/(24/METSTEP),T_cutoff_birch)
         if(.not.pollen_out(2)) &
           heatsum(i,j,2)=heatsum(i,j,2)&
-            +heatsum_calc((h_day(i,j)/(24/METSTEP)),T_cutoff_olive)
+            +heatsum_calc(h_day(i,j)/(24/METSTEP),T_cutoff_olive)
       end if
-      if(.not.pollen_out(3)) &
-        call CheckStop(RWEED//' under development')
     else
       p_day(i,j) = current_date%day
       h_day(i,j) = t2_nwp(i,j,1)
     end if
-    ! End of heatsum calculations
+    call CheckStop(.not.pollen_out(3),RWEED//' under development')
+    if(.not.pollen_out(3)) &
+      heatsum(i,j,3)=heatsum(i,j,3)&
+          +heatsum_rweed(heatsum(i,j,3),t2_nwp(i,j,1),daylength(glat(i,j)))&
+           /(24/METSTEP)  ! to degreedays
   end if ! heatsum calc each timestep
 
   ! if heatsum is over heatsum threhold for the grid cell, the pollen
@@ -539,11 +542,32 @@ end subroutine write_uset
 end subroutine pollen_flux
 function heatsum_calc(t2,T_cutoff) result(ff)
 ! The temperature needs to be over the cutoff temperature
-  real, intent(in) :: t2,T_cutoff
+  real, intent(in) :: t2,T_cutoff ! degreedays
   real             :: ff
 ! ff = (t2-T_cutoff)*heaviside(t2-T_cutoff)
   ff = DIM(t2,T_cutoff) ! same as max(t2-T_cutoff,0.0)
 endfunction heatsum_calc
+function heatsum_rweed(hsum,t2,daylen) result(ff)
+  real, intent(in) :: hsum,t2,daylen  ! degreedays,deg K,date%hours
+  real             :: ff
+
+  ! Temperature response for biotime accumulation
+  if (t2>=loTemp_rweed .and. t2<=optTemp_rweed)then
+    ff = (t2 - loTemp_rweed) / (optTemp_rweed - loTemp_rweed)
+  elseif (t2>optTemp_rweed .and. t2<=hiTemp_rweed)then
+    ff = (hiTemp_rweed - t2) / (hiTemp_rweed - optTemp_rweed)
+  else 
+    ff = 0.0
+    return
+  endif
+  
+  ! Photoperiod response for biotime accumulation
+  if(hsum>11.5 .and. hsum<16. .and. daylen>photoperiod_rweed)then
+    ff = ff * exp((daylen-photoperiod_rweed) * log(1.-0.5))
+  elseif(hsum>16. .and. hsum<20.5 .and. daylen>photoperiod_rweed)then
+    ff = ff * exp((daylen-photoperiod_rweed) * log(1.-0.6))
+  endif  
+endfunction heatsum_rweed
 function f_gamma_w_tails(relTime,relDt) result(ff)
 ! Returns the pollen prepared for release assuming the modified "taily" Gamma distribution
 ! of the season. Tails are the reason for many parameters: have to describe the main peak

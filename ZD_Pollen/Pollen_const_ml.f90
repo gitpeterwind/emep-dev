@@ -43,6 +43,12 @@ real, parameter  :: &
   D_POLL_rweed = 18.0,        & ! Pollen grain diameter [um] grass
   POLL_DENS= 800e3              ! Pollen density [g/m3]
 
+real, parameter ::            &
+  loTemp_rweed = 274.05,      &  ! 0.9C
+  hiTemp_rweed = 313.15,      &  ! 40C
+  optTemp_rweed = 304.85,     &  ! 31.7C
+  photoperiod_rweed = 14.5       ! date%hour
+
 ! pollen arrays indexing, order must match with POLLEN_GROUP: birch,olive,grass
 character(len=*), parameter :: &
   BIRCH = "POLLEN_BIRCH",&
