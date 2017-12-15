@@ -21,7 +21,7 @@ use LocalVariables_ml,    only: Grid
 use MetFields_ml,         only: surface_precip, ws_10m ,rh2m,t2_nwp,&
                                 foundws10_met,foundprecip,pr,u_ref,z_bnd,z_mid
 use MicroMet_ml,          only: Wind_at_h
-use ModelConstants_ml,    only: AERO, KMAX_MID, nstep, FORECAST, &
+use ModelConstants_ml,    only: AERO, KMAX_MID, FORECAST, &
                                 METSTEP, MasterProc, IOU_INST, RUNDOMAIN, &
                                 dt=>dt_advec, DEBUG=>DEBUG_POLLEN
 use MPI_Groups_ml,        only: MPI_INTEGER,MPI_LOGICAL,MPI_COMM_CALC,&
@@ -318,6 +318,7 @@ subroutine pollen_flux(i,j,debug_flag)
     .or.any([pollen_frac(i,j,2),olive_h_c(i,j)]==UnDef)
   
   pollen_out(3)=.not.checkdates(daynumber,RWEED)&
+!   .or.pollen_frac(i,j,3)==UnDef&
     .or..true. ! RAGWEED under development
 
   pollen_out(4)=.not.checkdates(daynumber,GRASS)&
@@ -325,6 +326,7 @@ subroutine pollen_flux(i,j,debug_flag)
     .or.(daynumber>(grass_end  (i,j)+uncert_grass_day))&
     .or.any([pollen_frac(i,j,3),grass_start(i,j),grass_end(i,j)]==UnDef)
 
+  call CheckStop(.not.pollen_out(3),RWEED//' under development')
 
   EmisNat(inat(:),i,j)      = 0.0
   rcemis (itot(:),KMAX_MID) = 0.0
@@ -334,31 +336,13 @@ subroutine pollen_flux(i,j,debug_flag)
     return
   end if
 
- !  Heatsum calculations
- !  Sums up the temperatures that day for each timestep (20 min).
- !  The heatsum are then divided by timesteps, and added using the
- !  function heatsum_calc.
-  if(nstep==1) then ! Heatsum calculation only each meteorological timestep
-    if(p_day(i,j)==current_date%day) then
-      h_day(i,j) = h_day(i,j) + t2_nwp(i,j,1)
-      if(current_date%hour==21)then
-        if(.not.pollen_out(1)) &
-          heatsum(i,j,1)=heatsum(i,j,1)&
-            +heatsum_calc(h_day(i,j)/(24/METSTEP),T_cutoff_birch)
-        if(.not.pollen_out(2)) &
-          heatsum(i,j,2)=heatsum(i,j,2)&
-            +heatsum_calc(h_day(i,j)/(24/METSTEP),T_cutoff_olive)
-      end if
-    else
-      p_day(i,j) = current_date%day
-      h_day(i,j) = t2_nwp(i,j,1)
-    end if
-    call CheckStop(.not.pollen_out(3),RWEED//' under development')
-    if(.not.pollen_out(3)) &
-      heatsum(i,j,3)=heatsum(i,j,3)&
-          +heatsum_rweed(heatsum(i,j,3),t2_nwp(i,j,1),daylength(glat(i,j)))&
-           /(24/METSTEP)  ! to degreedays
-  end if ! heatsum calc each timestep
+ ! Heatsum: sums up the temperatures that day for all time-steps
+  if(.not.pollen_out(1)) &
+    call heatsum_calc(heatsum(i,j,1),t2_nwp(i,j,1),T_cutoff_birch)
+  if(.not.pollen_out(2)) &
+    call heatsum_calc(heatsum(i,j,2),t2_nwp(i,j,1),T_cutoff_olive)
+  if(.not.pollen_out(3)) &
+    call heatsum_rweed(heatsum(i,j,3),t2_nwp(i,j,1),daylength(glat(i,j)))
 
   ! if heatsum is over heatsum threhold for the grid cell, the pollen
   ! emission can start calculating
@@ -540,15 +524,17 @@ subroutine write_uset()
   end do
 end subroutine write_uset
 end subroutine pollen_flux
-function heatsum_calc(t2,T_cutoff) result(ff)
+subroutine heatsum_calc(hsum,t2,T_cutoff)
 ! The temperature needs to be over the cutoff temperature
+  real, intent(inout) :: hsum
   real, intent(in) :: t2,T_cutoff ! degreedays
   real             :: ff
-! ff = (t2-T_cutoff)*heaviside(t2-T_cutoff)
   ff = DIM(t2,T_cutoff) ! same as max(t2-T_cutoff,0.0)
-endfunction heatsum_calc
-function heatsum_rweed(hsum,t2,daylen) result(ff)
-  real, intent(in) :: hsum,t2,daylen  ! degreedays,deg K,date%hours
+  hsum = hsum + ff*dt/(3600*24)      ! seconds to days
+end subroutine heatsum_calc
+subroutine heatsum_rweed(hsum,t2,daylen)
+  real, intent(inout) :: hsum
+  real, intent(in) :: t2,daylen  ! degreedays,deg K,date%hours
   real             :: ff
 
   ! Temperature response for biotime accumulation
@@ -557,7 +543,6 @@ function heatsum_rweed(hsum,t2,daylen) result(ff)
   elseif (t2>optTemp_rweed .and. t2<=hiTemp_rweed)then
     ff = (hiTemp_rweed - t2) / (hiTemp_rweed - optTemp_rweed)
   else 
-    ff = 0.0
     return
   endif
   
@@ -567,7 +552,9 @@ function heatsum_rweed(hsum,t2,daylen) result(ff)
   elseif(hsum>16. .and. hsum<20.5 .and. daylen>photoperiod_rweed)then
     ff = ff * exp((daylen-photoperiod_rweed) * log(1.-0.6))
   endif  
-endfunction heatsum_rweed
+
+  hsum = hsum + ff*dt/(3600*24)      ! seconds to days
+end subroutine heatsum_rweed
 function f_gamma_w_tails(relTime,relDt) result(ff)
 ! Returns the pollen prepared for release assuming the modified "taily" Gamma distribution
 ! of the season. Tails are the reason for many parameters: have to describe the main peak
