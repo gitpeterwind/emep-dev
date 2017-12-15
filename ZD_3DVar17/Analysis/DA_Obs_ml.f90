@@ -45,15 +45,17 @@ module DA_Obs_ml
   integer, parameter  ::  LEVTYPE_3D_ML_SFC  = 2  ! 3D model layers, surface simulation (3m)
   integer, parameter  ::  LEVTYPE_3D_ML_TC   = 3  ! 3D model layers, sum to total column
   integer, parameter  ::  LEVTYPE_2D_ML_SFC  = 4  ! 2D lowest model layer, surface simulation (3m)
-  integer, parameter  ::  LEVTYPE_2D_OBS_SFC = 5  ! 2D simulated observations, surface simulation (3m)
+  integer, parameter  ::  LEVTYPE_2D_ML_SFCP = 5  ! 2D lowest model layer, surface simulation (3m), scale profile
+  integer, parameter  ::  LEVTYPE_2D_OBS_SFC = 6  ! 2D simulated observations, surface simulation (3m)
   ! counter:
-  integer, parameter  ::  NLEVTYPE = 5
+  integer, parameter  ::  NLEVTYPE = 6
   ! names:
   character(len=10), parameter   ::  LEVTYPE_NAME(NLEVTYPE) = (/ &
                                         '3D_ML     ', &
                                         '3D_ML_SFC ', &
                                         '3D_ML_TC  ', &
                                         '2D_ML_SFC ', &
+                                        '2D_ML_SFCP', &
                                         '2D_OBS_SFC' /)
   
   
@@ -75,6 +77,7 @@ module DA_Obs_ml
   public    ::  LEVTYPE_3D_ML_SFC
   public    ::  LEVTYPE_3D_ML_TC
   public    ::  LEVTYPE_2D_ML_SFC
+  public    ::  LEVTYPE_2D_ML_SFCP
   public    ::  LEVTYPE_2D_OBS_SFC
   
 !  public    ::  dbg_cell, dbg_i, dbg_j
@@ -499,11 +502,8 @@ contains
   ! and return this in arguments:
   !   xn_obs_sfc   : sfc field
   !   xn_obs_ml    : model level field
+  !   xn_obs_units
   !
-!  ! Optional inputs 'xn_obs+dx_obs' specify analysis fields:
-!  !   xn_obs    : original (first guess) estimate
-!  !   dx_obs    : analysis increment
-!  !
   
   subroutine ObsCompInfo_FillFields( self, xn_adv, xn_adv_units, &
                                        xn_obs_sfc, xn_obs_ml, xn_obs_units, status )
@@ -604,7 +604,7 @@ contains
       !  - eventually 'roa' (air density)
       !  - for surface: 'cfac' (due to deposition profile)
       !
-      case ( '3D-ML-SFC', '2D-ML-SFC', '3D-ML-TC' )
+      case ( '3D-ML-SFC', '2D-ML-SFC', '2D-ML-SFCP' )!, '3D-ML-TC' )
       
         ! check ...
         if ( self%nspec /= 1 ) then
@@ -967,10 +967,8 @@ contains
     do i = 1, self%nspec
       ! global index:
       ispec = self%ispec(i)
-      
       ! scale 3D:
       xn_adv(ispec,:,:,:) = xn_adv(ispec,:,:,:) * ratio
-
     end do ! specs
 
     ! also apply to aerosol water?
@@ -1045,20 +1043,23 @@ contains
     ! fraction of NO3c assigned to PM2.5:
     real, parameter    ::  alfa = 0.27
     
+    ! pm collections:
+    integer, parameter        ::  npm = 3
+    integer, parameter        ::  ipm_fine   = 1
+    integer, parameter        ::  ipm_coarse = 2
+    integer, parameter        ::  ipm_no3c   = 3
+    
     ! --- local -----------------------------
     
     logical               ::  verb
     integer               ::  nspec, lnx, lny, nz
-    real, allocatable     ::  tpm_sfc(:,:,  :)  ! (lnx,lny   ,2)
-    real, allocatable     ::  tpm_ml (:,:,:,:)  ! (lnx,lny,nz,2)
-    real, allocatable     ::  no3c_sfc(:,:)     ! (lnx,lny)
-    real, allocatable     ::  no3c_ml (:,:,:)   ! (lnx,lny,nz)
-    real, allocatable     ::  xn_ana(:,:)       ! (lnx,lny)
-    real, allocatable     ::  fine_factor_sfc  (:,:)  ! (lnx,lny)
-    real, allocatable     ::  coarse_factor_sfc(:,:)  ! (lnx,lny)
-    real, allocatable     ::  fine_factor_ml  (:,:,:)  ! (lnx,lny,nz)
-    real, allocatable     ::  coarse_factor_ml(:,:,:)  ! (lnx,lny,nz)
-    real, allocatable     ::  w(:,:)  ! (nspec_adv,2)
+    real, allocatable     ::  tpm_sfc(:,:,  :)  ! (lnx,lny   ,npm)
+    real, allocatable     ::  tpm_ml (:,:,:,:)  ! (lnx,lny,nz,npm)
+    real, allocatable     ::  xn_25(:,:)        ! (lnx,lny)
+    real, allocatable     ::  xn_10(:,:)        ! (lnx,lny)
+    real, allocatable     ::  factor_sfc(:,:  ,:)  ! (lnx,lny   ,npm)
+    real, allocatable     ::  factor_ml (:,:,:,:)  ! (lnx,lny,nz,npm)
+    logical, allocatable  ::  ispm(:,:)            ! (nspec_adv,npm)
     integer               ::  ipm
     integer, pointer      ::  out_group(:)
     integer               ::  out_offset
@@ -1082,35 +1083,22 @@ contains
     lny   = size(xn_adv,3)
     nz    = size(xn_adv,4)
     
-    ! storage for current total fine/coarse aerosol:
-    allocate( tpm_ml (lnx,lny,nz,2), stat=status )
-    IF_NOT_OK_RETURN(status=1)
-    allocate( tpm_sfc(lnx,lny   ,2), stat=status )
-    IF_NOT_OK_RETURN(status=1)
-    ! storage for NO3c fields:
-    allocate( no3c_ml (lnx,lny,nz), stat=status )
-    IF_NOT_OK_RETURN(status=1)
-    allocate( no3c_sfc(lnx,lny), stat=status )
-    IF_NOT_OK_RETURN(status=1)
     ! target obs:
-    allocate( xn_ana(lnx,lny), stat=status )
+    allocate( xn_25(lnx,lny), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    allocate( xn_10(lnx,lny), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    ! storage for current total fine/coarse aerosol:
+    allocate( tpm_ml (lnx,lny,nz,npm), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    allocate( tpm_sfc(lnx,lny   ,npm), stat=status )
     IF_NOT_OK_RETURN(status=1)
     ! storage for factors:
-    allocate( fine_factor_sfc(lnx,lny), stat=status )
+    allocate( factor_sfc(lnx,lny   ,npm), stat=status )
     IF_NOT_OK_RETURN(status=1)
-    allocate( coarse_factor_sfc(lnx,lny), stat=status )
-    IF_NOT_OK_RETURN(status=1)
-    allocate( fine_factor_ml(lnx,lny,nz), stat=status )
-    IF_NOT_OK_RETURN(status=1)
-    allocate( coarse_factor_ml(lnx,lny,nz), stat=status )
+    allocate( factor_ml (lnx,lny,nz,npm), stat=status )
     IF_NOT_OK_RETURN(status=1)
     
-    ! weights of tracers in fine and corase:
-    allocate( w(nspec,2), stat=status )
-    IF_NOT_OK_RETURN(status=1)
-    ! init with no contribution:
-    w = 0.0
-
     ! Coarse nitrate should be treated special ...
     ! Fraction alfa is assigned to "fine" and (1-alfa) to "coarse",
     ! thus fine/coarse ratio "within" no3c is fixed.
@@ -1122,10 +1110,15 @@ contains
     ! Find index of coarse nitrate:
     ispec_no3c = find_index( 'NO3_C', species_adv(:)%name )
 
-    ! loop over fine (=1) and coarse (=2):
-    do ipm = 1, 2
+    ! weights of tracers in fine and corase:
+    allocate( ispm(nspec,npm), stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    ! init with no contribution:
+    ispm = .false.    
+    ! loop over pm collections:
+    do ipm = 1, npm
       ! use group defined in 'ChemGroups_ml':
-      if ( ipm == 1 ) then
+      if ( ipm == ipm_fine ) then
         out_group => PMFINE_GROUP
       else
         out_group => PM10_GROUP
@@ -1136,32 +1129,38 @@ contains
       do k = 1, size(out_group)
         ! extract index of specie:
         ispec = out_group(k) - out_offset
-        ! skip coarse nitrate, special:
-        if ( ispec == ispec_no3c ) cycle
         ! store relative weight in fine and coarse parts:
-        if ( ipm == 1 ) then
+        if ( ipm == ipm_fine ) then
           ! contributes to fine part:
-          w(ispec,ipm) = 1.0
-        else
-          ! only if exclusevely coarse:
-          if ( w(ispec,1) <= 0.0 ) w(ispec,ipm) = 1.0
+          ispm(ispec,ipm) = .true.
+        !  
+        else if ( ipm == ipm_coarse ) then
+          ! only if exclusevely coarse and not coarse nitrate:
+          ispm(ispec,ipm) = .not. ( ispm(ispec,ipm_fine) .or. (ispec == ispec_no3c) )
+        !
+        else if ( ipm == ipm_no3c ) then
+          ! only if coarse nitrate:
+          ispm(ispec,ipm) = ispec == ispec_no3c
         end if
+        !
       end do ! group elements
     end do  ! total fine and coarse
+    ! special:
+    ispm(ispec_no3c,ipm_no3c) = .true.
     
-    !! info ...
-    !write (gol,*) 'rrr weights: '; call goPr
-    !do ispec = 1, nspec
-    !  if ( any(w(ispec,:) > 0.0) ) then
-    !    write (gol,'("rrr ",2f8.2," ",a)') w(ispec,:), trim(species_adv(ispec)%name); call goPr
-    !  end if
-    !end do
+    ! info ...
+    write (gol,*) 'rrr weights: '; call goPr
+    do ispec = 1, nspec
+      if ( any( ispm(ispec,:) ) ) then
+        write (gol,'("rrr ",3l2," ",a)') ispm(ispec,:), trim(species_adv(ispec)%name); call goPr
+      end if
+    end do
 
     ! init sums:
     tpm_ml  = 0.0
     tpm_sfc = 0.0
-    ! loop over fine (=1) and coarse (=2):
-    do ipm = 1, 2
+    ! loop over fine (=1) and coarse-without-no3c (=2):
+    do ipm = 1, 3
       !! testing ...
       !if ( dbg_cell ) then
       !  write (gol,*) 'yyy ipm = ', ipm; call goPr
@@ -1169,7 +1168,7 @@ contains
       ! loop over species:
       do ispec = 1, nspec
         ! skip if no contribution:
-        if ( w(ispec,ipm) <= 0.0 ) cycle
+        if ( .not. ispm(ispec,ipm) ) cycle
         ! info on conversion to target units:
 #ifdef with_ajs
         call Units_Scale( obs_units, ispec, fscale, &
@@ -1185,12 +1184,12 @@ contains
         if ( needroa ) then
           ! add contribution, multiply with air density:
           tpm_ml(:,:,:,ipm) = tpm_ml(:,:,:,ipm) + &
-                               xn_adv(ispec,:,:,lev3d(:num_lev3d)) * w(ispec,ipm) &
+                               xn_adv(ispec,:,:,lev3d(:num_lev3d)) &
                                * fscale &
                                * roa(:,:,lev3d(:num_lev3d),1)    ! density
           ! surface fraction:
           tpm_sfc(:,:,ipm)  = tpm_sfc(:,:,ipm) + &
-                               xn_adv(ispec,:,:,nlev) * w(ispec,ipm) &
+                               xn_adv(ispec,:,:,nlev) &
                                * fscale &
                                * roa(:,:,nlev,1)    &  ! density
                                * cfac(ispec,:,:)       ! 50 m -> 3 m
@@ -1203,11 +1202,11 @@ contains
         else
           ! add contribution:
           tpm_ml(:,:,:,ipm) = tpm_ml(:,:,:,ipm) + &
-                               xn_adv(ispec,:,:,lev3d(:num_lev3d)) * w(ispec,ipm) &
+                               xn_adv(ispec,:,:,lev3d(:num_lev3d)) &
                                * fscale
           ! surface fraction:
           tpm_sfc(:,:,ipm)  = tpm_sfc(:,:,ipm) + &
-                               xn_adv(ispec,:,:,nlev) * w(ispec,ipm) &
+                               xn_adv(ispec,:,:,nlev) &
                                * fscale &
                                * cfac(ispec,:,:)       ! 50 m -> 3 m
           !! testing ...
@@ -1217,62 +1216,21 @@ contains
           !end if
         end if
       end do  ! spec
-      ! add 3D aersosol water to fine fraction:
-      if ( ipm == 1 ) then
-        tpm_ml (:,:,:,ipm) = tpm_ml (:,:,:,ipm) + PM25_water
-        tpm_sfc(:,:  ,ipm) = tpm_sfc(:,:  ,ipm) + PM25_water_rh50
-        !! testing ...
-        !if ( dbg_cell ) then
-        !  write (gol,*) 'yyy   rh50           = ', PM25_water_rh50(dbg_i,dbg_j); call goPr
-        !end if
-      end if
-    end do  ! total fine and coarse
-    
-    ! coarse nitrate:
-    ispec = ispec_no3c
-    ! info on conversion to target units:
-#ifdef with_ajs
-    call Units_Scale( obs_units, ispec, fscale, &
-                             needroa=needroa, status=status )
-    IF_NOT_OK_RETURN(status=1)
-#else
-    call Units_Scale( obs_units, ispec, fscale, &
-                             needroa=needroa )
-#endif
+    end do  ! pm collections
+    ! add 3D aersosol water to fine fraction:
+    tpm_ml (:,:,:,ipm_fine) = tpm_ml (:,:,:,ipm_fine) + PM25_water
+    tpm_sfc(:,:  ,ipm_fine) = tpm_sfc(:,:  ,ipm_fine) + PM25_water_rh50
     !! testing ...
-    !write (gol,*) 'qqq ', ipm, ' ', obs_units, ispec, ' ', trim(species_adv(ispec)%name), fscale, needroa; call goPr
-    ! convert using air density?
-    if ( needroa ) then
-      ! add contribution, multiply with air density:
-      no3c_ml = xn_adv(ispec,:,:,lev3d(:num_lev3d)) * fscale &
-                * roa(:,:,lev3d(:num_lev3d),1)    ! density
-      ! surface fraction:
-      no3c_sfc = xn_adv(ispec,:,:,nlev) * fscale &
-                 * roa(:,:,nlev,1)    &  ! density
-                 * cfac(ispec,:,:)       ! 50 m -> 3 m
-      !! testing ...
-      !if ( dbg_cell ) then
-      !  write (gol,*) 'yyy   no3c ', ispec, no3c_sfc(dbg_i,dbg_j); call goPr
-      !end if
-
-    else
-      ! add contribution:
-      no3c_ml = xn_adv(ispec,:,:,lev3d(:num_lev3d)) * fscale
-      ! surface fraction:
-      no3c_sfc = xn_adv(ispec,:,:,nlev) * fscale &
-                 * cfac(ispec,:,:)       ! 50 m -> 3 m
-      !! testing ...
-      !if ( dbg_cell ) then
-      !  write (gol,*) 'yyy   no3c ', ispec, no3c_sfc(dbg_i,dbg_j); call goPr
-      !end if
-    end if
+    !if ( dbg_cell ) then
+    !  write (gol,*) 'yyy   rh50           = ', PM25_water_rh50(dbg_i,dbg_j); call goPr
+    !end if
     
     !! testing ...
     !if ( dbg_cell ) then
     !  write (gol,*) 'yyy before tpm fine,course   = ', tpm_sfc(dbg_i,dbg_j,:); call goPr
     !  write (gol,*) 'yyy before tpm fine+coarse   = ', sum(tpm_sfc(dbg_i,dbg_j,:)); call goPr
-    !  write (gol,*) 'yyy before tpm f + a*no3c    = ', tpm_sfc(dbg_i,dbg_j,1)+alfa*no3c_sfc(dbg_i,dbg_j); call goPr
-    !  write (gol,*) 'yyy before tpm f + c + no3c  = ', sum(tpm_sfc(dbg_i,dbg_j,:)) + no3c_sfc(dbg_i,dbg_j); call goPr
+    !  write (gol,*) 'yyy before tpm f + a*no3c    = ', tpm_sfc(dbg_i,dbg_j,1)+alfa*tpm_sfc(:,:,3)(dbg_i,dbg_j); call goPr
+    !  write (gol,*) 'yyy before tpm f + c + no3c  = ', sum(tpm_sfc(dbg_i,dbg_j,:)) + tpm_sfc(:,:,3)(dbg_i,dbg_j); call goPr
     !end if
 
     !! testing ..
@@ -1284,9 +1242,10 @@ contains
     ! obserations are found with pm25 > pm10 ;
     ! limit the analyzed field to the current total 
     ! (which should remain unchanged in this update):
-    xn_ana = min( max( 0.0, xn_obs + dx_obs(:,:,nz) ), tpm_sfc(:,:,1)+tpm_sfc(:,:,2)+no3c_sfc )
+    xn_10 = sum( tpm_sfc, dim=3 )
+    xn_25 = min( max( 0.0, xn_obs + dx_obs(:,:,nz) ), xn_10 )
     !! without the water part:
-    !xn_ana = min( xn_obs + dx_obs - PM25_water, tpm(:,:,:,1)+tpm(:,:,:,2) )
+    !xn_ana = min( xn_obs + dx_obs - PM25_water, tpm(:,:,:,1)+tpm(:,:,:,ipm_coarse) )
     
     !! testing ..
     !write (gol,*) 'ppp0 xn_ana = ',xn_obs(1,1), dx_obs(1,1), xn_ana(1,1); call goPr
@@ -1298,133 +1257,120 @@ contains
     !  write (gol,*) 'yyy xn_ana          = ', xn_ana(dbg_i,dbg_j); call goPr
     !end if
     
+    !
+    ! Determine scale factors for fine and coarse part such that:
+    !
+    !   total_fine * fine_factor +  alfa*no3c                 * coarse_factor = xn_25
+    !   total_fine * fine_factor + (     no3c + total_coarse) * coarse_factor = xn_10
+    !
+    ! First solve coarse factor:
+    !
+    !   xn_25 - alfa*no3c * coarse_factor + ( no3c + total_coarse) * coarse_factor = xn_10
+    !   ( (1-alfa)*no3c + total_coarse ) * coarse_factor = xn_10 - xn_25
+    !     coarse_factor = (xn_10 - xn_25)/( (1-alfa)*no3c + total_coarse )
+    !
+    ! Thus, scale the coarse fraction to match with analyzed coarse fraction.
+    !
+    where ( xn_10 > xn_25 )
+      ! scale factor for coarse fraction:
+      factor_sfc(:,:,ipm_coarse) = (xn_10 - xn_25) / ( (1.0-alfa)*tpm_sfc(:,:,ipm_no3c) + tpm_sfc(:,:,ipm_coarse) )
+    elsewhere
+      ! no coarse fraction in analysis present, dummy factor:
+      factor_sfc(:,:,ipm_coarse) = 1.0
+    end where
+    
     ! scale factor to make fine fraction (incl part of no3c) equal to observations:
-    !   total_fine * fine_factor + alfa*no3c  =  ana_fine
+    !   total_fine * fine_factor + alfa*no3c * coarse_factor =  xn_25
     ! thus:
-    !   fine_factor  =  (ana_fine - alfa*no3c) / total_fine
+    !   fine_factor  =  (xn_25 - alfa*no3c * coarse_factor) / total_fine
     ! any fine pm?
-    where ( tpm_sfc(:,:,1) > 0.0 )
+    where ( tpm_sfc(:,:,ipm_fine) > 0.0 )
       ! fine pm present, obtain scale factor;
       ! might become negative which means that all fine pm shoulde be removed
       ! except the no3c fration that is also considered as part of the fine mode;
-      ! negative values will be clipped below:
-      fine_factor_sfc = ( xn_ana - alfa*no3c_sfc ) / tpm_sfc(:,:,1)
+      ! keep minimum fraction to avoid that all fine aerosols are removed:
+      factor_sfc(:,:,ipm_fine) =  max( 0.01, ( xn_25 - alfa*tpm_sfc(:,:,ipm_no3c) * factor_sfc(:,:,ipm_coarse) ) / tpm_sfc(:,:,ipm_fine) )
     elsewhere
       ! no fine pm present, dummy factor:
-      fine_factor_sfc = 1.0
+      factor_sfc(:,:,ipm_fine) = 1.0
     end where
     !! testing ...
     !if ( dbg_cell ) then
-    !  write (gol,*) 'yyy fine_factor 1 = ', fine_factor_sfc(dbg_i,dbg_j); call goPr
+    !  write (gol,*) 'yyy fine_factor 1 = ', factor_sfc(:,:,ipm_fine)(dbg_i,dbg_j); call goPr
     !end if
     ! use minimum factor to avoid that all aersols are removed,
     ! this would give errors from aerosol equilibrium routines:
-    fine_factor_sfc = max( 0.01, fine_factor_sfc )
+    !factor_sfc(:,:,ipm_fine) = max( 0.01, factor_sfc(:,:,ipm_fine) )
     !! testing ...
     !if ( dbg_cell ) then
-    !  write (gol,*) 'yyy fine_factor 2 = ', fine_factor_sfc(dbg_i,dbg_j); call goPr
-    !end if
-    ! expand to higher layers; copy surface:
-    fine_factor_ml(:,:,nz) = fine_factor_sfc
-    ! other layers:
-    do k = 1, nz-1
-      ! use profile following ratio:
-      !   dx(:,:,k)/dx(:,:,nz)
-      ! which is 1 at the bottom layer (nz) and decays to zero with height;
-      ! note that also values >1 might be present in the first layers above the surface,
-      ! and tiny negative values at the top; use abs to avoid the later:
-      where ( abs(dx_obs(:,:,nz)) > 0.0 )
-        fine_factor_ml(:,:,k) = 1.0 + ( fine_factor_ml(:,:,nz) - 1.0 ) * abs(dx_obs(:,:,k)/dx_obs(:,:,nz))
-      elsewhere
-        fine_factor_ml(:,:,k) = 1.0
-      end where
-    end do
-    ! ensure minimum factor, negatives might have been introduced
-    ! for cells where dx(k) exceeds dx(nz) :
-    fine_factor_ml = max( 0.01, fine_factor_ml )
-    ! limit to not change total pm in model layers:
-    !   total_fine * fine_factor + alfa no3c  <=  total_fine + total_coarse + no3c
-    !                fine_factor  <=  [ total_fine + total_coarse + no3c ]/[total_fine + alfa no3c]
-    where ( tpm_ml(:,:,:,1) > 0.0 )
-      fine_factor_ml = min( fine_factor_ml, (tpm_ml(:,:,:,1)+tpm_ml(:,:,:,2)+no3c_ml)/(tpm_ml(:,:,:,1)+alfa*no3c_ml) )
-    end where
-    ! ensure minimum factor again:
-    fine_factor_ml = max( 0.01, fine_factor_ml )
-    !! testing ...
-    !if ( dbg_cell ) then
-    !  write (gol,*) 'yyy fine_factor ml= ', fine_factor_ml(dbg_i,dbg_j,nz); call goPr
+    !  write (gol,*) 'yyy fine_factor 2 = ', factor_sfc(:,:,ipm_fine)(dbg_i,dbg_j); call goPr
     !end if
     
-    ! scale factor to bring coarse fraction in agreement with analyzed fine fraction:
-    !   total_fine * fine_factor + total_coarse * coarse_factor + no3c  =  total_fine + total_coarse + no3c
-    ! thus:
-    !   coarse_factor = ( total_fine + total_coarse - total_fine * fine_factor )/total_coarse
-    ! any coarse pm?
-    where ( tpm_sfc(:,:,2) > 0.0 )
-      coarse_factor_sfc = ( tpm_sfc(:,:,1) + tpm_sfc(:,:,2) - tpm_sfc(:,:,1)*fine_factor_sfc ) / tpm_sfc(:,:,2)
+    ! if for the fine factor the minimum value is used,
+    ! then both the modelled pm25 and pm10 will exceed the analyzed pm25 and pm10 
+    ! since pm25 has too much of the coarse nitrate fraction;
+    ! remove the surplus of coarse nitrate:
+    where ( ( (1-alfa)*tpm_sfc(:,:,ipm_no3c) + tpm_sfc(:,:,ipm_coarse) )*factor_sfc(:,:,ipm_coarse) > xn_10 )
+      ! special scale factor for coarse nitrate:
+      !   total_fine * fine_factor + no3c * no3c_factor + total_coarse * coarse_factor = xn_10
+      !   no3c_factor = ( xn_10 - total_fine * fine_factor - total_coarse * coarse_factor ) / no3c
+      ! keep minimum ammount:
+      factor_sfc(:,:,ipm_no3c) = ( xn_10 - tpm_sfc(:,:,ipm_fine)*factor_sfc(:,:,ipm_fine) - tpm_sfc(:,:,ipm_coarse)*factor_sfc(:,:,ipm_coarse) ) / ( (1-alfa)*tpm_sfc(:,:,ipm_no3c) )
     elsewhere
-      ! no coarse pm present, dummy:
-      coarse_factor_sfc = 1.0
-    end where
-    ! ensure minimum factor:
-    coarse_factor_sfc  = max( 0.01, coarse_factor_sfc )
-    !! testing ...
-    !if ( dbg_cell ) then
-    !  write (gol,*) 'yyy coarse_factor 1 sfc = ', coarse_factor_sfc(dbg_i,dbg_j); call goPr
-    !end if
-    ! idem for model layers:
-    where ( tpm_ml(:,:,:,2) > 0.0 )
-      coarse_factor_ml = ( tpm_ml(:,:,:,1) + tpm_ml(:,:,:,2) - tpm_ml(:,:,:,1)*fine_factor_ml ) / tpm_ml(:,:,:,2)
-    elsewhere
-      ! no coarse pm present, dummy:
-      coarse_factor_ml = 1.0
-    end where
-    ! ensure minimum factor:
-    coarse_factor_ml  = max( 0.01, coarse_factor_ml )
-    !! testing ...
-    !if ( dbg_cell ) then
-    !  write (gol,*) 'yyy coarse_factor 2 ml  = ', coarse_factor_ml(dbg_i,dbg_j,nz); call goPr
-    !end if
-    ! scale profile to have factors at bottom layer equal to factor for surface field:
-    do k = 1, nz
-      where ( coarse_factor_ml(:,:,nz) /= 1.0 )
-        coarse_factor_ml(:,:,k) = 1.0 + (coarse_factor_ml(:,:,k)-1.0) * (coarse_factor_sfc-1.0) / (coarse_factor_ml(:,:,nz)-1.0)
-      endwhere
-    end do
-    ! minimum factor to avoid loss of all aerosols:
-    coarse_factor_ml = max( 0.01, coarse_factor_ml )
-    !! testing ...
-    !if ( dbg_cell ) then
-    !  write (gol,*) 'yyy coarse_factor 3 ml  = ', coarse_factor_ml(dbg_i,dbg_j,nz); call goPr
-    !end if
+      ! keep already computed coarse factor:
+      factor_sfc(:,:,ipm_no3c) = factor_sfc(:,:,ipm_coarse)
+    endwhere
+
+    ! expand to higher layers; same for all collections:
+    do ipm = 1, npm
+      ! copy surface:
+      factor_ml(:,:,nz,ipm) = factor_sfc(:,:,ipm)
+      ! other layers:
+      do k = 1, nz-1
+        ! use profile following ratio:
+        !   dx(:,:,k)/dx(:,:,nz)
+        ! which is 1 at the bottom layer (nz) and decays to zero with height;
+        ! note that also values >1 might be present in the first layers above the surface,
+        ! and tiny negative values at the top, therefore use abs values;
+        ! also use minimum factor:
+        where ( abs(dx_obs(:,:,nz)) > 0.0 )
+          factor_ml(:,:,k,ipm) = max( 0.01, 1.0 + ( factor_ml(:,:,nz,ipm) - 1.0 ) * abs(dx_obs(:,:,k)/dx_obs(:,:,nz)) )
+        elsewhere
+          factor_ml(:,:,k,ipm) = 1.0
+        end where
+      end do ! levels
+    end do ! ipm
     
     !! info ..
-    !write (gol,*) 'ppp2 fine: ', xn_ana(1,1), tpm_sfc(1,1,1), xn_ana(1,1) / tpm_sfc(1,1,1); call goPr
-    !write (gol,*) 'ppp2 fine   factor = ', fine_factor  (1,1); call goPr
-    !write (gol,*) 'ppp2 coarse factor = ', coarse_factor(1,1); call goPr
+    !write (gol,*) 'ppp2 fine: ', xn_ana(1,ipm_fine), tpm_sfc(1,1,ipm_fine), xn_ana(1,ipm_fine) / tpm_sfc(1,1,ipm_fine); call goPr
+    !write (gol,*) 'ppp2 fine   factor = ', fine_factor  (1,ipm_fine); call goPr
+    !write (gol,*) 'ppp2 coarse factor = ', coarse_factor(1,ipm_fine); call goPr
 
-    ! loop over all species:
-    do ispec = 1, nspec
-      ! skip if no contribution to pm:
-      if ( all(w(ispec,:) <= 0.0) ) cycle
-      !! testing ...
-      !if ( dbg_cell ) then
-      !  write (gol,*) 'yyy ispec ', ispec; call goPr
-      !  !write (gol,*) 'yyy   wf ml  ', w(ispec,1) * fine_factor_ml(dbg_i,dbg_j,nz), w(ispec,2) * coarse_factor_ml(dbg_i,dbg_j,nz); call goPr
-      !  write (gol,*) 'yyy   wf ml  ', w(ispec,1) * fine_factor_ml(dbg_i,dbg_j,nz) + w(ispec,2) * coarse_factor_ml(dbg_i,dbg_j,nz); call goPr
-      !  write (gol,*) 'yyy   xn_adv ', xn_adv(ispec,dbg_i,dbg_j,nz); call goPr
-      !end if
-      ! apply factor fields, either only w(1) or w(2) is non-zero:
-      xn_adv(ispec,:,:,:) = xn_adv(ispec,:,:,:) * ( w(ispec,1) * fine_factor_ml + w(ispec,2) * coarse_factor_ml )
-      !! testing ...
-      !if ( dbg_cell ) then
-      !  write (gol,*) 'yyy   xn_adv ', xn_adv(ispec,dbg_i,dbg_j,nz); call goPr
-      !end if
-    end do
+    ! loop over fine/coarse:
+    do ipm = 1, npm
+      ! loop over all species:
+      do ispec = 1, nspec
+        ! skip if no contribution to pm:
+        if ( .not. ispm(ispec,ipm) ) cycle
+        !! testing ...
+        !if ( dbg_cell ) then
+        !  write (gol,*) 'yyy ispec ', ispec; call goPr
+        !  !write (gol,*) 'yyy   wf ml  ', w(ispec,ipm_fine) * factor_ml(:,:,ipm_fine)(dbg_i,dbg_j,nz), w(ispec,ipm_coarse) * factor_ml(:,:,ipm_coarse)(dbg_i,dbg_j,nz); call goPr
+        !  write (gol,*) 'yyy   wf ml  ', w(ispec,ipm_fine) * factor_ml(:,:,ipm_fine)(dbg_i,dbg_j,nz) + w(ispec,ipm_coarse) * factor_ml(:,:,ipm_coarse)(dbg_i,dbg_j,nz); call goPr
+        !  write (gol,*) 'yyy   xn_adv ', xn_adv(ispec,dbg_i,dbg_j,nz); call goPr
+        !end if
+        ! apply factor fields:
+        xn_adv(ispec,:,:,:) = xn_adv(ispec,:,:,:) * factor_ml(:,:,:,ipm)
+        !! testing ...
+        !if ( dbg_cell ) then
+        !  write (gol,*) 'yyy   xn_adv ', xn_adv(ispec,dbg_i,dbg_j,nz); call goPr
+        !end if
+      end do ! ispec
+    end do ! ipm
     ! also apply (fine) factor to aersol water;
     ! better would be to recompute water content after changing the aerosol load ...
-    PM25_water      = PM25_water      * fine_factor_ml    ! model levels
-    PM25_water_rh50 = PM25_water_rh50 * fine_factor_sfc   ! sfc
+    PM25_water      = PM25_water      * factor_ml (:,:,:,ipm_fine)   ! model levels
+    PM25_water_rh50 = PM25_water_rh50 * factor_sfc(:,:  ,ipm_fine)   ! sfc
     
 !    ! .... testing ........................
 !
@@ -1458,17 +1404,17 @@ contains
 !          tpm_ml(:,:,:,ipm) = tpm_ml(:,:,:,ipm) + &
 !                               xn_adv(ispec,:,:,lev3d(:num_lev3d)) * w(ispec,ipm) &
 !                               * fscale &
-!                               * roa(:,:,lev3d(:num_lev3d),1)    ! density
+!                               * roa(:,:,lev3d(:num_lev3d),ipm_fine)    ! density
 !          ! surface fraction:
 !          tpm_sfc(:,:,ipm)  = tpm_sfc(:,:,ipm) + &
 !                               xn_adv(ispec,:,:,nlev) * w(ispec,ipm) &
 !                               * fscale &
-!                               * roa(:,:,nlev,1)    &  ! density
+!                               * roa(:,:,nlev,ipm_fine)    &  ! density
 !                               * cfac(ispec,:,:)       ! 50 m -> 3 m
 !          !! testing ...
 !          !if ( dbg_cell ) then
 !          !  write (gol,*) 'yyy   r ispec ', ispec, xn_adv(ispec,dbg_i,dbg_j,nlev) * w(ispec,ipm) &
-!          !                                       * fscale * roa(dbg_i,dbg_j,nlev,1) * cfac(ispec,dbg_i,dbg_j); call goPr
+!          !                                       * fscale * roa(dbg_i,dbg_j,nlev,ipm_fine) * cfac(ispec,dbg_i,dbg_j); call goPr
 !          !end if
 !                               
 !        else
@@ -1515,30 +1461,30 @@ contains
 !    ! convert using air density?
 !    if ( needroa ) then
 !      ! surface fraction:
-!      no3c_sfc = xn_adv(ispec,:,:,nlev) * fscale &
-!                 * roa(:,:,nlev,1)    &  ! density
+!      tpm_sfc(:,:,ipm_no3c) = xn_adv(ispec,:,:,nlev) * fscale &
+!                 * roa(:,:,nlev,ipm_fine)    &  ! density
 !                 * cfac(ispec,:,:)       ! 50 m -> 3 m
 !      !! testing ...
 !      !if ( dbg_cell ) then
-!      !  write (gol,*) 'yyy   r ispec ', ispec, no3c_sfc(dbg_i,dbg_j); call goPr
+!      !  write (gol,*) 'yyy   r ispec ', ispec, tpm_sfc(:,:,ipm_no3c)(dbg_i,dbg_j); call goPr
 !      !end if
 !
 !    else
 !      ! surface fraction:
-!      no3c_sfc = xn_adv(ispec,:,:,nlev) * fscale &
+!      tpm_sfc(:,:,ipm_no3c) = xn_adv(ispec,:,:,nlev) * fscale &
 !                 * cfac(ispec,:,:)       ! 50 m -> 3 m
 !      !! testing ...
 !      !if ( dbg_cell ) then
-!      !  write (gol,*) 'yyy   p ispec ', ispec, no3c_sfc(dbg_i,dbg_j); call goPr
+!      !  write (gol,*) 'yyy   p ispec ', ispec, tpm_sfc(:,:,ipm_no3c)(dbg_i,dbg_j); call goPr
 !      !end if
 !    end if
 !
 !    ! testing ...
 !    if ( dbg_cell ) then
 !      write (gol,*) 'yyy after tpm_sfc      = ', tpm_sfc(dbg_i,dbg_j,:); call goPr
-!      write (gol,*) 'yyy after no3c_sfc     = ', no3c_sfc(dbg_i,dbg_j); call goPr
-!      write (gol,*) 'yyy after f + a*no3c   = ', tpm_sfc(dbg_i,dbg_j,1)+alfa*no3c_sfc(dbg_i,dbg_j); call goPr
-!      write (gol,*) 'yyy after f + c + no3c = ', sum(tpm_sfc(dbg_i,dbg_j,:))+no3c_sfc(dbg_i,dbg_j); call goPr
+!      write (gol,*) 'yyy after tpm_sfc(:,:,ipm_no3c)     = ', tpm_sfc(:,:,ipm_no3c)(dbg_i,dbg_j); call goPr
+!      write (gol,*) 'yyy after f + a*no3c   = ', tpm_sfc(dbg_i,dbg_j,ipm_fine)+alfa*tpm_sfc(:,:,ipm_no3c)(dbg_i,dbg_j); call goPr
+!      write (gol,*) 'yyy after f + c + no3c = ', sum(tpm_sfc(dbg_i,dbg_j,:))+tpm_sfc(:,:,ipm_no3c)(dbg_i,dbg_j); call goPr
 !      do ispec = 1, nspec
 !        !if ( any(w(ispec,:) > 0.0) .or. (ispec == ispec_no3c) ) then
 !        !  write (gol,*) 'yyy ispec ', ispec, ' ', trim(species_adv(ispec)%name); call goPr
@@ -1560,25 +1506,19 @@ contains
     !
     
     ! clear:
+    deallocate( xn_25, stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    deallocate( xn_10, stat=status )
+    IF_NOT_OK_RETURN(status=1)
+    deallocate( ispm, stat=status )
+    IF_NOT_OK_RETURN(status=1)
     deallocate( tpm_ml, stat=status )
     IF_NOT_OK_RETURN(status=1)
     deallocate( tpm_sfc, stat=status )
     IF_NOT_OK_RETURN(status=1)
-    deallocate( no3c_ml, stat=status )
+    deallocate( factor_sfc, stat=status )
     IF_NOT_OK_RETURN(status=1)
-    deallocate( no3c_sfc, stat=status )
-    IF_NOT_OK_RETURN(status=1)
-    deallocate( xn_ana, stat=status )
-    IF_NOT_OK_RETURN(status=1)
-    deallocate( fine_factor_sfc, stat=status )
-    IF_NOT_OK_RETURN(status=1)
-    deallocate( coarse_factor_sfc, stat=status )
-    IF_NOT_OK_RETURN(status=1)
-    deallocate( fine_factor_ml, stat=status )
-    IF_NOT_OK_RETURN(status=1)
-    deallocate( coarse_factor_ml, stat=status )
-    IF_NOT_OK_RETURN(status=1)
-    deallocate( w, stat=status )
+    deallocate( factor_ml, stat=status )
     IF_NOT_OK_RETURN(status=1)
 
     ! ok
@@ -2555,7 +2495,7 @@ contains
     
       !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       ! derive from 3D model levels (or 3D lowest layer) via surface (cfac)
-      case ( '3D-ML-SFC', '2D-ML-SFC' )
+      case ( '3D-ML-SFC', '2D-ML-SFC', '2D-ML-SFCP' )
       !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
         ! cfac is for single species ...
@@ -2575,6 +2515,8 @@ contains
             self%levtype = LEVTYPE_3D_ML_SFC
           case ( '2D-ML-SFC' )
             self%levtype = LEVTYPE_2D_ML_SFC
+          case ( '2D-ML-SFCP' )
+            self%levtype = LEVTYPE_2D_ML_SFCP
           case default
             write (gol,'("deriv `",a,"` not supported")') trim(obsData(self%iObsData)%deriv); call goErr
             TRACEBACK; status=1; return
@@ -2842,7 +2784,7 @@ contains
         !  TRACEBACK; status=1; return
         !end if
       !~ model levels:
-      case ( LEVTYPE_2D_ML_SFC, LEVTYPE_3D_ML_SFC, LEVTYPE_3D_ML_TC )
+      case ( LEVTYPE_2D_ML_SFC, LEVTYPE_2D_ML_SFCP, LEVTYPE_3D_ML_SFC, LEVTYPE_3D_ML_TC )
         ! level range:
         l0 = self%l(0)
         l1 = self%l(1)
