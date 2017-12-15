@@ -44,10 +44,15 @@ real, parameter  :: &
   POLL_DENS= 800e3              ! Pollen density [g/m3]
 
 real, parameter ::            &
-  loTemp_rweed = 274.05,      &  ! 0.9C
-  hiTemp_rweed = 313.15,      &  ! 40C
+  loTemp_rweed  = 274.05,     &  ! 0.9C
+  hiTemp_rweed  = 313.15,     &  ! 40C
   optTemp_rweed = 304.85,     &  ! 31.7C
-  photoperiod_rweed = 14.5       ! date%hour
+  photoperiod_rweed = 14.5,   &  ! date%hour
+  StartHSThr_rweed = 25.0,    &  ! Deen et al 1998
+  TempThr_rweed    = 273.15,  &  !   0C (Deen et al 1998)
+  DayTempThr_rweed = 280.65,  &  ! 7.5C (Deen et al 1998)
+  EndCDThr_rweed   = 265.0       ! 97.5% == 2sigma; 22 sept (autumn equinox)
+
 
 ! pollen arrays indexing, order must match with POLLEN_GROUP: birch,olive,grass
 character(len=*), parameter :: &

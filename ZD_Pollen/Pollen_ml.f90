@@ -226,10 +226,7 @@ subroutine pollen_flux(i,j,debug_flag)
     birch_corr, & ! correction field for p.emission, read in
     olive_h_c,  & ! temperature treshold olive, read in
     olive_dH,   & ! flowering period [degree days]
-    h_day         ! temperature summed over a day
-
-  integer,save,allocatable, dimension(:,:) :: &
-    p_day
+    t2_day        ! daily temperature
 
   ! Read in the different fields
   if(first_call) then
@@ -237,10 +234,9 @@ subroutine pollen_flux(i,j,debug_flag)
     call Config_Pollen()
     if(FORECAST) call pollen_read()
 
-    allocate(p_day(LIMAX,LJMAX),AreaPOLL(LIMAX,LJMAX,POLLEN_NUM),h_day(LIMAX,LJMAX))
-    p_day(:,:) =current_date%day
+    allocate(AreaPOLL(LIMAX,LJMAX,POLLEN_NUM),t2_day(LIMAX,LJMAX))
     AreaPOLL(:,:,:)=0.0
-    h_day(:,:)=0.0
+    t2_day(:,:)=0.0
 
     allocate(pollen_frac(LIMAX,LJMAX,POLLEN_NUM))
     allocate(birch_h_c(LIMAX,LJMAX),birch_corr(LIMAX,LJMAX))
@@ -344,6 +340,13 @@ subroutine pollen_flux(i,j,debug_flag)
   if(.not.pollen_out(3)) &
     call heatsum_rweed(heatsum(i,j,3),t2_nwp(i,j,1),daylength(glat(i,j)))
 
+  ! calculate daily mean temperatures
+  if(current_date%hour==0 .and. current_date%seconds==dt)&
+    t2_day(i,j) = 0.0
+  t2_day(i,j) = t2_day(i,j) + t2_nwp(i,j,1)*dt
+  if(current_date%hour==0 .and. current_date%seconds==0)&
+    t2_day(i,j) = t2_day(i,j)/(3600*24)
+
   ! if heatsum is over heatsum threhold for the grid cell, the pollen
   ! emission can start calculating
   lim_birch = (1-prob_in_birch)*birch_h_c(i,j)
@@ -391,7 +394,17 @@ subroutine pollen_flux(i,j,debug_flag)
     .or.(t2_nwp(i,j,1)<T_cutoff_olive)& ! too windy
     .or.(heatsum(i,j,2)-olive_h_c(i,j)> olive_dH(i,j))
 
-  pollen_out(3)=.true. ! RAGWEED under development
+! Ragweed specific emission inhibitors
+! meteo flowering thresholds can zero the heatsum
+  if(t2_nwp(i,j,1)<TempThr_rweed .or. & ! inst. treshold
+    (current_date%hour==0 .and. current_date%seconds==0 .and. &
+    t2_day(i,j)<DayTempThr_rweed))then
+    heatsum(i,j,3)=0.0
+    if(R(i,j,3)>0.0) &        ! if flowering started 
+      R(i,j,3)=N_TOT(3)+1e-6  ! end emission in gridcell
+  end if
+  pollen_out(3)=pollen_out(3)         & ! out season
+    .or.(R(i,j,3)>N_TOT(3))             ! out of pollen
 
 ! Grass specific emission inhibitors
   pollen_out(4)=pollen_out(4)         & ! out season
