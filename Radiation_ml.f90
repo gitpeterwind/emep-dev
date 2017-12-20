@@ -25,7 +25,9 @@ module Radiation_ml
   !/ Functions:
   public :: daytime       !> true if zen < 89.9 deg
   public :: daylength     !> Lenght of day, hours
-  public :: solarnoon     !> time of solarnoon
+  public :: solarnoon     !> time of solarnoon, hours
+  public :: sunrise       !> time of sunrise, hours
+  public :: sunset        !> time of sunset, hours
 
 
   real, public, parameter :: &
@@ -443,6 +445,26 @@ contains
         noon = 12.0 - eqt_h - long*24.0/360.0
 
   end function solarnoon
+  !-----------------------------------------------------------------
+  ! sunrise/sunset
+  elemental function hourangle(lat) result (ha)
+    real, intent(in) :: lat    !  latitude, deg.
+    real :: noon, ha
+    real, parameter ::      &
+      ang_zenith = 90.833,  &
+      cos_zenith = cos(DEG2RAD*ang_zenith)
+    ha = acos(cos_zenith/(cos(DEG2RAD*lat)*cosrdecl)-tan(lat)*tan_decl)
+  end function hourangle
+  elemental function sunrise(lat,lon) result (noon)
+    real, intent(in) :: lat,lon    !  latitude,Longitude, deg.
+    real :: noon
+    noon = solarnoon(lon+hourangle(lat))
+  end function sunrise
+  elemental function sunset(lat,lon) result (noon)
+    real, intent(in) :: lat,lon    !  latitude,Longitude, deg.
+    real :: noon
+    noon = solarnoon(lon-hourangle(lat))
+  end function sunset
 !===============================================================
 end module Radiation_ml
 !===============================================================
