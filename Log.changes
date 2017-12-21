@@ -137,6 +137,14 @@ the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21st Dec     2017 Dave  rv4_16
+
+** TAGGING as rv4_16 **
+
+Rsurface_ml: cleaned and simplified structure
+
+ChemFunctions: bug fix for gamma SmixC   (changes results a bit with SmixC)
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 7th Dec      2017 Dave
