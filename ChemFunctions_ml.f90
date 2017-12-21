@@ -18,6 +18,7 @@ module ChemFunctions_ml
  use AeroFunctions,         only : UptakeRate, GammaN2O5_EJSS, GammaN2O5
  use CheckStop_ml,          only : StopAll
  use ChemSpecs,             only : SO4, NO3_f, NH4_f, NO3_c
+! use Config_module,         only : DebugCell, DEBUG  ! set with DEBUG%RUNCHEM
  use LocalVariables_ml,     only : Grid   ! => izen, is_mainlysea
  use Config_module,     only : K1  => KCHEMTOP, K2 => KMAX_MID, USES, AERO
  use PhysicalConstants_ml,  only : AVOG, RGAS_J, DAY_ZEN
@@ -340,7 +341,7 @@ module ChemFunctions_ml
    real, dimension(K1:K2) :: rate
    real    :: rc
    real    :: f   ! Was f_Riemer
-   real    :: gam, S,  S_ss, S_du, Rwet  ! for newer methods
+   real    :: gam, gamSS,gamDU, S,  S_ss, S_du, Rwet  ! for newer methods
    real, save :: g1 = 0.02, g2=0.002 ! gammas for 100% SO4, 100% NO3, default
   ! fixed-value gammas can be specified with e.g. Gamma:0.02. We derive
   ! the numerical value, gFix, from this string
@@ -351,6 +352,7 @@ module ChemFunctions_ml
    real :: xNO3  ! As the partitioning between fine and coarse is so difficult
                  ! we include both in the nitrate used here.
    logical, save :: first_call = .true.
+   character(len=*), parameter :: dtxt = 'HydrolN2O5:'
 
 
    if( first_call ) then
@@ -389,6 +391,9 @@ module ChemFunctions_ml
   !---------------------------------------
    case ( "Smix", "SmixTen", "SmixC" )
 
+!if ( DEBUG%RUNCHEM .and. DebugCell ) then
+!  write(*,*) dtxt//trim(method), rh(K2), S_m2m3(AERO%PM_F,K2) , S_m2m3(AERO%DU_C,K2)
+!end if
      do k = K1, K2
 
        if ( rh(k)  > 0.4) then ! QUERY???
@@ -406,11 +411,12 @@ module ChemFunctions_ml
 
             if( method == "SmixC") then
                  S_ss = S_m2m3(AERO%SS_C,k)
-                 gam=GammaN2O5_EJSS(rh(k))
+                 gamSS=GammaN2O5_EJSS(rh(k))
                  S_du = S_m2m3(AERO%DU_C,k)
-                 gam=0.01 ! for dust
+                ! gamDU=0.01 ! for dust
                ! same as UptakeRate(cN2O5,gam,S), but easier to code here:
-                 rate(k) = rate(k) + cN2O5(k)*(gam*S_ss+0.01*S_du)/4 
+                 rate(k) = rate(k) + cN2O5(k)*(gamSS*S_ss+0.01*S_du)/4 
+                 ! ToDo update gam for export. Currently at fine-mod only
             end if ! SmixC
        else
             gam = 0.0 ! just for export
