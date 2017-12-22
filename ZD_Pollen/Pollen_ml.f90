@@ -14,7 +14,6 @@ use ChemSpecs,            only: NSPEC_SHL, species_adv
 use Chemfields_ml,        only: xn_adv    ! emep model concs.
 use DerivedFields_ml,     only: f_2d,d_2d ! D2D houtly (debug) output
 use GasParticleCoeffs_ml, only: AERO_SIZE,CDDEP_BIRCH,CDDEP_OLIVE,CDDEP_GRASS,CDDEP_RWEED
-use Functions_ml,         only: heaviside
 use GridValues_ml ,       only: glon, glat, debug_proc, debug_li, debug_lj
 use Landuse_ml,           only: LandCover
 use LocalVariables_ml,    only: Grid
@@ -22,19 +21,19 @@ use MetFields_ml,         only: surface_precip, ws_10m ,rh2m,t2_nwp,&
                                 foundws10_met,foundprecip,pr,u_ref,z_bnd,z_mid
 use MicroMet_ml,          only: Wind_at_h
 use ModelConstants_ml,    only: AERO, KMAX_MID, FORECAST, &
-                                METSTEP, MasterProc, IOU_INST, RUNDOMAIN, &
+                                MasterProc, IOU_INST, &
                                 dt=>dt_advec, DEBUG=>DEBUG_POLLEN
-use MPI_Groups_ml,        only: MPI_INTEGER,MPI_LOGICAL,MPI_COMM_CALC,&
-                                MasterPE,IERROR
+use MPI_Groups_ml,        only: MasterPE,IERROR,MPI_COMM_WORLD,MPI_COMM_CALC,&
+                                MPI_INTEGER,MPI_LOGICAL,MPI_DOUBLE_PRECISION,&
+                                MPI_IN_PLACE,MPI_MIN,MPI_MAX!,MPI_ALLREDUCE
+                                ! openMPI has no explicit interface for MPI_ALLREDUCE
 use Nest_ml,              only: outdate,FORECAST_NDUMP,out_DOMAIN,&
                                 template_read_IC=>template_read_3D,&
                                 template_write_IC=>template_write
 use NetCDF_ml,            only: ReadField_CDF,Out_netCDF,GetCDF_modelgrid,&
-                                ReadTimeCDF,CDFtype=>Real4
-use netcdf,               only: nf90_close
-use Par_ml,               only: limax, ljmax, LIMAX, LJMAX, me
-use PhysicalConstants_ml, only: PI
-use Radiation_ml,         only: daylength
+                                ReadTimeCDF,CDFtype=>Real4,nf90_close
+use Par_ml,               only: limax, ljmax, me
+use Radiation_ml,         only: daylength,sunrise
 use OwnDataTypes_ml,      only: Deriv
 use Setup_1dfields_ml,    only: rcemis
 use SmallUtils_ml,        only: find_index
@@ -42,9 +41,6 @@ use SubMet_ml,            only: Sub
 use TimeDate_ml,          only: current_date,daynumber,date,day_of_year
 use TimeDate_ExtraUtil_ml,only: date2string,compare_date,date2nctime
 use Io_ml,                only: IO_NML, PrintLog
-use mpi,                  only: MPI_COMM_WORLD,MPI_DOUBLE_PRECISION,&
-                                MPI_IN_PLACE,MPI_MIN,MPI_MAX!,MPI_ALLREDUCE
-! openMPI has no explicit interface for MPI_ALLREDUCE
 !-------------------------------------
 implicit none
 private
@@ -203,7 +199,6 @@ function checkdates(nday,spc,update) result(ok)
 end function checkdates
 !-------------------------------------------------------------------------!
 subroutine pollen_flux(i,j,debug_flag)
-  implicit none
   integer, intent(in) :: i,j    ! coordinates of column
   logical, intent(in) :: debug_flag
 

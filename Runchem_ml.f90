@@ -40,7 +40,7 @@ module RunChem_ml
                               Init_OrganicAerosol, & 
                               Reset_OrganicAerosol, & 
                               SOA_MODULE_FLAG   ! ="VBS" or "NotUsed"
-  use Pollen_ml,        only: Pollen_flux
+  use Pollen_ml,        only: pollen_flux
   use Par_ml,           only: lj0,lj1,li0,li1, limax, ljmax,  &
                               gi0, gj0, me,IRUNBEG, JRUNBEG  !! for testing
   use PointSource_ml,    only: pointsources, get_pointsources
@@ -130,7 +130,7 @@ subroutine runchem()
       end if
     
       if(USE_POLLEN) &
-        call Pollen_flux(i,j,debug_flag)
+        call pollen_flux(i,j,debug_flag)
 
       call Setup_Clouds(i,j,debug_flag)
 
