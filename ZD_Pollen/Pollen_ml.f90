@@ -252,6 +252,7 @@ subroutine pollen_flux(i,j,debug_flag)
       call ReadField_CDF(birch_data_nc,'cross',birch_corr,1, &
         interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
 ! olive
+    olive_data_nc=date2string(olive_data_nc,current_date,debug=DEBUG_NC.and.MasterProc)
     call ReadField_CDF(olive_data_nc,'olive_frac',pollen_frac(:,:,2),1, &
         interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
     call ReadField_CDF(olive_data_nc,'olive_th',olive_h_c,1, &
