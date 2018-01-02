@@ -53,7 +53,6 @@ real, parameter ::            &
   DayTempThr_rweed = 280.65,  &  ! 7.5C (Deen et al 1998)
   EndCDThr_rweed   = 265.0       ! 97.5% == 2sigma; 22 sept (autumn equinox)
 
-
 ! pollen arrays indexing, order must match with POLLEN_GROUP: birch,olive,grass
 character(len=*), parameter :: &
   BIRCH = "POLLEN_BIRCH",&
