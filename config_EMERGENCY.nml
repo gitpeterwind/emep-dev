@@ -92,9 +92,11 @@
 !-------- Read/Write MODEs
   MODE_READ = 'FORECAST',     ! at the start of run, if files are found
   MODE_SAVE = 'FORECAST',     ! every OUTDATE(1:FORECAST_NDUMP)
+  native_grid_3D   = T,       ! initial conditions always in same grid
+  native_grid_BC   = T,       ! BC not used
 !-------- File name templates for Nest I/O
   template_read_3D = 'EMEP_IN_YYYYMMDD.nc',   ! YYYY, YY, MM, DD, hh strings
-  template_read_BC = 'EMEP_IN_YYYYMMDD.nc',   ! will be replaced with numbers
+  template_read_BC = 'EMEP_IN_YYYYMMDD_bc.nc',   ! will be replaced with numbers
   template_write   = 'EMEP_OUT_YYYYMMDD.nc',  ! in Nest_ml
 !-------- CWF dump/restart
 ! WRITE_SPC        = 'NO2','O3','SO2','CO',   ! reduce output for NMC statistics (3DVar)
