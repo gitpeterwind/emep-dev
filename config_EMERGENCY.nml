@@ -85,8 +85,8 @@
 ! femsdef="DataDir/volcano_emission.csv",
   topo_nc="DataDir/GRID/topography.nc",
   need_topo=T, ! stop simulation if topo_nc not found
-  NMAX_LOC=-1, ! estimate from lines in flocdef
-  NMAX_EMS=-1, ! estiamte from lines in femsdef
+  NMAX_LOC=1, ! number of locations (-1 for autodetect)
+  NMAX_EMS=9, ! number of emissions per loc (bins(2,7,9) * emissions for volc)
 &end
 &Nest_config
 !-------- Read/Write MODEs
