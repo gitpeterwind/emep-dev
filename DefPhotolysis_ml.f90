@@ -32,6 +32,9 @@
    integer, public, parameter :: &
              NRCPHOT      = 17   ! Number of photolytic reactions
    
+   integer, public, parameter:: NzPHODIS=20 !number of heights defined in the input files
+   real, save, public :: zPHODIS(NzPHODIS) !heights of the input files, assumed constants
+
    real, allocatable,save,public, dimension(:,:) &
          :: rcphot       ! photolysis rates    -   main output
 
@@ -76,7 +79,7 @@
 
       integer ::  newseason
 
-      integer ::  k     &  ! help index
+      integer ::  kz     &  ! help index
                  ,izn   &  ! integer zenith angle
                  ,nr    &  ! numbering of photolytic reactions
                  ,la       ! counting every 10 deg. latitude
@@ -93,9 +96,9 @@
 
         if(first_call)then
            if(.not.(allocated(rcphot)))allocate(rcphot(NRCPHOT,KCHEMTOP:KMAX_MID))
-           allocate(dj(NPHODIS,KCHEMTOP:KMAX_MID,HORIZON,NLAT))
-           allocate(djcl1(NPHODIS,KCHEMTOP:KMAX_MID,HORIZON))
-           allocate(djcl3(NPHODIS,KCHEMTOP:KMAX_MID,HORIZON))
+           allocate(dj(NPHODIS,NzPHODIS,HORIZON,NLAT))
+           allocate(djcl1(NPHODIS,NzPHODIS,HORIZON))
+           allocate(djcl3(NPHODIS,NzPHODIS,HORIZON))
         end if
 !    Open, read and broadcast clear sky rates
 !---------------
@@ -114,27 +117,20 @@
         if(me == 0)then
 
           do la = 1,NLAT
-            do izn = 1,HORIZON
-               do k = 1,KCHEMTOP
-                  read(IO_DJ,999) myz,(dj(nr,KCHEMTOP,izn,la),nr=1,NPHODIS)
-               end do
-               do k = 2,KMAX_MID-KMAX20+2
-                  do nr=1,NPHODIS
-                     dj(nr,k,izn,la)=dj(nr,KCHEMTOP,izn,la)
-                  end do
-               end do
-              do k = KMAX_MID-KMAX20+3,KMAX_MID
-!TEMPORARY FIX  do k = KCHEMTOP+1,KMAX_MID
-                read(IO_DJ,999) myz,(dj(nr,k,izn,la),nr=1,NPHODIS)
-              end do   ! k
+            do izn = 1,HORIZON        
+              do kz = 1,NzPHODIS
+                 !we assume that zPHODIS(kz) is constant, and simply overwrite
+                read(IO_DJ,999) zPHODIS(kz),(dj(nr,kz,izn,la),nr=1,NPHODIS)
+              end do   ! kz
             end do    ! izn
           end do     ! la
           close(IO_DJ)
         end if  ! me = 0
 
-        CALL MPI_BCAST(dj  ,8*NPHODIS*(KMAX_MID-KCHEMTOP+1)*HORIZON*NLAT,MPI_BYTE,0,MPI_COMM_CALC,IERROR) 
-
-
+        CALL MPI_BCAST(zPHODIS  ,8*NzPHODIS,MPI_BYTE,0,MPI_COMM_CALC,IERROR) 
+        CALL MPI_BCAST(dj  ,8*NPHODIS*NzPHODIS*HORIZON*NLAT,MPI_BYTE,0,MPI_COMM_CALC,IERROR) 
+        zPHODIS = 1000.0*zPHODIS !km->m
+!        write(*,*)'zPHODIS ',(kz,zPHODIS(kz),kz=1,NzPHODIS)
 
 
 !    Open, read and broadcast light cloud rates
@@ -150,31 +146,22 @@
         if(me == 0)then
 
           do izn = 1,HORIZON
-            do k = 1,KCHEMTOP
-              read(IO_DJ,999) myz,(djcl1(nr,KCHEMTOP,izn),nr=1,NPHODIS)
-            end do
-               do k = 2,KMAX_MID-KMAX20+2
-                  do nr=1,NPHODIS
-                     djcl1(nr,K,izn)=djcl1(nr,KCHEMTOP,izn)
-                  end do
-               end do
-              do k = KMAX_MID-KMAX20+3,KMAX_MID
-!TEMPORARY FIX              do k = KCHEMTOP+1,KMAX_MID
-              read(IO_DJ,999) myz,(djcl1(nr,k,izn),nr=1,NPHODIS)
+             do kz = 1,NzPHODIS
+              read(IO_DJ,999) myz,(djcl1(nr,kz,izn),nr=1,NPHODIS)
             end do
           end do  ! izn
 
           do izn = 1,HORIZON
-            do k = KCHEMTOP,KMAX_MID
+            do kz = 1,NzPHODIS
               do nr=1,NPHODIS
-                djcl1(nr,k,izn)=djcl1(nr,k,izn)/dj(nr,k,izn,3)-1.0
+                djcl1(nr,kz,izn)=djcl1(nr,kz,izn)/dj(nr,kz,izn,3)-1.0
               end do ! nr
             end do ! k
           end do  ! izn
           close(IO_DJ)
         end if   ! me = 0
 
-        CALL MPI_BCAST(djcl1  ,8*NPHODIS*(KMAX_MID-KCHEMTOP+1)*HORIZON,MPI_BYTE,0,MPI_COMM_CALC,IERROR) 
+        CALL MPI_BCAST(djcl1  ,8*NPHODIS*NzPHODIS*HORIZON,MPI_BYTE,0,MPI_COMM_CALC,IERROR) 
 
 
 
@@ -191,32 +178,23 @@
 
         if(me == 0)then
 
-          do izn = 1,HORIZON
-            do k = 1,KCHEMTOP
-              read(IO_DJ,999) myz,(djcl3(nr,KCHEMTOP,izn),nr=1,NPHODIS)
-            end do
-               do k = 2,KMAX_MID-KMAX20+2
-                  do nr=1,NPHODIS
-                     djcl3(nr,K,izn)=djcl3(nr,KCHEMTOP,izn)
-                  end do
-               end do
-              do k = KMAX_MID-KMAX20+3,KMAX_MID
-!TEMPORARY FIX              do k = KCHEMTOP+1,KMAX_MID
-              read(IO_DJ,999) myz,(djcl3(nr,k,izn),nr=1,NPHODIS)
-            end do  ! k
-          end do   ! izn
-          close(IO_DJ)
-          do izn = 1,HORIZON
-            do k = KCHEMTOP,KMAX_MID
-              do nr=1,NPHODIS
-                djcl3(nr,k,izn)=djcl3(nr,k,izn)/dj(nr,k,izn,3)-1.
-              end do  ! nr
-            end do  ! k
-          end do   ! izn
-       end if      !  me = 0
-
-        CALL MPI_BCAST(djcl3  ,8*NPHODIS*(KMAX_MID-KCHEMTOP+1)*HORIZON,MPI_BYTE,0,MPI_COMM_CALC,IERROR) 
-
+           do izn = 1,HORIZON
+              do kz = 1,NzPHODIS
+                 read(IO_DJ,999) myz,(djcl3(nr,kz,izn),nr=1,NPHODIS)
+              end do  ! kz
+           end do   ! izn
+           close(IO_DJ)
+           do izn = 1,HORIZON
+              do kz = 1,NzPHODIS
+                 do nr=1,NPHODIS
+                    djcl3(nr,kz,izn)=djcl3(nr,kz,izn)/dj(nr,kz,izn,3)-1.
+                 end do  ! nr
+              end do  ! k
+           end do   ! izn
+        end if      !  me = 0
+        
+        CALL MPI_BCAST(djcl3  ,8*NPHODIS*NzPHODIS*HORIZON,MPI_BYTE,0,MPI_COMM_CALC,IERROR) 
+        
 
 !       if(me == 0) then
 !        do k=1,KMAX_MID
@@ -234,7 +212,7 @@
         subroutine setup_phot(i,j,errcode)
 
 !       input
-        integer :: i,j
+        integer :: i,j,iz
         integer :: errcode
 
 !       local
@@ -246,6 +224,20 @@
                ,iclcat    ! cloud type
 
         real clear        ! clear sky fraction
+        integer k2zPHODIS(KMAX_MID)! converts model level k into PHODIS height index
+        logical, save ::firstc=.true.
+
+! make conversion between zPHODIS heights and model level (k) for this (i,j)
+! should be fast and does not need to be too accurate (smooth field) -> no interpolation
+        do k=KMAX_MID,1,-1
+           k2zPHODIS(k) = NzPHODIS    
+           do iz = NzPHODIS,1,-1
+              if(z_bnd(i,j,k)<zPHODIS(iz))exit
+              k2zPHODIS(k) = iz       
+           enddo
+!           if(firstc .and. me==0)write(*,*)'PHODIS level conversion ',k,k2zPHODIS(k),z_bnd(i,j,k),zPHODIS(k2zPHODIS(k))
+        enddo
+        firstc=.false.
 
 !---- assign photolysis rates ------------------------------------------------
 
@@ -297,20 +289,20 @@
 
 
 
-            la = max(1,int(0.1*glat(i,j)-2.0001))
+            la = max(1,int(0.1*abs(glat(i,j))-2.0001))
 
             if(iclcat == 0)then
               do k = KCHEMTOP,KMAX_MID
                 do n=1,NRCPHOT
-                  rcphot(n,k)  = dj(n,k,Grid%izen,la)
+                  rcphot(n,k)  = dj(n,k2zPHODIS(k),Grid%izen,la)
                 end do
               end do
             else if(iclcat == 1)then
               clear = cc3dmax(i,j,KMAX_MID)
               do k = KCHEMTOP,KMAX_MID
                 do n=1,NRCPHOT
-                  rcphot(n,k)  = (1. +          &
-                               clear*djcl1(n,k,Grid%izen)) * dj(n,k,Grid%izen,la)
+                  rcphot(n,k)  = (1. + clear*djcl1(n,k2zPHODIS(k),Grid%izen)) &
+                                * dj(n,k2zPHODIS(k),Grid%izen,la)
                 end do  !  n
               end do   !  k
 
@@ -319,8 +311,8 @@
               clear = cc3dmax(i,j,KMAX_MID)
               do k = KCHEMTOP,KMAX_MID
                 do n=1,NRCPHOT
-                  rcphot(n,k)  = (1. +            &
-                               clear*djcl3(n,k,Grid%izen))*dj(n,k,Grid%izen,la)
+                  rcphot(n,k)  = (1. +     clear*djcl3(n,k2zPHODIS(k),Grid%izen)) &
+                               * dj(n,k2zPHODIS(k),Grid%izen,la)
                  end do
               end do
             end if
