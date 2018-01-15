@@ -2,7 +2,7 @@ module Units_ml
 use CheckStop_ml,         only: CheckStop
 use ChemGroups_ml,        only: chemgroups
 use ChemSpecs,            only: NSPEC_ADV, NSPEC_SHL, species_adv
-use ModelConstants_ml,    only: PPBINV
+use Config_module,    only: PPBINV
 use PhysicalConstants_ml, only: AVOG,ATWAIR
 use Pollen_const_ml,      only: pollen_check
 use OwnDataTypes_ml,      only: TXTLEN_DERIV,TXTLEN_SHORT,Asc2D

@@ -49,7 +49,7 @@ use ChemSpecs,        only: NSPEC_SHL, species
 use GridValues_ml,    only: i_fdom, j_fdom,&   ! Gives emep coordinates
                             debug_proc, debug_li,debug_lj
 use Io_ml,            only: IO_TMP
-use ModelConstants_ml,only: KMAX_MID, MasterProc, MY_OUTPUTS, &
+use Config_module,only: KMAX_MID, MasterProc, MY_OUTPUTS, &
                             IOU_INST, IOU_YEAR, IOU_HOUR_EXTRA, IOU_MAX_MAX, &
                             DEBUG => DEBUG_OUT_HOUR,runlabel1,HOURLYFILE_ending,&
                             FORECAST, hour_DOMAIN, SELECT_LEVELS_HOURLY !NML

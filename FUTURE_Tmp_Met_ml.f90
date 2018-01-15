@@ -6,7 +6,7 @@
 module calc_emis_potential_ml
   use Met_ml,           only: GetCDF_short
   use MetFields_ml,     only: foundu10_met,foundv10_met
-  use ModelConstants_ml,only: MasterProc, DEBUG_NH3,DEBUG_i, DEBUG_j,&
+  use Config_module,only: MasterProc, DEBUG_NH3,DEBUG_i, DEBUG_j,&
                               METSTEP, NMET, KMAX_MID
   use Par_ml,           only: GIMAX,GJMAX,me,IRUNBEG,JRUNBEG, LIMAX,&
                               LJMAX,MSG_READ2,MSG_READ3,MSG_READ5, &

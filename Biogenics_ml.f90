@@ -34,7 +34,14 @@ module Biogenics_ml
 
   use CheckStop_ml,      only: CheckStop, StopAll
   use ChemSpecs,         only : species
-  use emep_Config_mod, only: EmBio
+  use Config_module, only : NPROC, MasterProc, TINY, &
+                           NLANDUSEMAX, IOU_INST, & 
+                           KT => KCHEMTOP, KG => KMAX_MID, & 
+                           EURO_SOILNOX_DEPSCALE, & 
+                           DEBUG, BVOC_USED, MasterProc, &
+                           USES, &
+                           DEBUG_SOILNOX, USE_SOILNH3,&
+                           EmBio, EMEP_EuroBVOCFile
   use GridValues_ml    , only : i_fdom,j_fdom, debug_proc,debug_li,debug_lj
   use Io_ml            , only : IO_FORES, open_file, ios, PrintLog, datewrite
   use KeyValueTypes,     only : KeyVal,KeyValue
@@ -43,13 +50,7 @@ module Biogenics_ml
   use Landuse_ml,        only : LandCover
   use LocalVariables_ml, only : Grid  ! -> izen, DeltaZ
   use MetFields_ml,      only : t2_nwp
-  use ModelConstants_ml, only : NPROC, MasterProc, TINY, &
-                           NLANDUSEMAX, IOU_INST, & 
-                           KT => KCHEMTOP, KG => KMAX_MID, & 
-                           EURO_SOILNOX_DEPSCALE, & 
-                           DEBUG, BVOC_USED, MasterProc, &
-                           USE_EURO_SOILNOX, USE_GLOBAL_SOILNOx, &
-                           DEBUG_SOILNOX, USE_SOILNH3
+  use MetFields_ml,     only: PARdbh, PARdif !WN17, in W/m2
   use NetCDF_ml,        only : ReadField_CDF, printCDF
   use OwnDataTypes_ml,  only : Deriv, TXTLEN_SHORT
 !  use Paleo_ml, only : PALEO_mlai, PALEO_miso, PALEO_mmon
@@ -169,8 +170,8 @@ module Biogenics_ml
       !call CheckStop( ispec_TERP < 1 , "BiogencERROR TERP")
       if( ispec_TERP < 0 ) call PrintLog("WARNING: No TERPENE Emissions")
      
-      call CheckStop( USE_EURO_SOILNOX .and. ispec_NO < 1 , "BiogencERROR NO")
-      call CheckStop( USE_GLOBAL_SOILNOX .and. ispec_NO < 1 , "BiogencERROR NO")
+      call CheckStop( USES%EURO_SOILNOX .and. ispec_NO < 1 , "BiogencERROR NO")
+      call CheckStop( USES%GLOBAL_SOILNOX .and. ispec_NO < 1 , "BiogencERROR NO")
       if( MasterProc ) write(*,*) "SOILNOX ispec ", ispec_NO
 
       itot_C5H8 = find_index( "C5H8", species(:)%name    ) 
@@ -261,11 +262,12 @@ module Biogenics_ml
 
      do iVeg = 1, size(VegName)
        ibvoc = find_index( VegName(iveg), LandDefs(:)%code )
+       if( ibvoc<0 ) cycle
        HaveLocalEF(ibvoc) = .true.
        do iEmis = 1, size(BVOC_USED)
          varname = trim(BVOC_USED(iEmis)) // "_" // trim(VegName(iVeg))
           
-         call ReadField_CDF('EMEP_EuroBVOC.nc',varname,&
+         call ReadField_CDF(EMEP_EuroBVOCFile,varname,&
              bvocEF(:,:,ibvoc,iEmis),1,interpol='zero_order',needed=.true.,&
               debug_flag=.false.,UnDef=-999.0)
 
@@ -559,7 +561,8 @@ module Biogenics_ml
 
      ! Light effects from Guenther G93
 
-      par = (Grid%Idirect + Grid%Idiffuse) * PARfrac * Wm2_uE
+!WN      par = (Grid%Idirect + Grid%Idiffuse) * PARfrac * Wm2_uE
+      par = ( PARdbh(i,j) + PARdif(i,j)  ) * Wm2_uE
 
       cL = ALPHA * CL1 * par/ sqrt( 1 + ALPHA*ALPHA * par*par)
 
@@ -597,11 +600,11 @@ module Biogenics_ml
         EmisNat(ispec_TERP,i,j) = (E_MTL+E_MTP) * 1.0e-9/3600.0
     end if
 
-    if ( USE_EURO_SOILNOX ) then
+    if ( USES%EURO_SOILNOX ) then
         rcemis(itot_NO,KG)    = rcemis(itot_NO,KG) + &
              SoilNOx(i,j) * biofac_SOILNO/Grid%DeltaZ
         EmisNat(ispec_NO,i,j) =  SoilNOx(i,j) * 1.0e-9/3600.0
-    else if ( USE_GLOBAL_SOILNOX ) then !TEST
+    else if ( USES%GLOBAL_SOILNOX ) then !TEST
         EmisNat(ispec_NO,i,j) =  SoilNOx(i,j)*Grid%DeltaZ/biofac_SOILNO * 1.0e-9/3600.0
     end if
 
@@ -640,12 +643,12 @@ module Biogenics_ml
       real :: hfac
 
 
-      if ( .not. USE_EURO_SOILNOX  ) return ! and fSW has been set to 1. at start
+      if ( .not. USES%EURO_SOILNOX  ) return ! and fSW has been set to 1. at start
 
       if( DEBUG_SOILNOX .and. debug_proc ) then
          write(*,*)"Biogenic_ml DEBUG_SOILNOX EURO: ",&
           current_date%day, current_date%hour, current_date%seconds,&
-          USE_EURO_SOILNOX, EURO_SOILNOX_DEPSCALE
+          USES%EURO_SOILNOX, EURO_SOILNOX_DEPSCALE
       end if
 
       ! We reset once per hour
@@ -669,7 +672,7 @@ module Biogenics_ml
            ! We use a factor normalised to 1.0 at 5000 mgN/m2/a
 
              fn = AnnualNdep(i,j)/5000.0 ! scale for now
-             fn = fn * EURO_SOILNOX_DEPSCALE  ! See ModelConstants_ml
+             fn = fn * EURO_SOILNOX_DEPSCALE  ! See Config_module
 
              ftn = ft * fn * hfac 
 

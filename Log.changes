@@ -138,11 +138,335 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+21st Dec     2017 Dave  rv4_16
+
+** TAGGING as rv4_16 **
+
+Rsurface_ml: cleaned and simplified structure
+
+ChemFunctions: bug fix for gamma SmixC   (changes results a bit with SmixC)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+7th Dec      2017 Dave
+
+** TAGGING as rv4_16beta **
+Should be same as code used for N2O5 paper
+
+Config_module - now includes previous emep_Config_mod.f90
+
+rm emep_Config_mod.f90
+
+Changes in :
+
+  Biogenics_ml.f90 BLPhysics_ml.f90 Config_module.f90 Landuse_ml.f90 Met_ml.f90
+  OutputChem_ml.f90 PhyChem_ml.f90 Runchem_ml.f90 Solver.f90 YieldModifications_mod.f90
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6th Dec      2017 Dave
+
+*** RESULTS CHANGING ***** START of rv4_16beta
+** ModelConstants_ml renamed!
+
+1) Science
+
+N2O5:
+
+  EmChem16mtbase.species now has deposition of N2O5 set to that of HNO3. This
+  makes a big difference to N2O5 levels, and some difference to
+  o3 etc.  Could have done the same for NO3 but that causes small changes.
+
+FFIRE_CO:
+  ZCM_EmChem16mt:
+
+  BiomassBurning_FINNv1.5_to_EmChem16mt  - added FFIRE_CO
+
+  ZCM_EmChem09:
+
+  Added ForestTracers.species ForestTracers.reactions
+
+  ForestFire_ml - modified to cope with FFIRE_CO
+
+  config_emep.nml and config_Outputs_EMEPSTD now have FFIRE_CO as examples.
+
+  mk.GenChem - uses ForestFire tracers for EmChem16mt
+
+
+ModelConstants_ml now renamed to Config_module!
+
+  - since the constants are now very variable and it was easier to rename this
+    than to move code into emep_Config. In the next step the small emep_Confg
+    stuff can move here, and maye we can even retsart ModelConstants for some
+    constants ;-)
+
+  - change 'use' calls in most files.
+
+  NOTE: Changed also in ZD_Pollen, and ZD_3CVar, but not other ZD_Var directories.
+
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+2nd Dec      2017 Michael G
+
+Switched from USE_XXX to USES%XXX method for five variables:
+USE_POLLEN, USE_ASH, USE_NOCHEM, USE_AOD, USE_PreADV
+
+Files affected:
+config_*nml
+ModelConstants_ml.f90
+ZD_OZONE/My_Outputs_ml.f90
+ZD_POLLEN/My_Pollen_ml.f90
+ZD_POLLEN/Pollen_ml.f90
+ZD_POLLEN/Pollen_const_ml.f90
+Nest_ml.f90 PhyChem_ml.f90 Runchem_ml.f90 ColumnSource_ml.f90
+AOD_PM_ml.f90 Derived_ml.f90 My_Derived_ml.f90
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+1st Dec      2017 Dave
+
+*** RESULTS CHANGING ***** START of rv4_16beta
+
+Implemented Weiss & Norman radiation scheme, to give better diffuse/direct
+treatment. Changes in:
+
+  Biogencs_ml - modified to use total PAR from W & N
+  MetFields - added PARdbh, PARdif, fCloud
+  Radiation_ml - add WeissNorman routines and usage
+  Rsurface_ml  - add WeissNorman routines and usage
+  PhyChem -  use of above
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+01st Dec     2017 Michael G
+
+Switched from USE_XXX to USES%XXX method for nine variables:
+USE_SOILWATER, USE_CONVECTION, USE_AIRCRAFT_EMIS, USE_LIGHTNING_EMIS,
+USE_SEASALT, USE_DUST, USE_ROADDUST, USE_EURO_SOILNOX, USE_GLOBAL_SOILNOX
+
+Files affected:
+config_*nml MetFields_ml.f90 DO3SE_ml.f90 Met_ml.f90 SoilWater_ml.f90
+SubMet_ml.f90 Advection_ml.f90 Convection_ml.f90 Emissions_ml.f90
+Setup_1d_ml.f90 AirEmis_ml.f90 Unimod.f90 ModelConstants_ml.f90
+BoundaryConditions_ml.f90 Runchem_ml.f90 SeaSalt_ml.f90 Solver.f90
+DustProd_ml.f90 EmisGet_ml.f90 Biogenics_ml.f90
+
+This should not lead to any changes in the model results and this was
+tested before git push.
+Other USE_* variables will be changed in further updates soon.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+28th Nov     2017  Dave
+
+ChemFunctions_ml
+  Now allows any number in Gamma:xxxx for N2O5 hydrolysis (instead of SmixC
+   etc). For example, with Gamma:0.02 we derive the numerical value, gFix=0.02,
+   from this string
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+27th Nov     2017  Dave
+
+Country_ml
+   Fixed --100 to -100 for HT1015   ! BUG!!
+   More length to country name
+   Extra tests in self_test
+   
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+23rd Nov     2017  Peter, Massimo
+
+There was a bug when the lon lat grid is defined in such a way that the transition
+from negative to positive longitudes is on the same processor. 
+This does never happen if the grid starts at -180, such as our GLOBAL or GLOBAL05 grids.
+The model could then crash in the landuse (explains Massimo's issue).
+
+Also changed the lib path in utils/uEMEP_GUI.py , so that it works on Stallo.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16th Nov     2017  Peter
+
+GetEuroBVOC() uses hardcoded landuse (CF,DF...). If these where not defined 
+the index (ibvoc) gets negative, and values are written in a random part of memory.
+This might be the reason why the code crash when glc2000.nc was defined for both
+landuse files.
+Added if(ibvoc<0)cycle which seems to solve this problem.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+14-15th Nov     2017  Peter
+
+All files (except config) can be linked through config.
+Only Unimod and config_emep.nml are needed.
+Just run from any directory; copy Unimod (executable) and config_emep.pl and: 
+mpirun Unimod
+(you should of course do this from a compute-node or in a script)
+
+config_emep.nml is now simply made from config_EMEPSTD.nml+config_Outputs_EMEPSTD.nml
+and the first &INPUT_PARA Block
+At present default path are set in ModelConstants_ml
+ALL links removed from run.pl. We do not need it anymore?
+Still to be done:
+.-Emissplit now taken from DataDir/ZCM_EmChem16mt/EMISSPLIT/ . Should be adapted to chemistry in use
+.-femis/SR runs?
+.-general bash script?
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+9th Nov     2017  Peter
+
+Corrected bug in uEMEP/uemep_adv_k when uEMEP%Nvert = 1
+(Otherwise no effect)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6th Nov     2017  Peter
+
+Some flexibilities for AROME meteorology:
+Surface precipitations can be accumulated. Assumes it has name
+'precipitation_amount_acc'and unit mm (or kg/m2).
+Surface pressure can be either Pa or hPa (it looks at the value to find out).
+Time dimension can be called "times" (but it is not recommended).
+The code accept meteorology in either Short or Float (or Double) types.
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+24th Oct     2017  Dave
+
+Landuse_ml - BUG FIX for non Euro domains anyway
+             Initialise landuse_tot
+             Add where statement to check if landuse_tmp > 0
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+19th Oct     2017  Dave
+
+My_Derived_ml - just increased default size of MAX_NUM_NEWMOS to be 30, see #76.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+19th Oct     2017  Peter
+
+Country code column in the "lonlat" lines in femis.dat.
+If the code is zero, all countries within the lonlat rectangle will be reduced; 
+otherwise only the country corresponding toi the code will be reduced.
+
+There is backward compatibility, in the sense that it will work if the country code
+is omitted, however this should be avoided: put 0 instead for reducing all countries.
+The backward compatibility will not work if there are comments at the end of the line
+
+Example of femis:
+Name  7         sox        nox        co       voc     nh3     pm25   pmco
+ 28    0        1.0        1.0       1.0      1.0      1.0     1.0    1.0
+lonlat 0.0 25.0 45.0 60.0  0 0    0.0  1.0   1.0   1.0   1.0   1.0   1.0
+lonlat 0.0 25.0 45.0 60.0  17 0    1.0  0.0   1.0   1.0   1.0   1.0   1.0
+lonlat 0.0 25.0 45.0 60.0  3 0    1.0   1.0   1.0   1.0   0.0   1.0   1.0
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+17th Oct     2017  Alvaro
+
+ModelConstants_ml, Met_ml, ColumnSource_ml, ForestFire_ml, ZD_Pollen/Pollen_ml:
+- Extend length of the meteo path/filename variable.
+  From open source user feedback, see metno/emep-ctm#25.
+- TXTLEN_FILE parameter defines path/filename length.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+16th Oct     2017  Peter
+
+Allow to switch off (i.e. not take into account) femis for specific emissions 
+files. Only the lines with "lonlat" format are switched off.
+To switch off femis-lonlat for the emissions specified in emis_inputlist(1), 
+add this in config file:  
+emis_inputlist(1)%use_lonlat_femis = F,
+
+uEMEP: output only lowest level (can be modified to different number of levels, 
+but hardcoded for now)  
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+14th Oct     2017  Dave
+
+run.pl - just added Peter's text concerning 16 or 32 threads, since this it
+ clarifies a lot!
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+10th Oct     2017  Dave/Roy
+
+Radiation_ml:  identified problem with diffuse/direct !!! TO-FIX
+               Added TSTEMX lines to illustrate this.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+03rd Oct     2017  Dave
+
+  config_*nml files. Added comment that 1km PS Landcover also available
+
+  run.pl. Started to remove ancient or config'd code lines
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+19-21th Sep  2017  Alvaro
+
+ForestFire_ml:
+- fix gFortran compile error
+
+ModelConstants_ml
+- Ash from historical Eruptions by default (#49,#29)
+
+ColumnSource_ml:
+- stop simulation when NMAX_LOC/NMAX_EMS is exceeded (#44)
+- topography file (topo_nc) is required by default,
+  can be made optional on ColumnSource_config namelist (need_topo=F) (#31)
+
+ColumnSource_ml,run.pl,config_$exp_name.nml
+- read NMAX_LOC/NMAX_EMS from ColumnSource_config namelist (#29)
+- estimate NMAX_LOC/NMAX_EMS from lines on input files when NMAX_LOC/NMAX_EMS<1 (#29)
+
+Derived_ml:
+- fix bug afecting Z_MID output (#47)
+
+ForestFire_ml,Nest_ml,Pollen_ml,run.pl,config_$exp_name.nml
+- use DataDir/GRID keywords on Fire_config,Nest_config,Pollen_config (#63)
+
+NetCDF_ml:
+- improve missing file error message 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+18th Sep  2017  Dave
+
+ForestFire_ml.f90
+
+   - added new option (MODE="MONTHLY_CLIM" or "C" or "c") to deal with
+   climatological BB emissions, where the monthly averages have been
+   pre-calculated. This might be from the year in question, but the main
+   aim is to allow e.g. 10-year average climatologies to be used where
+   'real' data is not available.
+
+   (A preliminary 10-year data set from FINNv1.5 can be found in
+    /global/work/mifads/FFIRE_TESTS/gRemapMonthly10yr.nc.  Also need to
+    set ${'FINN'} in run.pl to use, along with modified MODE in 
+    config Fire_config. )
+
+   - changed function newFFrecord to be subroutine, since (a) I don't
+   like functions to do more than return one value (ie no side-effects),
+   (b) most fortran style-suggestions don't like that either, and (c)
+   having more than one contains command per module is also confusing
+   (IMO!).
+
+  - harmonised treatement of ReadField_CDF across different BB sources
+  - Extra documentation
+  - Modified debug, though this is still somewhat confusing
+     
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+8th   Sep  2017 Alvaro
+
+OPEN-SOURCE RELEASE (tag rv4_15os)
+ 
+The open source release contains some commits between rv4_15_1 and this point.
+The list of commit included can be found on issue #52.
+
+The release is based on master after cleanUp2017 (PR #56, #61 & #62).
+It contains some additional clean up, intended only for the open source release.
+ 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 6th   Sep  2017 Alvaro
 
 config_BM-EECCA.nml,config_Open.nml,
 config_ANALYSIS.nml,config_FORECAST.nml,config_FORECAST_CitySR.nml:
-  Add FLUX_IGNORE bug-fix entry from Aug 5th to remaining namelists
+ Add FLUX_IGNORE bug-fix entry from Aug 5th to remaining namelists
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+1st    Sep  2017 Alvaro
+
+allow multiple Special_ShipEmis files, see #55
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 29th   Aug  2017 Alvaro
@@ -173,8 +497,19 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Fix eEMEP emission expansion, close #54
 
 ColumnSource_ml:
-  Refvert bug introduced on svn 3303 (Oct 2016, git aaa393b).
+  Revert bug introduced on svn 3303 (Oct 2016, git aaa393b).
   It caused the default emissions used by eEMEP to fail to expand as groups
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+14th   Aug  2017  Alvaro
+
+cherry-pick patches from cams50 branch
+  2017-06-29: fix Nest for native_grid, close #48
+  2017-05-15: log #obs assimilated
+  2017-05-12: compile new 3Dvar17 version
+  2017-05-10: import new 3Dvar17 version
+  2017-03-20: fix grass pollen forecast (#12)
+  2017-01-02: fix pollen forecast crash, close #18
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 8th   Aug  2017  Alvaro
@@ -190,7 +525,7 @@ area where landocover came from the Landuse_PS_5km_LC.nc file.
 Solution now is to set IAM_VEG for all land-cover areas except those specified
 in the config array FLUX_IGNORE:
 
-  FLUX_IGNORE = 'W', 'D', 'DE', 'ICE', 'BARE'   ! Ignore these for FLUX calcs.  
+  FLUX_IGNORE = 'W', 'D', 'DE', 'ICE', 'BARE'   ! Ignore these for FLUX calcs.
 
 This allows for future landcover data-sets, which might have other codes for
 these non-veg areas. (The 'IAM_VEG' currently found in Landuse_PS_5km_LC.nc
@@ -201,6 +536,24 @@ Landuse_ml - as above
 ModelCostants_ml - added FLUX_IGNORE
 config_EMEPSTD.nml - added FLUX_IGNORE
 config_EMEPGLOB.nml - added FLUX_IGNORE
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+30th  June 2017  Peter, Anna
+
+Bug fix! timefactors can be wrong in certain cases.
+If a timefactor code is defined several times in Country_ml, the timefactor for
+the last one is used instead of the first one (using find_index).
+This will normally give a default timefactor of 1. Affects:
+shipping emissions (country codes 30-34, but does not matter, since the timefactors are 1 anyway?)
+"European Community" (code 64, not used?), Turkey (code 25), "Rest of Russia " (Code 42).
+
+Allow country specific hourly factor. The idea is that we define cities by a new
+country code, and special traffic hourly factors are applied to those (CAMS50 project).
+17 European cities are defined in Country_ml.f90.
+The new factors are given for now at:
+$DataDir/inputs_emepdefaults_Jun2017/HourlyFacsSpecials.CAMS50
+As long as the emisions do not have these new City-codes, there will be no effect.
+Defaults are the old values.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 18th June 2017 Peter rv4_15_1 (status 2017 version, 494ad81)
@@ -216,18 +569,17 @@ Implemented in a rush for reporting. Should be cleaned/revised.
 Monthly only for now.
 
 Example of format:
-!  emis_inputlist(3)%name     = '/home/mifajej/Emissions/Ships/FMI_Glob/2015/FMIGlobShip2015mon.nc',  !
+!  emis_inputlist(3)%name = '/home/mifajej/Emissions/Ships/FMI_Glob/2015/FMIGlobShip2015mon.nc',  !
 !  emis_inputlist(3)%type = 'Special_ShipEmis',
-
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 9th  June 2017  Peter
 
 Can use a mix of SNAP and GNFR emission, if the type of the second is specified.
-The first emission determines the main sector categories, the other emissions 
-will be mapped. For instance 
+The first emission determines the main sector categories, the other emissions
+will be mapped. For instance
 
-  emis_inputlist(1)%name = '/global/work/nyiri/emis01deg_EMEP2015/GNFREmis_EMEP01_2015.nc',! GNFR 
+  emis_inputlist(1)%name = '/global/work/nyiri/emis01deg_EMEP2015/GNFREmis_EMEP01_2015.nc',! GNFR
 
   emis_inputlist(3)%name     = '/global/work/mifapw/emep/Data/Emis_TNO7_MACCIII/Emis_TNO7_MACCIII_2011.nc',
   emis_inputlist(3)%type     = 'SNAPsectors',          !interpret as SNAP
@@ -235,7 +587,7 @@ will be mapped. For instance
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-9th  June 2017  Dave 
+9th  June 2017  Dave
 
 CellMet_ml - restriced z_ref to be >= 30m to avoid negative height calculations
   in SubMet_ml.
@@ -246,7 +598,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Allow for outputting sectorwise emission.
 In ModelConstants_config set for instance:
 
-  SecEmisOutPoll(1:)	= 'pm25', 'nox',	
+  SecEmisOutPoll(1:)	= 'pm25', 'nox',
 
 This will give you separately all the 11 sectors for each of these pollutants
 
@@ -278,7 +630,7 @@ with new system in ZCM_EmChem16mt/VBS_SOAformationY.reactions. The new system
 now makes use of labels, e.g. |YCOXY(1)| to set yields for different components
 in different VBS bins. Here, from OXYL into 10**1 (ie 10ug/m3) bin.
 
-ZCM_CRIv2R5/GenIn.shorthand 
+ZCM_CRIv2R5/GenIn.shorthand
   Copied CRIv2R5jpc.shorthand to GenIn.shorthand
 
 ZCM_EmChem16mt:
@@ -295,16 +647,16 @@ ZCM_EmChem16mt:
  VBS_SOAformationY.reactions  ---- NEW !!!
     uses new and improved YieldModifications for VBS
 
-ChemFields_ml.f90 
+ChemFields_ml.f90
   Adding cell_tinv as 1/T for use in YieldModifications
 
-ChemFunctions_ml.f90 
+ChemFunctions_ml.f90
   Added SmixC option to explore coarse-mode uptake. Not used yet.
- 
-mk.GenChem 
+
+mk.GenChem
   Used new SOAformation file for EmChem16mt - using YieldModification methods
 
-config_EMEPSTD.nml 
+config_EMEPSTD.nml
   Using YieldModification = VBS
 
 emep_Config_mod.f90
@@ -314,10 +666,8 @@ a little CPU.
 config_Outputs_EMEPSTD
    Added SQT output
 
-Solver.f90 
+Solver.f90
   Adapted for new VBS methods in YieldModifications
-
->>>>>>> 27ddc801f707bb3dd0a6a5ed01ad0056fa69cfa6
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 31st  May 2017  Peter
@@ -327,22 +677,22 @@ Can affect only cases where:
 1)interpolation from lon-lat to lon-lat
 and 2) the model grid has finer resoltion than the data interpolated (which is normally not the case)
 
-Nest_ml.f90: option to save only the data at BC  of inner grid. 
+Nest_ml.f90: option to save only the data at BC  of inner grid.
 Set  "MET_inner" and "RUNDOMAIN_inner" in config.
 Still under testing.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 24th  May 2017  Peter
 
-run.pl: changed SLURM commands. There is a bug on Stallo, that makes MPI count 
+run.pl: changed SLURM commands. There is a bug on Stallo, that makes MPI count
 wrong the number of CPUs if not entire nodes are taken.
 
-Introduced special2d and special3d arrays in MetFields. 
-If you need very special output (i.e some quantity that cannot be outputted by 
+Introduced special2d and special3d arrays in MetFields.
+If you need very special output (i.e some quantity that cannot be outputted by
 standard My_Derived). For 2D fields
 1) set Nspecial2d  in MetFields according to the number of new outputs
-2) write in set in the code the values of the array special2d(i,j,N), where N is 
-   the output number (i.e. 1,2,... Nspecial2d). 
+2) write in set in the code the values of the array special2d(i,j,N), where N is
+   the output number (i.e. 1,2,... Nspecial2d).
    For instance special2d(i,j,1)=Grid%invL in CellMet_ml.f90 for invL
 3) include in the same routine the use MetFields_ml  , only : special2d
 4) In config_Output.nml include the line for instance
@@ -369,7 +719,7 @@ ZCM_EmChem16mt/EmChem16mtbase.reactions
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 16th  May 2017  Peter
 
-Some uemep improvements: pollutant destination, more dimensions possible in 
+Some uemep improvements: pollutant destination, more dimensions possible in
 Out_NetCDF, zero order advction config flag
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -402,7 +752,7 @@ uEMEP: for each gridcell computes fractions for a surrounding region.
 Needs write out many dimensional data (i,j,k,t,sector, + x and y for origin of pollutant).
 New routine in NetCDF_ml that writes many dimensional array.
 Still need interface for input parameters and more checking.
-Molecular mass of emissions/pollutant hardcoded now. 
+Molecular mass of emissions/pollutant hardcoded now.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -491,8 +841,8 @@ config_Outputs_EMEPSTD
     to modify to cover PFTs or ecosystem definitions.
 
 
-3) ColumnSource_ml - reduced NMAX_LOC, NMAX_EMS to 5, 300 to avoid problems 
-   discussed on github issues. 
+3) ColumnSource_ml - reduced NMAX_LOC, NMAX_EMS to 5, 300 to avoid problems
+   discussed on github issues.
 
    *  Action needed: Alvaro
 
@@ -554,7 +904,7 @@ Landuse_ml
 
    Updated to cope with CLM
    Now allows landcover to be different in European and global files
-   
+
 ModelConstants_ml
 
    Moved GlobBvocMethod to emep_Config
@@ -571,7 +921,7 @@ Setup_ml
 
 run.pl
 
-   Point to LandInputs_Apr2017 which has GLC-CLM based global use and 
+   Point to LandInputs_Apr2017 which has GLC-CLM based global use and
    appropriate Inputs files.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -596,7 +946,7 @@ BIG CHANGE FOR GLOBAL BVOC and also some structural changes
 
   config_EMEPSTD.nml - just added commented out example for PBL%ZiMin
 
-  Note: The _mod suffix is intended also for the merge with ESX/BoxChem - 
+  Note: The _mod suffix is intended also for the merge with ESX/BoxChem -
         - I will use it to denote modules which have been updated/merged.
 
 2) Biogenic changes
@@ -622,7 +972,7 @@ Wesely_ml renamed to GasParticleCoeffs_ml
 
   - added option of variable yields on RHS of equations, with |YA_xx| notation, e.g.
     coded for gas and aerosol yields so far, e.g. to allow:
-     A + B = |YG_isopO3| gas-phase-products + |YA_isopO3| aerosol-phase-products 
+     A + B = |YG_isopO3| gas-phase-products + |YA_isopO3| aerosol-phase-products
     Needs more work.
 
 5) Name changes
@@ -652,11 +1002,11 @@ Define USE_PreADV=T in config to activate. (otherwise no effect).
 The emissions from ColumnSources are distributed along a line.
 The length and direction of the line is defined according to winds at each level.
 The line is "one-dimensional" in the 2D layer.
-The wind is defind only at origin (emission source), it is not varying along 
-the line. The number of gridcells on the line is equal to the Courant number in 
+The wind is defind only at origin (emission source), it is not varying along
+the line. The number of gridcells on the line is equal to the Courant number in
 each direction (nearest integer larger than C).
 
-This is to avoid the problem of holes in the concentration when there are 
+This is to avoid the problem of holes in the concentration when there are
 strong wind, since the advection will move pollutants far away, while emissions
 are put into the atmosphere only every dt_advec.
 
@@ -667,7 +1017,7 @@ ModelConstants_ml
 Runchem_ml
 
   - Added DEBUG%datetxt - to add a date string which  can be accessed from
-     other modules while debugging. Saves the need for TimeDate_ml, 
+     other modules while debugging. Saves the need for TimeDate_ml,
      print_date etc.
 
 Wesely_ml
@@ -683,20 +1033,20 @@ Small changes
 My_Derived_ml.f90
  -  Removed n1 from print - was not set when DEBUG turned on
 
-Setup_1d_ml.f90 
+Setup_1d_ml.f90
  - Increased length of specname and size of d2index
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15th Feb 2017 Peter
 
 The new interpolation method (9th feb) was switched off. Switched on now.
-Also improved the selection of data to be read in, as it was reading way too much 
+Also improved the selection of data to be read in, as it was reading way too much
 for lon lat grids, thereby wasting lots of memory.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 15th Feb 2017 Peter
 
-Removed the diagnostic "natso2" from the old system: 
+Removed the diagnostic "natso2" from the old system:
 it was producing a divide by zero.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -717,9 +1067,9 @@ Problems from the new interpolation routine (26th Jan) for global grids:
 the cyclic longitudes where not taken correctly into account.
 
 The landuse could be numerically large than 1 (1E-15 over), and that caused
-negative deposition over south pole for PB210. Added a "max(1,lu_cover)" 
+negative deposition over south pole for PB210. Added a "max(1,lu_cover)"
 
-Found a few (3?) gridcell at south pole (left corner) in LanduseGLC.nc with 150% 
+Found a few (3?) gridcell at south pole (left corner) in LanduseGLC.nc with 150%
 lu coverage. Will replace with correct one.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -739,7 +1089,7 @@ Makefile, run.pl:
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 2nd  Feb 2017  Dave
 
-Country_ml.f90 - added 199 to cope with non-specific emissions as seen 
+Country_ml.f90 - added 199 to cope with non-specific emissions as seen
   in annual Emis_01degGLOBAL_2012_HTAP_MIEC.nc file.
 
 EECCA 2012 beckmark, submitted to AeroCom
@@ -754,13 +1104,13 @@ run.pl - used pattern match on EmChems to get emissplit.specials
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26th Jan 2017 Peter
 
-Faster and better latlon to latlon interpolation: 
+Faster and better latlon to latlon interpolation:
 integrates exactly, assuming uniform emissions over gridcells
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23rd Jan 2017 Peter      rv4_11_5
 
-Smoother interpolation when lon and lat resolution is not the same, as in TNO7 
+Smoother interpolation when lon and lat resolution is not the same, as in TNO7
 emissions.
 
 
@@ -795,7 +1145,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 5th Jan 2017 Dave   rv4_11_0
 
 Re-started tags. We need something to keep track of model changes in
-a simple way - as had with svnversion. 
+a simple way - as had with svnversion.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 28th Jan 2017 Peter
@@ -807,7 +1157,7 @@ uEMEP: diagonal neighbors.
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26th Jan 2017 Peter
 
-Faster and better latlon to latlon interpolation: 
+Faster and better latlon to latlon interpolation:
 integrates exactly, assuming uniform emissions over gridcells
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -824,7 +1174,7 @@ Update pollen modules (ZD_Pollen), issue #12
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 23rd Dec 2016 Peter
 
-Bug when wrf is used: XLAT reading for pole detection was read as a one-dimensional array. 
+Bug when wrf is used: XLAT reading for pole detection was read as a one-dimensional array.
 Detected by Massimo.
 
 Reading 3 hourly O3 from top when fileName_O3_Top is set in config file

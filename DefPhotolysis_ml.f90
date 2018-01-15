@@ -18,12 +18,14 @@
    use CheckStop_ml,      only: CheckStop
    use GridValues_ml    , only : glat
    use Io_ml,           only : IO_DJ, open_file, ios
+   use LocalVariables_ml, only : Grid  ! => izen
    use MetFields_ml           , only : cc3d,cc3dmax,z_bnd
-   use ModelConstants_ml,    only: KMAX_MID, KCHEMTOP, NPROC
+   use Config_module,    only: TXTLEN_FILE, KMAX_MID, KCHEMTOP, NPROC,&
+                                   jcl1kmFile,jcl3kmFile,jclearFile
    use MPI_Groups_ml      , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_INTEGER&
                                      ,MPI_COMM_CALC, IERROR
    use Par_ml      ,    only : me,LIMAX,LJMAX
-   use LocalVariables_ml, only : Grid  ! => izen
+   use SmallUtils_ml,     only: key2str
    implicit none
    private
 
@@ -79,10 +81,15 @@
                  ,nr    &  ! numbering of photolytic reactions
                  ,la       ! counting every 10 deg. latitude
         real myz
-        character*20 fname1, fname2, fname3
+        character(len=TXTLEN_FILE) fname1
+        character(len=3) ::season3
 
         logical,save:: first_call=.true.
 
+        if(newseason==1)season3='jan'
+        if(newseason==2)season3='apr'
+        if(newseason==3)season3='jul'
+        if(newseason==4)season3='oct' 
 
         if(first_call)then
            if(.not.(allocated(rcphot)))allocate(rcphot(NRCPHOT,KCHEMTOP:KMAX_MID))
@@ -94,14 +101,14 @@
 !---------------
 
         if(me == 0)then
-           write(fname1,fmt='(''jclear'',i2.2,''.dat'')') newseason
+           fname1 = key2str(jclearFile,'SEASON',season3)
            call open_file(IO_DJ,"r",fname1,needed=.true.)
            call CheckStop(ios,"DefPhotolysis: ios error in jclear ")
         end if
 
 
 !       Format of input data from Phodis - careful with "17" and NPHODIS
-999     FORMAT(1x, f8.3, 17(1x, 1pe8.2))
+999     FORMAT(1x, f8.3, 17(1x, 1pe8.2)) !Format imposed by file
 
 
         if(me == 0)then
@@ -134,8 +141,8 @@
 !---------------
 
         if(me == 0)then
-           write(fname2,fmt='(''jcl1km'',i2.2,''.dat'')') newseason
-           call open_file(IO_DJ,"r",fname2,needed=.true.)
+           fname1 = key2str(jcl1kmFile,'SEASON',season3)
+           call open_file(IO_DJ,"r",fname1,needed=.true.)
            call CheckStop(ios,"DefPhotolysis: ios error in jcl1km ")
         end if
 
@@ -176,8 +183,8 @@
 !---------------
 
         if(me == 0)then
-           write(fname3,fmt='(''jcl3km'',i2.2,''.dat'')') newseason
-           call open_file(IO_DJ,"r",fname3,needed=.true.)
+           fname1 = key2str(jcl3kmFile,'SEASON',season3)
+           call open_file(IO_DJ,"r",fname1,needed=.true.)
            call CheckStop(ios,"DefPhotolysis: ios error in jcl3km ")
         end if
 

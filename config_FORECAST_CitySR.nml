@@ -20,19 +20,19 @@
   USES%DEGREEDAY_FACTORS= F,
   USES%PlumeMethod      = 'PVDI',    ! default PVDI, possible: NILU, ASMI, PVDI
 !------------------------------
-  USE_SOILWATER         = F,          ! Uses SMI from meteo data
-  USE_CONVECTION        = F,
-  USE_SEASALT           = T,
-  USE_AIRCRAFT_EMIS     = T,          ! Needs global file, see manual
-  USE_LIGHTNING_EMIS    = T,          ! 
+  USES%SOILWATER         = F,          ! Uses SMI from meteo data
+  USES%CONVECTION        = F,
+  USES%SEASALT           = T,
+  USES%AIRCRAFT_EMIS     = T,          ! Needs global file, see manual
+  USES%LIGHTNING_EMIS    = T,          ! 
 !------------------------------
-  USE_EURO_SOILNOX      = F,          ! diff for global + Euro runs
+  USES%EURO_SOILNOX      = F,          ! diff for global + Euro runs
   EURO_SOILNOX_DEPSCALE = 1.0,        ! Scale, default 1  (see ModelConstants_ml)
-  USE_GLOBAL_SOILNOX    = F,          ! diff for global + Euro runs
+  USES%GLOBAL_SOILNOX    = F,          ! diff for global + Euro runs
 !------------------------------
-  USE_POLLEN            = F,          ! EXPERIMENTAL. Only works if start Jan 1
-  USE_ROADDUST          = F,          ! Only EECCA?
-  USE_DUST              = F,          ! Only EECCA?
+  USES%POLLEN            = F,          ! EXPERIMENTAL. Only works if start Jan 1
+  USES%ROADDUST          = F,          ! Only EECCA?
+  USES%DUST              = F,          ! Only EECCA?
   NETCDF_DEFLATE_LEVEL  = 4,          ! 1-9 GZIP compress, 0 no compress, -1 nc3
 !-------- Can switch on INERIS-type degreeday stuff
   INERIS_SNAP1          = F,          ! Used for TFMM runs
@@ -43,9 +43,9 @@
 !------------------------------
   SELECT_LEVELS_HOURLY  = T,          ! hourly output flag Also for FORECAST, 3DPROFILES
   FORECAST              = T,
-  USE_ASH               = T,          ! Used for FORECASTs and Status 2010
+  USES%ASH               = T,          ! Ash from historical Volcanic Eruptions
   ANALYSIS              = F,          ! EXPERIMENTAL: 3DVar data assimilation
-  USE_AOD               = F,          ! Used for FORECASTs usually
+  USES%AOD               = F,          ! Used for FORECASTs usually
   BGND_CH4              = -1,         ! Reset CH4 (use ppb). (Use -1 for defaults)
 !--- 'fake' vegetation for ozone POD calculations
   FLUX_VEGS = 'IAM_CR','IAM_DF','IAM_MF', ! do not need all array elements
@@ -53,11 +53,22 @@
             ! 'NEUR_SPRUCE','NEUR_BIRCH','MED_OAK','MED_PINE','MED_BEECH'
   FLUX_IGNORE = 'W', 'D', 'DE', 'ICE', 'BARE'   ! Ignore these for FLUX calcs.  
 &end
+&ColumnSource_config
+!------------------------------
+! volcanic emissions from passive degassing and historical eruptions
+!------------------------------
+  flocdef="DataDir/volcano_location.csv",
+  femsdef="DataDir/volcano_emission.csv",
+  topo_nc="DataDir/GRID/topography.nc",
+  need_topo=F, ! continue simulation if topo_nc not found
+  NMAX_LOC=-1, ! estimate from lines in flocdef
+  NMAX_EMS=-1, ! estiamte from lines in femsdef
+&end
 &Fire_config
   need_file=F,need_date=F,need_poll=F,! continue if don't find file,time record,pollutant
-  GFED_PATTERN='$GFED',#GFED
-  FINN_PATTERN='$FINN',#FINN
-  GFAS_PATTERN='$GFAS',#GFAS
+  GFED_PATTERN='DataDir/GLOBAL_ForestFireEmis.nc',
+  FINN_PATTERN='DataDir/ForestFire/FINN/ForestFire_Emis_v15_YYYY.nc',
+  GFAS_PATTERN='DataDir/ForestFire/GFAS/GFAS_ForestFireEmis_YYYY.nc',
 &end
 &Nest_config
 !-------- Read/Write MODEs

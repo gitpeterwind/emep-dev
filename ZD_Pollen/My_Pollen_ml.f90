@@ -8,7 +8,7 @@
 ! Pollen particles are assumed of 22 um diameter and 800 kg/m3 density. 
 !-----------------------------------------------------------------------!
 module Pollen_const_ml
-use ModelConstants_ml,    only: USE_POLLEN,DEBUG=>DEBUG_POLLEN
+use Config_module,    only: USES,DEBUG
 use ChemSpecs,            only: NSPEC_ADV
 use CheckStop_ml,         only: CheckStop
 implicit none
@@ -26,8 +26,8 @@ subroutine pollen_check(igrp,uconv_adv)
   if(present(igrp))igrp=-1
   if(.not.first_call)return
   first_call=.false.
-  call CheckStop(USE_POLLEN.or.DEBUG,&
-    "USE_POLLEN/DEBUG_POLLEN on model compiled without pollen modules")
+  call CheckStop(USES%POLLEN.or.DEBUG%POLLEN,&
+    "USES%POLLEN/DEBUG%POLLEN on model compiled without pollen modules")
 endsubroutine pollen_check
 endmodule Pollen_const_ml
 !-----------------------------------------------------------------------!

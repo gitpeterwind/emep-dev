@@ -20,7 +20,7 @@
   LandCoverInputs%LandDefs   = 'DataDir/LandInputs_Apr2017/Inputs_LandDefs.csv',
   LandCoverInputs%Do3seDefs  = 'DataDir/LandInputs_Apr2017/Inputs_DO3SE.csv',
   LandCoverInputs%MapFile =
-    'DataDir/Landuse/Landuse_PS_5km_LC.nc',
+    'DataDir/Landuse/Landuse_PS_5km_LC.nc',    ! 1km also available
     'DataDir/LandInputs_Apr2017/glc2000mCLM.nc',
 !   'DataDir/LanduseGLC.nc',
   YieldModifications = 'VBS'   ! None for EmChems 'JPC-VY-acid',
@@ -31,19 +31,19 @@
   USES%DEGREEDAY_FACTORS= F,
   USES%PlumeMethod      = 'PVDI',    ! default PVDI, possible: NILU, ASMI, PVDI
 !------------------------------
-  USE_SOILWATER         = F,          ! Uses SMI from meteo data
-  USE_CONVECTION        = F,
-  USE_SEASALT           = T,
-  USE_AIRCRAFT_EMIS     = T,          ! Needs global file, see manual
-  USE_LIGHTNING_EMIS    = T,          ! 
+  USES%SOILWATER         = F,          ! Uses SMI from meteo data
+  USES%CONVECTION        = F,
+  USES%SEASALT           = T,
+  USES%AIRCRAFT_EMIS     = T,          ! Needs global file, see manual
+  USES%LIGHTNING_EMIS    = T,          ! 
 !------------------------------
-  USE_EURO_SOILNOX      = F,          ! diff for global + Euro runs
+  USES%EURO_SOILNOX      = F,          ! diff for global + Euro runs
   EURO_SOILNOX_DEPSCALE = 1.0,        ! Scale, default 1  (see ModelConstants_ml)
-  USE_GLOBAL_SOILNOX    = F,          ! diff for global + Euro runs
+  USES%GLOBAL_SOILNOX    = F,          ! diff for global + Euro runs
 !------------------------------
-  USE_POLLEN            = F,          ! EXPERIMENTAL. Only works if start Jan 1
-  USE_ROADDUST          = F,          ! Only EECCA?
-  USE_DUST              = F,          ! Only EECCA?
+  USES%POLLEN            = F,          ! EXPERIMENTAL. Only works if start Jan 1
+  USES%ROADDUST          = F,          ! Only EECCA?
+  USES%DUST              = F,          ! Only EECCA?
   NETCDF_DEFLATE_LEVEL  = 4,          ! 1-9 GZIP compress, 0 no compress, -1 nc3
 !-------- Can switch on INERIS-type degreeday stuff
   INERIS_SNAP1          = F,          ! Used for TFMM runs
@@ -54,9 +54,9 @@
 !------------------------------
   SELECT_LEVELS_HOURLY  = T,          ! hourly output flag Also for FORECAST, 3DPROFILES
   FORECAST              = T,
-  USE_ASH               = T,          ! Used for FORECASTs and Status 2010
+  USES%ASH               = T,          ! Ash from historical Volcanic Eruptions
   ANALYSIS              = T,          ! EXPERIMENTAL: 3DVar data assimilation
-  USE_AOD               = T,          ! Used for FORECASTs usually
+  USES%AOD               = T,          ! Used for FORECASTs usually
   BGND_CH4              = -1,         ! Reset CH4 (use ppb). (Use -1 for defaults)
 !--- 'fake' vegetation for ozone POD calculations
   FLUX_VEGS = 'IAM_CR','IAM_DF','IAM_MF', ! do not need all array elements
@@ -122,22 +122,33 @@
   obsData(4)%name='SO2',obsData(4)%deriv='surface',obsData(4)%unit='ug/m3',
   obsData(4)%min=00.0,obsData(4)%max=150.0,obsData(4)%error_rel=0.10,
 &end
+&ColumnSource_config
+!------------------------------
+! volcanic emissions from passive degassing and historical eruptions
+!------------------------------
+  flocdef="DataDir/volcano_location.csv",
+  femsdef="DataDir/volcano_emission.csv",
+  topo_nc="DataDir/GRID/topography.nc",
+  need_topo=F, ! continue simulation if topo_nc not found
+  NMAX_LOC=-1, ! estimate from lines in flocdef
+  NMAX_EMS=-1, ! estiamte from lines in femsdef
+&end
 &Fire_config
   need_file=F,need_date=F,need_poll=F,! continue if don't find file,time record,pollutant
-  GFED_PATTERN='$GFED',#GFED
-  FINN_PATTERN='$FINN',#FINN
-  GFAS_PATTERN='$GFAS',#GFAS
+  GFED_PATTERN='DataDir/GLOBAL_ForestFireEmis.nc',
+  FINN_PATTERN='DataDir/ForestFire/FINN/ForestFire_Emis_v15_YYYY.nc',
+  GFAS_PATTERN='DataDir/ForestFire/GFAS/GFAS_ForestFireEmis_YYYY.nc',
 &end
 &Nest_config
 !-------- Read/Write MODEs
   MODE_READ = 'FORECAST',     ! at the start of run, if files are found
   MODE_SAVE = 'FORECAST',     ! every OUTDATE(1:FORECAST_NDUMP)
 !-------- File name templates for Nest I/O
-  template_read_3D = '$inic',#inic            ! YYYY, YY, MM, DD, hh strings
-  template_read_BC = '$INBC',#inbc            ! will be replaced with numbers
-  template_write   = '$dump',#dump            ! in Nest_ml
-  native_grid_3D = T,                         ! restart file on the same grid
-  native_grid_BC = F,                         ! nest-bc file on a different grid
+  template_read_3D = '../RESTART/CWF_00AN-YYYYMMDD_restart.nc',
+  template_read_BC = 'DataDir/GRID/Boundary_conditions/YYYY_ENS/cwf-cifs_hYYYYMMDD12_raqbc',
+  template_write   = '../RESTART/CWF_12FC-YYYYMMDD_restart.nc',
+  native_grid_3D = T,         ! restart file on the same grid
+  native_grid_BC = F,         ! nest-bc file on a different grid
 !-------- CWF dump/restart
 ! WRITE_SPC = 'NO2','O3','SO2','REMPPM25','REMPPM_C', ! reduce output for
 ! WRITE_GRP = 'DAOBS','DAUNOBS','PM10','AOD',         ! NMC statistics (3DVar)
@@ -160,7 +171,7 @@
   EXTERNAL_BIC_NAME    = 'MACC_ENS',
   EXTERNAL_BIC_VERSION = 'MACC_ENS',          ! alias for IFS_MOZ_f7kn|fkya|fnyp
   TOP_BC               = T,
-  filename_eta         = '$filename_eta',#filename_eta
+  filename_eta         = 'DataDir/GRID/Boundary_conditions/mozart_eta.zaxis',
 &end
 &ExternalBICs_bc
 ! BC from IFS-MOZ exp id: f7kn (before 2011-12-01)

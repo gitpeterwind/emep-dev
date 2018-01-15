@@ -9,7 +9,7 @@
   !
   ! - new aray added to keep o2, m, and for MADE oh, etc
 
-  use ModelConstants_ml, only : AERO ! for %NSAREA = No types surface area
+  use Config_module, only : AERO ! for %NSAREA = No types surface area
   implicit none
   private
 

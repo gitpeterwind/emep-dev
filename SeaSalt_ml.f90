@@ -24,7 +24,7 @@
                                   u_ref, foundSST, &
                                    foundws10_met,ws_10m
  use MicroMet_ml,          only : Wind_at_h
- use ModelConstants_ml,    only : KMAX_MID, KMAX_BND, USES, &
+ use Config_module,    only : KMAX_MID, KMAX_BND, USES, &
                                   MasterProc, & 
                                   DEBUG   ! -> SEASALT
  use PhysicalConstants_ml, only : CHARNOCK, AVOG ,PI
@@ -88,7 +88,7 @@
  
   if ( my_first_call ) then 
 
-    ! We might have USE_SEASALT=.true. in ModelConstants, but the
+    ! We might have USES%SEASALT=.true. in ModelConstants, but the
     ! chemical scheme might not have seasalt species. We check.
 
     inat_SSFI = find_index( "SEASALT_F", EMIS_BioNat(:) )

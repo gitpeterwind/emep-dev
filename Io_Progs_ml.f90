@@ -14,7 +14,7 @@
 use CheckStop_ml,           only: CheckStop
 use GridValues_ml,          only: i_local, j_local
 use Io_Nums_ml,             only: IO_TMP, IO_LOG
-use ModelConstants_ml,      only: DEBUG, DEBUG, DomainName, &
+use Config_module,      only: DEBUG, DEBUG, DomainName, &
                                   MasterProc, IIFULLDOM, JJFULLDOM
 use MPI_Groups_ml        , only : MPI_INTEGER, MPI_CHARACTER, MPI_COMM_CALC, IERROR, ME_MPI
 use KeyValueTypes,          only: KeyVal, KeyValue, LENKEYVAL
@@ -559,7 +559,7 @@ subroutine Self_Test()
 ! All lines starting "# " are ignored, but text will show up nicest in
 ! spread sheets if enlcosed in quotation marks
 !-------------------------------------------------------------------------
-use ModelConstants_ml, only: NPROC
+use Config_module, only: NPROC
   use Par_ml, only: me
   integer :: NHeaders, NKeyValues, i, ios
   character(len=10), dimension(10) :: Headers

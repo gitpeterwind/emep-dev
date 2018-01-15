@@ -43,7 +43,7 @@ use MetFields_ml,     only: ps, u_ref, cc3dmax, sdepth, surface_precip, &
                             ice_nwp,fh, fl, z_mid, z_bnd, q, roa, rh2m, &
                             rho_surf, th, pzpbl, t2_nwp, ustar_nwp, zen,&
                             coszen, Idirect, Idiffuse
-use ModelConstants_ml,    only: KMAX_MID, KMAX_BND, PT, USE_ZREF
+use Config_module,    only: KMAX_MID, KMAX_BND, PT, USE_ZREF
 use PhysicalConstants_ml, only: PI, CP, GRAV, KARMAN
 use SoilWater_ml,     only: fSW
 use SubMet_ml,        only: Get_SubMet, Sub

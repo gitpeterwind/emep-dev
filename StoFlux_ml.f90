@@ -7,7 +7,7 @@ module StoFlux_ml
   use LandDefs_ml, only : LandType, STUBBLE, iLC_grass
   use LocalVariables_ml, only : L, Grid
   use MicroMet_ml, only : AerRes, Wind_at_h
-  use ModelConstants_ml, only : NLANDUSEMAX, dt_advec, DEBUG
+  use Config_module, only : NLANDUSEMAX, dt_advec, DEBUG
   use Par_ml, only : LIMAX, LJMAX
   use PhysicalConstants_ml, only : AVOG, KARMAN
   use SmallUtils_ml, only : find_index

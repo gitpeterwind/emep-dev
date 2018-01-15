@@ -29,7 +29,7 @@
 !
 !    gather a 2D 'real' array from the processors at the host me=0
 !
-    use ModelConstants_ml, only : NPROC ! Actual total number of processors
+    use Config_module, only : NPROC ! Actual total number of processors
     use Par_ml , only : &
              MAXLIMAX &    ! Maximum number of local points in longitude
              ,MAXLJMAX&    ! Maximum number of local points in latitude

@@ -7,9 +7,9 @@ SRCS ?=	\
 	ChemSpecs_wrapper.f90 CoDep_ml.f90 Country_ml.f90 \
 	ChemFunctions_ml.f90 CM_ChemRates_ml.f90 Convection_ml.f90 ColumnSource_ml.f90 \
 	CM_ChemGroups_ml.f90 CM_ChemSpecs_ml.f90  \
+	Config_module.f90  \
 	DefPhotolysis_ml.f90 Derived_ml.f90 DerivedFields_ml.f90 DO3SE_ml.f90 \
-	DryDep_ml.f90 DustProd_ml.f90 \
-	EcoSystem_ml.f90 emep_Config_mod.f90 \
+	DryDep_ml.f90 DustProd_ml.f90 EcoSystem_ml.f90  \
 	EmisDef_ml.f90 EmisGet_ml.f90 Emissions_ml.f90 ExternalBICs_ml.f90 \
 	FastJ_ml.f90 ForestFire_ml.f90 Functions_ml.f90 \
         GasParticleCoeffs_ml.f90 \
@@ -18,7 +18,7 @@ SRCS ?=	\
 	Io_ml.f90 Io_Nums_ml.f90 Io_Progs_ml.f90 KeyValueTypes.f90  LandDefs_ml.f90 Landuse_ml.f90 \
 	LandPFT_ml.f90 LocalVariables_ml.f90 MARS_ml.f90 MARS_Aero_water_ml.f90 \
 	MassBudget_ml.f90 Met_ml.f90 MetFields_ml.f90 EQSAM_ml.f90 MicroMet_ml.f90 \
-	ModelConstants_ml.f90 MosaicOutputs_ml.f90 MPI_Groups_ml.f90 AerosolCalls.f90 \
+	MosaicOutputs_ml.f90 MPI_Groups_ml.f90 AerosolCalls.f90 \
         My_Derived_ml.f90 My_Outputs_ml.f90 NetCDF_ml.f90 Nest_ml.f90 NumberConstants.f90 \
         Output_hourly.f90 OutputChem_ml.f90 OwnDataTypes_ml.f90 Par_ml.f90 \
 	PhysicalConstants_ml.f90 PlumeRise_ml.f90 PointSource_ml.f90 \

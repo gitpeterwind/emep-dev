@@ -76,8 +76,9 @@ rcemis:C5H8                        = C5H8    ; # Anthropogenic isoprene
 *
 * <----------- Biogenic/natural emissions ----------------------------->
 *
-*emisextra:C5H8,APINENE,NO
+*emisextra:C5H8,APINENE,NO,BIOTERP
 rcbio:C5H8                       = C5H8    ;
 rcbio:APINENE                    = APINENE ;
+rcbio:BIOTERP                    = APINENE ;
 rcbio:NO                         = NO ;
 

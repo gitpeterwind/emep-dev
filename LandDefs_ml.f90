@@ -6,8 +6,8 @@ module LandDefs_ml
  use Io_ml, only : IO_TMP, open_file, ios, Read_Headers, read_line
  use KeyValueTypes, only :  KeyVal
  use LandPFT_ml,  only : PFT_CODES
- use ModelConstants_ml, only : NLANDUSEMAX, MasterProc, DEBUG
- use ModelConstants_ml, only :  FLUX_VEGS
+ use Config_module, only : NLANDUSEMAX, MasterProc, DEBUG
+ use Config_module, only :  FLUX_VEGS
  use SmallUtils_ml, only : find_index, trims
   implicit none
   private

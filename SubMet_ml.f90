@@ -20,12 +20,12 @@ use Landuse_ml,    only: LandCover
 use LocalVariables_ml, only: Grid, SubDat
 use MicroMet_ml, only :  PsiM, AerRes    !functions
 use MicroMet_ml, only :  Launiainen1995
-use ModelConstants_ml, only :  DEBUG_SUBMET &  ! Needs DEBUG_RUNCHEM to get debug_flag
+use Config_module, only :  DEBUG_SUBMET &  ! Needs DEBUG_RUNCHEM to get debug_flag
                               , USE_ZREF & ! TEST
                               , FluxPROFILE &
                               , LANDIFY_MET   &
-                              , USE_SOILWATER 
-use ModelConstants_ml, only: NLANDUSEMAX
+                              , USES 
+use Config_module, only: NLANDUSEMAX
 use PhysicalConstants_ml, only : PI, RGAS_KG, CP, GRAV, KARMAN, CHARNOCK, T0
 
 implicit none
@@ -114,7 +114,7 @@ real :: theta2
         Sub(iL)%is_forest = LandType(iL)%is_forest
         Sub(iL)%is_crop   = LandType(iL)%is_crop   
 
-        !if( USE_SOILWATER )
+        !if( USES%SOILWATER )
           Sub(iL)%fSW    = Grid%fSW ! MAR2013 - not needed, but for safety
 !GMO3
   if( index( LandDefs(iL)%name , 'Irrigated' ) > 0 ) then

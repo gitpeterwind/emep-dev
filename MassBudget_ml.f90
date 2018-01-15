@@ -11,7 +11,7 @@ use GridValues_ml,      only: xmd, &
                               gridwidth_m,dA,dB,debug_proc,debug_li,debug_lj
 use Io_ml,              only: IO_LOG, PrintLog, datewrite
 use MetFields_ml,       only: ps            ! surface pressure
-use ModelConstants_ml,  only: KMAX_MID,KCHEMTOP,& ! Start and upper k for 1d fields
+use Config_module,  only: KMAX_MID,KCHEMTOP,& ! Start and upper k for 1d fields
                               MasterProc,       & ! Master processor
                               dt_advec,         & ! time-step
                               PT,               & ! Pressure at top

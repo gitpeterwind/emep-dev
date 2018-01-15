@@ -47,7 +47,7 @@ use MetFields_ml,     only: roa,pzpbl,Kz_m2s,th,zen, ustar_nwp, u_ref,&
                             met, derivmet,  & !TEST of targets
                             ws_10m, rh2m, z_bnd, z_mid, u_mid,v_mid,ps, t2_nwp, &
                             SoilWater_deep, SoilWater_uppr, Idirect, Idiffuse
-use ModelConstants_ml, only: &
+use Config_module, only: &
    KMAX_MID,KMAX_BND  & ! =>  z dimension: layer number,level number
   ,NPROC              & ! No. processors
   ,dt_advec           &
@@ -62,7 +62,7 @@ use ModelConstants_ml, only: &
   ! output types corresponding to instantaneous,year,month,day
   ,IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY,IOU_HOUR,IOU_HOUR_INST,IOU_KEY &
   ,MasterProc, SOURCE_RECEPTOR &
-  ,USE_AOD, USE_OCEAN_DMS, USE_OCEAN_NH3, USE_uEMEP, uEMEP, startdate,enddate
+  ,USES, USE_OCEAN_DMS, USE_OCEAN_NH3, USE_uEMEP, uEMEP, startdate,enddate
 
 use AOD_PM_ml,            only: AOD_init,aod_grp,wavelength,& ! group and
                                 wanted_wlen,wanted_ext3d      ! wavelengths
@@ -364,6 +364,7 @@ subroutine Define_Derived()
       select case(class)
       case ('Z_MID','Z','Z_BND','Zlev','dZ_BND','dZ')
         iadv = -1
+        unitscale=1.0
         unittxt="m"
         Is3D=.true.
       case('PM25','PM25X','PM25_rh50','PM25X_rh50','PM10_rh50',&
@@ -420,7 +421,7 @@ subroutine Define_Derived()
         outname = "COLUMN_" // trim(outname) // "_" // trim(subclass)
       case('AOD','AOD:TOTAL','AOD:SPEC','AOD:SHL','AOD:GROUP',&
            'EXT','EXT:TOTAL','EXT:SPEC','EXT:SHL','EXT:GROUP')
-        if(.not.USE_AOD)cycle
+        if(.not.USES%AOD)cycle
         select case(class)
         case('AOD:GROUP','EXT:GROUP')
           iout=find_index(outname,chemgroups(:)%name)

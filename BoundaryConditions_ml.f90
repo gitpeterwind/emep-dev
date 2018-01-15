@@ -44,12 +44,11 @@ use Io_Progs_ml,       only: datewrite, PrintLog
 use Landuse_ml,        only: mainly_sea
 use LocalVariables_ml, only: Grid
 use MetFields_ml,      only: roa
-use ModelConstants_ml, only: KMAX_MID  &  ! Number of levels in vertical
+use Config_module, only: KMAX_MID  &  ! Number of levels in vertical
                             ,iyr_trend &  ! Used for e.g. future scenarios
-                            ,BGND_CH4  &  ! If positive, replaces defaults
-                            ,USE_SEASALT,USE_DUST & 
+                            ,BGND_CH4  &  ! If positive, replaces defaults 
                             ,USES,DEBUG  & ! %BCs
-                            ,MasterProc, PPB, Pref
+                            ,MasterProc, PPB, Pref, LoganO3File, DustFile
 use MPI_Groups_ml,     only: MPI_DOUBLE_PRECISION, MPI_SUM,MPI_INTEGER, &
                              MPI_COMM_CALC, IERROR
 use NetCDF_ml,         only: ReadField_CDF,vertical_interpolate
@@ -294,7 +293,7 @@ contains
              !  If SeaSalt isn't called from mk.GenChem, we don't have the
              !  SS_GROUP, so we search for the simple SEASALT name.
              bc_seaspec = .false.
-             if ( USE_SEASALT .and. &
+             if ( USES%SEASALT .and. &
                   ( index( species(ntot)%name, "SEASALT_" ) > 0 ) ) then
                 bc_seaspec = .true.
              end if
@@ -310,7 +309,7 @@ contains
 
                       if ( bc_seaspec ) then
                          if ( .not. mainly_sea(i,j))  bc_fac = 0.001 ! low over land
-                         if ( .not. USE_SEASALT )  bc_fac = 0.0   ! not wanted!
+                         if ( .not. USES%SEASALT )  bc_fac = 0.0   ! not wanted!
                       end if
 
                       xn_adv(iem,i,j,k) =   xn_adv(iem,i,j,k) +&
@@ -346,7 +345,7 @@ contains
              iem = spc_used_adv(ibc,n)
              ntot = iem + NSPEC_SHL 
              bc_seaspec = .false.
-             if ( USE_SEASALT .and. ( index( species(ntot)%name, "SEASALT_" ) > 0 ) ) then
+             if ( USES%SEASALT .and. ( index( species(ntot)%name, "SEASALT_" ) > 0 ) ) then
                 bc_seaspec = .true.
              end if
 
@@ -358,7 +357,7 @@ contains
 
                       if ( bc_seaspec ) then
                          if ( .not. mainly_sea(i,j))  bc_fac = 0.001 ! low over land
-                         if ( .not. USE_SEASALT )  bc_fac = 0.0   ! not wanted!
+                         if ( .not. USES%SEASALT )  bc_fac = 0.0   ! not wanted!
                       end if
 
                       xn_adv(iem,i,j,k) =   xn_adv(iem,i,j,k) +&
@@ -372,7 +371,7 @@ contains
 
                       if ( bc_seaspec ) then
                          if ( .not. mainly_sea(i,j))  bc_fac = 0.001 ! low over land
-                         if ( .not. USE_SEASALT )  bc_fac = 0.0   ! not wanted!
+                         if ( .not. USES%SEASALT )  bc_fac = 0.0   ! not wanted!
                       end if
 
                       xn_adv(iem,i,j,k) =   xn_adv(iem,i,j,k) +&
@@ -389,7 +388,7 @@ contains
 
                       if ( bc_seaspec ) then
                          if ( .not. mainly_sea(i,j))  bc_fac = 0.001 ! low over land
-                         if ( .not. USE_SEASALT )  bc_fac = 0.0   ! not wanted!
+                         if ( .not. USES%SEASALT )  bc_fac = 0.0   ! not wanted!
                       end if
 
                       xn_adv(iem,i,j,k) =   xn_adv(iem,i,j,k) +&
@@ -406,7 +405,7 @@ contains
 
                       if ( bc_seaspec ) then
                          if ( .not. mainly_sea(i,j))  bc_fac = 0.001 ! low over land
-                         if ( .not. USE_SEASALT )  bc_fac = 0.0   ! not wanted!
+                         if ( .not. USES%SEASALT )  bc_fac = 0.0   ! not wanted!
                       end if
 
                       xn_adv(iem,i,j,k) =   xn_adv(iem,i,j,k) +&
@@ -425,7 +424,7 @@ contains
 
                       if ( bc_seaspec ) then
                          if ( .not. mainly_sea(i,j))  bc_fac = 0.001 ! low over land
-                         if ( .not. USE_SEASALT )  bc_fac = 0.0   ! not wanted!
+                         if ( .not. USES%SEASALT )  bc_fac = 0.0   ! not wanted!
                       end if
 
                       xn_adv(iem,i,j,k) =   xn_adv(iem,i,j,k) +&
@@ -1197,12 +1196,11 @@ real :: trend_o3=1.0, trend_co, trend_voc
      O3_logan=0.0
      O3_logan_emep=0.0
  
-     filename='Logan_P.nc'
      varname='O3'
-     call  ReadField_CDF(fileName,varname,O3_logan,nstart=month,kstart=1,kend=Nlevel_logan,interpol='zero_order', &
+     call  ReadField_CDF(LoganO3File,varname,O3_logan,nstart=month,kstart=1,kend=Nlevel_logan,interpol='zero_order', &
           needed=.true.,debug_flag=.false.)
      !interpolate vertically
-     call vertical_interpolate(filename,O3_logan,Nlevel_logan,O3_logan_emep,debug=.false.)
+     call vertical_interpolate(LoganO3File,O3_logan,Nlevel_logan,O3_logan_emep,debug=.false.)
      do k = 1, KMAX_MID
         do j = 1, ljmax
            do i = 1, limax
@@ -1278,7 +1276,7 @@ real :: trend_o3=1.0, trend_co, trend_voc
     endforall
 
     case (IBC_DUST_C,IBC_DUST_F)
-       if(USE_DUST)then
+       if(USES%DUST)then
 !         bc_data(:,:,:) = 0.0
 
 !dust are read from the results of a Global run
@@ -1298,11 +1296,11 @@ real :: trend_o3=1.0, trend_co, trend_voc
          else
             call CheckStop('IBC dust case error')
          end if
-         call  ReadField_CDF(fileName,varname,Dust_3D,nstart=month,kstart=1,kend=Nlevel_Dust,&
+         call  ReadField_CDF(DustFile,varname,Dust_3D,nstart=month,kstart=1,kend=Nlevel_Dust,&
               interpol='zero_order', needed=.true.,debug_flag=.false.)
 
          !interpolate vertically
-         call vertical_interpolate(filename,Dust_3D,Nlevel_Dust,Dust_3D_emep,debug=.false.)
+         call vertical_interpolate(DustFile,Dust_3D,Nlevel_Dust,Dust_3D_emep,debug=.false.)
 
 !has to convert from ug/m3 into mixing ratio. NB: Dust in Netcdf file has molwt = 200 g/mol
          conv_fac=ATWAIR/200.*1.E-9

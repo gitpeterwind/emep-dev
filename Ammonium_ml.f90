@@ -44,7 +44,7 @@ module Ammonium_ml
  !     sulphate, whereas with the old indices it was only free sulphate.
  !----------------------------------------------------------------------------
  !
- use ModelConstants_ml   , only : CHEMTMIN, CHEMTMAX   &! Temp. range
+ use Config_module   , only : CHEMTMIN, CHEMTMAX   &! Temp. range
                                  , PPB             &! unit factors
                                  , KCHEMTOP            &! k=2 - top of chemistry
                                  , KMAX_MID                ! K=20 at ground

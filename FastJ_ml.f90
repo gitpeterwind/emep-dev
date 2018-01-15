@@ -3286,7 +3286,7 @@
         use LandDefs_ml,    only: LandType, LandDefs
         use Landuse_ml,    only: LandCover
         use MetFields_ml, only : ps ,foundcloudwater,q,th,lwc,cc3dmax
-        use ModelConstants_ml,    only : KMAX_BND,KMAX_MID,KCHEMTOP, METSTEP
+        use Config_module,    only : KMAX_BND,KMAX_MID,KCHEMTOP, METSTEP
         use NetCDF_ml, only :ReadField_CDF
         use Par_ml,           only: me,LIMAX, LJMAX
         use PhysicalConstants_ml, only :KAPPA, RGAS_KG, GRAV
