@@ -16,16 +16,17 @@
 !-------------------------------------------------------------------------------
 
    use CheckStop_ml,      only: CheckStop
-   use GridValues_ml    , only : glat
+   use GridValues_ml    , only : glat, A_bnd, B_bnd
    use Io_ml,           only : IO_DJ, open_file, ios
    use LocalVariables_ml, only : Grid  ! => izen
-   use MetFields_ml           , only : cc3d,cc3dmax,z_bnd
+   use MetFields_ml           , only : cc3d,cc3dmax,z_bnd,ps
    use Config_module,    only: TXTLEN_FILE, KMAX_MID, KCHEMTOP, NPROC,&
                                    jcl1kmFile,jcl3kmFile,jclearFile
    use MPI_Groups_ml      , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_INTEGER&
                                      ,MPI_COMM_CALC, IERROR
    use Par_ml      ,    only : me,LIMAX,LJMAX
    use SmallUtils_ml,     only: key2str
+   use Functions_ml,     only: StandardAtmos_km_2_kPa
    implicit none
    private
 
@@ -33,7 +34,8 @@
              NRCPHOT      = 17   ! Number of photolytic reactions
    
    integer, public, parameter:: NzPHODIS=20 !number of heights defined in the input files
-   real, save, public :: zPHODIS(NzPHODIS) !heights of the input files, assumed constants
+   real, save, public :: zPHODIS(NzPHODIS) !heights of the input files, in km assumed constants
+   real, save, public :: P_PHODIS(NzPHODIS) !heights of the input files, in Pa
 
    real, allocatable,save,public, dimension(:,:) &
          :: rcphot       ! photolysis rates    -   main output
@@ -129,11 +131,17 @@
 
         CALL MPI_BCAST(zPHODIS  ,8*NzPHODIS,MPI_BYTE,0,MPI_COMM_CALC,IERROR) 
         CALL MPI_BCAST(dj  ,8*NPHODIS*NzPHODIS*HORIZON*NLAT,MPI_BYTE,0,MPI_COMM_CALC,IERROR) 
-        zPHODIS = 1000.0*zPHODIS !km->m
-!        write(*,*)'zPHODIS ',(kz,zPHODIS(kz),kz=1,NzPHODIS)
+!        write(*,*)'zPHODIS, P_PHODIS ',(kz,zPHODIS(kz),P_PHODIS(kz),kz=1,NzPHODIS)
 
+        if(first_call)then
+           !convert from z in meters to pressure
+           do kz = 1,NzPHODIS             
+              P_PHODIS(kz) = 1000*StandardAtmos_km_2_kPa(zPHODIS(kz)) ! P_PHODIS in Pa
+              !write(*,*)'PHODIS LEVELS ',kz,P_PHODIS(kz),zPHODIS(kz)
+           enddo
+        endif
 
-!    Open, read and broadcast light cloud rates
+        !   Open, read and broadcast light cloud rates
 !---------------
 
         if(me == 0)then
@@ -162,8 +170,6 @@
         end if   ! me = 0
 
         CALL MPI_BCAST(djcl1  ,8*NPHODIS*NzPHODIS*HORIZON,MPI_BYTE,0,MPI_COMM_CALC,IERROR) 
-
-
 
 
 !    Open, read and broadcast dense cloud rates
@@ -195,8 +201,6 @@
         
         CALL MPI_BCAST(djcl3  ,8*NPHODIS*NzPHODIS*HORIZON,MPI_BYTE,0,MPI_COMM_CALC,IERROR) 
         
-
-!       if(me == 0) then
 !        do k=1,KMAX_MID
 !           write(6,*) 'jverdi i niv. k',k
 !           write(6,*) (dj(3,1,k,nr),nr=1,4)
@@ -224,18 +228,18 @@
                ,iclcat    ! cloud type
 
         real clear        ! clear sky fraction
-        integer k2zPHODIS(KMAX_MID)! converts model level k into PHODIS height index
+        integer k2P_PHODIS(KMAX_MID)! converts model level k into PHODIS height index
         logical, save ::firstc=.true.
 
-! make conversion between zPHODIS heights and model level (k) for this (i,j)
+! make conversion between P_PHODIS heights and model level (k) for this (i,j)
 ! should be fast and does not need to be too accurate (smooth field) -> no interpolation
         do k=KMAX_MID,1,-1
-           k2zPHODIS(k) = NzPHODIS    
+           k2P_PHODIS(k) = NzPHODIS    
            do iz = NzPHODIS,1,-1
-              if(z_bnd(i,j,k)<zPHODIS(iz))exit
-              k2zPHODIS(k) = iz       
+              if(A_bnd(k)+B_bnd(k)*ps(i,j,1)>P_PHODIS(iz))exit
+              k2P_PHODIS(k) = iz       
            enddo
-!           if(firstc .and. me==0)write(*,*)'PHODIS level conversion ',k,k2zPHODIS(k),z_bnd(i,j,k),zPHODIS(k2zPHODIS(k))
+!           if(firstc and me==0)write(*,*)'PHODIS level conversion ',k,k2P_PHODIS(k),A_bnd(k)+B_bnd(k)*ps(i,j,1),P_PHODIS(k2P_PHODIS(k))
         enddo
         firstc=.false.
 
@@ -294,15 +298,15 @@
             if(iclcat == 0)then
               do k = KCHEMTOP,KMAX_MID
                 do n=1,NRCPHOT
-                  rcphot(n,k)  = dj(n,k2zPHODIS(k),Grid%izen,la)
+                  rcphot(n,k)  = dj(n,k2P_PHODIS(k),Grid%izen,la)
                 end do
               end do
             else if(iclcat == 1)then
               clear = cc3dmax(i,j,KMAX_MID)
               do k = KCHEMTOP,KMAX_MID
                 do n=1,NRCPHOT
-                  rcphot(n,k)  = (1. + clear*djcl1(n,k2zPHODIS(k),Grid%izen)) &
-                                * dj(n,k2zPHODIS(k),Grid%izen,la)
+                  rcphot(n,k)  = (1. + clear*djcl1(n,k2P_PHODIS(k),Grid%izen)) &
+                                * dj(n,k2P_PHODIS(k),Grid%izen,la)
                 end do  !  n
               end do   !  k
 
@@ -311,8 +315,8 @@
               clear = cc3dmax(i,j,KMAX_MID)
               do k = KCHEMTOP,KMAX_MID
                 do n=1,NRCPHOT
-                  rcphot(n,k)  = (1. +     clear*djcl3(n,k2zPHODIS(k),Grid%izen)) &
-                               * dj(n,k2zPHODIS(k),Grid%izen,la)
+                  rcphot(n,k)  = (1. +     clear*djcl3(n,k2P_PHODIS(k),Grid%izen)) &
+                               * dj(n,k2P_PHODIS(k),Grid%izen,la)
                  end do
               end do
             end if

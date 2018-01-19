@@ -593,7 +593,7 @@ type(names), public, save :: InputFiles(Size_InputFiles)
 !1) add a line just here below, XXFile = '/default/Path/Default.name'
 !2) add the XXFile in NAMELIST /ModelConstants_config/
 !3) add a call associate_File(XXFile) near the end of Config_ModelConstants
-!4) In the routine using the file, add the XXFile under  "use ModelConstants"
+!4) In the routine using the file, add the XXFile under  "use Config_module"
 !5) replace the name you used in the routine with XX_File
 character(len=TXTLEN_FILE), target, save, public :: femisFile = 'DataDir/femis.dat'
 character(len=TXTLEN_FILE), target, save, public :: Vertical_levelsFile = 'DataDir/Vertical_levels20.txt'
@@ -629,6 +629,7 @@ character(len=TXTLEN_FILE), target, save, public :: NdepFile = 'DataDir/AnnualNd
 character(len=TXTLEN_FILE), target, save, public :: lightningFile = 'DataDir/lt21-nox.datMM'
 character(len=TXTLEN_FILE), target, save, public :: LoganO3File = 'DataDir/Logan_P.nc'
 character(len=TXTLEN_FILE), target, save, public :: DustFile = 'DataDir/Dust.nc'
+character(len=TXTLEN_FILE), target, save, public :: TopoFile = 'DataDir/GRID/topography.nc'
 
 !----------------------------------------------------------------------------
 contains
@@ -697,7 +698,8 @@ subroutine Config_ModelConstants(iolog)
    ,NdepFile&
    ,lightningFile&
    ,LoganO3File&
-   ,DustFile
+   ,DustFile&
+   ,TopoFile
 
   NAMELIST /Machine_config/ DataPath
 
@@ -825,12 +827,16 @@ subroutine Config_ModelConstants(iolog)
   call associate_File(lightningFile)
   call associate_File(LoganO3File)
   call associate_File(DustFile)
+  call associate_File(TopoFile)
 
   do i = 1,size(InputFiles)
      if(associated(InputFiles(i)%filename))then
         InputFiles(i)%filename = key2str(InputFiles(i)%filename,'DataDir',DataDir)
+        InputFiles(i)%filename = key2str(InputFiles(i)%filename,'GRID',GRID)
      endif
   enddo
+
+
 end subroutine Config_ModelConstants
 
 subroutine associate_File(FileName)
