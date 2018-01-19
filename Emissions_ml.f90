@@ -1602,7 +1602,14 @@ subroutine newmonth
 
     use_lonlat_femis = emis_inputlist(iemislist)%use_lonlat_femis
 
-    if(emis_inputlist(iemislist)%type == "sectors")then !sectors is default
+    if(emis_inputlist(iemislist)%type == "sectors" .or.&
+       emis_inputlist(iemislist)%type == "GNFRsectors" .or.&
+       emis_inputlist(iemislist)%type == "SNAPsectors" )then !sectors is default
+
+       if((SECTORS_NAME=='GNFR'.and.emis_inputlist(iemislist)%type == "SNAPsectors") .or.&
+           (SECTORS_NAME=='SNAP'.and.emis_inputlist(iemislist)%type == "GNFRsectors"))then
+          call StopAll("monthly emissions and mixing GNFR and SNAP not implemented ")
+       endif
     !Read monthly emission snap sector files
 
     !reset emissions (except flat emissions!)
