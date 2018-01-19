@@ -199,6 +199,7 @@ type(emis_in), public, dimension(5) :: emis_inputlist = emis_in()
 character(len=40), dimension(20), public, save  :: SecEmisOutPoll = "NOTSET"
 
 character(len=40), public, save   :: SECTORS_NAME='SNAP'
+character(len=40), public, save   :: USE_SECTORS_NAME='NOTSET'
 
 integer, public, parameter :: &
   TXTLEN_NAME =  50, &
@@ -340,10 +341,6 @@ character(len=*), parameter, public :: &
 !IN-TESTING (reset in NML if wanted)
 !) Emissions. Standard =ascii emislist. CdfFractions possible for INERIS
 !  and new cdf emission system in testing. Reset in config_ files
-! EMIS_TEST can be merged with EMIS_SOURCE after tests
-character(len=20), save, public :: &
-  EMIS_SOURCE = "Mixed",  & ! "Mixed" or old formats: "emislist" or "CdfFractions"
-  EMIS_TEST   = "None"      ! "None" or "CdfSnap"
 Logical , save, public :: &
   EMIS_OUT    = .false.     ! output emissions in separate files (memory demanding)
 
@@ -662,7 +659,8 @@ subroutine Config_ModelConstants(iolog)
    ,SEAFIX_GEA_NEEDED     & ! only if problems, see text above.
    ,BGND_CH4              & ! Can reset background CH4 values
    ,SKIP_RCT              & ! Can  skip some rct
-   ,EMIS_SOURCE, EMIS_TEST, EMIS_OUT, emis_inputlist, EmisDir &
+   ,EMIS_OUT, emis_inputlist, EmisDir &
+   ,USE_SECTORS_NAME      & !to force a specific sector (SNAP or GNFR)
    ,SecEmisOutPoll        & ! to output sectorwise emissions
    ,FLUX_VEGS             & ! Allows user to add veg categories for eg IAM ouput
    ,FLUX_IGNORE           & ! Specify which landcovers don't need FLUX

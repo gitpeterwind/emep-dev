@@ -138,6 +138,18 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+19th Jan 2018 Peter
+
+A specific sector category (SNAP or GNFR) can be forced in config for example:
+USE_SECTORS_NAME = 'SNAP',
+
+Even if the emissions are defined in GNFR, they will be mapped over to SNAP, so 
+that everything looks like SNAP was used. The concentrations should be identical, 
+because so far we haven't introduce any specific parametrization for GNFR.
+
+Also removed the Emis_SOURCE and Emis_TEST flags, that were no more in use.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 21st Dec     2017 Dave  rv4_16
 
 ** TAGGING as rv4_16 **
