@@ -138,6 +138,12 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+26th Jan 2018 Peter, John
+
+Corrected bug in wrf met reading for snow. Was using SNOWNC which is accumulated since 
+the start of the run, while SNOWH should have been used.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 19th Jan 2018 Peter
 
 A specific sector category (SNAP or GNFR) can be forced in config for example:

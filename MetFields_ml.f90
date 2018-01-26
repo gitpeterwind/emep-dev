@@ -1034,7 +1034,7 @@ if(USE_WRF_MET_NAMES)then
    met(ix_ws_10m)%name            = 'U10'
    met(ix_SoilWater_uppr)%name    = 'SMI1'!take first level. Do not change name! (name set in Getmeteofield)
    met(ix_SoilWater_deep)%name    = 'SMI3'!take third level. Do not change name! (name set in Getmeteofield)
-   met(ix_sdepth)%name            = 'SNOWNC'!snow and ice in mm
+   met(ix_sdepth)%name            = 'SNOWH'!snowdepth in m
    met(ix_ice_nwp)%name           = 'SEAICE'!flag 0 or 1
 !... addmore
 end if

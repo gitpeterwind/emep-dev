@@ -695,7 +695,6 @@ subroutine MeteoRead()
         surface_precip = max(0.0,(surface_precip - surface_precip_old))*0.001/(METSTEP*3600)! get only the variation. mm ->m/s
       end if
       surface_precip_old = buff ! Accumulated rain in WRF
-      sdepth=sdepth*0.001 !mm->m
       ice_nwp = ice_nwp*100!flag->%
       !smooth qrain, because it is instantaneous but rain may move
       do k=1,kmax_mid
