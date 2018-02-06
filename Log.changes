@@ -142,6 +142,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 config_EMEPSTD.nml
  - commented out GRID line in ColumnSource_config that was causing problems
+ - added BIDIR and BiDir variables in preparation for future step
 
 ColumnSource_ml.f90
  - added dtxt='ColSrcConf' to help debug outputs
