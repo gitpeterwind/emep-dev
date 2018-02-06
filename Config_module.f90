@@ -174,6 +174,9 @@ type, public :: emep_debug
    character(len=20)     :: SPEC = 'O3'       ! default.
    character(len=20)     :: datetxt = '-'       ! default.
    integer               :: ISPEC = -999      ! Will be set after NML
+  ! In development
+   logical :: BIDIR       = .false.  !< FUTURE Bi-directional exchange
+   character(len=20)      :: BiDirMethod = 'NOTSET'  ! FUTURE
 end type emep_debug
 type(emep_debug), public, save :: DEBUG
 
@@ -610,6 +613,7 @@ character(len=TXTLEN_FILE), target, save, public :: lightningFile = 'DataDir/lt2
 character(len=TXTLEN_FILE), target, save, public :: LoganO3File = 'DataDir/Logan_P.nc'
 character(len=TXTLEN_FILE), target, save, public :: DustFile = 'DataDir/Dust.nc'
 character(len=TXTLEN_FILE), target, save, public :: TopoFile = 'DataDir/GRID/topography.nc'
+character(len=TXTLEN_FILE), target, save, public :: BiDirInputFile = 'NOTSET' ! FUTURE
 
 !----------------------------------------------------------------------------
 contains
@@ -806,6 +810,7 @@ subroutine Config_ModelConstants(iolog)
   call associate_File(jcl3kmFile)
   call associate_File(NdepFile)
   call associate_File(lightningFile)
+  call associate_File(BiDirInputFile)  ! FUTURE INPUT
   call associate_File(LoganO3File)
   call associate_File(DustFile)
   call associate_File(TopoFile)
