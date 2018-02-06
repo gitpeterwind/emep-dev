@@ -1,0 +1,63 @@
+&OutputConcs_config
+! freq: YEAR='Y', MON='M', DAY='D', HOUR='H', HOUR_INST='I'
+!--MY_OUTPUTS=="MACC_POL": hourly D2D output
+OutputConcs= 
+  'O3'             ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'H',
+  'NO2'            ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'H',
+  'NO'             ,'ug'  ,'2d','AIR_CONCS','SPEC' ,'H',
+  'PMFINE'        ,'ug'  ,'2d' ,'AIR_CONCS','GROUP','',! needed by PM25_rh50
+  'PM10'          ,'ug'  ,'2d' ,'AIR_CONCS','GROUP','',! needed by PM10_rh50
+  'SURF_PM25water','ug'  ,'2d' ,'PM25water','MISC' ,'',! needed by    *_rh50
+  'SURF_ug_PM25_rh50','ug','2d','PM25_rh50','MISC' ,'H',
+  'SURF_ug_PM10_rh50','ug','2d','PM10_rh50','MISC' ,'H',
+  'HMIX'           ,'m'   ,'2d','HMIX'     ,'MISC' ,'H',
+  'Z_TOP'          ,'m'   ,'3d','Z_BND'    ,'MISC' ,'H',
+  'O3'             ,'ug'  ,'3d','AIR_CONCS','SPEC' ,'H',
+  'NO2'            ,'ug'  ,'3d','AIR_CONCS','SPEC' ,'H',
+  'NO'             ,'ug'  ,'3d','AIR_CONCS','SPEC' ,'H',
+  'OX'             ,'ug'  ,'3d','AIR_CONCS','GROUP','H',
+  'NOX'            ,'ugN' ,'3d','AIR_CONCS','GROUP','H',
+  'PMFINE'         ,'ug'  ,'3d','AIR_CONCS','GROUP','H',
+  'PM10'           ,'ug'  ,'3d','AIR_CONCS','GROUP','H',
+  'PPM_C'          ,'ug'  ,'3d','AIR_CONCS','GROUP','H',
+OutputMisc=
+  'precipitations' ,'MET3D','precipitation'    ,'-','mm'   ,-99,-99,T,1.0,F,'H',
+  'rho_airdensity' ,'MET3D','air_density'      ,'-','kg/m3',-99,-99,F,1.0,T,'H',
+  'J(NO2)'         ,'MET3D','special3d1'       ,'-','1/s'  ,-99,-99,F,1.0,T,'H',
+  'wind_speed'     ,'MET3D','wind_speed_3D'    ,'-','m/s'  ,-99,-99,F,1.0,T,'H',
+  'Kz'             ,'MET3D','Kz'               ,'-','m2/s' ,-99,-99,F,1.0,T,'H',
+  'u_wind'         ,'MET3D','u_wind_3D'        ,'-','m/s'  ,-99,-99,F,1.0,T,'H',
+  'v_wind'         ,'MET3D','v_wind_3D'        ,'-','m/s'  ,-99,-99,F,1.0,T,'H',
+  'inv_wind_speed' ,'MET3D','inv_wind_speed_3D','-','s/m'  ,-99,-99,F,1.0,T,'H',
+  'inv_ws10m'      ,'MET2D','inv_u10'          ,'-','m/s'  ,-99,-99,F,1.0,T,'H',
+  'ws10m'          ,'MET2D','u10'              ,'-','m/s'  ,-99,-99,F,1.0,T,'H',
+  'inv_L'          ,'MET2D','special2d1'       ,'-','1/m'  ,-99,-99,F,1.0,T,'H',
+  'av_logz0'       ,'MET2D','special2d2'       ,'-','log_m',-99,-99,F,1.0,T,'H',
+  'met2d_ustar_nwp','MET2D','ustar_nwp'        ,'-','m/s'  ,-99,-99,F,1.0,T,'H',
+  'met2d_t2m'      ,'MET2D','temperature_2m'   ,'-','degK' ,-99,-99,F,1.0,T,'H',
+  'Psurf_d'        ,'PSURF','-'                ,'-','hPa'  ,-99,-99,F,1.0,T,'H',
+&end
+&OutputDep_config
+! freq: YEAR='Y', MON='M', DAY='D', HOUR='H', HOUR_INST='I'
+  DDEP_ECOS =
+    'Grid     ', 'YMD',
+  DDEP_WANTED =
+    'SOX      ', 'GROUP', 'mgS',
+    'OXN      ', 'GROUP', 'mgN',
+    'RDN      ', 'GROUP', 'mgN',
+  WDEP_WANTED = 
+    'PREC'     ,'PREC' , 'mm','YMDH',
+    'SOX      ','GROUP','mgS','YMD',
+    'OXN      ','GROUP','mgN','YMD',
+    'RDN      ','GROUP','mgN','YMD',
+&end
+&OutputSize_config
+! hour_DOMAIN=60,107,11,58, !=[istart,iend,jstart,jend], default RUNDOMAIN+[1,-1,1,-1]
+!--- uEMEP output domain (x0,x1,y0,y1): (3.25W..34E)x(56.5N..72.125N)
+!  fullrun_DOMAIN = 108, 257, 213, 338,
+!  month_DOMAIN   = 108, 257, 213, 338,
+!  day_DOMAIN     = 108, 257, 213, 338,
+!  hour_DOMAIN    = 108, 257, 213, 338,
+!------------
+num_lev3d=7,lev3d_from_surface=T,lev3d=1,2,3,4,5,6,7, 
+&end
