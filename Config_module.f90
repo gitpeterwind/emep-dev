@@ -125,6 +125,10 @@ type, public :: emep_useconfig
 ! Selection of method for Whitecap calculation for Seasalt
   character(len=15) :: WHITECAPS  = 'Callaghan'
 
+! In development
+   logical :: BIDIR       = .false.  !< FUTURE Bi-directional exchange
+   character(len=20)      :: BiDirMethod = 'NOTSET'  ! FUTURE
+
 end type emep_useconfig
 type(emep_useconfig), public, save :: USES
 
@@ -174,9 +178,6 @@ type, public :: emep_debug
    character(len=20)     :: SPEC = 'O3'       ! default.
    character(len=20)     :: datetxt = '-'       ! default.
    integer               :: ISPEC = -999      ! Will be set after NML
-  ! In development
-   logical :: BIDIR       = .false.  !< FUTURE Bi-directional exchange
-   character(len=20)      :: BiDirMethod = 'NOTSET'  ! FUTURE
 end type emep_debug
 type(emep_debug), public, save :: DEBUG
 
