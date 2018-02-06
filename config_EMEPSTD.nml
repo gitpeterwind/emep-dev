@@ -220,8 +220,8 @@
 !------------------------------
   flocdef="DataDir/volcano_location.csv_20160610",
   femsdef="DataDir/volcano_emission.csv_20160610",
-  topo_nc="DataDir/GRID/topography.nc",
-  need_topo=T, ! stop simulation if topo_nc not found
+!OLD  topo_nc="DataDir/GRID/topography.nc",
+  need_topo=F, ! stop simulation if topo_nc not found
 ! NMAX_LOC=-1, ! estimate from lines in flocdef
 ! NMAX_EMS=-1, ! estiamte from lines in femsdef
 &end
