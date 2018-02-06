@@ -138,6 +138,18 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6th Feb 2018, Dave
+
+config_EMEPSTD.nml
+ - commented out GRID line in ColumnSource_config that was causing problems
+
+ColumnSource_ml.f90
+ - added dtxt='ColSrcConf' to help debug outputs
+
+NEW: UPDATE_README.md - start of text to explain rv4.17 update
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26th Jan 2018 Peter, John
 
 Corrected bug in wrf met reading for snow. Was using SNOWNC which is accumulated since 
