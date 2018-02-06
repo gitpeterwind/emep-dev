@@ -19,7 +19,7 @@ use GridValues_ml,    only: dA,dB,xm2, dhs1i, glat, glon, projection, extendarea
 use MetFields_ml,     only: ps,roa
 use Config_module,only: KMAX_MID, KMAX_BND,USES, USE_uEMEP, uEMEP, IOU_HOUR, IOU_HOUR_INST,&
                             IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY,IOU_HOUR,IOU_HOUR_INST, &
-                            KMAX_MID,  MasterProc,dt_advec, RUNDOMAIN
+                            KMAX_MID,  MasterProc,dt_advec, RUNDOMAIN, runlabel1
 use MPI_Groups_ml
 use NetCDF_ml,        only: Real4,Out_netCDF
 use OwnDataTypes_ml,  only: Deriv, Npoll_uemep_max, Nsector_uemep_max
@@ -209,6 +209,10 @@ subroutine init_uEMEP
      loc_frac_full=0.0
      allocate(loc_tot_full(LIMAX,LJMAX,KMAX_MID-uEMEP%Nvert+1:KMAX_MID,uEMEP%Npoll))
      loc_tot_full=0.0
+  else
+     !need to be allocated to avoid debugging error
+     allocate(loc_frac_full(1,1,1,1,1,1))
+     allocate(loc_tot_full(1,1,1,1))
   endif
   
 end subroutine init_uEMEP
@@ -230,15 +234,15 @@ subroutine out_uEMEP(iotyp)
 
   if(COMPUTE_LOCAL_TRANSPORT)allocate(tmp_ext(-uEMEP%dist:uEMEP%dist,-uEMEP%dist:uEMEP%dist,1-uEMEP%dist:LIMAX+uEMEP%dist,1-uEMEP%dist:LJMAX+uEMEP%dist,KMAX_MID-uEMEPNvertout+1:KMAX_MID))
   if(iotyp==IOU_HOUR_INST .and. uEMEP%HOUR_INST)then
-     fileName='uEMEP_hour_inst.nc'
+     fileName=trim(runlabel1)//'_uEMEP_hourInst.nc'
   else if(iotyp==IOU_HOUR .and. uEMEP%HOUR)then
-     fileName='uEMEP_hour.nc'
+     fileName=trim(runlabel1)//'_uEMEP_hour.nc'
   else if(iotyp==IOU_DAY .and. uEMEP%DAY)then
-     fileName='uEMEP_day.nc'
+     fileName=trim(runlabel1)//'_uEMEP_day.nc'
   else if(iotyp==IOU_MON .and. uEMEP%MONTH)then
-     fileName='uEMEP_month.nc'
+     fileName=trim(runlabel1)//'_uEMEP_month.nc'
   else if(iotyp==IOU_YEAR .and. uEMEP%YEAR)then
-     fileName='uEMEP_full.nc'
+     fileName=trim(runlabel1)//'_uEMEP_full.nc'
   else
      return
   endif
@@ -448,13 +452,22 @@ subroutine out_uEMEP(iotyp)
               enddo
               write(def1%name,"(A,I2.2,A)")trim(uEMEP%poll(ipoll)%emis)//'_sec',isec,'_local_transport'
               if(isec==0)write(def1%name,"(A,I2.2,A)")trim(uEMEP%poll(ipoll)%emis)//'_local_transport'
-              scale=1.0/av_fac_hour
+              if(abs(av_fac_hour)>1.E-5)then
+                 scale=1.0/av_fac_hour
+              else
+                 scale=0.0
+              endif
+              if(abs(av_fac_hour)<1.E-5)scale=0.0
               call Out_netCDF(iotyp,def1,ndim,kmax,loc_poll_to,scale,CDFtype,dimSizes,dimNames,out_DOMAIN=uEMEP%DOMAIN,&
                    fileName_given=trim(fileName),overwrite=.false.,create_var_only=.false.)       
            endif
         enddo
         !              loc_tot_hour=loc_tot_hour/av_fac_hour
-        scale=1.0/av_fac_hour
+        if(abs(av_fac_hour)>1.E-5)then
+           scale=1.0/av_fac_hour
+        else
+           scale=0.0
+        endif
         def1%name=trim(uEMEP%poll(ipoll)%emis)
         call Out_netCDF(iotyp,def1,ndim_tot,kmax,loc_tot_hour(1,1,KMAX_MID-uEMEPNvertout+1,ipoll),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=uEMEP%DOMAIN,&
              fileName_given=trim(fileName),overwrite=.false.,create_var_only=.false.) 
@@ -499,13 +512,21 @@ subroutine out_uEMEP(iotyp)
               enddo
               write(def1%name,"(A,I2.2,A)")trim(uEMEP%poll(ipoll)%emis)//'_sec',isec,'_local_transport'
               if(isec==0)write(def1%name,"(A,I2.2,A)")trim(uEMEP%poll(ipoll)%emis)//'_local_transport'
-              scale=1.0/av_fac_day
+              if(abs(av_fac_day)>1.E-5)then
+                 scale=1.0/av_fac_day
+              else
+                 scale=0.0
+              endif
               call Out_netCDF(iotyp,def1,ndim,kmax,loc_poll_to,scale,CDFtype,dimSizes,dimNames,out_DOMAIN=uEMEP%DOMAIN,&
                    fileName_given=trim(fileName),overwrite=.false.,create_var_only=.false.)       
            endif
         enddo
 
-        scale=1.0/av_fac_day
+        if(abs(av_fac_day)>1.E-5)then
+           scale=1.0/av_fac_day
+        else
+           scale=0.0
+        endif
         def2%name=trim(uEMEP%poll(ipoll)%emis)
         call Out_netCDF(iotyp,def2,ndim_tot,kmax,loc_tot_day(1,1,KMAX_MID-uEMEPNvertout+1,ipoll),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=uEMEP%DOMAIN,&
              fileName_given=trim(fileName),overwrite=.false.,create_var_only=.false.)       
@@ -550,13 +571,21 @@ subroutine out_uEMEP(iotyp)
               enddo
               write(def1%name,"(A,I2.2,A)")trim(uEMEP%poll(ipoll)%emis)//'_sec',isec,'_local_transport'
               if(isec==0)write(def1%name,"(A,I2.2,A)")trim(uEMEP%poll(ipoll)%emis)//'_local_transport'
-              scale=1.0/av_fac_month
+              if(abs(av_fac_month)>1.E-5)then
+                 scale=1.0/av_fac_month
+              else
+                 scale=0.0
+              endif
               call Out_netCDF(iotyp,def1,ndim,kmax,loc_poll_to,scale,CDFtype,dimSizes,dimNames,out_DOMAIN=uEMEP%DOMAIN,&
                    fileName_given=trim(fileName),overwrite=.false.,create_var_only=.false.)       
            endif
         enddo
 
-        scale=1.0/av_fac_month
+       if(abs(av_fac_month)>1.E-5)then
+           scale=1.0/av_fac_month
+        else
+           scale=0.0
+        endif
         def2%name=trim(uEMEP%poll(ipoll)%emis)
         call Out_netCDF(iotyp,def2,ndim_tot,kmax,loc_tot_month(1,1,KMAX_MID-uEMEPNvertout+1,ipoll),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=uEMEP%DOMAIN,&
              fileName_given=trim(fileName),overwrite=.false.,create_var_only=.false.)       
@@ -605,13 +634,21 @@ subroutine out_uEMEP(iotyp)
               enddo
               write(def1%name,"(A,I2.2,A)")trim(uEMEP%poll(ipoll)%emis)//'_sec',isec,'_local_transport'
               if(isec==0)write(def1%name,"(A,I2.2,A)")trim(uEMEP%poll(ipoll)%emis)//'_local_transport'
-              scale=1.0/av_fac_full
-              call Out_netCDF(iotyp,def1,ndim,kmax,loc_poll_to,scale,CDFtype,dimSizes,dimNames,out_DOMAIN=uEMEP%DOMAIN,&
+              if(abs(av_fac_full)>1.E-5)then
+                 scale=1.0/av_fac_full
+              else
+                 scale=0.0
+              endif
+             call Out_netCDF(iotyp,def1,ndim,kmax,loc_poll_to,scale,CDFtype,dimSizes,dimNames,out_DOMAIN=uEMEP%DOMAIN,&
                    fileName_given=trim(fileName),overwrite=.false.,create_var_only=.false.)       
            endif
         enddo
 
-        scale=1.0/av_fac_full
+        if(abs(av_fac_full)>1.E-5)then
+           scale=1.0/av_fac_full
+        else
+           scale=0.0
+        endif
         def1%name=trim(uEMEP%poll(ipoll)%emis)
         call Out_netCDF(iotyp,def2,ndim_tot,kmax,loc_tot_full(1,1,KMAX_MID-uEMEPNvertout+1,ipoll),scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=uEMEP%DOMAIN,&
              fileName_given=trim(fileName),overwrite=.false.,create_var_only=.false.)   

@@ -19,7 +19,7 @@
    use GridValues_ml    , only : glat, A_bnd, B_bnd
    use Io_ml,           only : IO_DJ, open_file, ios
    use LocalVariables_ml, only : Grid  ! => izen
-   use MetFields_ml           , only : cc3d,cc3dmax,z_bnd,ps
+   use MetFields_ml           , only : cc3d,cc3dmax,z_bnd,ps,special3d
    use Config_module,    only: TXTLEN_FILE, KMAX_MID, KCHEMTOP, NPROC,&
                                    jcl1kmFile,jcl3kmFile,jclearFile
    use MPI_Groups_ml      , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_INTEGER&
@@ -328,6 +328,8 @@
 
 
           end if   !  end izen <  90 (daytime)  test
+
+          special3d(i,j,KCHEMTOP:KMAX_MID,1)=rcphot(IDNO2,KCHEMTOP:KMAX_MID)
 
     end subroutine setup_phot
   ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
