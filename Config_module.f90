@@ -8,7 +8,6 @@ module Config_module
 use Aerofunctions,        only: DpgV2DpgN
 use CheckStop_ml,         only: CheckStop
 use ChemSpecs,            only: species
-!!use emep_Config_mod,      only: PBL, EmBio, YieldModifications, LandCoverInputs, END_OF_EMEPDAY
 use Io_Nums_ml,           only: IO_NML, IO_LOG, IO_TMP
 use OwnDataTypes_ml,      only: typ_ss, uEMEP_type
 use Precision_ml,         only: dp
@@ -221,25 +220,9 @@ real, public, save :: CONVECTION_FACTOR = 1.0
 !-----------------------------------------------------------
 logical, public, save ::             &
   FORECAST              = .false.    & ! reset in namelist
-! ,USE_SOILWATER         = .false.    &
-! ,USE_SEASALT           = .true.     &
-! ,USE_CONVECTION        = .false.    & ! false works best for Euro runs,
-!
-! Might sometimes change for scenario runs (e.g. EnsClim):
-! ,USE_AIRCRAFT_EMIS  = .true.        & ! Needs global file, see manual
-! ,USE_LIGHTNING_EMIS = .true.        &
-!
-! More experimental:
-! ,USE_ROADDUST       = .false.       & ! TNO Road Dust routine. So far with simplified "climate-correction" factor
-! ,USE_DUST           = .false.       & ! Experimental
  ,TEGEN_DATA         = .true.        & ! Interpolate global data to make dust if  USE_DUST=.true.
  ,INERIS_SNAP1       = .false.       & !(EXP_NAME=="TFMM"), & ! Switches off decadal trend
  ,INERIS_SNAP2       = .false.       & !(EXP_NAME=="TFMM"), & ! Allows near-zero summer values
-! ,USE_ASH            = .true.        & ! Ash from historical Volcanic Eruption
-! ,USE_PreADV         = .false.       & ! Column Emissions are preadvected when winds are very strong 
-! ,USE_NOCHEM         = .false.       & ! Turns of chemistry for emergency runs
-! ,USE_AOD            = .false.       &
-! ,USE_POLLEN         = .false.       & ! EXPERIMENTAL. Only works if start Jan 1
  ,USE_AMINEAQ        = .false.       & ! MKPS
  ,ANALYSIS           = .false.       & ! EXPERIMENTAL: 3DVar data assimilation
  ,USE_FASTJ          = .false.       & ! use FastJ_ml for computing rcphot
