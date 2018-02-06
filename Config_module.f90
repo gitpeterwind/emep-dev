@@ -139,6 +139,7 @@ type, public :: emep_debug
     ,AQUEOUS         = .false. &
     ,BCS             = .false. & ! BoundaryConditions
     ,BIO             = .false. & !< Biogenic emissions
+    ,BIDIR           = .false. & !< FUTURE Bi-directional exchange
     ,COLUMN          = .false. & !  Used in Derived_ml for column integration
     ,COLSRC          = .false. & !  Volcanic emissions and Emergency scenarios
     ,DERIVED         = .false. & !
