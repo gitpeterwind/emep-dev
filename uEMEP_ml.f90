@@ -19,7 +19,7 @@ use GridValues_ml,    only: dA,dB,xm2, dhs1i, glat, glon, projection, extendarea
 use MetFields_ml,     only: ps,roa
 use Config_module,only: KMAX_MID, KMAX_BND,USES, USE_uEMEP, uEMEP, IOU_HOUR, IOU_HOUR_INST,&
                             IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY,IOU_HOUR,IOU_HOUR_INST, &
-                            KMAX_MID,  MasterProc,dt_advec, RUNDOMAIN
+                            KMAX_MID,  MasterProc,dt_advec, RUNDOMAIN, runlabel1
 use MPI_Groups_ml
 use NetCDF_ml,        only: Real4,Out_netCDF
 use OwnDataTypes_ml,  only: Deriv, Npoll_uemep_max, Nsector_uemep_max
@@ -234,15 +234,15 @@ subroutine out_uEMEP(iotyp)
 
   if(COMPUTE_LOCAL_TRANSPORT)allocate(tmp_ext(-uEMEP%dist:uEMEP%dist,-uEMEP%dist:uEMEP%dist,1-uEMEP%dist:LIMAX+uEMEP%dist,1-uEMEP%dist:LJMAX+uEMEP%dist,KMAX_MID-uEMEPNvertout+1:KMAX_MID))
   if(iotyp==IOU_HOUR_INST .and. uEMEP%HOUR_INST)then
-     fileName='uEMEP_hour_inst.nc'
+     fileName=trim(runlabel1)//'_uEMEP_hourInst.nc'
   else if(iotyp==IOU_HOUR .and. uEMEP%HOUR)then
-     fileName='uEMEP_hour.nc'
+     fileName=trim(runlabel1)//'_uEMEP_hour.nc'
   else if(iotyp==IOU_DAY .and. uEMEP%DAY)then
-     fileName='uEMEP_day.nc'
+     fileName=trim(runlabel1)//'_uEMEP_day.nc'
   else if(iotyp==IOU_MON .and. uEMEP%MONTH)then
-     fileName='uEMEP_month.nc'
+     fileName=trim(runlabel1)//'_uEMEP_month.nc'
   else if(iotyp==IOU_YEAR .and. uEMEP%YEAR)then
-     fileName='uEMEP_full.nc'
+     fileName=trim(runlabel1)//'_uEMEP_full.nc'
   else
      return
   endif
