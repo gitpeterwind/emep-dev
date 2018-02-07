@@ -2,7 +2,9 @@
 SRCS ?=	\
 	AeroFunctions.f90 Aero_Vds_ml.f90 Ammonium_ml.f90 AOD_PM_ml.f90 \
 	Advection_ml.f90 AirEmis_ml.f90 AllocInit.f90 \
-	AOTnPOD_ml.f90 Aqueous_n_WetDep_ml.f90 BLPhysics_ml.f90 Biogenics_ml.f90 \
+	AOTnPOD_ml.f90 Aqueous_n_WetDep_ml.f90 \
+	BiDir_emep.f90 BiDir_module.f90 \
+	BLPhysics_ml.f90 Biogenics_ml.f90 \
 	BoundaryConditions_ml.f90 CellMet_ml.f90 CheckStop_ml.f90 ChemFields_ml.f90 \
 	ChemSpecs_wrapper.f90 CoDep_ml.f90 Country_ml.f90 \
 	ChemFunctions_ml.f90 CM_ChemRates_ml.f90 Convection_ml.f90 ColumnSource_ml.f90 \
