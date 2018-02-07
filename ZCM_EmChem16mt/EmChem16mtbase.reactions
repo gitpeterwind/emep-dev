@@ -395,8 +395,7 @@ rcemis:C5H8                        = C5H8    ; # Anthropogenic isoprene
 rcbio:C5H8                       = C5H8    ;
 *E: rcbio:BIOTERP                    = APINENE ;
 rcbio:NO                         = NO ;
-*FEB2012 rc_Rn222(k)                                = Rn222    ;
-*FEB2012 rc_Rnwater(k)                             = Rnwater    ;
+rcbio:NH3                         = NH3 ;   # for FUTURE BIDIR
 *
 * Add ammonia
 * FUTURE rcnh3(k)                          = NH3 ;  # hbNH3
