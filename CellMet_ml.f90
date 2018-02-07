@@ -34,15 +34,16 @@ module CellMet_ml
 !=============================================================================
 
 use CheckStop_ml,     only: CheckStop
-use GridValues_ml,    only: dA,dB
+use GridValues_ml,    only: dA,dB, glat, glon
 use Landuse_ml,       only: LandCover, ice_landcover ! Provides SGS,hveg,LAI,...
 use Landuse_ml,       only: mainly_sea
 use LocalVariables_ml,only: Grid, ResetSub
 use MicroMet_ml,      only: PsiH, PsiM, AerRes       ! functions
 use MetFields_ml,     only: ps, u_ref, cc3dmax, sdepth, surface_precip, &
-                            ice_nwp,fh, fl, z_mid, z_bnd, q, roa, rh2m, &
+                            ice_nwp,fh, fl, z_mid, z_bnd, q, roa, rh2m, sst, &
                             rho_surf, th, pzpbl, t2_nwp, ustar_nwp, zen,&
-                            coszen, Idirect, Idiffuse, special2d
+                            coszen, Idirect, Idiffuse
+use MetFields_ml,     only: special2d  ! TMP
 use Config_module,    only: KMAX_MID, KMAX_BND, PT, USE_ZREF
 use PhysicalConstants_ml, only: PI, CP, GRAV, KARMAN
 use SoilWater_ml,     only: fSW
@@ -89,8 +90,15 @@ subroutine Get_CellMet(i,j,debug_flag)
 
   Grid%i        = i
   Grid%j        = j
+  Grid%latitude  = glat(i,j) !SPOD tests
+  Grid%longitude = glon(i,j)
+
   Grid%psurf    = ps(i,j,1)             ! Surface pressure, Pa
   Grid%z_mid    = z_mid(i,j,KMAX_MID)   ! NB: Approx, updated every 3h
+  Grid%rh2m = rh2m(i,j,1) !NWP value !now used in BiDir
+  Grid%sst  = sst(i,j,1)  !NWP value !to be used in BiDir
+  Grid%is_frozen = Grid%t2 < 271.15 ! BiDir extra
+
 
   ! Have option to use a different reference ht:
   if ( USE_ZREF ) then
