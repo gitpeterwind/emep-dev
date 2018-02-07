@@ -308,6 +308,10 @@ subroutine Init_My_Deriv()
     tag_name(1) = "Emis_mgm2_BioNatNO"
     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
   end if
+  if(USES%BIDIR) then
+    tag_name(1) = "Emis_mgm2_BioNatNH3"
+    call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
+  end if
   if(USE_OCEAN_DMS)then
     tag_name(1) = "Emis_mgm2_DMS"
     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
