@@ -157,6 +157,9 @@ BiDir -associated changes in :
    - removed GasParticleCoeffs_ml dependency with NLOCDRYDEP_MAX param
    - added sst
 
+  My_Derived_ml
+   - added Emis_mgm2_BioNatSoilNH3
+
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 6th Feb 2018, Dave
