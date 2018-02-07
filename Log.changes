@@ -163,6 +163,9 @@ BiDir -associated changes in :
   Unimod.f90
    - added call to Init_BiDir
 
+ZCM_EmChem16mt/
+  Added Aero2017nx.reactions - excludes some (R18) gas-aerosol uptake
+        Aero2017nx.species
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 6th Feb 2018, Dave
 
