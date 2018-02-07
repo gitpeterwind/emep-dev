@@ -160,6 +160,8 @@ BiDir -associated changes in :
   My_Derived_ml
    - added Emis_mgm2_BioNatSoilNH3
 
+  Unimod.f90
+   - added call to Init_BiDir
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 6th Feb 2018, Dave
