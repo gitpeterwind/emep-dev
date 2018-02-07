@@ -138,6 +138,24 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+7th Feb 2018, Dave
+
+NEW BUT EMPTY:  BiDir_module.f90, BiDir_emep.f90
+  - added so that Roy and Dave can work with the BiDir version.
+  - Makefile.SRCS modified
+
+BiDir -associated changes in :
+
+  CellMet_ml.f90
+   - added is_frozen, sets Grid%latitude rh2m
+  DryDep_ml.f90
+   - also clean up and some BIDIR entries
+  LocalVariables_ml.f90
+   - removed GasParticleCoeffs_ml dependency with NLOCDRYDEP_MAX param
+   - added sst
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 6th Feb 2018, Dave
 
 config_EMEPSTD.nml
