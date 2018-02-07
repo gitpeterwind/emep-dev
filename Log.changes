@@ -146,6 +146,9 @@ NEW BUT EMPTY:  BiDir_module.f90, BiDir_emep.f90
 
 BiDir -associated changes in :
 
+  Biogenics_ml.f90
+   - commented out old enh3 code. Some safety initialisations added.
+
   CellMet_ml.f90
    - added is_frozen, sets Grid%latitude rh2m
   DryDep_ml.f90
