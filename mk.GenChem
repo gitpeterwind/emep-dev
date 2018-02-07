@@ -132,10 +132,10 @@ EmChem09soa)
 # Updated rates with MCM (and PAN correction). Assume SOA wanted
 EmChem16mt)
   echo "RUN $run chosen."
-  spcs=( ${run}base Aero2017n $xdir/Ash \
+  spcs=( ${run}base Aero2017nx $xdir/Ash \
           $xdir/ForestTracers \
           VBS_nonvolatile ../ZCM_vbs_tests/VBS_partitioning )  #  VBS NPNA
-  rcns=( ${run}base Aero2017n $xdir/Ash \
+  rcns=( ${run}base Aero2017nx $xdir/Ash \
           $xdir/ForestTracers \
 	 ${run}BVOC \
          VBS_SOAformationY ../ZCM_vbs_tests/VBS_SOAageing \
