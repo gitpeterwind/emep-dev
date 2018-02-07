@@ -166,6 +166,7 @@ BiDir -associated changes in :
 ZCM_EmChem16mt/
   Added Aero2017nx.reactions - excludes some (R18) gas-aerosol uptake
         Aero2017nx.species
+  EmChem16mtbase.reactions - added rcbio for NH3
 
 mk.GenChem - uses above Aero2017nx
 
