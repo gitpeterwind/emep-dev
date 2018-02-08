@@ -128,6 +128,7 @@ type, public :: emep_useconfig
 ! In development
    logical :: BIDIR       = .false.  !< FUTURE Bi-directional exchange
    character(len=20)      :: BiDirMethod = 'NOTSET'  ! FUTURE
+   character(len=20)      :: MonthlyNH3  = 'NOTSET'  ! can be 'LOTOS'
 
 end type emep_useconfig
 type(emep_useconfig), public, save :: USES

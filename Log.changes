@@ -138,6 +138,13 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+8th Feb 2018, Dave
+
+Config_module
+Timefactors_ml
+  - added USES%MonthlyNH3, with a LOTOS option. Gives better NH3 :-)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 7th Feb 2018, Dave
 
 NEW BUT EMPTY:  BiDir_module.f90, BiDir_emep.f90
