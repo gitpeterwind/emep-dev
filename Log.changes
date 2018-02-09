@@ -138,6 +138,62 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+8th Feb 2018, Dave
+
+Config_module
+Timefactors_ml
+  - added USES%MonthlyNH3, with a LOTOS option. Gives better NH3 :-)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+7th Feb 2018, Dave
+
+NEW BUT EMPTY:  BiDir_module.f90, BiDir_emep.f90
+  - added so that Roy and Dave can work with the BiDir version.
+  - Makefile.SRCS modified
+
+BiDir -associated changes in :
+
+  Biogenics_ml.f90
+   - commented out old enh3 code. Some safety initialisations added.
+
+  CellMet_ml.f90
+   - added is_frozen, sets Grid%latitude rh2m
+  DryDep_ml.f90
+   - also clean up and some BIDIR entries
+  LocalVariables_ml.f90
+   - removed GasParticleCoeffs_ml dependency with NLOCDRYDEP_MAX param
+   - added sst
+
+  My_Derived_ml
+   - added Emis_mgm2_BioNatSoilNH3
+
+  Unimod.f90
+   - added call to Init_BiDir
+
+ZCM_EmChem16mt/
+  Added Aero2017nx.reactions - excludes some (R18) gas-aerosol uptake
+        Aero2017nx.species
+  EmChem16mtbase.reactions - added rcbio for NH3
+
+mk.GenChem - uses above Aero2017nx
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+6th Feb 2018, Dave
+
+config_EMEPSTD.nml
+ - commented out GRID line in ColumnSource_config that was causing problems
+ - added BIDIR and BiDir variables in preparation for future step
+
+ColumnSource_ml.f90
+ - added dtxt='ColSrcConf' to help debug outputs
+
+NEW: UPDATE_README.md - start of text to explain rv4.17 update
+
+Config_module.f90
+  - clean-up - removed old USE_ variables
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26th Jan 2018 Peter, John
 
 Corrected bug in wrf met reading for snow. Was using SNOWNC which is accumulated since 

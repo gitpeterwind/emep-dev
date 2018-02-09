@@ -187,10 +187,10 @@ module MetFields_ml
       ,Idiffuse     &  ! diffuse solar radiation (W/m^2)
       ,Idirect         ! total direct solar radiation (W/m^2)
 
-  integer, parameter ::Nspecial2d = 0
+  integer, parameter ::Nspecial2d = 2
   real,target, public,allocatable, dimension(:,:,:), save:: &
        special2d
-  integer, parameter ::Nspecial3d = 0
+  integer, parameter ::Nspecial3d = 1
   real,target, public,allocatable, dimension(:,:,:,:), save:: &
        special3d
   integer, public, save   :: ix_special2d(Nspecial2d),ix_special3d(Nspecial3d)

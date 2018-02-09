@@ -605,7 +605,7 @@ subroutine Define_Derived()
     if(EMIS_BioNat(ind)(1:5)=="ASH_L")cycle   ! skip ASH_LxxByy for AshInversion
     dname = "Emis_mgm2_BioNat" // trim(EMIS_BioNat(ind) )
     call AddNewDeriv( dname, "NatEmis", "-", "-", "mg/m2", &
-                 ind , -99, T ,    1.0e6,     F, 'YM' )
+                 ind , -99, T ,    1.0e6,     F, 'H' )
   end do
 
 ! SNAP emissions called every hour, given in kg/m2/s, but added to
@@ -616,7 +616,7 @@ subroutine Define_Derived()
   do  ind = 1, size(EMIS_FILE)
     dname = "Emis_mgm2_" // trim(EMIS_FILE(ind))
     call AddNewDeriv( dname, "SnapEmis", "-", "-", "mg/m2", &
-                       ind , -99, T,  1.0e6,  F,  'YM' )
+                       ind , -99, T,  1.0e6,  F,  'H' )
   end do ! ind
 
   isec_poll = 0
@@ -625,7 +625,7 @@ subroutine Define_Derived()
        do isec=1,NSECTORS
           write(dname,"(A,I0,A)")"Emis_mgm2_sec",isec,trim(EMIS_FILE(i))
           call AddNewDeriv( dname, "SecEmis", "-", "-", "mg/m2", &
-               isec_poll , -99, T,  1.0e6,  F,  'YM' )
+               isec_poll , -99, T,  1.0e6,  F,  'H' )
           isec_poll = isec_poll + 1
        end do
     endif
@@ -633,19 +633,19 @@ subroutine Define_Derived()
   if(USE_OCEAN_DMS)then
     dname = "Emis_mgm2_DMS"
     call AddNewDeriv( dname, "Emis_mgm2_DMS", "-", "-", "mg/m2", &
-                       ind , -99, T,  1.0,  F,  'YM' )
+                       ind , -99, T,  1.0,  F,  'H' )
   end if
   if(USE_OCEAN_NH3)then
      dname = "Emis_mgm2_Ocean_NH3"
     call AddNewDeriv( dname, "Emis_mgm2_Ocean_NH3", "-", "-", "mg/m2", &
-                       ind , -99, T,  1.0,  F,  'YM' )
+                       ind , -99, T,  1.0,  F,  'H' )
   end if
 
 !Splitted total emissions (inclusive Natural)
   do ind=1,nrcemis
     dname = "EmisSplit_mgm2_"//trim(species(iqrc2itot(ind))%name)
     call AddNewDeriv(dname, "EmisSplit_mgm2", "-", "-", "mg/m2", &
-                        ind , -99, T, 1.0e6,   F,  'YM' )
+                        ind , -99, T, 1.0e6,   F,  'H' )
   end do
 
   if(find_index("SURF_PM25water",def_2d(:)%name)<1)&
