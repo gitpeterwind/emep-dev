@@ -872,6 +872,11 @@ subroutine MeteoRead()
     rh2m(:,:,nr) = -999.9  ! ?
   end if
 
+  if(.not. WRF_MET_CORRECTIONS .and. foundsdepth)then
+     !IFS defines snowdepth in units of water equivalent
+     sdepth(:,:,nr) = sdepth(:,:,nr)*5 !crude conversion from water equivalent into meters of snow
+  endif
+
   if(WRF_MET_CORRECTIONS)then
     ! flux defined with opposite signs
     fh(:,:,nr)=-fh(:,:,nr)

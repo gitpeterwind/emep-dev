@@ -138,6 +138,15 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+9th Feb 2018, Peter
+
+Snowdepth multiplied by 5 by default (not for WRF metdata). This is because
+IFS snowdepth is given in water equivalent, while the model needs meters of 
+snow.
+Added SplitSpecialsFile and BiDirInputFile under NAMELIST /ModelConstants_config/
+(were missing)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 8th Feb 2018, Dave
 
 Config_module
@@ -192,6 +201,13 @@ NEW: UPDATE_README.md - start of text to explain rv4.17 update
 Config_module.f90
   - clean-up - removed old USE_ variables
 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+5th Feb 2018, Matthieu, Alvaro, Peter
+
+Special outputs for uEMEP. Only temporary. 
+Tee "specials" (special2d, special3d) should be put into USET, and the "H" in 
+Derived_ml must be revised.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26th Jan 2018 Peter, John

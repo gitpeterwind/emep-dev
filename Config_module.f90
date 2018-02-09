@@ -673,6 +673,7 @@ subroutine Config_ModelConstants(iolog)
    ,DailyFacFile&
    ,HourlyFacFile&
    ,SplitDefaultFile&
+   ,SplitSpecialsFile&
    ,RoadMapFile&
    ,AVG_SMI_2005_2010File&
    ,Soil_TegenFile&
@@ -685,6 +686,7 @@ subroutine Config_ModelConstants(iolog)
    ,jcl3kmFile&
    ,NdepFile&
    ,lightningFile&
+   ,BiDirInputFile&
    ,LoganO3File&
    ,DustFile&
    ,TopoFile
