@@ -245,8 +245,10 @@ subroutine Init_My_Deriv()
        
   if(MasterProc) write(*,"(a,i3)") "NMLOUT nOUTMISC ", nOutputMisc
   do i = 1,nOutputMisc  
-    Is3D=(OutputMisc(i)%class=="MET3D").or.(OutputMisc(i)%name(1:2)=='D3')
-    if(MasterProc) write(*,"(4(A,1X),i3,1X,L1)")"NMLOUT OUTMISC",&
+    Is3D=(OutputMisc(i)%class=="MET3D").or.(OutputMisc(i)%name(1:2)=='D3')&
+         .or.(OutputMisc(i)%subclass(1:2)=='D3')
+    
+    if(MasterProc) write(*,"(4(A,1X),i3,1X,L1,A)")"NMLOUT OUTMISC",&
       trim(OutputMisc(i)%name),trim(OutputMisc(i)%class),&
       trim(OutputMisc(i)%subclass),OutputMisc(i)%index,Is3D
     tag_name(1) = trim(OutputMisc(i)%name)

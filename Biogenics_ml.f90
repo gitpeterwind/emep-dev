@@ -617,9 +617,9 @@ module Biogenics_ml
     if ( USES%BIDIR ) then
        rcemis(itot_NH3,KG)    = rcemis(itot_NH3,KG) + &
            SoilNH3(i,j) * biofac_SOILNH3/Grid%DeltaZ
-        EmisNat(ispec_NH3,i,j) =  SoilNH3(i,j) * 1.0e-9/3600.0
+        if(ispec_NH3>0)EmisNat(ispec_NH3,i,j) =  SoilNH3(i,j) * 1.0e-9/3600.0
     else
-        EmisNat(ispec_NH3,i,j) = 0.0
+        if(ispec_NH3>0)EmisNat(ispec_NH3,i,j) = 0.0
     end if
      
  

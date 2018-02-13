@@ -16,17 +16,18 @@
 !-------------------------------------------------------------------------------
 
    use CheckStop_ml,      only: CheckStop
-   use GridValues_ml    , only : glat, A_bnd, B_bnd
-   use Io_ml,           only : IO_DJ, open_file, ios
-   use LocalVariables_ml, only : Grid  ! => izen
-   use MetFields_ml           , only : cc3d,cc3dmax,z_bnd,ps,special3d
-   use Config_module,    only: TXTLEN_FILE, KMAX_MID, KCHEMTOP, NPROC,&
-                                   jcl1kmFile,jcl3kmFile,jclearFile
-   use MPI_Groups_ml      , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_INTEGER&
+   use DerivedFields_ml,  only: d_3d, f_3d
+   use GridValues_ml   , only : glat, A_bnd, B_bnd
+   use Io_ml,            only : IO_DJ, open_file, ios
+   use LocalVariables_ml,only : Grid  ! => izen
+   use MetFields_ml    , only : cc3d,cc3dmax,z_bnd,ps
+   use Config_module,     only: TXTLEN_FILE, KMAX_MID, KCHEMTOP, NPROC, IOU_INST,&
+                                   jcl1kmFile,jcl3kmFile,jclearFile,num_lev3d,lev3d
+   use MPI_Groups_ml   , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_INTEGER&
                                      ,MPI_COMM_CALC, IERROR
-   use Par_ml      ,    only : me,LIMAX,LJMAX
-   use SmallUtils_ml,     only: key2str
-   use Functions_ml,     only: StandardAtmos_km_2_kPa
+   use Par_ml      ,     only : me,LIMAX,LJMAX
+   use SmallUtils_ml,     only: key2str, find_index
+   use Functions_ml,      only: StandardAtmos_km_2_kPa
    implicit none
    private
 
@@ -69,6 +70,8 @@
       IDHO2NO2 = 16 , IDACETON = 17
     integer, public, parameter ::  IDRCOCHO  = IDRCOHCO ! Just tmp
 
+    integer, save :: photo_out_ix = -1
+
  !/ subroutines: 
 
   public :: readdiss
@@ -101,6 +104,10 @@
            allocate(dj(NPHODIS,NzPHODIS,HORIZON,NLAT))
            allocate(djcl1(NPHODIS,NzPHODIS,HORIZON))
            allocate(djcl3(NPHODIS,NzPHODIS,HORIZON))
+
+           photo_out_ix = find_index("D3_J(NO2)", f_3d(:)%subclass)
+           if(photo_out_ix>0 .and. me==0)write(*,*)'will output J(NO2)'
+           
         end if
 !    Open, read and broadcast clear sky rates
 !---------------
@@ -241,6 +248,7 @@
            enddo
 !           if(firstc and me==0)write(*,*)'PHODIS level conversion ',k,k2P_PHODIS(k),A_bnd(k)+B_bnd(k)*ps(i,j,1),P_PHODIS(k2P_PHODIS(k))
         enddo
+        
         firstc=.false.
 
 !---- assign photolysis rates ------------------------------------------------
@@ -329,7 +337,8 @@
 
           end if   !  end izen <  90 (daytime)  test
 
-          special3d(i,j,KCHEMTOP:KMAX_MID,1)=rcphot(IDNO2,KCHEMTOP:KMAX_MID)
+          if(photo_out_ix>0) d_3d(photo_out_ix,i,j,1:num_lev3d,IOU_INST) = &
+               rcphot(IDNO2,lev3d(1:num_lev3d))
 
     end subroutine setup_phot
   ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

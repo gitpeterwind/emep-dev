@@ -293,6 +293,9 @@ OutputMisc=
  ! name        class    subclass txt   unit          index f2d dt_scale scale avg period
  !------------------------------------------------------------------------------------
  !! CAREFUL !!  Rate constant numbers will change with chemical scheme! Adjust as needed!
+ !'J(NO2)'         ,'USET','D3_J(NO2)'  ,'photorate','1/s' ,-99,-99,F,1.0,T,'YMH',
+ !'inv_L'          ,'USET', 'invL','inv_MO_length', 'm/s'  ,-99, -1,F,1.0,T,'YMH',
+ !'av_logz0'       ,'USET', 'logz0','roughness_length','log_m',-99,-1,F,1.0,T,'YMH',
  'rcAeroN2O5',   'USET', 'rct',   'rct', '/s',          61, -1,       F,   1.0, T, 'YM',
 !'rcAeroHNO3SS', 'USET', 'rct',   'rct', '/s',          71, -1,       F,   1.0, T, 'YM',
 !'rcAeroHNO3DU', 'USET', 'rct',   'rct', '/s',          72, -1,       F,   1.0, T, 'YM',

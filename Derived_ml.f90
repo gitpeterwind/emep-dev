@@ -541,7 +541,8 @@ subroutine Define_Derived()
 
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
   do n = 1, nOutputMisc
-    Is3D=(OutputMisc(n)%class=="MET3D").or.(OutputMisc(n)%name(1:2)=='D3')
+    Is3D=(OutputMisc(n)%class=="MET3D").or.(OutputMisc(n)%name(1:2)=='D3')&
+         .or.(OutputMisc(n)%subclass(1:2)=='D3')
     if(MasterProc) write(*,"(3(A,1X),L1)") &
       'ADDMISC',trim(OutputMisc(n)%name),'Is3D',Is3D
     call AddDeriv(OutputMisc(n),Is3D=Is3D)

@@ -1519,10 +1519,10 @@ subroutine met_derived(nt)
             / (CP*rho_surf(i,j) * ustar_nwp(i,j)**3 * t2_nwp(i,j,nt) )
   end forall
 
-  where ( invL_nwp < -1.0 )
-    invL_nwp  = -1.0
-  else where ( invL_nwp > 1.0 )
-    invL_nwp  = 1.0
+  where ( invL_nwp(:,:) < -1.0 )
+    invL_nwp(:,:)  = -1.0
+  else where ( invL_nwp(:,:) > 1.0 )
+    invL_nwp(:,:)  = 1.0
   end where
 
 

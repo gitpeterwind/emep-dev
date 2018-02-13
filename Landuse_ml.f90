@@ -246,9 +246,9 @@ contains
              end if
 
              if ( LandType(lu)%is_water ) water_fraction(i,j) = &
-                  LandCover(i,j)%fraction(ilu)
+                  water_fraction(i,j) + LandCover(i,j)%fraction(ilu)
              if ( LandType(lu)%is_ice   ) ice_landcover(i,j) = &
-                  LandCover(i,j)%fraction(ilu)
+                  ice_landcover(i,j) + LandCover(i,j)%fraction(ilu)
 
 
           end do ! ilu
