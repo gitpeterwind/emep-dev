@@ -153,6 +153,7 @@ NEW: LandInputs_Feb2018
 
 config_EMEPGLOB.nml
    uses new landcover
+   added PANDA emissions as possible (better?!) emissions for global
 
 config_EMEPSTD.nml
    uses new landcover
