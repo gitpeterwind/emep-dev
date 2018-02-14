@@ -40,7 +40,7 @@
   USES%GRIDDED_EMIS_MONTHLY_FACTOR = F,  !
   USES%PlumeMethod      = 'PVDI',        ! default PVDI, possible: NILU, ASMI, PVDI
   USES%PFT_MAPS         = T,             ! PFT LAI tests
-  USES%n2o5HydrolysisMethod = 'SmixC',    !  "Gamma:0.002' ! 'OrigRiemer'! =ACP2012 EMEP implementation
+  USES%n2o5HydrolysisMethod = 'Smix',    !  "Gamma:0.002' ! 'OrigRiemer'! =ACP2012 EMEP implementation
   USES%WHITECAPS =       "Callaghan"    ! Norris , Monahan
 !------------------------------
   USES%SOILWATER         = T,             ! Uses SMI from meteo data
