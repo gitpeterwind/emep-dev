@@ -37,7 +37,7 @@ run=CRI_v2_R5
 run=EmChem09
 run=EmChem09soa
 run=CRIv2R5jpc # April 2017
-run=EmChem16mt # new default, Apr 2017, Still some testing
+run=EmChem16a  # new default, Feb 2018, Still some testing
 #run=EmChem09ecom # for G20
 Aero=" "     # for Riemer, VOLFAC etc.
 Aero="Aero2015"     # for Riemer, VOLFAC etc.
@@ -130,7 +130,7 @@ EmChem09soa)
   bics=( $xdir/EmChem09base )  # No special SOA BICs (yet)
 ;;
 # Updated rates with MCM (and PAN correction). Assume SOA wanted
-EmChem16mt)
+EmChem16a)
   echo "RUN $run chosen."
   spcs=( ${run}base Aero2017nx $xdir/Ash \
           $xdir/ForestTracers \
@@ -142,7 +142,7 @@ EmChem16mt)
 #Y         ../ZCM_vbs_tests/VBS_SOAformation ../ZCM_vbs_tests/VBS_SOAageing \
          ../ZCM_EmChem09soa/VBS_emissions_nonvolatilePOA_FromPM25  ) # VBS NPNA
   bics=( ${run}base )
-  #bics=( $x16mt/EmChem16mtbase )  # No special SOA BICs (yet)
+  #bics=( $x16a/EmChem16abase )  # No special SOA BICs (yet)
   #rcns=( ${run}base $xdir/$Aero \  #$xdir/PMmass )
 ;;
 EmChem09ecom)

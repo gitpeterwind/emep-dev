@@ -127,7 +127,7 @@ touchdepend:
 # Model/Config specific targets
 ###
 # My_* files pre-requisites
-EMEP HTAP MACC MACC-EVA Polen EmChem16mt EmChem09 EmChem09-ESX CRI_v2_R5 eEMEP SR-MACC: \
+EMEP HTAP MACC MACC-EVA Polen EmChem16a EmChem09 EmChem09-ESX CRI_v2_R5 eEMEP SR-MACC: \
 	  ./ZD_OZONE/My_Outputs_ml.f90 \
 	  ./ZD_3DVar/My_3DVar_ml.f90 ./ZD_Pollen/My_Pollen_ml.f90 \
 	  ./ZD_EXTRA/My_ESX_ml.f90
@@ -151,16 +151,16 @@ TEST:
 	  SRCS="$(filter-out Unimod.f90,$(SRCS)) ModuleTester.f90"
 
 # Link My_* files and MAKE target
-EMEP HTAP MACC MACC-EVA MACC-Pollen EmChem16mt EmChem09 EmChem09-ESX CRI_v2_R5 eEMEP SR-MACC:
+EMEP HTAP MACC MACC-EVA MACC-Pollen EmChem16a EmChem09 EmChem09-ESX CRI_v2_R5 eEMEP SR-MACC:
 	ln -sf $(filter %.f90 %.inc,$+) . && $(MAKE)
 
 # GenChem config
 .SECONDEXPANSION:
-EMEP:               GenChem-EMEP-EmChem16mt
+EMEP:               GenChem-EMEP-EmChem16a
 EmChem09 CRI_v2_R5: GenChem-EMEP-$$@
 EmChem09-ESX:       GenChem-EMEP-EmChem09
-HTAP MACC SR-MACC:  GenChem-$$@-EmChem16mt
-MACC-EVA:           GenChem-MACCEVA-EmChem16mt
+HTAP MACC SR-MACC:  GenChem-$$@-EmChem16a
+MACC-EVA:           GenChem-MACCEVA-EmChem16a
 MACC-Pollen:        GenChem-MACCEVA-Pollen
 eEMEP ?= Emergency # Emergency | AshInversion
 eEMEP:              $$(eEMEP) GenChem-$$@-Emergency
