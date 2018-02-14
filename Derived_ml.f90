@@ -62,7 +62,8 @@ use Config_module, only: &
   ! output types corresponding to instantaneous,year,month,day
   ,IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY,IOU_HOUR,IOU_HOUR_INST,IOU_KEY &
   ,MasterProc, SOURCE_RECEPTOR &
-  ,USES, USE_OCEAN_DMS, USE_OCEAN_NH3, USE_uEMEP, uEMEP, startdate,enddate
+  ,USES, USE_OCEAN_DMS, USE_OCEAN_NH3, USE_uEMEP, uEMEP, startdate,enddate,&
+  HourlyEmisOut
 
 use AOD_PM_ml,            only: AOD_init,aod_grp,wavelength,& ! group and
                                 wanted_wlen,wanted_ext3d      ! wavelengths
@@ -169,6 +170,8 @@ subroutine Init_Derived()
   allocate(D2_O3_DAY( LIMAX, LJMAX, NTDAY))
   D2_O3_DAY = 0.0
 
+  if(USE_uEMEP .and. (uEMEP%HOUR_INST.or.uEMEP%HOUR)) HourlyEmisOut = .true.
+
   if(dbg0) write(*,*) "INIT My DERIVED STUFF"
   call Init_My_Deriv()  !-> wanted_deriv2d, wanted_deriv3d
 
@@ -224,6 +227,7 @@ subroutine Init_Derived()
   if(dbg0) write(*,"(a,2g12.3,i4)") ' CFAC INIT PMFRACTION ', &
       fracPM25, AERO%DpgV(2), nint(1.0e7*AERO%DpgV(2))
   call CheckStop( fracPM25 < 0.01, "NEED TO SET FRACPM25")
+
 end subroutine Init_Derived
 !=========================================================================
 subroutine AddNewDeriv( name,class,subclass,txt,unit,index,f2d,&
@@ -606,7 +610,7 @@ subroutine Define_Derived()
     if(EMIS_BioNat(ind)(1:5)=="ASH_L")cycle   ! skip ASH_LxxByy for AshInversion
     dname = "Emis_mgm2_BioNat" // trim(EMIS_BioNat(ind) )
     call AddNewDeriv( dname, "NatEmis", "-", "-", "mg/m2", &
-                 ind , -99, T ,    1.0e6,     F, 'H' )
+                 ind , -99, T ,    1.0e6,     F, 'YM' )
   end do
 
 ! SNAP emissions called every hour, given in kg/m2/s, but added to
@@ -616,37 +620,47 @@ subroutine Define_Derived()
 ! Future option - might make use of Emis_Molwt to get mg(N)/m2
   do  ind = 1, size(EMIS_FILE)
     dname = "Emis_mgm2_" // trim(EMIS_FILE(ind))
-    call AddNewDeriv( dname, "SnapEmis", "-", "-", "mg/m2", &
-                       ind , -99, T,  1.0e6,  F,  'H' )
+    if(HourlyEmisOut)then
+       call AddNewDeriv( dname, "SnapEmis", "-", "-", "mg/m2", &
+            ind , -99, T,  1.0e6,  F,  'YMH' )
+    else
+       call AddNewDeriv( dname, "SnapEmis", "-", "-", "mg/m2", &
+            ind , -99, T,  1.0e6,  F,  'YM' )
+    endif
   end do ! ind
 
   isec_poll = 0
   do  i = 1, NEMIS_FILE
-    if(SecEmisOut(i))then
-       do isec=1,NSECTORS
-          write(dname,"(A,I0,A)")"Emis_mgm2_sec",isec,trim(EMIS_FILE(i))
-          call AddNewDeriv( dname, "SecEmis", "-", "-", "mg/m2", &
-               isec_poll , -99, T,  1.0e6,  F,  'H' )
-          isec_poll = isec_poll + 1
-       end do
-    endif
+     if(SecEmisOut(i))then
+        do isec=1,NSECTORS
+           write(dname,"(A,I0,A)")"Emis_mgm2_sec",isec,trim(EMIS_FILE(i))
+           if(HourlyEmisOut)then
+              call AddNewDeriv( dname, "SecEmis", "-", "-", "mg/m2", &
+                   isec_poll , -99, T,  1.0e6,  F,  'YMH' )
+           else
+              call AddNewDeriv( dname, "SecEmis", "-", "-", "mg/m2", &
+                   isec_poll , -99, T,  1.0e6,  F,  'YM' )
+           endif
+           isec_poll = isec_poll + 1           
+        end do
+     endif
   end do
   if(USE_OCEAN_DMS)then
     dname = "Emis_mgm2_DMS"
     call AddNewDeriv( dname, "Emis_mgm2_DMS", "-", "-", "mg/m2", &
-                       ind , -99, T,  1.0,  F,  'H' )
+                       ind , -99, T,  1.0,  F,  'YM' )
   end if
   if(USE_OCEAN_NH3)then
      dname = "Emis_mgm2_Ocean_NH3"
     call AddNewDeriv( dname, "Emis_mgm2_Ocean_NH3", "-", "-", "mg/m2", &
-                       ind , -99, T,  1.0,  F,  'H' )
+                       ind , -99, T,  1.0,  F,  'YM' )
   end if
 
 !Splitted total emissions (inclusive Natural)
   do ind=1,nrcemis
     dname = "EmisSplit_mgm2_"//trim(species(iqrc2itot(ind))%name)
     call AddNewDeriv(dname, "EmisSplit_mgm2", "-", "-", "mg/m2", &
-                        ind , -99, T, 1.0e6,   F,  'H' )
+                        ind , -99, T, 1.0e6,   F,  'YM' )
   end do
 
   if(find_index("SURF_PM25water",def_2d(:)%name)<1)&

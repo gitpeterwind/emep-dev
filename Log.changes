@@ -138,6 +138,19 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+13-14th Feb 2018, Peter
+
+Removed the two 2d and one 3d "specials" for uEMEP outputs, and replace them
+by "USET" outputs (example in config_emep.pl and config_Outputs_NORWAY.nml 
+Redefined slightly is_water is_ice and is_allsea; several water or ice categories 
+can in principle be defined.
+For 3d output, also subclass can start by 'D3', instead of name (to allow more 
+freedom in names as they appearin the output). 
+
+New config flag HourlyEmisOut = .false., to output snap and sector emissions hourly
+This is set automatically if uEMEP hourly output are requested.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 9th Feb 2018, Peter
 
 Snowdepth multiplied by 5 by default (not for WRF metdata). This is because
