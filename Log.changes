@@ -142,7 +142,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 ZCM_EmChem16mt and all EmChem16mt files renamed to EmChem16a
 
-Also in mk.GenChem and Makefile.
+Also in mk.GenChem, run.pl and Makefile.
 
 EmChem16abase-reactions: bug-fixes for HONO and OD+H2O rates
 
