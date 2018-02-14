@@ -150,6 +150,13 @@ freedom in names as they appearin the output).
 New config flag HourlyEmisOut = .false., to output snap and sector emissions hourly
 This is set automatically if uEMEP hourly output are requested.
 
+In effect removed the changes introduced 5th Feb 2018
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+9th Feb 2018, Svetlana
+
+LandType(n)%is_desert is implemented in LandDefs_ml and DustProd_ml
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 9th Feb 2018, Peter
 
@@ -221,6 +228,8 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Special outputs for uEMEP. Only temporary. 
 Tee "specials" (special2d, special3d) should be put into USET, and the "H" in 
 Derived_ml must be revised.
+
+Edit: these changes are removed 14th Feb
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26th Jan 2018 Peter, John
