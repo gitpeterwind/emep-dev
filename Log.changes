@@ -154,6 +154,13 @@ NEW: LandInputs_Feb2018
 config_EMEPGLOB.nml
    uses new landcover
 
+config_EMEPSTD.nml
+   uses new landcover
+   has MonthlyNH3='LOTOS' - intended for EECCA/Europe only!
+
+ChemFunctions_ml
+   Merged SmixC into Smix. Just use Smix, but this now has coarse aerosol too.
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 13-14th Feb 2018, Peter
 
