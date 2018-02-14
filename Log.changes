@@ -138,6 +138,23 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+14th Feb 2018, Dave
+
+ZCM_EmChem16mt and all EmChem16mt files renamed to EmChem16a
+
+Also in mk.GenChem and Makefile.
+
+EmChem16abase-reactions: bug-fixes for HONO and OD+H2O rates
+
+NEW: LandInputs_Feb2018
+
+   glc2000xCLMf18.nc i
+   csv files same as Apr2017
+
+config_EMEPGLOB.nml
+   uses new landcover
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 13-14th Feb 2018, Peter
 
 Removed the two 2d and one 3d "specials" for uEMEP outputs, and replace them
