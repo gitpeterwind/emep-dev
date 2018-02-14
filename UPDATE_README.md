@@ -7,7 +7,9 @@ previous versions, and partly as a result of this we have found both bugs and
 areas of improvement in the model. We summarise below the main changes
 
 
-# Chemistry
+# Chemistry - EmChem16a
+
+EmChem16a is an update of the EmChem16 scheme presented in EMEP report 1/2017.
 
 ## Modifications
 
@@ -16,26 +18,34 @@ areas of improvement in the model. We summarise below the main changes
   influence but causing model-performance degredation and being too uncertain to
   be reliable  (NO2+ .., ibid)
 
-## bug fix
+## bug fixes
 
-  OH + HONO  - rate coefficient had incorrect negative temperature dependence (small change)
+  OH + HONO - rate coefficient had incorrect negative temperature dependence (small change)
+  OD + H2O  - updated rate coefficient from IUPAC 2007
 
 # Timefactors
 
-  Dave will likely use LOTOS for NH3 ... gives better results ;-)
+  For EECCA runs, the monthly time-factors from the LOTOS-EUROS model can now be
+  activated, and seem to generate betetr results. 
+
+  To use, set MonthlyNH3 = 'LOTOS' in config_emep.nml
+
 
 # Landuse_ml
 
- Fixed a bug whereby ...
+ Fixed varius bugs  whereby ...
 
 # Global landcover
 
-  Deserts were included under the category 'BARE' instead of 'DE'. In principal this could
-  have been fine, except that some 'BARE' land was also assigned where tew GLC2000 database
-  had sparse vegetation. 
+  NEW landcover file: glc2000xCLMf18.nc - set this in config_emep.nml.
 
-  To correct this, we have temporalily renamed 'BARE' from CLM to be 'DE', and reserved
-  BARE for bare-soil assumed to be associated with vegetation 
+  In the rv4.15 glc2000mCLM.nc file, deserts were included under the
+  category 'BARE' instead of 'DE'. In principal this could have been
+  fine, except that some 'BARE' land was also assigned where the GLC2000
+  database had sparse vegetation. The EMEP model´s calculation of dust
+  production was taking place only over the 'DE' regions, which were
+  only found in the inner EECCA domain.
+
 
 # Tidy-ups
 
