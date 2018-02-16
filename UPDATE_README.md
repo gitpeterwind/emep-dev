@@ -65,7 +65,7 @@ EmChem16a is an update of the EmChem16 scheme presented in EMEP report 1/2017.
   "lonlat" type reductions has an additional country flag.
   The "lonlat" reductions can also be dectivated for individual emission files, using the configuration flag emis_inputlist(1)%use_lonlat_femis = F
   
-# Photolysis rates
+# Radiation
 
   A height instead of level defintion is used. Should be more correct over mountainous terrain. Also in Southern hemisphere the wrong latitude was taken, now corrected.
 
