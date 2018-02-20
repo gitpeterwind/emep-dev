@@ -138,6 +138,12 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+20th Feb 2018, Alvaro
+
+DefPhotolysis_ml
+  Fix USET query when no 3D output is required
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 14th Feb 2018, Dave
 
 ZCM_EmChem16mt and all EmChem16mt files renamed to EmChem16a

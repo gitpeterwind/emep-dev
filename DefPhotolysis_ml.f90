@@ -105,7 +105,9 @@
            allocate(djcl1(NPHODIS,NzPHODIS,HORIZON))
            allocate(djcl3(NPHODIS,NzPHODIS,HORIZON))
 
-           photo_out_ix = find_index("D3_J(NO2)", f_3d(:)%subclass)
+           photo_out_ix = 0
+           if(allocated(f_3d)) &
+             photo_out_ix = find_index("D3_J(NO2)", f_3d(:)%subclass)
            if(photo_out_ix>0 .and. me==0)write(*,*)'will output J(NO2)'
            
         end if
