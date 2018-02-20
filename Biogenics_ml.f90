@@ -28,8 +28,9 @@ module Biogenics_ml
   !    by the ReadField_CDF interpolation routines. No need to worry about
   !    conserving these very imperfect numbers accurately ;-)
   !
-  !    Dave Simpson, 2010-2012
+  !    Dave Simpson, 2010-2018
   !    Updated for CLM-GLC merge, 2017
+  !    Start of BiDir work, 2018
   !---------------------------------------------------------------------------
 
   use CheckStop_ml,      only: CheckStop, StopAll
@@ -40,7 +41,7 @@ module Biogenics_ml
                            EURO_SOILNOX_DEPSCALE, & 
                            DEBUG, BVOC_USED, MasterProc, &
                            USES, &
-                           DEBUG_SOILNOX, USE_SOILNH3,&
+                           DEBUG_SOILNOX, &
                            EmBio, EMEP_EuroBVOCFile
   use GridValues_ml    , only : i_fdom,j_fdom, debug_proc,debug_li,debug_lj
   use Io_ml            , only : IO_FORES, open_file, ios, PrintLog, datewrite
@@ -148,6 +149,8 @@ module Biogenics_ml
     allocate(AnnualNdep(LIMAX,LJMAX), &
                 SoilNOx(LIMAX,LJMAX), &
                 SoilNH3(LIMAX,LJMAX))
+    SoilNOx=0.0  !BIDIR safety
+    SoilNH3=0.0  !BIDIR safety
     allocate(EmisNat(NEMIS_BioNat,LIMAX,LJMAX))
     EmisNat=0.0
     allocate(day_embvoc(LIMAX,LJMAX,size(BVOC_USED)))
@@ -525,6 +528,7 @@ module Biogenics_ml
 
   integer, intent(in) ::  i,j
 
+  character(len=*), parameter :: dtxt = 'setup_bio:'
   integer :: it2m
   real    :: E_ISOP, E_MTP, E_MTL
 
@@ -609,10 +613,13 @@ module Biogenics_ml
     end if
 
     !EXPERIMENTAL
-    if ( USE_SOILNH3 ) then
-        rcemis(itot_NH3,KG)    = rcemis(itot_NH3,KG) + &
-            SoilNH3(i,j) * biofac_SOILNH3/Grid%DeltaZ
-        EmisNat(ispec_NH3,i,j) =  SoilNH3(i,j) * 1.0e-9/3600.0
+    !if ( USES%SOILNH3 ) then
+    if ( USES%BIDIR ) then
+       rcemis(itot_NH3,KG)    = rcemis(itot_NH3,KG) + &
+           SoilNH3(i,j) * biofac_SOILNH3/Grid%DeltaZ
+        if(ispec_NH3>0)EmisNat(ispec_NH3,i,j) =  SoilNH3(i,j) * 1.0e-9/3600.0
+    else
+        if(ispec_NH3>0)EmisNat(ispec_NH3,i,j) = 0.0
     end if
      
  
@@ -620,8 +627,9 @@ module Biogenics_ml
 
       call datewrite("DBIO env ", it2m, (/ max(par,0.0), max(cL,0.0), &
             canopy_ecf(BIO_ISOP,it2m),canopy_ecf(BIO_TERP,it2m) /) )
-      call datewrite("DBIO EISOP EMTP EMTL ESOIL ", (/  E_ISOP, &
-             E_MTP, E_MTL, SoilNOx(i,j) /) ) 
+      call datewrite("DBIO EISOP EMTP EMTL ESOIL-N ", (/  E_ISOP, &
+             E_MTP, E_MTL, SoilNOx(i,j), SoilNH3(i,j) /) ) 
+      if (USES%BIDIR) call datewrite("DBIO BIDIR ", (/  SoilNOx(i,j), SoilNH3(i,j), rcemis(itot_NH3,KG) /) ) 
       call datewrite("DBIO rcemisL ", (/ &
             rcemis(itot_C5H8,KG), rcemis(itot_TERP,KG) /))
       call datewrite("DBIO EmisNat ", EmisNat(:,i,j) )
@@ -638,7 +646,7 @@ module Biogenics_ml
       integer :: i, j, nLC, iLC, LC
       logical :: my_first_call = .true.
       real    :: f, ft, fn, ftn
-      real    :: enox, enh3  ! emissions, ugN/m2/h
+      real    :: enox !, enh3  ! emissions, ugN/m2/h
       real :: beta, bmin, bmax, bx, by ! for beta function
       real :: hfac
 
@@ -677,7 +685,7 @@ module Biogenics_ml
              ftn = ft * fn * hfac 
 
              enox = 0.0
-             enh3 = 0.0 
+             !enh3 = 0.0 
 
      LCLOOP: do ilc= 1, nLC
 
@@ -696,13 +704,13 @@ module Biogenics_ml
 
                  if ( LandType(LC)%is_conif ) then
                     enox = enox + f*ftn*150.0
-                    enh3 = enh3 + f*ftn*1500.0 ! Huge?! W+E ca. 600 ngNH3/m2/s -> 1800 ugN/m2/h
+                    !enh3 = enh3 + f*ftn*1500.0 ! Huge?! W+E ca. 600 ngNH3/m2/s -> 1800 ugN/m2/h
                  else if ( LandType(LC)%is_decid ) then
                     enox = enox + f*ftn* 50.0
-                    enh3 = enh3 + f*ftn*500.0 !  Just guessing
+                    !enh3 = enh3 + f*ftn*500.0 !  Just guessing
                  else if ( LandType(LC)%is_seminat ) then
                     enox = enox + f*ftn* 50.0
-                    enh3 = enh3 + f * ftn  *20.0 !mg/m2/h approx from US report 1 ng/m2/s
+                    !enh3 = enh3 + f * ftn  *20.0 !mg/m2/h approx from US report 1 ng/m2/s
 
                  else if ( LandType(LC)%is_crop    ) then ! emissions in 1st 70 days
 
@@ -714,7 +722,7 @@ module Biogenics_ml
                     if ( daynumber >= Landcover(i,j)%SGS(iLC) .and. &
                          daynumber <= Landcover(i,j)%EGS(iLC) ) then
                          enox = enox + f* 1.0
-                         enh3 = enh3 + f * 60.0
+                         !enh3 = enh3 + f * 60.0
                     end if
 
                     ! CRUDE - just playing for NH3.
@@ -731,7 +739,7 @@ module Biogenics_ml
                          by = 1.0 - bx
                          beta =  ( bx*by *4.0) 
                          enox = enox + f*80.0*ft* beta 
-                         enh3 = enh3 + f * 1000.0*ft * beta
+                         !enh3 = enh3 + f * 1000.0*ft * beta
                     end if
 
                     
@@ -740,7 +748,7 @@ module Biogenics_ml
                      i == debug_li .and. j == debug_lj ) then
                    write(*, "(a,4i4,f7.2,9g12.3)") "LOOPING SOIL", daynumber, &
                    iLC, LC, LandCover(i,j)%SGS(iLC), t2_nwp(i,j,1)-273.15, &
-                      f, ft, fn, ftn,  beta, enox, enh3
+                      f, ft, fn, ftn,  beta, enox!, enh3
                    if(iLC==1) &
                      call datewrite("HFAC SOIL", (/ 1.0*daynumber,hfac /) )
                  end if
@@ -754,13 +762,12 @@ module Biogenics_ml
      ! Emissions_ml (snapemis).  ug/m2/h -> kg/m2/s needs 1.0-9/3600.0. 
  
            SoilNOx(i,j) = enox
-           SoilNH3(i,j) = enh3
+
+             !enh3 = 0.0 ! BIDIR SOON .... we don't want enh3
+             !SoilNH3(i,j) = enh3
  
          end do
       end do
- !     if ( DEBUG_SOILNOX .and. debug_proc ) then
- !             SoilNOx(:,:) = 1.0 ! Check scaling
- !     end if
 
       if ( DEBUG_SOILNOX .and. debug_proc ) then
          i = debug_li

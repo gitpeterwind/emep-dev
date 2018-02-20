@@ -82,6 +82,7 @@ end interface Check_LandCoverPresent
      logical :: is_conif
      logical :: is_decid
      logical :: is_crop 
+     logical :: is_desert 
      logical :: is_seminat 
      logical :: is_water
      logical :: is_ice
@@ -244,7 +245,8 @@ contains
             LandType(n)%is_decid = ( LandInput%type == "EDF"  )
             LandType(n)%is_crop  = ( LandInput%type == "ECR"  )
             LandType(n)%is_seminat  = ( LandInput%type == "SNL"  )
-            LandType(n)%is_bulk   =  LandInput%type == "BLK" 
+            LandType(n)%is_bulk   =  LandInput%type == "BLK"
+            LandType(n)%is_desert = ( LandInput%code == "DE"  )
             LandType(n)%is_veg    =  LandInput%code /= "U" .and. &
                   LandInput%hveg_max > 0.01   ! Excludes water, ice_nwp, desert 
             if( LandInput%code(1:2) == "GR" ) iLC_grass =  n ! for eg clover

@@ -389,7 +389,7 @@ module ChemFunctions_ml
         end if
       end do ! k
   !---------------------------------------
-   case ( "Smix", "SmixTen", "SmixC" )
+   case ( "Smix", "SmixTen" )
 
 !if ( DEBUG%RUNCHEM .and. DebugCell ) then
 !  write(*,*) dtxt//trim(method), rh(K2), S_m2m3(AERO%PM_F,K2) , S_m2m3(AERO%DU_C,K2)
@@ -405,11 +405,10 @@ module ChemFunctions_ml
             gam = GammaN2O5(temp(k),rh(k),&
                    f,aero_fom(k),aero_fss(k),aero_fdust(k),aero_fbc(k))
 
-            if( method == "SmixTen") gam = 0.1 * gam ! cf Brown et al, 2009!
 
             rate(k) = UptakeRate(cN2O5(k),gam,S) !1=fine SIA ! +OM
 
-            if( method == "SmixC") then
+            !Add coarse model ! was SmixC
                  S_ss = S_m2m3(AERO%SS_C,k)
                  gamSS=GammaN2O5_EJSS(rh(k))
                  S_du = S_m2m3(AERO%DU_C,k)
@@ -417,7 +416,11 @@ module ChemFunctions_ml
                ! same as UptakeRate(cN2O5,gam,S), but easier to code here:
                  rate(k) = rate(k) + cN2O5(k)*(gamSS*S_ss+0.01*S_du)/4 
                  ! ToDo update gam for export. Currently at fine-mod only
-            end if ! SmixC
+            !Coarse end 
+            if( method == "SmixTen") then
+              gam = 0.1 * gam ! cf Brown et al, 2009!
+              rate(k) = 0.1 * rate(k)
+            end if
        else
             gam = 0.0 ! just for export
             rate(k) = 0.0

@@ -8,7 +8,6 @@ module Config_module
 use Aerofunctions,        only: DpgV2DpgN
 use CheckStop_ml,         only: CheckStop
 use ChemSpecs,            only: species
-!!use emep_Config_mod,      only: PBL, EmBio, YieldModifications, LandCoverInputs, END_OF_EMEPDAY
 use Io_Nums_ml,           only: IO_NML, IO_LOG, IO_TMP
 use OwnDataTypes_ml,      only: typ_ss, uEMEP_type
 use Precision_ml,         only: dp
@@ -126,6 +125,11 @@ type, public :: emep_useconfig
 ! Selection of method for Whitecap calculation for Seasalt
   character(len=15) :: WHITECAPS  = 'Callaghan'
 
+! In development
+   logical :: BIDIR       = .false.  !< FUTURE Bi-directional exchange
+   character(len=20)      :: BiDirMethod = 'NOTSET'  ! FUTURE
+   character(len=20)      :: MonthlyNH3  = 'NOTSET'  ! can be 'LOTOS'
+
 end type emep_useconfig
 type(emep_useconfig), public, save :: USES
 
@@ -136,6 +140,7 @@ type, public :: emep_debug
     ,AQUEOUS         = .false. &
     ,BCS             = .false. & ! BoundaryConditions
     ,BIO             = .false. & !< Biogenic emissions
+    ,BIDIR           = .false. & !< FUTURE Bi-directional exchange
     ,COLUMN          = .false. & !  Used in Derived_ml for column integration
     ,COLSRC          = .false. & !  Volcanic emissions and Emergency scenarios
     ,DERIVED         = .false. & !
@@ -197,8 +202,10 @@ end type emis_in
 type(emis_in), public, dimension(5) :: emis_inputlist = emis_in()
 
 character(len=40), dimension(20), public, save  :: SecEmisOutPoll = "NOTSET"
+logical, public, save  :: HourlyEmisOut = .false. !to output snap and sector emissions hourly
 
 character(len=40), public, save   :: SECTORS_NAME='SNAP'
+character(len=40), public, save   :: USE_SECTORS_NAME='NOTSET'
 
 integer, public, parameter :: &
   TXTLEN_NAME =  50, &
@@ -220,25 +227,9 @@ real, public, save :: CONVECTION_FACTOR = 1.0
 !-----------------------------------------------------------
 logical, public, save ::             &
   FORECAST              = .false.    & ! reset in namelist
-! ,USE_SOILWATER         = .false.    &
-! ,USE_SEASALT           = .true.     &
-! ,USE_CONVECTION        = .false.    & ! false works best for Euro runs,
-!
-! Might sometimes change for scenario runs (e.g. EnsClim):
-! ,USE_AIRCRAFT_EMIS  = .true.        & ! Needs global file, see manual
-! ,USE_LIGHTNING_EMIS = .true.        &
-!
-! More experimental:
-! ,USE_ROADDUST       = .false.       & ! TNO Road Dust routine. So far with simplified "climate-correction" factor
-! ,USE_DUST           = .false.       & ! Experimental
  ,TEGEN_DATA         = .true.        & ! Interpolate global data to make dust if  USE_DUST=.true.
  ,INERIS_SNAP1       = .false.       & !(EXP_NAME=="TFMM"), & ! Switches off decadal trend
  ,INERIS_SNAP2       = .false.       & !(EXP_NAME=="TFMM"), & ! Allows near-zero summer values
-! ,USE_ASH            = .true.        & ! Ash from historical Volcanic Eruption
-! ,USE_PreADV         = .false.       & ! Column Emissions are preadvected when winds are very strong 
-! ,USE_NOCHEM         = .false.       & ! Turns of chemistry for emergency runs
-! ,USE_AOD            = .false.       &
-! ,USE_POLLEN         = .false.       & ! EXPERIMENTAL. Only works if start Jan 1
  ,USE_AMINEAQ        = .false.       & ! MKPS
  ,ANALYSIS           = .false.       & ! EXPERIMENTAL: 3DVar data assimilation
  ,USE_FASTJ          = .false.       & ! use FastJ_ml for computing rcphot
@@ -340,10 +331,6 @@ character(len=*), parameter, public :: &
 !IN-TESTING (reset in NML if wanted)
 !) Emissions. Standard =ascii emislist. CdfFractions possible for INERIS
 !  and new cdf emission system in testing. Reset in config_ files
-! EMIS_TEST can be merged with EMIS_SOURCE after tests
-character(len=20), save, public :: &
-  EMIS_SOURCE = "Mixed",  & ! "Mixed" or old formats: "emislist" or "CdfFractions"
-  EMIS_TEST   = "None"      ! "None" or "CdfSnap"
 Logical , save, public :: &
   EMIS_OUT    = .false.     ! output emissions in separate files (memory demanding)
 
@@ -593,7 +580,7 @@ type(names), public, save :: InputFiles(Size_InputFiles)
 !1) add a line just here below, XXFile = '/default/Path/Default.name'
 !2) add the XXFile in NAMELIST /ModelConstants_config/
 !3) add a call associate_File(XXFile) near the end of Config_ModelConstants
-!4) In the routine using the file, add the XXFile under  "use ModelConstants"
+!4) In the routine using the file, add the XXFile under  "use Config_module"
 !5) replace the name you used in the routine with XX_File
 character(len=TXTLEN_FILE), target, save, public :: femisFile = 'DataDir/femis.dat'
 character(len=TXTLEN_FILE), target, save, public :: Vertical_levelsFile = 'DataDir/Vertical_levels20.txt'
@@ -629,6 +616,8 @@ character(len=TXTLEN_FILE), target, save, public :: NdepFile = 'DataDir/AnnualNd
 character(len=TXTLEN_FILE), target, save, public :: lightningFile = 'DataDir/lt21-nox.datMM'
 character(len=TXTLEN_FILE), target, save, public :: LoganO3File = 'DataDir/Logan_P.nc'
 character(len=TXTLEN_FILE), target, save, public :: DustFile = 'DataDir/Dust.nc'
+character(len=TXTLEN_FILE), target, save, public :: TopoFile = 'DataDir/GRID/topography.nc'
+character(len=TXTLEN_FILE), target, save, public :: BiDirInputFile = 'NOTSET' ! FUTURE
 
 !----------------------------------------------------------------------------
 contains
@@ -661,8 +650,10 @@ subroutine Config_ModelConstants(iolog)
    ,SEAFIX_GEA_NEEDED     & ! only if problems, see text above.
    ,BGND_CH4              & ! Can reset background CH4 values
    ,SKIP_RCT              & ! Can  skip some rct
-   ,EMIS_SOURCE, EMIS_TEST, EMIS_OUT, emis_inputlist, EmisDir &
+   ,EMIS_OUT, emis_inputlist, EmisDir &
+   ,USE_SECTORS_NAME      & !to force a specific sector (SNAP or GNFR)
    ,SecEmisOutPoll        & ! to output sectorwise emissions
+   ,HourlyEmisOut         & ! to output snap and sector emissions hourly
    ,FLUX_VEGS             & ! Allows user to add veg categories for eg IAM ouput
    ,FLUX_IGNORE           & ! Specify which landcovers don't need FLUX
    ,VEG_2dGS              & ! Allows 2d maps of growing seasons
@@ -684,6 +675,7 @@ subroutine Config_ModelConstants(iolog)
    ,DailyFacFile&
    ,HourlyFacFile&
    ,SplitDefaultFile&
+   ,SplitSpecialsFile&
    ,RoadMapFile&
    ,AVG_SMI_2005_2010File&
    ,Soil_TegenFile&
@@ -696,8 +688,10 @@ subroutine Config_ModelConstants(iolog)
    ,jcl3kmFile&
    ,NdepFile&
    ,lightningFile&
+   ,BiDirInputFile&
    ,LoganO3File&
-   ,DustFile
+   ,DustFile&
+   ,TopoFile
 
   NAMELIST /Machine_config/ DataPath
 
@@ -823,14 +817,19 @@ subroutine Config_ModelConstants(iolog)
   call associate_File(jcl3kmFile)
   call associate_File(NdepFile)
   call associate_File(lightningFile)
+  call associate_File(BiDirInputFile)  ! FUTURE INPUT
   call associate_File(LoganO3File)
   call associate_File(DustFile)
+  call associate_File(TopoFile)
 
   do i = 1,size(InputFiles)
      if(associated(InputFiles(i)%filename))then
         InputFiles(i)%filename = key2str(InputFiles(i)%filename,'DataDir',DataDir)
+        InputFiles(i)%filename = key2str(InputFiles(i)%filename,'GRID',GRID)
      endif
   enddo
+
+
 end subroutine Config_ModelConstants
 
 subroutine associate_File(FileName)

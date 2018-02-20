@@ -215,6 +215,12 @@ contains
               cycle
            end if
            fac_emm(ic,1:12,insec,iemis)=buff(1:12)
+
+           ! Temporary and crude implementation for BIDIR tests:
+            if ( EMIS_FILE(iemis) == 'nh3' .and. USES%MonthlyNH3 == 'LOTOS' ) then
+              fac_emm(ic,1:12,insec,iemis) = &
+                 [ 0.60, 0.66,1.50,1.36,1.02,1.17,1.19,1.27,0.93,0.89,0.77,0.64]
+            end if
            !defined after renormalization and send to al processors:
            ! fac_min(inland,insec,iemis) = minval( fac_emm(inland,:,insec,iemis) )
 

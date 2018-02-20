@@ -38,7 +38,7 @@
 (6.0e-34*O2+5.6e-34*N2)*O2*EXP(-2.6*LogTdiv300)   OP + {O2} + {M}  = O3  ; acp2004, #1
 1.8e-11*N2*EXP(107.0*TINV)          OD + {N2}  = OP           ; A97,J
 3.2e-11*O2*EXP(67.0*TINV)           OD + {O2}  = OP           ; A97,J
-2.2e-10*H2O                         OD + {H2O} = 2. OH        ; A97,J
+2.14e-10*H2O                        OD + {H2O} = 2. OH        ; IUPAC 2007 Updated RB rv4_17 change
 1.4e-12*EXP(-1310.0*TINV)           O3 + NO    = NO2 + {O2}    ; acp2004
 1.4e-13*EXP(-2470.0*TINV)           O3 + NO2   = NO3 + {O2}    ; acp2004
 1.7e-12*EXP(-940.0*TINV)            O3 + OH    = HO2 + {O2}    ; acp2004 
@@ -67,7 +67,7 @@ KMT10                              HO2NO2 = HO2 + NO2 ; #-
 FH2O*2.2e-13*EXP(600.0*TINV)       HO2 + HO2 = H2O2          ; IUPAC 2001
 FH2O*1.9e-33*EXP(980.0*TINV)*M    HO2 + HO2 = H2O2          ; IUPAC 2001
 * HONO chemistry to be added (also need photolysis of HONO!)
-2.5e-12*EXP(-260.0*TINV)            OH + HONO = NO2         ;
+2.5e-12*EXP(260.0*TINV)            OH + HONO = NO2         ; rv4_17 changed
 
 * ;
 *----- sulphur chemistry ----------------------------------- ;
@@ -395,8 +395,7 @@ rcemis:C5H8                        = C5H8    ; # Anthropogenic isoprene
 rcbio:C5H8                       = C5H8    ;
 *E: rcbio:BIOTERP                    = APINENE ;
 rcbio:NO                         = NO ;
-*FEB2012 rc_Rn222(k)                                = Rn222    ;
-*FEB2012 rc_Rnwater(k)                             = Rnwater    ;
+rcbio:NH3                         = NH3 ;   # for FUTURE BIDIR
 *
 * Add ammonia
 * FUTURE rcnh3(k)                          = NH3 ;  # hbNH3

@@ -85,16 +85,18 @@
 ! femsdef="DataDir/volcano_emission.csv",
   topo_nc="DataDir/GRID/topography.nc",
   need_topo=T, ! stop simulation if topo_nc not found
-  NMAX_LOC=-1, ! estimate from lines in flocdef
-  NMAX_EMS=-1, ! estiamte from lines in femsdef
+  NMAX_LOC=1, ! number of locations (-1 for autodetect)
+  NMAX_EMS=9, ! number of emissions per loc (bins(2,7,9) * emissions for volc)
 &end
 &Nest_config
 !-------- Read/Write MODEs
   MODE_READ = 'FORECAST',     ! at the start of run, if files are found
   MODE_SAVE = 'FORECAST',     ! every OUTDATE(1:FORECAST_NDUMP)
+  native_grid_3D   = T,       ! initial conditions always in same grid
+  native_grid_BC   = T,       ! BC not used
 !-------- File name templates for Nest I/O
   template_read_3D = 'EMEP_IN_YYYYMMDD.nc',   ! YYYY, YY, MM, DD, hh strings
-  template_read_BC = 'EMEP_IN_YYYYMMDD.nc',   ! will be replaced with numbers
+  template_read_BC = 'EMEP_IN_YYYYMMDD_bc.nc',   ! will be replaced with numbers
   template_write   = 'EMEP_OUT_YYYYMMDD.nc',  ! in Nest_ml
 !-------- CWF dump/restart
 ! WRITE_SPC        = 'NO2','O3','SO2','CO',   ! reduce output for NMC statistics (3DVar)

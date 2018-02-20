@@ -56,10 +56,10 @@ use Config_module,    only: PASCAL, PT, Pref, METSTEP  &
      ,CONVECTION_FACTOR &
      ,LANDIFY_MET,MANUAL_GRID  &
      ,CW_THRESHOLD,RH_THRESHOLD, CW2CC, JUMPOVER29FEB, meteo, startdate&
-     ,SoilTypesFile, Soil_TegenFile
+     ,SoilTypesFile, Soil_TegenFile, TopoFile, SurfacePressureFile
 use FastJ_ml,             only: setup_phot_fastj,rcphot_3D
 use Functions_ml,         only: Exner_tab, Exner_nd
-use Functions_ml,         only: T_2_Tpot  !OS_TESTS
+use Functions_ml,         only: T_2_Tpot, StandardAtmos_kPa_2_km 
 use GridValues_ml,        only: glat, xm_i, xm_j, xm2         &
        ,Poles, sigma_bnd, sigma_mid, xp, yp, fi, GRIDWIDTH_M  &
        ,debug_proc, debug_li, debug_lj, A_mid, B_mid          &
@@ -597,6 +597,11 @@ subroutine MeteoRead()
   ! conversion of pressure from hPa to Pascal.
   if(ps_in_hPa)ps(1:limax,1:ljmax,nr) = ps(1:limax,1:ljmax,nr)*PASCAL
 
+
+  if(first_call)then !constant->read only once
+     call read_surf_elevation(ix_elev)
+  endif
+
   if(foundcc3d)then
     if(WRF_MET_CORRECTIONS)then
       !WRF clouds in fraction, multiply by 100:
@@ -690,7 +695,6 @@ subroutine MeteoRead()
         surface_precip = max(0.0,(surface_precip - surface_precip_old))*0.001/(METSTEP*3600)! get only the variation. mm ->m/s
       end if
       surface_precip_old = buff ! Accumulated rain in WRF
-      sdepth=sdepth*0.001 !mm->m
       ice_nwp = ice_nwp*100!flag->%
       !smooth qrain, because it is instantaneous but rain may move
       do k=1,kmax_mid
@@ -867,6 +871,11 @@ subroutine MeteoRead()
       write(*,*)'WARNING: relative_humidity_2m not found'
     rh2m(:,:,nr) = -999.9  ! ?
   end if
+
+  if(.not. WRF_MET_CORRECTIONS .and. foundsdepth)then
+     !IFS defines snowdepth in units of water equivalent
+     sdepth(:,:,nr) = sdepth(:,:,nr)*5 !crude conversion from water equivalent into meters of snow
+  endif
 
   if(WRF_MET_CORRECTIONS)then
     ! flux defined with opposite signs
@@ -1510,10 +1519,10 @@ subroutine met_derived(nt)
             / (CP*rho_surf(i,j) * ustar_nwp(i,j)**3 * t2_nwp(i,j,nt) )
   end forall
 
-  where ( invL_nwp < -1.0 )
-    invL_nwp  = -1.0
-  else where ( invL_nwp > 1.0 )
-    invL_nwp  = 1.0
+  where ( invL_nwp(:,:) < -1.0 )
+    invL_nwp(:,:)  = -1.0
+  else where ( invL_nwp(:,:) > 1.0 )
+    invL_nwp(:,:)  = 1.0
   end where
 
 
@@ -3071,5 +3080,22 @@ subroutine Check_Meteo_Date_Short
     met(ix_irainnc)%needed     = found_wrf_bucket
   end if
 end subroutine Check_Meteo_Date_Short
+
+subroutine read_surf_elevation(ix)
+
+  integer :: ix
+
+  call GetCDF_modelgrid(met(ix)%name,TopoFile,met(ix)%field,&
+                        1,1,1,1,needed=met(ix)%needed,found=met(ix)%found)
+
+  if(met(ix)%found == .false.) then
+     if( me==0 )write(*,*)'WARNING: met topography not found. Approximating elevation using standard map'
+     call ReadField_CDF(SurfacePressureFile,'surface_pressure_year',&
+          met(ix)%field,1,needed=.true.,interpol='zero_order')
+     
+     met(ix)%field=1000.0*StandardAtmos_kPa_2_km(0.001*met(ix)%field)
+  endif
+
+end subroutine read_surf_elevation
 
 end module met_ml

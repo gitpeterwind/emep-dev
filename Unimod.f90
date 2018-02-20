@@ -17,6 +17,7 @@ program myeul
   use Advection_ml,     only: vgrid_Eta, assign_nmax, assign_dtadvec
   use Aqueous_ml,       only: init_aqueous, Init_WetDep   !  Initialises & tabulates
   use AirEmis_ml,       only: lightning
+  use BiDir_emep,       only : Init_BiDir  !  FUTURE
   use Biogenics_ml,     only: Init_BVOC, SetDailyBVOC
   use BoundaryConditions_ml, only: BoundaryConditions
   use CheckStop_ml,     only: CheckStop
@@ -193,6 +194,8 @@ program myeul
   call Init_Derived()        ! Derived field defs.
 
   call Init_BVOC()
+
+  call Init_BiDir()           ! BIDIR FUTURE 
 
   call tabulate()             ! sets up tab_esat, etc.
 

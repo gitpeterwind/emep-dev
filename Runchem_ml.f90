@@ -14,7 +14,7 @@ module RunChem_ml
   use AOD_PM_ml,        only: AOD_Ext
   use Aqueous_ml,       only: Setup_Clouds, prclouds_present, WetDeposition
   use Biogenics_ml,     only: setup_bio
-  use CellMet_ml,       only: Get_CellMet
+  use CellMet_ml,       only: Get_CellMet, z0_out_ix, invL_out_ix
   use CheckStop_ml,     only: CheckStop, StopAll
   use Chemfields_ml,    only: xn_adv    ! For DEBUG 
   use Chemsolver_ml,    only: chemistry
@@ -29,6 +29,7 @@ module RunChem_ml
                               DEBUG_EMISSTACKS, & ! MKPS
                               DebugCell, DEBUG    ! RUNCHEM
   use DefPhotolysis_ml, only: setup_phot
+  use DerivedFields_ml, only: f_2d
   use DryDep_ml,        only: drydep
   use DustProd_ml,      only: WindDust  !DUST -> USES%DUST
   use FastJ_ml,         only: setup_phot_fastj,phot_fastj_interpolate
@@ -47,6 +48,7 @@ module RunChem_ml
   use Setup_1d_ml,      only: setup_1d, setup_rcemis, reset_3d
   use Setup_1dfields_ml,only: first_call, &
                               amk, rcemis, xn_2d  ! DEBUG for testing
+  use SmallUtils_ml,    only: find_index
   use TimeDate_ml,      only: current_date,daynumber,print_date
 !--------------------------------
   implicit none
@@ -84,6 +86,12 @@ subroutine runchem()
   if( (.not. first_call) .and. USES%PreADV)then
      call getWinds
   endif
+
+  if(first_call)then
+     z0_out_ix = find_index("logz0", f_2d(:)%subclass)
+     invL_out_ix = find_index("invL", f_2d(:)%subclass)
+  endif
+
 ! Processes calls 
   errcode = 0
 

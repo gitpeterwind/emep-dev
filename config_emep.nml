@@ -31,7 +31,7 @@
  LandCoverInputs%Do3seDefs  = 'DataDir/LandInputs_Apr2017/Inputs_DO3SE.csv',
  LandCoverInputs%MapFile =
     'DataDir/Landuse/Landuse_PS_5km_LC.nc',    ! 1km also available    ! Can also use 1km
-    'DataDir/LandInputs_Apr2017/glc2000mCLM.nc',
+    'DataDir/LandInputs_Feb2018/glc2000xCLMf18.nc',
 !    'DataDir/LanduseGLC.nc',
  YieldModifications = 'VBS'   ! None for EmChems 'JPC-VY-acid',
 ! EmBio%IsopFac           =  1.0,
@@ -47,6 +47,7 @@
   USES%n2o5HydrolysisMethod = "Smix" ! "SmixTen" "Gamma:0.002" NOT:"OrigRiemer"
   USES%WHITECAPS =       "Callaghan"    ! Norris , Monahan
   USES%PFT_MAPS         = F,            ! PFT LAI tests
+!  USES%MonthlyNH3       = 'LOTOS',      !  Better monthly profile, for Europe only!
 !------------------------------
   USES%SOILWATER         = T,            ! Uses SMI from meteo data
   USES%CONVECTION        = F,
@@ -86,6 +87,8 @@
   emis_inputlist(1)%name  = 'DataDir/Emis_TNO7_MACCIII/Emis_TNO7_MACCIII_2011.nc',
 !  emis_inputlist(1)%name  = 'DataDir/Emis_GLOB_05.nc',
 !  emis_inputlist(1)%pollName(1:2)     = 'voc','sox', !example of restricted choice of pollutants
+! PANDA=HTAP+MEIC
+! emis_inputlist(1)%name  = 'DataDir/ASIA/Emis_01degGLOBAL_2012_HTAP_MIEC_monthly.nc',
 
 
 !
@@ -223,8 +226,7 @@
 !------------------------------
   flocdef="DataDir/volcano_location.csv_20160610",
   femsdef="DataDir/volcano_emission.csv_20160610",
-  topo_nc="DataDir/GRID/topography.nc",
-  need_topo=T, ! stop simulation if topo_nc not found
+  need_topo=T, ! Do not use column emissions if topography.nc not found
 ! NMAX_LOC=-1, ! estimate from lines in flocdef
 ! NMAX_EMS=-1, ! estiamte from lines in femsdef
 &end
@@ -294,6 +296,9 @@ OutputMisc=
  ! name        class    subclass txt   unit          index f2d dt_scale scale avg period
  !------------------------------------------------------------------------------------
  !! CAREFUL !!  Rate constant numbers will change with chemical scheme! Adjust as needed!
+ !'J(NO2)'         ,'USET','D3_J(NO2)'  ,'photorate','1/s' ,-99,-99,F,1.0,T,'YMH',
+ !'inv_L'          ,'USET', 'invL','inv_MO_length', 'm/s'  ,-99, -1,F,1.0,T,'YMH',
+ !'av_logz0'       ,'USET', 'logz0','roughness_length','log_m',-99,-1,F,1.0,T,'YMH',
  'rcAeroN2O5',   'USET', 'rct',   'rct', '/s',          61, -1,       F,   1.0, T, 'YM',
 !'rcAeroHNO3SS', 'USET', 'rct',   'rct', '/s',          71, -1,       F,   1.0, T, 'YM',
 !'rcAeroHNO3DU', 'USET', 'rct',   'rct', '/s',          72, -1,       F,   1.0, T, 'YM',

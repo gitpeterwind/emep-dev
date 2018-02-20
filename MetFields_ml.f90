@@ -158,8 +158,8 @@ module MetFields_ml
        ,SoilWater_uppr  & !  Shallow  (Upper 7.2cm in PARLAM)
        ,SoilWater_deep  & !  Deep (Next 6x7cm in PARLAM), converted to relative value 
        ,sdepth          & !  Snowdepth, m
-       ,ice_nwp             & ! QUERY why real?
-       ,sst     &  ! SST Sea Surface Temprature- ONLY from 2002 in PARLAM
+       ,ice_nwp         & ! QUERY why real?
+       ,sst       &  ! SST Sea Surface Temprature- ONLY from 2002 in PARLAM
        ,ws_10m    ! wind speed 10m
  
 
@@ -170,10 +170,11 @@ module MetFields_ml
     ,convective_precip & ! Convective precip mm/hr
     ,Tpot2m            & ! Potential temp at 2m
     ,ustar_nwp         & ! friction velocity m/s ustar^2 = tau/roa
-    ,invL_nwp          & ! friction velocity m/s ustar^2 = tau/roa
     ,pzpbl             & ! stores H(ABL) for averaging and plotting purposes, m
     ,pwp               & ! Permanent Wilting Point
-    ,fc                  ! Field Capacity
+    ,fc                & ! Field Capacity
+    ,invL_nwp          & ! inverse of the Monin-Obuhkov length
+    ,model_surf_elevation! height above sea level of model surface. NB: can differ from physical value
 
 !  temporary placement of solar radiation variations QUERY?
  
@@ -240,14 +241,18 @@ module MetFields_ml
     ,foundSMI3= .true.& ! false if no Soil Moisture Index level 3 (deep)
     ,foundrain= .false.& ! false if no rain found or used
     ,foundirainnc= .false. &! false if no irainnc found or used
-    ,foundirainc= .false. ! false if no irainc found or used
+    ,foundirainc= .false. &! false if no irainc found or used
+    ,foundinvL= .false. &! false if topography file found. 
+    ,foundtopo= .false. ! false if topography file found. 
+     !NB: the value of model_surf_elevation will be set to default value based on surface pressure anyway
 
 ! specific indices of met
   integer, public, save   :: ix_u_xmj,ix_v_xmi, ix_q, ix_th, ix_sdot, ix_cc3d, ix_pr, ix_cw_met, ix_cnvuf, &
        ix_cnvdf, ix_Kz_met, ix_roa, ix_SigmaKz, ix_EtaKz, ix_Etadot, ix_cc3dmax, ix_lwc, ix_Kz_m2s, &
        ix_u_mid, ix_v_mid, ix_ps, ix_t2_nwp, ix_rh2m, ix_fh, ix_fl, ix_tau, ix_ustar_nwp, ix_sst, &
        ix_SoilWater_uppr, ix_SoilWater_deep, ix_sdepth, ix_ice_nwp, ix_ws_10m, ix_surface_precip, &
-       ix_uw, ix_ue, ix_vs, ix_vn, ix_convective_precip, ix_rain,ix_irainc,ix_irainnc
+       ix_uw, ix_ue, ix_vs, ix_vn, ix_convective_precip, ix_rain,ix_irainc,ix_irainnc, ix_elev,&
+       ix_invL
 
   type,  public :: metfield
      character(len = 100) :: name = 'empty' !name as defined in external meteo file
@@ -807,6 +812,21 @@ subroutine Alloc_MetFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND,NMET)
   ix_ws_10m=ix
 
   ix=ix+1
+  met(ix)%name             = 'invL_nwp'
+  met(ix)%dim              = 2
+  met(ix)%frequency        = 3
+  met(ix)%time_interpolate = .false.
+  met(ix)%read_meteo       = .false.
+  met(ix)%needed           = .false.
+  met(ix)%found            => foundinvL
+  allocate(invL_nwp(LIMAX,LJMAX))
+  invL_nwp=0.0
+  met(ix)%field(1:LIMAX,1:LJMAX,1:1,1:1)  => invL_nwp
+  met(ix)%zsize = 1
+  met(ix)%msize = 1
+  ix_invL=ix
+
+  ix=ix+1
   met(ix)%name             = 'large_scale_precipitations'
   met(ix)%dim              = 2
   met(ix)%frequency        = 3
@@ -835,6 +855,21 @@ subroutine Alloc_MetFields(LIMAX,LJMAX,KMAX_MID,KMAX_BND,NMET)
   met(ix)%zsize = 1
   met(ix)%msize = 1
   ix_convective_precip=ix
+
+  ix=ix+1
+  met(ix)%name             = 'topography'!NB: as used in the met model; can differ from physical in mountainous areas.
+  met(ix)%dim              = 2
+  met(ix)%frequency        = 100000!constant
+  met(ix)%time_interpolate = .false.
+  met(ix)%read_meteo       = .false.!read once only the first time
+  met(ix)%needed           = .false.
+  met(ix)%found            => foundtopo
+  allocate(model_surf_elevation(LIMAX,LJMAX))
+  model_surf_elevation=0.0
+  met(ix)%field(1:LIMAX,1:LJMAX,1:1,1:1)  => model_surf_elevation
+  met(ix)%zsize = 1
+  met(ix)%msize = 1
+  ix_elev=ix
 
   ix=ix+1
   met(ix)%name             = 'neigbors_wind-uw'
@@ -1016,7 +1051,7 @@ if(USE_WRF_MET_NAMES)then
    met(ix_ws_10m)%name            = 'U10'
    met(ix_SoilWater_uppr)%name    = 'SMI1'!take first level. Do not change name! (name set in Getmeteofield)
    met(ix_SoilWater_deep)%name    = 'SMI3'!take third level. Do not change name! (name set in Getmeteofield)
-   met(ix_sdepth)%name            = 'SNOWNC'!snow and ice in mm
+   met(ix_sdepth)%name            = 'SNOWH'!snowdepth in m
    met(ix_ice_nwp)%name           = 'SEAICE'!flag 0 or 1
 !... addmore
 end if
@@ -1030,7 +1065,6 @@ end if
     allocate(u_ref(LIMAX,LJMAX))
     allocate(rho_surf(LIMAX,LJMAX))
     allocate(Tpot2m(LIMAX,LJMAX))
-    allocate(invL_nwp(LIMAX,LJMAX))
     allocate(pzpbl(LIMAX,LJMAX))
     allocate(pwp(LIMAX,LJMAX))
     allocate(fc(LIMAX,LJMAX))

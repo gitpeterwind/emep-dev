@@ -16,11 +16,11 @@ use GridValues_ml,        only: xm2,sigma_bnd,GridArea_m2,&
                                 GRIDWIDTH_M,&
                                 coord_in_processor,coord_in_gridbox
 use Io_ml,                only: open_file,read_line,IO_NML,IO_TMP,PrintLog
-use MetFields_ml,         only: roa, z_bnd, u_xmj, v_xmi
+use MetFields_ml,         only: roa, z_bnd, u_xmj, v_xmi, foundtopo, model_surf_elevation
 use Config_module,    only: KCHEMTOP,KMAX_MID,MasterProc,NPROC, &
                                 USES,DEBUG,&
                                 TXTLEN_NAME,TXTLEN_FILE,dt_advec,dt_advec_inv,&
-                                startdate,enddate,DataDir,GRID
+                                startdate,enddate,DataDir,GRID, TopoFile
 use NetCDF_ml,            only: GetCDF_modelgrid
 use MPI_Groups_ml
 use Par_ml,               only: LIMAX, LJMAX, me
@@ -39,8 +39,7 @@ public :: getWinds        ! Wind speeds at locations
 
 logical, save ::          &
   found_source = .true.,  & ! Are sources found on this processor/subdomain?
-  found_topo   = .false., & ! topo_nc file found?
-  need_topo    = .true.     ! stop if topo_nc is not found
+  need_topo    = .true.     ! do not use column emissions if topo file is not found
 
 integer, save ::  &
   NMAX_LOC = 5,   &! Max number of locations on processor/subdomain (increase to 24 for eEMEP)
@@ -85,7 +84,6 @@ character(len=*),parameter :: &
   MSG_FMT="('"//mname//":',:,1X,A,5(:,1X,I0,':',A),3(:,1X,ES10.3,':',A))"
 
 character(len=TXTLEN_FILE), save :: &
-  topo_nc="topography.nc",&
   flocdef="columnsource_location.csv",  & ! see locdef
   femsdef="columnsource_emission.csv"     ! see emsdef
 
@@ -93,7 +91,6 @@ character(len=3), parameter :: &  ! Expand variable name for multy sceario runs
 ! EXPAND_SCENARIO_NAME(4)=["ASH","NUC","###","***"] ! e.g. ASH_F --> V1702A02B_F
   EXPAND_SCENARIO_NAME(1)=""                        ! do not expand
 
-real,save,allocatable :: surf_height(:,:) ! [m], read from topo_nc
 integer,save,public,allocatable :: PROC_LOC(:)
 real,save,public,allocatable  :: Winds(:,:,:)
 
@@ -132,14 +129,26 @@ subroutine Config_ColumnSource()
 !-----------------------------------------------------------------------!
   integer,parameter :: read_ok(4)=[0,-1,84,85] ! OK if namelist not found
   integer :: ios=0
+  character(len=*), parameter :: dtxt = 'ColSrcConf:'
+  ! test if topography file was found
+  if(.not.foundtopo)then
+    call PrintLog(dtxt//"WARNING: "//trim(TopoFile)//" not found",MasterProc)
+    if(need_topo)then
+       call PrintLog(dtxt//"WARNING: Not calculating Column emissions because no topo file found")
+       NMAX_LOC = 0
+       NMAX_EMS = 0
+       found_source = .false.
+       return
+    else
+       call PrintLog(dtxt//"WARNING: Column emissions calculated using approximate elevations")
+    endif
+  end if
   NAMELIST /ColumnSource_config/&
-    NMAX_LOC,NMAX_EMS,flocdef,femsdef,topo_nc,need_topo
+    NMAX_LOC,NMAX_EMS,flocdef,femsdef,need_topo
   rewind(IO_NML)
   read(IO_NML,NML=ColumnSource_config,iostat=ios)
-  call CheckStop(all(ios/=read_ok),"NML=ColumnSource_config")
-  ! expand DataDir/GRID keyswords
-  topo_nc=key2str(topo_nc,'DataDir',DataDir)
-  topo_nc=key2str(topo_nc,'GRID',GRID)
+  call CheckStop(all(ios/=read_ok),dtxt//"NML=ColumnSource_config")
+  ! expand DataDir keyswords
   flocdef=key2str(flocdef,'DataDir',DataDir)
   femsdef=key2str(femsdef,'DataDir',DataDir)
   ! estimate NMAX_LOC/EMS from lines in file, if not defined
@@ -156,15 +165,8 @@ subroutine Config_ColumnSource()
                   '??','??',-1,-1,-1,.true.,.false.)
   PROC_LOC(:)=-1
   if(USES%PreADV) allocate(Winds(KMAX_MID,2,NMAX_LOC))
+print *, dtxt//'done', me
 
-  ! read topography file
-  allocate(surf_height(LIMAX,LJMAX))
-  call GetCDF_modelgrid("topography",topo_nc,surf_height,&
-                        1,1,1,1,needed=need_topo,found=found_topo)
-  if(.not.found_topo)then
-    call PrintLog("WARNING: "//mname//" topography file not found",MasterProc)
-    surf_height=0.0
-  end if
 end subroutine Config_ColumnSource
 !-----------------------------------------------------------------------!
 ! Emergency scenarios:
@@ -192,10 +194,17 @@ function ColumnRate(i,j,REDUCE_VOLCANO) result(emiss)
 !----------------------------!
 !
 !----------------------------!
+  if(NMAX_LOC==0)then
+     emiss =0.0
+     return
+  endif
   if(first_call)then
     call Config_ColumnSource()
+    if(NMAX_LOC==0)then
+       emiss =0.0
+       return
+    endif
     call setRate()
-    deallocate(surf_height)
     first_call=.false.
     itot=find_index("SO2",species(:)%name)
     if(itot<1)then
@@ -374,7 +383,7 @@ subroutine setRate()
       call CheckStop(nloc>NMAX_LOC,&
             mname//" NMAX_LOC exceeded in "//trim(flocdef)//" read")
       ! remove model surface height from vent elevation
-      dloc%elev=dloc%elev-surf_height(dloc%iloc,dloc%jloc)
+      dloc%elev=dloc%elev-model_surf_elevation(dloc%iloc,dloc%jloc)
       locdef(nloc)=dloc
       if(DEBUG%COLSRC) &
         write(*,MSG_FMT)'Vent',me,'in',nloc,trim(dloc%id),&
