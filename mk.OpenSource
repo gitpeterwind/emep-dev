@@ -1,4 +1,4 @@
-vers=rv4.15;year=2017                 # Input version/year flags
+vers=rv4.17;year=2018                 # Input version/year flags
 tdir=$HOME/Unify                      # top directory - change $HOME as required
 idir=$tdir/emep-mscw                  # Input dir
 

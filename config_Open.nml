@@ -1,8 +1,8 @@
 &INPUT_PARA
-  GRID      = 'EMEP01',
+  GRID      = 'EECCA',
   iyr_trend = 2015
   runlabel1 = 'Base',
-  runlabel2 = 'Opensource_Setup_2017',
+  runlabel2 = 'Opensource_Setup_2018',
   startdate = 2015,01,01,000000,
   enddate   = 2015,12,31,000024,
 &end
@@ -12,6 +12,13 @@
 &ModelConstants_config
   meteo                 = '../meteoYYYY/GRID/meteoYYYYMMDD.nc',
   DegreeDayFactorsFile  = 'MetDir/DegreeDayFactors.nc',
+  EmisHeightsFile       = 'DataDir/EmisHeights.txt',
+  SplitDefaultFile      = 'DataDir/emissplit.defaults.POLL',
+  SplitSpecialsFile     = 'DataDir/emissplit.specials.POLL',
+  MonthlyFacFile        = 'DataDir/MonthlyFac.POLL',
+  DailyFacFile          = 'DataDir/DailyFac.POLL',
+  HourlyFacFile         = 'DataDir/HourlyFacs.INERIS',
+  EMEP_EuroBVOCFile     = 'DataDir/EMEP_EuroBVOC.nc',
 !------------------------------
   EXP_NAME              = 'EMEPSTD',
   MY_OUTPUTS            = 'EMEPSTD',
@@ -21,7 +28,7 @@
   LandCoverInputs%LandDefs  = 'DataDir/Inputs_LandDefs.csv',
   LandCoverInputs%Do3seDefs = 'DataDir/Inputs_DO3SE.csv',
   LandCoverInputs%MapFile   = 'DataDir/Landuse_PS_5km_LC.nc',
-                              'DataDir/glc2000mCLM.nc',
+                              'DataDir/glc2000xCLMf18.nc',
   YieldModifications    = 'VBS', 
   PBL%ZiMIN             =  50.0,
 !------------------------------
@@ -75,9 +82,8 @@
 !------------------------------
 ! volcanic emissions from passive degassing and historical eruptions
 !------------------------------
-  flocdef="DataDir/columnsource_location.csv",
-  femsdef="DataDir/columnsource_location.csv",
-  topo_nc="DataDir/GRID/topography.nc",
+  flocdef='DataDir/columnsource_location.csv',
+  femsdef='DataDir/columnsource_emission.csv',
   need_topo=T, ! stop simulation if topo_nc not found
   NMAX_LOC=-1, ! estimate from lines in flocdef
   NMAX_EMS=-1, ! estiamte from lines in femsdef
