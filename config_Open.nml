@@ -31,7 +31,6 @@
   USES%DEGREEDAY_FACTORS = T,
   USES%PlumeMethod      = 'PVDI',    ! default PVDI, possible: NILU, ASMI, PVDI
   USES%PFT_MAPS         = F,         ! PFT LAI tests
-  USES%n2o5HydrolysisMethod = "Gamma:0.002" ! EmepRiemer=ACP2012 EMEP implementation
 !------------------------------
   USES%SOILWATER         = T,          ! Uses SMI from meteo data
   USES%CONVECTION        = F,
