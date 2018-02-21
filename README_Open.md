@@ -94,7 +94,7 @@ EmChem16a is an update of the EmChem16 scheme presented in EMEP report 1/2017.
 # Timefactors
 
   For EECCA runs, the monthly time-factors from the LOTOS-EUROS model can now be
-  activated, and seem to generate betetr results. 
+  activated, and seem to generate better results. 
 
   To use, set MonthlyNH3 = 'LOTOS' in config_emep.nml
 
