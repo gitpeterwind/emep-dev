@@ -203,13 +203,10 @@ and eliminate special coding as far as possible.
 ## Code structure
 
 Some code from `ModelConstants_ml.f90` has been moved into a new
-`emep_Config_mod.f90` module. The aim is to restore `ModelConstants_ml.f90` to
+`Config_module.f90` module. The aim is to restore `ModelConstants_ml.f90` to
 its original role as a place to store some model-specific variables, and
-to let `emep_Config_mod.f90` take over the operations of reading namelists
+to let `Config_module.f90` take over the operations of reading namelists
 and setting the configuration variables. This work has only just started,
 however, and so unfortunately the current release has configuration 
 variables in both modules. This will be rectified in future release.
 
-(The suffix `_mod` will also be used in future to represent module, rather
-than ml as used prevously, since `_mod` seems to be gaining ground among
-other fortran projects.)
