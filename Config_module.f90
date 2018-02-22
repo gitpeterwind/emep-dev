@@ -223,7 +223,7 @@ integer, public, save :: startdate(4)=(/0,0,0,0/),enddate(4)=(/0,0,0,24/) ! star
 !-----------------------------------------------------------
 ! Convection factor - reduces convective fluxes (which can be
 ! too high in some NWPs)
-real, public, save :: CONVECTION_FACTOR = 1.0
+real, public, save :: CONVECTION_FACTOR = 0.33   ! Pragmatic default
 !-----------------------------------------------------------
 logical, public, save ::             &
   FORECAST              = .false.    & ! reset in namelist
