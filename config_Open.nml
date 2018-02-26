@@ -3,8 +3,8 @@
   iyr_trend = 2015
   runlabel1 = 'Base',
   runlabel2 = 'Opensource_Setup_2018',
-  startdate = 2015,01,01,000000,
-  enddate   = 2015,12,31,000024,
+  startdate = 2015,01,01,00,
+  enddate   = 2015,12,31,24,
 &end
 &Machine_config
   DataPath(1) = '../input',
