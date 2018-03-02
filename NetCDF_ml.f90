@@ -3705,7 +3705,6 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
         call CheckStop(status /= nf90_noerr,"Grid_resolution attribute not found")
         Ndiv=nint(5*Grid_resolution/GRIDWIDTH_M)
         Ndiv=max(1,Ndiv)
-        Ndiv=5
         Ndiv2=Ndiv*Ndiv
         if(Ndiv>1.and.MasterProc)then
            write(*,*)'dividing each gridcell into ',Ndiv2,' pieces'

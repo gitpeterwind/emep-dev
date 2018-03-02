@@ -84,7 +84,7 @@
 !------------------------------
   flocdef='DataDir/columnsource_location.csv',
   femsdef='DataDir/columnsource_emission.csv',
-  need_topo=T, ! stop simulation if topo_nc not found
+  need_topo=T, ! do not use column emissions if topo_nc not found
   NMAX_LOC=-1, ! estimate from lines in flocdef
   NMAX_EMS=-1, ! estiamte from lines in femsdef
 &end
