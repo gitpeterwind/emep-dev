@@ -178,7 +178,7 @@ subroutine Init_My_Deriv()
 
   integer :: i, itot, nDD, nMET, nVEGO3=0, n1, istat, nMc, neigh
   integer :: nOutputConcs
-  character(len=100) :: errmsg
+  character(len=100) :: errmsg,line
   character(len=TXTLEN_DERIV), dimension(size(OutputConcs(:)%txt1)) :: &
     tag_name    ! Needed to concatanate some text in AddArray calls
                 ! - older (gcc 4.1?) gfortran's had bug
@@ -209,9 +209,24 @@ subroutine Init_My_Deriv()
   debug0 = DEBUG%MY_DERIVED.and.MasterProc
 
   rewind(IO_NML)
-  read(IO_NML,NML=OutputConcs_config)
-  read(IO_NML,NML=OutputDep_config)
-  read(IO_NML,NML=OutputSize_config)
+  read(IO_NML,NML=OutputConcs_config,iostat=istat, iomsg=errmsg)
+  if (istat/=0) then
+      backspace(IO_NML)
+      read(IO_NML,fmt='(A)') line
+      call CheckStop(errmsg , errmsg // ": " // trim(line))
+  end if
+  read(IO_NML,NML=OutputDep_config,iostat=istat, iomsg=errmsg)
+  if (istat/=0) then
+      backspace(IO_NML)
+      read(IO_NML,fmt='(A)') line
+      call CheckStop(errmsg , errmsg // ": " // trim(line))
+  end if
+  read(IO_NML,NML=OutputSize_config,iostat=istat, iomsg=errmsg)
+  if (istat/=0) then
+      backspace(IO_NML)
+      read(IO_NML,fmt='(A)') line
+      call CheckStop(errmsg , errmsg // ": " // trim(line))
+  end if
  
   !shift output domain according to rundomain
   call RestrictDomain(fullrun_DOMAIN)
