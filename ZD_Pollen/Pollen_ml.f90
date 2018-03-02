@@ -257,7 +257,7 @@ subroutine pollen_flux(i,j,debug_flag)
         interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
     call ReadField_CDF(olive_data_nc,'olive_th',olive_h_c,1, &
         interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
-    call ReadField_CDF(olive_data_nc,'olive_th',olive_dH,1, &
+    call ReadField_CDF(olive_data_nc,'olive_len',olive_dH,1, &
         interpol='conservative',needed=.false.,debug_flag=DEBUG_NC,UnDef=UnDef,found=found)
     if(.not.found) olive_dH(:,:) = dH_d_olive
 ! grass
