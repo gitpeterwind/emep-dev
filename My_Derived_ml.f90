@@ -75,7 +75,7 @@ public  :: My_DerivFunc ! Miscelleaneous functions of xn_adv for output
 integer, public, parameter ::       &
   MAX_NUM_DERIV2D = 343,            &
   MAX_NUM_DERIV3D = 179,            &
-  MAX_NUM_DDEP_ECOS = 6,            & ! Grid, Conif, etc.
+  MAX_NUM_DDEP_ECOS = 9,            & ! Grid, Conif, etc.
   MAX_NUM_DDEP_WANTED = NSPEC_ADV,  & !plenty big
   MAX_NUM_WDEP_WANTED = NSPEC_ADV,  & !plenty big
   MAX_NUM_NEWMOS  = 30,             & !New system.

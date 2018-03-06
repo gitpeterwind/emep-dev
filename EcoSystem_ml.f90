@@ -16,7 +16,7 @@ public :: Init_EcoSystems
 
 integer, public, parameter :: FULL_ECOGRID=1
 integer, private, parameter :: &
-  CONIF=2, DECID=3, CROP=4, SEMINAT=5, WATER_D=6 ! try to skip
+  CONIF=2, DECID=3, CROP=4, SEMINAT=5, FOREST=6, WATER_D=7 ! try to skipW
 
 ! We also keep the parameter for FULL_LCGRID=0 here, which is used
 ! for e.g. Vg values. Do not confuse LC with ECO stuff!
@@ -29,10 +29,10 @@ integer, public, parameter :: FULL_LCGRID=0
 ! since CCE want to have deposition to the watershed, which means 
 ! the grid in practice.
 
-integer, public, parameter :: NDEF_ECOSYSTEMS = 6
+integer, public, parameter :: NDEF_ECOSYSTEMS = 7
 character(len=8),public,dimension(NDEF_ECOSYSTEMS),parameter :: &
   DEF_ECOSYSTEMS = [character(len=8):: &
-    "Grid","Conif","Decid","Crops","Seminat","Water_D"]
+    "Grid","Conif","Decid","Crops","Seminat","Forest","Water_D"]
 
 type(Deriv),public,dimension(NDEF_ECOSYSTEMS)            ,save:: DepEcoSystem
 logical,    public,dimension(NDEF_ECOSYSTEMS,NLANDUSEMAX),save:: Is_EcoSystem
@@ -74,6 +74,7 @@ subroutine Init_EcoSystems()
   Is_EcoSystem(DECID,:)   =  LandType(:)%is_decid
   Is_EcoSystem(CROP,:)    =  LandType(:)%is_crop
   Is_EcoSystem(SEMINAT,:) =  LandType(:)%is_seminat
+  Is_EcoSystem(FOREST,:) =  LandType(:)%is_decid .or. LandType(:)%is_conif
   Is_EcoSystem(WATER_D,:) =  LandType(:)%is_water
 
   EcoSystemFrac(:,:,:) = 0.0

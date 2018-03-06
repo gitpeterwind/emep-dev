@@ -138,6 +138,14 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+06 Mar Dave, Heiko
+
+Ecosystem_ml
+My_Derived_ml
+config_Outputs_EMEPSTD.nml
+
+  - added is_forest and Forest outputs - merges both conif and decid
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 02 Mar 2018, Heiko
 
 Showing namelist-error line, gfortran fixes
