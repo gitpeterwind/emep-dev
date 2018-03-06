@@ -61,17 +61,20 @@ integer, parameter :: &
   max_string_length=200 ! large enough for paths to be set on Pollen_config namelist
 !-------------------------------------
 ! Variables read from NetCDF Files
-! pollen_flux   NetCDF file    NetCDF var
-!   pollen_frac birch_frac_nc  birch_frac
-!   birch_corr  birch_corr_nc  scale_factor (year specific version)
-!   birch_corr  birch_data_nc  cross
-!   birch_h_c   birch_data_nc  h_c
-!   pollen_frac olive_data_nc  olive_frac
-!   olive_h_c   olive_data_nc  olive_th
-!   pollen_frac grass_field_nc grass_frac
-!   grass_start grass_time_nc  grass_start
-!   grass_end   grass_time_nc  grass_end
-!   grass_end   grass_time_nc  grass_length+grass_start if grass_end not found
+! pollen_flux       NetCDF file     NetCDF var
+!   pollen_frac     birch_frac_nc   birch_frac
+!   birch_corr      birch_corr_nc   scale_factor (year specific version)
+!   birch_corr      birch_data_nc   cross
+!   birch_h_c       birch_data_nc   h_c
+!   pollen_frac     olive_data_nc   olive_frac
+!   olive_h_c       olive_data_nc   olive_th
+!   pollen_frac     rweed_frac_nc   fraction
+!   rweed_start_th  rweed_data_nc   start_th
+!   rweed_scale     rweed_data_nc   scale
+!   pollen_frac     grass_field_nc  grass_frac
+!   grass_start     grass_time_nc   grass_start
+!   grass_end       grass_time_nc   grass_end
+!   grass_end       grass_time_nc   grass_length+grass_start if grass_end not found
 ! Variables write/read from dump/restart Files
 ! pollen_dump/pollen_read   pollen ype (SPC)    NetCDF var
 !   xn_adv(i,:,:,:)         BIRCH,OLIVE,GRASS   SPC
@@ -81,7 +84,9 @@ character(len=max_string_length), save :: &
   birch_frac_nc ='birch_frac.nc',         &
   birch_data_nc ='pollen_data.nc',        &
   birch_corr_nc ='birch_factor_YYYY.nc',  &
-  olive_data_nc ='olive_YYYY.nc',    &
+  olive_data_nc ='olive_YYYY.nc',         &
+  rweed_frac_nc ='ragweed_frac.nc',       &
+  rweed_data_nc ='ragweed_YYYY.nc',       &
   grass_field_nc='grass_frac.nc',         &
   grass_time_nc ='grass_time.nc',         &
   grass_mode    ='linear',      & ! 'linear' (old) | 'gamma' (new)
@@ -110,7 +115,8 @@ subroutine Config_Pollen()
   logical, save :: first_call = .true.
   NAMELIST /Pollen_config/&
     birch_frac_nc,birch_data_nc,birch_corr_nc,&
-    olive_data_nc,grass_field_nc,grass_time_nc,grass_mode,&
+    olive_data_nc,rweed_frac_nc,rweed_data_nc,&
+    grass_field_nc,grass_time_nc,grass_mode,&
     template_read,template_write
 
   if(.not.first_call)return
@@ -174,14 +180,14 @@ function checkdates(nday,spc,update) result(ok)
     day_first_r=day_of_year(current_date%year,date_first_rweed%month,date_first_rweed%day)
     day_first_g=day_of_year(current_date%year,date_first_grass%month,date_first_grass%day)
     day_first_g=day_first_g-uncert_grass_day
-    day_first=min(day_first_b,day_first_o,day_first_g)
+    day_first=min(day_first_b,day_first_o,day_first_r,day_first_g)
 
     day_last_b=day_of_year(current_date%year,date_last_birch%month,date_last_birch%day)
     day_last_o=day_of_year(current_date%year,date_last_olive%month,date_last_olive%day)
     day_last_r=day_of_year(current_date%year,date_last_rweed%month,date_last_rweed%day)
     day_last_g=day_of_year(current_date%year,date_last_grass%month,date_last_grass%day)
     day_last_g=day_last_g+uncert_grass_day
-    day_last=max(day_last_b,day_last_o,day_last_g)
+    day_last=max(day_last_b,day_last_o,day_last_r,day_last_g)
     first_call = .false.
   end if
   select case(spc)
@@ -191,6 +197,8 @@ function checkdates(nday,spc,update) result(ok)
     ok=(day_first_b<=nday).and.(nday<=day_last_b)
   case(OLIVE,"O","o","olive")
     ok=(day_first_o<=nday).and.(nday<=day_last_o)
+  case(RWEED,"R","r","rweed")
+    ok=(day_first_r<=nday).and.(nday<=day_last_r)
   case(GRASS,"G","g","grass")
     ok=(day_first_g<=nday).and.(nday<=day_last_g)
   case default
@@ -215,13 +223,16 @@ subroutine pollen_flux(i,j,debug_flag)
        n2m(POLLEN_NUM),u10,prec,relhum,dfirst_g,dlast_g
 
   real, save, allocatable, dimension(:,:,:) :: &
-    pollen_frac   ! fraction of pollen (birch/olive/grass), read in
+    pollen_frac   ! fraction of pollen (birch/olive/rweed/grass), read in
   real, save, allocatable, dimension(:,:) :: &
-    birch_h_c,  & ! temperature treshold birch, read in
-    birch_corr, & ! correction field for p.emission, read in
-    olive_h_c,  & ! temperature treshold olive, read in
-    olive_dH,   & ! flowering period [degree days]
-    t2_day        ! daily temperature
+    birch_h_c,      & ! temperature treshold birch, read in
+    birch_corr,     & ! correction field for p.emission, read in
+    olive_h_c,      & ! temperature treshold olive, read in
+    olive_dH,       & ! flowering period [degree days]
+    rweed_start_th, & ! day of the year when the daylight length goes below 14.5h (StartCDThr)
+    t2_day            ! daily temperature
+  real, allocatable, dimension(:,:) :: &
+    rweed_scale       ! relative productivity (PollenTotal=rweed_scale*1.7e7)
 
   ! Read in the different fields
   if(first_call) then
@@ -236,8 +247,9 @@ subroutine pollen_flux(i,j,debug_flag)
     allocate(pollen_frac(LIMAX,LJMAX,POLLEN_NUM))
     allocate(birch_h_c(LIMAX,LJMAX),birch_corr(LIMAX,LJMAX))
     allocate(olive_h_c(LIMAX,LJMAX),olive_dH(LIMAX,LJMAX))
+    allocate(rweed_start_th(LIMAX,LJMAX),rweed_scale(LIMAX,LJMAX))
     allocate(grass_start(LIMAX,LJMAX),grass_end(LIMAX,LJMAX))
-    call ReadField_CDF(birch_frac_nc,'birch_frac',pollen_frac(:,:,1),1, &
+    call ReadField_CDF(birch_frac_nc,'birch_frac',pollen_frac(:,:,iBIRCH),1, &
        interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
     call ReadField_CDF(birch_data_nc,'h_c',birch_h_c,1, &
        interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
@@ -251,15 +263,26 @@ subroutine pollen_flux(i,j,debug_flag)
         interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
 ! olive
     olive_data_nc=date2string(olive_data_nc,current_date,debug=DEBUG_NC.and.MasterProc)
-    call ReadField_CDF(olive_data_nc,'olive_frac',pollen_frac(:,:,2),1, &
+    call ReadField_CDF(olive_data_nc,'olive_frac',pollen_frac(:,:,iOLIVE),1, &
         interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
     call ReadField_CDF(olive_data_nc,'olive_th',olive_h_c,1, &
         interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
     call ReadField_CDF(olive_data_nc,'olive_len',olive_dH,1, &
         interpol='conservative',needed=.false.,debug_flag=DEBUG_NC,UnDef=UnDef,found=found)
     if(.not.found) olive_dH(:,:) = dH_d_olive
+! ragweed
+    call ReadField_CDF(rweed_frac_nc,'fraction',pollen_frac(:,:,iRWEED),1, &
+        interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
+    rweed_data_nc=date2string(rweed_data_nc,current_date,debug=DEBUG_NC.and.MasterProc)
+    call ReadField_CDF(rweed_data_nc,'start_th',rweed_start_th,1, &
+        interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
+    call ReadField_CDF(rweed_data_nc,'scale',rweed_scale,1, &
+        interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
+    where(pollen_frac(:,:,iRWEED)/=UnDef.and.rweed_scale/=UnDef)&
+        pollen_frac(:,:,iRWEED) = pollen_frac(:,:,iRWEED)*rweed_scale
+    deallocate(rweed_scale)
 ! grass
-    call ReadField_CDF(grass_field_nc,'grass_frac',pollen_frac(:,:,4),1, &
+    call ReadField_CDF(grass_field_nc,'grass_frac',pollen_frac(:,:,iGRASS),1, &
         interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
     call ReadField_CDF(grass_time_nc,'grass_start',grass_start,1, &
         interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
@@ -274,12 +297,12 @@ subroutine pollen_flux(i,j,debug_flag)
 
     ! reduce birch from 60 degrees north:
     forall(ii=1:limax,jj=1:ljmax,glat(ii,jj)>=60.0) &
-      pollen_frac(ii,jj,1)=pollen_frac(ii,jj,1)&
+      pollen_frac(ii,jj,iBIRCH)=pollen_frac(ii,jj,iBIRCH)&
                        *max(0.3,1.0-0.005*(glat(ii,jj)-60.0))
 
     ! olive fraction [%] --> [1/1]
-    forall(ii=1:limax,jj=1:ljmax,pollen_frac(ii,jj,2)/=UnDef) &
-      pollen_frac(ii,jj,2)=pollen_frac(ii,jj,2)/100.0
+    forall(ii=1:limax,jj=1:ljmax,pollen_frac(ii,jj,iOLIVE)/=UnDef) &
+      pollen_frac(ii,jj,iOLIVE)=pollen_frac(ii,jj,iOLIVE)/100.0
 
     ! start/end of grass pollen season
     dfirst_g=minval(grass_start,MASK=(grass_start/=UnDef))
@@ -302,22 +325,19 @@ subroutine pollen_flux(i,j,debug_flag)
   end if !first_call
   debug_ij=all([DEBUG.or.debug_flag,debug_proc,i==debug_li,j==debug_lj])
 
-  pollen_out(1)=.not.checkdates(daynumber,BIRCH)&
-    .or.any([pollen_frac(i,j,1),birch_h_c(i,j)]==UnDef)
+  pollen_out(iBIRCH)=.not.checkdates(daynumber,BIRCH)&
+    .or.any([pollen_frac(i,j,iBIRCH),birch_h_c(i,j)]==UnDef)
 
-  pollen_out(2)=.not.checkdates(daynumber,OLIVE)&
-    .or.any([pollen_frac(i,j,2),olive_h_c(i,j)]==UnDef)
-  
-  pollen_out(3)=.not.checkdates(daynumber,RWEED)&
-!   .or.pollen_frac(i,j,3)==UnDef&
-    .or..true. ! RAGWEED under development
+  pollen_out(iOLIVE)=.not.checkdates(daynumber,OLIVE)&
+    .or.any([pollen_frac(i,j,iOLIVE),olive_h_c(i,j)]==UnDef)
 
-  pollen_out(4)=.not.checkdates(daynumber,GRASS)&
+  pollen_out(iRWEED)=.not.checkdates(daynumber,RWEED)&
+    .or.any([pollen_frac(i,j,iRWEED),rweed_start_th(i,j)]==UnDef)
+
+  pollen_out(iGRASS)=.not.checkdates(daynumber,GRASS)&
     .or.(daynumber<(grass_start(i,j)-uncert_grass_day))&
     .or.(daynumber>(grass_end  (i,j)+uncert_grass_day))&
-    .or.any([pollen_frac(i,j,3),grass_start(i,j),grass_end(i,j)]==UnDef)
-
-  call CheckStop(.not.pollen_out(3),RWEED//' under development')
+    .or.any([pollen_frac(i,j,iGRASS),grass_start(i,j),grass_end(i,j)]==UnDef)
 
   EmisNat(inat(:),i,j)      = 0.0
   rcemis (itot(:),KMAX_MID) = 0.0
@@ -328,12 +348,12 @@ subroutine pollen_flux(i,j,debug_flag)
   end if
 
  ! Heatsum: sums up the temperatures that day for all time-steps
-  if(.not.pollen_out(1)) &
-    call heatsum_calc(heatsum(i,j,1),t2_nwp(i,j,1),T_cutoff_birch)
-  if(.not.pollen_out(2)) &
-    call heatsum_calc(heatsum(i,j,2),t2_nwp(i,j,1),T_cutoff_olive)
-  if(.not.pollen_out(3)) &
-    call heatsum_rweed(heatsum(i,j,3),t2_nwp(i,j,1),daylength(glat(i,j)))
+  if(.not.pollen_out(iBIRCH)) &
+    call heatsum_calc(heatsum(i,j,iBIRCH),t2_nwp(i,j,1),T_cutoff_birch)
+  if(.not.pollen_out(iOLIVE)) &
+    call heatsum_calc(heatsum(i,j,iOLIVE),t2_nwp(i,j,1),T_cutoff_olive)
+  if(.not.pollen_out(iRWEED)) &
+    call heatsum_rweed(heatsum(i,j,iRWEED),t2_nwp(i,j,1),daylength(glat(i,j)))
 
   ! calculate daily mean temperatures
   if(current_date%hour==0 .and. current_date%seconds==dt)&
@@ -372,38 +392,42 @@ subroutine pollen_flux(i,j,debug_flag)
   end if
 
 ! Birch specific emission inhibitors
-  pollen_out(1)=pollen_out(1)         & ! out season
-    .or.(R(i,j,1)>N_TOT(1)*birch_corr(i,j)) & ! out of pollen
+  g=iBIRCH
+  pollen_out(g)=pollen_out(g)         & ! out season
+    .or.(R(i,j,g)>N_TOT(g)*birch_corr(i,j)) & ! out of pollen
     .or.(relhum>RH_HIGH)              & ! too humid
     .or.(prec>prec_max)               & ! too rainy
-    .or.(heatsum(i,j,1)<lim_birch)    & ! too cold
+    .or.(heatsum(i,j,g)<lim_birch)    & ! too cold
     .or.(t2_nwp(i,j,1)<T_cutoff_birch)& ! too windy
-    .or.(heatsum(i,j,1)-birch_h_c(i,j)> dH_d_birch)
+    .or.(heatsum(i,j,g)-birch_h_c(i,j)> dH_d_birch)
 
 ! Olive specific emission inhibitors
-  pollen_out(2)=pollen_out(2)         & ! out season
-    .or.(R(i,j,2)>N_TOT(2))           & ! out of pollen
+  g=iOLIVE
+  pollen_out(g)=pollen_out(g)         & ! out season
+    .or.(R(i,j,g)>N_TOT(g))           & ! out of pollen
     .or.(relhum>RH_HIGH)              & ! too humid
     .or.(prec>prec_max)               & ! too rainy
-    .or.(heatsum(i,j,2)<lim_olive)    & ! too cold
+    .or.(heatsum(i,j,g)<lim_olive)    & ! too cold
     .or.(t2_nwp(i,j,1)<T_cutoff_olive)& ! too windy
-    .or.(heatsum(i,j,2)-olive_h_c(i,j)> olive_dH(i,j))
+    .or.(heatsum(i,j,g)-olive_h_c(i,j)> olive_dH(i,j))
 
 ! Ragweed specific emission inhibitors
 ! meteo flowering thresholds can zero the heatsum
+  g=iRWEED
   if(t2_nwp(i,j,1)<TempThr_rweed .or. & ! inst. treshold
     (current_date%hour==0 .and. current_date%seconds==0 .and. &
     t2_day(i,j)<DayTempThr_rweed))then
-    heatsum(i,j,3)=0.0
-    if(R(i,j,3)>0.0) &        ! if flowering started 
-      R(i,j,3)=N_TOT(3)+1e-6  ! end emission in gridcell
+    heatsum(i,j,g)=0.0
+    if(R(i,j,g)>0.0) &        ! if flowering started 
+      R(i,j,g)=N_TOT(g)+1e-6  ! end emission in gridcell
   end if
-  pollen_out(3)=pollen_out(3)         & ! out season
-    .or.(R(i,j,3)>N_TOT(3))             ! out of pollen
+  pollen_out(g)=pollen_out(g)         & ! out season
+    .or.(R(i,j,g)>N_TOT(g))             ! out of pollen
 
 ! Grass specific emission inhibitors
-  pollen_out(4)=pollen_out(4)         & ! out season
-    .or.(R(i,j,4)>N_TOT(4))           & ! out of pollen
+  g=iGRASS
+  pollen_out(g)=pollen_out(g)         & ! out season
+    .or.(R(i,j,g)>N_TOT(g))           & ! out of pollen
     .or.(relhum>RH_HIGH)              & ! too humid
     .or.(prec>prec_max)                 ! too rainy
 
@@ -419,10 +443,10 @@ subroutine pollen_flux(i,j,debug_flag)
     if(pollen_out(g))cycle
     ! scale factor meteorological conditions
     select case(POLLEN_GROUP(g))
-      case(BIRCH);scale=scale_factor(BIRCH)
-      case(OLIVE);scale=scale_factor(OLIVE)
-      case(RWEED);cycle
-      case(GRASS);scale=scale_factor(GRASS//trim(grass_mode))
+    case(BIRCH,OLIVE,RWEED)
+      scale=scale_factor(POLLEN_GROUP(g))
+    case(GRASS);
+      scale=scale_factor(GRASS//trim(grass_mode))
     endselect
     R(i,j,g)=R(i,j,g)+N_TOT(g)*scale*dt       ! pollen grains released so far
     rcpoll=N_TOT(g)*scale*pollen_frac(i,j,g)  ! pollen grains production [grains/m2/s]
@@ -440,7 +464,7 @@ contains
 !------------------------
 function scale_factor(spc) result(scale)
   character(len=*), intent(in)  :: spc
-  real :: scale, dHsec
+  real :: scale, dHsec, seasLen
   integer :: g
 
   scale=f_wind(u10,Grid%wstar)           & ! wind dependence
@@ -448,20 +472,24 @@ function scale_factor(spc) result(scale)
        *f_cond(prec,PREC_MIN,PREC_MAX)     ! precipitation dependence
   select case(spc)
   case(BIRCH)
-    g=1
+    g=iBIRCH
     scale = scale*birch_corr(i,j) &
       *(t2_nwp(i,j,1)-T_cutoff_birch)/dH_birch &
       *f_in(heatsum(i,j,g),birch_h_c(i,j),PROB_IN_birch) &  ! prob. flowering start
       *f_out(R(i,j,g),N_TOT(g),PROB_OUT_birch)              ! prob. flowering end
   case(OLIVE)
-    g=2
+    g=iOLIVE
     dHsec = olive_dH(i,j)*24*3600   ! Flowering period [degree seconds] olive
     scale = scale &
       *(t2_nwp(i,j,1)-T_cutoff_olive)/dHsec &
       *f_in(heatsum(i,j,g),olive_h_c(i,j),PROB_IN_olive) &  ! prob. flowering start
       *f_out(R(i,j,g),N_TOT(g),PROB_OUT_olive)              ! prob. flowering end
+  case(RWEED)
+    g=iRWEED
+    scale = regweed_normal_diurnal(daynumber,sunrise(glat(i,j),glon(i,j)),&
+              rweed_start_th(i,j),EndCDThr_rweed)    ! StartCDThr,EndCDThr
   case(GRASS//'linear')   ! emission mass assuming linear release
-    g=4
+    g=iGRASS
     scale = scale &
       *f_fade_in (real(daynumber)/grass_start(i,j), &
                   uncert_grass_day/grass_start(i,j))& ! fade-in
@@ -473,12 +501,11 @@ function scale_factor(spc) result(scale)
     scale = scale/(grass_end(i,j)-daynumber+uncert_grass_day)&
                  /(grass_end(i,j)-grass_start(i,j))/86400.0
   case(GRASS//'gamma')    ! assume the modified "taily" Gamma distribution of the season
-    g=4
-    scale = scale &
-      *f_gamma_w_tails((real(daynumber)-grass_start(i,j))  & ! days since season start
-                       /(grass_end(i,j)-grass_start(i,j)), & ! season length
-                        dt/86400.0                         & ! timestep in days
-                       /(grass_end(i,j)-grass_start(i,j)))   ! season length
+    g=iGRASS
+    seasLen = grass_end(i,j)-grass_start(i,j)       ! season length in days
+    scale = f_gamma_w_tails(                      &
+      (real(daynumber)-grass_start(i,j))/seasLen, & ! days since season start/season length
+      (dt/86400.0)/seasLen)                         ! timestep in days/season length
     scale = scale/dt ! emited fration over dt to emission rate
   case default
     call CheckStop("Unknown pollen type: "//trim(spc))
@@ -563,38 +590,36 @@ subroutine heatsum_rweed(hsum,t2,daylen)
 
   hsum = hsum + ff*dt/(3600*24)      ! seconds to days
 end subroutine heatsum_rweed
-function regweed_normal_diurnal(dayJ,dayT,seasMid,seasSgm) result(ff)
+function regweed_normal_diurnal(dayJ,dayT,startDay,endDay) result(ff)
   integer, intent(in) :: &
     dayJ                ! julian date, daynumber
   real, intent(in) :: &
     dayT,             & ! seconds after sunrise
-    seasMid,          & ! (StartCDThr+EndCDThr)*0.5
-    seasSgm             ! DIM(EndCDThr,StartCDThr)*0.25
+    startDay,endDay     ! season start/end (StartCDThr/EndCDThr), daynumber
   real, parameter :: &
-    dayMid1 = 135*60, daySgm1 =  15*60, & ! 1st peak, sec since sunrise
-    dayMid2 = 285*60, daySgm2 = 100*60, & ! 2nd peak, sec since sunrise
+    sqrt2 = sqrt(2.),&
+    dayMid1 = 135*60, daySgm1 =  15*60*sqrt2, & ! 1st peak, sec since sunrise*sqrt2
+    dayMid2 = 285*60, daySgm2 = 100*60*sqrt2, & ! 2nd peak, sec since sunrise*sqrt2
     dayfrac1= 0.4,    dayfrac2= 1.0-dayFrac1 ! % in the 1st/2nd peak 
-  real(kind=8) :: t1, t2, s, ff
+  real(kind=8) :: t1, t2, s, ff, seasSgm
 
   ff=0.0
-  if(seasSgm<=0.0)return
+  if(startDay>endDay)return
   if(dayT<0.0 .or. dayT>36000.0)return  ! no nighttime emission
 
   ! Bimodal daily release
   t1 = dayT - dayMid1
   t2 = t1 + dt
-  s = daySgm1 * sqrt(2.)
-  ff =      dayFrac1 * 0.5 * (fu_erf(t2/s) - fu_erf(t1/s))       
+  ff =      dayFrac1 * 0.5 * (fu_erf(t2/daySgm1) - fu_erf(t1/daySgm1))
 
   t1 = dayT - dayMid2
   t2 = t1 + dt
-  s = daySgm2 * sqrt(2.)
-  ff = ff + dayFrac2 * 0.5 * (fu_erf(t2/s) - fu_erf(t1/s))      
+  ff = ff + dayFrac2 * 0.5 * (fu_erf(t2/daySgm2) - fu_erf(t1/daySgm2))
 
   ! Normal seas day by day
-  t1 = dayJ - seasMid
+  t1 = dayJ - (startDay+endDay)*0.5  ! dayJ - seasMid
   t2 = t1 + 1.0
-  s = seasSgm * sqrt(2.)
+  s = (endDay-startDay)*0.25 * sqrt2 ! seasSgm * sqrt(2.)
   ff = ff * 0.5 * (fu_erf(t2/s) - fu_erf(t1/s))
 
 contains
@@ -681,7 +706,6 @@ function f_gamma_w_tails(relTime,relDt) result(ff)
   integer, parameter:: nTerms= 3
   real, parameter::&
     beta = 0.155, &! [main season shape,correction 1,correction 2]
-!   timesRel(nTerms)=[ 0.164,-0.26,-0.7 ],&
     timesRel(nTerms)=[ 0.164,-0.3 ,-0.6 ],&
     scales  (nTerms)=[13.1  ,12.6 , 0.25],&
     powers  (nTerms)=[ 1.16 , 2.8 , 1.3 ]

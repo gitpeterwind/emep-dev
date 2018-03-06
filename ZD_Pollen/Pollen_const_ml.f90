@@ -53,7 +53,7 @@ real, parameter ::            &
   DayTempThr_rweed = 280.65,  &  ! 7.5C (Deen et al 1998)
   EndCDThr_rweed   = 265.0       ! 97.5% == 2sigma; 22 sept (autumn equinox)
 
-! pollen arrays indexing, order must match with POLLEN_GROUP: birch,olive,grass
+! pollen arrays indexing, order must match with POLLEN_GROUP: birch,olive,rweed,grass
 character(len=*), parameter :: &
   BIRCH = "POLLEN_BIRCH",&
   OLIVE = "POLLEN_OLIVE",&
@@ -61,12 +61,12 @@ character(len=*), parameter :: &
   GRASS = "POLLEN_GRASS",&
   POLLEN_GROUP(4)=[BIRCH,OLIVE,RWEED,GRASS]
 integer, parameter :: &
-  POLLEN_NUM=size(POLLEN_GROUP)
+  iBIRCH=1,iOLIVE=2,iRWEED=3,iGRASS=4,POLLEN_NUM=size(POLLEN_GROUP)
 real, parameter  :: &
   N_TOT(POLLEN_NUM)=[N_TOT_birch,N_TOT_olive,N_TOT_rweed,N_TOT_grass]
 
 real, parameter  :: &
-  D_POLL(POLLEN_NUM)=[D_POLL_birch,D_POLL_olive,D_POLL_grass,D_POLL_rweed], & ! pollen diameter
+  D_POLL(POLLEN_NUM)=[D_POLL_birch,D_POLL_olive,D_POLL_rweed,D_POLL_grass], & ! pollen diameter
   grain_wt(POLLEN_NUM) = POLL_DENS*PI*(D_POLL*1e-6)**3/6.0       ! 1 grain weight [g]
 ! weight 1 grain [ug], 1 mol of grains (AVOG*grain_wt) [Tonne=1e3 kg]
 ! BIRCH: 4.460e-3, 2686e6
