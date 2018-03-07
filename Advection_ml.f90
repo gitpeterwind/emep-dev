@@ -293,7 +293,7 @@
     !ratio along that line are averaged (1D).
     !This case can arises where there is a singularity close to the
     !poles in long-lat coordinates.
-    integer,parameter :: NITERXMAX=10
+    integer,parameter :: NITERXMAX=40
 
     xxdg=GRIDWIDTH_M*GRIDWIDTH_M/GRAV !constant used in loops
 

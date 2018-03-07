@@ -138,6 +138,19 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+07 Mar 2018, Peter
+
+Upgrade of "emis_inputlist". Can now mix monthly and yearly emission sets.
+Also "country style" emissions can now be monthly (although not tested).
+NB: the monthly time factors are reset to 1 if monthly emissions are used
+(in order not to count them twice). Will change results
+If both monthly and yearly emissions are used, the monthly emissions will first
+be divided by the monthly factor before merging to yearly.
+renamed "snapemis" to "secemis", as we do not only have snap sector categories.
+Perhaps not fully tested, as there are plenty of combinations possible.
+
+Also set NITERXMAX=40 in Advection_ml
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 06 Mar Dave, Heiko
 
 Ecosystem_ml

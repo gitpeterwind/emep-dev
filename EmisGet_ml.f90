@@ -197,10 +197,11 @@ contains
 
   end subroutine EmisGetCdfFrac
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-  subroutine EmisGetCdf(iem, fname, sumemis, use_lonlat_femis, incl,excl)
+  subroutine EmisGetCdf(iem, fname, sumemis, use_lonlat_femis, month, incl,excl)
    integer, intent(in) :: iem ! index in EMIS_FILE array and GridEmis output
    character(len=*), intent(in)    :: fname
    real, intent(inout) ::sumemis(*)
+   integer, intent(in), optional :: month
    character(len=*),dimension(:), optional :: &
        incl, excl ! Arrays of cc to inc/exclude
    logical, intent(in) :: use_lonlat_femis
@@ -212,7 +213,7 @@ contains
            xtype,ndims  !TESTE testing
    character(len=10) :: ewords(7), code ! Test Emis:UK:snap:7
    character(len=*), parameter ::  sub = 'EmisGetCdf:'
-   integer :: nwords, err, i_gridemis
+   integer :: nwords, err, i_gridemis, record
    logical, save :: my_first_call = .true., dbg0, dbgp
    logical :: Cexist
    real ::lonlat_fac
@@ -225,6 +226,9 @@ contains
    end if
 
    if(MasterProc) write(*,*) sub//"START ", trim(fname)
+
+   record = 1
+   if(present(month))record=month
 
    if( present(incl) ) then
       fmt="(a,i4,99a4)"
@@ -300,7 +304,7 @@ contains
 
      cdfemis = 0.0 ! safety, shouldn't be needed though
 
-     call ReadField_CDF(fname,varname,cdfemis,1,&
+     call ReadField_CDF(fname,varname,cdfemis,record,&
                interpol='mass_conservative',&
                 needed=.false.,UnDef=0.0,&
                 debug_flag=.false.,ncFileID_given=ncFileID)
