@@ -2634,8 +2634,10 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      if(trim(known_projection)=="longitude latitude")data_projection = "lon lat"
      if ( debug ) write(*,*) 'data known_projection ',trim(data_projection)
   else
-     call check(nf90_get_att(ncFileID, nf90_global, "projection", data_projection ),"Proj")
-     if(trim(data_projection(1:7))=="lon lat")data_projection="lon lat"!remove invisible char(0)!!
+     call check(nf90_get_att(ncFileID, nf90_global, &
+                           "projection", data_projection ),"Proj"//trim(fileName))
+    !remove invisible char(0)!!
+     if(trim(data_projection(1:7))=="lon lat")data_projection="lon lat"
      if ( debug ) write(*,*) 'data projection from file ',trim(data_projection)
   end if
 !  if(MasterProc)write(*,*)'Interpolating ',trim(varname),' from ',trim(filename),' to present grid'
