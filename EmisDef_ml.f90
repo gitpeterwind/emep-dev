@@ -51,7 +51,7 @@ implicit none
     ! and often change from run to run.
 
 
-    ! Note on SNAP sectors:
+    ! SNAP sectors:
     ! ----------------------
     ! SNAP1  =  Combustion in energy and transformation industries,
     !           e.g.  public power stations, 150m nat gas
@@ -166,11 +166,11 @@ implicit none
                                                          ! from gridSOx
 
 !
-real, public, save,  allocatable,dimension(:,:) ::  sumcdfemis ! Only used fby MasterProc
+real, public, save,  allocatable,dimension(:,:) ::  sumcdfemis ! Only used by MasterProc
 real, allocatable, public, save,  dimension(:,:) :: cdfemis
 integer, allocatable, public, save,  dimension(:,:) :: nGridEmisCodes
 integer, allocatable, public, save,  dimension(:,:,:):: GridEmisCodes
-real, allocatable, public, save,  dimension(:,:,:,:,:):: GridEmis
+real, allocatable, public, save,  dimension(:,:,:,:,:):: GridEmis !yearly sector emissions
 ! land-code information in each grid square - needed to know which country
 ! is emitting.                        
 ! nlandcode = No. countries in grid square
@@ -194,21 +194,21 @@ real, public, allocatable, save, dimension(:,:,:) :: &
   gridrcroadd0      ! varies every hour
 
 !
-! The output emission matrix for the 11-SNAP data is snapemis:
+! The output emission matrix for the 11-SNAP data is secemis:
 !
 real, public, allocatable, dimension(:,:,:,:,:), save :: &
-  snapemis      ! main emission arrays, in kg/m2/s
+  secemis      ! main emission arrays, in kg/m2/s
 
 real, public, allocatable, dimension(:,:,:,:), save :: &
-  snapemis_flat ! main emission arrays, in kg/m2/s  
+  secemis_flat ! main emission arrays, in kg/m2/s  
 
 real, public, allocatable, dimension(:,:,:,:), save :: &
 ! Not sure if it is really necessary to keep the country info; gives rather messy code but consistent with the rest at least (and can do the seasonal scaling for Nordic countries in the code instead of as preprocessing) 
   roaddust_emis_pot ! main road dust emission potential arrays, in kg/m2/s (to be scaled!)
 
 ! We store the emissions for output to d_2d files and netcdf in kg/m2/s
-real, public, allocatable, dimension(:,:,:), save :: SumSnapEmis,SumSplitEmis
-real, public, allocatable, dimension(:,:,:,:), save :: SumSecEmis
+real, public, allocatable, dimension(:,:,:), save :: SumSecEmis,SumSplitEmis!per species
+real, public, allocatable, dimension(:,:,:,:), save :: SumSecEmisOut !per sector and species
 
 !should be defined somewhere else?
 real, public, allocatable, dimension(:,:,:,:,:,:), save :: &
@@ -284,6 +284,9 @@ integer, public, save :: KEMISTOP ! not defined yet= KMAX_MID - nemis_kprofile +
 
   integer, public, save :: NSecEmisOut = 0
   logical, public, save :: SecEmisOut(NEMIS_FILE) = .false.
+
+  logical, public, save :: foundYearlySectorEmissions = .false.
+  logical, public, save :: foundMonthlySectorEmissions = .false.
 
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 ! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD

@@ -90,6 +90,7 @@
   public :: timefactors
   public :: DegreeDayFactors
   public :: Read_monthly_emis_grid_fac
+  public :: yearly_normalize
 
   !-- time factor stuff: 
 
@@ -99,6 +100,7 @@
                                                       ! calculated daily
   real, public, save, allocatable, &
      dimension(:,:,:,:) :: fac_emm  ! Monthly factors
+  logical, public, save :: InterpolateMonthEmis = .true. ! Whether interpolate (in time) Monthly factors or not
 
  ! Hourly for each day ! From EURODELTA/INERIS
   real, public, save, allocatable,  &
@@ -125,6 +127,8 @@
   character(len=TXTLEN_FILE), private :: fname2   ! input filename - do not change 
 
   real, allocatable, public, save,  dimension(:,:,:,:):: GridTfac
+
+  character(len=100) :: errmsg
 
 contains
 
@@ -155,7 +159,6 @@ contains
   integer :: weekday            ! 1=monday, 2=tuesday etc.
   real    :: xday, sumfac       ! used in interpolation, testing
   real    :: tmp24(24)          ! used for hourly factors
-  character(len=100) :: errmsg
   character(len=200) :: inputline
   real :: fracchange
   real :: Start, Endval, Average, x, buff(12)
@@ -176,6 +179,10 @@ contains
 
 !  #################################
 !  1) Read in Monthly factors, and determine min value (for baseload)
+
+! Note: the inverse of fac_emm/fac_cemm is applied after reading the monthly 
+!       sector emissions, in order to cancel subsequent application of fac_emm, 
+!       but keep the fac_cemm variations
 
   ! Summer/winter SNAP1 ratios reduced from 1990 to 2010:
    fac_cemm(:) = 1.0
@@ -414,6 +421,8 @@ contains
           if(me==0)write(*,*)'Special hourly factors not found (but not needed): ',trim(fname2)
        endif
 
+       write(unit=6,fmt="(a,I6,a,I5)")" Time factors normalisation: ",nydays,' days in ',year 
+
 ! #######################################################################
 ! 4) Normalise the monthly-daily factors. This is needed in order to
 !    account for leap years (nydays=366) and for the fact that different
@@ -421,110 +430,7 @@ contains
 !    Here we execute the same interpolations which are later done
 !    in "NewDayFactors", and scale efac_mm if necessary.
 
-
-  write(unit=6,fmt="(a,I6,a,I5)")" Time factors normalisation: ",nydays,' days in ',year 
-
-  
-   if(USES%GRIDDED_EMIS_MONTHLY_FACTOR)then
-      write(*,*)'Normalizing monthly emission time factors'
-      fac_emm=1.0
-      !enforce a constant integral of daily timefactors over each month
-      !note that the subsequent interpolation does not change this integral
-      do iemis = 1, NEMIS_FILE
-         n = 0
-         do isec = 1, N_TFAC
-            do ic = 1, NLAND
-               iday = 0
-               do mm = 1, 12     ! Jan - Dec
-                  sumfac = 0.0
-                  do idd = 1, nmdays(mm)
-                     
-                     weekday=day_of_week (year,mm,idd)
-                     
-                     if ( weekday == 0 ) weekday = 7  ! restores Sunday to 7
-                     sumfac = sumfac + fac_edd(ic,weekday,isec,iemis)   
-                     
-                  end do ! idd
-                  ! redefine monthly factor to enforce this
-                  fac_emm(ic,mm,isec,iemis)=nmdays(mm)/sumfac
-
-               end do ! mm
-               
-            end do ! ic
-       end do ! isec
-
-      end do ! iemis
-
-   end if
-
-! normalize the factors over the year 
-   do iemis = 1, NEMIS_FILE
-       n = 0
-       do isec = 1, N_TFAC
-           do ic = 1, NLAND
-             iday = 0
-             sumfac = 0.0
-
-             do mm = 1, 12     ! Jan - Dec
-                do idd = 1, nmdays(mm)
-
-                   weekday=day_of_week (year,mm,idd)
-
-                   if ( weekday == 0 ) weekday = 7  ! restores Sunday to 7
-
-                   mm2 = mm + 1 
-                   if( mm2  > 12 ) mm2 = 1          ! December+1 => January
-                   mm0 = mm - 1 
-                   if( mm0 < 1   ) mm0 = 12          ! January-1 => December
-                   Start= 0.5*(fac_emm(ic,mm0,isec,iemis)+fac_emm(ic,mm,isec,iemis))
-                   Endval= 0.5*(fac_emm(ic,mm,isec,iemis)+fac_emm(ic,mm2,isec,iemis))                   
-                   Average=fac_emm(ic,mm,isec,iemis)
-                   !limit values, to ensure that x never can be negative
-                   Start=min(Start,2*Average,2*fac_emm(ic,mm0,isec,iemis))
-                   Endval=min(Endval,2*Average,2*fac_emm(ic,mm2,isec,iemis))
-                   call Averageconserved_interpolate(Start,Endval,Average,nmdays(mm),idd,x)
-                   sumfac = sumfac + x * fac_edd(ic,weekday,isec,iemis)   
-
-                end do ! idd
-             end do ! mm
-
-             sumfac = real(nydays)/sumfac    
-
-             if(USES%GRIDDED_EMIS_MONTHLY_FACTOR)then
-                ! should already almost be normalized (almost, because there is still some 
-                ! variation left due to the differences occuring when week-ends are in the 
-                ! middle or end of the month (linear_interpolation*day_factor is not linear)
-               if ( sumfac < 0.999 .or. sumfac > 1.001 ) then
-                 write(unit=errmsg,fmt=*) &
-                   "GRIDDED Time-factor error! for ",iemis, isec, ic," sumfac ",sumfac
-                 call CheckStop(errmsg)
-              end if
-               
-             end if
-              if ( sumfac < 0.99 .or. sumfac > 1.01 )write(*,*)'sumfac: ',iemis,isec,ic,sumfac   
-
-              if ( sumfac < 0.97 .or. sumfac > 1.03 ) then
-                 write(unit=errmsg,fmt=*) &
-                   "Time-factor error! for ",iemis, isec, ic," sumfac ",sumfac
-                 call CheckStop(errmsg)
-              end if
-
-             ! can be caused by variable number of sundays in a month for instance
-             ! Slight adjustment of monthly factors
-              do mm = 1, 12
-                 fac_emm(ic,mm,isec,iemis)  =  &
-                       fac_emm(ic,mm,isec,iemis) * sumfac
-              end do ! mm
-       if ( debug .and. abs(sumfac-1.0)>0.001) &
-            write(unit=6,fmt=*)  &
-           "needed for country, isec, iemis, sumfac = " ,ic, isec, iemis, sumfac
-
-          end do ! ic
-       end do ! isec
-
-
-      end do ! iemis
-
+       call yearly_normalize(year)
 
 !#########################################################################
 !
@@ -595,16 +501,18 @@ contains
     do iemis = 1, NEMIS_FILE
       do isec = 1, N_TFAC
          do iland = 1, NLAND
-            
-            Start= 0.5*(fac_emm(iland ,nmnd0,isec,iemis)+fac_emm(iland ,nmnd,isec,iemis))
-            Endval= 0.5*(fac_emm(iland ,nmnd,isec,iemis)+fac_emm(iland ,nmnd2,isec,iemis))
             Average=fac_emm(iland ,nmnd,isec,iemis)
-            !limit values, to ensure that x never can be negative
-            Start=min(Start,2*Average,2*fac_emm(iland ,nmnd0,isec,iemis))
-            Endval=min(Endval,2*Average,2*fac_emm(iland ,nmnd2,isec,iemis))
-            call Averageconserved_interpolate(Start,Endval,Average,nmdays(nmnd),dd,x)
+            if(InterpolateMonthEmis)then
+               Start= 0.5*(fac_emm(iland ,nmnd0,isec,iemis)+fac_emm(iland ,nmnd,isec,iemis))
+               Endval= 0.5*(fac_emm(iland ,nmnd,isec,iemis)+fac_emm(iland ,nmnd2,isec,iemis))
+               !limit values, to ensure that x never can be negative
+               Start=min(Start,2*Average,2*fac_emm(iland ,nmnd0,isec,iemis))
+               Endval=min(Endval,2*Average,2*fac_emm(iland ,nmnd2,isec,iemis))
+               call Averageconserved_interpolate(Start,Endval,Average,nmdays(nmnd),dd,x)
+            else
+               x=Average
+            endif
             timefac(iland,isec,iemis) = x *  fac_edd(iland,weekday,isec,iemis) 
-            if(me==0.and.iemis==2.and.isec==7.and.iland==9)write(*,*)'DAYFAC ',timefac(iland,isec,iemis),fac_edd(iland,weekday,isec,iemis) 
  
          end do ! iland  
       end do ! isec   
@@ -757,5 +665,126 @@ contains
 !The normalization now, gives for instance GridTfac = 1 for constant emissions.
 
       end subroutine Read_monthly_emis_grid_fac
+
+subroutine yearly_normalize(year)
+
+  implicit none
+
+  integer, intent(in) :: year
+  integer :: iemis, n, isec, ic, iday, mm, idd, weekday, mm2, mm0
+  real :: sumfac, Start, Endval, Average, x
+
+! #######################################################################
+! 4) Normalise the monthly-daily factors. This is needed in order to
+!    account for leap years (nydays=366) and for the fact that different
+!    years have different numbers of e.g. Saturdays/Sundays. 
+!    Here we execute the same interpolations which are later done
+!    in "NewDayFactors", and scale efac_mm if necessary.
+
+
+  
+   if(USES%GRIDDED_EMIS_MONTHLY_FACTOR)then
+      write(*,*)'Normalizing monthly emission time factors'
+      fac_emm=1.0
+      !enforce a constant integral of daily timefactors over each month
+      !note that the subsequent interpolation does not change this integral
+      do iemis = 1, NEMIS_FILE
+         n = 0
+         do isec = 1, N_TFAC
+            do ic = 1, NLAND
+               iday = 0
+               do mm = 1, 12     ! Jan - Dec
+                  sumfac = 0.0
+                  do idd = 1, nmdays(mm)
+                     
+                     weekday=day_of_week (year,mm,idd)
+                     
+                     if ( weekday == 0 ) weekday = 7  ! restores Sunday to 7
+                     sumfac = sumfac + fac_edd(ic,weekday,isec,iemis)   
+                     
+                  end do ! idd
+                  ! redefine monthly factor to enforce this
+                  fac_emm(ic,mm,isec,iemis)=nmdays(mm)/sumfac
+
+               end do ! mm
+               
+            end do ! ic
+       end do ! isec
+
+      end do ! iemis
+
+   end if
+
+! normalize the factors over the year 
+   do iemis = 1, NEMIS_FILE
+       n = 0
+       do isec = 1, N_TFAC
+           do ic = 1, NLAND
+             iday = 0
+             sumfac = 0.0
+
+             do mm = 1, 12     ! Jan - Dec
+                do idd = 1, nmdays(mm)
+
+                   weekday=day_of_week (year,mm,idd)
+
+                   if ( weekday == 0 ) weekday = 7  ! restores Sunday to 7
+
+                   mm2 = mm + 1 
+                   if( mm2  > 12 ) mm2 = 1          ! December+1 => January
+                   mm0 = mm - 1 
+                   if( mm0 < 1   ) mm0 = 12          ! January-1 => December
+                   Start= 0.5*(fac_emm(ic,mm0,isec,iemis)+fac_emm(ic,mm,isec,iemis))
+                   Endval= 0.5*(fac_emm(ic,mm,isec,iemis)+fac_emm(ic,mm2,isec,iemis))                   
+                   Average=fac_emm(ic,mm,isec,iemis)
+                   !limit values, to ensure that x never can be negative
+                   Start=min(Start,2*Average,2*fac_emm(ic,mm0,isec,iemis))
+                   Endval=min(Endval,2*Average,2*fac_emm(ic,mm2,isec,iemis))
+                   call Averageconserved_interpolate(Start,Endval,Average,nmdays(mm),idd,x)
+                   sumfac = sumfac + x * fac_edd(ic,weekday,isec,iemis)   
+
+                end do ! idd
+             end do ! mm
+
+             sumfac = real(nydays)/sumfac    
+
+             if(USES%GRIDDED_EMIS_MONTHLY_FACTOR)then
+                ! should already almost be normalized (almost, because there is still some 
+                ! variation left due to the differences occuring when week-ends are in the 
+                ! middle or end of the month (linear_interpolation*day_factor is not linear)
+               if ( sumfac < 0.999 .or. sumfac > 1.001 ) then
+                 write(unit=errmsg,fmt=*) &
+                   "GRIDDED Time-factor error! for ",iemis, isec, ic," sumfac ",sumfac
+                 call CheckStop(errmsg)
+              end if
+               
+             end if
+              if ( sumfac < 0.99 .or. sumfac > 1.01 )write(*,*)'sumfac: ',iemis,isec,ic,sumfac   
+
+              if ( sumfac < 0.97 .or. sumfac > 1.03 ) then
+                 write(unit=errmsg,fmt=*) &
+                   "Time-factor error! for ",iemis, isec, ic," sumfac ",sumfac
+                 call CheckStop(errmsg)
+              end if
+
+             ! can be caused by variable number of sundays in a month for instance
+             ! Slight adjustment of monthly factors
+              do mm = 1, 12
+                 fac_emm(ic,mm,isec,iemis)  =  &
+                       fac_emm(ic,mm,isec,iemis) * sumfac
+              end do ! mm
+       if ( debug .and. abs(sumfac-1.0)>0.001) &
+            write(unit=6,fmt=*)  &
+           "needed for country, isec, iemis, sumfac = " ,ic, isec, iemis, sumfac
+
+          end do ! ic
+       end do ! isec
+
+
+      end do ! iemis
+
+
+end subroutine yearly_normalize
+
 end module Timefactors_ml
 

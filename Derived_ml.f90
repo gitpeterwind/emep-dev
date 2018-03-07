@@ -38,7 +38,7 @@ use DerivedFields_ml, only: MAXDEF_DERIV2D, MAXDEF_DERIV3D, &
 use EcoSystem_ml,     only: DepEcoSystem, NDEF_ECOSYSTEMS, &
                             EcoSystemFrac,FULL_ECOGRID
 use EmisDef_ml,       only: NSECTORS, EMIS_FILE, O_DMS, O_NH3, loc_frac, Nneighbors&
-                            ,SumSnapEmis, SumSecEmis, SumSplitEmis, SecEmisOut, NEMIS_FILE
+                            ,SumSecEmisOut, SumSecEmis, SumSplitEmis, SecEmisOut, NEMIS_FILE
 use EmisGet_ml,       only: nrcemis,iqrc2itot
 use GridValues_ml,    only: debug_li, debug_lj, debug_proc, A_mid, B_mid, &
                             dA,dB,xm2, GRIDWIDTH_M, GridArea_m2,xm_i,xm_j,glon,glat
@@ -621,10 +621,10 @@ subroutine Define_Derived()
   do  ind = 1, size(EMIS_FILE)
     dname = "Emis_mgm2_" // trim(EMIS_FILE(ind))
     if(HourlyEmisOut)then
-       call AddNewDeriv( dname, "SnapEmis", "-", "-", "mg/m2", &
+       call AddNewDeriv( dname, "TotSecEmis", "-", "-", "mg/m2", &
             ind , -99, T,  1.0e6,  F,  'YMH' )
     else
-       call AddNewDeriv( dname, "SnapEmis", "-", "-", "mg/m2", &
+       call AddNewDeriv( dname, "TotSecEmis", "-", "-", "mg/m2", &
             ind , -99, T,  1.0e6,  F,  'YM' )
     endif
   end do ! ind
@@ -1604,22 +1604,22 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
         call datewrite("NatEmis-in-Derived, still kg/m2/s", &
           f_2d(n)%Index, (/ EmisNat( f_2d(n)%Index, debug_li,debug_lj) /) )
 
-    case ( "SnapEmis" ) !emissions in kg/m2/s converted??
+    case ( "TotSecEmis" ) !emissions in kg/m2/s converted??
 
       forall ( i=1:limax, j=1:ljmax )
-          d_2d(n,i,j,IOU_INST) =  SumSnapEmis( i,j, f_2d(n)%Index)
+          d_2d(n,i,j,IOU_INST) =  SumSecEmis( i,j, f_2d(n)%Index)
       end forall
       !not done, to keep mg/m2 * GridArea_m2(i,j)
       if( dbgP .and. f_2d(n)%Index == 3  ) & ! CO:
-        call datewrite("SnapEmis-in-Derived, still kg/m2/s", n, & !f_2d(n)%Index,&
-              (/   SumSnapEmis( debug_li,debug_lj, f_2d(n)%Index ) /) )
+        call datewrite("SecEmis-in-Derived, still kg/m2/s", n, & !f_2d(n)%Index,&
+              (/   SumSecEmis( debug_li,debug_lj, f_2d(n)%Index ) /) )
 
     case ( "SecEmis" ) !emissions in mg/m2 per sector
 
       isec=mod(f_2d(n)%Index,NSECTORS)+1
       isec_poll=f_2d(n)%Index/NSECTORS + 1
       forall ( i=1:limax, j=1:ljmax )
-         d_2d(n,i,j,IOU_INST) =  SumSecEmis( i,j, isec,isec_poll)
+         d_2d(n,i,j,IOU_INST) =  SumSecEmisOut( i,j, isec,isec_poll)
       end forall
 
     case ( "Emis_mgm2_DMS" )      ! DMS

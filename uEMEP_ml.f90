@@ -11,8 +11,8 @@ use EmisDef_ml,       only: loc_frac, loc_frac_1d, loc_frac_hour, loc_tot_hour, 
                             loc_frac_day, loc_tot_day, loc_frac_month&
                             , loc_tot_month,loc_frac_full,loc_tot_full, NSECTORS,NEMIS_FILE, &
                             EMIS_FILE,nlandcode,landcode,flat_nlandcode,flat_landcode,&
-                            sec2tfac_map, sec2hfac_map ,ISNAP_DOM,snapemis,&
-                            snapemis_flat,roaddust_emis_pot,KEMISTOP
+                            sec2tfac_map, sec2hfac_map ,ISNAP_DOM,secemis,&
+                            secemis_flat,roaddust_emis_pot,KEMISTOP
 
 use EmisGet_ml,       only: nrcemis, iqrc2itot, emis_nsplit,nemis_kprofile, emis_kprofile
 use GridValues_ml,    only: dA,dB,xm2, dhs1i, glat, glon, projection, extendarea_N
@@ -1020,7 +1020,7 @@ subroutine uEMEP_emis(indate)
 
         do iem = 1, NEMIS_FILE 
            do isec = 1, Nsectors     ! Loop over snap codes
-            ! Calculate emission rates from snapemis, time-factors, 
+            ! Calculate emission rates from secemis, time-factors, 
             ! and if appropriate any speciation fraction (NEMIS_FRAC)
             iqrc = 0   ! index over emisfrac
             ! kg/m2/s
@@ -1039,9 +1039,9 @@ subroutine uEMEP_emis(indate)
                       * fac_ehh24x7(sec2tfac_map(isec),hour_iland,wday_loc,iland_timefac_hour)
               end if ! =============== HDD 
 
-              s = tfac * snapemis(isec,i,j,icc,iem)
+              s = tfac * secemis(isec,i,j,icc,iem)
             else
-              s = snapemis_flat(i,j,ficc,iem)                        
+              s = secemis_flat(i,j,ficc,iem)                        
             end if
 
             do k=max(KEMISTOP,KMAX_MID-uEMEP%Nvert+1),KMAX_MID
