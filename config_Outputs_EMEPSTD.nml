@@ -299,9 +299,10 @@ OutputVegO3=
   DDEP_ECOS =
    'Grid     ','YMD',
    'Conif    ','YM',
+   'Decid    ','YM',
+   'Forest   ','YM',
    'Seminat  ','YM',
    'Water_D  ','Y',
-   'Decid    ','Y',
    'Crops    ','Y',
 
  DDEP_WANTED =

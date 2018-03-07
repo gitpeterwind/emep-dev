@@ -149,6 +149,15 @@ be divided by the monthly factor before merging to yearly.
 renamed "snapemis" to "secemis", as we do not only have snap sector categories.
 Perhaps not fully tested, as there are plenty of combinations possible.
 
+Also set NITERXMAX=40 in Advection_ml
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+06 Mar Dave, Heiko
+
+Ecosystem_ml
+My_Derived_ml
+config_Outputs_EMEPSTD.nml
+
+  - added is_forest and Forest outputs - merges both conif and decid
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 02 Mar 2018, Heiko
 
