@@ -294,8 +294,8 @@ subroutine pollen_flux(i,j,debug_flag)
                        *max(0.3,1.0-0.005*(glat(ii,jj)-60.0))
 
     ! olive fraction [%] --> [1/1]
-    forall(ii=1:limax,jj=1:ljmax,pollen_frac(ii,jj,iOLIVE)/=UnDef) &
-      pollen_frac(ii,jj,iOLIVE)=pollen_frac(ii,jj,iOLIVE)/100.0
+    where(pollen_frac(:,:,iOLIVE)/=UnDef) &
+      pollen_frac(:,:,iOLIVE)=pollen_frac(:,:,iOLIVE)/100.0
 
     ! start/end of grass pollen season
     dfirst_g=minval(grass_start,MASK=(grass_start/=UnDef))
@@ -318,19 +318,22 @@ subroutine pollen_flux(i,j,debug_flag)
   end if !first_call
   debug_ij=all([DEBUG.or.debug_flag,debug_proc,i==debug_li,j==debug_lj])
 
-  pollen_out(iBIRCH)=.not.checkdates(daynumber,BIRCH)&
-    .or.any([pollen_frac(i,j,iBIRCH),birch_h_c(i,j)]==UnDef)
-
-  pollen_out(iOLIVE)=.not.checkdates(daynumber,OLIVE)&
-    .or.any([pollen_frac(i,j,iOLIVE),olive_h_c(i,j)]==UnDef)
-
-  pollen_out(iRWEED)=.not.checkdates(daynumber,RWEED)&
-    .or.any([pollen_frac(i,j,iRWEED),rweed_start_th(i,j)]==UnDef)
-
-  pollen_out(iGRASS)=.not.checkdates(daynumber,GRASS)&
-    .or.(daynumber<(grass_start(i,j)-uncert_grass_day))&
-    .or.(daynumber>(grass_end  (i,j)+uncert_grass_day))&
-    .or.any([pollen_frac(i,j,iGRASS),grass_start(i,j),grass_end(i,j)]==UnDef)
+  do g=1,POLLEN_NUM
+    pollen_out(g)=.not.checkdates(daynumber,POLLEN_GROUP(g))
+    if(pollen_out(g)) cycle
+    select case(g)
+    case(iBIRCH)
+      pollen_out(g)=any([pollen_frac(i,j,g),birch_h_c(i,j)]==UnDef)
+    case(iOLIVE)
+      pollen_out(g)=any([pollen_frac(i,j,g),olive_h_c(i,j)]==UnDef)
+    case(iRWEED)
+      pollen_out(g)=any([pollen_frac(i,j,g),rweed_start_th(i,j)]==UnDef)
+    case(iGRASS)
+      pollen_out(g)=any([pollen_frac(i,j,g),grass_start(i,j),grass_end(i,j)]==UnDef)&
+        .or.(daynumber<(grass_start(i,j)-uncert_grass_day))&
+        .or.(daynumber>(grass_end  (i,j)+uncert_grass_day))
+    end select
+  end do
 
   EmisNat(inat(:),i,j)      = 0.0
   rcemis (itot(:),KMAX_MID) = 0.0
@@ -340,13 +343,16 @@ subroutine pollen_flux(i,j,debug_flag)
     return
   end if
 
- ! Heatsum: sums up the temperatures that day for all time-steps
-  if(.not.pollen_out(iBIRCH)) &
-    call heatsum_calc(heatsum(i,j,iBIRCH),t2_nwp(i,j,1),T_cutoff_birch)
-  if(.not.pollen_out(iOLIVE)) &
-    call heatsum_calc(heatsum(i,j,iOLIVE),t2_nwp(i,j,1),T_cutoff_olive)
-  if(.not.pollen_out(iRWEED)) &
-    call heatsum_rweed(heatsum(i,j,iRWEED),t2_nwp(i,j,1),daylength(glat(i,j)))
+  ! Heatsum: sums up the temperatures that day for all time-steps
+  do g=1,POLLEN_NUM
+    if(.not.pollen_out(g)) cycle
+    select case(g)
+    case(iBIRCH,iOLIVE)
+      call heatsum_calc(heatsum(i,j,g),t2_nwp(i,j,1),T_cutoff(g))
+    case(iRWEED)
+      call heatsum_rweed(heatsum(i,j,g),t2_nwp(i,j,1),daylength(glat(i,j)))
+    end select
+  end do
 
   ! calculate daily mean temperatures
   if(current_date%hour==0 .and. current_date%seconds==dt)&
@@ -384,45 +390,39 @@ subroutine pollen_flux(i,j,debug_flag)
     prec=surface_precip(i,j)
   end if
 
-! Birch specific emission inhibitors
-  g=iBIRCH
-  pollen_out(g)=pollen_out(g)         & ! out season
-    .or.(R(i,j,g)>N_TOT(g)*birch_corr(i,j)) & ! out of pollen
-    .or.(relhum>RH_HIGH)              & ! too humid
-    .or.(prec>prec_max)               & ! too rainy
-    .or.(heatsum(i,j,g)<lim_birch)    & ! too cold
-    .or.(t2_nwp(i,j,1)<T_cutoff_birch)& ! too windy
-    .or.(heatsum(i,j,g)-birch_h_c(i,j)> dH_d_birch)
-
-! Olive specific emission inhibitors
-  g=iOLIVE
-  pollen_out(g)=pollen_out(g)         & ! out season
-    .or.(R(i,j,g)>N_TOT(g))           & ! out of pollen
-    .or.(relhum>RH_HIGH)              & ! too humid
-    .or.(prec>prec_max)               & ! too rainy
-    .or.(heatsum(i,j,g)<lim_olive)    & ! too cold
-    .or.(t2_nwp(i,j,1)<T_cutoff_olive)& ! too windy
-    .or.(heatsum(i,j,g)-olive_h_c(i,j)> olive_dH(i,j))
-
-! Ragweed specific emission inhibitors
-! meteo flowering thresholds can zero the heatsum
-  g=iRWEED
-  if(t2_nwp(i,j,1)<TempThr_rweed .or. & ! inst. treshold
-    (current_date%hour==0 .and. current_date%seconds==0 .and. &
-    t2_day(i,j)<DayTempThr_rweed))then
-    heatsum(i,j,g)=0.0
-    if(R(i,j,g)>0.0) &        ! if flowering started 
-      R(i,j,g)=N_TOT(g)+1e-6  ! end emission in gridcell
-  end if
-  pollen_out(g)=pollen_out(g)         & ! out season
-    .or.(R(i,j,g)>N_TOT(g))             ! out of pollen
-
-! Grass specific emission inhibitors
-  g=iGRASS
-  pollen_out(g)=pollen_out(g)         & ! out season
-    .or.(R(i,j,g)>N_TOT(g))           & ! out of pollen
-    .or.(relhum>RH_HIGH)              & ! too humid
-    .or.(prec>prec_max)                 ! too rainy
+  do g=1,POLLEN_NUM
+    if(pollen_out(g)) cycle
+    select case(g)
+    case(iBIRCH)  ! Birch specific emission inhibitors
+      pollen_out(g)=(R(i,j,g)>N_TOT(g)*birch_corr(i,j)) & ! out of pollen
+        .or.(relhum>RH_HIGH)                            & ! too humid
+        .or.(prec>prec_max)                             & ! too rainy
+        .or.(heatsum(i,j,g)<lim_birch)                  & ! too cold season
+        .or.(t2_nwp(i,j,1)<T_cutoff(g))                 & ! too cold
+        .or.(heatsum(i,j,g)-birch_h_c(i,j)> dH_d_birch)   ! too warm season
+    case(iOLIVE)  ! Olive specific emission inhibitors
+      pollen_out(g)=(R(i,j,g)>N_TOT(g))                 & ! out of pollen
+        .or.(relhum>RH_HIGH)                            & ! too humid
+        .or.(prec>prec_max)                             & ! too rainy
+        .or.(heatsum(i,j,g)<lim_olive)                  & ! too cold season
+        .or.(t2_nwp(i,j,1)<T_cutoff(g))                 & ! too cold
+        .or.(heatsum(i,j,g)-olive_h_c(i,j)> olive_dH(i,j))! too warm season
+    case(iRWEED)  ! Ragweed specific emission inhibitors
+      ! meteo flowering thresholds can zero the heatsum
+      if(t2_nwp(i,j,1)<TempThr_rweed .or. & ! inst. treshold
+        (current_date%hour==0 .and. current_date%seconds==0 .and. &
+        t2_day(i,j)<DayTempThr_rweed))then
+        heatsum(i,j,g)=0.0
+        if(R(i,j,g)>0.0) &        ! if flowering started 
+          R(i,j,g)=N_TOT(g)+1e-6  ! end emission in gridcell
+      end if
+      pollen_out(g)=(R(i,j,g)>N_TOT(g))     ! out of pollen
+    case(iGRASS)! Grass specific emission inhibitors
+      pollen_out(g)=(R(i,j,g)>N_TOT(g))                 & ! out of pollen
+        .or.(relhum>RH_HIGH)                            & ! too humid
+        .or.(prec>prec_max)                               ! too rainy
+    end select
+  end do
 
   ! grains to molecular weight: grains/m2/s --> mol/cm3/s
   n2m(:) = 1e-6/Grid%DeltaZ           & ! 1/dZ [1/cm3]
@@ -433,12 +433,12 @@ subroutine pollen_flux(i,j,debug_flag)
 ! Emission rates: Birch,Olive,Grass
 !------------------------
   do g=1,POLLEN_NUM
-    if(pollen_out(g))cycle
+    if(pollen_out(g)) cycle
     ! scale factor meteorological conditions
-    select case(POLLEN_GROUP(g))
-    case(BIRCH,OLIVE,RWEED)
+    select case(g)
+    case(iBIRCH,iOLIVE,iRWEED)
       scale=scale_factor(POLLEN_GROUP(g))
-    case(GRASS);
+    case(iGRASS);
       scale=scale_factor(GRASS//trim(grass_mode))
     endselect
     R(i,j,g)=R(i,j,g)+N_TOT(g)*scale*dt       ! pollen grains released so far
@@ -467,14 +467,14 @@ function scale_factor(spc) result(scale)
   case(BIRCH)
     g=iBIRCH
     scale = scale*birch_corr(i,j) &
-      *(t2_nwp(i,j,1)-T_cutoff_birch)/dH_birch &
+      *(t2_nwp(i,j,1)-T_cutoff(g))/dH_birch &
       *f_in(heatsum(i,j,g),birch_h_c(i,j),PROB_IN_birch) &  ! prob. flowering start
       *f_out(R(i,j,g),N_TOT(g),PROB_OUT_birch)              ! prob. flowering end
   case(OLIVE)
     g=iOLIVE
     dHsec = olive_dH(i,j)*24*3600   ! Flowering period [degree seconds] olive
     scale = scale &
-      *(t2_nwp(i,j,1)-T_cutoff_olive)/dHsec &
+      *(t2_nwp(i,j,1)-T_cutoff(g))/dHsec &
       *f_in(heatsum(i,j,g),olive_h_c(i,j),PROB_IN_olive) &  ! prob. flowering start
       *f_out(R(i,j,g),N_TOT(g),PROB_OUT_olive)              ! prob. flowering end
   case(RWEED)

@@ -63,7 +63,8 @@ character(len=*), parameter :: &
 integer, parameter :: &
   iBIRCH=1,iOLIVE=2,iRWEED=3,iGRASS=4,POLLEN_NUM=size(POLLEN_GROUP)
 real, parameter  :: &
-  N_TOT(POLLEN_NUM)=[N_TOT_birch,N_TOT_olive,N_TOT_rweed,N_TOT_grass]
+  N_TOT(POLLEN_NUM)=[N_TOT_birch,N_TOT_olive,N_TOT_rweed,N_TOT_grass],&
+  T_CUTOFF(iBIRCH:iOLIVE)=[T_cutoff_birch,T_cutoff_olive]
 
 real, parameter  :: &
   D_POLL(POLLEN_NUM)=[D_POLL_birch,D_POLL_olive,D_POLL_rweed,D_POLL_grass], & ! pollen diameter
@@ -74,6 +75,7 @@ real, parameter  :: &
 ! GRASS: 13.73e-3, 8267e6
 
 private :: N_TOT_birch,N_TOT_olive,N_TOT_rweed,N_TOT_grass,&
+           T_cutoff_birch,T_cutoff_olive,&
            D_POLL_birch,D_POLL_olive,D_POLL_rweed,D_POLL_grass
 
 contains
@@ -103,6 +105,8 @@ subroutine pollen_check(igrp,uconv_adv)
         "pollen_check: Inconsistent POLLEN group total, "//POLLEN_GROUP(g))
       call CheckStop(D_POLL(g)/=D_POLL_birch,&
         "pollen_check: Inconsistent POLLEN group diameter, "//POLLEN_GROUP(g))
+      call CheckStop(T_CUTOFF(g)/=T_cutoff_birch,&
+        "pollen_check: Inconsistent POLLEN group T_cutoff, "//POLLEN_GROUP(g))
     case(iOLIVE)
       call CheckStop(POLLEN_GROUP(g),OLIVE,&
         "pollen_check: Inconsistent POLLEN group order, "//POLLEN_GROUP(g))
@@ -110,6 +114,8 @@ subroutine pollen_check(igrp,uconv_adv)
         "pollen_check: Inconsistent POLLEN group total, "//POLLEN_GROUP(g))
       call CheckStop(D_POLL(g)/=D_POLL_olive,&
         "pollen_check: Inconsistent POLLEN group diameter, "//POLLEN_GROUP(g))
+      call CheckStop(T_CUTOFF(g)/=T_cutoff_olive,&
+        "pollen_check: Inconsistent POLLEN group T_cutoff, "//POLLEN_GROUP(g))
     case(iRWEED)
       call CheckStop(POLLEN_GROUP(g),RWEED,&
         "pollen_check: Inconsistent POLLEN group order, "//POLLEN_GROUP(g))
