@@ -162,41 +162,44 @@ subroutine Config_Pollen()
   R(:,:,:) = 0.0
 end subroutine Config_Pollen
 !-------------------------------------------------------------------------!
-function checkdates(nday,spc,update) result(ok)
+function checkdates(nday,spc,i,j) result(ok)
   integer, intent(in)           :: nday
   character(len=*), intent(in)  :: spc
-  logical, intent(in), optional :: update
+  integer, intent(in), optional :: i,j ! update GRASS start/end from coords
   logical :: ok
   logical, save :: first_call = .true.
   integer :: g
-  integer, save :: &
-    day_first(0:POLLEN_NUM)=1,day_last(0:POLLEN_NUM)=366
-  if(present(update))first_call=first_call.and.update
+  integer, parameter :: iPOLLEN=POLLEN_NUM+1
+  integer, save :: day(0:1,iPOLLEN) ! day(0,:)=first,day(1,:)=last
   if(first_call)then
-    day_first(iBIRCH)=day_of_year(current_date%year,date_first_birch%month,date_first_birch%day)
-    day_first(iOLIVE)=day_of_year(current_date%year,date_first_olive%month,date_first_olive%day)
-    day_first(iRWEED)=day_of_year(current_date%year,date_first_rweed%month,date_first_rweed%day)
-    day_first(iGRASS)=day_of_year(current_date%year,date_first_grass%month,date_first_grass%day)&
-                     -uncert_grass_day
-    day_first(0)=minval(day_first(1:))
+    day(0,iBIRCH)=day_of_year(current_date%year,date_first_birch%month,date_first_birch%day)
+    day(0,iOLIVE)=day_of_year(current_date%year,date_first_olive%month,date_first_olive%day)
+    day(0,iRWEED)=day_of_year(current_date%year,date_first_rweed%month,date_first_rweed%day)
+    day(0,iGRASS)=day_of_year(current_date%year,date_first_grass%month,date_first_grass%day)&
+                 -uncert_grass_day
+    day(0,iPOLLEN)=minval(day(0,:POLLEN_NUM))
 
-    day_last(iBIRCH)=day_of_year(current_date%year,date_last_birch%month,date_last_birch%day)
-    day_last(iOLIVE)=day_of_year(current_date%year,date_last_olive%month,date_last_olive%day)
-    day_last(iRWEED)=day_of_year(current_date%year,date_last_rweed%month,date_last_rweed%day)
-    day_last(iGRASS)=day_of_year(current_date%year,date_last_grass%month,date_last_grass%day)&
-                    +uncert_grass_day
-    day_last(0)=maxval(day_first(1:))
+    day(1,iBIRCH)=day_of_year(current_date%year,date_last_birch%month,date_last_birch%day)
+    day(1,iOLIVE)=day_of_year(current_date%year,date_last_olive%month,date_last_olive%day)
+    day(1,iRWEED)=day_of_year(current_date%year,date_last_rweed%month,date_last_rweed%day)
+    day(1,iGRASS)=day_of_year(current_date%year,date_last_grass%month,date_last_grass%day)&
+                 +uncert_grass_day
+    day(1,iPOLLEN)=maxval(day(1,:POLLEN_NUM))
     first_call = .false.
   end if
+  if(present(i).and.present(j))then
+    day(0,iGRASS)=grass_start(i,j)-uncert_grass_day
+    day(1,iGRASS)=grass_end(i,j)+uncert_grass_day
+  end if
   select case(spc)
-    case("POLLEN","P","p","pollen");g=0
+    case("POLLEN","P","p","pollen");g=iPOLLEN
     case(BIRCH,"B","b","birch");g=iBIRCH
     case(OLIVE,"O","o","olive");g=iOLIVE
     case(RWEED,"R","r","rweed");g=iRWEED
     case(GRASS,"G","g","grass");g=iGRASS
     case default; call CheckStop("Unknown pollen type: "//trim(spc))
   end select
-  ok=(day_first(g)<=nday).and.(nday<=day_last(g))
+  ok=(day(0,g)<=nday).and.(nday<=day(1,g))
 end function checkdates
 !-------------------------------------------------------------------------!
 subroutine pollen_flux(i,j,debug_flag)
@@ -213,7 +216,7 @@ subroutine pollen_flux(i,j,debug_flag)
 
   integer :: ii, jj, nlu, ilu, lu, info, g, n
   real :: scale,lim_birch,lim_olive,rcpoll,&
-       n2m(POLLEN_NUM),u10,prec,relhum,dfirst_g,dlast_g
+       n2m(POLLEN_NUM),u10,prec,relhum
 
   real, save, allocatable, dimension(:,:,:) :: &
     pollen_frac   ! fraction of pollen (birch/olive/rweed/grass), read in
@@ -297,30 +300,17 @@ subroutine pollen_flux(i,j,debug_flag)
     where(pollen_frac(:,:,iOLIVE)/=UnDef) &
       pollen_frac(:,:,iOLIVE)=pollen_frac(:,:,iOLIVE)/100.0
 
-    ! start/end of grass pollen season
-    dfirst_g=minval(grass_start,MASK=(grass_start/=UnDef))
-    CALL MPI_ALLREDUCE(MPI_IN_PLACE,dfirst_g,1,MPI_DOUBLE_PRECISION,&
-                       MPI_MIN,MPI_COMM_WORLD,INFO)
-    date_first_grass=date(-1,1,floor(dfirst_g),0,0)
-
-    dlast_g=maxval(grass_end   ,MASK=(grass_start/=UnDef))
-    CALL MPI_ALLREDUCE(MPI_IN_PLACE,dlast_g ,1,MPI_DOUBLE_PRECISION,&
-                       MPI_MAX,MPI_COMM_WORLD,INFO)
-    date_last_grass=date(-1,1,ceiling(dlast_g),0,0)
-
     ! Set D2D/USET output
     call write_uset()
 
     ! start of pollen forecast
-    if(checkdates(daynumber,"pollen",update=.true.).and.MasterProc)&
+    if(checkdates(daynumber,"pollen",i=i,j=j).and.MasterProc)&
       write(*,*) "POLLEN setup ",date2string("YYYY-MM-DD hh:mm",current_date)
     first_call = .false.
   end if !first_call
   debug_ij=all([DEBUG.or.debug_flag,debug_proc,i==debug_li,j==debug_lj])
 
   do g=1,POLLEN_NUM
-    pollen_out(g)=.not.checkdates(daynumber,POLLEN_GROUP(g))
-    if(pollen_out(g)) cycle
     select case(g)
     case(iBIRCH)
       pollen_out(g)=any([pollen_frac(i,j,g),birch_h_c(i,j)]==UnDef)
@@ -329,10 +319,9 @@ subroutine pollen_flux(i,j,debug_flag)
     case(iRWEED)
       pollen_out(g)=any([pollen_frac(i,j,g),rweed_start_th(i,j)]==UnDef)
     case(iGRASS)
-      pollen_out(g)=any([pollen_frac(i,j,g),grass_start(i,j),grass_end(i,j)]==UnDef)&
-        .or.(daynumber<(grass_start(i,j)-uncert_grass_day))&
-        .or.(daynumber>(grass_end  (i,j)+uncert_grass_day))
+      pollen_out(g)=any([pollen_frac(i,j,g),grass_start(i,j),grass_end(i,j)]==UnDef)
     end select
+    pollen_out(g)=pollen_out(g).or..not.checkdates(daynumber,POLLEN_GROUP(g))
   end do
 
   EmisNat(inat(:),i,j)      = 0.0

@@ -72,6 +72,7 @@ real, parameter  :: &
 ! weight 1 grain [ug], 1 mol of grains (AVOG*grain_wt) [Tonne=1e3 kg]
 ! BIRCH: 4.460e-3, 2686e6
 ! OLIVE: 9.195e-3, 5538e6
+! RWEED: 2.443e-3
 ! GRASS: 13.73e-3, 8267e6
 
 private :: N_TOT_birch,N_TOT_olive,N_TOT_rweed,N_TOT_grass,&
