@@ -102,8 +102,6 @@ type(date), parameter :: &
 type(date), save :: & ! will be updated when grass_time.nc is read
   date_first_grass=date(-1,2,7,0,0),date_last_grass=date(-1,9,23,0,0)
 
-integer, save :: day_first=1,day_last=366
-
 real, save, allocatable, dimension(:,:) :: &
   grass_start,grass_end ! Stard/End day of grass, read in
 
@@ -169,43 +167,36 @@ function checkdates(nday,spc,update) result(ok)
   character(len=*), intent(in)  :: spc
   logical, intent(in), optional :: update
   logical :: ok
-  integer, save :: &
-    day_first_b=1,day_last_b=366,&
-    day_first_o=1,day_last_o=366,&
-    day_first_r=1,day_last_r=366,&
-    day_first_g=1,day_last_g=366
   logical, save :: first_call = .true.
+  integer :: g
+  integer, save :: &
+    day_first(0:POLLEN_NUM)=1,day_last(0:POLLEN_NUM)=366
   if(present(update))first_call=first_call.and.update
   if(first_call)then
-    day_first_b=day_of_year(current_date%year,date_first_birch%month,date_first_birch%day)
-    day_first_o=day_of_year(current_date%year,date_first_olive%month,date_first_olive%day)
-    day_first_r=day_of_year(current_date%year,date_first_rweed%month,date_first_rweed%day)
-    day_first_g=day_of_year(current_date%year,date_first_grass%month,date_first_grass%day)
-    day_first_g=day_first_g-uncert_grass_day
-    day_first=min(day_first_b,day_first_o,day_first_r,day_first_g)
+    day_first(iBIRCH)=day_of_year(current_date%year,date_first_birch%month,date_first_birch%day)
+    day_first(iOLIVE)=day_of_year(current_date%year,date_first_olive%month,date_first_olive%day)
+    day_first(iRWEED)=day_of_year(current_date%year,date_first_rweed%month,date_first_rweed%day)
+    day_first(iGRASS)=day_of_year(current_date%year,date_first_grass%month,date_first_grass%day)&
+                     -uncert_grass_day
+    day_first(0)=minval(day_first(1:))
 
-    day_last_b=day_of_year(current_date%year,date_last_birch%month,date_last_birch%day)
-    day_last_o=day_of_year(current_date%year,date_last_olive%month,date_last_olive%day)
-    day_last_r=day_of_year(current_date%year,date_last_rweed%month,date_last_rweed%day)
-    day_last_g=day_of_year(current_date%year,date_last_grass%month,date_last_grass%day)
-    day_last_g=day_last_g+uncert_grass_day
-    day_last=max(day_last_b,day_last_o,day_last_r,day_last_g)
+    day_last(iBIRCH)=day_of_year(current_date%year,date_last_birch%month,date_last_birch%day)
+    day_last(iOLIVE)=day_of_year(current_date%year,date_last_olive%month,date_last_olive%day)
+    day_last(iRWEED)=day_of_year(current_date%year,date_last_rweed%month,date_last_rweed%day)
+    day_last(iGRASS)=day_of_year(current_date%year,date_last_grass%month,date_last_grass%day)&
+                    +uncert_grass_day
+    day_last(0)=maxval(day_first(1:))
     first_call = .false.
   end if
   select case(spc)
-  case("POLLEN","P","p","pollen")
-    ok=(day_first  <=nday).and.(nday<=day_last  )
-  case(BIRCH,"B","b","birch")
-    ok=(day_first_b<=nday).and.(nday<=day_last_b)
-  case(OLIVE,"O","o","olive")
-    ok=(day_first_o<=nday).and.(nday<=day_last_o)
-  case(RWEED,"R","r","rweed")
-    ok=(day_first_r<=nday).and.(nday<=day_last_r)
-  case(GRASS,"G","g","grass")
-    ok=(day_first_g<=nday).and.(nday<=day_last_g)
-  case default
-    call CheckStop("Unknown pollen type: "//trim(spc))
+    case("POLLEN","P","p","pollen");g=0
+    case(BIRCH,"B","b","birch");g=iBIRCH
+    case(OLIVE,"O","o","olive");g=iOLIVE
+    case(RWEED,"R","r","rweed");g=iRWEED
+    case(GRASS,"G","g","grass");g=iGRASS
+    case default; call CheckStop("Unknown pollen type: "//trim(spc))
   end select
+  ok=(day_first(g)<=nday).and.(nday<=day_last(g))
 end function checkdates
 !-------------------------------------------------------------------------!
 subroutine pollen_flux(i,j,debug_flag)
