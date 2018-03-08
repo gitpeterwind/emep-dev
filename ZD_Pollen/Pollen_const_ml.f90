@@ -26,8 +26,8 @@ real, parameter  :: &
   PREC_MAX = 0.5,             & ! Max cut-off precipitation [mm/h]
   N_TOT_birch = 1.0e9,        & ! Available pollen [grains/m2] birch
   N_TOT_olive = 3.9e8,        & ! Available pollen [grains/m2] olive
-  N_TOT_grass = 2.0e7,        & ! Available pollen [grains/m2] grass
   N_TOT_rweed = 1.7e7,        & ! Available pollen [grains/m2] ragweed
+  N_TOT_grass = 2.0e7,        & ! Available pollen [grains/m2] grass
   RH_LOW   = 0.50,            & ! Min cut-off relative humidity [1]
   RH_HIGH  = 0.80,            & ! Max cut-off relative humidity [1]
   PROB_IN_birch  = 0.2,       & ! Probability for flowering to start
@@ -39,8 +39,8 @@ real, parameter  :: &
   uncert_tot_grass_poll = 0.2,& ! end uncertainty for linear releases
   D_POLL_birch = 22.0,        & ! Pollen grain diameter [um] birch
   D_POLL_olive = 28.0,        & ! Pollen grain diameter [um] olive
-  D_POLL_grass = 32.0,        & ! Pollen grain diameter [um] grass
   D_POLL_rweed = 18.0,        & ! Pollen grain diameter [um] grass
+  D_POLL_grass = 32.0,        & ! Pollen grain diameter [um] grass
   POLL_DENS= 800e3              ! Pollen density [g/m3]
 
 real, parameter ::            &
@@ -80,7 +80,7 @@ contains
 subroutine pollen_check(igrp,uconv_adv)
   integer, intent(inout), optional :: igrp
   real, dimension(NSPEC_ADV), intent(inout), optional :: uconv_adv
-  integer :: poll
+  integer :: poll,g
   logical,save :: first_call=.true.
   poll=find_index("POLLEN",chemgroups(:)%name)
   if(present(igrp))igrp=poll
@@ -90,10 +90,42 @@ subroutine pollen_check(igrp,uconv_adv)
     "USE_POLLEN on model compiled without pollen")
   call CheckStop(DEBUG.and..not.USE_POLLEN,&
     "DEBUG_POLLEN on run without USE_POLLEN")
-  call CheckStop(size(chemgroups(poll)%specs),size(POLLEN_GROUP),&
+  call CheckStop(size(chemgroups(poll)%specs),POLLEN_NUM,&
     "pollen_check: Inconsistent POLLEN group size")
   call CheckStop(any(species(chemgroups(poll)%specs)%name/=POLLEN_GROUP),&
     "pollen_check: Inconsistent POLLEN group species")
+  do g=1,POLLEN_NUM
+    select case(g)
+    case(iBIRCH)
+      call CheckStop(POLLEN_GROUP(g),BIRCH,&
+        "pollen_check: Inconsistent POLLEN group order, "//POLLEN_GROUP(g))
+      call CheckStop(N_TOT(g)/=N_TOT_birch,&
+        "pollen_check: Inconsistent POLLEN group total, "//POLLEN_GROUP(g))
+      call CheckStop(D_POLL(g)/=D_POLL_birch,&
+        "pollen_check: Inconsistent POLLEN group diameter, "//POLLEN_GROUP(g))
+    case(iOLIVE)
+      call CheckStop(POLLEN_GROUP(g),OLIVE,&
+        "pollen_check: Inconsistent POLLEN group order, "//POLLEN_GROUP(g))
+      call CheckStop(N_TOT(g)/=N_TOT_olive,&
+        "pollen_check: Inconsistent POLLEN group total, "//POLLEN_GROUP(g))
+      call CheckStop(D_POLL(g)/=D_POLL_olive,&
+        "pollen_check: Inconsistent POLLEN group diameter, "//POLLEN_GROUP(g))
+    case(iRWEED)
+      call CheckStop(POLLEN_GROUP(g),RWEED,&
+        "pollen_check: Inconsistent POLLEN group order, "//POLLEN_GROUP(g))
+      call CheckStop(N_TOT(g)/=N_TOT_rweed,&
+        "pollen_check: Inconsistent POLLEN group total, "//POLLEN_GROUP(g))
+      call CheckStop(D_POLL(g)/=D_POLL_rweed,&
+        "pollen_check: Inconsistent POLLEN group diameter, "//POLLEN_GROUP(g))
+    case(iGRASS)
+      call CheckStop(POLLEN_GROUP(g),GRASS,&
+        "pollen_check: Inconsistent POLLEN group order, "//POLLEN_GROUP(g))
+      call CheckStop(N_TOT(g)/=N_TOT_grass,&
+        "pollen_check: Inconsistent POLLEN group total, "//POLLEN_GROUP(g))
+      call CheckStop(D_POLL(g)/=D_POLL_grass,&
+        "pollen_check: Inconsistent POLLEN group diameter, "//POLLEN_GROUP(g))
+    end select
+  end do
   if(present(uconv_adv))&
     uconv_adv(chemgroups(poll)%specs-NSPEC_SHL)=&
       uconv_adv(chemgroups(poll)%specs-NSPEC_SHL)/grain_wt
