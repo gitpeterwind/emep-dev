@@ -19,7 +19,8 @@ use GridValues_ml,    only: dA,dB,xm2, dhs1i, glat, glon, projection, extendarea
 use MetFields_ml,     only: ps,roa
 use Config_module,only: KMAX_MID, KMAX_BND,USES, USE_uEMEP, uEMEP, IOU_HOUR, IOU_HOUR_INST,&
                             IOU_INST,IOU_YEAR,IOU_MON,IOU_DAY,IOU_HOUR,IOU_HOUR_INST, &
-                            KMAX_MID,  MasterProc,dt_advec, RUNDOMAIN, runlabel1
+                            KMAX_MID,  MasterProc,dt_advec, RUNDOMAIN, runlabel1, HOURLYFILE_ending,&
+                            TXTLEN_FILE
 use MPI_Groups_ml
 use NetCDF_ml,        only: Real4,Out_netCDF
 use OwnDataTypes_ml,  only: Deriv, Npoll_uemep_max, Nsector_uemep_max
@@ -27,6 +28,7 @@ use Par_ml,           only: me,LIMAX,LJMAX,MAXLIMAX,MAXLJMAX,gi0,gj0,li0,li1,lj0
 use PhysicalConstants_ml, only : GRAV, ATWAIR 
 use SmallUtils_ml,    only: find_index
 use TimeDate_ml,      only: date, current_date,day_of_week
+use TimeDate_ExtraUtil_ml,only: date2string
 use Timefactors_ml,   only: &
     DegreeDayFactors       & ! degree-days used for SNAP-2
     ,Gridded_SNAP2_Factors, gridfac_HDD & 
@@ -231,12 +233,23 @@ subroutine out_uEMEP(iotyp)
   logical ::overwrite
   logical,save :: first_call(10)=.true.
   real,allocatable ::tmp_ext(:,:,:,:,:)!allocate since it may be heavy for the stack
+  type(date) :: onesecond = date(0,0,0,0,1)
+  character(len=TXTLEN_FILE),save :: oldhourlyname = 'NOTSET'
+  character(len=TXTLEN_FILE),save :: oldhourlyInstname = 'NOTSET'
 
   if(COMPUTE_LOCAL_TRANSPORT)allocate(tmp_ext(-uEMEP%dist:uEMEP%dist,-uEMEP%dist:uEMEP%dist,1-uEMEP%dist:LIMAX+uEMEP%dist,1-uEMEP%dist:LJMAX+uEMEP%dist,KMAX_MID-uEMEPNvertout+1:KMAX_MID))
   if(iotyp==IOU_HOUR_INST .and. uEMEP%HOUR_INST)then
-     fileName=trim(runlabel1)//'_uEMEP_hourInst.nc'
+     fileName = trim(runlabel1)//'_uEMEP_hourInst'//date2string(trim(HOURLYFILE_ending),current_date,-1.0)
+     if(oldhourlyInstname/=fileName)then
+        first_call(iotyp) = .true.
+        oldhourlyInstname = fileName
+     endif
   else if(iotyp==IOU_HOUR .and. uEMEP%HOUR)then
-     fileName=trim(runlabel1)//'_uEMEP_hour.nc'
+     fileName = trim(runlabel1)//'_uEMEP_hour'//date2string(trim(HOURLYFILE_ending),current_date,-1.0)
+     if(oldhourlyname/=fileName)then
+        first_call(iotyp) = .true.
+        oldhourlyname = fileName
+     endif
   else if(iotyp==IOU_DAY .and. uEMEP%DAY)then
      fileName=trim(runlabel1)//'_uEMEP_day.nc'
   else if(iotyp==IOU_MON .and. uEMEP%MONTH)then
@@ -313,7 +326,7 @@ subroutine out_uEMEP(iotyp)
   chunksizes_tot(3)=dimSizes_tot(3)
 
   isec_poll1=1
-  overwrite=.true.!only first time
+  overwrite=.true.!only first time when new file is created
   do ipoll=1,uEMEP%Npoll
      def2%name=trim(uEMEP%poll(ipoll)%emis)
      if(first_call(iotyp))then
@@ -335,7 +348,7 @@ subroutine out_uEMEP(iotyp)
         
         def2%name=trim(uEMEP%poll(ipoll)%emis)
         call Out_netCDF(iotyp,def2,ndim_tot,kmax,loc_tot_full,scale,CDFtype,dimSizes_tot,dimNames_tot,out_DOMAIN=uEMEP%DOMAIN,&
-             fileName_given=trim(fileName),overwrite=.false.,create_var_only=.true.,chunksizes=chunksizes_tot)
+             fileName_given=trim(fileName),overwrite=overwrite,create_var_only=.true.,chunksizes=chunksizes_tot)
   
      endif
 

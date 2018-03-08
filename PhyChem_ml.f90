@@ -292,10 +292,6 @@ subroutine phyche()
       modulo(current_date%hour,FREQ_SONDE)==0) &
       call siteswrt_sondes(xn_adv,xn_shl)
 
-    if((.not.SOURCE_RECEPTOR.or.FORECAST).and.NHOURLY_OUT>0 .and. &
-      modulo(current_date%hour,FREQ_HOURLY)==0) &
-      call hourly_out()
-
     call Add_2timing(35,tim_after,tim_before,"phyche:sites and hourly out")
 
   end if

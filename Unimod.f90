@@ -46,6 +46,7 @@ program myeul
        runlabel2,  &   ! explanatory text
        iyr_trend, nmax,nstep , meteo,     &
        IOU_INST,IOU_HOUR,IOU_HOUR_INST, IOU_YEAR,IOU_MON, IOU_DAY, &
+       HOURLYFILE_ending, &
        USES, USE_uEMEP,JUMPOVER29FEB,&
        FORECAST,ANALYSIS  ! FORECAST/ANALYSIS mode
   use Config_module,only: Config_ModelConstants,DEBUG, startdate,enddate
@@ -224,9 +225,11 @@ program myeul
   if(wanted_iou(IOU_DAY)) &
     call Init_new_netCDF(trim(runlabel1)//'_day.nc',IOU_DAY)
   if(wanted_iou(IOU_HOUR)) &
-    call Init_new_netCDF(trim(runlabel1)//'_hour.nc',IOU_HOUR)
+    call Init_new_netCDF(trim(runlabel1)//'_hour'//&
+    date2string(HOURLYFILE_ending,current_date),IOU_HOUR)
   if(wanted_iou(IOU_HOUR_INST)) &
-    call Init_new_netCDF(trim(runlabel1)//'_hourInst.nc',IOU_HOUR_INST)
+    call Init_new_netCDF(trim(runlabel1)//'_hourInst'//&
+    date2string(HOURLYFILE_ending,current_date),IOU_HOUR_INST)
 
   call Add_2timing(4,tim_after,tim_before,"Other init")
 

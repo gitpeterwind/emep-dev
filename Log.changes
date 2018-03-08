@@ -138,6 +138,17 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+08 Mar 2018, Peter
+
+Allow separate files for hourly outputs. Use the config keyword, for example:
+  HOURLYFILE_ending	= 'JJJ.nc',	
+(note that compared to earlier versions, "hour" is always added by the model, 
+ and should not be part of the keyword)
+
+removed the deprecated Output_hourly.f90 (excellent to be able to clean something!)
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 07 Mar 2018, Peter
 
 Upgrade of "emis_inputlist". Can now mix monthly and yearly emission sets.

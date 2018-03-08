@@ -1,12 +1,12 @@
 module OutputChem_ml
 
 use CheckStop_ml,      only: CheckStop
-use Config_module,     only: num_lev3d, MasterProc, &
+use Config_module,     only: num_lev3d, MasterProc, TXTLEN_FILE, runlabel1,&
                              FREQ_HOURLY, FORECAST, END_OF_EMEPDAY, &
                              DEBUG => DEBUG_OUTPUTCHEM, METSTEP, &
                              IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY,&
                              IOU_HOUR,IOU_HOUR_INST, IOU_MAX_MAX,&
-                             startdate, enddate, USE_uEMEP
+                             HOURLYFILE_ending, startdate, enddate, USE_uEMEP
 use Derived_ml,        only: LENOUT2D, nav_2d, num_deriv2d  &
                             ,LENOUT3D, nav_3d, num_deriv3d  &
                             ,wanted_iou, ResetDerived
@@ -15,10 +15,11 @@ use GridValues_ml,     only: debug_proc ,debug_li, debug_lj
 use My_Outputs_ml,     only: NBDATES, wanted_dates_inst,            &
                              Ascii3D_WANTED
 use Io_ml,             only: IO_WRTCHEM, IO_TMP, datewrite
-use NetCDF_ml,         only: CloseNetCDF, Out_netCDF, filename_iou
+use NetCDF_ml,         only: CloseNetCDF, Out_netCDF, filename_iou, Init_new_netCDF
 use OwnDataTypes_ml,   only: Deriv, print_deriv_type
 use Par_ml,            only: LIMAX,LJMAX
-use TimeDate_ml,       only: tdif_secs,date,timestamp,make_timestamp,current_date, max_day ! days in month
+use TimeDate_ml,       only: tdif_secs,date,timestamp,make_timestamp,current_date, max_day &! days in month
+                             ,daynumber,add2current_date
 use TimeDate_ExtraUtil_ml,only: date2string
 use uEMEP_ml,          only: out_uEMEP
 
@@ -55,7 +56,10 @@ subroutine Wrtchem(ONLY_HOUR)
   integer :: mm_out, dd_out
   logical :: Jan_1st, End_of_Run
   logical,save :: first_call = .true.
+  integer, save :: daynumber_old=-999
+  character(len=TXTLEN_FILE) :: newname
   TYPE(timestamp)   :: ts1,ts2
+
 !---------------------------------------------------------------------
   nyear  = current_date%year
   nmonth = current_date%month
@@ -94,6 +98,18 @@ subroutine Wrtchem(ONLY_HOUR)
                        nmonth, mm_out, nday, dd_out
     end if
   end if      ! for END_OF_EMEPDAY <= 7
+
+  !we substract one second, so that the day number of midnight is for the day 
+  !which has passed, not the next day
+  newname = trim(runlabel1)//'_hour'//date2string(HOURLYFILE_ending,current_date,-1.0)
+  if(wanted_iou(IOU_HOUR).and.fileName_iou(IOU_HOUR)/=newname)then
+     call Init_new_netCDF(trim(newname),IOU_HOUR)
+  endif
+  newname = trim(runlabel1)//'_hourInst'//date2string(trim(HOURLYFILE_ending),current_date,-1.0)
+  if(wanted_iou(IOU_HOUR_INST).and.fileName_iou(IOU_HOUR_INST)/=trim(newname))then
+     call Init_new_netCDF(trim(newname),IOU_HOUR_INST)
+  endif
+
 
   !== Instantaneous results output ====
   !   Possible actual array output for specified days and hours

@@ -421,11 +421,11 @@ integer, public, save :: NETCDF_DEFLATE_LEVEL=4
 !NB: will not work well by default on Stallo per 14th Feb 2012 because of library bugs!
 !Until this is fixed, you must compile with netcdf/4.1.3 and link and run with compiler 12.1.2
 character(len=30), public, save :: &    ! ending depeding on date:
-! HOURLYFILE_ending="_hourYYYYMM.nc"    ! MM  -> month (01 .. 12)
-! HOURLYFILE_ending="_hourYYYYMMDD.nc"  ! DD  -> day of the month (00 .. 31)
-! HOURLYFILE_ending="_hourYYYYJJJ.nc"   ! JJJ -> the day of the year (001 .. 366)
-! HOURLYFILE_ending="+FFF.nc"           ! a new file each forecast hour
-  HOURLYFILE_ending="_hourExtra.nc"     ! keep the same for the whole run
+! HOURLYFILE_ending="YYYYMM.nc"    ! MM  -> month (01 .. 12)
+! HOURLYFILE_ending="YYYYMMDD.nc"  ! DD  -> day of the month (00 .. 31)
+! HOURLYFILE_ending="JJJ.nc"   ! JJJ -> the day of the year (001 .. 366)
+     HOURLYFILE_ending=".nc"           ! default, just one file
+!do not use  HOURLYFILE_ending="_hourExtra.nc"     ! keep the same for the whole run
 
 ! NH3 module as set up originally with U10 from met: kept for safety only.
 ! Will be replaced by sub.grid calculation of wind in future.
