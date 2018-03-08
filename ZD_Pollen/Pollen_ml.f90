@@ -92,6 +92,8 @@ character(len=max_string_length), save :: &
   grass_mode    ='linear',      & ! 'linear' (old) | 'gamma' (new)
   template_read ='POLLEN_IN.nc',& ! dump/restart input
   template_write='POLLEN_OUT.nc'  ! dump/restart output
+logical,save:: &
+  overwrite=.true. ! append to existing template_write if false
 
 type(date), parameter :: &
   date_first_birch=date(-1,3,1,0,0),date_last_birch=date(-1,8,1,0,0),&
@@ -117,7 +119,7 @@ subroutine Config_Pollen()
     birch_frac_nc,birch_data_nc,birch_corr_nc,&
     olive_data_nc,rweed_frac_nc,rweed_data_nc,&
     grass_field_nc,grass_time_nc,grass_mode,&
-    template_read,template_write
+    template_read,template_write,overwrite
 
   if(.not.first_call)return
   first_call = .false.
@@ -916,7 +918,6 @@ subroutine pollen_dump()
   character(len=*), parameter :: dfmt="('Write: ',A20,' [',A,'].')"
   character(len=20) :: spc
   logical     :: fexist,create_var
-  logical,save:: overwrite=.true. ! append to existing files if false
   integer     :: ncfileID,i,g
   type(Deriv) :: def1
   real,allocatable, dimension(:,:,:) :: data ! Data arrays
