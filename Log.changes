@@ -138,6 +138,14 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+09 Mar 2018, Peter, Massimo
+
+When the input data has at least 10 times coarser resolution than teh metdata
+and both are in latlon, there can be an interpolation bug that give zero.
+Shows clearly as vertical lines.
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 08 Mar 2018, Peter
 
 Allow separate files for hourly outputs. Use the config keyword, for example:

@@ -131,10 +131,10 @@ subroutine Config_ColumnSource()
   integer :: ios=0
   character(len=*), parameter :: dtxt = 'ColSrcConf:'
   NAMELIST /ColumnSource_config/NMAX_LOC,NMAX_EMS,flocdef,femsdef,need_topo
-  ! test if topography file was found
   rewind(IO_NML)
   read(IO_NML,NML=ColumnSource_config,iostat=ios)
   call CheckStop(all(ios/=read_ok),dtxt//"NML=ColumnSource_config")
+
   if(.not.foundtopo)then
     !call PrintLog(dtxt//"WARNING: "//trim(TopoFile)//" not found",MasterProc)
     if(need_topo)then

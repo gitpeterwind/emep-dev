@@ -2410,7 +2410,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   real :: latlon_weight
 
   real ::Rlonmin,Rlonmax,dRlon,dRloni,frac,frac_j,ir,jr
-  real ::Rlatmin,Rlatmax,dRlat,dRlati
+  real ::Rlatmin,Rlatmax,dRlat,dRlati, Resolution_fac
   integer, allocatable ::ifirst(:),ilast(:),jfirst(:),jlast(:)
   real, allocatable :: fracfirstlon(:),fraclastlon(:),fracfirstlat(:),fraclastlat(:)
 
@@ -2831,7 +2831,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
      Grid_resolution = EARTH_RADIUS*abs(Rlat(2)-Rlat(1))*PI/180.0
      Grid_resolution_lon = EARTH_RADIUS*abs(Rlon(2)-Rlon(1))*PI/180.0!NB: varies with latitude
-
+     Resolution_fac = Grid_resolution/GRIDWIDTH_M
      !the method chosen depends on the relative resolutions
      if(.not.present(interpol).and.Grid_resolution/GRIDWIDTH_M>4)then
         interpol_used='zero_order'!usually good enough, and keeps gradients
@@ -3109,7 +3109,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
               ifirst(ig)=floor(ir+0.5+1.E-6)!first i to be treated
               call lb2ij(Rlonmax,0.0,ir,jr)
               ilast(ig)=floor(ir+0.5-1.E-6)!last i to be treated
-
+              
               !end of the world tests
               if(ilast(ig)>= ifirst(ig))then
                  !no problems with monotonicity
@@ -3157,35 +3157,35 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                  cycle
               endif
 
-
               !make fraction of overlap. Only first or last i can overlap. 1*dloni means 100% of the incoming data is taken.
               !put all incoming longitudes in the range 0-360
 !              fracfirstlon(ig) = min(1.0, mod(360.0 + mod(glon(ifirst(ig),1)+360.0,360.0)+ 0.5*dlon - mod(Rlonmin+360.0,360.0),360.0)*dloni)
               fracfirstlon(ig) = mod(360.0 + mod(glon(ifirst(ig),1)+360.0,360.0)&
                                 + 0.5*dlon - mod(Rlonmin+360.0,360.0),360.0)*dloni
-              if(fracfirstlon(ig)<0.0 .or. fracfirstlon(ig)>10.0)then
-                 fracfirstlon(ig)=0.0!numerical noise in glon?
+
+              if(fracfirstlon(ig)<0.0 .or. fracfirstlon(ig)>10.0*Resolution_fac)then
+                 fracfirstlon(ig)=0.0!numerical noise in glon or i=1
               endif
               fracfirstlon(ig)=min(1.0,fracfirstlon(ig))
  
 !             fraclastlon(ig)  = min(1.0, mod(360.0 + mod(Rlonmax+360.0,360.0) - (mod(glon(ilast(ig),1)+360.0,360.0) - 0.5*dlon),360.0)*dloni)
               fraclastlon(ig)  =  mod(360.0 + mod(Rlonmax+360.0,360.0) &
                   - (mod(glon(ilast(ig),1)+360.0,360.0) - 0.5*dlon),360.0)*dloni
-              if(fraclastlon(ig)<0.0 .or. fraclastlon(ig)>10.0)then
-                 fraclastlon(ig)=0.0!numerical noise
+              if(fraclastlon(ig)<0.0 .or. fraclastlon(ig)>10.0*Resolution_fac)then
+                 fraclastlon(ig)=0.0!numerical noise or i=limax
               endif
               fraclastlon(ig)=min(1.0,fraclastlon(ig))
 
               !NB: when reducing on both sides need to ADD reductions not multiply
               if(ifirst(ig)==ilast(ig))fraclastlon(ig)  = fraclastlon(ig) -(1.0-fracfirstlon(ig))!include reduction from both sides
-              if(fraclastlon(ig)<0.0 .or. fraclastlon(ig)>10.0)then
-                 fraclastlon(ig)=0.0!numerical noise
+              if(fraclastlon(ig)<0.0 .or. fraclastlon(ig)>10.0*Resolution_fac)then
+                 fraclastlon(ig)=0.0!numerical noise or i=limax
               endif
 
               if(fracfirstlon(ig)<0.0)write(*,*)'ERROR A in interpolation',me,ig,fracfirstlon(ig)
               if(fraclastlon(ig)<0.0)write(*,*)'ERROR B in interpolation',me,ig,fraclastlon(ig)
 !631           format(I4,A,F10.4,A,F10.4,A,I4,A,F10.4,A,I4,A,F10.4,A,F10.4)
-!              if(me==19 .and. (ig==-3 .or. abs(Rlat(ig))<-89.0 ))write(*,631)ig,' start '//trim(varname),Rlonmin,' end',Rlonmax,' firsti',ifirst(ig),'lon ',glon(ifirst(ig),1),'last i',ilast(ig),'frac ',fracfirstlon(ig),' and ',fraclastlon(ig)
+!              if(me==0 .and. ig==1.and. trim(varname)=='sox_sec01')write(*,631)ig,' start '//trim(varname),Rlonmin,' end',Rlonmax,' firsti',ifirst(ig),'lon ',glon(ifirst(ig),1),'last i',ilast(ig),'frac ',fracfirstlon(ig),' and ',fraclastlon(ig)
            enddo
 
            !make factors for j

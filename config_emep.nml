@@ -167,11 +167,6 @@
 
 !-------- Sub domain (x0,x1,y0,y1)
 ! RUNDOMAIN =  200, 214, 150, 164,      !EMEP01 reduced
- RUNDOMAIN =  1, 360, 2, 179,      !GLOBAL05  reduced around South Norway
-! RUNDOMAIN =  230, 530, 150, 415,      !EMEP01 reduced around South Norway
-! RUNDOMAIN =  230, 450, 120, 350,      !EMEP01 reduced South Norway Apr 2017
-! RUNDOMAIN =  370, 420, 270, 320,      !EMEP01 small oslo tests reduced to South Norway
-! RUNDOMAIN =  330, 430, 250, 350,      !EMEP01 reduced to South Norway
 !!RUNDOMAIN =   1, 100,  1, 100,      ! (EECCA benchmarks)
 ! RUNDOMAIN =  40, 210, 12, 184,      ! SR TNO28 area
 ! RUNDOMAIN =  20,  70, 40, 90,       ! LPS tests

@@ -469,9 +469,10 @@ subroutine checkNewFFrecord(ymd, ncFileID,fname,new,nstart)
     write(*,*)  dtxt//" IDs ", ncFileID, closedID ! TMP
   end if 
   if(fname/=file_old)then
-    if(DEBUG%FORESTFIRE.and.MasterProc) &
-      write(*,*)dtxt//" new file:.. ",trim(fname(36:))
-      write(*,*)dtxt//' new fpoll FF_poll:',trim(FF_poll)
+    if(DEBUG%FORESTFIRE.and.MasterProc)then 
+       write(*,*)dtxt//" new file:.. ",trim(fname(36:))
+       write(*,*)dtxt//' new fpoll FF_poll:',trim(FF_poll)
+    endif
   ! close old ncFile, if already open
     if(ncFileID/=closedID)&
       call CheckNC(nf90_close(ncFileID),dtxt//"close:"//trim(file_old))
