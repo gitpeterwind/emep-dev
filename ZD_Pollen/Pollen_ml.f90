@@ -70,7 +70,7 @@ integer, parameter :: &
 !   olive_h_c       olive_data_nc   olive_th
 !   pollen_frac     rweed_frac_nc   fraction
 !   rweed_start_th  rweed_data_nc   start_th
-!   rweed_scale     rweed_data_nc   scale
+!   rweed_corr      rweed_data_nc   scale
 !   pollen_frac     grass_field_nc  grass_frac
 !   grass_start     grass_time_nc   grass_start
 !   grass_end       grass_time_nc   grass_end
@@ -226,9 +226,8 @@ subroutine pollen_flux(i,j,debug_flag)
     olive_h_c,      & ! temperature treshold olive, read in
     olive_dH,       & ! flowering period [degree days]
     rweed_start_th, & ! day of the year when the daylight length goes below 14.5h (StartCDThr)
+    rweed_corr,     & ! relative productivity (PollenTotal=rweed_corr*1.7e7)
     t2_day            ! daily temperature
-  real, allocatable, dimension(:,:) :: &
-    rweed_scale       ! relative productivity (PollenTotal=rweed_scale*1.7e7)
 
   ! Read in the different fields
   if(first_call) then
@@ -243,7 +242,7 @@ subroutine pollen_flux(i,j,debug_flag)
     allocate(pollen_frac(LIMAX,LJMAX,POLLEN_NUM))
     allocate(birch_h_c(LIMAX,LJMAX),birch_corr(LIMAX,LJMAX))
     allocate(olive_h_c(LIMAX,LJMAX),olive_dH(LIMAX,LJMAX))
-    allocate(rweed_start_th(LIMAX,LJMAX),rweed_scale(LIMAX,LJMAX))
+    allocate(rweed_start_th(LIMAX,LJMAX),rweed_corr(LIMAX,LJMAX))
     allocate(grass_start(LIMAX,LJMAX),grass_end(LIMAX,LJMAX))
     call ReadField_CDF(birch_frac_nc,'birch_frac',pollen_frac(:,:,iBIRCH),1, &
        interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
@@ -272,11 +271,8 @@ subroutine pollen_flux(i,j,debug_flag)
     rweed_data_nc=date2string(rweed_data_nc,current_date,debug=DEBUG_NC.and.MasterProc)
     call ReadField_CDF(rweed_data_nc,'start_th',rweed_start_th,1, &
         interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
-    call ReadField_CDF(rweed_data_nc,'scale',rweed_scale,1, &
+    call ReadField_CDF(rweed_data_nc,'scale',rweed_corr,1, &
         interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
-    where(pollen_frac(:,:,iRWEED)/=UnDef.and.rweed_scale/=UnDef)&
-        pollen_frac(:,:,iRWEED) = pollen_frac(:,:,iRWEED)*rweed_scale
-    deallocate(rweed_scale)
 ! grass
     call ReadField_CDF(grass_field_nc,'grass_frac',pollen_frac(:,:,iGRASS),1, &
         interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
@@ -313,11 +309,11 @@ subroutine pollen_flux(i,j,debug_flag)
   do g=1,POLLEN_NUM
     select case(g)
     case(iBIRCH)
-      pollen_out(g)=any([pollen_frac(i,j,g),birch_h_c(i,j)]==UnDef)
+      pollen_out(g)=any([pollen_frac(i,j,g),birch_h_c(i,j),birch_corr(i,j)]==UnDef)
     case(iOLIVE)
       pollen_out(g)=any([pollen_frac(i,j,g),olive_h_c(i,j)]==UnDef)
     case(iRWEED)
-      pollen_out(g)=any([pollen_frac(i,j,g),rweed_start_th(i,j)]==UnDef)
+      pollen_out(g)=any([pollen_frac(i,j,g),rweed_start_th(i,j),rweed_corr(i,j)]==UnDef)
     case(iGRASS)
       pollen_out(g)=any([pollen_frac(i,j,g),grass_start(i,j),grass_end(i,j)]==UnDef)
     end select
@@ -405,7 +401,7 @@ subroutine pollen_flux(i,j,debug_flag)
         if(R(i,j,g)>0.0) &        ! if flowering started 
           R(i,j,g)=N_TOT(g)+1e-6  ! end emission in gridcell
       end if
-      pollen_out(g)=(R(i,j,g)>N_TOT(g))     ! out of pollen
+      pollen_out(g)=(R(i,j,g)>N_TOT(g)*rweed_corr(i,j))   ! out of pollen
     case(iGRASS)! Grass specific emission inhibitors
       pollen_out(g)=(R(i,j,g)>N_TOT(g))                 & ! out of pollen
         .or.(relhum>RH_HIGH)                            & ! too humid
@@ -468,7 +464,8 @@ function scale_factor(spc) result(scale)
       *f_out(R(i,j,g),N_TOT(g),PROB_OUT_olive)              ! prob. flowering end
   case(RWEED)
     g=iRWEED
-    scale = regweed_normal_diurnal(daynumber,sunrise(glat(i,j),glon(i,j)),&
+    scale = rweed_corr(i,j) &
+          * regweed_normal_diurnal(daynumber,sunrise(glat(i,j),glon(i,j)),&
               rweed_start_th(i,j),EndCDThr_rweed)    ! StartCDThr,EndCDThr
   case(GRASS//'linear')   ! emission mass assuming linear release
     g=iGRASS
