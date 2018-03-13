@@ -35,8 +35,8 @@ real, parameter  :: &
   PROB_IN_olive  = 0.1,       & ! Probability for flowering to start
   PROB_OUT_olive = 0.1,       & ! Probability for flowering to end
                                 ! (could be assumed to be larger than PROB_IN)
-  uncert_grass_day = 7,       &
-  uncert_tot_grass_poll = 0.2,& ! end uncertainty for linear releases
+  uncert_day_grass = 7,       &
+  uncert_tot_grass = 0.2,     & ! end uncertainty for linear releases
   D_POLL_birch = 22.0,        & ! Pollen grain diameter [um] birch
   D_POLL_olive = 28.0,        & ! Pollen grain diameter [um] olive
   D_POLL_rweed = 18.0,        & ! Pollen grain diameter [um] grass
@@ -44,13 +44,16 @@ real, parameter  :: &
   POLL_DENS= 800e3              ! Pollen density [g/m3]
 
 real, parameter ::            &
-  loTemp_rweed  = 274.05,     &  ! 0.9C
-  hiTemp_rweed  = 313.15,     &  ! 40C
-  optTemp_rweed = 304.85,     &  ! 31.7C
-  photoperiod_rweed = 14.5,   &  ! date%hour
-  StartHSThr_rweed = 25.0,    &  ! Deen et al 1998
+  loTemp_rweed     = 274.05,  &  ! 0.9C
+  hiTemp_rweed     = 313.15,  &  ! 40C
+  optTemp_rweed    = 304.85,  &  ! 31.7C
+  photoperiod_rweed=  14.5,   &  ! date%hour
+  HS_startday_rweed=  79.0,   &  ! 20 March, spring equinox
+! StartHSThr_rweed =  25.0,   &  ! Deen et al 1998
+! uncert_HS_rweed  =   0.1,   &  ! 10.0% (fUncertainty_HS_relative_start)
   TempThr_rweed    = 273.15,  &  !   0C (Deen et al 1998)
   DayTempThr_rweed = 280.65,  &  ! 7.5C (Deen et al 1998)
+! uncert_rweed_day =  30.0,   &  ! 30 days (fUncertainty_CD_days_start)
   EndCDThr_rweed   = 265.0       ! 97.5% == 2sigma; 22 sept (autumn equinox)
 
 ! pollen arrays indexing, order must match with POLLEN_GROUP: birch,olive,rweed,grass
@@ -64,7 +67,9 @@ integer, parameter :: &
   iBIRCH=1,iOLIVE=2,iRWEED=3,iGRASS=4,POLLEN_NUM=size(POLLEN_GROUP)
 real, parameter  :: &
   N_TOT(POLLEN_NUM)=[N_TOT_birch,N_TOT_olive,N_TOT_rweed,N_TOT_grass],&
-  T_CUTOFF(iBIRCH:iOLIVE)=[T_cutoff_birch,T_cutoff_olive]
+  T_CUTOFF(iBIRCH:iOLIVE)=[T_cutoff_birch,T_cutoff_olive],&
+  PROB_IN(iBIRCH:iOLIVE)=[PROB_IN_birch,PROB_IN_olive],&
+  PROB_OUT(iBIRCH:iOLIVE)=[PROB_OUT_birch,PROB_OUT_olive]
 
 real, parameter  :: &
   D_POLL(POLLEN_NUM)=[D_POLL_birch,D_POLL_olive,D_POLL_rweed,D_POLL_grass], & ! pollen diameter
@@ -77,6 +82,7 @@ real, parameter  :: &
 
 private :: N_TOT_birch,N_TOT_olive,N_TOT_rweed,N_TOT_grass,&
            T_cutoff_birch,T_cutoff_olive,&
+           PROB_IN_birch,PROB_IN_olive,PROB_OUT_birch,PROB_OUT_olive,&
            D_POLL_birch,D_POLL_olive,D_POLL_rweed,D_POLL_grass
 
 contains
@@ -108,6 +114,10 @@ subroutine pollen_check(igrp,uconv_adv)
         "pollen_check: Inconsistent POLLEN group diameter, "//POLLEN_GROUP(g))
       call CheckStop(T_CUTOFF(g)/=T_cutoff_birch,&
         "pollen_check: Inconsistent POLLEN group T_cutoff, "//POLLEN_GROUP(g))
+      call CheckStop(PROB_IN(g)/=PROB_IN_birch,&
+        "pollen_check: Inconsistent POLLEN group PROB_IN, "//POLLEN_GROUP(g))
+      call CheckStop(PROB_OUT(g)/=PROB_OUT_birch,&
+        "pollen_check: Inconsistent POLLEN group PROB_OUT, "//POLLEN_GROUP(g))
     case(iOLIVE)
       call CheckStop(POLLEN_GROUP(g),OLIVE,&
         "pollen_check: Inconsistent POLLEN group order, "//POLLEN_GROUP(g))
@@ -117,6 +127,10 @@ subroutine pollen_check(igrp,uconv_adv)
         "pollen_check: Inconsistent POLLEN group diameter, "//POLLEN_GROUP(g))
       call CheckStop(T_CUTOFF(g)/=T_cutoff_olive,&
         "pollen_check: Inconsistent POLLEN group T_cutoff, "//POLLEN_GROUP(g))
+      call CheckStop(PROB_IN(g)/=PROB_IN_olive,&
+        "pollen_check: Inconsistent POLLEN group PROB_IN, "//POLLEN_GROUP(g))
+      call CheckStop(PROB_OUT(g)/=PROB_OUT_olive,&
+        "pollen_check: Inconsistent POLLEN group PROB_OUT, "//POLLEN_GROUP(g))
     case(iRWEED)
       call CheckStop(POLLEN_GROUP(g),RWEED,&
         "pollen_check: Inconsistent POLLEN group order, "//POLLEN_GROUP(g))
