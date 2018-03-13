@@ -44,12 +44,12 @@ real, parameter  :: &
   POLL_DENS= 800e3              ! Pollen density [g/m3]
 
 real, parameter ::            &
-  loTemp_rweed     = 274.05,  &  ! 0.9C
-  hiTemp_rweed     = 313.15,  &  ! 40C
-  optTemp_rweed    = 304.85,  &  ! 31.7C
+  temp_min_rweed   = 274.05,  &  !  0.9C (loTemp)
+  temp_max_rweed   = 313.15,  &  ! 40.0C (hiTemp)
+  temp_opt_rweed   = 304.85,  &  ! 31.7C (optTemp)
   photoperiod_rweed=  14.5,   &  ! date%hour
   HS_startday_rweed=  79.0,   &  ! 20 March, spring equinox
-  StartHSThr_rweed =  25.0,   &  ! Deen et al 1998
+  startThr_HS_rweed=  25.0,   &  ! Deen et al 1998 (StartHSThr)
   uncert_HS_rweed  =   0.1,   &  ! 10.0% (fUncertainty_HS_relative_start)
   TempThr_rweed    = 273.15,  &  !   0C (Deen et al 1998)
   DayTempThr_rweed = 280.65,  &  ! 7.5C (Deen et al 1998)

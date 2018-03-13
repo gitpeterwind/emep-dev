@@ -390,10 +390,10 @@ subroutine pollen_flux(i,j,debug_flag)
         .or.(t2_nwp(i,j,1)<T_cutoff(g))                 & ! too cold
         .or.(heatsum(i,j,g)>heatsum_max)                  ! too warm season
     case(iRWEED)  ! Ragweed specific emission inhibitors
-      heatsum_min = (1.0-uncert_HS_rweed)*StartHSThr_rweed
+      heatsum_min = (1.0-uncert_HS_rweed)*startThr_HS_rweed
       ! delay past calendar day threshold; change value to preserve distribution function
-      if(heatsum(i,j,g)<heatsum_min)&
-        rweed_start_th(i,j) = max(rweed_start_th(i,j),daynumber)
+      if(heatsum(i,j,g)<heatsum_min .and. rweed_start_th(i,j)<daynumber)&
+        rweed_start_th(i,j) = daynumber
       ! meteo flowering thresholds can zero the heatsum
       if(t2_nwp(i,j,1)<TempThr_rweed .or. & ! inst. treshold
         (current_date%hour==0 .and. current_date%seconds==0 .and. &
@@ -557,10 +557,10 @@ subroutine heatsum_rweed(hsum,t2,daylen)
   if(daynumber<HS_startday_rweed) return
 
   ! Temperature response for biotime accumulation
-  if (t2>=loTemp_rweed .and. t2<=optTemp_rweed)then
-    ff = (t2 - loTemp_rweed) / (optTemp_rweed - loTemp_rweed)
-  elseif (t2>optTemp_rweed .and. t2<=hiTemp_rweed)then
-    ff = (hiTemp_rweed - t2) / (hiTemp_rweed - optTemp_rweed)
+  if (t2>=temp_min_rweed .and. t2<=temp_opt_rweed)then
+    ff = (t2 - temp_min_rweed) / (temp_opt_rweed - temp_min_rweed)
+  elseif (t2>temp_opt_rweed .and. t2<=temp_max_rweed)then
+    ff = (temp_max_rweed - t2) / (temp_max_rweed - temp_opt_rweed)
   else 
     return
   endif
