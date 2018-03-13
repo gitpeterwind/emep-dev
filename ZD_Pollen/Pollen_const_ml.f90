@@ -49,11 +49,11 @@ real, parameter ::            &
   optTemp_rweed    = 304.85,  &  ! 31.7C
   photoperiod_rweed=  14.5,   &  ! date%hour
   HS_startday_rweed=  79.0,   &  ! 20 March, spring equinox
-! StartHSThr_rweed =  25.0,   &  ! Deen et al 1998
-! uncert_HS_rweed  =   0.1,   &  ! 10.0% (fUncertainty_HS_relative_start)
+  StartHSThr_rweed =  25.0,   &  ! Deen et al 1998
+  uncert_HS_rweed  =   0.1,   &  ! 10.0% (fUncertainty_HS_relative_start)
   TempThr_rweed    = 273.15,  &  !   0C (Deen et al 1998)
   DayTempThr_rweed = 280.65,  &  ! 7.5C (Deen et al 1998)
-! uncert_rweed_day =  30.0,   &  ! 30 days (fUncertainty_CD_days_start)
+  uncert_day_rweed =  30.0,   &  ! 30 days (fUncertainty_CD_days_start)
   EndCDThr_rweed   = 265.0       ! 97.5% == 2sigma; 22 sept (autumn equinox)
 
 ! pollen arrays indexing, order must match with POLLEN_GROUP: birch,olive,rweed,grass

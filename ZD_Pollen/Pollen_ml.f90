@@ -174,7 +174,8 @@ function checkdates(nday,spc,i,j) result(ok)
   if(first_call)then
     day(0,iBIRCH)=day_of_year(current_date%year,date_first_birch%month,date_first_birch%day)
     day(0,iOLIVE)=day_of_year(current_date%year,date_first_olive%month,date_first_olive%day)
-    day(0,iRWEED)=day_of_year(current_date%year,date_first_rweed%month,date_first_rweed%day)
+    day(0,iRWEED)=day_of_year(current_date%year,date_first_rweed%month,date_first_rweed%day)&
+                 -uncert_day_rweed
     day(0,iGRASS)=day_of_year(current_date%year,date_first_grass%month,date_first_grass%day)&
                  -uncert_day_grass
     day(0,iPOLLEN)=minval(day(0,:POLLEN_NUM))
@@ -389,15 +390,20 @@ subroutine pollen_flux(i,j,debug_flag)
         .or.(t2_nwp(i,j,1)<T_cutoff(g))                 & ! too cold
         .or.(heatsum(i,j,g)>heatsum_max)                  ! too warm season
     case(iRWEED)  ! Ragweed specific emission inhibitors
+      heatsum_min = (1.0-uncert_HS_rweed)*StartHSThr_rweed
+      ! delay past calendar day threshold; change value to preserve distribution function
+      if(heatsum(i,j,g)<heatsum_min)&
+        rweed_start_th(i,j) = max(rweed_start_th(i,j),daynumber)
       ! meteo flowering thresholds can zero the heatsum
       if(t2_nwp(i,j,1)<TempThr_rweed .or. & ! inst. treshold
         (current_date%hour==0 .and. current_date%seconds==0 .and. &
         t2_day(i,j)<DayTempThr_rweed))then
         heatsum(i,j,g)=0.0
-        if(R(i,j,g)>0.0) &        ! if flowering started 
-          R(i,j,g)=N_TOT(g)+1e-6  ! end emission in gridcell
+        if(R(i,j,g)>0.0) &                        ! if flowering started 
+          R(i,j,g)=N_TOT(g)*rweed_corr(i,j)+1e-6  ! end emission in gridcell
       end if
-      pollen_out(g)=(R(i,j,g)>N_TOT(g)*rweed_corr(i,j))   ! out of pollen
+      pollen_out(g)=(R(i,j,g)>N_TOT(g)*rweed_corr(i,j)) & ! out of pollen
+        .or.(heatsum(i,j,g)<heatsum_min)                  ! too cold season
     case(iGRASS)! Grass specific emission inhibitors
       pollen_out(g)=(R(i,j,g)>N_TOT(g))                 & ! out of pollen
         .or.(relhum>RH_HIGH)                            & ! too humid
@@ -461,8 +467,9 @@ function scale_factor(spc) result(scale)
   case(RWEED)
     g=iRWEED
     scale = rweed_corr(i,j) &
-          * regweed_normal_diurnal(daynumber,sunrise(glat(i,j),glon(i,j)),&
-              rweed_start_th(i,j),EndCDThr_rweed)    ! StartCDThr,EndCDThr
+      *regweed_normal_diurnal(daynumber,sunrise(glat(i,j),glon(i,j)),&
+          rweed_start_th(i,j),EndCDThr_rweed)       ! StartCDThr,EndCDThr
+    scale = scale/dt                                ! emited fration over dt to emission rate
   case(GRASS//'linear')   ! emission mass assuming linear release
     g=iGRASS
     scale = scale &
@@ -480,7 +487,7 @@ function scale_factor(spc) result(scale)
     scale = f_gamma_w_tails(                      &
       (real(daynumber)-grass_start(i,j))/seasLen, & ! days since season start/season length
       (dt/86400.0)/seasLen)                         ! timestep in days/season length
-    scale = scale/dt ! emited fration over dt to emission rate
+    scale = scale/dt                                ! emited fration over dt to emission rate
   case default
     call CheckStop("Unknown pollen type: "//trim(spc))
   end select
@@ -545,6 +552,9 @@ subroutine heatsum_rweed(hsum,t2,daylen)
   real, intent(inout) :: hsum
   real, intent(in) :: t2,daylen  ! degreedays,deg K,date%hours
   real             :: ff
+
+  ! Too early to do anything
+  if(daynumber<HS_startday_rweed) return
 
   ! Temperature response for biotime accumulation
   if (t2>=loTemp_rweed .and. t2<=optTemp_rweed)then
