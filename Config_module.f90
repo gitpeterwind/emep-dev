@@ -618,6 +618,7 @@ character(len=TXTLEN_FILE), target, save, public :: LoganO3File = 'DataDir/Logan
 character(len=TXTLEN_FILE), target, save, public :: DustFile = 'DataDir/Dust.nc'
 character(len=TXTLEN_FILE), target, save, public :: TopoFile = 'DataDir/GRID/topography.nc'
 character(len=TXTLEN_FILE), target, save, public :: BiDirInputFile = 'NOTSET' ! FUTURE
+character(len=TXTLEN_FILE), target, save, public :: Monthly_patternsFile = 'DataDir/ECLIPSEv5_monthly_patterns.nc'
 
 !----------------------------------------------------------------------------
 contains
@@ -691,8 +692,8 @@ subroutine Config_ModelConstants(iolog)
    ,BiDirInputFile&
    ,LoganO3File&
    ,DustFile&
-   ,TopoFile
-
+   ,TopoFile&
+   ,Monthly_patternsFile
   NAMELIST /Machine_config/ DataPath
 
   NAMELIST /INPUT_PARA/GRID,iyr_trend,runlabel1,runlabel2,&
@@ -821,6 +822,7 @@ subroutine Config_ModelConstants(iolog)
   call associate_File(LoganO3File)
   call associate_File(DustFile)
   call associate_File(TopoFile)
+  call associate_File(Monthly_patternsFile)
 
   do i = 1,size(InputFiles)
      if(associated(InputFiles(i)%filename))then

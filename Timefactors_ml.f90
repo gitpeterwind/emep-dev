@@ -63,7 +63,7 @@
   use Config_module, only : MasterProc, DEBUG => DEBUG_EMISTIMEFACS
   use Config_module, only : IIFULLDOM, JJFULLDOM
   use Config_module, only : iyr_trend ,USES  ! for GRIDDED_EMIS_MONTHLY_FACTOR 
-  use Config_module, only : INERIS_SNAP1, INERIS_SNAP2, DegreeDayFactorsFile&
+  use Config_module, only : INERIS_SNAP1, INERIS_SNAP2, DegreeDayFactorsFile,Monthly_patternsFile&
                                 ,DailyFacFile,MonthlyFacFile,HourlyFacFile,TXTLEN_FILE
   use NetCDF_ml,    only : GetCDF , ReadField_CDF
   use Par_ml,       only : MAXLIMAX,MAXLJMAX, limax,ljmax, me, li0, lj0, li1, lj1
@@ -642,7 +642,7 @@ contains
               
               name=sector_map(isec,iemis)
               
-              call ReadField_CDF('ECLIPSEv5_monthly_patterns.nc',&
+              call ReadField_CDF(trim(Monthly_patternsFile),&
                    name,GridTfac(:,:,isec,iemis),month,interpol='zero_order',&
                    known_projection='lon lat',needed=.true.,debug_flag=.false.,&
                    Undef=real(nmdays(month))/nydays )!default, multiplied by inverse later!!
