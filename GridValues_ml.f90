@@ -450,7 +450,7 @@ subroutine GetFullDomainSize(filename,IIFULLDOM,JJFULLDOM,KMAX,METSTEP,projectio
     call check(nf90_inquire_dimension(ncid=ncFileID,dimID=timedimID,len=Nhh))
   end if
     
-    METSTEP=24/Nhh
+    METSTEP=max(1,24/Nhh)
     write(*,*)'METSTEP set to ',METSTEP,' hours'
     call check(nf90_close(ncFileID))
   end if

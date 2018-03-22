@@ -82,9 +82,9 @@ use Par_ml,               only: MAXLIMAX,MAXLJMAX,GIMAX,GJMAX, me  &
 use PhysicalConstants_ml, only: KARMAN, KAPPA, RGAS_KG, CP, GRAV
 use TimeDate_ml,          only: current_date, date,nmdays, &
      add_secs,timestamp, make_timestamp, make_current_date
-use NetCDF_ml,        only: ReadField_CDF,vertical_interpolate,GetCDF_modelgrid
+use NetCDF_ml,        only: ReadField_CDF,vertical_interpolate,GetCDF_modelgrid,ReadTimeCDF
 use netcdf
-use TimeDate_ExtraUtil_ml,only: nctime2date,date2string
+use TimeDate_ExtraUtil_ml,only: nctime2date,date2string,date2nctime
 
 implicit none
 private
@@ -2952,9 +2952,16 @@ subroutine Check_Meteo_Date_Short
   integer :: nyear,nmonth,nday
   integer :: status,ncFileID,timeDimID,timeVarID,VarID,xtype
   character (len = 50) :: timeunit
-  integer ::ihh,ndate(4),n1,nseconds(1)
+  character (len = 19) ::  Times_string
+  integer ::ihh,ndate(4),n1,nseconds(1),n
   real :: ndays(1),Xminutes(24)
   logical :: date_in_days,MasterProc_local
+  integer :: NTime_Read,string_length
+  real :: TimesInDays(1000)
+  real(kind=8), parameter :: &
+       halfsecond=0.5/(24.0*3600.0)! used to avoid rounding errors
+  real(kind=8) :: ndays_indate
+
   nyear=startdate(1)
   nmonth=startdate(2)
   nday=startdate(3)
@@ -2967,38 +2974,61 @@ subroutine Check_Meteo_Date_Short
 
     status=nf90_inq_dimid(ncid=ncFileID,name="time",dimID=timedimID)
     if(status/=nf90_noerr)then
-      status=nf90_inq_dimid(ncid=ncFileID,name="Time",dimID=timedimID)! WRF
-      if(status/=nf90_noerr)then
-        if(MasterProc)write(*,*)'time variable not found'
-        nhour_first=0 !hour of the first record
-        Nhh=8
-        if(MasterProc_local)then
-          write(*,*)'Did not check times, and assume nhour_first =',nhour_first
-          write(*,*)'Assume  Nhh =',Nhh
-        end if
-        goto 777
-      else
-        call check(nf90_inquire_dimension(ncid=ncFileID,dimID=timedimID,len=Nhh))
-        nhour_first=0 !hour of the first record
-        if(MasterProc_local)then
-          write(*,*)'Did not check times, and assume nhour_first =',nhour_first
-          write(*,*)'  Nhh =',Nhh
-        end if
-        status=nf90_inq_varid(ncid=ncFileID,name="XTIME",varID=timeVarID)
-        if(status==nf90_noerr)then
+       status=nf90_inq_dimid(ncid=ncFileID,name="Time",dimID=timedimID)! WRF
+       if(status/=nf90_noerr)then
+          if(MasterProc)write(*,*)'time variable not found'
+          nhour_first=0 !hour of the first record
+          Nhh=8
+          if(MasterProc_local)then
+             write(*,*)'Did not check times, and assume nhour_first =',nhour_first
+             write(*,*)'Assume  Nhh =',Nhh
+          end if
+          goto 777
+       else
+          call check(nf90_inquire_dimension(ncid=ncFileID,dimID=timedimID,len=Nhh))
+          nhour_first=0 !hour of the first record        
+          if(MasterProc_local)then
+          write(*,*)' assume nhour_first =',nhour_first
+          write(*,*)' Nhh =',Nhh
+       end if
+       status=nf90_inq_varid(ncid=ncFileID,name="Times",varID=timeVarID)
+       if(status==nf90_noerr)then
+          if(MasterProc_local)then
+             NTime_Read=-1
+             call ReadTimeCDF(meteoname,TimesInDays,NTime_Read)
+             call date2nctime(startdate,ndays_indate)
+             do n=1,NTime_Read
+                if(ndays_indate-TimesInDays(n)<halfsecond) goto 876               
+             enddo
+             n=1
+             write(*,*)'WARNING: did not find correct meteo date, starting at first record '
+876          continue
+             nrec = n-1 !will take +1 later
+!             call check(nf90_get_var(ncFileID, timeVarID, Times_string,start=(/1,nrec+1/),count=(/19,1/)))
+             call check(nf90_get_var(ncFileID, timeVarID, Times_string,start=(/1,nrec+1/)))
+             43 format(A,I5,A,A)
+             write(*,43)'starting at record ',nrec+1,' date: ',trim(Times_string)
+          endif
+       else
+          if(MasterProc_local)then
+             write(*,*)' Did not check start date'
+          endif
+       endif
+       status=nf90_inq_varid(ncid=ncFileID,name="XTIME",varID=timeVarID)
+       if(status==nf90_noerr)then
           call check(nf90_get_var(ncFileID,timeVarID,Xminutes,count=(/2/)))
           call CheckStop(60*(nint(Xminutes(2)-Xminutes(1))/60)&
-                           /=nint(Xminutes(2)-Xminutes(1)),&
-                         "Met_ml: METSTEP in hours must be an integer")
+               /=nint(Xminutes(2)-Xminutes(1)),&
+               "Met_ml: METSTEP in hours must be an integer")
           METSTEP=nint(Xminutes(2)-Xminutes(1))/60
           if(MasterProc_local)write(*,*)'METSTEP reset to', METSTEP,' hours'
-        end if
-        goto 777
+       end if
+       goto 777
       end if
     end if
     call check(nf90_inq_varid(ncid=ncFileID,name="time",varID=timeVarID))
     call check(nf90_inquire_dimension(ncid=ncFileID,dimID=timedimID,len=Nhh))
-    call CheckStop(24/Nhh,METSTEP,"Met_ml: METSTEP inconsistent with number of records")
+    if(Nhh<25)call CheckStop(24/Nhh,METSTEP,"Met_ml: METSTEP inconsistent with number of records")
     call check(nf90_get_att(ncFileID,timeVarID,"units",timeunit))
     date_in_days=(trim(timeunit(1:19))==trim("days since 1900-1-1"))
 
@@ -3031,7 +3061,7 @@ subroutine Check_Meteo_Date_Short
       call CheckStop(mod((ihh-1)*METSTEP+nhour_first,24),ndate(4),&
                      date2string("Met_ml: wrong hour YYYY-MM-DD hh",ndate))
     end do
- 777 continue
+777 continue
     if(WRF_MET_CORRECTIONS)then
       !check if the "bucket" method is used
       status = nf90_get_att(ncFileID,nf90_global,"BUCKET_MM",wrf_bucket)
@@ -3059,12 +3089,14 @@ subroutine Check_Meteo_Date_Short
     call check(nf90_close(ncFileID))
   end if
   if(me_calc>=0)then
+    CALL MPI_BCAST(nrec,4*1,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
     CALL MPI_BCAST(nhour_first,4*1,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
     CALL MPI_BCAST(Nhh,4*1,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
     CALL MPI_BCAST(METSTEP,4*1,MPI_BYTE,0,MPI_COMM_CALC,IERROR)
     CALL MPI_BCAST(found_wrf_bucket,1,MPI_LOGICAL,0,MPI_COMM_CALC,IERROR)
     CALL MPI_BCAST(MET_SHORT,1,MPI_LOGICAL,0,MPI_COMM_CALC,IERROR)
   else
+    CALL MPI_BCAST(nrec,4*1,MPI_BYTE,0,MPI_COMM_IO,IERROR)
     CALL MPI_BCAST(nhour_first,4*1,MPI_BYTE,0,MPI_COMM_IO,IERROR)
     CALL MPI_BCAST(Nhh,4*1,MPI_BYTE,0,MPI_COMM_IO,IERROR)
     CALL MPI_BCAST(METSTEP,4*1,MPI_BYTE,0,MPI_COMM_IO,IERROR)

@@ -4418,12 +4418,14 @@ subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read)
   integer, intent(inout) :: NTime_Read ! in:records to read, out:records readed
 
   real, allocatable :: times(:)
-  integer :: i,ntimes,status
+  integer :: i,j,ntimes,status
   integer :: varID,ncFileID,ndims
   integer :: xtype,dimids(NF90_MAX_VAR_DIMS),nAtts
   integer, parameter::wordarraysize=20
   character(len=50) :: varname,period,since,name,timeunit,wordarray(wordarraysize),calendar
-
+  character(len=50) :: wordarray2(wordarraysize)
+  character, allocatable :: Times_string(:,:)
+  integer :: string_length
   integer :: yyyy,mo,dd,hh,mi,ss,julian,julian_1900,diff_1900,nwords,errcode
   logical:: proleptic_gregorian
 
@@ -4431,8 +4433,8 @@ subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read)
        errmsg="ReadTimeCDF, file not found: "//trim(fileName))
 
   varname='time'
-  call check(nf90_inq_varid(ncid=ncFileID, name=varname, varID=VarID),&
-       errmsg="ReadTimeCDF, "//trim(varname)//" not found in "//trim(fileName))
+  status=nf90_inq_varid(ncid=ncFileID, name=varname, varID=VarID)
+  if(status==nf90_noerr)then
   if(DEBUG_NETCDF)write(*,*)'time variable exists: ',trim(varname)
 
   call check(nf90_Inquire_Variable(ncFileID,VarID,name,xtype,ndims,dimids,nAtts))
@@ -4558,9 +4560,46 @@ subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read)
       end if
      end if
   end if
+  deallocate(times)
+  else
+!     write(*,*)'ReadTimeCDF '//trim(varname)//" not found in "//trim(fileName)
+     varname='Times'!wrf format
+     call check(nf90_inq_varid(ncid=ncFileID, name=varname, varID=VarID),&
+          errmsg="ReadTimeCDF, "//trim(varname)//" not found in "//trim(fileName))
+     call check(nf90_Inquire_Variable(ncFileID,VarID,name,xtype,ndims,dimids,nAtts))
+     if(ndims>2)write(*,*)'WARNING: Times has more than 2 dimension!? ',ndims
+     call check(nf90_inquire_dimension(ncid=ncFileID,dimID=dimids(2),len=ntimes))
+     if(NTime_Read<1)then
+        if(DEBUG_NETCDF)write(*,*)'reading all time records'
+        NTime_Read=ntimes
+     end if
+     call CheckStop(ntimes<NTime_Read, "to few records in "//trim(fileName))
+     call CheckStop(SIZE(TimesInDays)<NTime_Read,"to many records in "//trim(fileName))
+     call check(nf90_inquire_dimension(ncid=ncFileID,dimID=dimids(1),len=string_length))
+     
+     allocate(Times_string(string_length,ntimes))
+     call check(nf90_get_var(ncFileID, VarID, Times_string(1:string_length,1:NTime_Read),count=(/string_length,NTime_Read/)))
+     do i=1,NTime_Read
+        do j=1,string_length
+           name(j:j)=Times_string(j,i)
+        enddo
+        call wordsplit(name,string_length,wordarray,nwords,errcode,'_')
+        if(DEBUG_NETCDF.and.MasterProc)write(*,*)'date ',trim(wordarray(1)),' hour ',trim(wordarray(2))
+        call wordsplit(wordarray(1),wordarraysize,wordarray2,nwords,errcode,'-')
+        if(DEBUG_NETCDF.and.MasterProc)write(*,*)'year ',trim(wordarray2(1)),' month ',trim(wordarray2(2)),' day ',trim(wordarray2(3))
+        read(wordarray2(1),*)yyyy
+        read(wordarray2(2),*)mo
+        read(wordarray2(3),*)dd
+        read(wordarray(2),*)hh
+        julian=julian_date(yyyy,mo,dd)
+        julian_1900=julian_date(1900,1,1)
+        diff_1900=julian-julian_1900
+        TimesInDays(i)=diff_1900+hh/24.0
+     enddo
+  endif
 
   call check(nf90_close(ncFileID))
-  deallocate(times)
+
 end subroutine ReadTimeCDF
 
 subroutine   vertical_interpolate(filename,Rvar,KMAX_ext,Rvar_emep,debug)
