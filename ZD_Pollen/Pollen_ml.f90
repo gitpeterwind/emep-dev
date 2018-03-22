@@ -69,7 +69,7 @@ integer, parameter :: &
 !   pollen_frac     olive_data_nc   olive_frac
 !   pollen_h_c      olive_data_nc   olive_th
 !   pollen_frac     rweed_frac_nc   fraction
-!   rweed_start_th  rweed_data_nc   start_th
+!   rweed_start     rweed_data_nc   start_th
 !   rweed_corr      rweed_data_nc   scale
 !   pollen_frac     grass_field_nc  grass_frac
 !   grass_start     grass_time_nc   grass_start
@@ -97,12 +97,12 @@ logical,save:: &
 
 type(date), parameter :: &
   date_first_birch=date(-1,3,1,0,0),date_last_birch=date(-1,8,1,0,0),&
-  date_first_olive=date(-1,1,1,0,0),date_last_olive=date_last_birch,&
-  date_first_rweed=date(-1,3,20,0,0),date_last_rweed=date(-1,1,aint(EndCDThr_rweed),0,0)
+  date_first_olive=date(-1,1,1,0,0),date_last_olive=date_last_birch
 type(date), save :: & ! will be updated when grass_time.nc is read
   date_first_grass=date(-1,2,7,0,0),date_last_grass=date(-1,9,23,0,0)
 
 real, save, allocatable, dimension(:,:) :: &
+  rweed_start,        & ! day when daylight length goes below 14.5h (StartCDThr)
   grass_start,grass_end ! Stard/End day of grass, read in
 
 logical, parameter :: DEBUG_NC=.false.
@@ -174,23 +174,23 @@ function checkdates(nday,spc,i,j) result(ok)
   if(first_call)then
     day(0,iBIRCH)=day_of_year(current_date%year,date_first_birch%month,date_first_birch%day)
     day(0,iOLIVE)=day_of_year(current_date%year,date_first_olive%month,date_first_olive%day)
-    day(0,iRWEED)=day_of_year(current_date%year,date_first_rweed%month,date_first_rweed%day)&
-                 -uncert_day_rweed
+    day(0,iRWEED)=FLOOR(HS_startday_rweed)
     day(0,iGRASS)=day_of_year(current_date%year,date_first_grass%month,date_first_grass%day)&
-                 -uncert_day_grass
-    day(0,iPOLLEN)=minval(day(0,:POLLEN_NUM))
+                 -FLOOR(uncert_day_grass)
+    day(0,iPOLLEN)=MINVAL(day(0,:POLLEN_NUM))
 
     day(1,iBIRCH)=day_of_year(current_date%year,date_last_birch%month,date_last_birch%day)
     day(1,iOLIVE)=day_of_year(current_date%year,date_last_olive%month,date_last_olive%day)
-    day(1,iRWEED)=day_of_year(current_date%year,date_last_rweed%month,date_last_rweed%day)
+    day(1,iRWEED)=CEILING(EndCDThr_rweed)
     day(1,iGRASS)=day_of_year(current_date%year,date_last_grass%month,date_last_grass%day)&
-                 +uncert_day_grass
-    day(1,iPOLLEN)=maxval(day(1,:POLLEN_NUM))
+                 +CEILING(uncert_day_grass)
+    day(1,iPOLLEN)=MAXVAL(day(1,:POLLEN_NUM))
     first_call = .false.
   end if
   if(present(i).and.present(j))then
-    day(0,iGRASS)=grass_start(i,j)-uncert_day_grass
-    day(1,iGRASS)=grass_end(i,j)+uncert_day_grass
+    day(0,iRWEED)=MIN(day(0,iRWEED),FLOOR(rweed_start(i,j)-uncert_day_rweed))
+    day(0,iGRASS)=MIN(day(0,iGRASS),FLOOR(grass_start(i,j)-uncert_day_grass))
+    day(1,iGRASS)=MAX(day(1,iGRASS),CEILING(grass_end(i,j)+uncert_day_grass))
   end if
   select case(spc)
     case("POLLEN","P","p","pollen");g=iPOLLEN
@@ -224,7 +224,6 @@ subroutine pollen_flux(i,j,debug_flag)
   real, save, allocatable, dimension(:,:) :: &
     birch_corr,     & ! correction field for p.emission, read in
     olive_dH,       & ! flowering period [degree days]
-    rweed_start_th, & ! day of the year when the daylight length goes below 14.5h (StartCDThr)
     rweed_corr,     & ! relative productivity (PollenTotal=rweed_corr*1.7e7)
     t2_day            ! daily temperature
 
@@ -240,7 +239,7 @@ subroutine pollen_flux(i,j,debug_flag)
 
     allocate(pollen_frac(LIMAX,LJMAX,POLLEN_NUM),pollen_h_c(LIMAX,LJMAX,iBIRCH:iOLIVE))
     allocate(birch_corr(LIMAX,LJMAX),olive_dH(LIMAX,LJMAX))
-    allocate(rweed_start_th(LIMAX,LJMAX),rweed_corr(LIMAX,LJMAX))
+    allocate(rweed_start(LIMAX,LJMAX),rweed_corr(LIMAX,LJMAX))
     allocate(grass_start(LIMAX,LJMAX),grass_end(LIMAX,LJMAX))
     call ReadField_CDF(birch_frac_nc,'birch_frac',pollen_frac(:,:,iBIRCH),1, &
        interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
@@ -267,7 +266,7 @@ subroutine pollen_flux(i,j,debug_flag)
     call ReadField_CDF(rweed_frac_nc,'fraction',pollen_frac(:,:,iRWEED),1, &
         interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
     rweed_data_nc=date2string(rweed_data_nc,current_date,debug=DEBUG_NC.and.MasterProc)
-    call ReadField_CDF(rweed_data_nc,'start_th',rweed_start_th,1, &
+    call ReadField_CDF(rweed_data_nc,'start_th',rweed_start,1, &
         interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
     call ReadField_CDF(rweed_data_nc,'scale',rweed_corr,1, &
         interpol='conservative',needed=.true.,debug_flag=DEBUG_NC,UnDef=UnDef)
@@ -288,7 +287,7 @@ subroutine pollen_flux(i,j,debug_flag)
     ! reduce birch from 60 degrees north:
     forall(ii=1:limax,jj=1:ljmax,glat(ii,jj)>=60.0) &
       pollen_frac(ii,jj,iBIRCH)=pollen_frac(ii,jj,iBIRCH)&
-                       *max(0.3,1.0-0.005*(glat(ii,jj)-60.0))
+                       *MAX(0.3,1.0-0.005*(glat(ii,jj)-60.0))
 
     ! olive fraction [%] --> [1/1]
     where(pollen_frac(:,:,iOLIVE)/=UnDef) &
@@ -311,7 +310,7 @@ subroutine pollen_flux(i,j,debug_flag)
     case(iOLIVE)
       pollen_out(g)=any([pollen_frac(i,j,g),pollen_h_c(i,j,g)]==UnDef)
     case(iRWEED)
-      pollen_out(g)=any([pollen_frac(i,j,g),rweed_start_th(i,j),rweed_corr(i,j)]==UnDef)
+      pollen_out(g)=any([pollen_frac(i,j,g),rweed_start(i,j),rweed_corr(i,j)]==UnDef)
     case(iGRASS)
       pollen_out(g)=any([pollen_frac(i,j,g),grass_start(i,j),grass_end(i,j)]==UnDef)
     end select
@@ -392,8 +391,8 @@ subroutine pollen_flux(i,j,debug_flag)
     case(iRWEED)  ! Ragweed specific emission inhibitors
       heatsum_min = (1.0-uncert_HS_rweed)*startThr_HS_rweed
       ! delay past calendar day threshold; change value to preserve distribution function
-      if(heatsum(i,j,g)<heatsum_min .and. rweed_start_th(i,j)<daynumber)&
-        rweed_start_th(i,j) = daynumber
+      if(heatsum(i,j,g)<heatsum_min .and. daynumber>rweed_start(i,j))&
+        rweed_start(i,j) = daynumber
       ! meteo flowering thresholds can zero the heatsum
       if(t2_nwp(i,j,1)<TempThr_rweed .or. & ! inst. treshold
         (current_date%hour==0 .and. current_date%seconds==0 .and. &
@@ -404,6 +403,7 @@ subroutine pollen_flux(i,j,debug_flag)
       end if
       pollen_out(g)=(R(i,j,g)>N_TOT(g)*rweed_corr(i,j)) & ! out of pollen
         .or.(heatsum(i,j,g)<heatsum_min)                  ! too cold season
+!     call CheckStop(.not.pollen_out(g),RWEED//': start season')
     case(iGRASS)! Grass specific emission inhibitors
       pollen_out(g)=(R(i,j,g)>N_TOT(g))                 & ! out of pollen
         .or.(relhum>RH_HIGH)                            & ! too humid
@@ -444,7 +444,7 @@ contains
 !------------------------
 function scale_factor(spc) result(scale)
   character(len=*), intent(in)  :: spc
-  real :: scale, dH_olive, seasLen
+  real :: scale, dH_olive, sec_since_sunrise, seasLen
   integer :: g
 
   scale=f_wind(u10,Grid%wstar)           & ! wind dependence
@@ -466,9 +466,11 @@ function scale_factor(spc) result(scale)
       *f_out(R(i,j,g),N_TOT(g),PROB_OUT(g))               ! prob. flowering end
   case(RWEED)
     g=iRWEED
+    sec_since_sunrise=(current_date%hour-sunrise(glat(i,j),glon(i,j)))*3600 &
+                      -current_date%seconds
     scale = rweed_corr(i,j) &
-      *regweed_normal_diurnal(daynumber,sunrise(glat(i,j),glon(i,j)),&
-          rweed_start_th(i,j),EndCDThr_rweed)       ! StartCDThr,EndCDThr
+      *regweed_normal_diurnal(daynumber,sec_since_sunrise,&
+          rweed_start(i,j),EndCDThr_rweed)          ! StartCDThr,EndCDThr
     scale = scale/dt                                ! emited fration over dt to emission rate
   case(GRASS//'linear')   ! emission mass assuming linear release
     g=iGRASS
@@ -545,7 +547,7 @@ subroutine heatsum_calc(hsum,t2,T_cutoff)
   real, intent(inout) :: hsum
   real, intent(in) :: t2,T_cutoff ! degreedays
   real             :: ff
-  ff = DIM(t2,T_cutoff) ! same as max(t2-T_cutoff,0.0)
+  ff = DIM(t2,T_cutoff) ! same as MAX(t2-T_cutoff,0.0)
   hsum = hsum + ff*dt/(3600*24)      ! seconds to days
 end subroutine heatsum_calc
 subroutine heatsum_rweed(hsum,t2,daylen)
@@ -683,7 +685,7 @@ function f_gamma_w_tails(relTime,relDt) result(ff)
 ! of the season. Tails are the reason for many parameters: have to describe the main peak
 ! via gamma-type distribution, and both elevated tails via add-on corrections.
 ! formula: rate(x)=exp(-a_1/beta)* sum(scale_i * a_i^power_i), i=1:3
-!          where a_i = max(x-timesRel_i,0)
+!          where a_i = MAX(x-timesRel_i,0)
   real, intent(in) :: relTime,relDt ! normalised time, normalised timestep
   real             :: ff
 ! Fitting parameters
@@ -697,7 +699,7 @@ function f_gamma_w_tails(relTime,relDt) result(ff)
   real :: a1
 
   ff = 0.0
-  a1 = DIM(relTime,timesRel(1)) ! same as max(relTime-timesRel(1),0.0)
+  a1 = DIM(relTime,timesRel(1)) ! same as MAX(relTime-timesRel(1),0.0)
   if(a1>beta*10.0)return ! too far from the season peak, as decided by timesRel(1)
   ! Be careful: the rise of the function can be quite steep
   a1=exp(-a1/beta)
@@ -763,8 +765,8 @@ function f_fade_in(value_rel,uncert_rel_) result(ff)
   real, intent(in) :: value_rel,uncert_rel_
   real             :: uncert_rel,ff
 
-  uncert_rel = max(uncert_rel_,1e-5) ! avoid zero uncertainty
-  ff = min(1.0,max(0.0,(value_rel-1.0+uncert_rel)/(2.0*uncert_rel)))
+  uncert_rel = MAX(uncert_rel_,1e-5) ! avoid zero uncertainty
+  ff = MIN(1.0,MAX(0.0,(value_rel-1.0+uncert_rel)/(2.0*uncert_rel)))
 end function f_fade_in
 function f_fade_out(value_rel,uncert_rel_) result(ff)
 ! Computes the linear fade-in function. It is 0 at vaule_rel = 1.-uncert_rel
@@ -772,8 +774,8 @@ function f_fade_out(value_rel,uncert_rel_) result(ff)
   real, intent(in) :: value_rel,uncert_rel_
   real             :: uncert_rel,ff
 
-  uncert_rel = max(uncert_rel_,1e-5) ! avoid zero uncertainty
-  ff = min(1.0,max(0.0,(1.0+uncert_rel-value_rel)/(2.0*uncert_rel)))
+  uncert_rel = MAX(uncert_rel_,1e-5) ! avoid zero uncertainty
+  ff = MIN(1.0,MAX(0.0,(1.0+uncert_rel-value_rel)/(2.0*uncert_rel)))
 end function f_fade_out
 !-------------------------------------------------------------------------!
 integer function getRecord(fileName,findDate,fatal)

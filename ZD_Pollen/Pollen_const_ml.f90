@@ -18,8 +18,8 @@ public
 real, parameter  :: &
   T_cutoff_birch = 273.2+3.5, & ! Cut-off temperature [K] birch
   T_cutoff_olive = 273.2,     & ! Cut-off temperature [K] olive
-  dH_d_birch    =  50,        & ! Flowering period [degree days] birch
-  dH_d_olive    = 275,        & ! Flowering period [degree days] olive
+  dH_d_birch     =  50,       & ! Flowering period [degree days] birch
+  dH_d_olive     = 275,       & ! Flowering period [degree days] olive
   dH_birch=dH_d_birch*24*3600,& ! Flowering period [degree seconds] birch
 ! dH_olive=dH_d_olive*24*3600,& ! Flowering period [degree seconds] olive
   PREC_MIN = 0.0,             & ! Min cut-off precipitation [mm/h]
@@ -41,12 +41,12 @@ real, parameter  :: &
   D_POLL_olive = 28.0,        & ! Pollen grain diameter [um] olive
   D_POLL_rweed = 18.0,        & ! Pollen grain diameter [um] grass
   D_POLL_grass = 32.0,        & ! Pollen grain diameter [um] grass
-  POLL_DENS= 800e3              ! Pollen density [g/m3]
+  POLL_DENS    = 800e3          ! Pollen density [g/m3]
 
 real, parameter ::            &
   temp_min_rweed   = 274.05,  &  !  0.9C (loTemp)
-  temp_max_rweed   = 313.15,  &  ! 40.0C (hiTemp)
   temp_opt_rweed   = 304.85,  &  ! 31.7C (optTemp)
+  temp_max_rweed   = 313.15,  &  ! 40.0C (hiTemp)
   photoperiod_rweed=  14.5,   &  ! date%hour
   HS_startday_rweed=  79.0,   &  ! 20 March, spring equinox
   startThr_HS_rweed=  25.0,   &  ! Deen et al 1998 (StartHSThr)
