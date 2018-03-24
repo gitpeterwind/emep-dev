@@ -580,7 +580,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 
   if ( ios == NO_FILE ) then
         ios = 0
-        write( *,*) "WARNING: NO FEMIS FILE"
+        write( *,*) "WARNING: NO FEMIS FILE:"//trim(femisFile)
         return !*** if no femis file, e_fact=1 as default *** 
   end if
   call CheckStop( ios < 0 ,"EmisGet:ios error in "//trim(femisFile))
@@ -626,8 +626,8 @@ READEMIS: do   ! ************* Loop over emislist files *******************
   end do COLS   ! ic
 
 if ( n < NEMIS_FILE ) then
-  print *, "FEMIS me n NEMIS_FILE", me, n, NEMIS_FILE
-  call CheckStop( n < NEMIS_FILE , "EmisGet: too few femis items" )
+  print *, "FEMIS me n NEMIS_FILE", me, n, NEMIS_FILE, trim(femisFile)
+  call CheckStop( n < NEMIS_FILE , "EmisGet: too few femis items"//trim(femisFile) )
 end if
 
   
