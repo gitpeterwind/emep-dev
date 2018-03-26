@@ -199,7 +199,7 @@ type, public :: emis_in
                                         !Country+sector specific reductions can be dealt
                                         !with with incl/excl, so those are not affected
 end type emis_in
-type(emis_in), public, dimension(5) :: emis_inputlist = emis_in()
+type(emis_in), public, dimension(30) :: emis_inputlist = emis_in()
 
 character(len=40), dimension(20), public, save  :: SecEmisOutPoll = "NOTSET"
 logical, public, save  :: HourlyEmisOut = .false. !to output snap and sector emissions hourly
