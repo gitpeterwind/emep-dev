@@ -2346,6 +2346,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   use netcdf
 
   implicit none
+  character(len=*), parameter :: dtxt = 'ReadF:' ! debug text
+  character(len=99) :: dtxt_msg
   character(len = *),intent(in) ::fileName,varname
   real,intent(out) :: Rvar(*)
   integer,intent(in) :: nstart
@@ -2422,6 +2424,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   fileneeded=.true.!default
 
   debug = .false.
+  dtxt_msg = dtxt//trim(fileName)//':'//trim(varname)//':' ! Message for errors
   if(present(debug_flag))then
      debug = debug_flag .and. me==0
      if ( debug ) write(*,*) 'ReadCDF start: ',trim(filename),':', trim(varname)
@@ -2937,7 +2940,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
         end do
      end if
      call check(nf90_get_var(ncFileID, VarID, Rvalues,start=startvec,count=dims),&
-          errmsg="RRvalues")
+          errmsg=dtxt_msg//"RRvalues")
 
      if(present(Mask_filename))then
         N=1

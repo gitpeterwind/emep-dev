@@ -138,6 +138,11 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+26 Mar 2018, Dave
+
+NetCDF_ml : small debug changes - added dtxt and dtxt_smg
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 09 Mar 2018, Peter, Massimo
 
 When the input data has at least 10 times coarser resolution than teh metdata
