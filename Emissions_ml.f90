@@ -1006,7 +1006,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
 !          secemis (NSECTORS,LIMAX,LJMAX,NCMAX,NEMIS_FILES) 
 !  
 !   Units:
-!   secemis has units of kg/m2/s, SO2 as S, NO2 as N, NH3 as N. 
+!   secemis has units of kg/m2/s, SOx as SO2, NOx as NO2, the others as speciated mw mass.
 !   Map factor (xm2) already accounted for. 
 !  
 !   Data on how many countries contribute per grid square is stored in
