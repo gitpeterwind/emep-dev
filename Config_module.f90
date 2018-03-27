@@ -3,15 +3,15 @@ module Config_module
 ! Specifies a number of constants used in the model, and reads namelist
 ! file to (re-)configure where possible.
 ! Note that physical constants (e.g. gravity, Cp, etc ( are specified in
-! the module PhysicalConstants_ml.f90)
+! the module PhysicalConstants_mod.f90)
 !----------------------------------------------------------------------------
 use Aerofunctions,        only: DpgV2DpgN
-use CheckStop_ml,         only: CheckStop
+use CheckStop_mod,         only: CheckStop
 use ChemSpecs,            only: species
-use Io_Nums_ml,           only: IO_NML, IO_LOG, IO_TMP
-use OwnDataTypes_ml,      only: typ_ss, uEMEP_type
-use Precision_ml,         only: dp
-use SmallUtils_ml,        only: find_index, key2str
+use Io_Nums_mod,           only: IO_NML, IO_LOG, IO_TMP
+use OwnDataTypes_mod,      only: typ_ss, uEMEP_type
+use Precision_mod,         only: dp
+use SmallUtils_mod,        only: find_index, key2str
 
 implicit none
 private
@@ -28,7 +28,7 @@ public :: Config_ModelConstants
 !  EMERGENCY   FORECAST with ONLY Volcanic Eruption & Nuclear Accident.
 !
 ! We separate the concept of exp_name and the
-! variable used to set the type of output in My_outputs_ml.
+! variable used to set the type of output in My_outputs_mod.
 ! The longer term solution puts the outputs into namelists
 ! but for now we use the MY_OUTPUTS flag. EXP_NAME can
 ! now be anything descriptive.
@@ -141,7 +141,7 @@ type, public :: emep_debug
     ,BCS             = .false. & ! BoundaryConditions
     ,BIO             = .false. & !< Biogenic emissions
     ,BIDIR           = .false. & !< FUTURE Bi-directional exchange
-    ,COLUMN          = .false. & !  Used in Derived_ml for column integration
+    ,COLUMN          = .false. & !  Used in Derived_mod for column integration
     ,COLSRC          = .false. & !  Volcanic emissions and Emergency scenarios
     ,DERIVED         = .false. & !
     ,DRYDEP          = .false. & ! Skips fast chemistry to save some CPU
@@ -232,7 +232,7 @@ logical, public, save ::             &
  ,INERIS_SNAP2       = .false.       & !(EXP_NAME=="TFMM"), & ! Allows near-zero summer values
  ,USE_AMINEAQ        = .false.       & ! MKPS
  ,ANALYSIS           = .false.       & ! EXPERIMENTAL: 3DVar data assimilation
- ,USE_FASTJ          = .false.       & ! use FastJ_ml for computing rcphot
+ ,USE_FASTJ          = .false.       & ! use FastJ_mod for computing rcphot
 !
 ! Output flags
  ,SELECT_LEVELS_HOURLY  = .false.    & ! for FORECAST, 3DPROFILES
@@ -270,7 +270,7 @@ integer, public, save :: &
   logical, public, save ::  USE_OCEAN_NH3 = .false. !set automatically true if found
 
 ! Methane background.
-  real, public, save :: BGND_CH4 = -1  ! -1 gives defaults in BoundaryConditions_ml,
+  real, public, save :: BGND_CH4 = -1  ! -1 gives defaults in BoundaryConditions_mod,
 ! To skip rct value   (jAero work)
   integer, public, save, dimension(10) :: SKIP_RCT  = -1  ! -1 gives defaults
 !
@@ -356,14 +356,14 @@ integer, public, save ::  & ! Actual number of processors in longitude, latitude
   NPROCX, NPROCY, NPROC     ! and total. NPROCY must be 2 for GLOBAL runs.
 
 CHARACTER(LEN=3), public, save :: &
-  DOMAIN_DECOM_MODE=''      ! override parinit(Pole_singular) option (Par_ml)
+  DOMAIN_DECOM_MODE=''      ! override parinit(Pole_singular) option (Par_mod)
 
 !=============================================================================
 !+ 2) Define  debug flags.
 
 ! We have one variable, to say if we are on master-processor
 ! or not: (kept here to avoid too many dependencies for box-model
-! codes which don't need Par_ml
+! codes which don't need Par_mod
 
 logical, public, save ::  MasterProc = .true.
 logical, public, save ::  DebugCell  = .false.
@@ -393,7 +393,7 @@ logical, public, parameter ::    &
   ,DEBUG_NEST           = .false. &
   ,DEBUG_NEST_ICBC      = .false. & ! IFS-MOZART/C-IFS BC
   ,DEBUG_NETCDF         = .false. &
-  ,DEBUG_NETCDF_RF      = .false. & ! ReadField_CDF in NetCDF_ml
+  ,DEBUG_NETCDF_RF      = .false. & ! ReadField_CDF in NetCDF_mod
   ,DEBUG_NH3            = .false. & ! NH3Emis experimental
   ,DEBUG_OUTPUTCHEM     = .false. & ! Output of netcdf results
   ,DEBUG_OUT_HOUR       = .false. & ! Debug Output_hourly.f90
@@ -410,7 +410,7 @@ logical, public, parameter ::    &
 !=============================================================================
 ! 3)  Source-receptor runs?
 ! We don't (generally) want daily outputs for SR runs, so in
-! Derived_ml, we set all IOU_DAY false if SOURCE_RECPTOR = .true..
+! Derived_mod, we set all IOU_DAY false if SOURCE_RECPTOR = .true..
 
 logical, public, save :: SOURCE_RECEPTOR = .false., VOLCANO_SR=.false.
 
@@ -486,7 +486,7 @@ character(len=15), public, save, dimension(20) :: FLUX_VEGS=""
 character(len=15), public, save, dimension(20) :: FLUX_IGNORE=""   ! e.g. Water, desert..
 character(len=15), public, save, dimension(20) :: VEG_2dGS=""
 character(len=99), public, save, dimension(10) :: VEG_2dGS_Params=""
-integer, public, save :: nFluxVegs = 0 ! reset in Landuse_ml
+integer, public, save :: nFluxVegs = 0 ! reset in Landuse_mod
 
 ! To use external maps of plant functional types we need to
 ! map between EMEP codes and netcdf file codes
@@ -528,7 +528,7 @@ character(len=120), public, save :: runlabel1&!SHORT Allows explanatory text
                                   , runlabel2 !LONG  Read in from grun.pl
 
 ! Typically, we define as mainly sea when > 50% water, and
-! likely_coastal when > 20%. See Landuse_ml
+! likely_coastal when > 20%. See Landuse_mod
 real, public, parameter, dimension(2) ::  SEA_LIMIT = (/ 0.2, 0.5 /)
 
 real, public, parameter :: &
@@ -550,9 +550,9 @@ real, public, parameter :: &
 
 ! Define output types.
 !   Derived output types: types 1..6 (instantaneous,year,month,day,hour,hour_inst),
-!                         refer to output variables defined in Derived_ml.
+!                         refer to output variables defined in Derived_mod.
 !   Hourly  output types: types 7..8 (hourly_out inst.,hourly_out_mean),
-!                         refer to output variables defined in My_Outputs_ml.
+!                         refer to output variables defined in My_Outputs_mod.
 integer, public, parameter ::  &
   IOU_INST=1,IOU_YEAR=2,IOU_MON=3,IOU_DAY=4,IOU_HOUR=5,IOU_HOUR_INST=6, & ! Derived output
   IOU_HOUR_EXTRA=7,IOU_HOUR_EXTRA_MEAN=8, & ! additional hourly output

@@ -16,12 +16,12 @@ module ChemFunctions_mod
 !   troe - standrad chemical function
 !____________________________________________________________________
  use AeroFunctions,         only : UptakeRate, GammaN2O5_EJSS, GammaN2O5
- use CheckStop_ml,          only : StopAll
+ use CheckStop_mod,          only : StopAll
  use ChemSpecs,             only : SO4, NO3_f, NH4_f, NO3_c
 ! use Config_module,         only : DebugCell, DEBUG  ! set with DEBUG%RUNCHEM
- use LocalVariables_ml,     only : Grid   ! => izen, is_mainlysea
+ use LocalVariables_mod,     only : Grid   ! => izen, is_mainlysea
  use Config_module,     only : K1  => KCHEMTOP, K2 => KMAX_MID, USES, AERO
- use PhysicalConstants_ml,  only : AVOG, RGAS_J, DAY_ZEN
+ use PhysicalConstants_mod,  only : AVOG, RGAS_J, DAY_ZEN
  use ZchemData_mod,     only : itemp, tinv, rh, x=> xn_2d, M, &
      aero_fom,aero_fss,aero_fdust, aero_fbc,  &
      gamN2O5, cN2O5, temp, DpgNw, S_m2m3 ! for gammas & surface area

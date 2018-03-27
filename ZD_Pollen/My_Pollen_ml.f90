@@ -7,10 +7,10 @@
 ! Pollen emission based upon meteorology paparameters, and heatsum.
 ! Pollen particles are assumed of 22 um diameter and 800 kg/m3 density. 
 !-----------------------------------------------------------------------!
-module Pollen_const_ml
+module Pollen_const_mod
 use Config_module,    only: USES,DEBUG
 use ChemSpecs,            only: NSPEC_ADV
-use CheckStop_ml,         only: CheckStop
+use CheckStop_mod,         only: CheckStop
 implicit none
 public
 
@@ -29,7 +29,7 @@ subroutine pollen_check(igrp,uconv_adv)
   call CheckStop(USES%POLLEN.or.DEBUG%POLLEN,&
     "USES%POLLEN/DEBUG%POLLEN on model compiled without pollen modules")
 endsubroutine pollen_check
-endmodule Pollen_const_ml
+endmodule Pollen_const_mod
 !-----------------------------------------------------------------------!
 ! Empty Pollen rountines for "standrd" model compilation
 !-----------------------------------------------------------------------!
@@ -39,8 +39,8 @@ endmodule Pollen_const_ml
 ! Pollen emission based upon meteorology paparameters, and heatsum.
 ! Pollen particles are assumed of 22 um diameter and 800 kg/m3 density. 
 !-----------------------------------------------------------------------!
-module Pollen_ml
-use Pollen_const_ml
+module Pollen_mod
+use Pollen_const_mod
 implicit none
 public:: pollen_flux,pollen_dump,pollen_read,pollen_check
 
@@ -65,4 +65,4 @@ endsubroutine pollen_read
 subroutine pollen_dump()
   call pollen_check()
 endsubroutine pollen_dump
-endmodule Pollen_ml
+endmodule Pollen_mod

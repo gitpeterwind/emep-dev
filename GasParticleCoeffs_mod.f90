@@ -10,7 +10,7 @@ module GasParticleCoeffs_mod
 ! includes DryDepDefs for 14 gases
 ! specifies Henry's coefficients, reactivities for gases
 !
-use PhysicalConstants_ml, only : PRANDTL, Sc_H20
+use PhysicalConstants_mod, only : PRANDTL, Sc_H20
 implicit none
 private
 

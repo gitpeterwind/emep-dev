@@ -5,7 +5,7 @@
 module AeroFunctions
 !____________________________________________________________________
 !
- use PhysicalConstants_ml, only : AVOG, RGAS_J, PI
+ use PhysicalConstants_mod, only : AVOG, RGAS_J, PI
   implicit none
   private
 

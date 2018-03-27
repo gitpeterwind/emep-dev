@@ -1,6 +1,6 @@
 module ChemSpecs
-  use ChemSpecs_adv_ml
-  use ChemSpecs_shl_ml
-  use ChemSpecs_tot_ml
-  use ChemChemicals_ml
+  use ChemSpecs_adv_mod
+  use ChemSpecs_shl_mod
+  use ChemSpecs_tot_mod
+  use ChemChemicals_mod
 end module ChemSpecs

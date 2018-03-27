@@ -1,4 +1,4 @@
-module Pollen_ml
+module Pollen_mod
 !-----------------------------------------------------------------------!
 ! Birch pollen emission calculation based on
 ! M. Sofiev et al. 2006, doi:10.1007/s00484-006-0027-x
@@ -6,41 +6,41 @@ module Pollen_ml
 ! Pollen emission based upon meteorology paparameters, and heatsum.
 ! Pollen particles are assumed of 22 um diameter and 800 kg/m3 density.
 !-----------------------------------------------------------------------!
-use Pollen_const_ml
-use PhysicalConstants_ml, only: AVOG
-use Biogenics_ml,         only: EMIS_BioNat, EmisNat
-use CheckStop_ml,         only: CheckStop,CheckNC
+use Pollen_const_mod
+use PhysicalConstants_mod, only: AVOG
+use Biogenics_mod,         only: EMIS_BioNat, EmisNat
+use CheckStop_mod,         only: CheckStop,CheckNC
 use ChemSpecs,            only: NSPEC_SHL, species_adv
-use Chemfields_ml,        only: xn_adv    ! emep model concs.
-use DerivedFields_ml,     only: f_2d,d_2d ! D2D houtly (debug) output
-use GasParticleCoeffs_ml, only: AERO_SIZE,CDDEP_BIRCH,CDDEP_OLIVE,CDDEP_GRASS
-use Functions_ml,         only: heaviside
-use GridValues_ml ,       only: glon, glat, debug_proc, debug_li, debug_lj
-use Landuse_ml,           only: LandCover
-use LocalVariables_ml,    only: Grid
-use MetFields_ml,         only: surface_precip, ws_10m ,rh2m,t2_nwp,&
+use Chemfields_mod,        only: xn_adv    ! emep model concs.
+use DerivedFields_mod,     only: f_2d,d_2d ! D2D houtly (debug) output
+use GasParticleCoeffs_mod, only: AERO_SIZE,CDDEP_BIRCH,CDDEP_OLIVE,CDDEP_GRASS
+use Functions_mod,         only: heaviside
+use GridValues_mod ,       only: glon, glat, debug_proc, debug_li, debug_lj
+use Landuse_mod,           only: LandCover
+use LocalVariables_mod,    only: Grid
+use MetFields_mod,         only: surface_precip, ws_10m ,rh2m,t2_nwp,&
                                 foundws10_met,foundprecip,pr,u_ref,z_bnd,z_mid
-use MicroMet_ml,          only: Wind_at_h
+use MicroMet_mod,          only: Wind_at_h
 use Config_module,    only: AERO, KMAX_MID, nstep, DataDir, FORECAST, &
                                 METSTEP, MasterProc, IOU_INST, RUNDOMAIN, &
                                 TXTLEN_FILE, dt=>dt_advec, DEBUG
-use MPI_Groups_ml,        only: MPI_INTEGER,MPI_LOGICAL,MPI_COMM_CALC,&
+use MPI_Groups_mod,        only: MPI_INTEGER,MPI_LOGICAL,MPI_COMM_CALC,&
                                 MasterPE,IERROR
-use Nest_ml,              only: outdate,FORECAST_NDUMP,out_DOMAIN,&
+use Nest_mod,              only: outdate,FORECAST_NDUMP,out_DOMAIN,&
                                 template_read_IC=>template_read_3D,&
                                 template_write_IC=>template_write
-use NetCDF_ml,            only: ReadField_CDF,Out_netCDF,GetCDF_modelgrid,&
+use NetCDF_mod,            only: ReadField_CDF,Out_netCDF,GetCDF_modelgrid,&
                                 ReadTimeCDF,CDFtype=>Real4
 use netcdf,               only: nf90_close
-use Par_ml,               only: limax, ljmax, LIMAX, LJMAX, me
-use PhysicalConstants_ml, only: PI
-use OwnDataTypes_ml,      only: Deriv
-use Setup_1dfields_ml,    only: rcemis
-use SmallUtils_ml,        only: find_index,key2str
-use SubMet_ml,            only: Sub
-use TimeDate_ml,          only: current_date,daynumber,date,day_of_year
-use TimeDate_ExtraUtil_ml,only: date2string,compare_date,date2nctime
-use Io_ml,                only: IO_NML, PrintLog
+use Par_mod,               only: limax, ljmax, LIMAX, LJMAX, me
+use PhysicalConstants_mod, only: PI
+use OwnDataTypes_mod,      only: Deriv
+use Setup_1dfields_mod,    only: rcemis
+use SmallUtils_mod,        only: find_index,key2str
+use SubMet_mod,            only: Sub
+use TimeDate_mod,          only: current_date,daynumber,date,day_of_year
+use TimeDate_ExtraUtil_mod,only: date2string,compare_date,date2nctime
+use Io_mod,                only: IO_NML, PrintLog
 use mpi,                  only: MPI_COMM_WORLD,MPI_DOUBLE_PRECISION,&
                                 MPI_IN_PLACE,MPI_MIN,MPI_MAX!,MPI_ALLREDUCE
 ! openMPI has no explicit interface for MPI_ALLREDUCE
@@ -116,7 +116,7 @@ subroutine Config_Pollen()
   if(.not.first_call)return
   first_call = .false.
 
-  ! check consistency between Pollen_const_ml and species_adv definitions
+  ! check consistency between Pollen_const_mod and species_adv definitions
   call pollen_check()
 
   template_read =template_read_IC   ! by default read/write
@@ -632,7 +632,7 @@ integer function getRecord(fileName,findDate,fatal)
 
   if(MasterProc) getRecord=startRecord()
   call MPI_BCAST(getRecord,1,MPI_INTEGER,MasterPE,MPI_COMM_CALC,IERROR)
-  if(getRecord<1)&  ! switch off Pollen_ml when restart file is corrupted
+  if(getRecord<1)&  ! switch off Pollen_mod when restart file is corrupted
     call MPI_BCAST(USES%POLLEN,1,MPI_LOGICAL,MasterPE,MPI_COMM_CALC,IERROR)
 contains
 function startRecord() result(nstart)
@@ -650,7 +650,7 @@ function startRecord() result(nstart)
     call CheckStop(fatal,"File not found: "//trim(filename))
     if(MasterProc) write(*,*)&
       "Warning Pollen dump file not found: "//trim(filename)
-    call PrintLog("WARNING: Pollen_ml cold start",MasterProc)
+    call PrintLog("WARNING: Pollen_mod cold start",MasterProc)
     nstart=-1
     return
   end if
@@ -663,7 +663,7 @@ function startRecord() result(nstart)
     call CheckStop(fatal,"Corrupted file: "//trim(filename))
     if(MasterProc) write(*,*)&
       "Warning Pollen dump file corrupted: "//trim(filename)
-    call PrintLog("WARNING: Pollen_ml forced OFF",MasterProc)
+    call PrintLog("WARNING: Pollen_mod forced OFF",MasterProc)
     USES%POLLEN=.false.
     nstart=-1
     return
@@ -685,7 +685,7 @@ function startRecord() result(nstart)
     if(MasterProc) write(*,*)&
       "No records for"//date2string(" YYYY-MM-DD hh:mm ",findDate)//&
       "found in "//trim(filename)
-    call PrintLog("WARNING: Pollen_ml cold start",MasterProc)
+    call PrintLog("WARNING: Pollen_mod cold start",MasterProc)
     nstart=-1
     return
   end if
@@ -717,7 +717,7 @@ subroutine pollen_read()
   do g=1,size(POLLEN_GROUP)
     spc=trim(POLLEN_GROUP(g))
 !------------------------
-! pollen adv (not written by Nest_ml)
+! pollen adv (not written by Nest_mod)
 !------------------------
     call GetCDF_modelgrid(trim(spc),filename,data,&
           1,KMAX_MID,nstart,1,needed=.not.FORECAST,found=found)
@@ -781,7 +781,7 @@ subroutine pollen_dump()
     do g=1,size(POLLEN_GROUP)
       spc=trim(POLLEN_GROUP(g))
 !------------------------
-! pollen adv (not written by Nest_ml)
+! pollen adv (not written by Nest_mod)
 !------------------------
       def1%class='Advected'           ! written
       def1%unit='mix_ratio'           ! written
@@ -824,4 +824,4 @@ subroutine pollen_dump()
     write(*,"(3(A,1X),I0)") "Found Pollen dump",trim(filename),"record",i
   deallocate(data)
 end subroutine pollen_dump
-end module Pollen_ml
+end module Pollen_mod

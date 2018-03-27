@@ -1,4 +1,4 @@
-module Pollen_const_ml
+module Pollen_const_mod
 !-----------------------------------------------------------------------!
 ! Birch pollen emission calculation based on
 ! M. Sofiev et al. 2006, doi:10.1007/s00484-006-0027-x
@@ -6,12 +6,12 @@ module Pollen_const_ml
 ! Pollen emission based upon meteorology paparameters, and heatsum.
 ! Pollen particles are assumed of 22 um diameter and 800 kg/m3 density.
 !-----------------------------------------------------------------------!
-use PhysicalConstants_ml, only: PI,ATWAIR,AVOG
+use PhysicalConstants_mod, only: PI,ATWAIR,AVOG
 use Config_module,    only: USES,DEBUG
-use CheckStop_ml,         only: CheckStop
+use CheckStop_mod,         only: CheckStop
 use ChemSpecs,            only: NSPEC_ADV,NSPEC_SHL,species
-use ChemGroups_ml,        only: chemgroups
-use SmallUtils_ml,        only: find_index
+use ChemGroups_mod,        only: chemgroups
+use SmallUtils_mod,        only: find_index
 implicit none
 public
 
@@ -85,4 +85,4 @@ subroutine pollen_check(igrp,uconv_adv)
     uconv_adv(chemgroups(poll)%specs-NSPEC_SHL)=&
       uconv_adv(chemgroups(poll)%specs-NSPEC_SHL)/grain_wt
 end subroutine pollen_check
-end module Pollen_const_ml
+end module Pollen_const_mod

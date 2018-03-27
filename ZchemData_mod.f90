@@ -23,7 +23,7 @@
 
    integer, public, save  :: CHEMSIZE  !
 
- !FIELDS ALLOCATED IN Chem_ml.f90
+ !FIELDS ALLOCATED IN Chem_mod.f90
 
   real, public, allocatable, dimension(:,:), save :: &
                    xn_2d            ! Concentrations [molecules/cm3]

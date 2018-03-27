@@ -2,19 +2,19 @@
 !_____________________________________________________________________________!
 ! Added March 2017
 ! For placement of miscellaneous coefficients and routines which can be
-! called from Solver_ml. Currently allows access to VBS and JPC-based yields
+! called from Solver_mod. Currently allows access to VBS and JPC-based yields
 ! D. Simpson & R. Bergström March-June 2017
 !_____________________________________________________________________________!
 !
  module YieldModifications_mod
 
-  use CheckStop_ml,       only : StopAll
-  use ChemFields_ml             ! => cell_tinv,  NSPEC_TOT, O3, NO2, etc.
+  use CheckStop_mod,       only : StopAll
+  use ChemFields_mod             ! => cell_tinv,  NSPEC_TOT, O3, NO2, etc.
   use ChemSpecs                  ! => NSPEC_TOT, O3, NO2, etc.
   use Config_module,  only : MasterProc, DebugCell, DEBUG, USES &
                             ,YieldModifications ! JPCIsoYield
   use NumberConstants,    only : UNDEF_R, UNDEF_I
-  use SmallUtils_ml,      only : find_index, trims
+  use SmallUtils_mod,      only : find_index, trims
 
   implicit none
   private
