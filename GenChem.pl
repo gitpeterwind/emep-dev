@@ -116,13 +116,13 @@ my %description = ($adv => "Advected species",
 #  is only called if the more complex functions are needed.
 #  but for simplicity we define it anyway.... (ESX check)
 my $txtrcfunc = "";
-$txtrcfunc = "\n  use ChemFunctions_ml       ! => kaero, RiemerN2O5\n" ; #ESX if $nrcfunc>0;
+$txtrcfunc = "\n  use ChemFunctions_mod      ! => kaero, RiemerN2O5\n" ; #ESX if $nrcfunc>0;
 #printall ("TXTRCFUNC needed? $nrcfunc   TXT:$txtrcfunc");
 my %UsedVariables = (
    $rct    => " $txtrcfunc
   use AeroFunctions     ! => UpdakeRate, cMolSpeed
-  use Setup_1dfields_ml ! => tinv, h2o, m, Fgas
-  use Setup_1dfields_ml, m=> amk
+  use ZchemData_mod     ! => tinv, h2o, m, Fgas
+  use ZchemData_mod    , m=> amk
   use ChemSpecs_tot_ml  ! => PINALD, .... for FgasJ08
   use Config_module, only: KMAX_MID,KCHEMTOP,DebugCell,DEBUG,AERO");
 
