@@ -39,7 +39,7 @@ use Par_ml,             only: me, LIMAX, LJMAX, limax, ljmax, &
                               IRUNBEG,JRUNBEG, & ! TMP for debug
                               gi0, gi1, gj0, gj1
 use PlumeRise_ml,       only: Plume_PreggerFriedrich, Plume_ASME, Plume_NILU
-use Setup_1dfields_ml,  only: rcemis, temp, pp
+use ZchemData_mod,  only: rcemis, temp, pp
 use SmallUtils_ml,      only: find_index, wordsplit
 use TimeDate_ml,        only:  nydays
 use PhysicalConstants_ml,only: AVOG,PI

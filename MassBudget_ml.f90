@@ -28,7 +28,7 @@ use Par_ml,             only: &
   li0,li1,& ! First/Last local index in long. when outer boundary is excluded
   lj0,lj1   ! First/Last local index in lat.  when outer boundary is excluded
 use PhysicalConstants_ml,only: GRAV,ATWAIR! Mol. weight of air(Jones,1992)
-use Setup_1dfields_ml,  only: amk, rcemis ! Air concentrations , emissions
+use ZchemData_mod,  only: amk, rcemis ! Air concentrations , emissions
 use SmallUtils_ml,       only: find_index
 implicit none
 private

@@ -23,7 +23,7 @@ use MetFields_ml,         only: z_bnd
 use Config_module,    only: KMAX_MID, KCHEMTOP, ANALYSIS, USES
 use Par_ml,               only: LIMAX,LJMAX   ! => x, y dimensions
 use PhysicalConstants_ml, only: AVOG
-use Setup_1dfields_ml,    only: xn_2d, rh
+use ZchemData_mod,    only: xn_2d, rh
 use SmallUtils_ml,        only: find_index
 implicit none
 private

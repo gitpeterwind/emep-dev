@@ -151,7 +151,7 @@ module Ammonium_ml
    ! Units :  Kp, Kaq : (molecules cm-3)^2
    !          rc      ????
    !--------------------------------------------------------------------------
- use Setup_1dfields_ml   , only : rh, amk, itemp
+ use ZchemData_mod   , only : rh, amk, itemp
 
    real, dimension(KCHEMTOP:KMAX_MID)  ::  rcnh4 ! equilib. value
    real, dimension(KCHEMTOP:KMAX_MID) ::   rhd, Kp     ! deliq. rh, Kp
@@ -197,7 +197,7 @@ module Ammonium_ml
      !-------------------------------------------------------------------------
 
  use ChemSpecs,         only : SO4, NH4_f, NO3_f, NH3, HNO3
- use Setup_1dfields_ml, only :  xn => xn_2d
+ use ZchemData_mod, only :  xn => xn_2d
 
    real, dimension(KCHEMTOP:KMAX_MID)  ::  rcnh4 ! equilib. value
    real, dimension(KCHEMTOP:KMAX_MID) :: eqnh3, delteq

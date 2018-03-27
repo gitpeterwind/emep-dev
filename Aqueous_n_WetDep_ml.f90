@@ -55,7 +55,7 @@ use Par_ml,             only: limax,ljmax, me,li0,li1,lj0,lj1
 use PhysicalConstants_ml,only: GRAV,AVOG,  &    ! "g" & Avogadro's No.
                                ATWAIR,&         ! Mol. weight of air(Jones,1992)
                                RGAS_ATML,RGAS_J ! Gas-constant
-use Setup_1dfields_ml,  only: xn_2d, amk, Fpart, Fgas, &
+use ZchemData_mod,  only: xn_2d, amk, Fpart, Fgas, &
                               temp, itemp        ! temperature (K)
 use SmallUtils_ml,      only: find_index
 use Units_ml,           only: Group_Scale,group_umap

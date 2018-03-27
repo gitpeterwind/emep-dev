@@ -46,8 +46,8 @@
  use Par_ml,               only : limax, ljmax ! Debugging 
  use PhysicalConstants_ml, only : GRAV,  AVOG, PI, KARMAN, RGAS_KG, CP
                                   !! ECO_CROP, ECO_SEMINAT, Desert=13, Urban=17
- use Setup_1dfields_ml,    only : rcemis 
- use Setup_1dfields_ml,    only : rh
+ use ZchemData_mod,    only : rcemis 
+ use ZchemData_mod,    only : rh
  use SmallUtils_ml,        only : find_index
  use SubMet_ml,            only : Sub
  use TimeDate_ml,          only : daynumber

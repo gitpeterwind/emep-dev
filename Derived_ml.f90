@@ -74,7 +74,7 @@ use OwnDataTypes_ml,      only: Deriv, print_Deriv_type, &
 use Par_ml,               only: me,                &      ! for print outs
                                 limax, ljmax      ! => used x, y area
 use PhysicalConstants_ml, only: PI,KAPPA,ATWAIR,GRAV
-use Setup_1dfields_ml,    only: Fpart ! for FSOA work
+use ZchemData_mod,    only: Fpart ! for FSOA work
 use SmallUtils_ml,        only: find_index, LenArray, NOT_SET_STRING, trims
 use TimeDate_ml,          only: day_of_year,daynumber,current_date,&
                                 tdif_days

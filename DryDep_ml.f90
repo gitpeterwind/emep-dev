@@ -73,7 +73,7 @@ use Par_ml,               only: limax,ljmax, me,li0,li1,lj0,lj1
 use PhysicalConstants_ml, only: ATWAIR,PI,KARMAN,GRAV,RGAS_KG,CP,AVOG,NMOLE_M3
 use Rb_ml,                only: Rb_gas
 use Rsurface_ml,          only: Rsurface, Rinc
-use Setup_1dfields_ml,    only: xn_2d,amk, Fpart, Fgas
+use ZchemData_mod,    only: xn_2d,amk, Fpart, Fgas
 use Sites_ml, only : nlocal_sites, site_x, site_y, site_name, site_gn
 use SoilWater_ml,         only: fSW !  =1.0 unless set by Met_ml
 use StoFlux_ml,  only:   unit_flux, &! = sto. flux per m2

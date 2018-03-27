@@ -2,7 +2,7 @@ module Setup_1d_ml
 !-----------------------------------------------------------------------!
 ! DESCRIPTION
 ! Generates arrays for 1-D column , for input to chemical solver. The output
-! fields are stored in the Setup_1dfields_ml module.
+! fields are stored in the ZchemData_mod module.
 !-----------------------------------------------------------------------!
 
 use AeroFunctions,       only: umWetRad,WetRad, pmSurfArea, cMolSpeed, UptakeRate
@@ -11,7 +11,7 @@ use Biogenics_ml,        only: SoilNOx
 use Biogenics_ml,        only: EMIS_BioNat, EmisNat  
 use Chemfields_ml,       only: xn_adv,xn_bgn,xn_shl, &
                                NSPEC_COL, NSPEC_BGN, xn_2d_bgn
-use ChemFunctions_ml, only : S_RiemerN2O5
+use ChemFunctions_mod, only : S_RiemerN2O5
 use ChemGroups_ml,       only: PM10_GROUP, PMFINE_GROUP, SIA_GROUP, SS_GROUP, DUST_GROUP, chemgroups
 use CheckStop_ml,        only:  CheckStop, StopAll
 use ColumnSource_ml,     only: ColumnRate
@@ -56,7 +56,7 @@ use Par_ml,              only: me, &
                                gi0,gi1,gj0,gj1,IRUNBEG,JRUNBEG
 use PhysicalConstants_ml,only: ATWAIR, AVOG, PI, GRAV, T0
 use Radiation_ml,        only: PARfrac, Wm2_uE
-use Setup_1dfields_ml,   only: &
+use ZchemData_mod,   only: &
    xn_2d                &  ! concentration terms (molec/cm3)
   ,rcemis, deltaZcm     &  ! emission terms and lowest layer thickness
   ,rh, temp, tinv, itemp,pp      &  !

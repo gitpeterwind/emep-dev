@@ -46,8 +46,8 @@ module OrganicAerosol_ml
                                     K2 => KMAX_MID, K1 => KCHEMTOP
    use Par_ml,               only : LIDIM => LIMAX, LJDIM => LJMAX, me
    use PhysicalConstants_ml, only : AVOG, RGAS_J 
-   use Setup_1dfields_ml,    only : itemp, xn => xn_2d, Fgas, Fpart
-   use Setup_1dfields_ml,    only : amk   ! "M" = air density
+   use ZchemData_mod,    only : itemp, xn => xn_2d, Fgas, Fpart
+   use ZchemData_mod,    only : amk   ! "M" = air density
    use SmallUtils_ml,        only : find_index
    use TimeDate_ml,          only : current_date
    implicit none

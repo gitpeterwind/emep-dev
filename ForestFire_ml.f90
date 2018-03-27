@@ -51,7 +51,7 @@ use NetCDF_ml,            only: ReadTimeCDF,ReadField_CDF,Out_netCDF,Real4,&
 use OwnDataTypes_ml,      only: Deriv, TXTLEN_SHORT
 use Par_ml,               only: LIMAX, LJMAX, me,limax,ljmax
 use PhysicalConstants_ml, only: AVOG
-use Setup_1dfields_ml,    only: rcemis
+use ZchemData_mod,    only: rcemis
 use SmallUtils_ml,        only: find_index, key2str
 ! No. days per year, date-type:
 use TimeDate_ml,          only: current_date,day_of_year,max_day
