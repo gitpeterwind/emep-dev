@@ -3,7 +3,7 @@ use CheckStop_ml,      only: CheckStop, StopAll
 use CoDep_ml,          only: CoDep_factors, humidity_fac, Rns_NH3, Rns_SO2
 use Config_module,     only: DEBUG, NO_CROPNH3DEP
 use DO3SE_ml,          only: g_stomatal, do3se
-use GasParticleCoeffs_ml,    only : DryDepDefs &  ! Extension of Wesely Table 2
+use GasParticleCoeffs_mod,    only : DryDepDefs &  ! Extension of Wesely Table 2
    ,WES_HNO3, WES_NH3,DRx,WES_SO2    ! Indices and Ratio of diffusivities to ozone
 use Io_Progs_ml,       only: datewrite
 use LandDefs_ml,       only: LandDefs, LandType

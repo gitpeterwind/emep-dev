@@ -151,7 +151,7 @@ module Ammonium_ml
    ! Units :  Kp, Kaq : (molecules cm-3)^2
    !          rc      ????
    !--------------------------------------------------------------------------
- use ZchemData_mod   , only : rh, amk, itemp
+ use ZchemData_mod   , only : rh, M, itemp
 
    real, dimension(KCHEMTOP:KMAX_MID)  ::  rcnh4 ! equilib. value
    real, dimension(KCHEMTOP:KMAX_MID) ::   rhd, Kp     ! deliq. rh, Kp
@@ -164,7 +164,7 @@ module Ammonium_ml
       Kp(:)  =  tab_Kp_amni( itemp(:) )
 
 ! Initialize rcnh4 to tab_Kp_amni,need roappm
-      roappm(:) = amk(:)*PPB
+      roappm(:) = M(:)*PPB
       rcnh4(:)  =  tab_Kp_amni( itemp(:) )*roappm(:)* roappm(:)
 
 !  The lines below are a CPU-efficient way of calculating the
@@ -179,7 +179,7 @@ module Ammonium_ml
                - tab_MozP2(itemp)*humd &
                + tab_MozP3(itemp)*humd*humd  ) *humd*humdsqrt2*Kp
 
-        roappm = amk*PPB
+        roappm = M*PPB
         rcnh4  = Kp * roappm * roappm 
 
       end where

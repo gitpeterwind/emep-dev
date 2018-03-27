@@ -22,7 +22,7 @@ module ChemFunctions_mod
  use LocalVariables_ml,     only : Grid   ! => izen, is_mainlysea
  use Config_module,     only : K1  => KCHEMTOP, K2 => KMAX_MID, USES, AERO
  use PhysicalConstants_ml,  only : AVOG, RGAS_J, DAY_ZEN
- use ZchemData_mod,     only : itemp, tinv, rh, x=> xn_2d, amk, &
+ use ZchemData_mod,     only : itemp, tinv, rh, x=> xn_2d, M, &
      aero_fom,aero_fss,aero_fdust, aero_fbc,  &
      gamN2O5, cN2O5, temp, DpgNw, S_m2m3 ! for gammas & surface area
  use ChemSpecs,             only : SO4, NO3_f, NH4_f, NO3_c
@@ -66,8 +66,8 @@ module ChemFunctions_mod
        k1 = a1 * EXP(C1*TINV)
        k3 = a3 * EXP(C3*TINV)
        k4 = a4 * EXP(C4*TINV)
-!QUERY amk&m?...
-       rckmt3 = k1 + (k3*amk)/(1.0+(k3*m)/k4)
+!QUERY M&m?...
+       rckmt3 = k1 + (k3*M)/(1.0+(k3*m)/k4)
        !rckmt3 = k1 + (k3*M)/(1.0+(k3*M)/k4)
   end function kmt3
 

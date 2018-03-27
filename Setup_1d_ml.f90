@@ -60,7 +60,7 @@ use ZchemData_mod,   only: &
    xn_2d                &  ! concentration terms (molec/cm3)
   ,rcemis, deltaZcm     &  ! emission terms and lowest layer thickness
   ,rh, temp, tinv, itemp,pp      &  !
-  ,amk, o2, n2, h2o     &  ! Air concentrations
+  ,M, o2, n2, h2o     &  ! Air concentrations
   ,cN2O5, cHO2, cO3, cHNO3 &  ! mol speeds, m/s
   ,cNO2, cNO3              &  ! mol speeds, m/s, kHetero tests
   ,gamN2O5                 &  ! kHetero test - for printout
@@ -175,10 +175,10 @@ contains
   !- to_number_cm3 - to scale from  density (roa, kg/m3) to  molecules/cm3
   ! (kg/m3 = 1000 g/m3 = 0.001 * Avog/Atw molecules/cm3)
 
-       amk(k) = roa(i,j,k,1) * to_number_cm3  ! molecules air/cm3
+       M(k) = roa(i,j,k,1) * to_number_cm3  ! molecules air/cm3
 
-       h2o(k) = max( 1.e-5*amk(k), &
-                     q(i,j,k,1)*amk(k)*ATWAIR/18.0)
+       h2o(k) = max( 1.e-5*M(k), &
+                     q(i,j,k,1)*M(k)*ATWAIR/18.0)
 
       ! nb. max function for h2o used as some NWP numerics can give 
       ! negative negative H2O....   :-(
@@ -203,12 +203,12 @@ contains
         ! 2)/ Advected species
         do n = 1, NSPEC_ADV
               ispec = NSPEC_SHL + n
-              xn_2d(ispec,k) = max(0.0,xn_adv(n,i,j,k)*amk(k))
+              xn_2d(ispec,k) = max(0.0,xn_adv(n,i,j,k)*M(k))
         end do ! ispec
 
         ! 3)/ Background species (with units in mix. ratio)
         do n = 1, NSPEC_BGN
-              xn_2d_bgn(n,k) = max(0.0,xn_bgn(n,i,j,k)*amk(k))
+              xn_2d_bgn(n,k) = max(0.0,xn_bgn(n,i,j,k)*M(k))
         end do ! ispec
 
       ! Surf Area
@@ -376,10 +376,10 @@ contains
       call CheckStop( "Detected non numerical concentrations (NaN)")
    end if
 
-   o2(:) = 0.21 *amk(:)
-   n2(:) = amk(:) - o2(:)
-!   o2(:) = 0.2095 *amk(:) ! more exact, but prefer o3+n2 to add to 100%
-!   n2(:) = 0.7808 *amk(:)
+   o2(:) = 0.21 *M(:)
+   n2(:) = M(:) - o2(:)
+!   o2(:) = 0.2095 *M(:) ! more exact, but prefer o3+n2 to add to 100%
+!   n2(:) = 0.7808 *M(:)
    tinv(:) = 1./temp(:)
 
 
@@ -605,9 +605,9 @@ subroutine setup_rcemis(i,j)
     if(DEBUG%SETUP_1DCHEM.and.debug_proc.and.i==debug_li.and.j==debug_lj) then
        write(*,"(a,i3,9es12.4)") "1DCHEM DZ",  k, deltaZcm(k), &
         100*(dA(k)+dB(k)*ps(i,j,1))/(GRAV*roa(i,j,k,1))! , &
-!        100*(dA(k)+dB(k)*ps(i,j,1))/(GRAV*amk(k)*ATWAIR)!, &
-!        amk(k)*ATWAIR/roa(i,j,k,1)
-!       amk(k) = roa(i,j,k,1) * to_number_cm3  ! molecules air/cm3
+!        100*(dA(k)+dB(k)*ps(i,j,1))/(GRAV*M(k)*ATWAIR)!, &
+!        M(k)*ATWAIR/roa(i,j,k,1)
+!       M(k) = roa(i,j,k,1) * to_number_cm3  ! molecules air/cm3
     end if
   end do
 
@@ -665,7 +665,7 @@ subroutine setup_rcemis(i,j)
         itot=iqrc2itot(iqrc)
         SumSplitEmis(i,j,iqrc) = SumSplitEmis(i,j,iqrc)&
           +rcemis(itot,k)*species(itot)%molwt &
-          *(dA(k)+dB(k)*ps(i,j,1))/(GRAV*amk(k)*ATWAIR)
+          *(dA(k)+dB(k)*ps(i,j,1))/(GRAV*M(k)*ATWAIR)
       end do
     end do
   end if
@@ -709,7 +709,7 @@ subroutine reset_3d(i,j)
     ! 2)/ Advected species
     do n = 1, NSPEC_ADV
       ispec = NSPEC_SHL + n
-      xn_adv(n,i,j,k) = xn_2d(ispec,k)/amk(k)
+      xn_adv(n,i,j,k) = xn_2d(ispec,k)/M(k)
     end do ! ispec
   end do ! k
 

@@ -30,7 +30,7 @@ module Rb_ml
 use Config_module,    only :  DEBUG_RB
 use PhysicalConstants_ml, only :  KARMAN
                     
-use GasParticleCoeffs_ml, only : DryDepDefs &  !  Table for 64 gases
+use GasParticleCoeffs_mod, only : DryDepDefs &  !  Table for 64 gases
                        ,Rb_cor          !
 implicit none
 private

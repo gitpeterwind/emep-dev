@@ -43,8 +43,8 @@
                                  xn_2d,         &
                                  rh,            &
                                  Fgas,   & ! fraction in gas-phase, for SOA
-                                 amk
-    use ZchemData_mod,     only : itemp, tinv, rh,  amk
+                                 M
+    use ZchemData_mod,     only : itemp, tinv, rh,  M
     use YieldModifications_mod  ! eg YA_ for SOA aerosol. Allows changes with
                                 ! e.g. concentrations
 

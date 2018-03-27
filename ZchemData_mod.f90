@@ -45,7 +45,7 @@
 
    real, public, allocatable, dimension(:), save :: &
           rh                  & ! RH (fraction, 0-1)
-         ,amk                 & ! M - atmospheric conc.
+         ,M                   & ! M - atmospheric conc. (was amk)
          ,o2, n2              & ! oxygen, nitrogen
          ,h2o                 & ! water
          ,temp                & ! temperature

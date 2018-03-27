@@ -145,6 +145,8 @@ Small renames, on way to EMEP/ESX merge
 mv ChemFunctions_ml.f90 ChemFunctions_ml.f90
 mv Setup1dfields_ml.f90 ZchemData_mod.f90
 
+GasParticleCoeffs_ml to GasParticleCoeffs_mod
+
 Changed references in most files.
 
 Also Makefile.SRCS, GenChem.pl

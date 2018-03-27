@@ -7,7 +7,7 @@ module LocalVariables_ml
 ! -----------------------------------------------------------------------
 
 ! To simplify some other dependencies we removed this:
-! use GasParticleCoeffs_ml,         only: NDRYDEP_CALC
+! use GasParticleCoeffs_mod,         only: NDRYDEP_CALC
 ! And use NLOCDRYDEP_MAX below (will test in DryDep )
 
 implicit none

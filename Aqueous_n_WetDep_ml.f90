@@ -55,7 +55,7 @@ use Par_ml,             only: limax,ljmax, me,li0,li1,lj0,lj1
 use PhysicalConstants_ml,only: GRAV,AVOG,  &    ! "g" & Avogadro's No.
                                ATWAIR,&         ! Mol. weight of air(Jones,1992)
                                RGAS_ATML,RGAS_J ! Gas-constant
-use ZchemData_mod,  only: xn_2d, amk, Fpart, Fgas, &
+use ZchemData_mod,  only: xn_2d, M, Fpart, Fgas, &
                               temp, itemp        ! temperature (K)
 use SmallUtils_ml,      only: find_index
 use Units_ml,           only: Group_Scale,group_umap
@@ -736,7 +736,7 @@ subroutine WetDeposition(i,j,debug_flag)
   f_rho  = 1.0/(invgridarea*GRAV*ATWAIR)
 ! Loop starting from above:
   do k=kcloudtop, KMAX_MID           ! No need to go above cloudtop
-    rho(k) = f_rho*(dA(k) + dB(k)*ps(i,j,1))/ amk(k)
+    rho(k) = f_rho*(dA(k) + dB(k)*ps(i,j,1))/ M(k)
   end do
 
   wdeploss(:) = 0.0

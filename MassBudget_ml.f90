@@ -28,7 +28,7 @@ use Par_ml,             only: &
   li0,li1,& ! First/Last local index in long. when outer boundary is excluded
   lj0,lj1   ! First/Last local index in lat.  when outer boundary is excluded
 use PhysicalConstants_ml,only: GRAV,ATWAIR! Mol. weight of air(Jones,1992)
-use ZchemData_mod,  only: amk, rcemis ! Air concentrations , emissions
+use ZchemData_mod,  only: M, rcemis ! Air concentrations , emissions
 use SmallUtils_ml,       only: find_index
 implicit none
 private
@@ -109,7 +109,7 @@ subroutine emis_massbudget_1d(i,j)
   scaling = dt_advec * xmd(i,j)* gridwidth_m*gridwidth_m / GRAV
 
   do k = KCHEMTOP,KMAX_MID
-    scaling_k = scaling * (dA(k) + dB(k)*ps(i,j,1))/amk(k)
+    scaling_k = scaling * (dA(k) + dB(k)*ps(i,j,1))/M(k)
     if(all((/DEBUG_MASS,debug_proc,i==debug_li,j==debug_lj/)))&
       call datewrite("MASSRC ",k,(/dB(k)*ps(i,j,1),xmd(i,j),&
           ps(i,j,1),scaling_k/))

@@ -51,7 +51,7 @@ use Config_module,    only: dt_advec,PT, K2=> KMAX_MID, NPROC, &
 use DO3SE_ml,         only: do3se
 use EcoSystem_ml,     only: EcoSystemFrac, Is_EcoSystem,  &
                             NDEF_ECOSYSTEMS, DEF_ECOSYSTEMS
-use GasParticleCoeffs_ml         ! ... Init_GasCoeff, DRx, Rb_Cor, ...
+use GasParticleCoeffs_mod         ! ... Init_GasCoeff, DRx, Rb_Cor, ...
 use GridValues_ml ,   only: GRIDWIDTH_M,xmd,xm2, glat,dA,dB, &
      glon,   debug_proc, debug_li, debug_lj, i_fdom, j_fdom   ! for testing
 
@@ -73,7 +73,7 @@ use Par_ml,               only: limax,ljmax, me,li0,li1,lj0,lj1
 use PhysicalConstants_ml, only: ATWAIR,PI,KARMAN,GRAV,RGAS_KG,CP,AVOG,NMOLE_M3
 use Rb_ml,                only: Rb_gas
 use Rsurface_ml,          only: Rsurface, Rinc
-use ZchemData_mod,    only: xn_2d,amk, Fpart, Fgas
+use ZchemData_mod,    only: xn_2d,M, Fpart, Fgas
 use Sites_ml, only : nlocal_sites, site_x, site_y, site_name, site_gn
 use SoilWater_ml,         only: fSW !  =1.0 unless set by Met_ml
 use StoFlux_ml,  only:   unit_flux, &! = sto. flux per m2
@@ -316,7 +316,7 @@ contains
 
    ! -----------------------------------------------------------------!
    ! conver molecules/cm3 to ppb for surface:
-    surf_ppb   = PPBINV /amk(K2)
+    surf_ppb   = PPBINV /M(K2)
     if ( DEBUG%AOT .and. debug_flag ) write(*,"(a,es12.4)") "CHAMK", surf_ppb
 
    ! -----------------------------------------------------------------!
@@ -461,7 +461,7 @@ contains
            ! ================================================
            if ( n > NDRYDEP_GASES )  then    ! particles
 
-              nae = AERO_SIZE(n) ! See GasParticleCoeffs_ml
+              nae = AERO_SIZE(n) ! See GasParticleCoeffs_mod
 
               if ( LandType(iL)%is_forest  ) then 
 
@@ -811,7 +811,7 @@ contains
        end do GASLOOP2 ! n
 
 
-      convfac =  convfac/amk(K2)
+      convfac =  convfac/M(K2)
 
     !  DryDep Budget terms  (do not include values on outer frame)
       if(.not.(i<li0.or.i>li1.or.j<lj0.or.j>lj1))then

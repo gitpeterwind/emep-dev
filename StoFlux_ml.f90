@@ -12,7 +12,7 @@ module StoFlux_ml
   use PhysicalConstants_ml, only : AVOG, KARMAN
   use SmallUtils_ml, only : find_index
   use SubMet_ml, only : Sub
-  use GasParticleCoeffs_ml, only : WES_O3, Rb_cor
+  use GasParticleCoeffs_mod, only : WES_O3, Rb_cor
   implicit none
   private
 

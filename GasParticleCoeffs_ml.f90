@@ -1,4 +1,4 @@
-module GasParticleCoeffs_ml
+module GasParticleCoeffs_mod
 !..............................................................................
 ! specifies data for deposition modelling. Initial parameters for Henry's
 ! law and reactivit scaling from:
@@ -305,4 +305,4 @@ subroutine Init_GasCoeff()
   end do GASLOOP
 
   end subroutine Init_GasCoeff
-end module GasParticleCoeffs_ml
+end module GasParticleCoeffs_mod
