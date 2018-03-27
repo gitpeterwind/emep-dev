@@ -59,7 +59,7 @@ module Biogenics_ml
   use Par_ml,            only : limax, ljmax, LIMAX, LJMAX, me
   use PhysicalConstants_ml,  only :  AVOG, GRAV
   use Radiation_ml,          only : PARfrac, Wm2_uE
-  use Setup_1dfields_ml,     only : rcemis  
+  use ZchemData_mod,     only : rcemis  
   use SmallUtils_ml, only : find_index
   use TimeDate_ml,       only : current_date, daynumber
   implicit none

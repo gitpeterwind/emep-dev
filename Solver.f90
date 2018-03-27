@@ -22,7 +22,7 @@
 
     use Aqueous_ml,        only: aqrck, ICLOHSO2, ICLRC1, ICLRC2, ICLRC3
     use CheckStop_ml,      only: CheckStop, StopAll
-    use ChemFunctions_ml,  only: VOLFACSO4,VOLFACNO3,VOLFACNH4 !TEST TTTT
+    use ChemFunctions_mod,  only: VOLFACSO4,VOLFACNO3,VOLFACNH4 !TEST TTTT
     use ChemGroups_ml,     only: RO2_POOL, RO2_GROUP
     use ChemSpecs                  ! => NSPEC_TOT, O3, NO2, etc.
     use ChemFields_ml,     only: x, xold ,xnew  & ! Work arrays [molec./cm3]
@@ -39,12 +39,12 @@
     use Par_ml,            only: me, LIMAX, LJMAX
     use PhysicalConstants_ml, only:  RGAS_J
     use Precision_ml, only:  dp
-    use Setup_1dfields_ml, only: rcemis,        & ! photolysis, emissions
+    use ZchemData_mod, only: rcemis,        & ! photolysis, emissions
                                  xn_2d,         &
                                  rh,            &
                                  Fgas,   & ! fraction in gas-phase, for SOA
                                  amk
-    use Setup_1dfields_ml,     only : itemp, tinv, rh,  amk
+    use ZchemData_mod,     only : itemp, tinv, rh,  amk
     use YieldModifications_mod  ! eg YA_ for SOA aerosol. Allows changes with
                                 ! e.g. concentrations
 

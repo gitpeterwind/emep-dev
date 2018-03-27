@@ -1,6 +1,6 @@
-! <Setup_1dfields_ml.f90 - part of the EMEP MSC-W Chemical transport Model>
+! <ZchemData_mod.f90 - part of the EMEP MSC-W Chemical transport Model>
 !_____________________________________________________________________________!
- module Setup_1dfields_ml
+ module ZchemData_mod
 
   ! Arrays of meteorology and concentration for 1-D column , for input to
   ! chemical solver ........
@@ -69,4 +69,4 @@
          DpgNw  & ! wet diameter,           dim:NSAREA,k
         ,S_m2m3   ! surface area, m2/m3     dim:NSAREA,k
 
- end module Setup_1dfields_ml
+ end module ZchemData_mod

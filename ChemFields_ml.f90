@@ -6,7 +6,7 @@ use ChemSpecs,    only: NSPEC_ADV, NSPEC_SHL, NSPEC_TOT, & ! => No. species
 use Config_module,    only: KMAX_MID, KCHEMTOP, AERO        ! =>  z dimension
 use NumberConstants,      only: UNDEF_R
 use Par_ml,               only: LIMAX,LJMAX   ! => x, y dimensions
-use Setup_1dfields_ml
+use ZchemData_mod
 implicit none
 private
 

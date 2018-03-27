@@ -46,7 +46,7 @@ module RunChem_ml
   use PointSource_ml,    only: pointsources, get_pointsources
   use SeaSalt_ml,       only: SeaSalt_flux
   use Setup_1d_ml,      only: setup_1d, setup_rcemis, reset_3d
-  use Setup_1dfields_ml,only: first_call, &
+  use ZchemData_mod,only: first_call, &
                               amk, rcemis, xn_2d  ! DEBUG for testing
   use SmallUtils_ml,    only: find_index
   use TimeDate_ml,      only: current_date,daynumber,print_date

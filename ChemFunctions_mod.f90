@@ -1,6 +1,6 @@
-! <ChemFunctions_ml.f90 - the EMEP MSC-W Chemical transport Model>
+! <ChemFunctions_mod.f90 - the EMEP MSC-W Chemical transport Model>
 !*****************************************************************************! 
-module ChemFunctions_ml
+module ChemFunctions_mod
 !____________________________________________________________________
 ! Miscellaneous collection of "standard" (or guessed ) functions
 ! Including Troe, sine and cosine curves, 
@@ -22,7 +22,7 @@ module ChemFunctions_ml
  use LocalVariables_ml,     only : Grid   ! => izen, is_mainlysea
  use Config_module,     only : K1  => KCHEMTOP, K2 => KMAX_MID, USES, AERO
  use PhysicalConstants_ml,  only : AVOG, RGAS_J, DAY_ZEN
- use Setup_1dfields_ml,     only : itemp, tinv, rh, x=> xn_2d, amk, &
+ use ZchemData_mod,     only : itemp, tinv, rh, x=> xn_2d, amk, &
      aero_fom,aero_fss,aero_fdust, aero_fbc,  &
      gamN2O5, cN2O5, temp, DpgNw, S_m2m3 ! for gammas & surface area
  use ChemSpecs,             only : SO4, NO3_f, NH4_f, NO3_c
@@ -569,4 +569,4 @@ module ChemFunctions_ml
 
   end function ec_ageing_rate
 
-end module ChemFunctions_ml
+end module ChemFunctions_mod
