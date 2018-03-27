@@ -1380,7 +1380,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
   if(present(dimSizes))then 
      do n=1,ndim-3
         Nextradim=Nextradim*dimSizes(n)
-     enddo
+     end do
   endif
   do iextradim = 1,Nextradim
      startvec(1:ndim+1)=1
@@ -1389,7 +1389,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,dimSizes,dimNames,o
      do n=1,ndim-3
         startvec(n)=mod(iiextradim,dimSizes(n))+1
         iiextradim=iiextradim/dimSizes(n)
-     enddo
+     end do
      if(ndim-2>0)countvec(ndim-2)=i2-i1+1
      if(ndim-1>0)countvec(ndim-1)=j2-j1+1
      countvec(ndim)=kmax
@@ -4418,6 +4418,7 @@ subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read)
   integer, intent(inout) :: NTime_Read ! in:records to read, out:records readed
 
   real, allocatable :: times(:)
+  integer, allocatable :: int_times(:,:,:)
   integer :: i,j,ntimes,status
   integer :: varID,ncFileID,ndims
   integer :: xtype,dimids(NF90_MAX_VAR_DIMS),nAtts
@@ -4564,8 +4565,8 @@ subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read)
   else
 !     write(*,*)'ReadTimeCDF '//trim(varname)//" not found in "//trim(fileName)
      varname='Times'!wrf format
-     call check(nf90_inq_varid(ncid=ncFileID, name=varname, varID=VarID),&
-          errmsg="ReadTimeCDF, "//trim(varname)//" not found in "//trim(fileName))
+     status=nf90_inq_varid(ncid=ncFileID, name=varname, varID=VarID)
+     if(status==nf90_noerr)then
      call check(nf90_Inquire_Variable(ncFileID,VarID,name,xtype,ndims,dimids,nAtts))
      if(ndims>2)write(*,*)'WARNING: Times has more than 2 dimension!? ',ndims
      call check(nf90_inquire_dimension(ncid=ncFileID,dimID=dimids(2),len=ntimes))
@@ -4582,7 +4583,7 @@ subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read)
      do i=1,NTime_Read
         do j=1,string_length
            name(j:j)=Times_string(j,i)
-        enddo
+        end do
         call wordsplit(name,string_length,wordarray,nwords,errcode,'_')
         if(DEBUG_NETCDF.and.MasterProc)write(*,*)'date ',trim(wordarray(1)),' hour ',trim(wordarray(2))
         call wordsplit(wordarray(1),wordarraysize,wordarray2,nwords,errcode,'-')
@@ -4595,7 +4596,43 @@ subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read)
         julian_1900=julian_date(1900,1,1)
         diff_1900=julian-julian_1900
         TimesInDays(i)=diff_1900+hh/24.0
-     enddo
+     end do
+  else
+     varname='TFLAG'!SMOKE/CMAQ format
+     status=nf90_inq_varid(ncid=ncFileID, name=varname, varID=VarID)
+     if(status==nf90_noerr)then
+          call check(nf90_Inquire_Variable(ncFileID,VarID,name,xtype,ndims,dimids,nAtts))
+          if(ndims/=3)write(*,*)'WARNING: TSTEP does not have 3 dimensions!? ',ndims
+          call check(nf90_inquire_dimension(ncid=ncFileID,dimID=dimids(3),len=ntimes))
+          if(NTime_Read<1)then
+             if(DEBUG_NETCDF)write(*,*)'reading all time records'
+             NTime_Read=ntimes
+          end if
+          call CheckStop(ntimes<NTime_Read, "to few records in "//trim(fileName))
+          call CheckStop(SIZE(TimesInDays)<NTime_Read,"to many records in "//trim(fileName))
+          
+          allocate(int_times(2,1,ntimes))
+          NTime_Read = ntimes
+!NB: we assume all variables have samre time stamp. Read only for first
+          call check(nf90_get_var(ncFileID, VarID, int_times,count=(/2,1,ntimes/)))
+          do i=1,NTime_Read
+             yyyy=int_times(1,1,i)/1000
+             mo=1!start at beginning of year
+             dd=mod(int_times(1,1,i),1000)!nb day of year!!
+             hh= int_times(1,2,i)/10000 + &
+                  1.0/60*(mod(int_times(1,2,i),10000)/100) + &
+                  1.0/3600*mod(int_times(1,2,i),100)
+             julian=julian_date(yyyy,mo,dd)
+             julian_1900=julian_date(1900,1,1)
+             diff_1900=julian-julian_1900
+             TimesInDays(i)=diff_1900+hh/24.0
+          end do
+          deallocate(int_times)
+       else
+          if(DEBUG_NETCDF)write(*,*)'time variable not found: ',trim(varname)
+          NTime_Read = 0
+       endif
+    endif
   endif
 
   call check(nf90_close(ncFileID))
@@ -4863,7 +4900,7 @@ end subroutine vertical_interpolate
          fractions_out(ijk,N_out)=fractions_out(ijk,N_out)+Rvalues*fraction_in(igjgk,Ng)*latlon_weight/Ncc_out(ijk)*factor
       end if
       val=total
-   enddo
+   end do
  end subroutine readfrac
 
 endmodule NetCDF_ml
