@@ -138,6 +138,14 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+27 Mar 2018, Dave
+
+Small renames, on way to EMEP/ESX merge
+
+mv ChemFunctions_ml.f90 ChemFunctions_ml.f90
+mv Setup1dfields_ml.f90 ZchemData_mod.f90
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 26 Mar 2018, Dave
 
 NetCDF_ml : small debug changes - added dtxt and dtxt_smg
