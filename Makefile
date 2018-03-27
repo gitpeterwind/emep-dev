@@ -92,7 +92,7 @@ F90FLAGS += -cpp $(DFLAGS) $(addprefix -I,$(INCL)) \
 
 # disable div0 exeption (DEBUG=yes) on netcdf/4.3.1 .. netcdf/4.4.0
 ifneq ($(LD),gfortran)
-NetCDF_ml.o:NetCDF_ml.f90
+NetCDF_mod.o:NetCDF_mod.f90
 	$(F90) $(F90FLAGS) -fpe-all=3 -c $< -o $@
 endif
 
@@ -128,9 +128,9 @@ touchdepend:
 ###
 # My_* files pre-requisites
 EMEP HTAP MACC MACC-EVA Polen EmChem16a EmChem09 EmChem09-ESX CRI_v2_R5 eEMEP SR-MACC: \
-	  ./ZD_OZONE/My_Outputs_ml.f90 \
-	  ./ZD_3DVar/My_3DVar_ml.f90 ./ZD_Pollen/My_Pollen_ml.f90 \
-	  ./ZD_EXTRA/My_ESX_ml.f90
+	  ./ZD_OZONE/My_Outputs_mod.f90 \
+	  ./ZD_3DVar/My_3DVar_mod.f90 ./ZD_Pollen/My_Pollen_mod.f90 \
+	  ./ZD_EXTRA/My_ESX_mod.f90
 
 SR-EMEP:    EMEP              # SR is only a different config_emep.nml
 MACC-NMC:   MACC-EVA          # EVA run, with different nest/dump output
@@ -138,11 +138,11 @@ MACC-EVAan: MACC-EVA-3DVar16  # 3DVar run, with EVA nest/dump output
 Pollen:     MACC-Pollen
 
 # Pollen for MACC FC runs
-MACC MACC-Pollen: export SRCS := Pollen_ml.f90 Pollen_const_ml.f90 $(filter-out My_Pollen_ml.f90,$(SRCS))
-MACC MACC-Pollen: ./ZD_Pollen/Pollen_ml.f90 ./ZD_Pollen/Pollen_const_ml.f90
+MACC MACC-Pollen: export SRCS := Pollen_mod.f90 Pollen_const_mod.f90 $(filter-out My_Pollen_mod.f90,$(SRCS))
+MACC MACC-Pollen: ./ZD_Pollen/Pollen_mod.f90 ./ZD_Pollen/Pollen_const_mod.f90
 
 # ESX
-EmChem09-ESX: SRCS := $(filter-out My_ESX_ml.f90,$(SRCS)) $(ESX_SRCS)
+EmChem09-ESX: SRCS := $(filter-out My_ESX_mod.f90,$(SRCS)) $(ESX_SRCS)
 EmChem09-ESX: $(ESX_SRCS) | depend
 
 # Test

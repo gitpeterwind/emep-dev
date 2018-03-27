@@ -303,20 +303,20 @@ else
   $cdir/GenChem.pl
 fi
 
-# Mar 17th 2009, added fake GenSpec_bgn_ml
+# Mar 17th 2009, added fake GenSpec_bgn_mod
 
 #odir=$PWD/ZCM_$run   # We keep output in work-directory
 odir=$wdir           # We keep output in work-directory
 echo $odir
 
-cat GenOut_ChemRates*_ml.inc            > $odir/CM_ChemRates_ml.f90
-cat GenOut_Chem{Spec*,Chemicals}_ml.inc > $odir/CM_ChemSpecs_ml.f90
-cat GenOut_ChemGroups_ml.f90            > $odir/CM_ChemGroups_ml.f90
+cat GenOut_ChemRates*_mod.inc            > $odir/CM_ChemRates_mod.f90
+cat GenOut_Chem{Spec*,Chemicals}_mod.inc > $odir/CM_ChemSpecs_mod.f90
+cat GenOut_ChemGroups_mod.f90            > $odir/CM_ChemGroups_mod.f90
 
-# ../DUMMY_Spec_bgn_ml \
+# ../DUMMY_Spec_bgn_mod \
 
-#mv GenOut_SOA_ml.f90 $odir/CM_SOA_ml.f90
-#mv ChemSOA_ml.f90 $odir/CM_SOA_ml.f90
+#mv GenOut_SOA_mod.f90 $odir/CM_SOA_mod.f90
+#mv ChemSOA_mod.f90 $odir/CM_SOA_mod.f90
 
 mv GenOut_AerExt.inc      $odir/CM_AerExt.inc
 mv GenOut_Reactions1.inc  $odir/CM_Reactions1.inc
