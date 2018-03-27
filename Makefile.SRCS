@@ -26,7 +26,7 @@ SRCS ?=	\
 	PhysicalConstants_ml.f90 PlumeRise_ml.f90 PointSource_ml.f90 \
 	Precision_ml.f90 Radiation_ml.f90 Rb_ml.f90 \
 	ReadField_ml.f90 Rsurface_ml.f90 Runchem_ml.f90 \
-	Setup_1dfields_ml.f90 Sites_ml.f90 SmallUtils_ml.f90 SOA_ml.f90 \
+	Sites_ml.f90 SmallUtils_ml.f90 SOA_ml.f90 \
 	SoilWater_ml.f90 Solver.f90 SeaSalt_ml.f90 StoFlux_ml.f90 \
 	SubMet_ml.f90 Tabulations_ml.f90 TimeDate_ml.f90 TimeDate_ExtraUtil_ml.f90 \
 	Timefactors_ml.f90 Timing_ml.f90 \
