@@ -14,7 +14,7 @@ SRCS ?=	\
 	DryDep_ml.f90 DustProd_ml.f90 EcoSystem_ml.f90  \
 	EmisDef_ml.f90 EmisGet_ml.f90 Emissions_ml.f90 ExternalBICs_ml.f90 \
 	FastJ_ml.f90 ForestFire_ml.f90 Functions_ml.f90 \
-        GasParticleCoeffs_ml.f90 \
+        GasParticleCoeffs_mod.f90 \
 	Gravset_ml.f90 GridAllocate_ml.f90 GridValues_ml.f90 \
 	InterpolationRoutines_ml.f90 \
 	Io_ml.f90 Io_Nums_ml.f90 Io_Progs_ml.f90 KeyValueTypes.f90  LandDefs_ml.f90 Landuse_ml.f90 \
