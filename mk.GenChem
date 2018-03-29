@@ -256,6 +256,7 @@ echo "CDIR $cdir"
 echo "WDIR $wdir"
 sleep 1
 #
+cp $run.shorthand GenIn.shorthand # # Assume shorthands from 1st, main, file
 mv GenIn.species GenIn.species.bk # Safety
 echo "Species Files:" > CM_chempackages.txt
 for FF in ${spcs[@]}; do
