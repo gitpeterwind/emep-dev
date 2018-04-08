@@ -66,7 +66,7 @@ implicit none
 private
 
 ! Subroutines:
-public :: Init_WetDep       ! Call from Unimod
+public :: Init_WetDep       ! Call from emepctm
 public :: WetDep_Budget     ! called here
 public :: init_aqueous
 public :: Setup_Clouds      ! characterises clouds and calls WetDeposition if rain

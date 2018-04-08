@@ -133,7 +133,7 @@ program myeul
 
   if(ANALYSIS)then              ! init 3D-var module
     call DA_3DVar_Init(status)  ! pass settings
-    call CheckStop(status,"DA_3DVar_Init in Unimod")
+    call CheckStop(status,"DA_3DVar_Init in emepctm")
   end if
 
   !*** Timing ********
@@ -383,7 +383,7 @@ program myeul
 
   if(ANALYSIS)then              ! assimilation enabled
     call DA_3DVar_Done(status)  ! done with 3D-var module:
-    call CheckStop(status,"DA_3DVar_Done in Unimod")
+    call CheckStop(status,"DA_3DVar_Done in emepctm")
   end if
 
   CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)

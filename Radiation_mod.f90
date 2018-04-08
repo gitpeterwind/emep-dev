@@ -440,8 +440,8 @@ contains
    ! distribute Idrctt and Idrctn according to this.
 
    ! This routine is from  a stand-alone version of the drydep, so not used
-   ! in Unimod. The subroutine is retained in order to keep the standalone 
-   ! and Unimod code the same
+   ! in emepctm. The subroutine is retained in order to keep the standalone 
+   ! and emepctm code the same
 
           Scale = -999 ! gfortran compilation gives a warning that scale is 
                        ! not set unless  ObsRad > 0.0 

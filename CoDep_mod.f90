@@ -46,7 +46,7 @@ module CoDep_mod
    real, private, save, dimension(0:100)   :: tab_exp_rh  ! For eqn (8.16)
    real, private, save, dimension(0:NTAB) :: &
            tab_acidity_fac,                &
-           tab_F2,&                            ! For Unimod eqn (8.16)
+           tab_F2,&                            ! For emepctm eqn (8.16)
            tab_F4, &                           ! for Rns_NH3
            tab_F3                              !For Rns SO2 
 
@@ -88,7 +88,7 @@ contains
 
   !local terms governing intermediary calculations in the evaluation of NH3_st:
 
-   real, parameter :: BETA=1.0/22.0   ! Rns factors, see Unimod eqn (8.16)
+   real, parameter :: BETA=1.0/22.0   ! Rns factors, see emepctm eqn (8.16)
    real    :: F1, F2           ! Rns factors, NH3
    real    :: F3, F4           ! Rns factors for SO2
    real    :: a_SN             ! so2/nh3 after correction with 0.6
@@ -134,7 +134,7 @@ contains
    end if
 
 
-  !/ 3) Rns_NH3   - see Unimod eqn (8.16)
+  !/ 3) Rns_NH3   - see emepctm eqn (8.16)
   !     Rns_SO2   - Fagerli et al, in preperation
 
 

@@ -3469,7 +3469,7 @@ use netcdf
 
   !-----------------------------------------------------------------------
   !---fast-JX:  INIT_JX is called only once to read in and store all fast-JX data:
-  !PW should be moved to Unimod.f90
+  !PW should be moved to emepctm.f90
   if(first_call)then
 
      call INIT_FJX (TITLJXX,NJX_,NJXX)

@@ -73,7 +73,7 @@ implicit none
 
 ! Nested input/output on FORECAST mode
 integer,private,parameter :: FORECAST_NDUMP_MAX = 4  ! Number of nested output
-integer, public, save     :: FORECAST_NDUMP     = 1  ! Read by Unimod.f90
+integer, public, save     :: FORECAST_NDUMP     = 1  ! Read by emepctm.f90
 ! on FORECAST mode (1: start next forecast; 2-4: NMC statistics)
 type(date), public :: outdate(FORECAST_NDUMP_MAX)=date(-1,-1,-1,-1,-1)
 
@@ -545,13 +545,13 @@ end subroutine wrtxn
 subroutine init_icbc(idate,cdate,ndays,nsecs)
 !----------------------------------------------------------------------------!
 ! Setup IC/BC detailed description.
-! ICs are assumed to come from Unimod.
+! ICs are assumed to come from emepctm.
 !
 ! adv_ic            IC detailed description for all adv species
 ! adv_bc            BC detailed description relevant adv species
-! EXTERNAL_BC       External (non Unimod) BC detailed description/setup
+! EXTERNAL_BC       External (non emepctm) BC detailed description/setup
 ! EXTERNAL_BIC_SET  EXTERNAL_BC has been set (adv_bc=>EXTERNAL_BC)
-!        otherwise  Assume Unimod BCs        (adv_bc=>adv_ic)
+!        otherwise  Assume emepctm BCs        (adv_bc=>adv_ic)
 !----------------------------------------------------------------------------!
   integer,   intent(in), optional :: idate(4)
   type(date),intent(in), optional :: cdate

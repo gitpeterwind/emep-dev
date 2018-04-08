@@ -33,7 +33,7 @@ module ForestFire_mod
 !   fire assimilation system based on observed fire radiative power,
 !   Biogeosciences, 9, 527-554, doi:10.5194/bg-9-527-2012, 2012.
 !----------------------------------------------------------------
-!  Unimod calls just call Fire_Emis(daynumber)
+!  emepctm calls just call Fire_Emis(daynumber)
 !  and put the day-testing code here. This lets the module decide if new
 !  emissions are needed, and keeps all forest-fire logic here
 !----------------------------------------------------------------

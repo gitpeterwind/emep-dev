@@ -154,7 +154,7 @@ type, public :: emep_debug
     ,HOURLY_OUTPUTS  = .false. & !
     ,IOPROG          = .false. &
     ,LANDDEFS        = .false. &
-    ,MAINCODE        = .false. & !< debugs main code (Unimod) driver
+    ,MAINCODE        = .false. & !< debugs main code (emepctm) driver
     ,MOSAICS         = .false. &
     ,MY_DERIVED      = .false. &
     ,pH              = .false. &

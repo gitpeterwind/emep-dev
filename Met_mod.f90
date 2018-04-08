@@ -1,13 +1,13 @@
 module Met_mod
 !=============================================================================
 !  Subroutines:        Frequency  Called from:
-!    MetModel_LandUse             Unimod
-!    MeteoRead         3h         Unimod    - puts data into nr
-!    metfieldint       dt_advec   Unimod
+!    MetModel_LandUse             emepctm
+!    MeteoRead         3h         emepctm    - puts data into nr
+!    metfieldint       dt_advec   emepctm
 !    BLPhysics(numt)   3h         MeteoRead, after met_derived
 !
 ! Alt:
-!  Unimod  do every dt_advec , ....
+!  emepctm  do every dt_advec , ....
 !    call MeteoRead - puts data into nr
 !          Unit changes, special definitions etc...
 !          e.g. converts wind to u_xmj, v_xmi

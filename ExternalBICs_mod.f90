@@ -22,7 +22,7 @@ interface set_extbic
 end interface set_extbic
 
 logical, public, save :: &
-  USE_EXTERNAL_BIC = .false., & ! use external (non Unimod) BCs
+  USE_EXTERNAL_BIC = .false., & ! use external (non emepctm) BCs
   EXTERNAL_BIC_SET = .false., & ! external BC description/setup has been found
   TOP_BC           = .false.    ! BCs include top level
 
@@ -44,7 +44,7 @@ character(len=100),public, save :: &
 character(len=*),public, parameter :: &
   ICBC_FMT="(A24,'=',A24,'*',F7.2,2L2,'=',I4)"
 type, public :: icbc                ! Inital (IC) & Boundary Conditions (BC)
-  character(len=24) :: spcname="none",varname="none" ! Unimod,BC_file names
+  character(len=24) :: spcname="none",varname="none" ! emepctm,BC_file names
   real              :: frac=1.0                      ! fraction to unimod variable
   logical           :: wanted=.false.,found=.false.  ! BC is wanted,found in file
   integer           :: ixadv=-1                      ! adv index, set from %spcname
@@ -56,7 +56,7 @@ type, private :: icbc_desc          ! IC/BC description
 end type icbc_desc
 
 type(icbc), dimension(:), public, pointer :: &
-  EXTERNAL_BC=>null() ! external (non Unimod) BCs detailed description/setup
+  EXTERNAL_BC=>null() ! external (non emepctm) BCs detailed description/setup
 type(icbc), dimension(NSPEC_ADV), private, target, save :: &
   map_bc              ! detailed description/setup from ExternalBICs_bc namelist
 
@@ -66,11 +66,11 @@ character(len=*),private, parameter :: &
 contains
 subroutine Config_ExternalBICs()
 !----------------------------------------------------------------------------!
-! Read basic configuration for external (non Unimod) BCs.
-! ICs are assumed to come from Unimod (Nest_mod.init_icbc).
+! Read basic configuration for external (non emepctm) BCs.
+! ICs are assumed to come from emepctm (Nest_mod.init_icbc).
 !
 ! USE_EXTERNAL_BIC  Use of external BCs  
-!        otherwise  Assume Unimod BCs (.not.EXTERNAL_BIC_SET)
+!        otherwise  Assume emepctm BCs (.not.EXTERNAL_BIC_SET)
 ! EXTERNAL_BIC_NAME description%name to look for on ExternalBICs_bc namelist
 !----------------------------------------------------------------------------!
   integer :: ios
@@ -90,11 +90,11 @@ end subroutine Config_ExternalBICs
 
 subroutine set_extbic_id(idate)
 !----------------------------------------------------------------------------!
-! Read external (non Unimod) BCs description/setup.
-! ICs are assumed to come from Unimod (Nest_mod.init_icbc).
+! Read external (non emepctm) BCs description/setup.
+! ICs are assumed to come from emepctm (Nest_mod.init_icbc).
 !
 ! EXTERNAL_BIC_SET  BC description/setup has been found
-!        otherwise  Assume Unimod BCs (Nest_mod.init_icbc)
+!        otherwise  Assume emepctm BCs (Nest_mod.init_icbc)
 ! description       BCs basic info %name,%version,%mapsize
 ! map_bc            BCs detailed setup from ExternalBICs_bc namelist
 ! EXTERNAL_BC       pointer to the records on map_bc with data (%mapsize)

@@ -44,7 +44,7 @@ implicit none
   integer, parameter, public  :: &
     IO_LOG      = 7   &! General output log (o)
    ,IO_SITES    = 8   &! sites module, first for input(c)
-   ,IO_MYTIM    = 20  &! Unimod.f90(c)-output mytim.out 
+   ,IO_MYTIM    = 20  &! emepctm.f90(c)-output mytim.out 
    ,IO_RES      = 25  &! o3mod,massbud(o) 
    ,IO_DEBUG    = 26  &! keep open, use where needed
    ,IO_TMP      = 27  &! General IO number (files *must* be type (c))

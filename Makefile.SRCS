@@ -14,6 +14,7 @@ SRCS ?=	\
 	Config_module.f90  \
 	DefPhotolysis_mod.f90 Derived_mod.f90 DerivedFields_mod.f90 DO3SE_mod.f90 \
 	DryDep_mod.f90 DustProd_mod.f90 EcoSystem_mod.f90  \
+ 	emep_Main.f90 \
 	EmisDef_mod.f90 EmisGet_mod.f90 Emissions_mod.f90 ExternalBICs_mod.f90 \
 	FastJ_mod.f90 ForestFire_mod.f90 Functions_mod.f90 \
         GasParticleCoeffs_mod.f90 \
@@ -32,7 +33,7 @@ SRCS ?=	\
 	SoilWater_mod.f90 Solver.f90 SeaSalt_mod.f90 StoFlux_mod.f90 \
 	SubMet_mod.f90 Tabulations_mod.f90 TimeDate_mod.f90 TimeDate_ExtraUtil_mod.f90 \
 	Timefactors_mod.f90 Timing_mod.f90 \
-	Trajectory_mod.f90 uEMEP_mod.f90 Units_mod.f90 Unimod.f90 \
+	Trajectory_mod.f90 uEMEP_mod.f90 Units_mod.f90 \
         YieldModifications_mod.f90 \
 	ZchemData_mod.f90 \
         FUTURE_isocom.f90 FUTURE_ISOFWD.f90 FUTURE_isorev.f90 \

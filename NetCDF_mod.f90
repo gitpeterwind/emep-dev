@@ -568,7 +568,7 @@ subroutine CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,IBEGcdf,JBEGcdf,&
   logical, intent(in), optional :: KLEVcdf_from_top
   character(len=*),optional, intent(in):: RequiredProjection
 
-  character(len=*), parameter :: author_of_run='Unimod group'
+  character(len=*), parameter :: author_of_run='emepctm group'
   character(len=19) :: projection_params='90.0 -32.0 0.933013' !set later on
 
   real :: xcoord(GIMAX),ycoord(GJMAX)
