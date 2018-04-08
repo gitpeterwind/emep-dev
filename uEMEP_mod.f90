@@ -4,12 +4,13 @@ module uEMEP_mod
 !
 use CheckStop_mod,     only: CheckStop,StopAll
 use Chemfields_mod,    only: xn_adv
-use ChemSpecs,        only: NSPEC_ADV, NSPEC_SHL,species_adv
+use ChemDims_mod,      only: NSPEC_ADV, NSPEC_SHL,NEMIS_File
+use ChemSpecs_mod,     only: species_adv
 use Country_mod,       only: MAXNLAND,NLAND,Country
 use EmisDef_mod,       only: loc_frac, loc_frac_1d, loc_frac_hour, loc_tot_hour, &
                             loc_frac_hour_inst, loc_tot_hour_inst, &
-                            loc_frac_day, loc_tot_day, loc_frac_month&
-                            , loc_tot_month,loc_frac_full,loc_tot_full, NSECTORS,NEMIS_FILE, &
+                            loc_frac_day, loc_tot_day, loc_frac_month,&
+                            loc_tot_month,loc_frac_full,loc_tot_full, NSECTORS, &
                             EMIS_FILE,nlandcode,landcode,flat_nlandcode,flat_landcode,&
                             sec2tfac_map, sec2hfac_map ,ISNAP_DOM,secemis,&
                             secemis_flat,roaddust_emis_pot,KEMISTOP

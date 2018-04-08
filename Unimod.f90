@@ -22,7 +22,7 @@ program myeul
   use BoundaryConditions_mod, only: BoundaryConditions
   use CheckStop_mod,     only: CheckStop
   use Chemfields_mod,    only: alloc_ChemFields
-  use ChemSpecs,        only: define_chemicals
+  use ChemSpecs_mod,        only: define_chemicals
   use ChemGroups_mod,    only: Init_ChemGroups
   use Country_mod,       only: init_Country
   use DA_3DVar_mod,      only: NTIMING_3DVAR,DA_3DVar_Init, DA_3DVar_Done
@@ -31,6 +31,8 @@ program myeul
   use EcoSystem_mod,     only: Init_EcoSystems
   use Emissions_mod,     only: Emissions, newmonth
   use ForestFire_mod,    only: Fire_Emis
+  use DryDep_mod,        only: init_DryDep ! sets up dry and wet dep
+  !use GasParticleCoeffs_mod, only: init_DryDep ! sets up dry and wet dep
   use GridValues_mod,    only: MIN_ADVGRIDS, GRIDWIDTH_M, Poles,&
                               DefDebugProc, GridRead
   use Io_mod,            only: IO_MYTIM,IO_RES,IO_LOG,IO_NML,IO_DO3SE
@@ -162,7 +164,7 @@ program myeul
 
   call alloc_ChemFields     !allocate chemistry arrays
 !TEST  call define_chemicals()    ! sets up species details
-  call Init_ChemGroups()    ! sets up species details
+  call Init_ChemGroups()      ! sets up species details
 
   call assign_nmax(METSTEP)   ! No. timesteps in inner loop
 
@@ -191,6 +193,8 @@ program myeul
   call MetModel_LandUse(1)   !
 
   call Init_EcoSystems()     ! Defines ecosystem-groups for dep output
+
+  call init_DryDep()        ! sets up dry and wet dep arrays
 
   call Init_Derived()        ! Derived field defs.
 

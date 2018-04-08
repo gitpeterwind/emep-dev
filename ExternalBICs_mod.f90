@@ -4,9 +4,10 @@ module ExternalBICs_mod
 ! Nothing in this file will be used if
 !  EXTERNAL_BIC_SET = .false. in ExternalBICs_config namelist
 use CheckStop_mod,           only: CheckStop
-use ChemSpecs,              only: NSPEC_ADV, species_adv
+use ChemDims_mod,            only: NSPEC_ADV
+use ChemSpecs_mod,           only: species_adv
 use Io_mod,                  only: PrintLog,IO_NML
-use Config_module,      only: MasterProc, DEBUG=>DEBUG_NEST_ICBC
+use Config_module,           only: MasterProc, DEBUG=>DEBUG_NEST_ICBC
 use SmallUtils_mod,          only: find_index
 use TimeDate_mod,            only: date
 use TimeDate_ExtraUtil_mod,  only: date2string

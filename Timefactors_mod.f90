@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2007-2012 met.no
+!*  Copyright (C) 2007-2018 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -54,23 +54,24 @@
 !  for differences in number of days in the month
 !_____________________________________________________________________________
 
-  use CheckStop_mod, only : CheckStop
-  use Country_mod,   only : NLAND,Country
-  use EmisDef_mod,   only : NEMIS_FILE, EMIS_FILE, ISNAP_DOM, NSECTORS_SNAP,N_TFAC
+  use CheckStop_mod, only: CheckStop
+  use ChemDims_mod,  only: NEMIS_File 
+  use Country_mod,   only: NLAND,Country
+  use EmisDef_mod,   only: EMIS_FILE, ISNAP_DOM, NSECTORS_SNAP,N_TFAC
   use GridValues_mod    , only : i_fdom,j_fdom, debug_proc,debug_li,debug_lj
   use InterpolationRoutines_mod, only : Averageconserved_interpolate
-  use Met_mod,       only : Getmeteofield
-  use Config_module, only : MasterProc, DEBUG => DEBUG_EMISTIMEFACS
-  use Config_module, only : IIFULLDOM, JJFULLDOM
-  use Config_module, only : iyr_trend ,USES  ! for GRIDDED_EMIS_MONTHLY_FACTOR 
-  use Config_module, only : INERIS_SNAP1, INERIS_SNAP2, DegreeDayFactorsFile,Monthly_patternsFile&
+  use Met_mod,       only: Getmeteofield
+  use Config_module, only: MasterProc, DEBUG => DEBUG_EMISTIMEFACS
+  use Config_module, only: IIFULLDOM, JJFULLDOM
+  use Config_module, only: iyr_trend ,USES  ! for GRIDDED_EMIS_MONTHLY_FACTOR 
+  use Config_module, only: INERIS_SNAP1, INERIS_SNAP2, DegreeDayFactorsFile,Monthly_patternsFile&
                                 ,DailyFacFile,MonthlyFacFile,HourlyFacFile,TXTLEN_FILE
-  use NetCDF_mod,    only : GetCDF , ReadField_CDF
-  use Par_mod,       only : MAXLIMAX,MAXLJMAX, limax,ljmax, me, li0, lj0, li1, lj1
-  use Par_mod,       only : IRUNBEG, JRUNBEG, MSG_READ8
-  use PhysicalConstants_mod, only : PI
-  use SmallUtils_mod,    only: find_index, key2str
-  use Io_mod,        only :            &
+  use NetCDF_mod,    only: GetCDF , ReadField_CDF
+  use Par_mod,       only: MAXLIMAX,MAXLJMAX, limax,ljmax, me, li0, lj0, li1, lj1
+  use Par_mod,       only: IRUNBEG, JRUNBEG, MSG_READ8
+  use PhysicalConstants_mod, only: PI
+  use SmallUtils_mod, only: find_index, key2str
+  use Io_mod,        only:            &
                      open_file,       & ! subroutine
                      check_file,       & ! subroutine
                      PrintLog,        &

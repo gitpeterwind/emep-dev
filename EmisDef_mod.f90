@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************!
 !*
-!*  Copyright (C) 2007-2011 met.no
+!*  Copyright (C) 2007-2018 met.no
 !*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -34,7 +34,9 @@
 ! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 !_____________________________________________________________________________
+use ChemDims_mod, only : NEMIS_File
 implicit none
+private
 
     !----------------- basic emissions file definitions --------------------!
     !  Here we define the parameters *not* likely to change often           !
@@ -83,25 +85,25 @@ implicit none
    integer, save, public :: & !must be compatible with:
       ! timefac, fac_ehh24x7, fac_edd, fac_emm, fac_min, GridTfac, ISNAP_DOM, ISNAP_TRAF
           N_TFAC  = 11  ! Number of timefactor classes defined
-   integer, save, pointer, dimension(:) :: sec2tfac_map => null()! mapping of sector to time factor class
+   integer, save, pointer, dimension(:), public :: sec2tfac_map => null()! mapping of sector to time factor class
    integer, save, public :: & !must be compatible with:
           N_HFAC  = 11  ! Number of height distribution classes defined
-   integer, save, pointer, dimension(:) :: sec2hfac_map => null()! mapping of sector to height distribution class
+   integer, save, pointer, dimension(:), public :: sec2hfac_map => null()! mapping of sector to height distribution class
    integer, save, public :: & !must be compatible with: emisfrac
           N_SPLIT  = 11  ! Number of speciation classes defined
-   integer, save, pointer, dimension(:) :: sec2split_map => null()! mapping of sector to speciation class
+   integer, save, pointer, dimension(:), public :: sec2split_map => null()! mapping of sector to speciation class
 
 !SNAP specific definitions
    integer, public, parameter :: &
           NSECTORS_SNAP  = 11    ! Number of sectors defined in SNAP emissions. Do not modify
-   integer, save, target, dimension(NSECTORS_SNAP) :: & ! mapping of sector to time factor class
+   integer, save, target, dimension(NSECTORS_SNAP), public :: & ! mapping of sector to time factor class
         SNAP_sec2tfac_map = (/1,2,3,4,5,6,7,8,9,10,11/) !values must be <= N_TFAC
-   integer, save, target, dimension(NSECTORS_SNAP) :: & ! mapping of sector to height distribution class
+   integer, save, target, dimension(NSECTORS_SNAP), public :: & ! mapping of sector to height distribution class
         SNAP_sec2hfac_map = (/1,2,3,4,5,6,7,8,9,10,11/) !values must be <= N_HFAC
-   integer, save, target, dimension(NSECTORS_SNAP) :: & ! mapping of sector to height distribution class
+   integer, save, target, dimension(NSECTORS_SNAP), public :: & ! mapping of sector to height distribution class
         SNAP_sec2split_map = (/1,2,3,4,5,6,7,8,9,10,11/) !values must be <= N_SPECIATION
 !   integer, save, dimension(NSECTORS_SNAP) ::snap2gnfr=(/1,3,2,4,13,5,6,7,10,11,-1/)
-   integer, save, dimension(NSECTORS_SNAP,3) ::snap2gnfr=reshape([1,3,2,4,13,5,6,7,10,11,-1 &
+   integer, save, dimension(NSECTORS_SNAP,3), public ::snap2gnfr=reshape([1,3,2,4,13,5,6,7,10,11,-1 &
                                                           ,-1,-1,-1,-1,-1,-1,-1,8,-1,12,-1 &
                                                           ,-1,-1,-1,-1,-1,-1,-1,9,-1,-1,-1 &
                                                           ],shape(snap2gnfr))
@@ -109,23 +111,23 @@ implicit none
 !GNFR  specific definitions
    integer, public, parameter :: &
           NSECTORS_GNFR  = 13    ! Number of sectors defined in GNFR emissions
-   integer, save, target, dimension(NSECTORS_GNFR) :: & ! mapping of sector to time factor class
+   integer, save, target, dimension(NSECTORS_GNFR), public :: & ! mapping of sector to time factor class
         GNFR_sec2tfac_map = (/1,3,2,4,6,7,8,8,8,9,10,10,5/) !values must be <= N_TFAC
-   integer, save, target, dimension(NSECTORS_GNFR) :: & ! mapping of sector to height distribution class
+   integer, save, target, dimension(NSECTORS_GNFR), public :: & ! mapping of sector to height distribution class
         GNFR_sec2hfac_map = (/1,3,2,4,6,7,8,8,8,9,10,10,5/) !values must be <= N_HFAC
-   integer, save, target, dimension(NSECTORS_GNFR) :: & ! mapping of sector to height distribution class
+   integer, save, target, dimension(NSECTORS_GNFR), public :: & ! mapping of sector to height distribution class
         GNFR_sec2split_map = (/1,3,2,4,6,7,8,8,8,9,10,10,5/) !values must be <= N_SPECIATION
 
-   integer, save, dimension(NSECTORS_GNFR) ::gnfr2snap=(/1,3,2,4,6,7,8,-1,-1,9,10,-1,5/)
+   integer, save, dimension(NSECTORS_GNFR), public ::gnfr2snap=(/1,3,2,4,6,7,8,-1,-1,9,10,-1,5/)
 
 !TEST  specific definitions
-   integer, public, parameter :: &
+   integer, public, parameter:: &
           NSECTORS_TEST  = 11    ! Number of sectors defined in SNAP emissions. Do not modify
-   integer, save, target, dimension(NSECTORS_TEST) :: & ! mapping of sector to time factor class
+   integer, save, target, dimension(NSECTORS_TEST), public :: & ! mapping of sector to time factor class
         TEST_sec2tfac_map = (/1,2,3,4,5,6,7,8,9,10,11/) !values must be <= N_TFAC
-   integer, save, target, dimension(NSECTORS_TEST) :: & ! mapping of sector to height distribution class
+   integer, save, target, dimension(NSECTORS_TEST), public :: & ! mapping of sector to height distribution class
         TEST_sec2hfac_map = (/1,2,3,4,5,6,7,8,9,10,11/) !values must be <= N_HFAC
-   integer, save, target, dimension(NSECTORS_TEST) :: & ! mapping of sector to height distribution class
+   integer, save, target, dimension(NSECTORS_TEST), public :: & ! mapping of sector to height distribution class
         TEST_sec2split_map = (/1,2,3,4,5,6,7,8,9,10,11/) !values must be <= N_SPECIATION
 
 
@@ -251,8 +253,8 @@ integer, public, save ::NO_ix,NO2_ix,SO2_ix,SO4_ix,CO_ix,REMPPM25_ix&
 logical, public, save :: FOUND_Special_ShipEmis = .false.
 
 !used for EEMEP 
-real, allocatable, save, dimension(:,:,:,:)       ::  Emis_4D !(i,j,k,pollutant)
-integer, save ::N_Emis_4D=0 !number of pollutants to read
+real, allocatable, save, dimension(:,:,:,:), public       ::  Emis_4D !(i,j,k,pollutant)
+integer, save, public ::N_Emis_4D=0 !number of pollutants to read
 integer, public, save :: Found_Emis_4D = 0 
 
 integer, public, save :: KEMISTOP ! not defined yet= KMAX_MID - nemis_kprofile + 1
@@ -260,7 +262,7 @@ integer, public, save :: KEMISTOP ! not defined yet= KMAX_MID - nemis_kprofile +
 
  ! Names of emis files, generated by GenChem:
 
-     include 'CM_EmisFiles.inc'
+     include 'CM_EmisFile.inc'
 
  ! Road dust emission files (should perhaps be added to GenChem in the future?)
 

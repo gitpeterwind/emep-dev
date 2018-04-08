@@ -29,9 +29,10 @@ module My_Derived_mod
 use AOTx_mod,          only: VEGO3_OUTPUTS, nOutputVegO3,OutputVegO3
 use CheckStop_mod,     only: CheckStop
 use Chemfields_mod,    only: xn_adv, xn_shl, cfac
-use ChemSpecs             ! Use IXADV_ indices...
-use ChemGroups_mod         ! Allow all groups to ease compilation
+use ChemDims_mod          ! Use IXADV_ indices...
+use ChemGroups_mod        ! Allow all groups to ease compilation
                           !  eg. OXN_GROUP, DDEP_OXNGROUP, BVOC_GROUP
+use ChemSpecs_mod         ! Use IXADV_ indices...
 use EmisDef_mod,       only: NSECTORS, EMIS_FILE, NEMIS_FILE, SecEmisOut, Nneighbors
 use EmisGet_mod,       only: nrcemis, iqrc2itot
 use GridValues_mod,    only: RestrictDomain

@@ -12,7 +12,7 @@ module StoFlux_mod
   use PhysicalConstants_mod, only : AVOG, KARMAN
   use SmallUtils_mod, only : find_index
   use SubMet_mod, only : Sub
-  use GasParticleCoeffs_mod, only : WES_O3, Rb_cor
+  use GasParticleCoeffs_mod, only: DDspec !A2018 WES_O3, Rb_cor
   implicit none
   private
 
@@ -33,6 +33,7 @@ module StoFlux_mod
 
   real, private, save :: gext_leaf = 1.0/2500.0
   real, private :: rc_leaf, rb_leaf
+  integer, private, save :: idepO3  ! A2018
 
 
 
@@ -46,6 +47,7 @@ contains
     integer ::  istat, iL
 
      if ( my_first_call ) then
+       idepO3 = find_index('O3',DDspec(:)%name) ! A2018
        allocate(SumVPD(LIMAX,LJMAX,nSumVPD),stat=istat)
        allocate(old_gsun(LIMAX,LJMAX,nSumVPD),stat=istat)
        do iL = 1, NLANDUSEMAX
@@ -55,17 +57,14 @@ contains
        end do
      end if
 
+     Sub(:)%FstO3 = 0.0
 
-       Sub(:)%FstO3 = 0.0
-
-
-       ! resets whole grid on 1st day change
-       if ( jd /= old_daynumber ) then
-           SumVPD   = 0.0    ! For Critical VPD stuff, wheat
-           old_gsun = 1.0e99 ! "     "
-           old_daynumber = jd
-       end if
-
+    ! resets whole grid on 1st day change
+     if ( jd /= old_daynumber ) then
+        SumVPD   = 0.0    ! For Critical VPD stuff, wheat
+        old_gsun = 1.0e99 ! "     "
+        old_daynumber = jd
+    end if
 
   end subroutine Setup_StoFlux
 
@@ -180,7 +179,8 @@ contains
             gv = 0.0
             gvcms = 0.0
             if( L%g_sto > 1.0e-10 ) then
-              gv = 1.0/ (2.0 * Rb_cor(WES_O3) /(KARMAN*L%ustar) + 1.0/ ( L%g_sto * L%LAI ) )
+              !A2018 gv = 1.0/ (2.0 * Rb_cor(WES_O3) /(KARMAN*L%ustar) + 1.0/ ( L%g_sto * L%LAI ) )
+              gv = 1.0/ (2.0 * DDspec(idepO3)%Rb_cor /(KARMAN*L%ustar) + 1.0/ ( L%g_sto * L%LAI ) )
               gvcms = gv
 
          ! Step 2: Convert to mole/m2/s and for H2O

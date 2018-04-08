@@ -154,26 +154,26 @@ TEST:
 EMEP HTAP MACC MACC-EVA MACC-Pollen EmChem16a EmChem09 EmChem09-ESX CRI_v2_R5 eEMEP SR-MACC:
 	ln -sf $(filter %.f90 %.inc,$+) . && $(MAKE)
 
-# GenChem config
-.SECONDEXPANSION:
-EMEP:               GenChem-EMEP-EmChem16a
-EmChem09 CRI_v2_R5: GenChem-EMEP-$$@
-EmChem09-ESX:       GenChem-EMEP-EmChem09
-HTAP MACC SR-MACC:  GenChem-$$@-EmChem16a
-MACC-EVA:           GenChem-MACCEVA-EmChem16a
-MACC-Pollen:        GenChem-MACCEVA-Pollen
-eEMEP ?= Emergency # Emergency | AshInversion
-eEMEP:              $$(eEMEP) GenChem-$$@-Emergency
-
-GenChem%:
-	./mk.GenChem $(GenChemOptions) -q
-GenChem-%:          GenChemOptions += -r $(lastword $(subst -, ,$*))
-GenChem-EMEP-%:     GenChemOptions += -f FINNv1.5 -e SeaSalt,Dust,Isotopes
-GenChem-HTAP-%:     GenChemOptions += -f GFED     -e SeaSalt,Dust,Isotopes
-GenChem-MACC-%:     GenChemOptions += -f GFASv1   -e SeaSalt,Dust,../ZCM_Pollen/Pollen
-GenChem-SR-MACC-%:  GenChemOptions += -f GFASv1   -e none
-GenChem-MACCEVA-%:  GenChemOptions += -f GFASv1   -e SeaSalt,Dust
-GenChem-eEMEP-%:    GenChemOptions += -f GFASv1   -e SeaSalt,Dust
+#DSA2018# GenChem config
+#DSA2018.SECONDEXPANSION:
+#DSA2018EMEP:               GenChem-EMEP-EmChem16a
+#DSA2018EmChem09 CRI_v2_R5: GenChem-EMEP-$$@
+#DSA2018EmChem09-ESX:       GenChem-EMEP-EmChem09
+#DSA2018HTAP MACC SR-MACC:  GenChem-$$@-EmChem16a
+#DSA2018MACC-EVA:           GenChem-MACCEVA-EmChem16a
+#DSA2018MACC-Pollen:        GenChem-MACCEVA-Pollen
+#DSA2018eEMEP ?= Emergency # Emergency | AshInversion
+#DSA2018eEMEP:              $$(eEMEP) GenChem-$$@-Emergency
+#DSA2018
+#DSA2018GenChem%:
+#DSA2018	./mk.GenChem $(GenChemOptions) -q
+#DSA2018GenChem-%:          GenChemOptions += -r $(lastword $(subst -, ,$*))
+#DSA2018GenChem-EMEP-%:     GenChemOptions += -f FINNv1.5 -e SeaSalt,Dust,Isotopes
+#DSA2018GenChem-HTAP-%:     GenChemOptions += -f GFED     -e SeaSalt,Dust,Isotopes
+#DSA2018GenChem-MACC-%:     GenChemOptions += -f GFASv1   -e SeaSalt,Dust,../ZCM_Pollen/Pollen
+#DSA2018GenChem-SR-MACC-%:  GenChemOptions += -f GFASv1   -e none
+#DSA2018GenChem-MACCEVA-%:  GenChemOptions += -f GFASv1   -e SeaSalt,Dust
+#DSA2018GenChem-eEMEP-%:    GenChemOptions += -f GFASv1   -e SeaSalt,Dust
 
 # eEMP Default Scenarios: Vents, NPPs & NUCs
 Emergency: VENTS ?= DefaultVolcano

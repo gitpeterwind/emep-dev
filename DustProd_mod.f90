@@ -23,7 +23,7 @@
  use Biogenics_mod,         only : EmisNat, EMIS_BioNat
  use CheckStop_mod,         only : CheckStop
  use Functions_mod,         only : ERFfunc
- use ChemSpecs,            only : species
+ use ChemSpecs_mod,            only : species
  use GridValues_mod,        only : glat, glon, i_fdom, j_fdom 
  use GridValues_mod,        only : debug_proc, debug_li, debug_lj
  use Io_mod,                only : PrintLog, datewrite

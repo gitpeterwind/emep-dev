@@ -8,6 +8,9 @@ module Sites_mod
 ! -----------------------------------------------------------------------
 
 use CheckStop_mod,  only : CheckStop, StopAll
+use ChemDims_mod,       only: NSPEC_SHL, NSPEC_ADV
+use ChemSpecs_mod
+use ChemGroups_mod,     only: OXN_GROUP, PMFINE_GROUP, PMCO_GROUP
 use My_Outputs_mod, only : &  ! for sitesout
       NSITES_MAX, &
       NADV_SITE, NSHL_SITE, NXTRA_SITE_MISC, NXTRA_SITE_D2D, &
@@ -24,8 +27,6 @@ use GridValues_mod,     only : lb2ij, i_fdom, j_fdom &
 use Io_mod,             only : check_file,open_file,ios &
                               , fexist, IO_SITES, IO_SONDES &
                               , Read_Headers,read_line
-use ChemSpecs
-use ChemGroups_mod,     only : OXN_GROUP, PMFINE_GROUP, PMCO_GROUP
 use MetFields_mod,      only : t2_nwp, th, pzpbl  &  ! output with concentrations
                               , z_bnd, z_mid, roa, Kz_m2s, q
 use MetFields_mod,      only : u_xmj, v_xmi, ps

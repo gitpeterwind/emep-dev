@@ -10,7 +10,7 @@
 
   use CheckStop_mod,       only : StopAll
   use ChemFields_mod             ! => cell_tinv,  NSPEC_TOT, O3, NO2, etc.
-  use ChemSpecs                  ! => NSPEC_TOT, O3, NO2, etc.
+  use ChemSpecs_mod              ! => NSPEC_TOT, O3, NO2, etc.
   use Config_module,  only : MasterProc, DebugCell, DEBUG, USES &
                             ,YieldModifications ! JPCIsoYield
   use NumberConstants,    only : UNDEF_R, UNDEF_I

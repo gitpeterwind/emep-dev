@@ -25,7 +25,7 @@ module PointSource_mod
 ! --- prelim module to introduce point sources.
 !
 use CheckStop_mod,       only: CheckStop
-use ChemSpecs,          only: species
+use ChemSpecs_mod,          only: species
 use Functions_mod,       only: StandardAtmos_kPa_2_km, Tpot_2_T
 use GridValues_mod,      only: sigma_bnd, debug_proc &
                          , coord_in_processor, GridArea_m2

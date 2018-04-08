@@ -1,11 +1,11 @@
 module ChemFields_mod
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-use AllocInits,   only: AllocInit
-use ChemSpecs,    only: NSPEC_ADV, NSPEC_SHL, NSPEC_TOT, & ! => No. species 
-                    FIRST_SEMIVOL, LAST_SEMIVOL ! both -999 unless SOA used
-use Config_module,    only: KMAX_MID, KCHEMTOP, AERO        ! =>  z dimension
-use NumberConstants,      only: UNDEF_R
-use Par_mod,               only: LIMAX,LJMAX   ! => x, y dimensions
+use AllocInits,     only: AllocInit
+use ChemDims_mod,   only: NSPEC_ADV, NSPEC_SHL, NSPEC_TOT ! => No. species 
+use ChemSpecs_mod,  only: FIRST_SEMIVOL, LAST_SEMIVOL    ! -999 unless SOA used
+use Config_module,  only: KMAX_MID, KCHEMTOP, AERO       ! =>  z dimension
+use NumberConstants,  only: UNDEF_R
+use Par_mod,        only: LIMAX,LJMAX   ! => x, y dimensions
 use ZchemData_mod
 implicit none
 private

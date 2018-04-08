@@ -1,8 +1,9 @@
 module Units_mod
 use CheckStop_mod,         only: CheckStop
 use ChemGroups_mod,        only: chemgroups
-use ChemSpecs,            only: NSPEC_ADV, NSPEC_SHL, species_adv
-use Config_module,    only: PPBINV
+use ChemDims_mod,          only: NSPEC_ADV, NSPEC_SHL
+use ChemSpecs_mod,         only: species_adv
+use Config_module,         only: PPBINV
 use PhysicalConstants_mod, only: AVOG,ATWAIR
 use Pollen_const_mod,      only: pollen_check
 use OwnDataTypes_mod,      only: TXTLEN_DERIV,TXTLEN_SHORT,Asc2D
@@ -227,7 +228,7 @@ subroutine Units_Scale(txtin,iadv,unitscale,unitstxt,volunit,needroa,semivol,deb
   character(len=len(txtin)) :: txt
   integer :: i
 
-  if(Initialize_Units) call Init_Units
+  if(Initialize_Units) call Init_Units()
   txt=ADJUSTL(txtin)                    ! Remove leading spaces
   do i=1,len(txt)                       ! Remove invisible character
     if(ichar(txt(i:i))==0)txt(i:i)=' '  ! char(0)

@@ -196,7 +196,7 @@ module Ammonium_mod
      !   in order to have same structure as with EQSAM and MARS 
      !-------------------------------------------------------------------------
 
- use ChemSpecs,         only : SO4, NH4_f, NO3_f, NH3, HNO3
+ use ChemSpecs_mod,         only : SO4, NH4_f, NO3_f, NH3, HNO3
  use ZchemData_mod, only :  xn => xn_2d
 
    real, dimension(KCHEMTOP:KMAX_MID)  ::  rcnh4 ! equilib. value

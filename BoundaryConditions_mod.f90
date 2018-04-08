@@ -35,7 +35,8 @@ module BoundaryConditions_mod
 
 use CheckStop_mod,      only: CheckStop
 use Chemfields_mod,     only: xn_adv, xn_bgn, NSPEC_BGN  ! emep model concs.
-use ChemSpecs                ! provide species names, NSPEC_ADV and IXADV_*
+use ChemDims_mod,       only: NSPEC_SHL,NSPEC_ADV
+use ChemSpecs_mod                ! provide species names, IXADV_*
 use Functions_mod,   only: StandardAtmos_kPa_2_km ! for use in Hz scaling
 use GridValues_mod,     only: glon, glat   & ! full domain lat, long
                             ,debug_proc, debug_li, debug_lj & ! debugging

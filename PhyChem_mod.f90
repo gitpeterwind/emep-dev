@@ -10,7 +10,8 @@ use Advection_mod,     only: advecdiff_poles,advecdiff_Eta!,adv_int
 use Biogenics_mod,     only: Set_SoilNOx
 use CheckStop_mod,     only: CheckStop
 use Chemfields_mod,    only: xn_adv,cfac,xn_shl
-use ChemSpecs,        only: IXADV_SO2, IXADV_NH3, IXADV_O3, NSPEC_SHL, species
+use ChemDims_mod,      only: NSPEC_SHL
+use ChemSpecs_mod,     only: IXADV_SO2, IXADV_NH3, IXADV_O3, species
 use CoDep_mod,         only: make_so2nh3_24hr
 use Config_module,only: MasterProc, KMAX_MID, nmax, nstep,END_OF_EMEPDAY &
                            ,dt_advec       & ! time-step for phyche/advection
@@ -339,4 +340,4 @@ subroutine debug_concs(txt)
   end if
 end subroutine debug_concs
 !--------------------------------------------------------------------------
-endmodule PhyChem_mod
+end module PhyChem_mod

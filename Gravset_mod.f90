@@ -5,14 +5,13 @@ module Gravset_mod
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 use CheckStop_mod,         only: CheckStop
 use Chemfields_mod,        only: xn_adv
-use ChemChemicals_mod,     only: species_adv
-use ChemSpecs_adv_mod
-use ChemSpecs_shl_mod,     only: NSPEC_SHL
+use ChemDims_mod,          only: NSPEC_SHL
 use ChemGroups_mod,        only: chemgroups
+use ChemSpecs_mod,         only: species_adv
 use DerivedFields_mod,     only: f_3d,d_3d ! debug output
 use GridValues_mod,        only: A_mid,B_mid,A_bnd,B_bnd
 use MetFields_mod,         only: roa,th,ps
-use Config_module,    only: KMAX_MID,KMAX_BND,dt_advec,MasterProc,&
+use Config_module,         only: KMAX_MID,KMAX_BND,dt_advec,MasterProc,&
                                 IOU_INST,num_lev3d,lev3d
 use Par_mod,               only: MAXLIMAX,MAXLJMAX,li0,li1,lj0,lj1
 use PhysicalConstants_mod, only: GRAV

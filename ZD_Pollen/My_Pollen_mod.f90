@@ -8,8 +8,8 @@
 ! Pollen particles are assumed of 22 um diameter and 800 kg/m3 density. 
 !-----------------------------------------------------------------------!
 module Pollen_const_mod
-use Config_module,    only: USES,DEBUG
-use ChemSpecs,            only: NSPEC_ADV
+use Config_module,         only: USES,DEBUG
+use ChemDims_mod,          only: NSPEC_ADV
 use CheckStop_mod,         only: CheckStop
 implicit none
 public

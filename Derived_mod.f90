@@ -31,15 +31,17 @@ use Chemfields_mod,    only: xn_adv, xn_shl, cfac,xn_bgn, AOD,  &
                             Fgas3d, & ! FSOA
                             Extin_coeff, PM25_water, PM25_water_rh50
 use Chemfields_mod ,   only: so2nh3_24hr,Grid_snow
-use ChemGroups_mod     ! SIA_GROUP, PMCO_GROUP -- use tot indices
-use ChemSpecs         ! Use NSPEC_ADV amd any of IXADV_ indices
+use ChemDims_mod,      only: NSPEC_ADV, NSPEC_SHL,NEMIS_File
+use ChemGroups_mod          ! SIA_GROUP, PMCO_GROUP -- use tot indices
+use ChemSpecs_mod           ! IXADV_ indices etc
 use DerivedFields_mod, only: MAXDEF_DERIV2D, MAXDEF_DERIV3D, &
                             def_2d, def_3d, f_2d, f_3d, d_2d, d_3d
 use EcoSystem_mod,     only: DepEcoSystem, NDEF_ECOSYSTEMS, &
                             EcoSystemFrac,FULL_ECOGRID
 use EmisDef_mod,       only: NSECTORS, EMIS_FILE, O_DMS, O_NH3, loc_frac, Nneighbors&
-                            ,SumSecEmisOut, SumSecEmis, SumSplitEmis, SecEmisOut, NEMIS_FILE
+                            ,SumSecEmisOut, SumSecEmis, SumSplitEmis, SecEmisOut
 use EmisGet_mod,       only: nrcemis,iqrc2itot
+use GasParticleCoeffs_mod, only: DDspec !A2018
 use GridValues_mod,    only: debug_li, debug_lj, debug_proc, A_mid, B_mid, &
                             dA,dB,xm2, GRIDWIDTH_M, GridArea_m2,xm_i,xm_j,glon,glat
 use Io_Progs_mod,      only: datewrite
@@ -165,6 +167,8 @@ contains
 !=========================================================================
 subroutine Init_Derived()
   integer :: alloc_err
+  integer :: idcmpPMc
+  character(len=*), parameter :: dtxt='IniDeriv:' !debug label
   dbg0 = (DEBUG%DERIVED .and. MasterProc )
 
   allocate(D2_O3_DAY( LIMAX, LJMAX, NTDAY))
@@ -172,34 +176,34 @@ subroutine Init_Derived()
 
   if(USE_uEMEP .and. (uEMEP%HOUR_INST.or.uEMEP%HOUR)) HourlyEmisOut = .true.
 
-  if(dbg0) write(*,*) "INIT My DERIVED STUFF"
+  if(dbg0) write(*,*) dtxt//"INIT STUFF"
   call Init_My_Deriv()  !-> wanted_deriv2d, wanted_deriv3d
 
   ! get lengths of wanted arrays (excludes notset values)
   num_deriv2d = LenArray(wanted_deriv2d,NOT_SET_STRING)
   num_deriv3d = LenArray(wanted_deriv3d,NOT_SET_STRING)
 
-  call CheckStop(num_deriv2d<1,"num_deriv2d<1 !!")
+  call CheckStop(num_deriv2d<1,dtxt//"num_deriv2d<1 !!")
 
   if(num_deriv2d > 0) then
-    if(dbg0) write(*,*) "Allocate arrays for 2d:", num_deriv2d
+    if(dbg0) write(*,*) dtxt//"Allocate arrays for 2d:", num_deriv2d
     allocate(f_2d(num_deriv2d),stat=alloc_err)
-    call CheckStop(alloc_err,"Allocation of f_2d")
+    call CheckStop(alloc_err,dtxt//"Allocation of f_2d")
     allocate(d_2d(num_deriv2d,LIMAX,LJMAX,LENOUT2D),stat=alloc_err)
-    call CheckStop(alloc_err,"Allocation of d_2d")
-    call CheckStop(alloc_err,"Allocation of d_3d")
+    call CheckStop(alloc_err,dtxt//"Allocation of d_2d")
+    call CheckStop(alloc_err,dtxt//"Allocation of d_3d")
     allocate(nav_2d(num_deriv2d,LENOUT2D),stat=alloc_err)
-    call CheckStop(alloc_err,"Allocation of nav_2d")
+    call CheckStop(alloc_err,dtxt//"Allocation of nav_2d")
     nav_2d = 0
   end if
   if(num_deriv3d > 0) then
-    if(dbg0) write(*,*) "Allocate arrays for 3d: ", num_deriv3d
+    if(dbg0) write(*,*) dtxt//"Allocate arrays for 3d: ", num_deriv3d
     allocate(f_3d(num_deriv3d),stat=alloc_err)
-    call CheckStop(alloc_err,"Allocation of f_3d")
+    call CheckStop(alloc_err,dtxt//"Allocation of f_3d")
     allocate(d_3d(num_deriv3d,LIMAX,LJMAX,num_lev3d,LENOUT3D),&
             stat=alloc_err)
     allocate(nav_3d(num_deriv3d,LENOUT3D),stat=alloc_err)
-    call CheckStop(alloc_err,"Allocation of nav_3d")
+    call CheckStop(alloc_err,dtxt//"Allocation of nav_3d")
     nav_3d = 0
   end if
 
@@ -220,13 +224,17 @@ subroutine Init_Derived()
   call Define_Derived()
   call Setups()  ! just for VOC now
 
-  select case(nint(AERO%DpgV(2)*1e7))
+!A2018   select case(nint(AERO%DpgV(2)*1e7))
+  idcmpPMc = find_index('PMc',DDspec(:)%name)
+print *, dtxt//'idcmp', idcmpPMc, DDspec(idcmpPMc)%name, DDspec(idcmpPMc)%DpgV
+  select case(nint(DDspec(idcmpPMc)%DpgV*1e7))
     case(25);fracPM25=0.37
     case(30);fracPM25=0.27
   end select
-  if(dbg0) write(*,"(a,2g12.3,i4)") ' CFAC INIT PMFRACTION ', &
-      fracPM25, AERO%DpgV(2), nint(1.0e7*AERO%DpgV(2))
-  call CheckStop( fracPM25 < 0.01, "NEED TO SET FRACPM25")
+  if(dbg0) write(*,"(a,i4,2g12.3,i4)") dtxt//' CFAC INIT PMFRACTION Dpgv(um)',&
+    idcmpPMc, fracPM25, nint(1.0e7* DDspec(idcmpPMc)%DpgV )
+!S2018      fracPM25, AERO%DpgV(2), nint(1.0e7*AERO%DpgV(2))
+  call CheckStop( fracPM25 < 0.01, dtxt//"NEED TO SET FRACPM25")
 
 end subroutine Init_Derived
 !=========================================================================
@@ -630,7 +638,7 @@ subroutine Define_Derived()
   end do ! ind
 
   isec_poll = 0
-  do  i = 1, NEMIS_FILE
+  do  i = 1, NEMIS_File
      if(SecEmisOut(i))then
         do isec=1,NSECTORS
            write(dname,"(A,I0,A)")"Emis_mgm2_sec",isec,trim(EMIS_FILE(i))
@@ -1041,10 +1049,10 @@ subroutine Derived(dt,End_of_Day,ONLY_IOU)
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = SurfArea_um2cm3(AERO%DU_C,i,j)
       end forall
-    case ( "SurfAreaORIG_um2cm3" )
-       forall ( i=1:limax, j=1:ljmax )
-         d_2d( n, i,j,IOU_INST) = SurfArea_um2cm3(AERO%ORIG,i,j)
-       end forall
+!A2018    case ( "SurfAreaORIG_um2cm3" )
+!A2018       forall ( i=1:limax, j=1:ljmax )
+!A2018         d_2d( n, i,j,IOU_INST) = SurfArea_um2cm3(AERO%ORIG,i,j)
+!A2018       end forall
 
     case ( "u_ref" )
       forall ( i=1:limax, j=1:ljmax )

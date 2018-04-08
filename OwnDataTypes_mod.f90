@@ -1,6 +1,8 @@
-!> OwnDataTypes_mod.f90 - A component of the EMEP MSC-W Chemical transport Model
-!! ***************************************************************************! 
-
+! <OwnDataTypes_mod.f90 - A component of the EMEP MSC-W Chemical transport Model>
+!*****************************************************************************! 
+!*    You should have received a copy of the GNU General Public License
+!*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+!*****************************************************************************! 
 module OwnDataTypes_mod
 use NumberConstants, only : UNDEF_I, UNDEF_R
 implicit none
@@ -22,14 +24,17 @@ integer, public, parameter :: &
 ! Deriv used in My_Derived and  Derived_mod
 ! VBST from SOA_mod
 
-!/-- we define a type to map indices of species to be deposited
-!   to the lesser number of species where Vg is calculated
+!MOVED!/-- we define a type to map indices of species to be deposited
+!MOVED   to the lesser number of species where Vg is calculated
+!MOVED
 
-type, public :: depmap
-  integer :: ind   ! Index of species in IXADV_ or IX_ arrays
-  integer :: calc  ! Index of species in  calculated dep arrays
-  real    :: vg    ! if CDDEP_SET, give vg in m/s
-end type depmap
+!MOVED type, public :: dep_t
+!MOVED character(len=TXTLEN_SHORT) :: name       ! Species name
+!MOVED character(len=TXTLEN_SHORT) :: surrogate  ! Surrogate species in  calculated dep arrays
+!MOVED    integer :: iadv  ! Index of species in IXADV_ or IX_ arrays
+!MOVED    integer :: idef  ! Index of species in  DryDep_Defs or WetDep_Defs. Set in run
+!MOVED    real    :: setRate   ! if CDDEP_SET, give vg in m/s
+!MOVED  endtype dep_t
 
   !==================
   !/ generic groups for integers
@@ -56,24 +61,40 @@ end type depmap
     integer, dimension(:), pointer :: specs
   end type typ_sp
 
-  !/ HI: generic group for name and two pointers to integer arrays
+  !/ HI: generic group for name and two pointers to one integer and one
+  !/  real array
+  type, public :: typ_factors
+    character(len=TXTLEN_SHORT) :: name ! e.g. POD1_IAM_DF
+    integer, dimension(:), pointer :: species ! like ptr in typ_sp
+    real, dimension(:), pointer :: factors 
+  end type typ_factors
+
+  !/ HI: generic group for name and two pointers to one integer and one
+  !/  character array
   type, public :: typ_maps
     character(len=TXTLEN_SHORT) :: name ! e.g. POD1_IAM_DF
-    integer, dimension(:), pointer :: species ! like specs in typ_sp
-    integer, dimension(:), pointer :: maps ! other species to map this
-                                           !  one to
-  end type typ_maps
+    integer, dimension(:), pointer :: species ! like ptr in typ_sp
+    character(len=TXTLEN_SHORT), dimension(:), pointer :: maps ! other 
+      ! species' or variables' names to map this one to
+  endtype typ_maps
 
   !/ generic group one (short) string & one integer
   type, public :: typ_si
-    character(len=TXTLEN_SHORT) :: name
-    integer :: ind
-  end type typ_si
+    character(len=TXTLEN_SHORT) :: name = '-'
+    integer :: ind = UNDEF_I
+  endtype typ_si
+
   !/ generic group for one (short) string & one shorter string
   type, public :: typ_s1ind
     character(len=TXTLEN_SHORT) :: name
     character(len=TXTLEN_IND)   :: ind  ! e.g. YMDHI
   end type typ_s1ind
+
+  !/ generic group one (short) string & one real
+  type, public :: typ_sr
+    character(len=TXTLEN_SHORT) :: name
+    real :: rval
+  end type typ_sr
 
 !/ generic group for three (short) strings
 type, public :: typ_s3

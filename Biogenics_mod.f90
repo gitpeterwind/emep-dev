@@ -34,7 +34,7 @@ module Biogenics_mod
   !---------------------------------------------------------------------------
 
   use CheckStop_mod,      only: CheckStop, StopAll
-  use ChemSpecs,         only : species
+  use ChemSpecs_mod,         only : species
   use Config_module, only : NPROC, MasterProc, TINY, &
                            NLANDUSEMAX, IOU_INST, & 
                            KT => KCHEMTOP, KG => KMAX_MID, & 

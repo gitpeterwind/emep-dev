@@ -18,7 +18,8 @@ module RunChem_mod
   use CheckStop_mod,     only: CheckStop, StopAll
   use Chemfields_mod,    only: xn_adv    ! For DEBUG 
   use Chemsolver_mod,    only: chemistry
-  use ChemSpecs                         ! DEBUG ONLY
+  use ChemDims_mod,      only: NSPEC_SHL, NSPEC_TOT 
+  use ChemSpecs_mod                     ! DEBUG ONLY
   use ColumnSource_mod,  only: Winds, getWinds
   use Config_module,    only: USES, & 
                               MasterProc, & 

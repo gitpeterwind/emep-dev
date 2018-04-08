@@ -14,7 +14,7 @@ module AOD_PM_mod
 ! Chin et. al (2002): J. Atm.Sci., 59, 461-483,
 !   doi:10.1175/1520-0469(2002)059%3C0461:TAOTFT%3E2.0.CO;2
 !-----------------------------------------------------------------------!
-use ChemSpecs
+use ChemSpecs_mod
 use Chemfields_mod,        only: AOD, Extin_coeff
 use ChemGroups_mod,        only: chemgroups
 use CheckStop_mod,         only: CheckStop

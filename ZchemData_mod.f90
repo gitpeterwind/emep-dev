@@ -23,7 +23,15 @@
 
    integer, public, save  :: CHEMSIZE  !
 
- !FIELDS ALLOCATED IN Chem_mod.f90
+ !Emissions in column. We assume that these only involve advected species
+  real, public, save, allocatable, dimension(:,:) :: & ! dims: nspec x nz
+      rct               & !< chemical rate coeffs.  molec/cm3/s
+     ,rcemis            & !< Emissions rate coeff.  molec/cm3/s
+     ,rcbio             & !< Emissions rate coeff.  molec/cm3/s (BVOC, soil-NO, etc.)
+!ESX     ,esxemis           & !< Emissions rate coeff.  molec/cm3/s !INTERIM -saves rcemis
+!ESX     ,bcemis            & !<  rcemis provided by boundary conditions or tests
+!ESX     ,DChem             & !< chemical tendency, molec/cm3/s
+     ,rcphot              !< Photolysis rates
 
   real, public, allocatable, dimension(:,:), save :: &
                    xn_2d            ! Concentrations [molecules/cm3]
@@ -36,9 +44,6 @@
                    Fgas       &! Fraction as gas-phase
                   ,Fpart      ! Fraction as gas-phase
 
- !Emissions in column. We assume that these only involve advected species
-   real, public, allocatable, dimension(:,:), save ::&
-         rcemis     ! emissions
   ! We define a column array for isoprene and terpene for use in
   ! the chemical solver. All values except for k=KMAX_MID will
   ! remain zero however

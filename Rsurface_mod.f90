@@ -1,10 +1,12 @@
 module Rsurface_mod
 use CheckStop_mod,      only: CheckStop, StopAll
 use CoDep_mod,          only: CoDep_factors, humidity_fac, Rns_NH3, Rns_SO2
-use Config_module,     only: DEBUG, NO_CROPNH3DEP
+use Config_module,      only: DEBUG, NO_CROPNH3DEP
 use DO3SE_mod,          only: g_stomatal, do3se
-use GasParticleCoeffs_mod,    only : DryDepDefs &  ! Extension of Wesely Table 2
-   ,WES_HNO3, WES_NH3,DRx,WES_SO2    ! Indices and Ratio of diffusivities to ozone
+use GasParticleCoeffs_mod, only: nddep, DDspec,  &
+                              idcmpO3, idcmpHNO3,idcmpNH3,idcmpSO2
+!A2018 use GasParticleCoeffs_mod,    only : DryDepDefs &  ! Extension of Wesely Table 2
+!2018   ,WES_HNO3, WES_NH3,DRx,WES_SO2    ! Indices and Ratio of diffusivities to ozone
 use Io_Progs_mod,       only: datewrite
 use LandDefs_mod,       only: LandDefs, LandType
 ! L (local) provides  t2C, rh, LAI, SAI, hveg, ustar, 
@@ -16,6 +18,7 @@ use MetFields_mod, only : foundsdepth, foundice
 use MetFields_mod, only : PARdbh, PARdif
 use Par_mod,only :me
 use Radiation_mod, only : CanopyPAR
+use SmallUtils_mod, only: find_index
 use TimeDate_mod,  only : current_date
 
 implicit none
@@ -31,7 +34,8 @@ real, public, save :: Rinc, RigsO, GnsO, RgsS
 contains
 ! =======================================================================
 
-  subroutine Rsurface(i,j,DRYDEP_CALC,Gsto,Rsur,errmsg,debug_arg,fsnow) 
+  !A2018 subroutine Rsurface(i,j,DRYDEP_CALC,Gsto,Rsur,errmsg,debug_arg,fsnow) 
+  subroutine Rsurface(i,j,Gsto,Rsur,errmsg,debug_arg,fsnow) 
 ! =======================================================================
 !
 !     Description
@@ -94,8 +98,8 @@ contains
 !......................................
 ! Input:
     integer, intent(in) :: i,j
-    integer, dimension(:), intent(in) :: &
-         DRYDEP_CALC   ! Array with DryDepDefs indices of gases wanted
+!A2018    integer, dimension(:), intent(in) :: &
+!A2018         DRYDEP_CALC   ! Array with DryDepDefs indices of gases wanted
 
 ! Output:
 
@@ -127,8 +131,7 @@ contains
 
 ! Working values:
    
-    integer :: icmp             ! gaseous species
-    integer :: iwes             ! gaseous species, DryDepDefs tables
+    integer :: icmp             ! gaseous species, =index in DDspec list
     logical :: canopy         & ! For SAI>0, .e.g grass, forest, also in winter
         ,leafy_canopy           ! For LAI>0, only when green
     real, parameter :: SMALLSAI= 0.05  ! arbitrary value but small enough
@@ -279,8 +282,7 @@ contains
   !####      Resistance, Rgs, for the remaining Gases of Interest            ##
   !.........  Loop over all required gases   ................................##
 
-  GASLOOP: do icmp = 1, size( DRYDEP_CALC )
-      iwes = DRYDEP_CALC(icmp)
+  GASLOOP: do icmp = 1, nddep ! size( DRYDEP_CALC )
       Gsto(icmp) = 0.0                     ! change where needed
 
      !-------------------------------------------------------------------------
@@ -292,7 +294,7 @@ contains
      !  Earlier had Rsur(icmp)  = max(1.0,lowThno3) !Cadle,1985
      !  Also, not so affected by snow_flag, e.g. Erisman 1994,Table 6,
 
-        if ( iwes == WES_HNO3 ) then
+        if ( icmp == idcmpHNO3 ) then
             lowThno3= -L%t2C *2.0
             Rsur(icmp)  = max(10.0,lowThno3) 
             Gns(icmp)   =  1/Rsur(icmp) ! OCT2017 if needed???!
@@ -300,15 +302,24 @@ contains
         end if
 
      !-------------------------------------------------------------------------
+     ! Calculate the Wesely variables Hstar (solubility) and f0 (reactivity)
+
+        !A2018 Hstar =DryDepDefs(2,iwes)    !Extract H*'s 
+        !A2018 f0    =DryDepDefs(5,iwes)    !Extract f0's
+
+        Hstar =DDspec(icmp)%Hstar
+        f0    =DDspec(icmp)%f0
+
+     !-------------------------------------------------------------------------
      ! Ammonia is also special
      ! Has just Gsto and Gns. Uses Rns from co-dep or (FUTURE) BiDir
      ! QUERY - no impact of wet soils?
 
-        if ( iwes == WES_NH3 ) then
+        if ( icmp == idcmpNH3 ) then
 
           if  (canopy .or. L%is_veg ) then
             Gns(icmp) = (1.-fsnow)/(Rns_NH3 * lowTcorr) + fsnow/RsnowS 
-            Gsto(icmp) = L%LAI*DRx(iwes) *L%g_sto
+            Gsto(icmp) = L%LAI*DDspec(icmp)%DxDO3 *L%g_sto !A2018 changed notation. CHECK
           else !OLD Looks odd
             Gns(icmp) = 1.0e-5*Hstar*GnsS + f0*GnsO
           end if
@@ -325,8 +336,8 @@ contains
           if ( NO_CROPNH3DEP  ) then
              if ( L%is_crop .and.  L%LAI > 0.1 ) then
                if ( dbg .and. L%is_crop ) then 
-                write(*,"(a,i4,2i4,L2,f8.2)")  "NO_CROPNH3DEP ", &
-                 iL, DRYDEP_CALC(icmp), WES_NH3, L%is_crop, L%LAI
+                write(*,"(a,i4,L2,f8.2)")  "NO_CROPDEP:"// &
+                  DDspec(icmp)%name,  iL, L%is_crop, L%LAI
                end if
                Rsur(icmp) =  1.0e10  ! BIG number
              end if ! is_crop
@@ -335,11 +346,6 @@ contains
           cycle GASLOOP
         end if  ! NH3
 
-     !-------------------------------------------------------------------------
-     ! Calculate the Wesely variables Hstar (solubility) and f0 (reactivity)
-
-        Hstar =DryDepDefs(2,iwes)    !Extract H*'s 
-        f0    =DryDepDefs(5,iwes)    !Extract f0's
     
      !-------------------------------------------------------------------------
 
@@ -366,7 +372,8 @@ contains
      ! ##############   4. Calculate Rsur for canopies   ###############
 
       if ( canopy  ) then   
-         Gsto(icmp) = L%LAI*DRx(iwes) *L%g_sto
+         !A2018 Gsto(icmp) = L%LAI*DDspec(icmp)%DRx *L%g_sto
+         Gsto(icmp) = L%LAI*DDspec(icmp)%DxDO3 *L%g_sto
       end if
 
 !WHY?      Rgs = 1.0/Gns(icmp)  ! Eqn. (9) !hf was  f0/do3se(iL)%RgsO
@@ -382,7 +389,7 @@ contains
 
   if ( dbg ) then 
     write(*,"(a,a10,i4,2f7.3,5L2)")  "RSURFACE nGas iL, LAI, SAI, LOGIS ", &
-      trim(LandDefs(iL)%name), size(DRYDEP_CALC), L%LAI, L%SAI, L%is_forest,&
+      trim(LandDefs(iL)%name), nddep, L%LAI, L%SAI, L%is_forest,&
        L%is_water, L%is_veg, canopy, leafy_canopy
   end if
  end subroutine Rsurface

@@ -9,8 +9,9 @@ module ColumnSource_mod
 !   ems: emission parameters
 !-----------------------------------------------------------------------!
 use CheckStop_mod,         only: CheckStop
-use ChemSpecs,            only: NSPEC_TOT, NSPEC_SHL, species
+use ChemDims_mod,          only: NSPEC_TOT, NSPEC_SHL
 use ChemGroups_mod,        only: chemgroups
+use ChemSpecs_mod,         only: species
 use EmisDef_mod,           only: VOLCANOES_LL
 use GridValues_mod,        only: xm2,sigma_bnd,GridArea_m2,&
                                 GRIDWIDTH_M,&

@@ -44,7 +44,8 @@ use ExternalBICs_mod,     only: set_extbic, icbc, ICBC_FMT,&
 !----------------------------------------------------------------------------!
 use CheckStop_mod,           only: CheckStop,check=>CheckNC
 use Chemfields_mod,          only: xn_adv    ! emep model concs.
-use ChemSpecs,              only: NSPEC_ADV, NSPEC_SHL, species_adv
+use ChemDims_mod,            only: NSPEC_ADV, NSPEC_SHL
+use ChemSpecs_mod,           only: species_adv
 use GridValues_mod,          only: A_mid,B_mid, glon,glat, i_fdom,j_fdom, RestrictDomain
 use Io_mod,                  only: open_file,IO_TMP,IO_NML,PrintLog
 use InterpolationRoutines_mod,  only : grid2grid_coeff,point2grid_coeff

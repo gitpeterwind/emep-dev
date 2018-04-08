@@ -3,7 +3,7 @@
 !+ Photolysis coefficients
 !-------------------------------------------------------------------------------
 
-     module DefPhotolysis_mod
+  module DefPhotolysis_mod
 !-------------------------------------------------------------------------------
 
 !    Data needed  for photolysis calculation.  NPHODIS is the number of
@@ -69,6 +69,41 @@
       IDNO3    = 13 , IDN2O5   = 14 , IDCH3O2H = 15 , &
       IDHO2NO2 = 16 , IDACETON = 17
     integer, public, parameter ::  IDRCOCHO  = IDRCOHCO ! Just tmp
+
+!A2018 - moving to newer system
+!A2018 CHECK/FIX - these are MCM???
+   
+! In EMEP code, we use IDBO3 for O1D production and IDAO3 for OP production
+! MCM indices:
+
+!NEEDS FIXING. Changed from ESX to try to match above, but eg NO3 is difficult
+  integer, public, parameter :: & 
+    IDO3_O1D   = 1,IDO3_O3P  = 2,IDNO3_NO  = IDNO3  &
+   ,IDNO3_NO2  = IDNO3,IDHONO    = -999 & !HONO NEEDS FIXING!
+   ,IDHCHO_H  = 6& ! HCHO -> CO + 2 HO2
+   ,IDHCHO_H2 = 7&  ! HCHO -> CO + H2
+   ,MCM_J18   = 18, MCM_J20   = 20 &
+   ,MCM_J22   = 22 , IDMEK     = 22 &
+   ,IDCHOCHO_2CO  = 31 &! .. 33 QUERY
+   ,IDCHOCHO_HCHO = 32 &! .. 33 QUERY
+   ,IDCHOCHO_2CHO = 33 &! .. 33 QUERY
+   ,IDCH3COCH3  = IDACETON
+!NEEDS FIXING. ESX has:
+!  integer, public, parameter :: & 
+!    IDO3_O1D   = 1,IDO3_O3P  = 2,IDH2O2    = 3,IDNO2     = 4 ,IDNO3_NO  = 5 &
+!   ,IDNO3_NO2  = 6,IDHONO    = 7,IDHNO3    = 8,IDHCHO_H  = 11,IDHCHO_H2 = 12&
+!   ,IDCH3CHO  = 13 &
+!   ,MCM_J18   = 18, MCM_J20   = 20 &
+!   ,MCM_J22   = 22 , IDMEK     = 22 &
+!   ,IDCHOCHO_2CO  = 31 &! .. 33 QUERY
+!   ,IDCHOCHO_HCHO = 32 &! .. 33 QUERY
+!   ,IDCHOCHO_2CHO = 33 &! .. 33 QUERY
+!   ,IDCH3COCH3  = 34, IDRCOCHO  = 34 &!  MGLOX, etc
+!   ,IDCH3O2H  = 41 &
+!   ,IDiC3H7ONO2  = 54 &! Used for ISON
+!   ,IDCH3COO2H  = -1 &! QUERY ???
+!   ,IDN2O5    = -1 ! .. QUERY in PHUX; not MCM?
+
 
     integer, save :: photo_out_ix = -1
 

@@ -40,7 +40,8 @@ use BiDir_module
 use Biogenics_mod,     only: SoilNH3  ! for BiDir
 use CheckStop_mod,     only: CheckStop, StopAll
 use Chemfields_mod ,   only: cfac, so2nh3_24hr,Grid_snow 
-use ChemSpecs                ! several species needed
+use ChemDims_mod,      only: NSPEC_ADV, NSPEC_SHL,NDRYDEP_ADV
+use ChemSpecs_mod            ! several species needed
 use Config_module,    only: dt_advec,PT, K2=> KMAX_MID, NPROC, &
                             DEBUG, DEBUG_ECOSYSTEMS, DEBUG_VDS,&
                             USES, AERO, &
@@ -54,8 +55,6 @@ use EcoSystem_mod,     only: EcoSystemFrac, Is_EcoSystem,  &
 use GasParticleCoeffs_mod         ! ... Init_GasCoeff, DRx, Rb_Cor, ...
 use GridValues_mod ,   only: GRIDWIDTH_M,xmd,xm2, glat,dA,dB, &
      glon,   debug_proc, debug_li, debug_lj, i_fdom, j_fdom   ! for testing
-
-!use Io_Nums_mod,       only: IO_SPOD
 use Io_Progs_mod,      only: datewrite
 use Landuse_mod,       only: SetLandUse, Land_codes  & 
                            ,NLUMAX &  ! Max. no countries per grid
@@ -68,7 +67,7 @@ use MetFields_mod,     only: u_ref, rh2m, sst
 use MetFields_mod,     only: tau, sdepth, SoilWater_deep, th,pzpbl
 use MicroMet_mod,      only: AerRes, Wind_at_h
 use MosaicOutputs_mod,     only: Add_MosaicOutput, MMC_RH
-use OwnDataTypes_mod,      only: depmap
+!A2018 use OwnDataTypes_mod,      only: depmap
 use Par_mod,               only: limax,ljmax, me,li0,li1,lj0,lj1
 use PhysicalConstants_mod, only: ATWAIR,PI,KARMAN,GRAV,RGAS_KG,CP,AVOG,NMOLE_M3
 use Rb_mod,                only: Rb_gas
@@ -86,7 +85,7 @@ implicit none
 private
 
 public  :: DryDep, init_drydep
-private :: Init_DepMap
+!A2018 private :: Init_DepMap
 
 !integer, private, save :: P != IO_SPOD + me
 ! Maps from adv index to one of calc indices
@@ -98,9 +97,9 @@ character(len=30),private, save :: errmsg = "ok"
 ! WE NEED A FLUX_CDDEP, FLUX_ADV FOR OZONE;
 ! (set to one for non-ozone models)
 
-integer, public, parameter :: FLUX_CDDEP  = CDDEP_O3
 integer, public, parameter :: FLUX_ADV   = IXADV_O3
 integer, public, parameter :: FLUX_TOT   = O3
+!A2018 integer, public, parameter :: FLUX_CDDEP  = CDDEP_O3 now have icmpO3
 
 ! WE ALSO NEED NO3_f and NH4_f for deposition.
 ! (set to one for non-no3/nh4 models)
@@ -122,37 +121,71 @@ integer, public, parameter :: pNH4  = NH4_f
 ! above will be defined in Init_DepMap
 
 !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
- include 'CM_DryDep.inc'
-
+!A2018 include 'CM_DryDep.inc'
 !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
 logical, public, dimension(NDRYDEP_ADV), save :: vg_set 
+
+!  A type container for big-leaf (bulk) resistances, used by esx
+!  A little confusing still, bt Vg_ref etc are part of Sub(iL)
+!SKIP       ,rb_leaf      & ! Quasi-boundary layer rsis.
+type, public :: BL_t
+     real :: &
+          Rsur    & ! Surface Resistance (s/m) 
+         ,RsurX   & ! for testing Surface Resistance (s/m) 
+         ,Vd      & ! Dep. vel. from zRef to surface
+         ,Vd0     & ! Dep. vel. lowest z to surface
+         ,VdX     & ! testing with less Rinc influence
+         ,Rg      & ! R to ground, e.g. soil
+         ,rext    & !  = rextO for O3, otherwise scaled SO2-O3
+         ,Rb      & !
+         ,Rns       !
+     real ::  Gsto  !
+     real ::      & ! for Aerosols (but simplest here anyway)
+         Vds      & ! Vds term for fine, bulk (m/s)
+        ,Vs         ! settling velocity (m/s). Not really BL, but same dims
+end type BL_t
+type(BL_t), public, save, allocatable, dimension(:) :: BL
+
+real, allocatable, dimension(:), private :: &
+          gradient_fac & ! Ratio of conc. at zref (ca. 50m) and 3m
+         ,vg_fac       & ! Loss factor due to dry dep.
+         ,Vg_ref       & ! Vg at ref ht.
+         ,Vg_3m        & ! Vg at  3m
+         ,Vg_ratio     & ! Ratio Vg_ref/Vg_3m = ratio C(3m)/C(ref), over land
+         ,sea_ratio    & ! Ratio Vg_ref/Vg_3m = ratio C(3m)/C(ref), over sea
+         ,Gsto           ! Stomatal conductance (big-leaf), only for gases
 
 contains
 
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
- subroutine init_drydep
+ subroutine init_DryDep()
 
   integer, save ::  old_daynumber = -99
-  integer ::nadv,n
-  integer :: i, j, lc, ilc, nlc, iEco   ! for EcoSystem stuff
+  integer :: i, j, lc, ilc, nlc, is, iEco   ! for EcoSystem stuff
   logical :: debug_flag  ! for EcoSystem stuff
   real    :: coverage    ! for EcoSystem stuff
+  character(len=*), parameter :: dtxt='iniDDep:'
 
   if ( my_first_call ) then 
 
-     call Init_DepMap()               ! Maps CDDEP to IXADV
-     call Init_GasCoeff()             ! Sets DryDepDefs coeffs.
+    if(MasterProc) write(*,*) dtxt//" GET DEP"
+     call GetDepMapping()           !A2018 creates DDspec, DryDepMapping
 
-     call CheckStop( NLOCDRYDEP_MAX < NDRYDEP_CALC, &
+     allocate(BL(nddep))
+     allocate(gradient_fac(nddep), vg_fac(nddep), Vg_ref(nddep), &
+         Vg_3m(nddep), Vg_ratio(nddep), sea_ratio(nddep), Gsto(nddep) )
+     !A2018 call Init_DepMap()               ! Maps CDDEP to IXADV
+     !A2018 call Init_GasCoeff()             ! Sets DryDepDefs coeffs.
+
+     call CheckStop( NLOCDRYDEP_MAX < nddep, & !A2018 NDRYDEP_CALC, &
         "Need to increase size of NLOCDRYDEP_MAX" )
 
-     nadv = 0
-     do n = 1, NDRYDEP_ADV  
-         nadv       = max( DDepMap(n)%ind, nadv )  ! Looking for highest IXADV
-         vg_set(n)  = ( DDepMap(n)%calc == CDDEP_SET ) ! for set vg
-     end do
+     !Need to re-implement one day
+     !A2018 nadv = 0
+     !A2018 do n = 1, nddep  ! A2018  NDRYDEP_ADV  
+         !nadv       = max( DDepMap(n)%ind, nadv )  ! Looking for highest IXADV
+     !A2018     vg_set(n)  = ( DDepMap(n)%calc == CDDEP_SET ) ! for set vg
+     !A2018 end do
 
      my_first_call = .false.
      if( MasterProc  .and. DEBUG%DRYDEP) write(*,*) "INIT_DRYDEP day ", &
@@ -194,48 +227,38 @@ contains
 !=============================================================================
   end if !  my_first_call
 
-  end subroutine init_drydep
+  end subroutine init_DryDep
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-  subroutine Init_DepMap
-   integer :: iadv, i
-
-     do i = 1, NDRYDEP_ADV  ! 22
-      iadv = DDepMap(i)%ind
-      if(DEBUG%DRYDEP .and. MasterProc) &
-         write(6,*) "DEPMAP   ", DDepMap(i)%ind, DDepMap(i)%calc
-      call CheckStop( iadv < 1, "ERROR: Negative iadv" )
-      DepAdv2Calc(iadv) = DDepMap(i)%calc
-    end do
-  
-   ! We process the various combinations of gas-species and ecosystem:
-   ! starting with DryDep, e.g. DDEP_SO2_m2CF
- 
-     if(MasterProc.and.DEBUG%DRYDEP) write(6,*) "Init_DepMap D2D FINISHED"
-
-  end subroutine Init_DepMap
-
-
+!A2018  subroutine Init_DepMap
+!A2018   integer :: iadv, i
+!A2018
+!A2018     do i = 1, NDRYDEP_ADV  ! 22
+!A2018      iadv = DDepMap(i)%ind
+!A2018      if(DEBUG%DRYDEP .and. MasterProc) &
+!A2018         write(6,*) "DEPMAP   ", DDepMap(i)%ind, DDepMap(i)%calc
+!A2018      call CheckStop( iadv < 1, "ERROR: Negative iadv" )
+!A2018      DepAdv2Calc(iadv) = DDepMap(i)%calc
+!A2018    end do
+!A2018  
+!A2018   ! We process the various combinations of gas-species and ecosystem:
+!A2018   ! starting with DryDep, e.g. DDEP_SO2_m2CF
+!A2018 
+!A2018     if(MasterProc.and.DEBUG%DRYDEP) write(6,*) "Init_DepMap D2D FINISHED"
+!A2018
+!A2018  end subroutine Init_DepMap
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
   subroutine DryDep(i,j)
     integer, intent(in):: i,j
     real, save, dimension(NSPEC_ADV) :: DepLoss   ! Amount lost
 
-    real, dimension(NDRYDEP_GASES ) :: &
-          Rb           & ! Quasi-boundary layer rsis.
-         ,Rsur         & ! Surface Resistance (s/m) 
-         ,Gsto           ! Stomatal conductance (big-leadf)
+!A2018    real, dimension(NDRYDEP_GASES ) :: &
+!A2018          Rb           & ! Quasi-boundary layer rsis.
+!A2018         ,Rsur         & ! Surface Resistance (s/m) 
          
-    real, dimension(NDRYDEP_CALC) :: &
-          gradient_fac & ! Ratio of conc. at zref (ca. 50m) and 3m
-         ,vg_fac       & ! Loss factor due to dry dep.
-         ,Vg_ref       & ! Vg at ref ht.
-         ,Vg_3m        & ! Vg at  3m
-         ,Vg_ratio     & ! Ratio Vg_ref/Vg_3m = ratio C(3m)/C(ref), over land
-         ,sea_ratio     ! Ratio Vg_ref/Vg_3m = ratio C(3m)/C(ref), over sea
 
     character(len=*), parameter :: dtxt='DryDep:' ! debug label
     logical, save      :: dbg, dbghh, dbgBD
-    integer n, iiL, nlu, ncalc, nadv, nFlux  ! help indexes
+    integer icmp, ispec, iiL, nlu, ncalc, nadv, nFlux  ! help indexes
     integer :: imm, idd, ihh, iss     ! date
     integer :: ntot !index of adv species in xn_2d array
 
@@ -387,17 +410,28 @@ contains
         xn_2d(O3,K2)*surf_ppb, no2fac
     end if
 
+   !A2018 new....
+
+     call GasCoeffs(L%T2)             ! Sets DryDepDefs coeffs.
+     call ParticleCoeffs(L%t2,L%rho_s,debug_flag=DEBUG%A2018) ! Sets DryDepDefs coeffs.
+
+   !A2018 end new....
+
     call Setup_StoFlux( daynumber )
 
 ! - can set settling velcoty here since not landuse dependent
 
-    do nae = 1, AERO%NSIZE
-      AERO%Vs(nae) = SettlingVelocity( Grid%t2, Grid%rho_ref, &
-                       AERO%sigma(nae), AERO%DpgV(nae), AERO%PMdens(nae) )
+    !A2018 do nae = 1, AERO%NSIZE
+    !A2018   AERO%Vs(nae) = SettlingVelocity( Grid%t2, Grid%rho_ref, &
+    !A2018                    AERO%sigma(nae), AERO%DpgV(nae), AERO%PMdens(nae) )
+    do icmp = 1, nddep
+      if ( DDspec(icmp)%is_gas ) CYCLE
+      BL(icmp)%Vs = SettlingVelocity( Grid%t2, Grid%rho_ref, &
+                       DDspec(icmp)%sigma, DDspec(icmp)%DpgV, DDspec(icmp)%rho_p )
     end do
 
-    if ( dbghh ) call datewrite(dtxt//"DRYDEP VS",AERO%NSIZE,&
-                                  (/ Grid%t2, Grid%rho_ref, AERO%Vs /) )
+    if ( dbghh ) call datewrite(dtxt//" VS",AERO%NSIZE,&
+                                  (/ Grid%t2, Grid%rho_ref, BL(icmp)%Vs /) )
 
     !/ And start the sub-grid stuff over different landuse (iL)
 
@@ -437,12 +471,15 @@ contains
              end if
 
 
-         call Rb_gas(L%is_water, L%ustar, L%z0, DRYDEP_GASES ,Rb)
+         !A2018 call Rb_gas(L%is_water, L%ustar, L%z0, DRYDEP_GASES ,Rb)
+         call Rb_gas(L%is_water, L%ustar, L%z0, BL(:)%Rb)
 
-         call Rsurface(i,j,DRYDEP_GASES ,Gsto,Rsur,errmsg,debug_flag,snow_iL)
+         !A2018 call Rsurface(i,j,DRYDEP_GASES ,Gsto,Rsur,errmsg,debug_flag,snow_iL)
+         call Rsurface(i,j,BL(:)%Gsto,BL(:)%Rsur,errmsg,debug_flag,snow_iL)
 
          if(dbghh) call datewrite(dtxt//"STOFRAC "//LandDefs(iL)%name, &
-                 iL, (/ Gsto(2), Rsur(2), Gsto(2)*Rsur(2)  /) ) ! 2 is for WES_O3
+                 iL, [  BL(idcmpO3)%Gsto, BL(idcmpO3)%Rsur, &
+                       BL(idcmpO3)%Gsto*BL(idcmpO3)%Rsur ] )
 
            !Sub(iL)%g_sto = L%g_sto   ! needed elsewhere
            !Sub(iL)%g_sun = L%g_sun
@@ -456,12 +493,49 @@ contains
 !BIDIR SKIP         wet =   Grid%wetarea  ! QUERY Now used for BIDIR
 !BIDIR SKIP         dry =   1.0 - wet     !  "  "
 
-         do n = 1, NDRYDEP_CALC
+         !A2018 do n = 1, NDRYDEP_CALC
+         do icmp = 1, nddep
 
            ! ================================================
-           if ( n > NDRYDEP_GASES )  then    ! particles
+           if ( DDspec(icmp)%is_gas  ) then
 
-              nae = AERO_SIZE(n) ! See GasParticleCoeffs_mod
+              Vg_ref(icmp) = 1. / ( L%Ra_ref + BL(icmp)%Rb + BL(icmp)%Rsur ) 
+              Vg_3m(icmp)  = 1. / ( L%Ra_3m  + BL(icmp)%Rb + BL(icmp)%Rsur ) 
+
+             ! specials, NH3 and NO2:
+
+              if ( USES%BIDIR .and. icmp == idcmpNH3 ) then
+
+                call StopAll(dtxt//'NOT IMPLEMENTED YET')
+
+           
+           ! Surrogate for NO2 compensation point approach, 
+           ! assuming c.p.=4 ppb (ca. 1.0e11 #/cm3):        
+           ! Note, xn_2d has no2 in #/cm-3
+
+              else if ( .not. USE_SOILNOX .and.  icmp == idcmpNO2 ) then
+  
+                 Vg_ref(icmp) = Vg_ref(icmp) * no2fac
+                 Vg_3m(icmp)  = Vg_3m(icmp)  * no2fac
+
+              end if ! specials, NH3, NO2
+
+              !QUERY - do we need Gsur for anything now?!
+              ! StoFrac should end up with weighted mean. Start with Vg*f
+   
+              Sub(iL)%Gsur(icmp) = 1.0/BL(icmp)%Rsur ! Note iL, not iiL 
+              Sub(iL)%Gsto(icmp)  = BL(icmp)%Gsto    ! Note iL, not iiL 
+
+              Sub(0)%Gsur(icmp)  =  Sub(0)%Gsur(icmp) + L%coverage / BL(icmp)%Rsur
+              Sub(0)%Gsto(icmp)   =  Sub(0)%Gsto(icmp)  + L%coverage * BL(icmp)%Gsto
+              if( dbghh.and.icmp==2 ) call datewrite("CmpSto", iL, &
+                         (/ Sub(iL)%Gsto(icmp) / Sub(iL)%Gsur(icmp) /) )
+
+
+           else ! particles
+            ! ================================================
+
+              !A2018 nae = AERO_SIZE(icmp) ! See GasParticleCoeffs_mod
 
               if ( LandType(iL)%is_forest  ) then 
 
@@ -485,9 +559,9 @@ contains
              ! latter is (NH4)xSO4. Now, as all NO3_f is associated with NH4NO3, 
              ! we can scale any NH4_f deposition with the ratio
 
-              if (n==CDDEP_PMfN .and. L%invL<0.0 ) then 
+              if (icmp==idcmpPMfNO3 .and. L%invL<0.0 ) then 
                    Vds = Vds * 3.0 ! for nitrate-like
-              else if (n==CDDEP_PMfNH4 .and. L%invL<0.0 ) then 
+              else if (icmp==idcmpPMfNH4 .and. L%invL<0.0 ) then 
                    !Vds = Vds* [ ( 1 - no3ratio) +  3 * no3nh4ratio ]
                    Vds = Vds * (1 + 2 * no3nh4ratio) 
               end if
@@ -495,64 +569,33 @@ contains
             ! Use non-electrical-analogy version of Venkatram+Pleim (AE,1999)
             ! ACP70
 
-              Vg_ref(n) =  AERO%Vs(nae)/ ( 1.0 - exp( -( L%Ra_ref + 1.0/Vds)* AERO%Vs(nae)))
-              Vg_3m (n) =  AERO%Vs(nae)/ ( 1.0 - exp( -( L%Ra_3m  + 1.0/Vds)* AERO%Vs(nae)))
+              !A2018 Vg_ref(icmp) =  AERO%Vs(nae)/ ( 1.0 - exp( -( L%Ra_ref + 1.0/Vds)* AERO%Vs(nae)))
+              !A2018 Vg_3m (icmp) =  AERO%Vs(nae)/ ( 1.0 - exp( -( L%Ra_3m  + 1.0/Vds)* AERO%Vs(nae)))
+              Vg_ref(icmp) =  BL(icmp)%Vs/ ( 1.0 - exp( -( L%Ra_ref + 1.0/Vds)* BL(icmp)%Vs))
+              Vg_3m (icmp) =  BL(icmp)%Vs/ ( 1.0 - exp( -( L%Ra_3m  + 1.0/Vds)* BL(icmp)%Vs))
 
 
               if ( DEBUG_VDS ) then
-                if ( debug_flag .or. (Vg_3m(n)>0.50 .or. Vg_ref(n)>0.50 )) then
+                if ( debug_flag .or. (Vg_3m(icmp)>0.50 .or. Vg_ref(icmp)>0.50 )) then
                   write(*,"(a,5i3,2i4,2f7.3,f8.2,20f7.2)") "AEROCHECK", &
-                    imm, idd, ihh, n, iL, i_fdom(i), j_fdom(j),&
+                    imm, idd, ihh, icmp, iL, i_fdom(i), j_fdom(j),&
                     L%ustar,  L%invL, pzpbl(i,j), &
                     Grid%ustar, Grid%Hd,  100.0*Vds, &
-                    100.0*AERO%Vs(nae), 100.0*Vg_ref(n),  100.0*Vg_3m (n) &
+                    !A2018 100.0*AERO%Vs(nae), 100.0*Vg_ref(icmp),  100.0*Vg_3m (icmp) &
+                    100.0*BL(icmp)%Vs, 100.0*Vg_ref(icmp),  100.0*Vg_3m (icmp) &
                      , Grid%t2, Grid%rho_ref 
-                   write(*,"(a,2i4,3es10.3)") "VDS CHECK ",n, nae, Vds, Vg_ref(n)
+                   write(*,"(a,2i4,3es10.3)") "VDS CHECK ",icmp, nae, Vds, Vg_ref(icmp)
                   
-                   call CheckStop((Vg_3m(n)>0.50 .or. Vg_ref(n)>0.50 ), "AEROSTOP")
+                   call CheckStop((Vg_3m(icmp)>0.50 .or. Vg_ref(icmp)>0.50 ), "AEROSTOP")
                 end if
               end if
 
-            ! ================================================
-           else   ! gases ! NB no wet-dry difference needed here
-
-              Vg_ref(n) = 1. / ( L%Ra_ref + Rb(n) + Rsur(n) ) 
-              Vg_3m (n) = 1. / ( L%Ra_3m  + Rb(n) + Rsur(n) ) 
-
-             ! specials, NH3 and NO2:
-
-              if ( USES%BIDIR .and. n == CDDEP_NH3 ) then
-
-                call StopAll(dtxt//'NOT IMPLEMENTED YET')
-
-           
-           ! Surrogate for NO2 compensation point approach, 
-           ! assuming c.p.=4 ppb (ca. 1.0e11 #/cm3):        
-           ! Note, xn_2d has no2 in #/cm-3
-
-              else if ( .not. USE_SOILNOX .and.  n == CDDEP_NO2 ) then
-  
-                 Vg_ref(CDDEP_NO2) = Vg_ref(CDDEP_NO2) * no2fac
-                 Vg_3m (CDDEP_NO2) = Vg_3m (CDDEP_NO2) * no2fac
-
-              end if ! specials, NH3, NO2
-
-              !QUERY - do we need Gsur for anything now?!
-              ! StoFrac should end up with weighted mean. Start with Vg*f
-   
-              Sub(iL)%Gsur(n) = 1.0/Rsur(n) ! Note iL, not iiL 
-              Sub(iL)%Gsto(n)  = Gsto(n)      ! Note iL, not iiL 
-
-              Sub(0)%Gsur(n)  =  Sub(0)%Gsur(n) + L%coverage / Rsur(n)
-              Sub(0)%Gsto(n)   =  Sub(0)%Gsto(n)  + L%coverage * Gsto(n)
-              if( dbghh.and.n==2 ) call datewrite("CmpSto", iL, &
-                         (/ Sub(iL)%Gsto(n) / Sub(iL)%Gsur(n) /) )
            end if ! Gases?
 
-           Sub(0)%Vg_ref(n) = Sub(0)%Vg_ref(n) + L%coverage * Vg_ref(n)
-           Sub(0)%Vg_3m(n)  = Sub(0)%Vg_3m(n)  + L%coverage * Vg_3m(n)
-           Sub(iL)%Vg_ref(n) = Vg_ref(n)
-           Sub(iL)%Vg_3m(n) = Vg_3m(n)
+           Sub(0)%Vg_ref(icmp) = Sub(0)%Vg_ref(icmp) + L%coverage * Vg_ref(icmp)
+           Sub(0)%Vg_3m(icmp)  = Sub(0)%Vg_3m(icmp)  + L%coverage * Vg_3m(icmp)
+           Sub(iL)%Vg_ref(icmp) = Vg_ref(icmp)
+           Sub(iL)%Vg_3m(icmp) = Vg_3m(icmp)
 
          end do ! chemical species loop
 
@@ -561,26 +604,26 @@ contains
         !/-- only grab gradients over land-areas
 
          if ( L%is_water ) then
-            do n = 1, NDRYDEP_CALC
-               sea_ratio(n) =  Vg_ref(n)/Vg_3m(n)
+            do icmp = 1, nddep !A2018 NDRYDEP_CALC
+               sea_ratio(icmp) =  Vg_ref(icmp)/Vg_3m(icmp)
             end do
          else
             Sumland = Sumland + L%coverage
-            do n = 1, NDRYDEP_CALC
-                Vg_ratio(n) =  Vg_ratio(n) + L%coverage * Vg_ref(n)/Vg_3m(n)
+            do icmp = 1, nddep !A2018 NDRYDEP_CALC
+                Vg_ratio(icmp) =  Vg_ratio(icmp) + L%coverage * Vg_ref(icmp)/Vg_3m(icmp)
             end do
          end if
 
          if ( dbghh ) then
             call CheckStop(  Sumland > 1.011, dtxt// "SUMLAND>1")
-            do n = CDDEP_O3 , CDDEP_O3 !!! 1,NDRYDEP_GASES 
+            do icmp = idcmpO3 , idcmpO3 !!! 1,NDRYDEP_GASES 
                call datewrite("DEPO3 ", iL, &
-                   (/ Vg_ref(n), Sub(iL)%Vg_ref(n) /) )
-                   !(/ Mosaic_VgRef(n,iL) , Vg_ref(n), Sub(iL)%Vg_ref(n) /) )
-               call datewrite("DEPDVGA", iL, (/ L%coverage, 1.0*n,& 
-                 L%LAI,100*L%g_sto, L%Ra_ref, Rb(n), min( 999.0,Rsur(n) ) /) )
-               call datewrite("DEPDVGB", iL, (/ L%coverage, 1.0*n,& 
-                100*Vg_3m(n), 100*Vg_ref(n), Vg_ratio(n) /) )
+                   (/ Vg_ref(icmp), Sub(iL)%Vg_ref(icmp) /) )
+                   !(/ Mosaic_VgRef(n,iL) , Vg_ref(icmp), Sub(iL)%Vg_ref(icmp) /) )
+               call datewrite("DEPDVGA", iL, (/ L%coverage, 1.0*icmp,& 
+                 L%LAI,100*L%g_sto, L%Ra_ref, BL(icmp)%Rb, min( 999.0,BL(icmp)%Rsur ) /) )
+               call datewrite("DEPDVGB", iL, (/ L%coverage, 1.0*icmp,& 
+                100*Vg_3m(icmp), 100*Vg_ref(icmp), Vg_ratio(icmp) /) )
             end do
          end if
 
@@ -591,10 +634,10 @@ contains
 
          if (  LandType(iL)%flux_wanted ) then
 
-           n = CDDEP_O3
+           !n = CDDEP_O3
            Ra_diff = L%Ra_ref - L%Ra_3m
            c_hveg3m = xn_2d(FLUX_TOT,K2)  &     ! #/cm3 units
-                        * ( 1.0-Ra_diff*Vg_ref(n) )
+                        * ( 1.0-Ra_diff*Vg_ref(icmp) )
 
          ! Flux = Vg_ref*c_ref = Vg_h * c_h = (c_ref-c_h)/Ra(z_ref,z_h)
          ! which gives:  c_h = c_ref * [ 1-Ra(z_ref,z_h)*Vg_ref ]
@@ -604,13 +647,13 @@ contains
                        L%ustar,L%invL,KARMAN)
 
            c_hveg = xn_2d(FLUX_TOT,K2)  &     ! #/cm3 units
-                        * ( 1.0-Ra_diff*Vg_ref(n) )
+                        * ( 1.0-Ra_diff*Vg_ref(icmp) )
 
            if ( DEBUG%AOT .and. debug_flag .and. iL==1 ) then
               call datewrite(dtxt//"CHVEG ", iL, &
                 (/  xn_2d(FLUX_TOT,K2)*surf_ppb, c_hveg*surf_ppb,&
-                    c_hveg3m * surf_ppb, 100*Vg_ref(n), 100*Vg_3m(n), &
-                    L%Ra_ref, (L%Ra_ref-L%Ra_3m), Ra_diff, Rb(n),Rsur(n) /) )
+                    c_hveg3m * surf_ppb, 100*Vg_ref(icmp), 100*Vg_3m(icmp), &
+                    L%Ra_ref, (L%Ra_ref-L%Ra_3m), Ra_diff, BL(icmp)%Rb,BL(icmp)%Rsur /) )
            end if
            
 
@@ -648,139 +691,141 @@ contains
 
         if ( dbghh ) then
             call datewrite("DEP VGR snow_flag Vg", (/ Grid%sdepth, & 
-                (100.0*Sub(0)%Vg_Ref(n), n = 1, min(4,NDRYDEP_GASES )) , &
-                (100.0*Sub(iL)%Vg_Ref(n), n = 1, min(4,NDRYDEP_GASES )) /) )
+                (100.0*Sub(0)%Vg_Ref(icmp), icmp = 1, min(4,nddep )) , &
+                (100.0*Sub(iL)%Vg_Ref(icmp), icmp = 1, min(4,nddep )) /) )
         end if
 
 
 !-- loop through all affected advected species to calculate changes in
 !   concentration (xn_adv), the conc. ratios (cfac), and deposition 
 
-    do ncalc = 1, NDRYDEP_CALC
+    do icmp = 1, nddep ! NDRYDEP_CALC
 
-        vg_fac (ncalc) = 1.0 - exp ( -Sub(0)%Vg_Ref(ncalc) * dtz ) 
+        vg_fac (icmp) = 1.0 - exp ( -Sub(0)%Vg_Ref(icmp) * dtz ) 
 
-    end do ! n
-
-
-    GASLOOP2 :  do n = 1, NDRYDEP_ADV 
-         nadv    = DDepMap(n)%ind
-         ntot    = NSPEC_SHL + DDepMap(n)%ind
-         ncalc   = DDepMap(n)%calc
+    end do ! icmp
 
 
-         if ( vg_set(n) ) then
+!A2018    GASLOOP2 :  do n = 1, NDRYDEP_ADV 
+!A2018         nadv    = DDepMap(icmp)%ind
+!A2018         ntot    = NSPEC_SHL + DDepMap(icmp)%ind
+!A2018         ncalc   = DDepMap(icmp)%calc
 
-             DepLoss(nadv) =   & ! Use directly set Vg
-                 ( 1.0 - exp ( -DDepMap(n)%vg * dtz ) ) * xn_2d( ntot,K2)
-             cfac(nadv, i,j) = 1.0   ! Crude, for now.
-  
-         else
-           if ( ntot >= FIRST_SEMIVOL .and. ntot <= LAST_SEMIVOL ) THEN
-              ! Assuming dry deposition of particulate part of
-              ! semi-volatile components as PMfS and the gaseous part as
-              ! specified in GenIn.species.
+  ! ===================================================================
+   DDEPLOOP: do icmp = 1, nddep
 
-             DepLoss(nadv) =  &
-              Fgas(ntot,K2)*vg_fac( ncalc ) * xn_2d(ntot,K2) + &
-              Fpart(ntot,K2)*vg_fac( CDDEP_PMfS ) * xn_2d(ntot,K2)
+     if ( vg_set(icmp) ) then
+         call StopAll('NOT CODED')
+         !A2018 DepLoss(nadv) =   & ! Use directly set Vg
+         !A2018     ( 1.0 - exp ( -DDepMap(icmp)%vg * dtz ) ) * xn_2d( ntot,K2)
+         cfac(nadv, i,j) = 1.0   ! Crude, for now.
+     end if
+ 
+     CMPLOOP: do ispec = 1, size(DryDepMapping(icmp)%specs)  ! Real species now
 
-              cfac(nadv, i,j) = Fgas(ntot,K2)*gradient_fac(ncalc) + &
-                   Fpart(ntot,K2)*gradient_fac( CDDEP_PMfS )
-            else
-               DepLoss(nadv) =   vg_fac( ncalc )  * xn_2d( ntot,K2)
-               cfac(nadv, i,j) = gradient_fac( ncalc )
-            end if
-         end if
+        nadv = DryDepMapping(icmp)%specs(ispec)  ! Real species now
+        ntot = NSPEC_SHL + nadv
+          
+        if ( ntot >= FIRST_SEMIVOL .and. ntot <= LAST_SEMIVOL ) THEN
+           ! Assuming dry deposition of particulate part of
+           ! semi-volatile components as PMfS and the gaseous part as
+           ! specified in GenIn.species.
 
-         if ( DepLoss(nadv) < 0.0 .or. DepLoss(nadv)>xn_2d(ntot,K2) ) then
-            print "(a,2i4,a,es12.4,2f8.4,9es11.4)", "NEGXN ", ntot, ncalc, &
-              trim(species(ntot)%name), xn_2d(ntot,K2), &
-                 Fgas(ntot,K2), Fpart(ntot,K2), DepLoss(nadv), vg_fac(ncalc)
-            call CheckStop("NEGXN DEPLOSS" )
-         end if
+          DepLoss(nadv) =  &
+           Fgas(ntot,K2)*vg_fac( ncalc ) * xn_2d(ntot,K2) + &
+           Fpart(ntot,K2)*vg_fac( idcmpPMfS ) * xn_2d(ntot,K2)
 
+           cfac(nadv, i,j) = Fgas(ntot,K2)*gradient_fac(ncalc) + &
+                Fpart(ntot,K2)*gradient_fac( idcmpPMfS )
+        else
+            DepLoss(nadv) =   vg_fac( ncalc )  * xn_2d( ntot,K2)
+            cfac(nadv, i,j) = gradient_fac( ncalc )
+        end if !SEMIVOL
 
-         if ( ntot == O3 ) then 
+        if ( DepLoss(nadv) < 0.0 .or. DepLoss(nadv)>xn_2d(ntot,K2) ) then
+          print "(a,2i4,a,es12.4,2f8.4,9es11.4)", "NEGXN ", ntot, ncalc, &
+           trim(species(ntot)%name), xn_2d(ntot,K2), &
+              Fgas(ntot,K2), Fpart(ntot,K2), DepLoss(nadv), vg_fac(ncalc)
+         call CheckStop("NEGXN DEPLOSS" )
+        end if
 
-           o3_45m = xn_2d(O3,K2)*surf_ppb !store for consistency of SPOD outputs
-           Grid%surf_o3_ppb  = o3_45m * gradient_fac( ncalc )
-           Grid%surf_o3_ppb1 = ( xn_2d(O3,K2) - Deploss(nadv)) * & ! after loss
-                gradient_fac( ncalc )*surf_ppb
+        if ( ntot == O3 ) then 
 
-           if( dbghh ) then
-              lossfrac = ( 1 - DepLoss(nadv)/xn_2d( ntot,K2))
-              call datewrite("O3_ppb_ratios ", n, (/ o3_45m, &
-                 Grid%surf_o3_ppb, Grid%surf_o3_ppb1, &
-                 lossfrac, gradient_fac(ncalc), L%StoFrac(ntot) /) )
-           end if
+          o3_45m = xn_2d(O3,K2)*surf_ppb !store for consistency of SPOD outputs
+          Grid%surf_o3_ppb  = o3_45m * gradient_fac( ncalc )
+          Grid%surf_o3_ppb1 = ( xn_2d(O3,K2) - Deploss(nadv)) * & ! after loss
+               gradient_fac( ncalc )*surf_ppb
 
-         end if
+          if( dbghh ) then
+             lossfrac = ( 1 - DepLoss(nadv)/xn_2d( ntot,K2))
+             call datewrite("O3_ppb_ratios ", icmp, (/ o3_45m, &
+                Grid%surf_o3_ppb, Grid%surf_o3_ppb1, &
+                lossfrac, gradient_fac(ncalc), L%StoFrac(ntot) /) )
+          end if
+        end if ! ntot==O3
 
         xn_2d( ntot,K2) = xn_2d( ntot,K2) - DepLoss(nadv)
 
 
         if ( ntot == FLUX_TOT ) then
 
-           ! fraction by which xn is reduced - safety measure:
-              if( xn_2d(ntot,K2)  > 1.0e-30 ) then
-               lossfrac = ( 1 - DepLoss(nadv)/(DepLoss(nadv)+xn_2d( ntot,K2)))
-              end if
-              if ( DEBUG%DRYDEP .and. lossfrac < 0.1 ) then
-                print *, dtxt//"LOSSFRACING ", nadv, (/ 1.0*iL, &
-                  Sub(0)%Vg_Ref(n), DepLoss(nadv), vg_fac(ncalc), lossfrac /)
-                call CheckStop( lossfrac < 0.1, "ERROR: LOSSFRAC " )
-              end if
-
-              if ( DEBUG%AOT .and. debug_flag ) then !FEB2013 testing
-                call datewrite(dtxt//"CHVEGX ", me, &
-                  (/ xn_2d(FLUX_TOT,K2)*surf_ppb, c_hveg*surf_ppb,&
-                   c_hveg3m * surf_ppb, 100*Vg_ref(n), 100*Vg_3m(n) /) )
-              end if
-        end if
-
-
-      !.. ecosystem specific deposition - translate from calc to adv 
-      !  and normalise
-
-         IIL_LOOP : do iiL = 1, nlu
-            iL      = iL_used(iiL)
-
-            if ( vg_set(n) )  then
-               fluxfrac_adv(nadv,iL) = Sub(iL)%coverage  ! Since all vg_set equal
-            else
-               Vg_scale = Sub(iL)%Vg_Ref(ncalc)/ Sub(0)%Vg_Ref(ncalc)
-               fluxfrac_adv(nadv,iL) = Sub(iL)%coverage*Vg_scale
-            end if
+          ! fraction by which xn is reduced - safety measure:
+             if( xn_2d(ntot,K2)  > 1.0e-30 ) then
+              lossfrac = ( 1 - DepLoss(nadv)/(DepLoss(nadv)+xn_2d( ntot,K2)))
+             end if
+             if ( DEBUG%DRYDEP .and. lossfrac < 0.1 ) then
+               print *, dtxt//"LOSSFRACING ", nadv, (/ 1.0*iL, &
+                 Sub(0)%Vg_Ref(icmp), DepLoss(nadv), vg_fac(ncalc), lossfrac /)
+               call CheckStop( lossfrac < 0.1, "ERROR: LOSSFRAC " )
+             end if
+  
+             if ( DEBUG%AOT .and. debug_flag ) then !FEB2013 testing
+               call datewrite(dtxt//"CHVEGX ", me, &
+                 (/ xn_2d(FLUX_TOT,K2)*surf_ppb, c_hveg*surf_ppb,&
+                  c_hveg3m * surf_ppb, 100*Vg_ref(icmp), 100*Vg_3m(icmp) /) )
+             end if
+        end if ! not FLUXTOT
 
 
-          !=======================
-          ! The fraction going to the stomata = g_sto/g_sur = g_sto * R_sur.
-          ! Vg*nmole_o3 is the instantaneous deposition flux of ozone, and
-          ! the actual amount "deposited" is obtained from DepLoss(O3) using
-          ! fluxfrac as obtained above.
-
-          ! Now, DepLoss is loss of molecules/cm3 over time-period dt_advec
-          ! and depth z_bnd over 1m2 of grid. For sto fluxes we need to
-          ! find values over 1m2 of vegeation (regardless of how much veg
-          ! is in grid, so we don't need cover. Instead:
-
-
-            if ( dbghh .and. iL == 1 ) then ! SO2, CF
-
-               if ( vg_set(n) )  then
-                 write(6,"(a,3i3,3f12.3)") "FLUXSET  ", iiL, iL, nadv, &
-                     100*DDepMap(n)%vg, Sub(iL)%coverage, fluxfrac_adv(nadv,iL)
-               else
-                 write(6,"(a,3i3,f8.5,5f8.3)") "FLUXFRAC ", iiL, iL, nadv, &
-                  Sub(iL)%coverage, &
-                  100*Sub(0)%Vg_Ref(ncalc), &  ! GRID
-                  100*Sub(iL)%Vg_Ref(ncalc), & ! Mosaic VgRef &
-                  100*Sub(iL)%coverage*Sub(iL)%Vg_Ref(ncalc), & 
-                   fluxfrac_adv(nadv,iL)
-               end if
-            end if !SO2 CF
-         end do IIL_LOOP
+        !.. ecosystem specific deposition - translate from calc to adv 
+        !  and normalise
+  
+        IIL_LOOP : do iiL = 1, nlu
+           iL      = iL_used(iiL)
+  
+           !if ( vg_set(icmp) )  then
+           !      fluxfrac_adv(nadv,iL) = Sub(iL)%coverage  ! Since all vg_set equal
+           !else
+              Vg_scale = Sub(iL)%Vg_Ref(ncalc)/ Sub(0)%Vg_Ref(ncalc)
+              fluxfrac_adv(nadv,iL) = Sub(iL)%coverage*Vg_scale
+           !end if
+  
+  
+         !=======================
+         ! The fraction going to the stomata = g_sto/g_sur = g_sto * R_sur.
+         ! Vg*nmole_o3 is the instantaneous deposition flux of ozone, and
+         ! the actual amount "deposited" is obtained from DepLoss(O3) using
+         ! fluxfrac as obtained above.
+  
+         ! Now, DepLoss is loss of molecules/cm3 over time-period dt_advec
+         ! and depth z_bnd over 1m2 of grid. For sto fluxes we need to
+         ! find values over 1m2 of vegeation (regardless of how much veg
+         ! is in grid, so we don't need cover. Instead:
+  
+           if ( dbghh .and. iL == 1 ) then ! SO2, CF
+  
+              !if ( vg_set(icmp) )  then
+              !  write(6,"(a,3i3,3f12.3)") "FLUXSET  ", iiL, iL, nadv, &
+              !      100*DDepMap(icmp)%vg, Sub(iL)%coverage, fluxfrac_adv(nadv,iL)
+              !else
+              write(6,"(a,3i3,f8.5,5f8.3)") "FLUXFRAC ", iiL, iL, nadv, &
+                 Sub(iL)%coverage, 100*Sub(0)%Vg_Ref(ncalc), &  ! GRID
+                    100*Sub(iL)%Vg_Ref(ncalc), & ! Mosaic VgRef &
+                    100*Sub(iL)%coverage*Sub(iL)%Vg_Ref(ncalc), & 
+                     fluxfrac_adv(nadv,iL)
+              !end if
+           end if !SO2 CF
+        end do   IIL_LOOP
           
 
       !..accumulated dry deposition per grid square and summed over the whole
@@ -790,43 +835,50 @@ contains
 
 
         if ( dbghh) then
-          if ( vg_set(n) ) then
-              write(*, "(a,2i4,f8.3)") "DEBUG DryDep SET ", &
-                   n,nadv, DDepMap(n)%vg
-          else
-              if( n == 1 ) & ! O3
-              call datewrite( "DEBUG DDEPxnd: "// trim(species(ntot)%name), &
-                n, (/ real(nadv),real(ncalc), gradient_fac( ncalc),&
-                   xn_2d(ntot,K2), vg_fac(ncalc) /) )
-          end if
+          !if ( vg_set(icmp) ) then
+          !  write(*, "(a,2i4,f8.3)") "DEBUG DryDep SET ", &
+          !       n,nadv, DDepMap(icmp)%vg
+          !else
+          if( ntot == O3 ) & ! O3
+            call datewrite( "DEBUG DDEPxnd: "// trim(species(ntot)%name), &
+              icmp, (/ real(nadv),real(ncalc), gradient_fac( ncalc),&
+                 xn_2d(ntot,K2), vg_fac(ncalc) /) )
+          !end if
         end if
 
         if ( DEBUG%AOT .and. debug_flag .and. ntot == FLUX_TOT  ) then
-              write(*, "(a,3i3,i5,i3,2f9.4,f7.3)") &
-               dtxt//"AOTCHXN ", imm, idd, ihh, current_date%seconds, &
-                   iL, xn_2d(FLUX_TOT,K2)*surf_ppb, &
-                    (xn_2d( FLUX_TOT,K2) + DepLoss(nadv) )*surf_ppb, &
-                     gradient_fac( ncalc)
+            write(*, "(a,3i3,i5,i3,2f9.4,f7.3)") &
+             dtxt//"AOTCHXN ", imm, idd, ihh, current_date%seconds, &
+                 iL, xn_2d(FLUX_TOT,K2)*surf_ppb, &
+                  (xn_2d( FLUX_TOT,K2) + DepLoss(nadv) )*surf_ppb, &
+                   gradient_fac( ncalc)
         end if
-       end do GASLOOP2 ! n
+     end do CMPLOOP ! is !A2018
+   end do DDEPLOOP ! n
+  ! ===================================================================
+  !A2018 end do GASLOOP2 ! n
 
 
-      convfac =  convfac/M(K2)
+   convfac =  convfac/M(K2)
 
     !  DryDep Budget terms  (do not include values on outer frame)
-      if(.not.(i<li0.or.i>li1.or.j<lj0.or.j>lj1))then
-         
-         do n = 1, NDRYDEP_ADV
-            nadv    = DDepMap(n)%ind
-            totddep( nadv ) = totddep (nadv) + DepLoss(nadv)*convfac
-         end do
-      end if
+   if(.not.(i<li0.or.i>li1.or.j<lj0.or.j>lj1))then
+      
+     do icmp = 1, nddep
+       do ispec = 1, size(DryDepMapping(icmp)%specs)  ! Real species now
+          nadv = DryDepMapping(icmp)%specs(ispec)  ! Real species now
+          !A2018 do n = 1, NDRYDEP_ADV
+          !A2018 nadv    = DDepMap(icmp)%ind
+           totddep( nadv ) = totddep (nadv) + DepLoss(nadv)*convfac
+       end do ! is
+     end do ! icmp
+   end if
 
-       convfac2 = convfac * xm2(i,j) * inv_gridarea
+   convfac2 = convfac * xm2(i,j) * inv_gridarea
 
       !.. Add DepLoss to budgets if needed:
 
-       call Add_MosaicOutput(debug_flag,i,j,convfac2,&
+   call Add_MosaicOutput(debug_flag,i,j,convfac2,&
            DepAdv2Calc, fluxfrac_adv, Deploss ) 
 
 
@@ -860,8 +912,8 @@ contains
 
   !      if( iss==0 .and. nlocal_sites > 0  )then
   !       do  n = 1, nlocal_sites
-  !          if( i == site_x(n) .and. j == site_y(n) ) then 
-  !             nglob = site_gn(n)  ! number in global list
+  !          if( i == site_x(icmp) .and. j == site_y(icmp) ) then 
+  !             nglob = site_gn(icmp)  ! number in global list
 !        if( iss==0 .and. debug_proc.and.  i==debug_li .and. j==debug_lj)then
   !     
   !       do iiL = 1, nlu

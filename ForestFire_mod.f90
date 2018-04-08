@@ -38,7 +38,8 @@ module ForestFire_mod
 !  emissions are needed, and keeps all forest-fire logic here
 !----------------------------------------------------------------
 use CheckStop_mod,         only: CheckStop,CheckNC
-use ChemSpecs
+!use ChemDims_mod
+use ChemSpecs_mod
 use GridValues_mod,        only: i_fdom, j_fdom, debug_li, debug_lj, &
                                 debug_proc,xm2,GRIDWIDTH_M
 use Io_mod,                only: PrintLog, datewrite, IO_NML

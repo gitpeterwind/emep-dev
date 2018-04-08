@@ -18,7 +18,8 @@ use My_Outputs_mod,     only : NHOURLY_OUT, &        ! No. outputs
                               !NML SELECT_LEVELS_HOURLY
 use Chemfields_mod,     only : xn_shl,xn_adv
 use CheckStop_mod,      only : CheckStop,StopAll,check=>CheckNC
-use ChemSpecs,         only : species, NSPEC_TOT, NSPEC_ADV, NSPEC_SHL
+use ChemDims_mod,       only : NSPEC_TOT, NSPEC_ADV, NSPEC_SHL
+use ChemSpecs_mod,      only : species
 use Country_mod,        only : NLAND, Country
 use GridValues_mod,     only : GRIDWIDTH_M,fi,xp,yp,xp_EMEP_official&
                              ,debug_proc, debug_li, debug_lj &

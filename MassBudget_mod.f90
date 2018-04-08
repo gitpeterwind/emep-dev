@@ -4,7 +4,8 @@ module   MassBudget_mod
 ! Routine to cross check the mass balance of the model
 !_____________________________________________________________________________
 use CheckStop_mod,       only: CheckStop
-use ChemSpecs,          only: NSPEC_ADV, NSPEC_SHL, species_adv
+use ChemDims_mod,        only: NSPEC_ADV, NSPEC_SHL
+use ChemSpecs_mod,       only: species_adv
 use Chemfields_mod,      only: xn_adv        ! advected species
 use EmisDef_mod,         only: O_NH3, O_DMS
 use GridValues_mod,      only: xmd, &  

@@ -5,60 +5,63 @@ module Setup_1d_mod
 ! fields are stored in the ZchemData_mod module.
 !-----------------------------------------------------------------------!
 
-use AeroFunctions,       only: umWetRad,WetRad, pmSurfArea, cMolSpeed, UptakeRate
-use AirEmis_mod,          only: airn, airlig   ! airborne NOx emissions
-use Biogenics_mod,        only: SoilNOx
-use Biogenics_mod,        only: EMIS_BioNat, EmisNat  
-use Chemfields_mod,       only: xn_adv,xn_bgn,xn_shl, &
+use AeroFunctions,    only: umWetRad,WetRad, pmSurfArea, cMolSpeed, UptakeRate
+use AirEmis_mod,      only: airn, airlig   ! airborne NOx emissions
+use Biogenics_mod,    only: SoilNOx
+use Biogenics_mod,    only: EMIS_BioNat, EmisNat  
+use ChemDims_mod,     only: NSPEC_SHL, NSPEC_ADV,NCHEMRATES
+use ChemFields_mod,   only: SurfArea_um2cm3, xn_adv,xn_bgn,xn_shl, &
                                NSPEC_COL, NSPEC_BGN, xn_2d_bgn
-use ChemFunctions_mod, only : S_RiemerN2O5
-use ChemGroups_mod,       only: PM10_GROUP, PMFINE_GROUP, SIA_GROUP, SS_GROUP, DUST_GROUP, chemgroups
-use CheckStop_mod,        only:  CheckStop, StopAll
-use ColumnSource_mod,     only: ColumnRate
-use DerivedFields_mod,    only: d_2d, f_2d
-use EmisDef_mod,          only: gridrcemis, gridrcroadd, KEMISTOP,Emis_4D,N_Emis_4D,Found_Emis_4D&
-                                , O_NH3, O_DMS, SumSplitEmis&
-                                ,AISco, AISnox, AISsox, AISso4, AISash, AISec , AISoc, FOUND_Special_ShipEmis&
-                                ,NO_ix,NO2_ix,SO2_ix,SO4_ix,CO_ix,REMPPM25_ix&
-                                ,EC_F_FFUEL_NEW_ix,EC_F_FFUEL_AGE_ix,POM_F_FFUEL_ix
-use EmisGet_mod,          only:  nrcemis, iqrc2itot  
-use ForestFire_mod,       only: Fire_rcemis, burning
-use Functions_mod,        only:  Tpot_2_T
-use ChemFields_mod,       only: SurfArea_um2cm3
-use ChemSpecs  !,           only:  SO4,C5H8,NO,NO2,SO2,CO,
-use ChemRates_rct_mod,    only:  set_rct_rates, rct, NRCT
-use GridValues_mod,       only:  xmd, GridArea_m2, & 
-                                 debug_proc, debug_li, debug_lj,&
-                                 A_mid,B_mid,gridwidth_m,dA,dB,&
-                                 i_fdom, j_fdom
-use Io_Progs_mod,         only: datewrite !MASS
-use LocalVariables_mod,   only: Grid
-use MassBudget_mod,       only: totem    ! sum of emissions
-use MetFields_mod,        only: ps,sst
-use MetFields_mod,        only: roa, th, q, t2_nwp, cc3dmax, &
-                               zen, Idirect, Idiffuse,z_bnd,ws_10m
-use Config_module,   only:  &
+use ChemFunctions_mod,only: S_RiemerN2O5
+!A2018 use ChemGroups_mod,       only: PM10_GROUP, PMFINE_GROUP, SIA_GROUP, SS_GROUP, DUST_GROUP, chemgroups
+use ChemGroups_mod,   only:  chemgroups, PM10_GROUP
+use ChemRates_mod,    only:  setChemrates ! A2018, rct, NRCT
+use ChemSpecs_mod  !,           only:  SO4,C5H8,NO,NO2,SO2,CO,
+use CheckStop_mod,    only:  CheckStop, StopAll
+use ColumnSource_mod, only: ColumnRate
+use Config_module,    only:  &
    DEBUG,DEBUG_MASS             &
   ,AERO                         & ! for wet radii and surf area.
   ,SKIP_RCT                     & ! kHet tests
   ,dt_advec                     & ! time-step
   ,IOU_INST                     & ! for OUTMISC
   ,MasterProc                   & 
+  ,NSAREA_DEF                   & ! for aerosol surface area
   ,PPB, PT                      & ! PT-pressure at top
   ,USES                         & ! forest fires, hydrolysis, dergee_days etc.
   ,USE_OCEAN_NH3,USE_OCEAN_DMS,FOUND_OCEAN_DMS&
   ,VOLCANO_SR                   & ! Reduce Volcanic Emissions
   ,emis_inputlist               & ! Used in EEMEP
   ,KMAX_MID ,KMAX_BND, KCHEMTOP   ! Upper layer (k), upper level, and k for 1d fields
-use My_Derived_mod,       only: EmisSplit_OUT
-use Landuse_mod,          only: water_fraction, ice_landcover
-use Par_mod,              only: me, & 
-                               gi0,gi1,gj0,gj1,IRUNBEG,JRUNBEG
+use DerivedFields_mod,only: d_2d, f_2d
+use EmisDef_mod,      only: gridrcemis, gridrcroadd, KEMISTOP,Emis_4D,N_Emis_4D,Found_Emis_4D&
+                                , O_NH3, O_DMS, SumSplitEmis&
+                                ,AISco, AISnox, AISsox, AISso4, AISash, AISec , AISoc, FOUND_Special_ShipEmis&
+                                ,NO_ix,NO2_ix,SO2_ix,SO4_ix,CO_ix,REMPPM25_ix&
+                                ,EC_F_FFUEL_NEW_ix,EC_F_FFUEL_AGE_ix,POM_F_FFUEL_ix
+use EmisGet_mod,      only:  nrcemis, iqrc2itot  
+use ForestFire_mod,   only: Fire_rcemis, burning
+use Functions_mod,    only:  Tpot_2_T
+use GridValues_mod,   only:  xmd, GridArea_m2, & 
+                             debug_proc, debug_li, debug_lj,&
+                             A_mid,B_mid,gridwidth_m,dA,dB,&
+                             i_fdom, j_fdom
+use Io_Progs_mod,     only: datewrite !MASS
+use Landuse_mod,      only: water_fraction, ice_landcover
+use LocalVariables_mod,   only: Grid
+use MassBudget_mod,   only: totem    ! sum of emissions
+use MetFields_mod,    only: ps,sst
+use MetFields_mod,    only: roa, th, q, t2_nwp, cc3dmax, &
+                           zen, Idirect, Idiffuse,z_bnd,ws_10m
+use My_Derived_mod,   only: EmisSplit_OUT
+use Par_mod,          only: me, & 
+                           gi0,gi1,gj0,gj1,IRUNBEG,JRUNBEG
 use PhysicalConstants_mod,only: ATWAIR, AVOG, PI, GRAV, T0
-use Radiation_mod,        only: PARfrac, Wm2_uE
-use ZchemData_mod,   only: &
+use Radiation_mod,    only: PARfrac, Wm2_uE
+use ZchemData_mod,    only: &
    xn_2d                &  ! concentration terms (molec/cm3)
   ,rcemis, deltaZcm     &  ! emission terms and lowest layer thickness
+  ,rct                  &  ! chemical reaction rates
   ,rh, temp, tinv, itemp,pp      &  !
   ,M, o2, n2, h2o     &  ! Air concentrations
   ,cN2O5, cHO2, cO3, cHNO3 &  ! mol speeds, m/s
@@ -66,10 +69,10 @@ use ZchemData_mod,   only: &
   ,gamN2O5                 &  ! kHetero test - for printout
   ,DpgNw, S_m2m3           &  ! for wet diameter and surf area
   ,aero_fom, aero_fbc, aero_fss, aero_fdust
-use SmallUtils_mod,       only: find_index
-use Tabulations_mod,      only: tab_esat_Pa
-use TimeDate_mod,         only: current_date, date
-use Units_mod,            only: to_number_cm3 ! converts roa [kg/m3] to M [molec/cm3]
+use SmallUtils_mod,   only: find_index
+use Tabulations_mod,  only: tab_esat_Pa
+use TimeDate_mod,     only: current_date, date
+use Units_mod,        only: to_number_cm3 ! converts roa [kg/m3] to M [molec/cm3]
 !!  to_number_cm3=0.001*AVOG/ATWAIR,& ! from density (roa, kg/m3) to molecules/cm3
  
 
@@ -110,11 +113,14 @@ contains
     real :: ugSO4, ugNO3f, ugNO3c, ugRemF, ugRemC, ugpmF, ugpmC, rho
     logical :: is_finepm, is_ssalt, is_dust
     logical, dimension(size(PM10_GROUP)), save  :: is_BC 
-    real, dimension(size(AERO%Inddry))  :: Ddry ! Dry diameter
+    !A2018 real, dimension(size(AERO%Inddry))  :: Ddry ! Dry diameter
+    !A2018 Array below might need reconsideration. Link between
+    ! AERO and DDspec still confusing
+    real, dimension(NSAREA_DEF)  :: Ddry ! Dry diameter. 
     integer :: iw, ipm ! for wet rad
    ! if rates are wanted for d_2d output, we use these indices:
     integer, dimension(20), save :: d2index, id2rct 
-    integer, save :: nd2d, iBCf, iBCc
+    integer, save :: nd2d
     integer :: itmp
 
    ! local
@@ -122,9 +128,11 @@ contains
     integer           :: k, n, ispec   ! loop variables
     real              :: qsat ! saturation water content
     integer, save :: nSKIP_RCT = 0
-    logical, save ::is_finepm_a(size( PM10_GROUP ))
-    logical, save ::is_ssalt_a(size( PM10_GROUP ))
-    logical, save ::is_dust_a(size( PM10_GROUP ))
+    integer, save :: iSIAgroup,iSSgroup, iDUgroup, iPMfgroup !A2018
+    integer, save :: iBCfgroup,iBCcgroup                     !A2018
+    logical, save :: is_finepm_a(size( PM10_GROUP ))
+    logical, save :: is_ssalt_a(size( PM10_GROUP ))
+    logical, save :: is_dust_a(size( PM10_GROUP ))
 
     debug_flag =  ( DEBUG%SETUP_1DCHEM .and. debug_proc .and.  &
       i==debug_li .and. j==debug_lj .and. current_date%seconds == 0 )
@@ -132,6 +140,17 @@ contains
     if( first_call ) then
 
        if( debug_proc ) debug_flag = .true.  ! make sure we see 1st i,j combo
+
+      !A2018 see which groups we have:
+       iSIAgroup = find_index('SIA_GROUP',chemgroups(:)%name)
+       iSSgroup  = find_index('SS_GROUP',chemgroups(:)%name)
+       iDUgroup  = find_index('DUST_GROUP',chemgroups(:)%name)
+       iPMfgroup = find_index('PMFINE_GRPUP',chemgroups(:)%name)
+       iBCfgroup = find_index('ECFINE',chemgroups(:)%name)
+       iBCcgroup = find_index('ECCOARSE',chemgroups(:)%name)
+       if( MasterProc ) write(*,'(a,9(a,1x,i4))') dtxt//"Groups: ",&
+          'SIA', iSIAgroup, 'SS', iSSgroup, 'DU', iDUgroup, &
+          'BCf', iBCfgroup, 'BCc', iBCcgroup, 'PMf', iPMfgroup
 
        do n = 1, size(SKIP_RCT)
           if ( SKIP_RCT(n) > 0 ) nSKIP_RCT = nSKIP_RCT  + 1
@@ -142,28 +161,36 @@ contains
        is_BC(:) = .false.
 
 
-       iBCf = find_index('ECFINE',chemgroups(:)%name)
-       if( MasterProc ) write(*,*) dtxt//"is_BCf check ", iBCf, &
+       if( MasterProc ) write(*,*) dtxt//"is_BCf check ", iBCfgroup, &
            trim(USES%n2o5HydrolysisMethod)
-       if ( iBCf > 0 ) then
-          iBCc = find_index('ECCOARSE',chemgroups(:)%name)
-          if( MasterProc ) write(*,*) dtxt//"is_BCc check ", iBCc
+       if ( iBCfgroup > 0 ) then
           do ipm = 1, size( PM10_GROUP )
               ispec = PM10_GROUP(ipm)
-              is_BC(ipm)  = ( find_index( ispec, chemgroups(iBCf)%specs ) >0 )
-              if( iBCc > 0 ) then ! have coarse BC too
-                 if( find_index( ispec, chemgroups(iBCc)%specs ) >0) &
+              is_BC(ipm)  = ( find_index( ispec, chemgroups(iBCfgroup)%specs ) >0 )
+              if( iBCcgroup > 0 ) then ! have coarse BC too
+                 if( find_index( ispec, chemgroups(iBCcgroup)%specs ) >0) &
                     is_BC(ipm)  = .true.
               end if
               if( MasterProc) write(*,*) dtxt//"is_BC ",&
                    species(ispec)%name, is_BC(ipm)
           end do
        end if
+
+      !A2018 changes - SS and DU not essential now
+      !A2018 CHECK
+      !A2018 changes - SS and DU not essential now
+          if( MasterProc ) write(*,*) dtxt//"is_BCc check ", iBCcgroup
        do ipm = 1, size( PM10_GROUP )
           ispec = PM10_GROUP(ipm)
-          is_finepm_a(ipm) = ( find_index( ispec, PMFINE_GROUP) > 0 )
-          is_ssalt_a(ipm)  = ( find_index( ispec, SS_GROUP ) >0)
-          is_dust_a(ipm)   = ( find_index( ispec, DUST_GROUP )>0)
+          if ( iPMfgroup>0 ) is_finepm_a(ipm)  = & !A2018 methid
+                    ( find_index( ispec, chemgroups(iPMfgroup)%specs ) >0)
+          if ( iSSgroup>0 ) is_ssalt_a(ipm)  = & !A2018 methid
+                    ( find_index( ispec, chemgroups(iSSgroup)%specs ) >0)
+          if ( iDUgroup>0 ) is_dust_a(ipm)  = & !A2018 methid
+                    ( find_index( ispec, chemgroups(iDUgroup)%specs ) >0)
+          !A2018 is_finepm_a(ipm) = ( find_index( ispec, PMFINE_GROUP) > 0 )
+          !A2018 is_ssalt_a(ipm)  = ( find_index( ispec, SS_GROUP ) >0)
+          !A2018 is_dust_a(ipm)   = ( find_index( ispec, DUST_GROUP )>0)
        enddo
     end if ! first_call
 
@@ -243,7 +270,8 @@ contains
                ugpmF  = ugpmF   + ugtmp
                if(is_ssalt) ugSSaltF = ugSSaltF  +  ugtmp
                if(is_dust ) ugDustF  = ugDustF   +  ugtmp
-               if( find_index( ispec, SIA_GROUP )>0 ) &
+               !A2018 if( find_index( ispec, SIA_GROUP )>0 ) &
+               if( iSIAgroup >0 ) &
                     ugSIApm  = ugSIApm + ugtmp
                if(is_BC(ipm)) ugBCf = ugBCf  +  ugtmp
              else
@@ -266,7 +294,7 @@ contains
                      k, ugtmp, ugpmF, ugpmC,&
                      !find_index( ispec, SIA_GROUP ), ugtmp, ugpmF, ugpmC,&
                      ugSO4,ugNO3f,ugNO3c,ugBCf,ugBCc
-           end do
+           end do ! ipm
 
          ! FRACTIONS used for N2O5 hydrolysis
          ! We use mass fractions, since we anyway don't have MW for OM, dust,
@@ -291,68 +319,72 @@ contains
 
          ! GERBER equations for wet radius
 
-          do iw = 1, AERO%NSAREA 
+!A2018 FIXNEEDED!          AREALOOP: do iw = 1, AERO%NSAREA 
+!A2018 FIXNEEDED!
+!A2018 FIXNEEDED!            Ddry(iw) =  AERO%DpgN( AERO%Inddry(iw))   ! (m)
+!A2018 FIXNEEDED!
+!A2018 FIXNEEDED!            if( AERO%Gb(iw) > 0 ) then
+!A2018 FIXNEEDED!              DpgNw(iw,k)  = 2*WetRad( 0.5*Ddry(iw), rh(k), AERO%Gb(iw) ) 
+!A2018 FIXNEEDED!
+!A2018 FIXNEEDED!            else ! index -1 indicates use dry (for dust)
+!A2018 FIXNEEDED!              DpgNw(iw,k)  = Ddry(iw)
+!A2018 FIXNEEDED!            end if
+!A2018 FIXNEEDED!            if( debug_flag .and. k==20 ) write(*,fmt) dtxt//"WRAD  ", iw, &
+!A2018 FIXNEEDED!              1.0*AERO%Gb(iw),rh(k),Ddry(iw),DpgNw(iw,k), DpgNw(iw,k)/Ddry(iw)
+!A2018 FIXNEEDED!          end do AREALOOP
+!A2018 FIXNEEDED!
+!A2018 FIXNEEDED!           iw= AERO%SIA_F
+!A2018 FIXNEEDED!           rho=AERO%PMdens(AERO%Inddry(iw))
+!A2018 FIXNEEDED!           S_m2m3(iw,k) = pmSurfArea(ugSIApm,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
+!A2018 FIXNEEDED!                                     rho_kgm3=rho )
+!A2018 FIXNEEDED!
+!A2018 FIXNEEDED!           iw= AERO%PM_F ! now use for fine PM
+!A2018 FIXNEEDED!           rho=AERO%PMdens(AERO%Inddry(iw))
+!A2018 FIXNEEDED!           S_m2m3(iw,k) = pmSurfArea(ugpmf,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
+!A2018 FIXNEEDED!                                     rho_kgm3=rho )
+!A2018 FIXNEEDED!
+!A2018 FIXNEEDED!           iw= AERO%SS_F
+!A2018 FIXNEEDED!           rho=AERO%PMdens(AERO%Inddry(iw))
+!A2018 FIXNEEDED!           S_m2m3(iw,k) = pmSurfArea(ugSSaltF,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
+!A2018 FIXNEEDED!                                     rho_kgm3=rho )
+!A2018 FIXNEEDED!
+!A2018 FIXNEEDED!           iw= AERO%SS_C
+!A2018 FIXNEEDED!           rho=AERO%PMdens(AERO%Inddry(iw))
+!A2018 FIXNEEDED!           S_m2m3(iw,k) = pmSurfArea(ugSSaltC,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
+!A2018 FIXNEEDED!                                     rho_kgm3=rho )
+!A2018 FIXNEEDED!
+!A2018 FIXNEEDED!          ! dust - just used dry radius
+!A2018 FIXNEEDED!           iw= AERO%DU_F
+!A2018 FIXNEEDED!           rho=AERO%PMdens(AERO%Inddry(iw))
+!A2018 FIXNEEDED!           S_m2m3(iw,k) = pmSurfArea(ugDustF,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
+!A2018 FIXNEEDED!                                     rho_kgm3=rho )
+!A2018 FIXNEEDED!
+!A2018 FIXNEEDED!           iw= AERO%DU_C
+!A2018 FIXNEEDED!           rho=AERO%PMdens(AERO%Inddry(iw))
+!A2018 FIXNEEDED!           S_m2m3(iw,k) = pmSurfArea(ugDustC,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
+!A2018 FIXNEEDED!                                     rho_kgm3=rho )
+!A2018 FIXNEEDED!
+!A2018 FIXNEEDED!!           call CheckStop (  S_m2m3(k) < 0.0 , "NEGS_m2m3" )
+!A2018 FIXNEEDED!
+!A2018 FIXNEEDED!           if( debug_flag .and. k==20 )  then
+!A2018 FIXNEEDED!            write(*,fmt)  dtxt//" SAREAugPM in  ", k,  rh(k), temp(k), &
+!A2018 FIXNEEDED!              ugSIApm, ugpmf, ugSSaltC, ugDustC
+!A2018 FIXNEEDED!            do iw = 1, AERO%NSAREA
+!A2018 FIXNEEDED!             write(*,fmt) dtxt//"GERB ugDU (S um2/cm3)  ", iw, Ddry(iw), &
+!A2018 FIXNEEDED!              DpgNw(iw,k)/Ddry(iw), 1.0e6*S_m2m3(iw,k)
+!A2018 FIXNEEDED!            end do
+!A2018 FIXNEEDED!           end if
+!A2018 FIXNEEDED!
+!A2018 FIXNEEDED!           S_m2m3(:,k) = min( S_m2m3(:,k), 6.0e-3)  !! Allow max 6000 um2/cm3
+!A2018 FIXNEEDED!
+!A2018 FIXNEEDED!           ! For total area, we simply sum. We ignore some non-SS or dust _C.
+!A2018 FIXNEEDED!           iw= AERO%PM
+!A2018 FIXNEEDED!           S_m2m3(iw,k) = S_m2m3(AERO%PM_F,k) + S_m2m3(AERO%SS_C,k) &
+!A2018 FIXNEEDED!                             + S_m2m3(AERO%DU_C,k) 
 
-           Ddry(iw) =  AERO%DpgN( AERO%Inddry(iw))   ! (m)
-
-           if( AERO%Gb(iw) > 0 ) then
-              DpgNw(iw,k)  = 2*WetRad( 0.5*Ddry(iw), rh(k), AERO%Gb(iw) ) 
-
-           else ! index -1 indicates use dry (for dust)
-              DpgNw(iw,k)  = Ddry(iw)
-           end if
-           if( debug_flag .and. k==20 ) write(*,fmt) dtxt//"WRAD  ", iw, &
-             1.0*AERO%Gb(iw),rh(k),Ddry(iw),DpgNw(iw,k), DpgNw(iw,k)/Ddry(iw)
-          end do
-
-           iw= AERO%SIA_F
-           rho=AERO%PMdens(AERO%Inddry(iw))
-           S_m2m3(iw,k) = pmSurfArea(ugSIApm,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
-                                     rho_kgm3=rho )
-
-           iw= AERO%PM_F ! now use for fine PM
-           rho=AERO%PMdens(AERO%Inddry(iw))
-           S_m2m3(iw,k) = pmSurfArea(ugpmf,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
-                                     rho_kgm3=rho )
-
-           iw= AERO%SS_F
-           rho=AERO%PMdens(AERO%Inddry(iw))
-           S_m2m3(iw,k) = pmSurfArea(ugSSaltF,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
-                                     rho_kgm3=rho )
-
-           iw= AERO%SS_C
-           rho=AERO%PMdens(AERO%Inddry(iw))
-           S_m2m3(iw,k) = pmSurfArea(ugSSaltC,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
-                                     rho_kgm3=rho )
-
-          ! dust - just used dry radius
-           iw= AERO%DU_F
-           rho=AERO%PMdens(AERO%Inddry(iw))
-           S_m2m3(iw,k) = pmSurfArea(ugDustF,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
-                                     rho_kgm3=rho )
-
-           iw= AERO%DU_C
-           rho=AERO%PMdens(AERO%Inddry(iw))
-           S_m2m3(iw,k) = pmSurfArea(ugDustC,Dp=Ddry(iw), Dpw=DpgNw(iw,k),  &
-                                     rho_kgm3=rho )
-
-!           call CheckStop (  S_m2m3(k) < 0.0 , "NEGS_m2m3" )
-
-           if( debug_flag .and. k==20 )  then
-            write(*,fmt)  dtxt//" SAREAugPM in  ", k,  rh(k), temp(k), &
-              ugSIApm, ugpmf, ugSSaltC, ugDustC
-            do iw = 1, AERO%NSAREA
-             write(*,fmt) dtxt//"GERB ugDU (S um2/cm3)  ", iw, Ddry(iw), &
-              DpgNw(iw,k)/Ddry(iw), 1.0e6*S_m2m3(iw,k)
-            end do
-           end if
-
-           S_m2m3(:,k) = min( S_m2m3(:,k), 6.0e-3)  !! Allow max 6000 um2/cm3
-
-           ! For total area, we simply sum. We ignore some non-SS or dust _C.
-           iw= AERO%PM
-           S_m2m3(iw,k) = S_m2m3(AERO%PM_F,k) + S_m2m3(AERO%SS_C,k) &
-                             + S_m2m3(AERO%DU_C,k) 
+           !A2018 TMP FIX:
+           S_m2m3(:,k) =  3.0e-4  !! 300 um2/cm3
+           !A2018 END TMP FIX:
 
            iw= AERO%ORIG
            S_m2m3(iw,k) = S_RiemerN2O5(k)
@@ -393,7 +425,8 @@ contains
   ! 5 ) Rates  (!!!!!!!!!! NEEDS TO BE AFTER RH, XN, etc. !!!!!!!!!!)
 
 
-   call set_rct_rates()
+   !A2018 call set_rct_rates()
+   call setChemRates()
 
   ! For sensitivity tests
    do  n = 1, nSKIP_RCT ! can be zero
@@ -416,9 +449,10 @@ contains
      do itmp = 1, size(f_2d)
            if ( f_2d(itmp)%subclass == 'rct' ) then
             !check if index of rate constant (config) possible
-             if ( f_2d(itmp)%index > NRCT ) then
+             !A2018 if ( f_2d(itmp)%index > NRCT ) then
+             if ( f_2d(itmp)%index > NCHEMRATES ) then
                 if(MasterProc) write(*,*) 'RCT NOT AVAILABLE!', itmp, &
-                  f_2d(itmp)%index, NRCT
+                  f_2d(itmp)%index, NCHEMRATES
                 cycle
              end if
              nd2d =  nd2d  + 1

@@ -7,13 +7,14 @@ module Emissions_mod
 
 use Biogenics_mod,     only: SoilNOx, AnnualNdep
 use CheckStop_mod,     only: CheckStop,StopAll
-use ChemSpecs,        only: NSPEC_SHL, NSPEC_TOT,NO2, SO2,species,species_adv
+use ChemDims_mod,      only: NSPEC_SHL, NSPEC_TOT,&
+                             NEMIS_File  ! No. emission files
+use ChemSpecs_mod,     only: NO2, SO2,species,species_adv
 use Chemfields_mod,    only: xn_adv
 use Country_mod,       only: MAXNLAND,NLAND,Country,IC_NAT,IC_FI,IC_NO,IC_SE
 use Country_mod,       only: EU28,EUMACC2 !CdfSec
 use EmisDef_mod,       only: &
-      NEMIS_FILE    & ! No. emission files
-     ,EMIS_FILE     & ! Names of species ("sox  ",...)
+      EMIS_FILE     & ! Names of species ("sox  ",...)
      ,NCMAX         & ! Max. No. countries per grid
      ,FNCMAX        & ! Max. No. countries (with flat emissions) per grid
      ,ISNAP_DOM     & ! snap index for domestic/resid emis

@@ -32,9 +32,11 @@ module Aqueous_mod
 use My_Derived_mod,    only: WDEP_WANTED ! Which outputs wanted!
 use My_Derived_mod,    only: nWDEP => nOutputWdep ! number WDEP used
 use CheckStop_mod,     only: CheckStop
-use ChemSpecs                 
+use ChemDims_mod             
+use ChemSpecs_mod             
 use ChemGroups_mod,    only: ChemGroups
 use DerivedFields_mod, only: f_2d, d_2d     ! Contains Wet deposition fields
+use GasParticleCoeffs_mod, only: WetCoeffs, WDspec, WetDepMapping ! New A2018
 use GridValues_mod,    only: gridwidth_m,xm2,dA,dB
 use Io_mod,            only: IO_DEBUG, datewrite
 use MassBudget_mod,    only : wdeploss,totwdep
@@ -50,7 +52,7 @@ use Config_module,only: &
 use MetFields_mod,       only: pr, roa, z_bnd, cc3d, lwc
 use MetFields_mod,       only: ps
 use OrganicAerosol_mod,  only: ORGANIC_AEROSOLS
-use OwnDataTypes_mod,    only: depmap  ! has adv, calc, vg
+!A2018 use OwnDataTypes_mod,    only: depmap  ! has adv, calc, vg
 use Par_mod,             only: limax,ljmax, me,li0,li1,lj0,lj1
 use PhysicalConstants_mod,only: GRAV,AVOG,  &    ! "g" & Avogadro's No.
                                ATWAIR,&         ! Mol. weight of air(Jones,1992)
@@ -170,49 +172,53 @@ integer, public, parameter :: &
 
 
 ! ------------ WetDep initialisation (old My_WetDep --------------
-type, public :: WScav
-  real :: W_sca       ! Scavenging ratio/z_Sca/rho = W_sca/1.0e6
-  real :: W_sub       ! same for subcloud
-end type WScav
+!A2018 type, public :: WScav
+!A2018   real :: W_sca       ! Scavenging ratio/z_Sca/rho = W_sca/1.0e6
+!A2018   real :: W_sub       ! same for subcloud
+!A2018 end type WScav
 
-integer, public, parameter :: NWETDEP_CALC =  22 ! No. of solublity classes
+!A2018 integer, public, parameter :: NWETDEP_CALC =  22 ! No. of solublity classes
 !  Note - these are for "master" or model species - they do not
 !  need to be present in the chemical scheme. However, the chemical
 !  scheme needs to define wet scavenging after these. If you would
 !  like other characteristics, add them here.
-integer, parameter, public :: &
-  CWDEP_SO2  =  1, CWDEP_SO4  =  2, CWDEP_NH3  =  3, CWDEP_HNO3 =  4, &
-  CWDEP_H2O2 =  5, CWDEP_HCHO =  6, CWDEP_PMf  =  7, CWDEP_PMc  =  8, &
-  CWDEP_ECfn =  9, CWDEP_SSf  = 10, CWDEP_SSc  = 11, CWDEP_SSg  = 12, &
-  CWDEP_POLLw= 13, &
-  CWDEP_ROOH = 14, &   ! TEST!!
-  CWDEP_0p2 = 15, CWDEP_0p3 = 16, CWDEP_0p4 = 17, CWDEP_0p5 = 18, &
-  CWDEP_0p6 = 19, CWDEP_0p7 = 20, CWDEP_0p8 = 21, CWDEP_1p3 = 22
-integer, parameter, public :: &
-  CWDEP_ASH1=CWDEP_PMf,CWDEP_ASH2=CWDEP_PMf,CWDEP_ASH3=CWDEP_PMf,&
-  CWDEP_ASH4=CWDEP_PMf,CWDEP_ASH5=CWDEP_PMc,CWDEP_ASH6=CWDEP_PMc,&
-  CWDEP_ASH7=CWDEP_PMc
-
+!A2018 integer, parameter, public :: &
+!A2018   CWDEP_SO2  =  1, CWDEP_SO4  =  2, CWDEP_NH3  =  3, CWDEP_HNO3 =  4, &
+!A2018   CWDEP_H2O2 =  5, CWDEP_HCHO =  6, CWDEP_PMf  =  7, CWDEP_PMc  =  8, &
+!A2018   CWDEP_ECfn =  9, CWDEP_SSf  = 10, CWDEP_SSc  = 11, CWDEP_SSg  = 12, &
+!A2018   CWDEP_POLLw= 13, &
+!A2018   CWDEP_ROOH = 14, &   ! TEST!!
+!A2018   CWDEP_0p2 = 15, CWDEP_0p3 = 16, CWDEP_0p4 = 17, CWDEP_0p5 = 18, &
+!A2018   CWDEP_0p6 = 19, CWDEP_0p7 = 20, CWDEP_0p8 = 21, CWDEP_1p3 = 22
+!A2018 integer, parameter, public :: &
+!A2018   CWDEP_ASH1=CWDEP_PMf,CWDEP_ASH2=CWDEP_PMf,CWDEP_ASH3=CWDEP_PMf,&
+!A2018   CWDEP_ASH4=CWDEP_PMf,CWDEP_ASH5=CWDEP_PMc,CWDEP_ASH6=CWDEP_PMc,&
+!A2018   CWDEP_ASH7=CWDEP_PMc
+!A2018 
 !===========================================!
 ! Chemistry-dependent mapping:
 ! WdepMap = (/
-!    depmap( HNO3, CWDEP_HNO3, -1) & etc.
+!    dep_t( "HNO3",  "HNO3", -999) & 
+!    dep_t( "NO3_f", "PMf", -999) & etc.
 ! .... produced from GenChem, also with e.g.
 !integer, public, parameter ::  NWETDEP_ADV  = 14
 !===========================================!
-include 'CM_WetDep.inc'
+!April 2018.  This is now taken care of in GasParticleCoeffs
+!A2018 include 'CM_WetDep.inc'
 !===========================================!
 
 ! And create an array to map from the "calc" to the advected species
 ! Use zeroth column to store number of species in that row
-integer, public, dimension(NWETDEP_CALC,0:NWETDEP_ADV) :: Calc2adv
+!A2018 integer, public, dimension(NWETDEP_CALC,0:NWETDEP_ADV) :: Calc2adv
 
+!A2018:
+  integer, private, save :: iwdepPMf  !A2018 was CWDEP_PMf
 ! arrays for species and groups, e.g. SOX, OXN
 integer, private, save :: nwgrp = 0, nwspec = 0  ! no. groups & specs
 integer, private, allocatable, dimension(:), save :: wetGroup, wetSpec
 type(group_umap), private, allocatable, dimension(:), target, save :: wetGroupUnits
 
-type(WScav), public, dimension(NWETDEP_CALC), save  :: WetDep
+!A2018 type(WScav), public, dimension(NWETDEP_CALC), save  :: WetDep
 
 integer, public, save  :: WDEP_PREC=-1   ! Used in Aqueous_mod
 contains
@@ -220,16 +226,21 @@ contains
 subroutine Init_WetDep()
   integer :: iadv, igrp, icalc, n, nc, f2d, alloc_err
   character(len=30) :: dname
-!/ SUBCLFAC is A/FALLSPEED where A is 5.2 m3 kg-1 s-1,
-!  and the fallspeed of the raindroplets is assumed to be 5 m/s.
-  real, parameter :: FALLSPEED = 5.0               ! m/s
-  real, parameter :: SUBCLFAC = 5.2 / FALLSPEED
+!A2018 !/ SUBCLFAC is A/FALLSPEED where A is 5.2 m3 kg-1 s-1,
+!A2018 !  and the fallspeed of the raindroplets is assumed to be 5 m/s.
+!A2018   real, parameter :: FALLSPEED = 5.0               ! m/s
+!A2018   real, parameter :: SUBCLFAC = 5.2 / FALLSPEED
+!A2018 
+!A2018 !/ e is the scavenging efficiency (0.02 for fine particles, 0.4 for course)
+!A2018   real, parameter :: EFF25 = 0.02*SUBCLFAC, &
+!A2018                      EFFCO = 0.4 *SUBCLFAC, &
+!A2018                      EFFGI = 0.7 *SUBCLFAC
 
-!/ e is the scavenging efficiency (0.02 for fine particles, 0.4 for course)
-  real, parameter :: EFF25 = 0.02*SUBCLFAC, &
-                     EFFCO = 0.4 *SUBCLFAC, &
-                     EFFGI = 0.7 *SUBCLFAC
+!A2018: new
 
+   call WetCoeffs()  ! Sets WDspec(:)% name, W_sca, W_sub
+
+!A2018: end new
   allocate(incloud(KUPPER:KMAX_MID),pr_acc(KUPPER:KMAX_MID))
   allocate(pH(KUPPER:KMAX_MID),so4_aq(KUPPER:KMAX_MID),no3_aq(KUPPER:KMAX_MID))
   allocate(nh4_aq(KUPPER:KMAX_MID),nh3_aq(KUPPER:KMAX_MID),hso3_aq(KUPPER:KMAX_MID))
@@ -238,45 +249,48 @@ subroutine Init_WetDep()
   allocate(frac_aq(NHENRY,KUPPER:KMAX_MID))
   allocate(aqrck(NAQUEOUS,KCHEMTOP:KMAX_MID))
 
-!/.. setup the scavenging ratios for in-cloud and sub-cloud. For
-!    gases, sub-cloud = 0.5 * incloud. For particles, sub-cloud=
-!    efficiency * SUBCLFAC
-!/..                             W_Sca  W_sub
-  WetDep(CWDEP_SO2)   = WScav(   0.3,  0.15)  ! Berge+Jakobsen
-  WetDep(CWDEP_SO4)   = WScav(   1.0,  EFF25) ! Berge+Jakobsen
-  WetDep(CWDEP_NH3)   = WScav(   1.4,  0.5 )  ! subcloud = 1/3 of cloud for gases
-  WetDep(CWDEP_HNO3)  = WScav(   1.4,  0.5)   !
-  WetDep(CWDEP_H2O2)  = WScav(   1.4,  0.5)   !
-  WetDep(CWDEP_HCHO)  = WScav(   0.1,  0.03)  !
-  WetDep(CWDEP_ECfn)  = WScav(   0.05, EFF25)
-  WetDep(CWDEP_SSf)   = WScav(   1.6,  EFF25)
-  WetDep(CWDEP_SSc)   = WScav(   1.6,  EFFCO)
-  WetDep(CWDEP_SSg)   = WScav(   1.6,  EFFGI)
-  WetDep(CWDEP_PMf)   = WScav(   1.0,  EFF25) !!
-  WetDep(CWDEP_PMc)   = WScav(   1.0,  EFFCO) !!
-  WetDep(CWDEP_POLLw) = WScav(   1.0,  SUBCLFAC) ! pollen
-!RB extras:
-!perhaps too high for MeOOH? About an order of magnitude lower H* than HCHO:
-  WetDep(CWDEP_ROOH)  = WScav(   0.05, 0.015) ! assumed half of HCHO - 
-  WetDep(CWDEP_0p2)  = WScav(   0.2, 0.06) !
-  WetDep(CWDEP_0p3)  = WScav(   0.3, 0.09) !
-  WetDep(CWDEP_0p4)  = WScav(   0.4, 0.12) !
-  WetDep(CWDEP_0p5)  = WScav(   0.5, 0.15) !
-  WetDep(CWDEP_0p6)  = WScav(   0.6, 0.18) !
-  WetDep(CWDEP_0p7)  = WScav(   0.7, 0.21) !
-  WetDep(CWDEP_0p8)  = WScav(   0.8, 0.24) ! 
-  WetDep(CWDEP_1p3)  = WScav(   1.3, 0.39) !
+!A2018 !/.. setup the scavenging ratios for in-cloud and sub-cloud. For
+!A2018 !    gases, sub-cloud = 0.5 * incloud. For particles, sub-cloud=
+!A2018 !    efficiency * SUBCLFAC
+!A2018 !/..                             W_Sca  W_sub
+!A2018   WetDep(CWDEP_SO2)   = WScav(   0.3,  0.15)  ! Berge+Jakobsen
+!A2018   WetDep(CWDEP_SO4)   = WScav(   1.0,  EFF25) ! Berge+Jakobsen
+!A2018   WetDep(CWDEP_NH3)   = WScav(   1.4,  0.5 )  ! subcloud = 1/3 of cloud for gases
+!A2018   WetDep(CWDEP_HNO3)  = WScav(   1.4,  0.5)   !
+!A2018   WetDep(CWDEP_H2O2)  = WScav(   1.4,  0.5)   !
+!A2018   WetDep(CWDEP_HCHO)  = WScav(   0.1,  0.03)  !
+!A2018   WetDep(CWDEP_ECfn)  = WScav(   0.05, EFF25)
+!A2018   WetDep(CWDEP_SSf)   = WScav(   1.6,  EFF25)
+!A2018   WetDep(CWDEP_SSc)   = WScav(   1.6,  EFFCO)
+!A2018   WetDep(CWDEP_SSg)   = WScav(   1.6,  EFFGI)
+!A2018   WetDep(CWDEP_PMf)   = WScav(   1.0,  EFF25) !!
+!A2018   WetDep(CWDEP_PMc)   = WScav(   1.0,  EFFCO) !!
+!A2018   WetDep(CWDEP_POLLw) = WScav(   1.0,  SUBCLFAC) ! pollen
+!A2018 !RB extras:
+!A2018 !perhaps too high for MeOOH? About an order of magnitude lower H* than HCHO:
+!A2018   WetDep(CWDEP_ROOH)  = WScav(   0.05, 0.015) ! assumed half of HCHO - 
+!A2018   WetDep(CWDEP_0p2)  = WScav(   0.2, 0.06) !
+!A2018   WetDep(CWDEP_0p3)  = WScav(   0.3, 0.09) !
+!A2018   WetDep(CWDEP_0p4)  = WScav(   0.4, 0.12) !
+!A2018   WetDep(CWDEP_0p5)  = WScav(   0.5, 0.15) !
+!A2018   WetDep(CWDEP_0p6)  = WScav(   0.6, 0.18) !
+!A2018   WetDep(CWDEP_0p7)  = WScav(   0.7, 0.21) !
+!A2018   WetDep(CWDEP_0p8)  = WScav(   0.8, 0.24) ! 
+!A2018   WetDep(CWDEP_1p3)  = WScav(   1.3, 0.39) !
 
 ! Other PM compounds treated with SO4-LIKE array defined above
 
 !####################### gather indices from My_Derived
 ! WDEP_WANTED array, and determine needed indices in d_2d
 
+!A2018 now have nwdep which seems same as nwspec, or maybe not!
+  iwdepPMf = find_index('PMf',WDspec(:)%name )
   nwspec=count(WDEP_WANTED(1:nWDEP)%txt2=="SPEC")
   nwgrp =count(WDEP_WANTED(1:nWDEP)%txt2=="GROUP")
-  allocate(wetSpec(nwspec),wetGroup(nwgrp),wetGroupUnits(nwgrp),stat=alloc_err)
+  allocate(wetSpec(nwdep),wetGroup(nwgrp),wetGroupUnits(nwgrp),stat=alloc_err)
   call CheckStop(alloc_err, "alloc error wetSpec/wetGroup")
 
+  !A2018 nwspec=0;nwgrp=0
   nwspec=0;nwgrp=0
   do n = 1, nWDEP ! size(WDEP_WANTED(:)%txt1)
     dname = "WDEP_"//trim(WDEP_WANTED(n)%txt1)
@@ -324,24 +338,24 @@ subroutine Init_WetDep()
 
 !####################### END indices here ##########
 
-! Now create table to map calc species to actual advected ones:
-  Calc2adv = 0
-  do n = 1, NWETDEP_ADV
-    icalc = WDepMap(n)%calc
-    iadv  = WDepMap(n)%ind
-    nc    = Calc2adv(icalc,0) + 1
-    if(MasterProc.and.DEBUG%AQUEOUS) write(*,"(a,4i5)") &
-      "CHECKING WetDep Calc2adv ", n,icalc,iadv,nc
-    Calc2adv(icalc,0 ) = nc
-    Calc2adv(icalc,nc) = iadv
-  end do
-
-  if(MasterProc.and.DEBUG%AQUEOUS) then
-    write(*,*) "FINAL WetDep Calc2adv "
-    write(*,"(i3,i4,15(1x,a))") (icalc, Calc2adv(icalc,0), &
-      (trim(species_adv(Calc2adv(icalc,nc))%name),nc=1,Calc2adv(icalc,0)),&
-        icalc=1,NWETDEP_CALC)
-  end if
+!A2018! Now create table to map calc species to actual advected ones:
+!A2018  Calc2adv = 0
+!A2018  do n = 1, NWETDEP_ADV
+!A2018    icalc = WDepMap(n)%calc
+!A2018    iadv  = WDepMap(n)%ind
+!A2018    nc    = Calc2adv(icalc,0) + 1
+!A2018    if(MasterProc.and.DEBUG%AQUEOUS) write(*,"(a,4i5)") &
+!A2018      "CHECKING WetDep Calc2adv ", n,icalc,iadv,nc
+!A2018    Calc2adv(icalc,0 ) = nc
+!A2018    Calc2adv(icalc,nc) = iadv
+!A2018  end do
+!A2018
+!A2018  if(MasterProc.and.DEBUG%AQUEOUS) then
+!A2018    write(*,*) "FINAL WetDep Calc2adv "
+!A2018    write(*,"(i3,i4,15(1x,a))") (icalc, Calc2adv(icalc,0), &
+!A2018      (trim(species_adv(Calc2adv(icalc,nc))%name),nc=1,Calc2adv(icalc,0)),&
+!A2018        icalc=1,NWETDEP_CALC)
+!A2018  end if
 end subroutine Init_WetDep
 !-----------------------------------------------------------------------
 subroutine Setup_Clouds(i,j,debug_flag)
@@ -747,27 +761,35 @@ subroutine WetDeposition(i,j,debug_flag)
   if(DEBUG%AQUEOUS.and.debug_flag) write(*,*) "(a15,2i4,es14.4)", &
      "DEBUG_WDEP2", kcloudtop, ksubcloud, pr_acc(KMAX_MID)
 
+!A2018 had   WetDep(CWDEP_H2O2)  = WScav(   1.4,  0.5)   !
+! now WDspec()%
 ! need particle fraction wet deposition for semi-volatile species - here hard coded to use scavenging parameters for PMf
-  vw(kcloudtop:ksubcloud-1) = WetDep(CWDEP_PMf)%W_sca ! Scav. for incloud
-  vw(ksubcloud:KMAX_MID  )  = WetDep(CWDEP_PMf)%W_sub ! Scav. for subcloud
+!A2018  vw(kcloudtop:ksubcloud-1) = WetDep(CWDEP_PMf)%W_sca ! Scav. for incloud
+!A2018  vw(ksubcloud:KMAX_MID  )  = WetDep(CWDEP_PMf)%W_sub ! Scav. for subcloud
+  vw(kcloudtop:ksubcloud-1) = WDspec(iwdepPMf)%W_sca ! Scav. for incloud
+  vw(ksubcloud:KMAX_MID  )  = WDspec(iwdepPMf)%W_sub ! Scav. for subcloud
   do k = kcloudtop, KMAX_MID
     lossfacPMf(k)  = exp( -vw(k)*pr_acc(k)*dt )
   enddo 
 
-  do icalc = 1, NWETDEP_CALC  ! Here we loop over "model" species
+  do icalc = 1, nwdep !A2018 NWETDEP_CALC  ! Here we loop over "model" species
 
 ! Put both in- and sub-cloud scavenging ratios in the array vw:
 
-    vw(kcloudtop:ksubcloud-1) = WetDep(icalc)%W_sca ! Scav. for incloud
-    vw(ksubcloud:KMAX_MID  )  = WetDep(icalc)%W_sub ! Scav. for subcloud
+    !A2018 vw(kcloudtop:ksubcloud-1) = WetDep(icalc)%W_sca ! Scav. for incloud
+    !A2018 vw(ksubcloud:KMAX_MID  )  = WetDep(icalc)%W_sub ! Scav. for subcloud
+    vw(kcloudtop:ksubcloud-1) = WDspec(icalc)%W_sca ! Scav. for incloud
+    vw(ksubcloud:KMAX_MID  )  = WDspec(icalc)%W_sub ! Scav. for subcloud
 
     do k = kcloudtop, KMAX_MID
       lossfac(k)  = exp( -vw(k)*pr_acc(k)*dt )
 
       ! For each "calc" species we have often a number of model
       ! species
-      do is = 1, Calc2adv(icalc,0)  ! number of species
-        iadv = Calc2adv(icalc,is)
+      !A2018 do is = 1, Calc2adv(icalc,0)  ! number of species
+      !A2018   iadv = Calc2adv(icalc,is)
+      do is = 1, size(WetDepMapping(icalc)%specs)  ! number of species
+        iadv = WetDepMapping(is)%specs(is)
         itot = iadv+NSPEC_SHL
 
     ! For semivolatile species only the particle fraction is deposited

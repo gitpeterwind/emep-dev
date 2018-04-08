@@ -5,9 +5,9 @@ module Config_module
 ! Note that physical constants (e.g. gravity, Cp, etc ( are specified in
 ! the module PhysicalConstants_mod.f90)
 !----------------------------------------------------------------------------
-use Aerofunctions,        only: DpgV2DpgN
+!A2018 use Aerofunctions,        only: DpgV2DpgN
 use CheckStop_mod,         only: CheckStop
-use ChemSpecs,            only: species
+use ChemSpecs_mod,            only: species
 use Io_Nums_mod,           only: IO_NML, IO_LOG, IO_TMP
 use OwnDataTypes_mod,      only: typ_ss, uEMEP_type
 use Precision_mod,         only: dp
@@ -136,6 +136,7 @@ type(emep_useconfig), public, save :: USES
 type, public :: emep_debug
   logical :: &
      AOT             = .false. &
+    ,A2018           = .true.  & ! A2018 TMP while testing
     ,AEROSOL         = .false. & ! ...needed for intended debugs are to work
     ,AQUEOUS         = .false. &
     ,BCS             = .false. & ! BoundaryConditions
@@ -451,31 +452,34 @@ integer, public :: METSTEP = 3  ! time-step of met. (h). 3 hours default, but WR
 !Number of aerosol sizes (1-fine, 2-coarse, 3-'giant' for sea salt )
 ! FINE_PM = 1, COAR_NO3 = 2, COAR_SS = 3, COAR DUST = 4,pollen = 5
 
-integer, parameter :: NSAREA_DEF = 8 ! needs to be consistent with type below
+integer, parameter, public :: NSAREA_DEF = 8 ! needs to be consistent with type below
 type, public :: aero_t
   character(len=15) :: EQUILIB  = 'MARS ' !aerosol themodynamics
   logical          :: DYNAMICS = .false.
   integer          :: NSIZE    = 7
-  real, dimension(7) :: &
-     DpgV  =[0.33e-6,3.0e-6,4.8e-6,5.0e-6,22e-6,28e-6,32e-6] & ! diameter [m]
-    ,DpgN  =[   -1.0,  -1.0,  -1.0,  -1.0, -1.0, -1.0, -1.0] & ! to be calculated
-    ,sigma =[    1.8,   2.0,   2.0,   2.2,  2.0,  2.0,  2.0] &
-    ,PMdens=[ 1600.0,2200.0,2200.0,2600.0,800.0,800.0,800.0] & ! density [kg/m3]
-    ,Vs = 0.0   ! Settling velocity (m/s). Easiest to define here
-
+!A2018  real, dimension(7) :: &
+!A2018!??               F       C      G      
+!A2018     DpgV  =[0.33e-6,3.0e-6,4.8e-6,5.0e-6,22e-6,28e-6,32e-6] & ! diameter [m]
+!A2018    ,DpgN  =[   -1.0,  -1.0,  -1.0,  -1.0, -1.0, -1.0, -1.0] & ! to be calculated
+!A2018    ,sigma =[    1.8,   2.0,   2.0,   2.2,  2.0,  2.0,  2.0] &
+!A2018    ,PMdens=[ 1600.0,2200.0,2200.0,2600.0,800.0,800.0,800.0] & ! density [kg/m3]
+!A2018    ,Vs = 0.0   ! Settling velocity (m/s). Easiest to define here
+!A2018
+!A2018 QUERY - FIGURE OUT LINKS TO GasParticleCoeffs
 ! For surface area we track the following (NSD=not seasalt or dust)
 ! Must make sizes match NSAREA_DEF above
 ! NB PM is sum of PMf and PMC
-  integer :: &
-    SIA_F=1,PM_F=2,SS_F=3,DU_F=4,PM=5,SS_C=6,DU_C=7,ORIG=8,NSAREA=NSAREA_DEF
-
-! Mappings to DpgV types above, and Gerber types (see AeroFunctions).
-! For Gerber (Gb), -1 indicates to use dry radius
-character(len=4), dimension(NSAREA_DEF) :: &
-  SLABELS=[character(len=4)::'SIAF','PMF','SSF','DUF','PM','SSC','DUC','ORIG']
-integer, dimension(NSAREA_DEF) ::&
-  Inddry = [ 1, 1, 1, 1, 2, 3, 4, 3], &
-  Gb     = [ 1, 1, 2,-1, 1, 2,-1,-1]
+ integer :: &
+   SIA_F=1,PM_F=2,SS_F=3,DU_F=4,PM=5,SS_C=6,DU_C=7,ORIG=8,NSAREA=NSAREA_DEF
+!A2018
+!A2018! Mappings to DpgV types above, and Gerber types (see AeroFunctions).
+!A2018! For Gerber (Gb), -1 indicates to use dry radius
+!A2018character(len=4), dimension(NSAREA_DEF) :: &
+!A2018  SLABELS=[character(len=4)::'SIAF','PMF','SSF','DUF','PM','SSC','DUC','ORIG']
+!A2018integer, dimension(NSAREA_DEF) ::&
+!A2018!??         sia pmf   ssf duf  pm  ssc  duc   orig
+!A2018  Inddry = [ 1,   1,   1,  1,   2,   3,   4,   3], &
+!A2018  Gb     = [ 1,   1,   2, -1,   1,   2,  -1,  -1]
 end type aero_t
 type(aero_t), public, save :: AERO = aero_t()
 
@@ -713,9 +717,9 @@ subroutine Config_ModelConstants(iolog)
     DEBUG%ISPEC = ispec
     first_call = .false.
 
-    do i = 1, size(AERO%DpgN(:))
-      AERO%DpgN(i) = DpgV2DpgN(AERO%DpgV(i),AERO%sigma(i))
-    end do
+!A2018    do i = 1, size(AERO%DpgN(:))
+!A2018      AERO%DpgN(i) = DpgV2DpgN(AERO%DpgV(i),AERO%sigma(i))
+!A2018    end do
   end if
 
   if(MasterProc)then
@@ -844,3 +848,7 @@ end subroutine associate_File
 
 end module Config_module
 !_____________________________________________________________________________
+!!TSTEMX program testr
+!!TSTEMX use Config_module
+!!TSTEXM !FAILS due to mpi call Config_ModelConstants()
+!!TSTEMX end program testr

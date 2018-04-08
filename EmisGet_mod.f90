@@ -1,12 +1,13 @@
 module EmisGet_mod
 
 use CheckStop_mod,     only: CheckStop, StopAll, check=>CheckNC
-use ChemSpecs,        only: NSPEC_ADV, NSPEC_TOT, species 
+use ChemDims_mod,      only: NSPEC_ADV, NSPEC_TOT, NEMIS_File, NEMIS_Specs
+use ChemSpecs_mod,     only: species 
 use Country_mod,       only: NLAND, IC_NAT, IC_VUL, IC_NOA, Country, &
                              ! NMR-NH3 specific variables (hb NH3Emis)
                              IC_NMR 
 use EmisDef_mod,       only: NSECTORS, ANTROP_SECTORS, NCMAX, FNCMAX, & 
-                            N_HFAC,N_SPLIT, NEMIS_FILE, EMIS_FILE, & 
+                            N_HFAC,N_SPLIT, EMIS_FILE, & 
                             VOLCANOES_LL, &
                           ! NMR-NH3 specific variables (for FUTURE )
                             NH3EMIS_VAR,dknh3_agr,ISNAP_AGR,ISNAP_TRAF, &

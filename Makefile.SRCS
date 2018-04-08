@@ -1,14 +1,16 @@
 #=============================================================================
+# DLETE ChemSpecs_wrapper.f90
 SRCS ?=	\
 	AeroFunctions.f90 Aero_Vds_mod.f90 Ammonium_mod.f90 AOD_PM_mod.f90 \
 	Advection_mod.f90 AirEmis_mod.f90 AllocInit.f90 \
 	AOTnPOD_mod.f90 Aqueous_n_WetDep_mod.f90 \
 	BiDir_emep.f90 BiDir_module.f90 \
 	BLPhysics_mod.f90 Biogenics_mod.f90 \
-	BoundaryConditions_mod.f90 CellMet_mod.f90 CheckStop_mod.f90 ChemFields_mod.f90 \
-	ChemSpecs_wrapper.f90 CoDep_mod.f90 Country_mod.f90 \
-	ChemFunctions_mod.f90 CM_ChemRates_mod.f90 Convection_mod.f90 ColumnSource_mod.f90 \
-	CM_ChemGroups_mod.f90 CM_ChemSpecs_mod.f90  \
+	BoundaryConditions_mod.f90 CellMet_mod.f90 CheckStop_mod.f90 \
+	ChemFields_mod.f90 \
+	CoDep_mod.f90 Country_mod.f90 \
+	ChemFunctions_mod.f90 Convection_mod.f90 ColumnSource_mod.f90 \
+        CM_ChemDims_mod.f90 CM_ChemGroups_mod.f90 CM_ChemRates_mod.f90 CM_ChemSpecs_mod.f90  \
 	Config_module.f90  \
 	DefPhotolysis_mod.f90 Derived_mod.f90 DerivedFields_mod.f90 DO3SE_mod.f90 \
 	DryDep_mod.f90 DustProd_mod.f90 EcoSystem_mod.f90  \
@@ -25,8 +27,7 @@ SRCS ?=	\
         OutputChem_mod.f90 OwnDataTypes_mod.f90 Par_mod.f90 \
 	PhysicalConstants_mod.f90 PlumeRise_mod.f90 PointSource_mod.f90 \
 	Precision_mod.f90 Radiation_mod.f90 Rb_mod.f90 \
-	ReadField_mod.f90 Rsurface_mod.f90 Runchem_mod.f90 \
-	Setup_1d_mod.f90 \
+	ReadField_mod.f90 Rsurface_mod.f90 Runchem_mod.f90 Setup_1d_mod.f90 \
 	Sites_mod.f90 SmallUtils_mod.f90 SOA_mod.f90 \
 	SoilWater_mod.f90 Solver.f90 SeaSalt_mod.f90 StoFlux_mod.f90 \
 	SubMet_mod.f90 Tabulations_mod.f90 TimeDate_mod.f90 TimeDate_ExtraUtil_mod.f90 \

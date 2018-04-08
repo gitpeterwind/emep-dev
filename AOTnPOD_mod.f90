@@ -4,7 +4,7 @@
 module AOTx_mod
   use CheckStop_mod,  only : checkStop, StopAll
   use Chemfields_mod, only : xn_adv, cfac
-  use ChemSpecs,     only : IXADV_O3
+  use ChemSpecs_mod,     only : IXADV_O3
   use DO3SE_mod
   use GridValues_mod, only : debug_li, debug_lj, debug_proc, i_fdom, j_fdom
   use Io_Progs_mod,   only : datewrite

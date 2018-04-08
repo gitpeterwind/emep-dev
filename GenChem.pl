@@ -122,7 +122,7 @@ my %UsedVariables = (
    $rct    => " $txtrcfunc
   use AeroFunctions     ! => UpdakeRate, cMolSpeed
   use ZchemData_mod     ! => tinv, h2o, m, Fgas
-  use ZchemData_mod    , m=> amk
+  use ZchemData_mod, only : m  ! WAS => amk
   use ChemSpecs_tot_mod  ! => PINALD, .... for FgasJ08
   use Config_module, only: KMAX_MID,KCHEMTOP,DebugCell,DEBUG,AERO");
 

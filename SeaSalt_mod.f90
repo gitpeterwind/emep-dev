@@ -15,7 +15,7 @@
 
  use AeroFunctions,        only : WetRad, cmWetRad, GbSeaSalt
  use Biogenics_mod,         only : EMIS_BioNat, EmisNat  
- use ChemSpecs,            only : species
+ use ChemSpecs_mod,            only : species
  use GridValues_mod,        only : glat, glon, i_fdom, j_fdom 
  use Io_Progs_mod,          only : PrintLog
  use Landuse_mod,           only : LandCover, water_fraction

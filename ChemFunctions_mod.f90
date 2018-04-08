@@ -2,10 +2,9 @@
 !*****************************************************************************! 
 module ChemFunctions_mod
 !____________________________________________________________________
-! Miscellaneous collection of "standard" (or guessed ) functions
-! Including Troe, sine and cosine curves, 
-! bilinear-interpolation routines, 
-! and Standard Atmosphere p -> H conversion
+! Miscellaneous collection of "standard" functions for chemical
+! calculations.  Includes Troe, sine and cosine curves,  and some
+! from KPP system.
 !
 ! Where possible, reference to the EMEP documentation paper, Simpson
 ! et al., ACP, 2012,  are given, indicated by ACP:
@@ -13,11 +12,11 @@ module ChemFunctions_mod
 !____________________________________________________________________
 !
 !** includes
-!   troe - standrad chemical function
+!   troe - standard chemical function
 !____________________________________________________________________
  use AeroFunctions,         only : UptakeRate, GammaN2O5_EJSS, GammaN2O5
  use CheckStop_mod,          only : StopAll
- use ChemSpecs,             only : SO4, NO3_f, NH4_f, NO3_c
+ use ChemSpecs_mod,             only : SO4, NO3_f, NH4_f, NO3_c
 ! use Config_module,         only : DebugCell, DEBUG  ! set with DEBUG%RUNCHEM
  use LocalVariables_mod,     only : Grid   ! => izen, is_mainlysea
  use Config_module,     only : K1  => KCHEMTOP, K2 => KMAX_MID, USES, AERO
@@ -25,7 +24,7 @@ module ChemFunctions_mod
  use ZchemData_mod,     only : itemp, tinv, rh, x=> xn_2d, M, &
      aero_fom,aero_fss,aero_fdust, aero_fbc,  &
      gamN2O5, cN2O5, temp, DpgNw, S_m2m3 ! for gammas & surface area
- use ChemSpecs,             only : SO4, NO3_f, NH4_f, NO3_c
+ use ChemSpecs_mod,             only : SO4, NO3_f, NH4_f, NO3_c
   implicit none
   private
 
@@ -58,17 +57,16 @@ module ChemFunctions_mod
   !========================================
 
   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-  function kmt3(a1,c1,a3,c3,a4,c4,M) result (rckmt3)
+  ! KMT3 uses air concenrtation (M) and inverse Temp (tinv) from Zmet
+  !
+  function kmt3(a1,c1,a3,c3,a4,c4) result (rckmt3)
      real, intent(in)  :: a1,c1,a3,c3,a4,c4
-     real, dimension(size(tinv)), intent(in) :: m
-     real, dimension(size(tinv)) :: rckmt3
-     real, dimension(size(tinv)) :: k1, k3, k4
-       k1 = a1 * EXP(C1*TINV)
-       k3 = a3 * EXP(C3*TINV)
-       k4 = a4 * EXP(C4*TINV)
-!QUERY M&m?...
-       rckmt3 = k1 + (k3*M)/(1.0+(k3*m)/k4)
-       !rckmt3 = k1 + (k3*M)/(1.0+(k3*M)/k4)
+     real, dimension(size(M)) :: rckmt3
+     real, dimension(size(M)) ::  k1, k3, k4
+       k1 = a1 * EXP(C1*tinv)
+       k3 = a3 * EXP(C3*tinv)
+       k4 = a4 * EXP(C4*tinv)
+       rckmt3 = k1 + (k3*M)/(1.0+(k3*M)/k4)
   end function kmt3
 
   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

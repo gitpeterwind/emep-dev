@@ -32,8 +32,8 @@ module OrganicAerosol_mod
    use CheckStop_mod, only : StopAll, CheckStop
    use ChemFields_mod,      only : Fgas3d   !  stores 3-d  between time-steps
    use ChemFields_mod,      only : xn_adv   ! J16 for OM25_BGND
-   use ChemChemicals_mod,      only : species   ! for molwts
-   use ChemSpecs_tot_mod,  S1 => FIRST_SEMIVOL , S2 => LAST_SEMIVOL
+   use ChemSpecs_mod,       only : species   ! for molwts
+   use ChemSpecs_mod,       S1 => FIRST_SEMIVOL , S2 => LAST_SEMIVOL
 
    use ChemGroups_mod  !XSOA , only :    &
 
@@ -197,8 +197,9 @@ module OrganicAerosol_mod
          do it=CHEMTMIN,CHEMTMAX
 
          ! C*-values are given for 298K according to most(?) publications.
-           tabCiStar(is,it) = species(is)%CiStar * 298./it * &
-                  exp( species(is)%DeltaH * kJ/RGAS_J * (1.0/298. - 1.0/it) )
+!TMPESX           tabCiStar(is,it) = species(is)%CiStar * 298./it * &
+!TMPESX                  exp( species(is)%DeltaH * kJ/RGAS_J * (1.0/298. - 1.0/it) )
+tabCiStar(is,it) = 1.0
          end do
        end do
 

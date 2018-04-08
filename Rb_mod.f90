@@ -30,8 +30,9 @@ module Rb_mod
 use Config_module,    only :  DEBUG_RB
 use PhysicalConstants_mod, only :  KARMAN
                     
-use GasParticleCoeffs_mod, only : DryDepDefs &  !  Table for 64 gases
-                       ,Rb_cor          !
+use GasParticleCoeffs_mod, only: nddep, DDspec
+!A2018DryDepDefs &  !  Table for 64 gases
+!A2018                       ,Rb_cor          !
 implicit none
 private
 
@@ -41,24 +42,19 @@ public   ::  Rb_gas
 contains
 ! =======================================================================
 
-  subroutine Rb_gas(water,ustar,z0,DRYDEP_GAS,Rb) 
+  subroutine Rb_gas(water,ustar,z0,Rb) 
 ! =======================================================================
-! Input:
 
-    logical, intent(in) :: water
-    real, intent(in)    :: ustar, z0
-    integer, dimension(:), intent(in) :: &
-         DRYDEP_GAS    ! Array with DryDepDefs indices of gases wanted
-
-! Output:
+   logical, intent(in) :: water
+   real, intent(in)    :: ustar, z0
 
    real,dimension(:),intent(out) :: Rb   !  Rs  for dry surfaces 
 
 ! Working values:
    
     integer :: icmp             ! gaseous species
-    integer :: iwes             ! gaseous species, DryDepDefs tables
 
+!A2018 QUERY - GasP.. has 0.2178-e4 as DH2O. Should use
     real, parameter :: D_H2O = 0.21e-4  ! Diffusivity of H2O, m2/s
     real            :: D_i              ! Diffusivity of gas species, m2/s
 
@@ -69,12 +65,15 @@ contains
 
 !.........  Loop over all required gases   ................................
 
-  GASLOOP: do icmp = 1, size( DRYDEP_GAS )
-      iwes = DRYDEP_GAS(icmp)
+  GASLOOP: do icmp = 1, nddep !A2018 size( DRYDEP_GAS )
+              !A2018   iwes = DRYDEP_GAS(icmp)
+
+     if ( .not. DDspec(icmp)%is_gas ) CYCLE
 
      if   ( water ) then
 
-          D_i = D_H2O / DryDepDefs(1,iwes)  ! CORR !
+          !A2018 D_i = D_H2O / DryDepDefs(1,iwes)  ! CORR !
+          D_i = D_H2O / DDspec(icmp)%Dx ! SHOULD USE DH2ODx
 
           Rb(icmp) = log( z0 * KARMAN * ustar/ D_i )
           Rb(icmp) = Rb(icmp)/(ustar*KARMAN)
@@ -87,14 +86,14 @@ contains
 
       else
 
-          Rb(icmp) = 2.0 * Rb_cor(iwes)/(KARMAN*ustar)
+          Rb(icmp) = 2 * DDspec(icmp)%Rb_cor/(KARMAN*ustar)
       end if
 
 
   end do GASLOOP
 
    if ( DEBUG_RB ) then
-      print *,   "RB DRYDEP_GAS", size(DRYDEP_GAS), DRYDEP_GAS(1)
+!      print *,   "RB DRYDEP_GAS", size(DRYDEP_GAS), DRYDEP_GAS(1)
       print *,   "RB water",  water, "Rb(1) ", Rb(1)
    end if
  end subroutine Rb_gas

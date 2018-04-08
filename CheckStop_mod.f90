@@ -15,10 +15,11 @@ module CheckStop_mod
 use netcdf, only: NF90_NOERR,NF90_STRERROR
 use MPI_Groups_mod  , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_INTEGER&
                                      ,MPI_COMM_CALC, IERROR
+use NumberConstants, only : UNDEF_R
 
 implicit none
 
-public  :: StopAll, CheckStop, CheckNC
+public  :: StopAll, CheckStop, CheckNC, checkValid
 private :: CheckStop_ok, CheckStop_okinfo, CheckStop_int1, CheckStop_int2, &
            CheckStop_str2, CheckStop_TF, CheckStop_rangeI, CheckStop_rangeR
 
@@ -148,6 +149,19 @@ subroutine CheckNC(status,errmsg)
     call StopAll("Error in netcdf routine")
   end if
 end subroutine CheckNC
+
+!----------------------------------------------------------------------------!
+ !> SUBROUTINE checkValid compares for UNDEF and also for 
+ !! NaN (using +0 trick). Stops code if there is a problem.
+
+subroutine checkValid( x, txt )
+    real, intent(in) :: x
+    character(len=*), intent(in) :: txt
+
+    call CheckStop( x == UNDEF_R,  "checkValid UNDEF: "//txt )
+    call CheckStop( x /= x+0, "checkValid NaN: "//txt )
+
+end subroutine checkValid
 
 endmodule CheckStop_mod
 

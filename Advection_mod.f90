@@ -66,9 +66,10 @@
 !
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
   use Chemfields_mod,     only : xn_adv
-  use ChemSpecs,         only : NSPEC_ADV,species,species_adv
-!CRM  use ChemSpecs_adv_mod , only : NSPEC_ADV
+  use ChemDims_mod,       only : NSPEC_ADV
+  use ChemSpecs_mod,      only : species,species_adv
   use CheckStop_mod,      only : CheckStop,StopAll
+  use Config_module,      only : EPSIL, dt_advec
   use Convection_mod,     only : convection_pstar,convection_Eta
   use EmisDef_mod,        only : NSECTORS, Nneighbors, loc_frac, loc_frac_1d
   use GridValues_mod,     only : GRIDWIDTH_M,xm2,xmd,xm2ji,xmdji,xm_i, Pole_Singular, &
@@ -1183,10 +1184,6 @@
 !     executes advection with a. bott's integreated flux-form
 !     using 2'nd order polynomial in the vertical.
 
-    use Config_module   , only : EPSIL, dt_advec
-    use ChemSpecs,         only : NSPEC_ADV
-    implicit none
-
 !    input
     real,intent(in)::  sdot(0:LIMAX*LJMAX*KMAX_BND-1),dt_s
 
@@ -1365,11 +1362,6 @@
   subroutine vertdiff(xn_adv,SigmaKz,ds3,ds4)
 
 !     executes vertical diffusion
-
-    use ChemSpecs,         only : NSPEC_ADV
-
-    implicit none
-
 !    input
     real,intent(in)::  SigmaKz(0:LIMAX*LJMAX*KMAX_BND-1)
     real,intent(in)::  ds3(KMAX_MID-1),ds4(KMAX_MID-1)
@@ -1487,10 +1479,6 @@
 !            SigmaKz(k)*ds4(k)= SigmaKz(k)*dt_advec*dhs1i(k+1)*dhs2i(k)
 !            = SigmaKz(k+1)*dt_advec/(sigma_bnd(k+1)-sigma_bnd(k))/(sigma_mid(k)-sigma_mid(k-1))
 
-    use ChemSpecs,         only : NSPEC_ADV
-
-    implicit none
-
 !    input
     real,intent(in)::  SigmaKz(0:LIMAX*LJMAX*KMAX_BND-1)
     real,intent(in)::  ds3(KMAX_MID-1),ds4(KMAX_MID-1)
@@ -1548,10 +1536,6 @@
   subroutine vertdiffn2(xn_adv,SigmaKz,ds3,ds4,ndiff)
 
 !     executes vertical diffusion ndiff times
-
-    use ChemSpecs,         only : NSPEC_ADV
-
-    implicit none
 
 !    input
     real,intent(in)::  SigmaKz(0:LIMAX*LJMAX*KMAX_BND-1)
@@ -1621,10 +1605,6 @@
 !     in such a way that a Courant number of one corresponds exactly to "empty" a cell.
 !     (small effects on results: less than 1%)
 
-    use Par_mod   , only : li0,li1,limax
-    use ChemSpecs,         only : NSPEC_ADV
-    use MassBudget_mod , only : fluxin,fluxout
-    implicit none
 
 !    parameter:
 !    input
@@ -2211,12 +2191,6 @@ end if
 !     modified by pw february 2002:  Takes into account the mapping factor
 !     in such a way that a Courant number of one corresponds exactly to "empty" a cell.
 !     (small effects on results: less than 1%)
-!
-
-    use Par_mod   , only : lj0,lj1,ljmax
-    use ChemSpecs,         only : NSPEC_ADV
-    use MassBudget_mod , only : fluxin,fluxout
-    implicit none
 
 !    parameter:
 !    input
@@ -2826,9 +2800,6 @@ end if
                     ,xnbeg, xnend         &
                     ,psbeg, psend)
 
-    use Par_mod , only : lj0,lj1,li1,neighbor,WEST,EAST
-    use ChemSpecs,         only : NSPEC_ADV
-    implicit none
 
 !    input
     integer,intent(in):: msgnr
@@ -2963,10 +2934,6 @@ end if
 
 !send only one row
 
-    use Par_mod , only : li1,neighbor,WEST,EAST
-    use ChemSpecs,         only : NSPEC_ADV
-    implicit none
-
 !    input
     integer,intent(in):: msgnr
     real,intent(in):: xn_adv(NSPEC_ADV,LIMAX:LIMAX*(LJMAX+1))
@@ -3099,10 +3066,6 @@ end if
                      ,psbeg, psend,j,k,loc_frac_1d)
 
     ! Initialize arrays holding boundary slices
-
-    use Par_mod , only : li1,neighbor,WEST,EAST
-    use ChemSpecs,         only : NSPEC_ADV
-    implicit none
 
 !    input
     integer,intent(in):: msgnr,j,k
@@ -3322,9 +3285,6 @@ end if
                     ,xnbeg, xnend         &
                     ,psbeg, psend)
 
-    use Par_mod , only : li0,li1,lj0,lj1,ljmax,neighbor,NORTH,SOUTH
-    use ChemSpecs,         only : NSPEC_ADV
-    implicit none
 
 !    input
     integer,intent(in):: msgnr
@@ -3465,10 +3425,6 @@ end if
                      ,xnbeg, xnend         &
                      ,psbeg, psend,i_send)
 
-    use Par_mod , only : lj0,lj1,ljmax,neighbor,NORTH,SOUTH
-    use ChemSpecs,         only : NSPEC_ADV
-    implicit none
-
 !    input
     integer,intent(in):: msgnr,i_send
     real,intent(in):: xn_adv(NSPEC_ADV,LIMAX*LJMAX)
@@ -3608,10 +3564,6 @@ end if
                      ,psbeg, psend,i_send,k,loc_frac_1d)
 
     ! Initialize arrays holding boundary slices
-
-    use Par_mod , only : lj0,lj1,ljmax,neighbor,NORTH,SOUTH
-    use ChemSpecs,         only : NSPEC_ADV
-    implicit none
 
 !    input
     integer,intent(in):: msgnr,i_send,k

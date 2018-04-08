@@ -4,12 +4,13 @@ module MosaicOutputs_mod
 use AOTx_mod,          only: Calc_AOTx, Calc_POD, O3cl_t, VEGO3_OUTPUTS,&
                                 nOutputVegO3, OutputVegO3
 use CheckStop_mod,     only: CheckStop
-use ChemSpecs,        only: NSPEC_ADV, species_adv
+use ChemDims_mod,      only: NSPEC_ADV
 use ChemGroups_mod,    only: chemgroups
+use ChemSpecs_mod,     only: species_adv
 use DerivedFields_mod, only: f_2d, d_2d
 use EcoSystem_mod,     only: NDEF_ECOSYSTEMS, DEF_ECOSYSTEMS, EcoSystemFrac, &
                             FULL_ECOGRID, FULL_LCGRID, Is_EcoSystem
-use GasParticleCoeffs_mod,  only: NDRYDEP_CALC, CDDEP_O3
+use GasParticleCoeffs_mod,  only:  DDspec !DS A2018 CDDEP_O3
 use Io_Progs_mod,      only: datewrite
 use LandDefs_mod,      only: LandDefs, LandType, Check_LandCoverPresent ! e.g. "CF"
 use Landuse_mod,       only: LandCover ! for POD
@@ -318,6 +319,7 @@ subroutine Add_MosaicOutput(debug_flag,i,j,convfac,DepAdv2Calc,fluxfrac,&
   character(len=*), parameter :: dtxt='AddMosc:'
   type(group_umap), pointer :: gmap=>null()  ! group unit mapping  
   integer :: n, nadv, iLC, iEco
+  integer, save :: idepO3 ! was CDDEP_O3
   integer :: imc, f2d, cdep
   real :: output     ! tmp variable
   character(len=TXTLEN_SHORT) :: subclass, class, txtdate='-'
@@ -352,6 +354,8 @@ subroutine Add_MosaicOutput(debug_flag,i,j,convfac,DepAdv2Calc,fluxfrac,&
       MosaicOutput(imc)%f2d  = find_index(MosaicOutput(imc)%name,f_2d(:)%name)
       if(DEBUG%MOSAICS .and. MasterProc) write(*,*) dtxt//" f2D", imc, &
         trim(MosaicOutput(imc)%name),  MosaicOutput(imc)%f2d
+      idepO3 = find_index('O3',DDspec(:)%name)
+      if(MasterProc) write(*,*) dtxt,'idepO3 = ', idepO3 ! was CDDEP_O3
     end do
 
     if(dbg)then
@@ -394,7 +398,7 @@ subroutine Add_MosaicOutput(debug_flag,i,j,convfac,DepAdv2Calc,fluxfrac,&
         Fflux = Deploss(nadv)*sum(fluxfrac(nadv,:),Is_EcoSystem(iEco,:))
         if(species_adv(nadv)%name=="O3" .and.  &
            index(MosaicOutput(imc)%name,"STO_")>0) then
-          Fflux = Fflux * Sub(0)%Gsto(CDDEP_O3)/Sub(0)%Gsur(CDDEP_O3)
+          Fflux = Fflux * Sub(0)%Gsto(idepO3)/Sub(0)%Gsur(idepO3)
           if(dbghh) print "(a,2i4,3es12.3)", dtxt//"NOWSDEP ", &
             nadv, current_date%hour,  Sub(0)%Gsur(2), Sub(0)%Gsto(2), Fflux
         end if

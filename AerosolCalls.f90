@@ -11,8 +11,9 @@ module AerosolCalls
 
  use Ammonium_mod,          only : Ammonium
  use CheckStop_mod,         only : StopAll, CheckStop
- use ChemGroups_mod,         only : SS_GROUP, RDN_GROUP
- use ChemSpecs
+ use ChemDims_mod,          only : NSPEC_SHL
+!2018 not used use ChemGroups_mod,        only : SS_GROUP, RDN_GROUP
+ use ChemSpecs_mod
  use Chemfields_mod,        only :  PM25_water, PM25_water_rh50,  & !PMwater 
                                    cfac
  use EQSAM_v03d_mod,        only :  eqsam_v03d
