@@ -9,7 +9,8 @@ module  My_Outputs_mod
 ! -----------------------------------------------------------------------
 
 use CheckStop_mod,      only: CheckStop
-use ChemSpecs
+use ChemDims_mod,       only: NSPEC_ADV, NSPEC_SHL
+use ChemSpecs_mod
 use ChemGroups_mod,     only: chemgroups
 use DerivedFields_mod,  only: f_2d,f_3d          ! D2D/D3D houtly output type
 use Config_module, only: PPBINV, PPTINV, MasterProc, KMAX_MID,&
