@@ -170,8 +170,9 @@ contains
 
     if(MasterProc) write(*,*) dtxt//" GET DEP"
     print *, dtxt//" GET DEP"
-     call GetDepMapping()       !A2018 creates DDspec, DryDepMapping
-     call GasCoeffs(285.0)      ! just to allocate, temp irrelevant
+     call GetDepMapping() !A2018 creates DDspec, DryDepMapping
+     call GasCoeffs(285.0)          ! just to allocate, temp irrelevant
+     call InitParticleCoeffs()
 
      allocate(BL(nddep))
      allocate(gradient_fac(nddep), vg_fac(nddep), Vg_ref(nddep), &

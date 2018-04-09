@@ -727,8 +727,7 @@ Is3D = .true.
   ! Get indices of wanted fields in larger def_xx arrays:
   do i = 1, num_deriv2d
     if(dbg0) print *,"CHECK 2d", num_deriv2d, i, trim(wanted_deriv2d(i))
-    if(MasterProc)&
-      call CheckStop(count(f_2d(:i)%name==wanted_deriv2d(i))>0,&
+    if(MasterProc) call CheckStop(count(f_2d(:i)%name==wanted_deriv2d(i))>0,&
         sub//"REQUESTED 2D DERIVED ALREADY DEFINED: "//trim(wanted_deriv2d(i)))
     ind = find_index( wanted_deriv2d(i), def_2d(:)%name )
     if(ind>0)then

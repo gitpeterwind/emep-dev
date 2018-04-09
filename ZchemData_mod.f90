@@ -13,6 +13,8 @@
   implicit none
   private
 
+  public :: Alloc1Dchem       !> Sets up arrays of dimension nspec x nz
+  public :: SetChemMet
 
   !/ variables to keep track of which call
 

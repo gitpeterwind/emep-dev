@@ -142,27 +142,18 @@ contains
        if( debug_proc ) debug_flag = .true.  ! make sure we see 1st i,j combo
 
       !A2018 see which groups we have:
-       iSIAgroup = find_index('SIA_GROUP',chemgroups(:)%name)
-       iSSgroup  = find_index('SS_GROUP',chemgroups(:)%name)
-       iDUgroup  = find_index('DUST_GROUP',chemgroups(:)%name)
-       iPMfgroup = find_index('PMFINE_GRPUP',chemgroups(:)%name)
+       iSIAgroup = find_index('SIA',chemgroups(:)%name)
+       iSSgroup  = find_index('SS',chemgroups(:)%name)
+       iDUgroup  = find_index('DUST',chemgroups(:)%name)
+       iPMfgroup = find_index('PMFINE',chemgroups(:)%name)
        iBCfgroup = find_index('ECFINE',chemgroups(:)%name)
        iBCcgroup = find_index('ECCOARSE',chemgroups(:)%name)
        if( MasterProc ) write(*,'(a,9(a,1x,i4))') dtxt//"Groups: ",&
           'SIA', iSIAgroup, 'SS', iSSgroup, 'DU', iDUgroup, &
           'BCf', iBCfgroup, 'BCc', iBCcgroup, 'PMf', iPMfgroup
 
-       do n = 1, size(SKIP_RCT)
-          if ( SKIP_RCT(n) > 0 ) nSKIP_RCT = nSKIP_RCT  + 1
-       end do
-       if( MasterProc ) write(*,"(a,10i4)") &
-          dtxt//"SKIP_RCT:", SKIP_RCT(1:nSKIP_RCT)
 
        is_BC(:) = .false.
-
-
-       if( MasterProc ) write(*,*) dtxt//"is_BCf check ", iBCfgroup, &
-           trim(USES%n2o5HydrolysisMethod)
        if ( iBCfgroup > 0 ) then
           do ipm = 1, size( PM10_GROUP )
               ispec = PM10_GROUP(ipm)
@@ -172,14 +163,13 @@ contains
                     is_BC(ipm)  = .true.
               end if
               if( MasterProc) write(*,*) dtxt//"is_BC ",&
-                   species(ispec)%name, is_BC(ipm)
+                  iBCcgroup, species(ispec)%name, is_BC(ipm)
           end do
        end if
 
       !A2018 changes - SS and DU not essential now
       !A2018 CHECK
       !A2018 changes - SS and DU not essential now
-          if( MasterProc ) write(*,*) dtxt//"is_BCc check ", iBCcgroup
        do ipm = 1, size( PM10_GROUP )
           ispec = PM10_GROUP(ipm)
           if ( iPMfgroup>0 ) is_finepm_a(ipm)  = & !A2018 methid
@@ -188,10 +178,22 @@ contains
                     ( find_index( ispec, chemgroups(iSSgroup)%specs ) >0)
           if ( iDUgroup>0 ) is_dust_a(ipm)  = & !A2018 methid
                     ( find_index( ispec, chemgroups(iDUgroup)%specs ) >0)
+          if( MasterProc) then
+            write(*,'(2a,5i5,3L2)') dtxt//"is_ PMf, SS, DU? ",&
+            species(ispec)%name, ipm, iPMfgroup,iSSgroup,iDUgroup,iBCfgroup,&
+               is_finepm_a(ipm), is_ssalt_a(ipm), is_dust_a(ipm),is_BC(ipm)
+          end if
           !A2018 is_finepm_a(ipm) = ( find_index( ispec, PMFINE_GROUP) > 0 )
           !A2018 is_ssalt_a(ipm)  = ( find_index( ispec, SS_GROUP ) >0)
           !A2018 is_dust_a(ipm)   = ( find_index( ispec, DUST_GROUP )>0)
        enddo
+
+       do n = 1, size(SKIP_RCT)
+          if ( SKIP_RCT(n) > 0 ) nSKIP_RCT = nSKIP_RCT  + 1
+       end do
+       if( MasterProc ) write(*,"(a,10i4)") &
+          dtxt//"SKIP_RCT:", SKIP_RCT(1:nSKIP_RCT)
+
     end if ! first_call
 
     if( debug_flag ) write(*,*) dtxt//"=DBG=======  ", first_call, me

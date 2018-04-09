@@ -195,10 +195,7 @@ program emep_Main
 
   call Init_EcoSystems()     ! Defines ecosystem-groups for dep output
 
-print *,  dtxt, me, 'INTO DryDep'
   call init_DryDep()        ! sets up dry and wet dep arrays
-
-print *,  dtxt, me, 'INTO DERIV'
 
   call Init_Derived()        ! Derived field defs.
 

@@ -197,6 +197,8 @@ subroutine Config_Fire()
     
     ne = ne + 1
     emep_used(ne) = iemep
+!A2018
+if( iemep <1) print *, 'ABB', n, FF_defs(n)%emep, iemep
 
     ! CO is special. Keep the index
     !TRACER if(species(iemep)%name=="CO") ieCO=ne
@@ -209,6 +211,11 @@ subroutine Config_Fire()
   end do !n
   call CheckStop(ieCO<1,&
      dtxt//"No mapping for 'CO' found on "//BiomassBurningMapping)
+  if (any(emep_used<1) ) then
+    do n = 1, size(emep_used)
+       print *, "ABBn ", n, emep_used(n)
+    end do
+  end if
   call CheckStop(any(emep_used<1),&
      dtxt//"UNSET FFIRE EMEP "//BiomassBurningMapping)
 

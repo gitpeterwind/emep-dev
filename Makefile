@@ -1,6 +1,6 @@
 #
 #
-export PROG ?= $(if $(BINDIR),$(BINDIR)/)Unimod
+export PROG ?= $(if $(BINDIR),$(BINDIR)/)emepctm
 ###################################################
 
 include Makefile.SRCS
@@ -148,7 +148,7 @@ EmChem09-ESX: $(ESX_SRCS) | depend
 # Test
 TEST:
 	$(MAKE) -j4 PROG=ModuleTester DEBUG=yes \
-	  SRCS="$(filter-out Unimod.f90,$(SRCS)) ModuleTester.f90"
+	  SRCS="$(filter-out emep_Main.f90,$(SRCS)) ModuleTester.f90"
 
 # Link My_* files and MAKE target
 EMEP HTAP MACC MACC-EVA MACC-Pollen EmChem16a EmChem09 EmChem09-ESX CRI_v2_R5 eEMEP SR-MACC:
