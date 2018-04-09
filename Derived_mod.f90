@@ -41,7 +41,7 @@ use EcoSystem_mod,     only: DepEcoSystem, NDEF_ECOSYSTEMS, &
 use EmisDef_mod,       only: NSECTORS, EMIS_FILE, O_DMS, O_NH3, loc_frac, Nneighbors&
                             ,SumSecEmisOut, SumSecEmis, SumSplitEmis, SecEmisOut
 use EmisGet_mod,       only: nrcemis,iqrc2itot
-use GasParticleCoeffs_mod, only: DDspec !A2018
+use GasParticleCoeffs_mod, only: DryDepDefs !A2018
 use GridValues_mod,    only: debug_li, debug_lj, debug_proc, A_mid, B_mid, &
                             dA,dB,xm2, GRIDWIDTH_M, GridArea_m2,xm_i,xm_j,glon,glat
 use Io_Progs_mod,      only: datewrite
@@ -167,7 +167,7 @@ contains
 !=========================================================================
 subroutine Init_Derived()
   integer :: alloc_err
-  integer :: idcmpPMc
+  integer :: iddefPMc
   character(len=*), parameter :: dtxt='IniDeriv:' !debug label
   dbg0 = (DEBUG%DERIVED .and. MasterProc )
 
@@ -225,14 +225,13 @@ subroutine Init_Derived()
   call Setups()  ! just for VOC now
 
 !A2018   select case(nint(AERO%DpgV(2)*1e7))
-  idcmpPMc = find_index('PMc',DDspec(:)%name)
-print *, dtxt//'idcmp', idcmpPMc, DDspec(idcmpPMc)%name, DDspec(idcmpPMc)%DpgV
-  select case(nint(DDspec(idcmpPMc)%DpgV*1e7))
+  iddefPMc = find_index('PMc',DryDepDefs(:)%name)
+  select case(nint(DryDepDefs(iddefPMc)%DpgV*1e7))
     case(25);fracPM25=0.37
     case(30);fracPM25=0.27
   end select
   if(dbg0) write(*,"(a,i4,2g12.3,i4)") dtxt//' CFAC INIT PMFRACTION Dpgv(um)',&
-    idcmpPMc, fracPM25, nint(1.0e7* DDspec(idcmpPMc)%DpgV )
+    iddefPMc, fracPM25, nint(1.0e7* DryDepDefs(iddefPMc)%DpgV )
 !S2018      fracPM25, AERO%DpgV(2), nint(1.0e7*AERO%DpgV(2))
   call CheckStop( fracPM25 < 0.01, dtxt//"NEED TO SET FRACPM25")
 

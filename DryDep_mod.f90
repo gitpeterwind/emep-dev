@@ -169,7 +169,9 @@ contains
   if ( my_first_call ) then 
 
     if(MasterProc) write(*,*) dtxt//" GET DEP"
-     call GetDepMapping()           !A2018 creates DDspec, DryDepMapping
+    print *, dtxt//" GET DEP"
+     call GetDepMapping()       !A2018 creates DDspec, DryDepMapping
+     call GasCoeffs(285.0)      ! just to allocate, temp irrelevant
 
      allocate(BL(nddep))
      allocate(gradient_fac(nddep), vg_fac(nddep), Vg_ref(nddep), &

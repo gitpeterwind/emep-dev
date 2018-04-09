@@ -1,4 +1,4 @@
-program myeul
+program emep_Main
   !-----------------------------------------------------------------------!
   !
   !     This is the main program for the off-line regional scale multilayer
@@ -17,12 +17,12 @@ program myeul
   use Advection_mod,     only: vgrid_Eta, assign_nmax, assign_dtadvec
   use Aqueous_mod,       only: init_aqueous, Init_WetDep   !  Initialises & tabulates
   use AirEmis_mod,       only: lightning
-  use BiDir_emep,       only : Init_BiDir  !  FUTURE
+  use BiDir_emep,        only : Init_BiDir  !  FUTURE
   use Biogenics_mod,     only: Init_BVOC, SetDailyBVOC
   use BoundaryConditions_mod, only: BoundaryConditions
   use CheckStop_mod,     only: CheckStop
   use Chemfields_mod,    only: alloc_ChemFields
-  use ChemSpecs_mod,        only: define_chemicals
+  use ChemSpecs_mod,     only: define_chemicals
   use ChemGroups_mod,    only: Init_ChemGroups
   use Country_mod,       only: init_Country
   use DA_3DVar_mod,      only: NTIMING_3DVAR,DA_3DVar_Init, DA_3DVar_Done
@@ -40,7 +40,7 @@ program myeul
   use Landuse_mod,       only: InitLandUse, SetLanduse
   use MassBudget_mod,    only: Init_massbudget, massbudget
   use Met_mod,           only: metfieldint, MetModel_LandUse, Meteoread
-  use Config_module,only: MasterProc, &   ! set true for host processor, me==MasterPE
+  use Config_module,only: MasterProc, &   ! true for host processor, me==0
        RUNDOMAIN,  &   ! Model domain
        NPROC,      &   ! No. processors
        METSTEP,    &   ! Hours between met input
@@ -51,7 +51,7 @@ program myeul
        HOURLYFILE_ending, &
        USES, USE_uEMEP,JUMPOVER29FEB,&
        FORECAST,ANALYSIS  ! FORECAST/ANALYSIS mode
-  use Config_module,only: Config_ModelConstants,DEBUG, startdate,enddate
+  use Config_module,     only: Config_ModelConstants,DEBUG, startdate,enddate
   use MPI_Groups_mod,    only: MPI_BYTE, MPISTATUS, MPI_COMM_CALC,MPI_COMM_WORLD, &
                               MasterPE,IERROR, MPI_world_init
   use Nest_mod,          only: wrtxn     ! write nested output (IC/BC)
@@ -99,6 +99,7 @@ program myeul
   TYPE(timestamp)   :: ts1,ts2
   logical :: End_of_Run=.false.
   real :: tim_before0 !private
+  character(len=*), parameter :: dtxt='eMain:'
 
   associate ( yyyy => current_date%year, mm => current_date%month, &
        dd => current_date%day,  hh => current_date%hour)
@@ -113,7 +114,7 @@ program myeul
   MasterProc = ( me == MasterPE )
 
   call CheckStop(digits(1.0)<50, &
-       "COMPILED WRONGLY: Need double precision, e.g. f90 -r8")
+       dtxt//"COMPILED WRONGLY: Need double precision, e.g. f90 -r8")
 
   if(MasterProc) open(IO_LOG,file='RunLog.out')
 !TEST
@@ -133,7 +134,7 @@ program myeul
 
   if(ANALYSIS)then              ! init 3D-var module
     call DA_3DVar_Init(status)  ! pass settings
-    call CheckStop(status,"DA_3DVar_Init in emepctm")
+    call CheckStop(status,dtxt//"DA_3DVar_Init in emepctm")
   end if
 
   !*** Timing ********
@@ -194,7 +195,10 @@ program myeul
 
   call Init_EcoSystems()     ! Defines ecosystem-groups for dep output
 
+print *,  dtxt, me, 'INTO DryDep'
   call init_DryDep()        ! sets up dry and wet dep arrays
+
+print *,  dtxt, me, 'INTO DERIV'
 
   call Init_Derived()        ! Derived field defs.
 
@@ -389,7 +393,7 @@ program myeul
   CALL MPI_BARRIER(MPI_COMM_CALC, IERROR)
   CALL MPI_FINALIZE(IERROR)
 
-endassociate   ! yyyy, mm, dd
-endprogram
+end associate   ! yyyy, mm, dd
+end program emep_Main
 
 !===========================================================================
