@@ -1,0 +1,33 @@
+GenChem disabled just now. Copy CM and other  files from A2018_Files directory
+
+DefPhotolysis - needs to use EMEP indices. Map from MCM??
+
+Had to hard-code some changes just now:
+  CM_EmisBIONAT needed :-(
+  Needs sorting out rcbio, BVOC_GROUP etc.
+
+  cp ZCM_EmChem16a/EmChem16abase.BoundaryConditions CM_BoundaryConditions.inc
+  CM_ChemRates - skip Photol for now
+
+  BiomassBurning - mapping
+
+CM_AerExt - NEEDS FIX!!!!
+
+SOA_ need to re-instate CiStar etc..
+
+
+CDDEP_PNfNH4 - was it done right before in EMEP?
+             - need to implemet in ESX
+
+Aerosols - lots of work/checks needed!!
+
+  The main definitions are now in GasParticleCoeffs
+
+  check Dp, DpgV, etc - notation and values
+
+  AERO Gerber etc ---- NEEDS CHeck
+
+  NSAREA etc .... 
+
+ALSO needs PMfSS to be sent back to ES...
+
