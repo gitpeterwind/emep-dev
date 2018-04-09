@@ -7,7 +7,7 @@ module Emissions_ml
 
 use Biogenics_ml,     only: SoilNOx, AnnualNdep
 use CheckStop_ml,     only: CheckStop,StopAll
-use ChemSpecs,        only: NSPEC_SHL, NSPEC_TOT,NO2, SO2,species,species_adv
+use ChemSpecs,        only: NSPEC_SHL, NSPEC_TOT,NO2, NO, SO2,CO,NH3,REMPPM25,REMPPM_C,species,species_adv
 use Chemfields_ml,    only: xn_adv
 use Country_ml,       only: MAXNLAND,NLAND,Country,IC_NAT,IC_FI,IC_NO,IC_SE
 use Country_ml,       only: EU28,EUMACC2 !CdfSec
@@ -47,7 +47,9 @@ use EmisDef_ml,       only: &
      ,AISco, AISnox, AISsox, AISso4, AISash, AISec, AISoc, FOUND_Special_ShipEmis&
      ,NO_ix,NO2_ix,SO2_ix,SO4_ix,CO_ix,REMPPM25_ix&
      ,EC_F_FFUEL_NEW_ix,EC_F_FFUEL_AGE_ix,POM_F_FFUEL_ix&
-     ,foundYearlySectorEmissions, foundMonthlySectorEmissions
+     ,foundYearlySectorEmissions, foundMonthlySectorEmissions&
+     ,Emis_mask, Emis_mask_allocate, MASK_LIMIT
+
 use EmisGet_ml,       only: &
      EmisSplit &
     ,EmisGetCdf &  ! 
@@ -59,7 +61,7 @@ use EmisGet_ml,       only: &
     ,EmisHeights                 &  ! Generates vertical distrib
     ,nrcemis, nrcsplit, emisfrac &  ! speciation routines and array
     ,nemis_kprofile, emis_kprofile &! Vertical emissions profile
-    ,iqrc2itot                   &  ! maps from split index to total index
+    ,iqrc2itot,itot2iqrc         &  ! maps from split index to total index
     ,emis_masscorr               &  ! 1/molwt for most species
     ,emis_nsplit                 &  ! No. species per emis file
     ,RoadDustGet                 &  
@@ -94,14 +96,14 @@ use Config_module,only: &
 use MPI_Groups_ml  , only : MPI_BYTE, MPI_DOUBLE_PRECISION, MPI_REAL8, MPI_INTEGER&
                             ,MPI_SUM,MPI_COMM_CALC, IERROR
 use NetCDF_ml,        only: ReadField_CDF,ReadField_CDF_FL,ReadTimeCDF,IsCDFfractionFormat,&
-                            GetCDF_modelgrid,PrintCDF,ReadSectorName
+                            GetCDF_modelgrid,PrintCDF,ReadSectorName,check
 use netcdf
 use Par_ml,           only: MAXLIMAX,MAXLJMAX, GIMAX,GJMAX, IRUNBEG,JRUNBEG,&
                             me,limax,ljmax, MSG_READ1,MSG_READ7&
                            ,gi0,gj0,li0,li1,lj0,lj1
 use PhysicalConstants_ml,only: GRAV, AVOG, ATWAIR
 use PointSource_ml,      only: readstacks !MKPS
-use ZchemData_mod,only: rcemis   ! ESX
+use Setup_1dfields_ml,only: rcemis   ! ESX
 use SmallUtils_ml,    only: find_index,  key2str
 use ReadField_ml,     only: ReadField    ! Reads ascii fields
 use TimeDate_ml,      only: nydays, nmdays, date, current_date, &! No. days per 
@@ -113,7 +115,6 @@ use Timefactors_ml,   only: &
     ,Gridded_SNAP2_Factors, gridfac_HDD & 
     ,fac_min,timefactors   &                  ! subroutine
     ,fac_ehh24x7 ,fac_emm, fac_cemm, fac_edd, timefac & ! time-factors
-    ,InterpolateMonthEmis & !flag to indicate if we want to interpolate the monthly factors
     ,Read_monthly_emis_grid_fac &
     ,GridTfac &!array with monthly gridded time factors
     ,yearly_normalize !renormalize timefactors after reset
@@ -204,7 +205,9 @@ contains
     logical,save :: my_first_call=.true.  ! Used for femis call
     logical :: mappingGNFR2SNAP = .false.
     character(len=40) :: varname, fmt,cdf_sector_name
-    integer ::allocerr, i_Emis_4D, iemsec, sec_ix
+    integer ::allocerr, i_Emis_4D, iemsec, sec_ix,ih,id,k,ncFileID,varID
+    character(len=200) ::fileName
+
 
     if (MasterProc) write(6,*) "Reading emissions for year",  year
 
@@ -260,6 +263,7 @@ contains
                trim(emis_inputlist(iemislist)%name)
 
           cdf_sector_name='NOTSET'
+          fname = key2str(fname,'POLL',EMIS_FILE(1))
           call ReadSectorname(fname,cdf_sector_name)
           if(trim(cdf_sector_name)/='NOTSET')then
              SECTORS_NAME=trim(cdf_sector_name)
@@ -270,14 +274,20 @@ contains
              if(cdf_sector_name == 'GNFR')emis_inputlist(iemislist)%type = "GNFRsectors"
              if(cdf_sector_name == 'SNAP')emis_inputlist(iemislist)%type = "SNAPsectors"
           end if
+          if(emis_inputlist(iemislist)%set_mask.or.emis_inputlist(iemislist)%use_mask)Emis_mask_allocate = .true.
+
        end do ! iemislist
+       if(Emis_mask_allocate)then
+          allocate(Emis_mask(LIMAX,LJMAX))
+          Emis_mask = .false.
+       endif
        if(USE_SECTORS_NAME /='NOTSET')then
           SECTORS_NAME = trim(USE_SECTORS_NAME)
           call CheckStop((SECTORS_NAME /= 'GNFR' .and. SECTORS_NAME /= 'SNAP'), &
                'Only SNAP and GNFR can be defined as sector names, not '//trim(SECTORS_NAME))
           if(Masterproc)write(*,*)"Forcing sector categories to ",trim(SECTORS_NAME)          
        endif
-    end if
+    endif
 
     !>============================
 
@@ -493,6 +503,7 @@ contains
        nex = emis_inputlist(iemislist)%Nexcl
 
        !1) emissions in NetCDF Fractions format 
+       fname = key2str(fname,'POLL',EMIS_FILE(1))
        if(IsCDFfractionFormat(trim(fname)))then
           !the file is in "fraction" format
           !check first if the file is a monthly file
@@ -535,7 +546,8 @@ contains
                    endif
                    call EmisGetCdfFrac(iem, isec, fname, varname, sumemis_local, &
                         emis_inputlist(iemislist)%incl, nin, emis_inputlist(iemislist)%excl, nex, &
-                        emis_inputlist(iemislist)%use_lonlat_femis)
+                        emis_inputlist(iemislist)%use_lonlat_femis,&
+                        emis_inputlist(iemislist)%set_mask,emis_inputlist(iemislist)%use_mask)
 
                    if(mappingGNFR2SNAP)then
                       !some SNAP sectors have several GNFR counterparts. Must take all of them
@@ -587,6 +599,7 @@ contains
           !not in "fraction" format. Each land has own set of fields
 
           NTime_Read=-1
+          fname = key2str(fname,'POLL',EMIS_FILE(1))
           call ReadTimeCDF(trim(fname),TimesInDays,NTime_Read)
 
           if(NTime_Read==12)then
@@ -608,13 +621,14 @@ contains
              if(MasterProc)  write(*,*)sub//trim(fname)//" Processing"
              do iem = 1, NEMIS_FILE
                 
+                
                 if(emis_inputlist(iemislist)%pollName(1)/='NOTSET')then
                    if(all(emis_inputlist(iemislist)%pollName(:)/=trim(EMIS_FILE(iem))))cycle      
-                   if(Masterproc)write(*,*)'reading '//trim(EMIS_FILE(iem))//' from '//trim(fname)
                 end if
                 
                 fname = key2str(emis_inputlist(iemislist)%name,'POLL',EMIS_FILE(iem))
-                
+                if(Masterproc)write(*,*)'reading '//trim(EMIS_FILE(iem))//' from '//trim(fname)
+              
                 if(MasterProc) then
                    write(*,*)sub//trim(fname)//" iemProcess",iem,trim(fname)
                    write(*,"(a,2i3,a,3i3)") "INPUTLIST:", iem, iemislist, trim(fname), nin, nex,me
@@ -629,14 +643,20 @@ contains
                 if ( nin > 0 ) then
                    call EmisGetCdf(iem,fname, sumemis(1,iem), &
                         emis_inputlist(iemislist)%use_lonlat_femis, &
-                        incl=emis_inputlist(iemislist)%incl(1:nin) )
+                        incl=emis_inputlist(iemislist)%incl(1:nin),&
+                        set_mask=emis_inputlist(iemislist)%set_mask,&
+                        use_mask=emis_inputlist(iemislist)%use_mask )
                 elseif (  nex > 0 ) then
                    call EmisGetCdf(iem,fname, sumemis(1,iem), &
                         emis_inputlist(iemislist)%use_lonlat_femis, &
-                        excl=emis_inputlist(iemislist)%excl(1:nex) ) 
+                        excl=emis_inputlist(iemislist)%excl(1:nex),&
+                        set_mask=emis_inputlist(iemislist)%set_mask,&
+                        use_mask=emis_inputlist(iemislist)%use_mask )
                 else
                    call EmisGetCdf(iem,fname, sumemis(1,iem), &
-                        emis_inputlist(iemislist)%use_lonlat_femis )
+                        emis_inputlist(iemislist)%use_lonlat_femis,&
+                        set_mask=emis_inputlist(iemislist)%set_mask,&
+                        use_mask=emis_inputlist(iemislist)%use_mask )
                 end if
                 if(MasterProc) write(*,*) "PARTEMIS ", iem, trim(fname), sumemis(27,iem) 
                 
@@ -1006,7 +1026,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
 !          secemis (NSECTORS,LIMAX,LJMAX,NCMAX,NEMIS_FILES) 
 !  
 !   Units:
-!   secemis has units of kg/m2/s, SOx as SO2, NOx as NO2, the others as speciated mw mass.
+!   secemis has units of kg/m2/s, SO2 as S, NO2 as N, NH3 as N. 
 !   Map factor (xm2) already accounted for. 
 !  
 !   Data on how many countries contribute per grid square is stored in
@@ -1043,7 +1063,7 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
 
   integer, save :: oldday = -1, oldhour = -1
   integer, save :: wday , wday_loc ! wday = day of the week 1-7
-  real ::  oldtfac
+  real ::  oldtfac, lon
   logical :: debug_tfac
 
   ! If timezone=-100, calculate daytime based on longitude rather than timezone
@@ -1139,7 +1159,9 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
         ncc = nlandcode(i,j)            ! No. of countries in grid
         debug_tfac=(DEBUG_EMISTIMEFACS.and.debug_proc.and.i==DEBUG_li.and.j==DEBUG_lj)
         ! find the approximate local time:
-        hourloc= mod(nint(indate%hour+24*(1+glon(i,j)/360.0)),24)
+        lon = modulo(360+nint(glon(i,j)),360)
+        if(lon>180.0)lon=lon-360.0
+        hourloc= mod(nint(indate%hour+24*(lon/360.0)),24)
         hour_longitude=hourloc
         daytime_longitude=0
         if(hourloc>=7 .and. hourloc<= 18) daytime_longitude=1            
@@ -1168,6 +1190,12 @@ subroutine EmisSet(indate)   !  emission re-set every time-step/hour
             hour_iland = hour_iland - 24
             wday_loc=wday + 1
             if(wday_loc==0)wday_loc=7 ! Sunday -> 7
+            if(wday_loc>7 )wday_loc=1 
+          end if
+          if(hour_iland<1) then
+            hour_iland = hour_iland + 24
+            wday_loc=wday - 1
+            if(wday_loc<=0)wday_loc=7 ! Sunday -> 7
             if(wday_loc>7 )wday_loc=1 
           end if
           call CheckStop(hour_iland<1,"ERROR: HOUR Zero in EmisSet")
@@ -1672,6 +1700,13 @@ subroutine newmonth
                   debug_flag=.false.,Undef=0.0)
              do j=1,ljmax
                 do i=1,limax                   
+                   if(emis_inputlist(iemislist)%use_mask)then
+                      if(Emis_mask(i,j))cdfemis(i,j)=0.0
+                   endif
+                   if(emis_inputlist(iemislist)%set_mask)then
+                      if(cdfemis(i,j)>MASK_LIMIT)Emis_mask(i,j)=.true.
+                   endif
+
                    if(nlandcode(i,j)>NCMAX)then
                       write(*,*)"To many emitter countries in one gridcell: ",&
                            me,i,j,nlandcode(i,j)
@@ -1750,15 +1785,21 @@ subroutine newmonth
           if ( nin > 0 ) then
              call EmisGetCdf(iem,fname, sumemis(1,iem), &
                   emis_inputlist(iemislist)%use_lonlat_femis, &
-                  month=current_date%month,incl=emis_inputlist(iemislist)%incl(1:nin) )
+                  month=current_date%month,incl=emis_inputlist(iemislist)%incl(1:nin),&
+                  set_mask=emis_inputlist(iemislist)%set_mask,&
+                  use_mask=emis_inputlist(iemislist)%use_mask )
           elseif (  nex > 0 ) then
              call EmisGetCdf(iem,fname, sumemis(1,iem), &
                   emis_inputlist(iemislist)%use_lonlat_femis, &
-                  month=current_date%month,excl=emis_inputlist(iemislist)%excl(1:nex) ) 
+                  month=current_date%month,excl=emis_inputlist(iemislist)%excl(1:nex),&
+                  set_mask=emis_inputlist(iemislist)%set_mask,&
+                  use_mask=emis_inputlist(iemislist)%use_mask ) 
           else
              call EmisGetCdf(iem,fname, sumemis(1,iem), &
                   emis_inputlist(iemislist)%use_lonlat_femis, &
-                  month=current_date%month )
+                  month=current_date%month,&
+                  set_mask=emis_inputlist(iemislist)%set_mask,&
+                  use_mask=emis_inputlist(iemislist)%use_mask )
           end if
           
        endif

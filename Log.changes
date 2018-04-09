@@ -138,6 +138,18 @@ pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+9 April 2018, Peter
+
+Small bug in "day of the week": the local hour West  UTC was always positive, 
+giving possible wrong day of the week a few hours each day.
+
+Introduction of "automatic mask" for emissions. In config set for instance:
+emis_inputlist(1)%set_mask = T,
+emis_inputlist(2)%use_mask = T,
+NB: the order of the masks do matter and Yealy emissions are always treated before monthly (i.e. you cannot make a mask from monthly and apply it to yearly)
+The mask will be defined *only* at positions with some emissions (larger than 1.E-20)
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 27 Mar 2018, Dave
 
 Small renames, on way to EMEP/ESX merge

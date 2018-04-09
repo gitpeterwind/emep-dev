@@ -12,7 +12,7 @@ use EmisDef_ml,       only: NSECTORS, ANTROP_SECTORS, NCMAX, FNCMAX, &
                             NH3EMIS_VAR,dknh3_agr,ISNAP_AGR,ISNAP_TRAF, &
                             NROADDUST, &
                             cdfemis,sumcdfemis,nGridEmisCodes,GridEmisCodes,GridEmis&
-                            ,gridrcemis,gridrcemis0&
+                            ,gridrcemis,gridrcemis0, Emis_mask, MASK_LIMIT&
                             ,landcode,nlandcode,MAXFEMISLONLAT,N_femis_lonlat    
   
 use GridAllocate_ml,  only: GridAllocate
@@ -97,14 +97,14 @@ contains
 
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
   subroutine EmisGetCdfFrac(iem, isec, fname, varname, sumemis_local, &
-    incl, nin, excl, nex, use_lonlat_femis)
+    incl, nin, excl, nex, use_lonlat_femis,set_mask,use_mask)
 
     implicit none
     integer, intent(in) ::iem, isec, nin, nex
     character(len=*),intent(in) :: fname, varname, incl(*),excl(*)
    ! Sum of emissions per country
     real,intent(inout), dimension(NLAND,NEMIS_FILE) :: sumemis_local 
-    logical, intent(in) :: use_lonlat_femis
+    logical, intent(in) :: use_lonlat_femis,set_mask,use_mask
 
     real :: fractions(LIMAX,LJMAX,NCMAX),Reduc(NLAND)
     real :: lonlat_fac
@@ -121,6 +121,13 @@ contains
 
     do j=1,ljmax
        do i=1,limax                   
+          if(use_mask)then
+             if(Emis_mask(i,j))cdfemis(i,j)=0.0
+          endif
+          if(set_mask)then
+             if(cdfemis(i,j)>MASK_LIMIT)Emis_mask(i,j)=.true.
+          endif
+          
           if(nlandcode(i,j)>NCMAX)then
              write(*,*)"GetCdfFrac: Too many emitter countries in one gridcell: ",&
                   me,i,j,nlandcode(i,j)
@@ -197,7 +204,7 @@ contains
 
   end subroutine EmisGetCdfFrac
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-  subroutine EmisGetCdf(iem, fname, sumemis, use_lonlat_femis, month, incl,excl)
+  subroutine EmisGetCdf(iem, fname, sumemis, use_lonlat_femis, month, incl,excl,set_mask,use_mask)
    integer, intent(in) :: iem ! index in EMIS_FILE array and GridEmis output
    character(len=*), intent(in)    :: fname
    real, intent(inout) ::sumemis(*)
@@ -205,13 +212,14 @@ contains
    character(len=*),dimension(:), optional :: &
        incl, excl ! Arrays of cc to inc/exclude
    logical, intent(in) :: use_lonlat_femis
+   logical, optional, intent(in) :: set_mask,use_mask
    integer :: i,j, ic, isec, allocerr(6), status
    real, dimension(NLAND) :: sumcdfemis_loc
    character(len=40) :: varname, fmt
    integer, save :: ncalls=0
    integer :: ncFileID, nDimensions,nVariables,nAttributes,timeDimID,varid,&
            xtype,ndims  !TESTE testing
-   character(len=10) :: ewords(7), code ! Test Emis:UK:snap:7
+   character(len=30) :: ewords(7), code ! Test Emis:UK:snap:7
    character(len=*), parameter ::  sub = 'EmisGetCdf:'
    integer :: nwords, err, i_gridemis, record
    logical, save :: my_first_call = .true., dbg0, dbgp
@@ -262,17 +270,17 @@ contains
   write( *,*) sub//' Num variables: ',nVariables
  end if
 
-
   do varid=1,nVariables
      call check(nf90_Inquire_Variable(ncFileID,varid,varname,xtype,ndims))
-
+     if(MasterProc) write(*,*)'FOUND ',varname
     ! Emission terms look like, e.g. Emis:FR:snap:7
      if( index( varname, "Emis:") < 1 ) cycle ! ONLY emissions wanted
      call wordsplit(varname,4,ewords,nwords,err,separator=":")
-     if( ewords(3) /= "snap" ) cycle ! ONLY SNAP coded for now
+     
+     if( ewords(3) /= "snap" ) cycle ! ONLY SNAP coded for now     
+     read(ewords(4),"(I6)") isec
 
      code =ewords(2)    ! Country ISO
-     read(ewords(4),"(I6)") isec
 
      !/ We can include or exclude countries:
       if ( present(excl) ) then
@@ -305,10 +313,9 @@ contains
      cdfemis = 0.0 ! safety, shouldn't be needed though
 
      call ReadField_CDF(fname,varname,cdfemis,record,&
-               interpol='mass_conservative',&
+               interpol='mass_conservative',known_projection='lon lat',&
                 needed=.false.,UnDef=0.0,&
                 debug_flag=.false.,ncFileID_given=ncFileID)
-
      if( maxval(cdfemis ) < 1.0e-10 ) cycle ! Likely no emiss in domain
 
      if ( dbgp ) then !me==0 has some sea usually !!SHIPHUNT
@@ -325,6 +332,16 @@ contains
 
         do j = 1, ljmax
             do i = 1, limax
+               if(present(use_mask))then
+               if(use_mask)then
+                  if(Emis_mask(i,j))cdfemis(i,j)=0.0
+               endif
+               endif
+               if(present(set_mask))then
+               if(set_mask)then
+                  if(cdfemis(i,j)>MASK_LIMIT)Emis_mask(i,j)=.true.
+               endif
+               endif
 
               if( cdfemis(i,j) > 1.0e-10 ) then
                  ! Some bit of Germany found in Africa in MACC2 data. Correct to 
@@ -580,7 +597,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 
   if ( ios == NO_FILE ) then
         ios = 0
-        write( *,*) "WARNING: NO FEMIS FILE:"//trim(femisFile)
+        write( *,*) "WARNING: NO FEMIS FILE"
         return !*** if no femis file, e_fact=1 as default *** 
   end if
   call CheckStop( ios < 0 ,"EmisGet:ios error in "//trim(femisFile))
@@ -626,8 +643,8 @@ READEMIS: do   ! ************* Loop over emislist files *******************
   end do COLS   ! ic
 
 if ( n < NEMIS_FILE ) then
-  print *, "FEMIS me n NEMIS_FILE", me, n, NEMIS_FILE, trim(femisFile)
-  call CheckStop( n < NEMIS_FILE , "EmisGet: too few femis items"//trim(femisFile) )
+  print *, "FEMIS me n NEMIS_FILE", me, n, NEMIS_FILE
+  call CheckStop( n < NEMIS_FILE , "EmisGet: too few femis items" )
 end if
 
   

@@ -94,7 +94,7 @@ type, public :: emep_useconfig
     ,GLOBAL_SOILNOX   = .false. &! Need to design better switch
     ,ASH          = .true.  &! Ash from historical Volcanic Eruption
     ,PreADV       = .false. &! Column Emissions are preadvected when winds are very strong 
-    ,NOCHEM       = .false. &! Turns of chemistry for emergency runs
+    ,NOCHEM       = .false. &! Turns of fchemistry for emergency runs
     ,AOD          = .false. &
     ,POLLEN       = .false. &! EXPERIMENTAL. Only works if start Jan 1
     ,SURF_AREA        = .true.  &! For improved aerosol uptake
@@ -198,8 +198,12 @@ type, public :: emis_in
                                         !for specific emission files
                                         !Country+sector specific reductions can be dealt
                                         !with with incl/excl, so those are not affected
+  logical :: set_mask = .false.  !if T, set mask for each (i,j) where non zero emission is found
+  logical :: use_mask = .false.  !if T, do not include emission where mask is set 
+  character(len=40) ::  sector = "NOTSET" !put emissions into a specific sector (not yet implemented)
+  real ::  scale = 1.0 ! multiply by scale (not yet implemented)
 end type emis_in
-type(emis_in), public, dimension(30) :: emis_inputlist = emis_in()
+type(emis_in), public, dimension(50) :: emis_inputlist = emis_in()
 
 character(len=40), dimension(20), public, save  :: SecEmisOutPoll = "NOTSET"
 logical, public, save  :: HourlyEmisOut = .false. !to output snap and sector emissions hourly
@@ -544,9 +548,10 @@ real, public, parameter :: &
 , PPT    = 1.0e-12         &  ! parts per trillion (mixing ratio)
 , PPTINV = 1.0e+12         &
 , PT     = 1.0e+4          &  ! Top of model region = 10000 Pa = 100 hPa
-, Pref   = 101325.0        &  ! Reference pressure in Pa
 , TINY   = 1.0e-9             ! -1.E-9" is sometimes used  in order to avoid
                               ! different roundings on different machines.
+real, public :: Pref   = 101325.0  ! Reference pressure in Pa used to define vertical levels
+
 
 ! Define output types.
 !   Derived output types: types 1..6 (instantaneous,year,month,day,hour,hour_inst),
