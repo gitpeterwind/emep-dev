@@ -39,7 +39,7 @@ module OrganicAerosol_ml
 
    use Functions_ml, only: StandardAtmos_kPa_2_km !ds for use in Hz scaling
    use GridValues_ml, only: A_mid,B_mid, debug_proc, debug_li, debug_lj
-   use Config_module,    only :  PT
+   use Config_module,    only :  PT, Pref
 
    use Config_module,    only : CHEMTMIN, CHEMTMAX, &
                                     MasterProc, DEBUG, &
@@ -170,7 +170,7 @@ module OrganicAerosol_ml
 
     ! Use Standard Atmosphere to get average heights of layers
 
-       p_kPa(:) = 0.001*( A_mid(:)+B_mid(:)*101325.0 ) ! Pressure in kPa
+       p_kPa(:) = 0.001*( A_mid(:)+B_mid(:)*Pref ) ! Pressure in kPa
        h_km     = StandardAtmos_kPa_2_km(p_kPa)
        BGND_OC(:)= 0.2 * 1.005 ! ng/m3 !!! will give 0.2 ugC/m3 at z=0 m
 

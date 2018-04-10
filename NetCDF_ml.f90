@@ -2011,9 +2011,10 @@ subroutine GetCDF_modelgrid(varname,fileName,Rvar,k_start,k_end,nstart,nfetch,&
     if(DEBUG_NETCDF)write(*,*) 'variable exists: ',trim(varname)
     if(present(found))found=.true.
   else
-    if(MasterProc) &
+    if(MasterProc .and. DEBUG_NETCDF) &
       write(*,*)'variable does not exist: ',trim(varname),trim(nf90_strerror(status))
-    call CheckStop(fileneeded, "NetCDF_ml : variable needed but not found")
+    call CheckStop(fileneeded, "NetCDF_ml : variable needed but not found "&
+         //trim(varname)//' '//trim(fileName))
     call check(nf90_close(ncFileID))
     return
   end if
