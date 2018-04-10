@@ -221,7 +221,7 @@ subroutine Config_Nest()
 ! Update filenames according to date following templates defined on Nest_config
   call init_icbc(cdate=current_date)
 ! Ensure sub-domain is not larger than run-domain
-  call RestrictDomain(out_DOMAIN)
+  if(MODE_SAVE/='NONE')call RestrictDomain(out_DOMAIN)
 ! Ensure that only FORECAST_NDUMP are taking into account
   if(MODE_SAVE=='FORECAST')then
     if(FORECAST_NDUMP<FORECAST_NDUMP_MAX)&
