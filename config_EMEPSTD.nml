@@ -206,7 +206,7 @@
   DEBUG%SETUP_1DCHEM    = F,
   DEBUG%SITES           = F,
   DEBUG%SOA             = F,
-  DEBUG%STOFLUX         = F,
+  DEBUG%STOFLUX         = T,
 !  DEBUG%STOP_HH        = 1,   ! If >= 0,  stops code after STOP_HH hours
 ! Specify here the coords and species index (tot, see CM_ChemSpecs_tot)
 !  DEBUG%IJ              =  -60, -50,     ! Default: no debugij output

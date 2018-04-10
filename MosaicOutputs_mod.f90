@@ -457,6 +457,7 @@ subroutine Add_MosaicOutput(debug_flag,i,j,convfac,DepAdv2Calc,fluxfrac,&
 
     case("VG","Rs","Rns","Gns") ! could we use RG_LABELS? 
       cdep = DepAdv2Calc(nadv)  ! e.g. IXADV_O3 to calc index
+!A2018 test if ( cdep < 1 ) print *, 'CDEP', nadv, 'AAARGH' // species_adv(nadv)%name ! 24 hno3
       Gs   = Sub(iLC)%Gsur(cdep)
       Gns  = Sub(iLC)%Gns(cdep)
 

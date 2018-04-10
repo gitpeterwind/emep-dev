@@ -36,7 +36,7 @@ use ChemDims_mod
 use ChemSpecs_mod             
 use ChemGroups_mod,    only: ChemGroups
 use DerivedFields_mod, only: f_2d, d_2d     ! Contains Wet deposition fields
-use GasParticleCoeffs_mod, only: WetCoeffs, WDspec, WetDepMapping ! New A2018
+use GasParticleCoeffs_mod, only: WetCoeffs, WDspec, WDmapping ! New A2018
 use GridValues_mod,    only: gridwidth_m,xm2,dA,dB
 use Io_mod,            only: IO_DEBUG, datewrite
 use MassBudget_mod,    only : wdeploss,totwdep
@@ -788,8 +788,9 @@ subroutine WetDeposition(i,j,debug_flag)
       ! species
       !A2018 do is = 1, Calc2adv(icalc,0)  ! number of species
       !A2018   iadv = Calc2adv(icalc,is)
-      do is = 1, size(WetDepMapping(icalc)%specs)  ! number of species
-        iadv = WetDepMapping(is)%specs(is)
+      do is = 1, size(WDmapping(icalc)%advspecs)  ! number of species
+!print *, 'WET', is, DDspec(is)%name
+        iadv = WDmapping(icalc)%advspecs(is)
         itot = iadv+NSPEC_SHL
 
     ! For semivolatile species only the particle fraction is deposited

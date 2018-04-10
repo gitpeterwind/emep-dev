@@ -44,6 +44,7 @@ module GasParticleCoeffs_mod
   public ::   GetDepMapping
   public ::   GasCoeffs
   public ::   ParticleCoeffs
+  public ::   InitGasCoeffs
   public ::   InitParticleCoeffs
   public ::   WetCoeffs
   public ::   self_test
@@ -54,8 +55,8 @@ module GasParticleCoeffs_mod
   real, public, save       :: nu_air = UNDEF_R  ! Kin. viscosity of air, m2/s
 
   integer, public, parameter ::&
-        NDRYDEP_GASES = 14     &! no. of gases in Wesely tables, DryDepDefs below
-       ,NDRYDEP_AERO  = 10     &! no. of particles in DryDepDefs below
+        NDRYDEP_GASES = 14     &! no. of gases in Wesely tables, DDdefs below
+       ,NDRYDEP_AERO  = 10     &! no. of particles in DDdefs below
        ,NDRYDEP_DEF   = NDRYDEP_GASES + NDRYDEP_AERO ! gases + aerosol defs
      !mafor ,NDRYDEP_DEF   = 17      ! gases + aerosol defs ! MSK 26.01.2015 start
 
@@ -87,7 +88,7 @@ end type DD_t
 !type(aero_t), public, save :: AERO = aero_t()
 
 
-type(DD_t), public, dimension(NDRYDEP_DEF), parameter :: DryDepDefs = [ &
+type(DD_t), public, dimension(NDRYDEP_DEF), parameter :: DDdefs = [ &
 ! Dx values not from Massman are set using Wesely ratios for now. Will
 ! calculate later.
 ! QUERY - what is K? not used so far, but check for H2O
@@ -145,7 +146,7 @@ type, private :: WD_t
 end type WD_t
 
 integer, parameter :: NWETDEP_DEF = 22
-type(WD_t), public, dimension(NWETDEP_DEF),parameter :: WetDepDefs = [ &
+type(WD_t), public, dimension(NWETDEP_DEF),parameter :: WDdefs = [ &
   WD_t('SO2'  , 0.3,  0.15)  &! Berge+Jakobsen
  ,WD_t('SO4'  , 1.0,  EFF25) &! Berge+Jakobsen
  ,WD_t('NH3'  , 1.4,  0.5 )  &! subcloud = 1/3 of cloud for gases
@@ -181,14 +182,14 @@ type(WD_t), public, dimension(NWETDEP_DEF),parameter :: WetDepDefs = [ &
     integer :: idef   ! index in definitions arrays
     character(len=TXTLEN_SHORT) :: name
     logical :: is_gas  ! true if gas
-    integer, allocatable, dimension(:) :: specs  ! list of IXADV valuesadvect
+    integer, allocatable, dimension(:) :: advspecs  ! list of IXADV valuesadvect
   end type depmap_t
 
   type(depmap_t), allocatable, dimension(:), public ::&
-    DryDepMapping, WetDepMapping, DepMapping
+    DDmapping, WDmapping, DepMapping
 
   integer, public, save :: nddep, nwdep ! will be number of DDspec, WDspec
-  integer, public, save, dimension(NSPEC_TOT) :: Chem2DDspec = 0
+  integer, public, save, dimension(NSPEC_TOT) :: Adv2DDspec = 0
   integer, public, save :: idcmpHNO3, idcmpO3, idcmpNH3, idcmpSO2, idcmpNO2
   integer, public, save :: idcmpPMfS, idcmpPMfNO3, idcmpPMfNH4
 
@@ -255,14 +256,14 @@ contains
 
       if (idep==1) then
         dcase = 'dry:'
-        allocate(defnames(size(DryDepDefs)), CM_DepMap(NDRYDEP_ADV))
-        defnames = DryDepDefs(:)%name
+        allocate(defnames(size(DDdefs)), CM_DepMap(NDRYDEP_ADV))
+        defnames = DDdefs(:)%name
         CM_DepMap  = CM_DDepMap
       else
         dcase = 'wet:'
-        allocate(defnames(size(WetDepDefs)), CM_DepMap(NWETDEP_ADV))
+        allocate(defnames(size(WDdefs)), CM_DepMap(NWETDEP_ADV))
         CM_DepMap  = CM_WDepMap
-        defnames = WetDepDefs(:)%name
+        defnames = WDdefs(:)%name
       end if
 
       n=0
@@ -280,7 +281,7 @@ contains
 
       DEPLOOP: do  i = 1, size(CM_DepMap) ! from CM_DryDep - wanted species
         advname = CM_DepMap(i)%name
-        defname = CM_DepMap(i)%surrogate ! must be in DryDepDefs, WetDepDefs
+        defname = CM_DepMap(i)%surrogate ! must be in DDdefs, WDdefs
         itot    = find_index( advname, species(:)%name ) ! -ve if not unique
         iadv    = itot - NSPEC_SHL
         idef    = find_index( defname, defnames )
@@ -306,8 +307,8 @@ contains
 
       end do DEPLOOP
 
-      if( idep==1) allocate(DryDepMapping(nrow))
-      if( idep==2) allocate(WetDepMapping(nrow))
+      if( idep==1) allocate(DDmapping(nrow))
+      if( idep==2) allocate(WDmapping(nrow))
       allocate(DepMapping(nrow))
 
       irow=0
@@ -318,10 +319,10 @@ contains
           DepMapping(irow)%idef = idef
           DepMapping(irow)%name = defnames(idef)
 
-          allocate( DepMapping(irow)%specs(ni(idef)) ) ! IXADV values, one or more
-          if(idep==1) allocate( DryDepMapping(irow)%specs(ni(idef)) )
-          if(idep==2) allocate( WetDepMapping(irow)%specs(ni(idef)) )
-          DepMapping(irow)%specs = [ ( iDepUsed(idef,n), n=1,  ni(idef)) ]
+          allocate( DepMapping(irow)%advspecs(ni(idef)) ) ! IXADV values, one or more
+          if(idep==1) allocate( DDmapping(irow)%advspecs(ni(idef)) )
+          if(idep==2) allocate( WDmapping(irow)%advspecs(ni(idef)) )
+          DepMapping(irow)%advspecs = [ ( iDepUsed(idef,n), n=1,  ni(idef)) ]
 
           if(MasterProc) then
             if( irow==1) write(*,'(a)') dtxt//dcase// '  --- Mapping ----'
@@ -330,17 +331,22 @@ contains
           end if
 
           do n = 1,  ni(idef)
-            itot = DepMapping(irow)%specs(n) + NSPEC_SHL
-            Chem2DDspec(itot) = irow  ! Mapping from 'real' to DDspec
+            itot = DepMapping(irow)%advspecs(n) + NSPEC_SHL
             if(MasterProc) write(*,'(a8)',advance='no') species(itot)%name
+            !Chem2DDspec(itot) = irow  ! Mapping from 'real' to DDspec
+
+            if( idep==1 ) then ! for dry dep we need reverse mapping
+              iadv = itot - NSPEC_SHL
+              Adv2DDspec(iadv) = irow  ! Mapping from 'real' to DDspec
+            end if
           end do
           if(MasterProc) write(*,*)' '
         end if
     end do
        
   ! Now, copy DepMapping to wet or Dry
-   if (idep==1) DryDepMapping = DepMapping
-   if (idep==2) WetDepMapping = DepMapping
+   if (idep==1) DDmapping = DepMapping
+   if (idep==2) WDmapping = DepMapping
 
    deallocate(defnames)
    deallocate(CM_DepMap)
@@ -349,12 +355,12 @@ contains
  end do DRYWETLOOP
 
 ! Allocate other arrays used below
- nddep = size(DryDepMapping)
- nwdep = size(WetDepMapping)
+ nddep = size(DDmapping)
+ nwdep = size(WDmapping)
  allocate(DDspec(nddep))
  allocate(WDspec(nwdep))
- DDspec(:)%name = DryDepMapping(:)%name ! assign here to help printouts
- WDspec(:)%name = WetDepMapping(:)%name
+ DDspec(:)%name = DDmapping(:)%name ! assign here to help printouts
+ WDspec(:)%name = WDmapping(:)%name
  !call GasCoeffs(298.15) ! Just sets DDspec names
  if(MasterProc) write(*,*) dtxt//'ALLOCS', size(DDspec), size(WDSPEC)
 
@@ -378,51 +384,52 @@ contains
 !!  This T-dep fits changes in nu_air and kt from Garratt A3 very
 !!  well also.
 
+  subroutine InitGasCoeffs()
+    integer :: iO3, icmp, idef
+    real :: DxO3
+
+     iO3 = find_index('O3',DDdefs(:)%name)
+     DxO3 = DDdefs(iO3)%Dx
+
+    ! copy across some values from DDdefs to shorter DDspec array
+
+     do icmp = 1, size(DDmapping(:)%name )
+       idef = DDmapping(icmp)%idef
+
+       DDspec(icmp)%name  = DDdefs(idef)%name
+       DDspec(icmp)%is_gas  = .false.
+
+       if ( idef >  NDRYDEP_GASES ) CYCLE ! Just do gases here
+
+       DDspec(icmp)%DxDO3   = DDdefs(idef)%Dx / DxO3
+       DDspec(icmp)%Hstar   = DDdefs(idef)%Hstar
+       DDspec(icmp)%f0      = DDdefs(idef)%f0
+       DDspec(icmp)%is_gas  = .true.
+
+       ! Sc and Rb_cor same for all T
+       DDspec(icmp)%Schmidt = NU_AIR0 / DDdefs(icmp)%Dx
+       DDspec(icmp)%Rb_cor  = (DDspec(icmp)%Schmidt/PRANDTL)**(2.0/3.0)
+
+       if(MasterProc) write(*,fmt) "DD_Coeffs: "//DDspec(icmp)%name, &
+       !print *, "DD_Coeffs: "//DDspec(icmp)%name, &
+          "Dx=", DDspec(icmp)%Dx, "DxDO3=",DDspec(icmp)%DxDO3, &
+          "Sc=", DDspec(icmp)%Schmidt, "Rb_cor=", DDspec(icmp)%Rb_cor
+
+     end do
+
+  end subroutine InitGasCoeffs
+
   subroutine GasCoeffs(T)
     real, intent(in)  :: T    ! /temp, K
   
     integer :: icmp, idef, iO3
     real :: Tcorr, DxO3
-    logical, save :: first_call = .true.
-
-
-    if( first_call ) then
-       iO3 = find_index('O3',DryDepDefs(:)%name)
-       DxO3 = DryDepDefs(iO3)%Dx
-
-      ! copy across some values from DryDepDefs to shorter DDspec array
-
-       do icmp = 1, size(DryDepMapping(:)%name )
-         idef = DryDepMapping(icmp)%idef
-
-         DDspec(icmp)%name  = DryDepDefs(idef)%name
-         DDspec(icmp)%is_gas  = .false.
-
-         if ( idef >  NDRYDEP_GASES ) CYCLE ! Just do gases here
-
-         DDspec(icmp)%DxDO3   = DryDepDefs(idef)%Dx / DxO3
-         DDspec(icmp)%Hstar   = DryDepDefs(idef)%Hstar
-         DDspec(icmp)%f0      = DryDepDefs(idef)%f0
-         DDspec(icmp)%is_gas  = .true.
-
-         ! Sc and Rb_cor same for all T
-         DDspec(icmp)%Schmidt = NU_AIR0 / DryDepDefs(icmp)%Dx
-         DDspec(icmp)%Rb_cor  = (DDspec(icmp)%Schmidt/PRANDTL)**(2.0/3.0)
-
-         if(MasterProc) write(*,fmt) "DD_Coeffs: "//DDspec(icmp)%name, &
-         !print *, "DD_Coeffs: "//DDspec(icmp)%name, &
-            "Dx=", DDspec(icmp)%Dx, "DxDO3=",DDspec(icmp)%DxDO3, &
-            "Sc=", DDspec(icmp)%Schmidt, "Rb_cor=", DDspec(icmp)%Rb_cor
-
-       end do
-       first_call = .false.
-    end if
 
     Tcorr  = (T/273.15)**1.8
-    do icmp = 1, size(DryDepMapping(:)%name )
-      idef = DryDepMapping(icmp)%idef
+    do icmp = 1, size(DDmapping(:)%name )
+      idef = DDmapping(icmp)%idef
       if ( idef >  NDRYDEP_GASES ) CYCLE ! Just do gases here
-      DDspec(icmp)%Dx  = DryDepDefs(idef)%Dx * Tcorr
+      DDspec(icmp)%Dx  = DDdefs(idef)%Dx * Tcorr
     enddo
 
     !real :: mu_air   ! Dynamic viscosity of air, kg/ms/s
@@ -437,11 +444,11 @@ contains
   !----------------------------------------------------------------------------
   subroutine WetCoeffs()
     integer :: icmp, idef
-    do icmp = 1, size(WetDepMapping(:)%name )
-      idef = WetDepMapping(icmp)%idef
-      WDspec(icmp)%name   = WetDepDefs(idef)%name
-      WDspec(icmp)%W_sca  = WetDepDefs(idef)%W_sca
-      WDspec(icmp)%W_sub  = WetDepDefs(idef)%W_sub
+    do icmp = 1, size(WDmapping(:)%name )
+      idef = WDmapping(icmp)%idef
+      WDspec(icmp)%name   = WDdefs(idef)%name
+      WDspec(icmp)%W_sca  = WDdefs(idef)%W_sca
+      WDspec(icmp)%W_sub  = WDdefs(idef)%W_sub
       if(MasterProc) write(*,fmt) "WD_Coeffs: "//WDspec(icmp)%name
     end do
   end subroutine WetCoeffs
@@ -462,13 +469,14 @@ contains
     integer :: idef, icmp
     if( present(debug_flag) ) debug = debug_flag
 
-    do icmp = 1, size(DryDepMapping(:)%name )
-      idef = DryDepMapping(icmp)%idef
+    do icmp = 1, size(DDmapping(:)%name )
+      idef = DDmapping(icmp)%idef
 
       if ( idef <= NDRYDEP_GASES )  CYCLE ! Only particles here
 
-      DDspec(icmp)%sigma = DryDepDefs(idef)%sigma !just a copy
-      DDspec(icmp)%DpgV  = DryDepDefs(idef)%DpgV !just a copy
+      DDspec(icmp)%sigma = DDdefs(idef)%sigma !just a copy
+      DDspec(icmp)%DpgV  = DDdefs(idef)%DpgV !just a copy
+      DDspec(icmp)%rho_p = DDdefs(idef)%rho_p !just a copy
 
      !... volume median diameter (Dp in EMEP notation. Will change!
      ! -> geomettic number median diameter ! S&P, 7.52:
@@ -476,7 +484,7 @@ contains
 
       DDspec(icmp)%DpgN  = DpgV2DpgN(DDspec(icmp)%DpgV, DDspec(icmp)%sigma)
 
-     !QUERY DDspec(icmp)%Dg = exp (log( DryDepDefs(idef)%Dp ) - 3*lnSig2 )
+     !QUERY DDspec(icmp)%Dg = exp (log( DDdefs(idef)%Dp ) - 3*lnSig2 )
      ! done  above I think, we DpgN as result
 
       lnSig2 = log( DDspec(icmp)%sigma )**2
@@ -495,7 +503,7 @@ contains
 
       if(MasterProc) write(*,"(a,2i4,2a8,10es10.2)") &
         "PMi,sig,Dp,Dg,Kn,sigterm: ",icmp, idef,  trim(DDspec(icmp)%name), &
-         trim(DryDepDefs(idef)%name), DDspec(icmp)%sigma, DDspec(icmp)%DpgV,&
+         trim(DDdefs(idef)%name), DDspec(icmp)%sigma, DDspec(icmp)%DpgV,&
          DDspec(icmp)%DpgN, knut, DDspec(icmp)%sigterm
     end do !icmp
 
@@ -518,8 +526,8 @@ contains
 
   !... Diffusion coefficient for poly-disperse , A29, A30
 
-   do icmp = 1, size(DryDepMapping)
-      idef = DryDepMapping(icmp)%idef
+   do icmp = 1, size(DDmapping)
+      idef = DDmapping(icmp)%idef
       if ( idef <= NDRYDEP_GASES )  CYCLE ! Only particles here
 
         !CHECK ARGH :::: Dpg =BOLTZMANN*T/(3*PI * nu_air *rho * DDspec(icmp)%Dg) ! A30
@@ -529,9 +537,9 @@ contains
 
       DDspec(icmp)%Schmidt = nu_air / DDspec(icmp)%Dx
 
-      if(MasterProc .and. (first_call .or. debug) ) then
+      if(MasterProc .and. first_call ) then
         write(*,"(a,2f7.3,10es10.2)") "PM Coeffs,T,rho,nu,Dp,Dg", &
-           T,rho,  nu_air, DryDepDefs(idef)%DpgV, DDspec(icmp)%DpgN
+           T,rho,  nu_air, DDdefs(idef)%DpgV, DDspec(icmp)%DpgN
         write(*,"(a,10es10.2)") "  Polydisperse Dx,Sc:", &
            DDspec(icmp)%Dx,DDspec(icmp)%Schmidt
         Dpg = Dpg*(1+2*1.246*FREEPATH/DDspec(icmp)%DpgN)  !just for check
@@ -548,6 +556,8 @@ contains
   real :: T=293.15, rho=1.2
 
     call GetDepMapping()
+    call InitGasCoeffs()
+    call InitParticleCoeffs()
     call GasCoeffs(T)
     call ParticleCoeffs(T,rho,debug_flag=.true.) !QUERY VALUES v LOW
     call WetCoeffs()
@@ -556,23 +566,23 @@ contains
     write(*,"(a,es9.2)") " nu_air=", nu_air
     write(*,"(a,2i4)") "No gas and gas+particles ", NDRYDEP_GASES, NDRYDEP_DEF
 
-    do icmp = 1, size(DryDepMapping)
-      idef = DryDepMapping(icmp)%idef
+    do icmp = 1, size(DDmapping)
+      idef = DDmapping(icmp)%idef
       write(*,*) '-------------'
-      write(*,fmt) "GasCoeffs "//DryDepDefs(idef)%name, "Dx=", DDspec(icmp)%Dx, &
+      write(*,fmt) "GasCoeffs "//DDdefs(idef)%name, "Dx=", DDspec(icmp)%Dx, &
          "Sc=", DDspec(icmp)%Schmidt, "Rb_cor=", DDspec(icmp)%Rb_cor, &
-         "Zhang Rm=", DryDepDefs(idef)%Rm,  & ! NEEDS CHECK for Rm
-         " W&Th. Rm? ", 1.0/(DryDepDefs(idef)%Hstar/3000.0 + 100*DryDepDefs(idef)%f0 )
-      write(*,fmt) "PmCoeffs "//DryDepDefs(idef)%name, "Dx=",DDspec(icmp)%Dx, &
+         "Zhang Rm=", DDdefs(idef)%Rm,  & ! NEEDS CHECK for Rm
+         " W&Th. Rm? ", 1.0/(DDdefs(idef)%Hstar/3000.0 + 100*DDdefs(idef)%f0 )
+      write(*,fmt) "PmCoeffs "//DDdefs(idef)%name, "Dx=",DDspec(icmp)%Dx, &
          "Dp=", DDspec(icmp)%DpgV, "Sig=", DDspec(icmp)%sigma, &
          "Dg=", DDspec(icmp)%Dg, "Sc=",DDspec(icmp)%Schmidt
     end do !icmp
 
-    icmp=find_index('O3',DryDepDefs(:)%name )
+    icmp=find_index('O3',DDdefs(:)%name )
     do iT = 0, 30, 5    
       T=273.15 + iT
       call GasCoeffs(T)
-!TMP      write(*,fmt) DryDepDefs(n)%name//"=f(T) Coeffs ", "T=", T, "Dx ", Dx(n)
+!TMP      write(*,fmt) DDdefs(n)%name//"=f(T) Coeffs ", "T=", T, "Dx ", Dx(n)
     end do !iT
   end subroutine self_test
 end module GasParticleCoeffs_mod

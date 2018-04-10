@@ -29,7 +29,8 @@
      ! For EMEP, use:
      ! WT versions : zi/L and limit 1/L to -0.04, cf Pryor
 
-  public  :: SettlingVelocity
+  public  :: SettlingVelocity     ! uses sigma as arg
+  public  :: SettlingVelocityLn2  ! uses ln(sigma)**2 as arg
   public  :: PetroffFit
   public  :: GPF_VdsZi  ! General, Gallager-Petroff fits (loosely!)
   public  :: GPF_Vds300 !  "  "
@@ -45,6 +46,37 @@
 
 contains
 
+   !------------------------------------------------------------------------
+   ! We have two SettlingVelocity fuctions, one using pre-calculated
+   ! long(sigma)**2 and one using sigma.
+
+   elemental function SettlingVelocityLn2(tsK,rho,lnsig2,Dg) result(Vs)
+    ! gravitational settling for 2 modes
+    ! Equations Axx referred to here are from Appendix A,
+    !  Binkowski+Shankar, JGR, 1995
+    !  Note confusing notation in B+S, dp was used for diff. coeff.
+    !  here we use Di
+
+     real, intent(in) :: tsK, rho   ! temp, air density
+     real, intent(in) :: lnsig2, Dg ! geometric diameter 
+     real  :: Vs
+
+     real, parameter :: one2three = 1.0/3.0
+     real    :: knut, Di,   & ! Knudsen number, Diffusion coefficient
+                Di_help, vs_help
+     !vind, vsmo, slip, stoke, schmidt ! slip correction, Stokes and Schmidt numbers
+
+        knut = 2*FREEPATH/Dg   ! Knut's number
+
+        Di_help =BOLTZMANN*tsK/(3*PI *VISCO *rho *Dg)       ! A30, Dpg
+        vs_help= Dg*Dg * rho * GRAV / (18*VISCO*rho)        ! A32
+
+       !... Diffusion coefficient for poly-disperse 
+        Di = Di_help*(exp(-2.5*lnsig2)+1.246*knut*exp(-4.*lnsig2))      ! A29, Dpk 
+       !... Settling velocity for poly-disperse 
+        Vs = vs_help*(exp(8*lnsig2)+1.246*knut*exp(3.5*lnsig2)) ! A31, k=3
+
+   end function SettlingVelocityLn2
    !------------------------------------------------------------------------
    elemental function SettlingVelocity(tsK,roa,sigma,diam,PMdens) result(Vs)
     ! gravitational settling velocity
@@ -72,7 +104,7 @@ contains
 
         knut = 2.0*FREEPATH/dg   ! Knut's number
 
-        Di_help =BOLTZMANN*tsK/(3*PI*dg *VISCO *roa)              ! A30, dpg
+        Di_help =BOLTZMANN*tsK/(3*PI *VISCO *roa *dg)                    ! A30, Dpg
         vs_help= dg*dg * PMdens * GRAV / (18.0* VISCO*roa)        ! A32
 
        !... Diffusion coefficient for poly-disperse
@@ -96,7 +128,7 @@ contains
 
 ! -------------------------------------------------------------------
    function PetroffFit(ustar,invL,SAI) result(Vds)
-     ! "Simple" fitting of Petroff et al.
+     ! "Simple" fitting of Petroff et al. 2008
      ! Fig12b suggests  Vd = 0.3 cm/s for u* = 0.45, LAI=22
      ! ->  Vds = 0.007 * u*
      ! Fig.15 suggests that vds is approx prop to LAI for dp~0.4um
@@ -114,7 +146,7 @@ contains
    !------------------------------------------------------------------------
    ! GallagherPetrof fits
    ! Two functions here, for different stability methods
-     ! "Simple" fitting of Gallagher et al. (1997) and Petroff et al., which
+     ! "Simple" fitting of Gallagher et al. (1997) and Petroff et al., which 
      ! roughly captures the differences between Speulderbos-type and typical
      ! forests, because of LAI.
      ! Gallagher et al. had   Vds/u* = 0.0135 * Dp * stab function

@@ -101,7 +101,10 @@
 
     if ( inat_SSFI < 1 ) then
        seasalt_found = .false.
-       call PrintLog("WARNING: SeaSalt asked for but not found",MasterProc)
+       call PrintLog("WARNING: SeaSalt not found in Emis",MasterProc)
+    else if ( itot_SSFI < 1 ) then
+       seasalt_found = .false.
+       call PrintLog("WARNING: SeaSalt not found in Specs",MasterProc)
     else
         seasalt_found = .true.
         call init_seasalt()

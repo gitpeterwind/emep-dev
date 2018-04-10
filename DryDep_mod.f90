@@ -89,7 +89,7 @@ public  :: DryDep, init_drydep
 
 !integer, private, save :: P != IO_SPOD + me
 ! Maps from adv index to one of calc indices
-integer, public, save, dimension(NSPEC_ADV) :: DepAdv2Calc 
+!A2018 integer, public, save, dimension(NSPEC_ADV) :: DepAdv2Calc 
 
 logical, private, save :: my_first_call = .true.
 character(len=30),private, save :: errmsg = "ok"
@@ -110,7 +110,7 @@ integer, public, parameter :: pNH4  = NH4_f
 !logical, public, parameter :: COMPENSATION_PT = .false. 
 
 !***************************************************************************
-!  Specifies which of the possible species (from DryDepDefs list)
+!  Specifies which of the possible species (from DDdefs list)
 !  are required in the current air pollution model   
 !***************************************************************************
 ! .... Define the mapping between the advected species and
@@ -168,17 +168,17 @@ contains
 
   if ( my_first_call ) then 
 
-    if(MasterProc) write(*,*) dtxt//" GET DEP"
+    if(MasterProc) write(*,*) dtxt//" GET DEP", nddep
     print *, dtxt//" GET DEP"
-     call GetDepMapping() !A2018 creates DDspec, DryDepMapping
-     call GasCoeffs(285.0)          ! just to allocate, temp irrelevant
+     call GetDepMapping() !A2018 creates DDspec, DDmapping
+     call InitGasCoeffs()    ! allocate and set DDspec  
      call InitParticleCoeffs()
 
      allocate(BL(nddep))
      allocate(gradient_fac(nddep), vg_fac(nddep), Vg_ref(nddep), &
          Vg_3m(nddep), Vg_ratio(nddep), sea_ratio(nddep), Gsto(nddep) )
      !A2018 call Init_DepMap()               ! Maps CDDEP to IXADV
-     !A2018 call Init_GasCoeff()             ! Sets DryDepDefs coeffs.
+     !A2018 call Init_GasCoeff()             ! Sets DDdefs coeffs.
 
      call CheckStop( NLOCDRYDEP_MAX < nddep, & !A2018 NDRYDEP_CALC, &
         "Need to increase size of NLOCDRYDEP_MAX" )
@@ -261,7 +261,7 @@ contains
 
     character(len=*), parameter :: dtxt='DryDep:' ! debug label
     logical, save      :: dbg, dbghh, dbgBD
-    integer icmp, ispec, iiL, nlu, ncalc, nadv, nFlux  ! help indexes
+    integer icmp, ispec, iiL, nlu, nadv, nFlux  ! help indexes
     integer :: imm, idd, ihh, iss     ! date
     integer :: ntot !index of adv species in xn_2d array
 
@@ -415,8 +415,8 @@ contains
 
    !A2018 new....
 
-     call GasCoeffs(L%T2)             ! Sets DryDepDefs coeffs.
-     call ParticleCoeffs(L%t2,L%rho_s,debug_flag=DEBUG%A2018) ! Sets DryDepDefs coeffs.
+     call GasCoeffs(Grid%t2)             ! Sets DDdefs coeffs.
+     call ParticleCoeffs(Grid%t2,Grid%rho_s,debug_flag=DEBUG%A2018)
 
    !A2018 end new....
 
@@ -638,6 +638,7 @@ contains
          if (  LandType(iL)%flux_wanted ) then
 
            !n = CDDEP_O3
+           icmp = idcmpO3
            Ra_diff = L%Ra_ref - L%Ra_3m
            c_hveg3m = xn_2d(FLUX_TOT,K2)  &     ! #/cm3 units
                         * ( 1.0-Ra_diff*Vg_ref(icmp) )
@@ -709,11 +710,6 @@ contains
     end do ! icmp
 
 
-!A2018    GASLOOP2 :  do n = 1, NDRYDEP_ADV 
-!A2018         nadv    = DDepMap(icmp)%ind
-!A2018         ntot    = NSPEC_SHL + DDepMap(icmp)%ind
-!A2018         ncalc   = DDepMap(icmp)%calc
-
   ! ===================================================================
    DDEPLOOP: do icmp = 1, nddep
 
@@ -724,9 +720,9 @@ contains
          cfac(nadv, i,j) = 1.0   ! Crude, for now.
      end if
  
-     CMPLOOP: do ispec = 1, size(DryDepMapping(icmp)%specs)  ! Real species now
+     CMPLOOP: do ispec = 1, size(DDmapping(icmp)%advspecs)  ! Real species now
 
-        nadv = DryDepMapping(icmp)%specs(ispec)  ! Real species now
+        nadv = DDmapping(icmp)%advspecs(ispec)  ! Real species now
         ntot = NSPEC_SHL + nadv
           
         if ( ntot >= FIRST_SEMIVOL .and. ntot <= LAST_SEMIVOL ) THEN
@@ -735,35 +731,35 @@ contains
            ! specified in GenIn.species.
 
           DepLoss(nadv) =  &
-           Fgas(ntot,K2)*vg_fac( ncalc ) * xn_2d(ntot,K2) + &
+           Fgas(ntot,K2)*vg_fac( icmp ) * xn_2d(ntot,K2) + &
            Fpart(ntot,K2)*vg_fac( idcmpPMfS ) * xn_2d(ntot,K2)
 
-           cfac(nadv, i,j) = Fgas(ntot,K2)*gradient_fac(ncalc) + &
+           cfac(nadv, i,j) = Fgas(ntot,K2)*gradient_fac(icmp) + &
                 Fpart(ntot,K2)*gradient_fac( idcmpPMfS )
         else
-            DepLoss(nadv) =   vg_fac( ncalc )  * xn_2d( ntot,K2)
-            cfac(nadv, i,j) = gradient_fac( ncalc )
+            DepLoss(nadv) =   vg_fac( icmp )  * xn_2d( ntot,K2)
+            cfac(nadv, i,j) = gradient_fac( icmp )
         end if !SEMIVOL
 
         if ( DepLoss(nadv) < 0.0 .or. DepLoss(nadv)>xn_2d(ntot,K2) ) then
-          print "(a,2i4,a,es12.4,2f8.4,9es11.4)", "NEGXN ", ntot, ncalc, &
+          print "(a,2i4,a,es12.4,2f8.4,9es11.4)", "NEGXN ", ntot, icmp, &
            trim(species(ntot)%name), xn_2d(ntot,K2), &
-              Fgas(ntot,K2), Fpart(ntot,K2), DepLoss(nadv), vg_fac(ncalc)
+              Fgas(ntot,K2), Fpart(ntot,K2), DepLoss(nadv), vg_fac(icmp)
          call CheckStop("NEGXN DEPLOSS" )
         end if
 
         if ( ntot == O3 ) then 
 
           o3_45m = xn_2d(O3,K2)*surf_ppb !store for consistency of SPOD outputs
-          Grid%surf_o3_ppb  = o3_45m * gradient_fac( ncalc )
+          Grid%surf_o3_ppb  = o3_45m * gradient_fac( icmp )
           Grid%surf_o3_ppb1 = ( xn_2d(O3,K2) - Deploss(nadv)) * & ! after loss
-               gradient_fac( ncalc )*surf_ppb
+               gradient_fac( icmp )*surf_ppb
 
           if( dbghh ) then
              lossfrac = ( 1 - DepLoss(nadv)/xn_2d( ntot,K2))
              call datewrite("O3_ppb_ratios ", icmp, (/ o3_45m, &
                 Grid%surf_o3_ppb, Grid%surf_o3_ppb1, &
-                lossfrac, gradient_fac(ncalc), L%StoFrac(ntot) /) )
+                lossfrac, gradient_fac(icmp), L%StoFrac(ntot) /) )
           end if
         end if ! ntot==O3
 
@@ -778,7 +774,7 @@ contains
              end if
              if ( DEBUG%DRYDEP .and. lossfrac < 0.1 ) then
                print *, dtxt//"LOSSFRACING ", nadv, (/ 1.0*iL, &
-                 Sub(0)%Vg_Ref(icmp), DepLoss(nadv), vg_fac(ncalc), lossfrac /)
+                 Sub(0)%Vg_Ref(icmp), DepLoss(nadv), vg_fac(icmp), lossfrac /)
                call CheckStop( lossfrac < 0.1, "ERROR: LOSSFRAC " )
              end if
   
@@ -799,7 +795,7 @@ contains
            !if ( vg_set(icmp) )  then
            !      fluxfrac_adv(nadv,iL) = Sub(iL)%coverage  ! Since all vg_set equal
            !else
-              Vg_scale = Sub(iL)%Vg_Ref(ncalc)/ Sub(0)%Vg_Ref(ncalc)
+              Vg_scale = Sub(iL)%Vg_Ref(icmp)/ Sub(0)%Vg_Ref(icmp)
               fluxfrac_adv(nadv,iL) = Sub(iL)%coverage*Vg_scale
            !end if
   
@@ -822,9 +818,9 @@ contains
               !      100*DDepMap(icmp)%vg, Sub(iL)%coverage, fluxfrac_adv(nadv,iL)
               !else
               write(6,"(a,3i3,f8.5,5f8.3)") "FLUXFRAC ", iiL, iL, nadv, &
-                 Sub(iL)%coverage, 100*Sub(0)%Vg_Ref(ncalc), &  ! GRID
-                    100*Sub(iL)%Vg_Ref(ncalc), & ! Mosaic VgRef &
-                    100*Sub(iL)%coverage*Sub(iL)%Vg_Ref(ncalc), & 
+                 Sub(iL)%coverage, 100*Sub(0)%Vg_Ref(icmp), &  ! GRID
+                    100*Sub(iL)%Vg_Ref(icmp), & ! Mosaic VgRef &
+                    100*Sub(iL)%coverage*Sub(iL)%Vg_Ref(icmp), & 
                      fluxfrac_adv(nadv,iL)
               !end if
            end if !SO2 CF
@@ -844,8 +840,8 @@ contains
           !else
           if( ntot == O3 ) & ! O3
             call datewrite( "DEBUG DDEPxnd: "// trim(species(ntot)%name), &
-              icmp, (/ real(nadv),real(ncalc), gradient_fac( ncalc),&
-                 xn_2d(ntot,K2), vg_fac(ncalc) /) )
+              icmp, (/ real(nadv),real(icmp), gradient_fac( icmp),&
+                 xn_2d(ntot,K2), vg_fac(icmp) /) )
           !end if
         end if
 
@@ -854,7 +850,7 @@ contains
              dtxt//"AOTCHXN ", imm, idd, ihh, current_date%seconds, &
                  iL, xn_2d(FLUX_TOT,K2)*surf_ppb, &
                   (xn_2d( FLUX_TOT,K2) + DepLoss(nadv) )*surf_ppb, &
-                   gradient_fac( ncalc)
+                   gradient_fac( icmp)
         end if
      end do CMPLOOP ! is !A2018
    end do DDEPLOOP ! n
@@ -868,8 +864,8 @@ contains
    if(.not.(i<li0.or.i>li1.or.j<lj0.or.j>lj1))then
       
      do icmp = 1, nddep
-       do ispec = 1, size(DryDepMapping(icmp)%specs)  ! Real species now
-          nadv = DryDepMapping(icmp)%specs(ispec)  ! Real species now
+       do ispec = 1, size(DDmapping(icmp)%advspecs)  ! Real species now
+          nadv = DDmapping(icmp)%advspecs(ispec)  ! Real species now
           !A2018 do n = 1, NDRYDEP_ADV
           !A2018 nadv    = DDepMap(icmp)%ind
            totddep( nadv ) = totddep (nadv) + DepLoss(nadv)*convfac
@@ -882,7 +878,8 @@ contains
       !.. Add DepLoss to budgets if needed:
 
    call Add_MosaicOutput(debug_flag,i,j,convfac2,&
-           DepAdv2Calc, fluxfrac_adv, Deploss ) 
+            Adv2DDspec, fluxfrac_adv, Deploss ) 
+!A2018            DepAdv2Calc, fluxfrac_adv, Deploss ) 
 
 
 

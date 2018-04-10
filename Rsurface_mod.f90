@@ -5,7 +5,7 @@ use Config_module,      only: DEBUG, NO_CROPNH3DEP
 use DO3SE_mod,          only: g_stomatal, do3se
 use GasParticleCoeffs_mod, only: nddep, DDspec,  &
                               idcmpO3, idcmpHNO3,idcmpNH3,idcmpSO2
-!A2018 use GasParticleCoeffs_mod,    only : DryDepDefs &  ! Extension of Wesely Table 2
+!A2018 use GasParticleCoeffs_mod,    only : DDdefs &  ! Extension of Wesely Table 2
 !2018   ,WES_HNO3, WES_NH3,DRx,WES_SO2    ! Indices and Ratio of diffusivities to ozone
 use Io_Progs_mod,       only: datewrite
 use LandDefs_mod,       only: LandDefs, LandType
@@ -99,7 +99,7 @@ contains
 ! Input:
     integer, intent(in) :: i,j
 !A2018    integer, dimension(:), intent(in) :: &
-!A2018         DRYDEP_CALC   ! Array with DryDepDefs indices of gases wanted
+!A2018         DRYDEP_CALC   ! Array with DDdefs indices of gases wanted
 
 ! Output:
 
@@ -135,7 +135,7 @@ contains
     logical :: canopy         & ! For SAI>0, .e.g grass, forest, also in winter
         ,leafy_canopy           ! For LAI>0, only when green
     real, parameter :: SMALLSAI= 0.05  ! arbitrary value but small enough
-    real :: Hstar, f0           ! DryDepDefs tabulated Henry's coeff.'s, reactivity
+    real :: Hstar, f0           ! DDdefs tabulated Henry's coeff.'s, reactivity
     real :: Rgs
     real :: GigsO
     real :: RsnowS, RsnowO !surface resistance for snow_flag, S and O3
@@ -285,6 +285,8 @@ contains
   GASLOOP: do icmp = 1, nddep ! size( DRYDEP_CALC )
       Gsto(icmp) = 0.0                     ! change where needed
 
+      if ( .not. DDspec(icmp)%is_gas ) CYCLE
+
      !-------------------------------------------------------------------------
      ! HNO3
      !  code obtained from Wesely during 1994 personal communication
@@ -304,11 +306,11 @@ contains
      !-------------------------------------------------------------------------
      ! Calculate the Wesely variables Hstar (solubility) and f0 (reactivity)
 
-        !A2018 Hstar =DryDepDefs(2,iwes)    !Extract H*'s 
-        !A2018 f0    =DryDepDefs(5,iwes)    !Extract f0's
-
+        !A2018 Hstar =DDdefs(2,iwes)    !Extract H*'s 
+        !A2018 f0    =DDdefs(5,iwes)    !Extract f0's
         Hstar =DDspec(icmp)%Hstar
         f0    =DDspec(icmp)%f0
+!print *, 'HHHH', icmp, DDspec(icmp)%name, Hstar, f0
 
      !-------------------------------------------------------------------------
      ! Ammonia is also special

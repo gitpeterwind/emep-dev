@@ -31,7 +31,7 @@ use Config_module,    only :  DEBUG_RB
 use PhysicalConstants_mod, only :  KARMAN
                     
 use GasParticleCoeffs_mod, only: nddep, DDspec
-!A2018DryDepDefs &  !  Table for 64 gases
+!A2018DDdefs &  !  Table for 64 gases
 !A2018                       ,Rb_cor          !
 implicit none
 private
@@ -72,7 +72,7 @@ contains
 
      if   ( water ) then
 
-          !A2018 D_i = D_H2O / DryDepDefs(1,iwes)  ! CORR !
+          !A2018 D_i = D_H2O / DDdefs(1,iwes)  ! CORR !
           D_i = D_H2O / DDspec(icmp)%Dx ! SHOULD USE DH2ODx
 
           Rb(icmp) = log( z0 * KARMAN * ustar/ D_i )

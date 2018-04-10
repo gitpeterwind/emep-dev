@@ -41,7 +41,7 @@ use EcoSystem_mod,     only: DepEcoSystem, NDEF_ECOSYSTEMS, &
 use EmisDef_mod,       only: NSECTORS, EMIS_FILE, O_DMS, O_NH3, loc_frac, Nneighbors&
                             ,SumSecEmisOut, SumSecEmis, SumSplitEmis, SecEmisOut
 use EmisGet_mod,       only: nrcemis,iqrc2itot
-use GasParticleCoeffs_mod, only: DryDepDefs !A2018
+use GasParticleCoeffs_mod, only: DDdefs !A2018
 use GridValues_mod,    only: debug_li, debug_lj, debug_proc, A_mid, B_mid, &
                             dA,dB,xm2, GRIDWIDTH_M, GridArea_m2,xm_i,xm_j,glon,glat
 use Io_Progs_mod,      only: datewrite
@@ -209,7 +209,7 @@ subroutine Init_Derived()
 
   ! Avoid hard codded IXADV_SPCS
   iadv_O3         =find_index('O3'         ,species_adv(:)%name )
-  iadv_NO3_C      =find_index('NO3_C'      ,species_adv(:)%name )
+  iadv_NO3_C      =find_index('NO3_c'      ,species_adv(:)%name )
   iadv_EC_C_WOOD  =find_index('EC_C_WOOD'  ,species_adv(:)%name )
   iadv_EC_C_FFUEL =find_index('EC_C_FFUEL' ,species_adv(:)%name )
   iadv_POM_C_FFUEL=find_index('POM_C_FFUEL',species_adv(:)%name )
@@ -225,13 +225,13 @@ subroutine Init_Derived()
   call Setups()  ! just for VOC now
 
 !A2018   select case(nint(AERO%DpgV(2)*1e7))
-  iddefPMc = find_index('PMc',DryDepDefs(:)%name)
-  select case(nint(DryDepDefs(iddefPMc)%DpgV*1e7))
+  iddefPMc = find_index('PMc',DDdefs(:)%name)
+  select case(nint(DDdefs(iddefPMc)%DpgV*1e7))
     case(25);fracPM25=0.37
     case(30);fracPM25=0.27
   end select
   if(dbg0) write(*,"(a,i4,2g12.3,i4)") dtxt//' CFAC INIT PMFRACTION Dpgv(um)',&
-    iddefPMc, fracPM25, nint(1.0e7* DryDepDefs(iddefPMc)%DpgV )
+    iddefPMc, fracPM25, nint(1.0e7* DDdefs(iddefPMc)%DpgV )
 !S2018      fracPM25, AERO%DpgV(2), nint(1.0e7*AERO%DpgV(2))
   call CheckStop( fracPM25 < 0.01, dtxt//"NEED TO SET FRACPM25")
 

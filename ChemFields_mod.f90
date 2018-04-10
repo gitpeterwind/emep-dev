@@ -1,12 +1,13 @@
 module ChemFields_mod
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 use AllocInits,     only: AllocInit
-use ChemDims_mod,   only: NSPEC_ADV, NSPEC_SHL, NSPEC_TOT ! => No. species 
+use ChemDims_mod,   only: NSPEC_ADV, NSPEC_SHL, NSPEC_TOT, & ! => No. species 
+                          NCHEMRATES, NPHOTOLRATES 
 use ChemSpecs_mod,  only: FIRST_SEMIVOL, LAST_SEMIVOL    ! -999 unless SOA used
 use Config_module,  only: KMAX_MID, KCHEMTOP, AERO       ! =>  z dimension
 use NumberConstants,  only: UNDEF_R
 use Par_mod,        only: LIMAX,LJMAX   ! => x, y dimensions
-use ZchemData_mod
+use ZchemData_mod    ! rct, h2o, ..
 implicit none
 private
 
@@ -66,9 +67,7 @@ private
 
 contains
 
-  subroutine alloc_ChemFields
-
-    implicit none
+  subroutine alloc_ChemFields()
 
     allocate(xn_adv(NSPEC_ADV,LIMAX,LJMAX,KMAX_MID))
     xn_adv=0.0
@@ -90,6 +89,14 @@ contains
 
     allocate(xn_2d(NSPEC_TOT,KCHEMTOP:KMAX_MID))
     xn_2d = 0.0
+
+    allocate(rct(NCHEMRATES,KCHEMTOP:KMAX_MID))
+    rct = 0.0
+!allocated in DefPhotol??
+!    allocate(rcphot(NPHOTOLRATES,KCHEMTOP:KMAX_MID))
+!    rcphot = 0.0
+    allocate(rcbio(2,KCHEMTOP:KMAX_MID)) !A2018 QUERY!!!
+    rcbio = 0.0
 
     allocate(Fgas(NSPEC_TOT,KCHEMTOP:KMAX_MID),Fpart(NSPEC_TOT,KCHEMTOP:KMAX_MID))
     Fgas  = 1.0! Fraction as gas-phase

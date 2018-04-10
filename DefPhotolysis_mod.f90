@@ -32,7 +32,8 @@
    private
 
    integer, public, parameter :: &
-             NRCPHOT      = 17   ! Number of photolytic reactions
+             NRCPHOT          = 17  &! Number of photolytic reactions
+            ,NRCPHOTextended  = 18   !A2018 added one for HONO
    
    integer, public, parameter:: NzPHODIS=20 !number of heights defined in the input files
    real, save, public :: zPHODIS(NzPHODIS) !heights of the input files, in km assumed constants
@@ -68,7 +69,14 @@
       IDCH3COY = 10 , IDHCOHCO = 11 , IDRCOHCO = 12 , &
       IDNO3    = 13 , IDN2O5   = 14 , IDCH3O2H = 15 , &
       IDHO2NO2 = 16 , IDACETON = 17
-    integer, public, parameter ::  IDRCOCHO  = IDRCOHCO ! Just tmp
+    integer, public, parameter ::&
+        IDHONO = 18  & !A2018 added as extended
+       ,IDMEK     = IDCH3O2H & ! just name change CHECK
+       ,IDCHOCHO_2CHO  = IDHCOHCO & ! Just name change CHECK, TMP!!!
+       ,IDCHOCHO_2CO   = IDHCOHCO & ! Just name change CHECK, TMP!!!
+       ,IDCHOCHO_HCHO  = IDHCOHCO & ! Just name change CHECK, TMP!!!
+       ,IDRCOCHO  = IDHCOHCO & ! Just name change CHECK
+       ,IDCHOCHO  = IDHCOHCO   ! Just name change CHECK
 
 !A2018 - moving to newer system
 !A2018 CHECK/FIX - these are MCM???
@@ -79,15 +87,15 @@
 !NEEDS FIXING. Changed from ESX to try to match above, but eg NO3 is difficult
   integer, public, parameter :: & 
     IDO3_O1D   = 1,IDO3_O3P  = 2,IDNO3_NO  = IDNO3  &
-   ,IDNO3_NO2  = IDNO3,IDHONO    = -999 & !HONO NEEDS FIXING!
-   ,IDHCHO_H  = 6& ! HCHO -> CO + 2 HO2
-   ,IDHCHO_H2 = 7&  ! HCHO -> CO + H2
-   ,MCM_J18   = 18, MCM_J20   = 20 &
-   ,MCM_J22   = 22 , IDMEK     = 22 &
-   ,IDCHOCHO_2CO  = 31 &! .. 33 QUERY
-   ,IDCHOCHO_HCHO = 32 &! .. 33 QUERY
-   ,IDCHOCHO_2CHO = 33 &! .. 33 QUERY
-   ,IDCH3COCH3  = IDACETON
+   ,IDNO3_NO2  = IDNO3 & !HONO NEEDS FIXING!
+   ,IDHCHO_H  = 6 & ! HCHO -> CO + 2 HO2
+   ,IDHCHO_H2 = 7 !&  ! HCHO -> CO + H2
+!   ,MCM_J18   = 18, MCM_J20   = 20 &
+!   ,MCM_J22   = 22 , IDMEK     = 22 &
+!   ,IDCHOCHO_2CO  = 31 &! .. 33 QUERY
+!   ,IDCHOCHO_HCHO = 32 &! .. 33 QUERY
+!   ,IDCHOCHO_2CHO = 33 &! .. 33 QUERY
+!   ,IDCH3COCH3  = IDACETON
 !NEEDS FIXING. ESX has:
 !  integer, public, parameter :: & 
 !    IDO3_O1D   = 1,IDO3_O3P  = 2,IDH2O2    = 3,IDNO2     = 4 ,IDNO3_NO  = 5 &
@@ -135,7 +143,8 @@
         if(newseason==4)season3='oct' 
 
         if(first_call)then
-           if(.not.(allocated(rcphot)))allocate(rcphot(NRCPHOT,KCHEMTOP:KMAX_MID))
+          ! if(.not.(allocated(rcphot)))allocate(rcphot(NRCPHOT,KCHEMTOP:KMAX_MID))
+           if(.not.(allocated(rcphot)))allocate(rcphot(NRCPHOTextended,KCHEMTOP:KMAX_MID))
            allocate(dj(NPHODIS,NzPHODIS,HORIZON,NLAT))
            allocate(djcl1(NPHODIS,NzPHODIS,HORIZON))
            allocate(djcl3(NPHODIS,NzPHODIS,HORIZON))
