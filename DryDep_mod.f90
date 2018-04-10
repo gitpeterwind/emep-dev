@@ -168,11 +168,10 @@ contains
 
   if ( my_first_call ) then 
 
-    if(MasterProc) write(*,*) dtxt//" GET DEP", nddep
-    print *, dtxt//" GET DEP"
      call GetDepMapping() !A2018 creates DDspec, DDmapping
      call InitGasCoeffs()    ! allocate and set DDspec  
      call InitParticleCoeffs()
+     if(MasterProc) write(*,*) dtxt//" GET DEP", nddep
 
      allocate(BL(nddep))
      allocate(gradient_fac(nddep), vg_fac(nddep), Vg_ref(nddep), &
@@ -431,10 +430,12 @@ contains
       if ( DDspec(icmp)%is_gas ) CYCLE
       BL(icmp)%Vs = SettlingVelocity( Grid%t2, Grid%rho_ref, &
                        DDspec(icmp)%sigma, DDspec(icmp)%DpgV, DDspec(icmp)%rho_p )
+      if ( dbghh ) then
+        call datewrite(dtxt//" VS"//DDspec(icmp)%name, icmp, &
+           [ Grid%t2, Grid%rho_ref, DDspec(icmp)%rho_p, BL(icmp)%Vs ] )
+      end if
     end do
 
-    if ( dbghh ) call datewrite(dtxt//" VS",AERO%NSIZE,&
-                                  (/ Grid%t2, Grid%rho_ref, BL(icmp)%Vs /) )
 
     !/ And start the sub-grid stuff over different landuse (iL)
 
@@ -574,8 +575,10 @@ contains
 
               !A2018 Vg_ref(icmp) =  AERO%Vs(nae)/ ( 1.0 - exp( -( L%Ra_ref + 1.0/Vds)* AERO%Vs(nae)))
               !A2018 Vg_3m (icmp) =  AERO%Vs(nae)/ ( 1.0 - exp( -( L%Ra_3m  + 1.0/Vds)* AERO%Vs(nae)))
-              Vg_ref(icmp) =  BL(icmp)%Vs/ ( 1.0 - exp( -( L%Ra_ref + 1.0/Vds)* BL(icmp)%Vs))
-              Vg_3m (icmp) =  BL(icmp)%Vs/ ( 1.0 - exp( -( L%Ra_3m  + 1.0/Vds)* BL(icmp)%Vs))
+              Vg_ref(icmp) = BL(icmp)%Vs/ &
+                          ( 1.0 - exp( -( L%Ra_ref + 1.0/Vds)* BL(icmp)%Vs))
+              Vg_3m (icmp) = BL(icmp)%Vs/ &
+                          ( 1.0 - exp( -( L%Ra_3m  + 1.0/Vds)* BL(icmp)%Vs))
 
 
               if ( DEBUG_VDS ) then
@@ -683,8 +686,7 @@ contains
            Sub(0)%StoFrac = Sub(0)%StoFrac/Sub(0)%Vg_ref
         end where
 
-         call Calc_StoFlux(nFlux, iL_fluxes(1:nFlux), debug_flag )
-
+        call Calc_StoFlux(nFlux, iL_fluxes(1:nFlux), debug_flag )
 
 
         if ( Sumland > 0.01 ) then

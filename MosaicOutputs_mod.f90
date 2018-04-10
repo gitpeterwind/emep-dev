@@ -476,7 +476,7 @@ subroutine Add_MosaicOutput(debug_flag,i,j,convfac,DepAdv2Calc,fluxfrac,&
       case("VG" )
         output = Sub(iLC)%Vg_3m(cdep)  ! CHECK iLC
         if(dbg)&
-          call datewrite(":: ",iLC,(/ output /) )
+          call datewrite("VG:: ",iLC,(/ output /) )
       case("Gs" )
         output = Gs
      !case("Gns") ! Apr 2015. Not likely to need these?

@@ -350,10 +350,6 @@ contains
 
     
      !-------------------------------------------------------------------------
-
-                          
-
-
      ! ###   3. Calculate Cuticle conductance, Gext   ################
      ! ###      and  Ground surface conductance Ggs:
 
@@ -382,9 +378,10 @@ contains
 
       Rsur(icmp) = 1.0/( Gsto(icmp) + Gns(icmp)  )
 
-      if ( dbg ) write(*,"(a,a10,i3,L2,99g12.3)")  &
-          "RSURFACE Rsur(i): ", trim(LandDefs(iL)%name), icmp, L%is_crop,&
-             1.0e-5*Hstar, GnsS, f0, GnsO, Gsto(icmp),Gns(icmp), Rsur(icmp)
+      if ( dbg ) write(*,"(a,a10,i3,L2,99g10.2)")  &
+        "RSUR Rsur(i):"//trim(DDspec(icmp)%name)//' '//&
+           trim(LandDefs(iL)%name), icmp, L%is_crop,&
+           1.0e-5*Hstar, GnsS, f0, GnsO, Gsto(icmp),Gns(icmp), Rsur(icmp)
 
   end do GASLOOP
 
