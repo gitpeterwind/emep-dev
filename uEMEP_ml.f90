@@ -976,6 +976,7 @@ subroutine uEMEP_emis(indate)
   integer, save :: wday , wday_loc ! wday = day of the week 1-7
   integer ::ix,iix, dx, dy, isec_poll, iisec_poll, isec_poll1, ipoll
   real::dt_uemep, xtot, emis_uemep(KMAX_MID,NEMIS_FILE,NSECTORS),emis_tot(KMAX_MID,NEMIS_FILE)
+  real :: lon
 
   dt_uemep=dt_advec
 
@@ -992,7 +993,10 @@ subroutine uEMEP_emis(indate)
     do i = li0,li1
       ncc = nlandcode(i,j)            ! No. of countries in grid
       fncc = flat_nlandcode(i,j) ! No. of countries with flat emissions in grid
-      hourloc= mod(nint(indate%hour+24*(1+glon(i,j)/360.0)),24)
+     ! find the approximate local time:
+      lon = modulo(360+nint(glon(i,j)),360)
+      if(lon>180.0)lon=lon-360.0
+      hourloc= mod(nint(indate%hour+24*(1+lon/360.0)),24)
       hour_longitude=hourloc
       daytime_longitude=0
       if(hourloc>=7 .and. hourloc<= 18) daytime_longitude=1            
@@ -1029,6 +1033,12 @@ subroutine uEMEP_emis(indate)
           wday_loc=wday + 1
           if(wday_loc==0)wday_loc=7 ! Sunday -> 7
           if(wday_loc>7 )wday_loc=1 
+        end if
+                if(hour_iland<1) then
+           hour_iland = hour_iland + 24
+           wday_loc=wday - 1
+           if(wday_loc<=0)wday_loc=7 ! Sunday -> 7
+           if(wday_loc>7 )wday_loc=1 
         end if
 
         do iem = 1, NEMIS_FILE 

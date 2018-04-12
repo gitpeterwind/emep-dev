@@ -103,7 +103,7 @@ use Par_ml,           only: MAXLIMAX,MAXLJMAX, GIMAX,GJMAX, IRUNBEG,JRUNBEG,&
                            ,gi0,gj0,li0,li1,lj0,lj1
 use PhysicalConstants_ml,only: GRAV, AVOG, ATWAIR
 use PointSource_ml,      only: readstacks !MKPS
-use Setup_1dfields_ml,only: rcemis   ! ESX
+use ZchemData_mod,    only: rcemis   ! ESX
 use SmallUtils_ml,    only: find_index,  key2str
 use ReadField_ml,     only: ReadField    ! Reads ascii fields
 use TimeDate_ml,      only: nydays, nmdays, date, current_date, &! No. days per 

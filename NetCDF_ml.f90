@@ -4496,7 +4496,7 @@ subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read)
      calendar='unknown'
 
      status=nf90_get_att(ncFileID, VarID, "calendar", calendar )
-     proleptic_gregorian=(status==nf90_noerr).and.(calendar=='proleptic_gregorian')
+     proleptic_gregorian=(status==nf90_noerr).and.(calendar=='proleptic_gregorian'.or.calendar=='gregorian')
      if(proleptic_gregorian.and.DEBUG_NETCDF.and.MasterProc)&
       write(*,*)'found proleptic_gregorian calendar'
 
