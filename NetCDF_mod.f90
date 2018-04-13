@@ -2377,7 +2377,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   logical, save :: debug_ij
   logical ::fractions,interpolate_vertical
   integer :: ncFileID,VarID,lonVarID,latVarID,status,xtype,xtype_lon,xtype_lat,ndims,dimids(NF90_MAX_VAR_DIMS),nAtts
-  integer :: VarIDCC,VarIDNCC,VarIDfrac,NdimID
+  integer :: VarIDCC,VarIDNCC,VarIDfrac,NdimID, ndimslon
   integer :: ncFileID_Mask, VarID_Mask,ndims_Mask,dimids_Mask(NF90_MAX_VAR_DIMS),xtype_Mask,isize,jsize
   integer :: dims(NF90_MAX_VAR_DIMS),NCdims(NF90_MAX_VAR_DIMS),totsize,i,j,k
   integer :: startvec(NF90_MAX_VAR_DIMS),Nstartvec(NF90_MAX_VAR_DIMS)
@@ -2639,11 +2639,30 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      if(trim(known_projection)=="longitude latitude")data_projection = "lon lat"
      if ( debug ) write(*,*) 'data known_projection ',trim(data_projection)
   else
-     call check(nf90_get_att(ncFileID, nf90_global, &
-                           "projection", data_projection ),"Proj"//trim(fileName))
-    !remove invisible char(0)!!
-     if(trim(data_projection(1:7))=="lon lat")data_projection="lon lat"
+     status = nf90_get_att(ncFileID, nf90_global, &
+                           "projection", data_projection )
      if ( debug ) write(*,*) 'data projection from file ',trim(data_projection)
+     if(status == nf90_noerr)then
+    !remove invisible char(0)!!
+        if(trim(data_projection(1:7))=="lon lat")data_projection="lon lat"!remove invisible char(0)!!
+        if ( debug ) write(*,*) 'data projection from file ',trim(data_projection)
+     else
+        status=nf90_inq_varid(ncid = ncFileID, name='lon', varID = lonVarID)
+        if(status /= nf90_noerr) then
+           status=nf90_inq_varid(ncid = ncFileID, name = 'LON', varID = lonVarID)
+           if(status /= nf90_noerr) then
+              status=nf90_inq_varid(ncid = ncFileID, name = 'longitude', varID = lonVarID)
+              call CheckStop(status /= nf90_noerr,'did not find projection nor longitude variable '//trim(fileName))
+           end if
+        end if
+        call check(nf90_Inquire_Variable(ncid = ncFileID,  varID = lonVarID,xtype=xtype_lon, ndims=ndimslon ))
+        if(ndimslon==1)then
+           write(*,*) 'Assuming lon lat projection, because lon is one-dimensional'
+           data_projection = "lon lat"
+        else
+           call CheckStop('did not find projection for file '//trim(fileName))           
+        endif
+     endif
   end if
 !  if(MasterProc)write(*,*)'Interpolating ',trim(varname),' from ',trim(filename),' to present grid'
 
