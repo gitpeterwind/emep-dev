@@ -463,9 +463,10 @@ subroutine checkNewFFrecord(ymd, ncFileID,fname,new,nstart)
 
   ! Check: New file
   select case(BBMAP)
-    case("GFED");fname=date2file(GFED_PATTERN,ymd,persistence-1,"days")
-    case("FINN");fname=date2file(FINN_PATTERN,ymd,persistence-1,"days")
-    case("GFAS");fname=date2file(GFAS_PATTERN,ymd,persistence-1,"days")
+!note: without "mode=YMDH", there might be problems with names containing 'ss'
+    case("GFED");fname=date2file(GFED_PATTERN,ymd,persistence-1,"days",mode='YMDH')
+    case("FINN");fname=date2file(FINN_PATTERN,ymd,persistence-1,"days",mode='YMDH')
+    case("GFAS");fname=date2file(GFAS_PATTERN,ymd,persistence-1,"days",mode='YMDH')
   end select
   fname=key2str(fname,'DataDir',DataDir) ! expand DataDir keysword
 
