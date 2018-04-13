@@ -4,7 +4,7 @@ module MosaicOutputs_mod
 use AOTx_mod,          only: Calc_AOTx, Calc_POD, O3cl_t, VEGO3_OUTPUTS,&
                                 nOutputVegO3, OutputVegO3
 use CheckStop_mod,     only: CheckStop
-use ChemDims_mod,      only: NSPEC_ADV
+use ChemDims_mod,      only: NSPEC_ADV,NSPEC_SHL
 use ChemGroups_mod,    only: chemgroups
 use ChemSpecs_mod,     only: species_adv
 use DerivedFields_mod, only: f_2d, d_2d
@@ -305,14 +305,14 @@ subroutine Add_MosaicDDEP(DDEP_ECOS,DDEP_WANTED,nDD)
   end do ! DDEP_ECOS
 end subroutine Add_MosaicDDEP
 !<==========================================================================
-subroutine Add_MosaicOutput(debug_flag,i,j,convfac,DepAdv2Calc,fluxfrac,&
+subroutine Add_MosaicOutput(debug_flag,i,j,convfac,itot2Calc,fluxfrac,&
                 Deploss)
 !<==========================================================================
   ! Adds deposition losses to ddep arrays
   logical, intent(in) :: debug_flag
   integer, intent(in) :: i,j             ! coordinates
   real,    intent(in) ::  convfac  !!???, lossfrac
-  integer, dimension(:), intent(in) :: DepAdv2Calc
+  integer, dimension(:), intent(in) ::  itot2Calc
   real, dimension(:,:), intent(in) :: fluxfrac  ! dim (NADV, NLANDUSE)
   real, dimension(:), intent(in) :: Deploss
 
@@ -456,7 +456,7 @@ subroutine Add_MosaicOutput(debug_flag,i,j,convfac,DepAdv2Calc,fluxfrac,&
       call Calc_AOTx(n,iLC,output) 
 
     case("VG","Rs","Rns","Gns") ! could we use RG_LABELS? 
-      cdep = DepAdv2Calc(nadv)  ! e.g. IXADV_O3 to calc index
+      cdep = itot2Calc(nadv+NSPEC_SHL)  ! e.g. IXADV_O3 to calc index
 !A2018 test if ( cdep < 1 ) print *, 'CDEP', nadv, 'AAARGH' // species_adv(nadv)%name ! 24 hno3
       Gs   = Sub(iLC)%Gsur(cdep)
       Gns  = Sub(iLC)%Gns(cdep)
@@ -465,10 +465,10 @@ subroutine Add_MosaicOutput(debug_flag,i,j,convfac,DepAdv2Calc,fluxfrac,&
       if(DEBUG%MOSAICS.and.cdep<1) then
         write(*,*) "ERROR: OutVgR name", MosaicOutput(imc)%name
         write(*,*) "ERROR: Negative cdep", cdep, imc, MosaicOutput(imc)%Index
-        write(*,*) "ERROR: DEPADV2CALC had size", size(DepAdv2Calc)
-        do n = 1, size( DepAdv2Calc)
-          write(*,*) "DEPADVLIST ", n, DepAdv2Calc(n)
-        end do
+        write(*,*) "ERROR: itot2CALC had size", size(itot2Calc)
+!A2018        do n = 1, size( itot2Calc)
+!A2018          write(*,*) "DEPADVLIST ", n, itot2Calc(n)
+!A2018        end do
         call CheckStop(cdep<1,dtxt//"ERROR: Negative cdep")
       end if
 

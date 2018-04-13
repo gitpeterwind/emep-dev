@@ -880,7 +880,7 @@ contains
       !.. Add DepLoss to budgets if needed:
 
    call Add_MosaicOutput(debug_flag,i,j,convfac2,&
-            Adv2DDspec, fluxfrac_adv, Deploss ) 
+            itot2DDspec, fluxfrac_adv, Deploss ) 
 !A2018            DepAdv2Calc, fluxfrac_adv, Deploss ) 
 
 

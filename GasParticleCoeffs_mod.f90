@@ -1,5 +1,5 @@
 !*****************************************************************************!
-!> MODULE GasParticleCoeffs
+!> MODULE GasParticleCoeffs_mod
 !..............................................................................
 ! Specifies data for deposition modelling for specific gases and aerosols.
 ! as well as mapping arrays between real species and surrogates.
@@ -93,8 +93,8 @@ type(DD_t), public, dimension(NDRYDEP_DEF), parameter :: DDdefs = [ &
 ! calculate later.
 ! QUERY - what is K? not used so far, but check for H2O
 ! Rm from Zhang et al 2002. Note Zhang has 0 for MVK,100 for MACR
-! Dp, rhop are particle diameter and density, from EMEP
-!               Dx (m2/s)  DH2O   H*       pe         K   f0  Rm  DpV   sig rhop Gb Inddry
+! DpgV, rhop are particle diameter and density, from EMEP
+!               Dx (m2/s)  DH2O   H*       pe         K   f0  Rm  DpgV sig rhop Gb Inddry
 !                          /Dx
 !--------------------------------------------------------------------
 ! Gases:
@@ -114,6 +114,7 @@ type(DD_t), public, dimension(NDRYDEP_DEF), parameter :: DDdefs = [ &
  ,DD_t( 'PAN  ',DH2O/2.6 , 2.6, 3.6E+00, 9999, 3.0E+03, 0.1,  0.,  -1,-1,-1,-1,-1)&
  ,DD_t( 'HNO2 ',DH2O/1.6 , 1.6, 1.0E+05,    6, 4.0E-04, 0.1,  0.,  -1,-1,-1,-1,-1)&
 ! Particles:
+!               Dx (m2/s)  DH2O   H*   pe    K   f0  Rm  DpgV    sig  rhop Gb Inddry
  ,DD_t( 'PMfS ',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.33e-6,1.8, 1600,1,1)& ! as SAI_F 
  ,DD_t( 'PMfNO3',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.33e-6,1.8, 1600,1,1)&! as SIA_F
  ,DD_t( 'PMfNH4',UNDEF_R  , -1,   -1,   -1,  -1,  -1, 0., 0.33e-6,1.8, 1600,1,1)&! as SIA_F
@@ -189,7 +190,7 @@ type(WD_t), public, dimension(NWETDEP_DEF),parameter :: WDdefs = [ &
     DDmapping, WDmapping, DepMapping
 
   integer, public, save :: nddep, nwdep ! will be number of DDspec, WDspec
-  integer, public, save, dimension(NSPEC_TOT) :: Adv2DDspec = 0
+  integer, public, save, dimension(NSPEC_TOT) :: itot2DDspec = 0
   integer, public, save :: idcmpHNO3, idcmpO3, idcmpNH3, idcmpSO2, idcmpNO2
   integer, public, save :: idcmpPMfS, idcmpPMfNO3, idcmpPMfNH4
 
@@ -210,10 +211,8 @@ type(WD_t), public, dimension(NWETDEP_DEF),parameter :: WDdefs = [ &
        ,sigma    &! sigma of log-normal dist.  for particles
        ,lnsig2   &! log(sigma)**2  used for settling velocity
        ,rho_p    &! particle density
-       ,DpgV     &! Think its aero dynam, vol
-       ,DpgN     &! Think its aero dynam, vol
-       ,Dg        ! Geometric diameter ??! DpgN??
-!       ,Dp       &! Aerodynamic diameter for particles
+       ,DpgV     &! volume-based geometric mean diameter
+       ,DpgN      ! number-based geometric mean diameter
     logical :: is_gas 
   end type ddep_t  
   type(ddep_t), public, allocatable, dimension(:), save :: DDspec
@@ -289,8 +288,8 @@ contains
        ! Surrogate needs to exist in Defs list and species in species list
         if ( iadv <1 .or. idef <1 ) then
           print '(2(a,2i5))', dtxt//'NEG DepMap index'//dcase//&
-            trim(CM_DepMap(i)%name), iadv, idef, &
-            trim(CM_DepMap(i)%surrogate), iadv, idef
+            trim(advname), iadv, idef, trim(defname)
+!print *, 'DEFNAMES ', defnames
           call StopAll(dtxt//'NEG DepMap index'//dcase//CM_DepMap(i)%name )
         end if
 
@@ -336,8 +335,7 @@ contains
             !Chem2DDspec(itot) = irow  ! Mapping from 'real' to DDspec
 
             if( idep==1 ) then ! for dry dep we need reverse mapping
-              iadv = itot - NSPEC_SHL
-              Adv2DDspec(iadv) = irow  ! Mapping from 'real' to DDspec
+              itot2DDspec(itot) = irow  ! Mapping from 'real' to DDspec
             end if
           end do
           if(MasterProc) write(*,*)' '
@@ -401,6 +399,7 @@ contains
 
        if ( idef >  NDRYDEP_GASES ) CYCLE ! Just do gases here
 
+       DDspec(icmp)%Dx      = DDdefs(idef)%Dx
        DDspec(icmp)%DxDO3   = DDdefs(idef)%Dx / DxO3
        DDspec(icmp)%Hstar   = DDdefs(idef)%Hstar
        DDspec(icmp)%f0      = DDdefs(idef)%f0
@@ -426,6 +425,7 @@ contains
     real :: Tcorr, DxO3
 
     Tcorr  = (T/273.15)**1.8
+
     do icmp = 1, size(DDmapping(:)%name )
       idef = DDmapping(icmp)%idef
       if ( idef >  NDRYDEP_GASES ) CYCLE ! Just do gases here
@@ -479,8 +479,9 @@ contains
       DDspec(icmp)%rho_p = DDdefs(idef)%rho_p !just a copy
 
      !... volume median diameter (Dp in EMEP notation. Will change!
-     ! -> geomettic number median diameter ! S&P, 7.52:
-     !TEST Dg(i) = 1.0e-6 ! for comp to Seinfeld
+     ! DpgN = Dpg in Seinfeld&Pandis
+     ! -> geometric number median diameter ! S&P, 7.52:
+     !TEST DpgV(i) = 1.0e-6 ! for comp to Seinfeld
 
       DDspec(icmp)%DpgN  = DpgV2DpgN(DDspec(icmp)%DpgV, DDspec(icmp)%sigma)
 
@@ -494,7 +495,7 @@ contains
             !CHECK Dp DDspec(icmp)%Dg = exp(log(DDspec(icmp)%Dp)-3* DDspec(icmp)%lnsig2)
       !DONE?  DDspec(icmp)%Dg = exp(log(DDspec(icmp)%DpgV)-3* DDspec(icmp)%lnsig2)
       if(MasterProc) write(*,fmt) "DD_Coeffs: "//DDspec(icmp)%name, &
-              "Dp=", DDspec(icmp)%DpgV, "Dg=",DDspec(icmp)%Dg
+              "Dp=", DDspec(icmp)%DpgV, "DpgN=",DDspec(icmp)%DpgN
 
       !QUERY knut = 2*FREEPATH/DDspec(icmp)%Dg   ! Knut's number
       knut = 2*FREEPATH/DDspec(icmp)%DpgN   ! Knut's number
@@ -524,13 +525,13 @@ contains
   end if ! first call 
   ! ------------------------ first call ----------------
 
-  !... Diffusion coefficient for poly-disperse , A29, A30
+  !... Diffusion coefficient for poly-disperse , A29, A30 from
+  !    Binkowski & Shankar
 
    do icmp = 1, size(DDmapping)
       idef = DDmapping(icmp)%idef
       if ( idef <= NDRYDEP_GASES )  CYCLE ! Only particles here
 
-        !CHECK ARGH :::: Dpg =BOLTZMANN*T/(3*PI * nu_air *rho * DDspec(icmp)%Dg) ! A30
       Dpg =BOLTZMANN*T/(3*PI * nu_air *rho * DDspec(icmp)%DpgN) ! A30
 
       DDspec(icmp)%Dx  = Dpg * DDspec(icmp)%sigterm   ! A29, Dpk 
@@ -566,16 +567,19 @@ contains
     write(*,"(a,es9.2)") " nu_air=", nu_air
     write(*,"(a,2i4)") "No gas and gas+particles ", NDRYDEP_GASES, NDRYDEP_DEF
 
+    write(*,*) '-------------'
     do icmp = 1, size(DDmapping)
       idef = DDmapping(icmp)%idef
-      write(*,*) '-------------'
-      write(*,fmt) "GasCoeffs "//DDdefs(idef)%name, "Dx=", DDspec(icmp)%Dx, &
-         "Sc=", DDspec(icmp)%Schmidt, "Rb_cor=", DDspec(icmp)%Rb_cor, &
-         "Zhang Rm=", DDdefs(idef)%Rm,  & ! NEEDS CHECK for Rm
-         " W&Th. Rm? ", 1.0/(DDdefs(idef)%Hstar/3000.0 + 100*DDdefs(idef)%f0 )
-      write(*,fmt) "PmCoeffs "//DDdefs(idef)%name, "Dx=",DDspec(icmp)%Dx, &
-         "Dp=", DDspec(icmp)%DpgV, "Sig=", DDspec(icmp)%sigma, &
-         "Dg=", DDspec(icmp)%Dg, "Sc=",DDspec(icmp)%Schmidt
+      if ( DDspec(icmp)%is_gas ) then
+        write(*,fmt) "GasCoeffs "//DDdefs(idef)%name, "Dx=", DDspec(icmp)%Dx, &
+           "Sc=", DDspec(icmp)%Schmidt, "Rb_cor=", DDspec(icmp)%Rb_cor, &
+           "Zhang Rm=", DDdefs(idef)%Rm,  & ! NEEDS CHECK for Rm
+           " W&Th. Rm? ", 1.0/(DDdefs(idef)%Hstar/3000.0 + 100*DDdefs(idef)%f0 )
+      else ! particle
+        write(*,fmt) "PmCoeffs "//DDdefs(idef)%name, "Dx=",DDspec(icmp)%Dx, &
+         "DpgV=", DDspec(icmp)%DpgV, "Sig=", DDspec(icmp)%sigma, &
+         "DpgN=", DDspec(icmp)%DpgN, "Sc=",DDspec(icmp)%Schmidt
+      end if
     end do !icmp
 
     icmp=find_index('O3',DDdefs(:)%name )
