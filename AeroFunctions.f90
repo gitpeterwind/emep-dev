@@ -5,7 +5,7 @@
 module AeroFunctions
 !____________________________________________________________________
 !
- use PhysicalConstants_ml, only : AVOG, RGAS_J, PI
+ use PhysicalConstants_mod, only : AVOG, RGAS_J, PI
   implicit none
   private
 
@@ -344,7 +344,7 @@ module AeroFunctions
   !! Calculates the surface area for a given mass of dry PM, together
   !! with sigma for log-normal
   !! If Dpw provided, calculates surface area of wet aerosol.
-  !! NOTE - unlike Unimod's use of VOLFACs, here we use simple mass (ug/m3) and
+  !! NOTE - unlike emepctm's use of VOLFACs, here we use simple mass (ug/m3) and
   !! density. (rho was anyway species independent, so use of specific mol wts.
   !! for SO4, NO3, SEASALT, etc seems incosistent.)
 
@@ -411,7 +411,7 @@ module AeroFunctions
   !! Calculates the surface area for a given mass of dry PM, together
   !! with sigma for log-normal
   !! If Dpw provided, calculates surface area of wet aerosol.
-  !! NOTE - unlike Unimod's earlier use of VOLFACs, here we use simple
+  !! NOTE - unlike emepctm's earlier use of VOLFACs, here we use simple
   !! mass (ug/m3) and density. (rho was anyway species independent, so use of
   !! specific mol wts.  for SO4, NO3, SEASALT, etc seems incosistent.)
 
@@ -612,7 +612,7 @@ module AeroFunctions
    cn2o5 = cMolSpeed( 298.0, 108.0)
    print *, "Speed N2O5 ", cn2o5
 
-   ! Unimod has MMD=0.33e-6 for PMf, sigma 1.8
+   ! emepctm has MMD=0.33e-6 for PMf, sigma 1.8
    DpgN = DpgV2DpgN(DpgV=0.33e-6,sigma_g=1.8)
    DpgV = DpgN2DpgV(DpgN,sigma_g=1.8) ! test reverse
    print "(2(a,f8.4))", "EMEP DpgV 0.33um -> DpgN ",DpgN*um," ->DpgV ",DpgV*um
@@ -625,7 +625,7 @@ module AeroFunctions
 
    !print *, "Gerber simp", wetradS(rdry=0.5*DpgN, fRH=0.98, pmtype=1) ! m
 
- ! Start with methods based on Unimod-like xn calcs
+ ! Start with methods based on emepctm-like xn calcs
  ! 1 ppb SO4 ~ 4 ug/m3
    Smono = SurfArea_Mono(2.55e10,Dp=DpgV)
    Sdry  = SurfArea_Poly(2.55e10,Dp=DpgV)

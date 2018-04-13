@@ -112,7 +112,7 @@ my %description = ($adv => "Advected species",
                    $tot => "All reacting species ",
                    $rct => "Rate-coefficients - temperature dependant");
 
-#  These rates require different used variables. The ChemFunctions_ml
+#  These rates require different used variables. The ChemFunctions_mod
 #  is only called if the more complex functions are needed.
 #  but for simplicity we define it anyway.... (ESX check)
 my $txtrcfunc = "";
@@ -122,8 +122,8 @@ my %UsedVariables = (
    $rct    => " $txtrcfunc
   use AeroFunctions     ! => UpdakeRate, cMolSpeed
   use ZchemData_mod     ! => tinv, h2o, m, Fgas
-  use ZchemData_mod    , m=> amk
-  use ChemSpecs_tot_ml  ! => PINALD, .... for FgasJ08
+  use ZchemData_mod, only : m  ! WAS => amk
+  use ChemSpecs_tot_mod  ! => PINALD, .... for FgasJ08
   use Config_module, only: KMAX_MID,KCHEMTOP,DebugCell,DEBUG,AERO");
 
 #======================================================================
@@ -1006,10 +1006,10 @@ sub is_integer {
 sub print_species {
 #
 #............... print_species ..........................
-#   outputs fortran-format files GenOut_adv_ml.inc
+#   outputs fortran-format files GenOut_adv_mod.inc
 #   which look like, e.g.:
 #
-#    Genspec_adv_ml.inc
+#    Genspec_adv_mod.inc
 #        NSPEC_ADV=66
 #        integer
 #    &   OP, OH, O3, HO2
@@ -1031,7 +1031,7 @@ sub print_species {
     next if $nspecies[$s] == 0 ;
     print "PROCESS $s TXT $txt{$s} NSPEC $nspecies[$s] \n";
 
-    $module = "ChemSpecs_$txt{$s}_ml";
+    $module = "ChemSpecs_$txt{$s}_mod";
     open(F,">GenOut_$module.inc");
     $Use = "none";
     start_module($module,\*F,$Use);
@@ -1074,11 +1074,11 @@ sub print_species {
   } # loop over $s
 
 
-  $module = "ChemChemicals_ml";
+  $module = "ChemChemicals_mod";
   $Use    ="
-use ChemSpecs_tot_ml  ! => NSPEC_TOT, species indices
-use ChemSpecs_shl_ml, only: NSPEC_SHL
-use ChemSpecs_adv_ml, only: NSPEC_ADV";
+use ChemSpecs_tot_mod  ! => NSPEC_TOT, species indices
+use ChemSpecs_shl_mod, only: NSPEC_SHL
+use ChemSpecs_adv_mod, only: NSPEC_ADV";
   open(F,">GenOut_$module.inc");
   start_module($module,\*F,$Use);
 
@@ -1137,10 +1137,10 @@ END_CHEMSTART
 #########################################################################
 #sub print_speciesmap {
 #
-#     my $module = "ChemSpecs_maps_ml";
+#     my $module = "ChemSpecs_maps_mod";
 #     my $Use  = "
-#       use ChemSpecs_adv_ml, only : NSPEC_ADV
-#       use ChemSpecs_shl_ml, only : NSPEC_SHL
+#       use ChemSpecs_adv_mod, only : NSPEC_ADV
+#       use ChemSpecs_shl_mod, only : NSPEC_SHL
 #     ";
 #
 #     open(F,">$module.inc");
@@ -1213,7 +1213,7 @@ sub print_rates {
 
   my $defrc = $rctype ;
   my $Nrctype = "N" . uc($rctype);
-  my $module = "ChemRates_" . $rctype . "_ml" ;
+  my $module = "ChemRates_" . $rctype . "_mod" ;
   open(F,">GenOut_$module.inc");
   start_module( $module, \*F, $UsedVariables{$rctype} );
 
@@ -1347,14 +1347,14 @@ sub printmap_ext {
 }
 ###############################################################################
 sub print_groups {
-  my $module = "ChemGroups_ml";
+  my $module = "ChemGroups_mod";
   open(GROUPS,">GenOut_$module.f90");
   my $ngroups  = 0;
   my $groupsub = "\n${HLINE}contains\nsubroutine Init_ChemGroups()\n\n";
-  my $Use = "use ChemSpecs_tot_ml  ! => species indices\n"
-           ."use OwnDataTypes_ml   ! => typ_sp";
+  my $Use = "use ChemSpecs_tot_mod  ! => species indices\n"
+           ."use OwnDataTypes_mod   ! => typ_sp";
   # implement later
-  #   use OwnDataTypes_ml, only : gtype  ! => for group defs";
+  #   use OwnDataTypes_mod, only : gtype  ! => for group defs";
   start_module($module,\*GROUPS,$Use);
   print GROUPS "! Assignment of groups from GenIn.species:\n";
   print GROUPS "public :: Init_ChemGroups\n\n";

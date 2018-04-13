@@ -100,7 +100,7 @@ OutputConcs=
 ! SHL TEST - ONLY molec/cm3 for 2d at least. Denote as molec
 ! DO NOT USE ppb!!!
       'OH'                 ,'molec' ,'2d','AIR_CONCS','SHL' ,'YMD', !! test SHL
-      'ISRO2'              ,'molec' ,'2d','AIR_CONCS','SHL' ,'YMD', !! test SHL
+!A2018      'ISRO2'              ,'molec' ,'2d','AIR_CONCS','SHL' ,'YMD', !! test SHL
 ! ppb                                                      
       'O3'                  ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMDI', !! HOUR_INST
       'NO'                  ,'ppb' ,'2d','AIR_CONCS','SPEC' ,'YMD', !! also have ugN

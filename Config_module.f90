@@ -3,15 +3,15 @@ module Config_module
 ! Specifies a number of constants used in the model, and reads namelist
 ! file to (re-)configure where possible.
 ! Note that physical constants (e.g. gravity, Cp, etc ( are specified in
-! the module PhysicalConstants_ml.f90)
+! the module PhysicalConstants_mod.f90)
 !----------------------------------------------------------------------------
-use Aerofunctions,        only: DpgV2DpgN
-use CheckStop_ml,         only: CheckStop
-use ChemSpecs,            only: species
-use Io_Nums_ml,           only: IO_NML, IO_LOG, IO_TMP
-use OwnDataTypes_ml,      only: typ_ss, uEMEP_type
-use Precision_ml,         only: dp
-use SmallUtils_ml,        only: find_index, key2str
+!A2018 use Aerofunctions,        only: DpgV2DpgN
+use CheckStop_mod,         only: CheckStop
+use ChemSpecs_mod,            only: species
+use Io_Nums_mod,           only: IO_NML, IO_LOG, IO_TMP
+use OwnDataTypes_mod,      only: typ_ss, uEMEP_type
+use Precision_mod,         only: dp
+use SmallUtils_mod,        only: find_index, key2str
 
 implicit none
 private
@@ -28,7 +28,7 @@ public :: Config_ModelConstants
 !  EMERGENCY   FORECAST with ONLY Volcanic Eruption & Nuclear Accident.
 !
 ! We separate the concept of exp_name and the
-! variable used to set the type of output in My_outputs_ml.
+! variable used to set the type of output in My_outputs_mod.
 ! The longer term solution puts the outputs into namelists
 ! but for now we use the MY_OUTPUTS flag. EXP_NAME can
 ! now be anything descriptive.
@@ -136,12 +136,13 @@ type(emep_useconfig), public, save :: USES
 type, public :: emep_debug
   logical :: &
      AOT             = .false. &
+    ,A2018           = .true.  & ! A2018 TMP while testing
     ,AEROSOL         = .false. & ! ...needed for intended debugs are to work
     ,AQUEOUS         = .false. &
     ,BCS             = .false. & ! BoundaryConditions
     ,BIO             = .false. & !< Biogenic emissions
     ,BIDIR           = .false. & !< FUTURE Bi-directional exchange
-    ,COLUMN          = .false. & !  Used in Derived_ml for column integration
+    ,COLUMN          = .false. & !  Used in Derived_mod for column integration
     ,COLSRC          = .false. & !  Volcanic emissions and Emergency scenarios
     ,DERIVED         = .false. & !
     ,DRYDEP          = .false. & ! Skips fast chemistry to save some CPU
@@ -153,7 +154,7 @@ type, public :: emep_debug
     ,HOURLY_OUTPUTS  = .false. & !
     ,IOPROG          = .false. &
     ,LANDDEFS        = .false. &
-    ,MAINCODE        = .false. & !< debugs main code (Unimod) driver
+    ,MAINCODE        = .false. & !< debugs main code (emepctm) driver
     ,MOSAICS         = .false. &
     ,MY_DERIVED      = .false. &
     ,pH              = .false. &
@@ -236,7 +237,7 @@ logical, public, save ::             &
  ,INERIS_SNAP2       = .false.       & !(EXP_NAME=="TFMM"), & ! Allows near-zero summer values
  ,USE_AMINEAQ        = .false.       & ! MKPS
  ,ANALYSIS           = .false.       & ! EXPERIMENTAL: 3DVar data assimilation
- ,USE_FASTJ          = .false.       & ! use FastJ_ml for computing rcphot
+ ,USE_FASTJ          = .false.       & ! use FastJ_mod for computing rcphot
 !
 ! Output flags
  ,SELECT_LEVELS_HOURLY  = .false.    & ! for FORECAST, 3DPROFILES
@@ -274,7 +275,7 @@ integer, public, save :: &
   logical, public, save ::  USE_OCEAN_NH3 = .false. !set automatically true if found
 
 ! Methane background.
-  real, public, save :: BGND_CH4 = -1  ! -1 gives defaults in BoundaryConditions_ml,
+  real, public, save :: BGND_CH4 = -1  ! -1 gives defaults in BoundaryConditions_mod,
 ! To skip rct value   (jAero work)
   integer, public, save, dimension(10) :: SKIP_RCT  = -1  ! -1 gives defaults
 !
@@ -360,14 +361,14 @@ integer, public, save ::  & ! Actual number of processors in longitude, latitude
   NPROCX, NPROCY, NPROC     ! and total. NPROCY must be 2 for GLOBAL runs.
 
 CHARACTER(LEN=3), public, save :: &
-  DOMAIN_DECOM_MODE=''      ! override parinit(Pole_singular) option (Par_ml)
+  DOMAIN_DECOM_MODE=''      ! override parinit(Pole_singular) option (Par_mod)
 
 !=============================================================================
 !+ 2) Define  debug flags.
 
 ! We have one variable, to say if we are on master-processor
 ! or not: (kept here to avoid too many dependencies for box-model
-! codes which don't need Par_ml
+! codes which don't need Par_mod
 
 logical, public, save ::  MasterProc = .true.
 logical, public, save ::  DebugCell  = .false.
@@ -397,7 +398,7 @@ logical, public, parameter ::    &
   ,DEBUG_NEST           = .false. &
   ,DEBUG_NEST_ICBC      = .false. & ! IFS-MOZART/C-IFS BC
   ,DEBUG_NETCDF         = .false. &
-  ,DEBUG_NETCDF_RF      = .false. & ! ReadField_CDF in NetCDF_ml
+  ,DEBUG_NETCDF_RF      = .false. & ! ReadField_CDF in NetCDF_mod
   ,DEBUG_NH3            = .false. & ! NH3Emis experimental
   ,DEBUG_OUTPUTCHEM     = .false. & ! Output of netcdf results
   ,DEBUG_OUT_HOUR       = .false. & ! Debug Output_hourly.f90
@@ -414,7 +415,7 @@ logical, public, parameter ::    &
 !=============================================================================
 ! 3)  Source-receptor runs?
 ! We don't (generally) want daily outputs for SR runs, so in
-! Derived_ml, we set all IOU_DAY false if SOURCE_RECPTOR = .true..
+! Derived_mod, we set all IOU_DAY false if SOURCE_RECPTOR = .true..
 
 logical, public, save :: SOURCE_RECEPTOR = .false., VOLCANO_SR=.false.
 
@@ -455,31 +456,34 @@ integer, public :: METSTEP = 3  ! time-step of met. (h). 3 hours default, but WR
 !Number of aerosol sizes (1-fine, 2-coarse, 3-'giant' for sea salt )
 ! FINE_PM = 1, COAR_NO3 = 2, COAR_SS = 3, COAR DUST = 4,pollen = 5
 
-integer, parameter :: NSAREA_DEF = 8 ! needs to be consistent with type below
+integer, parameter, public :: NSAREA_DEF = 8 ! needs to be consistent with type below
 type, public :: aero_t
   character(len=15) :: EQUILIB  = 'MARS ' !aerosol themodynamics
   logical          :: DYNAMICS = .false.
   integer          :: NSIZE    = 7
-  real, dimension(7) :: &
-     DpgV  =[0.33e-6,3.0e-6,4.8e-6,5.0e-6,22e-6,28e-6,32e-6] & ! diameter [m]
-    ,DpgN  =[   -1.0,  -1.0,  -1.0,  -1.0, -1.0, -1.0, -1.0] & ! to be calculated
-    ,sigma =[    1.8,   2.0,   2.0,   2.2,  2.0,  2.0,  2.0] &
-    ,PMdens=[ 1600.0,2200.0,2200.0,2600.0,800.0,800.0,800.0] & ! density [kg/m3]
-    ,Vs = 0.0   ! Settling velocity (m/s). Easiest to define here
-
+!A2018  real, dimension(7) :: &
+!A2018!??               F       C      G      
+!A2018     DpgV  =[0.33e-6,3.0e-6,4.8e-6,5.0e-6,22e-6,28e-6,32e-6] & ! diameter [m]
+!A2018    ,DpgN  =[   -1.0,  -1.0,  -1.0,  -1.0, -1.0, -1.0, -1.0] & ! to be calculated
+!A2018    ,sigma =[    1.8,   2.0,   2.0,   2.2,  2.0,  2.0,  2.0] &
+!A2018    ,PMdens=[ 1600.0,2200.0,2200.0,2600.0,800.0,800.0,800.0] & ! density [kg/m3]
+!A2018    ,Vs = 0.0   ! Settling velocity (m/s). Easiest to define here
+!A2018
+!A2018 QUERY - FIGURE OUT LINKS TO GasParticleCoeffs
 ! For surface area we track the following (NSD=not seasalt or dust)
 ! Must make sizes match NSAREA_DEF above
 ! NB PM is sum of PMf and PMC
-  integer :: &
-    SIA_F=1,PM_F=2,SS_F=3,DU_F=4,PM=5,SS_C=6,DU_C=7,ORIG=8,NSAREA=NSAREA_DEF
-
-! Mappings to DpgV types above, and Gerber types (see AeroFunctions).
-! For Gerber (Gb), -1 indicates to use dry radius
-character(len=4), dimension(NSAREA_DEF) :: &
-  SLABELS=[character(len=4)::'SIAF','PMF','SSF','DUF','PM','SSC','DUC','ORIG']
-integer, dimension(NSAREA_DEF) ::&
-  Inddry = [ 1, 1, 1, 1, 2, 3, 4, 3], &
-  Gb     = [ 1, 1, 2,-1, 1, 2,-1,-1]
+ integer :: &
+   SIA_F=1,PM_F=2,SS_F=3,DU_F=4,PM=5,SS_C=6,DU_C=7,ORIG=8,NSAREA=NSAREA_DEF
+!A2018
+!A2018! Mappings to DpgV types above, and Gerber types (see AeroFunctions).
+!A2018! For Gerber (Gb), -1 indicates to use dry radius
+!A2018character(len=4), dimension(NSAREA_DEF) :: &
+!A2018  SLABELS=[character(len=4)::'SIAF','PMF','SSF','DUF','PM','SSC','DUC','ORIG']
+!A2018integer, dimension(NSAREA_DEF) ::&
+!A2018!??         sia pmf   ssf duf  pm  ssc  duc   orig
+!A2018  Inddry = [ 1,   1,   1,  1,   2,   3,   4,   3], &
+!A2018  Gb     = [ 1,   1,   2, -1,   1,   2,  -1,  -1]
 end type aero_t
 type(aero_t), public, save :: AERO = aero_t()
 
@@ -490,7 +494,7 @@ character(len=15), public, save, dimension(20) :: FLUX_VEGS=""
 character(len=15), public, save, dimension(20) :: FLUX_IGNORE=""   ! e.g. Water, desert..
 character(len=15), public, save, dimension(20) :: VEG_2dGS=""
 character(len=99), public, save, dimension(10) :: VEG_2dGS_Params=""
-integer, public, save :: nFluxVegs = 0 ! reset in Landuse_ml
+integer, public, save :: nFluxVegs = 0 ! reset in Landuse_mod
 
 ! To use external maps of plant functional types we need to
 ! map between EMEP codes and netcdf file codes
@@ -532,7 +536,7 @@ character(len=120), public, save :: runlabel1&!SHORT Allows explanatory text
                                   , runlabel2 !LONG  Read in from grun.pl
 
 ! Typically, we define as mainly sea when > 50% water, and
-! likely_coastal when > 20%. See Landuse_ml
+! likely_coastal when > 20%. See Landuse_mod
 real, public, parameter, dimension(2) ::  SEA_LIMIT = (/ 0.2, 0.5 /)
 
 real, public, parameter :: &
@@ -555,9 +559,9 @@ real, public :: Pref   = 101325.0  ! Reference pressure in Pa used to define ver
 
 ! Define output types.
 !   Derived output types: types 1..6 (instantaneous,year,month,day,hour,hour_inst),
-!                         refer to output variables defined in Derived_ml.
+!                         refer to output variables defined in Derived_mod.
 !   Hourly  output types: types 7..8 (hourly_out inst.,hourly_out_mean),
-!                         refer to output variables defined in My_Outputs_ml.
+!                         refer to output variables defined in My_Outputs_mod.
 integer, public, parameter ::  &
   IOU_INST=1,IOU_YEAR=2,IOU_MON=3,IOU_DAY=4,IOU_HOUR=5,IOU_HOUR_INST=6, & ! Derived output
   IOU_HOUR_EXTRA=7,IOU_HOUR_EXTRA_MEAN=8, & ! additional hourly output
@@ -718,9 +722,9 @@ subroutine Config_ModelConstants(iolog)
     DEBUG%ISPEC = ispec
     first_call = .false.
 
-    do i = 1, size(AERO%DpgN(:))
-      AERO%DpgN(i) = DpgV2DpgN(AERO%DpgV(i),AERO%sigma(i))
-    end do
+!A2018    do i = 1, size(AERO%DpgN(:))
+!A2018      AERO%DpgN(i) = DpgV2DpgN(AERO%DpgV(i),AERO%sigma(i))
+!A2018    end do
   end if
 
   if(MasterProc)then
@@ -849,3 +853,7 @@ end subroutine associate_File
 
 end module Config_module
 !_____________________________________________________________________________
+!!TSTEMX program testr
+!!TSTEMX use Config_module
+!!TSTEXM !FAILS due to mpi call Config_ModelConstants()
+!!TSTEMX end program testr

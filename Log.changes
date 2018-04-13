@@ -137,6 +137,62 @@ the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (eg make MACHINE=precise EMEP) - gives loads of
 info on unused variables, etc.
 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+08-09 Apr 2018, Dave
+
+Unimod no more :-)
+
+emepctm is the executable
+
+emep_Main is the name of the main :-)
+
+(end of poetry section.)
+
+
+MANY MANY CHANGES! INTERIM VERSION!
+(Changes usually marked with A2018 for April 2018)
+
+SORRY,.....
+     but once this is done EMEP, ESX and BoxChem will all work from the
+ same system, with the immediate benefit that Robert  can test chemistry
+ in the box and emep models at the same time. The new GenChem fixes some
+ bugs with the old in any case. The complex mapping of wet and dry deposition
+ have also been simplified.
+
+WARNING: some code is simply commented out since I didn't have time
+  to fix all, and some help from others would be useful.
+
+WARNING: Do not use the old GenChem system now! We need to get the new one
+ in place - speak to Dave
+
+ THEREFORE: CM_ files in current directory are *only* scheme to use just now
+  Will change soon!
+
+  Also, the Makefile no longer attempts to run GenChem. We will do this
+ separately in future.
+
+WARNING: Aerosol stuff *has* bugs, especially
+  the link to surface area which is/was confusing.
+
+WARNING: Extinc stuff is currently commented out, but will be brought
+  in via the new GenChem, as part of the GenIn_Species file.
+
+
+GasParticleCoeffs_now now takes care of the CM_DryDep.inc and
+CM_WetDep.inc stuff, now mapping to a simpler set of arrays and avoiding
+different indices for gases and particles. Definitions of scav rates,
+particle size and density are all now done in this module.
+
+
+Now have CM_ChemDims for eg NSPEC_TOT, NEMIS_File, etc.
+
+
+EmisDef_mod and Emissions_mod.
+  Added 'private' to EmisDef_mod
+  which needed a lot of 'public' on various variables used by Emissions_mod
+
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 9 April 2018, Peter
 
@@ -156,6 +212,8 @@ Small renames, on way to EMEP/ESX merge
 
 mv ChemFunctions_ml.f90 ChemFunctions_ml.f90
 mv Setup1dfields_ml.f90 ZchemData_mod.f90
+
+GasParticleCoeffs_ml to GasParticleCoeffs_mod
 
 Changed references in most files.
 
