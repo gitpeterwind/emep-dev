@@ -7,7 +7,7 @@ module Config_module
 !----------------------------------------------------------------------------
 !A2018 use Aerofunctions,        only: DpgV2DpgN
 use CheckStop_mod,         only: CheckStop
-use ChemSpecs_mod,            only: species
+use ChemSpecs_mod,         only: species, CM_schemes_ChemSpecs
 use Io_Nums_mod,           only: IO_NML, IO_LOG, IO_TMP
 use OwnDataTypes_mod,      only: typ_ss, uEMEP_type
 use Precision_mod,         only: dp
@@ -84,6 +84,7 @@ type, public :: emep_useconfig
   logical :: &                   ! Forest fire options
      FOREST_FIRES     = .true.  &!
     ,SOILWATER        = .false. &!
+    ,BVOC             = .true.  &!triggers isoprene and terpene emissions
     ,SEASALT          = .true.  &!
     ,CONVECTION       = .false. &! false works best for Euro runs
     ,AIRCRAFT_EMIS    = .true.  &! Needs global file, see manual 
@@ -108,7 +109,7 @@ type, public :: emep_useconfig
     ,EMISSTACKS       = F       &!
     ,PFT_MAPS         = .false.  ! Future option
 
- ! Mar 2017. Allow new MEGAN-like BVOC
+ ! Mar 2017. Allow new MEGAN-like VOC
  ! Moved to emep_Config
  ! character(len=10) :: GlobBvocMethod = "-" ! MEGAN
 
@@ -716,6 +717,9 @@ subroutine Config_ModelConstants(iolog)
 
   ! Convert DEBUG%SPEC to index
   if(first_call)then
+
+    write(iolog,*) 'CHEM SCHEMES: ',trim(CM_schemes_ChemSpecs)
+
     ispec = find_index( DEBUG%SPEC, species(:)%name )
   ! print *, "debug%spec testing", ispec, trim(DEBUG%SPEC)
     call CheckStop(ispec<1,"debug%spec not found"//trim(DEBUG%SPEC))
